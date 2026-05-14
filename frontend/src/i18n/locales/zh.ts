@@ -624,6 +624,7 @@ export default {
     userLabel: '用户',
     myInviteCode: '我的邀请码及邀请链接',
     inviteCodeHint: '分享此邀请码给好友，好友注册时填入，好友首次充值时好友账户余额将增加充值金额的 10%。',
+    inviteCodeHintWithRate: '分享此邀请码给好友，好友注册时填入，好友首次充值时好友账户余额将增加充值金额的 {rate}。',
     viewInvitedUsers: '邀请用户列表',
     viewInvitedUsersDesc: '按日期筛选查看邀请用户的消费与长效分润数据',
     viewCommissions: '分润记录',

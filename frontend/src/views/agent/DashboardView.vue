@@ -80,7 +80,7 @@
           </button>
         </div>
         <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
-          {{ t('agent.inviteCodeHint') }}
+          {{ t('agent.inviteCodeHintWithRate', { rate: inviteeBonusRate }) }}
           <span v-if="registerUrl" class="ml-1 font-mono text-xs text-gray-600 dark:text-dark-300">{{ registerUrl }}</span>
         </p>
       </div>
@@ -123,6 +123,7 @@ const inviteCode = ref('')
 const { copied, copyToClipboard } = useClipboard()
 const startDate = ref('')
 const endDate = ref('')
+const defaultInviteeBonusRate = 0.10
 
 function getDefaultDates() {
   const now = new Date()
@@ -135,6 +136,10 @@ const registerUrl = computed(() => {
   if (!inviteCode.value) return ''
   return `${window.location.origin}/register?ref=${inviteCode.value}`
 })
+
+const inviteeBonusRate = computed(() =>
+  formatRate(dashboard.value?.first_recharge_invitee_rate ?? defaultInviteeBonusRate)
+)
 
 async function fetchDashboard() {
   loading.value = true

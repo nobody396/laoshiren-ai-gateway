@@ -36,15 +36,16 @@ type InvitedUserStat struct {
 
 // AgentDashboard 代理商总览统计
 type AgentDashboard struct {
-	InvitedUserCount    int64   `json:"invited_user_count"`    // 邀请的用户总数
-	TotalCommission     float64 `json:"total_commission"`      // 累计分佣总额（所有类型）
-	SettledCommission   float64 `json:"settled_commission"`    // 已结算金额
-	UnsettledCommission float64 `json:"unsettled_commission"`  // 未结算金额
-	PeriodCommission    float64 `json:"period_commission"`     // 指定周期内的分佣总额
-	PeriodConsumed      float64 `json:"period_consumed"`       // 指定周期内旗下用户消费总额
-	ThisMonthCommission float64 `json:"this_month_commission"` // 本月分佣
-	ConsumptionRate     float64 `json:"consumption_rate"`      // 当前代理商消耗分润比例
-	RateSource          string  `json:"rate_source"`           // global 或 agent_override
+	InvitedUserCount         int64   `json:"invited_user_count"`          // 邀请的用户总数
+	TotalCommission          float64 `json:"total_commission"`            // 累计分佣总额（所有类型）
+	SettledCommission        float64 `json:"settled_commission"`          // 已结算金额
+	UnsettledCommission      float64 `json:"unsettled_commission"`        // 未结算金额
+	PeriodCommission         float64 `json:"period_commission"`           // 指定周期内的分佣总额
+	PeriodConsumed           float64 `json:"period_consumed"`             // 指定周期内旗下用户消费总额
+	ThisMonthCommission      float64 `json:"this_month_commission"`       // 本月分佣
+	ConsumptionRate          float64 `json:"consumption_rate"`            // 当前代理商消耗分润比例
+	FirstRechargeInviteeRate float64 `json:"first_recharge_invitee_rate"` // 被邀请用户首充奖励比例
+	RateSource               string  `json:"rate_source"`                 // global 或 agent_override
 }
 
 // UserReferralDashboard 普通用户邀请看板统计

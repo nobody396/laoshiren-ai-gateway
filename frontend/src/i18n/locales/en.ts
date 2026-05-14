@@ -624,6 +624,7 @@ export default {
     userLabel: 'User',
     myInviteCode: 'My Invite Code & Invite Link',
     inviteCodeHint: 'Share this invite code with friends. They enter it on registration, and their account balance increases by 10% of their first top-up amount.',
+    inviteCodeHintWithRate: 'Share this invite code with friends. They enter it on registration, and their account balance increases by {rate} of their first top-up amount.',
     viewInvitedUsers: 'Invited Users List',
     viewInvitedUsersDesc: 'View consumption and revenue share stats by date range',
     viewCommissions: 'Revenue Share Records',

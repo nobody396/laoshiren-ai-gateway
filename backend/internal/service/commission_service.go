@@ -320,6 +320,7 @@ func (s *CommissionService) GetAgentDashboard(ctx context.Context, agentID int64
 		unsettledCommission = 0
 	}
 	consumptionRate, rateSource := s.resolveAgentConsumptionRate(ctx, agentID)
+	rates := s.getCommissionRates(ctx)
 
 	// 邀请用户总数
 	_, paginationResult, err := s.commissionRepo.ListInvitedUsersWithStats(
@@ -335,14 +336,15 @@ func (s *CommissionService) GetAgentDashboard(ctx context.Context, agentID int64
 	}
 
 	return &AgentDashboard{
-		InvitedUserCount:    invitedCount,
-		TotalCommission:     totalCommission,
-		SettledCommission:   settledCommission,
-		UnsettledCommission: unsettledCommission,
-		PeriodCommission:    periodCommission,
-		ThisMonthCommission: thisMonthCommission,
-		ConsumptionRate:     consumptionRate,
-		RateSource:          rateSource,
+		InvitedUserCount:         invitedCount,
+		TotalCommission:          totalCommission,
+		SettledCommission:        settledCommission,
+		UnsettledCommission:      unsettledCommission,
+		PeriodCommission:         periodCommission,
+		ThisMonthCommission:      thisMonthCommission,
+		ConsumptionRate:          consumptionRate,
+		FirstRechargeInviteeRate: rates.FirstRechargeInviteeRate,
+		RateSource:               rateSource,
 	}, nil
 }
 

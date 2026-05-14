@@ -13,6 +13,7 @@ export interface AgentDashboard {
   period_commission: number
   this_month_commission: number
   consumption_rate: number
+  first_recharge_invitee_rate: number
   rate_source: string
 }
 

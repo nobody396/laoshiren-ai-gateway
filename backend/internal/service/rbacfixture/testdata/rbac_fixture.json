@@ -1,0 +1,3124 @@
+{
+  "menus": [
+    {
+      "id": 2,
+      "name": "管理仪表盘",
+      "type": "menu",
+      "path": "/admin/dashboard",
+      "component": "",
+      "icon": "dashboard",
+      "permission_key": "admin:dashboard",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 11,
+      "name": "用户管理",
+      "type": "menu",
+      "path": "/admin/users",
+      "component": "",
+      "icon": "users",
+      "permission_key": "admin:users",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 12,
+      "name": "代理商管理",
+      "type": "menu",
+      "path": "/admin/agents",
+      "component": "",
+      "icon": "agent",
+      "permission_key": "admin:agents",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 21,
+      "name": "账号管理",
+      "type": "menu",
+      "path": "/admin/accounts",
+      "component": "",
+      "icon": "globe",
+      "permission_key": "admin:accounts",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 22,
+      "name": "分组管理",
+      "type": "menu",
+      "path": "/admin/groups",
+      "component": "",
+      "icon": "folder",
+      "permission_key": "admin:groups",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 23,
+      "name": "渠道管理",
+      "type": "menu",
+      "path": "/admin/channels",
+      "component": "",
+      "icon": "channel",
+      "permission_key": "admin:channels",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 31,
+      "name": "订阅管理",
+      "type": "menu",
+      "path": "/admin/subscriptions",
+      "component": "",
+      "icon": "credit-card",
+      "permission_key": "admin:subscriptions",
+      "sort_order": 7,
+      "status": "active"
+    },
+    {
+      "id": 32,
+      "name": "卡密管理",
+      "type": "menu",
+      "path": "/admin/redeem",
+      "component": "",
+      "icon": "ticket",
+      "permission_key": "admin:redeem",
+      "sort_order": 8,
+      "status": "active"
+    },
+    {
+      "id": 33,
+      "name": "优惠码管理",
+      "type": "menu",
+      "path": "/admin/promo-codes",
+      "component": "",
+      "icon": "gift",
+      "permission_key": "admin:promo-codes",
+      "sort_order": 9,
+      "status": "active"
+    },
+    {
+      "id": 34,
+      "name": "充值订单",
+      "type": "menu",
+      "path": "/admin/topup-orders",
+      "component": "",
+      "icon": "credit-card",
+      "permission_key": "admin:topup-orders",
+      "sort_order": 10,
+      "status": "active"
+    },
+    {
+      "id": 35,
+      "name": "开票管理",
+      "type": "menu",
+      "path": "/admin/invoice-requests",
+      "component": "",
+      "icon": "ticket",
+      "permission_key": "admin:invoice-requests",
+      "sort_order": 11,
+      "status": "active"
+    },
+    {
+      "id": 41,
+      "name": "公告管理",
+      "type": "menu",
+      "path": "/admin/announcements",
+      "component": "",
+      "icon": "bell",
+      "permission_key": "admin:announcements",
+      "sort_order": 12,
+      "status": "active"
+    },
+    {
+      "id": 42,
+      "name": "反馈管理",
+      "type": "menu",
+      "path": "/admin/feedbacks",
+      "component": "",
+      "icon": "feedback",
+      "permission_key": "admin:feedbacks",
+      "sort_order": 13,
+      "status": "active"
+    },
+    {
+      "id": 51,
+      "name": "代理管理",
+      "type": "menu",
+      "path": "/admin/proxies",
+      "component": "",
+      "icon": "server",
+      "permission_key": "admin:proxies",
+      "sort_order": 14,
+      "status": "active"
+    },
+    {
+      "id": 52,
+      "name": "使用记录",
+      "type": "menu",
+      "path": "/admin/usage",
+      "component": "",
+      "icon": "chart",
+      "permission_key": "admin:usage",
+      "sort_order": 15,
+      "status": "active"
+    },
+    {
+      "id": 53,
+      "name": "运维监控",
+      "type": "menu",
+      "path": "/admin/ops",
+      "component": "",
+      "icon": "chart",
+      "permission_key": "admin:ops",
+      "sort_order": 16,
+      "status": "active"
+    },
+    {
+      "id": 54,
+      "name": "系统设置",
+      "type": "menu",
+      "path": "/admin/settings",
+      "component": "",
+      "icon": "cog",
+      "permission_key": "admin:settings",
+      "sort_order": 17,
+      "status": "active"
+    },
+    {
+      "id": 61,
+      "name": "角色管理",
+      "type": "menu",
+      "path": "/admin/roles",
+      "component": "",
+      "icon": "shield",
+      "permission_key": "admin:roles",
+      "sort_order": 18,
+      "status": "active"
+    },
+    {
+      "id": 62,
+      "name": "菜单管理",
+      "type": "menu",
+      "path": "/admin/menus",
+      "component": "",
+      "icon": "menu",
+      "permission_key": "admin:menus",
+      "sort_order": 19,
+      "status": "active"
+    },
+    {
+      "id": 63,
+      "name": "API 管理",
+      "type": "menu",
+      "path": "/admin/apis",
+      "component": "",
+      "icon": "api",
+      "permission_key": "admin:apis",
+      "sort_order": 20,
+      "status": "active"
+    }
+  ],
+  "apis": [
+    {
+      "id": 101,
+      "group": "仪表盘",
+      "path": "/admin/dashboard/snapshot-v2",
+      "method": "GET",
+      "description": "GET /admin/dashboard/snapshot-v2",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 102,
+      "group": "仪表盘",
+      "path": "/admin/dashboard/stats",
+      "method": "GET",
+      "description": "GET /admin/dashboard/stats",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 103,
+      "group": "仪表盘",
+      "path": "/admin/dashboard/realtime",
+      "method": "GET",
+      "description": "GET /admin/dashboard/realtime",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 104,
+      "group": "仪表盘",
+      "path": "/admin/dashboard/trend",
+      "method": "GET",
+      "description": "GET /admin/dashboard/trend",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 105,
+      "group": "仪表盘",
+      "path": "/admin/dashboard/models",
+      "method": "GET",
+      "description": "GET /admin/dashboard/models",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 106,
+      "group": "仪表盘",
+      "path": "/admin/dashboard/groups",
+      "method": "GET",
+      "description": "GET /admin/dashboard/groups",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 107,
+      "group": "仪表盘",
+      "path": "/admin/dashboard/api-keys-trend",
+      "method": "GET",
+      "description": "GET /admin/dashboard/api-keys-trend",
+      "sort_order": 7,
+      "status": "active"
+    },
+    {
+      "id": 108,
+      "group": "仪表盘",
+      "path": "/admin/dashboard/users-trend",
+      "method": "GET",
+      "description": "GET /admin/dashboard/users-trend",
+      "sort_order": 8,
+      "status": "active"
+    },
+    {
+      "id": 109,
+      "group": "仪表盘",
+      "path": "/admin/dashboard/users-ranking",
+      "method": "GET",
+      "description": "GET /admin/dashboard/users-ranking",
+      "sort_order": 9,
+      "status": "active"
+    },
+    {
+      "id": 110,
+      "group": "仪表盘",
+      "path": "/admin/dashboard/users-usage",
+      "method": "POST",
+      "description": "POST /admin/dashboard/users-usage",
+      "sort_order": 10,
+      "status": "active"
+    },
+    {
+      "id": 111,
+      "group": "仪表盘",
+      "path": "/admin/dashboard/api-keys-usage",
+      "method": "POST",
+      "description": "POST /admin/dashboard/api-keys-usage",
+      "sort_order": 11,
+      "status": "active"
+    },
+    {
+      "id": 112,
+      "group": "仪表盘",
+      "path": "/admin/dashboard/user-breakdown",
+      "method": "GET",
+      "description": "GET /admin/dashboard/user-breakdown",
+      "sort_order": 12,
+      "status": "active"
+    },
+    {
+      "id": 113,
+      "group": "仪表盘",
+      "path": "/admin/dashboard/aggregation/backfill",
+      "method": "POST",
+      "description": "POST /admin/dashboard/aggregation/backfill",
+      "sort_order": 13,
+      "status": "active"
+    },
+    {
+      "id": 114,
+      "group": "用户管理",
+      "path": "/admin/users",
+      "method": "GET",
+      "description": "GET /admin/users",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 115,
+      "group": "用户管理",
+      "path": "/admin/users/:id",
+      "method": "GET",
+      "description": "GET /admin/users/:id",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 116,
+      "group": "用户管理",
+      "path": "/admin/users",
+      "method": "POST",
+      "description": "POST /admin/users",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 117,
+      "group": "用户管理",
+      "path": "/admin/users/:id",
+      "method": "PUT",
+      "description": "PUT /admin/users/:id",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 118,
+      "group": "用户管理",
+      "path": "/admin/users/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/users/:id",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 119,
+      "group": "用户管理",
+      "path": "/admin/users/:id/balance",
+      "method": "POST",
+      "description": "POST /admin/users/:id/balance",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 120,
+      "group": "用户管理",
+      "path": "/admin/users/:id/api-keys",
+      "method": "GET",
+      "description": "GET /admin/users/:id/api-keys",
+      "sort_order": 7,
+      "status": "active"
+    },
+    {
+      "id": 121,
+      "group": "用户管理",
+      "path": "/admin/users/:id/usage",
+      "method": "GET",
+      "description": "GET /admin/users/:id/usage",
+      "sort_order": 8,
+      "status": "active"
+    },
+    {
+      "id": 122,
+      "group": "用户管理",
+      "path": "/admin/users/:id/balance-history",
+      "method": "GET",
+      "description": "GET /admin/users/:id/balance-history",
+      "sort_order": 9,
+      "status": "active"
+    },
+    {
+      "id": 123,
+      "group": "用户管理",
+      "path": "/admin/users/:id/replace-group",
+      "method": "POST",
+      "description": "POST /admin/users/:id/replace-group",
+      "sort_order": 10,
+      "status": "active"
+    },
+    {
+      "id": 124,
+      "group": "用户管理",
+      "path": "/admin/users/:id/attributes",
+      "method": "GET",
+      "description": "GET /admin/users/:id/attributes",
+      "sort_order": 11,
+      "status": "active"
+    },
+    {
+      "id": 125,
+      "group": "用户管理",
+      "path": "/admin/users/:id/attributes",
+      "method": "PUT",
+      "description": "PUT /admin/users/:id/attributes",
+      "sort_order": 12,
+      "status": "active"
+    },
+    {
+      "id": 126,
+      "group": "代理商管理",
+      "path": "/admin/agents",
+      "method": "GET",
+      "description": "GET /admin/agents",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 127,
+      "group": "代理商管理",
+      "path": "/admin/agents/rates",
+      "method": "GET",
+      "description": "GET /admin/agents/rates",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 128,
+      "group": "代理商管理",
+      "path": "/admin/agents/rates",
+      "method": "PUT",
+      "description": "PUT /admin/agents/rates",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 129,
+      "group": "代理商管理",
+      "path": "/admin/agents/:id",
+      "method": "GET",
+      "description": "GET /admin/agents/:id",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 130,
+      "group": "代理商管理",
+      "path": "/admin/agents/:id/users",
+      "method": "GET",
+      "description": "GET /admin/agents/:id/users",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 131,
+      "group": "代理商管理",
+      "path": "/admin/agents/:id/users/bind",
+      "method": "POST",
+      "description": "POST /admin/agents/:id/users/bind",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 132,
+      "group": "代理商管理",
+      "path": "/admin/agents/:id/commissions",
+      "method": "GET",
+      "description": "GET /admin/agents/:id/commissions",
+      "sort_order": 7,
+      "status": "active"
+    },
+    {
+      "id": 133,
+      "group": "代理商管理",
+      "path": "/admin/agents/:id/settlements",
+      "method": "GET",
+      "description": "GET /admin/agents/:id/settlements",
+      "sort_order": 8,
+      "status": "active"
+    },
+    {
+      "id": 134,
+      "group": "代理商管理",
+      "path": "/admin/agents/:id/settlements",
+      "method": "POST",
+      "description": "POST /admin/agents/:id/settlements",
+      "sort_order": 9,
+      "status": "active"
+    },
+    {
+      "id": 135,
+      "group": "代理商管理",
+      "path": "/admin/agents/:id/rate",
+      "method": "GET",
+      "description": "GET /admin/agents/:id/rate",
+      "sort_order": 10,
+      "status": "active"
+    },
+    {
+      "id": 136,
+      "group": "代理商管理",
+      "path": "/admin/agents/:id/rate",
+      "method": "PUT",
+      "description": "PUT /admin/agents/:id/rate",
+      "sort_order": 11,
+      "status": "active"
+    },
+    {
+      "id": 137,
+      "group": "分组管理",
+      "path": "/admin/groups",
+      "method": "GET",
+      "description": "GET /admin/groups",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 138,
+      "group": "分组管理",
+      "path": "/admin/groups/all",
+      "method": "GET",
+      "description": "GET /admin/groups/all",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 139,
+      "group": "分组管理",
+      "path": "/admin/groups/usage-summary",
+      "method": "GET",
+      "description": "GET /admin/groups/usage-summary",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 140,
+      "group": "分组管理",
+      "path": "/admin/groups/capacity-summary",
+      "method": "GET",
+      "description": "GET /admin/groups/capacity-summary",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 141,
+      "group": "分组管理",
+      "path": "/admin/groups/sort-order",
+      "method": "PUT",
+      "description": "PUT /admin/groups/sort-order",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 142,
+      "group": "分组管理",
+      "path": "/admin/groups/:id",
+      "method": "GET",
+      "description": "GET /admin/groups/:id",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 143,
+      "group": "分组管理",
+      "path": "/admin/groups",
+      "method": "POST",
+      "description": "POST /admin/groups",
+      "sort_order": 7,
+      "status": "active"
+    },
+    {
+      "id": 144,
+      "group": "分组管理",
+      "path": "/admin/groups/:id",
+      "method": "PUT",
+      "description": "PUT /admin/groups/:id",
+      "sort_order": 8,
+      "status": "active"
+    },
+    {
+      "id": 145,
+      "group": "分组管理",
+      "path": "/admin/groups/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/groups/:id",
+      "sort_order": 9,
+      "status": "active"
+    },
+    {
+      "id": 146,
+      "group": "分组管理",
+      "path": "/admin/groups/:id/stats",
+      "method": "GET",
+      "description": "GET /admin/groups/:id/stats",
+      "sort_order": 10,
+      "status": "active"
+    },
+    {
+      "id": 147,
+      "group": "分组管理",
+      "path": "/admin/groups/:id/rate-multipliers",
+      "method": "GET",
+      "description": "GET /admin/groups/:id/rate-multipliers",
+      "sort_order": 11,
+      "status": "active"
+    },
+    {
+      "id": 148,
+      "group": "分组管理",
+      "path": "/admin/groups/:id/rate-multipliers",
+      "method": "PUT",
+      "description": "PUT /admin/groups/:id/rate-multipliers",
+      "sort_order": 12,
+      "status": "active"
+    },
+    {
+      "id": 149,
+      "group": "分组管理",
+      "path": "/admin/groups/:id/rate-multipliers",
+      "method": "DELETE",
+      "description": "DELETE /admin/groups/:id/rate-multipliers",
+      "sort_order": 13,
+      "status": "active"
+    },
+    {
+      "id": 150,
+      "group": "分组管理",
+      "path": "/admin/groups/:id/api-keys",
+      "method": "GET",
+      "description": "GET /admin/groups/:id/api-keys",
+      "sort_order": 14,
+      "status": "active"
+    },
+    {
+      "id": 151,
+      "group": "账号管理",
+      "path": "/admin/accounts",
+      "method": "GET",
+      "description": "GET /admin/accounts",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 152,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id",
+      "method": "GET",
+      "description": "GET /admin/accounts/:id",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 153,
+      "group": "账号管理",
+      "path": "/admin/accounts",
+      "method": "POST",
+      "description": "POST /admin/accounts",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 154,
+      "group": "账号管理",
+      "path": "/admin/accounts/check-mixed-channel",
+      "method": "POST",
+      "description": "POST /admin/accounts/check-mixed-channel",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 155,
+      "group": "账号管理",
+      "path": "/admin/accounts/sync/crs",
+      "method": "POST",
+      "description": "POST /admin/accounts/sync/crs",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 156,
+      "group": "账号管理",
+      "path": "/admin/accounts/sync/crs/preview",
+      "method": "POST",
+      "description": "POST /admin/accounts/sync/crs/preview",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 157,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id",
+      "method": "PUT",
+      "description": "PUT /admin/accounts/:id",
+      "sort_order": 7,
+      "status": "active"
+    },
+    {
+      "id": 158,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/accounts/:id",
+      "sort_order": 8,
+      "status": "active"
+    },
+    {
+      "id": 159,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/test",
+      "method": "POST",
+      "description": "POST /admin/accounts/:id/test",
+      "sort_order": 9,
+      "status": "active"
+    },
+    {
+      "id": 160,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/recover-state",
+      "method": "POST",
+      "description": "POST /admin/accounts/:id/recover-state",
+      "sort_order": 10,
+      "status": "active"
+    },
+    {
+      "id": 161,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/refresh",
+      "method": "POST",
+      "description": "POST /admin/accounts/:id/refresh",
+      "sort_order": 11,
+      "status": "active"
+    },
+    {
+      "id": 162,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/set-privacy",
+      "method": "POST",
+      "description": "POST /admin/accounts/:id/set-privacy",
+      "sort_order": 12,
+      "status": "active"
+    },
+    {
+      "id": 163,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/refresh-tier",
+      "method": "POST",
+      "description": "POST /admin/accounts/:id/refresh-tier",
+      "sort_order": 13,
+      "status": "active"
+    },
+    {
+      "id": 164,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/stats",
+      "method": "GET",
+      "description": "GET /admin/accounts/:id/stats",
+      "sort_order": 14,
+      "status": "active"
+    },
+    {
+      "id": 165,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/clear-error",
+      "method": "POST",
+      "description": "POST /admin/accounts/:id/clear-error",
+      "sort_order": 15,
+      "status": "active"
+    },
+    {
+      "id": 166,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/usage",
+      "method": "GET",
+      "description": "GET /admin/accounts/:id/usage",
+      "sort_order": 16,
+      "status": "active"
+    },
+    {
+      "id": 167,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/today-stats",
+      "method": "GET",
+      "description": "GET /admin/accounts/:id/today-stats",
+      "sort_order": 17,
+      "status": "active"
+    },
+    {
+      "id": 168,
+      "group": "账号管理",
+      "path": "/admin/accounts/today-stats/batch",
+      "method": "POST",
+      "description": "POST /admin/accounts/today-stats/batch",
+      "sort_order": 18,
+      "status": "active"
+    },
+    {
+      "id": 169,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/clear-rate-limit",
+      "method": "POST",
+      "description": "POST /admin/accounts/:id/clear-rate-limit",
+      "sort_order": 19,
+      "status": "active"
+    },
+    {
+      "id": 170,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/reset-quota",
+      "method": "POST",
+      "description": "POST /admin/accounts/:id/reset-quota",
+      "sort_order": 20,
+      "status": "active"
+    },
+    {
+      "id": 171,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/temp-unschedulable",
+      "method": "GET",
+      "description": "GET /admin/accounts/:id/temp-unschedulable",
+      "sort_order": 21,
+      "status": "active"
+    },
+    {
+      "id": 172,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/temp-unschedulable",
+      "method": "DELETE",
+      "description": "DELETE /admin/accounts/:id/temp-unschedulable",
+      "sort_order": 22,
+      "status": "active"
+    },
+    {
+      "id": 173,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/schedulable",
+      "method": "POST",
+      "description": "POST /admin/accounts/:id/schedulable",
+      "sort_order": 23,
+      "status": "active"
+    },
+    {
+      "id": 174,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/models",
+      "method": "GET",
+      "description": "GET /admin/accounts/:id/models",
+      "sort_order": 24,
+      "status": "active"
+    },
+    {
+      "id": 175,
+      "group": "账号管理",
+      "path": "/admin/accounts/batch",
+      "method": "POST",
+      "description": "POST /admin/accounts/batch",
+      "sort_order": 25,
+      "status": "active"
+    },
+    {
+      "id": 176,
+      "group": "账号管理",
+      "path": "/admin/accounts/data",
+      "method": "GET",
+      "description": "GET /admin/accounts/data",
+      "sort_order": 26,
+      "status": "active"
+    },
+    {
+      "id": 177,
+      "group": "账号管理",
+      "path": "/admin/accounts/data",
+      "method": "POST",
+      "description": "POST /admin/accounts/data",
+      "sort_order": 27,
+      "status": "active"
+    },
+    {
+      "id": 178,
+      "group": "账号管理",
+      "path": "/admin/accounts/batch-update-credentials",
+      "method": "POST",
+      "description": "POST /admin/accounts/batch-update-credentials",
+      "sort_order": 28,
+      "status": "active"
+    },
+    {
+      "id": 179,
+      "group": "账号管理",
+      "path": "/admin/accounts/batch-refresh-tier",
+      "method": "POST",
+      "description": "POST /admin/accounts/batch-refresh-tier",
+      "sort_order": 29,
+      "status": "active"
+    },
+    {
+      "id": 180,
+      "group": "账号管理",
+      "path": "/admin/accounts/bulk-update",
+      "method": "POST",
+      "description": "POST /admin/accounts/bulk-update",
+      "sort_order": 30,
+      "status": "active"
+    },
+    {
+      "id": 181,
+      "group": "账号管理",
+      "path": "/admin/accounts/batch-clear-error",
+      "method": "POST",
+      "description": "POST /admin/accounts/batch-clear-error",
+      "sort_order": 31,
+      "status": "active"
+    },
+    {
+      "id": 182,
+      "group": "账号管理",
+      "path": "/admin/accounts/batch-refresh",
+      "method": "POST",
+      "description": "POST /admin/accounts/batch-refresh",
+      "sort_order": 32,
+      "status": "active"
+    },
+    {
+      "id": 183,
+      "group": "账号管理",
+      "path": "/admin/accounts/antigravity/default-model-mapping",
+      "method": "GET",
+      "description": "GET /admin/accounts/antigravity/default-model-mapping",
+      "sort_order": 33,
+      "status": "active"
+    },
+    {
+      "id": 184,
+      "group": "账号管理",
+      "path": "/admin/accounts/generate-auth-url",
+      "method": "POST",
+      "description": "POST /admin/accounts/generate-auth-url",
+      "sort_order": 34,
+      "status": "active"
+    },
+    {
+      "id": 185,
+      "group": "账号管理",
+      "path": "/admin/accounts/generate-setup-token-url",
+      "method": "POST",
+      "description": "POST /admin/accounts/generate-setup-token-url",
+      "sort_order": 35,
+      "status": "active"
+    },
+    {
+      "id": 186,
+      "group": "账号管理",
+      "path": "/admin/accounts/exchange-code",
+      "method": "POST",
+      "description": "POST /admin/accounts/exchange-code",
+      "sort_order": 36,
+      "status": "active"
+    },
+    {
+      "id": 187,
+      "group": "账号管理",
+      "path": "/admin/accounts/exchange-setup-token-code",
+      "method": "POST",
+      "description": "POST /admin/accounts/exchange-setup-token-code",
+      "sort_order": 37,
+      "status": "active"
+    },
+    {
+      "id": 188,
+      "group": "账号管理",
+      "path": "/admin/accounts/cookie-auth",
+      "method": "POST",
+      "description": "POST /admin/accounts/cookie-auth",
+      "sort_order": 38,
+      "status": "active"
+    },
+    {
+      "id": 189,
+      "group": "账号管理",
+      "path": "/admin/accounts/setup-token-cookie-auth",
+      "method": "POST",
+      "description": "POST /admin/accounts/setup-token-cookie-auth",
+      "sort_order": 39,
+      "status": "active"
+    },
+    {
+      "id": 190,
+      "group": "公告管理",
+      "path": "/admin/announcements",
+      "method": "GET",
+      "description": "GET /admin/announcements",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 191,
+      "group": "公告管理",
+      "path": "/admin/announcements",
+      "method": "POST",
+      "description": "POST /admin/announcements",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 192,
+      "group": "公告管理",
+      "path": "/admin/announcements/:id",
+      "method": "GET",
+      "description": "GET /admin/announcements/:id",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 193,
+      "group": "公告管理",
+      "path": "/admin/announcements/:id",
+      "method": "PUT",
+      "description": "PUT /admin/announcements/:id",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 194,
+      "group": "公告管理",
+      "path": "/admin/announcements/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/announcements/:id",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 195,
+      "group": "公告管理",
+      "path": "/admin/announcements/:id/read-status",
+      "method": "GET",
+      "description": "GET /admin/announcements/:id/read-status",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 196,
+      "group": "反馈管理",
+      "path": "/admin/feedbacks",
+      "method": "GET",
+      "description": "GET /admin/feedbacks",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 197,
+      "group": "反馈管理",
+      "path": "/admin/feedbacks/:id",
+      "method": "GET",
+      "description": "GET /admin/feedbacks/:id",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 198,
+      "group": "反馈管理",
+      "path": "/admin/feedbacks/:id/replies",
+      "method": "POST",
+      "description": "POST /admin/feedbacks/:id/replies",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 199,
+      "group": "反馈管理",
+      "path": "/admin/feedbacks/:id/status",
+      "method": "PUT",
+      "description": "PUT /admin/feedbacks/:id/status",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 200,
+      "group": "反馈管理",
+      "path": "/admin/feedbacks/:id/priority",
+      "method": "PUT",
+      "description": "PUT /admin/feedbacks/:id/priority",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 201,
+      "group": "反馈管理",
+      "path": "/admin/feedbacks/batch-status",
+      "method": "PUT",
+      "description": "PUT /admin/feedbacks/batch-status",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 202,
+      "group": "反馈管理",
+      "path": "/admin/feedbacks/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/feedbacks/:id",
+      "sort_order": 7,
+      "status": "active"
+    },
+    {
+      "id": 203,
+      "group": "反馈管理",
+      "path": "/admin/feedbacks/batch-delete",
+      "method": "POST",
+      "description": "POST /admin/feedbacks/batch-delete",
+      "sort_order": 8,
+      "status": "active"
+    },
+    {
+      "id": 204,
+      "group": "账号管理",
+      "path": "/admin/openai/generate-auth-url",
+      "method": "POST",
+      "description": "POST /admin/openai/generate-auth-url",
+      "sort_order": 40,
+      "status": "active"
+    },
+    {
+      "id": 205,
+      "group": "账号管理",
+      "path": "/admin/openai/exchange-code",
+      "method": "POST",
+      "description": "POST /admin/openai/exchange-code",
+      "sort_order": 41,
+      "status": "active"
+    },
+    {
+      "id": 206,
+      "group": "账号管理",
+      "path": "/admin/openai/refresh-token",
+      "method": "POST",
+      "description": "POST /admin/openai/refresh-token",
+      "sort_order": 42,
+      "status": "active"
+    },
+    {
+      "id": 207,
+      "group": "账号管理",
+      "path": "/admin/openai/accounts/:id/refresh",
+      "method": "POST",
+      "description": "POST /admin/openai/accounts/:id/refresh",
+      "sort_order": 43,
+      "status": "active"
+    },
+    {
+      "id": 208,
+      "group": "账号管理",
+      "path": "/admin/openai/create-from-oauth",
+      "method": "POST",
+      "description": "POST /admin/openai/create-from-oauth",
+      "sort_order": 44,
+      "status": "active"
+    },
+    {
+      "id": 209,
+      "group": "账号管理",
+      "path": "/admin/gemini/oauth/auth-url",
+      "method": "POST",
+      "description": "POST /admin/gemini/oauth/auth-url",
+      "sort_order": 45,
+      "status": "active"
+    },
+    {
+      "id": 210,
+      "group": "账号管理",
+      "path": "/admin/gemini/oauth/exchange-code",
+      "method": "POST",
+      "description": "POST /admin/gemini/oauth/exchange-code",
+      "sort_order": 46,
+      "status": "active"
+    },
+    {
+      "id": 211,
+      "group": "账号管理",
+      "path": "/admin/gemini/oauth/capabilities",
+      "method": "GET",
+      "description": "GET /admin/gemini/oauth/capabilities",
+      "sort_order": 47,
+      "status": "active"
+    },
+    {
+      "id": 212,
+      "group": "账号管理",
+      "path": "/admin/antigravity/oauth/auth-url",
+      "method": "POST",
+      "description": "POST /admin/antigravity/oauth/auth-url",
+      "sort_order": 48,
+      "status": "active"
+    },
+    {
+      "id": 213,
+      "group": "账号管理",
+      "path": "/admin/antigravity/oauth/exchange-code",
+      "method": "POST",
+      "description": "POST /admin/antigravity/oauth/exchange-code",
+      "sort_order": 49,
+      "status": "active"
+    },
+    {
+      "id": 214,
+      "group": "账号管理",
+      "path": "/admin/antigravity/oauth/refresh-token",
+      "method": "POST",
+      "description": "POST /admin/antigravity/oauth/refresh-token",
+      "sort_order": 50,
+      "status": "active"
+    },
+    {
+      "id": 215,
+      "group": "代理管理",
+      "path": "/admin/proxies",
+      "method": "GET",
+      "description": "GET /admin/proxies",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 216,
+      "group": "代理管理",
+      "path": "/admin/proxies/all",
+      "method": "GET",
+      "description": "GET /admin/proxies/all",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 217,
+      "group": "代理管理",
+      "path": "/admin/proxies/data",
+      "method": "GET",
+      "description": "GET /admin/proxies/data",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 218,
+      "group": "代理管理",
+      "path": "/admin/proxies/data",
+      "method": "POST",
+      "description": "POST /admin/proxies/data",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 219,
+      "group": "代理管理",
+      "path": "/admin/proxies/:id",
+      "method": "GET",
+      "description": "GET /admin/proxies/:id",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 220,
+      "group": "代理管理",
+      "path": "/admin/proxies",
+      "method": "POST",
+      "description": "POST /admin/proxies",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 221,
+      "group": "代理管理",
+      "path": "/admin/proxies/:id",
+      "method": "PUT",
+      "description": "PUT /admin/proxies/:id",
+      "sort_order": 7,
+      "status": "active"
+    },
+    {
+      "id": 222,
+      "group": "代理管理",
+      "path": "/admin/proxies/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/proxies/:id",
+      "sort_order": 8,
+      "status": "active"
+    },
+    {
+      "id": 223,
+      "group": "代理管理",
+      "path": "/admin/proxies/:id/test",
+      "method": "POST",
+      "description": "POST /admin/proxies/:id/test",
+      "sort_order": 9,
+      "status": "active"
+    },
+    {
+      "id": 224,
+      "group": "代理管理",
+      "path": "/admin/proxies/:id/quality-check",
+      "method": "POST",
+      "description": "POST /admin/proxies/:id/quality-check",
+      "sort_order": 10,
+      "status": "active"
+    },
+    {
+      "id": 225,
+      "group": "代理管理",
+      "path": "/admin/proxies/:id/stats",
+      "method": "GET",
+      "description": "GET /admin/proxies/:id/stats",
+      "sort_order": 11,
+      "status": "active"
+    },
+    {
+      "id": 226,
+      "group": "代理管理",
+      "path": "/admin/proxies/:id/accounts",
+      "method": "GET",
+      "description": "GET /admin/proxies/:id/accounts",
+      "sort_order": 12,
+      "status": "active"
+    },
+    {
+      "id": 227,
+      "group": "代理管理",
+      "path": "/admin/proxies/batch-delete",
+      "method": "POST",
+      "description": "POST /admin/proxies/batch-delete",
+      "sort_order": 13,
+      "status": "active"
+    },
+    {
+      "id": 228,
+      "group": "代理管理",
+      "path": "/admin/proxies/batch",
+      "method": "POST",
+      "description": "POST /admin/proxies/batch",
+      "sort_order": 14,
+      "status": "active"
+    },
+    {
+      "id": 229,
+      "group": "卡密管理",
+      "path": "/admin/redeem-codes",
+      "method": "GET",
+      "description": "GET /admin/redeem-codes",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 230,
+      "group": "卡密管理",
+      "path": "/admin/redeem-codes/stats",
+      "method": "GET",
+      "description": "GET /admin/redeem-codes/stats",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 231,
+      "group": "卡密管理",
+      "path": "/admin/redeem-codes/export",
+      "method": "GET",
+      "description": "GET /admin/redeem-codes/export",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 232,
+      "group": "卡密管理",
+      "path": "/admin/redeem-codes/:id",
+      "method": "GET",
+      "description": "GET /admin/redeem-codes/:id",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 233,
+      "group": "卡密管理",
+      "path": "/admin/redeem-codes/create-and-redeem",
+      "method": "POST",
+      "description": "POST /admin/redeem-codes/create-and-redeem",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 234,
+      "group": "卡密管理",
+      "path": "/admin/redeem-codes/generate",
+      "method": "POST",
+      "description": "POST /admin/redeem-codes/generate",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 235,
+      "group": "卡密管理",
+      "path": "/admin/redeem-codes/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/redeem-codes/:id",
+      "sort_order": 7,
+      "status": "active"
+    },
+    {
+      "id": 236,
+      "group": "卡密管理",
+      "path": "/admin/redeem-codes/batch-delete",
+      "method": "POST",
+      "description": "POST /admin/redeem-codes/batch-delete",
+      "sort_order": 8,
+      "status": "active"
+    },
+    {
+      "id": 237,
+      "group": "卡密管理",
+      "path": "/admin/redeem-codes/:id/expire",
+      "method": "POST",
+      "description": "POST /admin/redeem-codes/:id/expire",
+      "sort_order": 9,
+      "status": "active"
+    },
+    {
+      "id": 238,
+      "group": "优惠码管理",
+      "path": "/admin/promo-codes",
+      "method": "GET",
+      "description": "GET /admin/promo-codes",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 239,
+      "group": "优惠码管理",
+      "path": "/admin/promo-codes/:id",
+      "method": "GET",
+      "description": "GET /admin/promo-codes/:id",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 240,
+      "group": "优惠码管理",
+      "path": "/admin/promo-codes",
+      "method": "POST",
+      "description": "POST /admin/promo-codes",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 241,
+      "group": "优惠码管理",
+      "path": "/admin/promo-codes/:id",
+      "method": "PUT",
+      "description": "PUT /admin/promo-codes/:id",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 242,
+      "group": "优惠码管理",
+      "path": "/admin/promo-codes/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/promo-codes/:id",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 243,
+      "group": "优惠码管理",
+      "path": "/admin/promo-codes/:id/usages",
+      "method": "GET",
+      "description": "GET /admin/promo-codes/:id/usages",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 244,
+      "group": "系统设置",
+      "path": "/admin/settings",
+      "method": "GET",
+      "description": "GET /admin/settings",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 245,
+      "group": "系统设置",
+      "path": "/admin/settings",
+      "method": "PUT",
+      "description": "PUT /admin/settings",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 246,
+      "group": "系统设置",
+      "path": "/admin/settings/test-smtp",
+      "method": "POST",
+      "description": "POST /admin/settings/test-smtp",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 247,
+      "group": "系统设置",
+      "path": "/admin/settings/send-test-email",
+      "method": "POST",
+      "description": "POST /admin/settings/send-test-email",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 248,
+      "group": "系统设置",
+      "path": "/admin/settings/admin-api-key",
+      "method": "GET",
+      "description": "GET /admin/settings/admin-api-key",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 249,
+      "group": "系统设置",
+      "path": "/admin/settings/admin-api-key/regenerate",
+      "method": "POST",
+      "description": "POST /admin/settings/admin-api-key/regenerate",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 250,
+      "group": "系统设置",
+      "path": "/admin/settings/admin-api-key",
+      "method": "DELETE",
+      "description": "DELETE /admin/settings/admin-api-key",
+      "sort_order": 7,
+      "status": "active"
+    },
+    {
+      "id": 251,
+      "group": "系统设置",
+      "path": "/admin/settings/overload-cooldown",
+      "method": "GET",
+      "description": "GET /admin/settings/overload-cooldown",
+      "sort_order": 8,
+      "status": "active"
+    },
+    {
+      "id": 252,
+      "group": "系统设置",
+      "path": "/admin/settings/overload-cooldown",
+      "method": "PUT",
+      "description": "PUT /admin/settings/overload-cooldown",
+      "sort_order": 9,
+      "status": "active"
+    },
+    {
+      "id": 253,
+      "group": "系统设置",
+      "path": "/admin/settings/stream-timeout",
+      "method": "GET",
+      "description": "GET /admin/settings/stream-timeout",
+      "sort_order": 10,
+      "status": "active"
+    },
+    {
+      "id": 254,
+      "group": "系统设置",
+      "path": "/admin/settings/stream-timeout",
+      "method": "PUT",
+      "description": "PUT /admin/settings/stream-timeout",
+      "sort_order": 11,
+      "status": "active"
+    },
+    {
+      "id": 255,
+      "group": "系统设置",
+      "path": "/admin/settings/rectifier",
+      "method": "GET",
+      "description": "GET /admin/settings/rectifier",
+      "sort_order": 12,
+      "status": "active"
+    },
+    {
+      "id": 256,
+      "group": "系统设置",
+      "path": "/admin/settings/rectifier",
+      "method": "PUT",
+      "description": "PUT /admin/settings/rectifier",
+      "sort_order": 13,
+      "status": "active"
+    },
+    {
+      "id": 257,
+      "group": "系统设置",
+      "path": "/admin/settings/beta-policy",
+      "method": "GET",
+      "description": "GET /admin/settings/beta-policy",
+      "sort_order": 14,
+      "status": "active"
+    },
+    {
+      "id": 258,
+      "group": "系统设置",
+      "path": "/admin/settings/beta-policy",
+      "method": "PUT",
+      "description": "PUT /admin/settings/beta-policy",
+      "sort_order": 15,
+      "status": "active"
+    },
+    {
+      "id": 259,
+      "group": "系统设置",
+      "path": "/admin/settings/openai-fast-policy",
+      "method": "GET",
+      "description": "GET /admin/settings/openai-fast-policy",
+      "sort_order": 16,
+      "status": "active"
+    },
+    {
+      "id": 260,
+      "group": "系统设置",
+      "path": "/admin/settings/openai-fast-policy",
+      "method": "PUT",
+      "description": "PUT /admin/settings/openai-fast-policy",
+      "sort_order": 17,
+      "status": "active"
+    },
+    {
+      "id": 261,
+      "group": "系统设置",
+      "path": "/admin/settings/web-search-emulation",
+      "method": "GET",
+      "description": "GET /admin/settings/web-search-emulation",
+      "sort_order": 18,
+      "status": "active"
+    },
+    {
+      "id": 262,
+      "group": "系统设置",
+      "path": "/admin/settings/web-search-emulation",
+      "method": "PUT",
+      "description": "PUT /admin/settings/web-search-emulation",
+      "sort_order": 19,
+      "status": "active"
+    },
+    {
+      "id": 263,
+      "group": "系统设置",
+      "path": "/admin/settings/web-search-emulation/test",
+      "method": "POST",
+      "description": "POST /admin/settings/web-search-emulation/test",
+      "sort_order": 20,
+      "status": "active"
+    },
+    {
+      "id": 264,
+      "group": "系统设置",
+      "path": "/admin/settings/web-search-emulation/reset-usage",
+      "method": "POST",
+      "description": "POST /admin/settings/web-search-emulation/reset-usage",
+      "sort_order": 21,
+      "status": "active"
+    },
+    {
+      "id": 265,
+      "group": "系统设置",
+      "path": "/admin/data-management/agent/health",
+      "method": "GET",
+      "description": "GET /admin/data-management/agent/health",
+      "sort_order": 20,
+      "status": "active"
+    },
+    {
+      "id": 266,
+      "group": "系统设置",
+      "path": "/admin/data-management/config",
+      "method": "GET",
+      "description": "GET /admin/data-management/config",
+      "sort_order": 21,
+      "status": "active"
+    },
+    {
+      "id": 267,
+      "group": "系统设置",
+      "path": "/admin/data-management/config",
+      "method": "PUT",
+      "description": "PUT /admin/data-management/config",
+      "sort_order": 22,
+      "status": "active"
+    },
+    {
+      "id": 268,
+      "group": "系统设置",
+      "path": "/admin/data-management/sources/:source_type/profiles",
+      "method": "GET",
+      "description": "GET /admin/data-management/sources/:source_type/profiles",
+      "sort_order": 23,
+      "status": "active"
+    },
+    {
+      "id": 269,
+      "group": "系统设置",
+      "path": "/admin/data-management/sources/:source_type/profiles",
+      "method": "POST",
+      "description": "POST /admin/data-management/sources/:source_type/profiles",
+      "sort_order": 24,
+      "status": "active"
+    },
+    {
+      "id": 270,
+      "group": "系统设置",
+      "path": "/admin/data-management/sources/:source_type/profiles/:profile_id",
+      "method": "PUT",
+      "description": "PUT /admin/data-management/sources/:source_type/profiles/:profile_id",
+      "sort_order": 25,
+      "status": "active"
+    },
+    {
+      "id": 271,
+      "group": "系统设置",
+      "path": "/admin/data-management/sources/:source_type/profiles/:profile_id",
+      "method": "DELETE",
+      "description": "DELETE /admin/data-management/sources/:source_type/profiles/:profile_id",
+      "sort_order": 26,
+      "status": "active"
+    },
+    {
+      "id": 272,
+      "group": "系统设置",
+      "path": "/admin/data-management/sources/:source_type/profiles/:profile_id/activate",
+      "method": "POST",
+      "description": "POST /admin/data-management/sources/:source_type/profiles/:profile_id/activate",
+      "sort_order": 27,
+      "status": "active"
+    },
+    {
+      "id": 273,
+      "group": "系统设置",
+      "path": "/admin/data-management/s3/test",
+      "method": "POST",
+      "description": "POST /admin/data-management/s3/test",
+      "sort_order": 28,
+      "status": "active"
+    },
+    {
+      "id": 274,
+      "group": "系统设置",
+      "path": "/admin/data-management/s3/profiles",
+      "method": "GET",
+      "description": "GET /admin/data-management/s3/profiles",
+      "sort_order": 29,
+      "status": "active"
+    },
+    {
+      "id": 275,
+      "group": "系统设置",
+      "path": "/admin/data-management/s3/profiles",
+      "method": "POST",
+      "description": "POST /admin/data-management/s3/profiles",
+      "sort_order": 30,
+      "status": "active"
+    },
+    {
+      "id": 276,
+      "group": "系统设置",
+      "path": "/admin/data-management/s3/profiles/:profile_id",
+      "method": "PUT",
+      "description": "PUT /admin/data-management/s3/profiles/:profile_id",
+      "sort_order": 31,
+      "status": "active"
+    },
+    {
+      "id": 277,
+      "group": "系统设置",
+      "path": "/admin/data-management/s3/profiles/:profile_id",
+      "method": "DELETE",
+      "description": "DELETE /admin/data-management/s3/profiles/:profile_id",
+      "sort_order": 32,
+      "status": "active"
+    },
+    {
+      "id": 278,
+      "group": "系统设置",
+      "path": "/admin/data-management/s3/profiles/:profile_id/activate",
+      "method": "POST",
+      "description": "POST /admin/data-management/s3/profiles/:profile_id/activate",
+      "sort_order": 33,
+      "status": "active"
+    },
+    {
+      "id": 279,
+      "group": "系统设置",
+      "path": "/admin/data-management/backups",
+      "method": "POST",
+      "description": "POST /admin/data-management/backups",
+      "sort_order": 34,
+      "status": "active"
+    },
+    {
+      "id": 280,
+      "group": "系统设置",
+      "path": "/admin/data-management/backups",
+      "method": "GET",
+      "description": "GET /admin/data-management/backups",
+      "sort_order": 35,
+      "status": "active"
+    },
+    {
+      "id": 281,
+      "group": "系统设置",
+      "path": "/admin/data-management/backups/:job_id",
+      "method": "GET",
+      "description": "GET /admin/data-management/backups/:job_id",
+      "sort_order": 36,
+      "status": "active"
+    },
+    {
+      "id": 282,
+      "group": "系统设置",
+      "path": "/admin/backups/s3-config",
+      "method": "GET",
+      "description": "GET /admin/backups/s3-config",
+      "sort_order": 40,
+      "status": "active"
+    },
+    {
+      "id": 283,
+      "group": "系统设置",
+      "path": "/admin/backups/s3-config",
+      "method": "PUT",
+      "description": "PUT /admin/backups/s3-config",
+      "sort_order": 41,
+      "status": "active"
+    },
+    {
+      "id": 284,
+      "group": "系统设置",
+      "path": "/admin/backups/s3-config/test",
+      "method": "POST",
+      "description": "POST /admin/backups/s3-config/test",
+      "sort_order": 42,
+      "status": "active"
+    },
+    {
+      "id": 285,
+      "group": "系统设置",
+      "path": "/admin/backups/schedule",
+      "method": "GET",
+      "description": "GET /admin/backups/schedule",
+      "sort_order": 43,
+      "status": "active"
+    },
+    {
+      "id": 286,
+      "group": "系统设置",
+      "path": "/admin/backups/schedule",
+      "method": "PUT",
+      "description": "PUT /admin/backups/schedule",
+      "sort_order": 44,
+      "status": "active"
+    },
+    {
+      "id": 287,
+      "group": "系统设置",
+      "path": "/admin/backups",
+      "method": "POST",
+      "description": "POST /admin/backups",
+      "sort_order": 45,
+      "status": "active"
+    },
+    {
+      "id": 288,
+      "group": "系统设置",
+      "path": "/admin/backups",
+      "method": "GET",
+      "description": "GET /admin/backups",
+      "sort_order": 46,
+      "status": "active"
+    },
+    {
+      "id": 289,
+      "group": "系统设置",
+      "path": "/admin/backups/:id",
+      "method": "GET",
+      "description": "GET /admin/backups/:id",
+      "sort_order": 47,
+      "status": "active"
+    },
+    {
+      "id": 290,
+      "group": "系统设置",
+      "path": "/admin/backups/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/backups/:id",
+      "sort_order": 48,
+      "status": "active"
+    },
+    {
+      "id": 291,
+      "group": "系统设置",
+      "path": "/admin/backups/:id/download-url",
+      "method": "GET",
+      "description": "GET /admin/backups/:id/download-url",
+      "sort_order": 49,
+      "status": "active"
+    },
+    {
+      "id": 292,
+      "group": "系统设置",
+      "path": "/admin/backups/:id/restore",
+      "method": "POST",
+      "description": "POST /admin/backups/:id/restore",
+      "sort_order": 50,
+      "status": "active"
+    },
+    {
+      "id": 293,
+      "group": "运维监控",
+      "path": "/admin/ops/concurrency",
+      "method": "GET",
+      "description": "GET /admin/ops/concurrency",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 294,
+      "group": "运维监控",
+      "path": "/admin/ops/user-concurrency",
+      "method": "GET",
+      "description": "GET /admin/ops/user-concurrency",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 295,
+      "group": "运维监控",
+      "path": "/admin/ops/account-availability",
+      "method": "GET",
+      "description": "GET /admin/ops/account-availability",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 296,
+      "group": "运维监控",
+      "path": "/admin/ops/realtime-traffic",
+      "method": "GET",
+      "description": "GET /admin/ops/realtime-traffic",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 297,
+      "group": "运维监控",
+      "path": "/admin/ops/alert-rules",
+      "method": "GET",
+      "description": "GET /admin/ops/alert-rules",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 298,
+      "group": "运维监控",
+      "path": "/admin/ops/alert-rules",
+      "method": "POST",
+      "description": "POST /admin/ops/alert-rules",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 299,
+      "group": "运维监控",
+      "path": "/admin/ops/alert-rules/:id",
+      "method": "PUT",
+      "description": "PUT /admin/ops/alert-rules/:id",
+      "sort_order": 7,
+      "status": "active"
+    },
+    {
+      "id": 300,
+      "group": "运维监控",
+      "path": "/admin/ops/alert-rules/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/ops/alert-rules/:id",
+      "sort_order": 8,
+      "status": "active"
+    },
+    {
+      "id": 301,
+      "group": "运维监控",
+      "path": "/admin/ops/alert-events",
+      "method": "GET",
+      "description": "GET /admin/ops/alert-events",
+      "sort_order": 9,
+      "status": "active"
+    },
+    {
+      "id": 302,
+      "group": "运维监控",
+      "path": "/admin/ops/alert-events/:id",
+      "method": "GET",
+      "description": "GET /admin/ops/alert-events/:id",
+      "sort_order": 10,
+      "status": "active"
+    },
+    {
+      "id": 303,
+      "group": "运维监控",
+      "path": "/admin/ops/alert-events/:id/status",
+      "method": "PUT",
+      "description": "PUT /admin/ops/alert-events/:id/status",
+      "sort_order": 11,
+      "status": "active"
+    },
+    {
+      "id": 304,
+      "group": "运维监控",
+      "path": "/admin/ops/alert-silences",
+      "method": "POST",
+      "description": "POST /admin/ops/alert-silences",
+      "sort_order": 12,
+      "status": "active"
+    },
+    {
+      "id": 305,
+      "group": "运维监控",
+      "path": "/admin/ops/email-notification/config",
+      "method": "GET",
+      "description": "GET /admin/ops/email-notification/config",
+      "sort_order": 13,
+      "status": "active"
+    },
+    {
+      "id": 306,
+      "group": "运维监控",
+      "path": "/admin/ops/email-notification/config",
+      "method": "PUT",
+      "description": "PUT /admin/ops/email-notification/config",
+      "sort_order": 14,
+      "status": "active"
+    },
+    {
+      "id": 307,
+      "group": "运维监控",
+      "path": "/admin/ops/runtime/alert",
+      "method": "GET",
+      "description": "GET /admin/ops/runtime/alert",
+      "sort_order": 15,
+      "status": "active"
+    },
+    {
+      "id": 308,
+      "group": "运维监控",
+      "path": "/admin/ops/runtime/alert",
+      "method": "PUT",
+      "description": "PUT /admin/ops/runtime/alert",
+      "sort_order": 16,
+      "status": "active"
+    },
+    {
+      "id": 309,
+      "group": "运维监控",
+      "path": "/admin/ops/runtime/logging",
+      "method": "GET",
+      "description": "GET /admin/ops/runtime/logging",
+      "sort_order": 17,
+      "status": "active"
+    },
+    {
+      "id": 310,
+      "group": "运维监控",
+      "path": "/admin/ops/runtime/logging",
+      "method": "PUT",
+      "description": "PUT /admin/ops/runtime/logging",
+      "sort_order": 18,
+      "status": "active"
+    },
+    {
+      "id": 311,
+      "group": "运维监控",
+      "path": "/admin/ops/runtime/logging/reset",
+      "method": "POST",
+      "description": "POST /admin/ops/runtime/logging/reset",
+      "sort_order": 19,
+      "status": "active"
+    },
+    {
+      "id": 312,
+      "group": "运维监控",
+      "path": "/admin/ops/advanced-settings",
+      "method": "GET",
+      "description": "GET /admin/ops/advanced-settings",
+      "sort_order": 20,
+      "status": "active"
+    },
+    {
+      "id": 313,
+      "group": "运维监控",
+      "path": "/admin/ops/advanced-settings",
+      "method": "PUT",
+      "description": "PUT /admin/ops/advanced-settings",
+      "sort_order": 21,
+      "status": "active"
+    },
+    {
+      "id": 314,
+      "group": "运维监控",
+      "path": "/admin/ops/settings/metric-thresholds",
+      "method": "GET",
+      "description": "GET /admin/ops/settings/metric-thresholds",
+      "sort_order": 22,
+      "status": "active"
+    },
+    {
+      "id": 315,
+      "group": "运维监控",
+      "path": "/admin/ops/settings/metric-thresholds",
+      "method": "PUT",
+      "description": "PUT /admin/ops/settings/metric-thresholds",
+      "sort_order": 23,
+      "status": "active"
+    },
+    {
+      "id": 316,
+      "group": "运维监控",
+      "path": "/admin/ops/ws/qps",
+      "method": "GET",
+      "description": "GET /admin/ops/ws/qps",
+      "sort_order": 24,
+      "status": "active"
+    },
+    {
+      "id": 317,
+      "group": "运维监控",
+      "path": "/admin/ops/errors",
+      "method": "GET",
+      "description": "GET /admin/ops/errors",
+      "sort_order": 25,
+      "status": "active"
+    },
+    {
+      "id": 318,
+      "group": "运维监控",
+      "path": "/admin/ops/errors/:id",
+      "method": "GET",
+      "description": "GET /admin/ops/errors/:id",
+      "sort_order": 26,
+      "status": "active"
+    },
+    {
+      "id": 319,
+      "group": "运维监控",
+      "path": "/admin/ops/errors/:id/retries",
+      "method": "GET",
+      "description": "GET /admin/ops/errors/:id/retries",
+      "sort_order": 27,
+      "status": "active"
+    },
+    {
+      "id": 320,
+      "group": "运维监控",
+      "path": "/admin/ops/errors/:id/retry",
+      "method": "POST",
+      "description": "POST /admin/ops/errors/:id/retry",
+      "sort_order": 28,
+      "status": "active"
+    },
+    {
+      "id": 321,
+      "group": "运维监控",
+      "path": "/admin/ops/errors/:id/resolve",
+      "method": "PUT",
+      "description": "PUT /admin/ops/errors/:id/resolve",
+      "sort_order": 29,
+      "status": "active"
+    },
+    {
+      "id": 322,
+      "group": "运维监控",
+      "path": "/admin/ops/request-errors",
+      "method": "GET",
+      "description": "GET /admin/ops/request-errors",
+      "sort_order": 30,
+      "status": "active"
+    },
+    {
+      "id": 323,
+      "group": "运维监控",
+      "path": "/admin/ops/request-errors/:id",
+      "method": "GET",
+      "description": "GET /admin/ops/request-errors/:id",
+      "sort_order": 31,
+      "status": "active"
+    },
+    {
+      "id": 324,
+      "group": "运维监控",
+      "path": "/admin/ops/request-errors/:id/upstream-errors",
+      "method": "GET",
+      "description": "GET /admin/ops/request-errors/:id/upstream-errors",
+      "sort_order": 32,
+      "status": "active"
+    },
+    {
+      "id": 325,
+      "group": "运维监控",
+      "path": "/admin/ops/request-errors/:id/retry-client",
+      "method": "POST",
+      "description": "POST /admin/ops/request-errors/:id/retry-client",
+      "sort_order": 33,
+      "status": "active"
+    },
+    {
+      "id": 326,
+      "group": "运维监控",
+      "path": "/admin/ops/request-errors/:id/upstream-errors/:idx/retry",
+      "method": "POST",
+      "description": "POST /admin/ops/request-errors/:id/upstream-errors/:idx/retry",
+      "sort_order": 34,
+      "status": "active"
+    },
+    {
+      "id": 327,
+      "group": "运维监控",
+      "path": "/admin/ops/request-errors/:id/resolve",
+      "method": "PUT",
+      "description": "PUT /admin/ops/request-errors/:id/resolve",
+      "sort_order": 35,
+      "status": "active"
+    },
+    {
+      "id": 328,
+      "group": "运维监控",
+      "path": "/admin/ops/upstream-errors",
+      "method": "GET",
+      "description": "GET /admin/ops/upstream-errors",
+      "sort_order": 36,
+      "status": "active"
+    },
+    {
+      "id": 329,
+      "group": "运维监控",
+      "path": "/admin/ops/upstream-errors/:id",
+      "method": "GET",
+      "description": "GET /admin/ops/upstream-errors/:id",
+      "sort_order": 37,
+      "status": "active"
+    },
+    {
+      "id": 330,
+      "group": "运维监控",
+      "path": "/admin/ops/upstream-errors/:id/retry",
+      "method": "POST",
+      "description": "POST /admin/ops/upstream-errors/:id/retry",
+      "sort_order": 38,
+      "status": "active"
+    },
+    {
+      "id": 331,
+      "group": "运维监控",
+      "path": "/admin/ops/upstream-errors/:id/resolve",
+      "method": "PUT",
+      "description": "PUT /admin/ops/upstream-errors/:id/resolve",
+      "sort_order": 39,
+      "status": "active"
+    },
+    {
+      "id": 332,
+      "group": "运维监控",
+      "path": "/admin/ops/requests",
+      "method": "GET",
+      "description": "GET /admin/ops/requests",
+      "sort_order": 40,
+      "status": "active"
+    },
+    {
+      "id": 333,
+      "group": "运维监控",
+      "path": "/admin/ops/system-logs",
+      "method": "GET",
+      "description": "GET /admin/ops/system-logs",
+      "sort_order": 41,
+      "status": "active"
+    },
+    {
+      "id": 334,
+      "group": "运维监控",
+      "path": "/admin/ops/system-logs/cleanup",
+      "method": "POST",
+      "description": "POST /admin/ops/system-logs/cleanup",
+      "sort_order": 42,
+      "status": "active"
+    },
+    {
+      "id": 335,
+      "group": "运维监控",
+      "path": "/admin/ops/system-logs/health",
+      "method": "GET",
+      "description": "GET /admin/ops/system-logs/health",
+      "sort_order": 43,
+      "status": "active"
+    },
+    {
+      "id": 336,
+      "group": "运维监控",
+      "path": "/admin/ops/dashboard/snapshot-v2",
+      "method": "GET",
+      "description": "GET /admin/ops/dashboard/snapshot-v2",
+      "sort_order": 44,
+      "status": "active"
+    },
+    {
+      "id": 337,
+      "group": "运维监控",
+      "path": "/admin/ops/dashboard/overview",
+      "method": "GET",
+      "description": "GET /admin/ops/dashboard/overview",
+      "sort_order": 45,
+      "status": "active"
+    },
+    {
+      "id": 338,
+      "group": "运维监控",
+      "path": "/admin/ops/dashboard/throughput-trend",
+      "method": "GET",
+      "description": "GET /admin/ops/dashboard/throughput-trend",
+      "sort_order": 46,
+      "status": "active"
+    },
+    {
+      "id": 339,
+      "group": "运维监控",
+      "path": "/admin/ops/dashboard/latency-histogram",
+      "method": "GET",
+      "description": "GET /admin/ops/dashboard/latency-histogram",
+      "sort_order": 47,
+      "status": "active"
+    },
+    {
+      "id": 340,
+      "group": "运维监控",
+      "path": "/admin/ops/dashboard/error-trend",
+      "method": "GET",
+      "description": "GET /admin/ops/dashboard/error-trend",
+      "sort_order": 48,
+      "status": "active"
+    },
+    {
+      "id": 341,
+      "group": "运维监控",
+      "path": "/admin/ops/dashboard/error-distribution",
+      "method": "GET",
+      "description": "GET /admin/ops/dashboard/error-distribution",
+      "sort_order": 49,
+      "status": "active"
+    },
+    {
+      "id": 342,
+      "group": "运维监控",
+      "path": "/admin/ops/dashboard/openai-token-stats",
+      "method": "GET",
+      "description": "GET /admin/ops/dashboard/openai-token-stats",
+      "sort_order": 50,
+      "status": "active"
+    },
+    {
+      "id": 343,
+      "group": "",
+      "path": "/admin/system/version",
+      "method": "GET",
+      "description": "GET /admin/system/version",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 344,
+      "group": "",
+      "path": "/admin/system/check-updates",
+      "method": "GET",
+      "description": "GET /admin/system/check-updates",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 345,
+      "group": "",
+      "path": "/admin/system/update",
+      "method": "POST",
+      "description": "POST /admin/system/update",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 346,
+      "group": "",
+      "path": "/admin/system/rollback",
+      "method": "POST",
+      "description": "POST /admin/system/rollback",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 347,
+      "group": "",
+      "path": "/admin/system/restart",
+      "method": "POST",
+      "description": "POST /admin/system/restart",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 348,
+      "group": "订阅管理",
+      "path": "/admin/subscriptions",
+      "method": "GET",
+      "description": "GET /admin/subscriptions",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 349,
+      "group": "订阅管理",
+      "path": "/admin/subscriptions/:id",
+      "method": "GET",
+      "description": "GET /admin/subscriptions/:id",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 350,
+      "group": "订阅管理",
+      "path": "/admin/subscriptions/:id/progress",
+      "method": "GET",
+      "description": "GET /admin/subscriptions/:id/progress",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 351,
+      "group": "订阅管理",
+      "path": "/admin/subscriptions/assign",
+      "method": "POST",
+      "description": "POST /admin/subscriptions/assign",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 352,
+      "group": "订阅管理",
+      "path": "/admin/subscriptions/bulk-assign",
+      "method": "POST",
+      "description": "POST /admin/subscriptions/bulk-assign",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 353,
+      "group": "订阅管理",
+      "path": "/admin/subscriptions/:id/extend",
+      "method": "POST",
+      "description": "POST /admin/subscriptions/:id/extend",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 354,
+      "group": "订阅管理",
+      "path": "/admin/subscriptions/:id/reset-quota",
+      "method": "POST",
+      "description": "POST /admin/subscriptions/:id/reset-quota",
+      "sort_order": 7,
+      "status": "active"
+    },
+    {
+      "id": 355,
+      "group": "订阅管理",
+      "path": "/admin/subscriptions/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/subscriptions/:id",
+      "sort_order": 8,
+      "status": "active"
+    },
+    {
+      "id": 356,
+      "group": "订阅管理",
+      "path": "/admin/groups/:id/subscriptions",
+      "method": "GET",
+      "description": "GET /admin/groups/:id/subscriptions",
+      "sort_order": 9,
+      "status": "active"
+    },
+    {
+      "id": 357,
+      "group": "订阅管理",
+      "path": "/admin/users/:id/subscriptions",
+      "method": "GET",
+      "description": "GET /admin/users/:id/subscriptions",
+      "sort_order": 10,
+      "status": "active"
+    },
+    {
+      "id": 358,
+      "group": "使用记录",
+      "path": "/admin/usage",
+      "method": "GET",
+      "description": "GET /admin/usage",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 359,
+      "group": "使用记录",
+      "path": "/admin/usage/stats",
+      "method": "GET",
+      "description": "GET /admin/usage/stats",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 360,
+      "group": "使用记录",
+      "path": "/admin/usage/search-users",
+      "method": "GET",
+      "description": "GET /admin/usage/search-users",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 361,
+      "group": "使用记录",
+      "path": "/admin/usage/search-api-keys",
+      "method": "GET",
+      "description": "GET /admin/usage/search-api-keys",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 362,
+      "group": "使用记录",
+      "path": "/admin/usage/cleanup-tasks",
+      "method": "GET",
+      "description": "GET /admin/usage/cleanup-tasks",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 363,
+      "group": "使用记录",
+      "path": "/admin/usage/cleanup-tasks",
+      "method": "POST",
+      "description": "POST /admin/usage/cleanup-tasks",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 364,
+      "group": "使用记录",
+      "path": "/admin/usage/cleanup-tasks/:id/cancel",
+      "method": "POST",
+      "description": "POST /admin/usage/cleanup-tasks/:id/cancel",
+      "sort_order": 7,
+      "status": "active"
+    },
+    {
+      "id": 365,
+      "group": "用户管理",
+      "path": "/admin/user-attributes",
+      "method": "GET",
+      "description": "GET /admin/user-attributes",
+      "sort_order": 20,
+      "status": "active"
+    },
+    {
+      "id": 366,
+      "group": "用户管理",
+      "path": "/admin/user-attributes",
+      "method": "POST",
+      "description": "POST /admin/user-attributes",
+      "sort_order": 21,
+      "status": "active"
+    },
+    {
+      "id": 367,
+      "group": "用户管理",
+      "path": "/admin/user-attributes/batch",
+      "method": "POST",
+      "description": "POST /admin/user-attributes/batch",
+      "sort_order": 22,
+      "status": "active"
+    },
+    {
+      "id": 368,
+      "group": "用户管理",
+      "path": "/admin/user-attributes/reorder",
+      "method": "PUT",
+      "description": "PUT /admin/user-attributes/reorder",
+      "sort_order": 23,
+      "status": "active"
+    },
+    {
+      "id": 369,
+      "group": "用户管理",
+      "path": "/admin/user-attributes/:id",
+      "method": "PUT",
+      "description": "PUT /admin/user-attributes/:id",
+      "sort_order": 24,
+      "status": "active"
+    },
+    {
+      "id": 370,
+      "group": "用户管理",
+      "path": "/admin/user-attributes/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/user-attributes/:id",
+      "sort_order": 25,
+      "status": "active"
+    },
+    {
+      "id": 371,
+      "group": "系统设置",
+      "path": "/admin/error-passthrough-rules",
+      "method": "GET",
+      "description": "GET /admin/error-passthrough-rules",
+      "sort_order": 60,
+      "status": "active"
+    },
+    {
+      "id": 372,
+      "group": "系统设置",
+      "path": "/admin/error-passthrough-rules/:id",
+      "method": "GET",
+      "description": "GET /admin/error-passthrough-rules/:id",
+      "sort_order": 61,
+      "status": "active"
+    },
+    {
+      "id": 373,
+      "group": "系统设置",
+      "path": "/admin/error-passthrough-rules",
+      "method": "POST",
+      "description": "POST /admin/error-passthrough-rules",
+      "sort_order": 62,
+      "status": "active"
+    },
+    {
+      "id": 374,
+      "group": "系统设置",
+      "path": "/admin/error-passthrough-rules/:id",
+      "method": "PUT",
+      "description": "PUT /admin/error-passthrough-rules/:id",
+      "sort_order": 63,
+      "status": "active"
+    },
+    {
+      "id": 375,
+      "group": "系统设置",
+      "path": "/admin/error-passthrough-rules/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/error-passthrough-rules/:id",
+      "sort_order": 64,
+      "status": "active"
+    },
+    {
+      "id": 376,
+      "group": "系统设置",
+      "path": "/admin/tls-fingerprint-profiles",
+      "method": "GET",
+      "description": "GET /admin/tls-fingerprint-profiles",
+      "sort_order": 70,
+      "status": "active"
+    },
+    {
+      "id": 377,
+      "group": "系统设置",
+      "path": "/admin/tls-fingerprint-profiles/:id",
+      "method": "GET",
+      "description": "GET /admin/tls-fingerprint-profiles/:id",
+      "sort_order": 71,
+      "status": "active"
+    },
+    {
+      "id": 378,
+      "group": "系统设置",
+      "path": "/admin/tls-fingerprint-profiles",
+      "method": "POST",
+      "description": "POST /admin/tls-fingerprint-profiles",
+      "sort_order": 72,
+      "status": "active"
+    },
+    {
+      "id": 379,
+      "group": "系统设置",
+      "path": "/admin/tls-fingerprint-profiles/:id",
+      "method": "PUT",
+      "description": "PUT /admin/tls-fingerprint-profiles/:id",
+      "sort_order": 73,
+      "status": "active"
+    },
+    {
+      "id": 380,
+      "group": "系统设置",
+      "path": "/admin/tls-fingerprint-profiles/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/tls-fingerprint-profiles/:id",
+      "sort_order": 74,
+      "status": "active"
+    },
+    {
+      "id": 381,
+      "group": "系统设置",
+      "path": "/admin/api-keys/:id",
+      "method": "PUT",
+      "description": "PUT /admin/api-keys/:id",
+      "sort_order": 80,
+      "status": "active"
+    },
+    {
+      "id": 382,
+      "group": "账号管理",
+      "path": "/admin/scheduled-test-plans",
+      "method": "POST",
+      "description": "POST /admin/scheduled-test-plans",
+      "sort_order": 60,
+      "status": "active"
+    },
+    {
+      "id": 383,
+      "group": "账号管理",
+      "path": "/admin/scheduled-test-plans/:id",
+      "method": "PUT",
+      "description": "PUT /admin/scheduled-test-plans/:id",
+      "sort_order": 61,
+      "status": "active"
+    },
+    {
+      "id": 384,
+      "group": "账号管理",
+      "path": "/admin/scheduled-test-plans/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/scheduled-test-plans/:id",
+      "sort_order": 62,
+      "status": "active"
+    },
+    {
+      "id": 385,
+      "group": "账号管理",
+      "path": "/admin/scheduled-test-plans/:id/results",
+      "method": "GET",
+      "description": "GET /admin/scheduled-test-plans/:id/results",
+      "sort_order": 63,
+      "status": "active"
+    },
+    {
+      "id": 386,
+      "group": "账号管理",
+      "path": "/admin/accounts/:id/scheduled-test-plans",
+      "method": "GET",
+      "description": "GET /admin/accounts/:id/scheduled-test-plans",
+      "sort_order": 64,
+      "status": "active"
+    },
+    {
+      "id": 387,
+      "group": "渠道管理",
+      "path": "/admin/channels",
+      "method": "GET",
+      "description": "GET /admin/channels",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 388,
+      "group": "渠道管理",
+      "path": "/admin/channels/model-pricing",
+      "method": "GET",
+      "description": "GET /admin/channels/model-pricing",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 389,
+      "group": "渠道管理",
+      "path": "/admin/channels/:id",
+      "method": "GET",
+      "description": "GET /admin/channels/:id",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 390,
+      "group": "渠道管理",
+      "path": "/admin/channels",
+      "method": "POST",
+      "description": "POST /admin/channels",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 391,
+      "group": "渠道管理",
+      "path": "/admin/channels/:id",
+      "method": "PUT",
+      "description": "PUT /admin/channels/:id",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 392,
+      "group": "渠道管理",
+      "path": "/admin/channels/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/channels/:id",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 393,
+      "group": "充值订单",
+      "path": "/admin/topup/orders",
+      "method": "GET",
+      "description": "GET /admin/topup/orders",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 394,
+      "group": "开票管理",
+      "path": "/admin/invoice/requests",
+      "method": "GET",
+      "description": "GET /admin/invoice/requests",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 395,
+      "group": "开票管理",
+      "path": "/admin/invoice/requests/export",
+      "method": "POST",
+      "description": "POST /admin/invoice/requests/export",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 396,
+      "group": "开票管理",
+      "path": "/admin/invoice/requests/:id/complete",
+      "method": "POST",
+      "description": "POST /admin/invoice/requests/:id/complete",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 397,
+      "group": "开票管理",
+      "path": "/admin/invoice/requests/:id/reject",
+      "method": "POST",
+      "description": "POST /admin/invoice/requests/:id/reject",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 398,
+      "group": "角色管理",
+      "path": "/admin/rbac/menu",
+      "method": "GET",
+      "description": "GET /admin/rbac/menu",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 399,
+      "group": "角色管理",
+      "path": "/admin/rbac/me/permissions",
+      "method": "GET",
+      "description": "GET /admin/rbac/me/permissions",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 400,
+      "group": "角色管理",
+      "path": "/admin/rbac/roles",
+      "method": "GET",
+      "description": "GET /admin/rbac/roles",
+      "sort_order": 10,
+      "status": "active"
+    },
+    {
+      "id": 401,
+      "group": "角色管理",
+      "path": "/admin/rbac/roles",
+      "method": "POST",
+      "description": "POST /admin/rbac/roles",
+      "sort_order": 11,
+      "status": "active"
+    },
+    {
+      "id": 402,
+      "group": "角色管理",
+      "path": "/admin/rbac/roles/:id",
+      "method": "PUT",
+      "description": "PUT /admin/rbac/roles/:id",
+      "sort_order": 12,
+      "status": "active"
+    },
+    {
+      "id": 403,
+      "group": "角色管理",
+      "path": "/admin/rbac/roles/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/rbac/roles/:id",
+      "sort_order": 13,
+      "status": "active"
+    },
+    {
+      "id": 404,
+      "group": "角色管理",
+      "path": "/admin/rbac/roles/:id/menus",
+      "method": "GET",
+      "description": "GET /admin/rbac/roles/:id/menus",
+      "sort_order": 14,
+      "status": "active"
+    },
+    {
+      "id": 405,
+      "group": "角色管理",
+      "path": "/admin/rbac/roles/:id/menus",
+      "method": "PUT",
+      "description": "PUT /admin/rbac/roles/:id/menus",
+      "sort_order": 15,
+      "status": "active"
+    },
+    {
+      "id": 406,
+      "group": "角色管理",
+      "path": "/admin/rbac/roles/:id/apis",
+      "method": "GET",
+      "description": "GET /admin/rbac/roles/:id/apis",
+      "sort_order": 16,
+      "status": "active"
+    },
+    {
+      "id": 407,
+      "group": "角色管理",
+      "path": "/admin/rbac/roles/:id/apis",
+      "method": "PUT",
+      "description": "PUT /admin/rbac/roles/:id/apis",
+      "sort_order": 17,
+      "status": "active"
+    },
+    {
+      "id": 408,
+      "group": "角色管理",
+      "path": "/admin/rbac/users/:id/roles",
+      "method": "GET",
+      "description": "GET /admin/rbac/users/:id/roles",
+      "sort_order": 20,
+      "status": "active"
+    },
+    {
+      "id": 409,
+      "group": "角色管理",
+      "path": "/admin/rbac/users/:id/roles",
+      "method": "PUT",
+      "description": "PUT /admin/rbac/users/:id/roles",
+      "sort_order": 21,
+      "status": "active"
+    },
+    {
+      "id": 410,
+      "group": "菜单管理",
+      "path": "/admin/rbac/menus",
+      "method": "GET",
+      "description": "GET /admin/rbac/menus",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 411,
+      "group": "菜单管理",
+      "path": "/admin/rbac/menus/tree",
+      "method": "GET",
+      "description": "GET /admin/rbac/menus/tree",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 412,
+      "group": "菜单管理",
+      "path": "/admin/rbac/menus",
+      "method": "POST",
+      "description": "POST /admin/rbac/menus",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 413,
+      "group": "菜单管理",
+      "path": "/admin/rbac/menus/:id",
+      "method": "PUT",
+      "description": "PUT /admin/rbac/menus/:id",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 414,
+      "group": "菜单管理",
+      "path": "/admin/rbac/menus/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/rbac/menus/:id",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 415,
+      "group": "API 管理",
+      "path": "/admin/rbac/apis",
+      "method": "GET",
+      "description": "GET /admin/rbac/apis",
+      "sort_order": 1,
+      "status": "active"
+    },
+    {
+      "id": 416,
+      "group": "API 管理",
+      "path": "/admin/rbac/apis/all",
+      "method": "GET",
+      "description": "GET /admin/rbac/apis/all",
+      "sort_order": 2,
+      "status": "active"
+    },
+    {
+      "id": 417,
+      "group": "API 管理",
+      "path": "/admin/rbac/apis/groups",
+      "method": "GET",
+      "description": "GET /admin/rbac/apis/groups",
+      "sort_order": 3,
+      "status": "active"
+    },
+    {
+      "id": 418,
+      "group": "API 管理",
+      "path": "/admin/rbac/apis",
+      "method": "POST",
+      "description": "POST /admin/rbac/apis",
+      "sort_order": 4,
+      "status": "active"
+    },
+    {
+      "id": 419,
+      "group": "API 管理",
+      "path": "/admin/rbac/apis/:id",
+      "method": "PUT",
+      "description": "PUT /admin/rbac/apis/:id",
+      "sort_order": 5,
+      "status": "active"
+    },
+    {
+      "id": 420,
+      "group": "API 管理",
+      "path": "/admin/rbac/apis/:id",
+      "method": "DELETE",
+      "description": "DELETE /admin/rbac/apis/:id",
+      "sort_order": 6,
+      "status": "active"
+    },
+    {
+      "id": 421,
+      "group": "API 管理",
+      "path": "/admin/rbac/apis",
+      "method": "DELETE",
+      "description": "DELETE /admin/rbac/apis",
+      "sort_order": 7,
+      "status": "active"
+    },
+    {
+      "id": 422,
+      "group": "API 管理",
+      "path": "/admin/rbac/apis/sync",
+      "method": "POST",
+      "description": "POST /admin/rbac/apis/sync",
+      "sort_order": 8,
+      "status": "active"
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+<template>
+  <AppLayout>
+    <div class="mx-auto max-w-5xl space-y-6">
+      <div class="card space-y-6 p-6">
+        <div class="space-y-2">
+          <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('feedback.form.submit') }}</h1>
+          <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('feedback.form.description') }}</p>
+        </div>
+
+        <form class="space-y-6" @submit.prevent="handleSubmit">
+          <div class="grid gap-6 md:grid-cols-2">
+            <div>
+              <label class="input-label">{{ t('feedback.form.category') }}</label>
+              <Select v-model="form.category" :options="categoryOptions" />
+            </div>
+            <div>
+              <label class="input-label">{{ t('feedback.form.contact') }}</label>
+              <input v-model="form.contact" class="input" :placeholder="t('feedback.form.contactPlaceholder')" />
+            </div>
+          </div>
+
+          <div>
+            <label class="input-label">{{ t('feedback.form.titleLabel') }}</label>
+            <input v-model="form.title" class="input" :maxlength="200" required />
+          </div>
+
+          <div>
+            <label class="input-label">{{ t('feedback.form.content') }}</label>
+            <MarkdownEditorField
+              v-model="form.content"
+              :placeholder="t('feedback.form.contentPlaceholder')"
+              :upload-handler="uploadEditorImages"
+              :fallback-message="t('feedback.form.editorFallback')"
+              @paste-image-blocked="handlePasteBlocked"
+            />
+          </div>
+
+          <div>
+            <label class="input-label">{{ t('feedback.form.images') }}</label>
+            <MultiImageUpload
+              v-model="form.images"
+              :upload-fn="uploadSingleImage"
+              :hint="t('feedback.form.imageHint')"
+              :add-button-text="t('feedback.form.addImage')"
+              :uploading-text="t('feedback.form.uploading')"
+              :remove-text="t('common.delete')"
+              :count-template="t('feedback.form.imageCount', { count: '{count}', max: '{max}' })"
+            />
+          </div>
+
+          <div class="flex justify-end gap-3">
+            <RouterLink to="/feedbacks" class="btn btn-secondary">{{ t('common.cancel') }}</RouterLink>
+            <button class="btn btn-primary" :disabled="submitting">
+              {{ submitting ? t('common.processing') : t('feedback.form.submit') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </AppLayout>
+</template>
+
+<script setup lang="ts">
+import { computed, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import AppLayout from '@/components/layout/AppLayout.vue'
+import Select from '@/components/common/Select.vue'
+import MarkdownEditorField from '@/components/feedback/MarkdownEditorField.vue'
+import MultiImageUpload from '@/components/feedback/MultiImageUpload.vue'
+import feedbacksAPI from '@/api/feedbacks'
+import { feedbackCategoryOptions } from '@/utils/feedback'
+import { useAppStore } from '@/stores'
+import type { FeedbackCategory } from '@/types'
+
+const { t } = useI18n()
+const router = useRouter()
+const appStore = useAppStore()
+
+const submitting = ref(false)
+const form = reactive({
+  category: 'bug' as FeedbackCategory,
+  title: '',
+  content: '',
+  images: [] as string[],
+  contact: '',
+})
+
+const categoryOptions = computed(() =>
+  feedbackCategoryOptions.map((category) => ({
+    value: category,
+    label: t(`feedback.category.${category}`),
+  }))
+)
+
+async function uploadSingleImage(file: File): Promise<string> {
+  return feedbacksAPI.uploadImage(file)
+}
+
+async function uploadEditorImages(files: File[]): Promise<string[]> {
+  return Promise.all(files.map((file) => uploadSingleImage(file)))
+}
+
+function handlePasteBlocked() {
+  appStore.showError(t('feedback.message.pasteImageBlocked'))
+}
+
+async function handleSubmit() {
+  submitting.value = true
+  try {
+    const created = await feedbacksAPI.create({
+      category: form.category,
+      title: form.title,
+      content: form.content,
+      images: form.images,
+      contact: form.contact || undefined,
+    })
+    appStore.showSuccess(t('feedback.message.created'))
+    await router.push(`/feedbacks/${created.id}`)
+  } catch (error: any) {
+    if (error?.response?.status === 429 || error?.status === 429) {
+      const retryAfter = error?.response?.headers?.['retry-after']
+      appStore.showError(retryAfter ? t('feedback.message.rateLimitedWithRetry', { seconds: retryAfter }) : t('feedback.message.rateLimited'))
+      return
+    }
+    appStore.showError(error?.message || t('feedback.message.createFailed'))
+  } finally {
+    submitting.value = false
+  }
+}
+</script>

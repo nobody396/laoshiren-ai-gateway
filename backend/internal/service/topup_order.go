@@ -1,0 +1,43 @@
+package service
+
+import (
+	"time"
+
+	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
+)
+
+var (
+	ErrXunhuNotConfigured = infraerrors.BadRequest("XUNHU_NOT_CONFIGURED", "xunhu payment is not configured")
+	ErrTopupNotFound      = infraerrors.NotFound("TOPUP_NOT_FOUND", "topup order not found")
+	ErrTopupMinAmount     = infraerrors.BadRequest("TOPUP_MIN_AMOUNT", "minimum topup amount is ¥20")
+	ErrTopupMaxAmount     = infraerrors.BadRequest("TOPUP_MAX_AMOUNT", "单次充值最高为 ¥3000")
+	ErrTopupInvalidType   = infraerrors.BadRequest("TOPUP_INVALID_TYPE", "pay_type must be alipay or wechat")
+)
+
+const (
+	TopupStatusPending   = "pending"
+	TopupStatusCompleted = "completed"
+	TopupStatusExpired   = "expired"
+
+	// TopupMinAmountFen 最低充值金额（分）
+	TopupMinAmountFen = 2000 // ¥20
+	// TopupMaxAmountFen 单次充值最高金额（分）
+	TopupMaxAmountFen = 300000 // ¥3000
+
+)
+
+// TopupOrder represents a topup order domain model
+type TopupOrder struct {
+	ID            int64      `json:"id"`
+	OrderNo       string     `json:"order_no"`
+	UserID        int64      `json:"user_id"`
+	AmountCNYFen  int        `json:"amount_cny_fen"` // 充值金额，单位：分（CNY）
+	PayType       string     `json:"pay_type"`       // alipay / wechat
+	Status        string     `json:"status"`
+	InvoiceStatus string     `json:"invoice_status"`
+	XunhuTradeNo  *string    `json:"xunhu_trade_no,omitempty"`
+	QRCodeURL     *string    `json:"qr_code_url,omitempty"`
+	CompletedAt   *time.Time `json:"completed_at,omitempty"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+}

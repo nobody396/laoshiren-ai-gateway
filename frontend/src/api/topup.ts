@@ -1,0 +1,44 @@
+import { apiClient } from './client'
+
+export type TopupPayType = 'alipay' | 'wechat'
+
+export interface CreateTopupOrderResponse {
+  order_no: string
+  qr_code_url: string
+}
+
+export interface TopupOrderStatus {
+  order_no: string
+  status: 'pending' | 'completed' | 'expired'
+}
+
+/**
+ * 创建充值订单
+ * @param amountCnyFen 充值金额（分，CNY）。例如 2000 = ¥20
+ * @param payType 支付渠道
+ */
+export async function createTopupOrder(
+  amountCnyFen: number,
+  payType: TopupPayType
+): Promise<CreateTopupOrderResponse> {
+  const { data } = await apiClient.post<CreateTopupOrderResponse>('/topup/order', {
+    amount_cny_fen: amountCnyFen,
+    pay_type: payType,
+  })
+  return data
+}
+
+/**
+ * 查询充值订单状态
+ */
+export async function queryTopupOrderStatus(orderNo: string): Promise<TopupOrderStatus> {
+  const { data } = await apiClient.get<TopupOrderStatus>(`/topup/order/${orderNo}/status`)
+  return data
+}
+
+export const topupAPI = {
+  createTopupOrder,
+  queryTopupOrderStatus,
+}
+
+export default topupAPI

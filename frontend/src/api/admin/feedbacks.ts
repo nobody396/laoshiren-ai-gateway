@@ -1,0 +1,83 @@
+import { apiClient } from '../client'
+import type {
+  BasePaginationResponse,
+  CreateFeedbackReplyRequest,
+  FeedbackDetail,
+  FeedbackItem,
+  FeedbackPriority,
+  FeedbackStatus,
+} from '@/types'
+
+export interface AdminFeedbackListParams {
+  page?: number
+  pageSize?: number
+  category?: string
+  status?: string
+  priority?: string
+  search?: string
+  start_time?: string
+  end_time?: string
+}
+
+export async function listFeedbacks(params: AdminFeedbackListParams = {}): Promise<BasePaginationResponse<FeedbackItem>> {
+  const { data } = await apiClient.get<BasePaginationResponse<FeedbackItem>>('/admin/feedbacks', {
+    params: {
+      page: params.page ?? 1,
+      page_size: params.pageSize ?? 20,
+      category: params.category || undefined,
+      status: params.status || undefined,
+      priority: params.priority || undefined,
+      search: params.search || undefined,
+      start_time: params.start_time || undefined,
+      end_time: params.end_time || undefined,
+    },
+  })
+  return data
+}
+
+export async function getFeedback(id: number): Promise<FeedbackDetail> {
+  const { data } = await apiClient.get<FeedbackDetail>(`/admin/feedbacks/${id}`)
+  return data
+}
+
+export async function createReply(id: number, payload: CreateFeedbackReplyRequest): Promise<void> {
+  await apiClient.post(`/admin/feedbacks/${id}/replies`, payload)
+}
+
+export async function updateStatus(id: number, status: FeedbackStatus): Promise<void> {
+  await apiClient.put(`/admin/feedbacks/${id}/status`, { status })
+}
+
+export async function updatePriority(id: number, priority: FeedbackPriority): Promise<void> {
+  await apiClient.put(`/admin/feedbacks/${id}/priority`, { priority })
+}
+
+export async function batchUpdateStatus(ids: number[], status: FeedbackStatus): Promise<{ updated: number }> {
+  const { data } = await apiClient.put<{ updated: number }>('/admin/feedbacks/batch-status', {
+    ids,
+    status,
+  })
+  return data
+}
+
+export async function deleteFeedback(id: number): Promise<void> {
+  await apiClient.delete(`/admin/feedbacks/${id}`)
+}
+
+export async function batchDeleteFeedbacks(ids: number[]): Promise<{ deleted: number }> {
+  const { data } = await apiClient.post<{ deleted: number }>('/admin/feedbacks/batch-delete', { ids })
+  return data
+}
+
+const adminFeedbacksAPI = {
+  list: listFeedbacks,
+  getById: getFeedback,
+  createReply,
+  updateStatus,
+  updatePriority,
+  batchUpdateStatus,
+  delete: deleteFeedback,
+  batchDelete: batchDeleteFeedbacks,
+}
+
+export default adminFeedbacksAPI

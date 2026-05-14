@@ -1,0 +1,90 @@
+//go:build unit
+
+package service
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+// These tests guard against fmt.Sprintf arg-count mismatches in the email
+// templates. A mismatch would produce "%!(EXTRA ...)" or "%!v(MISSING)" in
+// the output, which these assertions will catch.
+
+// ---------- buildQuotaAlertEmailBody ----------
+
+func TestBuildQuotaAlertEmailBody_AllFieldsPresent(t *testing.T) {
+	s := &AccountQuotaAlertService{}
+	body := s.buildQuotaAlertEmailBody(
+		42,            // accountID
+		"acc-foo",     // accountName
+		"anthropic",   // platform
+		"日限额 / Daily", // dimLabel
+		750.50,        // used
+		1000.0,        // limit
+		249.50,        // remaining
+		"$249.50",     // thresholdDisplay
+		"MySite",      // siteName
+	)
+
+	require.Contains(t, body, "MySite")
+	require.Contains(t, body, "#42")
+	require.Contains(t, body, "acc-foo")
+	require.Contains(t, body, "anthropic")
+	require.Contains(t, body, "Daily")
+	require.Contains(t, body, "$750.50")
+	require.Contains(t, body, "$1000.00")
+	require.Contains(t, body, "$249.50")
+
+	// No format error markers.
+	require.NotContains(t, body, "%!")
+	require.NotContains(t, body, "MISSING")
+	require.NotContains(t, body, "EXTRA")
+}
+
+func TestBuildQuotaAlertEmailBody_UnlimitedDisplay(t *testing.T) {
+	s := &AccountQuotaAlertService{}
+	body := s.buildQuotaAlertEmailBody(
+		1, "n", "p", "dim",
+		100.0, 0.0, // limit=0 triggers unlimited branch
+		0.0, "30%", "Site",
+	)
+	require.Contains(t, body, "无限制")
+	require.Contains(t, body, "Unlimited")
+}
+
+func TestBuildQuotaAlertEmailBody_PercentageThresholdDisplay(t *testing.T) {
+	s := &AccountQuotaAlertService{}
+	body := s.buildQuotaAlertEmailBody(
+		1, "n", "p", "dim",
+		700.0, 1000.0, 300.0,
+		"30%", // percentage-formatted threshold
+		"Site",
+	)
+	require.Contains(t, body, "30%")
+	require.NotContains(t, body, "%!")
+}
+
+func TestBuildQuotaAlertEmailBody_RemainingClampedAtZero(t *testing.T) {
+	// Even though caller is responsible for clamping, this test documents the
+	// display behavior with remaining=0.
+	s := &AccountQuotaAlertService{}
+	body := s.buildQuotaAlertEmailBody(
+		1, "n", "p", "dim",
+		1500.0, 1000.0, 0.0, // used > limit (over-quota)
+		"$100.00", "Site",
+	)
+	require.Contains(t, body, "$0.00")
+}
+
+// ---------- sanity checks on the CSS `%%` escape ----------
+
+func TestBuildQuotaAlertEmailBody_NoCSSFormatError(t *testing.T) {
+	s := &AccountQuotaAlertService{}
+	body := s.buildQuotaAlertEmailBody(1, "n", "p", "d", 0, 0, 0, "$0.00", "Site")
+	require.True(t,
+		strings.Contains(body, "0%") && strings.Contains(body, "100%"),
+		"CSS gradient percentages not rendered; got: %s", body)
+}

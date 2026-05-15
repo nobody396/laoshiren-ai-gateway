@@ -2,7 +2,7 @@
   <AppLayout>
     <div class="mx-auto max-w-5xl space-y-6">
       <!-- Date Range Filter -->
-      <div class="card p-4">
+      <div class="admin-filter-slab card p-4">
         <div class="flex flex-wrap items-center gap-3">
           <span class="text-sm font-medium text-gray-700 dark:text-dark-300">{{ t('agent.dateRange') }}</span>
           <input
@@ -29,37 +29,86 @@
 
       <!-- Stats Cards -->
       <div v-if="loading" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div v-for="i in 6" :key="i" class="card h-24 animate-pulse bg-gray-100 dark:bg-dark-800"></div>
+        <div v-for="i in 6" :key="i" class="admin-stat-card card h-24 animate-pulse bg-gray-100 dark:bg-dark-800"></div>
       </div>
       <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="card p-5">
-          <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.totalCommission') }}</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">${{ dashboard?.total_commission.toFixed(4) ?? '0.0000' }}</p>
+        <div class="admin-stat-card card p-5">
+          <div class="flex items-center gap-3">
+            <div class="admin-stat-icon flex h-10 w-10 flex-shrink-0 items-center justify-center">
+              <Icon name="dollar" size="md" :stroke-width="2" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.totalCommission') }}</p>
+              <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">${{ dashboard?.total_commission.toFixed(4) ?? '0.0000' }}</p>
+            </div>
+          </div>
         </div>
-        <div class="card p-5">
-          <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.settledCommission') }}</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">${{ dashboard?.settled_commission.toFixed(4) ?? '0.0000' }}</p>
+        <div class="admin-stat-card card p-5">
+          <div class="flex items-center gap-3">
+            <div class="admin-stat-icon flex h-10 w-10 flex-shrink-0 items-center justify-center">
+              <Icon name="checkCircle" size="md" :stroke-width="2" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.settledCommission') }}</p>
+              <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">${{ dashboard?.settled_commission.toFixed(4) ?? '0.0000' }}</p>
+            </div>
+          </div>
         </div>
-        <div class="card p-5">
-          <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.unsettledCommission') }}</p>
-          <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">${{ dashboard?.unsettled_commission.toFixed(4) ?? '0.0000' }}</p>
+        <div class="admin-stat-card card p-5">
+          <div class="flex items-center gap-3">
+            <div class="admin-stat-icon flex h-10 w-10 flex-shrink-0 items-center justify-center">
+              <Icon name="clock" size="md" :stroke-width="2" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.unsettledCommission') }}</p>
+              <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">${{ dashboard?.unsettled_commission.toFixed(4) ?? '0.0000' }}</p>
+            </div>
+          </div>
         </div>
-        <div class="card p-5">
-          <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.thisMonthCommission') }}</p>
-          <p class="mt-1 text-2xl font-bold text-primary-600 dark:text-primary-400">${{ dashboard?.this_month_commission.toFixed(4) ?? '0.0000' }}</p>
+        <div class="admin-stat-card card p-5">
+          <div class="flex items-center gap-3">
+            <div class="admin-stat-icon flex h-10 w-10 flex-shrink-0 items-center justify-center">
+              <Icon name="calendar" size="md" :stroke-width="2" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.thisMonthCommission') }}</p>
+              <p class="mt-1 text-2xl font-bold text-primary-600 dark:text-primary-400">${{ dashboard?.this_month_commission.toFixed(4) ?? '0.0000' }}</p>
+            </div>
+          </div>
         </div>
-        <div class="card p-5">
-          <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.periodCommission') }}</p>
-          <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">${{ dashboard?.period_commission.toFixed(4) ?? '0.0000' }}</p>
-          <p class="mt-1 text-xs text-gray-400">{{ startDate && endDate ? `${startDate} ~ ${endDate}` : t('agent.allTime') }}</p>
+        <div class="admin-stat-card card p-5">
+          <div class="flex items-center gap-3">
+            <div class="admin-stat-icon flex h-10 w-10 flex-shrink-0 items-center justify-center">
+              <Icon name="filter" size="md" :stroke-width="2" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.periodCommission') }}</p>
+              <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">${{ dashboard?.period_commission.toFixed(4) ?? '0.0000' }}</p>
+              <p class="mt-1 text-xs text-gray-400">{{ startDate && endDate ? `${startDate} ~ ${endDate}` : t('agent.allTime') }}</p>
+            </div>
+          </div>
         </div>
-        <div class="card p-5">
-          <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.invitedUsers') }}</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ dashboard?.invited_user_count ?? 0 }}</p>
+        <div class="admin-stat-card card p-5">
+          <div class="flex items-center gap-3">
+            <div class="admin-stat-icon flex h-10 w-10 flex-shrink-0 items-center justify-center">
+              <Icon name="users" size="md" :stroke-width="2" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.invitedUsers') }}</p>
+              <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ dashboard?.invited_user_count ?? 0 }}</p>
+            </div>
+          </div>
         </div>
-        <div class="card p-5">
-          <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.currentRate') }}</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ formatRate(dashboard?.consumption_rate) }}</p>
+        <div class="admin-stat-card card p-5">
+          <div class="flex items-center gap-3">
+            <div class="admin-stat-icon flex h-10 w-10 flex-shrink-0 items-center justify-center">
+              <Icon name="trendingUp" size="md" :stroke-width="2" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.currentRate') }}</p>
+              <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ formatRate(dashboard?.consumption_rate) }}</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -109,6 +158,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import Icon from '@/components/icons/Icon.vue'
 import { getAgentDashboard, getAgentInviteCode, type AgentDashboard } from '@/api/agent'
 import { buildAuthErrorMessage } from '@/utils/authError'
 import { useClipboard } from '@/composables/useClipboard'

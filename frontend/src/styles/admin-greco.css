@@ -33,34 +33,34 @@ body.admin-console-active {
 
 .dark .admin-console-shell,
 .dark body.admin-console-active {
-  --admin-papyrus: #15130f;
-  --admin-parchment: #242016;
-  --admin-marble: #1d1a14;
-  --admin-stone: #2b2519;
-  --admin-terracotta: #d87757;
-  --admin-terracotta-dark: #f0a27f;
-  --admin-laurel: #9eb48b;
-  --admin-laurel-dark: #d7e2c5;
-  --admin-ink: #eee4ce;
-  --admin-ink-deep: #fff7e8;
-  --admin-muted: #b8a989;
-  --admin-border: rgba(215, 226, 197, 0.16);
-  --admin-border-strong: rgba(248, 243, 231, 0.34);
-  --admin-surface: rgba(29, 26, 20, 0.96);
-  --admin-surface-soft: rgba(43, 37, 25, 0.78);
-  --admin-control: rgba(21, 19, 15, 0.92);
-  --admin-table-alt: rgba(43, 37, 25, 0.52);
-  --admin-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
-  --admin-shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.26);
-  --admin-ring: rgba(216, 119, 87, 0.26);
-  --admin-danger: #f28a78;
-  --admin-success: #9fca92;
-  --admin-warning: #e0b36a;
-  --admin-info: #8fb7c4;
+  --admin-papyrus: #2a251d;
+  --admin-parchment: #3a3122;
+  --admin-marble: #332d23;
+  --admin-stone: #433824;
+  --admin-terracotta: #e18a68;
+  --admin-terracotta-dark: #ffb18b;
+  --admin-laurel: #b9c99e;
+  --admin-laurel-dark: #edf4d3;
+  --admin-ink: #f2ead6;
+  --admin-ink-deep: #fff8e8;
+  --admin-muted: #d1c3a5;
+  --admin-border: rgba(237, 244, 211, 0.2);
+  --admin-border-strong: rgba(255, 248, 232, 0.38);
+  --admin-surface: rgba(42, 38, 31, 0.96);
+  --admin-surface-soft: rgba(58, 49, 33, 0.82);
+  --admin-control: rgba(35, 31, 24, 0.94);
+  --admin-table-alt: rgba(58, 49, 33, 0.42);
+  --admin-shadow: 0 18px 48px rgba(10, 8, 5, 0.24);
+  --admin-shadow-sm: 0 8px 24px rgba(10, 8, 5, 0.18);
+  --admin-ring: rgba(225, 138, 104, 0.3);
+  --admin-danger: #ff9b86;
+  --admin-success: #b8d89f;
+  --admin-warning: #f0c77a;
+  --admin-info: #9fd0dc;
 }
 
 body.admin-console-active {
-  background: var(--admin-papyrus);
+  background: var(--admin-papyrus) !important;
 }
 
 .admin-console-shell {
@@ -71,6 +71,7 @@ body.admin-console-active {
     linear-gradient(90deg, rgba(63, 90, 58, 0.045) 1px, transparent 1px),
     linear-gradient(180deg, rgba(63, 90, 58, 0.035) 1px, transparent 1px),
     var(--admin-papyrus);
+  background-color: var(--admin-papyrus) !important;
   background-size: 72px 72px, 72px 72px, auto;
   color: var(--admin-ink);
   font-family: Inter, "Noto Serif SC", "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -143,7 +144,9 @@ body.admin-console-active {
 }
 
 .dark .admin-console-shell .sidebar {
-  background: linear-gradient(180deg, #1d1a14, #15130f);
+  background:
+    linear-gradient(180deg, rgba(60, 51, 35, 0.94), rgba(39, 35, 28, 0.98)),
+    var(--admin-marble);
 }
 
 .admin-console-shell .sidebar-header {
@@ -154,7 +157,7 @@ body.admin-console-active {
 }
 
 .dark .admin-console-shell .sidebar-header {
-  background: rgba(43, 37, 25, 0.42);
+  background: rgba(77, 65, 42, 0.34);
 }
 
 .admin-console-shell .sidebar-header::after {
@@ -207,6 +210,10 @@ body.admin-console-active {
   font-weight: 600;
 }
 
+.dark .admin-console-shell .sidebar-link {
+  color: #d8ccb1;
+}
+
 .admin-console-shell .sidebar-link::before {
   content: "";
   position: absolute;
@@ -222,9 +229,17 @@ body.admin-console-active {
   color: var(--admin-ink-deep) !important;
 }
 
+.dark .admin-console-shell .sidebar-link:hover {
+  background: rgba(225, 138, 104, 0.16) !important;
+}
+
 .admin-console-shell .sidebar-link-active {
   background: rgba(154, 59, 31, 0.13) !important;
   color: var(--admin-terracotta-dark) !important;
+}
+
+.dark .admin-console-shell .sidebar-link-active {
+  background: rgba(225, 138, 104, 0.2) !important;
 }
 
 .admin-console-shell .sidebar-link-active::before {
@@ -234,6 +249,13 @@ body.admin-console-active {
 .admin-console-shell .sidebar svg,
 .admin-console-shell .sidebar-svg-icon svg {
   stroke-width: 1.65;
+  opacity: 1;
+}
+
+.admin-console-shell .sidebar-link svg,
+.admin-console-shell .sidebar-svg-icon {
+  color: currentColor;
+  flex-shrink: 0;
 }
 
 .admin-console-shell .sidebar > .mt-auto {
@@ -242,7 +264,7 @@ body.admin-console-active {
 }
 
 .dark .admin-console-shell .sidebar > .mt-auto {
-  background: rgba(0, 0, 0, 0.12);
+  background: rgba(77, 65, 42, 0.18);
 }
 
 .admin-console-shell header.glass {
@@ -252,8 +274,8 @@ body.admin-console-active {
 }
 
 .dark .admin-console-shell header.glass {
-  background: rgba(29, 26, 20, 0.88) !important;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  background: rgba(42, 38, 31, 0.9) !important;
+  box-shadow: 0 10px 28px rgba(10, 8, 5, 0.16);
 }
 
 .admin-console-shell header h1 {
@@ -308,6 +330,57 @@ body.admin-console-active {
   box-shadow: var(--admin-shadow);
 }
 
+.dark .admin-console-shell .dark\:bg-dark-950,
+.dark .admin-console-shell .dark\:bg-dark-900,
+.dark .admin-console-shell .dark\:bg-dark-800,
+.dark .admin-console-shell .bg-dark-950,
+.dark .admin-console-shell .bg-dark-900,
+.dark .admin-console-shell .bg-dark-800 {
+  background-color: var(--admin-surface) !important;
+}
+
+.dark .admin-console-shell .dark\:bg-dark-700,
+.dark .admin-console-shell .dark\:bg-dark-600,
+.dark .admin-console-shell .bg-dark-700,
+.dark .admin-console-shell .bg-dark-600 {
+  background-color: var(--admin-surface-soft) !important;
+}
+
+.dark .admin-console-shell .dark\:border-dark-800,
+.dark .admin-console-shell .dark\:border-dark-700,
+.dark .admin-console-shell .dark\:border-dark-600,
+.dark .admin-console-shell .border-dark-800,
+.dark .admin-console-shell .border-dark-700,
+.dark .admin-console-shell .border-dark-600 {
+  border-color: var(--admin-border) !important;
+}
+
+.dark .admin-console-shell .dark\:text-dark-500,
+.dark .admin-console-shell .dark\:text-dark-400,
+.dark .admin-console-shell .dark\:text-gray-500,
+.dark .admin-console-shell .dark\:text-gray-400,
+.dark .admin-console-shell .text-dark-500,
+.dark .admin-console-shell .text-dark-400,
+.dark .admin-console-shell .text-gray-500,
+.dark .admin-console-shell .text-gray-400 {
+  color: var(--admin-muted) !important;
+}
+
+.dark .admin-console-shell .dark\:text-dark-300,
+.dark .admin-console-shell .dark\:text-dark-200,
+.dark .admin-console-shell .dark\:text-gray-300,
+.dark .admin-console-shell .dark\:text-gray-200,
+.dark .admin-console-shell .text-dark-300,
+.dark .admin-console-shell .text-dark-200 {
+  color: #eadfc6 !important;
+}
+
+.dark .admin-console-shell .dark\:text-white,
+.dark .admin-console-shell .dark\:text-gray-100,
+.dark .admin-console-shell .text-white {
+  color: var(--admin-ink-deep) !important;
+}
+
 .admin-console-shell .card-header,
 .admin-console-shell .card-footer,
 .admin-console-shell .modal-header,
@@ -325,7 +398,7 @@ body.admin-console-active {
 
 .dark .admin-console-shell .modal-overlay,
 .dark .admin-console-shell .dialog-overlay {
-  background: rgba(0, 0, 0, 0.68) !important;
+  background: rgba(16, 13, 8, 0.6) !important;
 }
 
 /* Buttons and controls */
@@ -393,6 +466,14 @@ body.admin-console-active {
   border-color: var(--admin-border) !important;
   border-radius: 4px !important;
   color: var(--admin-ink) !important;
+}
+
+.admin-console-shell input[type="date"] {
+  color-scheme: light;
+}
+
+.dark .admin-console-shell input[type="date"] {
+  color-scheme: dark;
 }
 
 .admin-console-shell .input:focus,
@@ -503,7 +584,7 @@ body.admin-console-active .select-search-input {
 
 .dark .admin-console-shell .table tbody tr:hover,
 .dark .admin-console-shell tbody tr:hover {
-  background: rgba(61, 50, 34, 0.72) !important;
+  background: rgba(75, 62, 42, 0.78) !important;
 }
 
 .admin-console-shell .table tbody tr:nth-child(even),
@@ -521,7 +602,7 @@ body.admin-console-active .select-search-input {
 }
 
 .dark .admin-console-shell tbody tr:hover .sticky-col {
-  background: rgba(61, 50, 34, 0.92) !important;
+  background: rgba(75, 62, 42, 0.94) !important;
 }
 
 .admin-console-shell .is-scrollable .sticky-col-left::after,
@@ -614,7 +695,7 @@ body.admin-console-active .select-search-input {
 
 .dark .admin-console-shell .admin-stat-card {
   background:
-    linear-gradient(180deg, rgba(43, 37, 25, 0.86), rgba(21, 19, 15, 0.68)),
+    linear-gradient(180deg, rgba(63, 53, 36, 0.82), rgba(42, 38, 31, 0.74)),
     var(--admin-surface) !important;
 }
 
@@ -637,13 +718,30 @@ body.admin-console-active .select-search-input {
   box-shadow: inset 0 0 0 1px rgba(154, 59, 31, 0.16);
 }
 
-.admin-console-shell .admin-stat-card p.text-xs.font-medium {
+.dark .admin-console-shell .admin-stat-card > .flex > div:first-child,
+.dark .admin-console-shell .admin-stat-icon {
+  background: rgba(225, 138, 104, 0.18) !important;
+  color: #ffc19d !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 193, 157, 0.22),
+    0 0 0 1px rgba(225, 138, 104, 0.08);
+}
+
+.admin-console-shell .admin-stat-card svg,
+.admin-console-shell .admin-stat-icon svg {
+  color: currentColor !important;
+  opacity: 1;
+}
+
+.admin-console-shell .admin-stat-card p.text-xs.font-medium,
+.admin-console-shell .admin-stat-card p.text-sm:first-child {
   color: var(--admin-muted) !important;
   font-size: 0.72rem;
   letter-spacing: 0.04em;
 }
 
-.admin-console-shell .admin-stat-card p.text-xl {
+.admin-console-shell .admin-stat-card p.text-xl,
+.admin-console-shell .admin-stat-card p.text-2xl {
   color: var(--admin-ink-deep) !important;
   font-family: "EB Garamond", "Noto Serif SC", Georgia, serif;
   font-feature-settings: "lnum" 1, "tnum" 1;
@@ -707,8 +805,42 @@ body.admin-console-active .select-search-input {
   background: rgba(255, 252, 245, 0.38);
 }
 
+.admin-console-shell .card .bg-gray-50,
+.admin-console-shell .card .bg-gray-100,
+.admin-console-shell .card code.bg-gray-100,
+.admin-console-shell .card .dark\:bg-dark-800,
+.admin-console-shell .card .dark\:bg-dark-700 {
+  background: var(--admin-surface-soft) !important;
+  border-color: var(--admin-border) !important;
+}
+
+.admin-console-shell .text-primary-600,
+.admin-console-shell .text-primary-700,
+.admin-console-shell .text-blue-600,
+.admin-console-shell .text-indigo-600,
+.admin-console-shell .text-purple-600,
+.admin-console-shell .text-violet-600,
+.admin-console-shell .text-sky-600 {
+  color: var(--admin-terracotta-dark) !important;
+}
+
+.admin-console-shell .text-emerald-600,
+.admin-console-shell .text-green-600 {
+  color: var(--admin-success) !important;
+}
+
+.admin-console-shell .text-amber-600,
+.admin-console-shell .text-orange-500 {
+  color: var(--admin-warning) !important;
+}
+
+.admin-console-shell .text-red-600,
+.admin-console-shell .text-rose-600 {
+  color: var(--admin-danger) !important;
+}
+
 .dark .admin-console-shell .admin-chart-frame {
-  background: rgba(0, 0, 0, 0.12);
+  background: rgba(33, 29, 22, 0.32);
 }
 
 /* Chart segmented controls */

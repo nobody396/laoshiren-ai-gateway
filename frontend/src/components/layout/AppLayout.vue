@@ -1,7 +1,7 @@
 <template>
   <div
     class="min-h-screen bg-gray-50 dark:bg-dark-950"
-    :class="{ 'admin-console-shell': isAdminRoute }"
+    :class="{ 'admin-console-shell': isConsoleRoute }"
   >
     <!-- Background Decoration -->
     <div class="pointer-events-none fixed inset-0 bg-mesh-gradient"></div>
@@ -42,7 +42,7 @@ const authStore = useAuthStore()
 const route = useRoute()
 const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)
 const isAdmin = computed(() => authStore.user?.role === 'admin')
-const isAdminRoute = computed(() => route.path.startsWith('/admin'))
+const isConsoleRoute = computed(() => route.meta.requiresAuth !== false)
 
 const { replayTour } = useOnboardingTour({
   storageKey: isAdmin.value ? 'admin_guide' : 'user_guide',
@@ -56,7 +56,7 @@ onMounted(() => {
 })
 
 watch(
-  isAdminRoute,
+  isConsoleRoute,
   (active) => {
     document.body.classList.toggle('admin-console-active', active)
   },

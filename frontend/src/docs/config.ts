@@ -25,7 +25,7 @@ export const docsConfig: DocsConfig = [
     items: [
       { title: '简介', slug: 'introduction' },
       { title: '常见问题', slug: 'faq' },
-      { title: 'Dragon Code 使用指南', slug: 'dragon-code-guide' },
+      { title: '老实人 AI 使用指南', slug: 'dragon-code-guide' },
     ],
   },
   {
@@ -64,11 +64,13 @@ export const defaultSlug = 'introduction'
  * 旧版本直接使用中文文件名作为 slug，这里保留兼容，避免外部链接失效。
  */
 const legacyDocSlugMap: Record<string, string> = {
+  '老实人 AI × Claude Code VS Code 图形化操作教程': 'vscode-gui-guide',
   'Dragon Code × Claude Code VS Code 图形化操作教程': 'vscode-gui-guide',
   'Claude Code与Codex协同开发指南': 'claude-code-codex-collaboration-guide',
   'Claude Code快速开始指南': 'claude-code-quickstart',
   'Claude%20Code快速开始指南': 'claude-code-quickstart',
   'Codex快速开始指南': 'codex-quickstart',
+  '老实人 AI × Hermes 快速开始指南': 'hermes-quickstart',
   'Dragon Code × Hermes 快速开始指南': 'hermes-quickstart',
   'Hermes快速开始指南': 'hermes-quickstart',
   'Hermes-DragonCode(3)': 'hermes-quickstart',

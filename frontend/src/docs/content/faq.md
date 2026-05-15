@@ -69,7 +69,7 @@
 打开购买页面有两种方式：
 
 1. **控制台入口**：在控制台点击「现在充值」按钮
-2. **直达链接**：访问 [https://your-domain.example/get-subscription](https://your-domain.example/get-subscription)，扫码支付即可
+2. **直达链接**：访问 [https://laoshirenai.com/get-subscription](https://laoshirenai.com/get-subscription)，扫码支付即可
 
 支付完成后，余额会自动到账，无需手动兑换。
 

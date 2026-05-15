@@ -1,4 +1,4 @@
-# Dragon Code 快速开始指南
+# 老实人 AI 快速开始指南
 
 ## 前置条件：安装 Node.js 环境
 
@@ -33,7 +33,7 @@ claude --version
 
 ### 第二步：创建 API Key
 
-登录 [Dragon Code 控制台](https://your-domain.example/keys)，进入 **API 密钥** 页面，点击 **创建密钥**。
+登录 [老实人 AI 控制台](https://laoshirenai.com/keys)，进入 **API 密钥** 页面，点击 **创建密钥**。
 
 ![](https://assets.example.com/dragoncode/file-20260317102346193.png)
 ![](https://assets.example.com/dragoncode/file-20260317102505220.png)
@@ -67,20 +67,20 @@ claude --version
 
 | 变量名 | 值 |
 |---|---|
-| `ANTHROPIC_BASE_URL` | `https://your-domain.example` |
+| `ANTHROPIC_BASE_URL` | `https://api.laoshirenai.com` |
 | `ANTHROPIC_AUTH_TOKEN` | 您的 API Key |
 
 **临时设置（当前终端会话有效）**
 
 Windows (PowerShell)：
 ```powershell
-$env:ANTHROPIC_BASE_URL = "https://your-domain.example"
+$env:ANTHROPIC_BASE_URL = "https://api.laoshirenai.com"
 $env:ANTHROPIC_AUTH_TOKEN = "YOUR_API_KEY"
 ```
 
 macOS / Linux：
 ```bash
-export ANTHROPIC_BASE_URL="https://your-domain.example"
+export ANTHROPIC_BASE_URL="https://api.laoshirenai.com"
 export ANTHROPIC_AUTH_TOKEN="YOUR_API_KEY"
 ```
 
@@ -88,20 +88,20 @@ export ANTHROPIC_AUTH_TOKEN="YOUR_API_KEY"
 
 Windows (PowerShell)：
 ```powershell
-[System.Environment]::SetEnvironmentVariable("ANTHROPIC_BASE_URL", "https://your-domain.example", [System.EnvironmentVariableTarget]::User)
+[System.Environment]::SetEnvironmentVariable("ANTHROPIC_BASE_URL", "https://api.laoshirenai.com", [System.EnvironmentVariableTarget]::User)
 [System.Environment]::SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", "YOUR_API_KEY", [System.EnvironmentVariableTarget]::User)
 ```
 
 macOS (Zsh)：
 ```bash
-echo 'export ANTHROPIC_BASE_URL="https://your-domain.example"' >> ~/.zshrc
+echo 'export ANTHROPIC_BASE_URL="https://api.laoshirenai.com"' >> ~/.zshrc
 echo 'export ANTHROPIC_AUTH_TOKEN="YOUR_API_KEY"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
 Linux (Bash)：
 ```bash
-echo 'export ANTHROPIC_BASE_URL="https://your-domain.example"' >> ~/.bashrc
+echo 'export ANTHROPIC_BASE_URL="https://api.laoshirenai.com"' >> ~/.bashrc
 echo 'export ANTHROPIC_AUTH_TOKEN="YOUR_API_KEY"' >> ~/.bashrc
 source ~/.bashrc
 ```
@@ -129,7 +129,7 @@ A：macOS / Linux 在命令前加 `sudo`；Windows 使用管理员权限运行 P
 A：确认 npm 全局目录已加入系统 `PATH`，可运行 `npm bin -g` 查看路径并手动添加。
 
 **Q：连接失败或返回 401 错误？**
-A：检查 `ANTHROPIC_BASE_URL` 是否为 `https://your-domain.example`，以及 `ANTHROPIC_AUTH_TOKEN` 是否填写正确且未过期。
+A：检查 `ANTHROPIC_BASE_URL` 是否为 `https://api.laoshirenai.com`，以及 `ANTHROPIC_AUTH_TOKEN` 是否填写正确且未过期。
 
 **Q：如何切换不同模型或倍率？**
-A：在 [Dragon Code 控制台](https://your-domain.example/dashboard)) 创建不同分组的密钥，通过 CC Switch 在多个配置间快速切换。
+A：在 [老实人 AI 控制台](https://laoshirenai.com/dashboard)) 创建不同分组的密钥，通过 CC Switch 在多个配置间快速切换。

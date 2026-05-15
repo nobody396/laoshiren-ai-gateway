@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="space-y-6">
+    <div class="admin-dashboard space-y-6">
       <!-- Loading State -->
       <div v-if="loading" class="flex items-center justify-center py-12">
         <LoadingSpinner />
@@ -8,9 +8,9 @@
 
       <template v-else-if="stats">
         <!-- 顶部统计卡片：大屏保持每排 4 张，延续原始阅读节奏 -->
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="admin-dashboard-stat-grid grid grid-cols-2 gap-4 lg:grid-cols-4">
           <!-- Users -->
-          <div class="card p-4">
+          <div class="admin-stat-card card p-4">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-900/30">
                 <Icon name="userPlus" size="md" class="text-emerald-600 dark:text-emerald-400" :stroke-width="2" />
@@ -30,7 +30,7 @@
           </div>
 
           <!-- Service Accounts -->
-          <div class="card p-4">
+          <div class="admin-stat-card card p-4">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-purple-100 p-2 dark:bg-purple-900/30">
                 <Icon name="server" size="md" class="text-purple-600 dark:text-purple-400" :stroke-width="2" />
@@ -55,7 +55,7 @@
           </div>
 
           <!-- Total API Keys -->
-          <div class="card p-4">
+          <div class="admin-stat-card card p-4">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
                 <Icon name="key" size="md" class="text-blue-600 dark:text-blue-400" :stroke-width="2" />
@@ -74,7 +74,7 @@
             </div>
           </div>
 
-          <div class="card p-4">
+          <div class="admin-stat-card card p-4">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-900/30">
                 <Icon name="dollar" size="md" class="text-emerald-600 dark:text-emerald-400" :stroke-width="2" />
@@ -94,7 +94,7 @@
           </div>
 
           <!-- Total User Balance -->
-          <div class="card p-4">
+          <div class="admin-stat-card card p-4">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-sky-100 p-2 dark:bg-sky-900/30">
                 <Icon name="creditCard" size="md" class="text-sky-600 dark:text-sky-400" :stroke-width="2" />
@@ -111,7 +111,7 @@
           </div>
 
           <!-- Total Tokens -->
-          <div class="card p-4">
+          <div class="admin-stat-card card p-4">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-indigo-100 p-2 dark:bg-indigo-900/30">
                 <Icon name="database" size="md" class="text-indigo-600 dark:text-indigo-400" :stroke-width="2" />
@@ -141,7 +141,7 @@
           </div>
 
           <!-- Performance (RPM/TPM) -->
-          <div class="card p-4">
+          <div class="admin-stat-card card p-4">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-violet-100 p-2 dark:bg-violet-900/30">
                 <Icon name="bolt" size="md" class="text-violet-600 dark:text-violet-400" :stroke-width="2" />
@@ -167,7 +167,7 @@
           </div>
 
           <!-- Avg Response Time -->
-          <div class="card p-4">
+          <div class="admin-stat-card card p-4">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-rose-100 p-2 dark:bg-rose-900/30">
                 <Icon name="clock" size="md" class="text-rose-600 dark:text-rose-400" :stroke-width="2" />
@@ -190,7 +190,7 @@
         <!-- Charts Section -->
         <div class="space-y-6">
           <!-- Date Range Filter -->
-          <div class="card p-4">
+          <div class="admin-filter-slab card p-4">
             <div class="flex flex-wrap items-center gap-4">
               <div class="flex items-center gap-2">
                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -234,16 +234,17 @@
               :start-date="startDate"
               :end-date="endDate"
               @ranking-click="goToUserUsage"
+              palette="greco"
             />
-            <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" />
+            <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" palette="greco" />
           </div>
 
           <!-- User Usage Trend (Full Width) -->
-          <div class="card p-4">
-            <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
+          <div class="admin-chart-card card p-4">
+            <h3 class="admin-chart-title mb-4 text-sm font-semibold text-gray-900 dark:text-white">
               {{ t('admin.dashboard.recentUsage') }} (Top 12)
             </h3>
-            <div class="h-64">
+            <div class="admin-chart-frame h-64 p-3">
               <div v-if="userTrendLoading" class="flex h-full items-center justify-center">
                 <LoadingSpinner size="md" />
               </div>
@@ -356,8 +357,8 @@ const isDarkMode = computed(() => {
 
 // Chart colors
 const chartColors = computed(() => ({
-  text: isDarkMode.value ? '#e5e7eb' : '#374151',
-  grid: isDarkMode.value ? '#374151' : '#e5e7eb'
+  text: isDarkMode.value ? '#eee4ce' : '#1f1a12',
+  grid: isDarkMode.value ? 'rgba(215, 226, 197, 0.18)' : 'rgba(63, 90, 58, 0.2)'
 }))
 
 // Line chart options (for user trend chart)
@@ -454,18 +455,18 @@ const userTrendChartData = computed(() => {
 
   const sortedDates = Array.from(allDates).sort()
   const colors = [
-    '#3b82f6',
-    '#10b981',
-    '#f59e0b',
-    '#ef4444',
-    '#8b5cf6',
-    '#ec4899',
-    '#14b8a6',
-    '#f97316',
-    '#6366f1',
-    '#84cc16',
-    '#06b6d4',
-    '#a855f7'
+    '#9a3b1f',
+    '#3f5a3a',
+    '#9a6a1f',
+    '#315f71',
+    '#7a4f2b',
+    '#6f4f87',
+    '#8a7d63',
+    '#5e2210',
+    '#b77a28',
+    '#26361f',
+    '#6f8b80',
+    '#a85f42'
   ]
 
   const datasets = Array.from(userGroups.values()).map((group, idx) => ({

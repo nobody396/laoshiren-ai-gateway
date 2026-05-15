@@ -15,8 +15,8 @@ Claude 擅长理解需求、架构规划、复杂推理，但价格也摆在那�
 这个搭配的核心逻辑是：Claude 的 Token 只花在「想清楚」上，具体的编码和审查交给更便宜的 Codex。对于每天高强度使用 Claude Code 的人来说，能显著降低整体开销。
 
 > 本指南假设你已完成 Claude Code 和 Codex 的安装配置。如未完成，请先参考：
-> - Claude Code 配置：[DragonCode 快速开始指南](DragonCode快速开始指南.md)
-> - Codex 配置：[DragonCode × Codex 快速开始指南](DragonCode-Codex快速开始指南.md)
+> - Claude Code 配置：[老实人 AI 快速开始指南](/docs/claude-code-quickstart)
+> - Codex 配置：[老实人 AI × Codex 快速开始指南](/docs/codex-quickstart)
 
 ---
 
@@ -217,7 +217,7 @@ model_reasoning_effort = "high"
 A：执行 `/reload-plugins` 重新加载插件。
 
 **Q：`/codex:review` 报认证错误？**
-A：说明 Codex 的认证没配好。请参考 [DragonCode × Codex 快速开始指南](DragonCode-Codex快速开始指南.md) 重新配置，或运行 `!codex login` 重新登录。
+A：说明 Codex 的认证没配好。请参考 [老实人 AI × Codex 快速开始指南](/docs/codex-quickstart) 重新配置，或运行 `!codex login` 重新登录。
 
 **Q：`/codex:rescue` 和直接让 Claude 写代码有什么区别？**
 A：rescue 是把任务交给 Codex 独立执行，消耗的是 OpenAI 额度而不是 Claude Token。适合标准化编码任务。但 Codex 拿不到你和 Claude 的对话上下文，所以任务描述要写清楚。

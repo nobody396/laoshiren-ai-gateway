@@ -1,12 +1,12 @@
-# DragonCode 使用指南
+# 老实人 AI 使用指南
 
-欢迎使用 DragonCode —— 企业级 AI 编码中转工作台。
+欢迎使用 老实人 AI —— 企业级 AI 编码中转工作台。
 
 ---
 
-## 什么是 DragonCode？
+## 什么是 老实人 AI？
 
-DragonCode 将 **Claude Code**、**Codex** 和 **Gemini CLI** 接入同一条稳定线路，提供统一的配置方式、计费视图与使用体验。
+老实人 AI 将 **Claude Code**、**Codex** 和 **Gemini CLI** 接入同一条稳定线路，提供统一的配置方式、计费视图与使用体验。
 
 ### 核心功能
 

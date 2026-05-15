@@ -52,20 +52,34 @@ const { t } = useI18n()
 const props = defineProps<{
   trendData: TrendDataPoint[]
   loading?: boolean
+  palette?: 'default' | 'greco'
 }>()
 
 const isDarkMode = computed(() => {
   return document.documentElement.classList.contains('dark')
 })
 
-const chartColors = computed(() => ({
-  text: isDarkMode.value ? '#e5e7eb' : '#374151',
-  grid: isDarkMode.value ? '#374151' : '#e5e7eb',
-  input: '#3b82f6',
-  output: '#10b981',
-  cacheCreation: '#f59e0b',
-  cacheRead: '#06b6d4'
-}))
+const chartColors = computed(() => {
+  if (props.palette === 'greco') {
+    return {
+      text: isDarkMode.value ? '#eee4ce' : '#1f1a12',
+      grid: isDarkMode.value ? 'rgba(215, 226, 197, 0.18)' : 'rgba(63, 90, 58, 0.2)',
+      input: isDarkMode.value ? '#d87757' : '#9a3b1f',
+      output: isDarkMode.value ? '#9eb48b' : '#3f5a3a',
+      cacheCreation: isDarkMode.value ? '#e0b36a' : '#9a6a1f',
+      cacheRead: isDarkMode.value ? '#8fb7c4' : '#315f71'
+    }
+  }
+
+  return {
+    text: isDarkMode.value ? '#e5e7eb' : '#374151',
+    grid: isDarkMode.value ? '#374151' : '#e5e7eb',
+    input: '#3b82f6',
+    output: '#10b981',
+    cacheCreation: '#f59e0b',
+    cacheRead: '#06b6d4'
+  }
+})
 
 const chartData = computed(() => {
   if (!props.trendData?.length) return null

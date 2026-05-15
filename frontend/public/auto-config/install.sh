@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SCRIPT_VERSION="0.1.0"
-DEFAULT_BASE_URL="https://your-domain.example"
+DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_TOOLS="all"
 DEFAULT_NODE_INDEX_PRIMARY="https://npmmirror.com/mirrors/node/index.tab"
 DEFAULT_NODE_INDEX_FALLBACK="https://nodejs.org/dist/index.tab"
@@ -13,7 +13,7 @@ DEFAULT_NPM_REGISTRY="https://registry.npmmirror.com"
 FALLBACK_NPM_REGISTRY="https://registry.npmjs.org"
 MIN_NODE_MAJOR=20
 
-DRAGON_HOME="${HOME}/.dragoncode"
+DRAGON_HOME="${HOME}/.laoshirenai"
 NODE_INSTALL_ROOT="${DRAGON_HOME}/node"
 NODE_CURRENT_DIR="${NODE_INSTALL_ROOT}/current"
 NPM_PREFIX="${DRAGON_HOME}/npm-global"
@@ -108,8 +108,8 @@ detect_profile_file() {
 
 # 将脚本需要的 PATH 导出块追加到 profile，保证新终端也能直接使用命令。
 ensure_profile_exports() {
-  local marker_begin="# >>> dragoncode auto config >>>"
-  local marker_end="# <<< dragoncode auto config <<<"
+  local marker_begin="# >>> laoshirenai auto config >>>"
+  local marker_end="# <<< laoshirenai auto config <<<"
 
   PROFILE_FILE="$(detect_profile_file)"
   touch "$PROFILE_FILE"
@@ -252,16 +252,16 @@ parse_args() {
         ;;
       --help|-h)
         cat <<'EOF'
-Dragon Code 一键安装与自动配置脚本
+老实人 AI 一键安装与自动配置脚本
 
 用法:
-  bash install.sh --api-key <Claude_API_Key> [--codex-api-key <Codex_API_Key>] [--tools all|claude|codex] [--base-url https://your-domain.example]
+  bash install.sh --api-key <Claude_API_Key> [--codex-api-key <Codex_API_Key>] [--tools all|claude|codex] [--base-url https://api.laoshirenai.com]
 
 参数:
   --api-key             Claude Code API Key
   --codex-api-key       Codex API Key
   --tools               需要配置的工具，默认 all
-  --base-url            API 基础地址，默认 https://your-domain.example
+  --base-url            API 基础地址，默认 https://api.laoshirenai.com
   --node-version        指定 Node.js 版本，例如 v24.11.0
   --skip-client-install 仅写配置，不安装 claude/codex 包
 EOF
@@ -618,7 +618,7 @@ verify_client_commands() {
 
 # 输出最终结果和下一步指引，帮助用户在新终端中直接使用命令。
 print_summary() {
-  log_info "Dragon Code 自动配置完成"
+  log_info "老实人 AI 自动配置完成"
   printf '\n'
   printf '  - API 地址: %s\n' "$BASE_URL"
   printf '  - 工具范围: %s\n' "$TOOLS"

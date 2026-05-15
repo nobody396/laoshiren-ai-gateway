@@ -29,10 +29,8 @@ async function bootstrap() {
   const appStore = useAppStore()
   appStore.initFromInjectedConfig()
 
-  // Set document title immediately after config is loaded
-  if (appStore.siteName && appStore.siteName !== 'Sub2API') {
-    document.title = `${appStore.siteName} - AI API Gateway`
-  }
+  // Set document title immediately after config is loaded.
+  document.title = resolveDocumentTitle('AI 编码中转', appStore.siteName, undefined, { siteNameFirst: true })
 
   await initI18n()
 
@@ -45,7 +43,9 @@ async function bootstrap() {
 
   registerLocaleChangeHandler(() => {
     const route = router.currentRoute.value
-    document.title = resolveDocumentTitle(route.meta.title, appStore.siteName, route.meta.titleKey as string)
+    document.title = resolveDocumentTitle(route.meta.title, appStore.siteName, route.meta.titleKey as string, {
+      siteNameFirst: route.meta.titleSiteNameFirst === true
+    })
   })
 
   app.mount('#app')

@@ -1,5 +1,5 @@
 const DEFAULT_TABLE_PAGE_SIZE = 20
-const TABLE_PAGE_SIZE_STORAGE_KEY = 'dragoncode.table.page_size'
+const TABLE_PAGE_SIZE_STORAGE_KEY = 'laoshirenai.table.page_size'
 
 export function getPersistedPageSize(fallback = DEFAULT_TABLE_PAGE_SIZE): number {
   if (typeof window === 'undefined') {

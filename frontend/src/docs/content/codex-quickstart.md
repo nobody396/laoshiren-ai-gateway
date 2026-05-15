@@ -1,4 +1,4 @@
-# Dragon Code × Codex 快速开始指南
+# 老实人 AI × Codex 快速开始指南
 
 ## 前置条件：安装 Node.js 环境
 
@@ -32,7 +32,7 @@ codex --version
 
 ## 2. 创建 API Key
 
-登录 [Dragon Code 控制台](https://your-domain.example/keys)，进入 **API 密钥** 页面，点击 **创建密钥**。
+登录 [老实人 AI 控制台](https://laoshirenai.com/keys)，进入 **API 密钥** 页面，点击 **创建密钥**。
 
 ![](https://assets.example.com/dragoncode/file-20260317102346193.png)
 ![](https://assets.example.com/dragoncode/file-20260317102505220.png)
@@ -76,15 +76,15 @@ rm -rf ~/.codex && mkdir -p ~/.codex
 在 `~/.codex/`（Windows 为 `%USERPROFILE%\.codex\`）目录下创建 `config.toml`：
 
 ```toml
-model_provider = "dragoncode"
+model_provider = "laoshirenai"
 model = "gpt-5.3-codex"
 model_reasoning_effort = "high"
 disable_response_storage = true
 preferred_auth_method = "apikey"
 
-[model_providers.dragoncode]
-name = "dragoncode"
-base_url = "https://your-domain.example"
+[model_providers.laoshirenai]
+name = "laoshirenai"
+base_url = "https://api.laoshirenai.com"
 wire_api = "responses"
 requires_openai_auth = true
 ```
@@ -126,7 +126,7 @@ A：macOS / Linux 在命令前加 `sudo`；Windows 使用管理员权限运行 P
 A：确认 npm 全局目录已加入系统 `PATH`，可运行 `npm bin -g` 查看路径并手动添加。
 
 **Q：连接失败或返回 401 错误？**
-A：检查 `config.toml` 中 `base_url` 是否为 `https://your-domain.example`，以及 `auth.json` 中的 API Key 是否正确且未过期。
+A：检查 `config.toml` 中 `base_url` 是否为 `https://api.laoshirenai.com`，以及 `auth.json` 中的 API Key 是否正确且未过期。
 
 **Q：如何切换不同模型或倍率？**
-A：在 [Dragon Code 控制台](https://your-domain.example/dashboard) 创建不同分组的密钥，更新 `auth.json` 中的 Key，或通过 CC Switch 在多个配置间快速切换。
+A：在 [老实人 AI 控制台](https://laoshirenai.com/dashboard) 创建不同分组的密钥，更新 `auth.json` 中的 Key，或通过 CC Switch 在多个配置间快速切换。

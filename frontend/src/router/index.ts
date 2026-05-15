@@ -35,7 +35,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/HomeView.vue'),
     meta: {
       requiresAuth: false,
-      title: 'Dragon - 企业级中转'
+      title: 'AI 编码中转',
+      titleSiteNameFirst: true
     }
   },
   {
@@ -704,13 +705,17 @@ router.beforeEach(async (to, _from, next) => {
     const menuItem = publicItems.find((item) => item.id === id)
       ?? (authStore.isAdmin ? adminSettingsStore.customMenuItems.find((item) => item.id === id) : undefined)
     if (menuItem?.label) {
-      const siteName = appStore.siteName || 'Sub2API'
+      const siteName = appStore.siteName || '老实人 AI'
       document.title = `${menuItem.label} - ${siteName}`
     } else {
-      document.title = resolveDocumentTitle(to.meta.title, appStore.siteName, to.meta.titleKey as string)
+      document.title = resolveDocumentTitle(to.meta.title, appStore.siteName, to.meta.titleKey as string, {
+        siteNameFirst: to.meta.titleSiteNameFirst === true
+      })
     }
   } else {
-    document.title = resolveDocumentTitle(to.meta.title, appStore.siteName, to.meta.titleKey as string)
+    document.title = resolveDocumentTitle(to.meta.title, appStore.siteName, to.meta.titleKey as string, {
+      siteNameFirst: to.meta.titleSiteNameFirst === true
+    })
   }
 
   // Check if route requires authentication

@@ -14,21 +14,16 @@
         :dashboard-path="dashboardPath"
       />
 
-      <!-- 中转体验 -->
-      <TransferExperience />
-
-      <!-- 为什么选择 DragonCode -->
+      <!-- 为什么选择老实人 AI -->
       <WhyChoose :feature-cards="featureCards" />
 
       <!-- Claude 组合 -->
       <ClaudeCombinations :models="models" />
 
-      <!-- IDE 协同 -->
-      <IDEIntegration />
-
       <!-- 模型定价 -->
       <ModelPricing
-        :rows="modelPricingRows"
+        :claude-rows="claudePricingRows"
+        :gpt-rows="gptPricingRows"
         :is-authenticated="isAuthenticated"
       />
 
@@ -52,18 +47,14 @@ import { useAuthStore, useAppStore } from '@/stores'
 // 子组件导入
 import HomeHeader from '@/components/home/HomeHeader.vue'
 import HeroSection from '@/components/home/HeroSection.vue'
-import TransferExperience from '@/components/home/TransferExperience.vue'
 import WhyChoose from '@/components/home/WhyChoose.vue'
 import ClaudeCombinations from '@/components/home/ClaudeCombinations.vue'
-import IDEIntegration from '@/components/home/IDEIntegration.vue'
 import ModelPricing from '@/components/home/ModelPricing.vue'
 import VIPTiers from '@/components/home/VIPTiers.vue'
 import HomeFooter from '@/components/home/HomeFooter.vue'
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
-
-const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
 
 // 认证相关状态
 const isAuthenticated = computed(() => authStore.isAuthenticated)
@@ -104,22 +95,19 @@ const models = [
     eyebrow: '架构规划',
     name: 'Claude',
     subtitle: '系统设计与复杂推理',
-    description: '擅长技术方案设计、代码审查与多步推理，适合把控项目全局方向。',
-    subModels: 'Opus 4.6 · Sonnet 4.6 · Haiku 4.5'
+    description: '擅长技术方案设计、代码审查与多步推理，适合把控项目全局方向。'
   },
   {
     eyebrow: '编码实现',
     name: 'ChatGPT',
     subtitle: '代码生成与功能开发',
-    description: '擅长代码生成、功能迭代与调试修复，日常编码的主力引擎。',
-    subModels: 'GPT-5.4 · GPT-5.3 Codex'
+    description: '擅长代码生成、功能迭代与调试修复，日常编码的主力引擎。'
   },
   {
     eyebrow: '多模态设计',
     name: 'Gemini',
     subtitle: '图像理解与视觉任务',
-    description: '擅长设计稿转代码、图像理解与多模态任务，前端设计的得力助手。',
-    subModels: '2.5 Pro · 2.0 Flash'
+    description: '擅长设计稿转代码、图像理解与多模态任务，前端设计的得力助手。'
   }
 ]
 
@@ -182,16 +170,87 @@ const _pricingPlans = [
   }
 ]
 
-// ── 模型定价表格数据 ──
-const modelPricingRows = [
-  { provider: 'Claude', name: 'Opus 4.7', badgeClass: 'is-claude', group: 'Claude Max', groupClass: 'is-enterprise', multiplier: '2', input: '¥10', output: '¥50', official: '¥35/¥175', discount: '2.8折', openclaw: false },
-  { provider: 'Claude', name: 'Sonnet 4.6', badgeClass: 'is-claude', group: 'Claude Max', groupClass: 'is-enterprise', multiplier: '2', input: '¥6', output: '¥30', official: '¥21/¥105', discount: '2.8折', openclaw: false },
-  { provider: 'Claude', name: 'Opus 4.7', badgeClass: 'is-claude', group: 'Kiro逆向', groupClass: 'is-claude-discount', multiplier: '0.65', input: '¥3.25', output: '¥16.25', official: '¥35/¥175', discount: '0.9折', openclaw: true },
-  { provider: 'Claude', name: 'Sonnet 4.6', badgeClass: 'is-claude', group: 'Kiro逆向', groupClass: 'is-claude-discount', multiplier: '0.65', input: '¥1.95', output: '¥9.75', official: '¥21/¥105', discount: '0.9折', openclaw: true },
-  { provider: 'Claude', name: 'Opus 4.6', badgeClass: 'is-claude', group: '反重力逆向', groupClass: 'is-antigravity', multiplier: '0.85', input: '¥4.25', output: '¥21.25', official: '¥35/¥175', discount: '1.2折', openclaw: true },
-  { provider: 'Claude', name: 'Sonnet 4.6', badgeClass: 'is-claude', group: '反重力逆向', groupClass: 'is-antigravity', multiplier: '0.85', input: '¥2.55', output: '¥12.75', official: '¥21/¥105', discount: '1.2折', openclaw: true },
-  { provider: 'GPT', name: '5.4', badgeClass: 'is-gpt', group: 'codex', groupClass: 'is-codex', multiplier: '0.5', input: '¥2.5', output: '¥12.75', official: '¥35/¥157.5', discount: '0.7折', openclaw: true },
-  { provider: 'GPT', name: '5.5', badgeClass: 'is-gpt', group: 'codex', groupClass: 'is-codex', multiplier: '0.5', input: '¥2.5', output: '¥15', official: '¥35/¥210', discount: '0.7折', openclaw: true }
+// ── 模型定价表格数据（单位：每 100 万 tokens） ──
+const claudePricingRows = [
+  {
+    model: 'Claude Opus 4.7',
+    official: {
+      input: '$5',
+      cacheWrite5m: '$6.25',
+      cacheRead: '$0.50',
+      output: '$25'
+    },
+    max: {
+      input: '¥20',
+      cacheWrite5m: '¥25',
+      cacheRead: '¥2',
+      output: '¥100'
+    },
+    discount: '5.7折'
+  },
+  {
+    model: 'Claude Sonnet 4.6',
+    official: {
+      input: '$3',
+      cacheWrite5m: '$3.75',
+      cacheRead: '$0.30',
+      output: '$15'
+    },
+    max: {
+      input: '¥12',
+      cacheWrite5m: '¥15',
+      cacheRead: '¥1.2',
+      output: '¥60'
+    },
+    discount: '5.7折'
+  }
+]
+
+const gptPricingRows = [
+  {
+    model: 'GPT-5.5',
+    official: {
+      input: '$5',
+      cachedInput: '$0.50',
+      output: '$30'
+    },
+    teamPlus: {
+      input: '¥5',
+      cachedInput: '¥0.5',
+      output: '¥30'
+    },
+    pro: {
+      input: '¥6',
+      cachedInput: '¥0.6',
+      output: '¥36'
+    },
+    discounts: {
+      teamPlus: '1.4折',
+      pro: '1.7折'
+    }
+  },
+  {
+    model: 'GPT-5.4',
+    official: {
+      input: '$2.50',
+      cachedInput: '$0.25',
+      output: '$15'
+    },
+    teamPlus: {
+      input: '¥2.5',
+      cachedInput: '¥0.25',
+      output: '¥15'
+    },
+    pro: {
+      input: '¥3',
+      cachedInput: '¥0.3',
+      output: '¥18'
+    },
+    discounts: {
+      teamPlus: '1.4折',
+      pro: '1.7折'
+    }
+  }
 ]
 
 // ── VIP 分组（暂未推出） ──
@@ -208,48 +267,15 @@ const footerSections = computed(() => [
   {
     title: '产品',
     links: [
-      { label: 'DragonCode 介绍', href: '#about', external: false },
+      { label: '老实人 AI 介绍', href: '#about', external: false },
       { label: '价格方案', href: '#model-pricing', external: false },
       { label: '登录', href: '/login', external: false }
     ]
   },
   {
-    title: '资源',
-    links: [
-      { label: '使用教程', href: docUrl.value || '#guide', external: !!docUrl.value },
-      { label: '品牌故事', href: '#brand-story', external: false }
-    ]
-  },
-  {
-    title: 'Claude 模型',
-    links: [
-      { label: 'Claude Opus 4.6', href: '#', external: false },
-      { label: 'Claude Sonnet 4.6', href: '#', external: false },
-      { label: 'Claude Haiku 4.5', href: '#', external: false }
-    ]
-  },
-  {
     title: '服务承诺',
     links: [
-      { label: '透明定价', href: '#model-pricing', external: false },
-      { label: '服务状态', href: 'https://status.your-domain.example', external: true },
-      { label: '隐私保护', href: '#about', external: false },
-      { label: '安全合规', href: '#about', external: false }
-    ]
-  },
-  {
-    title: '解决方案',
-    links: [
-      { label: 'AI 编程助手', href: '#guide', external: false },
-      { label: '代码生成', href: '#guide', external: false },
-      { label: '技术支持', href: '#guide', external: false }
-    ]
-  },
-  {
-    title: '关于',
-    links: [
-      { label: '关于我们', href: '#about', external: false },
-      { label: '联系我们', href: '#about', external: false }
+      { label: '服务状态', href: 'https://status.your-domain.example', external: true }
     ]
   }
 ])
@@ -288,14 +314,42 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap');
 
-/* 页面全局样式 - 蓝白色系 */
 .home-page {
+  --papyrus: #f8f3e7;
+  --papyrus-100: #efe6cf;
+  --marble: #faf6ec;
+  --parchment: #f2e9d2;
+  --terracotta: #9a3b1f;
+  --terracotta-dark: #7a2d17;
+  --laurel: #3f5a3a;
+  --laurel-dark: #26361f;
+  --ink: #1f1a12;
+  --ink-deep: #13100b;
+  --ink-fade: #8a7d63;
   min-height: 100vh;
-  background: #ffffff;
-  color: #1a1a2e;
-  font-family: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--papyrus);
+  color: var(--ink);
+  font-family: 'EB Garamond', 'Noto Serif SC', Georgia, serif;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.home-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.1 0 0 0 0 0.07 0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+.home-page :deep(a),
+.home-page :deep(button) {
+  -webkit-tap-highlight-color: transparent;
 }
 </style>
 

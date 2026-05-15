@@ -255,6 +255,7 @@ const { t } = useI18n()
 
 type DistributionMetric = 'tokens' | 'actual_cost'
 type ModelSource = 'requested' | 'upstream' | 'mapping'
+type ChartPalette = 'default' | 'greco'
 type RankingDisplayItem = UserSpendingRankingItem & { isOther?: boolean }
 const props = withDefaults(defineProps<{
   modelStats: ModelStat[]
@@ -275,6 +276,7 @@ const props = withDefaults(defineProps<{
   startDate?: string
   endDate?: string
   filters?: Record<string, any>
+  palette?: ChartPalette
 }>(), {
   upstreamModelStats: () => [],
   mappingModelStats: () => [],
@@ -289,7 +291,8 @@ const props = withDefaults(defineProps<{
   showSourceToggle: false,
   showMetricToggle: false,
   rankingLoading: false,
-  rankingError: false
+  rankingError: false,
+  palette: 'default'
 })
 
 const expandedKey = ref<string | null>(null)
@@ -330,7 +333,7 @@ const emit = defineEmits<{
 const enableRankingView = computed(() => props.enableRankingView)
 const activeView = ref<'model_distribution' | 'spending_ranking'>('model_distribution')
 
-const chartColors = [
+const defaultChartColors = [
   '#3b82f6',
   '#10b981',
   '#f59e0b',
@@ -344,6 +347,25 @@ const chartColors = [
   '#06b6d4',
   '#a855f7'
 ]
+
+const grecoChartColors = [
+  '#9a3b1f',
+  '#3f5a3a',
+  '#9a6a1f',
+  '#315f71',
+  '#7a4f2b',
+  '#6f4f87',
+  '#8a7d63',
+  '#5e2210',
+  '#b77a28',
+  '#26361f',
+  '#6f8b80',
+  '#a85f42'
+]
+
+const chartColors = computed(() =>
+  props.palette === 'greco' ? grecoChartColors : defaultChartColors
+)
 
 const displayModelStats = computed(() => {
   const sourceStats = props.source === 'upstream'
@@ -365,7 +387,7 @@ const chartData = computed(() => {
     datasets: [
       {
         data: displayModelStats.value.map((m) => props.metric === 'actual_cost' ? m.actual_cost : m.total_tokens),
-        backgroundColor: chartColors.slice(0, displayModelStats.value.length),
+        backgroundColor: chartColors.value.slice(0, displayModelStats.value.length),
         borderWidth: 0
       }
     ]
@@ -377,7 +399,7 @@ const rankingChartData = computed(() => {
 
   const labels = props.rankingItems.map((item, index) => `#${index + 1} ${getRankingUserLabel(item)}`)
   const data = props.rankingItems.map((item) => item.actual_cost)
-  const backgroundColor = chartColors.slice(0, props.rankingItems.length)
+  const backgroundColor = chartColors.value.slice(0, props.rankingItems.length)
 
   if (otherRankingItem.value) {
     labels.push(t('admin.dashboard.spendingRankingOther'))
@@ -495,7 +517,10 @@ const getRankingRowLabel = (item: RankingDisplayItem): string => {
   return getRankingUserLabel(item)
 }
 
-const formatCost = (value: number): string => {
+const formatCost = (value: number | null | undefined): string => {
+  if (value === undefined || value === null || Number.isNaN(value)) {
+    return '0.0000'
+  }
   if (value >= 1000) {
     return (value / 1000).toFixed(2) + 'K'
   } else if (value >= 1) {

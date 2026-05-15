@@ -2640,7 +2640,7 @@ const form = reactive<SettingsForm>({
   default_balance: 0,
   default_concurrency: 1,
   default_subscriptions: [],
-  site_name: 'Sub2API',
+  site_name: '老实人 AI',
   site_logo: '',
   site_subtitle: 'Subscription to API Conversion Platform',
   api_base_url: '',

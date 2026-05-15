@@ -121,6 +121,7 @@ ChartJS.register(ArcElement, Tooltip, Legend)
 const { t } = useI18n()
 
 type DistributionMetric = 'tokens' | 'actual_cost'
+type ChartPalette = 'default' | 'greco'
 
 const props = withDefaults(defineProps<{
   groupStats: GroupStat[]
@@ -130,10 +131,12 @@ const props = withDefaults(defineProps<{
   startDate?: string
   endDate?: string
   filters?: Record<string, any>
+  palette?: ChartPalette
 }>(), {
   loading: false,
   metric: 'tokens',
   showMetricToggle: false,
+  palette: 'default',
 })
 
 const emit = defineEmits<{
@@ -168,7 +171,7 @@ const toggleBreakdown = async (type: string, id: number | string) => {
   }
 }
 
-const chartColors = [
+const defaultChartColors = [
   '#3b82f6',
   '#10b981',
   '#f59e0b',
@@ -180,6 +183,23 @@ const chartColors = [
   '#6366f1',
   '#84cc16'
 ]
+
+const grecoChartColors = [
+  '#9a3b1f',
+  '#3f5a3a',
+  '#9a6a1f',
+  '#315f71',
+  '#7a4f2b',
+  '#6f4f87',
+  '#8a7d63',
+  '#5e2210',
+  '#b77a28',
+  '#26361f'
+]
+
+const chartColors = computed(() =>
+  props.palette === 'greco' ? grecoChartColors : defaultChartColors
+)
 
 const displayGroupStats = computed(() => {
   if (!props.groupStats?.length) return []
@@ -196,7 +216,7 @@ const chartData = computed(() => {
     datasets: [
       {
         data: displayGroupStats.value.map((g) => props.metric === 'actual_cost' ? g.actual_cost : g.total_tokens),
-        backgroundColor: chartColors.slice(0, displayGroupStats.value.length),
+        backgroundColor: chartColors.value.slice(0, displayGroupStats.value.length),
         borderWidth: 0
       }
     ]
@@ -241,7 +261,10 @@ const formatNumber = (value: number): string => {
   return value.toLocaleString()
 }
 
-const formatCost = (value: number): string => {
+const formatCost = (value: number | null | undefined): string => {
+  if (value === undefined || value === null || Number.isNaN(value)) {
+    return '0.0000'
+  }
   if (value >= 1000) {
     return (value / 1000).toFixed(2) + 'K'
   } else if (value >= 1) {

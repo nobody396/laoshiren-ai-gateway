@@ -13,6 +13,26 @@ import {
 } from '@/api/admin/system'
 import { getPublicSettings as fetchPublicSettingsAPI } from '@/api/auth'
 
+const DEFAULT_SITE_NAME = '老实人 AI'
+const DEFAULT_SITE_LOGO = '/laoshirenai-icon.jpg'
+const LEGACY_SITE_NAMES = new Set(['Sub2API', 'Dragon', 'DragonCode', 'Dragon Code'])
+
+function normalizeSiteName(name?: string): string {
+  const trimmed = name?.trim()
+  if (!trimmed || LEGACY_SITE_NAMES.has(trimmed)) {
+    return DEFAULT_SITE_NAME
+  }
+  return trimmed
+}
+
+function normalizeSiteLogo(logo?: string): string {
+  const trimmed = logo?.trim()
+  if (!trimmed || trimmed === '/logo.png') {
+    return DEFAULT_SITE_LOGO
+  }
+  return trimmed
+}
+
 export const useAppStore = defineStore('app', () => {
   // ==================== State ====================
 
@@ -24,8 +44,8 @@ export const useAppStore = defineStore('app', () => {
   // Public settings cache state
   const publicSettingsLoaded = ref<boolean>(false)
   const publicSettingsLoading = ref<boolean>(false)
-  const siteName = ref<string>('Sub2API')
-  const siteLogo = ref<string>('')
+  const siteName = ref<string>(DEFAULT_SITE_NAME)
+  const siteLogo = ref<string>(DEFAULT_SITE_LOGO)
   const siteVersion = ref<string>('')
   const contactInfo = ref<string>('')
   // 技术客服二维码图片 URL（负责安装及环境配置问题）
@@ -289,8 +309,8 @@ export const useAppStore = defineStore('app', () => {
    */
   function applySettings(config: PublicSettings): void {
     cachedPublicSettings.value = config
-    siteName.value = config.site_name || 'Sub2API'
-    siteLogo.value = config.site_logo || ''
+    siteName.value = normalizeSiteName(config.site_name)
+    siteLogo.value = normalizeSiteLogo(config.site_logo)
     siteVersion.value = config.version || ''
     contactInfo.value = config.contact_info || ''
     techSupportQRCode.value = config.tech_support_qrcode || ''

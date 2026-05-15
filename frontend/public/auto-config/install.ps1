@@ -2,7 +2,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $ScriptVersion = '0.1.0'
-$DefaultBaseUrl = 'https://your-domain.example'
+$DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultTools = 'all'
 $DefaultNodeIndexPrimary = 'https://npmmirror.com/mirrors/node/index.json'
 $DefaultNodeIndexFallback = 'https://nodejs.org/dist/index.json'
@@ -12,7 +12,7 @@ $DefaultNpmRegistry = 'https://registry.npmmirror.com'
 $FallbackNpmRegistry = 'https://registry.npmjs.org'
 $MinNodeMajor = 20
 
-$DragonHome = Join-Path $HOME '.dragoncode'
+$DragonHome = Join-Path $HOME '.laoshirenai'
 $NodeInstallRoot = Join-Path $DragonHome 'node'
 $NodeCurrentDir = Join-Path $NodeInstallRoot 'current'
 $NpmPrefix = Join-Path $DragonHome 'npm-global'
@@ -117,23 +117,23 @@ function Parse-Arguments {
       }
       '--help' {
         @'
-Dragon Code 一键安装与自动配置脚本
+老实人 AI 一键安装与自动配置脚本
 
 用法:
   # 方式一：直接执行脚本文件，支持命令行参数
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --tools all
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:DRAGON_CLAUDE_API_KEY='<Key>'; $env:DRAGON_CODEX_API_KEY='<Key>'; irm https://your-domain.example/auto-config/install.ps1 | iex
+  $env:DRAGON_CLAUDE_API_KEY='<Key>'; $env:DRAGON_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://your-domain.example/auto-config/install.ps1 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1 | iex
 
 参数:
   --api-key              Claude Code API Key
   --codex-api-key        Codex API Key
   --tools                需要配置的工具，默认 all
-  --base-url             API 基础地址，默认 https://your-domain.example
+  --base-url             API 基础地址，默认 https://api.laoshirenai.com
   --node-version         指定 Node.js 版本，例如 v24.11.0
   --skip-client-install  仅写配置，不安装 claude/codex 包
 '@ | Write-Host
@@ -683,7 +683,7 @@ function Verify-ClientCommands {
 
 # 输出最终结果和下一步指引，帮助用户立即开始使用。
 function Print-Summary {
-  Write-Info 'Dragon Code 自动配置完成'
+  Write-Info '老实人 AI 自动配置完成'
   Write-Host ''
   Write-Host "  - API 地址: $BaseUrl"
   Write-Host "  - 工具范围: $Tools"

@@ -1,4 +1,4 @@
-# Dragon Code × Claude Code VS Code 图形化操作教程
+# 老实人 AI × Claude Code VS Code 图形化操作教程
 
 
 ## 前置条件
@@ -33,7 +33,7 @@ Mac 用户注意选择正确的芯片架构：
 
 ## 3. 创建 API Key
 
-登录 [Dragon Code 控制台](https://your-domain.example/keys)，进入 **API 密钥** 页面，点击 **创建密钥**。
+登录 [老实人 AI 控制台](https://laoshirenai.com/keys)，进入 **API 密钥** 页面，点击 **创建密钥**。
 
 ![](https://assets.example.com/dragoncode/file-20260317102346193.png)
 ![](https://assets.example.com/dragoncode/file-20260317102505220.png)
@@ -67,20 +67,20 @@ Mac 用户注意选择正确的芯片架构：
 
 | 变量名 | 值 |
 |---|---|
-| `ANTHROPIC_BASE_URL` | `https://your-domain.example` |
+| `ANTHROPIC_BASE_URL` | `https://api.laoshirenai.com` |
 | `ANTHROPIC_AUTH_TOKEN` | 您的 API Key |
 
 **临时设置（当前终端会话有效）**
 
 Windows (PowerShell)：
 ```powershell
-$env:ANTHROPIC_BASE_URL = "https://your-domain.example"
+$env:ANTHROPIC_BASE_URL = "https://api.laoshirenai.com"
 $env:ANTHROPIC_AUTH_TOKEN = "YOUR_API_KEY"
 ```
 
 macOS / Linux：
 ```bash
-export ANTHROPIC_BASE_URL="https://your-domain.example"
+export ANTHROPIC_BASE_URL="https://api.laoshirenai.com"
 export ANTHROPIC_AUTH_TOKEN="YOUR_API_KEY"
 ```
 
@@ -88,20 +88,20 @@ export ANTHROPIC_AUTH_TOKEN="YOUR_API_KEY"
 
 Windows (PowerShell)：
 ```powershell
-[System.Environment]::SetEnvironmentVariable("ANTHROPIC_BASE_URL", "https://your-domain.example", [System.EnvironmentVariableTarget]::User)
+[System.Environment]::SetEnvironmentVariable("ANTHROPIC_BASE_URL", "https://api.laoshirenai.com", [System.EnvironmentVariableTarget]::User)
 [System.Environment]::SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", "YOUR_API_KEY", [System.EnvironmentVariableTarget]::User)
 ```
 
 macOS (Zsh)：
 ```bash
-echo 'export ANTHROPIC_BASE_URL="https://your-domain.example"' >> ~/.zshrc
+echo 'export ANTHROPIC_BASE_URL="https://api.laoshirenai.com"' >> ~/.zshrc
 echo 'export ANTHROPIC_AUTH_TOKEN="YOUR_API_KEY"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
 Linux (Bash)：
 ```bash
-echo 'export ANTHROPIC_BASE_URL="https://your-domain.example"' >> ~/.bashrc
+echo 'export ANTHROPIC_BASE_URL="https://api.laoshirenai.com"' >> ~/.bashrc
 echo 'export ANTHROPIC_AUTH_TOKEN="YOUR_API_KEY"' >> ~/.bashrc
 source ~/.bashrc
 ```
@@ -112,7 +112,7 @@ source ~/.bashrc
 
 首次打开插件可能出现 Anthropic 官方登录页面，显示三种登录方式。
 
-**不要选择任何一种**——等待 3-5 秒页面会自动消失。如果已按上一步配置好环境变量，插件会自动使用 Dragon Code 的 API Key，无需登录。
+**不要选择任何一种**——等待 3-5 秒页面会自动消失。如果已按上一步配置好环境变量，插件会自动使用 老实人 AI 的 API Key，无需登录。
 
 ![](https://assets.example.com/dragoncode/file-20260401164915737.png)
 
@@ -192,10 +192,10 @@ A：确认插件已安装成功，尝试重启 VS Code。图标位于编辑器�
 A：在对话框输入 `/config`，勾选 `Disable Login Prompt` 关闭登录提示。
 
 **Q：插件提示连接失败或 401 错误？**
-A：检查 `ANTHROPIC_BASE_URL` 是否为 `https://your-domain.example`，以及 `ANTHROPIC_AUTH_TOKEN` 是否填写正确且未过期。
+A：检查 `ANTHROPIC_BASE_URL` 是否为 `https://api.laoshirenai.com`，以及 `ANTHROPIC_AUTH_TOKEN` 是否填写正确且未过期。
 
 **Q：如何切换不同模型或倍率？**
-A：在 [Dragon Code 控制台](https://your-domain.example/dashboard) 创建不同分组的密钥，通过 CC Switch 在多个配置间快速切换。
+A：在 [老实人 AI 控制台](https://laoshirenai.com/dashboard) 创建不同分组的密钥，通过 CC Switch 在多个配置间快速切换。
 
 **Q：VS Code 应该选哪个版本？**
 A：Mac 用户根据芯片选择：M 系列芯片选 ARM64，Intel 芯片选 x64。Windows 用户直接下载默认版本即可。

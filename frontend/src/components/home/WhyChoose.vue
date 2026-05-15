@@ -1,94 +1,48 @@
 <template>
-  <!-- 为什么选择区块 - 3列网格布局还原设计稿 -->
   <section class="why-choose">
     <div class="why-choose__container mirror-reveal">
-      <div class="why-choose__grid">
-        <!-- 第一行：卡片01 + 卡片02 + 渐变装饰图 -->
-        <div class="why-choose__card">
-          <div class="why-choose__number">01</div>
-          <div class="why-choose__content">
-            <h3 class="why-choose__title">{{ featureCards[0].title }}</h3>
-            <p class="why-choose__desc">{{ featureCards[0].description }}</p>
-          </div>
-        </div>
+      <p class="section-eyebrow">I · 四美德</p>
+      <h2 class="section-title">Quattuor Virtutes</h2>
+      <p class="section-lede">古希腊智者推崇四主德：审慎、节制、勇毅、正义。我们的工程亦如是。</p>
 
-        <div class="why-choose__card">
-          <div class="why-choose__number">02</div>
-          <div class="why-choose__content">
-            <h3 class="why-choose__title">{{ featureCards[1].title }}</h3>
-            <p class="why-choose__desc">{{ featureCards[1].description }}</p>
-          </div>
-        </div>
-
-        <!-- 渐变流体装饰卡片 -->
-        <div class="why-choose__card why-choose__card--art">
-          <img src="/bg2.png" alt="" class="why-choose__art-img" />
-        </div>
-
-        <!-- 第二行：Logo装饰 + 卡片03 + 卡片04 -->
-        <div class="why-choose__card why-choose__card--logo">
-          <div class="why-choose__logo">
-            <img src="/logo.png" alt="DragonCode" />
-            <span>DragonCode</span>
-          </div>
-        </div>
-
-        <div class="why-choose__card">
-          <div class="why-choose__number">03</div>
-          <div class="why-choose__content">
-            <h3 class="why-choose__title">{{ featureCards[2].title }}</h3>
-            <p class="why-choose__desc">{{ featureCards[2].description }}</p>
-          </div>
-        </div>
-
-        <div class="why-choose__card">
-          <div class="why-choose__number">04</div>
-          <div class="why-choose__content">
-            <h3 class="why-choose__title">{{ featureCards[3].title }}</h3>
-            <p class="why-choose__desc">{{ featureCards[3].description }}</p>
-          </div>
-        </div>
+      <div class="virtue-grid">
+        <article
+          v-for="(card, index) in featureCards"
+          :key="card.title"
+          class="virtue-card"
+        >
+          <div class="virtue-card__icon" v-html="icons[index]"></div>
+          <p class="virtue-card__number">0{{ index + 1 }}</p>
+          <h3>{{ virtueNames[index] }} · {{ card.title }}</h3>
+          <p>{{ card.description }}</p>
+        </article>
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
-
 /**
- * 为什么选择区块 - 3列网格还原设计稿
- * 第一行：01 + 02 + 渐变装饰
- * 第二行：Logo装饰 + 03 + 04
+ * 为什么选择区块
  */
 defineProps<{
   featureCards: Array<{ title: string; description: string }>
 }>()
 
-const handleMouseMove = (e: MouseEvent) => {
-  const cards = document.querySelectorAll('.why-choose__card') as NodeListOf<HTMLElement>
-  cards.forEach(card => {
-    const rect = card.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    card.style.setProperty('--mouse-x', `${x}px`)
-    card.style.setProperty('--mouse-y', `${y}px`)
-  })
-}
+const virtueNames = ['Prudentia', 'Temperantia', 'Fortitudo', 'Iustitia']
 
-onMounted(() => {
-  window.addEventListener('mousemove', handleMouseMove, { passive: true })
-})
-
-onUnmounted(() => {
-  window.removeEventListener('mousemove', handleMouseMove)
-})
+const icons = [
+  '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><ellipse cx="24" cy="28" rx="14" ry="6"/><path d="M24 22 V14 M21 18 q3 -3 6 0 q-3 3 -6 0"/><path d="M24 12 Q22 9 24 7 Q26 9 24 12"/></svg>',
+  '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><rect x="10" y="14" width="28" height="22" rx="1"/><path d="M14 20 H34 M14 26 H30 M14 32 H26"/><circle cx="36" cy="14" r="6"/><path d="M34 14 L36 16 L40 12"/></svg>',
+  '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="M24 8 L34 14 V26 Q34 36 24 42 Q14 36 14 26 V14 Z"/><path d="M20 24 L23 27 L29 21"/></svg>',
+  '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="M24 8 V40"/><path d="M14 14 H34"/><path d="M10 14 Q14 26 18 14 Q14 18 10 14"/><path d="M30 14 Q34 26 38 14 Q34 18 30 14"/></svg>',
+]
 </script>
 
 <style scoped>
 .why-choose {
-  padding: 0 0 8rem;
-  background-color: #f8f9fa;
+  padding: 5rem 0 6rem;
+  background: #f8f3e7;
 }
 
 .why-choose__container {
@@ -96,147 +50,106 @@ onUnmounted(() => {
   margin: 0 auto;
 }
 
-/* 3列网格 */
-.why-choose__grid {
+.section-eyebrow {
+  margin: 0 0 0.875rem;
+  color: #8a7d63;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.section-title {
+  margin: 0;
+  color: #13100b;
+  font-family: 'Cinzel', 'Noto Serif SC', serif;
+  font-size: clamp(2.2rem, 4vw, 3rem);
+  font-weight: 500;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.section-lede {
+  max-width: 100%;
+  margin: 1.125rem auto 3.75rem;
+  color: #1f1a12;
+  font-size: 1.18rem;
+  font-style: italic;
+  line-height: 1.65;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.virtue-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.5rem;
 }
 
-/* 通用卡片样式 */
-.why-choose__card {
-  position: relative;
-  background: #eef0f3;
-  border-radius: 1.5rem;
-  padding: 2.5rem;
-  min-height: 240px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+.virtue-card {
+  min-height: 18rem;
+  padding: 2.25rem 1.65rem;
+  background: #efe6cf;
+  border: 1px solid rgba(63, 90, 58, 0.16);
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
 }
 
-.why-choose__card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+.virtue-card:hover {
+  background: #faf6ec;
+  border-color: rgba(63, 90, 58, 0.34);
+  transform: translateY(-2px);
 }
 
-.why-choose__card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(
-    600px circle at var(--mouse-x, -500px) var(--mouse-y, -500px),
-    rgba(255, 255, 255, 0.6),
-    transparent 40%
-  );
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.4s ease;
+.virtue-card__icon {
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1.35rem;
+  color: #9a3b1f;
 }
 
-.why-choose__card:hover::before {
-  opacity: 1;
-}
-
-.why-choose__card > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* 蓝色大数字 */
-.why-choose__number {
-  font-size: 3rem;
-  font-weight: 800;
-  color: #4f8cff;
-  line-height: 1;
-  margin-bottom: 1.5rem;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s ease;
-}
-
-.why-choose__card:hover .why-choose__number {
-  transform: scale(1.05);
-  color: #3b76eb;
-}
-
-.why-choose__content {
-  position: relative;
-  z-index: 2;
-}
-
-.why-choose__title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1a1a2e;
-  margin-bottom: 0.75rem;
-}
-
-.why-choose__desc {
-  font-size: 0.9375rem;
-  line-height: 1.7;
-  color: rgba(26, 26, 46, 0.55);
-}
-
-/* 渐变装饰卡片 - 右上角 */
-.why-choose__card--art {
-  padding: 0;
-  background: #eef0f3;
-}
-
-.why-choose__art-img {
+.virtue-card__icon :deep(svg) {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  border-radius: 1.5rem;
-  animation: driftPan 20s ease-in-out infinite;
 }
 
-@keyframes driftPan {
-  0% { transform: scale(1) translate(0, 0); }
-  50% { transform: scale(1.1) translate(-2%, -2%); }
-  100% { transform: scale(1) translate(0, 0); }
+.virtue-card__number {
+  margin: 0 0 0.5rem;
+  color: #8a7d63;
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
 }
 
-/* Logo 装饰卡片 - 左下角 */
-.why-choose__card--logo {
-  justify-content: flex-end;
-  align-items: flex-start;
+.virtue-card h3 {
+  margin: 0 0 0.875rem;
+  color: #13100b;
+  font-family: 'Cinzel', 'Noto Serif SC', serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 1.35;
 }
 
-.why-choose__logo {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-}
-
-.why-choose__logo img {
-  width: 1.75rem;
-  height: 1.75rem;
-}
-
-.why-choose__logo span {
+.virtue-card p:last-child {
+  margin: 0;
+  color: #1f1a12;
   font-size: 1rem;
-  font-weight: 600;
-  color: #1a1a2e;
+  line-height: 1.65;
 }
 
-/* 响应式 */
-@media (max-width: 968px) {
-  .why-choose__grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .why-choose__card--art,
-  .why-choose__card--logo {
-    display: none;
+@media (max-width: 1024px) {
+  .virtue-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 640px) {
-  .why-choose__grid {
+  .why-choose__container {
+    width: min(100% - 2rem, 1200px);
+  }
+
+  .virtue-grid {
     grid-template-columns: 1fr;
   }
 }

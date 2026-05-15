@@ -1,39 +1,39 @@
 <template>
-  <!-- Hero 主视觉区域 -->
   <section class="hero-section">
-    <!-- 背景底图层：放大后缓慢漂移，产生流动感 -->
-    <div class="hero-section__bg"></div>
-
     <div class="hero-section__container">
       <div class="hero-section__content">
-        <!-- 标题行 - 错落入场 -->
+        <div class="hero-section__eyebrow mirror-reveal">Founded on Craft · MMXXVI</div>
         <h1 class="hero-section__title">
-          <span class="hero-section__kicker mirror-reveal">开发者首选</span>
-          <span class="hero-section__main mirror-reveal" style="transition-delay: 0.1s">AI 编码工作台</span>
+          <span class="mirror-reveal" style="transition-delay: 0.08s">Code with</span>
+          <em class="mirror-reveal" style="transition-delay: 0.16s">clarity.</em>
         </h1>
-
-        <!-- 描述 -->
         <p class="hero-section__desc mirror-reveal" style="transition-delay: 0.2s">
-          一个账号、一条线路，统一调用 Claude Code、Codex 和 Gemini CLI。<br />
-          更低价格、更稳链路、更透明计费。
+          <span>让每一行代码都经得起审视。</span>
+          <span>像柏拉图与门徒在柱廊下对谈一样，</span>
+          <span>与 Claude、ChatGPT、Gemini 一起思考。</span>
         </p>
 
-        <!-- CTA 按钮组 -->
         <div class="hero-section__actions mirror-reveal" style="transition-delay: 0.32s">
           <a
             :href="isAuthenticated ? dashboardPath : '/login'"
             class="hero-section__btn hero-section__btn--primary"
           >
-            {{ isAuthenticated ? '进入控制台' : '立即体验' }}
+            {{ isAuthenticated ? '进入控制台' : 'Begin · 开始对谈' }}
           </a>
           <a
             href="#model-pricing"
             class="hero-section__btn hero-section__btn--outline"
           >
-            查看定价
+            Read the Pretium
           </a>
         </div>
       </div>
+
+      <aside class="hero-section__quote mirror-reveal" style="transition-delay: 0.26s">
+        <p class="hero-section__quote-text">"The unexamined code is not worth shipping."</p>
+        <p class="hero-section__quote-author">After Socrates, Apology 38a</p>
+        <p class="hero-section__quote-greek">ὁ δὲ ἀνεξέταστος βίος οὐ βιωτὸς ἀνθρώπῳ</p>
+      </aside>
     </div>
   </section>
 </template>
@@ -41,8 +41,6 @@
 <script setup lang="ts">
 /**
  * Hero 主视觉区域组件
- * - 居中排版
- * - bg.png 底图 + 缓慢漂移微动画
  */
 defineProps<{
   isAuthenticated: boolean
@@ -51,195 +49,241 @@ defineProps<{
 </script>
 
 <style scoped>
-/* Hero 区域 - 全屏居中布局 */
 .hero-section {
   position: relative;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-top: 80px;
+  min-height: 720px;
+  padding: 11rem 0 5rem;
   overflow: hidden;
-  background: #fff;
-}
-
-/* 背景底图 — 放大 130% 留出漂移空间，沿对角线缓慢游动 */
-.hero-section__bg {
-  position: absolute;
-  top: -15%;
-  left: -15%;
-  width: 130%;
-  height: 130%;
-  background-image: url('/bg.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  z-index: 0;
-  animation: bgDrift 10s ease-in-out infinite alternate;
-  will-change: transform;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(242, 233, 210, 0.9) 0%, rgba(242, 233, 210, 0) 62%),
+    linear-gradient(180deg, #f8f3e7 0%, #faf6ec 100%);
 }
 
 .hero-section__container {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: min(100% - 4rem, 1200px);
   margin: 0 auto;
-  text-align: center;
+  display: grid;
+  grid-template-columns: 1.12fr 0.88fr;
+  gap: 5rem;
+  align-items: center;
+  min-width: 0;
 }
 
 .hero-section__content {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  max-width: 900px;
-  margin: 0 auto;
+  align-items: flex-start;
+  min-width: 0;
+  width: 100%;
 }
 
-/* 主标题样式 */
+.hero-section__eyebrow {
+  margin-bottom: 1.5rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a7d63;
+}
+
 .hero-section__title {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-  line-height: 1.2;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.22em;
+  max-width: 760px;
+  margin: 0 0 1.75rem;
+  color: #13100b;
+  font-family: 'Cinzel', 'Noto Serif SC', serif;
+  font-size: clamp(4rem, 7vw, 5.9rem);
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: 0;
 }
 
-/* "开发者首选"胶囊标签 */
-.hero-section__kicker {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 1.75rem;
-  border: 1px solid #1a1a2e;
-  border-radius: 999px;
-  font-size: 2.25rem;
+.hero-section__title em {
+  color: #9a3b1f;
+  font-family: 'EB Garamond', 'Noto Serif SC', serif;
+  font-style: italic;
   font-weight: 500;
-  color: #1a1a2e;
-  letter-spacing: -0.02em;
 }
 
-/* "AI 编码工作台" */
-.hero-section__main {
-  font-size: 4.5rem;
-  font-weight: 700;
-  color: #1a1a2e;
-  letter-spacing: -0.01em;
-  background: linear-gradient(
-    to right,
-    #1a1a2e,
-    #1a1a2e 45%,
-    #4f8cff 50%,
-    #1a1a2e 55%,
-    #1a1a2e
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: textShimmer 6s linear infinite;
-}
-
-@keyframes textShimmer {
-  to { background-position: 200% center; }
-}
-
-/* 描述文字 */
 .hero-section__desc {
-  font-size: 1.125rem;
-  line-height: 1.8;
-  color: rgba(26, 26, 46, 0.6);
-  margin-bottom: 3.5rem;
+  max-width: 44rem;
+  margin: 0 0 2.5rem;
+  color: #1f1a12;
+  font-family: 'EB Garamond', 'Noto Serif SC', serif;
+  font-size: 1.45rem;
+  font-style: italic;
+  line-height: 1.55;
 }
 
-/* 按钮组 */
+.hero-section__desc span {
+  display: inline;
+}
+
 .hero-section__actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 1.25rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-/* 通用按钮基础 */
 .hero-section__btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 3.5rem;
-  padding: 0 2.5rem;
-  border-radius: 999px;
-  font-size: 1rem;
-  font-weight: 600;
+  min-height: 3.25rem;
+  padding: 0.95rem 1.9rem;
+  border-radius: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  text-transform: uppercase;
   text-decoration: none;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
   cursor: pointer;
 }
 
-/* 主要按钮 - 黑色填充 */
 .hero-section__btn--primary {
-  background: #000;
-  color: #fff;
+  background: #9a3b1f;
+  color: #faf6ec;
+  border: 1.5px solid #9a3b1f;
 }
 
 .hero-section__btn--primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  background: #7a2d17;
+  transform: translateY(-1px);
 }
 
-/* 次要按钮 - 描边样式 */
 .hero-section__btn--outline {
   background: transparent;
-  color: #1a1a2e;
-  border: 1px solid rgba(26, 26, 46, 0.3);
+  color: #1f1a12;
+  border: 1.5px solid #1f1a12;
 }
 
 .hero-section__btn--outline:hover {
-  border-color: #1a1a2e;
-  background: rgba(0, 0, 0, 0.02);
-  transform: translateY(-2px);
+  background: #1f1a12;
+  color: #f8f3e7;
+  transform: translateY(-1px);
 }
 
-/* 响应式适配 */
+.hero-section__quote {
+  border-left: 2px solid #3f5a3a;
+  padding: 1.65rem 1.9rem;
+  background: rgba(239, 230, 207, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+
+.hero-section__quote-text {
+  margin: 0 0 0.9rem;
+  color: #1f1a12;
+  font-family: 'EB Garamond', 'Noto Serif SC', serif;
+  font-size: 1.45rem;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.hero-section__quote-author {
+  margin: 0;
+  color: #8a7d63;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero-section__quote-greek {
+  margin: 1.25rem 0 0;
+  color: #3f5a3a;
+  font-family: 'EB Garamond', serif;
+  font-size: 1rem;
+  font-style: italic;
+  text-align: right;
+}
+
 @media (max-width: 1024px) {
-  .hero-section__main {
-    font-size: 3.5rem;
+  .hero-section {
+    min-height: auto;
+    padding-top: 8.5rem;
   }
-  .hero-section__kicker {
-    font-size: 1.75rem;
-    padding: 0.4rem 1.25rem;
+
+  .hero-section__container {
+    grid-template-columns: 1fr;
+    gap: 3rem;
   }
 }
 
 @media (max-width: 768px) {
+  .hero-section {
+    padding: 7.5rem 0 4rem;
+  }
+
+  .hero-section__container {
+    width: min(100% - 2rem, 1200px);
+  }
+
   .hero-section__title {
-    flex-direction: column;
-    gap: 1rem;
+    display: block;
+    max-width: 100%;
+    font-size: clamp(2.4rem, 12vw, 3rem);
+    overflow-wrap: anywhere;
   }
-  .hero-section__main {
-    font-size: 2.5rem;
+
+  .hero-section__title span,
+  .hero-section__title em {
+    display: block;
+    max-width: 100%;
   }
-  .hero-section__desc br {
-    display: none;
+
+  .hero-section__desc {
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-all;
+    line-break: anywhere;
+  }
+
+  .hero-section__desc span {
+    display: block;
+  }
+
+  .hero-section__desc,
+  .hero-section__quote-text {
+    font-size: 1.2rem;
+    overflow-wrap: anywhere;
+  }
+
+  .hero-section__actions,
+  .hero-section__btn {
+    width: 100%;
+  }
+
+  .hero-section__btn {
+    padding-inline: 1rem;
+    letter-spacing: 0.08em;
+  }
+
+  .hero-section__quote {
+    max-width: 100%;
+    padding-inline: 1.2rem;
+  }
+
+  .hero-section__quote-greek {
+    overflow-wrap: anywhere;
+    text-align: left;
   }
 }
 
-/* 无障碍：减弱动画偏好 */
 @media (prefers-reduced-motion: reduce) {
-  .hero-section__bg {
-    animation: none !important;
-  }
-}
-</style>
-
-<!-- 非 scoped：keyframes 避免 Vue scoped hash 问题 -->
-<style>
-/* 背景漂移：沿对角线平移 + 缩放，四段路径形成环形游动 */
-@keyframes bgDrift {
-  0% {
-    transform: translate(0, 0) scale(1);
-  }
-  100% {
-    transform: translate(8%, 5%) scale(1.07);
+  .hero-section__btn {
+    transition-duration: 1ms;
   }
 }
 </style>

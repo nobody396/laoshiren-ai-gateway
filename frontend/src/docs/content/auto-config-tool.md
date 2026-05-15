@@ -1,14 +1,14 @@
-# Dragon Code 自动配置工具
+# 老实人 AI 自动配置工具
 
-这篇文档解决一件事：用一条命令把 `Claude Code` 或 `Codex` 安装并接到 `Dragon Code`，即使你的机器还没有 Node.js，也可以继续走下去。 
+这篇文档解决一件事：用一条命令把 `Claude Code` 或 `Codex` 安装并接到 `老实人 AI`，即使你的机器还没有 Node.js，也可以继续走下去。
 
 ---
 
 ## 1. 创建 API Key
 
-脚本执行过程中会提示你输入 API Key，因此先在 Dragon Code 控制台创建好备用。
+脚本执行过程中会提示你输入 API Key，因此先在 老实人 AI 控制台创建好备用。
 
-登录 [Dragon Code 控制台](https://your-domain.example/keys)，进入 **API 密钥** 页面，点击 **创建密钥**。
+登录 [老实人 AI 控制台](https://laoshirenai.com/keys)，进入 **API 密钥** 页面，点击 **创建密钥**。
 
 ![](https://assets.example.com/dragoncode/file-20260317102346193.png)
 ![](https://assets.example.com/dragoncode/file-20260317102505220.png)
@@ -34,7 +34,7 @@ IP 限制、额度限制、速率限制和有效期可按需配置，新手建�
 直接执行：
 
 ```bash
-curl -fsSL https://your-domain.example/auto-config/install.sh | bash
+curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash
 ```
 
 脚本会自动完成以下动作：
@@ -51,7 +51,7 @@ curl -fsSL https://your-domain.example/auto-config/install.sh | bash
 直接执行：
 
 ```powershell
-irm https://your-domain.example/auto-config/install.ps1 | iex
+irm https://laoshirenai.com/auto-config/install.ps1 | iex
 ```
 
 ---
@@ -67,13 +67,13 @@ irm https://your-domain.example/auto-config/install.ps1 | iex
 macOS / Linux：
 
 ```bash
-curl -fsSL https://your-domain.example/auto-config/install.sh | bash -s -- --api-key YOUR_CLAUDE_KEY --tools claude
+curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --api-key YOUR_CLAUDE_KEY --tools claude
 ```
 
 Windows PowerShell（管道模式通过环境变量传参）：
 
 ```powershell
-$env:DRAGON_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:DRAGON_TOOLS='claude'; irm https://your-domain.example/auto-config/install.ps1 | iex
+$env:DRAGON_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:DRAGON_TOOLS='claude'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
 ```
 
 Windows PowerShell（下载后直接执行）：
@@ -87,13 +87,13 @@ Windows PowerShell（下载后直接执行）：
 macOS / Linux：
 
 ```bash
-curl -fsSL https://your-domain.example/auto-config/install.sh | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex
+curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex
 ```
 
 Windows PowerShell（管道模式）：
 
 ```powershell
-$env:DRAGON_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:DRAGON_TOOLS='codex'; irm https://your-domain.example/auto-config/install.ps1 | iex
+$env:DRAGON_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:DRAGON_TOOLS='codex'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
 ```
 
 Windows PowerShell（下载后直接执行）：
@@ -107,13 +107,13 @@ Windows PowerShell（下载后直接执行）：
 macOS / Linux：
 
 ```bash
-curl -fsSL https://your-domain.example/auto-config/install.sh | bash -s -- --api-key YOUR_CLAUDE_KEY --codex-api-key YOUR_CODEX_KEY
+curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --api-key YOUR_CLAUDE_KEY --codex-api-key YOUR_CODEX_KEY
 ```
 
 Windows PowerShell（管道模式）：
 
 ```powershell
-$env:DRAGON_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:DRAGON_CODEX_API_KEY='YOUR_CODEX_KEY'; irm https://your-domain.example/auto-config/install.ps1 | iex
+$env:DRAGON_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:DRAGON_CODEX_API_KEY='YOUR_CODEX_KEY'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
 ```
 
 Windows PowerShell（下载后直接执行）：
@@ -127,7 +127,7 @@ Windows PowerShell（下载后直接执行）：
 如果你部署了自定义域名，可以覆盖默认地址：
 
 ```bash
-curl -fsSL https://your-domain.example/auto-config/install.sh | bash -s -- --api-key YOUR_CLAUDE_KEY --base-url https://your-domain.example.com
+curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --api-key YOUR_CLAUDE_KEY --base-url https://api.laoshirenai.com
 ```
 
 ---
@@ -147,7 +147,7 @@ curl -fsSL https://your-domain.example/auto-config/install.sh | bash -s -- --api
 ```json
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "https://your-domain.example",
+    "ANTHROPIC_BASE_URL": "https://api.laoshirenai.com",
     "ANTHROPIC_AUTH_TOKEN": "YOUR_API_KEY",
     "CLAUDE_CODE_ATTRIBUTION_HEADER": "0"
   }
@@ -183,7 +183,7 @@ network_access = "enabled"
 
 [model_providers.OpenAI]
 name = "OpenAI"
-base_url = "https://your-domain.example"
+base_url = "https://api.laoshirenai.com"
 wire_api = "responses"
 requires_openai_auth = true
 ```
@@ -196,8 +196,8 @@ requires_openai_auth = true
 
 脚本优先使用系统已有的 Node.js；如果没有，就把 Node.js 安装到当前用户目录：
 
-- macOS / Linux：`~/.dragoncode/node`
-- Windows：`%USERPROFILE%\.dragoncode\node`
+- macOS / Linux：`~/.laoshirenai/node`
+- Windows：`%USERPROFILE%\.laoshirenai\node`
 
 客户端包也会安装到当前用户目录，而不是系统全局目录。
 
@@ -262,7 +262,7 @@ Claude Code 在 Windows 上依赖 git-bash 运行。脚本会自动检测并安�
 `irm ... | iex` 后面**不能直接跟参数**，需要通过环境变量传入：
 
 ```powershell
-$env:DRAGON_TOOLS='claude'; $env:DRAGON_CLAUDE_API_KEY='YOUR_KEY'; irm https://your-domain.example/auto-config/install.ps1 | iex
+$env:DRAGON_TOOLS='claude'; $env:DRAGON_CLAUDE_API_KEY='YOUR_KEY'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
 ```
 
 如果不传环境变量，脚本会交互式提示输入 API Key。
@@ -286,7 +286,7 @@ $env:DRAGON_TOOLS='claude'; $env:DRAGON_CLAUDE_API_KEY='YOUR_KEY'; irm https://y
 
 适合你已经装好 `claude` 或 `codex`，只想重新写配置文件的情况。
 
-### API 地址不是 `https://your-domain.example`
+### API 地址不是 `https://api.laoshirenai.com`
 
 使用 `--base-url` 覆盖即可。
 

@@ -160,6 +160,7 @@ const { t } = useI18n()
 
 type DistributionMetric = 'tokens' | 'actual_cost'
 type EndpointSource = 'inbound' | 'upstream' | 'path'
+type ChartPalette = 'default' | 'greco'
 
 const props = withDefaults(
   defineProps<{
@@ -174,6 +175,7 @@ const props = withDefaults(
     showSourceToggle?: boolean
     startDate?: string
     endDate?: string
+    palette?: ChartPalette
   }>(),
   {
     upstreamEndpointStats: () => [],
@@ -185,7 +187,8 @@ const props = withDefaults(
     showMetricToggle: false,
     showSourceToggle: false,
     startDate: '',
-    endDate: ''
+    endDate: '',
+    palette: 'default'
   }
 )
 
@@ -221,7 +224,7 @@ const toggleBreakdown = async (endpoint: string) => {
   }
 }
 
-const chartColors = [
+const defaultChartColors = [
   '#3b82f6',
   '#10b981',
   '#f59e0b',
@@ -235,6 +238,25 @@ const chartColors = [
   '#06b6d4',
   '#a855f7'
 ]
+
+const grecoChartColors = [
+  '#9a3b1f',
+  '#3f5a3a',
+  '#9a6a1f',
+  '#315f71',
+  '#7a4f2b',
+  '#6f4f87',
+  '#8a7d63',
+  '#5e2210',
+  '#b77a28',
+  '#26361f',
+  '#6f8b80',
+  '#a85f42'
+]
+
+const chartColors = computed(() =>
+  props.palette === 'greco' ? grecoChartColors : defaultChartColors
+)
 
 const displayEndpointStats = computed(() => {
   const sourceStats = props.source === 'upstream'
@@ -258,7 +280,7 @@ const chartData = computed(() => {
         data: displayEndpointStats.value.map((item) =>
           props.metric === 'actual_cost' ? item.actual_cost : item.total_tokens
         ),
-        backgroundColor: chartColors.slice(0, displayEndpointStats.value.length),
+        backgroundColor: chartColors.value.slice(0, displayEndpointStats.value.length),
         borderWidth: 0
       }
     ]
@@ -303,7 +325,10 @@ const formatNumber = (value: number): string => {
   return value.toLocaleString()
 }
 
-const formatCost = (value: number): string => {
+const formatCost = (value: number | null | undefined): string => {
+  if (value === undefined || value === null || Number.isNaN(value)) {
+    return '0.0000'
+  }
   if (value >= 1000) {
     return (value / 1000).toFixed(2) + 'K'
   } else if (value >= 1) {

@@ -1,8 +1,8 @@
-# Dragon Code × Hermes 快速开始指南
+# 老实人 AI × Hermes 快速开始指南
 
 ## 适用场景
 
-这篇文档只解决一件事：把 Dragon Code 的 Anthropic 兼容接口接到 Hermes，并完成一次最小可用验证。
+这篇文档只解决一件事：把 老实人 AI 的 Anthropic 兼容接口接到 Hermes，并完成一次最小可用验证。
 
 如果你当前用的是 Hermes，而不是 OpenClaw、Cherry Studio 或其他客户端，这篇文档就是对应的接入方式。
 
@@ -12,16 +12,16 @@
 
 开始前请先确认以下几点：
 
-- 你已经在 [Dragon Code 控制台](https://your-domain.example/keys) 创建好一枚 API Key
+- 你已经在 [老实人 AI 控制台](https://laoshirenai.com/keys) 创建好一枚 API Key
 - 你知道 Hermes 当前要调用的实际模型名
 - 你可以编辑 Hermes 的配置文件 `config.yaml`
-- 你本次要接的是 Dragon Code 的 Anthropic 兼容端点，不是 OpenAI 兼容端点
+- 你本次要接的是 老实人 AI 的 Anthropic 兼容端点，不是 OpenAI 兼容端点
 
 ---
 
 ## 2. 支持的模型
 
-当前这篇文档优先覆盖 Dragon Code 的 Anthropic 兼容模型接入，常见模型名如下：
+当前这篇文档优先覆盖 老实人 AI 的 Anthropic 兼容模型接入，常见模型名如下：
 
 | 模型名 |
 |---|
@@ -35,9 +35,9 @@
 
 ## 3. 推荐路径：通过 Hermes 的 `custom_providers` 接入
 
-Hermes 接 Dragon Code 时，核心思路是：
+Hermes 接 老实人 AI 时，核心思路是：
 
-1. 在 `custom_providers` 中声明一个 Dragon Code provider
+1. 在 `custom_providers` 中声明一个 老实人 AI provider
 2. 在 `model` 块中把默认模型指向这个 provider
 3. 关闭 `smart_model_routing`，避免 Hermes 自动切到别的模型
 
@@ -45,8 +45,8 @@ Hermes 接 Dragon Code 时，核心思路是：
 
 ```yaml
 custom_providers:
-  - name: custom-dragoncode-codes-aws
-    base_url: https://your-domain.example
+  - name: custom-laoshirenai-codes-aws
+    base_url: https://api.laoshirenai.com
     api_key: <your-key>
     api_mode: anthropic_messages
     models:
@@ -55,7 +55,7 @@ custom_providers:
 
 这里最关键的是两点：
 
-- `base_url` 写 `https://your-domain.example`
+- `base_url` 写 `https://api.laoshirenai.com`
 - `api_mode` 必须写 `anthropic_messages`
 
 ### 第二步：把默认模型指向这个 provider
@@ -63,13 +63,13 @@ custom_providers:
 ```yaml
 model:
   default: claude-opus-4-6
-  provider: custom-dragoncode-codes-aws
-  base_url: https://your-domain.example
+  provider: custom-laoshirenai-codes-aws
+  base_url: https://api.laoshirenai.com
   api_key: <your-key>
   api_mode: anthropic_messages
 ```
 
-这里的 `provider` 必须和上面 `custom_providers` 里的 `name` 对应上，否则 Hermes 不会走到你定义的 Dragon Code provider。
+这里的 `provider` 必须和上面 `custom_providers` 里的 `name` 对应上，否则 Hermes 不会走到你定义的 老实人 AI provider。
 
 ### 第三步：关闭 Smart Model Routing
 
@@ -84,19 +84,19 @@ smart_model_routing:
 
 ## 4. 可直接参考的最小可用配置
 
-下面是一份合并后的最小可用示例。把 `<your-key>` 换成你自己的 Dragon Code API Key 即可：
+下面是一份合并后的最小可用示例。把 `<your-key>` 换成你自己的 老实人 AI API Key 即可：
 
 ```yaml
 model:
   default: claude-opus-4-6
-  provider: custom-dragoncode-codes-aws
-  base_url: https://your-domain.example
+  provider: custom-laoshirenai-codes-aws
+  base_url: https://api.laoshirenai.com
   api_key: <your-key>
   api_mode: anthropic_messages
 
 custom_providers:
-  - name: custom-dragoncode-codes-aws
-    base_url: https://your-domain.example
+  - name: custom-laoshirenai-codes-aws
+    base_url: https://api.laoshirenai.com
     api_key: <your-key>
     api_mode: anthropic_messages
     models:
@@ -116,9 +116,9 @@ fallback_providers:
 
 ## 5. 成功标准
 
-满足下面几项，基本就说明 Hermes 和 Dragon Code 已经接通：
+满足下面几项，基本就说明 Hermes 和 老实人 AI 已经接通：
 
-- `base_url` 填写的是 `https://your-domain.example`
+- `base_url` 填写的是 `https://api.laoshirenai.com`
 - `api_mode` 填写的是 `anthropic_messages`
 - `model.provider` 指向的是你在 `custom_providers` 中定义的 provider 名
 - `smart_model_routing.enabled` 已关闭
@@ -130,7 +130,7 @@ fallback_providers:
 
 ### 为什么不能按 OpenAI 兼容方式接？
 
-这次 Hermes 接 Dragon Code，应该走 Anthropic 原生消息格式，也就是 `/v1/messages`。
+这次 Hermes 接 老实人 AI，应该走 Anthropic 原生消息格式，也就是 `/v1/messages`。
 
 已知结论是：
 
@@ -169,10 +169,10 @@ fallback_providers:
 
 ## 7. API 验证示例
 
-如果你想先绕过 Hermes，直接验证 Dragon Code 端点本身是否可用，可以先调用 Anthropic 原生端点：
+如果你想先绕过 Hermes，直接验证 老实人 AI 端点本身是否可用，可以先调用 Anthropic 原生端点：
 
 ```bash
-curl -X POST "https://your-domain.example/v1/messages" \
+curl -X POST "https://api.laoshirenai.com/v1/messages" \
   -H "Content-Type: application/json" \
   -H "x-api-key: <your-key>" \
   -H "anthropic-version: 2023-06-01" \
@@ -186,5 +186,5 @@ curl -X POST "https://your-domain.example/v1/messages" \
 ## 8. 下一步
 
 - 想继续接其他客户端：查看 `OpenClaw 快速开始指南`、`Cherry Studio 快速开始指南`
-- 还没创建 Key：回到 [Dragon Code 控制台](https://your-domain.example/keys) 先创建 API Key
+- 还没创建 Key：回到 [老实人 AI 控制台](https://laoshirenai.com/keys) 先创建 API Key
 - 想统一整理开发工具配置：继续查看站内其他快速接入文档

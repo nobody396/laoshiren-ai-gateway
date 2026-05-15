@@ -4,8 +4,13 @@
     <div class="home-header__inner">
       <!-- 品牌 Logo -->
       <router-link to="/" class="home-header__brand">
-        <img src="/logo.png" alt="DragonCode Logo" class="home-header__logo" />
-        <span class="home-header__brand-text">DragonCode</span>
+        <span class="home-header__seal">
+          <img src="/laoshirenai-icon.jpg" alt="老实人 AI" class="home-header__logo" />
+        </span>
+        <span class="home-header__brand-text">
+          <span class="home-header__brand-name">老实人 AI</span>
+          <span class="home-header__brand-tag">A Quiet Place for Code</span>
+        </span>
       </router-link>
 
       <!-- 导航菜单 -->
@@ -32,7 +37,7 @@
           target="_blank"
           rel="noopener noreferrer"
         >
-          {{ isAuthenticated ? '控制台' : '开始使用' }}
+          {{ isAuthenticated ? '控制台' : 'Begin' }}
         </a>
       </div>
     </div>
@@ -90,50 +95,81 @@ defineProps<{
   left: 0;
   right: 0;
   z-index: 50;
-  background: transparent;
-  border-bottom: 1px solid transparent;
+  background: rgba(248, 243, 231, 0.92);
+  border-bottom: 1px solid rgba(63, 90, 58, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   transition: background 0.4s ease, border-color 0.4s ease, backdrop-filter 0.4s ease;
 }
 
 .home-header.is-scrolled {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  background: rgba(248, 243, 231, 0.96);
+  border-bottom-color: rgba(63, 90, 58, 0.2);
 }
 
 /* 内部布局 - 水平三栏 */
 .home-header__inner {
-  width: min(100% - 4rem, 1400px);
+  width: min(100% - 4rem, 1200px);
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: 1.25rem 0;
+  padding: 0;
+  min-height: 72px;
 }
 
 /* 品牌标识 */
 .home-header__brand {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 0.875rem;
   flex: 1;
   text-decoration: none;
   color: inherit;
 }
 
+.home-header__seal {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #9a3b1f;
+  box-shadow: inset 0 0 0 2px rgba(250, 246, 236, 0.42), 0 0 0 1px #7a2d17;
+}
+
 .home-header__logo {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   flex-shrink: 0;
 }
 
 .home-header__brand-text {
-  font-size: 1.125rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: #1a1a2e;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.home-header__brand-name {
+  font-family: 'Cinzel', 'Noto Serif SC', serif;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #13100b;
+  white-space: nowrap;
+}
+
+.home-header__brand-tag {
+  margin-top: 0.125rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8a7d63;
   white-space: nowrap;
 }
 
@@ -148,20 +184,20 @@ defineProps<{
 .home-header__link {
   display: inline-flex;
   align-items: center;
-  color: #1a1a2e;
-  font-size: 0.9375rem;
+  color: #1f1a12;
+  font-family: 'EB Garamond', 'Noto Serif SC', serif;
+  font-size: 1.0625rem;
+  font-style: italic;
   font-weight: 500;
   text-decoration: none;
-  transition: opacity 0.2s ease;
-  opacity: 0.7;
+  transition: color 0.2s ease;
 }
 
 .home-header__link:hover {
-  opacity: 1;
+  color: #9a3b1f;
 }
 
 .home-header__link.is-active {
-  opacity: 1;
   font-weight: 600;
 }
 
@@ -178,20 +214,36 @@ defineProps<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 2.5rem;
-  padding: 0 1.75rem;
-  border-radius: 999px;
+  min-height: 2.625rem;
+  padding: 0 1.25rem;
   background: transparent;
-  color: #1a1a2e;
-  border: 1px solid #1a1a2e;
-  font-size: 0.875rem;
+  color: #1f1a12;
+  border: 1.5px solid #1f1a12;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8125rem;
   font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   text-decoration: none;
   transition: all 0.2s ease;
 }
 
 .home-header__cta:hover {
-  background: #1a1a2e;
-  color: #fff;
+  background: #1f1a12;
+  color: #f8f3e7;
+}
+
+@media (max-width: 800px) {
+  .home-header__inner {
+    width: min(100% - 2rem, 1200px);
+  }
+
+  .home-header__menu {
+    display: none;
+  }
+
+  .home-header__brand-tag {
+    display: none;
+  }
 }
 </style>

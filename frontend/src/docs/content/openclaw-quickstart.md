@@ -1,8 +1,8 @@
-# Dragon Code × OpenClaw 快速开始指南
+# 老实人 AI × OpenClaw 快速开始指南
 
 ## 适用场景
 
-这篇文档只解决一件事：把 OpenClaw 的模型服务接到 Dragon Code，并完成一次可用性验证。
+这篇文档只解决一件事：把 OpenClaw 的模型服务接到 老实人 AI，并完成一次可用性验证。
 
 如果你还没安装 Node.js，请先参考 [Node.js 环境安装指南](nodejs-setup)。
 
@@ -12,7 +12,7 @@
 
 开始前请先确认以下几点：
 
-- 你已经在 [Dragon Code 控制台](https://your-domain.example/keys) 创建好一枚 API Key
+- 你已经在 [老实人 AI 控制台](https://laoshirenai.com/keys) 创建好一枚 API Key
 - 你知道要调用的实际模型名，例如 `gpt-5.4`（完整支持列表见下方[支持的模型](#支持的模型)）
 - 你的运行环境满足 OpenClaw 官方要求：推荐 `Node 24`，兼容 `Node 22.16+`
 - Windows 用户建议优先使用 `WSL2 + Ubuntu` 安装和运行 OpenClaw
@@ -44,7 +44,7 @@
 
 ## 2. 推荐路径：使用 OpenClaw 向导接入
 
-如果你只是想先打通 OpenClaw 和 Dragon Code，最省事的方式是先跑 OpenClaw 自带向导，等浏览器控制台能正常回复后，再继续配置频道或后台常驻。
+如果你只是想先打通 OpenClaw 和 老实人 AI，最省事的方式是先跑 OpenClaw 自带向导，等浏览器控制台能正常回复后，再继续配置频道或后台常驻。
 
 ### 第一步：安装 OpenClaw
 
@@ -76,12 +76,12 @@ openclaw onboard
 | 兼容类型 | `Anthropic-compatible`或者 `OpenAI-compatible` |
 | 基础地址 | 见下方说明 |
 | 模型名 | `claude-sonnet-4-6` 或者 `gpt-5.4`（完整列表见[支持的模型](#支持的模型)）|
-| Provider ID | `dragoncode` |
-| API Key | 你创建的 Dragon Code API Key |
+| Provider ID | `laoshirenai` |
+| API Key | 你创建的 老实人 AI API Key |
 
 > **基础地址填写说明：**
-> - 选择 `Anthropic-compatible` 时，填写：`https://your-domain.example`
-> - 选择 `OpenAI-compatible` 时，需要在末尾加上 `/v1`，填写：`https://your-domain.example/v1`
+> - 选择 `Anthropic-compatible` 时，填写：`https://api.laoshirenai.com`
+> - 选择 `OpenAI-compatible` 时，需要在末尾加上 `/v1`，填写：`https://api.laoshirenai.com/v1`
 
 ### 第四步：完成向导并验证
 
@@ -109,20 +109,20 @@ openclaw dashboard
 ### 第一步：导出 API Key
 
 ```bash
-# 先把 Dragon Code API Key 写入环境变量
+# 先把 老实人 AI API Key 写入环境变量
 export CUSTOM_API_KEY="YOUR_DRAGONCODE_API_KEY"
 ```
 
 ### 第二步：执行非交互接入命令
 
 ```bash
-# 非交互式接入：将 Dragon Code 配置为自定义服务商
+# 非交互式接入：将 老实人 AI 配置为自定义服务商
 openclaw onboard --non-interactive \
   --mode local \
   --auth-choice custom-api-key \
-  --custom-base-url "https://your-domain.example" \
+  --custom-base-url "https://api.laoshirenai.com" \
   --custom-model-id "gpt-5.4" \
-  --custom-provider-id "dragoncode" \
+  --custom-provider-id "laoshirenai" \
   --custom-compatibility openai \
   --secret-input-mode ref \
   --gateway-port 18789 \
@@ -152,19 +152,19 @@ export OPENAI_API_KEY="YOUR_DRAGONCODE_API_KEY"
   agents: {
     defaults: {
       // 默认模型必须写成“服务商 ID/模型名”格式，不能只写模型名
-      model: { primary: "dragoncode/gpt-5.4" },
+      model: { primary: "laoshirenai/gpt-5.4" },
     },
   },
   models: {
     providers: {
-      dragoncode: {
-        baseUrl: "https://your-domain.example",
+      laoshirenai: {
+        baseUrl: "https://api.laoshirenai.com",
         // 推荐引用环境变量，避免把密钥明文写进配置文件
         apiKey: "${CUSTOM_API_KEY}",
         api: "openai-completions",
         models: [
           {
-            // 这里替换成 Dragon Code 控制台里实际可用的模型名
+            // 这里替换成 老实人 AI 控制台里实际可用的模型名
             id: "gpt-5.4",
             name: "gpt-5.4",
           },
@@ -175,7 +175,7 @@ export OPENAI_API_KEY="YOUR_DRAGONCODE_API_KEY"
 }
 ```
 
-> **最容易写错的地方**：默认模型必须写成 `dragoncode/模型名`，例如 `dragoncode/gpt-5.4`，不能只写 `gpt-5.4`。
+> **最容易写错的地方**：默认模型必须写成 `laoshirenai/模型名`，例如 `laoshirenai/gpt-5.4`，不能只写 `gpt-5.4`。
 
 ---
 
@@ -183,9 +183,9 @@ export OPENAI_API_KEY="YOUR_DRAGONCODE_API_KEY"
 
 满足下面几项，基本就说明接入已经打通：
 
-- 基础地址填写的是 `https://your-domain.example`
+- 基础地址填写的是 `https://api.laoshirenai.com`
 - API Key 仍然有效，未过期、未停用、未耗尽额度
-- 默认模型写成了 `dragoncode/你的模型名`
+- 默认模型写成了 `laoshirenai/你的模型名`
 - `openclaw doctor` 和 `openclaw status` 没有报配置错误
 - 浏览器控制台能正常发消息并收到回复
 
@@ -195,14 +195,14 @@ export OPENAI_API_KEY="YOUR_DRAGONCODE_API_KEY"
 
 ### 明明填了地址，还是连不上
 
-优先检查基础地址是不是 `https://your-domain.example`。不要带 /
+优先检查基础地址是不是 `https://api.laoshirenai.com`。不要带 /
 
 ### OpenClaw 能启动，但发消息时报模型不存在
 
 通常先查这两项：
 
-- 你填写的模型名是否就是 Dragon Code 当前实际开放的调用名
-- 默认模型是否写成了 `dragoncode/模型名`，而不是只写模型名
+- 你填写的模型名是否就是 老实人 AI 当前实际开放的调用名
+- 默认模型是否写成了 `laoshirenai/模型名`，而不是只写模型名
 
 ### 使用脚本化命令时提示 API Key 缺失
 
@@ -212,13 +212,13 @@ export OPENAI_API_KEY="YOUR_DRAGONCODE_API_KEY"
 
 ### 我已经配好 OpenClaw，为什么还不能在 WhatsApp 或 Telegram 里用
 
-这通常不是模型接入问题，而是频道还没有配置完成。本页只负责把 OpenClaw 和 Dragon Code 之间的模型调用打通；频道配置请继续参考 [OpenClaw 官方 Channels 文档](https://docs.openclaw.ai/channels)。
+这通常不是模型接入问题，而是频道还没有配置完成。本页只负责把 OpenClaw 和 老实人 AI 之间的模型调用打通；频道配置请继续参考 [OpenClaw 官方 Channels 文档](https://docs.openclaw.ai/channels)。
 
 ---
 
 ## 7. 下一步
 
-- 还没创建 Key：回到 [Dragon Code 控制台](https://your-domain.example/keys) 先创建 API Key
+- 还没创建 Key：回到 [老实人 AI 控制台](https://laoshirenai.com/keys) 先创建 API Key
 - 想先配置其他开发工具：继续查看 [Claude Code快速开始指南](claude-code-quickstart) 和 [Codex快速开始指南](codex-quickstart)
 - 需要安装运行环境：查看 [Node.js 环境安装指南](nodejs-setup)
 - 遇到常见接入问题：查看 [常见问题](faq)

@@ -1,0 +1,735 @@
+/*
+ * Admin-only Greco console skin.
+ * Scope every in-app selector under .admin-console-shell. Teleported selects
+ * use body.admin-console-active, which AppLayout toggles only on /admin routes.
+ */
+.admin-console-shell,
+body.admin-console-active {
+  --admin-papyrus: #f8f3e7;
+  --admin-parchment: #f2e9d2;
+  --admin-marble: #faf6ec;
+  --admin-stone: #efe6cf;
+  --admin-terracotta: #9a3b1f;
+  --admin-terracotta-dark: #7a2d17;
+  --admin-laurel: #3f5a3a;
+  --admin-laurel-dark: #26361f;
+  --admin-ink: #1f1a12;
+  --admin-ink-deep: #13100b;
+  --admin-muted: #8a7d63;
+  --admin-border: rgba(63, 90, 58, 0.18);
+  --admin-border-strong: rgba(31, 26, 18, 0.42);
+  --admin-surface: rgba(250, 246, 236, 0.96);
+  --admin-surface-soft: rgba(239, 230, 207, 0.78);
+  --admin-control: rgba(255, 252, 245, 0.95);
+  --admin-table-alt: rgba(239, 230, 207, 0.42);
+  --admin-shadow: 0 18px 48px rgba(49, 38, 20, 0.11);
+  --admin-shadow-sm: 0 8px 24px rgba(49, 38, 20, 0.08);
+  --admin-ring: rgba(154, 59, 31, 0.24);
+  --admin-danger: #9f2f23;
+  --admin-success: #3f6f43;
+  --admin-warning: #9a6a1f;
+  --admin-info: #315f71;
+}
+
+.dark .admin-console-shell,
+.dark body.admin-console-active {
+  --admin-papyrus: #15130f;
+  --admin-parchment: #242016;
+  --admin-marble: #1d1a14;
+  --admin-stone: #2b2519;
+  --admin-terracotta: #d87757;
+  --admin-terracotta-dark: #f0a27f;
+  --admin-laurel: #9eb48b;
+  --admin-laurel-dark: #d7e2c5;
+  --admin-ink: #eee4ce;
+  --admin-ink-deep: #fff7e8;
+  --admin-muted: #b8a989;
+  --admin-border: rgba(215, 226, 197, 0.16);
+  --admin-border-strong: rgba(248, 243, 231, 0.34);
+  --admin-surface: rgba(29, 26, 20, 0.96);
+  --admin-surface-soft: rgba(43, 37, 25, 0.78);
+  --admin-control: rgba(21, 19, 15, 0.92);
+  --admin-table-alt: rgba(43, 37, 25, 0.52);
+  --admin-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+  --admin-shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.26);
+  --admin-ring: rgba(216, 119, 87, 0.26);
+  --admin-danger: #f28a78;
+  --admin-success: #9fca92;
+  --admin-warning: #e0b36a;
+  --admin-info: #8fb7c4;
+}
+
+body.admin-console-active {
+  background: var(--admin-papyrus);
+}
+
+.admin-console-shell {
+  position: relative;
+  isolation: isolate;
+  overflow-x: hidden;
+  background:
+    linear-gradient(90deg, rgba(63, 90, 58, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(63, 90, 58, 0.035) 1px, transparent 1px),
+    var(--admin-papyrus);
+  background-size: 72px 72px, 72px 72px, auto;
+  color: var(--admin-ink);
+  font-family: Inter, "Noto Serif SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.admin-console-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.055;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.1 0 0 0 0 0.07 0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+.dark .admin-console-shell::before {
+  opacity: 0.08;
+  mix-blend-mode: screen;
+}
+
+.admin-console-shell .bg-mesh-gradient {
+  background:
+    linear-gradient(135deg, rgba(154, 59, 31, 0.08), transparent 34%),
+    repeating-linear-gradient(90deg, rgba(63, 90, 58, 0.06) 0 1px, transparent 1px 24px);
+  opacity: 0.7;
+}
+
+.admin-console-shell main {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-console-shell main::before {
+  content: "";
+  display: block;
+  width: min(280px, 42vw);
+  height: 14px;
+  margin: 0 0 1.5rem;
+  opacity: 0.46;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 14'><path d='M0,7 L8,7 L8,2 L16,2 L16,12 L24,12 L24,2 L32,2 L32,7 L40,7' stroke='%233F5A3A' fill='none' stroke-width='1.35'/></svg>");
+  background-repeat: repeat-x;
+  background-size: 40px 14px;
+}
+
+.dark .admin-console-shell main::before {
+  filter: brightness(1.7);
+  opacity: 0.34;
+}
+
+.admin-console-shell h1,
+.admin-console-shell h2,
+.admin-console-shell h3,
+.admin-console-shell .page-title {
+  color: var(--admin-ink-deep);
+}
+
+.admin-console-shell h1,
+.admin-console-shell .page-title,
+.admin-console-shell header h1 {
+  font-family: Cinzel, "Noto Serif SC", serif;
+  letter-spacing: 0;
+}
+
+/* Layout shell */
+.admin-console-shell .sidebar {
+  background: linear-gradient(180deg, var(--admin-marble), var(--admin-parchment));
+  border-right: 1px solid var(--admin-border);
+  box-shadow: 10px 0 32px rgba(49, 38, 20, 0.08);
+}
+
+.dark .admin-console-shell .sidebar {
+  background: linear-gradient(180deg, #1d1a14, #15130f);
+}
+
+.admin-console-shell .sidebar-header {
+  position: relative;
+  min-height: 4rem;
+  border-bottom: 1px solid var(--admin-border);
+  background: rgba(255, 252, 245, 0.42);
+}
+
+.dark .admin-console-shell .sidebar-header {
+  background: rgba(43, 37, 25, 0.42);
+}
+
+.admin-console-shell .sidebar-header::after {
+  content: "";
+  position: absolute;
+  right: 1rem;
+  bottom: -1px;
+  left: 1rem;
+  height: 7px;
+  opacity: 0.34;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 7'><path d='M0,3.5 L6,3.5 L6,1 L13,1 L13,6 L19,6 L19,1 L26,1 L26,3.5 L32,3.5' stroke='%239A3B1F' fill='none' stroke-width='1'/></svg>");
+  background-repeat: repeat-x;
+  background-size: 32px 7px;
+}
+
+.admin-console-shell .sidebar-header > div:first-child {
+  border-radius: 999px !important;
+  background: var(--admin-terracotta);
+  box-shadow:
+    inset 0 0 0 2px rgba(250, 246, 236, 0.38),
+    0 0 0 1px var(--admin-terracotta-dark);
+}
+
+.admin-console-shell .sidebar-header img {
+  object-fit: cover;
+}
+
+.admin-console-shell .sidebar-header .text-lg {
+  color: var(--admin-ink-deep) !important;
+  font-family: Cinzel, "Noto Serif SC", serif;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.admin-console-shell .sidebar-nav {
+  padding-top: 1rem;
+}
+
+.admin-console-shell .sidebar-section-title {
+  color: var(--admin-muted);
+  font-family: Inter, sans-serif;
+  font-size: 0.67rem;
+  letter-spacing: 0.13em;
+}
+
+.admin-console-shell .sidebar-link {
+  position: relative;
+  border-radius: 4px;
+  color: var(--admin-muted);
+  font-weight: 600;
+}
+
+.admin-console-shell .sidebar-link::before {
+  content: "";
+  position: absolute;
+  top: 0.55rem;
+  bottom: 0.55rem;
+  left: 0;
+  width: 2px;
+  background: transparent;
+}
+
+.admin-console-shell .sidebar-link:hover {
+  background: rgba(154, 59, 31, 0.08) !important;
+  color: var(--admin-ink-deep) !important;
+}
+
+.admin-console-shell .sidebar-link-active {
+  background: rgba(154, 59, 31, 0.13) !important;
+  color: var(--admin-terracotta-dark) !important;
+}
+
+.admin-console-shell .sidebar-link-active::before {
+  background: var(--admin-terracotta);
+}
+
+.admin-console-shell .sidebar svg,
+.admin-console-shell .sidebar-svg-icon svg {
+  stroke-width: 1.65;
+}
+
+.admin-console-shell .sidebar > .mt-auto {
+  border-top: 1px solid var(--admin-border) !important;
+  background: rgba(255, 252, 245, 0.34);
+}
+
+.dark .admin-console-shell .sidebar > .mt-auto {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.admin-console-shell header.glass {
+  background: rgba(250, 246, 236, 0.9) !important;
+  border-bottom: 1px solid var(--admin-border) !important;
+  box-shadow: 0 10px 28px rgba(49, 38, 20, 0.06);
+}
+
+.dark .admin-console-shell header.glass {
+  background: rgba(29, 26, 20, 0.88) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+
+.admin-console-shell header h1 {
+  color: var(--admin-ink-deep) !important;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.admin-console-shell header p {
+  color: var(--admin-muted) !important;
+}
+
+.admin-console-shell header a,
+.admin-console-shell header button {
+  border-radius: 4px;
+}
+
+.admin-console-shell header a:hover,
+.admin-console-shell header button:hover {
+  background-color: rgba(154, 59, 31, 0.09) !important;
+}
+
+.admin-console-shell header .bg-primary-50,
+.admin-console-shell header .dark\:bg-primary-900\/20 {
+  background: rgba(154, 59, 31, 0.11) !important;
+}
+
+.admin-console-shell header .text-primary-700,
+.admin-console-shell header .text-primary-600,
+.admin-console-shell header .dark\:text-primary-300,
+.admin-console-shell header .dark\:text-primary-400 {
+  color: var(--admin-terracotta-dark) !important;
+}
+
+/* Reusable surfaces */
+.admin-console-shell .card,
+.admin-console-shell .glass-card,
+.admin-console-shell .card-glass,
+.admin-console-shell .modal-content,
+.admin-console-shell .dialog-container,
+.admin-console-shell .dropdown {
+  background: var(--admin-surface) !important;
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 6px !important;
+  box-shadow: var(--admin-shadow-sm);
+  color: var(--admin-ink);
+}
+
+.admin-console-shell .card-hover:hover {
+  transform: translateY(-1px);
+  border-color: var(--admin-border-strong) !important;
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-console-shell .card-header,
+.admin-console-shell .card-footer,
+.admin-console-shell .modal-header,
+.admin-console-shell .modal-footer,
+.admin-console-shell .dialog-header,
+.admin-console-shell .dialog-footer {
+  border-color: var(--admin-border) !important;
+  background: var(--admin-surface-soft) !important;
+}
+
+.admin-console-shell .modal-overlay,
+.admin-console-shell .dialog-overlay {
+  background: rgba(19, 16, 11, 0.5) !important;
+}
+
+.dark .admin-console-shell .modal-overlay,
+.dark .admin-console-shell .dialog-overlay {
+  background: rgba(0, 0, 0, 0.68) !important;
+}
+
+/* Buttons and controls */
+.admin-console-shell .btn {
+  border-radius: 3px !important;
+  box-shadow: none !important;
+  font-weight: 650;
+}
+
+.admin-console-shell .btn-primary {
+  background: var(--admin-terracotta) !important;
+  border: 1px solid var(--admin-terracotta) !important;
+  color: var(--admin-marble) !important;
+}
+
+.admin-console-shell .btn-primary:hover {
+  background: var(--admin-terracotta-dark) !important;
+  border-color: var(--admin-terracotta-dark) !important;
+}
+
+.admin-console-shell .btn-secondary,
+.admin-console-shell .btn-ghost {
+  background: var(--admin-control) !important;
+  border: 1px solid var(--admin-border) !important;
+  color: var(--admin-ink) !important;
+}
+
+.admin-console-shell .btn-secondary:hover,
+.admin-console-shell .btn-ghost:hover {
+  background: var(--admin-parchment) !important;
+  border-color: var(--admin-border-strong) !important;
+  color: var(--admin-ink-deep) !important;
+}
+
+.admin-console-shell .btn-danger {
+  background: var(--admin-danger) !important;
+  border: 1px solid var(--admin-danger) !important;
+  color: var(--admin-marble) !important;
+}
+
+.admin-console-shell .btn-success {
+  background: var(--admin-success) !important;
+  border: 1px solid var(--admin-success) !important;
+  color: var(--admin-marble) !important;
+}
+
+.admin-console-shell .btn-warning {
+  background: var(--admin-warning) !important;
+  border: 1px solid var(--admin-warning) !important;
+  color: var(--admin-marble) !important;
+}
+
+.admin-console-shell .input,
+.admin-console-shell input[type="text"],
+.admin-console-shell input[type="email"],
+.admin-console-shell input[type="password"],
+.admin-console-shell input[type="number"],
+.admin-console-shell input[type="search"],
+.admin-console-shell input[type="date"],
+.admin-console-shell textarea,
+.admin-console-shell select,
+.admin-console-shell .select-trigger,
+.admin-console-shell .date-picker-trigger {
+  background: var(--admin-control) !important;
+  border-color: var(--admin-border) !important;
+  border-radius: 4px !important;
+  color: var(--admin-ink) !important;
+}
+
+.admin-console-shell .input:focus,
+.admin-console-shell input:focus,
+.admin-console-shell textarea:focus,
+.admin-console-shell select:focus,
+.admin-console-shell .select-trigger-open,
+.admin-console-shell .date-picker-trigger-open {
+  border-color: var(--admin-terracotta) !important;
+  box-shadow: 0 0 0 3px var(--admin-ring) !important;
+  outline: none !important;
+}
+
+.admin-console-shell .input-label,
+.admin-console-shell label,
+.admin-console-shell .date-picker-label {
+  color: var(--admin-ink) !important;
+}
+
+.admin-console-shell .input-hint,
+.admin-console-shell .input-error-text,
+.admin-console-shell .date-picker-icon,
+.admin-console-shell .date-picker-chevron,
+.admin-console-shell .select-icon {
+  color: var(--admin-muted) !important;
+}
+
+.admin-console-shell .date-picker-dropdown,
+body.admin-console-active .select-dropdown-portal {
+  background: var(--admin-surface) !important;
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 6px !important;
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-console-shell .date-picker-preset,
+body.admin-console-active .select-option {
+  border-radius: 3px !important;
+  color: var(--admin-ink) !important;
+}
+
+.admin-console-shell .date-picker-preset:hover,
+body.admin-console-active .select-option:hover,
+body.admin-console-active .select-option-focused {
+  background: rgba(154, 59, 31, 0.1) !important;
+}
+
+.admin-console-shell .date-picker-preset-active,
+body.admin-console-active .select-option-selected {
+  background: rgba(154, 59, 31, 0.16) !important;
+  color: var(--admin-terracotta-dark) !important;
+}
+
+.admin-console-shell .date-picker-apply {
+  background: var(--admin-terracotta) !important;
+  border-radius: 3px !important;
+}
+
+body.admin-console-active .select-search {
+  border-bottom-color: var(--admin-border) !important;
+}
+
+body.admin-console-active .select-search-input {
+  color: var(--admin-ink) !important;
+}
+
+/* Tables and dense data layouts */
+.admin-console-shell .table-container,
+.admin-console-shell .table-scroll-container,
+.admin-console-shell .table-wrapper,
+.admin-console-shell .pricing-frame {
+  border-color: var(--admin-border) !important;
+  border-radius: 6px !important;
+}
+
+.admin-console-shell .table-scroll-container {
+  background: var(--admin-surface) !important;
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.admin-console-shell .table,
+.admin-console-shell table {
+  color: var(--admin-ink);
+}
+
+.admin-console-shell .table th,
+.admin-console-shell thead th,
+.admin-console-shell .sticky-header-cell,
+.admin-console-shell .table-wrapper .table-header.table-header {
+  background: var(--admin-surface-soft) !important;
+  border-color: var(--admin-border) !important;
+  color: var(--admin-muted) !important;
+  font-family: Inter, "Noto Serif SC", sans-serif;
+  letter-spacing: 0.08em;
+}
+
+.admin-console-shell .table td,
+.admin-console-shell tbody td,
+.admin-console-shell .table-scroll-container td {
+  border-color: rgba(63, 90, 58, 0.12) !important;
+  color: var(--admin-ink) !important;
+}
+
+.admin-console-shell .table tbody tr:hover,
+.admin-console-shell tbody tr:hover {
+  background: var(--admin-parchment) !important;
+}
+
+.dark .admin-console-shell .table tbody tr:hover,
+.dark .admin-console-shell tbody tr:hover {
+  background: rgba(61, 50, 34, 0.72) !important;
+}
+
+.admin-console-shell .table tbody tr:nth-child(even),
+.admin-console-shell .table-body tr:nth-child(even) {
+  background: var(--admin-table-alt);
+}
+
+.admin-console-shell tbody .sticky-col,
+.admin-console-shell .sticky-header-cell.sticky-col {
+  background: var(--admin-surface) !important;
+}
+
+.admin-console-shell tbody tr:hover .sticky-col {
+  background: var(--admin-parchment) !important;
+}
+
+.dark .admin-console-shell tbody tr:hover .sticky-col {
+  background: rgba(61, 50, 34, 0.92) !important;
+}
+
+.admin-console-shell .is-scrollable .sticky-col-left::after,
+.admin-console-shell .is-scrollable .sticky-col-left-second::after {
+  background: linear-gradient(to right, rgba(31, 26, 18, 0.14), transparent) !important;
+}
+
+.admin-console-shell .is-scrollable .sticky-col-right::before {
+  background: linear-gradient(to left, rgba(31, 26, 18, 0.14), transparent) !important;
+}
+
+/* Badges and status chips */
+.admin-console-shell .badge,
+.admin-console-shell [class*="rounded-md"][class*="text-xs"],
+.admin-console-shell [class*="rounded-full"][class*="text-xs"] {
+  border-radius: 3px !important;
+}
+
+.admin-console-shell .badge-primary,
+.admin-console-shell .bg-primary-100,
+.admin-console-shell .dark\:bg-primary-900\/30 {
+  background: rgba(154, 59, 31, 0.12) !important;
+  color: var(--admin-terracotta-dark) !important;
+}
+
+.admin-console-shell .badge-success,
+.admin-console-shell .bg-emerald-100,
+.admin-console-shell .bg-green-100 {
+  background: rgba(63, 90, 58, 0.14) !important;
+  color: var(--admin-success) !important;
+}
+
+.admin-console-shell .badge-warning,
+.admin-console-shell .bg-amber-100 {
+  background: rgba(154, 106, 31, 0.15) !important;
+  color: var(--admin-warning) !important;
+}
+
+.admin-console-shell .badge-danger,
+.admin-console-shell .bg-red-100 {
+  background: rgba(159, 47, 35, 0.14) !important;
+  color: var(--admin-danger) !important;
+}
+
+/* Pagination */
+.admin-console-shell [aria-label="Pagination"] {
+  box-shadow: none !important;
+}
+
+.admin-console-shell [aria-label="Pagination"] button,
+.admin-console-shell .page-size-select .select-trigger {
+  border-color: var(--admin-border) !important;
+  background: var(--admin-control) !important;
+  color: var(--admin-ink) !important;
+}
+
+.admin-console-shell [aria-label="Pagination"] button:hover {
+  background: var(--admin-parchment) !important;
+}
+
+.admin-console-shell [aria-label="Pagination"] [aria-current="page"] {
+  background: var(--admin-terracotta) !important;
+  border-color: var(--admin-terracotta) !important;
+  color: var(--admin-marble) !important;
+}
+
+.admin-console-shell .border-t.bg-white,
+.admin-console-shell .dark\:bg-dark-800 {
+  border-color: var(--admin-border) !important;
+}
+
+/* Dashboard-specific control surface */
+.admin-console-shell .admin-dashboard {
+  color: var(--admin-ink);
+}
+
+.admin-console-shell .admin-dashboard-stat-grid {
+  gap: 1rem;
+}
+
+.admin-console-shell .admin-stat-card {
+  position: relative;
+  min-height: 6.35rem;
+  overflow: hidden;
+  border-top: 2px solid var(--admin-border-strong) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 245, 0.82), rgba(239, 230, 207, 0.42)),
+    var(--admin-surface) !important;
+}
+
+.dark .admin-console-shell .admin-stat-card {
+  background:
+    linear-gradient(180deg, rgba(43, 37, 25, 0.86), rgba(21, 19, 15, 0.68)),
+    var(--admin-surface) !important;
+}
+
+.admin-console-shell .admin-stat-card::after {
+  content: "";
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 56px;
+  height: 56px;
+  opacity: 0.08;
+  border: 1px solid var(--admin-ink);
+  border-radius: 999px;
+}
+
+.admin-console-shell .admin-stat-card > .flex > div:first-child {
+  border-radius: 999px !important;
+  background: rgba(154, 59, 31, 0.1) !important;
+  color: var(--admin-terracotta-dark) !important;
+  box-shadow: inset 0 0 0 1px rgba(154, 59, 31, 0.16);
+}
+
+.admin-console-shell .admin-stat-card p.text-xs.font-medium {
+  color: var(--admin-muted) !important;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.admin-console-shell .admin-stat-card p.text-xl {
+  color: var(--admin-ink-deep) !important;
+  font-family: "EB Garamond", "Noto Serif SC", Georgia, serif;
+  font-feature-settings: "lnum" 1, "tnum" 1;
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.admin-console-shell .admin-stat-card p.text-xs:not(.font-medium),
+.admin-console-shell .admin-stat-card span.text-xs {
+  color: var(--admin-muted) !important;
+}
+
+.admin-console-shell .admin-stat-icon {
+  border-radius: 999px !important;
+  background: rgba(154, 59, 31, 0.1) !important;
+  color: var(--admin-terracotta-dark) !important;
+  box-shadow: inset 0 0 0 1px rgba(154, 59, 31, 0.16);
+}
+
+.admin-console-shell .admin-stat-label {
+  color: var(--admin-muted) !important;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.admin-console-shell .admin-stat-value {
+  color: var(--admin-ink-deep) !important;
+  font-family: "EB Garamond", "Noto Serif SC", Georgia, serif;
+  font-feature-settings: "lnum" 1, "tnum" 1;
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.admin-console-shell .admin-stat-note {
+  color: var(--admin-muted) !important;
+}
+
+.admin-console-shell .admin-filter-slab {
+  background:
+    linear-gradient(90deg, rgba(63, 90, 58, 0.08), transparent 48%),
+    var(--admin-surface) !important;
+}
+
+.admin-console-shell .admin-chart-card,
+.admin-console-shell .admin-dashboard .card {
+  border-top: 2px solid rgba(63, 90, 58, 0.28) !important;
+}
+
+.admin-console-shell .admin-chart-title,
+.admin-console-shell .admin-dashboard h3 {
+  color: var(--admin-ink-deep) !important;
+  font-family: Cinzel, "Noto Serif SC", serif;
+  font-size: 0.98rem;
+  font-weight: 600;
+}
+
+.admin-console-shell .admin-chart-frame {
+  border: 1px solid rgba(63, 90, 58, 0.12);
+  background: rgba(255, 252, 245, 0.38);
+}
+
+.dark .admin-console-shell .admin-chart-frame {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+/* Chart segmented controls */
+.admin-console-shell .inline-flex.rounded-lg {
+  border-radius: 4px !important;
+}
+
+.admin-console-shell .inline-flex.rounded-lg button {
+  border-radius: 3px !important;
+}
+
+.admin-console-shell .inline-flex.rounded-lg .bg-white,
+.admin-console-shell .inline-flex.rounded-lg .dark\:bg-dark-700 {
+  background: var(--admin-terracotta) !important;
+  color: var(--admin-marble) !important;
+}
+
+/* Mobile data cards */
+.admin-console-shell .md\:hidden .rounded-lg.border.bg-white,
+.admin-console-shell .md\:hidden .dark\:bg-dark-900 {
+  background: var(--admin-surface) !important;
+  border-color: var(--admin-border) !important;
+  border-radius: 6px !important;
+}

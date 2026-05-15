@@ -1,6 +1,6 @@
 # Claude Desktop 第三方 Provider 配置指南
 
-本教程将指导你如何在 Claude Desktop 客户端中配置第三方 API Provider，使其通过自定义网关连接到不同的 AI 服务（如 DragonCode、Kimi 等）。
+本教程将指导你如何在 Claude Desktop 客户端中配置第三方 API Provider，使其通过自定义网关连接到不同的 AI 服务（如 老实人 AI、Kimi 等）。
 
 ## 前置准备
 
@@ -42,14 +42,14 @@
 
 2. 点击 **Developer** → **Configure Provider**，打开配置面板
 
-3. 填写第三方接口信息。以 DragonCode 为例：
+3. 填写第三方接口信息。以 老实人 AI 为例：
 
    ![配置第三方接口](https://assets.example.com/image-20260423200226091.png)
 
    | 配置项 | 值 |
       |--------|-----|
-   | **Gateway base URL** | `https://your-domain.example` |
-   | **Gateway API key** | 你的 DragonCode API Key |
+   | **Gateway base URL** | `https://api.laoshirenai.com` |
+   | **Gateway API key** | 你的 老实人 AI API Key |
 
 4. 点击右下角的 **Apply locally**
 

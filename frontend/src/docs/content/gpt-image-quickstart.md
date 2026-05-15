@@ -1,6 +1,6 @@
 # GPT-Image-2 使用指南
 
-GPT-Image-2 是 DragonCode 提供的 AI 图片生成服务，使用独立的图片接口。
+GPT-Image-2 是 老实人 AI 提供的 AI 图片生成服务，使用独立的图片接口。
 
 ---
 
@@ -8,7 +8,7 @@ GPT-Image-2 是 DragonCode 提供的 AI 图片生成服务，使用独立的图�
 
 ### 1. 创建 API Key
 
-前往 [API Keys 管理页面](https://your-domain.example/keys)，点击「创建 API Key」，分组选择 **GPT-Image**。
+前往 [API Keys 管理页面](https://laoshirenai.com/keys)，点击「创建 API Key」，分组选择 **GPT-Image**。
 
 创建完成后请妥善保存，后续所有请求都需要在 Header 中携带此 Key。
 
@@ -17,7 +17,7 @@ GPT-Image-2 是 DragonCode 提供的 AI 图片生成服务，使用独立的图�
 GPT-Image-2 使用独立 Base URL：
 
 ```
-https://your-domain.example/gpt-image/v1
+https://api.laoshirenai.com/gpt-image/v1
 ```
 
 ---
@@ -42,7 +42,7 @@ AI 会自动安装生图技能并引导你完成配置，之后只需对 AI 说�
 提交生成任务：
 
 ```bash
-curl 'https://your-domain.example/gpt-image/v1/images/generations' \
+curl 'https://api.laoshirenai.com/gpt-image/v1/images/generations' \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer YOUR_API_KEY' \
   -d '{
@@ -73,7 +73,7 @@ curl 'https://your-domain.example/gpt-image/v1/images/generations' \
 将 `task_xxx` 替换为提交任务时返回的 `task_id`：
 
 ```bash
-curl 'https://your-domain.example/gpt-image/v1/tasks/task_xxx' \
+curl 'https://api.laoshirenai.com/gpt-image/v1/tasks/task_xxx' \
   -H 'Authorization: Bearer YOUR_API_KEY'
 ```
 
@@ -103,7 +103,7 @@ curl 'https://your-domain.example/gpt-image/v1/tasks/task_xxx' \
       "images": [
         {
           "url": [
-            "https://your-domain.example/gpt-image/media/task_xxx/0?token=..."
+            "https://api.laoshirenai.com/gpt-image/media/task_xxx/0?token=..."
           ]
         }
       ]
@@ -123,7 +123,7 @@ curl 'https://your-domain.example/gpt-image/v1/tasks/task_xxx' \
 **使用 URL 引用图片：**
 
 ```bash
-curl 'https://your-domain.example/gpt-image/v1/images/generations' \
+curl 'https://api.laoshirenai.com/gpt-image/v1/images/generations' \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer YOUR_API_KEY' \
   -d '{
@@ -205,7 +205,7 @@ import time
 import requests
 
 # 替换为你的 API Key
-base_url = "https://your-domain.example/gpt-image/v1"
+base_url = "https://api.laoshirenai.com/gpt-image/v1"
 api_key = "YOUR_API_KEY"
 
 headers = {
@@ -270,4 +270,4 @@ while True:
 
 ## 图片链接说明
 
-任务完成后返回的图片链接为本站链接（`https://your-domain.example/gpt-image/media/...`），带有临时访问 token，可直接使用。
+任务完成后返回的图片链接为本站链接（`https://api.laoshirenai.com/gpt-image/media/...`），带有临时访问 token，可直接使用。

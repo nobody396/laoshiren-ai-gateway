@@ -11,8 +11,8 @@ describe('resolveDocumentTitle', () => {
   })
 
   it('站点名为空时，回退默认站点名', () => {
-    expect(resolveDocumentTitle('Dashboard', '')).toBe('Dashboard - Sub2API')
-    expect(resolveDocumentTitle(undefined, '   ')).toBe('Sub2API')
+    expect(resolveDocumentTitle('Dashboard', '')).toBe('Dashboard - 老实人 AI')
+    expect(resolveDocumentTitle(undefined, '   ')).toBe('老实人 AI')
   })
 
   it('站点名变更时仅影响后续路由标题计算', () => {
@@ -21,5 +21,9 @@ describe('resolveDocumentTitle', () => {
 
     expect(before).toBe('Admin Dashboard - Alpha')
     expect(after).toBe('Admin Dashboard - Beta')
+  })
+
+  it('支持首页使用“站点名 - 标题”格式', () => {
+    expect(resolveDocumentTitle('AI 编码中转', '老实人 AI', undefined, { siteNameFirst: true })).toBe('老实人 AI - AI 编码中转')
   })
 })

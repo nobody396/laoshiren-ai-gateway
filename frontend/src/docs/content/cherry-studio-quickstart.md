@@ -1,8 +1,8 @@
-# Dragon Code × Cherry Studio 快速开始指南
+# 老实人 AI × Cherry Studio 快速开始指南
 
 ## 适用场景
 
-这篇文档只解决一件事：把 Cherry Studio 接到 Dragon Code 中转站，并完成一次可用性验证。
+这篇文档只解决一件事：把 Cherry Studio 接到 老实人 AI 中转站，并完成一次可用性验证。
 
 ---
 
@@ -10,8 +10,8 @@
 
 只需要填这 3 项就能用：
 
-- **Base URL**：`https://your-domain.example`
-- **API Key**：你在 Dragon Code 获取的 key
+- **Base URL**：`https://api.laoshirenai.com`
+- **API Key**：你在 老实人 AI 获取的 key
 - **模型 ID**：例如 `claude-opus-4-6`
 
 不会填？按下面的步骤一步一步来。
@@ -23,14 +23,14 @@
 在开始前，请确认：
 
 - 已安装 Cherry Studio
-- 已注册 [Dragon Code](https://your-domain.example) 账号
+- 已注册 [老实人 AI](https://laoshirenai.com) 账号
 - 已获取 API Key（形如 `sk-xxxx`）
 
 ### 创建 API 密钥
 
-登录 Dragon Code 控制台，左边栏进入 **API 密钥** → 点击 **创建密钥**。
+登录 老实人 AI 控制台，左边栏进入 **API 密钥** → 点击 **创建密钥**。
 
-- **名称**：可以随便填，比如 `dragoncode`
+- **名称**：可以随便填，比如 `laoshirenai`
 - **分组**：根据你要使用的工具选择
   - 使用 **Codex**（OpenAI 工具）→ 选 `codex` 分组
   - 使用 **Claude Code**（Anthropic 工具）→ 选 Claude 对应分组
@@ -45,7 +45,7 @@
 
 ### 如何确认 API Key 正确
 
-- 能在 Dragon Code 后台看到该 Key
+- 能在 老实人 AI 后台看到该 Key
 - 复制后是完整的一串字符，没有空格或截断
 
 ### 常见卡点
@@ -65,13 +65,13 @@
 
 ---
 
-## 3. 添加 Dragon Code 提供商
+## 3. 添加 老实人 AI 提供商
 
 1. 在模型服务中点击 **+ 添加**
 
    ![添加提供商入口](https://assets.example.com/dragoncode-cherry-studio/page5_img1.png)
 
-   提供商名称可以随便填，例如 `dragoncode`。
+   提供商名称可以随便填，例如 `laoshirenai`。
 
    ![填写提供商名称](https://assets.example.com/dragoncode-cherry-studio/page5_img2.png)
 
@@ -83,8 +83,8 @@
 
 3. 填写 API 密钥和 API 地址（下图以 OpenAI 为例）
 
-   - **API 密钥**：你在 Dragon Code 创建的 API Key
-   - **API 地址**：`https://your-domain.example`
+   - **API 密钥**：你在 老实人 AI 创建的 API Key
+   - **API 地址**：`https://api.laoshirenai.com`
 
    ![填写 API 密钥和地址](https://assets.example.com/dragoncode-cherry-studio/page7_img1.png)
 
@@ -111,7 +111,7 @@
 | `claude-opus-4-6` |
 | `claude-sonnet-4-6` |
 
-> 模型 ID 必须和 Dragon Code 支持的**完全一致**，大小写、连字符都不能差。
+> 模型 ID 必须和 老实人 AI 支持的**完全一致**，大小写、连字符都不能差。
 
 ### 添加模型
 
@@ -153,7 +153,7 @@
 
 ### 502 Bad gateway
 
-- **含义**：Dragon Code 连接上游 Claude / GPT 失败
+- **含义**：老实人 AI 连接上游 Claude / GPT 失败
 - **解决**：等 1~2 分钟再试；或切换模型
 
 ### AI_RetryError
@@ -170,7 +170,7 @@
 
 - **含义**：模型 ID 或 URL 写错
 - **解决**：检查
-  - API 地址是否为 `https://your-domain.example`
+  - API 地址是否为 `https://api.laoshirenai.com`
   - 模型 ID 是否在[支持的模型](#支持的模型)列表中
 
 ### 一直转圈 / 卡住
@@ -186,7 +186,7 @@
 
 | 项目 | 正确写法 |
 |---|---|
-| Base URL | `https://your-domain.example` |
+| Base URL | `https://api.laoshirenai.com` |
 | API Key | `sk-xxxx`（完整、无空格） |
 | 模型 ID | 必须在支持列表中 |
 | 分组与类型 | OpenAI ↔ `codex` 分组；Anthropic ↔ Claude 分组 |

@@ -11,6 +11,7 @@ import {useAppStore} from '@/stores/app'
 // ==================== Axios Instance Configuration ====================
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+const AUTHENTICATED_GET_CACHE_BUSTER = '_nc'
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -125,6 +126,8 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem('auth_token')
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
+      config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+      config.headers['Pragma'] = 'no-cache'
     }
 
     // Attach locale for backend translations
@@ -138,6 +141,9 @@ apiClient.interceptors.request.use(
         config.params = {}
       }
       config.params.timezone = getUserTimezone()
+      if (token && config.params[AUTHENTICATED_GET_CACHE_BUSTER] == null) {
+        config.params[AUTHENTICATED_GET_CACHE_BUSTER] = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+      }
     }
 
     return config

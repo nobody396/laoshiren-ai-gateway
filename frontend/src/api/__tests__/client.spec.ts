@@ -88,6 +88,27 @@ describe('API Client', () => {
 
       const config = adapter.mock.calls[0][0]
       expect(config.headers.get('Authorization')).toBe('Bearer my-jwt-token')
+      expect(config.headers.get('Cache-Control')).toContain('no-store')
+      expect(config.headers.get('Pragma')).toBe('no-cache')
+    })
+
+    it('登录态 GET 请求附加防缓存参数', async () => {
+      localStorage.setItem('auth_token', 'my-jwt-token')
+
+      const adapter = vi.fn().mockResolvedValue({
+        status: 200,
+        data: { code: 0, data: {} },
+        headers: {},
+        config: {},
+        statusText: 'OK',
+      })
+      apiClient.defaults.adapter = adapter
+
+      await apiClient.get('/auth/me')
+
+      const config = adapter.mock.calls[0][0]
+      expect(config.params).toHaveProperty('_nc')
+      expect(config.params._nc).toEqual(expect.any(String))
     })
 
     it('无 token 时不附加 Authorization 头', async () => {
@@ -104,6 +125,7 @@ describe('API Client', () => {
 
       const config = adapter.mock.calls[0][0]
       expect(config.headers.get('Authorization')).toBeFalsy()
+      expect(config.params?._nc).toBeUndefined()
     })
 
     it('GET 请求自动附加 timezone 参数', async () => {

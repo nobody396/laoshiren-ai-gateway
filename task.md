@@ -24,7 +24,7 @@
 - [x] 扩展后台代理管理页面。
 - [x] 增加单元测试和仓储测试。
 - [x] 执行本地回归测试。
-- [ ] 检查 diff，提交并推送 GitHub。
+- [x] 检查 diff，提交并推送 GitHub。
 - [x] 明确未上线。
 
 ## 验收命令
@@ -44,3 +44,4 @@
 - `pnpm --dir frontend run typecheck` 通过。
 - `pnpm --dir frontend run build` 通过。
 - `git diff --check` 通过。
+- 已推送 GitHub：`4ee2777 feat(agent): add automatic tier evaluation`。

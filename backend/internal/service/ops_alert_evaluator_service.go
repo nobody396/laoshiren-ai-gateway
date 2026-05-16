@@ -223,14 +223,22 @@ func (s *OpsAlertEvaluatorService) evaluateOnce(interval time.Duration) {
 		windowStart := safeEnd.Add(-time.Duration(windowMinutes) * time.Minute)
 		windowEnd := safeEnd
 
-		metricValue, ok := s.computeRuleMetric(ctx, rule, systemMetrics, windowStart, windowEnd, scopePlatform, scopeGroupID)
-		if !ok {
+		metric := s.evaluateRuleMetric(ctx, rule, systemMetrics, windowStart, windowEnd, scopePlatform, scopeGroupID)
+		if !metric.OK {
 			s.resetRuleState(rule.ID, now)
+			if metric.NoSamples {
+				resolved, err := s.resolveActiveAlertEvent(ctx, rule.ID, now)
+				if err != nil {
+					logger.LegacyPrintf("service.ops_alert_evaluator", "[OpsAlertEvaluator] resolve event failed for no-sample metric (rule=%d): %v", rule.ID, err)
+				} else if resolved {
+					eventsResolved++
+				}
+			}
 			continue
 		}
 		rulesEvaluated++
 
-		breachedNow := compareMetric(metricValue, rule.Operator, rule.Threshold)
+		breachedNow := compareMetric(metric.Value, rule.Operator, rule.Threshold)
 		required := requiredSustainedBreaches(rule.SustainedMinutes, interval)
 		consecutive := s.updateRuleBreaches(rule.ID, now, interval, breachedNow)
 
@@ -273,8 +281,8 @@ func (s *OpsAlertEvaluatorService) evaluateOnce(interval time.Duration) {
 				Severity:       strings.TrimSpace(rule.Severity),
 				Status:         OpsAlertStatusFiring,
 				Title:          fmt.Sprintf("%s: %s", strings.TrimSpace(rule.Severity), strings.TrimSpace(rule.Name)),
-				Description:    buildOpsAlertDescription(rule, metricValue, windowMinutes, scopePlatform, scopeGroupID),
-				MetricValue:    float64Ptr(metricValue),
+				Description:    buildOpsAlertDescription(rule, metric.Value, windowMinutes, scopePlatform, scopeGroupID),
+				MetricValue:    float64Ptr(metric.Value),
 				ThresholdValue: float64Ptr(rule.Threshold),
 				Dimensions:     buildOpsAlertDimensions(scopePlatform, scopeGroupID),
 				FiredAt:        now,
@@ -309,6 +317,23 @@ func (s *OpsAlertEvaluatorService) evaluateOnce(interval time.Duration) {
 
 	result := truncateString(fmt.Sprintf("rules=%d enabled=%d evaluated=%d created=%d resolved=%d emails_sent=%d", rulesTotal, rulesEnabled, rulesEvaluated, eventsCreated, eventsResolved, emailsSent), 2048)
 	s.recordHeartbeatSuccess(runAt, time.Since(startedAt), result)
+}
+
+func (s *OpsAlertEvaluatorService) resolveActiveAlertEvent(ctx context.Context, ruleID int64, resolvedAt time.Time) (bool, error) {
+	if s == nil || s.opsRepo == nil || ruleID <= 0 {
+		return false, nil
+	}
+	activeEvent, err := s.opsRepo.GetActiveAlertEvent(ctx, ruleID)
+	if err != nil {
+		return false, err
+	}
+	if activeEvent == nil {
+		return false, nil
+	}
+	if err := s.opsRepo.UpdateAlertEventStatus(ctx, activeEvent.ID, OpsAlertStatusResolved, &resolvedAt); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (s *OpsAlertEvaluatorService) pruneRuleStates(rules []*OpsAlertRule) {
@@ -438,116 +463,135 @@ func (s *OpsAlertEvaluatorService) computeRuleMetric(
 	platform string,
 	groupID *int64,
 ) (float64, bool) {
+	result := s.evaluateRuleMetric(ctx, rule, systemMetrics, start, end, platform, groupID)
+	return result.Value, result.OK
+}
+
+type opsAlertMetricEvaluation struct {
+	Value     float64
+	OK        bool
+	NoSamples bool
+}
+
+func (s *OpsAlertEvaluatorService) evaluateRuleMetric(
+	ctx context.Context,
+	rule *OpsAlertRule,
+	systemMetrics *OpsSystemMetricsSnapshot,
+	start time.Time,
+	end time.Time,
+	platform string,
+	groupID *int64,
+) opsAlertMetricEvaluation {
 	if rule == nil {
-		return 0, false
+		return opsAlertMetricEvaluation{}
 	}
 	switch strings.TrimSpace(rule.MetricType) {
 	case "cpu_usage_percent":
 		if systemMetrics != nil && systemMetrics.CPUUsagePercent != nil {
-			return *systemMetrics.CPUUsagePercent, true
+			return opsAlertMetricEvaluation{Value: *systemMetrics.CPUUsagePercent, OK: true}
 		}
-		return 0, false
+		return opsAlertMetricEvaluation{}
 	case "memory_usage_percent":
 		if systemMetrics != nil && systemMetrics.MemoryUsagePercent != nil {
-			return *systemMetrics.MemoryUsagePercent, true
+			return opsAlertMetricEvaluation{Value: *systemMetrics.MemoryUsagePercent, OK: true}
 		}
-		return 0, false
+		return opsAlertMetricEvaluation{}
 	case "concurrency_queue_depth":
 		if systemMetrics != nil && systemMetrics.ConcurrencyQueueDepth != nil {
-			return float64(*systemMetrics.ConcurrencyQueueDepth), true
+			return opsAlertMetricEvaluation{Value: float64(*systemMetrics.ConcurrencyQueueDepth), OK: true}
 		}
-		return 0, false
+		return opsAlertMetricEvaluation{}
 	case "group_available_accounts":
 		if groupID == nil || *groupID <= 0 {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
 		if s == nil || s.opsService == nil {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
 		availability, err := s.opsService.GetAccountAvailability(ctx, platform, groupID)
 		if err != nil || availability == nil {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
 		if availability.Group == nil {
-			return 0, true
+			return opsAlertMetricEvaluation{Value: 0, OK: true}
 		}
-		return float64(availability.Group.AvailableCount), true
+		return opsAlertMetricEvaluation{Value: float64(availability.Group.AvailableCount), OK: true}
 	case "group_available_ratio":
 		if groupID == nil || *groupID <= 0 {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
 		if s == nil || s.opsService == nil {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
 		availability, err := s.opsService.GetAccountAvailability(ctx, platform, groupID)
 		if err != nil || availability == nil {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
-		return computeGroupAvailableRatio(availability.Group), true
+		return opsAlertMetricEvaluation{Value: computeGroupAvailableRatio(availability.Group), OK: true}
 	case "account_rate_limited_count":
 		if s == nil || s.opsService == nil {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
 		availability, err := s.opsService.GetAccountAvailability(ctx, platform, groupID)
 		if err != nil || availability == nil {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
-		return float64(countAccountsByCondition(availability.Accounts, func(acc *AccountAvailability) bool {
+		return opsAlertMetricEvaluation{Value: float64(countAccountsByCondition(availability.Accounts, func(acc *AccountAvailability) bool {
 			return acc.IsRateLimited
-		})), true
+		})), OK: true}
 	case "account_error_count":
 		if s == nil || s.opsService == nil {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
 		availability, err := s.opsService.GetAccountAvailability(ctx, platform, groupID)
 		if err != nil || availability == nil {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
-		return float64(countAccountsByCondition(availability.Accounts, func(acc *AccountAvailability) bool {
+		return opsAlertMetricEvaluation{Value: float64(countAccountsByCondition(availability.Accounts, func(acc *AccountAvailability) bool {
 			return acc.HasError && acc.TempUnschedulableUntil == nil
-		})), true
+		})), OK: true}
 	case "group_rate_limit_ratio":
 		if groupID == nil || *groupID <= 0 {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
 		if s == nil || s.opsService == nil {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
 		availability, err := s.opsService.GetAccountAvailability(ctx, platform, groupID)
 		if err != nil || availability == nil {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
 		if availability.Group == nil || availability.Group.TotalAccounts <= 0 {
-			return 0, true
+			return opsAlertMetricEvaluation{Value: 0, OK: true}
 		}
-		return (float64(availability.Group.RateLimitCount) / float64(availability.Group.TotalAccounts)) * 100, true
+		return opsAlertMetricEvaluation{Value: (float64(availability.Group.RateLimitCount) / float64(availability.Group.TotalAccounts)) * 100, OK: true}
 	case "account_error_ratio":
 		if s == nil || s.opsService == nil {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
 		availability, err := s.opsService.GetAccountAvailability(ctx, platform, groupID)
 		if err != nil || availability == nil {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
 		total := int64(len(availability.Accounts))
 		if total <= 0 {
-			return 0, true
+			return opsAlertMetricEvaluation{Value: 0, OK: true}
 		}
 		errorCount := countAccountsByCondition(availability.Accounts, func(acc *AccountAvailability) bool {
 			return acc.HasError && acc.TempUnschedulableUntil == nil
 		})
-		return (float64(errorCount) / float64(total)) * 100, true
+		return opsAlertMetricEvaluation{Value: (float64(errorCount) / float64(total)) * 100, OK: true}
 	case "overload_account_count":
 		if s == nil || s.opsService == nil {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
 		availability, err := s.opsService.GetAccountAvailability(ctx, platform, groupID)
 		if err != nil || availability == nil {
-			return 0, false
+			return opsAlertMetricEvaluation{}
 		}
-		return float64(countAccountsByCondition(availability.Accounts, func(acc *AccountAvailability) bool {
+		return opsAlertMetricEvaluation{Value: float64(countAccountsByCondition(availability.Accounts, func(acc *AccountAvailability) bool {
 			return acc.IsOverloaded
-		})), true
+		})), OK: true}
 	}
 
 	overview, err := s.opsRepo.GetDashboardOverview(ctx, &OpsDashboardFilter{
@@ -558,30 +602,30 @@ func (s *OpsAlertEvaluatorService) computeRuleMetric(
 		QueryMode: OpsQueryModeRaw,
 	})
 	if err != nil {
-		return 0, false
+		return opsAlertMetricEvaluation{}
 	}
 	if overview == nil {
-		return 0, false
+		return opsAlertMetricEvaluation{}
 	}
 
 	switch strings.TrimSpace(rule.MetricType) {
 	case "success_rate":
 		if overview.RequestCountSLA <= 0 {
-			return 0, false
+			return opsAlertMetricEvaluation{NoSamples: true}
 		}
-		return overview.SLA * 100, true
+		return opsAlertMetricEvaluation{Value: overview.SLA * 100, OK: true}
 	case "error_rate":
 		if overview.RequestCountSLA <= 0 {
-			return 0, false
+			return opsAlertMetricEvaluation{NoSamples: true}
 		}
-		return overview.ErrorRate * 100, true
+		return opsAlertMetricEvaluation{Value: overview.ErrorRate * 100, OK: true}
 	case "upstream_error_rate":
 		if overview.RequestCountSLA <= 0 {
-			return 0, false
+			return opsAlertMetricEvaluation{NoSamples: true}
 		}
-		return overview.UpstreamErrorRate * 100, true
+		return opsAlertMetricEvaluation{Value: overview.UpstreamErrorRate * 100, OK: true}
 	default:
-		return 0, false
+		return opsAlertMetricEvaluation{}
 	}
 }
 

@@ -4,6 +4,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -14,8 +15,15 @@ var _ OpsRepository = (*stubOpsRepo)(nil)
 
 type stubOpsRepo struct {
 	OpsRepository
-	overview *OpsDashboardOverview
-	err      error
+	overview     *OpsDashboardOverview
+	err          error
+	rules        []*OpsAlertRule
+	activeEvents map[int64]*OpsAlertEvent
+
+	updatedEventID int64
+	updatedStatus  string
+	resolvedAt     *time.Time
+	heartbeat      *OpsUpsertJobHeartbeatInput
 }
 
 func (s *stubOpsRepo) GetDashboardOverview(ctx context.Context, filter *OpsDashboardFilter) (*OpsDashboardOverview, error) {
@@ -26,6 +34,43 @@ func (s *stubOpsRepo) GetDashboardOverview(ctx context.Context, filter *OpsDashb
 		return s.overview, nil
 	}
 	return &OpsDashboardOverview{}, nil
+}
+
+func (s *stubOpsRepo) ListAlertRules(ctx context.Context) ([]*OpsAlertRule, error) {
+	return s.rules, nil
+}
+
+func (s *stubOpsRepo) GetLatestSystemMetrics(ctx context.Context, windowMinutes int) (*OpsSystemMetricsSnapshot, error) {
+	return nil, nil
+}
+
+func (s *stubOpsRepo) GetActiveAlertEvent(ctx context.Context, ruleID int64) (*OpsAlertEvent, error) {
+	if s.activeEvents == nil {
+		return nil, nil
+	}
+	ev := s.activeEvents[ruleID]
+	if ev == nil || ev.Status != OpsAlertStatusFiring {
+		return nil, nil
+	}
+	return ev, nil
+}
+
+func (s *stubOpsRepo) UpdateAlertEventStatus(ctx context.Context, eventID int64, status string, resolvedAt *time.Time) error {
+	s.updatedEventID = eventID
+	s.updatedStatus = status
+	s.resolvedAt = resolvedAt
+	for _, ev := range s.activeEvents {
+		if ev != nil && ev.ID == eventID {
+			ev.Status = status
+			ev.ResolvedAt = resolvedAt
+		}
+	}
+	return nil
+}
+
+func (s *stubOpsRepo) UpsertJobHeartbeat(ctx context.Context, input *OpsUpsertJobHeartbeatInput) error {
+	s.heartbeat = input
+	return nil
 }
 
 func TestComputeGroupAvailableRatio(t *testing.T) {
@@ -209,4 +254,88 @@ func TestComputeRuleMetricNewIndicators(t *testing.T) {
 			require.InDelta(t, tt.wantValue, gotValue, 0.0001)
 		})
 	}
+}
+
+func TestAlertEvaluatorResolvesTrafficRateAlertWhenWindowHasNoSamples(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now().UTC()
+	repo := &stubOpsRepo{
+		overview: &OpsDashboardOverview{RequestCountSLA: 0},
+		rules: []*OpsAlertRule{
+			{
+				ID:               1,
+				Name:             "错误率过高",
+				Enabled:          true,
+				Severity:         "P1",
+				MetricType:       "error_rate",
+				Operator:         ">",
+				Threshold:        5,
+				WindowMinutes:    5,
+				SustainedMinutes: 1,
+			},
+		},
+		activeEvents: map[int64]*OpsAlertEvent{
+			1: {
+				ID:      25,
+				RuleID:  1,
+				Status:  OpsAlertStatusFiring,
+				FiredAt: now.Add(-10 * time.Minute),
+			},
+		},
+	}
+	svc := &OpsAlertEvaluatorService{
+		opsRepo:    repo,
+		instanceID: "test-instance",
+		ruleStates: map[int64]*opsAlertRuleState{},
+	}
+
+	svc.evaluateOnce(time.Minute)
+
+	require.Equal(t, int64(25), repo.updatedEventID)
+	require.Equal(t, OpsAlertStatusResolved, repo.updatedStatus)
+	require.NotNil(t, repo.resolvedAt)
+	require.Equal(t, OpsAlertStatusResolved, repo.activeEvents[1].Status)
+	require.NotNil(t, repo.heartbeat)
+	require.NotNil(t, repo.heartbeat.LastResult)
+	require.Contains(t, *repo.heartbeat.LastResult, "resolved=1")
+}
+
+func TestAlertEvaluatorDoesNotResolveTrafficRateAlertWhenMetricReadFails(t *testing.T) {
+	t.Parallel()
+
+	repo := &stubOpsRepo{
+		err: errors.New("dashboard query failed"),
+		rules: []*OpsAlertRule{
+			{
+				ID:               1,
+				Name:             "错误率过高",
+				Enabled:          true,
+				Severity:         "P1",
+				MetricType:       "error_rate",
+				Operator:         ">",
+				Threshold:        5,
+				WindowMinutes:    5,
+				SustainedMinutes: 1,
+			},
+		},
+		activeEvents: map[int64]*OpsAlertEvent{
+			1: {
+				ID:     25,
+				RuleID: 1,
+				Status: OpsAlertStatusFiring,
+			},
+		},
+	}
+	svc := &OpsAlertEvaluatorService{
+		opsRepo:    repo,
+		instanceID: "test-instance",
+		ruleStates: map[int64]*opsAlertRuleState{},
+	}
+
+	svc.evaluateOnce(time.Minute)
+
+	require.Zero(t, repo.updatedEventID)
+	require.Empty(t, repo.updatedStatus)
+	require.Equal(t, OpsAlertStatusFiring, repo.activeEvents[1].Status)
 }

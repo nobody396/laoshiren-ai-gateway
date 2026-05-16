@@ -29,6 +29,7 @@ type CommissionService struct {
 	commissionRepo CommissionRepository
 	rateRepo       CommissionRateRepository
 	adminRepo      AgentCommissionAdminRepository
+	levelRepo      AgentLevelRepository
 }
 
 // NewCommissionService 创建分佣服务实例
@@ -42,6 +43,9 @@ func NewCommissionService(userRepo UserRepository, commissionRepo CommissionRepo
 	}
 	if repo, ok := commissionRepo.(AgentCommissionAdminRepository); ok {
 		s.adminRepo = repo
+	}
+	if repo, ok := commissionRepo.(AgentLevelRepository); ok {
+		s.levelRepo = repo
 	}
 	return s
 }
@@ -321,6 +325,10 @@ func (s *CommissionService) GetAgentDashboard(ctx context.Context, agentID int64
 	}
 	consumptionRate, rateSource := s.resolveAgentConsumptionRate(ctx, agentID)
 	rates := s.getCommissionRates(ctx)
+	var levelState *AgentLevelState
+	if s.levelRepo != nil {
+		levelState, _ = s.levelRepo.GetAgentLevelState(ctx, agentID)
+	}
 
 	// 邀请用户总数
 	_, paginationResult, err := s.commissionRepo.ListInvitedUsersWithStats(
@@ -335,7 +343,7 @@ func (s *CommissionService) GetAgentDashboard(ctx context.Context, agentID int64
 		invitedCount = paginationResult.Total
 	}
 
-	return &AgentDashboard{
+	dashboard := &AgentDashboard{
 		InvitedUserCount:         invitedCount,
 		TotalCommission:          totalCommission,
 		SettledCommission:        settledCommission,
@@ -345,7 +353,15 @@ func (s *CommissionService) GetAgentDashboard(ctx context.Context, agentID int64
 		ConsumptionRate:          consumptionRate,
 		FirstRechargeInviteeRate: rates.FirstRechargeInviteeRate,
 		RateSource:               rateSource,
-	}, nil
+	}
+	if levelState != nil {
+		dashboard.CurrentLevel = levelState.CurrentLevelKey
+		dashboard.PermanentLevel = levelState.PermanentLevelKey
+		dashboard.TemporaryLevel = levelState.TemporaryLevelKey
+		dashboard.LastMonthConsumption = levelState.LastMonthConsumption
+		dashboard.NextLevelGap = levelState.NextLevelGap
+	}
+	return dashboard, nil
 }
 
 // GetUserReferralDashboard 获取普通用户的邀请看板统计（邀请人数 + 获得的 referral 佣金）

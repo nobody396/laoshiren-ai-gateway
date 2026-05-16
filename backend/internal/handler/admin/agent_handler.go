@@ -31,6 +31,10 @@ type updateAgentRateRequest struct {
 	Enabled         bool    `json:"enabled"`
 }
 
+type updateAgentLevelRulesRequest struct {
+	Rules []service.AgentLevelRule `json:"rules"`
+}
+
 type createSettlementRequest struct {
 	Amount float64 `json:"amount"`
 	Note   string  `json:"note"`
@@ -200,6 +204,51 @@ func (h *AgentHandler) UpdateRates(c *gin.Context) {
 		return
 	}
 	response.Success(c, rates)
+}
+
+func (h *AgentHandler) GetLevelRules(c *gin.Context) {
+	rules, err := h.commissionService.GetAgentLevelRules(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, rules)
+}
+
+func (h *AgentHandler) UpdateLevelRules(c *gin.Context) {
+	var req updateAgentLevelRulesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	rules, err := h.commissionService.UpdateAgentLevelRules(c.Request.Context(), req.Rules)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, rules)
+}
+
+func (h *AgentHandler) RunLevelEvaluations(c *gin.Context) {
+	result, err := h.commissionService.RunAllAgentLevelEvaluations(c.Request.Context(), time.Now())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+func (h *AgentHandler) RunAgentLevelEvaluation(c *gin.Context) {
+	agentID, ok := parseAgentIDParam(c)
+	if !ok {
+		return
+	}
+	result, err := h.commissionService.RunAgentLevelEvaluation(c.Request.Context(), agentID, time.Now())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
 }
 
 func (h *AgentHandler) GetAgentRate(c *gin.Context) {

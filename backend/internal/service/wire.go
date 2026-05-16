@@ -140,6 +140,13 @@ func ProvideUsageCleanupService(repo UsageCleanupRepository, timingWheel *Timing
 	return svc
 }
 
+// ProvideAgentLevelEvaluatorService creates and starts the monthly agent level evaluator.
+func ProvideAgentLevelEvaluatorService(commission *CommissionService, cfg *config.Config) *AgentLevelEvaluatorService {
+	svc := NewAgentLevelEvaluatorService(commission, cfg)
+	svc.Start()
+	return svc
+}
+
 // ProvideAccountExpiryService creates and starts AccountExpiryService.
 func ProvideAccountExpiryService(accountRepo AccountRepository) *AccountExpiryService {
 	svc := NewAccountExpiryService(accountRepo, time.Minute)
@@ -475,6 +482,7 @@ var ProviderSet = wire.NewSet(
 	ProvideTimingWheelService,
 	ProvideDashboardAggregationService,
 	ProvideUsageCleanupService,
+	ProvideAgentLevelEvaluatorService,
 	ProvideDeferredService,
 	NewAntigravityQuotaFetcher,
 	NewUserAttributeService,

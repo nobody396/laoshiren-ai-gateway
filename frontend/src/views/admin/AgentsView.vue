@@ -28,6 +28,53 @@
       </div>
 
       <div class="card p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.agents.levelRules') }}</h3>
+            <p class="mt-1 text-xs text-gray-500">{{ t('admin.agents.levelRulesHint') }}</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn-secondary btn-sm" :disabled="levelEvaluationRunning" @click="runAllLevelEvaluations">
+              {{ levelEvaluationRunning ? t('common.processing') : t('admin.agents.runLevelEvaluation') }}
+            </button>
+            <button class="btn btn-secondary btn-sm" :disabled="levelRulesSaving" @click="saveLevelRules">
+              {{ levelRulesSaving ? t('common.saving') : t('common.save') }}
+            </button>
+          </div>
+        </div>
+        <div class="mt-4 overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-100 dark:divide-dark-800">
+            <thead class="bg-gray-50 dark:bg-dark-800/50">
+              <tr>
+                <th class="px-3 py-2 text-left text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.level') }}</th>
+                <th class="px-3 py-2 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.rate') }}</th>
+                <th class="px-3 py-2 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.monthlyThreshold') }}</th>
+                <th class="px-3 py-2 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.cumulativeThreshold') }}</th>
+                <th class="px-3 py-2 text-center text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.enabled') }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50 dark:divide-dark-800">
+              <tr v-for="rule in levelRules" :key="rule.level_key">
+                <td class="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white">{{ rule.level_name || formatLevel(rule.level_key) }}</td>
+                <td class="px-3 py-2 text-right">
+                  <input v-model.number="rule.ratePercent" type="number" min="0" max="20" step="0.01" class="input ml-auto w-24 text-right text-sm" />
+                </td>
+                <td class="px-3 py-2 text-right">
+                  <input v-model.number="rule.monthly_consumption_threshold" type="number" min="0" step="1" class="input ml-auto w-28 text-right text-sm" :placeholder="t('common.none')" />
+                </td>
+                <td class="px-3 py-2 text-right">
+                  <input v-model.number="rule.cumulative_consumption_threshold" type="number" min="0" step="1" class="input ml-auto w-28 text-right text-sm" :placeholder="t('common.none')" />
+                </td>
+                <td class="px-3 py-2 text-center">
+                  <input v-model="rule.enabled" type="checkbox" class="rounded border-gray-300" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card p-4">
         <div class="flex flex-wrap items-end gap-3">
           <div>
             <label class="input-label">{{ t('admin.agents.consumptionRate') }}</label>
@@ -86,13 +133,15 @@
                 <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.totalCommission') }}</th>
                 <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.settledCommission') }}</th>
                 <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.unsettledCommission') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.currentLevel') }}</th>
+                <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.lastMonthConsumption') }}</th>
                 <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.consumptionRate') }}</th>
                 <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.actions') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-50 dark:divide-dark-800">
               <tr v-if="loading">
-                <td colspan="8" class="px-4 py-8 text-center text-sm text-gray-500">{{ t('common.loading') }}</td>
+                <td colspan="10" class="px-4 py-8 text-center text-sm text-gray-500">{{ t('common.loading') }}</td>
               </tr>
               <tr
                 v-for="agent in agents"
@@ -122,9 +171,13 @@
                 <td class="px-4 py-3 text-right text-sm font-medium">{{ money(agent.total_commission) }}</td>
                 <td class="px-4 py-3 text-right text-sm">{{ money(agent.settled_commission) }}</td>
                 <td class="px-4 py-3 text-right text-sm font-medium text-green-600 dark:text-green-400">{{ money(agent.unsettled_commission) }}</td>
+                <td class="px-4 py-3 text-sm">
+                  <span class="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-dark-800 dark:text-dark-200">{{ formatLevel(agent.current_level) }}</span>
+                </td>
+                <td class="px-4 py-3 text-right text-sm">{{ money(agent.last_month_consumption || 0) }}</td>
                 <td class="px-4 py-3 text-right text-sm">
                   {{ percent(agent.consumption_rate) }}
-                  <span v-if="agent.rate_source === 'agent_override'" class="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">{{ t('admin.agents.override') }}</span>
+                  <span v-if="agent.rate_source === 'agent_override' || agent.rate_source === 'agent_manual_base'" class="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">{{ t('admin.agents.override') }}</span>
                 </td>
                 <td class="px-4 py-3 text-right">
                   <div class="flex justify-end gap-2">
@@ -138,7 +191,7 @@
                 </td>
               </tr>
               <tr v-if="!loading && agents.length === 0">
-                <td colspan="8" class="px-4 py-10 text-center text-sm text-gray-500">{{ t('admin.agents.empty') }}</td>
+                <td colspan="10" class="px-4 py-10 text-center text-sm text-gray-500">{{ t('admin.agents.empty') }}</td>
               </tr>
             </tbody>
           </table>
@@ -160,10 +213,15 @@
             <div class="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
               <span class="rounded bg-gray-100 px-2 py-1 dark:bg-dark-800">#{{ selectedAgent.agent_id }}</span>
               <span class="rounded bg-gray-100 px-2 py-1 dark:bg-dark-800">{{ t('admin.agents.invitedUserCount') }}: {{ selectedAgent.invited_user_count }}</span>
+              <span class="rounded bg-gray-100 px-2 py-1 dark:bg-dark-800">{{ t('admin.agents.currentLevel') }}: {{ formatLevel(selectedAgent.current_level) }}</span>
+              <span class="rounded bg-gray-100 px-2 py-1 dark:bg-dark-800">{{ t('admin.agents.nextLevelGap') }}: {{ money(selectedAgent.next_level_gap || 0) }}</span>
               <span class="rounded bg-gray-100 px-2 py-1 dark:bg-dark-800">{{ t('admin.agents.consumptionRate') }}: {{ percent(selectedAgent.consumption_rate) }}</span>
             </div>
           </div>
           <div class="flex flex-wrap items-center gap-3">
+            <button class="btn btn-secondary btn-sm" :disabled="levelEvaluationRunning" @click="runSelectedLevelEvaluation">
+              {{ t('admin.agents.runThisAgentLevelEvaluation') }}
+            </button>
             <button class="btn btn-primary btn-sm" @click="openBindUser">
               {{ t('admin.agents.bindUser') }}
             </button>
@@ -321,7 +379,8 @@ import type {
   AdminAgentSummary,
   AdminAgentUserStat,
   AdminAgentCommissionRecord,
-  AgentSettlement
+  AgentSettlement,
+  AgentLevelRule
 } from '@/api/admin/agents'
 import { useAppStore } from '@/stores/app'
 import { buildAuthErrorMessage } from '@/utils/authError'
@@ -336,11 +395,15 @@ const ratesSaving = ref(false)
 const agentRateSaving = ref(false)
 const settlementSaving = ref(false)
 const bindUserSaving = ref(false)
+const levelRulesSaving = ref(false)
+const levelEvaluationRunning = ref(false)
 const agents = ref<AdminAgentSummary[]>([])
 const selectedAgent = ref<AdminAgentSummary | null>(null)
 const detailUsers = ref<AdminAgentUserStat[]>([])
 const detailCommissions = ref<AdminAgentCommissionRecord[]>([])
 const detailSettlements = ref<AgentSettlement[]>([])
+type EditableAgentLevelRule = AgentLevelRule & { ratePercent: number }
+const levelRules = ref<EditableAgentLevelRule[]>([])
 const detailTab = ref<'users' | 'commissions' | 'settlements'>('users')
 const search = ref('')
 const sortBy = ref('total_commission')
@@ -410,6 +473,20 @@ async function loadRates() {
   }
 }
 
+async function loadLevelRules() {
+  try {
+    const rules = await adminAPI.agents.getLevelRules()
+    levelRules.value = (rules || []).map((rule) => ({
+      ...rule,
+      monthly_consumption_threshold: rule.monthly_consumption_threshold ?? null,
+      cumulative_consumption_threshold: rule.cumulative_consumption_threshold ?? null,
+      ratePercent: toPercentNumber(rule.rate)
+    }))
+  } catch (error: any) {
+    appStore.showError(buildAuthErrorMessage(error, { fallback: t('admin.agents.failedToLoad') }))
+  }
+}
+
 async function saveGlobalRates() {
   ratesSaving.value = true
   try {
@@ -424,6 +501,56 @@ async function saveGlobalRates() {
     appStore.showError(error.response?.data?.detail || error.message || t('admin.agents.failedToSave'))
   } finally {
     ratesSaving.value = false
+  }
+}
+
+async function saveLevelRules() {
+  levelRulesSaving.value = true
+  try {
+    const payload: AgentLevelRule[] = levelRules.value.map((rule) => ({
+      level_key: rule.level_key,
+      level_name: rule.level_name,
+      rate: fromPercent(rule.ratePercent),
+      monthly_consumption_threshold: normalizeOptionalNumber(rule.monthly_consumption_threshold),
+      cumulative_consumption_threshold: normalizeOptionalNumber(rule.cumulative_consumption_threshold),
+      sort_order: rule.sort_order,
+      enabled: rule.enabled
+    }))
+    await adminAPI.agents.updateLevelRules(payload)
+    appStore.showSuccess(t('admin.agents.levelRulesUpdated'))
+    await loadLevelRules()
+    await reloadAgents()
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || error.message || t('admin.agents.failedToSave'))
+  } finally {
+    levelRulesSaving.value = false
+  }
+}
+
+async function runAllLevelEvaluations() {
+  levelEvaluationRunning.value = true
+  try {
+    const result = await adminAPI.agents.runLevelEvaluations()
+    appStore.showSuccess(t('admin.agents.levelEvaluationCompleted', { count: result.evaluated_count, failed: result.failed_count }))
+    await reloadAgents()
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || error.message || t('admin.agents.failedToRunLevelEvaluation'))
+  } finally {
+    levelEvaluationRunning.value = false
+  }
+}
+
+async function runSelectedLevelEvaluation() {
+  if (!selectedAgent.value) return
+  levelEvaluationRunning.value = true
+  try {
+    await adminAPI.agents.runAgentLevelEvaluation(selectedAgent.value.agent_id)
+    appStore.showSuccess(t('admin.agents.agentLevelEvaluationCompleted'))
+    await reloadAgents()
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || error.message || t('admin.agents.failedToRunLevelEvaluation'))
+  } finally {
+    levelEvaluationRunning.value = false
   }
 }
 
@@ -599,12 +726,28 @@ function percent(value: number): string {
   return `${toPercentNumber(value).toFixed(2)}%`
 }
 
+function formatLevel(level?: string): string {
+  const key = (level || '').trim()
+  if (!key) return '-'
+  const found = levelRules.value.find((rule) => rule.level_key === key)
+  if (found?.level_name) return found.level_name
+  const localeKey = `admin.agents.level_${key}`
+  const translated = t(localeKey)
+  return translated === localeKey ? key : translated
+}
+
 function toPercentNumber(value: number): number {
   return Number(((value || 0) * 100).toFixed(4))
 }
 
 function fromPercent(value: number): number {
   return Number(((value || 0) / 100).toFixed(6))
+}
+
+function normalizeOptionalNumber(value: number | null | undefined): number | null {
+  if (value === null || value === undefined || (value as any) === '') return null
+  const numeric = Number(value)
+  return Number.isFinite(numeric) ? numeric : null
 }
 
 function date(value: string): string {
@@ -633,6 +776,7 @@ watch([sortBy, sortOrder], () => {
 
 onMounted(async () => {
   await loadRates()
+  await loadLevelRules()
   await reloadAgents()
 })
 </script>

@@ -37,6 +37,14 @@ export interface AdminAgentSummary {
   rate_source: string
   override_enabled: boolean
   override_consumption_rate?: number
+  current_level?: string
+  permanent_level?: string
+  temporary_level?: string
+  base_rate?: number
+  last_evaluated_period?: string
+  last_month_consumption?: number
+  next_level_key?: string
+  next_level_gap?: number
 }
 
 export interface AdminAgentUserStat {
@@ -95,6 +103,46 @@ export interface AgentSettlement {
   note: string
   status: string
   created_at: string
+}
+
+export interface AgentLevelRule {
+  level_key: string
+  level_name: string
+  rate: number
+  monthly_consumption_threshold?: number | null
+  cumulative_consumption_threshold?: number | null
+  sort_order: number
+  enabled: boolean
+  updated_at?: string
+}
+
+export interface AgentLevelState {
+  agent_id: number
+  base_level_key: string
+  base_rate: number
+  permanent_level_key: string
+  temporary_level_key?: string
+  current_level_key: string
+  current_rate: number
+  rate_source: string
+  last_evaluated_period: string
+  last_month_consumption: number
+  total_consumption: number
+  next_level_key?: string
+  next_level_gap: number
+  evaluated_at?: string
+}
+
+export interface AgentLevelEvaluationResult {
+  agent_id: number
+  state: AgentLevelState
+}
+
+export interface AgentLevelEvaluationRunResult {
+  period: string
+  evaluated_count: number
+  failed_count: number
+  items?: AgentLevelEvaluationResult[]
 }
 
 export interface AgentListParams {
@@ -162,6 +210,26 @@ export async function updateAgentRate(agentId: number, payload: { consumption_ra
   return data
 }
 
+export async function getLevelRules(): Promise<AgentLevelRule[]> {
+  const { data } = await apiClient.get<AgentLevelRule[]>('/admin/agents/level-rules')
+  return data
+}
+
+export async function updateLevelRules(rules: AgentLevelRule[]): Promise<AgentLevelRule[]> {
+  const { data } = await apiClient.put<AgentLevelRule[]>('/admin/agents/level-rules', { rules })
+  return data
+}
+
+export async function runLevelEvaluations(): Promise<AgentLevelEvaluationRunResult> {
+  const { data } = await apiClient.post<AgentLevelEvaluationRunResult>('/admin/agents/level-evaluations/run')
+  return data
+}
+
+export async function runAgentLevelEvaluation(agentId: number): Promise<AgentLevelEvaluationResult> {
+  const { data } = await apiClient.post<AgentLevelEvaluationResult>(`/admin/agents/${agentId}/level-evaluations/run`)
+  return data
+}
+
 export const agentsAPI = {
   list,
   get,
@@ -173,7 +241,11 @@ export const agentsAPI = {
   getRates,
   updateRates,
   getAgentRate,
-  updateAgentRate
+  updateAgentRate,
+  getLevelRules,
+  updateLevelRules,
+  runLevelEvaluations,
+  runAgentLevelEvaluation
 }
 
 export default agentsAPI

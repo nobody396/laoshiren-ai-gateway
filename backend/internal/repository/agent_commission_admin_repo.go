@@ -123,15 +123,18 @@ func (r *commissionRepository) ResolveAgentConsumptionRate(ctx context.Context, 
 	err := scanSingleRow(ctx, r.sql, `
 		SELECT
 			CASE
+				WHEN als.agent_id IS NOT NULL THEN als.current_rate
 				WHEN arc.enabled = true THEN arc.consumption_rate
 				ELSE gs.consumption_rate
 			END AS consumption_rate,
 			CASE
+				WHEN als.agent_id IS NOT NULL THEN als.rate_source
 				WHEN arc.enabled = true THEN 'agent_override'
 				ELSE 'global'
 			END AS rate_source
 		FROM agent_commission_settings gs
 		LEFT JOIN agent_rate_configs arc ON arc.agent_id = $1
+		LEFT JOIN agent_level_states als ON als.agent_id = $1
 		WHERE gs.id = 1
 	`, []any{agentID}, &rate, &source)
 	if errors.Is(err, sql.ErrNoRows) || isMissingAgentManagementRelation(err) {
@@ -219,10 +222,26 @@ func (r *commissionRepository) listAdminAgents(
 			COALESCE(month_comm.total, 0) AS this_month_commission,
 			COALESCE(settled.total, 0) AS settled_commission,
 			GREATEST(COALESCE(total_comm.total, 0) - COALESCE(settled.total, 0), 0) AS unsettled_commission,
-			CASE WHEN arc.enabled = true THEN arc.consumption_rate ELSE gs.consumption_rate END AS consumption_rate,
-			CASE WHEN arc.enabled = true THEN 'agent_override' ELSE 'global' END AS rate_source,
+			CASE
+				WHEN als.agent_id IS NOT NULL THEN als.current_rate
+				WHEN arc.enabled = true THEN arc.consumption_rate
+				ELSE gs.consumption_rate
+			END AS consumption_rate,
+			CASE
+				WHEN als.agent_id IS NOT NULL THEN als.rate_source
+				WHEN arc.enabled = true THEN 'agent_override'
+				ELSE 'global'
+			END AS rate_source,
 			COALESCE(arc.enabled, false) AS override_enabled,
-			arc.consumption_rate AS override_consumption_rate
+			arc.consumption_rate AS override_consumption_rate,
+			COALESCE(als.current_level_key, '') AS current_level_key,
+			COALESCE(als.permanent_level_key, '') AS permanent_level_key,
+			als.temporary_level_key,
+			COALESCE(als.base_rate, 0) AS base_rate,
+			COALESCE(als.last_evaluated_period, '') AS last_evaluated_period,
+			COALESCE(als.last_month_consumption, 0) AS last_month_consumption,
+			als.next_level_key,
+			COALESCE(als.next_level_gap, 0) AS next_level_gap
 		FROM users u
 		CROSS JOIN agent_commission_settings gs
 		LEFT JOIN (
@@ -269,6 +288,7 @@ func (r *commissionRepository) listAdminAgents(
 			GROUP BY agent_id
 		) settled ON settled.agent_id = u.id
 		LEFT JOIN agent_rate_configs arc ON arc.agent_id = u.id
+		LEFT JOIN agent_level_states als ON als.agent_id = u.id
 		WHERE gs.id = 1 AND %s
 		ORDER BY %s %s, u.id DESC
 		LIMIT $%d OFFSET $%d
@@ -287,6 +307,7 @@ func (r *commissionRepository) listAdminAgents(
 		var inviteCode sql.NullString
 		var lastActiveAt sql.NullTime
 		var overrideRate sql.NullFloat64
+		var temporaryLevel, nextLevel sql.NullString
 		if err := rows.Scan(
 			&item.AgentID,
 			&item.Email,
@@ -307,6 +328,14 @@ func (r *commissionRepository) listAdminAgents(
 			&item.RateSource,
 			&item.OverrideEnabled,
 			&overrideRate,
+			&item.CurrentLevel,
+			&item.PermanentLevel,
+			&temporaryLevel,
+			&item.BaseRate,
+			&item.LastEvaluatedPeriod,
+			&item.LastMonthConsumption,
+			&nextLevel,
+			&item.NextLevelGap,
 		); err != nil {
 			return nil, nil, fmt.Errorf("scan admin agent: %w", err)
 		}
@@ -318,6 +347,12 @@ func (r *commissionRepository) listAdminAgents(
 		}
 		if overrideRate.Valid {
 			item.OverrideConsumptionRate = &overrideRate.Float64
+		}
+		if temporaryLevel.Valid {
+			item.TemporaryLevel = &temporaryLevel.String
+		}
+		if nextLevel.Valid {
+			item.NextLevelKey = &nextLevel.String
 		}
 		items = append(items, item)
 	}

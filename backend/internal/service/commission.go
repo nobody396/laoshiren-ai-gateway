@@ -46,6 +46,11 @@ type AgentDashboard struct {
 	ConsumptionRate          float64 `json:"consumption_rate"`            // 当前代理商消耗分润比例
 	FirstRechargeInviteeRate float64 `json:"first_recharge_invitee_rate"` // 被邀请用户首充奖励比例
 	RateSource               string  `json:"rate_source"`                 // global 或 agent_override
+	CurrentLevel             string  `json:"current_level,omitempty"`
+	PermanentLevel           string  `json:"permanent_level,omitempty"`
+	TemporaryLevel           *string `json:"temporary_level,omitempty"`
+	LastMonthConsumption     float64 `json:"last_month_consumption,omitempty"`
+	NextLevelGap             float64 `json:"next_level_gap,omitempty"`
 }
 
 // UserReferralDashboard 普通用户邀请看板统计
@@ -111,6 +116,14 @@ type AdminAgentSummary struct {
 	RateSource              string     `json:"rate_source"`
 	OverrideEnabled         bool       `json:"override_enabled"`
 	OverrideConsumptionRate *float64   `json:"override_consumption_rate,omitempty"`
+	CurrentLevel            string     `json:"current_level,omitempty"`
+	PermanentLevel          string     `json:"permanent_level,omitempty"`
+	TemporaryLevel          *string    `json:"temporary_level,omitempty"`
+	BaseRate                float64    `json:"base_rate,omitempty"`
+	LastEvaluatedPeriod     string     `json:"last_evaluated_period,omitempty"`
+	LastMonthConsumption    float64    `json:"last_month_consumption,omitempty"`
+	NextLevelKey            *string    `json:"next_level_key,omitempty"`
+	NextLevelGap            float64    `json:"next_level_gap,omitempty"`
 }
 
 type AdminAgentUserStat struct {
@@ -158,6 +171,17 @@ type CommissionRateRepository interface {
 	GetAgentRateConfig(ctx context.Context, agentID int64) (*AgentRateConfig, error)
 	UpsertAgentRateConfig(ctx context.Context, config *AgentRateConfig) error
 	ResolveAgentConsumptionRate(ctx context.Context, agentID int64) (rate float64, source string, err error)
+}
+
+// AgentLevelRepository provides agent tier rule/state persistence.
+type AgentLevelRepository interface {
+	GetAgentLevelRules(ctx context.Context) ([]AgentLevelRule, error)
+	UpdateAgentLevelRules(ctx context.Context, rules []AgentLevelRule) error
+	GetAgentLevelState(ctx context.Context, agentID int64) (*AgentLevelState, error)
+	ListAgentIDs(ctx context.Context) ([]int64, error)
+	GetAgentLevelUsageStats(ctx context.Context, agentID int64, periodStart, periodEnd time.Time) (*AgentLevelUsageStats, error)
+	GetAgentManualBaseRate(ctx context.Context, agentID int64) (float64, string, error)
+	UpsertAgentLevelState(ctx context.Context, state *AgentLevelState) error
 }
 
 // AgentCommissionAdminRepository 提供管理员代理商面板所需的聚合和结算数据。

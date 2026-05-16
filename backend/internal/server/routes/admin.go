@@ -151,6 +151,9 @@ func registerAgentManagementRoutes(admin *gin.RouterGroup, h *handler.Handlers) 
 		agents.GET("", h.Admin.Agent.List)
 		agents.GET("/rates", h.Admin.Agent.GetRates)
 		agents.PUT("/rates", h.Admin.Agent.UpdateRates)
+		agents.GET("/level-rules", h.Admin.Agent.GetLevelRules)
+		agents.PUT("/level-rules", h.Admin.Agent.UpdateLevelRules)
+		agents.POST("/level-evaluations/run", h.Admin.Agent.RunLevelEvaluations)
 		agents.GET("/:id", h.Admin.Agent.Get)
 		agents.GET("/:id/users", h.Admin.Agent.ListUsers)
 		agents.POST("/:id/users/bind", h.Admin.Agent.BindUser)
@@ -159,6 +162,7 @@ func registerAgentManagementRoutes(admin *gin.RouterGroup, h *handler.Handlers) 
 		agents.POST("/:id/settlements", h.Admin.Agent.CreateSettlement)
 		agents.GET("/:id/rate", h.Admin.Agent.GetAgentRate)
 		agents.PUT("/:id/rate", h.Admin.Agent.UpdateAgentRate)
+		agents.POST("/:id/level-evaluations/run", h.Admin.Agent.RunAgentLevelEvaluation)
 	}
 }
 

@@ -25,7 +25,7 @@ var adminAPIAuthBypass = map[string]struct{}{
 //
 // 必须挂载在 adminAuth 之后, 期望上下文中存在:
 //   - ContextKeyIsSuperAdmin    (bool)     : 超管直接放行
-//   - ContextKeyUserPermissions ([]string) : 包含 "*" 或 "api:<METHOD>:<path>" 的权限 key 集合
+//   - ContextKeyUserPermissions ([]string) : 包含 "api:<METHOD>:<path>" 的权限 key 集合
 //
 // 路径约定与 route_sync.go 保持一致: admin_apis.path 存剥离 "/api/v1" 后的业务路径,
 // 因此这里取 c.FullPath() 并剥离前缀后再拼键, 保证与启动同步结果可对齐.
@@ -69,7 +69,7 @@ func RequireAPIPermission() gin.HandlerFunc {
 
 		target := "api:" + method + ":" + bizPath
 		for _, k := range permKeys {
-			if k == "*" || k == target {
+			if k == target {
 				c.Next()
 				return
 			}
@@ -104,7 +104,7 @@ func RequirePermission(permissionKey string) gin.HandlerFunc {
 		}
 
 		for _, k := range permKeys {
-			if k == "*" || k == permissionKey {
+			if k == permissionKey {
 				c.Next()
 				return
 			}

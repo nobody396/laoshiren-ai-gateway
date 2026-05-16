@@ -8,6 +8,7 @@ import (
 	"time"
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/stretchr/testify/suite"
@@ -91,6 +92,121 @@ func (s *UserRepoSuite) mustCreateSubscription(userID, groupID int64, mutate fun
 	return sub
 }
 
+func (s *UserRepoSuite) mustCreateUserWithPassword(email, password string) *service.User {
+	s.T().Helper()
+
+	user := &service.User{
+		Email:       email,
+		Role:        service.RoleUser,
+		Status:      service.StatusActive,
+		Balance:     1,
+		Concurrency: 5,
+	}
+	s.Require().NoError(user.SetPassword(password), "hash password")
+	return s.mustCreateUser(user)
+}
+
+func (s *UserRepoSuite) newAuthRevocationServices() (*service.AuthService, *service.UserService) {
+	cfg := &config.Config{
+		JWT: config.JWTConfig{
+			Secret:                 "test-jwt-secret-32bytes-long!!!",
+			ExpireHour:             1,
+			RefreshTokenExpireDays: 30,
+		},
+	}
+
+	authSvc := service.NewAuthService(
+		nil,
+		s.repo,
+		nil,
+		newRepositoryMemoryRefreshTokenCache(),
+		nil,
+		cfg,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	)
+	userSvc := service.NewUserService(s.repo, nil, nil)
+	return authSvc, userSvc
+}
+
+type repositoryMemoryRefreshTokenCache struct {
+	data map[string]*service.RefreshTokenData
+}
+
+func newRepositoryMemoryRefreshTokenCache() *repositoryMemoryRefreshTokenCache {
+	return &repositoryMemoryRefreshTokenCache{data: map[string]*service.RefreshTokenData{}}
+}
+
+func (c *repositoryMemoryRefreshTokenCache) StoreRefreshToken(_ context.Context, tokenHash string, data *service.RefreshTokenData, _ time.Duration) error {
+	c.data[tokenHash] = data
+	return nil
+}
+
+func (c *repositoryMemoryRefreshTokenCache) GetRefreshToken(_ context.Context, tokenHash string) (*service.RefreshTokenData, error) {
+	data, ok := c.data[tokenHash]
+	if !ok {
+		return nil, service.ErrRefreshTokenNotFound
+	}
+	return data, nil
+}
+
+func (c *repositoryMemoryRefreshTokenCache) DeleteRefreshToken(_ context.Context, tokenHash string) error {
+	delete(c.data, tokenHash)
+	return nil
+}
+
+func (c *repositoryMemoryRefreshTokenCache) ConsumeRefreshToken(_ context.Context, tokenHash string) (*service.RefreshTokenData, error) {
+	data, ok := c.data[tokenHash]
+	if !ok {
+		return nil, service.ErrRefreshTokenNotFound
+	}
+	delete(c.data, tokenHash)
+	return data, nil
+}
+
+func (c *repositoryMemoryRefreshTokenCache) DeleteUserRefreshTokens(_ context.Context, userID int64) error {
+	for tokenHash, data := range c.data {
+		if data.UserID == userID {
+			delete(c.data, tokenHash)
+		}
+	}
+	return nil
+}
+
+func (c *repositoryMemoryRefreshTokenCache) DeleteTokenFamily(_ context.Context, familyID string) error {
+	for tokenHash, data := range c.data {
+		if data.FamilyID == familyID {
+			delete(c.data, tokenHash)
+		}
+	}
+	return nil
+}
+
+func (c *repositoryMemoryRefreshTokenCache) AddToUserTokenSet(context.Context, int64, string, time.Duration) error {
+	return nil
+}
+
+func (c *repositoryMemoryRefreshTokenCache) AddToFamilyTokenSet(context.Context, string, string, time.Duration) error {
+	return nil
+}
+
+func (c *repositoryMemoryRefreshTokenCache) GetUserTokenHashes(context.Context, int64) ([]string, error) {
+	return nil, nil
+}
+
+func (c *repositoryMemoryRefreshTokenCache) GetFamilyTokenHashes(context.Context, string) ([]string, error) {
+	return nil, nil
+}
+
+func (c *repositoryMemoryRefreshTokenCache) IsTokenInFamily(context.Context, string, string) (bool, error) {
+	return false, nil
+}
+
 // --- Create / GetByID / GetByEmail / Update / Delete ---
 
 func (s *UserRepoSuite) TestCreate() {
@@ -138,6 +254,63 @@ func (s *UserRepoSuite) TestUpdate() {
 	updated, err := s.repo.GetByID(s.ctx, user.ID)
 	s.Require().NoError(err, "GetByID after update")
 	s.Require().Equal("updated", updated.Username)
+}
+
+func (s *UserRepoSuite) TestChangePasswordPersistsTokenVersionAndRejectsOldAccessToken() {
+	user := s.mustCreateUserWithPassword("access-revoked@test.com", "old-password")
+	authSvc, userSvc := s.newAuthRevocationServices()
+
+	oldAccessToken, loggedInUser, err := authSvc.Login(s.ctx, user.Email, "old-password")
+	s.Require().NoError(err, "login before password change")
+
+	err = userSvc.ChangePassword(s.ctx, user.ID, service.ChangePasswordRequest{
+		CurrentPassword: "old-password",
+		NewPassword:     "new-password",
+	})
+	s.Require().NoError(err, "change password")
+
+	reloaded, err := s.repo.GetByID(s.ctx, user.ID)
+	s.Require().NoError(err, "reload user after password change")
+	s.Require().Greater(reloaded.TokenVersion, loggedInUser.TokenVersion, "password change must persist a higher token version")
+
+	_, err = authSvc.RefreshToken(s.ctx, oldAccessToken)
+	s.Require().ErrorIs(err, service.ErrTokenRevoked, "old access token must be rejected after password change")
+}
+
+func (s *UserRepoSuite) TestChangePasswordRejectsOldRefreshToken() {
+	user := s.mustCreateUserWithPassword("refresh-revoked@test.com", "old-password")
+	authSvc, userSvc := s.newAuthRevocationServices()
+
+	_, loggedInUser, err := authSvc.Login(s.ctx, user.Email, "old-password")
+	s.Require().NoError(err, "login before password change")
+	pair, err := authSvc.GenerateTokenPair(s.ctx, loggedInUser, "")
+	s.Require().NoError(err, "generate token pair before password change")
+
+	err = userSvc.ChangePassword(s.ctx, user.ID, service.ChangePasswordRequest{
+		CurrentPassword: "old-password",
+		NewPassword:     "new-password",
+	})
+	s.Require().NoError(err, "change password")
+
+	_, err = authSvc.RefreshTokenPair(s.ctx, pair.RefreshToken)
+	s.Require().ErrorIs(err, service.ErrTokenRevoked, "old refresh token must be rejected after password change")
+}
+
+func (s *UserRepoSuite) TestRevokeAllUserSessionsRejectsOldAccessToken() {
+	user := s.mustCreateUserWithPassword("revoke-all@test.com", "password")
+	authSvc, _ := s.newAuthRevocationServices()
+
+	oldAccessToken, loggedInUser, err := authSvc.Login(s.ctx, user.Email, "password")
+	s.Require().NoError(err, "login before revoke-all")
+
+	s.Require().NoError(authSvc.RevokeAllUserSessions(s.ctx, user.ID), "revoke all sessions")
+
+	reloaded, err := s.repo.GetByID(s.ctx, user.ID)
+	s.Require().NoError(err, "reload user after revoke-all")
+	s.Require().Greater(reloaded.TokenVersion, loggedInUser.TokenVersion, "revoke-all must persist a higher token version")
+
+	_, err = authSvc.RefreshToken(s.ctx, oldAccessToken)
+	s.Require().ErrorIs(err, service.ErrTokenRevoked, "old access token must be rejected after revoke-all")
 }
 
 func (s *UserRepoSuite) TestDelete() {

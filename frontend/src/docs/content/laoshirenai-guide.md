@@ -327,7 +327,6 @@ API 在这里可以理解为：**让你的电脑程序去调用 AI 大脑的通�
 
 注册登录后，进入仪表盘：
 
-![登录后仪表盘](https://assets.example.com/dragoncode/file-20260412220205276.png)
 
 ### 第 2 步：充值
 
@@ -341,7 +340,6 @@ API 在这里可以理解为：**让你的电脑程序去调用 AI 大脑的通�
 
 我们的价格以人民币（¥）计价，官方原价以美元（$）标注，**汇率按 1:7 近似折算**（实际汇率以支付时为准），单位：百万 tokens。
 
-![模型定价](https://assets.example.com/dragoncode/file-20260412220203991.png)
 
 | 模型 | 分组 | 倍率 | 输入 (¥/M) | 输出 (¥/M) | 官方 ($) | 约为官方价 |
 |------|------|:----:|:----------:|:----------:|:--------:|:----:|
@@ -382,7 +380,6 @@ API 在这里可以理解为：**让你的电脑程序去调用 AI 大脑的通�
 - 其他可以不填
 - 点击创建
 
-![创建密钥弹窗](https://assets.example.com/dragoncode/file-20260412220200786.png)
 
 > **说明：** 如果你同时想用 Codex 和 Claude Code，需要分别创建两个密钥，各选对应的分组。
 
@@ -409,23 +406,18 @@ https://github.com/farion1231/cc-switch/blob/main/docs/user-manual/zh/README.md
 
 ① 打开 https://github.com/farion1231/cc-switch/tree/main，下拉找到 README：
 
-![① GitHub 仓库主页](https://assets.example.com/dragoncode/file-20260412220125391.png)
 
 ② 点击 README 顶部的「中文」链接：
 
-![② 点击中文链接](https://assets.example.com/dragoncode/file-20260412220127143.png)
 
 ③ 进入中文版 README，点击右上角目录按钮：
 
-![③ 打开文档目录](https://assets.example.com/dragoncode/file-20260412220129282.png)
 
 ④ 在目录搜索框输入「下载安装」，点击跳转：
 
-![④ 搜索下载安装章节](https://assets.example.com/dragoncode/file-20260412220130559.png)
 
 ⑤ 跳转到下载安装章节，看到系统要求和 Releases 链接：
 
-![⑤ 下载安装章节](https://assets.example.com/dragoncode/file-20260412220132616.png)
 
 ---
 
@@ -433,27 +425,22 @@ https://github.com/farion1231/cc-switch/blob/main/docs/user-manual/zh/README.md
 
 ⑥ 点击 Releases 链接进入版本页，不要点中文版，直接下拉：
 
-![⑥ Releases 页——Mac 选 .dmg](https://assets.example.com/dragoncode/file-20260412220134661.png)
 
 ⑦ Assets 文件列表中，Mac 用户点击绿色箭头所指的 `.dmg` 文件下载：
 
-![⑦ Assets 列表——Mac 选 .dmg](https://assets.example.com/dragoncode/file-20260412220135990.png)
 
 **Windows 用户下载：**
 
 ⑧ 点击「Show all 18 assets」展开完整列表：
 
-![⑧ 点击展开全部 Assets](https://assets.example.com/dragoncode/file-20260412220137937.png)
 
 ⑨ 展开后，Windows 用户选粉色箭头所指的 `Windows.msi` 安装包：
 
-![⑨ Windows 用户选 .msi](https://assets.example.com/dragoncode/file-20260412220138781.png)
 
 ---
 
 **Mac 安装：** 打开下载好的 dmg，将 CC Switch 图标拖入 Applications 文件夹：
 
-![⑩ Mac——拖入应用程序文件夹](https://assets.example.com/dragoncode/file-20260412220140264.png)
 
 **Windows 安装：** 双击 .msi 安装包，按提示完成安装。
 
@@ -482,13 +469,11 @@ npm -v
 
 看到两个版本号即安装成功。官网提供了完整的 Windows 安装命令：
 
-![Windows——Node.js 官网下载页](https://assets.example.com/dragoncode/file-20260412220110691.png)
 
 **Mac 安装：**
 
 打开 Node.js 官网下载页，切换平台到「macOS」，按图中标注的 1-2-3 步操作：
 
-![Mac——Node.js 官网下载页](https://assets.example.com/dragoncode/file-20260412220113359.png)
 
 ---
 
@@ -510,11 +495,9 @@ npm -v
 
 打开后，如果还没配置过供应商，界面应该是空白列表或者有官方 official 显示；这两种都属于正常的初始状态：
 
-![① CC Switch 初始界面](https://assets.example.com/dragoncode/file-20260412220115662.png)
 
 点击右上角 `+` 号 → 在「添加新供应商」页面选「**自定义配置**」：
 
-![② 选择自定义配置](https://assets.example.com/dragoncode/file-20260412220117766.png)
 
 填写表单（下拉可看到所有字段）：
 
@@ -523,11 +506,9 @@ npm -v
 - **API Key**：见下方说明
 - **请求地址**：`https://api.laoshirenai.com`（不要勾选「完整 URL」）
 
-![③ 填写供应商信息表单](https://assets.example.com/dragoncode/file-20260412220119516.png)
 
 **获取 API Key：** 打开 https://laoshirenai.com → 左边栏「API 密钥」→ 点红色箭头所指的复制按钮：
 
-![④ 在 老实人 AI 后台复制 API 密钥](https://assets.example.com/dragoncode/file-20260412220120275.png)
 
 也可以直接点右侧的「导入到 CCS」按钮，浏览器弹窗后点允许即可自动导入。
 
@@ -535,7 +516,6 @@ npm -v
 
 添加完成后，供应商出现在列表里，先点蓝色「**启用**」按钮，再点右侧箭头所指的检测入口；顶部出现绿色文字提示，才表示配置成功。若报错，把 CC Switch 用户手册链接和报错截图一起发给豆包排查：
 
-![⑤ 供应商列表——启用后再点检测完成配置](https://assets.example.com/dragoncode/file-20260412220122488.png)
 
 ---
 
@@ -726,15 +706,12 @@ codex
 
 ① 打开官网首页，点「查看服务状态」。状态显示为绿色的模型，当前可用性更高，优先选用。
 
-![官网首页查看服务状态](https://assets.example.com/dragoncode/file-20260412220146451.png)
 
 ② 进入官网 → 左边栏「API 密钥」→ 点击分组 → 选择新的分组。
 
-![官网切换节点/线路](https://assets.example.com/dragoncode/file-20260412220156067.png)
 
 ③ 在弹出的列表中选择一个可用节点。
 
-![选择可用节点](https://assets.example.com/dragoncode/file-20260412220157391.png)
 
 ④ 切换完成后，按以下顺序确认生效：
 
@@ -764,7 +741,6 @@ codex
 
 点击 `CC Switch` 右上角的会话管理入口（黄色箭头所指位置）：
 
-![CC Switch 右上角进入会话管理](https://assets.example.com/dragoncode/file-20260412220124626.png)
 
 进入后：
 
@@ -772,7 +748,6 @@ codex
 2. 点击左侧历史会话，查看过去的对话记录
 3. 如果需要继续之前的内容，点「恢复会话」
 
-![会话管理里筛选工具并恢复会话](https://assets.example.com/dragoncode/file-20260412220123723.png)
 
 **5. 误操作了怎么办**
 
@@ -844,7 +819,6 @@ codex
 
 **Token 就是 AI 计费时用的「文字小单位」。** 你发给它的内容、它回给你的内容，都会被换算成 Token。
 
-![Token 明细解释](https://assets.example.com/dragoncode/file-20260412220142036.png)
 
 | 术语 | 含义 |
 |------|------|

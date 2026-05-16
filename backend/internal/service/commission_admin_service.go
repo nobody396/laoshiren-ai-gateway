@@ -206,14 +206,6 @@ func (s *CommissionService) CreateAgentSettlement(ctx context.Context, agentID, 
 		return nil, infraerrors.BadRequest("INVALID_SETTLEMENT_AMOUNT", "settlement amount must be greater than 0")
 	}
 
-	summary, err := s.adminRepo.GetAdminAgent(ctx, agentID, nil, nil)
-	if err != nil {
-		return nil, fmt.Errorf("get agent settlement balance: %w", err)
-	}
-	if amount-summary.UnsettledCommission > 0.00000001 {
-		return nil, infraerrors.BadRequest("SETTLEMENT_EXCEEDS_UNSETTLED", "settlement amount exceeds unsettled commission")
-	}
-
 	settlement := &AgentSettlement{
 		AgentID:    agentID,
 		Amount:     amount,
@@ -221,7 +213,7 @@ func (s *CommissionService) CreateAgentSettlement(ctx context.Context, agentID, 
 		Note:       note,
 		Status:     AgentSettlementStatusCompleted,
 	}
-	if err := s.adminRepo.CreateAgentSettlement(ctx, settlement); err != nil {
+	if err := s.adminRepo.CreateAgentSettlementIfAvailable(ctx, settlement); err != nil {
 		return nil, fmt.Errorf("create agent settlement: %w", err)
 	}
 	return settlement, nil

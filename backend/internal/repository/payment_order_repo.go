@@ -67,6 +67,22 @@ func (r *paymentOrderRepository) UpdateStatus(ctx context.Context, id int64, sta
 	return up.Exec(ctx)
 }
 
+func (r *paymentOrderRepository) CompleteIfPending(ctx context.Context, id int64, alipayTradeNo *string) (bool, error) {
+	client := clientFromContext(ctx, r.client)
+	now := time.Now()
+	n, err := client.PaymentOrder.Update().
+		Where(paymentorder.IDEQ(id), paymentorder.StatusEQ(service.PaymentStatusPending)).
+		SetStatus(service.PaymentStatusCompleted).
+		SetCompletedAt(now).
+		SetUpdatedAt(now).
+		SetNillableAlipayTradeNo(alipayTradeNo).
+		Save(ctx)
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
+}
+
 func (r *paymentOrderRepository) UpdateQRCodeURL(ctx context.Context, id int64, qrCodeURL string) error {
 	client := clientFromContext(ctx, r.client)
 	return client.PaymentOrder.UpdateOneID(id).

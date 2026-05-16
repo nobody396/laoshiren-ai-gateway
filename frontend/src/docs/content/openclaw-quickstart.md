@@ -110,7 +110,7 @@ openclaw dashboard
 
 ```bash
 # 先把 老实人 AI API Key 写入环境变量
-export CUSTOM_API_KEY="YOUR_DRAGONCODE_API_KEY"
+export CUSTOM_API_KEY="YOUR_LAOSHIRENAI_API_KEY"
 ```
 
 ### 第二步：执行非交互接入命令
@@ -136,7 +136,7 @@ openclaw onboard --non-interactive \
 如果你已经生成了配置，也可以打开 `~/.openclaw/openclaw.json` 检查实际引用的变量名；如果你的版本写入的是别的变量名，再按实际配置补环境变量即可，例如：
 
 ```bash
-export OPENAI_API_KEY="YOUR_DRAGONCODE_API_KEY"
+export OPENAI_API_KEY="YOUR_LAOSHIRENAI_API_KEY"
 ```
 
 ---

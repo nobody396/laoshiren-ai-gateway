@@ -4,8 +4,11 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -126,6 +129,160 @@ func TestUsageBillingRepositoryApply_DeduplicatesSubscriptionBilling(t *testing.
 	var dailyUsage float64
 	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT daily_usage_usd FROM user_subscriptions WHERE id = $1", subscription.ID).Scan(&dailyUsage))
 	require.InDelta(t, 2.5, dailyUsage, 0.000001)
+}
+
+func TestUsageBillingRepositoryApply_BalanceFinalLimitRejectsInsufficientFunds(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-low-balance-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+		Balance:      0.01,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID: user.ID,
+		Key:    "sk-usage-billing-low-balance-" + uuid.NewString(),
+		Name:   "billing-low-balance",
+	})
+
+	requestID := uuid.NewString()
+	_, err := repo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:   requestID,
+		APIKeyID:    apiKey.ID,
+		UserID:      user.ID,
+		BalanceCost: 1.00,
+	})
+	require.ErrorIs(t, err, service.ErrInsufficientBalance)
+
+	var balance float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT balance FROM users WHERE id = $1", user.ID).Scan(&balance))
+	require.InDelta(t, 0.01, balance, 0.000001)
+
+	var dedupCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM usage_billing_dedup WHERE request_id = $1 AND api_key_id = $2", requestID, apiKey.ID).Scan(&dedupCount))
+	require.Equal(t, 0, dedupCount)
+}
+
+func TestUsageBillingRepositoryApply_SubscriptionFinalLimitRejectsOverage(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-sub-limit-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	limit := 10.00
+	group := mustCreateGroup(t, client, &service.Group{
+		Name:             "usage-billing-sub-limit-" + uuid.NewString(),
+		Platform:         service.PlatformAnthropic,
+		SubscriptionType: service.SubscriptionTypeSubscription,
+		DailyLimitUSD:    &limit,
+		WeeklyLimitUSD:   &limit,
+		MonthlyLimitUSD:  &limit,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID:  user.ID,
+		GroupID: &group.ID,
+		Key:     "sk-usage-billing-sub-limit-" + uuid.NewString(),
+		Name:    "billing-sub-limit",
+	})
+	subscription := mustCreateSubscription(t, client, &service.UserSubscription{
+		UserID:          user.ID,
+		GroupID:         group.ID,
+		DailyUsageUSD:   9.99,
+		WeeklyUsageUSD:  9.99,
+		MonthlyUsageUSD: 9.99,
+	})
+
+	requestID := uuid.NewString()
+	_, err := repo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:        requestID,
+		APIKeyID:         apiKey.ID,
+		UserID:           user.ID,
+		SubscriptionID:   &subscription.ID,
+		SubscriptionCost: 1.00,
+	})
+	require.ErrorIs(t, err, service.ErrDailyLimitExceeded)
+
+	var dailyUsage, weeklyUsage, monthlyUsage float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT daily_usage_usd, weekly_usage_usd, monthly_usage_usd
+		FROM user_subscriptions
+		WHERE id = $1
+	`, subscription.ID).Scan(&dailyUsage, &weeklyUsage, &monthlyUsage))
+	require.InDelta(t, 9.99, dailyUsage, 0.000001)
+	require.InDelta(t, 9.99, weeklyUsage, 0.000001)
+	require.InDelta(t, 9.99, monthlyUsage, 0.000001)
+
+	var dedupCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM usage_billing_dedup WHERE request_id = $1 AND api_key_id = $2", requestID, apiKey.ID).Scan(&dedupCount))
+	require.Equal(t, 0, dedupCount)
+}
+
+func TestUsageBillingRepositoryApply_ConcurrentBalanceFinalLimitPreventsOverspend(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-concurrent-balance-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+		Balance:      1.00,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID: user.ID,
+		Key:    "sk-usage-billing-concurrent-balance-" + uuid.NewString(),
+		Name:   "billing-concurrent-balance",
+	})
+
+	const workers = 2
+	var start sync.WaitGroup
+	start.Add(1)
+	var done sync.WaitGroup
+	done.Add(workers)
+	errCh := make(chan error, workers)
+	for i := 0; i < workers; i++ {
+		go func() {
+			defer done.Done()
+			start.Wait()
+			_, err := repo.Apply(ctx, &service.UsageBillingCommand{
+				RequestID:   uuid.NewString(),
+				APIKeyID:    apiKey.ID,
+				UserID:      user.ID,
+				BalanceCost: 0.75,
+			})
+			errCh <- err
+		}()
+	}
+	start.Done()
+	done.Wait()
+	close(errCh)
+
+	var successes int32
+	var insufficient int32
+	for err := range errCh {
+		switch {
+		case err == nil:
+			atomic.AddInt32(&successes, 1)
+		case errors.Is(err, service.ErrInsufficientBalance):
+			atomic.AddInt32(&insufficient, 1)
+		default:
+			require.NoError(t, err)
+		}
+	}
+	require.Equal(t, int32(1), successes)
+	require.Equal(t, int32(1), insufficient)
+
+	var balance float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT balance FROM users WHERE id = $1", user.ID).Scan(&balance))
+	require.InDelta(t, 0.25, balance, 0.000001)
+
+	var dedupCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM usage_billing_dedup WHERE api_key_id = $1", apiKey.ID).Scan(&dedupCount))
+	require.Equal(t, 1, dedupCount)
 }
 
 func TestUsageBillingRepositoryApply_RequestFingerprintConflict(t *testing.T) {

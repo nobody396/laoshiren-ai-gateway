@@ -158,6 +158,9 @@ func incrementUsageBillingSubscription(ctx context.Context, tx *sql.Tx, subscrip
 			AND us.deleted_at IS NULL
 			AND us.group_id = g.id
 			AND g.deleted_at IS NULL
+			AND (g.daily_limit_usd IS NULL OR g.daily_limit_usd <= 0 OR us.daily_usage_usd + $1 <= g.daily_limit_usd)
+			AND (g.weekly_limit_usd IS NULL OR g.weekly_limit_usd <= 0 OR us.weekly_usage_usd + $1 <= g.weekly_limit_usd)
+			AND (g.monthly_limit_usd IS NULL OR g.monthly_limit_usd <= 0 OR us.monthly_usage_usd + $1 <= g.monthly_limit_usd)
 	`
 	res, err := tx.ExecContext(ctx, updateSQL, costUSD, subscriptionID)
 	if err != nil {
@@ -170,7 +173,52 @@ func incrementUsageBillingSubscription(ctx context.Context, tx *sql.Tx, subscrip
 	if affected > 0 {
 		return nil
 	}
+	return classifyUsageBillingSubscriptionUpdateMiss(ctx, tx, subscriptionID, costUSD)
+}
+
+func classifyUsageBillingSubscriptionUpdateMiss(ctx context.Context, tx *sql.Tx, subscriptionID int64, costUSD float64) error {
+	var (
+		dailyUsage   float64
+		weeklyUsage  float64
+		monthlyUsage float64
+		dailyLimit   sql.NullFloat64
+		weeklyLimit  sql.NullFloat64
+		monthlyLimit sql.NullFloat64
+	)
+	err := tx.QueryRowContext(ctx, `
+		SELECT
+			us.daily_usage_usd,
+			us.weekly_usage_usd,
+			us.monthly_usage_usd,
+			g.daily_limit_usd,
+			g.weekly_limit_usd,
+			g.monthly_limit_usd
+		FROM user_subscriptions us
+		JOIN groups g ON us.group_id = g.id
+		WHERE us.id = $1
+			AND us.deleted_at IS NULL
+			AND g.deleted_at IS NULL
+	`, subscriptionID).Scan(&dailyUsage, &weeklyUsage, &monthlyUsage, &dailyLimit, &weeklyLimit, &monthlyLimit)
+	if errors.Is(err, sql.ErrNoRows) {
+		return service.ErrSubscriptionNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if usageBillingLimitExceeded(dailyUsage, dailyLimit, costUSD) {
+		return service.ErrDailyLimitExceeded
+	}
+	if usageBillingLimitExceeded(weeklyUsage, weeklyLimit, costUSD) {
+		return service.ErrWeeklyLimitExceeded
+	}
+	if usageBillingLimitExceeded(monthlyUsage, monthlyLimit, costUSD) {
+		return service.ErrMonthlyLimitExceeded
+	}
 	return service.ErrSubscriptionNotFound
+}
+
+func usageBillingLimitExceeded(current float64, limit sql.NullFloat64, cost float64) bool {
+	return limit.Valid && limit.Float64 > 0 && current+cost > limit.Float64
 }
 
 func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, amount float64) (float64, error) {
@@ -179,16 +227,38 @@ func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, am
 		UPDATE users
 		SET balance = balance - $1,
 			updated_at = NOW()
-		WHERE id = $2 AND deleted_at IS NULL
+		WHERE id = $2 AND deleted_at IS NULL AND balance >= $1
 		RETURNING balance
 	`, amount, userID).Scan(&newBalance)
 	if errors.Is(err, sql.ErrNoRows) {
+		exists, existsErr := usageBillingUserExists(ctx, tx, userID)
+		if existsErr != nil {
+			return 0, existsErr
+		}
+		if exists {
+			return 0, service.ErrInsufficientBalance
+		}
 		return 0, service.ErrUserNotFound
 	}
 	if err != nil {
 		return 0, err
 	}
 	return newBalance, nil
+}
+
+func usageBillingUserExists(ctx context.Context, tx *sql.Tx, userID int64) (bool, error) {
+	var exists bool
+	err := tx.QueryRowContext(ctx, `
+		SELECT EXISTS(
+			SELECT 1
+			FROM users
+			WHERE id = $1 AND deleted_at IS NULL
+		)
+	`, userID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
 
 func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID int64, amount float64) (bool, error) {

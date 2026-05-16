@@ -9,6 +9,8 @@ const mockLogout = vi.fn()
 const mockGetCurrentUser = vi.fn()
 const mockRegister = vi.fn()
 const mockRefreshToken = vi.fn()
+const mockGetMyPermissions = vi.fn()
+const mockGetMyMenuTree = vi.fn()
 
 vi.mock('@/api', () => ({
   authAPI: {
@@ -20,6 +22,13 @@ vi.mock('@/api', () => ({
     refreshToken: (...args: any[]) => mockRefreshToken(...args),
   },
   isTotp2FARequired: (response: any) => response?.requires_2fa === true,
+}))
+
+vi.mock('@/api/admin/rbac', () => ({
+  default: {
+    getMyPermissions: (...args: any[]) => mockGetMyPermissions(...args),
+    getMyMenuTree: (...args: any[]) => mockGetMyMenuTree(...args),
+  },
 }))
 
 const fakeUser = {
@@ -101,6 +110,8 @@ describe('useAuthStore', () => {
     ensureStorage().clear()
     vi.useFakeTimers()
     vi.clearAllMocks()
+    mockGetMyPermissions.mockResolvedValue([])
+    mockGetMyMenuTree.mockResolvedValue([])
   })
 
   afterEach(() => {
@@ -146,6 +157,51 @@ describe('useAuthStore', () => {
       expect(result).toEqual(twoFAResponse)
       expect(store.token).toBeNull()
       expect(store.isAuthenticated).toBe(false)
+    })
+
+    it('登录新用户前清除旧管理员 refresh token', async () => {
+      localStorage.setItem('auth_token', 'old-admin-token')
+      localStorage.setItem('auth_user', JSON.stringify(fakeAdminUser))
+      localStorage.setItem('refresh_token', 'old-admin-refresh')
+      localStorage.setItem('token_expires_at', String(Date.now() + 3600_000))
+
+      const responseWithoutRefresh = {
+        access_token: 'new-user-token',
+        token_type: 'Bearer',
+        user: { ...fakeUser },
+      }
+      mockLogin.mockResolvedValue(responseWithoutRefresh)
+      const store = useAuthStore()
+
+      await store.login({ email: 'test@example.com', password: '123456' })
+
+      expect(store.user).toEqual(fakeUser)
+      expect(store.isAdmin).toBe(false)
+      expect(localStorage.getItem('auth_token')).toBe('new-user-token')
+      expect(localStorage.getItem('auth_user')).toBe(JSON.stringify(fakeUser))
+      expect(localStorage.getItem('refresh_token')).toBeNull()
+      expect(localStorage.getItem('token_expires_at')).toBeNull()
+    })
+
+    it('需要 2FA 时清除旧认证状态', async () => {
+      const adminResponse = { ...fakeAuthResponse, user: { ...fakeAdminUser } }
+      mockLogin.mockResolvedValueOnce(adminResponse)
+      const store = useAuthStore()
+      await store.login({ email: 'admin@example.com', password: '123456' })
+      expect(store.isAdmin).toBe(true)
+
+      const twoFAResponse = { requires_2fa: true, temp_token: 'temp-123' }
+      mockLogin.mockResolvedValueOnce(twoFAResponse)
+
+      const result = await store.login({ email: 'test@example.com', password: '123456' })
+
+      expect(result).toEqual(twoFAResponse)
+      expect(store.token).toBeNull()
+      expect(store.user).toBeNull()
+      expect(store.isAuthenticated).toBe(false)
+      expect(localStorage.getItem('auth_token')).toBeNull()
+      expect(localStorage.getItem('auth_user')).toBeNull()
+      expect(localStorage.getItem('refresh_token')).toBeNull()
     })
   })
 
@@ -306,6 +362,31 @@ describe('useAuthStore', () => {
     it('未认证时抛出错误', async () => {
       const store = useAuthStore()
       await expect(store.refreshUser()).rejects.toThrow('Not authenticated')
+    })
+
+    it('刷新 token 后同步当前用户信息', async () => {
+      mockLogin.mockResolvedValue({ ...fakeAuthResponse, expires_in: 121 })
+      mockRefreshToken.mockResolvedValue({
+        access_token: 'new-token',
+        refresh_token: 'new-refresh',
+        expires_in: 3600,
+        token_type: 'Bearer',
+      })
+      const syncedUser = { ...fakeUser, username: 'synced-name' }
+      mockGetCurrentUser.mockResolvedValue({ data: syncedUser })
+      const store = useAuthStore()
+
+      await store.login({ email: 'test@example.com', password: '123456' })
+      mockGetCurrentUser.mockClear()
+
+      await vi.advanceTimersByTimeAsync(1000)
+
+      expect(mockRefreshToken).toHaveBeenCalled()
+      expect(mockGetCurrentUser).toHaveBeenCalled()
+      expect(store.token).toBe('new-token')
+      expect(store.user).toEqual(syncedUser)
+      expect(localStorage.getItem('refresh_token')).toBe('new-refresh')
+      expect(JSON.parse(localStorage.getItem('auth_user')!)).toEqual(syncedUser)
     })
   })
 

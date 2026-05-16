@@ -5058,11 +5058,13 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		APIKeyService:         input.APIKeyService,
 	}
 	billingDeps := s.billingDeps()
+	if err := persistUsageLogForBilling(ctx, s.usageLogRepo, usageLog, "service.openai_gateway"); err != nil {
+		return err
+	}
 	applied, billingErr := applyUsageBilling(ctx, requestID, usageLog, billingParams, billingDeps, s.usageBillingRepo)
 	if billingErr != nil {
 		return billingErr
 	}
-	writeUsageLogWithID(ctx, s.usageLogRepo, usageLog, "service.openai_gateway")
 	triggerConsumptionCommission(applied, usageLog, billingParams, billingDeps)
 
 	return nil

@@ -100,6 +100,11 @@ func Status(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldStatus, v))
 }
 
+// TokenVersion applies equality check predicate on the "token_version" field. It's identical to TokenVersionEQ.
+func TokenVersion(v int64) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTokenVersion, v))
+}
+
 // LastActiveAt applies equality check predicate on the "last_active_at" field. It's identical to LastActiveAtEQ.
 func LastActiveAt(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldLastActiveAt, v))
@@ -633,6 +638,46 @@ func StatusEqualFold(v string) predicate.User {
 // StatusContainsFold applies the ContainsFold predicate on the "status" field.
 func StatusContainsFold(v string) predicate.User {
 	return predicate.User(sql.FieldContainsFold(FieldStatus, v))
+}
+
+// TokenVersionEQ applies the EQ predicate on the "token_version" field.
+func TokenVersionEQ(v int64) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldTokenVersion, v))
+}
+
+// TokenVersionNEQ applies the NEQ predicate on the "token_version" field.
+func TokenVersionNEQ(v int64) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldTokenVersion, v))
+}
+
+// TokenVersionIn applies the In predicate on the "token_version" field.
+func TokenVersionIn(vs ...int64) predicate.User {
+	return predicate.User(sql.FieldIn(FieldTokenVersion, vs...))
+}
+
+// TokenVersionNotIn applies the NotIn predicate on the "token_version" field.
+func TokenVersionNotIn(vs ...int64) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldTokenVersion, vs...))
+}
+
+// TokenVersionGT applies the GT predicate on the "token_version" field.
+func TokenVersionGT(v int64) predicate.User {
+	return predicate.User(sql.FieldGT(FieldTokenVersion, v))
+}
+
+// TokenVersionGTE applies the GTE predicate on the "token_version" field.
+func TokenVersionGTE(v int64) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldTokenVersion, v))
+}
+
+// TokenVersionLT applies the LT predicate on the "token_version" field.
+func TokenVersionLT(v int64) predicate.User {
+	return predicate.User(sql.FieldLT(FieldTokenVersion, v))
+}
+
+// TokenVersionLTE applies the LTE predicate on the "token_version" field.
+func TokenVersionLTE(v int64) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldTokenVersion, v))
 }
 
 // LastActiveAtEQ applies the EQ predicate on the "last_active_at" field.

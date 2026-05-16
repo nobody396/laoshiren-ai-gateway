@@ -7528,16 +7528,27 @@ func writeUsageLogBestEffort(ctx context.Context, repo UsageLogRepository, usage
 	}
 }
 
-func writeUsageLogWithID(ctx context.Context, repo UsageLogRepository, usageLog *UsageLog, logKey string) {
-	if repo == nil || usageLog == nil {
-		return
+func persistUsageLogForBilling(ctx context.Context, repo UsageLogRepository, usageLog *UsageLog, logKey string) error {
+	if repo == nil {
+		return errors.New("usage log repository is required for billing")
 	}
+	if usageLog == nil {
+		return errors.New("usage log is required for billing")
+	}
+
 	usageCtx, cancel := detachedBillingContext(ctx)
 	defer cancel()
 
 	if _, err := repo.Create(usageCtx, usageLog); err != nil {
-		logger.LegacyPrintf(logKey, "Create usage log failed: %v", err)
+		logger.LegacyPrintf(logKey, "Create usage log before billing failed: %v", err)
+		return fmt.Errorf("create usage log before billing: %w", err)
 	}
+	if usageLog.ID == 0 {
+		err := errors.New("usage log id was not assigned")
+		logger.LegacyPrintf(logKey, "Create usage log before billing failed: %v", err)
+		return err
+	}
+	return nil
 }
 
 // RecordUsage 记录使用量并扣费（或更新订阅用量）
@@ -7706,11 +7717,13 @@ func (s *GatewayService) RecordUsage(ctx context.Context, input *RecordUsageInpu
 		APIKeyService:         input.APIKeyService,
 	}
 	billingDeps := s.billingDeps()
+	if err := persistUsageLogForBilling(ctx, s.usageLogRepo, usageLog, "service.gateway"); err != nil {
+		return err
+	}
 	applied, billingErr := applyUsageBilling(ctx, requestID, usageLog, billingParams, billingDeps, s.usageBillingRepo)
 	if billingErr != nil {
 		return billingErr
 	}
-	writeUsageLogWithID(ctx, s.usageLogRepo, usageLog, "service.gateway")
 	triggerConsumptionCommission(applied, usageLog, billingParams, billingDeps)
 
 	return nil
@@ -7890,11 +7903,13 @@ func (s *GatewayService) RecordUsageWithLongContext(ctx context.Context, input *
 		APIKeyService:         input.APIKeyService,
 	}
 	billingDeps := s.billingDeps()
+	if err := persistUsageLogForBilling(ctx, s.usageLogRepo, usageLog, "service.gateway"); err != nil {
+		return err
+	}
 	applied, billingErr := applyUsageBilling(ctx, requestID, usageLog, billingParams, billingDeps, s.usageBillingRepo)
 	if billingErr != nil {
 		return billingErr
 	}
-	writeUsageLogWithID(ctx, s.usageLogRepo, usageLog, "service.gateway")
 	triggerConsumptionCommission(applied, usageLog, billingParams, billingDeps)
 
 	return nil

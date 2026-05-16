@@ -8,9 +8,16 @@ import (
 	"strings"
 	"time"
 
+	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 )
+
+const agentSettlementAmountEpsilon = 0.00000001
+
+type sqlTransactor interface {
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
+}
 
 func (r *commissionRepository) GetCommissionRates(ctx context.Context) (*service.CommissionRates, error) {
 	if r.sql == nil {
@@ -593,7 +600,65 @@ func (r *commissionRepository) CreateAgentSettlement(ctx context.Context, settle
 	if r.sql == nil {
 		return fmt.Errorf("sql executor is not configured")
 	}
-	return scanSingleRow(ctx, r.sql, `
+	return insertAgentSettlement(ctx, r.sql, settlement)
+}
+
+func (r *commissionRepository) CreateAgentSettlementIfAvailable(ctx context.Context, settlement *service.AgentSettlement) (err error) {
+	if r.sql == nil {
+		return fmt.Errorf("sql executor is not configured")
+	}
+	db, ok := r.sql.(sqlTransactor)
+	if !ok {
+		return fmt.Errorf("sql transactor is not configured")
+	}
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	if _, err := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock($1)`, settlement.AgentID); err != nil {
+		return fmt.Errorf("lock agent settlement: %w", err)
+	}
+
+	var totalCommission, settledCommission float64
+	if err := scanSingleRow(ctx, tx, `
+		SELECT
+			COALESCE((SELECT SUM(amount) FROM commission_records WHERE beneficiary_id = $1), 0),
+			COALESCE((SELECT SUM(amount) FROM agent_settlements WHERE agent_id = $1 AND status = 'completed'), 0)
+	`, []any{settlement.AgentID}, &totalCommission, &settledCommission); err != nil {
+		if isMissingAgentManagementRelation(err) {
+			return infraerrors.BadRequest("SETTLEMENT_EXCEEDS_UNSETTLED", "settlement amount exceeds unsettled commission")
+		}
+		return fmt.Errorf("calculate agent settlement balance: %w", err)
+	}
+
+	available := totalCommission - settledCommission
+	if settlement.Amount-available > agentSettlementAmountEpsilon {
+		return infraerrors.BadRequest("SETTLEMENT_EXCEEDS_UNSETTLED", "settlement amount exceeds unsettled commission")
+	}
+
+	if settlement.Status == "" {
+		settlement.Status = service.AgentSettlementStatusCompleted
+	}
+	if err := insertAgentSettlement(ctx, tx, settlement); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	tx = nil
+	return nil
+}
+
+func insertAgentSettlement(ctx context.Context, q sqlExecutor, settlement *service.AgentSettlement) error {
+	return scanSingleRow(ctx, q, `
 		INSERT INTO agent_settlements (agent_id, amount, operator_id, note, status)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, created_at

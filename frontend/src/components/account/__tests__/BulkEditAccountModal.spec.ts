@@ -38,6 +38,7 @@ function mountModal() {
       show: true,
       accountIds: [1, 2],
       selectedPlatforms: ['antigravity'],
+      selectedTypes: ['oauth'],
       proxies: [],
       groups: []
     } as any,
@@ -54,11 +55,13 @@ function mountModal() {
 }
 
 describe('BulkEditAccountModal', () => {
-  it('antigravity 白名单包含 Gemini 图片模型且过滤掉普通 GPT 模型', () => {
+  it('antigravity 白名单包含 Gemini 图片模型且过滤掉普通 GPT 模型', async () => {
     const wrapper = mountModal()
 
-    expect(wrapper.text()).toContain('Gemini 3.1 Flash Image')
-    expect(wrapper.text()).toContain('Gemini 3 Pro Image (Legacy)')
+    await wrapper.find('.cursor-pointer').trigger('click')
+
+    expect(wrapper.text()).toContain('gemini-3.1-flash-image')
+    expect(wrapper.text()).toContain('gemini-3-pro-image')
     expect(wrapper.text()).not.toContain('GPT-5.3 Codex')
   })
 
@@ -69,8 +72,8 @@ describe('BulkEditAccountModal', () => {
     expect(mappingTab).toBeTruthy()
     await mappingTab!.trigger('click')
 
-    expect(wrapper.text()).toContain('Gemini 3.1 Image')
-    expect(wrapper.text()).toContain('G3 Image→3.1')
+    expect(wrapper.text()).toContain('3.1-Flash-Image透传')
+    expect(wrapper.text()).toContain('3-Pro-Image→3.1')
     expect(wrapper.text()).not.toContain('GPT-5.3 Codex')
   })
 })

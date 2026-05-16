@@ -659,6 +659,10 @@ func (r *stubUserSubscriptionRepo) ExtendExpiry(ctx context.Context, subscriptio
 	return errors.New("not implemented")
 }
 
+func (r *stubUserSubscriptionRepo) ExtendExpiryAtomically(ctx context.Context, subscriptionID int64, validityDays int, notes string, now, maxExpiresAt time.Time) error {
+	return errors.New("not implemented")
+}
+
 func (r *stubUserSubscriptionRepo) UpdateStatus(ctx context.Context, subscriptionID int64, status string) error {
 	if r.updateStatus != nil {
 		return r.updateStatus(ctx, subscriptionID, status)

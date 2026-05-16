@@ -64,6 +64,15 @@ func (c *memoryRefreshTokenCache) DeleteRefreshToken(_ context.Context, tokenHas
 	return nil
 }
 
+func (c *memoryRefreshTokenCache) ConsumeRefreshToken(_ context.Context, tokenHash string) (*RefreshTokenData, error) {
+	data, ok := c.data[tokenHash]
+	if !ok {
+		return nil, ErrRefreshTokenNotFound
+	}
+	delete(c.data, tokenHash)
+	return data, nil
+}
+
 func (c *memoryRefreshTokenCache) DeleteUserRefreshTokens(context.Context, int64) error { return nil }
 func (c *memoryRefreshTokenCache) DeleteTokenFamily(context.Context, string) error      { return nil }
 func (c *memoryRefreshTokenCache) AddToUserTokenSet(context.Context, int64, string, time.Duration) error {

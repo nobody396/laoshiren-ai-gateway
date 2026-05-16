@@ -136,9 +136,16 @@ export const useAuthStore = defineStore('auth', () => {
       // Update state
       token.value = response.access_token
       refreshTokenValue.value = response.refresh_token
+      localStorage.setItem(AUTH_TOKEN_KEY, response.access_token)
+      localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token)
 
       // Schedule next refresh (this also updates tokenExpiresAt and localStorage)
       scheduleTokenRefresh(response.expires_in)
+      try {
+        await refreshUser()
+      } catch (refreshUserError) {
+        console.error('Failed to refresh user after token refresh:', refreshUserError)
+      }
     } catch (error) {
       console.error('Token refresh failed:', error)
       // Don't clear auth here - the interceptor will handle 401 errors
@@ -163,6 +170,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   async function login(credentials: LoginRequest): Promise<LoginResponse> {
     try {
+      clearLocalAuthState()
       const response = await authAPI.login(credentials)
 
       // If 2FA is required, return the response without setting auth state
@@ -190,6 +198,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   async function login2FA(tempToken: string, totpCode: string): Promise<User> {
     try {
+      clearLocalAuthState()
       const response = await authAPI.login2FA({ temp_token: tempToken, totp_code: totpCode })
       setAuthFromResponse(response)
       return user.value!
@@ -204,6 +213,8 @@ export const useAuthStore = defineStore('auth', () => {
    * Internal helper function
    */
   function setAuthFromResponse(response: AuthResponse): void {
+    clearLocalAuthState()
+
     // Store token and user
     token.value = response.access_token
 
@@ -243,6 +254,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   async function register(userData: RegisterRequest): Promise<User> {
     try {
+      clearLocalAuthState()
       const response = await authAPI.register(userData)
 
       // Use the common helper to set auth state
@@ -334,6 +346,12 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Update localStorage
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData))
+      const permissionStore = usePermissionStore()
+      if (userData.role === 'admin') {
+        void permissionStore.fetchPermissions()
+      } else {
+        permissionStore.reset()
+      }
 
       return userData
     } catch (error) {
@@ -350,6 +368,10 @@ export const useAuthStore = defineStore('auth', () => {
    * Internal helper function
    */
   function clearAuth(): void {
+    clearLocalAuthState()
+  }
+
+  function clearLocalAuthState(): void {
     // Stop token refresh
     stopTokenRefresh()
 
@@ -357,6 +379,7 @@ export const useAuthStore = defineStore('auth', () => {
     refreshTokenValue.value = null
     tokenExpiresAt.value = null
     user.value = null
+    runMode.value = 'standard'
     localStorage.removeItem(AUTH_TOKEN_KEY)
     localStorage.removeItem(AUTH_USER_KEY)
     localStorage.removeItem(REFRESH_TOKEN_KEY)

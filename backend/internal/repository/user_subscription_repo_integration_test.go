@@ -5,12 +5,15 @@ package repository
 import (
 	"context"
 	"fmt"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -271,7 +274,7 @@ func (s *UserSubscriptionRepoSuite) TestList_NoFilters() {
 	group := s.mustCreateGroup("g-list")
 	s.mustCreateSubscription(user.ID, group.ID, nil)
 
-	subs, page, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, nil, nil, "", "", "")
+	subs, page, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, nil, nil, "", "", "", "")
 	s.Require().NoError(err, "List")
 	s.Require().Len(subs, 1)
 	s.Require().Equal(int64(1), page.Total)
@@ -285,7 +288,7 @@ func (s *UserSubscriptionRepoSuite) TestList_FilterByUserID() {
 	s.mustCreateSubscription(user1.ID, group.ID, nil)
 	s.mustCreateSubscription(user2.ID, group.ID, nil)
 
-	subs, _, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, &user1.ID, nil, "", "", "")
+	subs, _, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, &user1.ID, nil, "", "", "", "")
 	s.Require().NoError(err)
 	s.Require().Len(subs, 1)
 	s.Require().Equal(user1.ID, subs[0].UserID)
@@ -299,7 +302,7 @@ func (s *UserSubscriptionRepoSuite) TestList_FilterByGroupID() {
 	s.mustCreateSubscription(user.ID, g1.ID, nil)
 	s.mustCreateSubscription(user.ID, g2.ID, nil)
 
-	subs, _, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, nil, &g1.ID, "", "", "")
+	subs, _, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, nil, &g1.ID, "", "", "", "")
 	s.Require().NoError(err)
 	s.Require().Len(subs, 1)
 	s.Require().Equal(g1.ID, subs[0].GroupID)
@@ -320,7 +323,7 @@ func (s *UserSubscriptionRepoSuite) TestList_FilterByStatus() {
 		c.SetExpiresAt(time.Now().Add(-24 * time.Hour))
 	})
 
-	subs, _, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, nil, nil, service.SubscriptionStatusExpired, "", "")
+	subs, _, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, nil, nil, service.SubscriptionStatusExpired, "", "", "")
 	s.Require().NoError(err)
 	s.Require().Len(subs, 1)
 	s.Require().Equal(service.SubscriptionStatusExpired, subs[0].Status)
@@ -744,4 +747,141 @@ func (s *UserSubscriptionRepoSuite) TestTxContext_RollbackIsolation() {
 
 	_, err = repo.GetByID(context.Background(), sub.ID)
 	s.Require().ErrorIs(err, service.ErrSubscriptionNotFound)
+}
+
+type d5SubscriptionGroupRepoStub struct {
+	service.GroupRepository
+	group *service.Group
+}
+
+func (s d5SubscriptionGroupRepoStub) GetByID(context.Context, int64) (*service.Group, error) {
+	return s.group, nil
+}
+
+func createD5SubscriptionFixtures(t *testing.T, client *dbent.Client, suffix string, expiresAt time.Time, status, notes string) (*dbent.UserSubscription, *service.Group) {
+	t.Helper()
+	ctx := context.Background()
+
+	userEnt, err := client.User.Create().
+		SetEmail("d5-sub-" + suffix + "@example.com").
+		SetPasswordHash("test").
+		SetStatus(service.StatusActive).
+		SetRole(service.RoleUser).
+		Save(ctx)
+	require.NoError(t, err, "create d5 user")
+
+	groupEnt, err := client.Group.Create().
+		SetName("d5-sub-group-" + suffix).
+		SetStatus(service.StatusActive).
+		SetSubscriptionType(service.SubscriptionTypeSubscription).
+		Save(ctx)
+	require.NoError(t, err, "create d5 group")
+
+	now := time.Now()
+	subEnt, err := client.UserSubscription.Create().
+		SetUserID(userEnt.ID).
+		SetGroupID(groupEnt.ID).
+		SetStartsAt(now.AddDate(0, 0, -30)).
+		SetExpiresAt(expiresAt).
+		SetStatus(status).
+		SetAssignedAt(now).
+		SetNotes(notes).
+		Save(ctx)
+	require.NoError(t, err, "create d5 subscription")
+
+	groupSvc := groupEntityToService(groupEnt)
+	return subEnt, groupSvc
+}
+
+func TestUserSubscriptionAssignOrExtendConcurrentD5AddsBothExtensions(t *testing.T) {
+	client := testEntClient(t)
+	baseExpiresAt := time.Now().UTC().AddDate(0, 0, 30).Truncate(time.Microsecond)
+	subEnt, groupSvc := createD5SubscriptionFixtures(
+		t,
+		client,
+		fmt.Sprintf("concurrent-%d", time.Now().UnixNano()),
+		baseExpiresAt,
+		service.SubscriptionStatusActive,
+		"initial",
+	)
+
+	repo := NewUserSubscriptionRepository(client)
+	svc := service.NewSubscriptionService(d5SubscriptionGroupRepoStub{group: groupSvc}, repo, nil, client, nil)
+
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	errs := make(chan error, 2)
+	for i := 0; i < 2; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			_, extended, err := svc.AssignOrExtendSubscription(context.Background(), &service.AssignSubscriptionInput{
+				UserID:       subEnt.UserID,
+				GroupID:      groupSvc.ID,
+				ValidityDays: 30,
+				Notes:        fmt.Sprintf("extend-%d", i),
+			})
+			if err == nil && !extended {
+				err = fmt.Errorf("expected existing subscription extension")
+			}
+			errs <- err
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		require.NoError(t, err)
+	}
+
+	got, err := repo.GetByUserIDAndGroupID(context.Background(), subEnt.UserID, groupSvc.ID)
+	require.NoError(t, err)
+	require.WithinDuration(t, baseExpiresAt.AddDate(0, 0, 60), got.ExpiresAt, time.Second)
+	require.Equal(t, service.SubscriptionStatusActive, got.Status)
+	require.Contains(t, got.Notes, "initial")
+	require.Contains(t, got.Notes, "extend-0")
+	require.Contains(t, got.Notes, "extend-1")
+	require.Equal(t, 3, len(strings.Split(got.Notes, "\n")))
+}
+
+func TestUserSubscriptionAssignOrExtendTxRollbackD5DoesNotLeakSubscriptionUpdate(t *testing.T) {
+	client := testEntClient(t)
+	baseExpiresAt := time.Now().UTC().AddDate(0, 0, 15).Truncate(time.Microsecond)
+	subEnt, groupSvc := createD5SubscriptionFixtures(
+		t,
+		client,
+		fmt.Sprintf("rollback-%d", time.Now().UnixNano()),
+		baseExpiresAt,
+		service.SubscriptionStatusSuspended,
+		"before",
+	)
+
+	repo := NewUserSubscriptionRepository(client)
+	svc := service.NewSubscriptionService(d5SubscriptionGroupRepoStub{group: groupSvc}, repo, nil, client, nil)
+
+	tx, err := client.Tx(context.Background())
+	require.NoError(t, err, "begin outer tx")
+	txCtx := dbent.NewTxContext(context.Background(), tx)
+
+	updated, extended, err := svc.AssignOrExtendSubscription(txCtx, &service.AssignSubscriptionInput{
+		UserID:       subEnt.UserID,
+		GroupID:      groupSvc.ID,
+		ValidityDays: 30,
+		Notes:        "tx-note",
+	})
+	require.NoError(t, err)
+	require.True(t, extended)
+	require.Equal(t, service.SubscriptionStatusActive, updated.Status)
+	require.Equal(t, "before\ntx-note", updated.Notes)
+	require.WithinDuration(t, baseExpiresAt.AddDate(0, 0, 30), updated.ExpiresAt, time.Second)
+
+	require.NoError(t, tx.Rollback(), "rollback outer tx")
+
+	got, err := repo.GetByID(context.Background(), subEnt.ID)
+	require.NoError(t, err)
+	require.Equal(t, service.SubscriptionStatusSuspended, got.Status)
+	require.Equal(t, "before", got.Notes)
+	require.WithinDuration(t, baseExpiresAt, got.ExpiresAt, time.Second)
 }

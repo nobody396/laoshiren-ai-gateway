@@ -23,11 +23,9 @@ Mac 用户注意选择正确的芯片架构：
 
 打开 VS Code，点击左侧 **扩展市场**（Extensions），搜索 `Claude Code for VS Code`，认准发布者为 **Anthropic**，点击 **安装**。
 
-![](https://assets.example.com/dragoncode/file-20260401164747215.png)
 
 安装完成后，打开任意项目，点击右上角的 **Claude Code 图标** 打开插件面板。
 
-![](https://assets.example.com/dragoncode/file-20260401164814316.png)
 
 ---
 
@@ -35,8 +33,6 @@ Mac 用户注意选择正确的芯片架构：
 
 登录 [老实人 AI 控制台](https://laoshirenai.com/keys)，进入 **API 密钥** 页面，点击 **创建密钥**。
 
-![](https://assets.example.com/dragoncode/file-20260317102346193.png)
-![](https://assets.example.com/dragoncode/file-20260317102505220.png)
 
 填写密钥名称，选择分组（模型和倍率），按需配置 IP 限制、额度限制、速率限制和有效期。新手建议直接使用默认配置。
 
@@ -52,8 +48,6 @@ Mac 用户注意选择正确的芯片架构：
 
 前往 [CC Switch Release](https://github.com/farion1231/cc-switch/blob/main/docs/release-notes/v3.12.2-zh.md) 下载安装后，点击 **导入到 CCS** 完成一键导入：
 
-![](https://assets.example.com/dragoncode/file-20260317102723257.png)
-![](https://assets.example.com/dragoncode/file-20260317104909443.png)
 
 导入后点击 **启用** 即可。
 
@@ -61,7 +55,6 @@ Mac 用户注意选择正确的芯片架构：
 
 点击密钥旁的 **复制** 按钮获取 API Key。
 
-![](https://assets.example.com/dragoncode/file-20260317103239907.png)
 
 需要设置以下两个环境变量：
 
@@ -114,16 +107,12 @@ source ~/.bashrc
 
 **不要选择任何一种**——等待 3-5 秒页面会自动消失。如果已按上一步配置好环境变量，插件会自动使用 老实人 AI 的 API Key，无需登录。
 
-![](https://assets.example.com/dragoncode/file-20260401164915737.png)
 
 如果登录页面没有自动消失，左下角点击设置，然后搜索Claude code，勾选 **Disable Login Prompt** 手动关闭。
-![](https://assets.example.com/dragoncode/file-20260401165140845.png)
 
-![](https://assets.example.com/dragoncode/file-20260401165116806.png)
 
 配置成功后界面如下：
 
-![](https://assets.example.com/dragoncode/file-20260401165223172.png)
 
 ---
 
@@ -131,7 +120,6 @@ source ~/.bashrc
 
 在输入框中用自然语言描述需求，通过对话形式与 Claude Code 交互，插件会自动读取和修改当前项目的代码。
 
-![](https://assets.example.com/dragoncode/file-20260401165343382.png)
 
 ---
 
@@ -141,7 +129,6 @@ source ~/.bashrc
 
 左下角可切换操作模式：
 
-![](https://assets.example.com/dragoncode/file-20260401165410771.png)
 
 **1. Ask before edits（编辑前询问）**
 
@@ -159,19 +146,16 @@ source ~/.bashrc
 
 点击右上角 **+** 号可开启多个 Claude Code 窗口，例如一个负责开发、一个负责测试。
 
-![](https://assets.example.com/dragoncode/file-20260401170043951.png)
 
 ### 引用项目文件
 
 在输入框中输入 `@` 后选择文件名，可将文件内容作为上下文传递给 Claude Code。
 
-![](https://assets.example.com/dragoncode/file-20260401170057102.png)
 
 ### 上传文件
 
 输入 `/attach file`，从文件选择器中上传文件。
 
-![](https://assets.example.com/dragoncode/file-20260401170128374.png)
 
 > **注意**：右下角的附件图标是 **引用文件**（添加上下文），不是上传文件，注意区分。
 
@@ -179,7 +163,6 @@ source ~/.bashrc
 
 输入 `/model`，选择 **Switch Model**，按需切换模型。
 
-![](https://assets.example.com/dragoncode/file-20260401170141185.png)
 
 ---
 

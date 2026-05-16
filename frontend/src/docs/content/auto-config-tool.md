@@ -10,8 +10,6 @@
 
 登录 [老实人 AI 控制台](https://laoshirenai.com/keys)，进入 **API 密钥** 页面，点击 **创建密钥**。
 
-![](https://assets.example.com/dragoncode/file-20260317102346193.png)
-![](https://assets.example.com/dragoncode/file-20260317102505220.png)
 
 填写密钥名称，并根据要使用的工具选择分组：
 
@@ -73,7 +71,7 @@ curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --api-key
 Windows PowerShell（管道模式通过环境变量传参）：
 
 ```powershell
-$env:DRAGON_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:DRAGON_TOOLS='claude'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
+$env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:LAOSHIRENAI_TOOLS='claude'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
 ```
 
 Windows PowerShell（下载后直接执行）：
@@ -93,7 +91,7 @@ curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --codex-a
 Windows PowerShell（管道模式）：
 
 ```powershell
-$env:DRAGON_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:DRAGON_TOOLS='codex'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
+$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
 ```
 
 Windows PowerShell（下载后直接执行）：
@@ -113,7 +111,7 @@ curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --api-key
 Windows PowerShell（管道模式）：
 
 ```powershell
-$env:DRAGON_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:DRAGON_CODEX_API_KEY='YOUR_CODEX_KEY'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
+$env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
 ```
 
 Windows PowerShell（下载后直接执行）：
@@ -262,7 +260,7 @@ Claude Code 在 Windows 上依赖 git-bash 运行。脚本会自动检测并安�
 `irm ... | iex` 后面**不能直接跟参数**，需要通过环境变量传入：
 
 ```powershell
-$env:DRAGON_TOOLS='claude'; $env:DRAGON_CLAUDE_API_KEY='YOUR_KEY'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
+$env:LAOSHIRENAI_TOOLS='claude'; $env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_KEY'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
 ```
 
 如果不传环境变量，脚本会交互式提示输入 API Key。

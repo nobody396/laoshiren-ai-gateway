@@ -11,6 +11,7 @@ import (
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ip"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 
@@ -147,6 +148,9 @@ func (f fakeGoogleSubscriptionRepo) ExistsByUserIDAndGroupID(ctx context.Context
 func (f fakeGoogleSubscriptionRepo) ExtendExpiry(ctx context.Context, subscriptionID int64, newExpiresAt time.Time) error {
 	return errors.New("not implemented")
 }
+func (f fakeGoogleSubscriptionRepo) ExtendExpiryAtomically(ctx context.Context, subscriptionID int64, validityDays int, notes string, now, maxExpiresAt time.Time) error {
+	return errors.New("not implemented")
+}
 func (f fakeGoogleSubscriptionRepo) UpdateStatus(ctx context.Context, subscriptionID int64, status string) error {
 	if f.updateStatus != nil {
 		return f.updateStatus(ctx, subscriptionID, status)
@@ -251,7 +255,7 @@ func TestApiKeyAuthWithSubscriptionGoogle_QueryApiKeyRejected(t *testing.T) {
 	var resp googleErrorResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 	require.Equal(t, http.StatusBadRequest, resp.Error.Code)
-	require.Equal(t, "Query parameter api_key is deprecated. Use Authorization header or key instead.", resp.Error.Message)
+	require.Equal(t, "Query parameter api_key is deprecated. Use Authorization header or x-goog-api-key instead.", resp.Error.Message)
 	require.Equal(t, "INVALID_ARGUMENT", resp.Error.Status)
 }
 
@@ -320,21 +324,13 @@ func TestApiKeyAuthWithSubscriptionGoogleSetsGroupContext(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 }
 
-func TestApiKeyAuthWithSubscriptionGoogle_QueryKeyAllowedOnV1Beta(t *testing.T) {
+func TestApiKeyAuthWithSubscriptionGoogle_QueryKeyRejectedOnV1Beta(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	r := gin.New()
 	apiKeyService := newTestAPIKeyService(fakeAPIKeyRepo{
 		getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
-			return &service.APIKey{
-				ID:     1,
-				Key:    key,
-				Status: service.StatusActive,
-				User: &service.User{
-					ID:     123,
-					Status: service.StatusActive,
-				},
-			}, nil
+			return nil, errors.New("should not be called")
 		},
 	})
 	cfg := &config.Config{RunMode: config.RunModeSimple}
@@ -345,7 +341,37 @@ func TestApiKeyAuthWithSubscriptionGoogle_QueryKeyAllowedOnV1Beta(t *testing.T) 
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
 
-	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	var resp googleErrorResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, http.StatusBadRequest, resp.Error.Code)
+	require.Equal(t, "Query parameter key is deprecated. Use Authorization header or x-goog-api-key instead.", resp.Error.Message)
+	require.Equal(t, "INVALID_ARGUMENT", resp.Error.Status)
+}
+
+func TestApiKeyAuthWithSubscriptionGoogle_QueryKeyRejectedOnAntigravityV1Beta(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	r := gin.New()
+	apiKeyService := newTestAPIKeyService(fakeAPIKeyRepo{
+		getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
+			return nil, errors.New("should not be called")
+		},
+	})
+	cfg := &config.Config{RunMode: config.RunModeSimple}
+	r.Use(APIKeyAuthWithSubscriptionGoogle(apiKeyService, nil, cfg))
+	r.GET("/antigravity/v1beta/test", func(c *gin.Context) { c.JSON(200, gin.H{"ok": true}) })
+
+	req := httptest.NewRequest(http.MethodGet, "/antigravity/v1beta/test?key=valid", nil)
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	var resp googleErrorResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, http.StatusBadRequest, resp.Error.Code)
+	require.Equal(t, "Query parameter key is deprecated. Use Authorization header or x-goog-api-key instead.", resp.Error.Message)
+	require.Equal(t, "INVALID_ARGUMENT", resp.Error.Status)
 }
 
 func TestApiKeyAuthWithSubscriptionGoogle_InvalidKey(t *testing.T) {
@@ -429,6 +455,188 @@ func TestApiKeyAuthWithSubscriptionGoogle_DisabledKey(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, resp.Error.Code)
 	require.Equal(t, "API key is disabled", resp.Error.Message)
 	require.Equal(t, "UNAUTHENTICATED", resp.Error.Status)
+}
+
+func TestApiKeyAuthWithSubscriptionGoogle_RejectsExpiredAndQuotaExhaustedStatus(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	testCases := []struct {
+		name         string
+		status       string
+		wantHTTPCode int
+		wantStatus   string
+		wantMessage  string
+	}{
+		{
+			name:         "expired_status",
+			status:       service.StatusAPIKeyExpired,
+			wantHTTPCode: http.StatusForbidden,
+			wantStatus:   "PERMISSION_DENIED",
+			wantMessage:  "API key 已过期",
+		},
+		{
+			name:         "quota_exhausted_status",
+			status:       service.StatusAPIKeyQuotaExhausted,
+			wantHTTPCode: http.StatusTooManyRequests,
+			wantStatus:   "RESOURCE_EXHAUSTED",
+			wantMessage:  "API key 额度已用完",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			r := gin.New()
+			apiKeyService := newTestAPIKeyService(fakeAPIKeyRepo{
+				getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
+					return &service.APIKey{
+						ID:     1,
+						Key:    key,
+						Status: tc.status,
+						User: &service.User{
+							ID:      123,
+							Status:  service.StatusActive,
+							Balance: 10,
+						},
+					}, nil
+				},
+			})
+			r.Use(APIKeyAuthWithSubscriptionGoogle(apiKeyService, nil, &config.Config{RunMode: config.RunModeStandard}))
+			r.GET("/v1beta/test", func(c *gin.Context) { c.JSON(200, gin.H{"ok": true}) })
+
+			req := httptest.NewRequest(http.MethodGet, "/v1beta/test", nil)
+			req.Header.Set("Authorization", "Bearer key")
+			rec := httptest.NewRecorder()
+			r.ServeHTTP(rec, req)
+
+			require.Equal(t, tc.wantHTTPCode, rec.Code)
+			var resp googleErrorResponse
+			require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+			require.Equal(t, tc.wantHTTPCode, resp.Error.Code)
+			require.Equal(t, tc.wantStatus, resp.Error.Status)
+			require.Equal(t, tc.wantMessage, resp.Error.Message)
+		})
+	}
+}
+
+func TestApiKeyAuthWithSubscriptionGoogle_RejectsRuntimeExpiredAndQuotaExhausted(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	expiredAt := time.Now().Add(-time.Hour)
+	testCases := []struct {
+		name         string
+		mutate       func(*service.APIKey)
+		wantHTTPCode int
+		wantStatus   string
+		wantMessage  string
+	}{
+		{
+			name: "runtime_expired",
+			mutate: func(apiKey *service.APIKey) {
+				apiKey.ExpiresAt = &expiredAt
+			},
+			wantHTTPCode: http.StatusForbidden,
+			wantStatus:   "PERMISSION_DENIED",
+			wantMessage:  "API key 已过期",
+		},
+		{
+			name: "runtime_quota_exhausted",
+			mutate: func(apiKey *service.APIKey) {
+				apiKey.Quota = 10
+				apiKey.QuotaUsed = 10
+			},
+			wantHTTPCode: http.StatusTooManyRequests,
+			wantStatus:   "RESOURCE_EXHAUSTED",
+			wantMessage:  "API key 额度已用完",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			r := gin.New()
+			apiKeyService := newTestAPIKeyService(fakeAPIKeyRepo{
+				getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
+					apiKey := &service.APIKey{
+						ID:     1,
+						Key:    key,
+						Status: service.StatusActive,
+						User: &service.User{
+							ID:      123,
+							Status:  service.StatusActive,
+							Balance: 10,
+						},
+					}
+					tc.mutate(apiKey)
+					return apiKey, nil
+				},
+			})
+			r.Use(APIKeyAuthWithSubscriptionGoogle(apiKeyService, nil, &config.Config{RunMode: config.RunModeStandard}))
+			r.GET("/v1beta/test", func(c *gin.Context) { c.JSON(200, gin.H{"ok": true}) })
+
+			req := httptest.NewRequest(http.MethodGet, "/v1beta/test", nil)
+			req.Header.Set("Authorization", "Bearer key")
+			rec := httptest.NewRecorder()
+			r.ServeHTTP(rec, req)
+
+			require.Equal(t, tc.wantHTTPCode, rec.Code)
+			var resp googleErrorResponse
+			require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+			require.Equal(t, tc.wantHTTPCode, resp.Error.Code)
+			require.Equal(t, tc.wantStatus, resp.Error.Status)
+			require.Equal(t, tc.wantMessage, resp.Error.Message)
+		})
+	}
+}
+
+func TestApiKeyAuthWithSubscriptionGoogle_IPRestrictionDoesNotTrustSpoofedForwardHeaders(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	user := &service.User{
+		ID:          7,
+		Role:        service.RoleUser,
+		Status:      service.StatusActive,
+		Balance:     10,
+		Concurrency: 3,
+	}
+	apiKey := &service.APIKey{
+		ID:                  100,
+		UserID:              user.ID,
+		Key:                 "test-key",
+		Status:              service.StatusActive,
+		User:                user,
+		IPWhitelist:         []string{"1.2.3.4"},
+		CompiledIPWhitelist: ip.CompileIPRules([]string{"1.2.3.4"}),
+	}
+
+	apiKeyService := newTestAPIKeyService(fakeAPIKeyRepo{
+		getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
+			if key != apiKey.Key {
+				return nil, service.ErrAPIKeyNotFound
+			}
+			clone := *apiKey
+			return &clone, nil
+		},
+	})
+
+	router := gin.New()
+	require.NoError(t, router.SetTrustedProxies(nil))
+	router.Use(APIKeyAuthWithSubscriptionGoogle(apiKeyService, nil, &config.Config{RunMode: config.RunModeSimple}))
+	router.GET("/v1beta/test", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"ok": true}) })
+
+	req := httptest.NewRequest(http.MethodGet, "/v1beta/test", nil)
+	req.RemoteAddr = "9.9.9.9:12345"
+	req.Header.Set("x-goog-api-key", apiKey.Key)
+	req.Header.Set("X-Forwarded-For", "1.2.3.4")
+	req.Header.Set("X-Real-IP", "1.2.3.4")
+	req.Header.Set("CF-Connecting-IP", "1.2.3.4")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusForbidden, rec.Code)
+	var resp googleErrorResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, http.StatusForbidden, resp.Error.Code)
+	require.Equal(t, "Access denied", resp.Error.Message)
+	require.Equal(t, "PERMISSION_DENIED", resp.Error.Status)
 }
 
 func TestApiKeyAuthWithSubscriptionGoogle_InsufficientBalance(t *testing.T) {

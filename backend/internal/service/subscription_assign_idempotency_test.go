@@ -101,6 +101,9 @@ func (userSubRepoNoop) ExistsByUserIDAndGroupID(context.Context, int64, int64) (
 func (userSubRepoNoop) ExtendExpiry(context.Context, int64, time.Time) error {
 	panic("unexpected ExtendExpiry call")
 }
+func (userSubRepoNoop) ExtendExpiryAtomically(context.Context, int64, int, string, time.Time, time.Time) error {
+	panic("unexpected ExtendExpiryAtomically call")
+}
 func (userSubRepoNoop) UpdateStatus(context.Context, int64, string) error {
 	panic("unexpected UpdateStatus call")
 }
@@ -197,6 +200,36 @@ func (s *subscriptionUserSubRepoStub) GetByID(_ context.Context, id int64) (*Use
 	}
 	cp := *sub
 	return &cp, nil
+}
+
+func (s *subscriptionUserSubRepoStub) ExtendExpiryAtomically(_ context.Context, subscriptionID int64, validityDays int, notes string, now, maxExpiresAt time.Time) error {
+	sub := s.byID[subscriptionID]
+	if sub == nil {
+		return ErrSubscriptionNotFound
+	}
+	if validityDays <= 0 {
+		validityDays = 30
+	}
+	if validityDays > MaxValidityDays {
+		validityDays = MaxValidityDays
+	}
+	base := now
+	if sub.ExpiresAt.After(now) {
+		base = sub.ExpiresAt
+	}
+	newExpiresAt := base.AddDate(0, 0, validityDays)
+	if newExpiresAt.After(maxExpiresAt) {
+		newExpiresAt = maxExpiresAt
+	}
+	sub.ExpiresAt = newExpiresAt
+	sub.Status = SubscriptionStatusActive
+	if notes != "" {
+		if sub.Notes != "" {
+			sub.Notes += "\n"
+		}
+		sub.Notes += notes
+	}
+	return nil
 }
 
 func TestAssignSubscriptionReuseWhenSemanticsMatch(t *testing.T) {
@@ -378,6 +411,61 @@ func TestAssignSubscriptionGroupTypeValidation(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.Equal(t, infraerrors.Code(ErrGroupNotSubscriptionType), infraerrors.Code(err))
+}
+
+func TestAssignOrExtendSubscriptionCreatesNewSubscription(t *testing.T) {
+	groupRepo := &subscriptionGroupRepoStub{
+		group: &Group{ID: 1, SubscriptionType: SubscriptionTypeSubscription},
+	}
+	subRepo := newSubscriptionUserSubRepoStub()
+	svc := NewSubscriptionService(groupRepo, subRepo, nil, nil, nil)
+
+	sub, extended, err := svc.AssignOrExtendSubscription(context.Background(), &AssignSubscriptionInput{
+		UserID:       5001,
+		GroupID:      1,
+		ValidityDays: 30,
+		Notes:        "created",
+	})
+
+	require.NoError(t, err)
+	require.False(t, extended)
+	require.NotZero(t, sub.ID)
+	require.Equal(t, SubscriptionStatusActive, sub.Status)
+	require.Equal(t, "created", sub.Notes)
+	require.Equal(t, 1, subRepo.createCalls)
+	require.WithinDuration(t, time.Now().AddDate(0, 0, 30), sub.ExpiresAt, 2*time.Second)
+}
+
+func TestAssignOrExtendSubscriptionD5ExtendsExistingAtomically(t *testing.T) {
+	start := time.Now().AddDate(0, 0, 10)
+	groupRepo := &subscriptionGroupRepoStub{
+		group: &Group{ID: 1, SubscriptionType: SubscriptionTypeSubscription},
+	}
+	subRepo := newSubscriptionUserSubRepoStub()
+	subRepo.seed(&UserSubscription{
+		ID:        31,
+		UserID:    5002,
+		GroupID:   1,
+		StartsAt:  start.AddDate(0, 0, -30),
+		ExpiresAt: start,
+		Status:    SubscriptionStatusSuspended,
+		Notes:     "initial",
+	})
+	svc := NewSubscriptionService(groupRepo, subRepo, nil, nil, nil)
+
+	sub, extended, err := svc.AssignOrExtendSubscription(context.Background(), &AssignSubscriptionInput{
+		UserID:       5002,
+		GroupID:      1,
+		ValidityDays: 30,
+		Notes:        "extended",
+	})
+
+	require.NoError(t, err)
+	require.True(t, extended)
+	require.Equal(t, int64(31), sub.ID)
+	require.Equal(t, SubscriptionStatusActive, sub.Status)
+	require.Equal(t, "initial\nextended", sub.Notes)
+	require.WithinDuration(t, start.AddDate(0, 0, 30), sub.ExpiresAt, time.Second)
 }
 
 func strconvFormatInt(v int64) string {

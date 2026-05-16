@@ -133,7 +133,7 @@ curl 'https://api.laoshirenai.com/gpt-image/v1/images/generations' \
     "size": "1:1",
     "resolution": "2k",
     "image_urls": [
-      "https://example.com/photo.jpg"
+      "YOUR_IMAGE_URL"
     ]
   }'
 ```

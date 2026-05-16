@@ -224,6 +224,7 @@ const allModelsList: string[] = [
   ...openaiModels,
   ...claudeModels,
   ...geminiModels,
+  ...antigravityModels,
   ...zhipuModels,
   ...qwenModels,
   ...deepseekModels,

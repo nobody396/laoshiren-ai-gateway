@@ -27,8 +27,12 @@ func (s *openAIRecordUsageLogRepoStub) Create(ctx context.Context, log *UsageLog
 	s.calls++
 	s.lastLog = log
 	s.lastCtxErr = ctx.Err()
-	if log != nil && s.assignID > 0 {
-		log.ID = s.assignID
+	if log != nil && s.err == nil && log.ID == 0 {
+		if s.assignID > 0 {
+			log.ID = s.assignID
+		} else {
+			log.ID = int64(100000 + s.calls)
+		}
 	}
 	return s.inserted, s.err
 }
@@ -501,12 +505,13 @@ func TestOpenAIGatewayServiceRecordUsage_DuplicateBillingKeySkipsBillingWithRepo
 	require.Equal(t, 0, quotaSvc.quotaCalls)
 }
 
-func TestOpenAIGatewayServiceRecordUsage_BillsWhenUsageLogCreateReturnsError(t *testing.T) {
+func TestOpenAIGatewayServiceRecordUsage_UsageLogCreateErrorSkipsBilling(t *testing.T) {
 	usage := OpenAIUsage{InputTokens: 8, OutputTokens: 4}
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: false, err: errors.New("usage log batch state uncertain")}
+	billingRepo := &openAIRecordUsageBillingRepoStub{}
 	userRepo := &openAIRecordUsageUserRepoStub{}
 	subRepo := &openAIRecordUsageSubRepoStub{}
-	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, subRepo, nil)
+	svc := newOpenAIRecordUsageServiceWithBillingRepoForTest(usageRepo, billingRepo, userRepo, subRepo, nil)
 
 	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
 		Result: &OpenAIForwardResult{
@@ -520,18 +525,20 @@ func TestOpenAIGatewayServiceRecordUsage_BillsWhenUsageLogCreateReturnsError(t *
 		Account: &Account{ID: 30041},
 	})
 
-	require.NoError(t, err)
+	require.Error(t, err)
 	require.Equal(t, 1, usageRepo.calls)
-	require.Equal(t, 1, userRepo.deductCalls)
+	require.Equal(t, 0, billingRepo.calls)
+	require.Equal(t, 0, userRepo.deductCalls)
 	require.Equal(t, 0, subRepo.incrementCalls)
 }
 
-func TestOpenAIGatewayServiceRecordUsage_UsageLogWriteErrorDoesNotSkipBilling(t *testing.T) {
+func TestOpenAIGatewayServiceRecordUsage_UsageLogNotPersistedSkipsBilling(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: false, err: MarkUsageLogCreateNotPersisted(context.Canceled)}
+	billingRepo := &openAIRecordUsageBillingRepoStub{}
 	userRepo := &openAIRecordUsageUserRepoStub{}
 	subRepo := &openAIRecordUsageSubRepoStub{}
 	quotaSvc := &openAIRecordUsageAPIKeyQuotaStub{}
-	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, subRepo, nil)
+	svc := newOpenAIRecordUsageServiceWithBillingRepoForTest(usageRepo, billingRepo, userRepo, subRepo, nil)
 
 	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
 		Result: &OpenAIForwardResult{
@@ -552,11 +559,12 @@ func TestOpenAIGatewayServiceRecordUsage_UsageLogWriteErrorDoesNotSkipBilling(t 
 		APIKeyService: quotaSvc,
 	})
 
-	require.NoError(t, err)
+	require.Error(t, err)
 	require.Equal(t, 1, usageRepo.calls)
-	require.Equal(t, 1, userRepo.deductCalls)
+	require.Equal(t, 0, billingRepo.calls)
+	require.Equal(t, 0, userRepo.deductCalls)
 	require.Equal(t, 0, subRepo.incrementCalls)
-	require.Equal(t, 1, quotaSvc.quotaCalls)
+	require.Equal(t, 0, quotaSvc.quotaCalls)
 }
 
 func TestOpenAIGatewayServiceRecordUsage_TriggersCommissionWithPersistedUsageLogID(t *testing.T) {
@@ -601,7 +609,7 @@ func TestOpenAIGatewayServiceRecordUsage_TriggersCommissionWithPersistedUsageLog
 
 func TestOpenAIGatewayServiceRecordUsage_BillingUsesDetachedContext(t *testing.T) {
 	usage := OpenAIUsage{InputTokens: 10, OutputTokens: 6, CacheReadInputTokens: 2}
-	usageRepo := &openAIRecordUsageLogRepoStub{inserted: false, err: context.DeadlineExceeded}
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	userRepo := &openAIRecordUsageUserRepoStub{}
 	subRepo := &openAIRecordUsageSubRepoStub{}
 	quotaSvc := &openAIRecordUsageAPIKeyQuotaStub{}
@@ -627,6 +635,8 @@ func TestOpenAIGatewayServiceRecordUsage_BillingUsesDetachedContext(t *testing.T
 	})
 
 	require.NoError(t, err)
+	require.Equal(t, 1, usageRepo.calls)
+	require.NoError(t, usageRepo.lastCtxErr)
 	require.Equal(t, 1, userRepo.deductCalls)
 	require.NoError(t, userRepo.lastCtxErr)
 	require.Equal(t, 1, quotaSvc.quotaCalls)
@@ -780,7 +790,7 @@ func TestOpenAIGatewayServiceRecordUsage_GeneratesRequestIDWhenAllSourcesMissing
 	require.Equal(t, billingRepo.lastCmd.RequestID, usageRepo.lastLog.RequestID)
 }
 
-func TestOpenAIGatewayServiceRecordUsage_BillingErrorSkipsUsageLogWrite(t *testing.T) {
+func TestOpenAIGatewayServiceRecordUsage_BillingErrorKeepsPersistedUsageLog(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{}
 	billingRepo := &openAIRecordUsageBillingRepoStub{err: errors.New("billing tx failed")}
 	userRepo := &openAIRecordUsageUserRepoStub{}
@@ -803,8 +813,9 @@ func TestOpenAIGatewayServiceRecordUsage_BillingErrorSkipsUsageLogWrite(t *testi
 	})
 
 	require.Error(t, err)
+	require.Equal(t, 1, usageRepo.calls)
+	require.NotZero(t, usageRepo.lastLog.ID)
 	require.Equal(t, 1, billingRepo.calls)
-	require.Equal(t, 0, usageRepo.calls)
 }
 
 func TestOpenAIGatewayServiceRecordUsage_UpdatesAPIKeyQuotaWhenConfigured(t *testing.T) {

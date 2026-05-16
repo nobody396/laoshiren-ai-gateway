@@ -6,8 +6,10 @@ import (
 	"context"
 	"net/http"
 	"testing"
+	"time"
 
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
 )
 
@@ -160,4 +162,127 @@ func TestCommissionServiceBindUserToAgentRejectsNonUserTarget(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, http.StatusBadRequest, infraerrors.Code(err))
 	require.Empty(t, repo.bindCalls)
+}
+
+type agentSettlementAdminRepoStub struct {
+	recordUsageCommissionRepoStub
+
+	getAdminAgentCalls             int
+	createAgentSettlementCalls     int
+	createIfAvailableCalls         int
+	createIfAvailableErr           error
+	createIfAvailableSettlement    *AgentSettlement
+	createIfAvailableSettlementID  int64
+	createIfAvailableSettlementNow time.Time
+}
+
+func (s *agentSettlementAdminRepoStub) ListAdminAgents(context.Context, pagination.PaginationParams, AdminAgentListFilters) ([]AdminAgentSummary, *pagination.PaginationResult, error) {
+	return nil, nil, nil
+}
+
+func (s *agentSettlementAdminRepoStub) GetAdminAgent(context.Context, int64, *time.Time, *time.Time) (*AdminAgentSummary, error) {
+	s.getAdminAgentCalls++
+	return &AdminAgentSummary{UnsettledCommission: 100}, nil
+}
+
+func (s *agentSettlementAdminRepoStub) ListAdminAgentUsers(context.Context, int64, pagination.PaginationParams, *time.Time, *time.Time) ([]AdminAgentUserStat, *pagination.PaginationResult, error) {
+	return nil, nil, nil
+}
+
+func (s *agentSettlementAdminRepoStub) ListAdminAgentCommissions(context.Context, int64, pagination.PaginationParams, string, *time.Time, *time.Time) ([]AdminAgentCommissionRecord, *pagination.PaginationResult, error) {
+	return nil, nil, nil
+}
+
+func (s *agentSettlementAdminRepoStub) ListAgentSettlements(context.Context, int64, pagination.PaginationParams) ([]AgentSettlement, *pagination.PaginationResult, error) {
+	return nil, nil, nil
+}
+
+func (s *agentSettlementAdminRepoStub) SumAgentSettlements(context.Context, int64) (float64, error) {
+	return 0, nil
+}
+
+func (s *agentSettlementAdminRepoStub) CreateAgentSettlement(context.Context, *AgentSettlement) error {
+	s.createAgentSettlementCalls++
+	return nil
+}
+
+func (s *agentSettlementAdminRepoStub) CreateAgentSettlementIfAvailable(_ context.Context, settlement *AgentSettlement) error {
+	s.createIfAvailableCalls++
+	copied := *settlement
+	s.createIfAvailableSettlement = &copied
+	if s.createIfAvailableErr != nil {
+		return s.createIfAvailableErr
+	}
+	if s.createIfAvailableSettlementID != 0 {
+		settlement.ID = s.createIfAvailableSettlementID
+	}
+	if !s.createIfAvailableSettlementNow.IsZero() {
+		settlement.CreatedAt = s.createIfAvailableSettlementNow
+	}
+	return nil
+}
+
+func TestCommissionServiceCreateAgentSettlementUsesAtomicRepositoryPath(t *testing.T) {
+	userRepo := &bindUserRepoStub{
+		byID: map[int64]*User{
+			7: {ID: 7, Role: RoleAgent},
+		},
+	}
+	now := time.Date(2026, 5, 16, 9, 30, 0, 0, time.UTC)
+	adminRepo := &agentSettlementAdminRepoStub{
+		createIfAvailableSettlementID:  123,
+		createIfAvailableSettlementNow: now,
+	}
+	svc := NewCommissionService(userRepo, adminRepo)
+
+	settlement, err := svc.CreateAgentSettlement(context.Background(), 7, 99, 75, "manual payout")
+	require.NoError(t, err)
+	require.Equal(t, int64(123), settlement.ID)
+	require.Equal(t, now, settlement.CreatedAt)
+	require.Equal(t, int64(7), settlement.AgentID)
+	require.Equal(t, int64(99), settlement.OperatorID)
+	require.Equal(t, 75.0, settlement.Amount)
+	require.Equal(t, AgentSettlementStatusCompleted, settlement.Status)
+	require.Equal(t, "manual payout", settlement.Note)
+	require.Equal(t, 0, adminRepo.getAdminAgentCalls)
+	require.Equal(t, 0, adminRepo.createAgentSettlementCalls)
+	require.Equal(t, 1, adminRepo.createIfAvailableCalls)
+	require.NotNil(t, adminRepo.createIfAvailableSettlement)
+	require.Equal(t, 75.0, adminRepo.createIfAvailableSettlement.Amount)
+}
+
+func TestCommissionServiceCreateAgentSettlementRejectsNonPositiveAmount(t *testing.T) {
+	userRepo := &bindUserRepoStub{
+		byID: map[int64]*User{
+			7: {ID: 7, Role: RoleAgent},
+		},
+	}
+	adminRepo := &agentSettlementAdminRepoStub{}
+	svc := NewCommissionService(userRepo, adminRepo)
+
+	settlement, err := svc.CreateAgentSettlement(context.Background(), 7, 99, 0, "manual payout")
+	require.Nil(t, settlement)
+	require.Error(t, err)
+	require.Equal(t, http.StatusBadRequest, infraerrors.Code(err))
+	require.Equal(t, "INVALID_SETTLEMENT_AMOUNT", infraerrors.Reason(err))
+	require.Equal(t, 0, adminRepo.createIfAvailableCalls)
+}
+
+func TestCommissionServiceCreateAgentSettlementReturnsInsufficientUnsettledError(t *testing.T) {
+	userRepo := &bindUserRepoStub{
+		byID: map[int64]*User{
+			7: {ID: 7, Role: RoleAgent},
+		},
+	}
+	adminRepo := &agentSettlementAdminRepoStub{
+		createIfAvailableErr: infraerrors.BadRequest("SETTLEMENT_EXCEEDS_UNSETTLED", "settlement amount exceeds unsettled commission"),
+	}
+	svc := NewCommissionService(userRepo, adminRepo)
+
+	settlement, err := svc.CreateAgentSettlement(context.Background(), 7, 99, 75, "manual payout")
+	require.Nil(t, settlement)
+	require.Error(t, err)
+	require.Equal(t, http.StatusBadRequest, infraerrors.Code(err))
+	require.Equal(t, "SETTLEMENT_EXCEEDS_UNSETTLED", infraerrors.Reason(err))
+	require.Equal(t, 1, adminRepo.createIfAvailableCalls)
 }

@@ -61,6 +61,7 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 		SetBalance(userIn.Balance).
 		SetConcurrency(userIn.Concurrency).
 		SetStatus(userIn.Status).
+		SetTokenVersion(userIn.TokenVersion).
 		Save(ctx)
 	if err != nil {
 		return translatePersistenceError(err, nil, service.ErrEmailExists)
@@ -143,6 +144,7 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 		SetBalance(userIn.Balance).
 		SetConcurrency(userIn.Concurrency).
 		SetStatus(userIn.Status).
+		SetTokenVersion(userIn.TokenVersion).
 		SetTotalRecharged(userIn.TotalRecharged)
 	updated, err := updateOp.Save(ctx)
 	if err != nil {
@@ -160,7 +162,29 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 	}
 
 	userIn.UpdatedAt = updated.UpdatedAt
+	userIn.TokenVersion = updated.TokenVersion
 	return nil
+}
+
+func (r *userRepository) UpdatePasswordAndIncrementTokenVersion(ctx context.Context, userID int64, passwordHash string) (int64, error) {
+	updated, err := clientFromContext(ctx, r.client).User.UpdateOneID(userID).
+		SetPasswordHash(passwordHash).
+		AddTokenVersion(1).
+		Save(ctx)
+	if err != nil {
+		return 0, translatePersistenceError(err, service.ErrUserNotFound, nil)
+	}
+	return updated.TokenVersion, nil
+}
+
+func (r *userRepository) IncrementTokenVersion(ctx context.Context, userID int64) (int64, error) {
+	updated, err := clientFromContext(ctx, r.client).User.UpdateOneID(userID).
+		AddTokenVersion(1).
+		Save(ctx)
+	if err != nil {
+		return 0, translatePersistenceError(err, service.ErrUserNotFound, nil)
+	}
+	return updated.TokenVersion, nil
 }
 
 func (r *userRepository) Delete(ctx context.Context, id int64) error {
@@ -504,6 +528,7 @@ func applyUserEntityToService(dst *service.User, src *dbent.User) {
 		return
 	}
 	dst.ID = src.ID
+	dst.TokenVersion = src.TokenVersion
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
 }

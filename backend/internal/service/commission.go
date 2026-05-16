@@ -169,6 +169,7 @@ type AgentCommissionAdminRepository interface {
 	ListAgentSettlements(ctx context.Context, agentID int64, params pagination.PaginationParams) ([]AgentSettlement, *pagination.PaginationResult, error)
 	SumAgentSettlements(ctx context.Context, agentID int64) (float64, error)
 	CreateAgentSettlement(ctx context.Context, settlement *AgentSettlement) error
+	CreateAgentSettlementIfAvailable(ctx context.Context, settlement *AgentSettlement) error
 }
 
 // CommissionRepository 分佣记录数据访问接口

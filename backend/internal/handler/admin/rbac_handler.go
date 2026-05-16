@@ -497,7 +497,11 @@ func (h *RBACHandler) UpdateRole(c *gin.Context) {
 		response.BadRequest(c, "Invalid request: "+err.Error())
 		return
 	}
-	role := &service.AdminRole{ID: id}
+	role, err := h.rbacService.GetRole(c.Request.Context(), id)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
 	if req.Name != nil {
 		role.Name = *req.Name
 	}

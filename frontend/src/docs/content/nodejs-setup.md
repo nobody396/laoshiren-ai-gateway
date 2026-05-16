@@ -6,7 +6,6 @@ Claude Code、Gemini CLI、Codex 等工具均依赖 Node.js 运行环境，请�
 
 - **方法一：官方下载（推荐）**
   前往 [Node.js 官网](https://nodejs.org/zh-cn/download/) 下载 LTS 版本，双击安装包按提示完成安装。
-- ![](https://assets.example.com/dragoncode/file-20260317105358821.png)
 下载以后，一直下一步直到安装完成
 
 - **方法二：使用 Chocolatey**

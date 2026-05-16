@@ -1401,25 +1401,12 @@ func getContextInt64(c *gin.Context, key string) (int64, bool) {
 }
 
 func (h *OpenAIGatewayHandler) submitUsageRecordTask(task service.UsageRecordTask) {
-	if task == nil {
-		return
-	}
-	if h.usageRecordWorkerPool != nil {
-		h.usageRecordWorkerPool.Submit(task)
-		return
-	}
-	// 回退路径：worker 池未注入时同步执行，避免退回到无界 goroutine 模式。
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	defer func() {
-		if recovered := recover(); recovered != nil {
-			logger.L().With(
-				zap.String("component", "handler.openai_gateway.responses"),
-				zap.Any("panic", recovered),
-			).Error("openai.usage_record_task_panic_recovered")
-		}
-	}()
-	task(ctx)
+	submitUsageRecordTaskFailClosed(
+		h.usageRecordWorkerPool,
+		task,
+		"handler.openai_gateway.responses",
+		"openai.usage_record_task_panic_recovered",
+	)
 }
 
 // handleConcurrencyError handles concurrency-related errors with proper 429 response

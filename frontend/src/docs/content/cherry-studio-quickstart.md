@@ -37,11 +37,9 @@
 - 其他字段可保持默认
 - 点击创建
 
-![创建密钥](https://assets.example.com/dragoncode-cherry-studio/page2_img1.png)
 
 创建完成后，在列表中点击复制按钮拿到完整的 API Key。
 
-![复制 API Key](https://assets.example.com/dragoncode-cherry-studio/page3_img1.png)
 
 ### 如何确认 API Key 正确
 
@@ -61,7 +59,6 @@
 1. 打开 Cherry Studio
 2. 点击左下角/右上角 **设置**
 
-![Cherry Studio 设置入口](https://assets.example.com/dragoncode-cherry-studio/page4_img1.png)
 
 ---
 
@@ -69,24 +66,20 @@
 
 1. 在模型服务中点击 **+ 添加**
 
-   ![添加提供商入口](https://assets.example.com/dragoncode-cherry-studio/page5_img1.png)
 
    提供商名称可以随便填，例如 `laoshirenai`。
 
-   ![填写提供商名称](https://assets.example.com/dragoncode-cherry-studio/page5_img2.png)
 
 2. 选择提供商类型
 
    Cherry Studio 支持 **OpenAI** 和 **Anthropic** 两种类型，按你要用的模型系列选择。
 
-   ![选择提供商类型](https://assets.example.com/dragoncode-cherry-studio/page6_img1.png)
 
 3. 填写 API 密钥和 API 地址（下图以 OpenAI 为例）
 
    - **API 密钥**：你在 老实人 AI 创建的 API Key
    - **API 地址**：`https://api.laoshirenai.com`
 
-   ![填写 API 密钥和地址](https://assets.example.com/dragoncode-cherry-studio/page7_img1.png)
 
    > **注意**：API Key 要和分组匹配 —— OpenAI 类型只能选 `codex` 分组创建的 Key，Anthropic 类型只能选 Claude 分组创建的 Key。
 
@@ -115,11 +108,9 @@
 
 ### 添加模型
 
-![添加模型](https://assets.example.com/dragoncode-cherry-studio/page8_img1.png)
 
 添加完成后点击 **检测**，提示成功即可进入下一步。
 
-![检测模型](https://assets.example.com/dragoncode-cherry-studio/page9_img1.png)
 
 ---
 
@@ -128,7 +119,6 @@
 1. 新建对话
 2. 选择刚刚添加的模型
 
-   ![选择模型](https://assets.example.com/dragoncode-cherry-studio/page10_img1.png)
 
 3. 输入：`你好`
 
@@ -136,7 +126,6 @@
 
 模型正常回复内容即表示接入成功。
 
-![成功对话](https://assets.example.com/dragoncode-cherry-studio/page11_img1.png)
 
 如果没有回复或报错，参考下面的排查表。
 

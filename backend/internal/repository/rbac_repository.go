@@ -83,6 +83,10 @@ func (r *rbacRepository) DeleteRole(ctx context.Context, id int64) error {
 }
 
 func (r *rbacRepository) GetRolesByUserID(ctx context.Context, userID int64) ([]*service.AdminRole, error) {
+	return r.getRolesByUserID(ctx, userID, true)
+}
+
+func (r *rbacRepository) getRolesByUserID(ctx context.Context, userID int64, activeOnly bool) ([]*service.AdminRole, error) {
 	client := clientFromContext(ctx, r.client)
 
 	userRoles, err := client.AdminUserRole.Query().
@@ -100,10 +104,12 @@ func (r *rbacRepository) GetRolesByUserID(ctx context.Context, userID int64) ([]
 		roleIDs = append(roleIDs, ur.RoleID)
 	}
 
-	roles, err := client.AdminRole.Query().
-		Where(adminrole.IDIn(roleIDs...)).
-		Order(dbent.Asc(adminrole.FieldID)).
-		All(ctx)
+	query := client.AdminRole.Query().
+		Where(adminrole.IDIn(roleIDs...))
+	if activeOnly {
+		query = query.Where(adminrole.StatusEQ(service.ResourceStatusActive))
+	}
+	roles, err := query.Order(dbent.Asc(adminrole.FieldID)).All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -606,7 +612,7 @@ func (r *rbacRepository) AssignUserRoles(ctx context.Context, userID int64, role
 }
 
 func (r *rbacRepository) GetUserRoles(ctx context.Context, userID int64) ([]*service.AdminRole, error) {
-	return r.GetRolesByUserID(ctx, userID)
+	return r.getRolesByUserID(ctx, userID, false)
 }
 
 // GetUserRole 查询用户基础身份字段 users.role.

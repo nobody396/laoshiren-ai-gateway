@@ -13,10 +13,10 @@ DEFAULT_NPM_REGISTRY="https://registry.npmmirror.com"
 FALLBACK_NPM_REGISTRY="https://registry.npmjs.org"
 MIN_NODE_MAJOR=20
 
-DRAGON_HOME="${HOME}/.laoshirenai"
-NODE_INSTALL_ROOT="${DRAGON_HOME}/node"
+LAOSHIRENAI_HOME="${HOME}/.laoshirenai"
+NODE_INSTALL_ROOT="${LAOSHIRENAI_HOME}/node"
 NODE_CURRENT_DIR="${NODE_INSTALL_ROOT}/current"
-NPM_PREFIX="${DRAGON_HOME}/npm-global"
+NPM_PREFIX="${LAOSHIRENAI_HOME}/npm-global"
 LOCAL_BIN_DIR="${HOME}/.local/bin"
 CLAUDE_SETTINGS_PATH="${HOME}/.claude/settings.json"
 CODEX_DIR="${HOME}/.codex"
@@ -25,21 +25,24 @@ CODEX_CONFIG_PATH="${CODEX_DIR}/config.toml"
 
 BASE_URL="${DEFAULT_BASE_URL}"
 TOOLS="${DEFAULT_TOOLS}"
-CLAUDE_API_KEY="${DRAGON_CLAUDE_API_KEY:-}"
-CODEX_API_KEY="${DRAGON_CODEX_API_KEY:-}"
-NODE_VERSION_OVERRIDE="${DRAGON_NODE_VERSION:-}"
+CLAUDE_API_KEY="${LAOSHIRENAI_CLAUDE_API_KEY:-}"
+CODEX_API_KEY="${LAOSHIRENAI_CODEX_API_KEY:-}"
+NODE_VERSION_OVERRIDE="${LAOSHIRENAI_NODE_VERSION:-}"
 SKIP_CLIENT_INSTALL=0
 
-# 兼容旧版统一 API Key 环境变量；若未提供专用 Key，则回退复用旧值。
-if [ -n "${DRAGON_API_KEY:-}" ]; then
-  [ -n "$CLAUDE_API_KEY" ] || CLAUDE_API_KEY="${DRAGON_API_KEY}"
-  [ -n "$CODEX_API_KEY" ] || CODEX_API_KEY="${DRAGON_API_KEY}"
+# 兼容统一 API Key 环境变量；若未提供专用 Key，则回退复用统一值。
+UNIFIED_API_KEY="${LAOSHIRENAI_API_KEY:-}"
+if [ -n "$UNIFIED_API_KEY" ]; then
+  [ -n "$CLAUDE_API_KEY" ] || CLAUDE_API_KEY="$UNIFIED_API_KEY"
+  [ -n "$CODEX_API_KEY" ] || CODEX_API_KEY="$UNIFIED_API_KEY"
 fi
 
 # 支持通过环境变量覆盖基础参数，兼容管道执行或预置 shell 环境。
-[ -n "${DRAGON_BASE_URL:-}" ] && BASE_URL="${DRAGON_BASE_URL}"
-[ -n "${DRAGON_TOOLS:-}" ] && TOOLS="${DRAGON_TOOLS}"
-[ "${DRAGON_SKIP_CLIENT_INSTALL:-0}" = "1" ] && SKIP_CLIENT_INSTALL=1
+ENV_BASE_URL="${LAOSHIRENAI_BASE_URL:-}"
+ENV_TOOLS="${LAOSHIRENAI_TOOLS:-}"
+[ -n "$ENV_BASE_URL" ] && BASE_URL="$ENV_BASE_URL"
+[ -n "$ENV_TOOLS" ] && TOOLS="$ENV_TOOLS"
+[ "${LAOSHIRENAI_SKIP_CLIENT_INSTALL:-0}" = "1" ] && SKIP_CLIENT_INSTALL=1
 
 NODE_BIN=""
 NPM_BIN=""
@@ -299,13 +302,13 @@ prompt_for_named_api_key() {
 prompt_for_api_keys() {
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]; then
     if [ -z "$CLAUDE_API_KEY" ]; then
-      prompt_for_named_api_key "Claude Code API Key" "请输入 Claude Code API Key" "CLAUDE_API_KEY" "--api-key" "DRAGON_CLAUDE_API_KEY"
+      prompt_for_named_api_key "Claude Code API Key" "请输入 Claude Code API Key" "CLAUDE_API_KEY" "--api-key" "LAOSHIRENAI_CLAUDE_API_KEY"
     fi
   fi
 
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "codex" ]; then
     if [ -z "$CODEX_API_KEY" ]; then
-      prompt_for_named_api_key "Codex API Key" "请输入 Codex API Key" "CODEX_API_KEY" "--codex-api-key" "DRAGON_CODEX_API_KEY"
+      prompt_for_named_api_key "Codex API Key" "请输入 Codex API Key" "CODEX_API_KEY" "--codex-api-key" "LAOSHIRENAI_CODEX_API_KEY"
     fi
   fi
 }

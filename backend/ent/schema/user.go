@@ -52,6 +52,10 @@ func (User) Fields() []ent.Field {
 		field.String("status").
 			MaxLen(20).
 			Default(domain.StatusActive),
+		field.Int64("token_version").
+			Default(0).
+			NonNegative().
+			Comment("Incremented to invalidate previously issued access and refresh tokens"),
 		field.Time("last_active_at").
 			Optional().
 			Nillable(),

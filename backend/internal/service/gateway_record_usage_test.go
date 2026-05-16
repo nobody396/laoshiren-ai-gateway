@@ -78,14 +78,18 @@ func (s *openAIRecordUsageBestEffortLogRepoStub) Create(ctx context.Context, log
 	s.createCalls++
 	s.lastLog = log
 	s.lastCtxErr = ctx.Err()
-	if log != nil && s.assignID > 0 {
-		log.ID = s.assignID
+	if log != nil && s.createErr == nil && log.ID == 0 {
+		if s.assignID > 0 {
+			log.ID = s.assignID
+		} else {
+			log.ID = int64(200000 + s.createCalls)
+		}
 	}
 	return false, s.createErr
 }
 
 func TestGatewayServiceRecordUsage_BillingUsesDetachedContext(t *testing.T) {
-	usageRepo := &openAIRecordUsageLogRepoStub{inserted: false, err: context.DeadlineExceeded}
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	userRepo := &openAIRecordUsageUserRepoStub{}
 	subRepo := &openAIRecordUsageSubRepoStub{}
 	quotaSvc := &openAIRecordUsageAPIKeyQuotaStub{}
@@ -115,6 +119,7 @@ func TestGatewayServiceRecordUsage_BillingUsesDetachedContext(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, 1, usageRepo.calls)
+	require.NoError(t, usageRepo.lastCtxErr)
 	require.Equal(t, 1, userRepo.deductCalls)
 	require.NoError(t, userRepo.lastCtxErr)
 	require.Equal(t, 1, quotaSvc.quotaCalls)
@@ -172,12 +177,13 @@ func TestGatewayServiceRecordUsage_BillingFingerprintFallsBackToContextRequestID
 	require.Equal(t, "local:req-local-123", billingRepo.lastCmd.RequestPayloadHash)
 }
 
-func TestGatewayServiceRecordUsage_UsageLogWriteErrorDoesNotSkipBilling(t *testing.T) {
+func TestGatewayServiceRecordUsage_UsageLogCreateErrorSkipsBilling(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: false, err: MarkUsageLogCreateNotPersisted(context.Canceled)}
+	billingRepo := &openAIRecordUsageBillingRepoStub{}
 	userRepo := &openAIRecordUsageUserRepoStub{}
 	subRepo := &openAIRecordUsageSubRepoStub{}
 	quotaSvc := &openAIRecordUsageAPIKeyQuotaStub{}
-	svc := newGatewayRecordUsageServiceForTest(usageRepo, userRepo, subRepo)
+	svc := newGatewayRecordUsageServiceWithBillingRepoForTest(usageRepo, billingRepo, userRepo, subRepo)
 
 	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
 		Result: &ForwardResult{
@@ -198,14 +204,15 @@ func TestGatewayServiceRecordUsage_UsageLogWriteErrorDoesNotSkipBilling(t *testi
 		APIKeyService: quotaSvc,
 	})
 
-	require.NoError(t, err)
+	require.Error(t, err)
 	require.Equal(t, 1, usageRepo.calls)
-	require.Equal(t, 1, userRepo.deductCalls)
-	require.Equal(t, 1, quotaSvc.quotaCalls)
+	require.Equal(t, 0, billingRepo.calls)
+	require.Equal(t, 0, userRepo.deductCalls)
+	require.Equal(t, 0, quotaSvc.quotaCalls)
 }
 
 func TestGatewayServiceRecordUsageWithLongContext_BillingUsesDetachedContext(t *testing.T) {
-	usageRepo := &openAIRecordUsageLogRepoStub{inserted: false, err: context.DeadlineExceeded}
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	userRepo := &openAIRecordUsageUserRepoStub{}
 	subRepo := &openAIRecordUsageSubRepoStub{}
 	quotaSvc := &openAIRecordUsageAPIKeyQuotaStub{}
@@ -237,10 +244,47 @@ func TestGatewayServiceRecordUsageWithLongContext_BillingUsesDetachedContext(t *
 
 	require.NoError(t, err)
 	require.Equal(t, 1, usageRepo.calls)
+	require.NoError(t, usageRepo.lastCtxErr)
 	require.Equal(t, 1, userRepo.deductCalls)
 	require.NoError(t, userRepo.lastCtxErr)
 	require.Equal(t, 1, quotaSvc.quotaCalls)
 	require.NoError(t, quotaSvc.lastQuotaCtxErr)
+}
+
+func TestGatewayServiceRecordUsageWithLongContext_UsageLogCreateErrorSkipsBilling(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: false, err: MarkUsageLogCreateNotPersisted(context.Canceled)}
+	billingRepo := &openAIRecordUsageBillingRepoStub{}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	subRepo := &openAIRecordUsageSubRepoStub{}
+	quotaSvc := &openAIRecordUsageAPIKeyQuotaStub{}
+	svc := newGatewayRecordUsageServiceWithBillingRepoForTest(usageRepo, billingRepo, userRepo, subRepo)
+
+	err := svc.RecordUsageWithLongContext(context.Background(), &RecordUsageLongContextInput{
+		Result: &ForwardResult{
+			RequestID: "gateway_long_context_not_persisted",
+			Usage: ClaudeUsage{
+				InputTokens:  12,
+				OutputTokens: 8,
+			},
+			Model:    "claude-sonnet-4",
+			Duration: time.Second,
+		},
+		APIKey: &APIKey{
+			ID:    512,
+			Quota: 100,
+		},
+		User:                  &User{ID: 612},
+		Account:               &Account{ID: 712},
+		LongContextThreshold:  200000,
+		LongContextMultiplier: 2,
+		APIKeyService:         quotaSvc,
+	})
+
+	require.Error(t, err)
+	require.Equal(t, 1, usageRepo.calls)
+	require.Equal(t, 0, billingRepo.calls)
+	require.Equal(t, 0, userRepo.deductCalls)
+	require.Equal(t, 0, quotaSvc.quotaCalls)
 }
 
 func TestGatewayServiceRecordUsage_UsesFallbackRequestIDForUsageLog(t *testing.T) {
@@ -435,7 +479,7 @@ func TestNotifyBalanceLowUsesAppliedNewBalance(t *testing.T) {
 	}
 }
 
-func TestGatewayServiceRecordUsage_BillingErrorSkipsUsageLogWrite(t *testing.T) {
+func TestGatewayServiceRecordUsage_BillingErrorKeepsPersistedUsageLog(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{}
 	billingRepo := &openAIRecordUsageBillingRepoStub{err: context.DeadlineExceeded}
 	userRepo := &openAIRecordUsageUserRepoStub{}
@@ -458,8 +502,9 @@ func TestGatewayServiceRecordUsage_BillingErrorSkipsUsageLogWrite(t *testing.T) 
 	})
 
 	require.Error(t, err)
+	require.Equal(t, 1, usageRepo.calls)
+	require.NotZero(t, usageRepo.lastLog.ID)
 	require.Equal(t, 1, billingRepo.calls)
-	require.Equal(t, 0, usageRepo.calls)
 }
 
 func TestGatewayServiceRecordUsage_ReasoningEffortPersisted(t *testing.T) {

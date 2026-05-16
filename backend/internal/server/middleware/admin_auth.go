@@ -13,6 +13,11 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	adminAPIKeyServicePrincipalUserID      int64 = -1
+	adminAPIKeyServicePrincipalConcurrency       = 0
+)
+
 // NewAdminAuthMiddleware 创建管理员认证中间件
 func NewAdminAuthMiddleware(
 	authService *service.AuthService,
@@ -124,8 +129,8 @@ func validateAdminAPIKey(
 	c *gin.Context,
 	key string,
 	settingService *service.SettingService,
-	userService *service.UserService,
-	rbacService *service.RBACService,
+	_ *service.UserService,
+	_ *service.RBACService,
 ) bool {
 	storedKey, err := settingService.GetAdminAPIKey(c.Request.Context())
 	if err != nil {
@@ -139,27 +144,17 @@ func validateAdminAPIKey(
 		return false
 	}
 
-	// 获取真实的管理员用户
-	admin, err := userService.GetFirstAdmin(c.Request.Context())
-	if err != nil {
-		AbortWithError(c, 500, "INTERNAL_ERROR", "No admin user found")
-		return false
-	}
-
+	// The global Admin API Key authenticates a deterministic service principal.
+	// It must not inherit permissions from whichever real admin user sorts first.
 	c.Set(string(ContextKeyUser), AuthSubject{
-		UserID:      admin.ID,
-		Concurrency: admin.Concurrency,
+		UserID:      adminAPIKeyServicePrincipalUserID,
+		Concurrency: adminAPIKeyServicePrincipalConcurrency,
 	})
-	c.Set(string(ContextKeyUserRole), admin.Role)
+	c.Set(string(ContextKeyUserRole), service.RoleAdmin)
 	c.Set("auth_method", "admin_api_key")
-
-	// 加载 RBAC 权限上下文。任何失败都必须暴露成 500，
-	// 否则下游 RequireAPIPermission 拿不到权限上下文，会把基础设施抖动
-	// (Redis / DB) 误判成 403 Insufficient permissions，让整个后台
-	// 看起来“突然没权限了”。
-	if !loadRBACContext(c, rbacService, admin.ID) {
-		return false
-	}
+	c.Set(string(ContextKeyUserPermissions), []string{"*"})
+	c.Set(string(ContextKeyIsSuperAdmin), true)
+	c.Request = c.Request.WithContext(service.ContextWithRBACActorSuperAdmin(c.Request.Context(), true))
 
 	return true
 }
@@ -171,6 +166,7 @@ func loadRBACContext(c *gin.Context, rbacService *service.RBACService, userID in
 	if rbacService == nil {
 		c.Set(string(ContextKeyUserPermissions), []string{"*"})
 		c.Set(string(ContextKeyIsSuperAdmin), true)
+		c.Request = c.Request.WithContext(service.ContextWithRBACActorSuperAdmin(c.Request.Context(), true))
 		return true
 	}
 	ctx := c.Request.Context()
@@ -194,6 +190,7 @@ func loadRBACContext(c *gin.Context, rbacService *service.RBACService, userID in
 	}
 	c.Set(string(ContextKeyUserPermissions), permKeys)
 	c.Set(string(ContextKeyIsSuperAdmin), isSuper)
+	c.Request = c.Request.WithContext(service.ContextWithRBACActorSuperAdmin(ctx, isSuper))
 	return true
 }
 

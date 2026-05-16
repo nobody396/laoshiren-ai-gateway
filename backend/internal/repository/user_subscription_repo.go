@@ -283,6 +283,47 @@ func (r *userSubscriptionRepository) ExtendExpiry(ctx context.Context, subscript
 	return translatePersistenceError(err, service.ErrSubscriptionNotFound, nil)
 }
 
+func (r *userSubscriptionRepository) ExtendExpiryAtomically(ctx context.Context, subscriptionID int64, validityDays int, notes string, now, maxExpiresAt time.Time) error {
+	if validityDays <= 0 {
+		validityDays = 30
+	}
+	if validityDays > service.MaxValidityDays {
+		validityDays = service.MaxValidityDays
+	}
+
+	const updateSQL = `
+		UPDATE user_subscriptions
+		SET
+			expires_at = LEAST(
+				CASE WHEN expires_at > $2 THEN expires_at ELSE $2 END + ($3::int * INTERVAL '1 day'),
+				$4
+			),
+			status = $5,
+			notes = CASE
+				WHEN $6 = '' THEN notes
+				WHEN COALESCE(notes, '') = '' THEN $6
+				ELSE notes || E'\n' || $6
+			END,
+			updated_at = $2
+		WHERE id = $1
+			AND deleted_at IS NULL
+	`
+
+	client := clientFromContext(ctx, r.client)
+	result, err := client.ExecContext(ctx, updateSQL, subscriptionID, now, validityDays, maxExpiresAt, service.SubscriptionStatusActive, notes)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return service.ErrSubscriptionNotFound
+	}
+	return nil
+}
+
 func (r *userSubscriptionRepository) UpdateStatus(ctx context.Context, subscriptionID int64, status string) error {
 	client := clientFromContext(ctx, r.client)
 	_, err := client.UserSubscription.UpdateOneID(subscriptionID).

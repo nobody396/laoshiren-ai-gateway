@@ -35,8 +35,6 @@ claude --version
 
 登录 [老实人 AI 控制台](https://laoshirenai.com/keys)，进入 **API 密钥** 页面，点击 **创建密钥**。
 
-![](https://assets.example.com/dragoncode/file-20260317102346193.png)
-![](https://assets.example.com/dragoncode/file-20260317102505220.png)
 
 填写密钥名称，选择分组（模型和倍率），按需配置 IP 限制、额度限制、速率限制和有效期。新手建议直接使用默认配置。
 
@@ -52,8 +50,6 @@ claude --version
 
 前往 [CC Switch Release](https://github.com/farion1231/cc-switch/blob/main/docs/release-notes/v3.12.2-zh.md) 下载安装后，点击 **导入到 CCS** 完成一键导入：
 
-![](https://assets.example.com/dragoncode/file-20260317102723257.png)
-![400](https://assets.example.com/dragoncode/file-20260317104909443.png)
 
 导入后点击 **启用** 即可。
 
@@ -61,7 +57,6 @@ claude --version
 
 点击密钥旁的 **复制** 按钮获取 API Key。
 
-![](https://assets.example.com/dragoncode/file-20260317103239907.png)
 
 需要设置以下两个环境变量：
 

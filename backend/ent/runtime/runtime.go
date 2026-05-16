@@ -1709,30 +1709,36 @@ func init() {
 	user.DefaultStatus = userDescStatus.Default.(string)
 	// user.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	user.StatusValidator = userDescStatus.Validators[0].(func(string) error)
+	// userDescTokenVersion is the schema descriptor for token_version field.
+	userDescTokenVersion := userFields[6].Descriptor()
+	// user.DefaultTokenVersion holds the default value on creation for the token_version field.
+	user.DefaultTokenVersion = userDescTokenVersion.Default.(int64)
+	// user.TokenVersionValidator is a validator for the "token_version" field. It is called by the builders before save.
+	user.TokenVersionValidator = userDescTokenVersion.Validators[0].(func(int64) error)
 	// userDescUsername is the schema descriptor for username field.
-	userDescUsername := userFields[7].Descriptor()
+	userDescUsername := userFields[8].Descriptor()
 	// user.DefaultUsername holds the default value on creation for the username field.
 	user.DefaultUsername = userDescUsername.Default.(string)
 	// user.UsernameValidator is a validator for the "username" field. It is called by the builders before save.
 	user.UsernameValidator = userDescUsername.Validators[0].(func(string) error)
 	// userDescNotes is the schema descriptor for notes field.
-	userDescNotes := userFields[8].Descriptor()
+	userDescNotes := userFields[9].Descriptor()
 	// user.DefaultNotes holds the default value on creation for the notes field.
 	user.DefaultNotes = userDescNotes.Default.(string)
 	// userDescTotpEnabled is the schema descriptor for totp_enabled field.
-	userDescTotpEnabled := userFields[10].Descriptor()
+	userDescTotpEnabled := userFields[11].Descriptor()
 	// user.DefaultTotpEnabled holds the default value on creation for the totp_enabled field.
 	user.DefaultTotpEnabled = userDescTotpEnabled.Default.(bool)
 	// userDescTotalRecharged is the schema descriptor for total_recharged field.
-	userDescTotalRecharged := userFields[12].Descriptor()
+	userDescTotalRecharged := userFields[13].Descriptor()
 	// user.DefaultTotalRecharged holds the default value on creation for the total_recharged field.
 	user.DefaultTotalRecharged = userDescTotalRecharged.Default.(float64)
 	// userDescInviteCode is the schema descriptor for invite_code field.
-	userDescInviteCode := userFields[13].Descriptor()
+	userDescInviteCode := userFields[14].Descriptor()
 	// user.InviteCodeValidator is a validator for the "invite_code" field. It is called by the builders before save.
 	user.InviteCodeValidator = userDescInviteCode.Validators[0].(func(string) error)
 	// userDescFirstRecharged is the schema descriptor for first_recharged field.
-	userDescFirstRecharged := userFields[16].Descriptor()
+	userDescFirstRecharged := userFields[17].Descriptor()
 	// user.DefaultFirstRecharged holds the default value on creation for the first_recharged field.
 	user.DefaultFirstRecharged = userDescFirstRecharged.Default.(bool)
 	userallowedgroupFields := schema.UserAllowedGroup{}.Fields()

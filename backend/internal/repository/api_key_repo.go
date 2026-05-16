@@ -627,6 +627,7 @@ func userEntityToService(u *dbent.User) *service.User {
 		Balance:             u.Balance,
 		Concurrency:         u.Concurrency,
 		Status:              u.Status,
+		TokenVersion:        u.TokenVersion,
 		LastActiveAt:        u.LastActiveAt,
 		TotpSecretEncrypted: u.TotpSecretEncrypted,
 		TotpEnabled:         u.TotpEnabled,

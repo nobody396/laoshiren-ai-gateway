@@ -89,6 +89,7 @@ export function clearAuthToken(): void {
  * @returns Authentication response with token and user data, or 2FA required response
  */
 export async function login(credentials: LoginRequest): Promise<LoginResponse> {
+  clearAuthToken()
   const { data } = await apiClient.post<LoginResponse>('/auth/login', credentials)
 
   // Only store token if 2FA is not required
@@ -112,6 +113,7 @@ export async function login(credentials: LoginRequest): Promise<LoginResponse> {
  * @returns Authentication response with token and user data
  */
 export async function login2FA(request: TotpLogin2FARequest): Promise<AuthResponse> {
+  clearAuthToken()
   const { data } = await apiClient.post<AuthResponse>('/auth/login/2fa', request)
 
   // Store token and user data
@@ -133,6 +135,7 @@ export async function login2FA(request: TotpLogin2FARequest): Promise<AuthRespon
  * @returns Authentication response with token and user data
  */
 export async function register(userData: RegisterRequest): Promise<AuthResponse> {
+  clearAuthToken()
   const { data } = await apiClient.post<AuthResponse>('/auth/register', userData)
 
   // Store token and user data

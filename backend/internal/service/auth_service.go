@@ -1104,17 +1104,13 @@ func (s *AuthService) ResetPassword(ctx context.Context, email, token, newPasswo
 		return fmt.Errorf("hash password: %w", err)
 	}
 
-	// Update password and increment TokenVersion
-	user.PasswordHash = hashedPassword
-	user.TokenVersion++ // Invalidate all existing tokens
-
-	if err := s.userRepo.Update(ctx, user); err != nil {
+	if _, err := updatePasswordAndIncrementTokenVersion(ctx, s.userRepo, user.ID, hashedPassword); err != nil {
 		logger.LegacyPrintf("service.auth", "[Auth] Database error updating password for user %d: %v", user.ID, err)
 		return ErrServiceUnavailable
 	}
 
 	// Also revoke all refresh tokens for this user
-	if err := s.RevokeAllUserSessions(ctx, user.ID); err != nil {
+	if err := s.deleteAllUserRefreshTokens(ctx, user.ID); err != nil {
 		logger.LegacyPrintf("service.auth", "[Auth] Failed to revoke refresh tokens for user %d: %v", user.ID, err)
 		// Don't return error - password was already changed successfully
 	}
@@ -1276,13 +1272,15 @@ func (s *AuthService) generateRefreshToken(ctx context.Context, user *User, fami
 	// 添加到用户Token集合
 	if err := s.refreshTokenCache.AddToUserTokenSet(ctx, user.ID, tokenHash, ttl); err != nil {
 		logger.LegacyPrintf("service.auth", "[Auth] Failed to add token to user set: %v", err)
-		// 不影响主流程
+		_ = s.refreshTokenCache.DeleteRefreshToken(ctx, tokenHash)
+		return "", fmt.Errorf("add refresh token to user set: %w", err)
 	}
 
 	// 添加到家族Token集合
 	if err := s.refreshTokenCache.AddToFamilyTokenSet(ctx, familyID, tokenHash, ttl); err != nil {
 		logger.LegacyPrintf("service.auth", "[Auth] Failed to add token to family set: %v", err)
-		// 不影响主流程
+		_ = s.refreshTokenCache.DeleteRefreshToken(ctx, tokenHash)
+		return "", fmt.Errorf("add refresh token to family set: %w", err)
 	}
 
 	return rawToken, nil
@@ -1303,15 +1301,22 @@ func (s *AuthService) RefreshTokenPair(ctx context.Context, refreshToken string)
 
 	tokenHash := hashToken(refreshToken)
 
-	// 获取Token数据
-	data, err := s.refreshTokenCache.GetRefreshToken(ctx, tokenHash)
+	// 原子消费Token，确保同一个Refresh Token最多只能成功刷新一次。
+	data, err := s.refreshTokenCache.ConsumeRefreshToken(ctx, tokenHash)
 	if err != nil {
+		if errors.Is(err, ErrRefreshTokenReused) {
+			if data != nil && data.FamilyID != "" {
+				_ = s.refreshTokenCache.DeleteTokenFamily(ctx, data.FamilyID)
+			}
+			logger.LegacyPrintf("service.auth", "[Auth] Refresh token reuse detected; revoked token family")
+			return nil, ErrRefreshTokenReused
+		}
 		if errors.Is(err, ErrRefreshTokenNotFound) {
 			// Token不存在，可能是已被使用（Token轮转）或已过期
-			logger.LegacyPrintf("service.auth", "[Auth] Refresh token not found, possible reuse attack")
+			logger.LegacyPrintf("service.auth", "[Auth] Refresh token not found")
 			return nil, ErrRefreshTokenInvalid
 		}
-		logger.LegacyPrintf("service.auth", "[Auth] Error getting refresh token: %v", err)
+		logger.LegacyPrintf("service.auth", "[Auth] Error consuming refresh token: %v", err)
 		return nil, ErrServiceUnavailable
 	}
 
@@ -1348,12 +1353,6 @@ func (s *AuthService) RefreshTokenPair(ctx context.Context, refreshToken string)
 		return nil, ErrTokenRevoked
 	}
 
-	// Token轮转：立即使旧Token失效
-	if err := s.refreshTokenCache.DeleteRefreshToken(ctx, tokenHash); err != nil {
-		logger.LegacyPrintf("service.auth", "[Auth] Failed to delete old refresh token: %v", err)
-		// 继续处理，不影响主流程
-	}
-
 	// 生成新的Token对，保持同一个家族ID
 	pair, err := s.GenerateTokenPair(ctx, user, data.FamilyID)
 	if err != nil {
@@ -1381,6 +1380,13 @@ func (s *AuthService) RevokeRefreshToken(ctx context.Context, refreshToken strin
 // RevokeAllUserSessions 撤销用户的所有会话（所有Refresh Token）
 // 用于密码更改或用户主动登出所有设备
 func (s *AuthService) RevokeAllUserSessions(ctx context.Context, userID int64) error {
+	if _, err := incrementTokenVersion(ctx, s.userRepo, userID); err != nil {
+		return err
+	}
+	return s.deleteAllUserRefreshTokens(ctx, userID)
+}
+
+func (s *AuthService) deleteAllUserRefreshTokens(ctx context.Context, userID int64) error {
 	if s.refreshTokenCache == nil {
 		return nil // No-op if cache not configured
 	}

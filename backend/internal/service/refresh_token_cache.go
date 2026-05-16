@@ -24,8 +24,10 @@ type RefreshTokenData struct {
 //
 // Key 格式:
 //   - refresh_token:{token_hash}     -> RefreshTokenData (JSON)
+//   - consumed_refresh_token:{token_hash} -> RefreshTokenData (JSON)
 //   - user_refresh_tokens:{user_id}  -> Set<token_hash>
 //   - token_family:{family_id}       -> Set<token_hash>
+//   - token_family_revoked:{family_id} -> marker
 type RefreshTokenCache interface {
 	// StoreRefreshToken 存储Refresh Token
 	// tokenHash: Token的SHA256哈希值（不存储原始Token）
@@ -42,6 +44,12 @@ type RefreshTokenCache interface {
 	// DeleteRefreshToken 删除单个Refresh Token
 	// 用于Token轮转时使旧Token失效
 	DeleteRefreshToken(ctx context.Context, tokenHash string) error
+
+	// ConsumeRefreshToken 原子消费单个Refresh Token
+	// 返回 (data, nil) 如果Token存在且本次成功消费
+	// 返回 (data, ErrRefreshTokenReused) 如果Token已经被消费过
+	// 返回 (nil, ErrRefreshTokenNotFound) 如果Token不存在且没有消费标记
+	ConsumeRefreshToken(ctx context.Context, tokenHash string) (*RefreshTokenData, error)
 
 	// DeleteUserRefreshTokens 删除用户的所有Refresh Token
 	// 用于密码更改或用户主动登出所有设备

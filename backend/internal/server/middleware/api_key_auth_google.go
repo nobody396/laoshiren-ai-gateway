@@ -6,6 +6,7 @@ import (
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/googleapi"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ip"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -23,7 +24,11 @@ func APIKeyAuthGoogle(apiKeyService *service.APIKeyService, cfg *config.Config) 
 func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if v := strings.TrimSpace(c.Query("api_key")); v != "" {
-			abortWithGoogleError(c, 400, "Query parameter api_key is deprecated. Use Authorization header or key instead.")
+			abortWithGoogleError(c, 400, "Query parameter api_key is deprecated. Use Authorization header or x-goog-api-key instead.")
+			return
+		}
+		if v := strings.TrimSpace(c.Query("key")); v != "" {
+			abortWithGoogleError(c, 400, "Query parameter key is deprecated. Use Authorization header or x-goog-api-key instead.")
 			return
 		}
 		apiKeyString := extractAPIKeyForGoogle(c)
@@ -42,9 +47,19 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 			return
 		}
 
-		if !apiKey.IsActive() {
+		if !apiKey.IsActive() &&
+			apiKey.Status != service.StatusAPIKeyExpired &&
+			apiKey.Status != service.StatusAPIKeyQuotaExhausted {
 			abortWithGoogleError(c, 401, "API key is disabled")
 			return
+		}
+		if len(apiKey.IPWhitelist) > 0 || len(apiKey.IPBlacklist) > 0 {
+			clientIP := ip.GetTrustedClientIP(c)
+			allowed, _ := ip.CheckIPRestrictionWithCompiledRules(clientIP, apiKey.CompiledIPWhitelist, apiKey.CompiledIPBlacklist)
+			if !allowed {
+				abortWithGoogleError(c, 403, "Access denied")
+				return
+			}
 		}
 		if apiKey.User == nil {
 			abortWithGoogleError(c, 401, "User associated with API key not found")
@@ -52,6 +67,23 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 		}
 		if !apiKey.User.IsActive() {
 			abortWithGoogleError(c, 401, "User account is not active")
+			return
+		}
+
+		switch apiKey.Status {
+		case service.StatusAPIKeyQuotaExhausted:
+			abortWithGoogleError(c, 429, "API key 额度已用完")
+			return
+		case service.StatusAPIKeyExpired:
+			abortWithGoogleError(c, 403, "API key 已过期")
+			return
+		}
+		if apiKey.IsExpired() {
+			abortWithGoogleError(c, 403, "API key 已过期")
+			return
+		}
+		if apiKey.IsQuotaExhausted() {
+			abortWithGoogleError(c, 429, "API key 额度已用完")
 			return
 		}
 
@@ -119,7 +151,7 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 }
 
 // extractAPIKeyForGoogle extracts API key for Google/Gemini endpoints.
-// Priority: x-goog-api-key > Authorization: Bearer > x-api-key > query key
+// Priority: x-goog-api-key > Authorization: Bearer > x-api-key
 // This allows OpenClaw and other clients using Bearer auth to work with Gemini endpoints.
 func extractAPIKeyForGoogle(c *gin.Context) string {
 	// 1) preferred: Gemini native header
@@ -143,18 +175,7 @@ func extractAPIKeyForGoogle(c *gin.Context) string {
 		return k
 	}
 
-	// 4) query parameter key (for specific paths)
-	if allowGoogleQueryKey(c.Request.URL.Path) {
-		if v := strings.TrimSpace(c.Query("key")); v != "" {
-			return v
-		}
-	}
-
 	return ""
-}
-
-func allowGoogleQueryKey(path string) bool {
-	return strings.HasPrefix(path, "/v1beta") || strings.HasPrefix(path, "/antigravity/v1beta")
 }
 
 func abortWithGoogleError(c *gin.Context, status int, message string) {

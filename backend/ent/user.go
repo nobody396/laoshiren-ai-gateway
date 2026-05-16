@@ -35,6 +35,8 @@ type User struct {
 	Concurrency int `json:"concurrency,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
+	// Incremented to invalidate previously issued access and refresh tokens
+	TokenVersion int64 `json:"token_version,omitempty"`
 	// LastActiveAt holds the value of the "last_active_at" field.
 	LastActiveAt *time.Time `json:"last_active_at,omitempty"`
 	// Username holds the value of the "username" field.
@@ -270,7 +272,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case user.FieldBalance, user.FieldTotalRecharged:
 			values[i] = new(sql.NullFloat64)
-		case user.FieldID, user.FieldConcurrency, user.FieldInviterID, user.FieldAgentID, user.FieldFirstInvitedTopupOrderID:
+		case user.FieldID, user.FieldConcurrency, user.FieldTokenVersion, user.FieldInviterID, user.FieldAgentID, user.FieldFirstInvitedTopupOrderID:
 			values[i] = new(sql.NullInt64)
 		case user.FieldEmail, user.FieldPasswordHash, user.FieldRole, user.FieldStatus, user.FieldUsername, user.FieldNotes, user.FieldTotpSecretEncrypted, user.FieldInviteCode:
 			values[i] = new(sql.NullString)
@@ -351,6 +353,12 @@ func (_m *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				_m.Status = value.String
+			}
+		case user.FieldTokenVersion:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field token_version", values[i])
+			} else if value.Valid {
+				_m.TokenVersion = value.Int64
 			}
 		case user.FieldLastActiveAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -587,6 +595,9 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)
+	builder.WriteString(", ")
+	builder.WriteString("token_version=")
+	builder.WriteString(fmt.Sprintf("%v", _m.TokenVersion))
 	builder.WriteString(", ")
 	if v := _m.LastActiveAt; v != nil {
 		builder.WriteString("last_active_at=")

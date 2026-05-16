@@ -11,6 +11,7 @@ import (
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/adminuserrole"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/accountcredentials"
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/httpclient"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
@@ -603,6 +604,10 @@ func (s *adminServiceImpl) UpdateUser(ctx context.Context, id int64, input *Upda
 	oldConcurrency := user.Concurrency
 	oldStatus := user.Status
 	oldRole := user.Role
+
+	if oldRole == RoleAdmin && input.Role != "" && input.Role != RoleAdmin {
+		return nil, errors.New("cannot change admin user role")
+	}
 
 	if input.Email != "" {
 		user.Email = input.Email
@@ -1657,7 +1662,7 @@ func (s *adminServiceImpl) UpdateAccount(ctx context.Context, id int64, input *U
 		account.Notes = normalizeAccountNotes(input.Notes)
 	}
 	if len(input.Credentials) > 0 {
-		account.Credentials = input.Credentials
+		account.Credentials = accountcredentials.MergeForUpdate(account.Credentials, input.Credentials)
 	}
 	if len(input.Extra) > 0 {
 		// 保留配额用量字段，防止编辑账号时意外重置

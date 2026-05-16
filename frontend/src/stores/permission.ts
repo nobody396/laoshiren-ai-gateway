@@ -8,6 +8,7 @@ import type { MenuTreeNode } from "@/api/admin/rbac";
 // and a request triggered by the router guard resolve on the same Promise
 // instead of racing. See: admin 首次进入带 meta.permission 路由的竞态修复。
 let fetchPermissionsInFlight: Promise<void> | null = null;
+let permissionRequestVersion = 0;
 
 export const usePermissionStore = defineStore("permission", () => {
   // State
@@ -40,24 +41,30 @@ export const usePermissionStore = defineStore("permission", () => {
     }
 
     loading.value = true;
+    const requestVersion = permissionRequestVersion;
     fetchPermissionsInFlight = (async () => {
       try {
         const [keys, tree] = await Promise.all([
           rbacAPI.getMyPermissions(),
           rbacAPI.getMyMenuTree(),
         ]);
+        if (requestVersion !== permissionRequestVersion) return;
         permissionKeys.value = keys;
         menuTree.value = tree;
         isSuperAdmin.value = keys.includes("*");
         loaded.value = true;
       } catch {
-        // 权限加载失败, 降级为全量权限 (向后兼容)
-        permissionKeys.value = ["*"];
-        isSuperAdmin.value = true;
+        if (requestVersion !== permissionRequestVersion) return;
+        // 权限加载失败必须失败关闭, 避免前端误展示管理员菜单.
+        permissionKeys.value = [];
+        menuTree.value = [];
+        isSuperAdmin.value = false;
         loaded.value = true;
       } finally {
-        loading.value = false;
-        fetchPermissionsInFlight = null;
+        if (requestVersion === permissionRequestVersion) {
+          loading.value = false;
+          fetchPermissionsInFlight = null;
+        }
       }
     })();
 
@@ -75,6 +82,7 @@ export const usePermissionStore = defineStore("permission", () => {
   }
 
   function reset(): void {
+    permissionRequestVersion += 1;
     menuTree.value = [];
     permissionKeys.value = [];
     isSuperAdmin.value = false;

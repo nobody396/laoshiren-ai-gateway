@@ -119,8 +119,8 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, planID s
 	totalAmount := fmt.Sprintf("%.2f", float64(matchedPlan.PriceCents)/100.0)
 	req := alipay.TradePreCreate{
 		Trade: alipay.Trade{
-			Subject:    matchedPlan.Name,
-			OutTradeNo: orderNo,
+			Subject:     matchedPlan.Name,
+			OutTradeNo:  orderNo,
 			TotalAmount: totalAmount,
 		},
 	}
@@ -208,8 +208,8 @@ func (s *PaymentService) completeOrder(ctx context.Context, orderNo string, alip
 		return fmt.Errorf("get payment order: %w", err)
 	}
 
-	// Idempotency: skip if already completed
-	if order.Status == PaymentStatusCompleted {
+	// Idempotency: skip terminal orders without starting the side-effect transaction.
+	if order.Status != PaymentStatusPending {
 		return nil
 	}
 
@@ -222,9 +222,12 @@ func (s *PaymentService) completeOrder(ctx context.Context, orderNo string, alip
 
 	txCtx := dbent.NewTxContext(ctx, tx)
 
-	// Update order status
-	if err := s.paymentRepo.UpdateStatus(txCtx, order.ID, PaymentStatusCompleted, alipayTradeNo); err != nil {
-		return fmt.Errorf("update payment status: %w", err)
+	completed, err := s.paymentRepo.CompleteIfPending(txCtx, order.ID, alipayTradeNo)
+	if err != nil {
+		return fmt.Errorf("complete payment order: %w", err)
+	}
+	if !completed {
+		return nil
 	}
 
 	// Assign or extend subscription

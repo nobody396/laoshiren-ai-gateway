@@ -12,22 +12,29 @@ $DefaultNpmRegistry = 'https://registry.npmmirror.com'
 $FallbackNpmRegistry = 'https://registry.npmjs.org'
 $MinNodeMajor = 20
 
-$DragonHome = Join-Path $HOME '.laoshirenai'
-$NodeInstallRoot = Join-Path $DragonHome 'node'
+$LaoshirenaiHome = Join-Path $HOME '.laoshirenai'
+$NodeInstallRoot = Join-Path $LaoshirenaiHome 'node'
 $NodeCurrentDir = Join-Path $NodeInstallRoot 'current'
-$NpmPrefix = Join-Path $DragonHome 'npm-global'
+$NpmPrefix = Join-Path $LaoshirenaiHome 'npm-global'
 $ClaudeSettingsPath = Join-Path $HOME '.claude\settings.json'
 $CodexDir = Join-Path $HOME '.codex'
 $CodexAuthPath = Join-Path $CodexDir 'auth.json'
 $CodexConfigPath = Join-Path $CodexDir 'config.toml'
 
 # 支持通过环境变量传参，解决 `irm | iex` 管道模式下无法传命令行参数的问题
-$BaseUrl = if ($env:DRAGON_BASE_URL) { $env:DRAGON_BASE_URL } else { $DefaultBaseUrl }
-$Tools = if ($env:DRAGON_TOOLS) { $env:DRAGON_TOOLS.ToLowerInvariant() } else { $DefaultTools }
-$ClaudeApiKey = $env:DRAGON_CLAUDE_API_KEY
-$CodexApiKey = $env:DRAGON_CODEX_API_KEY
-$NodeVersionOverride = if ($env:DRAGON_NODE_VERSION) { $env:DRAGON_NODE_VERSION } else { '' }
-$SkipClientInstall = $env:DRAGON_SKIP_CLIENT_INSTALL -eq '1'
+$BaseUrl = if ($env:LAOSHIRENAI_BASE_URL) { $env:LAOSHIRENAI_BASE_URL } else { $DefaultBaseUrl }
+$Tools = if ($env:LAOSHIRENAI_TOOLS) { $env:LAOSHIRENAI_TOOLS.ToLowerInvariant() } else { $DefaultTools }
+$ClaudeApiKey = $env:LAOSHIRENAI_CLAUDE_API_KEY
+$CodexApiKey = $env:LAOSHIRENAI_CODEX_API_KEY
+$UnifiedApiKey = $env:LAOSHIRENAI_API_KEY
+if ([string]::IsNullOrWhiteSpace($ClaudeApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
+  $ClaudeApiKey = $UnifiedApiKey
+}
+if ([string]::IsNullOrWhiteSpace($CodexApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
+  $CodexApiKey = $UnifiedApiKey
+}
+$NodeVersionOverride = if ($env:LAOSHIRENAI_NODE_VERSION) { $env:LAOSHIRENAI_NODE_VERSION } else { '' }
+$SkipClientInstall = $env:LAOSHIRENAI_SKIP_CLIENT_INSTALL -eq '1'
 
 $script:NodeExe = ''
 $script:NpmCmd = ''
@@ -124,7 +131,7 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --tools all
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:DRAGON_CLAUDE_API_KEY='<Key>'; $env:DRAGON_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
   irm https://laoshirenai.com/auto-config/install.ps1 | iex
@@ -249,7 +256,7 @@ function Install-LocalNode {
   $ZipName = "node-$Version-win-$ArchName.zip"
 
   if (-not (Test-Path -LiteralPath (Join-Path $InstallDir 'node.exe'))) {
-    $TempDir = Join-Path ([IO.Path]::GetTempPath()) ("dragon-auto-config-" + [guid]::NewGuid().ToString('N'))
+    $TempDir = Join-Path ([IO.Path]::GetTempPath()) ("laoshirenai-auto-config-" + [guid]::NewGuid().ToString('N'))
     Ensure-Directory $TempDir
 
     $ZipPath = Join-Path $TempDir $ZipName
@@ -352,7 +359,7 @@ function Install-Git {
     Stop-Script "无法获取 Git 最新版本信息: $_"
   }
 
-  $TempDir = Join-Path ([IO.Path]::GetTempPath()) ("dragon-git-" + [guid]::NewGuid().ToString('N'))
+  $TempDir = Join-Path ([IO.Path]::GetTempPath()) ("laoshirenai-git-" + [guid]::NewGuid().ToString('N'))
   Ensure-Directory $TempDir
   $InstallerPath = Join-Path $TempDir 'git-installer.exe'
 
@@ -703,7 +710,7 @@ function Print-Summary {
 # 组织整个安装流程，确保安装、配置、校验按固定顺序执行。
 # 注意：通过 `irm | iex` 管道执行时，$args 始终为空，参数需通过环境变量传入。
 #   命令行方式：.\install.ps1 --tools claude --api-key <key>
-#   管道方式：  $env:DRAGON_TOOLS='claude'; $env:DRAGON_API_KEY='<key>'; irm ... | iex
+#   管道方式：  $env:LAOSHIRENAI_TOOLS='claude'; $env:LAOSHIRENAI_API_KEY='<key>'; irm ... | iex
 function Main {
   # 仅在非管道（直接执行脚本）时才解析命令行参数
   if ($MyInvocation.InvocationName -ne '&' -and $args.Count -gt 0) {

@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strings"
 	"sync"
+
+	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 )
 
 // RBAC 错误定义
@@ -19,9 +21,11 @@ var (
 	ErrRoleNameRequired       = errors.New("role name is required")
 	ErrMenuNameRequired       = errors.New("menu name is required")
 	ErrMenuKeyRequired        = errors.New("menu permission_key is required")
+	ErrMenuWildcardKey        = infraerrors.BadRequest("MENU_WILDCARD_PERMISSION_FORBIDDEN", "menu permission_key '*' is not allowed")
 	ErrInvalidMenuType        = errors.New("invalid menu type, must be 'menu'")
 	ErrAPIPathRequired        = errors.New("api path is required")
 	ErrAPIMethodRequired      = errors.New("api method is required")
+	ErrSuperAdminRoleMutation = infraerrors.Forbidden("SUPER_ADMIN_ROLE_MUTATION_FORBIDDEN", "only super admin can mutate super-admin roles")
 	// ErrUserNotAdmin 目标用户不是后台管理员 (users.role != admin)，不允许分配 RBAC 角色.
 	ErrUserNotAdmin = errors.New("rbac roles can only be assigned to admin users")
 )
@@ -85,6 +89,7 @@ func (s *RBACService) GetUserMenuTree(ctx context.Context, userID int64) ([]Menu
 	if err != nil {
 		return nil, fmt.Errorf("get user roles: %w", err)
 	}
+	roles = activeRBACRoles(roles)
 
 	isSuperAdmin := false
 	for _, r := range roles {
@@ -105,9 +110,11 @@ func (s *RBACService) GetUserMenuTree(ctx context.Context, userID int64) ([]Menu
 		for _, r := range roles {
 			roleIDs = append(roleIDs, r.ID)
 		}
-		menus, err = s.repo.GetMenusByRoleIDs(ctx, roleIDs)
-		if err != nil {
-			return nil, fmt.Errorf("get role menus: %w", err)
+		if len(roleIDs) > 0 {
+			menus, err = s.repo.GetMenusByRoleIDs(ctx, roleIDs)
+			if err != nil {
+				return nil, fmt.Errorf("get role menus: %w", err)
+			}
 		}
 	}
 
@@ -127,13 +134,14 @@ func (s *RBACService) GetUserMenuTree(ctx context.Context, userID int64) ([]Menu
 func (s *RBACService) GetUserPermissionKeys(ctx context.Context, userID int64) ([]string, error) {
 	cached, err := s.cache.GetUserPermissionKeys(ctx, userID)
 	if err == nil && cached != nil {
-		return cached, nil
+		return s.sanitizeCachedPermissionKeys(ctx, userID, cached)
 	}
 
 	roles, err := s.repo.GetRolesByUserID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("get user roles: %w", err)
 	}
+	roles = activeRBACRoles(roles)
 
 	for _, r := range roles {
 		if r.IsSuperAdmin {
@@ -146,6 +154,11 @@ func (s *RBACService) GetUserPermissionKeys(ctx context.Context, userID int64) (
 	roleIDs := make([]int64, 0, len(roles))
 	for _, r := range roles {
 		roleIDs = append(roleIDs, r.ID)
+	}
+	if len(roleIDs) == 0 {
+		keys := []string{}
+		_ = s.cache.SetUserPermissionKeys(ctx, userID, keys)
+		return keys, nil
 	}
 
 	menus, err := s.repo.GetMenusByRoleIDs(ctx, roleIDs)
@@ -170,6 +183,9 @@ func (s *RBACService) GetUserPermissionKeys(ctx context.Context, userID int64) (
 		keys = append(keys, k)
 	}
 	for _, m := range menus {
+		if isMenuWildcardPermissionKey(m.PermissionKey) {
+			continue
+		}
 		add(m.PermissionKey)
 	}
 	for _, a := range apis {
@@ -195,6 +211,7 @@ func (s *RBACService) IsSuperAdmin(ctx context.Context, userID int64) (bool, err
 	if err != nil {
 		return false, err
 	}
+	roles = activeRBACRoles(roles)
 	for _, r := range roles {
 		if r.IsSuperAdmin {
 			return true, nil
@@ -210,11 +227,77 @@ func (s *RBACService) CheckPermission(ctx context.Context, userID int64, permiss
 		return false, err
 	}
 	for _, k := range keys {
-		if k == "*" || k == permissionKey {
+		if k == permissionKey {
 			return true, nil
+		}
+		if k == "*" {
+			isSuper, err := s.IsSuperAdmin(ctx, userID)
+			if err != nil {
+				return false, err
+			}
+			if isSuper {
+				return true, nil
+			}
 		}
 	}
 	return false, nil
+}
+
+func validateMenuPermissionKey(permissionKey string) error {
+	if permissionKey == "" {
+		return ErrMenuKeyRequired
+	}
+	if isMenuWildcardPermissionKey(permissionKey) {
+		return ErrMenuWildcardKey
+	}
+	return nil
+}
+
+func isMenuWildcardPermissionKey(permissionKey string) bool {
+	return strings.TrimSpace(permissionKey) == "*"
+}
+
+func activeRBACRoles(roles []*AdminRole) []*AdminRole {
+	if len(roles) == 0 {
+		return nil
+	}
+	active := make([]*AdminRole, 0, len(roles))
+	for _, role := range roles {
+		if role != nil && role.Status == ResourceStatusActive {
+			active = append(active, role)
+		}
+	}
+	return active
+}
+
+func (s *RBACService) sanitizeCachedPermissionKeys(ctx context.Context, userID int64, keys []string) ([]string, error) {
+	hasWildcard := false
+	for _, k := range keys {
+		if k == "*" {
+			hasWildcard = true
+			break
+		}
+	}
+	if !hasWildcard {
+		return keys, nil
+	}
+
+	isSuper, err := s.IsSuperAdmin(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if isSuper {
+		return keys, nil
+	}
+
+	filtered := make([]string, 0, len(keys))
+	for _, k := range keys {
+		if k != "*" {
+			filtered = append(filtered, k)
+		}
+	}
+	_ = s.cache.SetUserPermissionKeys(ctx, userID, filtered)
+	return filtered, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -245,6 +328,9 @@ func (s *RBACService) CreateRole(ctx context.Context, role *AdminRole) error {
 	if role.Name == "" {
 		return ErrRoleNameRequired
 	}
+	if role.IsSuperAdmin && !rbacActorIsSuperAdmin(ctx) {
+		return ErrSuperAdminRoleMutation
+	}
 	if role.Status == "" {
 		role.Status = ResourceStatusActive
 	}
@@ -256,7 +342,18 @@ func (s *RBACService) UpdateRole(ctx context.Context, role *AdminRole) error {
 	if role.Name == "" {
 		return ErrRoleNameRequired
 	}
-	return s.repo.UpdateRole(ctx, role)
+	existing, err := s.GetRole(ctx, role.ID)
+	if err != nil {
+		return err
+	}
+	if (existing.IsSuperAdmin || existing.IsSuperAdmin != role.IsSuperAdmin) && !rbacActorIsSuperAdmin(ctx) {
+		return ErrSuperAdminRoleMutation
+	}
+	if err := s.repo.UpdateRole(ctx, role); err != nil {
+		return err
+	}
+	_ = s.cache.InvalidateAllPermissions(ctx)
+	return nil
 }
 
 // DeleteRole 删除角色 (不允许删除超级管理员角色).
@@ -310,8 +407,8 @@ func (s *RBACService) CreateMenu(ctx context.Context, m *AdminMenu) error {
 	if m.Name == "" {
 		return ErrMenuNameRequired
 	}
-	if m.PermissionKey == "" {
-		return ErrMenuKeyRequired
+	if err := validateMenuPermissionKey(m.PermissionKey); err != nil {
+		return err
 	}
 	if m.Type == "" {
 		m.Type = MenuTypeMenu
@@ -331,8 +428,8 @@ func (s *RBACService) CreateMenu(ctx context.Context, m *AdminMenu) error {
 
 // UpdateMenu 更新菜单节点.
 func (s *RBACService) UpdateMenu(ctx context.Context, m *AdminMenu) error {
-	if m.PermissionKey == "" {
-		return ErrMenuKeyRequired
+	if err := validateMenuPermissionKey(m.PermissionKey); err != nil {
+		return err
 	}
 	if m.Type != "" && !validMenuTypes[m.Type] {
 		return ErrInvalidMenuType
@@ -590,11 +687,50 @@ func (s *RBACService) AssignUserRoles(ctx context.Context, userID int64, roleIDs
 			return ErrUserNotAdmin
 		}
 	}
+	touchesSuperRole, err := s.assignUserRolesTouchesSuperRole(ctx, userID, roleIDs)
+	if err != nil {
+		return err
+	}
+	if touchesSuperRole && !rbacActorIsSuperAdmin(ctx) {
+		return ErrSuperAdminRoleMutation
+	}
 	if err := s.repo.AssignUserRoles(ctx, userID, roleIDs); err != nil {
 		return err
 	}
 	_ = s.cache.InvalidateUserPermissions(ctx, userID)
 	return nil
+}
+
+func (s *RBACService) assignUserRolesTouchesSuperRole(ctx context.Context, userID int64, roleIDs []int64) (bool, error) {
+	currentRoles, err := s.repo.GetUserRoles(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+	for _, role := range currentRoles {
+		if role.IsSuperAdmin {
+			return true, nil
+		}
+	}
+
+	if len(roleIDs) == 0 {
+		return false, nil
+	}
+	allRoles, err := s.repo.GetAllRoles(ctx)
+	if err != nil {
+		return false, err
+	}
+	superRoleIDs := make(map[int64]struct{})
+	for _, role := range allRoles {
+		if role.IsSuperAdmin {
+			superRoleIDs[role.ID] = struct{}{}
+		}
+	}
+	for _, roleID := range roleIDs {
+		if _, ok := superRoleIDs[roleID]; ok {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // GetUserRoles 获取用户角色.

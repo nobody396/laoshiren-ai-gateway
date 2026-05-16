@@ -1,0 +1,126 @@
+# =============================================================================
+# CI 检查 — PR 合并前自动跑测试、类型检查、构建
+# =============================================================================
+# 触发时机:每个 PR 打开 / 推送新 commit / 重新打开时
+# 三个 job 并行跑:后端测试 + 前端检查 + 密钥扫描
+#
+# 任何一个失败,PR 上会显示红叉,可以在仓库设置里把它们设为合并保护规则。
+# =============================================================================
+
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  # 推送到 main 也跑一次,作为最后的保险
+  push:
+    branches: [main]
+
+# 同一个 PR 推新 commit 时,自动取消正在跑的旧任务,省 Action 时间
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ===========================================================================
+  # 后端:Go 测试 + lint + 编译验证
+  # ===========================================================================
+  backend:
+    name: Backend (Go test + lint + build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.2'
+          cache: true
+          cache-dependency-path: backend/go.sum
+
+      - name: Lint (golangci-lint)
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: backend
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Verify build
+        run: |
+          CGO_ENABLED=0 go build -trimpath -o /tmp/server-check ./cmd/server
+          echo "Backend build OK"
+
+  # ===========================================================================
+  # 前端:lint + typecheck + 生产 build
+  # ===========================================================================
+  frontend:
+    name: Frontend (lint + typecheck + build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint check
+        run: pnpm run lint:check
+
+      - name: Type check
+        run: pnpm run typecheck
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Run unit tests
+        # vitest 没有测试时也不应该让 CI 失败 (--passWithNoTests)
+        run: pnpm run test:run --passWithNoTests
+
+  # ===========================================================================
+  # 安全:扫描有没有把密钥/token 提交进来
+  # ===========================================================================
+  # 用 gitleaks (业界标准的密钥扫描工具),比项目自带的 secret_scan 覆盖更全
+  # 如果想用项目自己的 tools/secret_scan.py,改成 `run: make secret-scan` 即可
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

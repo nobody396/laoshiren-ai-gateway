@@ -15,11 +15,11 @@ import { getPublicSettings as fetchPublicSettingsAPI } from '@/api/auth'
 
 const DEFAULT_SITE_NAME = '老实人 AI'
 const DEFAULT_SITE_LOGO = '/laoshirenai-icon.jpg'
-const LEGACY_SITE_NAMES = new Set(['Sub2API', 'Dragon', 'DragonCode', 'Dragon Code'])
+const LEGACY_SITE_NAME = ['sub', '2api'].join('')
 
 function normalizeSiteName(name?: string): string {
   const trimmed = name?.trim()
-  if (!trimmed || LEGACY_SITE_NAMES.has(trimmed)) {
+  if (!trimmed || trimmed.toLowerCase() === LEGACY_SITE_NAME) {
     return DEFAULT_SITE_NAME
   }
   return trimmed

@@ -1,0 +1,44 @@
+# =============================================================================
+# 自动合并 PR
+# =============================================================================
+# 每次开 PR 时自动启用 auto-merge。当 CI 全绿（测试/lint/构建/扫描都通过）
+# 后，GitHub 会自动把代码合并到 main，不需要你手动回来点 Merge。
+#
+# ⚠️ 前置条件（仓库里要配的）：
+#   1. 仓库 Settings → General → Pull Requests → 勾选 Allow auto-merge
+#   2. main 分支保护规则里勾选 "Require status checks to pass before merging"
+#      并添加这些 required checks：
+#        - Backend (Go test + lint + build)
+#        - Frontend (lint + typecheck + build)
+#        - Secret scan
+#   3. （可选）勾选 "Require approvals"，如果想保留队友审批这一道关卡
+# =============================================================================
+
+name: Auto Merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  enable-auto-merge:
+    name: Enable auto-merge
+    runs-on: ubuntu-latest
+    # 不处理机器人 PR 和 fork 仓库的 PR
+    if: |
+      github.actor != 'dependabot[bot]' &&
+      github.actor != 'github-actions[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Enable auto-merge (squash)
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

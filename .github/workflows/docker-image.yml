@@ -4,6 +4,20 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'changelogs/**'
+      - 'tutorials/**'
+      - 'screenshots/**'
+      - 'assets/**/*.png'
+      - 'assets/**/*.jpg'
+      - 'assets/**/*.jpeg'
+      - 'assets/**/*.gif'
+      - 'assets/**/*.webp'
+      - 'AGENTS.md'
+      - 'DEV_GUIDE.md'
+      - 'README*'
   workflow_dispatch:
 
 permissions:

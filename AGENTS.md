@@ -2,6 +2,13 @@
 
 This repository powers the production site at `laoshirenai.com`. Treat production changes as controlled releases.
 
+## Required Context
+
+Before changing code, reviewing pull requests, deploying, backing up data, or touching infrastructure, read:
+
+- `docs/ops/ENVIRONMENTS.md` for production environment context, domains, server, database, Redis, CDN, GitHub/GHCR, and backup entry points.
+- `docs/ops/TEAM_WORKFLOW.md` for team collaboration, PR review, merge, and release policy.
+
 ## Default Workflow
 
 1. Make code changes locally.

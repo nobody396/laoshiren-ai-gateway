@@ -9,6 +9,7 @@
 # =============================================================================
 
 name: Claude Code Review
+run-name: "AI 审查: ${{ github.event.pull_request.title }}"
 
 on:
   pull_request:
@@ -23,7 +24,8 @@ permissions:
   contents: read
   pull-requests: write
   issues: write
-  # 注意:不给 contents: write — 防止 prompt injection 让 Claude 误推代码
+  # OIDC token 用于 Claude Code Action 的认证流程
+  id-token: write
 
 jobs:
   review:
@@ -54,13 +56,6 @@ jobs:
           # 控制成本:限制最多回合数(每个回合 = 一次工具调用)
           # 一般 10-15 够审查中等大小的 PR;大 PR 可以调到 20
           claude_args: '--max-turns 15 --model claude-sonnet-4-5'
-          # 只允许 Claude 调用「读」和「评论」类工具,不允许它推代码或合并 PR
-          allowed_tools: |
-            mcp__github_inline_comment__create_inline_comment
-            Bash(gh pr comment:*)
-            Bash(gh pr diff:*)
-            Bash(gh pr view:*)
-            Bash(gh pr checks:*)
           prompt: |
             你正在审查 laoshirenai-gateway 项目的 PR。这是一个生产网站 (laoshirenai.com) 的代码,
             后端 Go (entgo ORM)、前端 Vue + Vite + TypeScript、Docker 部署到 Dokploy。

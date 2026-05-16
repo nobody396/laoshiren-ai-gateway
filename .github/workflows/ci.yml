@@ -8,6 +8,7 @@
 # =============================================================================
 
 name: CI
+run-name: "CI 检查: ${{ github.event.pull_request.title }}"
 
 on:
   pull_request:
@@ -107,7 +108,7 @@ jobs:
   # ===========================================================================
   # 安全:扫描有没有把密钥/token 提交进来
   # ===========================================================================
-  # 用 gitleaks (业界标准的密钥扫描工具),比项目自带的 secret_scan 覆盖更全
+  # 用 TruffleHog (开源密钥扫描工具,不需要 license)
   # 如果想用项目自己的 tools/secret_scan.py,改成 `run: make secret-scan` 即可
   secret-scan:
     name: Secret scan
@@ -120,7 +121,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified

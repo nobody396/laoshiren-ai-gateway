@@ -15,6 +15,7 @@
 # =============================================================================
 
 name: Auto Merge
+run-name: "自动合并: ${{ github.event.pull_request.title }}"
 
 on:
   pull_request:

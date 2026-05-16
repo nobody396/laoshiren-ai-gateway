@@ -27,7 +27,7 @@ https://api.laoshirenai.com/gpt-image/v1
 如果你使用 Claude Code、Codex 等支持 Skills 的 AI 编码工具，可以直接将以下地址发送给你的 AI：
 
 ```
-https://github.com/bozhouDev/images2-gen/blob/main/README.md  帮我安装这个skills 并且生成一个图片
+打开老实人 AI 的 GPT-Image-2 使用指南，帮我配置图片生成能力并生成一张图片
 ```
 
 AI 会自动安装生图技能并引导你完成配置，之后只需对 AI 说「帮我生成一张图片」即可。

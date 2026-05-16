@@ -1,5 +1,5 @@
 /**
- * Core Type Definitions for Sub2API Frontend
+ * Core type definitions for laoshirenai frontend
  */
 
 // ==================== Common Types ====================

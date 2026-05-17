@@ -27,6 +27,8 @@ export interface AgentDashboard {
   next_level_gap?: number
   last_evaluated_period?: string
   evaluated_at?: string
+  assessment_period_start?: string
+  assessment_period_end?: string
   next_assessment_at?: string
   next_monthly_progress?: AgentLevelProgress
   next_cumulative_progress?: AgentLevelProgress

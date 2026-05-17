@@ -58,6 +58,8 @@ type AgentDashboard struct {
 	NextLevelGap             float64             `json:"next_level_gap,omitempty"`
 	LastEvaluatedPeriod      string              `json:"last_evaluated_period,omitempty"`
 	EvaluatedAt              *time.Time          `json:"evaluated_at,omitempty"`
+	AssessmentPeriodStart    *time.Time          `json:"assessment_period_start,omitempty"`
+	AssessmentPeriodEnd      *time.Time          `json:"assessment_period_end,omitempty"`
 	NextAssessmentAt         *time.Time          `json:"next_assessment_at,omitempty"`
 	NextMonthlyProgress      *AgentLevelProgress `json:"next_monthly_progress,omitempty"`
 	NextCumulativeProgress   *AgentLevelProgress `json:"next_cumulative_progress,omitempty"`

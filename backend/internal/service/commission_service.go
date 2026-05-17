@@ -308,7 +308,8 @@ func (s *CommissionService) GetAgentDashboard(ctx context.Context, agentID int64
 	// 本月分佣
 	now := apptimezone.Now()
 	monthStart, nextAssessmentAt := agentLevelCurrentMonthWindow(now)
-	monthEnd := nextAssessmentAt.Add(-time.Second)
+	assessmentPeriodEnd := nextAssessmentAt.Add(-time.Second)
+	monthEnd := assessmentPeriodEnd
 	thisMonthCommission, err := s.commissionRepo.SumByBeneficiaryAndPeriod(ctx, agentID, &monthStart, &monthEnd)
 	if err != nil {
 		return nil, fmt.Errorf("sum this month commission: %w", err)
@@ -366,6 +367,8 @@ func (s *CommissionService) GetAgentDashboard(ctx context.Context, agentID int64
 		RateSource:               rateSource,
 		ThisMonthConsumption:     thisMonthConsumption,
 		TotalConsumption:         totalConsumption,
+		AssessmentPeriodStart:    &monthStart,
+		AssessmentPeriodEnd:      &assessmentPeriodEnd,
 		NextAssessmentAt:         &nextAssessmentAt,
 	}
 	normalizedRules := enabledAgentLevelRules(normalizeAgentLevelRules(rules))

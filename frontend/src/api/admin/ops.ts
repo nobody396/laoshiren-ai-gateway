@@ -815,17 +815,6 @@ export interface FeishuNotificationConfig {
   rate_limit_per_hour: number
 }
 
-export interface DingTalkNotificationConfig {
-  enabled: boolean
-  name: string
-  webhook_url?: string
-  webhook_url_configured: boolean
-  secret?: string
-  secret_configured: boolean
-  min_severity: AlertSeverity | ''
-  rate_limit_per_hour: number
-}
-
 export interface TelegramNotificationConfig {
   enabled: boolean
   name: string
@@ -838,12 +827,11 @@ export interface TelegramNotificationConfig {
 
 export interface WebhookNotificationConfig {
   feishu: FeishuNotificationConfig
-  dingtalk: DingTalkNotificationConfig
   telegram: TelegramNotificationConfig
 }
 
 export interface WebhookNotificationTestResponse {
-  channel: 'feishu' | 'dingtalk' | 'telegram' | string
+  channel: 'feishu' | 'telegram' | string
   sent: boolean
 }
 
@@ -1351,7 +1339,7 @@ export async function updateWebhookNotificationConfig(config: WebhookNotificatio
   return data
 }
 
-export async function testWebhookNotification(channel: 'feishu' | 'dingtalk' | 'telegram'): Promise<WebhookNotificationTestResponse> {
+export async function testWebhookNotification(channel: 'feishu' | 'telegram'): Promise<WebhookNotificationTestResponse> {
   const { data } = await apiClient.post<WebhookNotificationTestResponse>('/admin/ops/webhook-notification/test', { channel })
   return data
 }

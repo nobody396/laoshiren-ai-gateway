@@ -116,16 +116,6 @@ function mockSettings() {
       min_severity: 'warning',
       rate_limit_per_hour: 20,
     },
-    dingtalk: {
-      enabled: true,
-      name: '钉钉告警群',
-      webhook_url: '',
-      webhook_url_configured: true,
-      secret: '',
-      secret_configured: true,
-      min_severity: 'warning',
-      rate_limit_per_hour: 20,
-    },
     telegram: {
       enabled: true,
       name: 'Telegram 告警群',
@@ -170,7 +160,7 @@ describe('OpsSettingsDialog webhook notifications', () => {
     mockSettings()
   })
 
-  it('加载飞书、钉钉和 Telegram 群通知配置，并支持测试发送与保存', async () => {
+  it('加载飞书和 Telegram 群通知配置，并支持测试发送与保存', async () => {
     const wrapper = mount(OpsSettingsDialog, {
       props: { show: false },
       global: {
@@ -188,11 +178,10 @@ describe('OpsSettingsDialog webhook notifications', () => {
     expect(mockAPI.getWebhookNotificationConfig).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('admin.ops.webhook.title')
     expect(wrapper.text()).toContain('admin.ops.webhook.feishuTitle')
-    expect(wrapper.text()).toContain('admin.ops.webhook.dingtalkTitle')
     expect(wrapper.text()).toContain('admin.ops.webhook.telegramTitle')
 
     const testButtons = wrapper.findAll('button').filter((button) => button.text() === 'admin.ops.webhook.sendTest')
-    expect(testButtons.length).toBe(3)
+    expect(testButtons.length).toBe(2)
     await testButtons[0].trigger('click')
     await flushPromises()
     expect(mockAPI.testWebhookNotification).toHaveBeenCalledWith('feishu')
@@ -205,10 +194,6 @@ describe('OpsSettingsDialog webhook notifications', () => {
     expect(mockAPI.updateWebhookNotificationConfig).toHaveBeenCalledWith(
       expect.objectContaining({
         feishu: expect.objectContaining({
-          enabled: true,
-          webhook_url_configured: true,
-        }),
-        dingtalk: expect.objectContaining({
           enabled: true,
           webhook_url_configured: true,
         }),

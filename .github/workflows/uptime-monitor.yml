@@ -1,0 +1,62 @@
+name: Production Uptime Monitor
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-uptime-monitor
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check production availability
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Check public endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          check_endpoint() {
+            local name="$1"
+            local url="$2"
+            local expected="$3"
+            local max_seconds="$4"
+            local attempt
+            local output
+            local code
+            local seconds
+
+            for attempt in 1 2 3; do
+              output="$(curl -sS -o /tmp/uptime-body.txt -w '%{http_code} %{time_total}' --connect-timeout 5 --max-time 20 "$url" || true)"
+              code="$(awk '{print $1}' <<< "$output")"
+              seconds="$(awk '{print $2}' <<< "$output")"
+
+              echo "[$name] attempt=$attempt status=${code:-curl_failed} time=${seconds:-unknown}s url=$url"
+
+              if [[ "$code" == "$expected" ]] && awk -v t="${seconds:-999}" -v m="$max_seconds" 'BEGIN { exit !(t <= m) }'; then
+                return 0
+              fi
+
+              sleep 10
+            done
+
+            echo "::error title=${name} unavailable::Expected HTTP $expected within ${max_seconds}s for $url, got status=${code:-curl_failed} time=${seconds:-unknown}s"
+            if [[ -s /tmp/uptime-body.txt ]]; then
+              echo "Last response body preview:"
+              head -c 500 /tmp/uptime-body.txt || true
+              echo
+            fi
+            return 1
+          }
+
+          check_endpoint "site_home" "https://laoshirenai.com" "200" "10"
+          check_endpoint "site_health" "https://laoshirenai.com/health" "200" "5"
+          check_endpoint "api_auth_guard" "https://api.laoshirenai.com/v1/models" "401" "8"

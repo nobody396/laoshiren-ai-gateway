@@ -24,6 +24,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: docker-image-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -54,6 +58,8 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}

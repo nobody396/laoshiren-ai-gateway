@@ -150,7 +150,7 @@
               <div>
                 <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('agent.monthlyProgress') }}</p>
                 <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">
-                  {{ monthlyProgress ? t('agent.targetLevelWithRate', { level: monthlyProgress.level_name, rate: formatRate(monthlyProgress.rate) }) : t('agent.maxLevelReached') }}
+                  {{ monthlyProgress ? t('agent.targetLevelWithRate', { level: displayLevelName(monthlyProgress.level_name, monthlyProgress.level_key), rate: formatRate(monthlyProgress.rate) }) : t('agent.maxLevelReached') }}
                 </p>
               </div>
               <span class="text-sm font-semibold text-primary-600 dark:text-primary-400">{{ progressPercent(monthlyProgress) }}</span>
@@ -179,7 +179,7 @@
               <div>
                 <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('agent.cumulativeProgress') }}</p>
                 <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">
-                  {{ cumulativeProgress ? t('agent.targetLevelWithRate', { level: cumulativeProgress.level_name, rate: formatRate(cumulativeProgress.rate) }) : t('agent.maxLevelReached') }}
+                  {{ cumulativeProgress ? t('agent.targetLevelWithRate', { level: displayLevelName(cumulativeProgress.level_name, cumulativeProgress.level_key), rate: formatRate(cumulativeProgress.rate) }) : t('agent.maxLevelReached') }}
                 </p>
               </div>
               <span class="text-sm font-semibold text-primary-600 dark:text-primary-400">{{ progressPercent(cumulativeProgress) }}</span>
@@ -381,8 +381,8 @@ const inviteeBonusRate = computed(() =>
   formatRate(dashboard.value?.first_recharge_invitee_rate ?? defaultInviteeBonusRate)
 )
 
-const currentLevelLabel = computed(() => dashboard.value?.current_level_name || formatLevelKey(dashboard.value?.current_level))
-const permanentLevelLabel = computed(() => dashboard.value?.permanent_level_name || formatLevelKey(dashboard.value?.permanent_level))
+const currentLevelLabel = computed(() => displayLevelName(dashboard.value?.current_level_name, dashboard.value?.current_level))
+const permanentLevelLabel = computed(() => displayLevelName(dashboard.value?.permanent_level_name, dashboard.value?.permanent_level))
 const monthlyProgress = computed(() => dashboard.value?.next_monthly_progress ?? null)
 const cumulativeProgress = computed(() => dashboard.value?.next_cumulative_progress ?? null)
 const canEditPaymentProfile = computed(() => authStore.user?.role === 'agent')
@@ -591,6 +591,22 @@ function formatLevelKey(value?: string): string {
       return t('agent.levelManual')
     default:
       return '—'
+  }
+}
+
+function displayLevelName(name?: string | null, fallbackKey?: string): string {
+  const normalized = (name || '').trim()
+  switch (normalized) {
+    case '轻代理':
+      return t('agent.levelLight')
+    case '标准代理':
+      return t('agent.levelStandard')
+    case '核心代理':
+      return t('agent.levelCore')
+    case '超级代理':
+      return t('agent.levelSuper')
+    default:
+      return normalized || formatLevelKey(fallbackKey)
   }
 }
 

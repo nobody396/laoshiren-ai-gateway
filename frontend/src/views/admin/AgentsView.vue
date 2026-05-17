@@ -59,7 +59,7 @@
             </thead>
             <tbody class="divide-y divide-gray-50 dark:divide-dark-800">
               <tr v-for="rule in levelRules" :key="rule.level_key">
-                <td class="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white">{{ rule.level_name || formatLevel(rule.level_key) }}</td>
+                <td class="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white">{{ displayAgentLevelName(rule.level_name, rule.level_key) }}</td>
                 <td class="px-3 py-2 text-right">
                   <input v-model.number="rule.ratePercent" type="number" min="0" max="20" step="0.01" class="input ml-auto w-24 text-right text-sm" />
                 </td>
@@ -984,10 +984,32 @@ function formatLevel(level?: string): string {
   const key = (level || '').trim()
   if (!key) return '-'
   const found = levelRules.value.find((rule) => rule.level_key === key)
-  if (found?.level_name) return found.level_name
+  if (found) return displayAgentLevelName(found.level_name, found.level_key)
   const localeKey = `admin.agents.level_${key}`
   const translated = t(localeKey)
-  return translated === localeKey ? key : translated
+  if (translated !== localeKey) return translated
+  return displayAgentLevelName(key)
+}
+
+function displayAgentLevelName(name?: string | null, fallbackKey?: string): string {
+  const normalized = (name || '').trim()
+  switch (normalized) {
+    case '轻代理':
+      return t('admin.agents.level_light')
+    case '标准代理':
+      return t('admin.agents.level_standard')
+    case '核心代理':
+      return t('admin.agents.level_core')
+    case '超级代理':
+      return t('admin.agents.level_super')
+    default: {
+      if (normalized) return normalized
+      if (!fallbackKey) return '-'
+      const localeKey = `admin.agents.level_${fallbackKey}`
+      const translated = t(localeKey)
+      return translated === localeKey ? fallbackKey : translated
+    }
+  }
 }
 
 function toPercentNumber(value: number): number {

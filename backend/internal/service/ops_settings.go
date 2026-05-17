@@ -232,6 +232,19 @@ func (s *OpsService) UpdateWebhookNotificationConfig(ctx context.Context, req *O
 		cfg.Feishu.RateLimitPerHour = req.Feishu.RateLimitPerHour
 	}
 
+	if req.DingTalk != nil {
+		cfg.DingTalk.Enabled = req.DingTalk.Enabled
+		cfg.DingTalk.Name = strings.TrimSpace(req.DingTalk.Name)
+		if strings.TrimSpace(req.DingTalk.WebhookURL) != "" {
+			cfg.DingTalk.WebhookURL = strings.TrimSpace(req.DingTalk.WebhookURL)
+		}
+		if strings.TrimSpace(req.DingTalk.Secret) != "" {
+			cfg.DingTalk.Secret = strings.TrimSpace(req.DingTalk.Secret)
+		}
+		cfg.DingTalk.MinSeverity = strings.TrimSpace(req.DingTalk.MinSeverity)
+		cfg.DingTalk.RateLimitPerHour = req.DingTalk.RateLimitPerHour
+	}
+
 	if req.Telegram != nil {
 		cfg.Telegram.Enabled = req.Telegram.Enabled
 		cfg.Telegram.Name = strings.TrimSpace(req.Telegram.Name)
@@ -277,6 +290,14 @@ func (s *OpsService) TestWebhookNotification(ctx context.Context, channel string
 			return nil, err
 		}
 		return &OpsWebhookNotificationTestResponse{Channel: "feishu", Sent: true}, nil
+	case "dingtalk":
+		if !cfg.DingTalk.Enabled {
+			return nil, errors.New("dingtalk notification is disabled")
+		}
+		if err := sendOpsDingTalkText(ctx, opsNotificationHTTPClient, cfg.DingTalk, text); err != nil {
+			return nil, err
+		}
+		return &OpsWebhookNotificationTestResponse{Channel: "dingtalk", Sent: true}, nil
 	case "telegram":
 		if !cfg.Telegram.Enabled {
 			return nil, errors.New("telegram notification is disabled")
@@ -286,7 +307,7 @@ func (s *OpsService) TestWebhookNotification(ctx context.Context, channel string
 		}
 		return &OpsWebhookNotificationTestResponse{Channel: "telegram", Sent: true}, nil
 	default:
-		return nil, errors.New("channel must be feishu or telegram")
+		return nil, errors.New("channel must be feishu, dingtalk, or telegram")
 	}
 }
 
@@ -326,6 +347,12 @@ func defaultOpsWebhookNotificationConfig() *OpsWebhookNotificationConfig {
 			MinSeverity:      "warning",
 			RateLimitPerHour: 20,
 		},
+		DingTalk: OpsDingTalkNotificationConfig{
+			Enabled:          false,
+			Name:             "钉钉告警群",
+			MinSeverity:      "warning",
+			RateLimitPerHour: 20,
+		},
 		Telegram: OpsTelegramNotificationConfig{
 			Enabled:          false,
 			Name:             "Telegram 告警群",
@@ -350,6 +377,17 @@ func normalizeOpsWebhookNotificationConfig(cfg *OpsWebhookNotificationConfig) {
 		cfg.Feishu.RateLimitPerHour = 0
 	}
 
+	cfg.DingTalk.Name = strings.TrimSpace(cfg.DingTalk.Name)
+	if cfg.DingTalk.Name == "" {
+		cfg.DingTalk.Name = "钉钉告警群"
+	}
+	cfg.DingTalk.WebhookURL = strings.TrimSpace(cfg.DingTalk.WebhookURL)
+	cfg.DingTalk.Secret = strings.TrimSpace(cfg.DingTalk.Secret)
+	cfg.DingTalk.MinSeverity = strings.TrimSpace(cfg.DingTalk.MinSeverity)
+	if cfg.DingTalk.RateLimitPerHour < 0 {
+		cfg.DingTalk.RateLimitPerHour = 0
+	}
+
 	cfg.Telegram.Name = strings.TrimSpace(cfg.Telegram.Name)
 	if cfg.Telegram.Name == "" {
 		cfg.Telegram.Name = "Telegram 告警群"
@@ -369,10 +407,16 @@ func validateOpsWebhookNotificationConfig(cfg *OpsWebhookNotificationConfig) err
 	if cfg.Feishu.RateLimitPerHour < 0 {
 		return errors.New("feishu.rate_limit_per_hour must be >= 0")
 	}
+	if cfg.DingTalk.RateLimitPerHour < 0 {
+		return errors.New("dingtalk.rate_limit_per_hour must be >= 0")
+	}
 	if cfg.Telegram.RateLimitPerHour < 0 {
 		return errors.New("telegram.rate_limit_per_hour must be >= 0")
 	}
 	if err := validateOpsNotificationSeverity(cfg.Feishu.MinSeverity, "feishu.min_severity"); err != nil {
+		return err
+	}
+	if err := validateOpsNotificationSeverity(cfg.DingTalk.MinSeverity, "dingtalk.min_severity"); err != nil {
 		return err
 	}
 	if err := validateOpsNotificationSeverity(cfg.Telegram.MinSeverity, "telegram.min_severity"); err != nil {
@@ -380,6 +424,9 @@ func validateOpsWebhookNotificationConfig(cfg *OpsWebhookNotificationConfig) err
 	}
 	if cfg.Feishu.Enabled && cfg.Feishu.WebhookURL == "" {
 		return errors.New("feishu.webhook_url is required when enabled")
+	}
+	if cfg.DingTalk.Enabled && cfg.DingTalk.WebhookURL == "" {
+		return errors.New("dingtalk.webhook_url is required when enabled")
 	}
 	if cfg.Telegram.Enabled {
 		if cfg.Telegram.BotToken == "" {
@@ -413,6 +460,10 @@ func redactOpsWebhookNotificationConfig(cfg *OpsWebhookNotificationConfig) *OpsW
 	clone.Feishu.SecretConfigured = strings.TrimSpace(cfg.Feishu.Secret) != ""
 	clone.Feishu.WebhookURL = ""
 	clone.Feishu.Secret = ""
+	clone.DingTalk.WebhookURLConfigured = strings.TrimSpace(cfg.DingTalk.WebhookURL) != ""
+	clone.DingTalk.SecretConfigured = strings.TrimSpace(cfg.DingTalk.Secret) != ""
+	clone.DingTalk.WebhookURL = ""
+	clone.DingTalk.Secret = ""
 	clone.Telegram.BotTokenConfigured = strings.TrimSpace(cfg.Telegram.BotToken) != ""
 	clone.Telegram.BotToken = ""
 	return &clone

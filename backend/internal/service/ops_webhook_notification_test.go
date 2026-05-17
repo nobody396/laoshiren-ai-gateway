@@ -98,6 +98,7 @@ func TestOpsWebhookConfigRedactsAndPreservesSecrets(t *testing.T) {
 	require.True(t, updated.Feishu.SecretConfigured)
 	require.Empty(t, updated.Feishu.WebhookURL)
 	require.Empty(t, updated.Feishu.Secret)
+	require.False(t, updated.DingTalk.WebhookURLConfigured)
 	require.True(t, updated.Telegram.BotTokenConfigured)
 	require.Empty(t, updated.Telegram.BotToken)
 
@@ -119,6 +120,7 @@ func TestOpsWebhookConfigRedactsAndPreservesSecrets(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, updated.Feishu.WebhookURLConfigured)
 	require.True(t, updated.Feishu.SecretConfigured)
+	require.False(t, updated.DingTalk.WebhookURLConfigured)
 	require.True(t, updated.Telegram.BotTokenConfigured)
 
 	raw := &OpsWebhookNotificationConfig{}
@@ -129,6 +131,45 @@ func TestOpsWebhookConfigRedactsAndPreservesSecrets(t *testing.T) {
 	require.Equal(t, "-100999", raw.Telegram.ChatID)
 }
 
+func TestOpsWebhookConfigPreservesDingTalkSecrets(t *testing.T) {
+	ctx := context.Background()
+	repo := &opsWebhookSettingRepoStub{}
+	svc := &OpsService{settingRepo: repo}
+
+	updated, err := svc.UpdateWebhookNotificationConfig(ctx, &OpsWebhookNotificationConfigUpdateRequest{
+		DingTalk: &OpsDingTalkNotificationConfig{
+			Enabled:          true,
+			Name:             "钉钉主群",
+			WebhookURL:       "https://oapi.dingtalk.com/robot/send?access_token=test",
+			Secret:           "ding-secret",
+			MinSeverity:      "warning",
+			RateLimitPerHour: 6,
+		},
+	})
+	require.NoError(t, err)
+	require.True(t, updated.DingTalk.WebhookURLConfigured)
+	require.True(t, updated.DingTalk.SecretConfigured)
+	require.Empty(t, updated.DingTalk.WebhookURL)
+	require.Empty(t, updated.DingTalk.Secret)
+
+	updated, err = svc.UpdateWebhookNotificationConfig(ctx, &OpsWebhookNotificationConfigUpdateRequest{
+		DingTalk: &OpsDingTalkNotificationConfig{
+			Enabled:          true,
+			Name:             "钉钉新名称",
+			MinSeverity:      "critical",
+			RateLimitPerHour: 8,
+		},
+	})
+	require.NoError(t, err)
+	require.True(t, updated.DingTalk.WebhookURLConfigured)
+	require.True(t, updated.DingTalk.SecretConfigured)
+
+	raw := &OpsWebhookNotificationConfig{}
+	require.NoError(t, json.Unmarshal([]byte(repo.values[SettingKeyOpsWebhookNotificationConfig]), raw))
+	require.Equal(t, "https://oapi.dingtalk.com/robot/send?access_token=test", raw.DingTalk.WebhookURL)
+	require.Equal(t, "ding-secret", raw.DingTalk.Secret)
+}
+
 func TestOpsWebhookConfigValidation(t *testing.T) {
 	svc := &OpsService{settingRepo: &opsWebhookSettingRepoStub{}}
 	_, err := svc.UpdateWebhookNotificationConfig(context.Background(), &OpsWebhookNotificationConfigUpdateRequest{
@@ -136,16 +177,29 @@ func TestOpsWebhookConfigValidation(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "feishu.webhook_url")
+
+	_, err = svc.UpdateWebhookNotificationConfig(context.Background(), &OpsWebhookNotificationConfigUpdateRequest{
+		DingTalk: &OpsDingTalkNotificationConfig{Enabled: true},
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "dingtalk.webhook_url")
 }
 
 func TestOpsAlertWebhookNotificationsSendToConfiguredGroups(t *testing.T) {
 	var feishuHits int
+	var dingTalkHits int
 	var telegramHits int
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		switch {
 		case r.URL.Path == "/feishu":
 			feishuHits++
+			require.Contains(t, string(body), "老实人AI 运维告警")
+			w.WriteHeader(http.StatusOK)
+		case r.URL.Path == "/dingtalk":
+			dingTalkHits++
+			require.NotEmpty(t, r.URL.Query().Get("timestamp"))
+			require.NotEmpty(t, r.URL.Query().Get("sign"))
 			require.Contains(t, string(body), "老实人AI 运维告警")
 			w.WriteHeader(http.StatusOK)
 		case r.URL.Path == "/bot123456:test-token/sendMessage":
@@ -170,6 +224,13 @@ func TestOpsAlertWebhookNotificationsSendToConfiguredGroups(t *testing.T) {
 			MinSeverity:      "warning",
 			RateLimitPerHour: 0,
 		},
+		DingTalk: OpsDingTalkNotificationConfig{
+			Enabled:          true,
+			WebhookURL:       server.URL + "/dingtalk",
+			Secret:           "ding-secret",
+			MinSeverity:      "warning",
+			RateLimitPerHour: 0,
+		},
 		Telegram: OpsTelegramNotificationConfig{
 			Enabled:          true,
 			BotToken:         "123456:test-token",
@@ -187,6 +248,7 @@ func TestOpsAlertWebhookNotificationsSendToConfiguredGroups(t *testing.T) {
 	svc := &OpsAlertEvaluatorService{
 		opsService:      &OpsService{settingRepo: repo},
 		feishuLimiter:   newSlidingWindowLimiter(0, time.Hour),
+		dingtalkLimiter: newSlidingWindowLimiter(0, time.Hour),
 		telegramLimiter: newSlidingWindowLimiter(0, time.Hour),
 	}
 
@@ -210,6 +272,7 @@ func TestOpsAlertWebhookNotificationsSendToConfiguredGroups(t *testing.T) {
 	})
 	require.True(t, sent)
 	require.Equal(t, 1, feishuHits)
+	require.Equal(t, 1, dingTalkHits)
 	require.Equal(t, 1, telegramHits)
 }
 
@@ -247,6 +310,20 @@ func TestOpsAlertWebhookNotificationsRespectSeverity(t *testing.T) {
 		FiredAt: time.Now().UTC(),
 	})
 	require.False(t, sent)
+}
+
+func TestSignDingTalkWebhookURL(t *testing.T) {
+	got, err := signDingTalkWebhookURL("https://oapi.dingtalk.com/robot/send?access_token=test", "secret", time.UnixMilli(1700000000000))
+	require.NoError(t, err)
+	require.Contains(t, got, "access_token=test")
+	require.Contains(t, got, "timestamp=1700000000000")
+	require.Contains(t, got, "sign=")
+}
+
+func TestValidateOpsWebhookSuccessBodyDetectsDingTalkError(t *testing.T) {
+	err := validateOpsWebhookSuccessBody("dingtalk", `{"errcode":310000,"errmsg":"keywords not in content"}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "310000")
 }
 
 func TestSendOpsTelegramTextRejectsMissingChat(t *testing.T) {

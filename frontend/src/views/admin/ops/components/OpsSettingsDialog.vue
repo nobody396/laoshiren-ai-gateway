@@ -22,7 +22,7 @@ const emit = defineEmits<{
 
 const loading = ref(false)
 const saving = ref(false)
-const testingChannel = ref<'feishu' | 'telegram' | null>(null)
+const testingChannel = ref<'feishu' | 'dingtalk' | 'telegram' | null>(null)
 
 // 运行时设置
 const runtimeSettings = ref<OpsAlertRuntimeSettings | null>(null)
@@ -139,9 +139,13 @@ const validation = computed(() => {
   // 邮件配置: 启用但无收件人时不阻断保存, 保存时会自动禁用
   if (webhookConfig.value) {
     const feishu = webhookConfig.value.feishu
+    const dingtalk = webhookConfig.value.dingtalk
     const telegram = webhookConfig.value.telegram
     if (feishu.enabled && !feishu.webhook_url && !feishu.webhook_url_configured) {
       errors.push(t('admin.ops.webhook.validation.feishuWebhookRequired'))
+    }
+    if (dingtalk.enabled && !dingtalk.webhook_url && !dingtalk.webhook_url_configured) {
+      errors.push(t('admin.ops.webhook.validation.dingtalkWebhookRequired'))
     }
     if (telegram.enabled && !telegram.bot_token && !telegram.bot_token_configured) {
       errors.push(t('admin.ops.webhook.validation.telegramTokenRequired'))
@@ -150,6 +154,9 @@ const validation = computed(() => {
       errors.push(t('admin.ops.webhook.validation.telegramChatRequired'))
     }
     if (!Number.isFinite(feishu.rate_limit_per_hour) || feishu.rate_limit_per_hour < 0) {
+      errors.push(t('admin.ops.webhook.validation.rateLimitRange'))
+    }
+    if (!Number.isFinite(dingtalk.rate_limit_per_hour) || dingtalk.rate_limit_per_hour < 0) {
       errors.push(t('admin.ops.webhook.validation.rateLimitRange'))
     }
     if (!Number.isFinite(telegram.rate_limit_per_hour) || telegram.rate_limit_per_hour < 0) {
@@ -228,7 +235,7 @@ function configuredSecretPlaceholder(configured: boolean) {
   return configured ? t('admin.ops.webhook.secretConfiguredPlaceholder') : ''
 }
 
-async function sendWebhookTest(channel: 'feishu' | 'telegram') {
+async function sendWebhookTest(channel: 'feishu' | 'dingtalk' | 'telegram') {
   testingChannel.value = channel
   try {
     if (webhookConfig.value) {
@@ -381,6 +388,62 @@ async function sendWebhookTest(channel: 'feishu' | 'telegram') {
                   @click="sendWebhookTest('feishu')"
                 >
                   {{ testingChannel === 'feishu' ? t('admin.ops.webhook.testing') : t('admin.ops.webhook.sendTest') }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-dark-600 dark:bg-dark-800/70">
+            <div class="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <h5 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.ops.webhook.dingtalkTitle') }}</h5>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.webhook.dingtalkHint') }}</p>
+              </div>
+              <Toggle v-model="webhookConfig.dingtalk.enabled" />
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.groupName') }}</label>
+                <input v-model="webhookConfig.dingtalk.name" type="text" class="input" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.dingtalkWebhookUrl') }}</label>
+                <input
+                  v-model="webhookConfig.dingtalk.webhook_url"
+                  type="password"
+                  autocomplete="off"
+                  class="input"
+                  :placeholder="configuredSecretPlaceholder(webhookConfig.dingtalk.webhook_url_configured)"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.dingtalkSignSecret') }}</label>
+                <input
+                  v-model="webhookConfig.dingtalk.secret"
+                  type="password"
+                  autocomplete="off"
+                  class="input"
+                  :placeholder="configuredSecretPlaceholder(webhookConfig.dingtalk.secret_configured)"
+                />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.webhook.dingtalkSignSecretHint') }}</p>
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.minSeverity') }}</label>
+                <Select v-model="webhookConfig.dingtalk.min_severity" :options="severityOptions" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.rateLimitPerHour') }}</label>
+                <input v-model.number="webhookConfig.dingtalk.rate_limit_per_hour" type="number" min="0" class="input" />
+              </div>
+              <div class="flex items-end">
+                <button
+                  class="btn btn-secondary w-full"
+                  type="button"
+                  :disabled="testingChannel !== null || !webhookConfig.dingtalk.enabled"
+                  @click="sendWebhookTest('dingtalk')"
+                >
+                  {{ testingChannel === 'dingtalk' ? t('admin.ops.webhook.testing') : t('admin.ops.webhook.sendTest') }}
                 </button>
               </div>
             </div>

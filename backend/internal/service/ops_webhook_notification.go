@@ -88,6 +88,56 @@ func sendOpsFeishuText(ctx context.Context, client opsHTTPDoer, cfg OpsFeishuNot
 	return doOpsWebhookRequest(client, req, "feishu")
 }
 
+func sendOpsDingTalkText(ctx context.Context, client opsHTTPDoer, cfg OpsDingTalkNotificationConfig, text string) error {
+	if client == nil {
+		client = opsNotificationHTTPClient
+	}
+	webhookURL := strings.TrimSpace(cfg.WebhookURL)
+	if webhookURL == "" {
+		return errors.New("dingtalk webhook url is required")
+	}
+	if secret := strings.TrimSpace(cfg.Secret); secret != "" {
+		signedURL, err := signDingTalkWebhookURL(webhookURL, secret, time.Now())
+		if err != nil {
+			return err
+		}
+		webhookURL = signedURL
+	}
+	payload := map[string]any{
+		"msgtype": "text",
+		"text": map[string]string{
+			"content": text,
+		},
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, webhookURL, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	return doOpsWebhookRequest(client, req, "dingtalk")
+}
+
+func signDingTalkWebhookURL(webhookURL string, secret string, now time.Time) (string, error) {
+	parsed, err := url.Parse(webhookURL)
+	if err != nil {
+		return "", err
+	}
+	timestamp := now.UnixMilli()
+	stringToSign := fmt.Sprintf("%d\n%s", timestamp, secret)
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write([]byte(stringToSign))
+	sign := base64.StdEncoding.EncodeToString(mac.Sum(nil))
+	query := parsed.Query()
+	query.Set("timestamp", fmt.Sprintf("%d", timestamp))
+	query.Set("sign", sign)
+	parsed.RawQuery = query.Encode()
+	return parsed.String(), nil
+}
+
 func signFeishuWebhook(timestamp string, secret string) string {
 	stringToSign := timestamp + "\n" + secret
 	mac := hmac.New(sha256.New, []byte(stringToSign))
@@ -125,9 +175,37 @@ func doOpsWebhookRequest(client opsHTTPDoer, req *http.Request, channel string) 
 		return err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+	data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	body := strings.TrimSpace(string(data))
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("%s webhook returned %d: %s", channel, resp.StatusCode, body)
+	}
+	if err := validateOpsWebhookSuccessBody(channel, body); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateOpsWebhookSuccessBody(channel string, body string) error {
+	if body == "" {
 		return nil
 	}
-	data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-	return fmt.Errorf("%s webhook returned %d: %s", channel, resp.StatusCode, strings.TrimSpace(string(data)))
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(body), &payload); err != nil {
+		return nil
+	}
+	switch strings.ToLower(strings.TrimSpace(channel)) {
+	case "dingtalk":
+		if code, ok := payload["errcode"].(float64); ok && code != 0 {
+			return fmt.Errorf("dingtalk webhook returned errcode %.0f: %v", code, payload["errmsg"])
+		}
+	case "feishu":
+		if code, ok := payload["code"].(float64); ok && code != 0 {
+			return fmt.Errorf("feishu webhook returned code %.0f: %v", code, payload["msg"])
+		}
+		if code, ok := payload["StatusCode"].(float64); ok && code != 0 {
+			return fmt.Errorf("feishu webhook returned status %.0f: %v", code, payload["StatusMessage"])
+		}
+	}
+	return nil
 }

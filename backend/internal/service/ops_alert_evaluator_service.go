@@ -50,6 +50,7 @@ type OpsAlertEvaluatorService struct {
 
 	emailLimiter    *slidingWindowLimiter
 	feishuLimiter   *slidingWindowLimiter
+	dingtalkLimiter *slidingWindowLimiter
 	telegramLimiter *slidingWindowLimiter
 
 	skipLogMu sync.Mutex
@@ -80,6 +81,7 @@ func NewOpsAlertEvaluatorService(
 		ruleStates:      map[int64]*opsAlertRuleState{},
 		emailLimiter:    newSlidingWindowLimiter(0, time.Hour),
 		feishuLimiter:   newSlidingWindowLimiter(0, time.Hour),
+		dingtalkLimiter: newSlidingWindowLimiter(0, time.Hour),
 		telegramLimiter: newSlidingWindowLimiter(0, time.Hour),
 	}
 }
@@ -785,6 +787,20 @@ func (s *OpsAlertEvaluatorService) maybeSendAlertWebhooks(ctx context.Context, r
 		if s.feishuLimiter.Allow(now) {
 			if err := sendOpsFeishuText(ctx, opsNotificationHTTPClient, cfg.Feishu, text); err != nil {
 				logger.LegacyPrintf("service.ops_alert_evaluator", "[OpsAlertEvaluator] send feishu notification failed (event=%d): %v", event.ID, err)
+			} else {
+				anySent = true
+			}
+		}
+	}
+
+	if cfg.DingTalk.Enabled && shouldSendOpsAlertEmailByMinSeverity(cfg.DingTalk.MinSeverity, severity) {
+		if s.dingtalkLimiter == nil {
+			s.dingtalkLimiter = newSlidingWindowLimiter(0, time.Hour)
+		}
+		s.dingtalkLimiter.SetLimit(cfg.DingTalk.RateLimitPerHour)
+		if s.dingtalkLimiter.Allow(now) {
+			if err := sendOpsDingTalkText(ctx, opsNotificationHTTPClient, cfg.DingTalk, text); err != nil {
+				logger.LegacyPrintf("service.ops_alert_evaluator", "[OpsAlertEvaluator] send dingtalk notification failed (event=%d): %v", event.ID, err)
 			} else {
 				anySent = true
 			}

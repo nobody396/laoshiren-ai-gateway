@@ -233,7 +233,7 @@ const (
 	// SettingKeyOpsEmailNotificationConfig stores JSON config for ops email notifications.
 	SettingKeyOpsEmailNotificationConfig = "ops_email_notification_config"
 
-	// SettingKeyOpsWebhookNotificationConfig stores JSON config for ops Feishu/Telegram webhook notifications.
+	// SettingKeyOpsWebhookNotificationConfig stores JSON config for ops Feishu/DingTalk/Telegram webhook notifications.
 	SettingKeyOpsWebhookNotificationConfig = "ops_webhook_notification_config"
 
 	// SettingKeyOpsAlertRuntimeSettings stores JSON config for ops alert evaluator runtime settings.

@@ -14,6 +14,7 @@ export type {
   EmailNotificationConfig,
   WebhookNotificationConfig,
   FeishuNotificationConfig,
+  DingTalkNotificationConfig,
   TelegramNotificationConfig,
   OpsDistributedLockSettings,
   OpsAlertRuntimeSettings,

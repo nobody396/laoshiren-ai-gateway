@@ -40,10 +40,22 @@ type OpsEmailNotificationConfigUpdateRequest struct {
 
 type OpsWebhookNotificationConfig struct {
 	Feishu   OpsFeishuNotificationConfig   `json:"feishu"`
+	DingTalk OpsDingTalkNotificationConfig `json:"dingtalk"`
 	Telegram OpsTelegramNotificationConfig `json:"telegram"`
 }
 
 type OpsFeishuNotificationConfig struct {
+	Enabled              bool   `json:"enabled"`
+	Name                 string `json:"name"`
+	WebhookURL           string `json:"webhook_url,omitempty"`
+	WebhookURLConfigured bool   `json:"webhook_url_configured"`
+	Secret               string `json:"secret,omitempty"`
+	SecretConfigured     bool   `json:"secret_configured"`
+	MinSeverity          string `json:"min_severity"`
+	RateLimitPerHour     int    `json:"rate_limit_per_hour"`
+}
+
+type OpsDingTalkNotificationConfig struct {
 	Enabled              bool   `json:"enabled"`
 	Name                 string `json:"name"`
 	WebhookURL           string `json:"webhook_url,omitempty"`
@@ -66,6 +78,7 @@ type OpsTelegramNotificationConfig struct {
 
 type OpsWebhookNotificationConfigUpdateRequest struct {
 	Feishu   *OpsFeishuNotificationConfig   `json:"feishu"`
+	DingTalk *OpsDingTalkNotificationConfig `json:"dingtalk"`
 	Telegram *OpsTelegramNotificationConfig `json:"telegram"`
 }
 

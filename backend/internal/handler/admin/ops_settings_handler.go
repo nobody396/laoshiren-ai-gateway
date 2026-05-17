@@ -56,7 +56,7 @@ func (h *OpsHandler) UpdateEmailNotificationConfig(c *gin.Context) {
 	response.Success(c, updated)
 }
 
-// GetWebhookNotificationConfig returns Ops Feishu/Telegram notification config (DB-backed).
+// GetWebhookNotificationConfig returns Ops Feishu/DingTalk/Telegram notification config (DB-backed).
 // GET /api/v1/admin/ops/webhook-notification/config
 func (h *OpsHandler) GetWebhookNotificationConfig(c *gin.Context) {
 	if h.opsService == nil {
@@ -76,7 +76,7 @@ func (h *OpsHandler) GetWebhookNotificationConfig(c *gin.Context) {
 	response.Success(c, cfg)
 }
 
-// UpdateWebhookNotificationConfig updates Ops Feishu/Telegram notification config (DB-backed).
+// UpdateWebhookNotificationConfig updates Ops Feishu/DingTalk/Telegram notification config (DB-backed).
 // PUT /api/v1/admin/ops/webhook-notification/config
 func (h *OpsHandler) UpdateWebhookNotificationConfig(c *gin.Context) {
 	if h.opsService == nil {

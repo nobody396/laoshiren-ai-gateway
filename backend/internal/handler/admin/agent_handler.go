@@ -6,6 +6,7 @@ import (
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/response"
+	apptimezone "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/timezone"
 	middleware2 "github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 
@@ -230,7 +231,7 @@ func (h *AgentHandler) UpdateLevelRules(c *gin.Context) {
 }
 
 func (h *AgentHandler) RunLevelEvaluations(c *gin.Context) {
-	result, err := h.commissionService.RunAllAgentLevelEvaluations(c.Request.Context(), time.Now())
+	result, err := h.commissionService.RunAllAgentLevelEvaluations(c.Request.Context(), apptimezone.Now())
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -243,7 +244,7 @@ func (h *AgentHandler) RunAgentLevelEvaluation(c *gin.Context) {
 	if !ok {
 		return
 	}
-	result, err := h.commissionService.RunAgentLevelEvaluation(c.Request.Context(), agentID, time.Now())
+	result, err := h.commissionService.RunAgentLevelEvaluation(c.Request.Context(), agentID, apptimezone.Now())
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

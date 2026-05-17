@@ -485,9 +485,18 @@ async function handleQRCodeChange(event: Event) {
   if (!file) return
   qrUploading.value = true
   try {
+    const savedProfile = await updateAgentPaymentProfile({
+      alipay_real_name: paymentForm.alipay_real_name,
+      alipay_account: paymentForm.alipay_account,
+      contact_phone: paymentForm.contact_phone,
+      payment_note: paymentForm.payment_note
+    })
+    applyPaymentProfile(savedProfile)
+
     const profile = await uploadAgentPaymentQRCode(file)
     applyPaymentProfile(profile)
-    await refreshQRCodePreview()
+    setQRCodePreview(URL.createObjectURL(file))
+    await refreshQRCodePreview({ clearOnError: false })
     appStore.showSuccess(t('agent.alipayQRCodeSaved'))
     await fetchDashboard()
   } catch (e: unknown) {
@@ -506,12 +515,14 @@ function applyPaymentProfile(profile: AgentPaymentProfile) {
   paymentProfileUpdatedAt.value = profile.updated_at || ''
 }
 
-async function refreshQRCodePreview() {
+async function refreshQRCodePreview(options: { clearOnError?: boolean } = {}) {
   try {
     const blob = await getAgentPaymentQRCode()
     setQRCodePreview(URL.createObjectURL(blob))
   } catch {
-    setQRCodePreview('')
+    if (options.clearOnError !== false) {
+      setQRCodePreview('')
+    }
   }
 }
 

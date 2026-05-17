@@ -288,9 +288,12 @@ const monthlyProgress = computed(() => dashboard.value?.next_monthly_progress ??
 const cumulativeProgress = computed(() => dashboard.value?.next_cumulative_progress ?? null)
 const nextAssessmentLabel = computed(() => formatDateTime(dashboard.value?.next_assessment_at))
 const upgradeTimeLabel = computed(() => {
+  if (nextAssessmentLabel.value === '—') return '—'
   const hasReachedTarget = [monthlyProgress.value, cumulativeProgress.value].some((item) => item && item.gap <= 0.000001)
-  if (hasReachedTarget) return nextAssessmentLabel.value
-  return t('agent.afterTargetReached')
+  if (hasReachedTarget) {
+    return t('agent.upgradeAtAssessment', { time: nextAssessmentLabel.value })
+  }
+  return t('agent.upgradeAfterTargetAtAssessment', { time: nextAssessmentLabel.value })
 })
 
 async function fetchDashboard() {
@@ -353,15 +356,14 @@ function progressStyle(progress?: AgentLevelProgress | null) {
 
 function formatDateTime(value?: string): string {
   if (!value) return '—'
+  const isoWallTime = value.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})/)
+  if (isoWallTime) {
+    return `${isoWallTime[1]}/${isoWallTime[2]}/${isoWallTime[3]} ${isoWallTime[4]}:${isoWallTime[5]}`
+  }
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '—'
-  return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  const pad = (part: number) => String(part).padStart(2, '0')
+  return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 function formatLevelKey(value?: string): string {

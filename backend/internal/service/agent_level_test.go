@@ -96,3 +96,12 @@ func TestPreviousMonthWindowUsesNaturalMonth(t *testing.T) {
 	require.Equal(t, time.Date(2026, 5, 1, 0, 0, 0, 0, loc), start)
 	require.Equal(t, time.Date(2026, 6, 1, 0, 0, 0, 0, loc), end)
 }
+
+func TestAgentLevelCurrentMonthWindowMatchesMonthlyEvaluatorSchedule(t *testing.T) {
+	loc := time.FixedZone("CST", 8*3600)
+	start, nextAssessment := agentLevelCurrentMonthWindow(time.Date(2026, 5, 17, 9, 45, 0, 0, loc))
+
+	require.Equal(t, "0 0 1 * *", AgentLevelMonthlyEvaluationCron)
+	require.Equal(t, time.Date(2026, 5, 1, 0, 0, 0, 0, loc), start)
+	require.Equal(t, time.Date(2026, 6, 1, 0, 0, 0, 0, loc), nextAssessment)
+}

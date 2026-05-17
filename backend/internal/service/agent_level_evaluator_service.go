@@ -40,7 +40,7 @@ func (s *AgentLevelEvaluatorService) Start() {
 		}
 	}
 	c := cron.New(cron.WithLocation(loc))
-	if _, err := c.AddFunc("0 0 1 * *", func() {
+	if _, err := c.AddFunc(AgentLevelMonthlyEvaluationCron, func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 		result, err := s.commission.RunAllAgentLevelEvaluations(ctx, time.Now().In(loc))

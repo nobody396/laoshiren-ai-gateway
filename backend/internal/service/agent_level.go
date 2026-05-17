@@ -26,6 +26,8 @@ const (
 	AgentLevelRateSourceMonthly    = "agent_monthly"
 	AgentLevelRateSourceCumulative = "agent_cumulative"
 	AgentLevelRateSourceManualBase = "agent_manual_base"
+
+	AgentLevelMonthlyEvaluationCron = "0 0 1 * *"
 )
 
 type AgentLevelRule struct {
@@ -460,6 +462,15 @@ func previousMonthWindow(now time.Time) (time.Time, time.Time, string) {
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, loc)
 	start := monthStart.AddDate(0, -1, 0)
 	return start, monthStart, start.Format("2006-01")
+}
+
+func agentLevelCurrentMonthWindow(now time.Time) (time.Time, time.Time) {
+	if now.IsZero() {
+		now = time.Now()
+	}
+	loc := now.Location()
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, loc)
+	return monthStart, monthStart.AddDate(0, 1, 0)
 }
 
 func clampAgentLevelRate(rate float64) float64 {

@@ -192,6 +192,233 @@ func validateOpsEmailNotificationConfig(cfg *OpsEmailNotificationConfig) error {
 }
 
 // =========================
+// Webhook notification config
+// =========================
+
+func (s *OpsService) GetWebhookNotificationConfig(ctx context.Context) (*OpsWebhookNotificationConfig, error) {
+	cfg, err := s.getWebhookNotificationConfigRaw(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return redactOpsWebhookNotificationConfig(cfg), nil
+}
+
+func (s *OpsService) UpdateWebhookNotificationConfig(ctx context.Context, req *OpsWebhookNotificationConfigUpdateRequest) (*OpsWebhookNotificationConfig, error) {
+	if s == nil || s.settingRepo == nil {
+		return nil, errors.New("setting repository not initialized")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if req == nil {
+		return nil, errors.New("invalid request")
+	}
+
+	cfg, err := s.getWebhookNotificationConfigRaw(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.Feishu != nil {
+		cfg.Feishu.Enabled = req.Feishu.Enabled
+		cfg.Feishu.Name = strings.TrimSpace(req.Feishu.Name)
+		if strings.TrimSpace(req.Feishu.WebhookURL) != "" {
+			cfg.Feishu.WebhookURL = strings.TrimSpace(req.Feishu.WebhookURL)
+		}
+		if strings.TrimSpace(req.Feishu.Secret) != "" {
+			cfg.Feishu.Secret = strings.TrimSpace(req.Feishu.Secret)
+		}
+		cfg.Feishu.MinSeverity = strings.TrimSpace(req.Feishu.MinSeverity)
+		cfg.Feishu.RateLimitPerHour = req.Feishu.RateLimitPerHour
+	}
+
+	if req.Telegram != nil {
+		cfg.Telegram.Enabled = req.Telegram.Enabled
+		cfg.Telegram.Name = strings.TrimSpace(req.Telegram.Name)
+		if strings.TrimSpace(req.Telegram.BotToken) != "" {
+			cfg.Telegram.BotToken = strings.TrimSpace(req.Telegram.BotToken)
+		}
+		cfg.Telegram.ChatID = strings.TrimSpace(req.Telegram.ChatID)
+		cfg.Telegram.MinSeverity = strings.TrimSpace(req.Telegram.MinSeverity)
+		cfg.Telegram.RateLimitPerHour = req.Telegram.RateLimitPerHour
+	}
+
+	normalizeOpsWebhookNotificationConfig(cfg)
+	if err := validateOpsWebhookNotificationConfig(cfg); err != nil {
+		return nil, err
+	}
+
+	raw, err := json.Marshal(cfg)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.settingRepo.Set(ctx, SettingKeyOpsWebhookNotificationConfig, string(raw)); err != nil {
+		return nil, err
+	}
+	return redactOpsWebhookNotificationConfig(cfg), nil
+}
+
+func (s *OpsService) TestWebhookNotification(ctx context.Context, channel string) (*OpsWebhookNotificationTestResponse, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	cfg, err := s.getWebhookNotificationConfigRaw(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	text := buildOpsWebhookTestMessage()
+	switch strings.ToLower(strings.TrimSpace(channel)) {
+	case "feishu":
+		if !cfg.Feishu.Enabled {
+			return nil, errors.New("feishu notification is disabled")
+		}
+		if err := sendOpsFeishuText(ctx, opsNotificationHTTPClient, cfg.Feishu, text); err != nil {
+			return nil, err
+		}
+		return &OpsWebhookNotificationTestResponse{Channel: "feishu", Sent: true}, nil
+	case "telegram":
+		if !cfg.Telegram.Enabled {
+			return nil, errors.New("telegram notification is disabled")
+		}
+		if err := sendOpsTelegramText(ctx, opsNotificationHTTPClient, cfg.Telegram, text); err != nil {
+			return nil, err
+		}
+		return &OpsWebhookNotificationTestResponse{Channel: "telegram", Sent: true}, nil
+	default:
+		return nil, errors.New("channel must be feishu or telegram")
+	}
+}
+
+func (s *OpsService) getWebhookNotificationConfigRaw(ctx context.Context) (*OpsWebhookNotificationConfig, error) {
+	defaultCfg := defaultOpsWebhookNotificationConfig()
+	if s == nil || s.settingRepo == nil {
+		return defaultCfg, nil
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	raw, err := s.settingRepo.GetValue(ctx, SettingKeyOpsWebhookNotificationConfig)
+	if err != nil {
+		if errors.Is(err, ErrSettingNotFound) {
+			if b, mErr := json.Marshal(defaultCfg); mErr == nil {
+				_ = s.settingRepo.Set(ctx, SettingKeyOpsWebhookNotificationConfig, string(b))
+			}
+			return defaultCfg, nil
+		}
+		return nil, err
+	}
+
+	cfg := &OpsWebhookNotificationConfig{}
+	if err := json.Unmarshal([]byte(raw), cfg); err != nil {
+		return defaultCfg, nil
+	}
+	normalizeOpsWebhookNotificationConfig(cfg)
+	return cfg, nil
+}
+
+func defaultOpsWebhookNotificationConfig() *OpsWebhookNotificationConfig {
+	return &OpsWebhookNotificationConfig{
+		Feishu: OpsFeishuNotificationConfig{
+			Enabled:          false,
+			Name:             "飞书告警群",
+			MinSeverity:      "warning",
+			RateLimitPerHour: 20,
+		},
+		Telegram: OpsTelegramNotificationConfig{
+			Enabled:          false,
+			Name:             "Telegram 告警群",
+			MinSeverity:      "critical",
+			RateLimitPerHour: 10,
+		},
+	}
+}
+
+func normalizeOpsWebhookNotificationConfig(cfg *OpsWebhookNotificationConfig) {
+	if cfg == nil {
+		return
+	}
+	cfg.Feishu.Name = strings.TrimSpace(cfg.Feishu.Name)
+	if cfg.Feishu.Name == "" {
+		cfg.Feishu.Name = "飞书告警群"
+	}
+	cfg.Feishu.WebhookURL = strings.TrimSpace(cfg.Feishu.WebhookURL)
+	cfg.Feishu.Secret = strings.TrimSpace(cfg.Feishu.Secret)
+	cfg.Feishu.MinSeverity = strings.TrimSpace(cfg.Feishu.MinSeverity)
+	if cfg.Feishu.RateLimitPerHour < 0 {
+		cfg.Feishu.RateLimitPerHour = 0
+	}
+
+	cfg.Telegram.Name = strings.TrimSpace(cfg.Telegram.Name)
+	if cfg.Telegram.Name == "" {
+		cfg.Telegram.Name = "Telegram 告警群"
+	}
+	cfg.Telegram.BotToken = strings.TrimSpace(cfg.Telegram.BotToken)
+	cfg.Telegram.ChatID = strings.TrimSpace(cfg.Telegram.ChatID)
+	cfg.Telegram.MinSeverity = strings.TrimSpace(cfg.Telegram.MinSeverity)
+	if cfg.Telegram.RateLimitPerHour < 0 {
+		cfg.Telegram.RateLimitPerHour = 0
+	}
+}
+
+func validateOpsWebhookNotificationConfig(cfg *OpsWebhookNotificationConfig) error {
+	if cfg == nil {
+		return errors.New("invalid config")
+	}
+	if cfg.Feishu.RateLimitPerHour < 0 {
+		return errors.New("feishu.rate_limit_per_hour must be >= 0")
+	}
+	if cfg.Telegram.RateLimitPerHour < 0 {
+		return errors.New("telegram.rate_limit_per_hour must be >= 0")
+	}
+	if err := validateOpsNotificationSeverity(cfg.Feishu.MinSeverity, "feishu.min_severity"); err != nil {
+		return err
+	}
+	if err := validateOpsNotificationSeverity(cfg.Telegram.MinSeverity, "telegram.min_severity"); err != nil {
+		return err
+	}
+	if cfg.Feishu.Enabled && cfg.Feishu.WebhookURL == "" {
+		return errors.New("feishu.webhook_url is required when enabled")
+	}
+	if cfg.Telegram.Enabled {
+		if cfg.Telegram.BotToken == "" {
+			return errors.New("telegram.bot_token is required when enabled")
+		}
+		if cfg.Telegram.ChatID == "" {
+			return errors.New("telegram.chat_id is required when enabled")
+		}
+		if strings.ContainsAny(cfg.Telegram.BotToken, "/ \t\r\n") {
+			return errors.New("telegram.bot_token is invalid")
+		}
+	}
+	return nil
+}
+
+func validateOpsNotificationSeverity(raw string, field string) error {
+	switch strings.TrimSpace(raw) {
+	case "", "critical", "warning", "info":
+		return nil
+	default:
+		return errors.New(field + " must be one of: critical, warning, info, or empty")
+	}
+}
+
+func redactOpsWebhookNotificationConfig(cfg *OpsWebhookNotificationConfig) *OpsWebhookNotificationConfig {
+	if cfg == nil {
+		return defaultOpsWebhookNotificationConfig()
+	}
+	clone := *cfg
+	clone.Feishu.WebhookURLConfigured = strings.TrimSpace(cfg.Feishu.WebhookURL) != ""
+	clone.Feishu.SecretConfigured = strings.TrimSpace(cfg.Feishu.Secret) != ""
+	clone.Feishu.WebhookURL = ""
+	clone.Feishu.Secret = ""
+	clone.Telegram.BotTokenConfigured = strings.TrimSpace(cfg.Telegram.BotToken) != ""
+	clone.Telegram.BotToken = ""
+	return &clone
+}
+
+// =========================
 // Alert runtime settings
 // =========================
 

@@ -804,6 +804,37 @@ export interface EmailNotificationConfig {
   }
 }
 
+export interface FeishuNotificationConfig {
+  enabled: boolean
+  name: string
+  webhook_url?: string
+  webhook_url_configured: boolean
+  secret?: string
+  secret_configured: boolean
+  min_severity: AlertSeverity | ''
+  rate_limit_per_hour: number
+}
+
+export interface TelegramNotificationConfig {
+  enabled: boolean
+  name: string
+  bot_token?: string
+  bot_token_configured: boolean
+  chat_id: string
+  min_severity: AlertSeverity | ''
+  rate_limit_per_hour: number
+}
+
+export interface WebhookNotificationConfig {
+  feishu: FeishuNotificationConfig
+  telegram: TelegramNotificationConfig
+}
+
+export interface WebhookNotificationTestResponse {
+  channel: 'feishu' | 'telegram' | string
+  sent: boolean
+}
+
 export interface OpsMetricThresholds {
   sla_percent_min?: number | null                 // SLA低于此值变红
   ttft_p99_ms_max?: number | null                 // TTFT P99高于此值变红
@@ -1298,6 +1329,21 @@ export async function updateEmailNotificationConfig(config: EmailNotificationCon
   return data
 }
 
+export async function getWebhookNotificationConfig(): Promise<WebhookNotificationConfig> {
+  const { data } = await apiClient.get<WebhookNotificationConfig>('/admin/ops/webhook-notification/config')
+  return data
+}
+
+export async function updateWebhookNotificationConfig(config: WebhookNotificationConfig): Promise<WebhookNotificationConfig> {
+  const { data } = await apiClient.put<WebhookNotificationConfig>('/admin/ops/webhook-notification/config', config)
+  return data
+}
+
+export async function testWebhookNotification(channel: 'feishu' | 'telegram'): Promise<WebhookNotificationTestResponse> {
+  const { data } = await apiClient.post<WebhookNotificationTestResponse>('/admin/ops/webhook-notification/test', { channel })
+  return data
+}
+
 // Runtime settings (DB-backed)
 export async function getAlertRuntimeSettings(): Promise<OpsAlertRuntimeSettings> {
   const { data } = await apiClient.get<OpsAlertRuntimeSettings>('/admin/ops/runtime/alert')
@@ -1405,6 +1451,9 @@ export const opsAPI = {
   createAlertSilence,
   getEmailNotificationConfig,
   updateEmailNotificationConfig,
+  getWebhookNotificationConfig,
+  updateWebhookNotificationConfig,
+  testWebhookNotification,
   getAlertRuntimeSettings,
   updateAlertRuntimeSettings,
   getRuntimeLogConfig,

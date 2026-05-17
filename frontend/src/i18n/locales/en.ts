@@ -4434,7 +4434,7 @@ export default {
           sustained: 'Sustained (samples)',
           cooldown: 'Cooldown (minutes)',
           enabled: 'Enabled',
-          notifyEmail: 'Send email notifications'
+          notifyEmail: 'Send alert notifications'
         },
         validation: {
           title: 'Please fix the following issues',
@@ -4547,6 +4547,34 @@ export default {
           cronFormat: 'Cron expression format looks invalid (expected at least 5 parts)',
           digestMinCountRange: 'Min errors for digest must be a number ≥ 0',
           accountHealthThresholdRange: 'Account health threshold must be between 0 and 100'
+        }
+      },
+      webhook: {
+        title: 'Group Notifications',
+        description: 'Send alerts to fixed group chats. Add new people to the group and they will receive alerts automatically.',
+        feishuTitle: 'Feishu Alert Group',
+        feishuHint: 'Add a custom bot to the Feishu group, then paste the bot webhook here.',
+        telegramTitle: 'Telegram Alert Group',
+        telegramHint: 'Add the bot to a group, then configure the bot token and group chat ID.',
+        groupName: 'Group name',
+        webhookUrl: 'Feishu Webhook',
+        signSecret: 'Feishu signing secret',
+        signSecretHint: 'Leave empty if signing is not enabled for the Feishu bot.',
+        botToken: 'Telegram Bot Token',
+        chatId: 'Telegram Chat ID',
+        chatIdHint: 'Group IDs are usually negative; supergroups often start with -100.',
+        minSeverity: 'Minimum Severity',
+        rateLimitPerHour: 'Rate limit per hour',
+        sendTest: 'Send test notification',
+        testing: 'Sending...',
+        testSuccess: 'Test notification sent',
+        testFailed: 'Failed to send test notification',
+        secretConfiguredPlaceholder: 'Configured; leave empty to keep unchanged',
+        validation: {
+          feishuWebhookRequired: 'Feishu webhook is required when Feishu notifications are enabled',
+          telegramTokenRequired: 'Telegram bot token is required when Telegram notifications are enabled',
+          telegramChatRequired: 'Telegram chat ID is required when Telegram notifications are enabled',
+          rateLimitRange: 'Group notification rate limit must be a number ≥ 0'
         }
       },
       settings: {

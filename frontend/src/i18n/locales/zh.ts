@@ -4594,7 +4594,7 @@ export default {
           sustained: '连续样本数（每分钟）',
           cooldown: '冷却期（分钟）',
           enabled: '启用',
-          notifyEmail: '发送邮件通知'
+          notifyEmail: '发送告警通知'
         },
         validation: {
           title: '请先修正以下问题',
@@ -4707,6 +4707,34 @@ export default {
           cronFormat: 'Cron 表达式格式可能不正确（至少应包含 5 段）',
           digestMinCountRange: '错误摘要最小数量必须为 ≥ 0 的数字',
           accountHealthThresholdRange: '账号健康错误率阈值必须在 0 到 100 之间'
+        }
+      },
+      webhook: {
+        title: '群通知配置',
+        description: '把告警发送到固定群聊。后续拉新人进群即可收到通知，不需要逐个配置。',
+        feishuTitle: '飞书告警群',
+        feishuHint: '在飞书群添加自定义机器人后，把机器人 Webhook 填在这里。',
+        telegramTitle: 'Telegram 告警群',
+        telegramHint: '把 Bot 拉进群后，填写 Bot Token 和群 Chat ID。',
+        groupName: '群名称',
+        webhookUrl: '飞书 Webhook',
+        signSecret: '飞书签名密钥',
+        signSecretHint: '飞书机器人未开启签名校验时可留空。',
+        botToken: 'Telegram Bot Token',
+        chatId: 'Telegram Chat ID',
+        chatIdHint: '群 ID 通常是负数，超级群常以 -100 开头。',
+        minSeverity: '最低级别',
+        rateLimitPerHour: '每小时限额',
+        sendTest: '发送测试通知',
+        testing: '发送中...',
+        testSuccess: '测试通知已发送',
+        testFailed: '测试通知发送失败',
+        secretConfiguredPlaceholder: '已配置，留空保持不变',
+        validation: {
+          feishuWebhookRequired: '开启飞书通知时必须填写飞书 Webhook',
+          telegramTokenRequired: '开启 Telegram 通知时必须填写 Bot Token',
+          telegramChatRequired: '开启 Telegram 通知时必须填写 Chat ID',
+          rateLimitRange: '群通知每小时限额必须为 ≥ 0 的数字'
         }
       },
       settings: {

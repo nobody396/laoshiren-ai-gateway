@@ -38,6 +38,46 @@ type OpsEmailNotificationConfigUpdateRequest struct {
 	Report *OpsEmailReportConfig `json:"report"`
 }
 
+type OpsWebhookNotificationConfig struct {
+	Feishu   OpsFeishuNotificationConfig   `json:"feishu"`
+	Telegram OpsTelegramNotificationConfig `json:"telegram"`
+}
+
+type OpsFeishuNotificationConfig struct {
+	Enabled              bool   `json:"enabled"`
+	Name                 string `json:"name"`
+	WebhookURL           string `json:"webhook_url,omitempty"`
+	WebhookURLConfigured bool   `json:"webhook_url_configured"`
+	Secret               string `json:"secret,omitempty"`
+	SecretConfigured     bool   `json:"secret_configured"`
+	MinSeverity          string `json:"min_severity"`
+	RateLimitPerHour     int    `json:"rate_limit_per_hour"`
+}
+
+type OpsTelegramNotificationConfig struct {
+	Enabled            bool   `json:"enabled"`
+	Name               string `json:"name"`
+	BotToken           string `json:"bot_token,omitempty"`
+	BotTokenConfigured bool   `json:"bot_token_configured"`
+	ChatID             string `json:"chat_id"`
+	MinSeverity        string `json:"min_severity"`
+	RateLimitPerHour   int    `json:"rate_limit_per_hour"`
+}
+
+type OpsWebhookNotificationConfigUpdateRequest struct {
+	Feishu   *OpsFeishuNotificationConfig   `json:"feishu"`
+	Telegram *OpsTelegramNotificationConfig `json:"telegram"`
+}
+
+type OpsWebhookNotificationTestRequest struct {
+	Channel string `json:"channel"`
+}
+
+type OpsWebhookNotificationTestResponse struct {
+	Channel string `json:"channel"`
+	Sent    bool   `json:"sent"`
+}
+
 type OpsDistributedLockSettings struct {
 	Enabled    bool   `json:"enabled"`
 	Key        string `json:"key"`

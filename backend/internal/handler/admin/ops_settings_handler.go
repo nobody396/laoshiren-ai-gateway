@@ -56,6 +56,78 @@ func (h *OpsHandler) UpdateEmailNotificationConfig(c *gin.Context) {
 	response.Success(c, updated)
 }
 
+// GetWebhookNotificationConfig returns Ops Feishu/Telegram notification config (DB-backed).
+// GET /api/v1/admin/ops/webhook-notification/config
+func (h *OpsHandler) GetWebhookNotificationConfig(c *gin.Context) {
+	if h.opsService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
+		return
+	}
+	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	cfg, err := h.opsService.GetWebhookNotificationConfig(c.Request.Context())
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to get webhook notification config")
+		return
+	}
+	response.Success(c, cfg)
+}
+
+// UpdateWebhookNotificationConfig updates Ops Feishu/Telegram notification config (DB-backed).
+// PUT /api/v1/admin/ops/webhook-notification/config
+func (h *OpsHandler) UpdateWebhookNotificationConfig(c *gin.Context) {
+	if h.opsService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
+		return
+	}
+	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	var req service.OpsWebhookNotificationConfigUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body")
+		return
+	}
+
+	updated, err := h.opsService.UpdateWebhookNotificationConfig(c.Request.Context(), &req)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.Success(c, updated)
+}
+
+// TestWebhookNotification sends a test notification to the configured group channel.
+// POST /api/v1/admin/ops/webhook-notification/test
+func (h *OpsHandler) TestWebhookNotification(c *gin.Context) {
+	if h.opsService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
+		return
+	}
+	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	var req service.OpsWebhookNotificationTestRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body")
+		return
+	}
+
+	result, err := h.opsService.TestWebhookNotification(c.Request.Context(), req.Channel)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.Success(c, result)
+}
+
 // GetAlertRuntimeSettings returns Ops alert evaluator runtime settings (DB-backed).
 // GET /api/v1/admin/ops/runtime/alert
 func (h *OpsHandler) GetAlertRuntimeSettings(c *gin.Context) {

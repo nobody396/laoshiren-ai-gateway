@@ -6,7 +6,7 @@ import { opsAPI } from '@/api/admin/ops'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Select from '@/components/common/Select.vue'
 import Toggle from '@/components/common/Toggle.vue'
-import type { OpsAlertRuntimeSettings, EmailNotificationConfig, AlertSeverity, OpsAdvancedSettings, OpsMetricThresholds } from '../types'
+import type { OpsAlertRuntimeSettings, EmailNotificationConfig, WebhookNotificationConfig, AlertSeverity, OpsAdvancedSettings, OpsMetricThresholds } from '../types'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -22,11 +22,14 @@ const emit = defineEmits<{
 
 const loading = ref(false)
 const saving = ref(false)
+const testingChannel = ref<'feishu' | 'telegram' | null>(null)
 
 // 运行时设置
 const runtimeSettings = ref<OpsAlertRuntimeSettings | null>(null)
 // 邮件通知配置
 const emailConfig = ref<EmailNotificationConfig | null>(null)
+// 群通知配置
+const webhookConfig = ref<WebhookNotificationConfig | null>(null)
 // 高级设置
 const advancedSettings = ref<OpsAdvancedSettings | null>(null)
 // 指标阈值配置
@@ -41,14 +44,16 @@ const metricThresholds = ref<OpsMetricThresholds>({
 async function loadAllSettings() {
   loading.value = true
   try {
-    const [runtime, email, advanced, thresholds] = await Promise.all([
+    const [runtime, email, webhook, advanced, thresholds] = await Promise.all([
       opsAPI.getAlertRuntimeSettings(),
       opsAPI.getEmailNotificationConfig(),
+      opsAPI.getWebhookNotificationConfig(),
       opsAPI.getAdvancedSettings(),
       opsAPI.getMetricThresholds()
     ])
     runtimeSettings.value = runtime
     emailConfig.value = email
+    webhookConfig.value = webhook
     advancedSettings.value = advanced
     // 如果后端返回了阈值，使用后端的值；否则保持默认值
     if (thresholds && Object.keys(thresholds).length > 0) {
@@ -132,6 +137,25 @@ const validation = computed(() => {
   }
 
   // 邮件配置: 启用但无收件人时不阻断保存, 保存时会自动禁用
+  if (webhookConfig.value) {
+    const feishu = webhookConfig.value.feishu
+    const telegram = webhookConfig.value.telegram
+    if (feishu.enabled && !feishu.webhook_url && !feishu.webhook_url_configured) {
+      errors.push(t('admin.ops.webhook.validation.feishuWebhookRequired'))
+    }
+    if (telegram.enabled && !telegram.bot_token && !telegram.bot_token_configured) {
+      errors.push(t('admin.ops.webhook.validation.telegramTokenRequired'))
+    }
+    if (telegram.enabled && !telegram.chat_id.trim()) {
+      errors.push(t('admin.ops.webhook.validation.telegramChatRequired'))
+    }
+    if (!Number.isFinite(feishu.rate_limit_per_hour) || feishu.rate_limit_per_hour < 0) {
+      errors.push(t('admin.ops.webhook.validation.rateLimitRange'))
+    }
+    if (!Number.isFinite(telegram.rate_limit_per_hour) || telegram.rate_limit_per_hour < 0) {
+      errors.push(t('admin.ops.webhook.validation.rateLimitRange'))
+    }
+  }
 
   // 验证高级设置
   if (advancedSettings.value) {
@@ -185,6 +209,7 @@ async function saveAllSettings() {
     await Promise.all([
       runtimeSettings.value ? opsAPI.updateAlertRuntimeSettings(runtimeSettings.value) : Promise.resolve(),
       emailConfig.value ? opsAPI.updateEmailNotificationConfig(emailConfig.value) : Promise.resolve(),
+      webhookConfig.value ? opsAPI.updateWebhookNotificationConfig(webhookConfig.value) : Promise.resolve(),
       advancedSettings.value ? opsAPI.updateAdvancedSettings(advancedSettings.value) : Promise.resolve(),
       opsAPI.updateMetricThresholds(metricThresholds.value)
     ])
@@ -198,6 +223,26 @@ async function saveAllSettings() {
     saving.value = false
   }
 }
+
+function configuredSecretPlaceholder(configured: boolean) {
+  return configured ? t('admin.ops.webhook.secretConfiguredPlaceholder') : ''
+}
+
+async function sendWebhookTest(channel: 'feishu' | 'telegram') {
+  testingChannel.value = channel
+  try {
+    if (webhookConfig.value) {
+      webhookConfig.value = await opsAPI.updateWebhookNotificationConfig(webhookConfig.value)
+    }
+    await opsAPI.testWebhookNotification(channel)
+    appStore.showSuccess(t('admin.ops.webhook.testSuccess'))
+  } catch (err: any) {
+    console.error('[OpsSettingsDialog] Failed to send webhook test', err)
+    appStore.showError(err?.response?.data?.message || err?.response?.data?.detail || t('admin.ops.webhook.testFailed'))
+  } finally {
+    testingChannel.value = null
+  }
+}
 </script>
 
 <template>
@@ -206,7 +251,7 @@ async function saveAllSettings() {
       {{ t('common.loading') }}
     </div>
 
-    <div v-else-if="runtimeSettings && emailConfig && advancedSettings" class="space-y-6">
+    <div v-else-if="runtimeSettings && emailConfig && webhookConfig && advancedSettings" class="space-y-6">
       <!-- 验证错误 -->
       <div v-if="!validation.valid" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
         <div class="font-bold">{{ t('admin.ops.settings.validation.title') }}</div>
@@ -275,6 +320,120 @@ async function saveAllSettings() {
           <div v-if="emailConfig.alert.enabled">
             <label class="input-label">{{ t('admin.ops.settings.minSeverity') }}</label>
             <Select v-model="emailConfig.alert.min_severity" :options="severityOptions" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 群通知配置 -->
+      <div class="rounded-2xl bg-gray-50 p-4 dark:bg-dark-700/50">
+        <h4 class="mb-2 text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.ops.webhook.title') }}</h4>
+        <p class="mb-4 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.webhook.description') }}</p>
+
+        <div class="space-y-5">
+          <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-dark-600 dark:bg-dark-800/70">
+            <div class="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <h5 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.ops.webhook.feishuTitle') }}</h5>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.webhook.feishuHint') }}</p>
+              </div>
+              <Toggle v-model="webhookConfig.feishu.enabled" />
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.groupName') }}</label>
+                <input v-model="webhookConfig.feishu.name" type="text" class="input" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.webhookUrl') }}</label>
+                <input
+                  v-model="webhookConfig.feishu.webhook_url"
+                  type="password"
+                  autocomplete="off"
+                  class="input"
+                  :placeholder="configuredSecretPlaceholder(webhookConfig.feishu.webhook_url_configured)"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.signSecret') }}</label>
+                <input
+                  v-model="webhookConfig.feishu.secret"
+                  type="password"
+                  autocomplete="off"
+                  class="input"
+                  :placeholder="configuredSecretPlaceholder(webhookConfig.feishu.secret_configured)"
+                />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.webhook.signSecretHint') }}</p>
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.minSeverity') }}</label>
+                <Select v-model="webhookConfig.feishu.min_severity" :options="severityOptions" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.rateLimitPerHour') }}</label>
+                <input v-model.number="webhookConfig.feishu.rate_limit_per_hour" type="number" min="0" class="input" />
+              </div>
+              <div class="flex items-end">
+                <button
+                  class="btn btn-secondary w-full"
+                  type="button"
+                  :disabled="testingChannel !== null || !webhookConfig.feishu.enabled"
+                  @click="sendWebhookTest('feishu')"
+                >
+                  {{ testingChannel === 'feishu' ? t('admin.ops.webhook.testing') : t('admin.ops.webhook.sendTest') }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-dark-600 dark:bg-dark-800/70">
+            <div class="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <h5 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.ops.webhook.telegramTitle') }}</h5>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.webhook.telegramHint') }}</p>
+              </div>
+              <Toggle v-model="webhookConfig.telegram.enabled" />
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.groupName') }}</label>
+                <input v-model="webhookConfig.telegram.name" type="text" class="input" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.botToken') }}</label>
+                <input
+                  v-model="webhookConfig.telegram.bot_token"
+                  type="password"
+                  autocomplete="off"
+                  class="input"
+                  :placeholder="configuredSecretPlaceholder(webhookConfig.telegram.bot_token_configured)"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.chatId') }}</label>
+                <input v-model="webhookConfig.telegram.chat_id" type="text" class="input" />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.webhook.chatIdHint') }}</p>
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.minSeverity') }}</label>
+                <Select v-model="webhookConfig.telegram.min_severity" :options="severityOptions" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.rateLimitPerHour') }}</label>
+                <input v-model.number="webhookConfig.telegram.rate_limit_per_hour" type="number" min="0" class="input" />
+              </div>
+              <div class="flex items-end">
+                <button
+                  class="btn btn-secondary w-full"
+                  type="button"
+                  :disabled="testingChannel !== null || !webhookConfig.telegram.enabled"
+                  @click="sendWebhookTest('telegram')"
+                >
+                  {{ testingChannel === 'telegram' ? t('admin.ops.webhook.testing') : t('admin.ops.webhook.sendTest') }}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

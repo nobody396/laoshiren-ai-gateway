@@ -48,7 +48,9 @@ type OpsAlertEvaluatorService struct {
 	mu         sync.Mutex
 	ruleStates map[int64]*opsAlertRuleState
 
-	emailLimiter *slidingWindowLimiter
+	emailLimiter    *slidingWindowLimiter
+	feishuLimiter   *slidingWindowLimiter
+	telegramLimiter *slidingWindowLimiter
 
 	skipLogMu sync.Mutex
 	skipLogAt time.Time
@@ -69,14 +71,16 @@ func NewOpsAlertEvaluatorService(
 	cfg *config.Config,
 ) *OpsAlertEvaluatorService {
 	return &OpsAlertEvaluatorService{
-		opsService:   opsService,
-		opsRepo:      opsRepo,
-		emailService: emailService,
-		redisClient:  redisClient,
-		cfg:          cfg,
-		instanceID:   uuid.NewString(),
-		ruleStates:   map[int64]*opsAlertRuleState{},
-		emailLimiter: newSlidingWindowLimiter(0, time.Hour),
+		opsService:      opsService,
+		opsRepo:         opsRepo,
+		emailService:    emailService,
+		redisClient:     redisClient,
+		cfg:             cfg,
+		instanceID:      uuid.NewString(),
+		ruleStates:      map[int64]*opsAlertRuleState{},
+		emailLimiter:    newSlidingWindowLimiter(0, time.Hour),
+		feishuLimiter:   newSlidingWindowLimiter(0, time.Hour),
+		telegramLimiter: newSlidingWindowLimiter(0, time.Hour),
 	}
 }
 
@@ -196,6 +200,7 @@ func (s *OpsAlertEvaluatorService) evaluateOnce(interval time.Duration) {
 	eventsCreated := 0
 	eventsResolved := 0
 	emailsSent := 0
+	webhooksSent := 0
 
 	now := time.Now().UTC()
 	safeEnd := now.Truncate(time.Minute)
@@ -300,6 +305,9 @@ func (s *OpsAlertEvaluatorService) evaluateOnce(interval time.Duration) {
 				if s.maybeSendAlertEmail(ctx, runtimeCfg, rule, created) {
 					emailsSent++
 				}
+				if s.maybeSendAlertWebhooks(ctx, runtimeCfg, rule, created) {
+					webhooksSent++
+				}
 			}
 			continue
 		}
@@ -315,7 +323,7 @@ func (s *OpsAlertEvaluatorService) evaluateOnce(interval time.Duration) {
 		}
 	}
 
-	result := truncateString(fmt.Sprintf("rules=%d enabled=%d evaluated=%d created=%d resolved=%d emails_sent=%d", rulesTotal, rulesEnabled, rulesEvaluated, eventsCreated, eventsResolved, emailsSent), 2048)
+	result := truncateString(fmt.Sprintf("rules=%d enabled=%d evaluated=%d created=%d resolved=%d emails_sent=%d webhooks_sent=%d", rulesTotal, rulesEnabled, rulesEvaluated, eventsCreated, eventsResolved, emailsSent, webhooksSent), 2048)
 	s.recordHeartbeatSuccess(runAt, time.Since(startedAt), result)
 }
 
@@ -740,6 +748,63 @@ func (s *OpsAlertEvaluatorService) maybeSendAlertEmail(ctx context.Context, runt
 	if anySent {
 		_ = s.opsRepo.UpdateAlertEventEmailSent(context.Background(), event.ID, true)
 	}
+	return anySent
+}
+
+func (s *OpsAlertEvaluatorService) maybeSendAlertWebhooks(ctx context.Context, runtimeCfg *OpsAlertRuntimeSettings, rule *OpsAlertRule, event *OpsAlertEvent) bool {
+	if s == nil || s.opsService == nil || event == nil || rule == nil {
+		return false
+	}
+	if !rule.NotifyEmail {
+		return false
+	}
+	if runtimeCfg != nil && runtimeCfg.Silencing.Enabled {
+		if isOpsAlertSilenced(time.Now().UTC(), rule, event, runtimeCfg.Silencing) {
+			return false
+		}
+	}
+
+	cfg, err := s.opsService.getWebhookNotificationConfigRaw(ctx)
+	if err != nil || cfg == nil {
+		return false
+	}
+	text := buildOpsAlertWebhookText(rule, event)
+	if strings.TrimSpace(text) == "" {
+		return false
+	}
+
+	anySent := false
+	now := time.Now().UTC()
+	severity := strings.TrimSpace(rule.Severity)
+
+	if cfg.Feishu.Enabled && shouldSendOpsAlertEmailByMinSeverity(cfg.Feishu.MinSeverity, severity) {
+		if s.feishuLimiter == nil {
+			s.feishuLimiter = newSlidingWindowLimiter(0, time.Hour)
+		}
+		s.feishuLimiter.SetLimit(cfg.Feishu.RateLimitPerHour)
+		if s.feishuLimiter.Allow(now) {
+			if err := sendOpsFeishuText(ctx, opsNotificationHTTPClient, cfg.Feishu, text); err != nil {
+				logger.LegacyPrintf("service.ops_alert_evaluator", "[OpsAlertEvaluator] send feishu notification failed (event=%d): %v", event.ID, err)
+			} else {
+				anySent = true
+			}
+		}
+	}
+
+	if cfg.Telegram.Enabled && shouldSendOpsAlertEmailByMinSeverity(cfg.Telegram.MinSeverity, severity) {
+		if s.telegramLimiter == nil {
+			s.telegramLimiter = newSlidingWindowLimiter(0, time.Hour)
+		}
+		s.telegramLimiter.SetLimit(cfg.Telegram.RateLimitPerHour)
+		if s.telegramLimiter.Allow(now) {
+			if err := sendOpsTelegramText(ctx, opsNotificationHTTPClient, cfg.Telegram, text); err != nil {
+				logger.LegacyPrintf("service.ops_alert_evaluator", "[OpsAlertEvaluator] send telegram notification failed (event=%d): %v", event.ID, err)
+			} else {
+				anySent = true
+			}
+		}
+	}
+
 	return anySent
 }
 

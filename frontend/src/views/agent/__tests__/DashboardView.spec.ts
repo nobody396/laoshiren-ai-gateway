@@ -44,6 +44,10 @@ vi.mock('@/stores/auth', () => ({
   })
 }))
 
+vi.mock('@/utils/imagePreview', () => ({
+  imageBlobToDataURL: vi.fn(async () => 'data:image/png;base64,cG5n')
+}))
+
 vi.mock('@/composables/useClipboard', () => ({
   useClipboard: () => ({
     copied: false,
@@ -100,9 +104,6 @@ const createProfile = (overrides = {}) => ({
 })
 
 describe('agent DashboardView payment profile', () => {
-  const originalCreateObjectURL = URL.createObjectURL
-  const originalRevokeObjectURL = URL.revokeObjectURL
-
   beforeEach(() => {
     getAgentDashboard.mockReset()
     getAgentInviteCode.mockReset()
@@ -126,14 +127,6 @@ describe('agent DashboardView payment profile', () => {
       complete: true,
       updated_at: '2026-05-17T14:21:00+08:00'
     }))
-
-    URL.createObjectURL = vi.fn(() => 'blob:agent-payment-qr')
-    URL.revokeObjectURL = vi.fn()
-  })
-
-  afterEach(() => {
-    URL.createObjectURL = originalCreateObjectURL
-    URL.revokeObjectURL = originalRevokeObjectURL
   })
 
   it('saves typed payment fields before uploading a QR code and then shows a preview', async () => {

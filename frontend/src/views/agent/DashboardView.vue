@@ -336,6 +336,7 @@ import {
   type AgentPaymentProfile
 } from '@/api/agent'
 import { buildAuthErrorMessage } from '@/utils/authError'
+import { imageBlobToDataURL } from '@/utils/imagePreview'
 import { useClipboard } from '@/composables/useClipboard'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
@@ -495,7 +496,7 @@ async function handleQRCodeChange(event: Event) {
 
     const profile = await uploadAgentPaymentQRCode(file)
     applyPaymentProfile(profile)
-    setQRCodePreview(URL.createObjectURL(file))
+    setQRCodePreview(await imageBlobToDataURL(file))
     await refreshQRCodePreview({ clearOnError: false })
     appStore.showSuccess(t('agent.alipayQRCodeSaved'))
     await fetchDashboard()
@@ -518,7 +519,7 @@ function applyPaymentProfile(profile: AgentPaymentProfile) {
 async function refreshQRCodePreview(options: { clearOnError?: boolean } = {}) {
   try {
     const blob = await getAgentPaymentQRCode()
-    setQRCodePreview(URL.createObjectURL(blob))
+    setQRCodePreview(await imageBlobToDataURL(blob))
   } catch {
     if (options.clearOnError !== false) {
       setQRCodePreview('')
@@ -527,7 +528,7 @@ async function refreshQRCodePreview(options: { clearOnError?: boolean } = {}) {
 }
 
 function setQRCodePreview(url: string) {
-  if (qrPreviewUrl.value) {
+  if (qrPreviewUrl.value.startsWith('blob:')) {
     URL.revokeObjectURL(qrPreviewUrl.value)
   }
   qrPreviewUrl.value = url

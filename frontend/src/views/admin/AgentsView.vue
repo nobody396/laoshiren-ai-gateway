@@ -211,7 +211,7 @@
                 </td>
                 <td class="px-4 py-3 text-right">
                   <div class="flex justify-end gap-2">
-                    <button class="btn btn-secondary btn-sm" @click.stop="selectAgent(agent)">
+                    <button class="btn btn-secondary btn-sm" @click.stop="openAgentDetails(agent)">
                       {{ t('admin.agents.viewDetails') }}
                     </button>
                     <button class="btn btn-secondary btn-sm" :disabled="!agent.settlement_eligible" @click.stop="openSettlement(agent)">
@@ -250,6 +250,9 @@
             </div>
           </div>
           <div class="flex flex-wrap items-center gap-3">
+            <button class="btn btn-secondary btn-sm" @click="openPaymentProfile(selectedAgent)">
+              {{ t('admin.agents.paymentProfile') }}
+            </button>
             <button class="btn btn-secondary btn-sm" :disabled="levelEvaluationRunning" @click="runSelectedLevelEvaluation">
               {{ t('admin.agents.runThisAgentLevelEvaluation') }}
             </button>
@@ -379,6 +382,51 @@
         </div>
       </div>
 
+      <div v-if="paymentProfileDialog.show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-5 shadow-xl dark:bg-dark-900">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('admin.agents.paymentProfile') }}</h3>
+          <p class="mt-1 text-sm text-gray-500">{{ paymentProfileDialog.agent ? displayAgent(paymentProfileDialog.agent) : '' }}</p>
+          <div v-if="paymentProfileDialog.loading" class="mt-6 py-10 text-center text-sm text-gray-500">
+            {{ t('common.loading') }}
+          </div>
+          <div v-else class="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_260px]">
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <p class="text-xs text-gray-500">{{ t('admin.agents.alipayRealName') }}</p>
+                  <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ paymentProfileDialog.paymentProfile?.alipay_real_name || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">{{ t('admin.agents.alipayAccount') }}</p>
+                  <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ paymentProfileDialog.paymentProfile?.alipay_account || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">{{ t('admin.agents.contactPhone') }}</p>
+                  <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ paymentProfileDialog.paymentProfile?.contact_phone || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">{{ t('admin.agents.paymentProfileStatus') }}</p>
+                  <p class="mt-1 text-sm font-medium" :class="paymentProfileDialog.paymentProfile?.complete ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'">
+                    {{ paymentProfileDialog.paymentProfile?.complete ? t('admin.agents.paymentProfileComplete') : t('admin.agents.paymentProfileIncomplete') }}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500">{{ t('admin.agents.note') }}</p>
+                <p class="mt-1 whitespace-pre-wrap text-sm text-gray-700 dark:text-dark-200">{{ paymentProfileDialog.paymentProfile?.payment_note || '-' }}</p>
+              </div>
+            </div>
+            <div class="flex min-h-72 items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 p-3 dark:border-dark-700 dark:bg-dark-900">
+              <img v-if="paymentProfileDialog.qrPreviewUrl" :src="paymentProfileDialog.qrPreviewUrl" class="max-h-64 max-w-full rounded-md object-contain" :alt="t('admin.agents.alipayQRCode')" />
+              <div v-else class="text-center text-sm text-gray-500">{{ t('admin.agents.noAlipayQRCode') }}</div>
+            </div>
+          </div>
+          <div class="mt-5 flex justify-end gap-2">
+            <button class="btn btn-secondary" @click="closePaymentProfile">{{ t('common.close') }}</button>
+          </div>
+        </div>
+      </div>
+
       <div v-if="settlementDialog.show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
         <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-5 shadow-xl dark:bg-dark-900">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('admin.agents.settle') }}</h3>
@@ -448,6 +496,7 @@ import type {
 } from '@/api/admin/agents'
 import { useAppStore } from '@/stores/app'
 import { buildAuthErrorMessage } from '@/utils/authError'
+import { imageBlobToDataURL } from '@/utils/imagePreview'
 import { useClipboard } from '@/composables/useClipboard'
 
 const { t } = useI18n()
@@ -493,6 +542,19 @@ const settlementDialog = reactive<{
   amount: 0,
   note: '',
   paymentReference: '',
+  paymentProfile: null,
+  qrPreviewUrl: ''
+})
+const paymentProfileDialog = reactive<{
+  show: boolean
+  loading: boolean
+  agent: AdminAgentSummary | null
+  paymentProfile: AgentPaymentProfile | null
+  qrPreviewUrl: string
+}>({
+  show: false,
+  loading: false,
+  agent: null,
   paymentProfile: null,
   qrPreviewUrl: ''
 })
@@ -694,6 +756,11 @@ async function selectAgent(agent: AdminAgentSummary) {
   await loadDetail()
 }
 
+async function openAgentDetails(agent: AdminAgentSummary) {
+  await selectAgent(agent)
+  await openPaymentProfile(agent)
+}
+
 async function reconcileSelectedAgent() {
   if (agents.value.length === 0) {
     clearSelectedAgent()
@@ -770,7 +837,7 @@ async function openSettlement(agent: AdminAgentSummary) {
     settlementDialog.paymentProfile = profile
     if (profile.has_alipay_qr) {
       const blob = await adminAPI.agents.getPaymentQRCode(agent.agent_id)
-      setSettlementQRPreview(URL.createObjectURL(blob))
+      setSettlementQRPreview(await imageBlobToDataURL(blob))
     }
   } catch (error: any) {
     appStore.showError(buildAuthErrorMessage(error, { fallback: t('admin.agents.failedToLoad') }))
@@ -782,6 +849,38 @@ function closeSettlement() {
   settlementDialog.agent = null
   settlementDialog.paymentProfile = null
   setSettlementQRPreview('')
+}
+
+async function openPaymentProfile(agent: AdminAgentSummary | null) {
+  if (!agent) return
+  if (selectedAgent.value?.agent_id !== agent.agent_id) {
+    await selectAgent(agent)
+  }
+  setPaymentProfileQRPreview('')
+  paymentProfileDialog.show = true
+  paymentProfileDialog.loading = true
+  paymentProfileDialog.agent = agent
+  paymentProfileDialog.paymentProfile = null
+  try {
+    const profile = await adminAPI.agents.getPaymentProfile(agent.agent_id)
+    paymentProfileDialog.paymentProfile = profile
+    if (profile.has_alipay_qr) {
+      const blob = await adminAPI.agents.getPaymentQRCode(agent.agent_id)
+      setPaymentProfileQRPreview(await imageBlobToDataURL(blob))
+    }
+  } catch (error: any) {
+    appStore.showError(buildAuthErrorMessage(error, { fallback: t('admin.agents.failedToLoad') }))
+  } finally {
+    paymentProfileDialog.loading = false
+  }
+}
+
+function closePaymentProfile() {
+  paymentProfileDialog.show = false
+  paymentProfileDialog.agent = null
+  paymentProfileDialog.paymentProfile = null
+  paymentProfileDialog.loading = false
+  setPaymentProfileQRPreview('')
 }
 
 function openBindUser() {
@@ -856,10 +955,17 @@ function settlementStatusClass(agent: AdminAgentSummary): string {
 }
 
 function setSettlementQRPreview(url: string) {
-  if (settlementDialog.qrPreviewUrl) {
+  if (settlementDialog.qrPreviewUrl.startsWith('blob:')) {
     URL.revokeObjectURL(settlementDialog.qrPreviewUrl)
   }
   settlementDialog.qrPreviewUrl = url
+}
+
+function setPaymentProfileQRPreview(url: string) {
+  if (paymentProfileDialog.qrPreviewUrl.startsWith('blob:')) {
+    URL.revokeObjectURL(paymentProfileDialog.qrPreviewUrl)
+  }
+  paymentProfileDialog.qrPreviewUrl = url
 }
 
 function money(value: number): string {
@@ -931,5 +1037,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   setSettlementQRPreview('')
+  setPaymentProfileQRPreview('')
 })
 </script>

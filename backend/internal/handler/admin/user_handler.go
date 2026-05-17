@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/handler/dto"
+	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/response"
+	apptimezone "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/timezone"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -22,13 +24,15 @@ type UserWithConcurrency struct {
 type UserHandler struct {
 	adminService       service.AdminService
 	concurrencyService *service.ConcurrencyService
+	commissionService  *service.CommissionService
 }
 
 // NewUserHandler creates a new admin user handler
-func NewUserHandler(adminService service.AdminService, concurrencyService *service.ConcurrencyService) *UserHandler {
+func NewUserHandler(adminService service.AdminService, concurrencyService *service.ConcurrencyService, commissionService *service.CommissionService) *UserHandler {
 	return &UserHandler{
 		adminService:       adminService,
 		concurrencyService: concurrencyService,
+		commissionService:  commissionService,
 	}
 }
 
@@ -51,6 +55,7 @@ type UpdateUserRequest struct {
 	Username      *string  `json:"username"`
 	Notes         *string  `json:"notes"`
 	Role          string   `json:"role" binding:"omitempty,oneof=admin user agent"`
+	AgentLevelKey string   `json:"agent_level_key" binding:"omitempty,oneof=light standard"`
 	Balance       *float64 `json:"balance"`
 	Concurrency   *int     `json:"concurrency"`
 	Status        string   `json:"status" binding:"omitempty,oneof=active disabled"`
@@ -210,6 +215,18 @@ func (h *UserHandler) Update(c *gin.Context) {
 		return
 	}
 
+	oldRole := ""
+	if req.Role == service.RoleAgent && h.commissionService != nil {
+		existing, err := h.adminService.GetUser(c.Request.Context(), userID)
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+		if existing != nil {
+			oldRole = existing.Role
+		}
+	}
+
 	// 使用指针类型直接传递，nil 表示未提供该字段
 	user, err := h.adminService.UpdateUser(c.Request.Context(), userID, &service.UpdateUserInput{
 		Email:         req.Email,
@@ -228,7 +245,66 @@ func (h *UserHandler) Update(c *gin.Context) {
 		return
 	}
 
+	if req.Role == service.RoleAgent && h.commissionService != nil && (oldRole != service.RoleAgent || strings.TrimSpace(req.AgentLevelKey) != "") {
+		levelKey := strings.TrimSpace(req.AgentLevelKey)
+		if levelKey == "" {
+			levelKey = service.AgentLevelLight
+		}
+		if err := h.initializePromotedAgentLevel(c.Request.Context(), userID, levelKey); err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+	}
+
 	response.Success(c, dto.UserFromServiceAdmin(user))
+}
+
+func (h *UserHandler) initializePromotedAgentLevel(ctx context.Context, agentID int64, levelKey string) error {
+	if h == nil || h.commissionService == nil {
+		return nil
+	}
+
+	switch levelKey {
+	case service.AgentLevelLight:
+		lightRate := h.agentLevelRate(ctx, service.AgentLevelLight, 0.05)
+		if _, err := h.commissionService.UpdateAgentRateConfig(ctx, &service.AgentRateConfig{
+			AgentID:         agentID,
+			ConsumptionRate: lightRate,
+			Enabled:         false,
+		}); err != nil {
+			return err
+		}
+	case service.AgentLevelStandard:
+		standardRate := h.agentLevelRate(ctx, service.AgentLevelStandard, 0.10)
+		if _, err := h.commissionService.UpdateAgentRateConfig(ctx, &service.AgentRateConfig{
+			AgentID:         agentID,
+			ConsumptionRate: standardRate,
+			Enabled:         true,
+		}); err != nil {
+			return err
+		}
+	default:
+		return infraerrors.BadRequest("INVALID_AGENT_LEVEL", "agent_level_key must be light or standard")
+	}
+
+	_, err := h.commissionService.RunAgentLevelEvaluation(ctx, agentID, apptimezone.Now())
+	return err
+}
+
+func (h *UserHandler) agentLevelRate(ctx context.Context, levelKey string, fallback float64) float64 {
+	if h == nil || h.commissionService == nil {
+		return fallback
+	}
+	rules, err := h.commissionService.GetAgentLevelRules(ctx)
+	if err != nil {
+		return fallback
+	}
+	for _, rule := range rules {
+		if rule.LevelKey == levelKey && rule.Enabled {
+			return rule.Rate
+		}
+	}
+	return fallback
 }
 
 // Delete handles deleting a user

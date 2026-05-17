@@ -1813,8 +1813,12 @@ export default {
       failedToDelete: 'Failed to delete user',
       failedToToggle: 'Failed to update user status',
       setAsAgent: 'Set as Agent',
+      setAsLightAgent: 'Set as Light Agent (5%)',
+      setAsStandardAgent: 'Set as Standard Agent (10%)',
       removeAgent: 'Remove Agent Role',
       setAsAgentSuccess: 'User has been set as agent',
+      setAsLightAgentSuccess: 'User has been set as light agent',
+      setAsStandardAgentSuccess: 'User has been set as standard agent',
       removeAgentSuccess: 'Agent role removed',
       promoteToAdmin: 'Set as Admin',
       promoteConfirm:

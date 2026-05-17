@@ -1477,6 +1477,7 @@ export interface UpdateUserRequest {
   username?: string
   notes?: string
   role?: 'admin' | 'user' | 'agent'
+  agent_level_key?: 'light' | 'standard'
   balance?: number
   concurrency?: number
   status?: 'active' | 'disabled'

@@ -622,8 +622,6 @@ export default {
     agentLevel: 'Agent Level',
     permanentLevel: 'Permanent Level',
     temporaryLevel: 'Temporary Level',
-    monthlyQualifiedLevel: 'Monthly Qualified Level',
-    notTriggered: 'Not triggered',
     assessmentPeriod: 'Current Assessment Period',
     nextAssessment: 'Next Auto Assessment',
     upgradeTime: 'Expected Upgrade',

@@ -622,8 +622,6 @@ export default {
     agentLevel: '代理商等级',
     permanentLevel: '永久等级',
     temporaryLevel: '临时等级',
-    monthlyQualifiedLevel: '月度达标等级',
-    notTriggered: '未触发',
     assessmentPeriod: '当前考核周期',
     nextAssessment: '下次自动评档',
     upgradeTime: '预计升级',

@@ -122,7 +122,6 @@
                 {{ currentLevelLabel }}
               </span>
               <span class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.permanentLevel') }}: {{ permanentLevelLabel }}</span>
-              <span class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.monthlyQualifiedLevel') }}: {{ monthlyQualifiedLevelLabel }}</span>
             </div>
           </div>
           <div class="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:max-w-3xl xl:grid-cols-4">
@@ -287,11 +286,6 @@ const inviteeBonusRate = computed(() =>
 
 const currentLevelLabel = computed(() => dashboard.value?.current_level_name || formatLevelKey(dashboard.value?.current_level))
 const permanentLevelLabel = computed(() => dashboard.value?.permanent_level_name || formatLevelKey(dashboard.value?.permanent_level))
-const monthlyQualifiedLevelLabel = computed(() => {
-  if (dashboard.value?.temporary_level_name) return dashboard.value.temporary_level_name
-  if (dashboard.value?.temporary_level) return formatLevelKey(dashboard.value.temporary_level)
-  return t('agent.notTriggered')
-})
 const monthlyProgress = computed(() => dashboard.value?.next_monthly_progress ?? null)
 const cumulativeProgress = computed(() => dashboard.value?.next_cumulative_progress ?? null)
 const nextAssessmentLabel = computed(() => formatDateTime(dashboard.value?.next_assessment_at))

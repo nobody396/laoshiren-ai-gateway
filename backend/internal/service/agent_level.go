@@ -367,6 +367,25 @@ func rateMatchesRule(rule AgentLevelRule, rate float64) bool {
 	return math.Abs(rule.Rate-rate) <= agentLevelEpsilon
 }
 
+func findAgentLevelRule(rules []AgentLevelRule, levelKey string) (AgentLevelRule, bool) {
+	for _, rule := range rules {
+		if rule.LevelKey == levelKey {
+			return rule, true
+		}
+	}
+	return AgentLevelRule{}, false
+}
+
+func agentLevelName(rules []AgentLevelRule, levelKey string) string {
+	if rule, ok := findAgentLevelRule(rules, levelKey); ok {
+		return rule.LevelName
+	}
+	if levelKey == AgentLevelManual {
+		return "手动基准"
+	}
+	return ""
+}
+
 func nextCumulativeLevelGap(rules []AgentLevelRule, totalConsumption float64) (*string, float64) {
 	for _, rule := range rules {
 		if rule.CumulativeConsumptionThreshold == nil {
@@ -378,6 +397,59 @@ func nextCumulativeLevelGap(rules []AgentLevelRule, totalConsumption float64) (*
 		}
 	}
 	return nil, 0
+}
+
+func nextAgentLevelProgress(rules []AgentLevelRule, currentConsumption, minRate float64, monthly bool) *AgentLevelProgress {
+	var reached *AgentLevelProgress
+	var next *AgentLevelProgress
+	for _, rule := range enabledAgentLevelRules(normalizeAgentLevelRules(rules)) {
+		if rule.Rate <= minRate+agentLevelEpsilon {
+			continue
+		}
+		var threshold *float64
+		if monthly {
+			threshold = rule.MonthlyConsumptionThreshold
+		} else {
+			threshold = rule.CumulativeConsumptionThreshold
+		}
+		if threshold == nil {
+			continue
+		}
+		gap := *threshold - currentConsumption
+		if gap < 0 {
+			gap = 0
+		}
+		progress := 0.0
+		if *threshold > 0 {
+			progress = currentConsumption / *threshold
+		}
+		if progress < 0 {
+			progress = 0
+		}
+		if progress > 1 {
+			progress = 1
+		}
+		item := &AgentLevelProgress{
+			LevelKey:           rule.LevelKey,
+			LevelName:          rule.LevelName,
+			Rate:               rule.Rate,
+			Threshold:          *threshold,
+			CurrentConsumption: currentConsumption,
+			Gap:                gap,
+			Progress:           progress,
+		}
+		if gap <= agentLevelEpsilon {
+			reached = item
+			continue
+		}
+		if next == nil {
+			next = item
+		}
+	}
+	if reached != nil {
+		return reached
+	}
+	return next
 }
 
 func previousMonthWindow(now time.Time) (time.Time, time.Time, string) {

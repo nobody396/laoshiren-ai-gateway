@@ -36,21 +36,41 @@ type InvitedUserStat struct {
 
 // AgentDashboard 代理商总览统计
 type AgentDashboard struct {
-	InvitedUserCount         int64   `json:"invited_user_count"`          // 邀请的用户总数
-	TotalCommission          float64 `json:"total_commission"`            // 累计分佣总额（所有类型）
-	SettledCommission        float64 `json:"settled_commission"`          // 已结算金额
-	UnsettledCommission      float64 `json:"unsettled_commission"`        // 未结算金额
-	PeriodCommission         float64 `json:"period_commission"`           // 指定周期内的分佣总额
-	PeriodConsumed           float64 `json:"period_consumed"`             // 指定周期内旗下用户消费总额
-	ThisMonthCommission      float64 `json:"this_month_commission"`       // 本月分佣
-	ConsumptionRate          float64 `json:"consumption_rate"`            // 当前代理商消耗分润比例
-	FirstRechargeInviteeRate float64 `json:"first_recharge_invitee_rate"` // 被邀请用户首充奖励比例
-	RateSource               string  `json:"rate_source"`                 // global 或 agent_override
-	CurrentLevel             string  `json:"current_level,omitempty"`
-	PermanentLevel           string  `json:"permanent_level,omitempty"`
-	TemporaryLevel           *string `json:"temporary_level,omitempty"`
-	LastMonthConsumption     float64 `json:"last_month_consumption,omitempty"`
-	NextLevelGap             float64 `json:"next_level_gap,omitempty"`
+	InvitedUserCount         int64               `json:"invited_user_count"`          // 邀请的用户总数
+	TotalCommission          float64             `json:"total_commission"`            // 累计分佣总额（所有类型）
+	SettledCommission        float64             `json:"settled_commission"`          // 已结算金额
+	UnsettledCommission      float64             `json:"unsettled_commission"`        // 未结算金额
+	PeriodCommission         float64             `json:"period_commission"`           // 指定周期内的分佣总额
+	PeriodConsumed           float64             `json:"period_consumed"`             // 指定周期内旗下用户消费总额
+	ThisMonthCommission      float64             `json:"this_month_commission"`       // 本月分佣
+	ConsumptionRate          float64             `json:"consumption_rate"`            // 当前代理商消耗分润比例
+	FirstRechargeInviteeRate float64             `json:"first_recharge_invitee_rate"` // 被邀请用户首充奖励比例
+	RateSource               string              `json:"rate_source"`                 // global 或 agent_override
+	CurrentLevel             string              `json:"current_level,omitempty"`
+	CurrentLevelName         string              `json:"current_level_name,omitempty"`
+	PermanentLevel           string              `json:"permanent_level,omitempty"`
+	PermanentLevelName       string              `json:"permanent_level_name,omitempty"`
+	TemporaryLevel           *string             `json:"temporary_level,omitempty"`
+	TemporaryLevelName       *string             `json:"temporary_level_name,omitempty"`
+	LastMonthConsumption     float64             `json:"last_month_consumption,omitempty"`
+	ThisMonthConsumption     float64             `json:"this_month_consumption,omitempty"`
+	TotalConsumption         float64             `json:"total_consumption,omitempty"`
+	NextLevelGap             float64             `json:"next_level_gap,omitempty"`
+	LastEvaluatedPeriod      string              `json:"last_evaluated_period,omitempty"`
+	EvaluatedAt              *time.Time          `json:"evaluated_at,omitempty"`
+	NextAssessmentAt         *time.Time          `json:"next_assessment_at,omitempty"`
+	NextMonthlyProgress      *AgentLevelProgress `json:"next_monthly_progress,omitempty"`
+	NextCumulativeProgress   *AgentLevelProgress `json:"next_cumulative_progress,omitempty"`
+}
+
+type AgentLevelProgress struct {
+	LevelKey           string  `json:"level_key"`
+	LevelName          string  `json:"level_name"`
+	Rate               float64 `json:"rate"`
+	Threshold          float64 `json:"threshold"`
+	CurrentConsumption float64 `json:"current_consumption"`
+	Gap                float64 `json:"gap"`
+	Progress           float64 `json:"progress"`
 }
 
 // UserReferralDashboard 普通用户邀请看板统计

@@ -15,6 +15,31 @@ export interface AgentDashboard {
   consumption_rate: number
   first_recharge_invitee_rate: number
   rate_source: string
+  current_level?: string
+  current_level_name?: string
+  permanent_level?: string
+  permanent_level_name?: string
+  temporary_level?: string
+  temporary_level_name?: string
+  last_month_consumption?: number
+  this_month_consumption?: number
+  total_consumption?: number
+  next_level_gap?: number
+  last_evaluated_period?: string
+  evaluated_at?: string
+  next_assessment_at?: string
+  next_monthly_progress?: AgentLevelProgress
+  next_cumulative_progress?: AgentLevelProgress
+}
+
+export interface AgentLevelProgress {
+  level_key: string
+  level_name: string
+  rate: number
+  threshold: number
+  current_consumption: number
+  gap: number
+  progress: number
 }
 
 export interface InvitedUserStat {

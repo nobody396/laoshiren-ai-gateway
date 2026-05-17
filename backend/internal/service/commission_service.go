@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
+	apptimezone "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/timezone"
 )
 
 const (
@@ -305,9 +306,10 @@ func (s *CommissionService) GetAgentDashboard(ctx context.Context, agentID int64
 	}
 
 	// 本月分佣
-	now := time.Now()
+	now := apptimezone.Now()
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	monthEnd := monthStart.AddDate(0, 1, 0).Add(-time.Second)
+	nextAssessmentAt := monthStart.AddDate(0, 1, 0)
+	monthEnd := nextAssessmentAt.Add(-time.Second)
 	thisMonthCommission, err := s.commissionRepo.SumByBeneficiaryAndPeriod(ctx, agentID, &monthStart, &monthEnd)
 	if err != nil {
 		return nil, fmt.Errorf("sum this month commission: %w", err)
@@ -326,8 +328,18 @@ func (s *CommissionService) GetAgentDashboard(ctx context.Context, agentID int64
 	consumptionRate, rateSource := s.resolveAgentConsumptionRate(ctx, agentID)
 	rates := s.getCommissionRates(ctx)
 	var levelState *AgentLevelState
+	rules := defaultAgentLevelRules()
+	thisMonthConsumption := 0.0
+	totalConsumption := 0.0
 	if s.levelRepo != nil {
+		if loadedRules, ruleErr := s.GetAgentLevelRules(ctx); ruleErr == nil {
+			rules = loadedRules
+		}
 		levelState, _ = s.levelRepo.GetAgentLevelState(ctx, agentID)
+		if stats, statsErr := s.levelRepo.GetAgentLevelUsageStats(ctx, agentID, monthStart, nextAssessmentAt); statsErr == nil && stats != nil {
+			thisMonthConsumption = stats.LastMonthConsumption
+			totalConsumption = stats.TotalConsumption
+		}
 	}
 
 	// 邀请用户总数
@@ -353,14 +365,44 @@ func (s *CommissionService) GetAgentDashboard(ctx context.Context, agentID int64
 		ConsumptionRate:          consumptionRate,
 		FirstRechargeInviteeRate: rates.FirstRechargeInviteeRate,
 		RateSource:               rateSource,
+		ThisMonthConsumption:     thisMonthConsumption,
+		TotalConsumption:         totalConsumption,
+		NextAssessmentAt:         &nextAssessmentAt,
 	}
+	normalizedRules := enabledAgentLevelRules(normalizeAgentLevelRules(rules))
 	if levelState != nil {
 		dashboard.CurrentLevel = levelState.CurrentLevelKey
+		dashboard.CurrentLevelName = agentLevelName(normalizedRules, levelState.CurrentLevelKey)
 		dashboard.PermanentLevel = levelState.PermanentLevelKey
+		dashboard.PermanentLevelName = agentLevelName(normalizedRules, levelState.PermanentLevelKey)
 		dashboard.TemporaryLevel = levelState.TemporaryLevelKey
+		if levelState.TemporaryLevelKey != nil {
+			name := agentLevelName(normalizedRules, *levelState.TemporaryLevelKey)
+			dashboard.TemporaryLevelName = &name
+		}
 		dashboard.LastMonthConsumption = levelState.LastMonthConsumption
 		dashboard.NextLevelGap = levelState.NextLevelGap
+		dashboard.LastEvaluatedPeriod = levelState.LastEvaluatedPeriod
+		dashboard.EvaluatedAt = levelState.EvaluatedAt
+		if dashboard.TotalConsumption == 0 && levelState.TotalConsumption > 0 {
+			dashboard.TotalConsumption = levelState.TotalConsumption
+		}
+	} else if len(normalizedRules) > 0 {
+		currentRule := levelForRate(normalizedRules, consumptionRate)
+		dashboard.CurrentLevel = currentRule.LevelKey
+		dashboard.CurrentLevelName = currentRule.LevelName
+		dashboard.PermanentLevel = firstAgentLevelRule(normalizedRules).LevelKey
+		dashboard.PermanentLevelName = firstAgentLevelRule(normalizedRules).LevelName
 	}
+	monthlyMinRate := consumptionRate
+	permanentMinRate := 0.0
+	if dashboard.PermanentLevel != "" {
+		if permanentRule, ok := findAgentLevelRule(normalizedRules, dashboard.PermanentLevel); ok {
+			permanentMinRate = permanentRule.Rate
+		}
+	}
+	dashboard.NextMonthlyProgress = nextAgentLevelProgress(normalizedRules, dashboard.ThisMonthConsumption, monthlyMinRate, true)
+	dashboard.NextCumulativeProgress = nextAgentLevelProgress(normalizedRules, dashboard.TotalConsumption, permanentMinRate, false)
 	return dashboard, nil
 }
 

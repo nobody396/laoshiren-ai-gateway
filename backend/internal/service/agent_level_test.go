@@ -68,6 +68,26 @@ func TestDecideAgentLevel_ManualBaseDoesNotBlockUpgrade(t *testing.T) {
 	require.Equal(t, AgentLevelRateSourceManualBase, manualBase.rateSource)
 }
 
+func TestNextAgentLevelProgressMonthlyReachedTarget(t *testing.T) {
+	progress := nextAgentLevelProgress(defaultAgentLevelRules(), 1600, 0.10, true)
+
+	require.NotNil(t, progress)
+	require.Equal(t, AgentLevelCore, progress.LevelKey)
+	require.Equal(t, 1500.0, progress.Threshold)
+	require.Equal(t, 0.0, progress.Gap)
+	require.Equal(t, 1.0, progress.Progress)
+}
+
+func TestNextAgentLevelProgressCumulativeUsesPermanentFloor(t *testing.T) {
+	progress := nextAgentLevelProgress(defaultAgentLevelRules(), 500, 0.05, false)
+
+	require.NotNil(t, progress)
+	require.Equal(t, AgentLevelStandard, progress.LevelKey)
+	require.Equal(t, 1000.0, progress.Threshold)
+	require.Equal(t, 500.0, progress.Gap)
+	require.Equal(t, 0.5, progress.Progress)
+}
+
 func TestPreviousMonthWindowUsesNaturalMonth(t *testing.T) {
 	loc := time.FixedZone("CST", 8*3600)
 	start, end, key := previousMonthWindow(time.Date(2026, 6, 1, 0, 0, 0, 0, loc))

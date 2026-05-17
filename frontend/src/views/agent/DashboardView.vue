@@ -112,6 +112,96 @@
         </div>
       </div>
 
+      <!-- Level Overview -->
+      <div v-if="!loading" class="card p-6">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-gray-500 dark:text-dark-400">{{ t('agent.agentLevel') }}</p>
+            <div class="mt-2 flex flex-wrap items-center gap-3">
+              <span class="rounded-md bg-primary-50 px-3 py-1.5 text-lg font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                {{ currentLevelLabel }}
+              </span>
+              <span class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.permanentLevel') }}: {{ permanentLevelLabel }}</span>
+              <span v-if="temporaryLevelLabel" class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.temporaryLevel') }}: {{ temporaryLevelLabel }}</span>
+            </div>
+          </div>
+          <div class="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 lg:max-w-2xl">
+            <div>
+              <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('agent.currentRate') }}</p>
+              <p class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">{{ formatRate(dashboard?.consumption_rate) }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('agent.nextAssessment') }}</p>
+              <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ nextAssessmentLabel }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('agent.upgradeTime') }}</p>
+              <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ upgradeTimeLabel }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <div class="border-t border-gray-200 pt-4 dark:border-dark-700">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('agent.monthlyProgress') }}</p>
+                <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">
+                  {{ monthlyProgress ? t('agent.targetLevelWithRate', { level: monthlyProgress.level_name, rate: formatRate(monthlyProgress.rate) }) : t('agent.maxLevelReached') }}
+                </p>
+              </div>
+              <span class="text-sm font-semibold text-primary-600 dark:text-primary-400">{{ progressPercent(monthlyProgress) }}</span>
+            </div>
+            <div class="mt-4 h-2.5 overflow-hidden rounded-full bg-gray-100 dark:bg-dark-800">
+              <div class="h-full rounded-full bg-primary-500 transition-all" :style="progressStyle(monthlyProgress)"></div>
+            </div>
+            <div class="mt-3 grid grid-cols-3 gap-3 text-sm">
+              <div>
+                <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('agent.thisMonthPerformance') }}</p>
+                <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ formatMoney(monthlyProgress?.current_consumption ?? dashboard?.this_month_consumption) }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('agent.targetPerformance') }}</p>
+                <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ formatMoney(monthlyProgress?.threshold) }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('agent.performanceGap') }}</p>
+                <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ formatMoney(monthlyProgress?.gap) }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t border-gray-200 pt-4 dark:border-dark-700">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('agent.cumulativeProgress') }}</p>
+                <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">
+                  {{ cumulativeProgress ? t('agent.targetLevelWithRate', { level: cumulativeProgress.level_name, rate: formatRate(cumulativeProgress.rate) }) : t('agent.maxLevelReached') }}
+                </p>
+              </div>
+              <span class="text-sm font-semibold text-primary-600 dark:text-primary-400">{{ progressPercent(cumulativeProgress) }}</span>
+            </div>
+            <div class="mt-4 h-2.5 overflow-hidden rounded-full bg-gray-100 dark:bg-dark-800">
+              <div class="h-full rounded-full bg-primary-500 transition-all" :style="progressStyle(cumulativeProgress)"></div>
+            </div>
+            <div class="mt-3 grid grid-cols-3 gap-3 text-sm">
+              <div>
+                <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('agent.totalPerformance') }}</p>
+                <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ formatMoney(cumulativeProgress?.current_consumption ?? dashboard?.total_consumption) }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('agent.targetPerformance') }}</p>
+                <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ formatMoney(cumulativeProgress?.threshold) }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('agent.performanceGap') }}</p>
+                <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ formatMoney(cumulativeProgress?.gap) }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Invite Code Card -->
       <div class="card p-6">
         <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-3">{{ t('agent.myInviteCode') }}</h3>
@@ -159,7 +249,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
-import { getAgentDashboard, getAgentInviteCode, type AgentDashboard } from '@/api/agent'
+import { getAgentDashboard, getAgentInviteCode, type AgentDashboard, type AgentLevelProgress } from '@/api/agent'
 import { buildAuthErrorMessage } from '@/utils/authError'
 import { useClipboard } from '@/composables/useClipboard'
 
@@ -190,6 +280,18 @@ const registerUrl = computed(() => {
 const inviteeBonusRate = computed(() =>
   formatRate(dashboard.value?.first_recharge_invitee_rate ?? defaultInviteeBonusRate)
 )
+
+const currentLevelLabel = computed(() => dashboard.value?.current_level_name || formatLevelKey(dashboard.value?.current_level))
+const permanentLevelLabel = computed(() => dashboard.value?.permanent_level_name || formatLevelKey(dashboard.value?.permanent_level))
+const temporaryLevelLabel = computed(() => dashboard.value?.temporary_level_name || formatLevelKey(dashboard.value?.temporary_level))
+const monthlyProgress = computed(() => dashboard.value?.next_monthly_progress ?? null)
+const cumulativeProgress = computed(() => dashboard.value?.next_cumulative_progress ?? null)
+const nextAssessmentLabel = computed(() => formatDateTime(dashboard.value?.next_assessment_at))
+const upgradeTimeLabel = computed(() => {
+  const hasReachedTarget = [monthlyProgress.value, cumulativeProgress.value].some((item) => item && item.gap <= 0.000001)
+  if (hasReachedTarget) return nextAssessmentLabel.value
+  return t('agent.afterTargetReached')
+})
 
 async function fetchDashboard() {
   loading.value = true
@@ -232,6 +334,51 @@ function clearDateRange() {
 
 function formatRate(value?: number): string {
   return `${(((value ?? 0) * 100)).toFixed(2)}%`
+}
+
+function formatMoney(value?: number | null): string {
+  if (value == null) return '—'
+  return `$${value.toFixed(2)}`
+}
+
+function progressPercent(progress?: AgentLevelProgress | null): string {
+  if (!progress) return '—'
+  return `${Math.round((progress.progress ?? 0) * 100)}%`
+}
+
+function progressStyle(progress?: AgentLevelProgress | null) {
+  const width = progress ? Math.min(Math.max(progress.progress ?? 0, 0), 1) * 100 : 0
+  return { width: `${width}%` }
+}
+
+function formatDateTime(value?: string): string {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+function formatLevelKey(value?: string): string {
+  switch (value) {
+    case 'light':
+      return t('agent.levelLight')
+    case 'standard':
+      return t('agent.levelStandard')
+    case 'core':
+      return t('agent.levelCore')
+    case 'super':
+      return t('agent.levelSuper')
+    case 'manual_base':
+      return t('agent.levelManual')
+    default:
+      return '—'
+  }
 }
 
 onMounted(() => {

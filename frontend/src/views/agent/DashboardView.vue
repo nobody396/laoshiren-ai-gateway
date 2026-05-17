@@ -113,7 +113,7 @@
       </div>
 
       <!-- Level Overview -->
-      <div v-if="!loading" class="card p-6">
+      <div v-if="!loading && canEditPaymentProfile" class="card p-6">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div class="min-w-0">
             <p class="text-sm font-medium text-gray-500 dark:text-dark-400">{{ t('agent.agentLevel') }}</p>
@@ -205,6 +205,78 @@
         </div>
       </div>
 
+      <!-- Settlement & Payment Profile -->
+      <div v-if="!loading" class="card p-6">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div class="min-w-0">
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('agent.paymentProfile') }}</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">{{ t('agent.paymentProfileHint') }}</p>
+          </div>
+          <div class="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 lg:max-w-2xl">
+            <div>
+              <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('agent.unsettledCommission') }}</p>
+              <p class="mt-1 text-xl font-semibold text-green-600 dark:text-green-400">{{ formatMoney(dashboard?.unsettled_commission) }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('agent.settlementMinimum') }}</p>
+              <p class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">{{ formatMoney(dashboard?.settlement_minimum_amount) }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('agent.settlementStatus') }}</p>
+              <p class="mt-1 text-sm font-semibold" :class="dashboard?.settlement_eligible ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'">
+                {{ settlementStatusLabel }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5">
+          <div class="h-2.5 overflow-hidden rounded-full bg-gray-100 dark:bg-dark-800">
+            <div class="h-full rounded-full bg-green-500 transition-all" :style="{ width: `${settlementProgressPercent}%` }"></div>
+          </div>
+          <div class="mt-2 flex flex-wrap justify-between gap-2 text-xs text-gray-500 dark:text-dark-400">
+            <span>{{ t('agent.settlementProgress') }} {{ settlementProgressPercent }}%</span>
+            <span>{{ settlementGapLabel }}</span>
+          </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_220px]">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label class="input-label">{{ t('agent.alipayRealName') }}</label>
+              <input v-model.trim="paymentForm.alipay_real_name" class="input" :placeholder="t('agent.alipayRealNamePlaceholder')" />
+            </div>
+            <div>
+              <label class="input-label">{{ t('agent.alipayAccount') }}</label>
+              <input v-model.trim="paymentForm.alipay_account" class="input" :placeholder="t('agent.alipayAccountPlaceholder')" />
+            </div>
+            <div>
+              <label class="input-label">{{ t('agent.contactPhone') }}</label>
+              <input v-model.trim="paymentForm.contact_phone" class="input" :placeholder="t('agent.optional')" />
+            </div>
+            <div>
+              <label class="input-label">{{ t('agent.alipayQRCode') }}</label>
+              <input type="file" accept="image/png,image/jpeg,image/webp" class="input text-sm" :disabled="qrUploading" @change="handleQRCodeChange" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="input-label">{{ t('agent.paymentNote') }}</label>
+              <textarea v-model.trim="paymentForm.payment_note" class="input min-h-20" :placeholder="t('agent.optional')" />
+            </div>
+            <div class="sm:col-span-2 flex flex-wrap items-center gap-3">
+              <button class="btn btn-primary btn-sm" :disabled="paymentSaving" @click="savePaymentProfile">
+                {{ paymentSaving ? t('common.saving') : t('common.save') }}
+              </button>
+              <span class="text-xs text-gray-500 dark:text-dark-400">{{ paymentProfileUpdatedLabel }}</span>
+            </div>
+          </div>
+
+          <div class="flex min-h-52 items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 p-3 dark:border-dark-700 dark:bg-dark-900">
+            <img v-if="qrPreviewUrl" :src="qrPreviewUrl" class="max-h-48 max-w-full rounded-md object-contain" :alt="t('agent.alipayQRCode')" />
+            <div v-else class="text-center text-sm text-gray-500 dark:text-dark-400">{{ t('agent.noAlipayQRCode') }}</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Invite Code Card -->
       <div class="card p-6">
         <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-3">{{ t('agent.myInviteCode') }}</h3>
@@ -248,15 +320,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
-import { getAgentDashboard, getAgentInviteCode, type AgentDashboard, type AgentLevelProgress } from '@/api/agent'
+import {
+  getAgentDashboard,
+  getAgentInviteCode,
+  getAgentPaymentProfile,
+  getAgentPaymentQRCode,
+  updateAgentPaymentProfile,
+  uploadAgentPaymentQRCode,
+  type AgentDashboard,
+  type AgentLevelProgress,
+  type AgentPaymentProfile
+} from '@/api/agent'
 import { buildAuthErrorMessage } from '@/utils/authError'
 import { useClipboard } from '@/composables/useClipboard'
+import { useAppStore } from '@/stores/app'
+import { useAuthStore } from '@/stores/auth'
 
 const { t } = useI18n()
+const appStore = useAppStore()
+const authStore = useAuthStore()
 
 const loading = ref(true)
 const inviteCodeLoading = ref(true)
@@ -267,6 +353,16 @@ const { copied, copyToClipboard } = useClipboard()
 const startDate = ref('')
 const endDate = ref('')
 const defaultInviteeBonusRate = 0.10
+const paymentSaving = ref(false)
+const qrUploading = ref(false)
+const qrPreviewUrl = ref('')
+const paymentForm = reactive<Pick<AgentPaymentProfile, 'alipay_real_name' | 'alipay_account' | 'contact_phone' | 'payment_note'>>({
+  alipay_real_name: '',
+  alipay_account: '',
+  contact_phone: '',
+  payment_note: ''
+})
+const paymentProfileUpdatedAt = ref('')
 
 function getDefaultDates() {
   const now = new Date()
@@ -288,6 +384,7 @@ const currentLevelLabel = computed(() => dashboard.value?.current_level_name || 
 const permanentLevelLabel = computed(() => dashboard.value?.permanent_level_name || formatLevelKey(dashboard.value?.permanent_level))
 const monthlyProgress = computed(() => dashboard.value?.next_monthly_progress ?? null)
 const cumulativeProgress = computed(() => dashboard.value?.next_cumulative_progress ?? null)
+const canEditPaymentProfile = computed(() => authStore.user?.role === 'agent')
 const nextAssessmentLabel = computed(() => formatDateTime(dashboard.value?.next_assessment_at))
 const assessmentPeriodLabel = computed(() => {
   const start = formatDateTime(dashboard.value?.assessment_period_start)
@@ -302,6 +399,26 @@ const upgradeTimeLabel = computed(() => {
     return t('agent.upgradeAtAssessment', { time: nextAssessmentLabel.value })
   }
   return t('agent.upgradeAfterTargetAtAssessment', { time: nextAssessmentLabel.value })
+})
+const settlementProgressPercent = computed(() => {
+  const minimum = dashboard.value?.settlement_minimum_amount || 50
+  if (minimum <= 0) return 100
+  const unsettled = dashboard.value?.unsettled_commission || 0
+  return Math.min(100, Math.max(0, Math.round((unsettled / minimum) * 100)))
+})
+const settlementStatusLabel = computed(() => {
+  if (!dashboard.value?.payment_profile_complete) return t('agent.paymentProfileIncomplete')
+  if (dashboard.value?.settlement_eligible) return t('agent.settlementEligible')
+  return t('agent.settlementBelowMinimum')
+})
+const settlementGapLabel = computed(() => {
+  const gap = dashboard.value?.settlement_gap || 0
+  if (gap <= 0.000001) return t('agent.settlementReady')
+  return t('agent.settlementGap', { amount: formatMoney(gap) })
+})
+const paymentProfileUpdatedLabel = computed(() => {
+  if (!paymentProfileUpdatedAt.value) return t('agent.paymentProfileNotSaved')
+  return t('agent.paymentProfileUpdatedAt', { time: formatDateTime(paymentProfileUpdatedAt.value) })
 })
 
 async function fetchDashboard() {
@@ -329,6 +446,80 @@ async function fetchInviteCode() {
   } finally {
     inviteCodeLoading.value = false
   }
+}
+
+async function fetchPaymentProfile() {
+  try {
+    const profile = await getAgentPaymentProfile()
+    applyPaymentProfile(profile)
+    if (profile.has_alipay_qr) {
+      await refreshQRCodePreview()
+    }
+  } catch (e: unknown) {
+    error.value = buildAuthErrorMessage(e, { fallback: t('common.error') })
+  }
+}
+
+async function savePaymentProfile() {
+  paymentSaving.value = true
+  try {
+    const profile = await updateAgentPaymentProfile({
+      alipay_real_name: paymentForm.alipay_real_name,
+      alipay_account: paymentForm.alipay_account,
+      contact_phone: paymentForm.contact_phone,
+      payment_note: paymentForm.payment_note
+    })
+    applyPaymentProfile(profile)
+    appStore.showSuccess(t('agent.paymentProfileSaved'))
+    await fetchDashboard()
+  } catch (e: unknown) {
+    appStore.showError(buildAuthErrorMessage(e, { fallback: t('common.error') }))
+  } finally {
+    paymentSaving.value = false
+  }
+}
+
+async function handleQRCodeChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  qrUploading.value = true
+  try {
+    const profile = await uploadAgentPaymentQRCode(file)
+    applyPaymentProfile(profile)
+    await refreshQRCodePreview()
+    appStore.showSuccess(t('agent.alipayQRCodeSaved'))
+    await fetchDashboard()
+  } catch (e: unknown) {
+    appStore.showError(buildAuthErrorMessage(e, { fallback: t('common.error') }))
+  } finally {
+    qrUploading.value = false
+    input.value = ''
+  }
+}
+
+function applyPaymentProfile(profile: AgentPaymentProfile) {
+  paymentForm.alipay_real_name = profile.alipay_real_name || ''
+  paymentForm.alipay_account = profile.alipay_account || ''
+  paymentForm.contact_phone = profile.contact_phone || ''
+  paymentForm.payment_note = profile.payment_note || ''
+  paymentProfileUpdatedAt.value = profile.updated_at || ''
+}
+
+async function refreshQRCodePreview() {
+  try {
+    const blob = await getAgentPaymentQRCode()
+    setQRCodePreview(URL.createObjectURL(blob))
+  } catch {
+    setQRCodePreview('')
+  }
+}
+
+function setQRCodePreview(url: string) {
+  if (qrPreviewUrl.value) {
+    URL.revokeObjectURL(qrPreviewUrl.value)
+  }
+  qrPreviewUrl.value = url
 }
 
 async function copyInviteCode() {
@@ -397,5 +588,12 @@ onMounted(() => {
   endDate.value = end
   fetchDashboard()
   fetchInviteCode()
+  if (canEditPaymentProfile.value) {
+    fetchPaymentProfile()
+  }
+})
+
+onUnmounted(() => {
+  setQRCodePreview('')
 })
 </script>

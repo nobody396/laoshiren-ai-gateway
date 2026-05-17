@@ -1,9 +1,14 @@
 package handler
 
 import (
+	"errors"
+	"io"
+	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
+	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/response"
 	middleware2 "github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
@@ -114,6 +119,78 @@ func (h *AgentHandler) GetCommissions(c *gin.Context) {
 	})
 }
 
+type updateAgentPaymentProfileRequest struct {
+	AlipayRealName string `json:"alipay_real_name"`
+	AlipayAccount  string `json:"alipay_account"`
+	ContactPhone   string `json:"contact_phone"`
+	PaymentNote    string `json:"payment_note"`
+}
+
+func (h *AgentHandler) GetPaymentProfile(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	profile, err := h.commissionService.GetAgentPaymentProfile(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	profile.AlipayQRCodeURL = "/api/v1/agent/payment-profile/alipay-qr"
+	response.Success(c, profile)
+}
+
+func (h *AgentHandler) UpdatePaymentProfile(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req updateAgentPaymentProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	profile, err := h.commissionService.UpdateAgentPaymentProfile(c.Request.Context(), &service.AgentPaymentProfile{
+		AgentID:        subject.UserID,
+		AlipayRealName: req.AlipayRealName,
+		AlipayAccount:  req.AlipayAccount,
+		ContactPhone:   req.ContactPhone,
+		PaymentNote:    req.PaymentNote,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	profile.AlipayQRCodeURL = "/api/v1/agent/payment-profile/alipay-qr"
+	response.Success(c, profile)
+}
+
+func (h *AgentHandler) UploadPaymentQRCode(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	profile, err := h.uploadPaymentQRCode(c, subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	profile.AlipayQRCodeURL = "/api/v1/agent/payment-profile/alipay-qr"
+	response.Created(c, profile)
+}
+
+func (h *AgentHandler) GetPaymentQRCode(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	h.servePaymentQRCode(c, subject.UserID)
+}
+
 // GetMyInviteCode 普通用户获取自己的邀请码
 // GET /api/v1/user/invite-code
 func (h *AgentHandler) GetMyInviteCode(c *gin.Context) {
@@ -130,6 +207,63 @@ func (h *AgentHandler) GetMyInviteCode(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{"invite_code": code})
+}
+
+func (h *AgentHandler) uploadPaymentQRCode(c *gin.Context, agentID int64) (*service.AgentPaymentProfile, error) {
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		return nil, infraerrors.BadRequest("PAYMENT_QR_REQUIRED", "file is required")
+	}
+	if fileHeader.Size <= 0 {
+		return nil, infraerrors.BadRequest("PAYMENT_QR_EMPTY", "empty file is not allowed")
+	}
+	if fileHeader.Size > 5<<20 {
+		return nil, infraerrors.BadRequest("PAYMENT_QR_TOO_LARGE", "file size must be at most 5MB")
+	}
+	file, err := fileHeader.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+
+	header := make([]byte, 512)
+	n, readErr := file.Read(header)
+	if readErr != nil && !errors.Is(readErr, io.EOF) && !errors.Is(readErr, http.ErrBodyReadAfterClose) {
+		return nil, readErr
+	}
+	contentType := http.DetectContentType(header[:n])
+	switch contentType {
+	case "image/jpeg", "image/png", "image/webp":
+	default:
+		return nil, infraerrors.BadRequest("PAYMENT_QR_UNSUPPORTED", "only jpg/png/webp images are supported")
+	}
+	if seeker, ok := file.(interface {
+		Seek(offset int64, whence int) (int64, error)
+	}); ok {
+		if _, err := seeker.Seek(0, 0); err != nil {
+			return nil, err
+		}
+	}
+	return h.commissionService.UploadAgentPaymentQRCode(c.Request.Context(), agentID, service.AgentPaymentQRCodeUpload{
+		Filename:    filepath.Base(fileHeader.Filename),
+		ContentType: contentType,
+		Size:        fileHeader.Size,
+		Body:        file,
+	})
+}
+
+func (h *AgentHandler) servePaymentQRCode(c *gin.Context, agentID int64) {
+	file, err := h.commissionService.GetAgentPaymentQRCodeFile(c.Request.Context(), agentID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	contentType := file.ContentType
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	c.Header("Content-Type", contentType)
+	c.File(file.Path)
 }
 
 // parseDateRange 从 query 参数解析 start/end 时间（格式：2006-01-02）

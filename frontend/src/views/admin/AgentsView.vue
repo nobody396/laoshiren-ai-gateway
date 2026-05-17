@@ -16,6 +16,10 @@
             <Select v-model="sortOrder" :options="sortOrderOptions" class="min-w-28" />
           </div>
           <div>
+            <label class="input-label">{{ t('admin.agents.settlementFilter') }}</label>
+            <Select v-model="settlementStatus" :options="settlementStatusOptions" class="min-w-36" />
+          </div>
+          <div>
             <label class="input-label">{{ t('agent.dateRange') }}</label>
             <div class="flex items-center gap-2">
               <input v-model="startDate" type="date" class="input w-auto text-sm" :max="endDate || undefined" />
@@ -103,7 +107,23 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div class="card p-4">
+        <div class="flex flex-wrap items-end gap-3">
+          <div>
+            <label class="input-label">{{ t('admin.agents.settlementMinimum') }}</label>
+            <div class="flex items-center gap-2">
+              <input v-model.number="settlementSettingsForm.minimum" type="number" min="0" step="0.01" class="input w-32" />
+              <span class="text-sm text-gray-500">$</span>
+            </div>
+          </div>
+          <button class="btn btn-secondary" :disabled="settlementSettingsSaving" @click="saveSettlementSettings">
+            {{ settlementSettingsSaving ? t('common.saving') : t('common.save') }}
+          </button>
+          <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('admin.agents.settlementMinimumHint') }}</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-5">
         <div class="card p-4">
           <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('admin.agents.agentCount') }}</p>
           <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ pagination.total }}</p>
@@ -120,6 +140,10 @@
           <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('admin.agents.unsettledCommission') }}</p>
           <p class="mt-1 text-2xl font-semibold text-green-600 dark:text-green-400">{{ money(listTotals.unsettled) }}</p>
         </div>
+        <div class="card p-4">
+          <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('admin.agents.eligibleSettlementCount') }}</p>
+          <p class="mt-1 text-2xl font-semibold text-primary-600 dark:text-primary-400">{{ listTotals.eligible }}</p>
+        </div>
       </div>
 
       <div class="card overflow-hidden">
@@ -133,6 +157,7 @@
                 <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.totalCommission') }}</th>
                 <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.settledCommission') }}</th>
                 <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.unsettledCommission') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.settlementStatus') }}</th>
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.currentLevel') }}</th>
                 <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.lastMonthConsumption') }}</th>
                 <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.consumptionRate') }}</th>
@@ -141,7 +166,7 @@
             </thead>
             <tbody class="divide-y divide-gray-50 dark:divide-dark-800">
               <tr v-if="loading">
-                <td colspan="10" class="px-4 py-8 text-center text-sm text-gray-500">{{ t('common.loading') }}</td>
+                <td colspan="11" class="px-4 py-8 text-center text-sm text-gray-500">{{ t('common.loading') }}</td>
               </tr>
               <tr
                 v-for="agent in agents"
@@ -172,6 +197,11 @@
                 <td class="px-4 py-3 text-right text-sm">{{ money(agent.settled_commission) }}</td>
                 <td class="px-4 py-3 text-right text-sm font-medium text-green-600 dark:text-green-400">{{ money(agent.unsettled_commission) }}</td>
                 <td class="px-4 py-3 text-sm">
+                  <span class="rounded px-2 py-0.5 text-xs font-medium" :class="settlementStatusClass(agent)">
+                    {{ settlementStatusLabel(agent) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-sm">
                   <span class="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-dark-800 dark:text-dark-200">{{ formatLevel(agent.current_level) }}</span>
                 </td>
                 <td class="px-4 py-3 text-right text-sm">{{ money(agent.last_month_consumption || 0) }}</td>
@@ -184,14 +214,14 @@
                     <button class="btn btn-secondary btn-sm" @click.stop="selectAgent(agent)">
                       {{ t('admin.agents.viewDetails') }}
                     </button>
-                    <button class="btn btn-secondary btn-sm" :disabled="agent.unsettled_commission <= 0" @click.stop="openSettlement(agent)">
+                    <button class="btn btn-secondary btn-sm" :disabled="!agent.settlement_eligible" @click.stop="openSettlement(agent)">
                       {{ t('admin.agents.settle') }}
                     </button>
                   </div>
                 </td>
               </tr>
               <tr v-if="!loading && agents.length === 0">
-                <td colspan="10" class="px-4 py-10 text-center text-sm text-gray-500">{{ t('admin.agents.empty') }}</td>
+                <td colspan="11" class="px-4 py-10 text-center text-sm text-gray-500">{{ t('admin.agents.empty') }}</td>
               </tr>
             </tbody>
           </table>
@@ -216,6 +246,7 @@
               <span class="rounded bg-gray-100 px-2 py-1 dark:bg-dark-800">{{ t('admin.agents.currentLevel') }}: {{ formatLevel(selectedAgent.current_level) }}</span>
               <span class="rounded bg-gray-100 px-2 py-1 dark:bg-dark-800">{{ t('admin.agents.nextLevelGap') }}: {{ money(selectedAgent.next_level_gap || 0) }}</span>
               <span class="rounded bg-gray-100 px-2 py-1 dark:bg-dark-800">{{ t('admin.agents.consumptionRate') }}: {{ percent(selectedAgent.consumption_rate) }}</span>
+              <span class="rounded bg-gray-100 px-2 py-1 dark:bg-dark-800">{{ t('admin.agents.settlementStatus') }}: {{ settlementStatusLabel(selectedAgent) }}</span>
             </div>
           </div>
           <div class="flex flex-wrap items-center gap-3">
@@ -303,6 +334,8 @@
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">{{ t('agent.commissionTime') }}</th>
                 <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.settlementAmount') }}</th>
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.operator') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.alipayAccount') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.paymentReference') }}</th>
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">{{ t('admin.agents.note') }}</th>
               </tr>
             </thead>
@@ -311,10 +344,12 @@
                 <td class="px-4 py-3 text-sm text-gray-500">{{ datetime(item.created_at) }}</td>
                 <td class="px-4 py-3 text-right text-sm font-medium">{{ money(item.amount) }}</td>
                 <td class="px-4 py-3 text-sm">#{{ item.operator_id }}</td>
+                <td class="px-4 py-3 text-sm">{{ item.payment_alipay_account || '-' }}</td>
+                <td class="px-4 py-3 text-sm">{{ item.payment_reference || '-' }}</td>
                 <td class="px-4 py-3 text-sm text-gray-500">{{ item.note || '-' }}</td>
               </tr>
               <tr v-if="detailSettlements.length === 0">
-                <td colspan="4" class="px-4 py-8 text-center text-sm text-gray-500">{{ t('admin.agents.noSettlements') }}</td>
+                <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500">{{ t('admin.agents.noSettlements') }}</td>
               </tr>
             </tbody>
           </table>
@@ -345,23 +380,51 @@
       </div>
 
       <div v-if="settlementDialog.show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-        <div class="w-full max-w-md rounded-lg bg-white p-5 shadow-xl dark:bg-dark-900">
+        <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-5 shadow-xl dark:bg-dark-900">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('admin.agents.settle') }}</h3>
           <p class="mt-1 text-sm text-gray-500">{{ settlementDialog.agent ? displayAgent(settlementDialog.agent) : '' }}</p>
-          <div class="mt-4 space-y-3">
-            <div>
-              <label class="input-label">{{ t('admin.agents.settlementAmount') }}</label>
-              <input v-model.number="settlementDialog.amount" type="number" min="0" step="0.01" class="input" />
-              <p class="mt-1 text-xs text-gray-500">{{ t('admin.agents.availableToSettle', { amount: money(settlementDialog.agent?.unsettled_commission || 0) }) }}</p>
+          <div class="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_240px]">
+            <div class="space-y-3">
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <p class="text-xs text-gray-500">{{ t('admin.agents.alipayRealName') }}</p>
+                  <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ settlementDialog.paymentProfile?.alipay_real_name || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">{{ t('admin.agents.alipayAccount') }}</p>
+                  <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ settlementDialog.paymentProfile?.alipay_account || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">{{ t('admin.agents.contactPhone') }}</p>
+                  <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ settlementDialog.paymentProfile?.contact_phone || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">{{ t('admin.agents.settlementStatus') }}</p>
+                  <p class="mt-1 text-sm font-medium text-green-600 dark:text-green-400">{{ settlementDialog.agent ? settlementStatusLabel(settlementDialog.agent) : '-' }}</p>
+                </div>
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.agents.settlementAmount') }}</label>
+                <input v-model.number="settlementDialog.amount" type="number" min="0" step="0.01" class="input" />
+                <p class="mt-1 text-xs text-gray-500">{{ t('admin.agents.availableToSettle', { amount: money(settlementDialog.agent?.unsettled_commission || 0) }) }}</p>
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.agents.paymentReference') }}</label>
+                <input v-model.trim="settlementDialog.paymentReference" class="input" :placeholder="t('admin.agents.paymentReferencePlaceholder')" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.agents.note') }}</label>
+                <textarea v-model="settlementDialog.note" class="input min-h-20" />
+              </div>
             </div>
-            <div>
-              <label class="input-label">{{ t('admin.agents.note') }}</label>
-              <textarea v-model="settlementDialog.note" class="input min-h-20" />
+            <div class="flex min-h-60 items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 p-3 dark:border-dark-700 dark:bg-dark-900">
+              <img v-if="settlementDialog.qrPreviewUrl" :src="settlementDialog.qrPreviewUrl" class="max-h-56 max-w-full rounded-md object-contain" :alt="t('admin.agents.alipayQRCode')" />
+              <div v-else class="text-center text-sm text-gray-500">{{ t('admin.agents.noAlipayQRCode') }}</div>
             </div>
           </div>
           <div class="mt-5 flex justify-end gap-2">
             <button class="btn btn-secondary" @click="closeSettlement">{{ t('common.cancel') }}</button>
-            <button class="btn btn-primary" :disabled="settlementSaving" @click="submitSettlement">{{ settlementSaving ? t('common.saving') : t('admin.agents.completeSettlement') }}</button>
+            <button class="btn btn-primary" :disabled="settlementSaving || !settlementDialog.paymentProfile?.complete" @click="submitSettlement">{{ settlementSaving ? t('common.saving') : t('admin.agents.completeSettlement') }}</button>
           </div>
         </div>
       </div>
@@ -370,7 +433,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Select, { type SelectOption } from '@/components/common/Select.vue'
@@ -380,7 +443,8 @@ import type {
   AdminAgentUserStat,
   AdminAgentCommissionRecord,
   AgentSettlement,
-  AgentLevelRule
+  AgentLevelRule,
+  AgentPaymentProfile
 } from '@/api/admin/agents'
 import { useAppStore } from '@/stores/app'
 import { buildAuthErrorMessage } from '@/utils/authError'
@@ -394,6 +458,7 @@ const loading = ref(false)
 const ratesSaving = ref(false)
 const agentRateSaving = ref(false)
 const settlementSaving = ref(false)
+const settlementSettingsSaving = ref(false)
 const bindUserSaving = ref(false)
 const levelRulesSaving = ref(false)
 const levelEvaluationRunning = ref(false)
@@ -408,15 +473,28 @@ const detailTab = ref<'users' | 'commissions' | 'settlements'>('users')
 const search = ref('')
 const sortBy = ref('total_commission')
 const sortOrder = ref<'asc' | 'desc'>('desc')
+const settlementStatus = ref('')
 const currentPage = ref(1)
 const pagination = reactive({ total: 0, page: 1, page_size: 20, pages: 1 })
 const globalRateForm = reactive({ consumption: 6, invitee: 10, referral: 5 })
 const agentRateForm = reactive({ enabled: false, consumption: 6 })
-const settlementDialog = reactive<{ show: boolean; agent: AdminAgentSummary | null; amount: number; note: string }>({
+const settlementSettingsForm = reactive({ minimum: 50 })
+const settlementDialog = reactive<{
+  show: boolean
+  agent: AdminAgentSummary | null
+  amount: number
+  note: string
+  paymentReference: string
+  paymentProfile: AgentPaymentProfile | null
+  qrPreviewUrl: string
+}>({
   show: false,
   agent: null,
   amount: 0,
-  note: ''
+  note: '',
+  paymentReference: '',
+  paymentProfile: null,
+  qrPreviewUrl: ''
 })
 const bindUserDialog = reactive<{ show: boolean; email: string; overwriteAgent: boolean }>({
   show: false,
@@ -445,6 +523,7 @@ const detailTabs = computed(() => [
 const sortByOptions = computed<SelectOption[]>(() => [
   { value: 'total_commission', label: t('admin.agents.totalCommission') },
   { value: 'unsettled_commission', label: t('admin.agents.unsettledCommission') },
+  { value: 'settlement_gap', label: t('admin.agents.settlementGap') },
   { value: 'invited_user_count', label: t('admin.agents.invitedUserCount') },
   { value: 'total_consumption', label: t('admin.agents.totalConsumption') },
   { value: 'email', label: t('admin.agents.email') }
@@ -455,12 +534,20 @@ const sortOrderOptions = computed<SelectOption[]>(() => [
   { value: 'asc', label: t('admin.agents.asc') }
 ])
 
+const settlementStatusOptions = computed<SelectOption[]>(() => [
+  { value: '', label: t('admin.agents.settlementAll') },
+  { value: 'eligible', label: t('admin.agents.settlementEligible') },
+  { value: 'below_threshold', label: t('admin.agents.settlementBelowThreshold') },
+  { value: 'missing_profile', label: t('admin.agents.settlementMissingProfile') }
+])
+
 const listTotals = computed(() => agents.value.reduce((acc, item) => {
   acc.totalCommission += item.total_commission || 0
   acc.settled += item.settled_commission || 0
   acc.unsettled += item.unsettled_commission || 0
+  if (item.settlement_eligible) acc.eligible += 1
   return acc
-}, { totalCommission: 0, settled: 0, unsettled: 0 }))
+}, { totalCommission: 0, settled: 0, unsettled: 0, eligible: 0 }))
 
 async function loadRates() {
   try {
@@ -470,6 +557,28 @@ async function loadRates() {
     globalRateForm.referral = toPercentNumber(rates.first_recharge_referral_rate)
   } catch (error: any) {
     appStore.showError(buildAuthErrorMessage(error, { fallback: t('admin.agents.failedToLoad') }))
+  }
+}
+
+async function loadSettlementSettings() {
+  try {
+    const settings = await adminAPI.agents.getSettlementSettings()
+    settlementSettingsForm.minimum = Number(settings.minimum_amount || 50)
+  } catch (error: any) {
+    appStore.showError(buildAuthErrorMessage(error, { fallback: t('admin.agents.failedToLoad') }))
+  }
+}
+
+async function saveSettlementSettings() {
+  settlementSettingsSaving.value = true
+  try {
+    await adminAPI.agents.updateSettlementSettings({ minimum_amount: Number(settlementSettingsForm.minimum) })
+    appStore.showSuccess(t('admin.agents.settlementSettingsUpdated'))
+    await reloadAgents()
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || error.message || t('admin.agents.failedToSave'))
+  } finally {
+    settlementSettingsSaving.value = false
   }
 }
 
@@ -557,12 +666,13 @@ async function runSelectedLevelEvaluation() {
 async function reloadAgents() {
   loading.value = true
   try {
-    const res = await adminAPI.agents.list({
+    const res = await adminAPI.agents.listSettlementCandidates({
       page: currentPage.value,
       page_size: pagination.page_size,
       search: search.value || undefined,
       sort_by: sortBy.value,
       sort_order: sortOrder.value,
+      settlement_status: settlementStatus.value as any,
       start: startDate.value || undefined,
       end: endDate.value || undefined
     })
@@ -648,15 +758,30 @@ async function openSettlement(agent: AdminAgentSummary) {
   if (selectedAgent.value?.agent_id !== agent.agent_id) {
     await selectAgent(agent)
   }
+  setSettlementQRPreview('')
   settlementDialog.show = true
   settlementDialog.agent = agent
-  settlementDialog.amount = Number((agent.unsettled_commission || 0).toFixed(2))
+  settlementDialog.amount = floorMoney(agent.unsettled_commission || 0)
   settlementDialog.note = ''
+  settlementDialog.paymentReference = ''
+  settlementDialog.paymentProfile = null
+  try {
+    const profile = await adminAPI.agents.getPaymentProfile(agent.agent_id)
+    settlementDialog.paymentProfile = profile
+    if (profile.has_alipay_qr) {
+      const blob = await adminAPI.agents.getPaymentQRCode(agent.agent_id)
+      setSettlementQRPreview(URL.createObjectURL(blob))
+    }
+  } catch (error: any) {
+    appStore.showError(buildAuthErrorMessage(error, { fallback: t('admin.agents.failedToLoad') }))
+  }
 }
 
 function closeSettlement() {
   settlementDialog.show = false
   settlementDialog.agent = null
+  settlementDialog.paymentProfile = null
+  setSettlementQRPreview('')
 }
 
 function openBindUser() {
@@ -698,7 +823,7 @@ async function submitSettlement() {
   if (!settlementDialog.agent) return
   settlementSaving.value = true
   try {
-    await adminAPI.agents.createSettlement(settlementDialog.agent.agent_id, settlementDialog.amount, settlementDialog.note)
+    await adminAPI.agents.createSettlement(settlementDialog.agent.agent_id, settlementDialog.amount, settlementDialog.note, settlementDialog.paymentReference)
     appStore.showSuccess(t('admin.agents.settlementCreated'))
     closeSettlement()
     await reloadAgents()
@@ -718,8 +843,31 @@ function displayAgent(agent: AdminAgentSummary): string {
   return agent.username || agent.email || `#${agent.agent_id}`
 }
 
+function settlementStatusLabel(agent: AdminAgentSummary): string {
+  if (!agent.payment_profile_complete) return t('admin.agents.settlementMissingProfile')
+  if (agent.settlement_eligible) return t('admin.agents.settlementEligible')
+  return t('admin.agents.settlementGapLabel', { amount: money(agent.settlement_gap || agent.settlement_minimum_amount || 50) })
+}
+
+function settlementStatusClass(agent: AdminAgentSummary): string {
+  if (!agent.payment_profile_complete) return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+  if (agent.settlement_eligible) return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+  return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+}
+
+function setSettlementQRPreview(url: string) {
+  if (settlementDialog.qrPreviewUrl) {
+    URL.revokeObjectURL(settlementDialog.qrPreviewUrl)
+  }
+  settlementDialog.qrPreviewUrl = url
+}
+
 function money(value: number): string {
   return `$${Number(value || 0).toFixed(2)}`
+}
+
+function floorMoney(value: number): number {
+  return Math.floor(Number(value || 0) * 100) / 100
 }
 
 function percent(value: number): string {
@@ -769,14 +917,19 @@ async function copyInvite(agent: AdminAgentSummary) {
   await copyToClipboard(`${window.location.origin}/register?ref=${agent.invite_code}`, t('common.copiedToClipboard'))
 }
 
-watch([sortBy, sortOrder], () => {
+watch([sortBy, sortOrder, settlementStatus], () => {
   currentPage.value = 1
   reloadAgents()
 })
 
 onMounted(async () => {
   await loadRates()
+  await loadSettlementSettings()
   await loadLevelRules()
   await reloadAgents()
+})
+
+onUnmounted(() => {
+  setSettlementQRPreview('')
 })
 </script>

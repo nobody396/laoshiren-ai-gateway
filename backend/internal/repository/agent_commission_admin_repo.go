@@ -186,12 +186,6 @@ func (r *commissionRepository) listAdminAgents(
 	}
 	whereSQL := strings.Join(where, " AND ")
 
-	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM users u WHERE %s`, whereSQL)
-	var total int64
-	if err := scanSingleRow(ctx, r.sql, countQuery, baseArgs, &total); err != nil {
-		return nil, nil, fmt.Errorf("count admin agents: %w", err)
-	}
-
 	args := append([]any{}, baseArgs...)
 	periodUsageCond, periodCommissionCond := buildAgentPeriodConditions(&args, "ul", "cr", filters.Start, filters.End)
 	now := time.Now()
@@ -202,18 +196,20 @@ func (r *commissionRepository) listAdminAgents(
 	args = append(args, monthEnd)
 	monthEndIdx := len(args)
 
-	orderBy := adminAgentOrderBy(params.SortBy)
+	orderBy := adminAgentOuterOrderBy(params.SortBy)
 	sortOrder := params.NormalizedSortOrder(pagination.SortOrderDesc)
+	settlementWhere := adminAgentSettlementStatusWhere(filters.SettlementStatus)
 
-	query := fmt.Sprintf(`
+	baseQuery := fmt.Sprintf(`
+		WITH agent_rows AS (
 		SELECT
-			u.id,
-			u.email,
-			COALESCE(u.username, ''),
-			u.status,
-			u.invite_code,
-			u.created_at,
-			u.last_active_at,
+			u.id AS agent_id,
+			u.email AS email,
+			COALESCE(u.username, '') AS username,
+			u.status AS status,
+			u.invite_code AS invite_code,
+			u.created_at AS created_at,
+			u.last_active_at AS last_active_at,
 			COALESCE(invited.total, 0) AS invited_user_count,
 			COALESCE(total_usage.total, 0) AS total_consumption,
 			COALESCE(period_usage.total, 0) AS period_consumption,
@@ -241,7 +237,14 @@ func (r *commissionRepository) listAdminAgents(
 			COALESCE(als.last_evaluated_period, '') AS last_evaluated_period,
 			COALESCE(als.last_month_consumption, 0) AS last_month_consumption,
 			als.next_level_key,
-			COALESCE(als.next_level_gap, 0) AS next_level_gap
+			COALESCE(als.next_level_gap, 0) AS next_level_gap,
+			COALESCE(gs.settlement_min_amount, 50) AS settlement_minimum_amount,
+			(
+				NULLIF(TRIM(COALESCE(app.alipay_real_name, '')), '') IS NOT NULL AND
+				NULLIF(TRIM(COALESCE(app.alipay_account, '')), '') IS NOT NULL AND
+				NULLIF(TRIM(COALESCE(app.alipay_qr_object_key, '')), '') IS NOT NULL
+			) AS payment_profile_complete,
+			app.updated_at AS payment_profile_updated_at
 		FROM users u
 		CROSS JOIN agent_commission_settings gs
 		LEFT JOIN (
@@ -289,10 +292,24 @@ func (r *commissionRepository) listAdminAgents(
 		) settled ON settled.agent_id = u.id
 		LEFT JOIN agent_rate_configs arc ON arc.agent_id = u.id
 		LEFT JOIN agent_level_states als ON als.agent_id = u.id
+		LEFT JOIN agent_payment_profiles app ON app.agent_id = u.id
 		WHERE gs.id = 1 AND %s
-		ORDER BY %s %s, u.id DESC
+		)
+	`, periodUsageCond, periodCommissionCond, monthStartIdx, monthEndIdx, whereSQL)
+
+	countQuery := baseQuery + ` SELECT COUNT(*) FROM agent_rows ` + settlementWhere
+	var total int64
+	if err := scanSingleRow(ctx, r.sql, countQuery, args, &total); err != nil {
+		return nil, nil, fmt.Errorf("count admin agents: %w", err)
+	}
+
+	query := fmt.Sprintf(`%s
+		SELECT *
+		FROM agent_rows
+		%s
+		ORDER BY %s %s, agent_id DESC
 		LIMIT $%d OFFSET $%d
-	`, periodUsageCond, periodCommissionCond, monthStartIdx, monthEndIdx, whereSQL, orderBy, sortOrder, len(args)+1, len(args)+2)
+	`, baseQuery, settlementWhere, orderBy, sortOrder, len(args)+1, len(args)+2)
 
 	args = append(args, params.Limit(), params.Offset())
 	rows, err := r.sql.QueryContext(ctx, query, args...)
@@ -306,6 +323,7 @@ func (r *commissionRepository) listAdminAgents(
 		var item service.AdminAgentSummary
 		var inviteCode sql.NullString
 		var lastActiveAt sql.NullTime
+		var paymentProfileUpdatedAt sql.NullTime
 		var overrideRate sql.NullFloat64
 		var temporaryLevel, nextLevel sql.NullString
 		if err := rows.Scan(
@@ -336,6 +354,9 @@ func (r *commissionRepository) listAdminAgents(
 			&item.LastMonthConsumption,
 			&nextLevel,
 			&item.NextLevelGap,
+			&item.SettlementMinimumAmount,
+			&item.PaymentProfileComplete,
+			&paymentProfileUpdatedAt,
 		); err != nil {
 			return nil, nil, fmt.Errorf("scan admin agent: %w", err)
 		}
@@ -353,6 +374,9 @@ func (r *commissionRepository) listAdminAgents(
 		}
 		if nextLevel.Valid {
 			item.NextLevelKey = &nextLevel.String
+		}
+		if paymentProfileUpdatedAt.Valid {
+			item.PaymentProfileUpdatedAt = &paymentProfileUpdatedAt.Time
 		}
 		items = append(items, item)
 	}
@@ -590,7 +614,20 @@ func (r *commissionRepository) ListAgentSettlements(ctx context.Context, agentID
 	}
 
 	rows, err := r.sql.QueryContext(ctx, `
-		SELECT id, agent_id, amount, operator_id, note, status, created_at
+		SELECT
+			id,
+			agent_id,
+			amount,
+			operator_id,
+			note,
+			status,
+			COALESCE(payment_alipay_real_name, ''),
+			COALESCE(payment_alipay_account, ''),
+			COALESCE(payment_contact_phone, ''),
+			COALESCE(payment_note, ''),
+			COALESCE(payment_qr_object_key, ''),
+			COALESCE(payment_reference, ''),
+			created_at
 		FROM agent_settlements
 		WHERE agent_id = $1
 		ORDER BY created_at DESC, id DESC
@@ -604,7 +641,21 @@ func (r *commissionRepository) ListAgentSettlements(ctx context.Context, agentID
 	items := make([]service.AgentSettlement, 0)
 	for rows.Next() {
 		var item service.AgentSettlement
-		if err := rows.Scan(&item.ID, &item.AgentID, &item.Amount, &item.OperatorID, &item.Note, &item.Status, &item.CreatedAt); err != nil {
+		if err := rows.Scan(
+			&item.ID,
+			&item.AgentID,
+			&item.Amount,
+			&item.OperatorID,
+			&item.Note,
+			&item.Status,
+			&item.PaymentAlipayRealName,
+			&item.PaymentAlipayAccount,
+			&item.PaymentContactPhone,
+			&item.PaymentNote,
+			&item.PaymentQRCodeObjectKey,
+			&item.PaymentReference,
+			&item.CreatedAt,
+		); err != nil {
 			return nil, nil, fmt.Errorf("scan agent settlement: %w", err)
 		}
 		items = append(items, item)
@@ -694,8 +745,20 @@ func (r *commissionRepository) CreateAgentSettlementIfAvailable(ctx context.Cont
 
 func insertAgentSettlement(ctx context.Context, q sqlExecutor, settlement *service.AgentSettlement) error {
 	return scanSingleRow(ctx, q, `
-		INSERT INTO agent_settlements (agent_id, amount, operator_id, note, status)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO agent_settlements (
+			agent_id,
+			amount,
+			operator_id,
+			note,
+			status,
+			payment_alipay_real_name,
+			payment_alipay_account,
+			payment_contact_phone,
+			payment_note,
+			payment_qr_object_key,
+			payment_reference
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id, created_at
 	`, []any{
 		settlement.AgentID,
@@ -703,6 +766,12 @@ func insertAgentSettlement(ctx context.Context, q sqlExecutor, settlement *servi
 		settlement.OperatorID,
 		settlement.Note,
 		settlement.Status,
+		settlement.PaymentAlipayRealName,
+		settlement.PaymentAlipayAccount,
+		settlement.PaymentContactPhone,
+		settlement.PaymentNote,
+		settlement.PaymentQRCodeObjectKey,
+		settlement.PaymentReference,
 	}, &settlement.ID, &settlement.CreatedAt)
 }
 
@@ -722,10 +791,10 @@ func buildAgentPeriodConditions(args *[]any, usageAlias, commissionAlias string,
 	return usageCond, commissionCond
 }
 
-func adminAgentOrderBy(sortBy string) string {
+func adminAgentOuterOrderBy(sortBy string) string {
 	switch sortBy {
 	case "email":
-		return "LOWER(u.email)"
+		return "LOWER(email)"
 	case "invited_user_count":
 		return "invited_user_count"
 	case "total_consumption":
@@ -734,10 +803,23 @@ func adminAgentOrderBy(sortBy string) string {
 		return "period_commission"
 	case "unsettled_commission":
 		return "unsettled_commission"
-	case "created_at":
-		return "u.created_at"
+	case "settlement_gap":
+		return "GREATEST(settlement_minimum_amount - unsettled_commission, 0)"
 	default:
 		return "total_commission"
+	}
+}
+
+func adminAgentSettlementStatusWhere(status string) string {
+	switch strings.TrimSpace(strings.ToLower(status)) {
+	case "eligible":
+		return "WHERE payment_profile_complete = true AND unsettled_commission + 0.00000001 >= settlement_minimum_amount"
+	case "below_threshold":
+		return "WHERE unsettled_commission + 0.00000001 < settlement_minimum_amount"
+	case "missing_profile":
+		return "WHERE payment_profile_complete = false"
+	default:
+		return ""
 	}
 }
 

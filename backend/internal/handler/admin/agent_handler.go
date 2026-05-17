@@ -37,8 +37,13 @@ type updateAgentLevelRulesRequest struct {
 }
 
 type createSettlementRequest struct {
-	Amount float64 `json:"amount"`
-	Note   string  `json:"note"`
+	Amount           float64 `json:"amount"`
+	Note             string  `json:"note"`
+	PaymentReference string  `json:"payment_reference"`
+}
+
+type updateAgentSettlementSettingsRequest struct {
+	MinimumAmount float64 `json:"minimum_amount"`
 }
 
 type bindAgentUserRequest struct {
@@ -56,9 +61,32 @@ func (h *AgentHandler) List(c *gin.Context) {
 		SortOrder: c.Query("sort_order"),
 	}
 	items, result, err := h.commissionService.ListAdminAgents(c.Request.Context(), params, service.AdminAgentListFilters{
-		Search: c.Query("search"),
-		Start:  start,
-		End:    end,
+		Search:           c.Query("search"),
+		SettlementStatus: c.Query("settlement_status"),
+		Start:            start,
+		End:              end,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Paginated(c, items, result.Total, result.Page, result.PageSize)
+}
+
+func (h *AgentHandler) ListSettlementCandidates(c *gin.Context) {
+	page, pageSize := response.ParsePagination(c)
+	start, end := parseAgentDateRange(c)
+	params := pagination.PaginationParams{
+		Page:      page,
+		PageSize:  pageSize,
+		SortBy:    c.Query("sort_by"),
+		SortOrder: c.Query("sort_order"),
+	}
+	items, result, err := h.commissionService.ListAdminAgentSettlementCandidates(c.Request.Context(), params, service.AdminAgentListFilters{
+		Search:           c.Query("search"),
+		SettlementStatus: c.Query("settlement_status"),
+		Start:            start,
+		End:              end,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -172,12 +200,69 @@ func (h *AgentHandler) CreateSettlement(c *gin.Context) {
 		response.BadRequest(c, "Invalid request: "+err.Error())
 		return
 	}
-	settlement, err := h.commissionService.CreateAgentSettlement(c.Request.Context(), agentID, subject.UserID, req.Amount, req.Note)
+	settlement, err := h.commissionService.CreateAgentSettlement(c.Request.Context(), agentID, subject.UserID, req.Amount, req.Note, req.PaymentReference)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
 	response.Success(c, settlement)
+}
+
+func (h *AgentHandler) GetPaymentProfile(c *gin.Context) {
+	agentID, ok := parseAgentIDParam(c)
+	if !ok {
+		return
+	}
+	profile, err := h.commissionService.GetAgentPaymentProfile(c.Request.Context(), agentID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	profile.AlipayQRCodeURL = "/api/v1/admin/agents/" + strconv.FormatInt(agentID, 10) + "/payment-profile/alipay-qr"
+	response.Success(c, profile)
+}
+
+func (h *AgentHandler) GetPaymentQRCode(c *gin.Context) {
+	agentID, ok := parseAgentIDParam(c)
+	if !ok {
+		return
+	}
+	file, err := h.commissionService.GetAgentPaymentQRCodeFile(c.Request.Context(), agentID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	contentType := file.ContentType
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	c.Header("Content-Type", contentType)
+	c.File(file.Path)
+}
+
+func (h *AgentHandler) GetSettlementSettings(c *gin.Context) {
+	settings, err := h.commissionService.GetAgentSettlementSettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, settings)
+}
+
+func (h *AgentHandler) UpdateSettlementSettings(c *gin.Context) {
+	var req updateAgentSettlementSettingsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	settings, err := h.commissionService.UpdateAgentSettlementSettings(c.Request.Context(), &service.AgentSettlementSettings{
+		MinimumAmount: req.MinimumAmount,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, settings)
 }
 
 func (h *AgentHandler) GetRates(c *gin.Context) {

@@ -32,6 +32,10 @@ export interface AgentDashboard {
   next_assessment_at?: string
   next_monthly_progress?: AgentLevelProgress
   next_cumulative_progress?: AgentLevelProgress
+  settlement_minimum_amount: number
+  settlement_eligible: boolean
+  settlement_gap: number
+  payment_profile_complete: boolean
 }
 
 export interface AgentLevelProgress {
@@ -88,6 +92,21 @@ export interface PaginatedInvitedUsers {
 export interface PaginatedCommissions {
   items: CommissionRecord[]
   pagination: PaginationResult
+}
+
+export interface AgentPaymentProfile {
+  agent_id: number
+  alipay_real_name: string
+  alipay_account: string
+  contact_phone: string
+  payment_note: string
+  alipay_qr_original_filename?: string
+  alipay_qr_size?: number
+  alipay_qr_url?: string
+  has_alipay_qr: boolean
+  complete: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 function toNumber(value: unknown, fallback = 0): number {
@@ -166,6 +185,30 @@ export async function getAgentDashboard(params?: { start?: string; end?: string 
   return data
 }
 
+export async function getAgentPaymentProfile(): Promise<AgentPaymentProfile> {
+  const { data } = await apiClient.get<AgentPaymentProfile>('/agent/payment-profile')
+  return data
+}
+
+export async function updateAgentPaymentProfile(payload: Pick<AgentPaymentProfile, 'alipay_real_name' | 'alipay_account' | 'contact_phone' | 'payment_note'>): Promise<AgentPaymentProfile> {
+  const { data } = await apiClient.put<AgentPaymentProfile>('/agent/payment-profile', payload)
+  return data
+}
+
+export async function uploadAgentPaymentQRCode(file: File): Promise<AgentPaymentProfile> {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await apiClient.post<AgentPaymentProfile>('/agent/payment-profile/alipay-qr', form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+  return data
+}
+
+export async function getAgentPaymentQRCode(): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>('/agent/payment-profile/alipay-qr', { responseType: 'blob' })
+  return data
+}
+
 /**
  * Get invited users list with consumption stats
  */
@@ -213,6 +256,10 @@ export const agentAPI = {
   getMyInviteCode,
   getAgentInviteCode,
   getAgentDashboard,
+  getAgentPaymentProfile,
+  updateAgentPaymentProfile,
+  uploadAgentPaymentQRCode,
+  getAgentPaymentQRCode,
   getAgentInvitedUsers,
   getAgentCommissions,
   validateReferralCode

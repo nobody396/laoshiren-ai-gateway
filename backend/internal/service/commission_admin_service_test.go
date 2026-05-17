@@ -174,6 +174,10 @@ type agentSettlementAdminRepoStub struct {
 	createIfAvailableSettlement    *AgentSettlement
 	createIfAvailableSettlementID  int64
 	createIfAvailableSettlementNow time.Time
+	totalCommission                float64
+	settledCommission              float64
+	paymentProfile                 *AgentPaymentProfile
+	settlementSettings             *AgentSettlementSettings
 }
 
 func (s *agentSettlementAdminRepoStub) ListAdminAgents(context.Context, pagination.PaginationParams, AdminAgentListFilters) ([]AdminAgentSummary, *pagination.PaginationResult, error) {
@@ -198,7 +202,7 @@ func (s *agentSettlementAdminRepoStub) ListAgentSettlements(context.Context, int
 }
 
 func (s *agentSettlementAdminRepoStub) SumAgentSettlements(context.Context, int64) (float64, error) {
-	return 0, nil
+	return s.settledCommission, nil
 }
 
 func (s *agentSettlementAdminRepoStub) CreateAgentSettlement(context.Context, *AgentSettlement) error {
@@ -222,6 +226,41 @@ func (s *agentSettlementAdminRepoStub) CreateAgentSettlementIfAvailable(_ contex
 	return nil
 }
 
+func (s *agentSettlementAdminRepoStub) SumByBeneficiaryAndPeriod(context.Context, int64, *time.Time, *time.Time) (float64, error) {
+	return s.totalCommission, nil
+}
+
+func (s *agentSettlementAdminRepoStub) GetAgentSettlementSettings(context.Context) (*AgentSettlementSettings, error) {
+	if s.settlementSettings != nil {
+		return s.settlementSettings, nil
+	}
+	return &AgentSettlementSettings{MinimumAmount: 50}, nil
+}
+
+func (s *agentSettlementAdminRepoStub) UpdateAgentSettlementSettings(_ context.Context, settings *AgentSettlementSettings) error {
+	copied := *settings
+	copied.UpdatedAt = time.Now()
+	s.settlementSettings = &copied
+	settings.UpdatedAt = copied.UpdatedAt
+	return nil
+}
+
+func (s *agentSettlementAdminRepoStub) GetAgentPaymentProfile(context.Context, int64) (*AgentPaymentProfile, error) {
+	if s.paymentProfile == nil {
+		return nil, nil
+	}
+	copied := *s.paymentProfile
+	return &copied, nil
+}
+
+func (s *agentSettlementAdminRepoStub) UpsertAgentPaymentProfile(context.Context, *AgentPaymentProfile) error {
+	return nil
+}
+
+func (s *agentSettlementAdminRepoStub) UpdateAgentPaymentQRCode(context.Context, int64, string, string, string, int64) (*AgentPaymentProfile, error) {
+	return s.paymentProfile, nil
+}
+
 func TestCommissionServiceCreateAgentSettlementUsesAtomicRepositoryPath(t *testing.T) {
 	userRepo := &bindUserRepoStub{
 		byID: map[int64]*User{
@@ -232,10 +271,16 @@ func TestCommissionServiceCreateAgentSettlementUsesAtomicRepositoryPath(t *testi
 	adminRepo := &agentSettlementAdminRepoStub{
 		createIfAvailableSettlementID:  123,
 		createIfAvailableSettlementNow: now,
+		totalCommission:                100,
+		paymentProfile: &AgentPaymentProfile{
+			AlipayRealName:        "张三",
+			AlipayAccount:         "agent@example.com",
+			AlipayQRCodeObjectKey: "agent-payment-qrcodes/7/test.png",
+		},
 	}
 	svc := NewCommissionService(userRepo, adminRepo)
 
-	settlement, err := svc.CreateAgentSettlement(context.Background(), 7, 99, 75, "manual payout")
+	settlement, err := svc.CreateAgentSettlement(context.Background(), 7, 99, 75, "manual payout", "alipay-20260517")
 	require.NoError(t, err)
 	require.Equal(t, int64(123), settlement.ID)
 	require.Equal(t, now, settlement.CreatedAt)
@@ -244,6 +289,10 @@ func TestCommissionServiceCreateAgentSettlementUsesAtomicRepositoryPath(t *testi
 	require.Equal(t, 75.0, settlement.Amount)
 	require.Equal(t, AgentSettlementStatusCompleted, settlement.Status)
 	require.Equal(t, "manual payout", settlement.Note)
+	require.Equal(t, "张三", settlement.PaymentAlipayRealName)
+	require.Equal(t, "agent@example.com", settlement.PaymentAlipayAccount)
+	require.Equal(t, "agent-payment-qrcodes/7/test.png", settlement.PaymentQRCodeObjectKey)
+	require.Equal(t, "alipay-20260517", settlement.PaymentReference)
 	require.Equal(t, 0, adminRepo.getAdminAgentCalls)
 	require.Equal(t, 0, adminRepo.createAgentSettlementCalls)
 	require.Equal(t, 1, adminRepo.createIfAvailableCalls)
@@ -260,7 +309,7 @@ func TestCommissionServiceCreateAgentSettlementRejectsNonPositiveAmount(t *testi
 	adminRepo := &agentSettlementAdminRepoStub{}
 	svc := NewCommissionService(userRepo, adminRepo)
 
-	settlement, err := svc.CreateAgentSettlement(context.Background(), 7, 99, 0, "manual payout")
+	settlement, err := svc.CreateAgentSettlement(context.Background(), 7, 99, 0, "manual payout", "")
 	require.Nil(t, settlement)
 	require.Error(t, err)
 	require.Equal(t, http.StatusBadRequest, infraerrors.Code(err))
@@ -276,13 +325,65 @@ func TestCommissionServiceCreateAgentSettlementReturnsInsufficientUnsettledError
 	}
 	adminRepo := &agentSettlementAdminRepoStub{
 		createIfAvailableErr: infraerrors.BadRequest("SETTLEMENT_EXCEEDS_UNSETTLED", "settlement amount exceeds unsettled commission"),
+		totalCommission:      100,
+		paymentProfile: &AgentPaymentProfile{
+			AlipayRealName:        "张三",
+			AlipayAccount:         "agent@example.com",
+			AlipayQRCodeObjectKey: "agent-payment-qrcodes/7/test.png",
+		},
 	}
 	svc := NewCommissionService(userRepo, adminRepo)
 
-	settlement, err := svc.CreateAgentSettlement(context.Background(), 7, 99, 75, "manual payout")
+	settlement, err := svc.CreateAgentSettlement(context.Background(), 7, 99, 75, "manual payout", "")
 	require.Nil(t, settlement)
 	require.Error(t, err)
 	require.Equal(t, http.StatusBadRequest, infraerrors.Code(err))
 	require.Equal(t, "SETTLEMENT_EXCEEDS_UNSETTLED", infraerrors.Reason(err))
 	require.Equal(t, 1, adminRepo.createIfAvailableCalls)
+}
+
+func TestCommissionServiceCreateAgentSettlementRejectsBelowMinimumUnsettled(t *testing.T) {
+	userRepo := &bindUserRepoStub{
+		byID: map[int64]*User{
+			7: {ID: 7, Role: RoleAgent},
+		},
+	}
+	adminRepo := &agentSettlementAdminRepoStub{
+		totalCommission: 49.99,
+		paymentProfile: &AgentPaymentProfile{
+			AlipayRealName:        "张三",
+			AlipayAccount:         "agent@example.com",
+			AlipayQRCodeObjectKey: "agent-payment-qrcodes/7/test.png",
+		},
+	}
+	svc := NewCommissionService(userRepo, adminRepo)
+
+	settlement, err := svc.CreateAgentSettlement(context.Background(), 7, 99, 49.99, "manual payout", "")
+	require.Nil(t, settlement)
+	require.Error(t, err)
+	require.Equal(t, http.StatusBadRequest, infraerrors.Code(err))
+	require.Equal(t, "SETTLEMENT_BELOW_MINIMUM", infraerrors.Reason(err))
+	require.Equal(t, 0, adminRepo.createIfAvailableCalls)
+}
+
+func TestCommissionServiceCreateAgentSettlementRejectsIncompletePaymentProfile(t *testing.T) {
+	userRepo := &bindUserRepoStub{
+		byID: map[int64]*User{
+			7: {ID: 7, Role: RoleAgent},
+		},
+	}
+	adminRepo := &agentSettlementAdminRepoStub{
+		totalCommission: 100,
+		paymentProfile: &AgentPaymentProfile{
+			AlipayRealName: "张三",
+		},
+	}
+	svc := NewCommissionService(userRepo, adminRepo)
+
+	settlement, err := svc.CreateAgentSettlement(context.Background(), 7, 99, 75, "manual payout", "")
+	require.Nil(t, settlement)
+	require.Error(t, err)
+	require.Equal(t, http.StatusBadRequest, infraerrors.Code(err))
+	require.Equal(t, "AGENT_PAYMENT_PROFILE_INCOMPLETE", infraerrors.Reason(err))
+	require.Equal(t, 0, adminRepo.createIfAvailableCalls)
 }

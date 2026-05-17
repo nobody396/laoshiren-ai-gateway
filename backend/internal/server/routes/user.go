@@ -117,6 +117,10 @@ func RegisterUserRoutes(
 			agent.GET("/dashboard", h.Agent.GetDashboard)
 			agent.GET("/users", h.Agent.GetInvitedUsers)
 			agent.GET("/commissions", h.Agent.GetCommissions)
+			agent.GET("/payment-profile", h.Agent.GetPaymentProfile)
+			agent.PUT("/payment-profile", h.Agent.UpdatePaymentProfile)
+			agent.POST("/payment-profile/alipay-qr", h.Agent.UploadPaymentQRCode)
+			agent.GET("/payment-profile/alipay-qr", h.Agent.GetPaymentQRCode)
 		}
 
 		// 用户订阅

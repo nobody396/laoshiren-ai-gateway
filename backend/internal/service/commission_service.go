@@ -31,6 +31,7 @@ type CommissionService struct {
 	rateRepo       CommissionRateRepository
 	adminRepo      AgentCommissionAdminRepository
 	levelRepo      AgentLevelRepository
+	paymentRepo    AgentPaymentRepository
 }
 
 // NewCommissionService 创建分佣服务实例
@@ -47,6 +48,9 @@ func NewCommissionService(userRepo UserRepository, commissionRepo CommissionRepo
 	}
 	if repo, ok := commissionRepo.(AgentLevelRepository); ok {
 		s.levelRepo = repo
+	}
+	if repo, ok := commissionRepo.(AgentPaymentRepository); ok {
+		s.paymentRepo = repo
 	}
 	return s
 }
@@ -371,6 +375,18 @@ func (s *CommissionService) GetAgentDashboard(ctx context.Context, agentID int64
 		AssessmentPeriodEnd:      &assessmentPeriodEnd,
 		NextAssessmentAt:         &nextAssessmentAt,
 	}
+	settlementSettings := s.getAgentSettlementSettings(ctx)
+	settlementReached := unsettledCommission+agentSettlementAmountEpsilon >= settlementSettings.MinimumAmount
+	dashboard.SettlementMinimumAmount = settlementSettings.MinimumAmount
+	dashboard.SettlementGap = settlementGap(unsettledCommission, settlementSettings.MinimumAmount)
+	dashboard.SettlementEligible = settlementReached
+	if s.paymentRepo != nil {
+		if profile, profileErr := s.paymentRepo.GetAgentPaymentProfile(ctx, agentID); profileErr == nil && profile != nil {
+			normalizeAgentPaymentProfile(profile)
+			dashboard.PaymentProfileComplete = profile.Complete
+		}
+	}
+	dashboard.SettlementEligible = settlementReached && dashboard.PaymentProfileComplete
 	normalizedRules := enabledAgentLevelRules(normalizeAgentLevelRules(rules))
 	if levelState != nil {
 		dashboard.CurrentLevel = levelState.CurrentLevelKey

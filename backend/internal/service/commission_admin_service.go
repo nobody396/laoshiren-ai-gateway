@@ -97,7 +97,14 @@ func (s *CommissionService) ListAdminAgents(ctx context.Context, params paginati
 	if s.adminRepo == nil {
 		return nil, nil, fmt.Errorf("agent admin repository is not configured")
 	}
-	return s.adminRepo.ListAdminAgents(ctx, params, filters)
+	items, result, err := s.adminRepo.ListAdminAgents(ctx, params, filters)
+	if err != nil {
+		return nil, nil, err
+	}
+	for i := range items {
+		enrichAgentSettlementStatus(&items[i])
+	}
+	return items, result, nil
 }
 
 func (s *CommissionService) GetAdminAgent(ctx context.Context, agentID int64, start, end *time.Time) (*AdminAgentSummary, error) {
@@ -107,7 +114,12 @@ func (s *CommissionService) GetAdminAgent(ctx context.Context, agentID int64, st
 	if err := s.ensureAgent(ctx, agentID); err != nil {
 		return nil, err
 	}
-	return s.adminRepo.GetAdminAgent(ctx, agentID, start, end)
+	item, err := s.adminRepo.GetAdminAgent(ctx, agentID, start, end)
+	if err != nil {
+		return nil, err
+	}
+	enrichAgentSettlementStatus(item)
+	return item, nil
 }
 
 func (s *CommissionService) ListAdminAgentUsers(ctx context.Context, agentID int64, params pagination.PaginationParams, start, end *time.Time) ([]AdminAgentUserStat, *pagination.PaginationResult, error) {
@@ -195,7 +207,7 @@ func (s *CommissionService) ListAgentSettlements(ctx context.Context, agentID in
 	return s.adminRepo.ListAgentSettlements(ctx, agentID, params)
 }
 
-func (s *CommissionService) CreateAgentSettlement(ctx context.Context, agentID, operatorID int64, amount float64, note string) (*AgentSettlement, error) {
+func (s *CommissionService) CreateAgentSettlement(ctx context.Context, agentID, operatorID int64, amount float64, note, paymentReference string) (*AgentSettlement, error) {
 	if s.adminRepo == nil {
 		return nil, fmt.Errorf("agent admin repository is not configured")
 	}
@@ -205,18 +217,72 @@ func (s *CommissionService) CreateAgentSettlement(ctx context.Context, agentID, 
 	if amount <= 0 {
 		return nil, infraerrors.BadRequest("INVALID_SETTLEMENT_AMOUNT", "settlement amount must be greater than 0")
 	}
+	settings := s.getAgentSettlementSettings(ctx)
+	if amount+agentSettlementAmountEpsilon < settings.MinimumAmount {
+		return nil, infraerrors.BadRequest("SETTLEMENT_BELOW_MINIMUM", fmt.Sprintf("settlement amount must be at least %.2f", settings.MinimumAmount))
+	}
+	totalCommission, err := s.commissionRepo.SumByBeneficiaryAndPeriod(ctx, agentID, nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("sum agent commission: %w", err)
+	}
+	settledCommission, err := s.adminRepo.SumAgentSettlements(ctx, agentID)
+	if err != nil {
+		return nil, fmt.Errorf("sum agent settlements: %w", err)
+	}
+	available := totalCommission - settledCommission
+	if available < 0 {
+		available = 0
+	}
+	if available+agentSettlementAmountEpsilon < settings.MinimumAmount {
+		return nil, infraerrors.BadRequest("SETTLEMENT_BELOW_MINIMUM", fmt.Sprintf("unsettled commission must reach %.2f before settlement", settings.MinimumAmount))
+	}
+	if amount-available > agentSettlementAmountEpsilon {
+		return nil, infraerrors.BadRequest("SETTLEMENT_EXCEEDS_UNSETTLED", "settlement amount exceeds unsettled commission")
+	}
+
+	if s.paymentRepo == nil {
+		return nil, fmt.Errorf("agent payment repository is not configured")
+	}
+	profile, err := s.paymentRepo.GetAgentPaymentProfile(ctx, agentID)
+	if err != nil {
+		return nil, fmt.Errorf("get agent payment profile: %w", err)
+	}
+	if profile == nil {
+		profile = emptyAgentPaymentProfile(agentID)
+	}
+	normalizeAgentPaymentProfile(profile)
+	if !profile.Complete {
+		return nil, infraerrors.BadRequest("AGENT_PAYMENT_PROFILE_INCOMPLETE", "agent payment profile is incomplete")
+	}
 
 	settlement := &AgentSettlement{
-		AgentID:    agentID,
-		Amount:     amount,
-		OperatorID: operatorID,
-		Note:       note,
-		Status:     AgentSettlementStatusCompleted,
+		AgentID:                agentID,
+		Amount:                 amount,
+		OperatorID:             operatorID,
+		Note:                   strings.TrimSpace(note),
+		Status:                 AgentSettlementStatusCompleted,
+		PaymentAlipayRealName:  profile.AlipayRealName,
+		PaymentAlipayAccount:   profile.AlipayAccount,
+		PaymentContactPhone:    profile.ContactPhone,
+		PaymentNote:            profile.PaymentNote,
+		PaymentQRCodeObjectKey: profile.AlipayQRCodeObjectKey,
+		PaymentReference:       strings.TrimSpace(paymentReference),
 	}
 	if err := s.adminRepo.CreateAgentSettlementIfAvailable(ctx, settlement); err != nil {
 		return nil, fmt.Errorf("create agent settlement: %w", err)
 	}
 	return settlement, nil
+}
+
+func enrichAgentSettlementStatus(item *AdminAgentSummary) {
+	if item == nil {
+		return
+	}
+	if item.SettlementMinimumAmount <= 0 {
+		item.SettlementMinimumAmount = defaultAgentSettlementMinimumAmount
+	}
+	item.SettlementGap = settlementGap(item.UnsettledCommission, item.SettlementMinimumAmount)
+	item.SettlementEligible = item.PaymentProfileComplete && item.UnsettledCommission+agentSettlementAmountEpsilon >= item.SettlementMinimumAmount
 }
 
 func (s *CommissionService) ensureAgent(ctx context.Context, agentID int64) error {

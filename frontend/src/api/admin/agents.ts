@@ -45,6 +45,11 @@ export interface AdminAgentSummary {
   last_month_consumption?: number
   next_level_key?: string
   next_level_gap?: number
+  settlement_minimum_amount: number
+  settlement_eligible: boolean
+  settlement_gap: number
+  payment_profile_complete: boolean
+  payment_profile_updated_at?: string
 }
 
 export interface AdminAgentUserStat {
@@ -102,7 +107,33 @@ export interface AgentSettlement {
   operator_id: number
   note: string
   status: string
+  payment_alipay_real_name?: string
+  payment_alipay_account?: string
+  payment_contact_phone?: string
+  payment_note?: string
+  payment_qr_object_key?: string
+  payment_reference?: string
   created_at: string
+}
+
+export interface AgentSettlementSettings {
+  minimum_amount: number
+  updated_at?: string
+}
+
+export interface AgentPaymentProfile {
+  agent_id: number
+  alipay_real_name: string
+  alipay_account: string
+  contact_phone: string
+  payment_note: string
+  alipay_qr_original_filename?: string
+  alipay_qr_size?: number
+  alipay_qr_url?: string
+  has_alipay_qr: boolean
+  complete: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export interface AgentLevelRule {
@@ -151,12 +182,18 @@ export interface AgentListParams {
   search?: string
   sort_by?: string
   sort_order?: 'asc' | 'desc'
+  settlement_status?: 'eligible' | 'below_threshold' | 'missing_profile' | ''
   start?: string
   end?: string
 }
 
 export async function list(params?: AgentListParams): Promise<PaginatedResponse<AdminAgentSummary>> {
   const { data } = await apiClient.get<PaginatedResponse<AdminAgentSummary>>('/admin/agents', { params })
+  return data
+}
+
+export async function listSettlementCandidates(params?: AgentListParams): Promise<PaginatedResponse<AdminAgentSummary>> {
+  const { data } = await apiClient.get<PaginatedResponse<AdminAgentSummary>>('/admin/agents/settlement-candidates', { params })
   return data
 }
 
@@ -185,8 +222,32 @@ export async function listSettlements(agentId: number, params?: { page?: number;
   return data
 }
 
-export async function createSettlement(agentId: number, amount: number, note?: string): Promise<AgentSettlement> {
-  const { data } = await apiClient.post<AgentSettlement>(`/admin/agents/${agentId}/settlements`, { amount, note: note || '' })
+export async function createSettlement(agentId: number, amount: number, note?: string, paymentReference?: string): Promise<AgentSettlement> {
+  const { data } = await apiClient.post<AgentSettlement>(`/admin/agents/${agentId}/settlements`, {
+    amount,
+    note: note || '',
+    payment_reference: paymentReference || ''
+  })
+  return data
+}
+
+export async function getSettlementSettings(): Promise<AgentSettlementSettings> {
+  const { data } = await apiClient.get<AgentSettlementSettings>('/admin/agents/settlement-settings')
+  return data
+}
+
+export async function updateSettlementSettings(payload: AgentSettlementSettings): Promise<AgentSettlementSettings> {
+  const { data } = await apiClient.put<AgentSettlementSettings>('/admin/agents/settlement-settings', payload)
+  return data
+}
+
+export async function getPaymentProfile(agentId: number): Promise<AgentPaymentProfile> {
+  const { data } = await apiClient.get<AgentPaymentProfile>(`/admin/agents/${agentId}/payment-profile`)
+  return data
+}
+
+export async function getPaymentQRCode(agentId: number): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>(`/admin/agents/${agentId}/payment-profile/alipay-qr`, { responseType: 'blob' })
   return data
 }
 
@@ -232,12 +293,17 @@ export async function runAgentLevelEvaluation(agentId: number): Promise<AgentLev
 
 export const agentsAPI = {
   list,
+  listSettlementCandidates,
   get,
   listUsers,
   bindUser,
   listCommissions,
   listSettlements,
   createSettlement,
+  getSettlementSettings,
+  updateSettlementSettings,
+  getPaymentProfile,
+  getPaymentQRCode,
   getRates,
   updateRates,
   getAgentRate,

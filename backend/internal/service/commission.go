@@ -63,6 +63,10 @@ type AgentDashboard struct {
 	NextAssessmentAt         *time.Time          `json:"next_assessment_at,omitempty"`
 	NextMonthlyProgress      *AgentLevelProgress `json:"next_monthly_progress,omitempty"`
 	NextCumulativeProgress   *AgentLevelProgress `json:"next_cumulative_progress,omitempty"`
+	SettlementMinimumAmount  float64             `json:"settlement_minimum_amount"`
+	SettlementEligible       bool                `json:"settlement_eligible"`
+	SettlementGap            float64             `json:"settlement_gap"`
+	PaymentProfileComplete   bool                `json:"payment_profile_complete"`
 }
 
 type AgentLevelProgress struct {
@@ -90,6 +94,11 @@ type CommissionRates struct {
 	UpdatedAt                 time.Time `json:"updated_at,omitempty"`
 }
 
+type AgentSettlementSettings struct {
+	MinimumAmount float64   `json:"minimum_amount"`
+	UpdatedAt     time.Time `json:"updated_at,omitempty"`
+}
+
 // AgentRateConfig 单代理商比例覆盖配置。
 type AgentRateConfig struct {
 	AgentID                  int64      `json:"agent_id"`
@@ -103,19 +112,43 @@ type AgentRateConfig struct {
 
 // AgentSettlement 代理商结算流水。结算只扣减未结算佣金，不影响 users.balance。
 type AgentSettlement struct {
-	ID         int64     `json:"id"`
-	AgentID    int64     `json:"agent_id"`
-	Amount     float64   `json:"amount"`
-	OperatorID int64     `json:"operator_id"`
-	Note       string    `json:"note"`
-	Status     string    `json:"status"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID                     int64     `json:"id"`
+	AgentID                int64     `json:"agent_id"`
+	Amount                 float64   `json:"amount"`
+	OperatorID             int64     `json:"operator_id"`
+	Note                   string    `json:"note"`
+	Status                 string    `json:"status"`
+	PaymentAlipayRealName  string    `json:"payment_alipay_real_name,omitempty"`
+	PaymentAlipayAccount   string    `json:"payment_alipay_account,omitempty"`
+	PaymentContactPhone    string    `json:"payment_contact_phone,omitempty"`
+	PaymentNote            string    `json:"payment_note,omitempty"`
+	PaymentQRCodeObjectKey string    `json:"payment_qr_object_key,omitempty"`
+	PaymentReference       string    `json:"payment_reference,omitempty"`
+	CreatedAt              time.Time `json:"created_at"`
+}
+
+type AgentPaymentProfile struct {
+	AgentID                  int64      `json:"agent_id"`
+	AlipayRealName           string     `json:"alipay_real_name"`
+	AlipayAccount            string     `json:"alipay_account"`
+	ContactPhone             string     `json:"contact_phone"`
+	PaymentNote              string     `json:"payment_note"`
+	AlipayQRCodeObjectKey    string     `json:"-"`
+	AlipayQRCodeContentType  string     `json:"-"`
+	AlipayQRCodeOriginalName string     `json:"alipay_qr_original_filename,omitempty"`
+	AlipayQRCodeSize         int64      `json:"alipay_qr_size,omitempty"`
+	AlipayQRCodeURL          string     `json:"alipay_qr_url,omitempty"`
+	HasAlipayQRCode          bool       `json:"has_alipay_qr"`
+	Complete                 bool       `json:"complete"`
+	CreatedAt                *time.Time `json:"created_at,omitempty"`
+	UpdatedAt                *time.Time `json:"updated_at,omitempty"`
 }
 
 type AdminAgentListFilters struct {
-	Search string
-	Start  *time.Time
-	End    *time.Time
+	Search           string
+	SettlementStatus string
+	Start            *time.Time
+	End              *time.Time
 }
 
 type AdminAgentSummary struct {
@@ -146,6 +179,11 @@ type AdminAgentSummary struct {
 	LastMonthConsumption    float64    `json:"last_month_consumption,omitempty"`
 	NextLevelKey            *string    `json:"next_level_key,omitempty"`
 	NextLevelGap            float64    `json:"next_level_gap,omitempty"`
+	SettlementMinimumAmount float64    `json:"settlement_minimum_amount"`
+	SettlementEligible      bool       `json:"settlement_eligible"`
+	SettlementGap           float64    `json:"settlement_gap"`
+	PaymentProfileComplete  bool       `json:"payment_profile_complete"`
+	PaymentProfileUpdatedAt *time.Time `json:"payment_profile_updated_at,omitempty"`
 }
 
 type AdminAgentUserStat struct {
@@ -216,6 +254,14 @@ type AgentCommissionAdminRepository interface {
 	SumAgentSettlements(ctx context.Context, agentID int64) (float64, error)
 	CreateAgentSettlement(ctx context.Context, settlement *AgentSettlement) error
 	CreateAgentSettlementIfAvailable(ctx context.Context, settlement *AgentSettlement) error
+}
+
+type AgentPaymentRepository interface {
+	GetAgentSettlementSettings(ctx context.Context) (*AgentSettlementSettings, error)
+	UpdateAgentSettlementSettings(ctx context.Context, settings *AgentSettlementSettings) error
+	GetAgentPaymentProfile(ctx context.Context, agentID int64) (*AgentPaymentProfile, error)
+	UpsertAgentPaymentProfile(ctx context.Context, profile *AgentPaymentProfile) error
+	UpdateAgentPaymentQRCode(ctx context.Context, agentID int64, objectKey, contentType, originalName string, size int64) (*AgentPaymentProfile, error)
 }
 
 // CommissionRepository 分佣记录数据访问接口

@@ -22,6 +22,7 @@ type opsHTTPDoer interface {
 
 var (
 	opsNotificationHTTPClient = &http.Client{Timeout: 8 * time.Second}
+	opsFeishuAPIBaseURL       = "https://open.feishu.cn"
 	opsTelegramAPIBaseURL     = "https://api.telegram.org"
 )
 
@@ -63,7 +64,7 @@ func sendOpsFeishuText(ctx context.Context, client opsHTTPDoer, cfg OpsFeishuNot
 	}
 	webhookURL := strings.TrimSpace(cfg.WebhookURL)
 	if webhookURL == "" {
-		return errors.New("feishu webhook url is required")
+		return sendOpsFeishuAppBotText(ctx, client, cfg, text)
 	}
 	payload := map[string]any{
 		"msg_type": "text",
@@ -86,6 +87,87 @@ func sendOpsFeishuText(ctx context.Context, client opsHTTPDoer, cfg OpsFeishuNot
 	}
 	req.Header.Set("Content-Type", "application/json")
 	return doOpsWebhookRequest(client, req, "feishu")
+}
+
+func sendOpsFeishuAppBotText(ctx context.Context, client opsHTTPDoer, cfg OpsFeishuNotificationConfig, text string) error {
+	appID := strings.TrimSpace(cfg.AppID)
+	appSecret := strings.TrimSpace(cfg.AppSecret)
+	chatID := strings.TrimSpace(cfg.ChatID)
+	if appID == "" || appSecret == "" || chatID == "" {
+		return errors.New("feishu webhook url or app bot credentials are required")
+	}
+
+	token, err := getOpsFeishuTenantAccessToken(ctx, client, appID, appSecret)
+	if err != nil {
+		return err
+	}
+
+	content, err := json.Marshal(map[string]string{"text": text})
+	if err != nil {
+		return err
+	}
+	payload := map[string]string{
+		"receive_id": chatID,
+		"msg_type":   "text",
+		"content":    string(content),
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	apiBase := strings.TrimRight(opsFeishuAPIBaseURL, "/")
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiBase+"/open-apis/im/v1/messages?receive_id_type=chat_id", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	return doOpsWebhookRequest(client, req, "feishu")
+}
+
+func getOpsFeishuTenantAccessToken(ctx context.Context, client opsHTTPDoer, appID string, appSecret string) (string, error) {
+	payload := map[string]string{
+		"app_id":     appID,
+		"app_secret": appSecret,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+	apiBase := strings.TrimRight(opsFeishuAPIBaseURL, "/")
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiBase+"/open-apis/auth/v3/tenant_access_token/internal", bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("feishu token api returned %d: %s", resp.StatusCode, strings.TrimSpace(string(data)))
+	}
+
+	var payloadResp struct {
+		Code              int    `json:"code"`
+		Msg               string `json:"msg"`
+		TenantAccessToken string `json:"tenant_access_token"`
+	}
+	if err := json.Unmarshal(data, &payloadResp); err != nil {
+		return "", err
+	}
+	if payloadResp.Code != 0 {
+		return "", fmt.Errorf("feishu token api returned code %d: %s", payloadResp.Code, payloadResp.Msg)
+	}
+	token := strings.TrimSpace(payloadResp.TenantAccessToken)
+	if token == "" {
+		return "", errors.New("feishu token api returned empty tenant_access_token")
+	}
+	return token, nil
 }
 
 func signFeishuWebhook(timestamp string, secret string) string {
@@ -126,8 +208,48 @@ func doOpsWebhookRequest(client opsHTTPDoer, req *http.Request, channel string) 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		if err := validateOpsWebhookSuccessBody(channel, string(data)); err != nil {
+			return err
+		}
 		return nil
 	}
 	data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 	return fmt.Errorf("%s webhook returned %d: %s", channel, resp.StatusCode, strings.TrimSpace(string(data)))
+}
+
+func validateOpsWebhookSuccessBody(channel string, body string) error {
+	body = strings.TrimSpace(body)
+	if body == "" {
+		return nil
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(body), &payload); err != nil {
+		return nil
+	}
+	switch channel {
+	case "feishu":
+		if code, ok := jsonNumberAsFloat(payload["code"]); ok && code != 0 {
+			return fmt.Errorf("feishu webhook returned code %.0f: %v", code, payload["msg"])
+		}
+		if code, ok := jsonNumberAsFloat(payload["StatusCode"]); ok && code != 0 {
+			return fmt.Errorf("feishu webhook returned status %.0f: %v", code, payload["StatusMessage"])
+		}
+	case "telegram":
+		if ok, exists := payload["ok"].(bool); exists && !ok {
+			return fmt.Errorf("telegram webhook returned ok=false: %v", payload["description"])
+		}
+	}
+	return nil
+}
+
+func jsonNumberAsFloat(v any) (float64, bool) {
+	switch n := v.(type) {
+	case float64:
+		return n, true
+	case int:
+		return float64(n), true
+	default:
+		return 0, false
+	}
 }

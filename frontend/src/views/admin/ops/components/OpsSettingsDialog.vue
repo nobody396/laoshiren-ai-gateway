@@ -140,8 +140,10 @@ const validation = computed(() => {
   if (webhookConfig.value) {
     const feishu = webhookConfig.value.feishu
     const telegram = webhookConfig.value.telegram
-    if (feishu.enabled && !feishu.webhook_url && !feishu.webhook_url_configured) {
-      errors.push(t('admin.ops.webhook.validation.feishuWebhookRequired'))
+    const hasFeishuWebhook = Boolean(feishu.webhook_url || feishu.webhook_url_configured)
+    const hasFeishuAppBot = Boolean((feishu.app_id || feishu.app_id_configured) && (feishu.app_secret || feishu.app_secret_configured) && feishu.chat_id?.trim())
+    if (feishu.enabled && !hasFeishuWebhook && !hasFeishuAppBot) {
+      errors.push(t('admin.ops.webhook.validation.feishuDeliveryRequired'))
     }
     if (telegram.enabled && !telegram.bot_token && !telegram.bot_token_configured) {
       errors.push(t('admin.ops.webhook.validation.telegramTokenRequired'))
@@ -364,6 +366,31 @@ async function sendWebhookTest(channel: 'feishu' | 'telegram') {
                   :placeholder="configuredSecretPlaceholder(webhookConfig.feishu.secret_configured)"
                 />
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.webhook.signSecretHint') }}</p>
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.feishuAppId') }}</label>
+                <input
+                  v-model="webhookConfig.feishu.app_id"
+                  type="password"
+                  autocomplete="off"
+                  class="input"
+                  :placeholder="configuredSecretPlaceholder(webhookConfig.feishu.app_id_configured)"
+                />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.ops.webhook.feishuAppBotHint') }}</p>
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.feishuAppSecret') }}</label>
+                <input
+                  v-model="webhookConfig.feishu.app_secret"
+                  type="password"
+                  autocomplete="off"
+                  class="input"
+                  :placeholder="configuredSecretPlaceholder(webhookConfig.feishu.app_secret_configured)"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.ops.webhook.feishuChatId') }}</label>
+                <input v-model="webhookConfig.feishu.chat_id" type="text" class="input" />
               </div>
               <div>
                 <label class="input-label">{{ t('admin.ops.webhook.minSeverity') }}</label>

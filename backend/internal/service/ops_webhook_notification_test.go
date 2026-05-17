@@ -81,6 +81,9 @@ func TestOpsWebhookConfigRedactsAndPreservesSecrets(t *testing.T) {
 			Name:             "飞书主群",
 			WebhookURL:       "https://open.feishu.cn/open-apis/bot/v2/hook/test",
 			Secret:           "signing-secret",
+			AppID:            "cli_test",
+			AppSecret:        "app-secret",
+			ChatID:           "oc_test",
 			MinSeverity:      "warning",
 			RateLimitPerHour: 5,
 		},
@@ -96,8 +99,13 @@ func TestOpsWebhookConfigRedactsAndPreservesSecrets(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, updated.Feishu.WebhookURLConfigured)
 	require.True(t, updated.Feishu.SecretConfigured)
+	require.True(t, updated.Feishu.AppIDConfigured)
+	require.True(t, updated.Feishu.AppSecretConfigured)
 	require.Empty(t, updated.Feishu.WebhookURL)
 	require.Empty(t, updated.Feishu.Secret)
+	require.Empty(t, updated.Feishu.AppID)
+	require.Empty(t, updated.Feishu.AppSecret)
+	require.Equal(t, "oc_test", updated.Feishu.ChatID)
 	require.True(t, updated.Telegram.BotTokenConfigured)
 	require.Empty(t, updated.Telegram.BotToken)
 
@@ -125,6 +133,9 @@ func TestOpsWebhookConfigRedactsAndPreservesSecrets(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(repo.values[SettingKeyOpsWebhookNotificationConfig]), raw))
 	require.Equal(t, "https://open.feishu.cn/open-apis/bot/v2/hook/test", raw.Feishu.WebhookURL)
 	require.Equal(t, "signing-secret", raw.Feishu.Secret)
+	require.Equal(t, "cli_test", raw.Feishu.AppID)
+	require.Equal(t, "app-secret", raw.Feishu.AppSecret)
+	require.Equal(t, "oc_test", raw.Feishu.ChatID)
 	require.Equal(t, "123456:test-token", raw.Telegram.BotToken)
 	require.Equal(t, "-100999", raw.Telegram.ChatID)
 }
@@ -136,6 +147,25 @@ func TestOpsWebhookConfigValidation(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "feishu.webhook_url")
+}
+
+func TestOpsWebhookConfigAllowsFeishuAppBot(t *testing.T) {
+	svc := &OpsService{settingRepo: &opsWebhookSettingRepoStub{}}
+	updated, err := svc.UpdateWebhookNotificationConfig(context.Background(), &OpsWebhookNotificationConfigUpdateRequest{
+		Feishu: &OpsFeishuNotificationConfig{
+			Enabled:          true,
+			Name:             "飞书告警群",
+			AppID:            "cli_test",
+			AppSecret:        "app-secret",
+			ChatID:           "oc_test",
+			MinSeverity:      "warning",
+			RateLimitPerHour: 20,
+		},
+	})
+	require.NoError(t, err)
+	require.True(t, updated.Feishu.AppIDConfigured)
+	require.True(t, updated.Feishu.AppSecretConfigured)
+	require.Equal(t, "oc_test", updated.Feishu.ChatID)
 }
 
 func TestOpsAlertWebhookNotificationsSendToConfiguredGroups(t *testing.T) {
@@ -256,4 +286,49 @@ func TestSendOpsTelegramTextRejectsMissingChat(t *testing.T) {
 	}, "hello")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "chat id")
+}
+
+func TestSendOpsFeishuTextWithAppBot(t *testing.T) {
+	var tokenHit bool
+	var messageHit bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		switch r.URL.Path {
+		case "/open-apis/auth/v3/tenant_access_token/internal":
+			tokenHit = true
+			require.Contains(t, string(body), "cli_test")
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"code":0,"tenant_access_token":"tenant-token"}`))
+		case "/open-apis/im/v1/messages":
+			messageHit = true
+			require.Equal(t, "Bearer tenant-token", r.Header.Get("Authorization"))
+			require.Equal(t, "chat_id", r.URL.Query().Get("receive_id_type"))
+			require.Contains(t, string(body), "oc_test")
+			require.Contains(t, string(body), "老实人AI")
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"code":0}`))
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	oldBaseURL := opsFeishuAPIBaseURL
+	opsFeishuAPIBaseURL = server.URL
+	defer func() { opsFeishuAPIBaseURL = oldBaseURL }()
+
+	err := sendOpsFeishuText(context.Background(), server.Client(), OpsFeishuNotificationConfig{
+		AppID:     "cli_test",
+		AppSecret: "app-secret",
+		ChatID:    "oc_test",
+	}, "老实人AI 测试")
+	require.NoError(t, err)
+	require.True(t, tokenHit)
+	require.True(t, messageHit)
+}
+
+func TestValidateOpsWebhookSuccessBodyRejectsFeishuCode(t *testing.T) {
+	err := validateOpsWebhookSuccessBody("feishu", `{"code":999,"msg":"bad request"}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "999")
 }

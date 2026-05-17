@@ -50,6 +50,11 @@ type OpsFeishuNotificationConfig struct {
 	WebhookURLConfigured bool   `json:"webhook_url_configured"`
 	Secret               string `json:"secret,omitempty"`
 	SecretConfigured     bool   `json:"secret_configured"`
+	AppID                string `json:"app_id,omitempty"`
+	AppIDConfigured      bool   `json:"app_id_configured"`
+	AppSecret            string `json:"app_secret,omitempty"`
+	AppSecretConfigured  bool   `json:"app_secret_configured"`
+	ChatID               string `json:"chat_id,omitempty"`
 	MinSeverity          string `json:"min_severity"`
 	RateLimitPerHour     int    `json:"rate_limit_per_hour"`
 }

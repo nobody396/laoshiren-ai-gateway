@@ -811,6 +811,11 @@ export interface FeishuNotificationConfig {
   webhook_url_configured: boolean
   secret?: string
   secret_configured: boolean
+  app_id?: string
+  app_id_configured: boolean
+  app_secret?: string
+  app_secret_configured: boolean
+  chat_id?: string
   min_severity: AlertSeverity | ''
   rate_limit_per_hour: number
 }

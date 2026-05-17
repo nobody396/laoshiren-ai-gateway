@@ -228,6 +228,15 @@ func (s *OpsService) UpdateWebhookNotificationConfig(ctx context.Context, req *O
 		if strings.TrimSpace(req.Feishu.Secret) != "" {
 			cfg.Feishu.Secret = strings.TrimSpace(req.Feishu.Secret)
 		}
+		if strings.TrimSpace(req.Feishu.AppID) != "" {
+			cfg.Feishu.AppID = strings.TrimSpace(req.Feishu.AppID)
+		}
+		if strings.TrimSpace(req.Feishu.AppSecret) != "" {
+			cfg.Feishu.AppSecret = strings.TrimSpace(req.Feishu.AppSecret)
+		}
+		if strings.TrimSpace(req.Feishu.ChatID) != "" {
+			cfg.Feishu.ChatID = strings.TrimSpace(req.Feishu.ChatID)
+		}
 		cfg.Feishu.MinSeverity = strings.TrimSpace(req.Feishu.MinSeverity)
 		cfg.Feishu.RateLimitPerHour = req.Feishu.RateLimitPerHour
 	}
@@ -345,6 +354,9 @@ func normalizeOpsWebhookNotificationConfig(cfg *OpsWebhookNotificationConfig) {
 	}
 	cfg.Feishu.WebhookURL = strings.TrimSpace(cfg.Feishu.WebhookURL)
 	cfg.Feishu.Secret = strings.TrimSpace(cfg.Feishu.Secret)
+	cfg.Feishu.AppID = strings.TrimSpace(cfg.Feishu.AppID)
+	cfg.Feishu.AppSecret = strings.TrimSpace(cfg.Feishu.AppSecret)
+	cfg.Feishu.ChatID = strings.TrimSpace(cfg.Feishu.ChatID)
 	cfg.Feishu.MinSeverity = strings.TrimSpace(cfg.Feishu.MinSeverity)
 	if cfg.Feishu.RateLimitPerHour < 0 {
 		cfg.Feishu.RateLimitPerHour = 0
@@ -378,8 +390,12 @@ func validateOpsWebhookNotificationConfig(cfg *OpsWebhookNotificationConfig) err
 	if err := validateOpsNotificationSeverity(cfg.Telegram.MinSeverity, "telegram.min_severity"); err != nil {
 		return err
 	}
-	if cfg.Feishu.Enabled && cfg.Feishu.WebhookURL == "" {
-		return errors.New("feishu.webhook_url is required when enabled")
+	if cfg.Feishu.Enabled {
+		hasWebhook := cfg.Feishu.WebhookURL != ""
+		hasAppBot := cfg.Feishu.AppID != "" && cfg.Feishu.AppSecret != "" && cfg.Feishu.ChatID != ""
+		if !hasWebhook && !hasAppBot {
+			return errors.New("feishu.webhook_url or feishu app bot credentials are required when enabled")
+		}
 	}
 	if cfg.Telegram.Enabled {
 		if cfg.Telegram.BotToken == "" {
@@ -411,8 +427,12 @@ func redactOpsWebhookNotificationConfig(cfg *OpsWebhookNotificationConfig) *OpsW
 	clone := *cfg
 	clone.Feishu.WebhookURLConfigured = strings.TrimSpace(cfg.Feishu.WebhookURL) != ""
 	clone.Feishu.SecretConfigured = strings.TrimSpace(cfg.Feishu.Secret) != ""
+	clone.Feishu.AppIDConfigured = strings.TrimSpace(cfg.Feishu.AppID) != ""
+	clone.Feishu.AppSecretConfigured = strings.TrimSpace(cfg.Feishu.AppSecret) != ""
 	clone.Feishu.WebhookURL = ""
 	clone.Feishu.Secret = ""
+	clone.Feishu.AppID = ""
+	clone.Feishu.AppSecret = ""
 	clone.Telegram.BotTokenConfigured = strings.TrimSpace(cfg.Telegram.BotToken) != ""
 	clone.Telegram.BotToken = ""
 	return &clone

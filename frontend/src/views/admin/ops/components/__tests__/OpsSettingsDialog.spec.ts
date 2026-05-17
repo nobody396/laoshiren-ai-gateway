@@ -113,6 +113,11 @@ function mockSettings() {
       webhook_url_configured: true,
       secret: '',
       secret_configured: true,
+      app_id: '',
+      app_id_configured: false,
+      app_secret: '',
+      app_secret_configured: false,
+      chat_id: '',
       min_severity: 'warning',
       rate_limit_per_hour: 20,
     },
@@ -196,6 +201,8 @@ describe('OpsSettingsDialog webhook notifications', () => {
         feishu: expect.objectContaining({
           enabled: true,
           webhook_url_configured: true,
+          app_id_configured: false,
+          app_secret_configured: false,
         }),
         telegram: expect.objectContaining({
           enabled: true,

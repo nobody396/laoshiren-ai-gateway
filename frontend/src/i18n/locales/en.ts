@@ -3941,6 +3941,23 @@ export default {
       noData: 'No data.',
       loadingText: 'loading',
       ready: 'ready',
+      externalConsoles: {
+        title: 'External Consoles',
+        description: 'Quick links to vendor dashboards. Each link opens in a new tab.',
+        openInNewTab: 'Opens in a new tab',
+        edgeone: {
+          title: 'Tencent EdgeOne CDN',
+          description: 'Check CDN traffic, cache, domains, and edge protection.'
+        },
+        hostinger: {
+          title: 'Hostinger VPS',
+          description: 'Check the server instance, billing, resources, and restart entry.'
+        },
+        dokploy: {
+          title: 'Dokploy Deploy Panel',
+          description: 'Check production containers, deployment logs, and service status.'
+        }
+      },
       requestsTotal: 'Requests (total)',
       slaScope: 'SLA scope:',
       tokens: 'Tokens',

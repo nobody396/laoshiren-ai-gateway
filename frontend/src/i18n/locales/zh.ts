@@ -4097,6 +4097,23 @@ export default {
       noData: '暂无数据',
       loadingText: '加载中...',
       ready: '就绪',
+      externalConsoles: {
+        title: '外部控制台',
+        description: '常用服务商后台快捷入口，点击后在新标签页打开。',
+        openInNewTab: '新标签页打开',
+        edgeone: {
+          title: '腾讯云 EdgeOne CDN',
+          description: '查看 CDN 流量、缓存、域名与边缘防护。'
+        },
+        hostinger: {
+          title: 'Hostinger VPS',
+          description: '查看服务器实例、账单、资源与重启入口。'
+        },
+        dokploy: {
+          title: 'Dokploy 部署面板',
+          description: '查看生产容器、部署日志与服务状态。'
+        }
+      },
       requestsTotal: '请求（总计）',
       slaScope: 'SLA 范围：',
       tokens: 'Token数',

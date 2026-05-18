@@ -18,7 +18,49 @@
 
         <!-- Step 1: Select amount & pay type -->
         <div v-if="step === 1" class="px-6 py-5 space-y-5">
-          <template v-if="cardShopMode">
+          <div v-if="showChannelSelector" class="space-y-2">
+            <p class="text-sm font-medium text-gray-700 dark:text-dark-300">{{ t('topup.chooseChannel') }}</p>
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                v-if="cardShopMode"
+                type="button"
+                @click="selectTopupChannel('card_shop')"
+                :class="[
+                  'rounded-lg border-2 px-3 py-3 text-left transition-all',
+                  showingCardShop
+                    ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+                    : 'border-gray-200 text-gray-700 hover:border-primary-300 dark:border-dark-600 dark:text-dark-200'
+                ]"
+              >
+                <span class="flex items-center gap-2 text-sm font-semibold">
+                  <Icon name="gift" size="sm" />
+                  {{ t('topup.cardShopChannelTitle') }}
+                </span>
+                <span class="mt-1 block text-xs text-gray-500 dark:text-dark-400">{{ t('topup.availableNow') }}</span>
+              </button>
+              <button
+                type="button"
+                @click="selectTopupChannel('qr')"
+                :disabled="!qrTopupAvailable"
+                :class="[
+                  'rounded-lg border-2 px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-70',
+                  showingQrTopup
+                    ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+                    : 'border-gray-200 text-gray-700 hover:border-primary-300 dark:border-dark-600 dark:text-dark-200'
+                ]"
+              >
+                <span class="flex items-center gap-2 text-sm font-semibold">
+                  <Icon name="creditCard" size="sm" />
+                  {{ t('topup.qrChannelTitle') }}
+                </span>
+                <span class="mt-1 block text-xs text-gray-500 dark:text-dark-400">
+                  {{ qrTopupAvailable ? t('topup.availableNow') : t('topup.comingSoon') }}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <template v-if="showingCardShop">
             <div>
               <p class="text-sm font-medium text-gray-700 dark:text-dark-300 mb-3">{{ t('topup.cardShopSelectAmount') }}</p>
               <div class="grid grid-cols-1 gap-2">
@@ -217,6 +259,7 @@ import { ref, computed, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/api/topup'
+import Icon from '@/components/icons/Icon.vue'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { useAppStore } from '@/stores'
 import type { CardShopProduct } from '@/types'
@@ -233,9 +276,11 @@ const emit = defineEmits<{
 
 const presets = [20, 50, 100, 200, 1000, 2000]
 const QR_TTL_SECONDS = 300 // 5 分钟
+type TopupChannel = 'card_shop' | 'qr'
 
 // State
 const step = ref<1 | 2>(1)
+const selectedTopupChannel = ref<TopupChannel>('card_shop')
 const payType = ref<TopupPayType>('alipay')
 const selectedPreset = ref<number | null>(20)
 const useCustom = ref(false)
@@ -250,11 +295,12 @@ let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
 // 根据公开设置决定用户侧可见支付渠道；关闭的渠道直接不展示。
-const xunhuAlipayEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_alipay_enabled ?? true)
-const xunhuWechatEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_wechat_enabled ?? true)
+const xunhuAlipayEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_alipay_enabled ?? false)
+const xunhuWechatEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_wechat_enabled ?? false)
 const canUseAlipay = computed(() => xunhuAlipayEnabled.value)
 const canUseWechat = computed(() => xunhuWechatEnabled.value)
 const hasAvailablePayType = computed(() => canUseAlipay.value || canUseWechat.value)
+const qrTopupAvailable = computed(() => hasAvailablePayType.value)
 const activeCardShopProducts = computed<CardShopProduct[]>(() =>
   [...(appStore.cachedPublicSettings?.card_shop_products ?? [])]
     .filter((product) => product.enabled && product.url && product.amount_cny > 0)
@@ -263,6 +309,9 @@ const activeCardShopProducts = computed<CardShopProduct[]>(() =>
 const cardShopMode = computed(
   () => (appStore.cachedPublicSettings?.card_shop_enabled ?? false) && activeCardShopProducts.value.length > 0
 )
+const showChannelSelector = computed(() => cardShopMode.value || qrTopupAvailable.value)
+const showingCardShop = computed(() => selectedTopupChannel.value === 'card_shop' && cardShopMode.value)
+const showingQrTopup = computed(() => selectedTopupChannel.value === 'qr')
 
 // 当前有效的金额（元）
 const effectiveAmountYuan = computed<number>(() => {
@@ -301,6 +350,15 @@ function selectPayType(type: TopupPayType) {
   payType.value = type
 }
 
+function selectTopupChannel(channel: TopupChannel) {
+  if (channel === 'card_shop' && !cardShopMode.value) return
+  if (channel === 'qr' && !qrTopupAvailable.value) return
+  selectedTopupChannel.value = channel
+  if (channel === 'qr') {
+    syncPayTypeWithSettings()
+  }
+}
+
 function openCardShopProduct(product: CardShopProduct) {
   if (!product.url) return
   window.location.assign(product.url)
@@ -318,6 +376,19 @@ function syncPayTypeWithSettings() {
   } else if (!xunhuAlipayEnabled.value && xunhuWechatEnabled.value) {
     payType.value = 'wechat'
   }
+}
+
+function syncTopupChannelWithSettings() {
+  if (selectedTopupChannel.value === 'card_shop' && !cardShopMode.value) {
+    selectedTopupChannel.value = 'qr'
+  } else if (selectedTopupChannel.value === 'qr' && !qrTopupAvailable.value && cardShopMode.value) {
+    selectedTopupChannel.value = 'card_shop'
+  } else if (cardShopMode.value) {
+    selectedTopupChannel.value = 'card_shop'
+  } else {
+    selectedTopupChannel.value = 'qr'
+  }
+  syncPayTypeWithSettings()
 }
 
 function close() {
@@ -404,7 +475,7 @@ watch(() => props.modelValue, async (val) => {
     return
   }
   await appStore.fetchPublicSettings()
-  syncPayTypeWithSettings()
+  syncTopupChannelWithSettings()
 })
 
 onUnmounted(() => stopTimers())

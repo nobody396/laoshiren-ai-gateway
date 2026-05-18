@@ -22,7 +22,75 @@
                 {{ t('subscriptionAccess.summary') }}
               </p>
 
-              <div v-if="cardShopMode" class="mt-8 space-y-8">
+              <div v-if="showChannelSelector" class="mt-8">
+                <p class="mb-4 text-sm font-medium text-gray-700 dark:text-dark-300">
+                  {{ t('topup.chooseChannel') }}
+                </p>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <button
+                    v-if="cardShopMode"
+                    type="button"
+                    @click="selectTopupChannel('card_shop')"
+                    :class="[
+                      'flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-all',
+                      showingCardShop
+                        ? 'border-primary-500 bg-primary-50 shadow-[0_18px_30px_-24px_rgba(59,130,246,0.8)] dark:bg-primary-900/20'
+                        : 'border-gray-200 bg-white hover:border-primary-300 hover:bg-primary-50/60 dark:border-dark-600 dark:bg-dark-800/80 dark:hover:border-primary-500/40'
+                    ]"
+                  >
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-300">
+                      <Icon name="gift" size="md" />
+                    </span>
+                    <span class="min-w-0">
+                      <span class="block text-base font-semibold text-gray-900 dark:text-white">
+                        {{ t('topup.cardShopChannelTitle') }}
+                      </span>
+                      <span class="mt-1 block text-sm leading-5 text-gray-500 dark:text-dark-400">
+                        {{ t('topup.cardShopChannelDesc') }}
+                      </span>
+                      <span class="mt-3 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
+                        {{ t('topup.availableNow') }}
+                      </span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    @click="selectTopupChannel('qr')"
+                    :disabled="!qrTopupAvailable"
+                    :class="[
+                      'flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-70',
+                      showingQrTopup
+                        ? 'border-primary-500 bg-primary-50 shadow-[0_18px_30px_-24px_rgba(59,130,246,0.8)] dark:bg-primary-900/20'
+                        : 'border-gray-200 bg-white hover:border-primary-300 hover:bg-primary-50/60 dark:border-dark-600 dark:bg-dark-800/80 dark:hover:border-primary-500/40'
+                    ]"
+                  >
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-300">
+                      <Icon name="creditCard" size="md" />
+                    </span>
+                    <span class="min-w-0">
+                      <span class="block text-base font-semibold text-gray-900 dark:text-white">
+                        {{ t('topup.qrChannelTitle') }}
+                      </span>
+                      <span class="mt-1 block text-sm leading-5 text-gray-500 dark:text-dark-400">
+                        {{ t('topup.qrChannelDesc') }}
+                      </span>
+                      <span
+                        :class="[
+                          'mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-medium',
+                          qrTopupAvailable
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
+                            : 'bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-dark-300'
+                        ]"
+                      >
+                        {{ qrTopupAvailable ? t('topup.availableNow') : t('topup.comingSoon') }}
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <div v-if="showingCardShop" class="mt-8 space-y-8">
                 <section>
                   <p class="mb-4 text-sm font-medium text-gray-700 dark:text-dark-300">
                     {{ t('topup.cardShopSelectAmount') }}
@@ -49,7 +117,7 @@
                 </section>
               </div>
 
-              <div v-else-if="step === 1" class="mt-8 space-y-8">
+              <div v-else-if="step === 1 && showingQrTopup" class="mt-8 space-y-8">
                 <section>
                   <p class="mb-4 text-sm font-medium text-gray-700 dark:text-dark-300">
                     {{ t('topup.selectAmount') }}
@@ -156,7 +224,7 @@
                 </section>
               </div>
 
-              <div v-else class="mt-8 rounded-[28px] border border-gray-200 bg-gray-50/80 p-5 dark:border-dark-700 dark:bg-dark-800/70">
+              <div v-else-if="step === 2 && showingQrTopup" class="mt-8 rounded-[28px] border border-gray-200 bg-gray-50/80 p-5 dark:border-dark-700 dark:bg-dark-800/70">
                 <p class="text-sm leading-6 text-gray-600 dark:text-dark-300">
                   {{ t('topup.scanHint', { payType: payType === 'alipay' ? t('topup.alipay') : t('topup.wechat') }) }}
                 </p>
@@ -195,7 +263,7 @@
                   <div>
                     <p class="text-sm font-medium text-gray-500 dark:text-dark-400">{{ t('topup.title') }}</p>
                     <p class="mt-2 text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">
-                      <template v-if="cardShopMode">
+                      <template v-if="showingCardShop">
                         {{ t('topup.cardShopModeTitle') }}
                       </template>
                       <template v-else>
@@ -203,13 +271,13 @@
                       </template>
                     </p>
                   </div>
-                  <div v-if="!cardShopMode" class="rounded-2xl bg-primary-500/10 px-3 py-2 text-sm font-semibold text-primary-700 dark:text-primary-300">
+                  <div v-if="showingQrTopup" class="rounded-2xl bg-primary-500/10 px-3 py-2 text-sm font-semibold text-primary-700 dark:text-primary-300">
                     ${{ effectiveAmountYuan || 20 }}.00
                   </div>
                 </div>
 
                 <div class="mt-6 space-y-4">
-                  <template v-if="cardShopMode">
+                  <template v-if="showingCardShop">
                     <div class="flex items-center justify-between text-sm">
                       <span class="text-gray-500 dark:text-dark-400">{{ t('topup.cardShopProductCount') }}</span>
                       <span class="font-medium text-gray-900 dark:text-white">
@@ -229,7 +297,7 @@
                       {{ selectedPayTypeLabel }}
                     </span>
                   </div>
-                  <div v-if="!cardShopMode" class="flex items-center justify-between text-sm">
+                  <div v-if="showingQrTopup" class="flex items-center justify-between text-sm">
                     <span class="text-gray-500 dark:text-dark-400">{{ t('subscriptionAccess.rateLabel') }}</span>
                     <span class="font-medium text-gray-900 dark:text-white">{{ t('topup.creditsNote') }}</span>
                   </div>
@@ -240,7 +308,7 @@
                 </div>
 
                 <button
-                  v-if="cardShopMode"
+                  v-if="showingCardShop"
                   @click="goRedeem"
                   class="mt-8 w-full rounded-2xl bg-gray-950 px-5 py-4 text-base font-semibold text-white transition hover:bg-gray-800 dark:bg-white dark:text-gray-950 dark:hover:bg-gray-100"
                 >
@@ -282,6 +350,7 @@ import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import Icon from '@/components/icons/Icon.vue'
 import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/api/topup'
 import { useAppStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'
@@ -293,8 +362,10 @@ const router = useRouter()
 
 const presets = [20, 50, 100, 200, 1000, 2000]
 const QR_TTL_SECONDS = 300
+type TopupChannel = 'card_shop' | 'qr'
 
 const step = ref<1 | 2>(1)
+const selectedTopupChannel = ref<TopupChannel>('card_shop')
 const payType = ref<TopupPayType>('alipay')
 const selectedPreset = ref<number | null>(20)
 const useCustom = ref(false)
@@ -309,11 +380,12 @@ let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
 // 根据公开设置决定用户侧可见支付渠道；关闭的渠道直接不展示。
-const xunhuAlipayEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_alipay_enabled ?? true)
-const xunhuWechatEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_wechat_enabled ?? true)
+const xunhuAlipayEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_alipay_enabled ?? false)
+const xunhuWechatEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_wechat_enabled ?? false)
 const canUseAlipay = computed(() => xunhuAlipayEnabled.value)
 const canUseWechat = computed(() => xunhuWechatEnabled.value)
 const hasAvailablePayType = computed(() => canUseAlipay.value || canUseWechat.value)
+const qrTopupAvailable = computed(() => hasAvailablePayType.value)
 const hasMultiplePayTypes = computed(() => canUseAlipay.value && canUseWechat.value)
 const activeCardShopProducts = computed<CardShopProduct[]>(() =>
   [...(appStore.cachedPublicSettings?.card_shop_products ?? [])]
@@ -323,6 +395,9 @@ const activeCardShopProducts = computed<CardShopProduct[]>(() =>
 const cardShopMode = computed(
   () => (appStore.cachedPublicSettings?.card_shop_enabled ?? false) && activeCardShopProducts.value.length > 0
 )
+const showChannelSelector = computed(() => cardShopMode.value || qrTopupAvailable.value)
+const showingCardShop = computed(() => selectedTopupChannel.value === 'card_shop' && cardShopMode.value)
+const showingQrTopup = computed(() => selectedTopupChannel.value === 'qr')
 const selectedPayTypeLabel = computed(() => {
   if (!hasAvailablePayType.value) return t('topup.noAvailablePayType')
   return payType.value === 'alipay' ? t('topup.alipay') : t('topup.wechat')
@@ -367,6 +442,15 @@ function selectPayType(type: TopupPayType) {
   payType.value = type
 }
 
+function selectTopupChannel(channel: TopupChannel) {
+  if (channel === 'card_shop' && !cardShopMode.value) return
+  if (channel === 'qr' && !qrTopupAvailable.value) return
+  selectedTopupChannel.value = channel
+  if (channel === 'qr') {
+    syncPayTypeWithSettings()
+  }
+}
+
 function openCardShopProduct(product: CardShopProduct) {
   if (!product.url) return
   window.location.assign(product.url)
@@ -383,6 +467,19 @@ function syncPayTypeWithSettings() {
   } else if (!xunhuAlipayEnabled.value && xunhuWechatEnabled.value) {
     payType.value = 'wechat'
   }
+}
+
+function syncTopupChannelWithSettings() {
+  if (selectedTopupChannel.value === 'card_shop' && !cardShopMode.value) {
+    selectedTopupChannel.value = 'qr'
+  } else if (selectedTopupChannel.value === 'qr' && !qrTopupAvailable.value && cardShopMode.value) {
+    selectedTopupChannel.value = 'card_shop'
+  } else if (cardShopMode.value) {
+    selectedTopupChannel.value = 'card_shop'
+  } else {
+    selectedTopupChannel.value = 'qr'
+  }
+  syncPayTypeWithSettings()
 }
 
 function stopTimers() {
@@ -469,6 +566,6 @@ onUnmounted(() => {
 })
 
 void appStore.fetchPublicSettings().then(() => {
-  syncPayTypeWithSettings()
+  syncTopupChannelWithSettings()
 })
 </script>

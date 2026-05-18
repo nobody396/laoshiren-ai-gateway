@@ -238,6 +238,21 @@ func TestIsKnownOpsErrorType(t *testing.T) {
 	}
 }
 
+func TestParseOpsErrorResponseClassifiesMissingAPIKeyAsAuthentication(t *testing.T) {
+	body := []byte(`{"message":"API key is required in Authorization header (Bearer scheme), x-api-key header, or x-goog-api-key header"}`)
+
+	parsed := parseOpsErrorResponse(body)
+	phase := classifyOpsPhase(parsed.ErrorType, parsed.Message, parsed.Code)
+	owner := classifyOpsErrorOwner(phase, parsed.Message)
+	source := classifyOpsErrorSource(phase, parsed.Message)
+
+	require.Equal(t, "authentication_error", parsed.ErrorType)
+	require.Equal(t, "auth", phase)
+	require.Equal(t, "client", owner)
+	require.Equal(t, "client_request", source)
+	require.Equal(t, "P3", classifyOpsSeverity(parsed.ErrorType, http.StatusUnauthorized))
+}
+
 func TestNormalizeOpsErrorType(t *testing.T) {
 	tests := []struct {
 		name    string

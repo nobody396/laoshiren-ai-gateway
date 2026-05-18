@@ -59,4 +59,4 @@ jobs:
 
           check_endpoint "site_home" "https://laoshirenai.com" "200" "10"
           check_endpoint "site_health" "https://laoshirenai.com/health" "200" "5"
-          check_endpoint "api_auth_guard" "https://api.laoshirenai.com/v1/models" "401" "8"
+          check_endpoint "api_health" "https://api.laoshirenai.com/health" "200" "5"

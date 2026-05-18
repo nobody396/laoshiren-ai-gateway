@@ -34,28 +34,163 @@ func buildOpsAlertWebhookText(rule *OpsAlertRule, event *OpsAlertEvent) string {
 	if rule == nil || event == nil {
 		return ""
 	}
-	value := "-"
-	if event.MetricValue != nil {
-		value = fmt.Sprintf("%.2f", *event.MetricValue)
-	}
-	threshold := fmt.Sprintf("%.2f", rule.Threshold)
+	value := formatOpsAlertMetricValue(rule.MetricType, event.MetricValue)
+	threshold := formatOpsAlertMetricValue(rule.MetricType, float64Ptr(rule.Threshold))
 	if event.ThresholdValue != nil {
-		threshold = fmt.Sprintf("%.2f", *event.ThresholdValue)
+		threshold = formatOpsAlertMetricValue(rule.MetricType, event.ThresholdValue)
 	}
+	metricLabel := opsAlertMetricLabel(rule.MetricType)
+	severityLabel := opsAlertSeverityLabel(rule.Severity)
 
 	lines := []string{
 		"老实人AI 运维告警",
-		"级别：" + strings.TrimSpace(rule.Severity),
+		"结论：" + buildOpsAlertPlainConclusion(rule, event),
+		"级别：" + severityLabel,
 		"规则：" + strings.TrimSpace(rule.Name),
 		"状态：" + strings.TrimSpace(event.Status),
-		"指标：" + strings.TrimSpace(rule.MetricType) + " " + strings.TrimSpace(rule.Operator) + " " + threshold,
-		"当前值：" + value,
-		"触发时间：" + event.FiredAt.Format(time.RFC3339),
+		"根因判断：" + buildOpsAlertLikelyCause(rule),
+		"处理建议：" + buildOpsAlertSuggestedAction(rule),
+		"指标：" + metricLabel + " " + strings.TrimSpace(rule.Operator) + " " + threshold + "，当前 " + value,
+		"触发时间：" + formatOpsAlertLocalTime(event.FiredAt),
 	}
 	if desc := strings.TrimSpace(event.Description); desc != "" {
-		lines = append(lines, "说明："+desc)
+		lines = append(lines, "技术细节："+desc)
 	}
 	return strings.Join(lines, "\n")
+}
+
+func formatOpsAlertMetricValue(metricType string, value *float64) string {
+	if value == nil {
+		return "-"
+	}
+	switch strings.TrimSpace(metricType) {
+	case "success_rate", "error_rate", "upstream_error_rate", "cpu_usage_percent", "memory_usage_percent", "group_available_ratio", "group_rate_limit_ratio", "account_error_ratio":
+		return fmt.Sprintf("%.2f%%", *value)
+	case "p95_latency_ms", "p99_latency_ms":
+		return fmt.Sprintf("%.0fms", *value)
+	default:
+		return fmt.Sprintf("%.2f", *value)
+	}
+}
+
+func opsAlertMetricLabel(metricType string) string {
+	switch strings.TrimSpace(metricType) {
+	case "success_rate":
+		return "成功率"
+	case "error_rate":
+		return "错误率"
+	case "upstream_error_rate":
+		return "上游错误率"
+	case "p95_latency_ms":
+		return "P95 延迟"
+	case "p99_latency_ms":
+		return "P99 延迟"
+	case "cpu_usage_percent":
+		return "CPU 使用率"
+	case "memory_usage_percent":
+		return "内存使用率"
+	case "concurrency_queue_depth":
+		return "并发队列"
+	case "group_available_accounts":
+		return "可用账号数"
+	case "group_available_ratio":
+		return "可用账号比例"
+	case "account_rate_limited_count":
+		return "被限流账号数"
+	case "account_error_count":
+		return "异常账号数"
+	case "group_rate_limit_ratio":
+		return "限流账号比例"
+	case "account_error_ratio":
+		return "异常账号比例"
+	case "overload_account_count":
+		return "过载账号数"
+	default:
+		return strings.TrimSpace(metricType)
+	}
+}
+
+func opsAlertSeverityLabel(severity string) string {
+	switch strings.TrimSpace(severity) {
+	case "P0":
+		return "P0（最高优先级，可能影响可用性）"
+	case "P1":
+		return "P1（需要尽快处理）"
+	case "P2":
+		return "P2（需要关注）"
+	case "P3":
+		return "P3（低优先级）"
+	default:
+		return strings.TrimSpace(severity)
+	}
+}
+
+func buildOpsAlertPlainConclusion(rule *OpsAlertRule, event *OpsAlertEvent) string {
+	metric := opsAlertMetricLabel(rule.MetricType)
+	value := formatOpsAlertMetricValue(rule.MetricType, event.MetricValue)
+	switch strings.TrimSpace(rule.MetricType) {
+	case "success_rate":
+		return "系统成功率低于阈值，当前 " + value
+	case "error_rate":
+		return "系统错误率高于阈值，当前 " + value
+	case "upstream_error_rate":
+		return "上游供应商错误率高于阈值，当前 " + value
+	case "p95_latency_ms", "p99_latency_ms":
+		return "请求延迟高于阈值，当前 " + value
+	case "cpu_usage_percent", "memory_usage_percent":
+		return metric + "高于阈值，当前 " + value
+	default:
+		if name := strings.TrimSpace(rule.Name); name != "" {
+			return name + " 已触发"
+		}
+		return "运维规则已触发"
+	}
+}
+
+func buildOpsAlertLikelyCause(rule *OpsAlertRule) string {
+	switch strings.TrimSpace(rule.MetricType) {
+	case "success_rate", "error_rate":
+		return "平台或上游请求失败增多；客户端 401/400 这类用户请求错误不会再计入系统错误率。"
+	case "upstream_error_rate":
+		return "上游模型供应商返回 5xx/异常响应增多，优先检查账号池和供应商状态。"
+	case "p95_latency_ms", "p99_latency_ms":
+		return "上游响应慢、网络抖动或队列积压导致请求变慢。"
+	case "cpu_usage_percent":
+		return "服务器 CPU 压力升高，可能是请求量升高或后台任务集中运行。"
+	case "memory_usage_percent":
+		return "服务器内存压力升高，可能存在缓存增长、请求峰值或后台任务占用。"
+	case "concurrency_queue_depth":
+		return "并发请求排队过多，当前处理能力跟不上瞬时请求量。"
+	case "group_available_accounts", "group_available_ratio", "account_rate_limited_count", "account_error_count", "group_rate_limit_ratio", "account_error_ratio", "overload_account_count":
+		return "账号池可用性下降，可能是账号限流、余额/权限异常或上游返回异常。"
+	default:
+		return "需要结合运维面板的错误日志、账号状态和资源监控进一步确认。"
+	}
+}
+
+func buildOpsAlertSuggestedAction(rule *OpsAlertRule) string {
+	switch strings.TrimSpace(rule.MetricType) {
+	case "success_rate", "error_rate":
+		return "先看运维面板的错误日志。如果主要是 provider/platform 错误再处理；如果都是 client/auth，可忽略。"
+	case "upstream_error_rate":
+		return "先看账号健康和上游状态，必要时切换可用账号或临时降低异常供应商权重。"
+	case "p95_latency_ms", "p99_latency_ms":
+		return "先看队列、CPU/内存和上游延迟趋势，判断是服务器压力还是供应商变慢。"
+	case "cpu_usage_percent", "memory_usage_percent":
+		return "先看服务器资源曲线和最近部署/后台任务；持续不恢复再扩容或限流。"
+	case "concurrency_queue_depth":
+		return "先看并发队列和请求峰值，必要时提升并发处理能力或做流量控制。"
+	default:
+		return "打开 /admin/ops 查看对应详情，优先处理持续触发且影响用户请求的告警。"
+	}
+}
+
+func formatOpsAlertLocalTime(t time.Time) string {
+	if t.IsZero() {
+		return "-"
+	}
+	loc := time.FixedZone("CST", 8*60*60)
+	return t.In(loc).Format("2006-01-02 15:04:05 CST")
 }
 
 func sendOpsFeishuText(ctx context.Context, client opsHTTPDoer, cfg OpsFeishuNotificationConfig, text string) error {

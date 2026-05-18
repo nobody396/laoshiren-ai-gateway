@@ -17,6 +17,7 @@ import (
 
 const (
 	opsAlertEvaluatorJobName = "ops_alert_evaluator"
+	opsRateAlertMinSamples   = int64(10)
 
 	opsAlertEvaluatorTimeout         = 45 * time.Second
 	opsAlertEvaluatorLeaderLockKey   = "ops:alert:evaluator:leader"
@@ -618,17 +619,17 @@ func (s *OpsAlertEvaluatorService) evaluateRuleMetric(
 
 	switch strings.TrimSpace(rule.MetricType) {
 	case "success_rate":
-		if overview.RequestCountSLA <= 0 {
+		if overview.RequestCountSLA < opsRateAlertMinSamples {
 			return opsAlertMetricEvaluation{NoSamples: true}
 		}
 		return opsAlertMetricEvaluation{Value: overview.SLA * 100, OK: true}
 	case "error_rate":
-		if overview.RequestCountSLA <= 0 {
+		if overview.RequestCountSLA < opsRateAlertMinSamples {
 			return opsAlertMetricEvaluation{NoSamples: true}
 		}
 		return opsAlertMetricEvaluation{Value: overview.ErrorRate * 100, OK: true}
 	case "upstream_error_rate":
-		if overview.RequestCountSLA <= 0 {
+		if overview.RequestCountSLA < opsRateAlertMinSamples {
 			return opsAlertMetricEvaluation{NoSamples: true}
 		}
 		return opsAlertMetricEvaluation{Value: overview.UpstreamErrorRate * 100, OK: true}

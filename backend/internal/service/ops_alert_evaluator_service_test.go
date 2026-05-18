@@ -301,6 +301,55 @@ func TestAlertEvaluatorResolvesTrafficRateAlertWhenWindowHasNoSamples(t *testing
 	require.Contains(t, *repo.heartbeat.LastResult, "resolved=1")
 }
 
+func TestAlertEvaluatorTreatsLowSampleTrafficRateAsNoSamples(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now().UTC()
+	repo := &stubOpsRepo{
+		overview: &OpsDashboardOverview{
+			RequestCountSLA: 1,
+			ErrorRate:       1,
+			SLA:             0,
+		},
+		rules: []*OpsAlertRule{
+			{
+				ID:               8,
+				Name:             "错误率极高",
+				Enabled:          true,
+				Severity:         "P0",
+				MetricType:       "error_rate",
+				Operator:         ">",
+				Threshold:        20,
+				WindowMinutes:    1,
+				SustainedMinutes: 1,
+			},
+		},
+		activeEvents: map[int64]*OpsAlertEvent{
+			8: {
+				ID:      64,
+				RuleID:  8,
+				Status:  OpsAlertStatusFiring,
+				FiredAt: now.Add(-10 * time.Minute),
+			},
+		},
+	}
+	svc := &OpsAlertEvaluatorService{
+		opsRepo:    repo,
+		instanceID: "test-instance",
+		ruleStates: map[int64]*opsAlertRuleState{},
+	}
+
+	svc.evaluateOnce(time.Minute)
+
+	require.Equal(t, int64(64), repo.updatedEventID)
+	require.Equal(t, OpsAlertStatusResolved, repo.updatedStatus)
+	require.NotNil(t, repo.resolvedAt)
+	require.Equal(t, OpsAlertStatusResolved, repo.activeEvents[8].Status)
+	require.NotNil(t, repo.heartbeat)
+	require.NotNil(t, repo.heartbeat.LastResult)
+	require.Contains(t, *repo.heartbeat.LastResult, "resolved=1")
+}
+
 func TestAlertEvaluatorDoesNotResolveTrafficRateAlertWhenMetricReadFails(t *testing.T) {
 	t.Parallel()
 

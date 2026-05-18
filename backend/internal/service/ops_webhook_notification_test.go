@@ -243,6 +243,31 @@ func TestOpsAlertWebhookNotificationsSendToConfiguredGroups(t *testing.T) {
 	require.Equal(t, 1, telegramHits)
 }
 
+func TestBuildOpsAlertWebhookTextExplainsRootCause(t *testing.T) {
+	value := 100.0
+	threshold := 20.0
+	text := buildOpsAlertWebhookText(&OpsAlertRule{
+		Name:       "错误率极高",
+		MetricType: "error_rate",
+		Operator:   ">",
+		Threshold:  threshold,
+		Severity:   "P0",
+	}, &OpsAlertEvent{
+		Status:         OpsAlertStatusFiring,
+		MetricValue:    &value,
+		ThresholdValue: &threshold,
+		FiredAt:        time.Date(2026, 5, 18, 5, 11, 0, 0, time.FixedZone("CST", 8*60*60)),
+		Description:    "error_rate > 20.00 (current 100.00) over last 1m (overall)",
+	})
+
+	require.Contains(t, text, "结论：系统错误率高于阈值，当前 100.00%")
+	require.Contains(t, text, "级别：P0（最高优先级，可能影响可用性）")
+	require.Contains(t, text, "根因判断：平台或上游请求失败增多")
+	require.Contains(t, text, "客户端 401/400 这类用户请求错误不会再计入系统错误率")
+	require.Contains(t, text, "处理建议：先看运维面板的错误日志")
+	require.Contains(t, text, "触发时间：2026-05-18 05:11:00 CST")
+}
+
 func TestOpsAlertWebhookNotificationsRespectSeverity(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatalf("webhook should not be called for info alert")

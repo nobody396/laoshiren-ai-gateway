@@ -1051,10 +1051,26 @@ func parseOpsErrorResponse(body []byte) parsedOpsError {
 	code, _ := m["code"].(string)
 	msg, _ := m["message"].(string)
 	if code != "" || msg != "" {
+		if isOpsAuthenticationErrorMessage(msg) {
+			return parsedOpsError{ErrorType: "authentication_error", Message: msg, Code: code}
+		}
 		return parsedOpsError{ErrorType: "api_error", Message: msg, Code: code}
 	}
 
 	return parsedOpsError{Message: truncateString(string(body), 1024)}
+}
+
+func isOpsAuthenticationErrorMessage(message string) bool {
+	msg := strings.ToLower(strings.TrimSpace(message))
+	if msg == "" {
+		return false
+	}
+	return strings.Contains(msg, "api key") ||
+		strings.Contains(msg, "authorization header") ||
+		strings.Contains(msg, "bearer") ||
+		strings.Contains(msg, "x-api-key") ||
+		strings.Contains(msg, "x-goog-api-key") ||
+		strings.Contains(msg, "unauthorized")
 }
 
 func resolveOpsPlatform(apiKey *service.APIKey, fallback string) string {

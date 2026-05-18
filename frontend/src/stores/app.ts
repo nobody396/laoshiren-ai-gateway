@@ -360,6 +360,7 @@ export const useAppStore = defineStore('app', () => {
         purchase_subscription_url: '',
         card_shop_enabled: false,
         card_shop_products: [],
+        invoice_management_enabled: false,
         custom_menu_items: [],
         linuxdo_oauth_enabled: false,
         oidc_oauth_enabled: false,

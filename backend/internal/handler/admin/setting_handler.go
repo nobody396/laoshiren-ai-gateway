@@ -147,6 +147,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		PurchaseSubscriptionURL:              settings.PurchaseSubscriptionURL,
 		CardShopEnabled:                      settings.CardShopEnabled,
 		CardShopProducts:                     dto.CardShopProductsFromService(settings.CardShopProducts),
+		InvoiceManagementEnabled:             settings.InvoiceManagementEnabled,
 		SoraClientEnabled:                    settings.SoraClientEnabled,
 		TableDefaultPageSize:                 settings.TableDefaultPageSize,
 		TablePageSizeOptions:                 settings.TablePageSizeOptions,
@@ -277,6 +278,7 @@ type UpdateSettingsRequest struct {
 	PurchaseSubscriptionURL     *string                `json:"purchase_subscription_url"`
 	CardShopEnabled             *bool                  `json:"card_shop_enabled"`
 	CardShopProducts            *[]dto.CardShopProduct `json:"card_shop_products"`
+	InvoiceManagementEnabled    *bool                  `json:"invoice_management_enabled"`
 	SoraClientEnabled           bool                   `json:"sora_client_enabled"`
 	TableDefaultPageSize        int                    `json:"table_default_page_size"`
 	TablePageSizeOptions        []int                  `json:"table_page_size_options"`
@@ -751,6 +753,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			return
 		}
 	}
+	invoiceManagementEnabled := previousSettings.InvoiceManagementEnabled
+	if req.InvoiceManagementEnabled != nil {
+		invoiceManagementEnabled = *req.InvoiceManagementEnabled
+	}
 
 	// Frontend URL 验证
 	req.FrontendURL = strings.TrimSpace(req.FrontendURL)
@@ -997,6 +1003,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		PurchaseSubscriptionURL:          purchaseURL,
 		CardShopEnabled:                  cardShopEnabled,
 		CardShopProducts:                 cardShopProducts,
+		InvoiceManagementEnabled:         invoiceManagementEnabled,
 		SoraClientEnabled:                req.SoraClientEnabled,
 		TableDefaultPageSize:             req.TableDefaultPageSize,
 		TablePageSizeOptions:             req.TablePageSizeOptions,
@@ -1193,6 +1200,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		PurchaseSubscriptionURL:              updatedSettings.PurchaseSubscriptionURL,
 		CardShopEnabled:                      updatedSettings.CardShopEnabled,
 		CardShopProducts:                     dto.CardShopProductsFromService(updatedSettings.CardShopProducts),
+		InvoiceManagementEnabled:             updatedSettings.InvoiceManagementEnabled,
 		SoraClientEnabled:                    updatedSettings.SoraClientEnabled,
 		TableDefaultPageSize:                 updatedSettings.TableDefaultPageSize,
 		TablePageSizeOptions:                 updatedSettings.TablePageSizeOptions,
@@ -1509,6 +1517,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if !equalCardShopProducts(before.CardShopProducts, after.CardShopProducts) {
 		changed = append(changed, "card_shop_products")
+	}
+	if before.InvoiceManagementEnabled != after.InvoiceManagementEnabled {
+		changed = append(changed, "invoice_management_enabled")
 	}
 	if before.TableDefaultPageSize != after.TableDefaultPageSize {
 		changed = append(changed, "table_default_page_size")

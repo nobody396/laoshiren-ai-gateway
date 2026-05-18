@@ -80,6 +80,7 @@ type SystemSettings struct {
 	PurchaseSubscriptionURL     string
 	CardShopEnabled             bool
 	CardShopProducts            []CardShopProduct
+	InvoiceManagementEnabled    bool
 	SoraClientEnabled           bool
 	TableDefaultPageSize        int
 	TablePageSizeOptions        []int
@@ -202,6 +203,7 @@ type PublicSettings struct {
 	PurchaseSubscriptionURL     string
 	CardShopEnabled             bool
 	CardShopProducts            []CardShopProduct
+	InvoiceManagementEnabled    bool
 	SoraClientEnabled           bool
 	TableDefaultPageSize        int
 	TablePageSizeOptions        []int

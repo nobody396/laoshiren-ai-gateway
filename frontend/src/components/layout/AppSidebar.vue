@@ -69,7 +69,7 @@
             class="sidebar-link mb-1"
             :class="{ 'sidebar-link-active': isActive(item.path) }"
             :title="sidebarCollapsed ? item.label : undefined"
-            :data-tour="item.path === '/keys' ? 'sidebar-my-keys' : undefined"
+            :data-tour="getNavTourAttr(item.path)"
             @click="handleMenuItemClick(item.path)"
           >
             <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
@@ -112,7 +112,7 @@
             class="sidebar-link mb-1"
             :class="{ 'sidebar-link-active': isActive(item.path) }"
             :title="sidebarCollapsed ? item.label : undefined"
-            :data-tour="item.path === '/keys' ? 'sidebar-my-keys' : undefined"
+            :data-tour="getNavTourAttr(item.path)"
             @click="handleMenuItemClick(item.path)"
           >
             <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
@@ -210,6 +210,9 @@ const siteName = computed(() => appStore.siteName)
 const siteLogo = computed(() => appStore.siteLogo)
 const siteVersion = computed(() => appStore.siteVersion)
 const settingsLoaded = computed(() => appStore.publicSettingsLoaded)
+const invoiceManagementEnabled = computed(
+  () => appStore.cachedPublicSettings?.invoice_management_enabled === true
+)
 
 // SVG Icon Components
 const DashboardIcon = {
@@ -594,7 +597,9 @@ const userNavItems = computed((): NavItem[] => {
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     { path: '/get-subscription', label: t('nav.getSubscription'), icon: RechargeSubscriptionIcon },
     { path: '/topup/orders', label: t('nav.topupOrders'), icon: CreditCardIcon },
-    { path: '/invoice', label: t('nav.invoiceManagement'), icon: TicketIcon },
+    ...(invoiceManagementEnabled.value
+      ? [{ path: '/invoice', label: t('nav.invoiceManagement'), icon: TicketIcon }]
+      : []),
     { path: '/feedbacks', label: t('nav.feedback'), icon: FeedbackIcon },
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
     createDocsNavItem(),
@@ -616,7 +621,9 @@ const personalNavItems = computed((): NavItem[] => {
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     { path: '/get-subscription', label: t('nav.getSubscription'), icon: RechargeSubscriptionIcon },
     { path: '/topup/orders', label: t('nav.topupOrders'), icon: CreditCardIcon },
-    { path: '/invoice', label: t('nav.invoiceManagement'), icon: TicketIcon },
+    ...(invoiceManagementEnabled.value
+      ? [{ path: '/invoice', label: t('nav.invoiceManagement'), icon: TicketIcon }]
+      : []),
     { path: '/feedbacks', label: t('nav.feedback'), icon: FeedbackIcon },
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
     createDocsNavItem(),
@@ -878,6 +885,15 @@ function closeMobile() {
   appStore.setMobileOpen(false)
 }
 
+function getNavTourAttr(path: string): string | undefined {
+  const pathToTour: Record<string, string> = {
+    '/keys': 'sidebar-my-keys',
+    '/get-subscription': 'sidebar-topup',
+    '/docs': 'sidebar-docs'
+  }
+  return pathToTour[path]
+}
+
 function handleMenuItemClick(itemPath: string) {
   if (mobileOpen.value) {
     setTimeout(() => {
@@ -889,7 +905,9 @@ function handleMenuItemClick(itemPath: string) {
   const pathToSelector: Record<string, string> = {
     '/admin/groups': '#sidebar-group-manage',
     '/admin/accounts': '#sidebar-channel-manage',
-    '/keys': '[data-tour="sidebar-my-keys"]'
+    '/keys': '[data-tour="sidebar-my-keys"]',
+    '/get-subscription': '[data-tour="sidebar-topup"]',
+    '/docs': '[data-tour="sidebar-docs"]'
   }
 
   const selector = pathToSelector[itemPath]

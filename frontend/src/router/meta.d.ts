@@ -47,5 +47,11 @@ declare module 'vue-router' {
      * @default false
      */
     hideInMenu?: boolean
+
+    /**
+     * Whether this route requires the user-facing invoice management switch.
+     * @default false
+     */
+    requiresInvoiceManagement?: boolean
   }
 }

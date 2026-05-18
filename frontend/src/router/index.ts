@@ -281,6 +281,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      requiresInvoiceManagement: true,
       title: 'Invoice Management',
       titleKey: 'invoicePage.title',
       descriptionKey: 'invoicePage.description'
@@ -801,6 +802,16 @@ router.beforeEach(async (to, _from, next) => {
   if (requiresAgent && !authStore.isAdmin && authStore.user?.role !== 'agent') {
     next('/dashboard')
     return
+  }
+
+  if (to.meta.requiresInvoiceManagement === true) {
+    if (!appStore.publicSettingsLoaded) {
+      await appStore.fetchPublicSettings()
+    }
+    if (appStore.cachedPublicSettings?.invoice_management_enabled !== true) {
+      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+      return
+    }
   }
 
   // 简易模式下限制访问某些页面

@@ -45,6 +45,7 @@ export interface SystemSettings {
   purchase_subscription_url: string
   card_shop_enabled: boolean
   card_shop_products: CardShopProduct[]
+  invoice_management_enabled: boolean
   sora_client_enabled: boolean
   backend_mode_enabled: boolean
   balance_alert_enabled: boolean
@@ -175,6 +176,7 @@ export interface UpdateSettingsRequest {
   purchase_subscription_url?: string
   card_shop_enabled?: boolean
   card_shop_products?: CardShopProduct[]
+  invoice_management_enabled?: boolean
   sora_client_enabled?: boolean
   backend_mode_enabled?: boolean
   balance_alert_enabled?: boolean

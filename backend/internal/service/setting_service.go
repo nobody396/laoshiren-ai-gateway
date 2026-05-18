@@ -179,6 +179,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyPurchaseSubscriptionURL,
 		SettingKeyCardShopEnabled,
 		SettingKeyCardShopProducts,
+		SettingKeyInvoiceManagementEnabled,
 		SettingKeyTableDefaultPageSize,
 		SettingKeyTablePageSizeOptions,
 		SettingKeyCustomMenuItems,
@@ -261,6 +262,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
 		CardShopEnabled:                  settings[SettingKeyCardShopEnabled] == "true",
 		CardShopProducts:                 publicCardShopProducts(parseCardShopProducts(settings[SettingKeyCardShopProducts])),
+		InvoiceManagementEnabled:         settings[SettingKeyInvoiceManagementEnabled] == "true",
 		SoraClientEnabled:                settings[SettingKeySoraClientEnabled] == "true",
 		TableDefaultPageSize:             tableDefaultPageSize,
 		TablePageSizeOptions:             tablePageSizeOptions,
@@ -341,6 +343,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		PurchaseSubscriptionURL          string            `json:"purchase_subscription_url,omitempty"`
 		CardShopEnabled                  bool              `json:"card_shop_enabled"`
 		CardShopProducts                 []CardShopProduct `json:"card_shop_products"`
+		InvoiceManagementEnabled         bool              `json:"invoice_management_enabled"`
 		SoraClientEnabled                bool              `json:"sora_client_enabled"`
 		TableDefaultPageSize             int               `json:"table_default_page_size"`
 		TablePageSizeOptions             []int             `json:"table_page_size_options"`
@@ -383,6 +386,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		PurchaseSubscriptionURL:          settings.PurchaseSubscriptionURL,
 		CardShopEnabled:                  settings.CardShopEnabled,
 		CardShopProducts:                 settings.CardShopProducts,
+		InvoiceManagementEnabled:         settings.InvoiceManagementEnabled,
 		SoraClientEnabled:                settings.SoraClientEnabled,
 		TableDefaultPageSize:             settings.TableDefaultPageSize,
 		TablePageSizeOptions:             settings.TablePageSizeOptions,
@@ -689,6 +693,7 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 		return fmt.Errorf("marshal card shop products: %w", err)
 	}
 	updates[SettingKeyCardShopProducts] = string(cardShopProductsJSON)
+	updates[SettingKeyInvoiceManagementEnabled] = strconv.FormatBool(settings.InvoiceManagementEnabled)
 	updates[SettingKeySoraClientEnabled] = strconv.FormatBool(settings.SoraClientEnabled)
 	tableDefaultPageSize, tablePageSizeOptions := normalizeTablePreferences(
 		settings.TableDefaultPageSize,
@@ -1136,6 +1141,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyPurchaseSubscriptionURL:          "",
 		SettingKeyCardShopEnabled:                  "false",
 		SettingKeyCardShopProducts:                 "[]",
+		SettingKeyInvoiceManagementEnabled:         "false",
 		SettingKeyChatbotURL:                       "",
 		SettingKeyTableDefaultPageSize:             "20",
 		SettingKeyTablePageSizeOptions:             "[10,20,50,100]",
@@ -1233,6 +1239,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
 		CardShopEnabled:                  settings[SettingKeyCardShopEnabled] == "true",
 		CardShopProducts:                 parseCardShopProducts(settings[SettingKeyCardShopProducts]),
+		InvoiceManagementEnabled:         settings[SettingKeyInvoiceManagementEnabled] == "true",
 		SoraClientEnabled:                settings[SettingKeySoraClientEnabled] == "true",
 		CustomMenuItems:                  settings[SettingKeyCustomMenuItems],
 		CustomEndpoints:                  settings[SettingKeyCustomEndpoints],

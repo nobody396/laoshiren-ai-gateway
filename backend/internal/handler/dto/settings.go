@@ -105,6 +105,7 @@ type SystemSettings struct {
 	PurchaseSubscriptionURL     string            `json:"purchase_subscription_url"`
 	CardShopEnabled             bool              `json:"card_shop_enabled"`
 	CardShopProducts            []CardShopProduct `json:"card_shop_products"`
+	InvoiceManagementEnabled    bool              `json:"invoice_management_enabled"`
 	SoraClientEnabled           bool              `json:"sora_client_enabled"`
 	TableDefaultPageSize        int               `json:"table_default_page_size"`
 	TablePageSizeOptions        []int             `json:"table_page_size_options"`
@@ -232,6 +233,7 @@ type PublicSettings struct {
 	PurchaseSubscriptionURL          string            `json:"purchase_subscription_url"`
 	CardShopEnabled                  bool              `json:"card_shop_enabled"`
 	CardShopProducts                 []CardShopProduct `json:"card_shop_products"`
+	InvoiceManagementEnabled         bool              `json:"invoice_management_enabled"`
 	TableDefaultPageSize             int               `json:"table_default_page_size"`
 	TablePageSizeOptions             []int             `json:"table_page_size_options"`
 	CustomMenuItems                  []CustomMenuItem  `json:"custom_menu_items"`

@@ -105,18 +105,35 @@ const inviteCode = ref('')
 const inviteCodeLoading = ref(true)
 const referralStats = ref<UserReferralDashboard | null>(null)
 const { copied, copyToClipboard } = useClipboard()
+const defaultInviteeBonusRate = 0.10
+const defaultReferralBonusRate = 0.05
 
 const registerUrl = computed(() =>
   inviteCode.value ? `${window.location.origin}/register?ref=${inviteCode.value}` : ''
 )
+const inviteeBonusRate = computed(() =>
+  formatRate(referralStats.value?.first_recharge_invitee_rate ?? defaultInviteeBonusRate)
+)
+const referralBonusRate = computed(() =>
+  formatRate(referralStats.value?.first_recharge_referral_rate ?? defaultReferralBonusRate)
+)
 const inviteHint = computed(() =>
-  user.value?.role === 'agent' ? t('agent.inviteCodeHint') : t('user.referral.inviteHint')
+  user.value?.role === 'agent'
+    ? t('agent.inviteCodeHintWithRate', { rate: inviteeBonusRate.value })
+    : t('user.referral.inviteHintWithRates', {
+      inviteeRate: inviteeBonusRate.value,
+      referralRate: referralBonusRate.value
+    })
 )
 
 async function copyInviteLink() {
   const url = registerUrl.value || inviteCode.value
   if (!url) return
   await copyToClipboard(url, t('common.copiedToClipboard'))
+}
+
+function formatRate(value: number): string {
+  return `${(value * 100).toFixed(2)}%`
 }
 
 const loadStats = async () => {

@@ -81,9 +81,11 @@ type AgentLevelProgress struct {
 
 // UserReferralDashboard 普通用户邀请看板统计
 type UserReferralDashboard struct {
-	InvitedUserCount    int64   `json:"invited_user_count"`
-	TotalCommission     float64 `json:"total_commission"`
-	ThisMonthCommission float64 `json:"this_month_commission"`
+	InvitedUserCount          int64   `json:"invited_user_count"`
+	TotalCommission           float64 `json:"total_commission"`
+	ThisMonthCommission       float64 `json:"this_month_commission"`
+	FirstRechargeInviteeRate  float64 `json:"first_recharge_invitee_rate"`
+	FirstRechargeReferralRate float64 `json:"first_recharge_referral_rate"`
 }
 
 // CommissionRates 全局分佣/奖励比例配置。比例以小数表示：0.06 = 6%。

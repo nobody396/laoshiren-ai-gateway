@@ -10,6 +10,8 @@ export interface UserReferralDashboard {
   invited_user_count: number
   total_commission: number
   this_month_commission: number
+  first_recharge_invitee_rate: number
+  first_recharge_referral_rate: number
 }
 
 export interface UserIdentityBinding {

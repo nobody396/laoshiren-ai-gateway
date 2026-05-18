@@ -44,6 +44,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { formatDate } from '@/utils/format'
 import { authAPI } from '@/api'
+import { userAPI, type UserReferralDashboard } from '@/api/user'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import StatCard from '@/components/common/StatCard.vue'
 import ProfileInfoCard from '@/components/user/profile/ProfileInfoCard.vue'
@@ -62,12 +63,26 @@ const user = computed(() => authStore.user)
 const contactInfo = ref('')
 const myInviteCode = ref('')
 const inviteCodeLoading = ref(true)
+const referralStats = ref<UserReferralDashboard | null>(null)
 const { copied: codeCopied, copyToClipboard } = useClipboard()
+const defaultInviteeBonusRate = 0.10
+const defaultReferralBonusRate = 0.05
 const registerUrl = computed(() =>
   myInviteCode.value ? `${window.location.origin}/register?ref=${myInviteCode.value}` : ''
 )
+const inviteeBonusRate = computed(() =>
+  formatRate(referralStats.value?.first_recharge_invitee_rate ?? defaultInviteeBonusRate)
+)
+const referralBonusRate = computed(() =>
+  formatRate(referralStats.value?.first_recharge_referral_rate ?? defaultReferralBonusRate)
+)
 const inviteCodeHint = computed(() =>
-  user.value?.role === 'agent' ? t('agent.inviteCodeHint') : t('profile.inviteCodeHint')
+  user.value?.role === 'agent'
+    ? t('agent.inviteCodeHintWithRate', { rate: inviteeBonusRate.value })
+    : t('profile.inviteCodeHintWithRates', {
+      inviteeRate: inviteeBonusRate.value,
+      referralRate: referralBonusRate.value
+    })
 )
 
 const WalletIcon = { render: () => h('svg', { fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '1.5' }, [h('path', { d: 'M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12' })]) }
@@ -92,10 +107,17 @@ onMounted(async () => {
     myInviteCode.value = inviteCode.invite_code
   } catch {
     // ignore invite code failures
+  }
+
+  try {
+    referralStats.value = await userAPI.getUserReferralDashboard()
+  } catch {
+    // ignore referral dashboard failures
   } finally {
     inviteCodeLoading.value = false
   }
 })
 
 const formatCurrency = (v: number) => `$${v.toFixed(2)}`
+const formatRate = (v: number) => `${(v * 100).toFixed(2)}%`
 </script>

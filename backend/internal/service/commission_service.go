@@ -426,6 +426,8 @@ func (s *CommissionService) GetAgentDashboard(ctx context.Context, agentID int64
 
 // GetUserReferralDashboard 获取普通用户的邀请看板统计（邀请人数 + 获得的 referral 佣金）
 func (s *CommissionService) GetUserReferralDashboard(ctx context.Context, userID int64) (*UserReferralDashboard, error) {
+	rates := s.getCommissionRates(ctx)
+
 	// 邀请用户总数（按 inviter_id 查）
 	invitedCount, err := s.userRepo.CountInvitedByInviterID(ctx, userID)
 	if err != nil {
@@ -452,9 +454,11 @@ func (s *CommissionService) GetUserReferralDashboard(ctx context.Context, userID
 	}
 
 	return &UserReferralDashboard{
-		InvitedUserCount:    invitedCount,
-		TotalCommission:     totalCommission,
-		ThisMonthCommission: thisMonthCommission,
+		InvitedUserCount:          invitedCount,
+		TotalCommission:           totalCommission,
+		ThisMonthCommission:       thisMonthCommission,
+		FirstRechargeInviteeRate:  rates.FirstRechargeInviteeRate,
+		FirstRechargeReferralRate: rates.FirstRechargeReferralRate,
 	}, nil
 }
 

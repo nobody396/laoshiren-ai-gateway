@@ -2,7 +2,7 @@
   <AppLayout>
     <div class="topup-page">
       <div class="topup-shell">
-        <section class="topup-panel">
+        <section class="topup-panel" data-tour="topup-panel">
           <div class="topup-grid">
             <div class="topup-main">
               <div class="topup-eyebrow">

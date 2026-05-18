@@ -5640,9 +5640,21 @@ export default {
     user: {
       welcome: {
         title: '👋 Welcome to 老实人 AI',
-        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Hello! Welcome to the 老实人 AI AI service platform.</p><p style="margin-bottom: 12px;"><b>🎯 Quick Start:</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>🔑 Create API Key</li><li>📋 Copy key to your application</li><li>🚀 Start using AI services</li></ul><p style="color: #10b981; font-weight: 600;">Just 1 minute, let\'s get started →</p></div>',
+        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Welcome to 老实人 AI. This tour covers the essentials: top up, understand pricing, create an API key, then choose automatic import or manual setup.</p><p style="color: #10b981; font-weight: 600;">We will go step by step. You do not need to learn everything at once.</p></div>',
         nextBtn: 'Start 🚀',
         prevBtn: 'Skip'
+      },
+      topupEntry: {
+        title: '💰 Step 1: Top Up',
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Model calls consume balance. Use the left sidebar top-up entry to add balance.</p><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;">👉 Click "Top Up" in the sidebar to continue.</p></div>'
+      },
+      topupPanel: {
+        title: 'Choose an available payment method',
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">This page shows the currently available top-up methods, such as card shop or QR payment. Pick whichever is convenient.</p><p style="font-size: 13px; color: #6b7280;">If you are only previewing the tour, click Next to continue to API key creation.</p></div>'
+      },
+      pricing: {
+        title: '📊 Where pricing lives',
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Pricing is available on the home page model pricing section, and the FAQ explains multipliers and billing.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 13px;">In short: groups map to different models/clients and multipliers. Pick the group based on the tool you want to use.</p></div>'
       },
       keyManage: {
         title: '🔑 API Key Management',
@@ -5654,17 +5666,25 @@ export default {
       },
       keyName: {
         title: '✏️ Key Name',
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Give your key an easy-to-identify name.</p><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 Examples:</b> "My First Key", "For Testing", etc.</p></div>',
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">The name is only for your own reference. Use anything memorable.</p><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 Examples:</b> "My First Key", "Claude Code", "For Testing", etc.</p></div>',
         nextBtn: 'Next'
       },
       keyGroup: {
         title: '🎯 Select Group',
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Select the service group assigned by the administrator.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 13px;"><b>📌 Group Info:</b><br/>Different groups may have different service quality and billing rates, choose according to your needs.</p></div>',
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">The group decides which model/client this key uses and what multiplier applies.</p><div style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 13px;"><b>How to choose:</b><ul style="margin: 8px 0 0 16px;"><li>Claude Code: choose a Claude group</li><li>Codex: choose a GPT / Codex group</li><li>Gemini CLI: choose a Gemini group</li><li>Lower multipliers usually mean lower cost for the same usage</li></ul></div></div>',
         nextBtn: 'Next'
       },
       keySubmit: {
         title: '🎉 Complete Creation',
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Click to confirm and create your API key.</p><div style="padding: 8px 12px; background: #fee2e2; border-left: 3px solid #ef4444; border-radius: 4px; font-size: 13px; margin-bottom: 12px;"><b>⚠️ Important:</b><ul style="margin: 8px 0 0 16px;"><li>Copy the key (sk-xxx) immediately after creation</li><li>Key is only shown once, need to regenerate if lost</li></ul></div><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>🚀 How to Use:</b><br/>Configure the key in any OpenAI-compatible client (like ChatBox, OpenCat, etc.) and start using!</p><p style="margin-top: 12px; color: #10b981; font-weight: 600;">👉 Click "Create" button</p></div>'
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">After confirming name and group, click Create. The page returns to the key list after creation.</p><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;">👉 Click "Create" to generate your API key.</p></div>'
+      },
+      useOptions: {
+        title: 'Choose how to use it',
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Your key is ready. There are two paths:</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>Recommended for beginners:</b> click "Import to CCS" to import into CC Switch automatically. Install CC Switch only when you choose this path.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>No extra tool:</b> click "Use Key" and copy the config manually.</p></div></div>'
+      },
+      docs: {
+        title: '📚 Tutorials and download guide',
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Docs include CC Switch download instructions and setup guides for Claude Code, Codex, Gemini CLI, and more.</p><p style="font-size: 13px; color: #6b7280;">Download CC Switch only when you want automatic configuration. Manual setup remains available.</p></div>'
       }
     }
   },

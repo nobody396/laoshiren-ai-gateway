@@ -295,10 +295,11 @@
           </template>
 
           <template #cell-actions="{ row }">
-            <div class="flex items-center gap-1">
+            <div class="flex items-center gap-1" data-tour="keys-use-options">
               <!-- Use Key Button -->
               <button
                 @click="openUseKeyModal(row)"
+                data-tour="keys-use-key"
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
               >
                 <Icon name="terminal" size="sm" />
@@ -308,6 +309,7 @@
               <button
                 v-if="!publicSettings?.hide_ccs_import_button"
                 @click="importToCcswitch(row)"
+                data-tour="keys-import-ccs"
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
               >
                 <Icon name="upload" size="sm" />
@@ -1538,6 +1540,7 @@ const handleSubmit = async () => {
   } : { rate_limit_5h: 0, rate_limit_1d: 0, rate_limit_7d: 0 }
 
   submitting.value = true
+  let shouldAdvanceKeyCreationTour = false
   try {
     if (showEditModal.value && selectedKey.value) {
       await keysAPI.update(selectedKey.value.id, {
@@ -1567,12 +1570,13 @@ const handleSubmit = async () => {
       )
       appStore.showSuccess(t('keys.keyCreatedSuccess'))
       // Only advance tour if active, on submit step, and creation succeeded
-      if (onboardingStore.isCurrentStep('[data-tour="key-form-submit"]')) {
-        onboardingStore.nextStep(500)
-      }
+      shouldAdvanceKeyCreationTour = onboardingStore.isCurrentStep('[data-tour="key-form-submit"]')
     }
     closeModals()
-    loadApiKeys()
+    await loadApiKeys()
+    if (shouldAdvanceKeyCreationTour) {
+      onboardingStore.nextStep(500)
+    }
   } catch (error: any) {
     const errorMsg = error.response?.data?.detail || t('keys.failedToSave')
     appStore.showError(errorMsg)
@@ -1787,16 +1791,8 @@ const executeCcsImport = (row: ApiKey, clientType: 'claude' | 'gemini') => {
 
   try {
     window.open(deeplink, '_self')
-
-    // Check if the protocol handler worked by detecting if we're still focused
-    setTimeout(() => {
-      if (document.hasFocus()) {
-        // Still focused means the protocol handler likely failed
-        appStore.showError(t('keys.ccSwitchNotInstalled'))
-      }
-    }, 100)
-  } catch (error) {
-    appStore.showError(t('keys.ccSwitchNotInstalled'))
+  } catch {
+    // Browser blocked the custom protocol; onboarding explains the CC Switch install path.
   }
 }
 

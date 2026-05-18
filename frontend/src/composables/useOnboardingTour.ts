@@ -536,9 +536,8 @@ export function useOnboardingTour(options: OnboardingOptions) {
       return
     }
 
-    // 只在管理员+标准模式下自动启动
-    const isAdmin = userStore.user?.role === 'admin'
-    if (!isAdmin) {
+    // 标准模式下，管理员和普通用户都可以自动启动各自的新手引导。
+    if (!userStore.user) {
       return
     }
 

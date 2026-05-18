@@ -235,9 +235,9 @@ const contactInfo = computed(() => appStore.contactInfo)
 const docUrl = computed(() => appStore.docUrl)
 const chatbotUrl = computed(() => (appStore.cachedPublicSettings?.chatbot_url || '').trim())
 
-// 只在标准模式的管理员下显示新手引导按钮
+// 标准模式下，所有登录用户都可以随时重新查看新手引导。
 const showOnboardingButton = computed(() => {
-  return !authStore.isSimpleMode && user.value?.role === 'admin'
+  return !authStore.isSimpleMode && !!user.value
 })
 
 const userInitials = computed(() => {

@@ -5819,9 +5819,24 @@ export default {
       welcome: {
         title: '👋 欢迎使用 老实人 AI',
         description:
-          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">您好！欢迎来到 老实人 AI AI 服务平台。</p><p style="margin-bottom: 12px;"><b>🎯 快速开始：</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>🔑 创建 API 密钥</li><li>📋 复制密钥到您的应用</li><li>🚀 开始使用 AI 服务</li></ul><p style="color: #10b981; font-weight: 600;">只需 1 分钟，让我们开始吧 →</p></div>',
+          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">欢迎来到 老实人 AI。这里会带你走完最重要的几步：充值、看价格、创建 API 密钥，然后选择自动导入或手动配置。</p><p style="color: #10b981; font-weight: 600;">我们一步一步来，不需要一次看懂所有功能。</p></div>',
         nextBtn: '开始 🚀',
         prevBtn: '跳过'
+      },
+      topupEntry: {
+        title: '💰 第一步：充值入口',
+        description:
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">调用模型会消耗余额。你可以从左侧「现在充值」进入充值页面。</p><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;">👉 点击左侧「现在充值」继续。</p></div>'
+      },
+      topupPanel: {
+        title: '选择当前可用的充值方式',
+        description:
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">这里会展示当前站点支持的充值方式，比如卡密商城或扫码支付。选择你方便的方式完成充值即可。</p><p style="font-size: 13px; color: #6b7280;">如果你只是先体验引导，可以点下一步继续看密钥创建流程。</p></div>'
+      },
+      pricing: {
+        title: '📊 价格在哪里看',
+        description:
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">模型价格可以在首页「模型定价」区域查看，文档里的常见问题也会解释倍率和计费方式。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 13px;">简单理解：不同分组对应不同模型/客户端和倍率，选择分组时按你要用的工具来选。</p></div>'
       },
       keyManage: {
         title: '🔑 API 密钥管理',
@@ -5836,19 +5851,29 @@ export default {
       keyName: {
         title: '✏️ 密钥名称',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">为密钥起一个便于识别的名称。</p><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 示例：</b>"我的第一个密钥"、"测试用" 等</p></div>',
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">名称只是给你自己识别用，随便填一个好记的名字就行。</p><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 示例：</b>"我的第一个密钥"、"Claude Code"、"测试用" 等</p></div>',
         nextBtn: '下一步'
       },
       keyGroup: {
         title: '🎯 选择分组',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">选择管理员为您分配的服务分组。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 13px;"><b>📌 分组说明：</b><br/>不同分组可能有不同的服务质量和计费标准，请根据需要选择。</p></div>',
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">分组决定这把密钥主要调用哪类模型和使用什么倍率。</p><div style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 13px;"><b>怎么选：</b><ul style="margin: 8px 0 0 16px;"><li>用 Claude Code，优先选 Claude 相关分组</li><li>用 Codex，优先选 GPT / Codex 相关分组</li><li>用 Gemini CLI，优先选 Gemini 相关分组</li><li>倍率越低，同样用量扣费越少；具体以站点定价说明为准</li></ul></div></div>',
         nextBtn: '下一步'
       },
       keySubmit: {
         title: '🎉 完成创建',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">点击确认创建您的 API 密钥。</p><div style="padding: 8px 12px; background: #fee2e2; border-left: 3px solid #ef4444; border-radius: 4px; font-size: 13px; margin-bottom: 12px;"><b>⚠️ 重要：</b><ul style="margin: 8px 0 0 16px;"><li>创建后请立即复制密钥（sk-xxx）</li><li>密钥只显示一次，丢失需重新生成</li></ul></div><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>🚀 如何使用：</b><br/>将密钥配置到支持 OpenAI 接口的任何客户端（如 ChatBox、OpenCat 等），即可开始使用！</p><p style="margin-top: 12px; color: #10b981; font-weight: 600;">👉 点击"创建"按钮</p></div>'
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">确认名称和分组后，点击创建。创建成功后，系统会回到密钥列表。</p><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;">👉 点击「创建」生成你的 API 密钥。</p></div>'
+      },
+      useOptions: {
+        title: '现在选择怎么使用',
+        description:
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">密钥已经创建好了。接下来有两种方式：</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>推荐新手：</b>点「导入到 CCS」自动导入到 CC Switch。没有安装时，再去下载 CC Switch。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>不想装工具：</b>点「使用密钥」手动复制配置。</p></div></div>'
+      },
+      docs: {
+        title: '📚 教程和下载说明',
+        description:
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">文档里有 CC Switch 下载说明、Claude Code、Codex、Gemini CLI 等工具的接入教程。</p><p style="font-size: 13px; color: #6b7280;">你想用自动配置时再下载 CC Switch；不想用也可以直接手动配置。</p></div>'
       }
     }
   },

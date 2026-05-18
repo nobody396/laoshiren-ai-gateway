@@ -257,6 +257,34 @@ export const getUserSteps = (t: (key: string) => string): DriveStep[] => [
     }
   },
   {
+    element: '[data-tour="sidebar-topup"]',
+    popover: {
+      title: t('onboarding.user.topupEntry.title'),
+      description: t('onboarding.user.topupEntry.description'),
+      side: 'right',
+      align: 'center',
+      showButtons: ['close']
+    }
+  },
+  {
+    element: '[data-tour="topup-panel"]',
+    popover: {
+      title: t('onboarding.user.topupPanel.title'),
+      description: t('onboarding.user.topupPanel.description'),
+      side: 'right',
+      align: 'start',
+      showButtons: ['next', 'previous']
+    }
+  },
+  {
+    popover: {
+      title: t('onboarding.user.pricing.title'),
+      description: t('onboarding.user.pricing.description'),
+      align: 'center',
+      showButtons: ['next', 'previous']
+    }
+  },
+  {
     element: '[data-tour="sidebar-my-keys"]',
     popover: {
       title: t('onboarding.user.keyManage.title'),
@@ -304,6 +332,26 @@ export const getUserSteps = (t: (key: string) => string): DriveStep[] => [
       side: 'left',
       align: 'center',
       showButtons: ['close']
+    }
+  },
+  {
+    element: '[data-tour="keys-use-options"]',
+    popover: {
+      title: t('onboarding.user.useOptions.title'),
+      description: t('onboarding.user.useOptions.description'),
+      side: 'left',
+      align: 'center',
+      showButtons: ['next', 'previous']
+    }
+  },
+  {
+    element: '[data-tour="sidebar-docs"]',
+    popover: {
+      title: t('onboarding.user.docs.title'),
+      description: t('onboarding.user.docs.description'),
+      side: 'right',
+      align: 'center',
+      showButtons: ['next', 'previous']
     }
   }
 ]

@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from '../client'
-import type { CustomMenuItem } from '@/types'
+import type { CardShopProduct, CustomMenuItem } from '@/types'
 
 export interface DefaultSubscriptionSetting {
   group_id: number
@@ -43,6 +43,8 @@ export interface SystemSettings {
   hide_ccs_import_button: boolean
   purchase_subscription_enabled: boolean
   purchase_subscription_url: string
+  card_shop_enabled: boolean
+  card_shop_products: CardShopProduct[]
   sora_client_enabled: boolean
   backend_mode_enabled: boolean
   balance_alert_enabled: boolean
@@ -171,6 +173,8 @@ export interface UpdateSettingsRequest {
   hide_ccs_import_button?: boolean
   purchase_subscription_enabled?: boolean
   purchase_subscription_url?: string
+  card_shop_enabled?: boolean
+  card_shop_products?: CardShopProduct[]
   sora_client_enabled?: boolean
   backend_mode_enabled?: boolean
   balance_alert_enabled?: boolean

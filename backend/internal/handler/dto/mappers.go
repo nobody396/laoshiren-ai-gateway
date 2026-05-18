@@ -31,6 +31,42 @@ func UserFromServiceShallow(u *service.User) *User {
 	}
 }
 
+func CardShopProductsFromService(products []service.CardShopProduct) []CardShopProduct {
+	if len(products) == 0 {
+		return []CardShopProduct{}
+	}
+	out := make([]CardShopProduct, 0, len(products))
+	for _, product := range products {
+		out = append(out, CardShopProduct{
+			ID:        product.ID,
+			Label:     product.Label,
+			AmountCNY: product.AmountCNY,
+			URL:       product.URL,
+			Enabled:   product.Enabled,
+			SortOrder: product.SortOrder,
+		})
+	}
+	return out
+}
+
+func CardShopProductsToService(products []CardShopProduct) []service.CardShopProduct {
+	if len(products) == 0 {
+		return []service.CardShopProduct{}
+	}
+	out := make([]service.CardShopProduct, 0, len(products))
+	for _, product := range products {
+		out = append(out, service.CardShopProduct{
+			ID:        product.ID,
+			Label:     product.Label,
+			AmountCNY: product.AmountCNY,
+			URL:       product.URL,
+			Enabled:   product.Enabled,
+			SortOrder: product.SortOrder,
+		})
+	}
+	return out
+}
+
 func UserFromService(u *service.User) *User {
 	if u == nil {
 		return nil

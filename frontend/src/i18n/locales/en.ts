@@ -1046,6 +1046,14 @@ export default {
     notConfigured: 'Payment channel not configured, please contact admin.',
     cnyAmount: '¥{amount} CNY',
     creditsNote: '¥1 CNY = $1 balance',
+    cardShopSelectAmount: 'Choose a card product',
+    cardShopAmount: '¥{amount} balance',
+    cardShopHint: 'After payment, copy or open the card link from the Liandong shop order details, then confirm redemption here.',
+    cardShopModeTitle: 'Card Shop',
+    cardShopProductCount: 'Products',
+    cardShopRedeemType: 'Credit Method',
+    cardShopRedeemLink: 'Card link redemption',
+    cardShopGoRedeem: 'Purchased, redeem now',
   },
   redeem: {
     title: 'Redeem Code',
@@ -1086,7 +1094,10 @@ export default {
     codeRedeemSuccess: 'Code redeemed successfully!',
     failedToRedeem: 'Failed to redeem code. Please check the code and try again.',
     subscriptionRefreshFailed: 'Redeemed successfully, but failed to refresh subscription status.',
-    pleaseEnterCode: 'Please enter a redeem code'
+    pleaseEnterCode: 'Please enter a redeem code',
+    linkCodeDetected: 'Redeem code detected from the card link',
+    confirmAccountHint: 'Confirm redemption to current account: {account}',
+    confirmRedeemButton: 'Confirm redemption to current account'
   },
 
   // Profile
@@ -3620,6 +3631,8 @@ export default {
       generating: 'Generating...',
       generate: 'Generate',
       copyAll: 'Copy All',
+      redeemLinks: 'Redeem Links',
+      rawCodes: 'Raw Codes',
       copied: 'Copied!',
       download: 'Download',
       codesExported: 'Codes exported successfully',

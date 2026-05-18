@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -300,6 +301,15 @@ func (h *RedeemHandler) GetStats(c *gin.Context) {
 func (h *RedeemHandler) Export(c *gin.Context) {
 	codeType := c.Query("type")
 	status := c.Query("status")
+	redeemURLBase := strings.TrimRight(strings.TrimSpace(c.Query("redeem_url_base")), "/")
+	includeRedeemURL := c.Query("include_redeem_url") == "true" && redeemURLBase != ""
+	if includeRedeemURL {
+		parsed, err := url.Parse(redeemURLBase)
+		if err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+			response.BadRequest(c, "redeem_url_base must be an absolute http(s) URL")
+			return
+		}
+	}
 
 	// Get all codes without pagination (use large page size)
 	codes, _, err := h.adminService.ListRedeemCodes(c.Request.Context(), 1, 10000, codeType, status, "")
@@ -313,7 +323,11 @@ func (h *RedeemHandler) Export(c *gin.Context) {
 	writer := csv.NewWriter(&buf)
 
 	// Write header
-	if err := writer.Write([]string{"id", "code", "type", "value", "status", "used_by", "used_by_email", "used_at", "created_at"}); err != nil {
+	header := []string{"id", "code", "type", "value", "status", "used_by", "used_by_email", "used_at", "created_at"}
+	if includeRedeemURL {
+		header = append(header, "redeem_url")
+	}
+	if err := writer.Write(header); err != nil {
 		response.InternalError(c, "Failed to export redeem codes: "+err.Error())
 		return
 	}
@@ -332,7 +346,7 @@ func (h *RedeemHandler) Export(c *gin.Context) {
 		if code.UsedAt != nil {
 			usedAt = code.UsedAt.Format("2006-01-02 15:04:05")
 		}
-		if err := writer.Write([]string{
+		row := []string{
 			fmt.Sprintf("%d", code.ID),
 			code.Code,
 			code.Type,
@@ -342,7 +356,11 @@ func (h *RedeemHandler) Export(c *gin.Context) {
 			usedByEmail,
 			usedAt,
 			code.CreatedAt.Format("2006-01-02 15:04:05"),
-		}); err != nil {
+		}
+		if includeRedeemURL {
+			row = append(row, redeemURLBase+"/redeem?code="+url.QueryEscape(code.Code))
+		}
+		if err := writer.Write(row); err != nil {
 			response.InternalError(c, "Failed to export redeem codes: "+err.Error())
 			return
 		}

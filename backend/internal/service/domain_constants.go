@@ -164,6 +164,8 @@ const (
 	SettingKeyHideCcsImportButton         = "hide_ccs_import_button"        // 是否隐藏 API Keys 页面的导入 CCS 按钮
 	SettingKeyPurchaseSubscriptionEnabled = "purchase_subscription_enabled" // 是否展示"购买订阅"页面入口
 	SettingKeyPurchaseSubscriptionURL     = "purchase_subscription_url"     // "购买订阅"页面 URL（作为 iframe src）
+	SettingKeyCardShopEnabled             = "card_shop_enabled"             // 是否启用外部卡密商城充值入口
+	SettingKeyCardShopProducts            = "card_shop_products"            // 外部卡密商城固定面额商品列表（JSON）
 	SettingKeySoraClientEnabled           = "sora_client_enabled"           // 是否启用 Sora 客户端（管理员手动控制）
 	SettingKeyTableDefaultPageSize        = "table_default_page_size"       // 表格默认每页条数
 	SettingKeyTablePageSizeOptions        = "table_page_size_options"       // 表格可选每页条数（JSON 数组）

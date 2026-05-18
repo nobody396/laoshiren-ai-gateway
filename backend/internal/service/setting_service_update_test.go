@@ -194,6 +194,29 @@ func TestSettingService_UpdateSettings_RegistrationEmailSuffixWhitelist_Invalid(
 	require.Equal(t, "INVALID_REGISTRATION_EMAIL_SUFFIX_WHITELIST", infraerrors.Reason(err))
 }
 
+func TestSettingService_UpdateSettings_CardShopProducts_Normalized(t *testing.T) {
+	repo := &settingUpdateRepoStub{}
+	svc := NewSettingService(repo, &config.Config{})
+
+	err := svc.UpdateSettings(context.Background(), &SystemSettings{
+		CardShopEnabled: true,
+		CardShopProducts: []CardShopProduct{
+			{ID: " p2 ", Label: " 30 元 ", AmountCNY: 30, URL: " https://shop.example/30 ", Enabled: true, SortOrder: 2},
+			{},
+			{ID: "p1", Label: "10 元", AmountCNY: 10, URL: "https://shop.example/10", Enabled: true, SortOrder: 1},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "true", repo.updates[SettingKeyCardShopEnabled])
+
+	var got []CardShopProduct
+	require.NoError(t, json.Unmarshal([]byte(repo.updates[SettingKeyCardShopProducts]), &got))
+	require.Equal(t, []CardShopProduct{
+		{ID: "p1", Label: "10 元", AmountCNY: 10, URL: "https://shop.example/10", Enabled: true, SortOrder: 1},
+		{ID: "p2", Label: "30 元", AmountCNY: 30, URL: "https://shop.example/30", Enabled: true, SortOrder: 2},
+	}, got)
+}
+
 func TestParseDefaultSubscriptions_NormalizesValues(t *testing.T) {
 	got := parseDefaultSubscriptions(`[{"group_id":11,"validity_days":30},{"group_id":11,"validity_days":60},{"group_id":0,"validity_days":10},{"group_id":12,"validity_days":99999}]`)
 	require.Equal(t, []DefaultSubscriptionSetting{

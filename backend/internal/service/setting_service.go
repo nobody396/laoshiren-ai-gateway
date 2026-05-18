@@ -177,6 +177,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyHideCcsImportButton,
 		SettingKeyPurchaseSubscriptionEnabled,
 		SettingKeyPurchaseSubscriptionURL,
+		SettingKeyCardShopEnabled,
+		SettingKeyCardShopProducts,
 		SettingKeyTableDefaultPageSize,
 		SettingKeyTablePageSizeOptions,
 		SettingKeyCustomMenuItems,
@@ -257,6 +259,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		HideCcsImportButton:              settings[SettingKeyHideCcsImportButton] == "true",
 		PurchaseSubscriptionEnabled:      settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
+		CardShopEnabled:                  settings[SettingKeyCardShopEnabled] == "true",
+		CardShopProducts:                 publicCardShopProducts(parseCardShopProducts(settings[SettingKeyCardShopProducts])),
 		SoraClientEnabled:                settings[SettingKeySoraClientEnabled] == "true",
 		TableDefaultPageSize:             tableDefaultPageSize,
 		TablePageSizeOptions:             tablePageSizeOptions,
@@ -313,45 +317,47 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 
 	// Return a struct that matches the frontend's expected format
 	return &struct {
-		RegistrationEnabled              bool            `json:"registration_enabled"`
-		EmailVerifyEnabled               bool            `json:"email_verify_enabled"`
-		RegistrationEmailSuffixWhitelist []string        `json:"registration_email_suffix_whitelist"`
-		PromoCodeEnabled                 bool            `json:"promo_code_enabled"`
-		PasswordResetEnabled             bool            `json:"password_reset_enabled"`
-		InvitationCodeEnabled            bool            `json:"invitation_code_enabled"`
-		TotpEnabled                      bool            `json:"totp_enabled"`
-		TurnstileEnabled                 bool            `json:"turnstile_enabled"`
-		TurnstileSiteKey                 string          `json:"turnstile_site_key,omitempty"`
-		SiteName                         string          `json:"site_name"`
-		SiteLogo                         string          `json:"site_logo,omitempty"`
-		SiteSubtitle                     string          `json:"site_subtitle,omitempty"`
-		APIBaseURL                       string          `json:"api_base_url,omitempty"`
-		ContactInfo                      string          `json:"contact_info,omitempty"`
-		TechSupportQRCode                string          `json:"tech_support_qrcode,omitempty"`
-		AfterSalesQRCode                 string          `json:"after_sales_qrcode,omitempty"`
-		DocURL                           string          `json:"doc_url,omitempty"`
-		ChatbotURL                       string          `json:"chatbot_url,omitempty"`
-		HomeContent                      string          `json:"home_content,omitempty"`
-		HideCcsImportButton              bool            `json:"hide_ccs_import_button"`
-		PurchaseSubscriptionEnabled      bool            `json:"purchase_subscription_enabled"`
-		PurchaseSubscriptionURL          string          `json:"purchase_subscription_url,omitempty"`
-		SoraClientEnabled                bool            `json:"sora_client_enabled"`
-		TableDefaultPageSize             int             `json:"table_default_page_size"`
-		TablePageSizeOptions             []int           `json:"table_page_size_options"`
-		CustomMenuItems                  json.RawMessage `json:"custom_menu_items"`
-		CustomEndpoints                  json.RawMessage `json:"custom_endpoints"`
-		LinuxDoOAuthEnabled              bool            `json:"linuxdo_oauth_enabled"`
-		BackendModeEnabled               bool            `json:"backend_mode_enabled"`
-		PaymentEnabled                   bool            `json:"payment_enabled"`
-		StripeEnabled                    bool            `json:"stripe_enabled"`
-		AlipayEnabled                    bool            `json:"alipay_enabled"`
-		XunhuAlipayEnabled               bool            `json:"xunhu_alipay_enabled"`
-		XunhuWechatEnabled               bool            `json:"xunhu_wechat_enabled"`
-		OIDCOAuthEnabled                 bool            `json:"oidc_oauth_enabled"`
-		OIDCOAuthProviderName            string          `json:"oidc_oauth_provider_name"`
-		GitHubOAuthEnabled               bool            `json:"github_oauth_enabled"`
-		Version                          string          `json:"version,omitempty"`
-		AccountQuotaNotifyEnabled        bool            `json:"account_quota_notify_enabled"`
+		RegistrationEnabled              bool              `json:"registration_enabled"`
+		EmailVerifyEnabled               bool              `json:"email_verify_enabled"`
+		RegistrationEmailSuffixWhitelist []string          `json:"registration_email_suffix_whitelist"`
+		PromoCodeEnabled                 bool              `json:"promo_code_enabled"`
+		PasswordResetEnabled             bool              `json:"password_reset_enabled"`
+		InvitationCodeEnabled            bool              `json:"invitation_code_enabled"`
+		TotpEnabled                      bool              `json:"totp_enabled"`
+		TurnstileEnabled                 bool              `json:"turnstile_enabled"`
+		TurnstileSiteKey                 string            `json:"turnstile_site_key,omitempty"`
+		SiteName                         string            `json:"site_name"`
+		SiteLogo                         string            `json:"site_logo,omitempty"`
+		SiteSubtitle                     string            `json:"site_subtitle,omitempty"`
+		APIBaseURL                       string            `json:"api_base_url,omitempty"`
+		ContactInfo                      string            `json:"contact_info,omitempty"`
+		TechSupportQRCode                string            `json:"tech_support_qrcode,omitempty"`
+		AfterSalesQRCode                 string            `json:"after_sales_qrcode,omitempty"`
+		DocURL                           string            `json:"doc_url,omitempty"`
+		ChatbotURL                       string            `json:"chatbot_url,omitempty"`
+		HomeContent                      string            `json:"home_content,omitempty"`
+		HideCcsImportButton              bool              `json:"hide_ccs_import_button"`
+		PurchaseSubscriptionEnabled      bool              `json:"purchase_subscription_enabled"`
+		PurchaseSubscriptionURL          string            `json:"purchase_subscription_url,omitempty"`
+		CardShopEnabled                  bool              `json:"card_shop_enabled"`
+		CardShopProducts                 []CardShopProduct `json:"card_shop_products"`
+		SoraClientEnabled                bool              `json:"sora_client_enabled"`
+		TableDefaultPageSize             int               `json:"table_default_page_size"`
+		TablePageSizeOptions             []int             `json:"table_page_size_options"`
+		CustomMenuItems                  json.RawMessage   `json:"custom_menu_items"`
+		CustomEndpoints                  json.RawMessage   `json:"custom_endpoints"`
+		LinuxDoOAuthEnabled              bool              `json:"linuxdo_oauth_enabled"`
+		BackendModeEnabled               bool              `json:"backend_mode_enabled"`
+		PaymentEnabled                   bool              `json:"payment_enabled"`
+		StripeEnabled                    bool              `json:"stripe_enabled"`
+		AlipayEnabled                    bool              `json:"alipay_enabled"`
+		XunhuAlipayEnabled               bool              `json:"xunhu_alipay_enabled"`
+		XunhuWechatEnabled               bool              `json:"xunhu_wechat_enabled"`
+		OIDCOAuthEnabled                 bool              `json:"oidc_oauth_enabled"`
+		OIDCOAuthProviderName            string            `json:"oidc_oauth_provider_name"`
+		GitHubOAuthEnabled               bool              `json:"github_oauth_enabled"`
+		Version                          string            `json:"version,omitempty"`
+		AccountQuotaNotifyEnabled        bool              `json:"account_quota_notify_enabled"`
 	}{
 		RegistrationEnabled:              settings.RegistrationEnabled,
 		EmailVerifyEnabled:               settings.EmailVerifyEnabled,
@@ -375,6 +381,8 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		HideCcsImportButton:              settings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:      settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:          settings.PurchaseSubscriptionURL,
+		CardShopEnabled:                  settings.CardShopEnabled,
+		CardShopProducts:                 settings.CardShopProducts,
 		SoraClientEnabled:                settings.SoraClientEnabled,
 		TableDefaultPageSize:             settings.TableDefaultPageSize,
 		TablePageSizeOptions:             settings.TablePageSizeOptions,
@@ -517,6 +525,58 @@ func parseCustomMenuItemURLs(raw string) []string {
 	return urls
 }
 
+func parseCardShopProducts(raw string) []CardShopProduct {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw == "[]" {
+		return []CardShopProduct{}
+	}
+	var items []CardShopProduct
+	if err := json.Unmarshal([]byte(raw), &items); err != nil {
+		return []CardShopProduct{}
+	}
+	return normalizeCardShopProducts(items)
+}
+
+func normalizeCardShopProducts(items []CardShopProduct) []CardShopProduct {
+	if len(items) == 0 {
+		return []CardShopProduct{}
+	}
+	normalized := make([]CardShopProduct, 0, len(items))
+	for index, item := range items {
+		item.ID = strings.TrimSpace(item.ID)
+		item.Label = strings.TrimSpace(item.Label)
+		item.URL = strings.TrimSpace(item.URL)
+		if item.SortOrder == 0 {
+			item.SortOrder = index
+		}
+		if item.ID == "" && item.Label == "" && item.URL == "" && item.AmountCNY <= 0 {
+			continue
+		}
+		normalized = append(normalized, item)
+	}
+	sort.SliceStable(normalized, func(i, j int) bool {
+		if normalized[i].SortOrder == normalized[j].SortOrder {
+			return normalized[i].AmountCNY < normalized[j].AmountCNY
+		}
+		return normalized[i].SortOrder < normalized[j].SortOrder
+	})
+	return normalized
+}
+
+func publicCardShopProducts(items []CardShopProduct) []CardShopProduct {
+	if len(items) == 0 {
+		return []CardShopProduct{}
+	}
+	out := make([]CardShopProduct, 0, len(items))
+	for _, item := range items {
+		if !item.Enabled || item.AmountCNY <= 0 || strings.TrimSpace(item.URL) == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out
+}
+
 // UpdateSettings 更新系统设置
 func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSettings) error {
 	if err := s.validateDefaultSubscriptionGroups(ctx, settings.DefaultSubscriptions); err != nil {
@@ -623,6 +683,12 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 	updates[SettingKeyHideCcsImportButton] = strconv.FormatBool(settings.HideCcsImportButton)
 	updates[SettingKeyPurchaseSubscriptionEnabled] = strconv.FormatBool(settings.PurchaseSubscriptionEnabled)
 	updates[SettingKeyPurchaseSubscriptionURL] = strings.TrimSpace(settings.PurchaseSubscriptionURL)
+	updates[SettingKeyCardShopEnabled] = strconv.FormatBool(settings.CardShopEnabled)
+	cardShopProductsJSON, err := json.Marshal(normalizeCardShopProducts(settings.CardShopProducts))
+	if err != nil {
+		return fmt.Errorf("marshal card shop products: %w", err)
+	}
+	updates[SettingKeyCardShopProducts] = string(cardShopProductsJSON)
 	updates[SettingKeySoraClientEnabled] = strconv.FormatBool(settings.SoraClientEnabled)
 	tableDefaultPageSize, tablePageSizeOptions := normalizeTablePreferences(
 		settings.TableDefaultPageSize,
@@ -1068,6 +1134,8 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeySiteLogo:                         "",
 		SettingKeyPurchaseSubscriptionEnabled:      "false",
 		SettingKeyPurchaseSubscriptionURL:          "",
+		SettingKeyCardShopEnabled:                  "false",
+		SettingKeyCardShopProducts:                 "[]",
 		SettingKeyChatbotURL:                       "",
 		SettingKeyTableDefaultPageSize:             "20",
 		SettingKeyTablePageSizeOptions:             "[10,20,50,100]",
@@ -1163,6 +1231,8 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		HideCcsImportButton:              settings[SettingKeyHideCcsImportButton] == "true",
 		PurchaseSubscriptionEnabled:      settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
+		CardShopEnabled:                  settings[SettingKeyCardShopEnabled] == "true",
+		CardShopProducts:                 parseCardShopProducts(settings[SettingKeyCardShopProducts]),
 		SoraClientEnabled:                settings[SettingKeySoraClientEnabled] == "true",
 		CustomMenuItems:                  settings[SettingKeyCustomMenuItems],
 		CustomEndpoints:                  settings[SettingKeyCustomEndpoints],

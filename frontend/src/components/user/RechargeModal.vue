@@ -18,6 +18,40 @@
 
         <!-- Step 1: Select amount & pay type -->
         <div v-if="step === 1" class="px-6 py-5 space-y-5">
+          <template v-if="cardShopMode">
+            <div>
+              <p class="text-sm font-medium text-gray-700 dark:text-dark-300 mb-3">{{ t('topup.cardShopSelectAmount') }}</p>
+              <div class="grid grid-cols-1 gap-2">
+                <button
+                  v-for="product in activeCardShopProducts"
+                  :key="product.id"
+                  @click="openCardShopProduct(product)"
+                  class="rounded-lg border-2 border-gray-200 px-4 py-3 text-left transition-all hover:border-primary-300 hover:bg-primary-50 dark:border-dark-600 dark:hover:border-primary-500/40"
+                >
+                  <span class="block text-sm font-semibold text-gray-900 dark:text-white">
+                    {{ product.label || `¥${product.amount_cny}` }}
+                  </span>
+                  <span class="mt-1 block text-xs text-gray-500 dark:text-dark-400">
+                    {{ t('topup.cardShopAmount', { amount: product.amount_cny }) }}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <p class="rounded-lg border border-primary-200 bg-primary-50 px-3 py-2.5 text-sm leading-6 text-primary-700 dark:border-primary-900/50 dark:bg-primary-900/20 dark:text-primary-300">
+              {{ t('topup.cardShopHint') }}
+            </p>
+
+            <button
+              type="button"
+              class="w-full btn btn-secondary py-3 text-base font-semibold"
+              @click="goRedeem"
+            >
+              {{ t('topup.cardShopGoRedeem') }}
+            </button>
+          </template>
+
+          <template v-else>
           <!-- Amount presets -->
           <div>
             <p class="text-sm font-medium text-gray-700 dark:text-dark-300 mb-3">{{ t('topup.selectAmount') }}</p>
@@ -125,6 +159,7 @@
             </span>
             <span v-else>{{ t('topup.confirmButton') }} — ¥{{ effectiveAmountYuan }}</span>
           </button>
+          </template>
         </div>
 
         <!-- Step 2: QR Code -->
@@ -180,12 +215,15 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/api/topup'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { useAppStore } from '@/stores'
+import type { CardShopProduct } from '@/types'
 
 const { t } = useI18n()
 const appStore = useAppStore()
+const router = useRouter()
 
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
@@ -217,6 +255,14 @@ const xunhuWechatEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_w
 const canUseAlipay = computed(() => xunhuAlipayEnabled.value)
 const canUseWechat = computed(() => xunhuWechatEnabled.value)
 const hasAvailablePayType = computed(() => canUseAlipay.value || canUseWechat.value)
+const activeCardShopProducts = computed<CardShopProduct[]>(() =>
+  [...(appStore.cachedPublicSettings?.card_shop_products ?? [])]
+    .filter((product) => product.enabled && product.url && product.amount_cny > 0)
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.amount_cny - b.amount_cny)
+)
+const cardShopMode = computed(
+  () => (appStore.cachedPublicSettings?.card_shop_enabled ?? false) && activeCardShopProducts.value.length > 0
+)
 
 // 当前有效的金额（元）
 const effectiveAmountYuan = computed<number>(() => {
@@ -253,6 +299,16 @@ function selectPayType(type: TopupPayType) {
   if (type === 'alipay' && !canUseAlipay.value) return
   if (type === 'wechat' && !canUseWechat.value) return
   payType.value = type
+}
+
+function openCardShopProduct(product: CardShopProduct) {
+  if (!product.url) return
+  window.location.assign(product.url)
+}
+
+async function goRedeem() {
+  emit('update:modelValue', false)
+  await router.push('/redeem')
 }
 
 // 配置只保留一个渠道时，自动选中仍可用的支付方式。

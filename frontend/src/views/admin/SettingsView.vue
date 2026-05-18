@@ -1924,6 +1924,71 @@
                 {{ t('admin.settings.purchase.integrationDocHint') }}
               </span>
             </div>
+
+            <div class="border-t border-gray-100 pt-6 dark:border-dark-700">
+              <div class="flex items-center justify-between">
+                <div>
+                  <label class="font-medium text-gray-900 dark:text-white">链动小铺卡密商城</label>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    启用后，用户充值页会显示固定金额商品，并跳转到链动后台「自营商品」复制出来的真实商品独立链接。
+                  </p>
+                </div>
+                <Toggle v-model="form.card_shop_enabled" />
+              </div>
+
+              <div v-if="form.card_shop_enabled" class="mt-5 space-y-4">
+                <div
+                  v-for="(product, index) in form.card_shop_products"
+                  :key="product.id || index"
+                  class="rounded-lg border border-gray-100 p-4 dark:border-dark-700"
+                >
+                  <div class="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <p class="text-sm font-medium text-gray-900 dark:text-white">
+                        商品 {{ index + 1 }}
+                      </p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">
+                        建议和链动小铺自营商品面额一一对应。
+                      </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                        <input v-model="product.enabled" type="checkbox" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                        启用
+                      </label>
+                      <button
+                        type="button"
+                        class="btn btn-secondary btn-sm text-red-600 hover:text-red-700"
+                        @click="removeCardShopProduct(index)"
+                      >
+                        删除
+                      </button>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-1 gap-4 md:grid-cols-[1fr_140px]">
+                    <div>
+                      <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">商品名称</label>
+                      <input v-model="product.label" type="text" class="input" placeholder="¥20 余额卡" />
+                    </div>
+                    <div>
+                      <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">金额（元）</label>
+                      <input v-model.number="product.amount_cny" type="number" min="1" step="1" class="input" />
+                    </div>
+                  </div>
+                  <div class="mt-4">
+                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">链动商品链接</label>
+                    <input v-model="product.url" type="url" class="input font-mono text-sm" placeholder="https://www.ldxp.cn/..." />
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      从链动小铺商家后台的「自营商品」列表复制该商品的独立链接，不能填写测试页或店铺首页。
+                    </p>
+                  </div>
+                </div>
+
+                <button type="button" class="btn btn-secondary btn-sm" @click="addCardShopProduct">
+                  添加商品
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2464,7 +2529,7 @@ import type {
   WebSearchTestResult,
   OpenAIFastPolicyRule
 } from '@/api/admin/settings'
-import type { AdminGroup, Proxy } from '@/types'
+import type { AdminGroup, CardShopProduct, Proxy } from '@/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import Select from '@/components/common/Select.vue'
@@ -2654,6 +2719,8 @@ const form = reactive<SettingsForm>({
   hide_ccs_import_button: false,
   purchase_subscription_enabled: false,
   purchase_subscription_url: '',
+  card_shop_enabled: false,
+  card_shop_products: [],
   sora_client_enabled: false,
   balance_alert_enabled: true,
   balance_alert_default_threshold: 5,
@@ -2911,11 +2978,41 @@ function moveMenuItem(index: number, direction: -1 | 1) {
   })
 }
 
+function createCardShopProduct(): CardShopProduct {
+  const nextIndex = form.card_shop_products.length
+  const amount = [20, 50, 100, 200, 1000, 2000][nextIndex] ?? 20
+  return {
+    id: `card-shop-${Date.now()}-${nextIndex}`,
+    label: `¥${amount} 余额卡`,
+    amount_cny: amount,
+    url: '',
+    enabled: false,
+    sort_order: nextIndex
+  }
+}
+
+function addCardShopProduct() {
+  form.card_shop_products.push(createCardShopProduct())
+}
+
+function removeCardShopProduct(index: number) {
+  form.card_shop_products.splice(index, 1)
+  form.card_shop_products.forEach((item, i) => {
+    item.sort_order = i
+  })
+}
+
 async function loadSettings() {
   loading.value = true
   try {
     const settings = await adminAPI.settings.getSettings()
     Object.assign(form, settings)
+    form.card_shop_products = Array.isArray(settings.card_shop_products)
+      ? settings.card_shop_products.map((item, index) => ({
+          ...item,
+          sort_order: item.sort_order ?? index
+        }))
+      : []
     form.backend_mode_enabled = settings.backend_mode_enabled
     form.default_subscriptions = Array.isArray(settings.default_subscriptions)
       ? settings.default_subscriptions
@@ -3049,6 +3146,13 @@ async function saveSettings() {
       hide_ccs_import_button: form.hide_ccs_import_button,
       purchase_subscription_enabled: form.purchase_subscription_enabled,
       purchase_subscription_url: form.purchase_subscription_enabled ? form.purchase_subscription_url : '',
+      card_shop_enabled: form.card_shop_enabled,
+      card_shop_products: form.card_shop_products.map((item, index) => ({
+        ...item,
+        label: item.label.trim(),
+        url: item.url.trim(),
+        sort_order: index
+      })),
       sora_client_enabled: form.sora_client_enabled,
       balance_alert_enabled: form.balance_alert_enabled,
       balance_alert_default_threshold: form.balance_alert_default_threshold,
@@ -3129,6 +3233,12 @@ async function saveSettings() {
     }
     const updated = await adminAPI.settings.updateSettings(payload)
     Object.assign(form, updated)
+    form.card_shop_products = Array.isArray(updated.card_shop_products)
+      ? updated.card_shop_products.map((item, index) => ({
+          ...item,
+          sort_order: item.sort_order ?? index
+        }))
+      : []
     registrationEmailSuffixWhitelistTags.value = normalizeRegistrationEmailSuffixDomains(
       updated.registration_email_suffix_whitelist
     )

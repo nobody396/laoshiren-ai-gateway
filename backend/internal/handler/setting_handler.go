@@ -54,6 +54,8 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		HideCcsImportButton:              settings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:      settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:          settings.PurchaseSubscriptionURL,
+		CardShopEnabled:                  settings.CardShopEnabled,
+		CardShopProducts:                 dto.CardShopProductsFromService(settings.CardShopProducts),
 		CustomMenuItems:                  dto.ParseUserVisibleMenuItems(settings.CustomMenuItems),
 		LinuxDoOAuthEnabled:              settings.LinuxDoOAuthEnabled,
 		OIDCOAuthEnabled:                 settings.OIDCOAuthEnabled,

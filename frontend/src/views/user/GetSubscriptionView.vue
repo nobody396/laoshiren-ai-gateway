@@ -22,7 +22,34 @@
                 {{ t('subscriptionAccess.summary') }}
               </p>
 
-              <div v-if="step === 1" class="mt-8 space-y-8">
+              <div v-if="cardShopMode" class="mt-8 space-y-8">
+                <section>
+                  <p class="mb-4 text-sm font-medium text-gray-700 dark:text-dark-300">
+                    {{ t('topup.cardShopSelectAmount') }}
+                  </p>
+                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <button
+                      v-for="product in activeCardShopProducts"
+                      :key="product.id"
+                      @click="openCardShopProduct(product)"
+                      class="rounded-2xl border border-gray-200 bg-white px-5 py-4 text-left transition-all hover:border-primary-300 hover:bg-primary-50/60 dark:border-dark-600 dark:bg-dark-800/80 dark:hover:border-primary-500/40 dark:hover:bg-dark-800"
+                    >
+                      <span class="block text-lg font-semibold text-gray-900 dark:text-white">
+                        {{ product.label || `¥${product.amount_cny}` }}
+                      </span>
+                      <span class="mt-1 block text-sm text-gray-500 dark:text-dark-400">
+                        {{ t('topup.cardShopAmount', { amount: product.amount_cny }) }}
+                      </span>
+                    </button>
+                  </div>
+                </section>
+
+                <section class="rounded-2xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm leading-6 text-primary-700 dark:border-primary-900/50 dark:bg-primary-900/20 dark:text-primary-300">
+                  {{ t('topup.cardShopHint') }}
+                </section>
+              </div>
+
+              <div v-else-if="step === 1" class="mt-8 space-y-8">
                 <section>
                   <p class="mb-4 text-sm font-medium text-gray-700 dark:text-dark-300">
                     {{ t('topup.selectAmount') }}
@@ -168,22 +195,41 @@
                   <div>
                     <p class="text-sm font-medium text-gray-500 dark:text-dark-400">{{ t('topup.title') }}</p>
                     <p class="mt-2 text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">
+                      <template v-if="cardShopMode">
+                        {{ t('topup.cardShopModeTitle') }}
+                      </template>
+                      <template v-else>
                       ¥{{ effectiveAmountYuan || 20 }}
+                      </template>
                     </p>
                   </div>
-                  <div class="rounded-2xl bg-primary-500/10 px-3 py-2 text-sm font-semibold text-primary-700 dark:text-primary-300">
+                  <div v-if="!cardShopMode" class="rounded-2xl bg-primary-500/10 px-3 py-2 text-sm font-semibold text-primary-700 dark:text-primary-300">
                     ${{ effectiveAmountYuan || 20 }}.00
                   </div>
                 </div>
 
                 <div class="mt-6 space-y-4">
-                  <div class="flex items-center justify-between text-sm">
+                  <template v-if="cardShopMode">
+                    <div class="flex items-center justify-between text-sm">
+                      <span class="text-gray-500 dark:text-dark-400">{{ t('topup.cardShopProductCount') }}</span>
+                      <span class="font-medium text-gray-900 dark:text-white">
+                        {{ activeCardShopProducts.length }}
+                      </span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                      <span class="text-gray-500 dark:text-dark-400">{{ t('topup.cardShopRedeemType') }}</span>
+                      <span class="font-medium text-gray-900 dark:text-white">
+                        {{ t('topup.cardShopRedeemLink') }}
+                      </span>
+                    </div>
+                  </template>
+                  <div v-else class="flex items-center justify-between text-sm">
                     <span class="text-gray-500 dark:text-dark-400">{{ t('topup.selectPayType') }}</span>
                     <span class="font-medium text-gray-900 dark:text-white">
                       {{ selectedPayTypeLabel }}
                     </span>
                   </div>
-                  <div class="flex items-center justify-between text-sm">
+                  <div v-if="!cardShopMode" class="flex items-center justify-between text-sm">
                     <span class="text-gray-500 dark:text-dark-400">{{ t('subscriptionAccess.rateLabel') }}</span>
                     <span class="font-medium text-gray-900 dark:text-white">{{ t('topup.creditsNote') }}</span>
                   </div>
@@ -194,7 +240,15 @@
                 </div>
 
                 <button
-                  v-if="step === 1"
+                  v-if="cardShopMode"
+                  @click="goRedeem"
+                  class="mt-8 w-full rounded-2xl bg-gray-950 px-5 py-4 text-base font-semibold text-white transition hover:bg-gray-800 dark:bg-white dark:text-gray-950 dark:hover:bg-gray-100"
+                >
+                  {{ t('topup.cardShopGoRedeem') }}
+                </button>
+
+                <button
+                  v-else-if="step === 1"
                   @click="submitOrder"
                   :disabled="submitting || !hasAvailablePayType || !!amountError || effectiveAmountYuan < 20"
                   class="mt-8 w-full rounded-2xl bg-gray-950 px-5 py-4 text-base font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-gray-950 dark:hover:bg-gray-100"
@@ -226,13 +280,16 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/api/topup'
 import { useAppStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'
+import type { CardShopProduct } from '@/types'
 
 const { t } = useI18n()
 const appStore = useAppStore()
+const router = useRouter()
 
 const presets = [20, 50, 100, 200, 1000, 2000]
 const QR_TTL_SECONDS = 300
@@ -258,6 +315,14 @@ const canUseAlipay = computed(() => xunhuAlipayEnabled.value)
 const canUseWechat = computed(() => xunhuWechatEnabled.value)
 const hasAvailablePayType = computed(() => canUseAlipay.value || canUseWechat.value)
 const hasMultiplePayTypes = computed(() => canUseAlipay.value && canUseWechat.value)
+const activeCardShopProducts = computed<CardShopProduct[]>(() =>
+  [...(appStore.cachedPublicSettings?.card_shop_products ?? [])]
+    .filter((product) => product.enabled && product.url && product.amount_cny > 0)
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.amount_cny - b.amount_cny)
+)
+const cardShopMode = computed(
+  () => (appStore.cachedPublicSettings?.card_shop_enabled ?? false) && activeCardShopProducts.value.length > 0
+)
 const selectedPayTypeLabel = computed(() => {
   if (!hasAvailablePayType.value) return t('topup.noAvailablePayType')
   return payType.value === 'alipay' ? t('topup.alipay') : t('topup.wechat')
@@ -300,6 +365,15 @@ function selectPayType(type: TopupPayType) {
   if (type === 'alipay' && !canUseAlipay.value) return
   if (type === 'wechat' && !canUseWechat.value) return
   payType.value = type
+}
+
+function openCardShopProduct(product: CardShopProduct) {
+  if (!product.url) return
+  window.location.assign(product.url)
+}
+
+function goRedeem() {
+  router.push('/redeem')
 }
 
 // 配置只保留一个渠道时，自动选中仍可用的支付方式。

@@ -145,6 +145,8 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		HideCcsImportButton:                  settings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:          settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:              settings.PurchaseSubscriptionURL,
+		CardShopEnabled:                      settings.CardShopEnabled,
+		CardShopProducts:                     dto.CardShopProductsFromService(settings.CardShopProducts),
 		SoraClientEnabled:                    settings.SoraClientEnabled,
 		TableDefaultPageSize:                 settings.TableDefaultPageSize,
 		TablePageSizeOptions:                 settings.TablePageSizeOptions,
@@ -260,24 +262,26 @@ type UpdateSettingsRequest struct {
 	GitHubOAuthFrontendRedirectURL string `json:"github_oauth_frontend_redirect_url"`
 
 	// OEM设置
-	SiteName                    string                `json:"site_name"`
-	SiteLogo                    string                `json:"site_logo"`
-	SiteSubtitle                string                `json:"site_subtitle"`
-	APIBaseURL                  string                `json:"api_base_url"`
-	ContactInfo                 string                `json:"contact_info"`
-	TechSupportQRCode           string                `json:"tech_support_qrcode"`
-	AfterSalesQRCode            string                `json:"after_sales_qrcode"`
-	DocURL                      string                `json:"doc_url"`
-	ChatbotURL                  string                `json:"chatbot_url"`
-	HomeContent                 string                `json:"home_content"`
-	HideCcsImportButton         bool                  `json:"hide_ccs_import_button"`
-	PurchaseSubscriptionEnabled *bool                 `json:"purchase_subscription_enabled"`
-	PurchaseSubscriptionURL     *string               `json:"purchase_subscription_url"`
-	SoraClientEnabled           bool                  `json:"sora_client_enabled"`
-	TableDefaultPageSize        int                   `json:"table_default_page_size"`
-	TablePageSizeOptions        []int                 `json:"table_page_size_options"`
-	CustomMenuItems             *[]dto.CustomMenuItem `json:"custom_menu_items"`
-	CustomEndpoints             *[]dto.CustomEndpoint `json:"custom_endpoints"`
+	SiteName                    string                 `json:"site_name"`
+	SiteLogo                    string                 `json:"site_logo"`
+	SiteSubtitle                string                 `json:"site_subtitle"`
+	APIBaseURL                  string                 `json:"api_base_url"`
+	ContactInfo                 string                 `json:"contact_info"`
+	TechSupportQRCode           string                 `json:"tech_support_qrcode"`
+	AfterSalesQRCode            string                 `json:"after_sales_qrcode"`
+	DocURL                      string                 `json:"doc_url"`
+	ChatbotURL                  string                 `json:"chatbot_url"`
+	HomeContent                 string                 `json:"home_content"`
+	HideCcsImportButton         bool                   `json:"hide_ccs_import_button"`
+	PurchaseSubscriptionEnabled *bool                  `json:"purchase_subscription_enabled"`
+	PurchaseSubscriptionURL     *string                `json:"purchase_subscription_url"`
+	CardShopEnabled             *bool                  `json:"card_shop_enabled"`
+	CardShopProducts            *[]dto.CardShopProduct `json:"card_shop_products"`
+	SoraClientEnabled           bool                   `json:"sora_client_enabled"`
+	TableDefaultPageSize        int                    `json:"table_default_page_size"`
+	TablePageSizeOptions        []int                  `json:"table_page_size_options"`
+	CustomMenuItems             *[]dto.CustomMenuItem  `json:"custom_menu_items"`
+	CustomEndpoints             *[]dto.CustomEndpoint  `json:"custom_endpoints"`
 
 	// 默认配置
 	DefaultConcurrency   int                              `json:"default_concurrency"`
@@ -663,6 +667,91 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 	}
 
+	cardShopEnabled := previousSettings.CardShopEnabled
+	if req.CardShopEnabled != nil {
+		cardShopEnabled = *req.CardShopEnabled
+	}
+	cardShopProducts := previousSettings.CardShopProducts
+	if req.CardShopProducts != nil {
+		const (
+			maxCardShopProducts = 20
+			maxProductLabelLen  = 50
+			maxProductURLLen    = 2048
+			maxProductIDLen     = 32
+		)
+		items := dto.CardShopProductsToService(*req.CardShopProducts)
+		if len(items) > maxCardShopProducts {
+			response.BadRequest(c, "Too many card shop products (max 20)")
+			return
+		}
+		seen := make(map[string]struct{}, len(items))
+		for i := range items {
+			items[i].ID = strings.TrimSpace(items[i].ID)
+			items[i].Label = strings.TrimSpace(items[i].Label)
+			items[i].URL = strings.TrimSpace(items[i].URL)
+			items[i].SortOrder = i
+			if items[i].ID == "" {
+				id, err := generateMenuItemID()
+				if err != nil {
+					response.Error(c, http.StatusInternalServerError, "Failed to generate card shop product ID")
+					return
+				}
+				items[i].ID = id
+			} else if len(items[i].ID) > maxProductIDLen {
+				response.BadRequest(c, "Card shop product ID is too long (max 32 characters)")
+				return
+			} else if !menuItemIDPattern.MatchString(items[i].ID) {
+				response.BadRequest(c, "Card shop product ID contains invalid characters")
+				return
+			}
+			if _, exists := seen[items[i].ID]; exists {
+				response.BadRequest(c, "Duplicate card shop product ID: "+items[i].ID)
+				return
+			}
+			seen[items[i].ID] = struct{}{}
+			if items[i].Label == "" {
+				response.BadRequest(c, "Card shop product label is required")
+				return
+			}
+			if len(items[i].Label) > maxProductLabelLen {
+				response.BadRequest(c, "Card shop product label is too long (max 50 characters)")
+				return
+			}
+			if items[i].AmountCNY <= 0 {
+				response.BadRequest(c, "Card shop product amount must be greater than 0")
+				return
+			}
+			if len(items[i].URL) > maxProductURLLen {
+				response.BadRequest(c, "Card shop product URL is too long (max 2048 characters)")
+				return
+			}
+			if items[i].URL != "" {
+				if err := config.ValidateAbsoluteHTTPURL(items[i].URL); err != nil {
+					response.BadRequest(c, "Card shop product URL must be an absolute http(s) URL")
+					return
+				}
+			}
+			if items[i].Enabled && items[i].URL == "" {
+				response.BadRequest(c, "Enabled card shop products require a URL")
+				return
+			}
+		}
+		cardShopProducts = items
+	}
+	if cardShopEnabled {
+		hasEnabledProduct := false
+		for _, product := range cardShopProducts {
+			if product.Enabled && product.AmountCNY > 0 && strings.TrimSpace(product.URL) != "" {
+				hasEnabledProduct = true
+				break
+			}
+		}
+		if !hasEnabledProduct {
+			response.BadRequest(c, "At least one enabled card shop product is required when card shop is enabled")
+			return
+		}
+	}
+
 	// Frontend URL 验证
 	req.FrontendURL = strings.TrimSpace(req.FrontendURL)
 	if req.FrontendURL != "" {
@@ -906,6 +995,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		HideCcsImportButton:              req.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:      purchaseEnabled,
 		PurchaseSubscriptionURL:          purchaseURL,
+		CardShopEnabled:                  cardShopEnabled,
+		CardShopProducts:                 cardShopProducts,
 		SoraClientEnabled:                req.SoraClientEnabled,
 		TableDefaultPageSize:             req.TableDefaultPageSize,
 		TablePageSizeOptions:             req.TablePageSizeOptions,
@@ -1100,6 +1191,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		HideCcsImportButton:                  updatedSettings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:          updatedSettings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:              updatedSettings.PurchaseSubscriptionURL,
+		CardShopEnabled:                      updatedSettings.CardShopEnabled,
+		CardShopProducts:                     dto.CardShopProductsFromService(updatedSettings.CardShopProducts),
 		SoraClientEnabled:                    updatedSettings.SoraClientEnabled,
 		TableDefaultPageSize:                 updatedSettings.TableDefaultPageSize,
 		TablePageSizeOptions:                 updatedSettings.TablePageSizeOptions,
@@ -1411,6 +1504,12 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.PurchaseSubscriptionURL != after.PurchaseSubscriptionURL {
 		changed = append(changed, "purchase_subscription_url")
 	}
+	if before.CardShopEnabled != after.CardShopEnabled {
+		changed = append(changed, "card_shop_enabled")
+	}
+	if !equalCardShopProducts(before.CardShopProducts, after.CardShopProducts) {
+		changed = append(changed, "card_shop_products")
+	}
 	if before.TableDefaultPageSize != after.TableDefaultPageSize {
 		changed = append(changed, "table_default_page_size")
 	}
@@ -1486,6 +1585,23 @@ func equalDefaultSubscriptions(a, b []service.DefaultSubscriptionSetting) bool {
 	}
 	for i := range a {
 		if a[i].GroupID != b[i].GroupID || a[i].ValidityDays != b[i].ValidityDays {
+			return false
+		}
+	}
+	return true
+}
+
+func equalCardShopProducts(a, b []service.CardShopProduct) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].ID != b[i].ID ||
+			a[i].Label != b[i].Label ||
+			a[i].AmountCNY != b[i].AmountCNY ||
+			a[i].URL != b[i].URL ||
+			a[i].Enabled != b[i].Enabled ||
+			a[i].SortOrder != b[i].SortOrder {
 			return false
 		}
 	}

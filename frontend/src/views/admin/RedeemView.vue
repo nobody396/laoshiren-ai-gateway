@@ -348,10 +348,26 @@
           </div>
           <!-- Content -->
           <div class="p-5">
+            <div class="mb-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                :class="['btn btn-sm', resultOutputMode === 'links' ? 'btn-primary' : 'btn-secondary']"
+                @click="resultOutputMode = 'links'"
+              >
+                {{ t('admin.redeem.redeemLinks') }}
+              </button>
+              <button
+                type="button"
+                :class="['btn btn-sm', resultOutputMode === 'codes' ? 'btn-primary' : 'btn-secondary']"
+                @click="resultOutputMode = 'codes'"
+              >
+                {{ t('admin.redeem.rawCodes') }}
+              </button>
+            </div>
             <div class="relative">
               <textarea
                 readonly
-                :value="generatedCodesText"
+                :value="generatedResultText"
                 :style="{ height: textareaHeight }"
                 class="w-full resize-none rounded-lg border border-gray-200 bg-gray-50 p-3 font-mono text-sm text-gray-800 focus:outline-none dark:border-dark-600 dark:bg-dark-700 dark:text-gray-200"
               ></textarea>
@@ -445,6 +461,25 @@ const generatedCodesText = computed(() => {
   return generatedCodes.value.map((code) => code.code).join('\n')
 })
 
+const redeemURLBase = computed(() => {
+  if (typeof window === 'undefined') return ''
+  return window.location.origin
+})
+
+const buildRedeemURL = (code: string) => {
+  const base = redeemURLBase.value.replace(/\/$/, '')
+  return `${base}/redeem?code=${encodeURIComponent(code)}`
+}
+
+const generatedRedeemLinksText = computed(() => {
+  return generatedCodes.value.map((code) => buildRedeemURL(code.code)).join('\n')
+})
+
+const resultOutputMode = ref<'links' | 'codes'>('links')
+const generatedResultText = computed(() =>
+  resultOutputMode.value === 'links' ? generatedRedeemLinksText.value : generatedCodesText.value
+)
+
 const textareaHeight = computed(() => {
   const lineCount = generatedCodes.value.length
   const lineHeight = 24 // approximate line height in px
@@ -464,10 +499,11 @@ const closeResultDialog = () => {
   showResultDialog.value = false
   generatedCodes.value = []
   copiedAll.value = false
+  resultOutputMode.value = 'links'
 }
 
 const copyGeneratedCodes = async () => {
-  const success = await clipboardCopy(generatedCodesText.value, t('admin.redeem.copied'))
+  const success = await clipboardCopy(generatedResultText.value, t('admin.redeem.copied'))
   if (success) {
     copiedAll.value = true
     setTimeout(() => {
@@ -477,11 +513,11 @@ const copyGeneratedCodes = async () => {
 }
 
 const downloadGeneratedCodes = () => {
-  const blob = new Blob([generatedCodesText.value], { type: 'text/plain' })
+  const blob = new Blob([generatedResultText.value], { type: 'text/plain' })
   const url = window.URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = `redeem-codes-${new Date().toISOString().split('T')[0]}.txt`
+  link.download = `redeem-${resultOutputMode.value}-${new Date().toISOString().split('T')[0]}.txt`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
@@ -671,7 +707,9 @@ const handleExportCodes = async () => {
   try {
     const blob = await adminAPI.redeem.exportCodes({
       type: filters.type as RedeemCodeType,
-      status: filters.status as any
+      status: filters.status as any,
+      include_redeem_url: true,
+      redeem_url_base: redeemURLBase.value
     })
 
     // Create download link

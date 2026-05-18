@@ -1051,6 +1051,14 @@ export default {
     notConfigured: '当前支付渠道未配置，请联系管理员',
     cnyAmount: '¥{amount} 人民币',
     creditsNote: '充值 ¥1 = 获得 $1 余额',
+    cardShopSelectAmount: '选择卡密商品',
+    cardShopAmount: '¥{amount} 余额',
+    cardShopHint: '支付完成后，在链动小铺订单详情中复制或打开卡密链接，回到本站确认兑换即可到账。',
+    cardShopModeTitle: '卡密商城',
+    cardShopProductCount: '可选商品',
+    cardShopRedeemType: '到账方式',
+    cardShopRedeemLink: '卡密链接兑换',
+    cardShopGoRedeem: '已购买，去兑换',
   },
   redeem: {
     title: '兑换码',
@@ -1091,7 +1099,10 @@ export default {
     codeRedeemSuccess: '兑换成功！',
     failedToRedeem: '兑换失败，请检查兑换码后重试。',
     subscriptionRefreshFailed: '兑换成功，但订阅状态刷新失败。',
-    pleaseEnterCode: '请输入兑换码'
+    pleaseEnterCode: '请输入兑换码',
+    linkCodeDetected: '已从卡密链接读取兑换码',
+    confirmAccountHint: '请确认兑换到当前账号：{account}',
+    confirmRedeemButton: '确认兑换到当前账号'
   },
 
   // Profile
@@ -3749,6 +3760,8 @@ export default {
       count: '数量',
       generate: '生成',
       copyAll: '全部复制',
+      redeemLinks: '兑换链接',
+      rawCodes: '原始卡密',
       download: '下载',
       codesExported: '兑换码导出成功',
       codeDeleted: '兑换码删除成功',

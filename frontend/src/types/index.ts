@@ -96,6 +96,15 @@ export interface CustomMenuItem {
   sort_order: number
 }
 
+export interface CardShopProduct {
+  id: string
+  label: string
+  amount_cny: number
+  url: string
+  enabled: boolean
+  sort_order: number
+}
+
 export interface PublicSettings {
   registration_enabled: boolean
   email_verify_enabled: boolean
@@ -118,6 +127,8 @@ export interface PublicSettings {
   hide_ccs_import_button: boolean
   purchase_subscription_enabled: boolean
   purchase_subscription_url: string
+  card_shop_enabled: boolean
+  card_shop_products: CardShopProduct[]
   custom_menu_items: CustomMenuItem[]
   linuxdo_oauth_enabled: boolean
   oidc_oauth_enabled: boolean

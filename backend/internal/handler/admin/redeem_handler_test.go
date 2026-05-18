@@ -2,9 +2,11 @@ package admin
 
 import (
 	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
@@ -132,4 +134,39 @@ func TestCreateAndRedeem_BalanceIgnoresSubscriptionFields(t *testing.T) {
 
 	assert.NotEqual(t, http.StatusBadRequest, code,
 		"balance type should not require group_id or validity_days")
+}
+
+func TestRedeemExport_IncludesRedeemURL(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(
+		http.MethodGet,
+		"/api/v1/admin/redeem-codes/export?include_redeem_url=true&redeem_url_base=https://app.example.com/",
+		nil,
+	)
+
+	NewRedeemHandler(newStubAdminService(), nil).Export(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	records, err := csv.NewReader(strings.NewReader(w.Body.String())).ReadAll()
+	require.NoError(t, err)
+	require.Len(t, records, 2)
+	require.Equal(t, "redeem_url", records[0][len(records[0])-1])
+	require.Equal(t, "https://app.example.com/redeem?code=R-TEST", records[1][len(records[1])-1])
+}
+
+func TestRedeemExport_RejectsInvalidRedeemURLBase(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(
+		http.MethodGet,
+		"/api/v1/admin/redeem-codes/export?include_redeem_url=true&redeem_url_base=javascript:alert(1)",
+		nil,
+	)
+
+	NewRedeemHandler(newStubAdminService(), nil).Export(c)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
 }

@@ -78,6 +78,8 @@ type SystemSettings struct {
 	HideCcsImportButton         bool
 	PurchaseSubscriptionEnabled bool
 	PurchaseSubscriptionURL     string
+	CardShopEnabled             bool
+	CardShopProducts            []CardShopProduct
 	SoraClientEnabled           bool
 	TableDefaultPageSize        int
 	TablePageSizeOptions        []int
@@ -165,6 +167,15 @@ type DefaultSubscriptionSetting struct {
 	ValidityDays int   `json:"validity_days"`
 }
 
+type CardShopProduct struct {
+	ID        string  `json:"id"`
+	Label     string  `json:"label"`
+	AmountCNY float64 `json:"amount_cny"`
+	URL       string  `json:"url"`
+	Enabled   bool    `json:"enabled"`
+	SortOrder int     `json:"sort_order"`
+}
+
 type PublicSettings struct {
 	RegistrationEnabled              bool
 	EmailVerifyEnabled               bool
@@ -189,6 +200,8 @@ type PublicSettings struct {
 
 	PurchaseSubscriptionEnabled bool
 	PurchaseSubscriptionURL     string
+	CardShopEnabled             bool
+	CardShopProducts            []CardShopProduct
 	SoraClientEnabled           bool
 	TableDefaultPageSize        int
 	TablePageSizeOptions        []int

@@ -152,6 +152,8 @@ export async function getStats(): Promise<{
 export async function exportCodes(filters?: {
   type?: RedeemCodeType
   status?: 'active' | 'used' | 'expired'
+  include_redeem_url?: boolean
+  redeem_url_base?: string
 }): Promise<Blob> {
   const response = await apiClient.get('/admin/redeem-codes/export', {
     params: filters,

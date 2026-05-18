@@ -22,6 +22,15 @@
       <!-- Redeem Form -->
       <div class="card">
         <div class="p-6">
+          <div
+            v-if="prefilledFromLink && redeemCode"
+            class="mb-5 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-700 dark:border-primary-900/50 dark:bg-primary-900/20 dark:text-primary-300"
+          >
+            <p class="font-medium">{{ t('redeem.linkCodeDetected') }}</p>
+            <p class="mt-1">
+              {{ t('redeem.confirmAccountHint', { account: user?.email || user?.username || user?.id || '-' }) }}
+            </p>
+          </div>
           <form @submit.prevent="handleRedeem" class="space-y-5">
             <div>
               <label for="code" class="input-label">
@@ -72,7 +81,7 @@
                 ></path>
               </svg>
               <Icon v-else name="checkCircle" size="md" class="mr-2" />
-              {{ submitting ? t('redeem.redeeming') : t('redeem.redeemButton') }}
+              {{ submitting ? t('redeem.redeeming') : prefilledFromLink ? t('redeem.confirmRedeemButton') : t('redeem.redeemButton') }}
             </button>
           </form>
         </div>
@@ -342,8 +351,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { useSubscriptionStore } from '@/stores/subscriptions'
@@ -353,6 +363,8 @@ import Icon from '@/components/icons/Icon.vue'
 import { formatDateTime } from '@/utils/format'
 
 const { t } = useI18n()
+const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
 const subscriptionStore = useSubscriptionStore()
@@ -360,6 +372,7 @@ const subscriptionStore = useSubscriptionStore()
 const user = computed(() => authStore.user)
 
 const redeemCode = ref('')
+const prefilledFromLink = ref(false)
 const submitting = ref(false)
 const redeemResult = ref<{
   message: string
@@ -376,6 +389,36 @@ const errorMessage = ref('')
 const history = ref<RedeemHistoryItem[]>([])
 const loadingHistory = ref(false)
 const contactInfo = ref('')
+
+const firstQueryValue = (value: unknown): string => {
+  if (Array.isArray(value)) return String(value[0] || '')
+  return typeof value === 'string' ? value : ''
+}
+
+const extractRedeemCode = (value: string): string => {
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+  try {
+    const parsed = new URL(trimmed)
+    return (
+      parsed.searchParams.get('code') ||
+      parsed.searchParams.get('redeem_code') ||
+      trimmed
+    ).trim()
+  } catch {
+    return trimmed
+  }
+}
+
+const applyQueryRedeemCode = () => {
+  const raw = firstQueryValue(route.query.code) || firstQueryValue(route.query.redeem_code)
+  const code = extractRedeemCode(raw)
+  if (!code) return
+  redeemCode.value = code
+  prefilledFromLink.value = true
+  errorMessage.value = ''
+  redeemResult.value = null
+}
 
 // Helper functions for history display
 const isBalanceType = (type: string) => {
@@ -434,7 +477,8 @@ const fetchHistory = async () => {
 }
 
 const handleRedeem = async () => {
-  if (!redeemCode.value.trim()) {
+  const normalizedCode = extractRedeemCode(redeemCode.value)
+  if (!normalizedCode) {
     appStore.showError(t('redeem.pleaseEnterCode'))
     return
   }
@@ -444,7 +488,15 @@ const handleRedeem = async () => {
   redeemResult.value = null
 
   try {
-    const result = await redeemAPI.redeem(redeemCode.value.trim())
+    const shouldClearQuery = Boolean(route.query.code || route.query.redeem_code)
+    const result = await redeemAPI.redeem(normalizedCode)
+
+    if (shouldClearQuery) {
+      const query = { ...route.query }
+      delete query.code
+      delete query.redeem_code
+      await router.replace({ path: route.path, query, hash: route.hash })
+    }
 
     redeemResult.value = result
 
@@ -463,6 +515,7 @@ const handleRedeem = async () => {
 
     // Clear the input
     redeemCode.value = ''
+    prefilledFromLink.value = false
 
     // Refresh history
     await fetchHistory()
@@ -479,6 +532,7 @@ const handleRedeem = async () => {
 }
 
 onMounted(async () => {
+  applyQueryRedeemCode()
   fetchHistory()
   try {
     const settings = await authAPI.getPublicSettings()
@@ -487,6 +541,13 @@ onMounted(async () => {
     console.error('Failed to load contact info:', error)
   }
 })
+
+watch(
+  () => [route.query.code, route.query.redeem_code],
+  () => {
+    applyQueryRedeemCode()
+  }
+)
 </script>
 
 <style scoped>

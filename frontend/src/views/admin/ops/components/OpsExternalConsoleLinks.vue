@@ -4,6 +4,16 @@ import Icon from '@/components/icons/Icon.vue'
 
 const { t } = useI18n()
 
+type ConsoleLink = {
+  key: string
+  icon: 'cloud' | 'server' | 'terminal' | 'gift'
+  url: string
+  labelKey?: string
+  descriptionKey?: string
+  label?: string
+  description?: string
+}
+
 const consoleLinks = [
   {
     key: 'edgeone',
@@ -25,8 +35,23 @@ const consoleLinks = [
     labelKey: 'admin.ops.externalConsoles.dokploy.title',
     descriptionKey: 'admin.ops.externalConsoles.dokploy.description',
     url: 'http://187.77.143.86:3000'
+  },
+  {
+    key: 'ldxp',
+    icon: 'gift',
+    label: '链动小铺后台',
+    description: '管理卡密商品、库存、订单和自动发货。',
+    url: 'https://www.ldxp.cn/admin'
   }
-] as const
+] as const satisfies readonly ConsoleLink[]
+
+function getConsoleLabel(item: ConsoleLink) {
+  return item.labelKey ? t(item.labelKey) : (item.label ?? '')
+}
+
+function getConsoleDescription(item: ConsoleLink) {
+  return item.descriptionKey ? t(item.descriptionKey) : (item.description ?? '')
+}
 </script>
 
 <template>
@@ -45,7 +70,7 @@ const consoleLinks = [
       </div>
     </div>
 
-    <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+    <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
       <a
         v-for="item in consoleLinks"
         :key="item.key"
@@ -60,10 +85,10 @@ const consoleLinks = [
           </span>
           <span class="min-w-0">
             <span class="block text-sm font-bold text-gray-900 dark:text-white">
-              {{ t(item.labelKey) }}
+              {{ getConsoleLabel(item) }}
             </span>
             <span class="mt-0.5 block text-xs leading-5 text-gray-500 dark:text-gray-400">
-              {{ t(item.descriptionKey) }}
+              {{ getConsoleDescription(item) }}
             </span>
           </span>
         </span>

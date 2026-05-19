@@ -7,7 +7,6 @@ on:
   push:
     branches:
       - main
-      - upgrade/sub2api-v0.1.127-backport
   workflow_dispatch:
 
 permissions:
@@ -21,6 +20,7 @@ jobs:
   backend:
     name: Backend tests and lint
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - name: Checkout repository
@@ -44,6 +44,7 @@ jobs:
   frontend:
     name: Frontend typecheck, tests, and build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -53,8 +54,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Enable pnpm
         run: |
@@ -76,6 +75,7 @@ jobs:
   docker:
     name: Production Docker build
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     needs:
       - backend
       - frontend

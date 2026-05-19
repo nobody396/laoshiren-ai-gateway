@@ -478,6 +478,8 @@ func BaselineAPIs() []*service.AdminAPI {
 	add("POST", "/admin/rbac/menus", 62, 3)
 	add("PUT", "/admin/rbac/menus/:id", 62, 4)
 	add("DELETE", "/admin/rbac/menus/:id", 62, 5)
+	add("GET", "/admin/rbac/user-menus/visibility", 62, 6)
+	add("PUT", "/admin/rbac/user-menus/visibility", 62, 7)
 	// API 管理 CRUD
 	add("GET", "/admin/rbac/apis", 63, 1)
 	add("GET", "/admin/rbac/apis/all", 63, 2)

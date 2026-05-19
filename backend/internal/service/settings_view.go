@@ -81,6 +81,7 @@ type SystemSettings struct {
 	CardShopEnabled             bool
 	CardShopProducts            []CardShopProduct
 	InvoiceManagementEnabled    bool
+	FeedbackManagementEnabled   bool
 	SoraClientEnabled           bool
 	TableDefaultPageSize        int
 	TablePageSizeOptions        []int
@@ -204,6 +205,7 @@ type PublicSettings struct {
 	CardShopEnabled             bool
 	CardShopProducts            []CardShopProduct
 	InvoiceManagementEnabled    bool
+	FeedbackManagementEnabled   bool
 	SoraClientEnabled           bool
 	TableDefaultPageSize        int
 	TablePageSizeOptions        []int
@@ -223,6 +225,11 @@ type PublicSettings struct {
 	Version               string
 
 	AccountQuotaNotifyEnabled bool
+}
+
+type UserMenuVisibilitySettings struct {
+	InvoiceManagementEnabled  bool
+	FeedbackManagementEnabled bool
 }
 
 // StreamTimeoutSettings 流超时处理配置（仅控制超时后的处理方式，超时判定由网关配置控制）

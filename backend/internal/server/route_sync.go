@@ -33,8 +33,9 @@ const syncAdminAPIsTimeout = 10 * time.Second
 // 命名若想稳定保留, 需确保映射表未对该路径预设值.
 var scannerGroupMap = map[string]string{
 	// 两段前缀 (RBAC 子模块与菜单 62/63 对齐, 单独归类).
-	"rbac/menus": "菜单管理",   // 菜单 id=62 name
-	"rbac/apis":  "API 管理", // 菜单 id=63 name
+	"rbac/menus":      "菜单管理",   // 菜单 id=62 name
+	"rbac/user-menus": "菜单管理",   // 菜单 id=62 name
+	"rbac/apis":       "API 管理", // 菜单 id=63 name
 
 	// 单段 (与菜单 admin_menus.name 一一对齐, 条目顺序按菜单 sort_order).
 	"dashboard":     "管理仪表盘", // 菜单 id=2

@@ -180,6 +180,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyCardShopEnabled,
 		SettingKeyCardShopProducts,
 		SettingKeyInvoiceManagementEnabled,
+		SettingKeyFeedbackManagementEnabled,
 		SettingKeyTableDefaultPageSize,
 		SettingKeyTablePageSizeOptions,
 		SettingKeyCustomMenuItems,
@@ -263,6 +264,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		CardShopEnabled:                  settings[SettingKeyCardShopEnabled] == "true",
 		CardShopProducts:                 publicCardShopProducts(parseCardShopProducts(settings[SettingKeyCardShopProducts])),
 		InvoiceManagementEnabled:         settings[SettingKeyInvoiceManagementEnabled] == "true",
+		FeedbackManagementEnabled:        settings[SettingKeyFeedbackManagementEnabled] != "false",
 		SoraClientEnabled:                settings[SettingKeySoraClientEnabled] == "true",
 		TableDefaultPageSize:             tableDefaultPageSize,
 		TablePageSizeOptions:             tablePageSizeOptions,
@@ -309,6 +311,31 @@ func (s *SettingService) SetVersion(version string) {
 	s.version = version
 }
 
+func (s *SettingService) GetUserMenuVisibilitySettings(ctx context.Context) (*UserMenuVisibilitySettings, error) {
+	settings, err := s.GetAllSettings(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &UserMenuVisibilitySettings{
+		InvoiceManagementEnabled:  settings.InvoiceManagementEnabled,
+		FeedbackManagementEnabled: settings.FeedbackManagementEnabled,
+	}, nil
+}
+
+func (s *SettingService) UpdateUserMenuVisibilitySettings(ctx context.Context, settings UserMenuVisibilitySettings) error {
+	updates := map[string]string{
+		SettingKeyInvoiceManagementEnabled:  strconv.FormatBool(settings.InvoiceManagementEnabled),
+		SettingKeyFeedbackManagementEnabled: strconv.FormatBool(settings.FeedbackManagementEnabled),
+	}
+	if err := s.settingRepo.SetMultiple(ctx, updates); err != nil {
+		return err
+	}
+	if s.onUpdate != nil {
+		s.onUpdate()
+	}
+	return nil
+}
+
 // GetPublicSettingsForInjection returns public settings in a format suitable for HTML injection
 // This implements the web.PublicSettingsProvider interface
 func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any, error) {
@@ -344,6 +371,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		CardShopEnabled                  bool              `json:"card_shop_enabled"`
 		CardShopProducts                 []CardShopProduct `json:"card_shop_products"`
 		InvoiceManagementEnabled         bool              `json:"invoice_management_enabled"`
+		FeedbackManagementEnabled        bool              `json:"feedback_management_enabled"`
 		SoraClientEnabled                bool              `json:"sora_client_enabled"`
 		TableDefaultPageSize             int               `json:"table_default_page_size"`
 		TablePageSizeOptions             []int             `json:"table_page_size_options"`
@@ -387,6 +415,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		CardShopEnabled:                  settings.CardShopEnabled,
 		CardShopProducts:                 settings.CardShopProducts,
 		InvoiceManagementEnabled:         settings.InvoiceManagementEnabled,
+		FeedbackManagementEnabled:        settings.FeedbackManagementEnabled,
 		SoraClientEnabled:                settings.SoraClientEnabled,
 		TableDefaultPageSize:             settings.TableDefaultPageSize,
 		TablePageSizeOptions:             settings.TablePageSizeOptions,
@@ -694,6 +723,7 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 	}
 	updates[SettingKeyCardShopProducts] = string(cardShopProductsJSON)
 	updates[SettingKeyInvoiceManagementEnabled] = strconv.FormatBool(settings.InvoiceManagementEnabled)
+	updates[SettingKeyFeedbackManagementEnabled] = strconv.FormatBool(settings.FeedbackManagementEnabled)
 	updates[SettingKeySoraClientEnabled] = strconv.FormatBool(settings.SoraClientEnabled)
 	tableDefaultPageSize, tablePageSizeOptions := normalizeTablePreferences(
 		settings.TableDefaultPageSize,
@@ -1142,6 +1172,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyCardShopEnabled:                  "false",
 		SettingKeyCardShopProducts:                 "[]",
 		SettingKeyInvoiceManagementEnabled:         "false",
+		SettingKeyFeedbackManagementEnabled:        "true",
 		SettingKeyChatbotURL:                       "",
 		SettingKeyTableDefaultPageSize:             "20",
 		SettingKeyTablePageSizeOptions:             "[10,20,50,100]",
@@ -1240,6 +1271,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		CardShopEnabled:                  settings[SettingKeyCardShopEnabled] == "true",
 		CardShopProducts:                 parseCardShopProducts(settings[SettingKeyCardShopProducts]),
 		InvoiceManagementEnabled:         settings[SettingKeyInvoiceManagementEnabled] == "true",
+		FeedbackManagementEnabled:        settings[SettingKeyFeedbackManagementEnabled] != "false",
 		SoraClientEnabled:                settings[SettingKeySoraClientEnabled] == "true",
 		CustomMenuItems:                  settings[SettingKeyCustomMenuItems],
 		CustomEndpoints:                  settings[SettingKeyCustomEndpoints],

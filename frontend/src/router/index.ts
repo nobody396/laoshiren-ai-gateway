@@ -294,6 +294,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      requiresFeedbackManagement: true,
       title: 'Feedback',
       titleKey: 'feedback.title',
       descriptionKey: 'feedback.description'
@@ -306,6 +307,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      requiresFeedbackManagement: true,
       title: 'Submit Feedback',
       titleKey: 'feedback.form.submit'
     }
@@ -317,6 +319,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      requiresFeedbackManagement: true,
       title: 'Feedback Detail',
       titleKey: 'feedback.detail.title'
     }
@@ -328,6 +331,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
+      requiresFeedbackManagement: true,
       title: 'Edit Feedback',
       titleKey: 'feedback.edit.title'
     }
@@ -809,6 +813,16 @@ router.beforeEach(async (to, _from, next) => {
       await appStore.fetchPublicSettings()
     }
     if (appStore.cachedPublicSettings?.invoice_management_enabled !== true) {
+      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+      return
+    }
+  }
+
+  if (to.meta.requiresFeedbackManagement === true) {
+    if (!appStore.publicSettingsLoaded) {
+      await appStore.fetchPublicSettings()
+    }
+    if (appStore.cachedPublicSettings?.feedback_management_enabled === false) {
       next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
       return
     }

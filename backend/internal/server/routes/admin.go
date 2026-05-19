@@ -107,6 +107,8 @@ func registerRBACRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 	{
 		rbac.GET("/menu", h.Admin.RBAC.GetCurrentUserMenu)
 		rbac.GET("/me/permissions", h.Admin.RBAC.GetCurrentUserPermissions)
+		rbac.GET("/user-menus/visibility", h.Admin.Setting.GetUserMenuVisibilitySettings)
+		rbac.PUT("/user-menus/visibility", h.Admin.Setting.UpdateUserMenuVisibilitySettings)
 
 		rbac.GET("/menus", h.Admin.RBAC.ListMenus)
 		rbac.GET("/menus/tree", h.Admin.RBAC.GetMenuTree)

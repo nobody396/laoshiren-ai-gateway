@@ -99,3 +99,11 @@ func TestSettingService_GetPublicSettings_InvoiceManagementDefaultsClosed(t *tes
 	require.NoError(t, err)
 	require.False(t, settings.InvoiceManagementEnabled)
 }
+
+func TestSettingService_GetPublicSettings_FeedbackManagementDefaultsOpen(t *testing.T) {
+	svc := NewSettingService(&settingPublicRepoStub{values: map[string]string{}}, &config.Config{})
+
+	settings, err := svc.GetPublicSettings(context.Background())
+	require.NoError(t, err)
+	require.True(t, settings.FeedbackManagementEnabled)
+}

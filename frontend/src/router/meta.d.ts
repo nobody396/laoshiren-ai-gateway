@@ -53,5 +53,11 @@ declare module 'vue-router' {
      * @default false
      */
     requiresInvoiceManagement?: boolean
+
+    /**
+     * Whether this route requires the user-facing feedback switch.
+     * @default false
+     */
+    requiresFeedbackManagement?: boolean
   }
 }

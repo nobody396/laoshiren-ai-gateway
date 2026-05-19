@@ -213,6 +213,9 @@ const settingsLoaded = computed(() => appStore.publicSettingsLoaded)
 const invoiceManagementEnabled = computed(
   () => appStore.cachedPublicSettings?.invoice_management_enabled === true
 )
+const feedbackManagementEnabled = computed(
+  () => appStore.cachedPublicSettings?.feedback_management_enabled !== false
+)
 
 // SVG Icon Components
 const DashboardIcon = {
@@ -600,7 +603,9 @@ const userNavItems = computed((): NavItem[] => {
     ...(invoiceManagementEnabled.value
       ? [{ path: '/invoice', label: t('nav.invoiceManagement'), icon: TicketIcon }]
       : []),
-    { path: '/feedbacks', label: t('nav.feedback'), icon: FeedbackIcon },
+    ...(feedbackManagementEnabled.value
+      ? [{ path: '/feedbacks', label: t('nav.feedback'), icon: FeedbackIcon }]
+      : []),
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
     createDocsNavItem(),
     { path: '/profile', label: t('nav.profile'), icon: UserIcon },
@@ -624,7 +629,9 @@ const personalNavItems = computed((): NavItem[] => {
     ...(invoiceManagementEnabled.value
       ? [{ path: '/invoice', label: t('nav.invoiceManagement'), icon: TicketIcon }]
       : []),
-    { path: '/feedbacks', label: t('nav.feedback'), icon: FeedbackIcon },
+    ...(feedbackManagementEnabled.value
+      ? [{ path: '/feedbacks', label: t('nav.feedback'), icon: FeedbackIcon }]
+      : []),
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
     createDocsNavItem(),
     { path: '/profile', label: t('nav.profile'), icon: UserIcon },

@@ -1861,20 +1861,6 @@
               <Toggle v-model="form.hide_ccs_import_button" />
             </div>
 
-            <!-- Invoice Management -->
-            <div
-              class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700"
-            >
-              <div>
-                <label class="font-medium text-gray-900 dark:text-white">{{
-                  t('admin.settings.site.invoiceManagement')
-                }}</label>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                  {{ t('admin.settings.site.invoiceManagementHint') }}
-                </p>
-              </div>
-              <Toggle v-model="form.invoice_management_enabled" />
-            </div>
           </div>
         </div>
 
@@ -2737,6 +2723,7 @@ const form = reactive<SettingsForm>({
   card_shop_enabled: false,
   card_shop_products: [],
   invoice_management_enabled: false,
+  feedback_management_enabled: true,
   sora_client_enabled: false,
   balance_alert_enabled: true,
   balance_alert_default_threshold: 5,
@@ -3170,6 +3157,7 @@ async function saveSettings() {
         sort_order: index
       })),
       invoice_management_enabled: form.invoice_management_enabled,
+      feedback_management_enabled: form.feedback_management_enabled,
       sora_client_enabled: form.sora_client_enabled,
       balance_alert_enabled: form.balance_alert_enabled,
       balance_alert_default_threshold: form.balance_alert_default_threshold,

@@ -361,6 +361,7 @@ export const useAppStore = defineStore('app', () => {
         card_shop_enabled: false,
         card_shop_products: [],
         invoice_management_enabled: false,
+        feedback_management_enabled: true,
         custom_menu_items: [],
         linuxdo_oauth_enabled: false,
         oidc_oauth_enabled: false,

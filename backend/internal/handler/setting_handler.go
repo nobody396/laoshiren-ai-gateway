@@ -57,6 +57,7 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		CardShopEnabled:                  settings.CardShopEnabled,
 		CardShopProducts:                 dto.CardShopProductsFromService(settings.CardShopProducts),
 		InvoiceManagementEnabled:         settings.InvoiceManagementEnabled,
+		FeedbackManagementEnabled:        settings.FeedbackManagementEnabled,
 		CustomMenuItems:                  dto.ParseUserVisibleMenuItems(settings.CustomMenuItems),
 		LinuxDoOAuthEnabled:              settings.LinuxDoOAuthEnabled,
 		OIDCOAuthEnabled:                 settings.OIDCOAuthEnabled,

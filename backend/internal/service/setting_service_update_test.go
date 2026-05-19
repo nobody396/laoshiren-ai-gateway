@@ -93,6 +93,20 @@ func TestSettingService_UpdateSettings_DefaultSubscriptions_ValidGroup(t *testin
 	}, got)
 }
 
+func TestSettingService_UpdateUserMenuVisibilitySettings(t *testing.T) {
+	repo := &settingUpdateRepoStub{}
+	svc := NewSettingService(repo, &config.Config{})
+
+	err := svc.UpdateUserMenuVisibilitySettings(context.Background(), UserMenuVisibilitySettings{
+		InvoiceManagementEnabled:  true,
+		FeedbackManagementEnabled: false,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "true", repo.updates[SettingKeyInvoiceManagementEnabled])
+	require.Equal(t, "false", repo.updates[SettingKeyFeedbackManagementEnabled])
+	require.Len(t, repo.updates, 2)
+}
+
 func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsNonSubscriptionGroup(t *testing.T) {
 	repo := &settingUpdateRepoStub{}
 	groupReader := &defaultSubGroupReaderStub{

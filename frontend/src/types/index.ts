@@ -130,6 +130,7 @@ export interface PublicSettings {
   card_shop_enabled: boolean
   card_shop_products: CardShopProduct[]
   invoice_management_enabled: boolean
+  feedback_management_enabled: boolean
   custom_menu_items: CustomMenuItem[]
   linuxdo_oauth_enabled: boolean
   oidc_oauth_enabled: boolean

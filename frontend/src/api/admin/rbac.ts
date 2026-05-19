@@ -140,6 +140,11 @@ export interface SetUserRolesRequest {
   role_ids: number[];
 }
 
+export interface UserMenuVisibilitySettings {
+  invoice_management_enabled: boolean;
+  feedback_management_enabled: boolean;
+}
+
 // ==================== 当前用户: 菜单 & 权限 ====================
 
 export async function getMyMenuTree(): Promise<MenuTreeNode[]> {
@@ -149,6 +154,23 @@ export async function getMyMenuTree(): Promise<MenuTreeNode[]> {
 
 export async function getMyPermissions(): Promise<string[]> {
   const { data } = await apiClient.get<string[]>("/admin/rbac/me/permissions");
+  return data;
+}
+
+export async function getUserMenuVisibility(): Promise<UserMenuVisibilitySettings> {
+  const { data } = await apiClient.get<UserMenuVisibilitySettings>(
+    "/admin/rbac/user-menus/visibility",
+  );
+  return data;
+}
+
+export async function updateUserMenuVisibility(
+  request: UserMenuVisibilitySettings,
+): Promise<UserMenuVisibilitySettings> {
+  const { data } = await apiClient.put<UserMenuVisibilitySettings>(
+    "/admin/rbac/user-menus/visibility",
+    request,
+  );
   return data;
 }
 
@@ -325,6 +347,8 @@ const rbacAPI = {
   // 当前用户
   getMyMenuTree,
   getMyPermissions,
+  getUserMenuVisibility,
+  updateUserMenuVisibility,
   // 菜单
   listMenus,
   getMenuTree,

@@ -11,14 +11,43 @@
             {{ t("admin.rbac.menusDesc", "维护后台导航菜单 (扁平单层)") }}
           </p>
         </div>
-        <button class="btn btn-primary" @click="openCreateModal">
+        <button v-if="activeTab === 'admin'" class="btn btn-primary" @click="openCreateModal">
           <span class="mr-1">+</span>
           {{ t("admin.rbac.createMenu", "创建菜单") }}
         </button>
       </div>
 
+      <div class="mb-4 border-b border-gray-200 dark:border-dark-700">
+        <nav class="-mb-px flex gap-6" aria-label="Menu management tabs">
+          <button
+            type="button"
+            class="border-b-2 px-1 py-3 text-sm font-medium transition-colors"
+            :class="
+              activeTab === 'admin'
+                ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            "
+            @click="activeTab = 'admin'"
+          >
+            {{ t('admin.rbac.adminMenus', '后台菜单') }}
+          </button>
+          <button
+            type="button"
+            class="border-b-2 px-1 py-3 text-sm font-medium transition-colors"
+            :class="
+              activeTab === 'user'
+                ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            "
+            @click="activeTab = 'user'"
+          >
+            {{ t('admin.rbac.userMenus', '用户菜单') }}
+          </button>
+        </nav>
+      </div>
+
       <!-- Keyword -->
-      <div class="mb-3">
+      <div v-if="activeTab === 'admin'" class="mb-3">
         <input
           v-model="keyword"
           class="input max-w-sm"
@@ -29,7 +58,7 @@
       </div>
 
       <!-- Menu Table -->
-      <div class="card">
+      <div v-if="activeTab === 'admin'" class="card">
         <div v-if="loading" class="flex items-center justify-center py-12">
           <div
             class="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"
@@ -111,6 +140,56 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div v-else class="card">
+        <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+            {{ t('admin.rbac.userMenus', '用户菜单') }}
+          </h2>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {{ t('admin.rbac.userMenusDesc', '控制普通用户侧边栏里的固定功能入口。') }}
+          </p>
+        </div>
+        <div v-if="userMenuLoading" class="flex items-center justify-center py-12">
+          <div
+            class="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"
+          ></div>
+        </div>
+        <div v-else class="divide-y divide-gray-100 dark:divide-dark-700">
+          <div
+            v-for="item in userMenuItems"
+            :key="item.key"
+            class="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="font-medium text-gray-900 dark:text-white">
+                  {{ item.name }}
+                </h3>
+                <span class="rounded bg-gray-100 px-2 py-0.5 font-mono text-xs text-gray-500 dark:bg-dark-700 dark:text-gray-400">
+                  {{ item.path }}
+                </span>
+              </div>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {{ item.description }}
+              </p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span
+                class="text-sm"
+                :class="item.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'"
+              >
+                {{ item.enabled ? t('common.enabled', '启用') : t('common.disabled', '禁用') }}
+              </span>
+              <Toggle
+                :model-value="item.enabled"
+                :class="{ 'pointer-events-none opacity-60': userMenuSavingKey === item.key }"
+                @update:model-value="handleUserMenuToggle(item.key, $event)"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -322,17 +401,27 @@
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import rbacAPI from "@/api/admin/rbac";
-import type { AdminMenu } from "@/api/admin/rbac";
+import type { AdminMenu, UserMenuVisibilitySettings } from "@/api/admin/rbac";
+import Toggle from "@/components/common/Toggle.vue";
 import AppLayout from "@/components/layout/AppLayout.vue";
+import { useAppStore } from "@/stores/app";
 import { usePermissionStore } from "@/stores/permission";
 
 const { t } = useI18n();
+const appStore = useAppStore();
 const permissionStore = usePermissionStore();
 
 const menus = ref<AdminMenu[]>([]);
 const loading = ref(false);
 const saving = ref(false);
 const keyword = ref("");
+const activeTab = ref<"admin" | "user">("admin");
+const userMenuLoading = ref(false);
+const userMenuSavingKey = ref<keyof UserMenuVisibilitySettings | null>(null);
+const userMenuVisibility = ref<UserMenuVisibilitySettings>({
+  invoice_management_enabled: false,
+  feedback_management_enabled: true,
+});
 
 // Modal state
 const showModal = ref(false);
@@ -364,8 +453,32 @@ const filteredMenus = computed(() => {
   );
 });
 
+const userMenuItems = computed(() => [
+  {
+    key: "invoice_management_enabled" as const,
+    name: t("nav.invoiceManagement", "发票管理"),
+    path: "/invoice",
+    description: t(
+      "admin.rbac.userMenuInvoiceDesc",
+      "用户维护发票抬头、查看开票记录，并从充值订单发起开票申请。",
+    ),
+    enabled: userMenuVisibility.value.invoice_management_enabled,
+  },
+  {
+    key: "feedback_management_enabled" as const,
+    name: t("nav.feedback", "反馈"),
+    path: "/feedbacks",
+    description: t(
+      "admin.rbac.userMenuFeedbackDesc",
+      "用户提交问题反馈、查看处理进度和回复记录。",
+    ),
+    enabled: userMenuVisibility.value.feedback_management_enabled,
+  },
+]);
+
 onMounted(() => {
   loadData();
+  loadUserMenuVisibility();
 });
 
 async function loadData() {
@@ -376,6 +489,42 @@ async function loadData() {
     // handled by interceptor
   } finally {
     loading.value = false;
+  }
+}
+
+async function loadUserMenuVisibility() {
+  userMenuLoading.value = true;
+  try {
+    userMenuVisibility.value = await rbacAPI.getUserMenuVisibility();
+  } catch {
+    // handled by interceptor
+  } finally {
+    userMenuLoading.value = false;
+  }
+}
+
+async function handleUserMenuToggle(key: keyof UserMenuVisibilitySettings, enabled: boolean) {
+  if (userMenuSavingKey.value) return;
+  const previous = userMenuVisibility.value[key];
+  if (previous === enabled) return;
+
+  userMenuSavingKey.value = key;
+  userMenuVisibility.value = {
+    ...userMenuVisibility.value,
+    [key]: enabled,
+  };
+
+  try {
+    userMenuVisibility.value = await rbacAPI.updateUserMenuVisibility(userMenuVisibility.value);
+    await appStore.fetchPublicSettings(true);
+    appStore.showSuccess(t("admin.rbac.userMenuSaved", "用户菜单已更新"));
+  } catch {
+    userMenuVisibility.value = {
+      ...userMenuVisibility.value,
+      [key]: previous,
+    };
+  } finally {
+    userMenuSavingKey.value = null;
   }
 }
 

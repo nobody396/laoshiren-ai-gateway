@@ -167,6 +167,7 @@ const (
 	SettingKeyCardShopEnabled             = "card_shop_enabled"             // 是否启用外部卡密商城充值入口
 	SettingKeyCardShopProducts            = "card_shop_products"            // 外部卡密商城固定面额商品列表（JSON）
 	SettingKeyInvoiceManagementEnabled    = "invoice_management_enabled"    // 是否向用户展示发票管理入口
+	SettingKeyFeedbackManagementEnabled   = "feedback_management_enabled"   // 是否向用户展示反馈入口
 	SettingKeySoraClientEnabled           = "sora_client_enabled"           // 是否启用 Sora 客户端（管理员手动控制）
 	SettingKeyTableDefaultPageSize        = "table_default_page_size"       // 表格默认每页条数
 	SettingKeyTablePageSizeOptions        = "table_page_size_options"       // 表格可选每页条数（JSON 数组）

@@ -148,6 +148,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		CardShopEnabled:                      settings.CardShopEnabled,
 		CardShopProducts:                     dto.CardShopProductsFromService(settings.CardShopProducts),
 		InvoiceManagementEnabled:             settings.InvoiceManagementEnabled,
+		FeedbackManagementEnabled:            settings.FeedbackManagementEnabled,
 		SoraClientEnabled:                    settings.SoraClientEnabled,
 		TableDefaultPageSize:                 settings.TableDefaultPageSize,
 		TablePageSizeOptions:                 settings.TablePageSizeOptions,
@@ -279,6 +280,7 @@ type UpdateSettingsRequest struct {
 	CardShopEnabled             *bool                  `json:"card_shop_enabled"`
 	CardShopProducts            *[]dto.CardShopProduct `json:"card_shop_products"`
 	InvoiceManagementEnabled    *bool                  `json:"invoice_management_enabled"`
+	FeedbackManagementEnabled   *bool                  `json:"feedback_management_enabled"`
 	SoraClientEnabled           bool                   `json:"sora_client_enabled"`
 	TableDefaultPageSize        int                    `json:"table_default_page_size"`
 	TablePageSizeOptions        []int                  `json:"table_page_size_options"`
@@ -757,6 +759,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	if req.InvoiceManagementEnabled != nil {
 		invoiceManagementEnabled = *req.InvoiceManagementEnabled
 	}
+	feedbackManagementEnabled := previousSettings.FeedbackManagementEnabled
+	if req.FeedbackManagementEnabled != nil {
+		feedbackManagementEnabled = *req.FeedbackManagementEnabled
+	}
 
 	// Frontend URL 验证
 	req.FrontendURL = strings.TrimSpace(req.FrontendURL)
@@ -1004,6 +1010,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		CardShopEnabled:                  cardShopEnabled,
 		CardShopProducts:                 cardShopProducts,
 		InvoiceManagementEnabled:         invoiceManagementEnabled,
+		FeedbackManagementEnabled:        feedbackManagementEnabled,
 		SoraClientEnabled:                req.SoraClientEnabled,
 		TableDefaultPageSize:             req.TableDefaultPageSize,
 		TablePageSizeOptions:             req.TablePageSizeOptions,
@@ -1201,6 +1208,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		CardShopEnabled:                      updatedSettings.CardShopEnabled,
 		CardShopProducts:                     dto.CardShopProductsFromService(updatedSettings.CardShopProducts),
 		InvoiceManagementEnabled:             updatedSettings.InvoiceManagementEnabled,
+		FeedbackManagementEnabled:            updatedSettings.FeedbackManagementEnabled,
 		SoraClientEnabled:                    updatedSettings.SoraClientEnabled,
 		TableDefaultPageSize:                 updatedSettings.TableDefaultPageSize,
 		TablePageSizeOptions:                 updatedSettings.TablePageSizeOptions,
@@ -1247,6 +1255,46 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		BalanceAlertDefaultThreshold:         updatedSettings.BalanceAlertDefaultThreshold,
 		AccountQuotaNotifyEnabled:            updatedSettings.AccountQuotaNotifyEnabled,
 		AccountQuotaNotifyEmails:             dto.NotifyEmailEntriesFromService(updatedSettings.AccountQuotaNotifyEmails),
+	})
+}
+
+type UserMenuVisibilityRequest struct {
+	InvoiceManagementEnabled  bool `json:"invoice_management_enabled"`
+	FeedbackManagementEnabled bool `json:"feedback_management_enabled"`
+}
+
+func (h *SettingHandler) GetUserMenuVisibilitySettings(c *gin.Context) {
+	settings, err := h.settingService.GetUserMenuVisibilitySettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"invoice_management_enabled":  settings.InvoiceManagementEnabled,
+		"feedback_management_enabled": settings.FeedbackManagementEnabled,
+	})
+}
+
+func (h *SettingHandler) UpdateUserMenuVisibilitySettings(c *gin.Context) {
+	var req UserMenuVisibilityRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+
+	settings := service.UserMenuVisibilitySettings{
+		InvoiceManagementEnabled:  req.InvoiceManagementEnabled,
+		FeedbackManagementEnabled: req.FeedbackManagementEnabled,
+	}
+	if err := h.settingService.UpdateUserMenuVisibilitySettings(c.Request.Context(), settings); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"invoice_management_enabled":  settings.InvoiceManagementEnabled,
+		"feedback_management_enabled": settings.FeedbackManagementEnabled,
 	})
 }
 
@@ -1520,6 +1568,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.InvoiceManagementEnabled != after.InvoiceManagementEnabled {
 		changed = append(changed, "invoice_management_enabled")
+	}
+	if before.FeedbackManagementEnabled != after.FeedbackManagementEnabled {
+		changed = append(changed, "feedback_management_enabled")
 	}
 	if before.TableDefaultPageSize != after.TableDefaultPageSize {
 		changed = append(changed, "table_default_page_size")

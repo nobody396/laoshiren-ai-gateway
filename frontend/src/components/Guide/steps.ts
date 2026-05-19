@@ -1,4 +1,8 @@
-import { DriveStep } from 'driver.js'
+import type { DriveStep } from 'driver.js'
+
+export type TourStep = DriveStep & {
+  optional?: boolean
+}
 
 /**
  * 管理员完整引导流程
@@ -6,8 +10,8 @@ import { DriveStep } from 'driver.js'
  * @param t 国际化函数
  * @param isSimpleMode 是否为简易模式（简易模式下会过滤分组相关步骤）
  */
-export const getAdminSteps = (t: (key: string) => string, isSimpleMode = false): DriveStep[] => {
-  const allSteps: DriveStep[] = [
+export const getAdminSteps = (t: (key: string) => string, isSimpleMode = false): TourStep[] => {
+  const allSteps: TourStep[] = [
   // ========== 欢迎介绍 ==========
   {
     popover: {
@@ -246,7 +250,7 @@ export const getAdminSteps = (t: (key: string) => string, isSimpleMode = false):
 /**
  * 普通用户引导流程
  */
-export const getUserSteps = (t: (key: string) => string): DriveStep[] => [
+export const getUserSteps = (t: (key: string) => string): TourStep[] => [
   {
     popover: {
       title: t('onboarding.user.welcome.title'),
@@ -334,6 +338,17 @@ export const getUserSteps = (t: (key: string) => string): DriveStep[] => [
       side: 'left',
       align: 'center',
       showButtons: ['close']
+    }
+  },
+  {
+    element: '[data-tour="keys-save-official-provider"]',
+    optional: true,
+    popover: {
+      title: t('onboarding.user.saveOfficialProvider.title'),
+      description: t('onboarding.user.saveOfficialProvider.description'),
+      side: 'bottom',
+      align: 'end',
+      showButtons: ['next', 'previous']
     }
   },
   {

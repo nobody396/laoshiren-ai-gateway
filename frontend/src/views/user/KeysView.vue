@@ -34,6 +34,16 @@
         >
           <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
         </button>
+        <button
+          v-if="hasOpenAIGroup"
+          @click="copySaveOfficialProviderCommand"
+          data-tour="keys-save-official-provider"
+          class="btn btn-secondary"
+          :title="t('keys.saveOfficialProviderHint')"
+        >
+          <Icon name="terminal" size="md" class="mr-2" />
+          {{ t('keys.saveOfficialProvider') }}
+        </button>
         <button @click="showCreateModal = true" class="btn btn-primary" data-tour="keys-create-btn">
           <Icon name="plus" size="md" class="mr-2" />
           {{ t('keys.createKey') }}
@@ -1149,6 +1159,7 @@ const groupButtonRefs = ref<Map<number, HTMLElement>>(new Map())
 let abortController: AbortController | null = null
 
 const groupCacheHitRateEnabled = computed(() => publicSettings.value?.group_cache_hit_rate_enabled === true)
+const hasOpenAIGroup = computed(() => groups.value.some((group) => group.platform === 'openai'))
 
 // Get the currently selected key for group change
 const selectedKeyForGroup = computed(() => {
@@ -1279,6 +1290,14 @@ const copyToClipboard = async (text: string, keyId: number) => {
       copiedKeyId.value = null
     }, 800)
   }
+}
+
+const copySaveOfficialProviderCommand = async () => {
+  const isWindows = navigator.userAgent.toLowerCase().includes('windows')
+  const command = isWindows
+    ? "$env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1 | iex"
+    : 'curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash'
+  await clipboardCopy(command, t('keys.saveOfficialProviderCommandCopied'))
 }
 
 const isAbortError = (error: unknown) => {
@@ -1733,12 +1752,40 @@ const openChatbotWithKey = async (row: ApiKey) => {
   }
 }
 
+const trimCcsLabel = (value: string | null | undefined): string => value?.trim() || ''
+
+const buildCcsProviderName = (row: ApiKey, app: 'claude' | 'codex' | 'gemini'): string => {
+  const siteName = trimCcsLabel(publicSettings.value?.site_name) || 'sub2api'
+  const appLabel = app === 'codex' ? 'Codex' : app === 'gemini' ? 'Gemini' : 'Claude'
+  const groupName = trimCcsLabel(row.group?.name)
+  const keyName = trimCcsLabel(row.name)
+  const parts = [siteName, appLabel]
+
+  if (groupName) {
+    parts.push(groupName)
+  }
+  if (keyName && keyName !== groupName) {
+    parts.push(keyName)
+  }
+
+  const name = parts.join(' - ')
+  return name.length > 96 ? `${name.slice(0, 93)}...` : name
+}
+
+const buildCcsProviderNotes = (row: ApiKey, endpoint: string): string => {
+  return [
+    row.group?.name ? `Group: ${row.group.name}` : '',
+    row.name ? `API Key: ${row.name}` : '',
+    `Endpoint: ${endpoint}`
+  ].filter(Boolean).join('\n')
+}
+
 const executeCcsImport = (row: ApiKey, clientType: 'claude' | 'gemini') => {
   const baseUrl = publicSettings.value?.api_base_url || window.location.origin
   const platform = row.group?.platform || 'anthropic'
 
   // Determine app name and endpoint based on platform and client type
-  let app: string
+  let app: 'claude' | 'codex' | 'gemini'
   let endpoint: string
 
   if (platform === 'antigravity') {
@@ -1777,7 +1824,8 @@ const executeCcsImport = (row: ApiKey, clientType: 'claude' | 'gemini') => {
       };
     }
   })`
-  const providerName = (publicSettings.value?.site_name || 'sub2api').trim() || 'sub2api'
+  const providerName = buildCcsProviderName(row, app)
+  const providerNotes = buildCcsProviderNotes(row, endpoint)
 
   const params = new URLSearchParams({
     resource: 'provider',
@@ -1786,6 +1834,7 @@ const executeCcsImport = (row: ApiKey, clientType: 'claude' | 'gemini') => {
     homepage: baseUrl,
     endpoint: endpoint,
     apiKey: row.key,
+    notes: providerNotes,
     configFormat: 'json',
     usageEnabled: 'true',
     usageScript: btoa(usageScript),

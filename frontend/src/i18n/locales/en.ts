@@ -792,6 +792,9 @@ export default {
     copyToClipboard: 'Copy to clipboard',
     copied: 'Copied!',
     importToCcSwitch: 'Import to CCS',
+    saveOfficialProvider: 'Save Official',
+    saveOfficialProviderHint: 'Copy a script command that saves the local OpenAI official login as a CC Switch Provider',
+    saveOfficialProviderCommandCopied: 'Script command copied. Paste it into your terminal to run.',
     enable: 'Enable',
     disable: 'Disable',
     nameLabel: 'Name',
@@ -5680,9 +5683,13 @@ export default {
         title: '🎉 Complete Creation',
         description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">After confirming name and group, click Create. The page returns to the key list after creation.</p><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;">👉 Click "Create" to generate your API key.</p></div>'
       },
+      saveOfficialProvider: {
+        title: 'Optional: save OpenAI official plan',
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">If you already signed in to an OpenAI official plan in Codex App or Codex CLI, click here to copy a script command that saves that login as a CC Switch Provider.</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px; font-size: 13px;"><b>OpenAI / Codex only:</b> this lets you switch between your OpenAI official plan and 老实人 AI gateway later, instead of being stuck with only the gateway provider.</p></div>'
+      },
       useOptions: {
         title: 'Choose how to use it',
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Your key is ready. There are two paths:</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>Recommended for beginners:</b> click "Import to CCS" to import into CC Switch automatically. Install CC Switch only when you choose this path.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>No extra tool:</b> click "Use Key" and copy the config manually.</p></div></div>'
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Your key is ready. There are a few paths:</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>Recommended for beginners:</b> click "Import to CCS" to import into CC Switch automatically. Install CC Switch only when you choose this path.</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>Already have an OpenAI official plan:</b> save the official Provider first, then import the gateway, so you can switch between both.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>No extra tool:</b> click "Use Key" and copy the config manually.</p></div></div>'
       },
       docs: {
         title: '📚 Tutorials and download guide',

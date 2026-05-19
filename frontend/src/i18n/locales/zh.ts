@@ -792,6 +792,9 @@ export default {
     copyToClipboard: '复制到剪贴板',
     copied: '已复制！',
     importToCcSwitch: '导入到 CCS',
+    saveOfficialProvider: '保存官方订阅',
+    saveOfficialProviderHint: '复制脚本命令，把本机 OpenAI 官方登录保存成 CC Switch Provider',
+    saveOfficialProviderCommandCopied: '脚本命令已复制，请粘贴到终端运行',
     enable: '启用',
     disable: '禁用',
     nameLabel: '名称',
@@ -5867,10 +5870,15 @@ export default {
         description:
           '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">确认名称和分组后，点击创建。创建成功后，系统会回到密钥列表。</p><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;">👉 点击「创建」生成你的 API 密钥。</p></div>'
       },
+      saveOfficialProvider: {
+        title: '可选：保存 OpenAI 官方订阅',
+        description:
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">如果你已经在 Codex App 或 Codex CLI 里登录了 OpenAI 官方订阅，建议先点这里复制脚本命令，把官方登录保存成 CC Switch Provider。</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px; font-size: 13px;"><b>只适用于 OpenAI / Codex：</b>这样之后在 CC Switch 里可以在「OpenAI 官方订阅」和「老实人 AI 中转」之间切换，不会只剩中转可用。</p></div>'
+      },
       useOptions: {
         title: '现在选择怎么使用',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">密钥已经创建好了。接下来有两种方式：</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>推荐新手：</b>点「导入到 CCS」自动导入到 CC Switch。没有安装时，再去下载 CC Switch。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>不想装工具：</b>点「使用密钥」手动复制配置。</p></div></div>'
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">密钥已经创建好了。接下来有几种方式：</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>推荐新手：</b>点「导入到 CCS」自动导入到 CC Switch。没有安装时，再去下载 CC Switch。</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>已有 OpenAI 官方订阅：</b>先用「保存官方订阅」保存官方 Provider，再导入中转，之后就能两边切换。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>不想装工具：</b>点「使用密钥」手动复制配置。</p></div></div>'
       },
       docs: {
         title: '📚 教程和下载说明',

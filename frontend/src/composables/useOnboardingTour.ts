@@ -4,7 +4,7 @@ import 'driver.js/dist/driver.css'
 import { useAuthStore as useUserStore } from '@/stores/auth'
 import { useOnboardingStore } from '@/stores/onboarding'
 import { useI18n } from 'vue-i18n'
-import { getAdminSteps, getUserSteps } from '@/components/Guide/steps'
+import { getAdminSteps, getUserSteps, type TourStep } from '@/components/Guide/steps'
 
 export interface OnboardingOptions {
   storageKey?: string
@@ -15,7 +15,7 @@ export function useOnboardingTour(options: OnboardingOptions) {
   const { t } = useI18n()
   const userStore = useUserStore()
   const onboardingStore = useOnboardingStore()
-  const storageVersion = 'v4_interactive' // Bump version for new tour type
+  const storageVersion = 'v5_official_provider' // Bump version when tour content changes
 
   // Timing constants for better maintainability
   const TIMING = {
@@ -29,6 +29,8 @@ export function useOnboardingTour(options: OnboardingOptions) {
     return step.popover?.showButtons?.length === 1 &&
            step.popover.showButtons[0] === 'close'
   }
+
+  const isOptionalStep = (step: DriveStep): boolean => (step as TourStep).optional === true
 
   // Helper: Clean up click listener
   const cleanupClickListener = () => {
@@ -276,9 +278,12 @@ export function useOnboardingTour(options: OnboardingOptions) {
 
         // 尝试等待元素
         if (!element && step.element && typeof step.element === 'string') {
-           const exists = await ensureElement(step.element, 8000)
+           const exists = await ensureElement(step.element, isOptionalStep(step) ? 300 : 8000)
            if (!exists) {
-             console.warn(`Tour element not found after 8s: ${step.element}`)
+             console.warn(`Tour element not found: ${step.element}`)
+             if (isOptionalStep(step) && driverInstance?.isActive()) {
+               driverInstance.moveNext()
+             }
              return
            }
            element = document.querySelector(step.element) as HTMLElement

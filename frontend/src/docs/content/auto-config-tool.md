@@ -249,7 +249,35 @@ codex --version
 
 ---
 
-## 9. 常见问题
+## 9. 保存 OpenAI 官方订阅到 CC Switch
+
+如果你已经在 Codex App 或 Codex CLI 中登录了 ChatGPT/OpenAI 官方订阅，可以把当前本机登录态保存成 CC Switch 的独立 Provider。这样以后即使导入 老实人 AI 中转，也能在 CC Switch 里一键切回官方订阅。
+
+脚本只读写本机文件：
+
+- `~/.codex/auth.json`
+- `~/.codex/config.toml`
+- `~/.cc-switch/cc-switch.db`
+
+不会把 OpenAI token 上传到 老实人 AI。
+
+macOS / Linux：
+
+```bash
+curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash
+```
+
+Windows PowerShell：
+
+```powershell
+$env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1 | iex
+```
+
+执行完成后，重启或打开 CC Switch，在 `Codex` 页面启用 `OpenAI Official Pro` 即可切回官方订阅；要测试中转时，再启用 老实人 AI 导入的 Provider。
+
+---
+
+## 10. 常见问题
 
 ### Windows 上提示需要 git-bash
 
@@ -294,7 +322,7 @@ $env:LAOSHIRENAI_TOOLS='claude'; $env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_KEY'; irm
 
 ---
 
-## 10. 下一步
+## 11. 下一步
 
 - 想看手动安装与逐步解释：继续查看 [Claude Code快速开始指南](claude-code-quickstart) 和 [Codex快速开始指南](codex-quickstart)
 - 还没准备好本地环境：查看 [Node.js环境安装指南](nodejs-setup)

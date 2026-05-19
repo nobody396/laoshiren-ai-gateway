@@ -47,10 +47,36 @@ codex --version
 
 ### 方式一：CC Switch（推荐）
 
-前往 [CC Switch Release](https://github.com/farion1231/cc-switch/blob/main/docs/release-notes/v3.12.2-zh.md) 下载安装后，点击 **导入到 CCS** 完成一键导入：
+前往 [CC Switch Release](https://github.com/farion1231/cc-switch/releases/latest) 下载安装后，点击 **导入到 CCS** 完成一键导入：
 
 
 导入后点击 **启用** 即可。
+
+#### 官方订阅和中转同时放进 CC Switch
+
+如果你既有 OpenAI 官方订阅，又要测试 老实人 AI 中转，请在 CC Switch 里保留两类 Provider：
+
+- **官方订阅**：在 CC Switch 顶部切到 `Codex`，点击 `+`，选择 `OpenAI Official`，按提示登录你的 ChatGPT/OpenAI 账号。这个 Provider 才代表官方订阅入口。
+- **中转分组**：在 老实人 AI 的 API 密钥页面，给不同分组分别创建 Key，例如 `OpenAI Plus 测试`、`OpenAI Pro 测试`，再分别点击 **导入到 CCS**。
+- **切换方式**：回到 CC Switch 的 `Codex` 页面，在 Provider 列表里启用你要用的那一个。不要依赖 `default` 当官方入口；`default` 只是当前配置快照，若之前被中转覆盖过，内容可能已经不是官方订阅。
+
+导入到 CCS 的中转 Provider 名称会带上站点名、工具名、分组名和密钥名，便于区分，例如 `老实人 AI - Codex - OpenAI Pro - Pro 测试 Key`。
+
+如果你已经在 Codex App 或 Codex CLI 里登录过官方订阅，也可以用脚本把当前本机登录态保存成独立 Provider。脚本只读写本机 `~/.codex` 和 `~/.cc-switch`，不会把 OpenAI token 上传到 老实人 AI。
+
+macOS / Linux：
+
+```bash
+curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash
+```
+
+Windows PowerShell：
+
+```powershell
+$env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1 | iex
+```
+
+执行完成后，重启或打开 CC Switch，在 `Codex` 页面会看到 `OpenAI Official Pro`，之后就可以在官方订阅和 老实人 AI 中转之间切换。
 
 ### 方式二：手动配置文件
 

@@ -241,9 +241,9 @@
             <!-- Amount info -->
             <div class="rounded-lg bg-gray-50 dark:bg-dark-800 px-4 py-3 text-sm">
               <span class="text-gray-500 dark:text-dark-400">充值金额：</span>
-              <span class="font-semibold text-gray-900 dark:text-white">¥{{ effectiveAmountYuan }}</span>
+              <span class="font-semibold text-gray-900 dark:text-white">¥{{ displayAmountText }}</span>
               <span class="text-gray-400 mx-2">→</span>
-              <span class="font-semibold text-primary-600 dark:text-primary-400">${{ effectiveAmountYuan }}.00</span>
+              <span class="font-semibold text-primary-600 dark:text-primary-400">${{ displayUSDText }}</span>
             </div>
 
             <p class="text-xs text-gray-400 dark:text-dark-500">{{ t('topup.waitingPayment') }}</p>
@@ -290,9 +290,11 @@ const qrCodeURL = ref('')
 const orderNo = ref('')
 const qrExpired = ref(false)
 const countdown = ref(QR_TTL_SECONDS)
+const activeOrderAmountYuan = ref(0)
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
+let pollInFlight = false
 
 // 根据公开设置决定用户侧可见支付渠道；关闭的渠道直接不展示。
 const xunhuAlipayEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_alipay_enabled ?? false)
@@ -322,6 +324,16 @@ const effectiveAmountYuan = computed<number>(() => {
   return selectedPreset.value ?? 0
 })
 
+const displayAmountYuan = computed(() => {
+  if (step.value === 2 && activeOrderAmountYuan.value > 0) {
+    return activeOrderAmountYuan.value
+  }
+  return effectiveAmountYuan.value || 20
+})
+
+const displayAmountText = computed(() => formatMoney(displayAmountYuan.value, false))
+const displayUSDText = computed(() => formatMoney(displayAmountYuan.value, true))
+
 const amountError = computed<string>(() => {
   if (effectiveAmountYuan.value > 0 && effectiveAmountYuan.value < 20) {
     return t('topup.minAmountError')
@@ -337,6 +349,11 @@ const countdownText = computed(() => {
   const s = countdown.value % 60
   return `${m}:${s.toString().padStart(2, '0')}`
 })
+
+function formatMoney(value: number, fixed: boolean) {
+  if (!Number.isFinite(value) || value <= 0) return fixed ? '20.00' : '20'
+  return fixed || !Number.isInteger(value) ? value.toFixed(2) : String(value)
+}
 
 function selectPreset(v: number) {
   selectedPreset.value = v
@@ -404,8 +421,21 @@ function reset() {
   orderNo.value = ''
   qrExpired.value = false
   countdown.value = QR_TTL_SECONDS
+  activeOrderAmountYuan.value = 0
   submitting.value = false
   stopTimers()
+}
+
+function updateActiveOrderMeta(meta: { amount_cny_fen?: number; pay_type?: TopupPayType; qr_code_url?: string | null }) {
+  if (typeof meta.amount_cny_fen === 'number' && Number.isFinite(meta.amount_cny_fen) && meta.amount_cny_fen > 0) {
+    activeOrderAmountYuan.value = meta.amount_cny_fen / 100
+  }
+  if (meta.pay_type === 'alipay' || meta.pay_type === 'wechat') {
+    payType.value = meta.pay_type
+  }
+  if (typeof meta.qr_code_url === 'string' && meta.qr_code_url.trim() !== '') {
+    qrCodeURL.value = meta.qr_code_url
+  }
 }
 
 async function submitOrder() {
@@ -413,14 +443,17 @@ async function submitOrder() {
   syncPayTypeWithSettings()
   submitting.value = true
   try {
-    const res = await createTopupOrder(effectiveAmountYuan.value * 100, payType.value)
+    const orderAmountYuan = effectiveAmountYuan.value
+    const res = await createTopupOrder(Math.round(orderAmountYuan * 100), payType.value)
     orderNo.value = res.order_no
     qrCodeURL.value = res.qr_code_url
+    activeOrderAmountYuan.value = orderAmountYuan
+    updateActiveOrderMeta(res)
     step.value = 2
     startCountdown()
     startPolling()
   } catch (e: any) {
-    alert(extractApiErrorMessage(e, t('topup.payFailed')))
+    appStore.showError(extractApiErrorMessage(e, t('topup.payFailed')))
   } finally {
     submitting.value = false
   }
@@ -437,30 +470,47 @@ function startCountdown() {
   countdownTimer = setInterval(() => {
     countdown.value--
     if (countdown.value <= 0) {
-      qrExpired.value = true
-      stopTimers()
+      if (countdownTimer) {
+        clearInterval(countdownTimer)
+        countdownTimer = null
+      }
+      void pollOrderStatus().finally(() => {
+        if (step.value === 2 && orderNo.value) {
+          qrExpired.value = true
+          stopTimers()
+        }
+      })
     }
   }, 1000)
 }
 
 function startPolling() {
-  pollTimer = setInterval(async () => {
-    if (!orderNo.value) return
-    try {
-      const res = await queryTopupOrderStatus(orderNo.value)
-      if (res.status === 'completed') {
-        stopTimers()
-        emit('success')
-        emit('update:modelValue', false)
-        reset()
-      } else if (res.status === 'expired') {
-        qrExpired.value = true
-        stopTimers()
-      }
-    } catch {
-      // ignore polling errors
-    }
+  void pollOrderStatus()
+  pollTimer = setInterval(() => {
+    void pollOrderStatus()
   }, 3000)
+}
+
+async function pollOrderStatus() {
+  if (!orderNo.value || qrExpired.value || pollInFlight) return
+  pollInFlight = true
+  try {
+    const res = await queryTopupOrderStatus(orderNo.value)
+    updateActiveOrderMeta(res)
+    if (res.status === 'completed') {
+      stopTimers()
+      emit('success')
+      emit('update:modelValue', false)
+      reset()
+    } else if (res.status === 'expired') {
+      qrExpired.value = true
+      stopTimers()
+    }
+  } catch {
+    // ignore polling errors
+  } finally {
+    pollInFlight = false
+  }
 }
 
 function stopTimers() {

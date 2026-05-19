@@ -54,8 +54,10 @@ func (h *TopupHandler) CreateTopupOrder(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{
-		"order_no":    orderNo,
-		"qr_code_url": qrCodeURL,
+		"order_no":       orderNo,
+		"qr_code_url":    qrCodeURL,
+		"amount_cny_fen": req.AmountCNYFen,
+		"pay_type":       req.PayType,
 	})
 }
 
@@ -81,8 +83,11 @@ func (h *TopupHandler) QueryTopupOrderStatus(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{
-		"order_no": order.OrderNo,
-		"status":   order.Status,
+		"order_no":       order.OrderNo,
+		"status":         order.Status,
+		"amount_cny_fen": order.AmountCNYFen,
+		"pay_type":       order.PayType,
+		"qr_code_url":    order.QRCodeURL,
 	})
 }
 

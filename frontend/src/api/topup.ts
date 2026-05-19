@@ -5,11 +5,16 @@ export type TopupPayType = 'alipay' | 'wechat'
 export interface CreateTopupOrderResponse {
   order_no: string
   qr_code_url: string
+  amount_cny_fen: number
+  pay_type: TopupPayType
 }
 
 export interface TopupOrderStatus {
   order_no: string
   status: 'pending' | 'completed' | 'expired'
+  amount_cny_fen?: number
+  pay_type?: TopupPayType
+  qr_code_url?: string | null
 }
 
 /**

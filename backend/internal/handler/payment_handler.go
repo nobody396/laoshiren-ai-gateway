@@ -66,6 +66,7 @@ func (h *PaymentHandler) CreateOrder(c *gin.Context) {
 	response.Success(c, gin.H{
 		"order_no":    orderNo,
 		"qr_code_url": qrCodeURL,
+		"plan_id":     req.PlanID,
 	})
 }
 
@@ -91,10 +92,13 @@ func (h *PaymentHandler) QueryOrderStatus(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{
-		"order_no": order.OrderNo,
-		"status":   order.Status,
-		"plan_id":  order.PlanID,
-		"group_id": order.GroupID,
+		"order_no":      order.OrderNo,
+		"status":        order.Status,
+		"plan_id":       order.PlanID,
+		"group_id":      order.GroupID,
+		"amount_cents":  order.AmountCents,
+		"validity_days": order.ValidityDays,
+		"qr_code_url":   order.QRCodeURL,
 	})
 }
 

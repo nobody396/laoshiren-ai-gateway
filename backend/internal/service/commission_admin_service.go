@@ -16,14 +16,21 @@ const (
 
 func (s *CommissionService) GetCommissionRates(ctx context.Context) (*CommissionRates, error) {
 	if s.rateRepo == nil {
-		return defaultCommissionRates(), nil
+		rates := defaultCommissionRates()
+		if activity, ok := s.getInviteActivityConfig(ctx); ok && activity != nil {
+			rates.InviteActivity = activity
+		}
+		return rates, nil
 	}
 	rates, err := s.rateRepo.GetCommissionRates(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get commission rates: %w", err)
 	}
 	if rates == nil {
-		return defaultCommissionRates(), nil
+		rates = defaultCommissionRates()
+	}
+	if activity, ok := s.getInviteActivityConfig(ctx); ok && activity != nil {
+		rates.InviteActivity = activity
 	}
 	return rates, nil
 }

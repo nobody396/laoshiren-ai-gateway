@@ -25,8 +25,8 @@ var batchInvoiceTemplate []byte
 // Seller-side identity and item metadata used when filling the template.
 // Adjust these constants if the issuing company / billing item changes.
 const (
-	invoiceTemplateSheetBasic  = "1-发票基本信息"
-	invoiceTemplateSheetDetail = "2-发票明细信息"
+	invoiceTemplateSheetBasic   = "1-发票基本信息"
+	invoiceTemplateSheetDetail  = "2-发票明细信息"
 	invoiceTemplateDataStartRow = 4
 
 	invoiceTypeRegular = "普通发票"
@@ -498,19 +498,19 @@ func fillInvoiceBasicInfoSheet(f *excelize.File, requests []InvoiceRequest) erro
 		snapshot := req.ProfileSnapshot
 
 		cells := map[int]string{
-			1:  req.SerialNo,           // 发票流水号
-			2:  invoiceTypeRegular,     // 发票类型
-			4:  "是",                    // 是否含税
-			5:  "否",                    // 受票方自然人标识
-			6:  snapshot.Title,         // 购买方名称
-			7:  snapshot.TaxNumber,     // 购买方纳税人识别号
+			1:  req.SerialNo,                       // 发票流水号
+			2:  invoiceTypeRegular,                 // 发票类型
+			4:  "是",                                // 是否含税
+			5:  "否",                                // 受票方自然人标识
+			6:  snapshot.Title,                     // 购买方名称
+			7:  snapshot.TaxNumber,                 // 购买方纳税人识别号
 			11: valueOrEmpty(snapshot.Address),     // 购买方地址
 			17: valueOrEmpty(snapshot.Phone),       // 购买方电话
 			18: valueOrEmpty(snapshot.BankName),    // 购买方开户银行
 			19: valueOrEmpty(snapshot.BankAccount), // 购买方银行账号
-			28: invoiceSellerBank,     // 销售方开户行
-			29: invoiceSellerAccount,  // 销售方银行账号
-			31: snapshot.Email,        // 购买方邮箱
+			28: invoiceSellerBank,                  // 销售方开户行
+			29: invoiceSellerAccount,               // 销售方银行账号
+			31: snapshot.Email,                     // 购买方邮箱
 		}
 
 		for col, value := range cells {
@@ -535,14 +535,14 @@ func fillInvoiceDetailSheet(f *excelize.File, requests []InvoiceRequest) error {
 		amountStr := fmt.Sprintf("%.2f", fenToYuan(req.TotalAmountFen))
 
 		cells := map[int]string{
-			1: req.SerialNo,        // 发票流水号
-			2: invoiceItemName,     // 项目名称
-			3: invoiceItemTaxCode,  // 商品和服务税收编码
-			5: invoiceItemUnit,     // 单位
-			6: "1",                 // 数量
-			7: amountStr,           // 单价
-			8: amountStr,           // 金额
-			9: invoiceTaxRate,      // 税率
+			1: req.SerialNo,       // 发票流水号
+			2: invoiceItemName,    // 项目名称
+			3: invoiceItemTaxCode, // 商品和服务税收编码
+			5: invoiceItemUnit,    // 单位
+			6: "1",                // 数量
+			7: amountStr,          // 单价
+			8: amountStr,          // 金额
+			9: invoiceTaxRate,     // 税率
 		}
 
 		for col, value := range cells {

@@ -415,6 +415,7 @@ func (s *AccountTestService) testBedrockAccountConnection(c *gin.Context, ctx co
 	return nil
 }
 
+//nolint:unused // Exercised by unit-tagged OpenAI account tests.
 func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account *Account, modelID string) error {
 	return s.testOpenAIAccountConnectionWithMode(c, account, modelID, "", AccountTestModeDefault)
 }

@@ -52,13 +52,17 @@ func (h *AnnouncementHandler) List(c *gin.Context) {
 	page, pageSize := response.ParsePagination(c)
 	status := strings.TrimSpace(c.Query("status"))
 	search := strings.TrimSpace(c.Query("search"))
+	sortBy := strings.TrimSpace(c.DefaultQuery("sort_by", "created_at"))
+	sortOrder := strings.TrimSpace(c.DefaultQuery("sort_order", "desc"))
 	if len(search) > 200 {
 		search = search[:200]
 	}
 
 	params := pagination.PaginationParams{
-		Page:     page,
-		PageSize: pageSize,
+		Page:      page,
+		PageSize:  pageSize,
+		SortBy:    sortBy,
+		SortOrder: sortOrder,
 	}
 
 	items, paginationResult, err := h.announcementService.List(

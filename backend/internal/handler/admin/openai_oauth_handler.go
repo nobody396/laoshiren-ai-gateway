@@ -140,6 +140,7 @@ func (h *OpenAIOAuthHandler) RefreshToken(c *gin.Context) {
 
 	response.Success(c, tokenInfo)
 }
+
 // RefreshAccountToken refreshes token for a specific OpenAI account
 // POST /api/v1/admin/openai/accounts/:id/refresh
 func (h *OpenAIOAuthHandler) RefreshAccountToken(c *gin.Context) {

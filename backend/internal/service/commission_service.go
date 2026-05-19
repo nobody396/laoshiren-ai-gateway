@@ -29,9 +29,11 @@ type CommissionService struct {
 	userRepo       UserRepository
 	commissionRepo CommissionRepository
 	rateRepo       CommissionRateRepository
+	activityRepo   InviteActivityRepository
 	adminRepo      AgentCommissionAdminRepository
 	levelRepo      AgentLevelRepository
 	paymentRepo    AgentPaymentRepository
+	nowFunc        func() time.Time
 }
 
 // NewCommissionService 创建分佣服务实例
@@ -39,9 +41,13 @@ func NewCommissionService(userRepo UserRepository, commissionRepo CommissionRepo
 	s := &CommissionService{
 		userRepo:       userRepo,
 		commissionRepo: commissionRepo,
+		nowFunc:        apptimezone.Now,
 	}
 	if repo, ok := commissionRepo.(CommissionRateRepository); ok {
 		s.rateRepo = repo
+	}
+	if repo, ok := commissionRepo.(InviteActivityRepository); ok {
+		s.activityRepo = repo
 	}
 	if repo, ok := commissionRepo.(AgentCommissionAdminRepository); ok {
 		s.adminRepo = repo
@@ -517,6 +523,13 @@ func (s *CommissionService) getCommissionRates(ctx context.Context) *CommissionR
 		return defaultCommissionRates()
 	}
 	return rates
+}
+
+func (s *CommissionService) now() time.Time {
+	if s.nowFunc != nil {
+		return s.nowFunc()
+	}
+	return apptimezone.Now()
 }
 
 func (s *CommissionService) resolveAgentConsumptionRate(ctx context.Context, agentID int64) (float64, string) {

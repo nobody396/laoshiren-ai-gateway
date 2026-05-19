@@ -511,21 +511,6 @@ func isOpenAIAccountEligibleForRequest(account *Account, requestedModel string, 
 	return true
 }
 
-func prioritizeOpenAICompactAccounts(accounts []*Account) []*Account {
-	if len(accounts) <= 1 {
-		return accounts
-	}
-	ordered := append([]*Account(nil), accounts...)
-	sort.SliceStable(ordered, func(i, j int) bool {
-		ti, tj := openAICompactSupportTier(ordered[i]), openAICompactSupportTier(ordered[j])
-		if ti != tj {
-			return ti > tj
-		}
-		return false
-	})
-	return ordered
-}
-
 func resolveOpenAIAccountUpstreamModelForRequest(account *Account, requestedModel string, requireCompact bool) string {
 	upstreamModel := resolveOpenAIForwardModel(account, requestedModel, "")
 	if upstreamModel == "" {
@@ -3364,7 +3349,6 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 	}
 	if !clientDisconnected && bufferedWriter.Buffered() > 0 {
 		if err := flushBuffered(); err != nil {
-			clientDisconnected = true
 			logger.LegacyPrintf("service.openai_gateway", "[OpenAI passthrough] Client disconnected during final flush, returning collected usage: account=%d", account.ID)
 		}
 	}
@@ -4248,6 +4232,109 @@ func extractOpenAISSEDataLine(line string) (string, bool) {
 	return line[start:], true
 }
 
+func extractOpenAISSEEventLine(line string) (string, bool) {
+	if !strings.HasPrefix(line, "event:") {
+		return "", false
+	}
+	start := len("event:")
+	for start < len(line) {
+		if line[start] != ' ' && line[start] != '	' {
+			break
+		}
+		start++
+	}
+	return strings.TrimSpace(line[start:]), true
+}
+
+type openAICompatSSEFrame struct {
+	EventType string
+	Data      string
+}
+
+type openAICompatSSEFrameParser struct {
+	eventType string
+	dataLines []string
+}
+
+func (p *openAICompatSSEFrameParser) AddLine(line string) (openAICompatSSEFrame, bool) {
+	if line == "" {
+		return p.dispatch()
+	}
+	if strings.HasPrefix(line, ":") {
+		return openAICompatSSEFrame{}, false
+	}
+	if eventType, ok := extractOpenAISSEEventLine(line); ok {
+		p.eventType = eventType
+		return openAICompatSSEFrame{}, false
+	}
+	if data, ok := extractOpenAISSEDataLine(line); ok {
+		p.dataLines = append(p.dataLines, data)
+	}
+	return openAICompatSSEFrame{}, false
+}
+
+func (p *openAICompatSSEFrameParser) Finish() (openAICompatSSEFrame, bool) {
+	return p.dispatch()
+}
+
+func (p *openAICompatSSEFrameParser) dispatch() (openAICompatSSEFrame, bool) {
+	frame := openAICompatSSEFrame{
+		EventType: p.eventType,
+		Data:      strings.Join(p.dataLines, "\n"),
+	}
+	p.eventType = ""
+	p.dataLines = nil
+	return frame, frame.Data != ""
+}
+
+func scanOpenAICompatSSEFrames(body string, visit func(openAICompatSSEFrame) bool) {
+	var parser openAICompatSSEFrameParser
+	for _, rawLine := range strings.Split(body, "\n") {
+		line := strings.TrimSuffix(rawLine, "\r")
+		if parser.dataLines != nil && (strings.HasPrefix(line, "data:") || strings.HasPrefix(line, "event:")) {
+			if frame, ok := parser.dispatch(); ok {
+				if visit(frame) {
+					return
+				}
+			}
+		}
+		frame, ok := parser.AddLine(line)
+		if !ok {
+			continue
+		}
+		if visit(frame) {
+			return
+		}
+	}
+	if frame, ok := parser.Finish(); ok {
+		visit(frame)
+	}
+}
+
+func openAICompatPayloadWithEventType(payload, eventType string) string {
+	eventType = strings.TrimSpace(eventType)
+	if eventType == "" || strings.TrimSpace(payload) == "" || strings.TrimSpace(payload) == "[DONE]" {
+		return payload
+	}
+	if gjson.Get(payload, "type").Exists() {
+		return payload
+	}
+	patched, err := sjson.Set(payload, "type", eventType)
+	if err != nil {
+		return payload
+	}
+	return patched
+}
+
+func isOpenAICompatResponsesTerminalEvent(eventType string) bool {
+	switch eventType {
+	case "response.completed", "response.done", "response.incomplete", "response.failed":
+		return true
+	default:
+		return false
+	}
+}
+
 func (s *OpenAIGatewayService) replaceModelInSSELine(line, fromModel, toModel string) string {
 	data, ok := extractOpenAISSEDataLine(line)
 	if !ok {
@@ -4308,25 +4395,47 @@ func (s *OpenAIGatewayService) parseSSEUsageBytes(data []byte, usage *OpenAIUsag
 		return
 	}
 
-	usage.InputTokens = int(gjson.GetBytes(data, "response.usage.input_tokens").Int())
-	usage.OutputTokens = int(gjson.GetBytes(data, "response.usage.output_tokens").Int())
-	usage.CacheReadInputTokens = int(gjson.GetBytes(data, "response.usage.input_tokens_details.cached_tokens").Int())
+	if parsedUsage, ok := extractOpenAIUsageFromJSONBytes(data); ok {
+		*usage = parsedUsage
+	}
 }
 
 func extractOpenAIUsageFromJSONBytes(body []byte) (OpenAIUsage, bool) {
 	if len(body) == 0 || !gjson.ValidBytes(body) {
 		return OpenAIUsage{}, false
 	}
-	values := gjson.GetManyBytes(
-		body,
-		"usage.input_tokens",
-		"usage.output_tokens",
-		"usage.input_tokens_details.cached_tokens",
-	)
+	if usage, ok := openAIUsageFromGJSON(gjson.GetBytes(body, "usage")); ok {
+		return usage, true
+	}
+	return openAIUsageFromGJSON(gjson.GetBytes(body, "response.usage"))
+}
+
+func openAIUsageFromGJSON(value gjson.Result) (OpenAIUsage, bool) {
+	if !value.Exists() || !value.IsObject() {
+		return OpenAIUsage{}, false
+	}
+	inputTokens := value.Get("input_tokens").Int()
+	if inputTokens == 0 {
+		inputTokens = value.Get("prompt_tokens").Int()
+	}
+	outputTokens := value.Get("output_tokens").Int()
+	if outputTokens == 0 {
+		outputTokens = value.Get("completion_tokens").Int()
+	}
+	cacheReadTokens := value.Get("input_tokens_details.cached_tokens").Int()
+	if cacheReadTokens == 0 {
+		cacheReadTokens = value.Get("prompt_tokens_details.cached_tokens").Int()
+	}
+	imageOutputTokens := value.Get("output_tokens_details.image_tokens").Int()
+	if imageOutputTokens == 0 {
+		imageOutputTokens = value.Get("completion_tokens_details.image_tokens").Int()
+	}
 	return OpenAIUsage{
-		InputTokens:          int(values[0].Int()),
-		OutputTokens:         int(values[1].Int()),
-		CacheReadInputTokens: int(values[2].Int()),
+		InputTokens:              int(inputTokens),
+		OutputTokens:             int(outputTokens),
+		CacheCreationInputTokens: int(value.Get("cache_creation_input_tokens").Int()),
+		CacheReadInputTokens:     int(cacheReadTokens),
+		ImageOutputTokens:        int(imageOutputTokens),
 	}, true
 }
 
@@ -4444,17 +4553,24 @@ func (s *OpenAIGatewayService) handleOAuthSSEToJSON(resp *http.Response, c *gin.
 }
 
 func extractOpenAISSETerminalEvent(body string) (string, []byte, bool) {
-	lines := strings.Split(body, "\n")
-	for _, line := range lines {
-		data, ok := extractOpenAISSEDataLine(line)
-		if !ok || data == "" || data == "[DONE]" {
-			continue
+	var terminalType string
+	var terminalPayload []byte
+	scanOpenAICompatSSEFrames(body, func(frame openAICompatSSEFrame) bool {
+		data := openAICompatPayloadWithEventType(frame.Data, frame.EventType)
+		if strings.TrimSpace(data) == "" || strings.TrimSpace(data) == "[DONE]" {
+			return false
 		}
 		eventType := strings.TrimSpace(gjson.Get(data, "type").String())
 		switch eventType {
 		case "response.completed", "response.done", "response.failed":
-			return eventType, []byte(data), true
+			terminalType = eventType
+			terminalPayload = []byte(data)
+			return true
 		}
+		return false
+	})
+	if terminalPayload != nil {
+		return terminalType, terminalPayload, true
 	}
 	return "", nil, false
 }
@@ -4489,21 +4605,23 @@ func (s *OpenAIGatewayService) writeOpenAINonStreamingProtocolError(resp *http.R
 }
 
 func extractCodexFinalResponse(body string) ([]byte, bool) {
-	lines := strings.Split(body, "\n")
-	for _, line := range lines {
-		data, ok := extractOpenAISSEDataLine(line)
-		if !ok {
-			continue
-		}
-		if data == "" || data == "[DONE]" {
-			continue
+	var finalResponse []byte
+	scanOpenAICompatSSEFrames(body, func(frame openAICompatSSEFrame) bool {
+		data := openAICompatPayloadWithEventType(frame.Data, frame.EventType)
+		if strings.TrimSpace(data) == "" || strings.TrimSpace(data) == "[DONE]" {
+			return false
 		}
 		eventType := gjson.Get(data, "type").String()
 		if eventType == "response.done" || eventType == "response.completed" {
 			if response := gjson.Get(data, "response"); response.Exists() && response.Type == gjson.JSON && response.Raw != "" {
-				return []byte(response.Raw), true
+				finalResponse = []byte(response.Raw)
+				return true
 			}
 		}
+		return false
+	})
+	if finalResponse != nil {
+		return finalResponse, true
 	}
 	return nil, false
 }
@@ -4513,18 +4631,18 @@ func extractCodexFinalResponse(body string) ([]byte, bool) {
 // Returns (nil, false) if no content was found in deltas.
 func reconstructResponseOutputFromSSE(bodyText string) ([]byte, bool) {
 	acc := apicompat.NewBufferedResponseAccumulator()
-	lines := strings.Split(bodyText, "\n")
-	for _, line := range lines {
-		data, ok := extractOpenAISSEDataLine(line)
-		if !ok || data == "" || data == "[DONE]" {
-			continue
+	scanOpenAICompatSSEFrames(bodyText, func(frame openAICompatSSEFrame) bool {
+		data := openAICompatPayloadWithEventType(frame.Data, frame.EventType)
+		if strings.TrimSpace(data) == "" || strings.TrimSpace(data) == "[DONE]" {
+			return false
 		}
 		var event apicompat.ResponsesStreamEvent
 		if err := json.Unmarshal([]byte(data), &event); err != nil {
-			continue
+			return false
 		}
 		acc.ProcessEvent(&event)
-	}
+		return false
+	})
 	if !acc.HasContent() {
 		return nil, false
 	}
@@ -4538,17 +4656,14 @@ func reconstructResponseOutputFromSSE(bodyText string) ([]byte, bool) {
 
 func (s *OpenAIGatewayService) parseSSEUsageFromBody(body string) *OpenAIUsage {
 	usage := &OpenAIUsage{}
-	lines := strings.Split(body, "\n")
-	for _, line := range lines {
-		data, ok := extractOpenAISSEDataLine(line)
-		if !ok {
-			continue
-		}
-		if data == "" || data == "[DONE]" {
-			continue
+	scanOpenAICompatSSEFrames(body, func(frame openAICompatSSEFrame) bool {
+		data := openAICompatPayloadWithEventType(frame.Data, frame.EventType)
+		if strings.TrimSpace(data) == "" || strings.TrimSpace(data) == "[DONE]" {
+			return false
 		}
 		s.parseSSEUsageBytes([]byte(data), usage)
-	}
+		return false
+	})
 	return usage
 }
 
@@ -4588,13 +4703,10 @@ func (s *OpenAIGatewayService) validateUpstreamBaseURL(raw string) (string, erro
 // - 其他情况：追加 /v1/responses
 func buildOpenAIResponsesURL(base string) string {
 	normalized := strings.TrimRight(strings.TrimSpace(base), "/")
-	if strings.HasSuffix(normalized, "/responses") {
-		return normalized
+	if strings.HasSuffix(normalized, "/chat/completions") {
+		return strings.TrimSuffix(normalized, "/chat/completions") + "/responses"
 	}
-	if strings.HasSuffix(normalized, "/v1") {
-		return normalized + "/responses"
-	}
-	return normalized + "/v1/responses"
+	return buildOpenAIEndpointURL(base, "/v1/responses")
 }
 
 func trimOpenAIEncryptedReasoningItems(reqBody map[string]any) bool {

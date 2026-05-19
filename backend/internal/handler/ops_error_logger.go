@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"net/http"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -37,6 +38,10 @@ const (
 	opsErrInsufficientBalance        = "insufficient balance"
 	opsErrInsufficientAccountBalance = "insufficient account balance"
 	opsErrInsufficientQuota          = "insufficient_quota"
+	opsErrIPDenied                   = "ip denied"
+	opsErrAccessDenied               = "access denied"
+	opsErrNoCapacityAvailable        = "no capacity available"
+	opsErrCapacityExhausted          = "capacity exhausted"
 
 	// 上游错误码常量 — 错误分类 (normalizeOpsErrorType / classifyOpsPhase / classifyOpsIsBusinessLimited)
 	opsCodeInsufficientBalance  = "INSUFFICIENT_BALANCE"
@@ -1202,15 +1207,32 @@ func classifyOpsIsBusinessLimited(errType, phase, code string, status int, messa
 	case opsCodeInsufficientBalance, opsCodeUsageLimitExceeded, opsCodeSubscriptionNotFound, opsCodeSubscriptionInvalid, opsCodeUserInactive:
 		return true
 	}
+	msg := strings.ToLower(strings.TrimSpace(message))
+	if strings.Contains(msg, opsErrIPDenied) ||
+		strings.Contains(msg, "ip is denied") ||
+		strings.Contains(msg, "ip access denied") ||
+		strings.Contains(msg, "access denied by ip") ||
+		strings.Contains(msg, "request not allowed from your ip") {
+		return true
+	}
+	if status == http.StatusForbidden && strings.Contains(msg, opsErrAccessDenied) && !strings.Contains(msg, "upstream") {
+		return true
+	}
+	if strings.Contains(msg, opsErrNoCapacityAvailable) ||
+		strings.Contains(msg, opsErrCapacityExhausted) ||
+		strings.Contains(msg, "selected model is at capacity") ||
+		strings.Contains(msg, "exhausted your capacity") ||
+		strings.Contains(msg, "insufficient capacity") {
+		return true
+	}
 	if phase == "billing" || phase == "concurrency" {
 		// SLA/错误率排除“用户级业务限制”
 		return true
 	}
 	// Avoid treating upstream rate limits as business-limited.
-	if errType == "rate_limit_error" && strings.Contains(strings.ToLower(message), "upstream") {
+	if errType == "rate_limit_error" && strings.Contains(msg, "upstream") {
 		return false
 	}
-	_ = status
 	return false
 }
 

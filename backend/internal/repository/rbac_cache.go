@@ -143,9 +143,9 @@ func (c *rbacCache) SetUserMenuTree(ctx context.Context, userID int64, data []by
 	return c.rdb.Set(ctx, key, data, rbacCacheTTL).Err()
 }
 
-// stringSliceToInterfaceSlice 将 []string 转为 []interface{}, 用于 Redis SAdd.
-func stringSliceToInterfaceSlice(s []string) []interface{} {
-	result := make([]interface{}, len(s))
+// stringSliceToInterfaceSlice 将 []string 转为 []any, 用于 Redis SAdd.
+func stringSliceToInterfaceSlice(s []string) []any {
+	result := make([]any, len(s))
 	for i, v := range s {
 		result[i] = v
 	}

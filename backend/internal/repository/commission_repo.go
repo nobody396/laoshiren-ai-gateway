@@ -356,6 +356,8 @@ func expandCommissionTypes(typeFilter string) []string {
 		return []string{service.CommissionTypeFirstRechargeFriendInvitee, "first_recharge_friend_invitee_bonus"}
 	case service.CommissionTypeFirstRechargeReferral, "first_recharge_referral_bonus":
 		return []string{service.CommissionTypeFirstRechargeReferral, "first_recharge_referral_bonus"}
+	case service.CommissionTypeInviteActivityRegistrationBonus:
+		return []string{service.CommissionTypeInviteActivityRegistrationBonus}
 	default:
 		return []string{typeFilter}
 	}

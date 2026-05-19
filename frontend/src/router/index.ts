@@ -10,6 +10,7 @@ import {useAdminSettingsStore} from '@/stores/adminSettings'
 import {usePermissionStore} from '@/stores/permission'
 import {useNavigationLoadingState} from '@/composables/useNavigationLoading'
 import {useRoutePrefetch} from '@/composables/useRoutePrefetch'
+import {getSetupStatus, type SetupStatus} from '@/api/setup'
 import {resolveDocumentTitle} from './title'
 
 /**
@@ -713,12 +714,37 @@ const navigationLoading = useNavigationLoadingState()
 let routePrefetch: ReturnType<typeof useRoutePrefetch> | null = null
 const BACKEND_MODE_ALLOWED_PATHS = ['/login', '/key-usage', '/setup', '/docs']
 const BACKEND_MODE_EXACT_PATHS = ['/', '/home']
+let cachedSetupStatus: SetupStatus | null = null
+let setupStatusPromise: Promise<SetupStatus | null> | null = null
+
+function isSetupRoutePath(path: string): boolean {
+  return path === '/setup' || path.startsWith('/setup/')
+}
+
+async function getCachedSetupStatus(): Promise<SetupStatus | null> {
+  if (cachedSetupStatus) {
+    return cachedSetupStatus
+  }
+  if (!setupStatusPromise) {
+    setupStatusPromise = getSetupStatus()
+      .then((status) => {
+        cachedSetupStatus = status
+        return status
+      })
+      .catch(() => {
+        setupStatusPromise = null
+        return null
+      })
+  }
+  return setupStatusPromise
+}
 
 router.beforeEach(async (to, _from, next) => {
   // 开始导航加载状态
   navigationLoading.startNavigation()
 
   const authStore = useAuthStore()
+  const appStore = useAppStore()
 
   // Restore auth state from localStorage on first navigation (page refresh)
   if (!authInitialized) {
@@ -726,8 +752,17 @@ router.beforeEach(async (to, _from, next) => {
     authInitialized = true
   }
 
+  const setupStatus = await getCachedSetupStatus()
+  if (setupStatus?.needs_setup && !isSetupRoutePath(to.path)) {
+    next('/setup')
+    return
+  }
+  if (setupStatus && !setupStatus.needs_setup && isSetupRoutePath(to.path)) {
+    next(authStore.isAuthenticated ? (authStore.isAdmin ? '/admin/dashboard' : '/dashboard') : '/login')
+    return
+  }
+
   // Set page title
-  const appStore = useAppStore()
   // For custom pages, use menu item label as document title
   if (to.name === 'CustomPage') {
     const id = to.params.id as string

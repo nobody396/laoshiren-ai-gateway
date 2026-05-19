@@ -34,6 +34,7 @@
                 type="text"
                 maxlength="6"
                 inputmode="numeric"
+                autocomplete="one-time-code"
                 class="input flex-1"
                 :placeholder="t('profile.totp.enterEmailCode')"
               />

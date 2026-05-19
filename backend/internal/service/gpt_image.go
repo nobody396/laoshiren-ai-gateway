@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -86,12 +85,11 @@ func (s *OpenAIGatewayService) ParseGPTImageRequest(body []byte) (*GPTImageReque
 		return nil, fmt.Errorf("gpt-image endpoint only supports model %q", gptImageOnlyModel)
 	}
 
-	n := 1
 	if nResult := gjson.GetBytes(body, "n"); nResult.Exists() {
 		if nResult.Type != gjson.Number {
 			return nil, fmt.Errorf("invalid n field type")
 		}
-		n = int(nResult.Int())
+		n := int(nResult.Int())
 		if n != 1 {
 			return nil, fmt.Errorf("gpt-image endpoint only supports n=1")
 		}
@@ -1246,12 +1244,4 @@ func rewriteGPTImageTaskImageURLs(body []byte, taskID string, objectKeys []strin
 func buildGPTImageMediaURL(baseURL, taskID string, index int, token string) string {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return fmt.Sprintf("%s/%s/%d?token=%s", baseURL, url.PathEscape(taskID), index, url.QueryEscape(token))
-}
-
-func parseGPTImageMediaIndex(raw string) (int, error) {
-	index, err := strconv.Atoi(strings.TrimSpace(raw))
-	if err != nil || index < 0 {
-		return 0, fmt.Errorf("invalid media index")
-	}
-	return index, nil
 }

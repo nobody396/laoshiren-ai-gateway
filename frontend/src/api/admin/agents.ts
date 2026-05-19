@@ -5,6 +5,16 @@ export interface CommissionRates {
   consumption_rate: number
   first_recharge_invitee_rate: number
   first_recharge_referral_rate: number
+  invite_activity?: InviteActivityConfig
+  updated_at?: string
+}
+
+export interface InviteActivityConfig {
+  enabled: boolean
+  name: string
+  start_at?: string | null
+  end_at?: string | null
+  registration_bonus_amount: number
   updated_at?: string
 }
 
@@ -261,6 +271,32 @@ export async function updateRates(rates: CommissionRates): Promise<CommissionRat
   return data
 }
 
+export async function getInviteActivity(): Promise<InviteActivityConfig> {
+  const rates = await getRates()
+  return rates.invite_activity || defaultInviteActivityConfig()
+}
+
+export async function updateInviteActivity(activity: InviteActivityConfig): Promise<InviteActivityConfig> {
+  const currentRates = await getRates()
+  const { data } = await apiClient.put<CommissionRates>('/admin/agents/rates', {
+    consumption_rate: currentRates.consumption_rate,
+    first_recharge_invitee_rate: currentRates.first_recharge_invitee_rate,
+    first_recharge_referral_rate: currentRates.first_recharge_referral_rate,
+    invite_activity: activity
+  })
+  return data.invite_activity || activity
+}
+
+function defaultInviteActivityConfig(): InviteActivityConfig {
+  return {
+    enabled: false,
+    name: '公测邀请活动',
+    start_at: null,
+    end_at: null,
+    registration_bonus_amount: 5
+  }
+}
+
 export async function getAgentRate(agentId: number): Promise<AgentRateConfig> {
   const { data } = await apiClient.get<AgentRateConfig>(`/admin/agents/${agentId}/rate`)
   return data
@@ -306,6 +342,8 @@ export const agentsAPI = {
   getPaymentQRCode,
   getRates,
   updateRates,
+  getInviteActivity,
+  updateInviteActivity,
   getAgentRate,
   updateAgentRate,
   getLevelRules,

@@ -275,29 +275,20 @@ func (s *OpenAIGatewayService) handleAnthropicBufferedStreamingResponse(
 	var usage OpenAIUsage
 	acc := apicompat.NewBufferedResponseAccumulator()
 
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		if !strings.HasPrefix(line, "data: ") || line == "data: [DONE]" {
-			continue
-		}
-		payload := line[6:]
-
+	processPayload := func(payload string) bool {
 		var event apicompat.ResponsesStreamEvent
 		if err := json.Unmarshal([]byte(payload), &event); err != nil {
 			logger.L().Warn("openai messages buffered: failed to parse event",
 				zap.Error(err),
 				zap.String("request_id", requestID),
 			)
-			continue
+			return false
 		}
 
 		acc.ProcessEvent(&event)
 
 		// Terminal events carry the complete ResponsesResponse with output + usage.
-		if (event.Type == "response.completed" || event.Type == "response.done" ||
-			event.Type == "response.incomplete" || event.Type == "response.failed") &&
-			event.Response != nil {
+		if isOpenAICompatResponsesTerminalEvent(event.Type) && event.Response != nil {
 			finalResponse = event.Response
 			if event.Response.Usage != nil {
 				usage = OpenAIUsage{
@@ -308,6 +299,27 @@ func (s *OpenAIGatewayService) handleAnthropicBufferedStreamingResponse(
 					usage.CacheReadInputTokens = event.Response.Usage.InputTokensDetails.CachedTokens
 				}
 			}
+			return true
+		}
+		return false
+	}
+
+	var parser openAICompatSSEFrameParser
+	for scanner.Scan() {
+		frame, ok := parser.AddLine(scanner.Text())
+		if !ok {
+			continue
+		}
+		if strings.TrimSpace(frame.Data) == "[DONE]" {
+			break
+		}
+		if processPayload(openAICompatPayloadWithEventType(frame.Data, frame.EventType)) {
+			break
+		}
+	}
+	if finalResponse == nil {
+		if frame, ok := parser.Finish(); ok && strings.TrimSpace(frame.Data) != "[DONE]" {
+			processPayload(openAICompatPayloadWithEventType(frame.Data, frame.EventType))
 		}
 	}
 
@@ -374,6 +386,8 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 	var usage OpenAIUsage
 	var firstTokenMs *int
 	firstChunk := true
+	terminalSeen := false
+	clientDisconnected := false
 
 	scanner := bufio.NewScanner(resp.Body)
 	maxLineSize := defaultMaxLineSize
@@ -414,16 +428,16 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 			return false
 		}
 
-		// Extract usage from completion events
-		if (event.Type == "response.completed" || event.Type == "response.done" ||
-			event.Type == "response.incomplete" || event.Type == "response.failed") &&
-			event.Response != nil && event.Response.Usage != nil {
-			usage = OpenAIUsage{
-				InputTokens:  event.Response.Usage.InputTokens,
-				OutputTokens: event.Response.Usage.OutputTokens,
-			}
-			if event.Response.Usage.InputTokensDetails != nil {
-				usage.CacheReadInputTokens = event.Response.Usage.InputTokensDetails.CachedTokens
+		if isOpenAICompatResponsesTerminalEvent(event.Type) {
+			terminalSeen = true
+			if event.Response != nil && event.Response.Usage != nil {
+				usage = OpenAIUsage{
+					InputTokens:  event.Response.Usage.InputTokens,
+					OutputTokens: event.Response.Usage.OutputTokens,
+				}
+				if event.Response.Usage.InputTokensDetails != nil {
+					usage.CacheReadInputTokens = event.Response.Usage.InputTokensDetails.CachedTokens
+				}
 			}
 		}
 
@@ -442,13 +456,14 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 				logger.L().Info("openai messages stream: client disconnected",
 					zap.String("request_id", requestID),
 				)
+				clientDisconnected = true
 				return true
 			}
 		}
 		if len(events) > 0 {
 			c.Writer.Flush()
 		}
-		return false
+		return terminalSeen
 	}
 
 	// finalizeStream sends any remaining Anthropic events and returns the result.
@@ -475,6 +490,16 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 			)
 		}
 	}
+	missingTerminalErr := func() (*OpenAIForwardResult, error) {
+		return resultWithUsage(), fmt.Errorf("stream usage incomplete: missing terminal event")
+	}
+	processFrame := func(frame openAICompatSSEFrame) bool {
+		payload := openAICompatPayloadWithEventType(frame.Data, frame.EventType)
+		if strings.TrimSpace(payload) == "[DONE]" {
+			return false
+		}
+		return processDataLine(payload)
+	}
 
 	// ── Determine keepalive interval ──
 	keepaliveInterval := time.Duration(0)
@@ -484,17 +509,50 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 
 	// ── No keepalive: fast synchronous path (no goroutine overhead) ──
 	if keepaliveInterval <= 0 {
+		var parser openAICompatSSEFrameParser
 		for scanner.Scan() {
-			line := scanner.Text()
-			if !strings.HasPrefix(line, "data: ") || line == "data: [DONE]" {
+			frame, ok := parser.AddLine(scanner.Text())
+			if !ok {
 				continue
 			}
-			if processDataLine(line[6:]) {
-				return resultWithUsage(), nil
+			if strings.TrimSpace(frame.Data) == "[DONE]" {
+				if terminalSeen {
+					return finalizeStream()
+				}
+				return missingTerminalErr()
+			}
+			if processFrame(frame) {
+				if clientDisconnected {
+					return resultWithUsage(), nil
+				}
+				return finalizeStream()
 			}
 		}
-		handleScanErr(scanner.Err())
-		return finalizeStream()
+		if frame, ok := parser.Finish(); ok {
+			if strings.TrimSpace(frame.Data) == "[DONE]" {
+				if terminalSeen {
+					return finalizeStream()
+				}
+				return missingTerminalErr()
+			}
+			if processFrame(frame) {
+				if clientDisconnected {
+					return resultWithUsage(), nil
+				}
+				return finalizeStream()
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			handleScanErr(err)
+			if terminalSeen {
+				return finalizeStream()
+			}
+			return resultWithUsage(), fmt.Errorf("stream usage incomplete: %w", err)
+		}
+		if terminalSeen {
+			return finalizeStream()
+		}
+		return missingTerminalErr()
 	}
 
 	// ── With keepalive: goroutine + channel + select ──
@@ -528,25 +586,54 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 	keepaliveTicker := time.NewTicker(keepaliveInterval)
 	defer keepaliveTicker.Stop()
 	lastDataAt := time.Now()
+	var parser openAICompatSSEFrameParser
 
 	for {
 		select {
 		case ev, ok := <-events:
 			if !ok {
-				// Upstream closed
-				return finalizeStream()
+				if frame, ok := parser.Finish(); ok {
+					if strings.TrimSpace(frame.Data) == "[DONE]" {
+						if terminalSeen {
+							return finalizeStream()
+						}
+						return missingTerminalErr()
+					}
+					if processFrame(frame) {
+						if clientDisconnected {
+							return resultWithUsage(), nil
+						}
+						return finalizeStream()
+					}
+				}
+				if terminalSeen {
+					return finalizeStream()
+				}
+				return missingTerminalErr()
 			}
 			if ev.err != nil {
 				handleScanErr(ev.err)
-				return finalizeStream()
+				if terminalSeen {
+					return finalizeStream()
+				}
+				return resultWithUsage(), fmt.Errorf("stream usage incomplete: %w", ev.err)
 			}
 			lastDataAt = time.Now()
-			line := ev.line
-			if !strings.HasPrefix(line, "data: ") || line == "data: [DONE]" {
+			frame, ok := parser.AddLine(ev.line)
+			if !ok {
 				continue
 			}
-			if processDataLine(line[6:]) {
-				return resultWithUsage(), nil
+			if strings.TrimSpace(frame.Data) == "[DONE]" {
+				if terminalSeen {
+					return finalizeStream()
+				}
+				return missingTerminalErr()
+			}
+			if processFrame(frame) {
+				if clientDisconnected {
+					return resultWithUsage(), nil
+				}
+				return finalizeStream()
 			}
 
 		case <-keepaliveTicker.C:
@@ -559,6 +646,7 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 				logger.L().Info("openai messages stream: client disconnected during keepalive",
 					zap.String("request_id", requestID),
 				)
+				clientDisconnected = true
 				return resultWithUsage(), nil
 			}
 			c.Writer.Flush()

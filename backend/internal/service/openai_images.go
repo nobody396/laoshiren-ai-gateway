@@ -283,11 +283,7 @@ func (s *OpenAIGatewayService) buildOpenAIImagesRequest(
 	if err != nil {
 		return nil, err
 	}
-	if strings.HasSuffix(strings.TrimRight(validatedURL, "/"), "/v1") {
-		targetURL = strings.TrimRight(validatedURL, "/") + "/images/generations"
-	} else {
-		targetURL = strings.TrimRight(validatedURL, "/") + openAIImagesGenerationsEndpoint
-	}
+	targetURL = buildOpenAIEndpointURL(validatedURL, openAIImagesGenerationsEndpoint)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL, bytes.NewReader(body))
 	if err != nil {

@@ -15,7 +15,7 @@ import (
 
 const (
 	adminAPIKeyServicePrincipalUserID      int64 = -1
-	adminAPIKeyServicePrincipalConcurrency       = 0
+	adminAPIKeyServicePrincipalConcurrency int   = 0
 )
 
 // NewAdminAuthMiddleware 创建管理员认证中间件

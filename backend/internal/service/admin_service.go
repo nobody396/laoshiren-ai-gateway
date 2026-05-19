@@ -2319,14 +2319,11 @@ func runProxyQualityTarget(ctx context.Context, client *http.Client, target prox
 	item.LatencyMs = time.Since(start).Milliseconds()
 	item.HTTPStatus = resp.StatusCode
 
-	body, readErr := io.ReadAll(io.LimitReader(resp.Body, proxyQualityMaxBodyBytes+1))
+	_, readErr := io.ReadAll(io.LimitReader(resp.Body, proxyQualityMaxBodyBytes+1))
 	if readErr != nil {
 		item.Status = "fail"
 		item.Message = fmt.Sprintf("读取响应失败: %v", readErr)
 		return item
-	}
-	if int64(len(body)) > proxyQualityMaxBodyBytes {
-		body = body[:proxyQualityMaxBodyBytes]
 	}
 
 	if _, ok := target.AllowedStatuses[resp.StatusCode]; ok {

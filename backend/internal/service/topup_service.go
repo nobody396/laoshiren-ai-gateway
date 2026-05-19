@@ -68,17 +68,17 @@ func NewTopupService(
 
 // xunhuResponse 虎皮椒创建订单响应
 type xunhuResponse struct {
-	ErrCode     interface{} `json:"errcode"` // 0 表示成功
-	ErrMsg      string      `json:"errmsg"`
-	Hash        string      `json:"hash"`
-	URLQRCode   string      `json:"url_qrcode"` // 二维码图片 URL
-	URL         string      `json:"url"`
-	OpenOrderID string      `json:"open_order_id"` // 虎皮椒内部订单号
+	ErrCode     any    `json:"errcode"` // 0 表示成功
+	ErrMsg      string `json:"errmsg"`
+	Hash        string `json:"hash"`
+	URLQRCode   string `json:"url_qrcode"` // 二维码图片 URL
+	URL         string `json:"url"`
+	OpenOrderID string `json:"open_order_id"` // 虎皮椒内部订单号
 }
 
 // xunhuQueryResponse 虎皮椒查询订单响应
 type xunhuQueryResponse struct {
-	ErrCode     interface{}         `json:"errcode"`
+	ErrCode     any                 `json:"errcode"`
 	ErrMsg      string              `json:"errmsg"`
 	Hash        string              `json:"hash"`
 	Status      string              `json:"status"`        // 兼容部分扁平响应
@@ -468,16 +468,11 @@ func buildXunhuSignString(params map[string]string) string {
 	}
 	sort.Strings(keys)
 
-	var sb strings.Builder
-	for i, k := range keys {
-		if i > 0 {
-			sb.WriteByte('&')
-		}
-		sb.WriteString(k)
-		sb.WriteByte('=')
-		sb.WriteString(params[k])
+	parts := make([]string, 0, len(keys))
+	for _, k := range keys {
+		parts = append(parts, k+"="+params[k])
 	}
-	return sb.String()
+	return strings.Join(parts, "&")
 }
 
 // calcXunhuHash 计算虎皮椒签名（MD5 小写 32 位）
@@ -545,7 +540,7 @@ func postFormURLEncoded(apiURL string, params map[string]string) ([]byte, error)
 	if err != nil {
 		return nil, fmt.Errorf("http post: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("read response: %w", err)

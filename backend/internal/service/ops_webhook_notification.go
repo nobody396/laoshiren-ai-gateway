@@ -280,7 +280,7 @@ func getOpsFeishuTenantAccessToken(ctx context.Context, client opsHTTPDoer, appI
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -341,7 +341,7 @@ func doOpsWebhookRequest(client opsHTTPDoer, req *http.Request, channel string) 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		if err := validateOpsWebhookSuccessBody(channel, string(data)); err != nil {

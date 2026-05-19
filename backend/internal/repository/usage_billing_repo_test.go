@@ -13,7 +13,7 @@ import (
 func TestUsageBillingRepositoryApply_BalanceFinalLimitRollbackOnInsufficientFunds(t *testing.T) {
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
 	require.NoError(t, err)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	repo := NewUsageBillingRepository(nil, db)
 
@@ -45,7 +45,7 @@ func TestUsageBillingRepositoryApply_BalanceFinalLimitRollbackOnInsufficientFund
 func TestUsageBillingRepositoryApply_SubscriptionFinalLimitRollbackOnDailyOverage(t *testing.T) {
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
 	require.NoError(t, err)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	repo := NewUsageBillingRepository(nil, db)
 	subscriptionID := int64(55)

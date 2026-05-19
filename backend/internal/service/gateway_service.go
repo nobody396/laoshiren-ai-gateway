@@ -7436,13 +7436,6 @@ func notifyBalanceLow(p *postUsageBillingParams, deps *billingDeps, result *Usag
 	deps.balanceAlertService.CheckAndAlert(context.Background(), p.User.ID, balanceAfterDeduct)
 }
 
-func resolveOldBalance(p *postUsageBillingParams, result *UsageBillingApplyResult) float64 {
-	if result != nil && result.NewBalance != nil {
-		return *result.NewBalance + p.Cost.ActualCost
-	}
-	return p.User.Balance
-}
-
 func notifyAccountQuota(p *postUsageBillingParams, deps *billingDeps, result *UsageBillingApplyResult) {
 	defer func() {
 		if r := recover(); r != nil {

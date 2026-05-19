@@ -246,12 +246,12 @@ func TestComputeRuleMetricNewIndicators(t *testing.T) {
 			rule := &OpsAlertRule{
 				MetricType: tt.metricType,
 			}
-			gotValue, gotOK := svc.computeRuleMetric(ctx, rule, nil, start, end, platform, tt.groupID)
-			require.Equal(t, tt.wantOK, gotOK)
-			if !tt.wantOK {
+			got := svc.evaluateRuleMetric(ctx, rule, nil, start, end, platform, tt.groupID)
+			require.Equal(t, tt.wantOK, got.OK)
+			if !got.OK {
 				return
 			}
-			require.InDelta(t, tt.wantValue, gotValue, 0.0001)
+			require.InDelta(t, tt.wantValue, got.Value, 0.0001)
 		})
 	}
 }

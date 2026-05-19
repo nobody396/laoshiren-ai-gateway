@@ -136,7 +136,7 @@ func (c *refreshTokenCache) ConsumeRefreshToken(ctx context.Context, tokenHash s
 		return nil, err
 	}
 
-	items, ok := result.([]interface{})
+	items, ok := result.([]any)
 	if !ok || len(items) != 2 {
 		return nil, fmt.Errorf("unexpected consume refresh token result: %v", result)
 	}

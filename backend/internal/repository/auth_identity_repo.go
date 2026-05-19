@@ -94,7 +94,6 @@ func (r *authIdentityRepository) Upsert(ctx context.Context, input service.AuthI
 			if existingAfterConflict.UserID != input.UserID {
 				return nil, service.ErrAuthIdentityConflict
 			}
-			existing = existingAfterConflict
 		} else {
 			return nil, insertErr
 		}

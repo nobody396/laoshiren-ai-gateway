@@ -133,17 +133,3 @@ func IsSuperAdminFromContext(c *gin.Context) bool {
 	}
 	return false
 }
-
-// matchAPIPath 检查请求路径是否匹配 API 权限路径模式
-// 支持精确匹配和通配符匹配 (如 /admin/users/*)
-func matchAPIPath(pattern, actual string) bool {
-	if pattern == actual {
-		return true
-	}
-	// 通配符匹配: /admin/users/* 匹配 /admin/users/123
-	if strings.HasSuffix(pattern, "/*") {
-		prefix := strings.TrimSuffix(pattern, "/*")
-		return strings.HasPrefix(actual, prefix+"/") || actual == prefix
-	}
-	return false
-}

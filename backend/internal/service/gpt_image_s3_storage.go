@@ -14,13 +14,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
-	"github.com/bozhouDev/DragonCode-sub2api/internal/util/urlvalidator"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/util/urlvalidator"
 )
 
 var (

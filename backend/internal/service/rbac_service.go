@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"sync"
 
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 )
@@ -53,9 +52,6 @@ var validMenuTypes = map[string]bool{
 type RBACService struct {
 	repo  RBACRepository
 	cache RBACCache
-
-	// mu 保护并发写缓存
-	mu sync.Mutex
 }
 
 // NewRBACService 创建 RBAC 服务实例

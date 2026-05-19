@@ -463,19 +463,6 @@ func parseOpsAlertRuleScope(filters map[string]any) (platform string, groupID *i
 	return platform, groupID, region
 }
 
-func (s *OpsAlertEvaluatorService) computeRuleMetric(
-	ctx context.Context,
-	rule *OpsAlertRule,
-	systemMetrics *OpsSystemMetricsSnapshot,
-	start time.Time,
-	end time.Time,
-	platform string,
-	groupID *int64,
-) (float64, bool) {
-	result := s.evaluateRuleMetric(ctx, rule, systemMetrics, start, end, platform, groupID)
-	return result.Value, result.OK
-}
-
 type opsAlertMetricEvaluation struct {
 	Value     float64
 	OK        bool

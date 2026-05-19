@@ -13,7 +13,7 @@ import (
 func TestAgentLevelRepositoryGetUsageStatsUsesDirectUsersAndMonthWindow(t *testing.T) {
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
 	require.NoError(t, err)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	repo := &commissionRepository{sql: db}
 	start := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
@@ -33,7 +33,7 @@ func TestAgentLevelRepositoryGetUsageStatsUsesDirectUsersAndMonthWindow(t *testi
 func TestAgentLevelRepositoryUpsertStateIsIdempotent(t *testing.T) {
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
 	require.NoError(t, err)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	repo := &commissionRepository{sql: db}
 	temp := service.AgentLevelCore

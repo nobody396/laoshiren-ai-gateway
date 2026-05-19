@@ -125,7 +125,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, planID s
 		},
 	}
 	if notifyURL != "" {
-		req.Trade.NotifyURL = notifyURL
+		req.NotifyURL = notifyURL
 	}
 
 	resp, err := client.TradePreCreate(ctx, req)
@@ -182,7 +182,8 @@ func (s *PaymentService) QueryOrderStatus(ctx context.Context, orderNo string, u
 				OutTradeNo: orderNo,
 			})
 			if err == nil && resp.IsSuccess() {
-				if resp.TradeStatus == "TRADE_SUCCESS" || resp.TradeStatus == "TRADE_FINISHED" {
+				switch resp.TradeStatus {
+				case "TRADE_SUCCESS", "TRADE_FINISHED":
 					tradeNo := resp.TradeNo
 					if completeErr := s.completeOrder(ctx, orderNo, &tradeNo); completeErr != nil {
 						slog.Error("failed to complete order from query", "orderNo", orderNo, "error", completeErr)
@@ -190,7 +191,7 @@ func (s *PaymentService) QueryOrderStatus(ctx context.Context, orderNo string, u
 						// Re-fetch updated order
 						order, _ = s.paymentRepo.GetByOrderNo(ctx, orderNo)
 					}
-				} else if resp.TradeStatus == "TRADE_CLOSED" {
+				case "TRADE_CLOSED":
 					_ = s.paymentRepo.UpdateStatus(ctx, order.ID, PaymentStatusExpired, nil)
 					order.Status = PaymentStatusExpired
 				}

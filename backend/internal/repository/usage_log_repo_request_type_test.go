@@ -360,6 +360,7 @@ func (s usageLogScannerStub) Scan(dest ...any) error {
 	}
 	for i := range dest {
 		dv := reflect.ValueOf(dest[i])
+		//nolint:govet // reflect.Ptr keeps this test scanner's pointer check readable.
 		if dv.Kind() != reflect.Ptr {
 			return fmt.Errorf("dest[%d] is not pointer", i)
 		}

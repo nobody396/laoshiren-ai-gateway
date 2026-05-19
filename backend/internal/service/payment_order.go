@@ -32,17 +32,17 @@ type SubscriptionPlan struct {
 
 // PaymentOrder represents a payment order domain model
 type PaymentOrder struct {
-	ID           int64      `json:"id"`
-	OrderNo      string     `json:"order_no"`
-	UserID       int64      `json:"user_id"`
-	AmountCents  int        `json:"amount_cents"`  // price in CNY fen
-	PlanID       string     `json:"plan_id"`       // subscription plan ID
-	GroupID      int64      `json:"group_id"`      // target group
-	ValidityDays int        `json:"validity_days"` // subscription days
-	Status       string     `json:"status"`
-	AlipayTradeNo *string   `json:"alipay_trade_no,omitempty"`
-	QRCodeURL    *string    `json:"qr_code_url,omitempty"`
-	CompletedAt  *time.Time `json:"completed_at,omitempty"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
+	ID            int64      `json:"id"`
+	OrderNo       string     `json:"order_no"`
+	UserID        int64      `json:"user_id"`
+	AmountCents   int        `json:"amount_cents"`  // price in CNY fen
+	PlanID        string     `json:"plan_id"`       // subscription plan ID
+	GroupID       int64      `json:"group_id"`      // target group
+	ValidityDays  int        `json:"validity_days"` // subscription days
+	Status        string     `json:"status"`
+	AlipayTradeNo *string    `json:"alipay_trade_no,omitempty"`
+	QRCodeURL     *string    `json:"qr_code_url,omitempty"`
+	CompletedAt   *time.Time `json:"completed_at,omitempty"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
 }

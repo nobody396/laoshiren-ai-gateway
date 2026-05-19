@@ -242,7 +242,7 @@ func loadCandidates(ctx context.Context, db *sql.DB, start time.Time, end *time.
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	items := make([]candidate, 0)
 	for rows.Next() {

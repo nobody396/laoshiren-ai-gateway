@@ -511,21 +511,6 @@ func isOpenAIAccountEligibleForRequest(account *Account, requestedModel string, 
 	return true
 }
 
-func prioritizeOpenAICompactAccounts(accounts []*Account) []*Account {
-	if len(accounts) <= 1 {
-		return accounts
-	}
-	ordered := append([]*Account(nil), accounts...)
-	sort.SliceStable(ordered, func(i, j int) bool {
-		ti, tj := openAICompactSupportTier(ordered[i]), openAICompactSupportTier(ordered[j])
-		if ti != tj {
-			return ti > tj
-		}
-		return false
-	})
-	return ordered
-}
-
 func resolveOpenAIAccountUpstreamModelForRequest(account *Account, requestedModel string, requireCompact bool) string {
 	upstreamModel := resolveOpenAIForwardModel(account, requestedModel, "")
 	if upstreamModel == "" {
@@ -3364,7 +3349,6 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 	}
 	if !clientDisconnected && bufferedWriter.Buffered() > 0 {
 		if err := flushBuffered(); err != nil {
-			clientDisconnected = true
 			logger.LegacyPrintf("service.openai_gateway", "[OpenAI passthrough] Client disconnected during final flush, returning collected usage: account=%d", account.ID)
 		}
 	}

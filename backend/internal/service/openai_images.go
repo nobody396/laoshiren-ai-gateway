@@ -274,7 +274,6 @@ func (s *OpenAIGatewayService) buildOpenAIImagesRequest(
 	body []byte,
 	token string,
 ) (*http.Request, error) {
-	targetURL := openAIImagesGenerationsEndpoint
 	baseURL := account.GetOpenAIBaseURL()
 	if baseURL == "" {
 		baseURL = "https://api.openai.com"
@@ -283,7 +282,7 @@ func (s *OpenAIGatewayService) buildOpenAIImagesRequest(
 	if err != nil {
 		return nil, err
 	}
-	targetURL = buildOpenAIEndpointURL(validatedURL, openAIImagesGenerationsEndpoint)
+	targetURL := buildOpenAIEndpointURL(validatedURL, openAIImagesGenerationsEndpoint)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL, bytes.NewReader(body))
 	if err != nil {

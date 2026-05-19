@@ -111,8 +111,8 @@ func (h *DashboardHandler) GetStats(c *gin.Context) {
 		"today_cache_creation_tokens": stats.TodayCacheCreationTokens,
 		"today_cache_read_tokens":     stats.TodayCacheReadTokens,
 		"today_tokens":                stats.TodayTokens,
-		"today_cost":                  stats.TodayCost,       // 今日标准计费
-		"today_actual_cost":           stats.TodayActualCost, // 今日实际扣除
+		"today_cost":                  stats.TodayCost,           // 今日标准计费
+		"today_actual_cost":           stats.TodayActualCost,     // 今日实际扣除
 		"yesterday_actual_cost":       stats.YesterdayActualCost, // 昨日实际扣除
 
 		// 系统运行统计

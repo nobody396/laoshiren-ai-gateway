@@ -108,6 +108,53 @@
       </div>
 
       <div class="card p-4">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.agents.inviteActivity') }}</h3>
+            <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ t('admin.agents.inviteActivityHint') }}</p>
+          </div>
+          <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-dark-200">
+            <input v-model="inviteActivityForm.enabled" type="checkbox" class="rounded border-gray-300" />
+            {{ t('admin.agents.inviteActivityEnabled') }}
+          </label>
+        </div>
+        <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-5">
+          <div class="md:col-span-2">
+            <label class="input-label">{{ t('admin.agents.inviteActivityName') }}</label>
+            <input v-model="inviteActivityForm.name" class="input text-sm" :placeholder="t('admin.agents.inviteActivityNamePlaceholder')" />
+          </div>
+          <div>
+            <label class="input-label">{{ t('admin.agents.inviteActivityStart') }}</label>
+            <input v-model="inviteActivityForm.startAt" type="datetime-local" class="input text-sm" />
+          </div>
+          <div>
+            <label class="input-label">{{ t('admin.agents.inviteActivityEnd') }}</label>
+            <input v-model="inviteActivityForm.endAt" type="datetime-local" class="input text-sm" />
+          </div>
+          <div>
+            <label class="input-label">{{ t('admin.agents.registrationBonus') }}</label>
+            <div class="flex items-center gap-2">
+              <input
+                v-model.number="inviteActivityForm.registrationBonus"
+                data-test="invite-activity-registration-bonus"
+                type="number"
+                min="0"
+                step="0.01"
+                class="input w-24 text-sm"
+              />
+              <span class="text-sm text-gray-500">$</span>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('admin.agents.inviteActivityRule') }}</p>
+          <button data-test="invite-activity-save" class="btn btn-secondary btn-sm" :disabled="inviteActivitySaving" @click="saveInviteActivity">
+            {{ inviteActivitySaving ? t('common.saving') : t('common.save') }}
+          </button>
+        </div>
+      </div>
+
+      <div class="card p-4">
         <div class="flex flex-wrap items-end gap-3">
           <div>
             <label class="input-label">{{ t('admin.agents.settlementMinimum') }}</label>
@@ -492,7 +539,8 @@ import type {
   AdminAgentCommissionRecord,
   AgentSettlement,
   AgentLevelRule,
-  AgentPaymentProfile
+  AgentPaymentProfile,
+  InviteActivityConfig
 } from '@/api/admin/agents'
 import { useAppStore } from '@/stores/app'
 import { buildAuthErrorMessage } from '@/utils/authError'
@@ -505,6 +553,7 @@ const { copyToClipboard } = useClipboard()
 
 const loading = ref(false)
 const ratesSaving = ref(false)
+const inviteActivitySaving = ref(false)
 const agentRateSaving = ref(false)
 const settlementSaving = ref(false)
 const settlementSettingsSaving = ref(false)
@@ -526,6 +575,13 @@ const settlementStatus = ref('')
 const currentPage = ref(1)
 const pagination = reactive({ total: 0, page: 1, page_size: 20, pages: 1 })
 const globalRateForm = reactive({ consumption: 6, invitee: 10, referral: 5 })
+const inviteActivityForm = reactive({
+  enabled: false,
+  name: '公测邀请活动',
+  startAt: '',
+  endAt: '',
+  registrationBonus: 5
+})
 const agentRateForm = reactive({ enabled: false, consumption: 6 })
 const settlementSettingsForm = reactive({ minimum: 50 })
 const settlementDialog = reactive<{
@@ -617,6 +673,7 @@ async function loadRates() {
     globalRateForm.consumption = toPercentNumber(rates.consumption_rate)
     globalRateForm.invitee = toPercentNumber(rates.first_recharge_invitee_rate)
     globalRateForm.referral = toPercentNumber(rates.first_recharge_referral_rate)
+    syncInviteActivityForm(rates.invite_activity)
   } catch (error: any) {
     appStore.showError(buildAuthErrorMessage(error, { fallback: t('admin.agents.failedToLoad') }))
   }
@@ -672,6 +729,19 @@ async function saveGlobalRates() {
     appStore.showError(error.response?.data?.detail || error.message || t('admin.agents.failedToSave'))
   } finally {
     ratesSaving.value = false
+  }
+}
+
+async function saveInviteActivity() {
+  inviteActivitySaving.value = true
+  try {
+    const activity = await adminAPI.agents.updateInviteActivity(buildInviteActivityPayload())
+    syncInviteActivityForm(activity)
+    appStore.showSuccess(t('admin.agents.inviteActivityUpdated'))
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || error.message || t('admin.agents.failedToSaveInviteActivity'))
+  } finally {
+    inviteActivitySaving.value = false
   }
 }
 
@@ -1018,6 +1088,38 @@ function toPercentNumber(value: number): number {
 
 function fromPercent(value: number): number {
   return Number(((value || 0) / 100).toFixed(6))
+}
+
+function syncInviteActivityForm(activity?: InviteActivityConfig | null) {
+  inviteActivityForm.enabled = Boolean(activity?.enabled)
+  inviteActivityForm.name = activity?.name || '公测邀请活动'
+  inviteActivityForm.startAt = toDatetimeLocalInput(activity?.start_at)
+  inviteActivityForm.endAt = toDatetimeLocalInput(activity?.end_at)
+  inviteActivityForm.registrationBonus = Number(activity?.registration_bonus_amount ?? 5)
+}
+
+function buildInviteActivityPayload(): InviteActivityConfig {
+  return {
+    enabled: inviteActivityForm.enabled,
+    name: inviteActivityForm.name.trim() || '公测邀请活动',
+    start_at: fromDatetimeLocalInput(inviteActivityForm.startAt),
+    end_at: fromDatetimeLocalInput(inviteActivityForm.endAt),
+    registration_bonus_amount: Number(inviteActivityForm.registrationBonus || 0)
+  }
+}
+
+function toDatetimeLocalInput(value?: string | null): string {
+  if (!value) return ''
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return ''
+  const local = new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60_000)
+  return local.toISOString().slice(0, 16)
+}
+
+function fromDatetimeLocalInput(value: string): string | null {
+  if (!value) return null
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
 }
 
 function normalizeOptionalNumber(value: number | null | undefined): number | null {

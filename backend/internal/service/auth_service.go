@@ -238,6 +238,7 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 	}
 
 	s.bindReferralCode(ctx, user.ID, referralCode)
+	s.applyInviteActivityRegistrationBonus(ctx, user.ID)
 
 	// 生成token
 	token, err := s.GenerateToken(user)
@@ -690,6 +691,7 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 	}
 	if createdNewUser {
 		s.bindReferralCode(ctx, user.ID, referralCode)
+		s.applyInviteActivityRegistrationBonus(ctx, user.ID)
 	}
 
 	tokenPair, err := s.GenerateTokenPair(ctx, user, "")
@@ -720,6 +722,15 @@ func (s *AuthService) bindReferralCode(ctx context.Context, userID int64, referr
 	}
 	if err := s.userRepo.SetInviterAndAgent(ctx, userID, inviter.ID, agentID); err != nil {
 		logger.LegacyPrintf("service.auth", "[Auth] Failed to set inviter for user %d: %v", userID, err)
+	}
+}
+
+func (s *AuthService) applyInviteActivityRegistrationBonus(ctx context.Context, userID int64) {
+	if s.commissionService == nil {
+		return
+	}
+	if err := s.commissionService.ProcessInviteActivityRegistrationBonus(ctx, userID); err != nil {
+		logger.LegacyPrintf("service.auth", "[Auth] Failed to apply invite activity registration bonus for user %d: %v", userID, err)
 	}
 }
 

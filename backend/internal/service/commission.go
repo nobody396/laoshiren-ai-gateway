@@ -90,10 +90,22 @@ type UserReferralDashboard struct {
 
 // CommissionRates 全局分佣/奖励比例配置。比例以小数表示：0.06 = 6%。
 type CommissionRates struct {
-	ConsumptionRate           float64   `json:"consumption_rate"`
-	FirstRechargeInviteeRate  float64   `json:"first_recharge_invitee_rate"`
-	FirstRechargeReferralRate float64   `json:"first_recharge_referral_rate"`
-	UpdatedAt                 time.Time `json:"updated_at,omitempty"`
+	ConsumptionRate           float64               `json:"consumption_rate"`
+	FirstRechargeInviteeRate  float64               `json:"first_recharge_invitee_rate"`
+	FirstRechargeReferralRate float64               `json:"first_recharge_referral_rate"`
+	InviteActivity            *InviteActivityConfig `json:"invite_activity,omitempty"`
+	UpdatedAt                 time.Time             `json:"updated_at,omitempty"`
+}
+
+// InviteActivityConfig controls a time-boxed invite campaign.
+// Amounts are in the same balance unit used by user balances.
+type InviteActivityConfig struct {
+	Enabled                 bool       `json:"enabled"`
+	Name                    string     `json:"name"`
+	StartAt                 *time.Time `json:"start_at,omitempty"`
+	EndAt                   *time.Time `json:"end_at,omitempty"`
+	RegistrationBonusAmount float64    `json:"registration_bonus_amount"`
+	UpdatedAt               time.Time  `json:"updated_at,omitempty"`
 }
 
 type AgentSettlementSettings struct {
@@ -233,6 +245,12 @@ type CommissionRateRepository interface {
 	GetAgentRateConfig(ctx context.Context, agentID int64) (*AgentRateConfig, error)
 	UpsertAgentRateConfig(ctx context.Context, config *AgentRateConfig) error
 	ResolveAgentConsumptionRate(ctx context.Context, agentID int64) (rate float64, source string, err error)
+}
+
+// InviteActivityRepository stores the current invite campaign configuration.
+type InviteActivityRepository interface {
+	GetInviteActivityConfig(ctx context.Context) (*InviteActivityConfig, error)
+	UpdateInviteActivityConfig(ctx context.Context, activity *InviteActivityConfig) error
 }
 
 // AgentLevelRepository provides agent tier rule/state persistence.

@@ -57,10 +57,11 @@ const (
 
 // Commission type constants
 const (
-	CommissionTypeConsumption                = "consumption"
-	CommissionTypeFirstRechargeInvitee       = "first_recharge_invitee"
-	CommissionTypeFirstRechargeFriendInvitee = "first_recharge_friend_invitee"
-	CommissionTypeFirstRechargeReferral      = "first_recharge_referral"
+	CommissionTypeConsumption                     = "consumption"
+	CommissionTypeFirstRechargeInvitee            = "first_recharge_invitee"
+	CommissionTypeFirstRechargeFriendInvitee      = "first_recharge_friend_invitee"
+	CommissionTypeFirstRechargeReferral           = "first_recharge_referral"
+	CommissionTypeInviteActivityRegistrationBonus = "invite_activity_registration_bonus"
 )
 
 // Group subscription type constants

@@ -63,6 +63,83 @@ func (r *commissionRepository) UpdateCommissionRates(ctx context.Context, rates 
 	}, &rates.UpdatedAt)
 }
 
+func (r *commissionRepository) GetInviteActivityConfig(ctx context.Context) (*service.InviteActivityConfig, error) {
+	if r.sql == nil {
+		return nil, nil
+	}
+	var activity service.InviteActivityConfig
+	var startAt, endAt sql.NullTime
+	err := scanSingleRow(ctx, r.sql, `
+		SELECT
+			invite_activity_enabled,
+			invite_activity_name,
+			invite_activity_start_at,
+			invite_activity_end_at,
+			invite_activity_registration_bonus,
+			invite_activity_updated_at
+		FROM agent_commission_settings
+		WHERE id = 1
+	`, nil,
+		&activity.Enabled,
+		&activity.Name,
+		&startAt,
+		&endAt,
+		&activity.RegistrationBonusAmount,
+		&activity.UpdatedAt,
+	)
+	if errors.Is(err, sql.ErrNoRows) || isMissingAgentManagementRelation(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if startAt.Valid {
+		activity.StartAt = &startAt.Time
+	}
+	if endAt.Valid {
+		activity.EndAt = &endAt.Time
+	}
+	return &activity, nil
+}
+
+func (r *commissionRepository) UpdateInviteActivityConfig(ctx context.Context, activity *service.InviteActivityConfig) error {
+	if r.sql == nil {
+		return fmt.Errorf("sql executor is not configured")
+	}
+	var updatedAt time.Time
+	if err := scanSingleRow(ctx, r.sql, `
+		INSERT INTO agent_commission_settings (
+			id,
+			invite_activity_enabled,
+			invite_activity_name,
+			invite_activity_start_at,
+			invite_activity_end_at,
+			invite_activity_registration_bonus,
+			invite_activity_updated_at,
+			updated_at
+		) VALUES (1, $1, $2, $3, $4, $5, NOW(), NOW())
+		ON CONFLICT (id) DO UPDATE SET
+			invite_activity_enabled = EXCLUDED.invite_activity_enabled,
+			invite_activity_name = EXCLUDED.invite_activity_name,
+			invite_activity_start_at = EXCLUDED.invite_activity_start_at,
+			invite_activity_end_at = EXCLUDED.invite_activity_end_at,
+			invite_activity_registration_bonus = EXCLUDED.invite_activity_registration_bonus,
+			invite_activity_updated_at = NOW(),
+			updated_at = NOW()
+		RETURNING invite_activity_updated_at
+	`, []any{
+		activity.Enabled,
+		activity.Name,
+		activity.StartAt,
+		activity.EndAt,
+		activity.RegistrationBonusAmount,
+	}, &updatedAt); err != nil {
+		return err
+	}
+	activity.UpdatedAt = updatedAt
+	return nil
+}
+
 func (r *commissionRepository) GetAgentRateConfig(ctx context.Context, agentID int64) (*service.AgentRateConfig, error) {
 	if r.sql == nil {
 		return nil, fmt.Errorf("sql executor is not configured")

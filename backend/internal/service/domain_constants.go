@@ -59,10 +59,11 @@ const (
 
 // Commission type constants
 const (
-	CommissionTypeConsumption                = domain.CommissionTypeConsumption
-	CommissionTypeFirstRechargeInvitee       = domain.CommissionTypeFirstRechargeInvitee
-	CommissionTypeFirstRechargeFriendInvitee = domain.CommissionTypeFirstRechargeFriendInvitee
-	CommissionTypeFirstRechargeReferral      = domain.CommissionTypeFirstRechargeReferral
+	CommissionTypeConsumption                     = domain.CommissionTypeConsumption
+	CommissionTypeFirstRechargeInvitee            = domain.CommissionTypeFirstRechargeInvitee
+	CommissionTypeFirstRechargeFriendInvitee      = domain.CommissionTypeFirstRechargeFriendInvitee
+	CommissionTypeFirstRechargeReferral           = domain.CommissionTypeFirstRechargeReferral
+	CommissionTypeInviteActivityRegistrationBonus = domain.CommissionTypeInviteActivityRegistrationBonus
 )
 
 // Group subscription type constants

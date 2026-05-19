@@ -22,9 +22,10 @@ func NewAgentHandler(commissionService *service.CommissionService) *AgentHandler
 }
 
 type updateCommissionRatesRequest struct {
-	ConsumptionRate           float64 `json:"consumption_rate"`
-	FirstRechargeInviteeRate  float64 `json:"first_recharge_invitee_rate"`
-	FirstRechargeReferralRate float64 `json:"first_recharge_referral_rate"`
+	ConsumptionRate           float64                       `json:"consumption_rate"`
+	FirstRechargeInviteeRate  float64                       `json:"first_recharge_invitee_rate"`
+	FirstRechargeReferralRate float64                       `json:"first_recharge_referral_rate"`
+	InviteActivity            *service.InviteActivityConfig `json:"invite_activity"`
 }
 
 type updateAgentRateRequest struct {
@@ -288,6 +289,14 @@ func (h *AgentHandler) UpdateRates(c *gin.Context) {
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
+	}
+	if req.InviteActivity != nil {
+		activity, activityErr := h.commissionService.UpdateInviteActivityConfig(c.Request.Context(), req.InviteActivity)
+		if activityErr != nil {
+			response.ErrorFrom(c, activityErr)
+			return
+		}
+		rates.InviteActivity = activity
 	}
 	response.Success(c, rates)
 }

@@ -277,9 +277,11 @@ export const getUserSteps = (t: (key: string) => string): DriveStep[] => [
     }
   },
   {
+    element: '[data-tour="sidebar-model-pricing"]',
     popover: {
       title: t('onboarding.user.pricing.title'),
       description: t('onboarding.user.pricing.description'),
+      side: 'right',
       align: 'center',
       showButtons: ['next', 'previous']
     }

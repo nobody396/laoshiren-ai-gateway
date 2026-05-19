@@ -314,6 +314,7 @@ export default {
     save: '保存',
     cancel: '取消',
     serviceStatus: '服务状态',
+    landingPage: '官网',
     customerService: '客服',
     afterSalesTitle: '售后客服',
     afterSalesDesc: '负责账户充值、推广等售后事宜',
@@ -431,6 +432,7 @@ export default {
     github: 'GitHub',
     mySubscriptions: '我的订阅',
     getSubscription: '现在充值',
+    modelPricing: '模型定价',
     topupOrders: '我的订单',
     invoiceManagement: '发票管理',
     buySubscription: '充值/订阅',
@@ -5836,7 +5838,7 @@ export default {
       pricing: {
         title: '📊 价格在哪里看',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">模型价格可以在首页「模型定价」区域查看，文档里的常见问题也会解释倍率和计费方式。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 13px;">简单理解：不同分组对应不同模型/客户端和倍率，选择分组时按你要用的工具来选。</p></div>'
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">左侧新增了「模型定价」入口，会在新标签页打开官网的模型定价区域。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 13px;">简单理解：不同分组对应不同模型/客户端和倍率，选择分组时按你要用的工具来选。</p></div>'
       },
       keyManage: {
         title: '🔑 API 密钥管理',

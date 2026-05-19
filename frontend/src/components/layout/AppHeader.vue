@@ -26,6 +26,20 @@
         <!-- 服务状态入口 -->
         <ServiceStatusButton v-if="user" />
 
+        <!-- 官网入口 -->
+        <a
+          v-if="user"
+          href="/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="relative flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-600 transition-all hover:scale-105 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-800 dark:hover:text-white"
+          :aria-label="t('common.landingPage')"
+          :title="t('common.landingPage')"
+        >
+          <Icon name="home" size="sm" />
+          <span class="hidden sm:inline">{{ t('common.landingPage') }}</span>
+        </a>
+
         <!-- 客服入口（弹出二维码弹窗） -->
         <CustomerServiceButton v-if="user" />
 

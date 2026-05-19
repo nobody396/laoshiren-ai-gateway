@@ -314,6 +314,7 @@ export default {
     save: 'Save',
     cancel: 'Cancel',
     serviceStatus: 'Service Status',
+    landingPage: 'Home',
     customerService: 'Customer Service',
     afterSalesTitle: 'After-Sales',
     afterSalesDesc: 'Handles account recharge, promotions and other after-sales matters',
@@ -431,6 +432,7 @@ export default {
     github: 'GitHub',
     mySubscriptions: 'My Subscriptions',
     getSubscription: 'Top Up Now',
+    modelPricing: 'Model Pricing',
     topupOrders: 'My Orders',
     invoiceManagement: 'Invoices',
     buySubscription: 'Recharge / Subscription',
@@ -5654,7 +5656,7 @@ export default {
       },
       pricing: {
         title: '📊 Where pricing lives',
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Pricing is available on the home page model pricing section, and the FAQ explains multipliers and billing.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 13px;">In short: groups map to different models/clients and multipliers. Pick the group based on the tool you want to use.</p></div>'
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">The sidebar now has a Model Pricing entry. It opens the home page pricing section in a new tab.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 13px;">In short: groups map to different models/clients and multipliers. Pick the group based on the tool you want to use.</p></div>'
       },
       keyManage: {
         title: '🔑 API Key Management',

@@ -62,12 +62,16 @@
           </div>
           <div v-else class="mx-3 my-3 h-px bg-gray-200 dark:bg-dark-700"></div>
 
-          <router-link
+          <component
+            :is="item.external ? 'a' : 'router-link'"
             v-for="item in personalNavItems"
             :key="item.path"
-            :to="item.path"
+            :to="item.external ? undefined : item.path"
+            :href="item.external ? item.path : undefined"
+            :target="item.external ? '_blank' : undefined"
+            :rel="item.external ? 'noopener noreferrer' : undefined"
             class="sidebar-link mb-1"
-            :class="{ 'sidebar-link-active': isActive(item.path) }"
+            :class="{ 'sidebar-link-active': !item.external && isActive(item.path) }"
             :title="sidebarCollapsed ? item.label : undefined"
             :data-tour="getNavTourAttr(item.path)"
             @click="handleMenuItemClick(item.path)"
@@ -77,7 +81,7 @@
             <transition name="fade">
               <span v-if="!sidebarCollapsed">{{ item.label }}</span>
             </transition>
-          </router-link>
+          </component>
         </div>
       </template>
 
@@ -105,12 +109,16 @@
           </router-link>
         </div>
         <div class="sidebar-section">
-          <router-link
+          <component
+            :is="item.external ? 'a' : 'router-link'"
             v-for="item in userNavItems"
             :key="item.path"
-            :to="item.path"
+            :to="item.external ? undefined : item.path"
+            :href="item.external ? item.path : undefined"
+            :target="item.external ? '_blank' : undefined"
+            :rel="item.external ? 'noopener noreferrer' : undefined"
             class="sidebar-link mb-1"
-            :class="{ 'sidebar-link-active': isActive(item.path) }"
+            :class="{ 'sidebar-link-active': !item.external && isActive(item.path) }"
             :title="sidebarCollapsed ? item.label : undefined"
             :data-tour="getNavTourAttr(item.path)"
             @click="handleMenuItemClick(item.path)"
@@ -120,7 +128,7 @@
             <transition name="fade">
               <span v-if="!sidebarCollapsed">{{ item.label }}</span>
             </transition>
-          </router-link>
+          </component>
         </div>
       </template>
     </nav>
@@ -182,6 +190,7 @@ interface NavItem {
   icon: unknown
   iconSvg?: string
   hideInSimpleMode?: boolean
+  external?: boolean
 }
 
 interface AdminMenuOverride {
@@ -592,6 +601,15 @@ function createDocsNavItem(): NavItem {
   return { path: '/docs', label: t('nav.docs'), icon: BookIcon }
 }
 
+function createModelPricingNavItem(): NavItem {
+  return {
+    path: '/#model-pricing',
+    label: t('nav.modelPricing'),
+    icon: ChartIcon,
+    external: true
+  }
+}
+
 // User navigation items (for regular users)
 const userNavItems = computed((): NavItem[] => {
   const items: NavItem[] = [
@@ -599,6 +617,7 @@ const userNavItems = computed((): NavItem[] => {
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     { path: '/get-subscription', label: t('nav.getSubscription'), icon: RechargeSubscriptionIcon },
+    createModelPricingNavItem(),
     { path: '/topup/orders', label: t('nav.topupOrders'), icon: CreditCardIcon },
     ...(invoiceManagementEnabled.value
       ? [{ path: '/invoice', label: t('nav.invoiceManagement'), icon: TicketIcon }]
@@ -625,6 +644,7 @@ const personalNavItems = computed((): NavItem[] => {
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     { path: '/get-subscription', label: t('nav.getSubscription'), icon: RechargeSubscriptionIcon },
+    createModelPricingNavItem(),
     { path: '/topup/orders', label: t('nav.topupOrders'), icon: CreditCardIcon },
     ...(invoiceManagementEnabled.value
       ? [{ path: '/invoice', label: t('nav.invoiceManagement'), icon: TicketIcon }]
@@ -832,6 +852,7 @@ const adminNavItems = computed((): NavItem[] => {
   if (authStore.isSimpleMode) {
     const filtered = baseItems.filter(item => !item.hideInSimpleMode)
     filtered.push({ path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon })
+    filtered.push(createModelPricingNavItem())
     filtered.push(createDocsNavItem())
     filtered.push({
       path: '/admin/settings',
@@ -896,6 +917,7 @@ function getNavTourAttr(path: string): string | undefined {
   const pathToTour: Record<string, string> = {
     '/keys': 'sidebar-my-keys',
     '/get-subscription': 'sidebar-topup',
+    '/#model-pricing': 'sidebar-model-pricing',
     '/docs': 'sidebar-docs'
   }
   return pathToTour[path]

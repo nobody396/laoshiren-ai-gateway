@@ -289,3 +289,64 @@ func TestNormalizeOpsErrorType(t *testing.T) {
 		})
 	}
 }
+
+func TestClassifyOpsIsBusinessLimitedExcludesPolicyAndCapacity(t *testing.T) {
+	tests := []struct {
+		name    string
+		errType string
+		phase   string
+		code    string
+		status  int
+		message string
+		want    bool
+	}{
+		{
+			name:    "ip denied policy block",
+			errType: "api_error",
+			phase:   "internal",
+			status:  http.StatusForbidden,
+			message: "access denied",
+			want:    true,
+		},
+		{
+			name:    "explicit ip denied",
+			errType: "api_error",
+			phase:   "internal",
+			status:  http.StatusForbidden,
+			message: "ip denied by access policy",
+			want:    true,
+		},
+		{
+			name:    "local capacity shortage",
+			errType: "api_error",
+			phase:   "routing",
+			status:  http.StatusTooManyRequests,
+			message: "no capacity available for selected model",
+			want:    true,
+		},
+		{
+			name:    "upstream rate limit remains provider failure",
+			errType: "rate_limit_error",
+			phase:   "upstream",
+			status:  http.StatusTooManyRequests,
+			message: "upstream rate limit exceeded",
+			want:    false,
+		},
+		{
+			name:    "known billing code",
+			errType: "billing_error",
+			phase:   "request",
+			code:    "INSUFFICIENT_BALANCE",
+			status:  http.StatusPaymentRequired,
+			message: "insufficient balance",
+			want:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := classifyOpsIsBusinessLimited(tt.errType, tt.phase, tt.code, tt.status, tt.message)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}

@@ -32,6 +32,7 @@
                     type="text"
                     maxlength="6"
                     inputmode="numeric"
+                    autocomplete="one-time-code"
                     class="input flex-1"
                     :placeholder="t('profile.totp.enterEmailCode')"
                   />
@@ -143,6 +144,7 @@
                   maxlength="1"
                   inputmode="numeric"
                   pattern="[0-9]"
+                  :autocomplete="index === 0 ? 'one-time-code' : 'off'"
                   class="h-12 w-10 rounded-lg border border-gray-300 text-center text-lg font-semibold focus:border-primary-500 focus:ring-primary-500 dark:border-dark-600 dark:bg-dark-700"
                   @input="handleCodeInput($event, index)"
                   @keydown="handleKeydown($event, index)"

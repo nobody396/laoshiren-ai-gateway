@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
+	entsql "entgo.io/ent/dialect/sql"
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/apikey"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/group"
@@ -304,11 +306,18 @@ func (r *groupRepository) ListWithFilters(ctx context.Context, params pagination
 		return nil, nil, err
 	}
 
-	groups, err := q.
+	if strings.ToLower(strings.TrimSpace(params.SortBy)) == "account_count" {
+		return r.listWithAccountCountSort(ctx, q, params, total)
+	}
+
+	groupsQuery := q.
 		Offset(params.Offset()).
-		Limit(params.Limit()).
-		Order(dbent.Asc(group.FieldSortOrder), dbent.Asc(group.FieldID)).
-		All(ctx)
+		Limit(params.Limit())
+	for _, order := range groupListOrder(params) {
+		groupsQuery = groupsQuery.Order(order)
+	}
+
+	groups, err := groupsQuery.All(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -333,6 +342,141 @@ func (r *groupRepository) ListWithFilters(ctx context.Context, params pagination
 	r.applyChatbotEnabled(ctx, outGroups)
 
 	return outGroups, paginationResultFromTotal(int64(total), params), nil
+}
+
+func (r *groupRepository) listWithAccountCountSort(ctx context.Context, q *dbent.GroupQuery, params pagination.PaginationParams, total int) ([]service.Group, *pagination.PaginationResult, error) {
+	rows, err := q.Clone().
+		Select(group.FieldID, group.FieldSortOrder).
+		Order(dbent.Asc(group.FieldSortOrder), dbent.Asc(group.FieldID)).
+		All(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	type sortEntry struct {
+		id           int64
+		sortOrder    int
+		accountCount int64
+	}
+	entries := make([]sortEntry, 0, len(rows))
+	groupIDs := make([]int64, len(rows))
+	for i, row := range rows {
+		groupIDs[i] = row.ID
+		entries = append(entries, sortEntry{id: row.ID, sortOrder: row.SortOrder})
+	}
+
+	counts, err := r.loadAccountCounts(ctx, groupIDs)
+	if err != nil {
+		return nil, nil, err
+	}
+	for i := range entries {
+		entries[i].accountCount = counts[entries[i].id].Total
+	}
+
+	sortOrder := params.NormalizedSortOrder(pagination.SortOrderDesc)
+	tieLess := func(a, b sortEntry) bool {
+		if a.sortOrder == b.sortOrder {
+			return a.id < b.id
+		}
+		return a.sortOrder < b.sortOrder
+	}
+	sort.SliceStable(entries, func(i, j int) bool {
+		if entries[i].accountCount == entries[j].accountCount {
+			return tieLess(entries[i], entries[j])
+		}
+		if sortOrder == pagination.SortOrderAsc {
+			return entries[i].accountCount < entries[j].accountCount
+		}
+		return entries[i].accountCount > entries[j].accountCount
+	})
+
+	page := paginateSlice(entries, params)
+	if len(page) == 0 {
+		return []service.Group{}, paginationResultFromTotal(int64(total), params), nil
+	}
+
+	pageIDs := make([]int64, len(page))
+	pageIdx := make(map[int64]int, len(page))
+	for i, entry := range page {
+		pageIDs[i] = entry.id
+		pageIdx[entry.id] = i
+	}
+
+	groups, err := r.client.Group.Query().
+		Where(group.IDIn(pageIDs...)).
+		All(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	outGroups := make([]service.Group, len(page))
+	for i := range groups {
+		g := groupEntityToService(groups[i])
+		c := counts[g.ID]
+		g.AccountCount = c.Total
+		g.ActiveAccountCount = c.Active
+		g.RateLimitedAccountCount = c.RateLimited
+		if idx, ok := pageIdx[g.ID]; ok {
+			outGroups[idx] = *g
+		}
+	}
+	r.applyChatbotEnabled(ctx, outGroups)
+
+	return outGroups, paginationResultFromTotal(int64(total), params), nil
+}
+
+func groupListOrder(params pagination.PaginationParams) []func(*entsql.Selector) {
+	sortBy := strings.ToLower(strings.TrimSpace(params.SortBy))
+	sortOrder := params.NormalizedSortOrder(pagination.SortOrderAsc)
+
+	var field string
+	tieField := group.FieldID
+	defaultOrder := true
+	switch sortBy {
+	case "", "sort_order":
+		field = group.FieldSortOrder
+	case "name":
+		field = group.FieldName
+		defaultOrder = false
+	case "platform":
+		field = group.FieldPlatform
+		defaultOrder = false
+	case "billing_type", "subscription_type":
+		field = group.FieldSubscriptionType
+		defaultOrder = false
+	case "rate_multiplier":
+		field = group.FieldRateMultiplier
+		defaultOrder = false
+	case "is_exclusive":
+		field = group.FieldIsExclusive
+		defaultOrder = false
+	case "status":
+		field = group.FieldStatus
+		defaultOrder = false
+	case "created_at":
+		field = group.FieldCreatedAt
+		defaultOrder = false
+	case "id":
+		field = group.FieldID
+		defaultOrder = false
+		tieField = ""
+	default:
+		field = group.FieldSortOrder
+	}
+
+	if sortOrder == pagination.SortOrderDesc && sortBy != "" {
+		if tieField == "" {
+			return []func(*entsql.Selector){dbent.Desc(field)}
+		}
+		return []func(*entsql.Selector){dbent.Desc(field), dbent.Desc(tieField)}
+	}
+	if defaultOrder {
+		return []func(*entsql.Selector){dbent.Asc(group.FieldSortOrder), dbent.Asc(group.FieldID)}
+	}
+	if tieField == "" {
+		return []func(*entsql.Selector){dbent.Asc(field)}
+	}
+	return []func(*entsql.Selector){dbent.Asc(field), dbent.Asc(tieField)}
 }
 
 func (r *groupRepository) ListActive(ctx context.Context) ([]service.Group, error) {

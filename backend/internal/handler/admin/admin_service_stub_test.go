@@ -140,7 +140,7 @@ func (s *stubAdminService) GetUserUsageStats(ctx context.Context, userID int64, 
 	return map[string]any{"user_id": userID}, nil
 }
 
-func (s *stubAdminService) ListGroups(ctx context.Context, page, pageSize int, platform, status, search string, isExclusive *bool) ([]service.Group, int64, error) {
+func (s *stubAdminService) ListGroups(ctx context.Context, page, pageSize int, platform, status, search string, isExclusive *bool, sortBy, sortOrder string) ([]service.Group, int64, error) {
 	return s.groups, int64(len(s.groups)), nil
 }
 
@@ -187,7 +187,7 @@ func (s *stubAdminService) BatchSetGroupRateMultipliers(_ context.Context, _ int
 	return nil
 }
 
-func (s *stubAdminService) ListAccounts(ctx context.Context, page, pageSize int, platform, accountType, status, search string, groupID int64) ([]service.Account, int64, error) {
+func (s *stubAdminService) ListAccounts(ctx context.Context, page, pageSize int, platform, accountType, status, search string, groupID int64, sortBy, sortOrder string) ([]service.Account, int64, error) {
 	return s.accounts, int64(len(s.accounts)), nil
 }
 

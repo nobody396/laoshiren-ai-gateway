@@ -78,6 +78,12 @@ export function useOnboardingTour(options: OnboardingOptions) {
     localStorage.removeItem(getStorageKey())
   }
 
+  const closeTour = () => {
+    markAsSeen()
+    driverInstance?.destroy()
+    onboardingStore.setDriverInstance(null)
+  }
+
   /**
    * 检查元素是否存在，如果不存在则重试
    */
@@ -152,13 +158,15 @@ export function useOnboardingTour(options: OnboardingOptions) {
           driverInstance?.moveNext()
         }
       },
-      onPrevClick: () => {
+      onPrevClick: (_el, _step, { state }) => {
+        if ((state.activeIndex ?? 0) <= 0) {
+          closeTour()
+          return
+        }
         driverInstance?.movePrevious()
       },
       onCloseClick: () => {
-        markAsSeen()
-        driverInstance?.destroy()
-        onboardingStore.setDriverInstance(null)
+        closeTour()
       },
 
       // 渲染时重组 Footer 布局
@@ -256,8 +264,19 @@ export function useOnboardingTour(options: OnboardingOptions) {
           }
 
           // 3. 状态更新
+          const isFirstStep = (state.activeIndex ?? 0) === 0
           const isLastStep = state.activeIndex === (config.steps?.length ?? 0) - 1
           const activeNextBtn = nextButton || footerEl.querySelector(`.${CLASS_NEXT_BTN}`)
+          const activePrevBtn = (previousButton || footerEl.querySelector(`.${CLASS_PREV_BTN}`)) as HTMLButtonElement | null
+
+          // Driver.js treats the first Previous button as disabled by default.
+          // In our first step it is the visible "Skip" action, so keep it clickable.
+          if (isFirstStep && activePrevBtn) {
+            activePrevBtn.disabled = false
+            activePrevBtn.removeAttribute('disabled')
+            activePrevBtn.classList.remove('driver-popover-btn-disabled')
+            activePrevBtn.style.pointerEvents = 'auto'
+          }
 
           if (activeNextBtn) {
              if (isLastStep) {
@@ -422,9 +441,7 @@ export function useOnboardingTour(options: OnboardingOptions) {
       if (e.key === 'Escape') {
         e.preventDefault()
         e.stopPropagation()
-        markAsSeen()
-        driverInstance.destroy()
-        onboardingStore.setDriverInstance(null)
+        closeTour()
         return
       }
 

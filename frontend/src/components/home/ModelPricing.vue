@@ -177,6 +177,7 @@ defineProps<{
 .model-pricing {
   padding: 6rem 0 5.5rem;
   background: #f8f3e7;
+  scroll-margin-top: 88px;
 }
 
 .model-pricing__container {

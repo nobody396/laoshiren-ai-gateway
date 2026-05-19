@@ -181,6 +181,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyCardShopProducts,
 		SettingKeyInvoiceManagementEnabled,
 		SettingKeyFeedbackManagementEnabled,
+		SettingKeyGroupCacheHitRateEnabled,
 		SettingKeyTableDefaultPageSize,
 		SettingKeyTablePageSizeOptions,
 		SettingKeyCustomMenuItems,
@@ -265,6 +266,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		CardShopProducts:                 publicCardShopProducts(parseCardShopProducts(settings[SettingKeyCardShopProducts])),
 		InvoiceManagementEnabled:         settings[SettingKeyInvoiceManagementEnabled] == "true",
 		FeedbackManagementEnabled:        settings[SettingKeyFeedbackManagementEnabled] != "false",
+		GroupCacheHitRateEnabled:         settings[SettingKeyGroupCacheHitRateEnabled] == "true",
 		SoraClientEnabled:                settings[SettingKeySoraClientEnabled] == "true",
 		TableDefaultPageSize:             tableDefaultPageSize,
 		TablePageSizeOptions:             tablePageSizeOptions,
@@ -319,6 +321,7 @@ func (s *SettingService) GetUserMenuVisibilitySettings(ctx context.Context) (*Us
 	return &UserMenuVisibilitySettings{
 		InvoiceManagementEnabled:  settings.InvoiceManagementEnabled,
 		FeedbackManagementEnabled: settings.FeedbackManagementEnabled,
+		GroupCacheHitRateEnabled:  settings.GroupCacheHitRateEnabled,
 	}, nil
 }
 
@@ -326,6 +329,7 @@ func (s *SettingService) UpdateUserMenuVisibilitySettings(ctx context.Context, s
 	updates := map[string]string{
 		SettingKeyInvoiceManagementEnabled:  strconv.FormatBool(settings.InvoiceManagementEnabled),
 		SettingKeyFeedbackManagementEnabled: strconv.FormatBool(settings.FeedbackManagementEnabled),
+		SettingKeyGroupCacheHitRateEnabled:  strconv.FormatBool(settings.GroupCacheHitRateEnabled),
 	}
 	if err := s.settingRepo.SetMultiple(ctx, updates); err != nil {
 		return err
@@ -372,6 +376,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		CardShopProducts                 []CardShopProduct `json:"card_shop_products"`
 		InvoiceManagementEnabled         bool              `json:"invoice_management_enabled"`
 		FeedbackManagementEnabled        bool              `json:"feedback_management_enabled"`
+		GroupCacheHitRateEnabled         bool              `json:"group_cache_hit_rate_enabled"`
 		SoraClientEnabled                bool              `json:"sora_client_enabled"`
 		TableDefaultPageSize             int               `json:"table_default_page_size"`
 		TablePageSizeOptions             []int             `json:"table_page_size_options"`
@@ -416,6 +421,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		CardShopProducts:                 settings.CardShopProducts,
 		InvoiceManagementEnabled:         settings.InvoiceManagementEnabled,
 		FeedbackManagementEnabled:        settings.FeedbackManagementEnabled,
+		GroupCacheHitRateEnabled:         settings.GroupCacheHitRateEnabled,
 		SoraClientEnabled:                settings.SoraClientEnabled,
 		TableDefaultPageSize:             settings.TableDefaultPageSize,
 		TablePageSizeOptions:             settings.TablePageSizeOptions,
@@ -724,6 +730,7 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 	updates[SettingKeyCardShopProducts] = string(cardShopProductsJSON)
 	updates[SettingKeyInvoiceManagementEnabled] = strconv.FormatBool(settings.InvoiceManagementEnabled)
 	updates[SettingKeyFeedbackManagementEnabled] = strconv.FormatBool(settings.FeedbackManagementEnabled)
+	updates[SettingKeyGroupCacheHitRateEnabled] = strconv.FormatBool(settings.GroupCacheHitRateEnabled)
 	updates[SettingKeySoraClientEnabled] = strconv.FormatBool(settings.SoraClientEnabled)
 	tableDefaultPageSize, tablePageSizeOptions := normalizeTablePreferences(
 		settings.TableDefaultPageSize,
@@ -1173,6 +1180,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyCardShopProducts:                 "[]",
 		SettingKeyInvoiceManagementEnabled:         "false",
 		SettingKeyFeedbackManagementEnabled:        "true",
+		SettingKeyGroupCacheHitRateEnabled:         "false",
 		SettingKeyChatbotURL:                       "",
 		SettingKeyTableDefaultPageSize:             "20",
 		SettingKeyTablePageSizeOptions:             "[10,20,50,100]",
@@ -1272,6 +1280,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		CardShopProducts:                 parseCardShopProducts(settings[SettingKeyCardShopProducts]),
 		InvoiceManagementEnabled:         settings[SettingKeyInvoiceManagementEnabled] == "true",
 		FeedbackManagementEnabled:        settings[SettingKeyFeedbackManagementEnabled] != "false",
+		GroupCacheHitRateEnabled:         settings[SettingKeyGroupCacheHitRateEnabled] == "true",
 		SoraClientEnabled:                settings[SettingKeySoraClientEnabled] == "true",
 		CustomMenuItems:                  settings[SettingKeyCustomMenuItems],
 		CustomEndpoints:                  settings[SettingKeyCustomEndpoints],

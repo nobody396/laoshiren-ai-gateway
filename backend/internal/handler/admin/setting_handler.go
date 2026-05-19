@@ -149,6 +149,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		CardShopProducts:                     dto.CardShopProductsFromService(settings.CardShopProducts),
 		InvoiceManagementEnabled:             settings.InvoiceManagementEnabled,
 		FeedbackManagementEnabled:            settings.FeedbackManagementEnabled,
+		GroupCacheHitRateEnabled:             settings.GroupCacheHitRateEnabled,
 		SoraClientEnabled:                    settings.SoraClientEnabled,
 		TableDefaultPageSize:                 settings.TableDefaultPageSize,
 		TablePageSizeOptions:                 settings.TablePageSizeOptions,
@@ -281,6 +282,7 @@ type UpdateSettingsRequest struct {
 	CardShopProducts            *[]dto.CardShopProduct `json:"card_shop_products"`
 	InvoiceManagementEnabled    *bool                  `json:"invoice_management_enabled"`
 	FeedbackManagementEnabled   *bool                  `json:"feedback_management_enabled"`
+	GroupCacheHitRateEnabled    *bool                  `json:"group_cache_hit_rate_enabled"`
 	SoraClientEnabled           bool                   `json:"sora_client_enabled"`
 	TableDefaultPageSize        int                    `json:"table_default_page_size"`
 	TablePageSizeOptions        []int                  `json:"table_page_size_options"`
@@ -763,6 +765,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	if req.FeedbackManagementEnabled != nil {
 		feedbackManagementEnabled = *req.FeedbackManagementEnabled
 	}
+	groupCacheHitRateEnabled := previousSettings.GroupCacheHitRateEnabled
+	if req.GroupCacheHitRateEnabled != nil {
+		groupCacheHitRateEnabled = *req.GroupCacheHitRateEnabled
+	}
 
 	// Frontend URL 验证
 	req.FrontendURL = strings.TrimSpace(req.FrontendURL)
@@ -1011,6 +1017,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		CardShopProducts:                 cardShopProducts,
 		InvoiceManagementEnabled:         invoiceManagementEnabled,
 		FeedbackManagementEnabled:        feedbackManagementEnabled,
+		GroupCacheHitRateEnabled:         groupCacheHitRateEnabled,
 		SoraClientEnabled:                req.SoraClientEnabled,
 		TableDefaultPageSize:             req.TableDefaultPageSize,
 		TablePageSizeOptions:             req.TablePageSizeOptions,
@@ -1209,6 +1216,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		CardShopProducts:                     dto.CardShopProductsFromService(updatedSettings.CardShopProducts),
 		InvoiceManagementEnabled:             updatedSettings.InvoiceManagementEnabled,
 		FeedbackManagementEnabled:            updatedSettings.FeedbackManagementEnabled,
+		GroupCacheHitRateEnabled:             updatedSettings.GroupCacheHitRateEnabled,
 		SoraClientEnabled:                    updatedSettings.SoraClientEnabled,
 		TableDefaultPageSize:                 updatedSettings.TableDefaultPageSize,
 		TablePageSizeOptions:                 updatedSettings.TablePageSizeOptions,
@@ -1261,6 +1269,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 type UserMenuVisibilityRequest struct {
 	InvoiceManagementEnabled  bool `json:"invoice_management_enabled"`
 	FeedbackManagementEnabled bool `json:"feedback_management_enabled"`
+	GroupCacheHitRateEnabled  bool `json:"group_cache_hit_rate_enabled"`
 }
 
 func (h *SettingHandler) GetUserMenuVisibilitySettings(c *gin.Context) {
@@ -1271,8 +1280,9 @@ func (h *SettingHandler) GetUserMenuVisibilitySettings(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{
-		"invoice_management_enabled":  settings.InvoiceManagementEnabled,
-		"feedback_management_enabled": settings.FeedbackManagementEnabled,
+		"invoice_management_enabled":   settings.InvoiceManagementEnabled,
+		"feedback_management_enabled":  settings.FeedbackManagementEnabled,
+		"group_cache_hit_rate_enabled": settings.GroupCacheHitRateEnabled,
 	})
 }
 
@@ -1286,6 +1296,7 @@ func (h *SettingHandler) UpdateUserMenuVisibilitySettings(c *gin.Context) {
 	settings := service.UserMenuVisibilitySettings{
 		InvoiceManagementEnabled:  req.InvoiceManagementEnabled,
 		FeedbackManagementEnabled: req.FeedbackManagementEnabled,
+		GroupCacheHitRateEnabled:  req.GroupCacheHitRateEnabled,
 	}
 	if err := h.settingService.UpdateUserMenuVisibilitySettings(c.Request.Context(), settings); err != nil {
 		response.ErrorFrom(c, err)
@@ -1293,8 +1304,9 @@ func (h *SettingHandler) UpdateUserMenuVisibilitySettings(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{
-		"invoice_management_enabled":  settings.InvoiceManagementEnabled,
-		"feedback_management_enabled": settings.FeedbackManagementEnabled,
+		"invoice_management_enabled":   settings.InvoiceManagementEnabled,
+		"feedback_management_enabled":  settings.FeedbackManagementEnabled,
+		"group_cache_hit_rate_enabled": settings.GroupCacheHitRateEnabled,
 	})
 }
 
@@ -1571,6 +1583,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.FeedbackManagementEnabled != after.FeedbackManagementEnabled {
 		changed = append(changed, "feedback_management_enabled")
+	}
+	if before.GroupCacheHitRateEnabled != after.GroupCacheHitRateEnabled {
+		changed = append(changed, "group_cache_hit_rate_enabled")
 	}
 	if before.TableDefaultPageSize != after.TableDefaultPageSize {
 		changed = append(changed, "table_default_page_size")

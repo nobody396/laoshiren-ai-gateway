@@ -1148,6 +1148,8 @@ const dropdownPosition = ref<{ top?: number; bottom?: number; left: number } | n
 const groupButtonRefs = ref<Map<number, HTMLElement>>(new Map())
 let abortController: AbortController | null = null
 
+const groupCacheHitRateEnabled = computed(() => publicSettings.value?.group_cache_hit_rate_enabled === true)
+
 // Get the currently selected key for group change
 const selectedKeyForGroup = computed(() => {
   if (groupSelectorKeyId.value === null) return null
@@ -1247,7 +1249,7 @@ const groupOptions = computed(() =>
       userRate: userGroupRates.value[group.id] ?? null,
       subscriptionType: group.subscription_type,
       platform: group.platform,
-      cacheHitRatePct: cacheStats?.has_data ? cacheStats.hit_rate_pct : null,
+      cacheHitRatePct: groupCacheHitRateEnabled.value && cacheStats?.has_data ? cacheStats.hit_rate_pct : null,
       cacheWindowDays: groupCacheWindowDays.value
     }
   })
@@ -1361,6 +1363,11 @@ const loadGroupCacheStats = async () => {
 const loadPublicSettings = async () => {
   try {
     publicSettings.value = await authAPI.getPublicSettings()
+    if (publicSettings.value.group_cache_hit_rate_enabled) {
+      await loadGroupCacheStats()
+    } else {
+      groupCacheStats.value = {}
+    }
   } catch (error) {
     console.error('Failed to load public settings:', error)
   }
@@ -1825,7 +1832,6 @@ onMounted(() => {
   loadApiKeys()
   loadGroups()
   loadUserGroupRates()
-  loadGroupCacheStats()
   loadPublicSettings()
   document.addEventListener('click', closeGroupSelector)
   resetTimer = setInterval(() => { now.value = new Date() }, 60000)

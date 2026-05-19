@@ -149,7 +149,7 @@
             {{ t('admin.rbac.userMenus', '用户菜单') }}
           </h2>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {{ t('admin.rbac.userMenusDesc', '控制普通用户侧边栏里的固定功能入口。') }}
+            {{ t('admin.rbac.userMenusDesc', '控制普通用户侧的固定入口和可见功能项。') }}
           </p>
         </div>
         <div v-if="userMenuLoading" class="flex items-center justify-center py-12">
@@ -421,6 +421,7 @@ const userMenuSavingKey = ref<keyof UserMenuVisibilitySettings | null>(null);
 const userMenuVisibility = ref<UserMenuVisibilitySettings>({
   invoice_management_enabled: false,
   feedback_management_enabled: true,
+  group_cache_hit_rate_enabled: false,
 });
 
 // Modal state
@@ -473,6 +474,16 @@ const userMenuItems = computed(() => [
       "用户提交问题反馈、查看处理进度和回复记录。",
     ),
     enabled: userMenuVisibility.value.feedback_management_enabled,
+  },
+  {
+    key: "group_cache_hit_rate_enabled" as const,
+    name: t("admin.rbac.groupCacheHitRate", "七日缓存率"),
+    path: "/keys",
+    description: t(
+      "admin.rbac.groupCacheHitRateDesc",
+      "控制用户在 API Key 分组选择卡片中是否看到分组的 7 日缓存率。",
+    ),
+    enabled: userMenuVisibility.value.group_cache_hit_rate_enabled,
   },
 ]);
 

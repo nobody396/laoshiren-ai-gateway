@@ -107,6 +107,7 @@ type SystemSettings struct {
 	CardShopProducts            []CardShopProduct `json:"card_shop_products"`
 	InvoiceManagementEnabled    bool              `json:"invoice_management_enabled"`
 	FeedbackManagementEnabled   bool              `json:"feedback_management_enabled"`
+	GroupCacheHitRateEnabled    bool              `json:"group_cache_hit_rate_enabled"`
 	SoraClientEnabled           bool              `json:"sora_client_enabled"`
 	TableDefaultPageSize        int               `json:"table_default_page_size"`
 	TablePageSizeOptions        []int             `json:"table_page_size_options"`
@@ -236,6 +237,7 @@ type PublicSettings struct {
 	CardShopProducts                 []CardShopProduct `json:"card_shop_products"`
 	InvoiceManagementEnabled         bool              `json:"invoice_management_enabled"`
 	FeedbackManagementEnabled        bool              `json:"feedback_management_enabled"`
+	GroupCacheHitRateEnabled         bool              `json:"group_cache_hit_rate_enabled"`
 	TableDefaultPageSize             int               `json:"table_default_page_size"`
 	TablePageSizeOptions             []int             `json:"table_page_size_options"`
 	CustomMenuItems                  []CustomMenuItem  `json:"custom_menu_items"`

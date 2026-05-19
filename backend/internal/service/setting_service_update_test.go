@@ -100,11 +100,13 @@ func TestSettingService_UpdateUserMenuVisibilitySettings(t *testing.T) {
 	err := svc.UpdateUserMenuVisibilitySettings(context.Background(), UserMenuVisibilitySettings{
 		InvoiceManagementEnabled:  true,
 		FeedbackManagementEnabled: false,
+		GroupCacheHitRateEnabled:  true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, "true", repo.updates[SettingKeyInvoiceManagementEnabled])
 	require.Equal(t, "false", repo.updates[SettingKeyFeedbackManagementEnabled])
-	require.Len(t, repo.updates, 2)
+	require.Equal(t, "true", repo.updates[SettingKeyGroupCacheHitRateEnabled])
+	require.Len(t, repo.updates, 3)
 }
 
 func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsNonSubscriptionGroup(t *testing.T) {

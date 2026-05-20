@@ -5056,20 +5056,11 @@ func writeAnthropicResponseHeaders(dst http.Header, src http.Header, filter *res
 		deleteHeaderCaseInsensitive(dst, "x-request-id")
 		src = cloneHeaderWithoutCaseInsensitive(src, "x-request-id")
 	}
-	if filter != nil {
-		responseheaders.WriteFilteredHeaders(dst, src, filter)
-		if hasUpstreamRequestID {
-			responseheaders.WriteFilteredHeaders(dst, http.Header{
-				"x-request-id": []string{upstreamRequestID},
-			}, filter)
-		}
-		return
-	}
-	if v := strings.TrimSpace(src.Get("Content-Type")); v != "" {
-		dst.Set("Content-Type", v)
-	}
+	responseheaders.WriteFilteredHeaders(dst, src, filter)
 	if hasUpstreamRequestID {
-		dst.Set("x-request-id", upstreamRequestID)
+		responseheaders.WriteFilteredHeaders(dst, http.Header{
+			"x-request-id": []string{upstreamRequestID},
+		}, filter)
 	}
 }
 

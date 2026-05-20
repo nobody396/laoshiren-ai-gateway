@@ -223,6 +223,27 @@ func headerValuesCaseInsensitive(headers http.Header, key string) []string {
 	return values
 }
 
+func TestWriteAnthropicResponseHeaders_DefaultFilterPreservesKNAHeadersAndReplacesRequestID(t *testing.T) {
+	dst := http.Header{}
+	dst.Set("X-Request-ID", "gateway-request-id")
+	src := http.Header{
+		"Content-Type":  []string{"application/json"},
+		"x-request-id":  []string{"rid-anthropic-pass"},
+		"x-upstream":    []string{"api.anthropic.com"},
+		"x-passthrough": []string{"true"},
+		"Via":           []string{"1.1 Caddy"},
+		"Set-Cookie":    []string{"secret=upstream"},
+	}
+
+	writeAnthropicResponseHeaders(dst, src, nil)
+
+	require.Equal(t, []string{"rid-anthropic-pass"}, headerValuesCaseInsensitive(dst, "x-request-id"))
+	require.Equal(t, "api.anthropic.com", dst.Get("x-upstream"))
+	require.Equal(t, "true", dst.Get("x-passthrough"))
+	require.Equal(t, "1.1 Caddy", dst.Get("Via"))
+	require.Empty(t, dst.Get("Set-Cookie"))
+}
+
 func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardCountTokensPreservesBody(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

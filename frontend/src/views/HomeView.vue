@@ -214,20 +214,12 @@ const gptPricingRows = [
       cachedInput: '$0.50',
       output: '$30'
     },
-    teamPlus: {
-      input: '¥5',
-      cachedInput: '¥0.5',
-      output: '¥30'
-    },
     pro: {
       input: '¥6',
       cachedInput: '¥0.6',
       output: '¥36'
     },
-    discounts: {
-      teamPlus: '1.4折',
-      pro: '1.7折'
-    }
+    discount: '1.7折'
   },
   {
     model: 'GPT-5.4',
@@ -236,20 +228,12 @@ const gptPricingRows = [
       cachedInput: '$0.25',
       output: '$15'
     },
-    teamPlus: {
-      input: '¥2.5',
-      cachedInput: '¥0.25',
-      output: '¥15'
-    },
     pro: {
       input: '¥3',
       cachedInput: '¥0.3',
       output: '¥18'
     },
-    discounts: {
-      teamPlus: '1.4折',
-      pro: '1.7折'
-    }
+    discount: '1.7折'
   }
 ]
 

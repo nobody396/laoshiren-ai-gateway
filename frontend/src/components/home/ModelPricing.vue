@@ -10,7 +10,6 @@
 
       <div class="discount-ledger">
         <span><strong>Max</strong> ¥4 = $1 · 约 5.7 折</span>
-        <span><strong>Team / Plus</strong> ¥1 = $1 · 约 1.4 折</span>
         <span><strong>Pro</strong> ¥1.2 = $1 · 约 1.7 折</span>
       </div>
 
@@ -73,7 +72,6 @@
                 <tr>
                   <th>Model</th>
                   <th>官方价格</th>
-                  <th>Team / Plus 分组</th>
                   <th>Pro 分组</th>
                   <th>折扣</th>
                 </tr>
@@ -90,23 +88,13 @@
                   </td>
                   <td>
                     <div class="rate-stack">
-                      <span><strong>Input</strong><em>{{ row.teamPlus.input }}</em></span>
-                      <span><strong>Cached</strong><em>{{ row.teamPlus.cachedInput }}</em></span>
-                      <span><strong>Output</strong><em>{{ row.teamPlus.output }}</em></span>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="rate-stack">
                       <span><strong>Input</strong><em>{{ row.pro.input }}</em></span>
                       <span><strong>Cached</strong><em>{{ row.pro.cachedInput }}</em></span>
                       <span><strong>Output</strong><em>{{ row.pro.output }}</em></span>
                     </div>
                   </td>
                   <td>
-                    <div class="discount-stack">
-                      <span class="discount-tag">Team / Plus {{ row.discounts.teamPlus }}</span>
-                      <span class="discount-tag discount-tag--muted">Pro {{ row.discounts.pro }}</span>
-                    </div>
+                    <span class="discount-tag">Pro {{ row.discount }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -158,12 +146,8 @@ type GptPriceSet = {
 type GptPricingRow = {
   model: string
   official: GptPriceSet
-  teamPlus: GptPriceSet
   pro: GptPriceSet
-  discounts: {
-    teamPlus: string
-    pro: string
-  }
+  discount: string
 }
 
 defineProps<{
@@ -303,7 +287,7 @@ defineProps<{
 }
 
 .pricing-table--gpt {
-  min-width: 900px;
+  min-width: 760px;
 }
 
 .pricing-table th {
@@ -382,8 +366,7 @@ defineProps<{
   background: #3f5a3a;
 }
 
-.rate-stack,
-.discount-stack {
+.rate-stack {
   display: inline-grid;
   justify-items: center;
   gap: 0.48rem;

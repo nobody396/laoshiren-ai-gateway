@@ -189,6 +189,7 @@ func TestAPIKeyService_GetByKey_UsesL2Cache(t *testing.T) {
 	groupID := int64(9)
 	cacheEntry := &APIKeyAuthCacheEntry{
 		Snapshot: &APIKeyAuthSnapshot{
+			Version:  apiKeyAuthSnapshotVersion,
 			APIKeyID: 1,
 			UserID:   2,
 			GroupID:  &groupID,

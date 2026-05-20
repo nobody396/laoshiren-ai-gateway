@@ -31,6 +31,10 @@ func buildOpsWebhookTestMessage() string {
 }
 
 func buildOpsAlertWebhookText(rule *OpsAlertRule, event *OpsAlertEvent) string {
+	return buildOpsAlertWebhookTextWithDiagnosis(rule, event, nil)
+}
+
+func buildOpsAlertWebhookTextWithDiagnosis(rule *OpsAlertRule, event *OpsAlertEvent, diagnosis *OpsAlertDiagnosis) string {
 	if rule == nil || event == nil {
 		return ""
 	}
@@ -41,6 +45,16 @@ func buildOpsAlertWebhookText(rule *OpsAlertRule, event *OpsAlertEvent) string {
 	}
 	metricLabel := opsAlertMetricLabel(rule.MetricType)
 	severityLabel := opsAlertSeverityLabel(rule.Severity)
+	rootCause := buildOpsAlertLikelyCause(rule)
+	suggestedAction := buildOpsAlertSuggestedAction(rule)
+	if diagnosis != nil {
+		if value := strings.TrimSpace(diagnosis.RootCause); value != "" {
+			rootCause = value
+		}
+		if value := strings.TrimSpace(diagnosis.SuggestedAction); value != "" {
+			suggestedAction = value
+		}
+	}
 
 	lines := []string{
 		"老实人AI 运维告警",
@@ -48,11 +62,31 @@ func buildOpsAlertWebhookText(rule *OpsAlertRule, event *OpsAlertEvent) string {
 		"级别：" + severityLabel,
 		"规则：" + strings.TrimSpace(rule.Name),
 		"状态：" + strings.TrimSpace(event.Status),
-		"根因判断：" + buildOpsAlertLikelyCause(rule),
-		"处理建议：" + buildOpsAlertSuggestedAction(rule),
-		"指标：" + metricLabel + " " + strings.TrimSpace(rule.Operator) + " " + threshold + "，当前 " + value,
-		"触发时间：" + formatOpsAlertLocalTime(event.FiredAt),
+		"根因判断：" + rootCause,
 	}
+	if diagnosis != nil {
+		if impact := strings.TrimSpace(diagnosis.Impact); impact != "" {
+			lines = append(lines, "影响范围："+impact)
+		}
+		if window := strings.TrimSpace(diagnosis.SampleWindowText); window != "" {
+			lines = append(lines, "样本窗口：最近 "+window)
+		}
+		if len(diagnosis.Evidence) > 0 {
+			lines = append(lines, "根因证据：")
+			for _, evidence := range diagnosis.Evidence {
+				evidence = strings.TrimSpace(evidence)
+				if evidence == "" {
+					continue
+				}
+				lines = append(lines, "- "+evidence)
+			}
+		}
+	}
+	lines = append(lines,
+		"处理建议："+suggestedAction,
+		"指标："+metricLabel+" "+strings.TrimSpace(rule.Operator)+" "+threshold+"，当前 "+value,
+		"触发时间："+formatOpsAlertLocalTime(event.FiredAt),
+	)
 	if desc := strings.TrimSpace(event.Description); desc != "" {
 		lines = append(lines, "技术细节："+desc)
 	}

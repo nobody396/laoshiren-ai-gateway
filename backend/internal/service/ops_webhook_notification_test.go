@@ -268,6 +268,40 @@ func TestBuildOpsAlertWebhookTextExplainsRootCause(t *testing.T) {
 	require.Contains(t, text, "触发时间：2026-05-18 05:11:00 CST")
 }
 
+func TestBuildOpsAlertWebhookTextIncludesDynamicDiagnosis(t *testing.T) {
+	value := 100.0
+	threshold := 20.0
+	text := buildOpsAlertWebhookTextWithDiagnosis(&OpsAlertRule{
+		Name:       "错误率极高",
+		MetricType: "error_rate",
+		Operator:   ">",
+		Threshold:  threshold,
+		Severity:   "P0",
+	}, &OpsAlertEvent{
+		Status:         OpsAlertStatusFiring,
+		MetricValue:    &value,
+		ThresholdValue: &threshold,
+		FiredAt:        time.Date(2026, 5, 20, 12, 34, 0, 0, time.UTC),
+		Description:    "error_rate > 20.00",
+	}, &OpsAlertDiagnosis{
+		RootCause:        "账号/上游「KNA. 成本1.05r/1usd」：二级上游账号池无可用账号",
+		Impact:           "告警窗口内错误样本 12 条，主要根因 10 条，集中账号/上游：KNA. 成本1.05r/1usd",
+		SampleWindowText: "5m",
+		Evidence: []string{
+			"10条，二级上游账号池无可用账号，账号/上游=KNA. 成本1.05r/1usd，状态=503，责任=上游/供应商",
+			"2条，请求或流式连接中途取消，账号/上游=dragoncode，状态=499，责任=客户端",
+		},
+		SuggestedAction: "先暂停或降权对应二级中转账号；到对方平台补充/恢复它后面的官方账号池；恢复后再重新启用。",
+	})
+
+	require.Contains(t, text, "根因判断：账号/上游「KNA. 成本1.05r/1usd」：二级上游账号池无可用账号")
+	require.Contains(t, text, "影响范围：告警窗口内错误样本 12 条")
+	require.Contains(t, text, "样本窗口：最近 5m")
+	require.Contains(t, text, "根因证据：")
+	require.Contains(t, text, "- 10条，二级上游账号池无可用账号")
+	require.Contains(t, text, "处理建议：先暂停或降权对应二级中转账号")
+}
+
 func TestOpsAlertWebhookNotificationsRespectSeverity(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatalf("webhook should not be called for info alert")

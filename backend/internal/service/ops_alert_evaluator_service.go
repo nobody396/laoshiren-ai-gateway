@@ -756,7 +756,8 @@ func (s *OpsAlertEvaluatorService) maybeSendAlertWebhooks(ctx context.Context, r
 	if err != nil || cfg == nil {
 		return false
 	}
-	text := buildOpsAlertWebhookText(rule, event)
+	diagnosis := s.buildOpsAlertDiagnosis(ctx, rule, event)
+	text := buildOpsAlertWebhookTextWithDiagnosis(rule, event, diagnosis)
 	if strings.TrimSpace(text) == "" {
 		return false
 	}

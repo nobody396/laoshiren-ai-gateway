@@ -107,13 +107,17 @@ describe('admin AgentsView invite activity config', () => {
         name: '公测活动',
         start_at: '2026-05-20T00:00:00+08:00',
         end_at: '2026-05-21T00:00:00+08:00',
-        registration_bonus_amount: 5
+        registration_bonus_amount: 5,
+        email_restriction_enabled: true,
+        email_suffix_whitelist: ['@qq.com', '@gmail.com']
       }
     })
     updateInviteActivity.mockResolvedValue({
       enabled: true,
       name: '公测活动',
-      registration_bonus_amount: 5
+      registration_bonus_amount: 5,
+      email_restriction_enabled: true,
+      email_suffix_whitelist: ['@qq.com', '@gmail.com']
     })
     getSettlementSettings.mockResolvedValue({ minimum_amount: 50 })
     getLevelRules.mockResolvedValue([])
@@ -129,6 +133,8 @@ describe('admin AgentsView invite activity config', () => {
 
     expect((wrapper.get('[data-test="invite-activity-registration-bonus"]').element as HTMLInputElement).value).toBe('5')
     expect(wrapper.find('[data-test="invite-activity-first-recharge-rate"]').exists()).toBe(false)
+    expect((wrapper.get('[data-test="invite-activity-email-restriction-enabled"]').element as HTMLInputElement).checked).toBe(true)
+    expect((wrapper.get('[data-test="invite-activity-email-whitelist"]').element as HTMLTextAreaElement).value).toContain('@qq.com')
 
     await wrapper.get('[data-test="invite-activity-save"]').trigger('click')
     await flushPromises()
@@ -136,7 +142,9 @@ describe('admin AgentsView invite activity config', () => {
     expect(updateInviteActivity).toHaveBeenCalledWith(expect.objectContaining({
       enabled: true,
       name: '公测活动',
-      registration_bonus_amount: 5
+      registration_bonus_amount: 5,
+      email_restriction_enabled: true,
+      email_suffix_whitelist: ['@qq.com', '@gmail.com']
     }))
     expect(updateInviteActivity.mock.calls[0][0]).not.toHaveProperty('first_recharge_invitee_rate')
     expect(showSuccess).toHaveBeenCalledWith('admin.agents.inviteActivityUpdated')

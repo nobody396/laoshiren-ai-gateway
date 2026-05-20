@@ -472,6 +472,9 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 			if s.settingService == nil || !s.settingService.IsRegistrationEnabled(ctx) {
 				return "", nil, ErrRegDisabled
 			}
+			if err := s.validateRegistrationEmailPolicy(ctx, email); err != nil {
+				return "", nil, err
+			}
 
 			randomPassword, err := randomHexString(32)
 			if err != nil {
@@ -573,6 +576,9 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 			// OAuth 首次登录视为注册
 			if s.settingService == nil || !s.settingService.IsRegistrationEnabled(ctx) {
 				return nil, nil, ErrRegDisabled
+			}
+			if err := s.validateRegistrationEmailPolicy(ctx, email); err != nil {
+				return nil, nil, err
 			}
 
 			// 检查是否需要邀请码
@@ -812,11 +818,22 @@ func (s *AuthService) validateRegistrationEmailPolicy(ctx context.Context, email
 	if s.settingService == nil {
 		return nil
 	}
-	whitelist := s.settingService.GetRegistrationEmailSuffixWhitelist(ctx)
+	whitelist, restricted := s.registrationEmailSuffixWhitelistForCurrentPolicy(ctx)
+	if !restricted {
+		return nil
+	}
 	if !IsRegistrationEmailSuffixAllowed(email, whitelist) {
 		return buildEmailSuffixNotAllowedError(whitelist)
 	}
 	return nil
+}
+
+func (s *AuthService) registrationEmailSuffixWhitelistForCurrentPolicy(ctx context.Context) ([]string, bool) {
+	whitelist := s.settingService.GetRegistrationEmailSuffixWhitelist(ctx)
+	if s.commissionService == nil {
+		return whitelist, len(whitelist) > 0
+	}
+	return s.commissionService.ActiveInviteActivityEmailSuffixWhitelist(ctx, whitelist)
 }
 
 func buildEmailSuffixNotAllowedError(whitelist []string) error {

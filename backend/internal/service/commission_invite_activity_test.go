@@ -154,3 +154,50 @@ func TestCommissionServiceInviteActivityDoesNotOverrideFirstInvitedTopupBonus(t 
 	require.Equal(t, 0.01, commissionRepo.records[0].Rate)
 	require.Equal(t, "global", commissionRepo.records[0].RateSource)
 }
+
+func TestCommissionServiceActiveInviteActivityEmailWhitelistUsesActivityList(t *testing.T) {
+	now := time.Date(2026, 5, 20, 13, 0, 0, 0, time.UTC)
+	start := time.Date(2026, 5, 20, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 5, 21, 0, 0, 0, 0, time.UTC)
+	commissionRepo := &inviteActivityRepoStub{
+		activity: &InviteActivityConfig{
+			Enabled:                 true,
+			Name:                    "公测活动",
+			StartAt:                 &start,
+			EndAt:                   &end,
+			RegistrationBonusAmount: 5,
+			EmailRestrictionEnabled: true,
+			EmailSuffixWhitelist:    []string{"qq.com", "@GMAIL.com"},
+		},
+	}
+	svc := NewCommissionService(&inviteActivityUserRepoStub{}, commissionRepo)
+	svc.nowFunc = func() time.Time { return now }
+
+	whitelist, active := svc.ActiveInviteActivityEmailSuffixWhitelist(context.Background(), []string{"@fallback.com"})
+
+	require.True(t, active)
+	require.Equal(t, []string{"@qq.com", "@gmail.com"}, whitelist)
+}
+
+func TestCommissionServiceActiveInviteActivityEmailWhitelistFallsBackToSettingsList(t *testing.T) {
+	now := time.Date(2026, 5, 20, 13, 0, 0, 0, time.UTC)
+	start := time.Date(2026, 5, 20, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 5, 21, 0, 0, 0, 0, time.UTC)
+	commissionRepo := &inviteActivityRepoStub{
+		activity: &InviteActivityConfig{
+			Enabled:                 true,
+			Name:                    "公测活动",
+			StartAt:                 &start,
+			EndAt:                   &end,
+			RegistrationBonusAmount: 5,
+			EmailRestrictionEnabled: true,
+		},
+	}
+	svc := NewCommissionService(&inviteActivityUserRepoStub{}, commissionRepo)
+	svc.nowFunc = func() time.Time { return now }
+
+	whitelist, active := svc.ActiveInviteActivityEmailSuffixWhitelist(context.Background(), []string{"@QQ.com"})
+
+	require.True(t, active)
+	require.Equal(t, []string{"@qq.com"}, whitelist)
+}

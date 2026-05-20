@@ -15,6 +15,8 @@ export interface InviteActivityConfig {
   start_at?: string | null
   end_at?: string | null
   registration_bonus_amount: number
+  email_restriction_enabled?: boolean
+  email_suffix_whitelist?: string[]
   updated_at?: string
 }
 
@@ -293,7 +295,9 @@ function defaultInviteActivityConfig(): InviteActivityConfig {
     name: '公测邀请活动',
     start_at: null,
     end_at: null,
-    registration_bonus_amount: 5
+    registration_bonus_amount: 5,
+    email_restriction_enabled: false,
+    email_suffix_whitelist: []
   }
 }
 

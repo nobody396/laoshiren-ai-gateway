@@ -13,15 +13,18 @@ import (
 )
 
 type userRepoStub struct {
-	user       *User
-	getErr     error
-	createErr  error
-	deleteErr  error
-	exists     bool
-	existsErr  error
-	nextID     int64
-	created    []*User
-	deletedIDs []int64
+	user            *User
+	getErr          error
+	createErr       error
+	deleteErr       error
+	exists          bool
+	existsErr       error
+	allowGetByEmail bool
+	getByEmailUser  *User
+	getByEmailErr   error
+	nextID          int64
+	created         []*User
+	deletedIDs      []int64
 }
 
 func (s *userRepoStub) Create(ctx context.Context, user *User) error {
@@ -46,6 +49,15 @@ func (s *userRepoStub) GetByID(ctx context.Context, id int64) (*User, error) {
 }
 
 func (s *userRepoStub) GetByEmail(ctx context.Context, email string) (*User, error) {
+	if s.allowGetByEmail {
+		if s.getByEmailErr != nil {
+			return nil, s.getByEmailErr
+		}
+		if s.getByEmailUser != nil {
+			return s.getByEmailUser, nil
+		}
+		return nil, ErrUserNotFound
+	}
 	panic("unexpected GetByEmail call")
 }
 

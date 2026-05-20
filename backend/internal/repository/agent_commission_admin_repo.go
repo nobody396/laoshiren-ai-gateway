@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -69,6 +70,7 @@ func (r *commissionRepository) GetInviteActivityConfig(ctx context.Context) (*se
 	}
 	var activity service.InviteActivityConfig
 	var startAt, endAt sql.NullTime
+	var emailSuffixWhitelistJSON []byte
 	err := scanSingleRow(ctx, r.sql, `
 		SELECT
 			invite_activity_enabled,
@@ -76,6 +78,8 @@ func (r *commissionRepository) GetInviteActivityConfig(ctx context.Context) (*se
 			invite_activity_start_at,
 			invite_activity_end_at,
 			invite_activity_registration_bonus,
+			invite_activity_email_restriction_enabled,
+			COALESCE(invite_activity_email_suffix_whitelist, '[]'::jsonb),
 			invite_activity_updated_at
 		FROM agent_commission_settings
 		WHERE id = 1
@@ -85,6 +89,8 @@ func (r *commissionRepository) GetInviteActivityConfig(ctx context.Context) (*se
 		&startAt,
 		&endAt,
 		&activity.RegistrationBonusAmount,
+		&activity.EmailRestrictionEnabled,
+		&emailSuffixWhitelistJSON,
 		&activity.UpdatedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) || isMissingAgentManagementRelation(err) {
@@ -99,12 +105,19 @@ func (r *commissionRepository) GetInviteActivityConfig(ctx context.Context) (*se
 	if endAt.Valid {
 		activity.EndAt = &endAt.Time
 	}
+	if len(emailSuffixWhitelistJSON) > 0 {
+		_ = json.Unmarshal(emailSuffixWhitelistJSON, &activity.EmailSuffixWhitelist)
+	}
 	return &activity, nil
 }
 
 func (r *commissionRepository) UpdateInviteActivityConfig(ctx context.Context, activity *service.InviteActivityConfig) error {
 	if r.sql == nil {
 		return fmt.Errorf("sql executor is not configured")
+	}
+	emailSuffixWhitelistJSON, err := json.Marshal(activity.EmailSuffixWhitelist)
+	if err != nil {
+		return fmt.Errorf("marshal invite activity email suffix whitelist: %w", err)
 	}
 	var updatedAt time.Time
 	if err := scanSingleRow(ctx, r.sql, `
@@ -115,15 +128,19 @@ func (r *commissionRepository) UpdateInviteActivityConfig(ctx context.Context, a
 			invite_activity_start_at,
 			invite_activity_end_at,
 			invite_activity_registration_bonus,
+			invite_activity_email_restriction_enabled,
+			invite_activity_email_suffix_whitelist,
 			invite_activity_updated_at,
 			updated_at
-		) VALUES (1, $1, $2, $3, $4, $5, NOW(), NOW())
+		) VALUES (1, $1, $2, $3, $4, $5, $6, $7::jsonb, NOW(), NOW())
 		ON CONFLICT (id) DO UPDATE SET
 			invite_activity_enabled = EXCLUDED.invite_activity_enabled,
 			invite_activity_name = EXCLUDED.invite_activity_name,
 			invite_activity_start_at = EXCLUDED.invite_activity_start_at,
 			invite_activity_end_at = EXCLUDED.invite_activity_end_at,
 			invite_activity_registration_bonus = EXCLUDED.invite_activity_registration_bonus,
+			invite_activity_email_restriction_enabled = EXCLUDED.invite_activity_email_restriction_enabled,
+			invite_activity_email_suffix_whitelist = EXCLUDED.invite_activity_email_suffix_whitelist,
 			invite_activity_updated_at = NOW(),
 			updated_at = NOW()
 		RETURNING invite_activity_updated_at
@@ -133,6 +150,8 @@ func (r *commissionRepository) UpdateInviteActivityConfig(ctx context.Context, a
 		activity.StartAt,
 		activity.EndAt,
 		activity.RegistrationBonusAmount,
+		activity.EmailRestrictionEnabled,
+		string(emailSuffixWhitelistJSON),
 	}, &updatedAt); err != nil {
 		return err
 	}

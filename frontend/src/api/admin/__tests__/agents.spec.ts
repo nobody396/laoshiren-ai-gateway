@@ -30,7 +30,9 @@ describe('Admin agents API', () => {
           name: '公测活动',
           start_at: '2026-05-20T00:00:00+08:00',
           end_at: '2026-05-21T00:00:00+08:00',
-          registration_bonus_amount: 5
+          registration_bonus_amount: 5,
+          email_restriction_enabled: true,
+          email_suffix_whitelist: ['@qq.com', '@gmail.com']
         }
       }
     })
@@ -40,7 +42,9 @@ describe('Admin agents API', () => {
     expect(mockClient.get).toHaveBeenCalledWith('/admin/agents/rates')
     expect(activity).toEqual(expect.objectContaining({
       enabled: true,
-      registration_bonus_amount: 5
+      registration_bonus_amount: 5,
+      email_restriction_enabled: true,
+      email_suffix_whitelist: ['@qq.com', '@gmail.com']
     }))
     expect(activity).not.toHaveProperty('first_recharge_invitee_rate')
   })
@@ -58,7 +62,9 @@ describe('Admin agents API', () => {
         invite_activity: {
           enabled: true,
           name: '公测活动',
-          registration_bonus_amount: 5
+          registration_bonus_amount: 5,
+          email_restriction_enabled: true,
+          email_suffix_whitelist: ['@qq.com']
         }
       }
     })
@@ -68,7 +74,9 @@ describe('Admin agents API', () => {
       name: '公测活动',
       start_at: '2026-05-20T00:00:00+08:00',
       end_at: '2026-05-21T00:00:00+08:00',
-      registration_bonus_amount: 5
+      registration_bonus_amount: 5,
+      email_restriction_enabled: true,
+      email_suffix_whitelist: ['@qq.com']
     })
 
     expect(mockClient.put).toHaveBeenCalledWith('/admin/agents/rates', {
@@ -77,7 +85,9 @@ describe('Admin agents API', () => {
       first_recharge_referral_rate: 0.05,
       invite_activity: expect.objectContaining({
         enabled: true,
-        registration_bonus_amount: 5
+        registration_bonus_amount: 5,
+        email_restriction_enabled: true,
+        email_suffix_whitelist: ['@qq.com']
       })
     })
     expect(mockClient.put.mock.calls[0][1].invite_activity).not.toHaveProperty('first_recharge_invitee_rate')

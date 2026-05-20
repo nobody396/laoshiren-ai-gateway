@@ -265,6 +265,93 @@ func TestAuthService_Register_EmailSuffixAllowed(t *testing.T) {
 	require.Equal(t, int64(8), user.ID)
 }
 
+func TestAuthService_Register_ActivityEmailRestrictionUsesExistingWhitelist(t *testing.T) {
+	now := time.Date(2026, 5, 20, 13, 0, 0, 0, time.UTC)
+	start := time.Date(2026, 5, 20, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 5, 21, 0, 0, 0, 0, time.UTC)
+	repo := &userRepoStub{}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled:              "true",
+		SettingKeyRegistrationEmailSuffixWhitelist: `["@qq.com"]`,
+	}, nil)
+	commissionRepo := &inviteActivityRepoStub{
+		activity: &InviteActivityConfig{
+			Enabled:                 true,
+			Name:                    "公测活动",
+			StartAt:                 &start,
+			EndAt:                   &end,
+			RegistrationBonusAmount: 5,
+			EmailRestrictionEnabled: true,
+		},
+	}
+	commissionService := NewCommissionService(repo, commissionRepo)
+	commissionService.nowFunc = func() time.Time { return now }
+	service.commissionService = commissionService
+
+	_, _, err := service.Register(context.Background(), "user@other.com", "password")
+
+	require.ErrorIs(t, err, ErrEmailSuffixNotAllowed)
+}
+
+func TestAuthService_Register_IgnoresEmailWhitelistOutsideInviteActivity(t *testing.T) {
+	now := time.Date(2026, 5, 22, 13, 0, 0, 0, time.UTC)
+	start := time.Date(2026, 5, 20, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 5, 21, 0, 0, 0, 0, time.UTC)
+	repo := &userRepoStub{nextID: 9}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled:              "true",
+		SettingKeyRegistrationEmailSuffixWhitelist: `["@qq.com"]`,
+	}, nil)
+	commissionRepo := &inviteActivityRepoStub{
+		activity: &InviteActivityConfig{
+			Enabled:                 true,
+			Name:                    "公测活动",
+			StartAt:                 &start,
+			EndAt:                   &end,
+			RegistrationBonusAmount: 5,
+			EmailRestrictionEnabled: true,
+		},
+	}
+	commissionService := NewCommissionService(repo, commissionRepo)
+	commissionService.nowFunc = func() time.Time { return now }
+	service.commissionService = commissionService
+
+	_, user, err := service.Register(context.Background(), "user@other.com", "password")
+
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	require.Equal(t, int64(9), user.ID)
+}
+
+func TestAuthService_LoginOrRegisterOAuth_ActivityEmailRestrictionUsesExistingWhitelist(t *testing.T) {
+	now := time.Date(2026, 5, 20, 13, 0, 0, 0, time.UTC)
+	start := time.Date(2026, 5, 20, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 5, 21, 0, 0, 0, 0, time.UTC)
+	repo := &userRepoStub{allowGetByEmail: true}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled:              "true",
+		SettingKeyRegistrationEmailSuffixWhitelist: `["@qq.com"]`,
+	}, nil)
+	commissionRepo := &inviteActivityRepoStub{
+		activity: &InviteActivityConfig{
+			Enabled:                 true,
+			Name:                    "公测活动",
+			StartAt:                 &start,
+			EndAt:                   &end,
+			RegistrationBonusAmount: 5,
+			EmailRestrictionEnabled: true,
+		},
+	}
+	commissionService := NewCommissionService(repo, commissionRepo)
+	commissionService.nowFunc = func() time.Time { return now }
+	service.commissionService = commissionService
+
+	_, _, err := service.LoginOrRegisterOAuth(context.Background(), "user@other.com", "user")
+
+	require.ErrorIs(t, err, ErrEmailSuffixNotAllowed)
+	require.Empty(t, repo.created)
+}
+
 func TestAuthService_SendVerifyCode_EmailSuffixNotAllowed(t *testing.T) {
 	repo := &userRepoStub{}
 	service := newAuthService(repo, map[string]string{

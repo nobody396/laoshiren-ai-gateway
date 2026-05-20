@@ -10,15 +10,17 @@ import (
 
 // SettingHandler 公开设置处理器（无需认证）
 type SettingHandler struct {
-	settingService *service.SettingService
-	version        string
+	settingService    *service.SettingService
+	commissionService *service.CommissionService
+	version           string
 }
 
 // NewSettingHandler 创建公开设置处理器
-func NewSettingHandler(settingService *service.SettingService, version string) *SettingHandler {
+func NewSettingHandler(settingService *service.SettingService, commissionService *service.CommissionService, version string) *SettingHandler {
 	return &SettingHandler{
-		settingService: settingService,
-		version:        version,
+		settingService:    settingService,
+		commissionService: commissionService,
+		version:           version,
 	}
 }
 
@@ -30,11 +32,19 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
+	registrationEmailSuffixWhitelist := settings.RegistrationEmailSuffixWhitelist
+	if h.commissionService != nil {
+		if activeWhitelist, active := h.commissionService.ActiveInviteActivityEmailSuffixWhitelist(c.Request.Context(), settings.RegistrationEmailSuffixWhitelist); active {
+			registrationEmailSuffixWhitelist = activeWhitelist
+		} else {
+			registrationEmailSuffixWhitelist = []string{}
+		}
+	}
 
 	response.Success(c, dto.PublicSettings{
 		RegistrationEnabled:              settings.RegistrationEnabled,
 		EmailVerifyEnabled:               settings.EmailVerifyEnabled,
-		RegistrationEmailSuffixWhitelist: settings.RegistrationEmailSuffixWhitelist,
+		RegistrationEmailSuffixWhitelist: registrationEmailSuffixWhitelist,
 		PromoCodeEnabled:                 settings.PromoCodeEnabled,
 		PasswordResetEnabled:             settings.PasswordResetEnabled,
 		InvitationCodeEnabled:            settings.InvitationCodeEnabled,

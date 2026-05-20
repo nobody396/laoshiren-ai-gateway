@@ -79,8 +79,8 @@ func ProvideSystemHandler(updateService *service.UpdateService, lockService *ser
 }
 
 // ProvideSettingHandler creates SettingHandler with version from BuildInfo
-func ProvideSettingHandler(settingService *service.SettingService, buildInfo BuildInfo) *SettingHandler {
-	return NewSettingHandler(settingService, buildInfo.Version)
+func ProvideSettingHandler(settingService *service.SettingService, commissionService *service.CommissionService, buildInfo BuildInfo) *SettingHandler {
+	return NewSettingHandler(settingService, commissionService, buildInfo.Version)
 }
 
 func ProvideUserHandler(userService *service.UserService, commissionService *service.CommissionService, identityService *service.IdentityService, settingService *service.SettingService, cfg *config.Config) *UserHandler {

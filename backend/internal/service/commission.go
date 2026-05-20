@@ -105,6 +105,8 @@ type InviteActivityConfig struct {
 	StartAt                 *time.Time `json:"start_at,omitempty"`
 	EndAt                   *time.Time `json:"end_at,omitempty"`
 	RegistrationBonusAmount float64    `json:"registration_bonus_amount"`
+	EmailRestrictionEnabled bool       `json:"email_restriction_enabled"`
+	EmailSuffixWhitelist    []string   `json:"email_suffix_whitelist,omitempty"`
 	UpdatedAt               time.Time  `json:"updated_at,omitempty"`
 }
 

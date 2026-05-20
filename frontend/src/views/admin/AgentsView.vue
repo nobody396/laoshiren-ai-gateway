@@ -146,6 +146,29 @@
             </div>
           </div>
         </div>
+        <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+          <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-dark-200">
+            <input
+              v-model="inviteActivityForm.emailRestrictionEnabled"
+              data-test="invite-activity-email-restriction-enabled"
+              type="checkbox"
+              class="rounded border-gray-300"
+            />
+            {{ t('admin.agents.inviteActivityEmailRestriction') }}
+          </label>
+          <div>
+            <label class="input-label">{{ t('admin.agents.inviteActivityEmailWhitelist') }}</label>
+            <textarea
+              v-model="inviteActivityForm.emailWhitelistText"
+              data-test="invite-activity-email-whitelist"
+              rows="2"
+              class="input min-h-20 text-sm"
+              :disabled="!inviteActivityForm.emailRestrictionEnabled"
+              :placeholder="t('admin.agents.inviteActivityEmailWhitelistPlaceholder')"
+            />
+            <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ t('admin.agents.inviteActivityEmailRestrictionHint') }}</p>
+          </div>
+        </div>
         <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('admin.agents.inviteActivityRule') }}</p>
           <button data-test="invite-activity-save" class="btn btn-secondary btn-sm" :disabled="inviteActivitySaving" @click="saveInviteActivity">
@@ -546,6 +569,10 @@ import { useAppStore } from '@/stores/app'
 import { buildAuthErrorMessage } from '@/utils/authError'
 import { imageBlobToDataURL } from '@/utils/imagePreview'
 import { useClipboard } from '@/composables/useClipboard'
+import {
+  normalizeRegistrationEmailSuffixWhitelist,
+  parseRegistrationEmailSuffixWhitelistInput
+} from '@/utils/registrationEmailPolicy'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -580,7 +607,9 @@ const inviteActivityForm = reactive({
   name: '公测邀请活动',
   startAt: '',
   endAt: '',
-  registrationBonus: 5
+  registrationBonus: 5,
+  emailRestrictionEnabled: false,
+  emailWhitelistText: ''
 })
 const agentRateForm = reactive({ enabled: false, consumption: 6 })
 const settlementSettingsForm = reactive({ minimum: 50 })
@@ -1096,15 +1125,22 @@ function syncInviteActivityForm(activity?: InviteActivityConfig | null) {
   inviteActivityForm.startAt = toDatetimeLocalInput(activity?.start_at)
   inviteActivityForm.endAt = toDatetimeLocalInput(activity?.end_at)
   inviteActivityForm.registrationBonus = Number(activity?.registration_bonus_amount ?? 5)
+  inviteActivityForm.emailRestrictionEnabled = Boolean(activity?.email_restriction_enabled)
+  inviteActivityForm.emailWhitelistText = normalizeRegistrationEmailSuffixWhitelist(activity?.email_suffix_whitelist || []).join('\n')
 }
 
 function buildInviteActivityPayload(): InviteActivityConfig {
+  const emailWhitelist = normalizeRegistrationEmailSuffixWhitelist(
+    parseRegistrationEmailSuffixWhitelistInput(inviteActivityForm.emailWhitelistText)
+  )
   return {
     enabled: inviteActivityForm.enabled,
     name: inviteActivityForm.name.trim() || '公测邀请活动',
     start_at: fromDatetimeLocalInput(inviteActivityForm.startAt),
     end_at: fromDatetimeLocalInput(inviteActivityForm.endAt),
-    registration_bonus_amount: Number(inviteActivityForm.registrationBonus || 0)
+    registration_bonus_amount: Number(inviteActivityForm.registrationBonus || 0),
+    email_restriction_enabled: inviteActivityForm.emailRestrictionEnabled,
+    email_suffix_whitelist: emailWhitelist
   }
 }
 

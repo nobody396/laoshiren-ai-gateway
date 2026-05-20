@@ -37,6 +37,11 @@ func (s *CommissionService) UpdateInviteActivityConfig(ctx context.Context, acti
 	if normalized.RegistrationBonusAmount < 0 {
 		return nil, infraerrors.BadRequest("INVALID_INVITE_ACTIVITY", "registration bonus cannot be negative")
 	}
+	emailWhitelist, err := NormalizeRegistrationEmailSuffixWhitelist(normalized.EmailSuffixWhitelist)
+	if err != nil {
+		return nil, infraerrors.BadRequest("INVALID_INVITE_ACTIVITY_EMAIL_SUFFIX_WHITELIST", err.Error())
+	}
+	normalized.EmailSuffixWhitelist = emailWhitelist
 	if normalized.StartAt != nil && normalized.EndAt != nil && !normalized.EndAt.After(*normalized.StartAt) {
 		return nil, infraerrors.BadRequest("INVALID_INVITE_ACTIVITY_TIME_RANGE", "activity end time must be after start time")
 	}
@@ -112,7 +117,35 @@ func normalizeInviteActivityConfig(activity *InviteActivityConfig) *InviteActivi
 	if normalized.Name == "" {
 		normalized.Name = "公测邀请活动"
 	}
+	normalized.EmailSuffixWhitelist = normalizeInviteActivityEmailSuffixWhitelist(normalized.EmailSuffixWhitelist)
 	return &normalized
+}
+
+func (s *CommissionService) ActiveInviteActivityEmailSuffixWhitelist(ctx context.Context, fallbackWhitelist []string) ([]string, bool) {
+	activity, ok := s.getInviteActivityConfig(ctx)
+	if !ok || activity == nil || !activity.Enabled || !activity.EmailRestrictionEnabled {
+		return nil, false
+	}
+	if !inviteActivityContains(activity, s.now()) {
+		return nil, false
+	}
+
+	whitelist := normalizeInviteActivityEmailSuffixWhitelist(activity.EmailSuffixWhitelist)
+	if len(whitelist) == 0 {
+		whitelist = normalizeInviteActivityEmailSuffixWhitelist(fallbackWhitelist)
+	}
+	if len(whitelist) == 0 {
+		return nil, false
+	}
+	return whitelist, true
+}
+
+func normalizeInviteActivityEmailSuffixWhitelist(raw []string) []string {
+	normalized, err := NormalizeRegistrationEmailSuffixWhitelist(raw)
+	if err != nil {
+		return []string{}
+	}
+	return normalized
 }
 
 func inviteActivityContains(activity *InviteActivityConfig, ts time.Time) bool {

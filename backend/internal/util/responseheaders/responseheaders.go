@@ -22,6 +22,7 @@ var defaultAllowed = map[string]struct{}{
 	"expires":                        {},
 	"vary":                           {},
 	"date":                           {},
+	"via":                            {},
 	"request-id":                     {},
 	"x-request-id":                   {},
 	"anthropic-organization-id":      {},

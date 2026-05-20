@@ -4759,9 +4759,6 @@ func (s *GatewayService) handleStreamingResponseAnthropicAPIKeyPassthrough(
 		c.Header("Connection", "keep-alive")
 	}
 	c.Header("X-Accel-Buffering", "no")
-	if v := resp.Header.Get("x-request-id"); v != "" {
-		c.Header("x-request-id", v)
-	}
 
 	w := c.Writer
 	flusher, ok := w.(http.Flusher)
@@ -5054,16 +5051,62 @@ func writeAnthropicPassthroughResponseHeaders(dst http.Header, src http.Header, 
 	if dst == nil || src == nil {
 		return
 	}
+	upstreamRequestID, hasUpstreamRequestID := firstHeaderValueCaseInsensitive(src, "x-request-id")
+	if hasUpstreamRequestID {
+		deleteHeaderCaseInsensitive(dst, "x-request-id")
+		src = cloneHeaderWithoutCaseInsensitive(src, "x-request-id")
+	}
 	if filter != nil {
 		responseheaders.WriteFilteredHeaders(dst, src, filter)
+		if hasUpstreamRequestID {
+			responseheaders.WriteFilteredHeaders(dst, http.Header{
+				"x-request-id": []string{upstreamRequestID},
+			}, filter)
+		}
 		return
 	}
 	if v := strings.TrimSpace(src.Get("Content-Type")); v != "" {
 		dst.Set("Content-Type", v)
 	}
-	if v := strings.TrimSpace(src.Get("x-request-id")); v != "" {
-		dst.Set("x-request-id", v)
+	if hasUpstreamRequestID {
+		dst.Set("x-request-id", upstreamRequestID)
 	}
+}
+
+func firstHeaderValueCaseInsensitive(headers http.Header, key string) (string, bool) {
+	for existing, values := range headers {
+		if !strings.EqualFold(existing, key) {
+			continue
+		}
+		for _, value := range values {
+			if trimmed := strings.TrimSpace(value); trimmed != "" {
+				return trimmed, true
+			}
+		}
+	}
+	return "", false
+}
+
+func deleteHeaderCaseInsensitive(headers http.Header, key string) {
+	if headers == nil {
+		return
+	}
+	for existing := range headers {
+		if strings.EqualFold(existing, key) {
+			delete(headers, existing)
+		}
+	}
+}
+
+func cloneHeaderWithoutCaseInsensitive(headers http.Header, key string) http.Header {
+	clone := make(http.Header, len(headers))
+	for existing, values := range headers {
+		if strings.EqualFold(existing, key) {
+			continue
+		}
+		clone[existing] = append([]string(nil), values...)
+	}
+	return clone
 }
 
 // forwardBedrock 转发请求到 AWS Bedrock

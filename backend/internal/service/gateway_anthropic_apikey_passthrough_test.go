@@ -101,6 +101,7 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardStreamPreservesBodyAnd
 	gin.SetMode(gin.TestMode)
 
 	rec := httptest.NewRecorder()
+	rec.Header().Set("X-Request-ID", "gateway-request-id")
 	c, _ := gin.CreateTestContext(rec)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
 	c.Request.Header.Set("User-Agent", "claude-cli/1.0.0")
@@ -138,6 +139,7 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardStreamPreservesBodyAnd
 				"x-kna-upstream":                     []string{"api.anthropic.com"},
 				"x-passthrough":                      []string{"true"},
 				"body-sha256":                        []string{"body-hash"},
+				"Via":                                []string{"1.1 Caddy"},
 				"Set-Cookie":                         []string{"secret=upstream"},
 			},
 			Body: io.NopCloser(strings.NewReader(upstreamSSE)),
@@ -201,12 +203,24 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardStreamPreservesBodyAnd
 	require.Equal(t, "api.anthropic.com", rec.Header().Get("x-kna-upstream"))
 	require.Equal(t, "true", rec.Header().Get("x-passthrough"))
 	require.Equal(t, "body-hash", rec.Header().Get("body-sha256"))
+	require.Equal(t, "1.1 Caddy", rec.Header().Get("Via"))
+	require.Equal(t, []string{"rid-anthropic-pass"}, headerValuesCaseInsensitive(rec.Header(), "x-request-id"))
 	require.Empty(t, rec.Header().Get("Set-Cookie"), "响应头应经过安全过滤")
 	rawBody, ok := c.Get(OpsUpstreamRequestBodyKey)
 	require.True(t, ok)
 	bodyBytes, ok := rawBody.([]byte)
 	require.True(t, ok, "应以 []byte 形式缓存上游请求体，避免重复 string 拷贝")
 	require.Equal(t, "claude-3-haiku-20240307", gjson.GetBytes(bodyBytes, "model").String(), "缓存的上游请求体应包含映射后的模型")
+}
+
+func headerValuesCaseInsensitive(headers http.Header, key string) []string {
+	var values []string
+	for existing, existingValues := range headers {
+		if strings.EqualFold(existing, key) {
+			values = append(values, existingValues...)
+		}
+	}
+	return values
 }
 
 func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardCountTokensPreservesBody(t *testing.T) {

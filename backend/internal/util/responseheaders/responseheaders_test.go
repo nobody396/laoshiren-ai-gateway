@@ -10,6 +10,7 @@ import (
 func TestFilterHeadersDisabledUsesDefaultAllowlist(t *testing.T) {
 	src := http.Header{}
 	src.Add("Content-Type", "application/json")
+	src.Add("Via", "1.1 Caddy")
 	src.Add("Request-Id", "req-official")
 	src.Add("X-Request-Id", "req-123")
 	src.Add("Anthropic-Organization-Id", "org_123")
@@ -35,6 +36,9 @@ func TestFilterHeadersDisabledUsesDefaultAllowlist(t *testing.T) {
 	}
 	if filtered.Get("X-Request-Id") != "req-123" {
 		t.Fatalf("expected X-Request-Id allowed, got %q", filtered.Get("X-Request-Id"))
+	}
+	if filtered.Get("Via") != "1.1 Caddy" {
+		t.Fatalf("expected Via allowed, got %q", filtered.Get("Via"))
 	}
 	if filtered.Get("Request-Id") != "req-official" {
 		t.Fatalf("expected Request-Id allowed, got %q", filtered.Get("Request-Id"))

@@ -21,12 +21,20 @@
       <ClaudeCombinations :models="models" />
 
       <!-- 模型检测报告 -->
-      <ModelReports :reports="modelReports" />
+      <ModelReports
+        v-if="showModelReports"
+        :reports="modelReports"
+      />
 
       <!-- 模型定价 -->
       <ModelPricing
         :claude-rows="claudePricingRows"
         :gpt-rows="gptPricingRows"
+        :max-ledger-label="pricingDisplay.maxLedgerLabel"
+        :pro-ledger-label="pricingDisplay.proLedgerLabel"
+        :max-discount="pricingDisplay.maxDiscount"
+        :pro-discount="pricingDisplay.proDiscount"
+        :exchange-rate-label="pricingDisplay.exchangeRateLabel"
         :is-authenticated="isAuthenticated"
       />
 
@@ -64,11 +72,14 @@ const appStore = useAppStore()
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
 const dashboardPath = computed(() => (isAdmin.value ? '/admin/dashboard' : '/dashboard'))
+const showModelReports = computed(() => appStore.cachedPublicSettings?.landing_reports_enabled !== false)
 
 // ── 导航项 ──
 const navItems = computed(() => [
   { label: '首页', href: '#', active: true, external: false, routerPush: false },
-  { label: '报告', href: '#model-reports', active: false, external: false, routerPush: false },
+  ...(showModelReports.value
+    ? [{ label: '报告', href: '#model-reports', active: false, external: false, routerPush: false }]
+    : []),
   { label: '定价', href: '#model-pricing', active: false, external: false, routerPush: false },
   { label: '服务状态', href: 'https://status.your-domain.example', active: false, external: true, routerPush: false },
   { label: '文档', href: '/docs', active: false, external: false, routerPush: true }
@@ -244,71 +255,169 @@ const _pricingPlans = [
 ]
 
 // ── 模型定价表格数据（单位：每 100 万 tokens） ──
-const claudePricingRows = [
+type ClaudeBasePricingRow = {
+  model: string
+  official: {
+    input: number
+    cacheWrite5m: number
+    cacheRead: number
+    output: number
+  }
+}
+
+type GptBasePricingRow = {
+  model: string
+  official: {
+    input: number
+    cachedInput: number
+    output: number
+  }
+}
+
+const defaultLandingPricing = {
+  proMultiplier: 1.2,
+  maxMultiplier: 4,
+  exchangeRate: 7
+}
+
+function positiveNumberOrDefault(value: number | null | undefined, fallback: number): number {
+  return Number.isFinite(value) && Number(value) > 0 ? Number(value) : fallback
+}
+
+function formatCompactNumber(
+  value: number,
+  maximumFractionDigits = 2,
+  minimumFractionDigits = 0
+): string {
+  return new Intl.NumberFormat('zh-CN', {
+    maximumFractionDigits,
+    minimumFractionDigits
+  }).format(value)
+}
+
+function formatUSD(value: number): string {
+  const minimumFractionDigits = Number.isInteger(value) ? 0 : 2
+  return `$${formatCompactNumber(value, 2, minimumFractionDigits)}`
+}
+
+function formatCNY(value: number): string {
+  return `¥${formatCompactNumber(value)}`
+}
+
+function formatDiscount(multiplier: number, exchangeRate: number): string {
+  return `${formatCompactNumber((multiplier / exchangeRate) * 10, 1)}折`
+}
+
+const landingPricingConfig = computed(() => {
+  const settings = appStore.cachedPublicSettings
+  return {
+    proMultiplier: positiveNumberOrDefault(
+      settings?.landing_pricing_pro_multiplier,
+      defaultLandingPricing.proMultiplier
+    ),
+    maxMultiplier: positiveNumberOrDefault(
+      settings?.landing_pricing_max_multiplier,
+      defaultLandingPricing.maxMultiplier
+    ),
+    exchangeRate: positiveNumberOrDefault(
+      settings?.landing_pricing_exchange_rate,
+      defaultLandingPricing.exchangeRate
+    )
+  }
+})
+
+const pricingDisplay = computed(() => {
+  const config = landingPricingConfig.value
+  return {
+    maxLedgerLabel: `¥${formatCompactNumber(config.maxMultiplier)} = $1`,
+    proLedgerLabel: `¥${formatCompactNumber(config.proMultiplier)} = $1`,
+    maxDiscount: formatDiscount(config.maxMultiplier, config.exchangeRate),
+    proDiscount: formatDiscount(config.proMultiplier, config.exchangeRate),
+    exchangeRateLabel: formatCompactNumber(config.exchangeRate)
+  }
+})
+
+const claudeBasePricingRows: ClaudeBasePricingRow[] = [
   {
     model: 'Claude Opus 4.7',
     official: {
-      input: '$5',
-      cacheWrite5m: '$6.25',
-      cacheRead: '$0.50',
-      output: '$25'
-    },
-    max: {
-      input: '¥20',
-      cacheWrite5m: '¥25',
-      cacheRead: '¥2',
-      output: '¥100'
-    },
-    discount: '5.7折'
+      input: 5,
+      cacheWrite5m: 6.25,
+      cacheRead: 0.5,
+      output: 25
+    }
   },
   {
     model: 'Claude Sonnet 4.6',
     official: {
-      input: '$3',
-      cacheWrite5m: '$3.75',
-      cacheRead: '$0.30',
-      output: '$15'
-    },
-    max: {
-      input: '¥12',
-      cacheWrite5m: '¥15',
-      cacheRead: '¥1.2',
-      output: '¥60'
-    },
-    discount: '5.7折'
+      input: 3,
+      cacheWrite5m: 3.75,
+      cacheRead: 0.3,
+      output: 15
+    }
   }
 ]
 
-const gptPricingRows = [
+const gptBasePricingRows: GptBasePricingRow[] = [
   {
     model: 'GPT-5.5',
     official: {
-      input: '$5',
-      cachedInput: '$0.50',
-      output: '$30'
-    },
-    pro: {
-      input: '¥6',
-      cachedInput: '¥0.6',
-      output: '¥36'
-    },
-    discount: '1.7折'
+      input: 5,
+      cachedInput: 0.5,
+      output: 30
+    }
   },
   {
     model: 'GPT-5.4',
     official: {
-      input: '$2.50',
-      cachedInput: '$0.25',
-      output: '$15'
-    },
-    pro: {
-      input: '¥3',
-      cachedInput: '¥0.3',
-      output: '¥18'
-    },
-    discount: '1.7折'
+      input: 2.5,
+      cachedInput: 0.25,
+      output: 15
+    }
   }
 ]
+
+const claudePricingRows = computed(() => {
+  const config = landingPricingConfig.value
+  const discount = formatDiscount(config.maxMultiplier, config.exchangeRate)
+
+  return claudeBasePricingRows.map((row) => ({
+    model: row.model,
+    official: {
+      input: formatUSD(row.official.input),
+      cacheWrite5m: formatUSD(row.official.cacheWrite5m),
+      cacheRead: formatUSD(row.official.cacheRead),
+      output: formatUSD(row.official.output)
+    },
+    max: {
+      input: formatCNY(row.official.input * config.maxMultiplier),
+      cacheWrite5m: formatCNY(row.official.cacheWrite5m * config.maxMultiplier),
+      cacheRead: formatCNY(row.official.cacheRead * config.maxMultiplier),
+      output: formatCNY(row.official.output * config.maxMultiplier)
+    },
+    discount
+  }))
+})
+
+const gptPricingRows = computed(() => {
+  const config = landingPricingConfig.value
+  const discount = formatDiscount(config.proMultiplier, config.exchangeRate)
+
+  return gptBasePricingRows.map((row) => ({
+    model: row.model,
+    official: {
+      input: formatUSD(row.official.input),
+      cachedInput: formatUSD(row.official.cachedInput),
+      output: formatUSD(row.official.output)
+    },
+    pro: {
+      input: formatCNY(row.official.input * config.proMultiplier),
+      cachedInput: formatCNY(row.official.cachedInput * config.proMultiplier),
+      output: formatCNY(row.official.output * config.proMultiplier)
+    },
+    discount
+  }))
+})
 
 // ── VIP 分组（暂未推出） ──
 // const vipTiers = [
@@ -325,7 +434,9 @@ const footerSections = computed(() => [
     title: '产品',
     links: [
       { label: '老实人 AI 介绍', href: '#about', external: false },
-      { label: '模型检测报告', href: '#model-reports', external: false },
+      ...(showModelReports.value
+        ? [{ label: '模型检测报告', href: '#model-reports', external: false }]
+        : []),
       { label: '价格方案', href: '#model-pricing', external: false },
       { label: '登录', href: '/login', external: false }
     ]

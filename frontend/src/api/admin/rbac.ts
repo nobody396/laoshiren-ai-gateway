@@ -144,6 +144,7 @@ export interface UserMenuVisibilitySettings {
   invoice_management_enabled: boolean;
   feedback_management_enabled: boolean;
   group_cache_hit_rate_enabled: boolean;
+  landing_reports_enabled: boolean;
 }
 
 // ==================== 当前用户: 菜单 & 权限 ====================

@@ -115,3 +115,34 @@ func TestSettingService_GetPublicSettings_GroupCacheHitRateDefaultsClosed(t *tes
 	require.NoError(t, err)
 	require.False(t, settings.GroupCacheHitRateEnabled)
 }
+
+func TestSettingService_GetPublicSettings_LandingDisplayDefaultsAndOverrides(t *testing.T) {
+	t.Run("defaults", func(t *testing.T) {
+		svc := NewSettingService(&settingPublicRepoStub{values: map[string]string{}}, &config.Config{})
+
+		settings, err := svc.GetPublicSettings(context.Background())
+		require.NoError(t, err)
+		require.True(t, settings.LandingReportsEnabled)
+		require.Equal(t, 1.2, settings.LandingPricingProMultiplier)
+		require.Equal(t, 4.0, settings.LandingPricingMaxMultiplier)
+		require.Equal(t, 7.0, settings.LandingPricingExchangeRate)
+	})
+
+	t.Run("overrides", func(t *testing.T) {
+		svc := NewSettingService(&settingPublicRepoStub{
+			values: map[string]string{
+				SettingKeyLandingReportsEnabled:       "false",
+				SettingKeyLandingPricingProMultiplier: "1.35",
+				SettingKeyLandingPricingMaxMultiplier: "3.8",
+				SettingKeyLandingPricingExchangeRate:  "7.2",
+			},
+		}, &config.Config{})
+
+		settings, err := svc.GetPublicSettings(context.Background())
+		require.NoError(t, err)
+		require.False(t, settings.LandingReportsEnabled)
+		require.Equal(t, 1.35, settings.LandingPricingProMultiplier)
+		require.Equal(t, 3.8, settings.LandingPricingMaxMultiplier)
+		require.Equal(t, 7.2, settings.LandingPricingExchangeRate)
+	})
+}

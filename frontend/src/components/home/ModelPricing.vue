@@ -9,8 +9,8 @@
       </div>
 
       <div class="discount-ledger">
-        <span><strong>Max</strong> ¥4 = $1 · 约 5.7 折</span>
-        <span><strong>Pro</strong> ¥1.2 = $1 · 约 1.7 折</span>
+        <span><strong>Max</strong> {{ maxLedgerLabel }} · 约 {{ maxDiscount }}</span>
+        <span><strong>Pro</strong> {{ proLedgerLabel }} · 约 {{ proDiscount }}</span>
       </div>
 
       <div class="pricing-stack">
@@ -104,7 +104,7 @@
       </div>
 
       <p class="pricing-footnote">
-        折扣按 1 USD = ¥7 估算，仅用于展示与官方人民币折算价的相对优惠。
+        折扣按 1 USD = ¥{{ exchangeRateLabel }} 估算，仅用于展示与官方人民币折算价的相对优惠。
       </p>
 
       <div class="model-pricing__cta">
@@ -153,6 +153,11 @@ type GptPricingRow = {
 defineProps<{
   claudeRows: ClaudePricingRow[]
   gptRows: GptPricingRow[]
+  maxLedgerLabel: string
+  proLedgerLabel: string
+  maxDiscount: string
+  proDiscount: string
+  exchangeRateLabel: string
   isAuthenticated: boolean
 }>()
 </script>

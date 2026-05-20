@@ -422,6 +422,7 @@ const userMenuVisibility = ref<UserMenuVisibilitySettings>({
   invoice_management_enabled: false,
   feedback_management_enabled: true,
   group_cache_hit_rate_enabled: false,
+  landing_reports_enabled: true,
 });
 
 // Modal state
@@ -485,6 +486,16 @@ const userMenuItems = computed(() => [
     ),
     enabled: userMenuVisibility.value.group_cache_hit_rate_enabled,
   },
+  {
+    key: "landing_reports_enabled" as const,
+    name: t("admin.rbac.landingReports", "首页检测报告"),
+    path: "/#model-reports",
+    description: t(
+      "admin.rbac.landingReportsDesc",
+      "控制 landing page 是否展示模型检测报告模块。",
+    ),
+    enabled: userMenuVisibility.value.landing_reports_enabled,
+  },
 ]);
 
 onMounted(() => {
@@ -506,7 +517,10 @@ async function loadData() {
 async function loadUserMenuVisibility() {
   userMenuLoading.value = true;
   try {
-    userMenuVisibility.value = await rbacAPI.getUserMenuVisibility();
+    userMenuVisibility.value = {
+      ...userMenuVisibility.value,
+      ...(await rbacAPI.getUserMenuVisibility()),
+    };
   } catch {
     // handled by interceptor
   } finally {

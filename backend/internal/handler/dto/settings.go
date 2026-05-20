@@ -100,6 +100,10 @@ type SystemSettings struct {
 	DocURL                      string            `json:"doc_url"`
 	ChatbotURL                  string            `json:"chatbot_url"`
 	HomeContent                 string            `json:"home_content"`
+	LandingReportsEnabled       bool              `json:"landing_reports_enabled"`
+	LandingPricingProMultiplier float64           `json:"landing_pricing_pro_multiplier"`
+	LandingPricingMaxMultiplier float64           `json:"landing_pricing_max_multiplier"`
+	LandingPricingExchangeRate  float64           `json:"landing_pricing_exchange_rate"`
 	HideCcsImportButton         bool              `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled bool              `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL     string            `json:"purchase_subscription_url"`
@@ -230,6 +234,10 @@ type PublicSettings struct {
 	DocURL                           string            `json:"doc_url"`
 	ChatbotURL                       string            `json:"chatbot_url"`
 	HomeContent                      string            `json:"home_content"`
+	LandingReportsEnabled            bool              `json:"landing_reports_enabled"`
+	LandingPricingProMultiplier      float64           `json:"landing_pricing_pro_multiplier"`
+	LandingPricingMaxMultiplier      float64           `json:"landing_pricing_max_multiplier"`
+	LandingPricingExchangeRate       float64           `json:"landing_pricing_exchange_rate"`
 	HideCcsImportButton              bool              `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled      bool              `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL          string            `json:"purchase_subscription_url"`

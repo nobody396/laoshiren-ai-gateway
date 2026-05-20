@@ -75,6 +75,10 @@ type SystemSettings struct {
 	DocURL                      string
 	ChatbotURL                  string
 	HomeContent                 string
+	LandingReportsEnabled       bool
+	LandingPricingProMultiplier float64
+	LandingPricingMaxMultiplier float64
+	LandingPricingExchangeRate  float64
 	HideCcsImportButton         bool
 	PurchaseSubscriptionEnabled bool
 	PurchaseSubscriptionURL     string
@@ -199,6 +203,10 @@ type PublicSettings struct {
 	DocURL                           string
 	ChatbotURL                       string
 	HomeContent                      string
+	LandingReportsEnabled            bool
+	LandingPricingProMultiplier      float64
+	LandingPricingMaxMultiplier      float64
+	LandingPricingExchangeRate       float64
 	HideCcsImportButton              bool
 
 	PurchaseSubscriptionEnabled bool
@@ -233,6 +241,7 @@ type UserMenuVisibilitySettings struct {
 	InvoiceManagementEnabled  bool
 	FeedbackManagementEnabled bool
 	GroupCacheHitRateEnabled  bool
+	LandingReportsEnabled     bool
 }
 
 // StreamTimeoutSettings 流超时处理配置（仅控制超时后的处理方式，超时判定由网关配置控制）

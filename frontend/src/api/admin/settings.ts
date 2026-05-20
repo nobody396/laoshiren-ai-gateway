@@ -40,6 +40,10 @@ export interface SystemSettings {
   doc_url: string
   chatbot_url: string
   home_content: string
+  landing_reports_enabled: boolean
+  landing_pricing_pro_multiplier: number
+  landing_pricing_max_multiplier: number
+  landing_pricing_exchange_rate: number
   hide_ccs_import_button: boolean
   purchase_subscription_enabled: boolean
   purchase_subscription_url: string
@@ -173,6 +177,10 @@ export interface UpdateSettingsRequest {
   doc_url?: string
   chatbot_url?: string
   home_content?: string
+  landing_reports_enabled?: boolean
+  landing_pricing_pro_multiplier?: number
+  landing_pricing_max_multiplier?: number
+  landing_pricing_exchange_rate?: number
   hide_ccs_import_button?: boolean
   purchase_subscription_enabled?: boolean
   purchase_subscription_url?: string

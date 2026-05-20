@@ -34,6 +34,12 @@ var (
 	)
 )
 
+const (
+	defaultLandingPricingProMultiplier = 1.2
+	defaultLandingPricingMaxMultiplier = 4.0
+	defaultLandingPricingExchangeRate  = 7.0
+)
+
 type SettingRepository interface {
 	Get(ctx context.Context, key string) (*Setting, error)
 	GetValue(ctx context.Context, key string) (string, error)
@@ -174,6 +180,10 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyDocURL,
 		SettingKeyChatbotURL,
 		SettingKeyHomeContent,
+		SettingKeyLandingReportsEnabled,
+		SettingKeyLandingPricingProMultiplier,
+		SettingKeyLandingPricingMaxMultiplier,
+		SettingKeyLandingPricingExchangeRate,
 		SettingKeyHideCcsImportButton,
 		SettingKeyPurchaseSubscriptionEnabled,
 		SettingKeyPurchaseSubscriptionURL,
@@ -259,6 +269,10 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		DocURL:                           settings[SettingKeyDocURL],
 		ChatbotURL:                       strings.TrimSpace(settings[SettingKeyChatbotURL]),
 		HomeContent:                      settings[SettingKeyHomeContent],
+		LandingReportsEnabled:            settings[SettingKeyLandingReportsEnabled] != "false",
+		LandingPricingProMultiplier:      parsePositiveFloatOrDefault(settings[SettingKeyLandingPricingProMultiplier], defaultLandingPricingProMultiplier),
+		LandingPricingMaxMultiplier:      parsePositiveFloatOrDefault(settings[SettingKeyLandingPricingMaxMultiplier], defaultLandingPricingMaxMultiplier),
+		LandingPricingExchangeRate:       parsePositiveFloatOrDefault(settings[SettingKeyLandingPricingExchangeRate], defaultLandingPricingExchangeRate),
 		HideCcsImportButton:              settings[SettingKeyHideCcsImportButton] == "true",
 		PurchaseSubscriptionEnabled:      settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
@@ -322,6 +336,7 @@ func (s *SettingService) GetUserMenuVisibilitySettings(ctx context.Context) (*Us
 		InvoiceManagementEnabled:  settings.InvoiceManagementEnabled,
 		FeedbackManagementEnabled: settings.FeedbackManagementEnabled,
 		GroupCacheHitRateEnabled:  settings.GroupCacheHitRateEnabled,
+		LandingReportsEnabled:     settings.LandingReportsEnabled,
 	}, nil
 }
 
@@ -330,6 +345,7 @@ func (s *SettingService) UpdateUserMenuVisibilitySettings(ctx context.Context, s
 		SettingKeyInvoiceManagementEnabled:  strconv.FormatBool(settings.InvoiceManagementEnabled),
 		SettingKeyFeedbackManagementEnabled: strconv.FormatBool(settings.FeedbackManagementEnabled),
 		SettingKeyGroupCacheHitRateEnabled:  strconv.FormatBool(settings.GroupCacheHitRateEnabled),
+		SettingKeyLandingReportsEnabled:     strconv.FormatBool(settings.LandingReportsEnabled),
 	}
 	if err := s.settingRepo.SetMultiple(ctx, updates); err != nil {
 		return err
@@ -369,6 +385,10 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		DocURL                           string            `json:"doc_url,omitempty"`
 		ChatbotURL                       string            `json:"chatbot_url,omitempty"`
 		HomeContent                      string            `json:"home_content,omitempty"`
+		LandingReportsEnabled            bool              `json:"landing_reports_enabled"`
+		LandingPricingProMultiplier      float64           `json:"landing_pricing_pro_multiplier"`
+		LandingPricingMaxMultiplier      float64           `json:"landing_pricing_max_multiplier"`
+		LandingPricingExchangeRate       float64           `json:"landing_pricing_exchange_rate"`
 		HideCcsImportButton              bool              `json:"hide_ccs_import_button"`
 		PurchaseSubscriptionEnabled      bool              `json:"purchase_subscription_enabled"`
 		PurchaseSubscriptionURL          string            `json:"purchase_subscription_url,omitempty"`
@@ -414,6 +434,10 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		DocURL:                           settings.DocURL,
 		ChatbotURL:                       settings.ChatbotURL,
 		HomeContent:                      settings.HomeContent,
+		LandingReportsEnabled:            settings.LandingReportsEnabled,
+		LandingPricingProMultiplier:      settings.LandingPricingProMultiplier,
+		LandingPricingMaxMultiplier:      settings.LandingPricingMaxMultiplier,
+		LandingPricingExchangeRate:       settings.LandingPricingExchangeRate,
 		HideCcsImportButton:              settings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:      settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:          settings.PurchaseSubscriptionURL,
@@ -719,6 +743,19 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 	updates[SettingKeyDocURL] = settings.DocURL
 	updates[SettingKeyChatbotURL] = strings.TrimSpace(settings.ChatbotURL)
 	updates[SettingKeyHomeContent] = settings.HomeContent
+	updates[SettingKeyLandingReportsEnabled] = strconv.FormatBool(settings.LandingReportsEnabled)
+	updates[SettingKeyLandingPricingProMultiplier] = strconv.FormatFloat(
+		normalizePositiveFloat(settings.LandingPricingProMultiplier, defaultLandingPricingProMultiplier),
+		'f', -1, 64,
+	)
+	updates[SettingKeyLandingPricingMaxMultiplier] = strconv.FormatFloat(
+		normalizePositiveFloat(settings.LandingPricingMaxMultiplier, defaultLandingPricingMaxMultiplier),
+		'f', -1, 64,
+	)
+	updates[SettingKeyLandingPricingExchangeRate] = strconv.FormatFloat(
+		normalizePositiveFloat(settings.LandingPricingExchangeRate, defaultLandingPricingExchangeRate),
+		'f', -1, 64,
+	)
 	updates[SettingKeyHideCcsImportButton] = strconv.FormatBool(settings.HideCcsImportButton)
 	updates[SettingKeyPurchaseSubscriptionEnabled] = strconv.FormatBool(settings.PurchaseSubscriptionEnabled)
 	updates[SettingKeyPurchaseSubscriptionURL] = strings.TrimSpace(settings.PurchaseSubscriptionURL)
@@ -1182,6 +1219,10 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyFeedbackManagementEnabled:        "true",
 		SettingKeyGroupCacheHitRateEnabled:         "false",
 		SettingKeyChatbotURL:                       "",
+		SettingKeyLandingReportsEnabled:            "true",
+		SettingKeyLandingPricingProMultiplier:      strconv.FormatFloat(defaultLandingPricingProMultiplier, 'f', -1, 64),
+		SettingKeyLandingPricingMaxMultiplier:      strconv.FormatFloat(defaultLandingPricingMaxMultiplier, 'f', -1, 64),
+		SettingKeyLandingPricingExchangeRate:       strconv.FormatFloat(defaultLandingPricingExchangeRate, 'f', -1, 64),
 		SettingKeyTableDefaultPageSize:             "20",
 		SettingKeyTablePageSizeOptions:             "[10,20,50,100]",
 		SettingKeyCustomMenuItems:                  "[]",
@@ -1273,6 +1314,10 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		DocURL:                           settings[SettingKeyDocURL],
 		ChatbotURL:                       strings.TrimSpace(settings[SettingKeyChatbotURL]),
 		HomeContent:                      settings[SettingKeyHomeContent],
+		LandingReportsEnabled:            settings[SettingKeyLandingReportsEnabled] != "false",
+		LandingPricingProMultiplier:      parsePositiveFloatOrDefault(settings[SettingKeyLandingPricingProMultiplier], defaultLandingPricingProMultiplier),
+		LandingPricingMaxMultiplier:      parsePositiveFloatOrDefault(settings[SettingKeyLandingPricingMaxMultiplier], defaultLandingPricingMaxMultiplier),
+		LandingPricingExchangeRate:       parsePositiveFloatOrDefault(settings[SettingKeyLandingPricingExchangeRate], defaultLandingPricingExchangeRate),
 		HideCcsImportButton:              settings[SettingKeyHideCcsImportButton] == "true",
 		PurchaseSubscriptionEnabled:      settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
@@ -1695,6 +1740,20 @@ func normalizeTablePreferences(defaultPageSize int, options []int) (int, []int) 
 	}
 
 	return defaultPageSize, normalizedOptions
+}
+
+func parsePositiveFloatOrDefault(raw string, defaultValue float64) float64 {
+	if v, err := strconv.ParseFloat(strings.TrimSpace(raw), 64); err == nil && v > 0 {
+		return v
+	}
+	return defaultValue
+}
+
+func normalizePositiveFloat(value, defaultValue float64) float64 {
+	if value > 0 {
+		return value
+	}
+	return defaultValue
 }
 
 // getStringOrDefault 获取字符串值或默认值

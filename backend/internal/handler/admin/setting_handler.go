@@ -142,6 +142,10 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		DocURL:                               settings.DocURL,
 		ChatbotURL:                           settings.ChatbotURL,
 		HomeContent:                          settings.HomeContent,
+		LandingReportsEnabled:                settings.LandingReportsEnabled,
+		LandingPricingProMultiplier:          settings.LandingPricingProMultiplier,
+		LandingPricingMaxMultiplier:          settings.LandingPricingMaxMultiplier,
+		LandingPricingExchangeRate:           settings.LandingPricingExchangeRate,
 		HideCcsImportButton:                  settings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:          settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:              settings.PurchaseSubscriptionURL,
@@ -275,6 +279,10 @@ type UpdateSettingsRequest struct {
 	DocURL                      string                 `json:"doc_url"`
 	ChatbotURL                  string                 `json:"chatbot_url"`
 	HomeContent                 string                 `json:"home_content"`
+	LandingReportsEnabled       *bool                  `json:"landing_reports_enabled"`
+	LandingPricingProMultiplier *float64               `json:"landing_pricing_pro_multiplier"`
+	LandingPricingMaxMultiplier *float64               `json:"landing_pricing_max_multiplier"`
+	LandingPricingExchangeRate  *float64               `json:"landing_pricing_exchange_rate"`
 	HideCcsImportButton         bool                   `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled *bool                  `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL     *string                `json:"purchase_subscription_url"`
@@ -949,6 +957,35 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 	}
 
+	landingReportsEnabled := previousSettings.LandingReportsEnabled
+	if req.LandingReportsEnabled != nil {
+		landingReportsEnabled = *req.LandingReportsEnabled
+	}
+	landingPricingProMultiplier := previousSettings.LandingPricingProMultiplier
+	if req.LandingPricingProMultiplier != nil {
+		if *req.LandingPricingProMultiplier <= 0 {
+			response.BadRequest(c, "landing_pricing_pro_multiplier must be greater than 0")
+			return
+		}
+		landingPricingProMultiplier = *req.LandingPricingProMultiplier
+	}
+	landingPricingMaxMultiplier := previousSettings.LandingPricingMaxMultiplier
+	if req.LandingPricingMaxMultiplier != nil {
+		if *req.LandingPricingMaxMultiplier <= 0 {
+			response.BadRequest(c, "landing_pricing_max_multiplier must be greater than 0")
+			return
+		}
+		landingPricingMaxMultiplier = *req.LandingPricingMaxMultiplier
+	}
+	landingPricingExchangeRate := previousSettings.LandingPricingExchangeRate
+	if req.LandingPricingExchangeRate != nil {
+		if *req.LandingPricingExchangeRate <= 0 {
+			response.BadRequest(c, "landing_pricing_exchange_rate must be greater than 0")
+			return
+		}
+		landingPricingExchangeRate = *req.LandingPricingExchangeRate
+	}
+
 	settings := &service.SystemSettings{
 		RegistrationEnabled:              req.RegistrationEnabled,
 		EmailVerifyEnabled:               req.EmailVerifyEnabled,
@@ -1010,6 +1047,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		DocURL:                           req.DocURL,
 		ChatbotURL:                       req.ChatbotURL,
 		HomeContent:                      req.HomeContent,
+		LandingReportsEnabled:            landingReportsEnabled,
+		LandingPricingProMultiplier:      landingPricingProMultiplier,
+		LandingPricingMaxMultiplier:      landingPricingMaxMultiplier,
+		LandingPricingExchangeRate:       landingPricingExchangeRate,
 		HideCcsImportButton:              req.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:      purchaseEnabled,
 		PurchaseSubscriptionURL:          purchaseURL,
@@ -1209,6 +1250,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		DocURL:                               updatedSettings.DocURL,
 		ChatbotURL:                           updatedSettings.ChatbotURL,
 		HomeContent:                          updatedSettings.HomeContent,
+		LandingReportsEnabled:                updatedSettings.LandingReportsEnabled,
+		LandingPricingProMultiplier:          updatedSettings.LandingPricingProMultiplier,
+		LandingPricingMaxMultiplier:          updatedSettings.LandingPricingMaxMultiplier,
+		LandingPricingExchangeRate:           updatedSettings.LandingPricingExchangeRate,
 		HideCcsImportButton:                  updatedSettings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:          updatedSettings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:              updatedSettings.PurchaseSubscriptionURL,
@@ -1267,9 +1312,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 }
 
 type UserMenuVisibilityRequest struct {
-	InvoiceManagementEnabled  bool `json:"invoice_management_enabled"`
-	FeedbackManagementEnabled bool `json:"feedback_management_enabled"`
-	GroupCacheHitRateEnabled  bool `json:"group_cache_hit_rate_enabled"`
+	InvoiceManagementEnabled  bool  `json:"invoice_management_enabled"`
+	FeedbackManagementEnabled bool  `json:"feedback_management_enabled"`
+	GroupCacheHitRateEnabled  bool  `json:"group_cache_hit_rate_enabled"`
+	LandingReportsEnabled     *bool `json:"landing_reports_enabled"`
 }
 
 func (h *SettingHandler) GetUserMenuVisibilitySettings(c *gin.Context) {
@@ -1283,6 +1329,7 @@ func (h *SettingHandler) GetUserMenuVisibilitySettings(c *gin.Context) {
 		"invoice_management_enabled":   settings.InvoiceManagementEnabled,
 		"feedback_management_enabled":  settings.FeedbackManagementEnabled,
 		"group_cache_hit_rate_enabled": settings.GroupCacheHitRateEnabled,
+		"landing_reports_enabled":      settings.LandingReportsEnabled,
 	})
 }
 
@@ -1293,10 +1340,21 @@ func (h *SettingHandler) UpdateUserMenuVisibilitySettings(c *gin.Context) {
 		return
 	}
 
+	current, err := h.settingService.GetUserMenuVisibilitySettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	landingReportsEnabled := current.LandingReportsEnabled
+	if req.LandingReportsEnabled != nil {
+		landingReportsEnabled = *req.LandingReportsEnabled
+	}
+
 	settings := service.UserMenuVisibilitySettings{
 		InvoiceManagementEnabled:  req.InvoiceManagementEnabled,
 		FeedbackManagementEnabled: req.FeedbackManagementEnabled,
 		GroupCacheHitRateEnabled:  req.GroupCacheHitRateEnabled,
+		LandingReportsEnabled:     landingReportsEnabled,
 	}
 	if err := h.settingService.UpdateUserMenuVisibilitySettings(c.Request.Context(), settings); err != nil {
 		response.ErrorFrom(c, err)
@@ -1307,6 +1365,7 @@ func (h *SettingHandler) UpdateUserMenuVisibilitySettings(c *gin.Context) {
 		"invoice_management_enabled":   settings.InvoiceManagementEnabled,
 		"feedback_management_enabled":  settings.FeedbackManagementEnabled,
 		"group_cache_hit_rate_enabled": settings.GroupCacheHitRateEnabled,
+		"landing_reports_enabled":      settings.LandingReportsEnabled,
 	})
 }
 
@@ -1508,6 +1567,18 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.HomeContent != after.HomeContent {
 		changed = append(changed, "home_content")
+	}
+	if before.LandingReportsEnabled != after.LandingReportsEnabled {
+		changed = append(changed, "landing_reports_enabled")
+	}
+	if before.LandingPricingProMultiplier != after.LandingPricingProMultiplier {
+		changed = append(changed, "landing_pricing_pro_multiplier")
+	}
+	if before.LandingPricingMaxMultiplier != after.LandingPricingMaxMultiplier {
+		changed = append(changed, "landing_pricing_max_multiplier")
+	}
+	if before.LandingPricingExchangeRate != after.LandingPricingExchangeRate {
+		changed = append(changed, "landing_pricing_exchange_rate")
 	}
 	if before.HideCcsImportButton != after.HideCcsImportButton {
 		changed = append(changed, "hide_ccs_import_button")

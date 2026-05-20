@@ -1846,6 +1846,68 @@
               </p>
             </div>
 
+            <!-- Landing Model Pricing Display -->
+            <div class="rounded-lg border border-gray-100 p-4 dark:border-dark-700">
+              <div class="mb-4">
+                <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                  官网模型价格展示
+                </h3>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  仅影响 landing page 展示，不影响真实分组倍率、扣费和调度。
+                </p>
+              </div>
+
+              <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div>
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Pro 展示倍率
+                  </label>
+                  <input
+                    v-model.number="form.landing_pricing_pro_multiplier"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    class="input"
+                  />
+                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    首页按 ¥{{ formatCompactNumber(positiveNumberOrDefault(form.landing_pricing_pro_multiplier, 1.2)) }} = $1 展示，约 {{ landingPricingPreview.proDiscount }}。
+                  </p>
+                </div>
+
+                <div>
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Max 展示倍率
+                  </label>
+                  <input
+                    v-model.number="form.landing_pricing_max_multiplier"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    class="input"
+                  />
+                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    首页按 ¥{{ formatCompactNumber(positiveNumberOrDefault(form.landing_pricing_max_multiplier, 4)) }} = $1 展示，约 {{ landingPricingPreview.maxDiscount }}。
+                  </p>
+                </div>
+
+                <div>
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    折扣参考汇率
+                  </label>
+                  <input
+                    v-model.number="form.landing_pricing_exchange_rate"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    class="input"
+                  />
+                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    用于计算“几折”，例如 7 表示按 1 USD = ¥7 估算。
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <!-- Hide CCS Import Button -->
             <div
               class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700"
@@ -2566,6 +2628,18 @@ const settingsTabs = [
 const { copyToClipboard } = useClipboard()
 const paymentIntegrationDocUrl = computed(() => appStore.docUrl || '/docs')
 
+function positiveNumberOrDefault(value: number | null | undefined, fallback: number): number {
+  return Number.isFinite(value) && Number(value) > 0 ? Number(value) : fallback
+}
+
+function formatCompactNumber(value: number, maximumFractionDigits = 2): string {
+  return new Intl.NumberFormat('zh-CN', { maximumFractionDigits }).format(value)
+}
+
+function formatLandingDiscount(multiplier: number, exchangeRate: number): string {
+  return `${formatCompactNumber((multiplier / exchangeRate) * 10, 1)}折`
+}
+
 const loading = ref(true)
 const saving = ref(false)
 const testingSmtp = ref(false)
@@ -2716,6 +2790,10 @@ const form = reactive<SettingsForm>({
   doc_url: '',
   chatbot_url: '',
   home_content: '',
+  landing_reports_enabled: true,
+  landing_pricing_pro_multiplier: 1.2,
+  landing_pricing_max_multiplier: 4,
+  landing_pricing_exchange_rate: 7,
   backend_mode_enabled: false,
   hide_ccs_import_button: false,
   purchase_subscription_enabled: false,
@@ -2822,6 +2900,17 @@ const form = reactive<SettingsForm>({
   xunhu_wechat_key: '',
   xunhu_wechat_key_configured: false,
   xunhu_notify_url: ''
+})
+
+const landingPricingPreview = computed(() => {
+  const exchangeRate = positiveNumberOrDefault(form.landing_pricing_exchange_rate, 7)
+  const proMultiplier = positiveNumberOrDefault(form.landing_pricing_pro_multiplier, 1.2)
+  const maxMultiplier = positiveNumberOrDefault(form.landing_pricing_max_multiplier, 4)
+
+  return {
+    proDiscount: formatLandingDiscount(proMultiplier, exchangeRate),
+    maxDiscount: formatLandingDiscount(maxMultiplier, exchangeRate)
+  }
 })
 
 const defaultSubscriptionGroupOptions = computed<DefaultSubscriptionGroupOption[]>(() =>
@@ -3146,6 +3235,10 @@ async function saveSettings() {
       doc_url: form.doc_url,
       chatbot_url: form.chatbot_url,
       home_content: form.home_content,
+      landing_reports_enabled: form.landing_reports_enabled,
+      landing_pricing_pro_multiplier: positiveNumberOrDefault(form.landing_pricing_pro_multiplier, 1.2),
+      landing_pricing_max_multiplier: positiveNumberOrDefault(form.landing_pricing_max_multiplier, 4),
+      landing_pricing_exchange_rate: positiveNumberOrDefault(form.landing_pricing_exchange_rate, 7),
       backend_mode_enabled: form.backend_mode_enabled,
       hide_ccs_import_button: form.hide_ccs_import_button,
       purchase_subscription_enabled: form.purchase_subscription_enabled,

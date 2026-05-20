@@ -1811,7 +1811,7 @@ export default {
       registrationBonus: '注册赠送额度',
       inviteActivityEmailRestriction: '活动期限制邮箱',
       inviteActivityEmailWhitelist: '允许注册的邮箱域名',
-      inviteActivityEmailWhitelistPlaceholder: '@qq.com, @gmail.com, @outlook.com',
+      inviteActivityEmailWhitelistPlaceholder: "{'@'}qq.com, {'@'}gmail.com, {'@'}outlook.com",
       inviteActivityEmailRestrictionHint: '只在活动开启且处于活动时间内生效；留空时使用「安全与认证」里的邮箱域名白名单；非活动期自动放开所有邮箱。',
       inviteActivityRule: '规则：活动期内通过邀请链接注册立即赠送额度；开启邮箱限制后，只有允许域名的邮箱可在活动期注册。',
       inviteActivityUpdated: '限时邀请活动已更新',

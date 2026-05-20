@@ -1790,7 +1790,7 @@ export default {
       registrationBonus: 'Registration Bonus',
       inviteActivityEmailRestriction: 'Restrict campaign email domains',
       inviteActivityEmailWhitelist: 'Allowed registration email domains',
-      inviteActivityEmailWhitelistPlaceholder: '@qq.com, @gmail.com, @outlook.com',
+      inviteActivityEmailWhitelistPlaceholder: "{'@'}qq.com, {'@'}gmail.com, {'@'}outlook.com",
       inviteActivityEmailRestrictionHint: 'Only applies while the campaign is enabled and inside its time window. Leave blank to use the email domain whitelist from Security & Auth. Outside the campaign window, all email domains are allowed.',
       inviteActivityRule: 'Rule: invited users registered during the campaign window receive the bonus immediately. When email restriction is enabled, only allowed email domains can register during the campaign.',
       inviteActivityUpdated: 'Timed invite campaign updated',

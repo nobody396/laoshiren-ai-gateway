@@ -20,6 +20,9 @@
       <!-- Claude 组合 -->
       <ClaudeCombinations :models="models" />
 
+      <!-- 模型检测报告 -->
+      <ModelReports :reports="modelReports" />
+
       <!-- 模型定价 -->
       <ModelPricing
         :claude-rows="claudePricingRows"
@@ -49,6 +52,7 @@ import HomeHeader from '@/components/home/HomeHeader.vue'
 import HeroSection from '@/components/home/HeroSection.vue'
 import WhyChoose from '@/components/home/WhyChoose.vue'
 import ClaudeCombinations from '@/components/home/ClaudeCombinations.vue'
+import ModelReports from '@/components/home/ModelReports.vue'
 import ModelPricing from '@/components/home/ModelPricing.vue'
 import VIPTiers from '@/components/home/VIPTiers.vue'
 import HomeFooter from '@/components/home/HomeFooter.vue'
@@ -64,6 +68,7 @@ const dashboardPath = computed(() => (isAdmin.value ? '/admin/dashboard' : '/das
 // ── 导航项 ──
 const navItems = computed(() => [
   { label: '首页', href: '#', active: true, external: false, routerPush: false },
+  { label: '报告', href: '#model-reports', active: false, external: false, routerPush: false },
   { label: '定价', href: '#model-pricing', active: false, external: false, routerPush: false },
   { label: '服务状态', href: 'https://status.your-domain.example', active: false, external: true, routerPush: false },
   { label: '文档', href: '/docs', active: false, external: false, routerPush: true }
@@ -108,6 +113,74 @@ const models = [
     name: 'Gemini',
     subtitle: '图像理解与视觉任务',
     description: '擅长设计稿转代码、图像理解与多模态任务，前端设计的得力助手。'
+  }
+]
+
+// ── 模型检测报告 ──
+const modelReports = [
+  {
+    provider: 'Claude',
+    title: 'Claude Opus 4.7',
+    sourceUrl: 'https://www.hvoy.ai/report/K9TIp4lRV1Q',
+    endpoint: 'https://api.laoshirenai.com',
+    modelId: 'claude-opus-4-7',
+    score: 100,
+    verdict: '完美匹配',
+    testedAt: '2026-05-20 11:07',
+    passedChecks: 9,
+    totalChecks: 9,
+    latency: '4.5s',
+    tps: '15.3',
+    inputTokens: '1,855',
+    outputTokens: '315'
+  },
+  {
+    provider: 'Claude',
+    title: 'Claude Opus 4.6',
+    sourceUrl: 'https://www.hvoy.ai/report/q6R_YiEFJhc',
+    endpoint: 'https://api.laoshirenai.com',
+    modelId: 'claude-opus-4-6',
+    score: 100,
+    verdict: '完美匹配',
+    testedAt: '2026-05-20 11:08',
+    passedChecks: 10,
+    totalChecks: 10,
+    latency: '4.0s',
+    tps: '15.1',
+    inputTokens: '1,781',
+    outputTokens: '216'
+  },
+  {
+    provider: 'GPT',
+    title: 'GPT-5.5',
+    sourceUrl: 'https://www.hvoy.ai/report/H186QGxR4K8',
+    endpoint: 'https://api.laoshirenai.com',
+    modelId: 'gpt-5.5',
+    score: 100,
+    verdict: '完美匹配',
+    testedAt: '2026-05-20 11:09',
+    passedChecks: 4,
+    totalChecks: 4,
+    latency: '9.9s',
+    tps: '43.3',
+    inputTokens: '407',
+    outputTokens: '429'
+  },
+  {
+    provider: 'GPT',
+    title: 'GPT-5.4',
+    sourceUrl: 'https://www.hvoy.ai/report/Xj8IKpcfEJE',
+    endpoint: 'https://api.laoshirenai.com',
+    modelId: 'gpt-5.4',
+    score: 100,
+    verdict: '完美匹配',
+    testedAt: '2026-05-20 11:10',
+    passedChecks: 4,
+    totalChecks: 4,
+    latency: '2.9s',
+    tps: '14.7',
+    inputTokens: '393',
+    outputTokens: '42'
   }
 ]
 
@@ -252,6 +325,7 @@ const footerSections = computed(() => [
     title: '产品',
     links: [
       { label: '老实人 AI 介绍', href: '#about', external: false },
+      { label: '模型检测报告', href: '#model-reports', external: false },
       { label: '价格方案', href: '#model-pricing', external: false },
       { label: '登录', href: '/login', external: false }
     ]

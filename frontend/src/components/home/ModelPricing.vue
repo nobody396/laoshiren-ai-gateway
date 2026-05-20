@@ -3,7 +3,7 @@
     <div class="model-pricing__container mirror-reveal">
       <div class="greco-divider" aria-hidden="true"></div>
       <div class="pricing-heading">
-        <p class="section-eyebrow">III · 价格铭文</p>
+        <p class="section-eyebrow">IV · 价格铭文</p>
         <h2 class="section-title">Pretium · 模型定价</h2>
         <p class="section-lede">官方价 × 分组倍率；单位：每 100 万 tokens。</p>
       </div>

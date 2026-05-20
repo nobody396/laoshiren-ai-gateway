@@ -22,7 +22,14 @@ var defaultAllowed = map[string]struct{}{
 	"expires":                        {},
 	"vary":                           {},
 	"date":                           {},
+	"request-id":                     {},
 	"x-request-id":                   {},
+	"anthropic-organization-id":      {},
+	"x-upstream":                     {},
+	"x-kna-upstream":                 {},
+	"x-passthrough":                  {},
+	"body-sha256":                    {},
+	"x-body-sha256":                  {},
 	"x-ratelimit-limit-requests":     {},
 	"x-ratelimit-limit-tokens":       {},
 	"x-ratelimit-remaining-requests": {},
@@ -32,6 +39,10 @@ var defaultAllowed = map[string]struct{}{
 	"retry-after":                    {},
 	"location":                       {},
 	"www-authenticate":               {},
+}
+
+var defaultAllowedPrefixes = []string{
+	"anthropic-ratelimit-",
 }
 
 // hopByHopHeaders 是跳过的 hop-by-hop 头部，这些头部由 HTTP 库自动处理
@@ -94,7 +105,9 @@ func FilterHeaders(src http.Header, filter *CompiledHeaderFilter) http.Header {
 			continue
 		}
 		if _, ok := filter.allowed[lower]; !ok {
-			continue
+			if !hasAllowedPrefix(lower) {
+				continue
+			}
 		}
 		// 跳过 hop-by-hop 头部，这些由 HTTP 库自动处理
 		if _, isHopByHop := hopByHopHeaders[lower]; isHopByHop {
@@ -105,6 +118,15 @@ func FilterHeaders(src http.Header, filter *CompiledHeaderFilter) http.Header {
 		}
 	}
 	return filtered
+}
+
+func hasAllowedPrefix(key string) bool {
+	for _, prefix := range defaultAllowedPrefixes {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func WriteFilteredHeaders(dst http.Header, src http.Header, filter *CompiledHeaderFilter) {

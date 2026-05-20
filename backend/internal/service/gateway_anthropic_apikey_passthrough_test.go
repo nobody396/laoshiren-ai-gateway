@@ -129,9 +129,16 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardStreamPreservesBodyAnd
 		resp: &http.Response{
 			StatusCode: http.StatusOK,
 			Header: http.Header{
-				"Content-Type": []string{"text/event-stream"},
-				"x-request-id": []string{"rid-anthropic-pass"},
-				"Set-Cookie":   []string{"secret=upstream"},
+				"Content-Type":                       []string{"text/event-stream"},
+				"request-id":                         []string{"req-official-pass"},
+				"anthropic-organization-id":          []string{"org_test"},
+				"anthropic-ratelimit-requests-limit": []string{"100"},
+				"x-request-id":                       []string{"rid-anthropic-pass"},
+				"x-upstream":                         []string{"api.anthropic.com"},
+				"x-kna-upstream":                     []string{"api.anthropic.com"},
+				"x-passthrough":                      []string{"true"},
+				"body-sha256":                        []string{"body-hash"},
+				"Set-Cookie":                         []string{"secret=upstream"},
 			},
 			Body: io.NopCloser(strings.NewReader(upstreamSSE)),
 		},
@@ -187,6 +194,13 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardStreamPreservesBodyAnd
 	require.Contains(t, rec.Body.String(), `"cached_tokens":7`)
 	require.NotContains(t, rec.Body.String(), `"cache_read_input_tokens":7`, "透传输出不应被网关改写")
 	require.Equal(t, 7, result.Usage.CacheReadInputTokens, "计费 usage 解析应保留 cached_tokens 兼容")
+	require.Equal(t, "req-official-pass", rec.Header().Get("request-id"))
+	require.Equal(t, "org_test", rec.Header().Get("anthropic-organization-id"))
+	require.Equal(t, "100", rec.Header().Get("anthropic-ratelimit-requests-limit"))
+	require.Equal(t, "api.anthropic.com", rec.Header().Get("x-upstream"))
+	require.Equal(t, "api.anthropic.com", rec.Header().Get("x-kna-upstream"))
+	require.Equal(t, "true", rec.Header().Get("x-passthrough"))
+	require.Equal(t, "body-hash", rec.Header().Get("body-sha256"))
 	require.Empty(t, rec.Header().Get("Set-Cookie"), "响应头应经过安全过滤")
 	rawBody, ok := c.Get(OpsUpstreamRequestBodyKey)
 	require.True(t, ok)

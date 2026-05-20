@@ -358,25 +358,39 @@ export async function resetPassword(request: ResetPasswordRequest): Promise<Rese
  */
 export async function completeLinuxDoOAuthRegistration(
   pendingOAuthToken: string,
-  invitationCode: string
+  invitationCode: string,
+  referralCode = ''
 ): Promise<{ access_token: string; refresh_token: string; expires_in: number; token_type: string }> {
-  return completeOAuthRegistration('linuxdo', pendingOAuthToken, invitationCode)
+  return completeOAuthRegistration('linuxdo', pendingOAuthToken, invitationCode, referralCode)
 }
 
 export async function completeOAuthRegistration(
   provider: 'linuxdo' | 'google' | 'github',
   pendingOAuthToken: string,
-  invitationCode: string
+  invitationCode = '',
+  referralCode = ''
 ): Promise<{ access_token: string; refresh_token: string; expires_in: number; token_type: string }> {
+  const payload: {
+    pending_oauth_token: string
+    invitation_code?: string
+    referral_code?: string
+  } = {
+    pending_oauth_token: pendingOAuthToken
+  }
+  const trimmedInvitationCode = invitationCode.trim()
+  const trimmedReferralCode = referralCode.trim()
+  if (trimmedInvitationCode) {
+    payload.invitation_code = trimmedInvitationCode
+  }
+  if (trimmedReferralCode) {
+    payload.referral_code = trimmedReferralCode
+  }
   const { data } = await apiClient.post<{
     access_token: string
     refresh_token: string
     expires_in: number
     token_type: string
-  }>(`/auth/oauth/${provider}/complete-registration`, {
-    pending_oauth_token: pendingOAuthToken,
-    invitation_code: invitationCode
-  })
+  }>(`/auth/oauth/${provider}/complete-registration`, payload)
   return data
 }
 

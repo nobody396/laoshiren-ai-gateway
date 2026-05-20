@@ -553,3 +553,62 @@ func TestAuthService_Register_AssignsDefaultSubscriptions(t *testing.T) {
 	require.Equal(t, int64(12), assigner.calls[1].GroupID)
 	require.Equal(t, 7, assigner.calls[1].ValidityDays)
 }
+
+func TestAuthService_ShouldPromptOAuthReferral_NewUserWithoutReferral(t *testing.T) {
+	repo := &userRepoStub{allowGetByEmail: true}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled: "true",
+	}, nil)
+
+	prompt, err := service.ShouldPromptOAuthReferral(context.Background(), "new@test.com", "")
+
+	require.NoError(t, err)
+	require.True(t, prompt)
+}
+
+func TestAuthService_ShouldPromptOAuthReferral_ExistingUserOrReferralPresent(t *testing.T) {
+	repo := &userRepoStub{
+		allowGetByEmail: true,
+		getByEmailUser:  &User{ID: 1, Email: "existing@test.com", Status: StatusActive},
+	}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled: "true",
+	}, nil)
+
+	prompt, err := service.ShouldPromptOAuthReferral(context.Background(), "existing@test.com", "")
+	require.NoError(t, err)
+	require.False(t, prompt)
+
+	prompt, err = service.ShouldPromptOAuthReferral(context.Background(), "new@test.com", "AGENT123")
+	require.NoError(t, err)
+	require.False(t, prompt)
+}
+
+func TestAuthService_LoginOrRegisterOAuthWithTokenPair_BindsReferralOnFirstRegistration(t *testing.T) {
+	agentID := int64(7)
+	repo := &userRepoStub{
+		allowGetByEmail: true,
+		nextID:          42,
+		allowInviteCode: true,
+		inviteCodeUser:  &User{ID: agentID, Email: "agent@test.com", Role: RoleAgent, Status: StatusActive},
+		allowSetInviter: true,
+	}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled: "true",
+	}, nil)
+	service.refreshTokenCache = newMemoryRefreshTokenCache()
+	service.commissionService = NewCommissionService(repo, nil)
+
+	tokenPair, user, err := service.LoginOrRegisterOAuthWithTokenPair(context.Background(), "oauth-new@test.com", "OAuth User", "", "AGENT123")
+
+	require.NoError(t, err)
+	require.NotNil(t, tokenPair)
+	require.NotEmpty(t, tokenPair.AccessToken)
+	require.Equal(t, int64(42), user.ID)
+	require.Len(t, repo.created, 1)
+	require.Len(t, repo.setInviterCalls, 1)
+	require.Equal(t, int64(42), repo.setInviterCalls[0].UserID)
+	require.Equal(t, agentID, repo.setInviterCalls[0].InviterID)
+	require.NotNil(t, repo.setInviterCalls[0].AgentID)
+	require.Equal(t, agentID, *repo.setInviterCalls[0].AgentID)
+}

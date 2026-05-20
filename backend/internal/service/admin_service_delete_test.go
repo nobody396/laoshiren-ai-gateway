@@ -22,9 +22,20 @@ type userRepoStub struct {
 	allowGetByEmail bool
 	getByEmailUser  *User
 	getByEmailErr   error
+	allowInviteCode bool
+	inviteCodeUser  *User
+	inviteCodeErr   error
+	allowSetInviter bool
+	setInviterCalls []setInviterCall
 	nextID          int64
 	created         []*User
 	deletedIDs      []int64
+}
+
+type setInviterCall struct {
+	UserID    int64
+	InviterID int64
+	AgentID   *int64
 }
 
 func (s *userRepoStub) Create(ctx context.Context, user *User) error {
@@ -130,6 +141,15 @@ func (s *userRepoStub) DisableTotp(ctx context.Context, userID int64) error {
 }
 
 func (s *userRepoStub) GetByInviteCode(context.Context, string) (*User, error) {
+	if s.allowInviteCode {
+		if s.inviteCodeErr != nil {
+			return nil, s.inviteCodeErr
+		}
+		if s.inviteCodeUser != nil {
+			return s.inviteCodeUser, nil
+		}
+		return nil, ErrUserNotFound
+	}
 	panic("unexpected GetByInviteCode call")
 }
 
@@ -137,7 +157,20 @@ func (s *userRepoStub) SetInviteCode(context.Context, int64, string) error {
 	panic("unexpected SetInviteCode call")
 }
 
-func (s *userRepoStub) SetInviterAndAgent(context.Context, int64, int64, *int64) error {
+func (s *userRepoStub) SetInviterAndAgent(_ context.Context, userID, inviterID int64, agentID *int64) error {
+	if s.allowSetInviter {
+		var agentCopy *int64
+		if agentID != nil {
+			v := *agentID
+			agentCopy = &v
+		}
+		s.setInviterCalls = append(s.setInviterCalls, setInviterCall{
+			UserID:    userID,
+			InviterID: inviterID,
+			AgentID:   agentCopy,
+		})
+		return nil
+	}
 	panic("unexpected SetInviterAndAgent call")
 }
 

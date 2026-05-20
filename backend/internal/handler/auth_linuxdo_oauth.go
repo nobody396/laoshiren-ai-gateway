@@ -231,13 +231,25 @@ func (h *AuthHandler) LinuxDoOAuthCallback(c *gin.Context) {
 		return
 	}
 
+	if prompt, err := h.shouldPromptOAuthReferral(c.Request.Context(), email, session); err != nil {
+		redirectOAuthError(c, frontendCallback, "login_failed", infraerrors.Reason(err), infraerrors.Message(err))
+		return
+	} else if prompt {
+		h.redirectOAuthReferralOptional(c, frontendCallback, service.AuthProviderLinuxDo, redirectTo, session)
+		return
+	}
+
 	tokenPair, user, err := h.authService.LoginOrRegisterOAuthWithTokenPair(c.Request.Context(), email, username, oauthInvitationCodeFromSession(session), oauthReferralCodeFromSession(session))
 	if err != nil {
 		if errors.Is(err, service.ErrOAuthInvitationRequired) {
 			fragment := url.Values{}
 			fragment.Set("error", "invitation_required")
 			fragment.Set("pending_oauth_token", session.State)
+			fragment.Set("provider", service.AuthProviderLinuxDo)
 			fragment.Set("redirect", redirectTo)
+			if oauthReferralCodeFromSession(session) == "" {
+				fragment.Set("referral_optional", "true")
+			}
 			redirectWithFragment(c, frontendCallback, fragment)
 			return
 		}
@@ -266,7 +278,8 @@ func (h *AuthHandler) LinuxDoOAuthCallback(c *gin.Context) {
 
 type completeLinuxDoOAuthRequest struct {
 	PendingOAuthToken string `json:"pending_oauth_token" binding:"required"`
-	InvitationCode    string `json:"invitation_code"     binding:"required"`
+	InvitationCode    string `json:"invitation_code"`
+	ReferralCode      string `json:"referral_code"`
 }
 
 // CompleteLinuxDoOAuthRegistration completes a pending OAuth registration by validating
@@ -286,7 +299,11 @@ func (h *AuthHandler) CompleteLinuxDoOAuthRegistration(c *gin.Context) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "INVALID_TOKEN", "message": "invalid or expired registration token"})
 			return
 		}
-		tokenPair, user, err := h.authService.LoginOrRegisterOAuthWithTokenPair(c.Request.Context(), email, username, req.InvitationCode, oauthReferralCodeFromSession(session))
+		referralCode := strings.TrimSpace(req.ReferralCode)
+		if referralCode == "" {
+			referralCode = oauthReferralCodeFromSession(session)
+		}
+		tokenPair, user, err := h.authService.LoginOrRegisterOAuthWithTokenPair(c.Request.Context(), email, username, req.InvitationCode, referralCode)
 		if err != nil {
 			response.ErrorFrom(c, err)
 			return
@@ -322,7 +339,7 @@ func (h *AuthHandler) CompleteLinuxDoOAuthRegistration(c *gin.Context) {
 		return
 	}
 
-	tokenPair, _, err := h.authService.LoginOrRegisterOAuthWithTokenPair(c.Request.Context(), email, username, req.InvitationCode, "")
+	tokenPair, _, err := h.authService.LoginOrRegisterOAuthWithTokenPair(c.Request.Context(), email, username, req.InvitationCode, req.ReferralCode)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

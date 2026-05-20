@@ -67,7 +67,8 @@ type externalOAuthIdentity struct {
 
 type completeExternalOAuthRequest struct {
 	PendingOAuthToken string `json:"pending_oauth_token" binding:"required"`
-	InvitationCode    string `json:"invitation_code"     binding:"required"`
+	InvitationCode    string `json:"invitation_code"`
+	ReferralCode      string `json:"referral_code"`
 }
 
 // GoogleOAuthStart starts the Google/OpenID Connect login flow.
@@ -264,6 +265,14 @@ func (h *AuthHandler) completeExternalOAuthLogin(
 		return
 	}
 
+	if prompt, err := h.shouldPromptOAuthReferral(c.Request.Context(), identity.Email, session); err != nil {
+		redirectOAuthError(c, frontendCallback, "login_failed", infraerrors.Reason(err), infraerrors.Message(err))
+		return
+	} else if prompt {
+		h.redirectOAuthReferralOptional(c, frontendCallback, provider, redirectTo, session)
+		return
+	}
+
 	tokenPair, user, err := h.authService.LoginOrRegisterOAuthWithTokenPair(c.Request.Context(), identity.Email, identity.Username, oauthInvitationCodeFromSession(session), oauthReferralCodeFromSession(session))
 	if err != nil {
 		if errors.Is(err, service.ErrOAuthInvitationRequired) {
@@ -272,6 +281,9 @@ func (h *AuthHandler) completeExternalOAuthLogin(
 			fragment.Set("pending_oauth_token", session.State)
 			fragment.Set("provider", provider)
 			fragment.Set("redirect", redirectTo)
+			if oauthReferralCodeFromSession(session) == "" {
+				fragment.Set("referral_optional", "true")
+			}
 			redirectWithFragment(c, frontendCallback, fragment)
 			return
 		}
@@ -323,7 +335,11 @@ func (h *AuthHandler) completeExternalOAuthRegistration(c *gin.Context, provider
 		return
 	}
 
-	tokenPair, user, err := h.authService.LoginOrRegisterOAuthWithTokenPair(c.Request.Context(), identity.Email, identity.Username, req.InvitationCode, oauthReferralCodeFromSession(session))
+	referralCode := strings.TrimSpace(req.ReferralCode)
+	if referralCode == "" {
+		referralCode = oauthReferralCodeFromSession(session)
+	}
+	tokenPair, user, err := h.authService.LoginOrRegisterOAuthWithTokenPair(c.Request.Context(), identity.Email, identity.Username, req.InvitationCode, referralCode)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -350,6 +366,32 @@ func (h *AuthHandler) completeExternalOAuthRegistration(c *gin.Context, provider
 		"expires_in":    tokenPair.ExpiresIn,
 		"token_type":    "Bearer",
 	})
+}
+
+func (h *AuthHandler) shouldPromptOAuthReferral(ctx context.Context, email string, session *service.PendingAuthSession) (bool, error) {
+	if h == nil || h.authService == nil {
+		return false, nil
+	}
+	return h.authService.ShouldPromptOAuthReferral(ctx, email, oauthReferralCodeFromSession(session))
+}
+
+func (h *AuthHandler) redirectOAuthReferralOptional(c *gin.Context, frontendCallback, provider, redirectTo string, session *service.PendingAuthSession) {
+	fragment := url.Values{}
+	fragment.Set("error", "referral_optional")
+	fragment.Set("pending_oauth_token", session.State)
+	fragment.Set("provider", provider)
+	fragment.Set("redirect", redirectTo)
+	if h.oauthInvitationRequiredForSession(c.Request.Context(), session) {
+		fragment.Set("invitation_required", "true")
+	}
+	redirectWithFragment(c, frontendCallback, fragment)
+}
+
+func (h *AuthHandler) oauthInvitationRequiredForSession(ctx context.Context, session *service.PendingAuthSession) bool {
+	if h == nil || h.settingSvc == nil || session == nil || oauthInvitationCodeFromSession(session) != "" {
+		return false
+	}
+	return h.settingSvc.IsInvitationCodeEnabled(ctx)
 }
 
 func (h *AuthHandler) getExternalOAuthConfig(ctx context.Context, provider string) (externalOAuthConfig, error) {

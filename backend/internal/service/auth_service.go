@@ -708,6 +708,37 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 	return tokenPair, user, nil
 }
 
+// ShouldPromptOAuthReferral returns true when an OAuth login would create a new
+// user and no referral code was already captured in the OAuth state.
+func (s *AuthService) ShouldPromptOAuthReferral(ctx context.Context, email, referralCode string) (bool, error) {
+	if strings.TrimSpace(referralCode) != "" {
+		return false, nil
+	}
+	if s == nil || s.userRepo == nil {
+		return false, ErrServiceUnavailable
+	}
+	if s.settingService == nil || !s.settingService.IsRegistrationEnabled(ctx) {
+		return false, nil
+	}
+
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return false, infraerrors.BadRequest("INVALID_EMAIL", "invalid email")
+	}
+	if err := s.validateRegistrationEmailPolicy(ctx, email); err != nil {
+		return false, nil
+	}
+	_, err := s.userRepo.GetByEmail(ctx, email)
+	if err == nil {
+		return false, nil
+	}
+	if errors.Is(err, ErrUserNotFound) {
+		return true, nil
+	}
+	logger.LegacyPrintf("service.auth", "[Auth] Database error checking oauth referral prompt: %v", err)
+	return false, ErrServiceUnavailable
+}
+
 // bindReferralCode 绑定分佣邀请关系（与门控邀请码 invitationCode 完全独立）。
 func (s *AuthService) bindReferralCode(ctx context.Context, userID int64, referralCode string) {
 	referralCode = strings.TrimSpace(referralCode)

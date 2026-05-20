@@ -11,18 +11,31 @@
       </div>
 
       <transition name="fade">
-        <div v-if="needsInvitation" class="space-y-4">
-          <p class="text-sm text-gray-700 dark:text-gray-300">
+        <div v-if="needsRegistrationInfo" class="space-y-4">
+          <p v-if="needsInvitation" class="text-sm text-gray-700 dark:text-gray-300">
             {{ t('auth.oauth.invitationRequired', { provider: providerLabel }) }}
           </p>
-          <div>
+          <p v-if="needsReferral" class="text-sm text-gray-700 dark:text-gray-300">
+            {{ t('auth.oauth.referralOptional', { provider: providerLabel }) }}
+          </p>
+          <div v-if="needsInvitation">
             <input
               v-model="invitationCode"
               type="text"
               class="input w-full"
               :placeholder="t('auth.invitationCodePlaceholder')"
               :disabled="isSubmitting"
-              @keyup.enter="handleSubmitInvitation"
+              @keyup.enter="handleCompleteRegistration(false)"
+            />
+          </div>
+          <div v-if="needsReferral">
+            <input
+              v-model="referralCode"
+              type="text"
+              class="input w-full"
+              :placeholder="t('auth.referralCodePlaceholder')"
+              :disabled="isSubmitting"
+              @keyup.enter="handleCompleteRegistration(false)"
             />
           </div>
           <transition name="fade">
@@ -32,10 +45,18 @@
           </transition>
           <button
             class="btn btn-primary w-full"
-            :disabled="isSubmitting || !invitationCode.trim()"
-            @click="handleSubmitInvitation"
+            :disabled="isSubmitting || (needsInvitation && !invitationCode.trim())"
+            @click="handleCompleteRegistration(false)"
           >
             {{ isSubmitting ? t('auth.oauth.completing') : t('auth.oauth.completeRegistration') }}
+          </button>
+          <button
+            v-if="needsReferral"
+            class="btn btn-secondary w-full"
+            :disabled="isSubmitting || (needsInvitation && !invitationCode.trim())"
+            @click="handleCompleteRegistration(true)"
+          >
+            {{ t('auth.oauth.skipReferral') }}
           </button>
         </div>
       </transition>
@@ -85,8 +106,10 @@ const errorMessage = ref('')
 
 // Invitation code flow state
 const needsInvitation = ref(false)
+const needsReferral = ref(false)
 const pendingOAuthToken = ref('')
 const invitationCode = ref('')
+const referralCode = ref('')
 const isSubmitting = ref(false)
 const invitationError = ref('')
 const redirectTo = ref('/dashboard')
@@ -105,6 +128,8 @@ const providerLabel = computed(() => {
   if (provider.value === 'github') return 'GitHub'
   return 'Linux.do'
 })
+
+const needsRegistrationInfo = computed(() => needsInvitation.value || needsReferral.value)
 
 function resolveOAuthErrorMessage(error: string, fallback: string): string {
   switch (error) {
@@ -148,16 +173,20 @@ function sanitizeRedirectPath(path: string | null | undefined): string {
   return path
 }
 
-async function handleSubmitInvitation() {
+async function handleCompleteRegistration(skipReferral: boolean) {
   invitationError.value = ''
-  if (!invitationCode.value.trim()) return
+  if (needsInvitation.value && !invitationCode.value.trim()) {
+    invitationError.value = t('auth.invitationCodeRequired')
+    return
+  }
 
   isSubmitting.value = true
   try {
     const tokenData = await completeOAuthRegistration(
       provider.value,
       pendingOAuthToken.value,
-      invitationCode.value.trim()
+      invitationCode.value.trim(),
+      skipReferral ? '' : referralCode.value.trim()
     )
     if (tokenData.refresh_token) {
       localStorage.setItem('refresh_token', tokenData.refresh_token)
@@ -169,7 +198,13 @@ async function handleSubmitInvitation() {
     appStore.showSuccess(t('auth.loginSuccess'))
     await router.replace(redirectTo.value)
   } catch (e: unknown) {
-    const err = e as { message?: string; response?: { data?: { message?: string } } }
+    const err = e as { message?: string; response?: { data?: { error?: string; message?: string } } }
+    if (err.response?.data?.error === 'OAUTH_INVITATION_REQUIRED') {
+      needsInvitation.value = true
+      needsReferral.value = true
+      invitationError.value = t('auth.invitationCodeRequired')
+      return
+    }
     invitationError.value =
       err.response?.data?.message || err.message || t('auth.oauth.completeRegistrationFailed')
   } finally {
@@ -209,7 +244,7 @@ onMounted(async () => {
   }
 
   if (error) {
-    if (error === 'invitation_required') {
+    if (error === 'invitation_required' || error === 'referral_optional') {
       pendingOAuthToken.value = params.get('pending_oauth_token') || ''
       redirectTo.value = sanitizeRedirectPath(params.get('redirect'))
       if (!pendingOAuthToken.value) {
@@ -218,7 +253,8 @@ onMounted(async () => {
         isProcessing.value = false
         return
       }
-      needsInvitation.value = true
+      needsInvitation.value = error === 'invitation_required' || params.get('invitation_required') === 'true'
+      needsReferral.value = error === 'referral_optional' || params.get('referral_optional') === 'true'
       isProcessing.value = false
       return
     }

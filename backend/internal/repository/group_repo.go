@@ -642,7 +642,12 @@ func (r *groupRepository) ExistsByIDs(ctx context.Context, ids []int64) (map[int
 
 func (r *groupRepository) GetAccountCount(ctx context.Context, groupID int64) (int64, error) {
 	var count int64
-	if err := scanSingleRow(ctx, r.sql, "SELECT COUNT(*) FROM account_groups WHERE group_id = $1", []any{groupID}, &count); err != nil {
+	if err := scanSingleRow(ctx, r.sql, `
+		SELECT COUNT(*) FILTER (WHERE a.deleted_at IS NULL)
+		FROM account_groups ag
+		JOIN accounts a ON a.id = ag.account_id
+		WHERE ag.group_id = $1
+	`, []any{groupID}, &count); err != nil {
 		return 0, err
 	}
 	return count, nil
@@ -767,6 +772,28 @@ type groupAccountCounts struct {
 	RateLimited int64
 }
 
+const (
+	// 分组页的"可用"账号数必须与账号仓储的 ListSchedulableByGroupID 过滤口径一致。
+	groupAccountAvailableSQL = `a.deleted_at IS NULL
+				AND a.status = 'active'
+				AND a.schedulable = true
+				AND (a.expires_at IS NULL OR a.expires_at > NOW() OR a.auto_pause_on_expired = FALSE)
+				AND (a.rate_limit_reset_at IS NULL OR a.rate_limit_reset_at <= NOW())
+				AND (a.overload_until IS NULL OR a.overload_until <= NOW())
+				AND (a.temp_unschedulable_until IS NULL OR a.temp_unschedulable_until <= NOW())`
+
+	// 这里沿用历史字段名 RateLimitedAccountCount，但统计的是会让账号暂时退出调度的时间窗口。
+	groupAccountTemporarilyLimitedSQL = `a.deleted_at IS NULL
+				AND a.status = 'active'
+				AND a.schedulable = true
+				AND (a.expires_at IS NULL OR a.expires_at > NOW() OR a.auto_pause_on_expired = FALSE)
+				AND (
+					a.rate_limit_reset_at > NOW() OR
+					a.overload_until > NOW() OR
+					a.temp_unschedulable_until > NOW()
+				)`
+)
+
 func (r *groupRepository) loadAccountCounts(ctx context.Context, groupIDs []int64) (counts map[int64]groupAccountCounts, err error) {
 	counts = make(map[int64]groupAccountCounts, len(groupIDs))
 	if len(groupIDs) == 0 {
@@ -775,18 +802,14 @@ func (r *groupRepository) loadAccountCounts(ctx context.Context, groupIDs []int6
 
 	rows, err := r.sql.QueryContext(
 		ctx,
-		`SELECT ag.group_id,
-			COUNT(*) AS total,
-			COUNT(*) FILTER (WHERE a.status = 'active' AND a.schedulable = true) AS active,
-			COUNT(*) FILTER (WHERE a.status = 'active' AND (
-				a.rate_limit_reset_at > NOW() OR
-				a.overload_until > NOW() OR
-				a.temp_unschedulable_until > NOW()
-			)) AS rate_limited
+		fmt.Sprintf(`SELECT ag.group_id,
+			COUNT(*) FILTER (WHERE a.deleted_at IS NULL) AS total,
+			COUNT(*) FILTER (WHERE %s) AS active,
+			COUNT(*) FILTER (WHERE %s) AS rate_limited
 		FROM account_groups ag
 		JOIN accounts a ON a.id = ag.account_id
 		WHERE ag.group_id = ANY($1)
-		GROUP BY ag.group_id`,
+		GROUP BY ag.group_id`, groupAccountAvailableSQL, groupAccountTemporarilyLimitedSQL),
 		pq.Array(groupIDs),
 	)
 	if err != nil {

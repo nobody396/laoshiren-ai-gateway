@@ -9,6 +9,36 @@
             class="w-full sm:w-64"
             @search="onFilterChange"
           />
+          <div
+            class="flex w-full min-w-0 items-center rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/30 dark:border-dark-600 dark:bg-dark-800 sm:w-[24rem] xl:w-[26rem]"
+          >
+            <span class="shrink-0 px-3 text-xs font-medium text-gray-500 dark:text-dark-300">
+              {{ t('keys.baseUrl') }}
+            </span>
+            <input
+              :value="displayApiBaseUrl"
+              type="url"
+              readonly
+              class="min-w-0 flex-1 bg-transparent py-2.5 pr-2 font-mono text-sm text-gray-900 outline-none dark:text-gray-100"
+              @focus="selectBaseUrl"
+            />
+            <button
+              type="button"
+              @click="copyApiBaseUrl"
+              class="self-stretch border-l border-gray-200 px-3 text-gray-400 transition-colors hover:bg-gray-50 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500/40 dark:border-dark-600 dark:hover:bg-dark-700 dark:hover:text-primary-400"
+              :class="copiedBaseUrl ? 'text-green-500 dark:text-green-400' : ''"
+              :title="copiedBaseUrl ? t('keys.copied') : t('keys.copyBaseUrl')"
+              :aria-label="t('keys.copyBaseUrl')"
+            >
+              <Icon
+                v-if="copiedBaseUrl"
+                name="check"
+                size="sm"
+                :stroke-width="2"
+              />
+              <Icon v-else name="copy" size="sm" />
+            </button>
+          </div>
           <Select
             :model-value="filterGroupId"
             class="w-40"
@@ -1151,6 +1181,7 @@ const showCcsClientSelect = ref(false)
 const pendingCcsRow = ref<ApiKey | null>(null)
 const selectedKey = ref<ApiKey | null>(null)
 const copiedKeyId = ref<number | null>(null)
+const copiedBaseUrl = ref(false)
 const groupSelectorKeyId = ref<number | null>(null)
 const publicSettings = ref<PublicSettings | null>(null)
 const dropdownRef = ref<HTMLElement | null>(null)
@@ -1160,6 +1191,11 @@ let abortController: AbortController | null = null
 
 const groupCacheHitRateEnabled = computed(() => publicSettings.value?.group_cache_hit_rate_enabled === true)
 const hasOpenAIGroup = computed(() => groups.value.some((group) => group.platform === 'openai'))
+const displayApiBaseUrl = computed(() => {
+  const configuredBaseUrl = publicSettings.value?.api_base_url?.trim()
+  const fallbackBaseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+  return (configuredBaseUrl || fallbackBaseUrl).replace(/\/+$/, '')
+})
 
 // Get the currently selected key for group change
 const selectedKeyForGroup = computed(() => {
@@ -1289,6 +1325,21 @@ const copyToClipboard = async (text: string, keyId: number) => {
     setTimeout(() => {
       copiedKeyId.value = null
     }, 800)
+  }
+}
+
+const selectBaseUrl = (event: FocusEvent) => {
+  const target = event.target as HTMLInputElement
+  target.select()
+}
+
+const copyApiBaseUrl = async () => {
+  const success = await clipboardCopy(displayApiBaseUrl.value, t('keys.baseUrlCopied'))
+  if (success) {
+    copiedBaseUrl.value = true
+    setTimeout(() => {
+      copiedBaseUrl.value = false
+    }, 1200)
   }
 }
 

@@ -246,7 +246,7 @@ func TestOpsAlertWebhookNotificationsSendToConfiguredGroups(t *testing.T) {
 func TestBuildOpsAlertWebhookTextExplainsRootCause(t *testing.T) {
 	value := 100.0
 	threshold := 20.0
-	text := buildOpsAlertWebhookText(&OpsAlertRule{
+	text := buildOpsAlertWebhookTextWithDiagnosis(&OpsAlertRule{
 		Name:       "错误率极高",
 		MetricType: "error_rate",
 		Operator:   ">",
@@ -258,7 +258,7 @@ func TestBuildOpsAlertWebhookTextExplainsRootCause(t *testing.T) {
 		ThresholdValue: &threshold,
 		FiredAt:        time.Date(2026, 5, 18, 5, 11, 0, 0, time.FixedZone("CST", 8*60*60)),
 		Description:    "error_rate > 20.00 (current 100.00) over last 1m (overall)",
-	})
+	}, nil)
 
 	require.Contains(t, text, "结论：系统错误率高于阈值，当前 100.00%")
 	require.Contains(t, text, "级别：P0（最高优先级，可能影响可用性）")

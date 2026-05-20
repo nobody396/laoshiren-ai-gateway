@@ -30,10 +30,6 @@ func buildOpsWebhookTestMessage() string {
 	return fmt.Sprintf("老实人AI 运维通知测试\n时间：%s\n结果：群通知通道已连通", time.Now().UTC().Format(time.RFC3339))
 }
 
-func buildOpsAlertWebhookText(rule *OpsAlertRule, event *OpsAlertEvent) string {
-	return buildOpsAlertWebhookTextWithDiagnosis(rule, event, nil)
-}
-
 func buildOpsAlertWebhookTextWithDiagnosis(rule *OpsAlertRule, event *OpsAlertEvent, diagnosis *OpsAlertDiagnosis) string {
 	if rule == nil || event == nil {
 		return ""

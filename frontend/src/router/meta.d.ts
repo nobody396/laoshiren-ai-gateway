@@ -30,6 +30,33 @@ declare module 'vue-router' {
     title?: string
 
     /**
+     * i18n key used to resolve the page title.
+     */
+    titleKey?: string
+
+    /**
+     * Whether the site name should appear before the page title.
+     * @default false
+     */
+    titleSiteNameFirst?: boolean
+
+    /**
+     * Plain text page description used by headers and SEO metadata.
+     */
+    description?: string
+
+    /**
+     * i18n key used to resolve the page description.
+     */
+    descriptionKey?: string
+
+    /**
+     * Prevent this route from being indexed by search engines.
+     * @default false
+     */
+    noindex?: boolean
+
+    /**
      * Optional breadcrumb items for navigation
      */
     breadcrumbs?: Array<{

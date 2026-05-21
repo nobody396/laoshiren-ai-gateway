@@ -5,6 +5,7 @@ import router from './router'
 import i18n, { initI18n, registerLocaleChangeHandler } from './i18n'
 import { useAppStore } from '@/stores/app'
 import { resolveDocumentTitle } from './router/title'
+import { updateRouteSeo } from '@/utils/seo'
 import { vPermission } from './directives/permission'
 import './style.css'
 
@@ -43,8 +44,9 @@ async function bootstrap() {
 
   registerLocaleChangeHandler(() => {
     const route = router.currentRoute.value
-    document.title = resolveDocumentTitle(route.meta.title, appStore.siteName, route.meta.titleKey as string, {
-      siteNameFirst: route.meta.titleSiteNameFirst === true
+    updateRouteSeo(route, {
+      siteName: appStore.siteName,
+      siteLogo: appStore.siteLogo
     })
   })
 

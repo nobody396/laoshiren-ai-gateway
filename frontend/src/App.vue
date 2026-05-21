@@ -5,7 +5,9 @@ import Toast from '@/components/common/Toast.vue'
 import NavigationProgress from '@/components/common/NavigationProgress.vue'
 import AnnouncementPopup from '@/components/common/AnnouncementPopup.vue'
 import { useAppStore, useAuthStore, useSubscriptionStore, useAnnouncementStore } from '@/stores'
+import { useAdminSettingsStore } from '@/stores/adminSettings'
 import { getSetupStatus } from '@/api/setup'
+import { updateRouteSeo } from '@/utils/seo'
 
 const router = useRouter()
 const route = useRoute()
@@ -13,6 +15,17 @@ const appStore = useAppStore()
 const authStore = useAuthStore()
 const subscriptionStore = useSubscriptionStore()
 const announcementStore = useAnnouncementStore()
+const adminSettingsStore = useAdminSettingsStore()
+
+function resolveCustomPageTitle(): string | undefined {
+  if (route.name !== 'CustomPage') return undefined
+
+  const id = route.params.id as string
+  const publicItems = appStore.cachedPublicSettings?.custom_menu_items ?? []
+  const menuItem = publicItems.find((item) => item.id === id)
+    ?? (authStore.isAdmin ? adminSettingsStore.customMenuItems.find((item) => item.id === id) : undefined)
+  return menuItem?.label
+}
 
 /**
  * Update favicon dynamically
@@ -44,6 +57,18 @@ watch(
     if (newLogo) {
       updateFavicon(newLogo)
     }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => [appStore.siteName, appStore.siteLogo, route.fullPath],
+  () => {
+    updateRouteSeo(route, {
+      siteName: appStore.siteName,
+      siteLogo: appStore.siteLogo,
+      customTitle: resolveCustomPageTitle()
+    })
   },
   { immediate: true }
 )

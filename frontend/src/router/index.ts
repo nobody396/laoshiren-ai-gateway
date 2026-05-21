@@ -3,7 +3,7 @@
  * Defines all application routes with lazy loading and navigation guards
  */
 
-import {createRouter, createWebHistory, type RouteRecordRaw} from 'vue-router'
+import {createRouter, createWebHistory, type RouteLocationNormalized, type RouteRecordRaw} from 'vue-router'
 import {useAuthStore} from '@/stores/auth'
 import {useAppStore} from '@/stores/app'
 import {useAdminSettingsStore} from '@/stores/adminSettings'
@@ -11,7 +11,7 @@ import {usePermissionStore} from '@/stores/permission'
 import {useNavigationLoadingState} from '@/composables/useNavigationLoading'
 import {useRoutePrefetch} from '@/composables/useRoutePrefetch'
 import {getSetupStatus, type SetupStatus} from '@/api/setup'
-import {resolveDocumentTitle} from './title'
+import {updateRouteSeo} from '@/utils/seo'
 
 /**
  * Route definitions with lazy loading
@@ -37,6 +37,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: false,
       title: 'AI 编码中转',
+      description: '老实人 AI 提供面向开发者的 AI 编码中转服务，支持 Claude、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。',
       titleSiteNameFirst: true
     }
   },
@@ -52,7 +53,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/docs/DocsView.vue'),
     meta: {
       requiresAuth: false,
-      title: '文档'
+      title: '文档',
+      description: '老实人 AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
     }
   },
   {
@@ -61,7 +63,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/docs/DocsView.vue'),
     meta: {
       requiresAuth: false,
-      title: '文档'
+      title: '文档',
+      description: '老实人 AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
     }
   },
   {
@@ -717,6 +720,19 @@ const BACKEND_MODE_EXACT_PATHS = ['/', '/home']
 let cachedSetupStatus: SetupStatus | null = null
 let setupStatusPromise: Promise<SetupStatus | null> | null = null
 
+function resolveCustomPageTitle(to: RouteLocationNormalized): string | undefined {
+  if (to.name !== 'CustomPage') return undefined
+
+  const authStore = useAuthStore()
+  const appStore = useAppStore()
+  const adminSettingsStore = useAdminSettingsStore()
+  const id = to.params.id as string
+  const publicItems = appStore.cachedPublicSettings?.custom_menu_items ?? []
+  const menuItem = publicItems.find((item) => item.id === id)
+    ?? (authStore.isAdmin ? adminSettingsStore.customMenuItems.find((item) => item.id === id) : undefined)
+  return menuItem?.label
+}
+
 function isSetupRoutePath(path: string): boolean {
   return path === '/setup' || path.startsWith('/setup/')
 }
@@ -762,27 +778,12 @@ router.beforeEach(async (to, _from, next) => {
     return
   }
 
-  // Set page title
-  // For custom pages, use menu item label as document title
-  if (to.name === 'CustomPage') {
-    const id = to.params.id as string
-    const publicItems = appStore.cachedPublicSettings?.custom_menu_items ?? []
-    const adminSettingsStore = useAdminSettingsStore()
-    const menuItem = publicItems.find((item) => item.id === id)
-      ?? (authStore.isAdmin ? adminSettingsStore.customMenuItems.find((item) => item.id === id) : undefined)
-    if (menuItem?.label) {
-      const siteName = appStore.siteName || '老实人 AI'
-      document.title = `${menuItem.label} - ${siteName}`
-    } else {
-      document.title = resolveDocumentTitle(to.meta.title, appStore.siteName, to.meta.titleKey as string, {
-        siteNameFirst: to.meta.titleSiteNameFirst === true
-      })
-    }
-  } else {
-    document.title = resolveDocumentTitle(to.meta.title, appStore.siteName, to.meta.titleKey as string, {
-      siteNameFirst: to.meta.titleSiteNameFirst === true
-    })
-  }
+  // Set page title and SEO metadata in one place to avoid duplicate head tags.
+  updateRouteSeo(to, {
+    siteName: appStore.siteName,
+    siteLogo: appStore.siteLogo,
+    customTitle: resolveCustomPageTitle(to)
+  })
 
   // Check if route requires authentication
   const requiresAuth = to.meta.requiresAuth !== false // Default to true

@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /agent/
+Disallow: /dashboard
+Disallow: /key-usage
+Disallow: /keys
+Disallow: /usage
+Disallow: /redeem
+Disallow: /profile
+Disallow: /subscriptions
+Disallow: /purchase
+Disallow: /get-subscription
+Disallow: /topup
+Disallow: /invoice
+Disallow: /feedbacks
+Disallow: /custom/
+Disallow: /login
+Disallow: /register
+Disallow: /setup
+Disallow: /auth/
+Disallow: /email-verify
+Disallow: /forgot-password
+Disallow: /reset-password
+
+Sitemap: https://laoshirenai.com/sitemap.xml

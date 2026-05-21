@@ -2,7 +2,7 @@
   <section class="vip-tiers">
     <div class="vip-tiers__container mirror-reveal">
       <div class="seal-row">
-        <img src="/laoshirenai-icon.jpg" alt="老实人 AI" />
+        <img src="/laoshirenai-icon.jpg" alt="老实人AI" />
       </div>
       <h3 class="trusted-title">已被开发者广泛使用</h3>
       <div class="stats-list">

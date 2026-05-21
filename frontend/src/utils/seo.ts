@@ -3,12 +3,12 @@ import { i18n } from '@/i18n'
 import { findDocItemBySlug, resolveDocSlug, docsLastModified } from '@/docs/config'
 import { resolveDocumentTitle } from '@/router/title'
 
-const DEFAULT_SITE_NAME = '老实人 AI'
+const DEFAULT_SITE_NAME = '老实人AI'
 const DEFAULT_SITE_ORIGIN = 'https://laoshirenai.com'
 const DEFAULT_SITE_LOGO = '/laoshirenai-icon.jpg'
 const DEFAULT_OG_IMAGE = '/og-image.png'
-const HOME_DESCRIPTION = '老实人 AI 提供面向开发者的 AI 编码中转服务，支持 Claude、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。'
-const DOCS_DESCRIPTION = '老实人 AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
+const HOME_DESCRIPTION = '老实人AI 提供面向开发者的 AI 编码中转服务，支持 Claude Code、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。'
+const DOCS_DESCRIPTION = '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
 
 const INDEXABLE_ROUTE_NAMES = new Set(['Home', 'Docs', 'DocsPage'])
 
@@ -157,6 +157,7 @@ function organizationNode(siteName: string, siteLogo: string) {
     '@type': 'Organization',
     '@id': `${getSiteOrigin()}/#organization`,
     name: siteName,
+    alternateName: ['老实人 AI', '老实人ai', 'Laoshiren AI', 'laoshirenai'],
     url: getSiteOrigin(),
     logo: absoluteUrl(siteLogo || DEFAULT_SITE_LOGO)
   }
@@ -188,6 +189,7 @@ function buildStructuredData(route: RouteLocationNormalizedLoaded, seo: Omit<Rou
           '@id': `${getSiteOrigin()}/#website`,
           url: getSiteOrigin(),
           name: siteName,
+          alternateName: ['老实人 AI', '老实人ai', 'Laoshiren AI', 'laoshirenai'],
           description: seo.description,
           publisher: { '@id': org['@id'] },
           inLanguage: 'zh-CN'

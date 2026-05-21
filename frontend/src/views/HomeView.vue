@@ -14,7 +14,7 @@
         :dashboard-path="dashboardPath"
       />
 
-      <!-- 为什么选择老实人 AI -->
+      <!-- 为什么选择老实人AI -->
       <WhyChoose :feature-cards="featureCards" />
 
       <!-- Claude 组合 -->
@@ -433,7 +433,7 @@ const footerSections = computed(() => [
   {
     title: '产品',
     links: [
-      { label: '老实人 AI 介绍', href: '#about', external: false },
+      { label: '老实人AI 介绍', href: '#about', external: false },
       ...(showModelReports.value
         ? [{ label: '模型检测报告', href: '#model-reports', external: false }]
         : []),

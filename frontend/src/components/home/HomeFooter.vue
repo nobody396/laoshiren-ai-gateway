@@ -5,9 +5,9 @@
       <div class="home-footer__grid">
         <div class="home-footer__brand">
           <div class="brand-row">
-            <img src="/laoshirenai-icon.jpg" alt="老实人 AI" />
+            <img src="/laoshirenai-icon.jpg" alt="老实人AI" />
             <div>
-              <span class="brand-name">老实人 AI</span>
+              <span class="brand-name">老实人AI</span>
               <span class="brand-tag">A Quiet Place for Code</span>
             </div>
           </div>
@@ -35,7 +35,7 @@
       </div>
 
       <div class="home-footer__bottom">
-        <p>© MMXXVI · 老实人 AI · Made with reverence for craft.</p>
+        <p>© MMXXVI · 老实人AI · Made with reverence for craft.</p>
         <p class="home-footer__company">γνῶθι σεαυτόν</p>
       </div>
     </div>

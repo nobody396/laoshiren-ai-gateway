@@ -36,7 +36,7 @@ describe('updateRouteSeo', () => {
       },
     }))
 
-    expect(document.title).toBe('老实人 AI - AI 编码中转')
+    expect(document.title).toBe('老实人AI - AI 编码中转')
     expect(content('meta[name="robots"]')).toBe('index,follow')
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://laoshirenai.com/')
     expect(content('meta[property="og:type"]')).toBe('website')
@@ -51,7 +51,7 @@ describe('updateRouteSeo', () => {
       meta: { title: '文档' },
     }))
 
-    expect(document.title).toBe('Claude Code 快速开始指南 - 文档 - 老实人 AI')
+    expect(document.title).toBe('Claude Code 快速开始指南 - 文档 - 老实人AI')
     expect(content('meta[name="robots"]')).toBe('index,follow')
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
       'https://laoshirenai.com/docs/claude-code-quickstart'
@@ -67,7 +67,7 @@ describe('updateRouteSeo', () => {
       meta: { title: 'Login' },
     }))
 
-    expect(document.title).toBe('Login - 老实人 AI')
+    expect(document.title).toBe('Login - 老实人AI')
     expect(content('meta[name="robots"]')).toBe('noindex,nofollow')
     expect(document.head.querySelectorAll('script[type="application/ld+json"]').length).toBe(0)
   })
@@ -91,6 +91,6 @@ describe('updateRouteSeo', () => {
     expect(document.head.querySelectorAll('meta[name="robots"]').length).toBe(1)
     expect(document.head.querySelectorAll('meta[property="og:title"]').length).toBe(1)
     expect(document.head.querySelectorAll('link[rel="canonical"]').length).toBe(1)
-    expect(document.title).toBe('Codex 快速开始指南 - 文档 - 老实人 AI')
+    expect(document.title).toBe('Codex 快速开始指南 - 文档 - 老实人AI')
   })
 })

@@ -13,13 +13,14 @@ import {
 } from '@/api/admin/system'
 import { getPublicSettings as fetchPublicSettingsAPI } from '@/api/auth'
 
-const DEFAULT_SITE_NAME = '老实人 AI'
+const DEFAULT_SITE_NAME = '老实人AI'
 const DEFAULT_SITE_LOGO = '/laoshirenai-icon.jpg'
 const LEGACY_SITE_NAMES = new Set(['Sub2API', 'Dragon', 'DragonCode', 'Dragon Code'])
+const CANONICAL_SITE_NAMES = new Set(['老实人 AI', '老实人ai', 'laoshirenai', 'Laoshiren AI'])
 
 function normalizeSiteName(name?: string): string {
   const trimmed = name?.trim()
-  if (!trimmed || LEGACY_SITE_NAMES.has(trimmed)) {
+  if (!trimmed || LEGACY_SITE_NAMES.has(trimmed) || CANONICAL_SITE_NAMES.has(trimmed)) {
     return DEFAULT_SITE_NAME
   }
   return trimmed
@@ -308,9 +309,16 @@ export const useAppStore = defineStore('app', () => {
    * Apply settings to store state (internal helper to avoid code duplication)
    */
   function applySettings(config: PublicSettings): void {
-    cachedPublicSettings.value = config
-    siteName.value = normalizeSiteName(config.site_name)
-    siteLogo.value = normalizeSiteLogo(config.site_logo)
+    const normalizedSiteName = normalizeSiteName(config.site_name)
+    const normalizedSiteLogo = normalizeSiteLogo(config.site_logo)
+
+    cachedPublicSettings.value = {
+      ...config,
+      site_name: normalizedSiteName,
+      site_logo: normalizedSiteLogo
+    }
+    siteName.value = normalizedSiteName
+    siteLogo.value = normalizedSiteLogo
     siteVersion.value = config.version || ''
     contactInfo.value = config.contact_info || ''
     techSupportQRCode.value = config.tech_support_qrcode || ''
@@ -328,7 +336,7 @@ export const useAppStore = defineStore('app', () => {
     // Check for injected config from server (eliminates flash)
     if (!publicSettingsLoaded.value && !force && window.__APP_CONFIG__) {
       applySettings(window.__APP_CONFIG__)
-      return window.__APP_CONFIG__
+      return cachedPublicSettings.value ? { ...cachedPublicSettings.value } : window.__APP_CONFIG__
     }
 
     // Return cached data if available and not forcing refresh
@@ -391,7 +399,7 @@ export const useAppStore = defineStore('app', () => {
     try {
       const data = await fetchPublicSettingsAPI()
       applySettings(data)
-      return data
+      return cachedPublicSettings.value ? { ...cachedPublicSettings.value } : data
     } catch (error) {
       console.error('Failed to fetch public settings:', error)
       return null

@@ -6,7 +6,7 @@
       <section class="auth-shell__brand-panel">
         <router-link to="/" class="auth-shell__brand">
           <span class="auth-shell__seal">
-            <img :src="siteLogo || '/laoshirenai-icon.jpg'" alt="老实人 AI" />
+            <img :src="siteLogo || '/laoshirenai-icon.jpg'" alt="老实人AI" />
           </span>
           <span>
             <span class="auth-shell__brand-name">{{ siteName }}</span>
@@ -52,7 +52,7 @@ import { sanitizeUrl } from '@/utils/url'
 
 const appStore = useAppStore()
 
-const siteName = computed(() => appStore.siteName || '老实人 AI')
+const siteName = computed(() => appStore.siteName || '老实人AI')
 const siteLogo = computed(() => sanitizeUrl(appStore.siteLogo || '/laoshirenai-icon.jpg', { allowRelative: true, allowDataUrl: true }))
 const currentYear = computed(() => new Date().getFullYear())
 

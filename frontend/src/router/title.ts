@@ -14,7 +14,7 @@ export function resolveDocumentTitle(
   titleKey?: string,
   options: TitleOptions = {}
 ): string {
-  const normalizedSiteName = typeof siteName === 'string' && siteName.trim() ? siteName.trim() : '老实人 AI'
+  const normalizedSiteName = typeof siteName === 'string' && siteName.trim() ? siteName.trim() : '老实人AI'
 
   if (typeof titleKey === 'string' && titleKey.trim()) {
     const translated = i18n.global.t(titleKey)

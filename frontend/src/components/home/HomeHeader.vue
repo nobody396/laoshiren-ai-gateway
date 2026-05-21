@@ -5,10 +5,10 @@
       <!-- 品牌 Logo -->
       <router-link to="/" class="home-header__brand">
         <span class="home-header__seal">
-          <img src="/laoshirenai-icon.jpg" alt="老实人 AI" class="home-header__logo" />
+          <img src="/laoshirenai-icon.jpg" alt="老实人AI" class="home-header__logo" />
         </span>
         <span class="home-header__brand-text">
-          <span class="home-header__brand-name">老实人 AI</span>
+          <span class="home-header__brand-name">老实人AI</span>
           <span class="home-header__brand-tag">A Quiet Place for Code</span>
         </span>
       </router-link>

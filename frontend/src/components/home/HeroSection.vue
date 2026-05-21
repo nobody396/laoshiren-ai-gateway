@@ -2,15 +2,15 @@
   <section class="hero-section">
     <div class="hero-section__container">
       <div class="hero-section__content">
-        <div class="hero-section__eyebrow mirror-reveal">Founded on Craft · MMXXVI</div>
+        <div class="hero-section__eyebrow mirror-reveal">老实人AI · AI Coding Gateway · MMXXVI</div>
         <h1 class="hero-section__title">
-          <span class="mirror-reveal" style="transition-delay: 0.08s">Code with</span>
-          <em class="mirror-reveal" style="transition-delay: 0.16s">clarity.</em>
+          <span class="mirror-reveal" style="transition-delay: 0.08s">老实人AI</span>
+          <em class="mirror-reveal" style="transition-delay: 0.16s">编码中转</em>
         </h1>
         <p class="hero-section__desc mirror-reveal" style="transition-delay: 0.2s">
-          <span>让每一行代码都经得起审视。</span>
+          <span>Code with clarity. 让每一行代码都经得起审视。</span>
           <span>像柏拉图与门徒在柱廊下对谈一样，</span>
-          <span>与 Claude、ChatGPT、Gemini 一起思考。</span>
+          <span>通过老实人AI与 Claude Code、Codex、ChatGPT、Gemini 一起思考。</span>
         </p>
 
         <div class="hero-section__actions mirror-reveal" style="transition-delay: 0.32s">

@@ -37,7 +37,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: false,
       title: 'AI 编码中转',
-      description: '老实人 AI 提供面向开发者的 AI 编码中转服务，支持 Claude、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。',
+      description: '老实人AI 提供面向开发者的 AI 编码中转服务，支持 Claude Code、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。',
       titleSiteNameFirst: true
     }
   },
@@ -54,7 +54,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: false,
       title: '文档',
-      description: '老实人 AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
+      description: '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
     }
   },
   {
@@ -64,7 +64,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: false,
       title: '文档',
-      description: '老实人 AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
+      description: '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
     }
   },
   {

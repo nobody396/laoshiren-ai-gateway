@@ -493,15 +493,16 @@ type ClaudeUsage struct {
 
 // ForwardResult 转发结果
 type ForwardResult struct {
-	RequestID        string
-	Usage            ClaudeUsage
-	Model            string
-	UpstreamModel    string
-	Stream           bool
-	Duration         time.Duration
-	FirstTokenMs     *int // 首字时间（流式请求）
-	ClientDisconnect bool // 客户端是否在流式传输过程中断开
-	ReasoningEffort  *string
+	RequestID           string
+	Usage               ClaudeUsage
+	Model               string
+	UpstreamModel       string
+	Stream              bool
+	Duration            time.Duration
+	FirstTokenMs        *int // 首字时间（流式请求）
+	ClientDisconnect    bool // 客户端是否在流式传输过程中断开
+	ReasoningEffort     *string
+	CachePolicyDecision *CachePolicyDecision
 
 	// 图片生成计费字段（图片生成模型使用）
 	ImageCount int    // 生成的图片数量
@@ -545,6 +546,7 @@ type GatewayService struct {
 	accountRepo              AccountRepository
 	groupRepo                GroupRepository
 	usageLogRepo             UsageLogRepository
+	cachePolicyRepo          CachePolicyRepository
 	usageBillingRepo         UsageBillingRepository
 	userRepo                 UserRepository
 	userSubRepo              UserSubscriptionRepository
@@ -585,6 +587,7 @@ func NewGatewayService(
 	accountRepo AccountRepository,
 	groupRepo GroupRepository,
 	usageLogRepo UsageLogRepository,
+	cachePolicyRepo CachePolicyRepository,
 	usageBillingRepo UsageBillingRepository,
 	userRepo UserRepository,
 	userSubRepo UserSubscriptionRepository,
@@ -618,6 +621,7 @@ func NewGatewayService(
 		accountRepo:              accountRepo,
 		groupRepo:                groupRepo,
 		usageLogRepo:             usageLogRepo,
+		cachePolicyRepo:          cachePolicyRepo,
 		usageBillingRepo:         usageBillingRepo,
 		userRepo:                 userRepo,
 		userSubRepo:              userSubRepo,
@@ -4005,6 +4009,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 	if s.shouldInjectAnthropicCacheTTL1h(ctx, account) {
 		body = injectAnthropicCacheControlTTL1h(body)
 	}
+	body, cacheDecision := s.applyAnthropicCachePolicy(ctx, c, account, originalModel, body)
 
 	// 获取凭证
 	token, tokenType, err := s.GetAccessToken(ctx, account)
@@ -4068,6 +4073,29 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 			respBody, readErr := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
 			if readErr == nil {
 				_ = resp.Body.Close()
+
+				if isAnthropicCacheTTLOrder400(respBody) && cacheDecision != nil && !cacheDecision.Retried && attempt < maxRetryAttempts && time.Since(retryStart) < maxRetryElapsed {
+					markAnthropicCacheTTLRetry(cacheDecision, "ttl_order_400_retry_safe_5m")
+					body = forceEphemeralCacheControlTTL(body, cacheTTLTarget5m)
+					setOpsUpstreamRequestBody(c, body)
+					appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+						Platform:           account.Platform,
+						AccountID:          account.ID,
+						AccountName:        account.Name,
+						UpstreamStatusCode: resp.StatusCode,
+						UpstreamRequestID:  resp.Header.Get("x-request-id"),
+						Kind:               "cache_ttl_order_retry",
+						Message:            extractUpstreamErrorMessage(respBody),
+						Detail: func() string {
+							if s.cfg != nil && s.cfg.Gateway.LogUpstreamErrorBody {
+								return truncateString(string(respBody), s.cfg.Gateway.LogUpstreamErrorBodyMaxBytes)
+							}
+							return ""
+						}(),
+					})
+					logger.LegacyPrintf("service.gateway", "Account %d: detected Anthropic cache TTL order error, retrying once with all cache blocks as 5m", account.ID)
+					continue
+				}
 
 				if s.isThinkingBlockSignatureError(respBody) && s.settingService.IsSignatureRectifierEnabled(ctx) {
 					appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
@@ -4445,14 +4473,15 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 	}
 
 	return &ForwardResult{
-		RequestID:        resp.Header.Get("x-request-id"),
-		Usage:            *usage,
-		Model:            originalModel, // 使用原始模型用于计费和日志
-		UpstreamModel:    mappedModel,
-		Stream:           reqStream,
-		Duration:         time.Since(startTime),
-		FirstTokenMs:     firstTokenMs,
-		ClientDisconnect: clientDisconnect,
+		RequestID:           resp.Header.Get("x-request-id"),
+		Usage:               *usage,
+		Model:               originalModel, // 使用原始模型用于计费和日志
+		UpstreamModel:       mappedModel,
+		Stream:              reqStream,
+		Duration:            time.Since(startTime),
+		FirstTokenMs:        firstTokenMs,
+		ClientDisconnect:    clientDisconnect,
+		CachePolicyDecision: cacheDecision,
 	}, nil
 }
 
@@ -4480,6 +4509,8 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 
 	logger.LegacyPrintf("service.gateway", "[Anthropic 自动透传] 命中 API Key 透传分支: account=%d name=%s model=%s stream=%v",
 		account.ID, account.Name, reqModel, reqStream)
+
+	body, cacheDecision := s.applyAnthropicCachePolicy(ctx, c, account, reqModel, body)
 
 	if c != nil {
 		c.Set("anthropic_passthrough", true)
@@ -4523,7 +4554,38 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 			return nil, fmt.Errorf("upstream request failed: %s", safeErr)
 		}
 
-		// 透传分支禁止 400 请求体降级重试（该重试会改写请求体）
+		if resp.StatusCode == 400 {
+			respBody, readErr := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+			if readErr == nil {
+				_ = resp.Body.Close()
+				if isAnthropicCacheTTLOrder400(respBody) && cacheDecision != nil && !cacheDecision.Retried && attempt < maxRetryAttempts && time.Since(retryStart) < maxRetryElapsed {
+					markAnthropicCacheTTLRetry(cacheDecision, "passthrough_ttl_order_400_retry_safe_5m")
+					body = forceEphemeralCacheControlTTL(body, cacheTTLTarget5m)
+					setOpsUpstreamRequestBody(c, body)
+					appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+						Platform:           account.Platform,
+						AccountID:          account.ID,
+						AccountName:        account.Name,
+						UpstreamStatusCode: resp.StatusCode,
+						UpstreamRequestID:  resp.Header.Get("x-request-id"),
+						Passthrough:        true,
+						Kind:               "cache_ttl_order_retry",
+						Message:            extractUpstreamErrorMessage(respBody),
+						Detail: func() string {
+							if s.cfg != nil && s.cfg.Gateway.LogUpstreamErrorBody {
+								return truncateString(string(respBody), s.cfg.Gateway.LogUpstreamErrorBodyMaxBytes)
+							}
+							return ""
+						}(),
+					})
+					logger.LegacyPrintf("service.gateway", "Anthropic passthrough account %d: detected cache TTL order error, retrying once with all cache blocks as 5m", account.ID)
+					continue
+				}
+				resp.Body = io.NopCloser(bytes.NewReader(respBody))
+			}
+		}
+
+		// 透传分支禁止其他 400 请求体降级重试（该重试会改写请求体）
 		if resp.StatusCode >= 400 && resp.StatusCode != 400 && s.shouldRetryUpstreamError(account, resp.StatusCode) {
 			if attempt < maxRetryAttempts {
 				elapsed := time.Since(retryStart)
@@ -4671,14 +4733,15 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 	}
 
 	return &ForwardResult{
-		RequestID:        resp.Header.Get("x-request-id"),
-		Usage:            *usage,
-		Model:            reqModel,
-		UpstreamModel:    reqModel,
-		Stream:           reqStream,
-		Duration:         time.Since(startTime),
-		FirstTokenMs:     firstTokenMs,
-		ClientDisconnect: clientDisconnect,
+		RequestID:           resp.Header.Get("x-request-id"),
+		Usage:               *usage,
+		Model:               reqModel,
+		UpstreamModel:       reqModel,
+		Stream:              reqStream,
+		Duration:            time.Since(startTime),
+		FirstTokenMs:        firstTokenMs,
+		ClientDisconnect:    clientDisconnect,
+		CachePolicyDecision: cacheDecision,
 	}, nil
 }
 
@@ -7548,6 +7611,65 @@ func writeUsageLogBestEffort(ctx context.Context, repo UsageLogRepository, usage
 	}
 }
 
+func writeCachePolicyDecisionBestEffort(ctx context.Context, repo CachePolicyRepository, decision *CachePolicyDecision, logKey string) {
+	if repo == nil || decision == nil {
+		return
+	}
+	decisionCtx, cancel := detachedBillingContext(ctx)
+	defer cancel()
+	if err := repo.CreateDecision(decisionCtx, decision); err != nil {
+		logger.LegacyPrintf(logKey, "Create cache policy decision failed: %v", err)
+	}
+}
+
+func (s *GatewayService) recordCachePolicyDecision(ctx context.Context, result *ForwardResult, usageLog *UsageLog, cost *CostBreakdown) {
+	if s == nil || result == nil || result.CachePolicyDecision == nil || usageLog == nil {
+		return
+	}
+	decision := *result.CachePolicyDecision
+	decision.RequestID = usageLog.RequestID
+	if ctx != nil {
+		if clientRequestID, _ := ctx.Value(ctxkey.ClientRequestID).(string); strings.TrimSpace(clientRequestID) != "" {
+			decision.ClientRequestID = strings.TrimSpace(clientRequestID)
+		}
+	}
+	decision.UserID = cachePolicyInt64Ptr(usageLog.UserID)
+	decision.APIKeyID = cachePolicyInt64Ptr(usageLog.APIKeyID)
+	decision.AccountID = cachePolicyInt64Ptr(usageLog.AccountID)
+	if usageLog.GroupID != nil {
+		decision.GroupID = cachePolicyInt64Ptr(*usageLog.GroupID)
+	}
+	if strings.TrimSpace(decision.Model) == "" {
+		decision.Model = usageLog.Model
+	}
+	if strings.TrimSpace(decision.PolicyMode) == "" {
+		decision.PolicyMode = CachePolicyModeSafe5m
+	}
+	if strings.TrimSpace(decision.PolicyVersion) == "" {
+		decision.PolicyVersion = "v1"
+	}
+	if strings.TrimSpace(decision.ActualTTL) == "" {
+		decision.ActualTTL = cacheTTLTarget5m
+	}
+	decision.DurationMs = usageLog.DurationMs
+	decision.FirstTokenMs = usageLog.FirstTokenMs
+	decision.CacheCreation5mTokens = usageLog.CacheCreation5mTokens
+	decision.CacheCreation1hTokens = usageLog.CacheCreation1hTokens
+	decision.CacheReadTokens = usageLog.CacheReadTokens
+	if cost != nil {
+		decision.Cost = cost.ActualCost
+	}
+	if decision.CreatedAt.IsZero() {
+		decision.CreatedAt = time.Now()
+	}
+	writeCachePolicyDecisionBestEffort(ctx, s.cachePolicyRepo, &decision, "service.gateway")
+}
+
+func cachePolicyInt64Ptr(v int64) *int64 {
+	out := v
+	return &out
+}
+
 func persistUsageLogForBilling(ctx context.Context, repo UsageLogRepository, usageLog *UsageLog, logKey string) error {
 	if repo == nil {
 		return errors.New("usage log repository is required for billing")
@@ -7717,6 +7839,7 @@ func (s *GatewayService) RecordUsage(ctx context.Context, input *RecordUsageInpu
 	if subscription != nil {
 		usageLog.SubscriptionID = &subscription.ID
 	}
+	s.recordCachePolicyDecision(ctx, result, usageLog, cost)
 
 	if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
 		writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.gateway")
@@ -7903,6 +8026,7 @@ func (s *GatewayService) RecordUsageWithLongContext(ctx context.Context, input *
 	if subscription != nil {
 		usageLog.SubscriptionID = &subscription.ID
 	}
+	s.recordCachePolicyDecision(ctx, result, usageLog, cost)
 
 	if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
 		writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.gateway")

@@ -310,6 +310,11 @@ const (
 	SettingKeyEnableMetadataPassthrough          = "enable_metadata_passthrough"
 	SettingKeyEnableCCHSigning                   = "enable_cch_signing"
 	SettingKeyEnableAnthropicCacheTTL1hInjection = "enable_anthropic_cache_ttl_1h_injection"
+	SettingKeyAnthropicCachePolicyMode           = "anthropic_cache_policy_mode"
+	SettingKeyAnthropicCachePolicyVersion        = "anthropic_cache_policy_version"
+	SettingKeyAnthropicCachePolicyPhase          = "anthropic_cache_policy_phase"
+	SettingKeyAnthropicCachePolicyTokenThreshold = "anthropic_cache_policy_token_threshold"
+	SettingKeyAnthropicCachePolicyIntervalMins   = "anthropic_cache_policy_interval_threshold_minutes"
 
 	// Balance Alert
 	SettingKeyBalanceAlertEnabled          = "balance_alert_enabled"

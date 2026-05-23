@@ -1803,8 +1803,66 @@ const openChatbotWithKey = async (row: ApiKey) => {
   }
 }
 
-const buildCcsProviderName = (_row: ApiKey, _app: 'claude' | 'codex' | 'gemini'): string => {
-  return 'laoshirenai'
+const trimCcsLabel = (value: string | null | undefined): string => value?.trim() || ''
+
+const buildCcsProviderName = (row: ApiKey, app: 'claude' | 'codex' | 'gemini'): string => {
+  const siteName = trimCcsLabel(publicSettings.value?.site_name) || 'sub2api'
+  const appLabel = app === 'codex' ? 'Codex' : app === 'gemini' ? 'Gemini' : 'Claude'
+  const groupName = trimCcsLabel(row.group?.name)
+  const keyName = trimCcsLabel(row.name)
+  const parts = [siteName, appLabel]
+
+  if (groupName) {
+    parts.push(groupName)
+  }
+  if (keyName && keyName !== groupName) {
+    parts.push(keyName)
+  }
+
+  const name = parts.join(' - ')
+  return name.length > 96 ? `${name.slice(0, 93)}...` : name
+}
+
+const encodeBase64Utf8 = (value: string): string => {
+  const bytes = new TextEncoder().encode(value)
+  let binary = ''
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte)
+  })
+  return btoa(binary)
+}
+
+const escapeTomlString = (value: string): string => {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r')
+}
+
+const buildCodexCcsConfig = (endpoint: string, apiKey: string, model: string): string => {
+  const providerName = 'laoshirenai'
+  const safeEndpoint = escapeTomlString(endpoint)
+  const safeModel = escapeTomlString(model)
+
+  const config = `model_provider = "${providerName}"
+model = "${safeModel}"
+review_model = "${safeModel}"
+model_reasoning_effort = "high"
+disable_response_storage = true
+network_access = "enabled"
+windows_wsl_setup_acknowledged = true
+model_context_window = 1000000
+model_auto_compact_token_limit = 900000
+
+[model_providers.${providerName}]
+name = "${providerName}"
+base_url = "${safeEndpoint}"
+wire_api = "responses"
+requires_openai_auth = true`
+
+  return JSON.stringify({
+    auth: {
+      OPENAI_API_KEY: apiKey
+    },
+    config
+  })
 }
 
 const buildCcsProviderNotes = (row: ApiKey, endpoint: string): string => {
@@ -1862,6 +1920,7 @@ const executeCcsImport = (row: ApiKey, clientType: 'claude' | 'gemini') => {
   const providerName = buildCcsProviderName(row, app)
   const providerNotes = buildCcsProviderNotes(row, endpoint)
 
+  const defaultModel = 'gpt-5.5'
   const params = new URLSearchParams({
     resource: 'provider',
     app: app,
@@ -1876,7 +1935,8 @@ const executeCcsImport = (row: ApiKey, clientType: 'claude' | 'gemini') => {
     usageAutoInterval: '30'
   })
   if (platform === 'openai') {
-    params.set('model', 'gpt-5.5')
+    params.set('model', defaultModel)
+    params.set('config', encodeBase64Utf8(buildCodexCcsConfig(endpoint, row.key, defaultModel)))
   }
   const deeplink = `ccswitch://v1/import?${params.toString()}`
 

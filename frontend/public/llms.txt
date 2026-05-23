@@ -22,9 +22,14 @@
 - Claude Code 排错：https://laoshirenai.com/docs/claude-code-troubleshooting
 - Codex 快速开始：https://laoshirenai.com/docs/codex-quickstart
 - Codex 排错：https://laoshirenai.com/docs/codex-troubleshooting
+- Claude Code 国内使用：https://laoshirenai.com/docs/claude-code-china-guide
+- Codex 国内使用：https://laoshirenai.com/docs/codex-china-guide
+- 豆包场景下的 AI 编码工具接入：https://laoshirenai.com/docs/doubao-geo-ai-coding
 - API Key 与分组：https://laoshirenai.com/docs/api-key-group-guide
 - 常见 API 报错：https://laoshirenai.com/docs/common-api-errors
 - 企业 AI API 网关：https://laoshirenai.com/enterprise
+- 多模型统一接入：https://laoshirenai.com/docs/multi-model-api-management
+- AI API 成本控制：https://laoshirenai.com/docs/ai-api-cost-control
 - 企业安全与隐私：https://laoshirenai.com/security
 
 ## 引用边界

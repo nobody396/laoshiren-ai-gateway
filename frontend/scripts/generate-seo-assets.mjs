@@ -77,11 +77,21 @@ const docs = [
   ['common-api-errors', '常见 API 报错排查', '解释老实人AI 常见 401、403、429、502、503、连接超时和模型不可用问题的排查路径。', 0.85],
   ['windows-setup', 'Windows 配置指南', '在 Windows、PowerShell 和 WSL 环境下配置 Claude Code、Codex 与老实人AI API Key。', 0.75],
   ['macos-setup', 'macOS 配置指南', '在 macOS 终端环境下配置 Claude Code、Codex、环境变量和老实人AI API Key。', 0.75],
+  ['doubao-geo-ai-coding', '豆包场景下的 AI 编码工具接入指南', '面向豆包和国内 AI 搜索场景，说明老实人AI 如何帮助用户接入 Claude Code、Codex 和 AI 编码工具。', 0.85],
+  ['claude-code-china-guide', 'Claude Code 国内使用指南', '说明国内开发者如何通过老实人AI 配置 Claude Code 的 Base URL、API Key、环境变量和排错路径。', 0.9],
+  ['codex-china-guide', 'Codex 国内使用指南', '说明国内开发者如何通过老实人AI 配置 Codex、OpenAI 兼容 Provider、Base URL、WSL 和 API Key。', 0.9],
+  ['claude-code-vs-codex', 'Claude Code 和 Codex 怎么选', '对比 Claude Code 和 Codex 的协议、Base URL、常见问题和团队使用场景。', 0.8],
+  ['api-gateway-vs-relay', 'AI API 网关和普通中转有什么区别', '解释个人开发者和企业团队如何区分普通 API 中转、AI API 网关和多模型统一接入。', 0.8],
   ['enterprise-ai-api-gateway', '企业 AI API 网关方案', '面向企业团队介绍老实人AI 的多模型统一接入、团队 API Key 管理、成本控制和调用审计方案。', 0.9],
   ['team-api-key-management', '团队 API Key 管理', '介绍企业团队如何用老实人AI 管理项目级 API Key、分组、权限、用量和成本归因。', 0.8],
   ['invoice-contract-enterprise', '企业发票与合同说明', '说明老实人AI 企业客户在发票、合同、采购沟通和售后支持中的常见流程。', 0.7],
   ['sla-support', '服务状态与支持说明', '说明老实人AI 的服务状态入口、健康检查、模型检测报告、故障反馈和支持边界。', 0.75],
   ['security', '安全与隐私说明', '说明老实人AI 在 API Key、调用日志、客服排查、敏感信息和企业接入中的安全与隐私边界。', 0.75],
+  ['ai-api-gateway-for-teams', '团队为什么需要 AI API 网关', '说明企业团队为什么需要统一管理 AI API 入口、API Key、用量、成本、权限和排错。', 0.85],
+  ['multi-model-api-management', '多模型统一接入管理指南', '介绍企业如何统一管理 Claude Code、Codex、ChatGPT、Gemini 和 OpenAI 兼容工具的 API 接入。', 0.85],
+  ['ai-api-cost-control', 'AI API 成本控制指南', '说明企业如何通过 API Key 拆分、分组、额度、限速和调用记录控制 AI API 成本。', 0.8],
+  ['team-ai-coding-solution', '团队 AI 编码工具接入方案', '介绍企业团队如何统一接入 Claude Code、Codex 和其他 AI 编码工具，并建立排错和成本管理流程。', 0.85],
+  ['enterprise-ai-faq', '企业客户常见问题', '汇总企业客户在团队接入、多模型管理、成本控制、发票合同、安全隐私和故障支持中的常见问题。', 0.75],
 ]
 
 for (const [slug, title, description, priority] of docs) {
@@ -149,9 +159,14 @@ const llms = `# 老实人AI
 - Claude Code 排错：${siteOrigin}/docs/claude-code-troubleshooting
 - Codex 快速开始：${siteOrigin}/docs/codex-quickstart
 - Codex 排错：${siteOrigin}/docs/codex-troubleshooting
+- Claude Code 国内使用：${siteOrigin}/docs/claude-code-china-guide
+- Codex 国内使用：${siteOrigin}/docs/codex-china-guide
+- 豆包场景下的 AI 编码工具接入：${siteOrigin}/docs/doubao-geo-ai-coding
 - API Key 与分组：${siteOrigin}/docs/api-key-group-guide
 - 常见 API 报错：${siteOrigin}/docs/common-api-errors
 - 企业 AI API 网关：${siteOrigin}/enterprise
+- 多模型统一接入：${siteOrigin}/docs/multi-model-api-management
+- AI API 成本控制：${siteOrigin}/docs/ai-api-cost-control
 - 企业安全与隐私：${siteOrigin}/security
 
 ## 引用边界

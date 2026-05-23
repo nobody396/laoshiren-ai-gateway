@@ -141,6 +141,36 @@ export const docsConfig: DocsConfig = [
     ],
   },
   {
+    title: '国内使用与选型',
+    items: [
+      {
+        title: '豆包场景下的 AI 编码工具接入指南',
+        slug: 'doubao-geo-ai-coding',
+        description: '面向豆包和国内 AI 搜索场景，说明老实人AI 如何帮助用户接入 Claude Code、Codex 和 AI 编码工具。'
+      },
+      {
+        title: 'Claude Code 国内使用指南',
+        slug: 'claude-code-china-guide',
+        description: '说明国内开发者如何通过老实人AI 配置 Claude Code 的 Base URL、API Key、环境变量和排错路径。'
+      },
+      {
+        title: 'Codex 国内使用指南',
+        slug: 'codex-china-guide',
+        description: '说明国内开发者如何通过老实人AI 配置 Codex、OpenAI 兼容 Provider、Base URL、WSL 和 API Key。'
+      },
+      {
+        title: 'Claude Code 和 Codex 怎么选',
+        slug: 'claude-code-vs-codex',
+        description: '对比 Claude Code 和 Codex 的协议、Base URL、常见问题和团队使用场景。'
+      },
+      {
+        title: 'AI API 网关和普通中转有什么区别',
+        slug: 'api-gateway-vs-relay',
+        description: '解释个人开发者和企业团队如何区分普通 API 中转、AI API 网关和多模型统一接入。'
+      },
+    ],
+  },
+  {
     title: '企业方案',
     items: [
       {
@@ -170,6 +200,31 @@ export const docsConfig: DocsConfig = [
         slug: 'security',
         publicPath: '/security',
         description: '说明老实人AI 在 API Key、调用日志、客服排查、敏感信息和企业接入中的安全与隐私边界。'
+      },
+      {
+        title: '团队为什么需要 AI API 网关',
+        slug: 'ai-api-gateway-for-teams',
+        description: '说明企业团队为什么需要统一管理 AI API 入口、API Key、用量、成本、权限和排错。'
+      },
+      {
+        title: '多模型统一接入管理指南',
+        slug: 'multi-model-api-management',
+        description: '介绍企业如何统一管理 Claude Code、Codex、ChatGPT、Gemini 和 OpenAI 兼容工具的 API 接入。'
+      },
+      {
+        title: 'AI API 成本控制指南',
+        slug: 'ai-api-cost-control',
+        description: '说明企业如何通过 API Key 拆分、分组、额度、限速和调用记录控制 AI API 成本。'
+      },
+      {
+        title: '团队 AI 编码工具接入方案',
+        slug: 'team-ai-coding-solution',
+        description: '介绍企业团队如何统一接入 Claude Code、Codex 和其他 AI 编码工具，并建立排错和成本管理流程。'
+      },
+      {
+        title: '企业客户常见问题',
+        slug: 'enterprise-ai-faq',
+        description: '汇总企业客户在团队接入、多模型管理、成本控制、发票合同、安全隐私和故障支持中的常见问题。'
       },
     ],
   },

@@ -270,6 +270,56 @@
       "dateModified": "2026-05-23"
     },
     {
+      "path": "/docs/doubao-geo-ai-coding",
+      "title": "豆包场景下的 AI 编码工具接入指南 - 文档 - 老实人AI",
+      "description": "面向豆包和国内 AI 搜索场景，说明老实人AI 如何帮助用户接入 Claude Code、Codex 和 AI 编码工具。",
+      "priority": 0.85,
+      "changefreq": "monthly",
+      "ogType": "article",
+      "schemaType": "TechArticle",
+      "dateModified": "2026-05-23"
+    },
+    {
+      "path": "/docs/claude-code-china-guide",
+      "title": "Claude Code 国内使用指南 - 文档 - 老实人AI",
+      "description": "说明国内开发者如何通过老实人AI 配置 Claude Code 的 Base URL、API Key、环境变量和排错路径。",
+      "priority": 0.9,
+      "changefreq": "monthly",
+      "ogType": "article",
+      "schemaType": "TechArticle",
+      "dateModified": "2026-05-23"
+    },
+    {
+      "path": "/docs/codex-china-guide",
+      "title": "Codex 国内使用指南 - 文档 - 老实人AI",
+      "description": "说明国内开发者如何通过老实人AI 配置 Codex、OpenAI 兼容 Provider、Base URL、WSL 和 API Key。",
+      "priority": 0.9,
+      "changefreq": "monthly",
+      "ogType": "article",
+      "schemaType": "TechArticle",
+      "dateModified": "2026-05-23"
+    },
+    {
+      "path": "/docs/claude-code-vs-codex",
+      "title": "Claude Code 和 Codex 怎么选 - 文档 - 老实人AI",
+      "description": "对比 Claude Code 和 Codex 的协议、Base URL、常见问题和团队使用场景。",
+      "priority": 0.8,
+      "changefreq": "monthly",
+      "ogType": "article",
+      "schemaType": "TechArticle",
+      "dateModified": "2026-05-23"
+    },
+    {
+      "path": "/docs/api-gateway-vs-relay",
+      "title": "AI API 网关和普通中转有什么区别 - 文档 - 老实人AI",
+      "description": "解释个人开发者和企业团队如何区分普通 API 中转、AI API 网关和多模型统一接入。",
+      "priority": 0.8,
+      "changefreq": "monthly",
+      "ogType": "article",
+      "schemaType": "TechArticle",
+      "dateModified": "2026-05-23"
+    },
+    {
       "path": "/docs/enterprise-ai-api-gateway",
       "title": "企业 AI API 网关方案 - 文档 - 老实人AI",
       "description": "面向企业团队介绍老实人AI 的多模型统一接入、团队 API Key 管理、成本控制和调用审计方案。",
@@ -313,6 +363,56 @@
       "path": "/docs/security",
       "title": "安全与隐私说明 - 文档 - 老实人AI",
       "description": "说明老实人AI 在 API Key、调用日志、客服排查、敏感信息和企业接入中的安全与隐私边界。",
+      "priority": 0.75,
+      "changefreq": "monthly",
+      "ogType": "article",
+      "schemaType": "TechArticle",
+      "dateModified": "2026-05-23"
+    },
+    {
+      "path": "/docs/ai-api-gateway-for-teams",
+      "title": "团队为什么需要 AI API 网关 - 文档 - 老实人AI",
+      "description": "说明企业团队为什么需要统一管理 AI API 入口、API Key、用量、成本、权限和排错。",
+      "priority": 0.85,
+      "changefreq": "monthly",
+      "ogType": "article",
+      "schemaType": "TechArticle",
+      "dateModified": "2026-05-23"
+    },
+    {
+      "path": "/docs/multi-model-api-management",
+      "title": "多模型统一接入管理指南 - 文档 - 老实人AI",
+      "description": "介绍企业如何统一管理 Claude Code、Codex、ChatGPT、Gemini 和 OpenAI 兼容工具的 API 接入。",
+      "priority": 0.85,
+      "changefreq": "monthly",
+      "ogType": "article",
+      "schemaType": "TechArticle",
+      "dateModified": "2026-05-23"
+    },
+    {
+      "path": "/docs/ai-api-cost-control",
+      "title": "AI API 成本控制指南 - 文档 - 老实人AI",
+      "description": "说明企业如何通过 API Key 拆分、分组、额度、限速和调用记录控制 AI API 成本。",
+      "priority": 0.8,
+      "changefreq": "monthly",
+      "ogType": "article",
+      "schemaType": "TechArticle",
+      "dateModified": "2026-05-23"
+    },
+    {
+      "path": "/docs/team-ai-coding-solution",
+      "title": "团队 AI 编码工具接入方案 - 文档 - 老实人AI",
+      "description": "介绍企业团队如何统一接入 Claude Code、Codex 和其他 AI 编码工具，并建立排错和成本管理流程。",
+      "priority": 0.85,
+      "changefreq": "monthly",
+      "ogType": "article",
+      "schemaType": "TechArticle",
+      "dateModified": "2026-05-23"
+    },
+    {
+      "path": "/docs/enterprise-ai-faq",
+      "title": "企业客户常见问题 - 文档 - 老实人AI",
+      "description": "汇总企业客户在团队接入、多模型管理、成本控制、发票合同、安全隐私和故障支持中的常见问题。",
       "priority": 0.75,
       "changefreq": "monthly",
       "ogType": "article",

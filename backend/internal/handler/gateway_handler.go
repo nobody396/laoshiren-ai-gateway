@@ -31,8 +31,66 @@ import (
 )
 
 const gatewayCompatibilityMetricsLogInterval = 1024
+const gatewayModelOwner = "laoshirenai"
+const gatewayDefaultModelCreatedAt = "2024-01-01T00:00:00Z"
+const gatewayDefaultModelCreatedUnix int64 = 1704067200
 
 var gatewayCompatibilityMetricsLogCounter atomic.Uint64
+
+type gatewayModelInfo struct {
+	ID          string `json:"id"`
+	Object      string `json:"object"`
+	Created     int64  `json:"created"`
+	OwnedBy     string `json:"owned_by"`
+	Type        string `json:"type"`
+	DisplayName string `json:"display_name"`
+	CreatedAt   string `json:"created_at"`
+}
+
+func newGatewayModelInfo(modelID, displayName string, created int64, createdAt string) gatewayModelInfo {
+	if displayName == "" {
+		displayName = modelID
+	}
+	if created == 0 {
+		created = gatewayDefaultModelCreatedUnix
+	}
+	if createdAt == "" {
+		createdAt = gatewayDefaultModelCreatedAt
+	}
+	return gatewayModelInfo{
+		ID:          modelID,
+		Object:      "model",
+		Created:     created,
+		OwnedBy:     gatewayModelOwner,
+		Type:        "model",
+		DisplayName: displayName,
+		CreatedAt:   createdAt,
+	}
+}
+
+func gatewayModelInfoFromIDs(modelIDs []string) []gatewayModelInfo {
+	models := make([]gatewayModelInfo, 0, len(modelIDs))
+	for _, modelID := range modelIDs {
+		models = append(models, newGatewayModelInfo(modelID, modelID, 0, ""))
+	}
+	return models
+}
+
+func gatewayModelInfoFromOpenAI(defaults []openai.Model) []gatewayModelInfo {
+	models := make([]gatewayModelInfo, 0, len(defaults))
+	for _, model := range defaults {
+		models = append(models, newGatewayModelInfo(model.ID, model.DisplayName, model.Created, ""))
+	}
+	return models
+}
+
+func gatewayModelInfoFromClaude(defaults []claude.Model) []gatewayModelInfo {
+	models := make([]gatewayModelInfo, 0, len(defaults))
+	for _, model := range defaults {
+		models = append(models, newGatewayModelInfo(model.ID, model.DisplayName, 0, model.CreatedAt))
+	}
+	return models
+}
 
 // GatewayHandler handles API gateway requests
 type GatewayHandler struct {
@@ -872,19 +930,9 @@ func (h *GatewayHandler) Models(c *gin.Context) {
 	availableModels := h.gatewayService.GetAvailableModels(c.Request.Context(), groupID, "")
 
 	if len(availableModels) > 0 {
-		// Build model list from whitelist
-		models := make([]claude.Model, 0, len(availableModels))
-		for _, modelID := range availableModels {
-			models = append(models, claude.Model{
-				ID:          modelID,
-				Type:        "model",
-				DisplayName: modelID,
-				CreatedAt:   "2024-01-01T00:00:00Z",
-			})
-		}
 		c.JSON(http.StatusOK, gin.H{
 			"object": "list",
-			"data":   models,
+			"data":   gatewayModelInfoFromIDs(availableModels),
 		})
 		return
 	}
@@ -893,14 +941,14 @@ func (h *GatewayHandler) Models(c *gin.Context) {
 	if platform == "openai" {
 		c.JSON(http.StatusOK, gin.H{
 			"object": "list",
-			"data":   openai.DefaultModels,
+			"data":   gatewayModelInfoFromOpenAI(openai.DefaultModels),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"object": "list",
-		"data":   claude.DefaultModels,
+		"data":   gatewayModelInfoFromClaude(claude.DefaultModels),
 	})
 }
 

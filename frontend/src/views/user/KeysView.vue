@@ -1803,24 +1803,8 @@ const openChatbotWithKey = async (row: ApiKey) => {
   }
 }
 
-const trimCcsLabel = (value: string | null | undefined): string => value?.trim() || ''
-
-const buildCcsProviderName = (row: ApiKey, app: 'claude' | 'codex' | 'gemini'): string => {
-  const siteName = trimCcsLabel(publicSettings.value?.site_name) || 'sub2api'
-  const appLabel = app === 'codex' ? 'Codex' : app === 'gemini' ? 'Gemini' : 'Claude'
-  const groupName = trimCcsLabel(row.group?.name)
-  const keyName = trimCcsLabel(row.name)
-  const parts = [siteName, appLabel]
-
-  if (groupName) {
-    parts.push(groupName)
-  }
-  if (keyName && keyName !== groupName) {
-    parts.push(keyName)
-  }
-
-  const name = parts.join(' - ')
-  return name.length > 96 ? `${name.slice(0, 93)}...` : name
+const buildCcsProviderName = (_row: ApiKey, _app: 'claude' | 'codex' | 'gemini'): string => {
+  return 'laoshirenai'
 }
 
 const buildCcsProviderNotes = (row: ApiKey, endpoint: string): string => {

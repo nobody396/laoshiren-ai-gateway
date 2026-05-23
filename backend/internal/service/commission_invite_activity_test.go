@@ -201,3 +201,58 @@ func TestCommissionServiceActiveInviteActivityEmailWhitelistFallsBackToSettingsL
 	require.True(t, active)
 	require.Equal(t, []string{"@qq.com"}, whitelist)
 }
+
+func TestCommissionServiceGetInviteActivityAutoClosesExpiredActivity(t *testing.T) {
+	now := time.Date(2026, 5, 22, 0, 0, 0, 0, time.UTC)
+	start := time.Date(2026, 5, 20, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 5, 21, 23, 59, 0, 0, time.UTC)
+	commissionRepo := &inviteActivityRepoStub{
+		activity: &InviteActivityConfig{
+			Enabled:                 true,
+			Name:                    "公测活动",
+			StartAt:                 &start,
+			EndAt:                   &end,
+			RegistrationBonusAmount: 5,
+			EmailRestrictionEnabled: true,
+			EmailSuffixWhitelist:    []string{"@qq.com"},
+		},
+	}
+	svc := NewCommissionService(&inviteActivityUserRepoStub{}, commissionRepo)
+	svc.nowFunc = func() time.Time { return now }
+
+	activity, err := svc.GetInviteActivityConfig(context.Background())
+
+	require.NoError(t, err)
+	require.False(t, activity.Enabled)
+	require.False(t, activity.EmailRestrictionEnabled)
+	require.Equal(t, "公测活动", activity.Name)
+	require.Equal(t, 5.0, activity.RegistrationBonusAmount)
+	require.False(t, commissionRepo.activity.Enabled)
+	require.False(t, commissionRepo.activity.EmailRestrictionEnabled)
+}
+
+func TestCommissionServiceActiveInviteActivityEmailWhitelistAutoClosesExpiredActivity(t *testing.T) {
+	now := time.Date(2026, 5, 22, 0, 0, 0, 0, time.UTC)
+	start := time.Date(2026, 5, 20, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 5, 21, 23, 59, 0, 0, time.UTC)
+	commissionRepo := &inviteActivityRepoStub{
+		activity: &InviteActivityConfig{
+			Enabled:                 true,
+			Name:                    "公测活动",
+			StartAt:                 &start,
+			EndAt:                   &end,
+			RegistrationBonusAmount: 5,
+			EmailRestrictionEnabled: true,
+			EmailSuffixWhitelist:    []string{"@qq.com"},
+		},
+	}
+	svc := NewCommissionService(&inviteActivityUserRepoStub{}, commissionRepo)
+	svc.nowFunc = func() time.Time { return now }
+
+	whitelist, active := svc.ActiveInviteActivityEmailSuffixWhitelist(context.Background(), []string{"@fallback.com"})
+
+	require.False(t, active)
+	require.Nil(t, whitelist)
+	require.False(t, commissionRepo.activity.Enabled)
+	require.False(t, commissionRepo.activity.EmailRestrictionEnabled)
+}

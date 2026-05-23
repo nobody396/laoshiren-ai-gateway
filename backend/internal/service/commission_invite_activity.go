@@ -105,7 +105,27 @@ func (s *CommissionService) getInviteActivityConfig(ctx context.Context) (*Invit
 		}
 		return defaultInviteActivityConfig(), false
 	}
-	return normalizeInviteActivityConfig(activity), true
+	normalized := normalizeInviteActivityConfig(activity)
+	return s.autoCloseExpiredInviteActivity(ctx, normalized), true
+}
+
+func (s *CommissionService) autoCloseExpiredInviteActivity(ctx context.Context, activity *InviteActivityConfig) *InviteActivityConfig {
+	if activity == nil || !activity.Enabled || activity.EndAt == nil || s.now().Before(*activity.EndAt) {
+		return activity
+	}
+
+	closed := *activity
+	closed.Enabled = false
+	closed.EmailRestrictionEnabled = false
+	if s.activityRepo == nil {
+		return &closed
+	}
+	if err := s.activityRepo.UpdateInviteActivityConfig(ctx, &closed); err != nil {
+		slog.Warn("auto close expired invite activity failed", "name", activity.Name, "end_at", activity.EndAt, "error", err)
+		return &closed
+	}
+	slog.Info("auto closed expired invite activity", "name", activity.Name, "end_at", activity.EndAt)
+	return normalizeInviteActivityConfig(&closed)
 }
 
 func normalizeInviteActivityConfig(activity *InviteActivityConfig) *InviteActivityConfig {

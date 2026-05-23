@@ -51,6 +51,11 @@ declare module 'vue-router' {
     descriptionKey?: string
 
     /**
+     * Markdown doc slug used by public information pages.
+     */
+    publicDocSlug?: string
+
+    /**
      * Prevent this route from being indexed by search engines.
      * @default false
      */

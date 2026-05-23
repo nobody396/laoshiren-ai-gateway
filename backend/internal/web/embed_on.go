@@ -101,6 +101,8 @@ func (s *FrontendServer) Middleware() gin.HandlerFunc {
 			return
 		}
 
+		setSearchCriticalAssetCacheHeaders(c, cleanPath)
+
 		// Serve static files normally
 		s.fileServer.ServeHTTP(c.Writer, c.Request)
 		c.Abort()
@@ -221,6 +223,7 @@ func ServeEmbeddedFrontend() gin.HandlerFunc {
 
 		if file, err := distFS.Open(cleanPath); err == nil {
 			_ = file.Close()
+			setSearchCriticalAssetCacheHeaders(c, cleanPath)
 			fileServer.ServeHTTP(c.Writer, c.Request)
 			c.Abort()
 			return
@@ -241,6 +244,25 @@ func shouldBypassEmbeddedFrontend(path string) bool {
 		trimmed == "/health" ||
 		trimmed == "/responses" ||
 		strings.HasPrefix(trimmed, "/responses/")
+}
+
+func setSearchCriticalAssetCacheHeaders(c *gin.Context, cleanPath string) {
+	if !isSearchCriticalAsset(cleanPath) {
+		return
+	}
+
+	c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	c.Header("Pragma", "no-cache")
+	c.Header("Expires", "0")
+}
+
+func isSearchCriticalAsset(cleanPath string) bool {
+	switch strings.TrimPrefix(cleanPath, "/") {
+	case "sitemap.xml", "robots.txt", "llms.txt", "seo-manifest.json":
+		return true
+	default:
+		return false
+	}
 }
 
 func serveIndexHTML(c *gin.Context, fsys fs.FS) {

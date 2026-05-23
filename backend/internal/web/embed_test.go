@@ -502,6 +502,38 @@ func TestFrontendServer_Middleware(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Header().Get("Content-Type"), "image/png")
 	})
+
+	t.Run("sets_no_store_headers_for_search_assets", func(t *testing.T) {
+		provider := &mockSettingsProvider{
+			settings: map[string]string{"test": "value"},
+		}
+
+		server, err := NewFrontendServer(provider)
+		require.NoError(t, err)
+
+		router := gin.New()
+		router.Use(server.Middleware())
+
+		paths := []string{
+			"/sitemap.xml",
+			"/robots.txt",
+			"/llms.txt",
+			"/seo-manifest.json",
+		}
+
+		for _, path := range paths {
+			t.Run(path, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				req := httptest.NewRequest(http.MethodGet, path, nil)
+				router.ServeHTTP(w, req)
+
+				assert.Equal(t, http.StatusOK, w.Code)
+				assert.Equal(t, "no-store, no-cache, must-revalidate, max-age=0", w.Header().Get("Cache-Control"))
+				assert.Equal(t, "no-cache", w.Header().Get("Pragma"))
+				assert.Equal(t, "0", w.Header().Get("Expires"))
+			})
+		}
+	})
 }
 
 func TestNewFrontendServer(t *testing.T) {

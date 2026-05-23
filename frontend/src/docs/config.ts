@@ -10,6 +10,7 @@ export interface DocItem {
   title: string
   slug: string
   description: string
+  publicPath?: string
   lastModified?: string
 }
 
@@ -21,7 +22,7 @@ export interface DocCategory {
 
 export type DocsConfig = DocCategory[]
 
-export const docsLastModified = '2026-05-21'
+export const docsLastModified = '2026-05-23'
 
 export const docsConfig: DocsConfig = [
   {
@@ -63,6 +64,11 @@ export const docsConfig: DocsConfig = [
     title: '快速接入',
     items: [
       {
+        title: 'Base URL 填写总指南',
+        slug: 'base-url-guide',
+        description: '区分 Claude Code、Codex、OpenAI SDK、Anthropic SDK、Antigravity 和 GPT-Image 的老实人AI Base URL 填写方式。'
+      },
+      {
         title: 'Claude Code 快速开始指南',
         slug: 'claude-code-quickstart',
         description: '配置老实人AI 的 ANTHROPIC_BASE_URL 和 API Key，在 Claude Code 中开始使用 Claude 编码模型。'
@@ -96,6 +102,74 @@ export const docsConfig: DocsConfig = [
         title: 'GPT-Image-2 使用指南',
         slug: 'gpt-image-quickstart',
         description: '使用老实人AI 的 GPT-Image-2 接口完成图像生成请求、任务查询和结果获取。'
+      },
+    ],
+  },
+  {
+    title: '排错与运维',
+    items: [
+      {
+        title: 'API Key 与分组选择指南',
+        slug: 'api-key-group-guide',
+        description: '解释老实人AI API Key、订单号、兑换码、分组、模型支持和倍率之间的区别。'
+      },
+      {
+        title: 'Claude Code 配置排错指南',
+        slug: 'claude-code-troubleshooting',
+        description: '排查 Claude Code 接入老实人AI 时的 Base URL、API Key、分组、旧环境变量和旧窗口缓存问题。'
+      },
+      {
+        title: 'Codex 配置排错指南',
+        slug: 'codex-troubleshooting',
+        description: '排查 Codex CLI/App 接入老实人AI 时的 Provider、Base URL、Responses 模式、WSL 和登录问题。'
+      },
+      {
+        title: '常见 API 报错排查',
+        slug: 'common-api-errors',
+        description: '解释老实人AI 常见 401、403、429、502、503、连接超时和模型不可用问题的排查路径。'
+      },
+      {
+        title: 'Windows 配置指南',
+        slug: 'windows-setup',
+        description: '在 Windows、PowerShell 和 WSL 环境下配置 Claude Code、Codex 与老实人AI API Key。'
+      },
+      {
+        title: 'macOS 配置指南',
+        slug: 'macos-setup',
+        description: '在 macOS 终端环境下配置 Claude Code、Codex、环境变量和老实人AI API Key。'
+      },
+    ],
+  },
+  {
+    title: '企业方案',
+    items: [
+      {
+        title: '企业 AI API 网关方案',
+        slug: 'enterprise-ai-api-gateway',
+        publicPath: '/enterprise',
+        description: '面向企业团队介绍老实人AI 的多模型统一接入、团队 API Key 管理、成本控制和调用审计方案。'
+      },
+      {
+        title: '团队 API Key 管理',
+        slug: 'team-api-key-management',
+        description: '介绍企业团队如何用老实人AI 管理项目级 API Key、分组、权限、用量和成本归因。'
+      },
+      {
+        title: '企业发票与合同说明',
+        slug: 'invoice-contract-enterprise',
+        description: '说明老实人AI 企业客户在发票、合同、采购沟通和售后支持中的常见流程。'
+      },
+      {
+        title: '服务状态与支持说明',
+        slug: 'sla-support',
+        publicPath: '/status',
+        description: '说明老实人AI 的服务状态入口、健康检查、模型检测报告、故障反馈和支持边界。'
+      },
+      {
+        title: '安全与隐私说明',
+        slug: 'security',
+        publicPath: '/security',
+        description: '说明老实人AI 在 API Key、调用日志、客服排查、敏感信息和企业接入中的安全与隐私边界。'
       },
     ],
   },

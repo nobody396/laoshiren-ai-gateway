@@ -8,9 +8,9 @@ const DEFAULT_SITE_ORIGIN = 'https://laoshirenai.com'
 const DEFAULT_SITE_LOGO = '/laoshirenai-icon.jpg'
 const DEFAULT_OG_IMAGE = '/og-image.png'
 const HOME_DESCRIPTION = '老实人AI 提供面向开发者的 AI 编码中转服务，支持 Claude Code、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。'
-const DOCS_DESCRIPTION = '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
+const DOCS_DESCRIPTION = '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio、GPT-Image 和企业接入的配置教程与常见问题。'
 
-const INDEXABLE_ROUTE_NAMES = new Set(['Home', 'Docs', 'DocsPage'])
+const INDEXABLE_ROUTE_NAMES = new Set(['Home', 'Docs', 'DocsPage', 'Enterprise', 'Security', 'Status'])
 
 type SeoOptions = {
   siteName?: string
@@ -140,7 +140,7 @@ function setCanonical(url: string): void {
 
 function setStructuredData(data: Record<string, unknown> | null): void {
   document.head
-    .querySelectorAll<HTMLScriptElement>('script[type="application/ld+json"][data-seo="structured-data"]')
+    .querySelectorAll<HTMLScriptElement>('script[type="application/ld+json"][data-seo]')
     .forEach((element) => element.remove())
 
   if (!data) return
@@ -215,6 +215,28 @@ function buildStructuredData(route: RouteLocationNormalizedLoaded, seo: Omit<Rou
         buildBreadcrumb([
           { name: siteName, url: absoluteUrl('/') },
           { name: '文档', url: seo.canonicalUrl }
+        ])
+      ]
+    }
+  }
+
+  if (route.name !== 'DocsPage') {
+    return {
+      '@context': 'https://schema.org',
+      '@graph': [
+        org,
+        {
+          '@type': route.name === 'Enterprise' ? 'SoftwareApplication' : 'WebPage',
+          '@id': `${seo.canonicalUrl}#webpage`,
+          url: seo.canonicalUrl,
+          name: seo.title,
+          description: seo.description,
+          publisher: { '@id': org['@id'] },
+          inLanguage: 'zh-CN'
+        },
+        buildBreadcrumb([
+          { name: siteName, url: absoluteUrl('/') },
+          { name: String(route.meta.title || seo.title), url: seo.canonicalUrl }
         ])
       ]
     }

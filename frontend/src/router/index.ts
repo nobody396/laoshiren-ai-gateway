@@ -68,6 +68,39 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/enterprise',
+    name: 'Enterprise',
+    component: () => import('@/views/PublicInfoView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: '企业 AI API 网关',
+      description: '老实人AI 为企业团队提供 Claude Code、Codex、ChatGPT、Gemini 等多模型统一接入、API Key 管理、用量统计、成本控制和技术支持方案。',
+      publicDocSlug: 'enterprise-ai-api-gateway'
+    }
+  },
+  {
+    path: '/security',
+    name: 'Security',
+    component: () => import('@/views/PublicInfoView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: '安全与隐私',
+      description: '了解老实人AI 在 API Key、调用日志、客服排查、企业接入和敏感信息处理中的安全与隐私边界。',
+      publicDocSlug: 'security'
+    }
+  },
+  {
+    path: '/status',
+    name: 'Status',
+    component: () => import('@/views/PublicInfoView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: '服务状态',
+      description: '查看老实人AI 主站、API 健康检查、模型检测报告和异常反馈入口，用于判断 Claude Code、Codex 等接入链路状态。',
+      publicDocSlug: 'sla-support'
+    }
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/auth/LoginView.vue'),

@@ -75,6 +75,39 @@ func TestNonceHTMLPlaceholder(t *testing.T) {
 	})
 }
 
+func TestSEOManifest_RenderHTML(t *testing.T) {
+	manifest := &SEOManifest{
+		SiteName:   "老实人AI",
+		SiteOrigin: "https://laoshirenai.com",
+		OGImage:    "/og-image.png",
+		Routes: []SEORoute{
+			{
+				Path:        "/docs/base-url-guide",
+				Title:       "Base URL 填写总指南 - 文档 - 老实人AI",
+				Description: "区分 Claude Code、Codex 和 OpenAI SDK 的 Base URL 填写方式。",
+				OGType:      "article",
+				SchemaType:  "TechArticle",
+			},
+		},
+	}
+	base := []byte(`<!doctype html><html><head><title>老实人AI - AI 编码中转</title><meta name="description" content="home" /><meta name="robots" content="index,follow" /><link rel="canonical" href="https://laoshirenai.com/" /><meta property="og:type" content="website" /><meta property="og:title" content="home" /><meta property="og:description" content="home" /><meta property="og:url" content="https://laoshirenai.com/" /><meta name="twitter:title" content="home" /><meta name="twitter:description" content="home" /></head><body></body></html>`)
+
+	rendered := manifest.renderHTML(base, "/docs/base-url-guide")
+	body := string(rendered)
+
+	assert.Contains(t, body, "<title>Base URL 填写总指南 - 文档 - 老实人AI</title>")
+	assert.Contains(t, body, `content="区分 Claude Code、Codex 和 OpenAI SDK 的 Base URL 填写方式。"`)
+	assert.Contains(t, body, `href="https://laoshirenai.com/docs/base-url-guide"`)
+	assert.Contains(t, body, `property="og:type" content="article"`)
+	assert.Contains(t, body, `data-seo="server-structured-data"`)
+	assert.Contains(t, body, NonceHTMLPlaceholder)
+}
+
+func TestRouteAwareETag(t *testing.T) {
+	assert.NotEqual(t, routeAwareETag(`"base"`, "/"), routeAwareETag(`"base"`, "/docs/base-url-guide"))
+	assert.Equal(t, routeAwareETag(`"base"`, "/docs/base-url-guide"), routeAwareETag(`"base"`, "/docs/base-url-guide?utm=1"))
+}
+
 // mockSettingsProvider implements PublicSettingsProvider for testing
 type mockSettingsProvider struct {
 	settings any
@@ -463,7 +496,7 @@ func TestFrontendServer_Middleware(t *testing.T) {
 
 		// Request for existing static file
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/logo.png", nil)
+		req := httptest.NewRequest(http.MethodGet, "/favicon.png", nil)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -517,7 +550,7 @@ func TestServeEmbeddedFrontend(t *testing.T) {
 		router.Use(middleware)
 
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/logo.png", nil)
+		req := httptest.NewRequest(http.MethodGet, "/favicon.png", nil)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)

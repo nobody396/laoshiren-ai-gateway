@@ -47,7 +47,7 @@ func (s *GatewayService) applyAnthropicCachePolicy(ctx context.Context, c *gin.C
 	settings := s.getAnthropicCachePolicySettings(ctx)
 	mode, modeSource := resolveAnthropicCachePolicyMode(account, groupFromCachePolicyContext(ctx), settings.mode)
 	clientType := inferCachePolicyClientType(ctx, c)
-	targetTTL := cacheTTLTarget5m
+	var targetTTL string
 	shadowTTL := ""
 	reasons := []string{fmt.Sprintf("mode=%s", mode), "mode_source=" + modeSource, "phase=" + settings.phase}
 

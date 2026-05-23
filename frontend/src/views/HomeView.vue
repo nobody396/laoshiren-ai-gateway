@@ -77,11 +77,12 @@ const showModelReports = computed(() => appStore.cachedPublicSettings?.landing_r
 // ── 导航项 ──
 const navItems = computed(() => [
   { label: '首页', href: '#', active: true, external: false, routerPush: false },
+  { label: '企业', href: '/enterprise', active: false, external: false, routerPush: true },
   ...(showModelReports.value
     ? [{ label: '报告', href: '#model-reports', active: false, external: false, routerPush: false }]
     : []),
   { label: '定价', href: '#model-pricing', active: false, external: false, routerPush: false },
-  { label: '服务状态', href: 'https://status.your-domain.example', active: false, external: true, routerPush: false },
+  { label: '服务状态', href: '/status', active: false, external: false, routerPush: true },
   { label: '文档', href: '/docs', active: false, external: false, routerPush: true }
 ])
 
@@ -438,13 +439,15 @@ const footerSections = computed(() => [
         ? [{ label: '模型检测报告', href: '#model-reports', external: false }]
         : []),
       { label: '价格方案', href: '#model-pricing', external: false },
+      { label: '企业方案', href: '/enterprise', external: false },
       { label: '登录', href: '/login', external: false }
     ]
   },
   {
     title: '服务承诺',
     links: [
-      { label: '服务状态', href: 'https://status.your-domain.example', external: true }
+      { label: '服务状态', href: '/status', external: false },
+      { label: '安全与隐私', href: '/security', external: false }
     ]
   }
 ])

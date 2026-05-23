@@ -25,8 +25,12 @@ var (
 	openAIModelBasePattern     = regexp.MustCompile(`^(gpt-\d+(?:\.\d+)?)(?:-|$)`)
 	openAIGPT54FallbackPricing = &LiteLLMModelPricing{
 		InputCostPerToken:               2.5e-06, // $2.5 per MTok
+		InputCostPerTokenPriority:       5e-06,   // $5 per MTok
 		OutputCostPerToken:              1.5e-05, // $15 per MTok
+		OutputCostPerTokenPriority:      3e-05,   // $30 per MTok
+		CacheCreationInputTokenCost:     2.5e-06,
 		CacheReadInputTokenCost:         2.5e-07, // $0.25 per MTok
+		CacheReadInputTokenCostPriority: 5e-07,   // $0.50 per MTok
 		LongContextInputTokenThreshold:  272000,
 		LongContextInputCostMultiplier:  2.0,
 		LongContextOutputCostMultiplier: 1.5,
@@ -36,12 +40,12 @@ var (
 	}
 	openAIGPT55FallbackPricing = &LiteLLMModelPricing{
 		InputCostPerToken:               5e-06,
-		InputCostPerTokenPriority:       1e-05,
+		InputCostPerTokenPriority:       12.5e-06,
 		OutputCostPerToken:              3e-05,
-		OutputCostPerTokenPriority:      6e-05,
+		OutputCostPerTokenPriority:      75e-06,
 		CacheCreationInputTokenCost:     5e-06,
 		CacheReadInputTokenCost:         5e-07,
-		CacheReadInputTokenCostPriority: 1e-06,
+		CacheReadInputTokenCostPriority: 1.25e-06,
 		LongContextInputTokenThreshold:  272000,
 		LongContextInputCostMultiplier:  2.0,
 		LongContextOutputCostMultiplier: 1.5,
@@ -50,12 +54,15 @@ var (
 		SupportsPromptCaching:           true,
 	}
 	openAIGPT54MiniFallbackPricing = &LiteLLMModelPricing{
-		InputCostPerToken:       7.5e-07,
-		OutputCostPerToken:      4.5e-06,
-		CacheReadInputTokenCost: 7.5e-08,
-		LiteLLMProvider:         "openai",
-		Mode:                    "chat",
-		SupportsPromptCaching:   true,
+		InputCostPerToken:               7.5e-07,
+		InputCostPerTokenPriority:       1.5e-06,
+		OutputCostPerToken:              4.5e-06,
+		OutputCostPerTokenPriority:      9e-06,
+		CacheReadInputTokenCost:         7.5e-08,
+		CacheReadInputTokenCostPriority: 1.5e-07,
+		LiteLLMProvider:                 "openai",
+		Mode:                            "chat",
+		SupportsPromptCaching:           true,
 	}
 	openAIGPT54NanoFallbackPricing = &LiteLLMModelPricing{
 		InputCostPerToken:       2e-07,
@@ -169,6 +176,11 @@ func (s *PricingService) Stop() {
 
 // startUpdateScheduler 启动定时更新调度器
 func (s *PricingService) startUpdateScheduler() {
+	if !s.remotePricingDownloadEnabled() {
+		logger.LegacyPrintf("service.pricing", "%s", "[Pricing] Remote sync disabled; using local pricing data")
+		return
+	}
+
 	// 定期检查哈希更新
 	hashInterval := time.Duration(s.cfg.Pricing.HashCheckIntervalMinutes) * time.Minute
 	if hashInterval < time.Minute {
@@ -200,16 +212,33 @@ func (s *PricingService) startUpdateScheduler() {
 func (s *PricingService) checkAndUpdatePricing() error {
 	pricingFile := s.getPricingFilePath()
 
+	if !s.remotePricingDownloadEnabled() && strings.TrimSpace(s.cfg.Pricing.FallbackFile) != "" {
+		logger.LegacyPrintf("service.pricing", "%s", "[Pricing] Remote sync disabled; using bundled pricing file")
+		return s.useFallbackPricing()
+	}
+
 	// 检查本地文件是否存在
 	if _, err := os.Stat(pricingFile); os.IsNotExist(err) {
+		if !s.remotePricingDownloadEnabled() {
+			logger.LegacyPrintf("service.pricing", "%s", "[Pricing] Local pricing file not found, using bundled fallback")
+			return s.useFallbackPricing()
+		}
 		logger.LegacyPrintf("service.pricing", "%s", "[Pricing] Local pricing file not found, downloading...")
 		return s.downloadPricingData()
 	}
 
 	// 先加载本地文件（确保服务可用），再检查是否需要更新
 	if err := s.loadPricingData(pricingFile); err != nil {
+		if !s.remotePricingDownloadEnabled() {
+			logger.LegacyPrintf("service.pricing", "[Pricing] Failed to load local file, using bundled fallback: %v", err)
+			return s.useFallbackPricing()
+		}
 		logger.LegacyPrintf("service.pricing", "[Pricing] Failed to load local file, downloading: %v", err)
 		return s.downloadPricingData()
+	}
+
+	if !s.remotePricingDownloadEnabled() {
+		return nil
 	}
 
 	// 如果配置了哈希URL，通过远程哈希检查是否有更新
@@ -255,6 +284,10 @@ func (s *PricingService) checkAndUpdatePricing() error {
 
 // syncWithRemote 与远程同步（基于哈希校验）
 func (s *PricingService) syncWithRemote() error {
+	if !s.remotePricingDownloadEnabled() {
+		return nil
+	}
+
 	// 如果配置了哈希URL，从远程获取哈希进行比对
 	if s.cfg.Pricing.HashURL != "" {
 		remoteHash, err := s.fetchRemoteHash()
@@ -296,6 +329,13 @@ func (s *PricingService) syncWithRemote() error {
 
 // downloadPricingData 从远程下载价格数据
 func (s *PricingService) downloadPricingData() error {
+	if !s.remotePricingDownloadEnabled() {
+		return fmt.Errorf("remote pricing sync disabled; set pricing.remote_url to enable it")
+	}
+	if s.remoteClient == nil {
+		return fmt.Errorf("pricing remote client is not configured")
+	}
+
 	remoteURL, err := s.validatePricingURL(s.cfg.Pricing.RemoteURL)
 	if err != nil {
 		return err
@@ -780,7 +820,7 @@ func (s *PricingService) matchByModelFamily(model string) *LiteLLMModelPricing {
 // 2. gpt-5.2-codex -> gpt-5.2（去掉后缀如 -codex, -mini, -max 等）
 // 3. gpt-5.2-20251222 -> gpt-5.2（去掉日期版本号）
 // 4. gpt-5.3-codex -> gpt-5.2-codex
-// 5. gpt-5.5* -> 业务静态兜底价（GPT-5.4 的 2 倍）
+// 5. gpt-5.5* -> 业务静态兜底价（普通价为 GPT-5.4 的 2 倍，Priority 按官方独立价格）
 // 6. gpt-5.4* -> 业务静态兜底价
 // 7. 最终回退到 DefaultTestModel (gpt-5.1-codex)
 func (s *PricingService) matchOpenAIModel(model string) *LiteLLMModelPricing {
@@ -895,6 +935,10 @@ func (s *PricingService) GetStatus() map[string]any {
 // ForceUpdate 强制更新
 func (s *PricingService) ForceUpdate() error {
 	return s.downloadPricingData()
+}
+
+func (s *PricingService) remotePricingDownloadEnabled() bool {
+	return s != nil && s.cfg != nil && strings.TrimSpace(s.cfg.Pricing.RemoteURL) != ""
 }
 
 // getPricingFilePath 获取价格文件路径

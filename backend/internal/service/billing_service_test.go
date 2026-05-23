@@ -174,7 +174,7 @@ func TestGetModelPricing_OpenAIGPT54Fallback(t *testing.T) {
 	require.InDelta(t, 1.5, pricing.LongContextOutputMultiplier, 1e-12)
 }
 
-func TestGetModelPricing_OpenAIGPT55FallbackIsDoubleGPT54(t *testing.T) {
+func TestGetModelPricing_OpenAIGPT55FallbackMatchesOfficialPricing(t *testing.T) {
 	svc := newTestBillingService()
 
 	gpt54, err := svc.GetModelPricing("gpt-5.4")
@@ -184,12 +184,12 @@ func TestGetModelPricing_OpenAIGPT55FallbackIsDoubleGPT54(t *testing.T) {
 	require.NotNil(t, gpt55)
 
 	require.InDelta(t, gpt54.InputPricePerToken*2, gpt55.InputPricePerToken, 1e-12)
-	require.InDelta(t, gpt54.InputPricePerTokenPriority*2, gpt55.InputPricePerTokenPriority, 1e-12)
 	require.InDelta(t, gpt54.OutputPricePerToken*2, gpt55.OutputPricePerToken, 1e-12)
-	require.InDelta(t, gpt54.OutputPricePerTokenPriority*2, gpt55.OutputPricePerTokenPriority, 1e-12)
 	require.InDelta(t, gpt54.CacheCreationPricePerToken*2, gpt55.CacheCreationPricePerToken, 1e-12)
 	require.InDelta(t, gpt54.CacheReadPricePerToken*2, gpt55.CacheReadPricePerToken, 1e-12)
-	require.InDelta(t, gpt54.CacheReadPricePerTokenPriority*2, gpt55.CacheReadPricePerTokenPriority, 1e-12)
+	require.InDelta(t, 12.5e-6, gpt55.InputPricePerTokenPriority, 1e-12)
+	require.InDelta(t, 75e-6, gpt55.OutputPricePerTokenPriority, 1e-12)
+	require.InDelta(t, 1.25e-6, gpt55.CacheReadPricePerTokenPriority, 1e-12)
 	require.Equal(t, gpt54.LongContextInputThreshold, gpt55.LongContextInputThreshold)
 	require.InDelta(t, gpt54.LongContextInputMultiplier, gpt55.LongContextInputMultiplier, 1e-12)
 	require.InDelta(t, gpt54.LongContextOutputMultiplier, gpt55.LongContextOutputMultiplier, 1e-12)

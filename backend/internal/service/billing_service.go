@@ -191,7 +191,7 @@ func (s *BillingService) initFallbackPricing() {
 	// Claude 4.6 Opus (与4.5同价)
 	s.fallbackPrices["claude-opus-4.6"] = s.fallbackPrices["claude-opus-4.5"]
 
-	// Claude 4.7 Opus (暂与4.6同价，待官方定价更新)
+	// Claude 4.7 Opus（官方与4.6同价）
 	s.fallbackPrices["claude-opus-4.7"] = s.fallbackPrices["claude-opus-4.6"]
 
 	// Gemini 3.1 Pro
@@ -214,7 +214,7 @@ func (s *BillingService) initFallbackPricing() {
 		CacheReadPricePerTokenPriority: 0.25e-6,
 		SupportsCacheBreakdown:         false,
 	}
-	// OpenAI GPT-5.4（业务指定价格）
+	// OpenAI GPT-5.4（官方基础价格）
 	s.fallbackPrices["gpt-5.4"] = &ModelPricing{
 		InputPricePerToken:             2.5e-6,  // $2.5 per MTok
 		InputPricePerTokenPriority:     5e-6,    // $5 per MTok
@@ -228,25 +228,28 @@ func (s *BillingService) initFallbackPricing() {
 		LongContextInputMultiplier:     openAIGPT54LongContextInputMultiplier,
 		LongContextOutputMultiplier:    openAIGPT54LongContextOutputMultiplier,
 	}
-	// GPT-5.5 按 GPT-5.4 的 2 倍计费，长上下文策略沿用 GPT-5.4。
+	// GPT-5.5 普通价按 GPT-5.4 的 2 倍计费；Priority 使用官方独立价格。
 	s.fallbackPrices["gpt-5.5"] = &ModelPricing{
 		InputPricePerToken:             5e-6,
-		InputPricePerTokenPriority:     10e-6,
+		InputPricePerTokenPriority:     12.5e-6,
 		OutputPricePerToken:            30e-6,
-		OutputPricePerTokenPriority:    60e-6,
+		OutputPricePerTokenPriority:    75e-6,
 		CacheCreationPricePerToken:     5e-6,
 		CacheReadPricePerToken:         0.5e-6,
-		CacheReadPricePerTokenPriority: 1e-6,
+		CacheReadPricePerTokenPriority: 1.25e-6,
 		SupportsCacheBreakdown:         false,
 		LongContextInputThreshold:      openAIGPT54LongContextInputThreshold,
 		LongContextInputMultiplier:     openAIGPT54LongContextInputMultiplier,
 		LongContextOutputMultiplier:    openAIGPT54LongContextOutputMultiplier,
 	}
 	s.fallbackPrices["gpt-5.4-mini"] = &ModelPricing{
-		InputPricePerToken:     7.5e-7,
-		OutputPricePerToken:    4.5e-6,
-		CacheReadPricePerToken: 7.5e-8,
-		SupportsCacheBreakdown: false,
+		InputPricePerToken:             7.5e-7,
+		InputPricePerTokenPriority:     1.5e-6,
+		OutputPricePerToken:            4.5e-6,
+		OutputPricePerTokenPriority:    9e-6,
+		CacheReadPricePerToken:         7.5e-8,
+		CacheReadPricePerTokenPriority: 1.5e-7,
+		SupportsCacheBreakdown:         false,
 	}
 	s.fallbackPrices["gpt-5.4-nano"] = &ModelPricing{
 		InputPricePerToken:     2e-7,

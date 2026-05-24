@@ -2904,16 +2904,12 @@ const handleSubmit = async () => {
         base_url: newBaseUrl
       }
 
-      // Handle API key
+      // API responses omit sensitive credentials; when left blank, omit api_key
+      // from the update payload so the backend preserves the stored value.
       if (editApiKey.value.trim()) {
-        // User provided a new API key
         newCredentials.api_key = editApiKey.value.trim()
-      } else if (currentCredentials.api_key) {
-        // Preserve existing api_key
-        newCredentials.api_key = currentCredentials.api_key
       } else {
-        appStore.showError(t('admin.accounts.apiKeyIsRequired'))
-        return
+        delete newCredentials.api_key
       }
 
       // Add model mapping if configured（OpenAI 开启自动透传时保留现有映射，不再编辑）

@@ -30,6 +30,7 @@
       <ModelPricing
         :claude-rows="claudePricingRows"
         :gpt-rows="gptPricingRows"
+        :deepseek-reference="deepseekPricingReference"
         :max-ledger-label="pricingDisplay.maxLedgerLabel"
         :pro-ledger-label="pricingDisplay.proLedgerLabel"
         :max-discount="pricingDisplay.maxDiscount"
@@ -275,6 +276,18 @@ type GptBasePricingRow = {
   }
 }
 
+type MarketPricingReference = {
+  title: string
+  sourceLabel: string
+  sourceUrl: string
+  description: string
+  rows: Array<{
+    label: string
+    value: string
+    hint: string
+  }>
+}
+
 const defaultLandingPricing = {
   proMultiplier: 1.2,
   maxMultiplier: 4,
@@ -301,8 +314,12 @@ function formatUSD(value: number): string {
   return `$${formatCompactNumber(value, 2, minimumFractionDigits)}`
 }
 
-function formatCNY(value: number): string {
-  return `¥${formatCompactNumber(value)}`
+function formatCNY(
+  value: number,
+  maximumFractionDigits = 2,
+  minimumFractionDigits = 0
+): string {
+  return `¥${formatCompactNumber(value, maximumFractionDigits, minimumFractionDigits)}`
 }
 
 function formatDiscount(multiplier: number, exchangeRate: number): string {
@@ -377,6 +394,30 @@ const gptBasePricingRows: GptBasePricingRow[] = [
     }
   }
 ]
+
+const deepseekPricingReference: MarketPricingReference = {
+  title: '市场参照：DeepSeek-V4-Pro 官方人民币价',
+  sourceLabel: 'DeepSeek API Docs',
+  sourceUrl: 'https://api-docs.deepseek.com/zh-cn/quick_start/pricing',
+  description: '同样按每 100 万 tokens 对齐，可直接与下方 Pro / Max 分组价格对照。',
+  rows: [
+    {
+      label: '输入',
+      value: formatCNY(3),
+      hint: '缓存未命中'
+    },
+    {
+      label: '输出',
+      value: formatCNY(6),
+      hint: '模型生成'
+    },
+    {
+      label: '缓存命中',
+      value: formatCNY(0.025, 3),
+      hint: '输入缓存'
+    }
+  ]
+}
 
 const claudePricingRows = computed(() => {
   const config = landingPricingConfig.value

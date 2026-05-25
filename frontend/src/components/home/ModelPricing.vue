@@ -13,6 +13,35 @@
         <span><strong>Pro</strong> {{ proLedgerLabel }} · 约 {{ proDiscount }}</span>
       </div>
 
+      <aside class="market-reference" aria-labelledby="deepseek-reference-title">
+        <div class="market-reference__copy">
+          <div class="market-reference__heading">
+            <span class="provider-tag provider-tag--deepseek">DeepSeek</span>
+            <h3 id="deepseek-reference-title">{{ deepseekReference.title }}</h3>
+          </div>
+          <p>{{ deepseekReference.description }}</p>
+        </div>
+        <div class="market-reference__rates" aria-label="DeepSeek-V4-Pro 官方价格">
+          <div
+            v-for="row in deepseekReference.rows"
+            :key="row.label"
+            class="market-rate"
+          >
+            <span>{{ row.label }}</span>
+            <strong>{{ row.value }}</strong>
+            <em>{{ row.hint }}</em>
+          </div>
+        </div>
+        <a
+          class="market-reference__source"
+          :href="deepseekReference.sourceUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ deepseekReference.sourceLabel }}
+        </a>
+      </aside>
+
       <div class="pricing-stack">
         <article class="pricing-frame">
           <div class="pricing-frame__header">
@@ -150,9 +179,22 @@ type GptPricingRow = {
   discount: string
 }
 
+type MarketPricingReference = {
+  title: string
+  sourceLabel: string
+  sourceUrl: string
+  description: string
+  rows: Array<{
+    label: string
+    value: string
+    hint: string
+  }>
+}
+
 defineProps<{
   claudeRows: ClaudePricingRow[]
   gptRows: GptPricingRow[]
+  deepseekReference: MarketPricingReference
   maxLedgerLabel: string
   proLedgerLabel: string
   maxDiscount: string
@@ -238,6 +280,99 @@ defineProps<{
 
 .discount-ledger strong {
   margin-right: 0.4rem;
+  color: #9a3b1f;
+}
+
+.market-reference {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 1.5rem;
+  margin: 0 auto 2.25rem;
+  padding: 1.125rem 1.25rem;
+  background: #efe6cf;
+  border: 1px solid rgba(63, 90, 58, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(250, 246, 236, 0.46);
+}
+
+.market-reference__copy {
+  min-width: 0;
+}
+
+.market-reference__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.market-reference__heading h3 {
+  margin: 0;
+  color: #13100b;
+  font-family: 'Cinzel', 'Noto Serif SC', serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.market-reference__copy p {
+  margin: 0.45rem 0 0;
+  color: #6f634f;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.market-reference__rates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(6.25rem, 1fr));
+  gap: 0.75rem;
+}
+
+.market-rate {
+  min-height: 4.6rem;
+  padding: 0.75rem 0.875rem;
+  background: rgba(250, 246, 236, 0.72);
+  border: 1px solid rgba(63, 90, 58, 0.14);
+  text-align: center;
+}
+
+.market-rate span,
+.market-rate em {
+  display: block;
+  color: #8a7d63;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.63rem;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.market-rate strong {
+  display: block;
+  margin: 0.28rem 0 0.25rem;
+  color: #13100b;
+  font-family: 'EB Garamond', 'Noto Serif SC', serif;
+  font-feature-settings: 'lnum' 1, 'tnum' 1;
+  font-size: 1.32rem;
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.market-reference__source {
+  color: #3f5a3a;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.market-reference__source:hover {
   color: #9a3b1f;
 }
 
@@ -362,6 +497,11 @@ defineProps<{
   color: #26361f;
 }
 
+.provider-tag--deepseek {
+  background: rgba(28, 94, 105, 0.12);
+  color: #1c5e69;
+}
+
 .discount-tag {
   background: #9a3b1f;
   color: #faf6ec;
@@ -444,6 +584,25 @@ defineProps<{
 @media (max-width: 768px) {
   .model-pricing__container {
     width: min(100% - 2rem, 1320px);
+  }
+
+  .market-reference {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .market-reference__heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .market-reference__rates {
+    grid-template-columns: 1fr;
+  }
+
+  .market-reference__source {
+    justify-self: start;
   }
 
   .pricing-frame__header {

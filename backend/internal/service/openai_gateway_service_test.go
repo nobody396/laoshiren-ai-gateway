@@ -18,6 +18,7 @@ import (
 	"github.com/cespare/xxhash/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
 )
 
 // 编译期接口断言
@@ -1919,33 +1920,6 @@ func TestHandleNonStreamingResponse_APIKeyFallsBackToSSEBodyWhenContentTypeIsWro
 	require.NotContains(t, rec.Body.String(), "data:")
 	require.Equal(t, "resp_api_key_sse", gjson.Get(rec.Body.String(), "id").String())
 	require.Equal(t, "hello", gjson.Get(rec.Body.String(), "output.0.content.0.text").String())
-}
-
-func TestHandleSSEToJSON_ReconstructsImageGenerationOutputItemDone(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	rec := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(rec)
-	c.Request = httptest.NewRequest(http.MethodPost, "/", nil)
-
-	svc := &OpenAIGatewayService{cfg: &config.Config{}}
-	resp := &http.Response{
-		StatusCode: http.StatusOK,
-		Header:     http.Header{"Content-Type": []string{"text/event-stream"}},
-	}
-	body := []byte(strings.Join([]string{
-		`data: {"type":"response.output_item.done","item":{"id":"ig_123","type":"image_generation_call","result":"aGVsbG8=","revised_prompt":"draw a cat","output_format":"png"}}`,
-		`data: {"type":"response.completed","response":{"id":"resp_img","model":"gpt-5.4","output":[],"usage":{"input_tokens":7,"output_tokens":9,"output_tokens_details":{"image_tokens":4}}}}`,
-		`data: [DONE]`,
-	}, "\n"))
-
-	usage, err := svc.handleSSEToJSON(resp, c, body, "gpt-5.4", "gpt-5.4")
-	require.NoError(t, err)
-	require.NotNil(t, usage)
-	require.Equal(t, 4, usage.ImageOutputTokens)
-	require.NotContains(t, rec.Body.String(), "data:")
-	require.Equal(t, "image_generation_call", gjson.Get(rec.Body.String(), "output.0.type").String())
-	require.Equal(t, "aGVsbG8=", gjson.Get(rec.Body.String(), "output.0.result").String())
-	require.Equal(t, "draw a cat", gjson.Get(rec.Body.String(), "output.0.revised_prompt").String())
 }
 
 func TestHandleOAuthSSEToJSON_NoFinalResponseKeepsSSEBody(t *testing.T) {

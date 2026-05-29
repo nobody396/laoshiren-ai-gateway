@@ -366,6 +366,15 @@ const claudeBasePricingRows: ClaudeBasePricingRow[] = [
     }
   },
   {
+    model: 'Claude Opus 4.7',
+    official: {
+      input: 5,
+      cacheWrite5m: 6.25,
+      cacheRead: 0.5,
+      output: 25
+    }
+  },
+  {
     model: 'Claude Sonnet 4.6',
     official: {
       input: 3,

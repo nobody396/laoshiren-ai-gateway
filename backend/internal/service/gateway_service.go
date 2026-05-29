@@ -8579,7 +8579,7 @@ func sanitizeCountTokensRequestBody(body []byte) []byte {
 		"stop",
 	} {
 		if gjson.GetBytes(out, path).Exists() {
-			if next, ok := deleteJSONPathBytes(out, path); ok {
+			if next, err := sjson.DeleteBytes(out, path); err == nil {
 				out = next
 			}
 		}

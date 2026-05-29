@@ -281,18 +281,7 @@ func resToChatHandleCompleted(evt *ResponsesStreamEvent, state *ResponsesEventTo
 
 	if evt.Response != nil {
 		if evt.Response.Usage != nil {
-			u := evt.Response.Usage
-			usage := &ChatUsage{
-				PromptTokens:     u.InputTokens,
-				CompletionTokens: u.OutputTokens,
-				TotalTokens:      u.InputTokens + u.OutputTokens,
-			}
-			if u.InputTokensDetails != nil && u.InputTokensDetails.CachedTokens > 0 {
-				usage.PromptTokensDetails = &ChatTokenDetails{
-					CachedTokens: u.InputTokensDetails.CachedTokens,
-				}
-			}
-			state.Usage = usage
+			state.Usage = chatUsageFromResponsesUsage(evt.Response.Usage)
 		}
 
 		switch evt.Response.Status {

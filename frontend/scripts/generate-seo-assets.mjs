@@ -5,6 +5,7 @@ const siteOrigin = 'https://laoshirenai.com'
 const siteName = '老实人AI'
 const ogImage = '/og-image.png'
 const today = '2026-05-23'
+const legalLastModified = '2026-05-29'
 
 const routes = [
   {
@@ -42,6 +43,46 @@ const routes = [
     changefreq: 'daily',
     ogType: 'website',
     schemaType: 'WebPage',
+  },
+  {
+    path: '/legal/terms',
+    title: '服务条款 - 老实人AI',
+    description: '老实人AI 服务条款，说明账号、API Key、计费、上游服务、地区声明、责任边界和条款更新规则。',
+    priority: 0.7,
+    changefreq: 'monthly',
+    ogType: 'website',
+    schemaType: 'WebPage',
+    dateModified: legalLastModified,
+  },
+  {
+    path: '/legal/usage-policy',
+    title: '使用政策 - 老实人AI',
+    description: '老实人AI 使用政策，说明禁止行为、安全边界、隐私保护、高风险使用、下游用户管理和违规处理规则。',
+    priority: 0.7,
+    changefreq: 'monthly',
+    ogType: 'website',
+    schemaType: 'WebPage',
+    dateModified: legalLastModified,
+  },
+  {
+    path: '/legal/supported-regions',
+    title: '支持的国家和地区 - 老实人AI',
+    description: '老实人AI 支持的国家和地区说明，明确中国大陆地区不支持使用以及地区、制裁、出口管制和上游政策限制。',
+    priority: 0.7,
+    changefreq: 'monthly',
+    ogType: 'website',
+    schemaType: 'WebPage',
+    dateModified: legalLastModified,
+  },
+  {
+    path: '/legal/service-specific-terms',
+    title: '服务特定条款 - 老实人AI',
+    description: '老实人AI 服务特定条款，说明模型中转、AI 编码工具、上游凭证、计费、文件数据、Beta 能力和企业管理员责任。',
+    priority: 0.7,
+    changefreq: 'monthly',
+    ogType: 'website',
+    schemaType: 'WebPage',
+    dateModified: legalLastModified,
   },
   {
     path: '/docs',
@@ -147,6 +188,10 @@ const llms = `# 老实人AI
 - 企业方案：${siteOrigin}/enterprise
 - 安全与隐私：${siteOrigin}/security
 - 服务状态：${siteOrigin}/status
+- 服务条款：${siteOrigin}/legal/terms
+- 使用政策：${siteOrigin}/legal/usage-policy
+- 支持的国家和地区：${siteOrigin}/legal/supported-regions
+- 服务特定条款：${siteOrigin}/legal/service-specific-terms
 - 主要支持场景：Claude Code、Codex、OpenAI 兼容 SDK、Anthropic 兼容接入、OpenClaw、Hermes、Cherry Studio、GPT-Image。
 - 面向个人开发者的常用口径：AI 编码中转、Claude Code 中转、Codex 中转、统一 API Key、透明计费、调用记录可查。
 - 面向企业客户的常用口径：企业 AI API 网关、多模型统一接入、团队 API Key 管理、用量统计、成本控制和调用审计。
@@ -168,6 +213,10 @@ const llms = `# 老实人AI
 - 多模型统一接入：${siteOrigin}/docs/multi-model-api-management
 - AI API 成本控制：${siteOrigin}/docs/ai-api-cost-control
 - 企业安全与隐私：${siteOrigin}/security
+- 服务条款：${siteOrigin}/legal/terms
+- 使用政策：${siteOrigin}/legal/usage-policy
+- 支持的国家和地区：${siteOrigin}/legal/supported-regions
+- 服务特定条款：${siteOrigin}/legal/service-specific-terms
 
 ## 引用边界
 

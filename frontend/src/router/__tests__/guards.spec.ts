@@ -77,7 +77,7 @@ function simulateGuard(
       return authState.isAdmin ? '/admin/dashboard' : '/dashboard'
     }
     if (authState.backendModeEnabled && !authState.isAuthenticated) {
-      const allowed = ['/login', '/key-usage', '/setup']
+      const allowed = ['/login', '/key-usage', '/setup', '/docs', '/legal']
       if (!allowed.some((path) => toPath === path || toPath.startsWith(path))) {
         return '/login'
       }
@@ -114,7 +114,7 @@ function simulateGuard(
     if (authState.isAuthenticated && authState.isAdmin) {
       return null
     }
-    const allowed = ['/login', '/key-usage', '/setup']
+    const allowed = ['/login', '/key-usage', '/setup', '/docs', '/legal']
     if (!allowed.some((path) => toPath === path || toPath.startsWith(path))) {
       return '/login'
     }
@@ -340,6 +340,17 @@ describe('路由守卫逻辑', () => {
       expect(redirect).toBeNull()
     })
 
+    it('unauthenticated: /legal/terms is allowed', () => {
+      const authState: MockAuthState = {
+        isAuthenticated: false,
+        isAdmin: false,
+        isSimpleMode: false,
+        backendModeEnabled: true,
+      }
+      const redirect = simulateGuard('/legal/terms', { requiresAuth: false }, authState)
+      expect(redirect).toBeNull()
+    })
+
     it('admin: /admin/dashboard is allowed', () => {
       const authState: MockAuthState = {
         isAuthenticated: true,
@@ -392,6 +403,17 @@ describe('路由守卫逻辑', () => {
         backendModeEnabled: true,
       }
       const redirect = simulateGuard('/key-usage', { requiresAuth: false }, authState)
+      expect(redirect).toBeNull()
+    })
+
+    it('non-admin authenticated: /legal/usage-policy is allowed', () => {
+      const authState: MockAuthState = {
+        isAuthenticated: true,
+        isAdmin: false,
+        isSimpleMode: false,
+        backendModeEnabled: true,
+      }
+      const redirect = simulateGuard('/legal/usage-policy', { requiresAuth: false }, authState)
       expect(redirect).toBeNull()
     })
   })

@@ -508,6 +508,15 @@ const footerSections = computed(() => [
       { label: '服务状态', href: '/status', external: false },
       { label: '安全与隐私', href: '/security', external: false }
     ]
+  },
+  {
+    title: '合规条款',
+    links: [
+      { label: '服务条款', href: '/legal/terms', external: false },
+      { label: '使用政策', href: '/legal/usage-policy', external: false },
+      { label: '支持的国家和地区', href: '/legal/supported-regions', external: false },
+      { label: '服务特定条款', href: '/legal/service-specific-terms', external: false }
+    ]
   }
 ])
 

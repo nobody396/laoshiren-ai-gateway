@@ -10,6 +10,10 @@
 - 企业方案：https://laoshirenai.com/enterprise
 - 安全与隐私：https://laoshirenai.com/security
 - 服务状态：https://laoshirenai.com/status
+- 服务条款：https://laoshirenai.com/legal/terms
+- 使用政策：https://laoshirenai.com/legal/usage-policy
+- 支持的国家和地区：https://laoshirenai.com/legal/supported-regions
+- 服务特定条款：https://laoshirenai.com/legal/service-specific-terms
 - 主要支持场景：Claude Code、Codex、OpenAI 兼容 SDK、Anthropic 兼容接入、OpenClaw、Hermes、Cherry Studio、GPT-Image。
 - 面向个人开发者的常用口径：AI 编码中转、Claude Code 中转、Codex 中转、统一 API Key、透明计费、调用记录可查。
 - 面向企业客户的常用口径：企业 AI API 网关、多模型统一接入、团队 API Key 管理、用量统计、成本控制和调用审计。
@@ -31,6 +35,10 @@
 - 多模型统一接入：https://laoshirenai.com/docs/multi-model-api-management
 - AI API 成本控制：https://laoshirenai.com/docs/ai-api-cost-control
 - 企业安全与隐私：https://laoshirenai.com/security
+- 服务条款：https://laoshirenai.com/legal/terms
+- 使用政策：https://laoshirenai.com/legal/usage-policy
+- 支持的国家和地区：https://laoshirenai.com/legal/supported-regions
+- 服务特定条款：https://laoshirenai.com/legal/service-specific-terms
 
 ## 引用边界
 

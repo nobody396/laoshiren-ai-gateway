@@ -41,6 +41,46 @@
       "schemaType": "WebPage"
     },
     {
+      "path": "/legal/terms",
+      "title": "服务条款 - 老实人AI",
+      "description": "老实人AI 服务条款，说明账号、API Key、计费、上游服务、地区声明、责任边界和条款更新规则。",
+      "priority": 0.7,
+      "changefreq": "monthly",
+      "ogType": "website",
+      "schemaType": "WebPage",
+      "dateModified": "2026-05-29"
+    },
+    {
+      "path": "/legal/usage-policy",
+      "title": "使用政策 - 老实人AI",
+      "description": "老实人AI 使用政策，说明禁止行为、安全边界、隐私保护、高风险使用、下游用户管理和违规处理规则。",
+      "priority": 0.7,
+      "changefreq": "monthly",
+      "ogType": "website",
+      "schemaType": "WebPage",
+      "dateModified": "2026-05-29"
+    },
+    {
+      "path": "/legal/supported-regions",
+      "title": "支持的国家和地区 - 老实人AI",
+      "description": "老实人AI 支持的国家和地区说明，明确中国大陆地区不支持使用以及地区、制裁、出口管制和上游政策限制。",
+      "priority": 0.7,
+      "changefreq": "monthly",
+      "ogType": "website",
+      "schemaType": "WebPage",
+      "dateModified": "2026-05-29"
+    },
+    {
+      "path": "/legal/service-specific-terms",
+      "title": "服务特定条款 - 老实人AI",
+      "description": "老实人AI 服务特定条款，说明模型中转、AI 编码工具、上游凭证、计费、文件数据、Beta 能力和企业管理员责任。",
+      "priority": 0.7,
+      "changefreq": "monthly",
+      "ogType": "website",
+      "schemaType": "WebPage",
+      "dateModified": "2026-05-29"
+    },
+    {
       "path": "/docs",
       "title": "文档 - 老实人AI",
       "description": "老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio、GPT-Image 和企业接入的配置教程与常见问题。",

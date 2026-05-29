@@ -9,6 +9,7 @@
         <router-link to="/enterprise">企业</router-link>
         <router-link to="/security">安全</router-link>
         <router-link to="/status">状态</router-link>
+        <router-link to="/legal/terms">条款</router-link>
         <router-link to="/docs">文档</router-link>
         <router-link to="/login">登录</router-link>
       </nav>

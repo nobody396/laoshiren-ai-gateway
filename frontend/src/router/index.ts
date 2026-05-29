@@ -101,6 +101,54 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/legal',
+    redirect: '/legal/terms'
+  },
+  {
+    path: '/legal/terms',
+    name: 'LegalTerms',
+    component: () => import('@/views/PublicInfoView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: '服务条款',
+      description: '老实人AI 服务条款，说明账号、API Key、计费、上游服务、地区声明、责任边界和条款更新规则。',
+      publicDocSlug: 'legal-terms'
+    }
+  },
+  {
+    path: '/legal/usage-policy',
+    name: 'LegalUsagePolicy',
+    component: () => import('@/views/PublicInfoView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: '使用政策',
+      description: '老实人AI 使用政策，说明禁止行为、安全边界、隐私保护、高风险使用、下游用户管理和违规处理规则。',
+      publicDocSlug: 'legal-usage-policy'
+    }
+  },
+  {
+    path: '/legal/supported-regions',
+    name: 'LegalSupportedRegions',
+    component: () => import('@/views/PublicInfoView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: '支持的国家和地区',
+      description: '老实人AI 支持的国家和地区说明，明确中国大陆地区不支持使用以及地区、制裁、出口管制和上游政策限制。',
+      publicDocSlug: 'legal-supported-regions'
+    }
+  },
+  {
+    path: '/legal/service-specific-terms',
+    name: 'LegalServiceSpecificTerms',
+    component: () => import('@/views/PublicInfoView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: '服务特定条款',
+      description: '老实人AI 服务特定条款，说明模型中转、AI 编码工具、上游凭证、计费、文件数据、Beta 能力和企业管理员责任。',
+      publicDocSlug: 'legal-service-specific-terms'
+    }
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/auth/LoginView.vue'),
@@ -748,7 +796,7 @@ let authInitialized = false
 const navigationLoading = useNavigationLoadingState()
 // 延迟初始化预加载，传入 router 实例
 let routePrefetch: ReturnType<typeof useRoutePrefetch> | null = null
-const BACKEND_MODE_ALLOWED_PATHS = ['/login', '/key-usage', '/setup', '/docs']
+const BACKEND_MODE_ALLOWED_PATHS = ['/login', '/key-usage', '/setup', '/docs', '/legal']
 const BACKEND_MODE_EXACT_PATHS = ['/', '/home']
 let cachedSetupStatus: SetupStatus | null = null
 let setupStatusPromise: Promise<SetupStatus | null> | null = null

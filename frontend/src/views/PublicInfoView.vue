@@ -63,6 +63,8 @@ watch(
 .public-info-page {
   min-height: 100vh;
   background: #ffffff;
+  color: #374151;
+  color-scheme: light;
 }
 
 .public-info-header {
@@ -119,6 +121,76 @@ watch(
   width: min(100% - 2rem, 860px);
   margin: 0 auto;
   padding: 3rem 0 5rem;
+}
+
+.public-info-page :deep(.docs-doc-copy-btn) {
+  border-color: #e5e7eb;
+  background: rgba(255, 255, 255, 0.92);
+  color: #374151;
+}
+
+.public-info-page :deep(.docs-doc-copy-btn:hover) {
+  border-color: #d87757;
+  background: #fff7f3;
+  color: #d87757;
+}
+
+.public-info-page :deep(.docs-markdown) {
+  color: #374151;
+}
+
+.public-info-page :deep(.docs-markdown h1) {
+  color: #111827;
+}
+
+.public-info-page :deep(.docs-markdown h2),
+.public-info-page :deep(.docs-markdown h3) {
+  color: #1f2937;
+}
+
+.public-info-page :deep(.docs-markdown h2) {
+  border-bottom-color: #e5e7eb;
+}
+
+.public-info-page :deep(.docs-markdown h4) {
+  color: #374151;
+}
+
+.public-info-page :deep(.docs-markdown strong) {
+  color: #111827;
+}
+
+.public-info-page :deep(.docs-markdown blockquote) {
+  background-color: #fdf5f2;
+  color: #6f3829;
+}
+
+.public-info-page :deep(.docs-markdown code) {
+  background-color: #f3f4f6;
+  color: #d87757;
+}
+
+.public-info-page :deep(.docs-markdown pre) {
+  background-color: #1e293b;
+  color: #e2e8f0;
+}
+
+.public-info-page :deep(.docs-markdown pre code) {
+  background-color: transparent;
+  color: inherit;
+}
+
+.public-info-page :deep(.docs-markdown hr) {
+  border-top-color: #e5e7eb;
+}
+
+.public-info-page :deep(.docs-markdown th),
+.public-info-page :deep(.docs-markdown td) {
+  border-color: #e5e7eb;
+}
+
+.public-info-page :deep(.docs-markdown th) {
+  background-color: #f9fafb;
 }
 
 @media (max-width: 640px) {

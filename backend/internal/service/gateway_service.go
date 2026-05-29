@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/domain"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/claude"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
@@ -3906,6 +3907,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 	if account != nil && account.IsAnthropicAPIKeyPassthroughEnabled() {
 		passthroughBody := parsed.Body
 		passthroughModel := parsed.Model
+		originalPassthroughModel := passthroughModel
 		if passthroughModel != "" {
 			if mappedModel := account.GetMappedModel(passthroughModel); mappedModel != passthroughModel {
 				passthroughBody = s.replaceModelInBody(passthroughBody, mappedModel)
@@ -3913,7 +3915,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 				passthroughModel = mappedModel
 			}
 		}
-		return s.forwardAnthropicAPIKeyPassthrough(ctx, c, account, passthroughBody, passthroughModel, parsed.Stream, startTime)
+		return s.forwardAnthropicAPIKeyPassthrough(ctx, c, account, passthroughBody, originalPassthroughModel, passthroughModel, parsed.Stream, startTime)
 	}
 
 	if account != nil && account.IsBedrock() {
@@ -4490,6 +4492,7 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 	c *gin.Context,
 	account *Account,
 	body []byte,
+	originalModel string,
 	reqModel string,
 	reqStream bool,
 	startTime time.Time,
@@ -4735,7 +4738,7 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 	return &ForwardResult{
 		RequestID:           resp.Header.Get("x-request-id"),
 		Usage:               *usage,
-		Model:               reqModel,
+		Model:               originalModel,
 		UpstreamModel:       reqModel,
 		Stream:              reqStream,
 		Duration:            time.Since(startTime),
@@ -8644,6 +8647,7 @@ func (s *GatewayService) GetAvailableModels(ctx context.Context, groupID *int64,
 			}
 		}
 	}
+	domain.AddCurrentModelAliases(modelSet)
 
 	// If no account has model_mapping, return nil (use default)
 	if !hasAnyMapping {

@@ -1,6 +1,8 @@
 // Package claude provides constants and helpers for Claude API integration.
 package claude
 
+import "github.com/bozhouDev/DragonCode-sub2api/internal/domain"
+
 // Claude Code 客户端相关常量
 
 // Beta header 常量
@@ -100,9 +102,15 @@ type Model struct {
 // DefaultModels Claude Code 客户端支持的默认模型列表
 var DefaultModels = []Model{
 	{
-		ID:          "claude-opus-4-8",
+		ID:          domain.ClaudeOpusLatestModelID,
 		Type:        "model",
-		DisplayName: "Claude Opus 4.8",
+		DisplayName: "Claude Opus Latest (current 4.8)",
+		CreatedAt:   "2026-05-28T00:00:00Z",
+	},
+	{
+		ID:          domain.ClaudeOpusCurrentModelID,
+		Type:        "model",
+		DisplayName: domain.ClaudeOpusCurrentModelLabel,
 		CreatedAt:   "2026-05-28T00:00:00Z",
 	},
 	{
@@ -173,6 +181,9 @@ var ModelIDReverseOverrides = map[string]string{
 func NormalizeModelID(id string) string {
 	if id == "" {
 		return id
+	}
+	if mapped, ok := domain.ResolveModelAlias(id); ok {
+		return mapped
 	}
 	if mapped, ok := ModelIDOverrides[id]; ok {
 		return mapped

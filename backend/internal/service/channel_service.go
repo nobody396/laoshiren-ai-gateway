@@ -369,16 +369,21 @@ func (c *channelCache) matchWildcardMapping(groupID int64, platform, modelLower 
 // lookupPricingAcrossPlatforms 在分组平台内查找模型定价。
 // 各平台严格独立，只在本平台内查找（先精确匹配，再通配符）。
 func lookupPricingAcrossPlatforms(cache *channelCache, groupID int64, groupPlatform, modelLower string) *ChannelModelPricing {
-	for _, p := range matchingPlatforms(groupPlatform) {
-		key := channelModelKey{groupID: groupID, platform: p, model: modelLower}
-		if pricing, ok := cache.pricingByGroupModel[key]; ok {
-			return pricing
+	candidates := modelLookupCandidatesForMapping(groupPlatform, modelLower)
+	for _, candidate := range candidates {
+		for _, p := range matchingPlatforms(groupPlatform) {
+			key := channelModelKey{groupID: groupID, platform: p, model: candidate}
+			if pricing, ok := cache.pricingByGroupModel[key]; ok {
+				return pricing
+			}
 		}
 	}
 	// 精确查找全部失败，依次尝试通配符匹配
-	for _, p := range matchingPlatforms(groupPlatform) {
-		if pricing := cache.matchWildcard(groupID, p, modelLower); pricing != nil {
-			return pricing
+	for _, candidate := range candidates {
+		for _, p := range matchingPlatforms(groupPlatform) {
+			if pricing := cache.matchWildcard(groupID, p, candidate); pricing != nil {
+				return pricing
+			}
 		}
 	}
 	return nil
@@ -387,15 +392,20 @@ func lookupPricingAcrossPlatforms(cache *channelCache, groupID int64, groupPlatf
 // lookupMappingAcrossPlatforms 在分组平台内查找模型映射。
 // 逻辑与 lookupPricingAcrossPlatforms 相同：先精确查找，再通配符。
 func lookupMappingAcrossPlatforms(cache *channelCache, groupID int64, groupPlatform, modelLower string) string {
-	for _, p := range matchingPlatforms(groupPlatform) {
-		key := channelModelKey{groupID: groupID, platform: p, model: modelLower}
-		if mapped, ok := cache.mappingByGroupModel[key]; ok {
-			return mapped
+	candidates := modelLookupCandidatesForMapping(groupPlatform, modelLower)
+	for _, candidate := range candidates {
+		for _, p := range matchingPlatforms(groupPlatform) {
+			key := channelModelKey{groupID: groupID, platform: p, model: candidate}
+			if mapped, ok := cache.mappingByGroupModel[key]; ok {
+				return mapped
+			}
 		}
 	}
-	for _, p := range matchingPlatforms(groupPlatform) {
-		if mapped := cache.matchWildcardMapping(groupID, p, modelLower); mapped != "" {
-			return mapped
+	for _, candidate := range candidates {
+		for _, p := range matchingPlatforms(groupPlatform) {
+			if mapped := cache.matchWildcardMapping(groupID, p, candidate); mapped != "" {
+				return mapped
+			}
 		}
 	}
 	return ""

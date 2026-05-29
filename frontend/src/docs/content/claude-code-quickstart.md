@@ -53,6 +53,8 @@ claude --version
 
 导入后点击 **启用** 即可。
 
+如需指定 Opus 模型，可在 Claude Code 启动时使用 `claude --model claude-opus-4-8`。如果希望以后自动跟随老实人 AI 的当前 Opus 版本，可使用 `claude --model claude-opus-latest`；当前它指向 Claude Opus 4.8。
+
 #### 方式二：手动配置环境变量
 
 点击密钥旁的 **复制** 按钮获取 API Key。

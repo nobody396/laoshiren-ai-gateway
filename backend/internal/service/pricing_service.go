@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/domain"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/openai"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/util/urlvalidator"
@@ -588,6 +589,9 @@ func (s *PricingService) GetModelPricing(modelName string) *LiteLLMModelPricing 
 
 	// 标准化模型名称（同时兼容 "models/xxx"、VertexAI 资源名等前缀）
 	modelLower := strings.ToLower(strings.TrimSpace(modelName))
+	if resolved, ok := domain.ResolveModelAlias(modelLower); ok {
+		modelLower = resolved
+	}
 	lookupCandidates := s.buildModelLookupCandidates(modelLower)
 
 	// GPT-5.5 业务定价固定为 GPT-5.4 的 2 倍，不能被远端动态定价覆盖。
@@ -727,6 +731,7 @@ func (s *PricingService) matchByModelFamily(model string) *LiteLLMModelPricing {
 	// 按特异性降序排列：高版本号在前，避免 "claude-opus-4"（opus-4 系列）
 	// 因子串关系误匹配 "claude-opus-4-8" / "claude-opus-4-7" 等具体系列。
 	families := []modelFamily{
+		{name: "opus-latest", match: []string{domain.ClaudeOpusLatestModelID}, pricing: []string{domain.ClaudeOpusCurrentModelID, "claude-opus-4-7", "claude-opus-4-6"}},
 		{name: "opus-4.8", match: []string{"claude-opus-4-8", "claude-opus-4.8"}, pricing: []string{"claude-opus-4-8", "claude-opus-4.8", "claude-opus-4-7", "claude-opus-4-6"}},
 		{name: "opus-4.7", match: []string{"claude-opus-4-7", "claude-opus-4.7"}, pricing: []string{"claude-opus-4-7", "claude-opus-4.7", "claude-opus-4-6"}},
 		{name: "opus-4.6", match: []string{"claude-opus-4-6", "claude-opus-4.6"}},

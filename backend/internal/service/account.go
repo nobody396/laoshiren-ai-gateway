@@ -577,6 +577,33 @@ func normalizeRequestedModelForLookup(platform, requestedModel string) string {
 	return trimmed
 }
 
+func modelLookupCandidatesForMapping(platform, requestedModel string) []string {
+	add := func(items []string, item string) []string {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			return items
+		}
+		for _, existing := range items {
+			if existing == item {
+				return items
+			}
+		}
+		return append(items, item)
+	}
+
+	var candidates []string
+	candidates = add(candidates, requestedModel)
+	normalized := normalizeRequestedModelForLookup(platform, requestedModel)
+	candidates = add(candidates, normalized)
+
+	if resolved, ok := domain.ResolveModelAlias(requestedModel); ok {
+		candidates = add(candidates, resolved)
+		candidates = add(candidates, normalizeRequestedModelForLookup(platform, resolved))
+	}
+
+	return candidates
+}
+
 func mappingSupportsRequestedModel(mapping map[string]string, requestedModel string) bool {
 	if requestedModel == "" {
 		return false
@@ -593,11 +620,36 @@ func mappingSupportsRequestedModel(mapping map[string]string, requestedModel str
 }
 
 func resolveRequestedModelInMapping(mapping map[string]string, requestedModel string) (mappedModel string, matched bool) {
+	return resolveRequestedModelCandidates(mapping, []string{requestedModel}, requestedModel)
+}
+
+func resolveRequestedModelCandidates(mapping map[string]string, requestedModels []string, fallbackModel string) (mappedModel string, matched bool) {
+	for _, requestedModel := range requestedModels {
+		if mappedModel, matched := resolveRequestedModelExact(mapping, requestedModel); matched {
+			return mappedModel, true
+		}
+	}
+	for _, requestedModel := range requestedModels {
+		if mappedModel, matched := resolveRequestedModelWildcard(mapping, requestedModel); matched {
+			return mappedModel, true
+		}
+	}
+	return fallbackModel, false
+}
+
+func resolveRequestedModelExact(mapping map[string]string, requestedModel string) (mappedModel string, matched bool) {
 	if requestedModel == "" {
 		return "", false
 	}
 	if mappedModel, exists := mapping[requestedModel]; exists {
 		return mappedModel, true
+	}
+	return requestedModel, false
+}
+
+func resolveRequestedModelWildcard(mapping map[string]string, requestedModel string) (mappedModel string, matched bool) {
+	if requestedModel == "" {
+		return "", false
 	}
 	return matchWildcardMappingResult(mapping, requestedModel)
 }
@@ -609,11 +661,12 @@ func (a *Account) IsModelSupported(requestedModel string) bool {
 	if len(mapping) == 0 {
 		return true // 无映射 = 允许所有
 	}
-	if mappingSupportsRequestedModel(mapping, requestedModel) {
-		return true
+	for _, candidate := range modelLookupCandidatesForMapping(a.Platform, requestedModel) {
+		if mappingSupportsRequestedModel(mapping, candidate) {
+			return true
+		}
 	}
-	normalized := normalizeRequestedModelForLookup(a.Platform, requestedModel)
-	return normalized != requestedModel && mappingSupportsRequestedModel(mapping, normalized)
+	return false
 }
 
 // GetMappedModel 获取映射后的模型名（支持通配符，最长优先匹配）
@@ -628,18 +681,12 @@ func (a *Account) GetMappedModel(requestedModel string) string {
 func (a *Account) ResolveMappedModel(requestedModel string) (mappedModel string, matched bool) {
 	mapping := a.GetModelMapping()
 	if len(mapping) == 0 {
+		if resolved, ok := domain.ResolveModelAlias(requestedModel); ok {
+			return resolved, false
+		}
 		return requestedModel, false
 	}
-	if mappedModel, matched := resolveRequestedModelInMapping(mapping, requestedModel); matched {
-		return mappedModel, true
-	}
-	normalized := normalizeRequestedModelForLookup(a.Platform, requestedModel)
-	if normalized != requestedModel {
-		if mappedModel, matched := resolveRequestedModelInMapping(mapping, normalized); matched {
-			return mappedModel, true
-		}
-	}
-	return requestedModel, false
+	return resolveRequestedModelCandidates(mapping, modelLookupCandidatesForMapping(a.Platform, requestedModel), requestedModel)
 }
 
 func (a *Account) GetOpenAICompactMode() string {

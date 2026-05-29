@@ -16,6 +16,10 @@ func TestGatewayServiceIsModelSupportedByAccount_BedrockDefaultMappingRestrictsM
 		t.Fatalf("expected default Bedrock alias to be supported")
 	}
 
+	if !svc.isModelSupportedByAccount(account, "claude-opus-latest") {
+		t.Fatalf("expected Claude Opus latest alias to be supported")
+	}
+
 	if svc.isModelSupportedByAccount(account, "claude-3-5-sonnet-20241022") {
 		t.Fatalf("expected unsupported alias to be rejected for Bedrock account")
 	}

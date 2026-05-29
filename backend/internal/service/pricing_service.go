@@ -725,8 +725,9 @@ func (s *PricingService) matchByModelFamily(model string) *LiteLLMModelPricing {
 	}
 
 	// 按特异性降序排列：高版本号在前，避免 "claude-opus-4"（opus-4 系列）
-	// 因子串关系误匹配 "claude-opus-4-7"（opus-4.7 系列）。
+	// 因子串关系误匹配 "claude-opus-4-8" / "claude-opus-4-7" 等具体系列。
 	families := []modelFamily{
+		{name: "opus-4.8", match: []string{"claude-opus-4-8", "claude-opus-4.8"}, pricing: []string{"claude-opus-4-8", "claude-opus-4.8", "claude-opus-4-7", "claude-opus-4-6"}},
 		{name: "opus-4.7", match: []string{"claude-opus-4-7", "claude-opus-4.7"}, pricing: []string{"claude-opus-4-7", "claude-opus-4.7", "claude-opus-4-6"}},
 		{name: "opus-4.6", match: []string{"claude-opus-4-6", "claude-opus-4.6"}},
 		{name: "opus-4.5", match: []string{"claude-opus-4-5", "claude-opus-4.5"}},
@@ -757,6 +758,8 @@ func (s *PricingService) matchByModelFamily(model string) *LiteLLMModelPricing {
 		switch {
 		case strings.Contains(model, "opus"):
 			switch {
+			case strings.Contains(model, "4.8") || strings.Contains(model, "4-8"):
+				fallbackName = "opus-4.8"
 			case strings.Contains(model, "4.7") || strings.Contains(model, "4-7"):
 				fallbackName = "opus-4.7"
 			case strings.Contains(model, "4.6") || strings.Contains(model, "4-6"):

@@ -253,7 +253,7 @@ func TestBundledPricingMatchesCurrentOfficialGatewayModelPrices(t *testing.T) {
 			cacheReadPriority: 0.35e-6,
 		},
 		{
-			model:        "claude-opus-4-7",
+			model:        "claude-opus-4-8",
 			input:        5e-6,
 			output:       25e-6,
 			cacheRead:    0.5e-6,

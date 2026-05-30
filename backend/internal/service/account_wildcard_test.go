@@ -173,6 +173,16 @@ func TestAccountIsModelSupported(t *testing.T) {
 			expected:       true,
 		},
 		{
+			name: "codex auto review hidden alias supported when target model is mapped",
+			credentials: map[string]any{
+				"model_mapping": map[string]any{
+					"gpt-5.5": "gpt-5.5",
+				},
+			},
+			requestedModel: "codex-auto-review",
+			expected:       true,
+		},
+		{
 			name: "exact match not supported",
 			credentials: map[string]any{
 				"model_mapping": map[string]any{
@@ -376,6 +386,17 @@ func TestAccountResolveMappedModel(t *testing.T) {
 			},
 			requestedModel: "claude-opus-latest",
 			expectedModel:  "claude-opus-4-8",
+			expectedMatch:  true,
+		},
+		{
+			name: "codex auto review hidden alias maps through target model",
+			credentials: map[string]any{
+				"model_mapping": map[string]any{
+					"gpt-5.5": "gpt-5.5",
+				},
+			},
+			requestedModel: "codex-auto-review",
+			expectedModel:  "gpt-5.5",
 			expectedMatch:  true,
 		},
 		{

@@ -2,12 +2,14 @@ package domain
 
 import "strings"
 
-// Canonical model aliases exposed to users.
+// Canonical model aliases and hidden system aliases.
 const (
 	ClaudeOpusLatestModelID      = "claude-opus-latest"
 	ClaudeOpusCurrentModelID     = "claude-opus-4-8"
 	ClaudeOpusCurrentModelLabel  = "Claude Opus 4.8"
 	ClaudeOpusCurrentVersionText = "4.8"
+	CodexAutoReviewModelID       = "codex-auto-review"
+	CodexAutoReviewTargetModelID = "gpt-5.5"
 )
 
 // ResolveModelAlias returns the concrete model currently targeted by a stable
@@ -17,6 +19,8 @@ func ResolveModelAlias(model string) (string, bool) {
 	switch strings.ToLower(trimmed) {
 	case ClaudeOpusLatestModelID:
 		return ClaudeOpusCurrentModelID, true
+	case CodexAutoReviewModelID:
+		return CodexAutoReviewTargetModelID, true
 	default:
 		return trimmed, false
 	}

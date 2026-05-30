@@ -563,6 +563,34 @@ func TestGetAvailableModels_AddsLatestAliasWhenCurrentOpusIsMapped(t *testing.T)
 	require.Equal(t, []string{"claude-opus-4-8", "claude-opus-latest"}, models)
 }
 
+func TestGetAvailableModels_DoesNotExposeCodexAutoReviewAlias(t *testing.T) {
+	groupID := int64(19)
+	repo := &modelsListAccountRepoStub{
+		byGroup: map[int64][]Account{
+			groupID: {
+				{
+					ID:       1,
+					Platform: PlatformOpenAI,
+					Credentials: map[string]any{
+						"model_mapping": map[string]any{
+							"gpt-5.5": "gpt-5.5",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	svc := &GatewayService{
+		accountRepo:        repo,
+		modelsListCache:    gocache.New(time.Minute, time.Minute),
+		modelsListCacheTTL: time.Minute,
+	}
+
+	models := svc.GetAvailableModels(context.Background(), &groupID, PlatformOpenAI)
+	require.Equal(t, []string{"gpt-5.5"}, models)
+}
+
 func TestGetAvailableModels_ErrorAndGlobalListBranches(t *testing.T) {
 	resetGatewayHotpathStatsForTest()
 

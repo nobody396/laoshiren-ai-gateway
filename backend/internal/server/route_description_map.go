@@ -363,6 +363,14 @@ var scannerDescMap = map[string]string{
 	"PUT /admin/channels/:id":           "编辑渠道",
 	"DELETE /admin/channels/:id":        "删除渠道",
 
+	// ==================== 供应商考察 (suppliers) ====================
+	"GET /admin/suppliers":            "分页查询供应商列表",
+	"GET /admin/suppliers/:id":        "供应商详情",
+	"POST /admin/suppliers":           "新建供应商",
+	"PUT /admin/suppliers/:id":        "编辑供应商",
+	"POST /admin/suppliers/:id/probe": "立即执行供应商探针",
+	"DELETE /admin/suppliers/:id":     "删除供应商",
+
 	// ==================== API Key 管理 (api-keys) ====================
 	"PUT /admin/api-keys/:id": "更新 API Key 分组",
 

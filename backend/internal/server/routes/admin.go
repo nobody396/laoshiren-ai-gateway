@@ -94,6 +94,9 @@ func RegisterAdminRoutes(
 		// 渠道管理
 		registerChannelRoutes(admin, h)
 
+		// 供应商考察
+		registerSupplierRoutes(admin, h)
+
 		// 开票管理
 		registerInvoiceRoutes(admin, h)
 
@@ -658,6 +661,18 @@ func registerChannelRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		channels.POST("", h.Admin.Channel.Create)
 		channels.PUT("/:id", h.Admin.Channel.Update)
 		channels.DELETE("/:id", h.Admin.Channel.Delete)
+	}
+}
+
+func registerSupplierRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	suppliers := admin.Group("/suppliers")
+	{
+		suppliers.GET("", h.Admin.Supplier.List)
+		suppliers.GET("/:id", h.Admin.Supplier.GetByID)
+		suppliers.POST("", h.Admin.Supplier.Create)
+		suppliers.PUT("/:id", h.Admin.Supplier.Update)
+		suppliers.POST("/:id/probe", h.Admin.Supplier.Probe)
+		suppliers.DELETE("/:id", h.Admin.Supplier.Delete)
 	}
 }
 

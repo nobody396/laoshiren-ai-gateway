@@ -38,6 +38,7 @@ func ProvideAdminHandlers(
 	apiKeyHandler *admin.AdminAPIKeyHandler,
 	scheduledTestHandler *admin.ScheduledTestHandler,
 	channelHandler *admin.ChannelHandler,
+	supplierHandler *admin.SupplierHandler,
 	rbacHandler *admin.RBACHandler,
 ) *AdminHandlers {
 	return &AdminHandlers{
@@ -69,6 +70,7 @@ func ProvideAdminHandlers(
 		APIKey:                apiKeyHandler,
 		ScheduledTest:         scheduledTestHandler,
 		Channel:               channelHandler,
+		Supplier:              supplierHandler,
 		RBAC:                  rbacHandler,
 	}
 }
@@ -186,6 +188,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewAdminAPIKeyHandler,
 	admin.NewScheduledTestHandler,
 	admin.NewChannelHandler,
+	admin.NewSupplierHandler,
 	admin.NewRBACHandler,
 
 	// AdminHandlers and Handlers constructors

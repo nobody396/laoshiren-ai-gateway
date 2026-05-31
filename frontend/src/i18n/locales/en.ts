@@ -416,6 +416,7 @@ export default {
     users: 'Users',
     groups: 'Groups',
     channels: 'Channels',
+    suppliers: 'Suppliers',
     subscriptions: 'Subscriptions',
     accounts: 'Accounts',
     proxies: 'Proxies',
@@ -2401,6 +2402,12 @@ export default {
         perRequestPriceRequired: 'Per-request/image pricing requires a default price or at least one tier',
         unnamed: 'Unnamed'
       }
+    },
+
+    // Suppliers
+    suppliers: {
+      title: 'Supplier Evaluation',
+      description: 'Track upstream websites, keys, base URLs, target groups, and probe stability'
     },
 
     // Subscriptions

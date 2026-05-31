@@ -1,7 +1,7 @@
 // Package rbacfixture 提供 RBAC 测试 fixture (菜单 + API).
 //
 // 扁平化后的数据结构:
-//   - BaselineMenus(): 20 条菜单 (type 固定为 menu，不再有父子层级)，与当前后台导航保持一致
+//   - BaselineMenus(): 菜单基线 (type 固定为 menu，不再有父子层级)，与当前后台导航保持一致
 //   - BaselineAPIs(): admin API 记录, 每条对应一个 admin 路由; group 由对应菜单名决定
 //
 // 本包为测试辅助包, 仅被测试引用.
@@ -25,7 +25,7 @@ func newBaselineMenu(id int64, name, path, icon, key string, sortOrder int) *ser
 	}
 }
 
-// BaselineMenus 返回 20 条基线菜单.
+// BaselineMenus 返回基线菜单.
 //
 // 20260505 扁平化: migration 120 已删除 directory、button 两种类型与 parent_id 字段。
 // 保留原有子菜单 id (2/11/21-23/31-35/41-42/51-54/61-63)，新增当前项目特有菜单使用空出的 id。
@@ -40,24 +40,25 @@ func BaselineMenus() []*service.AdminMenu {
 		newBaselineMenu(21, "账号管理", "/admin/accounts", "globe", "admin:accounts", 4),
 		newBaselineMenu(22, "分组管理", "/admin/groups", "folder", "admin:groups", 5),
 		newBaselineMenu(23, "渠道管理", "/admin/channels", "channel", "admin:channels", 6),
+		newBaselineMenu(24, "供应商考察", "/admin/suppliers", "server", "admin:suppliers", 7),
 		// 财务管理
-		newBaselineMenu(31, "订阅管理", "/admin/subscriptions", "credit-card", "admin:subscriptions", 7),
-		newBaselineMenu(32, "卡密管理", "/admin/redeem", "ticket", "admin:redeem", 8),
-		newBaselineMenu(33, "优惠码管理", "/admin/promo-codes", "gift", "admin:promo-codes", 9),
-		newBaselineMenu(34, "充值订单", "/admin/topup-orders", "credit-card", "admin:topup-orders", 10),
-		newBaselineMenu(35, "开票管理", "/admin/invoice-requests", "ticket", "admin:invoice-requests", 11),
+		newBaselineMenu(31, "订阅管理", "/admin/subscriptions", "credit-card", "admin:subscriptions", 8),
+		newBaselineMenu(32, "卡密管理", "/admin/redeem", "ticket", "admin:redeem", 9),
+		newBaselineMenu(33, "优惠码管理", "/admin/promo-codes", "gift", "admin:promo-codes", 10),
+		newBaselineMenu(34, "充值订单", "/admin/topup-orders", "credit-card", "admin:topup-orders", 11),
+		newBaselineMenu(35, "开票管理", "/admin/invoice-requests", "ticket", "admin:invoice-requests", 12),
 		// 内容管理
-		newBaselineMenu(41, "公告管理", "/admin/announcements", "bell", "admin:announcements", 12),
-		newBaselineMenu(42, "反馈管理", "/admin/feedbacks", "feedback", "admin:feedbacks", 13),
+		newBaselineMenu(41, "公告管理", "/admin/announcements", "bell", "admin:announcements", 13),
+		newBaselineMenu(42, "反馈管理", "/admin/feedbacks", "feedback", "admin:feedbacks", 14),
 		// 系统管理
-		newBaselineMenu(51, "代理管理", "/admin/proxies", "server", "admin:proxies", 14),
-		newBaselineMenu(52, "使用记录", "/admin/usage", "chart", "admin:usage", 15),
-		newBaselineMenu(53, "运维监控", "/admin/ops", "chart", "admin:ops", 16),
-		newBaselineMenu(54, "系统设置", "/admin/settings", "cog", "admin:settings", 17),
+		newBaselineMenu(51, "代理管理", "/admin/proxies", "server", "admin:proxies", 15),
+		newBaselineMenu(52, "使用记录", "/admin/usage", "chart", "admin:usage", 16),
+		newBaselineMenu(53, "运维监控", "/admin/ops", "chart", "admin:ops", 17),
+		newBaselineMenu(54, "系统设置", "/admin/settings", "cog", "admin:settings", 18),
 		// 权限管理
-		newBaselineMenu(61, "角色管理", "/admin/roles", "shield", "admin:roles", 18),
-		newBaselineMenu(62, "菜单管理", "/admin/menus", "menu", "admin:menus", 19),
-		newBaselineMenu(63, "API 管理", "/admin/apis", "api", "admin:apis", 20),
+		newBaselineMenu(61, "角色管理", "/admin/roles", "shield", "admin:roles", 19),
+		newBaselineMenu(62, "菜单管理", "/admin/menus", "menu", "admin:menus", 20),
+		newBaselineMenu(63, "API 管理", "/admin/apis", "api", "admin:apis", 21),
 	}
 }
 
@@ -69,6 +70,7 @@ var menuGroupName = map[int64]string{
 	21: "账号管理",
 	22: "分组管理",
 	23: "渠道管理",
+	24: "供应商考察",
 	31: "订阅管理",
 	32: "卡密管理",
 	33: "优惠码管理",
@@ -451,6 +453,14 @@ func BaselineAPIs() []*service.AdminAPI {
 	add("POST", "/admin/channels", 23, 4)
 	add("PUT", "/admin/channels/:id", 23, 5)
 	add("DELETE", "/admin/channels/:id", 23, 6)
+
+	// ===== Supplier (parent=24 供应商考察) =====
+	add("GET", "/admin/suppliers", 24, 1)
+	add("GET", "/admin/suppliers/:id", 24, 2)
+	add("POST", "/admin/suppliers", 24, 3)
+	add("PUT", "/admin/suppliers/:id", 24, 4)
+	add("POST", "/admin/suppliers/:id/probe", 24, 5)
+	add("DELETE", "/admin/suppliers/:id", 24, 6)
 
 	// ===== Invoice (parent=34 充值订单 / 35 开票管理) =====
 	add("GET", "/admin/topup/orders", 34, 1)

@@ -416,6 +416,7 @@ export default {
     users: '用户管理',
     groups: '分组管理',
     channels: '渠道管理',
+    suppliers: '供应商考察',
     subscriptions: '订阅管理',
     accounts: '账号管理',
     proxies: 'IP管理',
@@ -2476,6 +2477,12 @@ export default {
         perRequestPriceRequired: '按次/图片计费模式必须设置默认价格或至少一个计费层级',
         unnamed: '未命名'
       }
+    },
+
+    // Suppliers Management
+    suppliers: {
+      title: '供应商考察',
+      description: '记录上游官网、Key/Base URL、目标分组和探针稳定性'
     },
 
     // Subscriptions Management

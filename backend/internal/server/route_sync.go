@@ -44,6 +44,7 @@ var scannerGroupMap = map[string]string{
 	"accounts":      "账号管理",  // 菜单 id=21
 	"groups":        "分组管理",  // 菜单 id=22
 	"channels":      "渠道管理",  // 菜单 route=/admin/channels
+	"suppliers":     "供应商考察", // 菜单 route=/admin/suppliers
 	"subscriptions": "订阅管理",  // 菜单 id=31
 	"redeem-codes":  "卡密管理",  // 菜单 id=32 (菜单 route=/admin/redeem, API 路径 /admin/redeem-codes)
 	"promo-codes":   "优惠码管理", // 菜单 id=33

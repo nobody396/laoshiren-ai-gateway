@@ -9,6 +9,7 @@ describe('后台路由权限声明', () => {
       '/admin/agents': 'admin:agents',
       '/admin/groups': 'admin:groups',
       '/admin/channels': 'admin:channels',
+      '/admin/suppliers': 'admin:suppliers',
       '/admin/subscriptions': 'admin:subscriptions',
       '/admin/accounts': 'admin:accounts',
       '/admin/announcements': 'admin:announcements',

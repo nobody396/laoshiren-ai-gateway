@@ -80,6 +80,7 @@ var ProviderSet = wire.NewSet(
 	NewErrorPassthroughRepository,
 	NewTLSFingerprintProfileRepository,
 	NewChannelRepository,
+	NewSupplierRepository,
 	NewPaymentOrderRepository,
 	NewTopupOrderRepository,
 	NewInvoiceRepository,

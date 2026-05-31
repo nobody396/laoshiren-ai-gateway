@@ -27,6 +27,7 @@ import apiKeysAPI from './apiKeys'
 import scheduledTestsAPI from './scheduledTests'
 import backupAPI from './backup'
 import channelsAPI from './channels'
+import suppliersAPI from './suppliers'
 import tlsFingerprintProfilesAPI from './tlsFingerprintProfile'
 import invoiceAPI from './invoice'
 import rbacAPI from './rbac'
@@ -59,6 +60,7 @@ export const adminAPI = {
   scheduledTests: scheduledTestsAPI,
   backup: backupAPI,
   channels: channelsAPI,
+  suppliers: suppliersAPI,
   invoice: invoiceAPI,
   rbac: rbacAPI,
   tlsFingerprintProfiles: tlsFingerprintProfilesAPI
@@ -89,6 +91,7 @@ export {
   scheduledTestsAPI,
   backupAPI,
   channelsAPI,
+  suppliersAPI,
   invoiceAPI,
   rbacAPI,
   tlsFingerprintProfilesAPI
@@ -102,3 +105,4 @@ export type { AdminAgentSummary, AgentSettlement, CommissionRates, InviteActivit
 export type { ErrorPassthroughRule, CreateRuleRequest, UpdateRuleRequest } from './errorPassthrough'
 export type { BackupAgentHealth, DataManagementConfig } from './dataManagement'
 export type { TLSFingerprintProfile, CreateProfileRequest, UpdateProfileRequest } from './tlsFingerprintProfile'
+export type { Supplier, CreateSupplierRequest, UpdateSupplierRequest } from './suppliers'

@@ -740,6 +740,7 @@ const navPermissionMap: Record<string, string> = {
   '/admin/agents': 'admin:agents',
   '/admin/groups': 'admin:groups',
   '/admin/channels': 'admin:channels',
+  '/admin/suppliers': 'admin:suppliers',
   '/admin/subscriptions': 'admin:subscriptions',
   '/admin/accounts': 'admin:accounts',
   '/admin/announcements': 'admin:announcements',
@@ -794,6 +795,12 @@ const adminNavItems = computed((): NavItem[] => {
       path: '/admin/channels',
       label: resolveAdminMenuLabel('/admin/channels', t('nav.channels', '渠道管理')),
       icon: ChannelIcon,
+      hideInSimpleMode: true
+    },
+    {
+      path: '/admin/suppliers',
+      label: resolveAdminMenuLabel('/admin/suppliers', t('nav.suppliers', '供应商考察')),
+      icon: ServerIcon,
       hideInSimpleMode: true
     },
     {

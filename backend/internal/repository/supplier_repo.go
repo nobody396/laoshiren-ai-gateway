@@ -157,12 +157,14 @@ func (r *supplierRepository) RecordProbeResult(ctx context.Context, supplierID i
 	return r.runInTx(ctx, func(tx *sql.Tx) error {
 		err := tx.QueryRowContext(ctx,
 			`INSERT INTO supplier_probe_results (
-				supplier_id, status, model, latency_ms, accuracy_ok, response_text,
-				error_message, checked_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+				supplier_id, status, sub_status, http_code, model, latency_ms,
+				accuracy_ok, response_text, error_message, checked_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 			RETURNING id, created_at`,
 			supplierID,
 			result.Status,
+			result.SubStatus,
+			result.HTTPCode,
 			result.Model,
 			result.LatencyMs,
 			result.AccuracyOK,
@@ -177,16 +179,20 @@ func (r *supplierRepository) RecordProbeResult(ctx context.Context, supplierID i
 		updateResult, err := tx.ExecContext(ctx,
 			`UPDATE suppliers SET
 				last_probe_status = $1,
-				last_probe_latency_ms = $2,
-				last_probe_error = $3,
-				last_probe_at = $4,
-				next_probe_at = $4::timestamptz + (probe_interval_minutes * INTERVAL '1 minute'),
-				probe_success_count = probe_success_count + $5,
+				last_probe_sub_status = $2,
+				last_probe_http_code = $3,
+				last_probe_latency_ms = $4,
+				last_probe_error = $5,
+				last_probe_at = $6,
+				next_probe_at = $6::timestamptz + (probe_interval_minutes * INTERVAL '1 minute'),
+				probe_success_count = probe_success_count + $7,
 				probe_total_count = probe_total_count + 1,
-				probe_success_rate = ROUND(((probe_success_count + $5)::numeric / (probe_total_count + 1)) * 100, 2),
+				probe_success_rate = ROUND(((probe_success_count + $7)::numeric / (probe_total_count + 1)) * 100, 2),
 				updated_at = NOW()
-			WHERE id = $6 AND deleted_at IS NULL`,
+			WHERE id = $8 AND deleted_at IS NULL`,
 			result.Status,
+			result.SubStatus,
+			result.HTTPCode,
 			result.LatencyMs,
 			result.ErrorMessage,
 			result.CheckedAt,
@@ -297,6 +303,7 @@ func (r *supplierRepository) List(ctx context.Context, params pagination.Paginat
 func scanSupplier(scanner rowScanner) (*service.Supplier, error) {
 	var supplier service.Supplier
 	var costRMBPerUSD sql.NullFloat64
+	var lastProbeHTTPCode sql.NullInt64
 	var lastProbeLatency sql.NullInt64
 	var lastProbeAt sql.NullTime
 	var nextProbeAt sql.NullTime
@@ -317,6 +324,8 @@ func scanSupplier(scanner rowScanner) (*service.Supplier, error) {
 		&supplier.ProbeModel,
 		&supplier.ProbeIntervalMinutes,
 		&supplier.LastProbeStatus,
+		&supplier.LastProbeSubStatus,
+		&lastProbeHTTPCode,
 		&lastProbeLatency,
 		&supplier.LastProbeError,
 		&lastProbeAt,
@@ -333,6 +342,10 @@ func scanSupplier(scanner rowScanner) (*service.Supplier, error) {
 	}
 	if costRMBPerUSD.Valid {
 		supplier.CostRMBPerUSD = &costRMBPerUSD.Float64
+	}
+	if lastProbeHTTPCode.Valid {
+		httpCode := int(lastProbeHTTPCode.Int64)
+		supplier.LastProbeHTTPCode = &httpCode
 	}
 	if lastProbeLatency.Valid {
 		supplier.LastProbeLatencyMs = &lastProbeLatency.Int64
@@ -369,6 +382,8 @@ func supplierSelectSQL() string {
 		s.probe_model,
 		s.probe_interval_minutes,
 		s.last_probe_status,
+		s.last_probe_sub_status,
+		s.last_probe_http_code,
 		s.last_probe_latency_ms,
 		s.last_probe_error,
 		s.last_probe_at,

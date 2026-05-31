@@ -121,6 +121,13 @@
               <div class="text-xs text-gray-500 dark:text-gray-400">
                 {{ formatProbeSummary(row) }}
               </div>
+              <div
+                v-if="formatProbeDetail(row)"
+                class="truncate text-xs text-gray-400 dark:text-gray-500"
+                :title="row.last_probe_error || formatProbeDetail(row)"
+              >
+                {{ formatProbeDetail(row) }}
+              </div>
             </div>
           </template>
 
@@ -366,7 +373,7 @@ import Icon from '@/components/icons/Icon.vue'
 const { t } = useI18n()
 const appStore = useAppStore()
 
-const defaultProbeModel = 'gpt-5.1-codex-mini'
+const defaultProbeModel = 'claude-haiku-4-5-20251001'
 
 const columns = computed<Column[]>(() => [
   { key: 'name', label: t('admin.suppliers.columns.name', '供应商'), sortable: true },
@@ -388,7 +395,20 @@ const statusLabels: Record<SupplierStatus, string> = {
 const probeStatusLabels: Record<SupplierProbeStatus, string> = {
   unknown: '暂无数据',
   success: '正常',
+  degraded: '需观察',
   failed: '异常'
+}
+
+const probeSubStatusLabels: Record<string, string> = {
+  slow_latency: '慢响应',
+  rate_limit: '限流',
+  server_error: '服务器错误',
+  client_error: '客户端错误',
+  auth_error: '认证失败',
+  invalid_request: '请求无效',
+  network_error: '网络错误',
+  response_timeout: '响应超时',
+  content_mismatch: '内容不匹配'
 }
 
 const contactPlatformLabels: Record<SupplierContactPlatform, string> = {
@@ -493,6 +513,7 @@ function probeBadgeClass(value: SupplierProbeStatus): string {
   const map: Record<string, string> = {
     unknown: 'bg-gray-100 text-gray-700 dark:bg-dark-600 dark:text-gray-300',
     success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    degraded: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
     failed: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
   }
   return `${base} ${map[value] || map.unknown}`
@@ -520,6 +541,17 @@ function formatProbeSummary(row: Supplier): string {
   const rate = Number(row.probe_success_rate || 0).toFixed(0)
   const latency = row.last_probe_latency_ms ? `${row.last_probe_latency_ms}ms` : '-'
   return `${rate}% · ${row.probe_success_count}/${row.probe_total_count} · ${latency}`
+}
+
+function formatProbeDetail(row: Supplier): string {
+  const parts: string[] = []
+  if (row.last_probe_sub_status) {
+    parts.push(probeSubStatusLabels[row.last_probe_sub_status] || row.last_probe_sub_status)
+  }
+  if (row.last_probe_http_code !== null && row.last_probe_http_code !== undefined && row.last_probe_http_code > 0) {
+    parts.push(`HTTP ${row.last_probe_http_code}`)
+  }
+  return parts.join(' · ')
 }
 
 function targetGroups(row: Supplier): AdminGroup[] {
@@ -717,6 +749,8 @@ async function runProbe(supplier: Supplier): Promise<void> {
     }
     if (result.result.status === 'success') {
       appStore.showSuccess(t('admin.suppliers.probeSuccess', '探针成功'))
+    } else if (result.result.status === 'degraded') {
+      appStore.showWarning(result.result.error_message || t('admin.suppliers.probeDegraded', '探针需观察'))
     } else {
       appStore.showError(result.result.error_message || t('admin.suppliers.probeFailed', '探针失败'))
     }

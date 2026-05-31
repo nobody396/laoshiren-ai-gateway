@@ -18,12 +18,29 @@ const (
 	SupplierStatusEvaluating = "evaluating"
 	SupplierStatusActive     = "active"
 
-	SupplierProbeStatusUnknown = "unknown"
-	SupplierProbeStatusSuccess = "success"
-	SupplierProbeStatusFailed  = "failed"
+	SupplierProbeStatusUnknown  = "unknown"
+	SupplierProbeStatusSuccess  = "success"
+	SupplierProbeStatusDegraded = "degraded"
+	SupplierProbeStatusFailed   = "failed"
 
-	DefaultSupplierProbeModel           = "gpt-5.1-codex-mini"
+	DefaultSupplierProbeModel           = "claude-haiku-4-5-20251001"
 	DefaultSupplierProbeIntervalMinutes = 30
+
+	SupplierProbeSubStatusNone            = ""
+	SupplierProbeSubStatusSlowLatency     = "slow_latency"
+	SupplierProbeSubStatusRateLimit       = "rate_limit"
+	SupplierProbeSubStatusServerError     = "server_error"
+	SupplierProbeSubStatusClientError     = "client_error"
+	SupplierProbeSubStatusAuthError       = "auth_error"
+	SupplierProbeSubStatusInvalidRequest  = "invalid_request"
+	SupplierProbeSubStatusNetworkError    = "network_error"
+	SupplierProbeSubStatusResponseTimeout = "response_timeout"
+	SupplierProbeSubStatusContentMismatch = "content_mismatch"
+
+	supplierProbeTimeout       = 30 * time.Second
+	supplierProbeSlowLatency   = 5 * time.Second
+	supplierProbeMaxAttempts   = 3
+	supplierProbeRetryBaseWait = 200 * time.Millisecond
 )
 
 var (
@@ -48,6 +65,8 @@ type Supplier struct {
 	ProbeModel           string     `json:"probe_model"`
 	ProbeIntervalMinutes int        `json:"probe_interval_minutes"`
 	LastProbeStatus      string     `json:"last_probe_status"`
+	LastProbeSubStatus   string     `json:"last_probe_sub_status"`
+	LastProbeHTTPCode    *int       `json:"last_probe_http_code"`
 	LastProbeLatencyMs   *int64     `json:"last_probe_latency_ms"`
 	LastProbeError       string     `json:"last_probe_error"`
 	LastProbeAt          *time.Time `json:"last_probe_at"`
@@ -67,6 +86,8 @@ type SupplierProbeResult struct {
 	ID           int64     `json:"id"`
 	SupplierID   int64     `json:"supplier_id"`
 	Status       string    `json:"status"`
+	SubStatus    string    `json:"sub_status"`
+	HTTPCode     int       `json:"http_code"`
 	Model        string    `json:"model"`
 	LatencyMs    int64     `json:"latency_ms"`
 	AccuracyOK   bool      `json:"accuracy_ok"`
@@ -386,7 +407,7 @@ func normalizeOptionalSupplierProbeStatus(status string) string {
 
 func isValidSupplierProbeStatus(status string) bool {
 	switch status {
-	case SupplierProbeStatusUnknown, SupplierProbeStatusSuccess, SupplierProbeStatusFailed:
+	case SupplierProbeStatusUnknown, SupplierProbeStatusSuccess, SupplierProbeStatusDegraded, SupplierProbeStatusFailed:
 		return true
 	default:
 		return false
@@ -398,6 +419,7 @@ func runSupplierProbe(ctx context.Context, supplier *Supplier) *SupplierProbeRes
 	result := &SupplierProbeResult{
 		SupplierID: supplier.ID,
 		Status:     SupplierProbeStatusFailed,
+		SubStatus:  SupplierProbeSubStatusNone,
 		Model:      normalizeSupplierProbeModel(supplier.ProbeModel),
 		CheckedAt:  started,
 	}
@@ -407,63 +429,264 @@ func runSupplierProbe(ctx context.Context, supplier *Supplier) *SupplierProbeRes
 
 	if strings.TrimSpace(supplier.BaseURL) == "" {
 		result.ErrorMessage = "base url is required"
+		result.SubStatus = SupplierProbeSubStatusInvalidRequest
 		return result
 	}
 	if strings.TrimSpace(supplier.APIKey) == "" {
 		result.ErrorMessage = "api key is required"
+		result.SubStatus = SupplierProbeSubStatusAuthError
 		return result
 	}
 
-	probeCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	probeCtx, cancel := context.WithTimeout(ctx, supplierProbeTimeout)
 	defer cancel()
 
+	for attempt := 0; attempt < supplierProbeMaxAttempts; attempt++ {
+		resetSupplierProbeAttempt(result)
+		if isSupplierClaudeProbeModel(result.Model) {
+			runSupplierClaudeHaikuProbe(probeCtx, supplier, result)
+		} else {
+			runSupplierOpenAIProbe(probeCtx, supplier, result)
+		}
+
+		if result.Status != SupplierProbeStatusFailed || attempt+1 >= supplierProbeMaxAttempts {
+			return result
+		}
+
+		delay := supplierProbeRetryDelay(attempt)
+		select {
+		case <-probeCtx.Done():
+			if result.SubStatus == SupplierProbeSubStatusNone {
+				result.SubStatus = SupplierProbeSubStatusResponseTimeout
+			}
+			if result.ErrorMessage == "" {
+				result.ErrorMessage = probeCtx.Err().Error()
+			}
+			return result
+		case <-time.After(delay):
+		}
+	}
+	return result
+}
+
+func resetSupplierProbeAttempt(result *SupplierProbeResult) {
+	result.Status = SupplierProbeStatusFailed
+	result.SubStatus = SupplierProbeSubStatusNone
+	result.HTTPCode = 0
+	result.AccuracyOK = false
+	result.ResponseText = ""
+	result.ErrorMessage = ""
+}
+
+func supplierProbeRetryDelay(attempt int) time.Duration {
+	delay := supplierProbeRetryBaseWait
+	for i := 0; i < attempt; i++ {
+		delay *= 2
+	}
+	if delay > 2*time.Second {
+		return 2 * time.Second
+	}
+	return delay
+}
+
+func runSupplierOpenAIProbe(ctx context.Context, supplier *Supplier, result *SupplierProbeResult) {
+	prompt, expected := newSupplierProbePrompt()
 	body, err := json.Marshal(map[string]any{
 		"model": result.Model,
 		"messages": []map[string]string{
-			{"role": "user", "content": "Reply exactly OK."},
+			{"role": "user", "content": prompt},
 		},
-		"max_tokens":  8,
+		"max_tokens":  24,
 		"temperature": 0,
 	})
 	if err != nil {
 		result.ErrorMessage = fmt.Sprintf("build probe payload: %v", err)
-		return result
+		return
 	}
 
-	req, err := http.NewRequestWithContext(probeCtx, http.MethodPost, buildOpenAIChatCompletionsURL(supplier.BaseURL), bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, buildOpenAIChatCompletionsURL(supplier.BaseURL), bytes.NewReader(body))
 	if err != nil {
 		result.ErrorMessage = fmt.Sprintf("build probe request: %v", err)
-		return result
+		return
 	}
 	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(supplier.APIKey))
+	req.Header.Set("X-Api-Key", strings.TrimSpace(supplier.APIKey))
 	req.Header.Set("Content-Type", "application/json")
 
+	started := time.Now()
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		result.ErrorMessage = err.Error()
-		return result
+		setSupplierProbeTransportError(result, ctx, err)
+		return
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, 32*1024))
 	if err != nil {
 		result.ErrorMessage = fmt.Sprintf("read probe response: %v", err)
-		return result
+		result.SubStatus = SupplierProbeSubStatusResponseTimeout
+		return
 	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		result.ErrorMessage = fmt.Sprintf("upstream returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
-		return result
+
+	status, subStatus := classifySupplierProbeHTTPStatus(resp.StatusCode, time.Since(started))
+	result.HTTPCode = resp.StatusCode
+	result.Status = status
+	result.SubStatus = subStatus
+
+	if result.Status == SupplierProbeStatusFailed {
+		result.ErrorMessage = supplierProbeHTTPError(resp.StatusCode, raw)
+		return
 	}
 
 	content := extractOpenAIProbeContent(raw)
-	result.ResponseText = content
-	result.AccuracyOK = strings.EqualFold(strings.TrimSpace(content), "OK")
-	if !result.AccuracyOK {
-		result.ErrorMessage = "probe response did not match OK"
-		return result
+	applySupplierProbeContentCheck(result, content, expected)
+}
+
+func runSupplierClaudeHaikuProbe(ctx context.Context, supplier *Supplier, result *SupplierProbeResult) {
+	body, err := json.Marshal(map[string]any{
+		"model":      result.Model,
+		"max_tokens": 1,
+		"messages": []map[string]string{
+			{"role": "user", "content": "quota"},
+		},
+		"metadata": map[string]string{
+			"user_id": fmt.Sprintf("supplier-probe-%d", supplier.ID),
+		},
+	})
+	if err != nil {
+		result.ErrorMessage = fmt.Sprintf("build probe payload: %v", err)
+		return
 	}
-	result.Status = SupplierProbeStatusSuccess
-	return result
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, buildSupplierAnthropicMessagesURL(supplier.BaseURL), bytes.NewReader(body))
+	if err != nil {
+		result.ErrorMessage = fmt.Sprintf("build probe request: %v", err)
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(supplier.APIKey))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "claude-cli/2.1.84 (external, cli)")
+	req.Header.Set("Anthropic-Version", "2023-06-01")
+	req.Header.Set("Anthropic-Beta", "oauth-2025-04-20,interleaved-thinking-2025-05-14")
+	req.Header.Set("Anthropic-Dangerous-Direct-Browser-Access", "true")
+	req.Header.Set("X-App", "cli")
+
+	started := time.Now()
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		setSupplierProbeTransportError(result, ctx, err)
+		return
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, 32*1024))
+	if err != nil {
+		result.ErrorMessage = fmt.Sprintf("read probe response: %v", err)
+		result.SubStatus = SupplierProbeSubStatusResponseTimeout
+		return
+	}
+
+	status, subStatus := classifySupplierProbeHTTPStatus(resp.StatusCode, time.Since(started))
+	result.HTTPCode = resp.StatusCode
+	result.Status = status
+	result.SubStatus = subStatus
+
+	if result.Status == SupplierProbeStatusFailed {
+		result.ErrorMessage = supplierProbeHTTPError(resp.StatusCode, raw)
+		return
+	}
+
+	content := extractAnthropicProbeContent(raw)
+	applySupplierProbeContentCheck(result, content, "#")
+}
+
+func setSupplierProbeTransportError(result *SupplierProbeResult, ctx context.Context, err error) {
+	result.Status = SupplierProbeStatusFailed
+	if ctx.Err() != nil {
+		result.SubStatus = SupplierProbeSubStatusResponseTimeout
+		result.ErrorMessage = ctx.Err().Error()
+		return
+	}
+	result.SubStatus = SupplierProbeSubStatusNetworkError
+	result.ErrorMessage = err.Error()
+}
+
+func classifySupplierProbeHTTPStatus(statusCode int, latency time.Duration) (string, string) {
+	switch {
+	case statusCode >= 200 && statusCode < 300:
+		if latency > supplierProbeSlowLatency {
+			return SupplierProbeStatusDegraded, SupplierProbeSubStatusSlowLatency
+		}
+		return SupplierProbeStatusSuccess, SupplierProbeSubStatusNone
+	case statusCode >= 300 && statusCode < 400:
+		return SupplierProbeStatusSuccess, SupplierProbeSubStatusNone
+	case statusCode == http.StatusUnauthorized || statusCode == http.StatusForbidden:
+		return SupplierProbeStatusFailed, SupplierProbeSubStatusAuthError
+	case statusCode == http.StatusBadRequest:
+		return SupplierProbeStatusFailed, SupplierProbeSubStatusInvalidRequest
+	case statusCode == http.StatusTooManyRequests:
+		return SupplierProbeStatusDegraded, SupplierProbeSubStatusRateLimit
+	case statusCode >= 500:
+		return SupplierProbeStatusFailed, SupplierProbeSubStatusServerError
+	case statusCode >= 400:
+		return SupplierProbeStatusFailed, SupplierProbeSubStatusClientError
+	default:
+		return SupplierProbeStatusFailed, SupplierProbeSubStatusClientError
+	}
+}
+
+func supplierProbeHTTPError(statusCode int, raw []byte) string {
+	body := strings.TrimSpace(string(raw))
+	if len(body) > 1200 {
+		body = body[:1200]
+	}
+	if body == "" {
+		return fmt.Sprintf("upstream returned HTTP %d", statusCode)
+	}
+	return fmt.Sprintf("upstream returned HTTP %d: %s", statusCode, body)
+}
+
+func applySupplierProbeContentCheck(result *SupplierProbeResult, content string, expected string) {
+	content = strings.TrimSpace(content)
+	result.ResponseText = content
+	if result.Status == SupplierProbeStatusDegraded && result.SubStatus == SupplierProbeSubStatusRateLimit {
+		return
+	}
+	if content == "" {
+		result.Status = SupplierProbeStatusDegraded
+		result.SubStatus = SupplierProbeSubStatusContentMismatch
+		result.ErrorMessage = "probe response was empty"
+		return
+	}
+	result.AccuracyOK = expected != "" && strings.Contains(content, expected)
+	if expected != "" && !result.AccuracyOK {
+		result.Status = SupplierProbeStatusDegraded
+		result.SubStatus = SupplierProbeSubStatusContentMismatch
+		result.ErrorMessage = "probe response did not contain expected marker"
+	}
+}
+
+func isSupplierClaudeProbeModel(model string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(model))
+	return strings.Contains(normalized, "claude")
+}
+
+func buildSupplierAnthropicMessagesURL(base string) string {
+	normalized := strings.TrimRight(strings.TrimSpace(base), "/")
+	if strings.Contains(normalized, "/v1/messages") {
+		return normalized
+	}
+	return buildOpenAIEndpointURL(normalized, "/v1/messages") + "?beta=true"
+}
+
+func newSupplierProbePrompt() (prompt string, expected string) {
+	seed := time.Now().UnixNano()
+	a := int(seed%90) + 10
+	b := int((seed/97)%90) + 10
+	expected = fmt.Sprintf("LSR_PROBE=%d", a+b)
+	prompt = fmt.Sprintf("Calculate: %d + %d = ? Reply ONLY: %s", a, b, expected)
+	return prompt, expected
 }
 
 func extractOpenAIProbeContent(raw []byte) string {
@@ -479,7 +702,7 @@ func extractOpenAIProbeContent(raw []byte) string {
 		return strings.TrimSpace(string(raw))
 	}
 	if len(parsed.Choices) == 0 {
-		return ""
+		return strings.TrimSpace(string(raw))
 	}
 	if parsed.Choices[0].Text != "" {
 		return strings.TrimSpace(parsed.Choices[0].Text)
@@ -498,8 +721,30 @@ func extractOpenAIProbeContent(raw []byte) string {
 		}
 		return strings.TrimSpace(strings.Join(parts, ""))
 	default:
-		return ""
+		return strings.TrimSpace(string(raw))
 	}
+}
+
+func extractAnthropicProbeContent(raw []byte) string {
+	var parsed struct {
+		Content []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"content"`
+	}
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		return strings.TrimSpace(string(raw))
+	}
+	if len(parsed.Content) == 0 {
+		return strings.TrimSpace(string(raw))
+	}
+	parts := make([]string, 0, len(parsed.Content))
+	for _, item := range parsed.Content {
+		if item.Text != "" {
+			parts = append(parts, item.Text)
+		}
+	}
+	return strings.TrimSpace(strings.Join(parts, ""))
 }
 
 func normalizeInt64IDs(ids []int64) []int64 {

@@ -2,7 +2,7 @@ import { apiClient } from '../client'
 import type { PaginatedResponse } from '@/types'
 
 export type SupplierStatus = 'evaluating' | 'active'
-export type SupplierProbeStatus = 'unknown' | 'success' | 'failed'
+export type SupplierProbeStatus = 'unknown' | 'success' | 'degraded' | 'failed'
 export type SupplierContactPlatform = '' | 'wechat' | 'telegram' | 'qq' | 'email' | 'phone' | 'other'
 
 export interface Supplier {
@@ -21,6 +21,8 @@ export interface Supplier {
   probe_model: string
   probe_interval_minutes: number
   last_probe_status: SupplierProbeStatus
+  last_probe_sub_status: string
+  last_probe_http_code: number | null
   last_probe_latency_ms: number | null
   last_probe_error: string
   last_probe_at: string | null
@@ -37,7 +39,9 @@ export interface Supplier {
 export interface SupplierProbeResult {
   id: number
   supplier_id: number
-  status: 'success' | 'failed'
+  status: 'success' | 'degraded' | 'failed'
+  sub_status: string
+  http_code: number
   model: string
   latency_ms: number
   accuracy_ok: boolean

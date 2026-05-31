@@ -107,6 +107,7 @@ func ProvideHandlers(
 	paymentHandler *PaymentHandler,
 	topupHandler *TopupHandler,
 	balanceAlertHandler *BalanceAlertHandler,
+	resourceHandler *ResourceHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 	_ *service.PendingAuthSessionCleanupService,
@@ -130,6 +131,7 @@ func ProvideHandlers(
 		Payment:       paymentHandler,
 		Topup:         topupHandler,
 		BalanceAlert:  balanceAlertHandler,
+		Resource:      resourceHandler,
 	}
 }
 
@@ -152,6 +154,7 @@ var ProviderSet = wire.NewSet(
 	NewPaymentHandler,
 	NewTopupHandler,
 	NewBalanceAlertHandler,
+	NewResourceHandler,
 	ProvideSettingHandler,
 
 	// Admin handlers

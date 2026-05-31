@@ -74,7 +74,6 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	subscriptionService := service.NewSubscriptionService(groupRepository, userSubscriptionRepository, billingCacheService, client, configConfig)
 	commissionRepository := repository.NewCommissionRepository(client, db)
 	commissionService := service.NewCommissionService(userRepository, commissionRepository)
-	agentLevelEvaluatorService := service.ProvideAgentLevelEvaluatorService(commissionService, configConfig)
 	authService := service.NewAuthService(client, userRepository, redeemCodeRepository, refreshTokenCache, ssoTicketCache, configConfig, settingService, emailService, turnstileService, emailQueueService, promoService, subscriptionService, commissionService)
 	identityCache := repository.NewIdentityCache(redisClient)
 	authIdentityRepository := repository.NewAuthIdentityRepository(db)
@@ -95,7 +94,6 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	agentHandler := handler.NewAgentHandler(commissionService)
 	apiKeyHandler := handler.NewAPIKeyHandler(apiKeyService)
 	usageLogRepository := repository.NewUsageLogRepository(client, db)
-	cachePolicyRepository := repository.NewCachePolicyRepository(db)
 	gptImageTaskRepository := repository.NewGPTImageTaskRepository(db)
 	usageService := service.ProvideUsageService(usageLogRepository, userRepository, client, apiKeyAuthCacheInvalidator, gptImageTaskRepository)
 	usageHandler := handler.NewUsageHandler(usageService, apiKeyService)
@@ -187,6 +185,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	adminRedeemHandler := admin.NewRedeemHandler(adminService, redeemService)
 	promoHandler := admin.NewPromoHandler(promoService)
 	opsRepository := repository.NewOpsRepository(db)
+	cachePolicyRepository := repository.NewCachePolicyRepository(db)
 	usageBillingRepository := repository.NewUsageBillingRepository(client, db)
 	pricingRemoteClient := repository.ProvidePricingRemoteClient(configConfig)
 	pricingService, err := service.ProvidePricingService(configConfig, pricingRemoteClient)
@@ -254,10 +253,12 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	topupService := service.NewTopupService(topupOrderRepository, settingService, userRepository, accountChangeRecordRepository, client, billingCacheService, apiKeyAuthCacheInvalidator, commissionService, balanceAlertService)
 	topupHandler := handler.NewTopupHandler(topupService)
 	balanceAlertHandler := handler.NewBalanceAlertHandler(balanceAlertService)
+	downloadResourceService := service.ProvideDownloadResourceService(configConfig, gitHubReleaseClient)
+	resourceHandler := handler.NewResourceHandler(downloadResourceService)
 	idempotencyCoordinator := service.ProvideIdempotencyCoordinator(idempotencyRepository, configConfig)
 	idempotencyCleanupService := service.ProvideIdempotencyCleanupService(idempotencyRepository, configConfig)
 	pendingAuthSessionCleanupService := service.ProvidePendingAuthSessionCleanupService(identityService)
-	handlers := handler.ProvideHandlers(authHandler, userHandler, agentHandler, apiKeyHandler, usageHandler, redeemHandler, subscriptionHandler, announcementHandler, invoiceHandler, feedbackHandler, adminHandlers, gatewayHandler, openAIGatewayHandler, handlerSettingHandler, totpHandler, paymentHandler, topupHandler, balanceAlertHandler, idempotencyCoordinator, idempotencyCleanupService, pendingAuthSessionCleanupService)
+	handlers := handler.ProvideHandlers(authHandler, userHandler, agentHandler, apiKeyHandler, usageHandler, redeemHandler, subscriptionHandler, announcementHandler, invoiceHandler, feedbackHandler, adminHandlers, gatewayHandler, openAIGatewayHandler, handlerSettingHandler, totpHandler, paymentHandler, topupHandler, balanceAlertHandler, resourceHandler, idempotencyCoordinator, idempotencyCleanupService, pendingAuthSessionCleanupService)
 	jwtAuthMiddleware := middleware.NewJWTAuthMiddleware(authService, userService)
 	adminAuthMiddleware := middleware.NewAdminAuthMiddleware(authService, userService, settingService, rbacService)
 	apiKeyAuthMiddleware := middleware.NewAPIKeyAuthMiddleware(apiKeyService, subscriptionService, userService, configConfig)
@@ -268,12 +269,13 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	opsAlertEvaluatorService := service.ProvideOpsAlertEvaluatorService(opsService, opsRepository, emailService, redisClient, configConfig)
 	opsCleanupService := service.ProvideOpsCleanupService(opsRepository, db, redisClient, configConfig)
 	opsScheduledReportService := service.ProvideOpsScheduledReportService(opsService, userService, emailService, redisClient, configConfig)
+	agentLevelEvaluatorService := service.ProvideAgentLevelEvaluatorService(commissionService, configConfig)
 	tokenRefreshService := service.ProvideTokenRefreshService(accountRepository, oAuthService, openAIOAuthService, geminiOAuthService, antigravityOAuthService, compositeTokenCacheInvalidator, schedulerCache, configConfig, tempUnschedCache, privacyClientFactory, proxyRepository, oAuthRefreshAPI)
 	accountExpiryService := service.ProvideAccountExpiryService(accountRepository)
 	subscriptionExpiryService := service.ProvideSubscriptionExpiryService(userSubscriptionRepository)
 	gptImageTaskSettlementService := service.ProvideGPTImageTaskSettlementService(gptImageTaskRepository, accountRepository, userSubscriptionRepository, apiKeyService, openAIGatewayService, configConfig)
 	scheduledTestRunnerService := service.ProvideScheduledTestRunnerService(scheduledTestPlanRepository, scheduledTestService, accountTestService, rateLimitService, configConfig)
-	v := provideCleanup(client, redisClient, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, agentLevelEvaluatorService, schedulerSnapshotService, tokenRefreshService, accountExpiryService, subscriptionExpiryService, usageCleanupService, idempotencyCleanupService, pricingService, emailQueueService, billingCacheService, usageRecordWorkerPool, subscriptionService, oAuthService, openAIOAuthService, geminiOAuthService, antigravityOAuthService, openAIGatewayService, gptImageTaskSettlementService, scheduledTestRunnerService, backupService)
+	v := provideCleanup(client, redisClient, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, agentLevelEvaluatorService, schedulerSnapshotService, tokenRefreshService, accountExpiryService, subscriptionExpiryService, usageCleanupService, idempotencyCleanupService, pricingService, emailQueueService, billingCacheService, usageRecordWorkerPool, subscriptionService, oAuthService, openAIOAuthService, geminiOAuthService, antigravityOAuthService, openAIGatewayService, gptImageTaskSettlementService, scheduledTestRunnerService, backupService, downloadResourceService)
 	application := &Application{
 		Server:  httpServer,
 		Cleanup: v,
@@ -328,6 +330,7 @@ func provideCleanup(
 	gptImageTaskSettlement *service.GPTImageTaskSettlementService,
 	scheduledTestRunner *service.ScheduledTestRunnerService,
 	backupSvc *service.BackupService,
+	downloadResources *service.DownloadResourceService,
 ) func() {
 	return func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -472,6 +475,12 @@ func provideCleanup(
 			{"BackupService", func() error {
 				if backupSvc != nil {
 					backupSvc.Stop()
+				}
+				return nil
+			}},
+			{"DownloadResourceService", func() error {
+				if downloadResources != nil {
+					downloadResources.Stop()
 				}
 				return nil
 			}},

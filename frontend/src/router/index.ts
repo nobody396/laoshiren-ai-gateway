@@ -360,6 +360,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/resources',
+    name: 'Resources',
+    component: () => import('@/views/user/ResourcesView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Download Resources',
+      titleKey: 'resources.title',
+      descriptionKey: 'resources.description'
+    }
+  },
+  {
     path: '/invoice',
     name: 'InvoiceManagement',
     component: () => import('@/views/user/InvoiceView.vue'),

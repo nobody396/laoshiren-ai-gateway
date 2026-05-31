@@ -436,6 +436,7 @@ export default {
     topupOrders: '我的订单',
     invoiceManagement: '发票管理',
     buySubscription: '充值/订阅',
+    resources: '下载资源',
     docs: '文档',
     feedback: '反馈',
     feedbackAdmin: '反馈管理',
@@ -449,6 +450,11 @@ export default {
     apiManagement: 'API 管理',
     topupOrderManagement: '订单管理',
     invoiceRequestManagement: '开票管理'
+  },
+
+  resources: {
+    title: '下载资源',
+    description: 'Claude Code、Codex、Claude Desktop、CC Switch 下载安装入口'
   },
 
   // Auth

@@ -18,6 +18,7 @@ export { userGroupsAPI } from './groups'
 export { totpAPI } from './totp'
 export { default as announcementsAPI } from './announcements'
 export { invoiceAPI } from './invoice'
+export { resourcesAPI } from './resources'
 
 // Admin APIs
 export { adminAPI } from './admin'

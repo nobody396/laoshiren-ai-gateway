@@ -96,6 +96,7 @@ func provideCleanup(
 	gptImageTaskSettlement *service.GPTImageTaskSettlementService,
 	scheduledTestRunner *service.ScheduledTestRunnerService,
 	backupSvc *service.BackupService,
+	downloadResources *service.DownloadResourceService,
 ) func() {
 	return func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -241,6 +242,12 @@ func provideCleanup(
 			{"BackupService", func() error {
 				if backupSvc != nil {
 					backupSvc.Stop()
+				}
+				return nil
+			}},
+			{"DownloadResourceService", func() error {
+				if downloadResources != nil {
+					downloadResources.Stop()
 				}
 				return nil
 			}},

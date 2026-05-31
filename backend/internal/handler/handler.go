@@ -57,6 +57,7 @@ type Handlers struct {
 	Payment       *PaymentHandler
 	Topup         *TopupHandler
 	BalanceAlert  *BalanceAlertHandler
+	Resource      *ResourceHandler
 }
 
 // BuildInfo contains build-time information

@@ -436,6 +436,7 @@ export default {
     topupOrders: 'My Orders',
     invoiceManagement: 'Invoices',
     buySubscription: 'Recharge / Subscription',
+    resources: 'Downloads',
     docs: 'Docs',
     feedback: 'Feedback',
     feedbackAdmin: 'Feedback Admin',
@@ -449,6 +450,11 @@ export default {
     apiManagement: 'APIs',
     topupOrderManagement: 'Orders',
     invoiceRequestManagement: 'Invoices'
+  },
+
+  resources: {
+    title: 'Downloads',
+    description: 'Install Claude Code, Codex, Claude Desktop, and CC Switch'
   },
 
   // Auth

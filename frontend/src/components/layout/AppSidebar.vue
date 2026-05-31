@@ -477,6 +477,21 @@ const BookIcon = {
     )
 }
 
+const DownloadIcon = {
+  render: () =>
+    h(
+      'svg',
+      { fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '1.5' },
+      [
+        h('path', {
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          d: 'M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 10.5L12 15m0 0l4.5-4.5M12 15V3'
+        })
+      ]
+    )
+}
+
 const CogIcon = {
   render: () =>
     h(
@@ -626,6 +641,7 @@ const userNavItems = computed((): NavItem[] => {
       ? [{ path: '/feedbacks', label: t('nav.feedback'), icon: FeedbackIcon }]
       : []),
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
+    { path: '/resources', label: t('nav.resources'), icon: DownloadIcon },
     createDocsNavItem(),
     { path: '/profile', label: t('nav.profile'), icon: UserIcon },
     ...customMenuItemsForUser.value.map((item): NavItem => ({
@@ -653,6 +669,7 @@ const personalNavItems = computed((): NavItem[] => {
       ? [{ path: '/feedbacks', label: t('nav.feedback'), icon: FeedbackIcon }]
       : []),
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
+    { path: '/resources', label: t('nav.resources'), icon: DownloadIcon },
     createDocsNavItem(),
     { path: '/profile', label: t('nav.profile'), icon: UserIcon },
     ...customMenuItemsForUser.value.map((item): NavItem => ({

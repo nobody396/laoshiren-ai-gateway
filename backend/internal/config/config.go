@@ -83,6 +83,7 @@ type Config struct {
 	Timezone                string                        `mapstructure:"timezone"` // e.g. "Asia/Shanghai", "UTC"
 	Gemini                  GeminiConfig                  `mapstructure:"gemini"`
 	Update                  UpdateConfig                  `mapstructure:"update"`
+	Downloads               DownloadsConfig               `mapstructure:"downloads"`
 	Idempotency             IdempotencyConfig             `mapstructure:"idempotency"`
 }
 
@@ -145,6 +146,19 @@ type UpdateConfig struct {
 	// 支持 http/https/socks5/socks5h 协议
 	// 例如: "http://127.0.0.1:7890", "socks5://127.0.0.1:1080"
 	ProxyURL string `mapstructure:"proxy_url"`
+}
+
+type DownloadsConfig struct {
+	Enabled                      bool   `mapstructure:"enabled"`
+	CacheDir                     string `mapstructure:"cache_dir"`
+	UpdateIntervalHours          int    `mapstructure:"update_interval_hours"`
+	StartupSync                  bool   `mapstructure:"startup_sync"`
+	CCSwitchRepo                 string `mapstructure:"cc_switch_repo"`
+	CodexRepo                    string `mapstructure:"codex_repo"`
+	ClaudeDesktopMacURL          string `mapstructure:"claude_desktop_mac_url"`
+	ClaudeDesktopWindowsX64URL   string `mapstructure:"claude_desktop_windows_x64_url"`
+	ClaudeDesktopWindowsARM64URL string `mapstructure:"claude_desktop_windows_arm64_url"`
+	MaxAssetBytes                int64  `mapstructure:"max_asset_bytes"`
 }
 
 type IdempotencyConfig struct {
@@ -1336,6 +1350,17 @@ func setDefaults() {
 
 	// Timezone (default to Asia/Shanghai for Chinese users)
 	viper.SetDefault("timezone", "Asia/Shanghai")
+
+	viper.SetDefault("downloads.enabled", true)
+	viper.SetDefault("downloads.cache_dir", "./data/downloads")
+	viper.SetDefault("downloads.update_interval_hours", 48)
+	viper.SetDefault("downloads.startup_sync", true)
+	viper.SetDefault("downloads.cc_switch_repo", "farion1231/cc-switch")
+	viper.SetDefault("downloads.codex_repo", "openai/codex")
+	viper.SetDefault("downloads.claude_desktop_mac_url", "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest/Claude.dmg")
+	viper.SetDefault("downloads.claude_desktop_windows_x64_url", "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest-win-x64/Claude-Setup-x64.exe")
+	viper.SetDefault("downloads.claude_desktop_windows_arm64_url", "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest-win-arm64/Claude-Setup-arm64.exe")
+	viper.SetDefault("downloads.max_asset_bytes", int64(300*1024*1024))
 
 	// API Key auth cache
 	viper.SetDefault("api_key_auth_cache.l1_size", 65535)

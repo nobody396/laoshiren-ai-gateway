@@ -104,6 +104,12 @@ func RegisterUserRoutes(
 			redeem.GET("/history", h.Redeem.GetHistory)
 		}
 
+		resources := authenticated.Group("/resources")
+		{
+			resources.GET("/:tool", h.Resource.ListTool)
+			resources.GET("/:tool/download/:assetID", h.Resource.DownloadTool)
+		}
+
 		// 用户邀请码（所有认证用户可用）
 		user.GET("/invite-code", h.Agent.GetMyInviteCode)
 		// 用户邀请看板��邀请统计、佣金）

@@ -239,6 +239,28 @@
               <label class="input-label">{{ t('admin.redeem.codeType') }}</label>
               <Select v-model="generateForm.type" :options="typeOptions" />
             </div>
+            <div v-if="generateForm.type === 'balance'" class="rounded-lg border border-gray-200 p-3 dark:border-dark-700">
+              <label class="input-label">{{ t('admin.redeem.flow.label') }}</label>
+              <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <button
+                  v-for="preset in generatePresetOptions"
+                  :key="preset.value"
+                  type="button"
+                  @click="applyGeneratePreset(preset.value)"
+                  :class="[
+                    'rounded-lg border-2 px-3 py-2.5 text-left transition-colors',
+                    activeGeneratePreset === preset.value
+                      ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+                      : 'border-gray-200 text-gray-700 hover:border-primary-300 dark:border-dark-600 dark:text-dark-200'
+                  ]"
+                >
+                  <span class="block text-sm font-semibold">{{ preset.label }}</span>
+                  <span class="mt-1 block text-xs leading-5 text-gray-500 dark:text-dark-400">
+                    {{ preset.description }}
+                  </span>
+                </button>
+              </div>
+            </div>
             <!-- 余额/并发类型：显示数值输入 -->
             <div v-if="generateForm.type !== 'subscription' && generateForm.type !== 'invitation'">
               <label class="input-label">
@@ -681,10 +703,25 @@ const purposeOptions = computed(() => [
 ])
 
 const salesStatusOptions = computed(() => [
-  { value: 'sold', label: t('admin.redeem.salesStatus.sold') },
   { value: 'inventory', label: t('admin.redeem.salesStatus.inventory') },
+  { value: 'sold', label: t('admin.redeem.salesStatus.sold') },
   { value: 'gifted', label: t('admin.redeem.salesStatus.gifted') },
   { value: 'void', label: t('admin.redeem.salesStatus.void') }
+])
+
+type GeneratePreset = 'store_inventory' | 'gift'
+
+const generatePresetOptions = computed<Array<{ value: GeneratePreset; label: string; description: string }>>(() => [
+  {
+    value: 'store_inventory',
+    label: t('admin.redeem.flow.storeInventory'),
+    description: t('admin.redeem.flow.storeInventoryDesc')
+  },
+  {
+    value: 'gift',
+    label: t('admin.redeem.flow.gift'),
+    description: t('admin.redeem.flow.giftDesc')
+  }
 ])
 
 const codes = ref<RedeemCode[]>([])
@@ -717,7 +754,7 @@ const generateForm = reactive({
   validity_days: 30,
   batch_name: '',
   purpose: 'sale_recharge' as RedeemCodePurpose,
-  sales_status: 'sold' as RedeemCodeSalesStatus,
+  sales_status: 'inventory' as RedeemCodeSalesStatus,
   sales_channel: '',
   external_url: '',
   sold_to_note: '',
@@ -725,6 +762,38 @@ const generateForm = reactive({
   external_order_url: '',
   internal_notes: ''
 })
+
+const activeGeneratePreset = computed<GeneratePreset | ''>(() => {
+  if (
+    generateForm.type === 'balance' &&
+    generateForm.purpose === 'sale_recharge' &&
+    generateForm.sales_status === 'inventory'
+  ) {
+    return 'store_inventory'
+  }
+  if (
+    generateForm.type === 'balance' &&
+    generateForm.purpose === 'gift' &&
+    generateForm.sales_status === 'gifted'
+  ) {
+    return 'gift'
+  }
+  return ''
+})
+
+const applyGeneratePreset = (preset: GeneratePreset) => {
+  generateForm.type = 'balance'
+  if (preset === 'store_inventory') {
+    generateForm.purpose = 'sale_recharge'
+    generateForm.sales_status = 'inventory'
+    if (!generateForm.sales_channel) {
+      generateForm.sales_channel = 'liandong_shop'
+    }
+    return
+  }
+  generateForm.purpose = 'gift'
+  generateForm.sales_status = 'gifted'
+}
 
 // 监听类型变化，邀请码类型时自动设置 value 为 0
 watch(
@@ -734,6 +803,19 @@ watch(
       generateForm.value = 0
     } else if (generateForm.value === 0) {
       generateForm.value = 10
+    }
+  }
+)
+
+watch(
+  () => generateForm.purpose,
+  (purpose) => {
+    if (purpose === 'gift' || purpose === 'compensation') {
+      generateForm.sales_status = 'gifted'
+    } else if (purpose === 'sale_recharge' && generateForm.sales_status === 'gifted') {
+      generateForm.sales_status = 'inventory'
+    } else if ((purpose === 'internal_test' || purpose === 'migration') && generateForm.sales_status === 'sold') {
+      generateForm.sales_status = 'inventory'
     }
   }
 )

@@ -232,6 +232,19 @@ func (r *redeemCodeRepository) Use(ctx context.Context, id, userID int64) error 
 	if affected == 0 {
 		return service.ErrRedeemCodeUsed
 	}
+	_, err = client.RedeemCode.Update().
+		Where(
+			redeemcode.IDEQ(id),
+			redeemcode.TypeEQ(service.RedeemTypeBalance),
+			redeemcode.PurposeEQ(service.RedeemCodePurposeSaleRecharge),
+			redeemcode.SalesStatusEQ(service.RedeemCodeSalesStatusInventory),
+		).
+		SetSalesStatus(service.RedeemCodeSalesStatusSold).
+		SetSoldAt(now).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

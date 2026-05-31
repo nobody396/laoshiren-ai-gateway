@@ -3842,6 +3842,13 @@ export default {
       soldToNotePlaceholder: '邮箱、微信、客户名等',
       internalNotes: '内部备注',
       internalNotesPlaceholder: '对账、赠送、补偿等说明',
+      flow: {
+        label: '生成流程',
+        storeInventory: '商城库存卡',
+        storeInventoryDesc: '上架到链动小铺；兑换成功时自动进入账单',
+        gift: '赠送卡',
+        giftDesc: '免费发给用户；兑换后不计入收入'
+      },
       purposes: {
         sale_recharge: '充值销售',
         gift: '赠送',

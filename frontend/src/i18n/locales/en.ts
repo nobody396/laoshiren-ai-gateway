@@ -3726,6 +3726,13 @@ export default {
       soldToNotePlaceholder: 'Email, contact, customer name',
       internalNotes: 'Internal Notes',
       internalNotesPlaceholder: 'Reconciliation, gift, compensation notes',
+      flow: {
+        label: 'Generation Flow',
+        storeInventory: 'Store Inventory Card',
+        storeInventoryDesc: 'List in the card shop; counted in billing after redemption',
+        gift: 'Gift Card',
+        giftDesc: 'Free card for a user; never counted as revenue'
+      },
       purposes: {
         sale_recharge: 'Recharge Sale',
         gift: 'Gift',

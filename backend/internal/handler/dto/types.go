@@ -324,16 +324,41 @@ type RedeemCode struct {
 	UsedBy    *int64     `json:"used_by"`
 	UsedAt    *time.Time `json:"used_at"`
 	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at,omitempty"`
 
 	GroupID      *int64 `json:"group_id"`
 	ValidityDays int    `json:"validity_days"`
+
+	BatchID          *int64     `json:"batch_id,omitempty"`
+	Purpose          string     `json:"purpose,omitempty"`
+	SalesStatus      string     `json:"sales_status,omitempty"`
+	SoldAt           *time.Time `json:"sold_at,omitempty"`
+	SoldToNote       string     `json:"sold_to_note,omitempty"`
+	ExternalOrderNo  string     `json:"external_order_no,omitempty"`
+	ExternalOrderURL string     `json:"external_order_url,omitempty"`
+	InternalNotes    string     `json:"internal_notes,omitempty"`
 
 	// Notes is only populated for admin_balance/admin_concurrency types
 	// so users can see why they were charged or credited
 	Notes *string `json:"notes,omitempty"`
 
-	User  *User  `json:"user,omitempty"`
-	Group *Group `json:"group,omitempty"`
+	User  *User            `json:"user,omitempty"`
+	Group *Group           `json:"group,omitempty"`
+	Batch *RedeemCodeBatch `json:"batch,omitempty"`
+}
+
+type RedeemCodeBatch struct {
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	Purpose      string    `json:"purpose"`
+	FaceValue    float64   `json:"face_value"`
+	Currency     string    `json:"currency"`
+	SalesChannel string    `json:"sales_channel"`
+	ExternalURL  string    `json:"external_url,omitempty"`
+	Notes        string    `json:"notes,omitempty"`
+	CreatedBy    *int64    `json:"created_by,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 // AdminRedeemCode 是管理员接口使用的 redeem code DTO（包含 notes 等字段）。

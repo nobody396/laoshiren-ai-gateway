@@ -99,6 +99,7 @@ type AdminService interface {
 	DeleteRedeemCode(ctx context.Context, id int64) error
 	BatchDeleteRedeemCodes(ctx context.Context, ids []int64) (int64, error)
 	ExpireRedeemCode(ctx context.Context, id int64) (*RedeemCode, error)
+	ListRedeemCodeBilling(ctx context.Context, page, pageSize int, filters RedeemCodeBillingFilters) (*RedeemCodeBillingResult, error)
 	ResetAccountQuota(ctx context.Context, id int64) error
 }
 
@@ -314,6 +315,18 @@ type GenerateRedeemCodesInput struct {
 	Value        float64
 	GroupID      *int64 // 订阅类型专用：关联的分组ID
 	ValidityDays int    // 订阅类型专用：有效天数
+
+	BatchName        string
+	Purpose          string
+	SalesStatus      string
+	SalesChannel     string
+	ExternalURL      string
+	SoldAt           *time.Time
+	SoldToNote       string
+	ExternalOrderNo  string
+	ExternalOrderURL string
+	InternalNotes    string
+	CreatedBy        *int64
 }
 
 type ProxyBatchDeleteResult struct {
@@ -2102,8 +2115,20 @@ func (s *adminServiceImpl) GetRedeemCode(ctx context.Context, id int64) (*Redeem
 }
 
 func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *GenerateRedeemCodesInput) ([]RedeemCode, error) {
+	codeType := input.Type
+	if codeType == "" {
+		codeType = RedeemTypeBalance
+	}
+	purpose := normalizeRedeemCodePurposeForService(codeType, input.Purpose)
+	salesStatus := normalizeRedeemCodeSalesStatusForService(purpose, input.SalesStatus)
+	soldAt := input.SoldAt
+	if salesStatus == RedeemCodeSalesStatusSold && soldAt == nil {
+		now := time.Now()
+		soldAt = &now
+	}
+
 	// 如果是订阅类型，验证必须有 GroupID
-	if input.Type == RedeemTypeSubscription {
+	if codeType == RedeemTypeSubscription {
 		if input.GroupID == nil {
 			return nil, errors.New("group_id is required for subscription type")
 		}
@@ -2117,6 +2142,24 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 		}
 	}
 
+	var batchID *int64
+	if s.entClient != nil && shouldCreateRedeemCodeBatch(input) {
+		created, err := s.entClient.RedeemCodeBatch.Create().
+			SetName(defaultRedeemCodeBatchName(input.BatchName, codeType, input.Value)).
+			SetPurpose(purpose).
+			SetFaceValue(input.Value).
+			SetCurrency("balance_unit").
+			SetSalesChannel(defaultRedeemSalesChannel(input.SalesChannel)).
+			SetNillableExternalURL(trimStringPointerForService(input.ExternalURL)).
+			SetNillableNotes(trimStringPointerForService(input.InternalNotes)).
+			SetNillableCreatedBy(input.CreatedBy).
+			Save(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("create redeem code batch: %w", err)
+		}
+		batchID = &created.ID
+	}
+
 	codes := make([]RedeemCode, 0, input.Count)
 	for i := 0; i < input.Count; i++ {
 		codeValue, err := GenerateRedeemCode()
@@ -2124,13 +2167,21 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 			return nil, err
 		}
 		code := RedeemCode{
-			Code:   codeValue,
-			Type:   input.Type,
-			Value:  input.Value,
-			Status: StatusUnused,
+			Code:             codeValue,
+			Type:             codeType,
+			Value:            input.Value,
+			Status:           StatusUnused,
+			BatchID:          batchID,
+			Purpose:          purpose,
+			SalesStatus:      salesStatus,
+			SoldAt:           soldAt,
+			SoldToNote:       input.SoldToNote,
+			ExternalOrderNo:  input.ExternalOrderNo,
+			ExternalOrderURL: input.ExternalOrderURL,
+			InternalNotes:    input.InternalNotes,
 		}
 		// 订阅类型专用字段
-		if input.Type == RedeemTypeSubscription {
+		if codeType == RedeemTypeSubscription {
 			code.GroupID = input.GroupID
 			code.ValidityDays = input.ValidityDays
 			if code.ValidityDays <= 0 {

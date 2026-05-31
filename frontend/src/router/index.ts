@@ -657,6 +657,19 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/billing',
+    name: 'AdminBilling',
+    component: () => import('@/views/admin/BillingView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      permission: 'admin:redeem',
+      title: 'Billing Management',
+      titleKey: 'admin.billing.title',
+      descriptionKey: 'admin.billing.description'
+    }
+  },
+  {
     path: '/admin/promo-codes',
     name: 'AdminPromoCodes',
     component: () => import('@/views/admin/PromoCodesView.vue'),
@@ -972,6 +985,7 @@ router.beforeEach(async (to, _from, next) => {
       '/admin/groups',
       '/admin/subscriptions',
       '/admin/redeem',
+      '/admin/billing',
       '/subscriptions',
       '/redeem'
     ]

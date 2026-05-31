@@ -28,8 +28,26 @@ const (
 	FieldUsedAt = "used_at"
 	// FieldNotes holds the string denoting the notes field in the database.
 	FieldNotes = "notes"
+	// FieldBatchID holds the string denoting the batch_id field in the database.
+	FieldBatchID = "batch_id"
+	// FieldPurpose holds the string denoting the purpose field in the database.
+	FieldPurpose = "purpose"
+	// FieldSalesStatus holds the string denoting the sales_status field in the database.
+	FieldSalesStatus = "sales_status"
+	// FieldSoldAt holds the string denoting the sold_at field in the database.
+	FieldSoldAt = "sold_at"
+	// FieldSoldToNote holds the string denoting the sold_to_note field in the database.
+	FieldSoldToNote = "sold_to_note"
+	// FieldExternalOrderNo holds the string denoting the external_order_no field in the database.
+	FieldExternalOrderNo = "external_order_no"
+	// FieldExternalOrderURL holds the string denoting the external_order_url field in the database.
+	FieldExternalOrderURL = "external_order_url"
+	// FieldInternalNotes holds the string denoting the internal_notes field in the database.
+	FieldInternalNotes = "internal_notes"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
 	// FieldGroupID holds the string denoting the group_id field in the database.
 	FieldGroupID = "group_id"
 	// FieldValidityDays holds the string denoting the validity_days field in the database.
@@ -38,6 +56,8 @@ const (
 	EdgeUser = "user"
 	// EdgeGroup holds the string denoting the group edge name in mutations.
 	EdgeGroup = "group"
+	// EdgeBatch holds the string denoting the batch edge name in mutations.
+	EdgeBatch = "batch"
 	// Table holds the table name of the redeemcode in the database.
 	Table = "redeem_codes"
 	// UserTable is the table that holds the user relation/edge.
@@ -54,6 +74,13 @@ const (
 	GroupInverseTable = "groups"
 	// GroupColumn is the table column denoting the group relation/edge.
 	GroupColumn = "group_id"
+	// BatchTable is the table that holds the batch relation/edge.
+	BatchTable = "redeem_codes"
+	// BatchInverseTable is the table name for the RedeemCodeBatch entity.
+	// It exists in this package in order to avoid circular dependency with the "redeemcodebatch" package.
+	BatchInverseTable = "redeem_code_batches"
+	// BatchColumn is the table column denoting the batch relation/edge.
+	BatchColumn = "batch_id"
 )
 
 // Columns holds all SQL columns for redeemcode fields.
@@ -66,7 +93,16 @@ var Columns = []string{
 	FieldUsedBy,
 	FieldUsedAt,
 	FieldNotes,
+	FieldBatchID,
+	FieldPurpose,
+	FieldSalesStatus,
+	FieldSoldAt,
+	FieldSoldToNote,
+	FieldExternalOrderNo,
+	FieldExternalOrderURL,
+	FieldInternalNotes,
 	FieldCreatedAt,
+	FieldUpdatedAt,
 	FieldGroupID,
 	FieldValidityDays,
 }
@@ -94,8 +130,22 @@ var (
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	StatusValidator func(string) error
+	// DefaultPurpose holds the default value on creation for the "purpose" field.
+	DefaultPurpose string
+	// PurposeValidator is a validator for the "purpose" field. It is called by the builders before save.
+	PurposeValidator func(string) error
+	// DefaultSalesStatus holds the default value on creation for the "sales_status" field.
+	DefaultSalesStatus string
+	// SalesStatusValidator is a validator for the "sales_status" field. It is called by the builders before save.
+	SalesStatusValidator func(string) error
+	// ExternalOrderNoValidator is a validator for the "external_order_no" field. It is called by the builders before save.
+	ExternalOrderNoValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
+	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
+	DefaultUpdatedAt func() time.Time
+	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
+	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultValidityDays holds the default value on creation for the "validity_days" field.
 	DefaultValidityDays int
 )
@@ -143,9 +193,54 @@ func ByNotes(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNotes, opts...).ToFunc()
 }
 
+// ByBatchID orders the results by the batch_id field.
+func ByBatchID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBatchID, opts...).ToFunc()
+}
+
+// ByPurpose orders the results by the purpose field.
+func ByPurpose(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPurpose, opts...).ToFunc()
+}
+
+// BySalesStatus orders the results by the sales_status field.
+func BySalesStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSalesStatus, opts...).ToFunc()
+}
+
+// BySoldAt orders the results by the sold_at field.
+func BySoldAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSoldAt, opts...).ToFunc()
+}
+
+// BySoldToNote orders the results by the sold_to_note field.
+func BySoldToNote(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSoldToNote, opts...).ToFunc()
+}
+
+// ByExternalOrderNo orders the results by the external_order_no field.
+func ByExternalOrderNo(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExternalOrderNo, opts...).ToFunc()
+}
+
+// ByExternalOrderURL orders the results by the external_order_url field.
+func ByExternalOrderURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExternalOrderURL, opts...).ToFunc()
+}
+
+// ByInternalNotes orders the results by the internal_notes field.
+func ByInternalNotes(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldInternalNotes, opts...).ToFunc()
+}
+
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByUpdatedAt orders the results by the updated_at field.
+func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
 // ByGroupID orders the results by the group_id field.
@@ -171,6 +266,13 @@ func ByGroupField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newGroupStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByBatchField orders the results by batch field.
+func ByBatchField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBatchStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -183,5 +285,12 @@ func newGroupStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(GroupInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, GroupTable, GroupColumn),
+	)
+}
+func newBatchStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(BatchInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, BatchTable, BatchColumn),
 	)
 }

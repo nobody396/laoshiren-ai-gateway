@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/group"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcode"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcodebatch"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/user"
 )
 
@@ -33,8 +34,26 @@ type RedeemCode struct {
 	UsedAt *time.Time `json:"used_at,omitempty"`
 	// Notes holds the value of the "notes" field.
 	Notes *string `json:"notes,omitempty"`
+	// BatchID holds the value of the "batch_id" field.
+	BatchID *int64 `json:"batch_id,omitempty"`
+	// Purpose holds the value of the "purpose" field.
+	Purpose string `json:"purpose,omitempty"`
+	// SalesStatus holds the value of the "sales_status" field.
+	SalesStatus string `json:"sales_status,omitempty"`
+	// SoldAt holds the value of the "sold_at" field.
+	SoldAt *time.Time `json:"sold_at,omitempty"`
+	// SoldToNote holds the value of the "sold_to_note" field.
+	SoldToNote *string `json:"sold_to_note,omitempty"`
+	// ExternalOrderNo holds the value of the "external_order_no" field.
+	ExternalOrderNo *string `json:"external_order_no,omitempty"`
+	// ExternalOrderURL holds the value of the "external_order_url" field.
+	ExternalOrderURL *string `json:"external_order_url,omitempty"`
+	// InternalNotes holds the value of the "internal_notes" field.
+	InternalNotes *string `json:"internal_notes,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// GroupID holds the value of the "group_id" field.
 	GroupID *int64 `json:"group_id,omitempty"`
 	// ValidityDays holds the value of the "validity_days" field.
@@ -51,9 +70,11 @@ type RedeemCodeEdges struct {
 	User *User `json:"user,omitempty"`
 	// Group holds the value of the group edge.
 	Group *Group `json:"group,omitempty"`
+	// Batch holds the value of the batch edge.
+	Batch *RedeemCodeBatch `json:"batch,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -78,6 +99,17 @@ func (e RedeemCodeEdges) GroupOrErr() (*Group, error) {
 	return nil, &NotLoadedError{edge: "group"}
 }
 
+// BatchOrErr returns the Batch value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e RedeemCodeEdges) BatchOrErr() (*RedeemCodeBatch, error) {
+	if e.Batch != nil {
+		return e.Batch, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: redeemcodebatch.Label}
+	}
+	return nil, &NotLoadedError{edge: "batch"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*RedeemCode) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -85,11 +117,11 @@ func (*RedeemCode) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case redeemcode.FieldValue:
 			values[i] = new(sql.NullFloat64)
-		case redeemcode.FieldID, redeemcode.FieldUsedBy, redeemcode.FieldGroupID, redeemcode.FieldValidityDays:
+		case redeemcode.FieldID, redeemcode.FieldUsedBy, redeemcode.FieldBatchID, redeemcode.FieldGroupID, redeemcode.FieldValidityDays:
 			values[i] = new(sql.NullInt64)
-		case redeemcode.FieldCode, redeemcode.FieldType, redeemcode.FieldStatus, redeemcode.FieldNotes:
+		case redeemcode.FieldCode, redeemcode.FieldType, redeemcode.FieldStatus, redeemcode.FieldNotes, redeemcode.FieldPurpose, redeemcode.FieldSalesStatus, redeemcode.FieldSoldToNote, redeemcode.FieldExternalOrderNo, redeemcode.FieldExternalOrderURL, redeemcode.FieldInternalNotes:
 			values[i] = new(sql.NullString)
-		case redeemcode.FieldUsedAt, redeemcode.FieldCreatedAt:
+		case redeemcode.FieldUsedAt, redeemcode.FieldSoldAt, redeemcode.FieldCreatedAt, redeemcode.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -157,11 +189,71 @@ func (_m *RedeemCode) assignValues(columns []string, values []any) error {
 				_m.Notes = new(string)
 				*_m.Notes = value.String
 			}
+		case redeemcode.FieldBatchID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field batch_id", values[i])
+			} else if value.Valid {
+				_m.BatchID = new(int64)
+				*_m.BatchID = value.Int64
+			}
+		case redeemcode.FieldPurpose:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field purpose", values[i])
+			} else if value.Valid {
+				_m.Purpose = value.String
+			}
+		case redeemcode.FieldSalesStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field sales_status", values[i])
+			} else if value.Valid {
+				_m.SalesStatus = value.String
+			}
+		case redeemcode.FieldSoldAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field sold_at", values[i])
+			} else if value.Valid {
+				_m.SoldAt = new(time.Time)
+				*_m.SoldAt = value.Time
+			}
+		case redeemcode.FieldSoldToNote:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field sold_to_note", values[i])
+			} else if value.Valid {
+				_m.SoldToNote = new(string)
+				*_m.SoldToNote = value.String
+			}
+		case redeemcode.FieldExternalOrderNo:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field external_order_no", values[i])
+			} else if value.Valid {
+				_m.ExternalOrderNo = new(string)
+				*_m.ExternalOrderNo = value.String
+			}
+		case redeemcode.FieldExternalOrderURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field external_order_url", values[i])
+			} else if value.Valid {
+				_m.ExternalOrderURL = new(string)
+				*_m.ExternalOrderURL = value.String
+			}
+		case redeemcode.FieldInternalNotes:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field internal_notes", values[i])
+			} else if value.Valid {
+				_m.InternalNotes = new(string)
+				*_m.InternalNotes = value.String
+			}
 		case redeemcode.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				_m.CreatedAt = value.Time
+			}
+		case redeemcode.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				_m.UpdatedAt = value.Time
 			}
 		case redeemcode.FieldGroupID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -197,6 +289,11 @@ func (_m *RedeemCode) QueryUser() *UserQuery {
 // QueryGroup queries the "group" edge of the RedeemCode entity.
 func (_m *RedeemCode) QueryGroup() *GroupQuery {
 	return NewRedeemCodeClient(_m.config).QueryGroup(_m)
+}
+
+// QueryBatch queries the "batch" edge of the RedeemCode entity.
+func (_m *RedeemCode) QueryBatch() *RedeemCodeBatchQuery {
+	return NewRedeemCodeClient(_m.config).QueryBatch(_m)
 }
 
 // Update returns a builder for updating this RedeemCode.
@@ -249,8 +346,47 @@ func (_m *RedeemCode) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
+	if v := _m.BatchID; v != nil {
+		builder.WriteString("batch_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("purpose=")
+	builder.WriteString(_m.Purpose)
+	builder.WriteString(", ")
+	builder.WriteString("sales_status=")
+	builder.WriteString(_m.SalesStatus)
+	builder.WriteString(", ")
+	if v := _m.SoldAt; v != nil {
+		builder.WriteString("sold_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.SoldToNote; v != nil {
+		builder.WriteString("sold_to_note=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.ExternalOrderNo; v != nil {
+		builder.WriteString("external_order_no=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.ExternalOrderURL; v != nil {
+		builder.WriteString("external_order_url=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.InternalNotes; v != nil {
+		builder.WriteString("internal_notes=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	if v := _m.GroupID; v != nil {
 		builder.WriteString("group_id=")

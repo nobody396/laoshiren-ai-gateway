@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
@@ -30,10 +31,19 @@ func (r *redeemCodeRepository) Create(ctx context.Context, code *service.RedeemC
 		SetNillableUsedBy(code.UsedBy).
 		SetNillableUsedAt(code.UsedAt).
 		SetNillableGroupID(code.GroupID).
+		SetNillableBatchID(code.BatchID).
+		SetPurpose(normalizeRedeemCodePurpose(code.Type, code.Purpose)).
+		SetSalesStatus(normalizeRedeemCodeSalesStatus(code.Purpose, code.SalesStatus)).
+		SetNillableSoldAt(code.SoldAt).
+		SetNillableSoldToNote(trimStringPointer(code.SoldToNote)).
+		SetNillableExternalOrderNo(trimStringPointer(code.ExternalOrderNo)).
+		SetNillableExternalOrderURL(trimStringPointer(code.ExternalOrderURL)).
+		SetNillableInternalNotes(trimStringPointer(code.InternalNotes)).
 		Save(ctx)
 	if err == nil {
 		code.ID = created.ID
 		code.CreatedAt = created.CreatedAt
+		code.UpdatedAt = created.UpdatedAt
 	}
 	return err
 }
@@ -55,7 +65,15 @@ func (r *redeemCodeRepository) CreateBatch(ctx context.Context, codes []service.
 			SetValidityDays(c.ValidityDays).
 			SetNillableUsedBy(c.UsedBy).
 			SetNillableUsedAt(c.UsedAt).
-			SetNillableGroupID(c.GroupID)
+			SetNillableGroupID(c.GroupID).
+			SetNillableBatchID(c.BatchID).
+			SetPurpose(normalizeRedeemCodePurpose(c.Type, c.Purpose)).
+			SetSalesStatus(normalizeRedeemCodeSalesStatus(c.Purpose, c.SalesStatus)).
+			SetNillableSoldAt(c.SoldAt).
+			SetNillableSoldToNote(trimStringPointer(c.SoldToNote)).
+			SetNillableExternalOrderNo(trimStringPointer(c.ExternalOrderNo)).
+			SetNillableExternalOrderURL(trimStringPointer(c.ExternalOrderURL)).
+			SetNillableInternalNotes(trimStringPointer(c.InternalNotes))
 		builders = append(builders, b)
 	}
 
@@ -65,6 +83,9 @@ func (r *redeemCodeRepository) CreateBatch(ctx context.Context, codes []service.
 func (r *redeemCodeRepository) GetByID(ctx context.Context, id int64) (*service.RedeemCode, error) {
 	m, err := r.client.RedeemCode.Query().
 		Where(redeemcode.IDEQ(id)).
+		WithUser().
+		WithGroup().
+		WithBatch().
 		Only(ctx)
 	if err != nil {
 		if dbent.IsNotFound(err) {
@@ -78,6 +99,9 @@ func (r *redeemCodeRepository) GetByID(ctx context.Context, id int64) (*service.
 func (r *redeemCodeRepository) GetByCode(ctx context.Context, code string) (*service.RedeemCode, error) {
 	m, err := r.client.RedeemCode.Query().
 		Where(redeemcode.CodeEQ(code)).
+		WithUser().
+		WithGroup().
+		WithBatch().
 		Only(ctx)
 	if err != nil {
 		if dbent.IsNotFound(err) {
@@ -130,6 +154,7 @@ func (r *redeemCodeRepository) ListWithFilters(ctx context.Context, params pagin
 	codes, err := q.
 		WithUser().
 		WithGroup().
+		WithBatch().
 		Offset(params.Offset()).
 		Limit(params.Limit()).
 		Order(dbent.Desc(redeemcode.FieldID)).
@@ -150,7 +175,14 @@ func (r *redeemCodeRepository) Update(ctx context.Context, code *service.RedeemC
 		SetValue(code.Value).
 		SetStatus(code.Status).
 		SetNotes(code.Notes).
-		SetValidityDays(code.ValidityDays)
+		SetValidityDays(code.ValidityDays).
+		SetPurpose(normalizeRedeemCodePurpose(code.Type, code.Purpose)).
+		SetSalesStatus(normalizeRedeemCodeSalesStatus(code.Purpose, code.SalesStatus)).
+		SetNillableSoldAt(code.SoldAt).
+		SetNillableSoldToNote(trimStringPointer(code.SoldToNote)).
+		SetNillableExternalOrderNo(trimStringPointer(code.ExternalOrderNo)).
+		SetNillableExternalOrderURL(trimStringPointer(code.ExternalOrderURL)).
+		SetNillableInternalNotes(trimStringPointer(code.InternalNotes))
 
 	if code.UsedBy != nil {
 		up.SetUsedBy(*code.UsedBy)
@@ -167,6 +199,11 @@ func (r *redeemCodeRepository) Update(ctx context.Context, code *service.RedeemC
 	} else {
 		up.ClearGroupID()
 	}
+	if code.BatchID != nil {
+		up.SetBatchID(*code.BatchID)
+	} else {
+		up.ClearBatchID()
+	}
 
 	updated, err := up.Save(ctx)
 	if err != nil {
@@ -176,6 +213,7 @@ func (r *redeemCodeRepository) Update(ctx context.Context, code *service.RedeemC
 		return err
 	}
 	code.CreatedAt = updated.CreatedAt
+	code.UpdatedAt = updated.UpdatedAt
 	return nil
 }
 
@@ -205,6 +243,7 @@ func (r *redeemCodeRepository) ListByUser(ctx context.Context, userID int64, lim
 	codes, err := r.client.RedeemCode.Query().
 		Where(redeemcode.UsedByEQ(userID)).
 		WithGroup().
+		WithBatch().
 		Order(dbent.Desc(redeemcode.FieldUsedAt)).
 		Limit(limit).
 		All(ctx)
@@ -233,6 +272,7 @@ func (r *redeemCodeRepository) ListByUserPaginated(ctx context.Context, userID i
 
 	codes, err := q.
 		WithGroup().
+		WithBatch().
 		Offset(params.Offset()).
 		Limit(params.Limit()).
 		Order(dbent.Desc(redeemcode.FieldUsedAt)).
@@ -271,23 +311,35 @@ func redeemCodeEntityToService(m *dbent.RedeemCode) *service.RedeemCode {
 		return nil
 	}
 	out := &service.RedeemCode{
-		ID:           m.ID,
-		Code:         m.Code,
-		Type:         m.Type,
-		Value:        m.Value,
-		Status:       m.Status,
-		UsedBy:       m.UsedBy,
-		UsedAt:       m.UsedAt,
-		Notes:        derefString(m.Notes),
-		CreatedAt:    m.CreatedAt,
-		GroupID:      m.GroupID,
-		ValidityDays: m.ValidityDays,
+		ID:               m.ID,
+		Code:             m.Code,
+		Type:             m.Type,
+		Value:            m.Value,
+		Status:           m.Status,
+		UsedBy:           m.UsedBy,
+		UsedAt:           m.UsedAt,
+		Notes:            derefString(m.Notes),
+		CreatedAt:        m.CreatedAt,
+		UpdatedAt:        m.UpdatedAt,
+		GroupID:          m.GroupID,
+		ValidityDays:     m.ValidityDays,
+		BatchID:          m.BatchID,
+		Purpose:          m.Purpose,
+		SalesStatus:      m.SalesStatus,
+		SoldAt:           m.SoldAt,
+		SoldToNote:       derefString(m.SoldToNote),
+		ExternalOrderNo:  derefString(m.ExternalOrderNo),
+		ExternalOrderURL: derefString(m.ExternalOrderURL),
+		InternalNotes:    derefString(m.InternalNotes),
 	}
 	if m.Edges.User != nil {
 		out.User = userEntityToService(m.Edges.User)
 	}
 	if m.Edges.Group != nil {
 		out.Group = groupEntityToService(m.Edges.Group)
+	}
+	if m.Edges.Batch != nil {
+		out.Batch = redeemCodeBatchEntityToService(m.Edges.Batch)
 	}
 	return out
 }
@@ -300,4 +352,64 @@ func redeemCodeEntitiesToService(models []*dbent.RedeemCode) []service.RedeemCod
 		}
 	}
 	return out
+}
+
+func trimStringPointer(v string) *string {
+	trimmed := strings.TrimSpace(v)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
+}
+
+func normalizeRedeemCodePurpose(codeType, purpose string) string {
+	trimmed := strings.TrimSpace(purpose)
+	switch trimmed {
+	case service.RedeemCodePurposeSaleRecharge,
+		service.RedeemCodePurposeGift,
+		service.RedeemCodePurposeCompensation,
+		service.RedeemCodePurposeInternalTest,
+		service.RedeemCodePurposeMigration:
+		return trimmed
+	}
+	if codeType == service.RedeemTypeBalance {
+		return service.RedeemCodePurposeSaleRecharge
+	}
+	return service.RedeemCodePurposeMigration
+}
+
+func normalizeRedeemCodeSalesStatus(purpose, status string) string {
+	trimmed := strings.TrimSpace(status)
+	switch trimmed {
+	case service.RedeemCodeSalesStatusInventory,
+		service.RedeemCodeSalesStatusSold,
+		service.RedeemCodeSalesStatusGifted,
+		service.RedeemCodeSalesStatusVoid:
+		return trimmed
+	}
+	switch strings.TrimSpace(purpose) {
+	case service.RedeemCodePurposeGift, service.RedeemCodePurposeCompensation:
+		return service.RedeemCodeSalesStatusGifted
+	default:
+		return service.RedeemCodeSalesStatusInventory
+	}
+}
+
+func redeemCodeBatchEntityToService(m *dbent.RedeemCodeBatch) *service.RedeemCodeBatch {
+	if m == nil {
+		return nil
+	}
+	return &service.RedeemCodeBatch{
+		ID:           m.ID,
+		Name:         m.Name,
+		Purpose:      m.Purpose,
+		FaceValue:    m.FaceValue,
+		Currency:     m.Currency,
+		SalesChannel: m.SalesChannel,
+		ExternalURL:  derefString(m.ExternalURL),
+		Notes:        derefString(m.Notes),
+		CreatedBy:    m.CreatedBy,
+		CreatedAt:    m.CreatedAt,
+		UpdatedAt:    m.UpdatedAt,
+	}
 }

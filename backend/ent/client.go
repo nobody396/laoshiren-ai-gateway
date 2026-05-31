@@ -41,6 +41,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/promocodeusage"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/proxy"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcode"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcodebatch"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/securitysecret"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/setting"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/tlsfingerprintprofile"
@@ -113,6 +114,8 @@ type Client struct {
 	Proxy *ProxyClient
 	// RedeemCode is the client for interacting with the RedeemCode builders.
 	RedeemCode *RedeemCodeClient
+	// RedeemCodeBatch is the client for interacting with the RedeemCodeBatch builders.
+	RedeemCodeBatch *RedeemCodeBatchClient
 	// SecuritySecret is the client for interacting with the SecuritySecret builders.
 	SecuritySecret *SecuritySecretClient
 	// Setting is the client for interacting with the Setting builders.
@@ -172,6 +175,7 @@ func (c *Client) init() {
 	c.PromoCodeUsage = NewPromoCodeUsageClient(c.config)
 	c.Proxy = NewProxyClient(c.config)
 	c.RedeemCode = NewRedeemCodeClient(c.config)
+	c.RedeemCodeBatch = NewRedeemCodeBatchClient(c.config)
 	c.SecuritySecret = NewSecuritySecretClient(c.config)
 	c.Setting = NewSettingClient(c.config)
 	c.TLSFingerprintProfile = NewTLSFingerprintProfileClient(c.config)
@@ -301,6 +305,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		PromoCodeUsage:          NewPromoCodeUsageClient(cfg),
 		Proxy:                   NewProxyClient(cfg),
 		RedeemCode:              NewRedeemCodeClient(cfg),
+		RedeemCodeBatch:         NewRedeemCodeBatchClient(cfg),
 		SecuritySecret:          NewSecuritySecretClient(cfg),
 		Setting:                 NewSettingClient(cfg),
 		TLSFingerprintProfile:   NewTLSFingerprintProfileClient(cfg),
@@ -357,6 +362,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		PromoCodeUsage:          NewPromoCodeUsageClient(cfg),
 		Proxy:                   NewProxyClient(cfg),
 		RedeemCode:              NewRedeemCodeClient(cfg),
+		RedeemCodeBatch:         NewRedeemCodeBatchClient(cfg),
 		SecuritySecret:          NewSecuritySecretClient(cfg),
 		Setting:                 NewSettingClient(cfg),
 		TLSFingerprintProfile:   NewTLSFingerprintProfileClient(cfg),
@@ -402,10 +408,10 @@ func (c *Client) Use(hooks ...Hook) {
 		c.Announcement, c.AnnouncementRead, c.CommissionRecord, c.ErrorPassthroughRule,
 		c.Feedback, c.FeedbackReply, c.Group, c.IdempotencyRecord, c.InvoiceProfile,
 		c.InvoiceRequest, c.InvoiceRequestOrder, c.PaymentOrder, c.PromoCode,
-		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
-		c.TLSFingerprintProfile, c.TopupOrder, c.UsageCleanupTask, c.UsageLog, c.User,
-		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserSubscription,
+		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.RedeemCodeBatch, c.SecuritySecret,
+		c.Setting, c.TLSFingerprintProfile, c.TopupOrder, c.UsageCleanupTask,
+		c.UsageLog, c.User, c.UserAllowedGroup, c.UserAttributeDefinition,
+		c.UserAttributeValue, c.UserSubscription,
 	} {
 		n.Use(hooks...)
 	}
@@ -420,10 +426,10 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.Announcement, c.AnnouncementRead, c.CommissionRecord, c.ErrorPassthroughRule,
 		c.Feedback, c.FeedbackReply, c.Group, c.IdempotencyRecord, c.InvoiceProfile,
 		c.InvoiceRequest, c.InvoiceRequestOrder, c.PaymentOrder, c.PromoCode,
-		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
-		c.TLSFingerprintProfile, c.TopupOrder, c.UsageCleanupTask, c.UsageLog, c.User,
-		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserSubscription,
+		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.RedeemCodeBatch, c.SecuritySecret,
+		c.Setting, c.TLSFingerprintProfile, c.TopupOrder, c.UsageCleanupTask,
+		c.UsageLog, c.User, c.UserAllowedGroup, c.UserAttributeDefinition,
+		c.UserAttributeValue, c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -484,6 +490,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Proxy.mutate(ctx, m)
 	case *RedeemCodeMutation:
 		return c.RedeemCode.mutate(ctx, m)
+	case *RedeemCodeBatchMutation:
+		return c.RedeemCodeBatch.mutate(ctx, m)
 	case *SecuritySecretMutation:
 		return c.SecuritySecret.mutate(ctx, m)
 	case *SettingMutation:
@@ -4561,6 +4569,22 @@ func (c *RedeemCodeClient) QueryGroup(_m *RedeemCode) *GroupQuery {
 	return query
 }
 
+// QueryBatch queries the batch edge of a RedeemCode.
+func (c *RedeemCodeClient) QueryBatch(_m *RedeemCode) *RedeemCodeBatchQuery {
+	query := (&RedeemCodeBatchClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(redeemcode.Table, redeemcode.FieldID, id),
+			sqlgraph.To(redeemcodebatch.Table, redeemcodebatch.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, redeemcode.BatchTable, redeemcode.BatchColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *RedeemCodeClient) Hooks() []Hook {
 	return c.hooks.RedeemCode
@@ -4583,6 +4607,171 @@ func (c *RedeemCodeClient) mutate(ctx context.Context, m *RedeemCodeMutation) (V
 		return (&RedeemCodeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown RedeemCode mutation op: %q", m.Op())
+	}
+}
+
+// RedeemCodeBatchClient is a client for the RedeemCodeBatch schema.
+type RedeemCodeBatchClient struct {
+	config
+}
+
+// NewRedeemCodeBatchClient returns a client for the RedeemCodeBatch from the given config.
+func NewRedeemCodeBatchClient(c config) *RedeemCodeBatchClient {
+	return &RedeemCodeBatchClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `redeemcodebatch.Hooks(f(g(h())))`.
+func (c *RedeemCodeBatchClient) Use(hooks ...Hook) {
+	c.hooks.RedeemCodeBatch = append(c.hooks.RedeemCodeBatch, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `redeemcodebatch.Intercept(f(g(h())))`.
+func (c *RedeemCodeBatchClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RedeemCodeBatch = append(c.inters.RedeemCodeBatch, interceptors...)
+}
+
+// Create returns a builder for creating a RedeemCodeBatch entity.
+func (c *RedeemCodeBatchClient) Create() *RedeemCodeBatchCreate {
+	mutation := newRedeemCodeBatchMutation(c.config, OpCreate)
+	return &RedeemCodeBatchCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RedeemCodeBatch entities.
+func (c *RedeemCodeBatchClient) CreateBulk(builders ...*RedeemCodeBatchCreate) *RedeemCodeBatchCreateBulk {
+	return &RedeemCodeBatchCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RedeemCodeBatchClient) MapCreateBulk(slice any, setFunc func(*RedeemCodeBatchCreate, int)) *RedeemCodeBatchCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RedeemCodeBatchCreateBulk{err: fmt.Errorf("calling to RedeemCodeBatchClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RedeemCodeBatchCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RedeemCodeBatchCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RedeemCodeBatch.
+func (c *RedeemCodeBatchClient) Update() *RedeemCodeBatchUpdate {
+	mutation := newRedeemCodeBatchMutation(c.config, OpUpdate)
+	return &RedeemCodeBatchUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RedeemCodeBatchClient) UpdateOne(_m *RedeemCodeBatch) *RedeemCodeBatchUpdateOne {
+	mutation := newRedeemCodeBatchMutation(c.config, OpUpdateOne, withRedeemCodeBatch(_m))
+	return &RedeemCodeBatchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RedeemCodeBatchClient) UpdateOneID(id int64) *RedeemCodeBatchUpdateOne {
+	mutation := newRedeemCodeBatchMutation(c.config, OpUpdateOne, withRedeemCodeBatchID(id))
+	return &RedeemCodeBatchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RedeemCodeBatch.
+func (c *RedeemCodeBatchClient) Delete() *RedeemCodeBatchDelete {
+	mutation := newRedeemCodeBatchMutation(c.config, OpDelete)
+	return &RedeemCodeBatchDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RedeemCodeBatchClient) DeleteOne(_m *RedeemCodeBatch) *RedeemCodeBatchDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RedeemCodeBatchClient) DeleteOneID(id int64) *RedeemCodeBatchDeleteOne {
+	builder := c.Delete().Where(redeemcodebatch.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RedeemCodeBatchDeleteOne{builder}
+}
+
+// Query returns a query builder for RedeemCodeBatch.
+func (c *RedeemCodeBatchClient) Query() *RedeemCodeBatchQuery {
+	return &RedeemCodeBatchQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRedeemCodeBatch},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RedeemCodeBatch entity by its id.
+func (c *RedeemCodeBatchClient) Get(ctx context.Context, id int64) (*RedeemCodeBatch, error) {
+	return c.Query().Where(redeemcodebatch.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RedeemCodeBatchClient) GetX(ctx context.Context, id int64) *RedeemCodeBatch {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRedeemCodes queries the redeem_codes edge of a RedeemCodeBatch.
+func (c *RedeemCodeBatchClient) QueryRedeemCodes(_m *RedeemCodeBatch) *RedeemCodeQuery {
+	query := (&RedeemCodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(redeemcodebatch.Table, redeemcodebatch.FieldID, id),
+			sqlgraph.To(redeemcode.Table, redeemcode.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, redeemcodebatch.RedeemCodesTable, redeemcodebatch.RedeemCodesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCreator queries the creator edge of a RedeemCodeBatch.
+func (c *RedeemCodeBatchClient) QueryCreator(_m *RedeemCodeBatch) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(redeemcodebatch.Table, redeemcodebatch.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, redeemcodebatch.CreatorTable, redeemcodebatch.CreatorColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RedeemCodeBatchClient) Hooks() []Hook {
+	return c.hooks.RedeemCodeBatch
+}
+
+// Interceptors returns the client interceptors.
+func (c *RedeemCodeBatchClient) Interceptors() []Interceptor {
+	return c.inters.RedeemCodeBatch
+}
+
+func (c *RedeemCodeBatchClient) mutate(ctx context.Context, m *RedeemCodeBatchMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RedeemCodeBatchCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RedeemCodeBatchUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RedeemCodeBatchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RedeemCodeBatchDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RedeemCodeBatch mutation op: %q", m.Op())
 	}
 }
 
@@ -5636,6 +5825,22 @@ func (c *UserClient) QueryRedeemCodes(_m *User) *RedeemCodeQuery {
 	return query
 }
 
+// QueryRedeemCodeBatches queries the redeem_code_batches edge of a User.
+func (c *UserClient) QueryRedeemCodeBatches(_m *User) *RedeemCodeBatchQuery {
+	query := (&RedeemCodeBatchClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(redeemcodebatch.Table, redeemcodebatch.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RedeemCodeBatchesTable, user.RedeemCodeBatchesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QuerySubscriptions queries the subscriptions edge of a User.
 func (c *UserClient) QuerySubscriptions(_m *User) *UserSubscriptionQuery {
 	query := (&UserSubscriptionClient{config: c.config}).Query()
@@ -6542,9 +6747,9 @@ type (
 		AnnouncementRead, CommissionRecord, ErrorPassthroughRule, Feedback,
 		FeedbackReply, Group, IdempotencyRecord, InvoiceProfile, InvoiceRequest,
 		InvoiceRequestOrder, PaymentOrder, PromoCode, PromoCodeUsage, Proxy,
-		RedeemCode, SecuritySecret, Setting, TLSFingerprintProfile, TopupOrder,
-		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
-		UserAttributeValue, UserSubscription []ent.Hook
+		RedeemCode, RedeemCodeBatch, SecuritySecret, Setting, TLSFingerprintProfile,
+		TopupOrder, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
+		UserAttributeDefinition, UserAttributeValue, UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountChangeRecord, AccountGroup, AdminAPI, AdminMenu,
@@ -6552,9 +6757,9 @@ type (
 		AnnouncementRead, CommissionRecord, ErrorPassthroughRule, Feedback,
 		FeedbackReply, Group, IdempotencyRecord, InvoiceProfile, InvoiceRequest,
 		InvoiceRequestOrder, PaymentOrder, PromoCode, PromoCodeUsage, Proxy,
-		RedeemCode, SecuritySecret, Setting, TLSFingerprintProfile, TopupOrder,
-		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
-		UserAttributeValue, UserSubscription []ent.Interceptor
+		RedeemCode, RedeemCodeBatch, SecuritySecret, Setting, TLSFingerprintProfile,
+		TopupOrder, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
+		UserAttributeDefinition, UserAttributeValue, UserSubscription []ent.Interceptor
 	}
 )
 

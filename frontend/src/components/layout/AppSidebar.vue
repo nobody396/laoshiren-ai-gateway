@@ -746,6 +746,7 @@ const navPermissionMap: Record<string, string> = {
   '/admin/feedbacks': 'admin:feedbacks',
   '/admin/proxies': 'admin:proxies',
   '/admin/redeem': 'admin:redeem',
+  '/admin/billing': 'admin:redeem',
   '/admin/promo-codes': 'admin:promo-codes',
   '/admin/usage': 'admin:usage',
   '/admin/topup-orders': 'admin:topup-orders',
@@ -825,6 +826,12 @@ const adminNavItems = computed((): NavItem[] => {
       path: '/admin/redeem',
       label: resolveAdminMenuLabel('/admin/redeem', t('nav.redeemCodes')),
       icon: TicketIcon,
+      hideInSimpleMode: true
+    },
+    {
+      path: '/admin/billing',
+      label: resolveAdminMenuLabel('/admin/billing', t('nav.billing')),
+      icon: CreditCardIcon,
       hideInSimpleMode: true
     },
     {

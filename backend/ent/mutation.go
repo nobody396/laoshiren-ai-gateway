@@ -39,6 +39,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/promocodeusage"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/proxy"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcode"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcodebatch"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/securitysecret"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/setting"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/tlsfingerprintprofile"
@@ -88,6 +89,7 @@ const (
 	TypePromoCodeUsage          = "PromoCodeUsage"
 	TypeProxy                   = "Proxy"
 	TypeRedeemCode              = "RedeemCode"
+	TypeRedeemCodeBatch         = "RedeemCodeBatch"
 	TypeSecuritySecret          = "SecuritySecret"
 	TypeSetting                 = "Setting"
 	TypeTLSFingerprintProfile   = "TLSFingerprintProfile"
@@ -27391,27 +27393,37 @@ func (m *ProxyMutation) ResetEdge(name string) error {
 // RedeemCodeMutation represents an operation that mutates the RedeemCode nodes in the graph.
 type RedeemCodeMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *int64
-	code             *string
-	_type            *string
-	value            *float64
-	addvalue         *float64
-	status           *string
-	used_at          *time.Time
-	notes            *string
-	created_at       *time.Time
-	validity_days    *int
-	addvalidity_days *int
-	clearedFields    map[string]struct{}
-	user             *int64
-	cleareduser      bool
-	group            *int64
-	clearedgroup     bool
-	done             bool
-	oldValue         func(context.Context) (*RedeemCode, error)
-	predicates       []predicate.RedeemCode
+	op                 Op
+	typ                string
+	id                 *int64
+	code               *string
+	_type              *string
+	value              *float64
+	addvalue           *float64
+	status             *string
+	used_at            *time.Time
+	notes              *string
+	purpose            *string
+	sales_status       *string
+	sold_at            *time.Time
+	sold_to_note       *string
+	external_order_no  *string
+	external_order_url *string
+	internal_notes     *string
+	created_at         *time.Time
+	updated_at         *time.Time
+	validity_days      *int
+	addvalidity_days   *int
+	clearedFields      map[string]struct{}
+	user               *int64
+	cleareduser        bool
+	group              *int64
+	clearedgroup       bool
+	batch              *int64
+	clearedbatch       bool
+	done               bool
+	oldValue           func(context.Context) (*RedeemCode, error)
+	predicates         []predicate.RedeemCode
 }
 
 var _ ent.Mutation = (*RedeemCodeMutation)(nil)
@@ -27823,6 +27835,372 @@ func (m *RedeemCodeMutation) ResetNotes() {
 	delete(m.clearedFields, redeemcode.FieldNotes)
 }
 
+// SetBatchID sets the "batch_id" field.
+func (m *RedeemCodeMutation) SetBatchID(i int64) {
+	m.batch = &i
+}
+
+// BatchID returns the value of the "batch_id" field in the mutation.
+func (m *RedeemCodeMutation) BatchID() (r int64, exists bool) {
+	v := m.batch
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBatchID returns the old "batch_id" field's value of the RedeemCode entity.
+// If the RedeemCode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeMutation) OldBatchID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBatchID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBatchID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBatchID: %w", err)
+	}
+	return oldValue.BatchID, nil
+}
+
+// ClearBatchID clears the value of the "batch_id" field.
+func (m *RedeemCodeMutation) ClearBatchID() {
+	m.batch = nil
+	m.clearedFields[redeemcode.FieldBatchID] = struct{}{}
+}
+
+// BatchIDCleared returns if the "batch_id" field was cleared in this mutation.
+func (m *RedeemCodeMutation) BatchIDCleared() bool {
+	_, ok := m.clearedFields[redeemcode.FieldBatchID]
+	return ok
+}
+
+// ResetBatchID resets all changes to the "batch_id" field.
+func (m *RedeemCodeMutation) ResetBatchID() {
+	m.batch = nil
+	delete(m.clearedFields, redeemcode.FieldBatchID)
+}
+
+// SetPurpose sets the "purpose" field.
+func (m *RedeemCodeMutation) SetPurpose(s string) {
+	m.purpose = &s
+}
+
+// Purpose returns the value of the "purpose" field in the mutation.
+func (m *RedeemCodeMutation) Purpose() (r string, exists bool) {
+	v := m.purpose
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPurpose returns the old "purpose" field's value of the RedeemCode entity.
+// If the RedeemCode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeMutation) OldPurpose(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPurpose is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPurpose requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPurpose: %w", err)
+	}
+	return oldValue.Purpose, nil
+}
+
+// ResetPurpose resets all changes to the "purpose" field.
+func (m *RedeemCodeMutation) ResetPurpose() {
+	m.purpose = nil
+}
+
+// SetSalesStatus sets the "sales_status" field.
+func (m *RedeemCodeMutation) SetSalesStatus(s string) {
+	m.sales_status = &s
+}
+
+// SalesStatus returns the value of the "sales_status" field in the mutation.
+func (m *RedeemCodeMutation) SalesStatus() (r string, exists bool) {
+	v := m.sales_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSalesStatus returns the old "sales_status" field's value of the RedeemCode entity.
+// If the RedeemCode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeMutation) OldSalesStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSalesStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSalesStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSalesStatus: %w", err)
+	}
+	return oldValue.SalesStatus, nil
+}
+
+// ResetSalesStatus resets all changes to the "sales_status" field.
+func (m *RedeemCodeMutation) ResetSalesStatus() {
+	m.sales_status = nil
+}
+
+// SetSoldAt sets the "sold_at" field.
+func (m *RedeemCodeMutation) SetSoldAt(t time.Time) {
+	m.sold_at = &t
+}
+
+// SoldAt returns the value of the "sold_at" field in the mutation.
+func (m *RedeemCodeMutation) SoldAt() (r time.Time, exists bool) {
+	v := m.sold_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSoldAt returns the old "sold_at" field's value of the RedeemCode entity.
+// If the RedeemCode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeMutation) OldSoldAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSoldAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSoldAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSoldAt: %w", err)
+	}
+	return oldValue.SoldAt, nil
+}
+
+// ClearSoldAt clears the value of the "sold_at" field.
+func (m *RedeemCodeMutation) ClearSoldAt() {
+	m.sold_at = nil
+	m.clearedFields[redeemcode.FieldSoldAt] = struct{}{}
+}
+
+// SoldAtCleared returns if the "sold_at" field was cleared in this mutation.
+func (m *RedeemCodeMutation) SoldAtCleared() bool {
+	_, ok := m.clearedFields[redeemcode.FieldSoldAt]
+	return ok
+}
+
+// ResetSoldAt resets all changes to the "sold_at" field.
+func (m *RedeemCodeMutation) ResetSoldAt() {
+	m.sold_at = nil
+	delete(m.clearedFields, redeemcode.FieldSoldAt)
+}
+
+// SetSoldToNote sets the "sold_to_note" field.
+func (m *RedeemCodeMutation) SetSoldToNote(s string) {
+	m.sold_to_note = &s
+}
+
+// SoldToNote returns the value of the "sold_to_note" field in the mutation.
+func (m *RedeemCodeMutation) SoldToNote() (r string, exists bool) {
+	v := m.sold_to_note
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSoldToNote returns the old "sold_to_note" field's value of the RedeemCode entity.
+// If the RedeemCode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeMutation) OldSoldToNote(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSoldToNote is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSoldToNote requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSoldToNote: %w", err)
+	}
+	return oldValue.SoldToNote, nil
+}
+
+// ClearSoldToNote clears the value of the "sold_to_note" field.
+func (m *RedeemCodeMutation) ClearSoldToNote() {
+	m.sold_to_note = nil
+	m.clearedFields[redeemcode.FieldSoldToNote] = struct{}{}
+}
+
+// SoldToNoteCleared returns if the "sold_to_note" field was cleared in this mutation.
+func (m *RedeemCodeMutation) SoldToNoteCleared() bool {
+	_, ok := m.clearedFields[redeemcode.FieldSoldToNote]
+	return ok
+}
+
+// ResetSoldToNote resets all changes to the "sold_to_note" field.
+func (m *RedeemCodeMutation) ResetSoldToNote() {
+	m.sold_to_note = nil
+	delete(m.clearedFields, redeemcode.FieldSoldToNote)
+}
+
+// SetExternalOrderNo sets the "external_order_no" field.
+func (m *RedeemCodeMutation) SetExternalOrderNo(s string) {
+	m.external_order_no = &s
+}
+
+// ExternalOrderNo returns the value of the "external_order_no" field in the mutation.
+func (m *RedeemCodeMutation) ExternalOrderNo() (r string, exists bool) {
+	v := m.external_order_no
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalOrderNo returns the old "external_order_no" field's value of the RedeemCode entity.
+// If the RedeemCode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeMutation) OldExternalOrderNo(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalOrderNo is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalOrderNo requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalOrderNo: %w", err)
+	}
+	return oldValue.ExternalOrderNo, nil
+}
+
+// ClearExternalOrderNo clears the value of the "external_order_no" field.
+func (m *RedeemCodeMutation) ClearExternalOrderNo() {
+	m.external_order_no = nil
+	m.clearedFields[redeemcode.FieldExternalOrderNo] = struct{}{}
+}
+
+// ExternalOrderNoCleared returns if the "external_order_no" field was cleared in this mutation.
+func (m *RedeemCodeMutation) ExternalOrderNoCleared() bool {
+	_, ok := m.clearedFields[redeemcode.FieldExternalOrderNo]
+	return ok
+}
+
+// ResetExternalOrderNo resets all changes to the "external_order_no" field.
+func (m *RedeemCodeMutation) ResetExternalOrderNo() {
+	m.external_order_no = nil
+	delete(m.clearedFields, redeemcode.FieldExternalOrderNo)
+}
+
+// SetExternalOrderURL sets the "external_order_url" field.
+func (m *RedeemCodeMutation) SetExternalOrderURL(s string) {
+	m.external_order_url = &s
+}
+
+// ExternalOrderURL returns the value of the "external_order_url" field in the mutation.
+func (m *RedeemCodeMutation) ExternalOrderURL() (r string, exists bool) {
+	v := m.external_order_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalOrderURL returns the old "external_order_url" field's value of the RedeemCode entity.
+// If the RedeemCode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeMutation) OldExternalOrderURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalOrderURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalOrderURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalOrderURL: %w", err)
+	}
+	return oldValue.ExternalOrderURL, nil
+}
+
+// ClearExternalOrderURL clears the value of the "external_order_url" field.
+func (m *RedeemCodeMutation) ClearExternalOrderURL() {
+	m.external_order_url = nil
+	m.clearedFields[redeemcode.FieldExternalOrderURL] = struct{}{}
+}
+
+// ExternalOrderURLCleared returns if the "external_order_url" field was cleared in this mutation.
+func (m *RedeemCodeMutation) ExternalOrderURLCleared() bool {
+	_, ok := m.clearedFields[redeemcode.FieldExternalOrderURL]
+	return ok
+}
+
+// ResetExternalOrderURL resets all changes to the "external_order_url" field.
+func (m *RedeemCodeMutation) ResetExternalOrderURL() {
+	m.external_order_url = nil
+	delete(m.clearedFields, redeemcode.FieldExternalOrderURL)
+}
+
+// SetInternalNotes sets the "internal_notes" field.
+func (m *RedeemCodeMutation) SetInternalNotes(s string) {
+	m.internal_notes = &s
+}
+
+// InternalNotes returns the value of the "internal_notes" field in the mutation.
+func (m *RedeemCodeMutation) InternalNotes() (r string, exists bool) {
+	v := m.internal_notes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldInternalNotes returns the old "internal_notes" field's value of the RedeemCode entity.
+// If the RedeemCode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeMutation) OldInternalNotes(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldInternalNotes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldInternalNotes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldInternalNotes: %w", err)
+	}
+	return oldValue.InternalNotes, nil
+}
+
+// ClearInternalNotes clears the value of the "internal_notes" field.
+func (m *RedeemCodeMutation) ClearInternalNotes() {
+	m.internal_notes = nil
+	m.clearedFields[redeemcode.FieldInternalNotes] = struct{}{}
+}
+
+// InternalNotesCleared returns if the "internal_notes" field was cleared in this mutation.
+func (m *RedeemCodeMutation) InternalNotesCleared() bool {
+	_, ok := m.clearedFields[redeemcode.FieldInternalNotes]
+	return ok
+}
+
+// ResetInternalNotes resets all changes to the "internal_notes" field.
+func (m *RedeemCodeMutation) ResetInternalNotes() {
+	m.internal_notes = nil
+	delete(m.clearedFields, redeemcode.FieldInternalNotes)
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (m *RedeemCodeMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
@@ -27857,6 +28235,42 @@ func (m *RedeemCodeMutation) OldCreatedAt(ctx context.Context) (v time.Time, err
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *RedeemCodeMutation) ResetCreatedAt() {
 	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RedeemCodeMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RedeemCodeMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RedeemCode entity.
+// If the RedeemCode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RedeemCodeMutation) ResetUpdatedAt() {
+	m.updated_at = nil
 }
 
 // SetGroupID sets the "group_id" field.
@@ -28031,6 +28445,33 @@ func (m *RedeemCodeMutation) ResetGroup() {
 	m.clearedgroup = false
 }
 
+// ClearBatch clears the "batch" edge to the RedeemCodeBatch entity.
+func (m *RedeemCodeMutation) ClearBatch() {
+	m.clearedbatch = true
+	m.clearedFields[redeemcode.FieldBatchID] = struct{}{}
+}
+
+// BatchCleared reports if the "batch" edge to the RedeemCodeBatch entity was cleared.
+func (m *RedeemCodeMutation) BatchCleared() bool {
+	return m.BatchIDCleared() || m.clearedbatch
+}
+
+// BatchIDs returns the "batch" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// BatchID instead. It exists only for internal usage by the builders.
+func (m *RedeemCodeMutation) BatchIDs() (ids []int64) {
+	if id := m.batch; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetBatch resets all changes to the "batch" edge.
+func (m *RedeemCodeMutation) ResetBatch() {
+	m.batch = nil
+	m.clearedbatch = false
+}
+
 // Where appends a list predicates to the RedeemCodeMutation builder.
 func (m *RedeemCodeMutation) Where(ps ...predicate.RedeemCode) {
 	m.predicates = append(m.predicates, ps...)
@@ -28065,7 +28506,7 @@ func (m *RedeemCodeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RedeemCodeMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 19)
 	if m.code != nil {
 		fields = append(fields, redeemcode.FieldCode)
 	}
@@ -28087,8 +28528,35 @@ func (m *RedeemCodeMutation) Fields() []string {
 	if m.notes != nil {
 		fields = append(fields, redeemcode.FieldNotes)
 	}
+	if m.batch != nil {
+		fields = append(fields, redeemcode.FieldBatchID)
+	}
+	if m.purpose != nil {
+		fields = append(fields, redeemcode.FieldPurpose)
+	}
+	if m.sales_status != nil {
+		fields = append(fields, redeemcode.FieldSalesStatus)
+	}
+	if m.sold_at != nil {
+		fields = append(fields, redeemcode.FieldSoldAt)
+	}
+	if m.sold_to_note != nil {
+		fields = append(fields, redeemcode.FieldSoldToNote)
+	}
+	if m.external_order_no != nil {
+		fields = append(fields, redeemcode.FieldExternalOrderNo)
+	}
+	if m.external_order_url != nil {
+		fields = append(fields, redeemcode.FieldExternalOrderURL)
+	}
+	if m.internal_notes != nil {
+		fields = append(fields, redeemcode.FieldInternalNotes)
+	}
 	if m.created_at != nil {
 		fields = append(fields, redeemcode.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, redeemcode.FieldUpdatedAt)
 	}
 	if m.group != nil {
 		fields = append(fields, redeemcode.FieldGroupID)
@@ -28118,8 +28586,26 @@ func (m *RedeemCodeMutation) Field(name string) (ent.Value, bool) {
 		return m.UsedAt()
 	case redeemcode.FieldNotes:
 		return m.Notes()
+	case redeemcode.FieldBatchID:
+		return m.BatchID()
+	case redeemcode.FieldPurpose:
+		return m.Purpose()
+	case redeemcode.FieldSalesStatus:
+		return m.SalesStatus()
+	case redeemcode.FieldSoldAt:
+		return m.SoldAt()
+	case redeemcode.FieldSoldToNote:
+		return m.SoldToNote()
+	case redeemcode.FieldExternalOrderNo:
+		return m.ExternalOrderNo()
+	case redeemcode.FieldExternalOrderURL:
+		return m.ExternalOrderURL()
+	case redeemcode.FieldInternalNotes:
+		return m.InternalNotes()
 	case redeemcode.FieldCreatedAt:
 		return m.CreatedAt()
+	case redeemcode.FieldUpdatedAt:
+		return m.UpdatedAt()
 	case redeemcode.FieldGroupID:
 		return m.GroupID()
 	case redeemcode.FieldValidityDays:
@@ -28147,8 +28633,26 @@ func (m *RedeemCodeMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldUsedAt(ctx)
 	case redeemcode.FieldNotes:
 		return m.OldNotes(ctx)
+	case redeemcode.FieldBatchID:
+		return m.OldBatchID(ctx)
+	case redeemcode.FieldPurpose:
+		return m.OldPurpose(ctx)
+	case redeemcode.FieldSalesStatus:
+		return m.OldSalesStatus(ctx)
+	case redeemcode.FieldSoldAt:
+		return m.OldSoldAt(ctx)
+	case redeemcode.FieldSoldToNote:
+		return m.OldSoldToNote(ctx)
+	case redeemcode.FieldExternalOrderNo:
+		return m.OldExternalOrderNo(ctx)
+	case redeemcode.FieldExternalOrderURL:
+		return m.OldExternalOrderURL(ctx)
+	case redeemcode.FieldInternalNotes:
+		return m.OldInternalNotes(ctx)
 	case redeemcode.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case redeemcode.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
 	case redeemcode.FieldGroupID:
 		return m.OldGroupID(ctx)
 	case redeemcode.FieldValidityDays:
@@ -28211,12 +28715,75 @@ func (m *RedeemCodeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetNotes(v)
 		return nil
+	case redeemcode.FieldBatchID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBatchID(v)
+		return nil
+	case redeemcode.FieldPurpose:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPurpose(v)
+		return nil
+	case redeemcode.FieldSalesStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSalesStatus(v)
+		return nil
+	case redeemcode.FieldSoldAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSoldAt(v)
+		return nil
+	case redeemcode.FieldSoldToNote:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSoldToNote(v)
+		return nil
+	case redeemcode.FieldExternalOrderNo:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalOrderNo(v)
+		return nil
+	case redeemcode.FieldExternalOrderURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalOrderURL(v)
+		return nil
+	case redeemcode.FieldInternalNotes:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetInternalNotes(v)
+		return nil
 	case redeemcode.FieldCreatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
+		return nil
+	case redeemcode.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
 		return nil
 	case redeemcode.FieldGroupID:
 		v, ok := value.(int64)
@@ -28298,6 +28865,24 @@ func (m *RedeemCodeMutation) ClearedFields() []string {
 	if m.FieldCleared(redeemcode.FieldNotes) {
 		fields = append(fields, redeemcode.FieldNotes)
 	}
+	if m.FieldCleared(redeemcode.FieldBatchID) {
+		fields = append(fields, redeemcode.FieldBatchID)
+	}
+	if m.FieldCleared(redeemcode.FieldSoldAt) {
+		fields = append(fields, redeemcode.FieldSoldAt)
+	}
+	if m.FieldCleared(redeemcode.FieldSoldToNote) {
+		fields = append(fields, redeemcode.FieldSoldToNote)
+	}
+	if m.FieldCleared(redeemcode.FieldExternalOrderNo) {
+		fields = append(fields, redeemcode.FieldExternalOrderNo)
+	}
+	if m.FieldCleared(redeemcode.FieldExternalOrderURL) {
+		fields = append(fields, redeemcode.FieldExternalOrderURL)
+	}
+	if m.FieldCleared(redeemcode.FieldInternalNotes) {
+		fields = append(fields, redeemcode.FieldInternalNotes)
+	}
 	if m.FieldCleared(redeemcode.FieldGroupID) {
 		fields = append(fields, redeemcode.FieldGroupID)
 	}
@@ -28323,6 +28908,24 @@ func (m *RedeemCodeMutation) ClearField(name string) error {
 		return nil
 	case redeemcode.FieldNotes:
 		m.ClearNotes()
+		return nil
+	case redeemcode.FieldBatchID:
+		m.ClearBatchID()
+		return nil
+	case redeemcode.FieldSoldAt:
+		m.ClearSoldAt()
+		return nil
+	case redeemcode.FieldSoldToNote:
+		m.ClearSoldToNote()
+		return nil
+	case redeemcode.FieldExternalOrderNo:
+		m.ClearExternalOrderNo()
+		return nil
+	case redeemcode.FieldExternalOrderURL:
+		m.ClearExternalOrderURL()
+		return nil
+	case redeemcode.FieldInternalNotes:
+		m.ClearInternalNotes()
 		return nil
 	case redeemcode.FieldGroupID:
 		m.ClearGroupID()
@@ -28356,8 +28959,35 @@ func (m *RedeemCodeMutation) ResetField(name string) error {
 	case redeemcode.FieldNotes:
 		m.ResetNotes()
 		return nil
+	case redeemcode.FieldBatchID:
+		m.ResetBatchID()
+		return nil
+	case redeemcode.FieldPurpose:
+		m.ResetPurpose()
+		return nil
+	case redeemcode.FieldSalesStatus:
+		m.ResetSalesStatus()
+		return nil
+	case redeemcode.FieldSoldAt:
+		m.ResetSoldAt()
+		return nil
+	case redeemcode.FieldSoldToNote:
+		m.ResetSoldToNote()
+		return nil
+	case redeemcode.FieldExternalOrderNo:
+		m.ResetExternalOrderNo()
+		return nil
+	case redeemcode.FieldExternalOrderURL:
+		m.ResetExternalOrderURL()
+		return nil
+	case redeemcode.FieldInternalNotes:
+		m.ResetInternalNotes()
+		return nil
 	case redeemcode.FieldCreatedAt:
 		m.ResetCreatedAt()
+		return nil
+	case redeemcode.FieldUpdatedAt:
+		m.ResetUpdatedAt()
 		return nil
 	case redeemcode.FieldGroupID:
 		m.ResetGroupID()
@@ -28371,12 +29001,15 @@ func (m *RedeemCodeMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RedeemCodeMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.user != nil {
 		edges = append(edges, redeemcode.EdgeUser)
 	}
 	if m.group != nil {
 		edges = append(edges, redeemcode.EdgeGroup)
+	}
+	if m.batch != nil {
+		edges = append(edges, redeemcode.EdgeBatch)
 	}
 	return edges
 }
@@ -28393,13 +29026,17 @@ func (m *RedeemCodeMutation) AddedIDs(name string) []ent.Value {
 		if id := m.group; id != nil {
 			return []ent.Value{*id}
 		}
+	case redeemcode.EdgeBatch:
+		if id := m.batch; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RedeemCodeMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
@@ -28411,12 +29048,15 @@ func (m *RedeemCodeMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RedeemCodeMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.cleareduser {
 		edges = append(edges, redeemcode.EdgeUser)
 	}
 	if m.clearedgroup {
 		edges = append(edges, redeemcode.EdgeGroup)
+	}
+	if m.clearedbatch {
+		edges = append(edges, redeemcode.EdgeBatch)
 	}
 	return edges
 }
@@ -28429,6 +29069,8 @@ func (m *RedeemCodeMutation) EdgeCleared(name string) bool {
 		return m.cleareduser
 	case redeemcode.EdgeGroup:
 		return m.clearedgroup
+	case redeemcode.EdgeBatch:
+		return m.clearedbatch
 	}
 	return false
 }
@@ -28442,6 +29084,9 @@ func (m *RedeemCodeMutation) ClearEdge(name string) error {
 		return nil
 	case redeemcode.EdgeGroup:
 		m.ClearGroup()
+		return nil
+	case redeemcode.EdgeBatch:
+		m.ClearBatch()
 		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode unique edge %s", name)
@@ -28457,8 +29102,1071 @@ func (m *RedeemCodeMutation) ResetEdge(name string) error {
 	case redeemcode.EdgeGroup:
 		m.ResetGroup()
 		return nil
+	case redeemcode.EdgeBatch:
+		m.ResetBatch()
+		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode edge %s", name)
+}
+
+// RedeemCodeBatchMutation represents an operation that mutates the RedeemCodeBatch nodes in the graph.
+type RedeemCodeBatchMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *int64
+	name                *string
+	purpose             *string
+	face_value          *float64
+	addface_value       *float64
+	currency            *string
+	sales_channel       *string
+	external_url        *string
+	notes               *string
+	created_at          *time.Time
+	updated_at          *time.Time
+	clearedFields       map[string]struct{}
+	redeem_codes        map[int64]struct{}
+	removedredeem_codes map[int64]struct{}
+	clearedredeem_codes bool
+	creator             *int64
+	clearedcreator      bool
+	done                bool
+	oldValue            func(context.Context) (*RedeemCodeBatch, error)
+	predicates          []predicate.RedeemCodeBatch
+}
+
+var _ ent.Mutation = (*RedeemCodeBatchMutation)(nil)
+
+// redeemcodebatchOption allows management of the mutation configuration using functional options.
+type redeemcodebatchOption func(*RedeemCodeBatchMutation)
+
+// newRedeemCodeBatchMutation creates new mutation for the RedeemCodeBatch entity.
+func newRedeemCodeBatchMutation(c config, op Op, opts ...redeemcodebatchOption) *RedeemCodeBatchMutation {
+	m := &RedeemCodeBatchMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRedeemCodeBatch,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRedeemCodeBatchID sets the ID field of the mutation.
+func withRedeemCodeBatchID(id int64) redeemcodebatchOption {
+	return func(m *RedeemCodeBatchMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RedeemCodeBatch
+		)
+		m.oldValue = func(ctx context.Context) (*RedeemCodeBatch, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RedeemCodeBatch.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRedeemCodeBatch sets the old RedeemCodeBatch of the mutation.
+func withRedeemCodeBatch(node *RedeemCodeBatch) redeemcodebatchOption {
+	return func(m *RedeemCodeBatchMutation) {
+		m.oldValue = func(context.Context) (*RedeemCodeBatch, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RedeemCodeBatchMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RedeemCodeBatchMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RedeemCodeBatchMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RedeemCodeBatchMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RedeemCodeBatch.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetName sets the "name" field.
+func (m *RedeemCodeBatchMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *RedeemCodeBatchMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the RedeemCodeBatch entity.
+// If the RedeemCodeBatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeBatchMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *RedeemCodeBatchMutation) ResetName() {
+	m.name = nil
+}
+
+// SetPurpose sets the "purpose" field.
+func (m *RedeemCodeBatchMutation) SetPurpose(s string) {
+	m.purpose = &s
+}
+
+// Purpose returns the value of the "purpose" field in the mutation.
+func (m *RedeemCodeBatchMutation) Purpose() (r string, exists bool) {
+	v := m.purpose
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPurpose returns the old "purpose" field's value of the RedeemCodeBatch entity.
+// If the RedeemCodeBatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeBatchMutation) OldPurpose(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPurpose is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPurpose requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPurpose: %w", err)
+	}
+	return oldValue.Purpose, nil
+}
+
+// ResetPurpose resets all changes to the "purpose" field.
+func (m *RedeemCodeBatchMutation) ResetPurpose() {
+	m.purpose = nil
+}
+
+// SetFaceValue sets the "face_value" field.
+func (m *RedeemCodeBatchMutation) SetFaceValue(f float64) {
+	m.face_value = &f
+	m.addface_value = nil
+}
+
+// FaceValue returns the value of the "face_value" field in the mutation.
+func (m *RedeemCodeBatchMutation) FaceValue() (r float64, exists bool) {
+	v := m.face_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFaceValue returns the old "face_value" field's value of the RedeemCodeBatch entity.
+// If the RedeemCodeBatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeBatchMutation) OldFaceValue(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFaceValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFaceValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFaceValue: %w", err)
+	}
+	return oldValue.FaceValue, nil
+}
+
+// AddFaceValue adds f to the "face_value" field.
+func (m *RedeemCodeBatchMutation) AddFaceValue(f float64) {
+	if m.addface_value != nil {
+		*m.addface_value += f
+	} else {
+		m.addface_value = &f
+	}
+}
+
+// AddedFaceValue returns the value that was added to the "face_value" field in this mutation.
+func (m *RedeemCodeBatchMutation) AddedFaceValue() (r float64, exists bool) {
+	v := m.addface_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetFaceValue resets all changes to the "face_value" field.
+func (m *RedeemCodeBatchMutation) ResetFaceValue() {
+	m.face_value = nil
+	m.addface_value = nil
+}
+
+// SetCurrency sets the "currency" field.
+func (m *RedeemCodeBatchMutation) SetCurrency(s string) {
+	m.currency = &s
+}
+
+// Currency returns the value of the "currency" field in the mutation.
+func (m *RedeemCodeBatchMutation) Currency() (r string, exists bool) {
+	v := m.currency
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCurrency returns the old "currency" field's value of the RedeemCodeBatch entity.
+// If the RedeemCodeBatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeBatchMutation) OldCurrency(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCurrency is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCurrency requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCurrency: %w", err)
+	}
+	return oldValue.Currency, nil
+}
+
+// ResetCurrency resets all changes to the "currency" field.
+func (m *RedeemCodeBatchMutation) ResetCurrency() {
+	m.currency = nil
+}
+
+// SetSalesChannel sets the "sales_channel" field.
+func (m *RedeemCodeBatchMutation) SetSalesChannel(s string) {
+	m.sales_channel = &s
+}
+
+// SalesChannel returns the value of the "sales_channel" field in the mutation.
+func (m *RedeemCodeBatchMutation) SalesChannel() (r string, exists bool) {
+	v := m.sales_channel
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSalesChannel returns the old "sales_channel" field's value of the RedeemCodeBatch entity.
+// If the RedeemCodeBatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeBatchMutation) OldSalesChannel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSalesChannel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSalesChannel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSalesChannel: %w", err)
+	}
+	return oldValue.SalesChannel, nil
+}
+
+// ResetSalesChannel resets all changes to the "sales_channel" field.
+func (m *RedeemCodeBatchMutation) ResetSalesChannel() {
+	m.sales_channel = nil
+}
+
+// SetExternalURL sets the "external_url" field.
+func (m *RedeemCodeBatchMutation) SetExternalURL(s string) {
+	m.external_url = &s
+}
+
+// ExternalURL returns the value of the "external_url" field in the mutation.
+func (m *RedeemCodeBatchMutation) ExternalURL() (r string, exists bool) {
+	v := m.external_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalURL returns the old "external_url" field's value of the RedeemCodeBatch entity.
+// If the RedeemCodeBatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeBatchMutation) OldExternalURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalURL: %w", err)
+	}
+	return oldValue.ExternalURL, nil
+}
+
+// ClearExternalURL clears the value of the "external_url" field.
+func (m *RedeemCodeBatchMutation) ClearExternalURL() {
+	m.external_url = nil
+	m.clearedFields[redeemcodebatch.FieldExternalURL] = struct{}{}
+}
+
+// ExternalURLCleared returns if the "external_url" field was cleared in this mutation.
+func (m *RedeemCodeBatchMutation) ExternalURLCleared() bool {
+	_, ok := m.clearedFields[redeemcodebatch.FieldExternalURL]
+	return ok
+}
+
+// ResetExternalURL resets all changes to the "external_url" field.
+func (m *RedeemCodeBatchMutation) ResetExternalURL() {
+	m.external_url = nil
+	delete(m.clearedFields, redeemcodebatch.FieldExternalURL)
+}
+
+// SetNotes sets the "notes" field.
+func (m *RedeemCodeBatchMutation) SetNotes(s string) {
+	m.notes = &s
+}
+
+// Notes returns the value of the "notes" field in the mutation.
+func (m *RedeemCodeBatchMutation) Notes() (r string, exists bool) {
+	v := m.notes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNotes returns the old "notes" field's value of the RedeemCodeBatch entity.
+// If the RedeemCodeBatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeBatchMutation) OldNotes(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNotes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNotes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNotes: %w", err)
+	}
+	return oldValue.Notes, nil
+}
+
+// ClearNotes clears the value of the "notes" field.
+func (m *RedeemCodeBatchMutation) ClearNotes() {
+	m.notes = nil
+	m.clearedFields[redeemcodebatch.FieldNotes] = struct{}{}
+}
+
+// NotesCleared returns if the "notes" field was cleared in this mutation.
+func (m *RedeemCodeBatchMutation) NotesCleared() bool {
+	_, ok := m.clearedFields[redeemcodebatch.FieldNotes]
+	return ok
+}
+
+// ResetNotes resets all changes to the "notes" field.
+func (m *RedeemCodeBatchMutation) ResetNotes() {
+	m.notes = nil
+	delete(m.clearedFields, redeemcodebatch.FieldNotes)
+}
+
+// SetCreatedBy sets the "created_by" field.
+func (m *RedeemCodeBatchMutation) SetCreatedBy(i int64) {
+	m.creator = &i
+}
+
+// CreatedBy returns the value of the "created_by" field in the mutation.
+func (m *RedeemCodeBatchMutation) CreatedBy() (r int64, exists bool) {
+	v := m.creator
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedBy returns the old "created_by" field's value of the RedeemCodeBatch entity.
+// If the RedeemCodeBatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeBatchMutation) OldCreatedBy(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedBy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedBy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedBy: %w", err)
+	}
+	return oldValue.CreatedBy, nil
+}
+
+// ClearCreatedBy clears the value of the "created_by" field.
+func (m *RedeemCodeBatchMutation) ClearCreatedBy() {
+	m.creator = nil
+	m.clearedFields[redeemcodebatch.FieldCreatedBy] = struct{}{}
+}
+
+// CreatedByCleared returns if the "created_by" field was cleared in this mutation.
+func (m *RedeemCodeBatchMutation) CreatedByCleared() bool {
+	_, ok := m.clearedFields[redeemcodebatch.FieldCreatedBy]
+	return ok
+}
+
+// ResetCreatedBy resets all changes to the "created_by" field.
+func (m *RedeemCodeBatchMutation) ResetCreatedBy() {
+	m.creator = nil
+	delete(m.clearedFields, redeemcodebatch.FieldCreatedBy)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RedeemCodeBatchMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RedeemCodeBatchMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RedeemCodeBatch entity.
+// If the RedeemCodeBatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeBatchMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RedeemCodeBatchMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RedeemCodeBatchMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RedeemCodeBatchMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RedeemCodeBatch entity.
+// If the RedeemCodeBatch object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeBatchMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RedeemCodeBatchMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// AddRedeemCodeIDs adds the "redeem_codes" edge to the RedeemCode entity by ids.
+func (m *RedeemCodeBatchMutation) AddRedeemCodeIDs(ids ...int64) {
+	if m.redeem_codes == nil {
+		m.redeem_codes = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.redeem_codes[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRedeemCodes clears the "redeem_codes" edge to the RedeemCode entity.
+func (m *RedeemCodeBatchMutation) ClearRedeemCodes() {
+	m.clearedredeem_codes = true
+}
+
+// RedeemCodesCleared reports if the "redeem_codes" edge to the RedeemCode entity was cleared.
+func (m *RedeemCodeBatchMutation) RedeemCodesCleared() bool {
+	return m.clearedredeem_codes
+}
+
+// RemoveRedeemCodeIDs removes the "redeem_codes" edge to the RedeemCode entity by IDs.
+func (m *RedeemCodeBatchMutation) RemoveRedeemCodeIDs(ids ...int64) {
+	if m.removedredeem_codes == nil {
+		m.removedredeem_codes = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.redeem_codes, ids[i])
+		m.removedredeem_codes[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRedeemCodes returns the removed IDs of the "redeem_codes" edge to the RedeemCode entity.
+func (m *RedeemCodeBatchMutation) RemovedRedeemCodesIDs() (ids []int64) {
+	for id := range m.removedredeem_codes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RedeemCodesIDs returns the "redeem_codes" edge IDs in the mutation.
+func (m *RedeemCodeBatchMutation) RedeemCodesIDs() (ids []int64) {
+	for id := range m.redeem_codes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRedeemCodes resets all changes to the "redeem_codes" edge.
+func (m *RedeemCodeBatchMutation) ResetRedeemCodes() {
+	m.redeem_codes = nil
+	m.clearedredeem_codes = false
+	m.removedredeem_codes = nil
+}
+
+// SetCreatorID sets the "creator" edge to the User entity by id.
+func (m *RedeemCodeBatchMutation) SetCreatorID(id int64) {
+	m.creator = &id
+}
+
+// ClearCreator clears the "creator" edge to the User entity.
+func (m *RedeemCodeBatchMutation) ClearCreator() {
+	m.clearedcreator = true
+	m.clearedFields[redeemcodebatch.FieldCreatedBy] = struct{}{}
+}
+
+// CreatorCleared reports if the "creator" edge to the User entity was cleared.
+func (m *RedeemCodeBatchMutation) CreatorCleared() bool {
+	return m.CreatedByCleared() || m.clearedcreator
+}
+
+// CreatorID returns the "creator" edge ID in the mutation.
+func (m *RedeemCodeBatchMutation) CreatorID() (id int64, exists bool) {
+	if m.creator != nil {
+		return *m.creator, true
+	}
+	return
+}
+
+// CreatorIDs returns the "creator" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// CreatorID instead. It exists only for internal usage by the builders.
+func (m *RedeemCodeBatchMutation) CreatorIDs() (ids []int64) {
+	if id := m.creator; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetCreator resets all changes to the "creator" edge.
+func (m *RedeemCodeBatchMutation) ResetCreator() {
+	m.creator = nil
+	m.clearedcreator = false
+}
+
+// Where appends a list predicates to the RedeemCodeBatchMutation builder.
+func (m *RedeemCodeBatchMutation) Where(ps ...predicate.RedeemCodeBatch) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RedeemCodeBatchMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RedeemCodeBatchMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RedeemCodeBatch, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RedeemCodeBatchMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RedeemCodeBatchMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RedeemCodeBatch).
+func (m *RedeemCodeBatchMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RedeemCodeBatchMutation) Fields() []string {
+	fields := make([]string, 0, 10)
+	if m.name != nil {
+		fields = append(fields, redeemcodebatch.FieldName)
+	}
+	if m.purpose != nil {
+		fields = append(fields, redeemcodebatch.FieldPurpose)
+	}
+	if m.face_value != nil {
+		fields = append(fields, redeemcodebatch.FieldFaceValue)
+	}
+	if m.currency != nil {
+		fields = append(fields, redeemcodebatch.FieldCurrency)
+	}
+	if m.sales_channel != nil {
+		fields = append(fields, redeemcodebatch.FieldSalesChannel)
+	}
+	if m.external_url != nil {
+		fields = append(fields, redeemcodebatch.FieldExternalURL)
+	}
+	if m.notes != nil {
+		fields = append(fields, redeemcodebatch.FieldNotes)
+	}
+	if m.creator != nil {
+		fields = append(fields, redeemcodebatch.FieldCreatedBy)
+	}
+	if m.created_at != nil {
+		fields = append(fields, redeemcodebatch.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, redeemcodebatch.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RedeemCodeBatchMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case redeemcodebatch.FieldName:
+		return m.Name()
+	case redeemcodebatch.FieldPurpose:
+		return m.Purpose()
+	case redeemcodebatch.FieldFaceValue:
+		return m.FaceValue()
+	case redeemcodebatch.FieldCurrency:
+		return m.Currency()
+	case redeemcodebatch.FieldSalesChannel:
+		return m.SalesChannel()
+	case redeemcodebatch.FieldExternalURL:
+		return m.ExternalURL()
+	case redeemcodebatch.FieldNotes:
+		return m.Notes()
+	case redeemcodebatch.FieldCreatedBy:
+		return m.CreatedBy()
+	case redeemcodebatch.FieldCreatedAt:
+		return m.CreatedAt()
+	case redeemcodebatch.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RedeemCodeBatchMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case redeemcodebatch.FieldName:
+		return m.OldName(ctx)
+	case redeemcodebatch.FieldPurpose:
+		return m.OldPurpose(ctx)
+	case redeemcodebatch.FieldFaceValue:
+		return m.OldFaceValue(ctx)
+	case redeemcodebatch.FieldCurrency:
+		return m.OldCurrency(ctx)
+	case redeemcodebatch.FieldSalesChannel:
+		return m.OldSalesChannel(ctx)
+	case redeemcodebatch.FieldExternalURL:
+		return m.OldExternalURL(ctx)
+	case redeemcodebatch.FieldNotes:
+		return m.OldNotes(ctx)
+	case redeemcodebatch.FieldCreatedBy:
+		return m.OldCreatedBy(ctx)
+	case redeemcodebatch.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case redeemcodebatch.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown RedeemCodeBatch field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RedeemCodeBatchMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case redeemcodebatch.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case redeemcodebatch.FieldPurpose:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPurpose(v)
+		return nil
+	case redeemcodebatch.FieldFaceValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFaceValue(v)
+		return nil
+	case redeemcodebatch.FieldCurrency:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCurrency(v)
+		return nil
+	case redeemcodebatch.FieldSalesChannel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSalesChannel(v)
+		return nil
+	case redeemcodebatch.FieldExternalURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalURL(v)
+		return nil
+	case redeemcodebatch.FieldNotes:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNotes(v)
+		return nil
+	case redeemcodebatch.FieldCreatedBy:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedBy(v)
+		return nil
+	case redeemcodebatch.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case redeemcodebatch.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RedeemCodeBatch field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RedeemCodeBatchMutation) AddedFields() []string {
+	var fields []string
+	if m.addface_value != nil {
+		fields = append(fields, redeemcodebatch.FieldFaceValue)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RedeemCodeBatchMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case redeemcodebatch.FieldFaceValue:
+		return m.AddedFaceValue()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RedeemCodeBatchMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case redeemcodebatch.FieldFaceValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddFaceValue(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RedeemCodeBatch numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RedeemCodeBatchMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(redeemcodebatch.FieldExternalURL) {
+		fields = append(fields, redeemcodebatch.FieldExternalURL)
+	}
+	if m.FieldCleared(redeemcodebatch.FieldNotes) {
+		fields = append(fields, redeemcodebatch.FieldNotes)
+	}
+	if m.FieldCleared(redeemcodebatch.FieldCreatedBy) {
+		fields = append(fields, redeemcodebatch.FieldCreatedBy)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RedeemCodeBatchMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RedeemCodeBatchMutation) ClearField(name string) error {
+	switch name {
+	case redeemcodebatch.FieldExternalURL:
+		m.ClearExternalURL()
+		return nil
+	case redeemcodebatch.FieldNotes:
+		m.ClearNotes()
+		return nil
+	case redeemcodebatch.FieldCreatedBy:
+		m.ClearCreatedBy()
+		return nil
+	}
+	return fmt.Errorf("unknown RedeemCodeBatch nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RedeemCodeBatchMutation) ResetField(name string) error {
+	switch name {
+	case redeemcodebatch.FieldName:
+		m.ResetName()
+		return nil
+	case redeemcodebatch.FieldPurpose:
+		m.ResetPurpose()
+		return nil
+	case redeemcodebatch.FieldFaceValue:
+		m.ResetFaceValue()
+		return nil
+	case redeemcodebatch.FieldCurrency:
+		m.ResetCurrency()
+		return nil
+	case redeemcodebatch.FieldSalesChannel:
+		m.ResetSalesChannel()
+		return nil
+	case redeemcodebatch.FieldExternalURL:
+		m.ResetExternalURL()
+		return nil
+	case redeemcodebatch.FieldNotes:
+		m.ResetNotes()
+		return nil
+	case redeemcodebatch.FieldCreatedBy:
+		m.ResetCreatedBy()
+		return nil
+	case redeemcodebatch.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case redeemcodebatch.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown RedeemCodeBatch field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RedeemCodeBatchMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.redeem_codes != nil {
+		edges = append(edges, redeemcodebatch.EdgeRedeemCodes)
+	}
+	if m.creator != nil {
+		edges = append(edges, redeemcodebatch.EdgeCreator)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RedeemCodeBatchMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case redeemcodebatch.EdgeRedeemCodes:
+		ids := make([]ent.Value, 0, len(m.redeem_codes))
+		for id := range m.redeem_codes {
+			ids = append(ids, id)
+		}
+		return ids
+	case redeemcodebatch.EdgeCreator:
+		if id := m.creator; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RedeemCodeBatchMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedredeem_codes != nil {
+		edges = append(edges, redeemcodebatch.EdgeRedeemCodes)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RedeemCodeBatchMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case redeemcodebatch.EdgeRedeemCodes:
+		ids := make([]ent.Value, 0, len(m.removedredeem_codes))
+		for id := range m.removedredeem_codes {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RedeemCodeBatchMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedredeem_codes {
+		edges = append(edges, redeemcodebatch.EdgeRedeemCodes)
+	}
+	if m.clearedcreator {
+		edges = append(edges, redeemcodebatch.EdgeCreator)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RedeemCodeBatchMutation) EdgeCleared(name string) bool {
+	switch name {
+	case redeemcodebatch.EdgeRedeemCodes:
+		return m.clearedredeem_codes
+	case redeemcodebatch.EdgeCreator:
+		return m.clearedcreator
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RedeemCodeBatchMutation) ClearEdge(name string) error {
+	switch name {
+	case redeemcodebatch.EdgeCreator:
+		m.ClearCreator()
+		return nil
+	}
+	return fmt.Errorf("unknown RedeemCodeBatch unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RedeemCodeBatchMutation) ResetEdge(name string) error {
+	switch name {
+	case redeemcodebatch.EdgeRedeemCodes:
+		m.ResetRedeemCodes()
+		return nil
+	case redeemcodebatch.EdgeCreator:
+		m.ResetCreator()
+		return nil
+	}
+	return fmt.Errorf("unknown RedeemCodeBatch edge %s", name)
 }
 
 // SecuritySecretMutation represents an operation that mutates the SecuritySecret nodes in the graph.
@@ -36749,6 +38457,9 @@ type UserMutation struct {
 	redeem_codes                    map[int64]struct{}
 	removedredeem_codes             map[int64]struct{}
 	clearedredeem_codes             bool
+	redeem_code_batches             map[int64]struct{}
+	removedredeem_code_batches      map[int64]struct{}
+	clearedredeem_code_batches      bool
 	subscriptions                   map[int64]struct{}
 	removedsubscriptions            map[int64]struct{}
 	clearedsubscriptions            bool
@@ -38088,6 +39799,60 @@ func (m *UserMutation) ResetRedeemCodes() {
 	m.redeem_codes = nil
 	m.clearedredeem_codes = false
 	m.removedredeem_codes = nil
+}
+
+// AddRedeemCodeBatchIDs adds the "redeem_code_batches" edge to the RedeemCodeBatch entity by ids.
+func (m *UserMutation) AddRedeemCodeBatchIDs(ids ...int64) {
+	if m.redeem_code_batches == nil {
+		m.redeem_code_batches = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.redeem_code_batches[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRedeemCodeBatches clears the "redeem_code_batches" edge to the RedeemCodeBatch entity.
+func (m *UserMutation) ClearRedeemCodeBatches() {
+	m.clearedredeem_code_batches = true
+}
+
+// RedeemCodeBatchesCleared reports if the "redeem_code_batches" edge to the RedeemCodeBatch entity was cleared.
+func (m *UserMutation) RedeemCodeBatchesCleared() bool {
+	return m.clearedredeem_code_batches
+}
+
+// RemoveRedeemCodeBatchIDs removes the "redeem_code_batches" edge to the RedeemCodeBatch entity by IDs.
+func (m *UserMutation) RemoveRedeemCodeBatchIDs(ids ...int64) {
+	if m.removedredeem_code_batches == nil {
+		m.removedredeem_code_batches = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.redeem_code_batches, ids[i])
+		m.removedredeem_code_batches[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRedeemCodeBatches returns the removed IDs of the "redeem_code_batches" edge to the RedeemCodeBatch entity.
+func (m *UserMutation) RemovedRedeemCodeBatchesIDs() (ids []int64) {
+	for id := range m.removedredeem_code_batches {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RedeemCodeBatchesIDs returns the "redeem_code_batches" edge IDs in the mutation.
+func (m *UserMutation) RedeemCodeBatchesIDs() (ids []int64) {
+	for id := range m.redeem_code_batches {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRedeemCodeBatches resets all changes to the "redeem_code_batches" edge.
+func (m *UserMutation) ResetRedeemCodeBatches() {
+	m.redeem_code_batches = nil
+	m.clearedredeem_code_batches = false
+	m.removedredeem_code_batches = nil
 }
 
 // AddSubscriptionIDs adds the "subscriptions" edge to the UserSubscription entity by ids.
@@ -39497,12 +41262,15 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 16)
+	edges := make([]string, 0, 17)
 	if m.api_keys != nil {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
 	if m.redeem_codes != nil {
 		edges = append(edges, user.EdgeRedeemCodes)
+	}
+	if m.redeem_code_batches != nil {
+		edges = append(edges, user.EdgeRedeemCodeBatches)
 	}
 	if m.subscriptions != nil {
 		edges = append(edges, user.EdgeSubscriptions)
@@ -39562,6 +41330,12 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 	case user.EdgeRedeemCodes:
 		ids := make([]ent.Value, 0, len(m.redeem_codes))
 		for id := range m.redeem_codes {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeRedeemCodeBatches:
+		ids := make([]ent.Value, 0, len(m.redeem_code_batches))
+		for id := range m.redeem_code_batches {
 			ids = append(ids, id)
 		}
 		return ids
@@ -39655,12 +41429,15 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 16)
+	edges := make([]string, 0, 17)
 	if m.removedapi_keys != nil {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
 	if m.removedredeem_codes != nil {
 		edges = append(edges, user.EdgeRedeemCodes)
+	}
+	if m.removedredeem_code_batches != nil {
+		edges = append(edges, user.EdgeRedeemCodeBatches)
 	}
 	if m.removedsubscriptions != nil {
 		edges = append(edges, user.EdgeSubscriptions)
@@ -39720,6 +41497,12 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 	case user.EdgeRedeemCodes:
 		ids := make([]ent.Value, 0, len(m.removedredeem_codes))
 		for id := range m.removedredeem_codes {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeRedeemCodeBatches:
+		ids := make([]ent.Value, 0, len(m.removedredeem_code_batches))
+		for id := range m.removedredeem_code_batches {
 			ids = append(ids, id)
 		}
 		return ids
@@ -39813,12 +41596,15 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 16)
+	edges := make([]string, 0, 17)
 	if m.clearedapi_keys {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
 	if m.clearedredeem_codes {
 		edges = append(edges, user.EdgeRedeemCodes)
+	}
+	if m.clearedredeem_code_batches {
+		edges = append(edges, user.EdgeRedeemCodeBatches)
 	}
 	if m.clearedsubscriptions {
 		edges = append(edges, user.EdgeSubscriptions)
@@ -39873,6 +41659,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedapi_keys
 	case user.EdgeRedeemCodes:
 		return m.clearedredeem_codes
+	case user.EdgeRedeemCodeBatches:
+		return m.clearedredeem_code_batches
 	case user.EdgeSubscriptions:
 		return m.clearedsubscriptions
 	case user.EdgeAssignedSubscriptions:
@@ -39922,6 +41710,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeRedeemCodes:
 		m.ResetRedeemCodes()
+		return nil
+	case user.EdgeRedeemCodeBatches:
+		m.ResetRedeemCodeBatches()
 		return nil
 	case user.EdgeSubscriptions:
 		m.ResetSubscriptions()

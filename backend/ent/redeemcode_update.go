@@ -14,6 +14,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/group"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/predicate"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcode"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcodebatch"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/user"
 )
 
@@ -153,6 +154,160 @@ func (_u *RedeemCodeUpdate) ClearNotes() *RedeemCodeUpdate {
 	return _u
 }
 
+// SetBatchID sets the "batch_id" field.
+func (_u *RedeemCodeUpdate) SetBatchID(v int64) *RedeemCodeUpdate {
+	_u.mutation.SetBatchID(v)
+	return _u
+}
+
+// SetNillableBatchID sets the "batch_id" field if the given value is not nil.
+func (_u *RedeemCodeUpdate) SetNillableBatchID(v *int64) *RedeemCodeUpdate {
+	if v != nil {
+		_u.SetBatchID(*v)
+	}
+	return _u
+}
+
+// ClearBatchID clears the value of the "batch_id" field.
+func (_u *RedeemCodeUpdate) ClearBatchID() *RedeemCodeUpdate {
+	_u.mutation.ClearBatchID()
+	return _u
+}
+
+// SetPurpose sets the "purpose" field.
+func (_u *RedeemCodeUpdate) SetPurpose(v string) *RedeemCodeUpdate {
+	_u.mutation.SetPurpose(v)
+	return _u
+}
+
+// SetNillablePurpose sets the "purpose" field if the given value is not nil.
+func (_u *RedeemCodeUpdate) SetNillablePurpose(v *string) *RedeemCodeUpdate {
+	if v != nil {
+		_u.SetPurpose(*v)
+	}
+	return _u
+}
+
+// SetSalesStatus sets the "sales_status" field.
+func (_u *RedeemCodeUpdate) SetSalesStatus(v string) *RedeemCodeUpdate {
+	_u.mutation.SetSalesStatus(v)
+	return _u
+}
+
+// SetNillableSalesStatus sets the "sales_status" field if the given value is not nil.
+func (_u *RedeemCodeUpdate) SetNillableSalesStatus(v *string) *RedeemCodeUpdate {
+	if v != nil {
+		_u.SetSalesStatus(*v)
+	}
+	return _u
+}
+
+// SetSoldAt sets the "sold_at" field.
+func (_u *RedeemCodeUpdate) SetSoldAt(v time.Time) *RedeemCodeUpdate {
+	_u.mutation.SetSoldAt(v)
+	return _u
+}
+
+// SetNillableSoldAt sets the "sold_at" field if the given value is not nil.
+func (_u *RedeemCodeUpdate) SetNillableSoldAt(v *time.Time) *RedeemCodeUpdate {
+	if v != nil {
+		_u.SetSoldAt(*v)
+	}
+	return _u
+}
+
+// ClearSoldAt clears the value of the "sold_at" field.
+func (_u *RedeemCodeUpdate) ClearSoldAt() *RedeemCodeUpdate {
+	_u.mutation.ClearSoldAt()
+	return _u
+}
+
+// SetSoldToNote sets the "sold_to_note" field.
+func (_u *RedeemCodeUpdate) SetSoldToNote(v string) *RedeemCodeUpdate {
+	_u.mutation.SetSoldToNote(v)
+	return _u
+}
+
+// SetNillableSoldToNote sets the "sold_to_note" field if the given value is not nil.
+func (_u *RedeemCodeUpdate) SetNillableSoldToNote(v *string) *RedeemCodeUpdate {
+	if v != nil {
+		_u.SetSoldToNote(*v)
+	}
+	return _u
+}
+
+// ClearSoldToNote clears the value of the "sold_to_note" field.
+func (_u *RedeemCodeUpdate) ClearSoldToNote() *RedeemCodeUpdate {
+	_u.mutation.ClearSoldToNote()
+	return _u
+}
+
+// SetExternalOrderNo sets the "external_order_no" field.
+func (_u *RedeemCodeUpdate) SetExternalOrderNo(v string) *RedeemCodeUpdate {
+	_u.mutation.SetExternalOrderNo(v)
+	return _u
+}
+
+// SetNillableExternalOrderNo sets the "external_order_no" field if the given value is not nil.
+func (_u *RedeemCodeUpdate) SetNillableExternalOrderNo(v *string) *RedeemCodeUpdate {
+	if v != nil {
+		_u.SetExternalOrderNo(*v)
+	}
+	return _u
+}
+
+// ClearExternalOrderNo clears the value of the "external_order_no" field.
+func (_u *RedeemCodeUpdate) ClearExternalOrderNo() *RedeemCodeUpdate {
+	_u.mutation.ClearExternalOrderNo()
+	return _u
+}
+
+// SetExternalOrderURL sets the "external_order_url" field.
+func (_u *RedeemCodeUpdate) SetExternalOrderURL(v string) *RedeemCodeUpdate {
+	_u.mutation.SetExternalOrderURL(v)
+	return _u
+}
+
+// SetNillableExternalOrderURL sets the "external_order_url" field if the given value is not nil.
+func (_u *RedeemCodeUpdate) SetNillableExternalOrderURL(v *string) *RedeemCodeUpdate {
+	if v != nil {
+		_u.SetExternalOrderURL(*v)
+	}
+	return _u
+}
+
+// ClearExternalOrderURL clears the value of the "external_order_url" field.
+func (_u *RedeemCodeUpdate) ClearExternalOrderURL() *RedeemCodeUpdate {
+	_u.mutation.ClearExternalOrderURL()
+	return _u
+}
+
+// SetInternalNotes sets the "internal_notes" field.
+func (_u *RedeemCodeUpdate) SetInternalNotes(v string) *RedeemCodeUpdate {
+	_u.mutation.SetInternalNotes(v)
+	return _u
+}
+
+// SetNillableInternalNotes sets the "internal_notes" field if the given value is not nil.
+func (_u *RedeemCodeUpdate) SetNillableInternalNotes(v *string) *RedeemCodeUpdate {
+	if v != nil {
+		_u.SetInternalNotes(*v)
+	}
+	return _u
+}
+
+// ClearInternalNotes clears the value of the "internal_notes" field.
+func (_u *RedeemCodeUpdate) ClearInternalNotes() *RedeemCodeUpdate {
+	_u.mutation.ClearInternalNotes()
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *RedeemCodeUpdate) SetUpdatedAt(v time.Time) *RedeemCodeUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
 // SetGroupID sets the "group_id" field.
 func (_u *RedeemCodeUpdate) SetGroupID(v int64) *RedeemCodeUpdate {
 	_u.mutation.SetGroupID(v)
@@ -218,6 +373,11 @@ func (_u *RedeemCodeUpdate) SetGroup(v *Group) *RedeemCodeUpdate {
 	return _u.SetGroupID(v.ID)
 }
 
+// SetBatch sets the "batch" edge to the RedeemCodeBatch entity.
+func (_u *RedeemCodeUpdate) SetBatch(v *RedeemCodeBatch) *RedeemCodeUpdate {
+	return _u.SetBatchID(v.ID)
+}
+
 // Mutation returns the RedeemCodeMutation object of the builder.
 func (_u *RedeemCodeUpdate) Mutation() *RedeemCodeMutation {
 	return _u.mutation
@@ -235,8 +395,15 @@ func (_u *RedeemCodeUpdate) ClearGroup() *RedeemCodeUpdate {
 	return _u
 }
 
+// ClearBatch clears the "batch" edge to the RedeemCodeBatch entity.
+func (_u *RedeemCodeUpdate) ClearBatch() *RedeemCodeUpdate {
+	_u.mutation.ClearBatch()
+	return _u
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *RedeemCodeUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -262,6 +429,14 @@ func (_u *RedeemCodeUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_u *RedeemCodeUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		v := redeemcode.UpdateDefaultUpdatedAt()
+		_u.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_u *RedeemCodeUpdate) check() error {
 	if v, ok := _u.mutation.Code(); ok {
@@ -277,6 +452,21 @@ func (_u *RedeemCodeUpdate) check() error {
 	if v, ok := _u.mutation.Status(); ok {
 		if err := redeemcode.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "RedeemCode.status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Purpose(); ok {
+		if err := redeemcode.PurposeValidator(v); err != nil {
+			return &ValidationError{Name: "purpose", err: fmt.Errorf(`ent: validator failed for field "RedeemCode.purpose": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.SalesStatus(); ok {
+		if err := redeemcode.SalesStatusValidator(v); err != nil {
+			return &ValidationError{Name: "sales_status", err: fmt.Errorf(`ent: validator failed for field "RedeemCode.sales_status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ExternalOrderNo(); ok {
+		if err := redeemcode.ExternalOrderNoValidator(v); err != nil {
+			return &ValidationError{Name: "external_order_no", err: fmt.Errorf(`ent: validator failed for field "RedeemCode.external_order_no": %w`, err)}
 		}
 	}
 	return nil
@@ -320,6 +510,45 @@ func (_u *RedeemCodeUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	}
 	if _u.mutation.NotesCleared() {
 		_spec.ClearField(redeemcode.FieldNotes, field.TypeString)
+	}
+	if value, ok := _u.mutation.Purpose(); ok {
+		_spec.SetField(redeemcode.FieldPurpose, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.SalesStatus(); ok {
+		_spec.SetField(redeemcode.FieldSalesStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.SoldAt(); ok {
+		_spec.SetField(redeemcode.FieldSoldAt, field.TypeTime, value)
+	}
+	if _u.mutation.SoldAtCleared() {
+		_spec.ClearField(redeemcode.FieldSoldAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.SoldToNote(); ok {
+		_spec.SetField(redeemcode.FieldSoldToNote, field.TypeString, value)
+	}
+	if _u.mutation.SoldToNoteCleared() {
+		_spec.ClearField(redeemcode.FieldSoldToNote, field.TypeString)
+	}
+	if value, ok := _u.mutation.ExternalOrderNo(); ok {
+		_spec.SetField(redeemcode.FieldExternalOrderNo, field.TypeString, value)
+	}
+	if _u.mutation.ExternalOrderNoCleared() {
+		_spec.ClearField(redeemcode.FieldExternalOrderNo, field.TypeString)
+	}
+	if value, ok := _u.mutation.ExternalOrderURL(); ok {
+		_spec.SetField(redeemcode.FieldExternalOrderURL, field.TypeString, value)
+	}
+	if _u.mutation.ExternalOrderURLCleared() {
+		_spec.ClearField(redeemcode.FieldExternalOrderURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.InternalNotes(); ok {
+		_spec.SetField(redeemcode.FieldInternalNotes, field.TypeString, value)
+	}
+	if _u.mutation.InternalNotesCleared() {
+		_spec.ClearField(redeemcode.FieldInternalNotes, field.TypeString)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(redeemcode.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.ValidityDays(); ok {
 		_spec.SetField(redeemcode.FieldValidityDays, field.TypeInt, value)
@@ -378,6 +607,35 @@ func (_u *RedeemCodeUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.BatchCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   redeemcode.BatchTable,
+			Columns: []string{redeemcode.BatchColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(redeemcodebatch.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.BatchIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   redeemcode.BatchTable,
+			Columns: []string{redeemcode.BatchColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(redeemcodebatch.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {
@@ -528,6 +786,160 @@ func (_u *RedeemCodeUpdateOne) ClearNotes() *RedeemCodeUpdateOne {
 	return _u
 }
 
+// SetBatchID sets the "batch_id" field.
+func (_u *RedeemCodeUpdateOne) SetBatchID(v int64) *RedeemCodeUpdateOne {
+	_u.mutation.SetBatchID(v)
+	return _u
+}
+
+// SetNillableBatchID sets the "batch_id" field if the given value is not nil.
+func (_u *RedeemCodeUpdateOne) SetNillableBatchID(v *int64) *RedeemCodeUpdateOne {
+	if v != nil {
+		_u.SetBatchID(*v)
+	}
+	return _u
+}
+
+// ClearBatchID clears the value of the "batch_id" field.
+func (_u *RedeemCodeUpdateOne) ClearBatchID() *RedeemCodeUpdateOne {
+	_u.mutation.ClearBatchID()
+	return _u
+}
+
+// SetPurpose sets the "purpose" field.
+func (_u *RedeemCodeUpdateOne) SetPurpose(v string) *RedeemCodeUpdateOne {
+	_u.mutation.SetPurpose(v)
+	return _u
+}
+
+// SetNillablePurpose sets the "purpose" field if the given value is not nil.
+func (_u *RedeemCodeUpdateOne) SetNillablePurpose(v *string) *RedeemCodeUpdateOne {
+	if v != nil {
+		_u.SetPurpose(*v)
+	}
+	return _u
+}
+
+// SetSalesStatus sets the "sales_status" field.
+func (_u *RedeemCodeUpdateOne) SetSalesStatus(v string) *RedeemCodeUpdateOne {
+	_u.mutation.SetSalesStatus(v)
+	return _u
+}
+
+// SetNillableSalesStatus sets the "sales_status" field if the given value is not nil.
+func (_u *RedeemCodeUpdateOne) SetNillableSalesStatus(v *string) *RedeemCodeUpdateOne {
+	if v != nil {
+		_u.SetSalesStatus(*v)
+	}
+	return _u
+}
+
+// SetSoldAt sets the "sold_at" field.
+func (_u *RedeemCodeUpdateOne) SetSoldAt(v time.Time) *RedeemCodeUpdateOne {
+	_u.mutation.SetSoldAt(v)
+	return _u
+}
+
+// SetNillableSoldAt sets the "sold_at" field if the given value is not nil.
+func (_u *RedeemCodeUpdateOne) SetNillableSoldAt(v *time.Time) *RedeemCodeUpdateOne {
+	if v != nil {
+		_u.SetSoldAt(*v)
+	}
+	return _u
+}
+
+// ClearSoldAt clears the value of the "sold_at" field.
+func (_u *RedeemCodeUpdateOne) ClearSoldAt() *RedeemCodeUpdateOne {
+	_u.mutation.ClearSoldAt()
+	return _u
+}
+
+// SetSoldToNote sets the "sold_to_note" field.
+func (_u *RedeemCodeUpdateOne) SetSoldToNote(v string) *RedeemCodeUpdateOne {
+	_u.mutation.SetSoldToNote(v)
+	return _u
+}
+
+// SetNillableSoldToNote sets the "sold_to_note" field if the given value is not nil.
+func (_u *RedeemCodeUpdateOne) SetNillableSoldToNote(v *string) *RedeemCodeUpdateOne {
+	if v != nil {
+		_u.SetSoldToNote(*v)
+	}
+	return _u
+}
+
+// ClearSoldToNote clears the value of the "sold_to_note" field.
+func (_u *RedeemCodeUpdateOne) ClearSoldToNote() *RedeemCodeUpdateOne {
+	_u.mutation.ClearSoldToNote()
+	return _u
+}
+
+// SetExternalOrderNo sets the "external_order_no" field.
+func (_u *RedeemCodeUpdateOne) SetExternalOrderNo(v string) *RedeemCodeUpdateOne {
+	_u.mutation.SetExternalOrderNo(v)
+	return _u
+}
+
+// SetNillableExternalOrderNo sets the "external_order_no" field if the given value is not nil.
+func (_u *RedeemCodeUpdateOne) SetNillableExternalOrderNo(v *string) *RedeemCodeUpdateOne {
+	if v != nil {
+		_u.SetExternalOrderNo(*v)
+	}
+	return _u
+}
+
+// ClearExternalOrderNo clears the value of the "external_order_no" field.
+func (_u *RedeemCodeUpdateOne) ClearExternalOrderNo() *RedeemCodeUpdateOne {
+	_u.mutation.ClearExternalOrderNo()
+	return _u
+}
+
+// SetExternalOrderURL sets the "external_order_url" field.
+func (_u *RedeemCodeUpdateOne) SetExternalOrderURL(v string) *RedeemCodeUpdateOne {
+	_u.mutation.SetExternalOrderURL(v)
+	return _u
+}
+
+// SetNillableExternalOrderURL sets the "external_order_url" field if the given value is not nil.
+func (_u *RedeemCodeUpdateOne) SetNillableExternalOrderURL(v *string) *RedeemCodeUpdateOne {
+	if v != nil {
+		_u.SetExternalOrderURL(*v)
+	}
+	return _u
+}
+
+// ClearExternalOrderURL clears the value of the "external_order_url" field.
+func (_u *RedeemCodeUpdateOne) ClearExternalOrderURL() *RedeemCodeUpdateOne {
+	_u.mutation.ClearExternalOrderURL()
+	return _u
+}
+
+// SetInternalNotes sets the "internal_notes" field.
+func (_u *RedeemCodeUpdateOne) SetInternalNotes(v string) *RedeemCodeUpdateOne {
+	_u.mutation.SetInternalNotes(v)
+	return _u
+}
+
+// SetNillableInternalNotes sets the "internal_notes" field if the given value is not nil.
+func (_u *RedeemCodeUpdateOne) SetNillableInternalNotes(v *string) *RedeemCodeUpdateOne {
+	if v != nil {
+		_u.SetInternalNotes(*v)
+	}
+	return _u
+}
+
+// ClearInternalNotes clears the value of the "internal_notes" field.
+func (_u *RedeemCodeUpdateOne) ClearInternalNotes() *RedeemCodeUpdateOne {
+	_u.mutation.ClearInternalNotes()
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *RedeemCodeUpdateOne) SetUpdatedAt(v time.Time) *RedeemCodeUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
 // SetGroupID sets the "group_id" field.
 func (_u *RedeemCodeUpdateOne) SetGroupID(v int64) *RedeemCodeUpdateOne {
 	_u.mutation.SetGroupID(v)
@@ -593,6 +1005,11 @@ func (_u *RedeemCodeUpdateOne) SetGroup(v *Group) *RedeemCodeUpdateOne {
 	return _u.SetGroupID(v.ID)
 }
 
+// SetBatch sets the "batch" edge to the RedeemCodeBatch entity.
+func (_u *RedeemCodeUpdateOne) SetBatch(v *RedeemCodeBatch) *RedeemCodeUpdateOne {
+	return _u.SetBatchID(v.ID)
+}
+
 // Mutation returns the RedeemCodeMutation object of the builder.
 func (_u *RedeemCodeUpdateOne) Mutation() *RedeemCodeMutation {
 	return _u.mutation
@@ -607,6 +1024,12 @@ func (_u *RedeemCodeUpdateOne) ClearUser() *RedeemCodeUpdateOne {
 // ClearGroup clears the "group" edge to the Group entity.
 func (_u *RedeemCodeUpdateOne) ClearGroup() *RedeemCodeUpdateOne {
 	_u.mutation.ClearGroup()
+	return _u
+}
+
+// ClearBatch clears the "batch" edge to the RedeemCodeBatch entity.
+func (_u *RedeemCodeUpdateOne) ClearBatch() *RedeemCodeUpdateOne {
+	_u.mutation.ClearBatch()
 	return _u
 }
 
@@ -625,6 +1048,7 @@ func (_u *RedeemCodeUpdateOne) Select(field string, fields ...string) *RedeemCod
 
 // Save executes the query and returns the updated RedeemCode entity.
 func (_u *RedeemCodeUpdateOne) Save(ctx context.Context) (*RedeemCode, error) {
+	_u.defaults()
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -650,6 +1074,14 @@ func (_u *RedeemCodeUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_u *RedeemCodeUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		v := redeemcode.UpdateDefaultUpdatedAt()
+		_u.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_u *RedeemCodeUpdateOne) check() error {
 	if v, ok := _u.mutation.Code(); ok {
@@ -665,6 +1097,21 @@ func (_u *RedeemCodeUpdateOne) check() error {
 	if v, ok := _u.mutation.Status(); ok {
 		if err := redeemcode.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "RedeemCode.status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Purpose(); ok {
+		if err := redeemcode.PurposeValidator(v); err != nil {
+			return &ValidationError{Name: "purpose", err: fmt.Errorf(`ent: validator failed for field "RedeemCode.purpose": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.SalesStatus(); ok {
+		if err := redeemcode.SalesStatusValidator(v); err != nil {
+			return &ValidationError{Name: "sales_status", err: fmt.Errorf(`ent: validator failed for field "RedeemCode.sales_status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ExternalOrderNo(); ok {
+		if err := redeemcode.ExternalOrderNoValidator(v); err != nil {
+			return &ValidationError{Name: "external_order_no", err: fmt.Errorf(`ent: validator failed for field "RedeemCode.external_order_no": %w`, err)}
 		}
 	}
 	return nil
@@ -726,6 +1173,45 @@ func (_u *RedeemCodeUpdateOne) sqlSave(ctx context.Context) (_node *RedeemCode, 
 	if _u.mutation.NotesCleared() {
 		_spec.ClearField(redeemcode.FieldNotes, field.TypeString)
 	}
+	if value, ok := _u.mutation.Purpose(); ok {
+		_spec.SetField(redeemcode.FieldPurpose, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.SalesStatus(); ok {
+		_spec.SetField(redeemcode.FieldSalesStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.SoldAt(); ok {
+		_spec.SetField(redeemcode.FieldSoldAt, field.TypeTime, value)
+	}
+	if _u.mutation.SoldAtCleared() {
+		_spec.ClearField(redeemcode.FieldSoldAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.SoldToNote(); ok {
+		_spec.SetField(redeemcode.FieldSoldToNote, field.TypeString, value)
+	}
+	if _u.mutation.SoldToNoteCleared() {
+		_spec.ClearField(redeemcode.FieldSoldToNote, field.TypeString)
+	}
+	if value, ok := _u.mutation.ExternalOrderNo(); ok {
+		_spec.SetField(redeemcode.FieldExternalOrderNo, field.TypeString, value)
+	}
+	if _u.mutation.ExternalOrderNoCleared() {
+		_spec.ClearField(redeemcode.FieldExternalOrderNo, field.TypeString)
+	}
+	if value, ok := _u.mutation.ExternalOrderURL(); ok {
+		_spec.SetField(redeemcode.FieldExternalOrderURL, field.TypeString, value)
+	}
+	if _u.mutation.ExternalOrderURLCleared() {
+		_spec.ClearField(redeemcode.FieldExternalOrderURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.InternalNotes(); ok {
+		_spec.SetField(redeemcode.FieldInternalNotes, field.TypeString, value)
+	}
+	if _u.mutation.InternalNotesCleared() {
+		_spec.ClearField(redeemcode.FieldInternalNotes, field.TypeString)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(redeemcode.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := _u.mutation.ValidityDays(); ok {
 		_spec.SetField(redeemcode.FieldValidityDays, field.TypeInt, value)
 	}
@@ -783,6 +1269,35 @@ func (_u *RedeemCodeUpdateOne) sqlSave(ctx context.Context) (_node *RedeemCode, 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.BatchCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   redeemcode.BatchTable,
+			Columns: []string{redeemcode.BatchColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(redeemcodebatch.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.BatchIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   redeemcode.BatchTable,
+			Columns: []string{redeemcode.BatchColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(redeemcodebatch.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

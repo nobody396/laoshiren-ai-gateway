@@ -420,6 +420,7 @@ export default {
     accounts: 'Accounts',
     proxies: 'Proxies',
     redeemCodes: 'Redeem Codes',
+    billing: 'Billing',
     ops: 'Ops',
     promoCodes: 'Promo Codes',
     settings: 'Settings',
@@ -3648,6 +3649,9 @@ export default {
         type: 'Type',
         value: 'Value',
         status: 'Status',
+        purpose: 'Purpose',
+        salesStatus: 'Sales Status',
+        batch: 'Batch / Order',
         usedBy: 'Used By',
         usedAt: 'Used At',
         actions: 'Actions'
@@ -3699,11 +3703,86 @@ export default {
       validityDays: 'Validity Days',
       groupRequired: 'Please select a subscription group',
       days: ' days',
+      batchName: 'Batch Name',
+      batchNamePlaceholder: 'Example: 2026-05 recharge cards',
+      purpose: 'Purpose',
+      salesStatusLabel: 'Sales Status',
+      salesChannel: 'Sales Channel',
+      salesChannelPlaceholder: 'Example: manual payment, reseller',
+      externalUrl: 'Batch Link',
+      externalUrlPlaceholder: 'Purchase page or batch source URL',
+      externalOrderNo: 'External Order No.',
+      externalOrderNoPlaceholder: 'Payment platform order number',
+      externalOrderUrl: 'Order Link',
+      externalOrderUrlPlaceholder: 'Openable order link',
+      soldToNote: 'Buyer Note',
+      soldToNotePlaceholder: 'Email, contact, customer name',
+      internalNotes: 'Internal Notes',
+      internalNotesPlaceholder: 'Reconciliation, gift, compensation notes',
+      purposes: {
+        sale_recharge: 'Recharge Sale',
+        gift: 'Gift',
+        compensation: 'Compensation',
+        internal_test: 'Internal Test',
+        migration: 'Historical Migration'
+      },
+      salesStatus: {
+        inventory: 'Inventory',
+        sold: 'Sold',
+        gifted: 'Gifted',
+        void: 'Void'
+      },
       status: {
         unused: 'Unused',
         used: 'Used',
         expired: 'Expired',
         disabled: 'Disabled'
+      }
+    },
+
+    billing: {
+      title: 'Billing Management',
+      description:
+        'Current billing source is recharge redeem codes; website top-up and Stripe can be attached later.',
+      empty: 'No billing records',
+      noBatch: 'No batch',
+      openOrder: 'Open order',
+      loadFailed: 'Failed to load billing records',
+      filters: {
+        search: 'Search',
+        searchPlaceholder: 'Code, email, order number, buyer note',
+        purpose: 'Purpose',
+        salesStatus: 'Sales Status',
+        redeemStatus: 'Redeem Status',
+        allPurposes: 'All Purposes',
+        allSalesStatuses: 'All Sales Statuses',
+        allRedeemStatuses: 'All Redeem Statuses',
+        usedStart: 'Redeemed From',
+        usedEnd: 'Redeemed To',
+        amountMin: 'Min Amount',
+        amountMax: 'Max Amount',
+        apply: 'Apply Filters'
+      },
+      summary: {
+        redeemedSaleAmount: 'Redeemed Sales',
+        soldUnredeemedFaceValue: 'Sold Not Redeemed',
+        soldFaceValue: 'Sold Face Value',
+        ledgerMissingCount: 'Missing Ledger Rows'
+      },
+      columns: {
+        code: 'Code',
+        amount: 'Amount',
+        classification: 'Classification',
+        buyer: 'Buyer',
+        redeemedBy: 'Redeemed By',
+        ledger: 'Ledger',
+        order: 'Order',
+        time: 'Created At'
+      },
+      ledger: {
+        matched: 'Posted',
+        missing: 'Missing Ledger',
+        notRedeemed: 'Not Redeemed'
       }
     },
 

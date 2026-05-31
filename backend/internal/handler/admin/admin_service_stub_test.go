@@ -17,6 +17,10 @@ type stubAdminService struct {
 	proxies              []service.Proxy
 	proxyCounts          []service.ProxyWithAccountCount
 	redeems              []service.RedeemCode
+	generatedRedeemInput *service.GenerateRedeemCodesInput
+	lastBillingPage      int
+	lastBillingPageSize  int
+	lastBillingFilters   service.RedeemCodeBillingFilters
 	createdAccounts      []*service.CreateAccountInput
 	createdProxies       []*service.CreateProxyInput
 	updatedProxyIDs      []int64
@@ -403,7 +407,21 @@ func (s *stubAdminService) GetRedeemCode(ctx context.Context, id int64) (*servic
 }
 
 func (s *stubAdminService) GenerateRedeemCodes(ctx context.Context, input *service.GenerateRedeemCodesInput) ([]service.RedeemCode, error) {
+	s.generatedRedeemInput = input
 	return s.redeems, nil
+}
+
+func (s *stubAdminService) ListRedeemCodeBilling(ctx context.Context, page, pageSize int, filters service.RedeemCodeBillingFilters) (*service.RedeemCodeBillingResult, error) {
+	s.lastBillingPage = page
+	s.lastBillingPageSize = pageSize
+	s.lastBillingFilters = filters
+	return &service.RedeemCodeBillingResult{
+		Items:    []service.RedeemCodeBillingItem{},
+		Total:    0,
+		Page:     page,
+		PageSize: pageSize,
+		Pages:    0,
+	}, nil
 }
 
 func (s *stubAdminService) DeleteRedeemCode(ctx context.Context, id int64) error {

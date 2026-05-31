@@ -38,6 +38,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/promocodeusage"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/proxy"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcode"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcodebatch"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/securitysecret"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/setting"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/tlsfingerprintprofile"
@@ -135,6 +136,7 @@ func checkColumn(t, c string) error {
 			promocodeusage.Table:          promocodeusage.ValidColumn,
 			proxy.Table:                   proxy.ValidColumn,
 			redeemcode.Table:              redeemcode.ValidColumn,
+			redeemcodebatch.Table:         redeemcodebatch.ValidColumn,
 			securitysecret.Table:          securitysecret.ValidColumn,
 			setting.Table:                 setting.ValidColumn,
 			tlsfingerprintprofile.Table:   tlsfingerprintprofile.ValidColumn,

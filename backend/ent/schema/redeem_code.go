@@ -59,9 +59,39 @@ func (RedeemCode) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			SchemaType(map[string]string{dialect.Postgres: "text"}),
+		field.Int64("batch_id").
+			Optional().
+			Nillable(),
+		field.String("purpose").
+			MaxLen(32).
+			Default(domain.RedeemCodePurposeSaleRecharge),
+		field.String("sales_status").
+			MaxLen(32).
+			Default(domain.RedeemCodeSalesStatusInventory),
+		field.Time("sold_at").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
+		field.Text("sold_to_note").
+			Optional().
+			Nillable(),
+		field.String("external_order_no").
+			MaxLen(128).
+			Optional().
+			Nillable(),
+		field.Text("external_order_url").
+			Optional().
+			Nillable(),
+		field.Text("internal_notes").
+			Optional().
+			Nillable(),
 		field.Time("created_at").
 			Immutable().
 			Default(time.Now).
+			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
+		field.Time("updated_at").
+			Default(time.Now).
+			UpdateDefault(time.Now).
 			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
 		field.Int64("group_id").
 			Optional().
@@ -81,6 +111,10 @@ func (RedeemCode) Edges() []ent.Edge {
 			Ref("redeem_codes").
 			Field("group_id").
 			Unique(),
+		edge.From("batch", RedeemCodeBatch.Type).
+			Ref("redeem_codes").
+			Field("batch_id").
+			Unique(),
 	}
 }
 
@@ -90,5 +124,11 @@ func (RedeemCode) Indexes() []ent.Index {
 		index.Fields("status"),
 		index.Fields("used_by"),
 		index.Fields("group_id"),
+		index.Fields("batch_id"),
+		index.Fields("purpose"),
+		index.Fields("sales_status"),
+		index.Fields("purpose", "sales_status"),
+		index.Fields("used_at"),
+		index.Fields("created_at"),
 	}
 }

@@ -117,6 +117,35 @@
             </span>
           </template>
 
+          <template #cell-purpose="{ value }">
+            <span class="badge badge-primary">
+              {{ t('admin.redeem.purposes.' + (value || 'sale_recharge')) }}
+            </span>
+          </template>
+
+          <template #cell-sales_status="{ value }">
+            <span
+              :class="[
+                'badge',
+                value === 'sold'
+                  ? 'badge-success'
+                  : value === 'gifted'
+                    ? 'badge-warning'
+                    : value === 'void'
+                      ? 'badge-danger'
+                      : 'badge-gray'
+              ]"
+            >
+              {{ t('admin.redeem.salesStatus.' + (value || 'inventory')) }}
+            </span>
+          </template>
+
+          <template #cell-batch="{ row }">
+            <div class="max-w-44 truncate text-sm text-gray-700 dark:text-dark-300">
+              {{ row.batch?.name || row.external_order_no || '-' }}
+            </div>
+          </template>
+
           <template #cell-used_by="{ value, row }">
             <span class="text-sm text-gray-500 dark:text-dark-400">
               {{ row.user?.email || (value ? t('admin.redeem.userPrefix', { id: value }) : '-') }}
@@ -200,7 +229,7 @@
       <div v-if="showGenerateDialog" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="fixed inset-0 bg-black/50" @click="showGenerateDialog = false"></div>
         <div
-          class="relative z-10 w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-dark-800"
+          class="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl dark:bg-dark-800"
         >
           <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
             {{ t('admin.redeem.generateCodesTitle') }}
@@ -289,6 +318,82 @@
                 required
                 class="input"
               />
+            </div>
+            <div
+              v-if="generateForm.type === 'balance'"
+              class="grid grid-cols-1 gap-4 border-t border-gray-100 pt-4 dark:border-dark-700 sm:grid-cols-2"
+            >
+              <div>
+                <label class="input-label">{{ t('admin.redeem.batchName') }}</label>
+                <input
+                  v-model.trim="generateForm.batch_name"
+                  type="text"
+                  :placeholder="t('admin.redeem.batchNamePlaceholder')"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.redeem.purpose') }}</label>
+                <Select v-model="generateForm.purpose" :options="purposeOptions" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.redeem.salesStatusLabel') }}</label>
+                <Select v-model="generateForm.sales_status" :options="salesStatusOptions" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.redeem.salesChannel') }}</label>
+                <input
+                  v-model.trim="generateForm.sales_channel"
+                  type="text"
+                  :placeholder="t('admin.redeem.salesChannelPlaceholder')"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.redeem.externalOrderNo') }}</label>
+                <input
+                  v-model.trim="generateForm.external_order_no"
+                  type="text"
+                  :placeholder="t('admin.redeem.externalOrderNoPlaceholder')"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.redeem.externalOrderUrl') }}</label>
+                <input
+                  v-model.trim="generateForm.external_order_url"
+                  type="url"
+                  :placeholder="t('admin.redeem.externalOrderUrlPlaceholder')"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.redeem.soldToNote') }}</label>
+                <input
+                  v-model.trim="generateForm.sold_to_note"
+                  type="text"
+                  :placeholder="t('admin.redeem.soldToNotePlaceholder')"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.redeem.externalUrl') }}</label>
+                <input
+                  v-model.trim="generateForm.external_url"
+                  type="url"
+                  :placeholder="t('admin.redeem.externalUrlPlaceholder')"
+                  class="input"
+                />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="input-label">{{ t('admin.redeem.internalNotes') }}</label>
+                <textarea
+                  v-model.trim="generateForm.internal_notes"
+                  rows="2"
+                  :placeholder="t('admin.redeem.internalNotesPlaceholder')"
+                  class="input"
+                ></textarea>
+              </div>
             </div>
             <div class="flex justify-end gap-3 pt-2">
               <button type="button" @click="showGenerateDialog = false" class="btn btn-secondary">
@@ -413,7 +518,15 @@ import { useAppStore } from '@/stores/app'
 import { useClipboard } from '@/composables/useClipboard'
 import { adminAPI } from '@/api/admin'
 import { formatDateTime } from '@/utils/format'
-import type { RedeemCode, RedeemCodeType, Group, GroupPlatform, SubscriptionType } from '@/types'
+import type {
+  RedeemCode,
+  RedeemCodeType,
+  RedeemCodePurpose,
+  RedeemCodeSalesStatus,
+  Group,
+  GroupPlatform,
+  SubscriptionType
+} from '@/types'
 import type { Column } from '@/components/common/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
@@ -529,6 +642,9 @@ const columns = computed<Column[]>(() => [
   { key: 'type', label: t('admin.redeem.columns.type'), sortable: true },
   { key: 'value', label: t('admin.redeem.columns.value'), sortable: true },
   { key: 'status', label: t('admin.redeem.columns.status'), sortable: true },
+  { key: 'purpose', label: t('admin.redeem.columns.purpose') },
+  { key: 'sales_status', label: t('admin.redeem.columns.salesStatus') },
+  { key: 'batch', label: t('admin.redeem.columns.batch') },
   { key: 'used_by', label: t('admin.redeem.columns.usedBy') },
   { key: 'used_at', label: t('admin.redeem.columns.usedAt'), sortable: true },
   { key: 'actions', label: t('admin.redeem.columns.actions') }
@@ -554,6 +670,21 @@ const filterStatusOptions = computed(() => [
   { value: 'unused', label: t('admin.redeem.unused') },
   { value: 'used', label: t('admin.redeem.used') },
   { value: 'expired', label: t('admin.redeem.status.expired') }
+])
+
+const purposeOptions = computed(() => [
+  { value: 'sale_recharge', label: t('admin.redeem.purposes.sale_recharge') },
+  { value: 'gift', label: t('admin.redeem.purposes.gift') },
+  { value: 'compensation', label: t('admin.redeem.purposes.compensation') },
+  { value: 'internal_test', label: t('admin.redeem.purposes.internal_test') },
+  { value: 'migration', label: t('admin.redeem.purposes.migration') }
+])
+
+const salesStatusOptions = computed(() => [
+  { value: 'sold', label: t('admin.redeem.salesStatus.sold') },
+  { value: 'inventory', label: t('admin.redeem.salesStatus.inventory') },
+  { value: 'gifted', label: t('admin.redeem.salesStatus.gifted') },
+  { value: 'void', label: t('admin.redeem.salesStatus.void') }
 ])
 
 const codes = ref<RedeemCode[]>([])
@@ -583,7 +714,16 @@ const generateForm = reactive({
   value: 10,
   count: 1,
   group_id: null as number | null,
-  validity_days: 30
+  validity_days: 30,
+  batch_name: '',
+  purpose: 'sale_recharge' as RedeemCodePurpose,
+  sales_status: 'sold' as RedeemCodeSalesStatus,
+  sales_channel: '',
+  external_url: '',
+  sold_to_note: '',
+  external_order_no: '',
+  external_order_url: '',
+  internal_notes: ''
 })
 
 // 监听类型变化，邀请码类型时自动设置 value 为 0
@@ -671,19 +811,40 @@ const handleGenerateCodes = async () => {
 
   generating.value = true
   try {
-    const result = await adminAPI.redeem.generate(
-      generateForm.count,
-      generateForm.type,
-      generateForm.value,
-      generateForm.type === 'subscription' ? generateForm.group_id : undefined,
-      generateForm.type === 'subscription' ? generateForm.validity_days : undefined
-    )
+    const payload = {
+      count: generateForm.count,
+      type: generateForm.type,
+      value: generateForm.value
+    } as const
+    const result = await adminAPI.redeem.generate({
+      ...payload,
+      group_id: generateForm.type === 'subscription' ? generateForm.group_id : undefined,
+      validity_days: generateForm.type === 'subscription' ? generateForm.validity_days : undefined,
+      batch_name: generateForm.type === 'balance' ? generateForm.batch_name : undefined,
+      purpose: generateForm.type === 'balance' ? generateForm.purpose : undefined,
+      sales_status: generateForm.type === 'balance' ? generateForm.sales_status : undefined,
+      sales_channel: generateForm.type === 'balance' ? generateForm.sales_channel : undefined,
+      external_url: generateForm.type === 'balance' ? generateForm.external_url : undefined,
+      sold_to_note: generateForm.type === 'balance' ? generateForm.sold_to_note : undefined,
+      external_order_no:
+        generateForm.type === 'balance' ? generateForm.external_order_no : undefined,
+      external_order_url:
+        generateForm.type === 'balance' ? generateForm.external_order_url : undefined,
+      internal_notes: generateForm.type === 'balance' ? generateForm.internal_notes : undefined
+    })
     showGenerateDialog.value = false
     generatedCodes.value = result
     showResultDialog.value = true
     // 重置表单
     generateForm.group_id = null
     generateForm.validity_days = 30
+    generateForm.batch_name = ''
+    generateForm.sales_channel = ''
+    generateForm.external_url = ''
+    generateForm.sold_to_note = ''
+    generateForm.external_order_no = ''
+    generateForm.external_order_url = ''
+    generateForm.internal_notes = ''
     loadCodes()
   } catch (error: any) {
     appStore.showError(error.response?.data?.detail || t('admin.redeem.failedToGenerate'))

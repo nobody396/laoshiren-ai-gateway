@@ -31,6 +31,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/promocodeusage"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/proxy"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcode"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcodebatch"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/schema"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/securitysecret"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/setting"
@@ -1281,14 +1282,88 @@ func init() {
 	redeemcode.DefaultStatus = redeemcodeDescStatus.Default.(string)
 	// redeemcode.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	redeemcode.StatusValidator = redeemcodeDescStatus.Validators[0].(func(string) error)
+	// redeemcodeDescPurpose is the schema descriptor for purpose field.
+	redeemcodeDescPurpose := redeemcodeFields[8].Descriptor()
+	// redeemcode.DefaultPurpose holds the default value on creation for the purpose field.
+	redeemcode.DefaultPurpose = redeemcodeDescPurpose.Default.(string)
+	// redeemcode.PurposeValidator is a validator for the "purpose" field. It is called by the builders before save.
+	redeemcode.PurposeValidator = redeemcodeDescPurpose.Validators[0].(func(string) error)
+	// redeemcodeDescSalesStatus is the schema descriptor for sales_status field.
+	redeemcodeDescSalesStatus := redeemcodeFields[9].Descriptor()
+	// redeemcode.DefaultSalesStatus holds the default value on creation for the sales_status field.
+	redeemcode.DefaultSalesStatus = redeemcodeDescSalesStatus.Default.(string)
+	// redeemcode.SalesStatusValidator is a validator for the "sales_status" field. It is called by the builders before save.
+	redeemcode.SalesStatusValidator = redeemcodeDescSalesStatus.Validators[0].(func(string) error)
+	// redeemcodeDescExternalOrderNo is the schema descriptor for external_order_no field.
+	redeemcodeDescExternalOrderNo := redeemcodeFields[12].Descriptor()
+	// redeemcode.ExternalOrderNoValidator is a validator for the "external_order_no" field. It is called by the builders before save.
+	redeemcode.ExternalOrderNoValidator = redeemcodeDescExternalOrderNo.Validators[0].(func(string) error)
 	// redeemcodeDescCreatedAt is the schema descriptor for created_at field.
-	redeemcodeDescCreatedAt := redeemcodeFields[7].Descriptor()
+	redeemcodeDescCreatedAt := redeemcodeFields[15].Descriptor()
 	// redeemcode.DefaultCreatedAt holds the default value on creation for the created_at field.
 	redeemcode.DefaultCreatedAt = redeemcodeDescCreatedAt.Default.(func() time.Time)
+	// redeemcodeDescUpdatedAt is the schema descriptor for updated_at field.
+	redeemcodeDescUpdatedAt := redeemcodeFields[16].Descriptor()
+	// redeemcode.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	redeemcode.DefaultUpdatedAt = redeemcodeDescUpdatedAt.Default.(func() time.Time)
+	// redeemcode.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	redeemcode.UpdateDefaultUpdatedAt = redeemcodeDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// redeemcodeDescValidityDays is the schema descriptor for validity_days field.
-	redeemcodeDescValidityDays := redeemcodeFields[9].Descriptor()
+	redeemcodeDescValidityDays := redeemcodeFields[18].Descriptor()
 	// redeemcode.DefaultValidityDays holds the default value on creation for the validity_days field.
 	redeemcode.DefaultValidityDays = redeemcodeDescValidityDays.Default.(int)
+	redeemcodebatchFields := schema.RedeemCodeBatch{}.Fields()
+	_ = redeemcodebatchFields
+	// redeemcodebatchDescName is the schema descriptor for name field.
+	redeemcodebatchDescName := redeemcodebatchFields[0].Descriptor()
+	// redeemcodebatch.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	redeemcodebatch.NameValidator = func() func(string) error {
+		validators := redeemcodebatchDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// redeemcodebatchDescPurpose is the schema descriptor for purpose field.
+	redeemcodebatchDescPurpose := redeemcodebatchFields[1].Descriptor()
+	// redeemcodebatch.DefaultPurpose holds the default value on creation for the purpose field.
+	redeemcodebatch.DefaultPurpose = redeemcodebatchDescPurpose.Default.(string)
+	// redeemcodebatch.PurposeValidator is a validator for the "purpose" field. It is called by the builders before save.
+	redeemcodebatch.PurposeValidator = redeemcodebatchDescPurpose.Validators[0].(func(string) error)
+	// redeemcodebatchDescFaceValue is the schema descriptor for face_value field.
+	redeemcodebatchDescFaceValue := redeemcodebatchFields[2].Descriptor()
+	// redeemcodebatch.DefaultFaceValue holds the default value on creation for the face_value field.
+	redeemcodebatch.DefaultFaceValue = redeemcodebatchDescFaceValue.Default.(float64)
+	// redeemcodebatchDescCurrency is the schema descriptor for currency field.
+	redeemcodebatchDescCurrency := redeemcodebatchFields[3].Descriptor()
+	// redeemcodebatch.DefaultCurrency holds the default value on creation for the currency field.
+	redeemcodebatch.DefaultCurrency = redeemcodebatchDescCurrency.Default.(string)
+	// redeemcodebatch.CurrencyValidator is a validator for the "currency" field. It is called by the builders before save.
+	redeemcodebatch.CurrencyValidator = redeemcodebatchDescCurrency.Validators[0].(func(string) error)
+	// redeemcodebatchDescSalesChannel is the schema descriptor for sales_channel field.
+	redeemcodebatchDescSalesChannel := redeemcodebatchFields[4].Descriptor()
+	// redeemcodebatch.DefaultSalesChannel holds the default value on creation for the sales_channel field.
+	redeemcodebatch.DefaultSalesChannel = redeemcodebatchDescSalesChannel.Default.(string)
+	// redeemcodebatch.SalesChannelValidator is a validator for the "sales_channel" field. It is called by the builders before save.
+	redeemcodebatch.SalesChannelValidator = redeemcodebatchDescSalesChannel.Validators[0].(func(string) error)
+	// redeemcodebatchDescCreatedAt is the schema descriptor for created_at field.
+	redeemcodebatchDescCreatedAt := redeemcodebatchFields[8].Descriptor()
+	// redeemcodebatch.DefaultCreatedAt holds the default value on creation for the created_at field.
+	redeemcodebatch.DefaultCreatedAt = redeemcodebatchDescCreatedAt.Default.(func() time.Time)
+	// redeemcodebatchDescUpdatedAt is the schema descriptor for updated_at field.
+	redeemcodebatchDescUpdatedAt := redeemcodebatchFields[9].Descriptor()
+	// redeemcodebatch.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	redeemcodebatch.DefaultUpdatedAt = redeemcodebatchDescUpdatedAt.Default.(func() time.Time)
+	// redeemcodebatch.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	redeemcodebatch.UpdateDefaultUpdatedAt = redeemcodebatchDescUpdatedAt.UpdateDefault.(func() time.Time)
 	securitysecretMixin := schema.SecuritySecret{}.Mixin()
 	securitysecretMixinFields0 := securitysecretMixin[0].Fields()
 	_ = securitysecretMixinFields0

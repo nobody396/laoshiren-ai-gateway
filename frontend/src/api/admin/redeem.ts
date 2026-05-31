@@ -8,7 +8,9 @@ import type {
   RedeemCode,
   GenerateRedeemCodesRequest,
   RedeemCodeType,
-  PaginatedResponse
+  PaginatedResponse,
+  RedeemCodeBillingFilters,
+  RedeemCodeBillingResult
 } from '@/types'
 
 /**
@@ -60,28 +62,21 @@ export async function getById(id: number): Promise<RedeemCode> {
  * @param validityDays - Validity days (for subscription type)
  * @returns Array of generated redeem codes
  */
-export async function generate(
-  count: number,
-  type: RedeemCodeType,
-  value: number,
-  groupId?: number | null,
-  validityDays?: number
-): Promise<RedeemCode[]> {
-  const payload: GenerateRedeemCodesRequest = {
-    count,
-    type,
-    value
-  }
-
-  // 订阅类型专用字段
-  if (type === 'subscription') {
-    payload.group_id = groupId
-    if (validityDays && validityDays > 0) {
-      payload.validity_days = validityDays
-    }
-  }
-
+export async function generate(payload: GenerateRedeemCodesRequest): Promise<RedeemCode[]> {
   const { data } = await apiClient.post<RedeemCode[]>('/admin/redeem-codes/generate', payload)
+  return data
+}
+
+export async function listBilling(
+  filters: RedeemCodeBillingFilters = {},
+  options?: {
+    signal?: AbortSignal
+  }
+): Promise<RedeemCodeBillingResult> {
+  const { data } = await apiClient.get<RedeemCodeBillingResult>('/admin/redeem-codes/billing', {
+    params: filters,
+    signal: options?.signal
+  })
   return data
 }
 
@@ -170,7 +165,8 @@ export const redeemAPI = {
   batchDelete,
   expire,
   getStats,
-  exportCodes
+  exportCodes,
+  listBilling
 }
 
 export default redeemAPI

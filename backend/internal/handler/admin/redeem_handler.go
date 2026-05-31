@@ -13,6 +13,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/handler/dto"
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/response"
+	middleware2 "github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -39,6 +40,16 @@ type GenerateRedeemCodesRequest struct {
 	Value        float64 `json:"value" binding:"min=0"`
 	GroupID      *int64  `json:"group_id"`                                    // 订阅类型必填
 	ValidityDays int     `json:"validity_days" binding:"omitempty,max=36500"` // 订阅类型使用，默认30天，最大100年
+
+	BatchName        string `json:"batch_name"`
+	Purpose          string `json:"purpose" binding:"omitempty,oneof=sale_recharge gift compensation internal_test migration"`
+	SalesStatus      string `json:"sales_status" binding:"omitempty,oneof=inventory sold gifted void"`
+	SalesChannel     string `json:"sales_channel"`
+	ExternalURL      string `json:"external_url"`
+	SoldToNote       string `json:"sold_to_note"`
+	ExternalOrderNo  string `json:"external_order_no"`
+	ExternalOrderURL string `json:"external_order_url"`
+	InternalNotes    string `json:"internal_notes"`
 }
 
 // CreateAndRedeemCodeRequest represents creating a fixed code and redeeming it for a target user.
@@ -107,12 +118,26 @@ func (h *RedeemHandler) Generate(c *gin.Context) {
 	}
 
 	executeAdminIdempotentJSON(c, "admin.redeem_codes.generate", req, service.DefaultWriteIdempotencyTTL(), func(ctx context.Context) (any, error) {
+		var createdBy *int64
+		if subject, ok := middleware2.GetAuthSubjectFromContext(c); ok {
+			createdBy = &subject.UserID
+		}
 		codes, execErr := h.adminService.GenerateRedeemCodes(ctx, &service.GenerateRedeemCodesInput{
-			Count:        req.Count,
-			Type:         req.Type,
-			Value:        req.Value,
-			GroupID:      req.GroupID,
-			ValidityDays: req.ValidityDays,
+			Count:            req.Count,
+			Type:             req.Type,
+			Value:            req.Value,
+			GroupID:          req.GroupID,
+			ValidityDays:     req.ValidityDays,
+			BatchName:        req.BatchName,
+			Purpose:          req.Purpose,
+			SalesStatus:      req.SalesStatus,
+			SalesChannel:     req.SalesChannel,
+			ExternalURL:      req.ExternalURL,
+			SoldToNote:       req.SoldToNote,
+			ExternalOrderNo:  req.ExternalOrderNo,
+			ExternalOrderURL: req.ExternalOrderURL,
+			InternalNotes:    req.InternalNotes,
+			CreatedBy:        createdBy,
 		})
 		if execErr != nil {
 			return nil, execErr
@@ -294,6 +319,83 @@ func (h *RedeemHandler) GetStats(c *gin.Context) {
 			"trial":       0,
 		},
 	})
+}
+
+// ListBilling handles card-code billing/reconciliation records.
+// GET /api/v1/admin/redeem-codes/billing
+func (h *RedeemHandler) ListBilling(c *gin.Context) {
+	page, pageSize := response.ParsePagination(c)
+
+	batchID, err := parseOptionalInt64Query(c.Query("batch_id"))
+	if err != nil {
+		response.BadRequest(c, "Invalid batch_id")
+		return
+	}
+	amountMin, err := parseOptionalFloatQuery(c.Query("amount_min"))
+	if err != nil {
+		response.BadRequest(c, "Invalid amount_min")
+		return
+	}
+	amountMax, err := parseOptionalFloatQuery(c.Query("amount_max"))
+	if err != nil {
+		response.BadRequest(c, "Invalid amount_max")
+		return
+	}
+	usedStart, usedEnd, err := parseFlexibleTimeRange(c.Query("used_start_time"), c.Query("used_end_time"))
+	if err != nil {
+		response.BadRequest(c, "Invalid used time range")
+		return
+	}
+	createdStart, createdEnd, err := parseFlexibleTimeRange(c.Query("created_start_time"), c.Query("created_end_time"))
+	if err != nil {
+		response.BadRequest(c, "Invalid created time range")
+		return
+	}
+
+	result, err := h.adminService.ListRedeemCodeBilling(c.Request.Context(), page, pageSize, service.RedeemCodeBillingFilters{
+		Search:            strings.TrimSpace(c.Query("search")),
+		Purpose:           strings.TrimSpace(c.Query("purpose")),
+		SalesStatus:       strings.TrimSpace(c.Query("sales_status")),
+		RedeemStatus:      strings.TrimSpace(c.Query("redeem_status")),
+		BatchID:           batchID,
+		AmountMin:         amountMin,
+		AmountMax:         amountMax,
+		UsedStartTime:     usedStart,
+		UsedEndTime:       usedEnd,
+		CreatedStartTime:  createdStart,
+		CreatedEndTime:    createdEnd,
+		IncludeNonRevenue: c.Query("include_non_revenue") == "true",
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, result)
+}
+
+func parseOptionalInt64Query(raw string) (*int64, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return nil, nil
+	}
+	parsed, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	return &parsed, nil
+}
+
+func parseOptionalFloatQuery(raw string) (*float64, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return nil, nil
+	}
+	parsed, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return nil, err
+	}
+	return &parsed, nil
 }
 
 // Export handles exporting redeem codes to CSV

@@ -16,6 +16,7 @@ describe('后台路由权限声明', () => {
       '/admin/feedbacks/:id': 'admin:feedbacks',
       '/admin/proxies': 'admin:proxies',
       '/admin/redeem': 'admin:redeem',
+      '/admin/billing': 'admin:redeem',
       '/admin/promo-codes': 'admin:promo-codes',
       '/admin/settings': 'admin:settings',
       '/admin/usage': 'admin:usage',

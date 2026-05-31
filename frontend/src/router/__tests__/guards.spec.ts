@@ -101,6 +101,7 @@ function simulateGuard(
       '/admin/groups',
       '/admin/subscriptions',
       '/admin/redeem',
+      '/admin/billing',
       '/subscriptions',
       '/redeem',
     ]

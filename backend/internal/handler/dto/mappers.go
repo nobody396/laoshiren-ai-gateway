@@ -538,18 +538,28 @@ func RedeemCodeFromServiceAdmin(rc *service.RedeemCode) *AdminRedeemCode {
 
 func redeemCodeFromServiceBase(rc *service.RedeemCode) RedeemCode {
 	out := RedeemCode{
-		ID:           rc.ID,
-		Code:         rc.Code,
-		Type:         rc.Type,
-		Value:        rc.Value,
-		Status:       rc.Status,
-		UsedBy:       rc.UsedBy,
-		UsedAt:       rc.UsedAt,
-		CreatedAt:    rc.CreatedAt,
-		GroupID:      rc.GroupID,
-		ValidityDays: rc.ValidityDays,
-		User:         UserFromServiceShallow(rc.User),
-		Group:        GroupFromServiceShallow(rc.Group),
+		ID:               rc.ID,
+		Code:             rc.Code,
+		Type:             rc.Type,
+		Value:            rc.Value,
+		Status:           rc.Status,
+		UsedBy:           rc.UsedBy,
+		UsedAt:           rc.UsedAt,
+		CreatedAt:        rc.CreatedAt,
+		UpdatedAt:        rc.UpdatedAt,
+		GroupID:          rc.GroupID,
+		ValidityDays:     rc.ValidityDays,
+		User:             UserFromServiceShallow(rc.User),
+		Group:            GroupFromServiceShallow(rc.Group),
+		BatchID:          rc.BatchID,
+		Purpose:          rc.Purpose,
+		SalesStatus:      rc.SalesStatus,
+		SoldAt:           rc.SoldAt,
+		SoldToNote:       rc.SoldToNote,
+		ExternalOrderNo:  rc.ExternalOrderNo,
+		ExternalOrderURL: rc.ExternalOrderURL,
+		InternalNotes:    rc.InternalNotes,
+		Batch:            RedeemCodeBatchFromService(rc.Batch),
 	}
 
 	// For admin_balance/admin_concurrency types, include notes so users can see
@@ -559,6 +569,25 @@ func redeemCodeFromServiceBase(rc *service.RedeemCode) RedeemCode {
 	}
 
 	return out
+}
+
+func RedeemCodeBatchFromService(batch *service.RedeemCodeBatch) *RedeemCodeBatch {
+	if batch == nil {
+		return nil
+	}
+	return &RedeemCodeBatch{
+		ID:           batch.ID,
+		Name:         batch.Name,
+		Purpose:      batch.Purpose,
+		FaceValue:    batch.FaceValue,
+		Currency:     batch.Currency,
+		SalesChannel: batch.SalesChannel,
+		ExternalURL:  batch.ExternalURL,
+		Notes:        batch.Notes,
+		CreatedBy:    batch.CreatedBy,
+		CreatedAt:    batch.CreatedAt,
+		UpdatedAt:    batch.UpdatedAt,
+	}
 }
 
 // AccountSummaryFromService returns a minimal AccountSummary for usage log display.

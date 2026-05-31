@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/group"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcode"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcodebatch"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/user"
 )
 
@@ -114,6 +115,118 @@ func (_c *RedeemCodeCreate) SetNillableNotes(v *string) *RedeemCodeCreate {
 	return _c
 }
 
+// SetBatchID sets the "batch_id" field.
+func (_c *RedeemCodeCreate) SetBatchID(v int64) *RedeemCodeCreate {
+	_c.mutation.SetBatchID(v)
+	return _c
+}
+
+// SetNillableBatchID sets the "batch_id" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableBatchID(v *int64) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetBatchID(*v)
+	}
+	return _c
+}
+
+// SetPurpose sets the "purpose" field.
+func (_c *RedeemCodeCreate) SetPurpose(v string) *RedeemCodeCreate {
+	_c.mutation.SetPurpose(v)
+	return _c
+}
+
+// SetNillablePurpose sets the "purpose" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillablePurpose(v *string) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetPurpose(*v)
+	}
+	return _c
+}
+
+// SetSalesStatus sets the "sales_status" field.
+func (_c *RedeemCodeCreate) SetSalesStatus(v string) *RedeemCodeCreate {
+	_c.mutation.SetSalesStatus(v)
+	return _c
+}
+
+// SetNillableSalesStatus sets the "sales_status" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableSalesStatus(v *string) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetSalesStatus(*v)
+	}
+	return _c
+}
+
+// SetSoldAt sets the "sold_at" field.
+func (_c *RedeemCodeCreate) SetSoldAt(v time.Time) *RedeemCodeCreate {
+	_c.mutation.SetSoldAt(v)
+	return _c
+}
+
+// SetNillableSoldAt sets the "sold_at" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableSoldAt(v *time.Time) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetSoldAt(*v)
+	}
+	return _c
+}
+
+// SetSoldToNote sets the "sold_to_note" field.
+func (_c *RedeemCodeCreate) SetSoldToNote(v string) *RedeemCodeCreate {
+	_c.mutation.SetSoldToNote(v)
+	return _c
+}
+
+// SetNillableSoldToNote sets the "sold_to_note" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableSoldToNote(v *string) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetSoldToNote(*v)
+	}
+	return _c
+}
+
+// SetExternalOrderNo sets the "external_order_no" field.
+func (_c *RedeemCodeCreate) SetExternalOrderNo(v string) *RedeemCodeCreate {
+	_c.mutation.SetExternalOrderNo(v)
+	return _c
+}
+
+// SetNillableExternalOrderNo sets the "external_order_no" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableExternalOrderNo(v *string) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetExternalOrderNo(*v)
+	}
+	return _c
+}
+
+// SetExternalOrderURL sets the "external_order_url" field.
+func (_c *RedeemCodeCreate) SetExternalOrderURL(v string) *RedeemCodeCreate {
+	_c.mutation.SetExternalOrderURL(v)
+	return _c
+}
+
+// SetNillableExternalOrderURL sets the "external_order_url" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableExternalOrderURL(v *string) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetExternalOrderURL(*v)
+	}
+	return _c
+}
+
+// SetInternalNotes sets the "internal_notes" field.
+func (_c *RedeemCodeCreate) SetInternalNotes(v string) *RedeemCodeCreate {
+	_c.mutation.SetInternalNotes(v)
+	return _c
+}
+
+// SetNillableInternalNotes sets the "internal_notes" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableInternalNotes(v *string) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetInternalNotes(*v)
+	}
+	return _c
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_c *RedeemCodeCreate) SetCreatedAt(v time.Time) *RedeemCodeCreate {
 	_c.mutation.SetCreatedAt(v)
@@ -124,6 +237,20 @@ func (_c *RedeemCodeCreate) SetCreatedAt(v time.Time) *RedeemCodeCreate {
 func (_c *RedeemCodeCreate) SetNillableCreatedAt(v *time.Time) *RedeemCodeCreate {
 	if v != nil {
 		_c.SetCreatedAt(*v)
+	}
+	return _c
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_c *RedeemCodeCreate) SetUpdatedAt(v time.Time) *RedeemCodeCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillableUpdatedAt(v *time.Time) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
 	return _c
 }
@@ -180,6 +307,11 @@ func (_c *RedeemCodeCreate) SetGroup(v *Group) *RedeemCodeCreate {
 	return _c.SetGroupID(v.ID)
 }
 
+// SetBatch sets the "batch" edge to the RedeemCodeBatch entity.
+func (_c *RedeemCodeCreate) SetBatch(v *RedeemCodeBatch) *RedeemCodeCreate {
+	return _c.SetBatchID(v.ID)
+}
+
 // Mutation returns the RedeemCodeMutation object of the builder.
 func (_c *RedeemCodeCreate) Mutation() *RedeemCodeMutation {
 	return _c.mutation
@@ -227,9 +359,21 @@ func (_c *RedeemCodeCreate) defaults() {
 		v := redeemcode.DefaultStatus
 		_c.mutation.SetStatus(v)
 	}
+	if _, ok := _c.mutation.Purpose(); !ok {
+		v := redeemcode.DefaultPurpose
+		_c.mutation.SetPurpose(v)
+	}
+	if _, ok := _c.mutation.SalesStatus(); !ok {
+		v := redeemcode.DefaultSalesStatus
+		_c.mutation.SetSalesStatus(v)
+	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := redeemcode.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
+	}
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		v := redeemcode.DefaultUpdatedAt()
+		_c.mutation.SetUpdatedAt(v)
 	}
 	if _, ok := _c.mutation.ValidityDays(); !ok {
 		v := redeemcode.DefaultValidityDays
@@ -266,8 +410,32 @@ func (_c *RedeemCodeCreate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "RedeemCode.status": %w`, err)}
 		}
 	}
+	if _, ok := _c.mutation.Purpose(); !ok {
+		return &ValidationError{Name: "purpose", err: errors.New(`ent: missing required field "RedeemCode.purpose"`)}
+	}
+	if v, ok := _c.mutation.Purpose(); ok {
+		if err := redeemcode.PurposeValidator(v); err != nil {
+			return &ValidationError{Name: "purpose", err: fmt.Errorf(`ent: validator failed for field "RedeemCode.purpose": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.SalesStatus(); !ok {
+		return &ValidationError{Name: "sales_status", err: errors.New(`ent: missing required field "RedeemCode.sales_status"`)}
+	}
+	if v, ok := _c.mutation.SalesStatus(); ok {
+		if err := redeemcode.SalesStatusValidator(v); err != nil {
+			return &ValidationError{Name: "sales_status", err: fmt.Errorf(`ent: validator failed for field "RedeemCode.sales_status": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.ExternalOrderNo(); ok {
+		if err := redeemcode.ExternalOrderNoValidator(v); err != nil {
+			return &ValidationError{Name: "external_order_no", err: fmt.Errorf(`ent: validator failed for field "RedeemCode.external_order_no": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "RedeemCode.created_at"`)}
+	}
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "RedeemCode.updated_at"`)}
 	}
 	if _, ok := _c.mutation.ValidityDays(); !ok {
 		return &ValidationError{Name: "validity_days", err: errors.New(`ent: missing required field "RedeemCode.validity_days"`)}
@@ -323,9 +491,41 @@ func (_c *RedeemCodeCreate) createSpec() (*RedeemCode, *sqlgraph.CreateSpec) {
 		_spec.SetField(redeemcode.FieldNotes, field.TypeString, value)
 		_node.Notes = &value
 	}
+	if value, ok := _c.mutation.Purpose(); ok {
+		_spec.SetField(redeemcode.FieldPurpose, field.TypeString, value)
+		_node.Purpose = value
+	}
+	if value, ok := _c.mutation.SalesStatus(); ok {
+		_spec.SetField(redeemcode.FieldSalesStatus, field.TypeString, value)
+		_node.SalesStatus = value
+	}
+	if value, ok := _c.mutation.SoldAt(); ok {
+		_spec.SetField(redeemcode.FieldSoldAt, field.TypeTime, value)
+		_node.SoldAt = &value
+	}
+	if value, ok := _c.mutation.SoldToNote(); ok {
+		_spec.SetField(redeemcode.FieldSoldToNote, field.TypeString, value)
+		_node.SoldToNote = &value
+	}
+	if value, ok := _c.mutation.ExternalOrderNo(); ok {
+		_spec.SetField(redeemcode.FieldExternalOrderNo, field.TypeString, value)
+		_node.ExternalOrderNo = &value
+	}
+	if value, ok := _c.mutation.ExternalOrderURL(); ok {
+		_spec.SetField(redeemcode.FieldExternalOrderURL, field.TypeString, value)
+		_node.ExternalOrderURL = &value
+	}
+	if value, ok := _c.mutation.InternalNotes(); ok {
+		_spec.SetField(redeemcode.FieldInternalNotes, field.TypeString, value)
+		_node.InternalNotes = &value
+	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(redeemcode.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := _c.mutation.UpdatedAt(); ok {
+		_spec.SetField(redeemcode.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := _c.mutation.ValidityDays(); ok {
 		_spec.SetField(redeemcode.FieldValidityDays, field.TypeInt, value)
@@ -363,6 +563,23 @@ func (_c *RedeemCodeCreate) createSpec() (*RedeemCode, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.GroupID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.BatchIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   redeemcode.BatchTable,
+			Columns: []string{redeemcode.BatchColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(redeemcodebatch.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.BatchID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -522,6 +739,150 @@ func (u *RedeemCodeUpsert) UpdateNotes() *RedeemCodeUpsert {
 // ClearNotes clears the value of the "notes" field.
 func (u *RedeemCodeUpsert) ClearNotes() *RedeemCodeUpsert {
 	u.SetNull(redeemcode.FieldNotes)
+	return u
+}
+
+// SetBatchID sets the "batch_id" field.
+func (u *RedeemCodeUpsert) SetBatchID(v int64) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldBatchID, v)
+	return u
+}
+
+// UpdateBatchID sets the "batch_id" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateBatchID() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldBatchID)
+	return u
+}
+
+// ClearBatchID clears the value of the "batch_id" field.
+func (u *RedeemCodeUpsert) ClearBatchID() *RedeemCodeUpsert {
+	u.SetNull(redeemcode.FieldBatchID)
+	return u
+}
+
+// SetPurpose sets the "purpose" field.
+func (u *RedeemCodeUpsert) SetPurpose(v string) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldPurpose, v)
+	return u
+}
+
+// UpdatePurpose sets the "purpose" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdatePurpose() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldPurpose)
+	return u
+}
+
+// SetSalesStatus sets the "sales_status" field.
+func (u *RedeemCodeUpsert) SetSalesStatus(v string) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldSalesStatus, v)
+	return u
+}
+
+// UpdateSalesStatus sets the "sales_status" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateSalesStatus() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldSalesStatus)
+	return u
+}
+
+// SetSoldAt sets the "sold_at" field.
+func (u *RedeemCodeUpsert) SetSoldAt(v time.Time) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldSoldAt, v)
+	return u
+}
+
+// UpdateSoldAt sets the "sold_at" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateSoldAt() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldSoldAt)
+	return u
+}
+
+// ClearSoldAt clears the value of the "sold_at" field.
+func (u *RedeemCodeUpsert) ClearSoldAt() *RedeemCodeUpsert {
+	u.SetNull(redeemcode.FieldSoldAt)
+	return u
+}
+
+// SetSoldToNote sets the "sold_to_note" field.
+func (u *RedeemCodeUpsert) SetSoldToNote(v string) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldSoldToNote, v)
+	return u
+}
+
+// UpdateSoldToNote sets the "sold_to_note" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateSoldToNote() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldSoldToNote)
+	return u
+}
+
+// ClearSoldToNote clears the value of the "sold_to_note" field.
+func (u *RedeemCodeUpsert) ClearSoldToNote() *RedeemCodeUpsert {
+	u.SetNull(redeemcode.FieldSoldToNote)
+	return u
+}
+
+// SetExternalOrderNo sets the "external_order_no" field.
+func (u *RedeemCodeUpsert) SetExternalOrderNo(v string) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldExternalOrderNo, v)
+	return u
+}
+
+// UpdateExternalOrderNo sets the "external_order_no" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateExternalOrderNo() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldExternalOrderNo)
+	return u
+}
+
+// ClearExternalOrderNo clears the value of the "external_order_no" field.
+func (u *RedeemCodeUpsert) ClearExternalOrderNo() *RedeemCodeUpsert {
+	u.SetNull(redeemcode.FieldExternalOrderNo)
+	return u
+}
+
+// SetExternalOrderURL sets the "external_order_url" field.
+func (u *RedeemCodeUpsert) SetExternalOrderURL(v string) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldExternalOrderURL, v)
+	return u
+}
+
+// UpdateExternalOrderURL sets the "external_order_url" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateExternalOrderURL() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldExternalOrderURL)
+	return u
+}
+
+// ClearExternalOrderURL clears the value of the "external_order_url" field.
+func (u *RedeemCodeUpsert) ClearExternalOrderURL() *RedeemCodeUpsert {
+	u.SetNull(redeemcode.FieldExternalOrderURL)
+	return u
+}
+
+// SetInternalNotes sets the "internal_notes" field.
+func (u *RedeemCodeUpsert) SetInternalNotes(v string) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldInternalNotes, v)
+	return u
+}
+
+// UpdateInternalNotes sets the "internal_notes" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateInternalNotes() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldInternalNotes)
+	return u
+}
+
+// ClearInternalNotes clears the value of the "internal_notes" field.
+func (u *RedeemCodeUpsert) ClearInternalNotes() *RedeemCodeUpsert {
+	u.SetNull(redeemcode.FieldInternalNotes)
+	return u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *RedeemCodeUpsert) SetUpdatedAt(v time.Time) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldUpdatedAt, v)
+	return u
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateUpdatedAt() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldUpdatedAt)
 	return u
 }
 
@@ -729,6 +1090,174 @@ func (u *RedeemCodeUpsertOne) UpdateNotes() *RedeemCodeUpsertOne {
 func (u *RedeemCodeUpsertOne) ClearNotes() *RedeemCodeUpsertOne {
 	return u.Update(func(s *RedeemCodeUpsert) {
 		s.ClearNotes()
+	})
+}
+
+// SetBatchID sets the "batch_id" field.
+func (u *RedeemCodeUpsertOne) SetBatchID(v int64) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetBatchID(v)
+	})
+}
+
+// UpdateBatchID sets the "batch_id" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateBatchID() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateBatchID()
+	})
+}
+
+// ClearBatchID clears the value of the "batch_id" field.
+func (u *RedeemCodeUpsertOne) ClearBatchID() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearBatchID()
+	})
+}
+
+// SetPurpose sets the "purpose" field.
+func (u *RedeemCodeUpsertOne) SetPurpose(v string) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetPurpose(v)
+	})
+}
+
+// UpdatePurpose sets the "purpose" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdatePurpose() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdatePurpose()
+	})
+}
+
+// SetSalesStatus sets the "sales_status" field.
+func (u *RedeemCodeUpsertOne) SetSalesStatus(v string) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetSalesStatus(v)
+	})
+}
+
+// UpdateSalesStatus sets the "sales_status" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateSalesStatus() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateSalesStatus()
+	})
+}
+
+// SetSoldAt sets the "sold_at" field.
+func (u *RedeemCodeUpsertOne) SetSoldAt(v time.Time) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetSoldAt(v)
+	})
+}
+
+// UpdateSoldAt sets the "sold_at" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateSoldAt() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateSoldAt()
+	})
+}
+
+// ClearSoldAt clears the value of the "sold_at" field.
+func (u *RedeemCodeUpsertOne) ClearSoldAt() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearSoldAt()
+	})
+}
+
+// SetSoldToNote sets the "sold_to_note" field.
+func (u *RedeemCodeUpsertOne) SetSoldToNote(v string) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetSoldToNote(v)
+	})
+}
+
+// UpdateSoldToNote sets the "sold_to_note" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateSoldToNote() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateSoldToNote()
+	})
+}
+
+// ClearSoldToNote clears the value of the "sold_to_note" field.
+func (u *RedeemCodeUpsertOne) ClearSoldToNote() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearSoldToNote()
+	})
+}
+
+// SetExternalOrderNo sets the "external_order_no" field.
+func (u *RedeemCodeUpsertOne) SetExternalOrderNo(v string) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetExternalOrderNo(v)
+	})
+}
+
+// UpdateExternalOrderNo sets the "external_order_no" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateExternalOrderNo() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateExternalOrderNo()
+	})
+}
+
+// ClearExternalOrderNo clears the value of the "external_order_no" field.
+func (u *RedeemCodeUpsertOne) ClearExternalOrderNo() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearExternalOrderNo()
+	})
+}
+
+// SetExternalOrderURL sets the "external_order_url" field.
+func (u *RedeemCodeUpsertOne) SetExternalOrderURL(v string) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetExternalOrderURL(v)
+	})
+}
+
+// UpdateExternalOrderURL sets the "external_order_url" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateExternalOrderURL() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateExternalOrderURL()
+	})
+}
+
+// ClearExternalOrderURL clears the value of the "external_order_url" field.
+func (u *RedeemCodeUpsertOne) ClearExternalOrderURL() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearExternalOrderURL()
+	})
+}
+
+// SetInternalNotes sets the "internal_notes" field.
+func (u *RedeemCodeUpsertOne) SetInternalNotes(v string) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetInternalNotes(v)
+	})
+}
+
+// UpdateInternalNotes sets the "internal_notes" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateInternalNotes() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateInternalNotes()
+	})
+}
+
+// ClearInternalNotes clears the value of the "internal_notes" field.
+func (u *RedeemCodeUpsertOne) ClearInternalNotes() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearInternalNotes()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *RedeemCodeUpsertOne) SetUpdatedAt(v time.Time) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateUpdatedAt() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateUpdatedAt()
 	})
 }
 
@@ -1108,6 +1637,174 @@ func (u *RedeemCodeUpsertBulk) UpdateNotes() *RedeemCodeUpsertBulk {
 func (u *RedeemCodeUpsertBulk) ClearNotes() *RedeemCodeUpsertBulk {
 	return u.Update(func(s *RedeemCodeUpsert) {
 		s.ClearNotes()
+	})
+}
+
+// SetBatchID sets the "batch_id" field.
+func (u *RedeemCodeUpsertBulk) SetBatchID(v int64) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetBatchID(v)
+	})
+}
+
+// UpdateBatchID sets the "batch_id" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateBatchID() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateBatchID()
+	})
+}
+
+// ClearBatchID clears the value of the "batch_id" field.
+func (u *RedeemCodeUpsertBulk) ClearBatchID() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearBatchID()
+	})
+}
+
+// SetPurpose sets the "purpose" field.
+func (u *RedeemCodeUpsertBulk) SetPurpose(v string) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetPurpose(v)
+	})
+}
+
+// UpdatePurpose sets the "purpose" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdatePurpose() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdatePurpose()
+	})
+}
+
+// SetSalesStatus sets the "sales_status" field.
+func (u *RedeemCodeUpsertBulk) SetSalesStatus(v string) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetSalesStatus(v)
+	})
+}
+
+// UpdateSalesStatus sets the "sales_status" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateSalesStatus() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateSalesStatus()
+	})
+}
+
+// SetSoldAt sets the "sold_at" field.
+func (u *RedeemCodeUpsertBulk) SetSoldAt(v time.Time) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetSoldAt(v)
+	})
+}
+
+// UpdateSoldAt sets the "sold_at" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateSoldAt() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateSoldAt()
+	})
+}
+
+// ClearSoldAt clears the value of the "sold_at" field.
+func (u *RedeemCodeUpsertBulk) ClearSoldAt() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearSoldAt()
+	})
+}
+
+// SetSoldToNote sets the "sold_to_note" field.
+func (u *RedeemCodeUpsertBulk) SetSoldToNote(v string) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetSoldToNote(v)
+	})
+}
+
+// UpdateSoldToNote sets the "sold_to_note" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateSoldToNote() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateSoldToNote()
+	})
+}
+
+// ClearSoldToNote clears the value of the "sold_to_note" field.
+func (u *RedeemCodeUpsertBulk) ClearSoldToNote() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearSoldToNote()
+	})
+}
+
+// SetExternalOrderNo sets the "external_order_no" field.
+func (u *RedeemCodeUpsertBulk) SetExternalOrderNo(v string) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetExternalOrderNo(v)
+	})
+}
+
+// UpdateExternalOrderNo sets the "external_order_no" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateExternalOrderNo() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateExternalOrderNo()
+	})
+}
+
+// ClearExternalOrderNo clears the value of the "external_order_no" field.
+func (u *RedeemCodeUpsertBulk) ClearExternalOrderNo() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearExternalOrderNo()
+	})
+}
+
+// SetExternalOrderURL sets the "external_order_url" field.
+func (u *RedeemCodeUpsertBulk) SetExternalOrderURL(v string) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetExternalOrderURL(v)
+	})
+}
+
+// UpdateExternalOrderURL sets the "external_order_url" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateExternalOrderURL() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateExternalOrderURL()
+	})
+}
+
+// ClearExternalOrderURL clears the value of the "external_order_url" field.
+func (u *RedeemCodeUpsertBulk) ClearExternalOrderURL() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearExternalOrderURL()
+	})
+}
+
+// SetInternalNotes sets the "internal_notes" field.
+func (u *RedeemCodeUpsertBulk) SetInternalNotes(v string) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetInternalNotes(v)
+	})
+}
+
+// UpdateInternalNotes sets the "internal_notes" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateInternalNotes() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateInternalNotes()
+	})
+}
+
+// ClearInternalNotes clears the value of the "internal_notes" field.
+func (u *RedeemCodeUpsertBulk) ClearInternalNotes() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.ClearInternalNotes()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *RedeemCodeUpsertBulk) SetUpdatedAt(v time.Time) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateUpdatedAt() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateUpdatedAt()
 	})
 }
 

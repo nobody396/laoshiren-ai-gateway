@@ -1085,6 +1085,13 @@ export interface AdminDataImportResult {
 // ==================== Usage & Redeem Types ====================
 
 export type RedeemCodeType = 'balance' | 'concurrency' | 'subscription' | 'invitation'
+export type RedeemCodePurpose =
+  | 'sale_recharge'
+  | 'gift'
+  | 'compensation'
+  | 'internal_test'
+  | 'migration'
+export type RedeemCodeSalesStatus = 'inventory' | 'sold' | 'gifted' | 'void'
 export type UsageRequestType = 'unknown' | 'sync' | 'stream' | 'ws_v2' | 'async'
 
 export interface UsageLog {
@@ -1203,10 +1210,33 @@ export interface RedeemCode {
   used_at: string | null
   created_at: string
   updated_at?: string
+  batch_id?: number | null
+  purpose?: RedeemCodePurpose
+  sales_status?: RedeemCodeSalesStatus
+  sold_at?: string | null
+  sold_to_note?: string | null
+  external_order_no?: string | null
+  external_order_url?: string | null
+  internal_notes?: string | null
   group_id?: number | null // 订阅类型专用
   validity_days?: number // 订阅类型专用
   user?: User
   group?: Group // 关联的分组
+  batch?: RedeemCodeBatch | null
+}
+
+export interface RedeemCodeBatch {
+  id: number
+  name: string
+  purpose: RedeemCodePurpose
+  face_value: number
+  currency: string
+  sales_channel?: string | null
+  external_url?: string | null
+  notes?: string | null
+  created_by?: number | null
+  created_at: string
+  updated_at: string
 }
 
 export interface GenerateRedeemCodesRequest {
@@ -1215,6 +1245,83 @@ export interface GenerateRedeemCodesRequest {
   value: number
   group_id?: number | null // 订阅类型专用
   validity_days?: number // 订阅类型专用
+  batch_name?: string
+  purpose?: RedeemCodePurpose
+  sales_status?: RedeemCodeSalesStatus
+  sales_channel?: string
+  external_url?: string
+  sold_at?: string | null
+  sold_to_note?: string
+  external_order_no?: string
+  external_order_url?: string
+  internal_notes?: string
+}
+
+export interface RedeemCodeBillingFilters {
+  page?: number
+  page_size?: number
+  search?: string
+  purpose?: RedeemCodePurpose | ''
+  sales_status?: RedeemCodeSalesStatus | ''
+  redeem_status?: 'unused' | 'used' | 'expired' | ''
+  batch_id?: number
+  amount_min?: number
+  amount_max?: number
+  used_start_time?: string
+  used_end_time?: string
+  created_start_time?: string
+  created_end_time?: string
+}
+
+export interface RedeemCodeBillingItem {
+  id: number
+  code: string
+  type: RedeemCodeType
+  value: number
+  purpose: RedeemCodePurpose
+  sales_status: RedeemCodeSalesStatus
+  redeem_status: 'unused' | 'used' | 'expired'
+  batch_id?: number | null
+  batch_name?: string
+  sold_at?: string | null
+  sold_to_note?: string
+  external_order_no?: string
+  external_order_url?: string
+  internal_notes?: string
+  notes?: string
+  used_by?: number | null
+  used_by_email?: string
+  used_by_username?: string
+  used_at?: string | null
+  ledger_id?: number | null
+  ledger_matched: boolean
+  ledger_delta?: number | null
+  current_user_balance?: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface RedeemCodeBillingSummary {
+  sale_face_value: number
+  sold_face_value: number
+  redeemed_sale_amount: number
+  sold_unredeemed_face_value: number
+  gift_redeemed_amount: number
+  compensation_redeemed_amount: number
+  internal_test_redeemed_amount: number
+  ledger_missing_count: number
+  total_codes: number
+  used_codes: number
+  unused_codes: number
+}
+
+export interface RedeemCodeBillingResult {
+  items: RedeemCodeBillingItem[]
+  summary: RedeemCodeBillingSummary
+  total: number
+  page: number
+  page_size: number
+  pages: number
 }
 
 export interface RedeemCodeRequest {

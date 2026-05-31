@@ -16,12 +16,23 @@ type RedeemCode struct {
 	UsedAt    *time.Time
 	Notes     string
 	CreatedAt time.Time
+	UpdatedAt time.Time
 
 	GroupID      *int64
 	ValidityDays int
 
+	BatchID          *int64
+	Purpose          string
+	SalesStatus      string
+	SoldAt           *time.Time
+	SoldToNote       string
+	ExternalOrderNo  string
+	ExternalOrderURL string
+	InternalNotes    string
+
 	User  *User
 	Group *Group
+	Batch *RedeemCodeBatch
 }
 
 func (r *RedeemCode) IsUsed() bool {
@@ -38,4 +49,18 @@ func GenerateRedeemCode() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
+}
+
+type RedeemCodeBatch struct {
+	ID           int64
+	Name         string
+	Purpose      string
+	FaceValue    float64
+	Currency     string
+	SalesChannel string
+	ExternalURL  string
+	Notes        string
+	CreatedBy    *int64
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }

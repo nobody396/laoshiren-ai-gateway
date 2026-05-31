@@ -35,6 +35,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/promocodeusage"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/proxy"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcode"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcodebatch"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/securitysecret"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/setting"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/tlsfingerprintprofile"
@@ -806,6 +807,33 @@ func (f TraverseRedeemCode) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.RedeemCodeQuery", q)
 }
 
+// The RedeemCodeBatchFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RedeemCodeBatchFunc func(context.Context, *ent.RedeemCodeBatchQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RedeemCodeBatchFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RedeemCodeBatchQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RedeemCodeBatchQuery", q)
+}
+
+// The TraverseRedeemCodeBatch type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRedeemCodeBatch func(context.Context, *ent.RedeemCodeBatchQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRedeemCodeBatch) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRedeemCodeBatch) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RedeemCodeBatchQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RedeemCodeBatchQuery", q)
+}
+
 // The SecuritySecretFunc type is an adapter to allow the use of ordinary function as a Querier.
 type SecuritySecretFunc func(context.Context, *ent.SecuritySecretQuery) (ent.Value, error)
 
@@ -1158,6 +1186,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.ProxyQuery, predicate.Proxy, proxy.OrderOption]{typ: ent.TypeProxy, tq: q}, nil
 	case *ent.RedeemCodeQuery:
 		return &query[*ent.RedeemCodeQuery, predicate.RedeemCode, redeemcode.OrderOption]{typ: ent.TypeRedeemCode, tq: q}, nil
+	case *ent.RedeemCodeBatchQuery:
+		return &query[*ent.RedeemCodeBatchQuery, predicate.RedeemCodeBatch, redeemcodebatch.OrderOption]{typ: ent.TypeRedeemCodeBatch, tq: q}, nil
 	case *ent.SecuritySecretQuery:
 		return &query[*ent.SecuritySecretQuery, predicate.SecuritySecret, securitysecret.OrderOption]{typ: ent.TypeSecuritySecret, tq: q}, nil
 	case *ent.SettingQuery:

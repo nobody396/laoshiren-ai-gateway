@@ -45,6 +45,23 @@ const (
 	RedeemTypeInvitation   = domain.RedeemTypeInvitation
 )
 
+// Redeem code purpose constants
+const (
+	RedeemCodePurposeSaleRecharge = domain.RedeemCodePurposeSaleRecharge
+	RedeemCodePurposeGift         = domain.RedeemCodePurposeGift
+	RedeemCodePurposeCompensation = domain.RedeemCodePurposeCompensation
+	RedeemCodePurposeInternalTest = domain.RedeemCodePurposeInternalTest
+	RedeemCodePurposeMigration    = domain.RedeemCodePurposeMigration
+)
+
+// Redeem code sales status constants
+const (
+	RedeemCodeSalesStatusInventory = domain.RedeemCodeSalesStatusInventory
+	RedeemCodeSalesStatusSold      = domain.RedeemCodeSalesStatusSold
+	RedeemCodeSalesStatusGifted    = domain.RedeemCodeSalesStatusGifted
+	RedeemCodeSalesStatusVoid      = domain.RedeemCodeSalesStatusVoid
+)
+
 // PromoCode status constants
 const (
 	PromoCodeStatusActive   = domain.PromoCodeStatusActive

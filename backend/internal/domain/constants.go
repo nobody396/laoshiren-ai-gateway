@@ -78,6 +78,23 @@ const (
 	RedeemTypeInvitation   = "invitation"
 )
 
+// Redeem code purpose constants
+const (
+	RedeemCodePurposeSaleRecharge = "sale_recharge"
+	RedeemCodePurposeGift         = "gift"
+	RedeemCodePurposeCompensation = "compensation"
+	RedeemCodePurposeInternalTest = "internal_test"
+	RedeemCodePurposeMigration    = "migration"
+)
+
+// Redeem code sales status constants
+const (
+	RedeemCodeSalesStatusInventory = "inventory"
+	RedeemCodeSalesStatusSold      = "sold"
+	RedeemCodeSalesStatusGifted    = "gifted"
+	RedeemCodeSalesStatusVoid      = "void"
+)
+
 // PromoCode status constants
 const (
 	PromoCodeStatusActive   = "active"

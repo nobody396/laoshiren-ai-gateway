@@ -40,6 +40,7 @@ This directory contains the Vue Router configuration for the Sub2API frontend ap
 | `/admin/accounts`  | AdminAccountsView  | Account management              |
 | `/admin/proxies`   | AdminProxiesView   | Proxy management                |
 | `/admin/redeem`    | AdminRedeemView    | Redeem code management          |
+| `/admin/billing`   | AdminBillingView   | Billing management              |
 
 ### Special Routes
 

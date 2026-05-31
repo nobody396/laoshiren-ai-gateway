@@ -420,6 +420,7 @@ export default {
     accounts: '账号管理',
     proxies: 'IP管理',
     redeemCodes: '兑换码',
+    billing: '账单管理',
     ops: '运维监控',
     promoCodes: '优惠码',
     settings: '系统设置',
@@ -3760,6 +3761,9 @@ export default {
         type: '类型',
         value: '面值',
         status: '状态',
+        purpose: '用途',
+        salesStatus: '销售状态',
+        batch: '批次/订单',
         usedBy: '使用者',
         usedAt: '使用时间',
         createdAt: '创建时间',
@@ -3815,6 +3819,35 @@ export default {
       validityDays: '有效天数',
       groupRequired: '请选择订阅分组',
       days: '天',
+      batchName: '批次名称',
+      batchNamePlaceholder: '例如：2026-05 充值卡密',
+      purpose: '用途',
+      salesStatusLabel: '销售状态',
+      salesChannel: '销售渠道',
+      salesChannelPlaceholder: '例如：联动优势、人工收款',
+      externalUrl: '批次链接',
+      externalUrlPlaceholder: '购买页或批次来源链接',
+      externalOrderNo: '外部订单号',
+      externalOrderNoPlaceholder: '支付平台订单号',
+      externalOrderUrl: '订单链接',
+      externalOrderUrlPlaceholder: '可打开的订单链接',
+      soldToNote: '购买人备注',
+      soldToNotePlaceholder: '邮箱、微信、客户名等',
+      internalNotes: '内部备注',
+      internalNotesPlaceholder: '对账、赠送、补偿等说明',
+      purposes: {
+        sale_recharge: '充值销售',
+        gift: '赠送',
+        compensation: '补偿',
+        internal_test: '内部测试',
+        migration: '历史迁移'
+      },
+      salesStatus: {
+        inventory: '库存',
+        sold: '已售',
+        gifted: '已赠送',
+        void: '作废'
+      },
       status: {
         unused: '未使用',
         used: '已使用',
@@ -3859,6 +3892,51 @@ export default {
       failedToGenerate: '生成兑换码失败',
       failedToUpdate: '更新兑换码失败',
       failedToDelete: '删除兑换码失败'
+    },
+
+    billing: {
+      title: '账单管理',
+      description: '当前账单来源为充值兑换码，后续可接入网站充值和 Stripe 等渠道。',
+      empty: '暂无账单记录',
+      noBatch: '未归入批次',
+      openOrder: '打开订单',
+      loadFailed: '加载账单失败',
+      filters: {
+        search: '搜索',
+        searchPlaceholder: '兑换码、邮箱、订单号、购买人备注',
+        purpose: '用途',
+        salesStatus: '销售状态',
+        redeemStatus: '兑换状态',
+        allPurposes: '全部用途',
+        allSalesStatuses: '全部销售状态',
+        allRedeemStatuses: '全部兑换状态',
+        usedStart: '兑换开始',
+        usedEnd: '兑换结束',
+        amountMin: '最低金额',
+        amountMax: '最高金额',
+        apply: '应用筛选'
+      },
+      summary: {
+        redeemedSaleAmount: '已兑换销售金额',
+        soldUnredeemedFaceValue: '已售未兑换金额',
+        soldFaceValue: '已售总面值',
+        ledgerMissingCount: '缺失余额流水'
+      },
+      columns: {
+        code: '兑换码',
+        amount: '金额',
+        classification: '分类',
+        buyer: '购买人',
+        redeemedBy: '兑换账号',
+        ledger: '余额流水',
+        order: '订单',
+        time: '创建时间'
+      },
+      ledger: {
+        matched: '已入账',
+        missing: '未匹配流水',
+        notRedeemed: '未兑换'
+      }
     },
 
     // Announcements

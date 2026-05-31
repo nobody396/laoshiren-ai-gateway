@@ -136,6 +136,69 @@ func TestCreateAndRedeem_BalanceIgnoresSubscriptionFields(t *testing.T) {
 		"balance type should not require group_id or validity_days")
 }
 
+func TestRedeemGenerate_AcceptsBillingMetadata(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	body := map[string]any{
+		"count":              2,
+		"type":               "balance",
+		"value":              20,
+		"batch_name":         "2026-05 sold cards",
+		"purpose":            "sale_recharge",
+		"sales_status":       "sold",
+		"sales_channel":      "manual",
+		"external_url":       "https://example.com/shop",
+		"sold_to_note":       "buyer@example.com",
+		"external_order_no":  "ORDER-20",
+		"external_order_url": "https://example.com/orders/ORDER-20",
+		"internal_notes":     "manual reconciliation",
+	}
+	jsonBytes, err := json.Marshal(body)
+	require.NoError(t, err)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/v1/admin/redeem-codes/generate", bytes.NewReader(jsonBytes))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	svc := newStubAdminService()
+	NewRedeemHandler(svc, nil).Generate(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.NotNil(t, svc.generatedRedeemInput)
+	require.Equal(t, 2, svc.generatedRedeemInput.Count)
+	require.Equal(t, service.RedeemCodePurposeSaleRecharge, svc.generatedRedeemInput.Purpose)
+	require.Equal(t, service.RedeemCodeSalesStatusSold, svc.generatedRedeemInput.SalesStatus)
+	require.Equal(t, "ORDER-20", svc.generatedRedeemInput.ExternalOrderNo)
+	require.Equal(t, "buyer@example.com", svc.generatedRedeemInput.SoldToNote)
+}
+
+func TestRedeemBilling_ParsesFilters(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(
+		http.MethodGet,
+		"/api/v1/admin/redeem-codes/billing?page=2&page_size=50&search=ORDER-20&purpose=sale_recharge&sales_status=sold&redeem_status=used&amount_min=10&amount_max=30&used_start_time=2026-05-01&used_end_time=2026-05-31",
+		nil,
+	)
+
+	svc := newStubAdminService()
+	NewRedeemHandler(svc, nil).ListBilling(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, 2, svc.lastBillingPage)
+	require.Equal(t, 50, svc.lastBillingPageSize)
+	require.Equal(t, "ORDER-20", svc.lastBillingFilters.Search)
+	require.Equal(t, service.RedeemCodePurposeSaleRecharge, svc.lastBillingFilters.Purpose)
+	require.Equal(t, service.RedeemCodeSalesStatusSold, svc.lastBillingFilters.SalesStatus)
+	require.Equal(t, service.StatusUsed, svc.lastBillingFilters.RedeemStatus)
+	require.NotNil(t, svc.lastBillingFilters.AmountMin)
+	require.NotNil(t, svc.lastBillingFilters.AmountMax)
+	assert.InDelta(t, 10, *svc.lastBillingFilters.AmountMin, 0.001)
+	assert.InDelta(t, 30, *svc.lastBillingFilters.AmountMax, 0.001)
+	require.NotNil(t, svc.lastBillingFilters.UsedStartTime)
+	require.NotNil(t, svc.lastBillingFilters.UsedEndTime)
+}
+
 func TestRedeemExport_IncludesRedeemURL(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()

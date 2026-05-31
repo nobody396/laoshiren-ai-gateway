@@ -175,6 +175,7 @@ var scannerDescMap = map[string]string{
 	"GET /admin/redeem-codes":                    "分页查询卡密列表",
 	"GET /admin/redeem-codes/stats":              "卡密统计数据",
 	"GET /admin/redeem-codes/export":             "导出卡密",
+	"GET /admin/redeem-codes/billing":            "卡密账单列表",
 	"GET /admin/redeem-codes/:id":                "卡密详情",
 	"POST /admin/redeem-codes/create-and-redeem": "创建并立即兑换卡密",
 	"POST /admin/redeem-codes/generate":          "批量生成卡密",

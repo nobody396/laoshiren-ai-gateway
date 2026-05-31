@@ -77,6 +77,7 @@ func TestProvideCleanup_WithMinimalDependencies_NoPanic(t *testing.T) {
 		nil, // gptImageTaskSettlement
 		nil, // scheduledTestRunner
 		nil, // backupSvc
+		nil, // downloadResourceSvc
 	)
 
 	require.NotPanics(t, func() {

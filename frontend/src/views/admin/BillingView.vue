@@ -34,9 +34,21 @@
         </div>
       </div>
 
+      <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100">
+        <div class="flex gap-3">
+          <Icon name="dollar" size="md" class="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-300" />
+          <div>
+            <div class="font-semibold">{{ t('admin.billing.revenueScopeTitle') }}</div>
+            <div class="mt-1 text-emerald-800 dark:text-emerald-200">
+              {{ t('admin.billing.revenueScopeDescription') }}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800">
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <div class="xl:col-span-2">
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-12">
+          <div class="xl:col-span-5">
             <label class="input-label">{{ t('admin.billing.filters.search') }}</label>
             <input
               v-model.trim="filters.search"
@@ -46,6 +58,47 @@
               @input="handleSearch"
             />
           </div>
+          <div class="xl:col-span-2">
+            <label class="input-label">{{ t('admin.billing.filters.exactAmount') }}</label>
+            <input
+              v-model.number="filters.amount_exact"
+              class="input"
+              type="number"
+              step="0.01"
+              min="0"
+              @change="reloadFromFirstPage"
+            />
+          </div>
+          <div class="xl:col-span-2">
+            <label class="input-label">{{ t('admin.billing.filters.redeemStatus') }}</label>
+            <Select
+              v-model="filters.redeem_status"
+              :options="redeemStatusOptions"
+              @change="reloadFromFirstPage"
+            />
+          </div>
+          <div class="flex items-end gap-2 xl:col-span-3">
+            <button type="button" class="btn btn-secondary" @click="resetFilters">
+              {{ t('common.reset') }}
+            </button>
+            <button type="button" class="btn btn-primary" :disabled="loading" @click="reloadFromFirstPage">
+              {{ t('admin.billing.filters.apply') }}
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+            @click="showAdvancedFilters = !showAdvancedFilters"
+          >
+            <Icon name="filter" size="sm" />
+            {{ showAdvancedFilters ? t('admin.billing.filters.hideAdvanced') : t('admin.billing.filters.showAdvanced') }}
+          </button>
+        </div>
+
+        <div v-if="showAdvancedFilters" class="mt-3 grid grid-cols-1 gap-3 border-t border-gray-100 pt-3 md:grid-cols-2 xl:grid-cols-6 dark:border-dark-700">
           <div>
             <label class="input-label">{{ t('admin.billing.filters.purpose') }}</label>
             <Select v-model="filters.purpose" :options="purposeOptions" @change="reloadFromFirstPage" />
@@ -59,14 +112,6 @@
             />
           </div>
           <div>
-            <label class="input-label">{{ t('admin.billing.filters.redeemStatus') }}</label>
-            <Select
-              v-model="filters.redeem_status"
-              :options="redeemStatusOptions"
-              @change="reloadFromFirstPage"
-            />
-          </div>
-          <div>
             <label class="input-label">{{ t('admin.billing.filters.usedStart') }}</label>
             <input v-model="filters.used_start_time" class="input" type="date" @change="reloadFromFirstPage" />
           </div>
@@ -74,8 +119,6 @@
             <label class="input-label">{{ t('admin.billing.filters.usedEnd') }}</label>
             <input v-model="filters.used_end_time" class="input" type="date" @change="reloadFromFirstPage" />
           </div>
-        </div>
-        <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
           <div>
             <label class="input-label">{{ t('admin.billing.filters.amountMin') }}</label>
             <input
@@ -98,14 +141,6 @@
               @change="reloadFromFirstPage"
             />
           </div>
-          <div class="flex items-end gap-2 md:col-span-2">
-            <button type="button" class="btn btn-secondary" @click="resetFilters">
-              {{ t('common.reset') }}
-            </button>
-            <button type="button" class="btn btn-primary" :disabled="loading" @click="reloadFromFirstPage">
-              {{ t('admin.billing.filters.apply') }}
-            </button>
-          </div>
         </div>
       </div>
 
@@ -114,24 +149,22 @@
           <table class="min-w-full divide-y divide-gray-200 dark:divide-dark-700">
             <thead class="bg-gray-50 dark:bg-dark-700/50">
               <tr>
-                <th class="table-th">{{ t('admin.billing.columns.code') }}</th>
+                <th class="table-th">{{ t('admin.billing.columns.paidCard') }}</th>
                 <th class="table-th">{{ t('admin.billing.columns.amount') }}</th>
-                <th class="table-th">{{ t('admin.billing.columns.classification') }}</th>
-                <th class="table-th">{{ t('admin.billing.columns.buyer') }}</th>
-                <th class="table-th">{{ t('admin.billing.columns.redeemedBy') }}</th>
-                <th class="table-th">{{ t('admin.billing.columns.ledger') }}</th>
-                <th class="table-th">{{ t('admin.billing.columns.order') }}</th>
+                <th class="table-th">{{ t('admin.billing.columns.purchase') }}</th>
+                <th class="table-th">{{ t('admin.billing.columns.redeemAccount') }}</th>
+                <th class="table-th">{{ t('admin.billing.columns.paymentStatus') }}</th>
                 <th class="table-th">{{ t('admin.billing.columns.time') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-dark-700">
               <tr v-if="loading">
-                <td colspan="8" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-dark-400">
+                <td colspan="6" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-dark-400">
                   {{ t('common.loading') }}
                 </td>
               </tr>
               <tr v-else-if="items.length === 0">
-                <td colspan="8" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-dark-400">
+                <td colspan="6" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-dark-400">
                   {{ t('admin.billing.empty') }}
                 </td>
               </tr>
@@ -151,17 +184,26 @@
                     <div class="font-medium text-gray-900 dark:text-white">{{ formatMoney(item.value) }}</div>
                   </td>
                   <td class="table-td">
-                    <div class="flex flex-col gap-1">
-                      <span class="badge badge-primary">{{ purposeLabel(item.purpose) }}</span>
-                      <span :class="salesStatusBadgeClass(item.sales_status)">{{ salesStatusLabel(item.sales_status) }}</span>
+                    <div class="max-w-56 truncate text-sm text-gray-900 dark:text-white">
+                      {{ item.sold_to_note || t('admin.billing.noBuyerNote') }}
                     </div>
-                  </td>
-                  <td class="table-td">
-                    <div class="max-w-44 truncate text-sm text-gray-700 dark:text-dark-300">
-                      {{ item.sold_to_note || '-' }}
+                    <div class="mt-1 text-xs text-gray-500 dark:text-dark-400">
+                      <a
+                        v-if="item.external_order_url"
+                        :href="item.external_order_url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1 font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                      >
+                        {{ item.external_order_no || t('admin.billing.openOrder') }}
+                        <Icon name="externalLink" size="xs" />
+                      </a>
+                      <span v-else>
+                        {{ item.external_order_no || t('admin.billing.noOrder') }}
+                      </span>
                     </div>
-                    <div class="text-xs text-gray-500 dark:text-dark-400">
-                      {{ item.sold_at ? formatDateTime(item.sold_at) : '-' }}
+                    <div v-if="item.internal_notes" class="mt-1 max-w-56 truncate text-xs text-gray-500 dark:text-dark-400">
+                      {{ item.internal_notes }}
                     </div>
                   </td>
                   <td class="table-td">
@@ -173,39 +215,19 @@
                     </div>
                   </td>
                   <td class="table-td">
-                    <span v-if="item.redeem_status !== 'used'" class="badge badge-gray">
-                      {{ t('admin.billing.ledger.notRedeemed') }}
-                    </span>
-                    <span v-else-if="item.ledger_matched" class="badge badge-success">
-                      {{ t('admin.billing.ledger.matched') }}
-                    </span>
-                    <span v-else class="badge badge-danger">
-                      {{ t('admin.billing.ledger.missing') }}
+                    <span :class="paymentStatusBadgeClass(item)">
+                      {{ paymentStatusLabel(item) }}
                     </span>
                     <div v-if="item.ledger_delta !== null && item.ledger_delta !== undefined" class="mt-1 text-xs text-gray-500 dark:text-dark-400">
                       {{ formatMoney(item.ledger_delta) }}
                     </div>
                   </td>
                   <td class="table-td">
-                    <a
-                      v-if="item.external_order_url"
-                      :href="item.external_order_url"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
-                    >
-                      {{ item.external_order_no || t('admin.billing.openOrder') }}
-                    </a>
-                    <span v-else class="text-sm text-gray-500 dark:text-dark-400">
-                      {{ item.external_order_no || '-' }}
-                    </span>
-                    <div v-if="item.internal_notes" class="mt-1 max-w-48 truncate text-xs text-gray-500 dark:text-dark-400">
-                      {{ item.internal_notes }}
-                    </div>
-                  </td>
-                  <td class="table-td">
                     <div class="text-sm text-gray-700 dark:text-dark-300">
-                      {{ formatDateTime(item.created_at) }}
+                      {{ item.sold_at ? formatDateTime(item.sold_at) : formatDateTime(item.created_at) }}
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-dark-400">
+                      {{ item.sold_at ? t('admin.billing.time.soldAt') : t('admin.billing.time.createdAt') }}
                     </div>
                   </td>
                 </tr>
@@ -266,6 +288,7 @@ const emptySummary = (): RedeemCodeBillingSummary => ({
 const items = ref<RedeemCodeBillingItem[]>([])
 const summary = ref<RedeemCodeBillingSummary>(emptySummary())
 const loading = ref(false)
+const showAdvancedFilters = ref(false)
 const pagination = reactive({
   page: 1,
   page_size: 20,
@@ -275,8 +298,9 @@ const pagination = reactive({
 const filters = reactive({
   search: '',
   purpose: 'sale_recharge' as RedeemCodePurpose | '',
-  sales_status: '' as RedeemCodeSalesStatus | '',
+  sales_status: 'sold' as RedeemCodeSalesStatus | '',
   redeem_status: '' as 'unused' | 'used' | 'expired' | '',
+  amount_exact: undefined as number | undefined,
   amount_min: undefined as number | undefined,
   amount_max: undefined as number | undefined,
   used_start_time: '',
@@ -312,6 +336,16 @@ const redeemStatusOptions = computed(() => [
 
 const summaryCards = computed(() => [
   {
+    key: 'paid_recharge_total',
+    label: t('admin.billing.summary.paidRechargeTotal'),
+    value: formatMoney(summary.value.sold_face_value)
+  },
+  {
+    key: 'paid_card_count',
+    label: t('admin.billing.summary.paidCardCount'),
+    value: summary.value.total_codes.toString()
+  },
+  {
     key: 'redeemed_sale_amount',
     label: t('admin.billing.summary.redeemedSaleAmount'),
     value: formatMoney(summary.value.redeemed_sale_amount)
@@ -320,16 +354,6 @@ const summaryCards = computed(() => [
     key: 'sold_unredeemed_face_value',
     label: t('admin.billing.summary.soldUnredeemedFaceValue'),
     value: formatMoney(summary.value.sold_unredeemed_face_value)
-  },
-  {
-    key: 'sold_face_value',
-    label: t('admin.billing.summary.soldFaceValue'),
-    value: formatMoney(summary.value.sold_face_value)
-  },
-  {
-    key: 'ledger_missing_count',
-    label: t('admin.billing.summary.ledgerMissingCount'),
-    value: summary.value.ledger_missing_count.toString()
   }
 ])
 
@@ -337,27 +361,28 @@ function formatMoney(value: number | null | undefined) {
   return formatCurrency(value ?? 0, 'USD')
 }
 
-function purposeLabel(value: RedeemCodePurpose) {
-  return t(`admin.redeem.purposes.${value || 'sale_recharge'}`)
-}
-
-function salesStatusLabel(value: RedeemCodeSalesStatus) {
-  return t(`admin.redeem.salesStatus.${value || 'inventory'}`)
-}
-
 function redeemStatusLabel(value: string) {
   return t(`admin.redeem.status.${value || 'unused'}`)
 }
 
-function salesStatusBadgeClass(value: RedeemCodeSalesStatus) {
-  if (value === 'sold') return 'badge badge-success'
-  if (value === 'gifted') return 'badge badge-warning'
-  if (value === 'void') return 'badge badge-danger'
-  return 'badge badge-gray'
-}
-
 function usedByFallback(userID?: number | null) {
   return userID ? t('admin.redeem.userPrefix', { id: userID }) : '-'
+}
+
+function paymentStatusLabel(item: RedeemCodeBillingItem) {
+  if (item.redeem_status !== 'used') return t('admin.billing.status.paidNotRedeemed')
+  if (item.ledger_matched) return t('admin.billing.status.paidAndPosted')
+  return t('admin.billing.status.needsReview')
+}
+
+function paymentStatusBadgeClass(item: RedeemCodeBillingItem) {
+  if (item.redeem_status !== 'used') return 'badge badge-warning'
+  if (item.ledger_matched) return 'badge badge-success'
+  return 'badge badge-danger'
+}
+
+function normalizeOptionalNumber(value: number | undefined | null) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }
 
 function buildQuery(): RedeemCodeBillingFilters {
@@ -369,8 +394,16 @@ function buildQuery(): RedeemCodeBillingFilters {
   if (filters.purpose) query.purpose = filters.purpose
   if (filters.sales_status) query.sales_status = filters.sales_status
   if (filters.redeem_status) query.redeem_status = filters.redeem_status
-  if (filters.amount_min !== undefined && filters.amount_min !== null) query.amount_min = filters.amount_min
-  if (filters.amount_max !== undefined && filters.amount_max !== null) query.amount_max = filters.amount_max
+  const exactAmount = normalizeOptionalNumber(filters.amount_exact)
+  if (exactAmount !== undefined) {
+    query.amount_min = exactAmount
+    query.amount_max = exactAmount
+  } else {
+    const minAmount = normalizeOptionalNumber(filters.amount_min)
+    const maxAmount = normalizeOptionalNumber(filters.amount_max)
+    if (minAmount !== undefined) query.amount_min = minAmount
+    if (maxAmount !== undefined) query.amount_max = maxAmount
+  }
   if (filters.used_start_time) query.used_start_time = filters.used_start_time
   if (filters.used_end_time) query.used_end_time = filters.used_end_time
   return query
@@ -425,8 +458,9 @@ function handleSearch() {
 function resetFilters() {
   filters.search = ''
   filters.purpose = 'sale_recharge'
-  filters.sales_status = ''
+  filters.sales_status = 'sold'
   filters.redeem_status = ''
+  filters.amount_exact = undefined
   filters.amount_min = undefined
   filters.amount_max = undefined
   filters.used_start_time = ''

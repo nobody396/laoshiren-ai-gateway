@@ -3896,14 +3896,19 @@ export default {
 
     billing: {
       title: '账单管理',
-      description: '当前账单来源为充值兑换码，后续可接入网站充值和 Stripe 等渠道。',
-      empty: '暂无账单记录',
+      description: '默认只看已收钱的充值卡密，快速确认收入、兑换账号和未兑换订单。',
+      revenueScopeTitle: '当前只统计：已售出的充值卡密',
+      revenueScopeDescription: '只有“充值销售 + 已售”的卡密会算作收入；赠送、补偿、测试卡密不计入这里。',
+      empty: '暂无付费充值卡密',
       noBatch: '未归入批次',
       openOrder: '打开订单',
+      noOrder: '无订单号',
+      noBuyerNote: '未备注购买人',
       loadFailed: '加载账单失败',
       filters: {
         search: '搜索',
         searchPlaceholder: '兑换码、邮箱、订单号、购买人备注',
+        exactAmount: '固定金额',
         purpose: '用途',
         salesStatus: '销售状态',
         redeemStatus: '兑换状态',
@@ -3914,28 +3919,43 @@ export default {
         usedEnd: '兑换结束',
         amountMin: '最低金额',
         amountMax: '最高金额',
+        showAdvanced: '高级筛选',
+        hideAdvanced: '收起高级筛选',
         apply: '应用筛选'
       },
       summary: {
-        redeemedSaleAmount: '已兑换销售金额',
-        soldUnredeemedFaceValue: '已售未兑换金额',
-        soldFaceValue: '已售总面值',
+        paidRechargeTotal: '实收充值总额',
+        paidCardCount: '付费订单数',
+        redeemedSaleAmount: '已兑换入账',
+        soldUnredeemedFaceValue: '已收未兑换',
         ledgerMissingCount: '缺失余额流水'
       },
       columns: {
-        code: '兑换码',
+        paidCard: '充值卡密',
         amount: '金额',
         classification: '分类',
         buyer: '购买人',
+        purchase: '购买/订单',
+        redeemAccount: '兑换账号',
         redeemedBy: '兑换账号',
+        paymentStatus: '入账状态',
         ledger: '余额流水',
         order: '订单',
-        time: '创建时间'
+        time: '时间'
       },
       ledger: {
         matched: '已入账',
         missing: '未匹配流水',
         notRedeemed: '未兑换'
+      },
+      status: {
+        paidNotRedeemed: '已收未兑换',
+        paidAndPosted: '已兑换入账',
+        needsReview: '需排查'
+      },
+      time: {
+        soldAt: '售出时间',
+        createdAt: '生成时间'
       }
     },
 

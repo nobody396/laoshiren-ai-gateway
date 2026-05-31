@@ -3743,14 +3743,20 @@ export default {
     billing: {
       title: 'Billing Management',
       description:
-        'Current billing source is recharge redeem codes; website top-up and Stripe can be attached later.',
-      empty: 'No billing records',
+        'Shows paid recharge cards by default so revenue, redemption accounts, and unredeemed orders are easy to verify.',
+      revenueScopeTitle: 'Current scope: sold recharge cards only',
+      revenueScopeDescription:
+        'Only cards marked as recharge sale and sold are counted as revenue. Gift, compensation, and test cards are excluded here.',
+      empty: 'No paid recharge cards',
       noBatch: 'No batch',
       openOrder: 'Open order',
+      noOrder: 'No order number',
+      noBuyerNote: 'No buyer note',
       loadFailed: 'Failed to load billing records',
       filters: {
         search: 'Search',
         searchPlaceholder: 'Code, email, order number, buyer note',
+        exactAmount: 'Exact Amount',
         purpose: 'Purpose',
         salesStatus: 'Sales Status',
         redeemStatus: 'Redeem Status',
@@ -3761,28 +3767,43 @@ export default {
         usedEnd: 'Redeemed To',
         amountMin: 'Min Amount',
         amountMax: 'Max Amount',
+        showAdvanced: 'Advanced filters',
+        hideAdvanced: 'Hide advanced filters',
         apply: 'Apply Filters'
       },
       summary: {
-        redeemedSaleAmount: 'Redeemed Sales',
-        soldUnredeemedFaceValue: 'Sold Not Redeemed',
-        soldFaceValue: 'Sold Face Value',
+        paidRechargeTotal: 'Paid Recharge Total',
+        paidCardCount: 'Paid Orders',
+        redeemedSaleAmount: 'Redeemed to Balance',
+        soldUnredeemedFaceValue: 'Paid Not Redeemed',
         ledgerMissingCount: 'Missing Ledger Rows'
       },
       columns: {
-        code: 'Code',
+        paidCard: 'Recharge Card',
         amount: 'Amount',
         classification: 'Classification',
         buyer: 'Buyer',
+        purchase: 'Purchase / Order',
+        redeemAccount: 'Redeem Account',
         redeemedBy: 'Redeemed By',
+        paymentStatus: 'Posting Status',
         ledger: 'Ledger',
         order: 'Order',
-        time: 'Created At'
+        time: 'Time'
       },
       ledger: {
         matched: 'Posted',
         missing: 'Missing Ledger',
         notRedeemed: 'Not Redeemed'
+      },
+      status: {
+        paidNotRedeemed: 'Paid, Not Redeemed',
+        paidAndPosted: 'Redeemed to Balance',
+        needsReview: 'Needs Review'
+      },
+      time: {
+        soldAt: 'Sold At',
+        createdAt: 'Created At'
       }
     },
 

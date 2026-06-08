@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"fmt"
+	"html"
 	"log/slog"
 	"math/big"
 	"mime"
@@ -152,6 +153,7 @@ func (s *EmailService) SendEmail(ctx context.Context, to, subject, body string) 
 
 const smtpDialTimeout = 10 * time.Second
 const smtpIOTimeout = 20 * time.Second
+const officialSiteURL = "https://laoshirenai.com"
 
 // SendEmailWithConfig 使用指定配置发送邮件
 func (s *EmailService) SendEmailWithConfig(config *SMTPConfig, to, subject, body string) error {
@@ -405,42 +407,61 @@ func (s *EmailService) VerifyCode(ctx context.Context, email, code string) error
 
 // buildVerifyCodeEmailBody 构建验证码邮件HTML内容
 func (s *EmailService) buildVerifyCodeEmailBody(code, siteName string) string {
+	safeSiteName := html.EscapeString(siteName)
+	safeCode := html.EscapeString(code)
+	body := fmt.Sprintf(`
+            <p style="font-size:16px;line-height:1.8;margin:0 0 20px;color:#5f574d;">你正在登录或注册 %s，请使用下面的验证码完成验证。</p>
+            <div style="margin:26px 0;text-align:center;">
+                <div style="display:inline-block;padding:18px 26px;border:1px solid #d9cdb8;background:#f4eee0;border-radius:10px;font-family:'Courier New',monospace;font-size:34px;font-weight:700;letter-spacing:8px;color:#171412;">%s</div>
+            </div>
+            <div style="border:1px solid #e5d8c5;background:#fbf7ed;border-radius:10px;padding:16px 18px;margin:22px 0;">
+                <p style="margin:0 0 8px;color:#4f463d;font-size:14px;line-height:1.7;">验证码将在 <strong>15 分钟</strong> 后失效。</p>
+                <p style="margin:0;color:#8a7d6d;font-size:13px;line-height:1.7;">如果这不是你的操作，可以直接忽略这封邮件。</p>
+            </div>
+            <div style="text-align:center;margin-top:26px;">
+                <a href="%s" style="display:inline-block;padding:12px 22px;border-radius:8px;background:#9a4d32;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;">打开老实人AI官网</a>
+            </div>
+`, safeSiteName, safeCode, officialSiteURL)
+	return buildBrandedEmailHTML(safeSiteName, "邮箱验证码", "Login Verification", body)
+}
+
+func buildBrandedEmailHTML(siteName, title, kicker, body string) string {
 	return fmt.Sprintf(`
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .header { background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); color: white; padding: 30px; text-align: center; }
-        .header h1 { margin: 0; font-size: 24px; }
-        .content { padding: 40px 30px; text-align: center; }
-        .code { font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #333; background-color: #f8f9fa; padding: 20px 30px; border-radius: 8px; display: inline-block; margin: 20px 0; font-family: monospace; }
-        .info { color: #666; font-size: 14px; line-height: 1.6; margin-top: 20px; }
-        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #999; font-size: 12px; }
+        body { margin: 0; padding: 0; background: #f5f2ea; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif; color: #1f1d1a; }
+        .page { max-width: 680px; margin: 0 auto; padding: 28px 16px; }
+        .container { background: #fffdf8; border: 1px solid #e3d8c6; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(64,48,24,.08); }
+        .header { padding: 30px 32px 22px; border-bottom: 1px solid #eee5d7; background: #fbf7ed; }
+        .kicker { margin: 0 0 10px; color: #9a4d32; font-size: 12px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; }
+        .header h1 { margin: 0; color: #171412; font-size: 28px; line-height: 1.3; }
+        .content { padding: 28px 32px; }
+        .footer { padding: 18px 32px; background: #f8f3e8; border-top: 1px solid #eee5d7; color: #8b8173; font-size: 12px; line-height: 1.6; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>%s</h1>
-        </div>
-        <div class="content">
-            <p style="font-size: 18px; color: #333;">Your verification code is:</p>
-            <div class="code">%s</div>
-            <div class="info">
-                <p>This code will expire in <strong>15 minutes</strong>.</p>
-                <p>If you did not request this code, please ignore this email.</p>
+    <div class="page">
+        <div class="container">
+            <div class="header">
+                <div class="kicker">%s</div>
+                <h1>%s</h1>
             </div>
-        </div>
-        <div class="footer">
-            <p>This is an automated message, please do not reply.</p>
+            <div class="content">
+                %s
+            </div>
+            <div class="footer">
+                <p style="margin:0 0 6px;">%s</p>
+                <p style="margin:0;">这是一封自动发送的邮件，请勿直接回复。</p>
+            </div>
         </div>
     </div>
 </body>
 </html>
-`, siteName, code)
+`, kicker, title, body, siteName)
 }
 
 // TestSMTPConnectionWithConfig 使用指定配置测试SMTP连接
@@ -596,50 +617,26 @@ func (s *EmailService) ConsumePasswordResetToken(ctx context.Context, email, tok
 
 // buildPasswordResetEmailBody builds the HTML content for password reset email
 func (s *EmailService) buildPasswordResetEmailBody(resetURL, siteName string) string {
-	return fmt.Sprintf(`
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .header { background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); color: white; padding: 30px; text-align: center; }
-        .header h1 { margin: 0; font-size: 24px; }
-        .content { padding: 40px 30px; text-align: center; }
-        .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600; margin: 20px 0; }
-        .button:hover { opacity: 0.9; }
-        .info { color: #666; font-size: 14px; line-height: 1.6; margin-top: 20px; }
-        .link-fallback { color: #666; font-size: 12px; word-break: break-all; margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 4px; }
-        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #999; font-size: 12px; }
-        .warning { color: #e74c3c; font-weight: 500; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>%s</h1>
-        </div>
-        <div class="content">
-            <p style="font-size: 18px; color: #333;">密码重置请求</p>
-            <p style="color: #666;">您已请求重置密码。请点击下方按钮设置新密码：</p>
-            <a href="%s" class="button">重置密码</a>
-            <div class="info">
-                <p>此链接将在 <strong>30 分钟</strong>后失效。</p>
-                <p class="warning">如果您没有请求重置密码，请忽略此邮件。您的密码将保持不变。</p>
+	safeSiteName := html.EscapeString(siteName)
+	safeResetURL := html.EscapeString(resetURL)
+	body := fmt.Sprintf(`
+            <p style="font-size:16px;line-height:1.8;margin:0 0 20px;color:#5f574d;">我们收到了你的密码重置请求。请点击下方按钮设置新密码。</p>
+            <div style="text-align:center;margin:28px 0;">
+                <a href="%s" style="display:inline-block;padding:13px 24px;border-radius:8px;background:#9a4d32;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;">重置密码</a>
             </div>
-            <div class="link-fallback">
-                <p>如果按钮无法点击，请复制以下链接到浏览器中打开：</p>
-                <p>%s</p>
+            <div style="border:1px solid #e5d8c5;background:#fbf7ed;border-radius:10px;padding:16px 18px;margin:22px 0;">
+                <p style="margin:0 0 8px;color:#4f463d;font-size:14px;line-height:1.7;">此链接将在 <strong>30 分钟</strong> 后失效。</p>
+                <p style="margin:0;color:#8a7d6d;font-size:13px;line-height:1.7;">如果你没有请求重置密码，请忽略此邮件，你的密码不会被修改。</p>
             </div>
-        </div>
-        <div class="footer">
-            <p>这是一封自动发送的邮件，请勿回复。</p>
-        </div>
-    </div>
-</body>
-</html>
-`, siteName, resetURL, resetURL)
+            <div style="color:#8a7d6d;font-size:12px;line-height:1.7;word-break:break-all;margin-top:18px;">
+                <p style="margin:0 0 6px;">如果按钮无法点击，请复制以下链接到浏览器中打开：</p>
+                <p style="margin:0;">%s</p>
+            </div>
+            <div style="text-align:center;margin-top:26px;">
+                <a href="%s" style="color:#9a4d32;text-decoration:none;font-weight:700;font-size:14px;">访问老实人AI官网</a>
+            </div>
+`, safeResetURL, safeResetURL, officialSiteURL)
+	return buildBrandedEmailHTML(safeSiteName, "密码重置请求", "Account Security", body)
 }
 
 // SendFeedbackNewEmail sends a new feedback notification to admins.

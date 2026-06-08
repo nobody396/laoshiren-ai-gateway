@@ -19,6 +19,7 @@ type RedeemCode struct {
 	UpdatedAt time.Time
 
 	GroupID      *int64
+	GroupIDs     []int64
 	ValidityDays int
 
 	BatchID          *int64

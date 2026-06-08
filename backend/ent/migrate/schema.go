@@ -1215,6 +1215,7 @@ var (
 		{Name: "internal_notes", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "group_ids", Type: field.TypeJSON, SchemaType: map[string]string{"postgres": "jsonb"}},
 		{Name: "validity_days", Type: field.TypeInt, Default: 30},
 		{Name: "group_id", Type: field.TypeInt64, Nullable: true},
 		{Name: "batch_id", Type: field.TypeInt64, Nullable: true},
@@ -1228,19 +1229,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "redeem_codes_groups_redeem_codes",
-				Columns:    []*schema.Column{RedeemCodesColumns[17]},
+				Columns:    []*schema.Column{RedeemCodesColumns[18]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "redeem_codes_redeem_code_batches_redeem_codes",
-				Columns:    []*schema.Column{RedeemCodesColumns[18]},
+				Columns:    []*schema.Column{RedeemCodesColumns[19]},
 				RefColumns: []*schema.Column{RedeemCodeBatchesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "redeem_codes_users_redeem_codes",
-				Columns:    []*schema.Column{RedeemCodesColumns[19]},
+				Columns:    []*schema.Column{RedeemCodesColumns[20]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -1254,17 +1255,17 @@ var (
 			{
 				Name:    "redeemcode_used_by",
 				Unique:  false,
-				Columns: []*schema.Column{RedeemCodesColumns[19]},
+				Columns: []*schema.Column{RedeemCodesColumns[20]},
 			},
 			{
 				Name:    "redeemcode_group_id",
 				Unique:  false,
-				Columns: []*schema.Column{RedeemCodesColumns[17]},
+				Columns: []*schema.Column{RedeemCodesColumns[18]},
 			},
 			{
 				Name:    "redeemcode_batch_id",
 				Unique:  false,
-				Columns: []*schema.Column{RedeemCodesColumns[18]},
+				Columns: []*schema.Column{RedeemCodesColumns[19]},
 			},
 			{
 				Name:    "redeemcode_purpose",

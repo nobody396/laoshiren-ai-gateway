@@ -1308,8 +1308,12 @@ func init() {
 	redeemcode.DefaultUpdatedAt = redeemcodeDescUpdatedAt.Default.(func() time.Time)
 	// redeemcode.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	redeemcode.UpdateDefaultUpdatedAt = redeemcodeDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// redeemcodeDescGroupIds is the schema descriptor for group_ids field.
+	redeemcodeDescGroupIds := redeemcodeFields[18].Descriptor()
+	// redeemcode.DefaultGroupIds holds the default value on creation for the group_ids field.
+	redeemcode.DefaultGroupIds = redeemcodeDescGroupIds.Default.([]int64)
 	// redeemcodeDescValidityDays is the schema descriptor for validity_days field.
-	redeemcodeDescValidityDays := redeemcodeFields[18].Descriptor()
+	redeemcodeDescValidityDays := redeemcodeFields[19].Descriptor()
 	// redeemcode.DefaultValidityDays holds the default value on creation for the validity_days field.
 	redeemcode.DefaultValidityDays = redeemcodeDescValidityDays.Default.(int)
 	redeemcodebatchFields := schema.RedeemCodeBatch{}.Fields()

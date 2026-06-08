@@ -96,6 +96,10 @@ func (RedeemCode) Fields() []ent.Field {
 		field.Int64("group_id").
 			Optional().
 			Nillable(),
+		field.JSON("group_ids", []int64{}).
+			Default([]int64{}).
+			SchemaType(map[string]string{dialect.Postgres: "jsonb"}).
+			Comment("订阅组合兑换码关联的多个分组 ID；为空时兼容旧版 group_id"),
 		field.Int("validity_days").
 			Default(30),
 	}

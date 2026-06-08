@@ -28,6 +28,7 @@ func (r *redeemCodeRepository) Create(ctx context.Context, code *service.RedeemC
 		SetStatus(code.Status).
 		SetNotes(code.Notes).
 		SetValidityDays(code.ValidityDays).
+		SetGroupIds(redeemCodeGroupIDsForPersistence(code.GroupIDs)).
 		SetNillableUsedBy(code.UsedBy).
 		SetNillableUsedAt(code.UsedAt).
 		SetNillableGroupID(code.GroupID).
@@ -63,6 +64,7 @@ func (r *redeemCodeRepository) CreateBatch(ctx context.Context, codes []service.
 			SetStatus(c.Status).
 			SetNotes(c.Notes).
 			SetValidityDays(c.ValidityDays).
+			SetGroupIds(redeemCodeGroupIDsForPersistence(c.GroupIDs)).
 			SetNillableUsedBy(c.UsedBy).
 			SetNillableUsedAt(c.UsedAt).
 			SetNillableGroupID(c.GroupID).
@@ -176,6 +178,7 @@ func (r *redeemCodeRepository) Update(ctx context.Context, code *service.RedeemC
 		SetStatus(code.Status).
 		SetNotes(code.Notes).
 		SetValidityDays(code.ValidityDays).
+		SetGroupIds(redeemCodeGroupIDsForPersistence(code.GroupIDs)).
 		SetPurpose(normalizeRedeemCodePurpose(code.Type, code.Purpose)).
 		SetSalesStatus(normalizeRedeemCodeSalesStatus(code.Purpose, code.SalesStatus)).
 		SetNillableSoldAt(code.SoldAt).
@@ -335,6 +338,7 @@ func redeemCodeEntityToService(m *dbent.RedeemCode) *service.RedeemCode {
 		CreatedAt:        m.CreatedAt,
 		UpdatedAt:        m.UpdatedAt,
 		GroupID:          m.GroupID,
+		GroupIDs:         append([]int64(nil), m.GroupIds...),
 		ValidityDays:     m.ValidityDays,
 		BatchID:          m.BatchID,
 		Purpose:          m.Purpose,
@@ -365,6 +369,13 @@ func redeemCodeEntitiesToService(models []*dbent.RedeemCode) []service.RedeemCod
 		}
 	}
 	return out
+}
+
+func redeemCodeGroupIDsForPersistence(groupIDs []int64) []int64 {
+	if len(groupIDs) == 0 {
+		return []int64{}
+	}
+	return append([]int64(nil), groupIDs...)
 }
 
 func trimStringPointer(v string) *string {

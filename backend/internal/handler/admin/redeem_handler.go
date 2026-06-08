@@ -38,7 +38,8 @@ type GenerateRedeemCodesRequest struct {
 	Count        int     `json:"count" binding:"required,min=1,max=100"`
 	Type         string  `json:"type" binding:"required,oneof=balance concurrency subscription invitation"`
 	Value        float64 `json:"value" binding:"min=0"`
-	GroupID      *int64  `json:"group_id"`                                    // 订阅类型必填
+	GroupID      *int64  `json:"group_id"`                                    // 订阅类型旧版单分组字段
+	GroupIDs     []int64 `json:"group_ids"`                                   // 订阅组合包字段；传入后可一次分配多个分组
 	ValidityDays int     `json:"validity_days" binding:"omitempty,max=36500"` // 订阅类型使用，默认30天，最大100年
 
 	BatchName        string `json:"batch_name"`
@@ -59,7 +60,8 @@ type CreateAndRedeemCodeRequest struct {
 	Type         string  `json:"type" binding:"omitempty,oneof=balance concurrency subscription invitation"` // 不传时默认 balance（向后兼容）
 	Value        float64 `json:"value" binding:"required,gt=0"`
 	UserID       int64   `json:"user_id" binding:"required,gt=0"`
-	GroupID      *int64  `json:"group_id"`                                    // subscription 类型必填
+	GroupID      *int64  `json:"group_id"`                                    // subscription 旧版单分组字段
+	GroupIDs     []int64 `json:"group_ids"`                                   // subscription 组合包字段
 	ValidityDays int     `json:"validity_days" binding:"omitempty,max=36500"` // subscription 类型必填，>0
 	Notes        string  `json:"notes"`
 }
@@ -127,6 +129,7 @@ func (h *RedeemHandler) Generate(c *gin.Context) {
 			Type:             req.Type,
 			Value:            req.Value,
 			GroupID:          req.GroupID,
+			GroupIDs:         req.GroupIDs,
 			ValidityDays:     req.ValidityDays,
 			BatchName:        req.BatchName,
 			Purpose:          req.Purpose,
@@ -172,8 +175,8 @@ func (h *RedeemHandler) CreateAndRedeem(c *gin.Context) {
 	}
 
 	if req.Type == "subscription" {
-		if req.GroupID == nil {
-			response.BadRequest(c, "group_id is required for subscription type")
+		if req.GroupID == nil && len(req.GroupIDs) == 0 {
+			response.BadRequest(c, "group_id or group_ids is required for subscription type")
 			return
 		}
 		if req.ValidityDays <= 0 {
@@ -198,6 +201,7 @@ func (h *RedeemHandler) CreateAndRedeem(c *gin.Context) {
 			Status:       service.StatusUnused,
 			Notes:        req.Notes,
 			GroupID:      req.GroupID,
+			GroupIDs:     req.GroupIDs,
 			ValidityDays: req.ValidityDays,
 		})
 		if createErr != nil {

@@ -326,8 +326,9 @@ type RedeemCode struct {
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at,omitempty"`
 
-	GroupID      *int64 `json:"group_id"`
-	ValidityDays int    `json:"validity_days"`
+	GroupID      *int64  `json:"group_id"`
+	GroupIDs     []int64 `json:"group_ids,omitempty"`
+	ValidityDays int     `json:"validity_days"`
 
 	BatchID          *int64     `json:"batch_id,omitempty"`
 	Purpose          string     `json:"purpose,omitempty"`

@@ -269,6 +269,12 @@ func (_c *RedeemCodeCreate) SetNillableGroupID(v *int64) *RedeemCodeCreate {
 	return _c
 }
 
+// SetGroupIds sets the "group_ids" field.
+func (_c *RedeemCodeCreate) SetGroupIds(v []int64) *RedeemCodeCreate {
+	_c.mutation.SetGroupIds(v)
+	return _c
+}
+
 // SetValidityDays sets the "validity_days" field.
 func (_c *RedeemCodeCreate) SetValidityDays(v int) *RedeemCodeCreate {
 	_c.mutation.SetValidityDays(v)
@@ -375,6 +381,10 @@ func (_c *RedeemCodeCreate) defaults() {
 		v := redeemcode.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.GroupIds(); !ok {
+		v := redeemcode.DefaultGroupIds
+		_c.mutation.SetGroupIds(v)
+	}
 	if _, ok := _c.mutation.ValidityDays(); !ok {
 		v := redeemcode.DefaultValidityDays
 		_c.mutation.SetValidityDays(v)
@@ -436,6 +446,9 @@ func (_c *RedeemCodeCreate) check() error {
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "RedeemCode.updated_at"`)}
+	}
+	if _, ok := _c.mutation.GroupIds(); !ok {
+		return &ValidationError{Name: "group_ids", err: errors.New(`ent: missing required field "RedeemCode.group_ids"`)}
 	}
 	if _, ok := _c.mutation.ValidityDays(); !ok {
 		return &ValidationError{Name: "validity_days", err: errors.New(`ent: missing required field "RedeemCode.validity_days"`)}
@@ -526,6 +539,10 @@ func (_c *RedeemCodeCreate) createSpec() (*RedeemCode, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(redeemcode.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if value, ok := _c.mutation.GroupIds(); ok {
+		_spec.SetField(redeemcode.FieldGroupIds, field.TypeJSON, value)
+		_node.GroupIds = value
 	}
 	if value, ok := _c.mutation.ValidityDays(); ok {
 		_spec.SetField(redeemcode.FieldValidityDays, field.TypeInt, value)
@@ -904,6 +921,18 @@ func (u *RedeemCodeUpsert) ClearGroupID() *RedeemCodeUpsert {
 	return u
 }
 
+// SetGroupIds sets the "group_ids" field.
+func (u *RedeemCodeUpsert) SetGroupIds(v []int64) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldGroupIds, v)
+	return u
+}
+
+// UpdateGroupIds sets the "group_ids" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdateGroupIds() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldGroupIds)
+	return u
+}
+
 // SetValidityDays sets the "validity_days" field.
 func (u *RedeemCodeUpsert) SetValidityDays(v int) *RedeemCodeUpsert {
 	u.Set(redeemcode.FieldValidityDays, v)
@@ -1279,6 +1308,20 @@ func (u *RedeemCodeUpsertOne) UpdateGroupID() *RedeemCodeUpsertOne {
 func (u *RedeemCodeUpsertOne) ClearGroupID() *RedeemCodeUpsertOne {
 	return u.Update(func(s *RedeemCodeUpsert) {
 		s.ClearGroupID()
+	})
+}
+
+// SetGroupIds sets the "group_ids" field.
+func (u *RedeemCodeUpsertOne) SetGroupIds(v []int64) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetGroupIds(v)
+	})
+}
+
+// UpdateGroupIds sets the "group_ids" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdateGroupIds() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateGroupIds()
 	})
 }
 
@@ -1826,6 +1869,20 @@ func (u *RedeemCodeUpsertBulk) UpdateGroupID() *RedeemCodeUpsertBulk {
 func (u *RedeemCodeUpsertBulk) ClearGroupID() *RedeemCodeUpsertBulk {
 	return u.Update(func(s *RedeemCodeUpsert) {
 		s.ClearGroupID()
+	})
+}
+
+// SetGroupIds sets the "group_ids" field.
+func (u *RedeemCodeUpsertBulk) SetGroupIds(v []int64) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetGroupIds(v)
+	})
+}
+
+// UpdateGroupIds sets the "group_ids" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdateGroupIds() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdateGroupIds()
 	})
 }
 

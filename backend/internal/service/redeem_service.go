@@ -200,6 +200,17 @@ func (s *RedeemService) CreateCode(ctx context.Context, code *RedeemCode) error 
 	if code.Type != RedeemTypeInvitation && code.Value <= 0 {
 		return errors.New("value must be greater than 0")
 	}
+	if code.Type == RedeemTypeSubscription {
+		groupIDs := subscriptionRedeemGroupIDs(code)
+		if len(groupIDs) == 0 {
+			return errors.New("group_id or group_ids is required for subscription type")
+		}
+		if code.GroupID == nil {
+			primaryGroupID := groupIDs[0]
+			code.GroupID = &primaryGroupID
+		}
+		code.GroupIDs = groupIDs
+	}
 	if code.Status == "" {
 		code.Status = StatusUnused
 	}
@@ -292,7 +303,7 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 	}
 
 	// 验证兑换码类型的前置条件
-	if redeemCode.Type == RedeemTypeSubscription && redeemCode.GroupID == nil {
+	if redeemCode.Type == RedeemTypeSubscription && len(subscriptionRedeemGroupIDs(redeemCode)) == 0 {
 		return nil, infraerrors.BadRequest("REDEEM_CODE_INVALID", "invalid subscription redeem code: missing group_id")
 	}
 
@@ -341,15 +352,17 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 		if validityDays <= 0 {
 			validityDays = 30
 		}
-		_, _, err := s.subscriptionService.AssignOrExtendSubscription(txCtx, &AssignSubscriptionInput{
-			UserID:       userID,
-			GroupID:      *redeemCode.GroupID,
-			ValidityDays: validityDays,
-			AssignedBy:   0, // 系统分配
-			Notes:        fmt.Sprintf("通过兑换码 %s 兑换", redeemCode.Code),
-		})
-		if err != nil {
-			return nil, fmt.Errorf("assign or extend subscription: %w", err)
+		for _, groupID := range subscriptionRedeemGroupIDs(redeemCode) {
+			_, _, err := s.subscriptionService.AssignOrExtendSubscription(txCtx, &AssignSubscriptionInput{
+				UserID:       userID,
+				GroupID:      groupID,
+				ValidityDays: validityDays,
+				AssignedBy:   0, // 系统分配
+				Notes:        fmt.Sprintf("通过兑换码 %s 兑换", redeemCode.Code),
+			})
+			if err != nil {
+				return nil, fmt.Errorf("assign or extend subscription group %d: %w", groupID, err)
+			}
 		}
 
 	default:
@@ -406,6 +419,31 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 	}
 
 	return redeemCode, nil
+}
+
+func subscriptionRedeemGroupIDs(code *RedeemCode) []int64 {
+	if code == nil {
+		return nil
+	}
+	seen := make(map[int64]struct{}, len(code.GroupIDs)+1)
+	out := make([]int64, 0, len(code.GroupIDs)+1)
+	add := func(id int64) {
+		if id <= 0 {
+			return
+		}
+		if _, ok := seen[id]; ok {
+			return
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	for _, id := range code.GroupIDs {
+		add(id)
+	}
+	if len(out) == 0 && code.GroupID != nil {
+		add(*code.GroupID)
+	}
+	return out
 }
 
 func (s *RedeemService) resetBalanceAlertNotifiedFlag(userID int64) {

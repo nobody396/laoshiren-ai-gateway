@@ -314,7 +314,8 @@ type GenerateRedeemCodesInput struct {
 	Type         string
 	Value        float64
 	GroupID      *int64 // 订阅类型专用：关联的分组ID
-	ValidityDays int    // 订阅类型专用：有效天数
+	GroupIDs     []int64
+	ValidityDays int // 订阅类型专用：有效天数
 
 	BatchName        string
 	Purpose          string
@@ -2127,18 +2128,22 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 		soldAt = &now
 	}
 
-	// 如果是订阅类型，验证必须有 GroupID
+	groupIDs := normalizeSubscriptionRedeemGroupIDs(input.GroupID, input.GroupIDs)
+
+	// 如果是订阅类型，验证必须有 GroupID 或 GroupIDs
 	if codeType == RedeemTypeSubscription {
-		if input.GroupID == nil {
-			return nil, errors.New("group_id is required for subscription type")
+		if len(groupIDs) == 0 {
+			return nil, errors.New("group_id or group_ids is required for subscription type")
 		}
-		// 验证分组存在且为订阅类型
-		group, err := s.groupRepo.GetByID(ctx, *input.GroupID)
-		if err != nil {
-			return nil, fmt.Errorf("group not found: %w", err)
-		}
-		if !group.IsSubscriptionType() {
-			return nil, errors.New("group must be subscription type")
+		for _, groupID := range groupIDs {
+			// 验证分组存在且为订阅类型
+			group, err := s.groupRepo.GetByID(ctx, groupID)
+			if err != nil {
+				return nil, fmt.Errorf("group %d not found: %w", groupID, err)
+			}
+			if !group.IsSubscriptionType() {
+				return nil, fmt.Errorf("group %d must be subscription type", groupID)
+			}
 		}
 	}
 
@@ -2182,7 +2187,11 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 		}
 		// 订阅类型专用字段
 		if codeType == RedeemTypeSubscription {
-			code.GroupID = input.GroupID
+			if len(groupIDs) > 0 {
+				primaryGroupID := groupIDs[0]
+				code.GroupID = &primaryGroupID
+				code.GroupIDs = groupIDs
+			}
 			code.ValidityDays = input.ValidityDays
 			if code.ValidityDays <= 0 {
 				code.ValidityDays = 30 // 默认30天
@@ -2194,6 +2203,28 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 		codes = append(codes, code)
 	}
 	return codes, nil
+}
+
+func normalizeSubscriptionRedeemGroupIDs(groupID *int64, groupIDs []int64) []int64 {
+	seen := make(map[int64]struct{}, len(groupIDs)+1)
+	out := make([]int64, 0, len(groupIDs)+1)
+	add := func(id int64) {
+		if id <= 0 {
+			return
+		}
+		if _, ok := seen[id]; ok {
+			return
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	for _, id := range groupIDs {
+		add(id)
+	}
+	if len(out) == 0 && groupID != nil {
+		add(*groupID)
+	}
+	return out
 }
 
 func (s *adminServiceImpl) DeleteRedeemCode(ctx context.Context, id int64) error {

@@ -1218,7 +1218,8 @@ export interface RedeemCode {
   external_order_no?: string | null
   external_order_url?: string | null
   internal_notes?: string | null
-  group_id?: number | null // 订阅类型专用
+  group_id?: number | null // 订阅类型旧版单分组字段
+  group_ids?: number[] // 订阅组合包字段
   validity_days?: number // 订阅类型专用
   user?: User
   group?: Group // 关联的分组
@@ -1243,7 +1244,8 @@ export interface GenerateRedeemCodesRequest {
   count: number
   type: RedeemCodeType
   value: number
-  group_id?: number | null // 订阅类型专用
+  group_id?: number | null // 订阅类型旧版单分组字段
+  group_ids?: number[] // 订阅组合包字段
   validity_days?: number // 订阅类型专用
   batch_name?: string
   purpose?: RedeemCodePurpose

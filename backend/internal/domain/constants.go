@@ -120,6 +120,7 @@ const (
 const (
 	SubscriptionTypeStandard     = "standard"     // 标准计费模式（按余额扣费）
 	SubscriptionTypeSubscription = "subscription" // 订阅模式（按限额控制）
+	SubscriptionTypeCredit       = "credit"       // Credit 订阅模式（按折算后额度控制）
 )
 
 // Subscription status constants

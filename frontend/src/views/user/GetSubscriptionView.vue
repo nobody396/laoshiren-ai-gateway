@@ -301,6 +301,12 @@
             </div>
           </div>
         </section>
+
+        <MonthlyCreditPlans
+          variant="app"
+          title="开发者月卡"
+          summary="固定每日 credits 池，GPT Pro 与 Claude Max 共用。"
+        />
       </div>
     </div>
   </AppLayout>
@@ -312,6 +318,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
+import MonthlyCreditPlans from '@/components/common/MonthlyCreditPlans.vue'
 import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/api/topup'
 import { useAppStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'

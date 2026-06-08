@@ -88,7 +88,7 @@ type CreateGroupRequest struct {
 	RateMultiplier   float64            `json:"rate_multiplier"`
 	IsExclusive      bool               `json:"is_exclusive"`
 	ChatbotEnabled   bool               `json:"chatbot_enabled"`
-	SubscriptionType string             `json:"subscription_type" binding:"omitempty,oneof=standard subscription"`
+	SubscriptionType string             `json:"subscription_type" binding:"omitempty,oneof=standard subscription credit"`
 	DailyLimitUSD    optionalLimitField `json:"daily_limit_usd"`
 	WeeklyLimitUSD   optionalLimitField `json:"weekly_limit_usd"`
 	MonthlyLimitUSD  optionalLimitField `json:"monthly_limit_usd"`
@@ -125,7 +125,7 @@ type UpdateGroupRequest struct {
 	IsExclusive      *bool              `json:"is_exclusive"`
 	ChatbotEnabled   *bool              `json:"chatbot_enabled"`
 	Status           string             `json:"status" binding:"omitempty,oneof=active inactive"`
-	SubscriptionType string             `json:"subscription_type" binding:"omitempty,oneof=standard subscription"`
+	SubscriptionType string             `json:"subscription_type" binding:"omitempty,oneof=standard subscription credit"`
 	DailyLimitUSD    optionalLimitField `json:"daily_limit_usd"`
 	WeeklyLimitUSD   optionalLimitField `json:"weekly_limit_usd"`
 	MonthlyLimitUSD  optionalLimitField `json:"monthly_limit_usd"`

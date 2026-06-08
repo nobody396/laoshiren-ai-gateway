@@ -1,6 +1,7 @@
 # Redeem Card Workflows
 
-This runbook defines the two supported balance-card workflows. It is the source of truth for card generation and billing reconciliation.
+This runbook defines the supported redeem-card workflows. It is the source of
+truth for card generation and billing reconciliation.
 
 ## Store Inventory Cards
 
@@ -47,6 +48,33 @@ Runtime behavior:
 ## Compensation And Test Cards
 
 Use `purpose=compensation` for customer make-good credits and `purpose=internal_test` for internal testing. Do not mark either as `sold`.
+
+## Subscription Monthly Cards
+
+Use this when cards grant a monthly subscription group, including Lite 月卡,
+Pro 月卡, Max 月卡, and Ultra 月卡.
+
+Generation fields:
+
+- `type`: `subscription`
+- `group_id`: the target monthly-card subscription group
+- `validity_days`: `30` unless explicitly configured otherwise
+- `purpose`: `sale_recharge` for sellable inventory
+- `sales_status`: `inventory`
+- `sales_channel`: `liandong_shop` when the batch is for Liandong card shop
+- `batch_name`: include product name, daily credits, and date
+- `internal_notes`: include the daily credits and GPT Pro / Claude Max usage copy
+
+Runtime behavior:
+
+- Newly generated cards stay as inventory and do not count as revenue.
+- When redeemed, the app marks the card `sold`, records the redeeming user, and
+  assigns or extends the target subscription group.
+- The card `value` is for face-value and reconciliation only. Subscription
+  benefits come from the bound group limits, not from `value`.
+
+See `docs/ops/monthly-credit-card-products.md` for the current monthly-card
+product lineup and credits conversion rules.
 
 ## API Examples
 

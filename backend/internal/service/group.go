@@ -86,7 +86,11 @@ func (g *Group) IsActive() bool {
 }
 
 func (g *Group) IsSubscriptionType() bool {
-	return g.SubscriptionType == SubscriptionTypeSubscription
+	return g.SubscriptionType == SubscriptionTypeSubscription || g.IsCreditSubscription()
+}
+
+func (g *Group) IsCreditSubscription() bool {
+	return g.SubscriptionType == SubscriptionTypeCredit
 }
 
 func (g *Group) IsFreeSubscription() bool {

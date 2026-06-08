@@ -3146,7 +3146,9 @@ async function loadSubscriptionGroups() {
   try {
     const groups = await adminAPI.groups.getAll()
     subscriptionGroups.value = groups.filter(
-      (group) => group.subscription_type === 'subscription' && group.status === 'active'
+      (group) =>
+        (group.subscription_type === 'subscription' || group.subscription_type === 'credit') &&
+        group.status === 'active'
     )
   } catch (error) {
     console.error('Failed to load subscription groups:', error)

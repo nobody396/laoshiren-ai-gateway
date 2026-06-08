@@ -26,6 +26,17 @@
         :reports="modelReports"
       />
 
+      <!-- 开发者月卡 -->
+      <section id="monthly-credit-cards" class="monthly-credit-section mirror-reveal">
+        <div class="monthly-credit-section__container">
+          <MonthlyCreditPlans
+            variant="home"
+            title="开发者月卡"
+            summary="固定每日 credits 池，GPT Pro 与 Claude Max 共用。"
+          />
+        </div>
+      </section>
+
       <!-- 模型定价 -->
       <ModelPricing
         :claude-rows="claudePricingRows"
@@ -65,6 +76,7 @@ import ModelReports from '@/components/home/ModelReports.vue'
 import ModelPricing from '@/components/home/ModelPricing.vue'
 import VIPTiers from '@/components/home/VIPTiers.vue'
 import HomeFooter from '@/components/home/HomeFooter.vue'
+import MonthlyCreditPlans from '@/components/common/MonthlyCreditPlans.vue'
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
@@ -590,6 +602,29 @@ onUnmounted(() => {
 .home-page :deep(a),
 .home-page :deep(button) {
   -webkit-tap-highlight-color: transparent;
+}
+
+.monthly-credit-section {
+  padding: 6rem 0 5.25rem;
+  background:
+    linear-gradient(180deg, rgba(239, 230, 207, 0.18), rgba(250, 246, 236, 0.58)),
+    var(--papyrus);
+  scroll-margin-top: 88px;
+}
+
+.monthly-credit-section__container {
+  width: min(100% - 4rem, 1320px);
+  margin: 0 auto;
+}
+
+@media (max-width: 720px) {
+  .monthly-credit-section {
+    padding: 4.5rem 0 4rem;
+  }
+
+  .monthly-credit-section__container {
+    width: min(100% - 2rem, 1320px);
+  }
 }
 </style>
 

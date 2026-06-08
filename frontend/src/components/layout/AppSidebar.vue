@@ -17,8 +17,6 @@
           <span class="text-lg font-bold text-gray-900 dark:text-white">
             {{ siteName }}
           </span>
-          <!-- Version Badge -->
-          <VersionBadge :version="siteVersion" />
         </div>
       </transition>
     </div>
@@ -181,7 +179,6 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAdminSettingsStore, useAppStore, useAuthStore, useOnboardingStore } from '@/stores'
 import { usePermissionStore } from '@/stores/permission'
-import VersionBadge from '@/components/common/VersionBadge.vue'
 import { sanitizeSvg } from '@/utils/sanitize'
 
 interface NavItem {
@@ -217,7 +214,6 @@ const isDark = ref(document.documentElement.classList.contains('dark'))
 // Site settings from appStore (cached, no flicker)
 const siteName = computed(() => appStore.siteName)
 const siteLogo = computed(() => appStore.siteLogo)
-const siteVersion = computed(() => appStore.siteVersion)
 const settingsLoaded = computed(() => appStore.publicSettingsLoaded)
 const invoiceManagementEnabled = computed(
   () => appStore.cachedPublicSettings?.invoice_management_enabled === true

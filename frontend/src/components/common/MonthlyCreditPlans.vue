@@ -33,7 +33,7 @@
           <strong>{{ plan.dailyCredits }} credits</strong>
         </div>
 
-        <dl class="monthly-credit-card__usage">
+        <dl v-if="showEntitlementDetails" class="monthly-credit-card__usage">
           <div>
             <dt>GPT Pro</dt>
             <dd>{{ plan.gptUsage }}</dd>
@@ -44,7 +44,7 @@
           </div>
         </dl>
 
-        <button type="button" class="monthly-credit-card__button" disabled>
+        <button v-if="showAction" type="button" class="monthly-credit-card__button" disabled>
           暂时缺货
         </button>
       </article>
@@ -63,10 +63,14 @@ withDefaults(defineProps<{
   variant?: 'home' | 'app'
   title?: string
   summary?: string
+  showEntitlementDetails?: boolean
+  showAction?: boolean
 }>(), {
   variant: 'app',
   title: '开发者月卡',
-  summary: '固定每日 credits 池，GPT Pro 与 Claude Max 共用。'
+  summary: '固定每日 credits 池，GPT Pro 与 Claude Max 共用。',
+  showEntitlementDetails: true,
+  showAction: true
 })
 </script>
 

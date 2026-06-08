@@ -16,174 +16,111 @@
                 {{ t('subscriptionAccess.summary') }}
               </p>
 
-              <div v-if="showChannelSelector" class="topup-section">
-                <p class="topup-label">
-                  {{ t('topup.chooseChannel') }}
-                </p>
-                <div class="topup-channel-grid">
-                  <button
-                    v-if="cardShopMode"
-                    type="button"
-                    @click="selectTopupChannel('card_shop')"
-                    class="topup-choice"
-                    :class="{ 'topup-choice--active': showingCardShop }"
-                  >
-                    <span class="topup-choice-icon topup-choice-icon--warm">
-                      <Icon name="gift" size="md" />
-                    </span>
-                    <span class="topup-choice-content">
-                      <span class="topup-choice-title">
-                        {{ t('topup.cardShopChannelTitle') }}
-                      </span>
-                      <span class="topup-choice-desc">
-                        {{ t('topup.cardShopChannelDesc') }}
-                      </span>
-                      <span class="topup-status topup-status--available">
-                        {{ t('topup.availableNow') }}
-                      </span>
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    @click="selectTopupChannel('qr')"
-                    :disabled="!qrTopupAvailable"
-                    class="topup-choice"
-                    :class="{ 'topup-choice--active': showingQrTopup }"
-                  >
-                    <span class="topup-choice-icon topup-choice-icon--laurel">
-                      <Icon name="creditCard" size="md" />
-                    </span>
-                    <span class="topup-choice-content">
-                      <span class="topup-choice-title">
-                        {{ t('topup.qrChannelTitle') }}
-                      </span>
-                      <span class="topup-choice-desc">
-                        {{ t('topup.qrChannelDesc') }}
-                      </span>
-                      <span
-                        class="topup-status"
-                        :class="qrTopupAvailable ? 'topup-status--available' : 'topup-status--disabled'"
-                      >
-                        {{ qrTopupAvailable ? t('topup.availableNow') : t('topup.comingSoon') }}
-                      </span>
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              <div v-if="showingCardShop" class="topup-section topup-section--stack">
+              <div v-if="step === 1" class="topup-section topup-section--stack">
                 <section>
                   <p class="topup-label">
-                    {{ t('topup.cardShopSelectAmount') }}
+                    {{ t('topup.balanceCardsTitle') }}
                   </p>
                   <div class="topup-products">
                     <button
-                      v-for="product in activeCardShopProducts"
+                      v-for="product in balanceProducts"
                       :key="product.id"
-                      @click="openCardShopProduct(product)"
+                      type="button"
+                      @click="selectBalanceProduct(product)"
                       class="topup-product"
+                      :class="{ 'topup-product--active': selectedProductKind === 'balance' && selectedBalanceProduct?.id === product.id }"
                     >
                       <span class="topup-product-title">
-                        {{ product.label || `¥${product.amount_cny}` }}
+                        {{ product.label }}
                       </span>
                       <span class="topup-product-desc">
-                        {{ t('topup.cardShopAmount', { amount: product.amount_cny }) }}
+                        {{ t('topup.cardShopAmount', { amount: product.amountCny }) }}
                       </span>
                     </button>
                   </div>
                 </section>
 
-                <section class="topup-note">
-                  {{ t('topup.cardShopHint') }}
-                </section>
-              </div>
-
-              <div v-else-if="step === 1 && showingQrTopup" class="topup-section topup-section--stack">
                 <section>
                   <p class="topup-label">
-                    {{ t('topup.selectAmount') }}
+                    {{ t('topup.developerPlansTitle') }}
                   </p>
-                  <div class="topup-presets">
+                  <div class="topup-plan-grid">
                     <button
-                      v-for="preset in presets"
-                      :key="preset"
-                      @click="selectPreset(preset)"
-                      class="topup-product topup-product--preset"
-                      :class="{ 'topup-product--active': selectedPreset === preset && !useCustom }"
+                      v-for="plan in monthlyCreditCardPlans"
+                      :key="plan.id"
+                      type="button"
+                      @click="selectMonthlyPlan(plan)"
+                      class="topup-monthly-product"
+                      :class="[
+                        `topup-monthly-product--${plan.accent}`,
+                        { 'topup-monthly-product--active': selectedProductKind === 'monthly' && selectedMonthlyPlan?.id === plan.id }
+                      ]"
                     >
-                      <span class="topup-product-title">¥{{ preset }}</span>
+                      <span class="topup-monthly-product__head">
+                        <span class="topup-product-title">{{ plan.name }}</span>
+                        <span class="topup-status topup-status--disabled">{{ t('topup.monthlyPlanStatus') }}</span>
+                      </span>
+                      <span class="topup-monthly-product__price">{{ plan.price }} <small>/ 月</small></span>
+                      <span class="topup-product-desc">{{ plan.dailyCredits }} credits / 天</span>
                     </button>
                   </div>
                 </section>
 
-                <section>
-                  <p class="topup-label">
-                    {{ t('topup.customAmount') }}
-                  </p>
-                  <div class="topup-input-wrap">
-                    <span class="topup-currency">¥</span>
-                    <input
-                      v-model="customAmountInput"
-                      type="number"
-                      min="20"
-                      step="1"
-                      :placeholder="t('topup.customAmountPlaceholder')"
-                      @focus="useCustom = true; selectedPreset = null"
-                      class="topup-input"
-                      :class="{ 'topup-input--active': useCustom }"
-                    />
-                  </div>
-                  <p v-if="amountError" class="topup-error">{{ amountError }}</p>
-                </section>
-
-                <section>
+                <section v-if="selectedProductKind === 'balance'">
                   <p class="topup-label">
                     {{ t('topup.selectPayType') }}
                   </p>
-                  <div
-                    v-if="hasAvailablePayType"
-                    class="topup-pay-grid"
-                    :class="{ 'topup-pay-grid--single': !hasMultiplePayTypes }"
-                  >
+                  <div class="topup-channel-grid">
                     <button
-                      v-if="canUseAlipay"
-                      @click="selectPayType('alipay')"
-                      class="topup-pay-option"
-                      :class="{ 'topup-pay-option--active': payType === 'alipay' }"
+                      v-if="cardShopMode"
+                      type="button"
+                      @click="selectTopupChannel('card_shop')"
+                      :disabled="!canUseCardShopForSelected"
+                      class="topup-choice"
+                      :class="{ 'topup-choice--active': showingCardShop }"
                     >
-                      <div>
-                        <span class="topup-choice-title">{{ t('topup.alipay') }}</span>
-                      </div>
-                      <span class="topup-choice-icon topup-choice-icon--laurel">
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M21.422 15.358c-3.83-1.153-6.055-1.84-6.055-1.84.598-1.163.959-2.478 1.028-3.869H20V8.5h-4.5V7h-1.75v1.5h-4.5v1.149h7.397c-.106 2.73-1.5 4.872-3.5 6.114C11.47 17.21 9.48 16.5 7.5 16.5c-2.76 0-5 2.24-5 5 0 .17.01.34.03.5H2.5v.5h19v-.5h-.077A10.47 10.47 0 0022 20c0-1.9-.214-3.375-.578-4.642zM7.5 20c-1.38 0-2.5-1.12-2.5-2.5S6.12 15 7.5 15s2.5 1.12 2.5 2.5S8.88 20 7.5 20z"/>
-                        </svg>
+                      <span class="topup-choice-icon topup-choice-icon--warm">
+                        <Icon name="gift" size="md" />
+                      </span>
+                      <span class="topup-choice-content">
+                        <span class="topup-choice-title">{{ t('topup.cardShopChannelTitle') }}</span>
+                        <span class="topup-choice-desc">{{ t('topup.cardShopChannelDesc') }}</span>
+                        <span
+                          class="topup-status"
+                          :class="canUseCardShopForSelected ? 'topup-status--available' : 'topup-status--disabled'"
+                        >
+                          {{ canUseCardShopForSelected ? t('topup.availableNow') : t('topup.comingSoon') }}
+                        </span>
                       </span>
                     </button>
 
                     <button
-                      v-if="canUseWechat"
-                      @click="selectPayType('wechat')"
-                      class="topup-pay-option"
-                      :class="{ 'topup-pay-option--active': payType === 'wechat' }"
+                      type="button"
+                      @click="selectTopupChannel('qr')"
+                      :disabled="!qrPaymentAvailableForSelected"
+                      class="topup-choice"
+                      :class="{ 'topup-choice--active': showingQrTopup }"
                     >
-                      <div>
-                        <span class="topup-choice-title">{{ t('topup.wechat') }}</span>
-                      </div>
                       <span class="topup-choice-icon topup-choice-icon--laurel">
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M8.667 12c0 .58.47 1.05 1.05 1.05S10.767 12.58 10.767 12s-.47-1.05-1.05-1.05S8.667 11.42 8.667 12zm5.666 0c0 .58.47 1.05 1.05 1.05s1.05-.47 1.05-1.05-.47-1.05-1.05-1.05-1.05.47-1.05 1.05zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
-                        </svg>
+                        <Icon name="creditCard" size="md" />
+                      </span>
+                      <span class="topup-choice-content">
+                        <span class="topup-choice-title">{{ t('topup.qrChannelTitle') }}</span>
+                        <span class="topup-choice-desc">{{ t('topup.qrChannelDesc') }}</span>
+                        <span
+                          class="topup-status"
+                          :class="qrPaymentAvailableForSelected ? 'topup-status--available' : 'topup-status--disabled'"
+                        >
+                          {{ qrPaymentAvailableForSelected ? t('topup.availableNow') : t('topup.comingSoon') }}
+                        </span>
                       </span>
                     </button>
                   </div>
-                  <p
-                    v-else
-                    class="topup-warning"
-                  >
-                    {{ t('topup.noAvailablePayType') }}
-                  </p>
+                  <p v-if="paymentNotice" class="topup-warning">{{ paymentNotice }}</p>
+                </section>
+
+                <section v-else class="topup-note">
+                  {{ t('topup.monthlyPlanHint') }}
                 </section>
               </div>
 
@@ -224,44 +161,55 @@
                   <div>
                     <p class="topup-summary-kicker">{{ t('topup.title') }}</p>
                     <p class="topup-summary-title">
-                      <template v-if="showingCardShop">
-                        {{ t('topup.cardShopModeTitle') }}
+                      <template v-if="selectedProductKind === 'monthly'">
+                        {{ selectedMonthlyPlan?.name }}
                       </template>
                       <template v-else>
-                        ¥{{ displayAmountText }}
+                        {{ selectedBalanceProduct?.label }}
                       </template>
                     </p>
                   </div>
                   <div v-if="showingQrTopup" class="topup-price-chip">
                     ${{ displayUSDText }}
                   </div>
+                  <div v-else-if="selectedProductKind === 'monthly'" class="topup-price-chip topup-price-chip--muted">
+                    {{ t('topup.monthlyPlanStatus') }}
+                  </div>
                 </div>
 
                 <div class="topup-summary-rows">
-                  <template v-if="showingCardShop">
+                  <template v-if="selectedProductKind === 'monthly'">
                     <div class="topup-summary-row">
-                      <span>{{ t('topup.cardShopProductCount') }}</span>
-                      <strong>
-                        {{ activeCardShopProducts.length }}
-                      </strong>
+                      <span>{{ t('topup.productType') }}</span>
+                      <strong>{{ t('topup.developerMonthlyCard') }}</strong>
                     </div>
                     <div class="topup-summary-row">
-                      <span>{{ t('topup.cardShopRedeemType') }}</span>
-                      <strong>
-                        {{ t('topup.cardShopRedeemLink') }}
-                      </strong>
+                      <span>{{ t('topup.monthlyPlanPrice') }}</span>
+                      <strong>{{ selectedMonthlyPlan?.price }} / 月</strong>
+                    </div>
+                    <div class="topup-summary-row">
+                      <span>{{ t('topup.monthlyPlanCredits') }}</span>
+                      <strong>{{ selectedMonthlyPlan?.dailyCredits }} credits / 天</strong>
                     </div>
                   </template>
-                  <div v-else class="topup-summary-row">
-                    <span>{{ t('topup.selectPayType') }}</span>
-                    <strong>
-                      {{ selectedPayTypeLabel }}
-                    </strong>
-                  </div>
-                  <div v-if="showingQrTopup" class="topup-summary-row">
-                    <span>{{ t('subscriptionAccess.rateLabel') }}</span>
-                    <strong>{{ t('topup.creditsNote') }}</strong>
-                  </div>
+                  <template v-else>
+                    <div class="topup-summary-row">
+                      <span>{{ t('topup.productType') }}</span>
+                      <strong>{{ t('topup.balanceCard') }}</strong>
+                    </div>
+                    <div class="topup-summary-row">
+                      <span>{{ t('topup.selectAmount') }}</span>
+                      <strong>¥{{ displayAmountText }}</strong>
+                    </div>
+                    <div class="topup-summary-row">
+                      <span>{{ t('topup.selectPayType') }}</span>
+                      <strong>{{ selectedTopupMethodLabel }}</strong>
+                    </div>
+                    <div v-if="showingQrTopup" class="topup-summary-row">
+                      <span>{{ t('subscriptionAccess.rateLabel') }}</span>
+                      <strong>{{ t('topup.creditsNote') }}</strong>
+                    </div>
+                  </template>
                   <div v-if="step === 2 && !qrExpired" class="topup-summary-row">
                     <span>{{ t('topup.qrExpiry') }}</span>
                     <strong>{{ countdownText }}</strong>
@@ -269,22 +217,82 @@
                 </div>
 
                 <button
-                  v-if="showingCardShop"
-                  @click="goRedeem"
+                  v-if="selectedProductKind === 'monthly'"
+                  disabled
                   class="topup-primary-action"
                 >
-                  {{ t('topup.cardShopGoRedeem') }}
+                  {{ t('topup.monthlyPlanStatus') }}
                 </button>
 
-                <button
-                  v-else-if="step === 1"
-                  @click="submitOrder"
-                  :disabled="submitting || !hasAvailablePayType || !!amountError || effectiveAmountYuan < 20"
-                  class="topup-primary-action"
-                >
-                  <span v-if="submitting">{{ t('topup.submitting') }}</span>
-                  <span v-else>{{ t('topup.confirmButton') }} — ¥{{ effectiveAmountYuan || 20 }}</span>
-                </button>
+                <template v-else-if="showingCardShop">
+                  <button
+                    @click="openSelectedCardShopProduct"
+                    :disabled="!selectedCardShopProduct"
+                    class="topup-primary-action"
+                  >
+                    {{ t('topup.cardShopAction') }}
+                  </button>
+                  <button
+                    @click="goRedeem"
+                    class="topup-secondary-action topup-secondary-action--stacked"
+                  >
+                    {{ t('topup.cardShopGoRedeem') }}
+                  </button>
+                </template>
+
+                <section v-else-if="step === 1" class="topup-inline-pay">
+                  <p class="topup-label">
+                    {{ t('topup.selectPayType') }}
+                  </p>
+                  <div
+                    v-if="hasAvailablePayType"
+                    class="topup-pay-grid"
+                    :class="{ 'topup-pay-grid--single': !hasMultiplePayTypes }"
+                  >
+                    <button
+                      v-if="canUseAlipay"
+                      @click="selectPayType('alipay')"
+                      class="topup-pay-option"
+                      :class="{ 'topup-pay-option--active': payType === 'alipay' }"
+                    >
+                      <div>
+                        <span class="topup-choice-title">{{ t('topup.alipay') }}</span>
+                      </div>
+                      <span class="topup-choice-icon topup-choice-icon--laurel">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M21.422 15.358c-3.83-1.153-6.055-1.84-6.055-1.84.598-1.163.959-2.478 1.028-3.869H20V8.5h-4.5V7h-1.75v1.5h-4.5v1.149h7.397c-.106 2.73-1.5 4.872-3.5 6.114C11.47 17.21 9.48 16.5 7.5 16.5c-2.76 0-5 2.24-5 5 0 .17.01.34.03.5H2.5v.5h19v-.5h-.077A10.47 10.47 0 0022 20c0-1.9-.214-3.375-.578-4.642zM7.5 20c-1.38 0-2.5-1.12-2.5-2.5S6.12 15 7.5 15s2.5 1.12 2.5 2.5S8.88 20 7.5 20z"/>
+                        </svg>
+                      </span>
+                    </button>
+
+                    <button
+                      v-if="canUseWechat"
+                      @click="selectPayType('wechat')"
+                      class="topup-pay-option"
+                      :class="{ 'topup-pay-option--active': payType === 'wechat' }"
+                    >
+                      <div>
+                        <span class="topup-choice-title">{{ t('topup.wechat') }}</span>
+                      </div>
+                      <span class="topup-choice-icon topup-choice-icon--laurel">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M8.667 12c0 .58.47 1.05 1.05 1.05S10.767 12.58 10.767 12s-.47-1.05-1.05-1.05S8.667 11.42 8.667 12zm5.666 0c0 .58.47 1.05 1.05 1.05s1.05-.47 1.05-1.05-.47-1.05-1.05-1.05-1.05.47-1.05 1.05zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+                        </svg>
+                      </span>
+                    </button>
+                  </div>
+                  <p v-else class="topup-warning">
+                    {{ t('topup.noAvailablePayType') }}
+                  </p>
+                  <button
+                    @click="submitOrder"
+                    :disabled="submitting || !hasAvailablePayType || !!amountError || effectiveAmountYuan < 20"
+                    class="topup-primary-action"
+                  >
+                    <span v-if="submitting">{{ t('topup.submitting') }}</span>
+                    <span v-else>{{ t('topup.confirmButton') }} — ¥{{ effectiveAmountYuan || 20 }}</span>
+                  </button>
+                </section>
 
                 <div v-else class="topup-summary-actions">
                   <div class="topup-success">
@@ -301,12 +309,6 @@
             </div>
           </div>
         </section>
-
-        <MonthlyCreditPlans
-          variant="app"
-          title="开发者月卡"
-          summary="固定每日 credits 池，GPT Pro 与 Claude Max 共用。"
-        />
       </div>
     </div>
   </AppLayout>
@@ -318,11 +320,11 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
-import MonthlyCreditPlans from '@/components/common/MonthlyCreditPlans.vue'
 import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/api/topup'
 import { useAppStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import type { CardShopProduct } from '@/types'
+import { monthlyCreditCardPlans, type MonthlyCreditCardPlan } from '@/constants/monthlyCreditCards'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -331,13 +333,20 @@ const router = useRouter()
 const presets = [20, 50, 100, 200, 1000, 2000]
 const QR_TTL_SECONDS = 300
 type TopupChannel = 'card_shop' | 'qr'
+type SelectedProductKind = 'balance' | 'monthly'
+type BalanceProduct = {
+  id: string
+  label: string
+  amountCny: number
+  cardShopProduct?: CardShopProduct
+}
 
 const step = ref<1 | 2>(1)
 const selectedTopupChannel = ref<TopupChannel>('card_shop')
+const selectedProductKind = ref<SelectedProductKind>('balance')
+const selectedBalanceProductId = ref('')
+const selectedMonthlyPlanId = ref<MonthlyCreditCardPlan['id']>('lite')
 const payType = ref<TopupPayType>('alipay')
-const selectedPreset = ref<number | null>(20)
-const useCustom = ref(false)
-const customAmountInput = ref('')
 const submitting = ref(false)
 const qrCodeURL = ref('')
 const orderNo = ref('')
@@ -365,20 +374,45 @@ const activeCardShopProducts = computed<CardShopProduct[]>(() =>
 const cardShopMode = computed(
   () => (appStore.cachedPublicSettings?.card_shop_enabled ?? false) && activeCardShopProducts.value.length > 0
 )
-const showChannelSelector = computed(() => cardShopMode.value || qrTopupAvailable.value)
-const showingCardShop = computed(() => selectedTopupChannel.value === 'card_shop' && cardShopMode.value)
-const showingQrTopup = computed(() => selectedTopupChannel.value === 'qr')
-const selectedPayTypeLabel = computed(() => {
-  if (!hasAvailablePayType.value) return t('topup.noAvailablePayType')
-  return payType.value === 'alipay' ? t('topup.alipay') : t('topup.wechat')
+const balanceProducts = computed<BalanceProduct[]>(() => {
+  if (activeCardShopProducts.value.length > 0) {
+    return activeCardShopProducts.value.map((product) => ({
+      id: product.id,
+      label: product.label || `¥${product.amount_cny} 余额卡`,
+      amountCny: product.amount_cny,
+      cardShopProduct: product
+    }))
+  }
+  return presets.map((amount) => ({
+    id: `qr-${amount}`,
+    label: `¥${amount} 余额卡`,
+    amountCny: amount
+  }))
+})
+const selectedBalanceProduct = computed<BalanceProduct | undefined>(
+  () => balanceProducts.value.find((product) => product.id === selectedBalanceProductId.value) ?? balanceProducts.value[0]
+)
+const selectedCardShopProduct = computed(() => selectedBalanceProduct.value?.cardShopProduct)
+const selectedMonthlyPlan = computed(
+  () => monthlyCreditCardPlans.find((plan) => plan.id === selectedMonthlyPlanId.value) ?? monthlyCreditCardPlans[0]
+)
+const canUseCardShopForSelected = computed(() => cardShopMode.value && !!selectedCardShopProduct.value)
+const qrPaymentAvailableForSelected = computed(
+  () => selectedProductKind.value === 'balance' && qrTopupAvailable.value && effectiveAmountYuan.value >= 20
+)
+const showingCardShop = computed(
+  () => selectedProductKind.value === 'balance' && selectedTopupChannel.value === 'card_shop' && canUseCardShopForSelected.value
+)
+const showingQrTopup = computed(() => selectedProductKind.value === 'balance' && selectedTopupChannel.value === 'qr')
+const selectedTopupMethodLabel = computed(() => {
+  if (showingCardShop.value) return t('topup.cardShopChannelTitle')
+  if (showingQrTopup.value) return t('topup.qrChannelTitle')
+  return t('topup.comingSoon')
 })
 
 const effectiveAmountYuan = computed<number>(() => {
-  if (useCustom.value) {
-    const value = parseInt(customAmountInput.value, 10)
-    return Number.isNaN(value) ? 0 : value
-  }
-  return selectedPreset.value ?? 0
+  if (selectedProductKind.value !== 'balance') return 0
+  return selectedBalanceProduct.value?.amountCny ?? 0
 })
 
 const displayAmountYuan = computed(() => {
@@ -392,15 +426,20 @@ const displayAmountText = computed(() => formatMoney(displayAmountYuan.value, fa
 const displayUSDText = computed(() => formatMoney(displayAmountYuan.value, true))
 
 const amountError = computed<string>(() => {
+  if (selectedProductKind.value !== 'balance' || selectedTopupChannel.value !== 'qr') return ''
   if (effectiveAmountYuan.value > 0 && effectiveAmountYuan.value < 20) {
     return t('topup.minAmountError')
   }
   if (effectiveAmountYuan.value > 3000) {
     return t('topup.maxAmountError')
   }
-  if (useCustom.value && customAmountInput.value !== '' && Number.isNaN(parseInt(customAmountInput.value, 10))) {
-    return t('topup.invalidAmount')
-  }
+  return ''
+})
+const paymentNotice = computed(() => {
+  if (selectedProductKind.value !== 'balance') return ''
+  if (selectedTopupChannel.value === 'qr' && amountError.value) return amountError.value
+  if (selectedTopupChannel.value === 'qr' && !qrTopupAvailable.value) return t('topup.noAvailablePayType')
+  if (selectedTopupChannel.value === 'card_shop' && !canUseCardShopForSelected.value) return t('topup.cardShopUnavailable')
   return ''
 })
 
@@ -415,30 +454,39 @@ function formatMoney(value: number, fixed: boolean) {
   return fixed || !Number.isInteger(value) ? value.toFixed(2) : String(value)
 }
 
-function selectPreset(value: number) {
-  selectedPreset.value = value
-  useCustom.value = false
-  customAmountInput.value = ''
-}
-
 function selectPayType(type: TopupPayType) {
   if (type === 'alipay' && !canUseAlipay.value) return
   if (type === 'wechat' && !canUseWechat.value) return
   payType.value = type
 }
 
+function selectBalanceProduct(product: BalanceProduct) {
+  selectedProductKind.value = 'balance'
+  selectedBalanceProductId.value = product.id
+  if (selectedTopupChannel.value === 'card_shop' && !product.cardShopProduct && qrTopupAvailable.value && product.amountCny >= 20) {
+    selectedTopupChannel.value = 'qr'
+  } else if (selectedTopupChannel.value === 'qr' && (!qrTopupAvailable.value || product.amountCny < 20) && product.cardShopProduct) {
+    selectedTopupChannel.value = 'card_shop'
+  }
+}
+
+function selectMonthlyPlan(plan: MonthlyCreditCardPlan) {
+  selectedProductKind.value = 'monthly'
+  selectedMonthlyPlanId.value = plan.id
+}
+
 function selectTopupChannel(channel: TopupChannel) {
-  if (channel === 'card_shop' && !cardShopMode.value) return
-  if (channel === 'qr' && !qrTopupAvailable.value) return
+  if (channel === 'card_shop' && !canUseCardShopForSelected.value) return
+  if (channel === 'qr' && !qrPaymentAvailableForSelected.value) return
   selectedTopupChannel.value = channel
   if (channel === 'qr') {
     syncPayTypeWithSettings()
   }
 }
 
-function openCardShopProduct(product: CardShopProduct) {
-  if (!product.url) return
-  window.location.assign(product.url)
+function openSelectedCardShopProduct() {
+  if (!selectedCardShopProduct.value?.url) return
+  window.location.assign(selectedCardShopProduct.value.url)
 }
 
 function goRedeem() {
@@ -455,11 +503,14 @@ function syncPayTypeWithSettings() {
 }
 
 function syncTopupChannelWithSettings() {
-  if (selectedTopupChannel.value === 'card_shop' && !cardShopMode.value) {
+  if (!selectedBalanceProductId.value && balanceProducts.value.length > 0) {
+    selectedBalanceProductId.value = balanceProducts.value[0].id
+  }
+  if (selectedTopupChannel.value === 'card_shop' && !canUseCardShopForSelected.value) {
     selectedTopupChannel.value = 'qr'
-  } else if (selectedTopupChannel.value === 'qr' && !qrTopupAvailable.value && cardShopMode.value) {
+  } else if (selectedTopupChannel.value === 'qr' && !qrPaymentAvailableForSelected.value && canUseCardShopForSelected.value) {
     selectedTopupChannel.value = 'card_shop'
-  } else if (cardShopMode.value) {
+  } else if (canUseCardShopForSelected.value) {
     selectedTopupChannel.value = 'card_shop'
   } else {
     selectedTopupChannel.value = 'qr'
@@ -502,7 +553,7 @@ function updateActiveOrderMeta(meta: { amount_cny_fen?: number; pay_type?: Topup
 }
 
 async function submitOrder() {
-  if (!hasAvailablePayType.value || effectiveAmountYuan.value < 20 || amountError.value) return
+  if (!showingQrTopup.value || !hasAvailablePayType.value || effectiveAmountYuan.value < 20 || amountError.value) return
   syncPayTypeWithSettings()
 
   submitting.value = true
@@ -697,7 +748,8 @@ void appStore.fetchPublicSettings().then(() => {
 .topup-channel-grid,
 .topup-products,
 .topup-presets,
-.topup-pay-grid {
+.topup-pay-grid,
+.topup-plan-grid {
   display: grid;
   gap: 0.75rem;
 }
@@ -709,6 +761,10 @@ void appStore.fetchPublicSettings().then(() => {
 
 .topup-presets {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.topup-plan-grid {
+  grid-template-columns: 1fr;
 }
 
 .topup-pay-grid {
@@ -854,6 +910,85 @@ void appStore.fetchPublicSettings().then(() => {
 
 .topup-product-title {
   font-size: 1.15rem;
+}
+
+.topup-monthly-product {
+  position: relative;
+  overflow: hidden;
+  min-height: 9.5rem;
+  width: 100%;
+  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border-radius: 8px;
+  background: var(--admin-control, rgba(255, 252, 245, 0.95));
+  color: var(--admin-ink, #1f1a12);
+  padding: 1rem;
+  text-align: left;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.topup-monthly-product::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0.25rem;
+  background: var(--admin-muted, #8a7d63);
+}
+
+.topup-monthly-product--lite::before {
+  background: #3f5a3a;
+}
+
+.topup-monthly-product--pro::before {
+  background: #4b6faf;
+}
+
+.topup-monthly-product--max::before {
+  background: #9a3b1f;
+}
+
+.topup-monthly-product--ultra::before {
+  background: #13100b;
+}
+
+.topup-monthly-product:hover {
+  border-color: var(--admin-border-strong, rgba(31, 26, 18, 0.32));
+  background: var(--admin-parchment, #f2e9d2);
+  transform: translateY(-1px);
+  box-shadow: var(--admin-shadow-sm, 0 8px 24px rgba(49, 38, 20, 0.08));
+}
+
+.topup-monthly-product--active {
+  border-color: var(--admin-terracotta, #9a3b1f);
+  background:
+    linear-gradient(180deg, rgba(154, 59, 31, 0.1), transparent 100%),
+    var(--admin-control, rgba(255, 252, 245, 0.95));
+  box-shadow: inset 0 0 0 1px rgba(154, 59, 31, 0.12);
+}
+
+.topup-monthly-product__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.topup-monthly-product__price {
+  display: block;
+  margin-top: 1.25rem;
+  color: var(--admin-ink-deep, #13100b);
+  font-size: 1.65rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.topup-monthly-product__price small {
+  color: var(--admin-muted, #8a7d63);
+  font-size: 0.82rem;
+  font-weight: 650;
 }
 
 .topup-note,
@@ -1044,6 +1179,12 @@ void appStore.fetchPublicSettings().then(() => {
   font-weight: 700;
 }
 
+.topup-price-chip--muted {
+  border-color: var(--admin-border, rgba(31, 26, 18, 0.14));
+  background: var(--admin-surface-soft, rgba(239, 230, 207, 0.78));
+  color: var(--admin-muted, #8a7d63);
+}
+
 .topup-summary-rows {
   display: grid;
   gap: 0.9rem;
@@ -1110,6 +1251,14 @@ void appStore.fetchPublicSettings().then(() => {
   margin-top: 2rem;
 }
 
+.topup-inline-pay {
+  margin-top: 1.5rem;
+}
+
+.topup-inline-pay .topup-primary-action {
+  margin-top: 1rem;
+}
+
 .topup-secondary-action {
   border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
   background: var(--admin-control, rgba(255, 252, 245, 0.95));
@@ -1120,6 +1269,10 @@ void appStore.fetchPublicSettings().then(() => {
   border-color: var(--admin-border-strong, rgba(31, 26, 18, 0.32));
   background: var(--admin-parchment, #f2e9d2);
   color: var(--admin-ink-deep, #13100b);
+}
+
+.topup-secondary-action--stacked {
+  margin-top: 0.75rem;
 }
 
 .dark .topup-primary-action {
@@ -1137,7 +1290,8 @@ void appStore.fetchPublicSettings().then(() => {
   }
 
   .topup-channel-grid,
-  .topup-products {
+  .topup-products,
+  .topup-plan-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

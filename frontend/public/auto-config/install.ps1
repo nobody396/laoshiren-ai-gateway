@@ -584,6 +584,10 @@ function Write-ClaudeConfig {
   $Config.env | Add-Member -NotePropertyName ANTHROPIC_BASE_URL -NotePropertyValue $BaseUrl -Force
   $Config.env | Add-Member -NotePropertyName ANTHROPIC_AUTH_TOKEN -NotePropertyValue $ClaudeApiKey -Force
   $Config.env | Add-Member -NotePropertyName CLAUDE_CODE_ATTRIBUTION_HEADER -NotePropertyValue '0' -Force
+  $Config.env | Add-Member -NotePropertyName CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY -NotePropertyValue '1' -Force
+  $Config.env | Add-Member -NotePropertyName ANTHROPIC_CUSTOM_MODEL_OPTION -NotePropertyValue 'claude-fable-5' -Force
+  $Config.env | Add-Member -NotePropertyName ANTHROPIC_CUSTOM_MODEL_OPTION_NAME -NotePropertyValue 'Claude Fable 5' -Force
+  $Config.env | Add-Member -NotePropertyName ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION -NotePropertyValue 'Claude Fable 5 via 老实人AI gateway' -Force
 
   $Config | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $ClaudeSettingsPath -Encoding UTF8
 }

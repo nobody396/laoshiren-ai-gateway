@@ -533,6 +533,10 @@ if (!config.env || typeof config.env !== 'object' || Array.isArray(config.env)) 
 config.env.ANTHROPIC_BASE_URL = baseUrl
 config.env.ANTHROPIC_AUTH_TOKEN = apiKey
 config.env.CLAUDE_CODE_ATTRIBUTION_HEADER = '0'
+config.env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY = '1'
+config.env.ANTHROPIC_CUSTOM_MODEL_OPTION = 'claude-fable-5'
+config.env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME = 'Claude Fable 5'
+config.env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION = 'Claude Fable 5 via 老实人AI gateway'
 
 fs.writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`, 'utf8')
 EOF

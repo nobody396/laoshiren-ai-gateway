@@ -55,6 +55,14 @@ claude --version
 
 如需指定模型，可在 Claude Code 启动时使用 `claude --model claude-fable-5` 或 `claude --model claude-opus-4-8`。不指定模型时，客户端会按自身默认策略选择模型。
 
+如果 `/model` 里看不到 `Claude Fable 5`，请先升级 Claude Code 到最新版，并确认配置中包含：
+
+```bash
+CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1
+ANTHROPIC_CUSTOM_MODEL_OPTION=claude-fable-5
+ANTHROPIC_CUSTOM_MODEL_OPTION_NAME="Claude Fable 5"
+```
+
 #### 方式二：手动配置环境变量
 
 点击密钥旁的 **复制** 按钮获取 API Key。

@@ -1848,8 +1848,8 @@ model_reasoning_effort = "high"
 disable_response_storage = true
 network_access = "enabled"
 windows_wsl_setup_acknowledged = true
-model_context_window = 1000000
-model_auto_compact_token_limit = 900000
+model_context_window = 400000
+model_auto_compact_token_limit = 360000
 
 [model_providers.${providerName}]
 name = "${providerName}"

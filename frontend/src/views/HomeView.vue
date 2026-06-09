@@ -273,6 +273,7 @@ const _pricingPlans = [
 // ── 模型定价表格数据（单位：每 100 万 tokens） ──
 type ClaudeBasePricingRow = {
   model: string
+  modelId: string
   official: {
     input: number
     cacheWrite5m: number
@@ -283,9 +284,10 @@ type ClaudeBasePricingRow = {
 
 type GptBasePricingRow = {
   model: string
+  modelId: string
   official: {
     input: number
-    cachedInput: number
+    cachedInput: number | null
     output: number
   }
 }
@@ -328,12 +330,20 @@ function formatUSD(value: number): string {
   return `$${formatCompactNumber(value, 2, minimumFractionDigits)}`
 }
 
+function formatOptionalUSD(value: number | null): string {
+  return value == null ? '—' : formatUSD(value)
+}
+
 function formatCNY(
   value: number,
   maximumFractionDigits = 2,
   minimumFractionDigits = 0
 ): string {
   return `¥${formatCompactNumber(value, maximumFractionDigits, minimumFractionDigits)}`
+}
+
+function formatOptionalCNY(value: number | null): string {
+  return value == null ? '—' : formatCNY(value)
 }
 
 function formatDiscount(multiplier: number, exchangeRate: number): string {
@@ -372,6 +382,7 @@ const pricingDisplay = computed(() => {
 const claudeBasePricingRows: ClaudeBasePricingRow[] = [
   {
     model: 'Claude Fable 5',
+    modelId: 'claude-fable-5',
     official: {
       input: 10,
       cacheWrite5m: 12.5,
@@ -381,6 +392,7 @@ const claudeBasePricingRows: ClaudeBasePricingRow[] = [
   },
   {
     model: 'Claude Opus 4.8',
+    modelId: 'claude-opus-4-8',
     official: {
       input: 5,
       cacheWrite5m: 6.25,
@@ -390,6 +402,27 @@ const claudeBasePricingRows: ClaudeBasePricingRow[] = [
   },
   {
     model: 'Claude Opus 4.7',
+    modelId: 'claude-opus-4-7',
+    official: {
+      input: 5,
+      cacheWrite5m: 6.25,
+      cacheRead: 0.5,
+      output: 25
+    }
+  },
+  {
+    model: 'Claude Opus 4.6',
+    modelId: 'claude-opus-4-6',
+    official: {
+      input: 5,
+      cacheWrite5m: 6.25,
+      cacheRead: 0.5,
+      output: 25
+    }
+  },
+  {
+    model: 'Claude Opus 4.5',
+    modelId: 'claude-opus-4-5-20251101',
     official: {
       input: 5,
       cacheWrite5m: 6.25,
@@ -399,11 +432,32 @@ const claudeBasePricingRows: ClaudeBasePricingRow[] = [
   },
   {
     model: 'Claude Sonnet 4.6',
+    modelId: 'claude-sonnet-4-6',
     official: {
       input: 3,
       cacheWrite5m: 3.75,
       cacheRead: 0.3,
       output: 15
+    }
+  },
+  {
+    model: 'Claude Sonnet 4.5',
+    modelId: 'claude-sonnet-4-5-20250929',
+    official: {
+      input: 3,
+      cacheWrite5m: 3.75,
+      cacheRead: 0.3,
+      output: 15
+    }
+  },
+  {
+    model: 'Claude Haiku 4.5',
+    modelId: 'claude-haiku-4-5-20251001',
+    official: {
+      input: 1,
+      cacheWrite5m: 1.25,
+      cacheRead: 0.1,
+      output: 5
     }
   }
 ]
@@ -411,6 +465,7 @@ const claudeBasePricingRows: ClaudeBasePricingRow[] = [
 const gptBasePricingRows: GptBasePricingRow[] = [
   {
     model: 'GPT-5.5',
+    modelId: 'gpt-5.5',
     official: {
       input: 5,
       cachedInput: 0.5,
@@ -419,10 +474,146 @@ const gptBasePricingRows: GptBasePricingRow[] = [
   },
   {
     model: 'GPT-5.4',
+    modelId: 'gpt-5.4',
     official: {
       input: 2.5,
       cachedInput: 0.25,
       output: 15
+    }
+  },
+  {
+    model: 'GPT-5.4 Mini',
+    modelId: 'gpt-5.4-mini',
+    official: {
+      input: 0.75,
+      cachedInput: 0.075,
+      output: 4.5
+    }
+  },
+  {
+    model: 'GPT-5.4 Nano',
+    modelId: 'gpt-5.4-nano',
+    official: {
+      input: 0.2,
+      cachedInput: 0.02,
+      output: 1.25
+    }
+  },
+  {
+    model: 'GPT-5.3 Codex',
+    modelId: 'gpt-5.3-codex',
+    official: {
+      input: 1.75,
+      cachedInput: 0.175,
+      output: 14
+    }
+  },
+  {
+    model: 'GPT-5.3 Codex Spark',
+    modelId: 'gpt-5.3-codex-spark',
+    official: {
+      input: 1.25,
+      cachedInput: 0.125,
+      output: 10
+    }
+  },
+  {
+    model: 'GPT-5.2',
+    modelId: 'gpt-5.2',
+    official: {
+      input: 1.75,
+      cachedInput: 0.175,
+      output: 14
+    }
+  },
+  {
+    model: 'GPT-5.2 Codex',
+    modelId: 'gpt-5.2-codex',
+    official: {
+      input: 1.75,
+      cachedInput: 0.175,
+      output: 14
+    }
+  },
+  {
+    model: 'GPT-5.2 Pro',
+    modelId: 'gpt-5.2-pro',
+    official: {
+      input: 21,
+      cachedInput: null,
+      output: 168
+    }
+  },
+  {
+    model: 'GPT-5.1',
+    modelId: 'gpt-5.1',
+    official: {
+      input: 1.25,
+      cachedInput: 0.125,
+      output: 10
+    }
+  },
+  {
+    model: 'GPT-5.1 Codex',
+    modelId: 'gpt-5.1-codex',
+    official: {
+      input: 1.25,
+      cachedInput: 0.125,
+      output: 10
+    }
+  },
+  {
+    model: 'GPT-5.1 Codex Max',
+    modelId: 'gpt-5.1-codex-max',
+    official: {
+      input: 1.25,
+      cachedInput: 0.125,
+      output: 10
+    }
+  },
+  {
+    model: 'GPT-5.1 Codex Mini',
+    modelId: 'gpt-5.1-codex-mini',
+    official: {
+      input: 0.25,
+      cachedInput: 0.025,
+      output: 2
+    }
+  },
+  {
+    model: 'GPT-5',
+    modelId: 'gpt-5',
+    official: {
+      input: 1.25,
+      cachedInput: 0.125,
+      output: 10
+    }
+  },
+  {
+    model: 'GPT-5 Pro',
+    modelId: 'gpt-5-pro',
+    official: {
+      input: 15,
+      cachedInput: null,
+      output: 120
+    }
+  },
+  {
+    model: 'GPT-5 Mini',
+    modelId: 'gpt-5-mini',
+    official: {
+      input: 0.25,
+      cachedInput: 0.025,
+      output: 2
+    }
+  },
+  {
+    model: 'GPT-5 Nano',
+    modelId: 'gpt-5-nano',
+    official: {
+      input: 0.05,
+      cachedInput: 0.005,
+      output: 0.4
     }
   }
 ]
@@ -457,6 +648,7 @@ const claudePricingRows = computed(() => {
 
   return claudeBasePricingRows.map((row) => ({
     model: row.model,
+    modelId: row.modelId,
     official: {
       input: formatUSD(row.official.input),
       cacheWrite5m: formatUSD(row.official.cacheWrite5m),
@@ -479,14 +671,17 @@ const gptPricingRows = computed(() => {
 
   return gptBasePricingRows.map((row) => ({
     model: row.model,
+    modelId: row.modelId,
     official: {
       input: formatUSD(row.official.input),
-      cachedInput: formatUSD(row.official.cachedInput),
+      cachedInput: formatOptionalUSD(row.official.cachedInput),
       output: formatUSD(row.official.output)
     },
     pro: {
       input: formatCNY(row.official.input * config.proMultiplier),
-      cachedInput: formatCNY(row.official.cachedInput * config.proMultiplier),
+      cachedInput: formatOptionalCNY(
+        row.official.cachedInput == null ? null : row.official.cachedInput * config.proMultiplier
+      ),
       output: formatCNY(row.official.output * config.proMultiplier)
     },
     discount

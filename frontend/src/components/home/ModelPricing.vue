@@ -5,7 +5,7 @@
       <div class="pricing-heading">
         <p class="section-eyebrow">IV · 价格铭文</p>
         <h2 class="section-title">Pretium · 模型定价</h2>
-        <p class="section-lede">官方价 × 分组倍率；单位：每 100 万 tokens。</p>
+        <p class="section-lede">当前公开可用模型；官方价 × 分组倍率，单位：每 100 万 tokens。</p>
       </div>
 
       <div class="discount-ledger">
@@ -63,7 +63,10 @@
               </thead>
               <tbody>
                 <tr v-for="row in claudeRows" :key="row.model">
-                  <td class="model-name">{{ row.model }}</td>
+                  <td class="model-name">
+                    <strong>{{ row.model }}</strong>
+                    <span>{{ row.modelId }}</span>
+                  </td>
                   <td>
                     <div class="rate-stack">
                       <span><strong>Input</strong><em>{{ row.official.input }}</em></span>
@@ -107,7 +110,10 @@
               </thead>
               <tbody>
                 <tr v-for="row in gptRows" :key="row.model">
-                  <td class="model-name">{{ row.model }}</td>
+                  <td class="model-name">
+                    <strong>{{ row.model }}</strong>
+                    <span>{{ row.modelId }}</span>
+                  </td>
                   <td>
                     <div class="rate-stack">
                       <span><strong>Input</strong><em>{{ row.official.input }}</em></span>
@@ -133,7 +139,7 @@
       </div>
 
       <p class="pricing-footnote">
-        折扣按 1 USD = ¥{{ exchangeRateLabel }} 估算，仅用于展示与官方人民币折算价的相对优惠。
+        列表按生产环境可调度账号的公开模型整理；上下文窗口不按 API 理论值展示，订阅账号池可用上限需以上游账号实际为准。折扣按 1 USD = ¥{{ exchangeRateLabel }} 估算，仅用于展示与官方人民币折算价的相对优惠。
       </p>
 
       <div class="model-pricing__cta">
@@ -162,6 +168,7 @@ type ClaudePriceSet = {
 
 type ClaudePricingRow = {
   model: string
+  modelId: string
   official: ClaudePriceSet
   max: ClaudePriceSet
   discount: string
@@ -175,6 +182,7 @@ type GptPriceSet = {
 
 type GptPricingRow = {
   model: string
+  modelId: string
   official: GptPriceSet
   pro: GptPriceSet
   discount: string
@@ -423,10 +431,7 @@ defineProps<{
   font-family: 'EB Garamond', 'Noto Serif SC', serif;
 }
 
-.pricing-table--claude {
-  min-width: 760px;
-}
-
+.pricing-table--claude,
 .pricing-table--gpt {
   min-width: 760px;
 }
@@ -468,9 +473,26 @@ defineProps<{
 .model-name {
   color: #13100b;
   font-feature-settings: 'lnum' 1, 'tnum' 1;
-  font-size: 1.08rem;
-  font-weight: 600;
+  min-width: 11.5rem;
   white-space: nowrap;
+}
+
+.model-name strong {
+  display: block;
+  font-size: 1.04rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.model-name span {
+  display: block;
+  margin-top: 0.22rem;
+  color: #8a7d63;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.25;
 }
 
 .provider-tag,

@@ -371,12 +371,12 @@ const pricingDisplay = computed(() => {
 
 const claudeBasePricingRows: ClaudeBasePricingRow[] = [
   {
-    model: 'Claude Opus Latest（当前 4.8）',
+    model: 'Claude Fable 5',
     official: {
-      input: 5,
-      cacheWrite5m: 6.25,
-      cacheRead: 0.5,
-      output: 25
+      input: 10,
+      cacheWrite5m: 12.5,
+      cacheRead: 1,
+      output: 50
     }
   },
   {

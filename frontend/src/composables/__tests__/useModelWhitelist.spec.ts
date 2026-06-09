@@ -21,8 +21,9 @@ describe('useModelWhitelist', () => {
   it('anthropic 模型列表默认不再包含 Claude 2 和 Claude 3 历史模型', () => {
     const models = getModelsByPlatform('anthropic')
 
+    expect(models).toContain('claude-fable-5')
     expect(models).toContain('claude-opus-4-8')
-    expect(models).toContain('claude-opus-latest')
+    expect(models).not.toContain('claude-opus-latest')
     expect(models).toContain('claude-opus-4-7')
     expect(models).toContain('claude-sonnet-4-6')
     expect(models).toContain('claude-haiku-4-5-20251001')

@@ -731,7 +731,7 @@ func (s *PricingService) matchByModelFamily(model string) *LiteLLMModelPricing {
 	// 按特异性降序排列：高版本号在前，避免 "claude-opus-4"（opus-4 系列）
 	// 因子串关系误匹配 "claude-opus-4-8" / "claude-opus-4-7" 等具体系列。
 	families := []modelFamily{
-		{name: "opus-latest", match: []string{domain.ClaudeOpusLatestModelID}, pricing: []string{domain.ClaudeOpusCurrentModelID, "claude-opus-4-7", "claude-opus-4-6"}},
+		{name: "fable-5", match: []string{"claude-fable-5"}, pricing: []string{"claude-fable-5"}},
 		{name: "opus-4.8", match: []string{"claude-opus-4-8", "claude-opus-4.8"}, pricing: []string{"claude-opus-4-8", "claude-opus-4.8", "claude-opus-4-7", "claude-opus-4-6"}},
 		{name: "opus-4.7", match: []string{"claude-opus-4-7", "claude-opus-4.7"}, pricing: []string{"claude-opus-4-7", "claude-opus-4.7", "claude-opus-4-6"}},
 		{name: "opus-4.6", match: []string{"claude-opus-4-6", "claude-opus-4.6"}},

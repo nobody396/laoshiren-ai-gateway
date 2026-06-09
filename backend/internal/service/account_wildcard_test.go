@@ -163,16 +163,6 @@ func TestAccountIsModelSupported(t *testing.T) {
 			expected:       true,
 		},
 		{
-			name: "latest alias supported when current model is mapped",
-			credentials: map[string]any{
-				"model_mapping": map[string]any{
-					"claude-opus-4-8": "claude-opus-4-8",
-				},
-			},
-			requestedModel: "claude-opus-latest",
-			expected:       true,
-		},
-		{
 			name: "codex auto review hidden alias supported when target model is mapped",
 			credentials: map[string]any{
 				"model_mapping": map[string]any{
@@ -243,12 +233,6 @@ func TestAccountGetMappedModel(t *testing.T) {
 			requestedModel: "claude-sonnet-4-5",
 			expected:       "claude-sonnet-4-5",
 		},
-		{
-			name:           "latest alias resolves without mapping",
-			credentials:    nil,
-			requestedModel: "claude-opus-latest",
-			expected:       "claude-opus-4-8",
-		},
 
 		// 精确匹配
 		{
@@ -286,27 +270,6 @@ func TestAccountGetMappedModel(t *testing.T) {
 			requestedModel: "claude-sonnet-4-5",
 			expected:       "claude-sonnet-4-5",
 		},
-		{
-			name: "latest alias uses current concrete mapping",
-			credentials: map[string]any{
-				"model_mapping": map[string]any{
-					"claude-opus-4-8": "upstream-opus-4-8",
-				},
-			},
-			requestedModel: "claude-opus-latest",
-			expected:       "upstream-opus-4-8",
-		},
-		{
-			name: "latest alias prefers current exact mapping over alias wildcard",
-			credentials: map[string]any{
-				"model_mapping": map[string]any{
-					"claude-opus-*":   "claude-opus-4-6",
-					"claude-opus-4-8": "claude-opus-4-8",
-				},
-			},
-			requestedModel: "claude-opus-latest",
-			expected:       "claude-opus-4-8",
-		},
 	}
 
 	for _, tt := range tests {
@@ -335,13 +298,6 @@ func TestAccountResolveMappedModel(t *testing.T) {
 			credentials:    nil,
 			requestedModel: "gpt-5.4",
 			expectedModel:  "gpt-5.4",
-			expectedMatch:  false,
-		},
-		{
-			name:           "latest alias without mapping resolves concrete model but not account mapping",
-			credentials:    nil,
-			requestedModel: "claude-opus-latest",
-			expectedModel:  "claude-opus-4-8",
 			expectedMatch:  false,
 		},
 		{
@@ -378,17 +334,6 @@ func TestAccountResolveMappedModel(t *testing.T) {
 			expectedMatch:  false,
 		},
 		{
-			name: "latest alias matched through current concrete mapping",
-			credentials: map[string]any{
-				"model_mapping": map[string]any{
-					"claude-opus-4-8": "claude-opus-4-8",
-				},
-			},
-			requestedModel: "claude-opus-latest",
-			expectedModel:  "claude-opus-4-8",
-			expectedMatch:  true,
-		},
-		{
 			name: "codex auto review hidden alias maps through target model",
 			credentials: map[string]any{
 				"model_mapping": map[string]any{
@@ -397,18 +342,6 @@ func TestAccountResolveMappedModel(t *testing.T) {
 			},
 			requestedModel: "codex-auto-review",
 			expectedModel:  "gpt-5.5",
-			expectedMatch:  true,
-		},
-		{
-			name: "latest alias reports current exact mapping before alias wildcard",
-			credentials: map[string]any{
-				"model_mapping": map[string]any{
-					"claude-opus-*":   "claude-opus-4-6",
-					"claude-opus-4-8": "claude-opus-4-8",
-				},
-			},
-			requestedModel: "claude-opus-latest",
-			expectedModel:  "claude-opus-4-8",
 			expectedMatch:  true,
 		},
 	}

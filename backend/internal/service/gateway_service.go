@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
-	"github.com/bozhouDev/DragonCode-sub2api/internal/domain"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/claude"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
@@ -8680,8 +8679,6 @@ func (s *GatewayService) GetAvailableModels(ctx context.Context, groupID *int64,
 			}
 		}
 	}
-	domain.AddCurrentModelAliases(modelSet)
-
 	// If no account has model_mapping, return nil (use default)
 	if !hasAnyMapping {
 		if s.modelsListCache != nil {

@@ -261,12 +261,12 @@ func TestBundledPricingMatchesCurrentOfficialGatewayModelPrices(t *testing.T) {
 			cacheWrite1h: 10e-6,
 		},
 		{
-			model:        "claude-opus-latest",
-			input:        5e-6,
-			output:       25e-6,
-			cacheRead:    0.5e-6,
-			cacheWrite5m: 6.25e-6,
-			cacheWrite1h: 10e-6,
+			model:        "claude-fable-5",
+			input:        10e-6,
+			output:       50e-6,
+			cacheRead:    1e-6,
+			cacheWrite5m: 12.5e-6,
+			cacheWrite1h: 20e-6,
 		},
 		{
 			model:        "claude-sonnet-4-6",

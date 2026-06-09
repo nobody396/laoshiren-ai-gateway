@@ -196,7 +196,15 @@ func (s *BillingService) initFallbackPricing() {
 
 	// Claude 4.8 Opus（官方与4.7同价）
 	s.fallbackPrices["claude-opus-4.8"] = s.fallbackPrices["claude-opus-4.7"]
-	s.fallbackPrices["claude-opus-latest"] = s.fallbackPrices["claude-opus-4.8"]
+
+	// Claude Fable 5
+	s.fallbackPrices["claude-fable-5"] = &ModelPricing{
+		InputPricePerToken:         10e-6,   // $10 per MTok
+		OutputPricePerToken:        50e-6,   // $50 per MTok
+		CacheCreationPricePerToken: 12.5e-6, // $12.50 per MTok
+		CacheReadPricePerToken:     1e-6,    // $1 per MTok
+		SupportsCacheBreakdown:     false,
+	}
 
 	// Gemini 3.1 Pro
 	s.fallbackPrices["gemini-3.1-pro"] = &ModelPricing{
@@ -300,10 +308,11 @@ func (s *BillingService) initFallbackPricing() {
 func (s *BillingService) getFallbackPricing(model string) *ModelPricing {
 	modelLower := strings.ToLower(model)
 
-	// 按模型系列匹配
-	if strings.Contains(modelLower, "claude-opus-latest") {
-		return s.fallbackPrices["claude-opus-latest"]
+	if strings.Contains(modelLower, "claude-fable-5") {
+		return s.fallbackPrices["claude-fable-5"]
 	}
+
+	// 按模型系列匹配
 	if strings.Contains(modelLower, "opus") {
 		if strings.Contains(modelLower, "4.8") || strings.Contains(modelLower, "4-8") {
 			return s.fallbackPrices["claude-opus-4.8"]

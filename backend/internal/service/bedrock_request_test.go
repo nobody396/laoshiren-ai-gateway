@@ -466,20 +466,6 @@ func TestResolveBedrockModelID(t *testing.T) {
 		assert.Equal(t, "eu.anthropic.claude-opus-4-8", modelID)
 	})
 
-	t.Run("opus latest alias resolves to current opus", func(t *testing.T) {
-		account := &Account{
-			Platform: PlatformAnthropic,
-			Type:     AccountTypeBedrock,
-			Credentials: map[string]any{
-				"aws_region": "eu-west-1",
-			},
-		}
-
-		modelID, ok := ResolveBedrockModelID(account, "claude-opus-latest")
-		require.True(t, ok)
-		assert.Equal(t, "eu.anthropic.claude-opus-4-8", modelID)
-	})
-
 	t.Run("force global rewrites anthropic regional model id", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformAnthropic,

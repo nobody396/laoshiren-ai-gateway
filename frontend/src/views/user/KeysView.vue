@@ -1938,7 +1938,7 @@ const executeCcsImport = (row: ApiKey, clientType: 'claude' | 'gemini') => {
     params.set('model', defaultModel)
     params.set('config', encodeBase64Utf8(buildCodexCcsConfig(endpoint, row.key, defaultModel)))
   } else if (platform === 'anthropic') {
-    params.set('model', 'claude-opus-latest')
+    params.set('model', 'claude-fable-5')
   }
   const deeplink = `ccswitch://v1/import?${params.toString()}`
 

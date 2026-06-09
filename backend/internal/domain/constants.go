@@ -4,7 +4,7 @@ import "strings"
 
 // Canonical model aliases and hidden system aliases.
 const (
-	ClaudeOpusLatestModelID      = "claude-opus-latest"
+	ClaudeFable5ModelID          = "claude-fable-5"
 	ClaudeOpusCurrentModelID     = "claude-opus-4-8"
 	ClaudeOpusCurrentModelLabel  = "Claude Opus 4.8"
 	ClaudeOpusCurrentVersionText = "4.8"
@@ -17,21 +17,10 @@ const (
 func ResolveModelAlias(model string) (string, bool) {
 	trimmed := strings.TrimSpace(model)
 	switch strings.ToLower(trimmed) {
-	case ClaudeOpusLatestModelID:
-		return ClaudeOpusCurrentModelID, true
 	case CodexAutoReviewModelID:
 		return CodexAutoReviewTargetModelID, true
 	default:
 		return trimmed, false
-	}
-}
-
-func AddCurrentModelAliases(modelSet map[string]struct{}) {
-	if modelSet == nil {
-		return
-	}
-	if _, ok := modelSet[ClaudeOpusCurrentModelID]; ok {
-		modelSet[ClaudeOpusLatestModelID] = struct{}{}
 	}
 }
 
@@ -185,7 +174,6 @@ var DefaultAntigravityModelMapping = map[string]string{
 // aws_region 自动调整为匹配的区域前缀（如 eu.、apac.、jp. 等）
 var DefaultBedrockModelMapping = map[string]string{
 	// Claude Opus
-	"claude-opus-latest":       "us.anthropic.claude-opus-4-8",
 	"claude-opus-4-8":          "us.anthropic.claude-opus-4-8",
 	"claude-opus-4-7":          "us.anthropic.claude-opus-4-7-v1",
 	"claude-opus-4-6-thinking": "us.anthropic.claude-opus-4-6-v1",

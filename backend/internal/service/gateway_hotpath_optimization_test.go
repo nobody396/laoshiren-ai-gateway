@@ -560,7 +560,7 @@ func TestGetAvailableModels_AddsLatestAliasWhenCurrentOpusIsMapped(t *testing.T)
 	}
 
 	models := svc.GetAvailableModels(context.Background(), &groupID, PlatformAnthropic)
-	require.Equal(t, []string{"claude-opus-4-8", "claude-opus-latest"}, models)
+	require.Equal(t, []string{"claude-opus-4-8"}, models)
 }
 
 func TestGetAvailableModels_DoesNotExposeCodexAutoReviewAlias(t *testing.T) {

@@ -15,7 +15,7 @@ const openaiModels = [
 
 // Anthropic Claude 官方默认白名单：当前 Claude 4.5+ / 4.6+ / 4.7 / 4.8 主力模型。
 export const claudeModels = [
-  'claude-opus-latest',
+  'claude-fable-5',
   'claude-opus-4-8',
   'claude-opus-4-7',
   'claude-sonnet-4-6',
@@ -225,7 +225,7 @@ export const allModels = allModelsList.map(m => ({ value: m, label: m }))
 // =====================
 
 const anthropicPresetMappings = [
-  { label: 'Opus Latest (4.8)', from: 'claude-opus-latest', to: 'claude-opus-latest', color: 'bg-fuchsia-100 text-fuchsia-700 hover:bg-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-400' },
+  { label: 'Fable 5', from: 'claude-fable-5', to: 'claude-fable-5', color: 'bg-fuchsia-100 text-fuchsia-700 hover:bg-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-400' },
   { label: 'Opus 4.8', from: 'claude-opus-4-8', to: 'claude-opus-4-8', color: 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400' },
   { label: 'Opus 4.7', from: 'claude-opus-4-7', to: 'claude-opus-4-7', color: 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400' },
   { label: 'Sonnet 4.6', from: 'claude-sonnet-4-6', to: 'claude-sonnet-4-6', color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400' },

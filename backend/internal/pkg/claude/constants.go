@@ -102,10 +102,10 @@ type Model struct {
 // DefaultModels Claude Code 客户端支持的默认模型列表
 var DefaultModels = []Model{
 	{
-		ID:          domain.ClaudeOpusLatestModelID,
+		ID:          domain.ClaudeFable5ModelID,
 		Type:        "model",
-		DisplayName: "Claude Opus Latest (current 4.8)",
-		CreatedAt:   "2026-05-28T00:00:00Z",
+		DisplayName: "Claude Fable 5",
+		CreatedAt:   "2026-06-09T00:00:00Z",
 	},
 	{
 		ID:          domain.ClaudeOpusCurrentModelID,

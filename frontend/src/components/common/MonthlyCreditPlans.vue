@@ -5,7 +5,7 @@
         <p class="monthly-credit-plans__kicker">Credits Membership</p>
         <h2>{{ title }}</h2>
       </div>
-      <p>{{ summary }}</p>
+      <p v-if="summary">{{ summary }}</p>
     </div>
 
     <div class="monthly-credit-plans__grid">
@@ -20,7 +20,7 @@
             <h3>{{ plan.name }}</h3>
             <p>{{ plan.description }}</p>
           </div>
-          <span class="monthly-credit-card__stock">暂时缺货</span>
+          <span class="monthly-credit-card__stock">正在供应</span>
         </div>
 
         <div class="monthly-credit-card__price">
@@ -30,11 +30,11 @@
 
         <div class="monthly-credit-card__credits">
           <div>
-            <span>每天</span>
-            <strong>{{ plan.displayDailyCreditsText }} AI credits</strong>
+            <span>每周额度</span>
+            <strong>{{ plan.displayWeeklyCreditsText }} AI credits</strong>
           </div>
           <div>
-            <span>30 天总额度</span>
+            <span>每月额度</span>
             <strong>{{ plan.displayMonthlyCreditsText }} AI credits</strong>
           </div>
         </div>
@@ -43,27 +43,27 @@
           <div>
             <dt>GPT Pro</dt>
             <dd>
-              <strong>{{ plan.gptUsage }}</strong>
+              <strong>{{ plan.gptWeeklyUsage }}</strong>
               <span>{{ plan.gptMonthlyUsage }}</span>
             </dd>
           </div>
           <div>
             <dt>Claude Max</dt>
             <dd>
-              <strong>{{ plan.claudeUsage }}</strong>
+              <strong>{{ plan.claudeWeeklyUsage }}</strong>
               <span>{{ plan.claudeMonthlyUsage }}</span>
             </dd>
           </div>
         </dl>
 
-        <button v-if="showAction" type="button" class="monthly-credit-card__button" disabled>
-          暂时缺货
+        <button v-if="showAction" type="button" class="monthly-credit-card__button" :disabled="!plan.cardShopUrl">
+          正在供应
         </button>
       </article>
     </div>
 
     <p class="monthly-credit-plans__note">
-      一个订阅共享 GPT Pro 与 Claude Max 两个分组的额度池，每月更新，不结转。
+      一个订阅共享 GPT Pro 与 Claude Max 两个分组的额度池，按周和按月展示上限，每月更新，不结转。
     </p>
   </section>
 </template>
@@ -80,7 +80,7 @@ withDefaults(defineProps<{
 }>(), {
   variant: 'app',
   title: '开发者月卡',
-  summary: '一个订阅共享同一份 AI credits 池，GPT Pro 按 8 AI credits/刀，Claude Max 按 18 AI credits/刀。',
+  summary: '',
   showEntitlementDetails: true,
   showAction: true
 })

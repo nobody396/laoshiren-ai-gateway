@@ -32,7 +32,7 @@
           <MonthlyCreditPlans
             variant="home"
             title="开发者月卡"
-            summary="一个订阅共享同一份 AI credits 池，GPT Pro 按 8 AI credits/刀，Claude Max 按 18 AI credits/刀，30 天总额度清楚可见。"
+            summary=""
             :show-entitlement-details="true"
             :show-action="false"
           />

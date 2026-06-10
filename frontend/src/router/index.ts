@@ -348,6 +348,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/pricing/subscription',
+    name: 'PricingSubscription',
+    component: () => import('@/views/user/GetSubscriptionView.vue'),
+    meta: {
+      requiresAuth: false,
+      requiresAdmin: false,
+      title: 'Top Up',
+      titleKey: 'topup.title',
+      descriptionKey: 'subscriptionAccess.description'
+    }
+  },
+  {
     path: '/topup/orders',
     name: 'TopupOrders',
     component: () => import('@/views/user/TopupOrdersView.vue'),

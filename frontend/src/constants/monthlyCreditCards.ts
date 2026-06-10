@@ -2,23 +2,30 @@ export type MonthlyCreditCardPlan = {
   id: 'lite' | 'pro' | 'max' | 'ultra'
   name: string
   priceCny: number
+  directPriceCny: number
   price: string
+  directPrice: string
   dailyCredits: number
+  weeklyCredits: number
   monthlyCredits: number
   displayDailyCredits: number
+  displayWeeklyCredits: number
   displayMonthlyCredits: number
   displayDailyCreditsText: string
+  displayWeeklyCreditsText: string
   displayMonthlyCreditsText: string
   gptDisplayRate: string
   claudeDisplayRate: string
-  gptUsage: string
-  claudeUsage: string
+  gptWeeklyUsage: string
+  claudeWeeklyUsage: string
   gptMonthlyUsage: string
   claudeMonthlyUsage: string
   description: string
   accent: string
+  cardShopUrl: string
 }
 
+const weeklyCardDays = 7
 const monthlyCardDays = 30
 const gptCreditsPerUsd = 0.8
 const claudeCreditsPerUsd = 1.8
@@ -41,34 +48,44 @@ function createMonthlyCreditCardPlan(
   input: Omit<
     MonthlyCreditCardPlan,
     | 'price'
+    | 'directPrice'
+    | 'weeklyCredits'
     | 'monthlyCredits'
     | 'displayDailyCredits'
+    | 'displayWeeklyCredits'
     | 'displayMonthlyCredits'
     | 'displayDailyCreditsText'
+    | 'displayWeeklyCreditsText'
     | 'displayMonthlyCreditsText'
     | 'gptDisplayRate'
     | 'claudeDisplayRate'
-    | 'gptUsage'
-    | 'claudeUsage'
+    | 'gptWeeklyUsage'
+    | 'claudeWeeklyUsage'
     | 'gptMonthlyUsage'
     | 'claudeMonthlyUsage'
   >
 ): MonthlyCreditCardPlan {
+  const weeklyCredits = input.dailyCredits * weeklyCardDays
   const monthlyCredits = input.dailyCredits * monthlyCardDays
   const displayDailyCredits = input.dailyCredits * displayCreditScale
+  const displayWeeklyCredits = weeklyCredits * displayCreditScale
   const displayMonthlyCredits = monthlyCredits * displayCreditScale
   return {
     ...input,
     price: `¥${input.priceCny}`,
+    directPrice: `¥${input.directPriceCny}`,
+    weeklyCredits,
     monthlyCredits,
     displayDailyCredits,
+    displayWeeklyCredits,
     displayMonthlyCredits,
     displayDailyCreditsText: formatCredits(displayDailyCredits),
+    displayWeeklyCreditsText: formatCredits(displayWeeklyCredits),
     displayMonthlyCreditsText: formatCredits(displayMonthlyCredits),
     gptDisplayRate: `${formatCredits(gptCreditsPerUsd * displayCreditScale)} AI credits / 刀`,
     claudeDisplayRate: `${formatCredits(claudeCreditsPerUsd * displayCreditScale)} AI credits / 刀`,
-    gptUsage: `约 ${formatUsd(input.dailyCredits / gptCreditsPerUsd)} / 天`,
-    claudeUsage: `约 ${formatUsd(input.dailyCredits / claudeCreditsPerUsd)} / 天`,
+    gptWeeklyUsage: `约 ${formatUsd(weeklyCredits / gptCreditsPerUsd)} / 周`,
+    claudeWeeklyUsage: `约 ${formatUsd(weeklyCredits / claudeCreditsPerUsd)} / 周`,
     gptMonthlyUsage: `约 ${formatUsd(monthlyCredits / gptCreditsPerUsd)} / 月`,
     claudeMonthlyUsage: `约 ${formatUsd(monthlyCredits / claudeCreditsPerUsd)} / 月`
   }
@@ -78,33 +95,41 @@ export const monthlyCreditCardPlans: MonthlyCreditCardPlan[] = [
   createMonthlyCreditCardPlan({
     id: 'lite',
     name: 'Lite 月卡',
-    priceCny: 265,
+    priceCny: 269,
+    directPriceCny: 265,
     dailyCredits: 15,
     description: '适合首次尝鲜，一份额度池同时覆盖 GPT Pro 与 Claude Max。',
-    accent: 'lite'
+    accent: 'lite',
+    cardShopUrl: ''
   }),
   createMonthlyCreditCardPlan({
     id: 'pro',
     name: 'Pro 月卡',
-    priceCny: 509,
+    priceCny: 519,
+    directPriceCny: 509,
     dailyCredits: 30,
     description: '适合稳定日常开发，两个高阶分组共用同一份总额度。',
-    accent: 'pro'
+    accent: 'pro',
+    cardShopUrl: ''
   }),
   createMonthlyCreditCardPlan({
     id: 'max',
     name: 'Max 月卡',
-    priceCny: 685,
+    priceCny: 699,
+    directPriceCny: 685,
     dailyCredits: 40,
     description: '适合重度开发者，共享池在复杂任务和长会话里留出余量。',
-    accent: 'max'
+    accent: 'max',
+    cardShopUrl: ''
   }),
   createMonthlyCreditCardPlan({
     id: 'ultra',
     name: 'Ultra 月卡',
-    priceCny: 879,
+    priceCny: 899,
+    directPriceCny: 879,
     dailyCredits: 50,
     description: '适合长期高频使用，两条高阶渠道共用同一份月度额度。',
-    accent: 'ultra'
+    accent: 'ultra',
+    cardShopUrl: ''
   })
 ]

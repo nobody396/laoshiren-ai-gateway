@@ -58,15 +58,9 @@
                     >
                       <span class="topup-monthly-product__head">
                         <span class="topup-product-title">{{ plan.name }}</span>
-                        <span class="topup-status topup-status--disabled">{{ t('topup.monthlyPlanStatus') }}</span>
+                        <span class="topup-status topup-status--available">{{ t('topup.monthlyPlanStatus') }}</span>
                       </span>
                       <span class="topup-monthly-product__price">{{ plan.price }} <small>/ 月</small></span>
-                      <span class="topup-product-desc">{{ plan.displayDailyCreditsText }} AI credits / 天</span>
-                      <span class="topup-monthly-product__total">{{ plan.displayMonthlyCreditsText }} AI credits / 30 天</span>
-                      <span class="topup-monthly-product__value">
-                        GPT Pro {{ plan.gptMonthlyUsage }} 或 Claude Max {{ plan.claudeMonthlyUsage }}
-                      </span>
-                      <span class="topup-monthly-product__pool">{{ t('topup.monthlyPlanSharedPool') }}</span>
                     </button>
                   </div>
                 </section>
@@ -124,9 +118,6 @@
                   <p v-if="paymentNotice" class="topup-warning">{{ paymentNotice }}</p>
                 </section>
 
-                <section v-else class="topup-note">
-                  {{ t('topup.monthlyPlanHint') }}
-                </section>
               </div>
 
               <div v-else-if="step === 2 && showingQrTopup" class="topup-section topup-qr-panel">
@@ -193,32 +184,30 @@
                       <strong>{{ selectedMonthlyPlan?.price }} / 月</strong>
                     </div>
                     <div class="topup-summary-row">
-                      <span>{{ t('topup.monthlyPlanCredits') }}</span>
-                      <strong>{{ selectedMonthlyPlan?.displayDailyCreditsText }} AI credits / 天</strong>
+                      <span>{{ t('topup.monthlyPlanDirectPrice') }}</span>
+                      <strong>{{ selectedMonthlyPlan?.directPrice }} / 月</strong>
                     </div>
                     <div class="topup-summary-row">
-                      <span>{{ t('topup.monthlyPlanTotalCredits') }}</span>
-                      <strong>{{ selectedMonthlyPlan?.displayMonthlyCreditsText }} AI credits / 30 天</strong>
+                      <span>{{ t('topup.monthlyPlanWeeklyLimit') }}</span>
+                      <strong class="topup-summary-limit">
+                        <span>{{ selectedMonthlyPlan?.displayWeeklyCreditsText }} AI credits / 周</span>
+                        <small>
+                          GPT Pro {{ selectedMonthlyPlan?.gptWeeklyUsage }} · Claude Max {{ selectedMonthlyPlan?.claudeWeeklyUsage }}
+                        </small>
+                      </strong>
+                    </div>
+                    <div class="topup-summary-row">
+                      <span>{{ t('topup.monthlyPlanMonthlyLimit') }}</span>
+                      <strong class="topup-summary-limit">
+                        <span>{{ selectedMonthlyPlan?.displayMonthlyCreditsText }} AI credits / 月</span>
+                        <small>
+                          GPT Pro {{ selectedMonthlyPlan?.gptMonthlyUsage }} · Claude Max {{ selectedMonthlyPlan?.claudeMonthlyUsage }}
+                        </small>
+                      </strong>
                     </div>
                     <div class="topup-summary-row">
                       <span>{{ t('topup.monthlyPlanQuotaMode') }}</span>
                       <strong>{{ t('topup.monthlyPlanSharedPool') }}</strong>
-                    </div>
-                    <div class="topup-summary-row">
-                      <span>{{ t('topup.monthlyPlanGptRate') }}</span>
-                      <strong>{{ selectedMonthlyPlan?.gptDisplayRate }}</strong>
-                    </div>
-                    <div class="topup-summary-row">
-                      <span>{{ t('topup.monthlyPlanClaudeRate') }}</span>
-                      <strong>{{ selectedMonthlyPlan?.claudeDisplayRate }}</strong>
-                    </div>
-                    <div class="topup-summary-row">
-                      <span>{{ t('topup.monthlyPlanGptValue') }}</span>
-                      <strong>{{ selectedMonthlyPlan?.gptMonthlyUsage }}</strong>
-                    </div>
-                    <div class="topup-summary-row">
-                      <span>{{ t('topup.monthlyPlanClaudeValue') }}</span>
-                      <strong>{{ selectedMonthlyPlan?.claudeMonthlyUsage }}</strong>
                     </div>
                   </template>
                   <template v-else>
@@ -247,7 +236,8 @@
 
                 <button
                   v-if="selectedProductKind === 'monthly'"
-                  disabled
+                  @click="openSelectedMonthlyCardShop"
+                  :disabled="!canOpenSelectedMonthlyCardShop"
                   class="topup-primary-action"
                 >
                   {{ t('topup.monthlyPlanStatus') }}
@@ -425,6 +415,8 @@ const selectedCardShopProduct = computed(() => selectedBalanceProduct.value?.car
 const selectedMonthlyPlan = computed(
   () => monthlyCreditCardPlans.find((plan) => plan.id === selectedMonthlyPlanId.value) ?? monthlyCreditCardPlans[0]
 )
+const selectedMonthlyCardShopUrl = computed(() => selectedMonthlyPlan.value?.cardShopUrl || '')
+const canOpenSelectedMonthlyCardShop = computed(() => selectedMonthlyCardShopUrl.value.trim() !== '')
 const canUseCardShopForSelected = computed(() => cardShopMode.value && !!selectedCardShopProduct.value)
 const qrPaymentAvailableForSelected = computed(
   () => selectedProductKind.value === 'balance' && qrTopupAvailable.value && effectiveAmountYuan.value >= 20
@@ -516,6 +508,12 @@ function selectTopupChannel(channel: TopupChannel) {
 function openSelectedCardShopProduct() {
   if (!selectedCardShopProduct.value?.url) return
   window.location.assign(selectedCardShopProduct.value.url)
+}
+
+function openSelectedMonthlyCardShop() {
+  const url = selectedMonthlyCardShopUrl.value.trim()
+  if (!url) return
+  window.location.assign(url)
 }
 
 function goRedeem() {
@@ -1020,30 +1018,6 @@ void appStore.fetchPublicSettings().then(() => {
   font-weight: 650;
 }
 
-.topup-monthly-product__total,
-.topup-monthly-product__value,
-.topup-monthly-product__pool {
-  display: block;
-  margin-top: 0.5rem;
-  color: var(--admin-ink, #1f1a12);
-  font-size: 0.82rem;
-  font-weight: 750;
-  line-height: 1.45;
-}
-
-.topup-monthly-product__value {
-  color: var(--admin-muted, #8a7d63);
-  font-size: 0.76rem;
-  font-weight: 650;
-}
-
-.topup-monthly-product__pool {
-  color: var(--admin-terracotta-dark, #7a2d17);
-  font-size: 0.74rem;
-  font-weight: 700;
-}
-
-.topup-note,
 .topup-warning,
 .topup-success {
   border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
@@ -1256,6 +1230,18 @@ void appStore.fetchPublicSettings().then(() => {
   color: var(--admin-ink-deep, #13100b);
   font-weight: 700;
   text-align: right;
+}
+
+.topup-summary-row .topup-summary-limit {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.topup-summary-limit small {
+  color: var(--admin-muted, #8a7d63);
+  font-size: 0.74rem;
+  font-weight: 650;
+  line-height: 1.35;
 }
 
 .topup-primary-action,

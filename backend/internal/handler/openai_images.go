@@ -131,6 +131,7 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 
 		service.SetOpsLatencyMs(c, service.OpsRoutingLatencyMsKey, time.Since(routingStart).Milliseconds())
 		forwardStart := time.Now()
+		writerSizeBeforeForward := c.Writer.Size()
 		result, err := h.gatewayService.ForwardImages(c.Request.Context(), c, account, body, parsed, channelMapping.MappedModel)
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
 		if accountReleaseFunc != nil {
@@ -146,6 +147,10 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
 			if errors.As(err, &failoverErr) {
+				if c.Writer.Size() != writerSizeBeforeForward {
+					h.handleFailoverExhausted(c, failoverErr, true)
+					return
+				}
 				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
 				h.gatewayService.RecordOpenAIAccountSwitch()
 				failedAccountIDs[account.ID] = struct{}{}
@@ -158,8 +163,17 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 				continue
 			}
 			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
-			_ = h.ensureForwardErrorResponse(c, streamStarted)
-			reqLog.Error("openai.images.forward_failed", zap.Error(err), zap.Int64("account_id", account.ID))
+			upstreamErrorAlreadyCommunicated := openAIForwardErrorAlreadyCommunicated(c, writerSizeBeforeForward, err)
+			wroteFallback := false
+			if !upstreamErrorAlreadyCommunicated {
+				wroteFallback = h.ensureForwardErrorResponse(c, streamStarted)
+			}
+			reqLog.Error("openai.images.forward_failed",
+				zap.Error(err),
+				zap.Int64("account_id", account.ID),
+				zap.Bool("fallback_error_response_written", wroteFallback),
+				zap.Bool("upstream_error_response_already_written", upstreamErrorAlreadyCommunicated),
+			)
 			return
 		}
 

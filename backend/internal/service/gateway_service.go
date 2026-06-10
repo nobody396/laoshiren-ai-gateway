@@ -6305,6 +6305,8 @@ func (s *GatewayService) handleErrorResponse(ctx context.Context, resp *http.Res
 		return nil, &UpstreamFailoverError{StatusCode: resp.StatusCode, ResponseBody: body}
 	}
 
+	MarkResponseCommitted(c)
+
 	// 记录上游错误响应体摘要便于排障（可选：由配置控制；不回显到客户端）
 	if s.cfg != nil && s.cfg.Gateway.LogUpstreamErrorBody {
 		logger.LegacyPrintf("service.gateway",
@@ -6327,6 +6329,7 @@ func (s *GatewayService) handleErrorResponse(ctx context.Context, resp *http.Res
 		"upstream_error",
 		"Upstream request failed",
 	); matched {
+		MarkResponseCommitted(c)
 		c.JSON(status, gin.H{
 			"type": "error",
 			"error": gin.H{
@@ -6502,6 +6505,8 @@ func (s *GatewayService) handleRetryExhaustedError(ctx context.Context, resp *ht
 		}
 		return nil, fmt.Errorf("upstream error: %d (retries exhausted, passthrough rule matched) message=%s", resp.StatusCode, summary)
 	}
+
+	MarkResponseCommitted(c)
 
 	// 返回统一的重试耗尽错误响应
 	c.JSON(http.StatusBadGateway, gin.H{

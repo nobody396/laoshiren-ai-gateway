@@ -828,6 +828,7 @@ func (s *OpenAIGatewayService) ForwardGPTImage(
 		if contentType == "" {
 			contentType = "application/json"
 		}
+		MarkResponseCommitted(c)
 		c.Data(resp.StatusCode, contentType, respBody)
 		if upstreamMsg == "" {
 			upstreamMsg = fmt.Sprintf("upstream error: %d", resp.StatusCode)
@@ -880,6 +881,7 @@ func (s *OpenAIGatewayService) ForwardGPTImageTask(
 	}
 	if err != nil {
 		if result != nil && result.ResponseStatus >= 400 {
+			MarkResponseCommitted(c)
 			c.Data(result.ResponseStatus, result.ResponseType, result.ResponseBody)
 		}
 		return nil, err

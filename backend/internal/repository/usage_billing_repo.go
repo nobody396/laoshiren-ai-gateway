@@ -265,7 +265,7 @@ func incrementUsageBillingSharedSubscription(ctx context.Context, tx *sql.Tx, ta
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	sharedRows := make([]usageBillingSharedSubscriptionRow, 0, 2)
 	for rows.Next() {
@@ -339,7 +339,7 @@ func incrementUsageBillingSharedSubscription(ctx context.Context, tx *sql.Tx, ta
 	if err != nil {
 		return nil, err
 	}
-	defer updateRows.Close()
+	defer func() { _ = updateRows.Close() }()
 
 	updates := make([]service.SubscriptionUsageUpdate, 0, len(sharedRows))
 	for updateRows.Next() {

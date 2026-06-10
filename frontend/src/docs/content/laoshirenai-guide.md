@@ -523,11 +523,37 @@ npm -v
 
 如果你已经开了 OpenAI 官方订阅，同时又想测试 老实人 AI 中转，建议在 CC Switch 里保留两套 Provider：
 
-- **官方订阅**：如果是给 `Codex` 用，在 CC Switch 顶部切到 `Codex` → 点 `+` → 选择 `OpenAI Official` → 按提示登录 ChatGPT/OpenAI 账号；如果是把 ChatGPT Plus/Pro 给 `Claude Code` 用，切到 `Claude Code` → 点 `+` → 选择 `Codex (ChatGPT Plus/Pro)`，按提示登录。
-- **中转分组**：在 老实人 AI 的 API 密钥页面，为不同分组分别创建密钥，再分别点击「导入到 CCS」。
+- **官方订阅 / 完整功能入口**：如果是给 `Codex` 用，在 CC Switch 顶部切到 `Codex` → 点 `+` → 选择 `OpenAI Official` → 按提示登录 ChatGPT/OpenAI 账号；如果是把 ChatGPT Plus/Pro 给 `Claude Code` 用，切到 `Claude Code` → 点 `+` → 选择 `Codex (ChatGPT Plus/Pro)`，按提示登录。
+- **中转分组 / 本地 API 入口**：在 老实人 AI 的 API 密钥页面，为不同分组分别创建密钥，再分别点击「导入到 CCS」。
 - **切换时**：在 CC Switch 的 `Codex` 页面启用你要用的 Provider。不要把 `default` 当作官方订阅；它通常只是 CC Switch 读取到的当前配置快照，如果当前配置已经被中转覆盖，`default` 也会跟着变成中转。
 
 中转 Provider 导入后会自动带上分组名和密钥名，例如 `老实人 AI - Codex - OpenAI Pro - Pro 测试 Key`，方便和 `OpenAI Official` 区分。
+
+##### 什么时候必须用官方订阅入口
+
+如果你只是想在本地终端里输入 `codex`，让它看文件、改代码、跑命令，老实人 AI 的 API Key 入口就可以使用。
+
+如果你想要“完整 Codex 体验”，比如：
+
+- Codex App / IDE 里的官方完整能力
+- Codex cloud 云端任务
+- 官方插件目录
+- 自动 code review
+- Slack、GitHub 等 ChatGPT workspace 云端集成
+- 企业工作区里的访问控制、审计、保留策略
+
+那就不要只填第三方 API Key。请在 CC Switch 里添加 `OpenAI Official`，按提示登录 ChatGPT/OpenAI 官方账号，然后启用这个 Provider。
+
+##### Codex++ 是什么
+
+你提到的 `codex++` 通常指 [BigPizzaV3/CodexPlusPlus](https://github.com/BigPizzaV3/CodexPlusPlus)。它不是 OpenAI 官方产品，也不是一个新模型，而是一个面向 Codex App 的第三方外部增强启动器。
+
+新手可以这样理解：
+
+- **官方登录态**：先让 Codex App 登录 ChatGPT/OpenAI 官方账号，负责插件入口、账号能力和官方 workspace 能力。
+- **Codex++ 启动器**：不要从原版 Codex App 入口打开，而是从 `Codex++` 入口启动，让它注入增强功能。
+- **中转注入**：如果需要，可以在 Codex++ 管理工具里填写兼容 API 的 Base URL 和 Key，让模型请求走中转。
+- **边界**：Codex++ 是第三方工具，不等于老实人 AI API Key，也不等于 OpenAI 官方功能。使用前应确认你信任该工具，并保留 `~/.codex` 配置备份。
 
 如果你已经在 Codex App 或 Codex CLI 里登录过官方订阅，可以直接运行下面的脚本，把当前本机官方登录态保存成 CC Switch 里的独立 Provider。脚本只读写本机 `~/.codex` 和 `~/.cc-switch`，不会把 OpenAI token 上传到 老实人 AI。
 
@@ -624,6 +650,8 @@ claude --version
 前面的安装和配置完成后，你只需要记住一句话：
 
 **`CC Switch` 负责切换接口，终端里的 `claude` 和 `codex` 才是真正干活的入口。**
+
+如果要使用官方插件、云端任务、自动 code review 或 Slack / GitHub 集成，请先在 CC Switch 里切到 `OpenAI Official`。如果只是本地终端任务，可以切到老实人 AI 中转 Provider。如果你使用 Codex++，请从 `Codex++` 入口启动 Codex App，不要从原版 Codex App 入口启动。
 
 第一次接触终端，不用追求一次全懂。先照着做，能跑起来最重要。
 

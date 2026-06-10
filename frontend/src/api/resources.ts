@@ -1,6 +1,6 @@
 import { apiClient } from './client'
 
-export type DownloadToolID = 'cc-switch' | 'codex' | 'claude-desktop'
+export type DownloadToolID = 'cc-switch' | 'codex' | 'codex-plus-plus' | 'claude-desktop'
 
 export interface DownloadAsset {
   id: string

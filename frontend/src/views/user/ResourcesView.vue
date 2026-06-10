@@ -7,7 +7,7 @@
             <p class="text-sm font-medium text-primary-600 dark:text-primary-400">下载资源</p>
             <h1 class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">AI 编码工具下载安装</h1>
             <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-dark-300">
-              先把 Claude Code、Codex、Claude Desktop 和 CC Switch 的安装入口集中到这里，方便用户登录后直接安装和验证。
+              先把 Claude Code、Codex、Codex++、Claude Desktop 和 CC Switch 的安装入口集中到这里，方便用户登录后直接安装和验证。
             </p>
           </div>
           <a
@@ -17,6 +17,41 @@
             <Icon name="book" size="sm" />
             查看文档
           </a>
+        </div>
+      </section>
+
+      <section class="rounded-lg border border-primary-200 bg-primary-50 p-5 dark:border-primary-900/60 dark:bg-primary-950/20">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p class="text-sm font-semibold text-primary-700 dark:text-primary-300">Codex App 用户先看这里</p>
+            <h2 class="mt-2 text-xl font-semibold text-gray-900 dark:text-white">只用 API Key 启动时，部分 Codex App 功能会受限</h2>
+            <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-700 dark:text-dark-200">
+              原版 Codex App 在 API Key / 中转模式下，常见限制是插件入口提示需要 ChatGPT 登录、官方插件无法正常使用；原版会话列表通常只有归档，没有真正删除按钮。Codex++ 的思路是先保留 ChatGPT/OpenAI 官方登录态，再通过外部启动器注入增强功能，并可选把模型请求切到兼容 API。
+            </p>
+          </div>
+          <a
+            href="https://github.com/BigPizzaV3/CodexPlusPlus"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-primary shrink-0 justify-center"
+          >
+            <Icon name="externalLink" size="sm" />
+            查看 Codex++ 项目
+          </a>
+        </div>
+        <div class="mt-4 grid grid-cols-1 gap-3 text-sm md:grid-cols-3">
+          <div class="rounded-md bg-white p-3 text-gray-700 shadow-sm dark:bg-dark-900 dark:text-dark-200">
+            <span class="font-medium text-gray-900 dark:text-white">原版 API Key 模式</span>
+            <p class="mt-1 leading-5">适合本地调用模型，但插件入口和官方账号能力可能不可用。</p>
+          </div>
+          <div class="rounded-md bg-white p-3 text-gray-700 shadow-sm dark:bg-dark-900 dark:text-dark-200">
+            <span class="font-medium text-gray-900 dark:text-white">官方登录态</span>
+            <p class="mt-1 leading-5">先在 Codex App 里登录 ChatGPT/OpenAI 账号，保留插件和账号能力。</p>
+          </div>
+          <div class="rounded-md bg-white p-3 text-gray-700 shadow-sm dark:bg-dark-900 dark:text-dark-200">
+            <span class="font-medium text-gray-900 dark:text-white">Codex++ 启动</span>
+            <p class="mt-1 leading-5">从 Codex++ 入口启动，解锁增强菜单、插件入口、会话删除和中转注入。</p>
+          </div>
         </div>
       </section>
 
@@ -240,6 +275,20 @@ const resources: DownloadResource[] = [
     note: '用户不方便访问 GitHub 时，可以直接下载本站缓存的 Codex CLI 或 Codex App Server 包。'
   },
   {
+    name: 'Codex++',
+    badge: 'Codex App 增强启动器',
+    description: '适合已经安装并登录 Codex App，但在 API Key / 中转模式下需要插件入口、会话删除、Markdown 导出、Timeline 和中转注入能力的用户。使用时请从 Codex++ 入口启动，不要从原版 Codex App 入口打开。',
+    icon: 'sparkles',
+    commands: [],
+    downloadToolId: 'codex-plus-plus',
+    downloadTitle: '本站缓存 Codex++ 安装包',
+    verifyText: '安装后先打开 Codex++ 管理工具检查状态，再从 Codex++ 入口启动 Codex App。顶部出现 Codex++ 菜单即表示增强注入成功。',
+    primaryLink: 'https://github.com/BigPizzaV3/CodexPlusPlus/releases/latest',
+    docsLink: 'https://github.com/BigPizzaV3/CodexPlusPlus',
+    primaryAction: '查看 Codex++ Release',
+    note: 'Codex++ 是第三方外部增强工具，不是 OpenAI 官方产品。它不修改 Codex App 原始安装文件；使用中转注入前，建议确认 Codex App 已有官方登录态并保留 ~/.codex 配置备份。'
+  },
+  {
     name: 'Claude Desktop',
     badge: 'Claude 官方桌面 App',
     description: 'Claude 桌面端集成聊天、Cowork 和 Code 标签页，适合需要图形界面的用户。',
@@ -311,6 +360,11 @@ function preferredAssets(tool: DownloadToolID): DownloadAsset[] {
       if (asset.platform === 'linux' && name.endsWith('.deb') && asset.arch === 'x64') return 60
       if (asset.platform === 'linux' && name.endsWith('.rpm') && asset.arch === 'x64') return 70
     }
+    if (tool === 'codex-plus-plus') {
+      if (asset.platform === 'windows' && name.endsWith('.exe')) return 10
+      if (asset.platform === 'macos' && asset.arch === 'arm64') return 20
+      if (asset.platform === 'macos' && asset.arch === 'x64') return 30
+    }
     return 100
   }
   return [...assets].sort((a, b) => score(a) - score(b) || a.name.localeCompare(b.name))
@@ -381,6 +435,11 @@ function formatAssetLabel(tool: DownloadToolID, asset: DownloadAsset): string {
     if (asset.platform === 'linux' && name.endsWith('.appimage')) return `Linux AppImage ${asset.arch}`
     if (asset.platform === 'linux' && name.endsWith('.deb')) return `Linux deb ${asset.arch}`
     if (asset.platform === 'linux' && name.endsWith('.rpm')) return `Linux rpm ${asset.arch}`
+  }
+  if (tool === 'codex-plus-plus') {
+    if (asset.platform === 'windows') return 'Windows x64 安装包'
+    if (asset.platform === 'macos' && asset.arch === 'arm64') return 'macOS Apple Silicon DMG'
+    if (asset.platform === 'macos') return 'macOS Intel DMG'
   }
   return asset.name
 }

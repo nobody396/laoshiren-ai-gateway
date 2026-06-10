@@ -23,9 +23,11 @@ import (
 const (
 	ccSwitchToolID      = "cc-switch"
 	codexToolID         = "codex"
+	codexPlusPlusToolID = "codex-plus-plus"
 	claudeDesktopToolID = "claude-desktop"
 	defaultCCSwitchRepo = "farion1231/cc-switch"
 	defaultCodexRepo    = "openai/codex"
+	defaultCodexPPRepo  = "BigPizzaV3/CodexPlusPlus"
 	defaultClaudeMacURL = "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest/Claude.dmg"
 	defaultClaudeWinURL = "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest-win-x64/Claude-Setup-x64.exe"
 	defaultClaudeARMURL = "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest-win-arm64/Claude-Setup-arm64.exe"
@@ -92,6 +94,7 @@ func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseCl
 		StartupSync:                  true,
 		CCSwitchRepo:                 defaultCCSwitchRepo,
 		CodexRepo:                    defaultCodexRepo,
+		CodexPlusPlusRepo:            defaultCodexPPRepo,
 		ClaudeDesktopMacURL:          defaultClaudeMacURL,
 		ClaudeDesktopWindowsX64URL:   defaultClaudeWinURL,
 		ClaudeDesktopWindowsARM64URL: defaultClaudeARMURL,
@@ -108,6 +111,9 @@ func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseCl
 	}
 	if strings.TrimSpace(downloadCfg.CodexRepo) == "" {
 		downloadCfg.CodexRepo = defaultCodexRepo
+	}
+	if strings.TrimSpace(downloadCfg.CodexPlusPlusRepo) == "" {
+		downloadCfg.CodexPlusPlusRepo = defaultCodexPPRepo
 	}
 	if strings.TrimSpace(downloadCfg.ClaudeDesktopMacURL) == "" {
 		downloadCfg.ClaudeDesktopMacURL = defaultClaudeMacURL
@@ -181,6 +187,7 @@ func (s *DownloadResourceService) syncWithTimeout(reason string) {
 	}{
 		{tool: ccSwitchToolID, fn: s.SyncCCSwitch},
 		{tool: codexToolID, fn: s.SyncCodex},
+		{tool: codexPlusPlusToolID, fn: s.SyncCodexPlusPlus},
 		{tool: claudeDesktopToolID, fn: s.SyncClaudeDesktop},
 	} {
 		if err := syncFn.fn(ctx); err != nil {
@@ -195,6 +202,10 @@ func (s *DownloadResourceService) SyncCCSwitch(ctx context.Context) error {
 
 func (s *DownloadResourceService) SyncCodex(ctx context.Context) error {
 	return s.syncGitHubRelease(ctx, codexToolID, s.cfg.CodexRepo, isCodexInstallAsset)
+}
+
+func (s *DownloadResourceService) SyncCodexPlusPlus(ctx context.Context) error {
+	return s.syncGitHubRelease(ctx, codexPlusPlusToolID, s.cfg.CodexPlusPlusRepo, isCodexPlusPlusInstallAsset)
 }
 
 func (s *DownloadResourceService) syncGitHubRelease(ctx context.Context, toolID, repo string, include func(string) bool) error {
@@ -514,6 +525,19 @@ func isCodexInstallAsset(name string) bool {
 		strings.HasSuffix(lower, "pc-windows-msvc.exe.zip")
 }
 
+func isCodexPlusPlusInstallAsset(name string) bool {
+	lower := strings.ToLower(name)
+	if strings.HasSuffix(lower, ".sig") || lower == "latest.json" {
+		return false
+	}
+	if !strings.HasPrefix(lower, "codexplusplus-") {
+		return false
+	}
+	return strings.HasSuffix(lower, "-windows-x64-setup.exe") ||
+		strings.HasSuffix(lower, "-macos-x64.dmg") ||
+		strings.HasSuffix(lower, "-macos-arm64.dmg")
+}
+
 func classifyPlatform(name string) string {
 	lower := strings.ToLower(name)
 	switch {
@@ -546,6 +570,8 @@ func normalizeDownloadToolID(toolID string) (string, bool) {
 		return ccSwitchToolID, true
 	case codexToolID:
 		return codexToolID, true
+	case codexPlusPlusToolID:
+		return codexPlusPlusToolID, true
 	case claudeDesktopToolID:
 		return claudeDesktopToolID, true
 	default:

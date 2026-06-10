@@ -129,6 +129,48 @@ func TestDownloadResourceServiceSyncCodexCachesSelectedAssets(t *testing.T) {
 	require.NotEmpty(t, manifest.Assets[0].SHA256)
 }
 
+func TestDownloadResourceServiceSyncCodexPlusPlusCachesInstallAssets(t *testing.T) {
+	dir := t.TempDir()
+	stub := &downloadResourceGitHubStub{
+		release: &GitHubRelease{
+			TagName:     "v1.2.4",
+			Name:        "v1.2.4",
+			PublishedAt: "2026-06-08T03:27:55Z",
+			Assets: []GitHubAsset{
+				{Name: "CodexPlusPlus-1.2.4-windows-x64-setup.exe", BrowserDownloadURL: "https://example.test/cpp-win", Size: int64(len("cpp-win"))},
+				{Name: "CodexPlusPlus-1.2.4-macos-arm64.dmg", BrowserDownloadURL: "https://example.test/cpp-arm64", Size: int64(len("cpp-arm64"))},
+				{Name: "CodexPlusPlus-1.2.4-macos-x64.dmg", BrowserDownloadURL: "https://example.test/cpp-x64", Size: int64(len("cpp-x64"))},
+				{Name: "latest.json", BrowserDownloadURL: "https://example.test/latest", Size: int64(len("skip"))},
+			},
+		},
+		files: map[string][]byte{
+			"https://example.test/cpp-win":   []byte("cpp-win"),
+			"https://example.test/cpp-arm64": []byte("cpp-arm64"),
+			"https://example.test/cpp-x64":   []byte("cpp-x64"),
+		},
+	}
+	svc := NewDownloadResourceService(&config.Config{
+		Downloads: config.DownloadsConfig{
+			Enabled:             true,
+			CacheDir:            dir,
+			UpdateIntervalHours: 1,
+			CodexPlusPlusRepo:   "BigPizzaV3/CodexPlusPlus",
+			MaxAssetBytes:       1024,
+		},
+	}, stub)
+
+	err := svc.SyncCodexPlusPlus(context.Background())
+	require.NoError(t, err)
+
+	manifest, err := svc.ListTool(context.Background(), codexPlusPlusToolID)
+	require.NoError(t, err)
+	require.Equal(t, "v1.2.4", manifest.Version)
+	require.Len(t, manifest.Assets, 3)
+	require.Equal(t, "windows", manifest.Assets[0].Platform)
+	require.Equal(t, "macos", manifest.Assets[1].Platform)
+	require.NotEmpty(t, manifest.Assets[0].SHA256)
+}
+
 func TestDownloadResourceServiceSyncClaudeDesktopCachesStaticAssets(t *testing.T) {
 	dir := t.TempDir()
 	stub := &downloadResourceGitHubStub{

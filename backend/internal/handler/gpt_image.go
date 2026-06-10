@@ -132,6 +132,7 @@ func (h *OpenAIGatewayHandler) GPTImageGenerate(c *gin.Context) {
 
 		service.SetOpsLatencyMs(c, service.OpsRoutingLatencyMsKey, time.Since(routingStart).Milliseconds())
 		forwardStart := time.Now()
+		writerSizeBeforeForward := c.Writer.Size()
 		result, err := h.gatewayService.ForwardGPTImage(c.Request.Context(), c, account, parsed)
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
 		if accountReleaseFunc != nil {
@@ -148,6 +149,10 @@ func (h *OpenAIGatewayHandler) GPTImageGenerate(c *gin.Context) {
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
 			if errors.As(err, &failoverErr) {
+				if c.Writer.Size() != writerSizeBeforeForward {
+					h.handleFailoverExhausted(c, failoverErr, true)
+					return
+				}
 				failedAccountIDs[account.ID] = struct{}{}
 				lastFailoverErr = failoverErr
 				if switchCount >= h.maxAccountSwitches {
@@ -156,8 +161,17 @@ func (h *OpenAIGatewayHandler) GPTImageGenerate(c *gin.Context) {
 				}
 				continue
 			}
-			_ = h.ensureForwardErrorResponse(c, streamStarted)
-			reqLog.Error("gpt_image.forward_failed", zap.Error(err), zap.Int64("account_id", account.ID))
+			upstreamErrorAlreadyCommunicated := openAIForwardErrorAlreadyCommunicated(c, writerSizeBeforeForward, err)
+			wroteFallback := false
+			if !upstreamErrorAlreadyCommunicated {
+				wroteFallback = h.ensureForwardErrorResponse(c, streamStarted)
+			}
+			reqLog.Error("gpt_image.forward_failed",
+				zap.Error(err),
+				zap.Int64("account_id", account.ID),
+				zap.Bool("fallback_error_response_written", wroteFallback),
+				zap.Bool("upstream_error_response_already_written", upstreamErrorAlreadyCommunicated),
+			)
 			return
 		}
 
@@ -240,9 +254,12 @@ func (h *OpenAIGatewayHandler) GPTImageTask(c *gin.Context) {
 	}
 	subscription, _ := middleware2.GetSubscriptionFromContext(c)
 
+	writerSizeBeforeForward := c.Writer.Size()
 	result, err := h.gatewayService.ForwardGPTImageTask(c.Request.Context(), c, &pending.Account, taskID)
 	if err != nil {
-		_ = h.ensureForwardErrorResponse(c, false)
+		if !openAIForwardErrorAlreadyCommunicated(c, writerSizeBeforeForward, err) {
+			_ = h.ensureForwardErrorResponse(c, false)
+		}
 		return
 	}
 	result.Model = pending.Model

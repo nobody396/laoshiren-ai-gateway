@@ -23,6 +23,16 @@ func TestSubscriptionRedeemGroupIDsNormalizesGroups(t *testing.T) {
 	}))
 }
 
+func TestSubscriptionRedeemNotesMarksSharedQuotaForMultiGroupCodes(t *testing.T) {
+	require.Equal(t, "通过兑换码 SINGLE 兑换", subscriptionRedeemNotes("SINGLE", false))
+
+	notes := subscriptionRedeemNotes("BUNDLE-GPT-CLAUDE", true)
+	require.Contains(t, notes, "通过兑换码 BUNDLE-GPT-CLAUDE 兑换")
+	require.Contains(t, notes, "shared_quota=redeem:BUNDLE-GPT-CLAUDE")
+	require.Equal(t, "redeem:BUNDLE-GPT-CLAUDE", SubscriptionSharedQuotaMarkerFromNotes(notes))
+	require.Equal(t, "redeem:OLD-BUNDLE", SubscriptionSharedQuotaMarkerFromNotes("通过兑换码 OLD-BUNDLE 兑换"))
+}
+
 func TestRedeemServiceCreateCodePersistsSubscriptionGroupIDs(t *testing.T) {
 	repo := &redeemCreateRepoCapture{}
 	svc := NewRedeemService(repo, nil, nil, nil, nil, nil, nil, nil, nil, nil)

@@ -7,10 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode"
 )
 
 var ErrUsageBillingRequestIDRequired = errors.New("usage billing request_id is required")
 var ErrUsageBillingRequestConflict = errors.New("usage billing request fingerprint conflict")
+
+const SubscriptionSharedQuotaNoteKey = "shared_quota="
 
 // UsageBillingCommand describes one billable request that must be applied at most once.
 type UsageBillingCommand struct {
@@ -116,8 +119,58 @@ type UsageBillingApplyResult struct {
 	APIKeyQuotaExhausted bool
 	NewBalance           *float64
 	QuotaState           *AccountQuotaState
+
+	SubscriptionUsageUpdates []SubscriptionUsageUpdate
+}
+
+type SubscriptionUsageUpdate struct {
+	UserID  int64
+	GroupID int64
+	CostUSD float64
 }
 
 type UsageBillingRepository interface {
 	Apply(ctx context.Context, cmd *UsageBillingCommand) (*UsageBillingApplyResult, error)
+}
+
+func SubscriptionRedeemSharedQuotaMarker(code string) string {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return ""
+	}
+	return "redeem:" + code
+}
+
+func SubscriptionSharedQuotaMarkerFromNotes(notes string) string {
+	idx := strings.LastIndex(notes, SubscriptionSharedQuotaNoteKey)
+	if idx < 0 {
+		return subscriptionRedeemSharedQuotaMarkerFromLegacyNotes(notes)
+	}
+	marker := strings.TrimSpace(notes[idx+len(SubscriptionSharedQuotaNoteKey):])
+	if marker == "" {
+		return ""
+	}
+	for i, r := range marker {
+		if unicode.IsSpace(r) || r == ';' || r == ',' {
+			return strings.TrimSpace(marker[:i])
+		}
+	}
+	return marker
+}
+
+func subscriptionRedeemSharedQuotaMarkerFromLegacyNotes(notes string) string {
+	const (
+		prefix = "通过兑换码 "
+		suffix = " 兑换"
+	)
+	idx := strings.LastIndex(notes, prefix)
+	if idx < 0 {
+		return ""
+	}
+	codeStart := idx + len(prefix)
+	codeEnd := strings.Index(notes[codeStart:], suffix)
+	if codeEnd < 0 {
+		return ""
+	}
+	return SubscriptionRedeemSharedQuotaMarker(notes[codeStart : codeStart+codeEnd])
 }

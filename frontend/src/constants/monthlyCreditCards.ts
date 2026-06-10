@@ -1,53 +1,110 @@
 export type MonthlyCreditCardPlan = {
   id: 'lite' | 'pro' | 'max' | 'ultra'
   name: string
+  priceCny: number
   price: string
   dailyCredits: number
+  monthlyCredits: number
+  displayDailyCredits: number
+  displayMonthlyCredits: number
+  displayDailyCreditsText: string
+  displayMonthlyCreditsText: string
+  gptDisplayRate: string
+  claudeDisplayRate: string
   gptUsage: string
   claudeUsage: string
+  gptMonthlyUsage: string
+  claudeMonthlyUsage: string
   description: string
   accent: string
 }
 
+const monthlyCardDays = 30
+const gptCreditsPerUsd = 0.8
+const claudeCreditsPerUsd = 1.8
+const displayCreditScale = 10
+
+function formatUsd(value: number): string {
+  const rounded = Math.round(value * 100) / 100
+  if (Number.isInteger(rounded)) return `${rounded} 刀`
+  if (Number.isInteger(rounded * 10)) return `${rounded.toFixed(1)} 刀`
+  return `${rounded.toFixed(2)} 刀`
+}
+
+function formatCredits(value: number): string {
+  return new Intl.NumberFormat('zh-CN', {
+    maximumFractionDigits: 0
+  }).format(value)
+}
+
+function createMonthlyCreditCardPlan(
+  input: Omit<
+    MonthlyCreditCardPlan,
+    | 'price'
+    | 'monthlyCredits'
+    | 'displayDailyCredits'
+    | 'displayMonthlyCredits'
+    | 'displayDailyCreditsText'
+    | 'displayMonthlyCreditsText'
+    | 'gptDisplayRate'
+    | 'claudeDisplayRate'
+    | 'gptUsage'
+    | 'claudeUsage'
+    | 'gptMonthlyUsage'
+    | 'claudeMonthlyUsage'
+  >
+): MonthlyCreditCardPlan {
+  const monthlyCredits = input.dailyCredits * monthlyCardDays
+  const displayDailyCredits = input.dailyCredits * displayCreditScale
+  const displayMonthlyCredits = monthlyCredits * displayCreditScale
+  return {
+    ...input,
+    price: `¥${input.priceCny}`,
+    monthlyCredits,
+    displayDailyCredits,
+    displayMonthlyCredits,
+    displayDailyCreditsText: formatCredits(displayDailyCredits),
+    displayMonthlyCreditsText: formatCredits(displayMonthlyCredits),
+    gptDisplayRate: `${formatCredits(gptCreditsPerUsd * displayCreditScale)} AI credits / 刀`,
+    claudeDisplayRate: `${formatCredits(claudeCreditsPerUsd * displayCreditScale)} AI credits / 刀`,
+    gptUsage: `约 ${formatUsd(input.dailyCredits / gptCreditsPerUsd)} / 天`,
+    claudeUsage: `约 ${formatUsd(input.dailyCredits / claudeCreditsPerUsd)} / 天`,
+    gptMonthlyUsage: `约 ${formatUsd(monthlyCredits / gptCreditsPerUsd)} / 月`,
+    claudeMonthlyUsage: `约 ${formatUsd(monthlyCredits / claudeCreditsPerUsd)} / 月`
+  }
+}
+
 export const monthlyCreditCardPlans: MonthlyCreditCardPlan[] = [
-  {
+  createMonthlyCreditCardPlan({
     id: 'lite',
     name: 'Lite 月卡',
-    price: '¥249',
+    priceCny: 265,
     dailyCredits: 15,
-    gptUsage: '约 25 刀/天',
-    claudeUsage: '约 10 刀/天',
-    description: '适合首次尝鲜，先体验 GPT Pro 与 Claude Max 共用额度。',
+    description: '适合首次尝鲜，一份额度池同时覆盖 GPT Pro 与 Claude Max。',
     accent: 'lite'
-  },
-  {
+  }),
+  createMonthlyCreditCardPlan({
     id: 'pro',
     name: 'Pro 月卡',
-    price: '¥499',
+    priceCny: 509,
     dailyCredits: 30,
-    gptUsage: '约 50 刀/天',
-    claudeUsage: '约 20 刀/天',
-    description: '适合稳定日常开发，覆盖多数个人高频编码需求。',
+    description: '适合稳定日常开发，两个高阶分组共用同一份总额度。',
     accent: 'pro'
-  },
-  {
+  }),
+  createMonthlyCreditCardPlan({
     id: 'max',
     name: 'Max 月卡',
-    price: '¥699',
+    priceCny: 685,
     dailyCredits: 40,
-    gptUsage: '约 66.67 刀/天',
-    claudeUsage: '约 26.67 刀/天',
-    description: '适合重度开发者，在复杂任务和长会话里留出更大余量。',
+    description: '适合重度开发者，共享池在复杂任务和长会话里留出余量。',
     accent: 'max'
-  },
-  {
+  }),
+  createMonthlyCreditCardPlan({
     id: 'ultra',
     name: 'Ultra 月卡',
-    price: '¥899',
+    priceCny: 879,
     dailyCredits: 50,
-    gptUsage: '约 83.33 刀/天',
-    claudeUsage: '约 33.33 刀/天',
-    description: '适合长期高频使用，把两条高阶渠道作为主力工作流。',
+    description: '适合长期高频使用，两条高阶渠道共用同一份月度额度。',
     accent: 'ultra'
-  }
+  })
 ]

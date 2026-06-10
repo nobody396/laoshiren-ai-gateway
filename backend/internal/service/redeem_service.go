@@ -352,13 +352,15 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 		if validityDays <= 0 {
 			validityDays = 30
 		}
-		for _, groupID := range subscriptionRedeemGroupIDs(redeemCode) {
+		groupIDs := subscriptionRedeemGroupIDs(redeemCode)
+		notes := subscriptionRedeemNotes(redeemCode.Code, len(groupIDs) > 1)
+		for _, groupID := range groupIDs {
 			_, _, err := s.subscriptionService.AssignOrExtendSubscription(txCtx, &AssignSubscriptionInput{
 				UserID:       userID,
 				GroupID:      groupID,
 				ValidityDays: validityDays,
 				AssignedBy:   0, // 系统分配
-				Notes:        fmt.Sprintf("通过兑换码 %s 兑换", redeemCode.Code),
+				Notes:        notes,
 			})
 			if err != nil {
 				return nil, fmt.Errorf("assign or extend subscription group %d: %w", groupID, err)
@@ -444,6 +446,18 @@ func subscriptionRedeemGroupIDs(code *RedeemCode) []int64 {
 		add(*code.GroupID)
 	}
 	return out
+}
+
+func subscriptionRedeemNotes(code string, sharedQuota bool) string {
+	notes := fmt.Sprintf("通过兑换码 %s 兑换", code)
+	if !sharedQuota {
+		return notes
+	}
+	marker := SubscriptionRedeemSharedQuotaMarker(code)
+	if marker == "" {
+		return notes
+	}
+	return fmt.Sprintf("%s; %s%s", notes, SubscriptionSharedQuotaNoteKey, marker)
 }
 
 func (s *RedeemService) resetBalanceAlertNotifiedFlag(userID int64) {

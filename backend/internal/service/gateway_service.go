@@ -7473,7 +7473,29 @@ func finalizePostUsageBilling(p *postUsageBillingParams, deps *billingDeps, resu
 
 	if p.IsSubscriptionBill {
 		if subscriptionCost := subscriptionUsageCost(p); subscriptionCost > 0 && p.User != nil && p.APIKey != nil && p.APIKey.GroupID != nil {
-			deps.billingCacheService.QueueUpdateSubscriptionUsage(p.User.ID, *p.APIKey.GroupID, subscriptionCost)
+			if result != nil && len(result.SubscriptionUsageUpdates) > 0 {
+				seen := make(map[int64]struct{}, len(result.SubscriptionUsageUpdates))
+				for _, update := range result.SubscriptionUsageUpdates {
+					if update.UserID != p.User.ID || update.GroupID <= 0 {
+						continue
+					}
+					if _, ok := seen[update.GroupID]; ok {
+						continue
+					}
+					seen[update.GroupID] = struct{}{}
+					if len(result.SubscriptionUsageUpdates) > 1 {
+						cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+						if err := deps.billingCacheService.InvalidateSubscription(cacheCtx, update.UserID, update.GroupID); err != nil {
+							slog.Error("invalidate shared subscription usage cache failed", "user_id", update.UserID, "group_id", update.GroupID, "error", err)
+						}
+						cancel()
+					} else {
+						deps.billingCacheService.QueueUpdateSubscriptionUsage(update.UserID, update.GroupID, update.CostUSD)
+					}
+				}
+			} else {
+				deps.billingCacheService.QueueUpdateSubscriptionUsage(p.User.ID, *p.APIKey.GroupID, subscriptionCost)
+			}
 		}
 	} else if p.Cost.ActualCost > 0 && p.User != nil {
 		deps.billingCacheService.QueueDeductBalance(p.User.ID, p.Cost.ActualCost)

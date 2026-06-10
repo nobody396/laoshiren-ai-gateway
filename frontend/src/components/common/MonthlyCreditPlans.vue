@@ -29,18 +29,30 @@
         </div>
 
         <div class="monthly-credit-card__credits">
-          <span>每天</span>
-          <strong>{{ plan.dailyCredits }} credits</strong>
+          <div>
+            <span>每天</span>
+            <strong>{{ plan.displayDailyCreditsText }} AI credits</strong>
+          </div>
+          <div>
+            <span>30 天总额度</span>
+            <strong>{{ plan.displayMonthlyCreditsText }} AI credits</strong>
+          </div>
         </div>
 
         <dl v-if="showEntitlementDetails" class="monthly-credit-card__usage">
           <div>
             <dt>GPT Pro</dt>
-            <dd>{{ plan.gptUsage }}</dd>
+            <dd>
+              <strong>{{ plan.gptUsage }}</strong>
+              <span>{{ plan.gptMonthlyUsage }}</span>
+            </dd>
           </div>
           <div>
             <dt>Claude Max</dt>
-            <dd>{{ plan.claudeUsage }}</dd>
+            <dd>
+              <strong>{{ plan.claudeUsage }}</strong>
+              <span>{{ plan.claudeMonthlyUsage }}</span>
+            </dd>
           </div>
         </dl>
 
@@ -51,7 +63,7 @@
     </div>
 
     <p class="monthly-credit-plans__note">
-      每月更新，不结转。
+      一个订阅共享 GPT Pro 与 Claude Max 两个分组的额度池，每月更新，不结转。
     </p>
   </section>
 </template>
@@ -68,7 +80,7 @@ withDefaults(defineProps<{
 }>(), {
   variant: 'app',
   title: '开发者月卡',
-  summary: '固定每日 credits 池，GPT Pro 与 Claude Max 共用。',
+  summary: '一个订阅共享同一份 AI credits 池，GPT Pro 按 8 AI credits/刀，Claude Max 按 18 AI credits/刀。',
   showEntitlementDetails: true,
   showAction: true
 })
@@ -239,15 +251,20 @@ withDefaults(defineProps<{
 }
 
 .monthly-credit-card__credits {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  display: grid;
+  gap: 0.65rem;
   margin-top: 1.1rem;
   padding: 0.8rem;
   border: 1px solid var(--membership-border);
   border-radius: 6px;
   background: var(--membership-surface-soft);
+}
+
+.monthly-credit-card__credits div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .monthly-credit-card__credits span {
@@ -290,9 +307,22 @@ withDefaults(defineProps<{
 }
 
 .monthly-credit-card__usage dd {
+  display: grid;
+  gap: 0.18rem;
   color: var(--membership-ink);
-  font-weight: 800;
   text-align: right;
+}
+
+.monthly-credit-card__usage dd strong {
+  color: var(--membership-ink);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.monthly-credit-card__usage dd span {
+  color: var(--membership-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .monthly-credit-card__button {

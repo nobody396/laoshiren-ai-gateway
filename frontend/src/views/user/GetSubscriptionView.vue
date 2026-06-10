@@ -61,7 +61,12 @@
                         <span class="topup-status topup-status--disabled">{{ t('topup.monthlyPlanStatus') }}</span>
                       </span>
                       <span class="topup-monthly-product__price">{{ plan.price }} <small>/ 月</small></span>
-                      <span class="topup-product-desc">{{ plan.dailyCredits }} credits / 天</span>
+                      <span class="topup-product-desc">{{ plan.displayDailyCreditsText }} AI credits / 天</span>
+                      <span class="topup-monthly-product__total">{{ plan.displayMonthlyCreditsText }} AI credits / 30 天</span>
+                      <span class="topup-monthly-product__value">
+                        GPT Pro {{ plan.gptMonthlyUsage }} 或 Claude Max {{ plan.claudeMonthlyUsage }}
+                      </span>
+                      <span class="topup-monthly-product__pool">{{ t('topup.monthlyPlanSharedPool') }}</span>
                     </button>
                   </div>
                 </section>
@@ -189,7 +194,31 @@
                     </div>
                     <div class="topup-summary-row">
                       <span>{{ t('topup.monthlyPlanCredits') }}</span>
-                      <strong>{{ selectedMonthlyPlan?.dailyCredits }} credits / 天</strong>
+                      <strong>{{ selectedMonthlyPlan?.displayDailyCreditsText }} AI credits / 天</strong>
+                    </div>
+                    <div class="topup-summary-row">
+                      <span>{{ t('topup.monthlyPlanTotalCredits') }}</span>
+                      <strong>{{ selectedMonthlyPlan?.displayMonthlyCreditsText }} AI credits / 30 天</strong>
+                    </div>
+                    <div class="topup-summary-row">
+                      <span>{{ t('topup.monthlyPlanQuotaMode') }}</span>
+                      <strong>{{ t('topup.monthlyPlanSharedPool') }}</strong>
+                    </div>
+                    <div class="topup-summary-row">
+                      <span>{{ t('topup.monthlyPlanGptRate') }}</span>
+                      <strong>{{ selectedMonthlyPlan?.gptDisplayRate }}</strong>
+                    </div>
+                    <div class="topup-summary-row">
+                      <span>{{ t('topup.monthlyPlanClaudeRate') }}</span>
+                      <strong>{{ selectedMonthlyPlan?.claudeDisplayRate }}</strong>
+                    </div>
+                    <div class="topup-summary-row">
+                      <span>{{ t('topup.monthlyPlanGptValue') }}</span>
+                      <strong>{{ selectedMonthlyPlan?.gptMonthlyUsage }}</strong>
+                    </div>
+                    <div class="topup-summary-row">
+                      <span>{{ t('topup.monthlyPlanClaudeValue') }}</span>
+                      <strong>{{ selectedMonthlyPlan?.claudeMonthlyUsage }}</strong>
                     </div>
                   </template>
                   <template v-else>
@@ -989,6 +1018,29 @@ void appStore.fetchPublicSettings().then(() => {
   color: var(--admin-muted, #8a7d63);
   font-size: 0.82rem;
   font-weight: 650;
+}
+
+.topup-monthly-product__total,
+.topup-monthly-product__value,
+.topup-monthly-product__pool {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--admin-ink, #1f1a12);
+  font-size: 0.82rem;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.topup-monthly-product__value {
+  color: var(--admin-muted, #8a7d63);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.topup-monthly-product__pool {
+  color: var(--admin-terracotta-dark, #7a2d17);
+  font-size: 0.74rem;
+  font-weight: 700;
 }
 
 .topup-note,

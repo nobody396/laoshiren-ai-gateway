@@ -57,6 +57,10 @@ func TestUsageBillingRepositoryApply_SubscriptionFinalLimitRollbackOnDailyOverag
 	mock.ExpectQuery(`SELECT request_fingerprint\s+FROM usage_billing_dedup_archive`).
 		WithArgs("req-sub-overage", int64(22)).
 		WillReturnError(sql.ErrNoRows)
+	mock.ExpectQuery(`SELECT id, user_id, group_id, COALESCE\(notes, ''\)`).
+		WithArgs(subscriptionID).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "user_id", "group_id", "notes"}).
+			AddRow(subscriptionID, int64(11), int64(33), ""))
 	mock.ExpectExec(`UPDATE user_subscriptions`).
 		WithArgs(1.00, subscriptionID).
 		WillReturnResult(sqlmock.NewResult(0, 0))

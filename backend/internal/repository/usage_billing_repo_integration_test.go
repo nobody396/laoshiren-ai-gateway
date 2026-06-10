@@ -131,6 +131,91 @@ func TestUsageBillingRepositoryApply_DeduplicatesSubscriptionBilling(t *testing.
 	require.InDelta(t, 2.5, dailyUsage, 0.000001)
 }
 
+func TestUsageBillingRepositoryApply_SharedSubscriptionBillingUsesOneQuotaPool(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-shared-sub-user-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	limit := 10.00
+	gptGroup := mustCreateGroup(t, client, &service.Group{
+		Name:             "usage-billing-shared-gpt-" + uuid.NewString(),
+		Platform:         service.PlatformOpenAI,
+		SubscriptionType: service.SubscriptionTypeSubscription,
+		DailyLimitUSD:    &limit,
+		WeeklyLimitUSD:   &limit,
+		MonthlyLimitUSD:  &limit,
+	})
+	claudeGroup := mustCreateGroup(t, client, &service.Group{
+		Name:             "usage-billing-shared-claude-" + uuid.NewString(),
+		Platform:         service.PlatformAnthropic,
+		SubscriptionType: service.SubscriptionTypeSubscription,
+		DailyLimitUSD:    &limit,
+		WeeklyLimitUSD:   &limit,
+		MonthlyLimitUSD:  &limit,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID:  user.ID,
+		GroupID: &gptGroup.ID,
+		Key:     "sk-usage-billing-shared-sub-" + uuid.NewString(),
+		Name:    "billing-shared-sub",
+	})
+	notes := "通过兑换码 BUNDLE-GPT-CLAUDE 兑换"
+	gptSub := mustCreateSubscription(t, client, &service.UserSubscription{
+		UserID:          user.ID,
+		GroupID:         gptGroup.ID,
+		DailyUsageUSD:   4,
+		WeeklyUsageUSD:  4,
+		MonthlyUsageUSD: 4,
+		Notes:           notes,
+	})
+	claudeSub := mustCreateSubscription(t, client, &service.UserSubscription{
+		UserID:          user.ID,
+		GroupID:         claudeGroup.ID,
+		DailyUsageUSD:   4,
+		WeeklyUsageUSD:  4,
+		MonthlyUsageUSD: 4,
+		Notes:           notes,
+	})
+
+	result, err := repo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:        uuid.NewString(),
+		APIKeyID:         apiKey.ID,
+		UserID:           user.ID,
+		SubscriptionID:   &gptSub.ID,
+		SubscriptionCost: 2,
+	})
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.ElementsMatch(t, []service.SubscriptionUsageUpdate{
+		{UserID: user.ID, GroupID: gptGroup.ID, CostUSD: 2},
+		{UserID: user.ID, GroupID: claudeGroup.ID, CostUSD: 2},
+	}, result.SubscriptionUsageUpdates)
+
+	var gptDaily, claudeDaily float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT daily_usage_usd FROM user_subscriptions WHERE id = $1", gptSub.ID).Scan(&gptDaily))
+	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT daily_usage_usd FROM user_subscriptions WHERE id = $1", claudeSub.ID).Scan(&claudeDaily))
+	require.InDelta(t, 6, gptDaily, 0.000001)
+	require.InDelta(t, 6, claudeDaily, 0.000001)
+
+	_, err = repo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:        uuid.NewString(),
+		APIKeyID:         apiKey.ID,
+		UserID:           user.ID,
+		SubscriptionID:   &claudeSub.ID,
+		SubscriptionCost: 5,
+	})
+	require.ErrorIs(t, err, service.ErrDailyLimitExceeded)
+
+	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT daily_usage_usd FROM user_subscriptions WHERE id = $1", gptSub.ID).Scan(&gptDaily))
+	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT daily_usage_usd FROM user_subscriptions WHERE id = $1", claudeSub.ID).Scan(&claudeDaily))
+	require.InDelta(t, 6, gptDaily, 0.000001)
+	require.InDelta(t, 6, claudeDaily, 0.000001)
+}
+
 func TestUsageBillingRepositoryApply_BalanceFinalLimitRejectsInsufficientFunds(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)

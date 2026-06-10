@@ -5,7 +5,7 @@
 // OpenAI 官方默认白名单：用于新建/编辑账号时一键填充模型白名单。
 // 保持为当前主力文本/编码模型，避免默认暴露 GPT-3.5、旧 GPT-4、旧 o-series 等历史模型。
 const openaiModels = [
-  'gpt-5.5', 'gpt-5.5-pro',
+  'gpt-5.5',
   'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.4-nano',
   'gpt-5.3-codex', 'gpt-5.3-codex-spark',
   'gpt-5.2', 'gpt-5.2-codex', 'gpt-5.2-pro',
@@ -237,7 +237,6 @@ const anthropicPresetMappings = [
 
 const openaiPresetMappings = [
   { label: 'GPT-5.5', from: 'gpt-5.5', to: 'gpt-5.5', color: 'bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400' },
-  { label: 'GPT-5.5 Pro', from: 'gpt-5.5-pro', to: 'gpt-5.5-pro', color: 'bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400' },
   { label: 'GPT-5.4', from: 'gpt-5.4', to: 'gpt-5.4', color: 'bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-400' },
   { label: 'GPT-5.3 Codex', from: 'gpt-5.3-codex', to: 'gpt-5.3-codex', color: 'bg-teal-100 text-teal-700 hover:bg-teal-200 dark:bg-teal-900/30 dark:text-teal-400' },
   { label: 'GPT-5.3 Codex Spark', from: 'gpt-5.3-codex-spark', to: 'gpt-5.3-codex-spark', color: 'bg-teal-100 text-teal-700 hover:bg-teal-200 dark:bg-teal-900/30 dark:text-teal-400' },

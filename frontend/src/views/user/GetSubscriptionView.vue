@@ -372,7 +372,8 @@ import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/ap
 import { useAppStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import type { CardShopProduct } from '@/types'
-import { monthlyCreditCardPlans, type MonthlyCreditCardPlan } from '@/constants/monthlyCreditCards'
+import { type MonthlyCreditCardPlan } from '@/constants/monthlyCreditCards'
+import { useMonthlyCreditCardPlans } from '@/composables/useMonthlyCreditCardPlans'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -402,6 +403,7 @@ const qrExpired = ref(false)
 const countdown = ref(QR_TTL_SECONDS)
 const activeOrderAmountYuan = ref(0)
 const showMonthlyDirectPurchase = ref(false)
+const { plans: monthlyCreditCardPlans, loadMonthlyCreditCardPlans } = useMonthlyCreditCardPlans()
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
@@ -443,7 +445,7 @@ const selectedBalanceProduct = computed<BalanceProduct | undefined>(
 )
 const selectedCardShopProduct = computed(() => selectedBalanceProduct.value?.cardShopProduct)
 const selectedMonthlyPlan = computed(
-  () => monthlyCreditCardPlans.find((plan) => plan.id === selectedMonthlyPlanId.value) ?? monthlyCreditCardPlans[0]
+  () => monthlyCreditCardPlans.value.find((plan) => plan.id === selectedMonthlyPlanId.value) ?? monthlyCreditCardPlans.value[0]
 )
 const selectedMonthlyCardShopUrl = computed(() => selectedMonthlyPlan.value?.cardShopUrl || '')
 const canOpenSelectedMonthlyCardShop = computed(() => selectedMonthlyCardShopUrl.value.trim() !== '')
@@ -702,7 +704,10 @@ onUnmounted(() => {
   stopTimers()
 })
 
-void appStore.fetchPublicSettings().then(() => {
+void Promise.all([
+  appStore.fetchPublicSettings(),
+  loadMonthlyCreditCardPlans()
+]).then(() => {
   syncTopupChannelWithSettings()
 })
 </script>

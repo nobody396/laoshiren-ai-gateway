@@ -110,12 +110,29 @@ type MonthlyCardPublicStatusAccount struct {
 	Points          []MonthlyCardPublicStatusPoint `json:"points"`
 }
 
+type MonthlyCardPublicPlanGroup struct {
+	ID              int64    `json:"id"`
+	Name            string   `json:"name"`
+	Platform        string   `json:"platform"`
+	RateMultiplier  float64  `json:"rate_multiplier"`
+	WeeklyLimitUSD  *float64 `json:"weekly_limit_usd"`
+	MonthlyLimitUSD *float64 `json:"monthly_limit_usd"`
+}
+
+type MonthlyCardPublicPlan struct {
+	ID          string                      `json:"id"`
+	Name        string                      `json:"name"`
+	GPTGroup    *MonthlyCardPublicPlanGroup `json:"gpt_group,omitempty"`
+	ClaudeGroup *MonthlyCardPublicPlanGroup `json:"claude_group,omitempty"`
+}
+
 type MonthlyCardPublicStatusSnapshot struct {
 	Enabled              bool                             `json:"enabled"`
 	VisibleToUsers       bool                             `json:"visible_to_users"`
 	WindowMinutes        int                              `json:"window_minutes"`
 	ProbeIntervalSeconds int                              `json:"probe_interval_seconds"`
 	GeneratedAt          time.Time                        `json:"generated_at"`
+	Plans                []MonthlyCardPublicPlan          `json:"plans"`
 	Accounts             []MonthlyCardPublicStatusAccount `json:"accounts"`
 }
 
@@ -314,8 +331,9 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 
 func (s *OpsService) GetMonthlyCardPublicStatusSnapshot(ctx context.Context, windowMinutes int) (*MonthlyCardPublicStatusSnapshot, error) {
 	windowMinutes = normalizeMonthlyUpstreamProbeWindow(windowMinutes)
+	plans := s.loadMonthlyCardPublicPlans(ctx)
 	if !s.IsMonthlyCardPublicStatusEnabled(ctx) {
-		return monthlyCardHiddenPublicStatusSnapshot(windowMinutes), nil
+		return monthlyCardHiddenPublicStatusSnapshot(windowMinutes, plans), nil
 	}
 
 	snapshot, err := s.GetMonthlyUpstreamProbeSnapshot(ctx, windowMinutes)
@@ -323,7 +341,7 @@ func (s *OpsService) GetMonthlyCardPublicStatusSnapshot(ctx context.Context, win
 		return nil, err
 	}
 	if !snapshot.PublicStatusEnabled {
-		return monthlyCardHiddenPublicStatusSnapshot(windowMinutes), nil
+		return monthlyCardHiddenPublicStatusSnapshot(windowMinutes, plans), nil
 	}
 
 	accounts := make([]MonthlyCardPublicStatusAccount, 0, len(snapshot.Accounts))
@@ -360,18 +378,66 @@ func (s *OpsService) GetMonthlyCardPublicStatusSnapshot(ctx context.Context, win
 		WindowMinutes:        snapshot.WindowMinutes,
 		ProbeIntervalSeconds: int(monthlyUpstreamProbeInterval / time.Second),
 		GeneratedAt:          snapshot.GeneratedAt,
+		Plans:                plans,
 		Accounts:             accounts,
 	}, nil
 }
 
-func monthlyCardHiddenPublicStatusSnapshot(windowMinutes int) *MonthlyCardPublicStatusSnapshot {
+func monthlyCardHiddenPublicStatusSnapshot(windowMinutes int, plans []MonthlyCardPublicPlan) *MonthlyCardPublicStatusSnapshot {
 	return &MonthlyCardPublicStatusSnapshot{
 		Enabled:              false,
 		VisibleToUsers:       false,
 		WindowMinutes:        windowMinutes,
 		ProbeIntervalSeconds: int(monthlyUpstreamProbeInterval / time.Second),
 		GeneratedAt:          time.Now(),
+		Plans:                plans,
 		Accounts:             []MonthlyCardPublicStatusAccount{},
+	}
+}
+
+var monthlyCardPublicPlanDefinitions = []struct {
+	ID            string
+	Name          string
+	GPTGroupID    int64
+	ClaudeGroupID int64
+}{
+	{ID: "lite", Name: "Lite 月卡", GPTGroupID: 7, ClaudeGroupID: 11},
+	{ID: "pro", Name: "Pro 月卡", GPTGroupID: 8, ClaudeGroupID: 12},
+	{ID: "max", Name: "Max 月卡", GPTGroupID: 9, ClaudeGroupID: 13},
+	{ID: "ultra", Name: "Ultra 月卡", GPTGroupID: 10, ClaudeGroupID: 14},
+}
+
+func (s *OpsService) loadMonthlyCardPublicPlans(ctx context.Context) []MonthlyCardPublicPlan {
+	plans := make([]MonthlyCardPublicPlan, 0, len(monthlyCardPublicPlanDefinitions))
+	if s == nil || s.groupRepo == nil {
+		return plans
+	}
+	for _, def := range monthlyCardPublicPlanDefinitions {
+		plans = append(plans, MonthlyCardPublicPlan{
+			ID:          def.ID,
+			Name:        def.Name,
+			GPTGroup:    s.monthlyCardPublicPlanGroup(ctx, def.GPTGroupID),
+			ClaudeGroup: s.monthlyCardPublicPlanGroup(ctx, def.ClaudeGroupID),
+		})
+	}
+	return plans
+}
+
+func (s *OpsService) monthlyCardPublicPlanGroup(ctx context.Context, groupID int64) *MonthlyCardPublicPlanGroup {
+	if s == nil || s.groupRepo == nil || groupID <= 0 {
+		return nil
+	}
+	group, err := s.groupRepo.GetByIDLite(ctx, groupID)
+	if err != nil || group == nil || group.Status != StatusActive {
+		return nil
+	}
+	return &MonthlyCardPublicPlanGroup{
+		ID:              group.ID,
+		Name:            group.Name,
+		Platform:        group.Platform,
+		RateMultiplier:  group.RateMultiplier,
+		WeeklyLimitUSD:  group.WeeklyLimitUSD,
+		MonthlyLimitUSD: group.MonthlyLimitUSD,
 	}
 }
 

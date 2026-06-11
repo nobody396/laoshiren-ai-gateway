@@ -16,12 +16,29 @@ export interface MonthlyCardStatusAccount {
   points: MonthlyCardStatusPoint[]
 }
 
+export interface MonthlyCardPlanGroup {
+  id: number
+  name: string
+  platform: string
+  rate_multiplier: number
+  weekly_limit_usd: number | null
+  monthly_limit_usd: number | null
+}
+
+export interface MonthlyCardPlanEntitlement {
+  id: 'lite' | 'pro' | 'max' | 'ultra'
+  name: string
+  gpt_group?: MonthlyCardPlanGroup | null
+  claude_group?: MonthlyCardPlanGroup | null
+}
+
 export interface MonthlyCardStatusSnapshot {
   enabled: boolean
   visible_to_users: boolean
   window_minutes: number
   probe_interval_seconds: number
   generated_at: string
+  plans?: MonthlyCardPlanEntitlement[]
   accounts: MonthlyCardStatusAccount[]
 }
 

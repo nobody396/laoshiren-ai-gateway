@@ -33,6 +33,7 @@
             variant="home"
             title="开发者月卡"
             summary=""
+            :plans="monthlyPlans"
             :show-entitlement-details="true"
             :show-action="false"
           />
@@ -79,6 +80,7 @@ import ModelPricing from '@/components/home/ModelPricing.vue'
 import VIPTiers from '@/components/home/VIPTiers.vue'
 import HomeFooter from '@/components/home/HomeFooter.vue'
 import MonthlyCreditPlans from '@/components/common/MonthlyCreditPlans.vue'
+import { useMonthlyCreditCardPlans } from '@/composables/useMonthlyCreditCardPlans'
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
@@ -88,6 +90,7 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
 const dashboardPath = computed(() => (isAdmin.value ? '/admin/dashboard' : '/dashboard'))
 const showModelReports = computed(() => appStore.cachedPublicSettings?.landing_reports_enabled !== false)
+const { plans: monthlyPlans, loadMonthlyCreditCardPlans } = useMonthlyCreditCardPlans()
 
 // ── 导航项 ──
 const navItems = computed(() => [
@@ -738,6 +741,7 @@ onMounted(() => {
   if (!appStore.publicSettingsLoaded) {
     appStore.fetchPublicSettings()
   }
+  void loadMonthlyCreditCardPlans()
 
   // 滚动进场动画 - 等子组件挂载后再绑定
   nextTick(() => {

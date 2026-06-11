@@ -87,9 +87,8 @@
                   {{ t('userSubscriptions.daily') }}
                 </span>
                 <span class="text-sm text-gray-500 dark:text-dark-400">
-                  ${{ (subscription.daily_usage_usd || 0).toFixed(2) }} / ${{
-                    subscription.group.daily_limit_usd.toFixed(2)
-                  }}
+                  {{ formatSubscriptionUsageAmount(subscription.daily_usage_usd, subscription.group) }} /
+                  {{ formatSubscriptionUsageAmount(subscription.group.daily_limit_usd, subscription.group) }}
                 </span>
               </div>
               <div class="relative h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
@@ -128,9 +127,8 @@
                   {{ t('userSubscriptions.weekly') }}
                 </span>
                 <span class="text-sm text-gray-500 dark:text-dark-400">
-                  ${{ (subscription.weekly_usage_usd || 0).toFixed(2) }} / ${{
-                    subscription.group.weekly_limit_usd.toFixed(2)
-                  }}
+                  {{ formatSubscriptionUsageAmount(subscription.weekly_usage_usd, subscription.group) }} /
+                  {{ formatSubscriptionUsageAmount(subscription.group.weekly_limit_usd, subscription.group) }}
                 </span>
               </div>
               <div class="relative h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
@@ -169,9 +167,8 @@
                   {{ t('userSubscriptions.monthly') }}
                 </span>
                 <span class="text-sm text-gray-500 dark:text-dark-400">
-                  ${{ (subscription.monthly_usage_usd || 0).toFixed(2) }} / ${{
-                    subscription.group.monthly_limit_usd.toFixed(2)
-                  }}
+                  {{ formatSubscriptionUsageAmount(subscription.monthly_usage_usd, subscription.group) }} /
+                  {{ formatSubscriptionUsageAmount(subscription.group.monthly_limit_usd, subscription.group) }}
                 </span>
               </div>
               <div class="relative h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
@@ -247,6 +244,8 @@ const appStore = useAppStore()
 const subscriptions = ref<UserSubscription[]>([])
 const loading = ref(true)
 
+type SubscriptionGroup = NonNullable<UserSubscription['group']>
+
 async function loadSubscriptions() {
   try {
     loading.value = true
@@ -271,6 +270,15 @@ function getProgressBarClass(used: number | undefined, limit: number | null | un
   if (percentage >= 90) return 'bg-red-500'
   if (percentage >= 70) return 'bg-orange-500'
   return 'bg-green-500'
+}
+
+function formatSubscriptionUsageAmount(value: number | null | undefined, group: SubscriptionGroup | undefined): string {
+  const raw = typeof value === 'number' && Number.isFinite(value) ? value : 0
+  const rate = group?.rate_multiplier
+  const displayValue = group?.subscription_type === 'credit' && typeof rate === 'number' && rate > 0
+    ? raw / rate
+    : raw
+  return `$${displayValue.toFixed(2)}`
 }
 
 function formatExpirationDate(expiresAt: string): string {

@@ -43,6 +43,7 @@ type OpsService struct {
 	cfg         *config.Config
 
 	accountRepo AccountRepository
+	groupRepo   GroupRepository
 	userRepo    UserRepository
 
 	// getAccountAvailability is a unit-test hook for overriding account availability lookup.
@@ -68,6 +69,7 @@ func NewOpsService(
 	geminiCompatService *GeminiMessagesCompatService,
 	antigravityGatewayService *AntigravityGatewayService,
 	systemLogSink *OpsSystemLogSink,
+	groupRepo ...GroupRepository,
 ) *OpsService {
 	svc := &OpsService{
 		opsRepo:     opsRepo,
@@ -83,6 +85,9 @@ func NewOpsService(
 		geminiCompatService:       geminiCompatService,
 		antigravityGatewayService: antigravityGatewayService,
 		systemLogSink:             systemLogSink,
+	}
+	if len(groupRepo) > 0 {
+		svc.groupRepo = groupRepo[0]
 	}
 	svc.applyRuntimeLogConfigOnStartup(context.Background())
 	svc.startMonthlyUpstreamProbeRunner()

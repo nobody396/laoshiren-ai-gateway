@@ -82,8 +82,6 @@ func RegisterUserRoutes(
 			usage.POST("/dashboard/api-keys-usage", h.Usage.DashboardAPIKeysUsage)
 		}
 
-		authenticated.GET("/monthly-card/status", h.Admin.Ops.GetPublicMonthlyCardStatus)
-
 		// 公告（用户可见）
 		announcements := authenticated.Group("/announcements")
 		{

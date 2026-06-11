@@ -97,6 +97,11 @@ func RegisterAuthRoutes(
 		settings.GET("/public", h.Setting.GetPublicSettings)
 	}
 
+	// 月卡公开配置（无需认证，落地页和充值页用于展示额度）
+	if h.Admin != nil && h.Admin.Ops != nil {
+		v1.GET("/monthly-card/status", h.Admin.Ops.GetPublicMonthlyCardStatus)
+	}
+
 	// 公开邀请码验证（无需认证，注册页使用）
 	v1.GET("/validate-referral-code", h.Agent.ValidateReferralCode)
 

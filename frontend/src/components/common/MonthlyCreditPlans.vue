@@ -10,7 +10,7 @@
 
     <div class="monthly-credit-plans__grid">
       <article
-        v-for="plan in monthlyCreditCardPlans"
+        v-for="plan in displayPlans"
         :key="plan.id"
         class="monthly-credit-card"
         :class="`monthly-credit-card--${plan.accent}`"
@@ -69,21 +69,26 @@
 </template>
 
 <script setup lang="ts">
-import { monthlyCreditCardPlans } from '@/constants/monthlyCreditCards'
+import { computed } from 'vue'
+import { monthlyCreditCardPlans, type MonthlyCreditCardPlan } from '@/constants/monthlyCreditCards'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   variant?: 'home' | 'app'
   title?: string
   summary?: string
   showEntitlementDetails?: boolean
   showAction?: boolean
+  plans?: MonthlyCreditCardPlan[]
 }>(), {
   variant: 'app',
   title: '开发者月卡',
   summary: '',
   showEntitlementDetails: true,
-  showAction: true
+  showAction: true,
+  plans: undefined
 })
+
+const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyCreditCardPlans)
 </script>
 
 <style scoped>

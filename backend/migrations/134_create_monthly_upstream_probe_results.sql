@@ -30,6 +30,6 @@ CREATE INDEX IF NOT EXISTS idx_monthly_upstream_probe_checked_at
 CREATE INDEX IF NOT EXISTS idx_monthly_upstream_probe_account_checked_at
     ON monthly_upstream_probe_results (account_name, checked_at DESC);
 
-INSERT INTO settings (key, value, created_at, updated_at)
-VALUES ('monthly_upstream_probe_enabled', 'false', NOW(), NOW())
+INSERT INTO settings (key, value, updated_at)
+VALUES ('monthly_upstream_probe_enabled', 'false', NOW())
 ON CONFLICT (key) DO NOTHING;

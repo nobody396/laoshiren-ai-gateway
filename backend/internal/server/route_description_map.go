@@ -251,6 +251,8 @@ var scannerDescMap = map[string]string{
 	"GET /admin/ops/user-concurrency":                               "用户并发统计",
 	"GET /admin/ops/account-availability":                           "账号可用性监控",
 	"GET /admin/ops/realtime-traffic":                               "实时流量汇总",
+	"GET /admin/ops/monthly-upstreams":                              "月卡上游探针状态",
+	"PUT /admin/ops/monthly-upstreams/settings":                     "修改月卡上游探针开关",
 	"GET /admin/ops/alert-rules":                                    "告警规则列表",
 	"POST /admin/ops/alert-rules":                                   "创建告警规则",
 	"PUT /admin/ops/alert-rules/:id":                                "编辑告警规则",

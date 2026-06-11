@@ -193,6 +193,7 @@ const (
 	SettingKeyFeedbackManagementEnabled   = "feedback_management_enabled"    // 是否向用户展示反馈入口
 	SettingKeyGroupCacheHitRateEnabled    = "group_cache_hit_rate_enabled"   // 是否向用户展示分组 7 日缓存率
 	SettingKeySoraClientEnabled           = "sora_client_enabled"            // 是否启用 Sora 客户端（管理员手动控制）
+	SettingKeyMonthlyUpstreamProbeEnabled = "monthly_upstream_probe_enabled" // 是否启用月卡上游常驻探针
 	SettingKeyTableDefaultPageSize        = "table_default_page_size"        // 表格默认每页条数
 	SettingKeyTablePageSizeOptions        = "table_page_size_options"        // 表格可选每页条数（JSON 数组）
 	SettingKeyCustomMenuItems             = "custom_menu_items"              // 自定义菜单项（JSON 数组）

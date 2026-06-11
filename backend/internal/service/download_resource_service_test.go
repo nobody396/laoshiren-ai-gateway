@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/stretchr/testify/require"
@@ -87,6 +88,80 @@ func TestDownloadResourceServiceGetCCSwitchAssetNotReady(t *testing.T) {
 
 	_, err := svc.GetCCSwitchAsset(context.Background(), "missing")
 	require.ErrorIs(t, err, ErrDownloadManifestNotReady)
+}
+
+func TestDownloadResourceServiceDownloadTokenReturnsAsset(t *testing.T) {
+	dir := t.TempDir()
+	stub := &downloadResourceGitHubStub{
+		release: &GitHubRelease{
+			TagName: "v3.16.0",
+			Name:    "CC Switch v3.16.0",
+			Assets: []GitHubAsset{
+				{Name: "CC-Switch-v3.16.0-Windows.msi", BrowserDownloadURL: "https://example.test/windows", Size: int64(len("windows"))},
+			},
+		},
+		files: map[string][]byte{
+			"https://example.test/windows": []byte("windows"),
+		},
+	}
+	svc := NewDownloadResourceService(&config.Config{
+		Downloads: config.DownloadsConfig{
+			Enabled:             true,
+			CacheDir:            dir,
+			UpdateIntervalHours: 1,
+			CCSwitchRepo:        "farion1231/cc-switch",
+			MaxAssetBytes:       1024,
+		},
+	}, stub)
+	require.NoError(t, svc.SyncCCSwitch(context.Background()))
+
+	manifest, err := svc.ListCCSwitch(context.Background())
+	require.NoError(t, err)
+
+	token, expiresAt, err := svc.CreateToolAssetDownloadToken(context.Background(), ccSwitchToolID, manifest.Assets[0].ID, time.Minute)
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
+	require.True(t, expiresAt.After(time.Now()))
+
+	file, err := svc.GetToolAssetByDownloadToken(context.Background(), token)
+	require.NoError(t, err)
+	require.Equal(t, manifest.Assets[0].ID, file.Asset.ID)
+	require.FileExists(t, file.Path)
+}
+
+func TestDownloadResourceServiceDownloadTokenExpires(t *testing.T) {
+	dir := t.TempDir()
+	stub := &downloadResourceGitHubStub{
+		release: &GitHubRelease{
+			TagName: "v3.16.0",
+			Name:    "CC Switch v3.16.0",
+			Assets: []GitHubAsset{
+				{Name: "CC-Switch-v3.16.0-Windows.msi", BrowserDownloadURL: "https://example.test/windows", Size: int64(len("windows"))},
+			},
+		},
+		files: map[string][]byte{
+			"https://example.test/windows": []byte("windows"),
+		},
+	}
+	svc := NewDownloadResourceService(&config.Config{
+		Downloads: config.DownloadsConfig{
+			Enabled:             true,
+			CacheDir:            dir,
+			UpdateIntervalHours: 1,
+			CCSwitchRepo:        "farion1231/cc-switch",
+			MaxAssetBytes:       1024,
+		},
+	}, stub)
+	require.NoError(t, svc.SyncCCSwitch(context.Background()))
+
+	manifest, err := svc.ListCCSwitch(context.Background())
+	require.NoError(t, err)
+	token, _, err := svc.CreateToolAssetDownloadToken(context.Background(), ccSwitchToolID, manifest.Assets[0].ID, time.Nanosecond)
+	require.NoError(t, err)
+
+	time.Sleep(time.Millisecond)
+	_, err = svc.GetToolAssetByDownloadToken(context.Background(), token)
+	require.ErrorIs(t, err, ErrDownloadTokenInvalid)
 }
 
 func TestDownloadResourceServiceSyncCodexCachesSelectedAssets(t *testing.T) {

@@ -732,6 +732,7 @@ function resolveAdminMenuLabel(path: string, fallbackLabel: string): string {
 const navPermissionMap: Record<string, string> = {
   '/admin/dashboard': 'admin:dashboard',
   '/admin/ops': 'admin:ops',
+  '/admin/monthly-upstreams': 'admin:ops',
   '/admin/users': 'admin:users',
   '/admin/agents': 'admin:agents',
   '/admin/groups': 'admin:groups',
@@ -767,6 +768,10 @@ const adminNavItems = computed((): NavItem[] => {
           path: '/admin/ops',
           label: resolveAdminMenuLabel('/admin/ops', t('nav.ops')),
           icon: ChartIcon
+        }, {
+          path: '/admin/monthly-upstreams',
+          label: resolveAdminMenuLabel('/admin/monthly-upstreams', t('nav.monthlyUpstreams', '月卡监控')),
+          icon: ServerIcon
         }]
       : []),
     {

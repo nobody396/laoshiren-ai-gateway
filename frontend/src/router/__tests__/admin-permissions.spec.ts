@@ -5,6 +5,7 @@ describe('后台路由权限声明', () => {
   it('除后台仪表盘外的后台页面声明 RBAC 权限', () => {
     const expectedPermissions: Record<string, string> = {
       '/admin/ops': 'admin:ops',
+      '/admin/monthly-upstreams': 'admin:ops',
       '/admin/users': 'admin:users',
       '/admin/agents': 'admin:agents',
       '/admin/groups': 'admin:groups',

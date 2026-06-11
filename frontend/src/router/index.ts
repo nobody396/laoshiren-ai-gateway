@@ -527,6 +527,17 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/monthly-upstreams',
+    name: 'AdminMonthlyUpstreams',
+    component: () => import('@/views/admin/MonthlyUpstreamsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      permission: 'admin:ops',
+      title: 'Monthly Upstream Monitor'
+    }
+  },
+  {
     path: '/admin/users',
     name: 'AdminUsers',
     component: () => import('@/views/admin/UsersView.vue'),

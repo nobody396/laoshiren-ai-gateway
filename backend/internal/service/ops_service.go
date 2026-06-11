@@ -85,6 +85,7 @@ func NewOpsService(
 		systemLogSink:             systemLogSink,
 	}
 	svc.applyRuntimeLogConfigOnStartup(context.Background())
+	svc.startMonthlyUpstreamProbeRunner()
 	return svc
 }
 

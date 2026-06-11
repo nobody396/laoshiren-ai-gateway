@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -37,6 +38,7 @@ var (
 	ErrDownloadManifestNotReady = errors.New("download manifest is not ready")
 	ErrDownloadAssetNotFound    = errors.New("download asset not found")
 	ErrDownloadToolNotFound     = errors.New("download tool not found")
+	ErrDownloadTokenInvalid     = errors.New("download token is invalid or expired")
 	assetIDUnsafeChars          = regexp.MustCompile(`[^a-z0-9._-]+`)
 )
 
@@ -72,6 +74,12 @@ type DownloadAssetFile struct {
 	Path  string
 }
 
+type assetDownloadToken struct {
+	ToolID    string
+	AssetID   string
+	ExpiresAt time.Time
+}
+
 type DownloadResourceService struct {
 	cfg          config.DownloadsConfig
 	githubClient GitHubReleaseClient
@@ -84,6 +92,9 @@ type DownloadResourceService struct {
 	doneCh  chan struct{}
 	started atomic.Bool
 	stopped atomic.Bool
+
+	tokenMu        sync.Mutex
+	downloadTokens map[string]assetDownloadToken
 }
 
 func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseClient) *DownloadResourceService {
@@ -132,13 +143,14 @@ func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseCl
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	return &DownloadResourceService{
-		cfg:          downloadCfg,
-		githubClient: githubClient,
-		cacheDir:     filepath.Clean(downloadCfg.CacheDir),
-		ctx:          ctx,
-		cancel:       cancel,
-		stopCh:       make(chan struct{}),
-		doneCh:       make(chan struct{}),
+		cfg:            downloadCfg,
+		githubClient:   githubClient,
+		cacheDir:       filepath.Clean(downloadCfg.CacheDir),
+		ctx:            ctx,
+		cancel:         cancel,
+		stopCh:         make(chan struct{}),
+		doneCh:         make(chan struct{}),
+		downloadTokens: make(map[string]assetDownloadToken),
 	}
 }
 
@@ -419,6 +431,76 @@ func (s *DownloadResourceService) GetToolAsset(ctx context.Context, toolID, asse
 	return nil, ErrDownloadAssetNotFound
 }
 
+func (s *DownloadResourceService) CreateToolAssetDownloadToken(ctx context.Context, toolID, assetID string, ttl time.Duration) (string, time.Time, error) {
+	if s == nil {
+		return "", time.Time{}, errors.New("nil download resource service")
+	}
+	toolID, ok := normalizeDownloadToolID(toolID)
+	if !ok {
+		return "", time.Time{}, ErrDownloadToolNotFound
+	}
+	assetID = strings.TrimSpace(assetID)
+	if assetID == "" {
+		return "", time.Time{}, ErrDownloadAssetNotFound
+	}
+	if _, err := s.GetToolAsset(ctx, toolID, assetID); err != nil {
+		return "", time.Time{}, err
+	}
+	if ttl <= 0 {
+		ttl = 5 * time.Minute
+	}
+
+	token, err := randomDownloadToken()
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	expiresAt := time.Now().UTC().Add(ttl)
+
+	s.tokenMu.Lock()
+	defer s.tokenMu.Unlock()
+	if s.downloadTokens == nil {
+		s.downloadTokens = make(map[string]assetDownloadToken)
+	}
+	s.cleanupExpiredDownloadTokensLocked(time.Now().UTC())
+	s.downloadTokens[token] = assetDownloadToken{
+		ToolID:    toolID,
+		AssetID:   assetID,
+		ExpiresAt: expiresAt,
+	}
+	return token, expiresAt, nil
+}
+
+func (s *DownloadResourceService) GetToolAssetByDownloadToken(ctx context.Context, token string) (*DownloadAssetFile, error) {
+	if s == nil {
+		return nil, errors.New("nil download resource service")
+	}
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return nil, ErrDownloadTokenInvalid
+	}
+
+	now := time.Now().UTC()
+	s.tokenMu.Lock()
+	entry, ok := s.downloadTokens[token]
+	if !ok || !entry.ExpiresAt.After(now) {
+		delete(s.downloadTokens, token)
+		s.tokenMu.Unlock()
+		return nil, ErrDownloadTokenInvalid
+	}
+	s.cleanupExpiredDownloadTokensLocked(now)
+	s.tokenMu.Unlock()
+
+	return s.GetToolAsset(ctx, entry.ToolID, entry.AssetID)
+}
+
+func (s *DownloadResourceService) cleanupExpiredDownloadTokensLocked(now time.Time) {
+	for token, entry := range s.downloadTokens {
+		if !entry.ExpiresAt.After(now) {
+			delete(s.downloadTokens, token)
+		}
+	}
+}
+
 func (s *DownloadResourceService) manifestPath(toolID string) string {
 	return filepath.Join(s.cacheDir, toolID, "manifest.json")
 }
@@ -595,6 +677,14 @@ func sanitizePathSegment(v string) string {
 		return "unknown"
 	}
 	return clean
+}
+
+func randomDownloadToken() (string, error) {
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("generate download token: %w", err)
+	}
+	return hex.EncodeToString(buf), nil
 }
 
 func fileSHA256(path string) (string, error) {

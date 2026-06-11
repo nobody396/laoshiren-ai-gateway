@@ -74,6 +74,61 @@ func NewOpsHandler(opsService *service.OpsService) *OpsHandler {
 	return &OpsHandler{opsService: opsService}
 }
 
+// GetMonthlyUpstreamProbeSnapshot returns monthly upstream probe status.
+// GET /api/v1/admin/ops/monthly-upstreams
+func (h *OpsHandler) GetMonthlyUpstreamProbeSnapshot(c *gin.Context) {
+	if h.opsService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
+		return
+	}
+	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	windowMinutes := 60
+	if raw := strings.TrimSpace(c.Query("window_minutes")); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed <= 0 {
+			response.BadRequest(c, "Invalid window_minutes")
+			return
+		}
+		windowMinutes = parsed
+	}
+
+	snapshot, err := h.opsService.GetMonthlyUpstreamProbeSnapshot(c.Request.Context(), windowMinutes)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	response.Success(c, snapshot)
+}
+
+// UpdateMonthlyUpstreamProbeSettings updates monthly upstream probe switch.
+// PUT /api/v1/admin/ops/monthly-upstreams/settings
+func (h *OpsHandler) UpdateMonthlyUpstreamProbeSettings(c *gin.Context) {
+	if h.opsService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
+		return
+	}
+	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	var req service.MonthlyUpstreamProbeSettings
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body")
+		return
+	}
+	settings, err := h.opsService.UpdateMonthlyUpstreamProbeSettings(c.Request.Context(), &req)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, settings)
+}
+
 // GetErrorLogs lists ops error logs.
 // GET /api/v1/admin/ops/errors
 func (h *OpsHandler) GetErrorLogs(c *gin.Context) {

@@ -21,23 +21,37 @@ export interface DownloadManifest {
   assets: DownloadAsset[]
 }
 
+export interface DownloadURLResponse {
+  token: string
+  expires_at: string
+}
+
 export async function getDownloads(tool: DownloadToolID): Promise<DownloadManifest> {
   const { data } = await apiClient.get<DownloadManifest>(`/resources/${tool}`)
   return data
 }
 
+export async function createDownloadURL(tool: DownloadToolID, asset: DownloadAsset): Promise<DownloadURLResponse> {
+  const { data } = await apiClient.post<DownloadURLResponse>(`/resources/${tool}/download-url/${asset.id}`)
+  return data
+}
+
+export function buildResourceDownloadURL(token: string): string {
+  const baseURL = String(apiClient.defaults.baseURL || '/api/v1').replace(/\/+$/, '')
+  return `${baseURL}/resource-downloads/${encodeURIComponent(token)}`
+}
+
 export async function downloadAsset(tool: DownloadToolID, asset: DownloadAsset): Promise<void> {
-  const { data } = await apiClient.get<Blob>(`/resources/${tool}/download/${asset.id}`, {
-    responseType: 'blob'
-  })
-  const url = window.URL.createObjectURL(data)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = asset.name
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  window.URL.revokeObjectURL(url)
+  const { token } = await createDownloadURL(tool, asset)
+  const url = buildResourceDownloadURL(token)
+  const frame = document.createElement('iframe')
+  frame.src = url
+  frame.title = `download-${asset.id}`
+  frame.style.cssText = 'position:absolute;width:0;height:0;border:0;opacity:0;pointer-events:none'
+  document.body.appendChild(frame)
+  window.setTimeout(() => {
+    frame.remove()
+  }, 5 * 60 * 1000)
 }
 
 export async function getCCSwitchDownloads(): Promise<DownloadManifest> {
@@ -50,6 +64,8 @@ export async function downloadCCSwitchAsset(asset: DownloadAsset): Promise<void>
 
 export const resourcesAPI = {
   getDownloads,
+  createDownloadURL,
+  buildResourceDownloadURL,
   downloadAsset,
   getCCSwitchDownloads,
   downloadCCSwitchAsset

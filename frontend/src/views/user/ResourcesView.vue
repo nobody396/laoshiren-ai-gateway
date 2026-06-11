@@ -7,7 +7,7 @@
             <p class="text-sm font-medium text-primary-600 dark:text-primary-400">下载资源</p>
             <h1 class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">AI 编码工具下载安装</h1>
             <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-dark-300">
-              先把 Claude Code、Codex、Codex++、Claude Desktop 和 CC Switch 的安装入口集中到这里，方便用户登录后直接安装和验证。
+              只保留普通用户最常用的 Windows 和 macOS 安装入口。Mac 用户按 Apple 芯片和 Intel 芯片选择，Windows 用户优先选 64 位安装包。
             </p>
           </div>
           <a
@@ -98,9 +98,11 @@
                   {{ manifestFor(resource.downloadToolId)?.version }}
                 </span>
               </div>
+              <p v-if="resource.downloadHint" class="text-xs leading-5 text-gray-500 dark:text-dark-400">
+                {{ resource.downloadHint }}
+              </p>
 
               <div v-if="loadingFor(resource.downloadToolId)" class="space-y-2">
-                <div class="h-10 animate-pulse rounded-lg bg-gray-100 dark:bg-dark-800"></div>
                 <div class="h-10 animate-pulse rounded-lg bg-gray-100 dark:bg-dark-800"></div>
                 <div class="h-10 animate-pulse rounded-lg bg-gray-100 dark:bg-dark-800"></div>
               </div>
@@ -109,19 +111,31 @@
                 {{ errorFor(resource.downloadToolId) }}
               </div>
 
+              <div v-else-if="preferredAssets(resource.downloadToolId).length === 0" class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-300">
+                暂无适合普通用户的 Windows 或 macOS 安装包，请先使用官方安装页。
+              </div>
+
               <div v-else class="grid grid-cols-1 gap-2">
                 <button
                   v-for="asset in preferredAssets(resource.downloadToolId)"
                   :key="asset.id"
-                  class="inline-flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-left text-sm hover:bg-gray-50 dark:border-dark-700 dark:hover:bg-dark-800"
+                  class="inline-flex min-h-[56px] items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-all duration-150"
+                  :class="downloadButtonClass(resource.downloadToolId, asset)"
                   type="button"
+                  :disabled="isDownloadPreparing(resource.downloadToolId, asset)"
                   @click="downloadCachedAsset(resource.downloadToolId, asset)"
                 >
                   <span class="min-w-0">
                     <span class="block truncate font-medium text-gray-800 dark:text-dark-100">{{ formatAssetLabel(resource.downloadToolId, asset) }}</span>
-                    <span class="block text-xs text-gray-500 dark:text-dark-400">{{ formatBytes(asset.size) }}</span>
+                    <span class="block truncate text-xs text-gray-500 dark:text-dark-400">{{ formatAssetDescription(asset) }} · {{ formatBytes(asset.size) }}</span>
                   </span>
-                  <Icon name="download" size="sm" class="flex-shrink-0" />
+                  <span class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-dark-800 dark:text-dark-300">
+                    <Icon
+                      :name="downloadIcon(resource.downloadToolId, asset)"
+                      size="sm"
+                      :class="{ 'animate-spin': isDownloadPreparing(resource.downloadToolId, asset) }"
+                    />
+                  </span>
                 </button>
               </div>
 
@@ -190,6 +204,7 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useClipboard } from '@/composables/useClipboard'
 import { resourcesAPI, type DownloadAsset, type DownloadManifest, type DownloadToolID } from '@/api/resources'
+import { useAppStore } from '@/stores/app'
 
 type IconName = InstanceType<typeof Icon>['$props']['name']
 
@@ -207,6 +222,7 @@ interface DownloadResource {
   commands: InstallCommand[]
   downloadToolId?: DownloadToolID
   downloadTitle?: string
+  downloadHint?: string
   verifyCommand?: string
   verifyText?: string
   primaryLink?: string
@@ -216,9 +232,11 @@ interface DownloadResource {
 }
 
 const { copyToClipboard } = useClipboard()
+const appStore = useAppStore()
 const manifests = ref<Partial<Record<DownloadToolID, DownloadManifest>>>({})
 const loading = ref<Partial<Record<DownloadToolID, boolean>>>({})
 const errors = ref<Partial<Record<DownloadToolID, string>>>({})
+const downloadStates = ref<Record<string, 'preparing' | 'started' | 'error'>>({})
 
 const resources: DownloadResource[] = [
   {
@@ -250,7 +268,7 @@ const resources: DownloadResource[] = [
   {
     name: 'Codex',
     badge: 'OpenAI 官方编码工具',
-    description: '适合在本地终端中运行 Codex，也可以使用 Codex App 体验。本站会缓存官方 release 中的 CLI 和 App 包。',
+    description: '适合在本地终端中运行 Codex，也可以使用 Codex App 体验。普通用户优先使用官方安装命令，下载区只保留常用系统的 CLI 备用包。',
     icon: 'cpu',
     commands: [
       {
@@ -267,12 +285,13 @@ const resources: DownloadResource[] = [
       }
     ],
     downloadToolId: 'codex',
-    downloadTitle: '本站缓存 Codex 包',
+    downloadTitle: '备用离线包',
+    downloadHint: '普通用户优先复制上方命令安装；只有安装脚本很慢或打不开时，再下载对应系统的备用包。',
     verifyCommand: 'codex\ncodex app',
     primaryLink: 'https://github.com/openai/codex/releases/latest',
     docsLink: 'https://developers.openai.com/codex/cli',
     primaryAction: '查看官方 Release',
-    note: '用户不方便访问 GitHub 时，可以直接下载本站缓存的 Codex CLI 或 Codex App Server 包。'
+    note: '用户不方便访问 GitHub 时，可以直接下载本站缓存的 Codex CLI 备用包。'
   },
   {
     name: 'Codex++',
@@ -281,7 +300,8 @@ const resources: DownloadResource[] = [
     icon: 'sparkles',
     commands: [],
     downloadToolId: 'codex-plus-plus',
-    downloadTitle: '本站缓存 Codex++ 安装包',
+    downloadTitle: '常用安装包',
+    downloadHint: 'Windows 选 64 位安装包；Mac 按芯片选择，M1/M2/M3/M4 选 Apple 芯片，老款 Mac 选 Intel。',
     verifyText: '安装后先打开 Codex++ 管理工具检查状态，再从 Codex++ 入口启动 Codex App。顶部出现 Codex++ 菜单即表示增强注入成功。',
     primaryLink: 'https://github.com/BigPizzaV3/CodexPlusPlus/releases/latest',
     docsLink: 'https://github.com/BigPizzaV3/CodexPlusPlus',
@@ -295,7 +315,8 @@ const resources: DownloadResource[] = [
     icon: 'cube',
     commands: [],
     downloadToolId: 'claude-desktop',
-    downloadTitle: '本站缓存桌面安装包',
+    downloadTitle: '常用安装包',
+    downloadHint: 'Windows 优先选择 64 位；macOS 官方包通常是通用版，Apple 芯片和 Intel Mac 都能用。',
     verifyText: '安装后打开 Claude Desktop，登录账号，并进入 Code 标签页确认可用。',
     primaryLink: 'https://claude.com/download',
     docsLink: 'https://support.claude.com/en/articles/10065433-install-claude-desktop',
@@ -309,7 +330,8 @@ const resources: DownloadResource[] = [
     icon: 'swap',
     commands: [],
     downloadToolId: 'cc-switch',
-    downloadTitle: '本站缓存安装包',
+    downloadTitle: '常用安装包',
+    downloadHint: '只展示最适合普通用户的 Windows 安装版和 macOS 安装包，Linux、绿色版和校验文件不放在主列表里。',
     verifyText: '安装完成后打开 CC Switch 应用，确认能看到 Claude Code 和 Codex 入口。',
     docsLink: 'https://ccswitch.ai/',
     note: 'CC Switch 安装包由本站定时缓存，用户下载时不需要访问 GitHub。'
@@ -334,40 +356,54 @@ function errorFor(tool: DownloadToolID): string {
 
 function preferredAssets(tool: DownloadToolID): DownloadAsset[] {
   const assets = manifests.value[tool]?.assets ?? []
-  const score = (asset: DownloadAsset) => {
-    const name = asset.name.toLowerCase()
-    if (tool === 'claude-desktop') {
-      if (asset.platform === 'macos' && name.endsWith('.dmg')) return 10
-      if (asset.platform === 'windows' && asset.arch === 'x64') return 20
-      if (asset.platform === 'windows' && asset.arch === 'arm64') return 30
+  const selected = new Map<string, { asset: DownloadAsset; score: number }>()
+
+  for (const asset of assets) {
+    const option = installOptionFor(tool, asset)
+    if (!option) continue
+    const current = selected.get(option.key)
+    if (!current || option.score < current.score || asset.name.localeCompare(current.asset.name) < 0) {
+      selected.set(option.key, { asset, score: option.score })
     }
-    if (tool === 'codex') {
-      if (name.startsWith('codex-app-server-package') && asset.platform === 'macos' && asset.arch === 'arm64') return 10
-      if (name.startsWith('codex-app-server-package') && asset.platform === 'macos' && asset.arch === 'x64') return 20
-      if (name.startsWith('codex-app-server-package') && asset.platform === 'windows' && asset.arch === 'x64') return 30
-      if (name.startsWith('codex-app-server-package') && asset.platform === 'linux' && asset.arch === 'x64') return 40
-      if (!name.startsWith('codex-app-server-package') && asset.platform === 'macos' && asset.arch === 'arm64') return 50
-      if (!name.startsWith('codex-app-server-package') && asset.platform === 'macos' && asset.arch === 'x64') return 60
-      if (!name.startsWith('codex-app-server-package') && asset.platform === 'windows' && asset.arch === 'x64') return 70
-      if (!name.startsWith('codex-app-server-package') && asset.platform === 'linux' && asset.arch === 'x64') return 80
-    }
-    if (tool === 'cc-switch') {
-      if (asset.platform === 'windows' && name.endsWith('.msi')) return 10
-      if (asset.platform === 'windows' && name.includes('portable')) return 20
-      if (asset.platform === 'macos' && name.endsWith('.dmg')) return 30
-      if (asset.platform === 'macos' && name.endsWith('.zip')) return 40
-      if (asset.platform === 'linux' && name.endsWith('.appimage') && asset.arch === 'x64') return 50
-      if (asset.platform === 'linux' && name.endsWith('.deb') && asset.arch === 'x64') return 60
-      if (asset.platform === 'linux' && name.endsWith('.rpm') && asset.arch === 'x64') return 70
-    }
-    if (tool === 'codex-plus-plus') {
-      if (asset.platform === 'windows' && name.endsWith('.exe')) return 10
-      if (asset.platform === 'macos' && asset.arch === 'arm64') return 20
-      if (asset.platform === 'macos' && asset.arch === 'x64') return 30
-    }
-    return 100
   }
-  return [...assets].sort((a, b) => score(a) - score(b) || a.name.localeCompare(b.name))
+
+  if (selected.has('macos-universal') && (selected.has('macos-arm64') || selected.has('macos-x64'))) {
+    selected.delete('macos-universal')
+  }
+
+  return [...selected.values()]
+    .sort((a, b) => a.score - b.score || a.asset.name.localeCompare(b.asset.name))
+    .map((entry) => entry.asset)
+}
+
+function installOptionFor(tool: DownloadToolID, asset: DownloadAsset): { key: string; score: number } | null {
+  const name = asset.name.toLowerCase()
+  if (asset.platform === 'windows') {
+    if (asset.arch === 'arm64') return null
+    if (tool === 'cc-switch' && !name.endsWith('.msi')) return null
+    if (tool === 'codex-plus-plus' && !name.endsWith('.exe')) return null
+    if (tool === 'claude-desktop' && !name.endsWith('.exe')) return null
+    if (tool === 'codex') {
+      if (name.startsWith('codex-app-server-package')) return null
+      if (!name.endsWith('pc-windows-msvc.exe.zip')) return null
+    }
+    return { key: 'windows-x64', score: 10 }
+  }
+
+  if (asset.platform === 'macos') {
+    if (tool === 'cc-switch' && !name.endsWith('.dmg')) return null
+    if (tool === 'codex-plus-plus' && !name.endsWith('.dmg')) return null
+    if (tool === 'claude-desktop' && !name.endsWith('.dmg')) return null
+    if (tool === 'codex') {
+      if (name.startsWith('codex-app-server-package')) return null
+      if (!name.endsWith('apple-darwin.tar.gz')) return null
+    }
+    if (asset.arch === 'arm64') return { key: 'macos-arm64', score: 20 }
+    if (asset.arch === 'x64') return { key: 'macos-x64', score: 30 }
+    return { key: 'macos-universal', score: 20 }
+  }
+
+  return null
 }
 
 async function copyCommand(command: string) {
@@ -391,7 +427,62 @@ async function loadDownloads(tool: DownloadToolID) {
 }
 
 async function downloadCachedAsset(tool: DownloadToolID, asset: DownloadAsset) {
-  await resourcesAPI.downloadAsset(tool, asset)
+  const key = downloadAssetKey(tool, asset)
+  if (downloadStates.value[key] === 'preparing') return
+
+  downloadStates.value = { ...downloadStates.value, [key]: 'preparing' }
+  try {
+    await resourcesAPI.downloadAsset(tool, asset)
+    downloadStates.value = { ...downloadStates.value, [key]: 'started' }
+    appStore.showInfo('下载已开始，请查看浏览器下载栏。')
+    window.setTimeout(() => {
+      if (downloadStates.value[key] === 'started') {
+        const next = { ...downloadStates.value }
+        delete next[key]
+        downloadStates.value = next
+      }
+    }, 4000)
+  } catch (error: any) {
+    downloadStates.value = { ...downloadStates.value, [key]: 'error' }
+    appStore.showError(error?.message || '创建下载链接失败，请稍后重试。')
+    window.setTimeout(() => {
+      if (downloadStates.value[key] === 'error') {
+        const next = { ...downloadStates.value }
+        delete next[key]
+        downloadStates.value = next
+      }
+    }, 4000)
+  }
+}
+
+function downloadAssetKey(tool: DownloadToolID, asset: DownloadAsset): string {
+  return `${tool}:${asset.id}`
+}
+
+function isDownloadPreparing(tool: DownloadToolID, asset: DownloadAsset): boolean {
+  return downloadStates.value[downloadAssetKey(tool, asset)] === 'preparing'
+}
+
+function downloadIcon(tool: DownloadToolID, asset: DownloadAsset): IconName {
+  const state = downloadStates.value[downloadAssetKey(tool, asset)]
+  if (state === 'preparing') return 'refresh'
+  if (state === 'started') return 'checkCircle'
+  if (state === 'error') return 'exclamationCircle'
+  return 'download'
+}
+
+function downloadButtonClass(tool: DownloadToolID, asset: DownloadAsset): string {
+  const state = downloadStates.value[downloadAssetKey(tool, asset)]
+  if (state === 'preparing') {
+    return 'cursor-wait border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-800 dark:bg-primary-950/30 dark:text-primary-200'
+  }
+  if (state === 'started') {
+    return 'border-emerald-300 bg-emerald-50 dark:border-emerald-900/70 dark:bg-emerald-950/30'
+  }
+  if (state === 'error') {
+    return 'border-rose-300 bg-rose-50 dark:border-rose-900/70 dark:bg-rose-950/30'
+  }
+  return 'border-gray-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:translate-y-0 dark:border-dark-700 dark:hover:bg-dark-800'
 }
 
 function formatBytes(bytes: number): string {
@@ -412,35 +503,22 @@ function formatDate(value: string): string {
 }
 
 function formatAssetLabel(tool: DownloadToolID, asset: DownloadAsset): string {
-  const name = asset.name.toLowerCase()
-  if (tool === 'claude-desktop') {
-    if (asset.platform === 'macos') return 'macOS 通用版'
-    if (asset.platform === 'windows' && asset.arch === 'arm64') return 'Windows ARM64 安装包'
-    if (asset.platform === 'windows') return 'Windows x64 安装包'
-  }
+  if (asset.platform === 'windows') return 'Windows 64 位安装包'
+  if (asset.platform === 'macos' && asset.arch === 'arm64') return 'macOS Apple 芯片版'
+  if (asset.platform === 'macos' && asset.arch === 'x64') return 'macOS Intel 芯片版'
+  if (asset.platform === 'macos') return 'macOS 通用版'
+
   if (tool === 'codex') {
-    const prefix = name.startsWith('codex-app-server-package') ? 'Codex App' : 'Codex CLI'
-    if (asset.platform === 'macos' && asset.arch === 'arm64') return `${prefix} macOS Apple Silicon`
-    if (asset.platform === 'macos') return `${prefix} macOS Intel`
-    if (asset.platform === 'windows' && asset.arch === 'arm64') return `${prefix} Windows ARM64`
-    if (asset.platform === 'windows') return `${prefix} Windows x64`
-    if (asset.platform === 'linux' && asset.arch === 'arm64') return `${prefix} Linux ARM64`
-    if (asset.platform === 'linux') return `${prefix} Linux x64`
+    return `Codex CLI ${asset.name}`
   }
-  if (tool === 'cc-switch') {
-    if (asset.platform === 'windows' && name.endsWith('.msi')) return 'Windows 安装版'
-    if (asset.platform === 'windows' && name.includes('portable')) return 'Windows 绿色版'
-    if (asset.platform === 'macos' && name.endsWith('.dmg')) return 'macOS DMG'
-    if (asset.platform === 'macos' && name.endsWith('.zip')) return 'macOS ZIP'
-    if (asset.platform === 'linux' && name.endsWith('.appimage')) return `Linux AppImage ${asset.arch}`
-    if (asset.platform === 'linux' && name.endsWith('.deb')) return `Linux deb ${asset.arch}`
-    if (asset.platform === 'linux' && name.endsWith('.rpm')) return `Linux rpm ${asset.arch}`
-  }
-  if (tool === 'codex-plus-plus') {
-    if (asset.platform === 'windows') return 'Windows x64 安装包'
-    if (asset.platform === 'macos' && asset.arch === 'arm64') return 'macOS Apple Silicon DMG'
-    if (asset.platform === 'macos') return 'macOS Intel DMG'
-  }
+  return asset.name
+}
+
+function formatAssetDescription(asset: DownloadAsset): string {
+  if (asset.platform === 'windows') return '适合绝大多数 Windows 10/11 电脑'
+  if (asset.platform === 'macos' && asset.arch === 'arm64') return 'M1/M2/M3/M4 等 Apple 芯片 Mac'
+  if (asset.platform === 'macos' && asset.arch === 'x64') return 'Intel 芯片老款 Mac'
+  if (asset.platform === 'macos') return 'Apple 芯片和 Intel Mac 都可用'
   return asset.name
 }
 

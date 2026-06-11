@@ -15,6 +15,8 @@ func RegisterUserRoutes(
 	jwtAuth middleware.JWTAuthMiddleware,
 	settingService *service.SettingService,
 ) {
+	v1.GET("/resource-downloads/:token", h.Resource.DownloadWithToken)
+
 	authenticated := v1.Group("")
 	authenticated.Use(gin.HandlerFunc(jwtAuth))
 	authenticated.Use(middleware.BackendModeUserGuard(settingService))
@@ -107,6 +109,7 @@ func RegisterUserRoutes(
 		resources := authenticated.Group("/resources")
 		{
 			resources.GET("/:tool", h.Resource.ListTool)
+			resources.POST("/:tool/download-url/:assetID", h.Resource.CreateDownloadURL)
 			resources.GET("/:tool/download/:assetID", h.Resource.DownloadTool)
 		}
 

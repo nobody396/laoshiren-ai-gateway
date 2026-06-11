@@ -456,8 +456,17 @@
                 :name="(option as unknown as GroupOption).label"
                 :platform="(option as unknown as GroupOption).platform"
                 :subscription-type="(option as unknown as GroupOption).subscriptionType"
-                :rate-multiplier="(option as unknown as GroupOption).rate"
-                :user-rate-multiplier="(option as unknown as GroupOption).userRate"
+                :rate-multiplier="
+                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
+                    ? (option as unknown as GroupOption).rate
+                    : undefined
+                "
+                :user-rate-multiplier="
+                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
+                    ? (option as unknown as GroupOption).userRate
+                    : null
+                "
+                :show-rate="shouldShowGroupOptionMeta(option as unknown as GroupOption)"
               />
               <span v-else class="text-gray-400">{{ t('keys.selectGroup') }}</span>
             </template>
@@ -466,9 +475,21 @@
                 :name="(option as unknown as GroupOption).label"
                 :platform="(option as unknown as GroupOption).platform"
                 :subscription-type="(option as unknown as GroupOption).subscriptionType"
-                :rate-multiplier="(option as unknown as GroupOption).rate"
-                :user-rate-multiplier="(option as unknown as GroupOption).userRate"
-                :description="(option as unknown as GroupOption).description"
+                :rate-multiplier="
+                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
+                    ? (option as unknown as GroupOption).rate
+                    : undefined
+                "
+                :user-rate-multiplier="
+                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
+                    ? (option as unknown as GroupOption).userRate
+                    : null
+                "
+                :description="
+                  shouldShowGroupOptionMeta(option as unknown as GroupOption)
+                    ? (option as unknown as GroupOption).description
+                    : null
+                "
                 :cache-hit-rate-pct="(option as unknown as GroupOption).cacheHitRatePct"
                 :cache-window-days="(option as unknown as GroupOption).cacheWindowDays"
                 :selected="selected"
@@ -1063,9 +1084,9 @@
               :name="option.label"
               :platform="option.platform"
               :subscription-type="option.subscriptionType"
-              :rate-multiplier="option.rate"
-              :user-rate-multiplier="option.userRate"
-              :description="option.description"
+              :rate-multiplier="shouldShowGroupOptionMeta(option) ? option.rate : undefined"
+              :user-rate-multiplier="shouldShowGroupOptionMeta(option) ? option.userRate : null"
+              :description="shouldShowGroupOptionMeta(option) ? option.description : null"
               :cache-hit-rate-pct="option.cacheHitRatePct"
               :cache-window-days="option.cacheWindowDays"
               :selected="
@@ -1301,6 +1322,10 @@ const groupOptions = computed(() =>
     }
   })
 )
+
+const shouldShowGroupOptionMeta = (option: GroupOption): boolean => {
+  return option.subscriptionType !== 'subscription' && option.subscriptionType !== 'credit'
+}
 
 // Group dropdown search
 const groupSearchQuery = ref('')
@@ -1939,6 +1964,9 @@ const executeCcsImport = (row: ApiKey, clientType: 'claude' | 'gemini') => {
     params.set('config', encodeBase64Utf8(buildCodexCcsConfig(endpoint, row.key, defaultModel)))
   } else if (platform === 'anthropic') {
     params.set('model', 'claude-fable-5')
+    params.set('haikuModel', 'claude-haiku-4-5')
+    params.set('sonnetModel', 'claude-sonnet-4-6')
+    params.set('opusModel', 'claude-opus-4-8')
   }
   const deeplink = `ccswitch://v1/import?${params.toString()}`
 

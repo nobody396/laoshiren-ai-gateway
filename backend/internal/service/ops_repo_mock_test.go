@@ -121,6 +121,14 @@ func (m *opsRepoMock) GetOpenAITokenStats(ctx context.Context, filter *OpsOpenAI
 	return &OpsOpenAITokenStatsResponse{}, nil
 }
 
+func (m *opsRepoMock) InsertMonthlyUpstreamProbeResult(ctx context.Context, input *MonthlyUpstreamProbePoint) error {
+	return nil
+}
+
+func (m *opsRepoMock) ListMonthlyUpstreamProbeResults(ctx context.Context, since time.Time) ([]MonthlyUpstreamProbePoint, error) {
+	return []MonthlyUpstreamProbePoint{}, nil
+}
+
 func (m *opsRepoMock) InsertSystemMetrics(ctx context.Context, input *OpsInsertSystemMetricsInput) error {
 	return nil
 }

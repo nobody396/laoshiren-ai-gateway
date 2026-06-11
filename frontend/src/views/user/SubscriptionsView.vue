@@ -86,9 +86,14 @@
                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
                   {{ t('userSubscriptions.daily') }}
                 </span>
-                <span class="text-sm text-gray-500 dark:text-dark-400">
-                  {{ formatSubscriptionUsageAmount(subscription.daily_usage_usd, subscription.group) }} /
-                  {{ formatSubscriptionUsageAmount(subscription.group.daily_limit_usd, subscription.group) }}
+                <span class="whitespace-nowrap text-right text-sm text-gray-500 dark:text-dark-400">
+                  {{
+                    formatSubscriptionUsageDisplay(
+                      subscription.daily_usage_usd,
+                      subscription.group.daily_limit_usd,
+                      subscription.group
+                    )
+                  }}
                 </span>
               </div>
               <div class="relative h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
@@ -126,9 +131,14 @@
                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
                   {{ t('userSubscriptions.weekly') }}
                 </span>
-                <span class="text-sm text-gray-500 dark:text-dark-400">
-                  {{ formatSubscriptionUsageAmount(subscription.weekly_usage_usd, subscription.group) }} /
-                  {{ formatSubscriptionUsageAmount(subscription.group.weekly_limit_usd, subscription.group) }}
+                <span class="whitespace-nowrap text-right text-sm text-gray-500 dark:text-dark-400">
+                  {{
+                    formatSubscriptionUsageDisplay(
+                      subscription.weekly_usage_usd,
+                      subscription.group.weekly_limit_usd,
+                      subscription.group
+                    )
+                  }}
                 </span>
               </div>
               <div class="relative h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
@@ -166,9 +176,14 @@
                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
                   {{ t('userSubscriptions.monthly') }}
                 </span>
-                <span class="text-sm text-gray-500 dark:text-dark-400">
-                  {{ formatSubscriptionUsageAmount(subscription.monthly_usage_usd, subscription.group) }} /
-                  {{ formatSubscriptionUsageAmount(subscription.group.monthly_limit_usd, subscription.group) }}
+                <span class="whitespace-nowrap text-right text-sm text-gray-500 dark:text-dark-400">
+                  {{
+                    formatSubscriptionUsageDisplay(
+                      subscription.monthly_usage_usd,
+                      subscription.group.monthly_limit_usd,
+                      subscription.group
+                    )
+                  }}
                 </span>
               </div>
               <div class="relative h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
@@ -237,14 +252,16 @@ import type { UserSubscription } from '@/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { formatDateOnly } from '@/utils/format'
+import {
+  formatSubscriptionUsageDisplay,
+  subscriptionUsagePercent
+} from '@/utils/subscriptionCredits'
 
 const { t } = useI18n()
 const appStore = useAppStore()
 
 const subscriptions = ref<UserSubscription[]>([])
 const loading = ref(true)
-
-type SubscriptionGroup = NonNullable<UserSubscription['group']>
 
 async function loadSubscriptions() {
   try {
@@ -260,25 +277,16 @@ async function loadSubscriptions() {
 
 function getProgressWidth(used: number | undefined, limit: number | null | undefined): string {
   if (!limit || limit === 0) return '0%'
-  const percentage = Math.min(((used || 0) / limit) * 100, 100)
+  const percentage = subscriptionUsagePercent(used, limit)
   return `${percentage}%`
 }
 
 function getProgressBarClass(used: number | undefined, limit: number | null | undefined): string {
   if (!limit || limit === 0) return 'bg-gray-400'
-  const percentage = ((used || 0) / limit) * 100
+  const percentage = subscriptionUsagePercent(used, limit)
   if (percentage >= 90) return 'bg-red-500'
   if (percentage >= 70) return 'bg-orange-500'
   return 'bg-green-500'
-}
-
-function formatSubscriptionUsageAmount(value: number | null | undefined, group: SubscriptionGroup | undefined): string {
-  const raw = typeof value === 'number' && Number.isFinite(value) ? value : 0
-  const rate = group?.rate_multiplier
-  const displayValue = group?.subscription_type === 'credit' && typeof rate === 'number' && rate > 0
-    ? raw / rate
-    : raw
-  return `$${displayValue.toFixed(2)}`
 }
 
 function formatExpirationDate(expiresAt: string): string {

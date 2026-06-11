@@ -1182,10 +1182,11 @@ func (h *GatewayHandler) usageUnrestricted(c *gin.Context, ctx context.Context, 
 	// 订阅模式
 	if apiKey.Group != nil && apiKey.Group.IsSubscriptionType() {
 		resp := gin.H{
-			"mode":     "unrestricted",
-			"isValid":  true,
-			"planName": apiKey.Group.Name,
-			"unit":     "USD",
+			"mode":              "unrestricted",
+			"isValid":           true,
+			"planName":          apiKey.Group.Name,
+			"subscription_type": apiKey.Group.SubscriptionType,
+			"unit":              "USD",
 		}
 
 		// 订阅信息可能不在 context 中（/v1/usage 路径跳过了中间件的计费检查）
@@ -1200,6 +1201,8 @@ func (h *GatewayHandler) usageUnrestricted(c *gin.Context, ctx context.Context, 
 				"daily_limit_usd":   apiKey.Group.DailyLimitUSD,
 				"weekly_limit_usd":  apiKey.Group.WeeklyLimitUSD,
 				"monthly_limit_usd": apiKey.Group.MonthlyLimitUSD,
+				"subscription_type": apiKey.Group.SubscriptionType,
+				"unit":              "USD",
 				"expires_at":        subscription.ExpiresAt,
 			}
 		}

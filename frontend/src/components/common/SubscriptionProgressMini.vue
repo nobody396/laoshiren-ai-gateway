@@ -93,9 +93,15 @@
                       }"
                     ></div>
                   </div>
-                  <span class="w-24 flex-shrink-0 text-right text-[10px] text-gray-500">
+                  <span
+                    class="w-44 flex-shrink-0 whitespace-nowrap text-right text-[10px] text-gray-500"
+                  >
                     {{
-                      formatUsage(subscription.daily_usage_usd, subscription.group?.daily_limit_usd)
+                      formatSubscriptionUsageDisplay(
+                        subscription.daily_usage_usd,
+                        subscription.group?.daily_limit_usd,
+                        subscription.group
+                      )
                     }}
                   </span>
                 </div>
@@ -121,9 +127,15 @@
                       }"
                     ></div>
                   </div>
-                  <span class="w-24 flex-shrink-0 text-right text-[10px] text-gray-500">
+                  <span
+                    class="w-44 flex-shrink-0 whitespace-nowrap text-right text-[10px] text-gray-500"
+                  >
                     {{
-                      formatUsage(subscription.weekly_usage_usd, subscription.group?.weekly_limit_usd)
+                      formatSubscriptionUsageDisplay(
+                        subscription.weekly_usage_usd,
+                        subscription.group?.weekly_limit_usd,
+                        subscription.group
+                      )
                     }}
                   </span>
                 </div>
@@ -149,11 +161,14 @@
                       }"
                     ></div>
                   </div>
-                  <span class="w-24 flex-shrink-0 text-right text-[10px] text-gray-500">
+                  <span
+                    class="w-44 flex-shrink-0 whitespace-nowrap text-right text-[10px] text-gray-500"
+                  >
                     {{
-                      formatUsage(
+                      formatSubscriptionUsageDisplay(
                         subscription.monthly_usage_usd,
-                        subscription.group?.monthly_limit_usd
+                        subscription.group?.monthly_limit_usd,
+                        subscription.group
                       )
                     }}
                   </span>
@@ -183,6 +198,10 @@ import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import { useSubscriptionStore } from '@/stores'
 import type { UserSubscription } from '@/types'
+import {
+  formatSubscriptionUsageDisplay,
+  subscriptionUsagePercent
+} from '@/utils/subscriptionCredits'
 
 const { t } = useI18n()
 
@@ -207,13 +226,13 @@ const displaySubscriptions = computed(() => {
 function getMaxUsagePercentage(sub: UserSubscription): number {
   const percentages: number[] = []
   if (sub.group?.daily_limit_usd) {
-    percentages.push(((sub.daily_usage_usd || 0) / sub.group.daily_limit_usd) * 100)
+    percentages.push(subscriptionUsagePercent(sub.daily_usage_usd, sub.group.daily_limit_usd))
   }
   if (sub.group?.weekly_limit_usd) {
-    percentages.push(((sub.weekly_usage_usd || 0) / sub.group.weekly_limit_usd) * 100)
+    percentages.push(subscriptionUsagePercent(sub.weekly_usage_usd, sub.group.weekly_limit_usd))
   }
   if (sub.group?.monthly_limit_usd) {
-    percentages.push(((sub.monthly_usage_usd || 0) / sub.group.monthly_limit_usd) * 100)
+    percentages.push(subscriptionUsagePercent(sub.monthly_usage_usd, sub.group.monthly_limit_usd))
   }
   return percentages.length > 0 ? Math.max(...percentages) : 0
 }
@@ -239,7 +258,7 @@ function getProgressDotClass(sub: UserSubscription): string {
 
 function getProgressBarClass(used: number | undefined, limit: number | null | undefined): string {
   if (!limit || limit === 0) return 'bg-gray-400'
-  const percentage = ((used || 0) / limit) * 100
+  const percentage = subscriptionUsagePercent(used, limit)
   if (percentage >= 90) return 'bg-red-500'
   if (percentage >= 70) return 'bg-orange-500'
   return 'bg-green-500'
@@ -247,14 +266,8 @@ function getProgressBarClass(used: number | undefined, limit: number | null | un
 
 function getProgressWidth(used: number | undefined, limit: number | null | undefined): string {
   if (!limit || limit === 0) return '0%'
-  const percentage = Math.min(((used || 0) / limit) * 100, 100)
+  const percentage = subscriptionUsagePercent(used, limit)
   return `${percentage}%`
-}
-
-function formatUsage(used: number | undefined, limit: number | null | undefined): string {
-  const usedValue = (used || 0).toFixed(2)
-  const limitValue = limit?.toFixed(2) || '∞'
-  return `$${usedValue}/$${limitValue}`
 }
 
 function formatDaysRemaining(expiresAt: string): string {

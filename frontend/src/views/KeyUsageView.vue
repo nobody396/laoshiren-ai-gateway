@@ -360,6 +360,12 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
+import type { SubscriptionType } from '@/types'
+import {
+  formatSubscriptionUsageRatio,
+  formatSubscriptionUsageValue,
+  subscriptionUsagePercent
+} from '@/utils/subscriptionCredits'
 
 const { t, locale } = useI18n()
 const appStore = useAppStore()
@@ -557,8 +563,8 @@ const ringItems = computed<RingItem[]>(() => {
       ]
       for (const l of limits) {
         if (l.limit != null && l.limit > 0) {
-          const pct = Math.min(Math.round((l.usage / l.limit) * 100), 100)
-          items.push({ title: l.label, pct, amount: `${usd(l.usage)} / ${usd(l.limit)}`, iconType: 'calendar' })
+          const pct = subscriptionUsagePercent(l.usage, l.limit)
+          items.push({ title: l.label, pct, amount: formatKeySubscriptionUsageRatio(l.usage, l.limit), iconType: 'calendar' })
         }
       }
     }
@@ -649,24 +655,24 @@ const detailRows = computed<DetailRow[]>(() => {
     if (data.subscription) {
       const sub = data.subscription
       if (sub.daily_limit_usd > 0) {
-        const pct = (sub.daily_usage_usd / sub.daily_limit_usd) * 100
+        const pct = subscriptionUsagePercent(sub.daily_usage_usd, sub.daily_limit_usd)
         rows.push({
           iconBg: 'bg-primary-500/10', iconColor: 'text-primary-500', iconSvg: ICON_DOLLAR,
-          label: `${t('keyUsage.usedQuota')} (${locale.value === 'zh' ? '日' : 'D'})`, value: `${usd(sub.daily_usage_usd)} / ${usd(sub.daily_limit_usd)}`, valueClass: getUsageColor(pct),
+          label: `${t('keyUsage.usedQuota')} (${locale.value === 'zh' ? '日' : 'D'})`, value: formatKeySubscriptionUsageRatio(sub.daily_usage_usd, sub.daily_limit_usd), valueClass: getUsageColor(pct),
         })
       }
       if (sub.weekly_limit_usd > 0) {
-        const pct = (sub.weekly_usage_usd / sub.weekly_limit_usd) * 100
+        const pct = subscriptionUsagePercent(sub.weekly_usage_usd, sub.weekly_limit_usd)
         rows.push({
           iconBg: 'bg-indigo-500/10', iconColor: 'text-indigo-500', iconSvg: ICON_DOLLAR,
-          label: `${t('keyUsage.usedQuota')} (${locale.value === 'zh' ? '周' : 'W'})`, value: `${usd(sub.weekly_usage_usd)} / ${usd(sub.weekly_limit_usd)}`, valueClass: getUsageColor(pct),
+          label: `${t('keyUsage.usedQuota')} (${locale.value === 'zh' ? '周' : 'W'})`, value: formatKeySubscriptionUsageRatio(sub.weekly_usage_usd, sub.weekly_limit_usd), valueClass: getUsageColor(pct),
         })
       }
       if (sub.monthly_limit_usd > 0) {
-        const pct = (sub.monthly_usage_usd / sub.monthly_limit_usd) * 100
+        const pct = subscriptionUsagePercent(sub.monthly_usage_usd, sub.monthly_limit_usd)
         rows.push({
           iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-500', iconSvg: ICON_DOLLAR,
-          label: `${t('keyUsage.usedQuota')} (${locale.value === 'zh' ? '月' : 'M'})`, value: `${usd(sub.monthly_usage_usd)} / ${usd(sub.monthly_limit_usd)}`, valueClass: getUsageColor(pct),
+          label: `${t('keyUsage.usedQuota')} (${locale.value === 'zh' ? '月' : 'M'})`, value: formatKeySubscriptionUsageRatio(sub.monthly_usage_usd, sub.monthly_limit_usd), valueClass: getUsageColor(pct),
         })
       }
       if (sub.expires_at) {
@@ -682,12 +688,30 @@ const detailRows = computed<DetailRow[]>(() => {
       : ''
     rows.push({
       iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-500', iconSvg: ICON_SHIELD,
-      label: t('keyUsage.remainingQuota'), value: data.remaining != null ? usd(data.remaining) : '-', valueClass: remainColor,
+      label: t('keyUsage.remainingQuota'), value: data.remaining != null ? formatKeySubscriptionValue(data.remaining) : '-', valueClass: remainColor,
     })
   }
 
   return rows
 })
+
+function getKeySubscriptionGroup(): { subscription_type: SubscriptionType } {
+  const data = resultData.value
+  const type = data?.subscription?.subscription_type ?? data?.subscription_type
+  if (type === 'credit') return { subscription_type: 'credit' }
+  return { subscription_type: 'subscription' }
+}
+
+function formatKeySubscriptionUsageRatio(
+  used: number | null | undefined,
+  limit: number | null | undefined
+): string {
+  return formatSubscriptionUsageRatio(used, limit, getKeySubscriptionGroup())
+}
+
+function formatKeySubscriptionValue(value: number | null | undefined): string {
+  return formatSubscriptionUsageValue(value, getKeySubscriptionGroup())
+}
 
 interface StatCell {
   label: string

@@ -1,3 +1,5 @@
+import { SUBSCRIPTION_CREDIT_DISPLAY_SCALE, formatSubscriptionCredits } from '@/utils/subscriptionCredits'
+
 export type MonthlyCreditCardPlan = {
   id: 'lite' | 'pro' | 'max' | 'ultra'
   name: string
@@ -45,19 +47,12 @@ const weeklyCardDays = 7
 const monthlyCardDays = 30
 const defaultGptCreditsPerUsd = 0.4
 const defaultClaudeCreditsPerUsd = 1.25
-const displayCreditScale = 10
 
 function formatUsd(value: number): string {
   const rounded = Math.round(value * 100) / 100
   if (Number.isInteger(rounded)) return `${rounded} 刀`
   if (Number.isInteger(rounded * 10)) return `${rounded.toFixed(1)} 刀`
   return `${rounded.toFixed(2)} 刀`
-}
-
-function formatCredits(value: number): string {
-  return new Intl.NumberFormat('zh-CN', {
-    maximumFractionDigits: 0
-  }).format(value)
 }
 
 function createMonthlyCreditCardPlan(
@@ -84,9 +79,9 @@ function createMonthlyCreditCardPlan(
 ): MonthlyCreditCardPlan {
   const weeklyCredits = resolveSharedLimit(entitlement, 'weekly_limit_usd') ?? input.dailyCredits * weeklyCardDays
   const monthlyCredits = resolveSharedLimit(entitlement, 'monthly_limit_usd') ?? input.dailyCredits * monthlyCardDays
-  const displayDailyCredits = input.dailyCredits * displayCreditScale
-  const displayWeeklyCredits = weeklyCredits * displayCreditScale
-  const displayMonthlyCredits = monthlyCredits * displayCreditScale
+  const displayDailyCredits = input.dailyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE
+  const displayWeeklyCredits = weeklyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE
+  const displayMonthlyCredits = monthlyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE
   const gptCreditsPerUsd = normalizeCreditsPerUsd(entitlement?.gpt_group?.rate_multiplier, defaultGptCreditsPerUsd)
   const claudeCreditsPerUsd = normalizeCreditsPerUsd(entitlement?.claude_group?.rate_multiplier, defaultClaudeCreditsPerUsd)
   return {
@@ -98,11 +93,11 @@ function createMonthlyCreditCardPlan(
     displayDailyCredits,
     displayWeeklyCredits,
     displayMonthlyCredits,
-    displayDailyCreditsText: formatCredits(displayDailyCredits),
-    displayWeeklyCreditsText: formatCredits(displayWeeklyCredits),
-    displayMonthlyCreditsText: formatCredits(displayMonthlyCredits),
-    gptDisplayRate: `${formatCredits(gptCreditsPerUsd * displayCreditScale)} AI credits / 刀`,
-    claudeDisplayRate: `${formatCredits(claudeCreditsPerUsd * displayCreditScale)} AI credits / 刀`,
+    displayDailyCreditsText: formatSubscriptionCredits(input.dailyCredits),
+    displayWeeklyCreditsText: formatSubscriptionCredits(weeklyCredits),
+    displayMonthlyCreditsText: formatSubscriptionCredits(monthlyCredits),
+    gptDisplayRate: `${formatSubscriptionCredits(gptCreditsPerUsd)} AI credits / 刀`,
+    claudeDisplayRate: `${formatSubscriptionCredits(claudeCreditsPerUsd)} AI credits / 刀`,
     gptWeeklyUsage: `约 ${formatUsd(weeklyCredits / gptCreditsPerUsd)} / 周`,
     claudeWeeklyUsage: `约 ${formatUsd(weeklyCredits / claudeCreditsPerUsd)} / 周`,
     gptMonthlyUsage: `约 ${formatUsd(monthlyCredits / gptCreditsPerUsd)} / 月`,

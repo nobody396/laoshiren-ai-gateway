@@ -10,6 +10,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSafeClientUpstreamError(t *testing.T) {
@@ -74,13 +75,16 @@ func TestClientErrorEnvelopesIncludeRequestID(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPost, "/", nil)
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkey.RequestID, "req-visible-1"))
 
-	openAIError := OpenAIClientErrorEnvelope(c, "api_error", ClientMessageServiceUnavailable)["error"].(gin.H)
+	openAIError, ok := OpenAIClientErrorEnvelope(c, "api_error", ClientMessageServiceUnavailable)["error"].(gin.H)
+	require.True(t, ok)
 	assert.Equal(t, "req-visible-1", openAIError["request_id"])
 
-	genericError := ClientErrorEnvelope(c, "api_error", ClientMessageServiceUnavailable)["error"].(gin.H)
+	genericError, ok := ClientErrorEnvelope(c, "api_error", ClientMessageServiceUnavailable)["error"].(gin.H)
+	require.True(t, ok)
 	assert.Equal(t, "req-visible-1", genericError["request_id"])
 
-	googleError := GoogleClientErrorEnvelope(c, http.StatusBadGateway, ClientMessageServiceUnavailable)["error"].(gin.H)
+	googleError, ok := GoogleClientErrorEnvelope(c, http.StatusBadGateway, ClientMessageServiceUnavailable)["error"].(gin.H)
+	require.True(t, ok)
 	assert.Equal(t, "req-visible-1", googleError["request_id"])
 }
 
@@ -92,8 +96,10 @@ func TestOpenAIResponsesFailedEnvelopeIncludesRequestID(t *testing.T) {
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkey.RequestID, "req-visible-2"))
 
 	payload := OpenAIResponsesFailedEnvelope(c, "", "gpt-test", "server_error", ClientMessageServiceUnavailable)
-	response := payload["response"].(gin.H)
-	errObj := response["error"].(gin.H)
+	response, ok := payload["response"].(gin.H)
+	require.True(t, ok)
+	errObj, ok := response["error"].(gin.H)
+	require.True(t, ok)
 
 	assert.Equal(t, "response.failed", payload["type"])
 	assert.Equal(t, "resp_reqvisible2", response["id"])
@@ -107,7 +113,8 @@ func TestOpenAIFastPolicyBlockedWSEventIncludesRequestID(t *testing.T) {
 
 	var parsed map[string]any
 	assert.NoError(t, json.Unmarshal(payload, &parsed))
-	errObj := parsed["error"].(map[string]any)
+	errObj, ok := parsed["error"].(map[string]any)
+	require.True(t, ok)
 	assert.Equal(t, "error", parsed["type"])
 	assert.Equal(t, "policy_violation", errObj["code"])
 	assert.Equal(t, "req-ws-policy", errObj["request_id"])

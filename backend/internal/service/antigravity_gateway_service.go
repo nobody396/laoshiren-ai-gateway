@@ -73,12 +73,6 @@ const (
 	antigravityModelCapacityCooldown = 10 * time.Second
 )
 
-// antigravityPassthroughErrorMessages 透传给客户端的错误消息白名单（小写）
-// 匹配时使用 strings.Contains，无需完全匹配
-var antigravityPassthroughErrorMessages = []string{
-	"prompt is too long",
-}
-
 // MODEL_CAPACITY_EXHAUSTED 全局去重：避免多个并发请求同时对同一模型进行容量耗尽重试
 var (
 	modelCapacityExhaustedMu    sync.RWMutex
@@ -1800,25 +1794,6 @@ func isPromptTooLongError(respBody []byte) bool {
 		strings.Contains(msg, "request is too long") ||
 		strings.Contains(msg, "context length exceeded") ||
 		strings.Contains(msg, "max_tokens")
-}
-
-// isPassthroughErrorMessage 检查错误消息是否在透传白名单中
-func isPassthroughErrorMessage(msg string) bool {
-	lower := strings.ToLower(msg)
-	for _, pattern := range antigravityPassthroughErrorMessages {
-		if strings.Contains(lower, pattern) {
-			return true
-		}
-	}
-	return false
-}
-
-// getPassthroughOrDefault 若消息在白名单内则返回原始消息，否则返回默认消息
-func getPassthroughOrDefault(upstreamMsg, defaultMsg string) string {
-	if isPassthroughErrorMessage(upstreamMsg) {
-		return upstreamMsg
-	}
-	return defaultMsg
 }
 
 func extractAntigravityErrorMessage(body []byte) string {

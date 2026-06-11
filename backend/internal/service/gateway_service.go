@@ -6550,10 +6550,9 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 		if errorEventSent {
 			return
 		}
+		_ = reason
+		_ = message
 		errorEventSent = true
-		if strings.TrimSpace(message) == "" {
-			message = reason
-		}
 		body, err := json.Marshal(ClientErrorEnvelope(c, "api_error", ClientMessageServiceUnavailable))
 		if err != nil {
 			body = []byte(`{"type":"error","error":{"type":"api_error","message":"The service is temporarily unavailable. Please try again later."}}`)

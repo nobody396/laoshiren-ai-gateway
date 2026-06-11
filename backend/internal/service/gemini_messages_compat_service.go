@@ -1389,7 +1389,6 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 		if s.rateLimitService != nil {
 			switch s.rateLimitService.CheckErrorPolicy(ctx, account, resp.StatusCode, respBody) {
 			case ErrorPolicySkipped:
-				respBody = unwrapIfNeeded(isOAuth, respBody)
 				MarkResponseCommitted(c)
 				safeClientErr := SafeClientUpstreamError(resp.StatusCode)
 				c.JSON(safeClientErr.StatusCode, GoogleClientErrorEnvelope(c, safeClientErr.StatusCode, safeClientErr.Message))

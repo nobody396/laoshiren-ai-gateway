@@ -3000,10 +3000,6 @@ func (s *OpenAIGatewayService) handleErrorResponsePassthrough(
 	})
 
 	writeOpenAIPassthroughResponseHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
-	contentType := resp.Header.Get("Content-Type")
-	if contentType == "" {
-		contentType = "application/json"
-	}
 	MarkResponseCommitted(c)
 	safeErr := SafeClientUpstreamError(resp.StatusCode)
 	c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
@@ -3241,7 +3237,6 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 				responseID := strings.TrimSpace(gjson.GetBytes(dataBytes, "response.id").String())
 				model := strings.TrimSpace(gjson.GetBytes(dataBytes, "response.model").String())
 				safePayload, _ := json.Marshal(OpenAIResponsesFailedEnvelope(c, responseID, model, "server_error", safeClientErr.Message))
-				dataBytes = safePayload
 				line = "data: " + string(safePayload)
 			}
 			startsClientOutput := forceFlushFailedEvent || openAIStreamDataStartsClientOutput(trimmedData, eventType)

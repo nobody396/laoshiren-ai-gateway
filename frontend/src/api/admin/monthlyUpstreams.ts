@@ -7,12 +7,23 @@ export interface MonthlyUpstreamProbePoint {
   account_name: string
   platform: string
   model: string
+  probe_path: 'gateway' | 'direct_upstream'
   status: MonthlyUpstreamProbeStatus
   http_status: number | null
   latency_ms: number
   error_code: string
   error_message: string
   checked_at: string
+}
+
+export interface MonthlyUpstreamProbeDiagnostic {
+  probe_path: 'gateway' | 'direct_upstream'
+  status: MonthlyUpstreamProbeStatus
+  http_status: number | null
+  latency_ms: number
+  error_code: string
+  error_message: string
+  checked_at: string | null
 }
 
 export interface MonthlyUpstreamProbeCostEstimate {
@@ -46,6 +57,7 @@ export interface MonthlyUpstreamProbeAccount {
   success_count: number
   total_count: number
   cost_estimate?: MonthlyUpstreamProbeCostEstimate
+  latest_direct_upstream?: MonthlyUpstreamProbeDiagnostic
   points: MonthlyUpstreamProbePoint[]
 }
 

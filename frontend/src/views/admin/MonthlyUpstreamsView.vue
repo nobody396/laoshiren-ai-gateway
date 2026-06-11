@@ -71,6 +71,7 @@
                     </span>
                   </div>
                   <div class="mt-3 flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-dark-300">
+                    <span class="text-xs font-medium uppercase tracking-[0.14em] text-gray-400">网关主探针</span>
                     <span class="inline-flex items-center gap-2">
                       <span class="h-2 w-2 rounded-full" :class="statusDotClass(account.latest_status)" />
                       {{ statusLabel(account.latest_status) }}
@@ -109,6 +110,19 @@
                 </div>
                 <p v-if="account.latest_error" class="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">
                   {{ account.latest_error_code || 'probe_error' }}：{{ account.latest_error }}
+                </p>
+                <p
+                  v-if="account.latest_direct_upstream"
+                  class="mt-3 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600 dark:bg-dark-800 dark:text-dark-300"
+                >
+                  直连上游诊断：
+                  {{ statusLabel(account.latest_direct_upstream.status) }}
+                  · HTTP {{ account.latest_direct_upstream.http_status ?? '-' }}
+                  · {{ account.latest_direct_upstream.latency_ms || 0 }} ms
+                  · {{ formatTime(account.latest_direct_upstream.checked_at) }}
+                  <span v-if="directDiagnosticError(account)" class="text-red-600 dark:text-red-300">
+                    · {{ directDiagnosticError(account) }}
+                  </span>
                 </p>
               </div>
 
@@ -385,6 +399,12 @@ function formatCost(value: number): string {
 function formatMultiplier(value: number): string {
   if (!Number.isFinite(value)) return 'x1'
   return `x${value.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')}`
+}
+
+function directDiagnosticError(account: MonthlyUpstreamProbeAccount): string {
+  const diagnostic = account.latest_direct_upstream
+  if (!diagnostic) return ''
+  return diagnostic.error_code || diagnostic.error_message || ''
 }
 
 function slotTitle(slot: TimelineSlot): string {

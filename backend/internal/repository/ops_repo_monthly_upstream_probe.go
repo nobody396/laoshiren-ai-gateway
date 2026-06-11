@@ -16,15 +16,20 @@ func (r *opsRepository) InsertMonthlyUpstreamProbeResult(ctx context.Context, in
 	if input == nil {
 		return fmt.Errorf("nil input")
 	}
+	probePath := input.ProbePath
+	if probePath == "" {
+		probePath = service.MonthlyUpstreamProbePathDirectUpstream
+	}
 	_, err := r.db.ExecContext(ctx, `
 INSERT INTO monthly_upstream_probe_results (
-  account_id, account_name, platform, model, status, http_status,
+  account_id, account_name, platform, model, probe_path, status, http_status,
   latency_ms, error_code, error_message, checked_at
-) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
 		opsNullInt64(nonZeroInt64Ptr(input.AccountID)),
 		input.AccountName,
 		input.Platform,
 		input.Model,
+		probePath,
 		input.Status,
 		opsNullInt(input.HTTPStatus),
 		input.LatencyMs,
@@ -45,6 +50,7 @@ SELECT
   account_name,
   platform,
   model,
+  probe_path,
   status,
   http_status,
   latency_ms,
@@ -68,6 +74,7 @@ ORDER BY checked_at ASC, account_name ASC`, since)
 			&point.AccountName,
 			&point.Platform,
 			&point.Model,
+			&point.ProbePath,
 			&point.Status,
 			&httpStatus,
 			&point.LatencyMs,

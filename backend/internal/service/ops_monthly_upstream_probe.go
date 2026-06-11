@@ -8,12 +8,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
+	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -30,6 +32,9 @@ const (
 	monthlyClaudeHaiku45InputCostPerToken    = 1e-6
 	monthlyClaudeHaiku45OutputCostPerToken   = 5e-6
 	monthlyUpstreamProbeCostCurrency         = "USD"
+
+	MonthlyUpstreamProbePathGateway        = "gateway"
+	MonthlyUpstreamProbePathDirectUpstream = "direct_upstream"
 )
 
 var monthlyUpstreamProbeTargets = []struct {
@@ -62,12 +67,23 @@ type MonthlyUpstreamProbePoint struct {
 	AccountName  string    `json:"account_name"`
 	Platform     string    `json:"platform"`
 	Model        string    `json:"model"`
+	ProbePath    string    `json:"probe_path"`
 	Status       string    `json:"status"`
 	HTTPStatus   *int      `json:"http_status"`
 	LatencyMs    int64     `json:"latency_ms"`
 	ErrorCode    string    `json:"error_code"`
 	ErrorMessage string    `json:"error_message"`
 	CheckedAt    time.Time `json:"checked_at"`
+}
+
+type MonthlyUpstreamProbeDiagnostic struct {
+	ProbePath    string     `json:"probe_path"`
+	Status       string     `json:"status"`
+	HTTPStatus   *int       `json:"http_status"`
+	LatencyMs    int64      `json:"latency_ms"`
+	ErrorCode    string     `json:"error_code"`
+	ErrorMessage string     `json:"error_message"`
+	CheckedAt    *time.Time `json:"checked_at"`
 }
 
 type MonthlyUpstreamProbeAccount struct {
@@ -85,6 +101,7 @@ type MonthlyUpstreamProbeAccount struct {
 	SuccessCount     int                               `json:"success_count"`
 	TotalCount       int                               `json:"total_count"`
 	CostEstimate     *MonthlyUpstreamProbeCostEstimate `json:"cost_estimate,omitempty"`
+	DirectUpstream   *MonthlyUpstreamProbeDiagnostic   `json:"latest_direct_upstream,omitempty"`
 	Points           []MonthlyUpstreamProbePoint       `json:"points"`
 }
 
@@ -253,6 +270,7 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 
 	byAccount := make(map[string]*MonthlyUpstreamProbeAccount)
 	for _, point := range points {
+		point.ProbePath = normalizeMonthlyUpstreamProbePath(point.ProbePath)
 		if target, ok := monthlyUpstreamProbeTarget(point.AccountName); ok {
 			point.Platform = target.Platform
 			point.Model = target.Model
@@ -277,6 +295,21 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 				Points: make([]MonthlyUpstreamProbePoint, 0, windowMinutes),
 			}
 			byAccount[key] = item
+		}
+		if point.ProbePath == MonthlyUpstreamProbePathDirectUpstream {
+			if item.DirectUpstream == nil || point.CheckedAt.After(diagnosticCheckedAt(item.DirectUpstream)) {
+				checkedAt := point.CheckedAt
+				item.DirectUpstream = &MonthlyUpstreamProbeDiagnostic{
+					ProbePath:    point.ProbePath,
+					Status:       point.Status,
+					HTTPStatus:   point.HTTPStatus,
+					LatencyMs:    point.LatencyMs,
+					ErrorCode:    point.ErrorCode,
+					ErrorMessage: point.ErrorMessage,
+					CheckedAt:    &checkedAt,
+				}
+			}
+			continue
 		}
 		item.Points = append(item.Points, point)
 		item.TotalCount++
@@ -305,6 +338,9 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 
 	accounts := make([]MonthlyUpstreamProbeAccount, 0, len(byAccount))
 	for _, item := range byAccount {
+		if item.TotalCount == 0 && item.DirectUpstream != nil {
+			continue
+		}
 		sort.Slice(item.Points, func(i, j int) bool {
 			return item.Points[i].CheckedAt.Before(item.Points[j].CheckedAt)
 		})
@@ -498,10 +534,18 @@ func (s *OpsService) RunMonthlyUpstreamProbeOnce(ctx context.Context) error {
 				CheckedAt:    time.Now(),
 			}
 		} else {
-			point = probeMonthlyUpstreamAccount(ctx, account, target.Model)
+			point = s.probeMonthlyGatewayAccount(ctx, account, target.Model)
 		}
+		point.ProbePath = MonthlyUpstreamProbePathGateway
 		if err := s.opsRepo.InsertMonthlyUpstreamProbeResult(ctx, &point); err != nil {
 			errs = append(errs, err)
+		}
+		if account != nil && point.Status != "not_schedulable" && !isMonthlyUpstreamProbeHealthy(point.Status) {
+			diagnostic := probeMonthlyDirectUpstreamAccount(ctx, account, target.Model)
+			diagnostic.ProbePath = MonthlyUpstreamProbePathDirectUpstream
+			if err := s.opsRepo.InsertMonthlyUpstreamProbeResult(ctx, &diagnostic); err != nil {
+				errs = append(errs, err)
+			}
 		}
 	}
 	return errors.Join(errs...)
@@ -524,6 +568,24 @@ func monthlyUpstreamProbeTarget(accountName string) (struct {
 	}{}, false
 }
 
+func normalizeMonthlyUpstreamProbePath(path string) string {
+	switch strings.ToLower(strings.TrimSpace(path)) {
+	case MonthlyUpstreamProbePathGateway:
+		return MonthlyUpstreamProbePathGateway
+	case MonthlyUpstreamProbePathDirectUpstream:
+		return MonthlyUpstreamProbePathDirectUpstream
+	default:
+		return MonthlyUpstreamProbePathDirectUpstream
+	}
+}
+
+func diagnosticCheckedAt(diagnostic *MonthlyUpstreamProbeDiagnostic) time.Time {
+	if diagnostic == nil || diagnostic.CheckedAt == nil {
+		return time.Time{}
+	}
+	return *diagnostic.CheckedAt
+}
+
 func (s *OpsService) loadMonthlyUpstreamProbeAccounts(ctx context.Context) (map[string]*Account, error) {
 	accounts, _, err := s.accountRepo.ListWithFilters(ctx, pagination.PaginationParams{Page: 1, PageSize: 100}, "", "", "", "pomoai-monthly", 0)
 	if err != nil {
@@ -542,7 +604,48 @@ func (s *OpsService) loadMonthlyUpstreamProbeAccounts(ctx context.Context) (map[
 	return out, nil
 }
 
-func probeMonthlyUpstreamAccount(ctx context.Context, account *Account, model string) MonthlyUpstreamProbePoint {
+func (s *OpsService) probeMonthlyGatewayAccount(ctx context.Context, account *Account, model string) MonthlyUpstreamProbePoint {
+	if account == nil {
+		return MonthlyUpstreamProbePoint{Status: "failed", ErrorCode: "nil_account", CheckedAt: time.Now()}
+	}
+	if !account.IsSchedulable() {
+		return MonthlyUpstreamProbePoint{
+			AccountID:    account.ID,
+			AccountName:  account.Name,
+			Platform:     account.Platform,
+			Model:        model,
+			Status:       "not_schedulable",
+			ErrorMessage: fmt.Sprintf("account status=%s schedulable=%t", account.Status, account.Schedulable),
+			CheckedAt:    time.Now(),
+		}
+	}
+
+	switch account.Platform {
+	case PlatformOpenAI:
+		if s == nil || s.openAIGatewayService == nil {
+			return monthlyProbeLocalFailure(account, model, "gateway_service_unavailable", "openai gateway service is not available")
+		}
+		return s.probeMonthlyOpenAIThroughGateway(ctx, account, model)
+	case PlatformAnthropic:
+		if s == nil || s.gatewayService == nil {
+			return monthlyProbeLocalFailure(account, model, "gateway_service_unavailable", "anthropic gateway service is not available")
+		}
+		return s.probeMonthlyAnthropicThroughGateway(ctx, account, model)
+	default:
+		return MonthlyUpstreamProbePoint{
+			AccountID:    account.ID,
+			AccountName:  account.Name,
+			Platform:     account.Platform,
+			Model:        model,
+			Status:       "failed",
+			ErrorCode:    "unsupported_platform",
+			ErrorMessage: "unsupported platform for monthly upstream probe",
+			CheckedAt:    time.Now(),
+		}
+	}
+}
+
+func probeMonthlyDirectUpstreamAccount(ctx context.Context, account *Account, model string) MonthlyUpstreamProbePoint {
 	if account == nil {
 		return MonthlyUpstreamProbePoint{Status: "failed", ErrorCode: "nil_account", CheckedAt: time.Now()}
 	}
@@ -575,6 +678,145 @@ func probeMonthlyUpstreamAccount(ctx context.Context, account *Account, model st
 			CheckedAt:    time.Now(),
 		}
 	}
+}
+
+func (s *OpsService) probeMonthlyOpenAIThroughGateway(ctx context.Context, account *Account, model string) MonthlyUpstreamProbePoint {
+	body, _ := json.Marshal(createOpenAICompactProbePayload(model))
+	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeout)
+	defer cancel()
+	c, recorder := newMonthlyProbeGinContext(probeCtx, "/v1/responses", body)
+	SetOpenAIClientTransport(c, OpenAIClientTransportHTTP)
+	c.Request.Header.Set("OpenAI-Beta", "responses=experimental")
+	c.Request.Header.Set("Originator", "codex_cli_rs")
+	c.Request.Header.Set("User-Agent", "codex_cli_rs/0.0.0 monthly-gateway-probe")
+	c.Request.Header.Set("Version", "0.0.0")
+	c.Request.Header.Set("Session_ID", fmt.Sprintf("monthly_gateway_probe_%d", account.ID))
+	c.Request.Header.Set("Conversation_ID", fmt.Sprintf("monthly_gateway_probe_%d", account.ID))
+
+	started := time.Now()
+	result, err := s.openAIGatewayService.Forward(c.Request.Context(), c, account, body)
+	return monthlyGatewayProbePoint(account, model, recorder, started, err, func() time.Duration {
+		if result != nil {
+			return result.Duration
+		}
+		return 0
+	})
+}
+
+func (s *OpsService) probeMonthlyAnthropicThroughGateway(ctx context.Context, account *Account, model string) MonthlyUpstreamProbePoint {
+	body, _ := json.Marshal(map[string]any{
+		"model":      model,
+		"max_tokens": 1,
+		"messages":   []map[string]string{{"role": "user", "content": "OK"}},
+		"metadata":   map[string]string{"user_id": fmt.Sprintf("monthly-gateway-probe-%d", account.ID)},
+		"stream":     false,
+	})
+	parsed, err := ParseGatewayRequest(body, PlatformAnthropic)
+	if err != nil {
+		return monthlyProbeLocalFailure(account, model, "build_gateway_request_failed", err.Error())
+	}
+
+	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeout)
+	defer cancel()
+	c, recorder := newMonthlyProbeGinContext(probeCtx, "/v1/messages", body)
+	c.Request.Header.Set("User-Agent", "claude-cli/2.1.84 (external, cli) monthly-gateway-probe")
+	c.Request.Header.Set("Anthropic-Version", "2023-06-01")
+	c.Request.Header.Set("Anthropic-Beta", "oauth-2025-04-20,interleaved-thinking-2025-05-14")
+	c.Request.Header.Set("Anthropic-Dangerous-Direct-Browser-Access", "true")
+	c.Request.Header.Set("X-App", "cli")
+
+	started := time.Now()
+	result, err := s.gatewayService.Forward(c.Request.Context(), c, account, parsed)
+	return monthlyGatewayProbePoint(account, model, recorder, started, err, func() time.Duration {
+		if result != nil {
+			return result.Duration
+		}
+		return 0
+	})
+}
+
+func newMonthlyProbeGinContext(ctx context.Context, path string, body []byte) (*gin.Context, *httptest.ResponseRecorder) {
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(body)).WithContext(ctx)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	c.Request = req
+	return c, recorder
+}
+
+func monthlyGatewayProbePoint(account *Account, model string, recorder *httptest.ResponseRecorder, started time.Time, forwardErr error, resultDuration func() time.Duration) MonthlyUpstreamProbePoint {
+	latency := time.Since(started)
+	if resultDuration != nil {
+		if duration := resultDuration(); duration > 0 {
+			latency = duration
+		}
+	}
+	var httpStatus *int
+	statusCode := 0
+	if recorder != nil {
+		statusCode = recorder.Code
+		if statusCode == 0 && forwardErr == nil {
+			statusCode = http.StatusOK
+		}
+		if statusCode > 0 {
+			httpStatus = &statusCode
+		}
+	}
+
+	point := MonthlyUpstreamProbePoint{
+		AccountID:   account.ID,
+		AccountName: account.Name,
+		Platform:    account.Platform,
+		Model:       model,
+		ProbePath:   MonthlyUpstreamProbePathGateway,
+		HTTPStatus:  httpStatus,
+		LatencyMs:   latency.Milliseconds(),
+		CheckedAt:   time.Now(),
+	}
+	body := []byte(nil)
+	if recorder != nil && recorder.Body != nil {
+		body = recorder.Body.Bytes()
+	}
+	point.ErrorCode, point.ErrorMessage = extractMonthlyProbeError(body)
+	shouldCaptureResponseError := forwardErr != nil || statusCode == 0 || statusCode < 200 || statusCode >= 300
+	if point.ErrorMessage == "" && shouldCaptureResponseError {
+		point.ErrorMessage = monthlyGatewayProbeContextError(recorder)
+	}
+	if point.ErrorMessage == "" && forwardErr != nil {
+		point.ErrorMessage = forwardErr.Error()
+	}
+	switch {
+	case forwardErr == nil && statusCode >= 200 && statusCode < 300:
+		if point.LatencyMs > 5000 {
+			point.Status = "slow"
+		} else {
+			point.Status = "ok"
+		}
+	case statusCode == http.StatusTooManyRequests:
+		point.Status = "rate_limited"
+	default:
+		point.Status = "failed"
+		if point.ErrorCode == "" {
+			point.ErrorCode = "gateway_probe_failed"
+		}
+	}
+	point.ErrorMessage = sanitizeMonthlyProbeError(point.ErrorMessage, account)
+	return point
+}
+
+func monthlyGatewayProbeContextError(recorder *httptest.ResponseRecorder) string {
+	if recorder == nil {
+		return ""
+	}
+	if recorder.Body == nil {
+		return ""
+	}
+	raw := strings.TrimSpace(recorder.Body.String())
+	if raw == "" {
+		return ""
+	}
+	return raw
 }
 
 func probeMonthlyOpenAIUpstream(ctx context.Context, account *Account, model string) MonthlyUpstreamProbePoint {

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
 	coderws "github.com/coder/websocket"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -608,6 +609,7 @@ func TestOpenAIGatewayService_Forward_WSv1_Unsupported(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(rec)
 	c.Request = httptest.NewRequest(http.MethodPost, "/openai/v1/responses", nil)
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkey.RequestID, "req-wsv1-unsupported"))
 	c.Request.Header.Set("User-Agent", "codex_cli_rs/0.98.0")
 
 	cfg := &config.Config{}
@@ -658,7 +660,9 @@ func TestOpenAIGatewayService_Forward_WSv1_Unsupported(t *testing.T) {
 	require.Nil(t, result)
 	require.Contains(t, err.Error(), "ws v1")
 	require.Equal(t, http.StatusBadRequest, rec.Code)
-	require.Contains(t, rec.Body.String(), "WSv1")
+	require.Contains(t, rec.Body.String(), ClientMessageRequestFailed)
+	require.Contains(t, rec.Body.String(), `"request_id":"req-wsv1-unsupported"`)
+	require.NotContains(t, rec.Body.String(), "WSv1")
 	require.Nil(t, upstream.lastReq, "WSv1 不支持时不应触发 HTTP 上游请求")
 }
 

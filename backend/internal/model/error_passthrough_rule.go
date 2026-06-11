@@ -16,7 +16,7 @@ type ErrorPassthroughRule struct {
 	Platforms       []string  `json:"platforms"`        // 适用平台列表
 	PassthroughCode bool      `json:"passthrough_code"` // 是否透传原始状态码
 	ResponseCode    *int      `json:"response_code"`    // 自定义状态码（passthrough_code=false 时使用）
-	PassthroughBody bool      `json:"passthrough_body"` // 是否透传原始错误信息
+	PassthroughBody bool      `json:"passthrough_body"` // 兼容旧配置；运行时不再向客户端透传上游错误信息
 	CustomMessage   *string   `json:"custom_message"`   // 自定义错误信息（passthrough_body=false 时使用）
 	SkipMonitoring  bool      `json:"skip_monitoring"`  // 是否跳过运维监控记录
 	Description     *string   `json:"description"`      // 规则描述
@@ -58,9 +58,6 @@ func (r *ErrorPassthroughRule) Validate() error {
 	}
 	if !r.PassthroughCode && (r.ResponseCode == nil || *r.ResponseCode <= 0) {
 		return &ValidationError{Field: "response_code", Message: "response_code is required when passthrough_code is false"}
-	}
-	if !r.PassthroughBody && (r.CustomMessage == nil || *r.CustomMessage == "") {
-		return &ValidationError{Field: "custom_message", Message: "custom_message is required when passthrough_body is false"}
 	}
 	return nil
 }

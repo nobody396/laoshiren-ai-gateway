@@ -169,7 +169,7 @@ func (s *OpenAIGatewayService) proxyResponsesWebSocketV2Passthrough(
 		return fmt.Errorf("apply openai fast policy on first ws frame: %w", policyErr)
 	}
 	if blocked != nil {
-		eventBytes := buildOpenAIFastPolicyBlockedWSEvent(blocked)
+		eventBytes := buildOpenAIFastPolicyBlockedWSEvent(blocked, ClientRequestID(c))
 		if eventBytes != nil {
 			writeCtx, cancelWrite := context.WithTimeout(ctx, s.openAIWSWriteTimeout())
 			_ = clientConn.Write(writeCtx, coderws.MessageText, eventBytes)
@@ -265,7 +265,7 @@ func (s *OpenAIGatewayService) proxyResponsesWebSocketV2Passthrough(
 			return out, blocked, policyErr
 		},
 		onBlock: func(blocked *OpenAIFastBlockedError) {
-			eventBytes := buildOpenAIFastPolicyBlockedWSEvent(blocked)
+			eventBytes := buildOpenAIFastPolicyBlockedWSEvent(blocked, ClientRequestID(c))
 			if eventBytes == nil {
 				return
 			}

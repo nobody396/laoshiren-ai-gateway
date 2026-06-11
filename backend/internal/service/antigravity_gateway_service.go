@@ -1374,11 +1374,13 @@ func (s *AntigravityGatewayService) Forward(ctx context.Context, c *gin.Context,
 
 	// 获取 access_token
 	if s.tokenProvider == nil {
-		return nil, s.writeClaudeError(c, http.StatusBadGateway, "api_error", "Antigravity token provider not configured")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		return nil, s.writeClaudeError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 	}
 	accessToken, err := s.tokenProvider.GetAccessToken(ctx, account)
 	if err != nil {
-		return nil, s.writeClaudeError(c, http.StatusBadGateway, "authentication_error", "Failed to get upstream access token")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		return nil, s.writeClaudeError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 	}
 
 	// 获取 project_id（部分账户类型可能没有）
@@ -1436,7 +1438,8 @@ func (s *AntigravityGatewayService) Forward(ctx context.Context, c *gin.Context,
 		if c.Request.Context().Err() != nil {
 			return nil, s.writeClaudeError(c, http.StatusBadGateway, "client_disconnected", "Client disconnected before upstream response")
 		}
-		return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Upstream request failed after retries")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		return nil, s.writeClaudeError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 	}
 	resp := result.resp
 	defer func() { _ = resp.Body.Close() }()
@@ -2119,11 +2122,13 @@ func (s *AntigravityGatewayService) ForwardGemini(ctx context.Context, c *gin.Co
 
 	// 获取 access_token
 	if s.tokenProvider == nil {
-		return nil, s.writeGoogleError(c, http.StatusBadGateway, "Antigravity token provider not configured")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		return nil, s.writeGoogleError(c, safeClientErr.StatusCode, safeClientErr.Message)
 	}
 	accessToken, err := s.tokenProvider.GetAccessToken(ctx, account)
 	if err != nil {
-		return nil, s.writeGoogleError(c, http.StatusBadGateway, "Failed to get upstream access token")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		return nil, s.writeGoogleError(c, safeClientErr.StatusCode, safeClientErr.Message)
 	}
 
 	// 获取 project_id（部分账户类型可能没有）
@@ -2190,7 +2195,8 @@ func (s *AntigravityGatewayService) ForwardGemini(ctx context.Context, c *gin.Co
 		if c.Request.Context().Err() != nil {
 			return nil, s.writeGoogleError(c, http.StatusBadGateway, "Client disconnected before upstream response")
 		}
-		return nil, s.writeGoogleError(c, http.StatusBadGateway, "Upstream request failed after retries")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		return nil, s.writeGoogleError(c, safeClientErr.StatusCode, safeClientErr.Message)
 	}
 	resp := result.resp
 	defer func() {
@@ -2202,7 +2208,6 @@ func (s *AntigravityGatewayService) ForwardGemini(ctx context.Context, c *gin.Co
 	// 处理错误响应
 	if resp.StatusCode >= 400 {
 		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
-		contentType := resp.Header.Get("Content-Type")
 		// 尽早关闭原始响应体，释放连接；后续逻辑仍可能需要读取 body，因此用内存副本重新包装。
 		_ = resp.Body.Close()
 		resp.Body = io.NopCloser(bytes.NewReader(respBody))
@@ -2304,7 +2309,6 @@ func (s *AntigravityGatewayService) ForwardGemini(ctx context.Context, c *gin.Co
 							Header:     retryResp.Header.Clone(),
 							Body:       io.NopCloser(bytes.NewReader(retryRespBody)),
 						}
-						contentType = resp.Header.Get("Content-Type")
 					}
 				} else {
 					if switchErr, ok := IsAntigravityAccountSwitchError(retryErr); ok {
@@ -2388,9 +2392,6 @@ func (s *AntigravityGatewayService) ForwardGemini(ctx context.Context, c *gin.Co
 			})
 			return nil, &UpstreamFailoverError{StatusCode: resp.StatusCode, ResponseBody: unwrappedForOps}
 		}
-		if contentType == "" {
-			contentType = "application/json"
-		}
 		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
 			Platform:           account.Platform,
 			AccountID:          account.ID,
@@ -2403,7 +2404,8 @@ func (s *AntigravityGatewayService) ForwardGemini(ctx context.Context, c *gin.Co
 		})
 		logger.LegacyPrintf("service.antigravity_gateway", "[antigravity-Forward] upstream error status=%d body=%s", resp.StatusCode, truncateForLog(unwrappedForOps, 500))
 		MarkResponseCommitted(c)
-		c.Data(resp.StatusCode, contentType, unwrappedForOps)
+		safeClientErr := SafeClientUpstreamError(resp.StatusCode)
+		c.JSON(safeClientErr.StatusCode, GoogleClientErrorEnvelope(c, safeClientErr.StatusCode, safeClientErr.Message))
 		return nil, fmt.Errorf("antigravity upstream error: %d", resp.StatusCode)
 	}
 
@@ -3109,7 +3111,8 @@ func (s *AntigravityGatewayService) handleGeminiStreamingResponse(c *gin.Context
 			return
 		}
 		errorEventSent = true
-		_, _ = fmt.Fprintf(c.Writer, "event: error\ndata: {\"error\":\"%s\"}\n\n", reason)
+		payload, _ := json.Marshal(ClientErrorEnvelope(c, "api_error", ClientMessageServiceUnavailable))
+		_, _ = fmt.Fprintf(c.Writer, "event: error\ndata: %s\n\n", payload)
 		flusher.Flush()
 	}
 
@@ -3547,10 +3550,7 @@ func mergeTextPartsToResponse(response map[string]any, textParts []string) map[s
 
 func (s *AntigravityGatewayService) writeClaudeError(c *gin.Context, status int, errType, message string) error {
 	MarkResponseCommitted(c)
-	c.JSON(status, gin.H{
-		"type":  "error",
-		"error": gin.H{"type": errType, "message": message},
-	})
+	c.JSON(status, ClientErrorEnvelope(c, errType, message))
 	return fmt.Errorf("%s", message)
 }
 
@@ -3582,56 +3582,21 @@ func (s *AntigravityGatewayService) writeMappedClaudeError(c *gin.Context, accou
 	}
 
 	// 检查错误透传规则
+	safeClientErr := SafeClientUpstreamError(upstreamStatus)
 	if ptStatus, ptErrType, ptErrMsg, matched := applyErrorPassthroughRule(
 		c, account.Platform, upstreamStatus, body,
-		0, "", "",
+		safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message,
 	); matched {
 		MarkResponseCommitted(c)
-		c.JSON(ptStatus, gin.H{
-			"type":  "error",
-			"error": gin.H{"type": ptErrType, "message": ptErrMsg},
-		})
+		c.JSON(ptStatus, ClientErrorEnvelope(c, ptErrType, ptErrMsg))
 		if upstreamMsg == "" {
 			return fmt.Errorf("upstream error: %d", upstreamStatus)
 		}
 		return fmt.Errorf("upstream error: %d message=%s", upstreamStatus, upstreamMsg)
 	}
 
-	var statusCode int
-	var errType, errMsg string
-
-	switch upstreamStatus {
-	case 400:
-		statusCode = http.StatusBadRequest
-		errType = "invalid_request_error"
-		errMsg = getPassthroughOrDefault(upstreamMsg, "Invalid request")
-	case 401:
-		statusCode = http.StatusBadGateway
-		errType = "authentication_error"
-		errMsg = "Upstream authentication failed"
-	case 403:
-		statusCode = http.StatusBadGateway
-		errType = "permission_error"
-		errMsg = "Upstream access forbidden"
-	case 429:
-		statusCode = http.StatusTooManyRequests
-		errType = "rate_limit_error"
-		errMsg = "Upstream rate limit exceeded"
-	case 529:
-		statusCode = http.StatusServiceUnavailable
-		errType = "overloaded_error"
-		errMsg = "Upstream service overloaded"
-	default:
-		statusCode = http.StatusBadGateway
-		errType = "upstream_error"
-		errMsg = "Upstream request failed"
-	}
-
 	MarkResponseCommitted(c)
-	c.JSON(statusCode, gin.H{
-		"type":  "error",
-		"error": gin.H{"type": errType, "message": errMsg},
-	})
+	c.JSON(safeClientErr.StatusCode, ClientErrorEnvelope(c, safeClientErr.Type, safeClientErr.Message))
 	if upstreamMsg == "" {
 		return fmt.Errorf("upstream error: %d", upstreamStatus)
 	}
@@ -3639,28 +3604,8 @@ func (s *AntigravityGatewayService) writeMappedClaudeError(c *gin.Context, accou
 }
 
 func (s *AntigravityGatewayService) writeGoogleError(c *gin.Context, status int, message string) error {
-	statusStr := "UNKNOWN"
-	switch status {
-	case 400:
-		statusStr = "INVALID_ARGUMENT"
-	case 404:
-		statusStr = "NOT_FOUND"
-	case 429:
-		statusStr = "RESOURCE_EXHAUSTED"
-	case 500:
-		statusStr = "INTERNAL"
-	case 502, 503:
-		statusStr = "UNAVAILABLE"
-	}
-
 	MarkResponseCommitted(c)
-	c.JSON(status, gin.H{
-		"error": gin.H{
-			"code":    status,
-			"message": message,
-			"status":  statusStr,
-		},
-	})
+	c.JSON(status, GoogleClientErrorEnvelope(c, status, message))
 	return fmt.Errorf("%s", message)
 }
 
@@ -3821,7 +3766,8 @@ returnResponse:
 	claudeResp, agUsage, err := antigravity.TransformGeminiToClaude(geminiBody, originalModel)
 	if err != nil {
 		logger.LegacyPrintf("service.antigravity_gateway", "[antigravity-Forward] transform_error error=%v body=%s", err, string(geminiBody))
-		return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Failed to parse upstream response")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		return nil, s.writeClaudeError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 	}
 
 	c.Data(http.StatusOK, "application/json", claudeResp)
@@ -3929,7 +3875,8 @@ func (s *AntigravityGatewayService) handleClaudeStreamingResponse(c *gin.Context
 			return
 		}
 		errorEventSent = true
-		_, _ = fmt.Fprintf(c.Writer, "event: error\ndata: {\"error\":\"%s\"}\n\n", reason)
+		payload, _ := json.Marshal(ClientErrorEnvelope(c, "api_error", ClientMessageServiceUnavailable))
+		_, _ = fmt.Fprintf(c.Writer, "event: error\ndata: %s\n\n", payload)
 		flusher.Flush()
 	}
 
@@ -4210,10 +4157,22 @@ func (s *AntigravityGatewayService) ForwardUpstream(ctx context.Context, c *gin.
 			s.handleUpstreamError(ctx, prefix, account, resp.StatusCode, resp.Header, respBody, originalModel, 0, "", false)
 		}
 
-		// 透传上游错误
-		c.Header("Content-Type", resp.Header.Get("Content-Type"))
-		c.Status(resp.StatusCode)
-		_, _ = c.Writer.Write(respBody)
+		upstreamMsg := strings.TrimSpace(extractAntigravityErrorMessage(respBody))
+		upstreamMsg = sanitizeUpstreamErrorMessage(upstreamMsg)
+		upstreamDetail := s.getUpstreamErrorDetail(respBody)
+		setOpsUpstreamError(c, resp.StatusCode, upstreamMsg, upstreamDetail)
+		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+			Platform:           account.Platform,
+			AccountID:          account.ID,
+			AccountName:        account.Name,
+			UpstreamStatusCode: resp.StatusCode,
+			UpstreamRequestID:  resp.Header.Get("x-request-id"),
+			Kind:               "http_error",
+			Message:            upstreamMsg,
+			Detail:             upstreamDetail,
+		})
+		safeClientErr := SafeClientUpstreamError(resp.StatusCode)
+		c.JSON(safeClientErr.StatusCode, ClientErrorEnvelope(c, safeClientErr.Type, safeClientErr.Message))
 
 		return &ForwardResult{
 			Model: originalModel,

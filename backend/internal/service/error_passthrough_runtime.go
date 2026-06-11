@@ -51,13 +51,17 @@ func applyErrorPassthroughRule(
 		return status, errType, errMsg, false
 	}
 
-	status = upstreamStatus
+	safe := SafeClientUpstreamError(upstreamStatus)
+
+	status = safe.StatusCode
 	if !rule.PassthroughCode && rule.ResponseCode != nil {
 		status = *rule.ResponseCode
+	} else if rule.PassthroughCode {
+		status = upstreamStatus
 	}
 
-	errMsg = ExtractUpstreamErrorMessage(responseBody)
-	if !rule.PassthroughBody && rule.CustomMessage != nil {
+	errMsg = safe.Message
+	if rule.CustomMessage != nil {
 		errMsg = *rule.CustomMessage
 	}
 
@@ -66,7 +70,6 @@ func applyErrorPassthroughRule(
 		c.Set(OpsSkipPassthroughKey, true)
 	}
 
-	// 与现有 failover 场景保持一致：命中规则时统一返回 upstream_error。
-	errType = "upstream_error"
+	errType = safe.Type
 	return status, errType, errMsg, true
 }

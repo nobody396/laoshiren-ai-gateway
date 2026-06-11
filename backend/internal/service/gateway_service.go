@@ -4059,13 +4059,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 				Kind:               "request_error",
 				Message:            safeErr,
 			})
-			c.JSON(http.StatusBadGateway, gin.H{
-				"type": "error",
-				"error": gin.H{
-					"type":    "upstream_error",
-					"message": "Upstream request failed",
-				},
-			})
+			c.JSON(http.StatusBadGateway, ClientErrorEnvelope(c, "api_error", ClientMessageServiceUnavailable))
 			return nil, fmt.Errorf("upstream request failed: %s", safeErr)
 		}
 
@@ -4546,13 +4540,8 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 				Kind:               "request_error",
 				Message:            safeErr,
 			})
-			c.JSON(http.StatusBadGateway, gin.H{
-				"type": "error",
-				"error": gin.H{
-					"type":    "upstream_error",
-					"message": "Upstream request failed",
-				},
-			})
+			safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+			c.JSON(safeClientErr.StatusCode, ClientErrorEnvelope(c, safeClientErr.Type, safeClientErr.Message))
 			return nil, fmt.Errorf("upstream request failed: %s", safeErr)
 		}
 
@@ -5322,13 +5311,8 @@ func (s *GatewayService) executeBedrockUpstream(
 				Kind:               "request_error",
 				Message:            safeErr,
 			})
-			c.JSON(http.StatusBadGateway, gin.H{
-				"type": "error",
-				"error": gin.H{
-					"type":    "upstream_error",
-					"message": "Upstream request failed",
-				},
-			})
+			safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+			c.JSON(safeClientErr.StatusCode, ClientErrorEnvelope(c, safeClientErr.Type, safeClientErr.Message))
 			return nil, fmt.Errorf("upstream request failed: %s", safeErr)
 		}
 
@@ -6330,13 +6314,7 @@ func (s *GatewayService) handleErrorResponse(ctx context.Context, resp *http.Res
 		"Upstream request failed",
 	); matched {
 		MarkResponseCommitted(c)
-		c.JSON(status, gin.H{
-			"type": "error",
-			"error": gin.H{
-				"type":    errType,
-				"message": errMsg,
-			},
-		})
+		c.JSON(status, ClientErrorEnvelope(c, errType, errMsg))
 
 		summary := upstreamMsg
 		if summary == "" {
@@ -6348,55 +6326,10 @@ func (s *GatewayService) handleErrorResponse(ctx context.Context, resp *http.Res
 		return nil, fmt.Errorf("upstream error: %d (passthrough rule matched) message=%s", resp.StatusCode, summary)
 	}
 
-	// 根据状态码返回适当的自定义错误响应（不透传上游详细信息）
-	var errType, errMsg string
-	var statusCode int
-
-	switch resp.StatusCode {
-	case 400:
-		c.Data(http.StatusBadRequest, "application/json", body)
-		summary := upstreamMsg
-		if summary == "" {
-			summary = truncateForLog(body, 512)
-		}
-		if summary == "" {
-			return nil, fmt.Errorf("upstream error: %d", resp.StatusCode)
-		}
-		return nil, fmt.Errorf("upstream error: %d message=%s", resp.StatusCode, summary)
-	case 401:
-		statusCode = http.StatusBadGateway
-		errType = "upstream_error"
-		errMsg = "Upstream authentication failed, please contact administrator"
-	case 403:
-		statusCode = http.StatusBadGateway
-		errType = "upstream_error"
-		errMsg = "Upstream access forbidden, please contact administrator"
-	case 429:
-		statusCode = http.StatusTooManyRequests
-		errType = "rate_limit_error"
-		errMsg = "Upstream rate limit exceeded, please retry later"
-	case 529:
-		statusCode = http.StatusServiceUnavailable
-		errType = "overloaded_error"
-		errMsg = "Upstream service overloaded, please retry later"
-	case 500, 502, 503, 504:
-		statusCode = http.StatusBadGateway
-		errType = "upstream_error"
-		errMsg = "Upstream service temporarily unavailable"
-	default:
-		statusCode = http.StatusBadGateway
-		errType = "upstream_error"
-		errMsg = "Upstream request failed"
-	}
+	safeErr := SafeClientUpstreamError(resp.StatusCode)
 
 	// 返回自定义错误响应
-	c.JSON(statusCode, gin.H{
-		"type": "error",
-		"error": gin.H{
-			"type":    errType,
-			"message": errMsg,
-		},
-	})
+	c.JSON(safeErr.StatusCode, ClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
 
 	if upstreamMsg == "" {
 		return nil, fmt.Errorf("upstream error: %d", resp.StatusCode)
@@ -6488,13 +6421,7 @@ func (s *GatewayService) handleRetryExhaustedError(ctx context.Context, resp *ht
 		"upstream_error",
 		"Upstream request failed after retries",
 	); matched {
-		c.JSON(status, gin.H{
-			"type": "error",
-			"error": gin.H{
-				"type":    errType,
-				"message": errMsg,
-			},
-		})
+		c.JSON(status, ClientErrorEnvelope(c, errType, errMsg))
 
 		summary := upstreamMsg
 		if summary == "" {
@@ -6509,13 +6436,8 @@ func (s *GatewayService) handleRetryExhaustedError(ctx context.Context, resp *ht
 	MarkResponseCommitted(c)
 
 	// 返回统一的重试耗尽错误响应
-	c.JSON(http.StatusBadGateway, gin.H{
-		"type": "error",
-		"error": gin.H{
-			"type":    "upstream_error",
-			"message": "Upstream request failed after retries",
-		},
-	})
+	safeErr := SafeClientUpstreamError(resp.StatusCode)
+	c.JSON(safeErr.StatusCode, ClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
 
 	if upstreamMsg == "" {
 		return nil, fmt.Errorf("upstream error: %d (retries exhausted)", resp.StatusCode)
@@ -6632,15 +6554,9 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 		if strings.TrimSpace(message) == "" {
 			message = reason
 		}
-		body, err := json.Marshal(map[string]any{
-			"type": "error",
-			"error": map[string]string{
-				"type":    reason,
-				"message": message,
-			},
-		})
+		body, err := json.Marshal(ClientErrorEnvelope(c, "api_error", ClientMessageServiceUnavailable))
 		if err != nil {
-			body = []byte(fmt.Sprintf(`{"type":"error","error":{"type":%q,"message":%q}}`, reason, message))
+			body = []byte(`{"type":"error","error":{"type":"api_error","message":"The service is temporarily unavailable. Please try again later."}}`)
 		}
 		_, _ = fmt.Fprintf(w, "event: error\ndata: %s\n\n", body)
 		flusher.Flush()
@@ -8627,13 +8543,13 @@ func sanitizeCountTokensRequestBody(body []byte) []byte {
 
 // countTokensError 返回 count_tokens 错误响应
 func (s *GatewayService) countTokensError(c *gin.Context, status int, errType, message string) {
-	c.JSON(status, gin.H{
-		"type": "error",
-		"error": gin.H{
-			"type":    errType,
-			"message": message,
-		},
-	})
+	if errType == "upstream_error" || strings.Contains(strings.ToLower(message), "upstream") {
+		safeClientErr := SafeClientUpstreamError(status)
+		status = safeClientErr.StatusCode
+		errType = safeClientErr.Type
+		message = safeClientErr.Message
+	}
+	c.JSON(status, ClientErrorEnvelope(c, errType, message))
 }
 
 func (s *GatewayService) validateUpstreamBaseURL(raw string) (string, error) {

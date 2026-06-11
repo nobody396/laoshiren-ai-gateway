@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/openai"
 	"github.com/cespare/xxhash/v2"
 	"github.com/gin-gonic/gin"
@@ -896,6 +897,7 @@ func TestOpenAIStreamingTimeout(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(rec)
 	c.Request = httptest.NewRequest(http.MethodPost, "/", nil)
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkey.RequestID, "req-stream-timeout"))
 
 	pr, pw := io.Pipe()
 	resp := &http.Response{
@@ -912,9 +914,54 @@ func TestOpenAIStreamingTimeout(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "stream data interval timeout") {
 		t.Fatalf("expected stream timeout error, got %v", err)
 	}
-	if !strings.Contains(rec.Body.String(), "\"type\":\"error\"") || !strings.Contains(rec.Body.String(), "stream_timeout") {
-		t.Fatalf("expected OpenAI-compatible error SSE event, got %q", rec.Body.String())
+	if !strings.Contains(rec.Body.String(), `"type":"response.failed"`) ||
+		!strings.Contains(rec.Body.String(), `"code":"server_error"`) ||
+		!strings.Contains(rec.Body.String(), `"request_id":"req-stream-timeout"`) ||
+		!strings.Contains(rec.Body.String(), ClientMessageServiceUnavailable) {
+		t.Fatalf("expected safe Responses error SSE event, got %q", rec.Body.String())
 	}
+}
+
+func TestOpenAIStreamingResponseFailedAfterOutputIsSanitizedWithRequestID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cfg := &config.Config{
+		Gateway: config.GatewayConfig{
+			StreamDataIntervalTimeout: 0,
+			StreamKeepaliveInterval:   0,
+			MaxLineSize:               defaultMaxLineSize,
+		},
+	}
+	svc := &OpenAIGatewayService{cfg: cfg}
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/", nil)
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkey.RequestID, "req-stream-failed"))
+
+	pr, pw := io.Pipe()
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       pr,
+		Header:     http.Header{},
+	}
+
+	go func() {
+		defer func() { _ = pw.Close() }()
+		_, _ = pw.Write([]byte(`data: {"type":"response.output_text.delta","delta":"hello"}` + "\n\n"))
+		_, _ = pw.Write([]byte(`data: {"type":"response.failed","response":{"id":"resp_upstream","error":{"message":"upstream account quota exhausted"}}}` + "\n\n"))
+	}()
+
+	_, err := svc.handleStreamingResponse(c.Request.Context(), resp, c, &Account{ID: 1}, time.Now(), "public-model", "mapped-model")
+	_ = pr.Close()
+
+	require.Error(t, err)
+	body := rec.Body.String()
+	require.Contains(t, body, `"type":"response.failed"`)
+	require.Contains(t, body, `"id":"resp_upstream"`)
+	require.Contains(t, body, `"request_id":"req-stream-failed"`)
+	require.Contains(t, body, ClientMessageServiceUnavailable)
+	require.NotContains(t, body, "upstream account quota exhausted")
+	require.NotContains(t, body, "quota")
 }
 
 func TestOpenAIStreamingContextCanceledReturnsIncompleteErrorWithoutInjectingErrorEvent(t *testing.T) {
@@ -1027,7 +1074,7 @@ func TestOpenAIStreamingMissingTerminalEventBeforeOutputReturnsFailover(t *testi
 	require.Error(t, err)
 	require.True(t, errors.As(err, &failoverErr), "expected failover error, got %v", err)
 	require.Equal(t, http.StatusBadGateway, failoverErr.StatusCode)
-	require.Contains(t, string(failoverErr.ResponseBody), "OpenAI stream ended before a terminal event")
+	require.Contains(t, string(failoverErr.ResponseBody), ClientMessageServiceUnavailable)
 }
 
 func TestOpenAIStreamingPassthroughMissingTerminalEventBeforeOutputReturnsFailover(t *testing.T) {
@@ -1061,7 +1108,7 @@ func TestOpenAIStreamingPassthroughMissingTerminalEventBeforeOutputReturnsFailov
 	require.Error(t, err)
 	require.True(t, errors.As(err, &failoverErr), "expected failover error, got %v", err)
 	require.Equal(t, http.StatusBadGateway, failoverErr.StatusCode)
-	require.Contains(t, string(failoverErr.ResponseBody), "OpenAI stream ended before a terminal event")
+	require.Contains(t, string(failoverErr.ResponseBody), ClientMessageServiceUnavailable)
 }
 
 func TestOpenAIStreamingPassthroughResponseDoneWithoutDoneMarkerStillSucceeds(t *testing.T) {
@@ -1134,8 +1181,10 @@ func TestOpenAIStreamingTooLong(t *testing.T) {
 	if !errors.Is(err, bufio.ErrTooLong) {
 		t.Fatalf("expected ErrTooLong, got %v", err)
 	}
-	if !strings.Contains(rec.Body.String(), "\"type\":\"error\"") || !strings.Contains(rec.Body.String(), "response_too_large") {
-		t.Fatalf("expected OpenAI-compatible error SSE event, got %q", rec.Body.String())
+	if !strings.Contains(rec.Body.String(), `"type":"response.failed"`) ||
+		!strings.Contains(rec.Body.String(), `"code":"server_error"`) ||
+		!strings.Contains(rec.Body.String(), ClientMessageServiceUnavailable) {
+		t.Fatalf("expected safe Responses error SSE event, got %q", rec.Body.String())
 	}
 }
 
@@ -1990,6 +2039,6 @@ func TestHandleOAuthSSEToJSON_ResponseFailedReturnsProtocolError(t *testing.T) {
 	require.Nil(t, usage)
 	require.Error(t, err)
 	require.Equal(t, http.StatusBadGateway, rec.Code)
-	require.Contains(t, rec.Body.String(), "upstream rejected request")
+	require.Contains(t, rec.Body.String(), ClientMessageServiceUnavailable)
 	require.Contains(t, rec.Header().Get("Content-Type"), "application/json")
 }

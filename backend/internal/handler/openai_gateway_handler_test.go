@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
 	pkghttputil "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/httputil"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
@@ -60,6 +61,7 @@ func TestOpenAIHandleStreamingAwareError_JSONEscaping(t *testing.T) {
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
 			c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+			c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkey.RequestID, "req-openai-stream"))
 
 			h := &OpenAIGatewayHandler{}
 			h.handleStreamingAwareError(c, http.StatusBadGateway, tt.errType, tt.message, true)
@@ -87,6 +89,7 @@ func TestOpenAIHandleStreamingAwareError_JSONEscaping(t *testing.T) {
 			require.True(t, ok, "应包含 error 对象")
 			assert.Equal(t, tt.errType, errorObj["type"])
 			assert.Equal(t, tt.message, errorObj["message"])
+			assert.Equal(t, "req-openai-stream", errorObj["request_id"])
 		})
 	}
 }
@@ -150,8 +153,8 @@ func TestOpenAIEnsureForwardErrorResponse_WritesFallbackWhenNotWritten(t *testin
 	require.NoError(t, err)
 	errorObj, ok := parsed["error"].(map[string]any)
 	require.True(t, ok)
-	assert.Equal(t, "upstream_error", errorObj["type"])
-	assert.Equal(t, "Upstream request failed", errorObj["message"])
+	assert.Equal(t, "api_error", errorObj["type"])
+	assert.Equal(t, service.ClientMessageServiceUnavailable, errorObj["message"])
 }
 
 // Writer 已写后 ensureForwardErrorResponse 必须仍然把错误信息以 SSE
@@ -194,8 +197,8 @@ func TestOpenAIEnsureForwardErrorResponse_ResponsesRouteAfterWrittenEmitsRespons
 	assert.Contains(t, body, ":\n\n", "earlier ping bytes preserved")
 	assert.Contains(t, body, "event: response.failed\n", "appended a Responses terminal event")
 	assert.Contains(t, body, `"type":"response.failed"`)
-	assert.Contains(t, body, `"code":"upstream_error"`)
-	assert.Contains(t, body, "Upstream request failed")
+	assert.Contains(t, body, `"code":"server_error"`)
+	assert.Contains(t, body, service.ClientMessageServiceUnavailable)
 }
 
 func TestOpenAIEnsureForwardErrorResponse_SkipsCommittedResponse(t *testing.T) {
@@ -316,8 +319,8 @@ func TestOpenAIRecoverResponsesPanic_WritesFallbackResponse(t *testing.T) {
 
 	errorObj, ok := parsed["error"].(map[string]any)
 	require.True(t, ok)
-	assert.Equal(t, "upstream_error", errorObj["type"])
-	assert.Equal(t, "Upstream request failed", errorObj["message"])
+	assert.Equal(t, "api_error", errorObj["type"])
+	assert.Equal(t, service.ClientMessageServiceUnavailable, errorObj["message"])
 }
 
 func TestOpenAIRecoverResponsesPanic_NoPanicNoWrite(t *testing.T) {
@@ -409,7 +412,7 @@ func TestOpenAIEnsureResponsesDependencies(t *testing.T) {
 		errorObj, exists := parsed["error"].(map[string]any)
 		require.True(t, exists)
 		assert.Equal(t, "api_error", errorObj["type"])
-		assert.Equal(t, "Service temporarily unavailable", errorObj["message"])
+		assert.Equal(t, service.ClientMessageServiceUnavailable, errorObj["message"])
 	})
 
 	t.Run("already_written_response_not_overridden", func(t *testing.T) {
@@ -482,7 +485,7 @@ func TestOpenAIResponses_MissingDependencies_ReturnsServiceUnavailable(t *testin
 	errorObj, ok := parsed["error"].(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "api_error", errorObj["type"])
-	assert.Equal(t, "Service temporarily unavailable", errorObj["message"])
+	assert.Equal(t, service.ClientMessageServiceUnavailable, errorObj["message"])
 }
 
 func TestOpenAIResponses_SetsClientTransportHTTP(t *testing.T) {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -824,12 +825,9 @@ func (s *OpenAIGatewayService) ForwardGPTImage(
 		}
 
 		responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
-		contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
-		if contentType == "" {
-			contentType = "application/json"
-		}
+		safeErr := SafeClientUpstreamError(resp.StatusCode)
 		MarkResponseCommitted(c)
-		c.Data(resp.StatusCode, contentType, respBody)
+		c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
 		if upstreamMsg == "" {
 			upstreamMsg = fmt.Sprintf("upstream error: %d", resp.StatusCode)
 		}
@@ -943,14 +941,16 @@ func (s *OpenAIGatewayService) fetchGPTImageTask(
 		if upstreamMsg == "" {
 			upstreamMsg = fmt.Sprintf("upstream error: %d", resp.StatusCode)
 		}
+		safeErr := SafeClientUpstreamError(resp.StatusCode)
+		safeBody, _ := json.Marshal(OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
 		return &OpenAIForwardResult{
 			RequestID:      resp.Header.Get("x-request-id"),
 			Model:          gptImageOnlyModel,
 			UpstreamModel:  gptImageOnlyModel,
 			Duration:       time.Since(startTime),
-			ResponseBody:   respBody,
-			ResponseStatus: resp.StatusCode,
-			ResponseType:   contentType,
+			ResponseBody:   safeBody,
+			ResponseStatus: safeErr.StatusCode,
+			ResponseType:   "application/json",
 		}, resp.Header.Clone(), fmt.Errorf("%s", upstreamMsg)
 	}
 

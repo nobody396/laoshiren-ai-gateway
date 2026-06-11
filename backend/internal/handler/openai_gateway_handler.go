@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
-	"strconv"
 	"strings"
 	"time"
 
@@ -276,10 +275,10 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 			)
 			if len(failedAccountIDs) == 0 {
 				if errors.Is(err, service.ErrNoAvailableCompactAccounts) {
-					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "compact_not_supported", "No available OpenAI accounts support /responses/compact", streamStarted)
+					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", service.ClientMessageServiceUnavailable, streamStarted)
 					return
 				}
-				h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable", streamStarted)
+				h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", service.ClientMessageServiceUnavailable, streamStarted)
 				return
 			}
 			if lastFailoverErr != nil {
@@ -290,7 +289,8 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 			return
 		}
 		if selection == nil || selection.Account == nil {
-			h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts", streamStarted)
+			safeErr := service.SafeClientUpstreamError(http.StatusServiceUnavailable)
+			h.handleStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, streamStarted)
 			return
 		}
 		if previousResponseID != "" && selection != nil && selection.Account != nil {
@@ -669,20 +669,22 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 			)
 			if len(failedAccountIDs) == 0 {
 				if err != nil {
-					h.anthropicStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable", streamStarted)
+					h.anthropicStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", service.ClientMessageServiceUnavailable, streamStarted)
 					return
 				}
 			} else {
 				if lastFailoverErr != nil {
 					h.handleAnthropicFailoverExhausted(c, lastFailoverErr, streamStarted)
 				} else {
-					h.anthropicStreamingAwareError(c, http.StatusBadGateway, "api_error", "Upstream request failed", streamStarted)
+					safeErr := service.SafeClientUpstreamError(http.StatusBadGateway)
+					h.anthropicStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, streamStarted)
 				}
 				return
 			}
 		}
 		if selection == nil || selection.Account == nil {
-			h.anthropicStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts", streamStarted)
+			safeErr := service.SafeClientUpstreamError(http.StatusServiceUnavailable)
+			h.anthropicStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, streamStarted)
 			return
 		}
 		account := selection.Account
@@ -819,13 +821,7 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 
 // anthropicErrorResponse writes an error in Anthropic Messages API format.
 func (h *OpenAIGatewayHandler) anthropicErrorResponse(c *gin.Context, status int, errType, message string) {
-	c.JSON(status, gin.H{
-		"type": "error",
-		"error": gin.H{
-			"type":    errType,
-			"message": message,
-		},
-	})
+	c.JSON(status, service.ClientErrorEnvelope(c, errType, message))
 }
 
 // anthropicStreamingAwareError handles errors that may occur during streaming,
@@ -834,13 +830,7 @@ func (h *OpenAIGatewayHandler) anthropicStreamingAwareError(c *gin.Context, stat
 	if streamStarted {
 		flusher, ok := c.Writer.(http.Flusher)
 		if ok {
-			errPayload, _ := json.Marshal(gin.H{
-				"type": "error",
-				"error": gin.H{
-					"type":    errType,
-					"message": message,
-				},
-			})
+			errPayload, _ := json.Marshal(service.ClientErrorEnvelope(c, errType, message))
 			fmt.Fprintf(c.Writer, "event: error\ndata: %s\n\n", errPayload) //nolint:errcheck
 			flusher.Flush()
 		}
@@ -860,7 +850,8 @@ func (h *OpenAIGatewayHandler) ensureAnthropicErrorResponse(c *gin.Context, stre
 	if c == nil || c.Writer == nil || c.Writer.Written() {
 		return false
 	}
-	h.anthropicStreamingAwareError(c, http.StatusBadGateway, "api_error", "Upstream request failed", streamStarted)
+	safeErr := service.SafeClientUpstreamError(http.StatusBadGateway)
+	h.anthropicStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, streamStarted)
 	return true
 }
 
@@ -966,7 +957,8 @@ func (h *OpenAIGatewayHandler) acquireResponsesAccountSlot(
 	reqLog *zap.Logger,
 ) (func(), bool) {
 	if selection == nil || selection.Account == nil {
-		h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts", *streamStarted)
+		safeErr := service.SafeClientUpstreamError(http.StatusServiceUnavailable)
+		h.handleStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, *streamStarted)
 		return nil, false
 	}
 
@@ -976,7 +968,8 @@ func (h *OpenAIGatewayHandler) acquireResponsesAccountSlot(
 		return wrapReleaseOnDone(ctx, selection.ReleaseFunc), true
 	}
 	if selection.WaitPlan == nil {
-		h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts", *streamStarted)
+		safeErr := service.SafeClientUpstreamError(http.StatusServiceUnavailable)
+		h.handleStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, *streamStarted)
 		return nil, false
 	}
 
@@ -1388,10 +1381,7 @@ func (h *OpenAIGatewayHandler) ensureResponsesDependencies(c *gin.Context, reqLo
 
 	if c != nil && c.Writer != nil && !c.Writer.Written() {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"error": gin.H{
-				"type":    "api_error",
-				"message": "Service temporarily unavailable",
-			},
+			"error": service.ClientErrorObject(c, "api_error", service.ClientMessageServiceUnavailable),
 		})
 	}
 	return false
@@ -1460,22 +1450,25 @@ func (h *OpenAIGatewayHandler) handleFailoverExhausted(c *gin.Context, failoverE
 
 	if service.IsOpenAISilentRefusalErrorBody(responseBody) {
 		service.SetOpsUpstreamError(c, statusCode, service.OpenAISilentRefusalClientMessage(), "")
-		h.handleStreamingAwareError(c, http.StatusBadGateway, "upstream_error", service.OpenAISilentRefusalClientMessage(), streamStarted)
+		h.handleStreamingAwareError(c, http.StatusBadGateway, "api_error", service.OpenAISilentRefusalClientMessage(), streamStarted)
 		return
 	}
 
 	// 先检查透传规则
 	if h.errorPassthroughService != nil && len(responseBody) > 0 {
 		if rule := h.errorPassthroughService.MatchRule("openai", statusCode, responseBody); rule != nil {
+			safeErr := service.SafeClientUpstreamError(statusCode)
 			// 确定响应状态码
-			respCode := statusCode
+			respCode := safeErr.StatusCode
 			if !rule.PassthroughCode && rule.ResponseCode != nil {
 				respCode = *rule.ResponseCode
+			} else if rule.PassthroughCode {
+				respCode = statusCode
 			}
 
 			// 确定响应消息
-			msg := service.ExtractUpstreamErrorMessage(responseBody)
-			if !rule.PassthroughBody && rule.CustomMessage != nil {
+			msg := safeErr.Message
+			if rule.CustomMessage != nil {
 				msg = *rule.CustomMessage
 			}
 
@@ -1483,7 +1476,7 @@ func (h *OpenAIGatewayHandler) handleFailoverExhausted(c *gin.Context, failoverE
 				c.Set(service.OpsSkipPassthroughKey, true)
 			}
 
-			h.handleStreamingAwareError(c, respCode, "upstream_error", msg, streamStarted)
+			h.handleStreamingAwareError(c, respCode, safeErr.Type, msg, streamStarted)
 			return
 		}
 	}
@@ -1500,20 +1493,8 @@ func (h *OpenAIGatewayHandler) handleFailoverExhaustedSimple(c *gin.Context, sta
 }
 
 func (h *OpenAIGatewayHandler) mapUpstreamError(statusCode int) (int, string, string) {
-	switch statusCode {
-	case 401:
-		return http.StatusBadGateway, "upstream_error", "Upstream authentication failed, please contact administrator"
-	case 403:
-		return http.StatusBadGateway, "upstream_error", "Upstream access forbidden, please contact administrator"
-	case 429:
-		return http.StatusTooManyRequests, "rate_limit_error", "Upstream rate limit exceeded, please retry later"
-	case 529:
-		return http.StatusServiceUnavailable, "upstream_error", "Upstream service overloaded, please retry later"
-	case 500, 502, 503, 504:
-		return http.StatusBadGateway, "upstream_error", "Upstream service temporarily unavailable"
-	default:
-		return http.StatusBadGateway, "upstream_error", "Upstream request failed"
-	}
+	safeErr := service.SafeClientUpstreamError(statusCode)
+	return safeErr.StatusCode, safeErr.Type, safeErr.Message
 }
 
 // handleStreamingAwareError handles errors that may occur after streaming has started
@@ -1531,9 +1512,8 @@ func (h *OpenAIGatewayHandler) handleStreamingAwareError(c *gin.Context, status 
 		// Stream already started, send error as SSE event then close
 		flusher, ok := c.Writer.(http.Flusher)
 		if ok {
-			// SSE 错误事件固定 schema，使用 Quote 直拼可避免额外 Marshal 分配。
-			errorEvent := "event: error\ndata: " + `{"error":{"type":` + strconv.Quote(errType) + `,"message":` + strconv.Quote(message) + `}}` + "\n\n"
-			if _, err := fmt.Fprint(c.Writer, errorEvent); err != nil {
+			errPayload, _ := json.Marshal(service.OpenAIClientErrorEnvelope(c, errType, message))
+			if _, err := fmt.Fprintf(c.Writer, "event: error\ndata: %s\n\n", errPayload); err != nil {
 				_ = c.Error(err)
 			}
 			flusher.Flush()
@@ -1561,7 +1541,8 @@ func (h *OpenAIGatewayHandler) ensureForwardErrorResponse(c *gin.Context, stream
 	if c.Writer.Written() {
 		streamStarted = true
 	}
-	h.handleStreamingAwareError(c, http.StatusBadGateway, "upstream_error", "Upstream request failed", streamStarted)
+	safeErr := service.SafeClientUpstreamError(http.StatusBadGateway)
+	h.handleStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, streamStarted)
 	return true
 }
 
@@ -1605,12 +1586,7 @@ func openAIForwardErrorAlreadyCommunicated(c *gin.Context, writerSizeBeforeForwa
 
 // errorResponse returns OpenAI API format error response
 func (h *OpenAIGatewayHandler) errorResponse(c *gin.Context, status int, errType, message string) {
-	c.JSON(status, gin.H{
-		"error": gin.H{
-			"type":    errType,
-			"message": message,
-		},
-	})
+	c.JSON(status, service.OpenAIClientErrorEnvelope(c, errType, message))
 }
 
 func setOpenAIClientTransportHTTP(c *gin.Context) {

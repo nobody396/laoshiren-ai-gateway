@@ -21,7 +21,6 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/geminicli"
-	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/googleapi"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/util/responseheaders"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/util/urlvalidator"
@@ -726,9 +725,10 @@ func (s *GeminiMessagesCompatService) Forward(ctx context.Context, c *gin.Contex
 			}
 			// Local build error: don't retry.
 			if strings.Contains(err.Error(), "missing project_id") {
-				return nil, s.writeClaudeError(c, http.StatusBadRequest, "invalid_request_error", err.Error())
+				return nil, s.writeClaudeError(c, http.StatusServiceUnavailable, "api_error", ClientMessageServiceUnavailable)
 			}
-			return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", err.Error())
+			safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+			return nil, s.writeClaudeError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 		}
 		requestIDHeader = idHeader
 
@@ -755,7 +755,8 @@ func (s *GeminiMessagesCompatService) Forward(ctx context.Context, c *gin.Contex
 				continue
 			}
 			setOpsUpstreamError(c, 0, safeErr, "")
-			return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Upstream request failed after retries: "+safeErr)
+			safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+			return nil, s.writeClaudeError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 		}
 
 		// Special-case: signature/thought_signature validation errors are not transient, but may be fixed by
@@ -1019,7 +1020,8 @@ func (s *GeminiMessagesCompatService) Forward(ctx context.Context, c *gin.Contex
 		if useUpstreamStream {
 			collected, usageObj, err := collectGeminiSSE(resp.Body, true)
 			if err != nil {
-				return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Failed to read upstream stream")
+				safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+				return nil, s.writeClaudeError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 			}
 			collectedBytes, _ := json.Marshal(collected)
 			claudeResp, usageObj2 := convertGeminiToClaudeMessage(collected, originalModel, collectedBytes)
@@ -1214,7 +1216,8 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 		requestIDHeader = "x-request-id"
 
 	default:
-		return nil, s.writeGoogleError(c, http.StatusBadGateway, "Unsupported account type: "+account.Type)
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		return nil, s.writeGoogleError(c, safeClientErr.StatusCode, safeClientErr.Message)
 	}
 
 	var resp *http.Response
@@ -1226,9 +1229,11 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 			}
 			// Local build error: don't retry.
 			if strings.Contains(err.Error(), "missing project_id") {
-				return nil, s.writeGoogleError(c, http.StatusBadRequest, err.Error())
+				safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+				return nil, s.writeGoogleError(c, safeClientErr.StatusCode, safeClientErr.Message)
 			}
-			return nil, s.writeGoogleError(c, http.StatusBadGateway, err.Error())
+			safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+			return nil, s.writeGoogleError(c, safeClientErr.StatusCode, safeClientErr.Message)
 		}
 		requestIDHeader = idHeader
 
@@ -1268,7 +1273,8 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 				}, nil
 			}
 			setOpsUpstreamError(c, 0, safeErr, "")
-			return nil, s.writeGoogleError(c, http.StatusBadGateway, "Upstream request failed after retries: "+safeErr)
+			safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+			return nil, s.writeGoogleError(c, safeClientErr.StatusCode, safeClientErr.Message)
 		}
 
 		// 错误策略优先：匹配则跳过重试直接处理。
@@ -1384,12 +1390,9 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 			switch s.rateLimitService.CheckErrorPolicy(ctx, account, resp.StatusCode, respBody) {
 			case ErrorPolicySkipped:
 				respBody = unwrapIfNeeded(isOAuth, respBody)
-				contentType := resp.Header.Get("Content-Type")
-				if contentType == "" {
-					contentType = "application/json"
-				}
 				MarkResponseCommitted(c)
-				c.Data(http.StatusInternalServerError, contentType, respBody)
+				safeClientErr := SafeClientUpstreamError(resp.StatusCode)
+				c.JSON(safeClientErr.StatusCode, GoogleClientErrorEnvelope(c, safeClientErr.StatusCode, safeClientErr.Message))
 				return nil, fmt.Errorf("gemini upstream error: %d (skipped by error policy)", resp.StatusCode)
 			case ErrorPolicyMatched, ErrorPolicyTempUnscheduled:
 				s.handleGeminiUpstreamError(ctx, account, resp.StatusCode, resp.Header, respBody)
@@ -1497,12 +1500,9 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 			Detail:             upstreamDetail,
 		})
 
-		contentType := resp.Header.Get("Content-Type")
-		if contentType == "" {
-			contentType = "application/json"
-		}
 		MarkResponseCommitted(c)
-		c.Data(resp.StatusCode, contentType, respBody)
+		safeClientErr := SafeClientUpstreamError(resp.StatusCode)
+		c.JSON(safeClientErr.StatusCode, GoogleClientErrorEnvelope(c, safeClientErr.StatusCode, safeClientErr.Message))
 		if upstreamMsg == "" {
 			return nil, fmt.Errorf("gemini upstream error: %d", resp.StatusCode)
 		}
@@ -1523,7 +1523,8 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 		if useUpstreamStream {
 			collected, usageObj, err := collectGeminiSSE(resp.Body, isOAuth)
 			if err != nil {
-				return nil, s.writeGoogleError(c, http.StatusBadGateway, "Failed to read upstream stream")
+				safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+				return nil, s.writeGoogleError(c, safeClientErr.StatusCode, safeClientErr.Message)
 			}
 			b, _ := json.Marshal(collected)
 			c.Data(http.StatusOK, "application/json", b)
@@ -1670,14 +1671,11 @@ func (s *GeminiMessagesCompatService) writeGeminiMappedError(c *gin.Context, acc
 		PlatformGemini,
 		upstreamStatus,
 		body,
-		http.StatusBadGateway,
-		"upstream_error",
-		"Upstream request failed",
+		SafeClientUpstreamError(upstreamStatus).StatusCode,
+		SafeClientUpstreamError(upstreamStatus).Type,
+		SafeClientUpstreamError(upstreamStatus).Message,
 	); matched {
-		c.JSON(status, gin.H{
-			"type":  "error",
-			"error": gin.H{"type": errType, "message": errMsg},
-		})
+		c.JSON(status, ClientErrorEnvelope(c, errType, errMsg))
 		if upstreamMsg == "" {
 			upstreamMsg = errMsg
 		}
@@ -1687,113 +1685,18 @@ func (s *GeminiMessagesCompatService) writeGeminiMappedError(c *gin.Context, acc
 		return fmt.Errorf("upstream error: %d (passthrough rule matched) message=%s", upstreamStatus, upstreamMsg)
 	}
 
-	var statusCode int
-	var errType, errMsg string
+	safeClientErr := SafeClientUpstreamError(upstreamStatus)
+	statusCode := safeClientErr.StatusCode
+	errType := safeClientErr.Type
+	errMsg := safeClientErr.Message
 
 	if mapped := mapGeminiErrorBodyToClaudeError(body); mapped != nil {
-		errType = mapped.Type
-		if mapped.Message != "" {
-			errMsg = mapped.Message
-		}
 		if mapped.StatusCode > 0 {
 			statusCode = mapped.StatusCode
 		}
 	}
 
-	switch upstreamStatus {
-	case 400:
-		if statusCode == 0 {
-			statusCode = http.StatusBadRequest
-		}
-		if errType == "" {
-			errType = "invalid_request_error"
-		}
-		if errMsg == "" {
-			errMsg = "Invalid request"
-		}
-	case 401:
-		if statusCode == 0 {
-			statusCode = http.StatusBadGateway
-		}
-		if errType == "" {
-			errType = "authentication_error"
-		}
-		if errMsg == "" {
-			errMsg = "Upstream authentication failed, please contact administrator"
-		}
-	case 403:
-		if statusCode == 0 {
-			statusCode = http.StatusBadGateway
-		}
-		if errType == "" {
-			errType = "permission_error"
-		}
-		if errMsg == "" {
-			errMsg = "Upstream access forbidden, please contact administrator"
-		}
-	case 404:
-		if statusCode == 0 {
-			statusCode = http.StatusNotFound
-		}
-		if errType == "" {
-			errType = "not_found_error"
-		}
-		if errMsg == "" {
-			errMsg = "Resource not found"
-		}
-	case 429:
-		if statusCode == 0 {
-			statusCode = http.StatusTooManyRequests
-		}
-		if errType == "" {
-			errType = "rate_limit_error"
-		}
-		if errMsg == "" {
-			errMsg = "Upstream rate limit exceeded, please retry later"
-		}
-	case 529:
-		if statusCode == 0 {
-			statusCode = http.StatusServiceUnavailable
-		}
-		if errType == "" {
-			errType = "overloaded_error"
-		}
-		if errMsg == "" {
-			errMsg = "Upstream service overloaded, please retry later"
-		}
-	case 500, 502, 503, 504:
-		if statusCode == 0 {
-			statusCode = http.StatusBadGateway
-		}
-		if errType == "" {
-			switch upstreamStatus {
-			case 504:
-				errType = "timeout_error"
-			case 503:
-				errType = "overloaded_error"
-			default:
-				errType = "api_error"
-			}
-		}
-		if errMsg == "" {
-			errMsg = "Upstream service temporarily unavailable"
-		}
-	default:
-		if statusCode == 0 {
-			statusCode = http.StatusBadGateway
-		}
-		if errType == "" {
-			errType = "upstream_error"
-		}
-		if errMsg == "" {
-			errMsg = "Upstream request failed"
-		}
-	}
-
-	c.JSON(statusCode, gin.H{
-		"type":  "error",
-		"error": gin.H{"type": errType, "message": errMsg},
-	})
+	c.JSON(statusCode, ClientErrorEnvelope(c, errType, errMsg))
 	if upstreamMsg == "" {
 		return fmt.Errorf("upstream error: %d", upstreamStatus)
 	}
@@ -1879,17 +1782,20 @@ type geminiStreamResult struct {
 func (s *GeminiMessagesCompatService) handleNonStreamingResponse(c *gin.Context, resp *http.Response, originalModel string) (*ClaudeUsage, error) {
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
 	if err != nil {
-		return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Failed to read upstream response")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		return nil, s.writeClaudeError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 	}
 
 	unwrappedBody, err := unwrapGeminiResponse(body)
 	if err != nil {
-		return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Failed to parse upstream response")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		return nil, s.writeClaudeError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 	}
 
 	var geminiResp map[string]any
 	if err := json.Unmarshal(unwrappedBody, &geminiResp); err != nil {
-		return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Failed to parse upstream response")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		return nil, s.writeClaudeError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 	}
 
 	claudeResp, usage := convertGeminiToClaudeMessage(geminiResp, originalModel, unwrappedBody)
@@ -2183,22 +2089,13 @@ func randomHex(nBytes int) string {
 
 func (s *GeminiMessagesCompatService) writeClaudeError(c *gin.Context, status int, errType, message string) error {
 	MarkResponseCommitted(c)
-	c.JSON(status, gin.H{
-		"type":  "error",
-		"error": gin.H{"type": errType, "message": message},
-	})
+	c.JSON(status, ClientErrorEnvelope(c, errType, message))
 	return fmt.Errorf("%s", message)
 }
 
 func (s *GeminiMessagesCompatService) writeGoogleError(c *gin.Context, status int, message string) error {
 	MarkResponseCommitted(c)
-	c.JSON(status, gin.H{
-		"error": gin.H{
-			"code":    status,
-			"message": message,
-			"status":  googleapi.HTTPStatusToGoogleStatus(status),
-		},
-	})
+	c.JSON(status, GoogleClientErrorEnvelope(c, status, message))
 	return fmt.Errorf("%s", message)
 }
 

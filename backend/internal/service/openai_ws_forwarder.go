@@ -2238,17 +2238,15 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 			}
 			statusCode := openAIWSErrorHTTPStatusFromRaw(errCodeRaw, errTypeRaw)
 			setOpsUpstreamError(c, statusCode, errMsg, "")
+			safeClientErr := SafeClientUpstreamError(statusCode)
 			if reqStream && !clientDisconnected {
 				flushBufferedStreamEvents("error_event")
-				emitStreamMessage(message, true)
+				safeResponseID := responseID
+				safePayload, _ := json.Marshal(OpenAIResponsesFailedEnvelope(c, safeResponseID, originalModel, "server_error", safeClientErr.Message))
+				emitStreamMessage(safePayload, true)
 			}
 			if !reqStream {
-				c.JSON(statusCode, gin.H{
-					"error": gin.H{
-						"type":    "upstream_error",
-						"message": errMsg,
-					},
-				})
+				c.JSON(safeClientErr.StatusCode, OpenAIClientErrorEnvelope(c, safeClientErr.Type, safeClientErr.Message))
 			}
 			return nil, fmt.Errorf("openai ws error event: %s", errMsg)
 		}
@@ -2563,7 +2561,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 			return openAIWSClientPayload{}, NewOpenAIWSClientCloseError(coderws.StatusPolicyViolation, "invalid websocket request payload", policyErr)
 		}
 		if blocked != nil {
-			eventBytes := buildOpenAIFastPolicyBlockedWSEvent(blocked)
+			eventBytes := buildOpenAIFastPolicyBlockedWSEvent(blocked, ClientRequestID(c))
 			if eventBytes != nil {
 				writeCtx, cancel := context.WithTimeout(ctx, s.openAIWSWriteTimeout())
 				_ = clientConn.Write(writeCtx, coderws.MessageText, eventBytes)

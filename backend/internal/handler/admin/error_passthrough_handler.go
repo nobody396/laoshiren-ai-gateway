@@ -117,18 +117,24 @@ func (h *ErrorPassthroughHandler) Create(c *gin.Context) {
 	if req.PassthroughCode != nil {
 		rule.PassthroughCode = *req.PassthroughCode
 	} else {
-		rule.PassthroughCode = true
+		rule.PassthroughCode = false
+		defaultResponseCode := 503
+		rule.ResponseCode = &defaultResponseCode
 	}
-	if req.PassthroughBody != nil {
-		rule.PassthroughBody = *req.PassthroughBody
-	} else {
-		rule.PassthroughBody = true
+	rule.PassthroughBody = false
+	if req.PassthroughBody == nil {
+		defaultMessage := service.ClientMessageServiceUnavailable
+		rule.CustomMessage = &defaultMessage
 	}
 	if req.SkipMonitoring != nil {
 		rule.SkipMonitoring = *req.SkipMonitoring
 	}
-	rule.ResponseCode = req.ResponseCode
-	rule.CustomMessage = req.CustomMessage
+	if req.ResponseCode != nil {
+		rule.ResponseCode = req.ResponseCode
+	}
+	if req.CustomMessage != nil {
+		rule.CustomMessage = req.CustomMessage
+	}
 	rule.Description = req.Description
 
 	// 确保切片不为 nil
@@ -227,9 +233,7 @@ func (h *ErrorPassthroughHandler) Update(c *gin.Context) {
 	if req.ResponseCode != nil {
 		rule.ResponseCode = req.ResponseCode
 	}
-	if req.PassthroughBody != nil {
-		rule.PassthroughBody = *req.PassthroughBody
-	}
+	rule.PassthroughBody = false
 	if req.CustomMessage != nil {
 		rule.CustomMessage = req.CustomMessage
 	}

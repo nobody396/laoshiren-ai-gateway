@@ -136,7 +136,7 @@ func TestResolveOpenAIWSFallbackErrorResponse(t *testing.T) {
 		require.True(t, ok)
 		require.Equal(t, http.StatusBadRequest, statusCode)
 		require.Equal(t, "invalid_request_error", errType)
-		require.Equal(t, "previous response not found", clientMessage)
+		require.Equal(t, ClientMessageRequestFailed, clientMessage)
 		require.Equal(t, "previous response not found", upstreamMessage)
 	})
 
@@ -148,9 +148,9 @@ func TestResolveOpenAIWSFallbackErrorResponse(t *testing.T) {
 			}),
 		)
 		require.True(t, ok)
-		require.Equal(t, http.StatusForbidden, statusCode)
-		require.Equal(t, "upstream_error", errType)
-		require.Equal(t, "forbidden", clientMessage)
+		require.Equal(t, http.StatusServiceUnavailable, statusCode)
+		require.Equal(t, "api_error", errType)
+		require.Equal(t, ClientMessageServiceUnavailable, clientMessage)
 		require.Equal(t, "forbidden", upstreamMessage)
 	})
 

@@ -137,13 +137,15 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 				if lastFailoverErr != nil {
 					h.handleFailoverExhausted(c, lastFailoverErr, streamStarted)
 				} else {
-					h.handleStreamingAwareError(c, http.StatusBadGateway, "api_error", "Upstream request failed", streamStarted)
+					safeErr := service.SafeClientUpstreamError(http.StatusBadGateway)
+					h.handleStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, streamStarted)
 				}
 				return
 			}
 		}
 		if selection == nil || selection.Account == nil {
-			h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts", streamStarted)
+			safeErr := service.SafeClientUpstreamError(http.StatusServiceUnavailable)
+			h.handleStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, streamStarted)
 			return
 		}
 		account := selection.Account

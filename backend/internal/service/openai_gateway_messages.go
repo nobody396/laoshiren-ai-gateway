@@ -160,7 +160,8 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 			Kind:               "request_error",
 			Message:            safeErr,
 		})
-		writeAnthropicError(c, http.StatusBadGateway, "api_error", "Upstream request failed")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		writeAnthropicError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 		return nil, fmt.Errorf("upstream request failed: %s", safeErr)
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -333,7 +334,8 @@ func (s *OpenAIGatewayService) handleAnthropicBufferedStreamingResponse(
 	}
 
 	if finalResponse == nil {
-		writeAnthropicError(c, http.StatusBadGateway, "api_error", "Upstream stream ended without a terminal response event")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		writeAnthropicError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 		return nil, fmt.Errorf("upstream stream ended without terminal event")
 	}
 
@@ -657,11 +659,5 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 // writeAnthropicError writes an error response in Anthropic Messages API format.
 func writeAnthropicError(c *gin.Context, statusCode int, errType, message string) {
 	MarkResponseCommitted(c)
-	c.JSON(statusCode, gin.H{
-		"type": "error",
-		"error": gin.H{
-			"type":    errType,
-			"message": message,
-		},
-	})
+	c.JSON(statusCode, ClientErrorEnvelope(c, errType, message))
 }

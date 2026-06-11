@@ -139,13 +139,13 @@
                   </div>
                   <div class="flex items-center gap-1">
                     <Icon
-                      :name="rule.passthrough_body ? 'checkCircle' : 'xCircle'"
+                      name="xCircle"
                       size="xs"
-                      :class="rule.passthrough_body ? 'text-green-500' : 'text-gray-400'"
+                      class="text-gray-400"
                     />
                     <span class="text-gray-600 dark:text-gray-400">
                       {{ t('admin.errorPassthrough.body') }}:
-                      {{ rule.passthrough_body ? t('admin.errorPassthrough.passthrough') : t('admin.errorPassthrough.custom') }}
+                      {{ t('admin.errorPassthrough.custom') }}
                     </span>
                   </div>
                   <div v-if="rule.skip_monitoring" class="flex items-center gap-1">
@@ -353,25 +353,13 @@
               </div>
             </div>
             <div>
-              <label class="flex items-center gap-1.5">
-                <input
-                  type="checkbox"
-                  v-model="form.passthrough_body"
-                  class="h-3.5 w-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                />
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-300">
-                  {{ t('admin.errorPassthrough.form.passthroughBody') }}
-                </span>
-              </label>
-              <div v-if="!form.passthrough_body" class="mt-2">
-                <label class="input-label text-xs">{{ t('admin.errorPassthrough.form.customMessage') }}</label>
-                <input
-                  v-model="form.custom_message"
-                  type="text"
-                  class="input text-sm"
-                  :placeholder="t('admin.errorPassthrough.form.customMessagePlaceholder')"
-                />
-              </div>
+              <label class="input-label text-xs">{{ t('admin.errorPassthrough.form.customMessage') }}</label>
+              <input
+                v-model="form.custom_message"
+                type="text"
+                class="input text-sm"
+                :placeholder="t('admin.errorPassthrough.form.customMessagePlaceholder')"
+              />
             </div>
           </div>
         </div>
@@ -472,10 +460,10 @@ const form = reactive({
   priority: 0,
   match_mode: 'any' as 'any' | 'all',
   platforms: [] as string[],
-  passthrough_code: true,
-  response_code: null as number | null,
-  passthrough_body: true,
-  custom_message: null as string | null,
+  passthrough_code: false,
+  response_code: 503 as number | null,
+  passthrough_body: false,
+  custom_message: 'The service is temporarily unavailable. Please try again later.' as string | null,
   skip_monitoring: false,
   description: null as string | null
 })
@@ -517,10 +505,10 @@ const resetForm = () => {
   form.priority = 0
   form.match_mode = 'any'
   form.platforms = []
-  form.passthrough_code = true
-  form.response_code = null
-  form.passthrough_body = true
-  form.custom_message = null
+  form.passthrough_code = false
+  form.response_code = 503
+  form.passthrough_body = false
+  form.custom_message = 'The service is temporarily unavailable. Please try again later.'
   form.skip_monitoring = false
   form.description = null
   errorCodesInput.value = ''
@@ -543,7 +531,7 @@ const handleEdit = (rule: ErrorPassthroughRule) => {
   form.platforms = [...rule.platforms]
   form.passthrough_code = rule.passthrough_code
   form.response_code = rule.response_code
-  form.passthrough_body = rule.passthrough_body
+  form.passthrough_body = false
   form.custom_message = rule.custom_message
   form.skip_monitoring = rule.skip_monitoring
   form.description = rule.description
@@ -599,8 +587,8 @@ const handleSubmit = async () => {
       platforms: form.platforms,
       passthrough_code: form.passthrough_code,
       response_code: form.passthrough_code ? null : form.response_code,
-      passthrough_body: form.passthrough_body,
-      custom_message: form.passthrough_body ? null : form.custom_message,
+      passthrough_body: false,
+      custom_message: form.custom_message,
       skip_monitoring: form.skip_monitoring,
       description: form.description?.trim() || null
     }

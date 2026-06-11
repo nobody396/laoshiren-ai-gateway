@@ -14,7 +14,6 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/domain"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/antigravity"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/gemini"
-	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/googleapi"
 	pkghttputil "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/httputil"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ip"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
@@ -563,7 +562,8 @@ func parseGeminiModelAction(rest string) (model string, action string, err error
 
 func (h *GatewayHandler) handleGeminiFailoverExhausted(c *gin.Context, failoverErr *service.UpstreamFailoverError) {
 	if failoverErr == nil {
-		googleError(c, http.StatusBadGateway, "Upstream request failed")
+		safeErr := service.SafeClientUpstreamError(http.StatusBadGateway)
+		googleError(c, safeErr.StatusCode, safeErr.Message)
 		return
 	}
 
@@ -573,15 +573,18 @@ func (h *GatewayHandler) handleGeminiFailoverExhausted(c *gin.Context, failoverE
 	// 先检查透传规则
 	if h.errorPassthroughService != nil && len(responseBody) > 0 {
 		if rule := h.errorPassthroughService.MatchRule(service.PlatformGemini, statusCode, responseBody); rule != nil {
+			safeErr := service.SafeClientUpstreamError(statusCode)
 			// 确定响应状态码
-			respCode := statusCode
+			respCode := safeErr.StatusCode
 			if !rule.PassthroughCode && rule.ResponseCode != nil {
 				respCode = *rule.ResponseCode
+			} else if rule.PassthroughCode {
+				respCode = statusCode
 			}
 
 			// 确定响应消息
-			msg := service.ExtractUpstreamErrorMessage(responseBody)
-			if !rule.PassthroughBody && rule.CustomMessage != nil {
+			msg := safeErr.Message
+			if rule.CustomMessage != nil {
 				msg = *rule.CustomMessage
 			}
 
@@ -600,20 +603,8 @@ func (h *GatewayHandler) handleGeminiFailoverExhausted(c *gin.Context, failoverE
 }
 
 func mapGeminiUpstreamError(statusCode int) (int, string) {
-	switch statusCode {
-	case 401:
-		return http.StatusBadGateway, "Upstream authentication failed, please contact administrator"
-	case 403:
-		return http.StatusBadGateway, "Upstream access forbidden, please contact administrator"
-	case 429:
-		return http.StatusTooManyRequests, "Upstream rate limit exceeded, please retry later"
-	case 529:
-		return http.StatusServiceUnavailable, "Upstream service overloaded, please retry later"
-	case 500, 502, 503, 504:
-		return http.StatusBadGateway, "Upstream service temporarily unavailable"
-	default:
-		return http.StatusBadGateway, "Upstream request failed"
-	}
+	safeErr := service.SafeClientUpstreamError(statusCode)
+	return safeErr.StatusCode, safeErr.Message
 }
 
 type pathParseError struct{ msg string }
@@ -621,18 +612,17 @@ type pathParseError struct{ msg string }
 func (e *pathParseError) Error() string { return e.msg }
 
 func googleError(c *gin.Context, status int, message string) {
-	c.JSON(status, gin.H{
-		"error": gin.H{
-			"code":    status,
-			"message": message,
-			"status":  googleapi.HTTPStatusToGoogleStatus(status),
-		},
-	})
+	c.JSON(status, service.GoogleClientErrorEnvelope(c, status, message))
 }
 
 func writeUpstreamResponse(c *gin.Context, res *service.UpstreamHTTPResult) {
 	if res == nil {
 		googleError(c, http.StatusBadGateway, "Empty upstream response")
+		return
+	}
+	if res.StatusCode >= 400 {
+		safeErr := service.SafeClientUpstreamError(res.StatusCode)
+		googleError(c, safeErr.StatusCode, safeErr.Message)
 		return
 	}
 	for k, vv := range res.Headers {

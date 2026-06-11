@@ -137,7 +137,8 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 			Kind:               "request_error",
 			Message:            safeErr,
 		})
-		writeChatCompletionsError(c, http.StatusBadGateway, "upstream_error", "Upstream request failed")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		writeChatCompletionsError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 		return nil, fmt.Errorf("upstream request failed: %s", safeErr)
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -384,7 +385,8 @@ func (s *OpenAIGatewayService) bufferRawChatCompletions(
 	respBody, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
 	if err != nil {
 		if !errors.Is(err, ErrUpstreamResponseBodyTooLarge) {
-			writeChatCompletionsError(c, http.StatusBadGateway, "api_error", "Failed to read upstream response")
+			safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+			writeChatCompletionsError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 		}
 		return nil, fmt.Errorf("read upstream body: %w", err)
 	}

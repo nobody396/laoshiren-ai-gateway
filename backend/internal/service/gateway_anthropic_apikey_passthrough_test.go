@@ -650,6 +650,7 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_CountTokens404PassthroughNotE
 		statusCode      int
 		respBody        string
 		wantPassthrough bool
+		wantStatusCode  int
 	}{
 		{
 			name:            "404 endpoint not found passes through as 404",
@@ -662,24 +663,28 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_CountTokens404PassthroughNotE
 			statusCode:      http.StatusNotFound,
 			respBody:        `{"error":{"message":"resource not found","type":"not_found_error"}}`,
 			wantPassthrough: false,
+			wantStatusCode:  http.StatusNotFound,
 		},
 		{
 			name:            "400 Invalid URL does not passthrough",
 			statusCode:      http.StatusBadRequest,
 			respBody:        `{"error":{"message":"Invalid URL (POST /v1/messages/count_tokens)","type":"invalid_request_error"}}`,
 			wantPassthrough: false,
+			wantStatusCode:  http.StatusBadRequest,
 		},
 		{
 			name:            "400 model error does not passthrough",
 			statusCode:      http.StatusBadRequest,
 			respBody:        `{"error":{"message":"model not found: claude-unknown","type":"invalid_request_error"}}`,
 			wantPassthrough: false,
+			wantStatusCode:  http.StatusBadRequest,
 		},
 		{
 			name:            "500 internal error does not passthrough",
 			statusCode:      http.StatusInternalServerError,
 			respBody:        `{"error":{"message":"internal error","type":"api_error"}}`,
 			wantPassthrough: false,
+			wantStatusCode:  http.StatusBadGateway,
 		},
 	}
 
@@ -737,7 +742,7 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_CountTokens404PassthroughNotE
 				require.Equal(t, "not_found_error", errObj["type"])
 			} else {
 				require.Error(t, err)
-				require.Equal(t, tt.statusCode, rec.Code)
+				require.Equal(t, tt.wantStatusCode, rec.Code)
 			}
 		})
 	}

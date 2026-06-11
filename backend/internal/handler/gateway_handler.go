@@ -359,7 +359,8 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			selection, err := h.gatewayService.SelectAccountWithLoadAwareness(c.Request.Context(), apiKey.GroupID, sessionKey, reqModel, fs.FailedAccountIDs, "", int64(0)) // Gemini 不使用会话限制
 			if err != nil {
 				if len(fs.FailedAccountIDs) == 0 {
-					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error(), streamStarted)
+					safeErr := service.SafeClientUpstreamError(http.StatusServiceUnavailable)
+					h.handleStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, streamStarted)
 					return
 				}
 				action := fs.HandleSelectionExhausted(c.Request.Context())
@@ -402,7 +403,8 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			accountReleaseFunc := selection.ReleaseFunc
 			if !selection.Acquired {
 				if selection.WaitPlan == nil {
-					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts", streamStarted)
+					safeErr := service.SafeClientUpstreamError(http.StatusServiceUnavailable)
+					h.handleStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, streamStarted)
 					return
 				}
 				accountWaitCounted := false
@@ -588,7 +590,8 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			selection, err := h.gatewayService.SelectAccountWithLoadAwareness(c.Request.Context(), currentAPIKey.GroupID, sessionKey, reqModel, fs.FailedAccountIDs, parsedReq.MetadataUserID, subject.UserID)
 			if err != nil {
 				if len(fs.FailedAccountIDs) == 0 {
-					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error(), streamStarted)
+					safeErr := service.SafeClientUpstreamError(http.StatusServiceUnavailable)
+					h.handleStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, streamStarted)
 					return
 				}
 				action := fs.HandleSelectionExhausted(c.Request.Context())
@@ -631,7 +634,8 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			accountReleaseFunc := selection.ReleaseFunc
 			if !selection.Acquired {
 				if selection.WaitPlan == nil {
-					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts", streamStarted)
+					safeErr := service.SafeClientUpstreamError(http.StatusServiceUnavailable)
+					h.handleStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, streamStarted)
 					return
 				}
 				accountWaitCounted := false
@@ -1295,22 +1299,25 @@ func (h *GatewayHandler) handleFailoverExhausted(c *gin.Context, failoverErr *se
 
 	if service.IsOpenAISilentRefusalErrorBody(responseBody) {
 		service.SetOpsUpstreamError(c, statusCode, service.OpenAISilentRefusalClientMessage(), "")
-		h.handleStreamingAwareError(c, http.StatusBadGateway, "upstream_error", service.OpenAISilentRefusalClientMessage(), streamStarted)
+		h.handleStreamingAwareError(c, http.StatusBadGateway, "api_error", service.OpenAISilentRefusalClientMessage(), streamStarted)
 		return
 	}
 
 	// 先检查透传规则
 	if h.errorPassthroughService != nil && len(responseBody) > 0 {
 		if rule := h.errorPassthroughService.MatchRule(platform, statusCode, responseBody); rule != nil {
+			safeErr := service.SafeClientUpstreamError(statusCode)
 			// 确定响应状态码
-			respCode := statusCode
+			respCode := safeErr.StatusCode
 			if !rule.PassthroughCode && rule.ResponseCode != nil {
 				respCode = *rule.ResponseCode
+			} else if rule.PassthroughCode {
+				respCode = statusCode
 			}
 
 			// 确定响应消息
-			msg := service.ExtractUpstreamErrorMessage(responseBody)
-			if !rule.PassthroughBody && rule.CustomMessage != nil {
+			msg := safeErr.Message
+			if rule.CustomMessage != nil {
 				msg = *rule.CustomMessage
 			}
 
@@ -1318,7 +1325,7 @@ func (h *GatewayHandler) handleFailoverExhausted(c *gin.Context, failoverErr *se
 				c.Set(service.OpsSkipPassthroughKey, true)
 			}
 
-			h.handleStreamingAwareError(c, respCode, "upstream_error", msg, streamStarted)
+			h.handleStreamingAwareError(c, respCode, safeErr.Type, msg, streamStarted)
 			return
 		}
 	}
@@ -1340,20 +1347,8 @@ func (h *GatewayHandler) handleFailoverExhaustedSimple(c *gin.Context, statusCod
 }
 
 func (h *GatewayHandler) mapUpstreamError(statusCode int) (int, string, string) {
-	switch statusCode {
-	case 401:
-		return http.StatusBadGateway, "upstream_error", "Upstream authentication failed, please contact administrator"
-	case 403:
-		return http.StatusBadGateway, "upstream_error", "Upstream access forbidden, please contact administrator"
-	case 429:
-		return http.StatusTooManyRequests, "rate_limit_error", "Upstream rate limit exceeded, please retry later"
-	case 529:
-		return http.StatusServiceUnavailable, "overloaded_error", "Upstream service overloaded, please retry later"
-	case 500, 502, 503, 504:
-		return http.StatusBadGateway, "upstream_error", "Upstream service temporarily unavailable"
-	default:
-		return http.StatusBadGateway, "upstream_error", "Upstream request failed"
-	}
+	safeErr := service.SafeClientUpstreamError(statusCode)
+	return safeErr.StatusCode, safeErr.Type, safeErr.Message
 }
 
 // handleStreamingAwareError handles errors that may occur after streaming has started
@@ -1370,9 +1365,8 @@ func (h *GatewayHandler) handleStreamingAwareError(c *gin.Context, status int, e
 		// Stream already started, send error as SSE event then close
 		flusher, ok := c.Writer.(http.Flusher)
 		if ok {
-			// SSE 错误事件固定 schema，使用 Quote 直拼可避免额外 Marshal 分配。
-			errorEvent := `data: {"type":"error","error":{"type":` + strconv.Quote(errType) + `,"message":` + strconv.Quote(message) + `}}` + "\n\n"
-			if _, err := fmt.Fprint(c.Writer, errorEvent); err != nil {
+			errPayload, _ := json.Marshal(service.ClientErrorEnvelope(c, errType, message))
+			if _, err := fmt.Fprintf(c.Writer, "data: %s\n\n", errPayload); err != nil {
 				_ = c.Error(err)
 			}
 			flusher.Flush()
@@ -1398,7 +1392,8 @@ func (h *GatewayHandler) ensureForwardErrorResponse(c *gin.Context, streamStarte
 	if c.Writer.Written() {
 		streamStarted = true
 	}
-	h.handleStreamingAwareError(c, http.StatusBadGateway, "upstream_error", "Upstream request failed", streamStarted)
+	safeErr := service.SafeClientUpstreamError(http.StatusBadGateway)
+	h.handleStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, streamStarted)
 	return true
 }
 
@@ -1465,13 +1460,7 @@ func (h *GatewayHandler) checkClaudeCodeVersion(c *gin.Context) bool {
 
 // errorResponse 返回Claude API格式的错误响应
 func (h *GatewayHandler) errorResponse(c *gin.Context, status int, errType, message string) {
-	c.JSON(status, gin.H{
-		"type": "error",
-		"error": gin.H{
-			"type":    errType,
-			"message": message,
-		},
-	})
+	c.JSON(status, service.ClientErrorEnvelope(c, errType, message))
 }
 
 // CountTokens handles token counting endpoint
@@ -1559,7 +1548,7 @@ func (h *GatewayHandler) CountTokens(c *gin.Context) {
 	account, err := h.gatewayService.SelectAccountForModel(c.Request.Context(), apiKey.GroupID, sessionHash, parsedReq.Model)
 	if err != nil {
 		reqLog.Warn("gateway.count_tokens_select_account_failed", zap.Error(err))
-		h.errorResponse(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable")
+		h.errorResponse(c, http.StatusServiceUnavailable, "api_error", service.ClientMessageServiceUnavailable)
 		return
 	}
 	setOpsSelectedAccount(c, account.ID, account.Platform)

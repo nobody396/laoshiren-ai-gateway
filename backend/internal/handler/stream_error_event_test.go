@@ -110,8 +110,9 @@ func TestOpenAIHandleStreamingAwareError_ResponsesStreamingReusesRequestID(t *te
 	h := &OpenAIGatewayHandler{}
 	h.handleStreamingAwareError(c, http.StatusTooManyRequests, "rate_limit_error", "x", true)
 
-	resp, _ := parseResponsesFailedSSE(t, w.Body.String())
+	resp, errObj := parseResponsesFailedSSE(t, w.Body.String())
 	assert.Equal(t, "resp_fd277bc5ff7e45d18aa9f54e1df318f1", resp["id"])
+	assert.Equal(t, "fd277bc5-ff7e-45d1-8aa9-f54e1df318f1", errObj["request_id"])
 }
 
 // 与旧分支的 TestOpenAIHandleStreamingAwareError_JSONEscaping 对齐：
@@ -160,7 +161,7 @@ func TestGatewayHandleStreamingAwareError_ResponsesStreamingEmitsResponseFailed(
 	h.handleStreamingAwareError(c, http.StatusBadGateway, "upstream_error", "upstream gone", true)
 
 	_, errObj := parseResponsesFailedSSE(t, w.Body.String())
-	assert.Equal(t, "upstream_error", errObj["code"])
+	assert.Equal(t, "server_error", errObj["code"])
 	assert.Equal(t, "upstream gone", errObj["message"])
 }
 
@@ -172,7 +173,10 @@ func TestGatewayHandleStreamingAwareError_MessagesStreamingKeepsLegacy(t *testin
 	h.handleStreamingAwareError(c, http.StatusBadGateway, "upstream_error", "boom", true)
 
 	body := w.Body.String()
-	assert.True(t, strings.HasPrefix(body, `data: {"type":"error"`), "got: %q", body)
+	require.True(t, strings.HasPrefix(body, "data: "), "got: %q", body)
+	var parsed map[string]any
+	require.NoError(t, json.Unmarshal([]byte(strings.TrimSuffix(strings.TrimPrefix(body, "data: "), "\n\n")), &parsed))
+	assert.Equal(t, "error", parsed["type"])
 }
 
 // 项目里 /responses 注册在多组路由：/v1/responses（gateway）、裸 /responses（top-level）、
@@ -241,7 +245,7 @@ func TestMapResponsesErrorCode(t *testing.T) {
 		{"invalid_request_error", "invalid_request"},
 		{"permission_error", "permission_denied"},
 		{"authentication_error", "authentication_failed"},
-		{"upstream_error", "upstream_error"},
+		{"upstream_error", "server_error"},
 		{"server_error", "server_error"},
 		{"api_error", "server_error"},
 		{"", "server_error"},

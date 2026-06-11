@@ -33,12 +33,13 @@ func writeResponsesFailedSSE(c *gin.Context, errType, message string) bool {
 	if !ok {
 		return false
 	}
+	requestID := responsesErrorRequestID(c)
 	rid := synthesizeResponseID(c)
 	model := requestModel(c)
 	code := mapResponsesErrorCode(errType)
 
 	var b strings.Builder
-	b.Grow(256 + len(message) + len(model))
+	b.Grow(256 + len(message) + len(model) + len(requestID))
 	write := func(s string) {
 		_, _ = b.WriteString(s)
 	}
@@ -54,6 +55,10 @@ func writeResponsesFailedSSE(c *gin.Context, errType, message string) bool {
 	write(strconv.Quote(code))
 	write(`,"message":`)
 	write(strconv.Quote(message))
+	if requestID != "" {
+		write(`,"request_id":`)
+		write(strconv.Quote(requestID))
+	}
 	write(`}}}`)
 
 	if _, err := fmt.Fprintf(c.Writer, "event: response.failed\ndata: %s\n\n", b.String()); err != nil {
@@ -98,14 +103,20 @@ func inboundIsResponses(c *gin.Context) bool {
 // 优先复用 server 端生成的 request_id（存在 request.Context 里，由 request_logger 写入），
 // 以便客户端报错能与 server 日志关联；缺失时回退 uuid。
 func synthesizeResponseID(c *gin.Context) string {
-	if c != nil && c.Request != nil {
-		if rid, ok := c.Request.Context().Value(ctxkey.RequestID).(string); ok {
-			if rid = strings.TrimSpace(rid); rid != "" {
-				return "resp_" + strings.ReplaceAll(rid, "-", "")
-			}
-		}
+	if rid := responsesErrorRequestID(c); rid != "" {
+		return "resp_" + strings.ReplaceAll(rid, "-", "")
 	}
 	return "resp_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+}
+
+func responsesErrorRequestID(c *gin.Context) string {
+	if c == nil || c.Request == nil {
+		return ""
+	}
+	if rid, ok := c.Request.Context().Value(ctxkey.RequestID).(string); ok {
+		return strings.TrimSpace(rid)
+	}
+	return ""
 }
 
 // requestModel 取当前请求的 inbound model（由 setOpsRequestContext 写入）。
@@ -135,7 +146,7 @@ func mapResponsesErrorCode(errType string) string {
 	case "authentication_error":
 		return "authentication_failed"
 	case "upstream_error":
-		return "upstream_error"
+		return "server_error"
 	case "server_error", "api_error", "":
 		return "server_error"
 	default:

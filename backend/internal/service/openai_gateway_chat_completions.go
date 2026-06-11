@@ -198,7 +198,8 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 			Kind:               "request_error",
 			Message:            safeErr,
 		})
-		writeChatCompletionsError(c, http.StatusBadGateway, "upstream_error", "Upstream request failed")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		writeChatCompletionsError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 		return nil, fmt.Errorf("upstream request failed: %s", safeErr)
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -399,7 +400,8 @@ func (s *OpenAIGatewayService) handleChatBufferedStreamingResponse(
 	}
 
 	if finalResponse == nil {
-		writeChatCompletionsError(c, http.StatusBadGateway, "api_error", "Upstream stream ended without a terminal response event")
+		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+		writeChatCompletionsError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
 		return nil, fmt.Errorf("upstream stream ended without terminal event")
 	}
 
@@ -847,10 +849,5 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 // writeChatCompletionsError writes an error response in OpenAI Chat Completions format.
 func writeChatCompletionsError(c *gin.Context, statusCode int, errType, message string) {
 	MarkResponseCommitted(c)
-	c.JSON(statusCode, gin.H{
-		"error": gin.H{
-			"type":    errType,
-			"message": message,
-		},
-	})
+	c.JSON(statusCode, OpenAIClientErrorEnvelope(c, errType, message))
 }

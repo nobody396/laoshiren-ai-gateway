@@ -27,8 +27,8 @@ export type MonthlyCreditCardPlan = {
 
 const weeklyCardDays = 7
 const monthlyCardDays = 30
-const gptCreditsPerUsd = 0.8
-const claudeCreditsPerUsd = 1.8
+const gptCreditsPerUsd = 0.4
+const claudeCreditsPerUsd = 1.25
 const displayCreditScale = 10
 
 function formatUsd(value: number): string {

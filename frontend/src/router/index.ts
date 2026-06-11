@@ -534,7 +534,7 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       requiresAdmin: true,
       permission: 'admin:ops',
-      title: 'Monthly Upstream Monitor'
+      title: '月卡监控'
     }
   },
   {

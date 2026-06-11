@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,8 +17,19 @@ import (
 )
 
 const (
-	monthlyUpstreamProbeInterval = time.Minute
+	monthlyUpstreamProbeInterval = 2 * time.Minute
 	monthlyUpstreamProbeTimeout  = 25 * time.Second
+
+	monthlyOpenAIProbeEstimatedInputTokens     = 18
+	monthlyOpenAIProbeEstimatedOutputTokens    = 1
+	monthlyAnthropicProbeEstimatedInputTokens  = 236
+	monthlyAnthropicProbeEstimatedOutputTokens = 32
+
+	monthlyOpenAIGPT54MiniInputCostPerToken  = 7.5e-7
+	monthlyOpenAIGPT54MiniOutputCostPerToken = 4.5e-6
+	monthlyClaudeHaiku45InputCostPerToken    = 1e-6
+	monthlyClaudeHaiku45OutputCostPerToken   = 5e-6
+	monthlyUpstreamProbeCostCurrency         = "USD"
 )
 
 var monthlyUpstreamProbeTargets = []struct {
@@ -25,8 +37,24 @@ var monthlyUpstreamProbeTargets = []struct {
 	Platform    string
 	Model       string
 }{
-	{AccountName: "pomoai-monthly-codex-0.12", Platform: PlatformOpenAI, Model: "gpt-5.4-mini-openai-compact"},
+	{AccountName: "pomoai-monthly-codex-0.12", Platform: PlatformOpenAI, Model: "gpt-5.4-mini"},
 	{AccountName: "pomoai-monthly-claude-0.4", Platform: PlatformAnthropic, Model: "claude-haiku-4-5"},
+}
+
+type MonthlyUpstreamProbeCostEstimate struct {
+	Currency             string  `json:"currency"`
+	RateMultiplier       float64 `json:"rate_multiplier"`
+	InputTokens          int     `json:"input_tokens"`
+	OutputTokens         int     `json:"output_tokens"`
+	InputCostPerToken    float64 `json:"input_cost_per_token"`
+	OutputCostPerToken   float64 `json:"output_cost_per_token"`
+	StandardCostPerProbe float64 `json:"standard_cost_per_probe"`
+	ActualCostPerProbe   float64 `json:"actual_cost_per_probe"`
+	ActualCostPerMinute  float64 `json:"actual_cost_per_minute"`
+	ActualCostPerHour    float64 `json:"actual_cost_per_hour"`
+	ActualCostPerDay     float64 `json:"actual_cost_per_day"`
+	ProbeIntervalSeconds int     `json:"probe_interval_seconds"`
+	EstimateNote         string  `json:"estimate_note"`
 }
 
 type MonthlyUpstreamProbePoint struct {
@@ -43,20 +71,21 @@ type MonthlyUpstreamProbePoint struct {
 }
 
 type MonthlyUpstreamProbeAccount struct {
-	AccountID        int64                       `json:"account_id"`
-	AccountName      string                      `json:"account_name"`
-	Platform         string                      `json:"platform"`
-	Model            string                      `json:"model"`
-	LatestStatus     string                      `json:"latest_status"`
-	LatestHTTPStatus *int                        `json:"latest_http_status"`
-	LatestLatencyMs  int64                       `json:"latest_latency_ms"`
-	LatestErrorCode  string                      `json:"latest_error_code"`
-	LatestError      string                      `json:"latest_error"`
-	LatestCheckedAt  *time.Time                  `json:"latest_checked_at"`
-	Uptime           float64                     `json:"uptime"`
-	SuccessCount     int                         `json:"success_count"`
-	TotalCount       int                         `json:"total_count"`
-	Points           []MonthlyUpstreamProbePoint `json:"points"`
+	AccountID        int64                             `json:"account_id"`
+	AccountName      string                            `json:"account_name"`
+	Platform         string                            `json:"platform"`
+	Model            string                            `json:"model"`
+	LatestStatus     string                            `json:"latest_status"`
+	LatestHTTPStatus *int                              `json:"latest_http_status"`
+	LatestLatencyMs  int64                             `json:"latest_latency_ms"`
+	LatestErrorCode  string                            `json:"latest_error_code"`
+	LatestError      string                            `json:"latest_error"`
+	LatestCheckedAt  *time.Time                        `json:"latest_checked_at"`
+	Uptime           float64                           `json:"uptime"`
+	SuccessCount     int                               `json:"success_count"`
+	TotalCount       int                               `json:"total_count"`
+	CostEstimate     *MonthlyUpstreamProbeCostEstimate `json:"cost_estimate,omitempty"`
+	Points           []MonthlyUpstreamProbePoint       `json:"points"`
 }
 
 type MonthlyUpstreamProbeSnapshot struct {
@@ -64,6 +93,28 @@ type MonthlyUpstreamProbeSnapshot struct {
 	WindowMinutes int                           `json:"window_minutes"`
 	GeneratedAt   time.Time                     `json:"generated_at"`
 	Accounts      []MonthlyUpstreamProbeAccount `json:"accounts"`
+}
+
+type MonthlyCardPublicStatusPoint struct {
+	Status    string    `json:"status"`
+	CheckedAt time.Time `json:"checked_at"`
+}
+
+type MonthlyCardPublicStatusAccount struct {
+	DisplayName     string                         `json:"display_name"`
+	Channel         string                         `json:"channel"`
+	Status          string                         `json:"status"`
+	LatestCheckedAt *time.Time                     `json:"latest_checked_at"`
+	Uptime          float64                        `json:"uptime"`
+	Points          []MonthlyCardPublicStatusPoint `json:"points"`
+}
+
+type MonthlyCardPublicStatusSnapshot struct {
+	Enabled              bool                             `json:"enabled"`
+	WindowMinutes        int                              `json:"window_minutes"`
+	ProbeIntervalSeconds int                              `json:"probe_interval_seconds"`
+	GeneratedAt          time.Time                        `json:"generated_at"`
+	Accounts             []MonthlyCardPublicStatusAccount `json:"accounts"`
 }
 
 type MonthlyUpstreamProbeSettings struct {
@@ -138,9 +189,19 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 	if err != nil {
 		return nil, err
 	}
+	probeAccounts := map[string]*Account{}
+	if s.accountRepo != nil {
+		if loaded, loadErr := s.loadMonthlyUpstreamProbeAccounts(ctx); loadErr == nil {
+			probeAccounts = loaded
+		}
+	}
 
 	byAccount := make(map[string]*MonthlyUpstreamProbeAccount)
 	for _, point := range points {
+		if target, ok := monthlyUpstreamProbeTarget(point.AccountName); ok {
+			point.Platform = target.Platform
+			point.Model = target.Model
+		}
 		key := point.AccountName
 		if key == "" {
 			key = point.Platform + ":" + point.Model
@@ -152,7 +213,13 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 				AccountName: point.AccountName,
 				Platform:    point.Platform,
 				Model:       point.Model,
-				Points:      make([]MonthlyUpstreamProbePoint, 0, windowMinutes),
+				CostEstimate: buildMonthlyUpstreamProbeCostEstimate(
+					point.AccountName,
+					point.Platform,
+					point.Model,
+					probeAccounts[point.AccountName],
+				),
+				Points: make([]MonthlyUpstreamProbePoint, 0, windowMinutes),
 			}
 			byAccount[key] = item
 		}
@@ -170,6 +237,14 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 			item.LatestErrorCode = point.ErrorCode
 			item.LatestError = point.ErrorMessage
 			item.Model = point.Model
+			if item.CostEstimate == nil {
+				item.CostEstimate = buildMonthlyUpstreamProbeCostEstimate(
+					point.AccountName,
+					point.Platform,
+					point.Model,
+					probeAccounts[point.AccountName],
+				)
+			}
 		}
 	}
 
@@ -196,6 +271,82 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 		GeneratedAt:   now,
 		Accounts:      accounts,
 	}, nil
+}
+
+func (s *OpsService) GetMonthlyCardPublicStatusSnapshot(ctx context.Context, windowMinutes int) (*MonthlyCardPublicStatusSnapshot, error) {
+	snapshot, err := s.GetMonthlyUpstreamProbeSnapshot(ctx, windowMinutes)
+	if err != nil {
+		return nil, err
+	}
+
+	accounts := make([]MonthlyCardPublicStatusAccount, 0, len(snapshot.Accounts))
+	for _, account := range snapshot.Accounts {
+		points := make([]MonthlyCardPublicStatusPoint, 0, len(account.Points))
+		for _, point := range account.Points {
+			points = append(points, MonthlyCardPublicStatusPoint{
+				Status:    point.Status,
+				CheckedAt: point.CheckedAt,
+			})
+		}
+
+		accounts = append(accounts, MonthlyCardPublicStatusAccount{
+			DisplayName:     monthlyCardPublicDisplayName(account.Platform),
+			Channel:         monthlyCardPublicChannelName(account.Platform),
+			Status:          account.LatestStatus,
+			LatestCheckedAt: account.LatestCheckedAt,
+			Uptime:          account.Uptime,
+			Points:          points,
+		})
+	}
+	sort.Slice(accounts, func(i, j int) bool {
+		leftRank := monthlyCardPublicSortRank(accounts[i].Channel)
+		rightRank := monthlyCardPublicSortRank(accounts[j].Channel)
+		if leftRank == rightRank {
+			return accounts[i].DisplayName < accounts[j].DisplayName
+		}
+		return leftRank < rightRank
+	})
+
+	return &MonthlyCardPublicStatusSnapshot{
+		Enabled:              snapshot.Enabled,
+		WindowMinutes:        snapshot.WindowMinutes,
+		ProbeIntervalSeconds: int(monthlyUpstreamProbeInterval / time.Second),
+		GeneratedAt:          snapshot.GeneratedAt,
+		Accounts:             accounts,
+	}, nil
+}
+
+func monthlyCardPublicSortRank(channel string) int {
+	switch channel {
+	case "Codex":
+		return 1
+	case "Claude":
+		return 2
+	default:
+		return 99
+	}
+}
+
+func monthlyCardPublicDisplayName(platform string) string {
+	switch platform {
+	case PlatformOpenAI:
+		return "Codex 月卡"
+	case PlatformAnthropic:
+		return "Claude 月卡"
+	default:
+		return "月卡通道"
+	}
+}
+
+func monthlyCardPublicChannelName(platform string) string {
+	switch platform {
+	case PlatformOpenAI:
+		return "Codex"
+	case PlatformAnthropic:
+		return "Claude"
+	default:
+		return platform
+	}
 }
 
 func (s *OpsService) RunMonthlyUpstreamProbeOnce(ctx context.Context) error {
@@ -229,6 +380,23 @@ func (s *OpsService) RunMonthlyUpstreamProbeOnce(ctx context.Context) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func monthlyUpstreamProbeTarget(accountName string) (struct {
+	AccountName string
+	Platform    string
+	Model       string
+}, bool) {
+	for _, target := range monthlyUpstreamProbeTargets {
+		if target.AccountName == accountName {
+			return target, true
+		}
+	}
+	return struct {
+		AccountName string
+		Platform    string
+		Model       string
+	}{}, false
 }
 
 func (s *OpsService) loadMonthlyUpstreamProbeAccounts(ctx context.Context) (map[string]*Account, error) {
@@ -294,9 +462,6 @@ func probeMonthlyOpenAIUpstream(ctx context.Context, account *Account, model str
 		baseURL = "https://api.openai.com"
 	}
 	url := buildOpenAIResponsesURL(baseURL)
-	if strings.HasSuffix(model, "-openai-compact") {
-		url = appendOpenAIResponsesRequestPathSuffix(url, "/compact")
-	}
 	body, _ := json.Marshal(createOpenAICompactProbePayload(model))
 	return executeMonthlyProbeHTTP(ctx, account, model, url, map[string]string{
 		"Authorization":   "Bearer " + apiKey,
@@ -309,6 +474,61 @@ func probeMonthlyOpenAIUpstream(ctx context.Context, account *Account, model str
 		"Session_ID":      fmt.Sprintf("monthly_probe_%d", account.ID),
 		"Conversation_ID": fmt.Sprintf("monthly_probe_%d", account.ID),
 	}, body)
+}
+
+func buildMonthlyUpstreamProbeCostEstimate(accountName, platform, model string, account *Account) *MonthlyUpstreamProbeCostEstimate {
+	rateMultiplier := monthlyProbeRateMultiplier(account, accountName)
+	var inputTokens, outputTokens int
+	var inputPrice, outputPrice float64
+
+	switch {
+	case platform == PlatformOpenAI && model == "gpt-5.4-mini":
+		inputTokens = monthlyOpenAIProbeEstimatedInputTokens
+		outputTokens = monthlyOpenAIProbeEstimatedOutputTokens
+		inputPrice = monthlyOpenAIGPT54MiniInputCostPerToken
+		outputPrice = monthlyOpenAIGPT54MiniOutputCostPerToken
+	case platform == PlatformAnthropic && model == "claude-haiku-4-5":
+		inputTokens = monthlyAnthropicProbeEstimatedInputTokens
+		outputTokens = monthlyAnthropicProbeEstimatedOutputTokens
+		inputPrice = monthlyClaudeHaiku45InputCostPerToken
+		outputPrice = monthlyClaudeHaiku45OutputCostPerToken
+	default:
+		return nil
+	}
+
+	standard := float64(inputTokens)*inputPrice + float64(outputTokens)*outputPrice
+	actual := standard * rateMultiplier
+	perMinute := actual * float64(time.Minute) / float64(monthlyUpstreamProbeInterval)
+	return &MonthlyUpstreamProbeCostEstimate{
+		Currency:             monthlyUpstreamProbeCostCurrency,
+		RateMultiplier:       rateMultiplier,
+		InputTokens:          inputTokens,
+		OutputTokens:         outputTokens,
+		InputCostPerToken:    inputPrice,
+		OutputCostPerToken:   outputPrice,
+		StandardCostPerProbe: standard,
+		ActualCostPerProbe:   actual,
+		ActualCostPerMinute:  perMinute,
+		ActualCostPerHour:    perMinute * 60,
+		ActualCostPerDay:     perMinute * 60 * 24,
+		ProbeIntervalSeconds: int(monthlyUpstreamProbeInterval / time.Second),
+		EstimateNote:         "按近期月卡健康探针实测均值估算，实际账单以 usage_logs 为准",
+	}
+}
+
+func monthlyProbeRateMultiplier(account *Account, accountName string) float64 {
+	if account != nil {
+		return account.BillingRateMultiplier()
+	}
+	parts := strings.Split(strings.TrimSpace(accountName), "-")
+	if len(parts) == 0 {
+		return 1
+	}
+	parsed, err := strconv.ParseFloat(parts[len(parts)-1], 64)
+	if err != nil || parsed < 0 {
+		return 1
+	}
+	return parsed
 }
 
 func probeMonthlyAnthropicUpstream(ctx context.Context, account *Account, model string) MonthlyUpstreamProbePoint {

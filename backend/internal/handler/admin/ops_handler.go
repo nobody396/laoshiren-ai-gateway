@@ -104,6 +104,32 @@ func (h *OpsHandler) GetMonthlyUpstreamProbeSnapshot(c *gin.Context) {
 	response.Success(c, snapshot)
 }
 
+// GetPublicMonthlyCardStatus returns a sanitized monthly-card status snapshot for regular users.
+// GET /api/v1/monthly-card/status
+func (h *OpsHandler) GetPublicMonthlyCardStatus(c *gin.Context) {
+	if h.opsService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
+		return
+	}
+
+	windowMinutes := 60
+	if raw := strings.TrimSpace(c.Query("window_minutes")); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed <= 0 {
+			response.BadRequest(c, "Invalid window_minutes")
+			return
+		}
+		windowMinutes = parsed
+	}
+
+	snapshot, err := h.opsService.GetMonthlyCardPublicStatusSnapshot(c.Request.Context(), windowMinutes)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "The service is temporarily unavailable. Please try again later.")
+		return
+	}
+	response.Success(c, snapshot)
+}
+
 // UpdateMonthlyUpstreamProbeSettings updates monthly upstream probe switch.
 // PUT /api/v1/admin/ops/monthly-upstreams/settings
 func (h *OpsHandler) UpdateMonthlyUpstreamProbeSettings(c *gin.Context) {

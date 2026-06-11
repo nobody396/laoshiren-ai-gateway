@@ -15,6 +15,22 @@ export interface MonthlyUpstreamProbePoint {
   checked_at: string
 }
 
+export interface MonthlyUpstreamProbeCostEstimate {
+  currency: string
+  rate_multiplier: number
+  input_tokens: number
+  output_tokens: number
+  input_cost_per_token: number
+  output_cost_per_token: number
+  standard_cost_per_probe: number
+  actual_cost_per_probe: number
+  actual_cost_per_minute: number
+  actual_cost_per_hour: number
+  actual_cost_per_day: number
+  probe_interval_seconds: number
+  estimate_note: string
+}
+
 export interface MonthlyUpstreamProbeAccount {
   account_id: number
   account_name: string
@@ -29,6 +45,7 @@ export interface MonthlyUpstreamProbeAccount {
   uptime: number
   success_count: number
   total_count: number
+  cost_estimate?: MonthlyUpstreamProbeCostEstimate
   points: MonthlyUpstreamProbePoint[]
 }
 

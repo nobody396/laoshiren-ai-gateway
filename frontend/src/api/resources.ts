@@ -44,14 +44,8 @@ export function buildResourceDownloadURL(token: string): string {
 export async function downloadAsset(tool: DownloadToolID, asset: DownloadAsset): Promise<void> {
   const { token } = await createDownloadURL(tool, asset)
   const url = buildResourceDownloadURL(token)
-  const frame = document.createElement('iframe')
-  frame.src = url
-  frame.title = `download-${asset.id}`
-  frame.style.cssText = 'position:absolute;width:0;height:0;border:0;opacity:0;pointer-events:none'
-  document.body.appendChild(frame)
-  window.setTimeout(() => {
-    frame.remove()
-  }, 5 * 60 * 1000)
+  // Use a top-level navigation so X-Frame-Options/CSP frame restrictions cannot block the file response.
+  window.location.assign(url)
 }
 
 export async function getCCSwitchDownloads(): Promise<DownloadManifest> {

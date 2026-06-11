@@ -100,7 +100,7 @@ export const monthlyCreditCardPlans: MonthlyCreditCardPlan[] = [
     dailyCredits: 15,
     description: '适合首次尝鲜，一份额度池同时覆盖 GPT Pro 与 Claude Max。',
     accent: 'lite',
-    cardShopUrl: ''
+    cardShopUrl: 'https://pay.ldxp.cn/item/dinyum'
   }),
   createMonthlyCreditCardPlan({
     id: 'pro',
@@ -110,7 +110,7 @@ export const monthlyCreditCardPlans: MonthlyCreditCardPlan[] = [
     dailyCredits: 30,
     description: '适合稳定日常开发，两个高阶分组共用同一份总额度。',
     accent: 'pro',
-    cardShopUrl: ''
+    cardShopUrl: 'https://pay.ldxp.cn/item/b1e0f5'
   }),
   createMonthlyCreditCardPlan({
     id: 'max',
@@ -120,7 +120,7 @@ export const monthlyCreditCardPlans: MonthlyCreditCardPlan[] = [
     dailyCredits: 40,
     description: '适合重度开发者，共享池在复杂任务和长会话里留出余量。',
     accent: 'max',
-    cardShopUrl: ''
+    cardShopUrl: 'https://pay.ldxp.cn/item/lhd7pa'
   }),
   createMonthlyCreditCardPlan({
     id: 'ultra',
@@ -130,6 +130,6 @@ export const monthlyCreditCardPlans: MonthlyCreditCardPlan[] = [
     dailyCredits: 50,
     description: '适合长期高频使用，两条高阶渠道共用同一份月度额度。',
     accent: 'ultra',
-    cardShopUrl: ''
+    cardShopUrl: 'https://pay.ldxp.cn/item/kqbjn9'
   })
 ]

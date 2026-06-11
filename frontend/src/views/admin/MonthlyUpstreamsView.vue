@@ -85,7 +85,10 @@
                   <div class="font-mono text-3xl font-semibold" :class="uptimeTextClass(account.uptime)">
                     {{ formatPercent(account.uptime) }}
                   </div>
-                  <div class="mt-1 text-xs uppercase tracking-[0.18em] text-gray-400">UPTIME</div>
+                  <div class="mt-1 text-xs uppercase tracking-[0.18em] text-gray-400">HEALTH</div>
+                  <div v-if="account.total_count > 0" class="mt-1 text-xs text-gray-400">
+                    {{ account.success_count }}/{{ account.total_count }} slots
+                  </div>
                 </div>
               </div>
 
@@ -233,8 +236,17 @@ const latestUpdateText = computed(() => {
   return formatTime(latest)
 })
 
-const hasFailures = computed(() => accounts.value.some((account) => account.latest_status === 'failed' || account.latest_status === 'not_schedulable'))
-const hasWarnings = computed(() => accounts.value.some((account) => account.latest_status === 'slow' || account.latest_status === 'rate_limited'))
+const hasFailures = computed(() => accounts.value.some((account) =>
+  account.latest_status === 'failed' ||
+  account.latest_status === 'not_schedulable' ||
+  account.latest_status === 'missing' ||
+  account.uptime < 0.8
+))
+const hasWarnings = computed(() => accounts.value.some((account) =>
+  account.latest_status === 'slow' ||
+  account.latest_status === 'rate_limited' ||
+  (account.uptime < 0.98 && account.uptime >= 0.8)
+))
 
 const summaryText = computed(() => {
   if (!enabled.value) return '监控已关闭'

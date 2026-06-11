@@ -1,6 +1,6 @@
 import { apiClient } from '../client'
 
-export type MonthlyUpstreamProbeStatus = 'ok' | 'slow' | 'rate_limited' | 'failed' | 'not_schedulable'
+export type MonthlyUpstreamProbeStatus = 'ok' | 'slow' | 'rate_limited' | 'failed' | 'not_schedulable' | 'missing'
 
 export interface MonthlyUpstreamProbePoint {
   account_id: number

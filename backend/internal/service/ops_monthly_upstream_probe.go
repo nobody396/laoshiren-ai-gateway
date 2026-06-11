@@ -16,6 +16,7 @@ import (
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 const (
@@ -257,6 +258,10 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 	}
 
 	now := time.Now()
+	enabled := s.IsMonthlyUpstreamProbeEnabled(ctx)
+	publicStatusEnabled := s.IsMonthlyCardPublicStatusEnabled(ctx)
+	reference := now.Truncate(time.Minute)
+	expectedSlots := monthlyUpstreamProbeExpectedSlotCount(windowMinutes)
 	points, err := s.opsRepo.ListMonthlyUpstreamProbeResults(ctx, now.Add(-time.Duration(windowMinutes)*time.Minute))
 	if err != nil {
 		return nil, err
@@ -269,33 +274,61 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 	}
 
 	byAccount := make(map[string]*MonthlyUpstreamProbeAccount)
+	gatewayPointsBySlot := make(map[string]map[int]MonthlyUpstreamProbePoint)
+	targetInitialized := make(map[string]bool)
+	ensureAccount := func(accountID int64, accountName, platform, model string) (*MonthlyUpstreamProbeAccount, string) {
+		key := accountName
+		if key == "" {
+			key = platform + ":" + model
+		}
+		item := byAccount[key]
+		if item == nil {
+			item = &MonthlyUpstreamProbeAccount{
+				AccountID:   accountID,
+				AccountName: accountName,
+				Platform:    platform,
+				Model:       model,
+				CostEstimate: buildMonthlyUpstreamProbeCostEstimate(
+					accountName,
+					platform,
+					model,
+					probeAccounts[accountName],
+				),
+				Points: make([]MonthlyUpstreamProbePoint, 0, expectedSlots),
+			}
+			byAccount[key] = item
+		}
+		if item.AccountID == 0 && accountID != 0 {
+			item.AccountID = accountID
+		}
+		if item.AccountName == "" && accountName != "" {
+			item.AccountName = accountName
+		}
+		if item.Platform == "" && platform != "" {
+			item.Platform = platform
+		}
+		if item.Model == "" && model != "" {
+			item.Model = model
+		}
+		return item, key
+	}
+	if enabled && len(probeAccounts) > 0 {
+		for _, target := range monthlyUpstreamProbeTargets {
+			account := probeAccounts[target.AccountName]
+			if account == nil {
+				continue
+			}
+			_, key := ensureAccount(account.ID, target.AccountName, target.Platform, target.Model)
+			targetInitialized[key] = true
+		}
+	}
 	for _, point := range points {
 		point.ProbePath = normalizeMonthlyUpstreamProbePath(point.ProbePath)
 		if target, ok := monthlyUpstreamProbeTarget(point.AccountName); ok {
 			point.Platform = target.Platform
 			point.Model = target.Model
 		}
-		key := point.AccountName
-		if key == "" {
-			key = point.Platform + ":" + point.Model
-		}
-		item := byAccount[key]
-		if item == nil {
-			item = &MonthlyUpstreamProbeAccount{
-				AccountID:   point.AccountID,
-				AccountName: point.AccountName,
-				Platform:    point.Platform,
-				Model:       point.Model,
-				CostEstimate: buildMonthlyUpstreamProbeCostEstimate(
-					point.AccountName,
-					point.Platform,
-					point.Model,
-					probeAccounts[point.AccountName],
-				),
-				Points: make([]MonthlyUpstreamProbePoint, 0, windowMinutes),
-			}
-			byAccount[key] = item
-		}
+		item, key := ensureAccount(point.AccountID, point.AccountName, point.Platform, point.Model)
 		if point.ProbePath == MonthlyUpstreamProbePathDirectUpstream {
 			if item.DirectUpstream == nil || point.CheckedAt.After(diagnosticCheckedAt(item.DirectUpstream)) {
 				checkedAt := point.CheckedAt
@@ -312,9 +345,15 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 			continue
 		}
 		item.Points = append(item.Points, point)
-		item.TotalCount++
-		if isMonthlyUpstreamProbeHealthy(point.Status) {
-			item.SuccessCount++
+		if slot, ok := monthlyUpstreamProbeSlotDistance(reference, point.CheckedAt, expectedSlots); ok {
+			slots := gatewayPointsBySlot[key]
+			if slots == nil {
+				slots = make(map[int]MonthlyUpstreamProbePoint)
+				gatewayPointsBySlot[key] = slots
+			}
+			if existing, exists := slots[slot]; !exists || point.CheckedAt.After(existing.CheckedAt) {
+				slots[slot] = point
+			}
 		}
 		if item.LatestCheckedAt == nil || point.CheckedAt.After(*item.LatestCheckedAt) {
 			checkedAt := point.CheckedAt
@@ -337,15 +376,20 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 	}
 
 	accounts := make([]MonthlyUpstreamProbeAccount, 0, len(byAccount))
-	for _, item := range byAccount {
-		if item.TotalCount == 0 && item.DirectUpstream != nil {
+	for key, item := range byAccount {
+		slots := gatewayPointsBySlot[key]
+		if len(slots) == 0 && item.DirectUpstream != nil && !targetInitialized[key] {
 			continue
 		}
 		sort.Slice(item.Points, func(i, j int) bool {
 			return item.Points[i].CheckedAt.Before(item.Points[j].CheckedAt)
 		})
-		if item.TotalCount > 0 {
-			item.Uptime = float64(item.SuccessCount) / float64(item.TotalCount)
+		if len(slots) > 0 || targetInitialized[key] {
+			item.TotalCount = expectedSlots
+			item.SuccessCount, item.Uptime = monthlyUpstreamProbeSlotHealth(slots, expectedSlots)
+		}
+		if item.LatestCheckedAt == nil && targetInitialized[key] {
+			item.LatestStatus = "missing"
 		}
 		accounts = append(accounts, *item)
 	}
@@ -357,8 +401,8 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 	})
 
 	return &MonthlyUpstreamProbeSnapshot{
-		Enabled:             s.IsMonthlyUpstreamProbeEnabled(ctx),
-		PublicStatusEnabled: s.IsMonthlyCardPublicStatusEnabled(ctx),
+		Enabled:             enabled,
+		PublicStatusEnabled: publicStatusEnabled,
 		WindowMinutes:       windowMinutes,
 		GeneratedAt:         now,
 		Accounts:            accounts,
@@ -540,11 +584,17 @@ func (s *OpsService) RunMonthlyUpstreamProbeOnce(ctx context.Context) error {
 		if err := s.opsRepo.InsertMonthlyUpstreamProbeResult(ctx, &point); err != nil {
 			errs = append(errs, err)
 		}
+		if !isMonthlyUpstreamProbeHealthy(point.Status) {
+			s.recordMonthlyUpstreamProbeError(ctx, &point)
+		}
 		if account != nil && point.Status != "not_schedulable" && !isMonthlyUpstreamProbeHealthy(point.Status) {
 			diagnostic := probeMonthlyDirectUpstreamAccount(ctx, account, target.Model)
 			diagnostic.ProbePath = MonthlyUpstreamProbePathDirectUpstream
 			if err := s.opsRepo.InsertMonthlyUpstreamProbeResult(ctx, &diagnostic); err != nil {
 				errs = append(errs, err)
+			}
+			if !isMonthlyUpstreamProbeHealthy(diagnostic.Status) {
+				s.recordMonthlyUpstreamProbeError(ctx, &diagnostic)
 			}
 		}
 	}
@@ -780,6 +830,14 @@ func monthlyGatewayProbePoint(account *Account, model string, recorder *httptest
 	}
 	point.ErrorCode, point.ErrorMessage = extractMonthlyProbeError(body)
 	shouldCaptureResponseError := forwardErr != nil || statusCode == 0 || statusCode < 200 || statusCode >= 300
+	if shouldCaptureResponseError && isMonthlyProbeGenericClientUnavailable(point.ErrorCode, point.ErrorMessage) {
+		point.ErrorCode = "gateway_forward_failed"
+		if forwardErr != nil {
+			point.ErrorMessage = forwardErr.Error()
+		} else {
+			point.ErrorMessage = "gateway forwarding failed before a successful upstream response"
+		}
+	}
 	if point.ErrorMessage == "" && shouldCaptureResponseError {
 		point.ErrorMessage = monthlyGatewayProbeContextError(recorder)
 	}
@@ -803,6 +861,16 @@ func monthlyGatewayProbePoint(account *Account, model string, recorder *httptest
 	}
 	point.ErrorMessage = sanitizeMonthlyProbeError(point.ErrorMessage, account)
 	return point
+}
+
+func isMonthlyProbeGenericClientUnavailable(code, message string) bool {
+	normalizedCode := strings.ToLower(strings.TrimSpace(code))
+	normalizedMessage := strings.ToLower(strings.TrimSpace(message))
+	if normalizedCode != "api_error" {
+		return false
+	}
+	return strings.Contains(normalizedMessage, "temporarily unavailable") ||
+		strings.Contains(normalizedMessage, "please try again later")
 }
 
 func monthlyGatewayProbeContextError(recorder *httptest.ResponseRecorder) string {
@@ -1033,4 +1101,138 @@ func isMonthlyUpstreamProbeHealthy(status string) bool {
 	default:
 		return false
 	}
+}
+
+func monthlyUpstreamProbeExpectedSlotCount(windowMinutes int) int {
+	window := time.Duration(normalizeMonthlyUpstreamProbeWindow(windowMinutes)) * time.Minute
+	count := int(window / monthlyUpstreamProbeInterval)
+	if window%monthlyUpstreamProbeInterval != 0 {
+		count++
+	}
+	if count < 1 {
+		return 1
+	}
+	return count
+}
+
+func monthlyUpstreamProbeSlotDistance(reference time.Time, checkedAt time.Time, expectedSlots int) (int, bool) {
+	if expectedSlots <= 0 || checkedAt.IsZero() {
+		return 0, false
+	}
+	delta := reference.Sub(checkedAt)
+	halfInterval := monthlyUpstreamProbeInterval / 2
+	if delta < -halfInterval {
+		return 0, false
+	}
+	if delta < 0 {
+		delta = 0
+	}
+	slot := int((delta + halfInterval) / monthlyUpstreamProbeInterval)
+	if slot < 0 || slot >= expectedSlots {
+		return 0, false
+	}
+	return slot, true
+}
+
+func monthlyUpstreamProbeSlotHealth(slots map[int]MonthlyUpstreamProbePoint, expectedSlots int) (int, float64) {
+	if expectedSlots <= 0 {
+		return 0, 0
+	}
+	successCount := 0
+	score := 0.0
+	for _, point := range slots {
+		switch strings.ToLower(strings.TrimSpace(point.Status)) {
+		case "ok":
+			successCount++
+			score += 1
+		case "slow", "rate_limited":
+			score += 0.5
+		}
+	}
+	return successCount, score / float64(expectedSlots)
+}
+
+func (s *OpsService) recordMonthlyUpstreamProbeError(ctx context.Context, point *MonthlyUpstreamProbePoint) {
+	if s == nil || point == nil || s.opsRepo == nil {
+		return
+	}
+	statusCode := http.StatusBadGateway
+	if point.HTTPStatus != nil && *point.HTTPStatus > 0 {
+		statusCode = *point.HTTPStatus
+	}
+	errorType := strings.TrimSpace(point.ErrorCode)
+	if errorType == "" {
+		errorType = "monthly_probe_failed"
+	}
+	errorMessage := strings.TrimSpace(point.ErrorMessage)
+	if errorMessage == "" {
+		errorMessage = strings.TrimSpace(point.Status)
+	}
+	accountID := monthlyProbeInt64Ptr(point.AccountID)
+	upstreamMessage := monthlyProbeStringPtr(errorMessage)
+	upstreamLatencyMs := monthlyProbeInt64Ptr(point.LatencyMs)
+	entry := &OpsInsertErrorLogInput{
+		RequestID:            "monthly-probe-" + uuid.NewString(),
+		AccountID:            accountID,
+		Platform:             point.Platform,
+		Model:                point.Model,
+		RequestPath:          monthlyProbeRequestPath(point),
+		InboundEndpoint:      monthlyProbeRequestPath(point),
+		UpstreamEndpoint:     monthlyProbeRequestPath(point),
+		RequestedModel:       point.Model,
+		UpstreamModel:        point.Model,
+		UserAgent:            "laoshirenai-monthly-upstream-probe",
+		ErrorPhase:           monthlyProbeErrorPhase(point),
+		ErrorType:            errorType,
+		Severity:             "warning",
+		StatusCode:           statusCode,
+		ErrorMessage:         errorMessage,
+		ErrorSource:          "monthly_upstream_probe",
+		ErrorOwner:           "ops",
+		UpstreamStatusCode:   point.HTTPStatus,
+		UpstreamErrorMessage: upstreamMessage,
+		UpstreamLatencyMs:    upstreamLatencyMs,
+		IsRetryable:          true,
+		CreatedAt:            point.CheckedAt,
+	}
+	if entry.CreatedAt.IsZero() {
+		entry.CreatedAt = time.Now()
+	}
+	_ = s.RecordError(ctx, entry, nil)
+}
+
+func monthlyProbeRequestPath(point *MonthlyUpstreamProbePoint) string {
+	if point == nil {
+		return "/monthly-upstream-probe"
+	}
+	switch point.Platform {
+	case PlatformOpenAI:
+		return "/v1/responses"
+	case PlatformAnthropic:
+		return "/v1/messages"
+	default:
+		return "/monthly-upstream-probe"
+	}
+}
+
+func monthlyProbeErrorPhase(point *MonthlyUpstreamProbePoint) string {
+	if point != nil && point.ProbePath == MonthlyUpstreamProbePathDirectUpstream {
+		return "upstream"
+	}
+	return "internal"
+}
+
+func monthlyProbeInt64Ptr(value int64) *int64 {
+	if value <= 0 {
+		return nil
+	}
+	return &value
+}
+
+func monthlyProbeStringPtr(value string) *string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	return &value
 }

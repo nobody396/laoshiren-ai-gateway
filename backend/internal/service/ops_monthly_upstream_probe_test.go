@@ -170,7 +170,9 @@ func TestMonthlyUpstreamProbeSnapshotUsesGatewayPointsForStatus(t *testing.T) {
 	require.Len(t, snapshot.Accounts, 1)
 	account := snapshot.Accounts[0]
 	require.Equal(t, "ok", account.LatestStatus)
-	require.Equal(t, 1, account.TotalCount)
+	require.Equal(t, 1, account.SuccessCount)
+	require.Equal(t, monthlyUpstreamProbeExpectedSlotCount(60), account.TotalCount)
+	require.InDelta(t, 1.0/float64(monthlyUpstreamProbeExpectedSlotCount(60)), account.Uptime, 0.0001)
 	require.Len(t, account.Points, 1)
 	require.NotNil(t, account.DirectUpstream)
 	require.Equal(t, "failed", account.DirectUpstream.Status)
@@ -180,6 +182,62 @@ func TestMonthlyUpstreamProbeSnapshotUsesGatewayPointsForStatus(t *testing.T) {
 	require.Len(t, publicSnapshot.Accounts, 1)
 	require.Equal(t, "ok", string(publicSnapshot.Accounts[0].Status))
 	require.Len(t, publicSnapshot.Accounts[0].Points, 1)
+}
+
+func TestMonthlyUpstreamProbeSnapshotScoresExpectedSlots(t *testing.T) {
+	ctx := context.Background()
+	reference := time.Now().Truncate(time.Minute)
+	svc := &OpsService{
+		opsRepo: &opsRepoMock{
+			ListMonthlyUpstreamProbeResultsFn: func(ctx context.Context, since time.Time) ([]MonthlyUpstreamProbePoint, error) {
+				return []MonthlyUpstreamProbePoint{
+					{
+						AccountID:   1,
+						AccountName: "pomoai-monthly-codex-0.12",
+						Platform:    PlatformOpenAI,
+						Model:       "gpt-5.4-mini",
+						ProbePath:   MonthlyUpstreamProbePathGateway,
+						Status:      "ok",
+						CheckedAt:   reference.Add(-2 * time.Minute),
+					},
+					{
+						AccountID:   1,
+						AccountName: "pomoai-monthly-codex-0.12",
+						Platform:    PlatformOpenAI,
+						Model:       "gpt-5.4-mini",
+						ProbePath:   MonthlyUpstreamProbePathGateway,
+						Status:      "slow",
+						CheckedAt:   reference.Add(-4 * time.Minute),
+					},
+					{
+						AccountID:   1,
+						AccountName: "pomoai-monthly-codex-0.12",
+						Platform:    PlatformOpenAI,
+						Model:       "gpt-5.4-mini",
+						ProbePath:   MonthlyUpstreamProbePathGateway,
+						Status:      "failed",
+						CheckedAt:   reference.Add(-6 * time.Minute),
+					},
+				}, nil
+			},
+		},
+		settingRepo: &monthlyStatusSettingRepoStub{
+			values: map[string]string{
+				SettingKeyMonthlyUpstreamProbeEnabled: "true",
+			},
+		},
+	}
+
+	snapshot, err := svc.GetMonthlyUpstreamProbeSnapshot(ctx, 60)
+
+	require.NoError(t, err)
+	require.Len(t, snapshot.Accounts, 1)
+	account := snapshot.Accounts[0]
+	expectedSlots := monthlyUpstreamProbeExpectedSlotCount(60)
+	require.Equal(t, expectedSlots, account.TotalCount)
+	require.Equal(t, 1, account.SuccessCount)
+	require.InDelta(t, 1.5/float64(expectedSlots), account.Uptime, 0.0001)
+	require.Equal(t, "ok", account.LatestStatus)
 }
 
 func TestUpdateMonthlyUpstreamProbeSettingsDoesNotOverwriteOmittedFields(t *testing.T) {
@@ -244,6 +302,22 @@ func TestMonthlyGatewayProbePointDoesNotStoreSuccessBodyAsError(t *testing.T) {
 	require.Equal(t, "ok", point.Status)
 	require.Empty(t, point.ErrorCode)
 	require.Empty(t, point.ErrorMessage)
+}
+
+func TestMonthlyGatewayProbePointClassifiesGenericGatewayFailure(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	recorder.WriteHeader(502)
+	_, _ = recorder.WriteString(`{"error":{"type":"api_error","message":"The service is temporarily unavailable. Please try again later."}}`)
+
+	point := monthlyGatewayProbePoint(&Account{
+		ID:       1,
+		Name:     "pomoai-monthly-codex-0.12",
+		Platform: PlatformOpenAI,
+	}, "gpt-5.4-mini", recorder, time.Now(), context.DeadlineExceeded, nil)
+
+	require.Equal(t, "failed", point.Status)
+	require.Equal(t, "gateway_forward_failed", point.ErrorCode)
+	require.Contains(t, point.ErrorMessage, "deadline exceeded")
 }
 
 func monthlyStatusBoolPtr(value bool) *bool {

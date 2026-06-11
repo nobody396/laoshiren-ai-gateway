@@ -65,7 +65,7 @@
               <div class="font-mono text-2xl font-semibold" :class="uptimeTextClass(account.uptime)">
                 {{ formatPercent(account.uptime) }}
               </div>
-              <div class="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-gray-400">UPTIME</div>
+              <div class="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-gray-400">HEALTH</div>
             </div>
           </div>
 
@@ -123,8 +123,17 @@ const timelineSlotCount = computed(() => Math.max(1, Math.ceil(windowMinutes.val
 const timelineGridStyle = computed(() => ({
   gridTemplateColumns: `repeat(${timelineSlotCount.value}, minmax(0, 1fr))`
 }))
-const hasFailures = computed(() => accounts.value.some((account) => account.status === 'failed' || account.status === 'not_schedulable'))
-const hasWarnings = computed(() => accounts.value.some((account) => account.status === 'slow' || account.status === 'rate_limited'))
+const hasFailures = computed(() => accounts.value.some((account) =>
+  account.status === 'failed' ||
+  account.status === 'not_schedulable' ||
+  account.status === 'missing' ||
+  account.uptime < 0.8
+))
+const hasWarnings = computed(() => accounts.value.some((account) =>
+  account.status === 'slow' ||
+  account.status === 'rate_limited' ||
+  (account.uptime < 0.98 && account.uptime >= 0.8)
+))
 const summaryText = computed(() => {
   if (!snapshot.value) return '状态更新中'
   if (accounts.value.length === 0) return '状态采集中'

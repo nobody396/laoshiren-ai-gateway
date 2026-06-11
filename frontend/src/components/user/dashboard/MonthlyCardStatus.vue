@@ -168,18 +168,24 @@ async function loadStatus() {
 function timelineSlots(account: MonthlyCardStatusAccount): TimelineSlot[] {
   const now = new Date(snapshot.value?.generated_at || Date.now())
   now.setSeconds(0, 0)
-  const pointsByMinute = new Map<string, MonthlyCardStatusPoint>()
+  const intervalMs = probeIntervalMinutes.value * 60_000
+  const pointsBySlotDistance = new Map<number, MonthlyCardStatusPoint>()
   for (const point of account.points) {
     const date = new Date(point.checked_at)
-    date.setSeconds(0, 0)
-    pointsByMinute.set(date.toISOString(), point)
+    if (Number.isNaN(date.getTime())) continue
+    const distanceFromNow = Math.round((now.getTime() - date.getTime()) / intervalMs)
+    if (distanceFromNow < 0 || distanceFromNow >= timelineSlotCount.value) continue
+    const existing = pointsBySlotDistance.get(distanceFromNow)
+    if (!existing || new Date(point.checked_at).getTime() > new Date(existing.checked_at).getTime()) {
+      pointsBySlotDistance.set(distanceFromNow, point)
+    }
   }
 
   const slots: TimelineSlot[] = []
   for (let idx = timelineSlotCount.value - 1; idx >= 0; idx--) {
     const at = new Date(now.getTime() - idx * probeIntervalMinutes.value * 60_000)
     const key = at.toISOString()
-    const point = pointsByMinute.get(key)
+    const point = pointsBySlotDistance.get(idx)
     slots.push({
       key,
       at,

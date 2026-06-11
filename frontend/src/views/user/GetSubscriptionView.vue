@@ -234,14 +234,21 @@
                   </div>
                 </div>
 
-                <button
-                  v-if="selectedProductKind === 'monthly'"
-                  @click="openSelectedMonthlyCardShop"
-                  :disabled="!canOpenSelectedMonthlyCardShop"
-                  class="topup-primary-action"
-                >
-                  {{ t('topup.monthlyPlanStatus') }}
-                </button>
+                <div v-if="selectedProductKind === 'monthly'" class="topup-monthly-actions">
+                  <button
+                    @click="openSelectedMonthlyCardShop"
+                    :disabled="!canOpenSelectedMonthlyCardShop"
+                    class="topup-primary-action topup-monthly-action"
+                  >
+                    {{ t('topup.monthlyCardShopAction') }}
+                  </button>
+                  <button
+                    @click="openMonthlyDirectPurchase"
+                    class="topup-secondary-action topup-monthly-action"
+                  >
+                    {{ t('topup.monthlyDirectAction') }}
+                  </button>
+                </div>
 
                 <template v-else-if="showingCardShop">
                   <button
@@ -330,6 +337,28 @@
         </section>
       </div>
     </div>
+    <div v-if="showMonthlyDirectPurchase" class="topup-modal-backdrop" @click.self="closeMonthlyDirectPurchase">
+      <section class="topup-direct-modal" role="dialog" aria-modal="true">
+        <div class="topup-direct-modal__head">
+          <div>
+            <p class="topup-summary-kicker">{{ t('topup.monthlyDirectAction') }}</p>
+            <h2>{{ selectedMonthlyPlan?.name }}</h2>
+          </div>
+          <button type="button" class="topup-modal-close" @click="closeMonthlyDirectPurchase">
+            ×
+          </button>
+        </div>
+        <div v-if="monthlyDirectPurchaseQRCode" class="topup-direct-qr">
+          <img :src="monthlyDirectPurchaseQRCode" alt="Monthly card support group QR code" />
+        </div>
+        <div v-else class="topup-direct-qr topup-direct-qr--empty">
+          {{ t('topup.monthlyDirectNoQr') }}
+        </div>
+        <p class="topup-direct-copy">
+          {{ t('topup.monthlyDirectInstruction', { plan: selectedMonthlyPlan?.name }) }}
+        </p>
+      </section>
+    </div>
   </AppLayout>
 </template>
 
@@ -372,6 +401,7 @@ const orderNo = ref('')
 const qrExpired = ref(false)
 const countdown = ref(QR_TTL_SECONDS)
 const activeOrderAmountYuan = ref(0)
+const showMonthlyDirectPurchase = ref(false)
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
@@ -417,6 +447,10 @@ const selectedMonthlyPlan = computed(
 )
 const selectedMonthlyCardShopUrl = computed(() => selectedMonthlyPlan.value?.cardShopUrl || '')
 const canOpenSelectedMonthlyCardShop = computed(() => selectedMonthlyCardShopUrl.value.trim() !== '')
+const monthlyDirectPurchaseQRCode = computed(
+  () =>
+    (appStore.cachedPublicSettings?.after_sales_qrcode || appStore.cachedPublicSettings?.tech_support_qrcode || '').trim()
+)
 const canUseCardShopForSelected = computed(() => cardShopMode.value && !!selectedCardShopProduct.value)
 const qrPaymentAvailableForSelected = computed(
   () => selectedProductKind.value === 'balance' && qrTopupAvailable.value && effectiveAmountYuan.value >= 20
@@ -514,6 +548,14 @@ function openSelectedMonthlyCardShop() {
   const url = selectedMonthlyCardShopUrl.value.trim()
   if (!url) return
   window.location.assign(url)
+}
+
+function openMonthlyDirectPurchase() {
+  showMonthlyDirectPurchase.value = true
+}
+
+function closeMonthlyDirectPurchase() {
+  showMonthlyDirectPurchase.value = false
 }
 
 function goRedeem() {
@@ -1283,6 +1325,24 @@ void appStore.fetchPublicSettings().then(() => {
   transform: none;
 }
 
+.topup-monthly-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.topup-monthly-actions .topup-primary-action,
+.topup-monthly-actions .topup-secondary-action {
+  margin-top: 0;
+}
+
+.topup-monthly-action {
+  min-height: 3.35rem;
+  padding-inline: 0.85rem;
+  text-align: center;
+}
+
 .topup-summary-actions {
   display: grid;
   gap: 1rem;
@@ -1315,6 +1375,92 @@ void appStore.fetchPublicSettings().then(() => {
 
 .dark .topup-primary-action {
   color: var(--admin-marble, #332d23) !important;
+}
+
+.topup-modal-backdrop {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(19, 16, 11, 0.42);
+}
+
+.topup-direct-modal {
+  width: min(28rem, 100%);
+  border: 1px solid var(--admin-border-strong, rgba(31, 26, 18, 0.32));
+  border-radius: 8px;
+  padding: 1.25rem;
+  background: var(--admin-surface, #faf6ec);
+  color: var(--admin-ink, #1f1a12);
+  box-shadow: 0 24px 60px rgba(31, 26, 18, 0.24);
+}
+
+.topup-direct-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.topup-direct-modal__head h2 {
+  margin-top: 0.25rem;
+  color: var(--admin-ink-deep, #13100b);
+  font-size: 1.55rem;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.topup-modal-close {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border-radius: 6px;
+  color: var(--admin-muted, #8a7d63);
+  background: var(--admin-control, rgba(255, 252, 245, 0.95));
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.topup-direct-qr {
+  display: grid;
+  min-height: 14rem;
+  place-items: center;
+  margin-top: 1.25rem;
+  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border-radius: 8px;
+  background: rgba(255, 252, 245, 0.78);
+}
+
+.topup-direct-qr img {
+  display: block;
+  width: min(13rem, 72vw);
+  height: min(13rem, 72vw);
+  object-fit: contain;
+}
+
+.topup-direct-qr--empty {
+  color: var(--admin-muted, #8a7d63);
+  font-weight: 650;
+}
+
+.topup-direct-copy {
+  margin-top: 1rem;
+  color: var(--admin-ink-deep, #13100b);
+  font-size: 1rem;
+  font-weight: 750;
+  line-height: 1.65;
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .topup-monthly-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (min-width: 640px) {

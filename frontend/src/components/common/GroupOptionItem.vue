@@ -1,10 +1,7 @@
 <template>
   <div class="flex min-w-0 flex-1 items-start justify-between gap-3">
     <!-- Left: name + description -->
-    <div
-      class="flex min-w-0 flex-1 flex-col items-start"
-      :title="description || undefined"
-    >
+    <div class="flex min-w-0 flex-1 flex-col items-start">
       <!-- Row 1: platform badge (name bold) -->
       <GroupBadge
         :name="name"
@@ -26,7 +23,13 @@
     <div class="flex shrink-0 flex-col items-end gap-1 pt-0.5">
       <div class="flex items-center gap-2">
         <!-- Rate pill (platform color) -->
-        <span v-if="rateMultiplier !== undefined" :class="['inline-flex items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold', ratePillClass]">
+        <span
+          v-if="actionLabel"
+          class="inline-flex items-center whitespace-nowrap rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+        >
+          {{ actionLabel }}
+        </span>
+        <span v-else-if="rateMultiplier !== undefined" :class="['inline-flex items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold', ratePillClass]">
           <template v-if="hasCustomRate">
             <span class="mr-1 line-through opacity-50">{{ rateMultiplier }}x</span>
             <span class="font-bold">{{ userRateMultiplier }}x</span>
@@ -70,6 +73,7 @@ interface Props {
   rateMultiplier?: number
   userRateMultiplier?: number | null
   description?: string | null
+  actionLabel?: string | null
   selected?: boolean
   showCheckmark?: boolean
   cacheHitRatePct?: number | null

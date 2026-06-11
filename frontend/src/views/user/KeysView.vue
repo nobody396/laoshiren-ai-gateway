@@ -490,6 +490,7 @@
                     ? (option as unknown as GroupOption).description
                     : null
                 "
+                :action-label="getGroupOptionActionLabel(option as unknown as GroupOption)"
                 :cache-hit-rate-pct="(option as unknown as GroupOption).cacheHitRatePct"
                 :cache-window-days="(option as unknown as GroupOption).cacheWindowDays"
                 :selected="selected"
@@ -1078,7 +1079,7 @@
                 ? 'bg-primary-50 dark:bg-primary-900/20'
                 : 'hover:bg-gray-100 dark:hover:bg-dark-700'
             ]"
-            :title="option.description || undefined"
+            :title="getGroupOptionHoverTitle(option)"
           >
             <GroupOptionItem
               :name="option.label"
@@ -1087,6 +1088,7 @@
               :rate-multiplier="shouldShowGroupOptionMeta(option) ? option.rate : undefined"
               :user-rate-multiplier="shouldShowGroupOptionMeta(option) ? option.userRate : null"
               :description="shouldShowGroupOptionMeta(option) ? option.description : null"
+              :action-label="getGroupOptionActionLabel(option)"
               :cache-hit-rate-pct="option.cacheHitRatePct"
               :cache-window-days="option.cacheWindowDays"
               :selected="
@@ -1325,6 +1327,18 @@ const groupOptions = computed(() =>
 
 const shouldShowGroupOptionMeta = (option: GroupOption): boolean => {
   return option.subscriptionType !== 'subscription' && option.subscriptionType !== 'credit'
+}
+
+const isMonthlyAccessGroup = (option: GroupOption): boolean => {
+  return option.subscriptionType === 'subscription' || option.subscriptionType === 'credit'
+}
+
+const getGroupOptionActionLabel = (option: GroupOption): string | null => {
+  return isMonthlyAccessGroup(option) ? '使用月卡请选择此分组' : null
+}
+
+const getGroupOptionHoverTitle = (option: GroupOption): string | undefined => {
+  return shouldShowGroupOptionMeta(option) ? option.description || undefined : undefined
 }
 
 // Group dropdown search
@@ -1963,10 +1977,9 @@ const executeCcsImport = (row: ApiKey, clientType: 'claude' | 'gemini') => {
     params.set('model', defaultModel)
     params.set('config', encodeBase64Utf8(buildCodexCcsConfig(endpoint, row.key, defaultModel)))
   } else if (platform === 'anthropic') {
-    params.set('model', 'claude-fable-5')
     params.set('haikuModel', 'claude-haiku-4-5')
-    params.set('sonnetModel', 'claude-sonnet-4-6')
-    params.set('opusModel', 'claude-opus-4-8')
+    params.set('sonnetModel', 'claude-sonnet-4-6[1M]')
+    params.set('opusModel', 'claude-opus-4-8[1M]')
   }
   const deeplink = `ccswitch://v1/import?${params.toString()}`
 

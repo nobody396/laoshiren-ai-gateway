@@ -1089,6 +1089,7 @@ export default {
     monthlyPlanClaudeRate: 'Claude Max 换算',
     monthlyPlanGptValue: 'GPT Pro 折算',
     monthlyPlanClaudeValue: 'Claude Max 折算',
+    monthlyPlanTokenNote: '额度按官方 API 计费折算；token 为真实长任务工作场景估算，实际随具体任务和缓存输出占比浮动。',
     monthlyCardShopAction: '卡密商城购买',
     monthlyDirectAction: '微信/支付宝优惠购买',
     monthlyDirectInstruction: '进群发送：购买 {plan}',

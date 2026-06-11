@@ -30,10 +30,6 @@
 
         <div class="monthly-credit-card__credits">
           <div>
-            <span>每周额度</span>
-            <strong>{{ plan.displayWeeklyCreditsText }} AI credits</strong>
-          </div>
-          <div>
             <span>每月额度</span>
             <strong>{{ plan.displayMonthlyCreditsText }} AI credits</strong>
           </div>
@@ -43,15 +39,15 @@
           <div>
             <dt>GPT Pro</dt>
             <dd>
-              <strong>{{ plan.gptWeeklyUsage }}</strong>
-              <span>{{ plan.gptMonthlyUsage }}</span>
+              <strong>{{ plan.gptMonthlyUsage }}</strong>
+              <span>{{ plan.gptMonthlyTokensText }}</span>
             </dd>
           </div>
           <div>
             <dt>Claude Max</dt>
             <dd>
-              <strong>{{ plan.claudeWeeklyUsage }}</strong>
-              <span>{{ plan.claudeMonthlyUsage }}</span>
+              <strong>{{ plan.claudeMonthlyUsage }}</strong>
+              <span>{{ plan.claudeMonthlyTokensText }}</span>
             </dd>
           </div>
         </dl>
@@ -63,7 +59,7 @@
     </div>
 
     <p class="monthly-credit-plans__note">
-      一个订阅共享 GPT Pro 与 Claude Max 两个分组的额度池，按周和按月展示上限，每月更新，不结转。
+      一个订阅共享 GPT Pro 与 Claude Max 两个分组的额度池；额度按官方 API 计费折算，token 为真实长任务工作场景估算，实际随具体任务和缓存输出占比浮动。
     </p>
   </section>
 </template>

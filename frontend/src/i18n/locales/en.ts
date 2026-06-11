@@ -1085,6 +1085,7 @@ export default {
     monthlyPlanClaudeRate: 'Claude Max conversion',
     monthlyPlanGptValue: 'GPT Pro value',
     monthlyPlanClaudeValue: 'Claude Max value',
+    monthlyPlanTokenNote: 'Quota is converted using official API pricing. Token estimates reflect long-running work sessions and vary by task, cache ratio, and output ratio.',
     monthlyCardShopAction: 'Buy card code',
     monthlyDirectAction: 'WeChat/Alipay deal',
     monthlyDirectInstruction: 'Join the group and send: Buy {plan}',

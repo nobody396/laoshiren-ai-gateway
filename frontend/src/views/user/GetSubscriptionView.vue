@@ -175,40 +175,48 @@
 
                 <div class="topup-summary-rows">
                   <template v-if="selectedProductKind === 'monthly'">
-                    <div class="topup-summary-row">
-                      <span>{{ t('topup.productType') }}</span>
-                      <strong>{{ t('topup.developerMonthlyCard') }}</strong>
-                    </div>
-                    <div class="topup-summary-row">
-                      <span>{{ t('topup.monthlyPlanPrice') }}</span>
-                      <strong>{{ selectedMonthlyPlan?.price }} / 月</strong>
-                    </div>
-                    <div class="topup-summary-row">
-                      <span>{{ t('topup.monthlyPlanDirectPrice') }}</span>
-                      <strong>{{ selectedMonthlyPlan?.directPrice }} / 月</strong>
-                    </div>
-                    <div class="topup-summary-row">
-                      <span>{{ t('topup.monthlyPlanWeeklyLimit') }}</span>
-                      <strong class="topup-summary-limit">
-                        <span>{{ selectedMonthlyPlan?.displayWeeklyCreditsText }} AI credits / 周</span>
-                        <small>
-                          GPT Pro {{ selectedMonthlyPlan?.gptWeeklyUsage }} · Claude Max {{ selectedMonthlyPlan?.claudeWeeklyUsage }}
-                        </small>
-                      </strong>
-                    </div>
-                    <div class="topup-summary-row">
-                      <span>{{ t('topup.monthlyPlanMonthlyLimit') }}</span>
-                      <strong class="topup-summary-limit">
-                        <span>{{ selectedMonthlyPlan?.displayMonthlyCreditsText }} AI credits / 月</span>
-                        <small>
-                          GPT Pro {{ selectedMonthlyPlan?.gptMonthlyUsage }} · Claude Max {{ selectedMonthlyPlan?.claudeMonthlyUsage }}
-                        </small>
-                      </strong>
-                    </div>
-                    <div class="topup-summary-row">
-                      <span>{{ t('topup.monthlyPlanQuotaMode') }}</span>
-                      <strong>{{ t('topup.monthlyPlanSharedPool') }}</strong>
-                    </div>
+                    <section class="topup-monthly-detail">
+                      <div class="topup-monthly-prices">
+                        <div>
+                          <span>{{ t('topup.monthlyPlanPrice') }}</span>
+                          <strong>{{ selectedMonthlyPlan?.price }} / 月</strong>
+                        </div>
+                        <div>
+                          <span>{{ t('topup.monthlyPlanDirectPrice') }}</span>
+                          <strong>{{ selectedMonthlyPlan?.directPrice }} / 月</strong>
+                        </div>
+                      </div>
+
+                      <div class="topup-quota-grid">
+                        <div class="topup-monthly-quota">
+                          <span>{{ t('topup.monthlyPlanWeeklyLimit') }}</span>
+                          <strong>{{ selectedMonthlyPlan?.displayWeeklyCreditsText }} AI credits / 周</strong>
+                          <small>{{ t('topup.monthlyPlanSharedPool') }}</small>
+                        </div>
+                        <div class="topup-monthly-quota">
+                          <span>{{ t('topup.monthlyPlanMonthlyLimit') }}</span>
+                          <strong>{{ selectedMonthlyPlan?.displayMonthlyCreditsText }} AI credits / 月</strong>
+                          <small>{{ t('topup.monthlyPlanSharedPool') }}</small>
+                        </div>
+                      </div>
+
+                      <div class="topup-token-grid">
+                        <article>
+                          <span>GPT Pro</span>
+                          <strong>{{ selectedMonthlyPlan?.gptMonthlyUsage }}</strong>
+                          <small>{{ selectedMonthlyPlan?.gptMonthlyTokensText }}</small>
+                        </article>
+                        <article>
+                          <span>Claude Max</span>
+                          <strong>{{ selectedMonthlyPlan?.claudeMonthlyUsage }}</strong>
+                          <small>{{ selectedMonthlyPlan?.claudeMonthlyTokensText }}</small>
+                        </article>
+                      </div>
+
+                      <p class="topup-token-note">
+                        {{ t('topup.monthlyPlanTokenNote') }}
+                      </p>
+                    </section>
                   </template>
                   <template v-else>
                     <div class="topup-summary-row">
@@ -1291,6 +1299,102 @@ void Promise.all([
   line-height: 1.35;
 }
 
+.topup-monthly-detail {
+  display: grid;
+  gap: 1rem;
+}
+
+.topup-monthly-prices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.topup-quota-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.topup-monthly-prices div,
+.topup-monthly-quota,
+.topup-token-grid article {
+  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border-radius: 8px;
+  background: rgba(255, 252, 245, 0.58);
+  padding: 0.85rem;
+}
+
+.topup-monthly-prices span,
+.topup-monthly-quota span,
+.topup-token-grid span {
+  display: block;
+  color: var(--admin-muted, #8a7d63);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.topup-monthly-prices strong,
+.topup-monthly-quota strong,
+.topup-token-grid strong {
+  display: block;
+  margin-top: 0.42rem;
+  color: var(--admin-ink-deep, #13100b);
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.28;
+}
+
+.topup-monthly-quota {
+  background:
+    linear-gradient(180deg, rgba(154, 59, 31, 0.08), transparent 100%),
+    rgba(255, 252, 245, 0.64);
+}
+
+.topup-monthly-quota strong {
+  font-size: 1.22rem;
+}
+
+.topup-monthly-quota small,
+.topup-token-grid small {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--admin-muted, #8a7d63);
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.topup-token-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.topup-token-grid article {
+  min-width: 0;
+}
+
+.topup-token-grid strong {
+  font-size: 0.98rem;
+}
+
+.topup-token-grid small {
+  color: var(--admin-terracotta-dark, #7a2d17);
+}
+
+.topup-token-note {
+  margin: 0;
+  border: 1px solid rgba(154, 106, 31, 0.18);
+  border-radius: 8px;
+  background: rgba(154, 106, 31, 0.08);
+  color: var(--admin-muted, #8a7d63);
+  padding: 0.8rem 0.9rem;
+  font-size: 0.8rem;
+  line-height: 1.65;
+}
+
 .topup-primary-action,
 .topup-secondary-action {
   display: inline-flex;
@@ -1464,6 +1568,12 @@ void Promise.all([
 
 @media (max-width: 520px) {
   .topup-monthly-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .topup-monthly-prices,
+  .topup-quota-grid,
+  .topup-token-grid {
     grid-template-columns: 1fr;
   }
 }

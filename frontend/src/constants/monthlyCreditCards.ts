@@ -22,6 +22,8 @@ export type MonthlyCreditCardPlan = {
   claudeWeeklyUsage: string
   gptMonthlyUsage: string
   claudeMonthlyUsage: string
+  gptMonthlyTokensText: string
+  claudeMonthlyTokensText: string
   description: string
   accent: string
   cardShopUrl: string
@@ -47,12 +49,26 @@ const weeklyCardDays = 7
 const monthlyCardDays = 30
 const defaultGptCreditsPerUsd = 0.4
 const defaultClaudeCreditsPerUsd = 1.25
+const millionTokens = 1_000_000
+const gptWeightedUsdPerMillionTokens = 1.035
+const claudeWeightedUsdPerMillionTokens = 1.0175
 
 function formatUsd(value: number): string {
   const rounded = Math.round(value * 100) / 100
   if (Number.isInteger(rounded)) return `${rounded} 刀`
   if (Number.isInteger(rounded * 10)) return `${rounded.toFixed(1)} 刀`
   return `${rounded.toFixed(2)} 刀`
+}
+
+function formatEstimatedTokens(usdValue: number, usdPerMillionTokens: number): string {
+  if (!Number.isFinite(usdValue) || usdValue <= 0 || usdPerMillionTokens <= 0) return '约 0 token'
+  const tokens = (usdValue / usdPerMillionTokens) * millionTokens
+  const yi = tokens / 100_000_000
+  if (yi >= 1) {
+    return `约 ${yi.toFixed(yi >= 10 ? 1 : 2).replace(/\.0$/, '')} 亿 token`
+  }
+  const wan = tokens / 10_000
+  return `约 ${wan.toFixed(wan >= 100 ? 0 : 1).replace(/\.0$/, '')} 万 token`
 }
 
 function createMonthlyCreditCardPlan(
@@ -74,6 +90,8 @@ function createMonthlyCreditCardPlan(
     | 'claudeWeeklyUsage'
     | 'gptMonthlyUsage'
     | 'claudeMonthlyUsage'
+    | 'gptMonthlyTokensText'
+    | 'claudeMonthlyTokensText'
   >,
   entitlement?: MonthlyCreditCardPlanEntitlement
 ): MonthlyCreditCardPlan {
@@ -84,6 +102,8 @@ function createMonthlyCreditCardPlan(
   const displayMonthlyCredits = monthlyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE
   const gptCreditsPerUsd = normalizeCreditsPerUsd(entitlement?.gpt_group?.rate_multiplier, defaultGptCreditsPerUsd)
   const claudeCreditsPerUsd = normalizeCreditsPerUsd(entitlement?.claude_group?.rate_multiplier, defaultClaudeCreditsPerUsd)
+  const gptMonthlyUsd = monthlyCredits / gptCreditsPerUsd
+  const claudeMonthlyUsd = monthlyCredits / claudeCreditsPerUsd
   return {
     ...input,
     price: `¥${input.priceCny}`,
@@ -100,8 +120,10 @@ function createMonthlyCreditCardPlan(
     claudeDisplayRate: `${formatSubscriptionCredits(claudeCreditsPerUsd)} AI credits / 刀`,
     gptWeeklyUsage: `约 ${formatUsd(weeklyCredits / gptCreditsPerUsd)} / 周`,
     claudeWeeklyUsage: `约 ${formatUsd(weeklyCredits / claudeCreditsPerUsd)} / 周`,
-    gptMonthlyUsage: `约 ${formatUsd(monthlyCredits / gptCreditsPerUsd)} / 月`,
-    claudeMonthlyUsage: `约 ${formatUsd(monthlyCredits / claudeCreditsPerUsd)} / 月`
+    gptMonthlyUsage: `约 ${formatUsd(gptMonthlyUsd)} / 月`,
+    claudeMonthlyUsage: `约 ${formatUsd(claudeMonthlyUsd)} / 月`,
+    gptMonthlyTokensText: formatEstimatedTokens(gptMonthlyUsd, gptWeightedUsdPerMillionTokens),
+    claudeMonthlyTokensText: formatEstimatedTokens(claudeMonthlyUsd, claudeWeightedUsdPerMillionTokens)
   }
 }
 

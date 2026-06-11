@@ -142,7 +142,7 @@ func (h *OpsHandler) UpdateMonthlyUpstreamProbeSettings(c *gin.Context) {
 		return
 	}
 
-	var req service.MonthlyUpstreamProbeSettings
+	var req service.MonthlyUpstreamProbeSettingsUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Invalid request body")
 		return

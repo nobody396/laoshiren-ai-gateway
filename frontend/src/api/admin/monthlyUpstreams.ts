@@ -51,6 +51,7 @@ export interface MonthlyUpstreamProbeAccount {
 
 export interface MonthlyUpstreamProbeSnapshot {
   enabled: boolean
+  public_status_enabled: boolean
   window_minutes: number
   generated_at: string
   accounts: MonthlyUpstreamProbeAccount[]
@@ -58,7 +59,10 @@ export interface MonthlyUpstreamProbeSnapshot {
 
 export interface MonthlyUpstreamProbeSettings {
   enabled: boolean
+  public_status_enabled: boolean
 }
+
+export type MonthlyUpstreamProbeSettingsUpdate = Partial<MonthlyUpstreamProbeSettings>
 
 export async function getSnapshot(windowMinutes = 60): Promise<MonthlyUpstreamProbeSnapshot> {
   const { data } = await apiClient.get<MonthlyUpstreamProbeSnapshot>('/admin/ops/monthly-upstreams', {
@@ -67,7 +71,7 @@ export async function getSnapshot(windowMinutes = 60): Promise<MonthlyUpstreamPr
   return data
 }
 
-export async function updateSettings(settings: MonthlyUpstreamProbeSettings): Promise<MonthlyUpstreamProbeSettings> {
+export async function updateSettings(settings: MonthlyUpstreamProbeSettingsUpdate): Promise<MonthlyUpstreamProbeSettings> {
   const { data } = await apiClient.put<MonthlyUpstreamProbeSettings>('/admin/ops/monthly-upstreams/settings', settings)
   return data
 }

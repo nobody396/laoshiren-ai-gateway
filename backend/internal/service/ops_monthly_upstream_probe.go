@@ -89,10 +89,11 @@ type MonthlyUpstreamProbeAccount struct {
 }
 
 type MonthlyUpstreamProbeSnapshot struct {
-	Enabled       bool                          `json:"enabled"`
-	WindowMinutes int                           `json:"window_minutes"`
-	GeneratedAt   time.Time                     `json:"generated_at"`
-	Accounts      []MonthlyUpstreamProbeAccount `json:"accounts"`
+	Enabled             bool                          `json:"enabled"`
+	PublicStatusEnabled bool                          `json:"public_status_enabled"`
+	WindowMinutes       int                           `json:"window_minutes"`
+	GeneratedAt         time.Time                     `json:"generated_at"`
+	Accounts            []MonthlyUpstreamProbeAccount `json:"accounts"`
 }
 
 type MonthlyCardPublicStatusPoint struct {
@@ -111,6 +112,7 @@ type MonthlyCardPublicStatusAccount struct {
 
 type MonthlyCardPublicStatusSnapshot struct {
 	Enabled              bool                             `json:"enabled"`
+	VisibleToUsers       bool                             `json:"visible_to_users"`
 	WindowMinutes        int                              `json:"window_minutes"`
 	ProbeIntervalSeconds int                              `json:"probe_interval_seconds"`
 	GeneratedAt          time.Time                        `json:"generated_at"`
@@ -118,7 +120,13 @@ type MonthlyCardPublicStatusSnapshot struct {
 }
 
 type MonthlyUpstreamProbeSettings struct {
-	Enabled bool `json:"enabled"`
+	Enabled             bool `json:"enabled"`
+	PublicStatusEnabled bool `json:"public_status_enabled"`
+}
+
+type MonthlyUpstreamProbeSettingsUpdate struct {
+	Enabled             *bool `json:"enabled"`
+	PublicStatusEnabled *bool `json:"public_status_enabled"`
 }
 
 func (s *OpsService) startMonthlyUpstreamProbeRunner() {
@@ -148,6 +156,21 @@ func (s *OpsService) IsMonthlyUpstreamProbeEnabled(ctx context.Context) bool {
 	if err != nil {
 		return false
 	}
+	return isTruthyMonthlyCardSettingValue(value)
+}
+
+func (s *OpsService) IsMonthlyCardPublicStatusEnabled(ctx context.Context) bool {
+	if s == nil || s.settingRepo == nil {
+		return false
+	}
+	value, err := s.settingRepo.GetValue(ctx, SettingKeyMonthlyCardPublicStatusEnabled)
+	if err != nil {
+		return false
+	}
+	return isTruthyMonthlyCardSettingValue(value)
+}
+
+func isTruthyMonthlyCardSettingValue(value string) bool {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "true", "1", "on", "enabled":
 		return true
@@ -156,30 +179,45 @@ func (s *OpsService) IsMonthlyUpstreamProbeEnabled(ctx context.Context) bool {
 	}
 }
 
-func (s *OpsService) UpdateMonthlyUpstreamProbeSettings(ctx context.Context, req *MonthlyUpstreamProbeSettings) (*MonthlyUpstreamProbeSettings, error) {
+func normalizeMonthlyUpstreamProbeWindow(windowMinutes int) int {
+	if windowMinutes <= 0 {
+		return 60
+	}
+	if windowMinutes > 24*60 {
+		return 24 * 60
+	}
+	return windowMinutes
+}
+
+func (s *OpsService) GetMonthlyUpstreamProbeSettings(ctx context.Context) *MonthlyUpstreamProbeSettings {
+	return &MonthlyUpstreamProbeSettings{
+		Enabled:             s.IsMonthlyUpstreamProbeEnabled(ctx),
+		PublicStatusEnabled: s.IsMonthlyCardPublicStatusEnabled(ctx),
+	}
+}
+
+func (s *OpsService) UpdateMonthlyUpstreamProbeSettings(ctx context.Context, req *MonthlyUpstreamProbeSettingsUpdate) (*MonthlyUpstreamProbeSettings, error) {
 	if s == nil || s.settingRepo == nil {
 		return nil, fmt.Errorf("settings repository is not available")
 	}
 	if req == nil {
-		req = &MonthlyUpstreamProbeSettings{}
+		return s.GetMonthlyUpstreamProbeSettings(ctx), nil
 	}
-	value := "false"
-	if req.Enabled {
-		value = "true"
+	if req.Enabled != nil {
+		if err := s.settingRepo.Set(ctx, SettingKeyMonthlyUpstreamProbeEnabled, strconv.FormatBool(*req.Enabled)); err != nil {
+			return nil, err
+		}
 	}
-	if err := s.settingRepo.Set(ctx, SettingKeyMonthlyUpstreamProbeEnabled, value); err != nil {
-		return nil, err
+	if req.PublicStatusEnabled != nil {
+		if err := s.settingRepo.Set(ctx, SettingKeyMonthlyCardPublicStatusEnabled, strconv.FormatBool(*req.PublicStatusEnabled)); err != nil {
+			return nil, err
+		}
 	}
-	return &MonthlyUpstreamProbeSettings{Enabled: req.Enabled}, nil
+	return s.GetMonthlyUpstreamProbeSettings(ctx), nil
 }
 
 func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, windowMinutes int) (*MonthlyUpstreamProbeSnapshot, error) {
-	if windowMinutes <= 0 {
-		windowMinutes = 60
-	}
-	if windowMinutes > 24*60 {
-		windowMinutes = 24 * 60
-	}
+	windowMinutes = normalizeMonthlyUpstreamProbeWindow(windowMinutes)
 	if s == nil || s.opsRepo == nil {
 		return nil, fmt.Errorf("ops repository is not available")
 	}
@@ -266,17 +304,26 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 	})
 
 	return &MonthlyUpstreamProbeSnapshot{
-		Enabled:       s.IsMonthlyUpstreamProbeEnabled(ctx),
-		WindowMinutes: windowMinutes,
-		GeneratedAt:   now,
-		Accounts:      accounts,
+		Enabled:             s.IsMonthlyUpstreamProbeEnabled(ctx),
+		PublicStatusEnabled: s.IsMonthlyCardPublicStatusEnabled(ctx),
+		WindowMinutes:       windowMinutes,
+		GeneratedAt:         now,
+		Accounts:            accounts,
 	}, nil
 }
 
 func (s *OpsService) GetMonthlyCardPublicStatusSnapshot(ctx context.Context, windowMinutes int) (*MonthlyCardPublicStatusSnapshot, error) {
+	windowMinutes = normalizeMonthlyUpstreamProbeWindow(windowMinutes)
+	if !s.IsMonthlyCardPublicStatusEnabled(ctx) {
+		return monthlyCardHiddenPublicStatusSnapshot(windowMinutes), nil
+	}
+
 	snapshot, err := s.GetMonthlyUpstreamProbeSnapshot(ctx, windowMinutes)
 	if err != nil {
 		return nil, err
+	}
+	if !snapshot.PublicStatusEnabled {
+		return monthlyCardHiddenPublicStatusSnapshot(windowMinutes), nil
 	}
 
 	accounts := make([]MonthlyCardPublicStatusAccount, 0, len(snapshot.Accounts))
@@ -309,11 +356,23 @@ func (s *OpsService) GetMonthlyCardPublicStatusSnapshot(ctx context.Context, win
 
 	return &MonthlyCardPublicStatusSnapshot{
 		Enabled:              snapshot.Enabled,
+		VisibleToUsers:       snapshot.PublicStatusEnabled,
 		WindowMinutes:        snapshot.WindowMinutes,
 		ProbeIntervalSeconds: int(monthlyUpstreamProbeInterval / time.Second),
 		GeneratedAt:          snapshot.GeneratedAt,
 		Accounts:             accounts,
 	}, nil
+}
+
+func monthlyCardHiddenPublicStatusSnapshot(windowMinutes int) *MonthlyCardPublicStatusSnapshot {
+	return &MonthlyCardPublicStatusSnapshot{
+		Enabled:              false,
+		VisibleToUsers:       false,
+		WindowMinutes:        windowMinutes,
+		ProbeIntervalSeconds: int(monthlyUpstreamProbeInterval / time.Second),
+		GeneratedAt:          time.Now(),
+		Accounts:             []MonthlyCardPublicStatusAccount{},
+	}
 }
 
 func monthlyCardPublicSortRank(channel string) int {

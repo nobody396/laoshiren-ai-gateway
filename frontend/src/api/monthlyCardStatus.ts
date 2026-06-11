@@ -18,6 +18,7 @@ export interface MonthlyCardStatusAccount {
 
 export interface MonthlyCardStatusSnapshot {
   enabled: boolean
+  visible_to_users: boolean
   window_minutes: number
   probe_interval_seconds: number
   generated_at: string

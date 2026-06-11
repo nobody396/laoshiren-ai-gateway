@@ -1218,6 +1218,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyInvoiceManagementEnabled:         "false",
 		SettingKeyFeedbackManagementEnabled:        "true",
 		SettingKeyGroupCacheHitRateEnabled:         "false",
+		SettingKeyMonthlyCardPublicStatusEnabled:   "false",
 		SettingKeyChatbotURL:                       "",
 		SettingKeyLandingReportsEnabled:            "true",
 		SettingKeyLandingPricingProMultiplier:      strconv.FormatFloat(defaultLandingPricingProMultiplier, 'f', -1, 64),

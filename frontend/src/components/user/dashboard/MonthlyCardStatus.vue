@@ -1,5 +1,5 @@
 <template>
-  <section class="card overflow-hidden">
+  <section v-if="shouldRender" class="card overflow-hidden">
     <div class="flex flex-col gap-4 border-b border-gray-100 p-5 dark:border-dark-700 lg:flex-row lg:items-center lg:justify-between">
       <div class="flex items-start gap-3">
         <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-950/40 dark:text-primary-300">
@@ -111,6 +111,7 @@ const snapshot = ref<MonthlyCardStatusSnapshot | null>(null)
 const loading = ref(false)
 let refreshTimer: number | undefined
 
+const shouldRender = computed(() => snapshot.value?.visible_to_users === true)
 const accounts = computed(() => snapshot.value?.accounts ?? [])
 const windowMinutes = computed(() => snapshot.value?.window_minutes || fallbackWindowMinutes)
 const probeIntervalMinutes = computed(() => {
@@ -152,6 +153,7 @@ async function loadStatus() {
     if (!snapshot.value) {
       snapshot.value = {
         enabled: false,
+        visible_to_users: false,
         window_minutes: fallbackWindowMinutes,
         probe_interval_seconds: fallbackProbeIntervalMinutes * 60,
         generated_at: new Date().toISOString(),

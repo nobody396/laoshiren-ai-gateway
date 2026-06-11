@@ -26,6 +26,10 @@
               <Toggle :model-value="enabled" :disabled="saving" @update:model-value="handleToggle" />
               <span class="text-sm font-medium text-gray-700 dark:text-dark-200">常驻探针</span>
             </label>
+            <label class="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 dark:border-dark-600">
+              <Toggle :model-value="publicStatusEnabled" :disabled="saving" @update:model-value="handlePublicStatusToggle" />
+              <span class="text-sm font-medium text-gray-700 dark:text-dark-200">用户可见</span>
+            </label>
             <button
               type="button"
               class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-200 px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-dark-600 dark:text-dark-200 dark:hover:bg-dark-700"
@@ -181,6 +185,7 @@ let refreshTimer: number | undefined
 
 const accounts = computed(() => snapshot.value?.accounts ?? [])
 const enabled = computed(() => Boolean(snapshot.value?.enabled))
+const publicStatusEnabled = computed(() => Boolean(snapshot.value?.public_status_enabled))
 const probeIntervalMinutes = computed(() => {
   const seconds = accounts.value.find((account) => account.cost_estimate)?.cost_estimate?.probe_interval_seconds
   if (!seconds || seconds <= 0) return fallbackProbeIntervalMinutes
@@ -258,6 +263,19 @@ async function handleToggle(value: boolean) {
     appStore.showSuccess(value ? '月卡探针已开启' : '月卡探针已关闭')
   } catch (error) {
     appStore.showError('更新月卡探针开关失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function handlePublicStatusToggle(value: boolean) {
+  saving.value = true
+  try {
+    await adminAPI.monthlyUpstreams.updateSettings({ public_status_enabled: value })
+    await loadSnapshot()
+    appStore.showSuccess(value ? '用户端运行状态已显示' : '用户端运行状态已隐藏')
+  } catch (error) {
+    appStore.showError('更新用户端运行状态开关失败')
   } finally {
     saving.value = false
   }

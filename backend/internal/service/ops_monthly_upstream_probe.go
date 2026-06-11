@@ -25,8 +25,8 @@ const (
 	monthlyAnthropicProbeEstimatedInputTokens  = 236
 	monthlyAnthropicProbeEstimatedOutputTokens = 32
 
-	monthlyOpenAIGPT54MiniInputCostPerToken  = 7.5e-7
-	monthlyOpenAIGPT54MiniOutputCostPerToken = 4.5e-6
+	monthlyOpenAIGPT54MiniInputCostPerToken  = 8e-7
+	monthlyOpenAIGPT54MiniOutputCostPerToken = 3.2e-6
 	monthlyClaudeHaiku45InputCostPerToken    = 1e-6
 	monthlyClaudeHaiku45OutputCostPerToken   = 5e-6
 	monthlyUpstreamProbeCostCurrency         = "USD"

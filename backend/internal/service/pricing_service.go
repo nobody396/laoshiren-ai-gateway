@@ -55,12 +55,12 @@ var (
 		SupportsPromptCaching:           true,
 	}
 	openAIGPT54MiniFallbackPricing = &LiteLLMModelPricing{
-		InputCostPerToken:               7.5e-07,
-		InputCostPerTokenPriority:       1.5e-06,
-		OutputCostPerToken:              4.5e-06,
-		OutputCostPerTokenPriority:      9e-06,
-		CacheReadInputTokenCost:         7.5e-08,
-		CacheReadInputTokenCostPriority: 1.5e-07,
+		InputCostPerToken:               8e-07,
+		InputCostPerTokenPriority:       1.6e-06,
+		OutputCostPerToken:              3.2e-06,
+		OutputCostPerTokenPriority:      6.4e-06,
+		CacheReadInputTokenCost:         8e-08,
+		CacheReadInputTokenCostPriority: 1.6e-07,
 		LiteLLMProvider:                 "openai",
 		Mode:                            "chat",
 		SupportsPromptCaching:           true,

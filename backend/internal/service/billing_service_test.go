@@ -175,6 +175,23 @@ func TestGetModelPricing_OpenAIGPT54Fallback(t *testing.T) {
 	require.InDelta(t, 1.5, pricing.LongContextOutputMultiplier, 1e-12)
 }
 
+func TestGetModelPricing_OpenAIGPT54MiniFallbackMatchesObservedBilling(t *testing.T) {
+	svc := newTestBillingService()
+
+	pricing, err := svc.GetModelPricing("gpt-5.4-mini")
+	require.NoError(t, err)
+	require.NotNil(t, pricing)
+	require.InDelta(t, 8e-7, pricing.InputPricePerToken, 1e-12)
+	require.InDelta(t, 1.6e-6, pricing.InputPricePerTokenPriority, 1e-12)
+	require.InDelta(t, 3.2e-6, pricing.OutputPricePerToken, 1e-12)
+	require.InDelta(t, 6.4e-6, pricing.OutputPricePerTokenPriority, 1e-12)
+	require.InDelta(t, 8e-8, pricing.CacheReadPricePerToken, 1e-12)
+	require.InDelta(t, 1.6e-7, pricing.CacheReadPricePerTokenPriority, 1e-12)
+
+	cost := (21*pricing.InputPricePerToken + 5*pricing.OutputPricePerToken) * 0.12
+	require.InDelta(t, 0.00000400, cost, 0.0000001)
+}
+
 func TestGetModelPricing_OpenAIGPT55FallbackMatchesOfficialPricing(t *testing.T) {
 	svc := newTestBillingService()
 

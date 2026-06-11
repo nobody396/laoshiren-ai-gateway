@@ -150,6 +150,22 @@ func TestUpdateMonthlyUpstreamProbeSettingsDoesNotOverwriteOmittedFields(t *test
 	require.Equal(t, "false", settings.values[SettingKeyMonthlyCardPublicStatusEnabled])
 }
 
+func TestMonthlyOpenAIProbeCostEstimateMatchesObservedBilling(t *testing.T) {
+	estimate := buildMonthlyUpstreamProbeCostEstimate(
+		"pomoai-monthly-codex-0.12",
+		PlatformOpenAI,
+		"gpt-5.4-mini",
+		nil,
+	)
+
+	require.NotNil(t, estimate)
+	require.InDelta(t, 8e-7, estimate.InputCostPerToken, 1e-12)
+	require.InDelta(t, 3.2e-6, estimate.OutputCostPerToken, 1e-12)
+
+	observedCost := (21*estimate.InputCostPerToken + 5*estimate.OutputCostPerToken) * estimate.RateMultiplier
+	require.InDelta(t, 0.00000400, observedCost, 0.0000001)
+}
+
 func monthlyStatusBoolPtr(value bool) *bool {
 	return &value
 }

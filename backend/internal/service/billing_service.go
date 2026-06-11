@@ -255,12 +255,12 @@ func (s *BillingService) initFallbackPricing() {
 		LongContextOutputMultiplier:    openAIGPT54LongContextOutputMultiplier,
 	}
 	s.fallbackPrices["gpt-5.4-mini"] = &ModelPricing{
-		InputPricePerToken:             7.5e-7,
-		InputPricePerTokenPriority:     1.5e-6,
-		OutputPricePerToken:            4.5e-6,
-		OutputPricePerTokenPriority:    9e-6,
-		CacheReadPricePerToken:         7.5e-8,
-		CacheReadPricePerTokenPriority: 1.5e-7,
+		InputPricePerToken:             8e-7,
+		InputPricePerTokenPriority:     1.6e-6,
+		OutputPricePerToken:            3.2e-6,
+		OutputPricePerTokenPriority:    6.4e-6,
+		CacheReadPricePerToken:         8e-8,
+		CacheReadPricePerTokenPriority: 1.6e-7,
 		SupportsCacheBreakdown:         false,
 	}
 	s.fallbackPrices["gpt-5.4-nano"] = &ModelPricing{

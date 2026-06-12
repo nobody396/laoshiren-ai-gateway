@@ -1354,11 +1354,6 @@ func applySupplierProbeContentCheck(result *SupplierProbeResult, content string,
 		return
 	}
 	result.AccuracyOK = expected != "" && strings.Contains(content, expected)
-	if expected != "" && !result.AccuracyOK {
-		result.Status = SupplierProbeStatusDegraded
-		result.SubStatus = SupplierProbeSubStatusContentMismatch
-		result.ErrorMessage = "probe response did not contain expected marker"
-	}
 }
 
 func isSupplierClaudeProbeModel(model string) bool {

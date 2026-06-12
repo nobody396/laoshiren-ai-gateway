@@ -13,11 +13,11 @@ import (
 func TestRunSupplierProbeTreatsOKWithPunctuationAsReachable(t *testing.T) {
 	result := runSupplierProbe(context.Background(), testSupplierProbeServer(t, `OK.`))
 
-	if result.Status != SupplierProbeStatusDegraded {
-		t.Fatalf("expected probe degraded, got status=%q error=%q", result.Status, result.ErrorMessage)
+	if result.Status != SupplierProbeStatusSuccess {
+		t.Fatalf("expected probe success, got status=%q error=%q", result.Status, result.ErrorMessage)
 	}
-	if result.SubStatus != SupplierProbeSubStatusContentMismatch {
-		t.Fatalf("expected content mismatch, got %q", result.SubStatus)
+	if result.SubStatus != SupplierProbeSubStatusNone {
+		t.Fatalf("expected no sub status, got %q", result.SubStatus)
 	}
 	if result.AccuracyOK {
 		t.Fatalf("expected accuracy_ok=false because OK. does not answer the dynamic probe")
@@ -41,17 +41,17 @@ func TestRunSupplierProbeMarksExpectedOpenAIAnswerAccurate(t *testing.T) {
 func TestRunSupplierProbeTreatsAnyNonEmptyModelResponseAsReachable(t *testing.T) {
 	result := runSupplierProbe(context.Background(), testSupplierProbeServer(t, `service reachable`))
 
-	if result.Status != SupplierProbeStatusDegraded {
-		t.Fatalf("expected probe degraded, got status=%q error=%q", result.Status, result.ErrorMessage)
+	if result.Status != SupplierProbeStatusSuccess {
+		t.Fatalf("expected probe success, got status=%q error=%q", result.Status, result.ErrorMessage)
 	}
-	if result.SubStatus != SupplierProbeSubStatusContentMismatch {
-		t.Fatalf("expected content mismatch, got %q", result.SubStatus)
+	if result.SubStatus != SupplierProbeSubStatusNone {
+		t.Fatalf("expected no sub status, got %q", result.SubStatus)
 	}
 	if result.AccuracyOK {
 		t.Fatalf("expected accuracy_ok=false for mismatched response")
 	}
-	if result.ErrorMessage != "probe response did not contain expected marker" {
-		t.Fatalf("expected mismatch error, got %q", result.ErrorMessage)
+	if result.ErrorMessage != "" {
+		t.Fatalf("expected no mismatch error, got %q", result.ErrorMessage)
 	}
 }
 
@@ -195,11 +195,11 @@ func TestRunSupplierProbeRetriesFailedRedStatus(t *testing.T) {
 	if attempts != 2 {
 		t.Fatalf("expected 2 attempts, got %d", attempts)
 	}
-	if result.Status != SupplierProbeStatusDegraded {
-		t.Fatalf("expected recovered attempt to be degraded by content mismatch, got status=%q", result.Status)
+	if result.Status != SupplierProbeStatusSuccess {
+		t.Fatalf("expected recovered attempt to be success, got status=%q", result.Status)
 	}
-	if result.SubStatus != SupplierProbeSubStatusContentMismatch {
-		t.Fatalf("expected content mismatch after recovery, got %q", result.SubStatus)
+	if result.SubStatus != SupplierProbeSubStatusNone {
+		t.Fatalf("expected no sub status after recovery, got %q", result.SubStatus)
 	}
 }
 

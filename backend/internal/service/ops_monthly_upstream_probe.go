@@ -476,15 +476,18 @@ func monthlyCardHiddenPublicStatusSnapshot(windowMinutes int, plans []MonthlyCar
 }
 
 var monthlyCardPublicPlanDefinitions = []struct {
-	ID            string
-	Name          string
-	GPTGroupID    int64
-	ClaudeGroupID int64
+	ID              string
+	Name            string
+	GPTGroupName    string
+	ClaudeGroupName string
+	GPTGroupID      int64
+	ClaudeGroupID   int64
 }{
-	{ID: "lite", Name: "Lite 月卡", GPTGroupID: 7, ClaudeGroupID: 11},
-	{ID: "pro", Name: "Pro 月卡", GPTGroupID: 8, ClaudeGroupID: 12},
-	{ID: "max", Name: "Max 月卡", GPTGroupID: 9, ClaudeGroupID: 13},
-	{ID: "ultra", Name: "Ultra 月卡", GPTGroupID: 10, ClaudeGroupID: 14},
+	{ID: "lite", Name: "Lite 月卡", GPTGroupName: "GPT Lite 月卡组", ClaudeGroupName: "Claude Lite 月卡组", GPTGroupID: 7, ClaudeGroupID: 11},
+	{ID: "pro", Name: "Pro 月卡", GPTGroupName: "GPT Pro 月卡组", ClaudeGroupName: "Claude Pro 月卡组", GPTGroupID: 8, ClaudeGroupID: 12},
+	{ID: "max", Name: "Max 月卡", GPTGroupName: "GPT Max 月卡组", ClaudeGroupName: "Claude Max 月卡组", GPTGroupID: 9, ClaudeGroupID: 13},
+	{ID: "ultra", Name: "Ultra 月卡", GPTGroupName: "GPT Ultra 月卡组", ClaudeGroupName: "Claude Ultra 月卡组", GPTGroupID: 10, ClaudeGroupID: 14},
+	{ID: "apex", Name: "Apex 月卡", GPTGroupName: "GPT Apex 月卡组", ClaudeGroupName: "Claude Apex 月卡组"},
 }
 
 func (s *OpsService) loadMonthlyCardPublicPlans(ctx context.Context) []MonthlyCardPublicPlan {
@@ -492,15 +495,43 @@ func (s *OpsService) loadMonthlyCardPublicPlans(ctx context.Context) []MonthlyCa
 	if s == nil || s.groupRepo == nil {
 		return plans
 	}
+	groupsByName := s.activeMonthlyCardGroupsByName(ctx)
 	for _, def := range monthlyCardPublicPlanDefinitions {
 		plans = append(plans, MonthlyCardPublicPlan{
 			ID:          def.ID,
 			Name:        def.Name,
-			GPTGroup:    s.monthlyCardPublicPlanGroup(ctx, def.GPTGroupID),
-			ClaudeGroup: s.monthlyCardPublicPlanGroup(ctx, def.ClaudeGroupID),
+			GPTGroup:    s.monthlyCardPublicPlanGroupByNameOrID(ctx, groupsByName, def.GPTGroupName, def.GPTGroupID),
+			ClaudeGroup: s.monthlyCardPublicPlanGroupByNameOrID(ctx, groupsByName, def.ClaudeGroupName, def.ClaudeGroupID),
 		})
 	}
 	return plans
+}
+
+func (s *OpsService) activeMonthlyCardGroupsByName(ctx context.Context) map[string]*Group {
+	groupsByName := make(map[string]*Group)
+	if s == nil || s.groupRepo == nil {
+		return groupsByName
+	}
+	groups, err := s.groupRepo.ListActive(ctx)
+	if err != nil {
+		return groupsByName
+	}
+	for i := range groups {
+		g := &groups[i]
+		if g.SubscriptionType == SubscriptionTypeCredit && g.Name != "" {
+			groupsByName[g.Name] = g
+		}
+	}
+	return groupsByName
+}
+
+func (s *OpsService) monthlyCardPublicPlanGroupByNameOrID(ctx context.Context, groupsByName map[string]*Group, groupName string, fallbackGroupID int64) *MonthlyCardPublicPlanGroup {
+	if groupName != "" {
+		if group := groupsByName[groupName]; group != nil {
+			return monthlyCardPublicPlanGroupFromService(group)
+		}
+	}
+	return s.monthlyCardPublicPlanGroup(ctx, fallbackGroupID)
 }
 
 func (s *OpsService) monthlyCardPublicPlanGroup(ctx context.Context, groupID int64) *MonthlyCardPublicPlanGroup {
@@ -509,6 +540,13 @@ func (s *OpsService) monthlyCardPublicPlanGroup(ctx context.Context, groupID int
 	}
 	group, err := s.groupRepo.GetByIDLite(ctx, groupID)
 	if err != nil || group == nil || group.Status != StatusActive {
+		return nil
+	}
+	return monthlyCardPublicPlanGroupFromService(group)
+}
+
+func monthlyCardPublicPlanGroupFromService(group *Group) *MonthlyCardPublicPlanGroup {
+	if group == nil || group.Status != StatusActive {
 		return nil
 	}
 	return &MonthlyCardPublicPlanGroup{

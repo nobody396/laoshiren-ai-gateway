@@ -98,57 +98,117 @@
               </div>
             </div>
 
-            <div class="mt-4 overflow-x-auto rounded-lg border border-gray-100 dark:border-dark-700">
-              <div class="grid min-w-[920px] grid-cols-[minmax(180px,1fr)_minmax(160px,0.8fr)_minmax(220px,1.4fr)_90px_90px_110px] bg-gray-50 px-3 py-2 text-xs font-medium text-gray-500 dark:bg-dark-900 dark:text-gray-400">
-                <span>{{ t('admin.suppliers.monitorSupplier', '供应商') }}</span>
-                <span>{{ t('admin.suppliers.monitorGroups', '对应分组') }}</span>
-                <span>{{ t('admin.suppliers.monitorSlots', '状态区块') }}</span>
-                <span>{{ t('admin.suppliers.monitorWindowRate', '窗口成功率') }}</span>
-                <span>{{ t('admin.suppliers.monitorLatency', '延迟') }}</span>
-                <span>{{ t('admin.suppliers.monitorLast', '最近探针') }}</span>
+            <div class="mt-5">
+              <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  {{ t('admin.suppliers.monitorCards', '渠道状态') }}
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.suppliers.monitorCardsHint', '近 60 次记录 · 每 2 分钟探测') }}
+                </div>
               </div>
-              <button
-                v-for="item in monitoredSupplierRows"
-                :key="item.id"
-                type="button"
-                class="grid min-w-[920px] w-full grid-cols-[minmax(180px,1fr)_minmax(160px,0.8fr)_minmax(220px,1.4fr)_90px_90px_110px] items-center border-t border-gray-100 px-3 py-2 text-left text-sm transition hover:bg-gray-50 dark:border-dark-700 dark:hover:bg-dark-900"
-                @click="openProbeDetail(item)"
-              >
-                <div class="min-w-0">
-                  <div class="truncate font-medium text-gray-800 dark:text-gray-200">{{ item.name }}</div>
-                  <div class="truncate text-xs text-gray-500 dark:text-gray-400">{{ item.probe_model || '-' }}</div>
+
+              <div class="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+                <button
+                  v-for="item in monitoredSupplierRows"
+                  :key="item.id"
+                  type="button"
+                  class="group flex min-h-[246px] w-full flex-col rounded-xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md dark:bg-dark-900/70"
+                  :class="probeCardClass(item.last_probe_status)"
+                  @click="openProbeDetail(item)"
+                >
+                  <div class="flex items-start gap-3">
+                    <span
+                      class="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-sm font-semibold ring-1 ring-black/5 dark:ring-white/10"
+                      :class="providerVisualClass(item.source_platform)"
+                    >
+                      {{ providerInitial(item.source_platform) }}
+                    </span>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex min-w-0 items-center gap-2">
+                        <div class="truncate text-base font-semibold text-gray-900 dark:text-white">{{ item.name }}</div>
+                        <span :class="probeBadgeClass(item.last_probe_status)">
+                          {{ probeStatusLabel(item.last_probe_status) }}
+                        </span>
+                      </div>
+                      <div class="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
+                        <span
+                          class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium"
+                          :class="providerBadgeClass(item.source_platform)"
+                        >
+                          {{ providerLabel(item.source_platform) }}
+                        </span>
+                        <span class="truncate font-mono text-xs text-gray-500 dark:text-gray-400">{{ item.probe_model || '-' }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 flex min-h-[24px] flex-wrap gap-1">
+                    <GroupBadge
+                      v-for="group in itemTargetGroups(item)"
+                      :key="group.id"
+                      :name="group.name"
+                      :platform="group.platform"
+                      :subscription-type="group.subscription_type"
+                      :rate-multiplier="group.rate_multiplier"
+                      class="max-w-32"
+                    />
+                    <span v-if="itemTargetGroups(item).length === 0" class="text-xs text-gray-400">-</span>
+                  </div>
+
+                  <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                    <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-800">
+                      <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.suppliers.cardLastLatency', '最近延迟') }}</div>
+                      <div class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">{{ formatLatencyText(item.last_probe_latency_ms) }}</div>
+                    </div>
+                    <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-800">
+                      <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.suppliers.cardWindowLatency', '窗口均值') }}</div>
+                      <div class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">{{ formatLatencyText(item.window_average_latency_ms) }}</div>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 border-t border-gray-100 pt-3 dark:border-dark-700">
+                    <div class="flex items-end justify-between gap-3">
+                      <div class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ t('admin.suppliers.cardAvailability', '可用性') }} · {{ monitorWindowLabel }}
+                      </div>
+                      <div class="text-2xl font-semibold tabular-nums" :class="cardAvailabilityClass(item)">
+                        {{ item.window_total > 0 ? formatPercent(item.window_success_rate) : '-' }}
+                      </div>
+                    </div>
+                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {{ item.window_success }}/{{ item.window_total }} · {{ nextProbeText(item) }}
+                    </div>
+                  </div>
+
+                  <div class="mt-auto pt-3">
+                    <div class="mb-2 flex justify-between text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                      <span>{{ t('admin.suppliers.cardRecentRecords', '近 60 次记录') }}</span>
+                      <span>{{ formatShortDateTime(item.last_probe_at) }}</span>
+                    </div>
+                    <div class="flex h-6 w-full items-end gap-[2px]">
+                      <span
+                        v-for="slot in supplierTimelineSlots(item)"
+                        :key="slot.key"
+                        class="min-w-[3px] flex-1 rounded-sm"
+                        :class="probeSlotClass(slot.status)"
+                        :style="probeSlotStyle(slot.status)"
+                        :title="probeSlotTitle(slot)"
+                      />
+                    </div>
+                    <div class="mt-1 flex justify-between text-[9px] uppercase tracking-widest text-gray-400">
+                      <span>PAST</span>
+                      <span>NOW</span>
+                    </div>
+                  </div>
+                </button>
+
+                <div
+                  v-if="monitoredSupplierRows.length === 0"
+                  class="rounded-xl border border-dashed border-gray-200 px-3 py-8 text-center text-sm text-gray-500 dark:border-dark-700 dark:text-gray-400"
+                >
+                  {{ t('admin.suppliers.noProbeRows', '暂无供应商探针数据') }}
                 </div>
-                <div class="flex min-w-0 flex-wrap gap-1">
-                  <GroupBadge
-                    v-for="group in itemTargetGroups(item)"
-                    :key="group.id"
-                    :name="group.name"
-                    :platform="group.platform"
-                    :subscription-type="group.subscription_type"
-                    :rate-multiplier="group.rate_multiplier"
-                    class="max-w-28"
-                  />
-                  <span v-if="itemTargetGroups(item).length === 0" class="text-xs text-gray-400">-</span>
-                </div>
-                <div class="grid grid-cols-12 gap-1">
-                  <span
-                    v-for="slot in supplierTimelineSlots(item)"
-                    :key="slot.key"
-                    class="h-3 min-w-0 rounded-full"
-                    :class="probeSlotClass(slot.status)"
-                    :title="probeSlotTitle(slot)"
-                  />
-                </div>
-                <span :class="probeBadgeClass(item.last_probe_status)">
-                  {{ item.window_total > 0 ? formatPercent(item.window_success_rate) : probeStatusLabel(item.last_probe_status) }}
-                </span>
-                <span class="text-gray-600 dark:text-gray-300">
-                  {{ item.window_average_latency_ms > 0 ? `${item.window_average_latency_ms}ms` : '-' }}
-                </span>
-                <span class="text-gray-500 dark:text-gray-400">{{ formatShortDateTime(item.last_probe_at) }}</span>
-              </button>
-              <div v-if="monitoredSupplierRows.length === 0" class="px-3 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                {{ t('admin.suppliers.noProbeRows', '暂无供应商探针数据') }}
               </div>
             </div>
           </section>
@@ -541,7 +601,7 @@
           <div class="mb-2 flex items-center justify-between">
             <div class="text-sm font-medium text-gray-800 dark:text-gray-200">最近状态区块</div>
             <div class="text-xs text-gray-500 dark:text-gray-400">
-              每 {{ selectedProbeItem.probe_interval_minutes || 30 }} 分钟一个 slot
+              每 {{ selectedProbeItem.probe_interval_minutes || defaultProbeIntervalMinutes }} 分钟一个 slot
             </div>
           </div>
           <div class="grid grid-cols-12 gap-1">
@@ -641,7 +701,8 @@ const { t } = useI18n()
 const appStore = useAppStore()
 
 const defaultProbeModel = 'claude-haiku-4-5-20251001'
-const supplierTimelineSlotCount = 12
+const defaultProbeIntervalMinutes = 2
+const supplierTimelineSlotCount = 60
 
 type SupplierTimelineSlot = {
   key: string
@@ -758,7 +819,7 @@ const form = reactive({
   notes: '',
   probe_enabled: true,
   probe_model: defaultProbeModel,
-  probe_interval_minutes: 30 as number | string,
+  probe_interval_minutes: defaultProbeIntervalMinutes as number | string,
   target_group_ids: [] as number[]
 })
 
@@ -782,11 +843,11 @@ const snapshotOverallStatus = computed<SupplierProbeStatus>(() => {
 const probeMetricCards = computed(() => {
   const snapshot = probeSnapshot.value
   return [
-	    {
-	      label: t('admin.suppliers.metricCoverage', '覆盖账号'),
-	      value: snapshot ? `${snapshot.enabled_suppliers}/${snapshot.total_suppliers}` : '-',
-	      hint: t('admin.suppliers.metricCoverageHint', '启用探针 / 启用账号')
-	    },
+    {
+      label: t('admin.suppliers.metricCoverage', '覆盖账号'),
+      value: snapshot ? `${snapshot.enabled_suppliers}/${snapshot.total_suppliers}` : '-',
+      hint: t('admin.suppliers.metricCoverageHint', '启用探针 / 启用账号')
+    },
     {
       label: t('admin.suppliers.metricWindowRate', '窗口成功率'),
       value: snapshot && snapshot.window_total > 0 ? formatPercent(snapshot.window_success_rate) : '-',
@@ -811,6 +872,15 @@ const probeMetricCards = computed(() => {
 })
 
 const hourlyBuckets = computed<SupplierHourlyStability[]>(() => probeSnapshot.value?.hourly || [])
+
+const monitorWindowLabel = computed(() => {
+  const minutes = probeSnapshot.value?.window_minutes || 60
+  if (minutes % 60 === 0) {
+    const hours = minutes / 60
+    return hours === 1 ? t('admin.suppliers.lastHour', '近 1 小时') : t('admin.suppliers.lastHours', { hours }, `近 ${hours} 小时`)
+  }
+  return t('admin.suppliers.lastMinutes', { minutes }, `近 ${minutes} 分钟`)
+})
 
 const riskyHours = computed<SupplierHourlyStability[]>(() =>
   hourlyBuckets.value
@@ -870,6 +940,77 @@ function probeBadgeClass(value: SupplierProbeStatus): string {
     failed: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
   }
   return `${base} ${map[value] || map.unknown}`
+}
+
+function probeCardClass(value: SupplierProbeStatus): string {
+  const map: Record<string, string> = {
+    success: 'border-gray-200 dark:border-dark-700',
+    degraded: 'border-amber-200 dark:border-amber-900/50',
+    failed: 'border-red-200 dark:border-red-900/50',
+    unknown: 'border-gray-200 dark:border-dark-700'
+  }
+  return map[value] || map.unknown
+}
+
+function providerLabel(value: string): string {
+  const normalized = value.toLowerCase()
+  if (normalized.includes('anthropic')) return 'Anthropic'
+  if (normalized.includes('openai')) return 'OpenAI'
+  if (normalized.includes('gemini')) return 'Gemini'
+  return value || 'Provider'
+}
+
+function providerInitial(value: string): string {
+  const label = providerLabel(value)
+  if (label === 'OpenAI') return 'OA'
+  if (label === 'Anthropic') return 'A'
+  if (label === 'Gemini') return 'G'
+  return label.slice(0, 2).toUpperCase()
+}
+
+function providerVisualClass(value: string): string {
+  const normalized = value.toLowerCase()
+  if (normalized.includes('anthropic')) return 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+  if (normalized.includes('openai')) return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+  if (normalized.includes('gemini')) return 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
+  return 'bg-gray-100 text-gray-700 dark:bg-dark-700 dark:text-gray-300'
+}
+
+function providerBadgeClass(value: string): string {
+  const normalized = value.toLowerCase()
+  if (normalized.includes('anthropic')) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+  if (normalized.includes('openai')) return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+  if (normalized.includes('gemini')) return 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
+  return 'bg-gray-100 text-gray-700 dark:bg-dark-700 dark:text-gray-300'
+}
+
+function cardAvailabilityClass(item: SupplierProbeSnapshotItem): string {
+  if (item.window_total <= 0) return 'text-gray-400 dark:text-gray-500'
+  if (item.window_success_rate >= 95) return 'text-emerald-600 dark:text-emerald-300'
+  if (item.window_success_rate >= 80) return 'text-amber-600 dark:text-amber-300'
+  return 'text-red-600 dark:text-red-300'
+}
+
+function formatLatencyText(value: number | null | undefined): string {
+  if (!value || value <= 0) return '-'
+  return `${value}ms`
+}
+
+function nextProbeText(item: SupplierProbeSnapshotItem): string {
+  if (!item.next_probe_at) {
+    return t('admin.suppliers.nextProbeUnknown', '等待调度')
+  }
+  const next = new Date(item.next_probe_at).getTime()
+  const base = new Date(probeSnapshot.value?.generated_at || Date.now()).getTime()
+  if (Number.isNaN(next) || Number.isNaN(base)) {
+    return formatShortDateTime(item.next_probe_at)
+  }
+  const diffSeconds = Math.max(0, Math.round((next - base) / 1000))
+  if (diffSeconds < 60) {
+    return t('admin.suppliers.nextProbeSeconds', { seconds: diffSeconds }, `${diffSeconds} 秒后`)
+  }
+  const minutes = Math.ceil(diffSeconds / 60)
+  return t('admin.suppliers.nextProbeMinutes', { minutes }, `${minutes} 分钟后`)
 }
 
 function withHttp(value: string): string {
@@ -979,7 +1120,7 @@ function groupToSupplierTargetGroup(group: AdminGroup): SupplierTargetGroup {
 function supplierTimelineSlots(item: SupplierProbeSnapshotItem): SupplierTimelineSlot[] {
   const now = new Date(probeSnapshot.value?.generated_at || Date.now())
   now.setSeconds(0, 0)
-  const intervalMinutes = Math.max(1, Number(item.probe_interval_minutes || 30))
+  const intervalMinutes = Math.max(1, Number(item.probe_interval_minutes || defaultProbeIntervalMinutes))
   const intervalMs = intervalMinutes * 60_000
   const pointsBySlotDistance = new Map<number, SupplierProbeTimelinePoint>()
 
@@ -1010,13 +1151,24 @@ function supplierTimelineSlots(item: SupplierProbeSnapshotItem): SupplierTimelin
 
 function probeSlotClass(status: SupplierProbeStatus | 'missing'): string {
   const map: Record<string, string> = {
-    success: 'bg-emerald-400',
-    degraded: 'bg-amber-400',
-    failed: 'bg-red-400',
+    success: 'bg-emerald-500',
+    degraded: 'bg-amber-500',
+    failed: 'bg-red-500',
     unknown: 'bg-gray-300 dark:bg-dark-600',
     missing: 'bg-gray-200 dark:bg-dark-600'
   }
   return map[status] || map.missing
+}
+
+function probeSlotStyle(status: SupplierProbeStatus | 'missing'): Record<string, string> {
+  const heightPct: Record<string, string> = {
+    success: '100%',
+    degraded: '65%',
+    failed: '35%',
+    unknown: '20%',
+    missing: '14%'
+  }
+  return { height: heightPct[status] || heightPct.missing }
 }
 
 function probeSlotTitle(slot: SupplierTimelineSlot): string {
@@ -1049,7 +1201,7 @@ function normalizeNumber(value: number | string | null): number | null {
 
 function normalizeInterval(value: number | string): number {
   const numeric = Number(value)
-  if (!Number.isFinite(numeric) || numeric <= 0) return 30
+  if (!Number.isFinite(numeric) || numeric <= 0) return defaultProbeIntervalMinutes
   return Math.min(1440, Math.floor(numeric))
 }
 
@@ -1146,12 +1298,12 @@ function resetForm(): void {
     contact_value: '',
     status: 'evaluating',
     cost_rmb_per_usd: null,
-    notes: '',
-    probe_enabled: true,
-    probe_model: defaultProbeModel,
-    probe_interval_minutes: 30,
-    target_group_ids: []
-  })
+	    notes: '',
+	    probe_enabled: true,
+	    probe_model: defaultProbeModel,
+	    probe_interval_minutes: defaultProbeIntervalMinutes,
+	    target_group_ids: []
+	  })
 }
 
 function openCreateDialog(): void {
@@ -1176,11 +1328,11 @@ function openEditDialog(supplier: Supplier): void {
     status: supplier.status,
     cost_rmb_per_usd: supplier.cost_rmb_per_usd,
     notes: supplier.notes || '',
-    probe_enabled: supplier.probe_enabled,
-    probe_model: supplier.probe_model || defaultProbeModel,
-    probe_interval_minutes: supplier.probe_interval_minutes || 30,
-    target_group_ids: [...(supplier.target_group_ids || [])]
-  })
+	    probe_enabled: supplier.probe_enabled,
+	    probe_model: supplier.probe_model || defaultProbeModel,
+	    probe_interval_minutes: supplier.probe_interval_minutes || defaultProbeIntervalMinutes,
+	    target_group_ids: [...(supplier.target_group_ids || [])]
+	  })
   showDialog.value = true
   if (allGroups.value.length === 0) {
     loadFormOptions()

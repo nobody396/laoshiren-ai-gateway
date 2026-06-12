@@ -28,7 +28,7 @@ const (
 
 	DefaultSupplierProbeModel           = "claude-haiku-4-5-20251001"
 	DefaultSupplierOpenAIProbeModel     = "gpt-5.4-mini"
-	DefaultSupplierProbeIntervalMinutes = 30
+	DefaultSupplierProbeIntervalMinutes = 2
 
 	SupplierProbeSubStatusNone            = ""
 	SupplierProbeSubStatusSlowLatency     = "slow_latency"
@@ -41,15 +41,16 @@ const (
 	SupplierProbeSubStatusResponseTimeout = "response_timeout"
 	SupplierProbeSubStatusContentMismatch = "content_mismatch"
 
-	supplierProbeTimeout       = 30 * time.Second
-	supplierProbeSlowLatency   = 5 * time.Second
-	supplierProbeMaxAttempts   = 3
-	supplierProbeRetryBaseWait = 200 * time.Millisecond
-	supplierProbeRunnerDelay   = 15 * time.Second
-	supplierProbeRunnerTick    = 1 * time.Minute
-	supplierProbeRunnerLimit   = 6
-	supplierProbeSnapshotDays  = 7
-	supplierProbeWindowMinutes = 60
+	supplierProbeTimeout        = 30 * time.Second
+	supplierProbeSlowLatency    = 5 * time.Second
+	supplierProbeMaxAttempts    = 3
+	supplierProbeRetryBaseWait  = 200 * time.Millisecond
+	supplierProbeRunnerDelay    = 15 * time.Second
+	supplierProbeRunnerTick     = 1 * time.Minute
+	supplierProbeRunnerLimit    = 6
+	supplierProbeSnapshotDays   = 7
+	supplierProbeWindowMinutes  = 60
+	supplierProbeTimelinePoints = 60
 )
 
 var (
@@ -145,6 +146,7 @@ type SupplierProbeSnapshotItem struct {
 	SourcePlatform       string                       `json:"source_platform"`
 	ProbeEnabled         bool                         `json:"probe_enabled"`
 	ProbeModel           string                       `json:"probe_model"`
+	ProbeIntervalMinutes int                          `json:"probe_interval_minutes"`
 	LastProbeStatus      string                       `json:"last_probe_status"`
 	LastProbeSubStatus   string                       `json:"last_probe_sub_status"`
 	LastProbeLatencyMs   *int64                       `json:"last_probe_latency_ms"`
@@ -569,23 +571,24 @@ func (s *SupplierService) GetProbeSnapshot(ctx context.Context, windowMinutes in
 		}
 
 		item := SupplierProbeSnapshotItem{
-			ID:                 supplier.ID,
-			Name:               supplier.Name,
-			SourceAccountID:    supplier.SourceAccountID,
-			SourcePlatform:     supplier.SourcePlatform,
-			ProbeEnabled:       supplier.ProbeEnabled,
-			ProbeModel:         supplier.ProbeModel,
-			LastProbeStatus:    supplier.LastProbeStatus,
-			LastProbeSubStatus: supplier.LastProbeSubStatus,
-			LastProbeLatencyMs: supplier.LastProbeLatencyMs,
-			LastProbeError:     supplier.LastProbeError,
-			LastProbeAt:        supplier.LastProbeAt,
-			NextProbeAt:        supplier.NextProbeAt,
-			ProbeSuccessRate:   supplier.ProbeSuccessRate,
-			ProbeSuccessCount:  supplier.ProbeSuccessCount,
-			ProbeTotalCount:    supplier.ProbeTotalCount,
-			TargetGroupIDs:     append([]int64{}, supplier.TargetGroupIDs...),
-			TargetGroups:       append([]SupplierTargetGroup{}, supplier.TargetGroups...),
+			ID:                   supplier.ID,
+			Name:                 supplier.Name,
+			SourceAccountID:      supplier.SourceAccountID,
+			SourcePlatform:       supplier.SourcePlatform,
+			ProbeEnabled:         supplier.ProbeEnabled,
+			ProbeModel:           supplier.ProbeModel,
+			ProbeIntervalMinutes: supplier.ProbeIntervalMinutes,
+			LastProbeStatus:      supplier.LastProbeStatus,
+			LastProbeSubStatus:   supplier.LastProbeSubStatus,
+			LastProbeLatencyMs:   supplier.LastProbeLatencyMs,
+			LastProbeError:       supplier.LastProbeError,
+			LastProbeAt:          supplier.LastProbeAt,
+			NextProbeAt:          supplier.NextProbeAt,
+			ProbeSuccessRate:     supplier.ProbeSuccessRate,
+			ProbeSuccessCount:    supplier.ProbeSuccessCount,
+			ProbeTotalCount:      supplier.ProbeTotalCount,
+			TargetGroupIDs:       append([]int64{}, supplier.TargetGroupIDs...),
+			TargetGroups:         append([]SupplierTargetGroup{}, supplier.TargetGroups...),
 		}
 		var latencyTotal int64
 		var latencyCount int
@@ -611,7 +614,11 @@ func (s *SupplierService) GetProbeSnapshot(ctx context.Context, windowMinutes in
 		if latencyCount > 0 {
 			item.WindowAverageLatency = latencyTotal / int64(latencyCount)
 		}
-		for _, result := range bySupplier[supplier.ID] {
+		points := bySupplier[supplier.ID]
+		if len(points) > supplierProbeTimelinePoints {
+			points = points[len(points)-supplierProbeTimelinePoints:]
+		}
+		for _, result := range points {
 			item.Points = append(item.Points, SupplierProbeTimelinePoint{
 				Status:       result.Status,
 				SubStatus:    result.SubStatus,

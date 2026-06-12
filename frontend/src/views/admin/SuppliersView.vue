@@ -98,22 +98,46 @@
               </div>
             </div>
 
-            <div class="mt-4 overflow-hidden rounded-lg border border-gray-100 dark:border-dark-700">
-              <div class="grid grid-cols-[minmax(160px,1.2fr)_90px_90px_110px_120px] bg-gray-50 px-3 py-2 text-xs font-medium text-gray-500 dark:bg-dark-900 dark:text-gray-400">
+            <div class="mt-4 overflow-x-auto rounded-lg border border-gray-100 dark:border-dark-700">
+              <div class="grid min-w-[920px] grid-cols-[minmax(180px,1fr)_minmax(160px,0.8fr)_minmax(220px,1.4fr)_90px_90px_110px] bg-gray-50 px-3 py-2 text-xs font-medium text-gray-500 dark:bg-dark-900 dark:text-gray-400">
                 <span>{{ t('admin.suppliers.monitorSupplier', '供应商') }}</span>
+                <span>{{ t('admin.suppliers.monitorGroups', '对应分组') }}</span>
+                <span>{{ t('admin.suppliers.monitorSlots', '状态区块') }}</span>
                 <span>{{ t('admin.suppliers.monitorWindowRate', '窗口成功率') }}</span>
                 <span>{{ t('admin.suppliers.monitorLatency', '延迟') }}</span>
                 <span>{{ t('admin.suppliers.monitorLast', '最近探针') }}</span>
-                <span>{{ t('admin.suppliers.monitorNext', '下次探针') }}</span>
               </div>
-              <div
+              <button
                 v-for="item in monitoredSupplierRows"
                 :key="item.id"
-                class="grid grid-cols-[minmax(160px,1.2fr)_90px_90px_110px_120px] items-center border-t border-gray-100 px-3 py-2 text-sm dark:border-dark-700"
+                type="button"
+                class="grid min-w-[920px] w-full grid-cols-[minmax(180px,1fr)_minmax(160px,0.8fr)_minmax(220px,1.4fr)_90px_90px_110px] items-center border-t border-gray-100 px-3 py-2 text-left text-sm transition hover:bg-gray-50 dark:border-dark-700 dark:hover:bg-dark-900"
+                @click="openProbeDetail(item)"
               >
                 <div class="min-w-0">
                   <div class="truncate font-medium text-gray-800 dark:text-gray-200">{{ item.name }}</div>
                   <div class="truncate text-xs text-gray-500 dark:text-gray-400">{{ item.probe_model || '-' }}</div>
+                </div>
+                <div class="flex min-w-0 flex-wrap gap-1">
+                  <GroupBadge
+                    v-for="group in itemTargetGroups(item)"
+                    :key="group.id"
+                    :name="group.name"
+                    :platform="group.platform"
+                    :subscription-type="group.subscription_type"
+                    :rate-multiplier="group.rate_multiplier"
+                    class="max-w-28"
+                  />
+                  <span v-if="itemTargetGroups(item).length === 0" class="text-xs text-gray-400">-</span>
+                </div>
+                <div class="grid grid-cols-12 gap-1">
+                  <span
+                    v-for="slot in supplierTimelineSlots(item)"
+                    :key="slot.key"
+                    class="h-3 min-w-0 rounded-full"
+                    :class="probeSlotClass(slot.status)"
+                    :title="probeSlotTitle(slot)"
+                  />
                 </div>
                 <span :class="probeBadgeClass(item.last_probe_status)">
                   {{ item.window_total > 0 ? formatPercent(item.window_success_rate) : probeStatusLabel(item.last_probe_status) }}
@@ -122,8 +146,7 @@
                   {{ item.window_average_latency_ms > 0 ? `${item.window_average_latency_ms}ms` : '-' }}
                 </span>
                 <span class="text-gray-500 dark:text-gray-400">{{ formatShortDateTime(item.last_probe_at) }}</span>
-                <span class="text-gray-500 dark:text-gray-400">{{ formatShortDateTime(item.next_probe_at) }}</span>
-              </div>
+              </button>
               <div v-if="monitoredSupplierRows.length === 0" class="px-3 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                 {{ t('admin.suppliers.noProbeRows', '暂无供应商探针数据') }}
               </div>
@@ -460,6 +483,114 @@
       </template>
     </BaseDialog>
 
+    <BaseDialog
+      :show="showProbeDetailDialog"
+      :title="selectedProbeItem ? `${selectedProbeItem.name} · 探针详情` : t('admin.suppliers.probeDetail', '探针详情')"
+      width="extra-wide"
+      @close="closeProbeDetail"
+    >
+      <div v-if="selectedProbeItem" class="space-y-5">
+        <div class="grid gap-3 md:grid-cols-4">
+          <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-900">
+            <div class="text-xs text-gray-500 dark:text-gray-400">当前状态</div>
+            <div class="mt-2">
+              <span :class="probeBadgeClass(selectedProbeItem.last_probe_status)">
+                {{ probeStatusLabel(selectedProbeItem.last_probe_status) }}
+              </span>
+            </div>
+          </div>
+          <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-900">
+            <div class="text-xs text-gray-500 dark:text-gray-400">窗口成功率</div>
+            <div class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">
+              {{ selectedProbeItem.window_total > 0 ? formatPercent(selectedProbeItem.window_success_rate) : '-' }}
+            </div>
+            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {{ selectedProbeItem.window_success }}/{{ selectedProbeItem.window_total }}
+            </div>
+          </div>
+          <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-900">
+            <div class="text-xs text-gray-500 dark:text-gray-400">平均延迟</div>
+            <div class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">
+              {{ selectedProbeItem.window_average_latency_ms > 0 ? `${selectedProbeItem.window_average_latency_ms}ms` : '-' }}
+            </div>
+          </div>
+          <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-900">
+            <div class="text-xs text-gray-500 dark:text-gray-400">下次探针</div>
+            <div class="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+              {{ formatDateTime(selectedProbeItem.next_probe_at) }}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="mb-2 text-sm font-medium text-gray-800 dark:text-gray-200">对应分组</div>
+          <div class="flex flex-wrap gap-1.5">
+            <GroupBadge
+              v-for="group in itemTargetGroups(selectedProbeItem)"
+              :key="group.id"
+              :name="group.name"
+              :platform="group.platform"
+              :subscription-type="group.subscription_type"
+              :rate-multiplier="group.rate_multiplier"
+            />
+            <span v-if="itemTargetGroups(selectedProbeItem).length === 0" class="text-sm text-gray-400">-</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="mb-2 flex items-center justify-between">
+            <div class="text-sm font-medium text-gray-800 dark:text-gray-200">最近状态区块</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">
+              每 {{ selectedProbeItem.probe_interval_minutes || 30 }} 分钟一个 slot
+            </div>
+          </div>
+          <div class="grid grid-cols-12 gap-1">
+            <span
+              v-for="slot in supplierTimelineSlots(selectedProbeItem)"
+              :key="slot.key"
+              class="h-5 min-w-0 rounded"
+              :class="probeSlotClass(slot.status)"
+              :title="probeSlotTitle(slot)"
+            />
+          </div>
+        </div>
+
+        <div class="overflow-hidden rounded-lg border border-gray-100 dark:border-dark-700">
+          <div class="grid grid-cols-[130px_90px_100px_90px_minmax(180px,1fr)] bg-gray-50 px-3 py-2 text-xs font-medium text-gray-500 dark:bg-dark-900 dark:text-gray-400">
+            <span>时间</span>
+            <span>状态</span>
+            <span>HTTP</span>
+            <span>延迟</span>
+            <span>备注</span>
+          </div>
+          <div v-if="probeHistoryLoading" class="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+            加载中...
+          </div>
+          <template v-else>
+            <div
+              v-for="result in probeHistory?.results || []"
+              :key="result.id"
+              class="grid grid-cols-[130px_90px_100px_90px_minmax(180px,1fr)] items-center border-t border-gray-100 px-3 py-2 text-sm dark:border-dark-700"
+            >
+              <span class="text-gray-500 dark:text-gray-400">{{ formatShortDateTime(result.checked_at) }}</span>
+              <span :class="probeBadgeClass(result.status)">{{ probeStatusLabel(result.status) }}</span>
+              <span class="text-gray-600 dark:text-gray-300">{{ result.http_code || '-' }}</span>
+              <span class="text-gray-600 dark:text-gray-300">{{ result.latency_ms ? `${result.latency_ms}ms` : '-' }}</span>
+              <span class="truncate text-gray-500 dark:text-gray-400" :title="result.error_message || result.response_text">
+                {{ probeHistorySummary(result) }}
+              </span>
+            </div>
+          </template>
+          <div
+            v-if="!probeHistoryLoading && (probeHistory?.results || []).length === 0"
+            class="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400"
+          >
+            暂无历史探针记录
+          </div>
+        </div>
+      </div>
+    </BaseDialog>
+
     <ConfirmDialog
       :show="showDeleteDialog"
       :title="t('admin.suppliers.delete', '删除供应商')"
@@ -481,10 +612,14 @@ import type {
   Supplier,
   SupplierContactPlatform,
   SupplierHourlyStability,
+  SupplierProbeHistory,
+  SupplierProbeResult,
   SupplierProbeSnapshot,
   SupplierProbeSnapshotItem,
   SupplierProbeStatus,
-  SupplierStatus
+  SupplierProbeTimelinePoint,
+  SupplierStatus,
+  SupplierTargetGroup
 } from '@/api/admin/suppliers'
 import type { AdminGroup } from '@/types'
 import type { Column } from '@/components/common/types'
@@ -506,6 +641,14 @@ const { t } = useI18n()
 const appStore = useAppStore()
 
 const defaultProbeModel = 'claude-haiku-4-5-20251001'
+const supplierTimelineSlotCount = 12
+
+type SupplierTimelineSlot = {
+  key: string
+  at: Date
+  status: SupplierProbeStatus | 'missing'
+  point?: SupplierProbeTimelinePoint
+}
 
 const columns = computed<Column[]>(() => [
   { key: 'name', label: t('admin.suppliers.columns.name', '供应商'), sortable: true },
@@ -597,6 +740,10 @@ const showDialog = ref(false)
 const editingSupplier = ref<Supplier | null>(null)
 const showDeleteDialog = ref(false)
 const deletingSupplier = ref<Supplier | null>(null)
+const showProbeDetailDialog = ref(false)
+const selectedProbeItem = ref<SupplierProbeSnapshotItem | null>(null)
+const probeHistory = ref<SupplierProbeHistory | null>(null)
+const probeHistoryLoading = ref(false)
 
 const form = reactive({
   name: '',
@@ -635,11 +782,11 @@ const snapshotOverallStatus = computed<SupplierProbeStatus>(() => {
 const probeMetricCards = computed(() => {
   const snapshot = probeSnapshot.value
   return [
-    {
-      label: t('admin.suppliers.metricCoverage', '覆盖账号'),
-      value: snapshot ? `${snapshot.enabled_suppliers}/${snapshot.total_suppliers}` : '-',
-      hint: t('admin.suppliers.metricCoverageHint', '已开启 / 全部供应商')
-    },
+	    {
+	      label: t('admin.suppliers.metricCoverage', '覆盖账号'),
+	      value: snapshot ? `${snapshot.enabled_suppliers}/${snapshot.total_suppliers}` : '-',
+	      hint: t('admin.suppliers.metricCoverageHint', '启用探针 / 启用账号')
+	    },
     {
       label: t('admin.suppliers.metricWindowRate', '窗口成功率'),
       value: snapshot && snapshot.window_total > 0 ? formatPercent(snapshot.window_success_rate) : '-',
@@ -691,7 +838,6 @@ const monitoredSupplierRows = computed<SupplierProbeSnapshotItem[]>(() =>
       if (aRank !== bRank) return aRank - bRank
       return (b.window_total || 0) - (a.window_total || 0)
     })
-    .slice(0, 8)
 )
 
 function statusLabel(value: SupplierStatus): string {
@@ -799,9 +945,100 @@ function hourBucketTitle(bucket: SupplierHourlyStability): string {
   return `${bucket.label} · ${formatPercent(bucket.success_rate)} · ${bucket.success}/${bucket.total} · ${bucket.average_latency_ms || '-'}ms`
 }
 
-function targetGroups(row: Supplier): AdminGroup[] {
+function targetGroups(row: Supplier): SupplierTargetGroup[] {
+  if (row.target_groups?.length) {
+    return row.target_groups
+  }
   const ids = new Set(row.target_group_ids || [])
-  return allGroups.value.filter((group) => ids.has(group.id))
+  return allGroups.value
+    .filter((group) => ids.has(group.id))
+    .map(groupToSupplierTargetGroup)
+}
+
+function itemTargetGroups(item: SupplierProbeSnapshotItem): SupplierTargetGroup[] {
+  if (item.target_groups?.length) {
+    return item.target_groups
+  }
+  const ids = new Set(item.target_group_ids || [])
+  return allGroups.value
+    .filter((group) => ids.has(group.id))
+    .map(groupToSupplierTargetGroup)
+}
+
+function groupToSupplierTargetGroup(group: AdminGroup): SupplierTargetGroup {
+  return {
+    id: group.id,
+    name: group.name,
+    platform: group.platform,
+    status: group.status,
+    subscription_type: group.subscription_type,
+    rate_multiplier: group.rate_multiplier
+  }
+}
+
+function supplierTimelineSlots(item: SupplierProbeSnapshotItem): SupplierTimelineSlot[] {
+  const now = new Date(probeSnapshot.value?.generated_at || Date.now())
+  now.setSeconds(0, 0)
+  const intervalMinutes = Math.max(1, Number(item.probe_interval_minutes || 30))
+  const intervalMs = intervalMinutes * 60_000
+  const pointsBySlotDistance = new Map<number, SupplierProbeTimelinePoint>()
+
+  for (const point of item.points || []) {
+    const date = new Date(point.checked_at)
+    if (Number.isNaN(date.getTime())) continue
+    const distanceFromNow = Math.round((now.getTime() - date.getTime()) / intervalMs)
+    if (distanceFromNow < 0 || distanceFromNow >= supplierTimelineSlotCount) continue
+    const existing = pointsBySlotDistance.get(distanceFromNow)
+    if (!existing || new Date(point.checked_at).getTime() > new Date(existing.checked_at).getTime()) {
+      pointsBySlotDistance.set(distanceFromNow, point)
+    }
+  }
+
+  const slots: SupplierTimelineSlot[] = []
+  for (let idx = supplierTimelineSlotCount - 1; idx >= 0; idx--) {
+    const at = new Date(now.getTime() - idx * intervalMs)
+    const point = pointsBySlotDistance.get(idx)
+    slots.push({
+      key: at.toISOString(),
+      at,
+      status: point?.status || 'missing',
+      point
+    })
+  }
+  return slots
+}
+
+function probeSlotClass(status: SupplierProbeStatus | 'missing'): string {
+  const map: Record<string, string> = {
+    success: 'bg-emerald-400',
+    degraded: 'bg-amber-400',
+    failed: 'bg-red-400',
+    unknown: 'bg-gray-300 dark:bg-dark-600',
+    missing: 'bg-gray-200 dark:bg-dark-600'
+  }
+  return map[status] || map.missing
+}
+
+function probeSlotTitle(slot: SupplierTimelineSlot): string {
+  const time = slot.at.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  if (!slot.point) return `${time} 无数据`
+  const subStatus = slot.point.sub_status ? ` ${probeSubStatusLabels[slot.point.sub_status] || slot.point.sub_status}` : ''
+  const http = slot.point.http_code > 0 ? ` HTTP ${slot.point.http_code}` : ''
+  const latency = slot.point.latency_ms > 0 ? ` ${slot.point.latency_ms}ms` : ''
+  return `${time} ${probeStatusLabel(slot.point.status)}${subStatus}${http}${latency}`
+}
+
+function probeHistorySummary(result: SupplierProbeResult): string {
+  const parts: string[] = []
+  if (result.sub_status) {
+    parts.push(probeSubStatusLabels[result.sub_status] || result.sub_status)
+  }
+  if (result.error_message) {
+    parts.push(result.error_message)
+  } else if (result.response_text) {
+    parts.push(result.response_text)
+  }
+  return parts.join(' · ') || '-'
 }
 
 function normalizeNumber(value: number | string | null): number | null {
@@ -1025,6 +1262,29 @@ async function runProbe(supplier: Supplier): Promise<void> {
   }
 }
 
+async function openProbeDetail(item: SupplierProbeSnapshotItem): Promise<void> {
+  selectedProbeItem.value = item
+  showProbeDetailDialog.value = true
+  probeHistory.value = null
+  probeHistoryLoading.value = true
+  try {
+    probeHistory.value = await adminAPI.suppliers.getProbeHistory(item.id, {
+      days: 7,
+      limit: 200
+    })
+  } catch (error: unknown) {
+    appStore.showError(extractApiErrorMessage(error, t('admin.suppliers.probeHistoryError', '加载探针历史失败')))
+  } finally {
+    probeHistoryLoading.value = false
+  }
+}
+
+function closeProbeDetail(): void {
+  showProbeDetailDialog.value = false
+  selectedProbeItem.value = null
+  probeHistory.value = null
+}
+
 async function syncAccountsToSuppliers(): Promise<void> {
   syncingAccounts.value = true
   try {
@@ -1032,8 +1292,8 @@ async function syncAccountsToSuppliers(): Promise<void> {
     appStore.showSuccess(
       t(
         'admin.suppliers.syncAccountsSuccess',
-        { created: result.created, updated: result.updated, skipped: result.skipped },
-        `账号已同步：新增 ${result.created}，更新 ${result.updated}，跳过 ${result.skipped}`
+        { created: result.created, updated: result.updated, removed: result.removed, skipped: result.skipped },
+        `账号已同步：新增 ${result.created}，更新 ${result.updated}，移除 ${result.removed}，跳过 ${result.skipped}`
       )
     )
     await refreshSupplierPage()

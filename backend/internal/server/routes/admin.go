@@ -675,6 +675,7 @@ func registerSupplierRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		suppliers.POST("/sync-accounts", h.Admin.Supplier.SyncAccounts)
 		suppliers.POST("/probe-all", h.Admin.Supplier.ProbeAll)
 		suppliers.GET("/:id", h.Admin.Supplier.GetByID)
+		suppliers.GET("/:id/probe-results", h.Admin.Supplier.ProbeHistory)
 		suppliers.POST("", h.Admin.Supplier.Create)
 		suppliers.PUT("/:id", h.Admin.Supplier.Update)
 		suppliers.POST("/:id/probe", h.Admin.Supplier.Probe)

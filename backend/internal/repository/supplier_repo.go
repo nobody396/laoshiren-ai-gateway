@@ -88,6 +88,9 @@ func (r *supplierRepository) GetByID(ctx context.Context, id int64) (*service.Su
 	if supplier.TargetGroupIDs, err = r.loadTargetGroupIDs(ctx, id); err != nil {
 		return nil, err
 	}
+	if supplier.TargetGroups, err = r.loadTargetGroups(ctx, id); err != nil {
+		return nil, err
+	}
 	return supplier, nil
 }
 
@@ -160,7 +163,8 @@ func (r *supplierRepository) BulkSetProbeEnabled(ctx context.Context, ids []int6
 				probe_enabled = $1,
 				next_probe_at = CASE WHEN $1 THEN COALESCE(next_probe_at, NOW()) ELSE next_probe_at END,
 				updated_at = NOW()
-			WHERE deleted_at IS NULL`,
+			WHERE deleted_at IS NULL
+				AND source_account_id IS NOT NULL`,
 			enabled,
 		)
 	} else {
@@ -188,6 +192,7 @@ func (r *supplierRepository) ListDueProbes(ctx context.Context, limit int) ([]se
 	rows, err := r.db.QueryContext(ctx,
 		supplierSelectSQL()+`
 		WHERE s.deleted_at IS NULL
+			AND s.source_account_id IS NOT NULL
 			AND s.probe_enabled = TRUE
 			AND (s.next_probe_at IS NULL OR s.next_probe_at <= NOW())
 		ORDER BY COALESCE(s.next_probe_at, s.last_probe_at, s.created_at) ASC, s.id ASC
@@ -249,6 +254,54 @@ func (r *supplierRepository) ListProbeResultsSince(ctx context.Context, since ti
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate supplier probe results: %w", err)
+	}
+	return results, nil
+}
+
+func (r *supplierRepository) ListProbeResultsBySupplier(ctx context.Context, supplierID int64, since time.Time, limit int) ([]service.SupplierProbeResult, error) {
+	if limit <= 0 {
+		limit = 200
+	}
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT
+			spr.id,
+			spr.supplier_id,
+			spr.status,
+			spr.sub_status,
+			spr.http_code,
+			spr.model,
+			spr.latency_ms,
+			spr.accuracy_ok,
+			spr.response_text,
+			spr.error_message,
+			spr.checked_at,
+			spr.created_at
+		FROM supplier_probe_results spr
+		JOIN suppliers s ON s.id = spr.supplier_id
+		WHERE s.deleted_at IS NULL
+			AND spr.supplier_id = $1
+			AND spr.checked_at >= $2
+		ORDER BY spr.checked_at DESC, spr.id DESC
+		LIMIT $3`,
+		supplierID,
+		since,
+		limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list supplier probe history: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	results := []service.SupplierProbeResult{}
+	for rows.Next() {
+		result, err := scanSupplierProbeResult(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan supplier probe history: %w", err)
+		}
+		results = append(results, result)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate supplier probe history: %w", err)
 	}
 	return results, nil
 }
@@ -329,18 +382,17 @@ func (r *supplierRepository) UpsertFromAccount(ctx context.Context, supplier *se
 	err := r.runInTx(ctx, func(tx *sql.Tx) error {
 		updateErr := tx.QueryRowContext(ctx,
 			`UPDATE suppliers SET
-				name = $2,
-				base_url = $3,
-				api_key = $4,
-				upstream_group = $5,
-				status = $6,
-				notes = $7,
-				source_account_id = $1,
-				source_platform = $8,
-				probe_enabled = TRUE,
-				probe_model = $9,
-				probe_interval_minutes = $10,
-				updated_at = NOW()
+					name = $2,
+					base_url = $3,
+					api_key = $4,
+					upstream_group = $5,
+					status = $6,
+					notes = $7,
+					source_account_id = $1,
+					source_platform = $8,
+					probe_model = $9,
+					probe_interval_minutes = $10,
+					updated_at = NOW()
 			WHERE deleted_at IS NULL
 				AND (source_account_id = $1 OR (source_account_id IS NULL AND name = $2))
 			RETURNING id, created_at, updated_at`,
@@ -357,6 +409,9 @@ func (r *supplierRepository) UpsertFromAccount(ctx context.Context, supplier *se
 		).Scan(&supplier.ID, &supplier.CreatedAt, &supplier.UpdatedAt)
 		if updateErr == nil {
 			created = false
+			if err := replaceSupplierTargetGroupsTx(ctx, tx, supplier.ID, supplier.TargetGroupIDs); err != nil {
+				return err
+			}
 			return nil
 		}
 		if updateErr != sql.ErrNoRows {
@@ -389,10 +444,34 @@ func (r *supplierRepository) UpsertFromAccount(ctx context.Context, supplier *se
 			}
 			return fmt.Errorf("insert supplier from account: %w", insertErr)
 		}
+		if err := replaceSupplierTargetGroupsTx(ctx, tx, supplier.ID, supplier.TargetGroupIDs); err != nil {
+			return err
+		}
 		created = true
 		return nil
 	})
 	return created, err
+}
+
+func (r *supplierRepository) PruneAccountSuppliers(ctx context.Context, activeSourceAccountIDs []int64) (int64, error) {
+	activeSourceAccountIDs = normalizeRepositoryInt64IDs(activeSourceAccountIDs)
+	query := `UPDATE suppliers SET
+			probe_enabled = FALSE,
+			deleted_at = NOW(),
+			updated_at = NOW()
+		WHERE deleted_at IS NULL
+			AND source_account_id IS NOT NULL`
+	args := []any{}
+	if len(activeSourceAccountIDs) > 0 {
+		query += ` AND NOT (source_account_id = ANY($1))`
+		args = append(args, pq.Array(activeSourceAccountIDs))
+	}
+	result, err := r.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("prune account suppliers: %w", err)
+	}
+	rows, _ := result.RowsAffected()
+	return rows, nil
 }
 
 func (r *supplierRepository) Delete(ctx context.Context, id int64) error {
@@ -468,8 +547,13 @@ func (r *supplierRepository) List(ctx context.Context, params pagination.Paginat
 		if err != nil {
 			return nil, nil, err
 		}
+		targetGroupMap, err := r.batchLoadTargetGroups(ctx, supplierIDs)
+		if err != nil {
+			return nil, nil, err
+		}
 		for i := range suppliers {
 			suppliers[i].TargetGroupIDs = groupMap[suppliers[i].ID]
+			suppliers[i].TargetGroups = targetGroupMap[suppliers[i].ID]
 		}
 	}
 
@@ -696,6 +780,17 @@ func (r *supplierRepository) loadTargetGroupIDs(ctx context.Context, supplierID 
 	return ids, nil
 }
 
+func (r *supplierRepository) loadTargetGroups(ctx context.Context, supplierID int64) ([]service.SupplierTargetGroup, error) {
+	groupMap, err := r.batchLoadTargetGroups(ctx, []int64{supplierID})
+	if err != nil {
+		return nil, err
+	}
+	if groups, ok := groupMap[supplierID]; ok {
+		return groups, nil
+	}
+	return []service.SupplierTargetGroup{}, nil
+}
+
 func (r *supplierRepository) batchLoadTargetGroupIDs(ctx context.Context, supplierIDs []int64) (map[int64][]int64, error) {
 	groupMap := make(map[int64][]int64, len(supplierIDs))
 	for _, id := range supplierIDs {
@@ -724,6 +819,53 @@ func (r *supplierRepository) batchLoadTargetGroupIDs(ctx context.Context, suppli
 	return groupMap, nil
 }
 
+func (r *supplierRepository) batchLoadTargetGroups(ctx context.Context, supplierIDs []int64) (map[int64][]service.SupplierTargetGroup, error) {
+	groupMap := make(map[int64][]service.SupplierTargetGroup, len(supplierIDs))
+	for _, id := range supplierIDs {
+		groupMap[id] = []service.SupplierTargetGroup{}
+	}
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT
+			sg.supplier_id,
+			g.id,
+			g.name,
+			g.platform,
+			g.status,
+			g.subscription_type,
+			g.rate_multiplier
+		FROM supplier_groups sg
+		JOIN groups g ON g.id = sg.group_id
+		WHERE sg.supplier_id = ANY($1)
+		ORDER BY sg.supplier_id, g.sort_order, g.id`,
+		pq.Array(supplierIDs),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("batch load supplier target group details: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	for rows.Next() {
+		var supplierID int64
+		var group service.SupplierTargetGroup
+		if err := rows.Scan(
+			&supplierID,
+			&group.ID,
+			&group.Name,
+			&group.Platform,
+			&group.Status,
+			&group.SubscriptionType,
+			&group.RateMultiplier,
+		); err != nil {
+			return nil, fmt.Errorf("scan supplier target group detail: %w", err)
+		}
+		groupMap[supplierID] = append(groupMap[supplierID], group)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate supplier target group details: %w", err)
+	}
+	return groupMap, nil
+}
+
 func replaceSupplierTargetGroupsTx(ctx context.Context, exec dbExec, supplierID int64, groupIDs []int64) error {
 	if _, err := exec.ExecContext(ctx, `DELETE FROM supplier_groups WHERE supplier_id = $1`, supplierID); err != nil {
 		return fmt.Errorf("delete supplier groups: %w", err)
@@ -740,6 +882,25 @@ func replaceSupplierTargetGroupsTx(ctx context.Context, exec dbExec, supplierID 
 		return fmt.Errorf("insert supplier groups: %w", err)
 	}
 	return nil
+}
+
+func normalizeRepositoryInt64IDs(ids []int64) []int64 {
+	if len(ids) == 0 {
+		return []int64{}
+	}
+	out := make([]int64, 0, len(ids))
+	seen := make(map[int64]struct{}, len(ids))
+	for _, id := range ids {
+		if id <= 0 {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	return out
 }
 
 func nullableFloatArg(v *float64) any {

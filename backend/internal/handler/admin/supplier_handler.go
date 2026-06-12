@@ -238,6 +238,22 @@ func (h *SupplierHandler) Probe(c *gin.Context) {
 	})
 }
 
+// ProbeHistory returns recent probe history for one supplier.
+func (h *SupplierHandler) ProbeHistory(c *gin.Context) {
+	id, ok := parseSupplierID(c)
+	if !ok {
+		return
+	}
+	days := parsePositiveQueryInt(c.Query("days"), 7)
+	limit := parsePositiveQueryInt(c.Query("limit"), 200)
+	history, err := h.supplierService.GetProbeHistory(c.Request.Context(), id, days, limit)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, history)
+}
+
 // Delete handles supplier soft deletion.
 func (h *SupplierHandler) Delete(c *gin.Context) {
 	id, ok := parseSupplierID(c)

@@ -88,9 +88,19 @@ type Supplier struct {
 	CreatedAt            time.Time  `json:"created_at"`
 	UpdatedAt            time.Time  `json:"updated_at"`
 
-	TargetGroupIDs []int64 `json:"target_group_ids"`
+	TargetGroupIDs []int64               `json:"target_group_ids"`
+	TargetGroups   []SupplierTargetGroup `json:"target_groups"`
 
 	TargetGroupCount int `json:"target_group_count"`
+}
+
+type SupplierTargetGroup struct {
+	ID               int64   `json:"id"`
+	Name             string  `json:"name"`
+	Platform         string  `json:"platform"`
+	Status           string  `json:"status"`
+	SubscriptionType string  `json:"subscription_type"`
+	RateMultiplier   float64 `json:"rate_multiplier"`
 }
 
 type SupplierProbeResult struct {
@@ -129,27 +139,40 @@ type SupplierProbeSnapshot struct {
 }
 
 type SupplierProbeSnapshotItem struct {
-	ID                   int64      `json:"id"`
-	Name                 string     `json:"name"`
-	SourceAccountID      *int64     `json:"source_account_id"`
-	SourcePlatform       string     `json:"source_platform"`
-	ProbeEnabled         bool       `json:"probe_enabled"`
-	ProbeModel           string     `json:"probe_model"`
-	LastProbeStatus      string     `json:"last_probe_status"`
-	LastProbeSubStatus   string     `json:"last_probe_sub_status"`
-	LastProbeLatencyMs   *int64     `json:"last_probe_latency_ms"`
-	LastProbeError       string     `json:"last_probe_error"`
-	LastProbeAt          *time.Time `json:"last_probe_at"`
-	NextProbeAt          *time.Time `json:"next_probe_at"`
-	ProbeSuccessRate     float64    `json:"probe_success_rate"`
-	ProbeSuccessCount    int        `json:"probe_success_count"`
-	ProbeTotalCount      int        `json:"probe_total_count"`
-	WindowTotal          int        `json:"window_total"`
-	WindowSuccess        int        `json:"window_success"`
-	WindowDegraded       int        `json:"window_degraded"`
-	WindowFailed         int        `json:"window_failed"`
-	WindowSuccessRate    float64    `json:"window_success_rate"`
-	WindowAverageLatency int64      `json:"window_average_latency_ms"`
+	ID                   int64                        `json:"id"`
+	Name                 string                       `json:"name"`
+	SourceAccountID      *int64                       `json:"source_account_id"`
+	SourcePlatform       string                       `json:"source_platform"`
+	ProbeEnabled         bool                         `json:"probe_enabled"`
+	ProbeModel           string                       `json:"probe_model"`
+	LastProbeStatus      string                       `json:"last_probe_status"`
+	LastProbeSubStatus   string                       `json:"last_probe_sub_status"`
+	LastProbeLatencyMs   *int64                       `json:"last_probe_latency_ms"`
+	LastProbeError       string                       `json:"last_probe_error"`
+	LastProbeAt          *time.Time                   `json:"last_probe_at"`
+	NextProbeAt          *time.Time                   `json:"next_probe_at"`
+	ProbeSuccessRate     float64                      `json:"probe_success_rate"`
+	ProbeSuccessCount    int                          `json:"probe_success_count"`
+	ProbeTotalCount      int                          `json:"probe_total_count"`
+	WindowTotal          int                          `json:"window_total"`
+	WindowSuccess        int                          `json:"window_success"`
+	WindowDegraded       int                          `json:"window_degraded"`
+	WindowFailed         int                          `json:"window_failed"`
+	WindowSuccessRate    float64                      `json:"window_success_rate"`
+	WindowAverageLatency int64                        `json:"window_average_latency_ms"`
+	TargetGroupIDs       []int64                      `json:"target_group_ids"`
+	TargetGroups         []SupplierTargetGroup        `json:"target_groups"`
+	Points               []SupplierProbeTimelinePoint `json:"points"`
+}
+
+type SupplierProbeTimelinePoint struct {
+	Status       string    `json:"status"`
+	SubStatus    string    `json:"sub_status"`
+	HTTPCode     int       `json:"http_code"`
+	Model        string    `json:"model"`
+	LatencyMs    int64     `json:"latency_ms"`
+	ErrorMessage string    `json:"error_message"`
+	CheckedAt    time.Time `json:"checked_at"`
 }
 
 type SupplierHourlyStability struct {
@@ -167,6 +190,7 @@ type SupplierHourlyStability struct {
 type SupplierAccountSyncResult struct {
 	Created         int                       `json:"created"`
 	Updated         int                       `json:"updated"`
+	Removed         int                       `json:"removed"`
 	Skipped         int                       `json:"skipped"`
 	SkippedAccounts []SupplierAccountSyncSkip `json:"skipped_accounts,omitempty"`
 }
@@ -191,6 +215,11 @@ type SupplierProbeBatchItem struct {
 	SupplierName string               `json:"supplier_name"`
 	Result       *SupplierProbeResult `json:"result,omitempty"`
 	Error        string               `json:"error,omitempty"`
+}
+
+type SupplierProbeHistory struct {
+	Supplier *Supplier             `json:"supplier"`
+	Results  []SupplierProbeResult `json:"results"`
 }
 
 type SupplierListFilter struct {
@@ -240,8 +269,10 @@ type SupplierRepository interface {
 	BulkSetProbeEnabled(ctx context.Context, ids []int64, enabled bool) (int64, error)
 	ListDueProbes(ctx context.Context, limit int) ([]Supplier, error)
 	ListProbeResultsSince(ctx context.Context, since time.Time) ([]SupplierProbeResult, error)
+	ListProbeResultsBySupplier(ctx context.Context, supplierID int64, since time.Time, limit int) ([]SupplierProbeResult, error)
 	RecordProbeResult(ctx context.Context, supplierID int64, result *SupplierProbeResult) error
 	UpsertFromAccount(ctx context.Context, supplier *Supplier) (bool, error)
+	PruneAccountSuppliers(ctx context.Context, activeSourceAccountIDs []int64) (int64, error)
 	Delete(ctx context.Context, id int64) error
 	List(ctx context.Context, params pagination.PaginationParams, filter SupplierListFilter) ([]Supplier, *pagination.PaginationResult, error)
 }
@@ -402,6 +433,9 @@ func (s *SupplierService) Delete(ctx context.Context, id int64) error {
 }
 
 func (s *SupplierService) GetProbeSnapshot(ctx context.Context, windowMinutes int, days int) (*SupplierProbeSnapshot, error) {
+	if _, err := s.syncAccountsToSuppliers(ctx, false); err != nil {
+		slog.Debug("supplier_probe.sync_before_snapshot_failed", "error", err)
+	}
 	if windowMinutes <= 0 {
 		windowMinutes = supplierProbeWindowMinutes
 	}
@@ -428,6 +462,17 @@ func (s *SupplierService) GetProbeSnapshot(ctx context.Context, windowMinutes in
 	if err != nil {
 		return nil, err
 	}
+	accountSuppliers := make([]Supplier, 0, len(suppliers))
+	monitoredSupplierIDs := make(map[int64]struct{}, len(suppliers))
+	for _, supplier := range suppliers {
+		if supplier.SourceAccountID == nil {
+			continue
+		}
+		accountSuppliers = append(accountSuppliers, supplier)
+		if supplier.ProbeEnabled {
+			monitoredSupplierIDs[supplier.ID] = struct{}{}
+		}
+	}
 
 	results, err := s.repo.ListProbeResultsSince(ctx, resultsSince)
 	if err != nil {
@@ -447,6 +492,9 @@ func (s *SupplierService) GetProbeSnapshot(ctx context.Context, windowMinutes in
 	var windowSuccess, windowDegraded, windowFailed, windowLatencyCount int
 	var windowLatencyTotal int64
 	for _, result := range results {
+		if _, ok := monitoredSupplierIDs[result.SupplierID]; !ok {
+			continue
+		}
 		bySupplier[result.SupplierID] = append(bySupplier[result.SupplierID], result)
 
 		localCheckedAt := result.CheckedAt.In(time.FixedZone("CST", 8*60*60))
@@ -491,11 +539,11 @@ func (s *SupplierService) GetProbeSnapshot(ctx context.Context, windowMinutes in
 		GeneratedAt:       now,
 		WindowMinutes:     windowMinutes,
 		Days:              days,
-		TotalSuppliers:    len(suppliers),
+		TotalSuppliers:    len(accountSuppliers),
 		WindowSuccess:     windowSuccess,
 		WindowDegraded:    windowDegraded,
 		WindowFailed:      windowFailed,
-		Suppliers:         make([]SupplierProbeSnapshotItem, 0, len(suppliers)),
+		Suppliers:         make([]SupplierProbeSnapshotItem, 0, len(monitoredSupplierIDs)),
 		Hourly:            hourly,
 		WindowSuccessRate: probePercentage(windowSuccess, windowSuccess+windowDegraded+windowFailed),
 	}
@@ -504,10 +552,11 @@ func (s *SupplierService) GetProbeSnapshot(ctx context.Context, windowMinutes in
 		snapshot.AverageLatencyMs = windowLatencyTotal / int64(windowLatencyCount)
 	}
 
-	for _, supplier := range suppliers {
-		if supplier.ProbeEnabled {
-			snapshot.EnabledSuppliers++
+	for _, supplier := range accountSuppliers {
+		if !supplier.ProbeEnabled {
+			continue
 		}
+		snapshot.EnabledSuppliers++
 		switch normalizeOptionalSupplierProbeStatus(supplier.LastProbeStatus) {
 		case SupplierProbeStatusSuccess:
 			snapshot.HealthySuppliers++
@@ -535,6 +584,8 @@ func (s *SupplierService) GetProbeSnapshot(ctx context.Context, windowMinutes in
 			ProbeSuccessRate:   supplier.ProbeSuccessRate,
 			ProbeSuccessCount:  supplier.ProbeSuccessCount,
 			ProbeTotalCount:    supplier.ProbeTotalCount,
+			TargetGroupIDs:     append([]int64{}, supplier.TargetGroupIDs...),
+			TargetGroups:       append([]SupplierTargetGroup{}, supplier.TargetGroups...),
 		}
 		var latencyTotal int64
 		var latencyCount int
@@ -560,6 +611,17 @@ func (s *SupplierService) GetProbeSnapshot(ctx context.Context, windowMinutes in
 		if latencyCount > 0 {
 			item.WindowAverageLatency = latencyTotal / int64(latencyCount)
 		}
+		for _, result := range bySupplier[supplier.ID] {
+			item.Points = append(item.Points, SupplierProbeTimelinePoint{
+				Status:       result.Status,
+				SubStatus:    result.SubStatus,
+				HTTPCode:     result.HTTPCode,
+				Model:        result.Model,
+				LatencyMs:    result.LatencyMs,
+				ErrorMessage: result.ErrorMessage,
+				CheckedAt:    result.CheckedAt,
+			})
+		}
 		snapshot.Suppliers = append(snapshot.Suppliers, item)
 	}
 
@@ -573,10 +635,19 @@ func (s *SupplierService) BulkSetProbeEnabled(ctx context.Context, ids []int64, 
 			return 0, infraerrors.BadRequest("INVALID_SUPPLIER_ID", "invalid supplier id")
 		}
 	}
+	if len(ids) == 0 {
+		if _, err := s.syncAccountsToSuppliers(ctx, false); err != nil {
+			slog.Debug("supplier_probe.sync_before_bulk_toggle_failed", "error", err)
+		}
+	}
 	return s.repo.BulkSetProbeEnabled(ctx, ids, enabled)
 }
 
 func (s *SupplierService) SyncAccountsToSuppliers(ctx context.Context) (*SupplierAccountSyncResult, error) {
+	return s.syncAccountsToSuppliers(ctx, true)
+}
+
+func (s *SupplierService) syncAccountsToSuppliers(ctx context.Context, includeSkips bool) (*SupplierAccountSyncResult, error) {
 	if s.accountRepo == nil {
 		return nil, infraerrors.BadRequest("ACCOUNT_SYNC_UNAVAILABLE", "account repository is unavailable")
 	}
@@ -585,17 +656,21 @@ func (s *SupplierService) SyncAccountsToSuppliers(ctx context.Context) (*Supplie
 		return nil, fmt.Errorf("list active accounts: %w", err)
 	}
 	out := &SupplierAccountSyncResult{}
+	activeSourceIDs := []int64{}
 	for _, account := range accounts {
 		supplier, reason := supplierFromAccount(account)
 		if reason != "" {
-			out.Skipped++
-			out.SkippedAccounts = append(out.SkippedAccounts, SupplierAccountSyncSkip{
-				AccountID:   account.ID,
-				AccountName: account.Name,
-				Reason:      reason,
-			})
+			if includeSkips {
+				out.Skipped++
+				out.SkippedAccounts = append(out.SkippedAccounts, SupplierAccountSyncSkip{
+					AccountID:   account.ID,
+					AccountName: account.Name,
+					Reason:      reason,
+				})
+			}
 			continue
 		}
+		activeSourceIDs = append(activeSourceIDs, account.ID)
 		created, err := s.repo.UpsertFromAccount(ctx, supplier)
 		if err != nil {
 			return nil, err
@@ -606,6 +681,11 @@ func (s *SupplierService) SyncAccountsToSuppliers(ctx context.Context) (*Supplie
 			out.Updated++
 		}
 	}
+	removed, err := s.repo.PruneAccountSuppliers(ctx, activeSourceIDs)
+	if err != nil {
+		return nil, err
+	}
+	out.Removed = int(removed)
 	return out, nil
 }
 
@@ -614,6 +694,11 @@ func (s *SupplierService) RunEnabledProbes(ctx context.Context, ids []int64) (*S
 	for _, id := range ids {
 		if id <= 0 {
 			return nil, infraerrors.BadRequest("INVALID_SUPPLIER_ID", "invalid supplier id")
+		}
+	}
+	if len(ids) == 0 {
+		if _, err := s.syncAccountsToSuppliers(ctx, false); err != nil {
+			slog.Debug("supplier_probe.sync_before_batch_failed", "error", err)
 		}
 	}
 
@@ -679,6 +764,36 @@ func (s *SupplierService) RunProbe(ctx context.Context, id int64) (*Supplier, *S
 	return updated, result, nil
 }
 
+func (s *SupplierService) GetProbeHistory(ctx context.Context, id int64, days int, limit int) (*SupplierProbeHistory, error) {
+	if id <= 0 {
+		return nil, infraerrors.BadRequest("INVALID_SUPPLIER_ID", "invalid supplier id")
+	}
+	if days <= 0 {
+		days = supplierProbeSnapshotDays
+	}
+	if days > 30 {
+		days = 30
+	}
+	if limit <= 0 {
+		limit = 200
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	supplier, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	results, err := s.repo.ListProbeResultsBySupplier(ctx, id, time.Now().Add(-time.Duration(days)*24*time.Hour), limit)
+	if err != nil {
+		return nil, err
+	}
+	return &SupplierProbeHistory{
+		Supplier: supplier,
+		Results:  results,
+	}, nil
+}
+
 func (s *SupplierService) runProbeForSupplier(ctx context.Context, supplier *Supplier) (*SupplierProbeResult, error) {
 	result := runSupplierProbe(ctx, supplier)
 	if err := s.repo.RecordProbeResult(ctx, supplier.ID, result); err != nil {
@@ -706,6 +821,10 @@ func (s *SupplierService) probeRunner() {
 func (s *SupplierService) runDueProbes() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(supplierProbeRunnerLimit)*supplierProbeTimeout)
 	defer cancel()
+
+	if _, err := s.syncAccountsToSuppliers(ctx, false); err != nil {
+		slog.Debug("supplier_probe.sync_before_run_failed", "error", err)
+	}
 
 	suppliers, err := s.repo.ListDueProbes(ctx, supplierProbeRunnerLimit)
 	if err != nil {
@@ -747,7 +866,14 @@ func (s *SupplierService) suppliersForBatchProbe(ctx context.Context, ids []int6
 	if err != nil {
 		return nil, err
 	}
-	return suppliers, nil
+	out := suppliers[:0]
+	for _, supplier := range suppliers {
+		if supplier.SourceAccountID == nil {
+			continue
+		}
+		out = append(out, supplier)
+	}
+	return out, nil
 }
 
 func supplierFromAccount(account Account) (*Supplier, string) {
@@ -807,7 +933,30 @@ func supplierFromAccount(account Account) (*Supplier, string) {
 		ProbeModel:           model,
 		ProbeIntervalMinutes: DefaultSupplierProbeIntervalMinutes,
 		LastProbeStatus:      SupplierProbeStatusUnknown,
+		TargetGroupIDs:       normalizeInt64IDs(account.GroupIDs),
+		TargetGroups:         supplierTargetGroupsFromAccount(account),
 	}, ""
+}
+
+func supplierTargetGroupsFromAccount(account Account) []SupplierTargetGroup {
+	if len(account.Groups) == 0 {
+		return []SupplierTargetGroup{}
+	}
+	out := make([]SupplierTargetGroup, 0, len(account.Groups))
+	for _, group := range account.Groups {
+		if group == nil || group.ID <= 0 {
+			continue
+		}
+		out = append(out, SupplierTargetGroup{
+			ID:               group.ID,
+			Name:             group.Name,
+			Platform:         group.Platform,
+			Status:           group.Status,
+			SubscriptionType: group.SubscriptionType,
+			RateMultiplier:   group.RateMultiplier,
+		})
+	}
+	return out
 }
 
 func probePercentage(success int, total int) float64 {

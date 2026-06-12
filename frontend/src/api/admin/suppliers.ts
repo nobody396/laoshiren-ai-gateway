@@ -1,5 +1,5 @@
 import { apiClient } from '../client'
-import type { PaginatedResponse } from '@/types'
+import type { GroupPlatform, PaginatedResponse, SubscriptionType } from '@/types'
 
 export type SupplierStatus = 'evaluating' | 'active'
 export type SupplierProbeStatus = 'unknown' | 'success' | 'degraded' | 'failed'
@@ -35,7 +35,17 @@ export interface Supplier {
   created_at: string
   updated_at: string
   target_group_ids: number[]
+  target_groups: SupplierTargetGroup[]
   target_group_count: number
+}
+
+export interface SupplierTargetGroup {
+  id: number
+  name: string
+  platform: GroupPlatform
+  status: string
+  subscription_type: SubscriptionType
+  rate_multiplier: number
 }
 
 export interface SupplierProbeResult {
@@ -53,6 +63,16 @@ export interface SupplierProbeResult {
   created_at: string
 }
 
+export interface SupplierProbeTimelinePoint {
+  status: SupplierProbeStatus
+  sub_status: string
+  http_code: number
+  model: string
+  latency_ms: number
+  error_message: string
+  checked_at: string
+}
+
 export interface SupplierProbeResponse {
   supplier: Supplier
   result: SupplierProbeResult
@@ -65,6 +85,7 @@ export interface SupplierProbeSnapshotItem {
   source_platform: string
   probe_enabled: boolean
   probe_model: string
+  probe_interval_minutes: number
   last_probe_status: SupplierProbeStatus
   last_probe_sub_status: string
   last_probe_latency_ms: number | null
@@ -80,6 +101,9 @@ export interface SupplierProbeSnapshotItem {
   window_failed: number
   window_success_rate: number
   window_average_latency_ms: number
+  target_group_ids: number[]
+  target_groups: SupplierTargetGroup[]
+  points: SupplierProbeTimelinePoint[]
 }
 
 export interface SupplierHourlyStability {
@@ -117,12 +141,18 @@ export interface SupplierProbeSnapshot {
 export interface SupplierAccountSyncResult {
   created: number
   updated: number
+  removed: number
   skipped: number
   skipped_accounts?: Array<{
     account_id: number
     account_name: string
     reason: string
   }>
+}
+
+export interface SupplierProbeHistory {
+  supplier: Supplier
+  results: SupplierProbeResult[]
 }
 
 export interface SupplierProbeBatchResult {
@@ -201,6 +231,16 @@ export async function probe(id: number): Promise<SupplierProbeResponse> {
   return data
 }
 
+export async function getProbeHistory(
+  id: number,
+  params: { days?: number; limit?: number } = {}
+): Promise<SupplierProbeHistory> {
+  const { data } = await apiClient.get<SupplierProbeHistory>(`/admin/suppliers/${id}/probe-results`, {
+    params
+  })
+  return data
+}
+
 export async function getProbeSnapshot(
   params: { window_minutes?: number; days?: number } = {}
 ): Promise<SupplierProbeSnapshot> {
@@ -238,6 +278,7 @@ const suppliersAPI = {
   create,
   update,
   probe,
+  getProbeHistory,
   getProbeSnapshot,
   bulkSetProbeEnabled,
   syncAccounts,

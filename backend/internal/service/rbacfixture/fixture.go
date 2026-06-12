@@ -461,10 +461,11 @@ func BaselineAPIs() []*service.AdminAPI {
 	add("POST", "/admin/suppliers/sync-accounts", 24, 4)
 	add("POST", "/admin/suppliers/probe-all", 24, 5)
 	add("GET", "/admin/suppliers/:id", 24, 6)
-	add("POST", "/admin/suppliers", 24, 7)
-	add("PUT", "/admin/suppliers/:id", 24, 8)
-	add("POST", "/admin/suppliers/:id/probe", 24, 9)
-	add("DELETE", "/admin/suppliers/:id", 24, 10)
+	add("GET", "/admin/suppliers/:id/probe-results", 24, 7)
+	add("POST", "/admin/suppliers", 24, 8)
+	add("PUT", "/admin/suppliers/:id", 24, 9)
+	add("POST", "/admin/suppliers/:id/probe", 24, 10)
+	add("DELETE", "/admin/suppliers/:id", 24, 11)
 
 	// ===== Invoice (parent=34 充值订单 / 35 开票管理) =====
 	add("GET", "/admin/topup/orders", 34, 1)

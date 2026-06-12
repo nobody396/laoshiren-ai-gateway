@@ -616,6 +616,12 @@
         </div>
 
         <div class="overflow-hidden rounded-lg border border-gray-100 dark:border-dark-700">
+          <div
+            v-if="currentProbeHistoryHiddenCount > 0"
+            class="border-b border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300"
+          >
+            当前表格只显示连续的 {{ selectedProbeIntervalMinutes }} 分钟探测段；已折叠 {{ currentProbeHistoryHiddenCount }} 条改频前或断档历史记录。
+          </div>
           <div class="grid grid-cols-[130px_90px_100px_90px_minmax(180px,1fr)] bg-gray-50 px-3 py-2 text-xs font-medium text-gray-500 dark:bg-dark-900 dark:text-gray-400">
             <span>时间</span>
             <span>状态</span>
@@ -628,7 +634,7 @@
           </div>
           <template v-else>
             <div
-              v-for="result in probeHistory?.results || []"
+              v-for="result in currentProbeHistoryResults"
               :key="result.id"
               class="grid grid-cols-[130px_90px_100px_90px_minmax(180px,1fr)] items-center border-t border-gray-100 px-3 py-2 text-sm dark:border-dark-700"
             >
@@ -642,7 +648,7 @@
             </div>
           </template>
           <div
-            v-if="!probeHistoryLoading && (probeHistory?.results || []).length === 0"
+            v-if="!probeHistoryLoading && currentProbeHistoryResults.length === 0"
             class="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400"
           >
             暂无历史探针记录
@@ -830,6 +836,31 @@ const deleteConfirmMessage = computed(() =>
   deletingSupplier.value
     ? t('admin.suppliers.deleteConfirm', { name: deletingSupplier.value.name }, `确认删除供应商「${deletingSupplier.value.name}」？`)
     : ''
+)
+
+const selectedProbeIntervalMinutes = computed(() =>
+  Math.max(1, Number(selectedProbeItem.value?.probe_interval_minutes || defaultProbeIntervalMinutes))
+)
+const currentProbeHistoryResults = computed<SupplierProbeResult[]>(() => {
+  const results = probeHistory.value?.results || []
+  if (results.length <= 1) return results
+
+  const intervalMs = selectedProbeIntervalMinutes.value * 60_000
+  const maxContinuousGapMs = Math.max(intervalMs * 3, intervalMs + 2 * 60_000)
+  let cutoff = results.length
+  for (let idx = 1; idx < results.length; idx++) {
+    const newer = new Date(results[idx - 1].checked_at).getTime()
+    const older = new Date(results[idx].checked_at).getTime()
+    if (!Number.isFinite(newer) || !Number.isFinite(older)) continue
+    if (newer - older > maxContinuousGapMs) {
+      cutoff = idx
+      break
+    }
+  }
+  return results.slice(0, cutoff)
+})
+const currentProbeHistoryHiddenCount = computed(() =>
+  Math.max(0, (probeHistory.value?.results || []).length - currentProbeHistoryResults.value.length)
 )
 
 const snapshotOverallStatus = computed<SupplierProbeStatus>(() => {

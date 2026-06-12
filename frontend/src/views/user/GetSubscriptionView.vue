@@ -53,14 +53,23 @@
                       class="topup-monthly-product"
                       :class="[
                         `topup-monthly-product--${plan.accent}`,
-                        { 'topup-monthly-product--active': selectedProductKind === 'monthly' && selectedMonthlyPlan?.id === plan.id }
+                        {
+                          'topup-monthly-product--active': selectedProductKind === 'monthly' && selectedMonthlyPlan?.id === plan.id,
+                          'topup-monthly-product--apex-activate': isApexActivation(plan)
+                        }
                       ]"
                     >
                       <span class="topup-monthly-product__head">
-                        <span class="topup-product-title">{{ plan.name }}</span>
+                        <span>
+                          <span v-if="plan.rarityLabel" class="topup-monthly-product__rarity">{{ plan.rarityLabel }}</span>
+                          <span class="topup-product-title">{{ plan.name }}</span>
+                        </span>
                         <span class="topup-status topup-status--available">{{ t('topup.monthlyPlanStatus') }}</span>
                       </span>
                       <span class="topup-monthly-product__price">{{ plan.price }} <small>/ 月</small></span>
+                      <span v-if="plan.legendaryCopy" class="topup-monthly-product__legend">
+                        {{ plan.description }}
+                      </span>
                     </button>
                   </div>
                 </section>
@@ -152,7 +161,13 @@
             </div>
 
             <div class="topup-summary">
-              <div class="topup-summary-card">
+              <div
+                class="topup-summary-card"
+                :class="{
+                  'topup-summary-card--apex': selectedProductKind === 'monthly' && selectedMonthlyPlan?.accent === 'apex',
+                  'topup-summary-card--apex-activate': apexActivationActive && selectedProductKind === 'monthly' && selectedMonthlyPlan?.accent === 'apex'
+                }"
+              >
                 <div class="topup-summary-head">
                   <div>
                     <p class="topup-summary-kicker">{{ t('topup.title') }}</p>
@@ -169,13 +184,20 @@
                     ${{ displayUSDText }}
                   </div>
                   <div v-else-if="selectedProductKind === 'monthly'" class="topup-price-chip topup-price-chip--muted">
-                    {{ t('topup.monthlyPlanStatus') }}
+                    {{ selectedMonthlyPlan?.rarityLabel ?? t('topup.monthlyPlanStatus') }}
                   </div>
                 </div>
 
                 <div class="topup-summary-rows">
                   <template v-if="selectedProductKind === 'monthly'">
-                    <section class="topup-monthly-detail">
+                    <section
+                      class="topup-monthly-detail"
+                      :class="{ 'topup-monthly-detail--apex': selectedMonthlyPlan?.accent === 'apex' }"
+                    >
+                      <p v-if="selectedMonthlyPlan?.legendaryCopy" class="topup-apex-lore">
+                        {{ selectedMonthlyPlan.legendaryCopy }}
+                      </p>
+
                       <div class="topup-monthly-prices">
                         <div>
                           <span>{{ t('topup.monthlyPlanPrice') }}</span>
@@ -187,8 +209,11 @@
                         </div>
                       </div>
 
-                      <div class="topup-quota-grid">
-                        <div class="topup-monthly-quota">
+                      <div
+                        class="topup-quota-grid"
+                        :class="{ 'topup-quota-grid--single': !selectedMonthlyPlan?.showWeeklyLimit }"
+                      >
+                        <div v-if="selectedMonthlyPlan?.showWeeklyLimit" class="topup-monthly-quota">
                           <span>{{ t('topup.monthlyPlanWeeklyLimit') }}</span>
                           <strong>{{ selectedMonthlyPlan?.displayWeeklyCreditsText }} AI credits / 周</strong>
                           <small>{{ t('topup.monthlyPlanSharedPool') }}</small>
@@ -411,10 +436,12 @@ const qrExpired = ref(false)
 const countdown = ref(QR_TTL_SECONDS)
 const activeOrderAmountYuan = ref(0)
 const showMonthlyDirectPurchase = ref(false)
+const apexActivationActive = ref(false)
 const { plans: monthlyCreditCardPlans, loadMonthlyCreditCardPlans } = useMonthlyCreditCardPlans()
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
+let apexActivationTimer: ReturnType<typeof setTimeout> | null = null
 let pollInFlight = false
 
 // 根据公开设置决定用户侧可见支付渠道；关闭的渠道直接不展示。
@@ -538,6 +565,28 @@ function selectBalanceProduct(product: BalanceProduct) {
 function selectMonthlyPlan(plan: MonthlyCreditCardPlan) {
   selectedProductKind.value = 'monthly'
   selectedMonthlyPlanId.value = plan.id
+  if (plan.accent === 'apex') {
+    triggerApexActivation()
+  }
+}
+
+function isApexActivation(plan: MonthlyCreditCardPlan) {
+  return apexActivationActive.value && selectedProductKind.value === 'monthly' && selectedMonthlyPlanId.value === plan.id && plan.accent === 'apex'
+}
+
+function triggerApexActivation() {
+  if (apexActivationTimer) {
+    clearTimeout(apexActivationTimer)
+    apexActivationTimer = null
+  }
+  apexActivationActive.value = false
+  window.requestAnimationFrame(() => {
+    apexActivationActive.value = true
+    apexActivationTimer = setTimeout(() => {
+      apexActivationActive.value = false
+      apexActivationTimer = null
+    }, 980)
+  })
 }
 
 function selectTopupChannel(channel: TopupChannel) {
@@ -710,6 +759,10 @@ async function pollOrderStatus() {
 
 onUnmounted(() => {
   stopTimers()
+  if (apexActivationTimer) {
+    clearTimeout(apexActivationTimer)
+    apexActivationTimer = null
+  }
 })
 
 void Promise.all([
@@ -880,6 +933,7 @@ void Promise.all([
 
 .topup-choice:focus-visible,
 .topup-product:focus-visible,
+.topup-monthly-product:focus-visible,
 .topup-pay-option:focus-visible,
 .topup-input:focus-visible,
 .topup-primary-action:focus-visible,
@@ -1036,6 +1090,39 @@ void Promise.all([
   background: #13100b;
 }
 
+.topup-monthly-product--apex {
+  grid-column: 1 / -1;
+  isolation: isolate;
+  min-height: 12.4rem;
+  border-color: rgba(230, 183, 90, 0.52);
+  background:
+    linear-gradient(135deg, rgba(255, 221, 146, 0.14), rgba(122, 28, 16, 0.12) 42%, transparent 70%),
+    linear-gradient(118deg, #110d09 0%, #271c13 48%, #090807 100%);
+  color: #fff7df;
+  box-shadow:
+    0 18px 48px rgba(31, 17, 8, 0.2),
+    inset 0 0 0 1px rgba(255, 220, 138, 0.14);
+}
+
+.topup-monthly-product--apex::before {
+  height: 0.32rem;
+  background: linear-gradient(90deg, #8e2b18, #e6b75a 25%, #fff0af 52%, #d58831 78%, #0d0907);
+  box-shadow: 0 0 22px rgba(230, 183, 90, 0.42);
+}
+
+.topup-monthly-product--apex::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: 0.58;
+  background:
+    linear-gradient(95deg, transparent 0%, rgba(255, 221, 146, 0.2) 45%, transparent 58%),
+    repeating-linear-gradient(90deg, rgba(255, 220, 138, 0.08) 0 1px, transparent 1px 2.8rem);
+  transform: translateX(-46%);
+  animation: topup-apex-sweep 7s ease-in-out infinite;
+}
+
 .topup-monthly-product:hover {
   border-color: var(--admin-border-strong, rgba(31, 26, 18, 0.32));
   background: var(--admin-parchment, #f2e9d2);
@@ -1051,11 +1138,66 @@ void Promise.all([
   box-shadow: inset 0 0 0 1px rgba(154, 59, 31, 0.12);
 }
 
+.topup-monthly-product--apex:hover {
+  border-color: rgba(255, 220, 138, 0.82);
+  background:
+    linear-gradient(135deg, rgba(255, 221, 146, 0.2), rgba(154, 59, 31, 0.14) 44%, transparent 72%),
+    linear-gradient(118deg, #17100a 0%, #302116 48%, #090807 100%);
+  box-shadow:
+    0 22px 58px rgba(31, 17, 8, 0.24),
+    inset 0 0 0 1px rgba(255, 220, 138, 0.18);
+}
+
+.topup-monthly-product--apex.topup-monthly-product--active {
+  border-color: #ffd88d;
+  background:
+    linear-gradient(135deg, rgba(255, 221, 146, 0.24), rgba(154, 59, 31, 0.16) 46%, transparent 72%),
+    linear-gradient(118deg, #1b120a 0%, #372315 50%, #090807 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 216, 141, 0.36),
+    0 22px 66px rgba(115, 49, 17, 0.28),
+    inset 0 0 34px rgba(255, 216, 141, 0.1);
+  transform: translateY(-2px);
+}
+
+.topup-monthly-product--apex-activate {
+  animation: topup-apex-card-summon 0.94s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.topup-monthly-product--apex-activate::before {
+  animation: topup-apex-edge-flare 0.94s ease-out both;
+}
+
 .topup-monthly-product__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.topup-monthly-product__rarity {
+  display: block;
+  margin-bottom: 0.32rem;
+  color: #ffd88d;
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.topup-monthly-product--apex .topup-product-title {
+  color: #fff6db;
+  font-family: 'Cinzel', 'Noto Serif SC', serif;
+  font-size: 1.35rem;
+  letter-spacing: 0;
+  text-shadow: 0 0 18px rgba(255, 216, 141, 0.2);
+}
+
+.topup-monthly-product--apex .topup-status--available {
+  border-color: rgba(255, 216, 141, 0.38);
+  background: rgba(255, 216, 141, 0.1);
+  color: #ffd88d;
 }
 
 .topup-monthly-product__price {
@@ -1067,10 +1209,29 @@ void Promise.all([
   line-height: 1;
 }
 
+.topup-monthly-product--apex .topup-monthly-product__price {
+  color: #fff3c9;
+  font-size: 2rem;
+}
+
 .topup-monthly-product__price small {
   color: var(--admin-muted, #8a7d63);
   font-size: 0.82rem;
   font-weight: 650;
+}
+
+.topup-monthly-product--apex .topup-monthly-product__price small {
+  color: rgba(255, 246, 219, 0.72);
+}
+
+.topup-monthly-product__legend {
+  display: block;
+  max-width: 34rem;
+  margin-top: 0.75rem;
+  color: rgba(255, 246, 219, 0.72);
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.7;
 }
 
 .topup-warning,
@@ -1228,6 +1389,50 @@ void Promise.all([
   box-shadow: var(--admin-shadow-sm, 0 8px 24px rgba(49, 38, 20, 0.08));
 }
 
+.topup-summary-card--apex {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border-color: rgba(255, 216, 141, 0.5);
+  background:
+    linear-gradient(135deg, rgba(255, 221, 146, 0.14), rgba(154, 59, 31, 0.1) 42%, transparent 72%),
+    linear-gradient(120deg, #120d09 0%, #2b1e14 52%, #090807 100%);
+  color: #fff7df;
+  box-shadow:
+    0 24px 70px rgba(31, 17, 8, 0.24),
+    inset 0 0 0 1px rgba(255, 216, 141, 0.16);
+}
+
+.topup-summary-card--apex::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: 0.68;
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(255, 221, 146, 0.18) 48%, transparent 60%),
+    repeating-linear-gradient(90deg, rgba(255, 216, 141, 0.07) 0 1px, transparent 1px 3.25rem);
+  transform: translateX(-44%);
+  animation: topup-apex-sweep 7.4s ease-in-out infinite;
+}
+
+.topup-summary-card--apex-activate {
+  animation: topup-apex-panel-summon 0.98s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.topup-summary-card--apex-activate::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(110deg, transparent 0%, rgba(255, 240, 175, 0.52) 36%, rgba(213, 136, 49, 0.36) 50%, transparent 66%),
+    linear-gradient(180deg, rgba(255, 216, 141, 0.32), transparent 36%, rgba(255, 216, 141, 0.14));
+  opacity: 0;
+  animation: topup-apex-panel-flare 0.98s ease-out both;
+}
+
 .topup-summary-head {
   display: flex;
   align-items: flex-start;
@@ -1241,12 +1446,23 @@ void Promise.all([
   font-weight: 650;
 }
 
+.topup-summary-card--apex .topup-summary-kicker {
+  color: rgba(255, 246, 219, 0.74);
+}
+
 .topup-summary-title {
   margin-top: 0.45rem;
   color: var(--admin-ink-deep, #13100b);
   font-size: 1.85rem;
   font-weight: 650;
   line-height: 1.2;
+}
+
+.topup-summary-card--apex .topup-summary-title {
+  color: #fff6db;
+  font-family: 'Cinzel', 'Noto Serif SC', serif;
+  font-size: clamp(2rem, 4vw, 2.45rem);
+  text-shadow: 0 0 20px rgba(255, 216, 141, 0.2);
 }
 
 .topup-price-chip {
@@ -1264,6 +1480,12 @@ void Promise.all([
   border-color: var(--admin-border, rgba(31, 26, 18, 0.14));
   background: var(--admin-surface-soft, rgba(239, 230, 207, 0.78));
   color: var(--admin-muted, #8a7d63);
+}
+
+.topup-summary-card--apex .topup-price-chip--muted {
+  border-color: rgba(255, 216, 141, 0.42);
+  background: rgba(255, 216, 141, 0.1);
+  color: #ffd88d;
 }
 
 .topup-summary-rows {
@@ -1314,6 +1536,10 @@ void Promise.all([
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
+}
+
+.topup-quota-grid--single {
+  grid-template-columns: 1fr;
 }
 
 .topup-monthly-prices div,
@@ -1395,6 +1621,52 @@ void Promise.all([
   line-height: 1.65;
 }
 
+.topup-apex-lore {
+  margin: 0;
+  border-left: 2px solid rgba(255, 216, 141, 0.56);
+  padding-left: 0.85rem;
+  color: rgba(255, 239, 191, 0.88);
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.85;
+}
+
+.topup-monthly-detail--apex .topup-monthly-prices div,
+.topup-monthly-detail--apex .topup-monthly-quota,
+.topup-monthly-detail--apex .topup-token-grid article {
+  border-color: rgba(255, 216, 141, 0.24);
+  background:
+    linear-gradient(135deg, rgba(255, 216, 141, 0.12), rgba(255, 118, 70, 0.07)),
+    rgba(8, 7, 6, 0.46);
+}
+
+.topup-monthly-detail--apex .topup-monthly-prices span,
+.topup-monthly-detail--apex .topup-monthly-quota span,
+.topup-monthly-detail--apex .topup-token-grid span {
+  color: rgba(255, 246, 219, 0.72);
+}
+
+.topup-monthly-detail--apex .topup-monthly-prices strong,
+.topup-monthly-detail--apex .topup-monthly-quota strong,
+.topup-monthly-detail--apex .topup-token-grid strong {
+  color: #fff7df;
+}
+
+.topup-monthly-detail--apex .topup-monthly-quota small,
+.topup-monthly-detail--apex .topup-token-grid small {
+  color: rgba(255, 246, 219, 0.7);
+}
+
+.topup-monthly-detail--apex .topup-token-grid small {
+  color: #ffb37b;
+}
+
+.topup-monthly-detail--apex .topup-token-note {
+  border-color: rgba(255, 216, 141, 0.22);
+  background: rgba(255, 216, 141, 0.08);
+  color: rgba(255, 246, 219, 0.72);
+}
+
 .dark .topup-monthly-prices div,
 .dark .topup-monthly-quota,
 .dark .topup-token-grid article {
@@ -1436,6 +1708,36 @@ void Promise.all([
     rgba(22, 19, 15, 0.92);
   color: #fffaf0;
   font-weight: 650;
+}
+
+.dark .topup-monthly-detail--apex .topup-monthly-prices div,
+.dark .topup-monthly-detail--apex .topup-monthly-quota,
+.dark .topup-monthly-detail--apex .topup-token-grid article {
+  border-color: rgba(255, 216, 141, 0.24);
+  background:
+    linear-gradient(135deg, rgba(255, 216, 141, 0.12), rgba(255, 118, 70, 0.07)),
+    rgba(8, 7, 6, 0.5);
+}
+
+.dark .topup-monthly-detail--apex .topup-monthly-prices span,
+.dark .topup-monthly-detail--apex .topup-monthly-quota span,
+.dark .topup-monthly-detail--apex .topup-token-grid span {
+  color: rgba(255, 246, 219, 0.72);
+}
+
+.dark .topup-monthly-detail--apex .topup-monthly-prices strong,
+.dark .topup-monthly-detail--apex .topup-monthly-quota strong,
+.dark .topup-monthly-detail--apex .topup-token-grid strong {
+  color: #fff7df;
+}
+
+.dark .topup-monthly-detail--apex .topup-monthly-quota small,
+.dark .topup-monthly-detail--apex .topup-token-grid small {
+  color: rgba(255, 246, 219, 0.7);
+}
+
+.dark .topup-monthly-detail--apex .topup-token-grid small {
+  color: #ffb37b;
 }
 
 .topup-primary-action,
@@ -1489,6 +1791,34 @@ void Promise.all([
   margin-top: 0;
 }
 
+.topup-summary-card--apex .topup-primary-action {
+  border-color: #d58831;
+  background:
+    linear-gradient(135deg, #ffd88d 0%, #d58831 44%, #8e2b18 100%);
+  color: #1d1208 !important;
+  box-shadow: 0 16px 34px rgba(213, 136, 49, 0.28);
+}
+
+.topup-summary-card--apex .topup-primary-action:disabled {
+  border-color: rgba(255, 216, 141, 0.2);
+  background: rgba(255, 216, 141, 0.12);
+  color: rgba(255, 246, 219, 0.52) !important;
+  opacity: 1;
+  box-shadow: none;
+}
+
+.topup-summary-card--apex .topup-secondary-action {
+  border-color: rgba(255, 216, 141, 0.28);
+  background: rgba(255, 246, 219, 0.06);
+  color: #fff3c9;
+}
+
+.topup-summary-card--apex .topup-secondary-action:hover {
+  border-color: rgba(255, 216, 141, 0.5);
+  background: rgba(255, 216, 141, 0.12);
+  color: #fff7df;
+}
+
 .topup-monthly-action {
   min-height: 3.35rem;
   padding-inline: 0.85rem;
@@ -1527,6 +1857,98 @@ void Promise.all([
 
 .dark .topup-primary-action {
   color: var(--admin-marble, #332d23) !important;
+}
+
+@keyframes topup-apex-sweep {
+  0%,
+  58% {
+    transform: translateX(-48%);
+    opacity: 0.36;
+  }
+  82% {
+    transform: translateX(44%);
+    opacity: 0.86;
+  }
+  100% {
+    transform: translateX(48%);
+    opacity: 0.36;
+  }
+}
+
+@keyframes topup-apex-card-summon {
+  0% {
+    transform: translateY(0) scale(1);
+    box-shadow:
+      0 0 0 rgba(255, 216, 141, 0),
+      inset 0 0 0 1px rgba(255, 220, 138, 0.12);
+  }
+  34% {
+    transform: translateY(-4px) scale(1.015);
+    box-shadow:
+      0 0 0 5px rgba(255, 216, 141, 0.15),
+      0 26px 78px rgba(213, 136, 49, 0.34),
+      inset 0 0 44px rgba(255, 216, 141, 0.16);
+  }
+  100% {
+    transform: translateY(-2px) scale(1);
+  }
+}
+
+@keyframes topup-apex-panel-summon {
+  0% {
+    transform: translateY(0) scale(1);
+    box-shadow:
+      0 24px 70px rgba(31, 17, 8, 0.24),
+      inset 0 0 0 1px rgba(255, 216, 141, 0.16);
+  }
+  32% {
+    transform: translateY(-5px) scale(1.012);
+    box-shadow:
+      0 0 0 5px rgba(255, 216, 141, 0.16),
+      0 32px 86px rgba(213, 136, 49, 0.32),
+      inset 0 0 54px rgba(255, 216, 141, 0.18);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes topup-apex-panel-flare {
+  0% {
+    opacity: 0;
+    transform: translateX(-46%);
+  }
+  28% {
+    opacity: 0.94;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(46%);
+  }
+}
+
+@keyframes topup-apex-edge-flare {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  38% {
+    filter: brightness(1.75);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topup-monthly-product--apex::after,
+  .topup-monthly-product--apex-activate,
+  .topup-summary-card--apex::before,
+  .topup-summary-card--apex-activate {
+    animation: none;
+    transform: none;
+  }
+
+  .topup-summary-card--apex-activate::after {
+    display: none;
+  }
 }
 
 .topup-modal-backdrop {

@@ -17,6 +17,7 @@
       >
         <div class="monthly-credit-card__top">
           <div>
+            <span v-if="plan.rarityLabel" class="monthly-credit-card__rarity">{{ plan.rarityLabel }}</span>
             <h3>{{ plan.name }}</h3>
             <p>{{ plan.description }}</p>
           </div>
@@ -34,6 +35,10 @@
             <strong>{{ plan.displayMonthlyCreditsText }} AI credits</strong>
           </div>
         </div>
+
+        <p v-if="plan.legendaryCopy" class="monthly-credit-card__legend">
+          {{ plan.legendaryCopy }}
+        </p>
 
         <dl v-if="showEntitlementDetails" class="monthly-credit-card__usage">
           <div>
@@ -53,7 +58,7 @@
         </dl>
 
         <button v-if="showAction" type="button" class="monthly-credit-card__button" :disabled="!plan.cardShopUrl">
-          正在供应
+          {{ plan.cardShopUrl ? '正在供应' : '等待开售' }}
         </button>
       </article>
     </div>
@@ -171,6 +176,33 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   box-shadow: var(--membership-shadow);
 }
 
+.monthly-credit-card--apex {
+  grid-column: 1 / -1;
+  min-height: 20rem;
+  isolation: isolate;
+  border-color: rgba(236, 186, 92, 0.62);
+  background:
+    linear-gradient(135deg, rgba(255, 236, 182, 0.12), rgba(132, 24, 18, 0.08) 38%, transparent 62%),
+    linear-gradient(115deg, rgba(17, 13, 9, 0.96), rgba(35, 28, 20, 0.98) 48%, rgba(9, 8, 7, 0.96));
+  color: #fff7df;
+  box-shadow:
+    0 26px 70px rgba(31, 17, 8, 0.22),
+    inset 0 0 0 1px rgba(255, 220, 138, 0.14);
+}
+
+.monthly-credit-card--apex::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: 0.92;
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(255, 218, 137, 0.18) 46%, transparent 58%),
+    repeating-linear-gradient(90deg, rgba(255, 220, 138, 0.08) 0 1px, transparent 1px 3.1rem);
+  transform: translateX(-42%);
+  animation: monthly-apex-sheen 6.8s ease-in-out infinite;
+}
+
 .monthly-credit-card::before {
   content: "";
   position: absolute;
@@ -195,6 +227,28 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   background: #13100b;
 }
 
+.monthly-credit-card--apex::before {
+  height: 0.34rem;
+  background: linear-gradient(90deg, #8e2b18, #e6b75a 24%, #fff0af 50%, #d58831 76%, #0d0907);
+  box-shadow: 0 0 22px rgba(230, 183, 90, 0.46);
+}
+
+.monthly-credit-card__rarity {
+  display: inline-flex;
+  margin-bottom: 0.55rem;
+  color: #ffd88d;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.monthly-credit-card--apex .monthly-credit-card__top {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
 .monthly-credit-card__top {
   display: grid;
   gap: 0.75rem;
@@ -208,12 +262,25 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   line-height: 1.25;
 }
 
+.monthly-credit-card--apex h3 {
+  color: #fff6db;
+  font-family: 'Cinzel', 'Noto Serif SC', serif;
+  font-size: clamp(1.45rem, 2.5vw, 2rem);
+  letter-spacing: 0;
+  text-shadow: 0 0 18px rgba(255, 216, 141, 0.2);
+}
+
 .monthly-credit-card p {
   min-height: 3.6rem;
   margin: 0.55rem 0 0;
   color: var(--membership-muted);
   font-size: 0.82rem;
   line-height: 1.55;
+}
+
+.monthly-credit-card--apex p {
+  max-width: 45rem;
+  color: rgba(255, 246, 219, 0.74);
 }
 
 .monthly-credit-card__stock {
@@ -231,6 +298,13 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   line-height: 1;
 }
 
+.monthly-credit-card--apex .monthly-credit-card__stock {
+  border-color: rgba(255, 216, 141, 0.42);
+  background: rgba(255, 216, 141, 0.1);
+  color: #ffd88d;
+  box-shadow: inset 0 0 18px rgba(255, 216, 141, 0.08);
+}
+
 .monthly-credit-card__price {
   display: flex;
   align-items: baseline;
@@ -246,9 +320,18 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   font-feature-settings: 'lnum' 1, 'tnum' 1;
 }
 
+.monthly-credit-card--apex .monthly-credit-card__price strong {
+  color: #fff3c9;
+  font-size: clamp(2.2rem, 4vw, 3rem);
+}
+
 .monthly-credit-card__price span {
   color: var(--membership-muted);
   font-size: 0.9rem;
+}
+
+.monthly-credit-card--apex .monthly-credit-card__price span {
+  color: rgba(255, 246, 219, 0.7);
 }
 
 .monthly-credit-card__credits {
@@ -259,6 +342,14 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   border: 1px solid var(--membership-border);
   border-radius: 6px;
   background: var(--membership-surface-soft);
+}
+
+.monthly-credit-card--apex .monthly-credit-card__credits {
+  margin-top: 1.25rem;
+  border-color: rgba(255, 216, 141, 0.28);
+  background:
+    linear-gradient(135deg, rgba(255, 216, 141, 0.16), rgba(255, 118, 70, 0.08)),
+    rgba(8, 7, 6, 0.44);
 }
 
 .monthly-credit-card__credits div {
@@ -274,6 +365,10 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   font-weight: 700;
 }
 
+.monthly-credit-card--apex .monthly-credit-card__credits span {
+  color: rgba(255, 246, 219, 0.72);
+}
+
 .monthly-credit-card__credits strong {
   color: var(--membership-ink);
   font-size: 0.98rem;
@@ -281,10 +376,31 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   line-height: 1.15;
 }
 
+.monthly-credit-card--apex .monthly-credit-card__credits strong {
+  color: #fff7df;
+  font-size: clamp(1rem, 2vw, 1.22rem);
+}
+
+.monthly-credit-card__legend {
+  min-height: 0 !important;
+  margin-top: 1rem !important;
+  border-left: 2px solid rgba(255, 216, 141, 0.54);
+  padding-left: 0.8rem;
+  color: rgba(255, 239, 191, 0.86) !important;
+  font-size: 0.86rem !important;
+  font-weight: 650;
+  line-height: 1.8 !important;
+}
+
 .monthly-credit-card__usage {
   display: grid;
   gap: 0.55rem;
   margin: 1rem 0 0;
+}
+
+.monthly-credit-card--apex .monthly-credit-card__usage {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
 }
 
 .monthly-credit-card__usage div {
@@ -296,6 +412,14 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   border-bottom: 1px solid rgba(31, 26, 18, 0.08);
 }
 
+.monthly-credit-card--apex .monthly-credit-card__usage div {
+  min-height: 4.2rem;
+  border: 1px solid rgba(255, 216, 141, 0.22);
+  border-radius: 7px;
+  background: rgba(255, 246, 219, 0.06);
+  padding: 0.85rem;
+}
+
 .monthly-credit-card__usage dt,
 .monthly-credit-card__usage dd {
   margin: 0;
@@ -305,6 +429,10 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 .monthly-credit-card__usage dt {
   color: var(--membership-muted);
   font-weight: 700;
+}
+
+.monthly-credit-card--apex .monthly-credit-card__usage dt {
+  color: rgba(255, 246, 219, 0.72);
 }
 
 .monthly-credit-card__usage dd {
@@ -320,10 +448,18 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   font-weight: 800;
 }
 
+.monthly-credit-card--apex .monthly-credit-card__usage dd strong {
+  color: #fff7df;
+}
+
 .monthly-credit-card__usage dd span {
   color: var(--membership-muted);
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+.monthly-credit-card--apex .monthly-credit-card__usage dd span {
+  color: #ffb37b;
 }
 
 .monthly-credit-card__button {
@@ -340,6 +476,12 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   font-size: 0.88rem;
   font-weight: 800;
   cursor: not-allowed;
+}
+
+.monthly-credit-card--apex .monthly-credit-card__button {
+  border-color: rgba(255, 216, 141, 0.42);
+  background: rgba(255, 216, 141, 0.12);
+  color: #ffd88d;
 }
 
 .monthly-credit-plans__note {
@@ -375,6 +517,29 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
+@keyframes monthly-apex-sheen {
+  0%,
+  62% {
+    transform: translateX(-46%);
+    opacity: 0.42;
+  }
+  82% {
+    transform: translateX(42%);
+    opacity: 0.88;
+  }
+  100% {
+    transform: translateX(46%);
+    opacity: 0.42;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monthly-credit-card--apex::after {
+    animation: none;
+    transform: none;
+  }
+}
+
 @media (max-width: 1100px) {
   .monthly-credit-plans__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -393,6 +558,10 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 
   .monthly-credit-card {
     min-height: auto;
+  }
+
+  .monthly-credit-card--apex .monthly-credit-card__usage {
+    grid-template-columns: 1fr;
   }
 
   .monthly-credit-card p {

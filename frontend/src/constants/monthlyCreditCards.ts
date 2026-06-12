@@ -1,7 +1,7 @@
 import { SUBSCRIPTION_CREDIT_DISPLAY_SCALE, formatSubscriptionCredits } from '@/utils/subscriptionCredits'
 
 export type MonthlyCreditCardPlan = {
-  id: 'lite' | 'pro' | 'max' | 'ultra'
+  id: 'lite' | 'pro' | 'max' | 'ultra' | 'apex'
   name: string
   priceCny: number
   directPriceCny: number
@@ -16,6 +16,7 @@ export type MonthlyCreditCardPlan = {
   displayDailyCreditsText: string
   displayWeeklyCreditsText: string
   displayMonthlyCreditsText: string
+  showWeeklyLimit: boolean
   gptDisplayRate: string
   claudeDisplayRate: string
   gptWeeklyUsage: string
@@ -25,8 +26,11 @@ export type MonthlyCreditCardPlan = {
   gptMonthlyTokensText: string
   claudeMonthlyTokensText: string
   description: string
+  legendaryCopy?: string
+  rarityLabel?: string
   accent: string
   cardShopUrl: string
+  disableWeeklyLimit?: boolean
 }
 
 export type MonthlyCreditCardPlanGroupEntitlement = {
@@ -84,6 +88,7 @@ function createMonthlyCreditCardPlan(
     | 'displayDailyCreditsText'
     | 'displayWeeklyCreditsText'
     | 'displayMonthlyCreditsText'
+    | 'showWeeklyLimit'
     | 'gptDisplayRate'
     | 'claudeDisplayRate'
     | 'gptWeeklyUsage'
@@ -95,7 +100,9 @@ function createMonthlyCreditCardPlan(
   >,
   entitlement?: MonthlyCreditCardPlanEntitlement
 ): MonthlyCreditCardPlan {
-  const weeklyCredits = resolveSharedLimit(entitlement, 'weekly_limit_usd') ?? input.dailyCredits * weeklyCardDays
+  const weeklyCredits = input.disableWeeklyLimit
+    ? 0
+    : resolveSharedLimit(entitlement, 'weekly_limit_usd') ?? input.dailyCredits * weeklyCardDays
   const monthlyCredits = resolveSharedLimit(entitlement, 'monthly_limit_usd') ?? input.dailyCredits * monthlyCardDays
   const displayDailyCredits = input.dailyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE
   const displayWeeklyCredits = weeklyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE
@@ -116,6 +123,7 @@ function createMonthlyCreditCardPlan(
     displayDailyCreditsText: formatSubscriptionCredits(input.dailyCredits),
     displayWeeklyCreditsText: formatSubscriptionCredits(weeklyCredits),
     displayMonthlyCreditsText: formatSubscriptionCredits(monthlyCredits),
+    showWeeklyLimit: weeklyCredits > 0,
     gptDisplayRate: `${formatSubscriptionCredits(gptCreditsPerUsd)} AI credits / 刀`,
     claudeDisplayRate: `${formatSubscriptionCredits(claudeCreditsPerUsd)} AI credits / 刀`,
     gptWeeklyUsage: `约 ${formatUsd(weeklyCredits / gptCreditsPerUsd)} / 周`,
@@ -181,6 +189,19 @@ const monthlyCreditCardPlanInputs = [
     description: '适合长期高频使用，两条高阶渠道共用同一份月度额度。',
     accent: 'ultra',
     cardShopUrl: 'https://pay.ldxp.cn/item/kqbjn9'
+  },
+  {
+    id: 'apex',
+    name: 'Apex 月卡',
+    priceCny: 1299,
+    directPriceCny: 1299,
+    dailyCredits: 96.6,
+    description: '传说级长任务通行证，面向连续编排、海量审查与整月高频开发。',
+    legendaryCopy: '黑金权限已铸成：适合把大型重构、长上下文代理和批量审查一次推到底。',
+    rarityLabel: 'Legendary Apex',
+    accent: 'apex',
+    cardShopUrl: '',
+    disableWeeklyLimit: true
   }
 ] satisfies Array<Parameters<typeof createMonthlyCreditCardPlan>[0]>
 

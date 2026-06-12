@@ -14,6 +14,37 @@ type monthlyStatusSettingRepoStub struct {
 	updates map[string]string
 }
 
+type monthlyProbeAccountRepoStub struct {
+	AccountRepository
+	accountsByGroup map[int64][]Account
+}
+
+func (s *monthlyProbeAccountRepoStub) ListByGroup(ctx context.Context, groupID int64) ([]Account, error) {
+	return s.accountsByGroup[groupID], nil
+}
+
+type monthlyProbeGroupRepoStub struct {
+	groupRepoNoop
+	groups map[int64]*Group
+}
+
+func (s *monthlyProbeGroupRepoStub) GetByIDLite(ctx context.Context, id int64) (*Group, error) {
+	if group := s.groups[id]; group != nil {
+		return group, nil
+	}
+	return nil, ErrGroupNotFound
+}
+
+func (s *monthlyProbeGroupRepoStub) ListActive(ctx context.Context) ([]Group, error) {
+	groups := make([]Group, 0, len(s.groups))
+	for _, group := range s.groups {
+		if group != nil && group.Status == StatusActive {
+			groups = append(groups, *group)
+		}
+	}
+	return groups, nil
+}
+
 func (s *monthlyStatusSettingRepoStub) Get(ctx context.Context, key string) (*Setting, error) {
 	panic("unexpected Get call")
 }
@@ -238,6 +269,118 @@ func TestMonthlyUpstreamProbeSnapshotScoresExpectedSlots(t *testing.T) {
 	require.Equal(t, 1, account.SuccessCount)
 	require.InDelta(t, 1.5/float64(expectedSlots), account.Uptime, 0.0001)
 	require.Equal(t, "ok", account.LatestStatus)
+}
+
+func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
+	ctx := context.Background()
+	rate := 0.2
+	svc := &OpsService{
+		accountRepo: &monthlyProbeAccountRepoStub{
+			accountsByGroup: map[int64][]Account{
+				7: {
+					{
+						ID:             12,
+						Name:           "pomoai-monthly-codex-0.2",
+						Platform:       PlatformOpenAI,
+						Status:         StatusActive,
+						Schedulable:    true,
+						RateMultiplier: &rate,
+					},
+				},
+			},
+		},
+		groupRepo: &monthlyProbeGroupRepoStub{
+			groups: map[int64]*Group{
+				7: {
+					ID:               7,
+					Name:             "GPT Lite 月卡组",
+					Platform:         PlatformOpenAI,
+					Status:           StatusActive,
+					SubscriptionType: SubscriptionTypeCredit,
+				},
+			},
+		},
+	}
+
+	targets, err := svc.loadMonthlyUpstreamProbeTargets(ctx)
+
+	require.NoError(t, err)
+	require.Len(t, targets, 1)
+	require.Equal(t, "pomoai-monthly-codex-0.2", targets[0].AccountName)
+	require.Equal(t, PlatformOpenAI, targets[0].Platform)
+	require.Equal(t, "gpt-5.4-mini", targets[0].Model)
+	require.NotNil(t, targets[0].Account)
+	require.InDelta(t, 0.2, targets[0].Account.BillingRateMultiplier(), 0.0001)
+}
+
+func TestMonthlyUpstreamProbeSnapshotFiltersObsoleteRenamedAccountPoints(t *testing.T) {
+	ctx := context.Background()
+	reference := time.Now().Truncate(time.Minute)
+	svc := &OpsService{
+		opsRepo: &opsRepoMock{
+			ListMonthlyUpstreamProbeResultsFn: func(ctx context.Context, since time.Time) ([]MonthlyUpstreamProbePoint, error) {
+				return []MonthlyUpstreamProbePoint{
+					{
+						AccountName:  "pomoai-monthly-codex-0.12",
+						Platform:     PlatformOpenAI,
+						Model:        "gpt-5.4-mini",
+						ProbePath:    MonthlyUpstreamProbePathGateway,
+						Status:       "failed",
+						ErrorCode:    "missing_account",
+						ErrorMessage: "monthly upstream account was not found",
+						CheckedAt:    reference.Add(-2 * time.Minute),
+					},
+					{
+						AccountID:   12,
+						AccountName: "pomoai-monthly-codex-0.2",
+						Platform:    PlatformOpenAI,
+						Model:       "gpt-5.4-mini",
+						ProbePath:   MonthlyUpstreamProbePathGateway,
+						Status:      "ok",
+						CheckedAt:   reference.Add(-time.Minute),
+					},
+				}, nil
+			},
+		},
+		settingRepo: &monthlyStatusSettingRepoStub{
+			values: map[string]string{
+				SettingKeyMonthlyUpstreamProbeEnabled: "true",
+			},
+		},
+		accountRepo: &monthlyProbeAccountRepoStub{
+			accountsByGroup: map[int64][]Account{
+				7: {
+					{
+						ID:          12,
+						Name:        "pomoai-monthly-codex-0.2",
+						Platform:    PlatformOpenAI,
+						Status:      StatusActive,
+						Schedulable: true,
+					},
+				},
+			},
+		},
+		groupRepo: &monthlyProbeGroupRepoStub{
+			groups: map[int64]*Group{
+				7: {
+					ID:               7,
+					Name:             "GPT Lite 月卡组",
+					Platform:         PlatformOpenAI,
+					Status:           StatusActive,
+					SubscriptionType: SubscriptionTypeCredit,
+				},
+			},
+		},
+	}
+
+	snapshot, err := svc.GetMonthlyUpstreamProbeSnapshot(ctx, 60)
+
+	require.NoError(t, err)
+	require.Len(t, snapshot.Accounts, 1)
+	require.Equal(t, "pomoai-monthly-codex-0.2", snapshot.Accounts[0].AccountName)
+	require.Equal(t, "ok", snapshot.Accounts[0].LatestStatus)
+	require.Len(t, snapshot.Accounts[0].Points, 1)
+	require.Equal(t, "pomoai-monthly-codex-0.2", snapshot.Accounts[0].Points[0].AccountName)
 }
 
 func TestUpdateMonthlyUpstreamProbeSettingsDoesNotOverwriteOmittedFields(t *testing.T) {

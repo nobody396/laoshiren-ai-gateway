@@ -38,13 +38,82 @@ const (
 	MonthlyUpstreamProbePathDirectUpstream = "direct_upstream"
 )
 
-var monthlyUpstreamProbeTargets = []struct {
+type monthlyUpstreamProbeTargetSpec struct {
+	Platform string
+	Model    string
+}
+
+type monthlyUpstreamProbeResolvedTarget struct {
 	AccountName string
 	Platform    string
 	Model       string
-}{
-	{AccountName: "pomoai-monthly-codex-0.12", Platform: PlatformOpenAI, Model: "gpt-5.4-mini"},
-	{AccountName: "pomoai-monthly-claude-0.4", Platform: PlatformAnthropic, Model: "claude-haiku-4-5"},
+	Account     *Account
+}
+
+var monthlyUpstreamProbeTargetSpecs = []monthlyUpstreamProbeTargetSpec{
+	{Platform: PlatformOpenAI, Model: "gpt-5.4-mini"},
+	{Platform: PlatformAnthropic, Model: "claude-haiku-4-5"},
+}
+
+func monthlyUpstreamProbeSpecForPlatform(platform string) (monthlyUpstreamProbeTargetSpec, bool) {
+	for _, spec := range monthlyUpstreamProbeTargetSpecs {
+		if spec.Platform == platform {
+			return spec, true
+		}
+	}
+	return monthlyUpstreamProbeTargetSpec{}, false
+}
+
+func monthlyUpstreamProbeTargetByAccountName(targets []monthlyUpstreamProbeResolvedTarget, accountName string) (monthlyUpstreamProbeResolvedTarget, bool) {
+	for _, target := range targets {
+		if target.AccountName == accountName {
+			return target, true
+		}
+	}
+	return monthlyUpstreamProbeResolvedTarget{}, false
+}
+
+func monthlyUpstreamProbeTargetNameSet(targets []monthlyUpstreamProbeResolvedTarget) map[string]struct{} {
+	out := make(map[string]struct{}, len(targets))
+	for _, target := range targets {
+		if target.AccountName != "" {
+			out[target.AccountName] = struct{}{}
+		}
+	}
+	return out
+}
+
+func monthlyUpstreamProbeTargetFromAccount(account Account, spec monthlyUpstreamProbeTargetSpec) monthlyUpstreamProbeResolvedTarget {
+	accountCopy := account
+	return monthlyUpstreamProbeResolvedTarget{
+		AccountName: account.Name,
+		Platform:    spec.Platform,
+		Model:       spec.Model,
+		Account:     &accountCopy,
+	}
+}
+
+func monthlyUpstreamProbeDedupKey(account Account, spec monthlyUpstreamProbeTargetSpec) string {
+	if account.ID > 0 {
+		return spec.Platform + ":" + strconv.FormatInt(account.ID, 10)
+	}
+	return spec.Platform + ":" + account.Name
+}
+
+func monthlyUpstreamProbeFallbackAccountName(accountName string) bool {
+	return strings.Contains(strings.ToLower(strings.TrimSpace(accountName)), "pomoai-monthly")
+}
+
+func shouldKeepMonthlyUpstreamProbePoint(point MonthlyUpstreamProbePoint, targetNames map[string]struct{}) bool {
+	if len(targetNames) == 0 || point.AccountName == "" {
+		return true
+	}
+	if _, ok := targetNames[point.AccountName]; ok {
+		return true
+	}
+	// When monthly upstream accounts are renamed, stale hard-coded probe rows can
+	// otherwise keep the dashboard red until the whole window expires.
+	return !monthlyUpstreamProbeFallbackAccountName(point.AccountName)
 }
 
 type MonthlyUpstreamProbeCostEstimate struct {
@@ -266,12 +335,19 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 	if err != nil {
 		return nil, err
 	}
+	probeTargets := []monthlyUpstreamProbeResolvedTarget{}
 	probeAccounts := map[string]*Account{}
 	if s.accountRepo != nil {
-		if loaded, loadErr := s.loadMonthlyUpstreamProbeAccounts(ctx); loadErr == nil {
-			probeAccounts = loaded
+		if loadedTargets, loadErr := s.loadMonthlyUpstreamProbeTargets(ctx); loadErr == nil {
+			probeTargets = loadedTargets
+			for _, target := range loadedTargets {
+				if target.Account != nil && target.AccountName != "" {
+					probeAccounts[target.AccountName] = target.Account
+				}
+			}
 		}
 	}
+	probeTargetNames := monthlyUpstreamProbeTargetNameSet(probeTargets)
 
 	byAccount := make(map[string]*MonthlyUpstreamProbeAccount)
 	gatewayPointsBySlot := make(map[string]map[int]MonthlyUpstreamProbePoint)
@@ -313,18 +389,20 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 		return item, key
 	}
 	if enabled && len(probeAccounts) > 0 {
-		for _, target := range monthlyUpstreamProbeTargets {
-			account := probeAccounts[target.AccountName]
-			if account == nil {
+		for _, target := range probeTargets {
+			if target.Account == nil {
 				continue
 			}
-			_, key := ensureAccount(account.ID, target.AccountName, target.Platform, target.Model)
+			_, key := ensureAccount(target.Account.ID, target.AccountName, target.Platform, target.Model)
 			targetInitialized[key] = true
 		}
 	}
 	for _, point := range points {
+		if !shouldKeepMonthlyUpstreamProbePoint(point, probeTargetNames) {
+			continue
+		}
 		point.ProbePath = normalizeMonthlyUpstreamProbePath(point.ProbePath)
-		if target, ok := monthlyUpstreamProbeTarget(point.AccountName); ok {
+		if target, ok := monthlyUpstreamProbeTargetByAccountName(probeTargets, point.AccountName); ok {
 			point.Platform = target.Platform
 			point.Model = target.Model
 		}
@@ -597,13 +675,13 @@ func (s *OpsService) RunMonthlyUpstreamProbeOnce(ctx context.Context) error {
 		return fmt.Errorf("monthly upstream probe dependencies are not available")
 	}
 
-	accounts, err := s.loadMonthlyUpstreamProbeAccounts(ctx)
+	targets, err := s.loadMonthlyUpstreamProbeTargets(ctx)
 	if err != nil {
 		return err
 	}
 	var errs []error
-	for _, target := range monthlyUpstreamProbeTargets {
-		account := accounts[target.AccountName]
+	for _, target := range targets {
+		account := target.Account
 		var point MonthlyUpstreamProbePoint
 		if account == nil {
 			point = MonthlyUpstreamProbePoint{
@@ -639,23 +717,6 @@ func (s *OpsService) RunMonthlyUpstreamProbeOnce(ctx context.Context) error {
 	return errors.Join(errs...)
 }
 
-func monthlyUpstreamProbeTarget(accountName string) (struct {
-	AccountName string
-	Platform    string
-	Model       string
-}, bool) {
-	for _, target := range monthlyUpstreamProbeTargets {
-		if target.AccountName == accountName {
-			return target, true
-		}
-	}
-	return struct {
-		AccountName string
-		Platform    string
-		Model       string
-	}{}, false
-}
-
 func normalizeMonthlyUpstreamProbePath(path string) string {
 	switch strings.ToLower(strings.TrimSpace(path)) {
 	case MonthlyUpstreamProbePathGateway:
@@ -674,22 +735,89 @@ func diagnosticCheckedAt(diagnostic *MonthlyUpstreamProbeDiagnostic) time.Time {
 	return *diagnostic.CheckedAt
 }
 
-func (s *OpsService) loadMonthlyUpstreamProbeAccounts(ctx context.Context) (map[string]*Account, error) {
+func (s *OpsService) loadMonthlyUpstreamProbeTargets(ctx context.Context) ([]monthlyUpstreamProbeResolvedTarget, error) {
+	if s == nil || s.accountRepo == nil {
+		return nil, nil
+	}
+	if s.groupRepo == nil {
+		return s.loadMonthlyUpstreamProbeTargetsByNameSearch(ctx)
+	}
+	return s.loadMonthlyUpstreamProbeTargetsFromGroups(ctx)
+}
+
+func (s *OpsService) loadMonthlyUpstreamProbeTargetsFromGroups(ctx context.Context) ([]monthlyUpstreamProbeResolvedTarget, error) {
+	plans := s.loadMonthlyCardPublicPlans(ctx)
+	targets := make([]monthlyUpstreamProbeResolvedTarget, 0, len(monthlyUpstreamProbeTargetSpecs))
+	seen := make(map[string]struct{})
+
+	for _, plan := range plans {
+		for _, group := range []*MonthlyCardPublicPlanGroup{plan.GPTGroup, plan.ClaudeGroup} {
+			if group == nil {
+				continue
+			}
+			spec, ok := monthlyUpstreamProbeSpecForPlatform(group.Platform)
+			if !ok {
+				continue
+			}
+			accounts, err := s.accountRepo.ListByGroup(ctx, group.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, account := range accounts {
+				if account.Platform != spec.Platform || account.Name == "" {
+					continue
+				}
+				key := monthlyUpstreamProbeDedupKey(account, spec)
+				if _, exists := seen[key]; exists {
+					continue
+				}
+				seen[key] = struct{}{}
+				targets = append(targets, monthlyUpstreamProbeTargetFromAccount(account, spec))
+			}
+		}
+	}
+	sortMonthlyUpstreamProbeTargets(targets)
+	return targets, nil
+}
+
+func (s *OpsService) loadMonthlyUpstreamProbeTargetsByNameSearch(ctx context.Context) ([]monthlyUpstreamProbeResolvedTarget, error) {
 	accounts, _, err := s.accountRepo.ListWithFilters(ctx, pagination.PaginationParams{Page: 1, PageSize: 100}, "", "", "", "pomoai-monthly", 0)
 	if err != nil {
 		return nil, err
 	}
-	out := make(map[string]*Account)
-	for i := range accounts {
-		account := accounts[i]
-		for _, target := range monthlyUpstreamProbeTargets {
-			if account.Name == target.AccountName {
-				copy := account
-				out[account.Name] = &copy
-			}
+	targets := make([]monthlyUpstreamProbeResolvedTarget, 0, len(accounts))
+	seen := make(map[string]struct{})
+	for _, account := range accounts {
+		spec, ok := monthlyUpstreamProbeSpecForPlatform(account.Platform)
+		if !ok || account.Name == "" {
+			continue
 		}
+		key := monthlyUpstreamProbeDedupKey(account, spec)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		targets = append(targets, monthlyUpstreamProbeTargetFromAccount(account, spec))
 	}
-	return out, nil
+	sortMonthlyUpstreamProbeTargets(targets)
+	return targets, nil
+}
+
+func sortMonthlyUpstreamProbeTargets(targets []monthlyUpstreamProbeResolvedTarget) {
+	sort.SliceStable(targets, func(i, j int) bool {
+		leftRank := monthlyCardPublicSortRank(monthlyCardPublicChannelName(targets[i].Platform))
+		rightRank := monthlyCardPublicSortRank(monthlyCardPublicChannelName(targets[j].Platform))
+		if leftRank != rightRank {
+			return leftRank < rightRank
+		}
+		if targets[i].AccountName != targets[j].AccountName {
+			return targets[i].AccountName < targets[j].AccountName
+		}
+		if targets[i].Account == nil || targets[j].Account == nil {
+			return targets[i].Account != nil
+		}
+		return targets[i].Account.ID < targets[j].Account.ID
+	})
 }
 
 func (s *OpsService) probeMonthlyGatewayAccount(ctx context.Context, account *Account, model string) MonthlyUpstreamProbePoint {

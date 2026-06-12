@@ -670,6 +670,10 @@ func registerSupplierRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 	suppliers := admin.Group("/suppliers")
 	{
 		suppliers.GET("", h.Admin.Supplier.List)
+		suppliers.GET("/probe-snapshot", h.Admin.Supplier.ProbeSnapshot)
+		suppliers.PUT("/probe-enabled", h.Admin.Supplier.BulkSetProbeEnabled)
+		suppliers.POST("/sync-accounts", h.Admin.Supplier.SyncAccounts)
+		suppliers.POST("/probe-all", h.Admin.Supplier.ProbeAll)
 		suppliers.GET("/:id", h.Admin.Supplier.GetByID)
 		suppliers.POST("", h.Admin.Supplier.Create)
 		suppliers.PUT("/:id", h.Admin.Supplier.Update)

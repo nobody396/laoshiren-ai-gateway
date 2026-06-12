@@ -97,6 +97,7 @@ func provideCleanup(
 	scheduledTestRunner *service.ScheduledTestRunnerService,
 	backupSvc *service.BackupService,
 	downloadResources *service.DownloadResourceService,
+	supplierService *service.SupplierService,
 ) func() {
 	return func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -248,6 +249,12 @@ func provideCleanup(
 			{"DownloadResourceService", func() error {
 				if downloadResources != nil {
 					downloadResources.Stop()
+				}
+				return nil
+			}},
+			{"SupplierService", func() error {
+				if supplierService != nil {
+					supplierService.Stop()
 				}
 				return nil
 			}},

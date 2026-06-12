@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"io"
 	"strconv"
 
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
@@ -51,6 +52,15 @@ type updateSupplierRequest struct {
 	ProbeModel           *string  `json:"probe_model" binding:"omitempty,max=100"`
 	ProbeIntervalMinutes *int     `json:"probe_interval_minutes" binding:"omitempty,min=1,max=1440"`
 	TargetGroupIDs       *[]int64 `json:"target_group_ids"`
+}
+
+type bulkSupplierProbeEnabledRequest struct {
+	IDs     []int64 `json:"ids"`
+	Enabled *bool   `json:"enabled" binding:"required"`
+}
+
+type supplierProbeBatchRequest struct {
+	IDs []int64 `json:"ids"`
 }
 
 // List handles supplier list with pagination.
@@ -155,6 +165,62 @@ func (h *SupplierHandler) Update(c *gin.Context) {
 	response.Success(c, supplier)
 }
 
+// ProbeSnapshot returns supplier probe monitoring aggregation.
+func (h *SupplierHandler) ProbeSnapshot(c *gin.Context) {
+	windowMinutes := parsePositiveQueryInt(c.Query("window_minutes"), 60)
+	days := parsePositiveQueryInt(c.Query("days"), 7)
+	snapshot, err := h.supplierService.GetProbeSnapshot(c.Request.Context(), windowMinutes, days)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, snapshot)
+}
+
+// BulkSetProbeEnabled enables or disables supplier probes in batch.
+func (h *SupplierHandler) BulkSetProbeEnabled(c *gin.Context) {
+	var req bulkSupplierProbeEnabledRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", err.Error()))
+		return
+	}
+	if req.Enabled == nil {
+		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", "enabled is required"))
+		return
+	}
+	affected, err := h.supplierService.BulkSetProbeEnabled(c.Request.Context(), req.IDs, *req.Enabled)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"affected": affected})
+}
+
+// SyncAccounts imports active API key accounts into supplier probe rows.
+func (h *SupplierHandler) SyncAccounts(c *gin.Context) {
+	result, err := h.supplierService.SyncAccountsToSuppliers(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+// ProbeAll runs an immediate probe for selected or all enabled suppliers.
+func (h *SupplierHandler) ProbeAll(c *gin.Context) {
+	var req supplierProbeBatchRequest
+	if err := c.ShouldBindJSON(&req); err != nil && err != io.EOF {
+		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", err.Error()))
+		return
+	}
+	result, err := h.supplierService.RunEnabledProbes(c.Request.Context(), req.IDs)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
 // Probe runs one immediate supplier probe.
 func (h *SupplierHandler) Probe(c *gin.Context) {
 	id, ok := parseSupplierID(c)
@@ -199,4 +265,15 @@ func boolPtrValue(value *bool, fallback bool) bool {
 		return fallback
 	}
 	return *value
+}
+
+func parsePositiveQueryInt(value string, fallback int) int {
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed <= 0 {
+		return fallback
+	}
+	return parsed
 }

@@ -17,6 +17,8 @@ export interface Supplier {
   status: SupplierStatus
   cost_rmb_per_usd: number | null
   notes: string
+  source_account_id: number | null
+  source_platform: string
   probe_enabled: boolean
   probe_model: string
   probe_interval_minutes: number
@@ -54,6 +56,87 @@ export interface SupplierProbeResult {
 export interface SupplierProbeResponse {
   supplier: Supplier
   result: SupplierProbeResult
+}
+
+export interface SupplierProbeSnapshotItem {
+  id: number
+  name: string
+  source_account_id: number | null
+  source_platform: string
+  probe_enabled: boolean
+  probe_model: string
+  last_probe_status: SupplierProbeStatus
+  last_probe_sub_status: string
+  last_probe_latency_ms: number | null
+  last_probe_error: string
+  last_probe_at: string | null
+  next_probe_at: string | null
+  probe_success_rate: number
+  probe_success_count: number
+  probe_total_count: number
+  window_total: number
+  window_success: number
+  window_degraded: number
+  window_failed: number
+  window_success_rate: number
+  window_average_latency_ms: number
+}
+
+export interface SupplierHourlyStability {
+  hour: number
+  label: string
+  status: SupplierProbeStatus
+  total: number
+  success: number
+  degraded: number
+  failed: number
+  success_rate: number
+  average_latency_ms: number
+}
+
+export interface SupplierProbeSnapshot {
+  generated_at: string
+  window_minutes: number
+  days: number
+  total_suppliers: number
+  enabled_suppliers: number
+  healthy_suppliers: number
+  degraded_suppliers: number
+  failed_suppliers: number
+  unknown_suppliers: number
+  window_total: number
+  window_success: number
+  window_degraded: number
+  window_failed: number
+  window_success_rate: number
+  average_latency_ms: number
+  suppliers: SupplierProbeSnapshotItem[]
+  hourly: SupplierHourlyStability[]
+}
+
+export interface SupplierAccountSyncResult {
+  created: number
+  updated: number
+  skipped: number
+  skipped_accounts?: Array<{
+    account_id: number
+    account_name: string
+    reason: string
+  }>
+}
+
+export interface SupplierProbeBatchResult {
+  total: number
+  success: number
+  degraded: number
+  failed: number
+  skipped: number
+  results: Array<{
+    supplier_id: number
+    supplier_name: string
+    result?: SupplierProbeResult
+    error?: string
+  }>
 }
 
 export interface CreateSupplierRequest {
@@ -118,9 +201,47 @@ export async function probe(id: number): Promise<SupplierProbeResponse> {
   return data
 }
 
+export async function getProbeSnapshot(
+  params: { window_minutes?: number; days?: number } = {}
+): Promise<SupplierProbeSnapshot> {
+  const { data } = await apiClient.get<SupplierProbeSnapshot>('/admin/suppliers/probe-snapshot', {
+    params
+  })
+  return data
+}
+
+export async function bulkSetProbeEnabled(ids: number[], enabled: boolean): Promise<{ affected: number }> {
+  const { data } = await apiClient.put<{ affected: number }>('/admin/suppliers/probe-enabled', {
+    ids,
+    enabled
+  })
+  return data
+}
+
+export async function syncAccounts(): Promise<SupplierAccountSyncResult> {
+  const { data } = await apiClient.post<SupplierAccountSyncResult>('/admin/suppliers/sync-accounts')
+  return data
+}
+
+export async function probeAll(ids: number[] = []): Promise<SupplierProbeBatchResult> {
+  const { data } = await apiClient.post<SupplierProbeBatchResult>('/admin/suppliers/probe-all', { ids })
+  return data
+}
+
 export async function remove(id: number): Promise<void> {
   await apiClient.delete(`/admin/suppliers/${id}`)
 }
 
-const suppliersAPI = { list, getById, create, update, probe, remove }
+const suppliersAPI = {
+  list,
+  getById,
+  create,
+  update,
+  probe,
+  getProbeSnapshot,
+  bulkSetProbeEnabled,
+  syncAccounts,
+  probeAll,
+  remove
+}
 export default suppliersAPI

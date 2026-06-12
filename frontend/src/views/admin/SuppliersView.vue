@@ -2,52 +2,181 @@
   <AppLayout>
     <TablePageLayout>
       <template #filters>
-        <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-          <div class="flex flex-1 flex-wrap items-center gap-3">
-            <div class="relative w-full sm:w-72">
-              <Icon
-                name="search"
-                size="md"
-                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+        <div class="space-y-4">
+          <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    {{ t('admin.suppliers.monitorTitle', '供应商探针') }}
+                  </h2>
+                  <span :class="probeBadgeClass(snapshotOverallStatus)">
+                    {{ probeStatusLabel(snapshotOverallStatus) }}
+                  </span>
+                  <span class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ probeSnapshot ? formatDateTime(probeSnapshot.generated_at) : t('common.noData', '暂无数据') }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <button class="btn btn-secondary" :disabled="snapshotLoading" @click="loadProbeSnapshot">
+                  <Icon name="refresh" size="md" :class="snapshotLoading ? 'animate-spin' : ''" />
+                </button>
+                <button class="btn btn-secondary" :disabled="syncingAccounts" @click="syncAccountsToSuppliers">
+                  <Icon name="download" size="md" class="mr-2" />
+                  {{ t('admin.suppliers.syncAccounts', '同步账号') }}
+                </button>
+                <button class="btn btn-secondary" :disabled="bulkSaving" @click="bulkToggleProbes(true)">
+                  {{ t('admin.suppliers.enableAllProbes', '开启全部探针') }}
+                </button>
+                <button class="btn btn-secondary" :disabled="bulkSaving" @click="bulkToggleProbes(false)">
+                  {{ t('admin.suppliers.disableAllProbes', '关闭全部探针') }}
+                </button>
+                <button class="btn btn-primary" :disabled="batchProbing" @click="runAllEnabledProbes">
+                  <Icon name="refresh" size="md" :class="batchProbing ? 'animate-spin mr-2' : 'mr-2'" />
+                  {{ t('admin.suppliers.probeAll', '检测已启用') }}
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              <div
+                v-for="card in probeMetricCards"
+                :key="card.label"
+                class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-900"
+              >
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ card.label }}</div>
+                <div class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">{{ card.value }}</div>
+                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ card.hint }}</div>
+              </div>
+            </div>
+
+            <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.7fr)]">
+              <div>
+                <div class="mb-2 flex items-center justify-between">
+                  <div class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {{ t('admin.suppliers.hourlyStability', '每日小时稳定性') }}
+                  </div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.suppliers.hourlyWindow', { days: probeSnapshot?.days || 7 }, `最近 ${probeSnapshot?.days || 7} 天`) }}
+                  </div>
+                </div>
+                <div class="grid grid-cols-6 gap-1 sm:grid-cols-12">
+                  <div
+                    v-for="bucket in hourlyBuckets"
+                    :key="bucket.hour"
+                    class="h-12 rounded border px-1 py-1 text-center text-[10px] leading-tight"
+                    :class="hourBucketClass(bucket)"
+                    :title="hourBucketTitle(bucket)"
+                  >
+                    <div>{{ `${String(bucket.hour).padStart(2, '0')}` }}</div>
+                    <div class="mt-1 font-semibold">{{ bucket.total > 0 ? formatPercent(bucket.success_rate) : '-' }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div class="mb-2 text-sm font-medium text-gray-800 dark:text-gray-200">
+                  {{ t('admin.suppliers.riskHours', '更容易出事的时段') }}
+                </div>
+                <div class="space-y-2">
+                  <div
+                    v-for="bucket in riskyHours"
+                    :key="bucket.hour"
+                    class="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm dark:border-dark-700 dark:bg-dark-900"
+                  >
+                    <span class="font-medium text-gray-800 dark:text-gray-200">{{ bucket.label }}</span>
+                    <span class="text-gray-500 dark:text-gray-400">
+                      {{ bucket.failed + bucket.degraded }}/{{ bucket.total }} · {{ formatPercent(bucket.success_rate) }}
+                    </span>
+                  </div>
+                  <div v-if="riskyHours.length === 0" class="rounded-lg border border-dashed border-gray-200 px-3 py-4 text-center text-sm text-gray-500 dark:border-dark-700 dark:text-gray-400">
+                    {{ t('admin.suppliers.noRiskHours', '还没有足够探针数据') }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 overflow-hidden rounded-lg border border-gray-100 dark:border-dark-700">
+              <div class="grid grid-cols-[minmax(160px,1.2fr)_90px_90px_110px_120px] bg-gray-50 px-3 py-2 text-xs font-medium text-gray-500 dark:bg-dark-900 dark:text-gray-400">
+                <span>{{ t('admin.suppliers.monitorSupplier', '供应商') }}</span>
+                <span>{{ t('admin.suppliers.monitorWindowRate', '窗口成功率') }}</span>
+                <span>{{ t('admin.suppliers.monitorLatency', '延迟') }}</span>
+                <span>{{ t('admin.suppliers.monitorLast', '最近探针') }}</span>
+                <span>{{ t('admin.suppliers.monitorNext', '下次探针') }}</span>
+              </div>
+              <div
+                v-for="item in monitoredSupplierRows"
+                :key="item.id"
+                class="grid grid-cols-[minmax(160px,1.2fr)_90px_90px_110px_120px] items-center border-t border-gray-100 px-3 py-2 text-sm dark:border-dark-700"
+              >
+                <div class="min-w-0">
+                  <div class="truncate font-medium text-gray-800 dark:text-gray-200">{{ item.name }}</div>
+                  <div class="truncate text-xs text-gray-500 dark:text-gray-400">{{ item.probe_model || '-' }}</div>
+                </div>
+                <span :class="probeBadgeClass(item.last_probe_status)">
+                  {{ item.window_total > 0 ? formatPercent(item.window_success_rate) : probeStatusLabel(item.last_probe_status) }}
+                </span>
+                <span class="text-gray-600 dark:text-gray-300">
+                  {{ item.window_average_latency_ms > 0 ? `${item.window_average_latency_ms}ms` : '-' }}
+                </span>
+                <span class="text-gray-500 dark:text-gray-400">{{ formatShortDateTime(item.last_probe_at) }}</span>
+                <span class="text-gray-500 dark:text-gray-400">{{ formatShortDateTime(item.next_probe_at) }}</span>
+              </div>
+              <div v-if="monitoredSupplierRows.length === 0" class="px-3 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                {{ t('admin.suppliers.noProbeRows', '暂无供应商探针数据') }}
+              </div>
+            </div>
+          </section>
+
+          <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+            <div class="flex flex-1 flex-wrap items-center gap-3">
+              <div class="relative w-full sm:w-72">
+                <Icon
+                  name="search"
+                  size="md"
+                  class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                />
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  :placeholder="t('admin.suppliers.search', '搜索供应商、官网、Base URL...')"
+                  class="input pl-10"
+                  @input="handleSearch"
+                />
+              </div>
+
+              <Select
+                v-model="filters.status"
+                :options="statusFilterOptions"
+                :placeholder="t('admin.suppliers.allStatus', '全部状态')"
+                class="w-40"
+                @change="loadSuppliers"
               />
-              <input
-                v-model="searchQuery"
-                type="text"
-                :placeholder="t('admin.suppliers.search', '搜索供应商、官网、Base URL...')"
-                class="input pl-10"
-                @input="handleSearch"
+              <Select
+                v-model="filters.probe_status"
+                :options="probeStatusFilterOptions"
+                :placeholder="t('admin.suppliers.allProbeStatus', '全部探针')"
+                class="w-40"
+                @change="loadSuppliers"
               />
             </div>
 
-            <Select
-              v-model="filters.status"
-              :options="statusFilterOptions"
-              :placeholder="t('admin.suppliers.allStatus', '全部状态')"
-              class="w-40"
-              @change="loadSuppliers"
-            />
-            <Select
-              v-model="filters.probe_status"
-              :options="probeStatusFilterOptions"
-              :placeholder="t('admin.suppliers.allProbeStatus', '全部探针')"
-              class="w-40"
-              @change="loadSuppliers"
-            />
-          </div>
-
-          <div class="flex w-full flex-shrink-0 flex-wrap items-center justify-end gap-3 lg:w-auto">
-            <button
-              class="btn btn-secondary"
-              :disabled="loading"
-              :title="t('common.refresh', '刷新')"
-              @click="loadSuppliers"
-            >
-              <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
-            </button>
-            <button class="btn btn-primary" @click="openCreateDialog">
-              <Icon name="plus" size="md" class="mr-2" />
-              {{ t('admin.suppliers.create', '新增供应商') }}
-            </button>
+            <div class="flex w-full flex-shrink-0 flex-wrap items-center justify-end gap-3 lg:w-auto">
+              <button
+                class="btn btn-secondary"
+                :disabled="loading"
+                :title="t('common.refresh', '刷新')"
+                @click="refreshSupplierPage"
+              >
+                <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
+              </button>
+              <button class="btn btn-primary" @click="openCreateDialog">
+                <Icon name="plus" size="md" class="mr-2" />
+                {{ t('admin.suppliers.create', '新增供应商') }}
+              </button>
+            </div>
           </div>
         </div>
       </template>
@@ -351,6 +480,9 @@ import { adminAPI } from '@/api/admin'
 import type {
   Supplier,
   SupplierContactPlatform,
+  SupplierHourlyStability,
+  SupplierProbeSnapshot,
+  SupplierProbeSnapshotItem,
   SupplierProbeStatus,
   SupplierStatus
 } from '@/api/admin/suppliers'
@@ -438,9 +570,14 @@ const contactPlatformOptions = computed(() =>
 
 const suppliers = ref<Supplier[]>([])
 const allGroups = ref<AdminGroup[]>([])
+const probeSnapshot = ref<SupplierProbeSnapshot | null>(null)
 const loading = ref(false)
+const snapshotLoading = ref(false)
 const submitting = ref(false)
 const probingSupplierId = ref<number | null>(null)
+const syncingAccounts = ref(false)
+const bulkSaving = ref(false)
+const batchProbing = ref(false)
 const searchQuery = ref('')
 const filters = reactive({
   status: '',
@@ -487,6 +624,76 @@ const deleteConfirmMessage = computed(() =>
     : ''
 )
 
+const snapshotOverallStatus = computed<SupplierProbeStatus>(() => {
+  const snapshot = probeSnapshot.value
+  if (!snapshot || snapshot.window_total === 0) return 'unknown'
+  if (snapshot.window_success_rate >= 95) return 'success'
+  if (snapshot.window_success_rate >= 80) return 'degraded'
+  return 'failed'
+})
+
+const probeMetricCards = computed(() => {
+  const snapshot = probeSnapshot.value
+  return [
+    {
+      label: t('admin.suppliers.metricCoverage', '覆盖账号'),
+      value: snapshot ? `${snapshot.enabled_suppliers}/${snapshot.total_suppliers}` : '-',
+      hint: t('admin.suppliers.metricCoverageHint', '已开启 / 全部供应商')
+    },
+    {
+      label: t('admin.suppliers.metricWindowRate', '窗口成功率'),
+      value: snapshot && snapshot.window_total > 0 ? formatPercent(snapshot.window_success_rate) : '-',
+      hint: snapshot ? `${snapshot.window_success}/${snapshot.window_total}` : '-'
+    },
+    {
+      label: t('admin.suppliers.metricHealthy', '当前正常'),
+      value: snapshot ? String(snapshot.healthy_suppliers) : '-',
+      hint: t('admin.suppliers.metricHealthyHint', '最近一次探针正常')
+    },
+    {
+      label: t('admin.suppliers.metricProblem', '异常/观察'),
+      value: snapshot ? String(snapshot.failed_suppliers + snapshot.degraded_suppliers) : '-',
+      hint: t('admin.suppliers.metricProblemHint', '失败或慢响应')
+    },
+    {
+      label: t('admin.suppliers.metricLatency', '平均延迟'),
+      value: snapshot && snapshot.average_latency_ms > 0 ? `${snapshot.average_latency_ms}ms` : '-',
+      hint: t('admin.suppliers.metricLatencyHint', '当前窗口')
+    }
+  ]
+})
+
+const hourlyBuckets = computed<SupplierHourlyStability[]>(() => probeSnapshot.value?.hourly || [])
+
+const riskyHours = computed<SupplierHourlyStability[]>(() =>
+  hourlyBuckets.value
+    .filter((bucket) => bucket.total > 0 && bucket.success_rate < 95)
+    .sort((a, b) => {
+      const aRisk = a.failed + a.degraded
+      const bRisk = b.failed + b.degraded
+      if (aRisk !== bRisk) return bRisk - aRisk
+      return a.success_rate - b.success_rate
+    })
+    .slice(0, 3)
+)
+
+const monitoredSupplierRows = computed<SupplierProbeSnapshotItem[]>(() =>
+  [...(probeSnapshot.value?.suppliers || [])]
+    .sort((a, b) => {
+      const rank: Record<SupplierProbeStatus, number> = {
+        failed: 0,
+        degraded: 1,
+        unknown: 2,
+        success: 3
+      }
+      const aRank = rank[a.last_probe_status] ?? 2
+      const bRank = rank[b.last_probe_status] ?? 2
+      if (aRank !== bRank) return aRank - bRank
+      return (b.window_total || 0) - (a.window_total || 0)
+    })
+    .slice(0, 8)
+)
+
 function statusLabel(value: SupplierStatus): string {
   return statusLabels[value] || value
 }
@@ -529,6 +736,26 @@ function formatDate(value: string | null): string {
   return new Date(value).toLocaleDateString()
 }
 
+function formatDateTime(value: string | null): string {
+  if (!value) return '-'
+  return new Date(value).toLocaleString()
+}
+
+function formatShortDateTime(value: string | null): string {
+  if (!value) return '-'
+  return new Date(value).toLocaleString(undefined, {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+function formatPercent(value: number): string {
+  if (!Number.isFinite(value)) return '-'
+  return `${Number(value).toFixed(0)}%`
+}
+
 function formatCost(value: number | null): string {
   if (value === null || value === undefined) return '-'
   return `1 USD = ¥${Number(value).toLocaleString(undefined, { maximumFractionDigits: 8 })}`
@@ -554,6 +781,24 @@ function formatProbeDetail(row: Supplier): string {
   return parts.join(' · ')
 }
 
+function hourBucketClass(bucket: SupplierHourlyStability): string {
+  if (bucket.total <= 0) {
+    return 'border-gray-100 bg-gray-50 text-gray-400 dark:border-dark-700 dark:bg-dark-900 dark:text-gray-500'
+  }
+  if (bucket.status === 'success') {
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-300'
+  }
+  if (bucket.status === 'degraded') {
+    return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300'
+  }
+  return 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300'
+}
+
+function hourBucketTitle(bucket: SupplierHourlyStability): string {
+  if (bucket.total <= 0) return `${bucket.label} · 暂无数据`
+  return `${bucket.label} · ${formatPercent(bucket.success_rate)} · ${bucket.success}/${bucket.total} · ${bucket.average_latency_ms || '-'}ms`
+}
+
 function targetGroups(row: Supplier): AdminGroup[] {
   const ids = new Set(row.target_group_ids || [])
   return allGroups.value.filter((group) => ids.has(group.id))
@@ -569,6 +814,20 @@ function normalizeInterval(value: number | string): number {
   const numeric = Number(value)
   if (!Number.isFinite(numeric) || numeric <= 0) return 30
   return Math.min(1440, Math.floor(numeric))
+}
+
+async function loadProbeSnapshot(): Promise<void> {
+  snapshotLoading.value = true
+  try {
+    probeSnapshot.value = await adminAPI.suppliers.getProbeSnapshot({
+      window_minutes: 60,
+      days: 7
+    })
+  } catch (error: unknown) {
+    appStore.showError(extractApiErrorMessage(error, t('admin.suppliers.snapshotError', '加载探针快照失败')))
+  } finally {
+    snapshotLoading.value = false
+  }
 }
 
 async function loadSuppliers(): Promise<void> {
@@ -599,6 +858,10 @@ async function loadSuppliers(): Promise<void> {
   } finally {
     loading.value = false
   }
+}
+
+async function refreshSupplierPage(): Promise<void> {
+  await Promise.all([loadSuppliers(), loadProbeSnapshot()])
 }
 
 async function loadFormOptions(): Promise<void> {
@@ -731,7 +994,7 @@ async function handleSubmit(): Promise<void> {
       appStore.showSuccess(t('admin.suppliers.createSuccess', '供应商已创建'))
     }
     closeDialog()
-    await loadSuppliers()
+    await refreshSupplierPage()
   } catch (error: unknown) {
     appStore.showError(extractApiErrorMessage(error, t('admin.suppliers.saveError', '保存供应商失败')))
   } finally {
@@ -754,10 +1017,66 @@ async function runProbe(supplier: Supplier): Promise<void> {
     } else {
       appStore.showError(result.result.error_message || t('admin.suppliers.probeFailed', '探针失败'))
     }
+    await loadProbeSnapshot()
   } catch (error: unknown) {
     appStore.showError(extractApiErrorMessage(error, t('admin.suppliers.probeFailed', '探针失败')))
   } finally {
     probingSupplierId.value = null
+  }
+}
+
+async function syncAccountsToSuppliers(): Promise<void> {
+  syncingAccounts.value = true
+  try {
+    const result = await adminAPI.suppliers.syncAccounts()
+    appStore.showSuccess(
+      t(
+        'admin.suppliers.syncAccountsSuccess',
+        { created: result.created, updated: result.updated, skipped: result.skipped },
+        `账号已同步：新增 ${result.created}，更新 ${result.updated}，跳过 ${result.skipped}`
+      )
+    )
+    await refreshSupplierPage()
+  } catch (error: unknown) {
+    appStore.showError(extractApiErrorMessage(error, t('admin.suppliers.syncAccountsError', '同步账号失败')))
+  } finally {
+    syncingAccounts.value = false
+  }
+}
+
+async function bulkToggleProbes(enabled: boolean): Promise<void> {
+  bulkSaving.value = true
+  try {
+    const result = await adminAPI.suppliers.bulkSetProbeEnabled([], enabled)
+    appStore.showSuccess(
+      enabled
+        ? t('admin.suppliers.enableAllSuccess', { count: result.affected }, `已开启 ${result.affected} 个探针`)
+        : t('admin.suppliers.disableAllSuccess', { count: result.affected }, `已关闭 ${result.affected} 个探针`)
+    )
+    await refreshSupplierPage()
+  } catch (error: unknown) {
+    appStore.showError(extractApiErrorMessage(error, t('admin.suppliers.bulkToggleError', '批量更新探针失败')))
+  } finally {
+    bulkSaving.value = false
+  }
+}
+
+async function runAllEnabledProbes(): Promise<void> {
+  batchProbing.value = true
+  try {
+    const result = await adminAPI.suppliers.probeAll([])
+    appStore.showSuccess(
+      t(
+        'admin.suppliers.probeAllDone',
+        { success: result.success, degraded: result.degraded, failed: result.failed, skipped: result.skipped },
+        `检测完成：正常 ${result.success}，观察 ${result.degraded}，失败 ${result.failed}，跳过 ${result.skipped}`
+      )
+    )
+    await refreshSupplierPage()
+  } catch (error: unknown) {
+    appStore.showError(extractApiErrorMessage(error, t('admin.suppliers.probeAllError', '批量探针失败')))
+  } finally {
+    batchProbing.value = false
   }
 }
 
@@ -773,14 +1092,14 @@ async function confirmDelete(): Promise<void> {
     appStore.showSuccess(t('admin.suppliers.deleteSuccess', '供应商已删除'))
     showDeleteDialog.value = false
     deletingSupplier.value = null
-    await loadSuppliers()
+    await refreshSupplierPage()
   } catch (error: unknown) {
     appStore.showError(extractApiErrorMessage(error, t('admin.suppliers.deleteError', '删除供应商失败')))
   }
 }
 
 onMounted(() => {
-  loadSuppliers()
+  refreshSupplierPage()
   loadFormOptions()
 })
 

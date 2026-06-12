@@ -40,8 +40,9 @@ func (r *supplierRepository) Create(ctx context.Context, supplier *service.Suppl
 			`INSERT INTO suppliers (
 				name, website_url, base_url, api_key, upstream_group,
 				contact_platform, contact_value, status, cost_rmb_per_usd, notes,
+				source_account_id, source_platform,
 				probe_enabled, probe_model, probe_interval_minutes, last_probe_status
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 			RETURNING id, created_at, updated_at`,
 			supplier.Name,
 			supplier.WebsiteURL,
@@ -53,6 +54,8 @@ func (r *supplierRepository) Create(ctx context.Context, supplier *service.Suppl
 			supplier.Status,
 			nullableFloatArg(supplier.CostRMBPerUSD),
 			supplier.Notes,
+			nullableInt64Arg(supplier.SourceAccountID),
+			supplier.SourcePlatform,
 			supplier.ProbeEnabled,
 			supplier.ProbeModel,
 			supplier.ProbeIntervalMinutes,
@@ -102,11 +105,13 @@ func (r *supplierRepository) Update(ctx context.Context, supplier *service.Suppl
 				status = $8,
 				cost_rmb_per_usd = $9,
 				notes = $10,
-				probe_enabled = $11,
-				probe_model = $12,
-				probe_interval_minutes = $13,
+				source_account_id = $11,
+				source_platform = $12,
+				probe_enabled = $13,
+				probe_model = $14,
+				probe_interval_minutes = $15,
 				updated_at = NOW()
-			WHERE id = $14 AND deleted_at IS NULL`,
+			WHERE id = $16 AND deleted_at IS NULL`,
 			supplier.Name,
 			supplier.WebsiteURL,
 			supplier.BaseURL,
@@ -117,6 +122,8 @@ func (r *supplierRepository) Update(ctx context.Context, supplier *service.Suppl
 			supplier.Status,
 			nullableFloatArg(supplier.CostRMBPerUSD),
 			supplier.Notes,
+			nullableInt64Arg(supplier.SourceAccountID),
+			supplier.SourcePlatform,
 			supplier.ProbeEnabled,
 			supplier.ProbeModel,
 			supplier.ProbeIntervalMinutes,
@@ -140,6 +147,110 @@ func (r *supplierRepository) Update(ctx context.Context, supplier *service.Suppl
 		}
 		return nil
 	})
+}
+
+func (r *supplierRepository) BulkSetProbeEnabled(ctx context.Context, ids []int64, enabled bool) (int64, error) {
+	var (
+		result sql.Result
+		err    error
+	)
+	if len(ids) == 0 {
+		result, err = r.db.ExecContext(ctx,
+			`UPDATE suppliers SET
+				probe_enabled = $1,
+				next_probe_at = CASE WHEN $1 THEN COALESCE(next_probe_at, NOW()) ELSE next_probe_at END,
+				updated_at = NOW()
+			WHERE deleted_at IS NULL`,
+			enabled,
+		)
+	} else {
+		result, err = r.db.ExecContext(ctx,
+			`UPDATE suppliers SET
+				probe_enabled = $1,
+				next_probe_at = CASE WHEN $1 THEN COALESCE(next_probe_at, NOW()) ELSE next_probe_at END,
+				updated_at = NOW()
+			WHERE deleted_at IS NULL AND id = ANY($2)`,
+			enabled,
+			pq.Array(ids),
+		)
+	}
+	if err != nil {
+		return 0, fmt.Errorf("bulk update supplier probe enabled: %w", err)
+	}
+	rows, _ := result.RowsAffected()
+	return rows, nil
+}
+
+func (r *supplierRepository) ListDueProbes(ctx context.Context, limit int) ([]service.Supplier, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 10
+	}
+	rows, err := r.db.QueryContext(ctx,
+		supplierSelectSQL()+`
+		WHERE s.deleted_at IS NULL
+			AND s.probe_enabled = TRUE
+			AND (s.next_probe_at IS NULL OR s.next_probe_at <= NOW())
+		ORDER BY COALESCE(s.next_probe_at, s.last_probe_at, s.created_at) ASC, s.id ASC
+		LIMIT $1`,
+		limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list due supplier probes: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	suppliers := make([]service.Supplier, 0, limit)
+	for rows.Next() {
+		supplier, err := scanSupplier(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan due supplier: %w", err)
+		}
+		suppliers = append(suppliers, *supplier)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate due suppliers: %w", err)
+	}
+	return suppliers, nil
+}
+
+func (r *supplierRepository) ListProbeResultsSince(ctx context.Context, since time.Time) ([]service.SupplierProbeResult, error) {
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT
+			spr.id,
+			spr.supplier_id,
+			spr.status,
+			spr.sub_status,
+			spr.http_code,
+			spr.model,
+			spr.latency_ms,
+			spr.accuracy_ok,
+			spr.response_text,
+			spr.error_message,
+			spr.checked_at,
+			spr.created_at
+		FROM supplier_probe_results spr
+		JOIN suppliers s ON s.id = spr.supplier_id
+		WHERE s.deleted_at IS NULL AND spr.checked_at >= $1
+		ORDER BY spr.checked_at ASC, spr.id ASC`,
+		since,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list supplier probe results: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	results := []service.SupplierProbeResult{}
+	for rows.Next() {
+		result, err := scanSupplierProbeResult(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan supplier probe result: %w", err)
+		}
+		results = append(results, result)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate supplier probe results: %w", err)
+	}
+	return results, nil
 }
 
 func (r *supplierRepository) RecordProbeResult(ctx context.Context, supplierID int64, result *service.SupplierProbeResult) error {
@@ -208,6 +319,80 @@ func (r *supplierRepository) RecordProbeResult(ctx context.Context, supplierID i
 		}
 		return nil
 	})
+}
+
+func (r *supplierRepository) UpsertFromAccount(ctx context.Context, supplier *service.Supplier) (bool, error) {
+	if supplier == nil || supplier.SourceAccountID == nil {
+		return false, fmt.Errorf("supplier source account is required")
+	}
+	var created bool
+	err := r.runInTx(ctx, func(tx *sql.Tx) error {
+		updateErr := tx.QueryRowContext(ctx,
+			`UPDATE suppliers SET
+				name = $2,
+				base_url = $3,
+				api_key = $4,
+				upstream_group = $5,
+				status = $6,
+				notes = $7,
+				source_account_id = $1,
+				source_platform = $8,
+				probe_enabled = TRUE,
+				probe_model = $9,
+				probe_interval_minutes = $10,
+				updated_at = NOW()
+			WHERE deleted_at IS NULL
+				AND (source_account_id = $1 OR (source_account_id IS NULL AND name = $2))
+			RETURNING id, created_at, updated_at`,
+			*supplier.SourceAccountID,
+			supplier.Name,
+			supplier.BaseURL,
+			supplier.APIKey,
+			supplier.UpstreamGroup,
+			supplier.Status,
+			supplier.Notes,
+			supplier.SourcePlatform,
+			supplier.ProbeModel,
+			supplier.ProbeIntervalMinutes,
+		).Scan(&supplier.ID, &supplier.CreatedAt, &supplier.UpdatedAt)
+		if updateErr == nil {
+			created = false
+			return nil
+		}
+		if updateErr != sql.ErrNoRows {
+			return fmt.Errorf("update supplier from account: %w", updateErr)
+		}
+
+		insertErr := tx.QueryRowContext(ctx,
+			`INSERT INTO suppliers (
+				name, website_url, base_url, api_key, upstream_group,
+				contact_platform, contact_value, status, cost_rmb_per_usd, notes,
+				source_account_id, source_platform,
+				probe_enabled, probe_model, probe_interval_minutes, last_probe_status
+			) VALUES ($1, '', $2, $3, $4, '', '', $5, NULL, $6, $7, $8, TRUE, $9, $10, $11)
+			RETURNING id, created_at, updated_at`,
+			supplier.Name,
+			supplier.BaseURL,
+			supplier.APIKey,
+			supplier.UpstreamGroup,
+			supplier.Status,
+			supplier.Notes,
+			*supplier.SourceAccountID,
+			supplier.SourcePlatform,
+			supplier.ProbeModel,
+			supplier.ProbeIntervalMinutes,
+			supplier.LastProbeStatus,
+		).Scan(&supplier.ID, &supplier.CreatedAt, &supplier.UpdatedAt)
+		if insertErr != nil {
+			if isUniqueViolation(insertErr) {
+				return service.ErrSupplierExists
+			}
+			return fmt.Errorf("insert supplier from account: %w", insertErr)
+		}
+		created = true
+		return nil
+	})
+	return created, err
 }
 
 func (r *supplierRepository) Delete(ctx context.Context, id int64) error {
@@ -308,6 +493,7 @@ func scanSupplier(scanner rowScanner) (*service.Supplier, error) {
 	var lastProbeAt sql.NullTime
 	var nextProbeAt sql.NullTime
 	var probeSuccessRate sql.NullFloat64
+	var sourceAccountID sql.NullInt64
 	err := scanner.Scan(
 		&supplier.ID,
 		&supplier.Name,
@@ -320,6 +506,8 @@ func scanSupplier(scanner rowScanner) (*service.Supplier, error) {
 		&supplier.Status,
 		&costRMBPerUSD,
 		&supplier.Notes,
+		&sourceAccountID,
+		&supplier.SourcePlatform,
 		&supplier.ProbeEnabled,
 		&supplier.ProbeModel,
 		&supplier.ProbeIntervalMinutes,
@@ -359,10 +547,32 @@ func scanSupplier(scanner rowScanner) (*service.Supplier, error) {
 	if probeSuccessRate.Valid {
 		supplier.ProbeSuccessRate = probeSuccessRate.Float64
 	}
+	if sourceAccountID.Valid {
+		supplier.SourceAccountID = &sourceAccountID.Int64
+	}
 	if supplier.TargetGroupIDs == nil {
 		supplier.TargetGroupIDs = []int64{}
 	}
 	return &supplier, nil
+}
+
+func scanSupplierProbeResult(scanner rowScanner) (service.SupplierProbeResult, error) {
+	var result service.SupplierProbeResult
+	err := scanner.Scan(
+		&result.ID,
+		&result.SupplierID,
+		&result.Status,
+		&result.SubStatus,
+		&result.HTTPCode,
+		&result.Model,
+		&result.LatencyMs,
+		&result.AccuracyOK,
+		&result.ResponseText,
+		&result.ErrorMessage,
+		&result.CheckedAt,
+		&result.CreatedAt,
+	)
+	return result, err
 }
 
 func supplierSelectSQL() string {
@@ -378,6 +588,8 @@ func supplierSelectSQL() string {
 		s.status,
 		s.cost_rmb_per_usd,
 		s.notes,
+		s.source_account_id,
+		s.source_platform,
 		s.probe_enabled,
 		s.probe_model,
 		s.probe_interval_minutes,
@@ -531,6 +743,13 @@ func replaceSupplierTargetGroupsTx(ctx context.Context, exec dbExec, supplierID 
 }
 
 func nullableFloatArg(v *float64) any {
+	if v == nil {
+		return nil
+	}
+	return *v
+}
+
+func nullableInt64Arg(v *int64) any {
 	if v == nil {
 		return nil
 	}

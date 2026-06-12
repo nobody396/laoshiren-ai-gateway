@@ -506,7 +506,7 @@ var ProviderSet = wire.NewSet(
 	ProvideScheduledTestRunnerService,
 	NewGroupCapacityService,
 	NewChannelService,
-	NewSupplierService,
+	ProvideSupplierService,
 	NewModelPricingResolver,
 	NewCommissionService,
 	NewPaymentService,
@@ -515,6 +515,12 @@ var ProviderSet = wire.NewSet(
 	ProvideAccountQuotaAlertService,
 	ProvideBalanceAlertService,
 )
+
+func ProvideSupplierService(repo SupplierRepository, accountRepo AccountRepository) *SupplierService {
+	svc := NewSupplierService(repo, accountRepo)
+	svc.StartProbeRunner()
+	return svc
+}
 
 func ProvideAccountQuotaAlertService(emailService *EmailService, settingRepo SettingRepository, accountRepo AccountRepository) *AccountQuotaAlertService {
 	return NewAccountQuotaAlertService(emailService, settingRepo, accountRepo)

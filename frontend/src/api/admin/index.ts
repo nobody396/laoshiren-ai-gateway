@@ -108,4 +108,10 @@ export type { AdminAgentSummary, AgentSettlement, CommissionRates, InviteActivit
 export type { ErrorPassthroughRule, CreateRuleRequest, UpdateRuleRequest } from './errorPassthrough'
 export type { BackupAgentHealth, DataManagementConfig } from './dataManagement'
 export type { TLSFingerprintProfile, CreateProfileRequest, UpdateProfileRequest } from './tlsFingerprintProfile'
-export type { Supplier, CreateSupplierRequest, UpdateSupplierRequest } from './suppliers'
+export type {
+  Supplier,
+  SupplierProbeSnapshot,
+  SupplierHourlyStability,
+  CreateSupplierRequest,
+  UpdateSupplierRequest
+} from './suppliers'

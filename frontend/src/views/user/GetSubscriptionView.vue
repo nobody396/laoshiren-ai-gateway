@@ -1395,6 +1395,49 @@ void Promise.all([
   line-height: 1.65;
 }
 
+.dark .topup-monthly-prices div,
+.dark .topup-monthly-quota,
+.dark .topup-token-grid article {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(22, 19, 15, 0.86);
+}
+
+.dark .topup-monthly-quota {
+  background:
+    linear-gradient(180deg, rgba(226, 123, 81, 0.12), transparent 100%),
+    rgba(22, 19, 15, 0.9);
+}
+
+.dark .topup-monthly-prices span,
+.dark .topup-monthly-quota span,
+.dark .topup-token-grid span {
+  color: rgba(232, 220, 198, 0.78);
+}
+
+.dark .topup-monthly-prices strong,
+.dark .topup-monthly-quota strong,
+.dark .topup-token-grid strong {
+  color: #fffaf0;
+}
+
+.dark .topup-monthly-quota small,
+.dark .topup-token-grid small {
+  color: rgba(232, 220, 198, 0.72);
+}
+
+.dark .topup-token-grid small {
+  color: #f2a477;
+}
+
+.dark .topup-token-note {
+  border-color: rgba(226, 123, 81, 0.28);
+  background:
+    linear-gradient(180deg, rgba(226, 123, 81, 0.1), transparent 100%),
+    rgba(22, 19, 15, 0.92);
+  color: #fffaf0;
+  font-weight: 650;
+}
+
 .topup-primary-action,
 .topup-secondary-action {
   display: inline-flex;

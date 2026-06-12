@@ -200,7 +200,7 @@ const monthlyCreditCardPlanInputs = [
     legendaryCopy: '黑金权限已铸成：适合把大型重构、长上下文代理和批量审查一次推到底。',
     rarityLabel: 'Legendary Apex',
     accent: 'apex',
-    cardShopUrl: '',
+    cardShopUrl: 'https://pay.ldxp.cn/item/pb4se8',
     disableWeeklyLimit: true
   }
 ] satisfies Array<Parameters<typeof createMonthlyCreditCardPlan>[0]>

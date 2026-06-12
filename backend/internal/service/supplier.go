@@ -890,6 +890,9 @@ func supplierFromAccount(account Account) (*Supplier, string) {
 	if account.Status != "" && account.Status != StatusActive {
 		return nil, "账号未启用"
 	}
+	if !account.Schedulable {
+		return nil, "账号未启用调度"
+	}
 
 	var baseURL string
 	var apiKey string

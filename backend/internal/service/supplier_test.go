@@ -149,6 +149,28 @@ func TestRunSupplierProbeClassifiesRateLimitAsDegraded(t *testing.T) {
 	}
 }
 
+func TestSupplierFromAccountSkipsUnschedulableAccounts(t *testing.T) {
+	supplier, reason := supplierFromAccount(Account{
+		ID:          12,
+		Name:        "disabled-routing",
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Status:      StatusActive,
+		Schedulable: false,
+		Credentials: map[string]any{
+			"base_url": "https://example.invalid",
+			"api_key":  "sk-test",
+		},
+	})
+
+	if supplier != nil {
+		t.Fatalf("expected no supplier for unschedulable account, got %#v", supplier)
+	}
+	if reason != "账号未启用调度" {
+		t.Fatalf("expected unschedulable skip reason, got %q", reason)
+	}
+}
+
 func TestRunSupplierProbeRetriesFailedRedStatus(t *testing.T) {
 	attempts := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

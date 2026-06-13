@@ -465,12 +465,14 @@ func (s *SupplierService) GetProbeSnapshot(ctx context.Context, windowMinutes in
 		return nil, err
 	}
 	accountSuppliers := make([]Supplier, 0, len(suppliers))
+	accountSupplierIDs := make(map[int64]struct{}, len(suppliers))
 	monitoredSupplierIDs := make(map[int64]struct{}, len(suppliers))
 	for _, supplier := range suppliers {
 		if supplier.SourceAccountID == nil {
 			continue
 		}
 		accountSuppliers = append(accountSuppliers, supplier)
+		accountSupplierIDs[supplier.ID] = struct{}{}
 		if supplier.ProbeEnabled {
 			monitoredSupplierIDs[supplier.ID] = struct{}{}
 		}
@@ -494,10 +496,14 @@ func (s *SupplierService) GetProbeSnapshot(ctx context.Context, windowMinutes in
 	var windowSuccess, windowDegraded, windowFailed, windowLatencyCount int
 	var windowLatencyTotal int64
 	for _, result := range results {
-		if _, ok := monitoredSupplierIDs[result.SupplierID]; !ok {
+		if _, ok := accountSupplierIDs[result.SupplierID]; !ok {
 			continue
 		}
 		bySupplier[result.SupplierID] = append(bySupplier[result.SupplierID], result)
+
+		if _, ok := monitoredSupplierIDs[result.SupplierID]; !ok {
+			continue
+		}
 
 		localCheckedAt := result.CheckedAt.In(time.FixedZone("CST", 8*60*60))
 		hour := localCheckedAt.Hour()
@@ -545,7 +551,7 @@ func (s *SupplierService) GetProbeSnapshot(ctx context.Context, windowMinutes in
 		WindowSuccess:     windowSuccess,
 		WindowDegraded:    windowDegraded,
 		WindowFailed:      windowFailed,
-		Suppliers:         make([]SupplierProbeSnapshotItem, 0, len(monitoredSupplierIDs)),
+		Suppliers:         make([]SupplierProbeSnapshotItem, 0, len(accountSuppliers)),
 		Hourly:            hourly,
 		WindowSuccessRate: probePercentage(windowSuccess, windowSuccess+windowDegraded+windowFailed),
 	}
@@ -555,19 +561,18 @@ func (s *SupplierService) GetProbeSnapshot(ctx context.Context, windowMinutes in
 	}
 
 	for _, supplier := range accountSuppliers {
-		if !supplier.ProbeEnabled {
-			continue
-		}
-		snapshot.EnabledSuppliers++
-		switch normalizeOptionalSupplierProbeStatus(supplier.LastProbeStatus) {
-		case SupplierProbeStatusSuccess:
-			snapshot.HealthySuppliers++
-		case SupplierProbeStatusDegraded:
-			snapshot.DegradedSuppliers++
-		case SupplierProbeStatusFailed:
-			snapshot.FailedSuppliers++
-		default:
-			snapshot.UnknownSuppliers++
+		if supplier.ProbeEnabled {
+			snapshot.EnabledSuppliers++
+			switch normalizeOptionalSupplierProbeStatus(supplier.LastProbeStatus) {
+			case SupplierProbeStatusSuccess:
+				snapshot.HealthySuppliers++
+			case SupplierProbeStatusDegraded:
+				snapshot.DegradedSuppliers++
+			case SupplierProbeStatusFailed:
+				snapshot.FailedSuppliers++
+			default:
+				snapshot.UnknownSuppliers++
+			}
 		}
 
 		item := SupplierProbeSnapshotItem{
@@ -590,29 +595,31 @@ func (s *SupplierService) GetProbeSnapshot(ctx context.Context, windowMinutes in
 			TargetGroupIDs:       append([]int64{}, supplier.TargetGroupIDs...),
 			TargetGroups:         append([]SupplierTargetGroup{}, supplier.TargetGroups...),
 		}
-		var latencyTotal int64
-		var latencyCount int
-		for _, result := range bySupplier[supplier.ID] {
-			if result.CheckedAt.Before(windowSince) {
-				continue
+		if supplier.ProbeEnabled {
+			var latencyTotal int64
+			var latencyCount int
+			for _, result := range bySupplier[supplier.ID] {
+				if result.CheckedAt.Before(windowSince) {
+					continue
+				}
+				item.WindowTotal++
+				switch result.Status {
+				case SupplierProbeStatusSuccess:
+					item.WindowSuccess++
+				case SupplierProbeStatusDegraded:
+					item.WindowDegraded++
+				case SupplierProbeStatusFailed:
+					item.WindowFailed++
+				}
+				if result.LatencyMs > 0 {
+					latencyTotal += result.LatencyMs
+					latencyCount++
+				}
 			}
-			item.WindowTotal++
-			switch result.Status {
-			case SupplierProbeStatusSuccess:
-				item.WindowSuccess++
-			case SupplierProbeStatusDegraded:
-				item.WindowDegraded++
-			case SupplierProbeStatusFailed:
-				item.WindowFailed++
+			item.WindowSuccessRate = probePercentage(item.WindowSuccess, item.WindowTotal)
+			if latencyCount > 0 {
+				item.WindowAverageLatency = latencyTotal / int64(latencyCount)
 			}
-			if result.LatencyMs > 0 {
-				latencyTotal += result.LatencyMs
-				latencyCount++
-			}
-		}
-		item.WindowSuccessRate = probePercentage(item.WindowSuccess, item.WindowTotal)
-		if latencyCount > 0 {
-			item.WindowAverageLatency = latencyTotal / int64(latencyCount)
 		}
 		points := bySupplier[supplier.ID]
 		if len(points) > supplierProbeTimelinePoints {

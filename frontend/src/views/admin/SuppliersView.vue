@@ -107,13 +107,16 @@
               </div>
 
               <div class="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-                <button
+                <article
                   v-for="item in monitoredSupplierRows"
                   :key="item.id"
-                  type="button"
-                  class="group flex min-h-[246px] w-full flex-col rounded-xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md dark:bg-dark-900/70"
-                  :class="probeCardClass(item.last_probe_status)"
+                  role="button"
+                  tabindex="0"
+                  class="group flex min-h-[246px] w-full cursor-pointer flex-col rounded-xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:bg-dark-900/70 dark:focus:ring-offset-dark-800"
+                  :class="probeCardClass(item)"
                   @click="openProbeDetail(item)"
+                  @keydown.enter.prevent="openProbeDetail(item)"
+                  @keydown.space.prevent="openProbeDetail(item)"
                 >
                   <div class="flex items-start gap-3">
                     <span
@@ -123,10 +126,10 @@
                       {{ providerInitial(item.source_platform) }}
                     </span>
                     <div class="min-w-0 flex-1">
-                      <div class="flex min-w-0 items-center gap-2">
+                      <div class="flex min-w-0 flex-wrap items-center gap-2">
                         <div class="truncate text-base font-semibold text-gray-900 dark:text-white">{{ item.name }}</div>
-                        <span :class="probeBadgeClass(item.last_probe_status)">
-                          {{ probeStatusLabel(item.last_probe_status) }}
+                        <span :class="displayProbeBadgeClass(item)">
+                          {{ displayProbeStatusLabel(item) }}
                         </span>
                       </div>
                       <div class="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
@@ -138,6 +141,23 @@
                         </span>
                         <span class="truncate font-mono text-xs text-gray-500 dark:text-gray-400">{{ item.probe_model || '-' }}</span>
                       </div>
+                    </div>
+                    <div class="shrink-0" @click.stop @keydown.stop>
+                      <button
+                        type="button"
+                        role="switch"
+                        :aria-checked="item.probe_enabled"
+                        :aria-label="item.probe_enabled ? '关闭这个探针' : '开启这个探针'"
+                        :disabled="isSingleProbeSaving(item.id)"
+                        class="relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus:ring-offset-dark-800"
+                        :class="item.probe_enabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-dark-600'"
+                        @click="toggleSingleProbe(item, !item.probe_enabled)"
+                      >
+                        <span
+                          class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                          :class="item.probe_enabled ? 'translate-x-5' : 'translate-x-0'"
+                        />
+                      </button>
                     </div>
                   </div>
 
@@ -171,11 +191,11 @@
                         {{ t('admin.suppliers.cardAvailability', '可用性') }} · {{ monitorWindowLabel }}
                       </div>
                       <div class="text-2xl font-semibold tabular-nums" :class="cardAvailabilityClass(item)">
-                        {{ item.window_total > 0 ? formatPercent(item.window_success_rate) : '-' }}
+                        {{ item.probe_enabled && item.window_total > 0 ? formatPercent(item.window_success_rate) : '-' }}
                       </div>
                     </div>
                     <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {{ item.window_success }}/{{ item.window_total }} · {{ nextProbeText(item) }}
+                      {{ item.probe_enabled ? `${item.window_success}/${item.window_total}` : t('admin.suppliers.probeDisabledInline', '探针已关闭') }} · {{ nextProbeText(item) }}
                     </div>
                   </div>
 
@@ -199,7 +219,7 @@
                       <span>NOW</span>
                     </div>
                   </div>
-                </button>
+                </article>
 
                 <div
                   v-if="monitoredSupplierRows.length === 0"
@@ -223,8 +243,8 @@
           <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-900">
             <div class="text-xs text-gray-500 dark:text-gray-400">当前状态</div>
             <div class="mt-2">
-              <span :class="probeBadgeClass(selectedProbeItem.last_probe_status)">
-                {{ probeStatusLabel(selectedProbeItem.last_probe_status) }}
+              <span :class="displayProbeBadgeClass(selectedProbeItem)">
+                {{ displayProbeStatusLabel(selectedProbeItem) }}
               </span>
             </div>
           </div>
@@ -246,7 +266,7 @@
           <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 dark:border-dark-700 dark:bg-dark-900">
             <div class="text-xs text-gray-500 dark:text-gray-400">下次探针</div>
             <div class="mt-1 text-sm font-medium text-gray-900 dark:text-white">
-              {{ formatDateTime(selectedProbeItem.next_probe_at) }}
+              {{ selectedProbeItem.probe_enabled ? formatDateTime(selectedProbeItem.next_probe_at) : '探针已关闭' }}
             </div>
           </div>
         </div>
@@ -389,6 +409,7 @@ const snapshotLoading = ref(false)
 const syncingAccounts = ref(false)
 const bulkSaving = ref(false)
 const batchProbing = ref(false)
+const singleProbeSavingIds = ref<Set<number>>(new Set())
 
 const showProbeDetailDialog = ref(false)
 const selectedProbeItem = ref<SupplierProbeSnapshotItem | null>(null)
@@ -485,6 +506,9 @@ const riskyHours = computed<SupplierHourlyStability[]>(() =>
 const monitoredSupplierRows = computed<SupplierProbeSnapshotItem[]>(() =>
   [...(probeSnapshot.value?.suppliers || [])]
     .sort((a, b) => {
+      if (a.probe_enabled !== b.probe_enabled) {
+        return a.probe_enabled ? -1 : 1
+      }
       const rank: Record<SupplierProbeStatus, number> = {
         failed: 0,
         degraded: 1,
@@ -502,6 +526,13 @@ function probeStatusLabel(value: SupplierProbeStatus): string {
   return probeStatusLabels[value] || value
 }
 
+function displayProbeStatusLabel(item: SupplierProbeSnapshotItem): string {
+  if (!item.probe_enabled) {
+    return t('admin.suppliers.probeDisabled', '已关闭')
+  }
+  return probeStatusLabel(item.last_probe_status)
+}
+
 function probeBadgeClass(value: SupplierProbeStatus): string {
   const base = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium'
   const map: Record<string, string> = {
@@ -513,14 +544,24 @@ function probeBadgeClass(value: SupplierProbeStatus): string {
   return `${base} ${map[value] || map.unknown}`
 }
 
-function probeCardClass(value: SupplierProbeStatus): string {
+function displayProbeBadgeClass(item: SupplierProbeSnapshotItem): string {
+  if (!item.probe_enabled) {
+    return 'inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-dark-600 dark:text-gray-300'
+  }
+  return probeBadgeClass(item.last_probe_status)
+}
+
+function probeCardClass(item: SupplierProbeSnapshotItem): string {
+  if (!item.probe_enabled) {
+    return 'border-gray-200 opacity-75 dark:border-dark-700'
+  }
   const map: Record<string, string> = {
     success: 'border-gray-200 dark:border-dark-700',
     degraded: 'border-amber-200 dark:border-amber-900/50',
     failed: 'border-red-200 dark:border-red-900/50',
     unknown: 'border-gray-200 dark:border-dark-700'
   }
-  return map[value] || map.unknown
+  return map[item.last_probe_status] || map.unknown
 }
 
 function providerLabel(value: string): string {
@@ -556,6 +597,7 @@ function providerBadgeClass(value: string): string {
 }
 
 function cardAvailabilityClass(item: SupplierProbeSnapshotItem): string {
+  if (!item.probe_enabled) return 'text-gray-400 dark:text-gray-500'
   if (item.window_total <= 0) return 'text-gray-400 dark:text-gray-500'
   if (item.window_success_rate >= 95) return 'text-emerald-600 dark:text-emerald-300'
   if (item.window_success_rate >= 80) return 'text-amber-600 dark:text-amber-300'
@@ -568,6 +610,9 @@ function formatLatencyText(value: number | null | undefined): string {
 }
 
 function nextProbeText(item: SupplierProbeSnapshotItem): string {
+  if (!item.probe_enabled) {
+    return t('admin.suppliers.probeDisabledInline', '探针已关闭')
+  }
   if (!item.next_probe_at) {
     return t('admin.suppliers.nextProbeUnknown', '等待调度')
   }
@@ -582,6 +627,20 @@ function nextProbeText(item: SupplierProbeSnapshotItem): string {
   }
   const minutes = Math.ceil(diffSeconds / 60)
   return t('admin.suppliers.nextProbeMinutes', { minutes }, `${minutes} 分钟后`)
+}
+
+function isSingleProbeSaving(id: number): boolean {
+  return singleProbeSavingIds.value.has(id)
+}
+
+function setSingleProbeSaving(id: number, saving: boolean): void {
+  const next = new Set(singleProbeSavingIds.value)
+  if (saving) {
+    next.add(id)
+  } else {
+    next.delete(id)
+  }
+  singleProbeSavingIds.value = next
 }
 
 function formatDateTime(value: string | null): string {
@@ -801,6 +860,30 @@ async function bulkToggleProbes(enabled: boolean): Promise<void> {
     appStore.showError(extractApiErrorMessage(error, t('admin.suppliers.bulkToggleError', '批量更新探针失败')))
   } finally {
     bulkSaving.value = false
+  }
+}
+
+async function toggleSingleProbe(item: SupplierProbeSnapshotItem, enabled: boolean): Promise<void> {
+  if (isSingleProbeSaving(item.id)) {
+    return
+  }
+  setSingleProbeSaving(item.id, true)
+  try {
+    const result = await adminAPI.suppliers.bulkSetProbeEnabled([item.id], enabled)
+    if (result.affected === 0) {
+      appStore.showError(t('admin.suppliers.singleToggleNoop', '没有找到可更新的探针'))
+      return
+    }
+    appStore.showSuccess(
+      enabled
+        ? t('admin.suppliers.singleEnableSuccess', { name: item.name }, `已开启 ${item.name} 的探针`)
+        : t('admin.suppliers.singleDisableSuccess', { name: item.name }, `已关闭 ${item.name} 的探针`)
+    )
+    await loadProbeSnapshot()
+  } catch (error: unknown) {
+    appStore.showError(extractApiErrorMessage(error, t('admin.suppliers.singleToggleError', '更新探针开关失败')))
+  } finally {
+    setSingleProbeSaving(item.id, false)
   }
 }
 

@@ -137,10 +137,6 @@ func monthlyUpstreamProbeTargetFromGroup(group *MonthlyCardPublicPlanGroup, spec
 	return target
 }
 
-func monthlyUpstreamProbeFallbackAccountName(accountName string) bool {
-	return strings.Contains(strings.ToLower(strings.TrimSpace(accountName)), "pomoai-monthly")
-}
-
 func shouldKeepMonthlyUpstreamProbePoint(point MonthlyUpstreamProbePoint, targetNames map[string]struct{}) bool {
 	if len(targetNames) == 0 || point.AccountName == "" {
 		return true

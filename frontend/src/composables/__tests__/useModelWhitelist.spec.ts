@@ -18,10 +18,10 @@ describe('useModelWhitelist', () => {
     expect(models).not.toContain('gpt-4')
   })
 
-  it('anthropic 模型列表默认不再包含 Claude 2 和 Claude 3 历史模型', () => {
+  it('anthropic 模型列表默认不再包含已下架或历史模型', () => {
     const models = getModelsByPlatform('anthropic')
 
-    expect(models).toContain('claude-fable-5')
+    expect(models).not.toContain('claude-fable-5')
     expect(models).toContain('claude-opus-4-8')
     expect(models).not.toContain('claude-opus-latest')
     expect(models).toContain('claude-opus-4-7')

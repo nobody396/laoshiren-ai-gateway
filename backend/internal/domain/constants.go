@@ -4,7 +4,6 @@ import "strings"
 
 // Canonical model aliases and hidden system aliases.
 const (
-	ClaudeFable5ModelID          = "claude-fable-5"
 	ClaudeOpusCurrentModelID     = "claude-opus-4-8"
 	ClaudeOpusCurrentModelLabel  = "Claude Opus 4.8"
 	ClaudeOpusCurrentVersionText = "4.8"

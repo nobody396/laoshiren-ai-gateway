@@ -585,14 +585,6 @@ function Write-ClaudeConfig {
   $Config.env | Add-Member -NotePropertyName ANTHROPIC_AUTH_TOKEN -NotePropertyValue $ClaudeApiKey -Force
   $Config.env | Add-Member -NotePropertyName CLAUDE_CODE_ATTRIBUTION_HEADER -NotePropertyValue '0' -Force
   $Config.env | Add-Member -NotePropertyName CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY -NotePropertyValue '1' -Force
-  $Config.env | Add-Member -NotePropertyName ANTHROPIC_DEFAULT_FABLE_MODEL -NotePropertyValue 'claude-fable-5' -Force
-  $Config.env | Add-Member -NotePropertyName ANTHROPIC_DEFAULT_FABLE_MODEL_NAME -NotePropertyValue 'Claude Fable 5' -Force
-  $Config.env | Add-Member -NotePropertyName ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION -NotePropertyValue 'Claude Fable 5 via 老实人AI gateway' -Force
-  $Config.env | Add-Member -NotePropertyName ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES -NotePropertyValue 'effort,xhigh_effort,max_effort,thinking,adaptive_thinking,interleaved_thinking' -Force
-  $Config.env | Add-Member -NotePropertyName ANTHROPIC_CUSTOM_MODEL_OPTION -NotePropertyValue 'claude-fable-5' -Force
-  $Config.env | Add-Member -NotePropertyName ANTHROPIC_CUSTOM_MODEL_OPTION_NAME -NotePropertyValue 'Claude Fable 5' -Force
-  $Config.env | Add-Member -NotePropertyName ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION -NotePropertyValue 'Claude Fable 5 via 老实人AI gateway' -Force
-  $Config.env | Add-Member -NotePropertyName ANTHROPIC_CUSTOM_MODEL_OPTION_SUPPORTED_CAPABILITIES -NotePropertyValue 'effort,xhigh_effort,max_effort,thinking,adaptive_thinking,interleaved_thinking' -Force
 
   $Config | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $ClaudeSettingsPath -Encoding UTF8
 }

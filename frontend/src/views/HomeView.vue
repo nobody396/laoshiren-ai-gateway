@@ -384,16 +384,6 @@ const pricingDisplay = computed(() => {
 
 const claudeBasePricingRows: ClaudeBasePricingRow[] = [
   {
-    model: 'Claude Fable 5',
-    modelId: 'claude-fable-5',
-    official: {
-      input: 10,
-      cacheWrite5m: 12.5,
-      cacheRead: 1,
-      output: 50
-    }
-  },
-  {
     model: 'Claude Opus 4.8',
     modelId: 'claude-opus-4-8',
     official: {

@@ -202,8 +202,8 @@ func TestMonthlyUpstreamProbeSnapshotUsesGatewayPointsForStatus(t *testing.T) {
 	account := snapshot.Accounts[0]
 	require.Equal(t, "ok", account.LatestStatus)
 	require.Equal(t, 1, account.SuccessCount)
-	require.Equal(t, monthlyUpstreamProbeExpectedSlotCount(60), account.TotalCount)
-	require.InDelta(t, 1.0/float64(monthlyUpstreamProbeExpectedSlotCount(60)), account.Uptime, 0.0001)
+	require.Equal(t, 1, account.TotalCount)
+	require.InDelta(t, 1.0, account.Uptime, 0.0001)
 	require.Len(t, account.Points, 1)
 	require.NotNil(t, account.DirectUpstream)
 	require.Equal(t, "failed", account.DirectUpstream.Status)
@@ -264,10 +264,9 @@ func TestMonthlyUpstreamProbeSnapshotScoresExpectedSlots(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, snapshot.Accounts, 1)
 	account := snapshot.Accounts[0]
-	expectedSlots := monthlyUpstreamProbeExpectedSlotCount(60)
-	require.Equal(t, expectedSlots, account.TotalCount)
+	require.Equal(t, 3, account.TotalCount)
 	require.Equal(t, 1, account.SuccessCount)
-	require.InDelta(t, 1.5/float64(expectedSlots), account.Uptime, 0.0001)
+	require.InDelta(t, 0.5, account.Uptime, 0.0001)
 	require.Equal(t, "ok", account.LatestStatus)
 }
 
@@ -281,6 +280,14 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 					{
 						ID:             12,
 						Name:           "pomoai-monthly-codex-0.2",
+						Platform:       PlatformOpenAI,
+						Status:         StatusActive,
+						Schedulable:    true,
+						RateMultiplier: &rate,
+					},
+					{
+						ID:             15,
+						Name:           "pomoai-codexplus-0.12",
 						Platform:       PlatformOpenAI,
 						Status:         StatusActive,
 						Schedulable:    true,
@@ -306,9 +313,10 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, targets, 1)
-	require.Equal(t, "pomoai-monthly-codex-0.2", targets[0].AccountName)
+	require.Equal(t, "monthly-codex-gateway", targets[0].AccountName)
 	require.Equal(t, PlatformOpenAI, targets[0].Platform)
 	require.Equal(t, "gpt-5.4-mini", targets[0].Model)
+	require.Equal(t, int64(7), targets[0].GroupID)
 	require.NotNil(t, targets[0].Account)
 	require.InDelta(t, 0.2, targets[0].Account.BillingRateMultiplier(), 0.0001)
 }
@@ -332,7 +340,7 @@ func TestMonthlyUpstreamProbeSnapshotFiltersObsoleteRenamedAccountPoints(t *test
 					},
 					{
 						AccountID:   12,
-						AccountName: "pomoai-monthly-codex-0.2",
+						AccountName: "monthly-codex-gateway",
 						Platform:    PlatformOpenAI,
 						Model:       "gpt-5.4-mini",
 						ProbePath:   MonthlyUpstreamProbePathGateway,
@@ -377,10 +385,11 @@ func TestMonthlyUpstreamProbeSnapshotFiltersObsoleteRenamedAccountPoints(t *test
 
 	require.NoError(t, err)
 	require.Len(t, snapshot.Accounts, 1)
-	require.Equal(t, "pomoai-monthly-codex-0.2", snapshot.Accounts[0].AccountName)
+	require.Equal(t, "monthly-codex-gateway", snapshot.Accounts[0].AccountName)
 	require.Equal(t, "ok", snapshot.Accounts[0].LatestStatus)
 	require.Len(t, snapshot.Accounts[0].Points, 1)
-	require.Equal(t, "pomoai-monthly-codex-0.2", snapshot.Accounts[0].Points[0].AccountName)
+	require.Equal(t, "monthly-codex-gateway", snapshot.Accounts[0].Points[0].AccountName)
+	require.Equal(t, int64(12), snapshot.Accounts[0].Points[0].AccountID)
 }
 
 func TestUpdateMonthlyUpstreamProbeSettingsDoesNotOverwriteOmittedFields(t *testing.T) {

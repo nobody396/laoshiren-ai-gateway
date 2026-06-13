@@ -47,7 +47,10 @@ type monthlyUpstreamProbeResolvedTarget struct {
 	AccountName string
 	Platform    string
 	Model       string
+	GroupID     int64
+	GroupName   string
 	Account     *Account
+	Accounts    []Account
 }
 
 var monthlyUpstreamProbeTargetSpecs = []monthlyUpstreamProbeTargetSpec{
@@ -90,6 +93,7 @@ func monthlyUpstreamProbeTargetFromAccount(account Account, spec monthlyUpstream
 		Platform:    spec.Platform,
 		Model:       spec.Model,
 		Account:     &accountCopy,
+		Accounts:    []Account{accountCopy},
 	}
 }
 
@@ -98,6 +102,39 @@ func monthlyUpstreamProbeDedupKey(account Account, spec monthlyUpstreamProbeTarg
 		return spec.Platform + ":" + strconv.FormatInt(account.ID, 10)
 	}
 	return spec.Platform + ":" + account.Name
+}
+
+func monthlyUpstreamProbeChannelAccountName(platform string) string {
+	switch platform {
+	case PlatformOpenAI:
+		return "monthly-codex-gateway"
+	case PlatformAnthropic:
+		return "monthly-claude-gateway"
+	default:
+		return "monthly-" + strings.ToLower(strings.TrimSpace(platform)) + "-gateway"
+	}
+}
+
+func monthlyUpstreamProbeTargetFromGroup(group *MonthlyCardPublicPlanGroup, spec monthlyUpstreamProbeTargetSpec, accounts []Account) monthlyUpstreamProbeResolvedTarget {
+	target := monthlyUpstreamProbeResolvedTarget{
+		AccountName: monthlyUpstreamProbeChannelAccountName(spec.Platform),
+		Platform:    spec.Platform,
+		Model:       spec.Model,
+		Accounts:    append([]Account(nil), accounts...),
+	}
+	if group != nil {
+		target.GroupID = group.ID
+		target.GroupName = group.Name
+	}
+	for i := range accounts {
+		if accounts[i].Platform != spec.Platform {
+			continue
+		}
+		accountCopy := accounts[i]
+		target.Account = &accountCopy
+		break
+	}
+	return target
 }
 
 func monthlyUpstreamProbeFallbackAccountName(accountName string) bool {
@@ -111,9 +148,9 @@ func shouldKeepMonthlyUpstreamProbePoint(point MonthlyUpstreamProbePoint, target
 	if _, ok := targetNames[point.AccountName]; ok {
 		return true
 	}
-	// When monthly upstream accounts are renamed, stale hard-coded probe rows can
-	// otherwise keep the dashboard red until the whole window expires.
-	return !monthlyUpstreamProbeFallbackAccountName(point.AccountName)
+	// When the monitor is configured from monthly-card groups, stale account-level
+	// rows should not create extra cards beside the channel-level probe rows.
+	return false
 }
 
 type MonthlyUpstreamProbeCostEstimate struct {
@@ -336,13 +373,20 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 		return nil, err
 	}
 	probeTargets := []monthlyUpstreamProbeResolvedTarget{}
-	probeAccounts := map[string]*Account{}
+	probeAccountsByName := map[string]*Account{}
+	probeAccountsByID := map[int64]*Account{}
 	if s.accountRepo != nil {
 		if loadedTargets, loadErr := s.loadMonthlyUpstreamProbeTargets(ctx); loadErr == nil {
 			probeTargets = loadedTargets
 			for _, target := range loadedTargets {
 				if target.Account != nil && target.AccountName != "" {
-					probeAccounts[target.AccountName] = target.Account
+					probeAccountsByName[target.AccountName] = target.Account
+				}
+				for i := range target.Accounts {
+					accountCopy := target.Accounts[i]
+					if accountCopy.ID > 0 {
+						probeAccountsByID[accountCopy.ID] = &accountCopy
+					}
 				}
 			}
 		}
@@ -368,7 +412,7 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 					accountName,
 					platform,
 					model,
-					probeAccounts[accountName],
+					monthlyProbeAccountForCost(accountID, accountName, probeAccountsByID, probeAccountsByName),
 				),
 				Points: make([]MonthlyUpstreamProbePoint, 0, expectedSlots),
 			}
@@ -388,12 +432,13 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 		}
 		return item, key
 	}
-	if enabled && len(probeAccounts) > 0 {
+	if enabled && len(probeTargets) > 0 {
 		for _, target := range probeTargets {
-			if target.Account == nil {
-				continue
+			accountID := int64(0)
+			if target.Account != nil {
+				accountID = target.Account.ID
 			}
-			_, key := ensureAccount(target.Account.ID, target.AccountName, target.Platform, target.Model)
+			_, key := ensureAccount(accountID, target.AccountName, target.Platform, target.Model)
 			targetInitialized[key] = true
 		}
 	}
@@ -442,14 +487,12 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 			item.LatestErrorCode = point.ErrorCode
 			item.LatestError = point.ErrorMessage
 			item.Model = point.Model
-			if item.CostEstimate == nil {
-				item.CostEstimate = buildMonthlyUpstreamProbeCostEstimate(
-					point.AccountName,
-					point.Platform,
-					point.Model,
-					probeAccounts[point.AccountName],
-				)
-			}
+			item.CostEstimate = buildMonthlyUpstreamProbeCostEstimate(
+				point.AccountName,
+				point.Platform,
+				point.Model,
+				monthlyProbeAccountForCost(point.AccountID, point.AccountName, probeAccountsByID, probeAccountsByName),
+			)
 		}
 	}
 
@@ -463,8 +506,7 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 			return item.Points[i].CheckedAt.Before(item.Points[j].CheckedAt)
 		})
 		if len(slots) > 0 || targetInitialized[key] {
-			item.TotalCount = expectedSlots
-			item.SuccessCount, item.Uptime = monthlyUpstreamProbeSlotHealth(slots, expectedSlots)
+			item.SuccessCount, item.TotalCount, item.Uptime = monthlyUpstreamProbeSlotHealth(slots)
 		}
 		if item.LatestCheckedAt == nil && targetInitialized[key] {
 			item.LatestStatus = "missing"
@@ -681,6 +723,42 @@ func (s *OpsService) RunMonthlyUpstreamProbeOnce(ctx context.Context) error {
 	}
 	var errs []error
 	for _, target := range targets {
+		point, account := s.probeMonthlyGatewayTarget(ctx, target)
+		if point.AccountName == "" {
+			point.AccountName = target.AccountName
+		}
+		if point.Platform == "" {
+			point.Platform = target.Platform
+		}
+		if point.Model == "" {
+			point.Model = target.Model
+		}
+		point.ProbePath = MonthlyUpstreamProbePathGateway
+		if err := s.opsRepo.InsertMonthlyUpstreamProbeResult(ctx, &point); err != nil {
+			errs = append(errs, err)
+		}
+		if !isMonthlyUpstreamProbeHealthy(point.Status) {
+			s.recordMonthlyUpstreamProbeError(ctx, &point)
+		}
+		if account != nil && point.Status != "not_schedulable" && !isMonthlyUpstreamProbeHealthy(point.Status) {
+			diagnostic := probeMonthlyDirectUpstreamAccount(ctx, account, target.Model)
+			diagnostic.AccountName = target.AccountName
+			diagnostic.Platform = target.Platform
+			diagnostic.Model = target.Model
+			diagnostic.ProbePath = MonthlyUpstreamProbePathDirectUpstream
+			if err := s.opsRepo.InsertMonthlyUpstreamProbeResult(ctx, &diagnostic); err != nil {
+				errs = append(errs, err)
+			}
+			if !isMonthlyUpstreamProbeHealthy(diagnostic.Status) {
+				s.recordMonthlyUpstreamProbeError(ctx, &diagnostic)
+			}
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func (s *OpsService) probeMonthlyGatewayTarget(ctx context.Context, target monthlyUpstreamProbeResolvedTarget) (MonthlyUpstreamProbePoint, *Account) {
+	if target.GroupID <= 0 {
 		account := target.Account
 		var point MonthlyUpstreamProbePoint
 		if account == nil {
@@ -696,25 +774,132 @@ func (s *OpsService) RunMonthlyUpstreamProbeOnce(ctx context.Context) error {
 		} else {
 			point = s.probeMonthlyGatewayAccount(ctx, account, target.Model)
 		}
-		point.ProbePath = MonthlyUpstreamProbePathGateway
-		if err := s.opsRepo.InsertMonthlyUpstreamProbeResult(ctx, &point); err != nil {
-			errs = append(errs, err)
-		}
-		if !isMonthlyUpstreamProbeHealthy(point.Status) {
-			s.recordMonthlyUpstreamProbeError(ctx, &point)
-		}
-		if account != nil && point.Status != "not_schedulable" && !isMonthlyUpstreamProbeHealthy(point.Status) {
-			diagnostic := probeMonthlyDirectUpstreamAccount(ctx, account, target.Model)
-			diagnostic.ProbePath = MonthlyUpstreamProbePathDirectUpstream
-			if err := s.opsRepo.InsertMonthlyUpstreamProbeResult(ctx, &diagnostic); err != nil {
-				errs = append(errs, err)
-			}
-			if !isMonthlyUpstreamProbeHealthy(diagnostic.Status) {
-				s.recordMonthlyUpstreamProbeError(ctx, &diagnostic)
-			}
-		}
+		point.AccountName = target.AccountName
+		point.Platform = target.Platform
+		point.Model = target.Model
+		return point, account
 	}
-	return errors.Join(errs...)
+
+	switch target.Platform {
+	case PlatformOpenAI:
+		return s.probeMonthlyOpenAIGroupThroughGateway(ctx, target)
+	case PlatformAnthropic:
+		return s.probeMonthlyAnthropicGroupThroughGateway(ctx, target)
+	default:
+		return monthlyProbeTargetLocalFailure(target, "unsupported_platform", "unsupported platform for monthly upstream probe"), nil
+	}
+}
+
+func (s *OpsService) probeMonthlyOpenAIGroupThroughGateway(ctx context.Context, target monthlyUpstreamProbeResolvedTarget) (MonthlyUpstreamProbePoint, *Account) {
+	if s == nil || s.openAIGatewayService == nil {
+		return monthlyProbeTargetLocalFailure(target, "gateway_service_unavailable", "openai gateway service is not available"), nil
+	}
+	groupID := target.GroupID
+	sessionHash := monthlyGatewayProbeSessionHash(target)
+	selection, _, err := s.openAIGatewayService.SelectAccountWithSchedulerForRequest(
+		ctx,
+		&groupID,
+		"",
+		sessionHash,
+		target.Model,
+		nil,
+		OpenAIUpstreamTransportAny,
+		false,
+	)
+	if err != nil {
+		return monthlyProbeTargetLocalFailure(target, "account_select_failed", err.Error()), nil
+	}
+	if selection == nil || selection.Account == nil {
+		return monthlyProbeTargetLocalFailure(target, "missing_account", "monthly upstream account was not selected"), nil
+	}
+	if selection.Acquired && selection.ReleaseFunc != nil {
+		defer selection.ReleaseFunc()
+	} else if !selection.Acquired && selection.WaitPlan != nil {
+		return monthlyProbeSelectedAccountBusy(target, selection.Account), selection.Account
+	} else if !selection.Acquired {
+		return monthlyProbeSelectedAccountBusy(target, selection.Account), selection.Account
+	}
+
+	body, _ := json.Marshal(createOpenAICompactProbePayload(target.Model))
+	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeout)
+	defer cancel()
+	c, recorder := newMonthlyProbeGinContext(probeCtx, "/v1/responses", body)
+	SetOpenAIClientTransport(c, OpenAIClientTransportHTTP)
+	c.Request.Header.Set("OpenAI-Beta", "responses=experimental")
+	c.Request.Header.Set("Originator", "codex_cli_rs")
+	c.Request.Header.Set("User-Agent", "codex_cli_rs/0.0.0 monthly-gateway-probe")
+	c.Request.Header.Set("Version", "0.0.0")
+	c.Request.Header.Set("Session_ID", sessionHash)
+	c.Request.Header.Set("Conversation_ID", sessionHash)
+
+	started := time.Now()
+	result, forwardErr := s.openAIGatewayService.Forward(c.Request.Context(), c, selection.Account, body)
+	point := monthlyGatewayProbePoint(selection.Account, target.Model, recorder, started, forwardErr, func() time.Duration {
+		if result != nil {
+			return result.Duration
+		}
+		return 0
+	})
+	point.AccountName = target.AccountName
+	point.Platform = target.Platform
+	point.Model = target.Model
+	return point, selection.Account
+}
+
+func (s *OpsService) probeMonthlyAnthropicGroupThroughGateway(ctx context.Context, target monthlyUpstreamProbeResolvedTarget) (MonthlyUpstreamProbePoint, *Account) {
+	if s == nil || s.gatewayService == nil {
+		return monthlyProbeTargetLocalFailure(target, "gateway_service_unavailable", "anthropic gateway service is not available"), nil
+	}
+	groupID := target.GroupID
+	sessionHash := monthlyGatewayProbeSessionHash(target)
+	selection, err := s.gatewayService.SelectAccountWithLoadAwareness(ctx, &groupID, sessionHash, target.Model, nil, "")
+	if err != nil {
+		return monthlyProbeTargetLocalFailure(target, "account_select_failed", err.Error()), nil
+	}
+	if selection == nil || selection.Account == nil {
+		return monthlyProbeTargetLocalFailure(target, "missing_account", "monthly upstream account was not selected"), nil
+	}
+	if selection.Acquired && selection.ReleaseFunc != nil {
+		defer selection.ReleaseFunc()
+	} else if !selection.Acquired && selection.WaitPlan != nil {
+		return monthlyProbeSelectedAccountBusy(target, selection.Account), selection.Account
+	} else if !selection.Acquired {
+		return monthlyProbeSelectedAccountBusy(target, selection.Account), selection.Account
+	}
+
+	body, _ := json.Marshal(map[string]any{
+		"model":      target.Model,
+		"max_tokens": 1,
+		"messages":   []map[string]string{{"role": "user", "content": "OK"}},
+		"metadata":   map[string]string{"user_id": "monthly-gateway-probe"},
+		"stream":     false,
+	})
+	parsed, err := ParseGatewayRequest(body, PlatformAnthropic)
+	if err != nil {
+		return monthlyProbeTargetLocalFailure(target, "build_gateway_request_failed", err.Error()), nil
+	}
+
+	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeout)
+	defer cancel()
+	c, recorder := newMonthlyProbeGinContext(probeCtx, "/v1/messages", body)
+	c.Request.Header.Set("User-Agent", "claude-cli/2.1.84 (external, cli) monthly-gateway-probe")
+	c.Request.Header.Set("Anthropic-Version", "2023-06-01")
+	c.Request.Header.Set("Anthropic-Beta", "oauth-2025-04-20,interleaved-thinking-2025-05-14")
+	c.Request.Header.Set("Anthropic-Dangerous-Direct-Browser-Access", "true")
+	c.Request.Header.Set("X-App", "cli")
+
+	started := time.Now()
+	result, forwardErr := s.gatewayService.Forward(c.Request.Context(), c, selection.Account, parsed)
+	point := monthlyGatewayProbePoint(selection.Account, target.Model, recorder, started, forwardErr, func() time.Duration {
+		if result != nil {
+			return result.Duration
+		}
+		return 0
+	})
+	point.AccountName = target.AccountName
+	point.Platform = target.Platform
+	point.Model = target.Model
+	return point, selection.Account
 }
 
 func normalizeMonthlyUpstreamProbePath(path string) string {
@@ -759,21 +944,15 @@ func (s *OpsService) loadMonthlyUpstreamProbeTargetsFromGroups(ctx context.Conte
 			if !ok {
 				continue
 			}
+			if _, exists := seen[spec.Platform]; exists {
+				continue
+			}
+			seen[spec.Platform] = struct{}{}
 			accounts, err := s.accountRepo.ListByGroup(ctx, group.ID)
 			if err != nil {
 				return nil, err
 			}
-			for _, account := range accounts {
-				if account.Platform != spec.Platform || account.Name == "" {
-					continue
-				}
-				key := monthlyUpstreamProbeDedupKey(account, spec)
-				if _, exists := seen[key]; exists {
-					continue
-				}
-				seen[key] = struct{}{}
-				targets = append(targets, monthlyUpstreamProbeTargetFromAccount(account, spec))
-			}
+			targets = append(targets, monthlyUpstreamProbeTargetFromGroup(group, spec, accounts))
 		}
 	}
 	sortMonthlyUpstreamProbeTargets(targets)
@@ -810,6 +989,9 @@ func sortMonthlyUpstreamProbeTargets(targets []monthlyUpstreamProbeResolvedTarge
 		if leftRank != rightRank {
 			return leftRank < rightRank
 		}
+		if targets[i].GroupID != targets[j].GroupID {
+			return targets[i].GroupID < targets[j].GroupID
+		}
 		if targets[i].AccountName != targets[j].AccountName {
 			return targets[i].AccountName < targets[j].AccountName
 		}
@@ -818,6 +1000,47 @@ func sortMonthlyUpstreamProbeTargets(targets []monthlyUpstreamProbeResolvedTarge
 		}
 		return targets[i].Account.ID < targets[j].Account.ID
 	})
+}
+
+func monthlyProbeAccountForCost(accountID int64, accountName string, byID map[int64]*Account, byName map[string]*Account) *Account {
+	if accountID > 0 {
+		if account := byID[accountID]; account != nil {
+			return account
+		}
+	}
+	if accountName != "" {
+		return byName[accountName]
+	}
+	return nil
+}
+
+func monthlyGatewayProbeSessionHash(target monthlyUpstreamProbeResolvedTarget) string {
+	slot := time.Now().Unix() / int64(monthlyUpstreamProbeInterval/time.Second)
+	return fmt.Sprintf("monthly_gateway_probe_%s_%d_%d", strings.ToLower(target.Platform), target.GroupID, slot)
+}
+
+func monthlyProbeTargetLocalFailure(target monthlyUpstreamProbeResolvedTarget, code, message string) MonthlyUpstreamProbePoint {
+	return MonthlyUpstreamProbePoint{
+		AccountName:  target.AccountName,
+		Platform:     target.Platform,
+		Model:        target.Model,
+		ProbePath:    MonthlyUpstreamProbePathGateway,
+		Status:       "failed",
+		ErrorCode:    code,
+		ErrorMessage: message,
+		CheckedAt:    time.Now(),
+	}
+}
+
+func monthlyProbeSelectedAccountBusy(target monthlyUpstreamProbeResolvedTarget, account *Account) MonthlyUpstreamProbePoint {
+	point := monthlyProbeTargetLocalFailure(target, "account_slot_busy", "selected monthly upstream account has no free slot")
+	point.Status = "rate_limited"
+	if account != nil {
+		point.AccountID = account.ID
+	}
+	status := http.StatusTooManyRequests
+	point.HTTPStatus = &status
+	return point
 }
 
 func (s *OpsService) probeMonthlyGatewayAccount(ctx context.Context, account *Account, model string) MonthlyUpstreamProbePoint {
@@ -1300,9 +1523,10 @@ func monthlyUpstreamProbeSlotDistance(reference time.Time, checkedAt time.Time, 
 	return slot, true
 }
 
-func monthlyUpstreamProbeSlotHealth(slots map[int]MonthlyUpstreamProbePoint, expectedSlots int) (int, float64) {
-	if expectedSlots <= 0 {
-		return 0, 0
+func monthlyUpstreamProbeSlotHealth(slots map[int]MonthlyUpstreamProbePoint) (int, int, float64) {
+	totalCount := len(slots)
+	if totalCount <= 0 {
+		return 0, 0, 0
 	}
 	successCount := 0
 	score := 0.0
@@ -1315,7 +1539,7 @@ func monthlyUpstreamProbeSlotHealth(slots map[int]MonthlyUpstreamProbePoint, exp
 			score += 0.5
 		}
 	}
-	return successCount, score / float64(expectedSlots)
+	return successCount, totalCount, score / float64(totalCount)
 }
 
 func (s *OpsService) recordMonthlyUpstreamProbeError(ctx context.Context, point *MonthlyUpstreamProbePoint) {

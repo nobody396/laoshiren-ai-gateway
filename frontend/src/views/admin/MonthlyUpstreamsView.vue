@@ -56,7 +56,7 @@
           <div v-else class="space-y-4">
             <article
               v-for="account in accounts"
-              :key="account.account_name"
+              :key="`${account.platform}:${account.account_name}`"
               class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-dark-700 dark:bg-dark-900"
             >
               <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -71,7 +71,7 @@
                     </span>
                   </div>
                   <div class="mt-3 flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-dark-300">
-                    <span class="text-xs font-medium uppercase tracking-[0.14em] text-gray-400">网关主探针</span>
+                    <span class="text-xs font-medium uppercase tracking-[0.14em] text-gray-400">网关通道探针</span>
                     <span class="inline-flex items-center gap-2">
                       <span class="h-2 w-2 rounded-full" :class="statusDotClass(account.latest_status)" />
                       {{ statusLabel(account.latest_status) }}
@@ -87,7 +87,7 @@
                   </div>
                   <div class="mt-1 text-xs uppercase tracking-[0.18em] text-gray-400">HEALTH</div>
                   <div v-if="account.total_count > 0" class="mt-1 text-xs text-gray-400">
-                    {{ account.success_count }}/{{ account.total_count }} slots
+                    {{ account.success_count }}/{{ account.total_count }} 样本
                   </div>
                 </div>
               </div>

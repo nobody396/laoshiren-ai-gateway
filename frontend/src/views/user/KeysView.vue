@@ -1140,8 +1140,8 @@ interface GroupOption {
   cacheWindowDays: number
 }
 
-type CcsImportTarget = 'claude' | 'claude-desktop' | 'gemini'
-type CcsApp = 'claude' | 'claude-desktop' | 'codex' | 'gemini'
+type CcsImportTarget = 'claude' | 'claude-desktop-bridge' | 'gemini'
+type CcsApp = 'claude' | 'codex' | 'gemini'
 type CcsClientOption = {
   value: CcsImportTarget
   label: string
@@ -1225,7 +1225,7 @@ const ccsClientOptions = computed<CcsClientOption[]>(() => {
       icon: 'terminal' as const
     },
     {
-      value: 'claude-desktop' as const,
+      value: 'claude-desktop-bridge' as const,
       label: t('keys.ccsClientSelect.claudeDesktop'),
       description: t('keys.ccsClientSelect.claudeDesktopDesc'),
       icon: 'cloud' as const
@@ -1868,15 +1868,15 @@ const openChatbotWithKey = async (row: ApiKey) => {
 
 const trimCcsLabel = (value: string | null | undefined): string => value?.trim() || ''
 
-const buildCcsProviderName = (row: ApiKey, app: CcsApp): string => {
+const buildCcsProviderName = (row: ApiKey, app: CcsApp, target?: CcsImportTarget): string => {
   const siteName = trimCcsLabel(publicSettings.value?.site_name) || 'sub2api'
-  const appLabel = app === 'codex'
+  const appLabel = target === 'claude-desktop-bridge'
+    ? 'Claude Desktop'
+    : app === 'codex'
     ? 'Codex'
     : app === 'gemini'
       ? 'Gemini'
-      : app === 'claude-desktop'
-        ? 'Claude Desktop'
-        : 'Claude Code'
+      : 'Claude Code'
   const groupName = trimCcsLabel(row.group?.name)
   const keyName = trimCcsLabel(row.name)
   const parts = [siteName, appLabel]
@@ -1934,11 +1934,14 @@ requires_openai_auth = true`
   })
 }
 
-const buildCcsProviderNotes = (row: ApiKey, endpoint: string): string => {
+const buildCcsProviderNotes = (row: ApiKey, endpoint: string, target?: CcsImportTarget): string => {
   return [
     row.group?.name ? `Group: ${row.group.name}` : '',
     row.name ? `API Key: ${row.name}` : '',
-    `Endpoint: ${endpoint}`
+    `Endpoint: ${endpoint}`,
+    target === 'claude-desktop-bridge'
+      ? 'Claude Desktop: Imported through Claude Code because CC Switch does not expose a public Desktop sync deeplink. If the Desktop import button is shown, use it; otherwise add a Desktop provider manually with the same endpoint/key.'
+      : ''
   ].filter(Boolean).join('\n')
 }
 
@@ -1952,7 +1955,7 @@ const executeCcsImport = (row: ApiKey, clientType: CcsImportTarget) => {
 
   if (platform === 'antigravity') {
     // Antigravity always uses /antigravity suffix
-    app = clientType === 'gemini' ? 'gemini' : clientType === 'claude-desktop' ? 'claude-desktop' : 'claude'
+    app = clientType === 'gemini' ? 'gemini' : 'claude'
     endpoint = `${baseUrl}/antigravity`
   } else {
     switch (platform) {
@@ -1965,7 +1968,7 @@ const executeCcsImport = (row: ApiKey, clientType: CcsImportTarget) => {
         endpoint = baseUrl
         break
       default: // anthropic
-        app = clientType === 'claude-desktop' ? 'claude-desktop' : 'claude'
+        app = 'claude'
         endpoint = baseUrl
     }
   }
@@ -1986,8 +1989,8 @@ const executeCcsImport = (row: ApiKey, clientType: CcsImportTarget) => {
       };
     }
   })`
-  const providerName = buildCcsProviderName(row, app)
-  const providerNotes = buildCcsProviderNotes(row, endpoint)
+  const providerName = buildCcsProviderName(row, app, clientType)
+  const providerNotes = buildCcsProviderNotes(row, endpoint, clientType)
 
   const defaultModel = 'gpt-5.5'
   const params = new URLSearchParams({
@@ -2008,13 +2011,16 @@ const executeCcsImport = (row: ApiKey, clientType: CcsImportTarget) => {
     params.set('config', encodeBase64Utf8(buildCodexCcsConfig(endpoint, row.key, defaultModel)))
   } else if (platform === 'anthropic') {
     params.set('haikuModel', 'claude-haiku-4-5')
-    params.set('sonnetModel', app === 'claude-desktop' ? 'claude-sonnet-4-6' : 'claude-sonnet-4-6[1M]')
-    params.set('opusModel', app === 'claude-desktop' ? 'claude-opus-4-8' : 'claude-opus-4-8[1M]')
+    params.set('sonnetModel', 'claude-sonnet-4-6[1M]')
+    params.set('opusModel', 'claude-opus-4-8[1M]')
   }
   const deeplink = `ccswitch://v1/import?${params.toString()}`
 
   try {
     window.open(deeplink, '_self')
+    if (clientType === 'claude-desktop-bridge') {
+      appStore.showInfo(t('keys.ccsClientSelect.claudeDesktopBridgeNotice'), 8000)
+    }
   } catch {
     // Browser blocked the custom protocol; onboarding explains the CC Switch install path.
   }

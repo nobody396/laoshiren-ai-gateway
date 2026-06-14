@@ -910,7 +910,8 @@ export default {
       claudeCodeCli: 'Claude Code CLI',
       claudeCodeCliDesc: '导入为终端版 Claude Code 配置',
       claudeDesktop: 'Claude Desktop',
-      claudeDesktopDesc: '导入为桌面版 Claude 配置',
+      claudeDesktopDesc: '兼容导入：先写入 Claude Code；Desktop 需在 CC Switch 内处理',
+      claudeDesktopBridgeNotice: 'CC Switch 当前没有网页可直接调用的 Desktop 同步入口，已先导入到 Claude Code。若 Desktop 页面出现“从 Claude Code 导入已有 Provider”，请在 CC Switch 内点击；否则需手动新增 Desktop Provider。',
       geminiCli: 'Gemini CLI',
       geminiCliDesc: '导入为 Gemini CLI 配置'
     },

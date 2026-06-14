@@ -22,7 +22,7 @@ export interface DocCategory {
 
 export type DocsConfig = DocCategory[]
 
-export const docsLastModified = '2026-05-23'
+export const docsLastModified = '2026-06-15'
 
 export const docsConfig: DocsConfig = [
   {
@@ -57,6 +57,11 @@ export const docsConfig: DocsConfig = [
         title: '自动配置工具',
         slug: 'auto-config-tool',
         description: '使用老实人AI 自动配置脚本快速写入 Claude Code、Codex 和本地开发环境所需配置。'
+      },
+      {
+        title: 'Codex App Windows 下载',
+        slug: 'codex-app-windows-download',
+        description: '下载并安装 Codex App for Windows 的 MSIX 缓存镜像，明确区分 Codex App 和 Codex CLI。'
       },
     ],
   },
@@ -263,6 +268,8 @@ const legacyDocSlugMap: Record<string, string> = {
   'Claude Code快速开始指南': 'claude-code-quickstart',
   'Claude%20Code快速开始指南': 'claude-code-quickstart',
   'Codex快速开始指南': 'codex-quickstart',
+  'Codex App Windows下载': 'codex-app-windows-download',
+  'Codex App Windows 下载': 'codex-app-windows-download',
   '老实人 AI × Hermes 快速开始指南': 'hermes-quickstart',
   '老实人AI × Hermes 快速开始指南': 'hermes-quickstart',
   'Hermes快速开始指南': 'hermes-quickstart',

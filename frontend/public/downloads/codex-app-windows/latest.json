@@ -1,0 +1,20 @@
+{
+  "name": "Codex App for Windows",
+  "type": "codex-app",
+  "platform": "windows",
+  "architecture": "x64",
+  "version": "26.609.4994.0",
+  "packageName": "OpenAI.Codex_26.609.4994.0_x64__2p2nqsd0c76g0.Msix",
+  "format": "msix",
+  "sizeBytes": 552187367,
+  "sha256": "547618a744149221078a27febdfff65c924b46ff85ab2fe1595180e128be8d85",
+  "preferredDownloadUrl": "https://github.com/Wangnov/codex-app-mirror/releases/download/codex-app-force-20260613-033831/OpenAI.Codex_26.609.4994.0_x64__2p2nqsd0c76g0.Msix",
+  "mirrorReleaseUrl": "https://github.com/Wangnov/codex-app-mirror/releases/tag/codex-app-force-20260613-033831",
+  "officialWindowsPage": "https://developers.openai.com/codex/app/windows",
+  "officialStoreProductId": "9PLM9XGG6VKS",
+  "officialWingetCommand": "winget install Codex -s msstore",
+  "installCommand": "Add-AppxPackage -Path .\\OpenAI.Codex_26.609.4994.0_x64__2p2nqsd0c76g0.Msix",
+  "launchCommand": "Start-Process \"shell:AppsFolder\\OpenAI.Codex_2p2nqsd0c76g0!App\"",
+  "sourceNote": "Codex App Windows MSIX package mirrored from Microsoft Store package metadata by codex-app-mirror. This is Codex App, not Codex CLI.",
+  "updatedAt": "2026-06-15T00:00:00+08:00"
+}

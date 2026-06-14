@@ -28,6 +28,8 @@ Codex 现在有三种常见启动方式：
 
 ## 1. 安装 Codex
 
+如果你要安装 **Codex App for Windows 桌面版**，不要用下面的 npm 命令，请先看 [Codex App Windows 下载](codex-app-windows-download)。
+
 ```bash
 # Windows
 npm install -g @openai/codex@latest

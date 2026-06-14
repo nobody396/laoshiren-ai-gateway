@@ -21,6 +21,8 @@ https://api.laoshirenai.com
 
 ## Codex
 
+如果你要安装的是 **Codex App for Windows**，优先看 [Codex App Windows 下载](codex-app-windows-download)。那里提供的是 App 的 MSIX 缓存镜像，不是 Codex CLI。
+
 Codex 官方客户端按站内教程使用：
 
 ```text
@@ -40,4 +42,3 @@ WSL 和 Windows 是两套环境。Windows 里配置过的 Provider 或环境变�
 ## 验收
 
 新开终端，发送一个最短测试问题。然后到老实人AI使用记录里确认请求进入平台。
-

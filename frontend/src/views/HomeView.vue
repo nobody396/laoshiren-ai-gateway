@@ -1,5 +1,5 @@
 <template>
-  <div class="home-page">
+  <div class="home-page" :class="{ 'home-page--reveal-ready': revealReady }">
     <!-- 头部导航 -->
     <HomeHeader
       :is-authenticated="isAuthenticated"
@@ -67,7 +67,7 @@
  * 落地页主视图 - 组装层
  * 负责数据定义和子组件编排，视觉实现下沉到各子组件
  */
-import { computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { computed, onMounted, onUnmounted, nextTick, ref } from 'vue'
 import { useAuthStore, useAppStore } from '@/stores'
 
 // 子组件导入
@@ -724,6 +724,8 @@ const footerSections = computed(() => [
 
 // ── 滚动进场动画（IntersectionObserver） ──
 let observer: IntersectionObserver | null = null
+let revealFallbackTimer: number | null = null
+const revealReady = ref(false)
 
 function revealAllSections(): void {
   document.querySelectorAll('.mirror-reveal').forEach((node) => {
@@ -741,6 +743,9 @@ onMounted(() => {
 
   // 滚动进场动画 - 等子组件挂载后再绑定
   nextTick(() => {
+    const revealNodes = Array.from(document.querySelectorAll('.mirror-reveal'))
+    if (revealNodes.length === 0) return
+
     if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
       revealAllSections()
       return
@@ -759,7 +764,9 @@ onMounted(() => {
         { threshold: 0.12, rootMargin: '0px 0px -48px 0px' }
       )
 
-      document.querySelectorAll('.mirror-reveal').forEach((node) => observer?.observe(node))
+      revealNodes.forEach((node) => observer?.observe(node))
+      revealReady.value = true
+      revealFallbackTimer = window.setTimeout(revealAllSections, 1200)
     } catch {
       revealAllSections()
     }
@@ -767,6 +774,9 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (revealFallbackTimer != null) {
+    window.clearTimeout(revealFallbackTimer)
+  }
   observer?.disconnect()
 })
 </script>
@@ -837,17 +847,35 @@ onUnmounted(() => {
 <style>
 /* 全局滚动进场动画（需要非 scoped 以穿透子组件） */
 .mirror-reveal {
-  opacity: 0;
-  transform: translateY(24px);
-  filter: blur(12px);
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
   transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
               transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
               filter 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.home-page--reveal-ready .mirror-reveal:not(.is-visible) {
+  opacity: 0;
+  transform: translateY(24px);
+  filter: blur(12px);
 }
 
 .mirror-reveal.is-visible {
   opacity: 1;
   transform: translateY(0);
   filter: blur(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mirror-reveal {
+    transition-duration: 1ms;
+  }
+
+  .home-page--reveal-ready .mirror-reveal:not(.is-visible) {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
 }
 </style>

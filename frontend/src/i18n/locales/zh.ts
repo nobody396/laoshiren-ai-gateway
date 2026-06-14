@@ -905,10 +905,12 @@ export default {
     ipBlacklistHint: '每行一个 IP 或 CIDR，这些 IP 将被禁止使用此密钥',
     ipRestrictionEnabled: '已配置 IP 限制',
     ccsClientSelect: {
-      title: '选择客户端',
-      description: '请选择您要导入到 CC-Switch 的客户端类型：',
-      claudeCode: 'Claude Code',
-      claudeCodeDesc: '导入为 Claude Code 配置',
+      title: '选择导入目标',
+      description: '请选择您要导入到 CC Switch 的目标配置：',
+      claudeCodeCli: 'Claude Code CLI',
+      claudeCodeCliDesc: '导入为终端版 Claude Code 配置',
+      claudeDesktop: 'Claude Desktop',
+      claudeDesktopDesc: '导入为桌面版 Claude 配置',
       geminiCli: 'Gemini CLI',
       geminiCliDesc: '导入为 Gemini CLI 配置'
     },

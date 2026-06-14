@@ -990,7 +990,7 @@
       @close="closeUseKeyModal"
     />
 
-    <!-- CCS Client Selection Dialog for Antigravity -->
+    <!-- CCS Client Selection Dialog -->
     <BaseDialog
       :show="showCcsClientSelect"
       :title="t('keys.ccsClientSelect.title')"
@@ -1001,33 +1001,19 @@
         <p class="text-sm text-gray-600 dark:text-gray-400">
           {{ t('keys.ccsClientSelect.description') }}
 	        </p>
-	        <div class="grid grid-cols-2 gap-3">
-	          <button
-	            @click="handleCcsClientSelect('claude')"
-	            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
-	          >
-	            <Icon name="terminal" size="xl" class="text-gray-600 dark:text-gray-400" />
-	            <span class="font-medium text-gray-900 dark:text-white">{{
-	              t('keys.ccsClientSelect.claudeCode')
-	            }}</span>
-	            <span class="text-xs text-gray-500 dark:text-gray-400">{{
-	              t('keys.ccsClientSelect.claudeCodeDesc')
-	            }}</span>
-	          </button>
-	          <button
-	            @click="handleCcsClientSelect('gemini')"
-	            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
-	          >
-	            <Icon name="sparkles" size="xl" class="text-gray-600 dark:text-gray-400" />
-	            <span class="font-medium text-gray-900 dark:text-white">{{
-	              t('keys.ccsClientSelect.geminiCli')
-	            }}</span>
-	            <span class="text-xs text-gray-500 dark:text-gray-400">{{
-	              t('keys.ccsClientSelect.geminiCliDesc')
-	            }}</span>
-	          </button>
-	        </div>
-	      </div>
+		        <div :class="['grid gap-3', ccsClientOptions.length >= 3 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2']">
+		          <button
+		            v-for="option in ccsClientOptions"
+		            :key="option.value"
+		            @click="handleCcsClientSelect(option.value)"
+		            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
+		          >
+		            <Icon :name="option.icon" size="xl" class="text-gray-600 dark:text-gray-400" />
+		            <span class="font-medium text-gray-900 dark:text-white">{{ option.label }}</span>
+		            <span class="text-xs text-gray-500 dark:text-gray-400">{{ option.description }}</span>
+		          </button>
+		        </div>
+		      </div>
       <template #footer>
         <div class="flex justify-end">
           <button @click="closeCcsClientSelect" class="btn btn-secondary">
@@ -1154,6 +1140,15 @@ interface GroupOption {
   cacheWindowDays: number
 }
 
+type CcsImportTarget = 'claude' | 'claude-desktop' | 'gemini'
+type CcsApp = 'claude' | 'claude-desktop' | 'codex' | 'gemini'
+type CcsClientOption = {
+  value: CcsImportTarget
+  label: string
+  description: string
+  icon: 'terminal' | 'cloud' | 'sparkles'
+}
+
 const appStore = useAppStore()
 const onboardingStore = useOnboardingStore()
 const { copyToClipboard: clipboardCopy } = useClipboard()
@@ -1218,6 +1213,35 @@ const displayApiBaseUrl = computed(() => {
   const configuredBaseUrl = publicSettings.value?.api_base_url?.trim()
   const fallbackBaseUrl = typeof window !== 'undefined' ? window.location.origin : ''
   return (configuredBaseUrl || fallbackBaseUrl).replace(/\/+$/, '')
+})
+
+const ccsClientOptions = computed<CcsClientOption[]>(() => {
+  const platform = pendingCcsRow.value?.group?.platform || 'anthropic'
+  const options: CcsClientOption[] = [
+    {
+      value: 'claude' as const,
+      label: t('keys.ccsClientSelect.claudeCodeCli'),
+      description: t('keys.ccsClientSelect.claudeCodeCliDesc'),
+      icon: 'terminal' as const
+    },
+    {
+      value: 'claude-desktop' as const,
+      label: t('keys.ccsClientSelect.claudeDesktop'),
+      description: t('keys.ccsClientSelect.claudeDesktopDesc'),
+      icon: 'cloud' as const
+    }
+  ]
+
+  if (platform === 'antigravity') {
+    options.push({
+      value: 'gemini' as const,
+      label: t('keys.ccsClientSelect.geminiCli'),
+      description: t('keys.ccsClientSelect.geminiCliDesc'),
+      icon: 'sparkles' as const
+    })
+  }
+
+  return options
 })
 
 // Get the currently selected key for group change
@@ -1811,8 +1835,8 @@ const resetRateLimitUsage = async () => {
 const importToCcswitch = (row: ApiKey) => {
   const platform = row.group?.platform || 'anthropic'
 
-  // For antigravity platform, show client selection dialog
-  if (platform === 'antigravity') {
+  // Claude-compatible keys can be imported into either Claude Code CLI or Claude Desktop.
+  if (platform === 'anthropic' || platform === 'antigravity') {
     pendingCcsRow.value = row
     showCcsClientSelect.value = true
     return
@@ -1844,9 +1868,15 @@ const openChatbotWithKey = async (row: ApiKey) => {
 
 const trimCcsLabel = (value: string | null | undefined): string => value?.trim() || ''
 
-const buildCcsProviderName = (row: ApiKey, app: 'claude' | 'codex' | 'gemini'): string => {
+const buildCcsProviderName = (row: ApiKey, app: CcsApp): string => {
   const siteName = trimCcsLabel(publicSettings.value?.site_name) || 'sub2api'
-  const appLabel = app === 'codex' ? 'Codex' : app === 'gemini' ? 'Gemini' : 'Claude'
+  const appLabel = app === 'codex'
+    ? 'Codex'
+    : app === 'gemini'
+      ? 'Gemini'
+      : app === 'claude-desktop'
+        ? 'Claude Desktop'
+        : 'Claude Code'
   const groupName = trimCcsLabel(row.group?.name)
   const keyName = trimCcsLabel(row.name)
   const parts = [siteName, appLabel]
@@ -1912,17 +1942,17 @@ const buildCcsProviderNotes = (row: ApiKey, endpoint: string): string => {
   ].filter(Boolean).join('\n')
 }
 
-const executeCcsImport = (row: ApiKey, clientType: 'claude' | 'gemini') => {
+const executeCcsImport = (row: ApiKey, clientType: CcsImportTarget) => {
   const baseUrl = publicSettings.value?.api_base_url || window.location.origin
   const platform = row.group?.platform || 'anthropic'
 
   // Determine app name and endpoint based on platform and client type
-  let app: 'claude' | 'codex' | 'gemini'
+  let app: CcsApp
   let endpoint: string
 
   if (platform === 'antigravity') {
     // Antigravity always uses /antigravity suffix
-    app = clientType === 'gemini' ? 'gemini' : 'claude'
+    app = clientType === 'gemini' ? 'gemini' : clientType === 'claude-desktop' ? 'claude-desktop' : 'claude'
     endpoint = `${baseUrl}/antigravity`
   } else {
     switch (platform) {
@@ -1935,7 +1965,7 @@ const executeCcsImport = (row: ApiKey, clientType: 'claude' | 'gemini') => {
         endpoint = baseUrl
         break
       default: // anthropic
-        app = 'claude'
+        app = clientType === 'claude-desktop' ? 'claude-desktop' : 'claude'
         endpoint = baseUrl
     }
   }
@@ -1978,8 +2008,8 @@ const executeCcsImport = (row: ApiKey, clientType: 'claude' | 'gemini') => {
     params.set('config', encodeBase64Utf8(buildCodexCcsConfig(endpoint, row.key, defaultModel)))
   } else if (platform === 'anthropic') {
     params.set('haikuModel', 'claude-haiku-4-5')
-    params.set('sonnetModel', 'claude-sonnet-4-6[1M]')
-    params.set('opusModel', 'claude-opus-4-8[1M]')
+    params.set('sonnetModel', app === 'claude-desktop' ? 'claude-sonnet-4-6' : 'claude-sonnet-4-6[1M]')
+    params.set('opusModel', app === 'claude-desktop' ? 'claude-opus-4-8' : 'claude-opus-4-8[1M]')
   }
   const deeplink = `ccswitch://v1/import?${params.toString()}`
 
@@ -1990,7 +2020,7 @@ const executeCcsImport = (row: ApiKey, clientType: 'claude' | 'gemini') => {
   }
 }
 
-const handleCcsClientSelect = (clientType: 'claude' | 'gemini') => {
+const handleCcsClientSelect = (clientType: CcsImportTarget) => {
   if (pendingCcsRow.value) {
     executeCcsImport(pendingCcsRow.value, clientType)
   }

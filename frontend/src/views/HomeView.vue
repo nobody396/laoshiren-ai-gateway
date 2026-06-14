@@ -725,6 +725,12 @@ const footerSections = computed(() => [
 // ── 滚动进场动画（IntersectionObserver） ──
 let observer: IntersectionObserver | null = null
 
+function revealAllSections(): void {
+  document.querySelectorAll('.mirror-reveal').forEach((node) => {
+    node.classList.add('is-visible')
+  })
+}
+
 onMounted(() => {
   // 认证检查
   authStore.checkAuth()
@@ -735,19 +741,28 @@ onMounted(() => {
 
   // 滚动进场动画 - 等子组件挂载后再绑定
   nextTick(() => {
-    observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible')
-            observer?.unobserve(entry.target)
-          }
-        })
-      },
-      { threshold: 0.12, rootMargin: '0px 0px -48px 0px' }
-    )
+    if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
+      revealAllSections()
+      return
+    }
 
-    document.querySelectorAll('.mirror-reveal').forEach((node) => observer?.observe(node))
+    try {
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible')
+              observer?.unobserve(entry.target)
+            }
+          })
+        },
+        { threshold: 0.12, rootMargin: '0px 0px -48px 0px' }
+      )
+
+      document.querySelectorAll('.mirror-reveal').forEach((node) => observer?.observe(node))
+    } catch {
+      revealAllSections()
+    }
   })
 })
 

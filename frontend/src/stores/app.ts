@@ -18,6 +18,53 @@ const DEFAULT_SITE_LOGO = '/laoshirenai-icon.jpg'
 const LEGACY_SITE_NAMES = new Set(['Sub2API', 'Dragon', 'DragonCode', 'Dragon Code'])
 const CANONICAL_SITE_NAMES = new Set(['老实人 AI', '老实人ai', 'laoshirenai', 'Laoshiren AI'])
 
+function createDefaultPublicSettings(): PublicSettings {
+  return {
+    registration_enabled: false,
+    email_verify_enabled: false,
+    registration_email_suffix_whitelist: [],
+    promo_code_enabled: true,
+    password_reset_enabled: false,
+    invitation_code_enabled: false,
+    turnstile_enabled: false,
+    turnstile_site_key: '',
+    site_name: DEFAULT_SITE_NAME,
+    site_logo: DEFAULT_SITE_LOGO,
+    site_subtitle: '',
+    api_base_url: '',
+    contact_info: '',
+    tech_support_qrcode: '',
+    after_sales_qrcode: '',
+    doc_url: '',
+    chatbot_url: '',
+    home_content: '',
+    landing_reports_enabled: true,
+    landing_pricing_pro_multiplier: 1.2,
+    landing_pricing_max_multiplier: 4,
+    landing_pricing_exchange_rate: 7,
+    hide_ccs_import_button: false,
+    purchase_subscription_enabled: false,
+    purchase_subscription_url: '',
+    card_shop_enabled: false,
+    card_shop_products: [],
+    invoice_management_enabled: false,
+    feedback_management_enabled: true,
+    group_cache_hit_rate_enabled: false,
+    custom_menu_items: [],
+    linuxdo_oauth_enabled: false,
+    oidc_oauth_enabled: false,
+    oidc_oauth_provider_name: 'Google',
+    github_oauth_enabled: false,
+    sora_client_enabled: false,
+    backend_mode_enabled: false,
+    stripe_enabled: false,
+    alipay_enabled: false,
+    xunhu_alipay_enabled: false,
+    xunhu_wechat_enabled: false,
+    version: '',
+  }
+}
+
 function normalizeSiteName(name?: string): string {
   const trimmed = name?.trim()
   if (!trimmed || LEGACY_SITE_NAMES.has(trimmed) || CANONICAL_SITE_NAMES.has(trimmed)) {
@@ -344,50 +391,7 @@ export const useAppStore = defineStore('app', () => {
       if (cachedPublicSettings.value) {
         return { ...cachedPublicSettings.value }
       }
-      return {
-        registration_enabled: false,
-        email_verify_enabled: false,
-        registration_email_suffix_whitelist: [],
-        promo_code_enabled: true,
-        password_reset_enabled: false,
-        invitation_code_enabled: false,
-        turnstile_enabled: false,
-        turnstile_site_key: '',
-        site_name: siteName.value,
-        site_logo: siteLogo.value,
-        site_subtitle: '',
-        api_base_url: apiBaseUrl.value,
-        contact_info: contactInfo.value,
-        tech_support_qrcode: techSupportQRCode.value,
-        after_sales_qrcode: afterSalesQRCode.value,
-        doc_url: docUrl.value,
-        chatbot_url: '',
-        home_content: '',
-        landing_reports_enabled: true,
-        landing_pricing_pro_multiplier: 1.2,
-        landing_pricing_max_multiplier: 4,
-        landing_pricing_exchange_rate: 7,
-        hide_ccs_import_button: false,
-        purchase_subscription_enabled: false,
-        purchase_subscription_url: '',
-        card_shop_enabled: false,
-        card_shop_products: [],
-        invoice_management_enabled: false,
-        feedback_management_enabled: true,
-        group_cache_hit_rate_enabled: false,
-        custom_menu_items: [],
-        linuxdo_oauth_enabled: false,
-        oidc_oauth_enabled: false,
-        oidc_oauth_provider_name: 'Google',
-        github_oauth_enabled: false,
-        sora_client_enabled: false,
-        backend_mode_enabled: false,
-        stripe_enabled: false,
-        alipay_enabled: false,
-        xunhu_alipay_enabled: false,
-        xunhu_wechat_enabled: false,
-        version: siteVersion.value,
-      }
+      return createDefaultPublicSettings()
     }
 
     // Prevent duplicate requests
@@ -402,7 +406,9 @@ export const useAppStore = defineStore('app', () => {
       return cachedPublicSettings.value ? { ...cachedPublicSettings.value } : data
     } catch (error) {
       console.error('Failed to fetch public settings:', error)
-      return null
+      const fallback = createDefaultPublicSettings()
+      applySettings(fallback)
+      return cachedPublicSettings.value ? { ...cachedPublicSettings.value } : fallback
     } finally {
       publicSettingsLoading.value = false
     }

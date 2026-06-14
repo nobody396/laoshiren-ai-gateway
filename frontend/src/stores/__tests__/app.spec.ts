@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAppStore } from '@/stores/app'
+import { getPublicSettings } from '@/api/auth'
 
 // Mock API 模块
 vi.mock('@/api/admin/system', () => ({
@@ -290,6 +291,19 @@ describe('useAppStore', () => {
 
       expect(store.publicSettingsLoaded).toBe(false)
       expect(store.cachedPublicSettings).toBeNull()
+    })
+
+    it('公开设置接口失败时应用首页定价兜底配置', async () => {
+      vi.mocked(getPublicSettings).mockRejectedValueOnce(new Error('network timeout'))
+
+      const store = useAppStore()
+      const result = await store.fetchPublicSettings()
+
+      expect(result?.landing_pricing_pro_multiplier).toBe(1.2)
+      expect(result?.landing_pricing_max_multiplier).toBe(4)
+      expect(result?.landing_pricing_exchange_rate).toBe(7)
+      expect(store.cachedPublicSettings?.landing_pricing_pro_multiplier).toBe(1.2)
+      expect(store.publicSettingsLoaded).toBe(true)
     })
   })
 })

@@ -31,7 +31,7 @@ async function bootstrap() {
   appStore.initFromInjectedConfig()
 
   // Set document title immediately after config is loaded.
-  document.title = resolveDocumentTitle('AI 编码中转', appStore.siteName, undefined, { siteNameFirst: true })
+  document.title = resolveDocumentTitle('AI 编码网关', appStore.siteName, undefined, { siteNameFirst: true })
 
   await initI18n()
 

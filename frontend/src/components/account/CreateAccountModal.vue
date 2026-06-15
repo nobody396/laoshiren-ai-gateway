@@ -2282,7 +2282,7 @@
           </div>
         </div>
 
-        <!-- Custom Base URL Relay -->
+        <!-- Custom Base URL routing -->
         <div class="rounded-lg border border-gray-200 p-4 dark:border-dark-600">
           <div class="flex items-center justify-between">
             <div>

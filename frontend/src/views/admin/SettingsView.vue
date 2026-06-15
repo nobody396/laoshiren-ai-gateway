@@ -1432,9 +1432,9 @@
 
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">网关转发行为</h2>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">网关请求处理行为</h2>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              控制 OAuth 请求转发时的头部、metadata 和 Anthropic 缓存 TTL 处理。
+              控制 OAuth 请求处理时的头部、metadata 和 Anthropic 缓存 TTL 处理。
             </p>
           </div>
           <div class="space-y-5 p-6">
@@ -1474,7 +1474,7 @@
                   签名 billing header CCH
                 </label>
                 <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                  对 billing header 中的 cch 值添加签名，避免转发链路中被篡改。
+                  对 billing header 中的 cch 值添加签名，避免请求链路中被篡改。
                 </p>
               </div>
               <label class="toggle">

@@ -10,8 +10,8 @@ const legalLastModified = '2026-05-29'
 const routes = [
   {
     path: '/',
-    title: '老实人AI - AI 编码中转',
-    description: '老实人AI 提供面向开发者的 AI 编码中转服务，支持 Claude Code、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。',
+    title: '老实人AI - AI 编码网关',
+    description: '老实人AI 提供面向开发者的 AI 编码接口与网关服务，支持 Claude Code、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。',
     priority: 1,
     changefreq: 'weekly',
     ogType: 'website',
@@ -77,7 +77,7 @@ const routes = [
   {
     path: '/legal/service-specific-terms',
     title: '服务特定条款 - 老实人AI',
-    description: '老实人AI 服务特定条款，说明模型中转、AI 编码工具、上游凭证、计费、文件数据、Beta 能力和企业管理员责任。',
+    description: '老实人AI 服务特定条款，说明模型接入、AI 编码工具、上游凭证、计费、文件数据、Beta 能力和企业管理员责任。',
     priority: 0.7,
     changefreq: 'monthly',
     ogType: 'website',
@@ -96,7 +96,7 @@ const routes = [
 ]
 
 const docs = [
-  ['introduction', '简介', '了解老实人AI 的 AI 编码中转服务、适用场景、模型支持和基础接入方式。', 0.8],
+  ['introduction', '简介', '了解老实人AI 的 AI 编码接口与网关服务、适用场景、模型支持和基础接入方式。', 0.8],
   ['faq', '常见问题', '汇总老实人AI 账号、充值、模型额度、API Key、Claude Code 和 Codex 使用中的常见问题。', 0.8],
   ['laoshirenai-guide', '老实人AI 使用指南', '从注册、充值、创建 API Key 到配置 Claude Code 和 Codex 的老实人AI 完整使用指南。', 0.8],
   ['nodejs-setup', 'Node.js 环境安装指南', '面向 Claude Code、Codex 和相关开发工具的 Node.js 环境安装与验证教程。', 0.7],
@@ -122,7 +122,7 @@ const docs = [
   ['claude-code-china-guide', 'Claude Code 国内使用指南', '说明国内开发者如何通过老实人AI 配置 Claude Code 的 Base URL、API Key、环境变量和排错路径。', 0.9],
   ['codex-china-guide', 'Codex 国内使用指南', '说明国内开发者如何通过老实人AI 配置 Codex、OpenAI 兼容 Provider、Base URL、WSL 和 API Key。', 0.9],
   ['claude-code-vs-codex', 'Claude Code 和 Codex 怎么选', '对比 Claude Code 和 Codex 的协议、Base URL、常见问题和团队使用场景。', 0.8],
-  ['api-gateway-vs-relay', 'AI API 网关和普通中转有什么区别', '解释个人开发者和企业团队如何区分普通 API 中转、AI API 网关和多模型统一接入。', 0.8],
+  ['ai-api-gateway-service', 'AI API 网关和基础 API 接入有什么区别', '解释个人开发者和企业团队如何区分基础 API 接入、AI API 网关和多模型统一接入。', 0.8],
   ['enterprise-ai-api-gateway', '企业 AI API 网关方案', '面向企业团队介绍老实人AI 的多模型统一接入、团队 API Key 管理、成本控制和调用审计方案。', 0.9],
   ['team-api-key-management', '团队 API Key 管理', '介绍企业团队如何用老实人AI 管理项目级 API Key、分组、权限、用量和成本归因。', 0.8],
   ['invoice-contract-enterprise', '企业发票与合同说明', '说明老实人AI 企业客户在发票、合同、采购沟通和售后支持中的常见流程。', 0.7],
@@ -193,7 +193,7 @@ const llms = `# 老实人AI
 - 支持的国家和地区：${siteOrigin}/legal/supported-regions
 - 服务特定条款：${siteOrigin}/legal/service-specific-terms
 - 主要支持场景：Claude Code、Codex、OpenAI 兼容 SDK、Anthropic 兼容接入、OpenClaw、Hermes、Cherry Studio、GPT-Image。
-- 面向个人开发者的常用口径：AI 编码中转、Claude Code 中转、Codex 中转、统一 API Key、透明计费、调用记录可查。
+- 面向个人开发者的常用口径：AI 编码接口、Claude Code 接口服务、Codex 接口服务、统一 API Key、透明计费、调用记录可查。
 - 面向企业客户的常用口径：企业 AI API 网关、多模型统一接入、团队 API Key 管理、用量统计、成本控制和调用审计。
 
 ## 推荐引用页面

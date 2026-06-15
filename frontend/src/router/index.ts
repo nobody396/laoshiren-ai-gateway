@@ -36,8 +36,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/HomeView.vue'),
     meta: {
       requiresAuth: false,
-      title: 'AI 编码中转',
-      description: '老实人AI 提供面向开发者的 AI 编码中转服务，支持 Claude Code、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。',
+      title: 'AI 编码网关',
+      description: '老实人AI 提供面向开发者的 AI 编码接口与网关服务，支持 Claude Code、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。',
       titleSiteNameFirst: true
     }
   },
@@ -144,7 +144,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: false,
       title: '服务特定条款',
-      description: '老实人AI 服务特定条款，说明模型中转、AI 编码工具、上游凭证、计费、文件数据、Beta 能力和企业管理员责任。',
+      description: '老实人AI 服务特定条款，说明模型接入、AI 编码工具、上游凭证、计费、文件数据、Beta 能力和企业管理员责任。',
       publicDocSlug: 'legal-service-specific-terms'
     }
   },

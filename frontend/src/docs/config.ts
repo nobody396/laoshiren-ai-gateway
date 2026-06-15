@@ -31,7 +31,7 @@ export const docsConfig: DocsConfig = [
       {
         title: '简介',
         slug: 'introduction',
-        description: '了解老实人AI 的 AI 编码中转服务、适用场景、模型支持和基础接入方式。'
+        description: '了解老实人AI 的 AI 编码接口与网关服务、适用场景、模型支持和基础接入方式。'
       },
       {
         title: '常见问题',
@@ -169,9 +169,9 @@ export const docsConfig: DocsConfig = [
         description: '对比 Claude Code 和 Codex 的协议、Base URL、常见问题和团队使用场景。'
       },
       {
-        title: 'AI API 网关和普通中转有什么区别',
-        slug: 'api-gateway-vs-relay',
-        description: '解释个人开发者和企业团队如何区分普通 API 中转、AI API 网关和多模型统一接入。'
+        title: 'AI API 网关和基础 API 接入有什么区别',
+        slug: 'ai-api-gateway-service',
+        description: '解释个人开发者和企业团队如何区分基础 API 接入、AI API 网关和多模型统一接入。'
       },
     ],
   },

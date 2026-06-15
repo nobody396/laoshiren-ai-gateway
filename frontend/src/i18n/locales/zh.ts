@@ -2627,7 +2627,7 @@ export default {
       dataImportCompletedWithErrors: '导入完成但有错误：账号失败 {account_failed}，代理失败 {proxy_failed}',
       syncFromCrsTitle: '从 CRS 同步账号',
       syncFromCrsDesc:
-        '将 claude-relay-service（CRS）中的账号同步到当前系统（不会在浏览器侧直接请求 CRS）。',
+        '将 CRS 中的账号同步到当前系统（不会在浏览器侧直接请求 CRS）。',
       crsVersionRequirement: '⚠️ 注意：CRS 版本必须 ≥ v1.1.240 才支持此功能',
       crsBaseUrl: 'CRS 服务地址',
       crsBaseUrlPlaceholder: '例如：http://127.0.0.1:3000',
@@ -2881,7 +2881,7 @@ export default {
         unlimited: '无限制'
       },
       ineligibleWarning:
-        '该账号无 Antigravity 使用权限，但仍能进行 API 转发。继续使用请自行承担风险。',
+        '该账号无 Antigravity 使用权限，但仍能进行 API 调用。继续使用请自行承担风险。',
       forbidden: '已封禁',
       forbiddenValidation: '需要验证',
       forbiddenViolation: '违规封禁',
@@ -3314,8 +3314,8 @@ export default {
           failedToExchangeCode: 'Gemini 授权码兑换失败',
           missingProjectId:
             'GCP Project ID 获取失败：您的 Google 账号未关联有效的 GCP 项目。请前往 Google Cloud Console 激活 GCP 并绑定信用卡，或在授权时手动填写 Project ID。',
-          modelPassthrough: 'Gemini 直接转发模型',
-          modelPassthroughDesc: '所有模型请求将直接转发至 Gemini API，不进行模型限制或映射。',
+          modelPassthrough: 'Gemini 直接调用模型',
+          modelPassthroughDesc: '所有模型请求将直接调用 Gemini API，不进行模型限制或映射。',
           stateWarningTitle: '提示',
           stateWarningDesc: '建议粘贴完整回调链接（包含 code 和 state）。',
           oauthTypeLabel: 'OAuth 类型',
@@ -3366,8 +3366,8 @@ export default {
           title: 'Gemini 使用指南',
           apiKeySection: 'API Key 相关链接'
         },
-        modelPassthrough: 'Gemini 直接转发模型',
-        modelPassthroughDesc: '所有模型请求将直接转发至 Gemini API，不进行模型限制或映射。',
+        modelPassthrough: 'Gemini 直接调用模型',
+        modelPassthroughDesc: '所有模型请求将直接调用 Gemini API，不进行模型限制或映射。',
         baseUrlHint: '留空使用官方 Gemini API',
         apiKeyHint: '您的 Gemini API Key（以 AIza 开头）',
         tier: {
@@ -5436,7 +5436,7 @@ export default {
       },
       betaPolicy: {
         title: 'Beta 策略',
-        description: '配置转发 Anthropic API 请求时如何处理 Beta 特性。仅适用于 /v1/messages 接口。',
+        description: '配置处理 Anthropic API 请求时如何处理 Beta 特性。仅适用于 /v1/messages 接口。',
         action: '处理方式',
         actionPass: '透传（不处理）',
         actionFilter: '过滤（移除）',
@@ -5869,7 +5869,7 @@ export default {
       welcome: {
         title: '👋 欢迎使用 老实人 AI',
         description:
-          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">老实人 AI 是一个强大的 AI 服务中转平台，让您轻松管理和分发 AI 服务。</p><p style="margin-bottom: 12px;"><b>🎯 核心功能：</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>📦 <b>分组管理</b> - 创建不同的服务套餐（VIP、免费试用等）</li><li>🔗 <b>账号池</b> - 连接多个上游 AI 服务商账号</li><li>🔑 <b>密钥分发</b> - 为用户生成独立的 API Key</li><li>💰 <b>计费管理</b> - 灵活的费率和配额控制</li></ul><p style="color: #10b981; font-weight: 600;">接下来，我们将用 3 分钟带您完成首次配置 →</p></div>',
+          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">老实人 AI 是一个强大的 AI 技术服务平台，让您轻松管理和分发 AI 服务。</p><p style="margin-bottom: 12px;"><b>🎯 核心功能：</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>📦 <b>分组管理</b> - 创建不同的服务套餐（VIP、免费试用等）</li><li>🔗 <b>账号池</b> - 连接多个上游 AI 服务商账号</li><li>🔑 <b>密钥分发</b> - 为用户生成独立的 API Key</li><li>💰 <b>计费管理</b> - 灵活的费率和配额控制</li></ul><p style="color: #10b981; font-weight: 600;">接下来，我们将用 3 分钟带您完成首次配置 →</p></div>',
         nextBtn: '开始配置 🚀',
         prevBtn: '跳过'
       },
@@ -6039,12 +6039,12 @@ export default {
       saveOfficialProvider: {
         title: '可选：保存 OpenAI 官方订阅',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">如果你已经在 Codex App 或 Codex CLI 里登录了 OpenAI 官方订阅，建议先点这里复制脚本命令，把官方登录保存成 CC Switch Provider。</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px; font-size: 13px;"><b>只适用于 OpenAI / Codex：</b>这样之后在 CC Switch 里可以在「OpenAI 官方订阅」和「老实人 AI 中转」之间切换，不会只剩中转可用。</p></div>'
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">如果你已经在 Codex App 或 Codex CLI 里登录了 OpenAI 官方订阅，建议先点这里复制脚本命令，把官方登录保存成 CC Switch Provider。</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px; font-size: 13px;"><b>只适用于 OpenAI / Codex：</b>这样之后在 CC Switch 里可以在「OpenAI 官方订阅」和「老实人 AI API 服务」之间切换，不会只剩接口配置可用。</p></div>'
       },
       useOptions: {
         title: '现在选择怎么使用',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">密钥已经创建好了。接下来有几种方式：</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>推荐新手：</b>点「导入到 CCS」自动导入到 CC Switch。没有安装时，再去下载 CC Switch。</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>已有 OpenAI 官方订阅：</b>先用「保存官方订阅」保存官方 Provider，再导入中转，之后就能两边切换。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>不想装工具：</b>点「使用密钥」手动复制配置。</p></div></div>'
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">密钥已经创建好了。接下来有几种方式：</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>推荐新手：</b>点「导入到 CCS」自动导入到 CC Switch。没有安装时，再去下载 CC Switch。</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>已有 OpenAI 官方订阅：</b>先用「保存官方订阅」保存官方 Provider，再导入老实人 AI 接口配置，之后就能两边切换。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>不想装工具：</b>点「使用密钥」手动复制配置。</p></div></div>'
       },
       docs: {
         title: '📚 教程和下载说明',

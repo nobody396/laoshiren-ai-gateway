@@ -5,7 +5,7 @@
         <div class="hero-section__eyebrow mirror-reveal">老实人AI · AI Coding Gateway · MMXXVI</div>
         <h1 class="hero-section__title">
           <span class="mirror-reveal" style="transition-delay: 0.08s">老实人AI</span>
-          <em class="mirror-reveal" style="transition-delay: 0.16s">编码中转</em>
+          <em class="mirror-reveal" style="transition-delay: 0.16s">编码网关</em>
         </h1>
         <p class="hero-section__desc mirror-reveal" style="transition-delay: 0.2s">
           <span>Code with clarity. 让每一行代码都经得起审视。</span>

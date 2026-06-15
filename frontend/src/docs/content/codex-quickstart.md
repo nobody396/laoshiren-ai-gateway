@@ -14,15 +14,15 @@ Codex 现在有三种常见启动方式：
 
 | 启动方式 | 适合谁 | 能用什么 |
 |---------|--------|----------|
-| **老实人 AI API Key / 第三方 API** | 想用更可控的 token 额度跑本地 Codex | 本地终端里的 `codex`、读写文件、执行命令、普通本地任务 |
+| **老实人 AI API Key / 第三方 API** | 想通过老实人 AI API 服务使用更可控的 token 额度 | 本地终端里的 `codex`、读写文件、执行命令、普通本地任务 |
 | **OpenAI 官方订阅登录** | 已有 ChatGPT Plus / Pro / Business / Enterprise，想用官方完整 Codex 生态 | 本地 Codex、Codex App / IDE、云端任务、官方插件、自动 code review、Slack / GitHub 等云端集成 |
-| **Codex++** | 已经安装并登录 Codex App，又想保留插件入口，同时把模型请求转到兼容 API | 通过第三方外部启动器启动 Codex App，保留官方账号能力，并可选开启中转注入 |
+| **Codex++** | 已经安装并登录 Codex App，又想保留插件入口，同时把模型请求转到兼容 API | 通过第三方外部启动器启动 Codex App，保留官方账号能力，并可选开启自定义接口注入 |
 
-简单说：**第三方 API 可以让 Codex 在本地干活，但不等于登录了 ChatGPT 官方订阅。** 只依赖 API Key 时，和 ChatGPT workspace、Codex cloud、官方插件目录、云端自动化相关的能力可能不可用或受限。
+简单说：**老实人 AI API 服务可以让 Codex 在本地干活，但不等于登录了 ChatGPT 官方订阅。** 只依赖 API Key 时，和 ChatGPT workspace、Codex cloud、官方插件目录、云端自动化相关的能力可能不可用或受限。
 
 `Codex++` 是一个第三方开源增强工具，不是 OpenAI 官方产品，也不是一个新模型。它的思路是：先让 Codex App 保持 ChatGPT/OpenAI 官方登录态，官方账号继续负责插件入口和账号能力；再由 Codex++ 外部启动器注入增强脚本，可选把模型请求切到自定义兼容 API。
 
-如果你的目标只是“像官方订阅一样使用完整功能”，优先在 CC Switch 里添加并启用 `OpenAI Official`。如果你的目标是“官方登录态 + 中转模型请求 + Codex App 增强”，再考虑使用 Codex++。
+如果你的目标只是“像官方订阅一样使用完整功能”，优先在 CC Switch 里添加并启用 `OpenAI Official`。如果你的目标是“官方登录态 + 模型请求走自定义接口 + Codex App 增强”，再考虑使用 Codex++。
 
 ---
 
@@ -70,15 +70,15 @@ codex --version
 
 导入后点击 **启用** 即可。
 
-#### 官方订阅和中转同时放进 CC Switch
+#### 官方订阅和接口服务同时放进 CC Switch
 
-如果你既有 OpenAI 官方订阅，又要测试 老实人 AI 中转，请在 CC Switch 里保留两类 Provider：
+如果你既有 OpenAI 官方订阅，又要测试 老实人 AI API 服务，请在 CC Switch 里保留两类 Provider：
 
 - **官方订阅 / 完整功能入口**：在 CC Switch 顶部切到 `Codex`，点击 `+`，选择 `OpenAI Official`，按提示登录你的 ChatGPT/OpenAI 账号。这个 Provider 才代表官方订阅入口，适合需要 Codex 云端任务、官方插件、自动 code review、Slack / GitHub 等云端集成的人。
-- **老实人 AI 中转 / 本地 API 入口**：在 老实人 AI 的 API 密钥页面，给不同分组分别创建 Key，例如 `OpenAI Plus 测试`、`OpenAI Pro 测试`，再分别点击 **导入到 CCS**。这个入口适合本地 `codex` 终端任务和可控 token 消耗。
-- **切换方式**：回到 CC Switch 的 `Codex` 页面，在 Provider 列表里启用你要用的那一个。不要依赖 `default` 当官方入口；`default` 只是当前配置快照，若之前被中转覆盖过，内容可能已经不是官方订阅。
+- **老实人 AI API 服务 / 本地 API 入口**：在 老实人 AI 的 API 密钥页面，给不同分组分别创建 Key，例如 `OpenAI Plus 测试`、`OpenAI Pro 测试`，再分别点击 **导入到 CCS**。这个入口适合本地 `codex` 终端任务和可控 token 消耗。
+- **切换方式**：回到 CC Switch 的 `Codex` 页面，在 Provider 列表里启用你要用的那一个。不要依赖 `default` 当官方入口；`default` 只是当前配置快照，若之前被接口服务覆盖过，内容可能已经不是官方订阅。
 
-导入到 CCS 的中转 Provider 名称会带上站点名、工具名、分组名和密钥名，便于区分，例如 `老实人 AI - Codex - OpenAI Pro - Pro 测试 Key`。
+导入到 CCS 的老实人 AI Provider 名称会带上站点名、工具名、分组名和密钥名，便于区分，例如 `老实人 AI - Codex - OpenAI Pro - Pro 测试 Key`。
 
 #### Codex++ 是什么情况
 
@@ -86,8 +86,8 @@ codex --version
 
 - CC Switch 主要负责管理和切换本机 Codex / Claude Code 的 Provider 配置。
 - Codex++ 是 Codex App 的外部增强启动器，通过 `Codex++` 入口启动原版 Codex App，并注入增强功能。
-- Codex++ 的中转注入适合“已经在 Codex App 登录官方账号，但希望模型请求走自定义兼容 API”的场景。
-- 使用 Codex++ 时，仍然建议先确认 Codex App 已检测到 ChatGPT 官方登录状态，再添加中转配置。
+- Codex++ 的自定义接口注入适合“已经在 Codex App 登录官方账号，但希望模型请求走自定义兼容 API”的场景。
+- 使用 Codex++ 时，仍然建议先确认 Codex App 已检测到 ChatGPT 官方登录状态，再添加接口服务配置。
 
 如果你已经在 Codex App 或 Codex CLI 里登录过官方订阅，也可以用脚本把当前本机登录态保存成独立 Provider。脚本只读写本机 `~/.codex` 和 `~/.cc-switch`，不会把 OpenAI token 上传到 老实人 AI。
 
@@ -103,7 +103,7 @@ Windows PowerShell：
 $env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1 | iex
 ```
 
-执行完成后，重启或打开 CC Switch，在 `Codex` 页面会看到 `OpenAI Official Pro`，之后就可以在官方订阅和 老实人 AI 中转之间切换。
+执行完成后，重启或打开 CC Switch，在 `Codex` 页面会看到 `OpenAI Official Pro`，之后就可以在官方订阅和 老实人 AI API 服务之间切换。
 
 ### 方式二：手动配置文件
 

@@ -26,7 +26,7 @@
             <p class="text-sm font-semibold text-primary-700 dark:text-primary-300">Codex App 用户先看这里</p>
             <h2 class="mt-2 text-xl font-semibold text-gray-900 dark:text-white">只用 API Key 启动时，部分 Codex App 功能会受限</h2>
             <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-700 dark:text-dark-200">
-              原版 Codex App 在 API Key / 中转模式下，常见限制是插件入口提示需要 ChatGPT 登录、官方插件无法正常使用；原版会话列表通常只有归档，没有真正删除按钮。Codex++ 的思路是先保留 ChatGPT/OpenAI 官方登录态，再通过外部启动器注入增强功能，并可选把模型请求切到兼容 API。
+              原版 Codex App 在 API Key / 第三方 API 模式下，常见限制是插件入口提示需要 ChatGPT 登录、官方插件无法正常使用；原版会话列表通常只有归档，没有真正删除按钮。Codex++ 的思路是先保留 ChatGPT/OpenAI 官方登录态，再通过外部启动器注入增强功能，并可选把模型请求切到兼容 API。
             </p>
           </div>
           <a
@@ -50,7 +50,7 @@
           </div>
           <div class="rounded-md bg-white p-3 text-gray-700 shadow-sm dark:bg-dark-900 dark:text-dark-200">
             <span class="font-medium text-gray-900 dark:text-white">Codex++ 启动</span>
-            <p class="mt-1 leading-5">从 Codex++ 入口启动，解锁增强菜单、插件入口、会话删除和中转注入。</p>
+            <p class="mt-1 leading-5">从 Codex++ 入口启动，解锁增强菜单、插件入口、会话删除和自定义接口注入。</p>
           </div>
         </div>
       </section>
@@ -296,7 +296,7 @@ const resources: DownloadResource[] = [
   {
     name: 'Codex++',
     badge: 'Codex App 增强启动器',
-    description: '适合已经安装并登录 Codex App，但在 API Key / 中转模式下需要插件入口、会话删除、Markdown 导出、Timeline 和中转注入能力的用户。使用时请从 Codex++ 入口启动，不要从原版 Codex App 入口打开。',
+    description: '适合已经安装并登录 Codex App，但在 API Key / 第三方 API 模式下需要插件入口、会话删除、Markdown 导出、Timeline 和自定义接口注入能力的用户。使用时请从 Codex++ 入口启动，不要从原版 Codex App 入口打开。',
     icon: 'sparkles',
     commands: [],
     downloadToolId: 'codex-plus-plus',
@@ -306,7 +306,7 @@ const resources: DownloadResource[] = [
     primaryLink: 'https://github.com/BigPizzaV3/CodexPlusPlus/releases/latest',
     docsLink: 'https://github.com/BigPizzaV3/CodexPlusPlus',
     primaryAction: '查看 Codex++ Release',
-    note: 'Codex++ 是第三方外部增强工具，不是 OpenAI 官方产品。它不修改 Codex App 原始安装文件；使用中转注入前，建议确认 Codex App 已有官方登录态并保留 ~/.codex 配置备份。'
+    note: 'Codex++ 是第三方外部增强工具，不是 OpenAI 官方产品。它不修改 Codex App 原始安装文件；使用自定义接口注入前，建议确认 Codex App 已有官方登录态并保留 ~/.codex 配置备份。'
   },
   {
     name: 'Claude Desktop',

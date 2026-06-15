@@ -8,8 +8,8 @@
 - 普通 OpenAI SDK 或通用 OpenAI 兼容客户端：通常使用 `https://api.laoshirenai.com/v1`。
 - Codex 官方客户端按站内教程使用 Responses 模式，不要盲目套用普通 OpenAI SDK 的 `/v1` 口径。
 - 第三方 API Key 主要支持本地 Codex 调用模型；需要官方插件、Codex cloud、自动 code review、Slack / GitHub 等云端集成时，请使用 ChatGPT/OpenAI 官方登录入口。
-- CC Switch 里 `OpenAI Official` 才代表官方订阅；老实人 AI Provider 代表中转 API，不要把两者混在一起。
-- Codex++ 是第三方 Codex App 外部增强启动器。它不是 OpenAI 官方产品；它通常要求先有 Codex App 官方登录态，再通过中转注入把模型请求转到兼容 API。
+- CC Switch 里 `OpenAI Official` 才代表官方订阅；老实人 AI Provider 代表第三方 API，不要把两者混在一起。
+- Codex++ 是第三方 Codex App 外部增强启动器。它不是 OpenAI 官方产品；它通常要求先有 Codex App 官方登录态，再通过自定义接口注入把模型请求转到兼容 API。
 
 ## 常见症状
 
@@ -24,7 +24,7 @@
 ## 排查顺序
 
 1. 确认你用的是 Codex 官方客户端，不是普通 OpenAI SDK。
-2. 先判断你要的是哪条路：本地 API 任务用老实人 AI Provider；完整官方功能用 `OpenAI Official`；Codex App 增强和中转注入用 Codex++ 入口。
+2. 先判断你要的是哪条路：本地 API 任务用老实人 AI Provider；完整官方功能用 `OpenAI Official`；Codex App 增强和自定义接口注入用 Codex++ 入口。
 3. 确认 Provider 的 Base URL 是站内教程要求的地址。
 4. 确认 API Key 是完整 Key，不是订单号或兑换码。
 5. 确认 Key 分组支持 Codex/OpenAI 协议。
@@ -36,7 +36,7 @@
 
 - 如果没有看到 `Codex++` 菜单，先确认你是从 `Codex++` 入口启动，而不是从原版 Codex App 启动。
 - 如果插件入口仍提示需要登录 ChatGPT，先确认 Codex App 本身已经完成官方账号登录。
-- 如果中转注入后请求没有进入平台，检查 Codex++ 管理工具里当前启用的 Base URL、Key 和模型配置。
+- 如果自定义接口注入后请求没有进入平台，检查 Codex++ 管理工具里当前启用的 Base URL、Key 和模型配置。
 - 如果要回到官方模式，在 Codex++ 管理工具里清除 API 模式，再重启 Codex App。
 
 ## 判断是客户端还是平台

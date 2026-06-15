@@ -31,12 +31,12 @@ describe('updateRouteSeo', () => {
     updateRouteSeo(route({
       name: 'Home',
       meta: {
-        title: 'AI 编码中转',
+        title: 'AI 编码网关',
         titleSiteNameFirst: true,
       },
     }))
 
-    expect(document.title).toBe('老实人AI - AI 编码中转')
+    expect(document.title).toBe('老实人AI - AI 编码网关')
     expect(content('meta[name="robots"]')).toBe('index,follow')
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://laoshirenai.com/')
     expect(content('meta[property="og:type"]')).toBe('website')
@@ -76,7 +76,7 @@ describe('updateRouteSeo', () => {
     updateRouteSeo(route({
       name: 'Home',
       meta: {
-        title: 'AI 编码中转',
+        title: 'AI 编码网关',
         titleSiteNameFirst: true,
       },
     }))

@@ -1688,7 +1688,7 @@
           </div>
         </div>
 
-        <!-- Custom Base URL Relay -->
+        <!-- Custom Base URL routing -->
         <div class="rounded-lg border border-gray-200 p-4 dark:border-dark-600">
           <div class="flex items-center justify-between">
             <div>
@@ -3171,7 +3171,7 @@ const handleSubmit = async () => {
         delete newExtra.cache_ttl_override_target
       }
 
-      // Custom base URL relay setting
+      // Custom base URL routing setting
       if (customBaseUrlEnabled.value && customBaseUrl.value.trim()) {
         newExtra.custom_base_url_enabled = true
         newExtra.custom_base_url = customBaseUrl.value.trim()

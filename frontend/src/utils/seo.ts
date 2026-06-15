@@ -7,7 +7,7 @@ const DEFAULT_SITE_NAME = '老实人AI'
 const DEFAULT_SITE_ORIGIN = 'https://laoshirenai.com'
 const DEFAULT_SITE_LOGO = '/laoshirenai-icon.jpg'
 const DEFAULT_OG_IMAGE = '/og-image.png'
-const HOME_DESCRIPTION = '老实人AI 提供面向开发者的 AI 编码中转服务，支持 Claude Code、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。'
+const HOME_DESCRIPTION = '老实人AI 提供面向开发者的 AI 编码网关服务，支持 Claude Code、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。'
 const DOCS_DESCRIPTION = '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio、GPT-Image 和企业接入的配置教程与常见问题。'
 
 const INDEXABLE_ROUTE_NAMES = new Set([

@@ -6,8 +6,8 @@
   "routes": [
     {
       "path": "/",
-      "title": "老实人AI - AI 编码中转",
-      "description": "老实人AI 提供面向开发者的 AI 编码中转服务，支持 Claude Code、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。",
+      "title": "老实人AI - AI 编码网关",
+      "description": "老实人AI 提供面向开发者的 AI 编码接口与网关服务，支持 Claude Code、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。",
       "priority": 1,
       "changefreq": "weekly",
       "ogType": "website",
@@ -73,7 +73,7 @@
     {
       "path": "/legal/service-specific-terms",
       "title": "服务特定条款 - 老实人AI",
-      "description": "老实人AI 服务特定条款，说明模型中转、AI 编码工具、上游凭证、计费、文件数据、Beta 能力和企业管理员责任。",
+      "description": "老实人AI 服务特定条款，说明模型接入、AI 编码工具、上游凭证、计费、文件数据、Beta 能力和企业管理员责任。",
       "priority": 0.7,
       "changefreq": "monthly",
       "ogType": "website",
@@ -92,7 +92,7 @@
     {
       "path": "/docs/introduction",
       "title": "简介 - 文档 - 老实人AI",
-      "description": "了解老实人AI 的 AI 编码中转服务、适用场景、模型支持和基础接入方式。",
+      "description": "了解老实人AI 的 AI 编码接口与网关服务、适用场景、模型支持和基础接入方式。",
       "priority": 0.8,
       "changefreq": "monthly",
       "ogType": "article",
@@ -350,9 +350,9 @@
       "dateModified": "2026-05-23"
     },
     {
-      "path": "/docs/api-gateway-vs-relay",
-      "title": "AI API 网关和普通中转有什么区别 - 文档 - 老实人AI",
-      "description": "解释个人开发者和企业团队如何区分普通 API 中转、AI API 网关和多模型统一接入。",
+      "path": "/docs/ai-api-gateway-service",
+      "title": "AI API 网关和基础 API 接入有什么区别 - 文档 - 老实人AI",
+      "description": "解释个人开发者和企业团队如何区分基础 API 接入、AI API 网关和多模型统一接入。",
       "priority": 0.8,
       "changefreq": "monthly",
       "ogType": "article",

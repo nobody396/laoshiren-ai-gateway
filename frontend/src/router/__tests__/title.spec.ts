@@ -24,6 +24,6 @@ describe('resolveDocumentTitle', () => {
   })
 
   it('支持首页使用“站点名 - 标题”格式', () => {
-    expect(resolveDocumentTitle('AI 编码中转', '老实人AI', undefined, { siteNameFirst: true })).toBe('老实人AI - AI 编码中转')
+    expect(resolveDocumentTitle('AI 编码网关', '老实人AI', undefined, { siteNameFirst: true })).toBe('老实人AI - AI 编码网关')
   })
 })

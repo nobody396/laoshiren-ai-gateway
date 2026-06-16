@@ -1,6 +1,6 @@
 <template>
-  <!-- 客服入口按钮：点击弹出二维码弹窗 -->
-  <div v-if="hasAnyQRCode">
+  <!-- 客服入口按钮：点击弹出客服联系方式弹窗 -->
+  <div v-if="hasCustomerServiceContact">
     <button
       @click="openModal"
       class="relative flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-600 transition-all hover:scale-105 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-800 dark:hover:text-white"
@@ -48,11 +48,11 @@
               </div>
             </div>
 
-            <!-- 内容：两列二维码 -->
+            <!-- 内容：售后客服 + 技术客服 -->
             <div class="grid gap-6 p-6 sm:grid-cols-2">
               <!-- 售后客服 -->
               <div
-                v-if="afterSalesQRCode"
+                v-if="showAfterSalesContact"
                 class="flex flex-col items-center rounded-2xl border border-gray-100 bg-gray-50/50 p-5 dark:border-dark-700 dark:bg-dark-900/30"
               >
                 <div class="mb-3 text-center">
@@ -64,16 +64,28 @@
                   </p>
                 </div>
                 <img
+                  v-if="afterSalesQRCode"
                   :src="afterSalesQRCode"
                   :alt="t('common.afterSalesTitle')"
                   class="h-44 w-44 rounded-lg border border-gray-200 bg-white object-contain p-2 dark:border-dark-600"
                   @error="onImgError($event, 'afterSales')"
                 />
+                <div
+                  v-else-if="supportContact"
+                  class="flex min-h-44 w-full flex-col items-center justify-center rounded-lg border border-gray-200 bg-white p-4 text-center dark:border-dark-600 dark:bg-dark-800"
+                >
+                  <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {{ t('common.wechatId') }}
+                  </span>
+                  <span class="mt-2 break-all text-lg font-semibold text-gray-900 dark:text-white">
+                    {{ supportContact }}
+                  </span>
+                </div>
               </div>
 
               <!-- 技术客服 -->
               <div
-                v-if="techSupportQRCode"
+                v-if="showTechSupportContact"
                 class="flex flex-col items-center rounded-2xl border border-gray-100 bg-gray-50/50 p-5 dark:border-dark-700 dark:bg-dark-900/30"
               >
                 <div class="mb-3 text-center">
@@ -85,11 +97,23 @@
                   </p>
                 </div>
                 <img
+                  v-if="techSupportQRCode"
                   :src="techSupportQRCode"
                   :alt="t('common.techSupportTitle')"
                   class="h-44 w-44 rounded-lg border border-gray-200 bg-white object-contain p-2 dark:border-dark-600"
                   @error="onImgError($event, 'techSupport')"
                 />
+                <div
+                  v-else-if="supportContact"
+                  class="flex min-h-44 w-full flex-col items-center justify-center rounded-lg border border-gray-200 bg-white p-4 text-center dark:border-dark-600 dark:bg-dark-800"
+                >
+                  <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {{ t('common.wechatId') }}
+                  </span>
+                  <span class="mt-2 break-all text-lg font-semibold text-gray-900 dark:text-white">
+                    {{ supportContact }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -102,7 +126,7 @@
 <script setup lang="ts">
 /**
  * 顶部栏客服入口按钮
- * 点击弹出弹窗，展示售后客服 + 技术客服二维码
+ * 点击弹出弹窗，展示售后客服 + 技术客服联系方式
  * 二维码图片来源于 admin 配置的 public settings
  */
 import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
@@ -113,11 +137,15 @@ import Icon from '@/components/icons/Icon.vue'
 
 const { t } = useI18n()
 const appStore = useAppStore()
-const { techSupportQRCode, afterSalesQRCode } = storeToRefs(appStore)
+const { contactInfo, techSupportQRCode, afterSalesQRCode } = storeToRefs(appStore)
 
-// 至少有一个二维码配置时才显示按钮
-const hasAnyQRCode = computed(
-  () => !!techSupportQRCode.value || !!afterSalesQRCode.value
+const supportContact = computed(() => contactInfo.value.trim())
+const showAfterSalesContact = computed(() => !!afterSalesQRCode.value || !!supportContact.value)
+const showTechSupportContact = computed(() => !!techSupportQRCode.value || !!supportContact.value)
+
+// 至少有一个二维码或客服联系方式配置时才显示按钮
+const hasCustomerServiceContact = computed(
+  () => showAfterSalesContact.value || showTechSupportContact.value
 )
 
 // 弹窗开关状态

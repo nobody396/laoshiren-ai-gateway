@@ -384,11 +384,22 @@
         <div v-if="monthlyDirectPurchaseQRCode" class="topup-direct-qr">
           <img :src="monthlyDirectPurchaseQRCode" alt="Monthly card support group QR code" />
         </div>
+        <div v-else-if="monthlyDirectPurchaseContact" class="topup-direct-contact">
+          <span>{{ t('topup.monthlyDirectContactLabel') }}</span>
+          <strong>{{ monthlyDirectPurchaseContact }}</strong>
+        </div>
         <div v-else class="topup-direct-qr topup-direct-qr--empty">
           {{ t('topup.monthlyDirectNoQr') }}
         </div>
         <p class="topup-direct-copy">
-          {{ t('topup.monthlyDirectInstruction', { plan: selectedMonthlyPlan?.name }) }}
+          {{
+            monthlyDirectPurchaseContact
+              ? t('topup.monthlyDirectWechatInstruction', {
+                  contact: monthlyDirectPurchaseContact,
+                  plan: selectedMonthlyPlan?.name
+                })
+              : t('topup.monthlyDirectInstruction', { plan: selectedMonthlyPlan?.name })
+          }}
         </p>
       </section>
     </div>
@@ -487,6 +498,9 @@ const canOpenSelectedMonthlyCardShop = computed(() => selectedMonthlyCardShopUrl
 const monthlyDirectPurchaseQRCode = computed(
   () =>
     (appStore.cachedPublicSettings?.after_sales_qrcode || appStore.cachedPublicSettings?.tech_support_qrcode || '').trim()
+)
+const monthlyDirectPurchaseContact = computed(
+  () => (appStore.cachedPublicSettings?.contact_info || appStore.contactInfo || '').trim()
 )
 const canUseCardShopForSelected = computed(() => cardShopMode.value && !!selectedCardShopProduct.value)
 const qrPaymentAvailableForSelected = computed(
@@ -2020,6 +2034,31 @@ void Promise.all([
 .topup-direct-qr--empty {
   color: var(--admin-muted, #8a7d63);
   font-weight: 650;
+}
+
+.topup-direct-contact {
+  display: grid;
+  min-height: 8.5rem;
+  place-items: center;
+  margin-top: 1.25rem;
+  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border-radius: 8px;
+  background: rgba(255, 252, 245, 0.78);
+  text-align: center;
+}
+
+.topup-direct-contact span {
+  color: var(--admin-muted, #8a7d63);
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.topup-direct-contact strong {
+  color: var(--admin-ink-deep, #13100b);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 .topup-direct-copy {

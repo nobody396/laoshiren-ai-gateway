@@ -807,7 +807,7 @@ export default {
     copyBaseUrl: 'Copy Base URL',
     baseUrlCopied: 'Base URL copied',
     importToCcSwitch: 'Import to CCS',
-    configureCodex: 'Configure Codex',
+    configureCodex: 'One-click Setup',
     configureCodexHint: 'Copy one command to install Codex, write config, and test the API key',
     codexAutoConfigCommandCopied: 'Codex setup command copied. Paste it into your terminal to run.',
     keyMustBeActiveForCodexConfig: 'Enable this API key before copying the Codex setup command',
@@ -5864,7 +5864,7 @@ export default {
       },
       useOptions: {
         title: 'Choose how to use it',
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Your key is ready. There are a few paths:</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>Recommended for Codex beginners:</b> for OpenAI / Codex groups, click "Configure Codex" to copy one terminal command that installs Codex, writes config, and tests the API key.</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>Already have an OpenAI official plan:</b> save the official Provider first, then import the gateway, so you can switch between both.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>Need multiple Provider switching:</b> use "Import to CCS" with CC Switch. Without extra tools, use "Use Key" and copy the config manually.</p></div></div>'
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Your key is ready. There are a few paths:</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>Recommended for Codex beginners:</b> for OpenAI / Codex groups, click "One-click Setup" to copy one terminal command that installs Codex, writes config, and tests the API key.</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>Already have an OpenAI official plan:</b> save the official Provider first, then import the gateway, so you can switch between both.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>Need multiple Provider switching:</b> use "Import to CCS" with CC Switch. Without extra tools, use "Use Key" and copy the config manually.</p></div></div>'
       },
       docs: {
         title: '📚 Tutorials and download guide',

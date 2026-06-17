@@ -239,7 +239,7 @@ const _pricingPlans = [
     category: '包月付费',
     badge: '最受欢迎',
     name: '包月付费套餐',
-    description: '包月付费,每周固定可用额度,额度不结转。',
+    description: '包月付费,每月固定可用额度,额度不结转。',
     price: '¥399.00',
     unit: '/ 月',
     variant: 'is-max',
@@ -249,7 +249,7 @@ const _pricingPlans = [
     ctaType: 'route',
     features: [
       '覆盖主流 Claude / Codex 编码模型调用',
-      '每周可用 $110 额度',
+      '每月固定额度,整月共享使用',
       '可与PAYGO套餐同时使用'
     ]
   },

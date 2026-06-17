@@ -49,7 +49,6 @@ export type MonthlyCreditCardPlanEntitlement = {
   claude_group?: MonthlyCreditCardPlanGroupEntitlement | null
 }
 
-const weeklyCardDays = 7
 const monthlyCardDays = 30
 const defaultGptCreditsPerUsd = 0.4
 const defaultClaudeCreditsPerUsd = 1.25
@@ -102,7 +101,7 @@ function createMonthlyCreditCardPlan(
 ): MonthlyCreditCardPlan {
   const weeklyCredits = input.disableWeeklyLimit
     ? 0
-    : resolveSharedLimit(entitlement, 'weekly_limit_usd') ?? input.dailyCredits * weeklyCardDays
+    : resolveSharedLimit(entitlement, 'weekly_limit_usd') ?? 0
   const monthlyCredits = resolveSharedLimit(entitlement, 'monthly_limit_usd') ?? input.dailyCredits * monthlyCardDays
   const displayDailyCredits = input.dailyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE
   const displayWeeklyCredits = weeklyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE
@@ -158,7 +157,8 @@ const monthlyCreditCardPlanInputs = [
     dailyCredits: 15,
     description: '适合首次尝鲜，一份额度池同时覆盖 GPT Pro 与 Claude Max。',
     accent: 'lite',
-    cardShopUrl: 'https://pay.ldxp.cn/item/dinyum'
+    cardShopUrl: 'https://pay.ldxp.cn/item/dinyum',
+    disableWeeklyLimit: true
   },
   {
     id: 'pro',
@@ -168,7 +168,8 @@ const monthlyCreditCardPlanInputs = [
     dailyCredits: 30,
     description: '适合稳定日常开发，两个高阶分组共用同一份总额度。',
     accent: 'pro',
-    cardShopUrl: 'https://pay.ldxp.cn/item/b1e0f5'
+    cardShopUrl: 'https://pay.ldxp.cn/item/b1e0f5',
+    disableWeeklyLimit: true
   },
   {
     id: 'max',
@@ -178,7 +179,8 @@ const monthlyCreditCardPlanInputs = [
     dailyCredits: 40,
     description: '适合重度开发者，共享池在复杂任务和长会话里留出余量。',
     accent: 'max',
-    cardShopUrl: 'https://pay.ldxp.cn/item/lhd7pa'
+    cardShopUrl: 'https://pay.ldxp.cn/item/lhd7pa',
+    disableWeeklyLimit: true
   },
   {
     id: 'ultra',
@@ -188,7 +190,8 @@ const monthlyCreditCardPlanInputs = [
     dailyCredits: 50,
     description: '适合长期高频使用，两条高阶渠道共用同一份月度额度。',
     accent: 'ultra',
-    cardShopUrl: 'https://pay.ldxp.cn/item/kqbjn9'
+    cardShopUrl: 'https://pay.ldxp.cn/item/kqbjn9',
+    disableWeeklyLimit: true
   },
   {
     id: 'apex',

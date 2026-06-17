@@ -48,8 +48,24 @@
               </div>
             </div>
 
-            <!-- 内容：售后客服 + 技术客服 -->
-            <div class="grid gap-6 p-6 sm:grid-cols-2">
+            <!-- 内容：仅配置微信号时显示单个客服入口；配置二维码时区分售后/技术客服 -->
+            <div v-if="showSingleContact" class="p-6">
+              <div
+                class="flex flex-col items-center rounded-2xl border border-gray-100 bg-gray-50/50 p-6 text-center dark:border-dark-700 dark:bg-dark-900/30"
+              >
+                <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
+                  <Icon name="headphones" size="lg" />
+                </div>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {{ t('common.wechatId') }}
+                </span>
+                <span class="mt-2 break-all text-2xl font-semibold text-gray-900 dark:text-white">
+                  {{ supportContact }}
+                </span>
+              </div>
+            </div>
+
+            <div v-else class="grid gap-6 p-6 sm:grid-cols-2">
               <!-- 售后客服 -->
               <div
                 v-if="showAfterSalesContact"
@@ -142,6 +158,9 @@ const { contactInfo, techSupportQRCode, afterSalesQRCode } = storeToRefs(appStor
 const supportContact = computed(() => contactInfo.value.trim())
 const showAfterSalesContact = computed(() => !!afterSalesQRCode.value || !!supportContact.value)
 const showTechSupportContact = computed(() => !!techSupportQRCode.value || !!supportContact.value)
+const showSingleContact = computed(
+  () => !!supportContact.value && !afterSalesQRCode.value && !techSupportQRCode.value
+)
 
 // 至少有一个二维码或客服联系方式配置时才显示按钮
 const hasCustomerServiceContact = computed(

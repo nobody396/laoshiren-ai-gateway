@@ -21,11 +21,8 @@
         </div>
       </div>
 
-      <!-- Right: Announcements + Docs + Language + Subscriptions + Balance + User Dropdown -->
+      <!-- Right: Support + Announcements + Docs + Language + Subscriptions + Balance + User Dropdown -->
       <div class="flex items-center gap-2">
-        <!-- 服务状态入口 -->
-        <ServiceStatusButton v-if="user" />
-
         <!-- 官网入口 -->
         <a
           v-if="user"
@@ -229,7 +226,6 @@ import { useAdminSettingsStore } from '@/stores/adminSettings'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMini.vue'
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
-import ServiceStatusButton from '@/components/common/ServiceStatusButton.vue'
 import CustomerServiceButton from '@/components/common/CustomerServiceButton.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { issueSSOTicket } from '@/api/auth'

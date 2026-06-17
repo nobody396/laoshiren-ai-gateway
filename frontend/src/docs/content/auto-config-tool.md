@@ -42,6 +42,7 @@ curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash
 - 将 npm 镜像切到国内源，降低无代理环境下载失败率
 - 安装 `Claude Code` 和 `Codex`
 - 写入对应配置文件
+- 对 Codex 执行 API Key 测试，确认 `/v1/models` 可以正常返回
 - 最后执行版本检查，确认命令可以运行
 
 ### Windows PowerShell
@@ -85,13 +86,13 @@ Windows PowerShell（下载后直接执行）：
 macOS / Linux：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex
+curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
 ```
 
 Windows PowerShell（管道模式）：
 
 ```powershell
-$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
+$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; $env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
 ```
 
 Windows PowerShell（下载后直接执行）：
@@ -178,6 +179,7 @@ review_model = "gpt-5.4"
 model_reasoning_effort = "high"
 disable_response_storage = true
 network_access = "enabled"
+preferred_auth_method = "apikey"
 
 [model_providers.OpenAI]
 name = "OpenAI"
@@ -233,7 +235,7 @@ claude --version
 codex --version
 ```
 
-只要命令能输出版本号，通常就说明安装链路已经打通。
+脚本还会自动用你的 Codex API Key 请求 `/v1/models`。因此执行脚本时看到 `Codex API Key 测试通过`，再加上 `codex --version` 能输出版本号，才说明配置和命令链路都已经打通。
 
 ---
 

@@ -345,6 +345,16 @@
                 <Icon name="terminal" size="sm" />
                 <span class="text-xs">{{ t('keys.useKey') }}</span>
               </button>
+              <!-- Codex Auto Config Button -->
+              <button
+                v-if="row.group?.platform === 'openai'"
+                @click="copyCodexAutoConfigCommand(row)"
+                :title="t('keys.configureCodexHint')"
+                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
+              >
+                <Icon name="terminal" size="sm" />
+                <span class="text-xs">{{ t('keys.configureCodex') }}</span>
+              </button>
               <!-- Import to CC Switch Button -->
               <button
                 v-if="!publicSettings?.hide_ccs_import_button"
@@ -1412,6 +1422,44 @@ const copySaveOfficialProviderCommand = async () => {
     ? "$env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1 | iex"
     : 'curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash'
   await clipboardCopy(command, t('keys.saveOfficialProviderCommandCopied'))
+}
+
+const shellSingleQuote = (value: string): string => {
+  return `'${value.replace(/'/g, "'\"'\"'")}'`
+}
+
+const powerShellSingleQuote = (value: string): string => {
+  return `'${value.replace(/'/g, "''")}'`
+}
+
+const buildCodexAutoConfigCommand = (row: ApiKey): string => {
+  const isWindows = navigator.userAgent.toLowerCase().includes('windows')
+  const baseUrl = displayApiBaseUrl.value
+
+  if (isWindows) {
+    return [
+      `$env:LAOSHIRENAI_CODEX_API_KEY=${powerShellSingleQuote(row.key)}`,
+      "$env:LAOSHIRENAI_TOOLS='codex'",
+      `$env:LAOSHIRENAI_BASE_URL=${powerShellSingleQuote(baseUrl)}`,
+      'irm https://laoshirenai.com/auto-config/install.ps1 | iex'
+    ].join('; ')
+  }
+
+  return [
+    'curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s --',
+    `--codex-api-key ${shellSingleQuote(row.key)}`,
+    '--tools codex',
+    `--base-url ${shellSingleQuote(baseUrl)}`
+  ].join(' ')
+}
+
+const copyCodexAutoConfigCommand = async (row: ApiKey) => {
+  if (row.status !== 'active') {
+    appStore.showError(t('keys.keyMustBeActiveForCodexConfig'))
+    return
+  }
+
+  await clipboardCopy(buildCodexAutoConfigCommand(row), t('keys.codexAutoConfigCommandCopied'))
 }
 
 const isAbortError = (error: unknown) => {

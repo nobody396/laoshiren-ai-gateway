@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="0.1.0"
+SCRIPT_VERSION="0.2.0"
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_TOOLS="all"
 DEFAULT_NODE_INDEX_PRIMARY="https://npmmirror.com/mirrors/node/index.tab"
@@ -579,6 +579,7 @@ review_model = "gpt-5.4"
 model_reasoning_effort = "high"
 disable_response_storage = true
 network_access = "enabled"
+preferred_auth_method = "apikey"
 
 [model_providers.OpenAI]
 name = "OpenAI"
@@ -586,6 +587,45 @@ base_url = "${BASE_URL}"
 wire_api = "responses"
 requires_openai_auth = true
 EOF
+}
+
+uses_codex() {
+  [ "$TOOLS" = "all" ] || [ "$TOOLS" = "codex" ]
+}
+
+normalize_openai_v1_base_url() {
+  local normalized_url
+
+  normalized_url="${1%/}"
+  case "$normalized_url" in
+    */v1)
+      printf '%s' "$normalized_url"
+      ;;
+    *)
+      printf '%s/v1' "$normalized_url"
+      ;;
+  esac
+}
+
+verify_codex_api_key() {
+  if ! uses_codex; then
+    return 0
+  fi
+
+  local api_base_url
+  local status_code
+
+  api_base_url="$(normalize_openai_v1_base_url "$BASE_URL")"
+  log_info "正在测试 Codex API Key"
+  status_code="$(curl -sS -o /dev/null -w '%{http_code}' \
+    -H "Authorization: Bearer ${CODEX_API_KEY}" \
+    "${api_base_url}/models" || true)"
+
+  if [ "$status_code" != "200" ]; then
+    log_error "Codex API Key 测试失败: ${api_base_url}/models 返回 HTTP ${status_code}，请检查 Key、分组和 API 地址"
+  fi
+
+  log_info "Codex API Key 测试通过"
 }
 
 # 根据用户选择写入 Claude Code 配置。
@@ -629,6 +669,9 @@ print_summary() {
   printf '  - Claude 配置: %s\n' "$CLAUDE_SETTINGS_PATH"
   printf '  - Codex 鉴权: %s\n' "$CODEX_AUTH_PATH"
   printf '  - Codex 配置: %s\n' "$CODEX_CONFIG_PATH"
+  if uses_codex; then
+    printf '  - Codex API Key 测试: 已通过\n'
+  fi
   printf '  - PATH 已写入: %s\n' "$PROFILE_FILE"
   printf '\n'
   printf '建议执行:\n'
@@ -654,6 +697,7 @@ main() {
   ensure_wrapper_scripts
   configure_claude
   configure_codex
+  verify_codex_api_key
   verify_client_commands
   print_summary
 }

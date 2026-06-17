@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.1.0'
+$ScriptVersion = '0.2.0'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultTools = 'all'
 $DefaultNodeIndexPrimary = 'https://npmmirror.com/mirrors/node/index.json'
@@ -627,6 +627,7 @@ review_model = "gpt-5.4"
 model_reasoning_effort = "high"
 disable_response_storage = true
 network_access = "enabled"
+preferred_auth_method = "apikey"
 
 [model_providers.OpenAI]
 name = "OpenAI"
@@ -635,6 +636,49 @@ wire_api = "responses"
 requires_openai_auth = true
 "@
   [System.IO.File]::WriteAllText($CodexConfigPath, $toml, [System.Text.UTF8Encoding]::new($false))
+}
+
+function Test-UsesCodex {
+  return $script:Tools -in @('all', 'codex')
+}
+
+function Get-OpenAIV1BaseUrl {
+  param([string]$Value)
+
+  $NormalizedUrl = $Value.TrimEnd([char[]]'/')
+  if ($NormalizedUrl.EndsWith('/v1', [StringComparison]::OrdinalIgnoreCase)) {
+    return $NormalizedUrl
+  }
+
+  return "$NormalizedUrl/v1"
+}
+
+function Test-CodexApiKey {
+  if (-not (Test-UsesCodex)) {
+    return
+  }
+
+  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  Write-Info '正在测试 Codex API Key'
+
+  try {
+    $Response = Invoke-WebRequest -Uri "$ApiBaseUrl/models" -Headers @{
+      Authorization = "Bearer $script:CodexApiKey"
+    } -Method GET
+
+    if ([int]$Response.StatusCode -ne 200) {
+      Stop-Script "Codex API Key 测试失败: $ApiBaseUrl/models 返回 HTTP $($Response.StatusCode)，请检查 Key、分组和 API 地址"
+    }
+  } catch {
+    $Status = '请求失败'
+    $ResponseProperty = $_.Exception.PSObject.Properties['Response']
+    if ($null -ne $ResponseProperty -and $null -ne $ResponseProperty.Value -and $ResponseProperty.Value.StatusCode) {
+      $Status = "HTTP $([int]$ResponseProperty.Value.StatusCode)"
+    }
+    Stop-Script "Codex API Key 测试失败: $ApiBaseUrl/models 返回 $Status，请检查 Key、分组和 API 地址"
+  }
+
+  Write-Info 'Codex API Key 测试通过'
 }
 
 # 根据用户选择写入 Claude Code 配置。
@@ -698,6 +742,9 @@ function Print-Summary {
   Write-Host "  - Claude 配置: $ClaudeSettingsPath"
   Write-Host "  - Codex 鉴权: $CodexAuthPath"
   Write-Host "  - Codex 配置: $CodexConfigPath"
+  if (Test-UsesCodex) {
+    Write-Host '  - Codex API Key 测试: 已通过'
+  }
   Write-Host ''
   Write-Host '建议重新打开 PowerShell，然后执行:'
   if ($script:Tools -in @('all', 'claude')) {
@@ -724,6 +771,7 @@ function Main {
   Install-RequestedClients
   Configure-Claude
   Configure-Codex
+  Test-CodexApiKey
   Verify-ClientCommands
   Print-Summary
 }

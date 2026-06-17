@@ -59,16 +59,34 @@ codex --version
 
 ---
 
-## 3. 导入密钥到 Codex
+## 3. 一键配置 Codex
 
-推荐使用 **CC Switch** 工具进行一键配置，也可手动创建配置文件。
+推荐优先使用控制台里的 **配置 Codex** 按钮。它会按你的系统复制一行命令，终端执行后自动完成 Codex 安装、配置写入和 API Key 测试，不需要先安装 CC Switch。
 
-### 方式一：CC Switch（推荐）
+### 方式一：自动配置命令（推荐）
+
+在 API 密钥列表里找到你的 OpenAI / Codex 分组 Key，点击 **配置 Codex**，然后把复制出来的命令粘贴到终端执行。
+
+macOS / Linux 命令格式：
+
+```bash
+curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
+```
+
+Windows PowerShell 命令格式：
+
+```powershell
+$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; $env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
+```
+
+脚本会写入 `~/.codex/auth.json` 和 `~/.codex/config.toml`，并请求 `/v1/models` 测试这把 API Key 是否能正常使用。如果 Key、分组或 API 地址不正确，脚本会直接报错，不会假装配置成功。
+
+### 方式二：CC Switch（可选，多 Provider 切换）
 
 前往 [CC Switch Release](https://github.com/farion1231/cc-switch/releases/latest) 下载安装后，点击 **导入到 CCS** 完成一键导入：
 
 
-导入后点击 **启用** 即可。
+导入后点击 **启用** 即可。这个方式更适合需要在多个 Provider、多个分组或官方订阅之间频繁切换的用户。
 
 #### 官方订阅和接口服务同时放进 CC Switch
 

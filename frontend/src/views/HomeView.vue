@@ -27,7 +27,11 @@
       />
 
       <!-- 开发者月卡 -->
-      <section id="monthly-credit-cards" class="monthly-credit-section mirror-reveal">
+      <section
+        v-if="!isEnglish"
+        id="monthly-credit-cards"
+        class="monthly-credit-section mirror-reveal"
+      >
         <div class="monthly-credit-section__container">
           <MonthlyCreditPlans
             variant="home"

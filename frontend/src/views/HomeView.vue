@@ -30,7 +30,7 @@
       <section
         v-if="!isEnglish"
         id="monthly-credit-cards"
-        class="monthly-credit-section mirror-reveal"
+        class="monthly-credit-section"
       >
         <div class="monthly-credit-section__container">
           <MonthlyCreditPlans

@@ -1,9 +1,9 @@
 <template>
   <section class="claude-combinations">
     <div class="claude-combinations__container mirror-reveal">
-      <p class="section-eyebrow">II · 三柱</p>
-      <h2 class="section-title">Tria Columna</h2>
-      <p class="section-lede">三大模型，各司其位，如帕特农神庙之三柱，共承一檐。</p>
+      <p class="section-eyebrow">{{ ui.eyebrow }}</p>
+      <h2 class="section-title">{{ ui.title }}</h2>
+      <p class="section-lede">{{ ui.lede }}</p>
 
       <div class="pillars-wrap">
         <div class="pillars-architrave" aria-hidden="true"></div>
@@ -24,6 +24,23 @@
 /**
  * 模型矩阵区块
  */
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { locale } = useI18n()
+const isEnglish = computed(() => locale.value === 'en')
+const ui = computed(() => (isEnglish.value
+  ? {
+    eyebrow: 'II · Three Pillars',
+    title: 'Three Model Pillars',
+    lede: 'Three model families, each in its place, holding one roof.'
+  }
+  : {
+    eyebrow: 'II · 三柱',
+    title: '三大模型支柱',
+    lede: '三大模型，各司其位，如帕特农神庙之三柱，共承一檐。'
+  }))
+
 defineProps<{
   models: Array<{
     eyebrow: string

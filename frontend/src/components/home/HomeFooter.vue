@@ -5,13 +5,13 @@
       <div class="home-footer__grid">
         <div class="home-footer__brand">
           <div class="brand-row">
-            <img src="/laoshirenai-icon.jpg" alt="老实人AI" />
+            <img src="/laoshirenai-icon.jpg" :alt="ui.brandName" />
             <div>
-              <span class="brand-name">老实人AI</span>
-              <span class="brand-tag">A Quiet Place for Code</span>
+              <span class="brand-name">{{ ui.brandName }}</span>
+              <span class="brand-tag">{{ ui.brandTag }}</span>
             </div>
           </div>
-          <p>我们以工匠之心，造一处让代码可被审视、可被信赖的安静之地。</p>
+          <p>{{ ui.description }}</p>
         </div>
 
         <div
@@ -35,7 +35,7 @@
       </div>
 
       <div class="home-footer__bottom">
-        <p>© MMXXVI · 老实人AI · Made with reverence for craft.</p>
+        <p>{{ ui.copyright }}</p>
         <p class="home-footer__company">γνῶθι σεαυτόν</p>
       </div>
     </div>
@@ -46,6 +46,25 @@
 /**
  * 页脚组件
  */
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { locale } = useI18n()
+const isEnglish = computed(() => locale.value === 'en')
+const ui = computed(() => (isEnglish.value
+  ? {
+    brandName: 'LaoshirenAI',
+    brandTag: 'A Quiet Place for Code',
+    description: 'We build a quiet place where code can be examined and trusted.',
+    copyright: '© MMXXVI · LaoshirenAI · Made with reverence for craft.'
+  }
+  : {
+    brandName: '老实人AI',
+    brandTag: '安静的代码工作台',
+    description: '我们以工匠之心，造一处让代码可被审视、可被信赖的安静之地。',
+    copyright: '© MMXXVI · 老实人AI · 以敬畏之心打磨工程。'
+  }))
+
 defineProps<{
   sections: Array<{
     title: string

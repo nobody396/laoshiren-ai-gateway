@@ -3,23 +3,23 @@
     <div class="model-reports__container mirror-reveal">
       <div class="greco-divider" aria-hidden="true"></div>
       <div class="reports-heading">
-        <p class="section-eyebrow">III · 检测卷宗</p>
-        <h2 class="section-title">Probatio · 模型检测</h2>
-        <p class="section-lede">由第三方检测工具核验模型身份、协议一致性与响应结构。</p>
+        <p class="section-eyebrow">{{ ui.eyebrow }}</p>
+        <h2 class="section-title">{{ ui.title }}</h2>
+        <p class="section-lede">{{ ui.lede }}</p>
       </div>
 
       <div class="report-board">
         <div class="report-board__summary">
           <div>
-            <span>已公开报告</span>
+            <span>{{ ui.publicReports }}</span>
             <strong>{{ reports.length }}</strong>
           </div>
           <div>
-            <span>平均匹配度</span>
+            <span>{{ ui.averageMatch }}</span>
             <strong>{{ averageScore }}%</strong>
           </div>
           <div>
-            <span>检测方</span>
+            <span>{{ ui.tester }}</span>
             <strong>hvoy.ai</strong>
           </div>
         </div>
@@ -42,34 +42,34 @@
 
             <dl class="report-facts">
               <div>
-                <dt>模型 ID</dt>
+                <dt>{{ ui.modelId }}</dt>
                 <dd>{{ report.modelId }}</dd>
               </div>
               <div>
-                <dt>检测项</dt>
+                <dt>{{ ui.checks }}</dt>
                 <dd>{{ report.passedChecks }}/{{ report.totalChecks }} Pass</dd>
               </div>
               <div>
-                <dt>检测时间</dt>
+                <dt>{{ ui.testedAt }}</dt>
                 <dd>{{ report.testedAt }}</dd>
               </div>
             </dl>
 
             <div class="metric-strip">
               <div>
-                <span>延迟</span>
+                <span>{{ ui.latency }}</span>
                 <strong>{{ report.latency }}</strong>
               </div>
               <div>
-                <span>Tokens/秒</span>
+                <span>{{ ui.tokensPerSecond }}</span>
                 <strong>{{ report.tps }}</strong>
               </div>
               <div>
-                <span>输入</span>
+                <span>{{ ui.input }}</span>
                 <strong>{{ report.inputTokens }}</strong>
               </div>
               <div>
-                <span>输出</span>
+                <span>{{ ui.output }}</span>
                 <strong>{{ report.outputTokens }}</strong>
               </div>
             </div>
@@ -80,7 +80,7 @@
               target="_blank"
               rel="noopener noreferrer"
             >
-              查看完整报告 ↗
+              {{ ui.fullReport }} ↗
             </a>
           </article>
         </div>
@@ -91,6 +91,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 /**
  * 模型检测报告区块
@@ -115,6 +116,42 @@ type ModelReport = {
 const props = defineProps<{
   reports: ModelReport[]
 }>()
+
+const { locale } = useI18n()
+const isEnglish = computed(() => locale.value === 'en')
+const ui = computed(() => (isEnglish.value
+  ? {
+    eyebrow: 'III · Verification Dossier',
+    title: 'Model Verification',
+    lede: 'Third-party checks verify model identity, protocol consistency, and response structure.',
+    publicReports: 'Public reports',
+    averageMatch: 'Average match',
+    tester: 'Tester',
+    modelId: 'Model ID',
+    checks: 'Checks',
+    testedAt: 'Tested at',
+    latency: 'Latency',
+    tokensPerSecond: 'Tokens/sec',
+    input: 'Input',
+    output: 'Output',
+    fullReport: 'View full report'
+  }
+  : {
+    eyebrow: 'III · 检测卷宗',
+    title: '模型检测',
+    lede: '由第三方检测工具核验模型身份、协议一致性与响应结构。',
+    publicReports: '已公开报告',
+    averageMatch: '平均匹配度',
+    tester: '检测方',
+    modelId: '模型 ID',
+    checks: '检测项',
+    testedAt: '检测时间',
+    latency: '延迟',
+    tokensPerSecond: 'Tokens/秒',
+    input: '输入',
+    output: '输出',
+    fullReport: '查看完整报告'
+  }))
 
 const averageScore = computed(() => {
   if (!props.reports.length) return 0

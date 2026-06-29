@@ -1,9 +1,9 @@
 <template>
   <section class="why-choose">
     <div class="why-choose__container mirror-reveal">
-      <p class="section-eyebrow">I · 四美德</p>
-      <h2 class="section-title">Quattuor Virtutes</h2>
-      <p class="section-lede">古希腊智者推崇四主德：审慎、节制、勇毅、正义。我们的工程亦如是。</p>
+      <p class="section-eyebrow">{{ ui.eyebrow }}</p>
+      <h2 class="section-title">{{ ui.title }}</h2>
+      <p class="section-lede">{{ ui.lede }}</p>
 
       <div class="virtue-grid">
         <article
@@ -25,9 +25,26 @@
 /**
  * 为什么选择区块
  */
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 defineProps<{
   featureCards: Array<{ title: string; description: string }>
 }>()
+
+const { locale } = useI18n()
+const isEnglish = computed(() => locale.value === 'en')
+const ui = computed(() => (isEnglish.value
+  ? {
+    eyebrow: 'I · Four Virtues',
+    title: 'Four Virtues',
+    lede: 'Four engineering virtues: prudence, restraint, courage, and justice.'
+  }
+  : {
+    eyebrow: 'I · 四美德',
+    title: '四美德',
+    lede: '古希腊智者推崇四主德：审慎、节制、勇毅、正义。我们的工程亦如是。'
+  }))
 
 const virtueNames = ['Prudentia', 'Temperantia', 'Fortitudo', 'Iustitia']
 

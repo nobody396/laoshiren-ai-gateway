@@ -3,151 +3,115 @@
     <div class="model-pricing__container mirror-reveal">
       <div class="greco-divider" aria-hidden="true"></div>
       <div class="pricing-heading">
-        <p class="section-eyebrow">IV · 价格铭文</p>
-        <h2 class="section-title">Pretium · 模型定价</h2>
-        <p class="section-lede">当前公开可用模型；官方价 × 分组倍率，单位：每 100 万 tokens。</p>
+        <p class="section-eyebrow">{{ ui.eyebrow }}</p>
+        <h2 class="section-title">{{ ui.title }}</h2>
+        <p class="section-lede">{{ ui.lede }}</p>
       </div>
 
       <div class="discount-ledger">
-        <span><strong>Max</strong> {{ maxLedgerLabel }} · 约 {{ maxDiscount }}</span>
-        <span><strong>Pro</strong> {{ proLedgerLabel }} · 约 {{ proDiscount }}</span>
+        <span><strong>DeepSeek</strong> {{ ui.deepseekLedger }}</span>
+        <span><strong>{{ ui.sixFoldProviders }}</strong> {{ ui.sixFoldLedger }}</span>
+        <span><strong>Anthropic Max</strong> {{ maxLedgerLabel }} · {{ ui.approx }} {{ maxDiscount }}</span>
+        <span><strong>OpenAI Pro</strong> {{ proLedgerLabel }} · {{ ui.approx }} {{ proDiscount }}</span>
       </div>
 
-      <aside class="market-reference" aria-labelledby="deepseek-reference-title">
-        <div class="market-reference__copy">
-          <div class="market-reference__heading">
-            <span class="provider-tag provider-tag--deepseek">DeepSeek</span>
-            <h3 id="deepseek-reference-title">{{ deepseekReference.title }}</h3>
+      <div class="pricing-provider-grid" :aria-label="ui.providerGridAria">
+        <article class="provider-card provider-card--gpt" :aria-label="ui.openaiAria">
+          <header class="provider-card__header">
+            <div class="provider-card__brand">
+              <strong>OpenAI</strong>
+              <span>{{ ui.openaiAlias }}</span>
+            </div>
+            <p>{{ ui.proGroup }} · {{ proDiscount }}</p>
+          </header>
+
+          <div class="provider-card__body">
+            <div v-for="row in gptRows" :key="row.model" class="compact-price-row">
+              <div class="compact-model">
+                <span>
+                  <strong>{{ row.model }}</strong>
+                  <em>{{ row.modelId }}</em>
+                </span>
+                <b>Pro {{ row.discount }}</b>
+              </div>
+              <div class="compact-rates compact-rates--three">
+                <span><strong>{{ ui.input }}</strong><em>{{ row.pro.input }}</em><small>{{ ui.official }} {{ row.official.input }}</small></span>
+                <span><strong>{{ ui.cached }}</strong><em>{{ row.pro.cachedInput }}</em><small>{{ ui.official }} {{ row.official.cachedInput }}</small></span>
+                <span><strong>{{ ui.output }}</strong><em>{{ row.pro.output }}</em><small>{{ ui.official }} {{ row.official.output }}</small></span>
+              </div>
+            </div>
           </div>
-          <p>{{ deepseekReference.description }}</p>
-        </div>
-        <div class="market-reference__rates" aria-label="DeepSeek-V4-Pro 官方价格">
-          <div
-            v-for="row in deepseekReference.rows"
-            :key="row.label"
-            class="market-rate"
-          >
-            <span>{{ row.label }}</span>
-            <strong>{{ row.value }}</strong>
-            <em>{{ row.hint }}</em>
+        </article>
+
+        <article class="provider-card provider-card--claude" :aria-label="ui.anthropicAria">
+          <header class="provider-card__header">
+            <div class="provider-card__brand">
+              <strong>Anthropic</strong>
+              <span>{{ ui.anthropicAlias }}</span>
+            </div>
+            <p>{{ ui.maxGroup }} · {{ maxDiscount }}</p>
+          </header>
+
+          <div class="provider-card__body">
+            <div v-for="row in claudeRows" :key="row.model" class="compact-price-row">
+              <div class="compact-model">
+                <span>
+                  <strong>{{ row.model }}</strong>
+                  <em>{{ row.modelId }}</em>
+                </span>
+                <b>{{ row.discount }}</b>
+              </div>
+              <div class="compact-rates">
+                <span><strong>{{ ui.input }}</strong><em>{{ row.max.input }}</em><small>{{ ui.official }} {{ row.official.input }}</small></span>
+                <span><strong>{{ ui.cacheWrite5m }}</strong><em>{{ row.max.cacheWrite5m }}</em><small>{{ ui.official }} {{ row.official.cacheWrite5m }}</small></span>
+                <span><strong>{{ ui.read }}</strong><em>{{ row.max.cacheRead }}</em><small>{{ ui.official }} {{ row.official.cacheRead }}</small></span>
+                <span><strong>{{ ui.output }}</strong><em>{{ row.max.output }}</em><small>{{ ui.official }} {{ row.official.output }}</small></span>
+              </div>
+            </div>
           </div>
-        </div>
-        <a
-          class="market-reference__source"
-          :href="deepseekReference.sourceUrl"
-          target="_blank"
-          rel="noopener noreferrer"
+        </article>
+
+        <article
+          v-for="group in specialProviderGroups"
+          :key="group.key"
+          class="provider-card"
+          :class="`provider-card--${group.key}`"
+          :aria-label="`${group.name} ${ui.priceAriaSuffix}`"
         >
-          {{ deepseekReference.sourceLabel }}
-        </a>
-      </aside>
-
-      <div class="pricing-stack">
-        <article class="pricing-frame">
-          <div class="pricing-frame__header">
-            <span class="provider-tag provider-tag--claude">Claude</span>
-            <div>
-              <h3>Claude 价格</h3>
+          <header class="provider-card__header">
+            <div class="provider-card__brand">
+              <strong>{{ group.name }}</strong>
+              <span>{{ group.alias }}</span>
             </div>
-          </div>
+            <p>{{ group.subtitle }}</p>
+          </header>
 
-          <div class="table-wrapper">
-            <table class="pricing-table pricing-table--claude">
-              <thead>
-                <tr>
-                  <th>Model</th>
-                  <th>官方价格</th>
-                  <th>Max 分组</th>
-                  <th>折扣</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in claudeRows" :key="row.model">
-                  <td class="model-name">
-                    <strong>{{ row.model }}</strong>
-                    <span>{{ row.modelId }}</span>
-                  </td>
-                  <td>
-                    <div class="rate-stack">
-                      <span><strong>Input</strong><em>{{ row.official.input }}</em></span>
-                      <span><strong>5m Write</strong><em>{{ row.official.cacheWrite5m }}</em></span>
-                      <span><strong>Read</strong><em>{{ row.official.cacheRead }}</em></span>
-                      <span><strong>Output</strong><em>{{ row.official.output }}</em></span>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="rate-stack">
-                      <span><strong>Input</strong><em>{{ row.max.input }}</em></span>
-                      <span><strong>5m Write</strong><em>{{ row.max.cacheWrite5m }}</em></span>
-                      <span><strong>Read</strong><em>{{ row.max.cacheRead }}</em></span>
-                      <span><strong>Output</strong><em>{{ row.max.output }}</em></span>
-                    </div>
-                  </td>
-                  <td><span class="discount-tag">{{ row.discount }}</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </article>
-
-        <article class="pricing-frame">
-          <div class="pricing-frame__header">
-            <span class="provider-tag provider-tag--gpt">GPT</span>
-            <div>
-              <h3>GPT 价格</h3>
+          <div class="provider-card__body provider-card__body--short">
+            <div v-for="row in group.rows" :key="row.modelId" class="compact-price-row">
+              <div class="compact-model">
+                <span>
+                  <strong>{{ row.model }}</strong>
+                  <em>{{ row.modelId }}</em>
+                </span>
+                <b>{{ row.discount }}</b>
+              </div>
+              <div class="compact-rates">
+                <span><strong>{{ ui.input }}</strong><em>{{ row.price.input }}</em><small>{{ ui.official }} {{ row.official.input }}</small></span>
+                <span><strong>{{ ui.output }}</strong><em>{{ row.price.output }}</em><small>{{ ui.official }} {{ row.official.output }}</small></span>
+                <span><strong>{{ ui.cacheRead }}</strong><em>{{ row.price.cacheRead }}</em><small>{{ ui.official }} {{ row.official.cacheRead }}</small></span>
+                <span><strong>{{ ui.cacheCreate }}</strong><em>{{ row.price.cacheCreate }}</em><small>{{ ui.official }} {{ row.official.cacheCreate }}</small></span>
+              </div>
             </div>
-          </div>
-
-          <div class="table-wrapper">
-            <table class="pricing-table pricing-table--gpt">
-              <thead>
-                <tr>
-                  <th>Model</th>
-                  <th>官方价格</th>
-                  <th>Pro 分组</th>
-                  <th>折扣</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in gptRows" :key="row.model">
-                  <td class="model-name">
-                    <strong>{{ row.model }}</strong>
-                    <span>{{ row.modelId }}</span>
-                  </td>
-                  <td>
-                    <div class="rate-stack">
-                      <span><strong>Input</strong><em>{{ row.official.input }}</em></span>
-                      <span><strong>Cached</strong><em>{{ row.official.cachedInput }}</em></span>
-                      <span><strong>Output</strong><em>{{ row.official.output }}</em></span>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="rate-stack">
-                      <span><strong>Input</strong><em>{{ row.pro.input }}</em></span>
-                      <span><strong>Cached</strong><em>{{ row.pro.cachedInput }}</em></span>
-                      <span><strong>Output</strong><em>{{ row.pro.output }}</em></span>
-                    </div>
-                  </td>
-                  <td>
-                    <span class="discount-tag">Pro {{ row.discount }}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </article>
       </div>
-
-      <p class="pricing-footnote">
-        列表按生产环境可调度账号的公开模型整理；上下文窗口不按 API 理论值展示，订阅账号池可用上限需以上游账号实际为准。折扣按 1 USD = ¥{{ exchangeRateLabel }} 估算，仅用于展示与官方人民币折算价的相对优惠。
-      </p>
 
       <div class="model-pricing__cta">
         <router-link
           :to="isAuthenticated ? '/dashboard' : '/login'"
           class="cta-btn"
         >
-          免费注册 · 立即体验
+          {{ ui.cta }}
         </router-link>
       </div>
     </div>
@@ -158,6 +122,8 @@
 /**
  * 模型定价表格
  */
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 type ClaudePriceSet = {
   input: string
@@ -188,29 +154,121 @@ type GptPricingRow = {
   discount: string
 }
 
-type MarketPricingReference = {
-  title: string
-  sourceLabel: string
-  sourceUrl: string
-  description: string
-  rows: Array<{
-    label: string
-    value: string
-    hint: string
-  }>
+type SpecialPriceSet = {
+  input: string
+  output: string
+  cacheRead: string
+  cacheCreate: string
 }
 
-defineProps<{
+type SpecialPricingRow = {
+  model: string
+  modelId: string
+  provider: string
+  providerKey: 'deepseek' | 'qwen' | 'glm' | 'minimax'
+  official: SpecialPriceSet
+  price: SpecialPriceSet
+  discount: string
+}
+
+const props = defineProps<{
   claudeRows: ClaudePricingRow[]
   gptRows: GptPricingRow[]
-  deepseekReference: MarketPricingReference
+  specialRows: SpecialPricingRow[]
   maxLedgerLabel: string
   proLedgerLabel: string
   maxDiscount: string
   proDiscount: string
-  exchangeRateLabel: string
   isAuthenticated: boolean
 }>()
+
+const { locale } = useI18n()
+const isEnglish = computed(() => locale.value === 'en')
+
+const ui = computed(() => (isEnglish.value
+  ? {
+    eyebrow: 'IV · Pricing Inscription',
+    title: 'Model Pricing',
+    lede: 'Displayed per 1M tokens.',
+    deepseekLedger: '30% of official price',
+    sixFoldProviders: 'Alibaba Cloud / Zhipu AI / MiniMax',
+    sixFoldLedger: '60% of official price',
+    approx: 'approx.',
+    providerGridAria: 'Model prices grouped by provider',
+    openaiAria: 'OpenAI model pricing',
+    anthropicAria: 'Anthropic model pricing',
+    openaiAlias: 'GPT models',
+    anthropicAlias: 'Claude models',
+    proGroup: 'Pro group',
+    maxGroup: 'Max group',
+    priceAriaSuffix: 'pricing',
+    official: 'Official',
+    input: 'Input',
+    output: 'Output',
+    cached: 'Cached',
+    cacheWrite5m: '5m write',
+    read: 'Read',
+    cacheRead: 'Cache read',
+    cacheCreate: 'Cache create',
+    cta: 'Sign up free · Start now'
+  }
+  : {
+    eyebrow: 'IV · 价格铭文',
+    title: '模型定价',
+    lede: '统一按每 100 万 tokens 展示。',
+    deepseekLedger: '官方价 3 折',
+    sixFoldProviders: '阿里云 / 智谱 AI / MiniMax',
+    sixFoldLedger: '官方价 6 折',
+    approx: '约',
+    providerGridAria: '按供应商分组的模型价格',
+    openaiAria: 'OpenAI 模型价格',
+    anthropicAria: 'Anthropic 模型价格',
+    openaiAlias: 'GPT 模型',
+    anthropicAlias: 'Claude 模型',
+    proGroup: 'Pro 分组',
+    maxGroup: 'Max 分组',
+    priceAriaSuffix: '价格',
+    official: '官方',
+    input: '输入',
+    output: '输出',
+    cached: '缓存',
+    cacheWrite5m: '5分钟写入',
+    read: '读取',
+    cacheRead: '缓存读取',
+    cacheCreate: '缓存创建',
+    cta: '免费注册 · 立即体验'
+  }))
+
+const specialProviderGroups = computed(() => [
+  {
+    key: 'deepseek',
+    name: 'DeepSeek',
+    alias: isEnglish.value ? 'DeepSeek models' : '深度求索',
+    subtitle: isEnglish.value ? '30% of official' : '官方价 3 折',
+    rows: props.specialRows.filter((row) => row.providerKey === 'deepseek')
+  },
+  {
+    key: 'qwen',
+    name: isEnglish.value ? 'Alibaba Cloud' : '阿里云',
+    alias: isEnglish.value ? 'Qwen models' : '通义千问',
+    subtitle: isEnglish.value ? '60% of official' : '官方价 6 折',
+    rows: props.specialRows.filter((row) => row.providerKey === 'qwen')
+  },
+  {
+    key: 'glm',
+    name: isEnglish.value ? 'Zhipu AI' : '智谱 AI',
+    alias: isEnglish.value ? 'GLM models' : 'GLM 模型',
+    subtitle: isEnglish.value ? '60% of official' : '官方价 6 折',
+    rows: props.specialRows.filter((row) => row.providerKey === 'glm')
+  },
+  {
+    key: 'minimax',
+    name: 'MiniMax',
+    alias: 'MiniMax M3',
+    subtitle: isEnglish.value ? '60% of official' : '官方价 6 折',
+    rows: props.specialRows.filter((row) => row.providerKey === 'minimax')
+  }
+])
 </script>
 
 <style scoped>
@@ -292,97 +350,202 @@ defineProps<{
   color: #9a3b1f;
 }
 
-.market-reference {
-  position: relative;
+.pricing-provider-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 1.5rem;
-  margin: 0 auto 2.25rem;
-  padding: 1.125rem 1.25rem;
-  background: #efe6cf;
-  border: 1px solid rgba(63, 90, 58, 0.2);
-  box-shadow: inset 0 0 0 1px rgba(250, 246, 236, 0.46);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 4.25rem 2.25rem;
+  margin-top: 4.25rem;
 }
 
-.market-reference__copy {
-  min-width: 0;
+.provider-card {
+  position: relative;
+  min-height: 20rem;
+  padding: 1rem;
+  background: #faf6ec;
+  border: 1px solid rgba(154, 59, 31, 0.34);
+  box-shadow: 0 1rem 2.6rem rgba(63, 90, 58, 0.08), inset 0 0 0 1px rgba(250, 246, 236, 0.7);
 }
 
-.market-reference__heading {
+.provider-card--claude {
+  min-height: 24rem;
+}
+
+.provider-card--qwen,
+.provider-card--glm,
+.provider-card--minimax {
+  min-height: 23rem;
+}
+
+.provider-card__header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-}
-
-.market-reference__heading h3 {
-  margin: 0;
-  color: #13100b;
-  font-family: 'Cinzel', 'Noto Serif SC', serif;
-  font-size: 1.05rem;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.market-reference__copy p {
-  margin: 0.45rem 0 0;
-  color: #6f634f;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.82rem;
-  line-height: 1.55;
-}
-
-.market-reference__rates {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(6.25rem, 1fr));
-  gap: 0.75rem;
-}
-
-.market-rate {
-  min-height: 4.6rem;
-  padding: 0.75rem 0.875rem;
-  background: rgba(250, 246, 236, 0.72);
-  border: 1px solid rgba(63, 90, 58, 0.14);
+  flex-direction: column;
+  justify-content: center;
+  min-height: 2.55rem;
+  padding: 0.65rem 0.75rem 0.95rem;
+  border-bottom: 1px solid rgba(63, 90, 58, 0.12);
   text-align: center;
 }
 
-.market-rate span,
-.market-rate em {
+.provider-card__brand {
+  position: absolute;
+  top: -2.55rem;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 0.18rem;
+  min-width: max-content;
+  color: #c5482a;
+  line-height: 1;
+  transform: translateX(-50%);
+}
+
+.provider-card__brand strong {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.provider-card__brand span {
+  color: #8a7d63;
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.provider-card__header p {
+  margin: 0;
+  color: #6f634f;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.provider-card__body {
+  display: grid;
+  gap: 0.75rem;
+  max-height: 32rem;
+  overflow-y: auto;
+  padding: 0.95rem 0.1rem 0.1rem;
+  scrollbar-color: rgba(154, 59, 31, 0.42) transparent;
+  scrollbar-width: thin;
+}
+
+.provider-card__body--short {
+  max-height: none;
+}
+
+.compact-price-row {
+  display: grid;
+  gap: 0.72rem;
+  padding: 0.82rem;
+  background: #f8f3e7;
+  border: 1px solid rgba(63, 90, 58, 0.14);
+}
+
+.compact-model {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.compact-model span {
+  min-width: 0;
+}
+
+.compact-model strong {
   display: block;
+  color: #13100b;
+  font-family: 'EB Garamond', 'Noto Serif SC', serif;
+  font-feature-settings: 'lnum' 1, 'tnum' 1;
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.18;
+}
+
+.compact-model em {
+  display: block;
+  margin-top: 0.2rem;
   color: #8a7d63;
   font-family: 'Inter', sans-serif;
-  font-size: 0.63rem;
+  font-size: 0.62rem;
   font-style: normal;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.compact-model b {
+  flex: 0 0 auto;
+  padding: 0.22rem 0.48rem;
+  background: #9a3b1f;
+  color: #faf6ec;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.compact-rates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.46rem;
+}
+
+.compact-rates--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.compact-rates span {
+  display: grid;
+  align-content: start;
+  gap: 0.18rem;
+  min-height: 4.35rem;
+  padding: 0.52rem 0.48rem;
+  background: rgba(250, 246, 236, 0.88);
+  border: 1px solid rgba(63, 90, 58, 0.1);
+}
+
+.compact-rates strong,
+.compact-rates small {
+  color: #8a7d63;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   line-height: 1.2;
   text-transform: uppercase;
 }
 
-.market-rate strong {
-  display: block;
-  margin: 0.28rem 0 0.25rem;
+.compact-rates em {
   color: #13100b;
   font-family: 'EB Garamond', 'Noto Serif SC', serif;
   font-feature-settings: 'lnum' 1, 'tnum' 1;
-  font-size: 1.32rem;
+  font-size: 1.02rem;
+  font-style: normal;
   font-weight: 700;
-  line-height: 1.05;
+  line-height: 1.1;
 }
 
-.market-reference__source {
-  color: #3f5a3a;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.72rem;
+.compact-rates small {
+  font-size: 0.5rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-decoration: none;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.market-reference__source:hover {
-  color: #9a3b1f;
+  letter-spacing: 0.03em;
+  text-transform: none;
 }
 
 .pricing-stack {
@@ -434,6 +597,14 @@ defineProps<{
 .pricing-table--claude,
 .pricing-table--gpt {
   min-width: 760px;
+}
+
+.pricing-table--special {
+  min-width: 920px;
+}
+
+.pricing-frame--special {
+  margin-bottom: 2.25rem;
 }
 
 .pricing-table th {
@@ -493,45 +664,6 @@ defineProps<{
   font-weight: 700;
   letter-spacing: 0;
   line-height: 1.25;
-}
-
-.provider-tag,
-.discount-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.3rem 0.7rem;
-  border-radius: 2px;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  line-height: 1.2;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.provider-tag--claude {
-  background: rgba(154, 59, 31, 0.1);
-  color: #7a2d17;
-}
-
-.provider-tag--gpt {
-  background: rgba(63, 90, 58, 0.12);
-  color: #26361f;
-}
-
-.provider-tag--deepseek {
-  background: rgba(28, 94, 105, 0.12);
-  color: #1c5e69;
-}
-
-.discount-tag {
-  background: #9a3b1f;
-  color: #faf6ec;
-}
-
-.discount-tag--muted {
-  background: #3f5a3a;
 }
 
 .rate-stack {
@@ -609,32 +741,44 @@ defineProps<{
     width: min(100% - 2rem, 1320px);
   }
 
-  .market-reference {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .market-reference__heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.55rem;
-  }
-
-  .market-reference__rates {
-    grid-template-columns: 1fr;
-  }
-
-  .market-reference__source {
-    justify-self: start;
-  }
-
   .pricing-frame__header {
     flex-direction: column;
+  }
+
+  .pricing-provider-grid {
+    grid-template-columns: 1fr;
+    gap: 3.75rem;
+    margin-top: 3.5rem;
+  }
+
+  .provider-card,
+  .provider-card--claude,
+  .provider-card--qwen,
+  .provider-card--glm,
+  .provider-card--minimax {
+    min-height: auto;
+  }
+
+  .provider-card__body {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .compact-rates,
+  .compact-rates--three {
+    grid-template-columns: 1fr;
   }
 
   .cta-btn {
     width: 100%;
     padding-inline: 1.25rem;
   }
+}
+
+@media (min-width: 769px) and (max-width: 1180px) {
+  .pricing-provider-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
 }
 </style>

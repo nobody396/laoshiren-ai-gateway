@@ -5,11 +5,11 @@
       <!-- 品牌 Logo -->
       <router-link to="/" class="home-header__brand">
         <span class="home-header__seal">
-          <img src="/laoshirenai-icon.jpg" alt="老实人AI" class="home-header__logo" />
+          <img src="/laoshirenai-icon.jpg" :alt="brandName" class="home-header__logo" />
         </span>
         <span class="home-header__brand-text">
-          <span class="home-header__brand-name">老实人AI</span>
-          <span class="home-header__brand-tag">A Quiet Place for Code</span>
+          <span class="home-header__brand-name">{{ brandName }}</span>
+          <span class="home-header__brand-tag">{{ brandTag }}</span>
         </span>
       </router-link>
 
@@ -31,13 +31,14 @@
 
       <!-- 右侧操作按钮 -->
       <div class="home-header__actions">
+        <LocaleSwitcher class="home-header__locale" />
         <a
           :href="isAuthenticated ? dashboardPath : '/login'"
           class="home-header__cta"
           target="_blank"
           rel="noopener noreferrer"
         >
-          {{ isAuthenticated ? '控制台' : 'Begin' }}
+          {{ isAuthenticated ? ctaDashboardLabel : ctaBeginLabel }}
         </a>
       </div>
     </div>
@@ -51,12 +52,20 @@
  * - 导航链接：首页/定价/文档
  * - 右侧 CTA 按钮（登录/控制台）
  */
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 
 const $router = useRouter()
+const { locale } = useI18n()
 
 const isScrolled = ref(false)
+const isEnglish = computed(() => locale.value === 'en')
+const brandName = computed(() => (isEnglish.value ? 'LaoshirenAI' : '老实人AI'))
+const brandTag = computed(() => (isEnglish.value ? 'A Quiet Place for Code' : '安静的代码工作台'))
+const ctaDashboardLabel = computed(() => (isEnglish.value ? 'Dashboard' : '控制台'))
+const ctaBeginLabel = computed(() => (isEnglish.value ? 'Begin' : '开始'))
 
 const handleScroll = () => {
   isScrolled.value = window.scrollY > 20
@@ -206,7 +215,12 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 0.75rem;
   flex: 1;
+}
+
+.home-header__locale {
+  flex: 0 0 auto;
 }
 
 /* CTA 按钮 - 圆角药丸 */

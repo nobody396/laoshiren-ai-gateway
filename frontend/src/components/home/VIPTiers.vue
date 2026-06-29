@@ -2,24 +2,17 @@
   <section class="vip-tiers">
     <div class="vip-tiers__container mirror-reveal">
       <div class="seal-row">
-        <img src="/laoshirenai-icon.jpg" alt="老实人AI" />
+        <img src="/laoshirenai-icon.jpg" :alt="ui.brandAlt" />
       </div>
-      <h3 class="trusted-title">已被开发者广泛使用</h3>
+      <h3 class="trusted-title">{{ ui.title }}</h3>
       <div class="stats-list">
-        <div class="stat-item">
-          <span class="stat-num">2000+</span>
-          <span class="stat-label">服务开发者</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-num">100万+</span>
-          <span class="stat-label">累计调用次数</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-num">6.3s</span>
-          <span class="stat-label">平均耗时</span>
-        </div>
+        <template v-for="(stat, index) in ui.stats" :key="stat.label">
+          <div v-if="index > 0" class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-num">{{ stat.value }}</span>
+            <span class="stat-label">{{ stat.label }}</span>
+          </div>
+        </template>
       </div>
     </div>
   </section>
@@ -29,6 +22,30 @@
 /**
  * 数据指标区块
  */
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { locale } = useI18n()
+const isEnglish = computed(() => locale.value === 'en')
+const ui = computed(() => (isEnglish.value
+  ? {
+    brandAlt: 'LaoshirenAI',
+    title: 'Widely used by developers',
+    stats: [
+      { value: '2000+', label: 'Developers served' },
+      { value: '1M+', label: 'Total calls' },
+      { value: '6.3s', label: 'Average latency' }
+    ]
+  }
+  : {
+    brandAlt: '老实人AI',
+    title: '已被开发者广泛使用',
+    stats: [
+      { value: '2000+', label: '服务开发者' },
+      { value: '100万+', label: '累计调用次数' },
+      { value: '6.3s', label: '平均耗时' }
+    ]
+  }))
 </script>
 
 <style scoped>

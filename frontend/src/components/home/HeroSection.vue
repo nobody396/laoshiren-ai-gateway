@@ -2,15 +2,13 @@
   <section class="hero-section">
     <div class="hero-section__container">
       <div class="hero-section__content">
-        <div class="hero-section__eyebrow mirror-reveal">老实人AI · AI Coding Gateway · MMXXVI</div>
+        <div class="hero-section__eyebrow mirror-reveal">{{ ui.eyebrow }}</div>
         <h1 class="hero-section__title">
-          <span class="mirror-reveal" style="transition-delay: 0.08s">老实人AI</span>
-          <em class="mirror-reveal" style="transition-delay: 0.16s">编码网关</em>
+          <span class="mirror-reveal" style="transition-delay: 0.08s">{{ ui.titleBrand }}</span>
+          <em class="mirror-reveal" style="transition-delay: 0.16s">{{ ui.titleProduct }}</em>
         </h1>
         <p class="hero-section__desc mirror-reveal" style="transition-delay: 0.2s">
-          <span>Code with clarity. 让每一行代码都经得起审视。</span>
-          <span>像柏拉图与门徒在柱廊下对谈一样，</span>
-          <span>通过老实人AI与 Claude Code、Codex、ChatGPT、Gemini 一起思考。</span>
+          <span v-for="line in ui.descriptionLines" :key="line">{{ line }}</span>
         </p>
 
         <div class="hero-section__actions mirror-reveal" style="transition-delay: 0.32s">
@@ -18,21 +16,21 @@
             :href="isAuthenticated ? dashboardPath : '/login'"
             class="hero-section__btn hero-section__btn--primary"
           >
-            {{ isAuthenticated ? '进入控制台' : 'Begin · 开始对谈' }}
+            {{ isAuthenticated ? ui.dashboardCta : ui.beginCta }}
           </a>
           <a
             href="#model-pricing"
             class="hero-section__btn hero-section__btn--outline"
           >
-            Read the Pretium
+            {{ ui.pricingCta }}
           </a>
         </div>
       </div>
 
       <aside class="hero-section__quote mirror-reveal" style="transition-delay: 0.26s">
-        <p class="hero-section__quote-text">"The unexamined code is not worth shipping."</p>
-        <p class="hero-section__quote-author">After Socrates, Apology 38a</p>
-        <p class="hero-section__quote-greek">ὁ δὲ ἀνεξέταστος βίος οὐ βιωτὸς ἀνθρώπῳ</p>
+        <p class="hero-section__quote-text">{{ ui.quoteText }}</p>
+        <p class="hero-section__quote-author">{{ ui.quoteAuthor }}</p>
+        <p class="hero-section__quote-greek">{{ ui.quoteGreek }}</p>
       </aside>
     </div>
   </section>
@@ -42,6 +40,45 @@
 /**
  * Hero 主视觉区域组件
  */
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { locale } = useI18n()
+const isEnglish = computed(() => locale.value === 'en')
+
+const ui = computed(() => (isEnglish.value
+  ? {
+    eyebrow: 'LaoshirenAI · AI Coding Gateway · MMXXVI',
+    titleBrand: 'LaoshirenAI',
+    titleProduct: 'Coding Gateway',
+    descriptionLines: [
+      'Code with clarity. Every line should stand up to scrutiny.',
+      'Think with Claude Code, Codex, ChatGPT, and Gemini through one quiet gateway.'
+    ],
+    dashboardCta: 'Dashboard',
+    beginCta: 'Begin the dialogue',
+    pricingCta: 'View pricing',
+    quoteText: '"The unexamined code is not worth shipping."',
+    quoteAuthor: 'After Socrates, Apology 38a',
+    quoteGreek: 'ὁ δὲ ἀνεξέταστος βίος οὐ βιωτὸς ἀνθρώπῳ'
+  }
+  : {
+    eyebrow: '老实人AI · AI 编码网关 · MMXXVI',
+    titleBrand: '老实人AI',
+    titleProduct: '编码网关',
+    descriptionLines: [
+      '让每一行代码都经得起审视。',
+      '像柏拉图与门徒在柱廊下对谈一样，',
+      '通过老实人AI与 Claude Code、Codex、ChatGPT、Gemini 一起思考。'
+    ],
+    dashboardCta: '进入控制台',
+    beginCta: '开始对谈',
+    pricingCta: '查看模型价格',
+    quoteText: '“未经审视的代码，不值得发布。”',
+    quoteAuthor: '化用苏格拉底《申辩篇》38a',
+    quoteGreek: 'ὁ δὲ ἀνεξέταστος βίος οὐ βιωτὸς ἀνθρώπῳ'
+  }))
+
 defineProps<{
   isAuthenticated: boolean
   dashboardPath: string
@@ -122,7 +159,7 @@ defineProps<{
 }
 
 .hero-section__desc span {
-  display: inline;
+  display: block;
 }
 
 .hero-section__actions {

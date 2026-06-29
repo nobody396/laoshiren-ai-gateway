@@ -31,7 +31,7 @@
         <div class="monthly-credit-section__container">
           <MonthlyCreditPlans
             variant="home"
-            title="开发者月卡"
+            :title="monthlyCreditTitle"
             summary=""
             :plans="monthlyPlans"
             :show-entitlement-details="true"
@@ -44,12 +44,11 @@
       <ModelPricing
         :claude-rows="claudePricingRows"
         :gpt-rows="gptPricingRows"
-        :deepseek-reference="deepseekPricingReference"
+        :special-rows="specialPricingRows"
         :max-ledger-label="pricingDisplay.maxLedgerLabel"
         :pro-ledger-label="pricingDisplay.proLedgerLabel"
         :max-discount="pricingDisplay.maxDiscount"
         :pro-discount="pricingDisplay.proDiscount"
-        :exchange-rate-label="pricingDisplay.exchangeRateLabel"
         :is-authenticated="isAuthenticated"
       />
 
@@ -68,6 +67,7 @@
  * 负责数据定义和子组件编排，视觉实现下沉到各子组件
  */
 import { computed, onMounted, onUnmounted, nextTick, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore, useAppStore } from '@/stores'
 
 // 子组件导入
@@ -84,6 +84,7 @@ import { useMonthlyCreditCardPlans } from '@/composables/useMonthlyCreditCardPla
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
+const { locale } = useI18n()
 
 // 认证相关状态
 const isAuthenticated = computed(() => authStore.isAuthenticated)
@@ -91,128 +92,195 @@ const isAdmin = computed(() => authStore.isAdmin)
 const dashboardPath = computed(() => (isAdmin.value ? '/admin/dashboard' : '/dashboard'))
 const showModelReports = computed(() => appStore.cachedPublicSettings?.landing_reports_enabled !== false)
 const { plans: monthlyPlans, loadMonthlyCreditCardPlans } = useMonthlyCreditCardPlans()
+const isEnglish = computed(() => locale.value === 'en')
+const pricingCurrency = computed<PricingCurrency>(() => (isEnglish.value ? 'USD' : 'CNY'))
+const monthlyCreditTitle = computed(() => (isEnglish.value ? 'Developer Monthly Cards' : '开发者月卡'))
 
 // ── 导航项 ──
-const navItems = computed(() => [
-  { label: '首页', href: '#', active: true, external: false, routerPush: false },
-  { label: '企业', href: '/enterprise', active: false, external: false, routerPush: true },
-  ...(showModelReports.value
-    ? [{ label: '报告', href: '#model-reports', active: false, external: false, routerPush: false }]
-    : []),
-  { label: '定价', href: '#model-pricing', active: false, external: false, routerPush: false },
-  { label: '服务状态', href: '/status', active: false, external: false, routerPush: true },
-  { label: '文档', href: '/docs', active: false, external: false, routerPush: true }
-])
+const navItems = computed(() => {
+  const labels = isEnglish.value
+    ? {
+      home: 'Home',
+      enterprise: 'Enterprise',
+      reports: 'Reports',
+      pricing: 'Pricing',
+      status: 'Status',
+      docs: 'Docs'
+    }
+    : {
+      home: '首页',
+      enterprise: '企业',
+      reports: '报告',
+      pricing: '定价',
+      status: '服务状态',
+      docs: '文档'
+    }
+
+  return [
+    { label: labels.home, href: '#', active: true, external: false, routerPush: false },
+    { label: labels.enterprise, href: '/enterprise', active: false, external: false, routerPush: true },
+    ...(showModelReports.value
+      ? [{ label: labels.reports, href: '#model-reports', active: false, external: false, routerPush: false }]
+      : []),
+    { label: labels.pricing, href: '#model-pricing', active: false, external: false, routerPush: false },
+    { label: labels.status, href: '/status', active: false, external: false, routerPush: true },
+    { label: labels.docs, href: '/docs', active: false, external: false, routerPush: true }
+  ]
+})
 
 // ── 特性卡片 ──
-const featureCards = [
-  {
-    title: '5 分钟完成配置',
-    description: '统一的域名与密钥格式，覆盖主流 IDE 插件与 CLI 工具，新手也能快速上手。'
-  },
-  {
-    title: '与官方一致的精确计费',
-    description: '采用与官方完全一致的计价方式，每一笔费用都经得起核对。'
-  },
-  {
-    title: '每一笔调用，费用可查',
-    description: '完整的调用日志与费用明细，花了多少、用在哪里，一目了然。'
-  },
-  {
-    title: '专注编码，拒绝臃肿',
-    description: '只接入编码场景最需要的模型，持续优化链路稳定性与响应速度。'
-  }
-]
+const featureCards = computed(() => (isEnglish.value
+  ? [
+    {
+      title: 'Five-minute setup',
+      description: 'One domain and one key format for mainstream IDE plugins and CLI tools, easy even for first-time users.'
+    },
+    {
+      title: 'Official-style precise billing',
+      description: 'Pricing follows the same dimensions as the official providers, so every charge can be checked.'
+    },
+    {
+      title: 'Every call is traceable',
+      description: 'Complete logs and cost breakdowns make it clear where each cent was spent.'
+    },
+    {
+      title: 'Coding-first, no bloat',
+      description: 'Only the models that matter for coding workflows, with continuous improvements to stability and latency.'
+    }
+  ]
+  : [
+    {
+      title: '5 分钟完成配置',
+      description: '统一的域名与密钥格式，覆盖主流 IDE 插件与 CLI 工具，新手也能快速上手。'
+    },
+    {
+      title: '与官方一致的精确计费',
+      description: '采用与官方完全一致的计价方式，每一笔费用都经得起核对。'
+    },
+    {
+      title: '每一笔调用，费用可查',
+      description: '完整的调用日志与费用明细，花了多少、用在哪里，一目了然。'
+    },
+    {
+      title: '专注编码，拒绝臃肿',
+      description: '只接入编码场景最需要的模型，持续优化链路稳定性与响应速度。'
+    }
+  ]))
 
 // ── 模型卡片（三大 AI 品牌，按场景定位展示） ──
-const models = [
-  {
-    eyebrow: '架构规划',
-    name: 'Claude',
-    subtitle: '系统设计与复杂推理',
-    description: '擅长技术方案设计、代码审查与多步推理，适合把控项目全局方向。'
-  },
-  {
-    eyebrow: '编码实现',
-    name: 'ChatGPT',
-    subtitle: '代码生成与功能开发',
-    description: '擅长代码生成、功能迭代与调试修复，日常编码的主力引擎。'
-  },
-  {
-    eyebrow: '多模态设计',
-    name: 'Gemini',
-    subtitle: '图像理解与视觉任务',
-    description: '擅长设计稿转代码、图像理解与多模态任务，前端设计的得力助手。'
-  }
-]
+const models = computed(() => (isEnglish.value
+  ? [
+    {
+      eyebrow: 'Architecture',
+      name: 'Claude',
+      subtitle: 'System design and complex reasoning',
+      description: 'Best for technical design, code review, and multi-step reasoning across a whole project.'
+    },
+    {
+      eyebrow: 'Implementation',
+      name: 'ChatGPT',
+      subtitle: 'Code generation and feature work',
+      description: 'A daily coding engine for generation, iteration, debugging, and fixes.'
+    },
+    {
+      eyebrow: 'Multimodal',
+      name: 'Gemini',
+      subtitle: 'Vision understanding and design tasks',
+      description: 'Useful for design-to-code, image understanding, and multimodal frontend workflows.'
+    }
+  ]
+  : [
+    {
+      eyebrow: '架构规划',
+      name: 'Claude',
+      subtitle: '系统设计与复杂推理',
+      description: '擅长技术方案设计、代码审查与多步推理，适合把控项目全局方向。'
+    },
+    {
+      eyebrow: '编码实现',
+      name: 'ChatGPT',
+      subtitle: '代码生成与功能开发',
+      description: '擅长代码生成、功能迭代与调试修复，日常编码的主力引擎。'
+    },
+    {
+      eyebrow: '多模态设计',
+      name: 'Gemini',
+      subtitle: '图像理解与视觉任务',
+      description: '擅长设计稿转代码、图像理解与多模态任务，前端设计的得力助手。'
+    }
+  ]))
 
 // ── 模型检测报告 ──
-const modelReports = [
-  {
-    provider: 'Claude',
-    title: 'Claude Opus 4.7',
-    sourceUrl: 'https://www.hvoy.ai/report/K9TIp4lRV1Q',
-    endpoint: 'https://api.laoshirenai.com',
-    modelId: 'claude-opus-4-7',
-    score: 100,
-    verdict: '完美匹配',
-    testedAt: '2026-05-20 11:07',
-    passedChecks: 9,
-    totalChecks: 9,
-    latency: '4.5s',
-    tps: '15.3',
-    inputTokens: '1,855',
-    outputTokens: '315'
-  },
-  {
-    provider: 'Claude',
-    title: 'Claude Opus 4.6',
-    sourceUrl: 'https://www.hvoy.ai/report/q6R_YiEFJhc',
-    endpoint: 'https://api.laoshirenai.com',
-    modelId: 'claude-opus-4-6',
-    score: 100,
-    verdict: '完美匹配',
-    testedAt: '2026-05-20 11:08',
-    passedChecks: 10,
-    totalChecks: 10,
-    latency: '4.0s',
-    tps: '15.1',
-    inputTokens: '1,781',
-    outputTokens: '216'
-  },
-  {
-    provider: 'GPT',
-    title: 'GPT-5.5',
-    sourceUrl: 'https://www.hvoy.ai/report/H186QGxR4K8',
-    endpoint: 'https://api.laoshirenai.com',
-    modelId: 'gpt-5.5',
-    score: 100,
-    verdict: '完美匹配',
-    testedAt: '2026-05-20 11:09',
-    passedChecks: 4,
-    totalChecks: 4,
-    latency: '9.9s',
-    tps: '43.3',
-    inputTokens: '407',
-    outputTokens: '429'
-  },
-  {
-    provider: 'GPT',
-    title: 'GPT-5.4',
-    sourceUrl: 'https://www.hvoy.ai/report/Xj8IKpcfEJE',
-    endpoint: 'https://api.laoshirenai.com',
-    modelId: 'gpt-5.4',
-    score: 100,
-    verdict: '完美匹配',
-    testedAt: '2026-05-20 11:10',
-    passedChecks: 4,
-    totalChecks: 4,
-    latency: '2.9s',
-    tps: '14.7',
-    inputTokens: '393',
-    outputTokens: '42'
-  }
-]
+const modelReports = computed(() => {
+  const verdict = isEnglish.value ? 'Perfect match' : '完美匹配'
+
+  return [
+    {
+      provider: 'Claude',
+      title: 'Claude Opus 4.7',
+      sourceUrl: 'https://www.hvoy.ai/report/K9TIp4lRV1Q',
+      endpoint: 'https://api.laoshirenai.com',
+      modelId: 'claude-opus-4-7',
+      score: 100,
+      verdict,
+      testedAt: '2026-05-20 11:07',
+      passedChecks: 9,
+      totalChecks: 9,
+      latency: '4.5s',
+      tps: '15.3',
+      inputTokens: '1,855',
+      outputTokens: '315'
+    },
+    {
+      provider: 'Claude',
+      title: 'Claude Opus 4.6',
+      sourceUrl: 'https://www.hvoy.ai/report/q6R_YiEFJhc',
+      endpoint: 'https://api.laoshirenai.com',
+      modelId: 'claude-opus-4-6',
+      score: 100,
+      verdict,
+      testedAt: '2026-05-20 11:08',
+      passedChecks: 10,
+      totalChecks: 10,
+      latency: '4.0s',
+      tps: '15.1',
+      inputTokens: '1,781',
+      outputTokens: '216'
+    },
+    {
+      provider: 'GPT',
+      title: 'GPT-5.5',
+      sourceUrl: 'https://www.hvoy.ai/report/H186QGxR4K8',
+      endpoint: 'https://api.laoshirenai.com',
+      modelId: 'gpt-5.5',
+      score: 100,
+      verdict,
+      testedAt: '2026-05-20 11:09',
+      passedChecks: 4,
+      totalChecks: 4,
+      latency: '9.9s',
+      tps: '43.3',
+      inputTokens: '407',
+      outputTokens: '429'
+    },
+    {
+      provider: 'GPT',
+      title: 'GPT-5.4',
+      sourceUrl: 'https://www.hvoy.ai/report/Xj8IKpcfEJE',
+      endpoint: 'https://api.laoshirenai.com',
+      modelId: 'gpt-5.4',
+      score: 100,
+      verdict,
+      testedAt: '2026-05-20 11:10',
+      passedChecks: 4,
+      totalChecks: 4,
+      latency: '2.9s',
+      tps: '14.7',
+      inputTokens: '393',
+      outputTokens: '42'
+    }
+  ]
+})
 
 // ── 套餐定价（保留供后续使用） ──
 // @ts-expect-error 暂未使用，后续会接入套餐定价组件
@@ -295,17 +363,27 @@ type GptBasePricingRow = {
   }
 }
 
-type MarketPricingReference = {
-  title: string
-  sourceLabel: string
-  sourceUrl: string
-  description: string
-  rows: Array<{
-    label: string
-    value: string
-    hint: string
-  }>
+type SpecialBasePricingRow = {
+  model: string
+  modelId: string
+  provider: string
+  providerKey: 'deepseek' | 'qwen' | 'glm' | 'minimax'
+  discountRate: number
+  officialCny: {
+    input: number
+    output: number
+    cacheRead: number | null
+    cacheCreate: number | null
+  }
+  officialUsd?: {
+    input: number
+    output: number
+    cacheRead: number | null
+    cacheCreate: number | null
+  }
 }
+
+type PricingCurrency = 'CNY' | 'USD'
 
 const defaultLandingPricing = {
   proMultiplier: 1.2,
@@ -322,19 +400,10 @@ function formatCompactNumber(
   maximumFractionDigits = 2,
   minimumFractionDigits = 0
 ): string {
-  return new Intl.NumberFormat('zh-CN', {
+  return new Intl.NumberFormat(isEnglish.value ? 'en-US' : 'zh-CN', {
     maximumFractionDigits,
     minimumFractionDigits
   }).format(value)
-}
-
-function formatUSD(value: number): string {
-  const minimumFractionDigits = Number.isInteger(value) ? 0 : 2
-  return `$${formatCompactNumber(value, 2, minimumFractionDigits)}`
-}
-
-function formatOptionalUSD(value: number | null): string {
-  return value == null ? '—' : formatUSD(value)
 }
 
 function formatCNY(
@@ -349,8 +418,69 @@ function formatOptionalCNY(value: number | null): string {
   return value == null ? '—' : formatCNY(value)
 }
 
+function formatUSD(
+  value: number,
+  maximumFractionDigits = 2,
+  minimumFractionDigits = Number.isInteger(value) ? 0 : 2
+): string {
+  return `$${formatCompactNumber(value, maximumFractionDigits, minimumFractionDigits)}`
+}
+
+function formatOptionalUSD(value: number | null): string {
+  return value == null ? '—' : formatUSD(value)
+}
+
+function formatPreciseCNY(value: number | null): string {
+  if (value == null) return '—'
+  if (value > 0 && value < 0.01) return formatCNY(value, 4, 4)
+  if (value > 0 && value < 0.1) return formatCNY(value, 3, 3)
+  return formatCNY(value, 2, Number.isInteger(value) ? 0 : 2)
+}
+
+function formatPreciseUSD(value: number | null): string {
+  if (value == null) return '—'
+  if (value > 0 && value < 0.01) return formatUSD(value, 4, 4)
+  if (value > 0 && value < 0.1) return formatUSD(value, 3, 3)
+  return formatUSD(value, 2, Number.isInteger(value) ? 0 : 2)
+}
+
+function formatPreciseMoney(value: number | null, currency: PricingCurrency): string {
+  return currency === 'USD' ? formatPreciseUSD(value) : formatPreciseCNY(value)
+}
+
+function formatPriceDiscount(rate: number): string {
+  if (isEnglish.value) {
+    return `${formatCompactNumber(rate * 100, 1)}%`
+  }
+
+  return `${formatCompactNumber(rate * 10, 1)}折`
+}
+
 function formatDiscount(multiplier: number, exchangeRate: number): string {
-  return `${formatCompactNumber((multiplier / exchangeRate) * 10, 1)}折`
+  const rate = multiplier / exchangeRate
+
+  if (isEnglish.value) {
+    return `${formatCompactNumber(rate * 100, 1)}%`
+  }
+
+  return `${formatCompactNumber(rate * 10, 1)}折`
+}
+
+function resolveSpecialOfficialPrice(
+  row: SpecialBasePricingRow,
+  currency: PricingCurrency,
+  exchangeRate: number
+) {
+  if (currency === 'USD') {
+    return row.officialUsd ?? {
+      input: row.officialCny.input / exchangeRate,
+      output: row.officialCny.output / exchangeRate,
+      cacheRead: row.officialCny.cacheRead == null ? null : row.officialCny.cacheRead / exchangeRate,
+      cacheCreate: row.officialCny.cacheCreate == null ? null : row.officialCny.cacheCreate / exchangeRate
+    }
+  }
+
+  return row.officialCny
 }
 
 const landingPricingConfig = computed(() => {
@@ -373,12 +503,18 @@ const landingPricingConfig = computed(() => {
 
 const pricingDisplay = computed(() => {
   const config = landingPricingConfig.value
+  const maxRate = config.maxMultiplier / config.exchangeRate
+  const proRate = config.proMultiplier / config.exchangeRate
+
   return {
-    maxLedgerLabel: `¥${formatCompactNumber(config.maxMultiplier)} = $1`,
-    proLedgerLabel: `¥${formatCompactNumber(config.proMultiplier)} = $1`,
+    maxLedgerLabel: isEnglish.value
+      ? `${formatUSD(maxRate, 3, 2)} per official $1`
+      : `¥${formatCompactNumber(config.maxMultiplier)} = $1`,
+    proLedgerLabel: isEnglish.value
+      ? `${formatUSD(proRate, 3, 2)} per official $1`
+      : `¥${formatCompactNumber(config.proMultiplier)} = $1`,
     maxDiscount: formatDiscount(config.maxMultiplier, config.exchangeRate),
-    proDiscount: formatDiscount(config.proMultiplier, config.exchangeRate),
-    exchangeRateLabel: formatCompactNumber(config.exchangeRate)
+    proDiscount: formatDiscount(config.proMultiplier, config.exchangeRate)
   }
 })
 
@@ -611,48 +747,172 @@ const gptBasePricingRows: GptBasePricingRow[] = [
   }
 ]
 
-const deepseekPricingReference: MarketPricingReference = {
-  title: '市场参照：DeepSeek-V4-Pro 官方人民币价',
-  sourceLabel: 'DeepSeek API Docs',
-  sourceUrl: 'https://api-docs.deepseek.com/zh-cn/quick_start/pricing',
-  description: '同样按每 100 万 tokens 对齐，可直接与下方 Pro / Max 分组价格对照。',
-  rows: [
-    {
-      label: '输入',
-      value: formatCNY(3),
-      hint: '缓存未命中'
+const specialBasePricingRows: SpecialBasePricingRow[] = [
+  {
+    model: 'DeepSeek V4 Flash',
+    modelId: 'deepseek-v4-flash',
+    provider: 'DeepSeek',
+    providerKey: 'deepseek',
+    discountRate: 0.3,
+    officialCny: {
+      input: 0.95,
+      output: 1.9,
+      cacheRead: 0.019,
+      cacheCreate: null
     },
-    {
-      label: '输出',
-      value: formatCNY(6),
-      hint: '模型生成'
-    },
-    {
-      label: '缓存命中',
-      value: formatCNY(0.025, 3),
-      hint: '输入缓存'
+    officialUsd: {
+      input: 0.14,
+      output: 0.28,
+      cacheRead: 0.0028,
+      cacheCreate: null
     }
-  ]
-}
+  },
+  {
+    model: 'DeepSeek V4 Pro',
+    modelId: 'deepseek-v4-pro',
+    provider: 'DeepSeek',
+    providerKey: 'deepseek',
+    discountRate: 0.3,
+    officialCny: {
+      input: 2.96,
+      output: 5.92,
+      cacheRead: 0.025,
+      cacheCreate: null
+    },
+    officialUsd: {
+      input: 0.435,
+      output: 0.87,
+      cacheRead: 0.003625,
+      cacheCreate: null
+    }
+  },
+  {
+    model: 'Qwen3.7 Max',
+    modelId: 'qwen3.7-max',
+    provider: '阿里云',
+    providerKey: 'qwen',
+    discountRate: 0.6,
+    officialCny: {
+      input: 12,
+      output: 36,
+      cacheRead: 1.2,
+      cacheCreate: 15
+    }
+  },
+  {
+    model: 'Qwen3.7 Plus',
+    modelId: 'qwen3.7-plus',
+    provider: '阿里云',
+    providerKey: 'qwen',
+    discountRate: 0.6,
+    officialCny: {
+      input: 2,
+      output: 8,
+      cacheRead: 0.4,
+      cacheCreate: 2.5
+    }
+  },
+  {
+    model: 'GLM-5.2',
+    modelId: 'glm-5.2',
+    provider: '智谱 AI',
+    providerKey: 'glm',
+    discountRate: 0.6,
+    officialCny: {
+      input: 8,
+      output: 28,
+      cacheRead: 2,
+      cacheCreate: null
+    }
+  },
+  {
+    model: 'MiniMax M3',
+    modelId: 'MiniMax-M3 · ≤512K',
+    provider: 'MiniMax',
+    providerKey: 'minimax',
+    discountRate: 0.6,
+    officialCny: {
+      input: 2.04,
+      output: 8.16,
+      cacheRead: 0.41,
+      cacheCreate: null
+    },
+    officialUsd: {
+      input: 0.3,
+      output: 1.2,
+      cacheRead: 0.06,
+      cacheCreate: null
+    }
+  }
+]
+
+const specialPricingRows = computed(() => specialBasePricingRows.map((row) => {
+  const config = landingPricingConfig.value
+  const currency = pricingCurrency.value
+  const official = resolveSpecialOfficialPrice(row, currency, config.exchangeRate)
+  const discounted = {
+    input: official.input * row.discountRate,
+    output: official.output * row.discountRate,
+    cacheRead: official.cacheRead == null ? null : official.cacheRead * row.discountRate,
+    cacheCreate: official.cacheCreate == null ? null : official.cacheCreate * row.discountRate
+  }
+
+  return {
+    model: row.model,
+    modelId: row.modelId,
+    provider: row.provider,
+    providerKey: row.providerKey,
+    official: {
+      input: formatPreciseMoney(official.input, currency),
+      output: formatPreciseMoney(official.output, currency),
+      cacheRead: formatPreciseMoney(official.cacheRead, currency),
+      cacheCreate: formatPreciseMoney(official.cacheCreate, currency)
+    },
+    price: {
+      input: formatPreciseMoney(discounted.input, currency),
+      output: formatPreciseMoney(discounted.output, currency),
+      cacheRead: formatPreciseMoney(discounted.cacheRead, currency),
+      cacheCreate: formatPreciseMoney(discounted.cacheCreate, currency)
+    },
+    discount: formatPriceDiscount(row.discountRate)
+  }
+}))
 
 const claudePricingRows = computed(() => {
   const config = landingPricingConfig.value
+  const currency = pricingCurrency.value
   const discount = formatDiscount(config.maxMultiplier, config.exchangeRate)
 
   return claudeBasePricingRows.map((row) => ({
     model: row.model,
     modelId: row.modelId,
     official: {
-      input: formatUSD(row.official.input),
-      cacheWrite5m: formatUSD(row.official.cacheWrite5m),
-      cacheRead: formatUSD(row.official.cacheRead),
-      output: formatUSD(row.official.output)
+      input: currency === 'USD'
+        ? formatUSD(row.official.input)
+        : formatCNY(row.official.input * config.exchangeRate),
+      cacheWrite5m: currency === 'USD'
+        ? formatUSD(row.official.cacheWrite5m)
+        : formatCNY(row.official.cacheWrite5m * config.exchangeRate),
+      cacheRead: currency === 'USD'
+        ? formatUSD(row.official.cacheRead)
+        : formatCNY(row.official.cacheRead * config.exchangeRate),
+      output: currency === 'USD'
+        ? formatUSD(row.official.output)
+        : formatCNY(row.official.output * config.exchangeRate)
     },
     max: {
-      input: formatCNY(row.official.input * config.maxMultiplier),
-      cacheWrite5m: formatCNY(row.official.cacheWrite5m * config.maxMultiplier),
-      cacheRead: formatCNY(row.official.cacheRead * config.maxMultiplier),
-      output: formatCNY(row.official.output * config.maxMultiplier)
+      input: currency === 'USD'
+        ? formatUSD((row.official.input * config.maxMultiplier) / config.exchangeRate)
+        : formatCNY(row.official.input * config.maxMultiplier),
+      cacheWrite5m: currency === 'USD'
+        ? formatUSD((row.official.cacheWrite5m * config.maxMultiplier) / config.exchangeRate)
+        : formatCNY(row.official.cacheWrite5m * config.maxMultiplier),
+      cacheRead: currency === 'USD'
+        ? formatUSD((row.official.cacheRead * config.maxMultiplier) / config.exchangeRate)
+        : formatCNY(row.official.cacheRead * config.maxMultiplier),
+      output: currency === 'USD'
+        ? formatUSD((row.official.output * config.maxMultiplier) / config.exchangeRate)
+        : formatCNY(row.official.output * config.maxMultiplier)
     },
     discount
   }))
@@ -660,22 +920,39 @@ const claudePricingRows = computed(() => {
 
 const gptPricingRows = computed(() => {
   const config = landingPricingConfig.value
+  const currency = pricingCurrency.value
   const discount = formatDiscount(config.proMultiplier, config.exchangeRate)
 
   return gptBasePricingRows.map((row) => ({
     model: row.model,
     modelId: row.modelId,
     official: {
-      input: formatUSD(row.official.input),
-      cachedInput: formatOptionalUSD(row.official.cachedInput),
-      output: formatUSD(row.official.output)
+      input: currency === 'USD'
+        ? formatUSD(row.official.input)
+        : formatCNY(row.official.input * config.exchangeRate),
+      cachedInput: currency === 'USD'
+        ? formatOptionalUSD(row.official.cachedInput)
+        : formatOptionalCNY(
+          row.official.cachedInput == null ? null : row.official.cachedInput * config.exchangeRate
+        ),
+      output: currency === 'USD'
+        ? formatUSD(row.official.output)
+        : formatCNY(row.official.output * config.exchangeRate)
     },
     pro: {
-      input: formatCNY(row.official.input * config.proMultiplier),
-      cachedInput: formatOptionalCNY(
-        row.official.cachedInput == null ? null : row.official.cachedInput * config.proMultiplier
-      ),
-      output: formatCNY(row.official.output * config.proMultiplier)
+      input: currency === 'USD'
+        ? formatUSD((row.official.input * config.proMultiplier) / config.exchangeRate)
+        : formatCNY(row.official.input * config.proMultiplier),
+      cachedInput: currency === 'USD'
+        ? formatOptionalUSD(
+          row.official.cachedInput == null ? null : (row.official.cachedInput * config.proMultiplier) / config.exchangeRate
+        )
+        : formatOptionalCNY(
+          row.official.cachedInput == null ? null : row.official.cachedInput * config.proMultiplier
+        ),
+      output: currency === 'USD'
+        ? formatUSD((row.official.output * config.proMultiplier) / config.exchangeRate)
+        : formatCNY(row.official.output * config.proMultiplier)
     },
     discount
   }))
@@ -691,36 +968,72 @@ const gptPricingRows = computed(() => {
 // ]
 
 // ── 页脚链接 ──
-const footerSections = computed(() => [
-  {
-    title: '产品',
-    links: [
-      { label: '老实人AI 介绍', href: '#about', external: false },
-      ...(showModelReports.value
-        ? [{ label: '模型检测报告', href: '#model-reports', external: false }]
-        : []),
-      { label: '价格方案', href: '#model-pricing', external: false },
-      { label: '企业方案', href: '/enterprise', external: false },
-      { label: '登录', href: '/login', external: false }
-    ]
-  },
-  {
-    title: '服务承诺',
-    links: [
-      { label: '服务状态', href: '/status', external: false },
-      { label: '安全与隐私', href: '/security', external: false }
-    ]
-  },
-  {
-    title: '合规条款',
-    links: [
-      { label: '服务条款', href: '/legal/terms', external: false },
-      { label: '使用政策', href: '/legal/usage-policy', external: false },
-      { label: '支持的国家和地区', href: '/legal/supported-regions', external: false },
-      { label: '服务特定条款', href: '/legal/service-specific-terms', external: false }
-    ]
-  }
-])
+const footerSections = computed(() => {
+  const labels = isEnglish.value
+    ? {
+      product: 'Product',
+      intro: 'LaoshirenAI Overview',
+      reports: 'Model verification reports',
+      pricing: 'Pricing',
+      enterprise: 'Enterprise',
+      login: 'Login',
+      commitment: 'Commitment',
+      status: 'Service status',
+      security: 'Security & privacy',
+      legal: 'Legal',
+      terms: 'Terms of service',
+      usage: 'Usage policy',
+      regions: 'Supported countries and regions',
+      specific: 'Service-specific terms'
+    }
+    : {
+      product: '产品',
+      intro: '老实人AI 介绍',
+      reports: '模型检测报告',
+      pricing: '价格方案',
+      enterprise: '企业方案',
+      login: '登录',
+      commitment: '服务承诺',
+      status: '服务状态',
+      security: '安全与隐私',
+      legal: '合规条款',
+      terms: '服务条款',
+      usage: '使用政策',
+      regions: '支持的国家和地区',
+      specific: '服务特定条款'
+    }
+
+  return [
+    {
+      title: labels.product,
+      links: [
+        { label: labels.intro, href: '#about', external: false },
+        ...(showModelReports.value
+          ? [{ label: labels.reports, href: '#model-reports', external: false }]
+          : []),
+        { label: labels.pricing, href: '#model-pricing', external: false },
+        { label: labels.enterprise, href: '/enterprise', external: false },
+        { label: labels.login, href: '/login', external: false }
+      ]
+    },
+    {
+      title: labels.commitment,
+      links: [
+        { label: labels.status, href: '/status', external: false },
+        { label: labels.security, href: '/security', external: false }
+      ]
+    },
+    {
+      title: labels.legal,
+      links: [
+        { label: labels.terms, href: '/legal/terms', external: false },
+        { label: labels.usage, href: '/legal/usage-policy', external: false },
+        { label: labels.regions, href: '/legal/supported-regions', external: false },
+        { label: labels.specific, href: '/legal/service-specific-terms', external: false }
+      ]
+    }
+  ]
+})
 
 // ── 滚动进场动画（IntersectionObserver） ──
 let observer: IntersectionObserver | null = null

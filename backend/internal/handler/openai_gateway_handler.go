@@ -228,14 +228,14 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	service.SetOpsLatencyMs(c, service.OpsAuthLatencyMsKey, time.Since(requestStart).Milliseconds())
 	routingStart := time.Now()
 
-	effectiveConcurrency, err := resolveBudgetGuardConcurrency(c.Request.Context(), h.billingCacheService, apiKey, subscription, subject.Concurrency)
+	budgetDecision, err := resolveBudgetGuardConcurrency(c.Request.Context(), h.billingCacheService, apiKey, subscription, subject.Concurrency)
 	if err != nil {
 		reqLog.Info("openai.budget_guard_failed", zap.Error(err))
 		status, code, message := billingErrorDetails(err)
 		h.handleStreamingAwareError(c, status, code, message, streamStarted)
 		return
 	}
-	userReleaseFunc, acquired := h.acquireResponsesUserSlot(c, subject.UserID, effectiveConcurrency, reqStream, &streamStarted, reqLog)
+	userReleaseFunc, acquired := h.acquireResponsesUserSlot(c, subject.UserID, budgetDecision, reqStream, &streamStarted, reqLog)
 	if !acquired {
 		return
 	}
@@ -614,14 +614,14 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 	service.SetOpsLatencyMs(c, service.OpsAuthLatencyMsKey, time.Since(requestStart).Milliseconds())
 	routingStart := time.Now()
 
-	effectiveConcurrency, err := resolveBudgetGuardConcurrency(c.Request.Context(), h.billingCacheService, apiKey, subscription, subject.Concurrency)
+	budgetDecision, err := resolveBudgetGuardConcurrency(c.Request.Context(), h.billingCacheService, apiKey, subscription, subject.Concurrency)
 	if err != nil {
 		reqLog.Info("openai_messages.budget_guard_failed", zap.Error(err))
 		status, code, message := billingErrorDetails(err)
 		h.anthropicStreamingAwareError(c, status, code, message, streamStarted)
 		return
 	}
-	userReleaseFunc, acquired := h.acquireResponsesUserSlot(c, subject.UserID, effectiveConcurrency, reqStream, &streamStarted, reqLog)
+	userReleaseFunc, acquired := h.acquireResponsesUserSlot(c, subject.UserID, budgetDecision, reqStream, &streamStarted, reqLog)
 	if !acquired {
 		return
 	}
@@ -912,16 +912,18 @@ func (h *OpenAIGatewayHandler) validateFunctionCallOutputRequest(c *gin.Context,
 func (h *OpenAIGatewayHandler) acquireResponsesUserSlot(
 	c *gin.Context,
 	userID int64,
-	userConcurrency int,
+	budgetDecision service.BudgetGuardConcurrencyDecision,
 	reqStream bool,
 	streamStarted *bool,
 	reqLog *zap.Logger,
 ) (func(), bool) {
 	ctx := c.Request.Context()
+	userConcurrency := budgetDecision.EffectiveConcurrency
 	userReleaseFunc, userAcquired, err := h.concurrencyHelper.TryAcquireUserSlot(ctx, userID, userConcurrency)
 	if err != nil {
 		reqLog.Warn("openai.user_slot_acquire_failed", zap.Error(err))
-		h.handleConcurrencyError(c, err, "user", *streamStarted)
+		status, errType, message := budgetGuardAwareConcurrencyErrorResponse(err, "user", budgetDecision)
+		h.handleStreamingAwareError(c, status, errType, message, *streamStarted)
 		return nil, false
 	}
 	if userAcquired {
@@ -935,7 +937,7 @@ func (h *OpenAIGatewayHandler) acquireResponsesUserSlot(
 		// 按现有降级语义：等待计数异常时放行后续抢槽流程
 	} else if !canWait {
 		reqLog.Info("openai.user_wait_queue_full", zap.Int("max_wait", maxWait))
-		h.errorResponse(c, http.StatusTooManyRequests, "rate_limit_error", "Too many pending requests, please retry later")
+		h.errorResponse(c, http.StatusTooManyRequests, "rate_limit_error", budgetGuardOrDefaultRateLimitMessage(budgetDecision, "Too many pending requests, please retry later"))
 		return nil, false
 	}
 
@@ -949,7 +951,8 @@ func (h *OpenAIGatewayHandler) acquireResponsesUserSlot(
 	userReleaseFunc, err = h.concurrencyHelper.AcquireUserSlotWithWait(c, userID, userConcurrency, reqStream, streamStarted)
 	if err != nil {
 		reqLog.Warn("openai.user_slot_acquire_failed_after_wait", zap.Error(err))
-		h.handleConcurrencyError(c, err, "user", *streamStarted)
+		status, errType, message := budgetGuardAwareConcurrencyErrorResponse(err, "user", budgetDecision)
+		h.handleStreamingAwareError(c, status, errType, message, *streamStarted)
 		return nil, false
 	}
 
@@ -1164,13 +1167,13 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 	defer releaseTurnSlots()
 
 	subscription, _ := middleware2.GetSubscriptionFromContext(c)
-	effectiveConcurrency, err := resolveBudgetGuardConcurrency(ctx, h.billingCacheService, apiKey, subscription, subject.Concurrency)
+	budgetDecision, err := resolveBudgetGuardConcurrency(ctx, h.billingCacheService, apiKey, subscription, subject.Concurrency)
 	if err != nil {
 		reqLog.Info("openai.websocket_budget_guard_failed", zap.Error(err))
 		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, "billing check failed")
 		return
 	}
-	userReleaseFunc, userAcquired, err := h.concurrencyHelper.TryAcquireUserSlot(ctx, subject.UserID, effectiveConcurrency)
+	userReleaseFunc, userAcquired, err := h.concurrencyHelper.TryAcquireUserSlot(ctx, subject.UserID, budgetDecision.EffectiveConcurrency)
 	if err != nil {
 		reqLog.Warn("openai.websocket_user_slot_acquire_failed", zap.Error(err))
 		closeOpenAIClientWS(wsConn, coderws.StatusInternalError, "failed to acquire user concurrency slot")
@@ -1266,11 +1269,11 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 			// 防御式清理：避免异常路径下旧槽位覆盖导致泄漏。
 			releaseTurnSlots()
 			// 非首轮 turn 需要重新抢占并发槽位，避免长连接空闲占槽。
-			turnConcurrency, err := resolveBudgetGuardConcurrency(ctx, h.billingCacheService, apiKey, subscription, subject.Concurrency)
+			turnBudgetDecision, err := resolveBudgetGuardConcurrency(ctx, h.billingCacheService, apiKey, subscription, subject.Concurrency)
 			if err != nil {
 				return service.NewOpenAIWSClientCloseError(coderws.StatusPolicyViolation, "billing check failed", err)
 			}
-			userReleaseFunc, userAcquired, err := h.concurrencyHelper.TryAcquireUserSlot(ctx, subject.UserID, turnConcurrency)
+			userReleaseFunc, userAcquired, err := h.concurrencyHelper.TryAcquireUserSlot(ctx, subject.UserID, turnBudgetDecision.EffectiveConcurrency)
 			if err != nil {
 				return service.NewOpenAIWSClientCloseError(coderws.StatusInternalError, "failed to acquire user concurrency slot", err)
 			}

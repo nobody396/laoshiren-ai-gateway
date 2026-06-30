@@ -189,13 +189,14 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 	// For Gemini native API, do not send Claude-style ping frames.
 	geminiConcurrency := NewConcurrencyHelper(h.concurrencyHelper.concurrencyService, SSEPingFormatNone, 0)
 
-	effectiveConcurrency, err := resolveBudgetGuardConcurrency(c.Request.Context(), h.billingCacheService, apiKey, subscription, authSubject.Concurrency)
+	budgetDecision, err := resolveBudgetGuardConcurrency(c.Request.Context(), h.billingCacheService, apiKey, subscription, authSubject.Concurrency)
 	if err != nil {
 		reqLog.Info("gemini.budget_guard_failed", zap.Error(err))
 		status, _, message := billingErrorDetails(err)
 		googleError(c, status, message)
 		return
 	}
+	effectiveConcurrency := budgetDecision.EffectiveConcurrency
 
 	// 0) wait queue check
 	maxWait := service.CalculateMaxWait(effectiveConcurrency)
@@ -205,7 +206,7 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 		reqLog.Warn("gemini.user_wait_counter_increment_failed", zap.Error(err))
 	} else if !canWait {
 		reqLog.Info("gemini.user_wait_queue_full", zap.Int("max_wait", maxWait))
-		googleError(c, http.StatusTooManyRequests, "Too many pending requests, please retry later")
+		googleError(c, http.StatusTooManyRequests, budgetGuardOrDefaultRateLimitMessage(budgetDecision, "Too many pending requests, please retry later"))
 		return
 	}
 	if err == nil && canWait {
@@ -225,7 +226,8 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 	userReleaseFunc, err := geminiConcurrency.AcquireUserSlotWithWait(c, authSubject.UserID, effectiveConcurrency, stream, &streamStarted)
 	if err != nil {
 		reqLog.Warn("gemini.user_slot_acquire_failed", zap.Error(err))
-		googleError(c, http.StatusTooManyRequests, err.Error())
+		status, _, message := budgetGuardAwareConcurrencyErrorResponse(err, "user", budgetDecision)
+		googleError(c, status, message)
 		return
 	}
 	if waitCounted {

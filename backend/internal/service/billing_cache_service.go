@@ -694,8 +694,36 @@ func (s *BillingCacheService) CheckBillingEligibility(ctx context.Context, user 
 // billable budget so top-ups / quota resets restore the original concurrency
 // automatically on the next request.
 func (s *BillingCacheService) ResolveBudgetGuardConcurrency(ctx context.Context, user *User, group *Group, subscription *UserSubscription, baseConcurrency int) (int, error) {
+	decision, err := s.ResolveBudgetGuardConcurrencyDecision(ctx, user, group, subscription, baseConcurrency)
+	return decision.EffectiveConcurrency, err
+}
+
+type BudgetGuardReason string
+
+const (
+	BudgetGuardReasonNone                 BudgetGuardReason = ""
+	BudgetGuardReasonBalanceLow           BudgetGuardReason = "balance_low"
+	BudgetGuardReasonBalanceCritical      BudgetGuardReason = "balance_critical"
+	BudgetGuardReasonSubscriptionLow      BudgetGuardReason = "subscription_low"
+	BudgetGuardReasonSubscriptionCritical BudgetGuardReason = "subscription_critical"
+)
+
+type BudgetGuardConcurrencyDecision struct {
+	EffectiveConcurrency int
+	Limited              bool
+	Reason               BudgetGuardReason
+}
+
+// ResolveBudgetGuardConcurrencyDecision returns the dynamic request-time
+// concurrency decision plus the business reason when the budget guard actually
+// lowers concurrency.
+//
+// This method must remain stateless: it reads the current balance/subscription
+// cache on every call and never persists the lowered concurrency to the user.
+func (s *BillingCacheService) ResolveBudgetGuardConcurrencyDecision(ctx context.Context, user *User, group *Group, subscription *UserSubscription, baseConcurrency int) (BudgetGuardConcurrencyDecision, error) {
+	baseDecision := BudgetGuardConcurrencyDecision{EffectiveConcurrency: baseConcurrency}
 	if s == nil || user == nil {
-		return baseConcurrency, nil
+		return baseDecision, nil
 	}
 	isSubscriptionMode := group != nil && group.IsSubscriptionType() && subscription != nil
 	if isSubscriptionMode {
@@ -704,14 +732,15 @@ func (s *BillingCacheService) ResolveBudgetGuardConcurrency(ctx context.Context,
 	return s.resolveBalanceBudgetGuardConcurrency(ctx, user.ID, baseConcurrency)
 }
 
-func (s *BillingCacheService) resolveBalanceBudgetGuardConcurrency(ctx context.Context, userID int64, baseConcurrency int) (int, error) {
+func (s *BillingCacheService) resolveBalanceBudgetGuardConcurrency(ctx context.Context, userID int64, baseConcurrency int) (BudgetGuardConcurrencyDecision, error) {
+	decision := BudgetGuardConcurrencyDecision{EffectiveConcurrency: baseConcurrency}
 	if s == nil {
-		return baseConcurrency, nil
+		return decision, nil
 	}
 	// Test/partial wiring fallback: if there is no way to load balance, leave
 	// concurrency unchanged and let the existing billing check path decide.
 	if s.cache == nil && s.userRepo == nil {
-		return baseConcurrency, nil
+		return decision, nil
 	}
 	balance, err := s.GetUserBalance(ctx, userID)
 	if err != nil {
@@ -719,32 +748,33 @@ func (s *BillingCacheService) resolveBalanceBudgetGuardConcurrency(ctx context.C
 			s.circuitBreaker.OnFailure(err)
 		}
 		logger.LegacyPrintf("service.billing_cache", "ALERT: budget guard balance check failed for user %d: %v", userID, err)
-		return baseConcurrency, ErrBillingServiceUnavailable.WithCause(err)
+		return decision, ErrBillingServiceUnavailable.WithCause(err)
 	}
 	if s.circuitBreaker != nil {
 		s.circuitBreaker.OnSuccess()
 	}
 	if balance <= 0 {
-		return baseConcurrency, ErrInsufficientBalance
+		return decision, ErrInsufficientBalance
 	}
 	if balance < budgetGuardBalanceCriticalUSD {
-		return applyBudgetGuardConcurrencyCap(baseConcurrency, budgetGuardCriticalConcurrency), nil
+		return applyBudgetGuardConcurrencyDecisionCap(decision, budgetGuardCriticalConcurrency, BudgetGuardReasonBalanceCritical), nil
 	}
 	if balance < budgetGuardBalanceLowUSD {
-		return applyBudgetGuardConcurrencyCap(baseConcurrency, budgetGuardLowConcurrency), nil
+		return applyBudgetGuardConcurrencyDecisionCap(decision, budgetGuardLowConcurrency, BudgetGuardReasonBalanceLow), nil
 	}
-	return baseConcurrency, nil
+	return decision, nil
 }
 
-func (s *BillingCacheService) resolveSubscriptionBudgetGuardConcurrency(ctx context.Context, userID int64, group *Group, baseConcurrency int) (int, error) {
+func (s *BillingCacheService) resolveSubscriptionBudgetGuardConcurrency(ctx context.Context, userID int64, group *Group, baseConcurrency int) (BudgetGuardConcurrencyDecision, error) {
+	decision := BudgetGuardConcurrencyDecision{EffectiveConcurrency: baseConcurrency}
 	if s == nil || group == nil {
-		return baseConcurrency, nil
+		return decision, nil
 	}
 	// Test/partial wiring fallback: if there is no way to load subscription
 	// status, leave concurrency unchanged and let the existing billing check path
 	// decide.
 	if s.cache == nil && s.subRepo == nil {
-		return baseConcurrency, nil
+		return decision, nil
 	}
 	subData, err := s.GetSubscriptionStatus(ctx, userID, group.ID)
 	if err != nil {
@@ -752,55 +782,54 @@ func (s *BillingCacheService) resolveSubscriptionBudgetGuardConcurrency(ctx cont
 			s.circuitBreaker.OnFailure(err)
 		}
 		logger.LegacyPrintf("service.billing_cache", "ALERT: budget guard subscription check failed for user %d group %d: %v", userID, group.ID, err)
-		return baseConcurrency, ErrBillingServiceUnavailable.WithCause(err)
+		return decision, ErrBillingServiceUnavailable.WithCause(err)
 	}
 	if s.circuitBreaker != nil {
 		s.circuitBreaker.OnSuccess()
 	}
 	if subData.Status != SubscriptionStatusActive || time.Now().After(subData.ExpiresAt) {
-		return baseConcurrency, ErrSubscriptionInvalid
+		return decision, ErrSubscriptionInvalid
 	}
 
-	effective := baseConcurrency
 	if group.HasDailyLimit() {
-		capConcurrency, err := subscriptionBudgetGuardLimitCap(subData.DailyUsage, *group.DailyLimitUSD)
+		capConcurrency, reason, err := subscriptionBudgetGuardLimitCap(subData.DailyUsage, *group.DailyLimitUSD)
 		if err != nil {
-			return baseConcurrency, ErrDailyLimitExceeded
+			return decision, ErrDailyLimitExceeded
 		}
-		effective = applyBudgetGuardConcurrencyCap(effective, capConcurrency)
+		decision = applyBudgetGuardConcurrencyDecisionCap(decision, capConcurrency, reason)
 	}
 	if group.HasWeeklyLimit() {
-		capConcurrency, err := subscriptionBudgetGuardLimitCap(subData.WeeklyUsage, *group.WeeklyLimitUSD)
+		capConcurrency, reason, err := subscriptionBudgetGuardLimitCap(subData.WeeklyUsage, *group.WeeklyLimitUSD)
 		if err != nil {
-			return baseConcurrency, ErrWeeklyLimitExceeded
+			return decision, ErrWeeklyLimitExceeded
 		}
-		effective = applyBudgetGuardConcurrencyCap(effective, capConcurrency)
+		decision = applyBudgetGuardConcurrencyDecisionCap(decision, capConcurrency, reason)
 	}
 	if group.HasMonthlyLimit() {
-		capConcurrency, err := subscriptionBudgetGuardLimitCap(subData.MonthlyUsage, *group.MonthlyLimitUSD)
+		capConcurrency, reason, err := subscriptionBudgetGuardLimitCap(subData.MonthlyUsage, *group.MonthlyLimitUSD)
 		if err != nil {
-			return baseConcurrency, ErrMonthlyLimitExceeded
+			return decision, ErrMonthlyLimitExceeded
 		}
-		effective = applyBudgetGuardConcurrencyCap(effective, capConcurrency)
+		decision = applyBudgetGuardConcurrencyDecisionCap(decision, capConcurrency, reason)
 	}
-	return effective, nil
+	return decision, nil
 }
 
-func subscriptionBudgetGuardLimitCap(used, limit float64) (int, error) {
+func subscriptionBudgetGuardLimitCap(used, limit float64) (int, BudgetGuardReason, error) {
 	if limit <= 0 {
-		return 0, nil
+		return 0, BudgetGuardReasonNone, nil
 	}
 	remaining := limit - used
 	if remaining <= SubscriptionUsageLimitEpsilonUSD {
-		return 0, ErrMonthlyLimitExceeded
+		return 0, BudgetGuardReasonNone, ErrMonthlyLimitExceeded
 	}
 	if remaining <= limit*budgetGuardSubscriptionCriticalRatio {
-		return budgetGuardCriticalConcurrency, nil
+		return budgetGuardCriticalConcurrency, BudgetGuardReasonSubscriptionCritical, nil
 	}
 	if remaining <= limit*budgetGuardSubscriptionLowRatio {
-		return budgetGuardLowConcurrency, nil
+		return budgetGuardLowConcurrency, BudgetGuardReasonSubscriptionLow, nil
 	}
-	return 0, nil
+	return 0, BudgetGuardReasonNone, nil
 }
 
 func applyBudgetGuardConcurrencyCap(baseConcurrency, capConcurrency int) int {
@@ -811,6 +840,19 @@ func applyBudgetGuardConcurrencyCap(baseConcurrency, capConcurrency int) int {
 		return capConcurrency
 	}
 	return baseConcurrency
+}
+
+func applyBudgetGuardConcurrencyDecisionCap(decision BudgetGuardConcurrencyDecision, capConcurrency int, reason BudgetGuardReason) BudgetGuardConcurrencyDecision {
+	if capConcurrency <= 0 {
+		return decision
+	}
+	effective := applyBudgetGuardConcurrencyCap(decision.EffectiveConcurrency, capConcurrency)
+	if effective != decision.EffectiveConcurrency {
+		decision.EffectiveConcurrency = effective
+		decision.Limited = true
+		decision.Reason = reason
+	}
+	return decision
 }
 
 // checkBalanceEligibility 检查余额模式资格

@@ -167,3 +167,57 @@ func TestBillingCacheServiceResolveBudgetGuardConcurrencySubscriptionScalesWithP
 	require.NoError(t, err)
 	require.Equal(t, 1, got)
 }
+
+func TestBillingCacheServiceBudgetGuardConcurrencyDecisionIsDynamic(t *testing.T) {
+	ctx := context.Background()
+	cache := &budgetGuardCacheStub{}
+	svc := NewBillingCacheService(cache, nil, nil, nil, &config.Config{})
+	t.Cleanup(svc.Stop)
+
+	user := &User{ID: 42}
+
+	cache.balance = 0.99
+	decision, err := svc.ResolveBudgetGuardConcurrencyDecision(ctx, user, nil, nil, 100)
+	require.NoError(t, err)
+	require.Equal(t, 1, decision.EffectiveConcurrency)
+	require.True(t, decision.Limited)
+	require.Equal(t, BudgetGuardReasonBalanceCritical, decision.Reason)
+
+	// Simulate a successful top-up. The next request must read the current
+	// balance and immediately restore the user's original concurrency. The
+	// budget guard must not persist a lowered users.concurrency value.
+	cache.balance = 10
+	decision, err = svc.ResolveBudgetGuardConcurrencyDecision(ctx, user, nil, nil, 100)
+	require.NoError(t, err)
+	require.Equal(t, 100, decision.EffectiveConcurrency)
+	require.False(t, decision.Limited)
+	require.Equal(t, BudgetGuardReasonNone, decision.Reason)
+
+	limit := 450.0
+	group := &Group{
+		ID:               7,
+		SubscriptionType: SubscriptionTypeSubscription,
+		MonthlyLimitUSD:  &limit,
+	}
+	sub := &UserSubscription{ID: 7}
+
+	cache.subData = &SubscriptionCacheData{
+		Status:       SubscriptionStatusActive,
+		ExpiresAt:    time.Now().Add(time.Hour),
+		MonthlyUsage: 449.2,
+	}
+	decision, err = svc.ResolveBudgetGuardConcurrencyDecision(ctx, user, group, sub, 100)
+	require.NoError(t, err)
+	require.Equal(t, 1, decision.EffectiveConcurrency)
+	require.True(t, decision.Limited)
+	require.Equal(t, BudgetGuardReasonSubscriptionCritical, decision.Reason)
+
+	// Simulate a quota reset / compensation / renewal that restores remaining
+	// monthly card credits. The next request must no longer be lowered.
+	cache.subData.MonthlyUsage = 100
+	decision, err = svc.ResolveBudgetGuardConcurrencyDecision(ctx, user, group, sub, 100)
+	require.NoError(t, err)
+	require.Equal(t, 100, decision.EffectiveConcurrency)
+	require.False(t, decision.Limited)
+	require.Equal(t, BudgetGuardReasonNone, decision.Reason)
+}

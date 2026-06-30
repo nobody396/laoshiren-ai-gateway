@@ -13,6 +13,7 @@ import (
 type concurrencyCacheMock struct {
 	acquireUserSlotFn    func(ctx context.Context, userID int64, maxConcurrency int, requestID string) (bool, error)
 	acquireAccountSlotFn func(ctx context.Context, accountID int64, maxConcurrency int, requestID string) (bool, error)
+	incrementWaitFn      func(ctx context.Context, userID int64, maxWait int) (bool, error)
 	releaseUserCalled    int32
 	releaseAccountCalled int32
 }
@@ -70,6 +71,9 @@ func (m *concurrencyCacheMock) GetUserConcurrency(ctx context.Context, userID in
 }
 
 func (m *concurrencyCacheMock) IncrementWaitCount(ctx context.Context, userID int64, maxWait int) (bool, error) {
+	if m.incrementWaitFn != nil {
+		return m.incrementWaitFn(ctx, userID, maxWait)
+	}
 	return true, nil
 }
 

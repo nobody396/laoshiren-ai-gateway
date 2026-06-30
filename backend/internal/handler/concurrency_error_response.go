@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 )
 
 const statusClientClosedRequest = 499
@@ -24,4 +26,12 @@ func concurrencyErrorResponse(err error, slotType string) (int, string, string) 
 	}
 
 	return http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable, please retry later"
+}
+
+func budgetGuardAwareConcurrencyErrorResponse(err error, slotType string, decision service.BudgetGuardConcurrencyDecision) (int, string, string) {
+	status, errType, message := concurrencyErrorResponse(err, slotType)
+	if status == http.StatusTooManyRequests && slotType == "user" {
+		message = budgetGuardOrDefaultRateLimitMessage(decision, message)
+	}
+	return status, errType, message
 }

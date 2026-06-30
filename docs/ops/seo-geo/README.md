@@ -34,3 +34,12 @@ python3 tools/seo_geo_audit.py --base-url https://laoshirenai.com --timeout 8 --
 ## 凭证边界
 
 Search Console、GA4、OpenAI/Anthropic/Firecrawl 等凭证只能放 Agent Switch secrets，不能写入本仓库、日报、周报或聊天记录。
+## 第二层 / 第三层闭环命令
+
+```bash
+node tools/seo_geo_collect.mjs --date $(date +%F) --days 28
+node tools/seo_geo_decision.mjs --date $(date +%F)
+node tools/seo_geo_intent_radar.mjs --date $(date +%F)
+```
+
+详细说明见 `docs/ops/seo-geo/effect-loop.md`。

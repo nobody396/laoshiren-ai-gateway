@@ -1,0 +1,78 @@
+{
+  "generatedAt": "2026-06-30T08:32:58.120Z",
+  "siteOrigin": "https://laoshirenai.com",
+  "outputs": {
+    "searchRadar": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API/docs/ops/seo-geo/radar/2026-06-30-setup/search-radar.json"
+  },
+  "skipped": [
+    {
+      "source": "firecrawl",
+      "query": "Claude Code 国内使用",
+      "reason": "missing FIRECRAWL_API_KEY in environment"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Claude Code Base URL 怎么填",
+      "reason": "missing FIRECRAWL_API_KEY in environment"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Claude Code login 失败",
+      "reason": "missing FIRECRAWL_API_KEY in environment"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Claude Code 走官方地址 怎么办",
+      "reason": "missing FIRECRAWL_API_KEY in environment"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Codex 国内使用",
+      "reason": "missing FIRECRAWL_API_KEY in environment"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Codex 免 API Key",
+      "reason": "missing FIRECRAWL_API_KEY in environment"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Codex 自定义 API",
+      "reason": "missing FIRECRAWL_API_KEY in environment"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Codex config.toml base_url",
+      "reason": "missing FIRECRAWL_API_KEY in environment"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Codex auth.json 放哪里",
+      "reason": "missing FIRECRAWL_API_KEY in environment"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Codex WSL 配置",
+      "reason": "missing FIRECRAWL_API_KEY in environment"
+    }
+  ],
+  "failed": [],
+  "seedQueries": [
+    "Claude Code 国内使用",
+    "Claude Code Base URL 怎么填",
+    "Claude Code login 失败",
+    "Claude Code 走官方地址 怎么办",
+    "Codex 国内使用",
+    "Codex 免 API Key",
+    "Codex 自定义 API",
+    "Codex config.toml base_url",
+    "Codex auth.json 放哪里",
+    "Codex WSL 配置"
+  ],
+  "aiPrompts": [
+    "Claude Code 国内怎么用？",
+    "Codex 免 API Key 怎么配置？",
+    "Codex base_url 怎么填？",
+    "Codex config.toml auth.json 应该怎么写？"
+  ]
+}

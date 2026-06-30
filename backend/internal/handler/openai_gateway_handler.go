@@ -228,7 +228,14 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	service.SetOpsLatencyMs(c, service.OpsAuthLatencyMsKey, time.Since(requestStart).Milliseconds())
 	routingStart := time.Now()
 
-	userReleaseFunc, acquired := h.acquireResponsesUserSlot(c, subject.UserID, subject.Concurrency, reqStream, &streamStarted, reqLog)
+	effectiveConcurrency, err := resolveBudgetGuardConcurrency(c.Request.Context(), h.billingCacheService, apiKey, subscription, subject.Concurrency)
+	if err != nil {
+		reqLog.Info("openai.budget_guard_failed", zap.Error(err))
+		status, code, message := billingErrorDetails(err)
+		h.handleStreamingAwareError(c, status, code, message, streamStarted)
+		return
+	}
+	userReleaseFunc, acquired := h.acquireResponsesUserSlot(c, subject.UserID, effectiveConcurrency, reqStream, &streamStarted, reqLog)
 	if !acquired {
 		return
 	}
@@ -607,7 +614,14 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 	service.SetOpsLatencyMs(c, service.OpsAuthLatencyMsKey, time.Since(requestStart).Milliseconds())
 	routingStart := time.Now()
 
-	userReleaseFunc, acquired := h.acquireResponsesUserSlot(c, subject.UserID, subject.Concurrency, reqStream, &streamStarted, reqLog)
+	effectiveConcurrency, err := resolveBudgetGuardConcurrency(c.Request.Context(), h.billingCacheService, apiKey, subscription, subject.Concurrency)
+	if err != nil {
+		reqLog.Info("openai_messages.budget_guard_failed", zap.Error(err))
+		status, code, message := billingErrorDetails(err)
+		h.anthropicStreamingAwareError(c, status, code, message, streamStarted)
+		return
+	}
+	userReleaseFunc, acquired := h.acquireResponsesUserSlot(c, subject.UserID, effectiveConcurrency, reqStream, &streamStarted, reqLog)
 	if !acquired {
 		return
 	}
@@ -1149,7 +1163,14 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 	// 必须尽早注册，确保任何 early return 都能释放已获取的并发槽位。
 	defer releaseTurnSlots()
 
-	userReleaseFunc, userAcquired, err := h.concurrencyHelper.TryAcquireUserSlot(ctx, subject.UserID, subject.Concurrency)
+	subscription, _ := middleware2.GetSubscriptionFromContext(c)
+	effectiveConcurrency, err := resolveBudgetGuardConcurrency(ctx, h.billingCacheService, apiKey, subscription, subject.Concurrency)
+	if err != nil {
+		reqLog.Info("openai.websocket_budget_guard_failed", zap.Error(err))
+		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, "billing check failed")
+		return
+	}
+	userReleaseFunc, userAcquired, err := h.concurrencyHelper.TryAcquireUserSlot(ctx, subject.UserID, effectiveConcurrency)
 	if err != nil {
 		reqLog.Warn("openai.websocket_user_slot_acquire_failed", zap.Error(err))
 		closeOpenAIClientWS(wsConn, coderws.StatusInternalError, "failed to acquire user concurrency slot")
@@ -1161,7 +1182,6 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 	}
 	currentUserRelease = wrapReleaseOnDone(ctx, userReleaseFunc)
 
-	subscription, _ := middleware2.GetSubscriptionFromContext(c)
 	if err := h.billingCacheService.CheckBillingEligibility(ctx, apiKey.User, apiKey, apiKey.Group, subscription); err != nil {
 		reqLog.Info("openai.websocket_billing_eligibility_check_failed", zap.Error(err))
 		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, "billing check failed")
@@ -1246,7 +1266,11 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 			// 防御式清理：避免异常路径下旧槽位覆盖导致泄漏。
 			releaseTurnSlots()
 			// 非首轮 turn 需要重新抢占并发槽位，避免长连接空闲占槽。
-			userReleaseFunc, userAcquired, err := h.concurrencyHelper.TryAcquireUserSlot(ctx, subject.UserID, subject.Concurrency)
+			turnConcurrency, err := resolveBudgetGuardConcurrency(ctx, h.billingCacheService, apiKey, subscription, subject.Concurrency)
+			if err != nil {
+				return service.NewOpenAIWSClientCloseError(coderws.StatusPolicyViolation, "billing check failed", err)
+			}
+			userReleaseFunc, userAcquired, err := h.concurrencyHelper.TryAcquireUserSlot(ctx, subject.UserID, turnConcurrency)
 			if err != nil {
 				return service.NewOpenAIWSClientCloseError(coderws.StatusInternalError, "failed to acquire user concurrency slot", err)
 			}

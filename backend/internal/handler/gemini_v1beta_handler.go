@@ -189,8 +189,16 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 	// For Gemini native API, do not send Claude-style ping frames.
 	geminiConcurrency := NewConcurrencyHelper(h.concurrencyHelper.concurrencyService, SSEPingFormatNone, 0)
 
+	effectiveConcurrency, err := resolveBudgetGuardConcurrency(c.Request.Context(), h.billingCacheService, apiKey, subscription, authSubject.Concurrency)
+	if err != nil {
+		reqLog.Info("gemini.budget_guard_failed", zap.Error(err))
+		status, _, message := billingErrorDetails(err)
+		googleError(c, status, message)
+		return
+	}
+
 	// 0) wait queue check
-	maxWait := service.CalculateMaxWait(authSubject.Concurrency)
+	maxWait := service.CalculateMaxWait(effectiveConcurrency)
 	canWait, err := geminiConcurrency.IncrementWaitCount(c.Request.Context(), authSubject.UserID, maxWait)
 	waitCounted := false
 	if err != nil {
@@ -214,7 +222,7 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 	if h.errorPassthroughService != nil {
 		service.BindErrorPassthroughService(c, h.errorPassthroughService)
 	}
-	userReleaseFunc, err := geminiConcurrency.AcquireUserSlotWithWait(c, authSubject.UserID, authSubject.Concurrency, stream, &streamStarted)
+	userReleaseFunc, err := geminiConcurrency.AcquireUserSlotWithWait(c, authSubject.UserID, effectiveConcurrency, stream, &streamStarted)
 	if err != nil {
 		reqLog.Warn("gemini.user_slot_acquire_failed", zap.Error(err))
 		googleError(c, http.StatusTooManyRequests, err.Error())

@@ -32,6 +32,19 @@ type subscriptionCacheData struct {
 	Version      int64
 }
 
+const (
+	budgetGuardLowConcurrency      = 3
+	budgetGuardCriticalConcurrency = 1
+
+	budgetGuardBalanceLowUSD      = 5.0
+	budgetGuardBalanceCriticalUSD = 1.0
+
+	// 月卡按“原始积分”的比例判断。前端展示积分 = raw * 10，比例计算中
+	// *10 会抵消，因此这里直接用 raw limit/usage 计算。
+	budgetGuardSubscriptionLowRatio      = 0.01  // 剩余 <= 原始额度 1%：并发最多 3
+	budgetGuardSubscriptionCriticalRatio = 0.002 // 剩余 <= 原始额度 0.2%：并发最多 1
+)
+
 // 缓存写入任务类型
 type cacheWriteKind int
 
@@ -672,6 +685,132 @@ func (s *BillingCacheService) CheckBillingEligibility(ctx context.Context, user 
 	}
 
 	return nil
+}
+
+// ResolveBudgetGuardConcurrency returns the request-time effective user
+// concurrency after low-budget risk controls.
+//
+// It does not mutate users.concurrency. The cap is derived from the current
+// billable budget so top-ups / quota resets restore the original concurrency
+// automatically on the next request.
+func (s *BillingCacheService) ResolveBudgetGuardConcurrency(ctx context.Context, user *User, group *Group, subscription *UserSubscription, baseConcurrency int) (int, error) {
+	if s == nil || user == nil {
+		return baseConcurrency, nil
+	}
+	isSubscriptionMode := group != nil && group.IsSubscriptionType() && subscription != nil
+	if isSubscriptionMode {
+		return s.resolveSubscriptionBudgetGuardConcurrency(ctx, user.ID, group, baseConcurrency)
+	}
+	return s.resolveBalanceBudgetGuardConcurrency(ctx, user.ID, baseConcurrency)
+}
+
+func (s *BillingCacheService) resolveBalanceBudgetGuardConcurrency(ctx context.Context, userID int64, baseConcurrency int) (int, error) {
+	if s == nil {
+		return baseConcurrency, nil
+	}
+	// Test/partial wiring fallback: if there is no way to load balance, leave
+	// concurrency unchanged and let the existing billing check path decide.
+	if s.cache == nil && s.userRepo == nil {
+		return baseConcurrency, nil
+	}
+	balance, err := s.GetUserBalance(ctx, userID)
+	if err != nil {
+		if s.circuitBreaker != nil {
+			s.circuitBreaker.OnFailure(err)
+		}
+		logger.LegacyPrintf("service.billing_cache", "ALERT: budget guard balance check failed for user %d: %v", userID, err)
+		return baseConcurrency, ErrBillingServiceUnavailable.WithCause(err)
+	}
+	if s.circuitBreaker != nil {
+		s.circuitBreaker.OnSuccess()
+	}
+	if balance <= 0 {
+		return baseConcurrency, ErrInsufficientBalance
+	}
+	if balance < budgetGuardBalanceCriticalUSD {
+		return applyBudgetGuardConcurrencyCap(baseConcurrency, budgetGuardCriticalConcurrency), nil
+	}
+	if balance < budgetGuardBalanceLowUSD {
+		return applyBudgetGuardConcurrencyCap(baseConcurrency, budgetGuardLowConcurrency), nil
+	}
+	return baseConcurrency, nil
+}
+
+func (s *BillingCacheService) resolveSubscriptionBudgetGuardConcurrency(ctx context.Context, userID int64, group *Group, baseConcurrency int) (int, error) {
+	if s == nil || group == nil {
+		return baseConcurrency, nil
+	}
+	// Test/partial wiring fallback: if there is no way to load subscription
+	// status, leave concurrency unchanged and let the existing billing check path
+	// decide.
+	if s.cache == nil && s.subRepo == nil {
+		return baseConcurrency, nil
+	}
+	subData, err := s.GetSubscriptionStatus(ctx, userID, group.ID)
+	if err != nil {
+		if s.circuitBreaker != nil {
+			s.circuitBreaker.OnFailure(err)
+		}
+		logger.LegacyPrintf("service.billing_cache", "ALERT: budget guard subscription check failed for user %d group %d: %v", userID, group.ID, err)
+		return baseConcurrency, ErrBillingServiceUnavailable.WithCause(err)
+	}
+	if s.circuitBreaker != nil {
+		s.circuitBreaker.OnSuccess()
+	}
+	if subData.Status != SubscriptionStatusActive || time.Now().After(subData.ExpiresAt) {
+		return baseConcurrency, ErrSubscriptionInvalid
+	}
+
+	effective := baseConcurrency
+	if group.HasDailyLimit() {
+		capConcurrency, err := subscriptionBudgetGuardLimitCap(subData.DailyUsage, *group.DailyLimitUSD)
+		if err != nil {
+			return baseConcurrency, ErrDailyLimitExceeded
+		}
+		effective = applyBudgetGuardConcurrencyCap(effective, capConcurrency)
+	}
+	if group.HasWeeklyLimit() {
+		capConcurrency, err := subscriptionBudgetGuardLimitCap(subData.WeeklyUsage, *group.WeeklyLimitUSD)
+		if err != nil {
+			return baseConcurrency, ErrWeeklyLimitExceeded
+		}
+		effective = applyBudgetGuardConcurrencyCap(effective, capConcurrency)
+	}
+	if group.HasMonthlyLimit() {
+		capConcurrency, err := subscriptionBudgetGuardLimitCap(subData.MonthlyUsage, *group.MonthlyLimitUSD)
+		if err != nil {
+			return baseConcurrency, ErrMonthlyLimitExceeded
+		}
+		effective = applyBudgetGuardConcurrencyCap(effective, capConcurrency)
+	}
+	return effective, nil
+}
+
+func subscriptionBudgetGuardLimitCap(used, limit float64) (int, error) {
+	if limit <= 0 {
+		return 0, nil
+	}
+	remaining := limit - used
+	if remaining <= SubscriptionUsageLimitEpsilonUSD {
+		return 0, ErrMonthlyLimitExceeded
+	}
+	if remaining <= limit*budgetGuardSubscriptionCriticalRatio {
+		return budgetGuardCriticalConcurrency, nil
+	}
+	if remaining <= limit*budgetGuardSubscriptionLowRatio {
+		return budgetGuardLowConcurrency, nil
+	}
+	return 0, nil
+}
+
+func applyBudgetGuardConcurrencyCap(baseConcurrency, capConcurrency int) int {
+	if capConcurrency <= 0 {
+		return baseConcurrency
+	}
+	if baseConcurrency <= 0 || baseConcurrency > capConcurrency {
+		return capConcurrency
+	}
+	return baseConcurrency
 }
 
 // checkBalanceEligibility 检查余额模式资格

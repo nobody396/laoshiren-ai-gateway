@@ -81,7 +81,14 @@ func (h *OpenAIGatewayHandler) GPTImageGenerate(c *gin.Context) {
 	service.SetOpsLatencyMs(c, service.OpsAuthLatencyMsKey, time.Since(requestStart).Milliseconds())
 	routingStart := time.Now()
 
-	userReleaseFunc, acquired := h.acquireResponsesUserSlot(c, subject.UserID, subject.Concurrency, false, &streamStarted, reqLog)
+	effectiveConcurrency, err := resolveBudgetGuardConcurrency(c.Request.Context(), h.billingCacheService, apiKey, subscription, subject.Concurrency)
+	if err != nil {
+		reqLog.Info("gpt_image.budget_guard_failed", zap.Error(err))
+		status, code, message := billingErrorDetails(err)
+		h.handleStreamingAwareError(c, status, code, message, streamStarted)
+		return
+	}
+	userReleaseFunc, acquired := h.acquireResponsesUserSlot(c, subject.UserID, effectiveConcurrency, false, &streamStarted, reqLog)
 	if !acquired {
 		return
 	}

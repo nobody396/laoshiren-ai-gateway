@@ -910,11 +910,11 @@ const revokingSubscription = ref<UserSubscription | null>(null)
 const assignForm = reactive({
   user_id: null as number | null,
   group_id: null as number | null,
-  validity_days: 30
+  validity_days: 31
 })
 
 const extendForm = reactive({
-  days: 30
+  days: 31
 })
 
 // Group options for filter (all groups)
@@ -1113,7 +1113,7 @@ const closeAssignModal = () => {
   showAssignModal.value = false
   assignForm.user_id = null
   assignForm.group_id = null
-  assignForm.validity_days = 30
+  assignForm.validity_days = 31
   // Clear user search state
   selectedUser.value = null
   userSearchKeyword.value = ''
@@ -1155,7 +1155,7 @@ const handleAssignSubscription = async () => {
 
 const handleExtend = (subscription: UserSubscription) => {
   extendingSubscription.value = subscription
-  extendForm.days = 30
+  extendForm.days = 31
   showExtendModal.value = true
 }
 
@@ -1283,7 +1283,7 @@ const formatResetTime = (windowStart: string, period: 'daily' | 'weekly' | 'mont
       resetTime = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000)
       break
     case 'monthly':
-      resetTime = new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000)
+      resetTime = new Date(start.getTime() + 31 * 24 * 60 * 60 * 1000)
       break
   }
 
@@ -1291,6 +1291,11 @@ const formatResetTime = (windowStart: string, period: 'daily' | 'weekly' | 'mont
   if (diffMs <= 0) return t('admin.subscriptions.windowNotActive')
 
   const diffSeconds = Math.floor(diffMs / 1000)
+  if (period === 'monthly') {
+    const days = Math.max(1, Math.ceil(diffSeconds / 86400))
+    return t('admin.subscriptions.resetInDays', { days })
+  }
+
   const days = Math.floor(diffSeconds / 86400)
   const hours = Math.floor((diffSeconds % 86400) / 3600)
   const minutes = Math.floor((diffSeconds % 3600) / 60)

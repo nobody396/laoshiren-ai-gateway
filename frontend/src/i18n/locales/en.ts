@@ -2462,6 +2462,7 @@ export default {
       windowNotActive: 'Window not active',
       resetInMinutes: 'Resets in {minutes}m',
       resetInHoursMinutes: 'Resets in {hours}h {minutes}m',
+      resetInDays: 'Resets in {days}d',
       resetInDaysHours: 'Resets in {days}d {hours}h',
       daysRemaining: 'days remaining',
       remainingDays: 'Remaining days',

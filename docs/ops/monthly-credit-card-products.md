@@ -10,7 +10,7 @@ or extends a subscription group; the group controls daily credits and billing.
 - Claude Max usage: 1.25 credits = 1 USD nominal usage.
 - GPT Pro and Claude Max share the same daily credits pool.
 - Daily credits do not roll over.
-- Validity is 30 days unless the batch explicitly says otherwise.
+- Validity is 31 days unless the batch explicitly says otherwise.
 
 ## Product Lineup
 
@@ -58,11 +58,11 @@ groups.
 
 | Product | subscription_type | daily_limit_usd | monthly_limit_usd | validity_days |
 | --- | --- | ---: | ---: | ---: |
-| Lite 月卡 | credit | 15 | 450 | 30 |
-| Pro 月卡 | credit | 30 | 900 | 30 |
-| Max 月卡 | credit | 40 | 1200 | 30 |
-| Ultra 月卡 | credit | 50 | 1500 | 30 |
-| Apex 月卡 | credit | empty | 2898 | 30 |
+| Lite 月卡 | credit | 15 | 450 | 31 |
+| Pro 月卡 | credit | 30 | 900 | 31 |
+| Max 月卡 | credit | 40 | 1200 | 31 |
+| Ultra 月卡 | credit | 50 | 1500 | 31 |
+| Apex 月卡 | credit | empty | 2898 | 31 |
 
 ## Redeem Code Payload Template
 
@@ -76,7 +76,7 @@ reconciliation; the monthly entitlement comes from the group limits.
   "type": "subscription",
   "value": 0,
   "group_id": 0,
-  "validity_days": 30,
+  "validity_days": 31,
   "batch_name": "monthly-credit-lite-20260608",
   "purpose": "sale_recharge",
   "sales_status": "inventory",

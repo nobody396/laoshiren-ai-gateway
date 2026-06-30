@@ -24,5 +24,20 @@ func TestRollingUsageWindowStartPreservesActivationMoment(t *testing.T) {
 
 	require.Equal(t, activation, windowStart)
 	require.NotEqual(t, startOfDay(activation), windowStart, "monthly windows must not be rounded down to midnight")
-	require.Equal(t, activation.Add(30*24*time.Hour), windowStart.Add(30*24*time.Hour))
+	require.Equal(t, activation.Add(SubscriptionMonthlyWindowDuration), windowStart.Add(SubscriptionMonthlyWindowDuration))
+}
+
+func TestMonthlyResetTimeUsesThirtyOneDayCycle(t *testing.T) {
+	start := time.Date(2026, 6, 30, 21, 13, 49, 0, time.FixedZone("CST", 8*3600))
+
+	resetAt := (&UserSubscription{MonthlyWindowStart: &start}).MonthlyResetTime()
+
+	require.NotNil(t, resetAt)
+	require.Equal(t, start.Add(31*24*time.Hour), *resetAt)
+}
+
+func TestDaysRemainingRoundsUpPartialDays(t *testing.T) {
+	sub := &UserSubscription{ExpiresAt: time.Now().Add(30*24*time.Hour + time.Hour)}
+
+	require.Equal(t, 31, sub.DaysRemaining())
 }

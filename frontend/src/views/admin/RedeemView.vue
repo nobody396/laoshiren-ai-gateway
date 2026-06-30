@@ -93,7 +93,7 @@
             <span class="text-sm font-medium text-gray-900 dark:text-white">
               <template v-if="row.type === 'balance'">${{ value.toFixed(2) }}</template>
               <template v-else-if="row.type === 'subscription'">
-                {{ row.validity_days || 30 }} {{ t('admin.redeem.days') }}
+                {{ row.validity_days || 31 }} {{ t('admin.redeem.days') }}
                 <span v-if="row.group" class="ml-1 text-xs text-gray-500 dark:text-gray-400"
                   >({{ row.group.name }})</span
                 >
@@ -751,7 +751,7 @@ const generateForm = reactive({
   value: 10,
   count: 1,
   group_id: null as number | null,
-  validity_days: 30,
+  validity_days: 31,
   batch_name: '',
   purpose: 'sale_recharge' as RedeemCodePurpose,
   sales_status: 'inventory' as RedeemCodeSalesStatus,
@@ -919,7 +919,7 @@ const handleGenerateCodes = async () => {
     showResultDialog.value = true
     // 重置表单
     generateForm.group_id = null
-    generateForm.validity_days = 30
+    generateForm.validity_days = 31
     generateForm.batch_name = ''
     generateForm.sales_channel = ''
     generateForm.external_url = ''

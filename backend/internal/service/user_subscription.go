@@ -1,12 +1,20 @@
 package service
 
-import "time"
+import (
+	"math"
+	"time"
+)
 
 // SubscriptionUsageLimitEpsilonUSD is the smallest remaining subscription
 // balance we still treat as usable. It closes floating-point / decimal tail
 // gaps such as 449.9999175202 / 450.00000000, where the UI is already full and
 // any real model request would exceed the cap after the response has streamed.
 const SubscriptionUsageLimitEpsilonUSD = 0.0001
+
+// SubscriptionMonthlyWindowDuration is the default monthly-card quota window.
+// Product-wise, a monthly card is sold as a 31-day cycle; keep quota reset and
+// remaining-day displays aligned with that customer-facing entitlement.
+const SubscriptionMonthlyWindowDuration = 31 * 24 * time.Hour
 
 type UserSubscription struct {
 	ID      int64
@@ -49,7 +57,7 @@ func (s *UserSubscription) DaysRemaining() int {
 	if s.IsExpired() {
 		return 0
 	}
-	return int(time.Until(s.ExpiresAt).Hours() / 24)
+	return int(math.Ceil(time.Until(s.ExpiresAt).Hours() / 24))
 }
 
 func (s *UserSubscription) IsWindowActivated() bool {
@@ -74,7 +82,7 @@ func (s *UserSubscription) NeedsMonthlyReset() bool {
 	if s.MonthlyWindowStart == nil {
 		return false
 	}
-	return time.Since(*s.MonthlyWindowStart) >= 30*24*time.Hour
+	return time.Since(*s.MonthlyWindowStart) >= SubscriptionMonthlyWindowDuration
 }
 
 func (s *UserSubscription) DailyResetTime() *time.Time {
@@ -97,7 +105,7 @@ func (s *UserSubscription) MonthlyResetTime() *time.Time {
 	if s.MonthlyWindowStart == nil {
 		return nil
 	}
-	t := s.MonthlyWindowStart.Add(30 * 24 * time.Hour)
+	t := s.MonthlyWindowStart.Add(SubscriptionMonthlyWindowDuration)
 	return &t
 }
 

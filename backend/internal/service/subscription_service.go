@@ -175,6 +175,9 @@ func (s *SubscriptionService) AssignOrExtendSubscription(ctx context.Context, in
 	if !group.IsSubscriptionType() {
 		return nil, false, ErrGroupNotSubscriptionType
 	}
+	normalizedInput := *input
+	normalizedInput.ValidityDays = normalizeSubscriptionValidityDays(input.ValidityDays, group)
+	input = &normalizedInput
 
 	// 查询是否已有订阅
 	existingSub, err := s.userSubRepo.GetByUserIDAndGroupID(ctx, input.UserID, input.GroupID)
@@ -184,12 +187,6 @@ func (s *SubscriptionService) AssignOrExtendSubscription(ctx context.Context, in
 	}
 
 	validityDays := input.ValidityDays
-	if validityDays <= 0 {
-		validityDays = 30
-	}
-	if validityDays > MaxValidityDays {
-		validityDays = MaxValidityDays
-	}
 
 	// 已有订阅，执行原子续期。若调用方已经传入事务上下文，repository 会复用该事务。
 	if existingSub != nil {
@@ -215,7 +212,7 @@ func (s *SubscriptionService) AssignOrExtendSubscription(ctx context.Context, in
 	}
 
 	// 没有订阅，创建新订阅
-	sub, err := s.createSubscription(ctx, input)
+	sub, err := s.createSubscription(ctx, input, group)
 	if err != nil {
 		return nil, false, err
 	}
@@ -235,14 +232,8 @@ func (s *SubscriptionService) AssignOrExtendSubscription(ctx context.Context, in
 }
 
 // createSubscription 创建新订阅（内部方法）
-func (s *SubscriptionService) createSubscription(ctx context.Context, input *AssignSubscriptionInput) (*UserSubscription, error) {
-	validityDays := input.ValidityDays
-	if validityDays <= 0 {
-		validityDays = 30
-	}
-	if validityDays > MaxValidityDays {
-		validityDays = MaxValidityDays
-	}
+func (s *SubscriptionService) createSubscription(ctx context.Context, input *AssignSubscriptionInput, group *Group) (*UserSubscription, error) {
+	validityDays := normalizeSubscriptionValidityDays(input.ValidityDays, group)
 
 	now := time.Now()
 	expiresAt := now.AddDate(0, 0, validityDays)
@@ -339,6 +330,9 @@ func (s *SubscriptionService) assignSubscriptionWithReuse(ctx context.Context, i
 	if !group.IsSubscriptionType() {
 		return nil, false, ErrGroupNotSubscriptionType
 	}
+	normalizedInput := *input
+	normalizedInput.ValidityDays = normalizeSubscriptionValidityDays(input.ValidityDays, group)
+	input = &normalizedInput
 
 	// 检查是否已存在订阅；若已存在，则按幂等成功返回现有订阅
 	exists, err := s.userSubRepo.ExistsByUserIDAndGroupID(ctx, input.UserID, input.GroupID)
@@ -358,7 +352,7 @@ func (s *SubscriptionService) assignSubscriptionWithReuse(ctx context.Context, i
 		return sub, true, nil
 	}
 
-	sub, err := s.createSubscription(ctx, input)
+	sub, err := s.createSubscription(ctx, input, group)
 	if err != nil {
 		return nil, false, err
 	}
@@ -403,8 +397,15 @@ func detectAssignSemanticConflict(existing *UserSubscription, input *AssignSubsc
 }
 
 func normalizeAssignValidityDays(days int) int {
+	return normalizeSubscriptionValidityDays(days, nil)
+}
+
+func normalizeSubscriptionValidityDays(days int, group *Group) int {
 	if days <= 0 {
 		days = 30
+		if group != nil && group.DefaultValidityDays > 0 {
+			days = group.DefaultValidityDays
+		}
 	}
 	if days > MaxValidityDays {
 		days = MaxValidityDays
@@ -954,7 +955,7 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	// 月进度
 	if group.HasMonthlyLimit() && sub.MonthlyWindowStart != nil {
 		limit := *group.MonthlyLimitUSD
-		resetsAt := sub.MonthlyWindowStart.Add(30 * 24 * time.Hour)
+		resetsAt := sub.MonthlyWindowStart.Add(SubscriptionMonthlyWindowDuration)
 		progress.Monthly = &UsageWindowProgress{
 			LimitUSD:        limit,
 			UsedUSD:         sub.MonthlyUsageUSD,

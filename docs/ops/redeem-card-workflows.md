@@ -58,7 +58,7 @@ Generation fields:
 
 - `type`: `subscription`
 - `group_id`: the target monthly-card subscription group
-- `validity_days`: `30` unless explicitly configured otherwise
+- `validity_days`: `31` unless explicitly configured otherwise
 - `purpose`: `sale_recharge` for sellable inventory
 - `sales_status`: `inventory`
 - `sales_channel`: `liandong_shop` when the batch is for Liandong card shop

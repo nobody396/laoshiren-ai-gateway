@@ -2537,6 +2537,7 @@ export default {
       windowNotActive: '窗口未激活',
       resetInMinutes: '{minutes} 分钟后重置',
       resetInHoursMinutes: '{hours} 小时 {minutes} 分钟后重置',
+      resetInDays: '{days} 天后重置',
       resetInDaysHours: '{days} 天 {hours} 小时后重置',
       daysRemaining: '天剩余',
       remainingDays: '剩余天数',

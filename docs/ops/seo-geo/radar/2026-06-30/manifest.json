@@ -1,0 +1,78 @@
+{
+  "generatedAt": "2026-06-30T09:35:49.074Z",
+  "siteOrigin": "https://laoshirenai.com",
+  "outputs": {
+    "searchRadar": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API/docs/ops/seo-geo/radar/2026-06-30/search-radar.json"
+  },
+  "skipped": [],
+  "failed": [
+    {
+      "source": "firecrawl",
+      "query": "Claude Code 国内使用",
+      "error": "The operation was aborted due to timeout"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Claude Code Base URL 怎么填",
+      "error": "rows.map is not a function"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Claude Code login 失败",
+      "error": "rows.map is not a function"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Claude Code 走官方地址 怎么办",
+      "error": "rows.map is not a function"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Codex 国内使用",
+      "error": "rows.map is not a function"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Codex 免 API Key",
+      "error": "rows.map is not a function"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Codex 自定义 API",
+      "error": "The operation was aborted due to timeout"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Codex config.toml base_url",
+      "error": "rows.map is not a function"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Codex auth.json 放哪里",
+      "error": "rows.map is not a function"
+    },
+    {
+      "source": "firecrawl",
+      "query": "Codex WSL 配置",
+      "error": "rows.map is not a function"
+    }
+  ],
+  "seedQueries": [
+    "Claude Code 国内使用",
+    "Claude Code Base URL 怎么填",
+    "Claude Code login 失败",
+    "Claude Code 走官方地址 怎么办",
+    "Codex 国内使用",
+    "Codex 免 API Key",
+    "Codex 自定义 API",
+    "Codex config.toml base_url",
+    "Codex auth.json 放哪里",
+    "Codex WSL 配置"
+  ],
+  "aiPrompts": [
+    "Claude Code 国内怎么用？",
+    "Codex 免 API Key 怎么配置？",
+    "Codex base_url 怎么填？",
+    "Codex config.toml auth.json 应该怎么写？"
+  ]
+}

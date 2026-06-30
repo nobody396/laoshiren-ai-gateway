@@ -23,6 +23,7 @@ for (let i = 2; i < process.argv.length; i += 1) {
 }
 
 const date = args.get('date') || todayISO()
+const requestTimeoutMs = Number(process.env.SEO_GEO_RADAR_TIMEOUT_MS || 12000)
 const outDir = path.join(SEO_DIR, 'radar', date)
 ensureDir(outDir)
 
@@ -72,6 +73,7 @@ async function tavilySearch(query) {
     method: 'POST',
     headers,
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(requestTimeoutMs),
   })
 }
 
@@ -91,6 +93,7 @@ async function firecrawlSearch(query) {
     method: 'POST',
     headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(requestTimeoutMs),
   })
 }
 

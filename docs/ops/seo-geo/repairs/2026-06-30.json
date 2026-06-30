@@ -1,0 +1,39 @@
+{
+  "date": "2026-06-30",
+  "decisionPath": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API/docs/ops/seo-geo/weekly/2026-06-30-decision.json",
+  "apply": true,
+  "targetPaths": [
+    "/docs/claude-code-china-guide",
+    "/docs/codex-china-guide",
+    "/docs/codex-custom-api-guide",
+    "/docs/codex-no-api-key-guide"
+  ],
+  "changedCount": 4,
+  "changes": [
+    {
+      "path": "/docs/claude-code-china-guide",
+      "file": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API/frontend/src/docs/content/claude-code-china-guide.md",
+      "action": "upsert_search_intent_block",
+      "applied": true
+    },
+    {
+      "path": "/docs/codex-china-guide",
+      "file": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API/frontend/src/docs/content/codex-china-guide.md",
+      "action": "upsert_search_intent_block",
+      "applied": true
+    },
+    {
+      "path": "/docs/codex-custom-api-guide",
+      "file": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API/frontend/src/docs/content/codex-custom-api-guide.md",
+      "action": "upsert_search_intent_block",
+      "applied": true
+    },
+    {
+      "path": "/docs/codex-no-api-key-guide",
+      "file": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API/frontend/src/docs/content/codex-no-api-key-guide.md",
+      "action": "upsert_search_intent_block",
+      "applied": true
+    }
+  ],
+  "rule": "Only P0 docs with decision actions are changed; no secrets, prices, credentials, or production configs are edited."
+}

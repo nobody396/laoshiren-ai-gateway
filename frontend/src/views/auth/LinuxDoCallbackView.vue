@@ -93,6 +93,7 @@ import { AuthLayout } from '@/components/layout'
 import Icon from '@/components/icons/Icon.vue'
 import { useAuthStore, useAppStore } from '@/stores'
 import { completeOAuthRegistration } from '@/api/auth'
+import { trackEvent } from '@/utils/analytics'
 
 const route = useRoute()
 const router = useRouter()
@@ -196,6 +197,7 @@ async function handleCompleteRegistration(skipReferral: boolean) {
     }
     await authStore.setToken(tokenData.access_token)
     appStore.showSuccess(t('auth.loginSuccess'))
+    trackEvent('sign_up', { method: provider.value || 'oauth' })
     await router.replace(redirectTo.value)
   } catch (e: unknown) {
     const err = e as { message?: string; response?: { data?: { error?: string; message?: string } } }
@@ -285,6 +287,7 @@ onMounted(async () => {
 
     await authStore.setToken(token)
     appStore.showSuccess(t('auth.loginSuccess'))
+    trackEvent('login', { method: returnedProvider || provider.value || 'oauth' })
     await router.replace(redirect)
   } catch (e: unknown) {
     const err = e as { message?: string; response?: { data?: { detail?: string } } }

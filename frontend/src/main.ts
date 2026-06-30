@@ -6,6 +6,7 @@ import i18n, { initI18n, registerLocaleChangeHandler } from './i18n'
 import { useAppStore } from '@/stores/app'
 import { resolveDocumentTitle } from './router/title'
 import { updateRouteSeo } from '@/utils/seo'
+import { initAnalytics } from '@/utils/analytics'
 import { vPermission } from './directives/permission'
 import './style.css'
 
@@ -29,6 +30,7 @@ async function bootstrap() {
   // This must happen after pinia is installed but before router and i18n
   const appStore = useAppStore()
   appStore.initFromInjectedConfig()
+  initAnalytics()
 
   // Set document title immediately after config is loaded.
   document.title = resolveDocumentTitle('AI 编码网关', appStore.siteName, undefined, { siteNameFirst: true })

@@ -189,6 +189,7 @@ import Icon from '@/components/icons/Icon.vue'
 import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { useAuthStore, useAppStore } from '@/stores'
 import { getPublicSettings, isTotp2FARequired } from '@/api/auth'
+import { trackEvent } from '@/utils/analytics'
 import type { TotpLoginResponse } from '@/types'
 
 const { t } = useI18n()
@@ -371,6 +372,7 @@ async function handleLogin(): Promise<void> {
 
     // Show success toast
     appStore.showSuccess(t('auth.loginSuccess'))
+    trackEvent('login', { method: 'password' })
 
     // Redirect to dashboard or intended route
     const redirectTo = (router.currentRoute.value.query.redirect as string) || '/dashboard'
@@ -413,6 +415,7 @@ async function handle2FAVerify(code: string): Promise<void> {
     // Close modal and show success
     show2FAModal.value = false
     appStore.showSuccess(t('auth.loginSuccess'))
+    trackEvent('login', { method: 'password_2fa' })
 
     // Redirect to dashboard or intended route
     const redirectTo = (router.currentRoute.value.query.redirect as string) || '/dashboard'

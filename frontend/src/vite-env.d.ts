@@ -3,6 +3,9 @@
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL: string
   readonly VITE_SITE_URL?: string
+  readonly VITE_GA4_DISABLED?: string
+  readonly VITE_GA4_FORCE_ENABLE?: string
+  readonly VITE_GA4_MEASUREMENT_ID?: string
   readonly BASE_URL: string
 }
 

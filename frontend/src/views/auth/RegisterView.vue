@@ -322,6 +322,7 @@ import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { useAuthStore, useAppStore } from '@/stores'
 import { getPublicSettings, validatePromoCode, validateInvitationCode } from '@/api/auth'
 import { buildAuthErrorMessage } from '@/utils/authError'
+import { trackEvent } from '@/utils/analytics'
 import {
   isRegistrationEmailSuffixAllowed,
   normalizeRegistrationEmailSuffixWhitelist
@@ -781,6 +782,7 @@ async function handleRegister(): Promise<void> {
 
     // Show success toast
     appStore.showSuccess(t('auth.accountCreatedSuccess', { siteName: siteName.value }))
+    trackEvent('sign_up', { method: 'password' })
 
     // Redirect to dashboard
     await router.push('/dashboard')

@@ -178,6 +178,7 @@ import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { useAuthStore, useAppStore } from '@/stores'
 import { getPublicSettings, sendVerifyCode } from '@/api/auth'
 import { buildAuthErrorMessage } from '@/utils/authError'
+import { trackEvent } from '@/utils/analytics'
 import {
   isRegistrationEmailSuffixAllowed,
   normalizeRegistrationEmailSuffixWhitelist
@@ -413,6 +414,7 @@ async function handleVerify(): Promise<void> {
 
     // Show success toast
     appStore.showSuccess(t('auth.accountCreatedSuccess', { siteName: siteName.value }))
+    trackEvent('sign_up', { method: 'email_verification' })
 
     // Redirect to dashboard
     await router.push('/dashboard')

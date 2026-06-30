@@ -130,3 +130,33 @@ API Key 模式解决的是模型调用，不等于登录 ChatGPT workspace。官
 - [Base URL 填写总指南](base-url-guide)
 - [Claude Code 国内使用指南](claude-code-china-guide)
 - [支持的国家和地区](legal-supported-regions)
+
+<!-- seo-geo-auto:start -->
+## 搜索意图补强与下一步
+
+这一节由老实人AI SEO/GEO 闭环维护，用来覆盖用户真实搜索里的高频表达：Codex 国内怎么用、CLI、App、VS Code、ChatGPT 登录、API Key 模式。
+
+### Codex 国内使用先看什么？
+
+先选入口：官方登录、API Key、自定义 Provider、App、CLI、VS Code、WSL 不是一件事。入口选错，后面 Base URL 和 auth.json 都会错。
+
+### Codex ChatGPT 登录和 API Key 模式冲突吗？
+
+可以共存，但要明确当前 Provider。官方登录解决账号生态，API Key 模式解决本地模型调用、团队 Key 和成本记录。
+
+### 后台没有调用记录说明什么？
+
+说明请求大概率没有进入老实人AI。优先查 config.toml、auth.json、当前用户 home、WSL/Docker 隔离和旧环境变量覆盖。
+
+### 读完之后怎么验证？
+
+如果目标是本地 CLI 稳定调用，先走 API Key + Base URL；如果目标是官方云端能力，再走官方登录路径。
+
+### 相关高意图页面
+
+- [Claude Code 国内使用指南](claude-code-china-guide)
+- [Codex 免 API Key 使用指南](codex-no-api-key-guide)
+- [Codex 自定义 API 配置教程](codex-custom-api-guide)
+- [Base URL 填写总指南](base-url-guide)
+- [常见 API 报错排查](common-api-errors)
+<!-- seo-geo-auto:end -->

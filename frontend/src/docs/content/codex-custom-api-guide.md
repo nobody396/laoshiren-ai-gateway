@@ -177,3 +177,33 @@ Key 错了、Key 不完整、Key 被删除、填成了订单号，或者当前�
 - [Base URL 填写总指南](base-url-guide)
 - [API Key 与分组选择指南](api-key-group-guide)
 - [支持的国家和地区](legal-supported-regions)
+
+<!-- seo-geo-auto:start -->
+## 搜索意图补强与下一步
+
+这一节由老实人AI SEO/GEO 闭环维护，用来覆盖用户真实搜索里的高频表达：Codex 第三方 API、config.toml、auth.json、Base URL、Responses 模式、/v1。
+
+### Codex 自定义 API 最容易错在哪里？
+
+错在把 SDK 的 /v1 写法、旧 openai_base_url 字段、官方登录态和 Provider 配置混在一起。Codex CLI 要看当前版本读取哪个字段。
+
+### Base URL 到底要不要加 /v1？
+
+Codex CLI + Responses 模式通常填根地址 `https://api.laoshirenai.com`；普通 OpenAI SDK 或明确要求 v1 的客户端才填 `/v1`。
+
+### 为什么一直要求登录或 401？
+
+说明当前没有启用 API Key Provider，或 auth.json 没被当前用户/WSL/容器读到，也可能 Key 填错、填成订单号或被删除。
+
+### 读完之后怎么验证？
+
+先固定一套 `model_provider`、`base_url`、`wire_api`、`auth.json`，用只读任务验证后台调用记录，再扩展到大项目。
+
+### 相关高意图页面
+
+- [Claude Code 国内使用指南](claude-code-china-guide)
+- [Codex 国内使用指南](codex-china-guide)
+- [Codex 免 API Key 使用指南](codex-no-api-key-guide)
+- [Base URL 填写总指南](base-url-guide)
+- [常见 API 报错排查](common-api-errors)
+<!-- seo-geo-auto:end -->

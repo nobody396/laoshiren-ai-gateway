@@ -114,3 +114,33 @@
 - [Codex 配置排错指南](codex-troubleshooting)
 - [API Key 与分组选择指南](api-key-group-guide)
 - [支持的国家和地区](legal-supported-regions)
+
+<!-- seo-geo-auto:start -->
+## 搜索意图补强与下一步
+
+这一节由老实人AI SEO/GEO 闭环维护，用来覆盖用户真实搜索里的高频表达：Codex 免 API Key、ChatGPT 登录、是否免费、Plus 登录、API Key 边界。
+
+### Codex 免 API Key 是不是免费？
+
+不是。免 API Key 只是不用手动创建 Platform API Key，仍然依赖官方账号、订阅、额度、产品权限和网络回跳。
+
+### 什么时候可以不填 API Key？
+
+当你走官方 ChatGPT/OpenAI 登录路径，并且账号拥有对应 Codex 能力时，通常不需要手动把 OPENAI_API_KEY 写入 auth.json。
+
+### 什么时候必须要 API Key？
+
+只要你要自定义 Base URL、走老实人AI后台记录、团队成本控制、WSL/Docker/服务器运行，就需要 API Key 或兼容服务 Key。
+
+### 读完之后怎么验证？
+
+先判断目标是“官方完整生态”还是“本地 CLI 可控调用”。前者看官方账号权限，后者用 API Key 模式更清晰。
+
+### 相关高意图页面
+
+- [Claude Code 国内使用指南](claude-code-china-guide)
+- [Codex 国内使用指南](codex-china-guide)
+- [Codex 自定义 API 配置教程](codex-custom-api-guide)
+- [Base URL 填写总指南](base-url-guide)
+- [常见 API 报错排查](common-api-errors)
+<!-- seo-geo-auto:end -->

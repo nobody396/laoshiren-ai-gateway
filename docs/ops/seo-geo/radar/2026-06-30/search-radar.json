@@ -1,0 +1,733 @@
+{
+  "rows": [
+    {
+      "source": "tavily",
+      "query": "Claude Code 国内使用",
+      "title": "免费白嫖Claude Code，国内也能免费使用（保姆级教程） - 腾讯云",
+      "url": "https://cloud.tencent.com/developer/article/2539379",
+      "snippet": "## 免费白嫖 Claude Code，国内也能免费使用（保姆级教程）. ### 1、Claude Code是什么？. `Claude Code` 是由 Anthropic 公司推出的一款智能编程工具，基于 Claude Sonnet 模型开发。这款工具最大的亮点是能够通过自然语言指令直接在终端操作，无需复杂的配置，就能完成代码编辑、Bug 修复、代码搜索等任务。它支持多种编程语言，包括 Java、Python、go 等，并且可以直接集成到 VS Code、Cursor 等开发环境中，让开发者体验更流畅. ### 2、国内使用 Claude Code 的难点. 尽管 Claude Code 功能强大，但在国内使用却并不容易，主要原因包括：. 那么，有没有办法绕过这些限制，让我们在国内也能免费使用呢？答案是肯定的！接下来，给大家分享，如何白嫖 Claude Code，国内也能免费使用，一天一个变化，限时福利，手慢无。. ### 3、国内免费使用 Claude Code 操作步骤. 1、**步骤1：注册 Any Router 账号**. 打开快捷导航平台(`https://kjdaohang.com/`)，点击**最新上架**菜单，找到`Any Router`，点击直达链接。. **Any Router**是一个Claude Code免费共享平台，提供API中转服务。. 2、**步骤2：** 进入到**Any Router**首页，使用 GitHub 账号登录（如果没有 GitHub，需先注册一个，此处需要魔法）. 3、**步骤3:** 登录后，你会自动进入数据看板，并免费获得 100 美元的初始额度。. 4、**步骤4:** 注册成功后，如果你觉得100美元的初始额度不够用，还可以将分享邀请链接 （可选）. 发送给你的好友，这样您和好友都可获得额外 $50 Claude Code 额度的奖励。. 6、**步骤6：安装 Node.js（已安装可跳过）**. `# 确保 Node.js 版本 ≥ 18.0. # Ubuntu / Debian 用户. curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo bash -. sudo apt-get install -y nodejs. # macOS 用户. /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\". **7、步骤7:安装 Claude Code**. `npm install -g @anthropic-ai/claude-code. 如果是使用 Windows 系统，需要通过 WSL（Windows 子系统）安装。. `echo -e '\\n export ANTHROPIC_AUTH_TOKEN=sk-...' >> ~/.bash_profile. echo -e '\\n export ANTHROPIC_BASE_URL=https://anyrouter.top' >> ~/.bash_profile. echo -e '\\n export ANTHROPIC_AUTH_TOKEN=sk-...' >> ~/.bashrc. echo -e '\\n export ANTHROPIC_BASE_URL=https://anyrouter.top' >> ~/.bashrc. 我试着用它写了个扫雷小游戏，也就用了1分钟，耗费$0.2，还行. 选择模型：`/model`, 默认的模型是**Claude 4 Sonnet**. 对于日常任务，推荐使用 `Claude 4 Sonnet`，费率仅为 Claude 4 Opus 的 1/5；对于有较复杂的任务，可以使用更强大的 `Claude 4 Opus`。. 如有侵权，请联系 cloudcommunity@tencent.com 删除。.",
+      "score": 0.9071234,
+      "labels": [
+        "登录/认证",
+        "Base URL",
+        "配置文件/环境",
+        "入口对比"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code 国内使用",
+      "title": "Claude Code 国内使用攻略 - Asp1rant - 博客园",
+      "url": "https://www.cnblogs.com/Asp1rant/p/19873275",
+      "snippet": "# Claude Code 国内使用攻略. Claude Code 是 Anthropic 推出的强大终端 AI 编程助手，能够理解整个项目、直接修改代码并执行复杂开发任务。但对于国内开发者来说，官方服务存在访问限制和成本问题。本文将带你一步步完成 Claude Code 的完整配置，实现**无需魔法、稳定使用、低成本**的 AI 编程体验。. ### 1.2 安装 Claude Code. 使用 Node.js 安装 Claude Code. ### 1.1 前置条件：安装 Node.js 18+. Claude Code 依赖 Node.js 18.0 或更高版本运行。. `npm install -g @anthropic-ai/claude-code --registry=https://registry.npmmirror.com`. `npm install -g @anthropic-ai/claude-code`. ### 2.2 备选安装方式：npm 命令行版. cc-switch 是一款跨平台的开源桌面工具，专为 Claude Code 等 AI 命令行助手设计。它本质上是一个**协议转换层 + 智能路由器**，可以一键切换不同大模型服务商的 API 配置，完美解决国内访问问题。. ### 2.1 推荐安装方式：桌面应用（图形界面）. `npm install -g cc-switch`. ### 3.2 在 cc-switch 中添加 MiniMax 配置. 在 cc-switch 部署国内大模型（以 Minimax 为例）. ### 3.1 获取 MiniMax API Key. ### 3.3 启用 MiniMax 配置. ### 3.4 验证配置是否生效. ### 4.2 安装 Fetch MCP（推荐首选）. ### 4.1 推荐的 MCP 工具对比. Fetch MCP 是最适合替代内置 `fetch` 工具的方案，它不受 Anthropic 政策限制，支持国内网站访问。. **通过 Claude Code CLI 安装**：. `claude mcp add --scope user fetch -- uvx mcp-server-fetch`. `pip install mcp-server-fetch. claude mcp add --scope user fetch -- python -m mcp_server_fetch`. ### 4.3 Fetch MCP 核心特性. ### 4.5 进阶：Playwright MCP 处理动态网页. `claude mcp add --scope user playwright npx @playwright/mcp@latest`. `使用 playwright 导航到百度，搜索\"Claude Code 国内使用教程\"，然后获取搜索结果页面的内容`.",
+      "score": 0.90593183,
+      "labels": [
+        "配置文件/环境",
+        "免 Key/API Key",
+        "入口对比"
+      ],
+      "pageIdea": "新增 Codex WSL/Docker/Windows 配置路径页或 FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code 国内使用",
+      "title": "GitHub - claude-code-chinese/claude-code-guide: Claude Code国内如何使用 ？最容易懂的 Claude Code 介绍与教学指南（2026年最新） · GitHub",
+      "url": "https://github.com/claude-code-chinese/claude-code-guide",
+      "snippet": "## Use saved searches to filter your results more quickly. # claude-code-chinese/claude-code-guide. | Latest commit   History2 Commits   2 Commits | | |. ## Repository files navigation. ## 什么是 Claude Code？. Claude Code 是 Anthropic（Claude AI 的开发者）于2025年初推出的命令行工具。它不是简单的代码补全AI，而是“代理式”（agentic）助手，能根据你的自然语言指令，自主规划步骤、执行任务。比如，你说“帮我构建一个React组件”，它会分析你的代码库、生成代码、测试并集成。它生活在你的终端（terminal）中，支持各种编程语言和环境，帮助开发者加速从想法到代码的过程。. 与其他AI编码工具（如 GitHub Copilot）不同，Claude Code 更注重整个项目级别的协作：它能读取整个代码库、使用 bash 命令、查看 git 历史，甚至运行测试。研究显示，使用它能让开发速度提升5倍以上！. ## 在中国如何使用 Claude Code？（绕过限制的实用方法）. 由于Claude 禁止CN地区访问，直接访问 Anthropic 官网（anthropic.com）或 Claude Code 文档（code.claude.com）可能被屏蔽。下载工具或使用 API 也需要翻墙。但别担心，有简单解决方案！. ## Claude Code 快速入门指南 ​ ​. ## 1.2 安装步骤 ​ ​. ## 1.1 系统要求 ​ ​. `npm install -g @anthropic-ai/claude-code@latest`. `curl -fsSL https://claude.ai/install.sh | bash`. `brew install --cask claude-code`. `irm https://claude.ai/install.ps1 | iex`. 如果我们之前已经安装过 Claude Code，迁移方法也非常简单。首先我们要确保关闭所有的 Claude code 会话窗口，然后在终端输入：. `npm uninstall -g @anthropic-ai/claude-code`. ## 2.1 注册账户 ​ ​. ## 3.1 API密钥配置 ​ ​. ## 3.2 权限设置（可选） ​ ​. readonly API_BASE_URL=\"https://api.yixia.ai/\". readonly NPM_PACKAGE=\"@anthropic-ai/claude-code\". echo \" - API_BASE_URL: API 基础地址 (例如: https://api.yixia.ai/)\". command -v brew &> /dev/null; then. # 安装 Node.js (包含 npm). # 安装 Claude Code. echo \"ℹ️ Claude Code 已安装\". command -v npm &> /dev/null; then. echo \"❌ npm 未安装，无法安装 Claude Code\".",
+      "score": 0.8952393,
+      "labels": [
+        "Base URL",
+        "配置文件/环境"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code 国内使用",
+      "title": "国内环境下的Claude Code安装与使用教程原创 - CSDN博客",
+      "url": "https://blog.csdn.net/wo541075754/article/details/160380569",
+      "snippet": "Claude Code是一款终端AI编程助手，支持代码编写、解释、重构等多种功能。教程特别针对国内网络环境提供了官方与第三方中转两种API获取方案，并强调了安全",
+      "score": 0.8657814,
+      "labels": [
+        "泛问题"
+      ],
+      "pageIdea": "观察，等待更多数据",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code 国内使用",
+      "title": "新手入门教学，claude code windows安装教程 - YouTube",
+      "url": "https://www.youtube.com/watch?v=COQ2GPhxNbM",
+      "snippet": "Claude Code 中国国内使用教程，新手详细教学，支持对接国内大模型【建议先看完视频再操作】 Claude Code使用教程：https://github.com/kjfx/AI Claude",
+      "score": 0.8235701,
+      "labels": [
+        "配置文件/环境"
+      ],
+      "pageIdea": "新增 Codex WSL/Docker/Windows 配置路径页或 FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code Base URL 怎么填",
+      "title": "Claude Code更换供应商：Base URL和API Key的注意事项",
+      "url": "https://blog.csdn.net/weixin_42198836/article/details/153888659",
+      "snippet": "操作步骤：. 在Windows 搜索框中输入“编辑系统环境变量” 并打开它。 点击“环境变量…” 按钮。 在弹出的窗口中，先在上面的“用户变量” 区域点击“新建…”，添加",
+      "score": 0.8095324,
+      "labels": [
+        "Base URL",
+        "配置文件/环境",
+        "免 Key/API Key"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code Base URL 怎么填",
+      "title": "Claude code 开发指南（新手篇） - 知乎专栏",
+      "url": "https://zhuanlan.zhihu.com/p/1958860117475819987",
+      "snippet": "... base.url\" # 或者走“API_KEY + Base URL”的组合（视服务商而定） export ANTHROPIC_API_KEY=\"sk-xxxxxxxx\" export ANTHROPIC_BASE_URL=\"https://your-base.",
+      "score": 0.80405265,
+      "labels": [
+        "Base URL"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code Base URL 怎么填",
+      "title": "Claude Code - AiHubMix Documentation Hub",
+      "url": "https://docs.aihubmix.com/cn/api/Claude-Code",
+      "snippet": "# Claude Code. 在 Claude Code 中接入 AIHubMix：这款终端 AI 编程助手用单个 API key 即可跨厂商调用模型，享受稳定路由与统一计费。. 本指南将帮助您在几分钟内使用由 AIHubMix 提供的 Claude Code。. npm install -g @anthropic-ai/claude-code npm  install -g @anthropic-ai/claude-code. 1. 将 `ANTHROPIC_BASE_URL` 设置为 `https://aihubmix.com`. 2. 将 `ANTHROPIC_AUTH_TOKEN` 设置为从 AIHubMix 平台 获取的 API Key. 3. 将 `ANTHROPIC_MODEL` 设置为模型列表中支持的 Claude 模型，例如 `claude-sonnet-4-5`。. # 将  替换为你从 AIHubMix 平台获取的真实 Key # 将  替换为你从 AIHubMix 平台获取的真实 Keyecho 'export ANTHROPIC_BASE_URL=\"https://aihubmix.com\"' >> ~/.zshrc echo 'export ANTHROPIC_BASE_URL=\"https://aihubmix.com\"' >> ~/.zshrcecho 'export ANTHROPIC_AUTH_TOKEN=\"\"' >> ~/.zshrc echo 'export ANTHROPIC_AUTH_TOKEN=\"\"' >> ~/.zshrcecho 'export ANTHROPIC_MODEL=\"claude-sonnet-4-5\"' >> ~/.zshrc echo 'export ANTHROPIC_MODEL=\"claude-sonnet-4-5\"' >> ~/.zshrc. REM 将 <AIHUBMIX_API_KEY> 替换为你从 AIHubMix 平台获取的真实 Key REM  将 < AIHUBMIX_API_KE Y>  替换为你从  AIHubMix  平台获取的真实  Key setx ANTHROPIC_AUTH_TOKEN \"\" setx  ANTHROPIC_AUTH_TOKEN  \"\"setx ANTHROPIC_BASE_URL \"https://aihubmix.com\" setx  ANTHROPIC_BASE_URL \"https://aihubmix.com\"setx ANTHROPIC_MODEL \"claude-sonnet-4-5\" setx  ANTHROPIC_MODEL \"claude-sonnet-4-5\". 如果你准备通过 CC Switch 管理 Claude Code，建议不要再额外设置全局 `ANTHROPIC_AUTH_TOKEN`、`ANTHROPIC_BASE_URL`、`ANTHROPIC_MODEL`。系统或用户环境变量可能覆盖 CC Switch 写入的 Provider 配置，导致界面里选择了正确 Provider，但 Claude Code 实际仍使用旧 Key 或旧模型。. claude -p \"1+1，只输出答案\" --model claude-sonnet-4-5 claude -p \"1+1，只输出答案\" --model claude-sonnet-4-5. /model claude-sonnet-4-5/model claude-sonnet-4-5. claude --model claude-sonnet-4-5claude --model claude-sonnet-4-5.",
+      "score": 0.7950386,
+      "labels": [
+        "Base URL",
+        "配置文件/环境",
+        "免 Key/API Key"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code Base URL 怎么填",
+      "title": "Claude Code Base URL 配置检查工具 · GitHub",
+      "url": "https://gist.github.com/engalar/a315d484b6595dbde1b09d118d50ca49",
+      "snippet": "|  | # Claude Code Base URL 配置检查工具 |. |  | [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 |. |  | $OutputEncoding = [System.Text.Encoding]::UTF8 |. |  | Write-Host \" Claude Code Base URL 配置检查工具\" -ForegroundColor Cyan |. |  | if ($env:ANTHROPIC\\_BASE\\_URL) { |. |  | Write-Host \"ANTHROPIC\\_BASE\\_URL: $env:ANTHROPIC\\_BASE\\_URL\" |. |  | Write-Host \"ANTHROPIC\\_BASE\\_URL: 未设置 (使用默认值)\" |. |  | Write-Host \"[警告] ANTHROPIC\\_API\\_KEY: 未设置!\" -ForegroundColor Red |. |  | $claudeSettings = \"$env:USERPROFILE\\.claude\\settings.json\" |. |  | Write-Host \"[信息] claude.json 中检测到自定义 apiBaseUrl\" -ForegroundColor Green |. |  | Write-Host \"[警告] 无法解析 claude.json\" -ForegroundColor Red |. |  | if ($settings.env.ANTHROPIC\\_BASE\\_URL) { |. |  | Write-Host \"[信息] settings.json env 中找到 ANTHROPIC\\_BASE\\_URL:\" -ForegroundColor Green |. |  | Write-Host \" ANTHROPIC\\_BASE\\_URL: $($settings.env.ANTHROPIC\\_BASE\\_URL)\" |. |  | $extractedUrl = $settings.env.ANTHROPIC\\_BASE\\_URL |. |  | Write-Host \"[信息] settings.json 中无 ANTHROPIC\\_BASE\\_URL\" |. |  | Write-Host \"[信息] settings.json 中找到 ANTHROPIC\\_AUTH\\_TOKEN\" -ForegroundColor Green |. |  | Write-Host \"[警告] 无法解析 settings.json\" -ForegroundColor Red |. |  | Write-Host \"环境变量 Base URL: $env:ANTHROPIC\\_BASE\\_URL\" |. |  | $checkUrl = $env:ANTHROPIC\\_BASE\\_URL |.",
+      "score": 0.70067,
+      "labels": [
+        "Base URL",
+        "配置文件/环境"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code Base URL 怎么填",
+      "title": "环境变量 - Claude Code Docs",
+      "url": "https://code.claude.com/docs/zh-CN/env-vars",
+      "snippet": "| `ANTHROPIC_AWS_API_KEY` | Claude Platform on AWS 的工作区 API 密钥，在 AWS 控制台中生成。作为 `x-api-key` 发送，优先于 AWS SigV4 |. | `ANTHROPIC_AWS_BASE_URL` | 覆盖 Claude Platform on AWS 端点 URL。用于自定义区域或通过 LLM 网关路由时。默认为 `https://aws-external-anthropic.{AWS_REGION}.api.aws` |. | `ANTHROPIC_BEDROCK_BASE_URL` | 覆盖 Bedrock 端点 URL。用于自定义 Bedrock 端点或通过 LLM 网关路由时。请参阅 Amazon Bedrock |. | `ANTHROPIC_BETAS` | 逗号分隔的其他 `anthropic-beta` 标头值列表，以包含在 API 请求中。Claude Code 已发送其需要的 beta 标头；使用此选项可在 Claude Code 添加原生支持之前选择加入 Anthropic API beta。与需要 API 密钥身份验证的 `--betas` 标志不同，此变量适用于所有身份验证方法，包括 Claude.ai 订阅 |. | `ANTHROPIC_SMALL_FAST_MODEL_AWS_REGION` | 使用 Bedrock 或 Bedrock Mantle 时覆盖 Haiku 级模型的 AWS 区域。在 Bedrock 上，仅当同时设置 `ANTHROPIC_DEFAULT_HAIKU_MODEL` 或已弃用的 `ANTHROPIC_SMALL_FAST_MODEL` 时才生效，因为 Bedrock 否则会为后台任务使用主模型 |. | `ANTHROPIC_VERTEX_BASE_URL` | 覆盖 Vertex AI 端点 URL。用于自定义 Vertex 端点或通过 LLM 网关路由时。请参阅 Google Vertex AI |. | `CLAUDECODE` | 在 Claude Code 生成的子进程中设置为 `1`（Bash 和 PowerShell 工具、tmux 会话、hook 命令、状态行命令、stdio MCP server 子进程）。用于检测脚本何时在 Claude Code 生成的子进程内运行 |. | `CLAUDE_CODE_ENABLE_AUTO_MODE` | 设置为 `1` 以在 Amazon Bedrock、Google Cloud Vertex AI 和 Microsoft Foundry 上提供自动模式。需要 Claude Code v2.1.158 或更高版本。对 Anthropic API 无效，自动模式在那里默认可用。请参阅在 Bedrock、Vertex AI 或 Foundry 上启用自动模式 |.",
+      "score": 0.6907474,
+      "labels": [
+        "Base URL"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code login 失败",
+      "title": "Error reference - Claude Code Docs",
+      "url": "https://code.claude.com/docs/en/errors",
+      "snippet": "Your Claude organization does not allow signing in to Claude Code with a subscription login. Running /login again with the same account returns the same error.",
+      "score": 0.818055,
+      "labels": [
+        "登录/认证",
+        "报错排查"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code login 失败",
+      "title": "[BUG] Unable to access Claude Code after successful OAuth login with Google account · Issue #19280 · anthropics/claude-code · GitHub",
+      "url": "https://github.com/anthropics/claude-code/issues/19280",
+      "snippet": "## Navigation Menu. We read every piece of feedback, and take your input very seriously. # Saved searches. ## Use saved searches to filter your results more quickly. There was an error while loading. # [BUG] Unable to access Claude Code after successful OAuth login with Google account #19280. After completing the OAuth login flow via browser using my Google-authenticated Claude account, I receive the error:. Unable to access Claude Code. There was an issue accessing Claude Code. Operating System: Linux (Ubuntu 24.04, some colleagues on MacOS have the same issue). Claude Code version: 2.1.12 (Claude Code). ### What Should Happen? Should successfully authenticate and allow me to use Claude Code with my subscription. Authentication appears to succeed in browser but fails in CLI with the error above. Select login with Claude app (subscription account). Browser opens and authentication completes successfully. Return to terminal - error message appears instead of successful login. ### Claude Model. ### Claude Code Version. ### Footer navigation.",
+      "score": 0.8058924,
+      "labels": [
+        "登录/认证",
+        "报错排查",
+        "入口对比"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code login 失败",
+      "title": "排查安装和登录问题- Claude Code Docs",
+      "url": "https://code.claude.com/docs/zh-CN/troubleshoot-install",
+      "snippet": "在macOS 上，当Keychain 被锁定或其密码与您的账户密码不同步时，登录也可能失败，这会阻止Claude Code 保存凭证。运行 claude doctor 检查Keychain 访问。要手动解锁Keychain",
+      "score": 0.8025714,
+      "labels": [
+        "登录/认证",
+        "报错排查"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code login 失败",
+      "title": "我多次尝试仍然无法登录到Claude Code CLI。还有其他人遇 ... - Reddit",
+      "url": "https://www.reddit.com/r/ClaudeAI/comments/1rqz4qr/i_am_unable_to_login_to_claude_code_cli_even?tl=zh-hans",
+      "snippet": "https://status.claude.com/. “更新- 我们正在调查Claude Code 和Claude.ai 的问题。一些用户可能无法登录，其他用户可能会遇到比平时更慢的性能。",
+      "score": 0.7769112,
+      "labels": [
+        "登录/认证",
+        "报错排查",
+        "入口对比"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code login 失败",
+      "title": "Claude Code 安装常见问题修复（macOS） - 知乎专栏",
+      "url": "https://zhuanlan.zhihu.com/p/1998367376887014613",
+      "snippet": "使用SOCKS 可能导致网络请求失败（错误可能表现为403 或其他）。 解决方法. 使用梯子提供的HTTP 代理本地端口（不是SOCKS 端口），在终端显式设置代理再执行安装或登录",
+      "score": 0.657033,
+      "labels": [
+        "登录/认证",
+        "报错排查"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code 走官方地址 怎么办",
+      "title": "Claude Code入口在哪安装到使用完整步骤一篇讲清",
+      "url": "https://my.oschina.net/u/3907323/blog/19693063",
+      "snippet": "macOS或Linux在终端执行官方安装脚本即可。Windows在PowerShell中执行对应安装命令。 npm安装：确保Node.js 18以上后执行全局安装命令。注意包名是带",
+      "score": 0.6461259,
+      "labels": [
+        "Base URL",
+        "配置文件/环境"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code 走官方地址 怎么办",
+      "title": "Claude Code国内如何使用？最容易懂的Claude Code 介绍与教学 ...",
+      "url": "https://github.com/claude-code-chinese/claude-code-guide",
+      "snippet": "## Use saved searches to filter your results more quickly. # claude-code-chinese/claude-code-guide. | Latest commit   History2 Commits   2 Commits | | |. ## Repository files navigation. ## 什么是 Claude Code？. Claude Code 是 Anthropic（Claude AI 的开发者）于2025年初推出的命令行工具。它不是简单的代码补全AI，而是“代理式”（agentic）助手，能根据你的自然语言指令，自主规划步骤、执行任务。比如，你说“帮我构建一个React组件”，它会分析你的代码库、生成代码、测试并集成。它生活在你的终端（terminal）中，支持各种编程语言和环境，帮助开发者加速从想法到代码的过程。. 与其他AI编码工具（如 GitHub Copilot）不同，Claude Code 更注重整个项目级别的协作：它能读取整个代码库、使用 bash 命令、查看 git 历史，甚至运行测试。研究显示，使用它能让开发速度提升5倍以上！. ## 在中国如何使用 Claude Code？（绕过限制的实用方法）. 由于Claude 禁止CN地区访问，直接访问 Anthropic 官网（anthropic.com）或 Claude Code 文档（code.claude.com）可能被屏蔽。下载工具或使用 API 也需要翻墙。但别担心，有简单解决方案！. ## Claude Code 快速入门指南 ​ ​. ## 1.2 安装步骤 ​ ​. ## 1.1 系统要求 ​ ​. `npm install -g @anthropic-ai/claude-code@latest`. `curl -fsSL https://claude.ai/install.sh | bash`. `brew install --cask claude-code`. `irm https://claude.ai/install.ps1 | iex`. 如果我们之前已经安装过 Claude Code，迁移方法也非常简单。首先我们要确保关闭所有的 Claude code 会话窗口，然后在终端输入：. `npm uninstall -g @anthropic-ai/claude-code`. ## 2.1 注册账户 ​ ​. ## 3.1 API密钥配置 ​ ​. ## 3.2 权限设置（可选） ​ ​. readonly API_BASE_URL=\"https://api.yixia.ai/\". readonly NPM_PACKAGE=\"@anthropic-ai/claude-code\". echo \" - API_BASE_URL: API 基础地址 (例如: https://api.yixia.ai/)\". command -v brew &> /dev/null; then. # 安装 Node.js (包含 npm). # 安装 Claude Code. echo \"ℹ️ Claude Code 已安装\". command -v npm &> /dev/null; then. echo \"❌ npm 未安装，无法安装 Claude Code\".",
+      "score": 0.6016175,
+      "labels": [
+        "Base URL",
+        "配置文件/环境"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code 走官方地址 怎么办",
+      "title": "国内环境下的Claude Code安装与使用教程原创 - CSDN博客",
+      "url": "https://blog.csdn.net/wo541075754/article/details/160380569",
+      "snippet": "接着，使用npm全局安装Claude Code官方CLI包，并验证安装成功。然后，获取Anthropic平台的Auth Token并配置API地址，以便在终端中启动Claude Code进行代码补全",
+      "score": 0.5611433,
+      "labels": [
+        "Base URL",
+        "配置文件/环境",
+        "入口对比"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code 走官方地址 怎么办",
+      "title": "Claude code 开发指南（新手篇） - 知乎专栏",
+      "url": "https://zhuanlan.zhihu.com/p/1958860117475819987",
+      "snippet": "在项目里开Claude：绝大多数“识别不到仓库/PR”的问题，都是路径不对。 不要在命令里粘贴你的密钥：统一走环境变量；需要时再 /logout 、切换。 弱",
+      "score": 0.5097406,
+      "labels": [
+        "Base URL"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Claude Code 走官方地址 怎么办",
+      "title": "Claude Code 使用指南：从官方配置到接入第三方模型",
+      "url": "https://www.kevnu.com/zh/posts/claude-code-usage-guide-from-official-configuration-to-integrating-third-party-models",
+      "snippet": "Claude Code 使用指南：从官方配置到接入第三方模型 | 理想的彼岸. # Claude Code 使用指南：从官方配置到接入第三方模型. 通过 NPM 或脚本快速安装 Claude Code，配置 DeepSeek、智谱 GLM 等第三方模型降低使用成本，以及使用 Claude Code Router (CCR) 构建智能路由系统。文章详细讲解了多 Provider 管理、动态路由策略、请求转换、成本优化等关键技术点，并提供完整的配置示例和架构设计。. ## 一、Claude Code 是什么? Claude Code 是 Anthropic 推出的终端 AI 编码助手,核心理念是\"住在终端里\"。它能理解项目结构、编辑代码、执行命令、管理 Git,虽然支持 IDE 集成,但本质是命令行驱动的工具。. > 关于 Claude Agent Skills 您可以参考这篇文章:. ### 2.1 安装方式. npm install -g @anthropic-ai/claude-code. curl -fsSL https://claude.ai/install.sh | bash. irm https://claude.ai/install.ps1 | iex. curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd. * **个人用户**:使用 Claude.ai 账户交互式登录. * **企业/API 用户**:使用 Anthropic API Key 授权. * `/plugin`:管理 Claude Code 插件. {\"env\":{\"ANTHROPIC_AUTH_TOKEN\": \"your_zhipu_api_key\", \"ANTHROPIC_BASE_URL\":\"https://open.bigmodel.cn/api/anthropic\",// 中国区// \"ANTHROPIC_BASE_URL\": \"https://api.z.ai/api/anthropic\", // 国际版 \"API_TIMEOUT_MS\": \"3000000\", \"ANTHROPIC_DEFAULT_HAIKU_MODEL\":\"glm-4.5-air\", \"ANTHROPIC_DEFAULT_SONNET_MODEL\":\"glm-4.6\", \"ANTHROPIC_DEFAULT_OPUS_MODEL\":\"glm-4.6\"}}. ### 6.1 Claude Code Router (CCR). npm install -g @musistudio/claude-code-router. 创建 `~/.claude-code-router/config.json`:. 1. **服务器日志**:HTTP 请求、API 调用,写入 `~/.claude-code-router/logs/ccr-*.log`. 2. **应用日志**:路由决策、业务事件,写入 `~/.claude-code-router/claude-code-router.log`. ### 6.2 CC-Switch. **CC-Switch** 是跨平台桌面应用,提供可视化的 Claude Code / Codex / Gemini CLI 配置管理。. * 一键切换 Claude Code、Codex、Gemini API 配置. | 特性 | Claude Code Router (CCR) | CC-Switch |. * Claude Code Router (CCR) 开源项目.",
+      "score": 0.46993434,
+      "labels": [
+        "登录/认证",
+        "Base URL",
+        "配置文件/环境",
+        "免 Key/API Key",
+        "入口对比"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 国内使用",
+      "title": "2026年国内 Codex 安装教程和使用教程：GPT-5.4 完整指南-阿里云开发者社区",
+      "url": "https://developer.aliyun.com/article/1718513",
+      "snippet": "### 探索云世界. #### 热门. #### 人工智能. #### 开发与运维. # 2026年国内 Codex 安装教程和使用教程：GPT-5.4 完整指南. 在 AI 编程进入“智能体时代”的今天，Codex 已经不再只是一个代码补全工具，而是一个可以**理解项目、修改代码、自动执行任务的 AI 编程助手**。. 随着 GPT-5.4 的发布，Codex 的能力也完成了一次关键跃迁：. 本文将带你从 0 到 1，完整掌握：. # 一、Codex 是什么（官方说明）. Codex 是由 OpenAI 提供的 AI 编程模型与工具体系，基于 GPT-5 系列模型构建，能够理解自然语言并生成、修改和执行代码。. **Codex = AI 编程模型（GPT-5.x） + 本地执行代理 + 开发工具链**. # 二、为什么选择 GPT-5.4. GPT-5.4 是目前 Codex 体系中的最强通用模型，适合复杂工程任务。. | 复杂任务 | GPT-5.4（推荐） |. # 三、国内使用 Codex 的核心思路. ### 1️⃣ 安装 Codex. ### 2️⃣ 配置 API Key. ### 3️⃣ 配置中转（关键）. # 四、Codex 安装教程（CLI 方式）. `npm install -g @openai/codex`. `npm install -g @openai/codex --registry=https://registry.npmmirror.com`. ### ✅ ChatGPT 登录（推荐）. ### ✅ API Key 登录. `codex --model gpt-5.4`. # 五、国内中转方案（推荐：cc-switch）. 在国内使用 Codex（尤其 GPT-5.4），**强烈建议配置中转，否则体验极差甚至不可用**。. cc-switch 是一个 AI 接口管理工具，可用于：. `wget https://github.com/farion1231/cc-switch/releases/download/v3.12.2/CC-Switch-v3.12.2-Linux-x86_64.AppImage. chmod +x CC-Switch-v3.12.2-Linux-x86_64.AppImage. ./CC-Switch-v3.12.2-Linux-x86_64.AppImage`. export OPENAI_BASE_URL=https://你的中转地址/v1`. ### 搭配 Cursor. Codex + Cursor + cc-switch 联动开发. # 六、Codex 核心使用方式. # 七、IDE 中使用 Codex. # 八、Codex 自动化能力（核心价值）. ### Step 2：模块开发. ### Step 4：优化. ## ❓ Linux 无界面. Codex + GPT-5.4 正在改变软件开发方式：. © 2009-现在 Aliyun.com 版权所有 增值电信业务经营许可证： 浙B2-20080101 域名注册服务机构许可： 浙D3-20210002. 浙公网安备 33010602009975号浙公网安备 33010602009975号浙B2-20080101-4.",
+      "score": 0.8724455,
+      "labels": [
+        "登录/认证",
+        "Base URL",
+        "配置文件/环境",
+        "免 Key/API Key",
+        "入口对比"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 国内使用",
+      "title": "2026年Codex & Codex CLI 国内使用教程： 支付注册、安装配置、常见命令，手把手教学！ | 小林coding",
+      "url": "https://www.xiaolincoding.com/other/codex.html",
+      "snippet": "# # 2026年Codex & Codex CLI 国内使用教程： 支付注册、安装配置、常见命令，手把手教学！. 首先什么是Codex？**Codex 是 OpenAI 专门做代码的 AI**。. * ❌ **但是慢**…特别慢…（所以我一般用 Claude 做日常执行，Codex 专门查 bug）. 日常执行 → 用 Claude Code（快，理解能力强） ↓ 遇到复杂 bug → 切换到 Codex（慢，但查得准） ↓ 细节处理 → 继续用 Codex（一次搞定）. 目前 Codex 需要付费才能使用，ChatGPT Plus、Pro、Business 等付费会员都可以使用，这些用户网页版就已经有 Codex 入口：. 目前 Codex 和 Claude Code 一样需要付费才能使用，如果你还是免费用户，可以试试这个一键升级工具（支持微信/支付宝付款）：. > ✅小林亲测有效，点击链接🔗👉：国内自助升级 ChatGPT Plus 网站 (opens new window). 详细的 ChatGPT Plus 充值教程，我也写过详细的教程：ChatGPT Plusc充值完全指南 (opens new window)，手把手教程，亲测有效！. **三种使用方式：** Codex 网页版、IDE扩展、Codex CLI 终端。. GPT-5-Codex 专为 Codex CLI、Codex IDE 扩展、Codex 云环境和在 GitHub 中工作而构建，还支持多种工具使用。. **下一步**：安装 Codex CLI（继续往下看！）. ## # 二、零代码安装 Codex CLI（提示词大法）. * • ✅ **可以管理 MCP 插件**（给 AI 装\"外挂\"）. ### # Codex CLI 安装步骤. #### # 第1步：复制这段话，发给 Trae（或其他 AI）. 简单说：**在 Claude Code 里装一个 Codex 插件，遇到复杂代码问题自动调用 Codex！**. 你提问 → Claude Code 开始干活 → 遇到复杂 bug（查不出来） → 自动调用 Codex MCP → Codex 返回精准答案 → Claude Code 继续完成任务. **复制这段话，发给 Claude Code（或其他 AI）**：. 用下述指令，安装 codex MCP: claude mcp add codex -s user -- codex -m gpt-5-codex -c model_reasoning_effort=\"high\" mcp 安装成功后，测试是否正常显示. 在 Claude Code 里输入 `/mcp`，看到 “codex” 出现在列表里就成功了！.",
+      "score": 0.8700796,
+      "labels": [
+        "配置文件/环境",
+        "入口对比"
+      ],
+      "pageIdea": "新增 Codex WSL/Docker/Windows 配置路径页或 FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 国内使用",
+      "title": "Codex 国内如何使用与安装？一篇真正能跑通的完整教程随着 AI 编程工具进入「工程化阶段」，CLI 型 Code A - 掘金",
+      "url": "https://juejin.cn/post/7643650503519617074",
+      "snippet": "随着 AI 编程工具进入「工程化阶段」，**CLI 型 Code Agent** 正在逐步替代早期的“对话式写代码”。. 在 Claude Code 频繁降智、封号成本高的背景下，**OpenAI Codex** 正迅速成为国内开发者的新选择。. **Codex 是 OpenAI 推出的代码智能体（Code Agent）工具**，而不是一个简单的代码补全插件。. | **Codex** | **Code CLI / IDE / Web 全覆盖** |. ### 二、为什么很多人从 Claude Code 转向 Codex？. #### 3.1 方式一：IDE 中使用 Codex（最简单）. Codex 官方提供 IDE 插件，支持：. #### 3.2 方式二：终端使用 Codex CLI（推荐）. Codex CLI 是 **完整体**，能力最强。. ### 四、安装 Codex CLI（Mac / Linux）. #### 4.1 方式一：npm 安装（推荐）. ##### 安装 Node.js（≥18）. curl -fsSL deb.nodesource.com/setup\\_22.x | sudo bash -. curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -. /bin/bash -c \"$(curl -fsSL raw.githubusercontent.com/Homebrew/in…)\". /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\". ##### 安装 Codex CLI. npm install -g @openai/codex. #### 4.2 方式二：Homebrew 安装. #### 4.3 启动 Codex. #### 5.1 登录与网络. OpenAI 对 Codex 的算力消耗监控比 ChatGPT 更严格。. #### 5.2 Codex CLI 使用资格. #### 6.1 全局中文回复（强烈推荐）. #### 6.2 切换和查看模型. #### 6.3 常用快捷命令一览. #### 7.1 安装 WSL. #### 7.2 在 WSL 中安装 Codex. 👉 **不要直接在 Windows 原生环境跑 Codex CLI**. ### 八、Codex vs Claude Code 实战对比. CLI + GPT-5-Codex 组合，是真正能干活的 Agent. 先从 CLI 或 App 选一个跑通，再补 IDE 插件。.",
+      "score": 0.8232293,
+      "labels": [
+        "登录/认证",
+        "Base URL",
+        "配置文件/环境",
+        "入口对比"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 国内使用",
+      "title": "App 国内使用教程，手把手教你如何支付、安装Codex！ - 知乎专栏",
+      "url": "https://zhuanlan.zhihu.com/p/1952169109400842799",
+      "snippet": "一、2026 年国内使用Codex & Codex Cli、App 教程. 最近OpenAI Codex 非常火，但是国内直接使用还是有门槛，国内使用Codex 以及Codex Cli 主要是要解决账号问题。",
+      "score": 0.81595254,
+      "labels": [
+        "入口对比"
+      ],
+      "pageIdea": "新增 Codex CLI/App/VS Code 区别页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 国内使用",
+      "title": "2026年国内Codex安装教程和使用教程：GPT-5.3-Codex完整指南",
+      "url": "https://zhuanlan.zhihu.com/p/2004914542765941622",
+      "snippet": "根据我们的Codex 使用教程实践,国内使用Codex 以及Codex CLI 主要是要解决三个核心问题:账号问题、网络环境和工具配置。 好消息是,OpenAI 最近宣布:ChatGPT Plus 用户无需",
+      "score": 0.81133276,
+      "labels": [
+        "配置文件/环境",
+        "入口对比"
+      ],
+      "pageIdea": "新增 Codex WSL/Docker/Windows 配置路径页或 FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 免 API Key",
+      "title": "Codex无需手机号验证登录的方法（使用API Key）_资源分享助手-AI编程社区",
+      "url": "https://aicoding.csdn.net/6a26760b10ee7a33f2795283.html",
+      "snippet": "# logo AI编程社区. ## 登录社区云. ### AI编程社区. # Codex无需手机号验证登录的方法（使用API Key）. ### 资源分享助手. **关键词：Codex免手机号登录、Codex API Key登录教程、Codex无需验证手机号、Codex第三方API配置、Codex接入GPT-5.5、Codex API模式使用教程、OpenAI兼容接口配置、Codex登录解决方案**. 最近很多开发者在体验 OpenAI 推出的 Codex 编程工具时发现一个问题：. 研究后发现，Codex 实际支持通过 API Key 进行调用，只要配置 OpenAI 兼容接口即可直接使用，无需走手机号验证登录流程。. 本文详细介绍如何通过 **API Key + CC-Switch** 的方式，让 Codex 直接使用 GPT-5.5 模型。. ## 一、效果展示. ## 二、软件下载. ### Codex客户端. ### CC-Switch. ## 三、准备API平台账号. 由于我们采用 API Key 方式接入，因此需要先获取一个 OpenAI 兼容接口。. `https://api.aisz.mom/sign-up? ## 四、创建API Key. `https://api.aisz.mom/keys`. ### 第一步. ## 五、配置CC-Switch. #### 预设供应商. #### 供应商名称. #### API请求地址. #### API Key. ## 六、切换到API渠道. ## 七、使用API Key启动Codex. Codex 会直接通过配置好的 API Key 调用模型。. ## 八、验证是否登录成功. ## 九、为什么这种方式无需手机号验证. 由于直接通过 API Key 认证，因此无需经过手机号验证环节。. ## 十、常见问题. ### 1、Codex没有响应. ### 2、提示认证失败. ### 3、修改后没有生效. ### 4、模型返回速度慢. ## 十一、总结. 对于经常使用 AI 编程工具的开发者来说，这种方式不需要账号登录流程，直接通过 API Key 即可接入模型，同时也方便后续切换不同模型服务商。. Cursor 与 GitOps 的结合，是 AI 赋能云原生运维的一次精彩实践。Cursor 通过其强大的 AI 能力，极大地降低了 GitOps 的配置编写门槛、提升了代码质量、加速了问题排查，让运维人员能够将更多精力聚焦于架构设计和业务创新，而非繁琐的 YAML 编写。这不仅仅是“新姿势”，更是迈向智能化、自动化运维未来的重要一步。现在，就打开 Cursor，开始你的 GitOps 智能运维之. ### 所有评论(0). ## 温馨提示：您尚未绑定手机号.",
+      "score": 0.7323053,
+      "labels": [
+        "登录/认证",
+        "Base URL",
+        "配置文件/环境",
+        "报错排查",
+        "免 Key/API Key"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 免 API Key",
+      "title": "Free, Unlimited Codex API",
+      "url": "https://developer.puter.com/tutorials/free-unlimited-codex-api",
+      "snippet": "# Free, Unlimited Codex API. In this tutorial, you will learn how to add Codex models into your application for free using Puter.js. You can gain access to models such as GPT-5.3-Codex, GPT-5.2-Codex, GPT-5.1-Codex-Max, GPT-5.1-Codex, and GPT-5.1-Codex-Mini by OpenAI without needing an OpenAI developer account or API key. Puter.js uses the User-Pays model, where users of your application cover their own AI costs. This means you as a developer don't pay anything for your users' usage, making your app practically free to run. You can scale to unlimited users and pay nothing for the AI or server usage. To use Puter.js, import our NPM library in your project:. { model: \"openai/gpt-5.3-codex\" }. ## Example 2: Maximum performance with Codex Max. For the most demanding coding tasks, use GPT-5.1-Codex-Max:. { model: \"openai/gpt-5.1-codex-max\" }. You can use the following Codex model variants with Puter.js:. `openai/gpt-5.3-codex. openai/gpt-5.1-codex-mini. Using Puter.js, you can gain access to Codex models without needing an OpenAI developer account or API key.",
+      "score": 0.69795954,
+      "labels": [
+        "免 Key/API Key",
+        "入口对比"
+      ],
+      "pageIdea": "扩写 Codex 免 API Key 与 API Key 模式边界",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 免 API Key",
+      "title": "Codex cannot use third-party API keys",
+      "url": "https://github.com/openai/codex/issues/8157",
+      "snippet": "[Skip to content](https://github.com/openai/codex/issues/8157#start-of-content). [Reload](https://github.com/openai/codex/issues/8157) to refresh your session.You signed out in another tab or window. [Reload](https://github.com/openai/codex/issues/8157) to refresh your session.You switched accounts on another tab or window. [Reload](https://github.com/openai/codex/issues/8157) to refresh your session.Dismiss alert. [Please reload this page](https://github.com/openai/codex/issues/8157). *   [Code](https://github.com/openai/codex). *   [Issues 5k+](https://github.com/openai/codex/issues). *   [Pull requests 386](https://github.com/openai/codex/pulls). *   [Discussions](https://github.com/openai/codex/discussions). *   [Actions](https://github.com/openai/codex/actions). *   [Insights](https://github.com/openai/codex/pulse). *   [Code](https://github.com/openai/codex). *   [Issues](https://github.com/openai/codex/issues). *   [Pull requests](https://github.com/openai/codex/pulls). *   [Discussions](https://github.com/openai/codex/discussions). *   [Actions](https://github.com/openai/codex/actions). *   [Insights](https://github.com/openai/codex/pulse). [Codex cannot use third-party API keys](https://github.com/openai/codex/issues/8157#top)#8157. opened [on Dec 17, 2025](https://github.com/openai/codex/issues/8157#issue-3737117947). [bug Something isn't working](https://github.com/openai/codex/issues?q=state%3Aopen%20label%3A%22bug%22)Something isn't working. [on Dec 17, 2025](https://github.com/openai/codex/issues/8157#event-21607068405). [on Dec 17, 2025](https://github.com/openai/codex/issues/8157#event-21607073323). *   [codex in vscode does not respect any change to config.toml#7963](https://github.com/openai/codex/issues/7963). *   [Tasks complete prematurely with custom model provider.#7944](https://github.com/openai/codex/issues/7944). *   [Error: OSS setup failed, Ollama no working any more#6158](https://github.com/openai/codex/issues/6158). Check your plan and billing details.#6792](https://github.com/openai/codex/issues/6792). [on Dec 17, 2025](https://github.com/openai/codex/issues/8157#issuecomment-3663918691). [on Dec 17, 2025](https://github.com/openai/codex/issues/8157#event-21609824754). [on Dec 20, 2025](https://github.com/openai/codex/issues/8157#issuecomment-3677395186). [on Dec 20, 2025](https://github.com/openai/codex/issues/8157#issuecomment-3677458618). mentioned this [on Jan 28, 2026](https://github.com/openai/codex/issues/8157#event-4499615322). *   [please add fallback API key feature #10082](https://github.com/openai/codex/issues/10082). [Sign in to comment](https://github.com/login?return_to=https://github.com/openai/codex/issues/8157).",
+      "score": 0.68344116,
+      "labels": [
+        "登录/认证",
+        "配置文件/环境",
+        "报错排查",
+        "免 Key/API Key",
+        "入口对比"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 免 API Key",
+      "title": "【2026 最新】免费使用Codex 的4 种方法 这4 种用法，能把成本压到 ...",
+      "url": "https://zhuanlan.zhihu.com/p/2037313661463688904",
+      "snippet": "这条路的基本步骤是先去Google AI Studio 申请免费的API Key，然后把它接进支持多服务商的Codex CLI 社区分支版本里。 环境变量示例：. bash. export",
+      "score": 0.67527276,
+      "labels": [
+        "免 Key/API Key",
+        "入口对比"
+      ],
+      "pageIdea": "扩写 Codex 免 API Key 与 API Key 模式边界",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 免 API Key",
+      "title": "Codex Authentication | 登录与 API Key",
+      "url": "https://www.codex-docs.com/administration/authentication",
+      "snippet": "## OpenAI 认证. * 使用 API key 登录，以按用量访问. Codex 云端要求使用 ChatGPT 登录。Codex CLI 和 IDE 扩展则同时支持这两种登录方式。. * 使用 ChatGPT 登录时，Codex 的使用会遵循你的 ChatGPT 工作区权限、RBAC，以及 ChatGPT Enterprise 的保留和数据驻留设置. * 使用 API key 时，使用行为则遵循你所在 API 组织的保留和数据共享设置. ### 使用 ChatGPT 登录. 当你在 Codex App、CLI 或 IDE 扩展中通过 ChatGPT 登录时，Codex 会打开一个浏览器窗口让你完成登录流程。登录后，浏览器会把访问令牌返回给 CLI 或 IDE 扩展。. ### 使用 API key 登录. 你也可以在 Codex App、CLI 或 IDE 扩展中通过 API key 登录。API key 可从 OpenAI 控制台 获取。. 对于程序化的 Codex CLI 工作流，例如 CI/CD 任务，推荐使用 API key 认证。不要把 Codex 的执行暴露在不受信任或公开的环境中。. 无论你是用 ChatGPT 还是 API key 登录 Codex App、CLI 或 IDE 扩展，Codex 都会缓存你的登录信息，并在你下次启动 CLI 或扩展时复用。CLI 和扩展共享同一份登录缓存；如果你从其中任一端退出登录，下一次启动 CLI 或扩展时都需要重新登录。. ssh user@remote 'mkdir -p ~/.codex' ssh  user@remote 'mkdir -p ~/.codex'scp ~/.codex/auth.json user@remote:~/.codex/auth.json scp ~/.codex/auth.json user@remote:~/.codex/auth.json. ssh user@remote 'mkdir -p ~/.codex && cat > ~/.codex/auth.json' < ~/.codex/auth.json ssh  user@remote 'mkdir -p ~/.codex && cat > ~/.codex/auth.json' < ~/.codex/auth.json. * **OpenAI 认证**：设置 `requires_openai_auth = true`，让该提供方使用 OpenAI 认证。随后你可以使用 ChatGPT 或 API key 登录。这适合通过 LLM 代理访问 OpenAI 模型的场景。当 `requires_openai_auth = true` 时，Codex 会忽略 `env_key`。.",
+      "score": 0.63804686,
+      "labels": [
+        "登录/认证",
+        "配置文件/环境",
+        "免 Key/API Key",
+        "入口对比"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 自定义 API",
+      "title": "使用自定义API接入OpenAI CodeX配置教程- 林恒 - 博客园",
+      "url": "https://www.cnblogs.com/smileZAZ/p/19406570",
+      "snippet": "* [博客园](https://www.cnblogs.com/). * [首页](https://www.cnblogs.com/smileZAZ/). * [新随笔](https://i.cnblogs.com/EditPosts.aspx?opt=1). * [联系](https://msg.cnblogs.com/send/%E6%9E%97%E6%81%92). * [管理](https://i.cnblogs.com/). # [使用自定义API接入OpenAI CodeX配置教程](https://www.cnblogs.com/smileZAZ/p/19406570 \"发布于 2025-12-26 20:19\"). 官网网站 [openai.com/codex/](https://openai.com/zh-Hans-CN/codex/). Codex 启动时会在`~/.codex/` 读取`config.toml`文件。若不存在就新建：. mkdir -p ~/.codex nano ~/.codex/config.toml. model_provider = \"vapi\" # 设置API供应商 model = \"gpt-5\" # 填写支持codex的模型即可 model_reasoning_effort = \"low\" # 思考级别 low medium（默认） high minimal，不需要可以#注释掉 # 供应商设置 [model_providers.vapi] name = \"VAPI\" base_url = \"https://api.v3.cm/v1\" env_key = \"V_API_KEY\" # 保留这个值，不需要替换为apikey wire_api = \"chat\" # 使用 /v1/chat/completions 协议 query_params = {} request_max_retries = 4 # 失败最大重试次数 stream_max_retries = 10 # 流中断后最大重试次数 # 可选：定义一个 profile，便于命令行快速切换 [profiles.vapi] model_provider = \"vapi\" model = \"gpt-5\" approval_policy = \"on-request\" # 需要时再询问是否执行 sandbox_mode = \"workspace-write\" # 允许在当前工程写文件，依旧禁网. ### Codex CLI原生命令. - name: Update changelog via Codex run: | npm install -g @openai/codex export OPENAI_API_KEY=\"${{ secrets.OPENAI_KEY }}\" codex exec --full-auto \"update CHANGELOG for next release\". 通过在`~/.codex/config.toml`中定义一个`mcp_servers`部分，可以将 Codex CLI 配置为使用 MCP 服务器。它旨在反映 Claude 和 Cursor 等工具在其各自的 JSON 配置文件中的 mcpServers 定义方式，尽管 Codex 的格式略有不同，因为它使用的是 TOML 而不是 JSON，例如：. posted @ 2025-12-26 20:19  [林恒](https://www.cnblogs.com/smileZAZ)  阅读(33655)  评论(2)    [收藏](javascript:void(0))  [举报](https://report.cnblogs.com?targetLink=https%3A%2F%2Fwww.cnblogs.com%2FsmileZAZ%2Fp%2F19406570&targetId=19406570&targetType=0). [博客园](https://www.cnblogs.com/)   ©  2004-2026.",
+      "score": 0.82728493,
+      "labels": [
+        "Base URL",
+        "配置文件/环境",
+        "报错排查",
+        "免 Key/API Key",
+        "入口对比"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 自定义 API",
+      "title": "OpenAI API Key 获取与Codex 自定义网关配置实战（附完整代码）",
+      "url": "https://cloud.tencent.com/developer/article/2648660",
+      "snippet": "## OpenAI API Key 获取与 Codex 自定义网关配置实战（附完整代码）. ## 玩转 AI 编程：OpenAI Codex CLI 安装教程与自定义 API Key 配置全指南. OpenAI Codex 作为当前极具生产力的 AI 编程助手，目前官方主推 **CLI（命令行界面）、IDE 扩展、App** 三种交互形态。对于习惯在终端中沉浸式开发的工程师而言，Codex CLI 无疑是最顺手的工具。. 本文将基于最新的官方文档，带你从零完成 Codex CLI 的安装，并重点梳理**如何配置自定义 API 网关**，让工具完美契合你的本地开发环境。. ### 一、 认识 Codex CLI. Codex CLI 是 OpenAI 官方推出的开源本地编码代理，底层基于 Rust 构建。它能够直接在当前目录下读取代码上下文、修改文件甚至执行终端命令。. `npm i -g @openai/codex`. 安装完成后，在终端输入 `codex` 即可启动。首次运行需要进行身份验证。. #### 方式 1：ChatGPT 网页授权（默认）. 直接运行 `codex`，CLI 默认会唤起浏览器进入 ChatGPT 登录流程。授权成功后，凭据会缓存在本地（`~/.codex/auth.json`），后续使用无需重复登录。. #### 方式 2：API Key 环境变量注入（推荐开发者使用）. 针对程序化工作流，提前注入 API Key 是更高效的做法。. *(注：你也可以随时使用* *`codex login`* *命令，通过管道传入 API Key 或切换设备授权模式。)*. Codex CLI 并非只能单纯对话，它的核心价值在于“动作执行”。. `codex \"Explain this codebase to me\". ### 五、 进阶：配置文件与自定义 API 接入. 这是国内开发者和企业用户最关心的部分。Codex 的核心配置文件位于：`~/.codex/config.toml`。CLI 和 IDE 扩展共用这一套配置。. 如果你需要将 Codex 接入自建网关、第三方聚合 API（如 uiuiAPI），可以通过修改该文件实现。官方支持配置 `base_url`、`env_key`、`http_headers` 等关键字段。. 如果你只是想把官方 OpenAI 的请求代理到自定义地址，可以直接覆盖内置的 `openai_base_url`。. openai_base_url = \"https://sg.uiuiapi.com/v1\"`. #### API\\_KEY 配置. 1.文件配置**`~/.codex/auth.json`** **配置示例：**. #### 方案 B：专业模式 —— 自定义 Provider（强烈推荐）. base_url = \"https://sg.uiuiapi.com/v1\". 如前所述，Windows 原生环境目前在支持上仍有局限。但官方已在 CLI 中加入了 Windows 沙箱模式（分 `elevated` 提权和 `unelevated` 非提权两种）。. 如果你坚持在原生 Windows（非 WSL）下使用，建议在 `config.toml` 中强制开启提权沙箱模式以提升文件操作的稳定性：. **Q3：ChatGPT 登录与 API Key 登录有何本质区别？**. OpenAI Codex 正在重塑开发者的工作流。通过合理配置 `config.toml` 和环境变量，我们完全可以打造一个兼顾网络稳定性与数据隐私的个人 AI 编程环境。建议优先采用**自定义 Provider (方案 B)** 的形式接入 API，这不仅能让配置文件更加语义化，也能在多个服务商之间实现秒级切换。. 如有侵权，请联系 cloudcommunity@tencent.com 删除。.",
+      "score": 0.7971311,
+      "labels": [
+        "登录/认证",
+        "Base URL",
+        "配置文件/环境",
+        "免 Key/API Key",
+        "入口对比"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 自定义 API",
+      "title": "人工智能 - OpenAI Codex 安装与使用全指南：API Key 获取与自定义 API 配置与实战排错 - AI ChatGPT - SegmentFault 思否",
+      "url": "https://segmentfault.com/a/1190000047687741",
+      "snippet": "#### AI ChatGPT. # OpenAI Codex 安装与使用全指南：API Key 获取与自定义 API 配置与实战排错. ## 一、为什么越来越多开发者开始关注 Codex？. 过去，开发者更多是在网页聊天窗口里向模型提问；而现在，大家更希望 AI 能直接进入项目目录、理解代码结构、修改文件、执行命令，甚至参与日常的重构、调试和自动化流程。也正因为这样，**终端里的 AI Agent** 正在成为新的开发入口。. 它不是单纯的聊天工具，而是一套更贴近开发现场的编码代理体系。尤其是 **Codex CLI**，更适合已经习惯命令行工作流的开发者：你可以在本地项目目录中直接调用它，让模型围绕真实代码仓库完成分析、修改与执行任务。. 这篇文章就围绕这些核心问题，做一次完整梳理，帮助你把 **OpenAI Codex 的安装、使用和自定义 API 配置** 一次搞明白。. ## 二、Codex 到底是什么？. 其中，最适合工程化实践的通常是 **Codex CLI**。因为它天然贴近开发者现有工作流：进入项目目录、执行命令、查看文件、修改代码，这些都可以在同一条操作链里完成。. 相比传统“问答式 AI”，Codex 更像一个可在本地环境中协作的编码代理。它的能力重点不再只是“解释代码”，而是进一步延伸到：. ## 三、如何安装 OpenAI Codex？. `npm i -g @openai/codex`. 如果你是 macOS 用户，同时本身习惯 Homebrew 管理本地工具，也可以使用：. #### 方案 A：直接使用 Codex App. #### 方案 B：在 WSL 中运行 Codex CLI. #### 方案 C：使用 VS Code 中的 Codex 扩展. ## 五、Codex CLI 的基础使用方式. 也就是说，**Codex 能否支持自定义 API 配置，决定了它能否真正进入企业级或复杂开发环境**。. ### macOS / Linux. 如果你的团队已经在 Azure OpenAI 上有部署，也可以通过 provider 的方式接入。. base_url = \"https://YOUR_PROJECT_NAME.openai.azure.com/openai\". 这类配置特别适合已经有 Azure 体系、且希望统一使用 Codex CLI 的团队。. 你的请求虽然经过代理网关，但后端本质上还是 OpenAI，希望继续沿用 OpenAI 的认证体系，而不是给代理单独分发一个新 Key。. ChatGPT 登录和 API Key 登录该怎么选？. #### ChatGPT 登录. #### API Key 登录. 如果你未来明确要接自定义 API，那么从一开始就使用 **API Key + 自定义 provider**，往往是更稳的一条路。. 从这个角度看，**自定义 API 配置** 并不是一个附加功能，而是 Codex 能否落地到复杂开发场景的关键能力之一。. 如果你只是想快速体验 AI 编码能力，那么安装 Codex CLI 并直接登录即可开始使用。. ###### ​GPT Image 2 模型深度解析：OpenAI API Key 获取、能力拆解与开发调用示例. ###### 终结“定位漂移与盲盒”的玄学：玩透 HarmonyOS Web 组件的位置权限心法. ###### HarmonyOS APP开发之玩透 ChannelConfig 的声道映射. ###### HarmonyOS Wear Engine Kit API全解析：打通手机与腕间的“任督二脉”.",
+      "score": 0.769306,
+      "labels": [
+        "登录/认证",
+        "Base URL",
+        "配置文件/环境",
+        "免 Key/API Key",
+        "入口对比"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 自定义 API",
+      "title": "Codex 配置自定义AI API 完整指南：从零到一接入你的专属模型",
+      "url": "https://blog.csdn.net/weixin_44976692/article/details/159989048",
+      "snippet": "本文将通过一个真实的配置案例，详细讲解如何在macOS（特别是Mac Mini）环境下配置Codex，使其能够调用自定义的AI API。整个过程涉及配置文件编写、环境变量",
+      "score": 0.7557276,
+      "labels": [
+        "配置文件/环境"
+      ],
+      "pageIdea": "新增 Codex WSL/Docker/Windows 配置路径页或 FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex 自定义 API",
+      "title": "OpenAI Codex 零基础入门指南 - 知乎专栏",
+      "url": "https://zhuanlan.zhihu.com/p/1960409079521476749",
+      "snippet": "如果没有订阅ChatGPT，你也可以通过自定义的API Key 使用。比如：. # 设置环境变量export OPENAI_API_KEY=\"your-api-key-here\" # 启动Codex codex. 对于",
+      "score": 0.7144891,
+      "labels": [
+        "免 Key/API Key"
+      ],
+      "pageIdea": "扩写 Codex 免 API Key 与 API Key 模式边界",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex config.toml base_url",
+      "title": "config.toml - feiskyer/codex-settings - GitHub",
+      "url": "https://github.com/feiskyer/codex-settings/blob/main/config.toml",
+      "snippet": "CLI settings, configurations, skills and prompts for vibe coding. This configuration uses LiteLLM as the model provider gateway base_url = \"http://localhost:",
+      "score": 0.8708723,
+      "labels": [
+        "Base URL",
+        "配置文件/环境",
+        "入口对比"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex config.toml base_url",
+      "title": "Part 1: Configuration with config.toml - Codex Starter Best Practices",
+      "url": "https://codex-best-practices-d67bea.pages.oit.duke.edu/best-practices/configuration.html",
+      "snippet": "In your personal defaults config (`~/.codex/config.toml`), we recommend setting the model provider information so that Codex will always work with Duke’s AI Gateway infrastructure, no matter which project you are working on. # ~/.codex/config.toml#:schema https://developers.openai.com/codex/config-schema.json model  =  \"gpt-5.3-codex\" model_provider  =  \"litellm\" approval_policy  =  \"on-request\" sandbox_mode  =  \"workspace-write\" web_search  =  \"disabled\" model_auto_compact_token_limit  =  200000[model_providers.litellm] name  =  \"litellm\" base_url  =  \"https://litellm.oit.duke.edu/v1\" env_key  =  \"LITELLM_KEY\" wire_api  =  \"responses\"[sandbox_workspace_write] network_access  =  false. *If your ChatGPT Edu account has Codex access enabled*, you won’t need to configure it to use the AI Gateway (LiteLLM). If you have previously configured Codex to work with the AI Gateway, you can switch to your ChatGPT Edu account by removing the `model` and `model_provider` defaults in the config file above. # ~/.codex/config.toml#:schema https://developers.openai.com/codex/config-schema.json approval_policy  =  \"on-request\" sandbox_mode  =  \"workspace-write\" web_search  =  \"disabled\" model_auto_compact_token_limit  =  200000[sandbox_workspace_write] network_access  =  false. Here is an example of your project `config.toml` to allow your project agent to search the web and execute shell commands that require network access.",
+      "score": 0.85157084,
+      "labels": [
+        "Base URL",
+        "配置文件/环境",
+        "入口对比"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex config.toml base_url",
+      "title": "Codex/Windsurf Configuration - MegaLLM Documentation",
+      "url": "https://docs.megallm.io/en/cli/codex-config",
+      "snippet": "# Codex/Windsurf Configuration. Configure Codex and Windsurf to use MegaLLM. Codex and Windsurf use TOML configuration format and only support system-level (global) configuration. **Codex/Windsurf only supports system-level configuration.** Project-level configuration is not available. Create config filecat > ~/.codex/config.toml << 'EOF' cat > ~/.codex/config.toml <<  'EOF'model_provider = \"megallm\"model_provider = \"megallm\"model = \"gpt-5\"model = \"gpt-5\" [model_providers.megallm][model_providers.megallm]name = \"OpenAI using Chat Completions\"name = \"OpenAI using Chat Completions\"base_url = \"https://ai.megallm.io/v1\"base_url = \"https://ai.megallm.io/v1\"env_key = \"MEGALLM_API_KEY\"env_key = \"MEGALLM_API_KEY\"query_params = {}query_params = {} [tools][tools]web_search = trueweb_search = truefile_browser = truefile_browser = true EOF EOF # 3. # Create backup of current config # Create backup of current configcp ~/.codex/config.toml ~/.codex/config.toml.backup cp ~/.codex/config.toml ~/.codex/config.toml.backup # Development config # Development configcat > ~/.codex/config.toml.dev << 'EOF' cat > ~/.codex/config.toml.dev <<  'EOF'model_provider = \"megallm\"model_provider = \"megallm\"model = \"gpt-4o-mini\"model = \"gpt-4o-mini\" [model_providers.megallm][model_providers.megallm]base_url = \"https://ai.megallm.io/v1\"base_url = \"https://ai.megallm.io/v1\"env_key = \"MEGALLM_API_KEY_DEV\"env_key = \"MEGALLM_API_KEY_DEV\" EOF EOF # Production config # Production configcat > ~/.codex/config.toml.prod << 'EOF' cat > ~/.codex/config.toml.prod <<  'EOF'model_provider = \"megallm\"model_provider = \"megallm\"model = \"gpt-5\"model = \"gpt-5\" [model_providers.megallm][model_providers.megallm]base_url = \"https://ai.megallm.io/v1\"base_url = \"https://ai.megallm.io/v1\"env_key = \"MEGALLM_API_KEY_PROD\"env_key = \"MEGALLM_API_KEY_PROD\" EOF EOF # Switch to dev # Switch to devcp ~/.codex/config.toml.dev ~/.codex/config.toml cp ~/.codex/config.toml.dev ~/.codex/config.toml # Switch to prod # Switch to prodcp ~/.codex/config.toml.prod ~/.codex/config.toml cp ~/.codex/config.toml.prod ~/.codex/config.toml.",
+      "score": 0.80126834,
+      "labels": [
+        "Base URL",
+        "配置文件/环境"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex config.toml base_url",
+      "title": "Codex config.toml (2026): Add Any Custom Provider in 6 Lines ...",
+      "url": "https://www.morphllm.com/codex-provider-configuration",
+      "snippet": "Up to $5K in API credits for startups. # Codex config.toml (2026): Add Any Custom Provider in 6 Lines (OpenRouter, Azure, Ollama, DeepSeek). Complete Codex config.toml reference: the 6-line model\\_providers block, why wire\\_api = \"responses\" is now the only option, file precedence, profiles, and copy-paste configs for OpenRouter, Azure, Ollama, DeepSeek, and Morph. #### Drop-in ~/.codex/config.toml. A repo-level `.codex/config.toml` cannot override provider, auth, notification, telemetry, or profile-selection keys. Two keys at the top of `config.toml` select what runs: `model` picks the model ID, `model_provider` picks which provider definition to use. #### ~/.codex/config.toml: complete custom provider. | experimental\\_bearer\\_token | string | (none) | Inline API key in the TOML; discouraged, prefer env\\_key |. The current configuration reference is explicit: `responses` is the only supported value, and it is the default when omitted. If the endpoint behind `base_url` only implements Chat Completions, Codex's Responses-API requests hit a route that does not exist. Each block is a complete `~/.codex/config.toml`.",
+      "score": 0.7593865,
+      "labels": [
+        "Base URL",
+        "配置文件/环境",
+        "免 Key/API Key"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex config.toml base_url",
+      "title": "Allow overriding the base URL for OpenAI in config.toml #11698",
+      "url": "https://github.com/openai/codex/issues/11698",
+      "snippet": "## Navigation Menu. # Search code, repositories, users, issues, pull requests... # Provide feedback. We read every piece of feedback, and take your input very seriously. # Saved searches. ## Use saved searches to filter your results more quickly. To see all available qualifiers, see our documentation. There was an error while loading. # Allow overriding the base URL for OpenAI in config.toml #11698. ## Footer. ### What variant of Codex are you using? ### What feature would you like to see? If I have this in my config:. Codex doesn't seem to respect it. If I am understanding the code correctly, since it's a built-in provider, we don't take into account any overrides in the TOML. It would be great if this was supported so I can permanently use codex through a proxy (this is needed for my use case). (I know I can override it via env vars, but config would be better for my use case). ### Footer navigation.",
+      "score": 0.72884524,
+      "labels": [
+        "Base URL",
+        "配置文件/环境",
+        "报错排查"
+      ],
+      "pageIdea": "扩写 Base URL 场景页，补“走官方地址/要不要 /v1”FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex auth.json 放哪里",
+      "title": "Codex 买号登录问题排查与 auth.json 手动配置记录_qq_36710118-DeepSeek技术社区",
+      "url": "https://deepseek.csdn.net/6a059faa662f9a54cb7471dc.html",
+      "snippet": "# logo DeepSeek技术社区. ### DeepSeek技术社区. DeepSeek技术社区   Codex 买号登录问题排查与 auth.json 手动配置记录. # Codex 买号登录问题排查与 auth.json 手动配置记录. ### qq\\_36710118. 6906人浏览 · 2026-05-01 23:47:07. qq\\_36710118  ·  2026-05-01 23:47:07 发布. 买了一个 Codex 的“四段 RT”号，卖家提供的账号信息格式如下：. 正常情况下，登录需要走 OAuth 流程，但遇到了一个尴尬的问题：邮箱收不到验证码，导致登录流程卡住。不过账号本身是正常的，能查到余额，说明没有被回收。. Codex 的 ChatGPT 账号登录依赖浏览器 OAuth 流程，需要邮箱接收验证码。一旦邮箱收不到验证码，这条路就走不通。. Codex 的认证信息存储在本地文件 `auth.json` 中，具体位置如下：. * **Windows**：`C:\\Users\\用户名\\.codex\\auth.json`. * **macOS/Linux**：`~/.codex/auth.json`. 如果能够手动构造一个合法的 `auth.json` 放入对应目录，Codex 启动时会直接读取该文件，从而跳过浏览器登录流程。. 在用户目录下创建 `.codex` 文件夹，并在里面新建两个文件：`auth.json` 和 `config.toml`。. { \"auth_mode\": \"chatgpt\", \"tokens\": { \"refresh_token\": \"rt_xxx\" }, \"last_refresh\": \"2026-04-30T00:00:00Z\" }. 这一行的作用是告诉 Codex 从文件读取凭证，而不是走浏览器 OAuth 流程。. 由于 Codex 需要联网向 OpenAI 换取新的 token，因此需要开启代理：. set https_proxy=http://127.0.0.1:7890 codex. 启动后，Codex 会自动使用 `refresh_token` 换取新的 `access_token`，进入正常使用状态。. 配置完成后，我检查了 `auth.json` 中的 `access_token` 内容，发现里面包含的邮箱信息是我的，而不是卖家的。. **原因分析**：我之前在本地登录过自己的账号，`auth.json` 中残留了我自己的 `access_token` 和 `id_token`。虽然我把 `refresh_token` 换成了卖家的，但 `access_token` 仍然是我的。. 解码 JWT 的 Payload 部分（Base64 编码，非加密）可以看到：. { \"email\": \"xxx@qq.com\", \"name\": \"xxx\" }. * **access\\_token**：我的身份信息（邮箱、对话记录）. * **refresh\\_token**：卖家的额度（订阅类型、扣费权限）. Codex 使用 `access_token` 显示用户信息和读取对话记录，使用 `refresh_token` 去换取新的调用凭证来进行扣费。**两者是分开管理的**。. ### 关于 JWT 的说明. JWT 的 Payload 部分只是 Base64 编码，**并非加密**。任何人拿到完整的 token 都可以解码读取里面的内容，包括邮箱、用户名、订阅信息等。. 因此，**`auth.json` 属于敏感文件，不要随意分享或提交到代码仓库**。. * 如果 Codex 邮箱验证码收不到，可以通过手动配置 `auth.json` 绕过登录流程。. * `access_token` 和 `refresh_token` 职责不同：前者管身份和对话记录，后者管额度和计费。. * JWT 的 Payload 是明文编码，务必注意信息安全。. ### 所有评论(0).",
+      "score": 0.87348515,
+      "labels": [
+        "登录/认证",
+        "配置文件/环境"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex auth.json 放哪里",
+      "title": "Codex 配置使用教程 - 知乎专栏",
+      "url": "https://zhuanlan.zhihu.com/p/1968120591967057674",
+      "snippet": "codex touch ~/.codex/auth.json touch ~/.codex/config.toml. 2.2 编辑auth.json 文件：. vi ~/.codex/auth.json. 按i 进入插入模式，粘贴以下内容（将sk-xxx 替换为您的",
+      "score": 0.8700796,
+      "labels": [
+        "配置文件/环境"
+      ],
+      "pageIdea": "新增 Codex WSL/Docker/Windows 配置路径页或 FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex auth.json 放哪里",
+      "title": "Codex Auth JSON 生成器(绕过验证码) 原创 - CSDN博客",
+      "url": "https://blog.csdn.net/qq_45662588/article/details/161584267",
+      "snippet": "通过安装Chrome插件\"Codex认证助手\"，用户可以在已登录ChatGPT的浏览器中导出会话凭证（auth.json），将其放入Codex配置目录即可跳过手机验证流程。",
+      "score": 0.850382,
+      "labels": [
+        "登录/认证",
+        "配置文件/环境",
+        "入口对比"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex auth.json 放哪里",
+      "title": "OpenAI Codex 零基础入门指南 - 知乎专栏",
+      "url": "https://zhuanlan.zhihu.com/p/1960409079521476749",
+      "snippet": "登录后，你的认证信息会保存在 ~/.codex/auth.json 文件中，默认使用GPT-5 模型。 ... 首先是全局配置，这些选项需要放在配置文件开头部分：. # 模型",
+      "score": 0.8412138,
+      "labels": [
+        "登录/认证",
+        "配置文件/环境"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex auth.json 放哪里",
+      "title": "【建议】一键配置~/.codex/auth.json · Issue #88 · cnlimiter/codex-manager · GitHub",
+      "url": "https://github.com/cnlimiter/codex-manager/issues/88",
+      "snippet": "## Navigation Menu. # Search code, repositories, users, issues, pull requests... # Provide feedback. We read every piece of feedback, and take your input very seriously. # Saved searches. ## Use saved searches to filter your results more quickly. To see all available qualifiers, see our documentation. # 【建议】一键配置~/.codex/auth.json #88. ## Footer. ## Description. ## Metadata. ### Assignees. ### Labels. ### Projects. ### Milestone. ### Relationships. ### Development. ## Issue actions. ### Footer navigation.",
+      "score": 0.79580134,
+      "labels": [
+        "配置文件/环境"
+      ],
+      "pageIdea": "新增 Codex WSL/Docker/Windows 配置路径页或 FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex WSL 配置",
+      "title": "Codex + Git 开发环境配置指南（WSL版）_git_wj305585378-DeepSeek技术社区",
+      "url": "https://deepseek.csdn.net/6a059fb510ee7a33f2727a28.html",
+      "snippet": "# logo DeepSeek技术社区. ### DeepSeek技术社区. DeepSeek技术社区   Codex + Git 开发环境配置指南（WSL版）. # Codex + Git 开发环境配置指南（WSL版）. 981人浏览 · 2026-05-01 15:58:26. wj305585378  ·  2026-05-01 15:58:26 发布. > 适用于：Windows + WSL + Codex CLI + Git. ## 一、Codex 环境配置（WSL）. Windows（宿主） ├─ Codex Desktop（可选） └─ WSL（Ubuntu） └─ Codex CLI（主力）. > Codex CLI 在 Linux/WSL 环境下更稳定，官方推荐使用类似 Linux 的环境运行 (apidog). git diff git -am \"codex changes\". #### ❗ Codex 无法启动. ## 二、Git 配置（WSL）. git --global \"Your Name\" git --global\"your@email.com\". git --global false git --global git --global. #### VS Code. git --global git --global git --global git --global git --global\"log --oneline --graph --decorate --all\". git --global git --global'cache --timeout=7200'. * Windows Git 操作 WSL 项目. * WSL Git 操作 Windows 项目. ### Codex. ### Git. cd ~/workspace/project git pull codex # 完成后 git diff git commit git push. # git  # linux  # 运维. * ·  Claude Code 菜单完全指南：每个选项都是什么意思？（图文详解）. * ·  Java 性能调优实战：Gemini 镜像站实现 JMH 基准测试与 JVM 参数精调. Java 性能调优曾是一项依赖大师经验和长期摸索的黑箱艺术。Gemini 将 JMH 基准、GC 日志解析、参数验证这三大技术环节变得即时可得。它让“修改 → 基准测试 → 验证效果”的反馈环路从小时级缩短到分钟级，使开发者敢于对热点代码进行大胆优化。如果你正在面对一个性能不达标的 Java 服务，不妨从 RskAi开始：先让 Arthas 或 SkyWalking 给出热点方法，然后交给 Gem.",
+      "score": 0.82728493,
+      "labels": [
+        "配置文件/环境",
+        "入口对比"
+      ],
+      "pageIdea": "新增 Codex WSL/Docker/Windows 配置路径页或 FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex WSL 配置",
+      "title": "Windows 通过WSL 配置Codex CLI - DeepSeek技术社区",
+      "url": "https://deepseek.csdn.net/6a05b05710ee7a33f272916a.html",
+      "snippet": "Windows 通过WSL 配置Codex CLI · 一、配置WSL2. 1. 启用WSL 与虚拟机平台. 2. 更新WSL. 3. 设置默认版本 · 二、VS Code 安装 WSL 插件 · 三、配置Codex",
+      "score": 0.79883134,
+      "labels": [
+        "配置文件/环境",
+        "入口对比"
+      ],
+      "pageIdea": "新增 Codex WSL/Docker/Windows 配置路径页或 FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex WSL 配置",
+      "title": "Windows 上配置Codex：安装WSL2/Ubuntu + sudo + 代理全局设置",
+      "url": "https://www.youtube.com/watch?v=a02CfnqxpY8",
+      "snippet": "这是系列第2 集：WSL 安装后重启回到系统，继续把Ubuntu 启动/安装流程走完，并演示常见命令（sudo）与下载慢时的代理设置要点。 你会看到： 重启后如何继续",
+      "score": 0.76554126,
+      "labels": [
+        "配置文件/环境"
+      ],
+      "pageIdea": "新增 Codex WSL/Docker/Windows 配置路径页或 FAQ",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex WSL 配置",
+      "title": "VS Code + Codex 在 WSL 中使用的正确姿势_codex wsl-CSDN博客",
+      "url": "https://blog.csdn.net/yangguangwuyue/article/details/150946282",
+      "snippet": "# VS Code + Codex 在 WSL 中使用的正确姿势. 已于 2025-09-18 13:05:04 修改. 于 2025-08-28 10:49:21 首次发布. Codex、Claude Code、Cursor、Hermes Agent、OpenClaw等工程化实战专栏 ，讲透 AI 如何接管脏活累活. 官方 Codex 扩展（openai.chatgpt）必须走 OAuth 登录。. Local (Windows 本地)：安装在 Windows，登录成功。. Remote (WSL 环境)：登录需要在 Ubuntu 内部完成 → 会失败（403/回调错误）。. 所以正确做法是：只在本地登录 Codex，用 UNC 路径访问 WSL 文件。. 打开 VS Code（非 WSL 窗口，左下角不显示 WSL: …）。. 扩展市场搜索 Codex – OpenAI’s coding agent。. 确认 Uninstall、Disable 按钮可用 → 表示已安装在本地。. 不要点击 “Install in WSL: MyUbuntu”。. 本地窗口 → 扩展 → 点 Sign in。. 浏览器跳转 → 登录 ChatGPT 账号 → 完成授权。. VS Code 右下角提示 “Signed in to OpenAI”。. 3. 打开 WSL 项目（走 UNC 路径）. 关闭 Remote-WSL 窗口（左下角 WSL: MyUbuntu → Close Remote Connection）。. 在 Windows VS Code 窗口，File → Open Folder…。. \\wsl.localhost\\Ubuntu\\home\\wanglonglong\\Learn\\_ROS2\\SlowFast. （“Ubuntu”替换成你自己的发行版名，可在资源管理器输入 \\wsl.localhost\\ 查看）.",
+      "score": 0.75355774,
+      "labels": [
+        "登录/认证",
+        "配置文件/环境",
+        "报错排查",
+        "入口对比"
+      ],
+      "pageIdea": "新增/扩写 Claude Code/Codex 登录失败与回跳排错页",
+      "isOwnSite": false
+    },
+    {
+      "source": "tavily",
+      "query": "Codex WSL 配置",
+      "title": "OpenAI Codex 安装与配置指南(Win & WSL & Linux) - 什么值得买",
+      "url": "https://post.smzdm.com/p/a5rmq9g8",
+      "snippet": "WSL 环境适配先在Windows 端安装WSL 插件，随后在WSL 终端进入代码目录（建议放在~/ 下），输入code . 自动连接。",
+      "score": 0.74563974,
+      "labels": [
+        "配置文件/环境",
+        "入口对比"
+      ],
+      "pageIdea": "新增 Codex WSL/Docker/Windows 配置路径页或 FAQ",
+      "isOwnSite": false
+    }
+  ]
+}

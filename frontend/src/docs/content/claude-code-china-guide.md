@@ -168,3 +168,33 @@ Claude Code / Anthropic 兼容入口通常填 `https://api.laoshirenai.com` 根�
 - [API Key 与分组选择指南](api-key-group-guide)
 - [团队 API Key 管理](team-api-key-management)
 - [支持的国家和地区](legal-supported-regions)
+
+<!-- seo-geo-auto:start -->
+## 搜索意图补强与下一步
+
+这一节由老实人AI SEO/GEO 闭环维护，用来覆盖用户真实搜索里的高频表达：Claude Code 国内怎么用、登录失败、API Key、Base URL、走官方地址。
+
+### Claude Code 国内怎么用最稳？
+
+先确认地区与账号合规，再把安装、认证、Base URL、API Key 和终端环境变量配对。只要后台有调用记录，说明请求已经进入老实人AI；没有记录先查本地变量和旧终端。
+
+### Claude Code 登录失败还要反复 login 吗？
+
+不要反复登录。登录链路失败时，优先用 API Key 加 Claude 兼容 Base URL 跑通本地任务，再排查浏览器回跳和官方账号状态。
+
+### 为什么配置后还是走官方地址？
+
+本质是当前进程没有读到正确的 ANTHROPIC_BASE_URL，或被旧 shell、旧配置、代理、工具缓存覆盖。先打印当前终端变量，再开新终端验证。
+
+### 读完之后怎么验证？
+
+创建一把低额度 API Key，配置 `ANTHROPIC_BASE_URL=https://api.laoshirenai.com` 和 `ANTHROPIC_AUTH_TOKEN`，跑一个只读任务后看后台调用记录。
+
+### 相关高意图页面
+
+- [Codex 国内使用指南](codex-china-guide)
+- [Codex 免 API Key 使用指南](codex-no-api-key-guide)
+- [Codex 自定义 API 配置教程](codex-custom-api-guide)
+- [Base URL 填写总指南](base-url-guide)
+- [常见 API 报错排查](common-api-errors)
+<!-- seo-geo-auto:end -->

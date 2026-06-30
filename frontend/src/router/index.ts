@@ -12,6 +12,7 @@ import {useNavigationLoadingState} from '@/composables/useNavigationLoading'
 import {useRoutePrefetch} from '@/composables/useRoutePrefetch'
 import {getSetupStatus, type SetupStatus} from '@/api/setup'
 import {updateRouteSeo} from '@/utils/seo'
+import {trackPageView} from '@/utils/analytics'
 
 /**
  * Route definitions with lazy loading
@@ -1056,6 +1057,10 @@ router.beforeEach(async (to, _from, next) => {
 router.afterEach((to) => {
   // 结束导航加载状态
   navigationLoading.endNavigation()
+
+  trackPageView(to.path, {
+    route_name: typeof to.name === 'string' ? to.name : '',
+  })
 
   // 懒初始化预加载（首次导航时创建，传入 router 实例）
   if (!routePrefetch) {

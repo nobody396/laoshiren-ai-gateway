@@ -102,7 +102,7 @@ defineProps<{
 
 .home-footer__grid {
   display: grid;
-  grid-template-columns: minmax(300px, 1.4fr) repeat(3, minmax(120px, 1fr));
+  grid-template-columns: minmax(280px, 1.35fr) repeat(4, minmax(120px, 1fr));
   gap: 2.5rem;
   margin-bottom: 3.5rem;
 }

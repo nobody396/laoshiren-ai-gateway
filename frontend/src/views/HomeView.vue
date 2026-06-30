@@ -981,6 +981,11 @@ const footerSections = computed(() => {
       pricing: 'Pricing',
       enterprise: 'Enterprise',
       login: 'Login',
+      guides: 'Guides',
+      claudeCodeChina: 'Claude Code in China',
+      codexChina: 'Codex in China',
+      codexNoApiKey: 'Codex without API key',
+      codexCustomApi: 'Codex custom API',
       commitment: 'Commitment',
       status: 'Service status',
       security: 'Security & privacy',
@@ -997,6 +1002,11 @@ const footerSections = computed(() => {
       pricing: '价格方案',
       enterprise: '企业方案',
       login: '登录',
+      guides: '高意图指南',
+      claudeCodeChina: 'Claude Code 国内使用',
+      codexChina: 'Codex 国内使用',
+      codexNoApiKey: 'Codex 免 API Key 使用',
+      codexCustomApi: 'Codex 自定义 API 配置',
       commitment: '服务承诺',
       status: '服务状态',
       security: '安全与隐私',
@@ -1018,6 +1028,15 @@ const footerSections = computed(() => {
         { label: labels.pricing, href: '#model-pricing', external: false },
         { label: labels.enterprise, href: '/enterprise', external: false },
         { label: labels.login, href: '/login', external: false }
+      ]
+    },
+    {
+      title: labels.guides,
+      links: [
+        { label: labels.claudeCodeChina, href: '/docs/claude-code-china-guide', external: false },
+        { label: labels.codexChina, href: '/docs/codex-china-guide', external: false },
+        { label: labels.codexNoApiKey, href: '/docs/codex-no-api-key-guide', external: false },
+        { label: labels.codexCustomApi, href: '/docs/codex-custom-api-guide', external: false }
       ]
     },
     {

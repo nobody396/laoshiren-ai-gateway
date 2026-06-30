@@ -1,0 +1,15 @@
+{
+  "siteUrl": "https://laoshirenai.com/",
+  "startDate": "2026-06-02",
+  "endDate": "2026-06-29",
+  "rows": [
+    {
+      "query": "hvoy.ai",
+      "page": "https://laoshirenai.com/",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 99
+    }
+  ]
+}

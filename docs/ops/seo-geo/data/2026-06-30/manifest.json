@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2026-06-30T09:00:18.016Z",
+  "siteOrigin": "https://laoshirenai.com",
+  "startDate": "2026-06-02",
+  "endDate": "2026-06-29",
+  "outputs": {
+    "technicalAudit": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API/docs/ops/seo-geo/data/2026-06-30/technical-audit.md",
+    "gsc": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API/docs/ops/seo-geo/data/2026-06-30/gsc-query-page.json"
+  },
+  "skipped": [
+    {
+      "source": "ga4",
+      "reason": "missing GA4_PROPERTY_ID"
+    }
+  ],
+  "failed": []
+}

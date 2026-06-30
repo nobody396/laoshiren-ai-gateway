@@ -25,7 +25,13 @@ for (let i = 2; i < process.argv.length; i += 1) {
 }
 
 const date = args.get('date') || todayISO()
-const dataDir = args.get('data-dir') || path.join(SEO_DIR, 'data', latestSubdir(path.join(SEO_DIR, 'data')) || date)
+function defaultDataDirFor(runDate) {
+  const dateDir = path.join(SEO_DIR, 'data', runDate)
+  if (fs.existsSync(path.join(dateDir, 'manifest.json'))) return dateDir
+  return path.join(SEO_DIR, 'data', latestSubdir(path.join(SEO_DIR, 'data')) || runDate)
+}
+
+const dataDir = args.get('data-dir') || defaultDataDirFor(date)
 const outFile = args.get('out') || path.join(SEO_DIR, 'weekly', `${date}-decision.md`)
 
 function urlPath(url) {
@@ -86,7 +92,7 @@ function loadTechnicalSummary(file) {
 
 function decide(page, dataAvailability) {
   const actions = []
-  if (!dataAvailability.gsc && !dataAvailability.ga4 && !P0_PATHS.includes(page.path)) return actions
+  const isP0 = P0_PATHS.includes(page.path)
   const imp = page.impressions || 0
   const clicks = page.clicks || 0
   const ctr = page.ctr || 0
@@ -96,13 +102,14 @@ function decide(page, dataAvailability) {
 
   if (page.techStatus && page.techStatus !== 200) actions.push({ priority: 'P0', type: 'technical', action: '修 HTTP 状态', reason: `status=${page.techStatus}` })
   if (page.visibleChars != null && page.visibleChars < 100) actions.push({ priority: 'P0', type: 'technical', action: '补原始 HTML 正文', reason: `visible_chars=${page.visibleChars}` })
+  if (!isP0 && !imp && !clicks && !sessions && !conversions && !actions.length) return actions
   if (imp >= 100 && ctr < 0.02) actions.push({ priority: 'P1', type: 'copy', action: '重写 title/description/首段结论', reason: `曝光 ${imp} 但 CTR ${(ctr * 100).toFixed(1)}%` })
   if (imp >= 50 && position > 8 && position <= 20) actions.push({ priority: 'P1', type: 'content', action: '扩充 FAQ、排错步骤、内链，提高相关性', reason: `平均排名 ${position.toFixed(1)}` })
-  if (dataAvailability.gsc && imp < 20 && P0_PATHS.includes(page.path)) actions.push({ priority: 'P1', type: 'distribution', action: '增加站内入口和外部引用，检查 sitemap lastmod', reason: 'P0 页面曝光不足' })
+  if (dataAvailability.gsc && imp < 20 && isP0) actions.push({ priority: 'P1', type: 'distribution', action: '增加站内入口和外部引用，检查 sitemap lastmod', reason: 'P0 页面曝光不足' })
   if (dataAvailability.ga4 && clicks >= 10 && sessions >= 10 && conversions === 0) actions.push({ priority: 'P1', type: 'conversion', action: '强化 CTA、注册/创建 Key 下一步、配置成功路径', reason: `点击/会话有量但关键事件为 0` })
   if (dataAvailability.gsc && dataAvailability.ga4 && clicks >= 1 && sessions === 0) actions.push({ priority: 'P2', type: 'measurement', action: '检查 GA4 页面路径/跨域/事件埋点', reason: `GSC 有点击 ${clicks} 但 GA4 会话为 0` })
   if (!actions.length && (imp || sessions)) actions.push({ priority: 'P3', type: 'observe', action: '继续观察，不做大改', reason: '当前无明显异常' })
-  if (!actions.length) actions.push({ priority: 'P2', type: 'data', action: '等待真实数据或补充内链', reason: '暂无 GSC/GA4 数据' })
+  if (!actions.length && isP0) actions.push({ priority: 'P2', type: 'data', action: '等待真实数据或补充内链', reason: '暂无 GSC/GA4 数据' })
   return actions
 }
 

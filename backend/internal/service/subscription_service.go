@@ -630,9 +630,20 @@ func normalizeSubscriptionStatus(subs []UserSubscription) {
 	}
 }
 
-// startOfDay 返回给定时间所在日期的零点（保持原时区）
+// startOfDay 返回给定时间所在日期的零点（保持原时区）。
 func startOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
+// rollingUsageWindowStart returns the exact activation/reset moment for usage
+// windows.
+//
+// Do not round this down to startOfDay. A 30-day subscription activated at
+// 14:22 must not get its monthly window reset at 00:00 on the expiry day,
+// otherwise the customer can receive an extra partial-day quota before the
+// subscription expires.
+func rollingUsageWindowStart(now time.Time) time.Time {
+	return now
 }
 
 // CheckAndActivateWindow 检查并激活窗口（首次使用时）
@@ -641,13 +652,14 @@ func (s *SubscriptionService) CheckAndActivateWindow(ctx context.Context, sub *U
 		return nil
 	}
 
-	// 使用当天零点作为窗口起始时间
-	windowStart := startOfDay(time.Now())
+	// 使用实际激活时刻作为窗口起始，避免 30 天/月卡窗口早于订阅过期时间重置。
+	windowStart := rollingUsageWindowStart(time.Now())
 	return s.userSubRepo.ActivateWindows(ctx, sub.ID, windowStart)
 }
 
 // AdminResetQuota manually resets the daily, weekly, and/or monthly usage windows.
-// Uses startOfDay(now) as the new window start, matching automatic resets.
+// Uses the exact reset moment as the new rolling window start, matching
+// automatic resets and avoiding early quota refresh before subscription expiry.
 func (s *SubscriptionService) AdminResetQuota(ctx context.Context, subscriptionID int64, resetDaily, resetWeekly, resetMonthly bool) (*UserSubscription, error) {
 	if !resetDaily && !resetWeekly && !resetMonthly {
 		return nil, ErrInvalidInput
@@ -656,7 +668,7 @@ func (s *SubscriptionService) AdminResetQuota(ctx context.Context, subscriptionI
 	if err != nil {
 		return nil, err
 	}
-	windowStart := startOfDay(time.Now())
+	windowStart := rollingUsageWindowStart(time.Now())
 	if resetDaily {
 		if err := s.userSubRepo.ResetDailyUsage(ctx, sub.ID, windowStart); err != nil {
 			return nil, err
@@ -688,8 +700,8 @@ func (s *SubscriptionService) AdminResetQuota(ctx context.Context, subscriptionI
 
 // CheckAndResetWindows 检查并重置过期的窗口
 func (s *SubscriptionService) CheckAndResetWindows(ctx context.Context, sub *UserSubscription) error {
-	// 使用当天零点作为新窗口起始时间
-	windowStart := startOfDay(time.Now())
+	// 使用实际重置时刻作为新窗口起始时间，避免新窗口短于 24h/7d/30d。
+	windowStart := rollingUsageWindowStart(time.Now())
 	needsInvalidateCache := false
 
 	// 日窗口重置（24小时）

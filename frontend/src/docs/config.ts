@@ -22,7 +22,7 @@ export interface DocCategory {
 
 export type DocsConfig = DocCategory[]
 
-export const docsLastModified = '2026-06-15'
+export const docsLastModified = '2026-06-30'
 
 export const docsConfig: DocsConfig = [
   {
@@ -162,6 +162,16 @@ export const docsConfig: DocsConfig = [
         title: 'Codex 国内使用指南',
         slug: 'codex-china-guide',
         description: '说明国内开发者如何通过老实人AI 配置 Codex、OpenAI 兼容 Provider、Base URL、WSL 和 API Key。'
+      },
+      {
+        title: 'Codex 免 API Key 使用指南',
+        slug: 'codex-no-api-key-guide',
+        description: '解释 Codex ChatGPT 登录、API Key 登录、访问令牌和第三方接口之间的区别，避免把“免 API Key”误解成免费或无限制。'
+      },
+      {
+        title: 'Codex 自定义 API 配置教程',
+        slug: 'codex-custom-api-guide',
+        description: '面向 Codex CLI/App 的自定义 API、Base URL、config.toml、auth.json、Responses 模式和第三方兼容接口配置指南。'
       },
       {
         title: 'Claude Code 和 Codex 怎么选',

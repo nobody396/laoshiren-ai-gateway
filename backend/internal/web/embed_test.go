@@ -87,10 +87,14 @@ func TestSEOManifest_RenderHTML(t *testing.T) {
 				Description: "区分 Claude Code、Codex 和 OpenAI SDK 的 Base URL 填写方式。",
 				OGType:      "article",
 				SchemaType:  "TechArticle",
+				StaticHTML:  `<main><h1>Base URL 填写总指南</h1><p>静态正文</p></main>`,
+				FAQ: []SEOFAQ{
+					{Question: "Base URL 要不要加 /v1？", Answer: "按客户端协议判断。"},
+				},
 			},
 		},
 	}
-	base := []byte(`<!doctype html><html><head><title>老实人AI - AI 编码中转</title><meta name="description" content="home" /><meta name="robots" content="index,follow" /><link rel="canonical" href="https://laoshirenai.com/" /><meta property="og:type" content="website" /><meta property="og:title" content="home" /><meta property="og:description" content="home" /><meta property="og:url" content="https://laoshirenai.com/" /><meta name="twitter:title" content="home" /><meta name="twitter:description" content="home" /></head><body></body></html>`)
+	base := []byte(`<!doctype html><html><head><title>老实人AI - AI 编码中转</title><meta name="description" content="home" /><meta name="robots" content="index,follow" /><link rel="canonical" href="https://laoshirenai.com/" /><meta property="og:type" content="website" /><meta property="og:title" content="home" /><meta property="og:description" content="home" /><meta property="og:url" content="https://laoshirenai.com/" /><meta name="twitter:title" content="home" /><meta name="twitter:description" content="home" /></head><body><div id="app"></div></body></html>`)
 
 	rendered := manifest.renderHTML(base, "/docs/base-url-guide")
 	body := string(rendered)
@@ -101,6 +105,34 @@ func TestSEOManifest_RenderHTML(t *testing.T) {
 	assert.Contains(t, body, `property="og:type" content="article"`)
 	assert.Contains(t, body, `data-seo="server-structured-data"`)
 	assert.Contains(t, body, NonceHTMLPlaceholder)
+	assert.Contains(t, body, `<div id="app"><main><h1>Base URL 填写总指南</h1><p>静态正文</p></main></div>`)
+	assert.Contains(t, body, `"@type":"FAQPage"`)
+	assert.Contains(t, body, `Base URL 要不要加 /v1？`)
+}
+
+func TestSEOManifest_NotFound(t *testing.T) {
+	manifest := &SEOManifest{
+		SiteOrigin: "https://laoshirenai.com",
+		Routes: []SEORoute{
+			{Path: "/docs/base-url-guide"},
+			{Path: "/legal/terms"},
+		},
+	}
+
+	assert.True(t, manifest.shouldServeNotFound("/docs/missing"))
+	assert.True(t, manifest.shouldServeNotFound("/legal/missing"))
+	assert.True(t, manifest.shouldServeNotFound("/missing"))
+	assert.True(t, manifest.shouldServeNotFound("/missing/nested"))
+	assert.False(t, manifest.shouldServeNotFound("/docs/base-url-guide"))
+	assert.False(t, manifest.shouldServeNotFound("/dashboard"))
+	assert.False(t, manifest.shouldServeNotFound("/legal"))
+
+	base := []byte(`<!doctype html><html><head><title>home</title><meta name="description" content="home" /><meta name="robots" content="index,follow" /><link rel="canonical" href="https://laoshirenai.com/" /></head><body><div id="app"></div></body></html>`)
+	body := string(manifest.renderNotFoundHTML(base, "/docs/missing"))
+
+	assert.Contains(t, body, `<title>页面未找到 - 老实人AI</title>`)
+	assert.Contains(t, body, `content="noindex,nofollow"`)
+	assert.Contains(t, body, `<h1>页面未找到</h1>`)
 }
 
 func TestRouteAwareETag(t *testing.T) {
@@ -481,6 +513,54 @@ func TestFrontendServer_Middleware(t *testing.T) {
 				assert.Contains(t, w.Header().Get("Content-Type"), "text/html")
 			})
 		}
+	})
+
+	t.Run("serves_static_seo_body_for_public_docs", func(t *testing.T) {
+		provider := &mockSettingsProvider{
+			settings: map[string]string{"test": "value"},
+		}
+
+		server, err := NewFrontendServer(provider)
+		require.NoError(t, err)
+
+		router := gin.New()
+		router.Use(func(c *gin.Context) {
+			c.Set(middleware.CSPNonceKey, "test-nonce")
+			c.Next()
+		})
+		router.Use(server.Middleware())
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/docs/claude-code-china-guide", nil)
+		router.ServeHTTP(w, req)
+
+		body := w.Body.String()
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, body, "Claude Code 国内使用完整指南")
+		assert.Contains(t, body, `<main class="seo-static-content">`)
+		assert.Contains(t, body, `data-seo="server-structured-data"`)
+		assert.Contains(t, body, `"@type":"FAQPage"`)
+	})
+
+	t.Run("serves_noindex_404_for_missing_public_routes", func(t *testing.T) {
+		provider := &mockSettingsProvider{
+			settings: map[string]string{"test": "value"},
+		}
+
+		server, err := NewFrontendServer(provider)
+		require.NoError(t, err)
+
+		router := gin.New()
+		router.Use(server.Middleware())
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/docs/__missing__", nil)
+		router.ServeHTTP(w, req)
+
+		body := w.Body.String()
+		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Contains(t, body, `<meta name="robots" content="noindex,nofollow"`)
+		assert.Contains(t, body, "页面未找到")
 	})
 
 	t.Run("serves_static_files", func(t *testing.T) {

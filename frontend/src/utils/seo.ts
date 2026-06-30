@@ -149,10 +149,19 @@ function setCanonical(url: string): void {
   element.setAttribute('href', url)
 }
 
-function setStructuredData(data: Record<string, unknown> | null): void {
+function setStructuredData(data: Record<string, unknown> | null, canonicalUrl: string): void {
   document.head
-    .querySelectorAll<HTMLScriptElement>('script[type="application/ld+json"][data-seo]')
+    .querySelectorAll<HTMLScriptElement>('script[type="application/ld+json"][data-seo="structured-data"]')
     .forEach((element) => element.remove())
+
+  document.head
+    .querySelectorAll<HTMLScriptElement>('script[type="application/ld+json"][data-seo="server-structured-data"]')
+    .forEach((element) => {
+      const serverCanonical = element.dataset.canonical
+      if (serverCanonical && serverCanonical.replace(/\/$/, '') !== canonicalUrl.replace(/\/$/, '')) {
+        element.remove()
+      }
+    })
 
   if (!data) return
 
@@ -318,5 +327,5 @@ export function updateRouteSeo(route: RouteLocationNormalizedLoaded, options: Se
   setMetaByName('twitter:description', seo.description)
   setMetaByName('twitter:image', ogImage)
 
-  setStructuredData(seo.structuredData)
+  setStructuredData(seo.structuredData, seo.canonicalUrl)
 }

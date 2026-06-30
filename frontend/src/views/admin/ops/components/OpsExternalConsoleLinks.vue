@@ -41,7 +41,7 @@ const consoleLinks = [
     icon: 'gift',
     label: '链动小铺后台',
     description: '管理卡密商品、库存、订单和自动发货。',
-    url: 'https://www.ldxp.cn/admin'
+    url: 'https://www.ldxp.cn/merchant/dashboard/workplace'
   }
 ] as const satisfies readonly ConsoleLink[]
 

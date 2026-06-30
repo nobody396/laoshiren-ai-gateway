@@ -197,7 +197,7 @@ const monthlyCreditCardPlanInputs = [
     id: 'apex',
     name: 'Apex 月卡',
     priceCny: 1299,
-    directPriceCny: 1299,
+    directPriceCny: 1275,
     dailyCredits: 96.6,
     description: '传说级长任务通行证，面向连续编排、海量审查与整月高频开发。',
     legendaryCopy: '黑金权限已铸成：适合把大型重构、长上下文代理和批量审查一次推到底。',

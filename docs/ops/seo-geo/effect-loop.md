@@ -28,6 +28,7 @@ docs/ops/seo-geo/data/YYYY-MM-DD/
   gsc-query-page.json      # 有 GSC 凭证时
   ga4-pages.json           # 有 GA4 凭证时
   ga4-events.json          # 有 GA4 凭证时
+  ga4-realtime.json        # 有 GA4 凭证时，记录最近 30 分钟事件
 ```
 
 缺凭证时不会失败，会在 `manifest.json` 和 `README.md` 里写明跳过原因。

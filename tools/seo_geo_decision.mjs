@@ -162,6 +162,7 @@ const report = [
   `- GSC：${manifest.outputs?.gsc ? '有' : '缺失'}`,
   `- GA4 页面：${manifest.outputs?.ga4Pages ? '有' : '缺失'}`,
   `- GA4 事件：${manifest.outputs?.ga4Events ? '有' : '缺失'}`,
+  `- GA4 Realtime：${manifest.outputs?.ga4Realtime ? '有' : '缺失'}`,
   '',
   '## P0 页面仪表盘',
   '',

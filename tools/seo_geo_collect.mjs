@@ -155,6 +155,27 @@ async function collectGA4() {
   }))
   writeJSON(path.join(outDir, 'ga4-events.json'), { propertyId, startDate, endDate, rows: eventRows })
   manifest.outputs.ga4Events = path.join(outDir, 'ga4-events.json')
+
+  try {
+    const realtimeEndpoint = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runRealtimeReport`
+    const realtimeData = await httpJSON(realtimeEndpoint, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        dimensions: [{ name: 'eventName' }],
+        metrics: [{ name: 'eventCount' }],
+        limit: '50',
+      }),
+    })
+    const realtimeRows = (realtimeData.rows || []).map((row) => ({
+      eventName: row.dimensionValues?.[0]?.value || '',
+      eventCount: Number(row.metricValues?.[0]?.value || 0),
+    }))
+    writeJSON(path.join(outDir, 'ga4-realtime.json'), { propertyId, generatedAt: new Date().toISOString(), rows: realtimeRows })
+    manifest.outputs.ga4Realtime = path.join(outDir, 'ga4-realtime.json')
+  } catch (error) {
+    manifest.failed.push({ source: 'ga4Realtime', error: String(error.message || error).slice(0, 1000) })
+  }
 }
 
 async function main() {

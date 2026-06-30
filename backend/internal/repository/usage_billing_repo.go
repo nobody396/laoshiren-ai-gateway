@@ -176,6 +176,9 @@ func incrementUsageBillingSubscription(ctx context.Context, tx *sql.Tx, subscrip
 		return incrementUsageBillingSharedSubscription(ctx, tx, target, marker, costUSD)
 	}
 	if err := incrementUsageBillingSingleSubscription(ctx, tx, subscriptionID, costUSD); err != nil {
+		if isUsageBillingLimitExceeded(err) {
+			return capUsageBillingSingleSubscription(ctx, tx, target, costUSD)
+		}
 		return nil, err
 	}
 	return []service.SubscriptionUsageUpdate{{
@@ -304,13 +307,13 @@ func incrementUsageBillingSharedSubscription(ctx context.Context, tx *sql.Tx, ta
 	}
 
 	if usageBillingLimitExceeded(dailyUsage, dailyLimit, costUSD) {
-		return nil, service.ErrDailyLimitExceeded
+		return capUsageBillingSharedSubscriptions(ctx, tx, target, explicitNeedle, legacyNeedle, costUSD, true, false, false)
 	}
 	if usageBillingLimitExceeded(weeklyUsage, weeklyLimit, costUSD) {
-		return nil, service.ErrWeeklyLimitExceeded
+		return capUsageBillingSharedSubscriptions(ctx, tx, target, explicitNeedle, legacyNeedle, costUSD, false, true, false)
 	}
 	if usageBillingLimitExceeded(monthlyUsage, monthlyLimit, costUSD) {
-		return nil, service.ErrMonthlyLimitExceeded
+		return capUsageBillingSharedSubscriptions(ctx, tx, target, explicitNeedle, legacyNeedle, costUSD, false, false, true)
 	}
 
 	newDailyUsage := dailyUsage + costUSD
@@ -351,6 +354,121 @@ func incrementUsageBillingSharedSubscription(ctx context.Context, tx *sql.Tx, ta
 		updates = append(updates, update)
 	}
 	if err := updateRows.Err(); err != nil {
+		return nil, err
+	}
+	if len(updates) == 0 {
+		return nil, service.ErrSubscriptionNotFound
+	}
+	return updates, nil
+}
+
+func isUsageBillingLimitExceeded(err error) bool {
+	return errors.Is(err, service.ErrDailyLimitExceeded) ||
+		errors.Is(err, service.ErrWeeklyLimitExceeded) ||
+		errors.Is(err, service.ErrMonthlyLimitExceeded)
+}
+
+func capUsageBillingSingleSubscription(ctx context.Context, tx *sql.Tx, target *usageBillingSubscriptionTarget, costUSD float64) ([]service.SubscriptionUsageUpdate, error) {
+	res, err := tx.ExecContext(ctx, `
+		UPDATE user_subscriptions us
+		SET
+			daily_usage_usd = CASE
+				WHEN g.daily_limit_usd IS NOT NULL AND g.daily_limit_usd > 0 AND us.daily_usage_usd + $1 > g.daily_limit_usd
+					THEN g.daily_limit_usd
+				ELSE us.daily_usage_usd
+			END,
+			weekly_usage_usd = CASE
+				WHEN g.weekly_limit_usd IS NOT NULL AND g.weekly_limit_usd > 0 AND us.weekly_usage_usd + $1 > g.weekly_limit_usd
+					THEN g.weekly_limit_usd
+				ELSE us.weekly_usage_usd
+			END,
+			monthly_usage_usd = CASE
+				WHEN g.monthly_limit_usd IS NOT NULL AND g.monthly_limit_usd > 0 AND us.monthly_usage_usd + $1 > g.monthly_limit_usd
+					THEN g.monthly_limit_usd
+				ELSE us.monthly_usage_usd
+			END,
+			updated_at = NOW()
+		FROM groups g
+		WHERE us.id = $2
+			AND us.deleted_at IS NULL
+			AND us.group_id = g.id
+			AND g.deleted_at IS NULL
+	`, costUSD, target.ID)
+	if err != nil {
+		return nil, err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+	if affected == 0 {
+		return nil, service.ErrSubscriptionNotFound
+	}
+	return []service.SubscriptionUsageUpdate{{
+		UserID:  target.UserID,
+		GroupID: target.GroupID,
+		CostUSD: costUSD,
+	}}, nil
+}
+
+func capUsageBillingSharedSubscriptions(
+	ctx context.Context,
+	tx *sql.Tx,
+	target *usageBillingSubscriptionTarget,
+	explicitNeedle string,
+	legacyNeedle string,
+	costUSD float64,
+	capDaily bool,
+	capWeekly bool,
+	capMonthly bool,
+) ([]service.SubscriptionUsageUpdate, error) {
+	rows, err := tx.QueryContext(ctx, `
+		UPDATE user_subscriptions us
+		SET
+			daily_usage_usd = CASE
+				WHEN $5 AND g.daily_limit_usd IS NOT NULL AND g.daily_limit_usd > 0
+					THEN g.daily_limit_usd
+				ELSE us.daily_usage_usd
+			END,
+			weekly_usage_usd = CASE
+				WHEN $6 AND g.weekly_limit_usd IS NOT NULL AND g.weekly_limit_usd > 0
+					THEN g.weekly_limit_usd
+				ELSE us.weekly_usage_usd
+			END,
+			monthly_usage_usd = CASE
+				WHEN $7 AND g.monthly_limit_usd IS NOT NULL AND g.monthly_limit_usd > 0
+					THEN g.monthly_limit_usd
+				ELSE us.monthly_usage_usd
+			END,
+			updated_at = NOW()
+		FROM groups g
+		WHERE us.user_id = $1
+			AND us.deleted_at IS NULL
+			AND us.status = $2
+			AND us.expires_at > NOW()
+			AND us.group_id = g.id
+			AND g.deleted_at IS NULL
+			AND (
+				STRPOS(COALESCE(us.notes, ''), $3) > 0
+				OR ($4 <> '' AND STRPOS(COALESCE(us.notes, ''), $4) > 0)
+			)
+		RETURNING us.user_id, us.group_id
+	`, target.UserID, service.SubscriptionStatusActive, explicitNeedle, legacyNeedle, capDaily, capWeekly, capMonthly)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	updates := make([]service.SubscriptionUsageUpdate, 0, 2)
+	for rows.Next() {
+		var update service.SubscriptionUsageUpdate
+		if err := rows.Scan(&update.UserID, &update.GroupID); err != nil {
+			return nil, err
+		}
+		update.CostUSD = costUSD
+		updates = append(updates, update)
+	}
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	if len(updates) == 0 {

@@ -2,6 +2,12 @@ package service
 
 import "time"
 
+// SubscriptionUsageLimitEpsilonUSD is the smallest remaining subscription
+// balance we still treat as usable. It closes floating-point / decimal tail
+// gaps such as 449.9999175202 / 450.00000000, where the UI is already full and
+// any real model request would exceed the cap after the response has streamed.
+const SubscriptionUsageLimitEpsilonUSD = 0.0001
+
 type UserSubscription struct {
 	ID      int64
 	UserID  int64
@@ -99,21 +105,21 @@ func (s *UserSubscription) CheckDailyLimit(group *Group, additionalCost float64)
 	if !group.HasDailyLimit() {
 		return true
 	}
-	return s.DailyUsageUSD+additionalCost <= *group.DailyLimitUSD
+	return subscriptionUsageWithinLimit(s.DailyUsageUSD, *group.DailyLimitUSD, additionalCost)
 }
 
 func (s *UserSubscription) CheckWeeklyLimit(group *Group, additionalCost float64) bool {
 	if !group.HasWeeklyLimit() {
 		return true
 	}
-	return s.WeeklyUsageUSD+additionalCost <= *group.WeeklyLimitUSD
+	return subscriptionUsageWithinLimit(s.WeeklyUsageUSD, *group.WeeklyLimitUSD, additionalCost)
 }
 
 func (s *UserSubscription) CheckMonthlyLimit(group *Group, additionalCost float64) bool {
 	if !group.HasMonthlyLimit() {
 		return true
 	}
-	return s.MonthlyUsageUSD+additionalCost <= *group.MonthlyLimitUSD
+	return subscriptionUsageWithinLimit(s.MonthlyUsageUSD, *group.MonthlyLimitUSD, additionalCost)
 }
 
 func (s *UserSubscription) CheckAllLimits(group *Group, additionalCost float64) (daily, weekly, monthly bool) {
@@ -121,4 +127,15 @@ func (s *UserSubscription) CheckAllLimits(group *Group, additionalCost float64) 
 	weekly = s.CheckWeeklyLimit(group, additionalCost)
 	monthly = s.CheckMonthlyLimit(group, additionalCost)
 	return
+}
+
+func subscriptionUsageWithinLimit(current, limit, additionalCost float64) bool {
+	if limit <= 0 {
+		return true
+	}
+	remaining := limit - current - additionalCost
+	if remaining < 0 {
+		return false
+	}
+	return remaining > SubscriptionUsageLimitEpsilonUSD
 }

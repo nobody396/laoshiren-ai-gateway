@@ -42,7 +42,7 @@ func TestUsageBillingRepositoryApply_BalanceFinalLimitRollbackOnInsufficientFund
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestUsageBillingRepositoryApply_SubscriptionFinalLimitRollbackOnDailyOverage(t *testing.T) {
+func TestUsageBillingRepositoryApply_SubscriptionFinalLimitCapsDailyOverage(t *testing.T) {
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
 	require.NoError(t, err)
 	defer func() { _ = db.Close() }()
@@ -74,16 +74,23 @@ func TestUsageBillingRepositoryApply_SubscriptionFinalLimitRollbackOnDailyOverag
 			"weekly_limit_usd",
 			"monthly_limit_usd",
 		}).AddRow(9.99, 0.00, 0.00, 10.00, 0.00, 0.00))
-	mock.ExpectRollback()
+	mock.ExpectExec(`UPDATE user_subscriptions us\s+SET`).
+		WithArgs(1.00, subscriptionID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
 
-	_, err = repo.Apply(context.Background(), &service.UsageBillingCommand{
+	result, err := repo.Apply(context.Background(), &service.UsageBillingCommand{
 		RequestID:        "req-sub-overage",
 		APIKeyID:         22,
 		UserID:           11,
 		SubscriptionID:   &subscriptionID,
 		SubscriptionCost: 1.00,
 	})
-	require.ErrorIs(t, err, service.ErrDailyLimitExceeded)
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.Len(t, result.SubscriptionUsageUpdates, 1)
+	require.Equal(t, int64(11), result.SubscriptionUsageUpdates[0].UserID)
+	require.Equal(t, int64(33), result.SubscriptionUsageUpdates[0].GroupID)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -145,7 +152,7 @@ func TestUsageBillingRepositoryApply_SharedSubscriptionIgnoresNilWeeklyLimit(t *
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestUsageBillingRepositoryApply_SharedSubscriptionStillRejectsMonthlyOverageWithNilWeeklyLimit(t *testing.T) {
+func TestUsageBillingRepositoryApply_SharedSubscriptionCapsMonthlyOverageWithNilWeeklyLimit(t *testing.T) {
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
 	require.NoError(t, err)
 	defer func() { _ = db.Close() }()
@@ -183,15 +190,22 @@ func TestUsageBillingRepositoryApply_SharedSubscriptionStillRejectsMonthlyOverag
 		}).
 			AddRow(subscriptionID, userID, int64(7), 0.00, 999.00, 449.80, nil, nil, 450.00).
 			AddRow(int64(56), userID, int64(11), 0.00, 998.00, 449.70, nil, nil, 450.00))
-	mock.ExpectRollback()
+	mock.ExpectQuery(`UPDATE user_subscriptions us\s+SET`).
+		WithArgs(userID, service.SubscriptionStatusActive, explicitNeedle, legacyNeedle, false, false, true).
+		WillReturnRows(sqlmock.NewRows([]string{"user_id", "group_id"}).
+			AddRow(userID, int64(7)).
+			AddRow(userID, int64(11)))
+	mock.ExpectCommit()
 
-	_, err = repo.Apply(context.Background(), &service.UsageBillingCommand{
+	result, err := repo.Apply(context.Background(), &service.UsageBillingCommand{
 		RequestID:        "req-shared-monthly-overage",
 		APIKeyID:         22,
 		UserID:           userID,
 		SubscriptionID:   &subscriptionID,
 		SubscriptionCost: 0.50,
 	})
-	require.ErrorIs(t, err, service.ErrMonthlyLimitExceeded)
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.Len(t, result.SubscriptionUsageUpdates, 2)
 	require.NoError(t, mock.ExpectationsWereMet())
 }

@@ -639,7 +639,7 @@ func startOfDay(t time.Time) time.Time {
 // rollingUsageWindowStart returns the exact activation/reset moment for usage
 // windows.
 //
-// Do not round this down to startOfDay. A 30-day subscription activated at
+// Do not round this down to startOfDay. A 31-day subscription activated at
 // 14:22 must not get its monthly window reset at 00:00 on the expiry day,
 // otherwise the customer can receive an extra partial-day quota before the
 // subscription expires.
@@ -725,7 +725,7 @@ func (s *SubscriptionService) CheckAndResetWindows(ctx context.Context, sub *Use
 		needsInvalidateCache = true
 	}
 
-	// 月窗口重置（30天）
+	// 月窗口重置（31天）
 	if sub.NeedsMonthlyReset() {
 		if err := s.userSubRepo.ResetMonthlyUsage(ctx, sub.ID, windowStart); err != nil {
 			return err
@@ -907,7 +907,7 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	// 日进度
 	if group.HasDailyLimit() && sub.DailyWindowStart != nil {
 		limit := *group.DailyLimitUSD
-		resetsAt := sub.DailyWindowStart.Add(24 * time.Hour)
+		resetsAt := subscriptionWindowResetTime(*sub.DailyWindowStart, 24*time.Hour, sub.ExpiresAt)
 		progress.Daily = &UsageWindowProgress{
 			LimitUSD:        limit,
 			UsedUSD:         sub.DailyUsageUSD,
@@ -931,7 +931,7 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	// 周进度
 	if group.HasWeeklyLimit() && sub.WeeklyWindowStart != nil {
 		limit := *group.WeeklyLimitUSD
-		resetsAt := sub.WeeklyWindowStart.Add(7 * 24 * time.Hour)
+		resetsAt := subscriptionWindowResetTime(*sub.WeeklyWindowStart, 7*24*time.Hour, sub.ExpiresAt)
 		progress.Weekly = &UsageWindowProgress{
 			LimitUSD:        limit,
 			UsedUSD:         sub.WeeklyUsageUSD,
@@ -955,7 +955,7 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	// 月进度
 	if group.HasMonthlyLimit() && sub.MonthlyWindowStart != nil {
 		limit := *group.MonthlyLimitUSD
-		resetsAt := sub.MonthlyWindowStart.Add(SubscriptionMonthlyWindowDuration)
+		resetsAt := subscriptionWindowResetTime(*sub.MonthlyWindowStart, SubscriptionMonthlyWindowDuration, sub.ExpiresAt)
 		progress.Monthly = &UsageWindowProgress{
 			LimitUSD:        limit,
 			UsedUSD:         sub.MonthlyUsageUSD,

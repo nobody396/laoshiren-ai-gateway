@@ -245,7 +245,7 @@
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span>{{ formatResetTime(row.daily_window_start, 'daily') }}</span>
+                  <span>{{ formatResetTime(row.daily_window_start, 'daily', row.expires_at) }}</span>
                 </div>
               </div>
 
@@ -282,7 +282,7 @@
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span>{{ formatResetTime(row.weekly_window_start, 'weekly') }}</span>
+                  <span>{{ formatResetTime(row.weekly_window_start, 'weekly', row.expires_at) }}</span>
                 </div>
               </div>
 
@@ -319,7 +319,7 @@
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span>{{ formatResetTime(row.monthly_window_start, 'monthly') }}</span>
+                  <span>{{ formatResetTime(row.monthly_window_start, 'monthly', row.expires_at) }}</span>
                 </div>
               </div>
 
@@ -1267,7 +1267,11 @@ const getProgressClass = (used: number | null | undefined, limit: number | null)
 }
 
 // Format reset time based on window start and period type
-const formatResetTime = (windowStart: string, period: 'daily' | 'weekly' | 'monthly'): string => {
+const formatResetTime = (
+  windowStart: string,
+  period: 'daily' | 'weekly' | 'monthly',
+  expiresAt?: string | null
+): string => {
   if (!windowStart) return t('admin.subscriptions.windowNotActive')
 
   const start = new Date(windowStart)
@@ -1285,6 +1289,13 @@ const formatResetTime = (windowStart: string, period: 'daily' | 'weekly' | 'mont
     case 'monthly':
       resetTime = new Date(start.getTime() + 31 * 24 * 60 * 60 * 1000)
       break
+  }
+
+  if (expiresAt) {
+    const expires = new Date(expiresAt)
+    if (!Number.isNaN(expires.getTime()) && resetTime.getTime() > expires.getTime()) {
+      resetTime = expires
+    }
   }
 
   const diffMs = resetTime.getTime() - now.getTime()

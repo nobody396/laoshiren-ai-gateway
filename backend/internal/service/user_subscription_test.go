@@ -36,6 +36,16 @@ func TestMonthlyResetTimeUsesThirtyOneDayCycle(t *testing.T) {
 	require.Equal(t, start.Add(31*24*time.Hour), *resetAt)
 }
 
+func TestMonthlyResetTimeIsCappedAtSubscriptionExpiry(t *testing.T) {
+	start := time.Date(2026, 6, 12, 0, 0, 0, 0, time.FixedZone("CST", 8*3600))
+	expiresAt := time.Date(2026, 7, 12, 14, 49, 41, 0, time.FixedZone("CST", 8*3600))
+
+	resetAt := (&UserSubscription{ExpiresAt: expiresAt, MonthlyWindowStart: &start}).MonthlyResetTime()
+
+	require.NotNil(t, resetAt)
+	require.Equal(t, expiresAt, *resetAt)
+}
+
 func TestDaysRemainingRoundsUpPartialDays(t *testing.T) {
 	sub := &UserSubscription{ExpiresAt: time.Now().Add(30*24*time.Hour + time.Hour)}
 

@@ -89,7 +89,7 @@ func (s *UserSubscription) DailyResetTime() *time.Time {
 	if s.DailyWindowStart == nil {
 		return nil
 	}
-	t := s.DailyWindowStart.Add(24 * time.Hour)
+	t := subscriptionWindowResetTime(*s.DailyWindowStart, 24*time.Hour, s.ExpiresAt)
 	return &t
 }
 
@@ -97,7 +97,7 @@ func (s *UserSubscription) WeeklyResetTime() *time.Time {
 	if s.WeeklyWindowStart == nil {
 		return nil
 	}
-	t := s.WeeklyWindowStart.Add(7 * 24 * time.Hour)
+	t := subscriptionWindowResetTime(*s.WeeklyWindowStart, 7*24*time.Hour, s.ExpiresAt)
 	return &t
 }
 
@@ -105,8 +105,22 @@ func (s *UserSubscription) MonthlyResetTime() *time.Time {
 	if s.MonthlyWindowStart == nil {
 		return nil
 	}
-	t := s.MonthlyWindowStart.Add(SubscriptionMonthlyWindowDuration)
+	t := subscriptionWindowResetTime(*s.MonthlyWindowStart, SubscriptionMonthlyWindowDuration, s.ExpiresAt)
 	return &t
+}
+
+// subscriptionWindowResetTime caps a quota-window reset at subscription expiry.
+//
+// A subscription cannot receive a fresh quota after it has already expired.
+// This keeps customer-facing "resets in" and "days remaining" timelines aligned
+// for one-cycle monthly cards, including legacy 30-day rows after the product
+// default moved to a 31-day cycle.
+func subscriptionWindowResetTime(windowStart time.Time, duration time.Duration, expiresAt time.Time) time.Time {
+	resetAt := windowStart.Add(duration)
+	if !expiresAt.IsZero() && resetAt.After(expiresAt) {
+		return expiresAt
+	}
+	return resetAt
 }
 
 func (s *UserSubscription) CheckDailyLimit(group *Group, additionalCost float64) bool {

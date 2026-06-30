@@ -119,7 +119,7 @@
               >
                 {{
                   t('userSubscriptions.resetIn', {
-                    time: formatResetTime(subscription.daily_window_start, 24)
+                    time: formatResetTime(subscription.daily_window_start, 24, subscription.expires_at)
                   })
                 }}
               </p>
@@ -164,7 +164,7 @@
               >
                 {{
                   t('userSubscriptions.resetIn', {
-                    time: formatResetTime(subscription.weekly_window_start, 168)
+                    time: formatResetTime(subscription.weekly_window_start, 168, subscription.expires_at)
                   })
                 }}
               </p>
@@ -209,7 +209,12 @@
               >
                 {{
                   t('userSubscriptions.resetIn', {
-                    time: formatResetTime(subscription.monthly_window_start, 720)
+                    time: formatResetTime(
+                      subscription.monthly_window_start,
+                      31 * 24,
+                      subscription.expires_at,
+                      true
+                    )
                   })
                 }}
               </p>
@@ -323,15 +328,30 @@ function getExpirationClass(expiresAt: string): string {
   return 'text-gray-700 dark:text-gray-300'
 }
 
-function formatResetTime(windowStart: string | null, windowHours: number): string {
+function formatResetTime(
+  windowStart: string | null,
+  windowHours: number,
+  expiresAt?: string | null,
+  daysOnly = false
+): string {
   if (!windowStart) return t('userSubscriptions.windowNotActive')
 
   const start = new Date(windowStart)
-  const end = new Date(start.getTime() + windowHours * 60 * 60 * 1000)
+  let end = new Date(start.getTime() + windowHours * 60 * 60 * 1000)
+  if (expiresAt) {
+    const expires = new Date(expiresAt)
+    if (!Number.isNaN(expires.getTime()) && end.getTime() > expires.getTime()) {
+      end = expires
+    }
+  }
   const now = new Date()
   const diff = end.getTime() - now.getTime()
 
   if (diff <= 0) return t('userSubscriptions.windowNotActive')
+
+  if (daysOnly) {
+    return `${Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)))}d`
+  }
 
   const hours = Math.floor(diff / (1000 * 60 * 60))
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))

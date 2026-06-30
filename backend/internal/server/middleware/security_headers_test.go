@@ -129,6 +129,7 @@ func TestSecurityHeaders(t *testing.T) {
 		assert.Contains(t, csp, "default-src 'self'")
 		assert.Contains(t, csp, "'nonce-")
 		assert.Contains(t, csp, CloudflareInsightsDomain)
+		assert.Contains(t, csp, GoogleTagManagerDomain)
 	})
 
 	t.Run("api_route_skips_csp_nonce_generation", func(t *testing.T) {
@@ -294,6 +295,7 @@ func TestEnhanceCSPPolicy(t *testing.T) {
 
 		assert.Contains(t, enhanced, NonceTemplate)
 		assert.Contains(t, enhanced, CloudflareInsightsDomain)
+		assert.Contains(t, enhanced, GoogleTagManagerDomain)
 	})
 
 	t.Run("does_not_duplicate_nonce_placeholder", func(t *testing.T) {
@@ -313,6 +315,14 @@ func TestEnhanceCSPPolicy(t *testing.T) {
 		assert.Equal(t, 1, count)
 	})
 
+	t.Run("does_not_duplicate_google_tag_manager_domain", func(t *testing.T) {
+		policy := "default-src 'self'; script-src 'self' https://www.googletagmanager.com"
+		enhanced := enhanceCSPPolicy(policy)
+
+		count := strings.Count(enhanced, GoogleTagManagerDomain)
+		assert.Equal(t, 1, count)
+	})
+
 	t.Run("handles_policy_without_script_src", func(t *testing.T) {
 		policy := "default-src 'self'"
 		enhanced := enhanceCSPPolicy(policy)
@@ -320,6 +330,7 @@ func TestEnhanceCSPPolicy(t *testing.T) {
 		assert.Contains(t, enhanced, "script-src")
 		assert.Contains(t, enhanced, NonceTemplate)
 		assert.Contains(t, enhanced, CloudflareInsightsDomain)
+		assert.Contains(t, enhanced, GoogleTagManagerDomain)
 	})
 
 	t.Run("preserves_existing_nonce", func(t *testing.T) {

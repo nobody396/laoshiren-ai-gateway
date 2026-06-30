@@ -18,6 +18,8 @@ const (
 	NonceTemplate = "__CSP_NONCE__"
 	// CloudflareInsightsDomain is the domain for Cloudflare Web Analytics
 	CloudflareInsightsDomain = "https://static.cloudflareinsights.com"
+	// GoogleTagManagerDomain is required for GA4 gtag.js loading.
+	GoogleTagManagerDomain = "https://www.googletagmanager.com"
 )
 
 // GenerateNonce generates a cryptographically secure random nonce.
@@ -109,6 +111,11 @@ func enhanceCSPPolicy(policy string) string {
 	// Add Cloudflare Insights domain to script-src if not present
 	if !strings.Contains(policy, CloudflareInsightsDomain) {
 		policy = addToDirective(policy, "script-src", CloudflareInsightsDomain)
+	}
+
+	// Add Google Tag Manager domain so GA4 gtag.js can load under CSP.
+	if !strings.Contains(policy, GoogleTagManagerDomain) {
+		policy = addToDirective(policy, "script-src", GoogleTagManagerDomain)
 	}
 
 	return policy

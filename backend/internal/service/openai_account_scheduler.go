@@ -361,6 +361,7 @@ func (s *defaultOpenAIAccountScheduler) selectBySessionHash(
 type openAIAccountCandidateScore struct {
 	account     *Account
 	loadInfo    *AccountLoadInfo
+	priority    int
 	score       float64
 	compactTier int
 	errorRate   float64
@@ -406,6 +407,8 @@ func isOpenAIAccountCandidateBetter(left openAIAccountCandidateScore, right open
 	if left.score != right.score {
 		return left.score > right.score
 	}
+	// This low-level ranking is used inside a priority bucket. Group-level
+	// priority ordering is enforced by buildOpenAIPriorityAwareSelectionOrder.
 	if left.account.Priority != right.account.Priority {
 		return left.account.Priority < right.account.Priority
 	}
@@ -563,6 +566,37 @@ func buildOpenAIWeightedSelectionOrder(
 	return order
 }
 
+func buildOpenAIPriorityAwareSelectionOrder(
+	candidates []openAIAccountCandidateScore,
+	req OpenAIAccountScheduleRequest,
+	topK int,
+) []openAIAccountCandidateScore {
+	if len(candidates) <= 1 {
+		return append([]openAIAccountCandidateScore(nil), candidates...)
+	}
+
+	buckets := make(map[int][]openAIAccountCandidateScore)
+	priorities := make([]int, 0, len(candidates))
+	seen := make(map[int]struct{}, len(candidates))
+	for _, candidate := range candidates {
+		priority := candidate.priority
+		buckets[priority] = append(buckets[priority], candidate)
+		if _, ok := seen[priority]; !ok {
+			seen[priority] = struct{}{}
+			priorities = append(priorities, priority)
+		}
+	}
+	sort.Ints(priorities)
+
+	ordered := make([]openAIAccountCandidateScore, 0, len(candidates))
+	for _, priority := range priorities {
+		bucket := buckets[priority]
+		ranked := selectTopKOpenAICandidates(bucket, topK)
+		ordered = append(ordered, buildOpenAIWeightedSelectionOrder(ranked, req)...)
+	}
+	return ordered
+}
+
 func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 	ctx context.Context,
 	req OpenAIAccountScheduleRequest,
@@ -619,7 +653,8 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 		}
 	}
 
-	minPriority, maxPriority := filtered[0].Priority, filtered[0].Priority
+	minPriority := filtered[0].EffectivePriorityForGroup(req.GroupID)
+	maxPriority := minPriority
 	maxWaiting := 1
 	loadRateSum := 0.0
 	loadRateSumSquares := 0.0
@@ -627,15 +662,16 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 	hasTTFTSample := false
 	candidates := make([]openAIAccountCandidateScore, 0, len(filtered))
 	for _, account := range filtered {
+		effectivePriority := account.EffectivePriorityForGroup(req.GroupID)
 		loadInfo := loadMap[account.ID]
 		if loadInfo == nil {
 			loadInfo = &AccountLoadInfo{AccountID: account.ID}
 		}
-		if account.Priority < minPriority {
-			minPriority = account.Priority
+		if effectivePriority < minPriority {
+			minPriority = effectivePriority
 		}
-		if account.Priority > maxPriority {
-			maxPriority = account.Priority
+		if effectivePriority > maxPriority {
+			maxPriority = effectivePriority
 		}
 		if loadInfo.WaitingCount > maxWaiting {
 			maxWaiting = loadInfo.WaitingCount
@@ -664,6 +700,7 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 		candidates = append(candidates, openAIAccountCandidateScore{
 			account:     account,
 			loadInfo:    loadInfo,
+			priority:    effectivePriority,
 			compactTier: compactTier,
 			errorRate:   errorRate,
 			ttft:        ttft,
@@ -677,7 +714,7 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 		item := &candidates[i]
 		priorityFactor := 1.0
 		if maxPriority > minPriority {
-			priorityFactor = 1 - float64(item.account.Priority-minPriority)/float64(maxPriority-minPriority)
+			priorityFactor = 1 - float64(item.priority-minPriority)/float64(maxPriority-minPriority)
 		}
 		loadFactor := 1 - clamp01(float64(item.loadInfo.LoadRate)/100.0)
 		queueFactor := 1 - clamp01(float64(item.loadInfo.WaitingCount)/float64(maxWaiting))
@@ -701,8 +738,7 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 	if topK <= 0 {
 		topK = 1
 	}
-	rankedCandidates := selectTopKOpenAICandidates(candidates, topK)
-	selectionOrder := buildOpenAIWeightedSelectionOrder(rankedCandidates, req)
+	selectionOrder := buildOpenAIPriorityAwareSelectionOrder(candidates, req, topK)
 
 	for i := 0; i < len(selectionOrder); i++ {
 		candidate := selectionOrder[i]

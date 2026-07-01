@@ -84,6 +84,108 @@ func TestOpenAIGatewayService_SelectAccountForModelWithExclusions_SkipsFreshlyRa
 	require.Equal(t, int64(32002), account.ID)
 }
 
+func TestOpenAIGatewayService_SelectAccountWithScheduler_UsesGroupPriorityBeforeGlobalPriority(t *testing.T) {
+	ctx := context.Background()
+	groupID := int64(7)
+	monthlyPreferred := Account{
+		ID:          15,
+		Name:        "pomoai-codexplus-0.12",
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 20,
+		Priority:    50,
+		AccountGroups: []AccountGroup{
+			{AccountID: 15, GroupID: groupID, Priority: 1},
+		},
+	}
+	monthlyBackup := Account{
+		ID:          12,
+		Name:        "pomoai-monthly-codex-0.2",
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 20,
+		Priority:    1,
+		AccountGroups: []AccountGroup{
+			{AccountID: 12, GroupID: groupID, Priority: 2},
+		},
+	}
+
+	svc := &OpenAIGatewayService{
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{monthlyBackup, monthlyPreferred}},
+		cfg:                &config.Config{},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
+	}
+
+	selection, decision, err := svc.SelectAccountWithScheduler(ctx, &groupID, "", "", "gpt-5.5", nil, OpenAIUpstreamTransportAny)
+	require.NoError(t, err)
+	require.NotNil(t, selection)
+	require.NotNil(t, selection.Account)
+	require.Equal(t, int64(15), selection.Account.ID)
+	require.Equal(t, openAIAccountScheduleLayerLoadBalance, decision.Layer)
+	require.Equal(t, 2, decision.CandidateCount)
+	if selection.ReleaseFunc != nil {
+		selection.ReleaseFunc()
+	}
+}
+
+func TestOpenAIGatewayService_SelectAccountWithScheduler_FallsBackToNextGroupPriorityWhenPreferredExcluded(t *testing.T) {
+	ctx := context.Background()
+	groupID := int64(7)
+	monthlyPreferred := Account{
+		ID:          15,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 20,
+		Priority:    50,
+		AccountGroups: []AccountGroup{
+			{AccountID: 15, GroupID: groupID, Priority: 1},
+		},
+	}
+	monthlyBackup := Account{
+		ID:          12,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 20,
+		Priority:    1,
+		AccountGroups: []AccountGroup{
+			{AccountID: 12, GroupID: groupID, Priority: 2},
+		},
+	}
+
+	svc := &OpenAIGatewayService{
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{monthlyBackup, monthlyPreferred}},
+		cfg:                &config.Config{},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
+	}
+
+	selection, decision, err := svc.SelectAccountWithScheduler(
+		ctx,
+		&groupID,
+		"",
+		"",
+		"gpt-5.5",
+		map[int64]struct{}{15: {}},
+		OpenAIUpstreamTransportAny,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, selection)
+	require.NotNil(t, selection.Account)
+	require.Equal(t, int64(12), selection.Account.ID)
+	require.Equal(t, openAIAccountScheduleLayerLoadBalance, decision.Layer)
+	require.Equal(t, 1, decision.CandidateCount)
+	if selection.ReleaseFunc != nil {
+		selection.ReleaseFunc()
+	}
+}
+
 func TestOpenAIGatewayService_SelectAccountWithScheduler_PreviousResponseSticky(t *testing.T) {
 	ctx := context.Background()
 	groupID := int64(9)

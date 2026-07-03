@@ -16,13 +16,48 @@ jobs:
   check:
     name: Check production availability
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
 
     steps:
       - name: Check public endpoints
         shell: bash
         run: |
           set -euo pipefail
+          failures=()
+          site_home_status="not_checked"
+          site_home_reason="unknown"
+          site_home_total="unknown"
+          site_health_status="not_checked"
+          site_health_reason="unknown"
+          site_health_total="unknown"
+          api_health_status="not_checked"
+          api_health_reason="unknown"
+          api_health_total="unknown"
+
+          set_endpoint_result() {
+            local name="$1"
+            local status="$2"
+            local reason="$3"
+            local total="$4"
+
+            case "$name" in
+              site_home)
+                site_home_status="$status"
+                site_home_reason="$reason"
+                site_home_total="$total"
+                ;;
+              site_health)
+                site_health_status="$status"
+                site_health_reason="$reason"
+                site_health_total="$total"
+                ;;
+              api_health)
+                api_health_status="$status"
+                api_health_reason="$reason"
+                api_health_total="$total"
+                ;;
+            esac
+          }
 
           check_endpoint() {
             local name="$1"
@@ -32,31 +67,89 @@ jobs:
             local attempt
             local output
             local code
+            local connect
+            local tls
+            local first_byte
             local seconds
+            local remote_ip
+            local reason
+            local body_file="/tmp/uptime-${name}-body.txt"
+            local error_file="/tmp/uptime-${name}-curl.err"
 
             for attempt in 1 2 3; do
-              output="$(curl -sS -o /tmp/uptime-body.txt -w '%{http_code} %{time_total}' --connect-timeout 5 --max-time 20 "$url" || true)"
-              code="$(awk '{print $1}' <<< "$output")"
-              seconds="$(awk '{print $2}' <<< "$output")"
+              rm -f "$body_file" "$error_file"
+              output="$(curl -sS -o "$body_file" -w '%{http_code} %{time_connect} %{time_appconnect} %{time_starttransfer} %{time_total} %{remote_ip}' --connect-timeout 10 --max-time 20 "$url" 2>"$error_file" || true)"
+              read -r code connect tls first_byte seconds remote_ip <<< "${output:-}"
 
-              echo "[$name] attempt=$attempt status=${code:-curl_failed} time=${seconds:-unknown}s url=$url"
+              if [[ "${code:-}" == "$expected" ]] && awk -v t="${seconds:-999}" -v m="$max_seconds" 'BEGIN { exit !(t <= m) }'; then
+                reason="ok"
+              elif [[ "${code:-}" == "000" ]]; then
+                reason="connect_or_network_timeout"
+              elif [[ "${code:-0}" =~ ^5 ]]; then
+                reason="server_or_edge_5xx"
+              elif [[ "${code:-}" == "$expected" ]]; then
+                reason="slow_response"
+              else
+                reason="unexpected_status"
+              fi
 
-              if [[ "$code" == "$expected" ]] && awk -v t="${seconds:-999}" -v m="$max_seconds" 'BEGIN { exit !(t <= m) }'; then
+              set_endpoint_result "$name" "${code:-curl_failed}" "$reason" "${seconds:-unknown}"
+
+              echo "[$name] attempt=$attempt status=${code:-curl_failed} reason=$reason connect=${connect:-unknown}s tls=${tls:-unknown}s first_byte=${first_byte:-unknown}s total=${seconds:-unknown}s remote=${remote_ip:-unknown} url=$url"
+
+              if [[ "$reason" == "ok" ]]; then
                 return 0
               fi
 
-              sleep 10
+              if [[ "$attempt" != "3" ]]; then
+                sleep 5
+              fi
             done
 
-            echo "::error title=${name} unavailable::Expected HTTP $expected within ${max_seconds}s for $url, got status=${code:-curl_failed} time=${seconds:-unknown}s"
-            if [[ -s /tmp/uptime-body.txt ]]; then
+            echo "::error title=${name} ${reason}::Expected HTTP $expected within ${max_seconds}s for $url, got status=${code:-curl_failed} reason=$reason time=${seconds:-unknown}s"
+            if [[ -s "$error_file" ]]; then
+              echo "Last curl error:"
+              head -c 500 "$error_file" || true
+              echo
+            fi
+            if [[ -s "$body_file" ]]; then
               echo "Last response body preview:"
-              head -c 500 /tmp/uptime-body.txt || true
+              head -c 500 "$body_file" || true
               echo
             fi
             return 1
           }
 
-          check_endpoint "site_home" "https://laoshirenai.com" "200" "10"
-          check_endpoint "site_health" "https://laoshirenai.com/health" "200" "5"
-          check_endpoint "api_health" "https://api.laoshirenai.com/health" "200" "5"
+          if ! check_endpoint "site_home" "https://laoshirenai.com" "200" "10"; then
+            failures+=("site_home")
+          fi
+          if ! check_endpoint "site_health" "https://laoshirenai.com/health" "200" "5"; then
+            failures+=("site_health")
+          fi
+          if ! check_endpoint "api_health" "https://api.laoshirenai.com/health" "200" "5"; then
+            failures+=("api_health")
+          fi
+
+          if (( ${#failures[@]} == 0 )); then
+            echo "All production endpoint checks passed."
+            exit 0
+          fi
+
+          echo "::group::Uptime failure classification"
+          echo "Failed endpoints: ${failures[*]}"
+          echo "[site_home] final_status=$site_home_status reason=$site_home_reason total=${site_home_total}s"
+          echo "[site_health] final_status=$site_health_status reason=$site_health_reason total=${site_health_total}s"
+          echo "[api_health] final_status=$api_health_status reason=$api_health_reason total=${api_health_total}s"
+
+          if [[ " ${failures[*]} " == *" site_home "* && " ${failures[*]} " != *" site_health "* && " ${failures[*]} " != *" api_health "* ]]; then
+            echo "::warning title=Homepage edge path degraded::The homepage check failed, but both health endpoints passed. This points to a public edge/homepage path issue rather than a full production outage."
+          elif [[ " ${failures[*]} " == *" api_health "* ]]; then
+            echo "::error title=API health failed::The API health endpoint failed; treat this as production-impacting until the source server and app logs prove otherwise."
+          elif [[ " ${failures[*]} " == *" site_health "* ]]; then
+            echo "::error title=Site health failed::The site health endpoint failed; check EdgeOne, Traefik, and app health."
+          else
+            echo "::error title=Public connectivity failed::The public monitor could not prove availability from the GitHub runner."
+          fi
+          echo "::endgroup::"
+
+          exit 1

@@ -5,8 +5,11 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"io/fs"
+	"strings"
 	"testing"
 
+	embeddedmigrations "github.com/bozhouDev/DragonCode-sub2api/migrations"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,10 +19,12 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	// Re-apply migrations to verify idempotency (no errors, no duplicate rows).
 	require.NoError(t, ApplyMigrations(context.Background(), integrationDB))
 
-	// schema_migrations should have at least the current migration set.
+	// The integration harness starts from an empty schema. Every prerequisite,
+	// including the immutable migration-138 compatibility seed, must therefore
+	// come from the embedded forward-only migration stream itself.
 	var applied int
 	require.NoError(t, tx.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM schema_migrations").Scan(&applied))
-	require.GreaterOrEqual(t, applied, 7, "expected schema_migrations to contain applied migrations")
+	require.Equal(t, nonEmptyEmbeddedMigrationCount(t), applied, "every non-empty embedded migration must be recorded exactly once")
 
 	// users: columns required by repository queries
 	requireColumn(t, tx, "users", "username", "character varying", 100, false)
@@ -88,6 +93,48 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 
 	// user_allowed_groups: created_at should be timestamptz
 	requireColumn(t, tx, "user_allowed_groups", "created_at", "timestamp with time zone", 0, false)
+
+	// migration 142: legacy rollback compensation and old-image compatibility
+	requireColumn(t, tx, "users", "wechat", "character varying", 100, false)
+
+	var activeWechatDefinitions int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT COUNT(*)
+FROM user_attribute_definitions
+WHERE key = 'wechat' AND deleted_at IS NULL AND enabled = true
+`).Scan(&activeWechatDefinitions))
+	require.Equal(t, 1, activeWechatDefinitions, "expected exactly one active wechat attribute definition")
+
+	var opsAlertSilencesRegclass sql.NullString
+	require.NoError(t, tx.QueryRowContext(context.Background(), "SELECT to_regclass('public.ops_alert_silences')").Scan(&opsAlertSilencesRegclass))
+	require.True(t, opsAlertSilencesRegclass.Valid, "expected ops_alert_silences table to exist")
+	requireIndex(t, tx, "ops_alert_silences", "idx_ops_alert_silences_lookup")
+
+	var unsafeFreshCompatibilityGroups int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT COUNT(*)
+FROM groups
+WHERE description = '[fresh-install compatibility template] Disabled source for the immutable Apex group migration.'
+  AND status <> 'disabled'
+`).Scan(&unsafeFreshCompatibilityGroups))
+	require.Zero(t, unsafeFreshCompatibilityGroups, "fresh-install compatibility groups must remain disabled")
+}
+
+func nonEmptyEmbeddedMigrationCount(t *testing.T) int {
+	t.Helper()
+
+	files, err := fs.Glob(embeddedmigrations.FS, "*.sql")
+	require.NoError(t, err)
+
+	count := 0
+	for _, name := range files {
+		content, readErr := fs.ReadFile(embeddedmigrations.FS, name)
+		require.NoError(t, readErr, name)
+		if strings.TrimSpace(string(content)) != "" {
+			count++
+		}
+	}
+	return count
 }
 
 func requireIndex(t *testing.T, tx *sql.Tx, table, index string) {

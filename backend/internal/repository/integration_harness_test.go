@@ -35,9 +35,10 @@ const (
 )
 
 var (
-	integrationDB        *sql.DB
-	integrationEntClient *dbent.Client
-	integrationRedis     *redisclient.Client
+	integrationDB                     *sql.DB
+	integrationEntClient              *dbent.Client
+	integrationRedis                  *redisclient.Client
+	rawBlankMigration138Characterized bool
 
 	redisNamespaceSeq uint64
 )
@@ -96,8 +97,39 @@ func TestMain(m *testing.M) {
 		log.Printf("failed to open sql db: %v", err)
 		os.Exit(1)
 	}
+	// A raw blank schema reaches immutable migration 138 without its two domain
+	// source groups. Characterize that declared prerequisite and prove the failed
+	// migration is not recorded before supplying isolated integration fixtures.
+	rawBlankErr := ApplyMigrations(ctx, integrationDB)
+	if rawBlankErr == nil || !strings.Contains(rawBlankErr.Error(), "source group GPT Ultra 月卡组 not found") {
+		log.Printf("raw blank migration characterization failed: expected migration 138 source-group error, got %v", rawBlankErr)
+		os.Exit(1)
+	}
+	var migration138Records int
+	if err := integrationDB.QueryRowContext(ctx, `
+SELECT COUNT(*) FROM schema_migrations
+WHERE filename = '138_add_apex_monthly_card_groups.sql'
+`).Scan(&migration138Records); err != nil {
+		log.Printf("failed to verify migration 138 rollback: %v", err)
+		os.Exit(1)
+	}
+	if migration138Records != 0 {
+		log.Printf("raw blank migration characterization failed: migration 138 was recorded after failure")
+		os.Exit(1)
+	}
+	rawBlankMigration138Characterized = true
+	log.Printf("migration_bootstrap=characterized raw_blank_stopped_at=138 record_count=0 prerequisite=ultra_source_groups")
+
+	if err := seedMigration138DomainPrerequisites(ctx, integrationDB); err != nil {
+		log.Printf("failed to declare migration 138 domain prerequisites: %v", err)
+		os.Exit(1)
+	}
 	if err := ApplyMigrations(ctx, integrationDB); err != nil {
-		log.Printf("failed to apply db migrations: %v", err)
+		log.Printf("failed to apply db migrations after declared domain prerequisites: %v", err)
+		os.Exit(1)
+	}
+	if err := retireMigration138DomainPrerequisites(ctx, integrationDB); err != nil {
+		log.Printf("failed to isolate migration 138 integration fixtures: %v", err)
 		os.Exit(1)
 	}
 
@@ -132,6 +164,60 @@ func TestMain(m *testing.M) {
 	_ = integrationDB.Close()
 
 	os.Exit(code)
+}
+
+// TestIntegrationHarnessSentinel proves the required integration gate reached
+// both real Testcontainers dependencies. The Makefile requires this exact test
+// to pass, so a package-wide skip cannot be reported as a green release gate.
+func TestIntegrationHarnessSentinel(t *testing.T) {
+	t.Helper()
+	require.NotNil(t, integrationDB, "postgres integration database must be initialized")
+	require.NotNil(t, integrationRedis, "redis integration client must be initialized")
+	require.True(t, rawBlankMigration138Characterized, "raw blank migration 138 prerequisite characterization must execute")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var postgresVersion string
+	require.NoError(t, integrationDB.QueryRowContext(ctx, "SHOW server_version").Scan(&postgresVersion))
+	require.NoError(t, integrationRedis.Ping(ctx).Err())
+	t.Logf(
+		"integration_sentinel=ready postgres_image=%s postgres_version=%s redis_image=%s",
+		postgresImageTag,
+		postgresVersion,
+		redisImageTag,
+	)
+}
+
+func seedMigration138DomainPrerequisites(ctx context.Context, db *sql.DB) error {
+	// Minimum domain fixture only: no production IDs, credentials, accounts, or
+	// customer data. The immutable migration copies schema defaults from these
+	// disabled rows and creates its Apex rows.
+	_, err := db.ExecContext(ctx, `
+INSERT INTO groups (name, description, status)
+VALUES
+    ('GPT Ultra 月卡组', 'integration prerequisite for migration 138', 'disabled'),
+    ('Claude Ultra 月卡组', 'integration prerequisite for migration 138', 'disabled')
+ON CONFLICT (name) WHERE deleted_at IS NULL DO NOTHING
+`)
+	return err
+}
+
+func retireMigration138DomainPrerequisites(ctx context.Context, db *sql.DB) error {
+	// Keep migration evidence but soft-delete the four fixture-derived rows so
+	// unrelated repository suites retain their isolated historical baseline.
+	_, err := db.ExecContext(ctx, `
+UPDATE groups
+SET deleted_at = NOW(), updated_at = NOW()
+WHERE deleted_at IS NULL
+  AND name IN (
+    'GPT Ultra 月卡组',
+    'Claude Ultra 月卡组',
+    'GPT Apex 月卡组',
+    'Claude Apex 月卡组'
+  )
+`)
+	return err
 }
 
 func dockerIsAvailable(ctx context.Context) bool {

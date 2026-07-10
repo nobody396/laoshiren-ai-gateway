@@ -35,16 +35,19 @@ Example: `017_add_gemini_tier_id.sql`
 ## Migration File Structure
 
 ```sql
--- +goose Up
--- +goose StatementBegin
--- Your forward migration SQL here
--- +goose StatementEnd
+-- NNN_describe_forward_change.sql
+-- New migrations contain forward-only, idempotent SQL with no Goose Down block.
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '120s';
 
--- +goose Down
--- +goose StatementBegin
--- Your rollback migration SQL here
--- +goose StatementEnd
+ALTER TABLE example ADD COLUMN IF NOT EXISTS new_field TEXT;
 ```
+
+The runner still parses the immutable historical Goose files and executes only
+their `Up` sections while retaining checksums over the original complete files.
+`Down` sections are forbidden in new migration files. Application rollback uses
+the previously recorded image digest against the expanded schema; it never runs
+database rollback SQL.
 
 ## Important Rules
 
@@ -66,17 +69,20 @@ Why?
    touch migrations/018_your_change.sql
    ```
 
-2. **Write Up and Down migrations**
-   - Up: Apply the change
-   - Down: Revert the change (should be symmetric with Up)
+2. **Write a forward-only migration**
+   - Use additive, idempotent SQL.
+   - Preserve compatibility with the currently deployed application.
+   - Correct mistakes with a later compensating migration; never add `Down`.
+   - Add bounded `SET LOCAL lock_timeout` and `statement_timeout` when the
+     migration takes locks or performs a backfill.
 
 3. **Test locally**
    ```bash
-   # Apply migration
-   make migrate-up
+   # Parser, direction, and checksum contracts
+   go test ./internal/repository -run 'Migration|Migrations'
 
-   # Test rollback
-   make migrate-down
+   # Real PostgreSQL migration/schema/idempotency checks
+   go test -tags=integration ./internal/repository -run 'Migration|Migrations|IntegrationHarnessSentinel'
    ```
 
 4. **Commit and deploy**
@@ -91,6 +97,8 @@ Why?
 - ❌ Delete migration files
 - ❌ Change migration file names
 - ❌ Reorder migration numbers
+- ❌ Add `Down` to a new migration
+- ❌ Reverse the database schema when rolling the application back
 
 ### 🔧 If You Accidentally Modified an Applied Migration
 
@@ -117,16 +125,35 @@ touch migrations/018_your_new_change.sql
 - **Tracking Table**: `schema_migrations` (filename, checksum, applied_at)
 - **Runner**: `internal/repository/migrations_runner.go`
 - **Auto-run**: Migrations run automatically on service startup
+- **Execution Direction**: Unmarked files run as-is; the immutable historical
+  Goose files run only their single validated `Up` section
+- **Serialization**: Advisory lock, metadata queries, migration SQL, and unlock
+  all use one dedicated PostgreSQL `*sql.Conn` session
+
+### Declared Domain Prerequisite
+
+`138_add_apex_monthly_card_groups.sql` deliberately requires the canonical
+`GPT Ultra 月卡组` and `Claude Ultra 月卡组` domain rows. The integration harness:
+
+1. starts with an empty schema and characterizes the raw-blank failure at 138;
+2. verifies that failed migration 138 was not recorded;
+3. inserts the two declared prerequisite fixtures after migrations 001–137;
+4. reruns the runner and requires every non-empty embedded migration to finish.
+
+Therefore the supported bootstrap claim is **empty schema plus the declared
+domain prerequisite**, not “a raw blank database has zero prerequisites.”
 
 ## Best Practices
 
 1. **Keep migrations small and focused**
    - One logical change per migration
-   - Easier to review and rollback
+   - Easier to review and to keep application rollback compatible
 
-2. **Write reversible migrations**
-   - Always provide a working Down migration
-   - Test rollback before committing
+2. **Use expand-contract migrations**
+   - Expand the schema first and keep old readers/writers compatible.
+   - Deploy application changes separately.
+   - Remove obsolete columns only in a later, isolated cleanup release.
+   - Roll the application back by exact image digest, never with `Down` SQL.
 
 3. **Use transactions**
    - Wrap DDL statements in transactions when possible
@@ -139,7 +166,7 @@ touch migrations/018_your_new_change.sql
 5. **Test in development first**
    - Apply migration locally
    - Verify data integrity
-   - Test rollback
+   - Re-run for idempotency and start the previous application against the expanded schema
 
 6. **Split schema and backfill work**
    - Additive schema changes and historical data backfills should be separate migrations
@@ -156,8 +183,9 @@ touch migrations/018_your_new_change.sql
 ## Example Migration
 
 ```sql
--- +goose Up
--- +goose StatementBegin
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '120s';
+
 -- Add tier_id field to Gemini OAuth accounts for quota tracking
 UPDATE accounts
 SET credentials = jsonb_set(
@@ -169,17 +197,6 @@ SET credentials = jsonb_set(
 WHERE platform = 'gemini'
   AND type = 'oauth'
   AND credentials->>'tier_id' IS NULL;
--- +goose StatementEnd
-
--- +goose Down
--- +goose StatementBegin
--- Remove tier_id field
-UPDATE accounts
-SET credentials = credentials - 'tier_id'
-WHERE platform = 'gemini'
-  AND type = 'oauth'
-  AND credentials->>'tier_id' = 'LEGACY';
--- +goose StatementEnd
 ```
 
 ## Troubleshooting
@@ -192,16 +209,14 @@ See "If You Accidentally Modified an Applied Migration" above.
 # Check migration status
 psql -d sub2api -c "SELECT * FROM schema_migrations ORDER BY applied_at DESC;"
 
-# Manually rollback if needed (use with caution)
-# Better to fix the migration and create a new one
+# Do not execute historical Down SQL. Fix forward with a new migration.
 ```
 
-### Need to Skip a Migration (Emergency Only)
-```sql
--- DANGEROUS: Only use in development or with extreme caution
-INSERT INTO schema_migrations (filename, checksum, applied_at)
-VALUES ('NNN_migration.sql', 'calculated_checksum', NOW());
-```
+### A Migration Has an Unmet Domain Prerequisite
+
+Do not forge a `schema_migrations` row. Stop, declare and validate the missing
+prerequisite, then rerun the unchanged migration. The failed transaction must
+leave neither partial schema/data nor a migration record.
 
 ## References
 

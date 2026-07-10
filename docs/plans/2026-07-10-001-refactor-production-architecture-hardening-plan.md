@@ -83,7 +83,7 @@ deepened: 2026-07-10
 - R6. runner 对带 Goose marker 的文件只执行 `Up` 段，对不带 marker 的历史文件保持现有行为，并拒绝歧义或畸形 marker。
 - R7. PostgreSQL advisory lock 的获取、整个迁移过程和释放绑定同一 `*sql.Conn` session。
 - R8. 新增 forward-only、幂等、向后兼容的补偿 migration，恢复已知被 `Down` 段撤销的 schema/data；补偿不删除旧列，不依赖回滚 SQL。
-- R9. CI 必须覆盖空库全量迁移、受损历史状态升级、重复执行、并发 runner、关键表/索引/回填和旧版本兼容。
+- R9. CI 必须覆盖 schema 空且显式声明业务前置 fixture 的全量迁移、raw blank 历史阻断、受损历史状态升级、重复执行、并发 runner、关键表/索引/回填和旧版本兼容。
 
 ### Security and frontend session
 
@@ -198,17 +198,21 @@ flowchart TB
   - `backend/Makefile`
   - `backend/internal/repository/integration_harness_test.go`
   - `backend/internal/repository/migrations_schema_integration_test.go`
+  - `backend/internal/repository/account_repo.go`
+  - `backend/internal/repository/account_repo_integration_test.go`
 - **Implementation:**
   - Add a required `backend-integration` CI job with `CI=true`, bounded timeout, and explicit PostgreSQL/Redis container evidence.
   - Run only deterministic repository, middleware and server route integration packages; exclude external-network TLS fingerprint probes from the release gate.
   - Make missing Docker/Testcontainers fail in CI instead of exiting successfully or silently skipping all tests.
   - Make the production Docker build depend on backend unit, backend integration and frontend gates.
+  - Preserve every valid invariant surfaced by the newly enabled suite. In particular, account soft-delete must remove scheduled test plans inside the same Ent transaction so the existing foreign-key cascade also removes results and no ghost plan remains runnable.
 - **Test scenarios:**
   1. PostgreSQL and Redis containers are visibly started and at least one known sentinel integration test executes.
   2. Docker unavailable under `CI=true` fails the job.
   3. A skipped required database suite fails the gate rather than appearing green.
   4. Unit test and integration test targets can be run separately without external network access.
   5. The gate records the exact commit SHA used by every job.
+  6. Deleting an account removes its scheduled plans/results atomically; rollback restores all three records.
 - **Rollback:** CI-only and test-harness changes; revert the unit if it blocks for infrastructure reasons, but never bypass it for production release.
 
 ### U1. Enforce forward-only migrations and repair legacy side effects
@@ -222,6 +226,7 @@ flowchart TB
   - `backend/internal/repository/migrations_runner_notx_test.go`
   - `backend/internal/repository/migrations_runner_direction_test.go`
   - `backend/internal/repository/migrations_schema_integration_test.go`
+  - `backend/internal/repository/migrations_runner_direction_integration_test.go`
   - `backend/migrations/142_repair_legacy_goose_migrations.sql`
   - `backend/migrations/README.md`
 - **Implementation:**
@@ -229,10 +234,11 @@ flowchart TB
   - Keep checksum computation over the original trimmed full file so all applied checksums remain valid.
   - Acquire a dedicated `*sql.Conn`; use it for `pg_try_advisory_lock`, metadata queries, `BeginTx`, non-transactional statements and `pg_advisory_unlock`.
   - Keep historical 019, 024 and 037 byte-for-byte unchanged. Add a contract test that allows those known `Down` sections but rejects any new migration containing `Down`.
-  - Make 142 forward-only and idempotent: restore `ops_alert_silences` and index; restore one active `wechat` attribute definition; backfill only safe non-empty legacy values; reapply the Gemini `tier_id` default to matching rows. Preserve `users.wechat` for old-app compatibility.
+  - The immutable 138 migration depends on Ultra groups that are domain prerequisites rather than schema objects. The isolated integration harness declares and seeds the minimum canonical prerequisite fixture before the full migration run; a separate raw-blank characterization proves 138 fails clearly and is not recorded. Do not add a production migration that guesses or creates business groups.
+  - Make 142 forward-only and idempotent: restore `ops_alert_silences` and index; restore one active `wechat` attribute definition; safely synchronize non-conflicting legacy values; reapply the Gemini `tier_id` default to matching rows. Recreate and retain non-null `users.wechat` for old-app compatibility.
   - Add transaction-local lock and statement timeouts. Abort on conflicting WeChat data rather than overwriting it.
 - **Test scenarios:**
-  1. Empty PostgreSQL applies every embedded migration; only `Up` effects exist and the recorded count exactly matches non-empty embedded files.
+  1. A schema-empty PostgreSQL with the declared domain prerequisite fixture applies every embedded migration; only `Up` effects exist and the recorded count exactly matches non-empty embedded files.
   2. Running the full migration set twice is idempotent.
   3. A fixture with 019/024/037 marked applied but their `Down` effects present is repaired by 142.
   4. Historical file checksums remain unchanged.
@@ -241,6 +247,7 @@ flowchart TB
   7. A mid-migration SQL failure rolls back both schema changes and the migration record.
   8. Conflicting WeChat values abort all of 142; a fresh schema without `users.wechat` still succeeds.
   9. The old production image starts and passes its health boundary against a database after 142.
+  10. A schema-empty integration database with the declared canonical business fixture crosses immutable 138; a raw-blank characterization stops at 138 with the expected source-group error and never records it.
 - **Rollback:** Never run old `Down` SQL. If 142 fails, its transaction rolls back. If the new app fails after 142 commits, deploy the recorded old image digest and leave the additive schema in place.
 
 ### U2. Add truthful liveness, readiness and draining
@@ -267,6 +274,7 @@ flowchart TB
   - `/readyz` applies one bounded deadline across PostgreSQL ping, Redis ping and an atomic ready/draining state; response exposes component names but never raw DSN, host or secret-bearing errors.
   - `/health` temporarily aliases readiness so existing monitors stop reporting false green while clients migrate.
   - On SIGTERM set draining before `http.Server.Shutdown`; no new readiness-qualified traffic enters while existing HTTP and stream requests receive the configured drain interval.
+  - Keep the orchestrator stop grace longer than the 30-second application shutdown deadline; the maintenance release must set and record at least 45 seconds before testing SIGTERM drain.
   - External uptime and release verification use `/readyz`, not `/livez` or the legacy constant response.
 - **Test scenarios:**
   1. DB and Redis healthy: live and ready return 200.
@@ -276,6 +284,7 @@ flowchart TB
   5. Readiness timeout is bounded and errors are redacted.
   6. A long streaming request is allowed to drain within the grace period while a new request is rejected from readiness-qualified routing.
   7. Setup mode exposes explicit setup liveness without claiming the normal app is ready.
+  8. The deployed service stop grace exceeds the application deadline, so the orchestrator cannot kill a valid drain early.
 - **Rollback:** Docker probe and application routes must change together in the same digest. App rollback restores the previous probe configuration; no database rollback is involved.
 
 ### U3. Make the release artifact immutable and reversible

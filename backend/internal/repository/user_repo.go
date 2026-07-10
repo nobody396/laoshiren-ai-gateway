@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -42,11 +43,17 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	var err error
 	if !hasOuterTx {
 		tx, err = r.client.Tx(ctx)
+		if errors.Is(err, dbent.ErrTxStarted) {
+			txClient = r.client
+			err = nil
+		}
 		if err != nil {
 			return err
 		}
-		defer func() { _ = tx.Rollback() }()
-		txClient = tx.Client()
+		if tx != nil {
+			defer func() { _ = tx.Rollback() }()
+			txClient = tx.Client()
+		}
 	}
 
 	created, err := txClient.User.Create().
@@ -122,11 +129,17 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 	var err error
 	if !hasOuterTx {
 		tx, err = r.client.Tx(ctx)
+		if errors.Is(err, dbent.ErrTxStarted) {
+			txClient = r.client
+			err = nil
+		}
 		if err != nil {
 			return err
 		}
-		defer func() { _ = tx.Rollback() }()
-		txClient = tx.Client()
+		if tx != nil {
+			defer func() { _ = tx.Rollback() }()
+			txClient = tx.Client()
+		}
 	}
 
 	updateOp := txClient.User.UpdateOneID(userIn.ID).

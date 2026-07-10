@@ -11,6 +11,10 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 )
 
+type sqlExecer interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
 type unitOfWorkContextKey struct{}
 
 type transactionResources struct {
@@ -101,4 +105,29 @@ func sqlExecutorFromContext(ctx context.Context, fallback sqlExecutor) sqlExecut
 		return resources.sql
 	}
 	return fallback
+}
+
+// withinEntTransaction gives repository-owned mutations an atomic Ent/outbox
+// boundary while still reusing an outer application UnitOfWork when present.
+func withinEntTransaction(ctx context.Context, defaultClient *dbent.Client, fn func(*dbent.Client) error) error {
+	if client, ok := transactionClientFromContext(ctx); ok {
+		return fn(client)
+	}
+	if defaultClient == nil {
+		return errors.New("ent client is not configured")
+	}
+	tx, err := defaultClient.Tx(ctx)
+	if errors.Is(err, dbent.ErrTxStarted) {
+		// Integration tests and legacy callers may inject tx.Client() directly;
+		// that caller remains the owner of commit/rollback.
+		return fn(defaultClient)
+	}
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := fn(tx.Client()); err != nil {
+		return err
+	}
+	return tx.Commit()
 }

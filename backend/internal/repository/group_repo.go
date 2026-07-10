@@ -12,7 +12,6 @@ import (
 	entsql "entgo.io/ent/dialect/sql"
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/group"
-	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/lib/pq"
@@ -36,55 +35,70 @@ func newGroupRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor) *groupRep
 	return &groupRepository{client: client, sql: sqlq}
 }
 
-func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) error {
-	builder := r.client.Group.Create().
-		SetName(groupIn.Name).
-		SetDescription(groupIn.Description).
-		SetPlatform(groupIn.Platform).
-		SetRateMultiplier(groupIn.RateMultiplier).
-		SetIsExclusive(groupIn.IsExclusive).
-		SetStatus(groupIn.Status).
-		SetSubscriptionType(groupIn.SubscriptionType).
-		SetNillableDailyLimitUsd(groupIn.DailyLimitUSD).
-		SetNillableWeeklyLimitUsd(groupIn.WeeklyLimitUSD).
-		SetNillableMonthlyLimitUsd(groupIn.MonthlyLimitUSD).
-		SetNillableImagePrice1k(groupIn.ImagePrice1K).
-		SetNillableImagePrice2k(groupIn.ImagePrice2K).
-		SetNillableImagePrice4k(groupIn.ImagePrice4K).
-		SetNillableGptImageCallPrice(groupIn.GPTImageCallPrice).
-		SetDefaultValidityDays(groupIn.DefaultValidityDays).
-		SetClaudeCodeOnly(groupIn.ClaudeCodeOnly).
-		SetNillableFallbackGroupID(groupIn.FallbackGroupID).
-		SetNillableFallbackGroupIDOnInvalidRequest(groupIn.FallbackGroupIDOnInvalidRequest).
-		SetModelRoutingEnabled(groupIn.ModelRoutingEnabled).
-		SetMcpXMLInject(groupIn.MCPXMLInject).
-		SetAllowMessagesDispatch(groupIn.AllowMessagesDispatch).
-		SetRequireOauthOnly(groupIn.RequireOAuthOnly).
-		SetRequirePrivacySet(groupIn.RequirePrivacySet).
-		SetDefaultMappedModel(groupIn.DefaultMappedModel).
-		SetMessagesDispatchModelConfig(groupIn.MessagesDispatchModelConfig)
-
-	// 设置模型路由配置
-	if groupIn.ModelRouting != nil {
-		builder = builder.SetModelRouting(groupIn.ModelRouting)
-	}
-
-	// 设置支持的模型系列（始终设置，空数组表示不限制）
-	builder = builder.SetSupportedModelScopes(groupIn.SupportedModelScopes)
-
-	created, err := builder.Save(ctx)
-	if err == nil {
-		groupIn.ID = created.ID
-		groupIn.CreatedAt = created.CreatedAt
-		groupIn.UpdatedAt = created.UpdatedAt
-		if err := r.setChatbotEnabled(ctx, groupIn.ID, groupIn.ChatbotEnabled); err != nil {
+func (r *groupRepository) mutateWithSchedulerOutbox(ctx context.Context, groupID *int64, mutation func(*dbent.Client) error) error {
+	return withinEntTransaction(ctx, r.client, func(client *dbent.Client) error {
+		if err := mutation(client); err != nil {
 			return err
 		}
-		if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &groupIn.ID, nil); err != nil {
-			logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue group create failed: group=%d err=%v", groupIn.ID, err)
+		return enqueueSchedulerOutbox(ctx, client, service.SchedulerOutboxEventGroupChanged, nil, groupID, nil)
+	})
+}
+
+func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) error {
+	var created *dbent.Group
+	err := withinEntTransaction(ctx, r.client, func(client *dbent.Client) error {
+		builder := client.Group.Create().
+			SetName(groupIn.Name).
+			SetDescription(groupIn.Description).
+			SetPlatform(groupIn.Platform).
+			SetRateMultiplier(groupIn.RateMultiplier).
+			SetIsExclusive(groupIn.IsExclusive).
+			SetStatus(groupIn.Status).
+			SetSubscriptionType(groupIn.SubscriptionType).
+			SetNillableDailyLimitUsd(groupIn.DailyLimitUSD).
+			SetNillableWeeklyLimitUsd(groupIn.WeeklyLimitUSD).
+			SetNillableMonthlyLimitUsd(groupIn.MonthlyLimitUSD).
+			SetNillableImagePrice1k(groupIn.ImagePrice1K).
+			SetNillableImagePrice2k(groupIn.ImagePrice2K).
+			SetNillableImagePrice4k(groupIn.ImagePrice4K).
+			SetNillableGptImageCallPrice(groupIn.GPTImageCallPrice).
+			SetDefaultValidityDays(groupIn.DefaultValidityDays).
+			SetClaudeCodeOnly(groupIn.ClaudeCodeOnly).
+			SetNillableFallbackGroupID(groupIn.FallbackGroupID).
+			SetNillableFallbackGroupIDOnInvalidRequest(groupIn.FallbackGroupIDOnInvalidRequest).
+			SetModelRoutingEnabled(groupIn.ModelRoutingEnabled).
+			SetMcpXMLInject(groupIn.MCPXMLInject).
+			SetAllowMessagesDispatch(groupIn.AllowMessagesDispatch).
+			SetRequireOauthOnly(groupIn.RequireOAuthOnly).
+			SetRequirePrivacySet(groupIn.RequirePrivacySet).
+			SetDefaultMappedModel(groupIn.DefaultMappedModel).
+			SetMessagesDispatchModelConfig(groupIn.MessagesDispatchModelConfig)
+
+		// 设置模型路由配置
+		if groupIn.ModelRouting != nil {
+			builder = builder.SetModelRouting(groupIn.ModelRouting)
 		}
+
+		// 设置支持的模型系列（始终设置，空数组表示不限制）
+		builder = builder.SetSupportedModelScopes(groupIn.SupportedModelScopes)
+
+		var saveErr error
+		created, saveErr = builder.Save(ctx)
+		if saveErr != nil {
+			return translatePersistenceError(saveErr, nil, service.ErrGroupExists)
+		}
+		groupIn.ID = created.ID
+		if err := setChatbotEnabledWithExec(ctx, client, groupIn.ID, groupIn.ChatbotEnabled); err != nil {
+			return err
+		}
+		return enqueueSchedulerOutbox(ctx, client, service.SchedulerOutboxEventGroupChanged, nil, &groupIn.ID, nil)
+	})
+	if err != nil {
+		return err
 	}
-	return translatePersistenceError(err, nil, service.ErrGroupExists)
+	groupIn.CreatedAt = created.CreatedAt
+	groupIn.UpdatedAt = created.UpdatedAt
+	return nil
 }
 
 func (r *groupRepository) GetByID(ctx context.Context, id int64) (*service.Group, error) {
@@ -119,107 +133,116 @@ func (r *groupRepository) GetByIDLite(ctx context.Context, id int64) (*service.G
 }
 
 func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) error {
-	builder := r.client.Group.UpdateOneID(groupIn.ID).
-		SetName(groupIn.Name).
-		SetDescription(groupIn.Description).
-		SetPlatform(groupIn.Platform).
-		SetRateMultiplier(groupIn.RateMultiplier).
-		SetIsExclusive(groupIn.IsExclusive).
-		SetStatus(groupIn.Status).
-		SetSubscriptionType(groupIn.SubscriptionType).
-		SetNillableDailyLimitUsd(groupIn.DailyLimitUSD).
-		SetNillableWeeklyLimitUsd(groupIn.WeeklyLimitUSD).
-		SetNillableMonthlyLimitUsd(groupIn.MonthlyLimitUSD).
-		SetNillableImagePrice1k(groupIn.ImagePrice1K).
-		SetNillableImagePrice2k(groupIn.ImagePrice2K).
-		SetNillableImagePrice4k(groupIn.ImagePrice4K).
-		SetNillableGptImageCallPrice(groupIn.GPTImageCallPrice).
-		SetDefaultValidityDays(groupIn.DefaultValidityDays).
-		SetClaudeCodeOnly(groupIn.ClaudeCodeOnly).
-		SetModelRoutingEnabled(groupIn.ModelRoutingEnabled).
-		SetMcpXMLInject(groupIn.MCPXMLInject).
-		SetAllowMessagesDispatch(groupIn.AllowMessagesDispatch).
-		SetRequireOauthOnly(groupIn.RequireOAuthOnly).
-		SetRequirePrivacySet(groupIn.RequirePrivacySet).
-		SetDefaultMappedModel(groupIn.DefaultMappedModel).
-		SetMessagesDispatchModelConfig(groupIn.MessagesDispatchModelConfig)
+	var updated *dbent.Group
+	err := withinEntTransaction(ctx, r.client, func(client *dbent.Client) error {
+		builder := client.Group.UpdateOneID(groupIn.ID).
+			SetName(groupIn.Name).
+			SetDescription(groupIn.Description).
+			SetPlatform(groupIn.Platform).
+			SetRateMultiplier(groupIn.RateMultiplier).
+			SetIsExclusive(groupIn.IsExclusive).
+			SetStatus(groupIn.Status).
+			SetSubscriptionType(groupIn.SubscriptionType).
+			SetNillableDailyLimitUsd(groupIn.DailyLimitUSD).
+			SetNillableWeeklyLimitUsd(groupIn.WeeklyLimitUSD).
+			SetNillableMonthlyLimitUsd(groupIn.MonthlyLimitUSD).
+			SetNillableImagePrice1k(groupIn.ImagePrice1K).
+			SetNillableImagePrice2k(groupIn.ImagePrice2K).
+			SetNillableImagePrice4k(groupIn.ImagePrice4K).
+			SetNillableGptImageCallPrice(groupIn.GPTImageCallPrice).
+			SetDefaultValidityDays(groupIn.DefaultValidityDays).
+			SetClaudeCodeOnly(groupIn.ClaudeCodeOnly).
+			SetModelRoutingEnabled(groupIn.ModelRoutingEnabled).
+			SetMcpXMLInject(groupIn.MCPXMLInject).
+			SetAllowMessagesDispatch(groupIn.AllowMessagesDispatch).
+			SetRequireOauthOnly(groupIn.RequireOAuthOnly).
+			SetRequirePrivacySet(groupIn.RequirePrivacySet).
+			SetDefaultMappedModel(groupIn.DefaultMappedModel).
+			SetMessagesDispatchModelConfig(groupIn.MessagesDispatchModelConfig)
 
-	// 显式处理可空字段：nil 需要 clear，非 nil 需要 set。
-	if groupIn.DailyLimitUSD != nil {
-		builder = builder.SetDailyLimitUsd(*groupIn.DailyLimitUSD)
-	} else {
-		builder = builder.ClearDailyLimitUsd()
-	}
-	if groupIn.WeeklyLimitUSD != nil {
-		builder = builder.SetWeeklyLimitUsd(*groupIn.WeeklyLimitUSD)
-	} else {
-		builder = builder.ClearWeeklyLimitUsd()
-	}
-	if groupIn.MonthlyLimitUSD != nil {
-		builder = builder.SetMonthlyLimitUsd(*groupIn.MonthlyLimitUSD)
-	} else {
-		builder = builder.ClearMonthlyLimitUsd()
-	}
-	if groupIn.ImagePrice1K != nil {
-		builder = builder.SetImagePrice1k(*groupIn.ImagePrice1K)
-	} else {
-		builder = builder.ClearImagePrice1k()
-	}
-	if groupIn.ImagePrice2K != nil {
-		builder = builder.SetImagePrice2k(*groupIn.ImagePrice2K)
-	} else {
-		builder = builder.ClearImagePrice2k()
-	}
-	if groupIn.ImagePrice4K != nil {
-		builder = builder.SetImagePrice4k(*groupIn.ImagePrice4K)
-	} else {
-		builder = builder.ClearImagePrice4k()
-	}
-	if groupIn.GPTImageCallPrice != nil {
-		builder = builder.SetGptImageCallPrice(*groupIn.GPTImageCallPrice)
-	} else {
-		builder = builder.ClearGptImageCallPrice()
-	}
+		// 显式处理可空字段：nil 需要 clear，非 nil 需要 set。
+		if groupIn.DailyLimitUSD != nil {
+			builder = builder.SetDailyLimitUsd(*groupIn.DailyLimitUSD)
+		} else {
+			builder = builder.ClearDailyLimitUsd()
+		}
+		if groupIn.WeeklyLimitUSD != nil {
+			builder = builder.SetWeeklyLimitUsd(*groupIn.WeeklyLimitUSD)
+		} else {
+			builder = builder.ClearWeeklyLimitUsd()
+		}
+		if groupIn.MonthlyLimitUSD != nil {
+			builder = builder.SetMonthlyLimitUsd(*groupIn.MonthlyLimitUSD)
+		} else {
+			builder = builder.ClearMonthlyLimitUsd()
+		}
+		if groupIn.ImagePrice1K != nil {
+			builder = builder.SetImagePrice1k(*groupIn.ImagePrice1K)
+		} else {
+			builder = builder.ClearImagePrice1k()
+		}
+		if groupIn.ImagePrice2K != nil {
+			builder = builder.SetImagePrice2k(*groupIn.ImagePrice2K)
+		} else {
+			builder = builder.ClearImagePrice2k()
+		}
+		if groupIn.ImagePrice4K != nil {
+			builder = builder.SetImagePrice4k(*groupIn.ImagePrice4K)
+		} else {
+			builder = builder.ClearImagePrice4k()
+		}
+		if groupIn.GPTImageCallPrice != nil {
+			builder = builder.SetGptImageCallPrice(*groupIn.GPTImageCallPrice)
+		} else {
+			builder = builder.ClearGptImageCallPrice()
+		}
 
-	// 处理 FallbackGroupID：nil 时清除，否则设置
-	if groupIn.FallbackGroupID != nil {
-		builder = builder.SetFallbackGroupID(*groupIn.FallbackGroupID)
-	} else {
-		builder = builder.ClearFallbackGroupID()
-	}
-	// 处理 FallbackGroupIDOnInvalidRequest：nil 时清除，否则设置
-	if groupIn.FallbackGroupIDOnInvalidRequest != nil {
-		builder = builder.SetFallbackGroupIDOnInvalidRequest(*groupIn.FallbackGroupIDOnInvalidRequest)
-	} else {
-		builder = builder.ClearFallbackGroupIDOnInvalidRequest()
-	}
+		// 处理 FallbackGroupID：nil 时清除，否则设置
+		if groupIn.FallbackGroupID != nil {
+			builder = builder.SetFallbackGroupID(*groupIn.FallbackGroupID)
+		} else {
+			builder = builder.ClearFallbackGroupID()
+		}
+		// 处理 FallbackGroupIDOnInvalidRequest：nil 时清除，否则设置
+		if groupIn.FallbackGroupIDOnInvalidRequest != nil {
+			builder = builder.SetFallbackGroupIDOnInvalidRequest(*groupIn.FallbackGroupIDOnInvalidRequest)
+		} else {
+			builder = builder.ClearFallbackGroupIDOnInvalidRequest()
+		}
 
-	// 处理 ModelRouting：nil 时清除，否则设置
-	if groupIn.ModelRouting != nil {
-		builder = builder.SetModelRouting(groupIn.ModelRouting)
-	} else {
-		builder = builder.ClearModelRouting()
-	}
+		// 处理 ModelRouting：nil 时清除，否则设置
+		if groupIn.ModelRouting != nil {
+			builder = builder.SetModelRouting(groupIn.ModelRouting)
+		} else {
+			builder = builder.ClearModelRouting()
+		}
 
-	// 处理 SupportedModelScopes（始终设置，空数组表示不限制）
-	builder = builder.SetSupportedModelScopes(groupIn.SupportedModelScopes)
+		// 处理 SupportedModelScopes（始终设置，空数组表示不限制）
+		builder = builder.SetSupportedModelScopes(groupIn.SupportedModelScopes)
 
-	updated, err := builder.Save(ctx)
+		var saveErr error
+		updated, saveErr = builder.Save(ctx)
+		if saveErr != nil {
+			return translatePersistenceError(saveErr, service.ErrGroupNotFound, service.ErrGroupExists)
+		}
+		if err := setChatbotEnabledWithExec(ctx, client, groupIn.ID, groupIn.ChatbotEnabled); err != nil {
+			return err
+		}
+		return enqueueSchedulerOutbox(ctx, client, service.SchedulerOutboxEventGroupChanged, nil, &groupIn.ID, nil)
+	})
 	if err != nil {
-		return translatePersistenceError(err, service.ErrGroupNotFound, service.ErrGroupExists)
-	}
-	if err := r.setChatbotEnabled(ctx, groupIn.ID, groupIn.ChatbotEnabled); err != nil {
 		return err
 	}
 	groupIn.UpdatedAt = updated.UpdatedAt
-	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &groupIn.ID, nil); err != nil {
-		logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue group update failed: group=%d err=%v", groupIn.ID, err)
-	}
 	return nil
 }
 
 func (r *groupRepository) setChatbotEnabled(ctx context.Context, groupID int64, enabled bool) error {
-	_, err := r.sql.ExecContext(ctx, `UPDATE groups SET chatbot_enabled = $1 WHERE id = $2`, enabled, groupID)
+	return setChatbotEnabledWithExec(ctx, r.sql, groupID, enabled)
+}
+
+func setChatbotEnabledWithExec(ctx context.Context, exec sqlExecer, groupID int64, enabled bool) error {
+	_, err := exec.ExecContext(ctx, `UPDATE groups SET chatbot_enabled = $1 WHERE id = $2`, enabled, groupID)
 	return err
 }
 
@@ -267,12 +290,12 @@ func (r *groupRepository) loadChatbotEnabled(ctx context.Context, groupIDs []int
 }
 
 func (r *groupRepository) Delete(ctx context.Context, id int64) error {
-	_, err := r.client.Group.Delete().Where(group.IDEQ(id)).Exec(ctx)
-	if err != nil {
+	err := r.mutateWithSchedulerOutbox(ctx, &id, func(client *dbent.Client) error {
+		_, err := client.Group.Delete().Where(group.IDEQ(id)).Exec(ctx)
 		return translatePersistenceError(err, service.ErrGroupNotFound, nil)
-	}
-	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &id, nil); err != nil {
-		logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue group delete failed: group=%d err=%v", id, err)
+	})
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -654,15 +677,16 @@ func (r *groupRepository) GetAccountCount(ctx context.Context, groupID int64) (i
 }
 
 func (r *groupRepository) DeleteAccountGroupsByGroupID(ctx context.Context, groupID int64) (int64, error) {
-	res, err := r.sql.ExecContext(ctx, "DELETE FROM account_groups WHERE group_id = $1", groupID)
-	if err != nil {
-		return 0, err
-	}
-	affected, _ := res.RowsAffected()
-	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &groupID, nil); err != nil {
-		logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue group account clear failed: group=%d err=%v", groupID, err)
-	}
-	return affected, nil
+	var affected int64
+	err := r.mutateWithSchedulerOutbox(ctx, &groupID, func(client *dbent.Client) error {
+		res, err := client.ExecContext(ctx, "DELETE FROM account_groups WHERE group_id = $1", groupID)
+		if err != nil {
+			return err
+		}
+		affected, err = res.RowsAffected()
+		return err
+	})
+	return affected, err
 }
 
 func (r *groupRepository) DeleteCascade(ctx context.Context, id int64) ([]int64, error) {
@@ -753,16 +777,15 @@ func (r *groupRepository) DeleteCascade(ctx context.Context, id int64) ([]int64,
 	if _, err := txClient.Group.Delete().Where(group.IDEQ(id)).Exec(ctx); err != nil {
 		return nil, err
 	}
+	if err := enqueueSchedulerOutbox(ctx, exec, service.SchedulerOutboxEventGroupChanged, nil, &id, nil); err != nil {
+		return nil, err
+	}
 
 	if tx != nil {
 		if err := tx.Commit(); err != nil {
 			return nil, err
 		}
 	}
-	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &id, nil); err != nil {
-		logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue group cascade delete failed: group=%d err=%v", id, err)
-	}
-
 	return affectedUserIDs, nil
 }
 
@@ -874,25 +897,17 @@ func (r *groupRepository) BindAccountsToGroup(ctx context.Context, groupID int64
 		return nil
 	}
 
-	// 使用 INSERT ... ON CONFLICT DO NOTHING 忽略已存在的绑定
-	_, err := r.sql.ExecContext(
-		ctx,
-		`INSERT INTO account_groups (account_id, group_id, priority, created_at)
-		 SELECT unnest($1::bigint[]), $2, 50, NOW()
-		 ON CONFLICT (account_id, group_id) DO NOTHING`,
-		pq.Array(accountIDs),
-		groupID,
-	)
-	if err != nil {
+	return r.mutateWithSchedulerOutbox(ctx, &groupID, func(client *dbent.Client) error {
+		_, err := client.ExecContext(
+			ctx,
+			`INSERT INTO account_groups (account_id, group_id, priority, created_at)
+			 SELECT unnest($1::bigint[]), $2, 50, NOW()
+			 ON CONFLICT (account_id, group_id) DO NOTHING`,
+			pq.Array(accountIDs),
+			groupID,
+		)
 		return err
-	}
-
-	// 发送调度器事件
-	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &groupID, nil); err != nil {
-		logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue bind accounts to group failed: group=%d err=%v", groupID, err)
-	}
-
-	return nil
+	})
 }
 
 // UpdateSortOrders 批量更新分组排序
@@ -917,21 +932,6 @@ func (r *groupRepository) UpdateSortOrders(ctx context.Context, updates []servic
 		return nil
 	}
 
-	// 与旧实现保持一致：任何不存在/已删除的分组都返回 not found，且不执行更新。
-	var existingCount int
-	if err := scanSingleRow(
-		ctx,
-		r.sql,
-		`SELECT COUNT(*) FROM groups WHERE deleted_at IS NULL AND id = ANY($1)`,
-		[]any{pq.Array(groupIDs)},
-		&existingCount,
-	); err != nil {
-		return err
-	}
-	if existingCount != len(groupIDs) {
-		return service.ErrGroupNotFound
-	}
-
 	args := make([]any, 0, len(groupIDs)*2+1)
 	caseClauses := make([]string, 0, len(groupIDs))
 	placeholder := 1
@@ -951,22 +951,35 @@ func (r *groupRepository) UpdateSortOrders(ctx context.Context, updates []servic
 		WHERE deleted_at IS NULL AND id = ANY($%d)
 	`, strings.Join(caseClauses, "\n\t\t\t"), placeholder)
 
-	result, err := r.sql.ExecContext(ctx, query, args...)
-	if err != nil {
-		return err
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if affected != int64(len(groupIDs)) {
-		return service.ErrGroupNotFound
-	}
-
-	for _, id := range groupIDs {
-		if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &id, nil); err != nil {
-			logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue group sort update failed: group=%d err=%v", id, err)
+	return withinEntTransaction(ctx, r.client, func(client *dbent.Client) error {
+		// Validate, mutate, and enqueue every affected group while holding one
+		// transaction so a partial event set can never commit.
+		var existingCount int
+		if err := scanSingleRow(ctx, client,
+			`SELECT COUNT(*) FROM groups WHERE deleted_at IS NULL AND id = ANY($1)`,
+			[]any{pq.Array(groupIDs)}, &existingCount); err != nil {
+			return err
 		}
-	}
-	return nil
+		if existingCount != len(groupIDs) {
+			return service.ErrGroupNotFound
+		}
+		result, err := client.ExecContext(ctx, query, args...)
+		if err != nil {
+			return err
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if affected != int64(len(groupIDs)) {
+			return service.ErrGroupNotFound
+		}
+		for _, id := range groupIDs {
+			id := id
+			if err := enqueueSchedulerOutbox(ctx, client, service.SchedulerOutboxEventGroupChanged, nil, &id, nil); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

@@ -45,7 +45,7 @@ func TestOpsRepositoryBatchInsertErrorLogs(t *testing.T) {
 	require.Equal(t, 2, count)
 }
 
-func TestEnqueueSchedulerOutbox_DeduplicatesIdempotentEvents(t *testing.T) {
+func TestEnqueueSchedulerOutbox_PreservesEveryStateEvent(t *testing.T) {
 	ctx := context.Background()
 	_, _ = integrationDB.ExecContext(ctx, "TRUNCATE scheduler_outbox RESTART IDENTITY")
 
@@ -54,11 +54,6 @@ func TestEnqueueSchedulerOutbox_DeduplicatesIdempotentEvents(t *testing.T) {
 	require.NoError(t, enqueueSchedulerOutbox(ctx, integrationDB, service.SchedulerOutboxEventAccountChanged, &accountID, nil, nil))
 
 	var count int
-	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM scheduler_outbox WHERE event_type = $1", service.SchedulerOutboxEventAccountChanged).Scan(&count))
-	require.Equal(t, 1, count)
-
-	time.Sleep(schedulerOutboxDedupWindow + 150*time.Millisecond)
-	require.NoError(t, enqueueSchedulerOutbox(ctx, integrationDB, service.SchedulerOutboxEventAccountChanged, &accountID, nil, nil))
 	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM scheduler_outbox WHERE event_type = $1", service.SchedulerOutboxEventAccountChanged).Scan(&count))
 	require.Equal(t, 2, count)
 }

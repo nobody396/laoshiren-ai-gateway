@@ -262,12 +262,12 @@ func (s *SchedulerSnapshotService) pollOutbox() {
 			logger.LegacyPrintf("service.scheduler_snapshot", "[Scheduler] outbox handle failed: id=%d type=%s err=%v", event.ID, event.EventType, err)
 			if rebuildErr := s.triggerFullRebuild("outbox_event_error"); rebuildErr != nil {
 				logger.LegacyPrintf("service.scheduler_snapshot", "[Scheduler] outbox error rebuild failed: id=%d type=%s err=%v", event.ID, event.EventType, rebuildErr)
-				s.checkOutboxLag(ctx, event, processedWatermark)
-				return
 			}
-			processedWatermark = event.ID
-			seen = make(map[batchSeenKey]struct{})
-			continue
+			// A rebuild can repair the projection, but it does not prove this
+			// durable event was processed. Never advance the watermark across a
+			// failed event; replay it after restart/next poll.
+			s.checkOutboxLag(ctx, event, processedWatermark)
+			return
 		}
 		processedWatermark = event.ID
 	}

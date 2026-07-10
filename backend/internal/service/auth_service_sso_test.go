@@ -8,12 +8,25 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 )
 
 type memorySSOTicketCache struct {
 	data map[string]SSOTicketData
 	ttl  map[string]time.Duration
+}
+
+type embedTargetResolverStub struct {
+	target *EmbedTarget
+	err    error
+}
+
+func (s *embedTargetResolverStub) ResolveEmbedTarget(_ context.Context, _, _, _ string) (*EmbedTarget, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	return s.target, nil
 }
 
 func newMemorySSOTicketCache() *memorySSOTicketCache {
@@ -145,4 +158,104 @@ func TestAuthService_ExchangeSSOTicket_InactiveUser(t *testing.T) {
 
 	_, _, _, err = service.ExchangeSSOTicket(context.Background(), ticket)
 	require.True(t, errors.Is(err, ErrUserNotActive))
+}
+
+func TestAuthService_EmbedTicket_BindsAudiencePurposeAndDelivery(t *testing.T) {
+	user := &User{ID: 42, Email: "embed@test.com", Role: RoleUser, Status: StatusActive, TokenVersion: 1}
+	svc := newAuthService(&userRepoStub{user: user}, nil, nil)
+	cache := newMemorySSOTicketCache()
+	svc.ssoTicketCache = cache
+	svc.embedTargetResolver = &embedTargetResolverStub{target: &EmbedTarget{
+		Kind: EmbedTargetKindCustomMenu, ID: "reports", URL: "https://consumer.example/embed", Audience: "https://consumer.example",
+	}}
+
+	issued, err := svc.IssueEmbedTicket(context.Background(), user.ID, EmbedTargetKindCustomMenu, "reports", EmbedDeliveryIframe)
+	require.NoError(t, err)
+	require.Equal(t, 60, issued.ExpiresIn)
+	require.Equal(t, "https://consumer.example", issued.Audience)
+	require.Equal(t, embedTicketPurpose, cache.data[issued.Ticket].Purpose)
+
+	session, err := svc.ExchangeEmbedTicket(context.Background(), issued.Ticket, "https://CONSUMER.example:443/path", EmbedTargetKindCustomMenu, "reports", EmbedDeliveryIframe)
+	require.NoError(t, err)
+	require.NotEmpty(t, session.SessionToken)
+	require.Equal(t, int(embedSessionTTL.Seconds()), session.ExpiresIn)
+
+	claims := &embedSessionClaims{}
+	parsed, err := jwt.ParseWithClaims(session.SessionToken, claims, func(*jwt.Token) (any, error) {
+		return []byte(svc.cfg.JWT.Secret), nil
+	})
+	require.NoError(t, err)
+	require.True(t, parsed.Valid)
+	require.Equal(t, embedSessionPurpose, claims.Purpose)
+	require.Equal(t, jwt.ClaimStrings{"https://consumer.example"}, claims.Audience)
+	require.Equal(t, EmbedDeliveryIframe, claims.Delivery)
+
+	_, err = svc.ExchangeEmbedTicket(context.Background(), issued.Ticket, issued.Audience, EmbedTargetKindCustomMenu, "reports", EmbedDeliveryIframe)
+	require.ErrorIs(t, err, ErrInvalidEmbedTicket)
+}
+
+func TestAuthService_EmbedTicket_WrongAudienceConsumesTicket(t *testing.T) {
+	user := &User{ID: 7, Email: "embed@test.com", Role: RoleUser, Status: StatusActive}
+	svc := newAuthService(&userRepoStub{user: user}, nil, nil)
+	svc.ssoTicketCache = newMemorySSOTicketCache()
+	svc.embedTargetResolver = &embedTargetResolverStub{target: &EmbedTarget{
+		Kind: EmbedTargetKindPurchase, ID: "purchase", URL: "https://pay.example/path", Audience: "https://pay.example",
+	}}
+	issued, err := svc.IssueEmbedTicket(context.Background(), user.ID, EmbedTargetKindPurchase, "purchase", EmbedDeliveryNewTab)
+	require.NoError(t, err)
+
+	_, err = svc.ExchangeEmbedTicket(context.Background(), issued.Ticket, "https://evil.example", EmbedTargetKindPurchase, "purchase", EmbedDeliveryNewTab)
+	require.ErrorIs(t, err, ErrInvalidEmbedTicket)
+	_, err = svc.ExchangeEmbedTicket(context.Background(), issued.Ticket, issued.Audience, EmbedTargetKindPurchase, "purchase", EmbedDeliveryNewTab)
+	require.ErrorIs(t, err, ErrInvalidEmbedTicket)
+}
+
+func TestAuthService_EmbedTicket_ExpiredAndInactiveFail(t *testing.T) {
+	user := &User{ID: 8, Email: "embed@test.com", Role: RoleUser, Status: StatusDisabled}
+	svc := newAuthService(&userRepoStub{user: user}, nil, nil)
+	cache := newMemorySSOTicketCache()
+	svc.ssoTicketCache = cache
+	svc.embedTargetResolver = &embedTargetResolverStub{target: &EmbedTarget{
+		Kind: EmbedTargetKindPurchase, ID: "purchase", URL: "https://pay.example", Audience: "https://pay.example",
+	}}
+	_, err := svc.IssueEmbedTicket(context.Background(), user.ID, EmbedTargetKindPurchase, "purchase", EmbedDeliveryIframe)
+	require.ErrorIs(t, err, ErrUserNotActive)
+
+	user.Status = StatusActive
+	ticket, err := randomHexString(32)
+	require.NoError(t, err)
+	cache.data[ticket] = SSOTicketData{
+		Purpose: embedTicketPurpose, UserID: user.ID, Audience: "https://pay.example",
+		TargetKind: EmbedTargetKindPurchase, TargetID: "purchase", Delivery: EmbedDeliveryIframe,
+		CreatedAt: time.Now().Add(-ssoTicketTTL - time.Second),
+	}
+	_, err = svc.ExchangeEmbedTicket(context.Background(), ticket, "https://pay.example", EmbedTargetKindPurchase, "purchase", EmbedDeliveryIframe)
+	require.ErrorIs(t, err, ErrInvalidEmbedTicket)
+}
+
+func TestAuthService_ChatbotExchangeRejectsEmbedPurpose(t *testing.T) {
+	user := &User{ID: 9, Email: "embed@test.com", Role: RoleUser, Status: StatusActive}
+	svc := newAuthService(&userRepoStub{user: user}, nil, nil)
+	cache := newMemorySSOTicketCache()
+	svc.ssoTicketCache = cache
+	ticket, err := randomHexString(32)
+	require.NoError(t, err)
+	cache.data[ticket] = SSOTicketData{Purpose: embedTicketPurpose, UserID: user.ID, CreatedAt: time.Now()}
+	_, _, _, err = svc.ExchangeSSOTicket(context.Background(), ticket)
+	require.ErrorIs(t, err, ErrInvalidSSOTicket)
+}
+
+func TestNormalizeConfiguredEmbedURL(t *testing.T) {
+	normalized, audience, err := normalizeConfiguredEmbedURL("https://EXAMPLE.com:443/path?q=1&token=jwt&user_id=42", false)
+	require.NoError(t, err)
+	require.Equal(t, "https://example.com/path?q=1", normalized)
+	require.Equal(t, "https://example.com", audience)
+
+	_, _, err = normalizeConfiguredEmbedURL("http://example.com/path", true)
+	require.Error(t, err)
+	_, localhostAudience, err := normalizeConfiguredEmbedURL("http://localhost:3000/embed", true)
+	require.NoError(t, err)
+	require.Equal(t, "http://localhost:3000", localhostAudience)
+	_, _, err = normalizeConfiguredEmbedURL("https://user:pass@example.com", false)
+	require.Error(t, err)
 }

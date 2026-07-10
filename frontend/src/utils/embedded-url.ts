@@ -1,48 +1,56 @@
 /**
- * Shared URL builder for iframe-embedded pages.
- * Used by PurchaseSubscriptionView and CustomPageView to build consistent URLs
- * with user_id, token, theme, lang, ui_mode, src_host, and src parameters.
+ * Credential-free URL helpers for externally embedded pages.
+ *
+ * General bearer credentials and user identity must never cross an iframe or
+ * new-tab boundary in a URL. Authenticated consumers use the separate,
+ * audience-bound embed-ticket contract in embedded-session.ts.
  */
 
-const EMBEDDED_USER_ID_QUERY_KEY = 'user_id'
-const EMBEDDED_AUTH_TOKEN_QUERY_KEY = 'token'
-const EMBEDDED_THEME_QUERY_KEY = 'theme'
-const EMBEDDED_LANG_QUERY_KEY = 'lang'
-const EMBEDDED_UI_MODE_QUERY_KEY = 'ui_mode'
-const EMBEDDED_UI_MODE_VALUE = 'embedded'
-const EMBEDDED_SRC_HOST_QUERY_KEY = 'src_host'
-const EMBEDDED_SRC_QUERY_KEY = 'src_url'
+const FORBIDDEN_QUERY_KEYS = new Set([
+  'token',
+  'access_token',
+  'refresh_token',
+  'api_key',
+  'apikey',
+  'user_id',
+  'src_url',
+])
+
+function isLocalDevelopmentUrl(url: URL): boolean {
+  if (!import.meta.env.DEV) return false
+  return url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]'
+}
+
+export function isAllowedEmbeddedUrl(baseUrl: string): boolean {
+  try {
+    const url = new URL(baseUrl)
+    if (url.username || url.password) return false
+    if (url.protocol === 'https:') return true
+    return url.protocol === 'http:' && isLocalDevelopmentUrl(url)
+  } catch {
+    return false
+  }
+}
 
 export function buildEmbeddedUrl(
   baseUrl: string,
-  userId?: number,
-  authToken?: string | null,
   theme: 'light' | 'dark' = 'light',
   lang?: string,
 ): string {
-  if (!baseUrl) return baseUrl
-  try {
-    const url = new URL(baseUrl)
-    if (userId) {
-      url.searchParams.set(EMBEDDED_USER_ID_QUERY_KEY, String(userId))
+  const trimmed = baseUrl.trim()
+  if (!trimmed || !isAllowedEmbeddedUrl(trimmed)) return ''
+
+  const url = new URL(trimmed)
+  for (const key of Array.from(url.searchParams.keys())) {
+    if (FORBIDDEN_QUERY_KEYS.has(key.toLowerCase())) {
+      url.searchParams.delete(key)
     }
-    if (authToken) {
-      url.searchParams.set(EMBEDDED_AUTH_TOKEN_QUERY_KEY, authToken)
-    }
-    url.searchParams.set(EMBEDDED_THEME_QUERY_KEY, theme)
-    if (lang) {
-      url.searchParams.set(EMBEDDED_LANG_QUERY_KEY, lang)
-    }
-    url.searchParams.set(EMBEDDED_UI_MODE_QUERY_KEY, EMBEDDED_UI_MODE_VALUE)
-    // Source tracking: let the embedded page know where it's being loaded from
-    if (typeof window !== 'undefined') {
-      url.searchParams.set(EMBEDDED_SRC_HOST_QUERY_KEY, window.location.origin)
-      url.searchParams.set(EMBEDDED_SRC_QUERY_KEY, window.location.href)
-    }
-    return url.toString()
-  } catch {
-    return baseUrl
   }
+  url.searchParams.set('theme', theme)
+  if (lang) url.searchParams.set('lang', lang)
+  else url.searchParams.delete('lang')
+  url.searchParams.set('ui_mode', 'embedded')
+  return url.toString()
 }
 
 export function detectTheme(): 'light' | 'dark' {

@@ -94,6 +94,20 @@ type SSOExchangeRequest struct {
 	Ticket string `json:"ticket" binding:"required"`
 }
 
+type EmbedTicketRequest struct {
+	TargetKind string `json:"target_kind" binding:"required"`
+	TargetID   string `json:"target_id" binding:"required"`
+	Delivery   string `json:"delivery" binding:"required"`
+}
+
+type EmbedExchangeRequest struct {
+	Ticket     string `json:"ticket" binding:"required"`
+	Audience   string `json:"audience" binding:"required"`
+	TargetKind string `json:"target_kind" binding:"required"`
+	TargetID   string `json:"target_id" binding:"required"`
+	Delivery   string `json:"delivery" binding:"required"`
+}
+
 // respondWithTokenPair 生成 Token 对并返回认证响应
 // 如果 Token 对生成失败，回退到只返回 Access Token（向后兼容）
 func (h *AuthHandler) respondWithTokenPair(c *gin.Context, user *service.User) {
@@ -201,6 +215,52 @@ func (h *AuthHandler) ExchangeSSOTicket(c *gin.Context) {
 		"token_type":    authResponse.TokenType,
 		"user":          authResponse.User,
 		"api_key_id":    apiKeyID,
+	})
+}
+
+// IssueEmbedTicket resolves the configured target and issues a bounded ticket.
+// POST /api/v1/auth/embed/ticket
+func (h *AuthHandler) IssueEmbedTicket(c *gin.Context) {
+	var req EmbedTicketRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok || subject.UserID <= 0 {
+		response.Unauthorized(c, "Unauthorized")
+		return
+	}
+	issued, err := h.authService.IssueEmbedTicket(c.Request.Context(), subject.UserID, req.TargetKind, req.TargetID, req.Delivery)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{
+		"ticket": issued.Ticket, "expires_in": issued.ExpiresIn,
+		"target_url": issued.TargetURL, "audience": issued.Audience,
+	})
+}
+
+// ExchangeEmbedTicket returns only a short embed session. It never returns a
+// refresh token or a general chatbot SSO token pair.
+// POST /api/v1/auth/embed/exchange
+func (h *AuthHandler) ExchangeEmbedTicket(c *gin.Context) {
+	var req EmbedExchangeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	session, err := h.authService.ExchangeEmbedTicket(c.Request.Context(), req.Ticket, req.Audience, req.TargetKind, req.TargetID, req.Delivery)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{
+		"session_token": session.SessionToken,
+		"expires_in":    session.ExpiresIn,
+		"token_type":    "Embed",
+		"user":          gin.H{"id": session.UserID, "role": session.Role},
 	})
 }
 

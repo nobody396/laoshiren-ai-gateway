@@ -232,6 +232,29 @@ export async function issueSSOTicket(apiKeyId?: number): Promise<SSOTicketRespon
   return data
 }
 
+export type EmbedTargetKind = 'purchase_subscription' | 'custom_menu'
+export type EmbedDelivery = 'iframe' | 'new_tab'
+
+export interface EmbedTicketResponse {
+  ticket: string
+  expires_in: number
+  target_url: string
+  audience: string
+}
+
+export async function issueEmbedTicket(
+  targetKind: EmbedTargetKind,
+  targetId: string,
+  delivery: EmbedDelivery,
+): Promise<EmbedTicketResponse> {
+  const { data } = await apiClient.post<EmbedTicketResponse>('/auth/embed/ticket', {
+    target_kind: targetKind,
+    target_id: targetId,
+    delivery,
+  })
+  return data
+}
+
 /**
  * Check if user is authenticated
  * @returns True if user has valid token

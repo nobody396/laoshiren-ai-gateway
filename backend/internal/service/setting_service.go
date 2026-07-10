@@ -567,6 +567,104 @@ func extractOriginFromURL(rawURL string) string {
 	return u.Scheme + "://" + u.Host
 }
 
+// EmbedTarget is a configured, audience-bound external consumer. Callers use
+// the stable kind/id pair; browser-provided URLs are never trusted.
+type EmbedTarget struct {
+	Kind     string
+	ID       string
+	URL      string
+	Audience string
+}
+
+// ResolveEmbedTarget resolves a configured embed target and enforces its
+// visibility before any one-time credential is issued.
+func (s *SettingService) ResolveEmbedTarget(ctx context.Context, kind, targetID, role string) (*EmbedTarget, error) {
+	settings, err := s.GetPublicSettings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get embed settings: %w", err)
+	}
+	kind = strings.TrimSpace(kind)
+	targetID = strings.TrimSpace(targetID)
+	if targetID == "" || len(targetID) > 128 {
+		return nil, ErrEmbedTargetUnavailable
+	}
+
+	var rawURL string
+	switch kind {
+	case EmbedTargetKindPurchase:
+		if targetID != "purchase" || !settings.PurchaseSubscriptionEnabled {
+			return nil, ErrEmbedTargetUnavailable
+		}
+		rawURL = settings.PurchaseSubscriptionURL
+	case EmbedTargetKindCustomMenu:
+		var items []struct {
+			ID         string `json:"id"`
+			URL        string `json:"url"`
+			Visibility string `json:"visibility"`
+		}
+		if err := json.Unmarshal([]byte(settings.CustomMenuItems), &items); err != nil {
+			return nil, ErrEmbedTargetUnavailable
+		}
+		for _, item := range items {
+			if strings.TrimSpace(item.ID) != targetID {
+				continue
+			}
+			if item.Visibility == "admin" && role != RoleAdmin {
+				return nil, ErrEmbedTargetUnavailable
+			}
+			rawURL = item.URL
+			break
+		}
+	default:
+		return nil, ErrEmbedTargetUnavailable
+	}
+
+	allowLocalhost := s.cfg != nil && s.cfg.Server.Mode != "release"
+	normalizedURL, audience, err := normalizeConfiguredEmbedURL(rawURL, allowLocalhost)
+	if err != nil {
+		return nil, ErrEmbedTargetUnavailable
+	}
+	return &EmbedTarget{Kind: kind, ID: targetID, URL: normalizedURL, Audience: audience}, nil
+}
+
+func normalizeConfiguredEmbedURL(rawURL string, allowLocalhost bool) (string, string, error) {
+	u, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil || u.Host == "" || u.User != nil {
+		return "", "", errors.New("invalid embed URL")
+	}
+	u.Scheme = strings.ToLower(u.Scheme)
+	hostname := strings.ToLower(u.Hostname())
+	isLocalhost := hostname == "localhost" || hostname == "127.0.0.1" || hostname == "::1"
+	if u.Scheme != "https" && !(allowLocalhost && isLocalhost && u.Scheme == "http") {
+		return "", "", errors.New("embed URL must use https")
+	}
+	port := u.Port()
+	if (u.Scheme == "https" && port == "443") || (u.Scheme == "http" && port == "80") {
+		port = ""
+	}
+	if strings.Contains(hostname, ":") {
+		hostname = "[" + hostname + "]"
+	}
+	u.Host = hostname
+	if port != "" {
+		u.Host += ":" + port
+	}
+	query := u.Query()
+	for key := range query {
+		switch strings.ToLower(key) {
+		case "token", "access_token", "refresh_token", "api_key", "apikey", "user_id", "src_url":
+			query.Del(key)
+		}
+	}
+	u.RawQuery = query.Encode()
+	return u.String(), u.Scheme + "://" + u.Host, nil
+}
+
+func normalizeEmbedAudience(raw string) (string, error) {
+	_, audience, err := normalizeConfiguredEmbedURL(raw, true)
+	return audience, err
+}
+
 // parseCustomMenuItemURLs extracts URLs from a raw JSON array of custom menu items.
 func parseCustomMenuItemURLs(raw string) []string {
 	raw = strings.TrimSpace(raw)

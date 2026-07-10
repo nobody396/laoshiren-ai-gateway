@@ -48,6 +48,7 @@
             :href="embeddedUrl"
             target="_blank"
             rel="noopener noreferrer"
+            referrerpolicy="no-referrer"
             class="btn btn-secondary btn-sm custom-open-fab"
           >
             <Icon name="externalLink" size="sm" class="mr-1.5" :stroke-width="2" />
@@ -56,7 +57,9 @@
           <iframe
             :src="embeddedUrl"
             class="custom-embed-frame"
-            allowfullscreen
+            referrerpolicy="no-referrer"
+            sandbox="allow-scripts allow-forms allow-popups allow-same-origin"
+            allow="clipboard-write"
           ></iframe>
         </div>
       </div>
@@ -104,8 +107,6 @@ const embeddedUrl = computed(() => {
   if (!menuItem.value) return ''
   return buildEmbeddedUrl(
     menuItem.value.url,
-    authStore.user?.id,
-    authStore.token,
     pageTheme.value,
     locale.value,
   )
@@ -113,7 +114,7 @@ const embeddedUrl = computed(() => {
 
 const isValidUrl = computed(() => {
   const url = embeddedUrl.value
-  return url.startsWith('http://') || url.startsWith('https://')
+  return url.startsWith('https://') || (import.meta.env.DEV && url.startsWith('http://'))
 })
 
 onMounted(async () => {

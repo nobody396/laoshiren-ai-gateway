@@ -1,10 +1,30 @@
 package repository
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"io/fs"
+	"strings"
 	"testing"
 
+	embeddedmigrations "github.com/bozhouDev/DragonCode-sub2api/migrations"
 	"github.com/stretchr/testify/require"
 )
+
+func TestHistoricalGooseMigrationChecksumsRemainImmutable(t *testing.T) {
+	want := map[string]string{
+		"019_migrate_wechat_to_attributes.sql": "d45e05b4bb722b287377790583c2677b8666dbf7e02b626c93468491d4ce8cf8",
+		"024_add_gemini_tier_id.sql":           "b54de1b9a4423224f7aef5e644d1af115214d58dd61befd3c25db3e709b9163a",
+		"037_ops_alert_silences.sql":           "72143a1ce3528ebc47472759c59011ec6993b25a3f22d50485538710047438c6",
+	}
+
+	for name, expected := range want {
+		content, err := fs.ReadFile(embeddedmigrations.FS, name)
+		require.NoError(t, err, name)
+		sum := sha256.Sum256([]byte(strings.TrimSpace(string(content))))
+		require.Equal(t, expected, hex.EncodeToString(sum[:]), name)
+	}
+}
 
 func TestIsMigrationChecksumCompatible(t *testing.T) {
 	t.Run("054历史checksum可兼容", func(t *testing.T) {

@@ -83,6 +83,8 @@ temp/
 *.log
 *.bak
 .cache/
+__pycache__/
+*.py[cod]
 .dev/
 .serena/
 
@@ -91,7 +93,7 @@ temp/
 # ===================
 dist/
 build/
-release/
+/release/
 
 # 后端嵌入的前端构建产物
 # Keep a placeholder file so `//go:embed all:dist` always has a match in CI/lint,

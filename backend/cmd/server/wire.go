@@ -23,8 +23,9 @@ import (
 )
 
 type Application struct {
-	Server  *http.Server
-	Cleanup func()
+	Server    *http.Server
+	Readiness *server.Readiness
+	Cleanup   func()
 }
 
 func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
@@ -43,6 +44,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 
 		// Privacy client factory for OpenAI training opt-out
 		providePrivacyClientFactory,
+		provideOpsGroupRepositories,
 
 		// BuildInfo provider
 		provideServiceBuildInfo,
@@ -51,7 +53,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 		provideCleanup,
 
 		// Application struct
-		wire.Struct(new(Application), "Server", "Cleanup"),
+		wire.Struct(new(Application), "Server", "Readiness", "Cleanup"),
 	)
 	return nil, nil
 }
@@ -65,6 +67,13 @@ func provideServiceBuildInfo(buildInfo handler.BuildInfo) service.BuildInfo {
 		Version:   buildInfo.Version,
 		BuildType: buildInfo.BuildType,
 	}
+}
+
+// Wire models a variadic constructor parameter as a slice dependency. Keep the
+// generated graph reproducible while preserving NewOpsService's optional
+// group-repository compatibility signature.
+func provideOpsGroupRepositories(groupRepo service.GroupRepository) []service.GroupRepository {
+	return []service.GroupRepository{groupRepo}
 }
 
 func provideCleanup(

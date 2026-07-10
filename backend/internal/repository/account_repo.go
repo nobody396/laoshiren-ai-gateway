@@ -442,6 +442,12 @@ func (r *accountRepository) Delete(ctx context.Context, id int64) error {
 	if _, err := txClient.AccountGroup.Delete().Where(dbaccountgroup.AccountIDEQ(id)).Exec(ctx); err != nil {
 		return err
 	}
+	// Account uses soft-delete, so the database FK's ON DELETE CASCADE never
+	// fires. Remove scheduled plans explicitly inside the same transaction;
+	// scheduled_test_results are then removed by their plan FK cascade.
+	if _, err := txClient.ExecContext(ctx, "DELETE FROM scheduled_test_plans WHERE account_id = $1", id); err != nil {
+		return err
+	}
 	if _, err := txClient.Account.Delete().Where(dbaccount.IDEQ(id)).Exec(ctx); err != nil {
 		return err
 	}

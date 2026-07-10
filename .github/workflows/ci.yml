@@ -26,6 +26,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Record tested commit
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          actual_sha="$(git rev-parse HEAD)"
+          echo "ci_commit_sha=${actual_sha}"
+          test "${actual_sha}" = "${EXPECTED_SHA}"
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -41,6 +49,42 @@ jobs:
       - name: Run backend test entrypoint
         run: make test-backend
 
+  backend-integration:
+    name: Backend deterministic integration gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      GIT_SHA: ${{ github.sha }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Record tested commit
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          actual_sha="$(git rev-parse HEAD)"
+          echo "ci_commit_sha=${actual_sha}"
+          test "${actual_sha}" = "${EXPECTED_SHA}"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Verify Docker integration runtime
+        run: |
+          docker version
+          docker info --format 'docker_server_version={{.ServerVersion}}'
+          echo "postgres_image=postgres:18.1-alpine3.23"
+          echo "redis_image=redis:8.4-alpine"
+
+      - name: Run deterministic backend integration gate
+        run: make test-backend-integration
+
   frontend:
     name: Frontend typecheck, tests, and build
     runs-on: ubuntu-latest
@@ -49,6 +93,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Record tested commit
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          actual_sha="$(git rev-parse HEAD)"
+          echo "ci_commit_sha=${actual_sha}"
+          test "${actual_sha}" = "${EXPECTED_SHA}"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -74,26 +126,14 @@ jobs:
 
   docker:
     name: Production Docker build
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
     needs:
       - backend
+      - backend-integration
       - frontend
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build production image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64
-          push: false
-          tags: laoshiren-ai-gateway:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/docker-image.yml
+    with:
+      commit_sha: ${{ github.sha }}
+      publish: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}

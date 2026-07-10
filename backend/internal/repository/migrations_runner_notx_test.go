@@ -65,9 +65,7 @@ func TestApplyMigrationsFS_NonTransactionalMigration(t *testing.T) {
 	mock.ExpectExec("INSERT INTO schema_migrations \\(filename, checksum\\) VALUES \\(\\$1, \\$2\\)").
 		WithArgs("001_add_idx_notx.sql", sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("SELECT pg_advisory_unlock\\(\\$1\\)").
-		WithArgs(migrationsAdvisoryLockID).
-		WillReturnResult(sqlmock.NewResult(0, 1))
+	expectMigrationUnlock(mock)
 
 	fsys := fstest.MapFS{
 		"001_add_idx_notx.sql": &fstest.MapFile{
@@ -96,9 +94,7 @@ func TestApplyMigrationsFS_NonTransactionalMigration_MultiStatements(t *testing.
 	mock.ExpectExec("INSERT INTO schema_migrations \\(filename, checksum\\) VALUES \\(\\$1, \\$2\\)").
 		WithArgs("001_add_multi_idx_notx.sql", sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("SELECT pg_advisory_unlock\\(\\$1\\)").
-		WithArgs(migrationsAdvisoryLockID).
-		WillReturnResult(sqlmock.NewResult(0, 1))
+	expectMigrationUnlock(mock)
 
 	fsys := fstest.MapFS{
 		"001_add_multi_idx_notx.sql": &fstest.MapFile{
@@ -132,9 +128,7 @@ func TestApplyMigrationsFS_TransactionalMigration(t *testing.T) {
 		WithArgs("001_add_col.sql", sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
-	mock.ExpectExec("SELECT pg_advisory_unlock\\(\\$1\\)").
-		WithArgs(migrationsAdvisoryLockID).
-		WillReturnResult(sqlmock.NewResult(0, 1))
+	expectMigrationUnlock(mock)
 
 	fsys := fstest.MapFS{
 		"001_add_col.sql": &fstest.MapFile{
@@ -161,4 +155,10 @@ func prepareMigrationsBootstrapExpectations(mock sqlmock.Sqlmock) {
 		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 	mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM atlas_schema_revisions").
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+}
+
+func expectMigrationUnlock(mock sqlmock.Sqlmock) {
+	mock.ExpectQuery("SELECT pg_advisory_unlock\\(\\$1\\)").
+		WithArgs(migrationsAdvisoryLockID).
+		WillReturnRows(sqlmock.NewRows([]string{"pg_advisory_unlock"}).AddRow(true))
 }

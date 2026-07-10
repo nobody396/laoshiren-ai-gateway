@@ -33,6 +33,7 @@ func SetupRouter(
 	cfg *config.Config,
 	redisClient *redis.Client,
 	rbacService *service.RBACService,
+	readiness *Readiness,
 ) *gin.Engine {
 	// 缓存 iframe 页面的 origin 列表，用于动态注入 CSP frame-src
 	var cachedFrameOrigins atomic.Pointer[[]string]
@@ -62,6 +63,11 @@ func SetupRouter(
 		return nil
 	}))
 	r.Use(middleware2.NoStoreAPIResponses())
+	r.Use(readiness.AdmissionMiddleware())
+
+	// Register probes before the embedded frontend middleware so both the site
+	// and API domains return probe JSON instead of an SPA fallback document.
+	routes.RegisterCommonRoutes(r, readiness)
 
 	// Serve embedded frontend with settings injection if available
 	if web.HasEmbeddedFrontend() {
@@ -105,9 +111,6 @@ func registerRoutes(
 	cfg *config.Config,
 	redisClient *redis.Client,
 ) {
-	// 通用路由（健康检查、状态等）
-	routes.RegisterCommonRoutes(r)
-
 	// API v1
 	v1 := r.Group("/api/v1")
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -50,7 +51,19 @@ CREATE TABLE IF NOT EXISTS atlas_schema_revisions (
 // 任何稳定的 int64 值都可以，只要不与同一数据库中的其他锁冲突即可。
 const migrationsAdvisoryLockID int64 = 694208311321144027
 const migrationsLockRetryInterval = 500 * time.Millisecond
+const migrationsUnlockTimeout = 5 * time.Second
 const nonTransactionalMigrationSuffix = "_notx.sql"
+
+var legacyMigrationsWithDownSections = map[string]struct{}{
+	"019_migrate_wechat_to_attributes.sql": {},
+	"024_add_gemini_tier_id.sql":           {},
+	"037_ops_alert_silences.sql":           {},
+}
+
+type migrationExecutor interface {
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}
 
 type migrationChecksumCompatibilityRule struct {
 	fileChecksum       string
@@ -119,30 +132,49 @@ func ApplyMigrations(ctx context.Context, db *sql.DB) error {
 //   - ctx: 上下文
 //   - db: 数据库连接
 //   - fsys: 包含迁移文件的文件系统（通常是 embed.FS）
-func applyMigrationsFS(ctx context.Context, db *sql.DB, fsys fs.FS) error {
+func applyMigrationsFS(ctx context.Context, db *sql.DB, fsys fs.FS) (resultErr error) {
 	if db == nil {
 		return errors.New("nil sql db")
 	}
 
+	// PostgreSQL session advisory locks are connection-scoped. Pin one physical
+	// connection for lock acquisition, every migration statement, and unlock.
+	// Using *sql.DB for those operations can acquire and release on different
+	// pooled sessions, leaving the migration sequence effectively unlocked.
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("reserve migrations connection: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+
 	// 获取分布式锁，确保多实例部署时只有一个实例执行迁移。
 	// 这是 PostgreSQL 特有的 Advisory Lock 机制。
-	if err := pgAdvisoryLock(ctx, db); err != nil {
+	if err := pgAdvisoryLock(ctx, conn); err != nil {
 		return err
 	}
 	defer func() {
-		// 无论迁移是否成功，都要释放锁。
-		// 使用 context.Background() 确保即使原 ctx 已取消也能释放锁。
-		_ = pgAdvisoryUnlock(context.Background(), db)
+		// 无论迁移是否成功，都在获取锁的同一 session 上释放它。
+		// 使用独立且有界的 context，避免原 ctx 取消后跳过 unlock，
+		// 也避免数据库异常时 shutdown 永久阻塞。
+		unlockCtx, cancel := context.WithTimeout(context.Background(), migrationsUnlockTimeout)
+		defer cancel()
+		if err := pgAdvisoryUnlock(unlockCtx, conn); err != nil {
+			// Returning a session that still owns the advisory lock to the pool
+			// would deadlock future migrations. driver.ErrBadConn forces
+			// database/sql to discard the physical connection instead.
+			_ = conn.Raw(func(any) error { return driver.ErrBadConn })
+			resultErr = errors.Join(resultErr, err)
+		}
 	}()
 
 	// 创建迁移记录表（如果不存在）。
 	// 该表记录所有已应用的迁移及其校验和。
-	if _, err := db.ExecContext(ctx, schemaMigrationsTableDDL); err != nil {
+	if _, err := conn.ExecContext(ctx, schemaMigrationsTableDDL); err != nil {
 		return fmt.Errorf("create schema_migrations: %w", err)
 	}
 
 	// 自动对齐 Atlas 基线（如果检测到 legacy schema_migrations 且缺失 atlas_schema_revisions）。
-	if err := ensureAtlasBaselineAligned(ctx, db, fsys); err != nil {
+	if err := ensureAtlasBaselineAligned(ctx, conn, fsys); err != nil {
 		return err
 	}
 
@@ -166,6 +198,14 @@ func applyMigrationsFS(ctx context.Context, db *sql.DB, fsys fs.FS) error {
 			continue // 跳过空文件
 		}
 
+		if err := validateMigrationDirectionPolicy(name, content); err != nil {
+			return fmt.Errorf("validate migration %s direction: %w", name, err)
+		}
+		executableContent, err := extractMigrationUpSQL(content)
+		if err != nil {
+			return fmt.Errorf("parse migration %s direction: %w", name, err)
+		}
+
 		// 计算文件内容的 SHA256 校验和，用于检测文件是否被修改。
 		// 这是一种防篡改机制：如果有人修改了已应用的迁移文件，系统会拒绝启动。
 		sum := sha256.Sum256([]byte(content))
@@ -173,7 +213,7 @@ func applyMigrationsFS(ctx context.Context, db *sql.DB, fsys fs.FS) error {
 
 		// 检查该迁移是否已经应用
 		var existing string
-		rowErr := db.QueryRowContext(ctx, "SELECT checksum FROM schema_migrations WHERE filename = $1", name).Scan(&existing)
+		rowErr := conn.QueryRowContext(ctx, "SELECT checksum FROM schema_migrations WHERE filename = $1", name).Scan(&existing)
 		if rowErr == nil {
 			// 迁移已应用，验证校验和是否匹配
 			if existing != checksum {
@@ -199,7 +239,7 @@ func applyMigrationsFS(ctx context.Context, db *sql.DB, fsys fs.FS) error {
 			return fmt.Errorf("check migration %s: %w", name, rowErr)
 		}
 
-		nonTx, err := validateMigrationExecutionMode(name, content)
+		nonTx, err := validateMigrationExecutionMode(name, executableContent)
 		if err != nil {
 			return fmt.Errorf("validate migration %s: %w", name, err)
 		}
@@ -207,7 +247,7 @@ func applyMigrationsFS(ctx context.Context, db *sql.DB, fsys fs.FS) error {
 		if nonTx {
 			// *_notx.sql：用于 CREATE/DROP INDEX CONCURRENTLY 场景，必须非事务执行。
 			// 逐条语句执行，避免将多条 CONCURRENTLY 语句放入同一个隐式事务块。
-			statements := splitSQLStatements(content)
+			statements := splitSQLStatements(executableContent)
 			for i, stmt := range statements {
 				trimmed := strings.TrimSpace(stmt)
 				if trimmed == "" {
@@ -216,24 +256,24 @@ func applyMigrationsFS(ctx context.Context, db *sql.DB, fsys fs.FS) error {
 				if stripSQLLineComment(trimmed) == "" {
 					continue
 				}
-				if _, err := db.ExecContext(ctx, trimmed); err != nil {
+				if _, err := conn.ExecContext(ctx, trimmed); err != nil {
 					return fmt.Errorf("apply migration %s (non-tx statement %d): %w", name, i+1, err)
 				}
 			}
-			if _, err := db.ExecContext(ctx, "INSERT INTO schema_migrations (filename, checksum) VALUES ($1, $2)", name, checksum); err != nil {
+			if _, err := conn.ExecContext(ctx, "INSERT INTO schema_migrations (filename, checksum) VALUES ($1, $2)", name, checksum); err != nil {
 				return fmt.Errorf("record migration %s (non-tx): %w", name, err)
 			}
 			continue
 		}
 
 		// 默认迁移在事务中执行，确保原子性：要么完全成功，要么完全回滚。
-		tx, err := db.BeginTx(ctx, nil)
+		tx, err := conn.BeginTx(ctx, nil)
 		if err != nil {
 			return fmt.Errorf("begin migration %s: %w", name, err)
 		}
 
 		// 执行迁移 SQL
-		if _, err := tx.ExecContext(ctx, content); err != nil {
+		if _, err := tx.ExecContext(ctx, executableContent); err != nil {
 			_ = tx.Rollback()
 			return fmt.Errorf("apply migration %s: %w", name, err)
 		}
@@ -254,7 +294,7 @@ func applyMigrationsFS(ctx context.Context, db *sql.DB, fsys fs.FS) error {
 	return nil
 }
 
-func ensureAtlasBaselineAligned(ctx context.Context, db *sql.DB, fsys fs.FS) error {
+func ensureAtlasBaselineAligned(ctx context.Context, db migrationExecutor, fsys fs.FS) error {
 	hasLegacy, err := tableExists(ctx, db, "schema_migrations")
 	if err != nil {
 		return fmt.Errorf("check schema_migrations: %w", err)
@@ -295,7 +335,7 @@ func ensureAtlasBaselineAligned(ctx context.Context, db *sql.DB, fsys fs.FS) err
 	return nil
 }
 
-func tableExists(ctx context.Context, db *sql.DB, tableName string) (bool, error) {
+func tableExists(ctx context.Context, db migrationExecutor, tableName string) (bool, error) {
 	var exists bool
 	err := db.QueryRowContext(ctx, `
 		SELECT EXISTS (
@@ -338,6 +378,191 @@ func isMigrationChecksumCompatible(name, dbChecksum, fileChecksum string) bool {
 	}
 	_, ok = rule.acceptedDBChecksum[dbChecksum]
 	return ok
+}
+
+type migrationDirection int
+
+const (
+	migrationDirectionNone migrationDirection = iota
+	migrationDirectionUp
+	migrationDirectionDown
+)
+
+// validateMigrationDirectionPolicy prevents new rollback sections from being
+// added to the embedded migration stream. Three historical files are allowed
+// because their checksums are immutable; extractMigrationUpSQL makes them safe
+// by executing only their Up sections.
+func validateMigrationDirectionPolicy(name, content string) error {
+	if !hasGooseMarker(content, "Down") {
+		return nil
+	}
+	if _, ok := legacyMigrationsWithDownSections[name]; !ok {
+		return errors.New("down sections are forbidden in new migrations; create a forward-only compensating migration")
+	}
+	return nil
+}
+
+// extractMigrationUpSQL returns the executable Up portion of a migration.
+// Files without Goose markers retain the repository's historical behavior.
+// Marker-bearing files are validated strictly so malformed direction blocks
+// fail before any SQL is executed or recorded.
+func extractMigrationUpSQL(content string) (string, error) {
+	if !hasAnyGooseDirective(content) {
+		return content, nil
+	}
+
+	lines := strings.Split(content, "\n")
+	direction := migrationDirectionNone
+	seenUp := false
+	seenDown := false
+	statementOpen := false
+	upLines := make([]string, 0, len(lines))
+	preface := make([]string, 0)
+
+	for lineNo, line := range lines {
+		marker, isDirective := parseGooseDirective(line)
+		if !isDirective {
+			switch direction {
+			case migrationDirectionNone:
+				preface = append(preface, line)
+			case migrationDirectionUp:
+				upLines = append(upLines, line)
+			case migrationDirectionDown:
+				// Down SQL is intentionally validated structurally but never executed.
+			}
+			continue
+		}
+
+		switch marker {
+		case "Up":
+			if seenUp || direction != migrationDirectionNone || statementOpen {
+				return "", fmt.Errorf("line %d: duplicate or misplaced Up marker", lineNo+1)
+			}
+			executable, err := containsExecutableSQL(strings.Join(preface, "\n"))
+			if err != nil {
+				return "", fmt.Errorf("line %d: invalid content before Up marker: %w", lineNo+1, err)
+			}
+			if executable {
+				return "", fmt.Errorf("line %d: executable SQL before Up marker", lineNo+1)
+			}
+			seenUp = true
+			direction = migrationDirectionUp
+		case "Down":
+			if !seenUp || seenDown || direction != migrationDirectionUp || statementOpen {
+				return "", fmt.Errorf("line %d: duplicate or misplaced Down marker", lineNo+1)
+			}
+			seenDown = true
+			direction = migrationDirectionDown
+		case "StatementBegin":
+			if direction == migrationDirectionNone || statementOpen {
+				return "", fmt.Errorf("line %d: misplaced StatementBegin marker", lineNo+1)
+			}
+			statementOpen = true
+		case "StatementEnd":
+			if direction == migrationDirectionNone || !statementOpen {
+				return "", fmt.Errorf("line %d: misplaced StatementEnd marker", lineNo+1)
+			}
+			statementOpen = false
+		default:
+			return "", fmt.Errorf("line %d: unsupported Goose marker %q", lineNo+1, marker)
+		}
+	}
+
+	if !seenUp {
+		return "", errors.New("goose markers present without an Up section")
+	}
+	if statementOpen {
+		return "", errors.New("unclosed Goose StatementBegin block")
+	}
+
+	upSQL := strings.TrimSpace(strings.Join(upLines, "\n"))
+	executable, err := containsExecutableSQL(upSQL)
+	if err != nil {
+		return "", fmt.Errorf("invalid Goose Up section: %w", err)
+	}
+	if !executable {
+		return "", errors.New("goose Up section contains no executable SQL")
+	}
+	return upSQL, nil
+}
+
+func hasAnyGooseDirective(content string) bool {
+	for _, line := range strings.Split(content, "\n") {
+		if _, ok := parseGooseDirective(line); ok {
+			return true
+		}
+	}
+	return false
+}
+
+// containsExecutableSQL distinguishes comment-only regions from executable
+// SQL. It is deliberately conservative: outside line or nested block comments,
+// any non-whitespace byte counts as executable content.
+func containsExecutableSQL(content string) (bool, error) {
+	blockDepth := 0
+	for i := 0; i < len(content); {
+		if blockDepth > 0 {
+			switch {
+			case i+1 < len(content) && content[i:i+2] == "/*":
+				blockDepth++
+				i += 2
+			case i+1 < len(content) && content[i:i+2] == "*/":
+				blockDepth--
+				i += 2
+			default:
+				i++
+			}
+			continue
+		}
+
+		switch {
+		case i+1 < len(content) && content[i:i+2] == "--":
+			i += 2
+			for i < len(content) && content[i] != '\n' {
+				i++
+			}
+		case i+1 < len(content) && content[i:i+2] == "/*":
+			blockDepth = 1
+			i += 2
+		case content[i] == ' ' || content[i] == '\t' || content[i] == '\r' || content[i] == '\n':
+			i++
+		default:
+			return true, nil
+		}
+	}
+	if blockDepth != 0 {
+		return false, errors.New("unterminated block comment")
+	}
+	return false, nil
+}
+
+func hasGooseMarker(content, marker string) bool {
+	for _, line := range strings.Split(content, "\n") {
+		parsed, ok := parseGooseDirective(line)
+		if ok && parsed == marker {
+			return true
+		}
+	}
+	return false
+}
+
+// parseGooseDirective recognizes the directive family even when whitespace is
+// non-canonical. Unknown or misspelled directives then fail closed instead of
+// letting rollback SQL be mistaken for an ordinary unmarked migration.
+func parseGooseDirective(line string) (string, bool) {
+	trimmed := strings.TrimSpace(line)
+	if !strings.HasPrefix(trimmed, "--") {
+		return "", false
+	}
+	comment := strings.TrimSpace(strings.TrimPrefix(trimmed, "--"))
+	fields := strings.Fields(comment)
+	if len(fields) == 0 || !strings.EqualFold(fields[0], "+goose") {
+		return "", false
+	}
+	if len(fields) == 1 {
+		return "", true
+	}
+	return strings.Join(fields[1:], " "), true
 }
 
 func validateMigrationExecutionMode(name, content string) (bool, error) {
@@ -409,7 +634,7 @@ func stripSQLLineComment(s string) string {
 // pgAdvisoryLock 获取 PostgreSQL Advisory Lock。
 // Advisory Lock 是一种轻量级的锁机制，不与任何特定的数据库对象关联。
 // 它非常适合用于应用层面的分布式锁场景，如迁移序列化。
-func pgAdvisoryLock(ctx context.Context, db *sql.DB) error {
+func pgAdvisoryLock(ctx context.Context, db migrationExecutor) error {
 	ticker := time.NewTicker(migrationsLockRetryInterval)
 	defer ticker.Stop()
 
@@ -431,10 +656,14 @@ func pgAdvisoryLock(ctx context.Context, db *sql.DB) error {
 
 // pgAdvisoryUnlock 释放 PostgreSQL Advisory Lock。
 // 必须在获取锁后确保释放，否则会阻塞其他实例的迁移操作。
-func pgAdvisoryUnlock(ctx context.Context, db *sql.DB) error {
-	_, err := db.ExecContext(ctx, "SELECT pg_advisory_unlock($1)", migrationsAdvisoryLockID)
+func pgAdvisoryUnlock(ctx context.Context, db migrationExecutor) error {
+	var unlocked bool
+	err := db.QueryRowContext(ctx, "SELECT pg_advisory_unlock($1)", migrationsAdvisoryLockID).Scan(&unlocked)
 	if err != nil {
 		return fmt.Errorf("release migrations lock: %w", err)
+	}
+	if !unlocked {
+		return errors.New("release migrations lock: current PostgreSQL session does not own the lock")
 	}
 	return nil
 }

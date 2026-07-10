@@ -103,6 +103,7 @@ type UsageRecordWorkerPool struct {
 	autoScaleCancel       context.CancelFunc
 	lifecycleWg           sync.WaitGroup
 	stopOnce              sync.Once
+	accountingWorker      *AccountingWorker
 }
 
 // NewUsageRecordWorkerPool 从配置构建使用量记录池。
@@ -209,6 +210,9 @@ func (p *UsageRecordWorkerPool) Stop() {
 		return
 	}
 	p.stopOnce.Do(func() {
+		if p.accountingWorker != nil {
+			p.accountingWorker.Stop()
+		}
 		if p.autoScaleCancel != nil {
 			p.autoScaleCancel()
 		}

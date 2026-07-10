@@ -19,6 +19,7 @@ const SubscriptionSharedQuotaNoteKey = "shared_quota="
 type UsageBillingCommand struct {
 	RequestID          string
 	APIKeyID           int64
+	UsageLogID         int64
 	RequestFingerprint string
 	RequestPayloadHash string
 

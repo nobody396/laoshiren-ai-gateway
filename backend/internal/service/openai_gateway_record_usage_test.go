@@ -788,6 +788,9 @@ func TestOpenAIGatewayServiceRecordUsage_GeneratesRequestIDWhenAllSourcesMissing
 	require.True(t, strings.HasPrefix(billingRepo.lastCmd.RequestID, "generated:"))
 	require.NotNil(t, usageRepo.lastLog)
 	require.Equal(t, billingRepo.lastCmd.RequestID, usageRepo.lastLog.RequestID)
+	require.NotNil(t, usageRepo.lastLog.AccountingCommand)
+	require.Equal(t, usageRepo.lastLog.RequestID, usageRepo.lastLog.AccountingCommand.RequestID)
+	require.Empty(t, usageRepo.lastLog.AccountingCommand.RequestPayloadHash)
 }
 
 func TestOpenAIGatewayServiceRecordUsage_BillingErrorKeepsPersistedUsageLog(t *testing.T) {

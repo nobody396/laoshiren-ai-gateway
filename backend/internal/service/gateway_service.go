@@ -7309,6 +7309,7 @@ func buildUsageBillingCommand(requestID string, usageLog *UsageLog, p *postUsage
 		RequestPayloadHash: strings.TrimSpace(p.RequestPayloadHash),
 	}
 	if usageLog != nil {
+		cmd.UsageLogID = usageLog.ID
 		cmd.Model = usageLog.Model
 		cmd.BillingType = usageLog.BillingType
 		cmd.InputTokens = usageLog.InputTokens
@@ -7825,6 +7826,7 @@ func (s *GatewayService) RecordUsage(ctx context.Context, input *RecordUsageInpu
 		APIKeyService:         input.APIKeyService,
 	}
 	billingDeps := s.billingDeps()
+	usageLog.AccountingCommand = buildUsageBillingCommand(requestID, usageLog, billingParams)
 	if err := persistUsageLogForBilling(ctx, s.usageLogRepo, usageLog, "service.gateway"); err != nil {
 		return err
 	}
@@ -8012,6 +8014,7 @@ func (s *GatewayService) RecordUsageWithLongContext(ctx context.Context, input *
 		APIKeyService:         input.APIKeyService,
 	}
 	billingDeps := s.billingDeps()
+	usageLog.AccountingCommand = buildUsageBillingCommand(requestID, usageLog, billingParams)
 	if err := persistUsageLogForBilling(ctx, s.usageLogRepo, usageLog, "service.gateway"); err != nil {
 		return err
 	}

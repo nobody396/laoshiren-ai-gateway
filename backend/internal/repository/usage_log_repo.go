@@ -248,8 +248,25 @@ func (r *usageLogRepository) Create(ctx context.Context, log *service.UsageLog) 
 		return false, nil
 	}
 
-	if tx := dbent.TxFromContext(ctx); tx != nil {
-		return r.createSingle(ctx, tx.Client(), log)
+	if log.AccountingCommand != nil {
+		var inserted bool
+		err := withinEntTransaction(ctx, r.client, func(client *dbent.Client) error {
+			var err error
+			inserted, err = r.createSingle(ctx, client, log)
+			if err != nil {
+				return err
+			}
+			if log.ID <= 0 {
+				return errors.New("usage log id was not assigned")
+			}
+			_, _, err = enqueueAccountingCommand(ctx, client, log.ID, log.AccountingCommand)
+			return err
+		})
+		return inserted, err
+	}
+
+	if client, ok := transactionClientFromContext(ctx); ok {
+		return r.createSingle(ctx, client, log)
 	}
 	requestID := strings.TrimSpace(log.RequestID)
 	if requestID == "" {

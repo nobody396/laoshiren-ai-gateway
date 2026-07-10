@@ -200,6 +200,13 @@ func ProvideUserMessageQueueService(cache UserMsgQueueCache, rpmCache RPMCache, 
 	return svc
 }
 
+func ProvideUsageRecordWorkerPool(cfg *config.Config, accountingWorker *AccountingWorker) *UsageRecordWorkerPool {
+	pool := NewUsageRecordWorkerPool(cfg)
+	pool.accountingWorker = accountingWorker
+	accountingWorker.Start()
+	return pool
+}
+
 // ProvideSchedulerSnapshotService creates and starts SchedulerSnapshotService.
 func ProvideSchedulerSnapshotService(
 	cache SchedulerCache,
@@ -515,7 +522,9 @@ var ProviderSet = wire.NewSet(
 	wire.Bind(new(DefaultSubscriptionAssigner), new(*SubscriptionService)),
 	ProvideConcurrencyService,
 	ProvideUserMessageQueueService,
-	NewUsageRecordWorkerPool,
+	NewAccountingService,
+	NewAccountingWorker,
+	ProvideUsageRecordWorkerPool,
 	ProvideSchedulerSnapshotService,
 	NewIdentityService,
 	NewCRSSyncService,

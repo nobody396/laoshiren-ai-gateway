@@ -5111,6 +5111,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		APIKeyService:         input.APIKeyService,
 	}
 	billingDeps := s.billingDeps()
+	usageLog.AccountingCommand = buildUsageBillingCommand(requestID, usageLog, billingParams)
 	if err := persistUsageLogForBilling(ctx, s.usageLogRepo, usageLog, "service.openai_gateway"); err != nil {
 		return err
 	}

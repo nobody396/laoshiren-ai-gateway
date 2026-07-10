@@ -17,6 +17,11 @@ jobs:
     name: Check production availability
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      # Beijing 2026-07-11 01:00-05:00. Before the window the live legacy
+      # image does not expose /readyz; after the window /readyz is mandatory.
+      MAINTENANCE_START_EPOCH: "1783702800"
+      MAINTENANCE_END_EPOCH: "1783717200"
 
     steps:
       - name: Check public endpoints
@@ -24,15 +29,26 @@ jobs:
         run: |
           set -euo pipefail
           failures=()
-          site_home_status="not_checked"
-          site_home_reason="unknown"
-          site_home_total="unknown"
-          site_health_status="not_checked"
-          site_health_reason="unknown"
-          site_health_total="unknown"
-          api_health_status="not_checked"
-          api_health_reason="unknown"
-          api_health_total="unknown"
+          for endpoint in site_home site_health api_health site_readiness api_readiness; do
+            printf -v "${endpoint}_status" '%s' "not_checked"
+            printf -v "${endpoint}_reason" '%s' "unknown"
+            printf -v "${endpoint}_total" '%s' "unknown"
+          done
+
+          status_is_allowed() {
+            local actual="$1"
+            local allowed_csv="$2"
+            local allowed
+            local values=()
+
+            IFS=',' read -r -a values <<< "$allowed_csv"
+            for allowed in "${values[@]}"; do
+              if [[ "$actual" == "$allowed" ]]; then
+                return 0
+              fi
+            done
+            return 1
+          }
 
           set_endpoint_result() {
             local name="$1"
@@ -41,20 +57,14 @@ jobs:
             local total="$4"
 
             case "$name" in
-              site_home)
-                site_home_status="$status"
-                site_home_reason="$reason"
-                site_home_total="$total"
+              site_home|site_health|api_health|site_readiness|api_readiness)
+                printf -v "${name}_status" '%s' "$status"
+                printf -v "${name}_reason" '%s' "$reason"
+                printf -v "${name}_total" '%s' "$total"
                 ;;
-              site_health)
-                site_health_status="$status"
-                site_health_reason="$reason"
-                site_health_total="$total"
-                ;;
-              api_health)
-                api_health_status="$status"
-                api_health_reason="$reason"
-                api_health_total="$total"
+              *)
+                echo "unsupported endpoint result name: $name" >&2
+                return 2
                 ;;
             esac
           }
@@ -62,7 +72,7 @@ jobs:
           check_endpoint() {
             local name="$1"
             local url="$2"
-            local expected="$3"
+            local allowed_statuses="$3"
             local max_seconds="$4"
             local attempt
             local output
@@ -81,13 +91,13 @@ jobs:
               output="$(curl -sS -o "$body_file" -w '%{http_code} %{time_connect} %{time_appconnect} %{time_starttransfer} %{time_total} %{remote_ip}' --connect-timeout 10 --max-time 20 "$url" 2>"$error_file" || true)"
               read -r code connect tls first_byte seconds remote_ip <<< "${output:-}"
 
-              if [[ "${code:-}" == "$expected" ]] && awk -v t="${seconds:-999}" -v m="$max_seconds" 'BEGIN { exit !(t <= m) }'; then
+              if status_is_allowed "${code:-}" "$allowed_statuses" && awk -v t="${seconds:-999}" -v m="$max_seconds" 'BEGIN { exit !(t <= m) }'; then
                 reason="ok"
               elif [[ "${code:-}" == "000" ]]; then
                 reason="connect_or_network_timeout"
               elif [[ "${code:-0}" =~ ^5 ]]; then
                 reason="server_or_edge_5xx"
-              elif [[ "${code:-}" == "$expected" ]]; then
+              elif status_is_allowed "${code:-}" "$allowed_statuses"; then
                 reason="slow_response"
               else
                 reason="unexpected_status"
@@ -106,46 +116,124 @@ jobs:
               fi
             done
 
-            echo "::error title=${name} ${reason}::Expected HTTP $expected within ${max_seconds}s for $url, got status=${code:-curl_failed} reason=$reason time=${seconds:-unknown}s"
+            echo "::error title=${name} ${reason}::Expected HTTP ${allowed_statuses} within ${max_seconds}s for $url, got status=${code:-curl_failed} reason=$reason time=${seconds:-unknown}s"
             if [[ -s "$error_file" ]]; then
               echo "Last curl error:"
               head -c 500 "$error_file" || true
               echo
             fi
-            if [[ -s "$body_file" ]]; then
-              echo "Last response body preview:"
-              head -c 500 "$body_file" || true
-              echo
-            fi
             return 1
           }
 
-          if ! check_endpoint "site_home" "https://laoshirenai.com" "200" "10"; then
-            failures+=("site_home")
+          require_endpoint() {
+            local name="$1"
+            local url="$2"
+            local allowed_statuses="$3"
+            local max_seconds="$4"
+
+            if ! check_endpoint "$name" "$url" "$allowed_statuses" "$max_seconds"; then
+              failures+=("$name")
+            fi
+          }
+
+          report_results() {
+            local name
+            local status_var
+            local reason_var
+            local total_var
+            for name in site_home site_health api_health site_readiness api_readiness; do
+              status_var="${name}_status"
+              reason_var="${name}_reason"
+              total_var="${name}_total"
+              echo "[$name] final_status=${!status_var} reason=${!reason_var} total=${!total_var}s"
+            done
+          }
+
+          now_epoch="$(date -u +%s)"
+          if (( now_epoch < MAINTENANCE_START_EPOCH )); then
+            phase="pre-maintenance"
+          elif (( now_epoch < MAINTENANCE_END_EPOCH )); then
+            phase="maintenance-window"
+          else
+            phase="post-maintenance"
           fi
-          if ! check_endpoint "site_health" "https://laoshirenai.com/readyz" "200" "5"; then
-            failures+=("site_health")
-          fi
-          if ! check_endpoint "api_health" "https://api.laoshirenai.com/readyz" "200" "5"; then
-            failures+=("api_health")
-          fi
+          echo "uptime_phase=$phase now_utc=$(date -u +%FT%TZ)"
+
+          case "$phase" in
+            pre-maintenance)
+              require_endpoint "site_home" "https://laoshirenai.com" "200" "10"
+              require_endpoint "site_health" "https://laoshirenai.com/health" "200" "5"
+              require_endpoint "api_health" "https://api.laoshirenai.com/health" "200" "5"
+              require_endpoint "site_readiness" "https://laoshirenai.com/readyz" "200,404" "5"
+              require_endpoint "api_readiness" "https://api.laoshirenai.com/readyz" "200,404" "5"
+
+              if [[ "$site_readiness_status" == "404" || "$api_readiness_status" == "404" ]]; then
+                echo "::warning title=Legacy readiness compatibility::Production is healthy on /health; /readyz remains optional only until the scheduled maintenance starts."
+              fi
+              ;;
+            maintenance-window)
+              # Route activation is not instantaneous. Accept either a coherent
+              # app state or the coherent planned-maintenance 503 state, but
+              # reject partial/mixed routing across the public domains.
+              require_endpoint "site_home" "https://laoshirenai.com" "200,503" "10"
+              require_endpoint "site_health" "https://laoshirenai.com/health" "200,503" "5"
+              require_endpoint "api_health" "https://api.laoshirenai.com/health" "200,503" "5"
+              require_endpoint "site_readiness" "https://laoshirenai.com/readyz" "200,404,503" "5"
+              require_endpoint "api_readiness" "https://api.laoshirenai.com/readyz" "200,404,503" "5"
+
+              coherent_app=false
+              coherent_maintenance=false
+              if [[ "$site_home_status" == "200" \
+                && "$site_health_status" == "200" \
+                && "$api_health_status" == "200" \
+                && "$site_readiness_status" =~ ^(200|404)$ \
+                && "$api_readiness_status" =~ ^(200|404)$ ]]; then
+                coherent_app=true
+              fi
+              if [[ "$site_home_status" == "503" \
+                && "$site_health_status" == "503" \
+                && "$api_health_status" == "503" \
+                && "$site_readiness_status" == "503" \
+                && "$api_readiness_status" == "503" ]]; then
+                coherent_maintenance=true
+              fi
+
+              if [[ "$coherent_maintenance" == "true" ]]; then
+                echo "Planned maintenance surface is coherently active on all public probes."
+              elif [[ "$coherent_app" == "true" ]]; then
+                echo "::warning title=Maintenance route not active::The app is still coherently serving traffic inside the announced window; the maintenance executor must verify the route before stopping writers."
+              else
+                failures+=("incoherent_public_route")
+                echo "::error title=Mixed public route state::Public probes do not match either a coherent app state or the planned maintenance 503 state."
+              fi
+              ;;
+            post-maintenance)
+              require_endpoint "site_home" "https://laoshirenai.com" "200" "10"
+              require_endpoint "site_health" "https://laoshirenai.com/health" "200" "5"
+              require_endpoint "api_health" "https://api.laoshirenai.com/health" "200" "5"
+              require_endpoint "site_readiness" "https://laoshirenai.com/readyz" "200" "5"
+              require_endpoint "api_readiness" "https://api.laoshirenai.com/readyz" "200" "5"
+              ;;
+          esac
 
           if (( ${#failures[@]} == 0 )); then
-            echo "All production endpoint checks passed."
+            report_results
+            echo "All production endpoint checks passed for phase=$phase."
             exit 0
           fi
 
           echo "::group::Uptime failure classification"
+          echo "Phase: $phase"
           echo "Failed endpoints: ${failures[*]}"
-          echo "[site_home] final_status=$site_home_status reason=$site_home_reason total=${site_home_total}s"
-          echo "[site_health] final_status=$site_health_status reason=$site_health_reason total=${site_health_total}s"
-          echo "[api_health] final_status=$api_health_status reason=$api_health_reason total=${api_health_total}s"
+          report_results
 
-          if [[ " ${failures[*]} " == *" site_home "* && " ${failures[*]} " != *" site_health "* && " ${failures[*]} " != *" api_health "* ]]; then
+          if [[ " ${failures[*]} " == *" incoherent_public_route "* ]]; then
+            echo "::error title=Public route transition failed::The edge is serving a mixed app/maintenance state. Verify the protected route before stopping or reopening app writers."
+          elif [[ " ${failures[*]} " == *" site_home "* && " ${failures[*]} " != *" site_health "* && " ${failures[*]} " != *" api_health "* ]]; then
             echo "::warning title=Homepage edge path degraded::The homepage check failed, but both health endpoints passed. This points to a public edge/homepage path issue rather than a full production outage."
-          elif [[ " ${failures[*]} " == *" api_health "* ]]; then
+          elif [[ " ${failures[*]} " == *" api_health "* || " ${failures[*]} " == *" api_readiness "* ]]; then
             echo "::error title=API health failed::The API health endpoint failed; treat this as production-impacting until the source server and app logs prove otherwise."
-          elif [[ " ${failures[*]} " == *" site_health "* ]]; then
+          elif [[ " ${failures[*]} " == *" site_health "* || " ${failures[*]} " == *" site_readiness "* ]]; then
             echo "::error title=Site health failed::The site health endpoint failed; check EdgeOne, Traefik, and app health."
           else
             echo "::error title=Public connectivity failed::The public monitor could not prove availability from the GitHub runner."

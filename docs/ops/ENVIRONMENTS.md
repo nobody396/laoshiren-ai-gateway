@@ -40,12 +40,14 @@ flowchart LR
 | 运维教程目录 | `/Users/fujunhao/laoshirenai/tutorials/03-operation` | 运行、备份、排错教程 |
 | Secret/MCP 控制面 | Agent Switch | 只用 CLI 管理 secret name/value；值不进项目文件或输出 |
 | 部署 Skill 源 | `/Users/fujunhao/AgentWorkspace/skill-hub/own/laoshirenai-skills/skills/laoshirenai-deploy/SKILL.md` | Skill Hub 管理；后续改代码/推送/上线必须先读 |
+| Checkout registry | `docs/ops/checkouts.json` | canonical/report-only/temporary owner, actions and TTL; only canonical may release |
 
 ## 后续线程必须遵守的规则
 
 - 普通修 bug、改前端、改后端：只做到测试、commit、push、GitHub Actions 镜像构建成功，然后停止。
 - 除非用户明确说“上线 / 发布 / 部署到生产”，否则不要更新生产服务。
 - 生产部署不是 Compose，不要改成 Compose。
+- 生产应用镜像只由仓库根 `Dockerfile` 构建；`deploy/maintenance/Dockerfile` 仅构建独立维护服务。
 - 不要重建 PostgreSQL 或 Redis。
 - 不要使用 `root@laoshirenai.com` SSH；该域名在 CDN 后面，不是 SSH 入口。
 - 服务器 SSH 统一使用本地 alias：`laoshirenai-hostinger`。
@@ -171,6 +173,8 @@ Dokploy 自身服务：
 ## 应用环境变量
 
 以下是生产 app 服务当前使用的环境变量。真实敏感值已隐藏。
+
+这些名称只描述平台注入契约，不是项目 `.env` 的模板或本地 secret 来源。真实值留在受控生产平台；本机 secret/MCP 值只进 Agent Switch。
 
 ```env
 ADMIN_EMAIL=collabwithjerrys@pm.me
@@ -341,6 +345,14 @@ curl -fsS 'https://dns.google/resolve?name=api.laoshirenai.com&type=A' | jq
 - OpenAI 兼容客户端手动填写：`https://api.laoshirenai.com/v1`
 - Claude/Anthropic 客户端手动填写：`https://api.laoshirenai.com`
 - Antigravity Claude：`https://api.laoshirenai.com/antigravity`
+
+## 备份权限、加密与恢复演练
+
+- 本机备份根目录和包含身份/数据库元数据的私有目录必须是 `0700`；备份文件、校验清单和恢复证据必须是 `0600`。
+- 离机副本必须使用所有者批准的静态加密；加密密钥只由受控平台或 Agent Switch 管理，不与密文同目录保存。
+- 每次维护保留 preflight、post-migration 和 final 三个验证点；在线副本按 30 天滚动保留，长期归档由所有者单独批准。
+- 至少每季度在隔离 PostgreSQL/Redis 容器中执行恢复演练，验证 checksum、migration、prior/new compatibility；禁止用生产库做演练，也禁止把恢复结果写回生产。
+- 公网重新开放写流量后只允许 forward fix 或精确 prior image 回滚，绝不恢复旧数据库覆盖新写入。
 
 ## 发布与不上线规则
 

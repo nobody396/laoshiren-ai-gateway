@@ -65,7 +65,7 @@ git push origin feat/short-description
 - AI review does not find blocking risk
 - a human accepts the product change
 
-8. After merge, GitHub Actions builds and pushes `ghcr.io/nobody396/laoshiren-ai-gateway:main`.
+8. After merge, required GitHub Actions builds the exact commit and records its immutable `image@sha256` artifact. Moving tags are not release evidence.
 
 9. Stop. Do not deploy production unless the owner explicitly asks.
 
@@ -99,6 +99,8 @@ Production release is separate from merge.
 
 Only after the owner explicitly requests production release, use the documented deploy process in `AGENTS.md` and `docs/ops/ENVIRONMENTS.md`.
 
+Local release commands must run from the canonical checkout registered in `docs/ops/checkouts.json`; report-only clones and temporary worktrees fail closed. CI build checkouts are ephemeral and may build, but production consumes only their verified immutable artifact.
+
 The production app service is:
 
 ```text
@@ -106,4 +108,3 @@ laoshirenai-app-tazu5m
 ```
 
 Do not recreate or replace PostgreSQL or Redis for ordinary code changes.
-

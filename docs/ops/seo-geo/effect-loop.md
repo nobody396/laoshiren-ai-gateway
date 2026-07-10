@@ -91,16 +91,16 @@ docs/ops/seo-geo/backlog/radar-page-opportunities.md
 ### 必需，第二层效果闭环
 
 ```bash
-agent-switch secret set GSC_SITE_URL 'https://laoshirenai.com/'
-agent-switch secret set GSC_SERVICE_ACCOUNT_JSON_B64 '<base64 service account json>'
-agent-switch secret set GA4_PROPERTY_ID '<ga4 property id>'
-agent-switch secret set GA4_SERVICE_ACCOUNT_JSON_B64 '<base64 service account json>'
+secret-producing-command | agent-switch secret set --stdin GSC_SITE_URL
+secret-producing-command | agent-switch secret set --stdin GSC_SERVICE_ACCOUNT_JSON_B64
+secret-producing-command | agent-switch secret set --stdin GA4_PROPERTY_ID
+secret-producing-command | agent-switch secret set --stdin GA4_SERVICE_ACCOUNT_JSON_B64
 ```
 
 也支持共用 Google service account：
 
 ```bash
-agent-switch secret set GOOGLE_SERVICE_ACCOUNT_JSON_B64 '<base64 service account json>'
+secret-producing-command | agent-switch secret set --stdin GOOGLE_SERVICE_ACCOUNT_JSON_B64
 ```
 
 ### 可选，第三层市场雷达

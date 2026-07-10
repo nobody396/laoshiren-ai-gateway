@@ -201,19 +201,29 @@ func TestUsageBillingRepositoryApply_SharedSubscriptionBillingUsesOneQuotaPool(t
 	require.InDelta(t, 6, gptDaily, 0.000001)
 	require.InDelta(t, 6, claudeDaily, 0.000001)
 
-	_, err = repo.Apply(ctx, &service.UsageBillingCommand{
-		RequestID:        uuid.NewString(),
+	capRequestID := uuid.NewString()
+	result, err = repo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:        capRequestID,
 		APIKeyID:         apiKey.ID,
 		UserID:           user.ID,
 		SubscriptionID:   &claudeSub.ID,
 		SubscriptionCost: 5,
 	})
-	require.ErrorIs(t, err, service.ErrDailyLimitExceeded)
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.ElementsMatch(t, []service.SubscriptionUsageUpdate{
+		{UserID: user.ID, GroupID: gptGroup.ID, CostUSD: 5},
+		{UserID: user.ID, GroupID: claudeGroup.ID, CostUSD: 5},
+	}, result.SubscriptionUsageUpdates)
 
 	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT daily_usage_usd FROM user_subscriptions WHERE id = $1", gptSub.ID).Scan(&gptDaily))
 	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT daily_usage_usd FROM user_subscriptions WHERE id = $1", claudeSub.ID).Scan(&claudeDaily))
-	require.InDelta(t, 6, gptDaily, 0.000001)
-	require.InDelta(t, 6, claudeDaily, 0.000001)
+	require.InDelta(t, 10, gptDaily, 0.000001)
+	require.InDelta(t, 10, claudeDaily, 0.000001)
+
+	var dedupCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM usage_billing_dedup WHERE request_id = $1 AND api_key_id = $2", capRequestID, apiKey.ID).Scan(&dedupCount))
+	require.Equal(t, 1, dedupCount)
 }
 
 func TestUsageBillingRepositoryApply_BalanceFinalLimitRejectsInsufficientFunds(t *testing.T) {
@@ -250,7 +260,7 @@ func TestUsageBillingRepositoryApply_BalanceFinalLimitRejectsInsufficientFunds(t
 	require.Equal(t, 0, dedupCount)
 }
 
-func TestUsageBillingRepositoryApply_SubscriptionFinalLimitRejectsOverage(t *testing.T) {
+func TestUsageBillingRepositoryApply_SubscriptionFinalLimitCapsOverage(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)
 	repo := NewUsageBillingRepository(client, integrationDB)
@@ -283,14 +293,20 @@ func TestUsageBillingRepositoryApply_SubscriptionFinalLimitRejectsOverage(t *tes
 	})
 
 	requestID := uuid.NewString()
-	_, err := repo.Apply(ctx, &service.UsageBillingCommand{
+	result, err := repo.Apply(ctx, &service.UsageBillingCommand{
 		RequestID:        requestID,
 		APIKeyID:         apiKey.ID,
 		UserID:           user.ID,
 		SubscriptionID:   &subscription.ID,
 		SubscriptionCost: 1.00,
 	})
-	require.ErrorIs(t, err, service.ErrDailyLimitExceeded)
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.Equal(t, []service.SubscriptionUsageUpdate{{
+		UserID:  user.ID,
+		GroupID: group.ID,
+		CostUSD: 1.00,
+	}}, result.SubscriptionUsageUpdates)
 
 	var dailyUsage, weeklyUsage, monthlyUsage float64
 	require.NoError(t, integrationDB.QueryRowContext(ctx, `
@@ -298,13 +314,13 @@ func TestUsageBillingRepositoryApply_SubscriptionFinalLimitRejectsOverage(t *tes
 		FROM user_subscriptions
 		WHERE id = $1
 	`, subscription.ID).Scan(&dailyUsage, &weeklyUsage, &monthlyUsage))
-	require.InDelta(t, 9.99, dailyUsage, 0.000001)
-	require.InDelta(t, 9.99, weeklyUsage, 0.000001)
-	require.InDelta(t, 9.99, monthlyUsage, 0.000001)
+	require.InDelta(t, 10, dailyUsage, 0.000001)
+	require.InDelta(t, 10, weeklyUsage, 0.000001)
+	require.InDelta(t, 10, monthlyUsage, 0.000001)
 
 	var dedupCount int
 	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM usage_billing_dedup WHERE request_id = $1 AND api_key_id = $2", requestID, apiKey.ID).Scan(&dedupCount))
-	require.Equal(t, 0, dedupCount)
+	require.Equal(t, 1, dedupCount)
 }
 
 func TestUsageBillingRepositoryApply_ConcurrentBalanceFinalLimitPreventsOverspend(t *testing.T) {

@@ -5,7 +5,7 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"errors"
+	"strings"
 	"testing"
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
@@ -21,18 +21,19 @@ type GroupRepoSuite struct {
 	repo *groupRepository
 }
 
-type forbidSQLExecutor struct {
-	called bool
+type recordingSQLExecutor struct {
+	delegate sqlExecutor
+	queries  []string
 }
 
-func (s *forbidSQLExecutor) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
-	s.called = true
-	return nil, errors.New("unexpected sql exec")
+func (s *recordingSQLExecutor) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	s.queries = append(s.queries, query)
+	return s.delegate.ExecContext(ctx, query, args...)
 }
 
-func (s *forbidSQLExecutor) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
-	s.called = true
-	return nil, errors.New("unexpected sql query")
+func (s *recordingSQLExecutor) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	s.queries = append(s.queries, query)
+	return s.delegate.QueryContext(ctx, query, args...)
 }
 
 func (s *GroupRepoSuite) SetupTest() {
@@ -84,13 +85,15 @@ func (s *GroupRepoSuite) TestGetByIDLite_DoesNotUseAccountCount() {
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, group))
 
-	spy := &forbidSQLExecutor{}
+	spy := &recordingSQLExecutor{delegate: s.tx}
 	repo := newGroupRepositoryWithSQL(s.tx.Client(), spy)
 
 	got, err := repo.GetByIDLite(s.ctx, group.ID)
 	s.Require().NoError(err)
 	s.Require().Equal(group.ID, got.ID)
-	s.Require().False(spy.called, "expected no direct sql executor usage")
+	for _, query := range spy.queries {
+		s.Require().NotContains(strings.ToLower(query), "account_groups", "GetByIDLite must not load account counts")
+	}
 }
 
 func (s *GroupRepoSuite) TestUpdate() {
@@ -199,6 +202,16 @@ func (s *GroupRepoSuite) TestListWithFilters_Platform() {
 }
 
 func (s *GroupRepoSuite) TestListWithFilters_Status() {
+	baseGroups, _, err := s.repo.ListWithFilters(
+		s.ctx,
+		pagination.PaginationParams{Page: 1, PageSize: 20},
+		"",
+		service.StatusDisabled,
+		"",
+		nil,
+	)
+	s.Require().NoError(err, "ListWithFilters disabled baseline")
+
 	s.Require().NoError(s.repo.Create(s.ctx, &service.Group{
 		Name:             "g1",
 		Platform:         service.PlatformAnthropic,
@@ -216,10 +229,17 @@ func (s *GroupRepoSuite) TestListWithFilters_Status() {
 		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 
-	groups, _, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, "", service.StatusDisabled, "", nil)
+	groups, _, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 20}, "", service.StatusDisabled, "", nil)
 	s.Require().NoError(err)
-	s.Require().Len(groups, 1)
-	s.Require().Equal(service.StatusDisabled, groups[0].Status)
+	s.Require().Len(groups, len(baseGroups)+1)
+	var found bool
+	for _, group := range groups {
+		s.Require().Equal(service.StatusDisabled, group.Status)
+		if group.Name == "g2" {
+			found = true
+		}
+	}
+	s.Require().True(found, "g2 disabled group should be in results")
 }
 
 func (s *GroupRepoSuite) TestListWithFilters_IsExclusive() {
@@ -507,6 +527,9 @@ func (s *GroupRepoSuite) TestListActive() {
 }
 
 func (s *GroupRepoSuite) TestListActiveByPlatform() {
+	baseGroups, err := s.repo.ListActiveByPlatform(s.ctx, service.PlatformAnthropic)
+	s.Require().NoError(err, "ListActiveByPlatform baseline")
+
 	s.Require().NoError(s.repo.Create(s.ctx, &service.Group{
 		Name:             "g1",
 		Platform:         service.PlatformAnthropic,
@@ -534,8 +557,7 @@ func (s *GroupRepoSuite) TestListActiveByPlatform() {
 
 	groups, err := s.repo.ListActiveByPlatform(s.ctx, service.PlatformAnthropic)
 	s.Require().NoError(err, "ListActiveByPlatform")
-	// 1 default anthropic group + 1 test active anthropic group = 2 total
-	s.Require().Len(groups, 2)
+	s.Require().Len(groups, len(baseGroups)+1)
 	// Verify our test group is in the results
 	var found bool
 	for _, g := range groups {

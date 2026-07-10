@@ -1,4 +1,6 @@
-.PHONY: build build-backend build-frontend build-datamanagementd test test-backend test-frontend test-datamanagementd secret-scan
+.PHONY: build build-backend build-frontend build-datamanagementd test test-backend test-backend-integration test-frontend test-datamanagementd secret-scan
+
+GIT_SHA ?= $(shell git rev-parse HEAD)
 
 # 一键编译前后端
 build: build-backend build-frontend
@@ -20,6 +22,9 @@ test: test-backend test-frontend
 
 test-backend:
 	@$(MAKE) -C backend test
+
+test-backend-integration:
+	@$(MAKE) -C backend test-integration GIT_SHA=$(GIT_SHA)
 
 test-frontend:
 	@pnpm --dir frontend run lint:check

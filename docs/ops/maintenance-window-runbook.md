@@ -154,7 +154,12 @@ docker --context "$CTX" exec "$PG_CONTAINER" sh -lc \
   > "$BACKUP_FILE"
 chmod 600 "$BACKUP_FILE"
 test -s "$BACKUP_FILE"
-pg_restore --list "$BACKUP_FILE" >/dev/null
+if command -v pg_restore >/dev/null 2>&1; then
+  pg_restore --list "$BACKUP_FILE" >/dev/null
+else
+  docker run --rm -i postgres:18.1-alpine3.23 \
+    pg_restore --list < "$BACKUP_FILE" >/dev/null
+fi
 shasum -a 256 "$BACKUP_FILE" > "$BACKUP_FILE.sha256"
 chmod 600 "$BACKUP_FILE.sha256"
 ```
@@ -170,15 +175,20 @@ The restore drill is local-only and uses no production credential:
    isolated Docker network without published ports.
 2. Restore with `pg_restore --exit-on-error --no-owner --no-acl` into a fresh
    database and verify the catalog.
-3. Start the **target digest** with dummy local application secrets against that
-   restore; wait for `/livez` and `/readyz`.
-4. Stop it cleanly, start the target digest a second time, and prove migrations
+3. In a disposable volume, create a root-only test config and installation lock
+   that point explicitly at the restored database. Generate its temporary
+   fixture keys inside a local helper container without printing them. Do not
+   use first-run/auto-setup mode for this compatibility proof because it can
+   select or initialize the wrong empty database instead of the restored one.
+4. Start the **target digest** with that disposable config against the restore;
+   wait for `/livez` and `/readyz`.
+5. Stop it cleanly, start the target digest a second time, and prove migrations
    are idempotent.
-5. Verify migration `142` is recorded once, the repaired table/index and safe
+6. Verify migration `142` is recorded once, the repaired table/index and safe
    compatibility attributes exist, and no conflict/destructive DDL occurred.
-6. Start the **prior digest** against the migrated restore and prove its legacy
+7. Start the **prior digest** against the migrated restore and prove its legacy
    health endpoint succeeds. This proves app-only rollback compatibility.
-7. Destroy only the disposable containers/network; preserve the secured dump
+8. Destroy only the disposable containers/network/volume; preserve the secured dump
    and a redacted evidence record.
 
 Never mount the production volume into this drill. If either exact image cannot

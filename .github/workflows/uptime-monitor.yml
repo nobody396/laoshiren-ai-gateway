@@ -123,10 +123,10 @@ jobs:
           if ! check_endpoint "site_home" "https://laoshirenai.com" "200" "10"; then
             failures+=("site_home")
           fi
-          if ! check_endpoint "site_health" "https://laoshirenai.com/health" "200" "5"; then
+          if ! check_endpoint "site_health" "https://laoshirenai.com/readyz" "200" "5"; then
             failures+=("site_health")
           fi
-          if ! check_endpoint "api_health" "https://api.laoshirenai.com/health" "200" "5"; then
+          if ! check_endpoint "api_health" "https://api.laoshirenai.com/readyz" "200" "5"; then
             failures+=("api_health")
           fi
 

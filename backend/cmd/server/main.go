@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -25,6 +26,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+const gracefulShutdownTimeout = 30 * time.Second
 
 //go:embed VERSION
 var embeddedVersion string
@@ -100,13 +103,7 @@ func runSetupServer() {
 	r.Use(middleware.CORS(config.CORSConfig{}))
 	r.Use(middleware.SecurityHeaders(config.CSPConfig{Enabled: true, Policy: config.DefaultCSPPolicy}, nil))
 
-	// Keep container health checks green during first-run setup mode.
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-			"mode":   "setup",
-		})
-	})
+	registerSetupProbeRoutes(r)
 
 	// Register setup routes
 	setup.RegisterRoutes(r)
@@ -137,6 +134,36 @@ func runSetupServer() {
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("Failed to start setup server: %v", err)
 	}
+}
+
+func registerSetupProbeRoutes(r *gin.Engine) {
+	// Setup is a live process state, but it is not ready to serve the normal
+	// application. Docker probes /livez so the setup wizard remains available.
+	r.GET("/livez", func(c *gin.Context) {
+		setSetupProbeNoStoreHeaders(c)
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+			"mode":   "setup",
+			"checks": gin.H{"application": "alive"},
+		})
+	})
+
+	notReady := func(c *gin.Context) {
+		setSetupProbeNoStoreHeaders(c)
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"status": "unavailable",
+			"mode":   "setup",
+			"checks": gin.H{"application": "setup"},
+		})
+	}
+	r.GET("/readyz", notReady)
+	r.GET("/health", notReady)
+}
+
+func setSetupProbeNoStoreHeaders(c *gin.Context) {
+	c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	c.Header("Pragma", "no-cache")
+	c.Header("Expires", "0")
 }
 
 func runMainServer() {
@@ -176,14 +203,29 @@ func runMainServer() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
+	// Readiness must turn false before the listener begins shutting down so
+	// routers stop sending new work while in-flight streams are drained.
+	app.Readiness.BeginDrain()
 	log.Println("Shutting down server...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := app.Server.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+	if err := shutdownHTTPServer(app.Server, gracefulShutdownTimeout); err != nil {
+		log.Printf("Graceful shutdown did not complete: %v", err)
+		if closeErr := app.Server.Close(); closeErr != nil {
+			log.Printf("Forced server close failed: %v", closeErr)
+		}
 	}
 
 	log.Println("Server exited")
+}
+
+func shutdownHTTPServer(server *http.Server, timeout time.Duration) error {
+	if server == nil {
+		return errors.New("nil HTTP server")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		return fmt.Errorf("shutdown HTTP server: %w", err)
+	}
+	return nil
 }

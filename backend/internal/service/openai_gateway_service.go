@@ -342,6 +342,7 @@ type OpenAIGatewayService struct {
 	gptImageTaskRepo         GPTImageTaskRepository
 	gptImageS3Storage        *GPTImageS3Storage
 	settingService           *SettingService
+	pipeline                 *GatewayPipeline
 
 	openaiWSPoolOnce              sync.Once
 	openaiWSStateStoreOnce        sync.Once
@@ -357,6 +358,10 @@ type OpenAIGatewayService struct {
 	openaiWSRetryMetrics  openAIWSRetryMetrics
 	responseHeaderFilter  *responseheaders.CompiledHeaderFilter
 	codexSnapshotThrottle *accountWriteThrottle
+}
+
+func (s *OpenAIGatewayService) SetGatewayPipeline(pipeline *GatewayPipeline) {
+	s.pipeline = pipeline
 }
 
 // NewOpenAIGatewayService creates a new OpenAIGatewayService
@@ -1908,6 +1913,36 @@ func (s *OpenAIGatewayService) handleFailoverSideEffects(ctx context.Context, re
 
 // Forward forwards request to OpenAI API
 func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, account *Account, body []byte) (*OpenAIForwardResult, error) {
+	if s == nil || s.pipeline == nil || s.cfg == nil || !s.cfg.Gateway.Pipeline.OpenAIResponsesEnabled {
+		return s.forwardLegacy(ctx, c, account, body)
+	}
+	_, stream, _ := extractOpenAIRequestMetaFromBody(body)
+	endpoint := "/v1/responses"
+	if c != nil && c.Request != nil && c.Request.URL != nil {
+		endpoint = c.Request.URL.Path
+	}
+	request := GatewayPipelineRequest{Platform: PlatformOpenAI, Endpoint: endpoint, AccountID: account.ID, Stream: stream}
+	result, err := s.pipeline.Execute(ctx, request, GatewayPipelineTransportFunc(func(ctx context.Context, _ GatewayPipelineRequest, selection GatewayPipelineSelection) (GatewayPipelineResult, error) {
+		if selection.AccountID != account.ID {
+			return GatewayPipelineResult{}, fmt.Errorf("pipeline selection changed preselected account")
+		}
+		legacyResult, err := s.forwardLegacy(ctx, c, account, body)
+		return GatewayPipelineResult{Value: legacyResult}, err
+	}))
+	if err != nil {
+		return nil, err
+	}
+	if result.Value == nil {
+		return nil, nil
+	}
+	forwardResult, ok := result.Value.(*OpenAIForwardResult)
+	if !ok {
+		return nil, errors.New("gateway pipeline returned unexpected result type")
+	}
+	return forwardResult, nil
+}
+
+func (s *OpenAIGatewayService) forwardLegacy(ctx context.Context, c *gin.Context, account *Account, body []byte) (*OpenAIForwardResult, error) {
 	startTime := time.Now()
 
 	restrictionResult := s.detectCodexClientRestriction(c, account)

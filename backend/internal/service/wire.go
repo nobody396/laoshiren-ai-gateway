@@ -387,6 +387,49 @@ func ProvideUserService(userRepo UserRepository, settingRepo SettingRepository, 
 	return svc
 }
 
+func ProvideOpenAIGatewayService(
+	accountRepo AccountRepository,
+	usageLogRepo UsageLogRepository,
+	usageBillingRepo UsageBillingRepository,
+	userRepo UserRepository,
+	userSubRepo UserSubscriptionRepository,
+	userGroupRateRepo UserGroupRateRepository,
+	cache GatewayCache,
+	cfg *config.Config,
+	schedulerSnapshot *SchedulerSnapshotService,
+	concurrencyService *ConcurrencyService,
+	billingService *BillingService,
+	rateLimitService *RateLimitService,
+	billingCacheService *BillingCacheService,
+	httpUpstream HTTPUpstream,
+	deferredService *DeferredService,
+	openAITokenProvider *OpenAITokenProvider,
+	resolver *ModelPricingResolver,
+	channelService *ChannelService,
+	accountQuotaAlertService *AccountQuotaAlertService,
+	balanceAlertService *BalanceAlertService,
+	commissionService *CommissionService,
+	gptImageTaskRepo GPTImageTaskRepository,
+	gptImageS3Storage *GPTImageS3Storage,
+	settingService *SettingService,
+	accountingService *AccountingService,
+) *OpenAIGatewayService {
+	svc := NewOpenAIGatewayService(
+		accountRepo, usageLogRepo, usageBillingRepo, userRepo, userSubRepo,
+		userGroupRateRepo, cache, cfg, schedulerSnapshot, concurrencyService,
+		billingService, rateLimitService, billingCacheService, httpUpstream,
+		deferredService, openAITokenProvider, resolver, channelService,
+		accountQuotaAlertService, balanceAlertService, commissionService,
+		gptImageTaskRepo, gptImageS3Storage, settingService,
+	)
+	svc.SetGatewayPipeline(NewGatewayPipeline(
+		PreselectedGatewaySelector{},
+		PreserveGatewayFailover{},
+		NewAccountingPipelineMeter(accountingService),
+	))
+	return svc
+}
+
 // ProvideAuthService injects the application UnitOfWork without expanding the
 // legacy constructor used by focused unit tests.
 func ProvideAuthService(
@@ -450,7 +493,7 @@ var ProviderSet = wire.NewSet(
 	ProvideGPTImageTaskSettlementService,
 	NewAdminService,
 	NewGatewayService,
-	NewOpenAIGatewayService,
+	ProvideOpenAIGatewayService,
 	NewOAuthService,
 	NewOpenAIOAuthService,
 	NewGeminiOAuthService,

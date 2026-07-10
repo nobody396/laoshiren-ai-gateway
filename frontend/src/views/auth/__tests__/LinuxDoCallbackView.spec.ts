@@ -87,6 +87,16 @@ beforeEach(() => {
 })
 
 describe('LinuxDoCallbackView OAuth completion', () => {
+  it('hands the entire rotating token tuple to AuthSession through the store', async () => {
+    mountCallbackView('#access_token=access&refresh_token=refresh&expires_in=900&provider=google&redirect=/dashboard')
+    await flushPromises()
+
+    expect(mocks.setToken).toHaveBeenCalledWith('access', 'refresh', 900)
+    expect(localStorage.getItem('refresh_token')).toBeNull()
+    expect(localStorage.getItem('token_expires_at')).toBeNull()
+    expect(mocks.routerReplace).toHaveBeenCalledWith('/dashboard')
+  })
+
   it('shows optional referral input and submits referral_code', async () => {
     const wrapper = mountCallbackView(
       '#error=referral_optional&pending_oauth_token=pending-token&provider=google&redirect=/dashboard'
@@ -105,6 +115,7 @@ describe('LinuxDoCallbackView OAuth completion', () => {
       '',
       'REF456'
     )
+    expect(mocks.setToken).toHaveBeenCalledWith('access-token', 'refresh-token', 3600)
     expect(mocks.routerReplace).toHaveBeenCalledWith('/dashboard')
   })
 

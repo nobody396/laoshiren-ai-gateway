@@ -189,13 +189,7 @@ async function handleCompleteRegistration(skipReferral: boolean) {
       invitationCode.value.trim(),
       skipReferral ? '' : referralCode.value.trim()
     )
-    if (tokenData.refresh_token) {
-      localStorage.setItem('refresh_token', tokenData.refresh_token)
-    }
-    if (tokenData.expires_in) {
-      localStorage.setItem('token_expires_at', String(Date.now() + tokenData.expires_in * 1000))
-    }
-    await authStore.setToken(tokenData.access_token)
+    await authStore.setToken(tokenData.access_token, tokenData.refresh_token, tokenData.expires_in)
     appStore.showSuccess(t('auth.loginSuccess'))
     trackEvent('sign_up', { method: provider.value || 'oauth' })
     await router.replace(redirectTo.value)
@@ -274,18 +268,8 @@ onMounted(async () => {
   }
 
   try {
-    // Store refresh token and expires_at (convert to timestamp) if provided
-    if (refreshToken) {
-      localStorage.setItem('refresh_token', refreshToken)
-    }
-    if (expiresInStr) {
-      const expiresIn = parseInt(expiresInStr, 10)
-      if (!isNaN(expiresIn)) {
-        localStorage.setItem('token_expires_at', String(Date.now() + expiresIn * 1000))
-      }
-    }
-
-    await authStore.setToken(token)
+    const expiresIn = expiresInStr ? parseInt(expiresInStr, 10) : undefined
+    await authStore.setToken(token, refreshToken || null, expiresIn != null && !isNaN(expiresIn) ? expiresIn : undefined)
     appStore.showSuccess(t('auth.loginSuccess'))
     trackEvent('login', { method: returnedProvider || provider.value || 'oauth' })
     await router.replace(redirect)

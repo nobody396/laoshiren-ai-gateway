@@ -174,7 +174,7 @@ func TestAdmissionMiddlewareLetsInflightRequestFinishAndRejectsNewWork(t *testin
 			inflightResult <- response{err: err}
 			return
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		body, readErr := io.ReadAll(resp.Body)
 		inflightResult <- response{status: resp.StatusCode, body: string(body), err: readErr}
 	}()
@@ -188,14 +188,14 @@ func TestAdmissionMiddlewareLetsInflightRequestFinishAndRejectsNewWork(t *testin
 	readiness.BeginDrain()
 	newResp, err := http.Get(testServer.URL + "/stream") //nolint:gosec // local httptest server
 	require.NoError(t, err)
-	defer newResp.Body.Close()
+	defer func() { _ = newResp.Body.Close() }()
 	require.Equal(t, http.StatusServiceUnavailable, newResp.StatusCode)
 	require.Equal(t, "1", newResp.Header.Get("Retry-After"))
 	require.Equal(t, "no-store", newResp.Header.Get("Cache-Control"))
 
 	liveResp, err := http.Get(testServer.URL + "/livez") //nolint:gosec // local httptest server
 	require.NoError(t, err)
-	defer liveResp.Body.Close()
+	defer func() { _ = liveResp.Body.Close() }()
 	require.Equal(t, http.StatusOK, liveResp.StatusCode)
 
 	close(release)

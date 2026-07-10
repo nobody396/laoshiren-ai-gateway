@@ -397,7 +397,7 @@ func validateMigrationDirectionPolicy(name, content string) error {
 		return nil
 	}
 	if _, ok := legacyMigrationsWithDownSections[name]; !ok {
-		return errors.New("Down sections are forbidden in new migrations; create a forward-only compensating migration")
+		return errors.New("down sections are forbidden in new migrations; create a forward-only compensating migration")
 	}
 	return nil
 }
@@ -469,7 +469,7 @@ func extractMigrationUpSQL(content string) (string, error) {
 	}
 
 	if !seenUp {
-		return "", errors.New("Goose markers present without an Up section")
+		return "", errors.New("goose markers present without an Up section")
 	}
 	if statementOpen {
 		return "", errors.New("unclosed Goose StatementBegin block")
@@ -481,7 +481,7 @@ func extractMigrationUpSQL(content string) (string, error) {
 		return "", fmt.Errorf("invalid Goose Up section: %w", err)
 	}
 	if !executable {
-		return "", errors.New("Goose Up section contains no executable SQL")
+		return "", errors.New("goose Up section contains no executable SQL")
 	}
 	return upSQL, nil
 }

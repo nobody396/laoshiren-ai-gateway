@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -36,20 +35,18 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 		return nil
 	}
 
-	// 统一使用 ent 的事务：保证用户与允许分组的更新原子化，
-	// 并避免基于 *sql.Tx 手动构造 ent client 导致的 ExecQuerier 断言错误。
-	tx, err := r.client.Tx(ctx)
-	if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
-		return err
-	}
-
-	var txClient *dbent.Client
-	if err == nil {
+	// Reuse an outer UnitOfWork/Ent transaction when present. Only create and
+	// own a transaction when this repository is the outermost boundary.
+	txClient, hasOuterTx := transactionClientFromContext(ctx)
+	var tx *dbent.Tx
+	var err error
+	if !hasOuterTx {
+		tx, err = r.client.Tx(ctx)
+		if err != nil {
+			return err
+		}
 		defer func() { _ = tx.Rollback() }()
 		txClient = tx.Client()
-	} else {
-		// 已处于外部事务中（ErrTxStarted），复用当前 client 并由调用方负责提交/回滚。
-		txClient = r.client
 	}
 
 	created, err := txClient.User.Create().
@@ -82,7 +79,7 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 }
 
 func (r *userRepository) GetByID(ctx context.Context, id int64) (*service.User, error) {
-	m, err := r.client.User.Query().Where(dbuser.IDEQ(id)).Only(ctx)
+	m, err := clientFromContext(ctx, r.client).User.Query().Where(dbuser.IDEQ(id)).Only(ctx)
 	if err != nil {
 		return nil, translatePersistenceError(err, service.ErrUserNotFound, nil)
 	}
@@ -99,7 +96,7 @@ func (r *userRepository) GetByID(ctx context.Context, id int64) (*service.User, 
 }
 
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*service.User, error) {
-	m, err := r.client.User.Query().Where(dbuser.EmailEQ(email)).Only(ctx)
+	m, err := clientFromContext(ctx, r.client).User.Query().Where(dbuser.EmailEQ(email)).Only(ctx)
 	if err != nil {
 		return nil, translatePersistenceError(err, service.ErrUserNotFound, nil)
 	}
@@ -120,19 +117,16 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 		return nil
 	}
 
-	// 使用 ent 事务包裹用户更新与 allowed_groups 同步，避免跨层事务不一致。
-	tx, err := r.client.Tx(ctx)
-	if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
-		return err
-	}
-
-	var txClient *dbent.Client
-	if err == nil {
+	txClient, hasOuterTx := transactionClientFromContext(ctx)
+	var tx *dbent.Tx
+	var err error
+	if !hasOuterTx {
+		tx, err = r.client.Tx(ctx)
+		if err != nil {
+			return err
+		}
 		defer func() { _ = tx.Rollback() }()
 		txClient = tx.Client()
-	} else {
-		// 已处于外部事务中（ErrTxStarted），复用当前 client 并由调用方负责提交/回滚。
-		txClient = r.client
 	}
 
 	updateOp := txClient.User.UpdateOneID(userIn.ID).
@@ -188,7 +182,7 @@ func (r *userRepository) IncrementTokenVersion(ctx context.Context, userID int64
 }
 
 func (r *userRepository) Delete(ctx context.Context, id int64) error {
-	affected, err := r.client.User.Delete().Where(dbuser.IDEQ(id)).Exec(ctx)
+	affected, err := clientFromContext(ctx, r.client).User.Delete().Where(dbuser.IDEQ(id)).Exec(ctx)
 	if err != nil {
 		return translatePersistenceError(err, service.ErrUserNotFound, nil)
 	}
@@ -203,7 +197,8 @@ func (r *userRepository) TouchLastActive(ctx context.Context, userID int64, ts t
 		return nil
 	}
 	threshold := ts.Add(-60 * time.Second)
-	_, err := r.sql.ExecContext(ctx, `
+	sqlq := sqlExecutorFromContext(ctx, r.sql)
+	_, err := sqlq.ExecContext(ctx, `
 		UPDATE users
 		SET last_active_at = $2
 		WHERE id = $1
@@ -407,7 +402,7 @@ func (r *userRepository) UpdateConcurrency(ctx context.Context, id int64, amount
 }
 
 func (r *userRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
-	return r.client.User.Query().Where(dbuser.EmailEQ(email)).Exist(ctx)
+	return clientFromContext(ctx, r.client).User.Query().Where(dbuser.EmailEQ(email)).Exist(ctx)
 }
 
 func (r *userRepository) AddGroupToAllowedGroups(ctx context.Context, userID int64, groupID int64) error {
@@ -440,7 +435,7 @@ func (r *userRepository) RemoveGroupFromAllowedGroups(ctx context.Context, group
 }
 
 func (r *userRepository) GetFirstAdmin(ctx context.Context) (*service.User, error) {
-	m, err := r.client.User.Query().
+	m, err := clientFromContext(ctx, r.client).User.Query().
 		Where(
 			dbuser.RoleEQ(service.RoleAdmin),
 			dbuser.StatusEQ(service.StatusActive),
@@ -468,7 +463,7 @@ func (r *userRepository) loadAllowedGroups(ctx context.Context, userIDs []int64)
 		return out, nil
 	}
 
-	rows, err := r.client.UserAllowedGroup.Query().
+	rows, err := clientFromContext(ctx, r.client).UserAllowedGroup.Query().
 		Where(userallowedgroup.UserIDIn(userIDs...)).
 		All(ctx)
 	if err != nil {
@@ -578,7 +573,7 @@ func (r *userRepository) DisableTotp(ctx context.Context, userID int64) error {
 
 // GetByInviteCode 根据邀请码查询用户
 func (r *userRepository) GetByInviteCode(ctx context.Context, code string) (*service.User, error) {
-	m, err := r.client.User.Query().
+	m, err := clientFromContext(ctx, r.client).User.Query().
 		Where(dbuser.InviteCodeEQ(code)).
 		Only(ctx)
 	if err != nil {
@@ -589,7 +584,7 @@ func (r *userRepository) GetByInviteCode(ctx context.Context, code string) (*ser
 
 // GetInviteCodeByUserID 查询用户的 invite_code 字段
 func (r *userRepository) GetInviteCodeByUserID(ctx context.Context, userID int64) (*string, error) {
-	m, err := r.client.User.Query().
+	m, err := clientFromContext(ctx, r.client).User.Query().
 		Where(dbuser.IDEQ(userID)).
 		Select(dbuser.FieldInviteCode).
 		Only(ctx)

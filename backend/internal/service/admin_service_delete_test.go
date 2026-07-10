@@ -346,6 +346,10 @@ func (s *proxyRepoStub) ListAccountSummariesByProxyID(ctx context.Context, proxy
 type redeemRepoStub struct {
 	deleteErrByID map[int64]error
 	deletedIDs    []int64
+	code          *RedeemCode
+	getByCodeErr  error
+	useErr        error
+	usedIDs       []int64
 }
 
 func (s *redeemRepoStub) Create(ctx context.Context, code *RedeemCode) error {
@@ -361,7 +365,13 @@ func (s *redeemRepoStub) GetByID(ctx context.Context, id int64) (*RedeemCode, er
 }
 
 func (s *redeemRepoStub) GetByCode(ctx context.Context, code string) (*RedeemCode, error) {
-	panic("unexpected GetByCode call")
+	if s.getByCodeErr != nil {
+		return nil, s.getByCodeErr
+	}
+	if s.code != nil && s.code.Code == code {
+		return s.code, nil
+	}
+	return nil, ErrRedeemCodeNotFound
 }
 
 func (s *redeemRepoStub) Update(ctx context.Context, code *RedeemCode) error {
@@ -379,7 +389,8 @@ func (s *redeemRepoStub) Delete(ctx context.Context, id int64) error {
 }
 
 func (s *redeemRepoStub) Use(ctx context.Context, id, userID int64) error {
-	panic("unexpected Use call")
+	s.usedIDs = append(s.usedIDs, id)
+	return s.useErr
 }
 
 func (s *redeemRepoStub) List(ctx context.Context, params pagination.PaginationParams) ([]RedeemCode, *pagination.PaginationResult, error) {

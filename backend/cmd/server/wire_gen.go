@@ -74,7 +74,8 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	subscriptionService := service.NewSubscriptionService(groupRepository, userSubscriptionRepository, billingCacheService, client, configConfig)
 	commissionRepository := repository.NewCommissionRepository(client, db)
 	commissionService := service.NewCommissionService(userRepository, commissionRepository)
-	authService := service.NewAuthService(client, userRepository, redeemCodeRepository, refreshTokenCache, ssoTicketCache, configConfig, settingService, emailService, turnstileService, emailQueueService, promoService, subscriptionService, commissionService)
+	unitOfWork := repository.NewUnitOfWork(db)
+	authService := service.ProvideAuthService(client, userRepository, redeemCodeRepository, refreshTokenCache, ssoTicketCache, configConfig, settingService, emailService, turnstileService, emailQueueService, promoService, subscriptionService, commissionService, unitOfWork)
 	identityCache := repository.NewIdentityCache(redisClient)
 	authIdentityRepository := repository.NewAuthIdentityRepository(db)
 	pendingAuthSessionRepository := repository.NewPendingAuthSessionRepository(db)
@@ -198,8 +199,6 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	digestSessionStore := service.NewDigestSessionStore()
 	channelRepository := repository.NewChannelRepository(db)
 	channelService := service.NewChannelService(channelRepository, apiKeyAuthCacheInvalidator)
-	supplierRepository := repository.NewSupplierRepository(db)
-	supplierService := service.ProvideSupplierService(supplierRepository, accountRepository)
 	modelPricingResolver := service.NewModelPricingResolver(channelService, billingService)
 	accountQuotaAlertService := service.ProvideAccountQuotaAlertService(emailService, settingRepository, accountRepository)
 	gatewayService := service.NewGatewayService(accountRepository, groupRepository, usageLogRepository, cachePolicyRepository, usageBillingRepository, userRepository, userSubscriptionRepository, userGroupRateRepository, gatewayCache, configConfig, schedulerSnapshotService, concurrencyService, billingService, rateLimitService, billingCacheService, identityService, httpUpstream, deferredService, claudeTokenProvider, sessionLimitCache, rpmCache, digestSessionStore, settingService, tlsFingerprintProfileService, channelService, modelPricingResolver, accountQuotaAlertService, balanceAlertService, commissionService)
@@ -208,7 +207,8 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	openAIGatewayService := service.NewOpenAIGatewayService(accountRepository, usageLogRepository, usageBillingRepository, userRepository, userSubscriptionRepository, userGroupRateRepository, gatewayCache, configConfig, schedulerSnapshotService, concurrencyService, billingService, rateLimitService, billingCacheService, httpUpstream, deferredService, openAITokenProvider, modelPricingResolver, channelService, accountQuotaAlertService, balanceAlertService, commissionService, gptImageTaskRepository, gptImageS3Storage, settingService)
 	geminiMessagesCompatService := service.NewGeminiMessagesCompatService(accountRepository, groupRepository, gatewayCache, schedulerSnapshotService, geminiTokenProvider, rateLimitService, httpUpstream, antigravityGatewayService, configConfig)
 	opsSystemLogSink := service.ProvideOpsSystemLogSink(opsRepository)
-	opsService := service.NewOpsService(opsRepository, settingRepository, configConfig, accountRepository, userRepository, concurrencyService, gatewayService, openAIGatewayService, geminiMessagesCompatService, antigravityGatewayService, opsSystemLogSink, groupRepository)
+	v := provideOpsGroupRepositories(groupRepository)
+	opsService := service.NewOpsService(opsRepository, settingRepository, configConfig, accountRepository, userRepository, concurrencyService, gatewayService, openAIGatewayService, geminiMessagesCompatService, antigravityGatewayService, opsSystemLogSink, v...)
 	settingHandler := admin.NewSettingHandler(settingService, emailService, turnstileService, opsService)
 	opsHandler := admin.NewOpsHandler(opsService)
 	updateCache := repository.NewUpdateCache(redisClient)
@@ -236,6 +236,8 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	scheduledTestService := service.ProvideScheduledTestService(scheduledTestPlanRepository, scheduledTestResultRepository)
 	scheduledTestHandler := admin.NewScheduledTestHandler(scheduledTestService)
 	channelHandler := admin.NewChannelHandler(channelService, billingService)
+	supplierRepository := repository.NewSupplierRepository(db)
+	supplierService := service.ProvideSupplierService(supplierRepository, accountRepository)
 	supplierHandler := admin.NewSupplierHandler(supplierService)
 	rbacRepository := repository.NewRBACRepository(client)
 	rbacCache := repository.NewRBACCache(redisClient)
@@ -279,11 +281,11 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	subscriptionExpiryService := service.ProvideSubscriptionExpiryService(userSubscriptionRepository)
 	gptImageTaskSettlementService := service.ProvideGPTImageTaskSettlementService(gptImageTaskRepository, accountRepository, userSubscriptionRepository, apiKeyService, openAIGatewayService, configConfig)
 	scheduledTestRunnerService := service.ProvideScheduledTestRunnerService(scheduledTestPlanRepository, scheduledTestService, accountTestService, rateLimitService, configConfig)
-	v := provideCleanup(client, redisClient, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, agentLevelEvaluatorService, schedulerSnapshotService, tokenRefreshService, accountExpiryService, subscriptionExpiryService, usageCleanupService, idempotencyCleanupService, pricingService, emailQueueService, billingCacheService, usageRecordWorkerPool, subscriptionService, oAuthService, openAIOAuthService, geminiOAuthService, antigravityOAuthService, openAIGatewayService, gptImageTaskSettlementService, scheduledTestRunnerService, backupService, downloadResourceService, supplierService)
+	v2 := provideCleanup(client, redisClient, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, agentLevelEvaluatorService, schedulerSnapshotService, tokenRefreshService, accountExpiryService, subscriptionExpiryService, usageCleanupService, idempotencyCleanupService, pricingService, emailQueueService, billingCacheService, usageRecordWorkerPool, subscriptionService, oAuthService, openAIOAuthService, geminiOAuthService, antigravityOAuthService, openAIGatewayService, gptImageTaskSettlementService, scheduledTestRunnerService, backupService, downloadResourceService, supplierService)
 	application := &Application{
 		Server:    httpServer,
 		Readiness: readiness,
-		Cleanup:   v,
+		Cleanup:   v2,
 	}
 	return application, nil
 }
@@ -305,6 +307,13 @@ func provideServiceBuildInfo(buildInfo handler.BuildInfo) service.BuildInfo {
 		Version:   buildInfo.Version,
 		BuildType: buildInfo.BuildType,
 	}
+}
+
+// Wire models a variadic constructor parameter as a slice dependency. Keep the
+// generated graph reproducible while preserving NewOpsService's optional
+// group-repository compatibility signature.
+func provideOpsGroupRepositories(groupRepo service.GroupRepository) []service.GroupRepository {
+	return []service.GroupRepository{groupRepo}
 }
 
 func provideCleanup(

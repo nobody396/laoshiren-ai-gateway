@@ -90,6 +90,19 @@ type AuthService struct {
 	defaultSubAssigner  DefaultSubscriptionAssigner
 	commissionService   *CommissionService
 	embedTargetResolver EmbedTargetResolver
+	unitOfWork          UnitOfWork
+}
+
+// SetUnitOfWork injects the transaction boundary used by registration flows.
+func (s *AuthService) SetUnitOfWork(unitOfWork UnitOfWork) {
+	s.unitOfWork = unitOfWork
+}
+
+func (s *AuthService) withinTx(ctx context.Context, fn func(context.Context) error) error {
+	if s.unitOfWork == nil {
+		return fn(ctx)
+	}
+	return s.unitOfWork.WithinTx(ctx, fn)
 }
 
 type EmbedTargetResolver interface {
@@ -226,23 +239,32 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 		Status:       StatusActive,
 	}
 
-	if err := s.userRepo.Create(ctx, user); err != nil {
-		// 优先检查邮箱冲突错误（竞态条件下可能发生）
+	err = s.withinTx(ctx, func(txCtx context.Context) error {
+		if createErr := s.userRepo.Create(txCtx, user); createErr != nil {
+			return createErr
+		}
+		if invitationRedeemCode != nil {
+			if useErr := s.redeemRepo.Use(txCtx, invitationRedeemCode.ID, user.ID); useErr != nil {
+				return ErrInvitationCodeInvalid.WithCause(useErr)
+			}
+		}
+		return nil
+	})
+	if err != nil {
 		if errors.Is(err, ErrEmailExists) {
 			return "", nil, ErrEmailExists
+		}
+		if errors.Is(err, ErrInvitationCodeInvalid) {
+			return "", nil, ErrInvitationCodeInvalid
 		}
 		logger.LegacyPrintf("service.auth", "[Auth] Database error creating user: %v", err)
 		return "", nil, ErrServiceUnavailable
 	}
-	s.assignDefaultSubscriptions(ctx, user.ID)
 
-	// 标记邀请码为已使用（如果使用了邀请码）
-	if invitationRedeemCode != nil {
-		if err := s.redeemRepo.Use(ctx, invitationRedeemCode.ID, user.ID); err != nil {
-			// 邀请码标记失败不影响注册，只记录日志
-			logger.LegacyPrintf("service.auth", "[Auth] Failed to mark invitation code as used for user %d: %v", user.ID, err)
-		}
-	}
+	// These side effects are deliberately after commit: no cache invalidation,
+	// subscription grant, referral, or notification may escape a rolled-back
+	// registration transaction.
+	s.assignDefaultSubscriptions(ctx, user.ID)
 	// 应用优惠码（如果提供且功能已启用）
 	if promoCode != "" && s.promoService != nil && s.settingService != nil && s.settingService.IsPromoCodeEnabled(ctx) {
 		if err := s.promoService.ApplyPromoCode(ctx, user.ID, promoCode); err != nil {
@@ -643,60 +665,34 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 				Status:       StatusActive,
 			}
 
-			if s.entClient != nil && invitationRedeemCode != nil {
-				tx, err := s.entClient.Tx(ctx)
-				if err != nil {
-					logger.LegacyPrintf("service.auth", "[Auth] Failed to begin transaction for oauth registration: %v", err)
+			createErr := s.withinTx(ctx, func(txCtx context.Context) error {
+				if err := s.userRepo.Create(txCtx, newUser); err != nil {
+					return err
+				}
+				if invitationRedeemCode != nil {
+					if err := s.redeemRepo.Use(txCtx, invitationRedeemCode.ID, newUser.ID); err != nil {
+						return ErrInvitationCodeInvalid.WithCause(err)
+					}
+				}
+				return nil
+			})
+			if createErr != nil {
+				if errors.Is(createErr, ErrEmailExists) {
+					// The UnitOfWork has rolled back before reading the winner.
+					user, err = s.userRepo.GetByEmail(ctx, email)
+					if err != nil {
+						logger.LegacyPrintf("service.auth", "[Auth] Database error getting user after conflict: %v", err)
+						return nil, nil, ErrServiceUnavailable
+					}
+				} else if errors.Is(createErr, ErrInvitationCodeInvalid) {
+					return nil, nil, ErrInvitationCodeInvalid
+				} else {
+					logger.LegacyPrintf("service.auth", "[Auth] Database error creating oauth user: %v", createErr)
 					return nil, nil, ErrServiceUnavailable
 				}
-				defer func() { _ = tx.Rollback() }()
-				txCtx := dbent.NewTxContext(ctx, tx)
-
-				if err := s.userRepo.Create(txCtx, newUser); err != nil {
-					if errors.Is(err, ErrEmailExists) {
-						user, err = s.userRepo.GetByEmail(ctx, email)
-						if err != nil {
-							logger.LegacyPrintf("service.auth", "[Auth] Database error getting user after conflict: %v", err)
-							return nil, nil, ErrServiceUnavailable
-						}
-					} else {
-						logger.LegacyPrintf("service.auth", "[Auth] Database error creating oauth user: %v", err)
-						return nil, nil, ErrServiceUnavailable
-					}
-				} else {
-					if err := s.redeemRepo.Use(txCtx, invitationRedeemCode.ID, newUser.ID); err != nil {
-						return nil, nil, ErrInvitationCodeInvalid
-					}
-					if err := tx.Commit(); err != nil {
-						logger.LegacyPrintf("service.auth", "[Auth] Failed to commit oauth registration transaction: %v", err)
-						return nil, nil, ErrServiceUnavailable
-					}
-					user = newUser
-					createdNewUser = true
-					s.assignDefaultSubscriptions(ctx, user.ID)
-				}
 			} else {
-				if err := s.userRepo.Create(ctx, newUser); err != nil {
-					if errors.Is(err, ErrEmailExists) {
-						user, err = s.userRepo.GetByEmail(ctx, email)
-						if err != nil {
-							logger.LegacyPrintf("service.auth", "[Auth] Database error getting user after conflict: %v", err)
-							return nil, nil, ErrServiceUnavailable
-						}
-					} else {
-						logger.LegacyPrintf("service.auth", "[Auth] Database error creating oauth user: %v", err)
-						return nil, nil, ErrServiceUnavailable
-					}
-				} else {
-					user = newUser
-					createdNewUser = true
-					s.assignDefaultSubscriptions(ctx, user.ID)
-					if invitationRedeemCode != nil {
-						if err := s.redeemRepo.Use(ctx, invitationRedeemCode.ID, user.ID); err != nil {
-							return nil, nil, ErrInvitationCodeInvalid
-						}
-					}
-				}
+				user = newUser
+				createdNewUser = true
 			}
 		} else {
 			logger.LegacyPrintf("service.auth", "[Auth] Database error during oauth login: %v", err)
@@ -715,6 +711,7 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 		}
 	}
 	if createdNewUser {
+		s.assignDefaultSubscriptions(ctx, user.ID)
 		s.bindReferralCode(ctx, user.ID, referralCode)
 		s.applyInviteActivityRegistrationBonus(ctx, user.ID)
 	}

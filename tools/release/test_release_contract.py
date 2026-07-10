@@ -17,6 +17,8 @@ OTHER_DIGEST = "sha256:" + "2" * 64
 IMAGE_REPOSITORY = "ghcr.io/nobody396/laoshiren-ai-gateway"
 IMAGE_TAG = f"{IMAGE_REPOSITORY}:{COMMIT}"
 IMAGE_REF = f"{IMAGE_REPOSITORY}@{DIGEST}"
+MAINTENANCE_REPOSITORY = f"{IMAGE_REPOSITORY}-maintenance"
+MAINTENANCE_REF = f"{MAINTENANCE_REPOSITORY}@{OTHER_DIGEST}"
 RELEASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = RELEASE_DIR.parents[1]
 
@@ -34,6 +36,18 @@ def docker_inspect_payload(*, revision: str = COMMIT, digest: str = DIGEST) -> s
             }
         ]
     )
+
+
+def metadata_payload(**overrides: str) -> str:
+    values = {
+        "commit_sha": COMMIT,
+        "image_ref": IMAGE_REF,
+        "build_digest": DIGEST,
+        "maintenance_image_ref": MAINTENANCE_REF,
+        "maintenance_build_digest": OTHER_DIGEST,
+    }
+    values.update(overrides)
+    return "\n".join(f"{key}={value}" for key, value in values.items()) + "\n"
 
 
 class ReleaseContractTests(unittest.TestCase):
@@ -76,6 +90,53 @@ class ReleaseContractTests(unittest.TestCase):
         with self.assertRaisesRegex(release_contract.ContractError, "registry digest"):
             release_contract.canonicalize_deployed_ref(
                 f"{IMAGE_REPOSITORY}:main"
+            )
+
+    def test_metadata_requires_exact_commit_repositories_and_digests(self) -> None:
+        result = release_contract.validate_metadata(
+            metadata_payload(),
+            expected_commit=COMMIT,
+            image_repository=IMAGE_REPOSITORY,
+            maintenance_image_repository=MAINTENANCE_REPOSITORY,
+        )
+        self.assertEqual(result["image_ref"], IMAGE_REF)
+        self.assertEqual(result["maintenance_image_ref"], MAINTENANCE_REF)
+
+        with self.assertRaisesRegex(release_contract.ContractError, "release commit"):
+            release_contract.validate_metadata(
+                metadata_payload(),
+                expected_commit=OTHER_COMMIT,
+                image_repository=IMAGE_REPOSITORY,
+                maintenance_image_repository=MAINTENANCE_REPOSITORY,
+            )
+        with self.assertRaisesRegex(release_contract.ContractError, "build digest"):
+            release_contract.validate_metadata(
+                metadata_payload(build_digest=OTHER_DIGEST),
+                expected_commit=COMMIT,
+                image_repository=IMAGE_REPOSITORY,
+                maintenance_image_repository=MAINTENANCE_REPOSITORY,
+            )
+        with self.assertRaisesRegex(release_contract.ContractError, "approved repository"):
+            release_contract.validate_metadata(
+                metadata_payload(),
+                expected_commit=COMMIT,
+                image_repository="ghcr.io/unapproved/image",
+                maintenance_image_repository=MAINTENANCE_REPOSITORY,
+            )
+
+    def test_metadata_rejects_unknown_duplicate_and_missing_keys(self) -> None:
+        common = {
+            "expected_commit": COMMIT,
+            "image_repository": IMAGE_REPOSITORY,
+            "maintenance_image_repository": MAINTENANCE_REPOSITORY,
+        }
+        with self.assertRaisesRegex(release_contract.ContractError, "unknown key"):
+            release_contract.validate_metadata(metadata_payload() + "extra=value\n", **common)
+        with self.assertRaisesRegex(release_contract.ContractError, "duplicate key"):
+            release_contract.validate_metadata(metadata_payload() + f"commit_sha={COMMIT}\n", **common)
+        with self.assertRaisesRegex(release_contract.ContractError, "missing keys"):
+            release_contract.validate_metadata(
+                "\n".join(metadata_payload().splitlines()[:-1]) + "\n", **common
             )
 
     def test_inspect_resolution_requires_matching_oci_revision(self) -> None:

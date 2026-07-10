@@ -13,7 +13,10 @@
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "bundle:check": "node scripts/check-bundle-budget.mjs",
+    "bundle:check:test": "node --test scripts/check-bundle-budget.test.mjs",
+    "boundary:check": "node scripts/check-frontend-boundaries.mjs"
   },
   "dependencies": {
     "@lobehub/icons": "^4.0.2",

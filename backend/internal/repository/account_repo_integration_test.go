@@ -228,14 +228,14 @@ func (s *AccountRepoSuite) TestDelete_CascadesScheduledTests() {
 	account := mustCreateAccount(s.T(), s.client, &service.Account{Name: "acc-del-scheduled"})
 
 	var planID int64
-	err := integrationDB.QueryRowContext(s.ctx, `
+	err := scanSingleRow(s.ctx, s.repo.sql, `
 		INSERT INTO scheduled_test_plans (account_id, model_id, cron_expression, enabled, max_results, auto_recover, created_at, updated_at)
 		VALUES ($1, 'gpt-5', '*/30 * * * *', true, 10, false, NOW(), NOW())
 		RETURNING id
-	`, account.ID).Scan(&planID)
+	`, []any{account.ID}, &planID)
 	s.Require().NoError(err)
 
-	_, err = integrationDB.ExecContext(s.ctx, `
+	_, err = s.repo.sql.ExecContext(s.ctx, `
 		INSERT INTO scheduled_test_results (plan_id, status, response_text, error_message, latency_ms, started_at, finished_at, created_at)
 		VALUES ($1, 'success', 'ok', '', 123, NOW(), NOW(), NOW())
 	`, planID)
@@ -245,12 +245,12 @@ func (s *AccountRepoSuite) TestDelete_CascadesScheduledTests() {
 	s.Require().NoError(err, "Delete should cascade scheduled test rows")
 
 	var planCount int
-	err = integrationDB.QueryRowContext(s.ctx, `SELECT COUNT(*) FROM scheduled_test_plans WHERE account_id = $1`, account.ID).Scan(&planCount)
+	err = scanSingleRow(s.ctx, s.repo.sql, `SELECT COUNT(*) FROM scheduled_test_plans WHERE account_id = $1`, []any{account.ID}, &planCount)
 	s.Require().NoError(err)
 	s.Require().Zero(planCount, "expected scheduled plans to be removed")
 
 	var resultCount int
-	err = integrationDB.QueryRowContext(s.ctx, `SELECT COUNT(*) FROM scheduled_test_results WHERE plan_id = $1`, planID).Scan(&resultCount)
+	err = scanSingleRow(s.ctx, s.repo.sql, `SELECT COUNT(*) FROM scheduled_test_results WHERE plan_id = $1`, []any{planID}, &resultCount)
 	s.Require().NoError(err)
 	s.Require().Zero(resultCount, "expected scheduled results to be removed")
 }
@@ -758,6 +758,8 @@ func (s *AccountRepoSuite) TestUpdateExtra_SchedulerNeutralSkipsOutboxAndSyncsFr
 		},
 	}
 	s.repo.schedulerCache = cacheRecorder
+	var outboxCountBefore int
+	s.Require().NoError(scanSingleRow(s.ctx, s.repo.sql, "SELECT COUNT(*) FROM scheduler_outbox", nil, &outboxCountBefore))
 
 	updates := map[string]any{
 		"codex_usage_updated_at":     "2026-03-11T10:00:00Z",
@@ -774,7 +776,7 @@ func (s *AccountRepoSuite) TestUpdateExtra_SchedulerNeutralSkipsOutboxAndSyncsFr
 
 	var outboxCount int
 	s.Require().NoError(scanSingleRow(s.ctx, s.repo.sql, "SELECT COUNT(*) FROM scheduler_outbox", nil, &outboxCount))
-	s.Require().Zero(outboxCount)
+	s.Require().Equal(outboxCountBefore, outboxCount, "scheduler-neutral update must not enqueue an outbox event")
 	s.Require().Len(cacheRecorder.setAccounts, 1)
 	s.Require().NotNil(cacheRecorder.accounts[account.ID])
 	s.Require().Equal(service.StatusActive, cacheRecorder.accounts[account.ID].Status)

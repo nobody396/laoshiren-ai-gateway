@@ -730,7 +730,7 @@ The 00:30 check is a checklist against this plan, not another architectural or a
 ### Smoke matrix
 
 - **No-cost probes:** public web, `/livez`, `/readyz`, unauthenticated auth boundary, admin route boundary, static chunks and API JSON shape.
-- **Owned-user probe:** user id `2` is the default ordinary-user identity. Validate identity metadata before selecting its key; never output the key.
+- **Owned-user probe:** user id `2` is the default approved owned identity, but its live role must be recorded rather than assumed (the pre-window read-only check found role `agent`). It may be used for the minimal owned paid path only after confirming that role can exercise the intended contract; do not change its role or claim that it proves ordinary-user authorization semantics. Never output its key.
 - **Admin-owned fallback:** user id `1` is allowed only for admin-path validation or when its test ownership is confirmed.
 - **Paid scope:** at most the minimum request needed to prove one streaming response and the matching usage/billing record. If no approved key exists, stop with `action-required`.
 

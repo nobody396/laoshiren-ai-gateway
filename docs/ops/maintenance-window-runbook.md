@@ -205,6 +205,9 @@ start against the restored/migrated database, the release is a No-Go.
 - Target and maintenance image references still pass the digest contract.
 - CI, restore drill, backup capacity, operator connectivity, and approved smoke
   identity are all available.
+- Owned identity id `2` still matches its approved owner metadata and has an
+  active key. Record its live role (pre-window it was `agent`); do not change
+  the role or use that smoke as proof of ordinary-user authorization semantics.
 
 ### 2. Copy and prove the route switcher without changing the live route
 

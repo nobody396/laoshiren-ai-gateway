@@ -10,6 +10,9 @@ describe('useModelWhitelist', () => {
   it('openai 模型列表默认只填充当前官方主力模型', () => {
     const models = getModelsByPlatform('openai')
 
+    expect(models).toContain('gpt-5.6-sol')
+    expect(models).toContain('gpt-5.6-terra')
+    expect(models).toContain('gpt-5.6-luna')
     expect(models).toContain('gpt-5.5')
     expect(models).not.toContain('gpt-5.5-pro')
     expect(models).toContain('gpt-5.4')

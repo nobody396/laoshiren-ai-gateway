@@ -172,6 +172,28 @@ func TestGetModelPricing_Gpt55UsesOfficialStaticFallback(t *testing.T) {
 	require.InDelta(t, 1.5, got.LongContextOutputCostMultiplier, 1e-12)
 }
 
+func TestGetModelPricing_Gpt56UsesOfficialStaticFallback(t *testing.T) {
+	svc := &PricingService{pricingData: map[string]*LiteLLMModelPricing{}}
+
+	cases := map[string]struct {
+		model  string
+		input  float64
+		output float64
+	}{
+		"sol":   {model: "gpt-5.6-sol", input: 5e-6, output: 30e-6},
+		"terra": {model: "gpt-5.6-terra-high", input: 2.5e-6, output: 15e-6},
+		"luna":  {model: "gpt-5.6-luna", input: 1e-6, output: 6e-6},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := svc.GetModelPricing(tc.model)
+			require.NotNil(t, got)
+			require.InDelta(t, tc.input, got.InputCostPerToken, 1e-12)
+			require.InDelta(t, tc.output, got.OutputCostPerToken, 1e-12)
+		})
+	}
+}
+
 func TestPricingService_RemoteSyncDisabledUsesBundledFallback(t *testing.T) {
 	dataDir := t.TempDir()
 	client := &pricingRemoteClientSpy{}

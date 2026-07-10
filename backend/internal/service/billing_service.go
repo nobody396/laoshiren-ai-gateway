@@ -226,6 +226,28 @@ func (s *BillingService) initFallbackPricing() {
 		CacheReadPricePerTokenPriority: 0.25e-6,
 		SupportsCacheBreakdown:         false,
 	}
+	// OpenAI GPT-5.6 Sol / Terra / Luna（官方标准价）
+	s.fallbackPrices["gpt-5.6-sol"] = &ModelPricing{
+		InputPricePerToken:         5e-6,
+		OutputPricePerToken:        30e-6,
+		CacheCreationPricePerToken: 5e-6,
+		CacheReadPricePerToken:     0.5e-6,
+		SupportsCacheBreakdown:     false,
+	}
+	s.fallbackPrices["gpt-5.6-terra"] = &ModelPricing{
+		InputPricePerToken:         2.5e-6,
+		OutputPricePerToken:        15e-6,
+		CacheCreationPricePerToken: 2.5e-6,
+		CacheReadPricePerToken:     0.25e-6,
+		SupportsCacheBreakdown:     false,
+	}
+	s.fallbackPrices["gpt-5.6-luna"] = &ModelPricing{
+		InputPricePerToken:         1e-6,
+		OutputPricePerToken:        6e-6,
+		CacheCreationPricePerToken: 1e-6,
+		CacheReadPricePerToken:     0.1e-6,
+		SupportsCacheBreakdown:     false,
+	}
 	// OpenAI GPT-5.4（官方基础价格）
 	s.fallbackPrices["gpt-5.4"] = &ModelPricing{
 		InputPricePerToken:             2.5e-6,  // $2.5 per MTok
@@ -352,6 +374,12 @@ func (s *BillingService) getFallbackPricing(model string) *ModelPricing {
 	if strings.Contains(modelLower, "gpt-5") || strings.Contains(modelLower, "codex") {
 		normalized := normalizeCodexModel(modelLower)
 		switch normalized {
+		case "gpt-5.6-sol":
+			return s.fallbackPrices["gpt-5.6-sol"]
+		case "gpt-5.6-terra":
+			return s.fallbackPrices["gpt-5.6-terra"]
+		case "gpt-5.6-luna":
+			return s.fallbackPrices["gpt-5.6-luna"]
 		case "gpt-5.5":
 			return s.fallbackPrices["gpt-5.5"]
 		case "gpt-5.4-mini":
@@ -376,10 +404,28 @@ func (s *BillingService) getFallbackPricing(model string) *ModelPricing {
 	return nil
 }
 
+func (s *BillingService) gpt56FallbackPricing(model string) *ModelPricing {
+	normalized := normalizeCodexModel(strings.ReplaceAll(strings.ToLower(strings.TrimSpace(model)), " ", "-"))
+	switch normalized {
+	case "gpt-5.6-sol":
+		return s.fallbackPrices["gpt-5.6-sol"]
+	case "gpt-5.6-terra":
+		return s.fallbackPrices["gpt-5.6-terra"]
+	case "gpt-5.6-luna":
+		return s.fallbackPrices["gpt-5.6-luna"]
+	default:
+		return nil
+	}
+}
+
 // GetModelPricing 获取模型价格配置
 func (s *BillingService) GetModelPricing(model string) (*ModelPricing, error) {
 	// 标准化模型名称（转小写）
 	model = strings.ToLower(model)
+
+	if fallback := s.gpt56FallbackPricing(model); fallback != nil {
+		return s.applyModelSpecificPricingPolicy(model, fallback), nil
+	}
 
 	// GPT-5.5 业务定价固定为 GPT-5.4 的 2 倍，不能被动态价格覆盖。
 	if strings.Contains(model, "gpt-5.5") || strings.Contains(model, "gpt 5.5") {

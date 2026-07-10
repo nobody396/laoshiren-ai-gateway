@@ -597,6 +597,33 @@ const claudeBasePricingRows: ClaudeBasePricingRow[] = [
 
 const gptBasePricingRows: GptBasePricingRow[] = [
   {
+    model: 'GPT-5.6 Sol',
+    modelId: 'gpt-5.6-sol',
+    official: {
+      input: 5,
+      cachedInput: 0.5,
+      output: 30
+    }
+  },
+  {
+    model: 'GPT-5.6 Terra',
+    modelId: 'gpt-5.6-terra',
+    official: {
+      input: 2.5,
+      cachedInput: 0.25,
+      output: 15
+    }
+  },
+  {
+    model: 'GPT-5.6 Luna',
+    modelId: 'gpt-5.6-luna',
+    official: {
+      input: 1,
+      cachedInput: 0.1,
+      output: 6
+    }
+  },
+  {
     model: 'GPT-5.5',
     modelId: 'gpt-5.5',
     official: {

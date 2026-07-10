@@ -22,6 +22,33 @@ import (
 )
 
 var (
+	openAIGPT56SolFallbackPricing = &LiteLLMModelPricing{
+		InputCostPerToken:           5e-06, // $5 per MTok
+		OutputCostPerToken:          3e-05, // $30 per MTok
+		CacheCreationInputTokenCost: 5e-06,
+		CacheReadInputTokenCost:     5e-07,
+		LiteLLMProvider:             "openai",
+		Mode:                        "chat",
+		SupportsPromptCaching:       true,
+	}
+	openAIGPT56TerraFallbackPricing = &LiteLLMModelPricing{
+		InputCostPerToken:           2.5e-06, // $2.50 per MTok
+		OutputCostPerToken:          1.5e-05, // $15 per MTok
+		CacheCreationInputTokenCost: 2.5e-06,
+		CacheReadInputTokenCost:     2.5e-07,
+		LiteLLMProvider:             "openai",
+		Mode:                        "chat",
+		SupportsPromptCaching:       true,
+	}
+	openAIGPT56LunaFallbackPricing = &LiteLLMModelPricing{
+		InputCostPerToken:           1e-06, // $1 per MTok
+		OutputCostPerToken:          6e-06, // $6 per MTok
+		CacheCreationInputTokenCost: 1e-06,
+		CacheReadInputTokenCost:     1e-07,
+		LiteLLMProvider:             "openai",
+		Mode:                        "chat",
+		SupportsPromptCaching:       true,
+	}
 	openAIModelDatePattern     = regexp.MustCompile(`-\d{8}$`)
 	openAIModelBasePattern     = regexp.MustCompile(`^(gpt-\d+(?:\.\d+)?)(?:-|$)`)
 	openAIGPT54FallbackPricing = &LiteLLMModelPricing{
@@ -74,6 +101,20 @@ var (
 		SupportsPromptCaching:   true,
 	}
 )
+
+func openAIGPT56PricingForModel(model string) *LiteLLMModelPricing {
+	normalized := strings.ReplaceAll(strings.ToLower(strings.TrimSpace(model)), " ", "-")
+	switch {
+	case strings.HasPrefix(normalized, "gpt-5.6-sol"):
+		return openAIGPT56SolFallbackPricing
+	case strings.HasPrefix(normalized, "gpt-5.6-terra"):
+		return openAIGPT56TerraFallbackPricing
+	case strings.HasPrefix(normalized, "gpt-5.6-luna"):
+		return openAIGPT56LunaFallbackPricing
+	default:
+		return nil
+	}
+}
 
 // LiteLLMModelPricing LiteLLM价格数据结构
 // 只保留我们需要的字段，使用指针来处理可能缺失的值
@@ -594,6 +635,11 @@ func (s *PricingService) GetModelPricing(modelName string) *LiteLLMModelPricing 
 	}
 	lookupCandidates := s.buildModelLookupCandidates(modelLower)
 
+	// GPT-5.6 Sol/Terra/Luna 使用已核定官方标准价，不能被远端动态定价覆盖。
+	if pricing := openAIGPT56PricingForModel(modelLower); pricing != nil {
+		return pricing
+	}
+
 	// GPT-5.5 业务定价固定为 GPT-5.4 的 2 倍，不能被远端动态定价覆盖。
 	if strings.Contains(modelLower, "gpt-5.5") || strings.Contains(modelLower, "gpt 5.5") {
 		return openAIGPT55FallbackPricing
@@ -850,6 +896,12 @@ func (s *PricingService) matchOpenAIModel(model string) *LiteLLMModelPricing {
 				Info(fmt.Sprintf("[Pricing] OpenAI fallback matched %s -> %s", model, variant))
 			return pricing
 		}
+	}
+
+	if pricing := openAIGPT56PricingForModel(model); pricing != nil {
+		logger.With(zap.String("component", "service.pricing")).
+			Info(fmt.Sprintf("[Pricing] OpenAI fallback matched %s -> %s", model, "gpt-5.6(static)"))
+		return pricing
 	}
 
 	if strings.HasPrefix(model, "gpt-5.3-codex") {

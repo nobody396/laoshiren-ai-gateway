@@ -20,12 +20,7 @@ type BuildInfo struct {
 
 // ProvidePricingService creates and initializes PricingService
 func ProvidePricingService(cfg *config.Config, remoteClient PricingRemoteClient) (*PricingService, error) {
-	svc := NewPricingService(cfg, remoteClient)
-	if err := svc.Initialize(); err != nil {
-		// Pricing service initialization failure should not block startup, use fallback prices
-		println("[Service] Warning: Pricing service initialization failed:", err.Error())
-	}
-	return svc, nil
+	return NewPricingService(cfg, remoteClient), nil
 }
 
 // ProvideUpdateService creates UpdateService with BuildInfo
@@ -60,7 +55,6 @@ func ProvideTokenRefreshService(
 	svc.SetRefreshAPI(refreshAPI)
 	// 调用侧显式注入后台刷新策略，避免策略漂移
 	svc.SetRefreshPolicy(DefaultBackgroundRefreshPolicy())
-	svc.Start()
 	return svc
 }
 
@@ -130,35 +124,30 @@ func ProvideOAuthRefreshAPI(accountRepo AccountRepository, tokenCache GeminiToke
 // ProvideDashboardAggregationService 创建并启动仪表盘聚合服务
 func ProvideDashboardAggregationService(repo DashboardAggregationRepository, timingWheel *TimingWheelService, cfg *config.Config) *DashboardAggregationService {
 	svc := NewDashboardAggregationService(repo, timingWheel, cfg)
-	svc.Start()
 	return svc
 }
 
 // ProvideUsageCleanupService 创建并启动使用记录清理任务服务
 func ProvideUsageCleanupService(repo UsageCleanupRepository, timingWheel *TimingWheelService, dashboardAgg *DashboardAggregationService, cfg *config.Config) *UsageCleanupService {
 	svc := NewUsageCleanupService(repo, timingWheel, dashboardAgg, cfg)
-	svc.Start()
 	return svc
 }
 
 // ProvideAgentLevelEvaluatorService creates and starts the monthly agent level evaluator.
 func ProvideAgentLevelEvaluatorService(commission *CommissionService, cfg *config.Config) *AgentLevelEvaluatorService {
 	svc := NewAgentLevelEvaluatorService(commission, cfg)
-	svc.Start()
 	return svc
 }
 
 // ProvideAccountExpiryService creates and starts AccountExpiryService.
 func ProvideAccountExpiryService(accountRepo AccountRepository) *AccountExpiryService {
 	svc := NewAccountExpiryService(accountRepo, time.Minute)
-	svc.Start()
 	return svc
 }
 
 // ProvideSubscriptionExpiryService creates and starts SubscriptionExpiryService.
 func ProvideSubscriptionExpiryService(userSubRepo UserSubscriptionRepository) *SubscriptionExpiryService {
 	svc := NewSubscriptionExpiryService(userSubRepo, time.Minute)
-	svc.Start()
 	return svc
 }
 
@@ -168,42 +157,30 @@ func ProvideTimingWheelService() (*TimingWheelService, error) {
 	if err != nil {
 		return nil, err
 	}
-	svc.Start()
 	return svc, nil
 }
 
 // ProvideDeferredService creates and starts DeferredService
 func ProvideDeferredService(accountRepo AccountRepository, timingWheel *TimingWheelService) *DeferredService {
 	svc := NewDeferredService(accountRepo, timingWheel, 10*time.Second)
-	svc.Start()
 	return svc
 }
 
 // ProvideConcurrencyService creates ConcurrencyService and starts slot cleanup worker.
 func ProvideConcurrencyService(cache ConcurrencyCache, accountRepo AccountRepository, cfg *config.Config) *ConcurrencyService {
 	svc := NewConcurrencyService(cache)
-	if err := svc.CleanupStaleProcessSlots(context.Background()); err != nil {
-		logger.LegacyPrintf("service.concurrency", "Warning: startup cleanup stale process slots failed: %v", err)
-	}
-	if cfg != nil {
-		svc.StartSlotCleanupWorker(accountRepo, cfg.Gateway.Scheduling.SlotCleanupInterval)
-	}
 	return svc
 }
 
 // ProvideUserMessageQueueService 创建用户消息串行队列服务并启动清理 worker
 func ProvideUserMessageQueueService(cache UserMsgQueueCache, rpmCache RPMCache, cfg *config.Config) *UserMessageQueueService {
 	svc := NewUserMessageQueueService(cache, rpmCache, &cfg.Gateway.UserMessageQueue)
-	if cfg.Gateway.UserMessageQueue.CleanupIntervalSeconds > 0 {
-		svc.StartCleanupWorker(time.Duration(cfg.Gateway.UserMessageQueue.CleanupIntervalSeconds) * time.Second)
-	}
 	return svc
 }
 
 func ProvideUsageRecordWorkerPool(cfg *config.Config, accountingWorker *AccountingWorker) *UsageRecordWorkerPool {
 	pool := NewUsageRecordWorkerPool(cfg)
 	pool.accountingWorker = accountingWorker
-	accountingWorker.Start()
 	return pool
 }
 
@@ -216,7 +193,6 @@ func ProvideSchedulerSnapshotService(
 	cfg *config.Config,
 ) *SchedulerSnapshotService {
 	svc := NewSchedulerSnapshotService(cache, outboxRepo, accountRepo, groupRepo, cfg)
-	svc.Start()
 	return svc
 }
 
@@ -251,7 +227,6 @@ func ProvideOpsMetricsCollector(
 	cfg *config.Config,
 ) *OpsMetricsCollector {
 	collector := NewOpsMetricsCollector(opsRepo, settingRepo, accountRepo, concurrencyService, db, redisClient, cfg)
-	collector.Start()
 	return collector
 }
 
@@ -264,7 +239,6 @@ func ProvideOpsAggregationService(
 	cfg *config.Config,
 ) *OpsAggregationService {
 	svc := NewOpsAggregationService(opsRepo, settingRepo, db, redisClient, cfg)
-	svc.Start()
 	return svc
 }
 
@@ -277,7 +251,6 @@ func ProvideOpsAlertEvaluatorService(
 	cfg *config.Config,
 ) *OpsAlertEvaluatorService {
 	svc := NewOpsAlertEvaluatorService(opsService, opsRepo, emailService, redisClient, cfg)
-	svc.Start()
 	return svc
 }
 
@@ -289,14 +262,11 @@ func ProvideOpsCleanupService(
 	cfg *config.Config,
 ) *OpsCleanupService {
 	svc := NewOpsCleanupService(opsRepo, db, redisClient, cfg)
-	svc.Start()
 	return svc
 }
 
 func ProvideOpsSystemLogSink(opsRepo OpsRepository) *OpsSystemLogSink {
 	sink := NewOpsSystemLogSink(opsRepo)
-	sink.Start()
-	logger.SetSink(sink)
 	return sink
 }
 
@@ -335,7 +305,6 @@ func ProvideSystemOperationLockService(repo IdempotencyRepository, cfg *config.C
 
 func ProvideIdempotencyCleanupService(repo IdempotencyRepository, cfg *config.Config) *IdempotencyCleanupService {
 	svc := NewIdempotencyCleanupService(repo, cfg)
-	svc.Start()
 	return svc
 }
 
@@ -356,7 +325,6 @@ func ProvideScheduledTestRunnerService(
 	cfg *config.Config,
 ) *ScheduledTestRunnerService {
 	svc := NewScheduledTestRunnerService(planRepo, scheduledSvc, accountTestSvc, rateLimitSvc, cfg)
-	svc.Start()
 	return svc
 }
 
@@ -369,20 +337,16 @@ func ProvideOpsScheduledReportService(
 	cfg *config.Config,
 ) *OpsScheduledReportService {
 	svc := NewOpsScheduledReportService(opsService, userService, emailService, redisClient, cfg)
-	svc.Start()
 	return svc
 }
 
 func ProvideDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseClient) *DownloadResourceService {
 	svc := NewDownloadResourceService(cfg, githubClient)
-	svc.Start()
 	return svc
 }
 
 // ProvideAPIKeyAuthCacheInvalidator 提供 API Key 认证缓存失效能力
 func ProvideAPIKeyAuthCacheInvalidator(apiKeyService *APIKeyService) APIKeyAuthCacheInvalidator {
-	// Start Pub/Sub subscriber for L1 cache invalidation across instances
-	apiKeyService.StartAuthCacheInvalidationSubscriber(context.Background())
 	return apiKeyService
 }
 
@@ -395,7 +359,6 @@ func ProvideBackupService(
 	dumper DBDumper,
 ) *BackupService {
 	svc := NewBackupService(settingRepo, cfg, encryptor, storeFactory, dumper)
-	svc.Start()
 	return svc
 }
 
@@ -561,6 +524,7 @@ var ProviderSet = wire.NewSet(
 	NewRBACService,
 	ProvideAccountQuotaAlertService,
 	ProvideBalanceAlertService,
+	ProvideRootLifecycle,
 )
 
 func ProvideSupplierService(repo SupplierRepository, accountRepo AccountRepository) *SupplierService {
@@ -586,6 +550,110 @@ func ProvideBalanceAlertService(
 
 func ProvidePendingAuthSessionCleanupService(identityService *IdentityService) *PendingAuthSessionCleanupService {
 	svc := NewPendingAuthSessionCleanupService(identityService, time.Hour)
-	svc.Start()
 	return svc
+}
+
+func ProvideRootLifecycle(
+	cfg *config.Config,
+	accountRepo AccountRepository,
+	pricing *PricingService,
+	apiKeyService *APIKeyService,
+	billingCache *BillingCacheService,
+	emailQueue *EmailQueueService,
+	subscriptionService *SubscriptionService,
+	accountingWorker *AccountingWorker,
+	usageRecordPool *UsageRecordWorkerPool,
+	timingWheel *TimingWheelService,
+	dashboardAggregation *DashboardAggregationService,
+	deferred *DeferredService,
+	schedulerSnapshot *SchedulerSnapshotService,
+	concurrencyService *ConcurrencyService,
+	userMessageQueue *UserMessageQueueService,
+	tokenRefresh *TokenRefreshService,
+	accountExpiry *AccountExpiryService,
+	subscriptionExpiry *SubscriptionExpiryService,
+	usageCleanup *UsageCleanupService,
+	agentLevelEvaluator *AgentLevelEvaluatorService,
+	opsMetrics *OpsMetricsCollector,
+	opsAggregation *OpsAggregationService,
+	opsAlert *OpsAlertEvaluatorService,
+	opsCleanup *OpsCleanupService,
+	opsReport *OpsScheduledReportService,
+	opsSink *OpsSystemLogSink,
+	idempotencyCleanup *IdempotencyCleanupService,
+	scheduledTests *ScheduledTestRunnerService,
+	downloadResources *DownloadResourceService,
+	backupService *BackupService,
+	pendingAuthCleanup *PendingAuthSessionCleanupService,
+) *Lifecycle {
+	component := func(name string, start func(), stop func()) LifecycleComponent {
+		return LifecycleFunc{
+			ComponentName: name,
+			StartFunc: func(context.Context) error {
+				if start != nil {
+					start()
+				}
+				return nil
+			},
+			StopFunc: func(context.Context) error {
+				if stop != nil {
+					stop()
+				}
+				return nil
+			},
+		}
+	}
+
+	var authSubscriberCancel context.CancelFunc
+	components := []LifecycleComponent{
+		LifecycleFunc{ComponentName: "pricing", StartFunc: func(context.Context) error { return pricing.Initialize() }, StopFunc: func(context.Context) error { pricing.Stop(); return nil }},
+		component("billing-cache", billingCache.Start, billingCache.Stop),
+		component("email-queue", emailQueue.Start, emailQueue.Stop),
+		component("subscription-maintenance", subscriptionService.Start, subscriptionService.Stop),
+		component("accounting-worker", accountingWorker.Start, accountingWorker.Stop),
+		component("usage-record-pool", usageRecordPool.Start, usageRecordPool.Stop),
+		component("timing-wheel", timingWheel.Start, timingWheel.Stop),
+		component("dashboard-aggregation", dashboardAggregation.Start, nil),
+		component("deferred-writes", deferred.Start, deferred.Stop),
+		component("scheduler-snapshot", schedulerSnapshot.Start, schedulerSnapshot.Stop),
+		component("concurrency-cleanup", func() {
+			if err := concurrencyService.CleanupStaleProcessSlots(context.Background()); err != nil {
+				logger.LegacyPrintf("service.concurrency", "Warning: startup cleanup stale process slots failed: %v", err)
+			}
+			if cfg != nil {
+				concurrencyService.StartSlotCleanupWorker(accountRepo, cfg.Gateway.Scheduling.SlotCleanupInterval)
+			}
+		}, concurrencyService.StopSlotCleanupWorker),
+		component("user-message-cleanup", func() {
+			if cfg != nil && cfg.Gateway.UserMessageQueue.CleanupIntervalSeconds > 0 {
+				userMessageQueue.StartCleanupWorker(time.Duration(cfg.Gateway.UserMessageQueue.CleanupIntervalSeconds) * time.Second)
+			}
+		}, userMessageQueue.Stop),
+		component("api-key-auth-subscriber", func() {
+			ctx, cancel := context.WithCancel(context.Background())
+			authSubscriberCancel = cancel
+			apiKeyService.StartAuthCacheInvalidationSubscriber(ctx)
+		}, func() {
+			if authSubscriberCancel != nil {
+				authSubscriberCancel()
+			}
+		}),
+		component("token-refresh", tokenRefresh.Start, tokenRefresh.Stop),
+		component("account-expiry", accountExpiry.Start, accountExpiry.Stop),
+		component("subscription-expiry", subscriptionExpiry.Start, subscriptionExpiry.Stop),
+		component("usage-cleanup", usageCleanup.Start, usageCleanup.Stop),
+		component("agent-level-evaluator", agentLevelEvaluator.Start, agentLevelEvaluator.Stop),
+		component("ops-metrics", opsMetrics.Start, opsMetrics.Stop),
+		component("ops-aggregation", opsAggregation.Start, opsAggregation.Stop),
+		component("ops-alert", opsAlert.Start, opsAlert.Stop),
+		component("ops-cleanup", opsCleanup.Start, opsCleanup.Stop),
+		component("ops-report", opsReport.Start, opsReport.Stop),
+		component("ops-log-sink", func() { opsSink.Start(); logger.SetSink(opsSink) }, func() { logger.SetSink(nil); opsSink.Stop() }),
+		component("idempotency-cleanup", idempotencyCleanup.Start, idempotencyCleanup.Stop),
+		component("scheduled-tests", scheduledTests.Start, scheduledTests.Stop),
+		component("download-resources", downloadResources.Start, downloadResources.Stop),
+		component("backup", backupService.Start, backupService.Stop),
+		component("pending-auth-cleanup", pendingAuthCleanup.Start, pendingAuthCleanup.Stop),
+	}
+	return NewLifecycle(components...)
 }

@@ -103,12 +103,13 @@ type BillingCacheService struct {
 	cfg                   *config.Config
 	circuitBreaker        *billingCircuitBreaker
 
-	cacheWriteChan     chan cacheWriteTask
-	cacheWriteWg       sync.WaitGroup
-	cacheWriteStopOnce sync.Once
-	cacheWriteMu       sync.RWMutex
-	stopped            atomic.Bool
-	balanceLoadSF      singleflight.Group
+	cacheWriteChan      chan cacheWriteTask
+	cacheWriteWg        sync.WaitGroup
+	cacheWriteStopOnce  sync.Once
+	cacheWriteStartOnce sync.Once
+	cacheWriteMu        sync.RWMutex
+	stopped             atomic.Bool
+	balanceLoadSF       singleflight.Group
 	// 丢弃日志节流计数器（减少高负载下日志噪音）
 	cacheWriteDropFullCount     uint64
 	cacheWriteDropFullLastLog   int64
@@ -126,8 +127,14 @@ func NewBillingCacheService(cache BillingCache, userRepo UserRepository, subRepo
 		cfg:                   cfg,
 	}
 	svc.circuitBreaker = newBillingCircuitBreaker(cfg.Billing.CircuitBreaker)
-	svc.startCacheWriteWorkers()
 	return svc
+}
+
+func (s *BillingCacheService) Start() {
+	if s == nil {
+		return
+	}
+	s.cacheWriteStartOnce.Do(s.startCacheWriteWorkers)
 }
 
 // Stop 关闭缓存写入工作池

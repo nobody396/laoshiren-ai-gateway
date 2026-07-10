@@ -103,6 +103,7 @@ type UsageRecordWorkerPool struct {
 	autoScaleCancel       context.CancelFunc
 	lifecycleWg           sync.WaitGroup
 	stopOnce              sync.Once
+	startOnce             sync.Once
 	accountingWorker      *AccountingWorker
 }
 
@@ -135,10 +136,18 @@ func NewUsageRecordWorkerPoolWithOptions(opts UsageRecordWorkerPoolOptions) *Usa
 		opts.WorkerCount,
 		pond.WithQueueSize(opts.QueueSize),
 	)
-	if p.autoScaleEnabled {
-		p.startAutoScaler()
-	}
 	return p
+}
+
+func (p *UsageRecordWorkerPool) Start() {
+	if p == nil {
+		return
+	}
+	p.startOnce.Do(func() {
+		if p.autoScaleEnabled {
+			p.startAutoScaler()
+		}
+	})
 }
 
 // Submit 提交一个使用量记录任务。

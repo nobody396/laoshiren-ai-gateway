@@ -60,6 +60,7 @@ func TestBillingCacheServiceResolveBudgetGuardConcurrencyBalance(t *testing.T) {
 	ctx := context.Background()
 	cache := &budgetGuardCacheStub{}
 	svc := NewBillingCacheService(cache, nil, nil, nil, &config.Config{})
+	svc.Start()
 	t.Cleanup(svc.Stop)
 
 	user := &User{ID: 42}
@@ -97,6 +98,7 @@ func TestBillingCacheServiceResolveBudgetGuardConcurrencySubscriptionUsesOrigina
 	ctx := context.Background()
 	cache := &budgetGuardCacheStub{}
 	svc := NewBillingCacheService(cache, nil, nil, nil, &config.Config{})
+	svc.Start()
 	t.Cleanup(svc.Stop)
 
 	limit := 450.0 // 450 raw = 4500 display credits
@@ -142,6 +144,7 @@ func TestBillingCacheServiceResolveBudgetGuardConcurrencySubscriptionScalesWithP
 	ctx := context.Background()
 	cache := &budgetGuardCacheStub{}
 	svc := NewBillingCacheService(cache, nil, nil, nil, &config.Config{})
+	svc.Start()
 	t.Cleanup(svc.Stop)
 
 	limit := 3000.0 // 3000 raw = 30000 display credits
@@ -172,6 +175,7 @@ func TestBillingCacheServiceBudgetGuardConcurrencyDecisionIsDynamic(t *testing.T
 	ctx := context.Background()
 	cache := &budgetGuardCacheStub{}
 	svc := NewBillingCacheService(cache, nil, nil, nil, &config.Config{})
+	svc.Start()
 	t.Cleanup(svc.Stop)
 
 	user := &User{ID: 42}

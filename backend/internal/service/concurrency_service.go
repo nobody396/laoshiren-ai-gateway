@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"os"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -85,7 +86,11 @@ const (
 
 // ConcurrencyService manages concurrent request limiting for accounts and users
 type ConcurrencyService struct {
-	cache ConcurrencyCache
+	cache        ConcurrencyCache
+	workerCancel context.CancelFunc
+	workerWG     sync.WaitGroup
+	workerStart  sync.Once
+	workerStop   sync.Once
 }
 
 // NewConcurrencyService creates a new ConcurrencyService
@@ -332,15 +337,38 @@ func (s *ConcurrencyService) StartSlotCleanupWorker(accountRepo AccountRepositor
 		}
 	}
 
-	go func() {
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
+	s.workerStart.Do(func() {
+		workerCtx, cancel := context.WithCancel(context.Background())
+		s.workerCancel = cancel
+		s.workerWG.Add(1)
+		go func() {
+			defer s.workerWG.Done()
+			ticker := time.NewTicker(interval)
+			defer ticker.Stop()
 
-		runCleanup()
-		for range ticker.C {
 			runCleanup()
+			for {
+				select {
+				case <-workerCtx.Done():
+					return
+				case <-ticker.C:
+					runCleanup()
+				}
+			}
+		}()
+	})
+}
+
+func (s *ConcurrencyService) StopSlotCleanupWorker() {
+	if s == nil {
+		return
+	}
+	s.workerStop.Do(func() {
+		if s.workerCancel != nil {
+			s.workerCancel()
 		}
-	}()
+		s.workerWG.Wait()
+	})
 }
 
 // GetAccountConcurrencyBatch gets current concurrency counts for multiple accounts

@@ -1,6 +1,6 @@
 # 老实人 AI 远程环境资产清单
 
-更新时间：2026-05-16 00:29 CST
+更新时间：2026-07-10（北京时间）
 
 用途：给团队成员和后续 Codex/AI 线程快速了解老实人 AI 中转站的远程环境、控制台入口、服务器、数据库、域名、CDN、GitHub、镜像和备份操作。新线程执行任何运维任务前，先读本文件，再读本仓库 `AGENTS.md`。
 
@@ -9,8 +9,8 @@
 ## 安全边界
 
 - 本文件不保存真实密码、Token、JWT、数据库密码、Redis 密码、GitHub PAT、用户 API Key。
-- 真实密钥只允许放在平台密钥、系统 keyring、Dokploy 环境变量、服务器容器环境变量或 `/Users/fujunhao/laoshirenai/secrets.local.env` 这类受保护本地文件里。
-- 任何线程都不要把 `/Users/fujunhao/laoshirenai/secrets.local.env`、SSH 私钥、GitHub Token、数据库密码内容打印到聊天或写入教程。
+- 本机 secret 与 MCP 凭证的唯一控制面是 Agent Switch；只通过 `agent-switch secret set/list` 管理，不直接读取或打印 `/Users/fujunhao/.config/agent-switch/secrets.env`。
+- 不在项目 `.env`、README、教程、日志、shell history、Skill 或测试 fixture 中保存真实密钥。生产运行时值由受控平台注入，不把值复制回仓库或聊天。
 - 需要备份数据库时，不需要读取数据库密码；直接在 PostgreSQL 容器内部使用容器自己的环境变量执行 `pg_dump`。
 
 ## 一句话总览
@@ -34,12 +34,12 @@ flowchart LR
 | 类型 | 路径 | 说明 |
 | --- | --- | --- |
 | 总工作区 | `/Users/fujunhao/laoshirenai` | 项目总目录 |
-| 源码仓库 | `/Users/fujunhao/laoshirenai/DragonCode-sub2api` | 改代码、提交、推送都在这里 |
+| 源码仓库 | `/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API` | canonical checkout；独立改造使用已登记 worktree |
 | 部署日志 | `/Users/fujunhao/laoshirenai/log.md` | 关键操作、错误和解决方式都追加在这里 |
 | 环境资产清单 | `docs/ops/ENVIRONMENTS.md` | 本文件，团队共享版本 |
 | 运维教程目录 | `/Users/fujunhao/laoshirenai/tutorials/03-operation` | 运行、备份、排错教程 |
-| 本地密钥备份 | `/Users/fujunhao/laoshirenai/secrets.local.env` | owner 本机受保护文件，不要打印内容，也不要提交 |
-| 部署 Skill | `/Users/fujunhao/.agents/skills/laoshirenai-deploy/SKILL.md` | 后续改代码/推送/上线必须先读 |
+| Secret/MCP 控制面 | Agent Switch | 只用 CLI 管理 secret name/value；值不进项目文件或输出 |
+| 部署 Skill 源 | `/Users/fujunhao/AgentWorkspace/skill-hub/own/laoshirenai-skills/skills/laoshirenai-deploy/SKILL.md` | Skill Hub 管理；后续改代码/推送/上线必须先读 |
 
 ## 后续线程必须遵守的规则
 
@@ -67,7 +67,7 @@ flowchart LR
 | 腾讯云 EdgeOne 控制台 | `https://console.cloud.tencent.com/edgeone` | 已验证：会跳转腾讯云登录页 |
 | EdgeOne 国际站 | `https://edgeone.ai` | 已验证：HTTP 200 |
 | GitHub 私有仓库 | `https://github.com/nobody396/laoshiren-ai-gateway` | 已通过 `gh` 验证；匿名网页访问 404 是私有仓库正常表现 |
-| GitHub Actions workflow | `https://github.com/nobody396/laoshiren-ai-gateway/actions/workflows/docker-image.yml` | 已通过 `gh` 验证最近 3 次均成功；匿名网页访问可能 404 |
+| GitHub Actions required CI | `https://github.com/nobody396/laoshiren-ai-gateway/actions/workflows/ci.yml` | backend、integration、frontend 全过后才调用镜像构建；匿名访问可能 404 |
 | GHCR 镜像包 | `https://github.com/nobody396/laoshiren-ai-gateway/pkgs/container/laoshiren-ai-gateway` | 私有包；已通过 `gh api` 验证存在 `main` 标签 |
 | DragonCode 上游源码 | `https://github.com/bozhouDev/DragonCode-sub2api` | 上游私有或受限；匿名网页访问 404 属正常情况 |
 
@@ -80,9 +80,11 @@ flowchart LR
 | 本地 remote origin | `git@github-work:nobody396/laoshiren-ai-gateway.git` |
 | 本地 remote upstream | `git@github-work:bozhouDev/DragonCode-sub2api.git` |
 | upstream push | `DISABLED`，不要推上游 |
-| GitHub Actions workflow | `.github/workflows/docker-image.yml` |
-| GHCR 镜像 | `ghcr.io/nobody396/laoshiren-ai-gateway:main` |
-| 最近已验证镜像标签 | `main`、`d5bc84140c7ed45b158c7e8804f794b081f3211b` |
+| Required workflow | `.github/workflows/ci.yml` |
+| Reusable image workflow | `.github/workflows/docker-image.yml`（只有 `workflow_call`，不能独立发布） |
+| GHCR 应用镜像仓库 | `ghcr.io/nobody396/laoshiren-ai-gateway` |
+| GHCR 维护镜像仓库 | `ghcr.io/nobody396/laoshiren-ai-gateway-maintenance` |
+| 发布/回滚输入 | 仅接受 CI artifact 验证后的 `image@sha256:...`；禁止 `:main` |
 | GitHub CLI 活跃账号 | `nobody396` |
 | GitHub CLI Token 保存位置 | 系统 keyring，本文档不保存 token |
 | Git SSH alias | `github-work` |
@@ -91,11 +93,11 @@ flowchart LR
 常用检查命令：
 
 ```bash
-cd /Users/fujunhao/laoshirenai/DragonCode-sub2api
+cd /Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API
 git status --short
 git remote -v
 gh repo view nobody396/laoshiren-ai-gateway --json nameWithOwner,url,isPrivate,defaultBranchRef
-gh run list -R nobody396/laoshiren-ai-gateway --workflow docker-image.yml --branch main --limit 5
+gh run list -R nobody396/laoshiren-ai-gateway --workflow ci.yml --branch main --limit 5
 ```
 
 ## 服务器环境
@@ -138,7 +140,7 @@ docker --context laoshirenai-hostinger service ls
 
 | 服务 | 镜像 | 副本 | 说明 |
 | --- | --- | --- | --- |
-| `laoshirenai-app-tazu5m` | `ghcr.io/nobody396/laoshiren-ai-gateway:main` | `1/1` | 业务应用 |
+| `laoshirenai-app-tazu5m` | 维护前重新读取并规范化为精确 digest | `1/1` | 业务应用；禁止按移动标签发布/回滚 |
 | `laoshirenai-postgres-xc1pnj` | `postgres:18-alpine` | `1/1` | 业务数据库 |
 | `laoshirenai-redis-yhmnps` | `redis:8-alpine` | `1/1` | 业务缓存/队列 |
 
@@ -235,13 +237,17 @@ docker --context laoshirenai-hostinger exec "$PG_CONTAINER" sh -lc 'pg_isready -
 数据库备份推荐命令：
 
 ```bash
+set +x
+umask 077
 BACKUP_DIR=/Users/fujunhao/laoshirenai/backups/postgres
-mkdir -p "$BACKUP_DIR"
+mkdir -p -m 700 "$BACKUP_DIR"
+BACKUP_FILE="$BACKUP_DIR/sub2api-$(date +%Y%m%d-%H%M%S).dump"
 PG_CONTAINER=$(docker --context laoshirenai-hostinger ps --filter 'name=laoshirenai-postgres' --format '{{.Names}}' | head -n1)
 docker --context laoshirenai-hostinger exec "$PG_CONTAINER" sh -lc \
   'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --format=custom --no-owner --no-acl' \
-  > "$BACKUP_DIR/sub2api-$(date +%Y%m%d-%H%M%S).dump"
-ls -lh "$BACKUP_DIR"
+  > "$BACKUP_FILE"
+chmod 600 "$BACKUP_FILE"
+pg_restore --list "$BACKUP_FILE" >/dev/null
 ```
 
 说明：
@@ -338,29 +344,41 @@ curl -fsS 'https://dns.google/resolve?name=api.laoshirenai.com&type=A' | jq
 
 ## 发布与不上线规则
 
-默认只推送，不上线：
+默认只测试、提交和推送分支，不上线。只有合并并推送到 `main` 后，required
+CI 才会构建可发布 artifact：
 
 ```bash
-cd /Users/fujunhao/laoshirenai/DragonCode-sub2api
+cd /Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API
 git status --short
 # 修改代码、测试、commit、push
 /Users/fujunhao/.agents/skills/laoshirenai-deploy/scripts/release-after-push.sh
 ```
 
-只有用户明确要求“上线 / 发布 / 部署到生产”时，才允许执行：
+脚本必须等待精确 main commit 的 `ci.yml` push run，下载并严格解析
+`immutable-image-<SHA>` artifact，验证 app/maintenance digest；默认只报告，
+不部署。只有用户明确要求“上线 / 发布 / 部署到生产”时，才允许执行：
 
 ```bash
 /Users/fujunhao/.agents/skills/laoshirenai-deploy/scripts/release-after-push.sh --deploy --confirm-production-deploy
 ```
 
-生产服务手动更新命令，只有明确上线时才可用：
+维护发布还必须遵循 `docs/ops/maintenance-window-runbook.md` 的路由、停写、
+备份、内部 readiness 和回滚顺序；部署 Skill 不是停机编排器。
+
+生产服务手动更新只允许使用已验证的精确 digest：
 
 ```bash
+TARGET_IMAGE_REF='ghcr.io/nobody396/laoshiren-ai-gateway@sha256:<64-hex-from-verified-artifact>'
+python3 tools/release/release_contract.py validate-deploy-ref "$TARGET_IMAGE_REF" >/dev/null
 docker --context laoshirenai-hostinger service update \
-  --force \
-  --image ghcr.io/nobody396/laoshiren-ai-gateway:main \
+  --image "$TARGET_IMAGE_REF" \
+  --stop-grace-period 45s \
   laoshirenai-app-tazu5m
 ```
+
+禁止 `--force`、`:main`、短 commit、未经验证的 tag 和模糊
+`docker service rollback`。更新后必须把服务镜像规范化为 digest-only，并与
+`TARGET_IMAGE_REF` 精确相等。
 
 ## 常见错误
 
@@ -378,9 +396,10 @@ docker --context laoshirenai-hostinger service update \
 ## 给新线程的最短提示词
 
 ```text
-先阅读 /Users/fujunhao/laoshirenai/ENVIRONMENTS.md 和 /Users/fujunhao/laoshirenai/log.md。
+先阅读仓库 docs/ops/ENVIRONMENTS.md、维护计划和 /Users/fujunhao/laoshirenai/log.md。
 本项目生产不是 Compose，是 Dokploy/Docker Swarm 拆分服务。
 普通代码修改只推送并等待 GitHub Actions 成功，不要上线。
 除非我明确说“上线/发布/部署到生产”，否则不要更新生产服务。
-真实密码、Token、JWT、数据库密码不要写入文档或聊天。
+发布和回滚只用 CI 验证后的 image@sha256 精确 digest，永不使用 :main。
+真实密码、Token、JWT、数据库密码只由受控 secret 平台注入，不写文档或聊天。
 ```

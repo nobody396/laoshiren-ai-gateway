@@ -322,11 +322,13 @@ flowchart TB
   - `deploy/maintenance/nginx.conf`
   - `deploy/maintenance/index.html`
   - `deploy/maintenance/test.sh`
+  - `deploy/maintenance/route_switch.py`
+  - `deploy/maintenance/test_route_switch.py`
   - `docs/ops/maintenance-window-runbook.md`
 - **Implementation:**
   - Build a tiny static service independent of the app, PostgreSQL and Redis.
   - Web routes return a Beijing-time maintenance page with HTTP 503; API/model routes return JSON 503 with `Retry-After` and `Cache-Control: no-store`.
-  - Pre-stage it on the existing Swarm network and validate it without taking production traffic. Activation uses a higher-priority, exact-host Traefik route; deactivation restores the app route and removes/scales down the maintenance service.
+  - Pre-stage it on the existing Swarm network and validate it without taking production traffic. Activation atomically replaces only the expected backend URLs inside the existing protected exact-host Traefik route, without rendering its secret-bearing contents; deactivation validates and restores the root-only backup before removing the maintenance service.
   - Do not improvise an untested EdgeOne or Traefik rule during the outage. If the route, CDN bypass/purge, or rollback command cannot be proven by 00:30, keep the old app online and announce postponement.
 - **Test scenarios:**
   1. With the app fully stopped, all website hosts show the maintenance HTML.

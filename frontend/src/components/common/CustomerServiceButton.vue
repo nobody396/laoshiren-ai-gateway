@@ -145,11 +145,12 @@
  * 点击弹出弹窗，展示售后客服 + 技术客服联系方式
  * 二维码图片来源于 admin 配置的 public settings
  */
-import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { useAppStore } from '@/stores/app'
 import Icon from '@/components/icons/Icon.vue'
+import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -199,13 +200,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleEscape)
-  document.body.style.overflow = ''
 })
 
-// 弹窗打开时锁定 body 滚动
-watch(isOpen, (open) => {
-  document.body.style.overflow = open ? 'hidden' : ''
-})
+useBodyScrollLock(isOpen)
 </script>
 
 <style scoped>

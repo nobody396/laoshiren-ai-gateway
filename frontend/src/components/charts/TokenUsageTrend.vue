@@ -6,7 +6,7 @@
     <div v-if="loading" class="flex h-48 items-center justify-center">
       <LoadingSpinner />
     </div>
-    <div v-else-if="trendData.length > 0 && chartData" class="h-48">
+    <div v-else-if="normalizedTrendData.length > 0 && chartData" class="h-48">
       <Line :data="chartData" :options="lineOptions" />
     </div>
     <div
@@ -35,6 +35,7 @@ import {
 import { Line } from 'vue-chartjs'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import type { TrendDataPoint } from '@/types'
+import { fillUsageTrendBuckets, type TrendGranularity } from '@/utils/trendBuckets'
 
 ChartJS.register(
   CategoryScale,
@@ -53,7 +54,13 @@ const props = defineProps<{
   trendData: TrendDataPoint[]
   loading?: boolean
   palette?: 'default' | 'greco'
+  startDate?: string
+  granularity?: TrendGranularity
 }>()
+
+const normalizedTrendData = computed(() =>
+  fillUsageTrendBuckets(props.trendData, props.startDate, props.granularity)
+)
 
 const isDarkMode = ref(document.documentElement.classList.contains('dark'))
 let themeObserver: MutationObserver | null = null
@@ -95,14 +102,14 @@ const chartColors = computed(() => {
 })
 
 const chartData = computed(() => {
-  if (!props.trendData?.length) return null
+  if (!normalizedTrendData.value.length) return null
 
   return {
-    labels: props.trendData.map((d) => d.date),
+    labels: normalizedTrendData.value.map((d) => d.date),
     datasets: [
       {
         label: 'Input',
-        data: props.trendData.map((d) => d.input_tokens),
+        data: normalizedTrendData.value.map((d) => d.input_tokens),
         borderColor: chartColors.value.input,
         backgroundColor: `${chartColors.value.input}20`,
         fill: true,
@@ -110,7 +117,7 @@ const chartData = computed(() => {
       },
       {
         label: 'Output',
-        data: props.trendData.map((d) => d.output_tokens),
+        data: normalizedTrendData.value.map((d) => d.output_tokens),
         borderColor: chartColors.value.output,
         backgroundColor: `${chartColors.value.output}20`,
         fill: true,
@@ -118,7 +125,7 @@ const chartData = computed(() => {
       },
       {
         label: 'Cache Creation',
-        data: props.trendData.map((d) => d.cache_creation_tokens),
+        data: normalizedTrendData.value.map((d) => d.cache_creation_tokens),
         borderColor: chartColors.value.cacheCreation,
         backgroundColor: `${chartColors.value.cacheCreation}20`,
         fill: true,
@@ -126,7 +133,7 @@ const chartData = computed(() => {
       },
       {
         label: 'Cache Read',
-        data: props.trendData.map((d) => d.cache_read_tokens),
+        data: normalizedTrendData.value.map((d) => d.cache_read_tokens),
         borderColor: chartColors.value.cacheRead,
         backgroundColor: `${chartColors.value.cacheRead}20`,
         fill: true,
@@ -163,8 +170,8 @@ const lineOptions = computed(() => ({
         },
         footer: (tooltipItems: any) => {
           const dataIndex = tooltipItems[0]?.dataIndex
-          if (dataIndex !== undefined && props.trendData[dataIndex]) {
-            const data = props.trendData[dataIndex]
+          if (dataIndex !== undefined && normalizedTrendData.value[dataIndex]) {
+            const data = normalizedTrendData.value[dataIndex]
             return `Actual: $${formatCost(data.actual_cost)} | Standard: $${formatCost(data.cost)}`
           }
           return ''

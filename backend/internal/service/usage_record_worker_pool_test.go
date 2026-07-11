@@ -197,6 +197,7 @@ func TestUsageRecordWorkerPool_AutoScaleUpAndDown(t *testing.T) {
 		AutoScaleInterval:     20 * time.Millisecond,
 		AutoScaleCooldown:     20 * time.Millisecond,
 	})
+	pool.Start()
 	t.Cleanup(pool.Stop)
 
 	block := make(chan struct{})
@@ -240,6 +241,7 @@ func TestUsageRecordWorkerPool_AutoScaleDownRequiresLowRunningUtilization(t *tes
 		AutoScaleInterval:     20 * time.Millisecond,
 		AutoScaleCooldown:     20 * time.Millisecond,
 	})
+	pool.Start()
 	t.Cleanup(pool.Stop)
 
 	block := make(chan struct{})

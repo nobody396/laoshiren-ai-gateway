@@ -2970,6 +2970,7 @@ import GroupSelector from '@/components/common/GroupSelector.vue'
 import ModelWhitelistSelector from '@/components/account/ModelWhitelistSelector.vue'
 import QuotaLimitCard from '@/components/account/QuotaLimitCard.vue'
 import { applyInterceptWarmup } from '@/components/account/credentialsBuilder'
+import { toCreateAccountPayload } from '@/features/accounts/domain/accountPayload'
 import { formatDateTimeLocalInput, parseDateTimeLocalInput } from '@/utils/format'
 import { createStableObjectKeyResolver } from '@/utils/stableObjectKey'
 import {
@@ -3781,10 +3782,13 @@ const ensureAntigravityMixedChannelConfirmed = async (onConfirm: () => Promise<v
   }
 }
 
+const createAccountWithAdapter = (payload: CreateAccountRequest) =>
+  adminAPI.accounts.create(toCreateAccountPayload(payload))
+
 const submitCreateAccount = async (payload: CreateAccountRequest) => {
   submitting.value = true
   try {
-    await adminAPI.accounts.create(withAntigravityConfirmFlag(payload))
+    await createAccountWithAdapter(withAntigravityConfirmFlag(payload))
     appStore.showSuccess(t('admin.accounts.accountCreated'))
     emit('created')
     handleClose()
@@ -3953,13 +3957,14 @@ const buildAnthropicExtra = (base?: Record<string, unknown>): Record<string, unk
 
 // Helper function to create account with mixed channel warning handling
 const doCreateAccount = async (payload: CreateAccountRequest) => {
+  const normalizedPayload = toCreateAccountPayload(payload)
   const canContinue = await ensureAntigravityMixedChannelConfirmed(async () => {
-    await submitCreateAccount(payload)
+    await submitCreateAccount(normalizedPayload)
   })
   if (!canContinue) {
     return
   }
-  await submitCreateAccount(payload)
+  await submitCreateAccount(normalizedPayload)
 }
 
 // Handle mixed channel warning confirmation
@@ -4335,7 +4340,7 @@ const handleOpenAIExchange = async (authCode: string) => {
     }
 
     if (shouldCreateOpenAI) {
-      await adminAPI.accounts.create({
+      await createAccountWithAdapter({
         name: form.name,
         notes: form.notes,
         platform: 'openai',
@@ -4425,7 +4430,7 @@ const handleOpenAIBatchRT = async (refreshTokenInput: string, clientId?: string)
         const accountName = refreshTokens.length > 1 ? `${baseName} #${i + 1}` : baseName
 
         if (shouldCreateOpenAI) {
-          await adminAPI.accounts.create({
+          await createAccountWithAdapter({
             name: accountName,
             notes: form.notes,
             platform: 'openai',
@@ -4539,7 +4544,7 @@ const handleAntigravityValidateRT = async (refreshTokenInput: string) => {
           expires_at: form.expires_at,
           auto_pause_on_expired: autoPauseOnExpired.value
         })
-        await adminAPI.accounts.create(createPayload)
+        await createAccountWithAdapter(createPayload)
         successCount++
       } catch (error: any) {
         failedCount++
@@ -4864,7 +4869,7 @@ const handleCookieAuth = async (sessionKey: string) => {
           credentials.temp_unschedulable_rules = tempUnschedPayload
         }
 
-        await adminAPI.accounts.create({
+        await createAccountWithAdapter({
           name: accountName,
           notes: form.notes,
           platform: form.platform,

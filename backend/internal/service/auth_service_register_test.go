@@ -58,11 +58,15 @@ type emailCacheStub struct {
 }
 
 type defaultSubscriptionAssignerStub struct {
-	calls []AssignSubscriptionInput
-	err   error
+	calls  []AssignSubscriptionInput
+	err    error
+	onCall func()
 }
 
 func (s *defaultSubscriptionAssignerStub) AssignOrExtendSubscription(_ context.Context, input *AssignSubscriptionInput) (*UserSubscription, bool, error) {
+	if s.onCall != nil {
+		s.onCall()
+	}
 	if input != nil {
 		s.calls = append(s.calls, *input)
 	}
@@ -70,6 +74,21 @@ func (s *defaultSubscriptionAssignerStub) AssignOrExtendSubscription(_ context.C
 		return nil, false, s.err
 	}
 	return &UserSubscription{UserID: input.UserID, GroupID: input.GroupID}, false, nil
+}
+
+type unitOfWorkStub struct {
+	inTx      bool
+	committed bool
+}
+
+func (s *unitOfWorkStub) WithinTx(ctx context.Context, fn func(context.Context) error) error {
+	s.inTx = true
+	err := fn(ctx)
+	s.inTx = false
+	if err == nil {
+		s.committed = true
+	}
+	return err
 }
 
 func (s *emailCacheStub) GetVerificationCode(ctx context.Context, email string) (*VerificationCodeData, error) {
@@ -213,6 +232,55 @@ func TestAuthService_Register_EmailExists(t *testing.T) {
 
 	_, _, err := service.Register(context.Background(), "user@test.com", "password")
 	require.ErrorIs(t, err, ErrEmailExists)
+}
+
+func TestAuthService_Register_InvitationFailureSuppressesPostCommitEffects(t *testing.T) {
+	repo := &userRepoStub{nextID: 42}
+	svc := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled:   "true",
+		SettingKeyInvitationCodeEnabled: "true",
+		SettingKeyDefaultSubscriptions:  `[{"group_id":1,"validity_days":30}]`,
+	}, nil)
+	redeem := &redeemRepoStub{
+		code:   &RedeemCode{ID: 7, Code: "INVITE", Type: RedeemTypeInvitation, Status: StatusUnused},
+		useErr: ErrRedeemCodeUsed,
+	}
+	assigner := &defaultSubscriptionAssignerStub{}
+	uow := &unitOfWorkStub{}
+	svc.redeemRepo = redeem
+	svc.defaultSubAssigner = assigner
+	svc.SetUnitOfWork(uow)
+
+	_, _, err := svc.RegisterWithVerification(context.Background(), "atomic@example.com", "password", "", "", "INVITE", "")
+	require.ErrorIs(t, err, ErrInvitationCodeInvalid)
+	require.False(t, uow.committed)
+	require.Empty(t, assigner.calls, "subscription writes must not run before a successful commit")
+}
+
+func TestAuthService_Register_PostCommitEffectsRunAfterUnitOfWork(t *testing.T) {
+	repo := &userRepoStub{nextID: 43}
+	svc := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled:   "true",
+		SettingKeyInvitationCodeEnabled: "true",
+		SettingKeyDefaultSubscriptions:  `[{"group_id":1,"validity_days":30}]`,
+	}, nil)
+	redeem := &redeemRepoStub{
+		code: &RedeemCode{ID: 8, Code: "INVITE-OK", Type: RedeemTypeInvitation, Status: StatusUnused},
+	}
+	uow := &unitOfWorkStub{}
+	assigner := &defaultSubscriptionAssignerStub{onCall: func() {
+		require.False(t, uow.inTx)
+		require.True(t, uow.committed)
+	}}
+	svc.redeemRepo = redeem
+	svc.defaultSubAssigner = assigner
+	svc.SetUnitOfWork(uow)
+
+	_, user, err := svc.RegisterWithVerification(context.Background(), "commit@example.com", "password", "", "", "INVITE-OK", "")
+	require.NoError(t, err)
+	require.Equal(t, int64(43), user.ID)
+	require.True(t, uow.committed)
+	require.Len(t, assigner.calls, 1)
 }
 
 func TestAuthService_Register_CheckEmailError(t *testing.T) {

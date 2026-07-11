@@ -46,6 +46,7 @@ type EmailQueueService struct {
 	wg                sync.WaitGroup
 	stopChan          chan struct{}
 	workers           int
+	startOnce         sync.Once
 }
 
 // NewEmailQueueService 创建邮件队列服务
@@ -62,10 +63,14 @@ func NewEmailQueueService(emailService *EmailService, balanceAlertCache BalanceA
 		workers:           workers,
 	}
 
-	// 启动工作协程
-	service.start()
-
 	return service
+}
+
+func (s *EmailQueueService) Start() {
+	if s == nil {
+		return
+	}
+	s.startOnce.Do(s.start)
 }
 
 // start 启动工作协程

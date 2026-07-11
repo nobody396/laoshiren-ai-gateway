@@ -8,6 +8,7 @@ Before changing code, reviewing pull requests, deploying, backing up data, or to
 
 - `docs/ops/ENVIRONMENTS.md` for production environment context, domains, server, database, Redis, CDN, GitHub/GHCR, and backup entry points.
 - `docs/ops/TEAM_WORKFLOW.md` for team collaboration, PR review, merge, and release policy.
+- `docs/ops/CHECKOUTS.md` for checkout ownership and release eligibility.
 
 ## Default Workflow
 
@@ -48,7 +49,7 @@ Production deployment is manual by default.
 ## Current Deployment Shape
 
 - Source repository: `nobody396/laoshiren-ai-gateway`.
-- Docker image: `ghcr.io/nobody396/laoshiren-ai-gateway:main`.
+- Docker image: CI publishes an exact-commit artifact; production and rollback use only the verified `image@sha256` reference.
 - Production is managed by Dokploy / Docker Swarm on the Hostinger server.
 - Current production application service name: `laoshirenai-app-tazu5m`.
 
@@ -64,4 +65,4 @@ Choose checks based on the change, but prefer:
 
 ## Secrets
 
-Never commit secrets, tokens, OAuth client secrets, SMTP passwords, SSH keys, or admin API keys. Keep local secrets in private local files only.
+Never commit secrets, tokens, OAuth client secrets, SMTP passwords, SSH keys, or admin API keys. Agent Switch is the only local secret/MCP control plane. Inspect names with `agent-switch secret list`; write values only with `agent-switch secret set --stdin NAME` or `--fd`, never command arguments or project `.env` files.

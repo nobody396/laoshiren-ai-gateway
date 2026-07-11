@@ -118,11 +118,17 @@ jobs:
       - name: Run frontend typecheck
         run: pnpm --dir frontend run typecheck
 
+      - name: Enforce frontend dependency boundaries
+        run: pnpm --dir frontend run boundary:check
+
       - name: Run frontend tests
         run: pnpm --dir frontend run test:run
 
       - name: Build frontend
         run: pnpm --dir frontend run build
+
+      - name: Enforce frontend bundle budget
+        run: pnpm --dir frontend run bundle:check:test && pnpm --dir frontend run bundle:check
 
   docker:
     name: Production Docker build

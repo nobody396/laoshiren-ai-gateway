@@ -13,6 +13,7 @@ import {useRoutePrefetch} from '@/composables/useRoutePrefetch'
 import {getSetupStatus, type SetupStatus} from '@/api/setup'
 import {updateRouteSeo} from '@/utils/seo'
 import {trackPageView} from '@/utils/analytics'
+import {evaluateRoutePolicy} from './route-policy'
 
 /**
  * Route definitions with lazy loading
@@ -858,8 +859,6 @@ let authInitialized = false
 const navigationLoading = useNavigationLoadingState()
 // 延迟初始化预加载，传入 router 实例
 let routePrefetch: ReturnType<typeof useRoutePrefetch> | null = null
-const BACKEND_MODE_ALLOWED_PATHS = ['/login', '/key-usage', '/setup', '/docs', '/legal']
-const BACKEND_MODE_EXACT_PATHS = ['/', '/home']
 let cachedSetupStatus: SetupStatus | null = null
 let setupStatusPromise: Promise<SetupStatus | null> | null = null
 
@@ -928,126 +927,44 @@ router.beforeEach(async (to, _from, next) => {
     customTitle: resolveCustomPageTitle(to)
   })
 
-  // Check if route requires authentication
-  const requiresAuth = to.meta.requiresAuth !== false // Default to true
   const requiresAdmin = to.meta.requiresAdmin === true
+  const requiredPermission = typeof to.meta.permission === 'string' ? to.meta.permission : undefined
+  let permissionAllowed = true
+  if (requiresAdmin && authStore.isAdmin && requiredPermission) {
+    const permissionStore = usePermissionStore()
+    if (!permissionStore.loaded) await permissionStore.fetchPermissions()
+    permissionAllowed = permissionStore.hasPermission(requiredPermission)
+  }
 
-  // If route doesn't require auth, allow access
-  if (!requiresAuth) {
-    // If already authenticated and trying to access login/register, redirect to appropriate dashboard
-    if (authStore.isAuthenticated && (to.path === '/login' || to.path === '/register')) {
-      // In backend mode, non-admin users should NOT be redirected away from login
-      // (they are blocked from all protected routes, so redirecting would cause a loop)
-      if (appStore.backendModeEnabled && !authStore.isAdmin) {
-        next()
-        return
-      }
-      // Admin users go to admin dashboard, regular users go to user dashboard
-      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
-      return
-    }
-    // Backend mode: block public pages for unauthenticated users (except login, key-usage, setup)
-    if (appStore.backendModeEnabled && !authStore.isAuthenticated) {
-      const isAllowed = BACKEND_MODE_EXACT_PATHS.includes(to.path) || BACKEND_MODE_ALLOWED_PATHS.some((p) => to.path === p || to.path.startsWith(p))
-      if (!isAllowed) {
-        next('/login')
-        return
-      }
-    }
-    next()
+  const requiresInvoiceManagement = to.meta.requiresInvoiceManagement === true
+  const requiresFeedbackManagement = to.meta.requiresFeedbackManagement === true
+  if ((requiresInvoiceManagement || requiresFeedbackManagement) && !appStore.publicSettingsLoaded) {
+    await appStore.fetchPublicSettings()
+  }
+
+  const decision = evaluateRoutePolicy({
+    path: to.path,
+    requiresAuth: to.meta.requiresAuth !== false,
+    requiresAdmin,
+    requiresAgent: to.meta.requiresAgent === true,
+    isAuthenticated: authStore.isAuthenticated,
+    isAdmin: authStore.isAdmin,
+    role: authStore.user?.role,
+    isSimpleMode: authStore.isSimpleMode,
+    backendModeEnabled: appStore.backendModeEnabled,
+    permissionAllowed,
+    invoiceManagementEnabled: appStore.cachedPublicSettings?.invoice_management_enabled === true,
+    feedbackManagementEnabled: appStore.cachedPublicSettings?.feedback_management_enabled !== false,
+    requiresInvoiceManagement,
+    requiresFeedbackManagement
+  })
+
+  if (!decision.allow && decision.redirect) {
+    next(decision.preserveIntent
+      ? { path: decision.redirect, query: { redirect: to.fullPath } }
+      : decision.redirect)
     return
   }
-
-  // Route requires authentication
-  if (!authStore.isAuthenticated) {
-    // Not authenticated, redirect to login
-    next({
-      path: '/login',
-      query: { redirect: to.fullPath } // Save intended destination
-    })
-    return
-  }
-
-  // Check admin requirement
-  if (requiresAdmin && !authStore.isAdmin) {
-    // User is authenticated but not admin, redirect to user dashboard
-    next('/dashboard')
-    return
-  }
-
-  if (requiresAdmin && authStore.isAdmin) {
-    const requiredPerm = to.meta.permission
-    if (requiredPerm) {
-      const permissionStore = usePermissionStore()
-      if (!permissionStore.loaded) {
-        await permissionStore.fetchPermissions()
-      }
-      if (!permissionStore.hasPermission(requiredPerm)) {
-        next('/admin/dashboard')
-        return
-      }
-    }
-  }
-
-  // Check agent requirement (agent or admin can access)
-  const requiresAgent = to.meta.requiresAgent === true
-  if (requiresAgent && !authStore.isAdmin && authStore.user?.role !== 'agent') {
-    next('/dashboard')
-    return
-  }
-
-  if (to.meta.requiresInvoiceManagement === true) {
-    if (!appStore.publicSettingsLoaded) {
-      await appStore.fetchPublicSettings()
-    }
-    if (appStore.cachedPublicSettings?.invoice_management_enabled !== true) {
-      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
-      return
-    }
-  }
-
-  if (to.meta.requiresFeedbackManagement === true) {
-    if (!appStore.publicSettingsLoaded) {
-      await appStore.fetchPublicSettings()
-    }
-    if (appStore.cachedPublicSettings?.feedback_management_enabled === false) {
-      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
-      return
-    }
-  }
-
-  // 简易模式下限制访问某些页面
-  if (authStore.isSimpleMode) {
-    const restrictedPaths = [
-      '/admin/groups',
-      '/admin/subscriptions',
-      '/admin/redeem',
-      '/admin/billing',
-      '/subscriptions',
-      '/redeem'
-    ]
-
-    if (restrictedPaths.some((path) => to.path.startsWith(path))) {
-      // 简易模式下访问受限页面,重定向到仪表板
-      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
-      return
-    }
-  }
-
-  // Backend mode: admin gets full access, non-admin blocked
-  if (appStore.backendModeEnabled) {
-    if (authStore.isAuthenticated && authStore.isAdmin) {
-      next()
-      return
-    }
-    const isAllowed = BACKEND_MODE_EXACT_PATHS.includes(to.path) || BACKEND_MODE_ALLOWED_PATHS.some((p) => to.path === p || to.path.startsWith(p))
-    if (!isAllowed) {
-      next('/login')
-      return
-    }
-  }
-
-  // All checks passed, allow navigation
   next()
 })
 

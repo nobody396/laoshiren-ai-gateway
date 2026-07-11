@@ -188,6 +188,13 @@ func runMainServer() {
 		log.Fatalf("Failed to initialize application: %v", err)
 	}
 	defer app.Cleanup()
+	startCtx, startCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	if err := app.Lifecycle.Start(startCtx); err != nil {
+		startCancel()
+		app.Cleanup()
+		log.Fatalf("Failed to start application lifecycle: %v", err)
+	}
+	startCancel()
 
 	// 启动服务器
 	go func() {

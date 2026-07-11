@@ -30,6 +30,17 @@ type UsageLogRepoSuite struct {
 
 func (s *UsageLogRepoSuite) SetupTest() {
 	s.ctx = context.Background()
+	for _, table := range []string{
+		"usage_accounting_commands",
+		"usage_dashboard_hourly_users",
+		"usage_dashboard_daily_users",
+		"usage_dashboard_hourly",
+		"usage_dashboard_daily",
+		"usage_logs",
+	} {
+		_, err := integrationDB.ExecContext(s.ctx, "DELETE FROM "+table)
+		s.Require().NoError(err, "reset %s integration fixtures", table)
+	}
 	tx := testEntTx(s.T())
 	s.tx = tx
 	s.client = tx.Client()

@@ -81,8 +81,10 @@ export default defineConfig(({ mode }) => {
   build: {
     outDir: '../backend/internal/web/dist',
     emptyOutDir: true,
+    manifest: true,
     rollupOptions: {
       output: {
+        onlyExplicitManualChunks: true,
         /**
          * 手动分包配置
          * 分离第三方库并按功能合并应用代码，避免循环依赖
@@ -99,14 +101,28 @@ export default defineConfig(({ mode }) => {
               return 'vendor-vue'
             }
 
+            // XLSX、编辑器、引导和图表只允许由对应的懒加载功能引用。
+            if (id.includes('/xlsx/')) {
+              return 'optional-xlsx'
+            }
+            if (id.includes('/md-editor-v3/')) {
+              return 'optional-editor'
+            }
+            if (id.includes('/marked/') || id.includes('/dompurify/')) {
+              return 'vendor-markdown'
+            }
+            if (id.includes('/driver.js/')) {
+              return 'optional-onboarding'
+            }
+
             // UI 工具库（较大，单独分离）
-            if (id.includes('/@vueuse/') || id.includes('/xlsx/')) {
+            if (id.includes('/@vueuse/')) {
               return 'vendor-ui'
             }
 
             // 图表库
             if (id.includes('/chart.js/') || id.includes('/vue-chartjs/')) {
-              return 'vendor-chart'
+              return 'optional-chart'
             }
 
             // 国际化
@@ -114,8 +130,8 @@ export default defineConfig(({ mode }) => {
               return 'vendor-i18n'
             }
 
-            // 其他小型第三方库合并
-            return 'vendor-misc'
+            // 其余依赖由 Rollup 根据静态/动态入口关系自动分包，禁止 catch-all vendor。
+            return undefined
           }
 
           // 应用代码：按入口点自动分包，不手动干预

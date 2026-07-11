@@ -89,6 +89,12 @@ func (s *SubscriptionService) Stop() {
 	}
 }
 
+func (s *SubscriptionService) Start() {
+	if s != nil && s.maintenanceQueue != nil {
+		s.maintenanceQueue.Start()
+	}
+}
+
 // initSubCache 初始化订阅 L1 缓存
 func (s *SubscriptionService) initSubCache(cfg *config.Config) {
 	if cfg == nil {

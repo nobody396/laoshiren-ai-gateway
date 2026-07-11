@@ -8,6 +8,8 @@ import { resolveDocumentTitle } from './router/title'
 import { updateRouteSeo } from '@/utils/seo'
 import { initAnalytics } from '@/utils/analytics'
 import { vPermission } from './directives/permission'
+import { authSession } from '@/auth'
+import { configureApiRuntime } from '@/api/runtime'
 import './style.css'
 
 function initThemeClass() {
@@ -30,6 +32,25 @@ async function bootstrap() {
   // This must happen after pinia is installed but before router and i18n
   const appStore = useAppStore()
   appStore.initFromInjectedConfig()
+  authSession.hydrate()
+  configureApiRuntime((event) => {
+    if (event.type === 'forbidden') {
+      appStore.showWarning(i18n.global.t(event.messageKey) as string)
+      return
+    }
+    if (event.type === 'ops-monitoring-disabled') {
+      localStorage.setItem('ops_monitoring_enabled_cached', 'false')
+      window.dispatchEvent(new CustomEvent('ops-monitoring-disabled'))
+      if (router.currentRoute.value.path.startsWith('/admin/ops')) {
+        void router.replace('/admin/settings')
+      }
+      return
+    }
+    sessionStorage.setItem('auth_expired', '1')
+    if (router.currentRoute.value.path !== '/login') {
+      void router.replace('/login')
+    }
+  })
   initAnalytics()
 
   // Set document title immediately after config is loaded.

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "checkouts": [
+    {
+      "path": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API",
+      "owner": "nobody396",
+      "kind": "canonical",
+      "allowed_actions": ["develop", "test", "release"]
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API-monthly-only",
+      "owner": "monthly-card-automation",
+      "kind": "report-only",
+      "allowed_actions": ["report"],
+      "ttl": null
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API-seo-bot",
+      "owner": "seo-geo-automation",
+      "kind": "report-only",
+      "allowed_actions": ["report"],
+      "ttl": null
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API/.worktrees/refactor/production-architecture-hardening-20260711",
+      "owner": "maintenance-20260711",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-07-12T12:00:00+08:00"
+    }
+  ]
+}

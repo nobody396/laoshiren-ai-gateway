@@ -1859,7 +1859,7 @@ import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { adminAPI } from '@/api/admin'
 import { useQuotaNotifyState } from '@/composables/useQuotaNotifyState'
-import type { Account, Proxy, AdminGroup, CheckMixedChannelResponse } from '@/types'
+import type { Account, Proxy, AdminGroup, CheckMixedChannelResponse, UpdateAccountRequest } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Select from '@/components/common/Select.vue'
@@ -1869,6 +1869,7 @@ import GroupSelector from '@/components/common/GroupSelector.vue'
 import ModelWhitelistSelector from '@/components/account/ModelWhitelistSelector.vue'
 import QuotaLimitCard from '@/components/account/QuotaLimitCard.vue'
 import { applyInterceptWarmup } from '@/components/account/credentialsBuilder'
+import { toUpdateAccountPayload } from '@/features/accounts/domain/accountPayload'
 import { formatDateTimeLocalInput, parseDateTimeLocalInput } from '@/utils/format'
 import { createStableObjectKeyResolver } from '@/utils/stableObjectKey'
 import {
@@ -2787,14 +2788,14 @@ const openMixedChannelDialog = (opts: {
   showMixedChannelWarning.value = true
 }
 
-const withAntigravityConfirmFlag = (payload: Record<string, unknown>) => {
+const withAntigravityConfirmFlag = <T extends object>(payload: T): T => {
   if (needsMixedChannelCheck() && antigravityMixedChannelConfirmed.value) {
     return {
       ...payload,
       confirm_mixed_channel_risk: true
     }
   }
-  const cloned = { ...payload }
+  const cloned = { ...payload } as T & { confirm_mixed_channel_risk?: boolean }
   delete cloned.confirm_mixed_channel_risk
   return cloned
 }
@@ -2844,9 +2845,11 @@ const handleClose = () => {
 }
 
 const submitUpdateAccount = async (accountID: number, updatePayload: Record<string, unknown>) => {
+  if (!props.account) return
+  const normalizedPayload = toUpdateAccountPayload(props.account, updatePayload as UpdateAccountRequest)
   submitting.value = true
   try {
-    const updatedAccount = await adminAPI.accounts.update(accountID, withAntigravityConfirmFlag(updatePayload))
+    const updatedAccount = await adminAPI.accounts.update(accountID, withAntigravityConfirmFlag(normalizedPayload))
     appStore.showSuccess(t('admin.accounts.accountUpdated'))
     emit('updated', updatedAccount)
     handleClose()
@@ -2856,7 +2859,7 @@ const submitUpdateAccount = async (accountID: number, updatePayload: Record<stri
         message: error.message,
         onConfirm: async () => {
           antigravityMixedChannelConfirmed.value = true
-          await submitUpdateAccount(accountID, updatePayload)
+          await submitUpdateAccount(accountID, normalizedPayload as Record<string, unknown>)
         }
       })
       return

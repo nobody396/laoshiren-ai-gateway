@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/handler"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/gin-gonic/gin"
@@ -99,67 +98,6 @@ func TestProvideServiceBuildInfo(t *testing.T) {
 }
 
 func TestProvideCleanup_WithMinimalDependencies_NoPanic(t *testing.T) {
-	cfg := &config.Config{}
-
-	oauthSvc := service.NewOAuthService(nil, nil)
-	openAIOAuthSvc := service.NewOpenAIOAuthService(nil, nil)
-	geminiOAuthSvc := service.NewGeminiOAuthService(nil, nil, nil, nil, cfg)
-	antigravityOAuthSvc := service.NewAntigravityOAuthService(nil)
-
-	tokenRefreshSvc := service.NewTokenRefreshService(
-		nil,
-		oauthSvc,
-		openAIOAuthSvc,
-		geminiOAuthSvc,
-		antigravityOAuthSvc,
-		nil,
-		nil,
-		cfg,
-		nil,
-	)
-	accountExpirySvc := service.NewAccountExpiryService(nil, time.Second)
-	subscriptionExpirySvc := service.NewSubscriptionExpiryService(nil, time.Second)
-	pricingSvc := service.NewPricingService(cfg, nil)
-	emailQueueSvc := service.NewEmailQueueService(nil, nil, 1)
-	billingCacheSvc := service.NewBillingCacheService(nil, nil, nil, nil, cfg)
-	idempotencyCleanupSvc := service.NewIdempotencyCleanupService(nil, cfg)
-	schedulerSnapshotSvc := service.NewSchedulerSnapshotService(nil, nil, nil, nil, cfg)
-	opsSystemLogSinkSvc := service.NewOpsSystemLogSink(nil)
-
-	cleanup := provideCleanup(
-		nil, // entClient
-		nil, // redis
-		&service.OpsMetricsCollector{},
-		&service.OpsAggregationService{},
-		&service.OpsAlertEvaluatorService{},
-		&service.OpsCleanupService{},
-		&service.OpsScheduledReportService{},
-		opsSystemLogSinkSvc,
-		nil, // agentLevelEvaluator
-		schedulerSnapshotSvc,
-		tokenRefreshSvc,
-		accountExpirySvc,
-		subscriptionExpirySvc,
-		&service.UsageCleanupService{},
-		idempotencyCleanupSvc,
-		pricingSvc,
-		emailQueueSvc,
-		billingCacheSvc,
-		&service.UsageRecordWorkerPool{},
-		&service.SubscriptionService{},
-		oauthSvc,
-		openAIOAuthSvc,
-		geminiOAuthSvc,
-		antigravityOAuthSvc,
-		nil, // openAIGateway
-		nil, // gptImageTaskSettlement
-		nil, // scheduledTestRunner
-		nil, // backupSvc
-		nil, // downloadResourceSvc
-		nil, // supplierService
-	)
-
-	require.NotPanics(t, func() {
-		cleanup()
-	})
+	cleanup := provideCleanup(nil, nil, service.NewLifecycle())
+	require.NotPanics(t, cleanup)
 }

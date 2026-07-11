@@ -49,6 +49,9 @@ func RegisterAuthRoutes(
 		auth.POST("/sso/exchange", rateLimiter.LimitWithOptions("auth-sso-exchange", 60, time.Minute, middleware.RateLimitOptions{
 			FailureMode: middleware.RateLimitFailClose,
 		}), h.Auth.ExchangeSSOTicket)
+		auth.POST("/embed/exchange", rateLimiter.LimitWithOptions("auth-embed-exchange", 60, time.Minute, middleware.RateLimitOptions{
+			FailureMode: middleware.RateLimitFailClose,
+		}), h.Auth.ExchangeEmbedTicket)
 		// 优惠码验证接口添加速率限制：每分钟最多 10 次（Redis 故障时 fail-close）
 		auth.POST("/validate-promo-code", rateLimiter.LimitWithOptions("validate-promo", 10, time.Minute, middleware.RateLimitOptions{
 			FailureMode: middleware.RateLimitFailClose,
@@ -114,6 +117,9 @@ func RegisterAuthRoutes(
 		authenticated.POST("/auth/sso/ticket", rateLimiter.LimitWithOptions("auth-sso-ticket", 30, time.Minute, middleware.RateLimitOptions{
 			FailureMode: middleware.RateLimitFailClose,
 		}), h.Auth.IssueSSOTicket)
+		authenticated.POST("/auth/embed/ticket", rateLimiter.LimitWithOptions("auth-embed-ticket", 30, time.Minute, middleware.RateLimitOptions{
+			FailureMode: middleware.RateLimitFailClose,
+		}), h.Auth.IssueEmbedTicket)
 		// 撤销所有会话（需要认证）
 		authenticated.POST("/auth/revoke-all-sessions", h.Auth.RevokeAllSessions)
 	}

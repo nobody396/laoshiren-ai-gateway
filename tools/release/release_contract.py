@@ -7,6 +7,7 @@ import argparse
 import json
 from pathlib import Path
 import re
+import subprocess
 import sys
 from typing import Any
 
@@ -24,6 +25,26 @@ METADATA_KEYS = {
 
 class ContractError(ValueError):
     """Raised when a release input is mutable or does not match its build."""
+
+
+def validate_release_checkout(checkout_path: Path | None = None) -> None:
+    tools_dir = Path(__file__).resolve().parents[1]
+    if str(tools_dir) not in sys.path:
+        sys.path.insert(0, str(tools_dir))
+    from validate_checkout_registry import validate
+
+    if checkout_path is None:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        checkout_path = Path(result.stdout.strip())
+    try:
+        validate(tools_dir.parent / "docs/ops/checkouts.json", checkout_path, "release")
+    except ValueError as exc:
+        raise ContractError(str(exc)) from exc
 
 
 def normalize_commit(value: str) -> str:
@@ -271,6 +292,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 0
         if args.command == "validate-deploy-ref":
+            validate_release_checkout()
             print(validate_digest_ref(args.image_ref))
             return 0
         if args.command == "canonicalize-deployed-ref":

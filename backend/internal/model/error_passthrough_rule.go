@@ -1,7 +1,10 @@
 // Package model 定义服务层使用的数据模型。
 package model
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // ErrorPassthroughRule 全局错误透传规则
 // 用于控制上游错误如何返回给客户端
@@ -58,6 +61,9 @@ func (r *ErrorPassthroughRule) Validate() error {
 	}
 	if !r.PassthroughCode && (r.ResponseCode == nil || *r.ResponseCode <= 0) {
 		return &ValidationError{Field: "response_code", Message: "response_code is required when passthrough_code is false"}
+	}
+	if !r.PassthroughBody && (r.CustomMessage == nil || strings.TrimSpace(*r.CustomMessage) == "") {
+		return &ValidationError{Field: "custom_message", Message: "custom_message is required when passthrough_body is false"}
 	}
 	return nil
 }

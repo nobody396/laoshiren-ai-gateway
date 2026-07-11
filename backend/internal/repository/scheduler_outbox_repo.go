@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 )
@@ -12,8 +11,6 @@ import (
 type schedulerOutboxRepository struct {
 	db *sql.DB
 }
-
-const schedulerOutboxDedupWindow = time.Second
 
 func NewSchedulerOutboxRepository(db *sql.DB) service.SchedulerOutboxRepository {
 	return &schedulerOutboxRepository{db: db}
@@ -79,7 +76,7 @@ func (r *schedulerOutboxRepository) MaxID(ctx context.Context) (int64, error) {
 	return maxID, nil
 }
 
-func enqueueSchedulerOutbox(ctx context.Context, exec sqlExecutor, eventType string, accountID *int64, groupID *int64, payload any) error {
+func enqueueSchedulerOutbox(ctx context.Context, exec sqlExecer, eventType string, accountID *int64, groupID *int64, payload any) error {
 	if exec == nil {
 		return nil
 	}
@@ -95,33 +92,6 @@ func enqueueSchedulerOutbox(ctx context.Context, exec sqlExecutor, eventType str
 		INSERT INTO scheduler_outbox (event_type, account_id, group_id, payload)
 		VALUES ($1, $2, $3, $4)
 	`
-	args := []any{eventType, accountID, groupID, payloadArg}
-	if schedulerOutboxEventSupportsDedup(eventType) {
-		query = `
-			INSERT INTO scheduler_outbox (event_type, account_id, group_id, payload)
-			SELECT $1, $2, $3, $4
-			WHERE NOT EXISTS (
-				SELECT 1
-				FROM scheduler_outbox
-				WHERE event_type = $1
-					AND account_id IS NOT DISTINCT FROM $2
-					AND group_id IS NOT DISTINCT FROM $3
-					AND created_at >= NOW() - make_interval(secs => $5)
-			)
-		`
-		args = append(args, schedulerOutboxDedupWindow.Seconds())
-	}
-	_, err := exec.ExecContext(ctx, query, args...)
+	_, err := exec.ExecContext(ctx, query, eventType, accountID, groupID, payloadArg)
 	return err
-}
-
-func schedulerOutboxEventSupportsDedup(eventType string) bool {
-	switch eventType {
-	case service.SchedulerOutboxEventAccountChanged,
-		service.SchedulerOutboxEventGroupChanged,
-		service.SchedulerOutboxEventFullRebuild:
-		return true
-	default:
-		return false
-	}
 }

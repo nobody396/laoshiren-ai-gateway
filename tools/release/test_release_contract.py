@@ -76,6 +76,14 @@ class ReleaseContractTests(unittest.TestCase):
                 f"{IMAGE_REPOSITORY}:{COMMIT}@{DIGEST}"
             )
 
+    def test_release_checkout_gate_is_wired_before_deploy_ref_output(self) -> None:
+        source = (RELEASE_DIR / "release_contract.py").read_text(encoding="utf-8")
+        deploy_branch = source.split('if args.command == "validate-deploy-ref":', 1)[1]
+        self.assertLess(
+            deploy_branch.index("validate_release_checkout()"),
+            deploy_branch.index("print(validate_digest_ref"),
+        )
+
     def test_deployed_service_reference_is_canonicalized_to_digest_only(self) -> None:
         self.assertEqual(
             release_contract.canonicalize_deployed_ref(

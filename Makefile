@@ -1,4 +1,4 @@
-.PHONY: build build-backend build-frontend build-datamanagementd test test-backend test-backend-integration test-frontend test-datamanagementd secret-scan
+.PHONY: build build-backend build-frontend build-datamanagementd test test-backend test-backend-integration test-frontend test-datamanagementd secret-scan checkout-validate
 
 GIT_SHA ?= $(shell git rev-parse HEAD)
 
@@ -35,3 +35,6 @@ test-datamanagementd:
 
 secret-scan:
 	@python3 tools/secret_scan.py
+
+checkout-validate:
+	@python3 tools/validate_checkout_registry.py --action develop

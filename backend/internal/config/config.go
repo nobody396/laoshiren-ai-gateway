@@ -357,6 +357,7 @@ type ConcurrencyConfig struct {
 
 // GatewayConfig API网关相关配置
 type GatewayConfig struct {
+	Pipeline GatewayPipelineConfig `mapstructure:"pipeline"`
 	// 等待上游响应头的超时时间（秒），0表示无超时
 	// 注意：这不影响流式数据传输，只控制等待响应头的时间
 	ResponseHeaderTimeout int `mapstructure:"response_header_timeout"`
@@ -458,6 +459,10 @@ type GatewayConfig struct {
 	// UserMessageQueue: 用户消息串行队列配置
 	// 对 role:"user" 的真实用户消息实施账号级串行化 + RPM 自适应延迟
 	UserMessageQueue UserMessageQueueConfig `mapstructure:"user_message_queue"`
+}
+
+type GatewayPipelineConfig struct {
+	OpenAIResponsesEnabled bool `mapstructure:"openai_responses_enabled"`
 }
 
 type GPTImageS3Config struct {
@@ -1422,6 +1427,7 @@ func setDefaults() {
 	viper.SetDefault("gateway.max_account_switches", 10)
 	viper.SetDefault("gateway.max_account_switches_gemini", 3)
 	viper.SetDefault("gateway.force_codex_cli", false)
+	viper.SetDefault("gateway.pipeline.openai_responses_enabled", true)
 	viper.SetDefault("gateway.openai_passthrough_allow_timeout_headers", false)
 	viper.SetDefault("gateway.gpt_image_s3.enabled", false)
 	viper.SetDefault("gateway.gpt_image_s3.endpoint", "")

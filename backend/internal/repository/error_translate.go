@@ -24,8 +24,8 @@ import (
 //	    return client.SomeEntity.Create().Save(ctx)
 //	}
 func clientFromContext(ctx context.Context, defaultClient *dbent.Client) *dbent.Client {
-	if tx := dbent.TxFromContext(ctx); tx != nil {
-		return tx.Client()
+	if client, ok := transactionClientFromContext(ctx); ok {
+		return client
 	}
 	return defaultClient
 }

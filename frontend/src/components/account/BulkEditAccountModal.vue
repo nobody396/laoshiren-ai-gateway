@@ -909,6 +909,7 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
 import type { Proxy as ProxyConfig, AdminGroup, AccountPlatform, AccountType } from '@/types'
+import { toBulkAccountPatch } from '@/features/accounts/domain/accountPayload'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Select from '@/components/common/Select.vue'
@@ -1278,7 +1279,13 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
     umqExtra.user_msg_queue_enabled = false  // 清理旧字段（JSONB merge）
   }
 
-  return Object.keys(updates).length > 0 ? updates : null
+  return Object.keys(updates).length > 0
+    ? toBulkAccountPatch(
+        props.selectedPlatforms,
+        props.selectedTypes,
+        updates as unknown as Parameters<typeof toBulkAccountPatch>[2]
+      ) as Record<string, unknown>
+    : null
 }
 
 const mixedChannelConfirmed = ref(false)

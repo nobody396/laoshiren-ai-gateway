@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -16,6 +17,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
+
+var userSubscriptionFixtureSeq uint64
 
 type UserSubscriptionRepoSuite struct {
 	suite.Suite
@@ -41,6 +44,8 @@ func (s *UserSubscriptionRepoSuite) mustCreateUser(email string, role string) *s
 	if role == "" {
 		role = service.RoleUser
 	}
+	fixtureID := atomic.AddUint64(&userSubscriptionFixtureSeq, 1)
+	email = strings.Replace(email, "@", fmt.Sprintf("+us%d@", fixtureID), 1)
 
 	u, err := s.client.User.Create().
 		SetEmail(email).
@@ -54,6 +59,7 @@ func (s *UserSubscriptionRepoSuite) mustCreateUser(email string, role string) *s
 
 func (s *UserSubscriptionRepoSuite) mustCreateGroup(name string) *service.Group {
 	s.T().Helper()
+	name = fmt.Sprintf("%s-us%d", name, atomic.AddUint64(&userSubscriptionFixtureSeq, 1))
 
 	g, err := s.client.Group.Create().
 		SetName(name).

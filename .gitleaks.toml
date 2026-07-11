@@ -1,0 +1,20 @@
+title = "laoshirenai redacting secret policy"
+
+[[rules]]
+id = "private-key"
+description = "Private key material"
+regex = '''-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'''
+
+[[rules]]
+id = "provider-token"
+description = "High-confidence provider token"
+regex = '''(?:sk-(?:proj-)?|gh[oprsu]_)[A-Za-z0-9_-]{20,}'''
+
+[[rules]]
+id = "aws-access-key"
+description = "AWS access key id"
+regex = '''(?:AKIA|ASIA)[A-Z0-9]{16}'''
+
+[allowlist]
+description = "Documentation placeholders and generated assets"
+paths = ['''backend/internal/web/dist/''']

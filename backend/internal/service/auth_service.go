@@ -42,6 +42,8 @@ var (
 	ErrInvitationCodeInvalid   = infraerrors.BadRequest("INVITATION_CODE_INVALID", "invalid or used invitation code")
 	ErrOAuthInvitationRequired = infraerrors.Forbidden("OAUTH_INVITATION_REQUIRED", "invitation code required to complete oauth registration")
 	ErrInvalidSSOTicket        = infraerrors.Unauthorized("INVALID_SSO_TICKET", "invalid or expired sso ticket")
+	ErrInvalidEmbedTicket      = infraerrors.Unauthorized("INVALID_EMBED_TICKET", "invalid or expired embed ticket")
+	ErrEmbedTargetUnavailable  = infraerrors.Forbidden("EMBED_TARGET_UNAVAILABLE", "embed target is unavailable")
 )
 
 // maxTokenLength 限制 token 大小，避免超长 header 触发解析时的异常内存分配。
@@ -51,6 +53,17 @@ const maxTokenLength = 8192
 const refreshTokenPrefix = "rt_"
 
 const ssoTicketTTL = 60 * time.Second
+
+const (
+	ssoTicketPurpose          = "chatbot_sso"
+	embedTicketPurpose        = "embed"
+	embedSessionPurpose       = "embed_session"
+	embedSessionTTL           = 5 * time.Minute
+	EmbedTargetKindPurchase   = "purchase_subscription"
+	EmbedTargetKindCustomMenu = "custom_menu"
+	EmbedDeliveryIframe       = "iframe"
+	EmbedDeliveryNewTab       = "new_tab"
+)
 
 // JWTClaims JWT载荷数据
 type JWTClaims struct {
@@ -63,19 +76,37 @@ type JWTClaims struct {
 
 // AuthService 认证服务
 type AuthService struct {
-	entClient          *dbent.Client
-	userRepo           UserRepository
-	redeemRepo         RedeemCodeRepository
-	refreshTokenCache  RefreshTokenCache
-	ssoTicketCache     SSOTicketCache
-	cfg                *config.Config
-	settingService     *SettingService
-	emailService       *EmailService
-	turnstileService   *TurnstileService
-	emailQueueService  *EmailQueueService
-	promoService       *PromoService
-	defaultSubAssigner DefaultSubscriptionAssigner
-	commissionService  *CommissionService
+	entClient           *dbent.Client
+	userRepo            UserRepository
+	redeemRepo          RedeemCodeRepository
+	refreshTokenCache   RefreshTokenCache
+	ssoTicketCache      SSOTicketCache
+	cfg                 *config.Config
+	settingService      *SettingService
+	emailService        *EmailService
+	turnstileService    *TurnstileService
+	emailQueueService   *EmailQueueService
+	promoService        *PromoService
+	defaultSubAssigner  DefaultSubscriptionAssigner
+	commissionService   *CommissionService
+	embedTargetResolver EmbedTargetResolver
+	unitOfWork          UnitOfWork
+}
+
+// SetUnitOfWork injects the transaction boundary used by registration flows.
+func (s *AuthService) SetUnitOfWork(unitOfWork UnitOfWork) {
+	s.unitOfWork = unitOfWork
+}
+
+func (s *AuthService) withinTx(ctx context.Context, fn func(context.Context) error) error {
+	if s.unitOfWork == nil {
+		return fn(ctx)
+	}
+	return s.unitOfWork.WithinTx(ctx, fn)
+}
+
+type EmbedTargetResolver interface {
+	ResolveEmbedTarget(ctx context.Context, kind, targetID, role string) (*EmbedTarget, error)
 }
 
 type DefaultSubscriptionAssigner interface {
@@ -99,19 +130,20 @@ func NewAuthService(
 	commissionService *CommissionService,
 ) *AuthService {
 	return &AuthService{
-		entClient:          entClient,
-		userRepo:           userRepo,
-		redeemRepo:         redeemRepo,
-		refreshTokenCache:  refreshTokenCache,
-		ssoTicketCache:     ssoTicketCache,
-		cfg:                cfg,
-		settingService:     settingService,
-		emailService:       emailService,
-		turnstileService:   turnstileService,
-		emailQueueService:  emailQueueService,
-		promoService:       promoService,
-		defaultSubAssigner: defaultSubAssigner,
-		commissionService:  commissionService,
+		entClient:           entClient,
+		userRepo:            userRepo,
+		redeemRepo:          redeemRepo,
+		refreshTokenCache:   refreshTokenCache,
+		ssoTicketCache:      ssoTicketCache,
+		cfg:                 cfg,
+		settingService:      settingService,
+		emailService:        emailService,
+		turnstileService:    turnstileService,
+		emailQueueService:   emailQueueService,
+		promoService:        promoService,
+		defaultSubAssigner:  defaultSubAssigner,
+		commissionService:   commissionService,
+		embedTargetResolver: settingService,
 	}
 }
 
@@ -207,23 +239,32 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 		Status:       StatusActive,
 	}
 
-	if err := s.userRepo.Create(ctx, user); err != nil {
-		// 优先检查邮箱冲突错误（竞态条件下可能发生）
+	err = s.withinTx(ctx, func(txCtx context.Context) error {
+		if createErr := s.userRepo.Create(txCtx, user); createErr != nil {
+			return createErr
+		}
+		if invitationRedeemCode != nil {
+			if useErr := s.redeemRepo.Use(txCtx, invitationRedeemCode.ID, user.ID); useErr != nil {
+				return ErrInvitationCodeInvalid.WithCause(useErr)
+			}
+		}
+		return nil
+	})
+	if err != nil {
 		if errors.Is(err, ErrEmailExists) {
 			return "", nil, ErrEmailExists
+		}
+		if errors.Is(err, ErrInvitationCodeInvalid) {
+			return "", nil, ErrInvitationCodeInvalid
 		}
 		logger.LegacyPrintf("service.auth", "[Auth] Database error creating user: %v", err)
 		return "", nil, ErrServiceUnavailable
 	}
-	s.assignDefaultSubscriptions(ctx, user.ID)
 
-	// 标记邀请码为已使用（如果使用了邀请码）
-	if invitationRedeemCode != nil {
-		if err := s.redeemRepo.Use(ctx, invitationRedeemCode.ID, user.ID); err != nil {
-			// 邀请码标记失败不影响注册，只记录日志
-			logger.LegacyPrintf("service.auth", "[Auth] Failed to mark invitation code as used for user %d: %v", user.ID, err)
-		}
-	}
+	// These side effects are deliberately after commit: no cache invalidation,
+	// subscription grant, referral, or notification may escape a rolled-back
+	// registration transaction.
+	s.assignDefaultSubscriptions(ctx, user.ID)
 	// 应用优惠码（如果提供且功能已启用）
 	if promoCode != "" && s.promoService != nil && s.settingService != nil && s.settingService.IsPromoCodeEnabled(ctx) {
 		if err := s.promoService.ApplyPromoCode(ctx, user.ID, promoCode); err != nil {
@@ -624,60 +665,34 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 				Status:       StatusActive,
 			}
 
-			if s.entClient != nil && invitationRedeemCode != nil {
-				tx, err := s.entClient.Tx(ctx)
-				if err != nil {
-					logger.LegacyPrintf("service.auth", "[Auth] Failed to begin transaction for oauth registration: %v", err)
+			createErr := s.withinTx(ctx, func(txCtx context.Context) error {
+				if err := s.userRepo.Create(txCtx, newUser); err != nil {
+					return err
+				}
+				if invitationRedeemCode != nil {
+					if err := s.redeemRepo.Use(txCtx, invitationRedeemCode.ID, newUser.ID); err != nil {
+						return ErrInvitationCodeInvalid.WithCause(err)
+					}
+				}
+				return nil
+			})
+			if createErr != nil {
+				if errors.Is(createErr, ErrEmailExists) {
+					// The UnitOfWork has rolled back before reading the winner.
+					user, err = s.userRepo.GetByEmail(ctx, email)
+					if err != nil {
+						logger.LegacyPrintf("service.auth", "[Auth] Database error getting user after conflict: %v", err)
+						return nil, nil, ErrServiceUnavailable
+					}
+				} else if errors.Is(createErr, ErrInvitationCodeInvalid) {
+					return nil, nil, ErrInvitationCodeInvalid
+				} else {
+					logger.LegacyPrintf("service.auth", "[Auth] Database error creating oauth user: %v", createErr)
 					return nil, nil, ErrServiceUnavailable
 				}
-				defer func() { _ = tx.Rollback() }()
-				txCtx := dbent.NewTxContext(ctx, tx)
-
-				if err := s.userRepo.Create(txCtx, newUser); err != nil {
-					if errors.Is(err, ErrEmailExists) {
-						user, err = s.userRepo.GetByEmail(ctx, email)
-						if err != nil {
-							logger.LegacyPrintf("service.auth", "[Auth] Database error getting user after conflict: %v", err)
-							return nil, nil, ErrServiceUnavailable
-						}
-					} else {
-						logger.LegacyPrintf("service.auth", "[Auth] Database error creating oauth user: %v", err)
-						return nil, nil, ErrServiceUnavailable
-					}
-				} else {
-					if err := s.redeemRepo.Use(txCtx, invitationRedeemCode.ID, newUser.ID); err != nil {
-						return nil, nil, ErrInvitationCodeInvalid
-					}
-					if err := tx.Commit(); err != nil {
-						logger.LegacyPrintf("service.auth", "[Auth] Failed to commit oauth registration transaction: %v", err)
-						return nil, nil, ErrServiceUnavailable
-					}
-					user = newUser
-					createdNewUser = true
-					s.assignDefaultSubscriptions(ctx, user.ID)
-				}
 			} else {
-				if err := s.userRepo.Create(ctx, newUser); err != nil {
-					if errors.Is(err, ErrEmailExists) {
-						user, err = s.userRepo.GetByEmail(ctx, email)
-						if err != nil {
-							logger.LegacyPrintf("service.auth", "[Auth] Database error getting user after conflict: %v", err)
-							return nil, nil, ErrServiceUnavailable
-						}
-					} else {
-						logger.LegacyPrintf("service.auth", "[Auth] Database error creating oauth user: %v", err)
-						return nil, nil, ErrServiceUnavailable
-					}
-				} else {
-					user = newUser
-					createdNewUser = true
-					s.assignDefaultSubscriptions(ctx, user.ID)
-					if invitationRedeemCode != nil {
-						if err := s.redeemRepo.Use(ctx, invitationRedeemCode.ID, user.ID); err != nil {
-							return nil, nil, ErrInvitationCodeInvalid
-						}
-					}
-				}
+				user = newUser
+				createdNewUser = true
 			}
 		} else {
 			logger.LegacyPrintf("service.auth", "[Auth] Database error during oauth login: %v", err)
@@ -696,6 +711,7 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 		}
 	}
 	if createdNewUser {
+		s.assignDefaultSubscriptions(ctx, user.ID)
 		s.bindReferralCode(ctx, user.ID, referralCode)
 		s.applyInviteActivityRegistrationBonus(ctx, user.ID)
 	}
@@ -1194,9 +1210,10 @@ func (s *AuthService) IssueSSOTicket(ctx context.Context, userID int64, apiKeyID
 	ticket := hex.EncodeToString(tokenBytes)
 
 	data := SSOTicketData{
+		Purpose:   ssoTicketPurpose,
 		UserID:    userID,
 		APIKeyID:  apiKeyID,
-		CreatedAt: time.Now(),
+		CreatedAt: time.Now().UTC(),
 	}
 	if err := s.ssoTicketCache.StoreSSOTicket(ctx, ticket, data, ssoTicketTTL); err != nil {
 		logger.LegacyPrintf("service.auth", "[Auth] Failed to store SSO ticket for user %d: %v", userID, err)
@@ -1227,6 +1244,9 @@ func (s *AuthService) ExchangeSSOTicket(ctx context.Context, ticket string) (*To
 		logger.LegacyPrintf("service.auth", "[Auth] Failed to consume SSO ticket: %v", err)
 		return nil, nil, nil, ErrServiceUnavailable
 	}
+	if data.Purpose != ssoTicketPurpose {
+		return nil, nil, nil, ErrInvalidSSOTicket
+	}
 
 	user, err := s.userRepo.GetByID(ctx, data.UserID)
 	if err != nil {
@@ -1247,6 +1267,134 @@ func (s *AuthService) ExchangeSSOTicket(ctx context.Context, ticket string) (*To
 	}
 	_ = s.userRepo.TouchLastActive(ctx, user.ID, time.Now())
 	return pair, user, data.APIKeyID, nil
+}
+
+// EmbedTicket is the short-lived launch credential and its server-resolved
+// consumer contract. The target URL is configuration, never browser input.
+type EmbedTicket struct {
+	Ticket    string
+	ExpiresIn int
+	TargetURL string
+	Audience  string
+}
+
+type EmbedSession struct {
+	SessionToken string
+	ExpiresIn    int
+	UserID       int64
+	Role         string
+}
+
+type embedSessionClaims struct {
+	UserID     int64  `json:"user_id"`
+	Role       string `json:"role"`
+	Purpose    string `json:"purpose"`
+	TargetKind string `json:"target_kind"`
+	TargetID   string `json:"target_id"`
+	Delivery   string `json:"delivery"`
+	jwt.RegisteredClaims
+}
+
+// IssueEmbedTicket creates a one-time ticket bound to one configured audience,
+// target and delivery mode. It is deliberately separate from chatbot SSO.
+func (s *AuthService) IssueEmbedTicket(ctx context.Context, userID int64, targetKind, targetID, delivery string) (*EmbedTicket, error) {
+	if s.ssoTicketCache == nil || s.embedTargetResolver == nil {
+		return nil, ErrServiceUnavailable
+	}
+	if delivery != EmbedDeliveryIframe && delivery != EmbedDeliveryNewTab {
+		return nil, ErrEmbedTargetUnavailable
+	}
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return nil, ErrInvalidEmbedTicket
+		}
+		return nil, ErrServiceUnavailable
+	}
+	if !user.IsActive() {
+		return nil, ErrUserNotActive
+	}
+	target, err := s.embedTargetResolver.ResolveEmbedTarget(ctx, targetKind, targetID, user.Role)
+	if err != nil {
+		return nil, ErrEmbedTargetUnavailable
+	}
+
+	ticket, err := randomHexString(32)
+	if err != nil {
+		return nil, fmt.Errorf("generate embed ticket: %w", err)
+	}
+	data := SSOTicketData{
+		Purpose:    embedTicketPurpose,
+		UserID:     user.ID,
+		Audience:   target.Audience,
+		TargetKind: target.Kind,
+		TargetID:   target.ID,
+		Delivery:   delivery,
+		CreatedAt:  time.Now().UTC(),
+	}
+	if err := s.ssoTicketCache.StoreSSOTicket(ctx, ticket, data, ssoTicketTTL); err != nil {
+		logger.LegacyPrintf("service.auth", "[Auth] Failed to store embed ticket for user %d: %v", user.ID, err)
+		return nil, ErrServiceUnavailable
+	}
+	return &EmbedTicket{Ticket: ticket, ExpiresIn: int(ssoTicketTTL.Seconds()), TargetURL: target.URL, Audience: target.Audience}, nil
+}
+
+// ExchangeEmbedTicket consumes the ticket before validation so failed or
+// replayed attempts cannot be upgraded into a general login session.
+func (s *AuthService) ExchangeEmbedTicket(ctx context.Context, ticket, audience, targetKind, targetID, delivery string) (*EmbedSession, error) {
+	if s.ssoTicketCache == nil {
+		return nil, ErrInvalidEmbedTicket
+	}
+	ticket = strings.TrimSpace(ticket)
+	if len(ticket) != 64 {
+		return nil, ErrInvalidEmbedTicket
+	}
+	if _, err := hex.DecodeString(ticket); err != nil {
+		return nil, ErrInvalidEmbedTicket
+	}
+	data, err := s.ssoTicketCache.ConsumeSSOTicket(ctx, ticket)
+	if err != nil {
+		if errors.Is(err, ErrSSOTicketNotFound) {
+			return nil, ErrInvalidEmbedTicket
+		}
+		return nil, ErrServiceUnavailable
+	}
+	normalizedAudience, err := normalizeEmbedAudience(audience)
+	if err != nil || data.Purpose != embedTicketPurpose || data.Audience != normalizedAudience ||
+		data.TargetKind != strings.TrimSpace(targetKind) || data.TargetID != strings.TrimSpace(targetID) || data.Delivery != delivery {
+		return nil, ErrInvalidEmbedTicket
+	}
+	now := time.Now().UTC()
+	if data.CreatedAt.IsZero() || data.CreatedAt.After(now.Add(5*time.Second)) || now.Sub(data.CreatedAt) > ssoTicketTTL {
+		return nil, ErrInvalidEmbedTicket
+	}
+	user, err := s.userRepo.GetByID(ctx, data.UserID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return nil, ErrInvalidEmbedTicket
+		}
+		return nil, ErrServiceUnavailable
+	}
+	if !user.IsActive() {
+		return nil, ErrUserNotActive
+	}
+	expiresAt := now.Add(embedSessionTTL)
+	claims := &embedSessionClaims{
+		UserID: user.ID, Role: user.Role, Purpose: embedSessionPurpose,
+		TargetKind: data.TargetKind, TargetID: data.TargetID, Delivery: data.Delivery,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Audience:  jwt.ClaimStrings{data.Audience},
+			Subject:   strconv.FormatInt(user.ID, 10),
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+		},
+	}
+	signed, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(s.cfg.JWT.Secret))
+	if err != nil {
+		return nil, ErrServiceUnavailable
+	}
+	return &EmbedSession{SessionToken: signed, ExpiresIn: int(embedSessionTTL.Seconds()), UserID: user.ID, Role: user.Role}, nil
 }
 
 // ==================== Refresh Token Methods ====================

@@ -19,6 +19,8 @@ linters:
           list-mode: original
           files:
             - "**/internal/service/**"
+            - "!**/internal/service/*_test.go"
+            - "!**/internal/service/**/*_test.go"
             - "!**/internal/service/ops_aggregation_service.go"
             - "!**/internal/service/ops_alert_evaluator_service.go"
             - "!**/internal/service/ops_cleanup_service.go"
@@ -26,7 +28,7 @@ linters:
             - "!**/internal/service/ops_scheduled_report_service.go"
             - "!**/internal/service/wire.go"
           deny:
-            - pkg: github.com/Wei-Shaw/sub2api/internal/repository
+            - pkg: github.com/bozhouDev/DragonCode-sub2api/internal/repository
               desc: "service must not import repository"
             - pkg: gorm.io/gorm
               desc: "service must not import gorm"
@@ -37,7 +39,7 @@ linters:
           files:
             - "**/internal/handler/**"
           deny:
-            - pkg: github.com/Wei-Shaw/sub2api/internal/repository
+            - pkg: github.com/bozhouDev/DragonCode-sub2api/internal/repository
               desc: "handler must not import repository"
             - pkg: gorm.io/gorm
               desc: "handler must not import gorm"

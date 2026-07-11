@@ -170,6 +170,11 @@ type UsageLog struct {
 
 	CreatedAt time.Time
 
+	// AccountingCommand is an in-memory, redacted persistence instruction. It
+	// is never serialized as part of a usage-log response. The repository
+	// commits it atomically with this usage log.
+	AccountingCommand *UsageBillingCommand `json:"-"`
+
 	User         *User
 	APIKey       *APIKey
 	Account      *Account

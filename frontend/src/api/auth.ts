@@ -3,7 +3,9 @@
  * Handles user login, registration, and logout operations
  */
 
+import axios from 'axios'
 import { apiClient } from './client'
+import { authSession } from '@/auth'
 import type {
   LoginRequest,
   RegisterRequest,
@@ -13,7 +15,8 @@ import type {
   SendVerifyCodeResponse,
   PublicSettings,
   TotpLoginResponse,
-  TotpLogin2FARequest
+  TotpLogin2FARequest,
+  ApiResponse,
 } from '@/types'
 
 /**
@@ -29,81 +32,12 @@ export function isTotp2FARequired(response: LoginResponse): response is TotpLogi
 }
 
 /**
- * Store authentication token in localStorage
- */
-export function setAuthToken(token: string): void {
-  localStorage.setItem('auth_token', token)
-}
-
-/**
- * Store refresh token in localStorage
- */
-export function setRefreshToken(token: string): void {
-  localStorage.setItem('refresh_token', token)
-}
-
-/**
- * Store token expiration timestamp in localStorage
- * Converts expires_in (seconds) to absolute timestamp (milliseconds)
- */
-export function setTokenExpiresAt(expiresIn: number): void {
-  const expiresAt = Date.now() + expiresIn * 1000
-  localStorage.setItem('token_expires_at', String(expiresAt))
-}
-
-/**
- * Get authentication token from localStorage
- */
-export function getAuthToken(): string | null {
-  return localStorage.getItem('auth_token')
-}
-
-/**
- * Get refresh token from localStorage
- */
-export function getRefreshToken(): string | null {
-  return localStorage.getItem('refresh_token')
-}
-
-/**
- * Get token expiration timestamp from localStorage
- */
-export function getTokenExpiresAt(): number | null {
-  const value = localStorage.getItem('token_expires_at')
-  return value ? parseInt(value, 10) : null
-}
-
-/**
- * Clear authentication token from localStorage
- */
-export function clearAuthToken(): void {
-  localStorage.removeItem('auth_token')
-  localStorage.removeItem('refresh_token')
-  localStorage.removeItem('auth_user')
-  localStorage.removeItem('token_expires_at')
-}
-
-/**
  * User login
  * @param credentials - Email and password
  * @returns Authentication response with token and user data, or 2FA required response
  */
 export async function login(credentials: LoginRequest): Promise<LoginResponse> {
-  clearAuthToken()
   const { data } = await apiClient.post<LoginResponse>('/auth/login', credentials)
-
-  // Only store token if 2FA is not required
-  if (!isTotp2FARequired(data)) {
-    setAuthToken(data.access_token)
-    if (data.refresh_token) {
-      setRefreshToken(data.refresh_token)
-    }
-    if (data.expires_in) {
-      setTokenExpiresAt(data.expires_in)
-    }
-    localStorage.setItem('auth_user', JSON.stringify(data.user))
-  }
-
   return data
 }
 
@@ -113,19 +47,7 @@ export async function login(credentials: LoginRequest): Promise<LoginResponse> {
  * @returns Authentication response with token and user data
  */
 export async function login2FA(request: TotpLogin2FARequest): Promise<AuthResponse> {
-  clearAuthToken()
   const { data } = await apiClient.post<AuthResponse>('/auth/login/2fa', request)
-
-  // Store token and user data
-  setAuthToken(data.access_token)
-  if (data.refresh_token) {
-    setRefreshToken(data.refresh_token)
-  }
-  if (data.expires_in) {
-    setTokenExpiresAt(data.expires_in)
-  }
-  localStorage.setItem('auth_user', JSON.stringify(data.user))
-
   return data
 }
 
@@ -135,19 +57,7 @@ export async function login2FA(request: TotpLogin2FARequest): Promise<AuthRespon
  * @returns Authentication response with token and user data
  */
 export async function register(userData: RegisterRequest): Promise<AuthResponse> {
-  clearAuthToken()
   const { data } = await apiClient.post<AuthResponse>('/auth/register', userData)
-
-  // Store token and user data
-  setAuthToken(data.access_token)
-  if (data.refresh_token) {
-    setRefreshToken(data.refresh_token)
-  }
-  if (data.expires_in) {
-    setTokenExpiresAt(data.expires_in)
-  }
-  localStorage.setItem('auth_user', JSON.stringify(data.user))
-
   return data
 }
 
@@ -164,9 +74,7 @@ export async function getCurrentUser() {
  * Clears authentication token and user data from localStorage
  * Optionally revokes the refresh token on the server
  */
-export async function logout(): Promise<void> {
-  const refreshToken = getRefreshToken()
-
+export async function logout(refreshToken?: string | null): Promise<void> {
   // Try to revoke the refresh token on the server
   if (refreshToken) {
     try {
@@ -176,7 +84,6 @@ export async function logout(): Promise<void> {
     }
   }
 
-  clearAuthToken()
 }
 
 /**
@@ -193,22 +100,20 @@ export interface RefreshTokenResponse {
  * Refresh the access token using the refresh token
  * @returns New token pair
  */
-export async function refreshToken(): Promise<RefreshTokenResponse> {
-  const currentRefreshToken = getRefreshToken()
+export async function refreshToken(currentRefreshToken?: string | null, signal?: AbortSignal): Promise<RefreshTokenResponse> {
   if (!currentRefreshToken) {
     throw new Error('No refresh token available')
   }
-
-  const { data } = await apiClient.post<RefreshTokenResponse>('/auth/refresh', {
-    refresh_token: currentRefreshToken
-  })
-
-  // Update tokens in localStorage
-  setAuthToken(data.access_token)
-  setRefreshToken(data.refresh_token)
-  setTokenExpiresAt(data.expires_in)
-
-  return data
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+  const response = await axios.post<ApiResponse<RefreshTokenResponse>>(
+    `${baseURL}/auth/refresh`,
+    { refresh_token: currentRefreshToken },
+    { headers: { 'Content-Type': 'application/json' }, signal },
+  )
+  if (response.data.code !== 0 || !response.data.data) {
+    throw new Error(response.data.message || 'Token refresh failed')
+  }
+  return response.data.data
 }
 
 /**
@@ -232,12 +137,35 @@ export async function issueSSOTicket(apiKeyId?: number): Promise<SSOTicketRespon
   return data
 }
 
+export type EmbedTargetKind = 'purchase_subscription' | 'custom_menu'
+export type EmbedDelivery = 'iframe' | 'new_tab'
+
+export interface EmbedTicketResponse {
+  ticket: string
+  expires_in: number
+  target_url: string
+  audience: string
+}
+
+export async function issueEmbedTicket(
+  targetKind: EmbedTargetKind,
+  targetId: string,
+  delivery: EmbedDelivery,
+): Promise<EmbedTicketResponse> {
+  const { data } = await apiClient.post<EmbedTicketResponse>('/auth/embed/ticket', {
+    target_kind: targetKind,
+    target_id: targetId,
+    delivery,
+  })
+  return data
+}
+
 /**
  * Check if user is authenticated
  * @returns True if user has valid token
  */
 export function isAuthenticated(): boolean {
-  return getAuthToken() !== null
+  return authSession.accessToken !== null
 }
 
 /**
@@ -402,13 +330,6 @@ export const authAPI = {
   getCurrentUser,
   logout,
   isAuthenticated,
-  setAuthToken,
-  setRefreshToken,
-  setTokenExpiresAt,
-  getAuthToken,
-  getRefreshToken,
-  getTokenExpiresAt,
-  clearAuthToken,
   getPublicSettings,
   sendVerifyCode,
   validatePromoCode,
@@ -418,6 +339,7 @@ export const authAPI = {
   refreshToken,
   revokeAllSessions,
   issueSSOTicket,
+  issueEmbedTicket,
   completeLinuxDoOAuthRegistration,
   completeOAuthRegistration
 }

@@ -153,6 +153,7 @@
               :href="purchaseUrl"
               target="_blank"
               rel="noopener noreferrer"
+              referrerpolicy="no-referrer"
               class="btn btn-secondary btn-sm purchase-open-fab"
             >
               <Icon name="externalLink" size="sm" class="mr-1.5" :stroke-width="2" />
@@ -161,7 +162,9 @@
             <iframe
               :src="purchaseUrl"
               class="purchase-embed-frame"
-              allowfullscreen
+              referrerpolicy="no-referrer"
+              sandbox="allow-scripts allow-forms allow-popups allow-same-origin"
+              allow="payment"
             ></iframe>
           </div>
         </div>
@@ -210,12 +213,12 @@ const currentBalance = computed(() => {
 
 const purchaseUrl = computed(() => {
   const baseUrl = (appStore.cachedPublicSettings?.purchase_subscription_url || '').trim()
-  return buildEmbeddedUrl(baseUrl, authStore.user?.id, authStore.token, purchaseTheme.value, locale.value)
+  return buildEmbeddedUrl(baseUrl, purchaseTheme.value, locale.value)
 })
 
 const isValidUrl = computed(() => {
   const url = purchaseUrl.value
-  return url.startsWith('http://') || url.startsWith('https://')
+  return url.startsWith('https://') || (import.meta.env.DEV && url.startsWith('http://'))
 })
 
 function statusClass(status: string): string {

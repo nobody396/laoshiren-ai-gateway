@@ -40,6 +40,8 @@ const total = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
 
+const showingFirstToken = computed(() => props.preset.sort === 'first_token_desc')
+
 const close = () => emit('update:modelValue', false)
 
 const rangeLabel = computed(() => {
@@ -205,7 +207,7 @@ const kindBadgeClass = (kind: string) => {
                     {{ t('admin.ops.requestDetails.table.model') }}
                   </th>
                   <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    {{ t('admin.ops.requestDetails.table.duration') }}
+                    {{ t(showingFirstToken ? 'admin.ops.requestDetails.table.firstToken' : 'admin.ops.requestDetails.table.duration') }}
                   </th>
                   <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     {{ t('admin.ops.requestDetails.table.status') }}
@@ -235,7 +237,9 @@ const kindBadgeClass = (kind: string) => {
                     {{ row.model || '-' }}
                   </td>
                   <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
-                    {{ typeof row.duration_ms === 'number' ? `${row.duration_ms} ms` : '-' }}
+                    {{ typeof (showingFirstToken ? row.first_token_ms : row.duration_ms) === 'number'
+                      ? `${showingFirstToken ? row.first_token_ms : row.duration_ms} ms`
+                      : '-' }}
                   </td>
                   <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
                     {{ row.status_code ?? '-' }}

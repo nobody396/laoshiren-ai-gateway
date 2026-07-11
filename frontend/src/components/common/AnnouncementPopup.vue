@@ -84,10 +84,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
 import { useAnnouncementStore } from '@/stores/announcements'
 import { formatRelativeWithDateTime } from '@/utils/format'
 
@@ -110,15 +111,7 @@ function handleDismiss() {
   announcementStore.dismissPopup()
 }
 
-// Manage body overflow — only set, never unset (bell component handles restore)
-watch(
-  () => announcementStore.currentPopup,
-  (popup) => {
-    if (popup) {
-      document.body.style.overflow = 'hidden'
-    }
-  }
-)
+useBodyScrollLock(computed(() => Boolean(announcementStore.currentPopup)))
 </script>
 
 <style scoped>

@@ -2828,7 +2828,7 @@ func shouldFailoverOpenAITransportError(ctx context.Context, err error) bool {
 	if err == nil {
 		return false
 	}
-	return ctx == nil || ctx.Err() == nil
+	return ctx != nil && ctx.Err() == nil
 }
 
 func logOpenAIPassthroughInstructionsRejected(

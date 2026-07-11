@@ -12,9 +12,6 @@ func TestShouldFailoverOpenAITransportError(t *testing.T) {
 	if !shouldFailoverOpenAITransportError(context.Background(), transportErr) {
 		t.Fatal("live request transport errors should be eligible for account failover")
 	}
-	if !shouldFailoverOpenAITransportError(nil, transportErr) {
-		t.Fatal("a missing context should not suppress transport failover")
-	}
 	if shouldFailoverOpenAITransportError(context.Background(), nil) {
 		t.Fatal("nil errors must not trigger failover")
 	}

@@ -1961,7 +1961,7 @@ const buildCodexCcsConfig = (endpoint: string, apiKey: string, model: string): s
   const config = `model_provider = "${providerName}"
 model = "${safeModel}"
 review_model = "${safeModel}"
-model_reasoning_effort = "high"
+model_reasoning_effort = "medium"
 disable_response_storage = true
 network_access = "enabled"
 windows_wsl_setup_acknowledged = true
@@ -2040,7 +2040,7 @@ const executeCcsImport = (row: ApiKey, clientType: CcsImportTarget) => {
   const providerName = buildCcsProviderName(row, app, clientType)
   const providerNotes = buildCcsProviderNotes(row, endpoint, clientType)
 
-  const defaultModel = 'gpt-5.5'
+  const defaultModel = 'gpt-5.6-sol'
   const params = new URLSearchParams({
     resource: 'provider',
     app: app,

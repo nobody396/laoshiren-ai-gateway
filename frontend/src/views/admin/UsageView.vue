@@ -49,7 +49,13 @@
             :end-date="endDate"
             palette="greco"
           />
-          <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" palette="greco" />
+          <TokenUsageTrend
+            :trend-data="trendData"
+            :loading="chartsLoading"
+            :start-date="startDate"
+            :granularity="granularity"
+            palette="greco"
+          />
         </div>
       </div>
       <UsageFilters v-model="filters" v-model:startDate="startDate" v-model:endDate="endDate" :exporting="exporting" @change="applyFilters" @refresh="refreshData" @reset="resetFilters" @cleanup="openCleanupDialog" @export="exportToExcel">

@@ -40,6 +40,14 @@ vi.mock('vue-router', () => ({
   })
 }))
 
+vi.mock('vue-chartjs', () => ({
+  Line: {
+    name: 'Line',
+    props: ['data', 'options'],
+    template: '<div data-testid="user-trend-chart" />'
+  }
+}))
+
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
   return {
@@ -125,7 +133,7 @@ describe('admin DashboardView', () => {
   })
 
   it('uses today as default dashboard range', async () => {
-    mount(DashboardView, {
+    const wrapper = mount(DashboardView, {
       global: {
         stubs: {
           AppLayout: { template: '<div><slot /></div>' },
@@ -149,5 +157,53 @@ describe('admin DashboardView', () => {
       end_date: formatLocalDate(now),
       granularity: 'hour'
     }))
+    const trend = wrapper.findComponent({ name: 'TokenUsageTrend' })
+    expect(trend.props('startDate')).toBe(formatLocalDate(now))
+    expect(trend.props('granularity')).toBe('hour')
+    expect(wrapper.html()).not.toContain('2xl:grid-cols-2')
+  })
+
+  it('fills missing hourly buckets in the recent-user trend', async () => {
+    const today = formatLocalDate(new Date())
+    getUserUsageTrend.mockResolvedValue({
+      trend: [{
+        date: `${today} 12:00`,
+        user_id: 2,
+        email: 'owned@example.com',
+        username: '',
+        requests: 1,
+        tokens: 100,
+        cost: 0.2,
+        actual_cost: 0.1
+      }],
+      start_date: today,
+      end_date: today,
+      granularity: 'hour'
+    })
+
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          ModelDistributionChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    const chart = wrapper.findComponent({ name: 'Line' })
+    const data = chart.props('data') as { labels: string[]; datasets: Array<{ data: number[] }> }
+    expect(data.labels).toHaveLength(13)
+    expect(data.labels[0]).toBe(`${today} 00:00`)
+    expect(data.labels.at(-1)).toBe(`${today} 12:00`)
+    expect(data.datasets[0]?.data[0]).toBe(0)
+    expect(data.datasets[0]?.data[12]).toBe(100)
   })
 })

@@ -218,7 +218,7 @@
           </div>
 
           <!-- Charts Grid -->
-          <div class="grid grid-cols-1 gap-6 2xl:grid-cols-2">
+          <div class="grid grid-cols-1 gap-6">
             <ModelDistributionChart
               v-model:source="modelDistributionSource"
               :model-stats="modelStats"
@@ -236,7 +236,13 @@
               @ranking-click="goToUserUsage"
               palette="greco"
             />
-            <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" palette="greco" />
+            <TokenUsageTrend
+              :trend-data="trendData"
+              :loading="chartsLoading"
+              :start-date="startDate"
+              :granularity="granularity"
+              palette="greco"
+            />
           </div>
 
           <!-- User Usage Trend (Full Width) -->
@@ -285,6 +291,7 @@ import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import Select from '@/components/common/Select.vue'
 import ModelDistributionChart from '@/components/charts/ModelDistributionChart.vue'
 import TokenUsageTrend from '@/components/charts/TokenUsageTrend.vue'
+import { buildContinuousBucketLabels } from '@/utils/trendBuckets'
 
 import {
   Chart as ChartJS,
@@ -466,7 +473,11 @@ const userTrendChartData = computed(() => {
     userGroups.get(key)!.data.set(point.date, point.tokens)
   })
 
-  const sortedDates = Array.from(allDates).sort()
+  const sortedDates = buildContinuousBucketLabels(
+    startDate.value,
+    granularity.value,
+    Array.from(allDates)
+  )
   const colors = [
     '#9a3b1f',
     '#3f5a3a',

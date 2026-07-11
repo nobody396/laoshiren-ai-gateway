@@ -635,7 +635,7 @@ func normalizeConfiguredEmbedURL(rawURL string, allowLocalhost bool) (string, st
 	u.Scheme = strings.ToLower(u.Scheme)
 	hostname := strings.ToLower(u.Hostname())
 	isLocalhost := hostname == "localhost" || hostname == "127.0.0.1" || hostname == "::1"
-	if u.Scheme != "https" && !(allowLocalhost && isLocalhost && u.Scheme == "http") {
+	if u.Scheme != "https" && (!allowLocalhost || !isLocalhost || u.Scheme != "http") {
 		return "", "", errors.New("embed URL must use https")
 	}
 	port := u.Port()

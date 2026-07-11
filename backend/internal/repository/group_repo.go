@@ -237,10 +237,6 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 	return nil
 }
 
-func (r *groupRepository) setChatbotEnabled(ctx context.Context, groupID int64, enabled bool) error {
-	return setChatbotEnabledWithExec(ctx, r.sql, groupID, enabled)
-}
-
 func setChatbotEnabledWithExec(ctx context.Context, exec sqlExecer, groupID int64, enabled bool) error {
 	_, err := exec.ExecContext(ctx, `UPDATE groups SET chatbot_enabled = $1 WHERE id = $2`, enabled, groupID)
 	return err

@@ -1612,10 +1612,6 @@ func (r *accountRepository) loadAccountGroups(ctx context.Context, accountIDs []
 	return groupsByAccount, groupIDsByAccount, accountGroupsByAccount, nil
 }
 
-func (r *accountRepository) loadAccountGroupIDs(ctx context.Context, accountID int64) ([]int64, error) {
-	return loadAccountGroupIDsWithClient(ctx, clientFromContext(ctx, r.client), accountID)
-}
-
 func loadAccountGroupIDsWithClient(ctx context.Context, client *dbent.Client, accountID int64) ([]int64, error) {
 	entries, err := client.AccountGroup.
 		Query().

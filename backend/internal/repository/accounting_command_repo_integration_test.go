@@ -34,7 +34,14 @@ func accountingUsageFixture(t *testing.T, suffix string) (*usageLogRepository, *
 	return newUsageLogRepositoryWithSQL(client, integrationDB), log
 }
 
+func resetAccountingCommandFixtures(t *testing.T) {
+	t.Helper()
+	_, err := integrationDB.ExecContext(context.Background(), `DELETE FROM usage_accounting_commands`)
+	require.NoError(t, err, "reset accounting command fixtures")
+}
+
 func TestAccountingCommand_UsageLogAndCommandCommitTogether(t *testing.T) {
+	resetAccountingCommandFixtures(t)
 	ctx := context.Background()
 	usageRepo, log := accountingUsageFixture(t, "commit")
 	inserted, err := usageRepo.Create(ctx, log)
@@ -56,6 +63,7 @@ func TestAccountingCommand_UsageLogAndCommandCommitTogether(t *testing.T) {
 }
 
 func TestAccountingCommand_EnqueueFailureRollsBackUsageLog(t *testing.T) {
+	resetAccountingCommandFixtures(t)
 	ctx := context.Background()
 	usageRepo, log := accountingUsageFixture(t, "rollback")
 	_, err := integrationDB.ExecContext(ctx, `ALTER TABLE usage_accounting_commands RENAME TO usage_accounting_commands_u10_unavailable`)
@@ -79,6 +87,7 @@ func TestAccountingCommand_EnqueueFailureRollsBackUsageLog(t *testing.T) {
 }
 
 func TestAccountingCommand_LeaseExpiryAndSkipLocked(t *testing.T) {
+	resetAccountingCommandFixtures(t)
 	ctx := context.Background()
 	usageRepo, log := accountingUsageFixture(t, "lease")
 	_, err := usageRepo.Create(ctx, log)
@@ -103,6 +112,7 @@ func TestAccountingCommand_LeaseExpiryAndSkipLocked(t *testing.T) {
 }
 
 func TestAccountingCommand_MultipleWorkersClaimDistinctRows(t *testing.T) {
+	resetAccountingCommandFixtures(t)
 	ctx := context.Background()
 	for i := 0; i < 8; i++ {
 		usageRepo, log := accountingUsageFixture(t, fmt.Sprintf("multi-%d", i))

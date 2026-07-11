@@ -2499,15 +2499,27 @@ func (s *OpenAIGatewayService) forwardLegacy(ctx context.Context, c *gin.Context
 		if err != nil {
 			// Ensure the client receives an error response (handlers assume Forward writes on non-failover errors).
 			safeErr := sanitizeUpstreamErrorMessage(err.Error())
+			shouldFailover := shouldFailoverOpenAITransportError(ctx, err)
 			setOpsUpstreamError(c, 0, safeErr, "")
+			kind := "request_error"
+			if shouldFailover {
+				kind = "failover"
+			}
 			appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
 				Platform:           account.Platform,
 				AccountID:          account.ID,
 				AccountName:        account.Name,
 				UpstreamStatusCode: 0,
-				Kind:               "request_error",
+				Kind:               kind,
 				Message:            safeErr,
 			})
+			// A live client request can still be recovered by the handler's existing
+			// account failover loop. Do not commit a 502 before that loop has a chance
+			// to select the configured fallback account. If the client context itself
+			// is already done, failover would only create duplicate upstream work.
+			if shouldFailover {
+				return nil, &UpstreamFailoverError{StatusCode: http.StatusBadGateway}
+			}
 			safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
 			c.JSON(safeClientErr.StatusCode, OpenAIClientErrorEnvelope(c, safeClientErr.Type, safeClientErr.Message))
 			return nil, fmt.Errorf("upstream request failed: %s", safeErr)
@@ -2737,16 +2749,24 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 	SetOpsLatencyMs(c, OpsUpstreamLatencyMsKey, time.Since(upstreamStart).Milliseconds())
 	if err != nil {
 		safeErr := sanitizeUpstreamErrorMessage(err.Error())
+		shouldFailover := shouldFailoverOpenAITransportError(ctx, err)
 		setOpsUpstreamError(c, 0, safeErr, "")
+		kind := "request_error"
+		if shouldFailover {
+			kind = "failover"
+		}
 		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
 			Platform:           account.Platform,
 			AccountID:          account.ID,
 			AccountName:        account.Name,
 			UpstreamStatusCode: 0,
 			Passthrough:        true,
-			Kind:               "request_error",
+			Kind:               kind,
 			Message:            safeErr,
 		})
+		if shouldFailover {
+			return nil, &UpstreamFailoverError{StatusCode: http.StatusBadGateway}
+		}
 		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
 		c.JSON(safeClientErr.StatusCode, OpenAIClientErrorEnvelope(c, safeClientErr.Type, safeClientErr.Message))
 		return nil, fmt.Errorf("upstream request failed: %s", safeErr)
@@ -2798,6 +2818,17 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 		Duration:        time.Since(startTime),
 		FirstTokenMs:    firstTokenMs,
 	}, nil
+}
+
+// shouldFailoverOpenAITransportError reports whether an outbound transport
+// failure may be recovered by selecting another account. A canceled client
+// context is never retried: the caller is no longer waiting and another
+// upstream attempt could create duplicate billable work.
+func shouldFailoverOpenAITransportError(ctx context.Context, err error) bool {
+	if err == nil {
+		return false
+	}
+	return ctx == nil || ctx.Err() == nil
 }
 
 func logOpenAIPassthroughInstructionsRejected(

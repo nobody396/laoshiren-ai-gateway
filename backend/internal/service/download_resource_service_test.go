@@ -11,11 +11,15 @@ import (
 )
 
 type downloadResourceGitHubStub struct {
-	release *GitHubRelease
-	files   map[string][]byte
+	release  *GitHubRelease
+	releases map[string]*GitHubRelease
+	files    map[string][]byte
 }
 
-func (s *downloadResourceGitHubStub) FetchLatestRelease(context.Context, string) (*GitHubRelease, error) {
+func (s *downloadResourceGitHubStub) FetchLatestRelease(_ context.Context, repo string) (*GitHubRelease, error) {
+	if release := s.releases[repo]; release != nil {
+		return release, nil
+	}
 	return s.release, nil
 }
 
@@ -167,29 +171,42 @@ func TestDownloadResourceServiceDownloadTokenExpires(t *testing.T) {
 func TestDownloadResourceServiceSyncCodexCachesSelectedAssets(t *testing.T) {
 	dir := t.TempDir()
 	stub := &downloadResourceGitHubStub{
-		release: &GitHubRelease{
-			TagName:     "rust-v0.135.0",
-			Name:        "0.135.0",
-			PublishedAt: "2026-05-31T00:00:00Z",
-			Assets: []GitHubAsset{
-				{Name: "codex-aarch64-apple-darwin.tar.gz", BrowserDownloadURL: "https://example.test/codex-mac", Size: int64(len("codex-mac"))},
-				{Name: "codex-app-server-package-x86_64-pc-windows-msvc.tar.gz", BrowserDownloadURL: "https://example.test/codex-app", Size: int64(len("codex-app"))},
-				{Name: "codex-app-server-x86_64-pc-windows-msvc.exe.zip", BrowserDownloadURL: "https://example.test/skip-server", Size: int64(len("skip"))},
-				{Name: "codex-npm-0.135.0.tgz", BrowserDownloadURL: "https://example.test/skip-npm", Size: int64(len("skip"))},
+		releases: map[string]*GitHubRelease{
+			"openai/codex": {
+				TagName:     "rust-v0.135.0",
+				Name:        "0.135.0",
+				PublishedAt: "2026-05-31T00:00:00Z",
+				Assets: []GitHubAsset{
+					{Name: "codex-aarch64-apple-darwin.tar.gz", BrowserDownloadURL: "https://example.test/codex-mac", Size: int64(len("codex-mac"))},
+					{Name: "codex-app-server-package-x86_64-pc-windows-msvc.tar.gz", BrowserDownloadURL: "https://example.test/codex-app", Size: int64(len("codex-app"))},
+					{Name: "codex-app-server-x86_64-pc-windows-msvc.exe.zip", BrowserDownloadURL: "https://example.test/skip-server", Size: int64(len("skip"))},
+					{Name: "codex-npm-0.135.0.tgz", BrowserDownloadURL: "https://example.test/skip-npm", Size: int64(len("skip"))},
+				},
+			},
+			"Wangnov/codex-app-mirror": {
+				TagName:     "codex-app-26.707.31428",
+				Name:        "Codex App Mirror 26.707.31428",
+				PublishedAt: "2026-07-10T03:42:05Z",
+				Assets: []GitHubAsset{
+					{Name: "OpenAI.Codex_26.707.3748.0_x64__2p2nqsd0c76g0.Msix", BrowserDownloadURL: "https://example.test/codex-msix", Size: int64(len("codex-msix"))},
+					{Name: "OpenAI.Codex_26.707.3748.0_arm64__2p2nqsd0c76g0.Msix", BrowserDownloadURL: "https://example.test/skip-arm64", Size: int64(len("skip"))},
+				},
 			},
 		},
 		files: map[string][]byte{
-			"https://example.test/codex-mac": []byte("codex-mac"),
-			"https://example.test/codex-app": []byte("codex-app"),
+			"https://example.test/codex-mac":  []byte("codex-mac"),
+			"https://example.test/codex-app":  []byte("codex-app"),
+			"https://example.test/codex-msix": []byte("codex-msix"),
 		},
 	}
 	svc := NewDownloadResourceService(&config.Config{
 		Downloads: config.DownloadsConfig{
-			Enabled:             true,
-			CacheDir:            dir,
-			UpdateIntervalHours: 1,
-			CodexRepo:           "openai/codex",
-			MaxAssetBytes:       1024,
+			Enabled:                true,
+			CacheDir:               dir,
+			UpdateIntervalHours:    1,
+			CodexRepo:              "openai/codex",
+			CodexWindowsMirrorRepo: "Wangnov/codex-app-mirror",
+			MaxAssetBytes:          1024,
 		},
 	}, stub)
 
@@ -198,9 +215,11 @@ func TestDownloadResourceServiceSyncCodexCachesSelectedAssets(t *testing.T) {
 
 	manifest, err := svc.ListTool(context.Background(), codexToolID)
 	require.NoError(t, err)
-	require.Equal(t, "rust-v0.135.0", manifest.Version)
+	require.Equal(t, "codex-app-26.707.31428", manifest.Version)
 	require.Len(t, manifest.Assets, 2)
 	require.Equal(t, "macos", manifest.Assets[0].Platform)
+	require.Equal(t, "windows", manifest.Assets[1].Platform)
+	require.Equal(t, "x64", manifest.Assets[1].Arch)
 	require.NotEmpty(t, manifest.Assets[0].SHA256)
 }
 

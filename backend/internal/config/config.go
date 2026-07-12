@@ -155,6 +155,7 @@ type DownloadsConfig struct {
 	StartupSync                  bool   `mapstructure:"startup_sync"`
 	CCSwitchRepo                 string `mapstructure:"cc_switch_repo"`
 	CodexRepo                    string `mapstructure:"codex_repo"`
+	CodexWindowsMirrorRepo       string `mapstructure:"codex_windows_mirror_repo"`
 	CodexPlusPlusRepo            string `mapstructure:"codex_plus_plus_repo"`
 	ClaudeDesktopMacURL          string `mapstructure:"claude_desktop_mac_url"`
 	ClaudeDesktopWindowsX64URL   string `mapstructure:"claude_desktop_windows_x64_url"`
@@ -1359,15 +1360,16 @@ func setDefaults() {
 
 	viper.SetDefault("downloads.enabled", true)
 	viper.SetDefault("downloads.cache_dir", "./data/downloads")
-	viper.SetDefault("downloads.update_interval_hours", 48)
+	viper.SetDefault("downloads.update_interval_hours", 24)
 	viper.SetDefault("downloads.startup_sync", true)
 	viper.SetDefault("downloads.cc_switch_repo", "farion1231/cc-switch")
 	viper.SetDefault("downloads.codex_repo", "openai/codex")
+	viper.SetDefault("downloads.codex_windows_mirror_repo", "Wangnov/codex-app-mirror")
 	viper.SetDefault("downloads.codex_plus_plus_repo", "BigPizzaV3/CodexPlusPlus")
 	viper.SetDefault("downloads.claude_desktop_mac_url", "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest/Claude.dmg")
 	viper.SetDefault("downloads.claude_desktop_windows_x64_url", "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest-win-x64/Claude-Setup-x64.exe")
 	viper.SetDefault("downloads.claude_desktop_windows_arm64_url", "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest-win-arm64/Claude-Setup-arm64.exe")
-	viper.SetDefault("downloads.max_asset_bytes", int64(300*1024*1024))
+	viper.SetDefault("downloads.max_asset_bytes", int64(1024*1024*1024))
 
 	// API Key auth cache
 	viper.SetDefault("api_key_auth_cache.l1_size", 65535)

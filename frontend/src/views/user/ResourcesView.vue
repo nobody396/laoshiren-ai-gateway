@@ -268,7 +268,7 @@ const resources: DownloadResource[] = [
   {
     name: 'Codex',
     badge: 'OpenAI 官方编码工具',
-    description: '适合在本地终端中运行 Codex，也可以使用 Codex App 体验。普通用户优先使用官方安装命令，下载区只保留常用系统的 CLI 备用包。',
+    description: '适合在本地终端中运行 Codex，也可以使用 Codex App 体验。下载区会每天检查新版本：官方仓库已有的包直接取官方源，Windows 桌面版取发布镜像。',
     icon: 'cpu',
     commands: [
       {
@@ -285,13 +285,13 @@ const resources: DownloadResource[] = [
       }
     ],
     downloadToolId: 'codex',
-    downloadTitle: '备用离线包',
-    downloadHint: '普通用户优先复制上方命令安装；只有安装脚本很慢或打不开时，再下载对应系统的备用包。',
+    downloadTitle: '自动更新安装包',
+    downloadHint: 'Windows 64 位提供 Codex App 的 MSIX 安装包；macOS 提供 OpenAI 官方 Codex 包。本站每天自动检查并缓存最新版。',
     verifyCommand: 'codex\ncodex app',
     primaryLink: 'https://github.com/openai/codex/releases/latest',
     docsLink: 'https://developers.openai.com/codex/cli',
     primaryAction: '查看官方 Release',
-    note: '用户不方便访问 GitHub 时，可以直接下载本站缓存的 Codex CLI 备用包。'
+    note: '官方仓库有对应安装包时优先缓存官方版本；Windows Codex App 使用 Wangnov/codex-app-mirror 的最新 Release。'
   },
   {
     name: 'Codex++',
@@ -385,7 +385,8 @@ function installOptionFor(tool: DownloadToolID, asset: DownloadAsset): { key: st
     if (tool === 'claude-desktop' && !name.endsWith('.exe')) return null
     if (tool === 'codex') {
       if (name.startsWith('codex-app-server-package')) return null
-      if (!name.endsWith('pc-windows-msvc.exe.zip')) return null
+      if (!name.endsWith('.msix') && !name.endsWith('pc-windows-msvc.exe.zip')) return null
+      return { key: 'windows-x64', score: name.endsWith('.msix') ? 1 : 10 }
     }
     return { key: 'windows-x64', score: 10 }
   }
@@ -503,6 +504,7 @@ function formatDate(value: string): string {
 }
 
 function formatAssetLabel(tool: DownloadToolID, asset: DownloadAsset): string {
+  if (tool === 'codex' && asset.name.toLowerCase().endsWith('.msix')) return 'Windows 64 位 Codex App'
   if (asset.platform === 'windows') return 'Windows 64 位安装包'
   if (asset.platform === 'macos' && asset.arch === 'arm64') return 'macOS Apple 芯片版'
   if (asset.platform === 'macos' && asset.arch === 'x64') return 'macOS Intel 芯片版'

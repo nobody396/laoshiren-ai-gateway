@@ -281,8 +281,8 @@ const resources: DownloadResource[] = [
       },
       {
         label: 'Windows Codex App 一键更新',
-        command: '$r=Invoke-RestMethod "https://api.github.com/repos/Wangnov/codex-app-mirror/releases/latest"; $a=$r.assets | Where-Object { $_.name -match "_x64__.*\\.Msix$" } | Select-Object -First 1; if (-not $a) { throw "未找到最新版 Windows x64 MSIX" }; $f="$env:USERPROFILE\\Downloads\\$($a.name)"; curl.exe -L $a.browser_download_url -o $f; if ($LASTEXITCODE -ne 0) { throw "下载失败" }; Add-AppxPackage -Path $f -ForceApplicationShutdown; echo "OK-DONE $($r.tag_name)"',
-        note: '复制整行到 PowerShell 执行；每次都会查询最新 Release，下载完成后自动覆盖更新 Codex App。'
+        command: '$r=Invoke-RestMethod "https://api.github.com/repos/Wangnov/codex-app-mirror/releases/latest"; $a=$r.assets | Where-Object { $_.name -match "_x64__.*\\.Msix$" } | Select-Object -First 1; if (-not $a) { throw "未找到最新版 Windows x64 MSIX" }; $f="$env:USERPROFILE\\Downloads\\$($a.name)"; curl.exe -L $a.browser_download_url -o $f; if ($LASTEXITCODE -ne 0) { throw "下载失败" }; Add-AppxPackage -Path $f -DeferRegistrationWhenPackagesAreInUse; echo "OK-DONE $($r.tag_name)"',
+        note: '复制整行到 PowerShell 执行；每次都会查询最新 Release，下载完成后安全更新；如果 Codex 正在运行，会等到应用退出后再完成。'
       },
       {
         label: 'npm 方式',

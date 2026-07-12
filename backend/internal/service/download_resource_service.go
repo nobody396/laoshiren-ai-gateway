@@ -520,6 +520,19 @@ func (s *DownloadResourceService) GetToolAsset(ctx context.Context, toolID, asse
 	return nil, ErrDownloadAssetNotFound
 }
 
+func (s *DownloadResourceService) GetCodexWindowsDesktopAsset(ctx context.Context) (*DownloadAssetFile, error) {
+	manifest, err := s.ListTool(ctx, codexToolID)
+	if err != nil {
+		return nil, err
+	}
+	for _, asset := range manifest.Assets {
+		if asset.Platform == "windows" && asset.Arch == "x64" && isCodexWindowsDesktopAsset(asset.Name) {
+			return s.GetToolAsset(ctx, codexToolID, asset.ID)
+		}
+	}
+	return nil, ErrDownloadAssetNotFound
+}
+
 func (s *DownloadResourceService) CreateToolAssetDownloadToken(ctx context.Context, toolID, assetID string, ttl time.Duration) (string, time.Time, error) {
 	if s == nil {
 		return "", time.Time{}, errors.New("nil download resource service")

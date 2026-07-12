@@ -272,21 +272,14 @@ const resources: DownloadResource[] = [
     icon: 'cpu',
     commands: [
       {
-        label: 'macOS / Linux',
-        command: 'curl -fsSL https://chatgpt.com/codex/install.sh | sh'
+        label: 'Windows Codex App 首次安装（自动更新）',
+        command: 'Start-Process "ms-appinstaller:?source=https://laoshirenai.com/api/v1/public-downloads/codex/windows-x64/latest.appinstaller"',
+        note: '首次安装请使用这一行。确认安装后，Windows 会登记本站更新地址；以后后台检查新版本，并在 Codex 未运行时安全完成更新。'
       },
       {
-        label: 'Windows PowerShell',
-        command: 'powershell -ExecutionPolicy ByPass -c "irm https://chatgpt.com/codex/install.ps1 | iex"'
-      },
-      {
-        label: 'Windows Codex App 一键更新',
-        command: '$r=Invoke-RestMethod "https://api.github.com/repos/Wangnov/codex-app-mirror/releases/latest"; $a=$r.assets | Where-Object { $_.name -match "_x64__.*\\.Msix$" } | Select-Object -First 1; if (-not $a) { throw "未找到最新版 Windows x64 MSIX" }; $f="$env:USERPROFILE\\Downloads\\$($a.name)"; curl.exe -L $a.browser_download_url -o $f; if ($LASTEXITCODE -ne 0) { throw "下载失败" }; Add-AppxPackage -Path $f -DeferRegistrationWhenPackagesAreInUse; echo "OK-DONE $($r.tag_name)"',
-        note: '复制整行到 PowerShell 执行；每次都会查询最新 Release，下载完成后安全更新；如果 Codex 正在运行，会等到应用退出后再完成。'
-      },
-      {
-        label: 'npm 方式',
-        command: 'npm install -g @openai/codex'
+        label: 'Windows Codex App 强制更新',
+        command: '$f="$env:TEMP\\Codex-latest.msix"; curl.exe -L "https://laoshirenai.com/api/v1/public-downloads/codex/windows-x64/latest.msix" -o $f; if ($LASTEXITCODE -ne 0) { throw "下载失败" }; Add-AppxPackage -Path $f -ForceApplicationShutdown; Remove-Item $f -Force -ErrorAction SilentlyContinue; echo "OK-DONE"',
+        note: '危险：执行前请先保存 Codex 中的工作并主动退出 Codex。该命令会强制关闭仍在运行的 Codex，然后立即更新。'
       }
     ],
     downloadToolId: 'codex',

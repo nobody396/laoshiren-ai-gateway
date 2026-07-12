@@ -16,6 +16,9 @@ func RegisterUserRoutes(
 	settingService *service.SettingService,
 ) {
 	v1.GET("/resource-downloads/:token", h.Resource.DownloadWithToken)
+	v1.GET("/public-downloads/codex/windows-x64/latest.appinstaller", h.Resource.CodexWindowsAppInstaller)
+	v1.GET("/public-downloads/codex/windows-x64/latest.msix", h.Resource.DownloadCodexWindowsLatest)
+	v1.GET("/public-downloads/codex/windows-x64/packages/:assetID", h.Resource.DownloadCodexWindowsPackage)
 
 	authenticated := v1.Group("")
 	authenticated.Use(gin.HandlerFunc(jwtAuth))

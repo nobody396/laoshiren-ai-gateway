@@ -152,6 +152,10 @@ gateway:
   # Max request body size in bytes (default: 256MB)
   # 请求体最大字节数（默认 256MB）
   max_body_size: 268435456
+  # Max OpenAI Responses request body size in bytes (default: 48MiB).
+  # Oversized requests are rejected locally with HTTP 413 before account selection.
+  # OpenAI Responses 请求体上限（默认 48MiB）；超限请求会在账号选择前返回 HTTP 413。
+  openai_responses_max_body_size: 50331648
   # Max bytes to read for non-stream upstream responses (default: 8MB)
   # 非流式上游响应体读取上限（默认 8MB）
   upstream_response_read_max_bytes: 8388608

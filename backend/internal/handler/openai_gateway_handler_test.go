@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
 	pkghttputil "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/httputil"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
@@ -134,6 +135,68 @@ func TestReadRequestBodyWithPrealloc_MaxBytesError(t *testing.T) {
 	require.Error(t, err)
 	var maxErr *http.MaxBytesError
 	require.ErrorAs(t, err, &maxErr)
+}
+
+func TestOpenAIResponsesRejectsOversizedBodyWithNonRetryable413(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(`{"model":"gpt-5"}`))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	groupID := int64(2)
+	c.Set(string(middleware.ContextKeyAPIKey), &service.APIKey{
+		ID:      101,
+		GroupID: &groupID,
+		User:    &service.User{ID: 1},
+	})
+	c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 1, Concurrency: 1})
+
+	h := newOpenAIHandlerForPreviousResponseIDValidation(t, nil)
+	h.cfg = &config.Config{Gateway: config.GatewayConfig{OpenAIResponsesMaxBodySize: 8}}
+	h.Responses(c)
+
+	require.Equal(t, http.StatusRequestEntityTooLarge, w.Code)
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &payload))
+	errorObj, ok := payload["error"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "invalid_request_error", errorObj["type"])
+	require.Equal(t, service.ClientCodeRequestBodyTooLarge, errorObj["code"])
+	require.Contains(t, errorObj["message"], "Maximum size is 8B")
+	require.Contains(t, errorObj["message"], "Start a new task")
+}
+
+func TestOpenAIResponsesRejectsChunkedOversizedBodyWithNonRetryable413(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(`{"model":"gpt-5"}`))
+	c.Request.ContentLength = -1
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	groupID := int64(2)
+	c.Set(string(middleware.ContextKeyAPIKey), &service.APIKey{
+		ID:      101,
+		GroupID: &groupID,
+		User:    &service.User{ID: 1},
+	})
+	c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 1, Concurrency: 1})
+
+	h := newOpenAIHandlerForPreviousResponseIDValidation(t, nil)
+	h.cfg = &config.Config{Gateway: config.GatewayConfig{OpenAIResponsesMaxBodySize: 8}}
+	h.Responses(c)
+
+	require.Equal(t, http.StatusRequestEntityTooLarge, w.Code)
+	require.Contains(t, w.Body.String(), service.ClientCodeRequestBodyTooLarge)
+}
+
+func TestOpenAIResponsesBodyLimitFallsBackToGatewayLimit(t *testing.T) {
+	h := &OpenAIGatewayHandler{cfg: &config.Config{Gateway: config.GatewayConfig{MaxBodySize: 32}}}
+	require.Equal(t, int64(32), h.openAIResponsesBodyLimit())
+
+	h.cfg.Gateway.OpenAIResponsesMaxBodySize = 16
+	require.Equal(t, int64(16), h.openAIResponsesBodyLimit())
 }
 
 func TestOpenAIEnsureForwardErrorResponse_WritesFallbackWhenNotWritten(t *testing.T) {

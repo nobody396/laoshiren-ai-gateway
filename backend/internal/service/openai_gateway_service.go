@@ -3698,7 +3698,7 @@ func (s *OpenAIGatewayService) handleErrorResponse(
 		})
 		MarkResponseCommitted(c)
 		safeErr := SafeClientUpstreamError(resp.StatusCode)
-		c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
+		c.JSON(safeErr.StatusCode, OpenAIClientUpstreamErrorEnvelope(c, safeErr))
 		if upstreamMsg == "" {
 			return nil, fmt.Errorf("upstream error: %d (not in custom error codes)", resp.StatusCode)
 		}
@@ -3735,7 +3735,7 @@ func (s *OpenAIGatewayService) handleErrorResponse(
 	MarkResponseCommitted(c)
 
 	safeErr := SafeClientUpstreamError(resp.StatusCode)
-	c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
+	c.JSON(safeErr.StatusCode, OpenAIClientUpstreamErrorEnvelope(c, safeErr))
 
 	if upstreamMsg == "" {
 		return nil, fmt.Errorf("upstream error: %d", resp.StatusCode)

@@ -17,6 +17,12 @@ import (
 const (
 	RunModeStandard = "standard"
 	RunModeSimple   = "simple"
+
+	// DefaultOpenAIResponsesMaxBodySize keeps downstream Responses requests
+	// below the request size observed being rejected by an upstream ingress.
+	// Oversized clients get a deterministic HTTP 413 before account selection
+	// instead of a retryable upstream 502.
+	DefaultOpenAIResponsesMaxBodySize int64 = 48 * 1024 * 1024
 )
 
 // 使用量记录队列溢出策略
@@ -364,6 +370,9 @@ type GatewayConfig struct {
 	ResponseHeaderTimeout int `mapstructure:"response_header_timeout"`
 	// 请求体最大字节数，用于网关请求体大小限制
 	MaxBodySize int64 `mapstructure:"max_body_size"`
+	// OpenAI Responses 请求体最大字节数。该限制只作用于 /responses，
+	// 避免下游把超大上下文发送到不支持的大包上游。
+	OpenAIResponsesMaxBodySize int64 `mapstructure:"openai_responses_max_body_size"`
 	// 非流式上游响应体读取上限（字节），用于防止无界读取导致内存放大
 	UpstreamResponseReadMaxBytes int64 `mapstructure:"upstream_response_read_max_bytes"`
 	// 代理探测响应体读取上限（字节）
@@ -1492,6 +1501,7 @@ func setDefaults() {
 	viper.SetDefault("gateway.antigravity_fallback_cooldown_minutes", 1)
 	viper.SetDefault("gateway.antigravity_extra_retries", 10)
 	viper.SetDefault("gateway.max_body_size", int64(256*1024*1024))
+	viper.SetDefault("gateway.openai_responses_max_body_size", DefaultOpenAIResponsesMaxBodySize)
 	viper.SetDefault("gateway.upstream_response_read_max_bytes", int64(8*1024*1024))
 	viper.SetDefault("gateway.proxy_probe_response_read_max_bytes", int64(1024*1024))
 	viper.SetDefault("gateway.gemini_debug_response_headers", false)
@@ -1925,6 +1935,12 @@ func (c *Config) Validate() error {
 	}
 	if c.Gateway.MaxBodySize <= 0 {
 		return fmt.Errorf("gateway.max_body_size must be positive")
+	}
+	if c.Gateway.OpenAIResponsesMaxBodySize <= 0 {
+		return fmt.Errorf("gateway.openai_responses_max_body_size must be positive")
+	}
+	if c.Gateway.OpenAIResponsesMaxBodySize > c.Gateway.MaxBodySize {
+		return fmt.Errorf("gateway.openai_responses_max_body_size must not exceed gateway.max_body_size")
 	}
 	if c.Gateway.UpstreamResponseReadMaxBytes <= 0 {
 		return fmt.Errorf("gateway.upstream_response_read_max_bytes must be positive")

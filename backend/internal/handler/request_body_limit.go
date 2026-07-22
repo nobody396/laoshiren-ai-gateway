@@ -25,3 +25,10 @@ func formatBodyLimit(limit int64) string {
 func buildBodyTooLargeMessage(limit int64) string {
 	return fmt.Sprintf("Request body too large, limit is %s", formatBodyLimit(limit))
 }
+
+func buildOpenAIResponsesBodyTooLargeMessage(limit int64) string {
+	return fmt.Sprintf(
+		"Request body is too large. Maximum size is %s. Start a new task or remove large attachments before retrying.",
+		formatBodyLimit(limit),
+	)
+}

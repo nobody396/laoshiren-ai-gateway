@@ -9,17 +9,20 @@ import (
 )
 
 const (
-	ClientMessageServiceUnavailable = "The service is temporarily unavailable. Please try again later."
-	ClientMessageServiceBusy        = "The service is currently busy. Please try again later."
-	ClientMessageRequestFailed      = "The request could not be processed. Please verify the request and try again."
-	ClientMessageResourceNotFound   = "The requested resource could not be found."
-	ClientMessageRequestTimeout     = "The request timed out. Please try again later."
+	ClientMessageServiceUnavailable  = "The service is temporarily unavailable. Please try again later."
+	ClientMessageServiceBusy         = "The service is currently busy. Please try again later."
+	ClientMessageRequestFailed       = "The request could not be processed. Please verify the request and try again."
+	ClientMessageRequestBodyTooLarge = "Request body is too large. Start a new task or remove large attachments before retrying."
+	ClientMessageResourceNotFound    = "The requested resource could not be found."
+	ClientMessageRequestTimeout      = "The request timed out. Please try again later."
+	ClientCodeRequestBodyTooLarge    = "request_body_too_large"
 )
 
 type ClientUpstreamError struct {
 	StatusCode int
 	Type       string
 	Message    string
+	Code       string
 }
 
 func SafeClientUpstreamError(upstreamStatus int) ClientUpstreamError {
@@ -35,6 +38,13 @@ func SafeClientUpstreamError(upstreamStatus int) ClientUpstreamError {
 			StatusCode: http.StatusNotFound,
 			Type:       "not_found_error",
 			Message:    ClientMessageResourceNotFound,
+		}
+	case http.StatusRequestEntityTooLarge:
+		return ClientUpstreamError{
+			StatusCode: http.StatusRequestEntityTooLarge,
+			Type:       "invalid_request_error",
+			Message:    ClientMessageRequestBodyTooLarge,
+			Code:       ClientCodeRequestBodyTooLarge,
 		}
 	case http.StatusRequestTimeout, http.StatusGatewayTimeout:
 		return ClientUpstreamError{
@@ -142,6 +152,18 @@ func OpenAIClientErrorEnvelope(c *gin.Context, errType, message string) gin.H {
 	return gin.H{
 		"error": ClientErrorObject(c, errType, message),
 	}
+}
+
+func OpenAIClientErrorEnvelopeWithCode(c *gin.Context, errType, code, message string) gin.H {
+	obj := ClientErrorObject(c, errType, message)
+	if code = strings.TrimSpace(code); code != "" {
+		obj["code"] = code
+	}
+	return gin.H{"error": obj}
+}
+
+func OpenAIClientUpstreamErrorEnvelope(c *gin.Context, err ClientUpstreamError) gin.H {
+	return OpenAIClientErrorEnvelopeWithCode(c, err.Type, err.Code, err.Message)
 }
 
 func GoogleClientErrorEnvelope(c *gin.Context, status int, message string) gin.H {

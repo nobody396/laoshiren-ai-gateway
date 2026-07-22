@@ -20,6 +20,7 @@ func TestSafeClientUpstreamError(t *testing.T) {
 		wantStatus     int
 		wantType       string
 		wantMessage    string
+		wantCode       string
 	}{
 		{
 			name:           "invalid request",
@@ -27,6 +28,14 @@ func TestSafeClientUpstreamError(t *testing.T) {
 			wantStatus:     http.StatusBadRequest,
 			wantType:       "invalid_request_error",
 			wantMessage:    ClientMessageRequestFailed,
+		},
+		{
+			name:           "request body too large",
+			upstreamStatus: http.StatusRequestEntityTooLarge,
+			wantStatus:     http.StatusRequestEntityTooLarge,
+			wantType:       "invalid_request_error",
+			wantMessage:    ClientMessageRequestBodyTooLarge,
+			wantCode:       ClientCodeRequestBodyTooLarge,
 		},
 		{
 			name:           "upstream auth hidden as service unavailable",
@@ -64,8 +73,21 @@ func TestSafeClientUpstreamError(t *testing.T) {
 			assert.Equal(t, tt.wantStatus, got.StatusCode)
 			assert.Equal(t, tt.wantType, got.Type)
 			assert.Equal(t, tt.wantMessage, got.Message)
+			assert.Equal(t, tt.wantCode, got.Code)
 		})
 	}
+}
+
+func TestOpenAIClientUpstreamErrorEnvelopeIncludesCode(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
+
+	payload := OpenAIClientUpstreamErrorEnvelope(c, SafeClientUpstreamError(http.StatusRequestEntityTooLarge))
+	errorObj, ok := payload["error"].(gin.H)
+	require.True(t, ok)
+	require.Equal(t, ClientCodeRequestBodyTooLarge, errorObj["code"])
 }
 
 func TestClientErrorEnvelopesIncludeRequestID(t *testing.T) {

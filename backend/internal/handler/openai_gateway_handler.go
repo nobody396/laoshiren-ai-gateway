@@ -132,11 +132,21 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		return
 	}
 
+	responsesBodyLimit := h.openAIResponsesBodyLimit()
+	if responsesBodyLimit > 0 {
+		contentEncoding := strings.ToLower(strings.TrimSpace(c.Request.Header.Get("Content-Encoding")))
+		if (contentEncoding == "" || contentEncoding == "identity") && c.Request.ContentLength > responsesBodyLimit {
+			h.writeOpenAIResponsesBodyTooLarge(c, responsesBodyLimit)
+			return
+		}
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, responsesBodyLimit)
+	}
+
 	// Read request body
-	body, err := pkghttputil.ReadRequestBodyWithPrealloc(c.Request)
+	body, err := pkghttputil.ReadRequestBodyWithPreallocLimit(c.Request, responsesBodyLimit)
 	if err != nil {
 		if maxErr, ok := extractMaxBytesError(err); ok {
-			h.errorResponse(c, http.StatusRequestEntityTooLarge, "invalid_request_error", buildBodyTooLargeMessage(maxErr.Limit))
+			h.writeOpenAIResponsesBodyTooLarge(c, maxErr.Limit)
 			return
 		}
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Failed to read request body")
@@ -1614,6 +1624,30 @@ func openAIForwardErrorAlreadyCommunicated(c *gin.Context, writerSizeBeforeForwa
 // errorResponse returns OpenAI API format error response
 func (h *OpenAIGatewayHandler) errorResponse(c *gin.Context, status int, errType, message string) {
 	c.JSON(status, service.OpenAIClientErrorEnvelope(c, errType, message))
+}
+
+func (h *OpenAIGatewayHandler) errorResponseWithCode(c *gin.Context, status int, errType, code, message string) {
+	c.JSON(status, service.OpenAIClientErrorEnvelopeWithCode(c, errType, code, message))
+}
+
+func (h *OpenAIGatewayHandler) writeOpenAIResponsesBodyTooLarge(c *gin.Context, limit int64) {
+	h.errorResponseWithCode(
+		c,
+		http.StatusRequestEntityTooLarge,
+		"invalid_request_error",
+		service.ClientCodeRequestBodyTooLarge,
+		buildOpenAIResponsesBodyTooLargeMessage(limit),
+	)
+}
+
+func (h *OpenAIGatewayHandler) openAIResponsesBodyLimit() int64 {
+	if h == nil || h.cfg == nil {
+		return 0
+	}
+	if limit := h.cfg.Gateway.OpenAIResponsesMaxBodySize; limit > 0 {
+		return limit
+	}
+	return h.cfg.Gateway.MaxBodySize
 }
 
 func setOpenAIClientTransportHTTP(c *gin.Context) {

@@ -1087,6 +1087,18 @@ func TestValidateConfigErrors(t *testing.T) {
 			wantErr: "gateway.max_body_size",
 		},
 		{
+			name:    "openai responses max body size positive",
+			mutate:  func(c *Config) { c.Gateway.OpenAIResponsesMaxBodySize = 0 },
+			wantErr: "gateway.openai_responses_max_body_size",
+		},
+		{
+			name: "openai responses max body size below gateway max",
+			mutate: func(c *Config) {
+				c.Gateway.OpenAIResponsesMaxBodySize = c.Gateway.MaxBodySize + 1
+			},
+			wantErr: "gateway.openai_responses_max_body_size must not exceed",
+		},
+		{
 			name:    "gateway max idle conns",
 			mutate:  func(c *Config) { c.Gateway.MaxIdleConns = 0 },
 			wantErr: "gateway.max_idle_conns",

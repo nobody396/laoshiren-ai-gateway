@@ -63,7 +63,7 @@
         function markSlow() {
           if (root.classList.contains('app-mounted')) return
           root.classList.add('app-load-slow')
-          updateStatus('网络加载较慢', '请继续等待，或者点击重新加载。')
+          updateStatus('Still thinking…', '网络有点慢，我们还在继续连接。')
         }
 
         function fail(reason) {
@@ -74,8 +74,8 @@
 
           var willRetry = reason !== 'manual' && retryOnce()
           updateStatus(
-            '页面加载没有完成',
-            willRetry ? '正在自动重试，请稍候。' : '请点击重新加载，或更换网络后再试。'
+            'Thinking interrupted',
+            willRetry ? '连接被打断了，正在自动续上。' : '点击重新连接，继续刚才的思路。'
           )
         }
 
@@ -150,18 +150,33 @@
           "Microsoft YaHei", sans-serif;
       }
 
-      #app-load-spinner {
-        width: 32px;
+      #app-load-thinking {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
         height: 32px;
         margin: 0 auto 18px;
-        border: 3px solid #d7c8a7;
-        border-top-color: #9a3b1f;
-        border-radius: 999px;
-        animation: app-load-spin 800ms linear infinite;
       }
 
-      html.app-load-failed #app-load-spinner {
-        border-color: #9a3b1f;
+      #app-load-thinking span {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #9a3b1f;
+        animation: app-thinking-pulse 1.2s ease-in-out infinite;
+      }
+
+      #app-load-thinking span:nth-child(2) {
+        animation-delay: 160ms;
+      }
+
+      #app-load-thinking span:nth-child(3) {
+        animation-delay: 320ms;
+      }
+
+      html.app-load-failed #app-load-thinking span {
+        opacity: 0.42;
         animation: none;
       }
 
@@ -202,9 +217,17 @@
         }
       }
 
-      @keyframes app-load-spin {
-        to {
-          transform: rotate(360deg);
+      @keyframes app-thinking-pulse {
+        0%,
+        60%,
+        100% {
+          opacity: 0.35;
+          transform: translateY(0);
+        }
+
+        30% {
+          opacity: 1;
+          transform: translateY(-5px);
         }
       }
 
@@ -213,8 +236,8 @@
           animation-delay: 0ms;
         }
 
-        #app-load-spinner {
-          animation-duration: 1600ms;
+        #app-load-thinking span {
+          animation-duration: 2s;
         }
       }
     </style>
@@ -223,10 +246,14 @@
     <div id="app"></div>
     <div id="app-load-status" role="status" aria-live="polite" aria-atomic="true">
       <div id="app-load-card">
-        <div id="app-load-spinner" aria-hidden="true"></div>
-        <h1 id="app-load-title">正在打开老实人AI</h1>
-        <p id="app-load-message">首次加载可能需要一点时间，请稍候。</p>
-        <button id="app-load-retry" type="button">重新加载</button>
+        <div id="app-load-thinking" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <h1 id="app-load-title">Thinking…</h1>
+        <p id="app-load-message">正在连接老实人AI。</p>
+        <button id="app-load-retry" type="button">重新连接</button>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

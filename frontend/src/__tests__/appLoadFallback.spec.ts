@@ -49,7 +49,8 @@ describe('app loading fallback', () => {
 
     vi.advanceTimersByTime(1)
     expect(document.documentElement.classList.contains('app-load-slow')).toBe(true)
-    expect(document.getElementById('app-load-title')?.textContent).toBe('网络加载较慢')
+    expect(document.getElementById('app-load-title')?.textContent).toBe('Still thinking…')
+    expect(document.getElementById('app-load-message')?.textContent).toContain('网络有点慢')
   })
 
   it('clears fallback state after the Vue app mounts', () => {

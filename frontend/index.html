@@ -24,23 +24,238 @@
     <meta name="twitter:title" content="老实人AI - AI 编码网关" />
     <meta name="twitter:description" content="老实人AI 提供面向开发者的 AI 编码接口与网关服务，支持 Claude Code、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。" />
     <meta name="twitter:image" content="https://laoshirenai.com/og-image.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script nonce="__CSP_NONCE_VALUE__">
-      document.documentElement.classList.add('js')
-      window.setTimeout(function () {
-        document.documentElement.classList.add('show-seo-fallback')
-      }, 4000)
+      ;(function () {
+        var root = document.documentElement
+        var retryKey = 'laoshirenai-app-load-retry'
+        var slowTimer
+
+        root.classList.add('js')
+
+        function updateStatus(title, message) {
+          var titleNode = document.getElementById('app-load-title')
+          var messageNode = document.getElementById('app-load-message')
+          if (titleNode) titleNode.textContent = title
+          if (messageNode) messageNode.textContent = message
+        }
+
+        function reload() {
+          try {
+            window.sessionStorage.removeItem(retryKey)
+          } catch (_) {}
+          window.location.reload()
+        }
+
+        function retryOnce() {
+          try {
+            if (window.sessionStorage.getItem(retryKey) === '1') return false
+            window.sessionStorage.setItem(retryKey, '1')
+          } catch (_) {
+            return false
+          }
+
+          window.setTimeout(function () {
+            window.location.reload()
+          }, 1500)
+          return true
+        }
+
+        function markSlow() {
+          if (root.classList.contains('app-mounted')) return
+          root.classList.add('app-load-slow')
+          updateStatus('Still thinking…', '网络有点慢，我们还在继续连接。')
+        }
+
+        function fail(reason) {
+          if (root.classList.contains('app-mounted')) return
+          window.clearTimeout(slowTimer)
+          root.classList.remove('app-load-slow')
+          root.classList.add('app-load-failed')
+
+          var willRetry = reason !== 'manual' && retryOnce()
+          updateStatus(
+            'Thinking interrupted',
+            willRetry ? '连接被打断了，正在自动续上。' : '点击重新连接，继续刚才的思路。'
+          )
+        }
+
+        function succeed() {
+          window.clearTimeout(slowTimer)
+          root.classList.remove('app-load-slow', 'app-load-failed')
+          root.classList.add('app-mounted')
+          try {
+            window.sessionStorage.removeItem(retryKey)
+          } catch (_) {}
+        }
+
+        slowTimer = window.setTimeout(markSlow, 15000)
+        window.__APP_LOAD_STATE__ = { fail: fail, markSlow: markSlow, succeed: succeed }
+
+        window.addEventListener(
+          'error',
+          function (event) {
+            if (root.classList.contains('app-mounted')) return
+            var target = event.target
+            if (target && target.tagName === 'SCRIPT') {
+              fail('script')
+              return
+            }
+            if (event.error) fail('runtime')
+          },
+          true
+        )
+
+        window.addEventListener('unhandledrejection', function () {
+          if (!root.classList.contains('app-mounted')) fail('promise')
+        })
+
+        document.addEventListener('DOMContentLoaded', function () {
+          var retryButton = document.getElementById('app-load-retry')
+          if (retryButton) retryButton.addEventListener('click', reload)
+        })
+      })()
     </script>
     <style>
-      html.js:not(.show-seo-fallback) .seo-static-content {
+      html.js .seo-static-content {
         display: none !important;
+      }
+
+      #app-load-status {
+        display: none;
+      }
+
+      html.js:not(.app-mounted) #app-load-status {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: #f8f3e7;
+        color: #1f1a12;
+        opacity: 0;
+        animation: app-load-reveal 180ms ease 600ms forwards;
+      }
+
+      #app-load-card {
+        width: min(420px, 100%);
+        padding: 32px 28px;
+        border: 1px solid #d7c8a7;
+        border-radius: 20px;
+        background: #faf6ec;
+        box-shadow: 0 24px 70px rgba(31, 26, 18, 0.12);
+        text-align: center;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Microsoft YaHei", sans-serif;
+      }
+
+      #app-load-thinking {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        height: 32px;
+        margin: 0 auto 18px;
+      }
+
+      #app-load-thinking span {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #9a3b1f;
+        animation: app-thinking-pulse 1.2s ease-in-out infinite;
+      }
+
+      #app-load-thinking span:nth-child(2) {
+        animation-delay: 160ms;
+      }
+
+      #app-load-thinking span:nth-child(3) {
+        animation-delay: 320ms;
+      }
+
+      html.app-load-failed #app-load-thinking span {
+        opacity: 0.42;
+        animation: none;
+      }
+
+      #app-load-title {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.35;
+      }
+
+      #app-load-message {
+        margin: 10px 0 0;
+        color: #6f624d;
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      #app-load-retry {
+        display: none;
+        margin: 22px auto 0;
+        padding: 10px 20px;
+        border: 0;
+        border-radius: 999px;
+        background: #9a3b1f;
+        color: #fff;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 600;
+      }
+
+      html.app-load-slow #app-load-retry,
+      html.app-load-failed #app-load-retry {
+        display: inline-flex;
+      }
+
+      @keyframes app-load-reveal {
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes app-thinking-pulse {
+        0%,
+        60%,
+        100% {
+          opacity: 0.35;
+          transform: translateY(0);
+        }
+
+        30% {
+          opacity: 1;
+          transform: translateY(-5px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html.js:not(.app-mounted) #app-load-status {
+          animation-delay: 0ms;
+        }
+
+        #app-load-thinking span {
+          animation-duration: 2s;
+        }
       }
     </style>
   </head>
   <body>
     <div id="app"></div>
+    <div id="app-load-status" role="status" aria-live="polite" aria-atomic="true">
+      <div id="app-load-card">
+        <div id="app-load-thinking" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <h1 id="app-load-title">Thinking…</h1>
+        <p id="app-load-message">正在连接老实人AI。</p>
+        <button id="app-load-retry" type="button">重新连接</button>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

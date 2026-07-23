@@ -193,6 +193,8 @@ func TestSecurityHeaders(t *testing.T) {
 		assert.NotEmpty(t, csp)
 		// Default policy should contain these elements
 		assert.Contains(t, csp, "default-src 'self'")
+		assert.NotContains(t, csp, "fonts.googleapis.com")
+		assert.NotContains(t, csp, "fonts.gstatic.com")
 	})
 
 	t.Run("uses_default_policy_when_whitespace_only", func(t *testing.T) {

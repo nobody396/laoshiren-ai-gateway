@@ -74,6 +74,10 @@ async function bootstrap() {
   })
 
   app.mount('#app')
+  window.__APP_LOAD_STATE__?.succeed()
 }
 
-bootstrap()
+void bootstrap().catch((error) => {
+  console.error('Failed to bootstrap frontend application', error)
+  window.__APP_LOAD_STATE__?.fail('bootstrap')
+})

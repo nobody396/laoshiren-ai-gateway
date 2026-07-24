@@ -106,6 +106,10 @@ type Group struct {
 	// OpenAI Messages 调度开关（用户侧需要此字段判断是否展示 Claude Code 教程）
 	AllowMessagesDispatch bool `json:"allow_messages_dispatch"`
 
+	// 分组默认模型：用户侧「导入到 CCS」按需将其写入客户端模型槽
+	// （anthropic 单模型上游分组如 GLM/Grok 用它覆盖 opus/sonnet/haiku 槽）。
+	DefaultMappedModel string `json:"default_mapped_model"`
+
 	// 账号过滤控制（仅 OpenAI/Antigravity/Anthropic/Gemini 平台有效）
 	RequireOAuthOnly  bool `json:"require_oauth_only"`
 	RequirePrivacySet bool `json:"require_privacy_set"`
@@ -127,7 +131,7 @@ type AdminGroup struct {
 	MCPXMLInject bool `json:"mcp_xml_inject"`
 
 	// OpenAI Messages 调度配置（仅 openai 平台使用）
-	DefaultMappedModel          string                                   `json:"default_mapped_model"`
+	// 注：default_mapped_model 已上移到基础 Group（用户接口亦返回），此处由内嵌继承。
 	MessagesDispatchModelConfig domain.OpenAIMessagesDispatchModelConfig `json:"messages_dispatch_model_config"`
 
 	// 支持的模型系列（仅 antigravity 平台使用）

@@ -2058,9 +2058,19 @@ const executeCcsImport = (row: ApiKey, clientType: CcsImportTarget) => {
     params.set('model', defaultModel)
     params.set('config', encodeBase64Utf8(buildCodexCcsConfig(endpoint, row.key, defaultModel)))
   } else if (platform === 'anthropic') {
-    params.set('haikuModel', 'claude-haiku-4-5')
-    params.set('sonnetModel', 'claude-sonnet-4-6[1M]')
-    params.set('opusModel', 'claude-opus-4-8[1M]')
+    // 单模型上游分组（如 GLM/Grok）：分组设了 default_mapped_model 时，
+    // 三个模型槽都指向该模型，客户端里显示与实际一致。
+    // 普通 Claude 分组该字段为空，保持原有 opus/sonnet/haiku 映射不变。
+    const groupModel = row.group?.default_mapped_model?.trim()
+    if (groupModel) {
+      params.set('haikuModel', groupModel)
+      params.set('sonnetModel', groupModel)
+      params.set('opusModel', groupModel)
+    } else {
+      params.set('haikuModel', 'claude-haiku-4-5')
+      params.set('sonnetModel', 'claude-sonnet-4-6[1M]')
+      params.set('opusModel', 'claude-opus-4-8[1M]')
+    }
   }
   const deeplink = `ccswitch://v1/import?${params.toString()}`
 

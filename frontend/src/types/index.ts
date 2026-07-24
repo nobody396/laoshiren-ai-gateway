@@ -502,6 +502,9 @@ export interface Group {
   fallback_group_id_on_invalid_request: number | null
   // OpenAI Messages 调度开关（用户侧需要此字段判断是否展示 Claude Code 教程）
   allow_messages_dispatch?: boolean
+  // 分组默认模型：用户侧「导入到 CCS」按需将其写入客户端模型槽
+  // （anthropic 单模型上游分组如 GLM/Grok 用它覆盖 opus/sonnet/haiku 槽）。
+  default_mapped_model?: string
   created_at: string
   updated_at: string
 }
@@ -525,7 +528,7 @@ export interface AdminGroup extends Group {
   rate_limited_account_count?: number
 
   // OpenAI Messages 调度配置（仅 openai 平台使用）
-  default_mapped_model?: string
+  // 注：default_mapped_model 已上移到基础 Group（用户接口亦返回），此处由继承获得。
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
 
   // 分组排序

@@ -95,6 +95,8 @@ func sanitizeGroupMessagesDispatchFields(g *Group) {
 		return
 	}
 	g.AllowMessagesDispatch = false
-	g.DefaultMappedModel = ""
 	g.MessagesDispatchModelConfig = OpenAIMessagesDispatchModelConfig{}
+	// DefaultMappedModel 不再对非 openai 平台清空：anthropic 单模型上游分组
+	// （如 GLM/Grok）用它承载「导入 CCS 时写入客户端 opus/sonnet/haiku 槽」的
+	// 默认模型。它不参与 openai 消息调度（AllowMessagesDispatch 仍被强制关闭）。
 }

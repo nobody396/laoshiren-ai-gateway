@@ -60,6 +60,14 @@ func (f *optionalLimitField) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("invalid limit value: %s", string(trimmed))
 }
 
+func (f optionalLimitField) IsSet() bool {
+	return f.set
+}
+
+// ToServiceInput converts the field for service-layer writes.
+// - omitted: nil (caller should leave existing values unchanged on update)
+// - JSON null / empty string: -1 (normalizeLimit treats as unlimited)
+// - number: that number (0 means zero quota, positive means the limit)
 func (f optionalLimitField) ToServiceInput() *float64 {
 	if !f.set {
 		return nil
@@ -67,8 +75,46 @@ func (f optionalLimitField) ToServiceInput() *float64 {
 	if f.value != nil {
 		return f.value
 	}
-	zero := 0.0
-	return &zero
+	// Explicit null/empty means unlimited, not "zero quota".
+	unlimited := -1.0
+	return &unlimited
+}
+
+// optionalStringField distinguishes omitted description from explicit "" clear.
+type optionalStringField struct {
+	set   bool
+	value string
+}
+
+func (f *optionalStringField) UnmarshalJSON(data []byte) error {
+	f.set = true
+	trimmed := bytes.TrimSpace(data)
+	if bytes.Equal(trimmed, []byte("null")) {
+		f.value = ""
+		return nil
+	}
+	var text string
+	if err := json.Unmarshal(trimmed, &text); err != nil {
+		return fmt.Errorf("invalid string value: %w", err)
+	}
+	f.value = text
+	return nil
+}
+
+func (f optionalStringField) IsSet() bool {
+	return f.set
+}
+
+func (f optionalStringField) Value() string {
+	return f.value
+}
+
+func (f optionalStringField) ToServicePointer() *string {
+	if !f.set {
+		return nil
+	}
+	v := f.value
+	return &v
 }
 
 // NewGroupHandler creates a new admin group handler
@@ -118,17 +164,17 @@ type CreateGroupRequest struct {
 
 // UpdateGroupRequest represents update group request
 type UpdateGroupRequest struct {
-	Name             string             `json:"name"`
-	Description      string             `json:"description"`
-	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity gpt-image"`
-	RateMultiplier   *float64           `json:"rate_multiplier"`
-	IsExclusive      *bool              `json:"is_exclusive"`
-	ChatbotEnabled   *bool              `json:"chatbot_enabled"`
-	Status           string             `json:"status" binding:"omitempty,oneof=active inactive"`
-	SubscriptionType string             `json:"subscription_type" binding:"omitempty,oneof=standard subscription credit"`
-	DailyLimitUSD    optionalLimitField `json:"daily_limit_usd"`
-	WeeklyLimitUSD   optionalLimitField `json:"weekly_limit_usd"`
-	MonthlyLimitUSD  optionalLimitField `json:"monthly_limit_usd"`
+	Name             string              `json:"name"`
+	Description      optionalStringField `json:"description"`
+	Platform         string              `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity gpt-image"`
+	RateMultiplier   *float64            `json:"rate_multiplier"`
+	IsExclusive      *bool               `json:"is_exclusive"`
+	ChatbotEnabled   *bool               `json:"chatbot_enabled"`
+	Status           string              `json:"status" binding:"omitempty,oneof=active inactive"`
+	SubscriptionType string              `json:"subscription_type" binding:"omitempty,oneof=standard subscription credit"`
+	DailyLimitUSD    optionalLimitField  `json:"daily_limit_usd"`
+	WeeklyLimitUSD   optionalLimitField  `json:"weekly_limit_usd"`
+	MonthlyLimitUSD  optionalLimitField  `json:"monthly_limit_usd"`
 	// 图片生成计费配置（antigravity 和 gemini 平台使用，负数表示清除配置）
 	ImagePrice1K                    *float64 `json:"image_price_1k"`
 	ImagePrice2K                    *float64 `json:"image_price_2k"`
@@ -295,7 +341,7 @@ func (h *GroupHandler) Update(c *gin.Context) {
 
 	group, err := h.adminService.UpdateGroup(c.Request.Context(), groupID, &service.UpdateGroupInput{
 		Name:                            req.Name,
-		Description:                     req.Description,
+		Description:                     req.Description.ToServicePointer(),
 		Platform:                        req.Platform,
 		RateMultiplier:                  req.RateMultiplier,
 		IsExclusive:                     req.IsExclusive,

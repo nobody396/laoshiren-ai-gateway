@@ -212,6 +212,60 @@ func TestAdminService_UpdateGroup_WithImagePricing(t *testing.T) {
 	require.InDelta(t, 0.36, *repo.updated.ImagePrice4K, 0.0001)
 }
 
+func TestAdminService_UpdateGroup_PreservesLimitsWhenOmitted(t *testing.T) {
+	monthly := 450.0
+	existingGroup := &Group{
+		ID:              1,
+		Name:            "GPT Lite 月卡组",
+		Platform:        PlatformOpenAI,
+		Status:          StatusActive,
+		Description:     "old description",
+		MonthlyLimitUSD: &monthly,
+		RateMultiplier:  0.37,
+	}
+	repo := &groupRepoStubForAdmin{getByID: existingGroup}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	// Partial update: only rate, no description/limits payload.
+	rate := 0.4
+	group, err := svc.UpdateGroup(context.Background(), 1, &UpdateGroupInput{
+		RateMultiplier: &rate,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.updated)
+	require.Equal(t, "old description", repo.updated.Description)
+	require.NotNil(t, repo.updated.MonthlyLimitUSD)
+	require.InDelta(t, 450.0, *repo.updated.MonthlyLimitUSD, 0.0001)
+	require.InDelta(t, 0.4, repo.updated.RateMultiplier, 0.0001)
+}
+
+func TestAdminService_UpdateGroup_ClearsDescriptionAndMonthlyLimitExplicitly(t *testing.T) {
+	monthly := 450.0
+	existingGroup := &Group{
+		ID:              1,
+		Name:            "GPT Lite 月卡组",
+		Platform:        PlatformOpenAI,
+		Status:          StatusActive,
+		Description:     "old description",
+		MonthlyLimitUSD: &monthly,
+	}
+	repo := &groupRepoStubForAdmin{getByID: existingGroup}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	empty := ""
+	unlimited := -1.0
+	group, err := svc.UpdateGroup(context.Background(), 1, &UpdateGroupInput{
+		Description:     &empty,
+		MonthlyLimitUSD: &unlimited,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.updated)
+	require.Equal(t, "", repo.updated.Description)
+	require.Nil(t, repo.updated.MonthlyLimitUSD)
+}
+
 // TestAdminService_UpdateGroup_PartialImagePricing 测试仅更新部分 ImagePrice 字段
 func TestAdminService_UpdateGroup_PartialImagePricing(t *testing.T) {
 	oldPrice2K := 0.15

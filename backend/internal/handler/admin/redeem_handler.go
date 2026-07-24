@@ -120,8 +120,10 @@ func (h *RedeemHandler) Generate(c *gin.Context) {
 	}
 
 	executeAdminIdempotentJSON(c, "admin.redeem_codes.generate", req, service.DefaultWriteIdempotencyTTL(), func(ctx context.Context) (any, error) {
+		// Only attach created_by for real admin users. Admin API Key auth uses a
+		// synthetic principal (UserID=-1) which is not a valid users FK target.
 		var createdBy *int64
-		if subject, ok := middleware2.GetAuthSubjectFromContext(c); ok {
+		if subject, ok := middleware2.GetAuthSubjectFromContext(c); ok && subject.UserID > 0 {
 			createdBy = &subject.UserID
 		}
 		codes, execErr := h.adminService.GenerateRedeemCodes(ctx, &service.GenerateRedeemCodesInput{

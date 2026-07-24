@@ -167,16 +167,19 @@ type CreateGroupInput struct {
 
 type UpdateGroupInput struct {
 	Name             string
-	Description      string
+	Description      *string // nil=leave unchanged; non-nil including ""=set (empty clears)
 	Platform         string
 	RateMultiplier   *float64 // 使用指针以支持设置为0
 	IsExclusive      *bool
 	ChatbotEnabled   *bool
 	Status           string
-	SubscriptionType string   // standard/subscription/credit
-	DailyLimitUSD    *float64 // 日限额 (USD)
-	WeeklyLimitUSD   *float64 // 周限额 (USD)
-	MonthlyLimitUSD  *float64 // 月限额 (USD)
+	SubscriptionType string // standard/subscription/credit
+	// Limit pointers: nil means leave existing value unchanged on update.
+	// Explicit unlimited is represented as a negative value (normalizeLimit -> nil).
+	// 0 means zero quota. Positive means the limit amount.
+	DailyLimitUSD   *float64 // 日限额 (USD)
+	WeeklyLimitUSD  *float64 // 周限额 (USD)
+	MonthlyLimitUSD *float64 // 月限额 (USD)
 	// 图片生成计费配置（antigravity、gemini 和 gpt-image 平台使用）
 	ImagePrice1K      *float64
 	ImagePrice2K      *float64
@@ -1133,8 +1136,9 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	if input.Name != "" {
 		group.Name = input.Name
 	}
-	if input.Description != "" {
-		group.Description = input.Description
+	// nil = leave unchanged; non-nil (including empty string) = set/clear description.
+	if input.Description != nil {
+		group.Description = *input.Description
 	}
 	if input.Platform != "" {
 		group.Platform = input.Platform
@@ -1153,11 +1157,18 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	if input.SubscriptionType != "" {
 		group.SubscriptionType = input.SubscriptionType
 	}
-	// 限额字段：nil/负数 表示"无限制"，0 表示"不允许用量"，正数表示具体限额
-	// 前端始终发送这三个字段，无需 nil 守卫
-	group.DailyLimitUSD = normalizeLimit(input.DailyLimitUSD)
-	group.WeeklyLimitUSD = normalizeLimit(input.WeeklyLimitUSD)
-	group.MonthlyLimitUSD = normalizeLimit(input.MonthlyLimitUSD)
+	// 限额字段：仅当请求显式提供时才更新。
+	// nil = 保持原值；负数 = 无限制；0 = 零额度；正数 = 具体限额。
+	// Partial API updates must not wipe existing monthly-card quotas.
+	if input.DailyLimitUSD != nil {
+		group.DailyLimitUSD = normalizeLimit(input.DailyLimitUSD)
+	}
+	if input.WeeklyLimitUSD != nil {
+		group.WeeklyLimitUSD = normalizeLimit(input.WeeklyLimitUSD)
+	}
+	if input.MonthlyLimitUSD != nil {
+		group.MonthlyLimitUSD = normalizeLimit(input.MonthlyLimitUSD)
+	}
 	// 图片生成计费配置：负数表示清除（使用默认价格）
 	if input.ImagePrice1K != nil {
 		group.ImagePrice1K = normalizePrice(input.ImagePrice1K)
@@ -2128,6 +2139,10 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 		soldAt = &now
 	}
 
+	// Admin API Key auth uses a synthetic principal UserID=-1 which is not a
+	// real users row. Batch.created_by is a FK to users, so drop invalid IDs.
+	createdBy := normalizeRedeemBatchCreatedBy(input.CreatedBy)
+
 	groupIDs := normalizeSubscriptionRedeemGroupIDs(input.GroupID, input.GroupIDs)
 
 	// 如果是订阅类型，验证必须有 GroupID 或 GroupIDs
@@ -2157,7 +2172,7 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 			SetSalesChannel(defaultRedeemSalesChannel(input.SalesChannel)).
 			SetNillableExternalURL(trimStringPointerForService(input.ExternalURL)).
 			SetNillableNotes(trimStringPointerForService(input.InternalNotes)).
-			SetNillableCreatedBy(input.CreatedBy).
+			SetNillableCreatedBy(createdBy).
 			Save(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("create redeem code batch: %w", err)

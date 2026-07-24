@@ -283,6 +283,15 @@ func shouldCreateRedeemCodeBatch(input *GenerateRedeemCodesInput) bool {
 		strings.TrimSpace(input.InternalNotes) != ""
 }
 
+// normalizeRedeemBatchCreatedBy drops synthetic/invalid principals that are not
+// real users rows (e.g. Admin API Key service principal UserID=-1).
+func normalizeRedeemBatchCreatedBy(createdBy *int64) *int64 {
+	if createdBy == nil || *createdBy <= 0 {
+		return nil
+	}
+	return createdBy
+}
+
 func defaultRedeemCodeBatchName(name, codeType string, value float64) string {
 	if trimmed := strings.TrimSpace(name); trimmed != "" {
 		return trimmed

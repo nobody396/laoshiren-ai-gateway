@@ -286,6 +286,32 @@ $env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com
 
 ## 10. 常见问题
 
+### 点击“一键导入”后 CC Switch 没有打开
+
+不需要自己判断是版本太旧、便携版还是 Deep Link 损坏。回到 API 密钥页面，点击 **“导入打不开？诊断修复”**，页面会根据 Windows 或 Mac 显示一行命令。
+
+Windows：
+
+1. 按 `Win + R`
+2. 输入 `powershell`，按回车
+3. 复制并粘贴下面整行命令，按回车
+
+```powershell
+irm https://laoshirenai.com/auto-config/diagnose-cc-switch.ps1?v=1.0.0 | iex
+```
+
+Mac：
+
+1. 按 `Command（⌘）+ 空格`
+2. 输入“终端”或 `Terminal`，按回车
+3. 复制并粘贴下面整行命令，按回车
+
+```bash
+curl -fsSL 'https://laoshirenai.com/auto-config/diagnose-cc-switch.sh?v=1.0.0' | bash
+```
+
+脚本会自动查找 CC Switch、读取版本并修复 `ccswitch://` 协议。能直接修复的会自动完成；确实需要升级或重新安装时，才会打开官方下载页。脚本不会读取或上传 API Key。
+
 ### Windows 上提示需要 git-bash
 
 Claude Code 在 Windows 上依赖 git-bash 运行。脚本会自动检测并安装 Git for Windows（优先从国内 npmmirror 镜像下载），无需手动操作。

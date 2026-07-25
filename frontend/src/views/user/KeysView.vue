@@ -1035,9 +1035,146 @@
         </p>
       </div>
       <template #footer>
-        <div class="flex justify-end">
+        <div class="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-testid="ccs-open-diagnostics"
+            @click="openCcsDiagnostics(false)"
+          >
+            <Icon name="questionCircle" size="sm" class="mr-2" />
+            {{ t('keys.ccsDiagnostics.helpButton') }}
+          </button>
           <button @click="closeCcsClientSelect" class="btn btn-secondary">
             {{ t('common.cancel') }}
+          </button>
+        </div>
+      </template>
+    </BaseDialog>
+
+    <!-- CC Switch beginner-friendly diagnostics -->
+    <BaseDialog
+      :show="showCcsDiagnostics"
+      :title="t('keys.ccsDiagnostics.title')"
+      width="normal"
+      @close="closeCcsDiagnostics"
+    >
+      <div class="space-y-5">
+        <div
+          v-if="ccsDiagnosticsAutoPrompt"
+          class="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800/60 dark:bg-amber-900/20 dark:text-amber-200"
+        >
+          <Icon name="exclamationCircle" size="md" class="mt-0.5 shrink-0" />
+          <p>{{ t('keys.ccsDiagnostics.autoPrompt') }}</p>
+        </div>
+
+        <p class="text-sm leading-6 text-gray-600 dark:text-gray-300">
+          {{ t('keys.ccsDiagnostics.description') }}
+        </p>
+
+        <div class="grid grid-cols-2 rounded-xl bg-gray-100 p-1 dark:bg-dark-700" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            :aria-selected="ccsDiagnosticPlatform === 'windows'"
+            data-testid="ccs-platform-windows"
+            :class="[
+              'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              ccsDiagnosticPlatform === 'windows'
+                ? 'bg-white text-primary-600 shadow-sm dark:bg-dark-800 dark:text-primary-400'
+                : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+            ]"
+            @click="selectCcsDiagnosticPlatform('windows')"
+          >
+            Windows
+          </button>
+          <button
+            type="button"
+            role="tab"
+            :aria-selected="ccsDiagnosticPlatform === 'macos'"
+            data-testid="ccs-platform-macos"
+            :class="[
+              'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              ccsDiagnosticPlatform === 'macos'
+                ? 'bg-white text-primary-600 shadow-sm dark:bg-dark-800 dark:text-primary-400'
+                : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+            ]"
+            @click="selectCcsDiagnosticPlatform('macos')"
+          >
+            Mac
+          </button>
+        </div>
+
+        <ol class="space-y-3">
+          <li class="flex gap-3">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">1</span>
+            <div>
+              <p class="font-medium text-gray-900 dark:text-white">
+                {{ t(`keys.ccsDiagnostics.${ccsDiagnosticPlatform}.openTitle`) }}
+              </p>
+              <p class="mt-0.5 text-sm leading-5 text-gray-500 dark:text-gray-400">
+                {{ t(`keys.ccsDiagnostics.${ccsDiagnosticPlatform}.openDescription`) }}
+              </p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">2</span>
+            <div>
+              <p class="font-medium text-gray-900 dark:text-white">
+                {{ t('keys.ccsDiagnostics.copyTitle') }}
+              </p>
+              <p class="mt-0.5 text-sm leading-5 text-gray-500 dark:text-gray-400">
+                {{ t('keys.ccsDiagnostics.copyDescription') }}
+              </p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">3</span>
+            <div>
+              <p class="font-medium text-gray-900 dark:text-white">
+                {{ t('keys.ccsDiagnostics.runTitle') }}
+              </p>
+              <p class="mt-0.5 text-sm leading-5 text-gray-500 dark:text-gray-400">
+                {{ t(`keys.ccsDiagnostics.${ccsDiagnosticPlatform}.runDescription`) }}
+              </p>
+            </div>
+          </li>
+        </ol>
+
+        <div class="overflow-hidden rounded-xl border border-gray-200 bg-gray-950 dark:border-dark-600">
+          <div class="flex items-center justify-between border-b border-white/10 px-3 py-2">
+            <span class="text-xs font-medium text-gray-300">
+              {{ t('keys.ccsDiagnostics.commandLabel') }}
+            </span>
+            <button
+              type="button"
+              data-testid="ccs-copy-diagnostic-command"
+              class="inline-flex items-center rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-white/20"
+              @click="copyCcsDiagnosticCommand"
+            >
+              <Icon :name="ccsDiagnosticCopied ? 'check' : 'copy'" size="sm" class="mr-1.5" />
+              {{ ccsDiagnosticCopied ? t('keys.ccsDiagnostics.copied') : t('keys.ccsDiagnostics.copyCommand') }}
+            </button>
+          </div>
+          <pre
+            data-testid="ccs-diagnostic-command"
+            class="overflow-x-auto whitespace-pre-wrap break-all p-3 font-mono text-xs leading-5 text-emerald-300"
+          ><code>{{ ccsDiagnosticCommand }}</code></pre>
+        </div>
+
+        <div class="rounded-xl bg-emerald-50 p-3 text-sm leading-6 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">
+          <p class="font-medium">{{ t('keys.ccsDiagnostics.automaticTitle') }}</p>
+          <p>{{ t('keys.ccsDiagnostics.automaticDescription') }}</p>
+        </div>
+
+        <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">
+          {{ t('keys.ccsDiagnostics.privacyNote') }}
+        </p>
+      </div>
+      <template #footer>
+        <div class="flex w-full justify-end">
+          <button type="button" class="btn btn-secondary" @click="closeCcsDiagnostics">
+            {{ t('common.close') }}
           </button>
         </div>
       </template>
@@ -1145,6 +1282,11 @@ import {
   getCompatibleCcsTargets,
   type CcsImportTarget
 } from '@/utils/ccSwitchImport'
+import {
+  buildCcsDiagnosticCommand,
+  detectCcsDiagnosticPlatform,
+  type CcsDiagnosticPlatform
+} from '@/utils/ccSwitchDiagnostics'
 
 // Helper to format date for datetime-local input
 const formatDateTimeLocal = (isoDate: string): string => {
@@ -1219,7 +1361,11 @@ const showResetQuotaDialog = ref(false)
 const showResetRateLimitDialog = ref(false)
 const showUseKeyModal = ref(false)
 const showCcsClientSelect = ref(false)
+const showCcsDiagnostics = ref(false)
 const pendingCcsRow = ref<ApiKey | null>(null)
+const ccsDiagnosticPlatform = ref<CcsDiagnosticPlatform>('windows')
+const ccsDiagnosticCopied = ref(false)
+const ccsDiagnosticsAutoPrompt = ref(false)
 const selectedKey = ref<ApiKey | null>(null)
 const copiedKeyId = ref<number | null>(null)
 const copiedBaseUrl = ref(false)
@@ -1229,6 +1375,8 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const dropdownPosition = ref<{ top?: number; bottom?: number; left: number } | null>(null)
 const groupButtonRefs = ref<Map<number, HTMLElement>>(new Map())
 let abortController: AbortController | null = null
+let ccsLaunchFallbackTimer: ReturnType<typeof setTimeout> | null = null
+let ccsLaunchObserved = false
 
 const groupCacheHitRateEnabled = computed(() => publicSettings.value?.group_cache_hit_rate_enabled === true)
 const hasOpenAIGroup = computed(() => groups.value.some((group) => group.platform === 'openai'))
@@ -1290,6 +1438,9 @@ const ccsClientOptions = computed<CcsClientOption[]>(() => {
 })
 const ccsHasClaudeCodeTarget = computed(() =>
   ccsClientOptions.value.some((option) => option.value === 'claude')
+)
+const ccsDiagnosticCommand = computed(() =>
+  buildCcsDiagnosticCommand(ccsDiagnosticPlatform.value, window.location.origin)
 )
 
 // Get the currently selected key for group change
@@ -1925,6 +2076,64 @@ const getCcsTargetsForKey = (row: ApiKey): CcsImportTarget[] => {
 
 const canImportToCcs = (row: ApiKey): boolean => getCcsTargetsForKey(row).length > 0
 
+const selectCcsDiagnosticPlatform = (platform: CcsDiagnosticPlatform) => {
+  ccsDiagnosticPlatform.value = platform
+  ccsDiagnosticCopied.value = false
+}
+
+const openCcsDiagnostics = (autoPrompt = false) => {
+  showCcsClientSelect.value = false
+  pendingCcsRow.value = null
+  ccsDiagnosticPlatform.value = detectCcsDiagnosticPlatform() || 'windows'
+  ccsDiagnosticCopied.value = false
+  ccsDiagnosticsAutoPrompt.value = autoPrompt
+  showCcsDiagnostics.value = true
+}
+
+const closeCcsDiagnostics = () => {
+  showCcsDiagnostics.value = false
+  ccsDiagnosticsAutoPrompt.value = false
+}
+
+const copyCcsDiagnosticCommand = async () => {
+  const success = await clipboardCopy(
+    ccsDiagnosticCommand.value,
+    t('keys.ccsDiagnostics.commandCopied')
+  )
+  if (success) {
+    ccsDiagnosticCopied.value = true
+  }
+}
+
+const cleanupCcsLaunchWatch = () => {
+  if (ccsLaunchFallbackTimer) {
+    clearTimeout(ccsLaunchFallbackTimer)
+    ccsLaunchFallbackTimer = null
+  }
+  window.removeEventListener('blur', markCcsLaunchObserved)
+  document.removeEventListener('visibilitychange', markCcsLaunchObserved)
+}
+
+function markCcsLaunchObserved() {
+  if (!document.hasFocus() || document.hidden) {
+    ccsLaunchObserved = true
+    cleanupCcsLaunchWatch()
+  }
+}
+
+const watchCcsLaunch = () => {
+  cleanupCcsLaunchWatch()
+  ccsLaunchObserved = false
+  window.addEventListener('blur', markCcsLaunchObserved)
+  document.addEventListener('visibilitychange', markCcsLaunchObserved)
+  ccsLaunchFallbackTimer = setTimeout(() => {
+    cleanupCcsLaunchWatch()
+    if (!ccsLaunchObserved) {
+      openCcsDiagnostics(true)
+    }
+  }, 4500)
+}
+
 const importToCcswitch = (row: ApiKey) => {
   if (!canImportToCcs(row)) {
     appStore.showError(t('keys.ccsClientSelect.noCompatibleTargets'))
@@ -1964,8 +2173,10 @@ const executeCcsImport = (row: ApiKey, clientType: CcsImportTarget) => {
       apiBaseUrl: baseUrl,
       siteName: publicSettings.value?.site_name
     })
+    watchCcsLaunch()
     window.open(deeplink, '_self')
   } catch (error) {
+    cleanupCcsLaunchWatch()
     console.error('Failed to build CC Switch import link', error)
     appStore.showError(t('keys.ccsClientSelect.importFailed'))
   }
@@ -2007,6 +2218,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', closeGroupSelector)
+  cleanupCcsLaunchWatch()
   if (resetTimer) clearInterval(resetTimer)
 })
 </script>

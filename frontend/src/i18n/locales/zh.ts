@@ -931,6 +931,32 @@ export default {
       noCompatibleTargets: '当前分组没有可安全一键导入的工具',
       importFailed: '无法生成 CC Switch 导入配置，请稍后重试'
     },
+    ccsDiagnostics: {
+      title: 'CC Switch 自动诊断修复',
+      helpButton: '导入打不开？诊断修复',
+      autoPrompt: '看起来 CC Switch 没有正常打开。不要自己判断版本，复制下面的一行命令，脚本会自动检查并修复。',
+      description: '不需要分辨安装版、便携版或版本号。只需按下面 3 步操作，整个过程只复制粘贴一行命令。',
+      windows: {
+        openTitle: '打开 PowerShell',
+        openDescription: '按键盘 Win + R，输入 powershell，然后按回车。',
+        runDescription: '回到 PowerShell，点一下鼠标右键即可粘贴，然后按回车。等它显示“诊断修复完成”。'
+      },
+      macos: {
+        openTitle: '打开“终端”',
+        openDescription: '按 Command（⌘）+ 空格，输入“终端”或 Terminal，然后按回车。',
+        runDescription: '回到终端，按 Command（⌘）+ V 粘贴，再按回车。等它显示“诊断修复完成”。'
+      },
+      copyTitle: '复制修复命令',
+      copyDescription: '点击下面的“复制命令”按钮，不要手动修改这一行。',
+      runTitle: '粘贴并运行',
+      commandLabel: '整行复制，不要删改',
+      copyCommand: '复制命令',
+      copied: '已复制',
+      commandCopied: '诊断修复命令已复制，请打开终端粘贴并按回车',
+      automaticTitle: '脚本会替你判断',
+      automaticDescription: '它会自动检查 CC Switch 是否存在、版本是否过旧、Deep Link 是否失效；能修复的直接修复，需要升级时会自动打开官方下载页。',
+      privacyNote: '诊断脚本只检查本机 CC Switch 的程序路径、版本和 ccswitch:// 协议，不会读取或上传你的 API Key。'
+    },
     // 配额和有效期
     quotaLimit: '额度限制',
     quotaAmount: '额度金额 (USD)',

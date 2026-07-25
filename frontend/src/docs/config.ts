@@ -56,7 +56,8 @@ export const docsConfig: DocsConfig = [
       {
         title: '自动配置工具',
         slug: 'auto-config-tool',
-        description: '使用老实人AI 自动配置脚本快速写入 Claude Code、Codex 和本地开发环境所需配置。'
+        description: '使用老实人AI 自动配置脚本快速写入 Claude Code、Codex 和本地开发环境所需配置。',
+        lastModified: '2026-07-25'
       },
       {
         title: 'Codex App Windows 下载',

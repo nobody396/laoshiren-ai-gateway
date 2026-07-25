@@ -800,6 +800,11 @@ export default {
     noGroup: 'No group',
     searchGroup: 'Search groups...',
     noGroupFound: 'No groups found',
+    groupSections: {
+      monthly: 'Monthly plans',
+      payg: 'Pay as you go',
+      monthlyOnly: 'Monthly plan'
+    },
     cacheHitRate: '{days}d cache {rate}%',
     created: 'Created',
     copyToClipboard: 'Copy to clipboard',
@@ -809,10 +814,10 @@ export default {
     baseUrlCopied: 'Base URL copied',
     importToCcSwitch: 'Quick Import',
     importToCcSwitchHint: 'Choose and import a compatible app through CC Switch',
-    configureCodex: 'One-click Setup',
-    configureCodexHint: 'Copy one command: reuse an existing Codex install, install only if missing, then test the API key',
-    codexAutoConfigCommandCopied: 'Codex setup command copied. Paste it into your terminal to run.',
-    keyMustBeActiveForCodexConfig: 'Enable this API key before copying the Codex setup command',
+    configureClient: 'One-click Setup',
+    configureClientHint: 'Copy one command: reuse an existing {client} install, install only if missing, then test the API key',
+    autoConfigCommandCopied: '{client} setup command copied. Paste it into your terminal to run.',
+    keyMustBeActiveForAutoConfig: 'Enable this API key before copying the setup command',
     saveOfficialProvider: 'Save Official',
     saveOfficialProviderHint: 'Copy a script command that saves the local OpenAI official login as a CC Switch Provider',
     saveOfficialProviderCommandCopied: 'Script command copied. Paste it into your terminal to run.',
@@ -926,6 +931,32 @@ export default {
       geminiCliDesc: 'Import as Gemini CLI configuration',
       noCompatibleTargets: 'This group has no safe quick-import targets',
       importFailed: 'Could not generate the CC Switch import configuration. Please try again.',
+    },
+    ccsDiagnostics: {
+      title: 'CC Switch Automatic Diagnosis',
+      helpButton: 'Import not opening? Diagnose',
+      autoPrompt: 'CC Switch did not appear to open. You do not need to identify the version yourself—copy the one-line command below and the script will diagnose and repair it.',
+      description: 'There is no need to distinguish installer, portable, or version numbers. Follow these three steps and copy only one command.',
+      windows: {
+        openTitle: 'Open PowerShell',
+        openDescription: 'Press Win + R, type powershell, then press Enter.',
+        runDescription: 'Return to PowerShell, right-click once to paste, then press Enter. Wait for the completed message.',
+      },
+      macos: {
+        openTitle: 'Open Terminal',
+        openDescription: 'Press Command (⌘) + Space, type Terminal, then press Enter.',
+        runDescription: 'Return to Terminal, press Command (⌘) + V to paste, then press Enter. Wait for the completed message.',
+      },
+      copyTitle: 'Copy the repair command',
+      copyDescription: 'Click “Copy command” below. Do not edit the command.',
+      runTitle: 'Paste and run',
+      commandLabel: 'Copy the entire line without editing',
+      copyCommand: 'Copy command',
+      copied: 'Copied',
+      commandCopied: 'Diagnostic command copied. Paste it into your terminal and press Enter.',
+      automaticTitle: 'The script makes the decision',
+      automaticDescription: 'It checks whether CC Switch exists, whether the version is too old, and whether the Deep Link handler is broken. It repairs what it can and opens the official download page only when an upgrade is required.',
+      privacyNote: 'The diagnostic script only checks the local CC Switch path, version, and ccswitch:// handler. It does not read or upload your API key.',
     },
     // Quota and expiration
     quotaLimit: 'Quota Limit',
@@ -6010,7 +6041,7 @@ export default {
       },
       useOptions: {
         title: 'Choose how to use it',
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Your key is ready. There are a few paths:</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>Recommended for Codex beginners:</b> for OpenAI / Codex groups, click "One-click Setup" to copy one terminal command. It reuses an existing Codex install, installs only if missing, writes config, and tests the API key.</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>Already have an OpenAI official plan:</b> save the official Provider first, then import the gateway, so you can switch between both.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>Need multiple Provider switching:</b> use "Import to CCS" with CC Switch. Without extra tools, use "Use Key" and copy the config manually.</p></div></div>'
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Your key is ready. There are a few paths:</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>Recommended for Codex / Claude Code beginners:</b> click "One-click Setup" to copy one terminal command. OpenAI groups configure Codex, while Anthropic / Antigravity groups configure Claude Code. Existing clients are reused, missing clients are installed, and the API key is tested.</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>Already have an OpenAI official plan:</b> save the official Provider first, then import the gateway, so you can switch between both.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>Need multiple Provider switching:</b> use "Import to CCS" with CC Switch. Without extra tools, use "Use Key" and copy the config manually.</p></div></div>'
       },
       docs: {
         title: '📚 Tutorials and download guide',

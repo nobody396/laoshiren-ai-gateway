@@ -800,6 +800,11 @@ export default {
     noGroup: '无分组',
     searchGroup: '搜索分组...',
     noGroupFound: '未找到匹配的分组',
+    groupSections: {
+      monthly: '月卡分组',
+      payg: '按量付费',
+      monthlyOnly: '月卡专享'
+    },
     cacheHitRate: '{days}日缓存 {rate}%',
     created: '创建时间',
     copyToClipboard: '复制到剪贴板',
@@ -809,10 +814,10 @@ export default {
     baseUrlCopied: 'Base URL 已复制',
     importToCcSwitch: '一键导入',
     importToCcSwitchHint: '通过 CC Switch 选择并导入兼容工具',
-    configureCodex: '一键配置',
-    configureCodexHint: '复制一行命令：已有 Codex 只更新配置，缺失时才安装，并测试 API Key',
-    codexAutoConfigCommandCopied: '一键配置命令已复制，请粘贴到终端运行',
-    keyMustBeActiveForCodexConfig: '请先启用该 API Key，再复制一键配置命令',
+    configureClient: '一键配置',
+    configureClientHint: '复制一行命令：已有 {client} 只更新配置，缺失时才安装，并测试 API Key',
+    autoConfigCommandCopied: '{client} 一键配置命令已复制，请粘贴到终端运行',
+    keyMustBeActiveForAutoConfig: '请先启用该 API Key，再复制一键配置命令',
     saveOfficialProvider: '保存官方订阅',
     saveOfficialProviderHint: '复制脚本命令，把本机 OpenAI 官方登录保存成 CC Switch Provider',
     saveOfficialProviderCommandCopied: '脚本命令已复制，请粘贴到终端运行',
@@ -930,6 +935,32 @@ export default {
       geminiCliDesc: '导入为 Gemini CLI 配置',
       noCompatibleTargets: '当前分组没有可安全一键导入的工具',
       importFailed: '无法生成 CC Switch 导入配置，请稍后重试'
+    },
+    ccsDiagnostics: {
+      title: 'CC Switch 自动诊断修复',
+      helpButton: '导入打不开？诊断修复',
+      autoPrompt: '看起来 CC Switch 没有正常打开。不要自己判断版本，复制下面的一行命令，脚本会自动检查并修复。',
+      description: '不需要分辨安装版、便携版或版本号。只需按下面 3 步操作，整个过程只复制粘贴一行命令。',
+      windows: {
+        openTitle: '打开 PowerShell',
+        openDescription: '按键盘 Win + R，输入 powershell，然后按回车。',
+        runDescription: '回到 PowerShell，点一下鼠标右键即可粘贴，然后按回车。等它显示“诊断修复完成”。'
+      },
+      macos: {
+        openTitle: '打开“终端”',
+        openDescription: '按 Command（⌘）+ 空格，输入“终端”或 Terminal，然后按回车。',
+        runDescription: '回到终端，按 Command（⌘）+ V 粘贴，再按回车。等它显示“诊断修复完成”。'
+      },
+      copyTitle: '复制修复命令',
+      copyDescription: '点击下面的“复制命令”按钮，不要手动修改这一行。',
+      runTitle: '粘贴并运行',
+      commandLabel: '整行复制，不要删改',
+      copyCommand: '复制命令',
+      copied: '已复制',
+      commandCopied: '诊断修复命令已复制，请打开终端粘贴并按回车',
+      automaticTitle: '脚本会替你判断',
+      automaticDescription: '它会自动检查 CC Switch 是否存在、版本是否过旧、Deep Link 是否失效；能修复的直接修复，需要升级时会自动打开官方下载页。',
+      privacyNote: '诊断脚本只检查本机 CC Switch 的程序路径、版本和 ccswitch:// 协议，不会读取或上传你的 API Key。'
     },
     // 配额和有效期
     quotaLimit: '额度限制',
@@ -6196,7 +6227,7 @@ export default {
       useOptions: {
         title: '现在选择怎么使用',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">密钥已经创建好了。接下来有几种方式：</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>推荐 Codex 新手：</b>如果是 OpenAI / Codex 分组，点「一键配置」复制一行命令；已有 Codex 时只更新配置，缺失时才安装，并测试 API Key。</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>已有 OpenAI 官方订阅：</b>先用「保存官方订阅」保存官方 Provider，再导入老实人 AI 接口配置，之后就能两边切换。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>需要多 Provider 切换：</b>再点「导入到 CCS」使用 CC Switch；不想装工具也可以点「使用密钥」手动复制配置。</p></div></div>'
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">密钥已经创建好了。接下来有几种方式：</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>推荐 Codex / Claude Code 新手：</b>点「一键配置」复制一行命令；OpenAI 分组自动配置 Codex，Anthropic / Antigravity 分组自动配置 Claude Code。已有客户端时只更新配置，缺失时才安装，并测试 API Key。</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>已有 OpenAI 官方订阅：</b>先用「保存官方订阅」保存官方 Provider，再导入老实人 AI 接口配置，之后就能两边切换。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>需要多 Provider 切换：</b>再点「导入到 CCS」使用 CC Switch；不想装工具也可以点「使用密钥」手动复制配置。</p></div></div>'
       },
       docs: {
         title: '📚 教程和下载说明',

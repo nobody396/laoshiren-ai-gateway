@@ -345,15 +345,15 @@
                 <Icon name="terminal" size="sm" />
                 <span class="text-xs">{{ t('keys.useKey') }}</span>
               </button>
-              <!-- Codex Auto Config Button -->
+              <!-- Client Auto Config Button -->
               <button
-                v-if="row.group?.platform === 'openai'"
-                @click="copyCodexAutoConfigCommand(row)"
-                :title="t('keys.configureCodexHint')"
+                v-if="getAutoConfigTargetForKey(row)"
+                @click="copyClientAutoConfigCommand(row)"
+                :title="t('keys.configureClientHint', { client: getAutoConfigClientName(row) })"
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
               >
                 <Icon name="terminal" size="sm" />
-                <span class="text-xs">{{ t('keys.configureCodex') }}</span>
+                <span class="text-xs">{{ t('keys.configureClient') }}</span>
               </button>
               <!-- Import to CC Switch Button -->
               <button
@@ -455,7 +455,7 @@
           <label class="input-label">{{ t('keys.groupLabel') }}</label>
           <Select
             v-model="formData.group_id"
-            :options="groupOptions"
+            :options="groupSelectOptions"
             :placeholder="t('keys.selectGroup')"
             :searchable="true"
             :search-placeholder="t('keys.searchGroup')"
@@ -482,7 +482,14 @@
               <span v-else class="text-gray-400">{{ t('keys.selectGroup') }}</span>
             </template>
             <template #option="{ option, selected }">
+              <GroupSectionHeader
+                v-if="isGroupHeaderOption(option as unknown as GroupSelectOption)"
+                :section="(option as unknown as GroupHeaderOption).groupKey"
+                :label="(option as unknown as GroupHeaderOption).label"
+                :count="(option as unknown as GroupHeaderOption).count"
+              />
               <GroupOptionItem
+                v-else
                 :name="(option as unknown as GroupOption).label"
                 :platform="(option as unknown as GroupOption).platform"
                 :subscription-type="(option as unknown as GroupOption).subscriptionType"
@@ -1017,9 +1024,12 @@
             v-for="option in ccsClientOptions"
             :key="option.value"
             @click="handleCcsClientSelect(option.value)"
-            class="flex flex-col items-center gap-2 rounded-xl border-2 border-gray-200 p-4 transition-all hover:border-primary-500 hover:bg-primary-50 dark:border-dark-600 dark:hover:border-primary-500 dark:hover:bg-primary-900/20"
+            class="group flex flex-col items-center gap-2.5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:border-dark-600 dark:bg-dark-800 dark:hover:border-primary-700 dark:focus-visible:ring-offset-dark-900"
           >
-            <Icon :name="option.icon" size="xl" class="text-gray-600 dark:text-gray-400" />
+            <CcsClientIcon
+              :client="option.value"
+              class="h-14 w-14 transition-transform duration-200 group-hover:scale-[1.04]"
+            />
             <span class="font-medium text-gray-900 dark:text-white">{{ option.label }}</span>
             <span class="text-center text-xs text-gray-500 dark:text-gray-400">{{ option.description }}</span>
           </button>
@@ -1035,9 +1045,146 @@
         </p>
       </div>
       <template #footer>
-        <div class="flex justify-end">
+        <div class="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-testid="ccs-open-diagnostics"
+            @click="openCcsDiagnostics(false)"
+          >
+            <Icon name="questionCircle" size="sm" class="mr-2" />
+            {{ t('keys.ccsDiagnostics.helpButton') }}
+          </button>
           <button @click="closeCcsClientSelect" class="btn btn-secondary">
             {{ t('common.cancel') }}
+          </button>
+        </div>
+      </template>
+    </BaseDialog>
+
+    <!-- CC Switch beginner-friendly diagnostics -->
+    <BaseDialog
+      :show="showCcsDiagnostics"
+      :title="t('keys.ccsDiagnostics.title')"
+      width="normal"
+      @close="closeCcsDiagnostics"
+    >
+      <div class="space-y-5">
+        <div
+          v-if="ccsDiagnosticsAutoPrompt"
+          class="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800/60 dark:bg-amber-900/20 dark:text-amber-200"
+        >
+          <Icon name="exclamationCircle" size="md" class="mt-0.5 shrink-0" />
+          <p>{{ t('keys.ccsDiagnostics.autoPrompt') }}</p>
+        </div>
+
+        <p class="text-sm leading-6 text-gray-600 dark:text-gray-300">
+          {{ t('keys.ccsDiagnostics.description') }}
+        </p>
+
+        <div class="grid grid-cols-2 rounded-xl bg-gray-100 p-1 dark:bg-dark-700" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            :aria-selected="ccsDiagnosticPlatform === 'windows'"
+            data-testid="ccs-platform-windows"
+            :class="[
+              'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              ccsDiagnosticPlatform === 'windows'
+                ? 'bg-white text-primary-600 shadow-sm dark:bg-dark-800 dark:text-primary-400'
+                : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+            ]"
+            @click="selectCcsDiagnosticPlatform('windows')"
+          >
+            Windows
+          </button>
+          <button
+            type="button"
+            role="tab"
+            :aria-selected="ccsDiagnosticPlatform === 'macos'"
+            data-testid="ccs-platform-macos"
+            :class="[
+              'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              ccsDiagnosticPlatform === 'macos'
+                ? 'bg-white text-primary-600 shadow-sm dark:bg-dark-800 dark:text-primary-400'
+                : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+            ]"
+            @click="selectCcsDiagnosticPlatform('macos')"
+          >
+            Mac
+          </button>
+        </div>
+
+        <ol class="space-y-3">
+          <li class="flex gap-3">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">1</span>
+            <div>
+              <p class="font-medium text-gray-900 dark:text-white">
+                {{ t(`keys.ccsDiagnostics.${ccsDiagnosticPlatform}.openTitle`) }}
+              </p>
+              <p class="mt-0.5 text-sm leading-5 text-gray-500 dark:text-gray-400">
+                {{ t(`keys.ccsDiagnostics.${ccsDiagnosticPlatform}.openDescription`) }}
+              </p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">2</span>
+            <div>
+              <p class="font-medium text-gray-900 dark:text-white">
+                {{ t('keys.ccsDiagnostics.copyTitle') }}
+              </p>
+              <p class="mt-0.5 text-sm leading-5 text-gray-500 dark:text-gray-400">
+                {{ t('keys.ccsDiagnostics.copyDescription') }}
+              </p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">3</span>
+            <div>
+              <p class="font-medium text-gray-900 dark:text-white">
+                {{ t('keys.ccsDiagnostics.runTitle') }}
+              </p>
+              <p class="mt-0.5 text-sm leading-5 text-gray-500 dark:text-gray-400">
+                {{ t(`keys.ccsDiagnostics.${ccsDiagnosticPlatform}.runDescription`) }}
+              </p>
+            </div>
+          </li>
+        </ol>
+
+        <div class="overflow-hidden rounded-xl border border-gray-200 bg-gray-950 dark:border-dark-600">
+          <div class="flex items-center justify-between border-b border-white/10 px-3 py-2">
+            <span class="text-xs font-medium text-gray-300">
+              {{ t('keys.ccsDiagnostics.commandLabel') }}
+            </span>
+            <button
+              type="button"
+              data-testid="ccs-copy-diagnostic-command"
+              class="inline-flex items-center rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-white/20"
+              @click="copyCcsDiagnosticCommand"
+            >
+              <Icon :name="ccsDiagnosticCopied ? 'check' : 'copy'" size="sm" class="mr-1.5" />
+              {{ ccsDiagnosticCopied ? t('keys.ccsDiagnostics.copied') : t('keys.ccsDiagnostics.copyCommand') }}
+            </button>
+          </div>
+          <pre
+            data-testid="ccs-diagnostic-command"
+            class="overflow-x-auto whitespace-pre-wrap break-all p-3 font-mono text-xs leading-5 text-emerald-300"
+          ><code>{{ ccsDiagnosticCommand }}</code></pre>
+        </div>
+
+        <div class="rounded-xl bg-emerald-50 p-3 text-sm leading-6 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">
+          <p class="font-medium">{{ t('keys.ccsDiagnostics.automaticTitle') }}</p>
+          <p>{{ t('keys.ccsDiagnostics.automaticDescription') }}</p>
+        </div>
+
+        <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">
+          {{ t('keys.ccsDiagnostics.privacyNote') }}
+        </p>
+      </div>
+      <template #footer>
+        <div class="flex w-full justify-end">
+          <button type="button" class="btn btn-secondary" @click="closeCcsDiagnostics">
+            {{ t('common.close') }}
           </button>
         </div>
       </template>
@@ -1048,7 +1195,7 @@
       <div
         v-if="groupSelectorKeyId !== null && dropdownPosition"
         ref="dropdownRef"
-        class="animate-in fade-in slide-in-from-top-2 fixed z-[100000020] w-max min-w-[380px] overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-black/5 duration-200 dark:bg-dark-800 dark:ring-white/10"
+        class="animate-in fade-in slide-in-from-top-2 fixed z-[100000020] w-[min(560px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl shadow-black/10 duration-200 dark:border-dark-700 dark:bg-dark-800 dark:shadow-black/30"
         style="pointer-events: auto !important;"
         :style="{
           top: dropdownPosition.top !== undefined ? dropdownPosition.top + 'px' : undefined,
@@ -1072,39 +1219,52 @@
           </div>
         </div>
         <!-- Group list -->
-        <div class="max-h-80 overflow-y-auto p-1.5">
-          <button
-            v-for="option in filteredGroupOptions"
-            :key="option.value ?? 'null'"
-            @click="changeGroup(selectedKeyForGroup!, option.value)"
-            :class="[
-              'flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors',
-              'border-b border-gray-100 last:border-0 dark:border-dark-700',
-              selectedKeyForGroup?.group_id === option.value ||
-              (!selectedKeyForGroup?.group_id && option.value === null)
-                ? 'bg-primary-50 dark:bg-primary-900/20'
-                : 'hover:bg-gray-100 dark:hover:bg-dark-700'
-            ]"
-            :title="getGroupOptionHoverTitle(option)"
+        <div
+          class="overflow-y-auto bg-gray-50/60 p-2 dark:bg-dark-900/40"
+          :style="{ maxHeight: dropdownPosition.listMaxHeight + 'px' }"
+        >
+          <section
+            v-for="section in filteredGroupOptionSections"
+            :key="section.id"
+            class="mb-2 last:mb-0"
           >
-            <GroupOptionItem
-              :name="option.label"
-              :platform="option.platform"
-              :subscription-type="option.subscriptionType"
-              :rate-multiplier="shouldShowGroupOptionMeta(option) ? option.rate : undefined"
-              :user-rate-multiplier="shouldShowGroupOptionMeta(option) ? option.userRate : null"
-              :description="shouldShowGroupOptionMeta(option) ? option.description : null"
-              :action-label="getGroupOptionActionLabel(option)"
-              :cache-hit-rate-pct="option.cacheHitRatePct"
-              :cache-window-days="option.cacheWindowDays"
-              :selected="
-                selectedKeyForGroup?.group_id === option.value ||
-                (!selectedKeyForGroup?.group_id && option.value === null)
-              "
-            />
-          </button>
+            <div class="sticky top-0 z-10 rounded-xl bg-gray-100/95 px-3 py-2 backdrop-blur dark:bg-dark-900/95">
+              <GroupSectionHeader
+                :section="section.id"
+                :label="getGroupSectionLabel(section.id)"
+                :count="section.options.length"
+              />
+            </div>
+            <div class="mt-1 space-y-1">
+              <button
+                v-for="option in section.options"
+                :key="option.value"
+                @click="changeGroup(selectedKeyForGroup!, option.value)"
+                :class="[
+                  'flex w-full items-center justify-between rounded-xl border px-3 py-3 text-sm transition-all',
+                  selectedKeyForGroup?.group_id === option.value
+                    ? 'border-primary-200 bg-primary-50 shadow-sm dark:border-primary-800 dark:bg-primary-900/20'
+                    : 'border-transparent bg-white hover:border-gray-200 hover:bg-gray-50 dark:bg-dark-800 dark:hover:border-dark-600 dark:hover:bg-dark-700'
+                ]"
+                :title="getGroupOptionHoverTitle(option)"
+              >
+                <GroupOptionItem
+                  :name="option.label"
+                  :platform="option.platform"
+                  :subscription-type="option.subscriptionType"
+                  :rate-multiplier="shouldShowGroupOptionMeta(option) ? option.rate : undefined"
+                  :user-rate-multiplier="shouldShowGroupOptionMeta(option) ? option.userRate : null"
+                  :description="shouldShowGroupOptionMeta(option) ? option.description : null"
+                  :action-label="getGroupOptionActionLabel(option)"
+                  :cache-hit-rate-pct="option.cacheHitRatePct"
+                  :cache-window-days="option.cacheWindowDays"
+                  :selected="selectedKeyForGroup?.group_id === option.value"
+                />
+              </button>
+            </div>
+          </section>
           <!-- Empty state when search has no results -->
-          <div v-if="filteredGroupOptions.length === 0" class="py-4 text-center text-sm text-gray-400 dark:text-gray-500">
+          <div v-if="filteredGroupOptionCount === 0" class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
             {{ t('keys.noGroupFound') }}
           </div>
         </div>
@@ -1118,6 +1278,7 @@
 	import { useI18n } from 'vue-i18n'
 	import { useAppStore } from '@/stores/app'
 	import { useOnboardingStore } from '@/stores/onboarding'
+	import { useSubscriptionStore } from '@/stores/subscriptions'
 	import { useClipboard } from '@/composables/useClipboard'
 
 const { t } = useI18n()
@@ -1133,8 +1294,10 @@ import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import SearchInput from '@/components/common/SearchInput.vue'
 	import Icon from '@/components/icons/Icon.vue'
 	import UseKeyModal from '@/components/keys/UseKeyModal.vue'
+	import CcsClientIcon from '@/components/keys/CcsClientIcon.vue'
 	import GroupBadge from '@/components/common/GroupBadge.vue'
 	import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
+	import GroupSectionHeader from '@/components/common/GroupSectionHeader.vue'
 	import type { ApiKey, Group, PublicSettings, SubscriptionType, GroupPlatform } from '@/types'
 import type { GroupCacheStats } from '@/api/groups'
 import type { Column } from '@/components/common/types'
@@ -1145,6 +1308,22 @@ import {
   getCompatibleCcsTargets,
   type CcsImportTarget
 } from '@/utils/ccSwitchImport'
+import {
+  buildCcsDiagnosticCommand,
+  detectCcsDiagnosticPlatform,
+  type CcsDiagnosticPlatform
+} from '@/utils/ccSwitchDiagnostics'
+import {
+  buildClientAutoConfigCommand,
+  getClientAutoConfigName,
+  getClientAutoConfigTarget,
+  type ClientAutoConfigTarget
+} from '@/utils/clientAutoConfig'
+import {
+  buildGroupOptionSections,
+  isMonthlyGroupOption,
+  type GroupOptionSectionId
+} from '@/utils/groupOptionSections'
 
 // Helper to format date for datetime-local input
 const formatDateTimeLocal = (isoDate: string): string => {
@@ -1154,6 +1333,7 @@ const formatDateTimeLocal = (isoDate: string): string => {
 }
 
 interface GroupOption {
+  [key: string]: unknown
   value: number
   label: string
   description: string | null
@@ -1163,17 +1343,30 @@ interface GroupOption {
   platform: GroupPlatform
   cacheHitRatePct: number | null
   cacheWindowDays: number
+  groupKey: GroupOptionSectionId
 }
+
+interface GroupHeaderOption {
+  [key: string]: unknown
+  value: string
+  label: string
+  kind: 'group'
+  groupKey: GroupOptionSectionId
+  count: number
+  disabled: true
+}
+
+type GroupSelectOption = GroupOption | GroupHeaderOption
 
 type CcsClientOption = {
   value: CcsImportTarget
   label: string
   description: string
-  icon: 'terminal' | 'cloud' | 'sparkles' | 'cube' | 'brain' | 'cpu'
 }
 
 const appStore = useAppStore()
 const onboardingStore = useOnboardingStore()
+const subscriptionStore = useSubscriptionStore()
 const { copyToClipboard: clipboardCopy } = useClipboard()
 
 const columns = computed<Column[]>(() => [
@@ -1219,16 +1412,27 @@ const showResetQuotaDialog = ref(false)
 const showResetRateLimitDialog = ref(false)
 const showUseKeyModal = ref(false)
 const showCcsClientSelect = ref(false)
+const showCcsDiagnostics = ref(false)
 const pendingCcsRow = ref<ApiKey | null>(null)
+const ccsDiagnosticPlatform = ref<CcsDiagnosticPlatform>('windows')
+const ccsDiagnosticCopied = ref(false)
+const ccsDiagnosticsAutoPrompt = ref(false)
 const selectedKey = ref<ApiKey | null>(null)
 const copiedKeyId = ref<number | null>(null)
 const copiedBaseUrl = ref(false)
 const groupSelectorKeyId = ref<number | null>(null)
 const publicSettings = ref<PublicSettings | null>(null)
 const dropdownRef = ref<HTMLElement | null>(null)
-const dropdownPosition = ref<{ top?: number; bottom?: number; left: number } | null>(null)
+const dropdownPosition = ref<{
+  top?: number
+  bottom?: number
+  left: number
+  listMaxHeight: number
+} | null>(null)
 const groupButtonRefs = ref<Map<number, HTMLElement>>(new Map())
 let abortController: AbortController | null = null
+let ccsLaunchFallbackTimer: ReturnType<typeof setTimeout> | null = null
+let ccsLaunchObserved = false
 
 const groupCacheHitRateEnabled = computed(() => publicSettings.value?.group_cache_hit_rate_enabled === true)
 const hasOpenAIGroup = computed(() => groups.value.some((group) => group.platform === 'openai'))
@@ -1247,49 +1451,46 @@ const ccsClientOptions = computed<CcsClientOption[]>(() => {
         return {
           value: target,
           label: t('keys.ccsClientSelect.claudeCodeCli'),
-          description: t('keys.ccsClientSelect.claudeCodeCliDesc'),
-          icon: 'terminal'
+          description: t('keys.ccsClientSelect.claudeCodeCliDesc')
         }
       case 'codex':
         return {
           value: target,
           label: t('keys.ccsClientSelect.codex'),
-          description: t('keys.ccsClientSelect.codexDesc'),
-          icon: 'cpu'
+          description: t('keys.ccsClientSelect.codexDesc')
         }
       case 'opencode':
         return {
           value: target,
           label: t('keys.ccsClientSelect.opencode'),
-          description: t('keys.ccsClientSelect.opencodeDesc'),
-          icon: 'terminal'
+          description: t('keys.ccsClientSelect.opencodeDesc')
         }
       case 'openclaw':
         return {
           value: target,
           label: t('keys.ccsClientSelect.openclaw'),
-          description: t('keys.ccsClientSelect.openclawDesc'),
-          icon: 'cube'
+          description: t('keys.ccsClientSelect.openclawDesc')
         }
       case 'hermes':
         return {
           value: target,
           label: t('keys.ccsClientSelect.hermes'),
-          description: t('keys.ccsClientSelect.hermesDesc'),
-          icon: 'brain'
+          description: t('keys.ccsClientSelect.hermesDesc')
         }
       case 'gemini':
         return {
           value: target,
           label: t('keys.ccsClientSelect.geminiCli'),
-          description: t('keys.ccsClientSelect.geminiCliDesc'),
-          icon: 'sparkles'
+          description: t('keys.ccsClientSelect.geminiCliDesc')
         }
     }
   })
 })
 const ccsHasClaudeCodeTarget = computed(() =>
   ccsClientOptions.value.some((option) => option.value === 'claude')
+)
+const ccsDiagnosticCommand = computed(() =>
+  buildCcsDiagnosticCommand(ccsDiagnosticPlatform.value, window.location.origin)
 )
 
 // Get the currently selected key for group change
@@ -1379,34 +1580,69 @@ const onStatusFilterChange = (value: string | number | boolean | null) => {
   onFilterChange()
 }
 
-// Convert groups to Select options format with rate multiplier and subscription type
-const groupOptions = computed(() =>
+// Convert groups to selector options, then organize them by billing mode.
+const baseGroupOptions = computed<GroupOption[]>(() =>
   groups.value.map((group) => {
     const cacheStats = groupCacheStats.value[group.id]
+    const subscriptionType = group.subscription_type
     return {
       value: group.id,
       label: group.name,
       description: group.description,
       rate: group.rate_multiplier,
       userRate: userGroupRates.value[group.id] ?? null,
-      subscriptionType: group.subscription_type,
+      subscriptionType,
       platform: group.platform,
       cacheHitRatePct: groupCacheHitRateEnabled.value && cacheStats?.has_data ? cacheStats.hit_rate_pct : null,
-      cacheWindowDays: groupCacheWindowDays.value
+      cacheWindowDays: groupCacheWindowDays.value,
+      groupKey: subscriptionType === 'subscription' || subscriptionType === 'credit'
+        ? 'monthly'
+        : 'payg'
     }
   })
 )
+
+const groupOptionSections = computed(() => {
+  return buildGroupOptionSections(
+    baseGroupOptions.value,
+    subscriptionStore.hasActiveSubscriptions
+  )
+})
+
+const getGroupSectionLabel = (section: GroupOptionSectionId): string => {
+  return section === 'monthly'
+    ? t('keys.groupSections.monthly')
+    : t('keys.groupSections.payg')
+}
+
+const groupSelectOptions = computed<GroupSelectOption[]>(() => {
+  return groupOptionSections.value.flatMap((section) => [
+    {
+      value: `group:${section.id}`,
+      label: getGroupSectionLabel(section.id),
+      kind: 'group' as const,
+      groupKey: section.id,
+      count: section.options.length,
+      disabled: true as const
+    },
+    ...section.options
+  ])
+})
+
+const isGroupHeaderOption = (option: GroupSelectOption): option is GroupHeaderOption => {
+  return 'kind' in option && option.kind === 'group'
+}
 
 const shouldShowGroupOptionMeta = (option: GroupOption): boolean => {
   return option.subscriptionType !== 'subscription' && option.subscriptionType !== 'credit'
 }
 
 const isMonthlyAccessGroup = (option: GroupOption): boolean => {
-  return option.subscriptionType === 'subscription' || option.subscriptionType === 'credit'
+  return isMonthlyGroupOption(option)
 }
 
 const getGroupOptionActionLabel = (option: GroupOption): string | null => {
-  return isMonthlyAccessGroup(option) ? '使用月卡请选择此分组' : null
+  return isMonthlyAccessGroup(option) ? t('keys.groupSections.monthlyOnly') : null
 }
 
 const getGroupOptionHoverTitle = (option: GroupOption): string | undefined => {
@@ -1415,13 +1651,24 @@ const getGroupOptionHoverTitle = (option: GroupOption): string | undefined => {
 
 // Group dropdown search
 const groupSearchQuery = ref('')
-const filteredGroupOptions = computed(() => {
+const filteredGroupOptionSections = computed(() => {
   const query = groupSearchQuery.value.trim().toLowerCase()
-  if (!query) return groupOptions.value
-  return groupOptions.value.filter((opt) => {
-    return opt.label.toLowerCase().includes(query) ||
-      (opt.description && opt.description.toLowerCase().includes(query))
+  if (!query) return groupOptionSections.value
+
+  return groupOptionSections.value.flatMap((section) => {
+    const options = section.options.filter((option) => {
+      return option.label.toLowerCase().includes(query) ||
+        (option.description && option.description.toLowerCase().includes(query))
+    })
+    return options.length > 0 ? [{ ...section, options }] : []
   })
+})
+
+const filteredGroupOptionCount = computed(() => {
+  return filteredGroupOptionSections.value.reduce(
+    (total, section) => total + section.options.length,
+    0
+  )
 })
 
 const maskKey = (key: string): string => {
@@ -1462,42 +1709,34 @@ const copySaveOfficialProviderCommand = async () => {
   await clipboardCopy(command, t('keys.saveOfficialProviderCommandCopied'))
 }
 
-const shellSingleQuote = (value: string): string => {
-  return `'${value.replace(/'/g, "'\"'\"'")}'`
+const getAutoConfigTargetForKey = (row: ApiKey): ClientAutoConfigTarget | null => {
+  return getClientAutoConfigTarget(row.group?.platform)
 }
 
-const powerShellSingleQuote = (value: string): string => {
-  return `'${value.replace(/'/g, "''")}'`
+const getAutoConfigClientName = (row: ApiKey): string => {
+  const target = getAutoConfigTargetForKey(row)
+  return target ? getClientAutoConfigName(target) : ''
 }
 
-const buildCodexAutoConfigCommand = (row: ApiKey): string => {
-  const isWindows = navigator.userAgent.toLowerCase().includes('windows')
-  const baseUrl = displayApiBaseUrl.value
-
-  if (isWindows) {
-    return [
-      `$env:LAOSHIRENAI_CODEX_API_KEY=${powerShellSingleQuote(row.key)}`,
-      "$env:LAOSHIRENAI_TOOLS='codex'",
-      `$env:LAOSHIRENAI_BASE_URL=${powerShellSingleQuote(baseUrl)}`,
-      'irm https://laoshirenai.com/auto-config/install.ps1 | iex'
-    ].join('; ')
-  }
-
-  return [
-    'curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s --',
-    `--codex-api-key ${shellSingleQuote(row.key)}`,
-    '--tools codex',
-    `--base-url ${shellSingleQuote(baseUrl)}`
-  ].join(' ')
-}
-
-const copyCodexAutoConfigCommand = async (row: ApiKey) => {
+const copyClientAutoConfigCommand = async (row: ApiKey) => {
   if (row.status !== 'active') {
-    appStore.showError(t('keys.keyMustBeActiveForCodexConfig'))
+    appStore.showError(t('keys.keyMustBeActiveForAutoConfig'))
     return
   }
 
-  await clipboardCopy(buildCodexAutoConfigCommand(row), t('keys.codexAutoConfigCommandCopied'))
+  const target = getAutoConfigTargetForKey(row)
+  if (!target || !row.group) {
+    return
+  }
+
+  const clientName = getClientAutoConfigName(target)
+  const command = buildClientAutoConfigCommand({
+    target,
+    platform: row.group.platform,
+    apiKey: row.key,
+    baseUrl: displayApiBaseUrl.value
+  })
+  await clipboardCopy(command, t('keys.autoConfigCommandCopied', { client: clientName }))
 }
 
 const isAbortError = (error: unknown) => {
@@ -1660,21 +1899,28 @@ const openGroupSelector = (key: ApiKey) => {
     const buttonEl = groupButtonRefs.value.get(key.id)
     if (buttonEl) {
       const rect = buttonEl.getBoundingClientRect()
-      const dropdownEstHeight = 400 // estimated max dropdown height
+      const dropdownWidth = Math.min(560, window.innerWidth - 24)
+      const safeLeft = Math.min(
+        Math.max(12, rect.left),
+        Math.max(12, window.innerWidth - dropdownWidth - 12)
+      )
       const spaceBelow = window.innerHeight - rect.bottom
       const spaceAbove = rect.top
+      const openUpward = spaceBelow < 460 && spaceAbove > spaceBelow
+      const availableHeight = openUpward ? spaceAbove : spaceBelow
+      const listMaxHeight = Math.max(160, Math.min(480, availableHeight - 68))
 
-      if (spaceBelow < dropdownEstHeight && spaceAbove > spaceBelow) {
-        // Not enough space below, pop upward
+      if (openUpward) {
         dropdownPosition.value = {
           bottom: window.innerHeight - rect.top + 4,
-          left: rect.left
+          left: safeLeft,
+          listMaxHeight
         }
       } else {
-        // Default: pop downward
         dropdownPosition.value = {
           top: rect.bottom + 4,
-          left: rect.left
+          left: safeLeft,
+          listMaxHeight
         }
       }
     }
@@ -1925,6 +2171,64 @@ const getCcsTargetsForKey = (row: ApiKey): CcsImportTarget[] => {
 
 const canImportToCcs = (row: ApiKey): boolean => getCcsTargetsForKey(row).length > 0
 
+const selectCcsDiagnosticPlatform = (platform: CcsDiagnosticPlatform) => {
+  ccsDiagnosticPlatform.value = platform
+  ccsDiagnosticCopied.value = false
+}
+
+const openCcsDiagnostics = (autoPrompt = false) => {
+  showCcsClientSelect.value = false
+  pendingCcsRow.value = null
+  ccsDiagnosticPlatform.value = detectCcsDiagnosticPlatform() || 'windows'
+  ccsDiagnosticCopied.value = false
+  ccsDiagnosticsAutoPrompt.value = autoPrompt
+  showCcsDiagnostics.value = true
+}
+
+const closeCcsDiagnostics = () => {
+  showCcsDiagnostics.value = false
+  ccsDiagnosticsAutoPrompt.value = false
+}
+
+const copyCcsDiagnosticCommand = async () => {
+  const success = await clipboardCopy(
+    ccsDiagnosticCommand.value,
+    t('keys.ccsDiagnostics.commandCopied')
+  )
+  if (success) {
+    ccsDiagnosticCopied.value = true
+  }
+}
+
+const cleanupCcsLaunchWatch = () => {
+  if (ccsLaunchFallbackTimer) {
+    clearTimeout(ccsLaunchFallbackTimer)
+    ccsLaunchFallbackTimer = null
+  }
+  window.removeEventListener('blur', markCcsLaunchObserved)
+  document.removeEventListener('visibilitychange', markCcsLaunchObserved)
+}
+
+function markCcsLaunchObserved() {
+  if (!document.hasFocus() || document.hidden) {
+    ccsLaunchObserved = true
+    cleanupCcsLaunchWatch()
+  }
+}
+
+const watchCcsLaunch = () => {
+  cleanupCcsLaunchWatch()
+  ccsLaunchObserved = false
+  window.addEventListener('blur', markCcsLaunchObserved)
+  document.addEventListener('visibilitychange', markCcsLaunchObserved)
+  ccsLaunchFallbackTimer = setTimeout(() => {
+    cleanupCcsLaunchWatch()
+    if (!ccsLaunchObserved) {
+      openCcsDiagnostics(true)
+    }
+  }, 4500)
+}
+
 const importToCcswitch = (row: ApiKey) => {
   if (!canImportToCcs(row)) {
     appStore.showError(t('keys.ccsClientSelect.noCompatibleTargets'))
@@ -1964,8 +2268,10 @@ const executeCcsImport = (row: ApiKey, clientType: CcsImportTarget) => {
       apiBaseUrl: baseUrl,
       siteName: publicSettings.value?.site_name
     })
+    watchCcsLaunch()
     window.open(deeplink, '_self')
   } catch (error) {
+    cleanupCcsLaunchWatch()
     console.error('Failed to build CC Switch import link', error)
     appStore.showError(t('keys.ccsClientSelect.importFailed'))
   }
@@ -2007,6 +2313,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', closeGroupSelector)
+  cleanupCcsLaunchWatch()
   if (resetTimer) clearInterval(resetTimer)
 })
 </script>

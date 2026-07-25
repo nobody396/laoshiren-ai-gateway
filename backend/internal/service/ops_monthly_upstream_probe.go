@@ -244,6 +244,7 @@ type MonthlyCardPublicPlan struct {
 	Name        string                      `json:"name"`
 	GPTGroup    *MonthlyCardPublicPlanGroup `json:"gpt_group,omitempty"`
 	ClaudeGroup *MonthlyCardPublicPlanGroup `json:"claude_group,omitempty"`
+	GrokGroup   *MonthlyCardPublicPlanGroup `json:"grok_group,omitempty"`
 }
 
 type MonthlyCardPublicStatusSnapshot struct {
@@ -596,14 +597,16 @@ var monthlyCardPublicPlanDefinitions = []struct {
 	Name            string
 	GPTGroupName    string
 	ClaudeGroupName string
+	GrokGroupName   string
 	GPTGroupID      int64
 	ClaudeGroupID   int64
+	GrokGroupID     int64
 }{
-	{ID: "lite", Name: "Lite 月卡", GPTGroupName: "GPT Lite 月卡组", ClaudeGroupName: "Claude Lite 月卡组", GPTGroupID: 7, ClaudeGroupID: 11},
-	{ID: "pro", Name: "Pro 月卡", GPTGroupName: "GPT Pro 月卡组", ClaudeGroupName: "Claude Pro 月卡组", GPTGroupID: 8, ClaudeGroupID: 12},
-	{ID: "max", Name: "Max 月卡", GPTGroupName: "GPT Max 月卡组", ClaudeGroupName: "Claude Max 月卡组", GPTGroupID: 9, ClaudeGroupID: 13},
-	{ID: "ultra", Name: "Ultra 月卡", GPTGroupName: "GPT Ultra 月卡组", ClaudeGroupName: "Claude Ultra 月卡组", GPTGroupID: 10, ClaudeGroupID: 14},
-	{ID: "apex", Name: "Apex 月卡", GPTGroupName: "GPT Apex 月卡组", ClaudeGroupName: "Claude Apex 月卡组"},
+	{ID: "lite", Name: "Lite 月卡", GPTGroupName: "GPT Lite 月卡组", ClaudeGroupName: "Claude Lite 月卡组", GrokGroupName: "Grok Lite 月卡组", GPTGroupID: 7, ClaudeGroupID: 11, GrokGroupID: 35},
+	{ID: "pro", Name: "Pro 月卡", GPTGroupName: "GPT Pro 月卡组", ClaudeGroupName: "Claude Pro 月卡组", GrokGroupName: "Grok Pro 月卡组", GPTGroupID: 8, ClaudeGroupID: 12, GrokGroupID: 36},
+	{ID: "max", Name: "Max 月卡", GPTGroupName: "GPT Max 月卡组", ClaudeGroupName: "Claude Max 月卡组", GrokGroupName: "Grok Max 月卡组", GPTGroupID: 9, ClaudeGroupID: 13, GrokGroupID: 37},
+	{ID: "ultra", Name: "Ultra 月卡", GPTGroupName: "GPT Ultra 月卡组", ClaudeGroupName: "Claude Ultra 月卡组", GrokGroupName: "Grok Ultra 月卡组", GPTGroupID: 10, ClaudeGroupID: 14, GrokGroupID: 38},
+	{ID: "apex", Name: "Apex 月卡", GPTGroupName: "GPT Apex 月卡组", ClaudeGroupName: "Claude Apex 月卡组", GrokGroupName: "Grok Apex 月卡组", GrokGroupID: 39},
 }
 
 func (s *OpsService) loadMonthlyCardPublicPlans(ctx context.Context) []MonthlyCardPublicPlan {
@@ -618,6 +621,7 @@ func (s *OpsService) loadMonthlyCardPublicPlans(ctx context.Context) []MonthlyCa
 			Name:        def.Name,
 			GPTGroup:    s.monthlyCardPublicPlanGroupByNameOrID(ctx, groupsByName, def.GPTGroupName, def.GPTGroupID),
 			ClaudeGroup: s.monthlyCardPublicPlanGroupByNameOrID(ctx, groupsByName, def.ClaudeGroupName, def.ClaudeGroupID),
+			GrokGroup:   s.monthlyCardPublicPlanGroupByNameOrID(ctx, groupsByName, def.GrokGroupName, def.GrokGroupID),
 		})
 	}
 	return plans

@@ -37,6 +37,9 @@ func RegisterAdminRoutes(
 		registerAnnouncementRoutes(admin, h)
 		registerFeedbackRoutes(admin, h)
 
+		// 财务记账（真实现金流水，独立于成本核算理论毛利率）
+		registerFinanceTransactionRoutes(admin, h)
+
 		// OpenAI OAuth
 		registerOpenAIOAuthRoutes(admin, h)
 
@@ -404,6 +407,20 @@ func registerFeedbackRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		feedbacks.PUT("/batch-status", h.Admin.Feedback.BatchUpdateStatus)
 		feedbacks.DELETE("/:id", h.Admin.Feedback.Delete)
 		feedbacks.POST("/batch-delete", h.Admin.Feedback.BatchDelete)
+	}
+}
+
+func registerFinanceTransactionRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	finance := admin.Group("/finance-transactions")
+	{
+		finance.GET("", h.Admin.FinanceTransaction.List)
+		finance.POST("", h.Admin.FinanceTransaction.Create)
+		finance.GET("/summary", h.Admin.FinanceTransaction.Summary)
+		finance.POST("/receipts", h.Admin.FinanceTransaction.UploadReceipt)
+		finance.GET("/:id", h.Admin.FinanceTransaction.GetByID)
+		finance.PUT("/:id", h.Admin.FinanceTransaction.Update)
+		finance.DELETE("/:id", h.Admin.FinanceTransaction.Delete)
+		finance.GET("/:id/receipt-url", h.Admin.FinanceTransaction.GetReceiptURL)
 	}
 }
 

@@ -46,6 +46,8 @@ type Tx struct {
 	Feedback *FeedbackClient
 	// FeedbackReply is the client for interacting with the FeedbackReply builders.
 	FeedbackReply *FeedbackReplyClient
+	// FinanceTransaction is the client for interacting with the FinanceTransaction builders.
+	FinanceTransaction *FinanceTransactionClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// IdempotencyRecord is the client for interacting with the IdempotencyRecord builders.
@@ -237,6 +239,7 @@ func (tx *Tx) init() {
 	tx.ErrorPassthroughRule = NewErrorPassthroughRuleClient(tx.config)
 	tx.Feedback = NewFeedbackClient(tx.config)
 	tx.FeedbackReply = NewFeedbackReplyClient(tx.config)
+	tx.FinanceTransaction = NewFinanceTransactionClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
 	tx.IdempotencyRecord = NewIdempotencyRecordClient(tx.config)
 	tx.InvoiceProfile = NewInvoiceProfileClient(tx.config)

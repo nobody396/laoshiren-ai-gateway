@@ -28,6 +28,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/errorpassthroughrule"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedback"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackreply"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/financetransaction"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/group"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/idempotencyrecord"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/invoiceprofile"
@@ -126,6 +127,7 @@ func checkColumn(t, c string) error {
 			errorpassthroughrule.Table:    errorpassthroughrule.ValidColumn,
 			feedback.Table:                feedback.ValidColumn,
 			feedbackreply.Table:           feedbackreply.ValidColumn,
+			financetransaction.Table:      financetransaction.ValidColumn,
 			group.Table:                   group.ValidColumn,
 			idempotencyrecord.Table:       idempotencyrecord.ValidColumn,
 			invoiceprofile.Table:          invoiceprofile.ValidColumn,

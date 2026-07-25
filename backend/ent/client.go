@@ -31,6 +31,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/errorpassthroughrule"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedback"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackreply"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/financetransaction"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/group"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/idempotencyrecord"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/invoiceprofile"
@@ -94,6 +95,8 @@ type Client struct {
 	Feedback *FeedbackClient
 	// FeedbackReply is the client for interacting with the FeedbackReply builders.
 	FeedbackReply *FeedbackReplyClient
+	// FinanceTransaction is the client for interacting with the FinanceTransaction builders.
+	FinanceTransaction *FinanceTransactionClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// IdempotencyRecord is the client for interacting with the IdempotencyRecord builders.
@@ -165,6 +168,7 @@ func (c *Client) init() {
 	c.ErrorPassthroughRule = NewErrorPassthroughRuleClient(c.config)
 	c.Feedback = NewFeedbackClient(c.config)
 	c.FeedbackReply = NewFeedbackReplyClient(c.config)
+	c.FinanceTransaction = NewFinanceTransactionClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.IdempotencyRecord = NewIdempotencyRecordClient(c.config)
 	c.InvoiceProfile = NewInvoiceProfileClient(c.config)
@@ -295,6 +299,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ErrorPassthroughRule:    NewErrorPassthroughRuleClient(cfg),
 		Feedback:                NewFeedbackClient(cfg),
 		FeedbackReply:           NewFeedbackReplyClient(cfg),
+		FinanceTransaction:      NewFinanceTransactionClient(cfg),
 		Group:                   NewGroupClient(cfg),
 		IdempotencyRecord:       NewIdempotencyRecordClient(cfg),
 		InvoiceProfile:          NewInvoiceProfileClient(cfg),
@@ -352,6 +357,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ErrorPassthroughRule:    NewErrorPassthroughRuleClient(cfg),
 		Feedback:                NewFeedbackClient(cfg),
 		FeedbackReply:           NewFeedbackReplyClient(cfg),
+		FinanceTransaction:      NewFinanceTransactionClient(cfg),
 		Group:                   NewGroupClient(cfg),
 		IdempotencyRecord:       NewIdempotencyRecordClient(cfg),
 		InvoiceProfile:          NewInvoiceProfileClient(cfg),
@@ -406,12 +412,12 @@ func (c *Client) Use(hooks ...Hook) {
 		c.APIKey, c.Account, c.AccountChangeRecord, c.AccountGroup, c.AdminAPI,
 		c.AdminMenu, c.AdminRole, c.AdminRoleAPI, c.AdminRoleMenu, c.AdminUserRole,
 		c.Announcement, c.AnnouncementRead, c.CommissionRecord, c.ErrorPassthroughRule,
-		c.Feedback, c.FeedbackReply, c.Group, c.IdempotencyRecord, c.InvoiceProfile,
-		c.InvoiceRequest, c.InvoiceRequestOrder, c.PaymentOrder, c.PromoCode,
-		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.RedeemCodeBatch, c.SecuritySecret,
-		c.Setting, c.TLSFingerprintProfile, c.TopupOrder, c.UsageCleanupTask,
-		c.UsageLog, c.User, c.UserAllowedGroup, c.UserAttributeDefinition,
-		c.UserAttributeValue, c.UserSubscription,
+		c.Feedback, c.FeedbackReply, c.FinanceTransaction, c.Group,
+		c.IdempotencyRecord, c.InvoiceProfile, c.InvoiceRequest, c.InvoiceRequestOrder,
+		c.PaymentOrder, c.PromoCode, c.PromoCodeUsage, c.Proxy, c.RedeemCode,
+		c.RedeemCodeBatch, c.SecuritySecret, c.Setting, c.TLSFingerprintProfile,
+		c.TopupOrder, c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
+		c.UserAttributeDefinition, c.UserAttributeValue, c.UserSubscription,
 	} {
 		n.Use(hooks...)
 	}
@@ -424,12 +430,12 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.APIKey, c.Account, c.AccountChangeRecord, c.AccountGroup, c.AdminAPI,
 		c.AdminMenu, c.AdminRole, c.AdminRoleAPI, c.AdminRoleMenu, c.AdminUserRole,
 		c.Announcement, c.AnnouncementRead, c.CommissionRecord, c.ErrorPassthroughRule,
-		c.Feedback, c.FeedbackReply, c.Group, c.IdempotencyRecord, c.InvoiceProfile,
-		c.InvoiceRequest, c.InvoiceRequestOrder, c.PaymentOrder, c.PromoCode,
-		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.RedeemCodeBatch, c.SecuritySecret,
-		c.Setting, c.TLSFingerprintProfile, c.TopupOrder, c.UsageCleanupTask,
-		c.UsageLog, c.User, c.UserAllowedGroup, c.UserAttributeDefinition,
-		c.UserAttributeValue, c.UserSubscription,
+		c.Feedback, c.FeedbackReply, c.FinanceTransaction, c.Group,
+		c.IdempotencyRecord, c.InvoiceProfile, c.InvoiceRequest, c.InvoiceRequestOrder,
+		c.PaymentOrder, c.PromoCode, c.PromoCodeUsage, c.Proxy, c.RedeemCode,
+		c.RedeemCodeBatch, c.SecuritySecret, c.Setting, c.TLSFingerprintProfile,
+		c.TopupOrder, c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
+		c.UserAttributeDefinition, c.UserAttributeValue, c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -470,6 +476,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Feedback.mutate(ctx, m)
 	case *FeedbackReplyMutation:
 		return c.FeedbackReply.mutate(ctx, m)
+	case *FinanceTransactionMutation:
+		return c.FinanceTransaction.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
 	case *IdempotencyRecordMutation:
@@ -2889,6 +2897,139 @@ func (c *FeedbackReplyClient) mutate(ctx context.Context, m *FeedbackReplyMutati
 		return (&FeedbackReplyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown FeedbackReply mutation op: %q", m.Op())
+	}
+}
+
+// FinanceTransactionClient is a client for the FinanceTransaction schema.
+type FinanceTransactionClient struct {
+	config
+}
+
+// NewFinanceTransactionClient returns a client for the FinanceTransaction from the given config.
+func NewFinanceTransactionClient(c config) *FinanceTransactionClient {
+	return &FinanceTransactionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `financetransaction.Hooks(f(g(h())))`.
+func (c *FinanceTransactionClient) Use(hooks ...Hook) {
+	c.hooks.FinanceTransaction = append(c.hooks.FinanceTransaction, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `financetransaction.Intercept(f(g(h())))`.
+func (c *FinanceTransactionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.FinanceTransaction = append(c.inters.FinanceTransaction, interceptors...)
+}
+
+// Create returns a builder for creating a FinanceTransaction entity.
+func (c *FinanceTransactionClient) Create() *FinanceTransactionCreate {
+	mutation := newFinanceTransactionMutation(c.config, OpCreate)
+	return &FinanceTransactionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of FinanceTransaction entities.
+func (c *FinanceTransactionClient) CreateBulk(builders ...*FinanceTransactionCreate) *FinanceTransactionCreateBulk {
+	return &FinanceTransactionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FinanceTransactionClient) MapCreateBulk(slice any, setFunc func(*FinanceTransactionCreate, int)) *FinanceTransactionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FinanceTransactionCreateBulk{err: fmt.Errorf("calling to FinanceTransactionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FinanceTransactionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FinanceTransactionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for FinanceTransaction.
+func (c *FinanceTransactionClient) Update() *FinanceTransactionUpdate {
+	mutation := newFinanceTransactionMutation(c.config, OpUpdate)
+	return &FinanceTransactionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FinanceTransactionClient) UpdateOne(_m *FinanceTransaction) *FinanceTransactionUpdateOne {
+	mutation := newFinanceTransactionMutation(c.config, OpUpdateOne, withFinanceTransaction(_m))
+	return &FinanceTransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FinanceTransactionClient) UpdateOneID(id int64) *FinanceTransactionUpdateOne {
+	mutation := newFinanceTransactionMutation(c.config, OpUpdateOne, withFinanceTransactionID(id))
+	return &FinanceTransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for FinanceTransaction.
+func (c *FinanceTransactionClient) Delete() *FinanceTransactionDelete {
+	mutation := newFinanceTransactionMutation(c.config, OpDelete)
+	return &FinanceTransactionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FinanceTransactionClient) DeleteOne(_m *FinanceTransaction) *FinanceTransactionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FinanceTransactionClient) DeleteOneID(id int64) *FinanceTransactionDeleteOne {
+	builder := c.Delete().Where(financetransaction.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FinanceTransactionDeleteOne{builder}
+}
+
+// Query returns a query builder for FinanceTransaction.
+func (c *FinanceTransactionClient) Query() *FinanceTransactionQuery {
+	return &FinanceTransactionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFinanceTransaction},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a FinanceTransaction entity by its id.
+func (c *FinanceTransactionClient) Get(ctx context.Context, id int64) (*FinanceTransaction, error) {
+	return c.Query().Where(financetransaction.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FinanceTransactionClient) GetX(ctx context.Context, id int64) *FinanceTransaction {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *FinanceTransactionClient) Hooks() []Hook {
+	return c.hooks.FinanceTransaction
+}
+
+// Interceptors returns the client interceptors.
+func (c *FinanceTransactionClient) Interceptors() []Interceptor {
+	return c.inters.FinanceTransaction
+}
+
+func (c *FinanceTransactionClient) mutate(ctx context.Context, m *FinanceTransactionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FinanceTransactionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FinanceTransactionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FinanceTransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FinanceTransactionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown FinanceTransaction mutation op: %q", m.Op())
 	}
 }
 
@@ -6745,21 +6886,23 @@ type (
 		APIKey, Account, AccountChangeRecord, AccountGroup, AdminAPI, AdminMenu,
 		AdminRole, AdminRoleAPI, AdminRoleMenu, AdminUserRole, Announcement,
 		AnnouncementRead, CommissionRecord, ErrorPassthroughRule, Feedback,
-		FeedbackReply, Group, IdempotencyRecord, InvoiceProfile, InvoiceRequest,
-		InvoiceRequestOrder, PaymentOrder, PromoCode, PromoCodeUsage, Proxy,
-		RedeemCode, RedeemCodeBatch, SecuritySecret, Setting, TLSFingerprintProfile,
-		TopupOrder, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserSubscription []ent.Hook
+		FeedbackReply, FinanceTransaction, Group, IdempotencyRecord, InvoiceProfile,
+		InvoiceRequest, InvoiceRequestOrder, PaymentOrder, PromoCode, PromoCodeUsage,
+		Proxy, RedeemCode, RedeemCodeBatch, SecuritySecret, Setting,
+		TLSFingerprintProfile, TopupOrder, UsageCleanupTask, UsageLog, User,
+		UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
+		UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountChangeRecord, AccountGroup, AdminAPI, AdminMenu,
 		AdminRole, AdminRoleAPI, AdminRoleMenu, AdminUserRole, Announcement,
 		AnnouncementRead, CommissionRecord, ErrorPassthroughRule, Feedback,
-		FeedbackReply, Group, IdempotencyRecord, InvoiceProfile, InvoiceRequest,
-		InvoiceRequestOrder, PaymentOrder, PromoCode, PromoCodeUsage, Proxy,
-		RedeemCode, RedeemCodeBatch, SecuritySecret, Setting, TLSFingerprintProfile,
-		TopupOrder, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserSubscription []ent.Interceptor
+		FeedbackReply, FinanceTransaction, Group, IdempotencyRecord, InvoiceProfile,
+		InvoiceRequest, InvoiceRequestOrder, PaymentOrder, PromoCode, PromoCodeUsage,
+		Proxy, RedeemCode, RedeemCodeBatch, SecuritySecret, Setting,
+		TLSFingerprintProfile, TopupOrder, UsageCleanupTask, UsageLog, User,
+		UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
+		UserSubscription []ent.Interceptor
 	}
 )
 

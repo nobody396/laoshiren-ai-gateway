@@ -410,6 +410,7 @@ export default {
   nav: {
     dashboard: '仪表盘',
     announcements: '公告',
+    financeTransactions: '财务记账',
     apiKeys: 'API 密钥',
     usage: '使用记录',
     redeem: '兑换',
@@ -4090,6 +4091,75 @@ export default {
       failedToDelete: '删除公告失败',
       failedToLoadReadStatus: '加载已读情况失败',
       deleteConfirm: '确定要删除该公告吗？此操作无法撤销。'
+    },
+
+    // Finance Ledger（手工记账：真实现金进出，独立于成本核算的理论毛利率）
+    financeTransactions: {
+      title: '财务记账',
+      description: '记录真实的收入与支出，核算营收、成本与利润率',
+      record: '记一笔',
+      editTransaction: '编辑记账',
+      deleteTransaction: '删除记账',
+      deleteConfirm: '确定要删除这笔记账吗？此操作无法撤销。',
+      searchPlaceholder: '搜索备注...',
+      allTypes: '全部类型',
+      allCategories: '全部分类',
+      viewReceipt: '查看凭证',
+      failedToLoad: '加载记账流水失败',
+      failedToCreate: '创建记账失败',
+      failedToUpdate: '更新记账失败',
+      failedToDelete: '删除记账失败',
+      failedToLoadReceipt: '加载凭证链接失败',
+      columns: {
+        occurredAt: '发生时间',
+        type: '类型',
+        category: '分类',
+        amount: '金额',
+        note: '备注',
+        source: '来源',
+        txCount: '笔数',
+        actions: '操作'
+      },
+      typeLabels: {
+        income: '收入',
+        expense: '支出'
+      },
+      sourceLabels: {
+        manual: '手动',
+        skill: 'Skill 自动'
+      },
+      categoryLabels: {
+        sale_revenue: '售卖收入',
+        other_income: '其他收入',
+        upstream_topup: '上游进货充值',
+        server_cost: '服务器成本',
+        domain_cost: '域名成本',
+        early_cost: '早期成本',
+        other_expense: '其他支出'
+      },
+      summary: {
+        income: '营收',
+        expense: '成本',
+        netProfit: '净利润',
+        margin: '利润率',
+        rangeTitle: '统计月份',
+        byCategory: '分类明细',
+        noData: '该月暂无记账数据'
+      },
+      form: {
+        type: '类型',
+        category: '分类',
+        amount: '金额（元）',
+        occurredAt: '发生时间',
+        note: '备注',
+        receipt: '凭证图片',
+        chooseReceipt: '选择图片',
+        uploading: '上传中...',
+        receiptAttached: '已附凭证',
+        receiptHint: '上传前会在浏览器本地压缩为 WebP，不会占用过多存储空间',
+        uploadFailed: '凭证上传失败',
+        invalidAmount: '请输入大于 0 的金额'
+      }
     },
 
     // Promo Codes

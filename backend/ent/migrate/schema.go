@@ -774,6 +774,48 @@ var (
 			},
 		},
 	}
+	// FinanceTransactionsColumns holds the columns for the "finance_transactions" table.
+	FinanceTransactionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "type", Type: field.TypeString, Size: 10},
+		{Name: "category", Type: field.TypeString, Size: 30},
+		{Name: "amount_fen", Type: field.TypeInt64},
+		{Name: "occurred_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "note", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "receipt_key", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "source", Type: field.TypeString, Size: 10, Default: "manual"},
+		{Name: "created_by", Type: field.TypeInt64, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// FinanceTransactionsTable holds the schema information for the "finance_transactions" table.
+	FinanceTransactionsTable = &schema.Table{
+		Name:       "finance_transactions",
+		Columns:    FinanceTransactionsColumns,
+		PrimaryKey: []*schema.Column{FinanceTransactionsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "financetransaction_type",
+				Unique:  false,
+				Columns: []*schema.Column{FinanceTransactionsColumns[1]},
+			},
+			{
+				Name:    "financetransaction_category",
+				Unique:  false,
+				Columns: []*schema.Column{FinanceTransactionsColumns[2]},
+			},
+			{
+				Name:    "financetransaction_occurred_at",
+				Unique:  false,
+				Columns: []*schema.Column{FinanceTransactionsColumns[4]},
+			},
+			{
+				Name:    "financetransaction_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{FinanceTransactionsColumns[9]},
+			},
+		},
+	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1895,6 +1937,7 @@ var (
 		ErrorPassthroughRulesTable,
 		FeedbacksTable,
 		FeedbackRepliesTable,
+		FinanceTransactionsTable,
 		GroupsTable,
 		IdempotencyRecordsTable,
 		InvoiceProfilesTable,
@@ -1980,6 +2023,9 @@ func init() {
 	FeedbackRepliesTable.ForeignKeys[1].RefTable = UsersTable
 	FeedbackRepliesTable.Annotation = &entsql.Annotation{
 		Table: "feedback_replies",
+	}
+	FinanceTransactionsTable.Annotation = &entsql.Annotation{
+		Table: "finance_transactions",
 	}
 	GroupsTable.Annotation = &entsql.Annotation{
 		Table: "groups",

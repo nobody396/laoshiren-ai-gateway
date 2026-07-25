@@ -21,6 +21,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/errorpassthroughrule"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedback"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackreply"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/financetransaction"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/group"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/idempotencyrecord"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/invoiceprofile"
@@ -756,6 +757,68 @@ func init() {
 	feedbackreplyDescCreatedAt := feedbackreplyFields[5].Descriptor()
 	// feedbackreply.DefaultCreatedAt holds the default value on creation for the created_at field.
 	feedbackreply.DefaultCreatedAt = feedbackreplyDescCreatedAt.Default.(func() time.Time)
+	financetransactionFields := schema.FinanceTransaction{}.Fields()
+	_ = financetransactionFields
+	// financetransactionDescType is the schema descriptor for type field.
+	financetransactionDescType := financetransactionFields[0].Descriptor()
+	// financetransaction.TypeValidator is a validator for the "type" field. It is called by the builders before save.
+	financetransaction.TypeValidator = func() func(string) error {
+		validators := financetransactionDescType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(_type string) error {
+			for _, fn := range fns {
+				if err := fn(_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// financetransactionDescCategory is the schema descriptor for category field.
+	financetransactionDescCategory := financetransactionFields[1].Descriptor()
+	// financetransaction.CategoryValidator is a validator for the "category" field. It is called by the builders before save.
+	financetransaction.CategoryValidator = func() func(string) error {
+		validators := financetransactionDescCategory.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(category string) error {
+			for _, fn := range fns {
+				if err := fn(category); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// financetransactionDescAmountFen is the schema descriptor for amount_fen field.
+	financetransactionDescAmountFen := financetransactionFields[2].Descriptor()
+	// financetransaction.AmountFenValidator is a validator for the "amount_fen" field. It is called by the builders before save.
+	financetransaction.AmountFenValidator = financetransactionDescAmountFen.Validators[0].(func(int64) error)
+	// financetransactionDescReceiptKey is the schema descriptor for receipt_key field.
+	financetransactionDescReceiptKey := financetransactionFields[5].Descriptor()
+	// financetransaction.ReceiptKeyValidator is a validator for the "receipt_key" field. It is called by the builders before save.
+	financetransaction.ReceiptKeyValidator = financetransactionDescReceiptKey.Validators[0].(func(string) error)
+	// financetransactionDescSource is the schema descriptor for source field.
+	financetransactionDescSource := financetransactionFields[6].Descriptor()
+	// financetransaction.DefaultSource holds the default value on creation for the source field.
+	financetransaction.DefaultSource = financetransactionDescSource.Default.(string)
+	// financetransaction.SourceValidator is a validator for the "source" field. It is called by the builders before save.
+	financetransaction.SourceValidator = financetransactionDescSource.Validators[0].(func(string) error)
+	// financetransactionDescCreatedAt is the schema descriptor for created_at field.
+	financetransactionDescCreatedAt := financetransactionFields[8].Descriptor()
+	// financetransaction.DefaultCreatedAt holds the default value on creation for the created_at field.
+	financetransaction.DefaultCreatedAt = financetransactionDescCreatedAt.Default.(func() time.Time)
+	// financetransactionDescUpdatedAt is the schema descriptor for updated_at field.
+	financetransactionDescUpdatedAt := financetransactionFields[9].Descriptor()
+	// financetransaction.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	financetransaction.DefaultUpdatedAt = financetransactionDescUpdatedAt.Default.(func() time.Time)
+	// financetransaction.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	financetransaction.UpdateDefaultUpdatedAt = financetransactionDescUpdatedAt.UpdateDefault.(func() time.Time)
 	groupMixin := schema.Group{}.Mixin()
 	groupMixinHooks1 := groupMixin[1].Hooks()
 	group.Hooks[0] = groupMixinHooks1[0]

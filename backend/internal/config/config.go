@@ -399,6 +399,8 @@ type GatewayConfig struct {
 	GPTImageS3 GPTImageS3Config `mapstructure:"gpt_image_s3"`
 	// GPTImageTaskSettlement: GPT-Image 异步任务后台结算配置。
 	GPTImageTaskSettlement GPTImageTaskSettlementConfig `mapstructure:"gpt_image_task_settlement"`
+	// FinanceReceiptS3: 财务记账凭证图片私有 S3 转存配置（复用同一套配置结构）。
+	FinanceReceiptS3 GPTImageS3Config `mapstructure:"finance_receipt_s3"`
 
 	// HTTP 上游连接池配置（性能优化：支持高并发场景调优）
 	// MaxIdleConns: 所有主机的最大空闲连接总数
@@ -1449,6 +1451,16 @@ func setDefaults() {
 	viper.SetDefault("gateway.gpt_image_s3.prefix", "gpt-image/")
 	viper.SetDefault("gateway.gpt_image_s3.force_path_style", false)
 	viper.SetDefault("gateway.gpt_image_s3.max_image_bytes", int64(20*1024*1024))
+
+	viper.SetDefault("gateway.finance_receipt_s3.enabled", false)
+	viper.SetDefault("gateway.finance_receipt_s3.endpoint", "")
+	viper.SetDefault("gateway.finance_receipt_s3.region", "us-east-1")
+	viper.SetDefault("gateway.finance_receipt_s3.bucket", "")
+	viper.SetDefault("gateway.finance_receipt_s3.access_key_id", "")
+	viper.SetDefault("gateway.finance_receipt_s3.secret_access_key", "")
+	viper.SetDefault("gateway.finance_receipt_s3.prefix", "finance-receipts/")
+	viper.SetDefault("gateway.finance_receipt_s3.force_path_style", false)
+	viper.SetDefault("gateway.finance_receipt_s3.max_image_bytes", int64(8*1024*1024))
 	viper.SetDefault("gateway.gpt_image_task_settlement.enabled", true)
 	viper.SetDefault("gateway.gpt_image_task_settlement.interval_seconds", 30)
 	viper.SetDefault("gateway.gpt_image_task_settlement.batch_size", 20)

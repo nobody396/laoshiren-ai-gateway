@@ -273,6 +273,72 @@ export interface AnnouncementUserReadStatus {
   read_at?: string
 }
 
+// ==================== Finance Ledger Types ====================
+// 手工记账流水：真实现金进出，独立于成本核算 (cost accounting) 的理论毛利率计算。
+
+export type FinanceTransactionType = 'income' | 'expense'
+
+export type FinanceTransactionCategory =
+  | 'sale_revenue'
+  | 'other_income'
+  | 'upstream_topup'
+  | 'server_cost'
+  | 'domain_cost'
+  | 'early_cost'
+  | 'other_expense'
+
+export type FinanceTransactionSource = 'manual' | 'skill'
+
+export interface FinanceTransaction {
+  id: number
+  type: FinanceTransactionType
+  category: FinanceTransactionCategory
+  amount_fen: number
+  occurred_at: string
+  note?: string
+  receipt_key?: string
+  source: FinanceTransactionSource
+  created_by?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface FinanceCategoryTotal {
+  type: FinanceTransactionType
+  category: FinanceTransactionCategory
+  total_fen: number
+  tx_count: number
+}
+
+export interface FinanceTransactionSummary {
+  range_from: string
+  range_to: string
+  total_income_fen: number
+  total_expense_fen: number
+  net_profit_fen: number
+  margin_percent: number
+  by_category: FinanceCategoryTotal[]
+}
+
+export interface CreateFinanceTransactionRequest {
+  type: FinanceTransactionType
+  category: FinanceTransactionCategory
+  amount_fen: number
+  occurred_at?: number
+  note?: string
+  receipt_key?: string
+  source?: FinanceTransactionSource
+}
+
+export interface UpdateFinanceTransactionRequest {
+  type?: FinanceTransactionType
+  category?: FinanceTransactionCategory
+  amount_fen?: number
+  occurred_at?: number
+  note?: string
+  receipt_key?: string
+}
+
 // ==================== Feedback Types ====================
 
 export type FeedbackCategory = 'bug' | 'suggestion' | 'complaint' | 'other'

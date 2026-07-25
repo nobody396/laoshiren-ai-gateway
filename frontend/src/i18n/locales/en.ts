@@ -410,6 +410,7 @@ export default {
   nav: {
     dashboard: 'Dashboard',
     announcements: 'Announcements',
+    financeTransactions: 'Finance Ledger',
     apiKeys: 'API Keys',
     usage: 'Usage',
     redeem: 'Redeem',
@@ -3938,6 +3939,76 @@ export default {
       failedToDelete: 'Failed to delete announcement',
       failedToLoadReadStatus: 'Failed to load read status',
       deleteConfirm: 'Are you sure you want to delete this announcement? This action cannot be undone.'
+    },
+
+    // Finance Ledger (manual bookkeeping of real cash in/out, independent of the
+    // theoretical cost-accounting margin calculator)
+    financeTransactions: {
+      title: 'Finance Ledger',
+      description: 'Record real income and expenses to track revenue, cost, and margin',
+      record: 'Record Transaction',
+      editTransaction: 'Edit Transaction',
+      deleteTransaction: 'Delete Transaction',
+      deleteConfirm: 'Are you sure you want to delete this transaction? This action cannot be undone.',
+      searchPlaceholder: 'Search notes...',
+      allTypes: 'All Types',
+      allCategories: 'All Categories',
+      viewReceipt: 'View Receipt',
+      failedToLoad: 'Failed to load finance transactions',
+      failedToCreate: 'Failed to create transaction',
+      failedToUpdate: 'Failed to update transaction',
+      failedToDelete: 'Failed to delete transaction',
+      failedToLoadReceipt: 'Failed to load receipt link',
+      columns: {
+        occurredAt: 'Occurred At',
+        type: 'Type',
+        category: 'Category',
+        amount: 'Amount',
+        note: 'Note',
+        source: 'Source',
+        txCount: 'Count',
+        actions: 'Actions'
+      },
+      typeLabels: {
+        income: 'Income',
+        expense: 'Expense'
+      },
+      sourceLabels: {
+        manual: 'Manual',
+        skill: 'Skill'
+      },
+      categoryLabels: {
+        sale_revenue: 'Sale Revenue',
+        other_income: 'Other Income',
+        upstream_topup: 'Upstream Top-up',
+        server_cost: 'Server Cost',
+        domain_cost: 'Domain Cost',
+        early_cost: 'Early-stage Cost',
+        other_expense: 'Other Expense'
+      },
+      summary: {
+        income: 'Revenue',
+        expense: 'Cost',
+        netProfit: 'Net Profit',
+        margin: 'Margin',
+        rangeTitle: 'Period',
+        byCategory: 'By Category',
+        noData: 'No transactions this month'
+      },
+      form: {
+        type: 'Type',
+        category: 'Category',
+        amount: 'Amount (CNY)',
+        occurredAt: 'Occurred At',
+        note: 'Note',
+        receipt: 'Receipt Image',
+        chooseReceipt: 'Choose Image',
+        uploading: 'Uploading...',
+        receiptAttached: 'Receipt attached',
+        receiptHint: 'Compressed to WebP in your browser before upload to keep storage small',
+        uploadFailed: 'Failed to upload receipt',
+        invalidAmount: 'Enter an amount greater than 0'
+      }
     },
 
     // Promo Codes

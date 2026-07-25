@@ -38,25 +38,26 @@ var scannerGroupMap = map[string]string{
 	"rbac/apis":       "API 管理", // 菜单 id=63 name
 
 	// 单段 (与菜单 admin_menus.name 一一对齐, 条目顺序按菜单 sort_order).
-	"dashboard":     "管理仪表盘", // 菜单 id=2
-	"users":         "用户管理",  // 菜单 route=/admin/users
-	"agents":        "代理商管理", // 菜单 route=/admin/agents
-	"accounts":      "账号管理",  // 菜单 id=21
-	"groups":        "分组管理",  // 菜单 id=22
-	"channels":      "渠道管理",  // 菜单 route=/admin/channels
-	"suppliers":     "供应商考察", // 菜单 route=/admin/suppliers
-	"subscriptions": "订阅管理",  // 菜单 id=31
-	"redeem-codes":  "卡密管理",  // 菜单 id=32 (菜单 route=/admin/redeem, API 路径 /admin/redeem-codes)
-	"promo-codes":   "优惠码管理", // 菜单 id=33
-	"topup":         "充值订单",  // 菜单 id=34 (API 路径 /admin/topup/orders)
-	"invoice":       "开票管理",  // 菜单 id=35 (API 路径 /admin/invoice/requests)
-	"announcements": "公告管理",  // 菜单 id=41
-	"feedbacks":     "反馈管理",  // 菜单 id=42
-	"proxies":       "代理管理",  // 菜单 id=51
-	"usage":         "使用记录",  // 菜单 id=52
-	"ops":           "运维监控",  // 菜单 id=53
-	"settings":      "系统设置",  // 菜单 id=54
-	"rbac":          "角色管理",  // 菜单 id=61 (/admin/rbac/roles/*, /admin/rbac/menu, /admin/rbac/me/*, /admin/rbac/users/:id/roles)
+	"dashboard":            "管理仪表盘", // 菜单 id=2
+	"users":                "用户管理",  // 菜单 route=/admin/users
+	"agents":               "代理商管理", // 菜单 route=/admin/agents
+	"accounts":             "账号管理",  // 菜单 id=21
+	"groups":               "分组管理",  // 菜单 id=22
+	"channels":             "渠道管理",  // 菜单 route=/admin/channels
+	"suppliers":            "供应商考察", // 菜单 route=/admin/suppliers
+	"subscriptions":        "订阅管理",  // 菜单 id=31
+	"redeem-codes":         "卡密管理",  // 菜单 id=32 (菜单 route=/admin/redeem, API 路径 /admin/redeem-codes)
+	"promo-codes":          "优惠码管理", // 菜单 id=33
+	"topup":                "充值订单",  // 菜单 id=34 (API 路径 /admin/topup/orders)
+	"invoice":              "开票管理",  // 菜单 id=35 (API 路径 /admin/invoice/requests)
+	"announcements":        "公告管理",  // 菜单 id=41
+	"feedbacks":            "反馈管理",  // 菜单 id=42
+	"finance-transactions": "财务记账",  // 菜单 route=/admin/finance-transactions
+	"proxies":              "代理管理",  // 菜单 id=51
+	"usage":                "使用记录",  // 菜单 id=52
+	"ops":                  "运维监控",  // 菜单 id=53
+	"settings":             "系统设置",  // 菜单 id=54
+	"rbac":                 "角色管理",  // 菜单 id=61 (/admin/rbac/roles/*, /admin/rbac/menu, /admin/rbac/me/*, /admin/rbac/users/:id/roles)
 
 	// 左侧菜单中无独立入口, 保留独立分组名仅便于运营识别, 未来若新增菜单需同步更新此处文案.
 	"api-keys":                 "API Key",

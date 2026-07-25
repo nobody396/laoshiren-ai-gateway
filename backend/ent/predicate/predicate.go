@@ -54,6 +54,9 @@ type Feedback func(*sql.Selector)
 // FeedbackReply is the predicate function for feedbackreply builders.
 type FeedbackReply func(*sql.Selector)
 
+// FinanceTransaction is the predicate function for financetransaction builders.
+type FinanceTransaction func(*sql.Selector)
+
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 

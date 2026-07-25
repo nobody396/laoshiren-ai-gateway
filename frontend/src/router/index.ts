@@ -655,6 +655,19 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/finance-transactions',
+    name: 'AdminFinanceTransactions',
+    component: () => import('@/views/admin/FinanceTransactionsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      permission: 'admin:finance-transactions',
+      title: 'Finance Ledger',
+      titleKey: 'admin.financeTransactions.title',
+      descriptionKey: 'admin.financeTransactions.description'
+    }
+  },
+  {
     path: '/admin/feedbacks',
     name: 'AdminFeedbacks',
     component: () => import('@/views/admin/FeedbacksView.vue'),

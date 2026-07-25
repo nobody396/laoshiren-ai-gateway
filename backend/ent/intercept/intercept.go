@@ -24,6 +24,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/errorpassthroughrule"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedback"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackreply"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/financetransaction"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/group"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/idempotencyrecord"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/invoiceprofile"
@@ -535,6 +536,33 @@ func (f TraverseFeedbackReply) Traverse(ctx context.Context, q ent.Query) error 
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.FeedbackReplyQuery", q)
+}
+
+// The FinanceTransactionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type FinanceTransactionFunc func(context.Context, *ent.FinanceTransactionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f FinanceTransactionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.FinanceTransactionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.FinanceTransactionQuery", q)
+}
+
+// The TraverseFinanceTransaction type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseFinanceTransaction func(context.Context, *ent.FinanceTransactionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseFinanceTransaction) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseFinanceTransaction) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.FinanceTransactionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.FinanceTransactionQuery", q)
 }
 
 // The GroupFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -1166,6 +1194,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.FeedbackQuery, predicate.Feedback, feedback.OrderOption]{typ: ent.TypeFeedback, tq: q}, nil
 	case *ent.FeedbackReplyQuery:
 		return &query[*ent.FeedbackReplyQuery, predicate.FeedbackReply, feedbackreply.OrderOption]{typ: ent.TypeFeedbackReply, tq: q}, nil
+	case *ent.FinanceTransactionQuery:
+		return &query[*ent.FinanceTransactionQuery, predicate.FinanceTransaction, financetransaction.OrderOption]{typ: ent.TypeFinanceTransaction, tq: q}, nil
 	case *ent.GroupQuery:
 		return &query[*ent.GroupQuery, predicate.Group, group.OrderOption]{typ: ent.TypeGroup, tq: q}, nil
 	case *ent.IdempotencyRecordQuery:

@@ -128,6 +128,16 @@ var scannerDescMap = map[string]string{
 	"DELETE /admin/announcements/:id":          "删除公告",
 	"GET /admin/announcements/:id/read-status": "公告已读状态",
 
+	// ==================== 财务记账 (finance-transactions) ====================
+	"GET /admin/finance-transactions":                 "分页查询记账流水",
+	"POST /admin/finance-transactions":                "新增记账流水",
+	"GET /admin/finance-transactions/summary":         "营收/成本汇总",
+	"POST /admin/finance-transactions/receipts":       "上传记账凭证图片",
+	"GET /admin/finance-transactions/:id":             "记账流水详情",
+	"PUT /admin/finance-transactions/:id":             "编辑记账流水",
+	"DELETE /admin/finance-transactions/:id":          "删除记账流水",
+	"GET /admin/finance-transactions/:id/receipt-url": "获取凭证图片临时链接",
+
 	// ==================== 反馈管理 (feedbacks) ====================
 	"GET /admin/feedbacks":               "分页查询反馈列表",
 	"GET /admin/feedbacks/:id":           "反馈详情",

@@ -53,7 +53,10 @@
                       <span class="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
                         保守 {{ formatPercent(plan.margin_range.conservative_percent) }}
                       </span>
-                      <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                      <span
+                        class="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
+                        :title="`全部走最便宜的主用账号：成本 ¥${plan.best_case_scenario.cost_cny.toFixed(2)}，利润 ¥${plan.best_case_scenario.profit_cny.toFixed(2)}`"
+                      >
                         最优 {{ formatPercent(plan.margin_range.best_percent) }}
                       </span>
                       <span

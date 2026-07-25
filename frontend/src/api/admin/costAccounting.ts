@@ -54,6 +54,7 @@ export interface CostAccountingMonthlyPlan {
   products: Record<CostAccountingProduct, CostAccountingRate>
   single_product_scenarios: Record<string, CostAccountingScenario>
   real_usage: CostAccountingRealUsage
+  best_case_scenario: CostAccountingMoney
   margin_range: CostAccountingMarginRange
 }
 

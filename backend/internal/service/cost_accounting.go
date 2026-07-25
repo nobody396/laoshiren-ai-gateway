@@ -103,7 +103,10 @@ type CostAccountingMonthlyPlan struct {
 	Products               map[string]CostAccountingRate     `json:"products"`
 	SingleProductScenarios map[string]CostAccountingScenario `json:"single_product_scenarios"`
 	RealUsage              CostAccountingRealUsage           `json:"real_usage"`
-	MarginRange            CostAccountingMarginRange         `json:"margin_range"`
+	// BestCaseScenario: full quota, all traffic through whichever product's
+	// cheapest bound (primary) account is cheapest overall. See MarginRange.BestPercent.
+	BestCaseScenario CostAccountingMoney       `json:"best_case_scenario"`
+	MarginRange      CostAccountingMarginRange `json:"margin_range"`
 }
 
 type CostAccountingPayAsYouGoGroup struct {
@@ -299,6 +302,27 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 		conservativeMargin := money(direct, conservativeCost).MarginPercent
 		balancedMargin := money(direct, balancedCost).MarginPercent
 
+		// Best case: all traffic goes through whichever product's cheapest
+		// (primary/highest-priority) bound account is cheapest overall — e.g.
+		// GPT's primary account at 0.15 vs its own worst-case fallback at
+		// 0.20. This is what "全部用便宜账号" actually means; it must use
+		// primaryCostPerCredit, not worstCostPerCredit, or it collapses to
+		// the same number as the worst/conservative case.
+		bestCP := 0.0
+		haveBestCP := false
+		for _, product := range []string{"gpt", "claude", "grok"} {
+			cp, ok := primaryCostPerCredit[product]
+			if !ok {
+				continue
+			}
+			if !haveBestCP || cp < bestCP {
+				bestCP = cp
+				haveBestCP = true
+			}
+		}
+		bestCost := monthlyCredits * bestCP
+		bestScenario := money(direct, bestCost)
+
 		realUsage := CostAccountingRealUsage{Available: false, Note: "usage query unavailable"}
 		var realPercentPtr *float64
 		if usageErr == nil && usageByGroup != nil {
@@ -349,9 +373,10 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 			Products:               products,
 			SingleProductScenarios: scenarios,
 			RealUsage:              realUsage,
+			BestCaseScenario:       bestScenario,
 			MarginRange: CostAccountingMarginRange{
-				WorstPercent:        round2(scenarios["all_gpt"].VsDirectPrice.MarginPercent),
-				BestPercent:         round2(maxScenarioMargin(scenarios)),
+				WorstPercent:        conservativeMargin,
+				BestPercent:         bestScenario.MarginPercent,
 				ConservativePercent: conservativeMargin,
 				RealPercent:         realPercentPtr,
 			},
@@ -387,18 +412,6 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 	}
 
 	return overview, nil
-}
-
-func maxScenarioMargin(scenarios map[string]CostAccountingScenario) float64 {
-	best := 0.0
-	first := true
-	for _, s := range scenarios {
-		if first || s.VsDirectPrice.MarginPercent > best {
-			best = s.VsDirectPrice.MarginPercent
-			first = false
-		}
-	}
-	return best
 }
 
 func round4(v float64) float64 {

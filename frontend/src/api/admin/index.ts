@@ -29,6 +29,7 @@ import backupAPI from './backup'
 import channelsAPI from './channels'
 import suppliersAPI from './suppliers'
 import monthlyUpstreamsAPI from './monthlyUpstreams'
+import costAccountingAPI from './costAccounting'
 import tlsFingerprintProfilesAPI from './tlsFingerprintProfile'
 import invoiceAPI from './invoice'
 import rbacAPI from './rbac'
@@ -63,6 +64,7 @@ export const adminAPI = {
   channels: channelsAPI,
   suppliers: suppliersAPI,
   monthlyUpstreams: monthlyUpstreamsAPI,
+  costAccounting: costAccountingAPI,
   invoice: invoiceAPI,
   rbac: rbacAPI,
   tlsFingerprintProfiles: tlsFingerprintProfilesAPI

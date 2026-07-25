@@ -540,6 +540,17 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/cost-accounting',
+    name: 'AdminCostAccounting',
+    component: () => import('@/views/admin/CostAccountingView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      permission: 'admin:ops',
+      title: '成本核算'
+    }
+  },
+  {
     path: '/admin/users',
     name: 'AdminUsers',
     component: () => import('@/views/admin/UsersView.vue'),

@@ -40,7 +40,7 @@ GROUP BY group_id`
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var row service.CostAccountingUsageRow

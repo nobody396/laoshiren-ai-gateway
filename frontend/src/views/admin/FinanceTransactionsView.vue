@@ -398,7 +398,22 @@
               <Icon name="upload" size="sm" class="mr-1" />
               {{ uploadingReceipt ? t('admin.financeTransactions.form.uploading') : t('admin.financeTransactions.form.chooseReceipt') }}
             </button>
-            <img v-if="receiptPreviewUrl" :src="receiptPreviewUrl" class="h-12 w-12 rounded object-cover ring-1 ring-gray-200 dark:ring-gray-700" />
+            <button
+              v-if="receiptPreviewUrl"
+              type="button"
+              class="group relative h-12 w-12 overflow-hidden rounded ring-1 ring-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:ring-gray-700"
+              :aria-label="t('admin.financeTransactions.enlargeReceipt')"
+              :title="t('admin.financeTransactions.enlargeReceipt')"
+              data-test="uploaded-receipt-enlarge"
+              @click="openReceiptLightbox(receiptPreviewUrl)"
+            >
+              <img
+                :src="receiptPreviewUrl"
+                :alt="t('admin.financeTransactions.receiptPreviewTitle')"
+                class="h-full w-full object-cover transition-transform group-hover:scale-105"
+              />
+              <span class="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/15"></span>
+            </button>
             <span v-else-if="form.receipt_key" class="text-xs text-gray-500 dark:text-gray-400">
               {{ t('admin.financeTransactions.form.receiptAttached') }}
             </span>
@@ -463,17 +478,31 @@
         >
           {{ t('admin.financeTransactions.receiptPreviewFailed') }}
         </div>
-        <img
+        <button
           v-if="receiptViewerUrl && !receiptViewerFailed"
-          :src="receiptViewerUrl"
-          :alt="t('admin.financeTransactions.receiptPreviewTitle')"
+          type="button"
           :class="[
-            'max-h-[70vh] max-w-full rounded-lg object-contain shadow-sm transition-opacity',
+            'group relative max-h-[70vh] max-w-full cursor-zoom-in overflow-hidden rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-dark-900',
             receiptViewerLoading ? 'opacity-0' : 'opacity-100'
           ]"
-          @load="receiptViewerLoading = false"
-          @error="handleReceiptPreviewError"
-        />
+          :aria-label="t('admin.financeTransactions.enlargeReceipt')"
+          :title="t('admin.financeTransactions.enlargeReceipt')"
+          data-test="receipt-preview-enlarge"
+          @click="openReceiptLightbox(receiptViewerUrl)"
+        >
+          <img
+            :src="receiptViewerUrl"
+            :alt="t('admin.financeTransactions.receiptPreviewTitle')"
+            class="max-h-[70vh] max-w-full object-contain shadow-sm transition-transform group-hover:scale-[1.01]"
+            @load="receiptViewerLoading = false"
+            @error="handleReceiptPreviewError"
+          />
+          <span
+            class="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent px-3 pb-3 pt-8 text-center text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100"
+          >
+            {{ t('admin.financeTransactions.enlargeReceipt') }}
+          </span>
+        </button>
       </div>
 
       <template #footer>
@@ -494,6 +523,18 @@
         </div>
       </template>
     </BaseDialog>
+
+    <ImageLightbox
+      :show="showReceiptLightbox"
+      :src="receiptLightboxUrl"
+      :title="t('admin.financeTransactions.receiptLightboxTitle')"
+      :alt="t('admin.financeTransactions.receiptPreviewTitle')"
+      :close-label="t('admin.financeTransactions.closeReceiptLightbox')"
+      :open-external-label="t('admin.financeTransactions.openReceiptInNewWindow')"
+      :failed-label="t('admin.financeTransactions.receiptPreviewFailed')"
+      @close="closeReceiptLightbox"
+      @error="handleReceiptLightboxError"
+    />
   </AppLayout>
 </template>
 
@@ -533,6 +574,7 @@ import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Select from '@/components/common/Select.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import StatCard from '@/components/common/StatCard.vue'
+import ImageLightbox from '@/components/common/ImageLightbox.vue'
 import Icon from '@/components/icons/Icon.vue'
 
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
@@ -1027,6 +1069,7 @@ function openEditDialog(row: FinanceTransaction) {
 }
 
 function closeEdit() {
+  closeReceiptLightbox()
   showEditDialog.value = false
   editingTransaction.value = null
 }
@@ -1132,6 +1175,9 @@ async function handleFileSelected(event: Event) {
 }
 
 function clearReceipt() {
+  if (receiptLightboxUrl.value === receiptPreviewUrl.value) {
+    closeReceiptLightbox()
+  }
   form.receipt_key = ''
   receiptPreviewUrl.value = ''
 }
@@ -1156,6 +1202,19 @@ const showReceiptViewer = ref(false)
 const receiptViewerUrl = ref('')
 const receiptViewerLoading = ref(false)
 const receiptViewerFailed = ref(false)
+const showReceiptLightbox = ref(false)
+const receiptLightboxUrl = ref('')
+
+function openReceiptLightbox(url: string) {
+  if (!url) return
+  receiptLightboxUrl.value = url
+  showReceiptLightbox.value = true
+}
+
+function closeReceiptLightbox() {
+  showReceiptLightbox.value = false
+  receiptLightboxUrl.value = ''
+}
 
 function handleReceiptPreviewError() {
   receiptViewerLoading.value = false
@@ -1163,7 +1222,12 @@ function handleReceiptPreviewError() {
   appStore.showError(t('admin.financeTransactions.receiptPreviewFailed'))
 }
 
+function handleReceiptLightboxError() {
+  appStore.showError(t('admin.financeTransactions.receiptPreviewFailed'))
+}
+
 function closeReceiptPreview() {
+  closeReceiptLightbox()
   showReceiptViewer.value = false
   receiptViewerUrl.value = ''
   receiptViewerLoading.value = false

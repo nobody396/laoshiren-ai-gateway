@@ -3,6 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 
 import FinanceTransactionsView from '../FinanceTransactionsView.vue'
 import { formatCurrency } from '@/utils/format'
+import ImageLightbox from '@/components/common/ImageLightbox.vue'
 
 const { list, summary, create, deleteTransaction, update, uploadReceipt, getReceiptUrl, showError, showSuccess } =
   vi.hoisted(() => {
@@ -232,6 +233,13 @@ describe('admin FinanceTransactionsView', () => {
     expect(wrapper.find('img[alt="admin.financeTransactions.receiptPreviewTitle"]').attributes('src')).toBe(
       'https://example.test/signed-receipt.jpg'
     )
+    await wrapper.find('[data-test="receipt-preview-enlarge"]').trigger('click')
+    await flushPromises()
+
+    const lightbox = wrapper.findComponent(ImageLightbox)
+    expect(lightbox.props('show')).toBe(true)
+    expect(lightbox.props('src')).toBe('https://example.test/signed-receipt.jpg')
+
     const downloadLink = wrapper.find('a[target="_blank"]')
     expect(downloadLink.attributes('href')).toBe(
       'https://example.test/signed-receipt.jpg'

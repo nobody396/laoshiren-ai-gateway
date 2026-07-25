@@ -1024,9 +1024,12 @@
             v-for="option in ccsClientOptions"
             :key="option.value"
             @click="handleCcsClientSelect(option.value)"
-            class="flex flex-col items-center gap-2 rounded-xl border-2 border-gray-200 p-4 transition-all hover:border-primary-500 hover:bg-primary-50 dark:border-dark-600 dark:hover:border-primary-500 dark:hover:bg-primary-900/20"
+            class="group flex flex-col items-center gap-2.5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:border-dark-600 dark:bg-dark-800 dark:hover:border-primary-700 dark:focus-visible:ring-offset-dark-900"
           >
-            <Icon :name="option.icon" size="xl" class="text-gray-600 dark:text-gray-400" />
+            <CcsClientIcon
+              :client="option.value"
+              class="h-14 w-14 transition-transform duration-200 group-hover:scale-[1.04]"
+            />
             <span class="font-medium text-gray-900 dark:text-white">{{ option.label }}</span>
             <span class="text-center text-xs text-gray-500 dark:text-gray-400">{{ option.description }}</span>
           </button>
@@ -1291,6 +1294,7 @@ import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import SearchInput from '@/components/common/SearchInput.vue'
 	import Icon from '@/components/icons/Icon.vue'
 	import UseKeyModal from '@/components/keys/UseKeyModal.vue'
+	import CcsClientIcon from '@/components/keys/CcsClientIcon.vue'
 	import GroupBadge from '@/components/common/GroupBadge.vue'
 	import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
 	import GroupSectionHeader from '@/components/common/GroupSectionHeader.vue'
@@ -1358,7 +1362,6 @@ type CcsClientOption = {
   value: CcsImportTarget
   label: string
   description: string
-  icon: 'terminal' | 'cloud' | 'sparkles' | 'cube' | 'brain' | 'cpu'
 }
 
 const appStore = useAppStore()
@@ -1448,43 +1451,37 @@ const ccsClientOptions = computed<CcsClientOption[]>(() => {
         return {
           value: target,
           label: t('keys.ccsClientSelect.claudeCodeCli'),
-          description: t('keys.ccsClientSelect.claudeCodeCliDesc'),
-          icon: 'terminal'
+          description: t('keys.ccsClientSelect.claudeCodeCliDesc')
         }
       case 'codex':
         return {
           value: target,
           label: t('keys.ccsClientSelect.codex'),
-          description: t('keys.ccsClientSelect.codexDesc'),
-          icon: 'cpu'
+          description: t('keys.ccsClientSelect.codexDesc')
         }
       case 'opencode':
         return {
           value: target,
           label: t('keys.ccsClientSelect.opencode'),
-          description: t('keys.ccsClientSelect.opencodeDesc'),
-          icon: 'terminal'
+          description: t('keys.ccsClientSelect.opencodeDesc')
         }
       case 'openclaw':
         return {
           value: target,
           label: t('keys.ccsClientSelect.openclaw'),
-          description: t('keys.ccsClientSelect.openclawDesc'),
-          icon: 'cube'
+          description: t('keys.ccsClientSelect.openclawDesc')
         }
       case 'hermes':
         return {
           value: target,
           label: t('keys.ccsClientSelect.hermes'),
-          description: t('keys.ccsClientSelect.hermesDesc'),
-          icon: 'brain'
+          description: t('keys.ccsClientSelect.hermesDesc')
         }
       case 'gemini':
         return {
           value: target,
           label: t('keys.ccsClientSelect.geminiCli'),
-          description: t('keys.ccsClientSelect.geminiCliDesc'),
-          icon: 'sparkles'
+          description: t('keys.ccsClientSelect.geminiCliDesc')
         }
     }
   })

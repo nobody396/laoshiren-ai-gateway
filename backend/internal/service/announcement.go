@@ -66,4 +66,6 @@ type AnnouncementReadRepository interface {
 	GetReadMapByUser(ctx context.Context, userID int64, announcementIDs []int64) (map[int64]time.Time, error)
 	GetReadMapByUsers(ctx context.Context, announcementID int64, userIDs []int64) (map[int64]time.Time, error)
 	CountByAnnouncementID(ctx context.Context, announcementID int64) (int64, error)
+	GetLastPromptedAnnouncementID(ctx context.Context, userID int64) (int64, error)
+	MarkPopupBatchPrompted(ctx context.Context, userID, throughAnnouncementID int64, promptedAt time.Time) error
 }

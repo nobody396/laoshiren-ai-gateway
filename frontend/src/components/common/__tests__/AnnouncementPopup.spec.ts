@@ -42,12 +42,45 @@ describe('AnnouncementPopup', () => {
     const store = useAnnouncementStore()
     wrapper = mount(AnnouncementPopup, { attachTo: document.body })
 
-    store.currentPopup = popup
+    store.popupBatch = {
+      announcements: [popup],
+      total: 1,
+      throughAnnouncementId: popup.id
+    }
     await nextTick()
     expect(document.body.style.overflow).toBe('hidden')
 
-    store.currentPopup = null
+    store.dismissPopup()
     await nextTick()
     expect(document.body.style.overflow).toBe('')
+  })
+
+  it('shows one summary popup for a backlog instead of replaying every item', async () => {
+    const store = useAnnouncementStore()
+    const backlog = Array.from({ length: 10 }, (_, index) => ({
+      ...popup,
+      id: index + 1,
+      title: `Announcement ${index + 1}`
+    }))
+    store.popupBatch = {
+      announcements: backlog.slice(0, 3),
+      total: backlog.length,
+      throughAnnouncementId: 10
+    }
+
+    wrapper = mount(AnnouncementPopup, { attachTo: document.body })
+    await nextTick()
+
+    expect(document.body.querySelectorAll('[data-testid="announcement-popup"]')).toHaveLength(1)
+    expect(document.body.querySelectorAll('[data-testid="announcement-popup-batch"] h3')).toHaveLength(3)
+    expect(document.body.textContent).toContain('announcements.newCount')
+
+    const buttons = Array.from(document.body.querySelectorAll('button'))
+    const laterButton = buttons.find((button) => button.textContent?.includes('announcements.viewLater'))
+    laterButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
+
+    expect(store.popupBatch).toBeNull()
+    expect(document.body.querySelectorAll('[data-testid="announcement-popup"]')).toHaveLength(0)
   })
 })

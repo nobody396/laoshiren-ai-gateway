@@ -5,17 +5,17 @@
       @click="openModal"
       class="relative flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-600 transition-all hover:scale-105 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-dark-800"
       :class="{ 'text-blue-600 dark:text-blue-400': unreadCount > 0 }"
-      :aria-label="t('announcements.title')"
+      :aria-label="unreadCount > 0 ? t('announcements.newCount', { count: unreadCount }) : t('announcements.title')"
     >
       <Icon name="bell" size="sm" />
       <span class="hidden sm:inline">{{ t('announcements.title') }}</span>
-      <!-- 未读红点 -->
+      <!-- 未读数量 -->
       <span
         v-if="unreadCount > 0"
-        class="absolute right-1 top-1 flex h-1.5 w-1.5"
+        data-testid="announcement-unread-badge"
+        class="absolute -right-1.5 -top-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-4 text-white shadow-sm ring-2 ring-white dark:ring-dark-900"
       >
-        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75"></span>
-        <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500"></span>
+        {{ unreadBadge }}
       </span>
     </button>
 
@@ -23,7 +23,7 @@
     <Teleport to="body">
       <Transition name="modal-fade">
         <div
-          v-if="isModalOpen"
+          v-if="isCenterOpen"
           class="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-gradient-to-br from-black/70 via-black/60 to-black/70 p-4 pt-[8vh] backdrop-blur-md"
           @click="closeModal"
         >
@@ -336,11 +336,11 @@ marked.setOptions({
 })
 
 // Use store state (storeToRefs for reactivity)
-const { announcements, loading } = storeToRefs(announcementStore)
+const { announcements, loading, isCenterOpen } = storeToRefs(announcementStore)
 const unreadCount = computed(() => announcementStore.unreadCount)
+const unreadBadge = computed(() => unreadCount.value > 99 ? '99+' : String(unreadCount.value))
 
 // Local modal state
-const isModalOpen = ref(false)
 const detailModalOpen = ref(false)
 const selectedAnnouncement = ref<UserAnnouncement | null>(null)
 
@@ -352,11 +352,11 @@ function renderMarkdown(content: string): string {
 }
 
 function openModal() {
-  isModalOpen.value = true
+  announcementStore.openCenter()
 }
 
 function closeModal() {
-  isModalOpen.value = false
+  announcementStore.closeCenter()
 }
 
 function openDetail(announcement: UserAnnouncement) {
@@ -399,7 +399,7 @@ function handleEscape(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     if (detailModalOpen.value) {
       closeDetail()
-    } else if (isModalOpen.value) {
+    } else if (isCenterOpen.value) {
       closeModal()
     }
   }
@@ -414,7 +414,7 @@ onBeforeUnmount(() => {
 })
 
 useBodyScrollLock(computed(
-  () => isModalOpen.value || detailModalOpen.value || Boolean(announcementStore.currentPopup)
+  () => isCenterOpen.value || detailModalOpen.value
 ))
 </script>
 

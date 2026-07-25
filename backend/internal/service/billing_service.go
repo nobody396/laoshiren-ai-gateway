@@ -197,6 +197,9 @@ func (s *BillingService) initFallbackPricing() {
 	// Claude 4.8 Opus（官方与4.7同价）
 	s.fallbackPrices["claude-opus-4.8"] = s.fallbackPrices["claude-opus-4.7"]
 
+	// Claude Opus 5（LiteLLM 尚未收录，临时与 4.8 同价；收录后由动态价格接管）
+	s.fallbackPrices["claude-opus-5"] = s.fallbackPrices["claude-opus-4.8"]
+
 	// Claude Fable 5
 	s.fallbackPrices["claude-fable-5"] = &ModelPricing{
 		InputPricePerToken:         10e-6,   // $10 per MTok
@@ -336,6 +339,10 @@ func (s *BillingService) getFallbackPricing(model string) *ModelPricing {
 
 	// 按模型系列匹配
 	if strings.Contains(modelLower, "opus") {
+		// 精确匹配裸模型名 "opus-5"，避免和 "opus-4-5"（4.5）的 "-5" 混淆。
+		if strings.Contains(modelLower, "opus-5") || strings.Contains(modelLower, "opus 5") {
+			return s.fallbackPrices["claude-opus-5"]
+		}
 		if strings.Contains(modelLower, "4.8") || strings.Contains(modelLower, "4-8") {
 			return s.fallbackPrices["claude-opus-4.8"]
 		}

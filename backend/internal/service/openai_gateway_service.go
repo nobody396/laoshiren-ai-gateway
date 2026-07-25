@@ -25,6 +25,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ip"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/openai"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/platform/liveattestation"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/util/responseheaders"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/util/urlvalidator"
 	"github.com/cespare/xxhash/v2"
@@ -358,6 +359,8 @@ type OpenAIGatewayService struct {
 	gptImageTaskRepo         GPTImageTaskRepository
 	gptImageS3Storage        *GPTImageS3Storage
 	settingService           *SettingService
+	liveAttestation          liveattestation.Provider
+	liveAttestationCipher    SecretEncryptor
 	openAIRouteEvaluator     OpenAIRouteShadowEvaluator
 	openAIRouteAuditService  *OpenAIRouteAuditService
 	pipeline                 *GatewayPipeline
@@ -470,6 +473,8 @@ func NewOpenAIGatewayService(
 		gptImageTaskRepo:         gptImageTaskRepo,
 		gptImageS3Storage:        gptImageS3Storage,
 		settingService:           settingService,
+		liveAttestation:          liveattestation.NewProvider(),
+		liveAttestationCipher:    newLiveAttestationCipher(cfg),
 		responseHeaderFilter:     compileResponseHeaderFilter(cfg),
 		codexSnapshotThrottle:    newAccountWriteThrottle(openAICodexSnapshotPersistMinInterval),
 	}

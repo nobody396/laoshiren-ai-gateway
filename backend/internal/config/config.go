@@ -1459,6 +1459,7 @@ func setDefaults() {
 	viper.SetDefault("gateway.force_codex_cli", false)
 	viper.SetDefault("gateway.pipeline.openai_responses_enabled", true)
 	viper.SetDefault("gateway.openai_passthrough_allow_timeout_headers", false)
+	viper.SetDefault("gateway.live.max_session_duration_seconds", 3600)
 	viper.SetDefault("gateway.gpt_image_s3.enabled", false)
 	viper.SetDefault("gateway.gpt_image_s3.endpoint", "")
 	viper.SetDefault("gateway.gpt_image_s3.region", "us-east-1")

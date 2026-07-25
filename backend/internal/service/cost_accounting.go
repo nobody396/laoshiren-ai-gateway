@@ -20,8 +20,8 @@ var costAccountingPlanPricing = map[string]struct {
 	ShopPriceCNY   float64
 	DirectPriceCNY float64
 }{
-	"lite":  {Name: "Lite", ShopPriceCNY: 269, DirectPriceCNY: 265},
-	"pro":   {Name: "Pro", ShopPriceCNY: 519, DirectPriceCNY: 509},
+	"lite":  {Name: "Lite", ShopPriceCNY: 329, DirectPriceCNY: 319},
+	"pro":   {Name: "Pro", ShopPriceCNY: 639, DirectPriceCNY: 619},
 	"max":   {Name: "Max", ShopPriceCNY: 699, DirectPriceCNY: 685},
 	"ultra": {Name: "Ultra", ShopPriceCNY: 899, DirectPriceCNY: 879},
 	"apex":  {Name: "Apex", ShopPriceCNY: 1299, DirectPriceCNY: 1275},

@@ -31,6 +31,7 @@ export type MonthlyCreditCardPlan = {
   accent: string
   cardShopUrl: string
   disableWeeklyLimit?: boolean
+  retired?: boolean
 }
 
 export type MonthlyCreditCardPlanGroupEntitlement = {
@@ -152,8 +153,8 @@ const monthlyCreditCardPlanInputs = [
   {
     id: 'lite',
     name: 'Lite 月卡',
-    priceCny: 269,
-    directPriceCny: 265,
+    priceCny: 329,
+    directPriceCny: 319,
     dailyCredits: 15,
     description: '适合首次尝鲜，一份额度池同时覆盖 GPT Pro 与 Claude Max。',
     accent: 'lite',
@@ -163,8 +164,8 @@ const monthlyCreditCardPlanInputs = [
   {
     id: 'pro',
     name: 'Pro 月卡',
-    priceCny: 519,
-    directPriceCny: 509,
+    priceCny: 639,
+    directPriceCny: 619,
     dailyCredits: 30,
     description: '适合稳定日常开发，两个高阶分组共用同一份总额度。',
     accent: 'pro',
@@ -180,7 +181,8 @@ const monthlyCreditCardPlanInputs = [
     description: '适合重度开发者，共享池在复杂任务和长会话里留出余量。',
     accent: 'max',
     cardShopUrl: 'https://pay.ldxp.cn/item/lhd7pa',
-    disableWeeklyLimit: true
+    disableWeeklyLimit: true,
+    retired: true
   },
   {
     id: 'ultra',
@@ -191,7 +193,8 @@ const monthlyCreditCardPlanInputs = [
     description: '适合长期高频使用，两条高阶渠道共用同一份月度额度。',
     accent: 'ultra',
     cardShopUrl: 'https://pay.ldxp.cn/item/kqbjn9',
-    disableWeeklyLimit: true
+    disableWeeklyLimit: true,
+    retired: true
   },
   {
     id: 'apex',
@@ -204,7 +207,8 @@ const monthlyCreditCardPlanInputs = [
     rarityLabel: 'Legendary Apex',
     accent: 'apex',
     cardShopUrl: 'https://pay.ldxp.cn/item/pb4se8',
-    disableWeeklyLimit: true
+    disableWeeklyLimit: true,
+    retired: true
   }
 ] satisfies Array<Parameters<typeof createMonthlyCreditCardPlan>[0]>
 
@@ -212,7 +216,9 @@ export function buildMonthlyCreditCardPlans(
   entitlements: MonthlyCreditCardPlanEntitlement[] | null | undefined
 ): MonthlyCreditCardPlan[] {
   const entitlementByID = new Map((entitlements ?? []).map((item) => [item.id, item]))
-  return monthlyCreditCardPlanInputs.map((input) => createMonthlyCreditCardPlan(input, entitlementByID.get(input.id)))
+  return monthlyCreditCardPlanInputs
+    .filter((input) => !input.retired)
+    .map((input) => createMonthlyCreditCardPlan(input, entitlementByID.get(input.id)))
 }
 
 export const monthlyCreditCardPlans: MonthlyCreditCardPlan[] = [

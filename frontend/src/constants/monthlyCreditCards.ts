@@ -158,7 +158,7 @@ const monthlyCreditCardPlanInputs = [
     dailyCredits: 15,
     description: '适合首次尝鲜，一份额度池同时覆盖 GPT Pro 与 Claude Max。',
     accent: 'lite',
-    cardShopUrl: 'https://pay.ldxp.cn/item/dinyum',
+    cardShopUrl: 'https://pay.ldxp.cn/item/ul7lg1',
     disableWeeklyLimit: true
   },
   {
@@ -169,7 +169,7 @@ const monthlyCreditCardPlanInputs = [
     dailyCredits: 30,
     description: '适合稳定日常开发，两个高阶分组共用同一份总额度。',
     accent: 'pro',
-    cardShopUrl: 'https://pay.ldxp.cn/item/b1e0f5',
+    cardShopUrl: 'https://pay.ldxp.cn/item/efaklw',
     disableWeeklyLimit: true
   },
   {

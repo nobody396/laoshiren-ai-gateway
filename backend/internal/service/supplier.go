@@ -946,7 +946,7 @@ func supplierFromAccount(account Account) (*Supplier, string) {
 		Notes:                notes,
 		SourceAccountID:      &accountID,
 		SourcePlatform:       account.Platform,
-		ProbeEnabled:         true,
+		ProbeEnabled:         false,
 		ProbeModel:           model,
 		ProbeIntervalMinutes: DefaultSupplierProbeIntervalMinutes,
 		LastProbeStatus:      SupplierProbeStatusUnknown,

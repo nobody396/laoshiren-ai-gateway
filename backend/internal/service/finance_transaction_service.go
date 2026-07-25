@@ -176,7 +176,7 @@ func (s *FinanceTransactionService) List(ctx context.Context, params pagination.
 	return s.repo.List(ctx, params, filters)
 }
 
-// Summary 汇总 [from, to) 区间内的真实收支：营收、成本、净利润、利润率、按分类小计。
+// Summary 汇总 [from, to) 区间内的真实收支：营收、支出、净利润、利润率、按分类和收款渠道小计。
 func (s *FinanceTransactionService) Summary(ctx context.Context, from, to time.Time) (*FinanceTransactionSummary, error) {
 	if !from.Before(to) {
 		return nil, fmt.Errorf("summary finance transactions: from must be before to")

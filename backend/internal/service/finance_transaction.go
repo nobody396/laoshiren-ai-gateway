@@ -14,15 +14,16 @@ const (
 )
 
 const (
-	FinanceTransactionCategorySaleRevenue   = domain.FinanceTransactionCategorySaleRevenue
-	FinanceTransactionCategoryOtherIncome   = domain.FinanceTransactionCategoryOtherIncome
-	FinanceTransactionCategoryUpstreamTopup = domain.FinanceTransactionCategoryUpstreamTopup
-	FinanceTransactionCategoryServerCost    = domain.FinanceTransactionCategoryServerCost
-	FinanceTransactionCategoryHostingCost   = domain.FinanceTransactionCategoryHostingCost
-	FinanceTransactionCategoryCDNCost       = domain.FinanceTransactionCategoryCDNCost
-	FinanceTransactionCategoryDomainCost    = domain.FinanceTransactionCategoryDomainCost
-	FinanceTransactionCategoryEarlyCost     = domain.FinanceTransactionCategoryEarlyCost
-	FinanceTransactionCategoryOtherExpense  = domain.FinanceTransactionCategoryOtherExpense
+	FinanceTransactionCategorySaleRevenue     = domain.FinanceTransactionCategorySaleRevenue
+	FinanceTransactionCategoryOtherIncome     = domain.FinanceTransactionCategoryOtherIncome
+	FinanceTransactionCategoryUpstreamTopup   = domain.FinanceTransactionCategoryUpstreamTopup
+	FinanceTransactionCategoryServerCost      = domain.FinanceTransactionCategoryServerCost
+	FinanceTransactionCategoryHostingCost     = domain.FinanceTransactionCategoryHostingCost
+	FinanceTransactionCategoryCDNCost         = domain.FinanceTransactionCategoryCDNCost
+	FinanceTransactionCategoryDomainCost      = domain.FinanceTransactionCategoryDomainCost
+	FinanceTransactionCategoryDomainEmailCost = domain.FinanceTransactionCategoryDomainEmailCost
+	FinanceTransactionCategoryEarlyCost       = domain.FinanceTransactionCategoryEarlyCost
+	FinanceTransactionCategoryOtherExpense    = domain.FinanceTransactionCategoryOtherExpense
 )
 
 const (
@@ -44,6 +45,8 @@ var (
 type FinanceTransaction = domain.FinanceTransaction
 
 type FinanceCategoryTotal = domain.FinanceCategoryTotal
+
+type FinancePaymentChannelTotal = domain.FinancePaymentChannelTotal
 
 type FinanceMonthlyTotal = domain.FinanceMonthlyTotal
 

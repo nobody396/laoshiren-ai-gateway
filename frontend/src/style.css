@@ -276,7 +276,7 @@
   }
 
   .stat-value {
-    @apply text-2xl font-bold text-gray-900 dark:text-white truncate;
+    @apply break-words text-2xl font-bold leading-tight text-gray-900 dark:text-white;
   }
 
   .stat-label {

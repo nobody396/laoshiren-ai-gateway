@@ -131,7 +131,7 @@ func (r *financeTransactionRepository) List(
 	return out, paginationResultFromTotal(int64(total), params), nil
 }
 
-// Summary 汇总 [from, to) 区间内的收支：总收入、总支出、净利润、利润率、按 (type, category) 小计。
+// Summary 汇总 [from, to) 区间内的收支：总收入、总支出、净利润、利润率、分类和收款渠道小计。
 // 账本体量是个人手工记账规模，直接把区间内的行拉到内存里聚合，比手写 SQL GROUP BY 更简单可靠。
 func (r *financeTransactionRepository) Summary(ctx context.Context, from, to time.Time) (*service.FinanceTransactionSummary, error) {
 	items, err := r.client.FinanceTransaction.Query().
@@ -174,6 +174,7 @@ func summarizeFinanceTransactions(
 	}
 	totals := make(map[key]*domain.FinanceCategoryTotal)
 	order := make([]key, 0)
+	channelTotals := make(map[string]*domain.FinancePaymentChannelTotal)
 	monthlyTotals := make(map[string]*domain.FinanceMonthlyTotal)
 	shanghai := time.FixedZone("Asia/Shanghai", 8*60*60)
 
@@ -181,6 +182,17 @@ func summarizeFinanceTransactions(
 		switch m.Type {
 		case domain.FinanceTransactionTypeIncome:
 			summary.TotalIncomeFen += m.AmountFen
+			channel := domain.FinancePaymentChannelOther
+			if m.PaymentChannel != nil && *m.PaymentChannel != "" {
+				channel = *m.PaymentChannel
+			}
+			channelTotal, ok := channelTotals[channel]
+			if !ok {
+				channelTotal = &domain.FinancePaymentChannelTotal{PaymentChannel: channel}
+				channelTotals[channel] = channelTotal
+			}
+			channelTotal.TotalFen += m.AmountFen
+			channelTotal.TxCount++
 		case domain.FinanceTransactionTypeExpense:
 			summary.TotalExpenseFen += m.AmountFen
 		}
@@ -217,6 +229,20 @@ func summarizeFinanceTransactions(
 	summary.ByCategory = make([]domain.FinanceCategoryTotal, 0, len(order))
 	for _, k := range order {
 		summary.ByCategory = append(summary.ByCategory, *totals[k])
+	}
+
+	channelOrder := []string{
+		domain.FinancePaymentChannelWechat,
+		domain.FinancePaymentChannelAlipay,
+		domain.FinancePaymentChannelLiandongShop,
+		domain.FinancePaymentChannelBankTransfer,
+		domain.FinancePaymentChannelOther,
+	}
+	summary.ByPaymentChannel = make([]domain.FinancePaymentChannelTotal, 0, len(channelTotals))
+	for _, channel := range channelOrder {
+		if total, ok := channelTotals[channel]; ok {
+			summary.ByPaymentChannel = append(summary.ByPaymentChannel, *total)
+		}
 	}
 
 	months := make([]string, 0, len(monthlyTotals))

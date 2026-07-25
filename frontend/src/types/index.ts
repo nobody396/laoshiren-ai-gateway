@@ -286,11 +286,12 @@ export type FinanceTransactionCategory =
   | 'hosting_cost'
   | 'cdn_cost'
   | 'domain_cost'
+  | 'domain_email_cost'
   | 'early_cost'
   | 'other_expense'
 
 export type FinanceTransactionSource = 'manual' | 'skill'
-export type FinancePaymentChannel = 'wechat' | 'alipay' | 'bank_transfer' | 'other'
+export type FinancePaymentChannel = 'wechat' | 'alipay' | 'liandong_shop' | 'bank_transfer' | 'other'
 
 export interface FinanceTransaction {
   id: number
@@ -314,6 +315,12 @@ export interface FinanceCategoryTotal {
   tx_count: number
 }
 
+export interface FinancePaymentChannelTotal {
+  payment_channel: FinancePaymentChannel
+  total_fen: number
+  tx_count: number
+}
+
 export interface FinanceTransactionSummary {
   range_from: string
   range_to: string
@@ -322,6 +329,7 @@ export interface FinanceTransactionSummary {
   net_profit_fen: number
   margin_percent: number
   by_category: FinanceCategoryTotal[]
+  by_payment_channel: FinancePaymentChannelTotal[]
   monthly_series: FinanceMonthlyTotal[]
 }
 

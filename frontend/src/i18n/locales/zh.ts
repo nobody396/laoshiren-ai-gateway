@@ -4093,10 +4093,10 @@ export default {
       deleteConfirm: '确定要删除该公告吗？此操作无法撤销。'
     },
 
-    // Finance Ledger（手工记账：真实现金进出，独立于成本核算的理论毛利率）
+    // Finance Ledger（手工记账：真实现金进出，独立于理论成本核算）
     financeTransactions: {
       title: '财务记账',
-      description: '记录真实的收入与支出，核算营收、成本与利润率',
+      description: '记录真实的收入与支出，核算营收、支出、净利润与利润率',
       record: '记一笔',
       editTransaction: '编辑记账',
       deleteTransaction: '删除记账',
@@ -4137,32 +4137,50 @@ export default {
         sale_revenue: '售卖收入',
         other_income: '其他收入',
         upstream_topup: '上游进货充值',
-        server_cost: '服务器成本（旧分类）',
-        hosting_cost: '服务器固定成本',
-        cdn_cost: 'CDN 动态成本',
-        domain_cost: '域名成本',
-        early_cost: '早期成本',
+        server_cost: '服务器支出（旧分类）',
+        hosting_cost: '服务器固定支出',
+        cdn_cost: 'CDN 每月支出',
+        domain_cost: '域名年度支出',
+        domain_email_cost: '域名邮箱每月支出',
+        early_cost: '早期一次性支出',
         other_expense: '其他支出'
       },
       paymentChannelLabels: {
         wechat: '微信',
         alipay: '支付宝',
+        liandong_shop: '链动小铺',
         bank_transfer: '银行转账',
         other: '其他/历史未标注'
       },
       summary: {
         income: '营收',
-        expense: '成本',
+        expense: '支出',
         netProfit: '净利润',
         margin: '利润率',
-        serverFixedCost: '服务器固定成本',
+        serverFixedCost: '服务器固定支出',
         rangeTitle: '统计范围',
         allTime: '累计',
         byMonth: '按月',
         allTimeHint: '默认展示全部历史流水的累计结果',
-        byCategory: '分类明细',
+        monthHint: '按北京时间自然月查看当月收支结构',
+        expenseStructure: '支出结构',
+        expenseStructureHint: '将固定业务支出、上游进货、早期一次性支出分层展示；CDN 金额虽浮动但属于每月持续支出',
+        incomeChannels: '收入渠道',
+        incomeChannelsHint: '按微信、支付宝和链动小铺的实际收款金额展示',
+        transactionsUnit: '笔',
+        businessGroup: '业务分层',
+        byCategory: '收支分类明细',
+        expenseGroups: {
+          fixed_business: '固定业务支出',
+          procurement: '上游进货支出',
+          setup: '早期一次性支出',
+          other: '其他支出'
+        },
+        businessGroups: {
+          income: '业务收入'
+        },
         noData: '当前范围暂无记账数据',
-        trendTitle: '近 12 个月营收与成本趋势',
+        trendTitle: '近 12 个月营收与支出趋势',
         trendHint: '按北京时间自然月统计，金额单位为人民币元',
         noTrendData: '近 12 个月暂无记账数据'
       },
@@ -4171,7 +4189,7 @@ export default {
         category: '分类',
         paymentChannel: '收款渠道',
         selectPaymentChannel: '请选择收款渠道',
-        paymentChannelHint: '仅收入需要填写，用于区分微信、支付宝或其他手工收款',
+        paymentChannelHint: '仅收入需要填写，目前使用微信、支付宝或链动小铺',
         amount: '金额（元）',
         occurredAt: '发生时间',
         note: '备注',

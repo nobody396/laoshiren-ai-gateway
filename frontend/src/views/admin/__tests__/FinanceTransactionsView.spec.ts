@@ -115,6 +115,10 @@ const emptySummary = {
     { type: 'income', category: 'sale_revenue', total_fen: 150000, tx_count: 2 },
     { type: 'expense', category: 'server_cost', total_fen: 50000, tx_count: 1 }
   ],
+  by_payment_channel: [
+    { payment_channel: 'wechat', total_fen: 100000, tx_count: 1 },
+    { payment_channel: 'liandong_shop', total_fen: 50000, tx_count: 1 }
+  ],
   monthly_series: [
     {
       month: '2026-07',
@@ -174,6 +178,15 @@ describe('admin FinanceTransactionsView', () => {
     expect(cards.some((c) => c.includes(formatCurrency(500, 'CNY')))).toBe(true) // expense
     expect(cards.some((c) => c.includes(formatCurrency(1000, 'CNY')))).toBe(true) // net profit
     expect(cards.some((c) => c.includes('66.7%'))).toBe(true) // margin
+  })
+
+  it('renders expense layers and Liandong Shop as a first-class income channel', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('admin.financeTransactions.summary.expenseGroups.fixed_business')
+    expect(wrapper.text()).toContain('liandong_shop')
+    expect(wrapper.findAll('.doughnut-stub')).toHaveLength(2)
   })
 
   it('opens a receipt in the in-page preview instead of navigating to the signed URL', async () => {

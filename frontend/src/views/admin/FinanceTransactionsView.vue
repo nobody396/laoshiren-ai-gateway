@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+    <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       <StatCard
         :title="t('admin.financeTransactions.summary.income')"
         :value="formatCurrency(summary.total_income_fen / 100, 'CNY')"
@@ -25,20 +25,32 @@
         :icon="ChartIconRaw"
         :icon-variant="summary.margin_percent >= 0 ? 'primary' : 'danger'"
       />
-      <StatCard
-        :title="t('admin.financeTransactions.summary.serverFixedCost')"
-        :value="formatCurrency(serverFixedCostFen / 100, 'CNY')"
-        :icon="ServerIconRaw"
-        icon-variant="warning"
-      />
     </div>
 
-    <div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <div class="card p-4 lg:col-span-1">
-        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+    <div class="card mb-4 p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
             {{ t('admin.financeTransactions.summary.rangeTitle') }}
           </h3>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            {{
+              summaryMode === 'all'
+                ? t('admin.financeTransactions.summary.allTimeHint')
+                : t('admin.financeTransactions.summary.monthHint')
+            }}
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div v-if="summaryMode === 'month'" class="flex items-center gap-1">
+            <button class="btn btn-secondary !px-2 !py-1" @click="shiftMonth(-1)">
+              <Icon name="chevronLeft" size="sm" />
+            </button>
+            <span class="min-w-[7rem] text-center text-sm text-gray-600 dark:text-gray-300">{{ rangeLabel }}</span>
+            <button class="btn btn-secondary !px-2 !py-1" @click="shiftMonth(1)">
+              <Icon name="chevronRight" size="sm" />
+            </button>
+          </div>
           <div class="flex rounded-lg bg-gray-100 p-1 dark:bg-dark-700">
             <button
               data-test="summary-scope-all"
@@ -66,36 +78,100 @@
             </button>
           </div>
         </div>
-        <div v-if="summaryMode === 'month'" class="mb-3 flex items-center justify-center gap-1">
-          <button class="btn btn-secondary !px-2 !py-1" @click="shiftMonth(-1)">
-            <Icon name="chevronLeft" size="sm" />
-          </button>
-          <span class="min-w-[7rem] text-center text-sm text-gray-600 dark:text-gray-300">{{ rangeLabel }}</span>
-          <button class="btn btn-secondary !px-2 !py-1" @click="shiftMonth(1)">
-            <Icon name="chevronRight" size="sm" />
-          </button>
-        </div>
-        <p v-else class="mb-3 text-center text-sm text-gray-600 dark:text-gray-300">
-          {{ t('admin.financeTransactions.summary.allTimeHint') }}
+      </div>
+    </div>
+
+    <div class="mb-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div class="card p-5">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+          {{ t('admin.financeTransactions.summary.expenseStructure') }}
+        </h3>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {{ t('admin.financeTransactions.summary.expenseStructureHint') }}
         </p>
-        <div v-if="summary.by_category.length === 0" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        <div v-if="!hasExpenseGroupData" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
           {{ t('admin.financeTransactions.summary.noData') }}
         </div>
-        <div v-else class="h-40 w-40 mx-auto">
-          <Doughnut :data="categoryChartData" :options="categoryChartOptions" />
+        <div v-else class="mt-4 grid items-center gap-5 sm:grid-cols-[11rem_1fr]">
+          <div class="mx-auto h-44 w-44">
+            <Doughnut :data="expenseGroupChartData" :options="structureChartOptions" />
+          </div>
+          <div class="space-y-3">
+            <div
+              v-for="group in expenseGroups"
+              :key="group.key"
+              class="flex items-center justify-between gap-3"
+            >
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: group.color }"></span>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ group.label }}</span>
+                </div>
+                <p class="ml-[1.125rem] text-xs text-gray-500 dark:text-gray-400">
+                  {{ group.tx_count }} {{ t('admin.financeTransactions.summary.transactionsUnit') }}
+                </p>
+              </div>
+              <span class="shrink-0 text-sm font-semibold tabular-nums text-red-600 dark:text-red-400">
+                {{ formatCurrency(group.total_fen / 100, 'CNY') }}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="card p-4 lg:col-span-2">
-        <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
-          {{ t('admin.financeTransactions.summary.byCategory') }}
+      <div class="card p-5">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+          {{ t('admin.financeTransactions.summary.incomeChannels') }}
         </h3>
-        <div v-if="summary.by_category.length === 0" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {{ t('admin.financeTransactions.summary.incomeChannelsHint') }}
+        </p>
+        <div v-if="!hasIncomeChannelData" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
           {{ t('admin.financeTransactions.summary.noData') }}
         </div>
-        <table v-else class="w-full text-sm">
+        <div v-else class="mt-4 grid items-center gap-5 sm:grid-cols-[11rem_1fr]">
+          <div class="mx-auto h-44 w-44">
+            <Doughnut :data="incomeChannelChartData" :options="structureChartOptions" />
+          </div>
+          <div class="space-y-3">
+            <div
+              v-for="channel in incomeChannelTotals"
+              :key="channel.payment_channel"
+              class="flex items-center justify-between gap-3"
+            >
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: channel.color }"></span>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    {{ paymentChannelLabel(channel.payment_channel) }}
+                  </span>
+                </div>
+                <p class="ml-[1.125rem] text-xs text-gray-500 dark:text-gray-400">
+                  {{ channel.tx_count }} {{ t('admin.financeTransactions.summary.transactionsUnit') }}
+                </p>
+              </div>
+              <span class="shrink-0 text-sm font-semibold tabular-nums text-green-600 dark:text-green-400">
+                {{ formatCurrency(channel.total_fen / 100, 'CNY') }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-6 p-5">
+      <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
+        {{ t('admin.financeTransactions.summary.byCategory') }}
+      </h3>
+      <div v-if="summary.by_category.length === 0" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        {{ t('admin.financeTransactions.summary.noData') }}
+      </div>
+      <div v-else class="overflow-x-auto">
+        <table class="w-full min-w-[42rem] text-sm">
           <thead>
             <tr class="text-left text-xs text-gray-500 dark:text-gray-400">
+              <th class="pb-2">{{ t('admin.financeTransactions.columns.type') }}</th>
+              <th class="pb-2">{{ t('admin.financeTransactions.summary.businessGroup') }}</th>
               <th class="pb-2">{{ t('admin.financeTransactions.columns.category') }}</th>
               <th class="pb-2 text-right">{{ t('admin.financeTransactions.columns.txCount') }}</th>
               <th class="pb-2 text-right">{{ t('admin.financeTransactions.columns.amount') }}</th>
@@ -103,10 +179,16 @@
           </thead>
           <tbody>
             <tr v-for="c in summary.by_category" :key="`${c.type}:${c.category}`" class="border-t border-gray-100 dark:border-gray-700">
-              <td class="py-1.5">
+              <td class="py-2">
                 <span :class="['badge', c.type === 'income' ? 'badge-success' : 'badge-gray']">
-                  {{ categoryLabel(c.category) }}
+                  {{ typeLabel(c.type) }}
                 </span>
+              </td>
+              <td class="py-2 text-gray-600 dark:text-gray-300">
+                {{ businessGroupLabel(c) }}
+              </td>
+              <td class="py-1.5">
+                <span class="text-gray-700 dark:text-gray-200">{{ categoryLabel(c.category) }}</span>
               </td>
               <td class="py-1.5 text-right text-gray-600 dark:text-gray-400">{{ c.tx_count }}</td>
               <td class="py-1.5 text-right" :class="c.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
@@ -424,6 +506,7 @@ import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
 import { formatCurrency } from '@/utils/format'
 import type {
+  FinanceCategoryTotal,
   FinanceTransaction,
   FinanceTransactionCategory,
   FinancePaymentChannel,
@@ -454,7 +537,6 @@ const TrendingUpIconRaw = { render: () => h(Icon, { name: 'trendingUp' }) }
 const TrendingDownIconRaw = { render: () => h(Icon, { name: 'trendingUp', class: 'rotate-180' }) }
 const DollarIconRaw = { render: () => h(Icon, { name: 'dollar' }) }
 const ChartIconRaw = { render: () => h(Icon, { name: 'chartBar' }) }
-const ServerIconRaw = { render: () => h(Icon, { name: 'server' }) }
 
 const INCOME_CATEGORIES: FinanceTransactionCategory[] = ['sale_revenue', 'other_income']
 const EXPENSE_CATEGORIES: FinanceTransactionCategory[] = [
@@ -463,11 +545,16 @@ const EXPENSE_CATEGORIES: FinanceTransactionCategory[] = [
   'hosting_cost',
   'cdn_cost',
   'domain_cost',
+  'domain_email_cost',
   'early_cost',
   'other_expense'
 ]
 const FORM_EXPENSE_CATEGORIES = EXPENSE_CATEGORIES.filter((category) => category !== 'server_cost')
-const PAYMENT_CHANNELS: FinancePaymentChannel[] = ['wechat', 'alipay', 'bank_transfer', 'other']
+const PAYMENT_CHANNELS: FinancePaymentChannel[] = [
+  'wechat',
+  'alipay',
+  'liandong_shop'
+]
 
 const categoryLabel = (category: string) =>
   t(`admin.financeTransactions.categoryLabels.${category}`, category)
@@ -618,6 +705,7 @@ const emptySummary = (): FinanceTransactionSummary => ({
   net_profit_fen: 0,
   margin_percent: 0,
   by_category: [],
+  by_payment_channel: [],
   monthly_series: []
 })
 
@@ -697,30 +785,100 @@ async function refreshSummaryData() {
   ])
 }
 
-const serverFixedCostFen = computed(() =>
-  summary.value.by_category
-    .filter((item) => item.type === 'expense' && ['hosting_cost', 'server_cost'].includes(item.category))
-    .reduce((total, item) => total + item.total_fen, 0)
+type ExpenseGroupKey = 'fixed_business' | 'procurement' | 'setup' | 'other'
+
+const FIXED_BUSINESS_CATEGORIES = new Set<FinanceTransactionCategory>([
+  'server_cost',
+  'hosting_cost',
+  'cdn_cost',
+  'domain_cost',
+  'domain_email_cost'
+])
+
+function expenseGroupKeyForCategory(category: FinanceTransactionCategory): ExpenseGroupKey {
+  if (FIXED_BUSINESS_CATEGORIES.has(category)) return 'fixed_business'
+  if (category === 'upstream_topup') return 'procurement'
+  if (category === 'early_cost') return 'setup'
+  return 'other'
+}
+
+const EXPENSE_GROUP_META: Array<{ key: ExpenseGroupKey; color: string }> = [
+  { key: 'fixed_business', color: '#f59e0b' },
+  { key: 'procurement', color: '#ef4444' },
+  { key: 'setup', color: '#8b5cf6' },
+  { key: 'other', color: '#64748b' }
+]
+
+const expenseGroups = computed(() =>
+  EXPENSE_GROUP_META.map((meta) => {
+    const items = summary.value.by_category.filter(
+      (item) =>
+        item.type === 'expense' &&
+        expenseGroupKeyForCategory(item.category) === meta.key
+    )
+    return {
+      ...meta,
+      label: t(`admin.financeTransactions.summary.expenseGroups.${meta.key}`),
+      total_fen: items.reduce((total, item) => total + item.total_fen, 0),
+      tx_count: items.reduce((total, item) => total + item.tx_count, 0)
+    }
+  }).filter((group) => group.total_fen > 0)
 )
 
-const categoryChartData = computed(() => {
-  const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6']
-  return {
-    labels: summary.value.by_category.map((c) => categoryLabel(c.category)),
-    datasets: [
-      {
-        data: summary.value.by_category.map((c) => c.total_fen),
-        backgroundColor: summary.value.by_category.map((_, i) => colors[i % colors.length]),
-        borderWidth: 0
-      }
-    ]
-  }
-})
+const INCOME_CHANNEL_COLORS: Record<FinancePaymentChannel, string> = {
+  wechat: '#22c55e',
+  alipay: '#1677ff',
+  liandong_shop: '#f97316',
+  bank_transfer: '#8b5cf6',
+  other: '#94a3b8'
+}
 
-const categoryChartOptions = {
+const incomeChannelTotals = computed(() =>
+  (summary.value.by_payment_channel ?? [])
+    .filter((channel) => channel.total_fen > 0)
+    .map((channel) => ({
+      ...channel,
+      color: INCOME_CHANNEL_COLORS[channel.payment_channel] ?? INCOME_CHANNEL_COLORS.other
+    }))
+)
+
+const hasExpenseGroupData = computed(() => expenseGroups.value.length > 0)
+const hasIncomeChannelData = computed(() => incomeChannelTotals.value.length > 0)
+
+const expenseGroupChartData = computed(() => ({
+  labels: expenseGroups.value.map((group) => group.label),
+  datasets: [
+    {
+      data: expenseGroups.value.map((group) => group.total_fen),
+      backgroundColor: expenseGroups.value.map((group) => group.color),
+      borderWidth: 0
+    }
+  ]
+}))
+
+const incomeChannelChartData = computed(() => ({
+  labels: incomeChannelTotals.value.map((channel) => paymentChannelLabel(channel.payment_channel)),
+  datasets: [
+    {
+      data: incomeChannelTotals.value.map((channel) => channel.total_fen),
+      backgroundColor: incomeChannelTotals.value.map((channel) => channel.color),
+      borderWidth: 0
+    }
+  ]
+}))
+
+const structureChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: { legend: { display: false } }
+}
+
+function businessGroupLabel(item: FinanceCategoryTotal) {
+  if (item.type === 'income') {
+    return t('admin.financeTransactions.summary.businessGroups.income')
+  }
+  const key = expenseGroupKeyForCategory(item.category)
+  return t(`admin.financeTransactions.summary.expenseGroups.${key}`)
 }
 
 const trendSeries = computed(() => {

@@ -226,6 +226,10 @@ func TestFinanceTransactionServiceSummaryComputesMarginAndCategoryTotals(t *test
 	require.EqualValues(t, 150000, byCategory["income:sale_revenue"])
 	require.EqualValues(t, 30000, byCategory["expense:upstream_topup"])
 	require.EqualValues(t, 20000, byCategory["expense:server_cost"])
+	require.Len(t, summary.ByPaymentChannel, 1)
+	require.Equal(t, "wechat", summary.ByPaymentChannel[0].PaymentChannel)
+	require.EqualValues(t, 150000, summary.ByPaymentChannel[0].TotalFen)
+	require.EqualValues(t, 2, summary.ByPaymentChannel[0].TxCount)
 	require.Len(t, summary.MonthlySeries, 1)
 	require.Equal(t, "2026-07", summary.MonthlySeries[0].Month)
 }
@@ -258,6 +262,35 @@ func TestFinanceTransactionServiceIncomeRequiresReceiptAndPaymentChannel(t *test
 		ReceiptKey: receipt,
 	})
 	require.ErrorIs(t, err, service.ErrFinanceTransactionIncomeChannelRequired)
+}
+
+func TestFinanceTransactionServiceAcceptsRefinedExpenseAndIncomeDimensions(t *testing.T) {
+	svc := newFinanceTransactionServiceSQLite(t)
+	ctx := context.Background()
+
+	_, err := svc.Create(ctx, &service.CreateFinanceTransactionInput{
+		Type:      service.FinanceTransactionTypeExpense,
+		Category:  service.FinanceTransactionCategoryDomainEmailCost,
+		AmountFen: 663,
+	})
+	require.NoError(t, err)
+
+	receipt := "finance-receipts/liandong-shop.jpg"
+	channel := "liandong_shop"
+	_, err = svc.Create(ctx, &service.CreateFinanceTransactionInput{
+		Type:           service.FinanceTransactionTypeIncome,
+		Category:       service.FinanceTransactionCategorySaleRevenue,
+		AmountFen:      970,
+		ReceiptKey:     &receipt,
+		PaymentChannel: &channel,
+	})
+	require.NoError(t, err)
+
+	summary, err := svc.SummaryAll(ctx, time.Now().Add(time.Minute))
+	require.NoError(t, err)
+	require.Len(t, summary.ByPaymentChannel, 1)
+	require.Equal(t, channel, summary.ByPaymentChannel[0].PaymentChannel)
+	require.EqualValues(t, 970, summary.ByPaymentChannel[0].TotalFen)
 }
 
 func TestFinanceTransactionServiceSummaryAllIncludesAllMonths(t *testing.T) {

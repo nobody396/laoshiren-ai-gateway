@@ -17,18 +17,20 @@ const (
 	FinanceTransactionCategoryOtherIncome = "other_income"
 
 	// 支出分类
-	FinanceTransactionCategoryUpstreamTopup = "upstream_topup"
-	FinanceTransactionCategoryServerCost    = "server_cost" // legacy; retained for old rows
-	FinanceTransactionCategoryHostingCost   = "hosting_cost"
-	FinanceTransactionCategoryCDNCost       = "cdn_cost"
-	FinanceTransactionCategoryDomainCost    = "domain_cost"
-	FinanceTransactionCategoryEarlyCost     = "early_cost"
-	FinanceTransactionCategoryOtherExpense  = "other_expense"
+	FinanceTransactionCategoryUpstreamTopup   = "upstream_topup"
+	FinanceTransactionCategoryServerCost      = "server_cost" // legacy; retained for old rows
+	FinanceTransactionCategoryHostingCost     = "hosting_cost"
+	FinanceTransactionCategoryCDNCost         = "cdn_cost"
+	FinanceTransactionCategoryDomainCost      = "domain_cost"
+	FinanceTransactionCategoryDomainEmailCost = "domain_email_cost"
+	FinanceTransactionCategoryEarlyCost       = "early_cost"
+	FinanceTransactionCategoryOtherExpense    = "other_expense"
 )
 
 const (
 	FinancePaymentChannelWechat       = "wechat"
 	FinancePaymentChannelAlipay       = "alipay"
+	FinancePaymentChannelLiandongShop = "liandong_shop"
 	FinancePaymentChannelBankTransfer = "bank_transfer"
 	FinancePaymentChannelOther        = "other"
 )
@@ -65,13 +67,14 @@ var financeIncomeCategories = map[string]struct{}{
 }
 
 var financeExpenseCategories = map[string]struct{}{
-	FinanceTransactionCategoryUpstreamTopup: {},
-	FinanceTransactionCategoryServerCost:    {},
-	FinanceTransactionCategoryHostingCost:   {},
-	FinanceTransactionCategoryCDNCost:       {},
-	FinanceTransactionCategoryDomainCost:    {},
-	FinanceTransactionCategoryEarlyCost:     {},
-	FinanceTransactionCategoryOtherExpense:  {},
+	FinanceTransactionCategoryUpstreamTopup:   {},
+	FinanceTransactionCategoryServerCost:      {},
+	FinanceTransactionCategoryHostingCost:     {},
+	FinanceTransactionCategoryCDNCost:         {},
+	FinanceTransactionCategoryDomainCost:      {},
+	FinanceTransactionCategoryDomainEmailCost: {},
+	FinanceTransactionCategoryEarlyCost:       {},
+	FinanceTransactionCategoryOtherExpense:    {},
 }
 
 func IsValidFinanceTransactionType(t string) bool {
@@ -96,6 +99,7 @@ func IsValidFinancePaymentChannel(channel string) bool {
 	switch channel {
 	case FinancePaymentChannelWechat,
 		FinancePaymentChannelAlipay,
+		FinancePaymentChannelLiandongShop,
 		FinancePaymentChannelBankTransfer,
 		FinancePaymentChannelOther:
 		return true
@@ -152,6 +156,13 @@ type FinanceCategoryTotal struct {
 	TxCount  int64  `json:"tx_count"`
 }
 
+// FinancePaymentChannelTotal 是收入按真实收款渠道聚合后的金额小计。
+type FinancePaymentChannelTotal struct {
+	PaymentChannel string `json:"payment_channel"`
+	TotalFen       int64  `json:"total_fen"`
+	TxCount        int64  `json:"tx_count"`
+}
+
 type FinanceMonthlyTotal struct {
 	Month           string `json:"month"`
 	TotalIncomeFen  int64  `json:"total_income_fen"`
@@ -159,14 +170,15 @@ type FinanceMonthlyTotal struct {
 	NetProfitFen    int64  `json:"net_profit_fen"`
 }
 
-// FinanceTransactionSummary 是一段时间范围内的营收/成本汇总。
+// FinanceTransactionSummary 是一段时间范围内的营收/支出汇总。
 type FinanceTransactionSummary struct {
-	RangeFrom       time.Time              `json:"range_from"`
-	RangeTo         time.Time              `json:"range_to"`
-	TotalIncomeFen  int64                  `json:"total_income_fen"`
-	TotalExpenseFen int64                  `json:"total_expense_fen"`
-	NetProfitFen    int64                  `json:"net_profit_fen"`
-	MarginPercent   float64                `json:"margin_percent"`
-	ByCategory      []FinanceCategoryTotal `json:"by_category"`
-	MonthlySeries   []FinanceMonthlyTotal  `json:"monthly_series"`
+	RangeFrom        time.Time                    `json:"range_from"`
+	RangeTo          time.Time                    `json:"range_to"`
+	TotalIncomeFen   int64                        `json:"total_income_fen"`
+	TotalExpenseFen  int64                        `json:"total_expense_fen"`
+	NetProfitFen     int64                        `json:"net_profit_fen"`
+	MarginPercent    float64                      `json:"margin_percent"`
+	ByCategory       []FinanceCategoryTotal       `json:"by_category"`
+	ByPaymentChannel []FinancePaymentChannelTotal `json:"by_payment_channel"`
+	MonthlySeries    []FinanceMonthlyTotal        `json:"monthly_series"`
 }

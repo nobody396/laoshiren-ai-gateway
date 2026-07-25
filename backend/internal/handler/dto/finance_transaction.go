@@ -28,6 +28,12 @@ type FinanceCategoryTotal struct {
 	TxCount  int64  `json:"tx_count"`
 }
 
+type FinancePaymentChannelTotal struct {
+	PaymentChannel string `json:"payment_channel"`
+	TotalFen       int64  `json:"total_fen"`
+	TxCount        int64  `json:"tx_count"`
+}
+
 type FinanceMonthlyTotal struct {
 	Month           string `json:"month"`
 	TotalIncomeFen  int64  `json:"total_income_fen"`
@@ -36,14 +42,15 @@ type FinanceMonthlyTotal struct {
 }
 
 type FinanceTransactionSummary struct {
-	RangeFrom       time.Time              `json:"range_from"`
-	RangeTo         time.Time              `json:"range_to"`
-	TotalIncomeFen  int64                  `json:"total_income_fen"`
-	TotalExpenseFen int64                  `json:"total_expense_fen"`
-	NetProfitFen    int64                  `json:"net_profit_fen"`
-	MarginPercent   float64                `json:"margin_percent"`
-	ByCategory      []FinanceCategoryTotal `json:"by_category"`
-	MonthlySeries   []FinanceMonthlyTotal  `json:"monthly_series"`
+	RangeFrom        time.Time                    `json:"range_from"`
+	RangeTo          time.Time                    `json:"range_to"`
+	TotalIncomeFen   int64                        `json:"total_income_fen"`
+	TotalExpenseFen  int64                        `json:"total_expense_fen"`
+	NetProfitFen     int64                        `json:"net_profit_fen"`
+	MarginPercent    float64                      `json:"margin_percent"`
+	ByCategory       []FinanceCategoryTotal       `json:"by_category"`
+	ByPaymentChannel []FinancePaymentChannelTotal `json:"by_payment_channel"`
+	MonthlySeries    []FinanceMonthlyTotal        `json:"monthly_series"`
 }
 
 func FinanceTransactionFromService(t *service.FinanceTransaction) *FinanceTransaction {
@@ -79,6 +86,14 @@ func FinanceTransactionSummaryFromService(s *service.FinanceTransactionSummary) 
 			TxCount:  c.TxCount,
 		})
 	}
+	byPaymentChannel := make([]FinancePaymentChannelTotal, 0, len(s.ByPaymentChannel))
+	for _, channel := range s.ByPaymentChannel {
+		byPaymentChannel = append(byPaymentChannel, FinancePaymentChannelTotal{
+			PaymentChannel: channel.PaymentChannel,
+			TotalFen:       channel.TotalFen,
+			TxCount:        channel.TxCount,
+		})
+	}
 	monthlySeries := make([]FinanceMonthlyTotal, 0, len(s.MonthlySeries))
 	for _, month := range s.MonthlySeries {
 		monthlySeries = append(monthlySeries, FinanceMonthlyTotal{
@@ -89,13 +104,14 @@ func FinanceTransactionSummaryFromService(s *service.FinanceTransactionSummary) 
 		})
 	}
 	return &FinanceTransactionSummary{
-		RangeFrom:       s.RangeFrom,
-		RangeTo:         s.RangeTo,
-		TotalIncomeFen:  s.TotalIncomeFen,
-		TotalExpenseFen: s.TotalExpenseFen,
-		NetProfitFen:    s.NetProfitFen,
-		MarginPercent:   s.MarginPercent,
-		ByCategory:      byCategory,
-		MonthlySeries:   monthlySeries,
+		RangeFrom:        s.RangeFrom,
+		RangeTo:          s.RangeTo,
+		TotalIncomeFen:   s.TotalIncomeFen,
+		TotalExpenseFen:  s.TotalExpenseFen,
+		NetProfitFen:     s.NetProfitFen,
+		MarginPercent:    s.MarginPercent,
+		ByCategory:       byCategory,
+		ByPaymentChannel: byPaymentChannel,
+		MonthlySeries:    monthlySeries,
 	}
 }

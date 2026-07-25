@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="0.2.0"
+SCRIPT_VERSION="0.3.0"
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_TOOLS="all"
 DEFAULT_NODE_INDEX_PRIMARY="https://npmmirror.com/mirrors/node/index.tab"
@@ -29,6 +29,7 @@ CLAUDE_API_KEY="${LAOSHIRENAI_CLAUDE_API_KEY:-}"
 CODEX_API_KEY="${LAOSHIRENAI_CODEX_API_KEY:-}"
 NODE_VERSION_OVERRIDE="${LAOSHIRENAI_NODE_VERSION:-}"
 SKIP_CLIENT_INSTALL=0
+FORCE_CLIENT_INSTALL=0
 
 # 兼容统一 API Key 环境变量；若未提供专用 Key，则回退复用统一值。
 UNIFIED_API_KEY="${LAOSHIRENAI_API_KEY:-}"
@@ -43,6 +44,7 @@ ENV_TOOLS="${LAOSHIRENAI_TOOLS:-}"
 [ -n "$ENV_BASE_URL" ] && BASE_URL="$ENV_BASE_URL"
 [ -n "$ENV_TOOLS" ] && TOOLS="$ENV_TOOLS"
 [ "${LAOSHIRENAI_SKIP_CLIENT_INSTALL:-0}" = "1" ] && SKIP_CLIENT_INSTALL=1
+[ "${LAOSHIRENAI_FORCE_CLIENT_INSTALL:-0}" = "1" ] && FORCE_CLIENT_INSTALL=1
 
 NODE_BIN=""
 NPM_BIN=""
@@ -51,6 +53,10 @@ PLATFORM_ID=""
 NODE_ARCHIVE_NAME=""
 USE_PROXYLESS_NPM=0
 ACTIVE_NPM_REGISTRY="${DEFAULT_NPM_REGISTRY}"
+INSTALL_CLAUDE_CLIENT=0
+INSTALL_CODEX_CLIENT=0
+EXISTING_CLAUDE_COMMAND=""
+EXISTING_CODEX_COMMAND=""
 
 # 输出信息日志，便于用户识别当前执行步骤。
 log_info() {
@@ -131,21 +137,29 @@ ensure_profile_exports() {
 
 # 为 claude 和 codex 生成稳定包装脚本，避免用户切换终端后找不到 node 运行时。
 ensure_wrapper_scripts() {
+  if ! needs_client_install; then
+    return 0
+  fi
+
   ensure_dir "$LOCAL_BIN_DIR"
 
-  cat >"${LOCAL_BIN_DIR}/claude" <<EOF
+  if [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ]; then
+    cat >"${LOCAL_BIN_DIR}/claude" <<EOF
 #!/usr/bin/env bash
 export PATH="${NODE_CURRENT_DIR}/bin:${NPM_PREFIX}/bin:\$PATH"
 exec "${NPM_PREFIX}/bin/claude" "\$@"
 EOF
-  chmod +x "${LOCAL_BIN_DIR}/claude"
+    chmod +x "${LOCAL_BIN_DIR}/claude"
+  fi
 
-  cat >"${LOCAL_BIN_DIR}/codex" <<EOF
+  if [ "$INSTALL_CODEX_CLIENT" -eq 1 ]; then
+    cat >"${LOCAL_BIN_DIR}/codex" <<EOF
 #!/usr/bin/env bash
 export PATH="${NODE_CURRENT_DIR}/bin:${NPM_PREFIX}/bin:\$PATH"
 exec "${NPM_PREFIX}/bin/codex" "\$@"
 EOF
-  chmod +x "${LOCAL_BIN_DIR}/codex"
+    chmod +x "${LOCAL_BIN_DIR}/codex"
+  fi
 }
 
 # 判断当前代理变量是否指向本地代理，避免用户残留的失效代理把 npm 请求全部带偏。
@@ -253,6 +267,10 @@ parse_args() {
         SKIP_CLIENT_INSTALL=1
         shift
         ;;
+      --force-client-install)
+        FORCE_CLIENT_INSTALL=1
+        shift
+        ;;
       --help|-h)
         cat <<'EOF'
 老实人 AI 一键安装与自动配置脚本
@@ -267,6 +285,7 @@ parse_args() {
   --base-url            API 基础地址，默认 https://api.laoshirenai.com
   --node-version        指定 Node.js 版本，例如 v24.11.0
   --skip-client-install 仅写配置，不安装 claude/codex 包
+  --force-client-install 即使检测到已有客户端，也重新安装所选 CLI
 EOF
         exit 0
         ;;
@@ -311,6 +330,65 @@ prompt_for_api_keys() {
       prompt_for_named_api_key "Codex API Key" "请输入 Codex API Key" "CODEX_API_KEY" "--codex-api-key" "LAOSHIRENAI_CODEX_API_KEY"
     fi
   fi
+}
+
+# 返回一个真正可运行的现有 CLI；PATH 残留但无法执行的命令不算已安装。
+get_usable_client_command() {
+  local command_name="$1"
+  local command_path=""
+
+  command_path="$(command -v "$command_name" 2>/dev/null || true)"
+  [ -n "$command_path" ] || return 1
+
+  if "$command_path" --version >/dev/null 2>&1; then
+    printf '%s' "$command_path"
+    return 0
+  fi
+
+  log_warn "检测到 ${command_name} 命令，但它当前无法运行，将按缺失客户端处理: ${command_path}"
+  return 1
+}
+
+# 默认复用可用的现有 CLI，仅在缺失时安装；显式 force/skip 参数仍优先。
+resolve_client_install_plan() {
+  if [ "$SKIP_CLIENT_INSTALL" -eq 1 ] && [ "$FORCE_CLIENT_INSTALL" -eq 1 ]; then
+    log_error "不能同时使用 --skip-client-install 和 --force-client-install"
+  fi
+
+  INSTALL_CLAUDE_CLIENT=0
+  INSTALL_CODEX_CLIENT=0
+
+  if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]; then
+    EXISTING_CLAUDE_COMMAND="$(get_usable_client_command claude || true)"
+    if [ "$FORCE_CLIENT_INSTALL" -eq 1 ]; then
+      INSTALL_CLAUDE_CLIENT=1
+      log_info "已要求强制重新安装 Claude Code CLI"
+    elif [ -n "$EXISTING_CLAUDE_COMMAND" ]; then
+      log_info "检测到现有 Claude Code CLI，跳过重复安装: ${EXISTING_CLAUDE_COMMAND}"
+    elif [ "$SKIP_CLIENT_INSTALL" -eq 1 ]; then
+      log_warn "未检测到可用的 Claude Code CLI，但已按要求跳过安装"
+    else
+      INSTALL_CLAUDE_CLIENT=1
+    fi
+  fi
+
+  if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "codex" ]; then
+    EXISTING_CODEX_COMMAND="$(get_usable_client_command codex || true)"
+    if [ "$FORCE_CLIENT_INSTALL" -eq 1 ]; then
+      INSTALL_CODEX_CLIENT=1
+      log_info "已要求强制重新安装 Codex CLI"
+    elif [ -n "$EXISTING_CODEX_COMMAND" ]; then
+      log_info "检测到现有 Codex CLI，跳过重复安装: ${EXISTING_CODEX_COMMAND}"
+    elif [ "$SKIP_CLIENT_INSTALL" -eq 1 ]; then
+      log_warn "未检测到可用的 Codex CLI，但已按要求跳过安装"
+    else
+      INSTALL_CODEX_CLIENT=1
+    fi
+  fi
+}
+
+needs_client_install() {
+  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ]
 }
 
 # 判断系统自带 node 是否可直接复用，避免重复下载安装。
@@ -479,8 +557,8 @@ npm_install_with_fallback() {
 
 # 安装指定客户端包，全部安装到用户目录，避免污染系统环境。
 install_requested_clients() {
-  if [ "$SKIP_CLIENT_INSTALL" -eq 1 ]; then
-    log_warn "已跳过客户端安装，仅写入配置文件"
+  if ! needs_client_install; then
+    log_info "所选客户端无需安装，本次仅写入配置并测试 API Key"
     return 0
   fi
 
@@ -491,12 +569,12 @@ install_requested_clients() {
   fi
   ensure_npm_registry "$DEFAULT_NPM_REGISTRY"
 
-  if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]; then
+  if [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ]; then
     log_info "正在安装 Claude Code"
     npm_install_with_fallback "@anthropic-ai/claude-code@latest"
   fi
 
-  if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "codex" ]; then
+  if [ "$INSTALL_CODEX_CLIENT" -eq 1 ]; then
     log_info "正在安装 Codex"
     npm_install_with_fallback "@openai/codex@latest"
   fi
@@ -645,18 +723,22 @@ configure_codex() {
   fi
 }
 
-# 使用安装后的可执行文件做一次最小自检，证明命令确实可运行。
+# 使用绝对路径做最小自检；复用已有客户端时也不会误报“安装失败”。
 verify_client_commands() {
-  if [ "$SKIP_CLIENT_INSTALL" -eq 1 ]; then
-    return 0
-  fi
-
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]; then
-    "${NPM_PREFIX}/bin/claude" --version >/dev/null 2>&1 || log_error "Claude Code 安装验证失败"
+    if [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ]; then
+      "${NPM_PREFIX}/bin/claude" --version >/dev/null 2>&1 || log_error "Claude Code 安装验证失败"
+    elif [ -n "$EXISTING_CLAUDE_COMMAND" ]; then
+      "$EXISTING_CLAUDE_COMMAND" --version >/dev/null 2>&1 || log_error "现有 Claude Code CLI 验证失败"
+    fi
   fi
 
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "codex" ]; then
-    "${NPM_PREFIX}/bin/codex" --version >/dev/null 2>&1 || log_error "Codex 安装验证失败"
+    if [ "$INSTALL_CODEX_CLIENT" -eq 1 ]; then
+      "${NPM_PREFIX}/bin/codex" --version >/dev/null 2>&1 || log_error "Codex 安装验证失败"
+    elif [ -n "$EXISTING_CODEX_COMMAND" ]; then
+      "$EXISTING_CODEX_COMMAND" --version >/dev/null 2>&1 || log_error "现有 Codex CLI 验证失败"
+    fi
   fi
 }
 
@@ -671,11 +753,20 @@ print_summary() {
   printf '  - Codex 配置: %s\n' "$CODEX_CONFIG_PATH"
   if uses_codex; then
     printf '  - Codex API Key 测试: 已通过\n'
+    if [ "$INSTALL_CODEX_CLIENT" -eq 1 ]; then
+      printf '  - Codex CLI: 本次已安装\n'
+    elif [ -n "$EXISTING_CODEX_COMMAND" ]; then
+      printf '  - Codex CLI: 已保留现有安装 (%s)\n' "$EXISTING_CODEX_COMMAND"
+    fi
   fi
-  printf '  - PATH 已写入: %s\n' "$PROFILE_FILE"
+  if [ -n "$PROFILE_FILE" ]; then
+    printf '  - PATH 已写入: %s\n' "$PROFILE_FILE"
+  fi
   printf '\n'
   printf '建议执行:\n'
-  printf '  source %s\n' "$PROFILE_FILE"
+  if [ -n "$PROFILE_FILE" ]; then
+    printf '  source %s\n' "$PROFILE_FILE"
+  fi
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]; then
     printf '  claude --version\n'
   fi
@@ -691,8 +782,13 @@ main() {
   parse_args "$@"
   TOOLS="$(normalize_tools "$TOOLS")"
   prompt_for_api_keys
+  resolve_client_install_plan
   ensure_node_runtime
-  ensure_profile_exports
+  if needs_client_install; then
+    ensure_profile_exports
+  else
+    log_info "检测到所选客户端已存在或已要求跳过安装；不修改 PATH"
+  fi
   install_requested_clients
   ensure_wrapper_scripts
   configure_claude

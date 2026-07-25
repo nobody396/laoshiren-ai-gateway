@@ -43,11 +43,19 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <div v-if="summaryMode === 'month'" class="flex items-center gap-1">
-            <button class="btn btn-secondary !px-2 !py-1" @click="shiftMonth(-1)">
+            <button
+              data-test="summary-month-prev"
+              class="btn btn-secondary !px-2 !py-1"
+              @click="shiftMonth(-1)"
+            >
               <Icon name="chevronLeft" size="sm" />
             </button>
             <span class="min-w-[7rem] text-center text-sm text-gray-600 dark:text-gray-300">{{ rangeLabel }}</span>
-            <button class="btn btn-secondary !px-2 !py-1" @click="shiftMonth(1)">
+            <button
+              data-test="summary-month-next"
+              class="btn btn-secondary !px-2 !py-1"
+              @click="shiftMonth(1)"
+            >
               <Icon name="chevronRight" size="sm" />
             </button>
           </div>
@@ -701,10 +709,17 @@ async function loadTransactions() {
 
   try {
     loading.value = true
+    const monthRange =
+      summaryMode.value === 'month'
+        ? { from: summaryRange.value.from, to: summaryRange.value.to }
+        : {}
     const res = await adminAPI.financeTransactions.list(pagination.page, pagination.page_size, {
       type: filters.type || undefined,
       category: filters.category || undefined,
-      search: searchQuery.value || undefined
+      search: searchQuery.value || undefined,
+      ...monthRange,
+      sort_by: 'occurred_at',
+      sort_order: 'asc'
     })
     transactions.value = res.items
     pagination.total = res.total
@@ -791,9 +806,10 @@ const rangeLabel = computed(() =>
   summaryRange.value.label.toLocaleDateString(undefined, { year: 'numeric', month: 'long', timeZone: 'UTC' })
 )
 
-function shiftMonth(delta: number) {
+async function shiftMonth(delta: number) {
   summaryMonthOffset.value += delta
-  loadSummary()
+  pagination.page = 1
+  await Promise.all([loadSummary(), loadTransactions()])
 }
 
 const summary = ref<FinanceTransactionSummary>(emptySummary())
@@ -802,7 +818,8 @@ const allTimeSummary = ref<FinanceTransactionSummary>(emptySummary())
 async function setSummaryMode(mode: SummaryMode) {
   if (summaryMode.value === mode) return
   summaryMode.value = mode
-  await loadSummary()
+  pagination.page = 1
+  await Promise.all([loadSummary(), loadTransactions()])
 }
 
 async function loadSummary() {

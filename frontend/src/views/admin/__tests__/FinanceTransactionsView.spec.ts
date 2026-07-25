@@ -151,11 +151,19 @@ describe('admin FinanceTransactionsView', () => {
     await flushPromises()
 
     expect(list).toHaveBeenCalledTimes(1)
+    expect(list).toHaveBeenCalledWith(1, 20, {
+      type: undefined,
+      category: undefined,
+      search: undefined,
+      sort_by: 'occurred_at',
+      sort_order: 'asc'
+    })
     expect(summary).toHaveBeenCalledTimes(1)
     expect(summary).toHaveBeenCalledWith(undefined, undefined, 'all')
   })
 
-  it('lets the admin switch from cumulative totals to a Shanghai calendar month', async () => {
+  it('filters both the summary and ledger list by the selected Shanghai calendar month', async () => {
+    list.mockResolvedValue({ items: [], total: 60, page: 4, page_size: 20, pages: 3 })
     const wrapper = mountView()
     await flushPromises()
 
@@ -168,6 +176,53 @@ describe('admin FinanceTransactionsView', () => {
     expect(typeof from).toBe('number')
     expect(typeof to).toBe('number')
     expect(to).toBeGreaterThan(from)
+    expect(list).toHaveBeenCalledTimes(2)
+    expect(list.mock.calls[1]).toEqual([
+      1,
+      20,
+      {
+        type: undefined,
+        category: undefined,
+        search: undefined,
+        from,
+        to,
+        sort_by: 'occurred_at',
+        sort_order: 'asc'
+      }
+    ])
+  })
+
+  it('reloads page one for a shifted month and removes month filters when returning to cumulative scope', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('[data-test="summary-scope-month"]').trigger('click')
+    await flushPromises()
+    const firstMonthFilters = list.mock.calls[1][2]
+
+    await wrapper.find('[data-test="summary-month-prev"]').trigger('click')
+    await flushPromises()
+    const previousMonthFilters = list.mock.calls[2][2]
+
+    expect(list.mock.calls[2][0]).toBe(1)
+    expect(previousMonthFilters.from).not.toBe(firstMonthFilters.from)
+    expect(previousMonthFilters.to).toBe(firstMonthFilters.from)
+
+    await wrapper.find('[data-test="summary-scope-all"]').trigger('click')
+    await flushPromises()
+
+    expect(list.mock.calls[3]).toEqual([
+      1,
+      20,
+      {
+        type: undefined,
+        category: undefined,
+        search: undefined,
+        sort_by: 'occurred_at',
+        sort_order: 'asc'
+      }
+    ])
+    expect(summary.mock.calls[3]).toEqual([undefined, undefined, 'all'])
   })
 
   it('renders the summary stat cards from the loaded data', async () => {

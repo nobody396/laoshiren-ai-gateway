@@ -22,6 +22,8 @@ export async function list(
     search?: string
     from?: number
     to?: number
+    sort_by?: 'occurred_at'
+    sort_order?: 'asc' | 'desc'
   }
 ): Promise<BasePaginationResponse<FinanceTransaction>> {
   const { data } = await apiClient.get<BasePaginationResponse<FinanceTransaction>>('/admin/finance-transactions', {

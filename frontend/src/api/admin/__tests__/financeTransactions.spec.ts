@@ -36,10 +36,26 @@ describe('Finance Transactions API - Admin', () => {
     it('calls GET /admin/finance-transactions with pagination and filters', async () => {
       mockClient.get.mockResolvedValue({ data: { items: [], total: 0, page: 1, page_size: 20, pages: 0 } })
 
-      const result = await list(2, 10, { type: 'expense', category: 'server_cost' })
+      const result = await list(2, 10, {
+        type: 'expense',
+        category: 'server_cost',
+        from: 1000,
+        to: 2000,
+        sort_by: 'occurred_at',
+        sort_order: 'asc'
+      })
 
       expect(mockClient.get).toHaveBeenCalledWith('/admin/finance-transactions', {
-        params: { page: 2, page_size: 10, type: 'expense', category: 'server_cost' }
+        params: {
+          page: 2,
+          page_size: 10,
+          type: 'expense',
+          category: 'server_cost',
+          from: 1000,
+          to: 2000,
+          sort_by: 'occurred_at',
+          sort_order: 'asc'
+        }
       })
       expect(result.total).toBe(0)
     })

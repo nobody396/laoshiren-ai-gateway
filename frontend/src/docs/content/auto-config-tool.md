@@ -43,7 +43,7 @@ curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash
 - 先检测已有的 `Claude Code` / `Codex` CLI，存在且可运行时不重复安装
 - 仅在所选客户端缺失时安装对应 CLI
 - 写入对应配置文件
-- 对 Codex 执行 API Key 测试，确认 `/v1/models` 可以正常返回
+- 对 Claude Code 和 Codex 执行 API Key 测试，确认 `/v1/models` 可以正常返回
 - 最后执行版本检查，确认命令可以运行
 
 ### Windows PowerShell
@@ -54,7 +54,9 @@ curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash
 irm https://laoshirenai.com/auto-config/install.ps1 | iex
 ```
 
-Windows 脚本还会检测官方 `OpenAI.Codex` App。已经安装 Codex App 或可用的 Codex CLI 时，不会再下载 Node.js 或重复安装 Codex CLI，只会备份原配置、写入中转配置并测试 API Key。
+Windows 脚本还会检测现有 Claude Code CLI 和官方 `OpenAI.Codex` App。已有客户端时不会再下载 Node.js 或重复安装，只会备份原配置、写入中转配置并测试 API Key。
+
+在控制台的 **API 密钥** 列表里也可以直接点击 **一键配置**：OpenAI 分组会生成 Codex 命令，Anthropic / Antigravity 分组会生成 Claude Code 命令，Windows 和 Mac 会自动显示各自适用的命令。
 
 ---
 
@@ -240,7 +242,7 @@ claude --version
 codex --version
 ```
 
-脚本还会自动用你的 Codex API Key 请求 `/v1/models`。因此执行脚本时看到 `Codex API Key 测试通过`，再加上 `codex --version` 能输出版本号，才说明配置和命令链路都已经打通。
+脚本会分别用所选客户端的 API Key 请求 `/v1/models`。看到 `Claude Code API Key 测试通过` 或 `Codex API Key 测试通过`，再加上对应的 `claude --version` / `codex --version` 能输出版本号，才说明配置和命令链路都已经打通。
 
 ---
 

@@ -345,15 +345,15 @@
                 <Icon name="terminal" size="sm" />
                 <span class="text-xs">{{ t('keys.useKey') }}</span>
               </button>
-              <!-- Codex Auto Config Button -->
+              <!-- Client Auto Config Button -->
               <button
-                v-if="row.group?.platform === 'openai'"
-                @click="copyCodexAutoConfigCommand(row)"
-                :title="t('keys.configureCodexHint')"
+                v-if="getAutoConfigTargetForKey(row)"
+                @click="copyClientAutoConfigCommand(row)"
+                :title="t('keys.configureClientHint', { client: getAutoConfigClientName(row) })"
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
               >
                 <Icon name="terminal" size="sm" />
-                <span class="text-xs">{{ t('keys.configureCodex') }}</span>
+                <span class="text-xs">{{ t('keys.configureClient') }}</span>
               </button>
               <!-- Import to CC Switch Button -->
               <button
@@ -1287,6 +1287,12 @@ import {
   detectCcsDiagnosticPlatform,
   type CcsDiagnosticPlatform
 } from '@/utils/ccSwitchDiagnostics'
+import {
+  buildClientAutoConfigCommand,
+  getClientAutoConfigName,
+  getClientAutoConfigTarget,
+  type ClientAutoConfigTarget
+} from '@/utils/clientAutoConfig'
 
 // Helper to format date for datetime-local input
 const formatDateTimeLocal = (isoDate: string): string => {
@@ -1613,42 +1619,34 @@ const copySaveOfficialProviderCommand = async () => {
   await clipboardCopy(command, t('keys.saveOfficialProviderCommandCopied'))
 }
 
-const shellSingleQuote = (value: string): string => {
-  return `'${value.replace(/'/g, "'\"'\"'")}'`
+const getAutoConfigTargetForKey = (row: ApiKey): ClientAutoConfigTarget | null => {
+  return getClientAutoConfigTarget(row.group?.platform)
 }
 
-const powerShellSingleQuote = (value: string): string => {
-  return `'${value.replace(/'/g, "''")}'`
+const getAutoConfigClientName = (row: ApiKey): string => {
+  const target = getAutoConfigTargetForKey(row)
+  return target ? getClientAutoConfigName(target) : ''
 }
 
-const buildCodexAutoConfigCommand = (row: ApiKey): string => {
-  const isWindows = navigator.userAgent.toLowerCase().includes('windows')
-  const baseUrl = displayApiBaseUrl.value
-
-  if (isWindows) {
-    return [
-      `$env:LAOSHIRENAI_CODEX_API_KEY=${powerShellSingleQuote(row.key)}`,
-      "$env:LAOSHIRENAI_TOOLS='codex'",
-      `$env:LAOSHIRENAI_BASE_URL=${powerShellSingleQuote(baseUrl)}`,
-      'irm https://laoshirenai.com/auto-config/install.ps1 | iex'
-    ].join('; ')
-  }
-
-  return [
-    'curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s --',
-    `--codex-api-key ${shellSingleQuote(row.key)}`,
-    '--tools codex',
-    `--base-url ${shellSingleQuote(baseUrl)}`
-  ].join(' ')
-}
-
-const copyCodexAutoConfigCommand = async (row: ApiKey) => {
+const copyClientAutoConfigCommand = async (row: ApiKey) => {
   if (row.status !== 'active') {
-    appStore.showError(t('keys.keyMustBeActiveForCodexConfig'))
+    appStore.showError(t('keys.keyMustBeActiveForAutoConfig'))
     return
   }
 
-  await clipboardCopy(buildCodexAutoConfigCommand(row), t('keys.codexAutoConfigCommandCopied'))
+  const target = getAutoConfigTargetForKey(row)
+  if (!target || !row.group) {
+    return
+  }
+
+  const clientName = getClientAutoConfigName(target)
+  const command = buildClientAutoConfigCommand({
+    target,
+    platform: row.group.platform,
+    apiKey: row.key,
+    baseUrl: displayApiBaseUrl.value
+  })
+  await clipboardCopy(command, t('keys.autoConfigCommandCopied', { client: clientName }))
 }
 
 const isAbortError = (error: unknown) => {

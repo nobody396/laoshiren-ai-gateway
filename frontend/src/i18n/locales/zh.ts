@@ -809,10 +809,10 @@ export default {
     baseUrlCopied: 'Base URL 已复制',
     importToCcSwitch: '一键导入',
     importToCcSwitchHint: '通过 CC Switch 选择并导入兼容工具',
-    configureCodex: '一键配置',
-    configureCodexHint: '复制一行命令：已有 Codex 只更新配置，缺失时才安装，并测试 API Key',
-    codexAutoConfigCommandCopied: '一键配置命令已复制，请粘贴到终端运行',
-    keyMustBeActiveForCodexConfig: '请先启用该 API Key，再复制一键配置命令',
+    configureClient: '一键配置',
+    configureClientHint: '复制一行命令：已有 {client} 只更新配置，缺失时才安装，并测试 API Key',
+    autoConfigCommandCopied: '{client} 一键配置命令已复制，请粘贴到终端运行',
+    keyMustBeActiveForAutoConfig: '请先启用该 API Key，再复制一键配置命令',
     saveOfficialProvider: '保存官方订阅',
     saveOfficialProviderHint: '复制脚本命令，把本机 OpenAI 官方登录保存成 CC Switch Provider',
     saveOfficialProviderCommandCopied: '脚本命令已复制，请粘贴到终端运行',
@@ -6222,7 +6222,7 @@ export default {
       useOptions: {
         title: '现在选择怎么使用',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">密钥已经创建好了。接下来有几种方式：</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>推荐 Codex 新手：</b>如果是 OpenAI / Codex 分组，点「一键配置」复制一行命令；已有 Codex 时只更新配置，缺失时才安装，并测试 API Key。</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>已有 OpenAI 官方订阅：</b>先用「保存官方订阅」保存官方 Provider，再导入老实人 AI 接口配置，之后就能两边切换。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>需要多 Provider 切换：</b>再点「导入到 CCS」使用 CC Switch；不想装工具也可以点「使用密钥」手动复制配置。</p></div></div>'
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">密钥已经创建好了。接下来有几种方式：</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>推荐 Codex / Claude Code 新手：</b>点「一键配置」复制一行命令；OpenAI 分组自动配置 Codex，Anthropic / Antigravity 分组自动配置 Claude Code。已有客户端时只更新配置，缺失时才安装，并测试 API Key。</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>已有 OpenAI 官方订阅：</b>先用「保存官方订阅」保存官方 Provider，再导入老实人 AI 接口配置，之后就能两边切换。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>需要多 Provider 切换：</b>再点「导入到 CCS」使用 CC Switch；不想装工具也可以点「使用密钥」手动复制配置。</p></div></div>'
       },
       docs: {
         title: '📚 教程和下载说明',

@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="0.3.0"
+SCRIPT_VERSION="0.4.0"
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_TOOLS="all"
 DEFAULT_NODE_INDEX_PRIMARY="https://npmmirror.com/mirrors/node/index.tab"
@@ -126,6 +126,7 @@ ensure_profile_exports() {
   if ! grep -Fq "$marker_begin" "$PROFILE_FILE"; then
     {
       printf '\n%s\n' "$marker_begin"
+      # shellcheck disable=SC2016 # Keep $PATH literal for future shells.
       printf 'export PATH="%s/bin:%s/bin:%s:$PATH"\n' "$NODE_CURRENT_DIR" "$NPM_PREFIX" "$LOCAL_BIN_DIR"
       printf '%s\n' "$marker_end"
     } >>"$PROFILE_FILE"
@@ -671,6 +672,10 @@ uses_codex() {
   [ "$TOOLS" = "all" ] || [ "$TOOLS" = "codex" ]
 }
 
+uses_claude() {
+  [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]
+}
+
 normalize_openai_v1_base_url() {
   local normalized_url
 
@@ -683,6 +688,28 @@ normalize_openai_v1_base_url() {
       printf '%s/v1' "$normalized_url"
       ;;
   esac
+}
+
+verify_claude_api_key() {
+  if ! uses_claude; then
+    return 0
+  fi
+
+  local api_base_url
+  local status_code
+
+  api_base_url="$(normalize_openai_v1_base_url "$BASE_URL")"
+  log_info "正在测试 Claude Code API Key"
+  status_code="$(curl -sS -o /dev/null -w '%{http_code}' \
+    -H "Authorization: Bearer ${CLAUDE_API_KEY}" \
+    -H "anthropic-version: 2023-06-01" \
+    "${api_base_url}/models" || true)"
+
+  if [ "$status_code" != "200" ]; then
+    log_error "Claude Code API Key 测试失败: ${api_base_url}/models 返回 HTTP ${status_code}，请检查 Key、分组和 API 地址"
+  fi
+
+  log_info "Claude Code API Key 测试通过"
 }
 
 verify_codex_api_key() {
@@ -751,6 +778,14 @@ print_summary() {
   printf '  - Claude 配置: %s\n' "$CLAUDE_SETTINGS_PATH"
   printf '  - Codex 鉴权: %s\n' "$CODEX_AUTH_PATH"
   printf '  - Codex 配置: %s\n' "$CODEX_CONFIG_PATH"
+  if uses_claude; then
+    printf '  - Claude Code API Key 测试: 已通过\n'
+    if [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ]; then
+      printf '  - Claude Code CLI: 本次已安装\n'
+    elif [ -n "$EXISTING_CLAUDE_COMMAND" ]; then
+      printf '  - Claude Code CLI: 已保留现有安装 (%s)\n' "$EXISTING_CLAUDE_COMMAND"
+    fi
+  fi
   if uses_codex; then
     printf '  - Codex API Key 测试: 已通过\n'
     if [ "$INSTALL_CODEX_CLIENT" -eq 1 ]; then
@@ -777,6 +812,7 @@ print_summary() {
 
 # 组织整个安装流程，确保步骤顺序稳定且可复用。
 main() {
+  log_info "老实人 AI 自动配置脚本 v${SCRIPT_VERSION}"
   require_command curl
   require_command tar
   parse_args "$@"
@@ -793,6 +829,7 @@ main() {
   ensure_wrapper_scripts
   configure_claude
   configure_codex
+  verify_claude_api_key
   verify_codex_api_key
   verify_client_commands
   print_summary

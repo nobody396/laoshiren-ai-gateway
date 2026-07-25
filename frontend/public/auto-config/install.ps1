@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.3.0'
+$ScriptVersion = '0.4.0'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultTools = 'all'
 $DefaultNodeIndexPrimary = 'https://npmmirror.com/mirrors/node/index.json'
@@ -766,6 +766,10 @@ function Test-UsesCodex {
   return $script:Tools -in @('all', 'codex')
 }
 
+function Test-UsesClaude {
+  return $script:Tools -in @('all', 'claude')
+}
+
 function Get-OpenAIV1BaseUrl {
   param([string]$Value)
 
@@ -775,6 +779,35 @@ function Get-OpenAIV1BaseUrl {
   }
 
   return "$NormalizedUrl/v1"
+}
+
+function Test-ClaudeApiKey {
+  if (-not (Test-UsesClaude)) {
+    return
+  }
+
+  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  Write-Info '正在测试 Claude Code API Key'
+
+  try {
+    $Response = Invoke-WebRequest -Uri "$ApiBaseUrl/models" -Headers @{
+      Authorization = "Bearer $script:ClaudeApiKey"
+      'anthropic-version' = '2023-06-01'
+    } -Method GET
+
+    if ([int]$Response.StatusCode -ne 200) {
+      Stop-Script "Claude Code API Key 测试失败: $ApiBaseUrl/models 返回 HTTP $($Response.StatusCode)，请检查 Key、分组和 API 地址"
+    }
+  } catch {
+    $Status = '请求失败'
+    $ResponseProperty = $_.Exception.PSObject.Properties['Response']
+    if ($null -ne $ResponseProperty -and $null -ne $ResponseProperty.Value -and $ResponseProperty.Value.StatusCode) {
+      $Status = "HTTP $([int]$ResponseProperty.Value.StatusCode)"
+    }
+    Stop-Script "Claude Code API Key 测试失败: $ApiBaseUrl/models 返回 $Status，请检查 Key、分组和 API 地址"
+  }
+
+  Write-Info 'Claude Code API Key 测试通过'
 }
 
 function Test-CodexApiKey {
@@ -872,6 +905,14 @@ function Print-Summary {
   Write-Host "  - Claude 配置: $ClaudeSettingsPath"
   Write-Host "  - Codex 鉴权: $CodexAuthPath"
   Write-Host "  - Codex 配置: $CodexConfigPath"
+  if (Test-UsesClaude) {
+    Write-Host '  - Claude Code API Key 测试: 已通过'
+    if ($script:InstallClaudeClient) {
+      Write-Host '  - Claude Code CLI: 本次已安装'
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingClaudeCommand)) {
+      Write-Host "  - Claude Code CLI: 已保留现有安装 ($($script:ExistingClaudeCommand))"
+    }
+  }
   if (Test-UsesCodex) {
     Write-Host '  - Codex API Key 测试: 已通过'
     if ($script:InstallCodexClient) {
@@ -903,6 +944,7 @@ function Print-Summary {
 #   命令行方式：.\install.ps1 --tools claude --api-key <key>
 #   管道方式：  $env:LAOSHIRENAI_TOOLS='claude'; $env:LAOSHIRENAI_API_KEY='<key>'; irm ... | iex
 function Main {
+  Write-Info "老实人 AI 自动配置脚本 v$ScriptVersion"
   # 仅在非管道（直接执行脚本）时才解析命令行参数
   if ($MyInvocation.InvocationName -ne '&' -and $args.Count -gt 0) {
     Parse-Arguments -ArgsList $args
@@ -919,6 +961,7 @@ function Main {
   Install-RequestedClients
   Configure-Claude
   Configure-Codex
+  Test-ClaudeApiKey
   Test-CodexApiKey
   Verify-ClientCommands
   Print-Summary

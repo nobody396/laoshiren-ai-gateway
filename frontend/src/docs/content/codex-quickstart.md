@@ -61,7 +61,7 @@ codex --version
 
 ## 3. 一键配置 Codex
 
-推荐优先使用控制台里的 **一键配置** 按钮。它会按你的系统复制一行命令，终端执行后自动完成 Codex 安装、配置写入和 API Key 测试，不需要先安装 CC Switch。
+推荐优先使用控制台里的 **一键配置** 按钮。它会按你的系统复制一行命令，终端执行后先检测已有 Codex，再完成配置写入和 API Key 测试；只有客户端缺失时才会安装，不需要先安装 CC Switch。
 
 ### 方式一：自动配置命令（推荐）
 
@@ -80,6 +80,8 @@ $env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex';
 ```
 
 脚本会写入 `~/.codex/auth.json` 和 `~/.codex/config.toml`，并请求 `/v1/models` 测试这把 API Key 是否能正常使用。如果 Key、分组或 API 地址不正确，脚本会直接报错，不会假装配置成功。
+
+在 Windows 上，脚本会同时识别官方 `OpenAI.Codex` App 和 Codex CLI。只要其中一个已经可用，就会跳过 Codex/Node.js 下载，保留现有客户端并只更新配置。配置完成后完全退出并重新打开 Codex App 即可。
 
 ### 方式二：CC Switch（可选，多 Provider 切换）
 

@@ -1,6 +1,6 @@
 # 老实人 AI 自动配置工具
 
-这篇文档解决一件事：用一条命令把 `Claude Code` 或 `Codex` 安装并接到 `老实人 AI`，即使你的机器还没有 Node.js，也可以继续走下去。
+这篇文档解决一件事：用一条命令把现有的 `Claude Code` 或 `Codex` 接到 `老实人 AI`；只有客户端确实缺失时，脚本才会自动安装。
 
 ---
 
@@ -40,7 +40,8 @@ curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash
 - 检测当前系统是否已有可用的 Node.js
 - 如果没有，则在当前用户目录下安装本地 Node.js 运行时
 - 将 npm 镜像切到国内源，降低无代理环境下载失败率
-- 安装 `Claude Code` 和 `Codex`
+- 先检测已有的 `Claude Code` / `Codex` CLI，存在且可运行时不重复安装
+- 仅在所选客户端缺失时安装对应 CLI
 - 写入对应配置文件
 - 对 Codex 执行 API Key 测试，确认 `/v1/models` 可以正常返回
 - 最后执行版本检查，确认命令可以运行
@@ -52,6 +53,8 @@ curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash
 ```powershell
 irm https://laoshirenai.com/auto-config/install.ps1 | iex
 ```
+
+Windows 脚本还会检测官方 `OpenAI.Codex` App。已经安装 Codex App 或可用的 Codex CLI 时，不会再下载 Node.js 或重复安装 Codex CLI，只会备份原配置、写入中转配置并测试 API Key。
 
 ---
 
@@ -100,6 +103,8 @@ Windows PowerShell（下载后直接执行）：
 ```powershell
 .\install.ps1 --codex-api-key YOUR_CODEX_KEY --tools codex
 ```
+
+如果你明确需要重新安装最新版 CLI，可在下载脚本后增加 `--force-client-install`。默认不要加这个参数。
 
 ### 同时配置 Claude Code 和 Codex
 
@@ -199,7 +204,7 @@ requires_openai_auth = true
 - macOS / Linux：`~/.laoshirenai/node`
 - Windows：`%USERPROFILE%\.laoshirenai\node`
 
-客户端包也会安装到当前用户目录，而不是系统全局目录。
+缺失的客户端包会安装到当前用户目录，而不是系统全局目录。已经存在的客户端会原样保留。
 
 ---
 
@@ -217,7 +222,7 @@ source ~/.zshrc
 
 ### Windows
 
-重新打开一个 PowerShell 窗口即可。
+如果复用的是 Codex App，请完全退出后重新打开 App；如果使用的是 CLI，重新打开一个 PowerShell 窗口即可。
 
 ---
 

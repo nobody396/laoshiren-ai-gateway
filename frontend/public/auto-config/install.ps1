@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.2.0'
+$ScriptVersion = '0.3.0'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultTools = 'all'
 $DefaultNodeIndexPrimary = 'https://npmmirror.com/mirrors/node/index.json'
@@ -35,11 +35,17 @@ if ([string]::IsNullOrWhiteSpace($CodexApiKey) -and -not [string]::IsNullOrWhite
 }
 $NodeVersionOverride = if ($env:LAOSHIRENAI_NODE_VERSION) { $env:LAOSHIRENAI_NODE_VERSION } else { '' }
 $SkipClientInstall = $env:LAOSHIRENAI_SKIP_CLIENT_INSTALL -eq '1'
+$ForceClientInstall = $env:LAOSHIRENAI_FORCE_CLIENT_INSTALL -eq '1'
 
 $script:NodeExe = ''
 $script:NpmCmd = ''
 $script:UseProxylessNpm = $false
 $script:ActiveNpmRegistry = $DefaultNpmRegistry
+$script:InstallClaudeClient = $false
+$script:InstallCodexClient = $false
+$script:ExistingClaudeCommand = ''
+$script:ExistingCodexCommand = ''
+$script:ExistingCodexApp = ''
 
 # 输出信息日志，方便用户了解当前执行到了哪一步。
 function Write-Info {
@@ -122,6 +128,9 @@ function Parse-Arguments {
       '--skip-client-install' {
         $script:SkipClientInstall = $true
       }
+      '--force-client-install' {
+        $script:ForceClientInstall = $true
+      }
       '--help' {
         @'
 老实人 AI 一键安装与自动配置脚本
@@ -143,6 +152,7 @@ function Parse-Arguments {
   --base-url             API 基础地址，默认 https://api.laoshirenai.com
   --node-version         指定 Node.js 版本，例如 v24.11.0
   --skip-client-install  仅写配置，不安装 claude/codex 包
+  --force-client-install 即使检测到已有客户端，也重新安装所选 CLI
 '@ | Write-Host
         exit 0
       }
@@ -184,6 +194,120 @@ function Prompt-ApiKeys {
       Stop-Script 'Codex API Key 不能为空'
     }
   }
+}
+
+# 查找一个真正可执行的现有 CLI。仅 PATH 中存在但无法运行的残留命令不算已安装。
+function Get-UsableClientCommand {
+  param([string]$CommandName)
+
+  $Command = Get-Command $CommandName -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandType -in @('Application', 'ExternalScript') } |
+    Select-Object -First 1
+  if ($null -eq $Command) {
+    return ''
+  }
+
+  $CommandPath = [string]$Command.Source
+  if ([string]::IsNullOrWhiteSpace($CommandPath)) {
+    $PathProperty = $Command.PSObject.Properties['Path']
+    if ($null -ne $PathProperty) {
+      $CommandPath = [string]$PathProperty.Value
+    }
+  }
+  if ([string]::IsNullOrWhiteSpace($CommandPath)) {
+    return ''
+  }
+
+  try {
+    & $CommandPath --version *> $null
+    return $CommandPath
+  } catch {
+    Write-WarnMessage "检测到 $CommandName 命令，但它当前无法运行，将按缺失客户端处理: $CommandPath"
+    return ''
+  }
+}
+
+# 检测当前 Windows 用户是否已经安装官方 Codex App。
+# App 与 npm 安装的 Codex CLI 是两种客户端；已有 App 时无需为了写配置再下载一份 CLI。
+function Get-InstalledCodexApp {
+  if ($null -ne (Get-Command Get-AppxPackage -ErrorAction SilentlyContinue)) {
+    try {
+      $Package = Get-AppxPackage -Name 'OpenAI.Codex' -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+      if ($null -ne $Package) {
+        return [string]$Package.PackageFullName
+      }
+    } catch {
+      Write-WarnMessage "读取 Codex App 安装状态失败，将继续检查开始菜单: $_"
+    }
+  }
+
+  if ($null -ne (Get-Command Get-StartApps -ErrorAction SilentlyContinue)) {
+    try {
+      $StartApp = Get-StartApps |
+        Where-Object { $_.AppID -like 'OpenAI.Codex*!App' } |
+        Select-Object -First 1
+      if ($null -ne $StartApp) {
+        return [string]$StartApp.AppID
+      }
+    } catch {
+      Write-WarnMessage "读取开始菜单中的 Codex App 状态失败: $_"
+    }
+  }
+
+  return ''
+}
+
+# 为每个所选客户端制定安装计划：默认复用可用的现有安装，仅在缺失时安装 CLI。
+function Resolve-ClientInstallPlan {
+  if ($script:SkipClientInstall -and $script:ForceClientInstall) {
+    Stop-Script '不能同时使用 --skip-client-install 和 --force-client-install'
+  }
+
+  $script:InstallClaudeClient = $false
+  $script:InstallCodexClient = $false
+
+  if ($script:Tools -in @('all', 'claude')) {
+    $script:ExistingClaudeCommand = Get-UsableClientCommand -CommandName 'claude'
+    if ($script:ForceClientInstall) {
+      $script:InstallClaudeClient = $true
+      Write-Info '已要求强制重新安装 Claude Code CLI'
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingClaudeCommand)) {
+      Write-Info "检测到现有 Claude Code CLI，跳过重复安装: $($script:ExistingClaudeCommand)"
+    } elseif ($script:SkipClientInstall) {
+      Write-WarnMessage '未检测到可用的 Claude Code CLI，但已按要求跳过安装'
+    } else {
+      $script:InstallClaudeClient = $true
+    }
+  }
+
+  if ($script:Tools -in @('all', 'codex')) {
+    $script:ExistingCodexCommand = Get-UsableClientCommand -CommandName 'codex'
+    if (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexCommand)) {
+      Write-Info "检测到现有 Codex CLI，跳过重复安装: $($script:ExistingCodexCommand)"
+    } else {
+      $script:ExistingCodexApp = Get-InstalledCodexApp
+      if (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexApp)) {
+        Write-Info '检测到现有 Codex App，跳过重复下载 Codex CLI'
+      }
+    }
+
+    if ($script:ForceClientInstall) {
+      $script:InstallCodexClient = $true
+      Write-Info '已要求强制重新安装 Codex CLI'
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexCommand) -or
+            -not [string]::IsNullOrWhiteSpace($script:ExistingCodexApp)) {
+      $script:InstallCodexClient = $false
+    } elseif ($script:SkipClientInstall) {
+      Write-WarnMessage '未检测到 Codex App 或可用的 Codex CLI，但已按要求跳过安装'
+    } else {
+      $script:InstallCodexClient = $true
+    }
+  }
+}
+
+function Test-NeedsClientInstall {
+  return ($script:InstallClaudeClient -or $script:InstallCodexClient)
 }
 
 # 判断系统自带 Node.js 是否可复用，避免重复下载安装。
@@ -533,8 +657,8 @@ function Install-NpmPackageWithFallback {
 
 # 安装用户选择的客户端包，并全部写入用户目录而非系统目录。
 function Install-RequestedClients {
-  if ($script:SkipClientInstall) {
-    Write-WarnMessage '已跳过客户端安装，仅写入配置文件'
+  if (-not (Test-NeedsClientInstall)) {
+    Write-Info '所选客户端无需安装，本次仅写入配置并测试 API Key'
     return
   }
 
@@ -545,12 +669,12 @@ function Install-RequestedClients {
   }
   Ensure-NpmRegistry -Registry $DefaultNpmRegistry
 
-  if ($script:Tools -in @('all', 'claude')) {
+  if ($script:InstallClaudeClient) {
     Write-Info '正在安装 Claude Code'
     Install-NpmPackageWithFallback -PackageName '@anthropic-ai/claude-code@latest'
   }
 
-  if ($script:Tools -in @('all', 'codex')) {
+  if ($script:InstallCodexClient) {
     Write-Info '正在安装 Codex'
     Install-NpmPackageWithFallback -PackageName '@openai/codex@latest'
   }
@@ -698,36 +822,42 @@ function Configure-Codex {
   }
 }
 
-# 通过绝对路径执行命令做一次最小自检，证明安装链路可用。
+# 通过绝对路径执行命令做一次最小自检；复用已有客户端时也不制造“未安装”的误报。
 function Verify-ClientCommands {
-  if ($script:SkipClientInstall) {
-    return
-  }
-
   if ($script:Tools -in @('all', 'claude')) {
-    $ClaudeCmd = Join-Path $NpmPrefix 'claude.cmd'
-    if (Test-Path -LiteralPath $ClaudeCmd) {
+    $ClaudeCmd = if ($script:InstallClaudeClient) {
+      Join-Path $NpmPrefix 'claude.cmd'
+    } else {
+      $script:ExistingClaudeCommand
+    }
+    if (-not [string]::IsNullOrWhiteSpace($ClaudeCmd) -and (Test-Path -LiteralPath $ClaudeCmd)) {
       try {
         & $ClaudeCmd --version | Out-Null
         Write-Info "Claude Code 验证通过"
       } catch {
-        Write-WarnMessage "Claude Code 安装完成，但自检失败（可忽略，重新打开终端后再试）: $_"
+        Write-WarnMessage "Claude Code 自检失败（可忽略，重新打开终端后再试）: $_"
       }
-    } else {
+    } elseif ($script:InstallClaudeClient) {
       Write-WarnMessage "未找到 $ClaudeCmd，请重新打开终端后执行 claude --version 确认"
     }
   }
 
   if ($script:Tools -in @('all', 'codex')) {
-    $CodexCmd = Join-Path $NpmPrefix 'codex.cmd'
-    if (Test-Path -LiteralPath $CodexCmd) {
+    $CodexCmd = if ($script:InstallCodexClient) {
+      Join-Path $NpmPrefix 'codex.cmd'
+    } else {
+      $script:ExistingCodexCommand
+    }
+    if (-not [string]::IsNullOrWhiteSpace($CodexCmd) -and (Test-Path -LiteralPath $CodexCmd)) {
       try {
         & $CodexCmd --version | Out-Null
         Write-Info "Codex 验证通过"
       } catch {
-        Write-WarnMessage "Codex 安装完成，但自检失败（可忽略，重新打开终端后再试）: $_"
+        Write-WarnMessage "Codex 自检失败（可忽略，重新打开终端后再试）: $_"
       }
-    } else {
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexApp)) {
+      Write-Info 'Codex App 已检测到，配置文件写入完成；无需执行 CLI 版本检查'
+    } elseif ($script:InstallCodexClient) {
       Write-WarnMessage "未找到 $CodexCmd，请重新打开终端后执行 codex --version 确认"
     }
   }
@@ -744,14 +874,27 @@ function Print-Summary {
   Write-Host "  - Codex 配置: $CodexConfigPath"
   if (Test-UsesCodex) {
     Write-Host '  - Codex API Key 测试: 已通过'
+    if ($script:InstallCodexClient) {
+      Write-Host '  - Codex CLI: 本次已安装'
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexCommand)) {
+      Write-Host "  - Codex CLI: 已保留现有安装 ($($script:ExistingCodexCommand))"
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexApp)) {
+      Write-Host '  - Codex App: 已保留现有安装，未重复下载'
+    }
   }
   Write-Host ''
-  Write-Host '建议重新打开 PowerShell，然后执行:'
+  Write-Host '下一步:'
   if ($script:Tools -in @('all', 'claude')) {
-    Write-Host '  claude --version'
+    Write-Host '  - 重新打开 PowerShell 后执行 claude --version'
   }
   if ($script:Tools -in @('all', 'codex')) {
-    Write-Host '  codex --version'
+    if (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexApp) -and
+        [string]::IsNullOrWhiteSpace($script:ExistingCodexCommand) -and
+        -not $script:InstallCodexClient) {
+      Write-Host '  - 完全退出后重新打开 Codex App，即可使用新配置'
+    } else {
+      Write-Host '  - 重新打开 PowerShell 后执行 codex --version'
+    }
   }
 }
 
@@ -765,9 +908,14 @@ function Main {
     Parse-Arguments -ArgsList $args
   }
   Prompt-ApiKeys
-  Ensure-NodeRuntime
-  Ensure-GitBash
-  Ensure-UserPath
+  Resolve-ClientInstallPlan
+  if (Test-NeedsClientInstall) {
+    Ensure-NodeRuntime
+    Ensure-GitBash
+    Ensure-UserPath
+  } else {
+    Write-Info '检测到所选客户端已存在或已要求跳过安装；不下载 Node.js、不修改 PATH'
+  }
   Install-RequestedClients
   Configure-Claude
   Configure-Codex

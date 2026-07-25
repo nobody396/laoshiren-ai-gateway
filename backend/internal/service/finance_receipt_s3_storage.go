@@ -46,7 +46,29 @@ func NewFinanceReceiptS3Storage(cfg *config.Config) *FinanceReceiptS3Storage {
 }
 
 func (s *FinanceReceiptS3Storage) Enabled() bool {
-	return s != nil && s.cfg != nil && s.cfg.Gateway.FinanceReceiptS3.IsConfigured()
+	if s == nil || s.cfg == nil {
+		return false
+	}
+	return s.cfg.Gateway.FinanceReceiptS3.IsConfigured() || s.cfg.Gateway.GPTImageS3.IsConfigured()
+}
+
+// resolvedConfig 返回实际生效的 S3 配置：优先使用专门配置的 finance_receipt_s3；
+// 未配置时退回复用已有的 gpt_image_s3 桶（同一套凭证/endpoint），仅前缀不同，
+// 避免为凭证图片单独申请一个新桶。
+func (s *FinanceReceiptS3Storage) resolvedConfig() config.GPTImageS3Config {
+	cfg := s.cfg.Gateway.FinanceReceiptS3
+	if cfg.IsConfigured() {
+		return cfg
+	}
+	fallback := s.cfg.Gateway.GPTImageS3
+	fallback.Prefix = cfg.Prefix
+	if strings.TrimSpace(fallback.Prefix) == "" {
+		fallback.Prefix = "finance-receipts/"
+	}
+	if cfg.MaxImageBytes > 0 {
+		fallback.MaxImageBytes = cfg.MaxImageBytes
+	}
+	return fallback
 }
 
 // Upload 保存已经在调用方压缩过的凭证图片，返回其 S3 key。
@@ -63,7 +85,8 @@ func (s *FinanceReceiptS3Storage) Upload(ctx context.Context, createdBy int64, d
 		return nil, ErrFinanceReceiptNotImage
 	}
 
-	maxBytes := s.cfg.Gateway.FinanceReceiptS3.MaxImageBytes
+	resolved := s.resolvedConfig()
+	maxBytes := resolved.MaxImageBytes
 	if maxBytes <= 0 {
 		maxBytes = 8 * 1024 * 1024
 	}
@@ -71,7 +94,7 @@ func (s *FinanceReceiptS3Storage) Upload(ctx context.Context, createdBy int64, d
 		return nil, ErrFinanceReceiptTooLarge
 	}
 
-	key := s.objectKey(createdBy, extensionForImageContentType(contentType))
+	key := s.objectKey(resolved, createdBy, extensionForImageContentType(contentType))
 	client, bucket, err := s.getClient(ctx)
 	if err != nil {
 		return nil, err
@@ -109,10 +132,10 @@ func (s *FinanceReceiptS3Storage) PresignGetURL(ctx context.Context, objectKey s
 	return result.URL, nil
 }
 
-func (s *FinanceReceiptS3Storage) objectKey(createdBy int64, ext string) string {
+func (s *FinanceReceiptS3Storage) objectKey(resolved config.GPTImageS3Config, createdBy int64, ext string) string {
 	prefix := "finance-receipts/"
-	if s.cfg != nil && strings.TrimSpace(s.cfg.Gateway.FinanceReceiptS3.Prefix) != "" {
-		prefix = strings.TrimSpace(s.cfg.Gateway.FinanceReceiptS3.Prefix)
+	if strings.TrimSpace(resolved.Prefix) != "" {
+		prefix = strings.TrimSpace(resolved.Prefix)
 	}
 	prefix = strings.Trim(prefix, "/")
 
@@ -133,7 +156,7 @@ func (s *FinanceReceiptS3Storage) getClient(ctx context.Context) (*s3.Client, st
 	if !s.Enabled() {
 		return nil, "", ErrFinanceReceiptS3NotConfigured
 	}
-	cfg := s.cfg.Gateway.FinanceReceiptS3
+	cfg := s.resolvedConfig()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.client != nil && s.bucket == cfg.Bucket {

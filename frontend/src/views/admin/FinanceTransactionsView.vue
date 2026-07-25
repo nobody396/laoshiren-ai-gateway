@@ -163,7 +163,7 @@
       <template #table>
         <DataTable :columns="columns" :data="transactions" :loading="loading">
           <template #cell-occurredAt="{ row }">
-            <span class="text-sm text-gray-600 dark:text-gray-300">{{ formatDateTime(row.occurred_at) }}</span>
+            <span class="text-sm text-gray-600 dark:text-gray-300">{{ formatFinanceDateTime(row.occurred_at) }}</span>
           </template>
 
           <template #cell-type="{ row }">
@@ -422,7 +422,7 @@ import { Chart as ChartJS, ArcElement, BarElement, CategoryScale, LinearScale, T
 import { Bar, Doughnut } from 'vue-chartjs'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
-import { formatCurrency, formatDateTime, formatDateTimeLocalInput, parseDateTimeLocalInput } from '@/utils/format'
+import { formatCurrency } from '@/utils/format'
 import type {
   FinanceTransaction,
   FinanceTransactionCategory,
@@ -477,6 +477,54 @@ const typeLabel = (type: string) =>
 
 const paymentChannelLabel = (channel: string) =>
   t(`admin.financeTransactions.paymentChannelLabels.${channel}`, channel)
+
+const FINANCE_TIME_ZONE = 'Asia/Shanghai'
+
+function financeDateParts(date: Date) {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: FINANCE_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(date)
+}
+
+function financeDatePart(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTypes) {
+  return parts.find((part) => part.type === type)?.value ?? ''
+}
+
+function formatFinanceDateTime(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return new Intl.DateTimeFormat(undefined, {
+    timeZone: FINANCE_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23'
+  }).format(date)
+}
+
+function formatFinanceDateTimeInput(timestampSeconds: number) {
+  const parts = financeDateParts(new Date(timestampSeconds * 1000))
+  return [
+    financeDatePart(parts, 'year'),
+    financeDatePart(parts, 'month'),
+    financeDatePart(parts, 'day')
+  ].join('-') + `T${financeDatePart(parts, 'hour')}:${financeDatePart(parts, 'minute')}`
+}
+
+function parseFinanceDateTimeInput(value: string) {
+  if (!value) return null
+  const timestamp = Date.parse(`${value}:00+08:00`)
+  return Number.isNaN(timestamp) ? null : Math.floor(timestamp / 1000)
+}
 
 // ===== List state =====
 const transactions = ref<FinanceTransaction[]>([])
@@ -774,7 +822,7 @@ function resetForm() {
   form.category = 'hosting_cost'
   form.payment_channel = ''
   form.amount_yuan = ''
-  form.occurred_at_str = formatDateTimeLocalInput(Math.floor(Date.now() / 1000))
+  form.occurred_at_str = formatFinanceDateTimeInput(Math.floor(Date.now() / 1000))
   form.note = ''
   form.receipt_key = ''
   receiptPreviewUrl.value = ''
@@ -785,7 +833,7 @@ function fillFormFromTransaction(row: FinanceTransaction) {
   form.category = row.category
   form.payment_channel = row.payment_channel || ''
   form.amount_yuan = (row.amount_fen / 100).toFixed(2)
-  form.occurred_at_str = formatDateTimeLocalInput(Math.floor(new Date(row.occurred_at).getTime() / 1000))
+  form.occurred_at_str = formatFinanceDateTimeInput(Math.floor(new Date(row.occurred_at).getTime() / 1000))
   form.note = row.note || ''
   form.receipt_key = row.receipt_key || ''
   receiptPreviewUrl.value = ''
@@ -822,7 +870,7 @@ async function handleSave() {
     appStore.showError(t('admin.financeTransactions.form.paymentChannelRequired'))
     return
   }
-  const occurredAt = parseDateTimeLocalInput(form.occurred_at_str)
+  const occurredAt = parseFinanceDateTimeInput(form.occurred_at_str)
 
   saving.value = true
   try {

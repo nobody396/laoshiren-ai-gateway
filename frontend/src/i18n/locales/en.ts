@@ -3964,7 +3964,7 @@ export default {
       failedToDelete: 'Failed to delete transaction',
       failedToLoadReceipt: 'Failed to load receipt link',
       columns: {
-        occurredAt: 'Occurred At',
+        occurredAt: 'Occurred At (Asia/Shanghai)',
         type: 'Type',
         category: 'Category',
         paymentChannel: 'Payment Channel',

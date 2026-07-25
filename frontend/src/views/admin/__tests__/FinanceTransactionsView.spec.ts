@@ -254,6 +254,48 @@ describe('admin FinanceTransactionsView', () => {
     expect(summary).toHaveBeenCalledTimes(2)
   })
 
+  it('edits finance occurrence times in Asia/Shanghai regardless of browser timezone', async () => {
+    list.mockResolvedValue({
+      items: [
+        {
+          id: 31,
+          type: 'expense',
+          category: 'hosting_cost',
+          amount_fen: 17899,
+          occurred_at: '2026-07-14T00:00:00+08:00',
+          source: 'manual',
+          created_at: '2026-07-25T00:00:00Z',
+          updated_at: '2026-07-25T00:00:00Z'
+        }
+      ],
+      total: 1,
+      page: 1,
+      page_size: 20,
+      pages: 1
+    })
+    update.mockResolvedValue({ id: 31 })
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    const editButton = wrapper.findAll('button[title]').find((button) => button.attributes('title') === 'common.edit')
+    expect(editButton).toBeDefined()
+    await editButton!.trigger('click')
+    await flushPromises()
+
+    expect((wrapper.find('input[type="datetime-local"]').element as HTMLInputElement).value).toBe('2026-07-14T00:00')
+
+    await wrapper.find('form#finance-transaction-form').trigger('submit')
+    await flushPromises()
+
+    expect(update).toHaveBeenCalledWith(
+      31,
+      expect.objectContaining({
+        occurred_at: Math.floor(Date.parse('2026-07-14T00:00:00+08:00') / 1000)
+      })
+    )
+  })
+
   it('rejects a zero/empty amount without calling the API', async () => {
     const wrapper = mountView()
     await flushPromises()

@@ -4115,7 +4115,7 @@ export default {
       failedToDelete: '删除记账失败',
       failedToLoadReceipt: '加载凭证链接失败',
       columns: {
-        occurredAt: '发生时间',
+        occurredAt: '发生时间（北京时间）',
         type: '类型',
         category: '分类',
         paymentChannel: '收款渠道',

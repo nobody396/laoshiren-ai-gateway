@@ -357,8 +357,9 @@
               </button>
               <!-- Import to CC Switch Button -->
               <button
-                v-if="!publicSettings?.hide_ccs_import_button"
+                v-if="!publicSettings?.hide_ccs_import_button && canImportToCcs(row)"
                 @click="importToCcswitch(row)"
+                :title="t('keys.importToCcSwitchHint')"
                 data-tour="keys-import-ccs"
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
               >
@@ -1010,20 +1011,29 @@
       <div class="space-y-4">
         <p class="text-sm text-gray-600 dark:text-gray-400">
           {{ t('keys.ccsClientSelect.description') }}
-	        </p>
-		        <div :class="['grid gap-3', ccsClientOptions.length >= 3 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2']">
-		          <button
-		            v-for="option in ccsClientOptions"
-		            :key="option.value"
-		            @click="handleCcsClientSelect(option.value)"
-		            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
-		          >
-		            <Icon :name="option.icon" size="xl" class="text-gray-600 dark:text-gray-400" />
-		            <span class="font-medium text-gray-900 dark:text-white">{{ option.label }}</span>
-		            <span class="text-xs text-gray-500 dark:text-gray-400">{{ option.description }}</span>
-		          </button>
-		        </div>
-		      </div>
+        </p>
+        <div :class="['grid gap-3', ccsClientOptions.length >= 3 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2']">
+          <button
+            v-for="option in ccsClientOptions"
+            :key="option.value"
+            @click="handleCcsClientSelect(option.value)"
+            class="flex flex-col items-center gap-2 rounded-xl border-2 border-gray-200 p-4 transition-all hover:border-primary-500 hover:bg-primary-50 dark:border-dark-600 dark:hover:border-primary-500 dark:hover:bg-primary-900/20"
+          >
+            <Icon :name="option.icon" size="xl" class="text-gray-600 dark:text-gray-400" />
+            <span class="font-medium text-gray-900 dark:text-white">{{ option.label }}</span>
+            <span class="text-center text-xs text-gray-500 dark:text-gray-400">{{ option.description }}</span>
+          </button>
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          {{ t('keys.ccsClientSelect.compatibilityNote') }}
+        </p>
+        <p
+          v-if="ccsHasClaudeCodeTarget"
+          class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300"
+        >
+          {{ t('keys.ccsClientSelect.claudeDesktopManualNotice') }}
+        </p>
+      </div>
       <template #footer>
         <div class="flex justify-end">
           <button @click="closeCcsClientSelect" class="btn btn-secondary">
@@ -1130,6 +1140,11 @@ import type { GroupCacheStats } from '@/api/groups'
 import type { Column } from '@/components/common/types'
 import type { BatchApiKeyUsageStats } from '@/api/usage'
 import { formatDateTime } from '@/utils/format'
+import {
+  buildCcsImportDeeplink,
+  getCompatibleCcsTargets,
+  type CcsImportTarget
+} from '@/utils/ccSwitchImport'
 
 // Helper to format date for datetime-local input
 const formatDateTimeLocal = (isoDate: string): string => {
@@ -1150,13 +1165,11 @@ interface GroupOption {
   cacheWindowDays: number
 }
 
-type CcsImportTarget = 'claude' | 'claude-desktop-bridge' | 'gemini'
-type CcsApp = 'claude' | 'codex' | 'gemini'
 type CcsClientOption = {
   value: CcsImportTarget
   label: string
   description: string
-  icon: 'terminal' | 'cloud' | 'sparkles'
+  icon: 'terminal' | 'cloud' | 'sparkles' | 'cube' | 'brain' | 'cpu'
 }
 
 const appStore = useAppStore()
@@ -1227,32 +1240,57 @@ const displayApiBaseUrl = computed(() => {
 
 const ccsClientOptions = computed<CcsClientOption[]>(() => {
   const platform = pendingCcsRow.value?.group?.platform || 'anthropic'
-  const options: CcsClientOption[] = [
-    {
-      value: 'claude' as const,
-      label: t('keys.ccsClientSelect.claudeCodeCli'),
-      description: t('keys.ccsClientSelect.claudeCodeCliDesc'),
-      icon: 'terminal' as const
-    },
-    {
-      value: 'claude-desktop-bridge' as const,
-      label: t('keys.ccsClientSelect.claudeDesktop'),
-      description: t('keys.ccsClientSelect.claudeDesktopDesc'),
-      icon: 'cloud' as const
+  const allowMessagesDispatch = pendingCcsRow.value?.group?.allow_messages_dispatch === true
+  return getCompatibleCcsTargets(platform, allowMessagesDispatch).map((target) => {
+    switch (target) {
+      case 'claude':
+        return {
+          value: target,
+          label: t('keys.ccsClientSelect.claudeCodeCli'),
+          description: t('keys.ccsClientSelect.claudeCodeCliDesc'),
+          icon: 'terminal'
+        }
+      case 'codex':
+        return {
+          value: target,
+          label: t('keys.ccsClientSelect.codex'),
+          description: t('keys.ccsClientSelect.codexDesc'),
+          icon: 'cpu'
+        }
+      case 'opencode':
+        return {
+          value: target,
+          label: t('keys.ccsClientSelect.opencode'),
+          description: t('keys.ccsClientSelect.opencodeDesc'),
+          icon: 'terminal'
+        }
+      case 'openclaw':
+        return {
+          value: target,
+          label: t('keys.ccsClientSelect.openclaw'),
+          description: t('keys.ccsClientSelect.openclawDesc'),
+          icon: 'cube'
+        }
+      case 'hermes':
+        return {
+          value: target,
+          label: t('keys.ccsClientSelect.hermes'),
+          description: t('keys.ccsClientSelect.hermesDesc'),
+          icon: 'brain'
+        }
+      case 'gemini':
+        return {
+          value: target,
+          label: t('keys.ccsClientSelect.geminiCli'),
+          description: t('keys.ccsClientSelect.geminiCliDesc'),
+          icon: 'sparkles'
+        }
     }
-  ]
-
-  if (platform === 'antigravity') {
-    options.push({
-      value: 'gemini' as const,
-      label: t('keys.ccsClientSelect.geminiCli'),
-      description: t('keys.ccsClientSelect.geminiCliDesc'),
-      icon: 'sparkles' as const
-    })
-  }
-
-  return options
+  })
 })
+const ccsHasClaudeCodeTarget = computed(() =>
+  ccsClientOptions.value.some((option) => option.value === 'claude')
+)
 
 // Get the currently selected key for group change
 const selectedKeyForGroup = computed(() => {
@@ -1880,18 +1918,20 @@ const resetRateLimitUsage = async () => {
   }
 }
 
-const importToCcswitch = (row: ApiKey) => {
+const getCcsTargetsForKey = (row: ApiKey): CcsImportTarget[] => {
   const platform = row.group?.platform || 'anthropic'
+  return getCompatibleCcsTargets(platform, row.group?.allow_messages_dispatch === true)
+}
 
-  // Claude-compatible keys can be imported into either Claude Code CLI or Claude Desktop.
-  if (platform === 'anthropic' || platform === 'antigravity') {
-    pendingCcsRow.value = row
-    showCcsClientSelect.value = true
+const canImportToCcs = (row: ApiKey): boolean => getCcsTargetsForKey(row).length > 0
+
+const importToCcswitch = (row: ApiKey) => {
+  if (!canImportToCcs(row)) {
+    appStore.showError(t('keys.ccsClientSelect.noCompatibleTargets'))
     return
   }
-
-  // For other platforms, execute directly
-  executeCcsImport(row, platform === 'gemini' ? 'gemini' : 'claude')
+  pendingCcsRow.value = row
+  showCcsClientSelect.value = true
 }
 
 const openChatbotWithKey = async (row: ApiKey) => {
@@ -1914,173 +1954,20 @@ const openChatbotWithKey = async (row: ApiKey) => {
   }
 }
 
-const trimCcsLabel = (value: string | null | undefined): string => value?.trim() || ''
-
-const buildCcsProviderName = (row: ApiKey, app: CcsApp, target?: CcsImportTarget): string => {
-  const siteName = trimCcsLabel(publicSettings.value?.site_name) || 'sub2api'
-  const appLabel = target === 'claude-desktop-bridge'
-    ? 'Claude Desktop'
-    : app === 'codex'
-    ? 'Codex'
-    : app === 'gemini'
-      ? 'Gemini'
-      : 'Claude Code'
-  const groupName = trimCcsLabel(row.group?.name)
-  const keyName = trimCcsLabel(row.name)
-  const parts = [siteName, appLabel]
-
-  if (groupName) {
-    parts.push(groupName)
-  }
-  if (keyName && keyName !== groupName) {
-    parts.push(keyName)
-  }
-
-  const name = parts.join(' - ')
-  return name.length > 96 ? `${name.slice(0, 93)}...` : name
-}
-
-const encodeBase64Utf8 = (value: string): string => {
-  const bytes = new TextEncoder().encode(value)
-  let binary = ''
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte)
-  })
-  return btoa(binary)
-}
-
-const escapeTomlString = (value: string): string => {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r')
-}
-
-const buildCodexCcsConfig = (endpoint: string, apiKey: string, model: string): string => {
-  const providerName = 'laoshirenai'
-  const safeEndpoint = escapeTomlString(endpoint)
-  const safeModel = escapeTomlString(model)
-
-  const config = `model_provider = "${providerName}"
-model = "${safeModel}"
-review_model = "${safeModel}"
-model_reasoning_effort = "medium"
-disable_response_storage = true
-network_access = "enabled"
-windows_wsl_setup_acknowledged = true
-model_context_window = 400000
-model_auto_compact_token_limit = 360000
-
-[model_providers.${providerName}]
-name = "${providerName}"
-base_url = "${safeEndpoint}"
-wire_api = "responses"
-requires_openai_auth = true`
-
-  return JSON.stringify({
-    auth: {
-      OPENAI_API_KEY: apiKey
-    },
-    config
-  })
-}
-
-const buildCcsProviderNotes = (row: ApiKey, endpoint: string, target?: CcsImportTarget): string => {
-  return [
-    row.group?.name ? `Group: ${row.group.name}` : '',
-    row.name ? `API Key: ${row.name}` : '',
-    `Endpoint: ${endpoint}`,
-    target === 'claude-desktop-bridge'
-      ? 'Claude Desktop: Imported through Claude Code because CC Switch does not expose a public Desktop sync deeplink. If the Desktop import button is shown, use it; otherwise add a Desktop provider manually with the same endpoint/key.'
-      : ''
-  ].filter(Boolean).join('\n')
-}
-
 const executeCcsImport = (row: ApiKey, clientType: CcsImportTarget) => {
   const baseUrl = publicSettings.value?.api_base_url || window.location.origin
-  const platform = row.group?.platform || 'anthropic'
-
-  // Determine app name and endpoint based on platform and client type
-  let app: CcsApp
-  let endpoint: string
-
-  if (platform === 'antigravity') {
-    // Antigravity always uses /antigravity suffix
-    app = clientType === 'gemini' ? 'gemini' : 'claude'
-    endpoint = `${baseUrl}/antigravity`
-  } else {
-    switch (platform) {
-      case 'openai':
-        app = 'codex'
-        endpoint = baseUrl
-        break
-      case 'gemini':
-        app = 'gemini'
-        endpoint = baseUrl
-        break
-      default: // anthropic
-        app = 'claude'
-        endpoint = baseUrl
-    }
-  }
-
-  const usageScript = `({
-    request: {
-      url: "{{baseUrl}}/v1/usage",
-      method: "GET",
-      headers: { "Authorization": "Bearer {{apiKey}}" }
-    },
-    extractor: function(response) {
-      const remaining = response?.remaining ?? response?.quota?.remaining ?? response?.balance;
-      const unit = response?.unit ?? response?.quota?.unit ?? "USD";
-      return {
-        isValid: response?.is_active ?? response?.isValid ?? true,
-        remaining,
-        unit
-      };
-    }
-  })`
-  const providerName = buildCcsProviderName(row, app, clientType)
-  const providerNotes = buildCcsProviderNotes(row, endpoint, clientType)
-
-  const defaultModel = 'gpt-5.6-sol'
-  const params = new URLSearchParams({
-    resource: 'provider',
-    app: app,
-    name: providerName,
-    homepage: baseUrl,
-    endpoint: endpoint,
-    apiKey: row.key,
-    notes: providerNotes,
-    configFormat: 'json',
-    usageEnabled: 'true',
-    usageScript: btoa(usageScript),
-    usageAutoInterval: '30'
-  })
-  if (platform === 'openai') {
-    params.set('model', defaultModel)
-    params.set('config', encodeBase64Utf8(buildCodexCcsConfig(endpoint, row.key, defaultModel)))
-  } else if (platform === 'anthropic') {
-    // 单模型上游分组（如 GLM/Grok）：分组设了 default_mapped_model 时，
-    // 三个模型槽都指向该模型，客户端里显示与实际一致。
-    // 普通 Claude 分组该字段为空，保持原有 opus/sonnet/haiku 映射不变。
-    const groupModel = row.group?.default_mapped_model?.trim()
-    if (groupModel) {
-      params.set('haikuModel', groupModel)
-      params.set('sonnetModel', groupModel)
-      params.set('opusModel', groupModel)
-    } else {
-      params.set('haikuModel', 'claude-haiku-4-5')
-      params.set('sonnetModel', 'claude-sonnet-4-6[1M]')
-      params.set('opusModel', 'claude-opus-4-8[1M]')
-    }
-  }
-  const deeplink = `ccswitch://v1/import?${params.toString()}`
 
   try {
+    const deeplink = buildCcsImportDeeplink({
+      key: row,
+      target: clientType,
+      apiBaseUrl: baseUrl,
+      siteName: publicSettings.value?.site_name
+    })
     window.open(deeplink, '_self')
-    if (clientType === 'claude-desktop-bridge') {
-      appStore.showInfo(t('keys.ccsClientSelect.claudeDesktopBridgeNotice'), 8000)
-    }
-  } catch {
-    // Browser blocked the custom protocol; onboarding explains the CC Switch install path.
+  } catch (error) {
+    console.error('Failed to build CC Switch import link', error)
+    appStore.showError(t('keys.ccsClientSelect.importFailed'))
   }
 }
 

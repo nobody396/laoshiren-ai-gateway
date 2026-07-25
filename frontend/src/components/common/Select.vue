@@ -66,6 +66,8 @@
               role="option"
               :aria-selected="isSelected(option)"
               :aria-disabled="isOptionDisabled(option)"
+              :data-group-key="getOptionGroupKey(option) ?? undefined"
+              :data-option-count="isGroupHeaderOption(option) ? option.count : undefined"
               @click.stop="!isOptionDisabled(option) && selectOption(option)"
               @mouseenter="handleOptionMouseEnter(option, index)"
               :class="[
@@ -209,6 +211,13 @@ const isGroupHeaderOption = (option: any): boolean => {
   return false
 }
 
+const getOptionGroupKey = (option: any): string | null => {
+  if (typeof option !== 'object' || option === null || option.groupKey == null) {
+    return null
+  }
+  return String(option.groupKey)
+}
+
 const selectedOption = computed(() => {
   return props.options.find((opt) => getOptionValue(opt) === props.modelValue) || null
 })
@@ -221,18 +230,30 @@ const selectedLabel = computed(() => {
 })
 
 const filteredOptions = computed(() => {
-  let opts = props.options as any[]
-  if (props.searchable && searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    opts = opts.filter((opt) => {
-      // Match label
-      if (getOptionLabel(opt).toLowerCase().includes(query)) return true
-      // Also match description if present
-      if (opt.description && String(opt.description).toLowerCase().includes(query)) return true
-      return false
-    })
-  }
-  return opts
+  const opts = props.options as any[]
+  if (!props.searchable || !searchQuery.value) return opts
+
+  const query = searchQuery.value.toLowerCase()
+  const matchingOptions = opts.filter((opt) => {
+    if (isGroupHeaderOption(opt)) return false
+    if (getOptionLabel(opt).toLowerCase().includes(query)) return true
+    return !!opt.description && String(opt.description).toLowerCase().includes(query)
+  })
+  const matchingOptionSet = new Set(matchingOptions)
+  const matchingGroupCounts = matchingOptions.reduce((counts, option) => {
+    const groupKey = getOptionGroupKey(option)
+    if (groupKey !== null) counts.set(groupKey, (counts.get(groupKey) ?? 0) + 1)
+    return counts
+  }, new Map<string, number>())
+
+  return opts.flatMap((opt) => {
+    if (isGroupHeaderOption(opt)) {
+      const groupKey = getOptionGroupKey(opt)
+      const count = groupKey === null ? 0 : matchingGroupCounts.get(groupKey) ?? 0
+      return count > 0 ? [{ ...opt, count }] : []
+    }
+    return matchingOptionSet.has(opt) ? [opt] : []
+  })
 })
 
 const isSelected = (option: any): boolean => {

@@ -455,7 +455,7 @@
           <label class="input-label">{{ t('keys.groupLabel') }}</label>
           <Select
             v-model="formData.group_id"
-            :options="groupOptions"
+            :options="groupSelectOptions"
             :placeholder="t('keys.selectGroup')"
             :searchable="true"
             :search-placeholder="t('keys.searchGroup')"
@@ -482,7 +482,14 @@
               <span v-else class="text-gray-400">{{ t('keys.selectGroup') }}</span>
             </template>
             <template #option="{ option, selected }">
+              <GroupSectionHeader
+                v-if="isGroupHeaderOption(option as unknown as GroupSelectOption)"
+                :section="(option as unknown as GroupHeaderOption).groupKey"
+                :label="(option as unknown as GroupHeaderOption).label"
+                :count="(option as unknown as GroupHeaderOption).count"
+              />
               <GroupOptionItem
+                v-else
                 :name="(option as unknown as GroupOption).label"
                 :platform="(option as unknown as GroupOption).platform"
                 :subscription-type="(option as unknown as GroupOption).subscriptionType"
@@ -1185,7 +1192,7 @@
       <div
         v-if="groupSelectorKeyId !== null && dropdownPosition"
         ref="dropdownRef"
-        class="animate-in fade-in slide-in-from-top-2 fixed z-[100000020] w-max min-w-[380px] overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-black/5 duration-200 dark:bg-dark-800 dark:ring-white/10"
+        class="animate-in fade-in slide-in-from-top-2 fixed z-[100000020] w-[min(560px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl shadow-black/10 duration-200 dark:border-dark-700 dark:bg-dark-800 dark:shadow-black/30"
         style="pointer-events: auto !important;"
         :style="{
           top: dropdownPosition.top !== undefined ? dropdownPosition.top + 'px' : undefined,
@@ -1209,39 +1216,52 @@
           </div>
         </div>
         <!-- Group list -->
-        <div class="max-h-80 overflow-y-auto p-1.5">
-          <button
-            v-for="option in filteredGroupOptions"
-            :key="option.value ?? 'null'"
-            @click="changeGroup(selectedKeyForGroup!, option.value)"
-            :class="[
-              'flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors',
-              'border-b border-gray-100 last:border-0 dark:border-dark-700',
-              selectedKeyForGroup?.group_id === option.value ||
-              (!selectedKeyForGroup?.group_id && option.value === null)
-                ? 'bg-primary-50 dark:bg-primary-900/20'
-                : 'hover:bg-gray-100 dark:hover:bg-dark-700'
-            ]"
-            :title="getGroupOptionHoverTitle(option)"
+        <div
+          class="overflow-y-auto bg-gray-50/60 p-2 dark:bg-dark-900/40"
+          :style="{ maxHeight: dropdownPosition.listMaxHeight + 'px' }"
+        >
+          <section
+            v-for="section in filteredGroupOptionSections"
+            :key="section.id"
+            class="mb-2 last:mb-0"
           >
-            <GroupOptionItem
-              :name="option.label"
-              :platform="option.platform"
-              :subscription-type="option.subscriptionType"
-              :rate-multiplier="shouldShowGroupOptionMeta(option) ? option.rate : undefined"
-              :user-rate-multiplier="shouldShowGroupOptionMeta(option) ? option.userRate : null"
-              :description="shouldShowGroupOptionMeta(option) ? option.description : null"
-              :action-label="getGroupOptionActionLabel(option)"
-              :cache-hit-rate-pct="option.cacheHitRatePct"
-              :cache-window-days="option.cacheWindowDays"
-              :selected="
-                selectedKeyForGroup?.group_id === option.value ||
-                (!selectedKeyForGroup?.group_id && option.value === null)
-              "
-            />
-          </button>
+            <div class="sticky top-0 z-10 rounded-xl bg-gray-100/95 px-3 py-2 backdrop-blur dark:bg-dark-900/95">
+              <GroupSectionHeader
+                :section="section.id"
+                :label="getGroupSectionLabel(section.id)"
+                :count="section.options.length"
+              />
+            </div>
+            <div class="mt-1 space-y-1">
+              <button
+                v-for="option in section.options"
+                :key="option.value"
+                @click="changeGroup(selectedKeyForGroup!, option.value)"
+                :class="[
+                  'flex w-full items-center justify-between rounded-xl border px-3 py-3 text-sm transition-all',
+                  selectedKeyForGroup?.group_id === option.value
+                    ? 'border-primary-200 bg-primary-50 shadow-sm dark:border-primary-800 dark:bg-primary-900/20'
+                    : 'border-transparent bg-white hover:border-gray-200 hover:bg-gray-50 dark:bg-dark-800 dark:hover:border-dark-600 dark:hover:bg-dark-700'
+                ]"
+                :title="getGroupOptionHoverTitle(option)"
+              >
+                <GroupOptionItem
+                  :name="option.label"
+                  :platform="option.platform"
+                  :subscription-type="option.subscriptionType"
+                  :rate-multiplier="shouldShowGroupOptionMeta(option) ? option.rate : undefined"
+                  :user-rate-multiplier="shouldShowGroupOptionMeta(option) ? option.userRate : null"
+                  :description="shouldShowGroupOptionMeta(option) ? option.description : null"
+                  :action-label="getGroupOptionActionLabel(option)"
+                  :cache-hit-rate-pct="option.cacheHitRatePct"
+                  :cache-window-days="option.cacheWindowDays"
+                  :selected="selectedKeyForGroup?.group_id === option.value"
+                />
+              </button>
+            </div>
+          </section>
           <!-- Empty state when search has no results -->
-          <div v-if="filteredGroupOptions.length === 0" class="py-4 text-center text-sm text-gray-400 dark:text-gray-500">
+          <div v-if="filteredGroupOptionCount === 0" class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
             {{ t('keys.noGroupFound') }}
           </div>
         </div>
@@ -1255,6 +1275,7 @@
 	import { useI18n } from 'vue-i18n'
 	import { useAppStore } from '@/stores/app'
 	import { useOnboardingStore } from '@/stores/onboarding'
+	import { useSubscriptionStore } from '@/stores/subscriptions'
 	import { useClipboard } from '@/composables/useClipboard'
 
 const { t } = useI18n()
@@ -1272,6 +1293,7 @@ import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import UseKeyModal from '@/components/keys/UseKeyModal.vue'
 	import GroupBadge from '@/components/common/GroupBadge.vue'
 	import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
+	import GroupSectionHeader from '@/components/common/GroupSectionHeader.vue'
 	import type { ApiKey, Group, PublicSettings, SubscriptionType, GroupPlatform } from '@/types'
 import type { GroupCacheStats } from '@/api/groups'
 import type { Column } from '@/components/common/types'
@@ -1293,6 +1315,11 @@ import {
   getClientAutoConfigTarget,
   type ClientAutoConfigTarget
 } from '@/utils/clientAutoConfig'
+import {
+  buildGroupOptionSections,
+  isMonthlyGroupOption,
+  type GroupOptionSectionId
+} from '@/utils/groupOptionSections'
 
 // Helper to format date for datetime-local input
 const formatDateTimeLocal = (isoDate: string): string => {
@@ -1302,6 +1329,7 @@ const formatDateTimeLocal = (isoDate: string): string => {
 }
 
 interface GroupOption {
+  [key: string]: unknown
   value: number
   label: string
   description: string | null
@@ -1311,7 +1339,20 @@ interface GroupOption {
   platform: GroupPlatform
   cacheHitRatePct: number | null
   cacheWindowDays: number
+  groupKey: GroupOptionSectionId
 }
+
+interface GroupHeaderOption {
+  [key: string]: unknown
+  value: string
+  label: string
+  kind: 'group'
+  groupKey: GroupOptionSectionId
+  count: number
+  disabled: true
+}
+
+type GroupSelectOption = GroupOption | GroupHeaderOption
 
 type CcsClientOption = {
   value: CcsImportTarget
@@ -1322,6 +1363,7 @@ type CcsClientOption = {
 
 const appStore = useAppStore()
 const onboardingStore = useOnboardingStore()
+const subscriptionStore = useSubscriptionStore()
 const { copyToClipboard: clipboardCopy } = useClipboard()
 
 const columns = computed<Column[]>(() => [
@@ -1378,7 +1420,12 @@ const copiedBaseUrl = ref(false)
 const groupSelectorKeyId = ref<number | null>(null)
 const publicSettings = ref<PublicSettings | null>(null)
 const dropdownRef = ref<HTMLElement | null>(null)
-const dropdownPosition = ref<{ top?: number; bottom?: number; left: number } | null>(null)
+const dropdownPosition = ref<{
+  top?: number
+  bottom?: number
+  left: number
+  listMaxHeight: number
+} | null>(null)
 const groupButtonRefs = ref<Map<number, HTMLElement>>(new Map())
 let abortController: AbortController | null = null
 let ccsLaunchFallbackTimer: ReturnType<typeof setTimeout> | null = null
@@ -1536,34 +1583,69 @@ const onStatusFilterChange = (value: string | number | boolean | null) => {
   onFilterChange()
 }
 
-// Convert groups to Select options format with rate multiplier and subscription type
-const groupOptions = computed(() =>
+// Convert groups to selector options, then organize them by billing mode.
+const baseGroupOptions = computed<GroupOption[]>(() =>
   groups.value.map((group) => {
     const cacheStats = groupCacheStats.value[group.id]
+    const subscriptionType = group.subscription_type
     return {
       value: group.id,
       label: group.name,
       description: group.description,
       rate: group.rate_multiplier,
       userRate: userGroupRates.value[group.id] ?? null,
-      subscriptionType: group.subscription_type,
+      subscriptionType,
       platform: group.platform,
       cacheHitRatePct: groupCacheHitRateEnabled.value && cacheStats?.has_data ? cacheStats.hit_rate_pct : null,
-      cacheWindowDays: groupCacheWindowDays.value
+      cacheWindowDays: groupCacheWindowDays.value,
+      groupKey: subscriptionType === 'subscription' || subscriptionType === 'credit'
+        ? 'monthly'
+        : 'payg'
     }
   })
 )
+
+const groupOptionSections = computed(() => {
+  return buildGroupOptionSections(
+    baseGroupOptions.value,
+    subscriptionStore.hasActiveSubscriptions
+  )
+})
+
+const getGroupSectionLabel = (section: GroupOptionSectionId): string => {
+  return section === 'monthly'
+    ? t('keys.groupSections.monthly')
+    : t('keys.groupSections.payg')
+}
+
+const groupSelectOptions = computed<GroupSelectOption[]>(() => {
+  return groupOptionSections.value.flatMap((section) => [
+    {
+      value: `group:${section.id}`,
+      label: getGroupSectionLabel(section.id),
+      kind: 'group' as const,
+      groupKey: section.id,
+      count: section.options.length,
+      disabled: true as const
+    },
+    ...section.options
+  ])
+})
+
+const isGroupHeaderOption = (option: GroupSelectOption): option is GroupHeaderOption => {
+  return 'kind' in option && option.kind === 'group'
+}
 
 const shouldShowGroupOptionMeta = (option: GroupOption): boolean => {
   return option.subscriptionType !== 'subscription' && option.subscriptionType !== 'credit'
 }
 
 const isMonthlyAccessGroup = (option: GroupOption): boolean => {
-  return option.subscriptionType === 'subscription' || option.subscriptionType === 'credit'
+  return isMonthlyGroupOption(option)
 }
 
 const getGroupOptionActionLabel = (option: GroupOption): string | null => {
-  return isMonthlyAccessGroup(option) ? '使用月卡请选择此分组' : null
+  return isMonthlyAccessGroup(option) ? t('keys.groupSections.monthlyOnly') : null
 }
 
 const getGroupOptionHoverTitle = (option: GroupOption): string | undefined => {
@@ -1572,13 +1654,24 @@ const getGroupOptionHoverTitle = (option: GroupOption): string | undefined => {
 
 // Group dropdown search
 const groupSearchQuery = ref('')
-const filteredGroupOptions = computed(() => {
+const filteredGroupOptionSections = computed(() => {
   const query = groupSearchQuery.value.trim().toLowerCase()
-  if (!query) return groupOptions.value
-  return groupOptions.value.filter((opt) => {
-    return opt.label.toLowerCase().includes(query) ||
-      (opt.description && opt.description.toLowerCase().includes(query))
+  if (!query) return groupOptionSections.value
+
+  return groupOptionSections.value.flatMap((section) => {
+    const options = section.options.filter((option) => {
+      return option.label.toLowerCase().includes(query) ||
+        (option.description && option.description.toLowerCase().includes(query))
+    })
+    return options.length > 0 ? [{ ...section, options }] : []
   })
+})
+
+const filteredGroupOptionCount = computed(() => {
+  return filteredGroupOptionSections.value.reduce(
+    (total, section) => total + section.options.length,
+    0
+  )
 })
 
 const maskKey = (key: string): string => {
@@ -1809,21 +1902,28 @@ const openGroupSelector = (key: ApiKey) => {
     const buttonEl = groupButtonRefs.value.get(key.id)
     if (buttonEl) {
       const rect = buttonEl.getBoundingClientRect()
-      const dropdownEstHeight = 400 // estimated max dropdown height
+      const dropdownWidth = Math.min(560, window.innerWidth - 24)
+      const safeLeft = Math.min(
+        Math.max(12, rect.left),
+        Math.max(12, window.innerWidth - dropdownWidth - 12)
+      )
       const spaceBelow = window.innerHeight - rect.bottom
       const spaceAbove = rect.top
+      const openUpward = spaceBelow < 460 && spaceAbove > spaceBelow
+      const availableHeight = openUpward ? spaceAbove : spaceBelow
+      const listMaxHeight = Math.max(160, Math.min(480, availableHeight - 68))
 
-      if (spaceBelow < dropdownEstHeight && spaceAbove > spaceBelow) {
-        // Not enough space below, pop upward
+      if (openUpward) {
         dropdownPosition.value = {
           bottom: window.innerHeight - rect.top + 4,
-          left: rect.left
+          left: safeLeft,
+          listMaxHeight
         }
       } else {
-        // Default: pop downward
         dropdownPosition.value = {
           top: rect.bottom + 4,
-          left: rect.left
+          left: safeLeft,
+          listMaxHeight
         }
       }
     }

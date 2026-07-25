@@ -800,6 +800,11 @@ export default {
     noGroup: '无分组',
     searchGroup: '搜索分组...',
     noGroupFound: '未找到匹配的分组',
+    groupSections: {
+      monthly: '月卡分组',
+      payg: '按量付费',
+      monthlyOnly: '月卡专享'
+    },
     cacheHitRate: '{days}日缓存 {rate}%',
     created: '创建时间',
     copyToClipboard: '复制到剪贴板',

@@ -800,6 +800,11 @@ export default {
     noGroup: 'No group',
     searchGroup: 'Search groups...',
     noGroupFound: 'No groups found',
+    groupSections: {
+      monthly: 'Monthly plans',
+      payg: 'Pay as you go',
+      monthlyOnly: 'Monthly plan'
+    },
     cacheHitRate: '{days}d cache {rate}%',
     created: 'Created',
     copyToClipboard: 'Copy to clipboard',

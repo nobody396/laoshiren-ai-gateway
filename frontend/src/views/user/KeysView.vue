@@ -1027,6 +1027,12 @@
         <p class="text-xs text-gray-500 dark:text-gray-400">
           {{ t('keys.ccsClientSelect.compatibilityNote') }}
         </p>
+        <p
+          v-if="ccsHasClaudeCodeTarget"
+          class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300"
+        >
+          {{ t('keys.ccsClientSelect.claudeDesktopManualNotice') }}
+        </p>
       </div>
       <template #footer>
         <div class="flex justify-end">
@@ -1244,13 +1250,6 @@ const ccsClientOptions = computed<CcsClientOption[]>(() => {
           description: t('keys.ccsClientSelect.claudeCodeCliDesc'),
           icon: 'terminal'
         }
-      case 'claude-desktop-bridge':
-        return {
-          value: target,
-          label: t('keys.ccsClientSelect.claudeDesktop'),
-          description: t('keys.ccsClientSelect.claudeDesktopDesc'),
-          icon: 'cloud'
-        }
       case 'codex':
         return {
           value: target,
@@ -1289,6 +1288,9 @@ const ccsClientOptions = computed<CcsClientOption[]>(() => {
     }
   })
 })
+const ccsHasClaudeCodeTarget = computed(() =>
+  ccsClientOptions.value.some((option) => option.value === 'claude')
+)
 
 // Get the currently selected key for group change
 const selectedKeyForGroup = computed(() => {
@@ -1963,9 +1965,6 @@ const executeCcsImport = (row: ApiKey, clientType: CcsImportTarget) => {
       siteName: publicSettings.value?.site_name
     })
     window.open(deeplink, '_self')
-    if (clientType === 'claude-desktop-bridge') {
-      appStore.showInfo(t('keys.ccsClientSelect.claudeDesktopBridgeNotice'), 8000)
-    }
   } catch (error) {
     console.error('Failed to build CC Switch import link', error)
     appStore.showError(t('keys.ccsClientSelect.importFailed'))

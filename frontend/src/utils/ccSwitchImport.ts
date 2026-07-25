@@ -2,14 +2,13 @@ import type { GroupPlatform } from '@/types'
 
 export type CcsImportTarget =
   | 'claude'
-  | 'claude-desktop-bridge'
   | 'codex'
   | 'opencode'
   | 'openclaw'
   | 'hermes'
   | 'gemini'
 
-export type CcsApp = Exclude<CcsImportTarget, 'claude-desktop-bridge'>
+export type CcsApp = CcsImportTarget
 
 export interface CcsImportGroup {
   platform: GroupPlatform
@@ -53,14 +52,14 @@ export const getCompatibleCcsTargets = (
     case 'openai': {
       const targets: CcsImportTarget[] = ['codex', 'opencode', 'openclaw', 'hermes']
       if (allowMessagesDispatch) {
-        targets.push('claude', 'claude-desktop-bridge')
+        targets.push('claude')
       }
       return targets
     }
     case 'anthropic':
-      return ['claude', 'claude-desktop-bridge']
+      return ['claude']
     case 'antigravity':
-      return ['claude', 'claude-desktop-bridge', 'gemini']
+      return ['claude', 'gemini']
     case 'gemini':
       return ['gemini']
     case 'gpt-image':
@@ -85,16 +84,10 @@ const appendPath = (baseUrl: string, path: string): string => {
   return `${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
 }
 
-const appForTarget = (target: CcsImportTarget): CcsApp => {
-  return target === 'claude-desktop-bridge' ? 'claude' : target
-}
-
 const appLabelForTarget = (target: CcsImportTarget): string => {
   switch (target) {
     case 'claude':
       return 'Claude Code'
-    case 'claude-desktop-bridge':
-      return 'Claude Desktop'
     case 'codex':
       return 'Codex'
     case 'opencode':
@@ -140,16 +133,12 @@ const buildProviderName = (
 
 const buildProviderNotes = (
   key: CcsImportKey,
-  endpoint: string,
-  target: CcsImportTarget
+  endpoint: string
 ): string => {
   return [
     key.group?.name ? `Group: ${key.group.name}` : '',
     key.name ? `API Key: ${key.name}` : '',
-    `Endpoint: ${endpoint}`,
-    target === 'claude-desktop-bridge'
-      ? 'Claude Desktop: Imported through Claude Code because CC Switch does not expose a public Desktop sync deeplink. If the Desktop import button is shown, use it; otherwise add a Desktop provider manually with the same endpoint/key.'
-      : ''
+    `Endpoint: ${endpoint}`
   ].filter(Boolean).join('\n')
 }
 
@@ -166,10 +155,10 @@ export const buildCcsImportDeeplink = ({
   }
 
   const gatewayBaseUrl = normalizeGatewayBaseUrl(apiBaseUrl)
-  const app = appForTarget(target)
+  const app: CcsApp = target
   const endpoint = endpointForTarget(gatewayBaseUrl, platform, target)
   const providerName = buildProviderName(key, target, siteName)
-  const providerNotes = buildProviderNotes(key, endpoint, target)
+  const providerNotes = buildProviderNotes(key, endpoint)
   const usageScript = `({
     request: {
       url: "{{baseUrl}}/v1/usage",
@@ -205,7 +194,7 @@ export const buildCcsImportDeeplink = ({
     params.set('model', DEFAULT_OPENAI_MODEL)
   }
 
-  if (target === 'claude' || target === 'claude-desktop-bridge') {
+  if (target === 'claude') {
     const groupModel = key.group?.default_mapped_model?.trim()
     if (platform === 'anthropic' && groupModel) {
       params.set('haikuModel', groupModel)

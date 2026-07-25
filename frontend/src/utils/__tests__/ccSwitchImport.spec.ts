@@ -40,18 +40,17 @@ describe('CC Switch import compatibility', () => {
       'opencode',
       'openclaw',
       'hermes',
-      'claude',
-      'claude-desktop-bridge'
+      'claude'
     ])
   })
 
   it('keeps native Anthropic and Antigravity targets protocol-safe', () => {
-    expect(getCompatibleCcsTargets('anthropic')).toEqual(['claude', 'claude-desktop-bridge'])
-    expect(getCompatibleCcsTargets('antigravity')).toEqual([
-      'claude',
-      'claude-desktop-bridge',
-      'gemini'
-    ])
+    expect(getCompatibleCcsTargets('anthropic')).toEqual(['claude'])
+    expect(getCompatibleCcsTargets('antigravity')).toEqual(['claude', 'gemini'])
+  })
+
+  it('does not claim a Claude Desktop deeplink that CC Switch does not expose', () => {
+    expect(getCompatibleCcsTargets('anthropic')).not.toContain('claude-desktop')
   })
 
   it('does not offer coding-agent imports for image-only groups', () => {

@@ -201,9 +201,10 @@ func summarizeFinanceTransactions(
 			monthly = &domain.FinanceMonthlyTotal{Month: month}
 			monthlyTotals[month] = monthly
 		}
-		if m.Type == domain.FinanceTransactionTypeIncome {
+		switch m.Type {
+		case domain.FinanceTransactionTypeIncome:
 			monthly.TotalIncomeFen += m.AmountFen
-		} else if m.Type == domain.FinanceTransactionTypeExpense {
+		case domain.FinanceTransactionTypeExpense:
 			monthly.TotalExpenseFen += m.AmountFen
 		}
 	}

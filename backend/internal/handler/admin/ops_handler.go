@@ -130,6 +130,23 @@ func (h *OpsHandler) GetPublicMonthlyCardStatus(c *gin.Context) {
 	response.Success(c, snapshot)
 }
 
+// GetCostAccounting returns a full cost/margin snapshot across monthly-card
+// products and public pay-as-you-go groups, including this month's real
+// usage mix. Admin-only.
+// GET /api/v1/admin/ops/cost-accounting
+func (h *OpsHandler) GetCostAccounting(c *gin.Context) {
+	if h.opsService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
+		return
+	}
+	overview, err := h.opsService.GetCostAccountingOverview(c.Request.Context())
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	response.Success(c, overview)
+}
+
 // UpdateMonthlyUpstreamProbeSettings updates monthly upstream probe switch.
 // PUT /api/v1/admin/ops/monthly-upstreams/settings
 func (h *OpsHandler) UpdateMonthlyUpstreamProbeSettings(c *gin.Context) {

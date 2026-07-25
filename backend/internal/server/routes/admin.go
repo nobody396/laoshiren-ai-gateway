@@ -186,6 +186,7 @@ func registerOpsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		ops.GET("/realtime-traffic", h.Admin.Ops.GetRealtimeTrafficSummary)
 		ops.GET("/monthly-upstreams", h.Admin.Ops.GetMonthlyUpstreamProbeSnapshot)
 		ops.PUT("/monthly-upstreams/settings", h.Admin.Ops.UpdateMonthlyUpstreamProbeSettings)
+		ops.GET("/cost-accounting", h.Admin.Ops.GetCostAccounting)
 
 		// Alerts (rules + events)
 		ops.GET("/alert-rules", h.Admin.Ops.ListAlertRules)

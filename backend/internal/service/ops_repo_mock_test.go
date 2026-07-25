@@ -133,6 +133,10 @@ func (m *opsRepoMock) ListMonthlyUpstreamProbeResults(ctx context.Context, since
 	return []MonthlyUpstreamProbePoint{}, nil
 }
 
+func (m *opsRepoMock) GetCostAccountingRealUsage(ctx context.Context, groupIDs []int64, start, end time.Time) (map[int64]CostAccountingUsageRow, error) {
+	return map[int64]CostAccountingUsageRow{}, nil
+}
+
 func (m *opsRepoMock) InsertSystemMetrics(ctx context.Context, input *OpsInsertSystemMetricsInput) error {
 	return nil
 }

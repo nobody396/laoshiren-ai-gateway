@@ -18,6 +18,8 @@ const (
 	FinanceTransactionCategoryOtherIncome   = domain.FinanceTransactionCategoryOtherIncome
 	FinanceTransactionCategoryUpstreamTopup = domain.FinanceTransactionCategoryUpstreamTopup
 	FinanceTransactionCategoryServerCost    = domain.FinanceTransactionCategoryServerCost
+	FinanceTransactionCategoryHostingCost   = domain.FinanceTransactionCategoryHostingCost
+	FinanceTransactionCategoryCDNCost       = domain.FinanceTransactionCategoryCDNCost
 	FinanceTransactionCategoryDomainCost    = domain.FinanceTransactionCategoryDomainCost
 	FinanceTransactionCategoryEarlyCost     = domain.FinanceTransactionCategoryEarlyCost
 	FinanceTransactionCategoryOtherExpense  = domain.FinanceTransactionCategoryOtherExpense
@@ -29,16 +31,21 @@ const (
 )
 
 var (
-	ErrFinanceTransactionNotFound      = domain.ErrFinanceTransactionNotFound
-	ErrFinanceTransactionInvalidType   = domain.ErrFinanceTransactionInvalidType
-	ErrFinanceTransactionInvalidCat    = domain.ErrFinanceTransactionInvalidCat
-	ErrFinanceTransactionInvalidAmount = domain.ErrFinanceTransactionInvalidAmount
-	ErrFinanceTransactionInvalidSource = domain.ErrFinanceTransactionInvalidSource
+	ErrFinanceTransactionNotFound              = domain.ErrFinanceTransactionNotFound
+	ErrFinanceTransactionInvalidType           = domain.ErrFinanceTransactionInvalidType
+	ErrFinanceTransactionInvalidCat            = domain.ErrFinanceTransactionInvalidCat
+	ErrFinanceTransactionInvalidAmount         = domain.ErrFinanceTransactionInvalidAmount
+	ErrFinanceTransactionInvalidSource         = domain.ErrFinanceTransactionInvalidSource
+	ErrFinanceTransactionInvalidChannel        = domain.ErrFinanceTransactionInvalidChannel
+	ErrFinanceTransactionIncomeReceiptRequired = domain.ErrFinanceTransactionIncomeReceiptRequired
+	ErrFinanceTransactionIncomeChannelRequired = domain.ErrFinanceTransactionIncomeChannelRequired
 )
 
 type FinanceTransaction = domain.FinanceTransaction
 
 type FinanceCategoryTotal = domain.FinanceCategoryTotal
+
+type FinanceMonthlyTotal = domain.FinanceMonthlyTotal
 
 type FinanceTransactionSummary = domain.FinanceTransactionSummary
 
@@ -58,4 +65,5 @@ type FinanceTransactionRepository interface {
 
 	List(ctx context.Context, params pagination.PaginationParams, filters FinanceTransactionListFilters) ([]FinanceTransaction, *pagination.PaginationResult, error)
 	Summary(ctx context.Context, from, to time.Time) (*FinanceTransactionSummary, error)
+	SummaryAll(ctx context.Context, to time.Time) (*FinanceTransactionSummary, error)
 }

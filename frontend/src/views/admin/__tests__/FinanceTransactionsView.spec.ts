@@ -57,7 +57,8 @@ vi.mock('vue-i18n', async () => {
 })
 
 vi.mock('vue-chartjs', () => ({
-  Doughnut: { props: ['data'], template: '<div class="doughnut-stub" />' }
+  Doughnut: { props: ['data'], template: '<div class="doughnut-stub" />' },
+  Bar: { props: ['data'], template: '<div class="bar-stub" />' }
 }))
 
 const AppLayoutStub = { template: '<div><slot /></div>' }
@@ -73,7 +74,14 @@ const ConfirmDialogStub = {
   emits: ['confirm', 'cancel'],
   template: '<div v-if="show" data-test="confirm-dialog"><button class="do-confirm" @click="$emit(\'confirm\')">confirm</button></div>'
 }
-const SelectStub = { props: ['modelValue', 'options'], template: '<select></select>' }
+const SelectStub = {
+  props: ['modelValue', 'options'],
+  emits: ['update:modelValue', 'change'],
+  template:
+    '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value); $emit(\'change\')">' +
+    '<option v-for="option in options" :key="option.value" :value="option.value">{{ option.label }}</option>' +
+    '</select>'
+}
 const StatCardStub = {
   props: ['title', 'value'],
   template: '<div class="stat-card">{{ title }}:{{ value }}</div>'
@@ -106,6 +114,14 @@ const emptySummary = {
   by_category: [
     { type: 'income', category: 'sale_revenue', total_fen: 150000, tx_count: 2 },
     { type: 'expense', category: 'server_cost', total_fen: 50000, tx_count: 1 }
+  ],
+  monthly_series: [
+    {
+      month: '2026-07',
+      total_income_fen: 150000,
+      total_expense_fen: 50000,
+      net_profit_fen: 100000
+    }
   ]
 }
 
@@ -125,12 +141,28 @@ beforeEach(() => {
 })
 
 describe('admin FinanceTransactionsView', () => {
-  it('loads the ledger list and the month summary on mount', async () => {
+  it('loads the ledger list and the cumulative summary on mount', async () => {
     mountView()
     await flushPromises()
 
     expect(list).toHaveBeenCalledTimes(1)
     expect(summary).toHaveBeenCalledTimes(1)
+    expect(summary).toHaveBeenCalledWith(undefined, undefined, 'all')
+  })
+
+  it('lets the admin switch from cumulative totals to a Shanghai calendar month', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('[data-test="summary-scope-month"]').trigger('click')
+    await flushPromises()
+
+    expect(summary).toHaveBeenCalledTimes(2)
+    const [from, to, scope] = summary.mock.calls[1]
+    expect(scope).toBe('month')
+    expect(typeof from).toBe('number')
+    expect(typeof to).toBe('number')
+    expect(to).toBeGreaterThan(from)
   })
 
   it('renders the summary stat cards from the loaded data', async () => {
@@ -235,6 +267,22 @@ describe('admin FinanceTransactionsView', () => {
 
     expect(create).not.toHaveBeenCalled()
     expect(showError).toHaveBeenCalled()
+  })
+
+  it('requires a receipt before creating an income transaction', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-test="transaction-type-select"]').setValue('income')
+    await wrapper.find('input[type="number"]').setValue('100')
+    await wrapper.find('form#finance-transaction-form').trigger('submit')
+    await flushPromises()
+
+    expect(create).not.toHaveBeenCalled()
+    expect(showError).toHaveBeenCalledWith('admin.financeTransactions.form.receiptRequired')
   })
 
   it('deletes a transaction after confirmation', async () => {

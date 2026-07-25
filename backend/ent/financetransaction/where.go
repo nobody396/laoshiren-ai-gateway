@@ -84,6 +84,11 @@ func ReceiptKey(v string) predicate.FinanceTransaction {
 	return predicate.FinanceTransaction(sql.FieldEQ(FieldReceiptKey, v))
 }
 
+// PaymentChannel applies equality check predicate on the "payment_channel" field. It's identical to PaymentChannelEQ.
+func PaymentChannel(v string) predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldEQ(FieldPaymentChannel, v))
+}
+
 // Source applies equality check predicate on the "source" field. It's identical to SourceEQ.
 func Source(v string) predicate.FinanceTransaction {
 	return predicate.FinanceTransaction(sql.FieldEQ(FieldSource, v))
@@ -462,6 +467,81 @@ func ReceiptKeyEqualFold(v string) predicate.FinanceTransaction {
 // ReceiptKeyContainsFold applies the ContainsFold predicate on the "receipt_key" field.
 func ReceiptKeyContainsFold(v string) predicate.FinanceTransaction {
 	return predicate.FinanceTransaction(sql.FieldContainsFold(FieldReceiptKey, v))
+}
+
+// PaymentChannelEQ applies the EQ predicate on the "payment_channel" field.
+func PaymentChannelEQ(v string) predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldEQ(FieldPaymentChannel, v))
+}
+
+// PaymentChannelNEQ applies the NEQ predicate on the "payment_channel" field.
+func PaymentChannelNEQ(v string) predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldNEQ(FieldPaymentChannel, v))
+}
+
+// PaymentChannelIn applies the In predicate on the "payment_channel" field.
+func PaymentChannelIn(vs ...string) predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldIn(FieldPaymentChannel, vs...))
+}
+
+// PaymentChannelNotIn applies the NotIn predicate on the "payment_channel" field.
+func PaymentChannelNotIn(vs ...string) predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldNotIn(FieldPaymentChannel, vs...))
+}
+
+// PaymentChannelGT applies the GT predicate on the "payment_channel" field.
+func PaymentChannelGT(v string) predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldGT(FieldPaymentChannel, v))
+}
+
+// PaymentChannelGTE applies the GTE predicate on the "payment_channel" field.
+func PaymentChannelGTE(v string) predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldGTE(FieldPaymentChannel, v))
+}
+
+// PaymentChannelLT applies the LT predicate on the "payment_channel" field.
+func PaymentChannelLT(v string) predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldLT(FieldPaymentChannel, v))
+}
+
+// PaymentChannelLTE applies the LTE predicate on the "payment_channel" field.
+func PaymentChannelLTE(v string) predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldLTE(FieldPaymentChannel, v))
+}
+
+// PaymentChannelContains applies the Contains predicate on the "payment_channel" field.
+func PaymentChannelContains(v string) predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldContains(FieldPaymentChannel, v))
+}
+
+// PaymentChannelHasPrefix applies the HasPrefix predicate on the "payment_channel" field.
+func PaymentChannelHasPrefix(v string) predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldHasPrefix(FieldPaymentChannel, v))
+}
+
+// PaymentChannelHasSuffix applies the HasSuffix predicate on the "payment_channel" field.
+func PaymentChannelHasSuffix(v string) predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldHasSuffix(FieldPaymentChannel, v))
+}
+
+// PaymentChannelIsNil applies the IsNil predicate on the "payment_channel" field.
+func PaymentChannelIsNil() predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldIsNull(FieldPaymentChannel))
+}
+
+// PaymentChannelNotNil applies the NotNil predicate on the "payment_channel" field.
+func PaymentChannelNotNil() predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldNotNull(FieldPaymentChannel))
+}
+
+// PaymentChannelEqualFold applies the EqualFold predicate on the "payment_channel" field.
+func PaymentChannelEqualFold(v string) predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldEqualFold(FieldPaymentChannel, v))
+}
+
+// PaymentChannelContainsFold applies the ContainsFold predicate on the "payment_channel" field.
+func PaymentChannelContainsFold(v string) predicate.FinanceTransaction {
+	return predicate.FinanceTransaction(sql.FieldContainsFold(FieldPaymentChannel, v))
 }
 
 // SourceEQ applies the EQ predicate on the "source" field.

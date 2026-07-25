@@ -35,6 +35,12 @@ func newFinanceTransactionServiceSQLite(t *testing.T) *service.FinanceTransactio
 	return service.NewFinanceTransactionService(repository.NewFinanceTransactionRepository(client))
 }
 
+func financeIncomeEvidence() (*string, *string) {
+	receipt := "finance-receipts/test.jpg"
+	channel := "wechat"
+	return &receipt, &channel
+}
+
 func TestFinanceTransactionServiceCreateRejectsMismatchedCategory(t *testing.T) {
 	svc := newFinanceTransactionServiceSQLite(t)
 	ctx := context.Background()
@@ -64,10 +70,13 @@ func TestFinanceTransactionServiceCreateDefaultsSourceAndOccurredAt(t *testing.T
 	ctx := context.Background()
 
 	before := time.Now()
+	receipt, channel := financeIncomeEvidence()
 	created, err := svc.Create(ctx, &service.CreateFinanceTransactionInput{
-		Type:      service.FinanceTransactionTypeIncome,
-		Category:  service.FinanceTransactionCategorySaleRevenue,
-		AmountFen: 5000,
+		Type:           service.FinanceTransactionTypeIncome,
+		Category:       service.FinanceTransactionCategorySaleRevenue,
+		AmountFen:      5000,
+		ReceiptKey:     receipt,
+		PaymentChannel: channel,
 	})
 	require.NoError(t, err)
 	require.Equal(t, service.FinanceTransactionSourceManual, created.Source)
@@ -123,10 +132,13 @@ func TestFinanceTransactionServiceDeleteAndGetByID(t *testing.T) {
 	svc := newFinanceTransactionServiceSQLite(t)
 	ctx := context.Background()
 
+	receipt, channel := financeIncomeEvidence()
 	created, err := svc.Create(ctx, &service.CreateFinanceTransactionInput{
-		Type:      service.FinanceTransactionTypeIncome,
-		Category:  service.FinanceTransactionCategoryOtherIncome,
-		AmountFen: 100,
+		Type:           service.FinanceTransactionTypeIncome,
+		Category:       service.FinanceTransactionCategoryOtherIncome,
+		AmountFen:      100,
+		ReceiptKey:     receipt,
+		PaymentChannel: channel,
 	})
 	require.NoError(t, err)
 
@@ -140,8 +152,10 @@ func TestFinanceTransactionServiceListFiltersByType(t *testing.T) {
 	svc := newFinanceTransactionServiceSQLite(t)
 	ctx := context.Background()
 
+	receipt, channel := financeIncomeEvidence()
 	_, err := svc.Create(ctx, &service.CreateFinanceTransactionInput{
 		Type: service.FinanceTransactionTypeIncome, Category: service.FinanceTransactionCategorySaleRevenue, AmountFen: 1000,
+		ReceiptKey: receipt, PaymentChannel: channel,
 	})
 	require.NoError(t, err)
 	_, err = svc.Create(ctx, &service.CreateFinanceTransactionInput{
@@ -167,12 +181,16 @@ func TestFinanceTransactionServiceSummaryComputesMarginAndCategoryTotals(t *test
 	to := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
 
 	mustCreate := func(txType, category string, amountFen int64) {
-		_, err := svc.Create(ctx, &service.CreateFinanceTransactionInput{
+		input := &service.CreateFinanceTransactionInput{
 			Type:       txType,
 			Category:   category,
 			AmountFen:  amountFen,
 			OccurredAt: now,
-		})
+		}
+		if txType == service.FinanceTransactionTypeIncome {
+			input.ReceiptKey, input.PaymentChannel = financeIncomeEvidence()
+		}
+		_, err := svc.Create(ctx, input)
 		require.NoError(t, err)
 	}
 
@@ -182,11 +200,14 @@ func TestFinanceTransactionServiceSummaryComputesMarginAndCategoryTotals(t *test
 	mustCreate(service.FinanceTransactionTypeExpense, service.FinanceTransactionCategoryServerCost, 20000)
 
 	// Outside the [from, to) range: must not leak into the summary.
+	receipt, channel := financeIncomeEvidence()
 	_, err := svc.Create(ctx, &service.CreateFinanceTransactionInput{
-		Type:       service.FinanceTransactionTypeIncome,
-		Category:   service.FinanceTransactionCategorySaleRevenue,
-		AmountFen:  999999,
-		OccurredAt: time.Date(2026, 6, 30, 23, 59, 59, 0, time.UTC),
+		Type:           service.FinanceTransactionTypeIncome,
+		Category:       service.FinanceTransactionCategorySaleRevenue,
+		AmountFen:      999999,
+		OccurredAt:     time.Date(2026, 6, 30, 23, 59, 59, 0, time.UTC),
+		ReceiptKey:     receipt,
+		PaymentChannel: channel,
 	})
 	require.NoError(t, err)
 
@@ -205,6 +226,8 @@ func TestFinanceTransactionServiceSummaryComputesMarginAndCategoryTotals(t *test
 	require.EqualValues(t, 150000, byCategory["income:sale_revenue"])
 	require.EqualValues(t, 30000, byCategory["expense:upstream_topup"])
 	require.EqualValues(t, 20000, byCategory["expense:server_cost"])
+	require.Len(t, summary.MonthlySeries, 1)
+	require.Equal(t, "2026-07", summary.MonthlySeries[0].Month)
 }
 
 func TestFinanceTransactionServiceSummaryRejectsInvalidRange(t *testing.T) {
@@ -214,4 +237,50 @@ func TestFinanceTransactionServiceSummaryRejectsInvalidRange(t *testing.T) {
 	now := time.Now()
 	_, err := svc.Summary(ctx, now, now)
 	require.Error(t, err)
+}
+
+func TestFinanceTransactionServiceIncomeRequiresReceiptAndPaymentChannel(t *testing.T) {
+	svc := newFinanceTransactionServiceSQLite(t)
+	ctx := context.Background()
+
+	_, err := svc.Create(ctx, &service.CreateFinanceTransactionInput{
+		Type:      service.FinanceTransactionTypeIncome,
+		Category:  service.FinanceTransactionCategorySaleRevenue,
+		AmountFen: 1000,
+	})
+	require.ErrorIs(t, err, service.ErrFinanceTransactionIncomeReceiptRequired)
+
+	receipt, _ := financeIncomeEvidence()
+	_, err = svc.Create(ctx, &service.CreateFinanceTransactionInput{
+		Type:       service.FinanceTransactionTypeIncome,
+		Category:   service.FinanceTransactionCategorySaleRevenue,
+		AmountFen:  1000,
+		ReceiptKey: receipt,
+	})
+	require.ErrorIs(t, err, service.ErrFinanceTransactionIncomeChannelRequired)
+}
+
+func TestFinanceTransactionServiceSummaryAllIncludesAllMonths(t *testing.T) {
+	svc := newFinanceTransactionServiceSQLite(t)
+	ctx := context.Background()
+
+	for _, occurredAt := range []time.Time{
+		time.Date(2026, 5, 14, 0, 0, 0, 0, time.FixedZone("CST", 8*60*60)),
+		time.Date(2026, 6, 14, 0, 0, 0, 0, time.FixedZone("CST", 8*60*60)),
+	} {
+		_, err := svc.Create(ctx, &service.CreateFinanceTransactionInput{
+			Type:       service.FinanceTransactionTypeExpense,
+			Category:   service.FinanceTransactionCategoryHostingCost,
+			AmountFen:  17899,
+			OccurredAt: occurredAt,
+		})
+		require.NoError(t, err)
+	}
+
+	summary, err := svc.SummaryAll(ctx, time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC))
+	require.NoError(t, err)
+	require.EqualValues(t, 35798, summary.TotalExpenseFen)
+	require.Len(t, summary.MonthlySeries, 2)
+	require.Equal(t, "2026-05", summary.MonthlySeries[0].Month)
+	require.Equal(t, "2026-06", summary.MonthlySeries[1].Month)
 }

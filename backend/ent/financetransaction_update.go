@@ -131,6 +131,26 @@ func (_u *FinanceTransactionUpdate) ClearReceiptKey() *FinanceTransactionUpdate 
 	return _u
 }
 
+// SetPaymentChannel sets the "payment_channel" field.
+func (_u *FinanceTransactionUpdate) SetPaymentChannel(v string) *FinanceTransactionUpdate {
+	_u.mutation.SetPaymentChannel(v)
+	return _u
+}
+
+// SetNillablePaymentChannel sets the "payment_channel" field if the given value is not nil.
+func (_u *FinanceTransactionUpdate) SetNillablePaymentChannel(v *string) *FinanceTransactionUpdate {
+	if v != nil {
+		_u.SetPaymentChannel(*v)
+	}
+	return _u
+}
+
+// ClearPaymentChannel clears the value of the "payment_channel" field.
+func (_u *FinanceTransactionUpdate) ClearPaymentChannel() *FinanceTransactionUpdate {
+	_u.mutation.ClearPaymentChannel()
+	return _u
+}
+
 // SetSource sets the "source" field.
 func (_u *FinanceTransactionUpdate) SetSource(v string) *FinanceTransactionUpdate {
 	_u.mutation.SetSource(v)
@@ -241,6 +261,11 @@ func (_u *FinanceTransactionUpdate) check() error {
 			return &ValidationError{Name: "receipt_key", err: fmt.Errorf(`ent: validator failed for field "FinanceTransaction.receipt_key": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.PaymentChannel(); ok {
+		if err := financetransaction.PaymentChannelValidator(v); err != nil {
+			return &ValidationError{Name: "payment_channel", err: fmt.Errorf(`ent: validator failed for field "FinanceTransaction.payment_channel": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Source(); ok {
 		if err := financetransaction.SourceValidator(v); err != nil {
 			return &ValidationError{Name: "source", err: fmt.Errorf(`ent: validator failed for field "FinanceTransaction.source": %w`, err)}
@@ -287,6 +312,12 @@ func (_u *FinanceTransactionUpdate) sqlSave(ctx context.Context) (_node int, err
 	}
 	if _u.mutation.ReceiptKeyCleared() {
 		_spec.ClearField(financetransaction.FieldReceiptKey, field.TypeString)
+	}
+	if value, ok := _u.mutation.PaymentChannel(); ok {
+		_spec.SetField(financetransaction.FieldPaymentChannel, field.TypeString, value)
+	}
+	if _u.mutation.PaymentChannelCleared() {
+		_spec.ClearField(financetransaction.FieldPaymentChannel, field.TypeString)
 	}
 	if value, ok := _u.mutation.Source(); ok {
 		_spec.SetField(financetransaction.FieldSource, field.TypeString, value)
@@ -426,6 +457,26 @@ func (_u *FinanceTransactionUpdateOne) ClearReceiptKey() *FinanceTransactionUpda
 	return _u
 }
 
+// SetPaymentChannel sets the "payment_channel" field.
+func (_u *FinanceTransactionUpdateOne) SetPaymentChannel(v string) *FinanceTransactionUpdateOne {
+	_u.mutation.SetPaymentChannel(v)
+	return _u
+}
+
+// SetNillablePaymentChannel sets the "payment_channel" field if the given value is not nil.
+func (_u *FinanceTransactionUpdateOne) SetNillablePaymentChannel(v *string) *FinanceTransactionUpdateOne {
+	if v != nil {
+		_u.SetPaymentChannel(*v)
+	}
+	return _u
+}
+
+// ClearPaymentChannel clears the value of the "payment_channel" field.
+func (_u *FinanceTransactionUpdateOne) ClearPaymentChannel() *FinanceTransactionUpdateOne {
+	_u.mutation.ClearPaymentChannel()
+	return _u
+}
+
 // SetSource sets the "source" field.
 func (_u *FinanceTransactionUpdateOne) SetSource(v string) *FinanceTransactionUpdateOne {
 	_u.mutation.SetSource(v)
@@ -549,6 +600,11 @@ func (_u *FinanceTransactionUpdateOne) check() error {
 			return &ValidationError{Name: "receipt_key", err: fmt.Errorf(`ent: validator failed for field "FinanceTransaction.receipt_key": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.PaymentChannel(); ok {
+		if err := financetransaction.PaymentChannelValidator(v); err != nil {
+			return &ValidationError{Name: "payment_channel", err: fmt.Errorf(`ent: validator failed for field "FinanceTransaction.payment_channel": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Source(); ok {
 		if err := financetransaction.SourceValidator(v); err != nil {
 			return &ValidationError{Name: "source", err: fmt.Errorf(`ent: validator failed for field "FinanceTransaction.source": %w`, err)}
@@ -612,6 +668,12 @@ func (_u *FinanceTransactionUpdateOne) sqlSave(ctx context.Context) (_node *Fina
 	}
 	if _u.mutation.ReceiptKeyCleared() {
 		_spec.ClearField(financetransaction.FieldReceiptKey, field.TypeString)
+	}
+	if value, ok := _u.mutation.PaymentChannel(); ok {
+		_spec.SetField(financetransaction.FieldPaymentChannel, field.TypeString, value)
+	}
+	if _u.mutation.PaymentChannelCleared() {
+		_spec.ClearField(financetransaction.FieldPaymentChannel, field.TypeString)
 	}
 	if value, ok := _u.mutation.Source(); ok {
 		_spec.SetField(financetransaction.FieldSource, field.TypeString, value)

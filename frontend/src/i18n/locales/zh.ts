@@ -4118,6 +4118,7 @@ export default {
         occurredAt: '发生时间',
         type: '类型',
         category: '分类',
+        paymentChannel: '收款渠道',
         amount: '金额',
         note: '备注',
         source: '来源',
@@ -4136,23 +4137,41 @@ export default {
         sale_revenue: '售卖收入',
         other_income: '其他收入',
         upstream_topup: '上游进货充值',
-        server_cost: '服务器成本',
+        server_cost: '服务器成本（旧分类）',
+        hosting_cost: '服务器固定成本',
+        cdn_cost: 'CDN 动态成本',
         domain_cost: '域名成本',
         early_cost: '早期成本',
         other_expense: '其他支出'
+      },
+      paymentChannelLabels: {
+        wechat: '微信',
+        alipay: '支付宝',
+        bank_transfer: '银行转账',
+        other: '其他/历史未标注'
       },
       summary: {
         income: '营收',
         expense: '成本',
         netProfit: '净利润',
         margin: '利润率',
-        rangeTitle: '统计月份',
+        serverFixedCost: '服务器固定成本',
+        rangeTitle: '统计范围',
+        allTime: '累计',
+        byMonth: '按月',
+        allTimeHint: '默认展示全部历史流水的累计结果',
         byCategory: '分类明细',
-        noData: '该月暂无记账数据'
+        noData: '当前范围暂无记账数据',
+        trendTitle: '近 12 个月营收与成本趋势',
+        trendHint: '按北京时间自然月统计，金额单位为人民币元',
+        noTrendData: '近 12 个月暂无记账数据'
       },
       form: {
         type: '类型',
         category: '分类',
+        paymentChannel: '收款渠道',
+        selectPaymentChannel: '请选择收款渠道',
+        paymentChannelHint: '仅收入需要填写，用于区分微信、支付宝或其他手工收款',
         amount: '金额（元）',
         occurredAt: '发生时间',
         note: '备注',
@@ -4161,8 +4180,11 @@ export default {
         uploading: '上传中...',
         receiptAttached: '已附凭证',
         receiptHint: '上传前会在浏览器本地压缩为 WebP，不会占用过多存储空间',
+        incomeReceiptHint: '收入必须附收款截图；上传前会在浏览器本地压缩为 WebP',
         uploadFailed: '凭证上传失败',
-        invalidAmount: '请输入大于 0 的金额'
+        invalidAmount: '请输入大于 0 的金额',
+        receiptRequired: '收入必须上传收款凭证',
+        paymentChannelRequired: '收入必须选择收款渠道'
       }
     },
 

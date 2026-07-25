@@ -104,6 +104,18 @@ describe('Finance Transactions API - Admin', () => {
       })
       expect(result.net_profit_fen).toBe(60)
     })
+
+    it('requests the cumulative scope without month boundaries', async () => {
+      mockClient.get.mockResolvedValue({
+        data: { total_income_fen: 100, total_expense_fen: 40, net_profit_fen: 60, margin_percent: 60, by_category: [], monthly_series: [] }
+      })
+
+      await summary(undefined, undefined, 'all')
+
+      expect(mockClient.get).toHaveBeenCalledWith('/admin/finance-transactions/summary', {
+        params: { scope: 'all' }
+      })
+    })
   })
 
   describe('uploadReceipt', () => {

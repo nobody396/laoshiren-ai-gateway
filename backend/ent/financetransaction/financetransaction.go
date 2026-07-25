@@ -25,6 +25,8 @@ const (
 	FieldNote = "note"
 	// FieldReceiptKey holds the string denoting the receipt_key field in the database.
 	FieldReceiptKey = "receipt_key"
+	// FieldPaymentChannel holds the string denoting the payment_channel field in the database.
+	FieldPaymentChannel = "payment_channel"
 	// FieldSource holds the string denoting the source field in the database.
 	FieldSource = "source"
 	// FieldCreatedBy holds the string denoting the created_by field in the database.
@@ -46,6 +48,7 @@ var Columns = []string{
 	FieldOccurredAt,
 	FieldNote,
 	FieldReceiptKey,
+	FieldPaymentChannel,
 	FieldSource,
 	FieldCreatedBy,
 	FieldCreatedAt,
@@ -71,6 +74,8 @@ var (
 	AmountFenValidator func(int64) error
 	// ReceiptKeyValidator is a validator for the "receipt_key" field. It is called by the builders before save.
 	ReceiptKeyValidator func(string) error
+	// PaymentChannelValidator is a validator for the "payment_channel" field. It is called by the builders before save.
+	PaymentChannelValidator func(string) error
 	// DefaultSource holds the default value on creation for the "source" field.
 	DefaultSource string
 	// SourceValidator is a validator for the "source" field. It is called by the builders before save.
@@ -119,6 +124,11 @@ func ByNote(opts ...sql.OrderTermOption) OrderOption {
 // ByReceiptKey orders the results by the receipt_key field.
 func ByReceiptKey(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldReceiptKey, opts...).ToFunc()
+}
+
+// ByPaymentChannel orders the results by the payment_channel field.
+func ByPaymentChannel(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPaymentChannel, opts...).ToFunc()
 }
 
 // BySource orders the results by the source field.

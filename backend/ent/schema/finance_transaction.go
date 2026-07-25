@@ -52,6 +52,11 @@ func (FinanceTransaction) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Comment("凭证图片的 S3 object key"),
+		field.String("payment_channel").
+			MaxLen(20).
+			Optional().
+			Nillable().
+			Comment("收入收款渠道：wechat / alipay / bank_transfer / other"),
 		field.String("source").
 			MaxLen(10).
 			Default(domain.FinanceTransactionSourceManual).

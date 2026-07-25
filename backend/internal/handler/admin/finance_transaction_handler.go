@@ -33,22 +33,24 @@ func NewFinanceTransactionHandler(
 }
 
 type CreateFinanceTransactionRequest struct {
-	Type       string `json:"type" binding:"required,oneof=income expense"`
-	Category   string `json:"category" binding:"required"`
-	AmountFen  int64  `json:"amount_fen" binding:"required,gt=0"`
-	OccurredAt int64  `json:"occurred_at"` // Unix seconds, 0 = now
-	Note       string `json:"note"`
-	ReceiptKey string `json:"receipt_key"`
-	Source     string `json:"source" binding:"omitempty,oneof=manual skill"`
+	Type           string `json:"type" binding:"required,oneof=income expense"`
+	Category       string `json:"category" binding:"required"`
+	AmountFen      int64  `json:"amount_fen" binding:"required,gt=0"`
+	OccurredAt     int64  `json:"occurred_at"` // Unix seconds, 0 = now
+	Note           string `json:"note"`
+	ReceiptKey     string `json:"receipt_key"`
+	PaymentChannel string `json:"payment_channel"`
+	Source         string `json:"source" binding:"omitempty,oneof=manual skill"`
 }
 
 type UpdateFinanceTransactionRequest struct {
-	Type       *string `json:"type" binding:"omitempty,oneof=income expense"`
-	Category   *string `json:"category"`
-	AmountFen  *int64  `json:"amount_fen" binding:"omitempty,gt=0"`
-	OccurredAt *int64  `json:"occurred_at"` // Unix seconds
-	Note       *string `json:"note"`
-	ReceiptKey *string `json:"receipt_key"`
+	Type           *string `json:"type" binding:"omitempty,oneof=income expense"`
+	Category       *string `json:"category"`
+	AmountFen      *int64  `json:"amount_fen" binding:"omitempty,gt=0"`
+	OccurredAt     *int64  `json:"occurred_at"` // Unix seconds
+	Note           *string `json:"note"`
+	ReceiptKey     *string `json:"receipt_key"`
+	PaymentChannel *string `json:"payment_channel"`
 }
 
 // List handles listing finance transactions with filters
@@ -99,6 +101,21 @@ func (h *FinanceTransactionHandler) List(c *gin.Context) {
 // Summary handles aggregating income/expense/profit for a time range (defaults to the current month).
 // GET /api/v1/admin/finance-transactions/summary
 func (h *FinanceTransactionHandler) Summary(c *gin.Context) {
+	scope := strings.TrimSpace(c.Query("scope"))
+	if scope == "all" {
+		summary, err := h.financeService.SummaryAll(c.Request.Context(), time.Now())
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+		response.Success(c, dto.FinanceTransactionSummaryFromService(summary))
+		return
+	}
+	if scope != "" && scope != "month" {
+		response.BadRequest(c, "Invalid finance summary scope")
+		return
+	}
+
 	from, hasFrom := parseUnixSecondsQuery(c, "from")
 	to, hasTo := parseUnixSecondsQuery(c, "to")
 	if !hasFrom || !hasTo {
@@ -155,12 +172,13 @@ func (h *FinanceTransactionHandler) Create(c *gin.Context) {
 	}
 
 	input := &service.CreateFinanceTransactionInput{
-		Type:      req.Type,
-		Category:  req.Category,
-		AmountFen: req.AmountFen,
-		Note:      nilIfEmpty(req.Note),
-		Source:    req.Source,
-		ActorID:   &subject.UserID,
+		Type:           req.Type,
+		Category:       req.Category,
+		AmountFen:      req.AmountFen,
+		Note:           nilIfEmpty(req.Note),
+		PaymentChannel: nilIfEmpty(req.PaymentChannel),
+		Source:         req.Source,
+		ActorID:        &subject.UserID,
 	}
 	if req.ReceiptKey != "" {
 		key := req.ReceiptKey
@@ -208,6 +226,9 @@ func (h *FinanceTransactionHandler) Update(c *gin.Context) {
 	}
 	if req.ReceiptKey != nil {
 		input.ReceiptKey = &req.ReceiptKey
+	}
+	if req.PaymentChannel != nil {
+		input.PaymentChannel = &req.PaymentChannel
 	}
 
 	updated, err := h.financeService.Update(c.Request.Context(), id, input)

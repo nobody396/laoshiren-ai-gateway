@@ -283,11 +283,14 @@ export type FinanceTransactionCategory =
   | 'other_income'
   | 'upstream_topup'
   | 'server_cost'
+  | 'hosting_cost'
+  | 'cdn_cost'
   | 'domain_cost'
   | 'early_cost'
   | 'other_expense'
 
 export type FinanceTransactionSource = 'manual' | 'skill'
+export type FinancePaymentChannel = 'wechat' | 'alipay' | 'bank_transfer' | 'other'
 
 export interface FinanceTransaction {
   id: number
@@ -297,6 +300,7 @@ export interface FinanceTransaction {
   occurred_at: string
   note?: string
   receipt_key?: string
+  payment_channel?: FinancePaymentChannel
   source: FinanceTransactionSource
   created_by?: number
   created_at: string
@@ -318,6 +322,14 @@ export interface FinanceTransactionSummary {
   net_profit_fen: number
   margin_percent: number
   by_category: FinanceCategoryTotal[]
+  monthly_series: FinanceMonthlyTotal[]
+}
+
+export interface FinanceMonthlyTotal {
+  month: string
+  total_income_fen: number
+  total_expense_fen: number
+  net_profit_fen: number
 }
 
 export interface CreateFinanceTransactionRequest {
@@ -327,6 +339,7 @@ export interface CreateFinanceTransactionRequest {
   occurred_at?: number
   note?: string
   receipt_key?: string
+  payment_channel?: FinancePaymentChannel
   source?: FinanceTransactionSource
 }
 
@@ -337,6 +350,7 @@ export interface UpdateFinanceTransactionRequest {
   occurred_at?: number
   note?: string
   receipt_key?: string
+  payment_channel?: FinancePaymentChannel | ''
 }
 
 // ==================== Feedback Types ====================

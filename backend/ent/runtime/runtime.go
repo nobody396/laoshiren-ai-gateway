@@ -803,18 +803,22 @@ func init() {
 	financetransactionDescReceiptKey := financetransactionFields[5].Descriptor()
 	// financetransaction.ReceiptKeyValidator is a validator for the "receipt_key" field. It is called by the builders before save.
 	financetransaction.ReceiptKeyValidator = financetransactionDescReceiptKey.Validators[0].(func(string) error)
+	// financetransactionDescPaymentChannel is the schema descriptor for payment_channel field.
+	financetransactionDescPaymentChannel := financetransactionFields[6].Descriptor()
+	// financetransaction.PaymentChannelValidator is a validator for the "payment_channel" field. It is called by the builders before save.
+	financetransaction.PaymentChannelValidator = financetransactionDescPaymentChannel.Validators[0].(func(string) error)
 	// financetransactionDescSource is the schema descriptor for source field.
-	financetransactionDescSource := financetransactionFields[6].Descriptor()
+	financetransactionDescSource := financetransactionFields[7].Descriptor()
 	// financetransaction.DefaultSource holds the default value on creation for the source field.
 	financetransaction.DefaultSource = financetransactionDescSource.Default.(string)
 	// financetransaction.SourceValidator is a validator for the "source" field. It is called by the builders before save.
 	financetransaction.SourceValidator = financetransactionDescSource.Validators[0].(func(string) error)
 	// financetransactionDescCreatedAt is the schema descriptor for created_at field.
-	financetransactionDescCreatedAt := financetransactionFields[8].Descriptor()
+	financetransactionDescCreatedAt := financetransactionFields[9].Descriptor()
 	// financetransaction.DefaultCreatedAt holds the default value on creation for the created_at field.
 	financetransaction.DefaultCreatedAt = financetransactionDescCreatedAt.Default.(func() time.Time)
 	// financetransactionDescUpdatedAt is the schema descriptor for updated_at field.
-	financetransactionDescUpdatedAt := financetransactionFields[9].Descriptor()
+	financetransactionDescUpdatedAt := financetransactionFields[10].Descriptor()
 	// financetransaction.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	financetransaction.DefaultUpdatedAt = financetransactionDescUpdatedAt.Default.(func() time.Time)
 	// financetransaction.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

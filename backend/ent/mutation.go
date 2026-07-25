@@ -16262,25 +16262,26 @@ func (m *FeedbackReplyMutation) ResetEdge(name string) error {
 // FinanceTransactionMutation represents an operation that mutates the FinanceTransaction nodes in the graph.
 type FinanceTransactionMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int64
-	_type         *string
-	category      *string
-	amount_fen    *int64
-	addamount_fen *int64
-	occurred_at   *time.Time
-	note          *string
-	receipt_key   *string
-	source        *string
-	created_by    *int64
-	addcreated_by *int64
-	created_at    *time.Time
-	updated_at    *time.Time
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*FinanceTransaction, error)
-	predicates    []predicate.FinanceTransaction
+	op              Op
+	typ             string
+	id              *int64
+	_type           *string
+	category        *string
+	amount_fen      *int64
+	addamount_fen   *int64
+	occurred_at     *time.Time
+	note            *string
+	receipt_key     *string
+	payment_channel *string
+	source          *string
+	created_by      *int64
+	addcreated_by   *int64
+	created_at      *time.Time
+	updated_at      *time.Time
+	clearedFields   map[string]struct{}
+	done            bool
+	oldValue        func(context.Context) (*FinanceTransaction, error)
+	predicates      []predicate.FinanceTransaction
 }
 
 var _ ent.Mutation = (*FinanceTransactionMutation)(nil)
@@ -16643,6 +16644,55 @@ func (m *FinanceTransactionMutation) ResetReceiptKey() {
 	delete(m.clearedFields, financetransaction.FieldReceiptKey)
 }
 
+// SetPaymentChannel sets the "payment_channel" field.
+func (m *FinanceTransactionMutation) SetPaymentChannel(s string) {
+	m.payment_channel = &s
+}
+
+// PaymentChannel returns the value of the "payment_channel" field in the mutation.
+func (m *FinanceTransactionMutation) PaymentChannel() (r string, exists bool) {
+	v := m.payment_channel
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPaymentChannel returns the old "payment_channel" field's value of the FinanceTransaction entity.
+// If the FinanceTransaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FinanceTransactionMutation) OldPaymentChannel(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPaymentChannel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPaymentChannel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPaymentChannel: %w", err)
+	}
+	return oldValue.PaymentChannel, nil
+}
+
+// ClearPaymentChannel clears the value of the "payment_channel" field.
+func (m *FinanceTransactionMutation) ClearPaymentChannel() {
+	m.payment_channel = nil
+	m.clearedFields[financetransaction.FieldPaymentChannel] = struct{}{}
+}
+
+// PaymentChannelCleared returns if the "payment_channel" field was cleared in this mutation.
+func (m *FinanceTransactionMutation) PaymentChannelCleared() bool {
+	_, ok := m.clearedFields[financetransaction.FieldPaymentChannel]
+	return ok
+}
+
+// ResetPaymentChannel resets all changes to the "payment_channel" field.
+func (m *FinanceTransactionMutation) ResetPaymentChannel() {
+	m.payment_channel = nil
+	delete(m.clearedFields, financetransaction.FieldPaymentChannel)
+}
+
 // SetSource sets the "source" field.
 func (m *FinanceTransactionMutation) SetSource(s string) {
 	m.source = &s
@@ -16855,7 +16905,7 @@ func (m *FinanceTransactionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *FinanceTransactionMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m._type != nil {
 		fields = append(fields, financetransaction.FieldType)
 	}
@@ -16873,6 +16923,9 @@ func (m *FinanceTransactionMutation) Fields() []string {
 	}
 	if m.receipt_key != nil {
 		fields = append(fields, financetransaction.FieldReceiptKey)
+	}
+	if m.payment_channel != nil {
+		fields = append(fields, financetransaction.FieldPaymentChannel)
 	}
 	if m.source != nil {
 		fields = append(fields, financetransaction.FieldSource)
@@ -16906,6 +16959,8 @@ func (m *FinanceTransactionMutation) Field(name string) (ent.Value, bool) {
 		return m.Note()
 	case financetransaction.FieldReceiptKey:
 		return m.ReceiptKey()
+	case financetransaction.FieldPaymentChannel:
+		return m.PaymentChannel()
 	case financetransaction.FieldSource:
 		return m.Source()
 	case financetransaction.FieldCreatedBy:
@@ -16935,6 +16990,8 @@ func (m *FinanceTransactionMutation) OldField(ctx context.Context, name string) 
 		return m.OldNote(ctx)
 	case financetransaction.FieldReceiptKey:
 		return m.OldReceiptKey(ctx)
+	case financetransaction.FieldPaymentChannel:
+		return m.OldPaymentChannel(ctx)
 	case financetransaction.FieldSource:
 		return m.OldSource(ctx)
 	case financetransaction.FieldCreatedBy:
@@ -16993,6 +17050,13 @@ func (m *FinanceTransactionMutation) SetField(name string, value ent.Value) erro
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetReceiptKey(v)
+		return nil
+	case financetransaction.FieldPaymentChannel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPaymentChannel(v)
 		return nil
 	case financetransaction.FieldSource:
 		v, ok := value.(string)
@@ -17085,6 +17149,9 @@ func (m *FinanceTransactionMutation) ClearedFields() []string {
 	if m.FieldCleared(financetransaction.FieldReceiptKey) {
 		fields = append(fields, financetransaction.FieldReceiptKey)
 	}
+	if m.FieldCleared(financetransaction.FieldPaymentChannel) {
+		fields = append(fields, financetransaction.FieldPaymentChannel)
+	}
 	if m.FieldCleared(financetransaction.FieldCreatedBy) {
 		fields = append(fields, financetransaction.FieldCreatedBy)
 	}
@@ -17107,6 +17174,9 @@ func (m *FinanceTransactionMutation) ClearField(name string) error {
 		return nil
 	case financetransaction.FieldReceiptKey:
 		m.ClearReceiptKey()
+		return nil
+	case financetransaction.FieldPaymentChannel:
+		m.ClearPaymentChannel()
 		return nil
 	case financetransaction.FieldCreatedBy:
 		m.ClearCreatedBy()
@@ -17136,6 +17206,9 @@ func (m *FinanceTransactionMutation) ResetField(name string) error {
 		return nil
 	case financetransaction.FieldReceiptKey:
 		m.ResetReceiptKey()
+		return nil
+	case financetransaction.FieldPaymentChannel:
+		m.ResetPaymentChannel()
 		return nil
 	case financetransaction.FieldSource:
 		m.ResetSource()

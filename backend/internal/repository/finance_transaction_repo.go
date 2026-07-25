@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"sort"
 	"strings"
 	"time"
 
@@ -35,6 +36,9 @@ func (r *financeTransactionRepository) Create(ctx context.Context, t *service.Fi
 	}
 	if t.ReceiptKey != nil {
 		builder.SetReceiptKey(*t.ReceiptKey)
+	}
+	if t.PaymentChannel != nil {
+		builder.SetPaymentChannel(*t.PaymentChannel)
 	}
 	if t.CreatedBy != nil {
 		builder.SetCreatedBy(*t.CreatedBy)
@@ -76,6 +80,11 @@ func (r *financeTransactionRepository) Update(ctx context.Context, t *service.Fi
 		builder.SetReceiptKey(*t.ReceiptKey)
 	} else {
 		builder.ClearReceiptKey()
+	}
+	if t.PaymentChannel != nil {
+		builder.SetPaymentChannel(*t.PaymentChannel)
+	} else {
+		builder.ClearPaymentChannel()
 	}
 
 	updated, err := builder.Save(ctx)
@@ -134,11 +143,30 @@ func (r *financeTransactionRepository) Summary(ctx context.Context, from, to tim
 	if err != nil {
 		return nil, err
 	}
+	return summarizeFinanceTransactions(items, from, to), nil
+}
 
-	summary := &service.FinanceTransactionSummary{
-		RangeFrom: from,
-		RangeTo:   to,
+func (r *financeTransactionRepository) SummaryAll(ctx context.Context, to time.Time) (*service.FinanceTransactionSummary, error) {
+	items, err := r.client.FinanceTransaction.Query().
+		Where(financetransaction.OccurredAtLT(to)).
+		All(ctx)
+	if err != nil {
+		return nil, err
 	}
+	from := to
+	for _, item := range items {
+		if item.OccurredAt.Before(from) {
+			from = item.OccurredAt
+		}
+	}
+	return summarizeFinanceTransactions(items, from, to), nil
+}
+
+func summarizeFinanceTransactions(
+	items []*dbent.FinanceTransaction,
+	from, to time.Time,
+) *service.FinanceTransactionSummary {
+	summary := &service.FinanceTransactionSummary{RangeFrom: from, RangeTo: to}
 
 	type key struct {
 		txType   string
@@ -146,6 +174,8 @@ func (r *financeTransactionRepository) Summary(ctx context.Context, from, to tim
 	}
 	totals := make(map[key]*domain.FinanceCategoryTotal)
 	order := make([]key, 0)
+	monthlyTotals := make(map[string]*domain.FinanceMonthlyTotal)
+	shanghai := time.FixedZone("Asia/Shanghai", 8*60*60)
 
 	for _, m := range items {
 		switch m.Type {
@@ -164,6 +194,18 @@ func (r *financeTransactionRepository) Summary(ctx context.Context, from, to tim
 		}
 		agg.TotalFen += m.AmountFen
 		agg.TxCount++
+
+		month := m.OccurredAt.In(shanghai).Format("2006-01")
+		monthly, ok := monthlyTotals[month]
+		if !ok {
+			monthly = &domain.FinanceMonthlyTotal{Month: month}
+			monthlyTotals[month] = monthly
+		}
+		if m.Type == domain.FinanceTransactionTypeIncome {
+			monthly.TotalIncomeFen += m.AmountFen
+		} else if m.Type == domain.FinanceTransactionTypeExpense {
+			monthly.TotalExpenseFen += m.AmountFen
+		}
 	}
 
 	summary.NetProfitFen = summary.TotalIncomeFen - summary.TotalExpenseFen
@@ -176,7 +218,19 @@ func (r *financeTransactionRepository) Summary(ctx context.Context, from, to tim
 		summary.ByCategory = append(summary.ByCategory, *totals[k])
 	}
 
-	return summary, nil
+	months := make([]string, 0, len(monthlyTotals))
+	for month := range monthlyTotals {
+		months = append(months, month)
+	}
+	sort.Strings(months)
+	summary.MonthlySeries = make([]domain.FinanceMonthlyTotal, 0, len(months))
+	for _, month := range months {
+		total := monthlyTotals[month]
+		total.NetProfitFen = total.TotalIncomeFen - total.TotalExpenseFen
+		summary.MonthlySeries = append(summary.MonthlySeries, *total)
+	}
+
+	return summary
 }
 
 func applyFinanceTransactionFilters(q *dbent.FinanceTransactionQuery, filters service.FinanceTransactionListFilters) *dbent.FinanceTransactionQuery {
@@ -254,17 +308,18 @@ func financeTransactionEntityToService(m *dbent.FinanceTransaction) *service.Fin
 		return nil
 	}
 	return &service.FinanceTransaction{
-		ID:         m.ID,
-		Type:       m.Type,
-		Category:   m.Category,
-		AmountFen:  m.AmountFen,
-		OccurredAt: m.OccurredAt,
-		Note:       m.Note,
-		ReceiptKey: m.ReceiptKey,
-		Source:     m.Source,
-		CreatedBy:  m.CreatedBy,
-		CreatedAt:  m.CreatedAt,
-		UpdatedAt:  m.UpdatedAt,
+		ID:             m.ID,
+		Type:           m.Type,
+		Category:       m.Category,
+		AmountFen:      m.AmountFen,
+		OccurredAt:     m.OccurredAt,
+		Note:           m.Note,
+		ReceiptKey:     m.ReceiptKey,
+		PaymentChannel: m.PaymentChannel,
+		Source:         m.Source,
+		CreatedBy:      m.CreatedBy,
+		CreatedAt:      m.CreatedAt,
+		UpdatedAt:      m.UpdatedAt,
 	}
 }
 

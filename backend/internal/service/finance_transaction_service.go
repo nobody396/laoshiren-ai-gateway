@@ -19,23 +19,25 @@ func NewFinanceTransactionService(repo FinanceTransactionRepository) *FinanceTra
 }
 
 type CreateFinanceTransactionInput struct {
-	Type       string
-	Category   string
-	AmountFen  int64
-	OccurredAt time.Time
-	Note       *string
-	ReceiptKey *string
-	Source     string
-	ActorID    *int64 // 管理员用户ID
+	Type           string
+	Category       string
+	AmountFen      int64
+	OccurredAt     time.Time
+	Note           *string
+	ReceiptKey     *string
+	PaymentChannel *string
+	Source         string
+	ActorID        *int64 // 管理员用户ID
 }
 
 type UpdateFinanceTransactionInput struct {
-	Type       *string
-	Category   *string
-	AmountFen  *int64
-	OccurredAt *time.Time
-	Note       **string
-	ReceiptKey **string
+	Type           *string
+	Category       *string
+	AmountFen      *int64
+	OccurredAt     *time.Time
+	Note           **string
+	ReceiptKey     **string
+	PaymentChannel **string
 }
 
 func (s *FinanceTransactionService) Create(ctx context.Context, input *CreateFinanceTransactionInput) (*FinanceTransaction, error) {
@@ -72,15 +74,20 @@ func (s *FinanceTransactionService) Create(ctx context.Context, input *CreateFin
 
 	note := trimOptionalString(input.Note)
 	receiptKey := trimOptionalString(input.ReceiptKey)
+	paymentChannel := trimOptionalString(input.PaymentChannel)
+	if err := validateFinanceEvidence(txType, receiptKey, paymentChannel); err != nil {
+		return nil, err
+	}
 
 	t := &FinanceTransaction{
-		Type:       txType,
-		Category:   category,
-		AmountFen:  input.AmountFen,
-		OccurredAt: occurredAt,
-		Note:       note,
-		ReceiptKey: receiptKey,
-		Source:     source,
+		Type:           txType,
+		Category:       category,
+		AmountFen:      input.AmountFen,
+		OccurredAt:     occurredAt,
+		Note:           note,
+		ReceiptKey:     receiptKey,
+		PaymentChannel: paymentChannel,
+		Source:         source,
 	}
 	if input.ActorID != nil && *input.ActorID > 0 {
 		t.CreatedBy = input.ActorID
@@ -140,6 +147,13 @@ func (s *FinanceTransactionService) Update(ctx context.Context, id int64, input 
 	if input.ReceiptKey != nil {
 		t.ReceiptKey = trimOptionalString(*input.ReceiptKey)
 	}
+	if input.PaymentChannel != nil {
+		t.PaymentChannel = trimOptionalString(*input.PaymentChannel)
+	}
+
+	if err := validateFinanceEvidence(t.Type, t.ReceiptKey, t.PaymentChannel); err != nil {
+		return nil, err
+	}
 
 	if err := s.repo.Update(ctx, t); err != nil {
 		return nil, fmt.Errorf("update finance transaction: %w", err)
@@ -168,6 +182,29 @@ func (s *FinanceTransactionService) Summary(ctx context.Context, from, to time.T
 		return nil, fmt.Errorf("summary finance transactions: from must be before to")
 	}
 	return s.repo.Summary(ctx, from, to)
+}
+
+func (s *FinanceTransactionService) SummaryAll(ctx context.Context, to time.Time) (*FinanceTransactionSummary, error) {
+	if to.IsZero() {
+		to = time.Now()
+	}
+	return s.repo.SummaryAll(ctx, to)
+}
+
+func validateFinanceEvidence(txType string, receiptKey, paymentChannel *string) error {
+	if paymentChannel != nil && !domain.IsValidFinancePaymentChannel(*paymentChannel) {
+		return ErrFinanceTransactionInvalidChannel
+	}
+	if txType != FinanceTransactionTypeIncome {
+		return nil
+	}
+	if receiptKey == nil {
+		return ErrFinanceTransactionIncomeReceiptRequired
+	}
+	if paymentChannel == nil {
+		return ErrFinanceTransactionIncomeChannelRequired
+	}
+	return nil
 }
 
 func trimOptionalString(v *string) *string {

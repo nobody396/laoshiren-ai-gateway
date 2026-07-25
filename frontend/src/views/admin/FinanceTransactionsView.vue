@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
       <StatCard
         :title="t('admin.financeTransactions.summary.income')"
         :value="formatCurrency(summary.total_income_fen / 100, 'CNY')"
@@ -25,24 +25,59 @@
         :icon="ChartIconRaw"
         :icon-variant="summary.margin_percent >= 0 ? 'primary' : 'danger'"
       />
+      <StatCard
+        :title="t('admin.financeTransactions.summary.serverFixedCost')"
+        :value="formatCurrency(serverFixedCostFen / 100, 'CNY')"
+        :icon="ServerIconRaw"
+        icon-variant="warning"
+      />
     </div>
 
     <div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
       <div class="card p-4 lg:col-span-1">
-        <div class="mb-3 flex items-center justify-between">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
             {{ t('admin.financeTransactions.summary.rangeTitle') }}
           </h3>
-          <div class="flex items-center gap-1">
-            <button class="btn btn-secondary !px-2 !py-1" @click="shiftMonth(-1)">
-              <Icon name="chevronLeft" size="sm" />
+          <div class="flex rounded-lg bg-gray-100 p-1 dark:bg-dark-700">
+            <button
+              data-test="summary-scope-all"
+              :class="[
+                'rounded-md px-3 py-1 text-xs font-medium transition-colors',
+                summaryMode === 'all'
+                  ? 'bg-white text-primary-600 shadow-sm dark:bg-dark-600 dark:text-primary-400'
+                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+              ]"
+              @click="setSummaryMode('all')"
+            >
+              {{ t('admin.financeTransactions.summary.allTime') }}
             </button>
-            <span class="min-w-[7rem] text-center text-sm text-gray-600 dark:text-gray-300">{{ rangeLabel }}</span>
-            <button class="btn btn-secondary !px-2 !py-1" @click="shiftMonth(1)">
-              <Icon name="chevronRight" size="sm" />
+            <button
+              data-test="summary-scope-month"
+              :class="[
+                'rounded-md px-3 py-1 text-xs font-medium transition-colors',
+                summaryMode === 'month'
+                  ? 'bg-white text-primary-600 shadow-sm dark:bg-dark-600 dark:text-primary-400'
+                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+              ]"
+              @click="setSummaryMode('month')"
+            >
+              {{ t('admin.financeTransactions.summary.byMonth') }}
             </button>
           </div>
         </div>
+        <div v-if="summaryMode === 'month'" class="mb-3 flex items-center justify-center gap-1">
+          <button class="btn btn-secondary !px-2 !py-1" @click="shiftMonth(-1)">
+            <Icon name="chevronLeft" size="sm" />
+          </button>
+          <span class="min-w-[7rem] text-center text-sm text-gray-600 dark:text-gray-300">{{ rangeLabel }}</span>
+          <button class="btn btn-secondary !px-2 !py-1" @click="shiftMonth(1)">
+            <Icon name="chevronRight" size="sm" />
+          </button>
+        </div>
+        <p v-else class="mb-3 text-center text-sm text-gray-600 dark:text-gray-300">
+          {{ t('admin.financeTransactions.summary.allTimeHint') }}
+        </p>
         <div v-if="summary.by_category.length === 0" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
           {{ t('admin.financeTransactions.summary.noData') }}
         </div>
@@ -80,6 +115,21 @@
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <div class="card mb-6 p-4">
+      <h3 class="mb-1 text-sm font-semibold text-gray-900 dark:text-white">
+        {{ t('admin.financeTransactions.summary.trendTitle') }}
+      </h3>
+      <p class="mb-4 text-xs text-gray-500 dark:text-gray-400">
+        {{ t('admin.financeTransactions.summary.trendHint') }}
+      </p>
+      <div v-if="!hasTrendData" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+        {{ t('admin.financeTransactions.summary.noTrendData') }}
+      </div>
+      <div v-else class="h-72">
+        <Bar :data="trendChartData" :options="trendChartOptions" />
       </div>
     </div>
 
@@ -124,6 +174,12 @@
 
           <template #cell-category="{ row }">
             <span class="text-sm text-gray-700 dark:text-gray-300">{{ categoryLabel(row.category) }}</span>
+          </template>
+
+          <template #cell-paymentChannel="{ row }">
+            <span class="text-sm text-gray-600 dark:text-gray-300">
+              {{ row.payment_channel ? paymentChannelLabel(row.payment_channel) : '-' }}
+            </span>
           </template>
 
           <template #cell-amount="{ row }">
@@ -207,7 +263,12 @@
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <label class="input-label">{{ t('admin.financeTransactions.form.type') }}</label>
-            <Select v-model="form.type" :options="typeOptions" @change="onTypeChange" />
+            <Select
+              v-model="form.type"
+              data-test="transaction-type-select"
+              :options="typeOptions"
+              @change="onTypeChange"
+            />
           </div>
           <div>
             <label class="input-label">{{ t('admin.financeTransactions.form.category') }}</label>
@@ -226,13 +287,29 @@
           </div>
         </div>
 
+        <div v-if="form.type === 'income'">
+          <label class="input-label">
+            {{ t('admin.financeTransactions.form.paymentChannel') }}
+            <span class="text-red-500">*</span>
+          </label>
+          <Select
+            v-model="form.payment_channel"
+            data-test="payment-channel-select"
+            :options="paymentChannelOptions"
+          />
+          <p class="input-hint">{{ t('admin.financeTransactions.form.paymentChannelHint') }}</p>
+        </div>
+
         <div>
           <label class="input-label">{{ t('admin.financeTransactions.form.note') }}</label>
           <textarea v-model="form.note" rows="3" class="input"></textarea>
         </div>
 
         <div>
-          <label class="input-label">{{ t('admin.financeTransactions.form.receipt') }}</label>
+          <label class="input-label">
+            {{ t('admin.financeTransactions.form.receipt') }}
+            <span v-if="form.type === 'income'" class="text-red-500">*</span>
+          </label>
           <div class="flex items-center gap-3">
             <input ref="fileInputRef" type="file" accept="image/*" class="hidden" @change="handleFileSelected" />
             <button type="button" class="btn btn-secondary" :disabled="uploadingReceipt" @click="fileInputRef?.click()">
@@ -247,7 +324,13 @@
               {{ t('common.delete') }}
             </button>
           </div>
-          <p class="input-hint">{{ t('admin.financeTransactions.form.receiptHint') }}</p>
+          <p class="input-hint">
+            {{
+              form.type === 'income'
+                ? t('admin.financeTransactions.form.incomeReceiptHint')
+                : t('admin.financeTransactions.form.receiptHint')
+            }}
+          </p>
         </div>
       </form>
 
@@ -335,14 +418,15 @@
 <script setup lang="ts">
 import { computed, h, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
-import { Doughnut } from 'vue-chartjs'
+import { Chart as ChartJS, ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js'
+import { Bar, Doughnut } from 'vue-chartjs'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
 import { formatCurrency, formatDateTime, formatDateTimeLocalInput, parseDateTimeLocalInput } from '@/utils/format'
 import type {
   FinanceTransaction,
   FinanceTransactionCategory,
+  FinancePaymentChannel,
   FinanceTransactionSummary,
   FinanceTransactionType
 } from '@/types'
@@ -359,7 +443,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import StatCard from '@/components/common/StatCard.vue'
 import Icon from '@/components/icons/Icon.vue'
 
-ChartJS.register(ArcElement, Tooltip, Legend)
+ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -370,21 +454,29 @@ const TrendingUpIconRaw = { render: () => h(Icon, { name: 'trendingUp' }) }
 const TrendingDownIconRaw = { render: () => h(Icon, { name: 'trendingUp', class: 'rotate-180' }) }
 const DollarIconRaw = { render: () => h(Icon, { name: 'dollar' }) }
 const ChartIconRaw = { render: () => h(Icon, { name: 'chartBar' }) }
+const ServerIconRaw = { render: () => h(Icon, { name: 'server' }) }
 
 const INCOME_CATEGORIES: FinanceTransactionCategory[] = ['sale_revenue', 'other_income']
 const EXPENSE_CATEGORIES: FinanceTransactionCategory[] = [
   'upstream_topup',
   'server_cost',
+  'hosting_cost',
+  'cdn_cost',
   'domain_cost',
   'early_cost',
   'other_expense'
 ]
+const FORM_EXPENSE_CATEGORIES = EXPENSE_CATEGORIES.filter((category) => category !== 'server_cost')
+const PAYMENT_CHANNELS: FinancePaymentChannel[] = ['wechat', 'alipay', 'bank_transfer', 'other']
 
 const categoryLabel = (category: string) =>
   t(`admin.financeTransactions.categoryLabels.${category}`, category)
 
 const typeLabel = (type: string) =>
   type === 'income' ? t('admin.financeTransactions.typeLabels.income') : t('admin.financeTransactions.typeLabels.expense')
+
+const paymentChannelLabel = (channel: string) =>
+  t(`admin.financeTransactions.paymentChannelLabels.${channel}`, channel)
 
 // ===== List state =====
 const transactions = ref<FinanceTransaction[]>([])
@@ -408,6 +500,7 @@ const columns = computed<Column[]>(() => [
   { key: 'occurredAt', label: t('admin.financeTransactions.columns.occurredAt') },
   { key: 'type', label: t('admin.financeTransactions.columns.type') },
   { key: 'category', label: t('admin.financeTransactions.columns.category') },
+  { key: 'paymentChannel', label: t('admin.financeTransactions.columns.paymentChannel') },
   { key: 'amount', label: t('admin.financeTransactions.columns.amount') },
   { key: 'note', label: t('admin.financeTransactions.columns.note') },
   { key: 'source', label: t('admin.financeTransactions.columns.source') },
@@ -466,19 +559,49 @@ function handleSearch() {
   }, 300)
 }
 
-// ===== Summary (month range) =====
+// ===== Summary (all-time by default, with a Shanghai-month drilldown) =====
+type SummaryMode = 'all' | 'month'
+
+const emptySummary = (): FinanceTransactionSummary => ({
+  range_from: '',
+  range_to: '',
+  total_income_fen: 0,
+  total_expense_fen: 0,
+  net_profit_fen: 0,
+  margin_percent: 0,
+  by_category: [],
+  monthly_series: []
+})
+
+const summaryMode = ref<SummaryMode>('all')
 const summaryMonthOffset = ref(0) // 0 = current month, -1 = last month, ...
 
+function currentShanghaiYearMonth(offset = 0) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: 'numeric'
+  }).formatToParts(new Date())
+  const year = Number(parts.find((part) => part.type === 'year')?.value)
+  const month = Number(parts.find((part) => part.type === 'month')?.value)
+  const shifted = new Date(Date.UTC(year, month - 1 + offset, 1))
+  return { year: shifted.getUTCFullYear(), month: shifted.getUTCMonth() + 1 }
+}
+
 const summaryRange = computed(() => {
-  const now = new Date()
-  const base = new Date(now.getFullYear(), now.getMonth() + summaryMonthOffset.value, 1)
-  const from = new Date(base.getFullYear(), base.getMonth(), 1)
-  const to = new Date(base.getFullYear(), base.getMonth() + 1, 1)
-  return { from: Math.floor(from.getTime() / 1000), to: Math.floor(to.getTime() / 1000), label: base }
+  const { year, month } = currentShanghaiYearMonth(summaryMonthOffset.value)
+  const shanghaiOffsetMs = 8 * 60 * 60 * 1000
+  const fromMs = Date.UTC(year, month - 1, 1) - shanghaiOffsetMs
+  const toMs = Date.UTC(year, month, 1) - shanghaiOffsetMs
+  return {
+    from: Math.floor(fromMs / 1000),
+    to: Math.floor(toMs / 1000),
+    label: new Date(Date.UTC(year, month - 1, 1))
+  }
 })
 
 const rangeLabel = computed(() =>
-  summaryRange.value.label.toLocaleDateString(undefined, { year: 'numeric', month: 'long' })
+  summaryRange.value.label.toLocaleDateString(undefined, { year: 'numeric', month: 'long', timeZone: 'UTC' })
 )
 
 function shiftMonth(delta: number) {
@@ -486,23 +609,51 @@ function shiftMonth(delta: number) {
   loadSummary()
 }
 
-const summary = ref<FinanceTransactionSummary>({
-  range_from: '',
-  range_to: '',
-  total_income_fen: 0,
-  total_expense_fen: 0,
-  net_profit_fen: 0,
-  margin_percent: 0,
-  by_category: []
-})
+const summary = ref<FinanceTransactionSummary>(emptySummary())
+const allTimeSummary = ref<FinanceTransactionSummary>(emptySummary())
+
+async function setSummaryMode(mode: SummaryMode) {
+  if (summaryMode.value === mode) return
+  summaryMode.value = mode
+  await loadSummary()
+}
 
 async function loadSummary() {
   try {
-    summary.value = await adminAPI.financeTransactions.summary(summaryRange.value.from, summaryRange.value.to)
+    if (summaryMode.value === 'all') {
+      const loaded = await adminAPI.financeTransactions.summary(undefined, undefined, 'all')
+      allTimeSummary.value = loaded
+      summary.value = loaded
+      return
+    }
+    summary.value = await adminAPI.financeTransactions.summary(
+      summaryRange.value.from,
+      summaryRange.value.to,
+      'month'
+    )
   } catch (error: any) {
     console.error('Error loading finance summary:', error)
   }
 }
+
+async function refreshSummaryData() {
+  if (summaryMode.value === 'all') {
+    await loadSummary()
+    return
+  }
+  await Promise.all([
+    loadSummary(),
+    adminAPI.financeTransactions.summary(undefined, undefined, 'all').then((loaded) => {
+      allTimeSummary.value = loaded
+    })
+  ])
+}
+
+const serverFixedCostFen = computed(() =>
+  summary.value.by_category
+    .filter((item) => item.type === 'expense' && ['hosting_cost', 'server_cost'].includes(item.category))
+    .reduce((total, item) => total + item.total_fen, 0)
+)
 
 const categoryChartData = computed(() => {
   const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6']
@@ -524,6 +675,54 @@ const categoryChartOptions = {
   plugins: { legend: { display: false } }
 }
 
+const trendSeries = computed(() => {
+  const totalsByMonth = new Map(allTimeSummary.value.monthly_series.map((item) => [item.month, item]))
+  const current = currentShanghaiYearMonth()
+  return Array.from({ length: 12 }, (_, index) => {
+    const shifted = new Date(Date.UTC(current.year, current.month - 12 + index, 1))
+    const month = `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, '0')}`
+    return totalsByMonth.get(month) ?? {
+      month,
+      total_income_fen: 0,
+      total_expense_fen: 0,
+      net_profit_fen: 0
+    }
+  })
+})
+
+const hasTrendData = computed(() =>
+  trendSeries.value.some((item) => item.total_income_fen > 0 || item.total_expense_fen > 0)
+)
+
+const trendChartData = computed(() => ({
+  labels: trendSeries.value.map((item) => item.month),
+  datasets: [
+    {
+      label: t('admin.financeTransactions.summary.income'),
+      data: trendSeries.value.map((item) => item.total_income_fen / 100),
+      backgroundColor: '#10b981',
+      borderRadius: 4
+    },
+    {
+      label: t('admin.financeTransactions.summary.expense'),
+      data: trendSeries.value.map((item) => item.total_expense_fen / 100),
+      backgroundColor: '#ef4444',
+      borderRadius: 4
+    }
+  ]
+}))
+
+const trendChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: true, position: 'top' as const }
+  },
+  scales: {
+    y: { beginAtZero: true }
+  }
+}
+
 // ===== Create/Edit dialog =====
 const showEditDialog = ref(false)
 const saving = ref(false)
@@ -532,7 +731,8 @@ const isEditing = computed(() => !!editingTransaction.value)
 
 const form = reactive({
   type: 'expense' as FinanceTransactionType,
-  category: 'server_cost' as FinanceTransactionCategory,
+  category: 'hosting_cost' as FinanceTransactionCategory,
+  payment_channel: '' as FinancePaymentChannel | '',
   amount_yuan: '',
   occurred_at_str: '',
   note: '',
@@ -545,20 +745,34 @@ const typeOptions = computed(() => [
 ])
 
 const categoryOptionsForForm = computed(() => {
-  const list = form.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
+  const list =
+    form.type === 'income'
+      ? INCOME_CATEGORIES
+      : form.category === 'server_cost'
+        ? [...FORM_EXPENSE_CATEGORIES, 'server_cost' as FinanceTransactionCategory]
+        : FORM_EXPENSE_CATEGORIES
   return list.map((c) => ({ value: c, label: categoryLabel(c) }))
 })
 
+const paymentChannelOptions = computed(() => [
+  { value: '', label: t('admin.financeTransactions.form.selectPaymentChannel') },
+  ...PAYMENT_CHANNELS.map((channel) => ({ value: channel, label: paymentChannelLabel(channel) }))
+])
+
 function onTypeChange() {
-  const list = form.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
+  const list = form.type === 'income' ? INCOME_CATEGORIES : FORM_EXPENSE_CATEGORIES
   if (!list.includes(form.category)) {
     form.category = list[0]
+  }
+  if (form.type === 'expense') {
+    form.payment_channel = ''
   }
 }
 
 function resetForm() {
   form.type = 'expense'
-  form.category = 'server_cost'
+  form.category = 'hosting_cost'
+  form.payment_channel = ''
   form.amount_yuan = ''
   form.occurred_at_str = formatDateTimeLocalInput(Math.floor(Date.now() / 1000))
   form.note = ''
@@ -569,6 +783,7 @@ function resetForm() {
 function fillFormFromTransaction(row: FinanceTransaction) {
   form.type = row.type
   form.category = row.category
+  form.payment_channel = row.payment_channel || ''
   form.amount_yuan = (row.amount_fen / 100).toFixed(2)
   form.occurred_at_str = formatDateTimeLocalInput(Math.floor(new Date(row.occurred_at).getTime() / 1000))
   form.note = row.note || ''
@@ -599,6 +814,14 @@ async function handleSave() {
     appStore.showError(t('admin.financeTransactions.form.invalidAmount'))
     return
   }
+  if (form.type === 'income' && !form.receipt_key) {
+    appStore.showError(t('admin.financeTransactions.form.receiptRequired'))
+    return
+  }
+  if (form.type === 'income' && !form.payment_channel) {
+    appStore.showError(t('admin.financeTransactions.form.paymentChannelRequired'))
+    return
+  }
   const occurredAt = parseDateTimeLocalInput(form.occurred_at_str)
 
   saving.value = true
@@ -610,7 +833,8 @@ async function handleSave() {
         amount_fen: amountFen,
         occurred_at: occurredAt ?? undefined,
         note: form.note || undefined,
-        receipt_key: form.receipt_key || undefined
+        receipt_key: form.receipt_key || undefined,
+        payment_channel: form.type === 'income' ? form.payment_channel || undefined : undefined
       })
       appStore.showSuccess(t('common.success'))
     } else {
@@ -620,13 +844,14 @@ async function handleSave() {
         amount_fen: amountFen,
         occurred_at: occurredAt ?? undefined,
         note: form.note,
-        receipt_key: form.receipt_key
+        receipt_key: form.receipt_key,
+        payment_channel: form.type === 'income' ? form.payment_channel : ''
       })
       appStore.showSuccess(t('common.success'))
     }
     showEditDialog.value = false
     editingTransaction.value = null
-    await Promise.all([loadTransactions(), loadSummary()])
+    await Promise.all([loadTransactions(), refreshSummaryData()])
   } catch (error: any) {
     console.error('Failed to save finance transaction:', error)
     appStore.showError(
@@ -738,7 +963,7 @@ async function confirmDelete() {
     appStore.showSuccess(t('common.success'))
     showDeleteDialog.value = false
     deletingTransaction.value = null
-    await Promise.all([loadTransactions(), loadSummary()])
+    await Promise.all([loadTransactions(), refreshSummaryData()])
   } catch (error: any) {
     console.error('Failed to delete finance transaction:', error)
     appStore.showError(error.response?.data?.detail || t('admin.financeTransactions.failedToDelete'))

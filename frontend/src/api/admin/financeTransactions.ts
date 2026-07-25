@@ -50,9 +50,17 @@ export async function deleteTransaction(id: number): Promise<{ message: string }
   return data
 }
 
-export async function summary(from?: number, to?: number): Promise<FinanceTransactionSummary> {
+export async function summary(
+  from?: number,
+  to?: number,
+  scope?: 'all' | 'month'
+): Promise<FinanceTransactionSummary> {
+  const params: Record<string, number | string> = {}
+  if (from !== undefined) params.from = from
+  if (to !== undefined) params.to = to
+  if (scope !== undefined) params.scope = scope
   const { data } = await apiClient.get<FinanceTransactionSummary>('/admin/finance-transactions/summary', {
-    params: { from, to }
+    params
   })
   return data
 }

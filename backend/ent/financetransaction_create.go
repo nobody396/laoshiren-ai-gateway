@@ -74,6 +74,20 @@ func (_c *FinanceTransactionCreate) SetNillableReceiptKey(v *string) *FinanceTra
 	return _c
 }
 
+// SetPaymentChannel sets the "payment_channel" field.
+func (_c *FinanceTransactionCreate) SetPaymentChannel(v string) *FinanceTransactionCreate {
+	_c.mutation.SetPaymentChannel(v)
+	return _c
+}
+
+// SetNillablePaymentChannel sets the "payment_channel" field if the given value is not nil.
+func (_c *FinanceTransactionCreate) SetNillablePaymentChannel(v *string) *FinanceTransactionCreate {
+	if v != nil {
+		_c.SetPaymentChannel(*v)
+	}
+	return _c
+}
+
 // SetSource sets the "source" field.
 func (_c *FinanceTransactionCreate) SetSource(v string) *FinanceTransactionCreate {
 	_c.mutation.SetSource(v)
@@ -213,6 +227,11 @@ func (_c *FinanceTransactionCreate) check() error {
 			return &ValidationError{Name: "receipt_key", err: fmt.Errorf(`ent: validator failed for field "FinanceTransaction.receipt_key": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.PaymentChannel(); ok {
+		if err := financetransaction.PaymentChannelValidator(v); err != nil {
+			return &ValidationError{Name: "payment_channel", err: fmt.Errorf(`ent: validator failed for field "FinanceTransaction.payment_channel": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.Source(); !ok {
 		return &ValidationError{Name: "source", err: errors.New(`ent: missing required field "FinanceTransaction.source"`)}
 	}
@@ -277,6 +296,10 @@ func (_c *FinanceTransactionCreate) createSpec() (*FinanceTransaction, *sqlgraph
 	if value, ok := _c.mutation.ReceiptKey(); ok {
 		_spec.SetField(financetransaction.FieldReceiptKey, field.TypeString, value)
 		_node.ReceiptKey = &value
+	}
+	if value, ok := _c.mutation.PaymentChannel(); ok {
+		_spec.SetField(financetransaction.FieldPaymentChannel, field.TypeString, value)
+		_node.PaymentChannel = &value
 	}
 	if value, ok := _c.mutation.Source(); ok {
 		_spec.SetField(financetransaction.FieldSource, field.TypeString, value)
@@ -433,6 +456,24 @@ func (u *FinanceTransactionUpsert) UpdateReceiptKey() *FinanceTransactionUpsert 
 // ClearReceiptKey clears the value of the "receipt_key" field.
 func (u *FinanceTransactionUpsert) ClearReceiptKey() *FinanceTransactionUpsert {
 	u.SetNull(financetransaction.FieldReceiptKey)
+	return u
+}
+
+// SetPaymentChannel sets the "payment_channel" field.
+func (u *FinanceTransactionUpsert) SetPaymentChannel(v string) *FinanceTransactionUpsert {
+	u.Set(financetransaction.FieldPaymentChannel, v)
+	return u
+}
+
+// UpdatePaymentChannel sets the "payment_channel" field to the value that was provided on create.
+func (u *FinanceTransactionUpsert) UpdatePaymentChannel() *FinanceTransactionUpsert {
+	u.SetExcluded(financetransaction.FieldPaymentChannel)
+	return u
+}
+
+// ClearPaymentChannel clears the value of the "payment_channel" field.
+func (u *FinanceTransactionUpsert) ClearPaymentChannel() *FinanceTransactionUpsert {
+	u.SetNull(financetransaction.FieldPaymentChannel)
 	return u
 }
 
@@ -631,6 +672,27 @@ func (u *FinanceTransactionUpsertOne) UpdateReceiptKey() *FinanceTransactionUpse
 func (u *FinanceTransactionUpsertOne) ClearReceiptKey() *FinanceTransactionUpsertOne {
 	return u.Update(func(s *FinanceTransactionUpsert) {
 		s.ClearReceiptKey()
+	})
+}
+
+// SetPaymentChannel sets the "payment_channel" field.
+func (u *FinanceTransactionUpsertOne) SetPaymentChannel(v string) *FinanceTransactionUpsertOne {
+	return u.Update(func(s *FinanceTransactionUpsert) {
+		s.SetPaymentChannel(v)
+	})
+}
+
+// UpdatePaymentChannel sets the "payment_channel" field to the value that was provided on create.
+func (u *FinanceTransactionUpsertOne) UpdatePaymentChannel() *FinanceTransactionUpsertOne {
+	return u.Update(func(s *FinanceTransactionUpsert) {
+		s.UpdatePaymentChannel()
+	})
+}
+
+// ClearPaymentChannel clears the value of the "payment_channel" field.
+func (u *FinanceTransactionUpsertOne) ClearPaymentChannel() *FinanceTransactionUpsertOne {
+	return u.Update(func(s *FinanceTransactionUpsert) {
+		s.ClearPaymentChannel()
 	})
 }
 
@@ -1003,6 +1065,27 @@ func (u *FinanceTransactionUpsertBulk) UpdateReceiptKey() *FinanceTransactionUps
 func (u *FinanceTransactionUpsertBulk) ClearReceiptKey() *FinanceTransactionUpsertBulk {
 	return u.Update(func(s *FinanceTransactionUpsert) {
 		s.ClearReceiptKey()
+	})
+}
+
+// SetPaymentChannel sets the "payment_channel" field.
+func (u *FinanceTransactionUpsertBulk) SetPaymentChannel(v string) *FinanceTransactionUpsertBulk {
+	return u.Update(func(s *FinanceTransactionUpsert) {
+		s.SetPaymentChannel(v)
+	})
+}
+
+// UpdatePaymentChannel sets the "payment_channel" field to the value that was provided on create.
+func (u *FinanceTransactionUpsertBulk) UpdatePaymentChannel() *FinanceTransactionUpsertBulk {
+	return u.Update(func(s *FinanceTransactionUpsert) {
+		s.UpdatePaymentChannel()
+	})
+}
+
+// ClearPaymentChannel clears the value of the "payment_channel" field.
+func (u *FinanceTransactionUpsertBulk) ClearPaymentChannel() *FinanceTransactionUpsertBulk {
+	return u.Update(func(s *FinanceTransactionUpsert) {
+		s.ClearPaymentChannel()
 	})
 }
 

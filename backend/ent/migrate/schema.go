@@ -783,6 +783,7 @@ var (
 		{Name: "occurred_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "note", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "receipt_key", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "payment_channel", Type: field.TypeString, Nullable: true, Size: 20},
 		{Name: "source", Type: field.TypeString, Size: 10, Default: "manual"},
 		{Name: "created_by", Type: field.TypeInt64, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
@@ -812,7 +813,7 @@ var (
 			{
 				Name:    "financetransaction_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{FinanceTransactionsColumns[9]},
+				Columns: []*schema.Column{FinanceTransactionsColumns[10]},
 			},
 		},
 	}

@@ -3967,6 +3967,7 @@ export default {
         occurredAt: 'Occurred At',
         type: 'Type',
         category: 'Category',
+        paymentChannel: 'Payment Channel',
         amount: 'Amount',
         note: 'Note',
         source: 'Source',
@@ -3985,23 +3986,41 @@ export default {
         sale_revenue: 'Sale Revenue',
         other_income: 'Other Income',
         upstream_topup: 'Upstream Top-up',
-        server_cost: 'Server Cost',
+        server_cost: 'Server Cost (Legacy)',
+        hosting_cost: 'Fixed Hosting Cost',
+        cdn_cost: 'Variable CDN Cost',
         domain_cost: 'Domain Cost',
         early_cost: 'Early-stage Cost',
         other_expense: 'Other Expense'
+      },
+      paymentChannelLabels: {
+        wechat: 'WeChat',
+        alipay: 'Alipay',
+        bank_transfer: 'Bank Transfer',
+        other: 'Other / Historical Unknown'
       },
       summary: {
         income: 'Revenue',
         expense: 'Cost',
         netProfit: 'Net Profit',
         margin: 'Margin',
-        rangeTitle: 'Period',
+        serverFixedCost: 'Fixed Hosting Cost',
+        rangeTitle: 'Summary Range',
+        allTime: 'Cumulative',
+        byMonth: 'By Month',
+        allTimeHint: 'Shows cumulative totals across the full ledger by default',
         byCategory: 'By Category',
-        noData: 'No transactions this month'
+        noData: 'No transactions in this range',
+        trendTitle: 'Revenue and Cost — Last 12 Months',
+        trendHint: 'Grouped by calendar month in Asia/Shanghai; amounts are CNY',
+        noTrendData: 'No transactions in the last 12 months'
       },
       form: {
         type: 'Type',
         category: 'Category',
+        paymentChannel: 'Payment Channel',
+        selectPaymentChannel: 'Select a payment channel',
+        paymentChannelHint: 'Required for income to distinguish WeChat, Alipay, or other manual receipts',
         amount: 'Amount (CNY)',
         occurredAt: 'Occurred At',
         note: 'Note',
@@ -4010,8 +4029,11 @@ export default {
         uploading: 'Uploading...',
         receiptAttached: 'Receipt attached',
         receiptHint: 'Compressed to WebP in your browser before upload to keep storage small',
+        incomeReceiptHint: 'Income requires a receipt screenshot, compressed to WebP before upload',
         uploadFailed: 'Failed to upload receipt',
-        invalidAmount: 'Enter an amount greater than 0'
+        invalidAmount: 'Enter an amount greater than 0',
+        receiptRequired: 'Income requires a receipt image',
+        paymentChannelRequired: 'Income requires a payment channel'
       }
     },
 

@@ -29,6 +29,8 @@ type FinanceTransaction struct {
 	Note *string `json:"note,omitempty"`
 	// 凭证图片的 S3 object key
 	ReceiptKey *string `json:"receipt_key,omitempty"`
+	// 收入收款渠道：wechat / alipay / bank_transfer / other
+	PaymentChannel *string `json:"payment_channel,omitempty"`
 	// manual / skill
 	Source string `json:"source,omitempty"`
 	// 创建人用户ID（管理员）
@@ -47,7 +49,7 @@ func (*FinanceTransaction) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case financetransaction.FieldID, financetransaction.FieldAmountFen, financetransaction.FieldCreatedBy:
 			values[i] = new(sql.NullInt64)
-		case financetransaction.FieldType, financetransaction.FieldCategory, financetransaction.FieldNote, financetransaction.FieldReceiptKey, financetransaction.FieldSource:
+		case financetransaction.FieldType, financetransaction.FieldCategory, financetransaction.FieldNote, financetransaction.FieldReceiptKey, financetransaction.FieldPaymentChannel, financetransaction.FieldSource:
 			values[i] = new(sql.NullString)
 		case financetransaction.FieldOccurredAt, financetransaction.FieldCreatedAt, financetransaction.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -109,6 +111,13 @@ func (_m *FinanceTransaction) assignValues(columns []string, values []any) error
 			} else if value.Valid {
 				_m.ReceiptKey = new(string)
 				*_m.ReceiptKey = value.String
+			}
+		case financetransaction.FieldPaymentChannel:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field payment_channel", values[i])
+			} else if value.Valid {
+				_m.PaymentChannel = new(string)
+				*_m.PaymentChannel = value.String
 			}
 		case financetransaction.FieldSource:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -190,6 +199,11 @@ func (_m *FinanceTransaction) String() string {
 	builder.WriteString(", ")
 	if v := _m.ReceiptKey; v != nil {
 		builder.WriteString("receipt_key=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.PaymentChannel; v != nil {
+		builder.WriteString("payment_channel=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

@@ -17,6 +17,10 @@ type AnnouncementHandler struct {
 	announcementService *service.AnnouncementService
 }
 
+type markPopupBatchPromptedRequest struct {
+	ThroughAnnouncementID int64 `json:"through_announcement_id" binding:"required,gt=0"`
+}
+
 // NewAnnouncementHandler creates a new user announcement handler
 func NewAnnouncementHandler(announcementService *service.AnnouncementService) *AnnouncementHandler {
 	return &AnnouncementHandler{
@@ -68,6 +72,50 @@ func (h *AnnouncementHandler) MarkRead(c *gin.Context) {
 		return
 	}
 
+	response.Success(c, gin.H{"message": "ok"})
+}
+
+// PopupState returns the delivery cursor used to avoid replaying an old popup backlog.
+// GET /api/v1/announcements/popup-state
+func (h *AnnouncementHandler) PopupState(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not found in context")
+		return
+	}
+
+	lastPromptedID, err := h.announcementService.GetPopupState(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"last_prompted_announcement_id": lastPromptedID})
+}
+
+// MarkPopupBatchPrompted records that a group of announcements already interrupted the user.
+// It intentionally does not mark any individual announcement as read.
+// POST /api/v1/announcements/popup-prompted
+func (h *AnnouncementHandler) MarkPopupBatchPrompted(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not found in context")
+		return
+	}
+
+	var req markPopupBatchPromptedRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request")
+		return
+	}
+
+	if err := h.announcementService.MarkPopupBatchPrompted(
+		c.Request.Context(),
+		subject.UserID,
+		req.ThroughAnnouncementID,
+	); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
 	response.Success(c, gin.H{"message": "ok"})
 }
 

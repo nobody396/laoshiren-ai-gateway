@@ -89,6 +89,8 @@ func RegisterUserRoutes(
 		announcements := authenticated.Group("/announcements")
 		{
 			announcements.GET("", h.Announcement.List)
+			announcements.GET("/popup-state", h.Announcement.PopupState)
+			announcements.POST("/popup-prompted", h.Announcement.MarkPopupBatchPrompted)
 			announcements.POST("/:id/read", h.Announcement.MarkRead)
 		}
 

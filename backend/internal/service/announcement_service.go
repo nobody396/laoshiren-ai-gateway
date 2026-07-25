@@ -325,6 +325,32 @@ func (s *AnnouncementService) MarkRead(ctx context.Context, userID, announcement
 	return nil
 }
 
+func (s *AnnouncementService) GetPopupState(ctx context.Context, userID int64) (int64, error) {
+	lastPromptedID, err := s.readRepo.GetLastPromptedAnnouncementID(ctx, userID)
+	if err != nil {
+		return 0, fmt.Errorf("get announcement popup state: %w", err)
+	}
+	return lastPromptedID, nil
+}
+
+func (s *AnnouncementService) MarkPopupBatchPrompted(
+	ctx context.Context,
+	userID, throughAnnouncementID int64,
+) error {
+	if throughAnnouncementID <= 0 {
+		return fmt.Errorf("mark announcement popup batch: invalid through announcement id")
+	}
+	if err := s.readRepo.MarkPopupBatchPrompted(
+		ctx,
+		userID,
+		throughAnnouncementID,
+		time.Now(),
+	); err != nil {
+		return fmt.Errorf("mark announcement popup batch: %w", err)
+	}
+	return nil
+}
+
 func (s *AnnouncementService) ListUserReadStatus(
 	ctx context.Context,
 	announcementID int64,

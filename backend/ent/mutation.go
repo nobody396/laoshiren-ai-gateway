@@ -24,6 +24,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/announcement"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/announcementread"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/apikey"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/changelogentry"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/commissionrecord"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/errorpassthroughrule"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedback"
@@ -76,6 +77,7 @@ const (
 	TypeAdminUserRole           = "AdminUserRole"
 	TypeAnnouncement            = "Announcement"
 	TypeAnnouncementRead        = "AnnouncementRead"
+	TypeChangelogEntry          = "ChangelogEntry"
 	TypeCommissionRecord        = "CommissionRecord"
 	TypeErrorPassthroughRule    = "ErrorPassthroughRule"
 	TypeFeedback                = "Feedback"
@@ -11986,6 +11988,1293 @@ func (m *AnnouncementReadMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown AnnouncementRead edge %s", name)
+}
+
+// ChangelogEntryMutation represents an operation that mutates the ChangelogEntry nodes in the graph.
+type ChangelogEntryMutation struct {
+	config
+	op                     Op
+	typ                    string
+	id                     *int64
+	slug                   *string
+	title                  *string
+	summary                *string
+	rationale              *string
+	content                *string
+	category               *string
+	related_products       *[]string
+	appendrelated_products []string
+	status                 *string
+	published_at           *time.Time
+	commit_sha             *string
+	pull_request_url       *string
+	created_by             *int64
+	addcreated_by          *int64
+	updated_by             *int64
+	addupdated_by          *int64
+	created_at             *time.Time
+	updated_at             *time.Time
+	clearedFields          map[string]struct{}
+	done                   bool
+	oldValue               func(context.Context) (*ChangelogEntry, error)
+	predicates             []predicate.ChangelogEntry
+}
+
+var _ ent.Mutation = (*ChangelogEntryMutation)(nil)
+
+// changelogentryOption allows management of the mutation configuration using functional options.
+type changelogentryOption func(*ChangelogEntryMutation)
+
+// newChangelogEntryMutation creates new mutation for the ChangelogEntry entity.
+func newChangelogEntryMutation(c config, op Op, opts ...changelogentryOption) *ChangelogEntryMutation {
+	m := &ChangelogEntryMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeChangelogEntry,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withChangelogEntryID sets the ID field of the mutation.
+func withChangelogEntryID(id int64) changelogentryOption {
+	return func(m *ChangelogEntryMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ChangelogEntry
+		)
+		m.oldValue = func(ctx context.Context) (*ChangelogEntry, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ChangelogEntry.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withChangelogEntry sets the old ChangelogEntry of the mutation.
+func withChangelogEntry(node *ChangelogEntry) changelogentryOption {
+	return func(m *ChangelogEntryMutation) {
+		m.oldValue = func(context.Context) (*ChangelogEntry, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ChangelogEntryMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ChangelogEntryMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ChangelogEntryMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ChangelogEntryMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ChangelogEntry.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetSlug sets the "slug" field.
+func (m *ChangelogEntryMutation) SetSlug(s string) {
+	m.slug = &s
+}
+
+// Slug returns the value of the "slug" field in the mutation.
+func (m *ChangelogEntryMutation) Slug() (r string, exists bool) {
+	v := m.slug
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSlug returns the old "slug" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldSlug(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSlug is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSlug requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSlug: %w", err)
+	}
+	return oldValue.Slug, nil
+}
+
+// ResetSlug resets all changes to the "slug" field.
+func (m *ChangelogEntryMutation) ResetSlug() {
+	m.slug = nil
+}
+
+// SetTitle sets the "title" field.
+func (m *ChangelogEntryMutation) SetTitle(s string) {
+	m.title = &s
+}
+
+// Title returns the value of the "title" field in the mutation.
+func (m *ChangelogEntryMutation) Title() (r string, exists bool) {
+	v := m.title
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTitle returns the old "title" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldTitle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTitle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
+	}
+	return oldValue.Title, nil
+}
+
+// ResetTitle resets all changes to the "title" field.
+func (m *ChangelogEntryMutation) ResetTitle() {
+	m.title = nil
+}
+
+// SetSummary sets the "summary" field.
+func (m *ChangelogEntryMutation) SetSummary(s string) {
+	m.summary = &s
+}
+
+// Summary returns the value of the "summary" field in the mutation.
+func (m *ChangelogEntryMutation) Summary() (r string, exists bool) {
+	v := m.summary
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSummary returns the old "summary" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldSummary(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSummary is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSummary requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSummary: %w", err)
+	}
+	return oldValue.Summary, nil
+}
+
+// ResetSummary resets all changes to the "summary" field.
+func (m *ChangelogEntryMutation) ResetSummary() {
+	m.summary = nil
+}
+
+// SetRationale sets the "rationale" field.
+func (m *ChangelogEntryMutation) SetRationale(s string) {
+	m.rationale = &s
+}
+
+// Rationale returns the value of the "rationale" field in the mutation.
+func (m *ChangelogEntryMutation) Rationale() (r string, exists bool) {
+	v := m.rationale
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRationale returns the old "rationale" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldRationale(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRationale is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRationale requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRationale: %w", err)
+	}
+	return oldValue.Rationale, nil
+}
+
+// ResetRationale resets all changes to the "rationale" field.
+func (m *ChangelogEntryMutation) ResetRationale() {
+	m.rationale = nil
+}
+
+// SetContent sets the "content" field.
+func (m *ChangelogEntryMutation) SetContent(s string) {
+	m.content = &s
+}
+
+// Content returns the value of the "content" field in the mutation.
+func (m *ChangelogEntryMutation) Content() (r string, exists bool) {
+	v := m.content
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContent returns the old "content" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldContent(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldContent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldContent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContent: %w", err)
+	}
+	return oldValue.Content, nil
+}
+
+// ResetContent resets all changes to the "content" field.
+func (m *ChangelogEntryMutation) ResetContent() {
+	m.content = nil
+}
+
+// SetCategory sets the "category" field.
+func (m *ChangelogEntryMutation) SetCategory(s string) {
+	m.category = &s
+}
+
+// Category returns the value of the "category" field in the mutation.
+func (m *ChangelogEntryMutation) Category() (r string, exists bool) {
+	v := m.category
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCategory returns the old "category" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldCategory(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCategory is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCategory requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCategory: %w", err)
+	}
+	return oldValue.Category, nil
+}
+
+// ResetCategory resets all changes to the "category" field.
+func (m *ChangelogEntryMutation) ResetCategory() {
+	m.category = nil
+}
+
+// SetRelatedProducts sets the "related_products" field.
+func (m *ChangelogEntryMutation) SetRelatedProducts(s []string) {
+	m.related_products = &s
+	m.appendrelated_products = nil
+}
+
+// RelatedProducts returns the value of the "related_products" field in the mutation.
+func (m *ChangelogEntryMutation) RelatedProducts() (r []string, exists bool) {
+	v := m.related_products
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRelatedProducts returns the old "related_products" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldRelatedProducts(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRelatedProducts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRelatedProducts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRelatedProducts: %w", err)
+	}
+	return oldValue.RelatedProducts, nil
+}
+
+// AppendRelatedProducts adds s to the "related_products" field.
+func (m *ChangelogEntryMutation) AppendRelatedProducts(s []string) {
+	m.appendrelated_products = append(m.appendrelated_products, s...)
+}
+
+// AppendedRelatedProducts returns the list of values that were appended to the "related_products" field in this mutation.
+func (m *ChangelogEntryMutation) AppendedRelatedProducts() ([]string, bool) {
+	if len(m.appendrelated_products) == 0 {
+		return nil, false
+	}
+	return m.appendrelated_products, true
+}
+
+// ClearRelatedProducts clears the value of the "related_products" field.
+func (m *ChangelogEntryMutation) ClearRelatedProducts() {
+	m.related_products = nil
+	m.appendrelated_products = nil
+	m.clearedFields[changelogentry.FieldRelatedProducts] = struct{}{}
+}
+
+// RelatedProductsCleared returns if the "related_products" field was cleared in this mutation.
+func (m *ChangelogEntryMutation) RelatedProductsCleared() bool {
+	_, ok := m.clearedFields[changelogentry.FieldRelatedProducts]
+	return ok
+}
+
+// ResetRelatedProducts resets all changes to the "related_products" field.
+func (m *ChangelogEntryMutation) ResetRelatedProducts() {
+	m.related_products = nil
+	m.appendrelated_products = nil
+	delete(m.clearedFields, changelogentry.FieldRelatedProducts)
+}
+
+// SetStatus sets the "status" field.
+func (m *ChangelogEntryMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *ChangelogEntryMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *ChangelogEntryMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetPublishedAt sets the "published_at" field.
+func (m *ChangelogEntryMutation) SetPublishedAt(t time.Time) {
+	m.published_at = &t
+}
+
+// PublishedAt returns the value of the "published_at" field in the mutation.
+func (m *ChangelogEntryMutation) PublishedAt() (r time.Time, exists bool) {
+	v := m.published_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPublishedAt returns the old "published_at" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldPublishedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPublishedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPublishedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPublishedAt: %w", err)
+	}
+	return oldValue.PublishedAt, nil
+}
+
+// ClearPublishedAt clears the value of the "published_at" field.
+func (m *ChangelogEntryMutation) ClearPublishedAt() {
+	m.published_at = nil
+	m.clearedFields[changelogentry.FieldPublishedAt] = struct{}{}
+}
+
+// PublishedAtCleared returns if the "published_at" field was cleared in this mutation.
+func (m *ChangelogEntryMutation) PublishedAtCleared() bool {
+	_, ok := m.clearedFields[changelogentry.FieldPublishedAt]
+	return ok
+}
+
+// ResetPublishedAt resets all changes to the "published_at" field.
+func (m *ChangelogEntryMutation) ResetPublishedAt() {
+	m.published_at = nil
+	delete(m.clearedFields, changelogentry.FieldPublishedAt)
+}
+
+// SetCommitSha sets the "commit_sha" field.
+func (m *ChangelogEntryMutation) SetCommitSha(s string) {
+	m.commit_sha = &s
+}
+
+// CommitSha returns the value of the "commit_sha" field in the mutation.
+func (m *ChangelogEntryMutation) CommitSha() (r string, exists bool) {
+	v := m.commit_sha
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCommitSha returns the old "commit_sha" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldCommitSha(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCommitSha is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCommitSha requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCommitSha: %w", err)
+	}
+	return oldValue.CommitSha, nil
+}
+
+// ClearCommitSha clears the value of the "commit_sha" field.
+func (m *ChangelogEntryMutation) ClearCommitSha() {
+	m.commit_sha = nil
+	m.clearedFields[changelogentry.FieldCommitSha] = struct{}{}
+}
+
+// CommitShaCleared returns if the "commit_sha" field was cleared in this mutation.
+func (m *ChangelogEntryMutation) CommitShaCleared() bool {
+	_, ok := m.clearedFields[changelogentry.FieldCommitSha]
+	return ok
+}
+
+// ResetCommitSha resets all changes to the "commit_sha" field.
+func (m *ChangelogEntryMutation) ResetCommitSha() {
+	m.commit_sha = nil
+	delete(m.clearedFields, changelogentry.FieldCommitSha)
+}
+
+// SetPullRequestURL sets the "pull_request_url" field.
+func (m *ChangelogEntryMutation) SetPullRequestURL(s string) {
+	m.pull_request_url = &s
+}
+
+// PullRequestURL returns the value of the "pull_request_url" field in the mutation.
+func (m *ChangelogEntryMutation) PullRequestURL() (r string, exists bool) {
+	v := m.pull_request_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPullRequestURL returns the old "pull_request_url" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldPullRequestURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPullRequestURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPullRequestURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPullRequestURL: %w", err)
+	}
+	return oldValue.PullRequestURL, nil
+}
+
+// ClearPullRequestURL clears the value of the "pull_request_url" field.
+func (m *ChangelogEntryMutation) ClearPullRequestURL() {
+	m.pull_request_url = nil
+	m.clearedFields[changelogentry.FieldPullRequestURL] = struct{}{}
+}
+
+// PullRequestURLCleared returns if the "pull_request_url" field was cleared in this mutation.
+func (m *ChangelogEntryMutation) PullRequestURLCleared() bool {
+	_, ok := m.clearedFields[changelogentry.FieldPullRequestURL]
+	return ok
+}
+
+// ResetPullRequestURL resets all changes to the "pull_request_url" field.
+func (m *ChangelogEntryMutation) ResetPullRequestURL() {
+	m.pull_request_url = nil
+	delete(m.clearedFields, changelogentry.FieldPullRequestURL)
+}
+
+// SetCreatedBy sets the "created_by" field.
+func (m *ChangelogEntryMutation) SetCreatedBy(i int64) {
+	m.created_by = &i
+	m.addcreated_by = nil
+}
+
+// CreatedBy returns the value of the "created_by" field in the mutation.
+func (m *ChangelogEntryMutation) CreatedBy() (r int64, exists bool) {
+	v := m.created_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedBy returns the old "created_by" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldCreatedBy(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedBy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedBy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedBy: %w", err)
+	}
+	return oldValue.CreatedBy, nil
+}
+
+// AddCreatedBy adds i to the "created_by" field.
+func (m *ChangelogEntryMutation) AddCreatedBy(i int64) {
+	if m.addcreated_by != nil {
+		*m.addcreated_by += i
+	} else {
+		m.addcreated_by = &i
+	}
+}
+
+// AddedCreatedBy returns the value that was added to the "created_by" field in this mutation.
+func (m *ChangelogEntryMutation) AddedCreatedBy() (r int64, exists bool) {
+	v := m.addcreated_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearCreatedBy clears the value of the "created_by" field.
+func (m *ChangelogEntryMutation) ClearCreatedBy() {
+	m.created_by = nil
+	m.addcreated_by = nil
+	m.clearedFields[changelogentry.FieldCreatedBy] = struct{}{}
+}
+
+// CreatedByCleared returns if the "created_by" field was cleared in this mutation.
+func (m *ChangelogEntryMutation) CreatedByCleared() bool {
+	_, ok := m.clearedFields[changelogentry.FieldCreatedBy]
+	return ok
+}
+
+// ResetCreatedBy resets all changes to the "created_by" field.
+func (m *ChangelogEntryMutation) ResetCreatedBy() {
+	m.created_by = nil
+	m.addcreated_by = nil
+	delete(m.clearedFields, changelogentry.FieldCreatedBy)
+}
+
+// SetUpdatedBy sets the "updated_by" field.
+func (m *ChangelogEntryMutation) SetUpdatedBy(i int64) {
+	m.updated_by = &i
+	m.addupdated_by = nil
+}
+
+// UpdatedBy returns the value of the "updated_by" field in the mutation.
+func (m *ChangelogEntryMutation) UpdatedBy() (r int64, exists bool) {
+	v := m.updated_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedBy returns the old "updated_by" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldUpdatedBy(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedBy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedBy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedBy: %w", err)
+	}
+	return oldValue.UpdatedBy, nil
+}
+
+// AddUpdatedBy adds i to the "updated_by" field.
+func (m *ChangelogEntryMutation) AddUpdatedBy(i int64) {
+	if m.addupdated_by != nil {
+		*m.addupdated_by += i
+	} else {
+		m.addupdated_by = &i
+	}
+}
+
+// AddedUpdatedBy returns the value that was added to the "updated_by" field in this mutation.
+func (m *ChangelogEntryMutation) AddedUpdatedBy() (r int64, exists bool) {
+	v := m.addupdated_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearUpdatedBy clears the value of the "updated_by" field.
+func (m *ChangelogEntryMutation) ClearUpdatedBy() {
+	m.updated_by = nil
+	m.addupdated_by = nil
+	m.clearedFields[changelogentry.FieldUpdatedBy] = struct{}{}
+}
+
+// UpdatedByCleared returns if the "updated_by" field was cleared in this mutation.
+func (m *ChangelogEntryMutation) UpdatedByCleared() bool {
+	_, ok := m.clearedFields[changelogentry.FieldUpdatedBy]
+	return ok
+}
+
+// ResetUpdatedBy resets all changes to the "updated_by" field.
+func (m *ChangelogEntryMutation) ResetUpdatedBy() {
+	m.updated_by = nil
+	m.addupdated_by = nil
+	delete(m.clearedFields, changelogentry.FieldUpdatedBy)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ChangelogEntryMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ChangelogEntryMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ChangelogEntryMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ChangelogEntryMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ChangelogEntryMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ChangelogEntry entity.
+// If the ChangelogEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChangelogEntryMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ChangelogEntryMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// Where appends a list predicates to the ChangelogEntryMutation builder.
+func (m *ChangelogEntryMutation) Where(ps ...predicate.ChangelogEntry) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ChangelogEntryMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ChangelogEntryMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ChangelogEntry, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ChangelogEntryMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ChangelogEntryMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ChangelogEntry).
+func (m *ChangelogEntryMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ChangelogEntryMutation) Fields() []string {
+	fields := make([]string, 0, 15)
+	if m.slug != nil {
+		fields = append(fields, changelogentry.FieldSlug)
+	}
+	if m.title != nil {
+		fields = append(fields, changelogentry.FieldTitle)
+	}
+	if m.summary != nil {
+		fields = append(fields, changelogentry.FieldSummary)
+	}
+	if m.rationale != nil {
+		fields = append(fields, changelogentry.FieldRationale)
+	}
+	if m.content != nil {
+		fields = append(fields, changelogentry.FieldContent)
+	}
+	if m.category != nil {
+		fields = append(fields, changelogentry.FieldCategory)
+	}
+	if m.related_products != nil {
+		fields = append(fields, changelogentry.FieldRelatedProducts)
+	}
+	if m.status != nil {
+		fields = append(fields, changelogentry.FieldStatus)
+	}
+	if m.published_at != nil {
+		fields = append(fields, changelogentry.FieldPublishedAt)
+	}
+	if m.commit_sha != nil {
+		fields = append(fields, changelogentry.FieldCommitSha)
+	}
+	if m.pull_request_url != nil {
+		fields = append(fields, changelogentry.FieldPullRequestURL)
+	}
+	if m.created_by != nil {
+		fields = append(fields, changelogentry.FieldCreatedBy)
+	}
+	if m.updated_by != nil {
+		fields = append(fields, changelogentry.FieldUpdatedBy)
+	}
+	if m.created_at != nil {
+		fields = append(fields, changelogentry.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, changelogentry.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ChangelogEntryMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case changelogentry.FieldSlug:
+		return m.Slug()
+	case changelogentry.FieldTitle:
+		return m.Title()
+	case changelogentry.FieldSummary:
+		return m.Summary()
+	case changelogentry.FieldRationale:
+		return m.Rationale()
+	case changelogentry.FieldContent:
+		return m.Content()
+	case changelogentry.FieldCategory:
+		return m.Category()
+	case changelogentry.FieldRelatedProducts:
+		return m.RelatedProducts()
+	case changelogentry.FieldStatus:
+		return m.Status()
+	case changelogentry.FieldPublishedAt:
+		return m.PublishedAt()
+	case changelogentry.FieldCommitSha:
+		return m.CommitSha()
+	case changelogentry.FieldPullRequestURL:
+		return m.PullRequestURL()
+	case changelogentry.FieldCreatedBy:
+		return m.CreatedBy()
+	case changelogentry.FieldUpdatedBy:
+		return m.UpdatedBy()
+	case changelogentry.FieldCreatedAt:
+		return m.CreatedAt()
+	case changelogentry.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ChangelogEntryMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case changelogentry.FieldSlug:
+		return m.OldSlug(ctx)
+	case changelogentry.FieldTitle:
+		return m.OldTitle(ctx)
+	case changelogentry.FieldSummary:
+		return m.OldSummary(ctx)
+	case changelogentry.FieldRationale:
+		return m.OldRationale(ctx)
+	case changelogentry.FieldContent:
+		return m.OldContent(ctx)
+	case changelogentry.FieldCategory:
+		return m.OldCategory(ctx)
+	case changelogentry.FieldRelatedProducts:
+		return m.OldRelatedProducts(ctx)
+	case changelogentry.FieldStatus:
+		return m.OldStatus(ctx)
+	case changelogentry.FieldPublishedAt:
+		return m.OldPublishedAt(ctx)
+	case changelogentry.FieldCommitSha:
+		return m.OldCommitSha(ctx)
+	case changelogentry.FieldPullRequestURL:
+		return m.OldPullRequestURL(ctx)
+	case changelogentry.FieldCreatedBy:
+		return m.OldCreatedBy(ctx)
+	case changelogentry.FieldUpdatedBy:
+		return m.OldUpdatedBy(ctx)
+	case changelogentry.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case changelogentry.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown ChangelogEntry field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ChangelogEntryMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case changelogentry.FieldSlug:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSlug(v)
+		return nil
+	case changelogentry.FieldTitle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTitle(v)
+		return nil
+	case changelogentry.FieldSummary:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSummary(v)
+		return nil
+	case changelogentry.FieldRationale:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRationale(v)
+		return nil
+	case changelogentry.FieldContent:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContent(v)
+		return nil
+	case changelogentry.FieldCategory:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCategory(v)
+		return nil
+	case changelogentry.FieldRelatedProducts:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRelatedProducts(v)
+		return nil
+	case changelogentry.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case changelogentry.FieldPublishedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPublishedAt(v)
+		return nil
+	case changelogentry.FieldCommitSha:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCommitSha(v)
+		return nil
+	case changelogentry.FieldPullRequestURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPullRequestURL(v)
+		return nil
+	case changelogentry.FieldCreatedBy:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedBy(v)
+		return nil
+	case changelogentry.FieldUpdatedBy:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedBy(v)
+		return nil
+	case changelogentry.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case changelogentry.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ChangelogEntry field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ChangelogEntryMutation) AddedFields() []string {
+	var fields []string
+	if m.addcreated_by != nil {
+		fields = append(fields, changelogentry.FieldCreatedBy)
+	}
+	if m.addupdated_by != nil {
+		fields = append(fields, changelogentry.FieldUpdatedBy)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ChangelogEntryMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case changelogentry.FieldCreatedBy:
+		return m.AddedCreatedBy()
+	case changelogentry.FieldUpdatedBy:
+		return m.AddedUpdatedBy()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ChangelogEntryMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case changelogentry.FieldCreatedBy:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCreatedBy(v)
+		return nil
+	case changelogentry.FieldUpdatedBy:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUpdatedBy(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ChangelogEntry numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ChangelogEntryMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(changelogentry.FieldRelatedProducts) {
+		fields = append(fields, changelogentry.FieldRelatedProducts)
+	}
+	if m.FieldCleared(changelogentry.FieldPublishedAt) {
+		fields = append(fields, changelogentry.FieldPublishedAt)
+	}
+	if m.FieldCleared(changelogentry.FieldCommitSha) {
+		fields = append(fields, changelogentry.FieldCommitSha)
+	}
+	if m.FieldCleared(changelogentry.FieldPullRequestURL) {
+		fields = append(fields, changelogentry.FieldPullRequestURL)
+	}
+	if m.FieldCleared(changelogentry.FieldCreatedBy) {
+		fields = append(fields, changelogentry.FieldCreatedBy)
+	}
+	if m.FieldCleared(changelogentry.FieldUpdatedBy) {
+		fields = append(fields, changelogentry.FieldUpdatedBy)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ChangelogEntryMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ChangelogEntryMutation) ClearField(name string) error {
+	switch name {
+	case changelogentry.FieldRelatedProducts:
+		m.ClearRelatedProducts()
+		return nil
+	case changelogentry.FieldPublishedAt:
+		m.ClearPublishedAt()
+		return nil
+	case changelogentry.FieldCommitSha:
+		m.ClearCommitSha()
+		return nil
+	case changelogentry.FieldPullRequestURL:
+		m.ClearPullRequestURL()
+		return nil
+	case changelogentry.FieldCreatedBy:
+		m.ClearCreatedBy()
+		return nil
+	case changelogentry.FieldUpdatedBy:
+		m.ClearUpdatedBy()
+		return nil
+	}
+	return fmt.Errorf("unknown ChangelogEntry nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ChangelogEntryMutation) ResetField(name string) error {
+	switch name {
+	case changelogentry.FieldSlug:
+		m.ResetSlug()
+		return nil
+	case changelogentry.FieldTitle:
+		m.ResetTitle()
+		return nil
+	case changelogentry.FieldSummary:
+		m.ResetSummary()
+		return nil
+	case changelogentry.FieldRationale:
+		m.ResetRationale()
+		return nil
+	case changelogentry.FieldContent:
+		m.ResetContent()
+		return nil
+	case changelogentry.FieldCategory:
+		m.ResetCategory()
+		return nil
+	case changelogentry.FieldRelatedProducts:
+		m.ResetRelatedProducts()
+		return nil
+	case changelogentry.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case changelogentry.FieldPublishedAt:
+		m.ResetPublishedAt()
+		return nil
+	case changelogentry.FieldCommitSha:
+		m.ResetCommitSha()
+		return nil
+	case changelogentry.FieldPullRequestURL:
+		m.ResetPullRequestURL()
+		return nil
+	case changelogentry.FieldCreatedBy:
+		m.ResetCreatedBy()
+		return nil
+	case changelogentry.FieldUpdatedBy:
+		m.ResetUpdatedBy()
+		return nil
+	case changelogentry.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case changelogentry.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ChangelogEntry field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ChangelogEntryMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ChangelogEntryMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ChangelogEntryMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ChangelogEntryMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ChangelogEntryMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ChangelogEntryMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ChangelogEntryMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown ChangelogEntry unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ChangelogEntryMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown ChangelogEntry edge %s", name)
 }
 
 // CommissionRecordMutation represents an operation that mutates the CommissionRecord nodes in the graph.

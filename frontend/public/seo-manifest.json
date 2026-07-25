@@ -16,6 +16,17 @@
       "staticHtml": "\n    <main class=\"seo-static-content\">\n      <h1>老实人AI - AI 编码网关</h1>\n      <p>老实人AI 为开发者和企业团队提供 Claude Code、Codex、ChatGPT、Gemini 等 AI 编码模型的统一 API 接入、Key 管理、用量统计和成本控制。</p>\n      <p>如果你正在搜索 Claude Code 国内使用、Codex 国内配置、Codex 免 API Key 登录或 Codex 自定义 API，请优先阅读文档中心的高意图指南。</p>\n      <nav aria-label=\"核心页面\">\n        <ul>\n          <li><a href=\"/docs/claude-code-china-guide\">Claude Code 国内使用指南</a></li>\n          <li><a href=\"/docs/codex-china-guide\">Codex 国内使用指南</a></li>\n          <li><a href=\"/docs/codex-no-api-key-guide\">Codex 免 API Key 使用指南</a></li>\n          <li><a href=\"/docs/codex-custom-api-guide\">Codex 自定义 API 配置教程</a></li>\n          <li><a href=\"/enterprise\">企业 AI API 网关方案</a></li>\n          <li><a href=\"/docs\">文档中心</a></li>\n        </ul>\n      </nav>\n    </main>"
     },
     {
+      "path": "/changelog",
+      "title": "更新日志 - 老实人AI",
+      "description": "查看老实人AI 已经做成的新功能、模型与配置更新、体验改进和问题修复。持续 Build in Public，让产品进展保持公开透明。",
+      "priority": 0.85,
+      "changefreq": "weekly",
+      "ogType": "website",
+      "schemaType": "CollectionPage",
+      "dateModified": "2026-06-30",
+      "staticHtml": "\n      <main class=\"seo-static-content\">\n        <h1>老实人AI 更新日志</h1>\n        <p>这里持续记录老实人AI 已经做成的新功能、模型与配置更新、体验改进和问题修复。</p>\n        <p>我们选择 Build in Public：公开产品进展和背后的原因，而不是把每一次普通更新都变成公告。</p>\n        <p><a href=\"/changelog\">查看最新产品进展</a></p>\n      </main>"
+    },
+    {
       "path": "/enterprise",
       "title": "企业 AI API 网关 - 老实人AI",
       "description": "面向企业团队介绍老实人AI 的多模型统一接入、团队 API Key 管理、成本控制和调用审计方案。",

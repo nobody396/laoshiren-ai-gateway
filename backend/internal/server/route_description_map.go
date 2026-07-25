@@ -128,6 +128,13 @@ var scannerDescMap = map[string]string{
 	"DELETE /admin/announcements/:id":          "删除公告",
 	"GET /admin/announcements/:id/read-status": "公告已读状态",
 
+	// ==================== 更新日志管理 (changelog) ====================
+	"GET /admin/changelog":        "分页查询更新日志",
+	"POST /admin/changelog":       "创建更新日志",
+	"GET /admin/changelog/:id":    "获取更新日志详情",
+	"PUT /admin/changelog/:id":    "编辑更新日志",
+	"DELETE /admin/changelog/:id": "删除未发布更新日志",
+
 	// ==================== 财务记账 (finance-transactions) ====================
 	"GET /admin/finance-transactions":                 "分页查询记账流水",
 	"POST /admin/finance-transactions":                "新增记账流水",

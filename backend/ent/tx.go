@@ -38,6 +38,8 @@ type Tx struct {
 	Announcement *AnnouncementClient
 	// AnnouncementRead is the client for interacting with the AnnouncementRead builders.
 	AnnouncementRead *AnnouncementReadClient
+	// ChangelogEntry is the client for interacting with the ChangelogEntry builders.
+	ChangelogEntry *ChangelogEntryClient
 	// CommissionRecord is the client for interacting with the CommissionRecord builders.
 	CommissionRecord *CommissionRecordClient
 	// ErrorPassthroughRule is the client for interacting with the ErrorPassthroughRule builders.
@@ -235,6 +237,7 @@ func (tx *Tx) init() {
 	tx.AdminUserRole = NewAdminUserRoleClient(tx.config)
 	tx.Announcement = NewAnnouncementClient(tx.config)
 	tx.AnnouncementRead = NewAnnouncementReadClient(tx.config)
+	tx.ChangelogEntry = NewChangelogEntryClient(tx.config)
 	tx.CommissionRecord = NewCommissionRecordClient(tx.config)
 	tx.ErrorPassthroughRule = NewErrorPassthroughRuleClient(tx.config)
 	tx.Feedback = NewFeedbackClient(tx.config)

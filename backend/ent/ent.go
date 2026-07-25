@@ -24,6 +24,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/announcement"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/announcementread"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/apikey"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/changelogentry"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/commissionrecord"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/errorpassthroughrule"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedback"
@@ -123,6 +124,7 @@ func checkColumn(t, c string) error {
 			adminuserrole.Table:           adminuserrole.ValidColumn,
 			announcement.Table:            announcement.ValidColumn,
 			announcementread.Table:        announcementread.ValidColumn,
+			changelogentry.Table:          changelogentry.ValidColumn,
 			commissionrecord.Table:        commissionrecord.ValidColumn,
 			errorpassthroughrule.Table:    errorpassthroughrule.ValidColumn,
 			feedback.Table:                feedback.ValidColumn,

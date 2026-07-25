@@ -366,6 +366,8 @@ export default {
     copied: '已复制',
     copy: '复制',
     copyFailed: '复制失败',
+    preview: '预览',
+    retry: '重试',
     prev: '上一页',
     showing: '显示',
     user: '用户',
@@ -410,6 +412,7 @@ export default {
   nav: {
     dashboard: '仪表盘',
     announcements: '公告',
+    changelog: '更新日志',
     financeTransactions: '财务记账',
     apiKeys: 'API 密钥',
     usage: '使用记录',
@@ -4103,6 +4106,72 @@ export default {
       deleteConfirm: '确定要删除该公告吗？此操作无法撤销。'
     },
 
+    changelog: {
+      title: '更新日志',
+      description: '记录、预览并发布 Build in Public 更新',
+      createEntry: '记录新进展',
+      editEntry: '编辑进展',
+      editorDescription: '记录我们做了什么、为什么做；Git 信息仅用于内部追溯。',
+      search: '搜索标题或摘要...',
+      allStatuses: '全部状态',
+      allCategories: '全部分类',
+      saveDraft: '保存草稿',
+      publish: '发布',
+      updatePublished: '更新已发布内容',
+      republish: '重新发布',
+      archive: '归档',
+      archived: '已归档',
+      copyLink: '复制公开链接',
+      publicPreview: '公开页面预览',
+      linkCopied: '公开链接已复制',
+      draftSaved: '草稿已保存',
+      published: '已发布',
+      updated: '更新已保存',
+      deleted: '草稿已删除',
+      loadFailed: '加载更新日志失败',
+      saveFailed: '保存更新日志失败',
+      deleteFailed: '删除草稿失败',
+      deleteTitle: '删除草稿',
+      deleteConfirm: '确定删除这条草稿吗？此操作无法撤销。',
+      emptyTitle: '还没有进展记录',
+      emptyDescription: '从第一条 Build in Public 记录开始。',
+      previewTitle: '我们刚刚做出了一项新进展',
+      previewSummary: '用一句话说明这次做成了什么。',
+      previewRationale: '说明我们为什么选择做这件事。',
+      columns: {
+        title: '标题',
+        category: '分类',
+        status: '状态',
+        publishedAt: '发布时间',
+        publicLink: '公开链接',
+        actions: '操作'
+      },
+      statuses: {
+        draft: '草稿',
+        published: '已发布',
+        scheduled: '待发布',
+        archived: '已归档'
+      },
+      form: {
+        title: '标题',
+        summary: '一句话摘要',
+        summaryHint: '只描述已经做成的事情，不写用户操作要求。',
+        rationale: '为什么做',
+        category: '分类',
+        publishedAt: '发布时间',
+        relatedProducts: '相关产品',
+        relatedProductsPlaceholder: '例如：Claude Code，Codex',
+        relatedProductsHint: '多个产品请使用逗号分隔。',
+        content: '完整记录',
+        contentPlaceholder: '写下做了什么、过程中的取舍，以及最终带来的变化...',
+        editorFallback: 'Markdown 编辑器加载失败，已切换为纯文本输入。',
+        gitTraceability: '内部追溯（可选）',
+        gitTraceabilityHint: 'Git 提交和 PR 只供后台追溯，不会展示在公开页面，也不会自动生成更新日志。',
+        slug: '公开链接标识',
+        slugPlaceholder: '留空将自动生成'
+      }
+    },
+
     // Finance Ledger（手工记账：真实现金进出，独立于理论成本核算）
     financeTransactions: {
       title: '财务记账',
@@ -5867,6 +5936,32 @@ export default {
     emptyDescription: '暂时没有任何系统公告',
     readStatus: '您已阅读此公告',
     markReadHint: '点击"已读"标记此公告'
+  },
+
+  changelog: {
+    title: '我们最近做了什么',
+    subtitle: '持续记录已经做成的功能、配置与体验改进。Build in public，让每一步都看得见。',
+    feedTitle: '产品进展',
+    filterLabel: '按更新类型筛选',
+    search: '搜索进展...',
+    whyBuilt: '为什么做',
+    relatedProducts: '相关产品',
+    viewDetails: '查看完整记录',
+    loadMore: '加载更多',
+    loadFailed: '更新日志加载失败',
+    emptyTitle: '第一条进展正在路上',
+    emptyDescription: '我们会把做成的事情持续记录在这里。',
+    backToList: '返回更新日志',
+    copyLink: '复制链接',
+    newUpdate: '有新的产品进展',
+    notFound: '这条进展不存在或尚未公开。',
+    categories: {
+      all: '全部',
+      feature: '新功能',
+      modelConfig: '模型与配置',
+      improvement: '体验改进',
+      fix: '问题修复'
+    }
   },
 
   feedback: {

@@ -581,6 +581,48 @@ var (
 			},
 		},
 	}
+	// ChangelogEntriesColumns holds the columns for the "changelog_entries" table.
+	ChangelogEntriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "slug", Type: field.TypeString, Unique: true, Size: 180},
+		{Name: "title", Type: field.TypeString, Size: 200},
+		{Name: "summary", Type: field.TypeString, Size: 500},
+		{Name: "rationale", Type: field.TypeString, Size: 500},
+		{Name: "content", Type: field.TypeString, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "category", Type: field.TypeString, Size: 30},
+		{Name: "related_products", Type: field.TypeJSON, Nullable: true, SchemaType: map[string]string{"postgres": "jsonb"}},
+		{Name: "status", Type: field.TypeString, Size: 20, Default: "draft"},
+		{Name: "published_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "commit_sha", Type: field.TypeString, Nullable: true, Size: 64},
+		{Name: "pull_request_url", Type: field.TypeString, Nullable: true, Size: 500},
+		{Name: "created_by", Type: field.TypeInt64, Nullable: true},
+		{Name: "updated_by", Type: field.TypeInt64, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// ChangelogEntriesTable holds the schema information for the "changelog_entries" table.
+	ChangelogEntriesTable = &schema.Table{
+		Name:       "changelog_entries",
+		Columns:    ChangelogEntriesColumns,
+		PrimaryKey: []*schema.Column{ChangelogEntriesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "changelogentry_status_published_at",
+				Unique:  false,
+				Columns: []*schema.Column{ChangelogEntriesColumns[8], ChangelogEntriesColumns[9]},
+			},
+			{
+				Name:    "changelogentry_category",
+				Unique:  false,
+				Columns: []*schema.Column{ChangelogEntriesColumns[6]},
+			},
+			{
+				Name:    "changelogentry_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ChangelogEntriesColumns[14]},
+			},
+		},
+	}
 	// CommissionRecordsColumns holds the columns for the "commission_records" table.
 	CommissionRecordsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1934,6 +1976,7 @@ var (
 		AdminUserRolesTable,
 		AnnouncementsTable,
 		AnnouncementReadsTable,
+		ChangelogEntriesTable,
 		CommissionRecordsTable,
 		ErrorPassthroughRulesTable,
 		FeedbacksTable,
@@ -2009,6 +2052,9 @@ func init() {
 	AnnouncementReadsTable.ForeignKeys[1].RefTable = UsersTable
 	AnnouncementReadsTable.Annotation = &entsql.Annotation{
 		Table: "announcement_reads",
+	}
+	ChangelogEntriesTable.Annotation = &entsql.Annotation{
+		Table: "changelog_entries",
 	}
 	CommissionRecordsTable.Annotation = &entsql.Annotation{
 		Table: "commission_records",

@@ -49,16 +49,17 @@ func BaselineMenus() []*service.AdminMenu {
 		newBaselineMenu(35, "开票管理", "/admin/invoice-requests", "ticket", "admin:invoice-requests", 12),
 		// 内容管理
 		newBaselineMenu(41, "公告管理", "/admin/announcements", "bell", "admin:announcements", 13),
-		newBaselineMenu(42, "反馈管理", "/admin/feedbacks", "feedback", "admin:feedbacks", 14),
+		newBaselineMenu(43, "更新日志管理", "/admin/changelog", "edit", "admin:changelog", 14),
+		newBaselineMenu(42, "反馈管理", "/admin/feedbacks", "feedback", "admin:feedbacks", 15),
 		// 系统管理
-		newBaselineMenu(51, "代理管理", "/admin/proxies", "server", "admin:proxies", 15),
-		newBaselineMenu(52, "使用记录", "/admin/usage", "chart", "admin:usage", 16),
-		newBaselineMenu(53, "运维监控", "/admin/ops", "chart", "admin:ops", 17),
-		newBaselineMenu(54, "系统设置", "/admin/settings", "cog", "admin:settings", 18),
+		newBaselineMenu(51, "代理管理", "/admin/proxies", "server", "admin:proxies", 16),
+		newBaselineMenu(52, "使用记录", "/admin/usage", "chart", "admin:usage", 17),
+		newBaselineMenu(53, "运维监控", "/admin/ops", "chart", "admin:ops", 18),
+		newBaselineMenu(54, "系统设置", "/admin/settings", "cog", "admin:settings", 19),
 		// 权限管理
-		newBaselineMenu(61, "角色管理", "/admin/roles", "shield", "admin:roles", 19),
-		newBaselineMenu(62, "菜单管理", "/admin/menus", "menu", "admin:menus", 20),
-		newBaselineMenu(63, "API 管理", "/admin/apis", "api", "admin:apis", 21),
+		newBaselineMenu(61, "角色管理", "/admin/roles", "shield", "admin:roles", 20),
+		newBaselineMenu(62, "菜单管理", "/admin/menus", "menu", "admin:menus", 21),
+		newBaselineMenu(63, "API 管理", "/admin/apis", "api", "admin:apis", 22),
 	}
 }
 
@@ -77,6 +78,7 @@ var menuGroupName = map[int64]string{
 	34: "充值订单",
 	35: "开票管理",
 	41: "公告管理",
+	43: "更新日志管理",
 	42: "反馈管理",
 	51: "代理管理",
 	52: "使用记录",
@@ -212,6 +214,13 @@ func BaselineAPIs() []*service.AdminAPI {
 	add("PUT", "/admin/announcements/:id", 41, 4)
 	add("DELETE", "/admin/announcements/:id", 41, 5)
 	add("GET", "/admin/announcements/:id/read-status", 41, 6)
+
+	// ===== Changelog (parent=43) =====
+	add("GET", "/admin/changelog", 43, 1)
+	add("POST", "/admin/changelog", 43, 2)
+	add("GET", "/admin/changelog/:id", 43, 3)
+	add("PUT", "/admin/changelog/:id", 43, 4)
+	add("DELETE", "/admin/changelog/:id", 43, 5)
 
 	// ===== Feedbacks (parent=42) =====
 	add("GET", "/admin/feedbacks", 42, 1)

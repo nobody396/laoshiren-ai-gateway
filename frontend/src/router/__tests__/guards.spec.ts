@@ -77,7 +77,7 @@ function simulateGuard(
       return authState.isAdmin ? '/admin/dashboard' : '/dashboard'
     }
     if (authState.backendModeEnabled && !authState.isAuthenticated) {
-      const allowed = ['/login', '/key-usage', '/setup', '/docs', '/legal']
+      const allowed = ['/login', '/key-usage', '/setup', '/docs', '/legal', '/changelog']
       if (!allowed.some((path) => toPath === path || toPath.startsWith(path))) {
         return '/login'
       }
@@ -115,7 +115,7 @@ function simulateGuard(
     if (authState.isAuthenticated && authState.isAdmin) {
       return null
     }
-    const allowed = ['/login', '/key-usage', '/setup', '/docs', '/legal']
+    const allowed = ['/login', '/key-usage', '/setup', '/docs', '/legal', '/changelog']
     if (!allowed.some((path) => toPath === path || toPath.startsWith(path))) {
       return '/login'
     }
@@ -147,6 +147,11 @@ describe('路由守卫逻辑', () => {
     it('访问管理页面重定向到 /login', () => {
       const redirect = simulateGuard('/admin/dashboard', { requiresAdmin: true }, authState)
       expect(redirect).toBe('/login')
+    })
+
+    it('可以直接访问公开更新日志', () => {
+      const redirect = simulateGuard('/changelog/first-public-update', { requiresAuth: false }, authState)
+      expect(redirect).toBeNull()
     })
 
     it('访问公开页面允许通过', () => {

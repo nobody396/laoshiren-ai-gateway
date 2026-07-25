@@ -50,6 +50,11 @@
             <transition name="fade">
               <span v-if="!sidebarCollapsed">{{ item.label }}</span>
             </transition>
+            <span
+              v-if="item.showDot"
+              class="ml-auto h-2 w-2 flex-shrink-0 rounded-full bg-primary-500 ring-2 ring-primary-100 dark:ring-primary-900"
+              :aria-label="t('changelog.newUpdate')"
+            ></span>
           </router-link>
         </div>
 
@@ -79,6 +84,11 @@
             <transition name="fade">
               <span v-if="!sidebarCollapsed">{{ item.label }}</span>
             </transition>
+            <span
+              v-if="item.showDot"
+              class="ml-auto h-2 w-2 flex-shrink-0 rounded-full bg-primary-500 ring-2 ring-primary-100 dark:ring-primary-900"
+              :aria-label="t('changelog.newUpdate')"
+            ></span>
           </component>
         </div>
       </template>
@@ -104,6 +114,11 @@
             <transition name="fade">
               <span v-if="!sidebarCollapsed">{{ item.label }}</span>
             </transition>
+            <span
+              v-if="item.showDot"
+              class="ml-auto h-2 w-2 flex-shrink-0 rounded-full bg-primary-500 ring-2 ring-primary-100 dark:ring-primary-900"
+              :aria-label="t('changelog.newUpdate')"
+            ></span>
           </router-link>
         </div>
         <div class="sidebar-section">
@@ -126,6 +141,11 @@
             <transition name="fade">
               <span v-if="!sidebarCollapsed">{{ item.label }}</span>
             </transition>
+            <span
+              v-if="item.showDot"
+              class="ml-auto h-2 w-2 flex-shrink-0 rounded-full bg-primary-500 ring-2 ring-primary-100 dark:ring-primary-900"
+              :aria-label="t('changelog.newUpdate')"
+            ></span>
           </component>
         </div>
       </template>
@@ -180,6 +200,7 @@ import { useI18n } from 'vue-i18n'
 import { useAdminSettingsStore, useAppStore, useAuthStore, useOnboardingStore } from '@/stores'
 import { usePermissionStore } from '@/stores/permission'
 import { sanitizeSvg } from '@/utils/sanitize'
+import { useChangelogFreshness } from '@/composables/useChangelogFreshness'
 
 interface NavItem {
   path: string
@@ -188,6 +209,7 @@ interface NavItem {
   iconSvg?: string
   hideInSimpleMode?: boolean
   external?: boolean
+  showDot?: boolean
 }
 
 interface AdminMenuOverride {
@@ -204,6 +226,7 @@ const authStore = useAuthStore()
 const onboardingStore = useOnboardingStore()
 const adminSettingsStore = useAdminSettingsStore()
 const permStore = usePermissionStore()
+const { hasNewChangelog, refreshChangelogFreshness } = useChangelogFreshness()
 
 const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)
 const mobileOpen = computed(() => appStore.mobileOpen)
@@ -627,6 +650,15 @@ function createDocsNavItem(): NavItem {
   return { path: '/docs', label: t('nav.docs'), icon: BookIcon }
 }
 
+function createChangelogNavItem(): NavItem {
+  return {
+    path: '/changelog',
+    label: t('nav.changelog'),
+    icon: BookIcon,
+    showDot: hasNewChangelog.value
+  }
+}
+
 function createModelPricingNavItem(): NavItem {
   return {
     path: '/#model-pricing',
@@ -653,6 +685,7 @@ const userNavItems = computed((): NavItem[] => {
       : []),
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
     { path: '/resources', label: t('nav.resources'), icon: DownloadIcon },
+    createChangelogNavItem(),
     createDocsNavItem(),
     { path: '/profile', label: t('nav.profile'), icon: UserIcon },
     ...customMenuItemsForUser.value.map((item): NavItem => ({
@@ -757,6 +790,7 @@ const navPermissionMap: Record<string, string> = {
   '/admin/subscriptions': 'admin:subscriptions',
   '/admin/accounts': 'admin:accounts',
   '/admin/announcements': 'admin:announcements',
+  '/admin/changelog': 'admin:changelog',
   '/admin/feedbacks': 'admin:feedbacks',
   '/admin/finance-transactions': 'admin:finance-transactions',
   '/admin/proxies': 'admin:proxies',
@@ -840,6 +874,11 @@ const adminNavItems = computed((): NavItem[] => {
       path: '/admin/announcements',
       label: resolveAdminMenuLabel('/admin/announcements', t('nav.announcements')),
       icon: BellIcon
+    },
+    {
+      path: '/admin/changelog',
+      label: resolveAdminMenuLabel('/admin/changelog', t('nav.changelog')),
+      icon: BookIcon
     },
     {
       path: '/admin/feedbacks',
@@ -1029,6 +1068,7 @@ watch(
 )
 
 onMounted(() => {
+  void refreshChangelogFreshness()
   if (isAdmin.value) {
     adminSettingsStore.fetch()
   }

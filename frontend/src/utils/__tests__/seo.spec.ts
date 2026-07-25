@@ -60,6 +60,27 @@ describe('updateRouteSeo', () => {
     expect(document.head.querySelector('script[type="application/ld+json"]')?.textContent).toContain('TechArticle')
   })
 
+  it('sets indexable article metadata for a public changelog entry', () => {
+    updateRouteSeo(route({
+      name: 'ChangelogDetail',
+      path: '/changelog/first-public-update',
+      params: { slug: 'first-public-update' },
+      meta: { title: '更新日志', description: '公开构建记录' },
+    }), {
+      customTitle: '我们开始公开记录产品进展 - 更新日志',
+      customDescription: '记录已经做成的事情和背后的原因。',
+    })
+
+    expect(document.title).toBe('我们开始公开记录产品进展 - 更新日志 - 老实人AI')
+    expect(content('meta[name="description"]')).toBe('记录已经做成的事情和背后的原因。')
+    expect(content('meta[name="robots"]')).toBe('index,follow')
+    expect(content('meta[property="og:type"]')).toBe('article')
+    expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
+      'https://laoshirenai.com/changelog/first-public-update'
+    )
+    expect(document.head.querySelector('script[type="application/ld+json"]')?.textContent).toContain('Article')
+  })
+
   it('marks private routes as noindex and removes structured data', () => {
     updateRouteSeo(route({
       name: 'Login',

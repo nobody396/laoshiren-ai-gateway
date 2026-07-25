@@ -17,6 +17,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/announcement"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/announcementread"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/apikey"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/changelogentry"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/commissionrecord"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/errorpassthroughrule"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedback"
@@ -603,6 +604,126 @@ func init() {
 	announcementreadDescCreatedAt := announcementreadFields[3].Descriptor()
 	// announcementread.DefaultCreatedAt holds the default value on creation for the created_at field.
 	announcementread.DefaultCreatedAt = announcementreadDescCreatedAt.Default.(func() time.Time)
+	changelogentryFields := schema.ChangelogEntry{}.Fields()
+	_ = changelogentryFields
+	// changelogentryDescSlug is the schema descriptor for slug field.
+	changelogentryDescSlug := changelogentryFields[0].Descriptor()
+	// changelogentry.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
+	changelogentry.SlugValidator = func() func(string) error {
+		validators := changelogentryDescSlug.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(slug string) error {
+			for _, fn := range fns {
+				if err := fn(slug); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// changelogentryDescTitle is the schema descriptor for title field.
+	changelogentryDescTitle := changelogentryFields[1].Descriptor()
+	// changelogentry.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	changelogentry.TitleValidator = func() func(string) error {
+		validators := changelogentryDescTitle.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(title string) error {
+			for _, fn := range fns {
+				if err := fn(title); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// changelogentryDescSummary is the schema descriptor for summary field.
+	changelogentryDescSummary := changelogentryFields[2].Descriptor()
+	// changelogentry.SummaryValidator is a validator for the "summary" field. It is called by the builders before save.
+	changelogentry.SummaryValidator = func() func(string) error {
+		validators := changelogentryDescSummary.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(summary string) error {
+			for _, fn := range fns {
+				if err := fn(summary); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// changelogentryDescRationale is the schema descriptor for rationale field.
+	changelogentryDescRationale := changelogentryFields[3].Descriptor()
+	// changelogentry.RationaleValidator is a validator for the "rationale" field. It is called by the builders before save.
+	changelogentry.RationaleValidator = func() func(string) error {
+		validators := changelogentryDescRationale.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(rationale string) error {
+			for _, fn := range fns {
+				if err := fn(rationale); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// changelogentryDescContent is the schema descriptor for content field.
+	changelogentryDescContent := changelogentryFields[4].Descriptor()
+	// changelogentry.ContentValidator is a validator for the "content" field. It is called by the builders before save.
+	changelogentry.ContentValidator = changelogentryDescContent.Validators[0].(func(string) error)
+	// changelogentryDescCategory is the schema descriptor for category field.
+	changelogentryDescCategory := changelogentryFields[5].Descriptor()
+	// changelogentry.CategoryValidator is a validator for the "category" field. It is called by the builders before save.
+	changelogentry.CategoryValidator = func() func(string) error {
+		validators := changelogentryDescCategory.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(category string) error {
+			for _, fn := range fns {
+				if err := fn(category); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// changelogentryDescStatus is the schema descriptor for status field.
+	changelogentryDescStatus := changelogentryFields[7].Descriptor()
+	// changelogentry.DefaultStatus holds the default value on creation for the status field.
+	changelogentry.DefaultStatus = changelogentryDescStatus.Default.(string)
+	// changelogentry.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	changelogentry.StatusValidator = changelogentryDescStatus.Validators[0].(func(string) error)
+	// changelogentryDescCommitSha is the schema descriptor for commit_sha field.
+	changelogentryDescCommitSha := changelogentryFields[9].Descriptor()
+	// changelogentry.CommitShaValidator is a validator for the "commit_sha" field. It is called by the builders before save.
+	changelogentry.CommitShaValidator = changelogentryDescCommitSha.Validators[0].(func(string) error)
+	// changelogentryDescPullRequestURL is the schema descriptor for pull_request_url field.
+	changelogentryDescPullRequestURL := changelogentryFields[10].Descriptor()
+	// changelogentry.PullRequestURLValidator is a validator for the "pull_request_url" field. It is called by the builders before save.
+	changelogentry.PullRequestURLValidator = changelogentryDescPullRequestURL.Validators[0].(func(string) error)
+	// changelogentryDescCreatedAt is the schema descriptor for created_at field.
+	changelogentryDescCreatedAt := changelogentryFields[13].Descriptor()
+	// changelogentry.DefaultCreatedAt holds the default value on creation for the created_at field.
+	changelogentry.DefaultCreatedAt = changelogentryDescCreatedAt.Default.(func() time.Time)
+	// changelogentryDescUpdatedAt is the schema descriptor for updated_at field.
+	changelogentryDescUpdatedAt := changelogentryFields[14].Descriptor()
+	// changelogentry.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	changelogentry.DefaultUpdatedAt = changelogentryDescUpdatedAt.Default.(func() time.Time)
+	// changelogentry.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	changelogentry.UpdateDefaultUpdatedAt = changelogentryDescUpdatedAt.UpdateDefault.(func() time.Time)
 	commissionrecordFields := schema.CommissionRecord{}.Fields()
 	_ = commissionrecordFields
 	// commissionrecordDescType is the schema descriptor for type field.

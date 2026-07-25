@@ -273,6 +273,61 @@ export interface AnnouncementUserReadStatus {
   read_at?: string
 }
 
+// ==================== Build in Public Changelog Types ====================
+
+export type ChangelogStatus = 'draft' | 'published' | 'archived'
+export type ChangelogCategory = 'feature' | 'model_config' | 'improvement' | 'fix'
+
+export interface PublicChangelogEntry {
+  id: number
+  slug: string
+  title: string
+  summary: string
+  rationale: string
+  content: string
+  category: ChangelogCategory
+  related_products: string[]
+  published_at: string | null
+  updated_at: string
+}
+
+export interface AdminChangelogEntry extends PublicChangelogEntry {
+  status: ChangelogStatus
+  commit_sha?: string
+  pull_request_url?: string
+  created_by?: number
+  updated_by?: number
+  created_at: string
+}
+
+export interface CreateChangelogRequest {
+  slug?: string
+  title: string
+  summary: string
+  rationale: string
+  content: string
+  category: ChangelogCategory
+  related_products: string[]
+  status?: ChangelogStatus
+  published_at?: string
+  commit_sha?: string
+  pull_request_url?: string
+}
+
+export interface UpdateChangelogRequest {
+  slug?: string
+  title?: string
+  summary?: string
+  rationale?: string
+  content?: string
+  category?: ChangelogCategory
+  related_products?: string[]
+  status?: ChangelogStatus
+  published_at?: string
+  commit_sha?: string
+  pull_request_url?: string
+}
+
 // ==================== Finance Ledger Types ====================
 // 手工记账流水：真实现金进出，独立于成本核算 (cost accounting) 的理论毛利率计算。
 

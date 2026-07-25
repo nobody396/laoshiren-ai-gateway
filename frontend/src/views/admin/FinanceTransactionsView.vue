@@ -272,6 +272,63 @@
       @confirm="confirmDelete"
       @cancel="showDeleteDialog = false"
     />
+
+    <!-- Receipt Preview -->
+    <BaseDialog
+      :show="showReceiptViewer"
+      :title="t('admin.financeTransactions.receiptPreviewTitle')"
+      width="extra-wide"
+      close-on-click-outside
+      @close="closeReceiptPreview"
+    >
+      <div
+        data-test="receipt-preview"
+        class="relative flex min-h-72 items-center justify-center overflow-hidden rounded-xl bg-gray-100 p-3 dark:bg-dark-900"
+      >
+        <div
+          v-if="receiptViewerLoading"
+          class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-sm text-gray-500 dark:text-gray-400"
+        >
+          <Icon name="refresh" size="lg" class="animate-spin" />
+          <span>{{ t('admin.financeTransactions.receiptPreviewLoading') }}</span>
+        </div>
+        <div
+          v-if="receiptViewerFailed"
+          class="py-16 text-center text-sm text-red-600 dark:text-red-400"
+        >
+          {{ t('admin.financeTransactions.receiptPreviewFailed') }}
+        </div>
+        <img
+          v-if="receiptViewerUrl && !receiptViewerFailed"
+          :src="receiptViewerUrl"
+          :alt="t('admin.financeTransactions.receiptPreviewTitle')"
+          :class="[
+            'max-h-[70vh] max-w-full rounded-lg object-contain shadow-sm transition-opacity',
+            receiptViewerLoading ? 'opacity-0' : 'opacity-100'
+          ]"
+          @load="receiptViewerLoading = false"
+          @error="handleReceiptPreviewError"
+        />
+      </div>
+
+      <template #footer>
+        <div class="flex w-full items-center justify-end gap-3">
+          <a
+            v-if="receiptViewerUrl && !receiptViewerFailed"
+            :href="receiptViewerUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-secondary"
+          >
+            <Icon name="download" size="sm" class="mr-1" />
+            {{ t('admin.financeTransactions.downloadReceipt') }}
+          </a>
+          <button type="button" class="btn btn-primary" @click="closeReceiptPreview">
+            {{ t('common.close') }}
+          </button>
+        </div>
+      </template>
+    </BaseDialog>
   </AppLayout>
 </template>
 
@@ -632,13 +689,37 @@ function clearReceipt() {
 }
 
 async function viewReceipt(row: FinanceTransaction) {
+  showReceiptViewer.value = true
+  receiptViewerLoading.value = true
+  receiptViewerFailed.value = false
+  receiptViewerUrl.value = ''
   try {
     const { url } = await adminAPI.financeTransactions.getReceiptUrl(row.id)
-    window.open(url, '_blank', 'noopener')
+    receiptViewerUrl.value = url
   } catch (error: any) {
     console.error('Failed to load receipt url:', error)
+    receiptViewerLoading.value = false
+    receiptViewerFailed.value = true
     appStore.showError(error.response?.data?.detail || t('admin.financeTransactions.failedToLoadReceipt'))
   }
+}
+
+const showReceiptViewer = ref(false)
+const receiptViewerUrl = ref('')
+const receiptViewerLoading = ref(false)
+const receiptViewerFailed = ref(false)
+
+function handleReceiptPreviewError() {
+  receiptViewerLoading.value = false
+  receiptViewerFailed.value = true
+  appStore.showError(t('admin.financeTransactions.receiptPreviewFailed'))
+}
+
+function closeReceiptPreview() {
+  showReceiptViewer.value = false
+  receiptViewerUrl.value = ''
+  receiptViewerLoading.value = false
+  receiptViewerFailed.value = false
 }
 
 // ===== Delete =====

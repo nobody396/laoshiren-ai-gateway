@@ -144,6 +144,58 @@ describe('admin FinanceTransactionsView', () => {
     expect(cards.some((c) => c.includes('66.7%'))).toBe(true) // margin
   })
 
+  it('opens a receipt in the in-page preview instead of navigating to the signed URL', async () => {
+    list.mockResolvedValue({
+      items: [
+        {
+          id: 7,
+          type: 'expense',
+          category: 'server_cost',
+          amount_fen: 2000,
+          occurred_at: '2026-07-10T00:00:00Z',
+          receipt_key: 'finance-receipts/receipt.jpg',
+          source: 'manual',
+          created_at: '2026-07-10T00:00:00Z',
+          updated_at: '2026-07-10T00:00:00Z'
+        }
+      ],
+      total: 1,
+      page: 1,
+      page_size: 20,
+      pages: 1
+    })
+    getReceiptUrl.mockResolvedValue({
+      url: 'https://example.test/signed-receipt.jpg',
+      expires_in_seconds: 600
+    })
+    const openSpy = vi.spyOn(window, 'open')
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    const previewButtons = wrapper
+      .findAll('button[title]')
+      .filter((button) => button.attributes('title') === 'admin.financeTransactions.viewReceipt')
+    expect(previewButtons.length).toBeGreaterThan(0)
+
+    await previewButtons[0].trigger('click')
+    await flushPromises()
+
+    expect(getReceiptUrl).toHaveBeenCalledWith(7)
+    expect(openSpy).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-test="receipt-preview"]').exists()).toBe(true)
+    expect(wrapper.find('img[alt="admin.financeTransactions.receiptPreviewTitle"]').attributes('src')).toBe(
+      'https://example.test/signed-receipt.jpg'
+    )
+    const downloadLink = wrapper.find('a[target="_blank"]')
+    expect(downloadLink.attributes('href')).toBe(
+      'https://example.test/signed-receipt.jpg'
+    )
+    expect(downloadLink.text()).toContain('admin.financeTransactions.downloadReceipt')
+
+    openSpy.mockRestore()
+  })
+
   it('converts the yuan input to fen and creates a transaction on save', async () => {
     create.mockResolvedValue({ id: 1 })
     const wrapper = mountView()

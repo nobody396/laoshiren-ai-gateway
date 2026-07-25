@@ -500,7 +500,16 @@
 <script setup lang="ts">
 import { computed, h, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Chart as ChartJS, ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js'
+import {
+  Chart as ChartJS,
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+  Legend,
+  type TooltipItem
+} from 'chart.js'
 import { Bar, Doughnut } from 'vue-chartjs'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
@@ -849,7 +858,7 @@ const expenseGroupChartData = computed(() => ({
   labels: expenseGroups.value.map((group) => group.label),
   datasets: [
     {
-      data: expenseGroups.value.map((group) => group.total_fen),
+      data: expenseGroups.value.map((group) => group.total_fen / 100),
       backgroundColor: expenseGroups.value.map((group) => group.color),
       borderWidth: 0
     }
@@ -860,7 +869,7 @@ const incomeChannelChartData = computed(() => ({
   labels: incomeChannelTotals.value.map((channel) => paymentChannelLabel(channel.payment_channel)),
   datasets: [
     {
-      data: incomeChannelTotals.value.map((channel) => channel.total_fen),
+      data: incomeChannelTotals.value.map((channel) => channel.total_fen / 100),
       backgroundColor: incomeChannelTotals.value.map((channel) => channel.color),
       borderWidth: 0
     }
@@ -870,7 +879,15 @@ const incomeChannelChartData = computed(() => ({
 const structureChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  plugins: { legend: { display: false } }
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: (context: TooltipItem<'doughnut'>) =>
+          `${context.label}: ${formatCurrency(context.parsed, 'CNY')}`
+      }
+    }
+  }
 }
 
 function businessGroupLabel(item: FinanceCategoryTotal) {

@@ -340,6 +340,21 @@ describe('admin FinanceTransactionsView', () => {
     expect(showError).toHaveBeenCalledWith('admin.financeTransactions.form.receiptRequired')
   })
 
+  it('offers exactly the three current collection channels for new income', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('button.btn-primary').trigger('click')
+    await wrapper.find('[data-test="transaction-type-select"]').setValue('income')
+    await flushPromises()
+
+    const values = wrapper
+      .find('[data-test="payment-channel-select"]')
+      .findAll('option')
+      .map((option) => option.attributes('value'))
+    expect(values).toEqual(['', 'wechat', 'alipay', 'liandong_shop'])
+  })
+
   it('deletes a transaction after confirmation', async () => {
     list.mockResolvedValue({
       items: [

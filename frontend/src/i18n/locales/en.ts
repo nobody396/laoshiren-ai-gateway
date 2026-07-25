@@ -4006,7 +4006,6 @@ export default {
         expense: 'Expenses',
         netProfit: 'Net Profit',
         margin: 'Margin',
-        serverFixedCost: 'Fixed Hosting Expense',
         rangeTitle: 'Summary Range',
         allTime: 'Cumulative',
         byMonth: 'By Month',

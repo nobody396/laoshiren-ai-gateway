@@ -4157,7 +4157,6 @@ export default {
         expense: '支出',
         netProfit: '净利润',
         margin: '利润率',
-        serverFixedCost: '服务器固定支出',
         rangeTitle: '统计范围',
         allTime: '累计',
         byMonth: '按月',

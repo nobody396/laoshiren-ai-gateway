@@ -252,12 +252,14 @@
    * does a grayscale printout. All eight sit in the same warm register as
    * the page, so a chart no longer announces itself as foreign.
    *
-   * Use in order, do not skip. If a chart needs a ninth series it needs
+   * Use in order, do not skip. If a chart needs a thirteenth series it needs
    * grouping, not another color.
    *
    * NOTE: RGB triples, like every other token here. Canvas cannot read CSS
    * variables, so chart code must resolve these at runtime — see
-   * src/utils/themeColors.ts.
+   * src/utils/chartPalette.ts. Never paste these hexes into a component;
+   * that is exactly how the three distribution charts drifted apart (one
+   * had ten entries, two had twelve) before this file existed.
    * --------------------------------------------------------------------- */
   --chart-1: 154 59 31; /* #9a3b1f terracotta — always the primary series */
   --chart-2: 63 90 58; /* #3f5a3a laurel */
@@ -266,7 +268,11 @@
   --chart-5: 122 79 43; /* #7a4f2b umber */
   --chart-6: 111 79 135; /* #6f4f87 muted plum */
   --chart-7: 138 125 99; /* #8a7d63 muted — the neutral/"other" series */
-  --chart-8: 90 45 23; /* #5a2d17 deep terracotta */
+  --chart-8: 94 34 16; /* #5e2210 deep terracotta */
+  --chart-9: 183 122 40; /* #b77a28 gold */
+  --chart-10: 38 54 31; /* #26361f laurel-dark */
+  --chart-11: 111 139 128; /* #6f8b80 sage */
+  --chart-12: 168 95 66; /* #a85f42 clay */
 }
 
 /*
@@ -292,6 +298,24 @@
   --color-warning: 240 199 122; /* #f0c77a */
   --color-info: 159 208 220; /* #9fd0dc */
   --color-vellum: 46 40 30; /* #2e281e — dark-mode form fill, one step above dark papyrus */
+
+  /* Chart series must be redefined here — unlike the 50–950 ramps, a chart
+   * can't reach for "a darker stop of the same ladder": every series is
+   * drawn on the same dark surface, so all twelve have to lift together or
+   * the low-numbered ones disappear into the background. Hues are held; only
+   * lightness and saturation move. */
+  --chart-1: 225 138 104; /* #e18a68 */
+  --chart-2: 158 180 139; /* #9eb48b */
+  --chart-3: 224 179 106; /* #e0b36a */
+  --chart-4: 143 183 196; /* #8fb7c4 */
+  --chart-5: 199 156 113; /* #c79c71 */
+  --chart-6: 178 148 201; /* #b294c9 */
+  --chart-7: 209 195 165; /* #d1c3a5 */
+  --chart-8: 233 150 118; /* #e99676 */
+  --chart-9: 232 189 118; /* #e8bd76 */
+  --chart-10: 185 201 158; /* #b9c99e */
+  --chart-11: 160 190 178; /* #a0beb2 */
+  --chart-12: 216 158 130; /* #d89e82 */
 }
 
 /* ─────────────────────────────────────────────────────────────

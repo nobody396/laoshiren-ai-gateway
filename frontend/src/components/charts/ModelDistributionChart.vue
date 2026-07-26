@@ -240,6 +240,7 @@
 </template>
 
 <script setup lang="ts">
+import { useChartPalette } from '@/utils/chartPalette'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
@@ -255,7 +256,6 @@ const { t } = useI18n()
 
 type DistributionMetric = 'tokens' | 'actual_cost'
 type ModelSource = 'requested' | 'upstream' | 'mapping'
-type ChartPalette = 'default' | 'greco'
 type RankingDisplayItem = UserSpendingRankingItem & { isOther?: boolean }
 const props = withDefaults(defineProps<{
   modelStats: ModelStat[]
@@ -276,7 +276,6 @@ const props = withDefaults(defineProps<{
   startDate?: string
   endDate?: string
   filters?: Record<string, any>
-  palette?: ChartPalette
 }>(), {
   upstreamModelStats: () => [],
   mappingModelStats: () => [],
@@ -292,7 +291,6 @@ const props = withDefaults(defineProps<{
   showMetricToggle: false,
   rankingLoading: false,
   rankingError: false,
-  palette: 'default'
 })
 
 const expandedKey = ref<string | null>(null)
@@ -333,39 +331,7 @@ const emit = defineEmits<{
 const enableRankingView = computed(() => props.enableRankingView)
 const activeView = ref<'model_distribution' | 'spending_ranking'>('model_distribution')
 
-const defaultChartColors = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#ec4899',
-  '#14b8a6',
-  '#f97316',
-  '#6366f1',
-  '#84cc16',
-  '#06b6d4',
-  '#a855f7'
-]
-
-const grecoChartColors = [
-  '#9a3b1f',
-  '#3f5a3a',
-  '#9a6a1f',
-  '#315f71',
-  '#7a4f2b',
-  '#6f4f87',
-  '#8a7d63',
-  '#5e2210',
-  '#b77a28',
-  '#26361f',
-  '#6f8b80',
-  '#a85f42'
-]
-
-const chartColors = computed(() =>
-  props.palette === 'greco' ? grecoChartColors : defaultChartColors
-)
+const chartColors = useChartPalette()
 
 const displayModelStats = computed(() => {
   const sourceStats = props.source === 'upstream'

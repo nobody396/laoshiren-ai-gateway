@@ -55,12 +55,13 @@
       </div>
 
       <!-- Token Usage Trend Chart -->
-      <TokenUsageTrend :trend-data="trend" :loading="loading" palette="greco" />
+      <TokenUsageTrend :trend-data="trend" :loading="loading" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { chartPalette } from '@/utils/chartPalette'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -81,7 +82,7 @@ const modelData = computed(() => !props.models?.length ? null : {
   labels: props.models.map((m: ModelStat) => m.model),
   datasets: [{
     data: props.models.map((m: ModelStat) => m.total_tokens),
-    backgroundColor: ['#9a3b1f', '#3f5a3a', '#9a6a1f', '#315f71', '#7a4f2b', '#6f4f87', '#8a7d63', '#a85f42']
+    backgroundColor: chartPalette().slice(0, 8)
   }]
 })
 

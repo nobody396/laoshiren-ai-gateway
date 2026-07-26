@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { chartSemantic } from '@/utils/chartPalette'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Select from '@/components/common/Select.vue'
@@ -437,12 +438,12 @@ const healthScoreValue = computed<number | null>(() => {
 })
 
 const healthScoreColor = computed(() => {
-  if (isSystemIdle.value) return '#9ca3af' // gray-400
+  if (isSystemIdle.value) return chartSemantic().neutral
   const score = healthScoreValue.value
-  if (score == null) return '#9ca3af'
-  if (score >= 90) return '#10b981' // green
-  if (score >= 60) return '#f59e0b' // yellow
-  return '#ef4444' // red
+  if (score == null) return chartSemantic().neutral
+  if (score >= 90) return chartSemantic().success
+  if (score >= 60) return chartSemantic().warning
+  return chartSemantic().danger
 })
 
 const healthScoreClass = computed(() => {
@@ -1185,7 +1186,7 @@ function handleToolbarRefresh() {
                   <path
                     d="M0 16 Q 20 16, 40 16 T 80 16 T 120 10 T 160 22 T 200 16 T 240 16 T 280 16"
                     fill="none"
-                    stroke="#3b82f6"
+                    class="pulse-line"
                     stroke-width="2"
                     vector-effect="non-scaling-stroke"
                   >
@@ -1625,3 +1626,12 @@ function handleToolbarRefresh() {
     </BaseDialog>
   </div>
 </template>
+
+<style scoped>
+/* stroke is a CSS property as well as an SVG presentation attribute, and only
+ * the CSS side resolves var() — which is why this lives here instead of on the
+ * <path stroke="…"> attribute it replaced. */
+.pulse-line {
+  stroke: rgb(var(--color-info));
+}
+</style>

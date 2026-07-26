@@ -234,14 +234,12 @@
               :start-date="startDate"
               :end-date="endDate"
               @ranking-click="goToUserUsage"
-              palette="greco"
             />
             <TokenUsageTrend
               :trend-data="trendData"
               :loading="chartsLoading"
               :start-date="startDate"
               :granularity="granularity"
-              palette="greco"
             />
           </div>
 
@@ -270,6 +268,7 @@
 </template>
 
 <script setup lang="ts">
+import { chartPalette, chartInk } from '@/utils/chartPalette'
 import { ref, computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -377,7 +376,7 @@ onBeforeUnmount(() => {
 
 // Chart colors
 const chartColors = computed(() => ({
-  text: isDarkMode.value ? '#eee4ce' : '#1f1a12',
+  text: chartInk().text,
   grid: isDarkMode.value ? 'rgba(215, 226, 197, 0.18)' : 'rgba(63, 90, 58, 0.2)'
 }))
 
@@ -478,26 +477,14 @@ const userTrendChartData = computed(() => {
     granularity.value,
     Array.from(allDates)
   )
-  const colors = [
-    '#9a3b1f',
-    '#3f5a3a',
-    '#9a6a1f',
-    '#315f71',
-    '#7a4f2b',
-    '#6f4f87',
-    '#8a7d63',
-    '#5e2210',
-    '#b77a28',
-    '#26361f',
-    '#6f8b80',
-    '#a85f42'
-  ]
+  const lineColors = chartPalette()
+  const fillColors = chartPalette(0.125)
 
   const datasets = Array.from(userGroups.values()).map((group, idx) => ({
     label: group.name,
     data: sortedDates.map((date) => group.data.get(date) || 0),
-    borderColor: colors[idx % colors.length],
-    backgroundColor: `${colors[idx % colors.length]}20`,
+    borderColor: lineColors[idx % lineColors.length],
+    backgroundColor: fillColors[idx % fillColors.length],
     fill: false,
     tension: 0.3
   }))

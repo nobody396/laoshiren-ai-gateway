@@ -355,6 +355,7 @@
 </template>
 
 <script setup lang="ts">
+import { themeColor } from '@/utils/chartPalette'
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores'
@@ -447,17 +448,21 @@ function getDateParams(): string {
 // ==================== Ring Animation ====================
 
 const CIRCUMFERENCE = 2 * Math.PI * 68
-const RING_GRADIENTS = [
-  { from: '#14b8a6', to: '#5eead4' },
-  { from: '#6366F1', to: '#A5B4FC' },
-  { from: '#10B981', to: '#6EE7B7' },
-  { from: '#F59E0B', to: '#FCD34D' },
-]
+// Four rings, four distinct hues — each a token stop paired with a lighter
+// stop of the same ramp, so the gradient lifts without leaving the palette.
+// Computed rather than constant: the stops differ in dark mode.
+const RING_GRADIENTS = computed(() => [
+  { from: themeColor('--color-terracotta', '#9a3b1f'), to: themeColor('--color-primary-300', '#e19b74') },
+  { from: themeColor('--color-laurel', '#3f5a3a'), to: themeColor('--color-green-400', '#7f9c72') },
+  { from: themeColor('--color-warning', '#9a6a1f'), to: themeColor('--color-amber-300', '#d9b878') },
+  { from: themeColor('--color-info', '#315f71'), to: themeColor('--color-blue-300', '#70a3ac') },
+])
 
 const ringAnimated = ref(false)
 const displayPcts = ref<number[]>([])
 
-const ringTrackColor = computed(() => isDark.value ? '#222222' : '#F0F0EE')
+// 轨道色跟随纸面：亮色下是 stone，暗色下自动变深，无需分支
+const ringTrackColor = computed(() => themeColor('--color-stone', '#efe6cf'))
 
 interface RingItem {
   title: string
@@ -858,8 +863,8 @@ onUnmounted(() => {
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .input-ring:focus {
-  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
-  border-color: #14b8a6;
+  box-shadow: 0 0 0 3px rgb(var(--color-terracotta) / 0.2);
+  border-color: rgb(var(--color-terracotta));
   outline: none;
 }
 

@@ -107,6 +107,7 @@
 </template>
 
 <script setup lang="ts">
+import { useChartPalette } from '@/utils/chartPalette'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
@@ -121,7 +122,6 @@ ChartJS.register(ArcElement, Tooltip, Legend)
 const { t } = useI18n()
 
 type DistributionMetric = 'tokens' | 'actual_cost'
-type ChartPalette = 'default' | 'greco'
 
 const props = withDefaults(defineProps<{
   groupStats: GroupStat[]
@@ -131,12 +131,10 @@ const props = withDefaults(defineProps<{
   startDate?: string
   endDate?: string
   filters?: Record<string, any>
-  palette?: ChartPalette
 }>(), {
   loading: false,
   metric: 'tokens',
   showMetricToggle: false,
-  palette: 'default',
 })
 
 const emit = defineEmits<{
@@ -171,35 +169,7 @@ const toggleBreakdown = async (type: string, id: number | string) => {
   }
 }
 
-const defaultChartColors = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#ec4899',
-  '#14b8a6',
-  '#f97316',
-  '#6366f1',
-  '#84cc16'
-]
-
-const grecoChartColors = [
-  '#9a3b1f',
-  '#3f5a3a',
-  '#9a6a1f',
-  '#315f71',
-  '#7a4f2b',
-  '#6f4f87',
-  '#8a7d63',
-  '#5e2210',
-  '#b77a28',
-  '#26361f'
-]
-
-const chartColors = computed(() =>
-  props.palette === 'greco' ? grecoChartColors : defaultChartColors
-)
+const chartColors = useChartPalette()
 
 const displayGroupStats = computed(() => {
   if (!props.groupStats?.length) return []

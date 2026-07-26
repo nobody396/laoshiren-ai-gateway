@@ -34,7 +34,7 @@ env:
 jobs:
   build:
     name: Build exact linux/amd64 commit
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
     timeout-minutes: 35
     outputs:
       image_ref: ${{ steps.resolve.outputs.image_ref }}
@@ -74,6 +74,13 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          # Reuse the same BuildKit daemon and its local layer/cache-mount state
+          # between PR and main jobs. This avoids a ~1 minute remote cache upload.
+          name: laoshirenai-ci
+          keep-state: true
+          cleanup: false
+          cache-binary: false
 
       - name: Log in to GitHub Container Registry
         if: ${{ inputs.publish }}
@@ -91,8 +98,9 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: ${{ inputs.publish }}
+          # Seed the persistent local builder from the former hosted-runner
+          # cache on first use. Later runs hit the local BuildKit cache first.
           cache-from: type=gha
-          cache-to: type=gha,mode=max
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.commit_sha }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
@@ -107,7 +115,6 @@ jobs:
           platforms: linux/amd64
           push: ${{ inputs.publish }}
           cache-from: type=gha,scope=maintenance
-          cache-to: type=gha,mode=max,scope=maintenance
           tags: ${{ env.REGISTRY }}/${{ env.MAINTENANCE_IMAGE_NAME }}:${{ inputs.commit_sha }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}

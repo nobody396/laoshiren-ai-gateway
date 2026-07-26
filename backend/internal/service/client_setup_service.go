@@ -21,6 +21,9 @@ const (
 	clientSetupTicketPurpose = "client_setup"
 	clientSetupTicketTTL     = 10 * time.Minute
 	clientSetupAPIBaseURL    = "https://api.laoshirenai.com"
+
+	clientSetupClaudeGroupName = "MAX 20X"
+	clientSetupCodexGroupName  = "Pro 20X"
 )
 
 var (
@@ -141,7 +144,7 @@ func (s *ClientSetupService) ExchangeTicket(ctx context.Context, ticket string) 
 	if apiKey.UserID != data.UserID ||
 		apiKey.Status != StatusActive ||
 		apiKey.Group == nil ||
-		!clientSetupGroupCompatible(target, apiKey.Group) {
+		!clientSetupGroupMatchesTarget(target, apiKey.Group) {
 		return nil, ErrInvalidClientSetupTicket
 	}
 
@@ -166,7 +169,7 @@ func (s *ClientSetupService) ensureAPIKey(ctx context.Context, userID int64, tar
 		return nil, err
 	}
 	for i := range keys {
-		if keys[i].Name == name && keys[i].Group != nil && clientSetupGroupCompatible(target, keys[i].Group) {
+		if keys[i].Name == name && keys[i].Group != nil && clientSetupGroupMatchesTarget(target, keys[i].Group) {
 			return &keys[i], nil
 		}
 	}
@@ -177,7 +180,10 @@ func (s *ClientSetupService) ensureAPIKey(ctx context.Context, userID int64, tar
 	}
 	group := selectClientSetupGroup(target, groups)
 	if group == nil {
-		return nil, ErrClientSetupGroupMissing.WithMetadata(map[string]string{"target": target})
+		return nil, ErrClientSetupGroupMissing.WithMetadata(map[string]string{
+			"target":         target,
+			"required_group": clientSetupRequiredGroupName(target),
+		})
 	}
 	apiKey, err := s.apiKeys.Create(ctx, userID, CreateAPIKeyRequest{
 		Name:    name,
@@ -218,11 +224,30 @@ func clientSetupGroupCompatible(target string, group *Group) bool {
 	return target == ClientSetupTargetCodex && group.Platform == PlatformOpenAI
 }
 
+func clientSetupRequiredGroupName(target string) string {
+	if target == ClientSetupTargetClaude {
+		return clientSetupClaudeGroupName
+	}
+	return clientSetupCodexGroupName
+}
+
+func clientSetupGroupMatchesTarget(target string, group *Group) bool {
+	if !clientSetupGroupCompatible(target, group) {
+		return false
+	}
+	groupName := strings.ToLower(strings.Join(strings.Fields(group.Name), " "))
+	requiredName := strings.ToLower(clientSetupRequiredGroupName(target))
+	return groupName == requiredName ||
+		groupName == requiredName+" 分组" ||
+		strings.Contains(groupName, requiredName)
+}
+
 func selectClientSetupGroup(target string, groups []Group) *Group {
-	// GetAvailableGroups preserves the administrator-defined SortOrder. Do not
-	// silently override that product decision based on a guessed billing mode.
+	// One-click onboarding is a fixed product rule: Claude Code keys use MAX
+	// 20X and Codex keys use Pro 20X. Never silently fall back to another
+	// compatible group because that can change both routing and billing.
 	for i := range groups {
-		if clientSetupGroupCompatible(target, &groups[i]) {
+		if clientSetupGroupMatchesTarget(target, &groups[i]) {
 			group := groups[i]
 			return &group
 		}

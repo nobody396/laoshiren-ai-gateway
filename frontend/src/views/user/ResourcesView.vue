@@ -328,13 +328,13 @@ const quickSetups: Array<{
   {
     id: 'claude',
     title: '1. Claude Code',
-    description: '自动创建 Claude 专用 Key，安装 Claude Code CLI 并写好接口配置。',
+    description: '自动创建 Claude 专用 Key，绑定 MAX 20X 分组，并安装配置 Claude Code CLI。',
     icon: 'terminal'
   },
   {
     id: 'codex',
     title: '2. Codex CLI + App',
-    description: '自动创建 Codex 专用 Key，同时安装 CLI 与匹配系统/芯片的 Codex App。',
+    description: '自动创建 Codex 专用 Key，绑定 Pro 20X 分组，同时安装 CLI 与对应 Codex App。',
     icon: 'cpu'
   },
   {

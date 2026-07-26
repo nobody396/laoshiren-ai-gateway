@@ -73,7 +73,10 @@ func (s *ClientSetupService) IssueTicket(ctx context.Context, userID int64, targ
 	if err != nil {
 		return nil, err
 	}
-	apiKey := value.(*APIKey)
+	apiKey, ok := value.(*APIKey)
+	if !ok || apiKey == nil {
+		return nil, fmt.Errorf("ensure client setup API key returned an unexpected value")
+	}
 
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {

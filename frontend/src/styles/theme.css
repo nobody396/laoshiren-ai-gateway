@@ -1,0 +1,308 @@
+/*
+ * ============================================================================
+ * SINGLE SOURCE OF THEME TRUTH
+ * ============================================================================
+ * Every color Tailwind class in this codebase (gray, primary, red,
+ * green, emerald, amber, blue, indigo, slate, dark, accent, warm)
+ * resolves through the CSS custom properties defined here.
+ * tailwind.config.js only points at these variables — it defines no literal
+ * hex values itself. To re-theme the entire frontend, edit ONLY this file.
+ *
+ * Source of truth for the palette: /Users/fujunhao/laoshirenai/artifacts/
+ * design-system-v2/design.md + tokens.json ("LaoshirenAI Style Reference" —
+ * warm papyrus canvas, terracotta action color, laurel structural green).
+ *
+ * Format: every --color-* variable stores a space-separated RGB triple
+ * (e.g. "248 243 231"), NOT a hex string. This is required so Tailwind can
+ * apply opacity modifiers (bg-gray-100/50, text-primary-600/80, …) via the
+ * `rgb(var(--x) / <alpha-value>)` pattern — Tailwind 3 cannot vary the alpha
+ * channel of a plain hex custom property. See tailwind.config.js for how
+ * each token is wired to a Tailwind color name.
+ *
+ * dark: classes (e.g. `dark:bg-gray-800`) work by selecting a DIFFERENT,
+ * already-dark stop of the same direction-consistent ramp (50 = lightest,
+ * 950 = darkest) — they do not rely on these variables changing value under
+ * `.dark`. The numbered 50–950 ramps below are therefore defined once and
+ * used as-is in both light and dark mode. Only the single named semantic
+ * tokens (papyrus, ink, terracotta, …) get a `.dark` override, mirroring the
+ * pattern already established in admin-greco.css, for any code that
+ * references them directly instead of through a numbered Tailwind class.
+ * ============================================================================
+ */
+
+:root {
+  /* ---------------------------------------------------------------------
+   * Semantic tokens — direct 1:1 mirror of design-system-v2/tokens.json
+   * --------------------------------------------------------------------- */
+  --color-papyrus: 248 243 231; /* #f8f3e7 — page canvas, never pure white */
+  --color-marble: 250 246 236; /* #faf6ec — raised paper: cards, panels */
+  --color-parchment: 242 233 210; /* #f2e9d2 — recessed paper: sidebar, section headers */
+  --color-stone: 239 230 207; /* #efe6cf — deepest paper: zebra stripes, hover fills */
+  --color-ink: 31 26 18; /* #1f1a12 — primary text, warm near-black */
+  --color-ink-deep: 19 16 11; /* #13100b — emphasis text, display headings */
+  --color-muted: 138 125 99; /* #8a7d63 — secondary text, the only permitted grey */
+  --color-terracotta: 154 59 31; /* #9a3b1f — the single action color */
+  --color-terracotta-dark: 122 45 23; /* #7a2d17 — pressed/hover state of terracotta */
+  --color-laurel: 63 90 58; /* #3f5a3a — structural green: hairlines, rules */
+  --color-laurel-dark: 38 54 31; /* #26361f — heavy structural accent */
+  --color-danger: 159 47 35; /* #9f2f23 */
+  --color-success: 63 111 67; /* #3f6f43 */
+  --color-warning: 154 106 31; /* #9a6a1f */
+  --color-info: 49 95 113; /* #315f71 */
+  --color-vellum: 255 252 245; /* #fffcf5 — form control fill, lightest paper */
+
+  /* ---------------------------------------------------------------------
+   * gray-50…950 — replaces Tailwind's default cool gray (undefined before
+   * this change, 6,516 usages across the app). Warm paper (light) fading
+   * through muted tan into ink (dark). This is the single biggest lever:
+   * body backgrounds, borders, and most secondary text all run through it.
+   * --------------------------------------------------------------------- */
+  --color-gray-50: 248 243 231; /* #f8f3e7 papyrus */
+  --color-gray-100: 242 233 210; /* #f2e9d2 parchment */
+  --color-gray-200: 239 230 207; /* #efe6cf stone */
+  --color-gray-300: 221 210 179; /* #ddd2b3 */
+  --color-gray-400: 178 164 136; /* #b2a488 */
+  --color-gray-500: 138 125 99; /* #8a7d63 muted */
+  --color-gray-600: 107 95 73; /* #6b5f49 */
+  --color-gray-700: 74 64 50; /* #4a4032 */
+  --color-gray-800: 31 26 18; /* #1f1a12 ink */
+  --color-gray-900: 23 19 16; /* #171310 */
+  --color-gray-950: 19 16 11; /* #13100b ink-deep */
+
+  /* ---------------------------------------------------------------------
+   * dark-50…950 — the palette behind `dark:bg-dark-*` etc (2,124 usages).
+   * Was slate/cool-blue; now a warm deep-brown-to-black ladder so the dark
+   * theme reads as "ink terminal", not "cool tech slate".
+   * --------------------------------------------------------------------- */
+  --color-dark-50: 239 232 216; /* #efe8d8 */
+  --color-dark-100: 221 208 179; /* #ddd0b3 */
+  --color-dark-200: 195 178 140; /* #c3b28c */
+  --color-dark-300: 160 143 108; /* #a08f6c */
+  --color-dark-400: 120 106 79; /* #786a4f */
+  --color-dark-500: 86 74 55; /* #564a37 */
+  --color-dark-600: 61 51 37; /* #3d3325 */
+  --color-dark-700: 44 36 25; /* #2c2419 */
+  --color-dark-800: 32 26 18; /* #201a12 */
+  --color-dark-900: 23 19 13; /* #17130d */
+  --color-dark-950: 16 13 9; /* #100d09 */
+
+  /* ---------------------------------------------------------------------
+   * accent-50…950 — legacy "secondary dark" palette (0 current usages in
+   * components, kept defined for compatibility). Same warm-dark family as
+   * `dark-*`, slightly desaturated so it can't be mistaken for the primary
+   * dark surface scale if it's ever reintroduced.
+   * --------------------------------------------------------------------- */
+  --color-accent-50: 239 236 224; /* #efece0 */
+  --color-accent-100: 219 214 194; /* #dbd6c2 */
+  --color-accent-200: 189 182 155; /* #bdb69b */
+  --color-accent-300: 152 143 116; /* #988f74 */
+  --color-accent-400: 115 107 84; /* #736b54 */
+  --color-accent-500: 84 77 58; /* #544d3a */
+  --color-accent-600: 60 54 40; /* #3c3628 */
+  --color-accent-700: 43 39 27; /* #2b271b */
+  --color-accent-800: 31 28 20; /* #1f1c14 */
+  --color-accent-900: 23 20 14; /* #17140e */
+  --color-accent-950: 16 14 9; /* #100e09 */
+
+  /* ---------------------------------------------------------------------
+   * warm-50…950 — was already a warm-gray palette (0 current usages);
+   * realigned onto the same papyrus→ink ladder as `gray-*` for consistency.
+   * --------------------------------------------------------------------- */
+  --color-warm-50: 250 246 236; /* #faf6ec marble */
+  --color-warm-100: 242 233 210; /* #f2e9d2 parchment */
+  --color-warm-200: 239 230 207; /* #efe6cf stone */
+  --color-warm-300: 221 210 179; /* #ddd2b3 */
+  --color-warm-400: 178 164 136; /* #b2a488 */
+  --color-warm-500: 138 125 99; /* #8a7d63 muted */
+  --color-warm-600: 107 95 73; /* #6b5f49 */
+  --color-warm-700: 74 64 50; /* #4a4032 */
+  --color-warm-800: 31 26 18; /* #1f1a12 ink */
+  --color-warm-900: 23 19 16; /* #171310 */
+  --color-warm-950: 19 16 11; /* #13100b ink-deep */
+
+  /* ---------------------------------------------------------------------
+   * primary-50…950 — terracotta ramp (904 usages). primary-500 is the
+   * exact brand terracotta; primary-700 is the exact terracotta-dark
+   * pressed state. This replaces the blue that never matched the brand.
+   * --------------------------------------------------------------------- */
+  --color-primary-50: 251 241 234; /* #fbf1ea */
+  --color-primary-100: 246 224 210; /* #f6e0d2 */
+  --color-primary-200: 238 191 165; /* #eebfa5 */
+  --color-primary-300: 225 155 116; /* #e19b74 */
+  --color-primary-400: 197 106 66; /* #c56a42 */
+  --color-primary-500: 154 59 31; /* #9a3b1f terracotta */
+  --color-primary-600: 135 51 24; /* #873318 */
+  --color-primary-700: 122 45 23; /* #7a2d17 terracotta-dark */
+  --color-primary-800: 92 34 17; /* #5c2211 */
+  --color-primary-900: 64 23 11; /* #40170b */
+  --color-primary-950: 40 14 6; /* #280e06 */
+
+  /* ---------------------------------------------------------------------
+   * red-50…950 — danger ramp (684 usages). red-600 is the exact danger
+   * token, matching the button/badge/text-red-600 convention already in
+   * the codebase.
+   * --------------------------------------------------------------------- */
+  --color-red-50: 251 238 236; /* #fbeeec */
+  --color-red-100: 246 216 211; /* #f6d8d3 */
+  --color-red-200: 237 178 168; /* #edb2a8 */
+  --color-red-300: 224 137 122; /* #e0897a */
+  --color-red-400: 198 89 73; /* #c65949 */
+  --color-red-500: 177 58 42; /* #b13a2a */
+  --color-red-600: 159 47 35; /* #9f2f23 danger */
+  --color-red-700: 130 39 25; /* #822719 */
+  --color-red-800: 97 29 19; /* #611d13 */
+  --color-red-900: 67 20 13; /* #43140d */
+  --color-red-950: 41 12 8; /* #290c08 */
+
+  /* ---------------------------------------------------------------------
+   * green-50…950 / emerald-50…950 — success ramp (662 usages combined).
+   * Both palettes share the same values so `bg-green-*` and `bg-emerald-*`
+   * render identically; green-600/emerald-600 is the exact success token.
+   * --------------------------------------------------------------------- */
+  --color-green-50: 238 243 236; /* #eef3ec */
+  --color-green-100: 215 228 211; /* #d7e4d3 */
+  --color-green-200: 177 201 170; /* #b1c9aa */
+  --color-green-300: 135 171 125; /* #87ab7d */
+  --color-green-400: 92 139 83; /* #5c8b53 */
+  --color-green-500: 74 124 66; /* #4a7c42 */
+  --color-green-600: 63 111 67; /* #3f6f43 success */
+  --color-green-700: 50 90 54; /* #325a36 */
+  --color-green-800: 37 69 39; /* #254527 */
+  --color-green-900: 24 48 27; /* #18301b */
+  --color-green-950: 14 29 16; /* #0e1d10 */
+
+  --color-emerald-50: 238 243 236;
+  --color-emerald-100: 215 228 211;
+  --color-emerald-200: 177 201 170;
+  --color-emerald-300: 135 171 125;
+  --color-emerald-400: 92 139 83;
+  --color-emerald-500: 74 124 66;
+  --color-emerald-600: 63 111 67; /* success */
+  --color-emerald-700: 50 90 54;
+  --color-emerald-800: 37 69 39;
+  --color-emerald-900: 24 48 27;
+  --color-emerald-950: 14 29 16;
+
+  /* ---------------------------------------------------------------------
+   * amber-50…950 — warning ramp (487 usages). amber-600 is the exact
+   * warning token.
+   * --------------------------------------------------------------------- */
+  --color-amber-50: 250 241 226; /* #faf1e2 */
+  --color-amber-100: 243 224 189; /* #f3e0bd */
+  --color-amber-200: 229 198 136; /* #e5c688 */
+  --color-amber-300: 211 169 90; /* #d3a95a */
+  --color-amber-400: 185 141 51; /* #b98d33 */
+  --color-amber-500: 169 122 36; /* #a97a24 */
+  --color-amber-600: 154 106 31; /* #9a6a1f warning */
+  --color-amber-700: 125 85 25; /* #7d5519 */
+  --color-amber-800: 94 64 19; /* #5e4013 */
+  --color-amber-900: 64 44 13; /* #402c0d */
+  --color-amber-950: 39 26 8; /* #271a08 */
+
+  /* ---------------------------------------------------------------------
+   * blue-50…950 / indigo-50…950 / slate-50…950 — info ramp (595 usages
+   * combined). blue-600/slate-600 are the exact info token; indigo shares
+   * the same family shifted slightly toward violet so blue/indigo pairs
+   * used together (e.g. gradients) still read as distinct hues.
+   * --------------------------------------------------------------------- */
+  --color-blue-50: 234 241 242; /* #eaf1f2 */
+  --color-blue-100: 207 224 227; /* #cfe0e3 */
+  --color-blue-200: 161 195 201; /* #a1c3c9 */
+  --color-blue-300: 112 163 172; /* #70a3ac */
+  --color-blue-400: 72 128 140; /* #48808c */
+  --color-blue-500: 55 110 124; /* #376e7c */
+  --color-blue-600: 49 95 113; /* #315f71 info */
+  --color-blue-700: 40 76 90; /* #284c5a */
+  --color-blue-800: 31 58 68; /* #1f3a44 */
+  --color-blue-900: 22 40 47; /* #16282f */
+  --color-blue-950: 13 24 28; /* #0d181c */
+
+  --color-indigo-50: 234 238 244; /* #eaeef4 */
+  --color-indigo-100: 207 216 230; /* #cfd8e6 */
+  --color-indigo-200: 163 181 207; /* #a3b5cf */
+  --color-indigo-300: 118 144 181; /* #7690b5 */
+  --color-indigo-400: 82 111 151; /* #526f97 */
+  --color-indigo-500: 61 90 127; /* #3d5a7f */
+  --color-indigo-600: 51 77 108; /* #334d6c */
+  --color-indigo-700: 42 63 88; /* #2a3f58 */
+  --color-indigo-800: 33 47 66; /* #212f42 */
+  --color-indigo-900: 24 33 45; /* #18212d */
+  --color-indigo-950: 14 19 26; /* #0e131a */
+
+  --color-slate-50: 238 241 241; /* #eef1f1 */
+  --color-slate-100: 216 224 224; /* #d8e0e0 */
+  --color-slate-200: 178 194 195; /* #b2c2c3 */
+  --color-slate-300: 135 160 162; /* #87a0a2 */
+  --color-slate-400: 95 127 130; /* #5f7f82 */
+  --color-slate-500: 67 101 105; /* #436569 */
+  --color-slate-600: 49 95 113; /* #315f71 info */
+  --color-slate-700: 43 77 84; /* #2b4d54 */
+  --color-slate-800: 33 58 63; /* #213a3f */
+  --color-slate-900: 24 40 44; /* #18282c */
+  --color-slate-950: 14 23 25; /* #0e1719 */
+}
+
+/*
+ * .dark overrides — semantic tokens only (values lifted from the already-
+ * shipped admin-greco.css dark palette so the console skin and the global
+ * theme agree). The numbered 50–950 ramps above are NOT redefined here: see
+ * the file header for why that's correct rather than an oversight.
+ */
+.dark {
+  --color-papyrus: 42 37 29; /* #2a251d */
+  --color-marble: 51 45 35; /* #332d23 */
+  --color-parchment: 58 49 34; /* #3a3122 */
+  --color-stone: 67 56 36; /* #433824 */
+  --color-ink: 242 234 214; /* #f2ead6 */
+  --color-ink-deep: 255 248 232; /* #fff8e8 */
+  --color-muted: 209 195 165; /* #d1c3a5 */
+  --color-terracotta: 225 138 104; /* #e18a68 */
+  --color-terracotta-dark: 255 177 139; /* #ffb18b */
+  --color-laurel: 185 201 158; /* #b9c99e */
+  --color-laurel-dark: 237 244 211; /* #edf4d3 */
+  --color-danger: 255 155 134; /* #ff9b86 */
+  --color-success: 184 216 159; /* #b8d89f */
+  --color-warning: 240 199 122; /* #f0c77a */
+  --color-info: 159 208 220; /* #9fd0dc */
+  --color-vellum: 46 40 30; /* #2e281e — dark-mode form fill, one step above dark papyrus */
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * Motion — 时长与缓动的单一事实源
+ *
+ * 跟颜色同源：调节奏只改这里，不用翻组件。
+ * 值取自 design-system-v2/design.md 的 Tokens — Motion 一节。
+ * 纪律：只动 transform 和 opacity。blur/filter 触发重绘，且在这套
+ * 纸质系统里显廉价 —— 契约 Motion Etiquette 一节写死了。
+ * ───────────────────────────────────────────────────────────── */
+:root {
+  /* 时长 */
+  --duration-instant: 75ms;    /* 按下反馈、勾选翻转 */
+  --duration-fast: 150ms;      /* 房子默认：hover 换色 */
+  --duration-base: 200ms;      /* 下拉、tooltip、tab 切换 */
+  --duration-slow: 300ms;      /* 抽屉、弹窗、侧栏折叠 */
+  --duration-reveal: 500ms;    /* 落地页区块入场（原 800ms，偏拖沓） */
+  --duration-ambient: 2s;      /* 骨架屏微光循环 */
+
+  /* 缓动 */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);   /* 默认，对称无过冲 */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);          /* 入场 */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);           /* 退场 */
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);      /* 落地页入场专用：快出长收 */
+
+  /* 入场编排 */
+  --reveal-lift: 16px;         /* 上移距离（原 24px，配 500ms 更利落） */
+  --reveal-stagger: 120ms;     /* 逐层间隔 —— 约为时长的 1/4，层次才看得出来 */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 1ms;
+    --duration-fast: 1ms;
+    --duration-base: 1ms;
+    --duration-slow: 1ms;
+    --duration-reveal: 1ms;
+    --reveal-lift: 0px;
+    --reveal-stagger: 0ms;
+  }
+}

@@ -4,14 +4,14 @@
       <div class="hero-section__content">
         <div class="hero-section__eyebrow mirror-reveal">{{ ui.eyebrow }}</div>
         <h1 class="hero-section__title">
-          <span class="mirror-reveal" style="transition-delay: 0.08s">{{ ui.titleBrand }}</span>
-          <em class="mirror-reveal" style="transition-delay: 0.16s">{{ ui.titleProduct }}</em>
+          <span class="mirror-reveal" style="transition-delay: calc(var(--reveal-stagger) * 1)">{{ ui.titleBrand }}</span>
+          <em class="mirror-reveal" style="transition-delay: calc(var(--reveal-stagger) * 2)">{{ ui.titleProduct }}</em>
         </h1>
-        <p class="hero-section__desc mirror-reveal" style="transition-delay: 0.2s">
+        <p class="hero-section__desc mirror-reveal" style="transition-delay: calc(var(--reveal-stagger) * 3)">
           <span v-for="line in ui.descriptionLines" :key="line">{{ line }}</span>
         </p>
 
-        <div class="hero-section__actions mirror-reveal" style="transition-delay: 0.32s">
+        <div class="hero-section__actions mirror-reveal" style="transition-delay: calc(var(--reveal-stagger) * 4)">
           <a
             :href="isAuthenticated ? dashboardPath : '/login'"
             class="hero-section__btn hero-section__btn--primary"
@@ -27,10 +27,19 @@
         </div>
       </div>
 
-      <aside class="hero-section__quote mirror-reveal" style="transition-delay: 0.26s">
+      <aside class="hero-section__quote mirror-reveal" style="transition-delay: calc(var(--reveal-stagger) * 3)">
         <p class="hero-section__quote-text">{{ ui.quoteText }}</p>
         <p class="hero-section__quote-author">{{ ui.quoteAuthor }}</p>
-        <p class="hero-section__quote-greek">{{ ui.quoteGreek }}</p>
+        <!-- 逐字符浮现：拆成 span，每个字符按 index 递增延迟。
+             空格用 &nbsp; 保证 inline-block 下不塌陷。 -->
+        <p class="hero-section__quote-greek" :aria-label="ui.quoteGreek">
+          <span
+            v-for="(ch, i) in greekChars"
+            :key="`${i}-${ch}`"
+            aria-hidden="true"
+            :style="{ transitionDelay: `calc(var(--reveal-stagger) * 3 + ${i * 26}ms)` }"
+          >{{ ch === ' ' ? ' ' : ch }}</span>
+        </p>
       </aside>
     </div>
   </section>
@@ -79,6 +88,10 @@ const ui = computed(() => (isEnglish.value
     quoteGreek: 'ὁ δὲ ἀνεξέταστος βίος οὐ βιωτὸς ἀνθρώπῳ'
   }))
 
+/** 希腊文引文拆成字符数组，供逐字浮现使用。
+ *  用 Array.from 而不是 split('') —— 希腊文有组合字符，split 会拆坏。 */
+const greekChars = computed(() => Array.from(ui.value.quoteGreek ?? ''))
+
 defineProps<{
   isAuthenticated: boolean
   dashboardPath: string
@@ -94,6 +107,61 @@ defineProps<{
   background:
     radial-gradient(circle at 50% 0%, rgba(242, 233, 210, 0.9) 0%, rgba(242, 233, 210, 0) 62%),
     linear-gradient(180deg, #f8f3e7 0%, #faf6ec 100%);
+}
+
+/* ── L1 环境层 ────────────────────────────────────────────────
+ * 两层纯 CSS 的环境动效，零素材、零依赖。
+ * 目的不是"加动画"，是让这张纸有生命感 —— 真实纸张在光下本来就有
+ * 纤维颗粒和缓慢移动的光斑。这是从 OKX 的 film-grain 手法移植过来的，
+ * 但语义换了：他们做胶片感，我们做纸感。
+ * ─────────────────────────────────────────────────────────── */
+
+/* 辉光漂移：朱红与月桂在纸下缓慢游走，像侧光照着纸面 */
+.hero-section::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 44% at 22% 32%, rgba(154, 59, 31, 0.055) 0%, rgba(154, 59, 31, 0) 70%),
+    radial-gradient(34% 40% at 78% 62%, rgba(63, 90, 58, 0.05) 0%, rgba(63, 90, 58, 0) 70%);
+  animation: heroGlowDrift 26s var(--ease-standard, ease-in-out) infinite alternate;
+}
+
+/* 纸纤维颗粒：SVG feTurbulence 生成，不是图片。
+ * steps(6) 而不是平滑过渡 —— 平滑会像"呼吸"，跳帧才像纸的颗粒感 */
+.hero-section::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: heroGrain 3s steps(6) infinite;
+}
+
+@keyframes heroGlowDrift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(2.5%, -2%, 0) scale(1.06); }
+}
+
+@keyframes heroGrain {
+  0%   { transform: translate3d(0, 0, 0); }
+  20%  { transform: translate3d(-3%, 2%, 0); }
+  40%  { transform: translate3d(2%, -3%, 0); }
+  60%  { transform: translate3d(-2%, -2%, 0); }
+  80%  { transform: translate3d(3%, 1%, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-section::before,
+  .hero-section::after {
+    animation: none;
+  }
 }
 
 .hero-section__container {

@@ -1130,9 +1130,21 @@ onMounted(() => {
         { threshold: 0.12, rootMargin: '0px 0px -48px 0px' }
       )
 
-      revealNodes.forEach((node) => observer?.observe(node))
+      // 顺序很关键，反了首屏就没有入场动效。
+      //
+      // observe() 对已在视口内的元素会立刻回调并打上 is-visible。如果先 observe
+      // 再挂门控类，两者落在同一帧，浏览器从来没画出过
+      // `.home-page--reveal-ready .mirror-reveal:not(.is-visible)` 这个隐藏态 ——
+      // 没有隐藏态就没有过渡，首屏元素直接以最终样式出现。
+      //
+      // 所以：先挂门控类 → 双 rAF 确保隐藏态真的被绘制过 → 再启动 observer。
       revealReady.value = true
-      revealFallbackTimer = window.setTimeout(revealAllSections, 1200)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          revealNodes.forEach((node) => observer?.observe(node))
+        })
+      })
+      revealFallbackTimer = window.setTimeout(revealAllSections, 1600)
     } catch {
       revealAllSections()
     }
@@ -1210,36 +1222,128 @@ onUnmounted(() => {
 
 <style>
 /* 全局滚动进场动画（需要非 scoped 以穿透子组件） */
+/* 时长/缓动/位移全部取自 theme.css，调节奏改那一处即可。
+ * 原来还动了 filter: blur(12px) —— 去掉了：blur 触发重绘，而且在纸质系统里
+ * 那种"糊一下再清晰"的观感偏廉价。只动 transform 和 opacity。 */
 .mirror-reveal {
   opacity: 1;
   transform: translateY(0);
-  filter: blur(0);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity var(--duration-reveal) var(--ease-expo),
+              transform var(--duration-reveal) var(--ease-expo);
+  will-change: opacity, transform;
 }
 
 .home-page--reveal-ready .mirror-reveal:not(.is-visible) {
   opacity: 0;
-  transform: translateY(24px);
-  filter: blur(12px);
+  transform: translateY(var(--reveal-lift));
 }
 
 .mirror-reveal.is-visible {
   opacity: 1;
   transform: translateY(0);
-  filter: blur(0);
+  will-change: auto;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .mirror-reveal {
-    transition-duration: 1ms;
-  }
+/* ── L2 排版层：让排版本身成为动效 ───────────────────────────────
+ * 必须放在这个非 scoped 块里。写在 HeroSection 的 scoped 块里时，
+ * `:global(.home-page--reveal-ready) .hero-section__title span` 这类
+ * 「全局祖先 + 局部后代」的选择器会被 Vue 的 scoped 编译器整条丢掉
+ * （实测编译产物里一条都不剩），规则根本不进样式表。
+ *
+ * 时长/缓动/间隔全部取自 theme.css，调节奏改那一处。
+ * ─────────────────────────────────────────────────────────── */
 
+/* transition 里必须把 opacity/transform 一起声明。
+ * 这条选择器特异性高于 .mirror-reveal，只写 letter-spacing 会把
+ * 入场的淡入上浮整个覆盖掉。 */
+.hero-section__title span,
+.hero-section__title em {
+  transition:
+    opacity var(--duration-reveal) var(--ease-expo),
+    transform var(--duration-reveal) var(--ease-expo),
+    letter-spacing 900ms var(--ease-expo);
+}
+
+/* 字距收敛：Cinzel 品牌名从散开收紧到定位，像铅字被压进版盘。
+ * 只给罗马大写做，斜体不参与（斜体收字距会糊）。
+ *
+ * 这里用 keyframes 而不是 transition，是踩过坑之后的选择：
+ * transition 需要从元素的"当前计算值"插值，而 letter-spacing 的零值
+ * 会被 Chrome 归一化成关键字 `normal`（继承也是 `normal`），
+ * CSS 无法在 `normal` 与长度之间插值 —— 过渡静默失效，一次都不触发。
+ * keyframes 两端都显式写成长度，绕开这个问题。 */
+@keyframes heroLetterSettle {
+  from { letter-spacing: 0.16em; }
+  to   { letter-spacing: 0.002em; }
+}
+
+.home-page--reveal-ready .hero-section__title span.is-visible {
+  animation: heroLetterSettle 900ms var(--ease-expo) both;
+  animation-delay: calc(var(--reveal-stagger) * 1);
+}
+
+/* 斜体产品名：从左往右揭开，像被一笔写出来。
+ *
+ * 同样用 keyframes 而不是 transition，原因和上面字距一样：
+ * transition 依赖"隐藏态先被浏览器绘制过一帧"，而这个元素拿到 is-visible
+ * 的时机太早，隐藏态从没上过屏 —— 实测采样第一帧时 clip-path 已经是终态，
+ * 揭开过程整个没播。keyframes 不依赖起始计算值，挂上就一定完整播完。 */
+@keyframes heroInkWrite {
+  from { clip-path: inset(0 100% -0.25em 0); }
+  to   { clip-path: inset(0 -0.12em -0.25em 0); }
+}
+
+.hero-section__title em {
+  clip-path: inset(0 -0.12em -0.25em 0);
+}
+
+.home-page--reveal-ready .hero-section__title em.is-visible {
+  animation: heroInkWrite 1100ms var(--ease-expo) both;
+  animation-delay: calc(var(--reveal-stagger) * 2);
+}
+
+/* 希腊文逐字浮现 —— 全站独有、竞品抄不走的一个动作 */
+.hero-section__quote-greek span {
+  display: inline-block;
+  white-space: pre;
+  transition: opacity 420ms var(--ease-out),
+              transform 420ms var(--ease-out);
+}
+
+.home-page--reveal-ready .hero-section__quote:not(.is-visible) .hero-section__quote-greek span {
+  opacity: 0;
+  transform: translateY(0.16em);
+}
+
+/* 初始态一律挂在 --reveal-ready 门控下：JS 没跑起来时直接是最终样式，
+ * 不会出现标题一直散着或被裁着的降级事故。 */
+
+@media (prefers-reduced-motion: reduce) {
   .home-page--reveal-ready .mirror-reveal:not(.is-visible) {
     opacity: 1;
     transform: translateY(0);
-    filter: blur(0);
+  }
+
+  .hero-section__title span,
+  .hero-section__title em,
+  .hero-section__quote-greek span {
+    transition-duration: 1ms;
+    transition-delay: 0ms;
+  }
+
+  .home-page--reveal-ready .hero-section__title span.is-visible {
+    animation: none;
+    letter-spacing: 0.002em;
+  }
+
+  .home-page--reveal-ready .hero-section__title em.is-visible {
+    animation: none;
+    clip-path: inset(0 -0.12em -0.25em 0);
+  }
+
+  .home-page--reveal-ready .hero-section__quote:not(.is-visible) .hero-section__quote-greek span {
+    opacity: 1;
+    transform: none;
   }
 }
 </style>

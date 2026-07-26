@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/response"
+	middleware2 "github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +19,7 @@ const resourceDownloadTokenTTL = 5 * time.Minute
 
 const (
 	codexWindowsPublicBase = "https://laoshirenai.com/api/v1/public-downloads/codex/windows-x64"
+	codexPublicBase        = "https://laoshirenai.com/api/v1/public-downloads/codex"
 	codexPackageName       = "OpenAI.Codex"
 	codexPackagePublisher  = "CN=50BDFD77-8903-4850-9FFE-6E8522F64D5B"
 	ccSwitchPublicBase     = "https://laoshirenai.com/api/v1/public-downloads/cc-switch"
@@ -26,6 +29,15 @@ var codexWindowsMSIXVersion = regexp.MustCompile(`(?i)^OpenAI\.Codex_([0-9]+(?:\
 
 type ResourceHandler struct {
 	downloads *service.DownloadResourceService
+	setup     *service.ClientSetupService
+}
+
+type clientSetupTicketRequest struct {
+	Target string `json:"target" binding:"required,oneof=claude codex"`
+}
+
+type clientSetupExchangeRequest struct {
+	Ticket string `json:"ticket" binding:"required"`
 }
 
 type publicDownloadManifest struct {
@@ -47,8 +59,8 @@ type publicDownloadAsset struct {
 	DownloadURL string `json:"download_url"`
 }
 
-func NewResourceHandler(downloads *service.DownloadResourceService) *ResourceHandler {
-	return &ResourceHandler{downloads: downloads}
+func NewResourceHandler(downloads *service.DownloadResourceService, setup *service.ClientSetupService) *ResourceHandler {
+	return &ResourceHandler{downloads: downloads, setup: setup}
 }
 
 func buildPublicDownloadManifest(manifest *service.CachedDownloadManifest, publicBase string) publicDownloadManifest {
@@ -156,6 +168,51 @@ func (h *ResourceHandler) DownloadWithToken(c *gin.Context) {
 	c.FileAttachment(file.Path, file.Asset.Name)
 }
 
+func (h *ResourceHandler) CreateSetupTicket(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok || subject.UserID <= 0 {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req clientSetupTicketRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请选择 Claude Code 或 Codex")
+		return
+	}
+	ticket, err := h.setup.IssueTicket(c.Request.Context(), subject.UserID, req.Target)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	c.Header("Cache-Control", "private, no-store")
+	response.Success(c, gin.H{
+		"ticket":     ticket.Ticket,
+		"expires_in": ticket.ExpiresIn,
+		"target":     ticket.Target,
+		"key_name":   ticket.KeyName,
+		"group_name": ticket.GroupName,
+	})
+}
+
+func (h *ResourceHandler) ExchangeSetupTicket(c *gin.Context) {
+	var req clientSetupExchangeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "一键安装凭证不能为空")
+		return
+	}
+	credential, err := h.setup.ExchangeTicket(c.Request.Context(), req.Ticket)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	c.Header("Cache-Control", "no-store")
+	response.Success(c, gin.H{
+		"target":   credential.Target,
+		"api_key":  credential.APIKey,
+		"base_url": credential.BaseURL,
+	})
+}
+
 func (h *ResourceHandler) DownloadCodexWindowsLatest(c *gin.Context) {
 	file, err := h.downloads.GetCodexWindowsDesktopAsset(c.Request.Context())
 	if err != nil {
@@ -210,6 +267,32 @@ func (h *ResourceHandler) DownloadCodexWindowsPackage(c *gin.Context) {
 	c.Header("Content-Type", "application/msix")
 	c.Header("Cache-Control", "public, max-age=31536000, immutable")
 	c.File(file.Path)
+}
+
+func (h *ResourceHandler) CodexLatestManifest(c *gin.Context) {
+	manifest, err := h.downloads.ListTool(c.Request.Context(), "codex")
+	if err != nil {
+		handlePublicDownloadError(c, err)
+		return
+	}
+	c.Header("Cache-Control", "public, max-age=300")
+	c.JSON(http.StatusOK, buildPublicDownloadManifest(manifest, codexPublicBase))
+}
+
+func (h *ResourceHandler) DownloadCodexPackage(c *gin.Context) {
+	file, err := h.downloads.GetToolAsset(c.Request.Context(), "codex", c.Param("assetID"))
+	if err != nil {
+		handlePublicDownloadError(c, err)
+		return
+	}
+	switch strings.ToLower(filepath.Ext(file.Asset.Name)) {
+	case ".msix":
+		c.Header("Content-Type", "application/msix")
+	case ".dmg":
+		c.Header("Content-Type", "application/x-apple-diskimage")
+	}
+	c.Header("Cache-Control", "public, max-age=31536000, immutable")
+	c.FileAttachment(file.Path, file.Asset.Name)
 }
 
 func (h *ResourceHandler) CodexWindowsAppInstaller(c *gin.Context) {

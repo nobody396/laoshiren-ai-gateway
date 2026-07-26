@@ -2,8 +2,11 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="0.4.0"
+SCRIPT_VERSION="0.5.0"
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
+DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
+DEFAULT_CODEX_MANIFEST_URL="https://laoshirenai.com/api/v1/public-downloads/codex/latest.json"
+DEFAULT_TOPUP_URL="https://laoshirenai.com/get-subscription"
 DEFAULT_TOOLS="all"
 DEFAULT_NODE_INDEX_PRIMARY="https://npmmirror.com/mirrors/node/index.tab"
 DEFAULT_NODE_INDEX_FALLBACK="https://nodejs.org/dist/index.tab"
@@ -30,6 +33,11 @@ CODEX_API_KEY="${LAOSHIRENAI_CODEX_API_KEY:-}"
 NODE_VERSION_OVERRIDE="${LAOSHIRENAI_NODE_VERSION:-}"
 SKIP_CLIENT_INSTALL=0
 FORCE_CLIENT_INSTALL=0
+INSTALL_CODEX_APP=0
+SETUP_TOKEN="${LAOSHIRENAI_SETUP_TOKEN:-}"
+SETUP_EXCHANGE_URL="${LAOSHIRENAI_SETUP_EXCHANGE_URL:-$DEFAULT_SETUP_EXCHANGE_URL}"
+CODEX_MANIFEST_URL="${LAOSHIRENAI_CODEX_MANIFEST_URL:-$DEFAULT_CODEX_MANIFEST_URL}"
+BALANCE_READY=1
 
 # 兼容统一 API Key 环境变量；若未提供专用 Key，则回退复用统一值。
 UNIFIED_API_KEY="${LAOSHIRENAI_API_KEY:-}"
@@ -45,6 +53,7 @@ ENV_TOOLS="${LAOSHIRENAI_TOOLS:-}"
 [ -n "$ENV_TOOLS" ] && TOOLS="$ENV_TOOLS"
 [ "${LAOSHIRENAI_SKIP_CLIENT_INSTALL:-0}" = "1" ] && SKIP_CLIENT_INSTALL=1
 [ "${LAOSHIRENAI_FORCE_CLIENT_INSTALL:-0}" = "1" ] && FORCE_CLIENT_INSTALL=1
+[ "${LAOSHIRENAI_INSTALL_CODEX_APP:-0}" = "1" ] && INSTALL_CODEX_APP=1
 
 NODE_BIN=""
 NPM_BIN=""
@@ -272,6 +281,10 @@ parse_args() {
         FORCE_CLIENT_INSTALL=1
         shift
         ;;
+      --install-codex-app)
+        INSTALL_CODEX_APP=1
+        shift
+        ;;
       --help|-h)
         cat <<'EOF'
 老实人 AI 一键安装与自动配置脚本
@@ -287,6 +300,7 @@ parse_args() {
   --node-version        指定 Node.js 版本，例如 v24.11.0
   --skip-client-install 仅写配置，不安装 claude/codex 包
   --force-client-install 即使检测到已有客户端，也重新安装所选 CLI
+  --install-codex-app    同时安装或更新与当前 Mac 芯片匹配的 Codex App
 EOF
         exit 0
         ;;
@@ -320,6 +334,10 @@ prompt_for_named_api_key() {
 
 # 根据用户选择的工具范围，分别补齐 Claude Code 与 Codex 所需的 API Key。
 prompt_for_api_keys() {
+  if [ -n "$SETUP_TOKEN" ]; then
+    log_info "检测到一次性安装凭证，将自动领取对应客户端的专用配置"
+    return 0
+  fi
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]; then
     if [ -z "$CLAUDE_API_KEY" ]; then
       prompt_for_named_api_key "Claude Code API Key" "请输入 Claude Code API Key" "CLAUDE_API_KEY" "--api-key" "LAOSHIRENAI_CLAUDE_API_KEY"
@@ -532,6 +550,74 @@ ensure_node_runtime() {
   log_info "本地 Node.js 已就绪: $("$NODE_BIN" --version)"
 }
 
+# 用一次性凭证换取当前目标的专用 API Key。响应只在本机内存/临时文件中解析，
+# 不会把 Key 打印到终端或写入 shell 历史。
+exchange_setup_ticket() {
+  [ -n "$SETUP_TOKEN" ] || return 0
+
+  local tmp_dir
+  local request_path
+  local response_path
+  local status_code
+  local parsed
+  local target
+  local received_key
+  local received_base_url
+
+  tmp_dir="$(mktemp -d)"
+  request_path="${tmp_dir}/request.json"
+  response_path="${tmp_dir}/response.json"
+  SETUP_TICKET="$SETUP_TOKEN" "$NODE_BIN" <<'EOF' >"$request_path"
+process.stdout.write(JSON.stringify({ ticket: process.env.SETUP_TICKET }))
+EOF
+
+  log_info "正在领取一次性安装配置"
+  status_code="$(curl -sS -o "$response_path" -w '%{http_code}' \
+    -H 'Content-Type: application/json' \
+    --data-binary "@${request_path}" \
+    "$SETUP_EXCHANGE_URL" || true)"
+  rm -f "$request_path"
+  if [ "$status_code" != "200" ]; then
+    rm -rf "$tmp_dir"
+    log_error "一次性安装凭证无效、已过期或已使用，请回到下载资源页重新生成"
+  fi
+
+  parsed="$(SETUP_RESPONSE_PATH="$response_path" "$NODE_BIN" <<'EOF'
+const fs = require('node:fs')
+const body = JSON.parse(fs.readFileSync(process.env.SETUP_RESPONSE_PATH, 'utf8'))
+const data = body && body.data
+if (!data || !['claude', 'codex'].includes(data.target) || !data.api_key || !data.base_url) {
+  process.exit(2)
+}
+process.stdout.write([
+  Buffer.from(String(data.target)).toString('base64'),
+  Buffer.from(String(data.api_key)).toString('base64'),
+  Buffer.from(String(data.base_url)).toString('base64')
+].join(':'))
+EOF
+  )" || {
+    rm -rf "$tmp_dir"
+    log_error "服务器返回的一键安装配置格式无效"
+  }
+  rm -rf "$tmp_dir"
+
+  IFS=: read -r target received_key received_base_url <<<"$parsed"
+  target="$(printf '%s' "$target" | base64 -d)"
+  received_key="$(printf '%s' "$received_key" | base64 -d)"
+  received_base_url="$(printf '%s' "$received_base_url" | base64 -d)"
+  [ "$target" = "$TOOLS" ] || log_error "安装凭证与当前工具不匹配，请重新生成"
+
+  BASE_URL="$received_base_url"
+  if [ "$target" = "claude" ]; then
+    CLAUDE_API_KEY="$received_key"
+  else
+    CODEX_API_KEY="$received_key"
+  fi
+  SETUP_TOKEN=""
+  unset LAOSHIRENAI_SETUP_TOKEN SETUP_TICKET
+  log_info "专用配置领取成功"
+}
+
 # 将 npm 切到国内镜像，降低无代理环境下的失败率。
 ensure_npm_registry() {
   ACTIVE_NPM_REGISTRY="$1"
@@ -579,6 +665,128 @@ install_requested_clients() {
     log_info "正在安装 Codex"
     npm_install_with_fallback "@openai/codex@latest"
   fi
+}
+
+install_codex_app_if_requested() {
+  [ "$INSTALL_CODEX_APP" -eq 1 ] || return 0
+  uses_codex || log_error "--install-codex-app 只能与 Codex 一起使用"
+
+  local os_name
+  local arch_name
+  local target_arch
+  local tmp_dir
+  local manifest_path
+  local asset_record
+  local asset_name
+  local asset_url
+  local expected_sha
+  local dmg_path
+  local actual_sha
+  local mount_dir
+  local source_app
+  local destination_root
+  local destination_app
+  local source_version
+  local current_version=""
+  local current_app=""
+
+  os_name="$(uname -s)"
+  if [ "$os_name" != "Darwin" ]; then
+    log_warn "Codex App 自动安装目前只在 macOS 使用 install.sh；Windows 请使用 PowerShell 命令"
+    return 0
+  fi
+  arch_name="$(uname -m)"
+  case "$arch_name" in
+    arm64|aarch64) target_arch="arm64" ;;
+    x86_64|amd64) target_arch="x64" ;;
+    *) log_error "暂不支持的 macOS 架构: $arch_name" ;;
+  esac
+
+  tmp_dir="$(mktemp -d)"
+  manifest_path="${tmp_dir}/latest.json"
+  curl -fsSL "$CODEX_MANIFEST_URL" -o "$manifest_path" || {
+    rm -rf "$tmp_dir"
+    log_error "无法读取本站 Codex App 最新版本清单"
+  }
+  asset_record="$(MANIFEST_PATH="$manifest_path" TARGET_ARCH="$target_arch" "$NODE_BIN" <<'EOF'
+const fs = require('node:fs')
+const manifest = JSON.parse(fs.readFileSync(process.env.MANIFEST_PATH, 'utf8'))
+const assets = Array.isArray(manifest.assets) ? manifest.assets : []
+const asset = assets.find((item) =>
+  item.platform === 'macos' &&
+  item.arch === process.env.TARGET_ARCH &&
+  String(item.name || '').toLowerCase().endsWith('.dmg'))
+if (!asset || !asset.download_url || !/^[a-f0-9]{64}$/i.test(String(asset.sha256 || ''))) process.exit(2)
+process.stdout.write([
+  Buffer.from(String(asset.name)).toString('base64'),
+  Buffer.from(String(asset.download_url)).toString('base64'),
+  Buffer.from(String(asset.sha256).toLowerCase()).toString('base64')
+].join(':'))
+EOF
+  )" || {
+    rm -rf "$tmp_dir"
+    log_error "本站缓存中暂时没有适合当前 Mac 芯片的 Codex App"
+  }
+  IFS=: read -r asset_name asset_url expected_sha <<<"$asset_record"
+  asset_name="$(printf '%s' "$asset_name" | base64 -d)"
+  asset_url="$(printf '%s' "$asset_url" | base64 -d)"
+  expected_sha="$(printf '%s' "$expected_sha" | base64 -d)"
+  case "$asset_url" in
+    https://laoshirenai.com/api/v1/public-downloads/codex/packages/*) ;;
+    *) rm -rf "$tmp_dir"; log_error "Codex App 下载地址未通过同站校验" ;;
+  esac
+
+  dmg_path="${tmp_dir}/${asset_name}"
+  log_info "正在从本站缓存下载最新 Codex App (${target_arch})"
+  curl -fL --retry 3 --retry-delay 2 "$asset_url" -o "$dmg_path" || {
+    rm -rf "$tmp_dir"
+    log_error "Codex App 下载失败，请检查网络后重试"
+  }
+  actual_sha="$(shasum -a 256 "$dmg_path" | awk '{print tolower($1)}')"
+  if [ "$actual_sha" != "$expected_sha" ]; then
+    rm -rf "$tmp_dir"
+    log_error "Codex App SHA256 校验失败，已停止安装"
+  fi
+
+  mount_dir="${tmp_dir}/mount"
+  mkdir -p "$mount_dir"
+  hdiutil attach "$dmg_path" -nobrowse -quiet -mountpoint "$mount_dir" || {
+    rm -rf "$tmp_dir"
+    log_error "Codex App 镜像挂载失败"
+  }
+  source_app="$(find "$mount_dir" -maxdepth 2 -type d -name 'Codex.app' -print -quit)"
+  if [ -z "$source_app" ] || ! codesign --verify --deep --strict "$source_app" >/dev/null 2>&1; then
+    hdiutil detach "$mount_dir" -quiet >/dev/null 2>&1 || true
+    rm -rf "$tmp_dir"
+    log_error "Codex App 签名校验失败，已停止安装"
+  fi
+
+  source_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$source_app/Contents/Info.plist" 2>/dev/null || true)"
+  for candidate in "/Applications/Codex.app" "$HOME/Applications/Codex.app"; do
+    if [ -d "$candidate" ]; then
+      current_app="$candidate"
+      current_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$candidate/Contents/Info.plist" 2>/dev/null || true)"
+      break
+    fi
+  done
+  if [ -n "$current_app" ] && [ -n "$source_version" ] && [ "$current_version" = "$source_version" ]; then
+    log_info "Codex App 已是最新版本 (${source_version})"
+  else
+    destination_root="$HOME/Applications"
+    destination_app="${destination_root}/Codex.app"
+    mkdir -p "$destination_root"
+    if pgrep -x Codex >/dev/null 2>&1; then
+      log_warn "检测到 Codex App 正在运行，将先安全退出再更新"
+      osascript -e 'tell application "Codex" to quit' >/dev/null 2>&1 || true
+      sleep 2
+    fi
+    rm -rf "$destination_app"
+    ditto "$source_app" "$destination_app"
+    log_info "Codex App 已安装到 ${destination_app}${source_version:+（版本 ${source_version}）}"
+  fi
+
+  hdiutil detach "$mount_dir" -quiet >/dev/null 2>&1 || true
+  rm -rf "$tmp_dir"
 }
 
 # 用 Node 安全合并 Claude Code 的 JSON 配置，尽量保留用户已有字段。
@@ -653,8 +861,8 @@ write_codex_config() {
 
   cat >"$CODEX_CONFIG_PATH" <<EOF
 model_provider = "OpenAI"
-model = "gpt-5.4"
-review_model = "gpt-5.4"
+model = "gpt-5.6-sol"
+review_model = "gpt-5.6-sol"
 model_reasoning_effort = "high"
 disable_response_storage = true
 network_access = "enabled"
@@ -690,47 +898,71 @@ normalize_openai_v1_base_url() {
   esac
 }
 
-verify_claude_api_key() {
-  if ! uses_claude; then
-    return 0
-  fi
-
+verify_api_key_readiness() {
+  local label="$1"
+  local api_key="$2"
   local api_base_url
+  local tmp_dir
+  local response_path
   local status_code
+  local readiness
 
   api_base_url="$(normalize_openai_v1_base_url "$BASE_URL")"
-  log_info "正在测试 Claude Code API Key"
-  status_code="$(curl -sS -o /dev/null -w '%{http_code}' \
-    -H "Authorization: Bearer ${CLAUDE_API_KEY}" \
-    -H "anthropic-version: 2023-06-01" \
-    "${api_base_url}/models" || true)"
+  tmp_dir="$(mktemp -d)"
+  response_path="${tmp_dir}/usage.json"
+  log_info "正在检查 ${label} 专用 Key 和账户余额"
+  status_code="$(curl -sS -o "$response_path" -w '%{http_code}' \
+    -H "Authorization: Bearer ${api_key}" \
+    "${api_base_url}/usage" || true)"
 
   if [ "$status_code" != "200" ]; then
-    log_error "Claude Code API Key 测试失败: ${api_base_url}/models 返回 HTTP ${status_code}，请检查 Key、分组和 API 地址"
+    rm -rf "$tmp_dir"
+    log_error "${label} 专用 Key 验证失败: ${api_base_url}/usage 返回 HTTP ${status_code}"
   fi
 
-  log_info "Claude Code API Key 测试通过"
+  readiness="$(USAGE_RESPONSE_PATH="$response_path" "$NODE_BIN" <<'EOF'
+const fs = require('node:fs')
+const data = JSON.parse(fs.readFileSync(process.env.USAGE_RESPONSE_PATH, 'utf8'))
+if (data.mode === 'quota_limited' && data.status && !['active', 'quota_exhausted'].includes(data.status)) {
+  process.stdout.write('invalid')
+} else if (typeof data.remaining === 'number' && data.remaining <= 0) {
+  process.stdout.write('insufficient')
+} else {
+  process.stdout.write('ready')
+}
+EOF
+  )" || {
+    rm -rf "$tmp_dir"
+    log_error "${label} 余额响应解析失败"
+  }
+  rm -rf "$tmp_dir"
+
+  if [ "$readiness" = "insufficient" ]; then
+    BALANCE_READY=0
+    log_warn "${label} 已安装并配置完成，但当前余额/套餐额度不足"
+    return 0
+  fi
+  if [ "$readiness" != "ready" ]; then
+    log_error "${label} 专用 Key 当前不可用，请在网站检查 Key 状态"
+  fi
+
+  status_code="$(curl -sS -o /dev/null -w '%{http_code}' \
+    -H "Authorization: Bearer ${api_key}" \
+    "${api_base_url}/models" || true)"
+  if [ "$status_code" != "200" ]; then
+    log_error "${label} 连通性测试失败: ${api_base_url}/models 返回 HTTP ${status_code}"
+  fi
+  log_info "${label} 专用 Key、余额和连通性检查通过"
+}
+
+verify_claude_api_key() {
+  uses_claude || return 0
+  verify_api_key_readiness "Claude Code" "$CLAUDE_API_KEY"
 }
 
 verify_codex_api_key() {
-  if ! uses_codex; then
-    return 0
-  fi
-
-  local api_base_url
-  local status_code
-
-  api_base_url="$(normalize_openai_v1_base_url "$BASE_URL")"
-  log_info "正在测试 Codex API Key"
-  status_code="$(curl -sS -o /dev/null -w '%{http_code}' \
-    -H "Authorization: Bearer ${CODEX_API_KEY}" \
-    "${api_base_url}/models" || true)"
-
-  if [ "$status_code" != "200" ]; then
-    log_error "Codex API Key 测试失败: ${api_base_url}/models 返回 HTTP ${status_code}，请检查 Key、分组和 API 地址"
-  fi
-
-  log_info "Codex API Key 测试通过"
+  uses_codex || return 0
+  verify_api_key_readiness "Codex" "$CODEX_API_KEY"
 }
 
 # 根据用户选择写入 Claude Code 配置。
@@ -779,7 +1011,7 @@ print_summary() {
   printf '  - Codex 鉴权: %s\n' "$CODEX_AUTH_PATH"
   printf '  - Codex 配置: %s\n' "$CODEX_CONFIG_PATH"
   if uses_claude; then
-    printf '  - Claude Code API Key 测试: 已通过\n'
+    printf '  - Claude Code 专用 Key: 已配置\n'
     if [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ]; then
       printf '  - Claude Code CLI: 本次已安装\n'
     elif [ -n "$EXISTING_CLAUDE_COMMAND" ]; then
@@ -787,7 +1019,7 @@ print_summary() {
     fi
   fi
   if uses_codex; then
-    printf '  - Codex API Key 测试: 已通过\n'
+    printf '  - Codex 专用 Key: 已配置\n'
     if [ "$INSTALL_CODEX_CLIENT" -eq 1 ]; then
       printf '  - Codex CLI: 本次已安装\n'
     elif [ -n "$EXISTING_CODEX_COMMAND" ]; then
@@ -798,6 +1030,12 @@ print_summary() {
     printf '  - PATH 已写入: %s\n' "$PROFILE_FILE"
   fi
   printf '\n'
+  if [ "$BALANCE_READY" -eq 1 ]; then
+    printf '✅ 余额/套餐额度充足，现在可以直接使用。\n\n'
+  else
+    printf '⚠️  安装和配置已经完成，但余额/套餐额度不足。\n'
+    printf '   请充值或购买套餐后直接打开使用：%s\n\n' "$DEFAULT_TOPUP_URL"
+  fi
   printf '建议执行:\n'
   if [ -n "$PROFILE_FILE" ]; then
     printf '  source %s\n' "$PROFILE_FILE"
@@ -820,12 +1058,14 @@ main() {
   prompt_for_api_keys
   resolve_client_install_plan
   ensure_node_runtime
+  exchange_setup_ticket
   if needs_client_install; then
     ensure_profile_exports
   else
     log_info "检测到所选客户端已存在或已要求跳过安装；不修改 PATH"
   fi
   install_requested_clients
+  install_codex_app_if_requested
   ensure_wrapper_scripts
   configure_claude
   configure_codex

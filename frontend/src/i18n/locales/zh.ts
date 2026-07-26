@@ -815,8 +815,8 @@ export default {
     baseUrl: 'Base URL',
     copyBaseUrl: '复制 Base URL',
     baseUrlCopied: 'Base URL 已复制',
-    importToCcSwitch: '一键导入',
-    importToCcSwitchHint: '通过 CC Switch 选择并导入兼容工具',
+    importToCcSwitch: '导入 CC Switch',
+    importToCcSwitchHint: '打开 CC Switch，并导入当前 API Key 的兼容工具配置',
     configureClient: '一键配置',
     configureClientHint: '复制一行命令：已有 {client} 只更新配置，缺失时才安装，并测试 API Key',
     autoConfigCommandCopied: '{client} 一键配置命令已复制，请粘贴到终端运行',
@@ -936,7 +936,7 @@ export default {
       hermesDesc: '使用 Chat Completions 协议',
       geminiCli: 'Gemini CLI',
       geminiCliDesc: '导入为 Gemini CLI 配置',
-      noCompatibleTargets: '当前分组没有可安全一键导入的工具',
+      noCompatibleTargets: '当前分组没有可安全导入 CC Switch 的工具',
       importFailed: '无法生成 CC Switch 导入配置，请稍后重试'
     },
     ccsDiagnostics: {
@@ -5527,7 +5527,7 @@ export default {
         homeContentIframeWarning:
           '⚠️ iframe 模式提示：部分网站设置了 X-Frame-Options 或 CSP 安全策略，禁止被嵌入到 iframe 中。如果页面显示空白或报错，请确认目标网站允许被嵌入，或考虑使用 HTML 模式自行构建页面内容。',
         hideCcsImportButton: '隐藏 CCS 导入按钮',
-        hideCcsImportButtonHint: '启用后将在 API Keys 页面隐藏"导入 CCS"按钮',
+        hideCcsImportButtonHint: '启用后将在 API Keys 页面隐藏“导入 CC Switch”按钮',
         invoiceManagement: '显示用户发票管理',
         invoiceManagementHint: '默认关闭；打开后，普通用户才会看到“发票管理”，关闭时直接访问也会回到控制台。'
       },
@@ -6322,7 +6322,7 @@ export default {
       useOptions: {
         title: '现在选择怎么使用',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">密钥已经创建好了。接下来有几种方式：</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>推荐 Codex / Claude Code 新手：</b>点「一键配置」复制一行命令；OpenAI 分组自动配置 Codex，Anthropic / Antigravity 分组自动配置 Claude Code。已有客户端时只更新配置，缺失时才安装，并测试 API Key。</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>已有 OpenAI 官方订阅：</b>先用「保存官方订阅」保存官方 Provider，再导入老实人 AI 接口配置，之后就能两边切换。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>需要多 Provider 切换：</b>再点「导入到 CCS」使用 CC Switch；不想装工具也可以点「使用密钥」手动复制配置。</p></div></div>'
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">密钥已经创建好了。接下来有几种方式：</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>推荐 Codex / Claude Code 新手：</b>点「一键配置」复制一行命令；OpenAI 分组自动配置 Codex，Anthropic / Antigravity 分组自动配置 Claude Code。已有客户端时只更新配置，缺失时才安装，并测试 API Key。</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>已有 OpenAI 官方订阅：</b>先用「保存官方订阅」保存官方 Provider，再导入老实人 AI 接口配置，之后就能两边切换。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>需要多 Provider 切换：</b>点「导入 CC Switch」导入当前密钥配置；不想装工具也可以点「使用密钥」手动复制配置。</p></div></div>'
       },
       docs: {
         title: '📚 教程和下载说明',

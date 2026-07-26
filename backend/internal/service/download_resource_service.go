@@ -231,30 +231,30 @@ func (s *DownloadResourceService) SyncCodex(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("fetch latest %s release: %w", codexToolID, err)
 	}
-	windowsRelease, err := s.githubClient.FetchLatestRelease(ctx, s.cfg.CodexWindowsMirrorRepo)
+	desktopRelease, err := s.githubClient.FetchLatestRelease(ctx, s.cfg.CodexWindowsMirrorRepo)
 	if err != nil {
-		return fmt.Errorf("fetch latest %s Windows mirror release: %w", codexToolID, err)
+		return fmt.Errorf("fetch latest %s desktop mirror release: %w", codexToolID, err)
 	}
-	if strings.TrimSpace(officialRelease.TagName) == "" || strings.TrimSpace(windowsRelease.TagName) == "" {
+	if strings.TrimSpace(officialRelease.TagName) == "" || strings.TrimSpace(desktopRelease.TagName) == "" {
 		return errors.New("latest codex release has empty tag")
 	}
 
 	// The public OpenAI repository is authoritative for Codex CLI packages. The
-	// Windows desktop MSIX is not published there, so only that missing artifact
-	// comes from the configured release mirror.
-	version := windowsRelease.TagName
+	// desktop installers are not published there, so only those missing artifacts
+	// come from the configured release mirror.
+	version := desktopRelease.TagName
 	versionDir := filepath.Join(s.cacheDir, codexToolID, sanitizePathSegment(version))
 	if err := os.MkdirAll(versionDir, 0755); err != nil {
 		return fmt.Errorf("create cache dir: %w", err)
 	}
 
-	assets := make([]CachedDownloadAsset, 0, len(officialRelease.Assets)+len(windowsRelease.Assets))
+	assets := make([]CachedDownloadAsset, 0, len(officialRelease.Assets)+len(desktopRelease.Assets))
 	for _, source := range []struct {
 		release *GitHubRelease
 		include func(string) bool
 	}{
 		{release: officialRelease, include: isCodexInstallAsset},
-		{release: windowsRelease, include: isCodexWindowsDesktopAsset},
+		{release: desktopRelease, include: isCodexDesktopAsset},
 	} {
 		for _, asset := range source.release.Assets {
 			if !source.include(asset.Name) {
@@ -277,8 +277,8 @@ func (s *DownloadResourceService) SyncCodex(ctx context.Context) error {
 		Tool:        codexToolID,
 		Repo:        s.cfg.CodexRepo + ", " + s.cfg.CodexWindowsMirrorRepo,
 		Version:     version,
-		ReleaseName: windowsRelease.Name,
-		PublishedAt: windowsRelease.PublishedAt,
+		ReleaseName: desktopRelease.Name,
+		PublishedAt: desktopRelease.PublishedAt,
 		UpdatedAt:   time.Now().UTC().Format(time.RFC3339),
 		Assets:      assets,
 	}
@@ -726,7 +726,18 @@ func isCodexInstallAsset(name string) bool {
 
 func isCodexWindowsDesktopAsset(name string) bool {
 	lower := strings.ToLower(name)
-	return strings.HasSuffix(lower, ".msix") && strings.Contains(lower, "_x64__")
+	return strings.HasSuffix(lower, ".msix") &&
+		(strings.Contains(lower, "_x64__") || strings.Contains(lower, "_arm64__"))
+}
+
+func isCodexDesktopAsset(name string) bool {
+	lower := strings.ToLower(name)
+	if isCodexWindowsDesktopAsset(name) {
+		return true
+	}
+	return strings.HasPrefix(lower, "codex-mac-") &&
+		strings.HasSuffix(lower, ".dmg") &&
+		(strings.Contains(lower, "arm64") || strings.Contains(lower, "x64"))
 }
 
 func isCodexPlusPlusInstallAsset(name string) bool {

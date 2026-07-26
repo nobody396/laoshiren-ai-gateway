@@ -815,8 +815,8 @@ export default {
     baseUrl: 'Base URL',
     copyBaseUrl: 'Copy Base URL',
     baseUrlCopied: 'Base URL copied',
-    importToCcSwitch: 'Quick Import',
-    importToCcSwitchHint: 'Choose and import a compatible app through CC Switch',
+    importToCcSwitch: 'Import to CC Switch',
+    importToCcSwitchHint: 'Open CC Switch and import compatible app settings for this API key',
     configureClient: 'One-click Setup',
     configureClientHint: 'Copy one command: reuse an existing {client} install, install only if missing, then test the API key',
     autoConfigCommandCopied: '{client} setup command copied. Paste it into your terminal to run.',
@@ -5370,7 +5370,7 @@ export default {
         homeContentHint: 'Customize the home page content. Supports Markdown/HTML. If you enter a URL (starting with http:// or https://), it will be used as an iframe src to embed an external page. When set, the default status information will no longer be displayed.',
         homeContentIframeWarning: '⚠️ iframe mode note: Some websites have X-Frame-Options or CSP security policies that prevent embedding in iframes. If the page appears blank or shows an error, please verify the target website allows embedding, or consider using HTML mode to build your own content.',
         hideCcsImportButton: 'Hide CCS Import Button',
-        hideCcsImportButtonHint: 'When enabled, the "Import to CCS" button will be hidden on the API Keys page',
+        hideCcsImportButtonHint: 'When enabled, the "Import to CC Switch" button will be hidden on the API Keys page',
         invoiceManagement: 'Show User Invoice Management',
         invoiceManagementHint: 'Disabled by default. When enabled, users can see Invoices; when disabled, direct visits return to the dashboard.'
       },
@@ -6136,7 +6136,7 @@ export default {
       },
       useOptions: {
         title: 'Choose how to use it',
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Your key is ready. There are a few paths:</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>Recommended for Codex / Claude Code beginners:</b> click "One-click Setup" to copy one terminal command. OpenAI groups configure Codex, while Anthropic / Antigravity groups configure Claude Code. Existing clients are reused, missing clients are installed, and the API key is tested.</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>Already have an OpenAI official plan:</b> save the official Provider first, then import the gateway, so you can switch between both.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>Need multiple Provider switching:</b> use "Import to CCS" with CC Switch. Without extra tools, use "Use Key" and copy the config manually.</p></div></div>'
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Your key is ready. There are a few paths:</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>Recommended for Codex / Claude Code beginners:</b> click "One-click Setup" to copy one terminal command. OpenAI groups configure Codex, while Anthropic / Antigravity groups configure Claude Code. Existing clients are reused, missing clients are installed, and the API key is tested.</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>Already have an OpenAI official plan:</b> save the official Provider first, then import the gateway, so you can switch between both.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>Need multiple Provider switching:</b> click "Import to CC Switch" to import this API key configuration. Without extra tools, use "Use Key" and copy the config manually.</p></div></div>'
       },
       docs: {
         title: '📚 Tutorials and download guide',

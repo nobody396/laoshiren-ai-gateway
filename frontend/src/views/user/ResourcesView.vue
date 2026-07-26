@@ -20,6 +20,59 @@
         </div>
       </section>
 
+      <section class="rounded-lg border border-emerald-200 bg-emerald-50/70 p-5 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">小白一键安装</p>
+            <h2 class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">只选工具、复制一条命令</h2>
+            <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-700 dark:text-dark-200">
+              已识别当前电脑为 <strong>{{ detectedOSLabel }}</strong>。脚本会再次检测真实系统和芯片，安装正确版本、写入专用配置，并在最后检查余额。
+            </p>
+          </div>
+          <span class="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 shadow-sm dark:bg-dark-900 dark:text-emerald-300">
+            安装凭证一次性使用 · 10 分钟失效
+          </span>
+        </div>
+
+        <div class="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <article
+            v-for="setup in quickSetups"
+            :key="setup.id"
+            class="flex flex-col rounded-lg border border-white bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-900"
+          >
+            <div class="flex items-start gap-3">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                <Icon :name="setup.icon" size="sm" />
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white">{{ setup.title }}</h3>
+                <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-dark-400">{{ setup.description }}</p>
+              </div>
+            </div>
+
+            <pre class="mt-4 min-h-[88px] overflow-x-auto whitespace-pre-wrap break-all rounded-lg bg-gray-950 p-3 text-xs leading-5 text-gray-100"><code>{{ quickCommandPreview(setup.id) }}</code></pre>
+            <p v-if="setupState[setup.id]?.groupName" class="mt-2 text-xs text-gray-500 dark:text-dark-400">
+              已准备专用 Key：{{ setupState[setup.id]?.keyName }} · {{ setupState[setup.id]?.groupName }}
+            </p>
+
+            <button
+              type="button"
+              class="btn btn-primary mt-4 justify-center"
+              :disabled="setupState[setup.id]?.loading || detectedOS === 'unsupported'"
+              @click="prepareAndCopySetup(setup.id)"
+            >
+              <Icon :name="setupState[setup.id]?.loading ? 'refresh' : 'copy'" size="sm" :class="{ 'animate-spin': setupState[setup.id]?.loading }" />
+              {{ setupState[setup.id]?.loading ? '正在生成…' : '生成并复制一键命令' }}
+            </button>
+          </article>
+        </div>
+
+        <div class="mt-4 rounded-lg border border-emerald-200 bg-white/80 p-3 text-sm leading-6 text-gray-700 dark:border-emerald-900/50 dark:bg-dark-900/70 dark:text-dark-200">
+          <strong>执行结果：</strong>余额或订阅额度充足时会显示“可以直接使用”；余额不足时，安装和配置仍然完成，只会提醒前往
+          <a href="/get-subscription" class="font-medium text-primary-600 hover:underline dark:text-primary-400">充值/购买套餐</a>，不会误报成安装失败。
+        </div>
+      </section>
+
       <section class="rounded-lg border border-primary-200 bg-primary-50 p-5 dark:border-primary-900/60 dark:bg-primary-950/20">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -203,7 +256,13 @@ import { computed, onMounted, ref } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useClipboard } from '@/composables/useClipboard'
-import { resourcesAPI, type DownloadAsset, type DownloadManifest, type DownloadToolID } from '@/api/resources'
+import {
+  resourcesAPI,
+  type ClientSetupTarget,
+  type DownloadAsset,
+  type DownloadManifest,
+  type DownloadToolID
+} from '@/api/resources'
 import { useAppStore } from '@/stores/app'
 
 type IconName = InstanceType<typeof Icon>['$props']['name']
@@ -237,6 +296,54 @@ const manifests = ref<Partial<Record<DownloadToolID, DownloadManifest>>>({})
 const loading = ref<Partial<Record<DownloadToolID, boolean>>>({})
 const errors = ref<Partial<Record<DownloadToolID, string>>>({})
 const downloadStates = ref<Record<string, 'preparing' | 'started' | 'error'>>({})
+
+type QuickSetupID = ClientSetupTarget | 'cc-switch'
+type DetectedOS = 'windows' | 'macos' | 'unsupported'
+
+interface QuickSetupState {
+  loading?: boolean
+  command?: string
+  keyName?: string
+  groupName?: string
+}
+
+const detectedOS = computed<DetectedOS>(() => {
+  const agent = navigator.userAgent.toLowerCase()
+  if (agent.includes('windows')) return 'windows'
+  if (agent.includes('macintosh') || agent.includes('mac os')) return 'macos'
+  return 'unsupported'
+})
+const detectedOSLabel = computed(() => {
+  if (detectedOS.value === 'windows') return 'Windows'
+  if (detectedOS.value === 'macos') return 'macOS'
+  return '暂不支持的系统'
+})
+const setupState = ref<Partial<Record<QuickSetupID, QuickSetupState>>>({})
+const quickSetups: Array<{
+  id: QuickSetupID
+  title: string
+  description: string
+  icon: IconName
+}> = [
+  {
+    id: 'claude',
+    title: '1. Claude Code',
+    description: '自动创建 Claude 专用 Key，绑定 MAX 20X 分组，并安装配置 Claude Code CLI。',
+    icon: 'terminal'
+  },
+  {
+    id: 'codex',
+    title: '2. Codex CLI + App',
+    description: '自动创建 Codex 专用 Key，绑定 Pro 20X 分组，同时安装 CLI 与对应 Codex App。',
+    icon: 'cpu'
+  },
+  {
+    id: 'cc-switch',
+    title: '3. CC Switch',
+    description: '从本站缓存下载并校验最新版本，按 Windows/macOS 自动安装或更新。',
+    icon: 'swap'
+  }
+]
 
 const resources: DownloadResource[] = [
   {
@@ -395,7 +502,11 @@ function installOptionFor(tool: DownloadToolID, asset: DownloadAsset): { key: st
     if (tool === 'claude-desktop' && !name.endsWith('.dmg')) return null
     if (tool === 'codex') {
       if (name.startsWith('codex-app-server-package')) return null
-      if (!name.endsWith('apple-darwin.tar.gz')) return null
+      if (!name.endsWith('.dmg') && !name.endsWith('apple-darwin.tar.gz')) return null
+      const scoreOffset = name.endsWith('.dmg') ? 0 : 10
+      if (asset.arch === 'arm64') return { key: 'macos-arm64', score: 20 + scoreOffset }
+      if (asset.arch === 'x64') return { key: 'macos-x64', score: 30 + scoreOffset }
+      return { key: 'macos-universal', score: 20 + scoreOffset }
     }
     if (asset.arch === 'arm64') return { key: 'macos-arm64', score: 20 }
     if (asset.arch === 'x64') return { key: 'macos-x64', score: 30 }
@@ -403,6 +514,88 @@ function installOptionFor(tool: DownloadToolID, asset: DownloadAsset): { key: st
   }
 
   return null
+}
+
+function powerShellQuote(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, "'\"'\"'")}'`
+}
+
+function buildQuickSetupCommand(id: QuickSetupID, ticket?: string): string {
+  if (detectedOS.value === 'unsupported') {
+    return '当前系统暂不支持一键安装，请使用 Windows 或 macOS。'
+  }
+  if (id === 'cc-switch') {
+    if (detectedOS.value === 'windows') {
+      return 'irm https://laoshirenai.com/auto-config/diagnose-cc-switch.ps1 | iex'
+    }
+    return 'curl -fsSL https://laoshirenai.com/auto-config/diagnose-cc-switch.sh | bash'
+  }
+
+  const token = ticket || '<点击生成一次性安装凭证>'
+  if (detectedOS.value === 'windows') {
+    const parts = [
+      `$env:LAOSHIRENAI_SETUP_TOKEN=${powerShellQuote(token)}`,
+      `$env:LAOSHIRENAI_TOOLS='${id}'`
+    ]
+    if (id === 'codex') {
+      parts.push("$env:LAOSHIRENAI_INSTALL_CODEX_APP='1'")
+    }
+    parts.push('irm https://laoshirenai.com/auto-config/install.ps1 | iex')
+    return parts.join('; ')
+  }
+
+  const env = [
+    `LAOSHIRENAI_SETUP_TOKEN=${shellQuote(token)}`,
+    `LAOSHIRENAI_TOOLS='${id}'`
+  ]
+  if (id === 'codex') {
+    env.push("LAOSHIRENAI_INSTALL_CODEX_APP='1'")
+  }
+  return `curl -fsSL https://laoshirenai.com/auto-config/install.sh | ${env.join(' ')} bash`
+}
+
+function quickCommandPreview(id: QuickSetupID): string {
+  return setupState.value[id]?.command || buildQuickSetupCommand(id)
+}
+
+async function prepareAndCopySetup(id: QuickSetupID) {
+  if (detectedOS.value === 'unsupported') {
+    appStore.showError('目前一键安装只支持 Windows 和 macOS。')
+    return
+  }
+  if (id === 'cc-switch') {
+    await copyCommand(buildQuickSetupCommand(id))
+    return
+  }
+
+  setupState.value = {
+    ...setupState.value,
+    [id]: { ...setupState.value[id], loading: true }
+  }
+  try {
+    const result = await resourcesAPI.createClientSetupTicket(id)
+    const command = buildQuickSetupCommand(id, result.ticket)
+    setupState.value = {
+      ...setupState.value,
+      [id]: {
+        loading: false,
+        command,
+        keyName: result.key_name,
+        groupName: result.group_name
+      }
+    }
+    await copyToClipboard(command, `${id === 'claude' ? 'Claude Code' : 'Codex'} 一键命令已复制`)
+  } catch (error: any) {
+    setupState.value = {
+      ...setupState.value,
+      [id]: { ...setupState.value[id], loading: false }
+    }
+    appStore.showError(error?.message || '生成一键安装命令失败，请稍后重试。')
+  }
 }
 
 async function copyCommand(command: string) {
@@ -503,6 +696,9 @@ function formatDate(value: string): string {
 
 function formatAssetLabel(tool: DownloadToolID, asset: DownloadAsset): string {
   if (tool === 'codex' && asset.name.toLowerCase().endsWith('.msix')) return 'Windows 64 位 Codex App'
+  if (tool === 'codex' && asset.name.toLowerCase().endsWith('.dmg')) {
+    return asset.arch === 'arm64' ? 'macOS Apple 芯片 Codex App' : 'macOS Intel Codex App'
+  }
   if (asset.platform === 'windows') return 'Windows 64 位安装包'
   if (asset.platform === 'macos' && asset.arch === 'arm64') return 'macOS Apple 芯片版'
   if (asset.platform === 'macos' && asset.arch === 'x64') return 'macOS Intel 芯片版'

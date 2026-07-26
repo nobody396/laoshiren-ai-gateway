@@ -645,7 +645,7 @@ export interface Group {
   fallback_group_id_on_invalid_request: number | null
   // OpenAI Messages 调度开关（用户侧需要此字段判断是否展示 Claude Code 教程）
   allow_messages_dispatch?: boolean
-  // 分组默认模型：用户侧「导入到 CCS」按需将其写入客户端模型槽
+  // 分组默认模型：用户侧「导入 CC Switch」按需将其写入客户端模型槽
   // （anthropic 单模型上游分组如 GLM/Grok 用它覆盖 opus/sonnet/haiku 槽）。
   default_mapped_model?: string
   created_at: string

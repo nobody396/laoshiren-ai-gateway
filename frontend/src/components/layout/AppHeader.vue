@@ -43,6 +43,9 @@
         <!-- Announcement Bell -->
         <AnnouncementBell v-if="user" />
 
+        <!-- Changelog with unread product-update indicator -->
+        <ChangelogHeaderLink v-if="user" />
+
         <!-- Docs Link -->
         <a
           v-if="docUrl"
@@ -226,6 +229,7 @@ import { useAdminSettingsStore } from '@/stores/adminSettings'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMini.vue'
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
+import ChangelogHeaderLink from '@/components/common/ChangelogHeaderLink.vue'
 import CustomerServiceButton from '@/components/common/CustomerServiceButton.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { issueSSOTicket } from '@/api/auth'

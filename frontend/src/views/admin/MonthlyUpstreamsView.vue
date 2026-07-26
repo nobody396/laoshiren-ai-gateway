@@ -49,7 +49,7 @@
           <div v-else-if="accounts.length === 0" class="rounded-lg border border-dashed border-gray-300 px-6 py-12 text-center dark:border-dark-600">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">暂无探针数据</h2>
             <p class="mt-2 text-sm text-gray-500 dark:text-dark-300">
-              开启常驻探针后，服务器会每 {{ probeIntervalMinutes }} 分钟检测 Codex 和 Claude 月卡通道。
+              开启常驻探针后，服务器会每 {{ probeIntervalMinutes }} 分钟检测 Codex、Claude 和 Grok 月卡通道。
             </p>
           </div>
 
@@ -64,7 +64,7 @@
                   <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ displayAccountName(account) }}</h2>
                     <span class="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 dark:bg-dark-700 dark:text-dark-200">
-                      {{ platformLabel(account.platform) }}
+                      {{ accountChannel(account) }}
                     </span>
                     <span class="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 dark:bg-dark-700 dark:text-dark-200">
                       {{ account.model }}
@@ -95,7 +95,7 @@
               <div class="mt-5">
                 <div class="grid grid-cols-[180px_1fr] items-center gap-4 max-md:grid-cols-1">
                   <div class="text-sm font-medium text-gray-600 dark:text-dark-300">
-                    {{ platformLabel(account.platform) }}
+                    {{ accountChannel(account) }}
                   </div>
                   <div class="grid gap-1" :style="timelineGridStyle">
                     <span
@@ -338,15 +338,17 @@ function timelineSlots(account: MonthlyUpstreamProbeAccount): TimelineSlot[] {
 }
 
 function displayAccountName(account: MonthlyUpstreamProbeAccount): string {
+  if (account.account_name === 'monthly-grok-gateway' || account.model.toLowerCase().includes('grok')) return 'Grok 月卡'
   if (account.platform === 'openai') return 'Codex 月卡'
   if (account.platform === 'anthropic') return 'Claude 月卡'
   return account.account_name
 }
 
-function platformLabel(platform: string): string {
-  if (platform === 'openai') return 'Codex'
-  if (platform === 'anthropic') return 'Claude'
-  return platform || '-'
+function accountChannel(account: MonthlyUpstreamProbeAccount): string {
+  if (account.account_name === 'monthly-grok-gateway' || account.model.toLowerCase().includes('grok')) return 'Grok'
+  if (account.platform === 'openai') return 'Codex'
+  if (account.platform === 'anthropic') return 'Claude'
+  return account.platform || '-'
 }
 
 function statusLabel(status: string): string {

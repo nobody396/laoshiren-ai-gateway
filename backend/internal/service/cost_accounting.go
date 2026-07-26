@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -20,34 +22,16 @@ var costAccountingPlanPricing = map[string]struct {
 	ShopPriceCNY   float64
 	DirectPriceCNY float64
 }{
-	"lite":  {Name: "Lite", ShopPriceCNY: 329, DirectPriceCNY: 319},
-	"pro":   {Name: "Pro", ShopPriceCNY: 639, DirectPriceCNY: 619},
-	"max":   {Name: "Max", ShopPriceCNY: 699, DirectPriceCNY: 685},
-	"ultra": {Name: "Ultra", ShopPriceCNY: 899, DirectPriceCNY: 879},
-	"apex":  {Name: "Apex", ShopPriceCNY: 1299, DirectPriceCNY: 1275},
+	"lite": {Name: "Lite", ShopPriceCNY: 329, DirectPriceCNY: 319},
+	"pro":  {Name: "Pro", ShopPriceCNY: 639, DirectPriceCNY: 619},
 }
 
 var costAccountingMonthlyCardGroupIDs = map[string]map[string]int64{
-	"lite":  {"gpt": 7, "claude": 11, "grok": 35},
-	"pro":   {"gpt": 8, "claude": 12, "grok": 36},
-	"max":   {"gpt": 9, "claude": 13, "grok": 37},
-	"ultra": {"gpt": 10, "claude": 14, "grok": 38},
-	"apex":  {"gpt": 18, "claude": 19, "grok": 39},
+	"lite": {"gpt": 7, "claude": 11, "grok": 35},
+	"pro":  {"gpt": 8, "claude": 12, "grok": 36},
 }
 
-var costAccountingMonthlyCardPlanOrder = []string{"lite", "pro", "max", "ultra", "apex"}
-
-// costAccountingPayAsYouGoGroups lists the public (non-monthly-card) groups this
-// overview covers, keyed by the group's admin ID.
-var costAccountingPayAsYouGoGroups = []struct {
-	GroupID int64
-	Product string
-}{
-	{GroupID: 5, Product: "claude"}, // MAX 20X 分组
-	{GroupID: 6, Product: "gpt"},    // Pro 20X 分组
-	{GroupID: 33, Product: "glm"},   // GLM
-	{GroupID: 34, Product: "grok"},  // Grok
-}
+var costAccountingMonthlyCardPlanOrder = []string{"lite", "pro"}
 
 const costAccountingPayAsYouGoTopupCNY = 100.0
 
@@ -110,25 +94,30 @@ type CostAccountingMonthlyPlan struct {
 }
 
 type CostAccountingPayAsYouGoGroup struct {
-	GroupID                      int64                `json:"group_id"`
-	GroupName                    string               `json:"group_name"`
-	Product                      string               `json:"product"`
-	GroupRateMultiplier          float64              `json:"group_rate_multiplier"`
-	PrimaryAccountRateMultiplier float64              `json:"primary_account_rate_multiplier"`
-	WorstAccountRateMultiplier   float64              `json:"worst_account_rate_multiplier"`
-	SchedulableAccountCount      int                  `json:"schedulable_account_count"`
-	Topup100CNYScenario          *CostAccountingMoney `json:"topup_100_cny_scenario,omitempty"`
-	Warning                      string               `json:"warning,omitempty"`
+	GroupID                      int64                   `json:"group_id"`
+	GroupName                    string                  `json:"group_name"`
+	Product                      string                  `json:"product"`
+	Platform                     string                  `json:"platform"`
+	GroupRateMultiplier          float64                 `json:"group_rate_multiplier"`
+	PrimaryAccountRateMultiplier float64                 `json:"primary_account_rate_multiplier"`
+	WorstAccountRateMultiplier   float64                 `json:"worst_account_rate_multiplier"`
+	SchedulableAccountCount      int                     `json:"schedulable_account_count"`
+	Topup100CNYScenario          *CostAccountingMoney    `json:"topup_100_cny_scenario,omitempty"`
+	RealUsage                    CostAccountingRealUsage `json:"real_usage"`
+	Warning                      string                  `json:"warning,omitempty"`
 }
 
 type CostAccountingOverview struct {
-	GeneratedAt           time.Time                       `json:"generated_at"`
-	ShopChannelFeePercent float64                         `json:"shop_channel_fee_percent"`
-	UsageWindowStart      time.Time                       `json:"usage_window_start"`
-	UsageWindowEnd        time.Time                       `json:"usage_window_end"`
-	PricingSourceNote     string                          `json:"pricing_source_note"`
-	MonthlyCards          []CostAccountingMonthlyPlan     `json:"monthly_cards"`
-	PayAsYouGo            []CostAccountingPayAsYouGoGroup `json:"pay_as_you_go"`
+	GeneratedAt                 time.Time                       `json:"generated_at"`
+	ShopChannelFeePercent       float64                         `json:"shop_channel_fee_percent"`
+	UsageWindowStart            time.Time                       `json:"usage_window_start"`
+	UsageWindowEnd              time.Time                       `json:"usage_window_end"`
+	PricingSourceNote           string                          `json:"pricing_source_note"`
+	ScopeNote                   string                          `json:"scope_note"`
+	LegacyMonthlyCardGroupCount int                             `json:"legacy_monthly_card_group_count"`
+	LegacyMonthlyCardRealUsage  CostAccountingRealUsage         `json:"legacy_monthly_card_real_usage"`
+	MonthlyCards                []CostAccountingMonthlyPlan     `json:"monthly_cards"`
+	PayAsYouGo                  []CostAccountingPayAsYouGoGroup `json:"pay_as_you_go"`
 }
 
 type CostAccountingUsageRow struct {
@@ -199,12 +188,52 @@ func (s *OpsService) loadGroupAndAccounts(ctx context.Context, groupID int64) (*
 	return group, accounts, nil
 }
 
+// costAccountingPayAsYouGoTargets discovers the complete current public
+// pay-as-you-go catalog instead of relying on a stale list of group IDs.
+// Historical monthly-card groups are credit subscriptions and therefore never
+// enter this list.
+func costAccountingPayAsYouGoTargets(groups []Group) []Group {
+	targets := make([]Group, 0, len(groups))
+	for _, group := range groups {
+		if group.Status != StatusActive ||
+			group.IsExclusive ||
+			group.SubscriptionType != SubscriptionTypeStandard {
+			continue
+		}
+		targets = append(targets, group)
+	}
+	sort.SliceStable(targets, func(i, j int) bool {
+		if targets[i].SortOrder != targets[j].SortOrder {
+			return targets[i].SortOrder < targets[j].SortOrder
+		}
+		return targets[i].ID < targets[j].ID
+	})
+	return targets
+}
+
+func costAccountingProductForGroup(group Group) string {
+	name := strings.ToLower(group.Name)
+	switch {
+	case strings.Contains(name, "glm"):
+		return "glm"
+	case strings.Contains(name, "grok"):
+		return "grok"
+	case group.Platform == PlatformOpenAI:
+		return "gpt"
+	case group.Platform == PlatformAnthropic:
+		return "claude"
+	case group.Platform != "":
+		return strings.ToLower(group.Platform)
+	default:
+		return "other"
+	}
+}
+
 // GetCostAccountingOverview computes a full cost/margin snapshot across
-// monthly-card products (GPT/Claude/Grok x Lite/Pro/Max/Ultra/Apex) and the
-// public pay-as-you-go groups (MAX 20X, Pro 20X, GLM, Grok), including this
-// month's real usage mix. It is the server-side source of truth backing the
-// admin cost-accounting page and the laoshirenai-monthly-cards skill's
-// `cost_accounting.py overview` fast path.
+// the current monthly-card products (GPT/Claude/Grok x Lite/Pro) and every
+// active public standard-billing group, including this month's real usage mix.
+// Historical monthly-card groups remain available for existing entitlements
+// but are intentionally excluded from the current commercial catalog.
 func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccountingOverview, error) {
 	if s == nil || s.groupRepo == nil || s.accountRepo == nil {
 		return nil, fmt.Errorf("cost accounting: service not fully wired")
@@ -217,14 +246,33 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 	now := time.Now().In(loc)
 	windowStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, loc)
 
+	activeGroups, err := s.groupRepo.ListActive(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("cost accounting: list active groups: %w", err)
+	}
+	payAsYouGoTargets := costAccountingPayAsYouGoTargets(activeGroups)
+
 	allGroupIDs := make([]int64, 0, 32)
+	currentMonthlyGroupIDs := make(map[int64]struct{}, 8)
 	for _, plan := range costAccountingMonthlyCardPlanOrder {
 		for _, gid := range costAccountingMonthlyCardGroupIDs[plan] {
+			currentMonthlyGroupIDs[gid] = struct{}{}
 			allGroupIDs = append(allGroupIDs, gid)
 		}
 	}
-	for _, g := range costAccountingPayAsYouGoGroups {
-		allGroupIDs = append(allGroupIDs, g.GroupID)
+	legacyMonthlyCardGroupIDs := make([]int64, 0, 16)
+	for _, group := range activeGroups {
+		if group.SubscriptionType != SubscriptionTypeCredit {
+			continue
+		}
+		if _, current := currentMonthlyGroupIDs[group.ID]; current {
+			continue
+		}
+		legacyMonthlyCardGroupIDs = append(legacyMonthlyCardGroupIDs, group.ID)
+		allGroupIDs = append(allGroupIDs, group.ID)
+	}
+	for _, group := range payAsYouGoTargets {
+		allGroupIDs = append(allGroupIDs, group.ID)
 	}
 
 	var usageByGroup map[int64]CostAccountingUsageRow
@@ -240,6 +288,31 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 		UsageWindowEnd:        now,
 		PricingSourceNote: "shop/direct prices are hardcoded in this handler; keep in sync with " +
 			"frontend/src/constants/monthlyCreditCards.ts and the monthly-cards skill's config/monthly_plans.json",
+		ScopeNote:                   "当前月卡只展示在售 Lite/Pro；历史月卡分组不再作为产品卡展示，但其真实请求成本仍计入本月实际上游成本。按量付费自动读取全部启用的公开标准计费分组。",
+		LegacyMonthlyCardGroupCount: len(legacyMonthlyCardGroupIDs),
+		LegacyMonthlyCardRealUsage:  CostAccountingRealUsage{Available: false, Note: "usage query unavailable"},
+	}
+	if usageErr == nil && usageByGroup != nil {
+		var legacyRequests int64
+		var legacyCredits float64
+		var legacyCost float64
+		for _, groupID := range legacyMonthlyCardGroupIDs {
+			usage := usageByGroup[groupID]
+			legacyRequests += usage.RequestCount
+			legacyCredits += usage.RawCredits
+			legacyCost += usage.RealCostCNY
+		}
+		overview.LegacyMonthlyCardRealUsage = CostAccountingRealUsage{
+			Available:            true,
+			ObservedRequestCount: legacyRequests,
+			ObservedRawCredits:   round4(legacyCredits),
+			ObservedRealCostCNY:  round4(legacyCost),
+		}
+		if legacyCredits <= 0 {
+			overview.LegacyMonthlyCardRealUsage.Note = "no legacy monthly-card usage recorded in this window"
+		} else {
+			overview.LegacyMonthlyCardRealUsage.BlendedCostPerCredit = round6(legacyCost / legacyCredits)
+		}
 	}
 
 	for _, planID := range costAccountingMonthlyCardPlanOrder {
@@ -384,20 +457,36 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 		_ = balancedMargin
 	}
 
-	for _, target := range costAccountingPayAsYouGoGroups {
-		group, accounts, err := s.loadGroupAndAccounts(ctx, target.GroupID)
+	for _, group := range payAsYouGoTargets {
+		accounts, err := s.accountRepo.ListByGroup(ctx, group.ID)
 		if err != nil {
-			return nil, fmt.Errorf("cost accounting: load pay-as-you-go group %d: %w", target.GroupID, err)
+			return nil, fmt.Errorf("cost accounting: load pay-as-you-go group %d accounts: %w", group.ID, err)
 		}
-		primary, worst, schedulable := accountRateSummary(target.GroupID, accounts)
+		primary, worst, schedulable := accountRateSummary(group.ID, accounts)
 		row := CostAccountingPayAsYouGoGroup{
-			GroupID:                      target.GroupID,
+			GroupID:                      group.ID,
 			GroupName:                    group.Name,
-			Product:                      target.Product,
+			Product:                      costAccountingProductForGroup(group),
+			Platform:                     group.Platform,
 			GroupRateMultiplier:          group.RateMultiplier,
 			PrimaryAccountRateMultiplier: primary,
 			WorstAccountRateMultiplier:   worst,
 			SchedulableAccountCount:      schedulable,
+			RealUsage:                    CostAccountingRealUsage{Available: false, Note: "usage query unavailable"},
+		}
+		if usageErr == nil && usageByGroup != nil {
+			usage := usageByGroup[group.ID]
+			row.RealUsage = CostAccountingRealUsage{
+				Available:            true,
+				ObservedRequestCount: usage.RequestCount,
+				ObservedRawCredits:   round4(usage.RawCredits),
+				ObservedRealCostCNY:  round4(usage.RealCostCNY),
+			}
+			if usage.RawCredits <= 0 {
+				row.RealUsage.Note = "no usage recorded in this window for this group"
+			} else {
+				row.RealUsage.BlendedCostPerCredit = round6(usage.RealCostCNY / usage.RawCredits)
+			}
 		}
 		if schedulable == 0 {
 			row.Warning = "no schedulable account bound to this group; it cannot currently serve requests"

@@ -156,7 +156,7 @@ describe('admin FinanceTransactionsView', () => {
       category: undefined,
       search: undefined,
       sort_by: 'occurred_at',
-      sort_order: 'asc'
+      sort_order: 'desc'
     })
     expect(summary).toHaveBeenCalledTimes(1)
     expect(summary).toHaveBeenCalledWith(undefined, undefined, 'all')
@@ -187,7 +187,7 @@ describe('admin FinanceTransactionsView', () => {
         from,
         to,
         sort_by: 'occurred_at',
-        sort_order: 'asc'
+        sort_order: 'desc'
       }
     ])
   })
@@ -219,7 +219,7 @@ describe('admin FinanceTransactionsView', () => {
         category: undefined,
         search: undefined,
         sort_by: 'occurred_at',
-        sort_order: 'asc'
+        sort_order: 'desc'
       }
     ])
     expect(summary.mock.calls[3]).toEqual([undefined, undefined, 'all'])

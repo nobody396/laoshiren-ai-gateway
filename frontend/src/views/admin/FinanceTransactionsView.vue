@@ -719,7 +719,7 @@ async function loadTransactions() {
       search: searchQuery.value || undefined,
       ...monthRange,
       sort_by: 'occurred_at',
-      sort_order: 'asc'
+      sort_order: 'desc'
     })
     transactions.value = res.items
     pagination.total = res.total

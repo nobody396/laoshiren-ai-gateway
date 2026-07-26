@@ -73,13 +73,25 @@
    * dark-50…950 — the palette behind `dark:bg-dark-*` etc (2,124 usages).
    * Was slate/cool-blue; now a warm deep-brown-to-black ladder so the dark
    * theme reads as "ink terminal", not "cool tech slate".
+   *
+   * The 200–400 stops carry secondary TEXT in dark mode (`dark:text-dark-400`
+   * alone is 290 usages) and nothing else — no fills, no borders. They are
+   * therefore spaced for legibility rather than for an even ramp: dark-400
+   * used to sit at #786a4f, which is 3.6:1 on the dark ground and fails AA
+   * for body text. Raising it here fixes every one of those 290 call sites
+   * without touching a component.
+   *
+   * Do NOT apply the same treatment to 500 and below: those carry fills and
+   * borders (dark-500 alone is 42 backgrounds and 48 borders), so lightening
+   * them would wash out surfaces to fix text. Text that needs more contrast
+   * than dark-500 offers should move up a stop, not drag the stop with it.
    * --------------------------------------------------------------------- */
   --color-dark-50: 239 232 216; /* #efe8d8 */
   --color-dark-100: 221 208 179; /* #ddd0b3 */
-  --color-dark-200: 195 178 140; /* #c3b28c */
-  --color-dark-300: 160 143 108; /* #a08f6c */
-  --color-dark-400: 120 106 79; /* #786a4f */
-  --color-dark-500: 86 74 55; /* #564a37 */
+  --color-dark-200: 202 188 152; /* #cabc98 */
+  --color-dark-300: 178 162 128; /* #b2a280 */
+  --color-dark-400: 155 139 105; /* #9b8b69 — 4.8:1 on dark papyrus (was 3.6:1) */
+  --color-dark-500: 86 74 55; /* #564a37 — fills and borders live here, do not lighten */
   --color-dark-600: 61 51 37; /* #3d3325 */
   --color-dark-700: 44 36 25; /* #2c2419 */
   --color-dark-800: 32 26 18; /* #201a12 */
@@ -310,6 +322,16 @@
   --lacquer-hover-mid: 48 33 22; /* #302116 */
   --lacquer-active-top: 27 18 10; /* #1b120a */
   --lacquer-active-mid: 55 35 21; /* #372315 */
+
+  /* ---------------------------------------------------------------------
+   * shadow-ink — the only color a shadow may use.
+   *
+   * Shadows were split between rgba(0,0,0,…) and rgba(49,38,20,…). Neutral
+   * black under warm paper reads as grey haze rather than shade, which is
+   * why the two never looked like the same light source. This is the warm
+   * one, kept as the single answer.
+   * --------------------------------------------------------------------- */
+  --shadow-ink: 49 38 20; /* #312614 */
 }
 
 /*

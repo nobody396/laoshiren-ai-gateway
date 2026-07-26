@@ -8,7 +8,7 @@
         <img src="/laoshirenai-icon.jpg" alt="老实人AI" class="h-7 w-7 rounded-full object-cover" />
         <span class="text-base font-semibold text-gray-900 dark:text-white">老实人AI</span>
       </router-link>
-      <span class="mx-2 text-gray-300 dark:text-dark-600">/</span>
+      <span class="mx-2 text-gray-300 dark:text-dark-400">/</span>
       <span class="text-sm font-medium text-gray-500 dark:text-dark-400">文档</span>
 
       <!-- Mobile sidebar toggle -->

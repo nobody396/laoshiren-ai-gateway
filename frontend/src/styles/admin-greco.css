@@ -22,8 +22,8 @@ body.admin-console-active {
   --admin-surface-soft: rgb(var(--color-stone) / 0.78);
   --admin-control: rgb(var(--color-vellum) / 0.95);
   --admin-table-alt: rgb(var(--color-stone) / 0.42);
-  --admin-shadow: 0 18px 48px rgba(49, 38, 20, 0.11);
-  --admin-shadow-sm: 0 8px 24px rgba(49, 38, 20, 0.08);
+  --admin-shadow: 0 18px 48px rgb(var(--shadow-ink) / 0.11);
+  --admin-shadow-sm: 0 8px 24px rgb(var(--shadow-ink) / 0.08);
   --admin-ring: rgb(var(--color-terracotta) / 0.24);
   --admin-danger: rgb(var(--color-danger));
   --admin-success: rgb(var(--color-success));
@@ -63,8 +63,8 @@ body.admin-console-active {
   isolation: isolate;
   overflow-x: hidden;
   background:
-    linear-gradient(90deg, rgba(63, 90, 58, 0.045) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(63, 90, 58, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--color-laurel) / 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, rgb(var(--color-laurel) / 0.035) 1px, transparent 1px),
     var(--admin-papyrus);
   background-color: var(--admin-papyrus) !important;
   background-size: 72px 72px, 72px 72px, auto;
@@ -90,8 +90,8 @@ body.admin-console-active {
 
 .admin-console-shell .bg-mesh-gradient {
   background:
-    linear-gradient(135deg, rgba(154, 59, 31, 0.08), transparent 34%),
-    repeating-linear-gradient(90deg, rgba(63, 90, 58, 0.06) 0 1px, transparent 1px 24px);
+    linear-gradient(135deg, rgb(var(--color-terracotta) / 0.08), transparent 34%),
+    repeating-linear-gradient(90deg, rgb(var(--color-laurel) / 0.06) 0 1px, transparent 1px 24px);
   opacity: 0.7;
 }
 
@@ -135,12 +135,12 @@ body.admin-console-active {
 .admin-console-shell .sidebar {
   background: linear-gradient(180deg, var(--admin-marble), var(--admin-parchment));
   border-right: 1px solid var(--admin-border);
-  box-shadow: 10px 0 32px rgba(49, 38, 20, 0.08);
+  box-shadow: 10px 0 32px rgb(var(--shadow-ink) / 0.08);
 }
 
 .dark .admin-console-shell .sidebar {
   background:
-    linear-gradient(180deg, rgba(60, 51, 35, 0.94), rgba(39, 35, 28, 0.98)),
+    linear-gradient(180deg, rgb(var(--color-dark-600) / 0.94), rgb(var(--color-accent-700) / 0.98)),
     var(--admin-marble);
 }
 
@@ -148,11 +148,11 @@ body.admin-console-active {
   position: relative;
   min-height: 4rem;
   border-bottom: 1px solid var(--admin-border);
-  background: rgba(255, 252, 245, 0.42);
+  background: rgb(var(--color-vellum) / 0.42);
 }
 
 .dark .admin-console-shell .sidebar-header {
-  background: rgba(77, 65, 42, 0.34);
+  background: rgb(var(--color-gray-700) / 0.34);
 }
 
 .admin-console-shell .sidebar-header::after {
@@ -172,7 +172,7 @@ body.admin-console-active {
   border-radius: 999px !important;
   background: var(--admin-terracotta);
   box-shadow:
-    inset 0 0 0 2px rgba(250, 246, 236, 0.38),
+    inset 0 0 0 2px rgb(var(--color-marble) / 0.38),
     0 0 0 1px var(--admin-terracotta-dark);
 }
 
@@ -220,21 +220,21 @@ body.admin-console-active {
 }
 
 .admin-console-shell .sidebar-link:hover {
-  background: rgba(154, 59, 31, 0.08) !important;
+  background: rgb(var(--color-terracotta) / 0.08) !important;
   color: var(--admin-ink-deep) !important;
 }
 
 .dark .admin-console-shell .sidebar-link:hover {
-  background: rgba(225, 138, 104, 0.16) !important;
+  background: rgb(var(--color-terracotta) / 0.16) !important;
 }
 
 .admin-console-shell .sidebar-link-active {
-  background: rgba(154, 59, 31, 0.13) !important;
+  background: rgb(var(--color-terracotta) / 0.13) !important;
   color: var(--admin-terracotta-dark) !important;
 }
 
 .dark .admin-console-shell .sidebar-link-active {
-  background: rgba(225, 138, 104, 0.2) !important;
+  background: rgb(var(--color-terracotta) / 0.2) !important;
 }
 
 .admin-console-shell .sidebar-link-active::before {
@@ -255,22 +255,22 @@ body.admin-console-active {
 
 .admin-console-shell .sidebar > .mt-auto {
   border-top: 1px solid var(--admin-border) !important;
-  background: rgba(255, 252, 245, 0.34);
+  background: rgb(var(--color-vellum) / 0.34);
 }
 
 .dark .admin-console-shell .sidebar > .mt-auto {
-  background: rgba(77, 65, 42, 0.18);
+  background: rgb(var(--color-gray-700) / 0.18);
 }
 
 .admin-console-shell header.glass {
-  background: rgba(250, 246, 236, 0.9) !important;
+  background: rgb(var(--color-marble) / 0.9) !important;
   border-bottom: 1px solid var(--admin-border) !important;
-  box-shadow: 0 10px 28px rgba(49, 38, 20, 0.06);
+  box-shadow: 0 10px 28px rgb(var(--shadow-ink) / 0.06);
 }
 
 .dark .admin-console-shell header.glass {
-  background: rgba(42, 38, 31, 0.9) !important;
-  box-shadow: 0 10px 28px rgba(10, 8, 5, 0.16);
+  background: rgb(var(--color-accent-700) / 0.9) !important;
+  box-shadow: 0 10px 28px rgb(var(--shadow-ink) / 0.16);
 }
 
 .admin-console-shell header h1 {
@@ -290,12 +290,12 @@ body.admin-console-active {
 
 .admin-console-shell header a:hover,
 .admin-console-shell header button:hover {
-  background-color: rgba(154, 59, 31, 0.09) !important;
+  background-color: rgb(var(--color-terracotta) / 0.09) !important;
 }
 
 .admin-console-shell header .bg-primary-50,
 .admin-console-shell header .dark\:bg-primary-900\/20 {
-  background: rgba(154, 59, 31, 0.11) !important;
+  background: rgb(var(--color-terracotta) / 0.11) !important;
 }
 
 .admin-console-shell header .text-primary-700,
@@ -388,12 +388,12 @@ body.admin-console-active {
 
 .admin-console-shell .modal-overlay,
 .admin-console-shell .dialog-overlay {
-  background: rgba(19, 16, 11, 0.5) !important;
+  background: rgb(var(--color-ink-deep) / 0.5) !important;
 }
 
 .dark .admin-console-shell .modal-overlay,
 .dark .admin-console-shell .dialog-overlay {
-  background: rgba(16, 13, 8, 0.6) !important;
+  background: rgb(var(--color-dark-950) / 0.6) !important;
 }
 
 /* Buttons and controls */
@@ -513,12 +513,12 @@ body.admin-console-active .select-option {
 .admin-console-shell .date-picker-preset:hover,
 body.admin-console-active .select-option:hover,
 body.admin-console-active .select-option-focused {
-  background: rgba(154, 59, 31, 0.1) !important;
+  background: rgb(var(--color-terracotta) / 0.1) !important;
 }
 
 .admin-console-shell .date-picker-preset-active,
 body.admin-console-active .select-option-selected {
-  background: rgba(154, 59, 31, 0.16) !important;
+  background: rgb(var(--color-terracotta) / 0.16) !important;
   color: var(--admin-terracotta-dark) !important;
 }
 
@@ -568,7 +568,7 @@ body.admin-console-active .select-search-input {
 .admin-console-shell .table td,
 .admin-console-shell tbody td,
 .admin-console-shell .table-scroll-container td {
-  border-color: rgba(63, 90, 58, 0.12) !important;
+  border-color: rgb(var(--color-laurel) / 0.12) !important;
   color: var(--admin-ink) !important;
 }
 
@@ -579,7 +579,7 @@ body.admin-console-active .select-search-input {
 
 .dark .admin-console-shell .table tbody tr:hover,
 .dark .admin-console-shell tbody tr:hover {
-  background: rgba(75, 62, 42, 0.78) !important;
+  background: rgb(var(--color-gray-700) / 0.78) !important;
 }
 
 .admin-console-shell .table tbody tr:nth-child(even),
@@ -597,16 +597,16 @@ body.admin-console-active .select-search-input {
 }
 
 .dark .admin-console-shell tbody tr:hover .sticky-col {
-  background: rgba(75, 62, 42, 0.94) !important;
+  background: rgb(var(--color-gray-700) / 0.94) !important;
 }
 
 .admin-console-shell .is-scrollable .sticky-col-left::after,
 .admin-console-shell .is-scrollable .sticky-col-left-second::after {
-  background: linear-gradient(to right, rgba(31, 26, 18, 0.14), transparent) !important;
+  background: linear-gradient(to right, rgb(var(--color-ink) / 0.14), transparent) !important;
 }
 
 .admin-console-shell .is-scrollable .sticky-col-right::before {
-  background: linear-gradient(to left, rgba(31, 26, 18, 0.14), transparent) !important;
+  background: linear-gradient(to left, rgb(var(--color-ink) / 0.14), transparent) !important;
 }
 
 /* Badges and status chips */
@@ -619,26 +619,26 @@ body.admin-console-active .select-search-input {
 .admin-console-shell .badge-primary,
 .admin-console-shell .bg-primary-100,
 .admin-console-shell .dark\:bg-primary-900\/30 {
-  background: rgba(154, 59, 31, 0.12) !important;
+  background: rgb(var(--color-terracotta) / 0.12) !important;
   color: var(--admin-terracotta-dark) !important;
 }
 
 .admin-console-shell .badge-success,
 .admin-console-shell .bg-emerald-100,
 .admin-console-shell .bg-green-100 {
-  background: rgba(63, 90, 58, 0.14) !important;
+  background: rgb(var(--color-laurel) / 0.14) !important;
   color: var(--admin-success) !important;
 }
 
 .admin-console-shell .badge-warning,
 .admin-console-shell .bg-amber-100 {
-  background: rgba(154, 106, 31, 0.15) !important;
+  background: rgb(var(--color-warning) / 0.15) !important;
   color: var(--admin-warning) !important;
 }
 
 .admin-console-shell .badge-danger,
 .admin-console-shell .bg-red-100 {
-  background: rgba(159, 47, 35, 0.14) !important;
+  background: rgb(var(--color-danger) / 0.14) !important;
   color: var(--admin-danger) !important;
 }
 
@@ -684,13 +684,13 @@ body.admin-console-active .select-search-input {
   overflow: hidden;
   border-top: 2px solid var(--admin-border-strong) !important;
   background:
-    linear-gradient(180deg, rgba(255, 252, 245, 0.82), rgba(239, 230, 207, 0.42)),
+    linear-gradient(180deg, rgb(var(--color-vellum) / 0.82), rgb(var(--color-stone) / 0.42)),
     var(--admin-surface) !important;
 }
 
 .dark .admin-console-shell .admin-stat-card {
   background:
-    linear-gradient(180deg, rgba(63, 53, 36, 0.82), rgba(42, 38, 31, 0.74)),
+    linear-gradient(180deg, rgb(var(--color-dark-600) / 0.82), rgb(var(--color-accent-700) / 0.74)),
     var(--admin-surface) !important;
 }
 
@@ -710,8 +710,8 @@ body.admin-console-active .select-search-input {
   background: var(--admin-terracotta) !important;
   color: var(--admin-marble) !important;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 252, 245, 0.4),
-    0 8px 18px rgba(154, 59, 31, 0.24);
+    inset 0 0 0 1px rgb(var(--color-vellum) / 0.4),
+    0 8px 18px rgb(var(--color-terracotta) / 0.24);
 }
 
 .dark .admin-console-shell .admin-stat-card > .flex > div:first-child,
@@ -719,8 +719,8 @@ body.admin-console-active .select-search-input {
   background: rgb(var(--color-primary-300)) !important;
   color: rgb(var(--color-dark-900)) !important;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 248, 232, 0.36),
-    0 8px 18px rgba(225, 138, 104, 0.2);
+    inset 0 0 0 1px rgb(var(--color-marble) / 0.36),
+    0 8px 18px rgb(var(--color-terracotta) / 0.2);
 }
 
 .admin-console-shell .admin-stat-card svg,
@@ -766,8 +766,8 @@ body.admin-console-active .select-search-input {
   background: var(--admin-terracotta) !important;
   color: var(--admin-marble) !important;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 252, 245, 0.4),
-    0 8px 18px rgba(154, 59, 31, 0.24);
+    inset 0 0 0 1px rgb(var(--color-vellum) / 0.4),
+    0 8px 18px rgb(var(--color-terracotta) / 0.24);
 }
 
 .admin-console-shell .admin-stat-label {
@@ -791,13 +791,13 @@ body.admin-console-active .select-search-input {
 
 .admin-console-shell .admin-filter-slab {
   background:
-    linear-gradient(90deg, rgba(63, 90, 58, 0.08), transparent 48%),
+    linear-gradient(90deg, rgb(var(--color-laurel) / 0.08), transparent 48%),
     var(--admin-surface) !important;
 }
 
 .admin-console-shell .admin-chart-card,
 .admin-console-shell .admin-dashboard .card {
-  border-top: 2px solid rgba(63, 90, 58, 0.28) !important;
+  border-top: 2px solid rgb(var(--color-laurel) / 0.28) !important;
 }
 
 .admin-console-shell .admin-chart-title,
@@ -809,8 +809,8 @@ body.admin-console-active .select-search-input {
 }
 
 .admin-console-shell .admin-chart-frame {
-  border: 1px solid rgba(63, 90, 58, 0.12);
-  background: rgba(255, 252, 245, 0.38);
+  border: 1px solid rgb(var(--color-laurel) / 0.12);
+  background: rgb(var(--color-vellum) / 0.38);
 }
 
 .admin-console-shell .card .bg-gray-50,
@@ -848,7 +848,7 @@ body.admin-console-active .select-search-input {
 }
 
 .dark .admin-console-shell .admin-chart-frame {
-  background: rgba(33, 29, 22, 0.32);
+  background: rgb(var(--color-accent-800) / 0.32);
 }
 
 /* Chart segmented controls */

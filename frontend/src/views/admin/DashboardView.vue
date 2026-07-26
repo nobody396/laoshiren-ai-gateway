@@ -377,7 +377,7 @@ onBeforeUnmount(() => {
 // Chart colors
 const chartColors = computed(() => ({
   text: chartInk().text,
-  grid: isDarkMode.value ? 'rgba(215, 226, 197, 0.18)' : 'rgba(63, 90, 58, 0.2)'
+  grid: chartInk().grid
 }))
 
 // Line chart options (for user trend chart)

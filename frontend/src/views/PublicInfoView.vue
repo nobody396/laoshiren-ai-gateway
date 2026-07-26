@@ -64,8 +64,11 @@ watch(
 .public-info-page {
   min-height: 100vh;
   background: rgb(var(--color-vellum));
-  color: rgb(var(--color-gray-700));
-  color-scheme: light;
+  color: rgb(var(--color-ink));
+  /* No color-scheme lock. This page used to pin itself light with a literal
+   * #ffffff ground; now that both ground and text run through tokens it
+   * follows the site theme, and a light island inside a dark site was the
+   * thing that looked broken. */
 }
 
 .public-info-header {
@@ -78,7 +81,7 @@ watch(
   justify-content: space-between;
   gap: 1.5rem;
   border-bottom: 1px solid rgb(var(--color-gray-200));
-  background: rgba(255, 255, 255, 0.92);
+  background: rgb(var(--color-vellum) / 0.92);
   padding: 0 2rem;
   backdrop-filter: blur(10px);
 }
@@ -87,7 +90,7 @@ watch(
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
-  color: rgb(var(--color-gray-900));
+  color: rgb(var(--color-ink-deep));
   font-weight: 700;
   text-decoration: none;
 }
@@ -107,7 +110,7 @@ watch(
 }
 
 .public-info-header nav a {
-  color: rgb(var(--color-gray-600));
+  color: rgb(var(--color-muted));
   font-size: 0.95rem;
   font-weight: 600;
   text-decoration: none;
@@ -125,9 +128,9 @@ watch(
 }
 
 .public-info-page :deep(.docs-doc-copy-btn) {
-  border-color: rgb(var(--color-gray-200));
-  background: rgba(255, 255, 255, 0.92);
-  color: rgb(var(--color-gray-700));
+  border-color: rgb(var(--color-stone));
+  background: rgb(var(--color-vellum) / 0.92);
+  color: rgb(var(--color-ink));
 }
 
 .public-info-page :deep(.docs-doc-copy-btn:hover) {
@@ -137,16 +140,16 @@ watch(
 }
 
 .public-info-page :deep(.docs-markdown) {
-  color: rgb(var(--color-gray-700));
+  color: rgb(var(--color-ink));
 }
 
 .public-info-page :deep(.docs-markdown h1) {
-  color: rgb(var(--color-gray-900));
+  color: rgb(var(--color-ink-deep));
 }
 
 .public-info-page :deep(.docs-markdown h2),
 .public-info-page :deep(.docs-markdown h3) {
-  color: rgb(var(--color-gray-800));
+  color: rgb(var(--color-ink));
 }
 
 .public-info-page :deep(.docs-markdown h2) {
@@ -154,11 +157,11 @@ watch(
 }
 
 .public-info-page :deep(.docs-markdown h4) {
-  color: rgb(var(--color-gray-700));
+  color: rgb(var(--color-ink));
 }
 
 .public-info-page :deep(.docs-markdown strong) {
-  color: rgb(var(--color-gray-900));
+  color: rgb(var(--color-ink-deep));
 }
 
 .public-info-page :deep(.docs-markdown blockquote) {
@@ -167,7 +170,7 @@ watch(
 }
 
 .public-info-page :deep(.docs-markdown code) {
-  background-color: rgb(var(--color-gray-100));
+  background-color: rgb(var(--color-parchment));
   color: rgb(var(--color-terracotta));
 }
 
@@ -182,16 +185,16 @@ watch(
 }
 
 .public-info-page :deep(.docs-markdown hr) {
-  border-top-color: rgb(var(--color-gray-200));
+  border-top-color: rgb(var(--color-stone));
 }
 
 .public-info-page :deep(.docs-markdown th),
 .public-info-page :deep(.docs-markdown td) {
-  border-color: rgb(var(--color-gray-200));
+  border-color: rgb(var(--color-stone));
 }
 
 .public-info-page :deep(.docs-markdown th) {
-  background-color: rgb(var(--color-gray-50));
+  background-color: rgb(var(--color-parchment));
 }
 
 @media (max-width: 640px) {

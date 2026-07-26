@@ -337,8 +337,8 @@ const specialProviderGroups = computed(() => [
   align-items: center;
   min-height: 2.25rem;
   padding: 0.45rem 0.9rem;
-  border: 1px solid rgba(63, 90, 58, 0.22);
-  background: rgba(250, 246, 236, 0.72);
+  border: 1px solid rgb(var(--color-laurel) / 0.22);
+  background: rgb(var(--color-marble) / 0.72);
   color: rgb(var(--color-ink));
   font-family: 'Inter', sans-serif;
   font-size: 0.78rem;
@@ -363,8 +363,8 @@ const specialProviderGroups = computed(() => [
   min-height: 20rem;
   padding: 1rem;
   background: rgb(var(--color-marble));
-  border: 1px solid rgba(154, 59, 31, 0.34);
-  box-shadow: 0 1rem 2.6rem rgba(63, 90, 58, 0.08), inset 0 0 0 1px rgba(250, 246, 236, 0.7);
+  border: 1px solid rgb(var(--color-terracotta) / 0.34);
+  box-shadow: 0 1rem 2.6rem rgb(var(--color-laurel) / 0.08), inset 0 0 0 1px rgb(var(--color-marble) / 0.7);
 }
 
 .provider-card--claude {
@@ -384,7 +384,7 @@ const specialProviderGroups = computed(() => [
   justify-content: center;
   min-height: 2.55rem;
   padding: 0.65rem 0.75rem 0.95rem;
-  border-bottom: 1px solid rgba(63, 90, 58, 0.12);
+  border-bottom: 1px solid rgb(var(--color-laurel) / 0.12);
   text-align: center;
 }
 
@@ -422,7 +422,7 @@ const specialProviderGroups = computed(() => [
 
 .provider-card__header p {
   margin: 0;
-  color: rgb(var(--color-gray-600));
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.76rem;
   font-weight: 800;
@@ -437,7 +437,7 @@ const specialProviderGroups = computed(() => [
   max-height: 32rem;
   overflow-y: auto;
   padding: 0.95rem 0.1rem 0.1rem;
-  scrollbar-color: rgba(154, 59, 31, 0.42) transparent;
+  scrollbar-color: rgb(var(--color-terracotta) / 0.42) transparent;
   scrollbar-width: thin;
 }
 
@@ -450,7 +450,7 @@ const specialProviderGroups = computed(() => [
   gap: 0.72rem;
   padding: 0.82rem;
   background: rgb(var(--color-papyrus));
-  border: 1px solid rgba(63, 90, 58, 0.14);
+  border: 1px solid rgb(var(--color-laurel) / 0.14);
 }
 
 .compact-model {
@@ -516,8 +516,8 @@ const specialProviderGroups = computed(() => [
   gap: 0.18rem;
   min-height: 4.35rem;
   padding: 0.52rem 0.48rem;
-  background: rgba(250, 246, 236, 0.88);
-  border: 1px solid rgba(63, 90, 58, 0.1);
+  background: rgb(var(--color-marble) / 0.88);
+  border: 1px solid rgb(var(--color-laurel) / 0.1);
 }
 
 .compact-rates strong,
@@ -556,8 +556,8 @@ const specialProviderGroups = computed(() => [
 .pricing-frame {
   padding: 0.5rem;
   background: rgb(var(--color-marble));
-  border: 1px solid rgba(63, 90, 58, 0.18);
-  box-shadow: 0 1px 0 rgba(63, 90, 58, 0.08), 0 0 0 1px rgba(63, 90, 58, 0.04);
+  border: 1px solid rgb(var(--color-laurel) / 0.18);
+  box-shadow: 0 1px 0 rgb(var(--color-laurel) / 0.08), 0 0 0 1px rgb(var(--color-laurel) / 0.04);
 }
 
 .pricing-frame__header {
@@ -565,7 +565,7 @@ const specialProviderGroups = computed(() => [
   align-items: flex-start;
   gap: 1rem;
   padding: 1.25rem 1.25rem 1rem;
-  border-bottom: 1px solid rgba(63, 90, 58, 0.14);
+  border-bottom: 1px solid rgb(var(--color-laurel) / 0.14);
 }
 
 .pricing-frame__header h3 {
@@ -579,7 +579,7 @@ const specialProviderGroups = computed(() => [
 
 .pricing-frame__header p {
   margin: 0.35rem 0 0;
-  color: rgb(var(--color-gray-600));
+  color: rgb(var(--color-muted));
   font-size: 0.98rem;
   line-height: 1.45;
 }
@@ -622,7 +622,7 @@ const specialProviderGroups = computed(() => [
 
 .pricing-table td {
   padding: 1.125rem 0.875rem;
-  border-bottom: 1px solid rgba(63, 90, 58, 0.1);
+  border-bottom: 1px solid rgb(var(--color-laurel) / 0.1);
   color: rgb(var(--color-ink));
   font-size: 1rem;
   text-align: center;

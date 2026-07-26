@@ -216,16 +216,16 @@ const averageScore = computed(() => {
 .report-board {
   padding: 0.5rem;
   background: rgb(var(--color-marble));
-  border: 1px solid rgba(63, 90, 58, 0.18);
-  box-shadow: 0 1px 0 rgba(63, 90, 58, 0.08), 0 0 0 1px rgba(63, 90, 58, 0.04);
+  border: 1px solid rgb(var(--color-laurel) / 0.18);
+  box-shadow: 0 1px 0 rgb(var(--color-laurel) / 0.08), 0 0 0 1px rgb(var(--color-laurel) / 0.04);
 }
 
 .report-board__summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1px;
-  background: rgba(63, 90, 58, 0.14);
-  border-bottom: 1px solid rgba(63, 90, 58, 0.14);
+  background: rgb(var(--color-laurel) / 0.14);
+  border-bottom: 1px solid rgb(var(--color-laurel) / 0.14);
 }
 
 .report-board__summary div {
@@ -260,7 +260,7 @@ const averageScore = computed(() => {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
-  background: rgba(63, 90, 58, 0.14);
+  background: rgb(var(--color-laurel) / 0.14);
 }
 
 .report-card {
@@ -292,7 +292,7 @@ const averageScore = computed(() => {
 }
 
 .report-badge {
-  background: rgba(63, 90, 58, 0.12);
+  background: rgb(var(--color-laurel) / 0.12);
   color: rgb(var(--color-laurel-dark));
 }
 
@@ -318,7 +318,7 @@ const averageScore = computed(() => {
 
 .report-card__body p {
   margin: 1rem 0 0;
-  color: rgb(var(--color-gray-600));
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.8rem;
   line-height: 1.55;
@@ -330,8 +330,8 @@ const averageScore = computed(() => {
   gap: 0.9rem;
   margin: 0;
   padding: 1.25rem 0;
-  border-top: 1px solid rgba(63, 90, 58, 0.14);
-  border-bottom: 1px solid rgba(63, 90, 58, 0.14);
+  border-top: 1px solid rgb(var(--color-laurel) / 0.14);
+  border-bottom: 1px solid rgb(var(--color-laurel) / 0.14);
 }
 
 .report-facts div {
@@ -353,7 +353,7 @@ const averageScore = computed(() => {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
   margin-top: 1.25rem;
-  background: rgba(63, 90, 58, 0.12);
+  background: rgb(var(--color-laurel) / 0.12);
 }
 
 .metric-strip div {

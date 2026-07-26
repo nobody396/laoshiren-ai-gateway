@@ -810,8 +810,8 @@ void Promise.all([
   opacity: 0.42;
   transform: translateX(-50%);
   background:
-    radial-gradient(circle at 35% 0%, rgba(154, 59, 31, 0.14), transparent 58%),
-    radial-gradient(circle at 70% 24%, rgba(63, 90, 58, 0.12), transparent 52%);
+    radial-gradient(circle at 35% 0%, rgb(var(--color-terracotta) / 0.14), transparent 58%),
+    radial-gradient(circle at 70% 24%, rgb(var(--color-laurel) / 0.12), transparent 52%);
 }
 
 .dark .topup-page::before {
@@ -826,11 +826,11 @@ void Promise.all([
 
 .topup-panel {
   overflow: hidden;
-  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
   background:
-    linear-gradient(135deg, var(--admin-surface, rgba(250, 246, 236, 0.96)), var(--admin-surface-soft, rgba(239, 230, 207, 0.78)));
-  box-shadow: var(--admin-shadow, 0 18px 48px rgba(49, 38, 20, 0.11));
+    linear-gradient(135deg, var(--admin-surface, rgb(var(--color-marble) / 0.96)), var(--admin-surface-soft, rgb(var(--color-stone) / 0.78)));
+  box-shadow: var(--admin-shadow, 0 18px 48px rgb(var(--shadow-ink) / 0.11));
   color: var(--admin-ink, rgb(var(--color-ink)));
 }
 
@@ -840,24 +840,24 @@ void Promise.all([
 
 .topup-main {
   padding: 2rem 1.5rem;
-  border-bottom: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border-bottom: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
 }
 
 .topup-summary {
   padding: 1.5rem;
   background:
-    linear-gradient(180deg, rgba(154, 59, 31, 0.045), rgba(63, 90, 58, 0.035)),
-    var(--admin-surface-soft, rgba(239, 230, 207, 0.78));
+    linear-gradient(180deg, rgb(var(--color-terracotta) / 0.045), rgb(var(--color-laurel) / 0.035)),
+    var(--admin-surface-soft, rgb(var(--color-stone) / 0.78));
 }
 
 .topup-eyebrow {
   display: inline-flex;
   align-items: center;
-  border: 1px solid var(--admin-border-strong, rgba(31, 26, 18, 0.32));
+  border: 1px solid var(--admin-border-strong, rgb(var(--color-ink) / 0.32));
   border-radius: 4px;
   padding: 0.35rem 0.65rem;
   color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
-  background: rgba(154, 59, 31, 0.08);
+  background: rgb(var(--color-terracotta) / 0.08);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.16em;
@@ -930,9 +930,9 @@ void Promise.all([
 .topup-product,
 .topup-pay-option {
   width: 100%;
-  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
-  background: var(--admin-control, rgba(255, 252, 245, 0.95));
+  background: var(--admin-control, rgb(var(--color-vellum) / 0.95));
   color: var(--admin-ink, rgb(var(--color-ink)));
   text-align: left;
   transition:
@@ -945,10 +945,10 @@ void Promise.all([
 .topup-choice:hover,
 .topup-product:hover,
 .topup-pay-option:hover {
-  border-color: var(--admin-border-strong, rgba(31, 26, 18, 0.32));
+  border-color: var(--admin-border-strong, rgb(var(--color-ink) / 0.32));
   background: var(--admin-parchment, rgb(var(--color-parchment)));
   transform: translateY(-1px);
-  box-shadow: var(--admin-shadow-sm, 0 8px 24px rgba(49, 38, 20, 0.08));
+  box-shadow: var(--admin-shadow-sm, 0 8px 24px rgb(var(--shadow-ink) / 0.08));
 }
 
 .topup-choice:focus-visible,
@@ -959,7 +959,7 @@ void Promise.all([
 .topup-primary-action:focus-visible,
 .topup-secondary-action:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--admin-ring, rgba(154, 59, 31, 0.24));
+  box-shadow: 0 0 0 3px var(--admin-ring, rgb(var(--color-terracotta) / 0.24));
 }
 
 .topup-choice {
@@ -982,9 +982,9 @@ void Promise.all([
 .topup-pay-option--active {
   border-color: var(--admin-terracotta, rgb(var(--color-terracotta)));
   background:
-    linear-gradient(180deg, rgba(154, 59, 31, 0.1), transparent 100%),
-    var(--admin-control, rgba(255, 252, 245, 0.95));
-  box-shadow: inset 0 0 0 1px rgba(154, 59, 31, 0.12);
+    linear-gradient(180deg, rgb(var(--color-terracotta) / 0.1), transparent 100%),
+    var(--admin-control, rgb(var(--color-vellum) / 0.95));
+  box-shadow: inset 0 0 0 1px rgb(var(--color-terracotta) / 0.12);
 }
 
 .topup-choice-icon {
@@ -994,9 +994,9 @@ void Promise.all([
   justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
-  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
-  background: rgba(154, 59, 31, 0.08);
+  background: rgb(var(--color-terracotta) / 0.08);
 }
 
 .topup-choice-icon--warm {
@@ -1005,7 +1005,7 @@ void Promise.all([
 
 .topup-choice-icon--laurel {
   color: var(--admin-laurel, rgb(var(--color-laurel)));
-  background: rgba(63, 90, 58, 0.1);
+  background: rgb(var(--color-laurel) / 0.1);
 }
 
 .topup-choice-content {
@@ -1044,14 +1044,14 @@ void Promise.all([
 }
 
 .topup-status--available {
-  border-color: rgba(63, 90, 58, 0.24);
-  background: rgba(63, 90, 58, 0.1);
+  border-color: rgb(var(--color-laurel) / 0.24);
+  background: rgb(var(--color-laurel) / 0.1);
   color: var(--admin-laurel-dark, rgb(var(--color-laurel-dark)));
 }
 
 .topup-status--disabled {
-  border-color: var(--admin-border, rgba(31, 26, 18, 0.14));
-  background: var(--admin-surface-soft, rgba(239, 230, 207, 0.78));
+  border-color: var(--admin-border, rgb(var(--color-ink) / 0.14));
+  background: var(--admin-surface-soft, rgb(var(--color-stone) / 0.78));
   color: var(--admin-muted, rgb(var(--color-muted)));
 }
 
@@ -1073,9 +1073,9 @@ void Promise.all([
   overflow: hidden;
   min-height: 9.5rem;
   width: 100%;
-  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
-  background: var(--admin-control, rgba(255, 252, 245, 0.95));
+  background: var(--admin-control, rgb(var(--color-vellum) / 0.95));
   color: var(--admin-ink, rgb(var(--color-ink)));
   padding: 1rem;
   text-align: left;
@@ -1114,20 +1114,20 @@ void Promise.all([
   grid-column: 1 / -1;
   isolation: isolate;
   min-height: 12.4rem;
-  border-color: rgba(230, 183, 90, 0.52);
+  border-color: rgb(var(--gild-600) / 0.52);
   background:
-    linear-gradient(135deg, rgba(255, 221, 146, 0.14), rgba(122, 28, 16, 0.12) 42%, transparent 70%),
+    linear-gradient(135deg, rgb(var(--gild-500) / 0.14), rgb(var(--color-red-700) / 0.12) 42%, transparent 70%),
     linear-gradient(118deg, rgb(var(--lacquer-rest-top)) 0%, rgb(var(--lacquer-rest-mid)) 48%, rgb(var(--lacquer-base)) 100%);
   color: rgb(var(--gild-100));
   box-shadow:
-    0 18px 48px rgba(31, 17, 8, 0.2),
-    inset 0 0 0 1px rgba(255, 220, 138, 0.14);
+    0 18px 48px rgb(var(--shadow-ink) / 0.2),
+    inset 0 0 0 1px rgb(var(--gild-500) / 0.14);
 }
 
 .topup-monthly-product--apex::before {
   height: 0.32rem;
   background: linear-gradient(90deg, rgb(var(--gild-900)), rgb(var(--gild-600)) 25%, rgb(var(--gild-400)) 52%, rgb(var(--gild-700)) 78%, rgb(var(--lacquer-base)));
-  box-shadow: 0 0 22px rgba(230, 183, 90, 0.42);
+  box-shadow: 0 0 22px rgb(var(--gild-600) / 0.42);
 }
 
 .topup-monthly-product--apex::after {
@@ -1137,46 +1137,46 @@ void Promise.all([
   inset: 0;
   opacity: 0.58;
   background:
-    linear-gradient(95deg, transparent 0%, rgba(255, 221, 146, 0.2) 45%, transparent 58%),
-    repeating-linear-gradient(90deg, rgba(255, 220, 138, 0.08) 0 1px, transparent 1px 2.8rem);
+    linear-gradient(95deg, transparent 0%, rgb(var(--gild-500) / 0.2) 45%, transparent 58%),
+    repeating-linear-gradient(90deg, rgb(var(--gild-500) / 0.08) 0 1px, transparent 1px 2.8rem);
   transform: translateX(-46%);
   animation: topup-apex-sweep 7s ease-in-out infinite;
 }
 
 .topup-monthly-product:hover {
-  border-color: var(--admin-border-strong, rgba(31, 26, 18, 0.32));
+  border-color: var(--admin-border-strong, rgb(var(--color-ink) / 0.32));
   background: var(--admin-parchment, rgb(var(--color-parchment)));
   transform: translateY(-1px);
-  box-shadow: var(--admin-shadow-sm, 0 8px 24px rgba(49, 38, 20, 0.08));
+  box-shadow: var(--admin-shadow-sm, 0 8px 24px rgb(var(--shadow-ink) / 0.08));
 }
 
 .topup-monthly-product--active {
   border-color: var(--admin-terracotta, rgb(var(--color-terracotta)));
   background:
-    linear-gradient(180deg, rgba(154, 59, 31, 0.1), transparent 100%),
-    var(--admin-control, rgba(255, 252, 245, 0.95));
-  box-shadow: inset 0 0 0 1px rgba(154, 59, 31, 0.12);
+    linear-gradient(180deg, rgb(var(--color-terracotta) / 0.1), transparent 100%),
+    var(--admin-control, rgb(var(--color-vellum) / 0.95));
+  box-shadow: inset 0 0 0 1px rgb(var(--color-terracotta) / 0.12);
 }
 
 .topup-monthly-product--apex:hover {
-  border-color: rgba(255, 220, 138, 0.82);
+  border-color: rgb(var(--gild-500) / 0.82);
   background:
-    linear-gradient(135deg, rgba(255, 221, 146, 0.2), rgba(154, 59, 31, 0.14) 44%, transparent 72%),
+    linear-gradient(135deg, rgb(var(--gild-500) / 0.2), rgb(var(--color-terracotta) / 0.14) 44%, transparent 72%),
     linear-gradient(118deg, rgb(var(--lacquer-hover-top)) 0%, rgb(var(--lacquer-hover-mid)) 48%, rgb(var(--lacquer-base)) 100%);
   box-shadow:
-    0 22px 58px rgba(31, 17, 8, 0.24),
-    inset 0 0 0 1px rgba(255, 220, 138, 0.18);
+    0 22px 58px rgb(var(--shadow-ink) / 0.24),
+    inset 0 0 0 1px rgb(var(--gild-500) / 0.18);
 }
 
 .topup-monthly-product--apex.topup-monthly-product--active {
   border-color: rgb(var(--gild-500));
   background:
-    linear-gradient(135deg, rgba(255, 221, 146, 0.24), rgba(154, 59, 31, 0.16) 46%, transparent 72%),
+    linear-gradient(135deg, rgb(var(--gild-500) / 0.24), rgb(var(--color-terracotta) / 0.16) 46%, transparent 72%),
     linear-gradient(118deg, rgb(var(--lacquer-active-top)) 0%, rgb(var(--lacquer-active-mid)) 50%, rgb(var(--lacquer-base)) 100%);
   box-shadow:
-    0 0 0 1px rgba(255, 216, 141, 0.36),
-    0 22px 66px rgba(115, 49, 17, 0.28),
-    inset 0 0 34px rgba(255, 216, 141, 0.1);
+    0 0 0 1px rgb(var(--gild-500) / 0.36),
+    0 22px 66px rgb(var(--shadow-ink) / 0.28),
+    inset 0 0 34px rgb(var(--gild-500) / 0.1);
   transform: translateY(-2px);
 }
 
@@ -1211,12 +1211,12 @@ void Promise.all([
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: 1.35rem;
   letter-spacing: 0;
-  text-shadow: 0 0 18px rgba(255, 216, 141, 0.2);
+  text-shadow: 0 0 18px rgb(var(--gild-500) / 0.2);
 }
 
 .topup-monthly-product--apex .topup-status--available {
-  border-color: rgba(255, 216, 141, 0.38);
-  background: rgba(255, 216, 141, 0.1);
+  border-color: rgb(var(--gild-500) / 0.38);
+  background: rgb(var(--gild-500) / 0.1);
   color: rgb(var(--gild-500));
 }
 
@@ -1241,14 +1241,14 @@ void Promise.all([
 }
 
 .topup-monthly-product--apex .topup-monthly-product__price small {
-  color: rgba(255, 246, 219, 0.72);
+  color: rgb(var(--gild-200) / 0.72);
 }
 
 .topup-monthly-product__legend {
   display: block;
   max-width: 34rem;
   margin-top: 0.75rem;
-  color: rgba(255, 246, 219, 0.72);
+  color: rgb(var(--gild-200) / 0.72);
   font-size: 0.82rem;
   font-weight: 650;
   line-height: 1.7;
@@ -1256,9 +1256,9 @@ void Promise.all([
 
 .topup-warning,
 .topup-success {
-  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
-  background: rgba(154, 59, 31, 0.08);
+  background: rgb(var(--color-terracotta) / 0.08);
   color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
   padding: 0.9rem 1rem;
   font-size: 0.9rem;
@@ -1266,12 +1266,12 @@ void Promise.all([
 }
 
 .topup-warning {
-  background: rgba(154, 106, 31, 0.12);
+  background: rgb(var(--color-warning) / 0.12);
   color: var(--admin-warning, rgb(var(--color-warning)));
 }
 
 .topup-success {
-  background: rgba(63, 90, 58, 0.12);
+  background: rgb(var(--color-laurel) / 0.12);
   color: var(--admin-laurel-dark, rgb(var(--color-laurel-dark)));
 }
 
@@ -1291,9 +1291,9 @@ void Promise.all([
 
 .topup-input {
   width: 100%;
-  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
-  background: var(--admin-control, rgba(255, 252, 245, 0.95));
+  background: var(--admin-control, rgb(var(--color-vellum) / 0.95));
   color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
   padding: 0.95rem 1rem 0.95rem 2.8rem;
   font-size: 1rem;
@@ -1311,7 +1311,7 @@ void Promise.all([
 .topup-input--active,
 .topup-input:focus {
   border-color: var(--admin-terracotta, rgb(var(--color-terracotta)));
-  background: var(--admin-control, rgba(255, 252, 245, 0.95));
+  background: var(--admin-control, rgb(var(--color-vellum) / 0.95));
 }
 
 .topup-error {
@@ -1329,9 +1329,9 @@ void Promise.all([
 }
 
 .topup-qr-panel {
-  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
-  background: var(--admin-surface-soft, rgba(239, 230, 207, 0.78));
+  background: var(--admin-surface-soft, rgb(var(--color-stone) / 0.78));
   padding: 1.25rem;
 }
 
@@ -1347,9 +1347,9 @@ void Promise.all([
   justify-content: center;
   width: 15rem;
   height: 15rem;
-  border: 1px dashed var(--admin-border-strong, rgba(31, 26, 18, 0.32));
+  border: 1px dashed var(--admin-border-strong, rgb(var(--color-ink) / 0.32));
   border-radius: 8px;
-  background: var(--admin-control, rgba(255, 252, 245, 0.95));
+  background: var(--admin-control, rgb(var(--color-vellum) / 0.95));
 }
 
 .topup-qr-image {
@@ -1374,9 +1374,9 @@ void Promise.all([
   justify-content: space-between;
   gap: 1rem;
   margin-top: 1.25rem;
-  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
-  background: var(--admin-control, rgba(255, 252, 245, 0.95));
+  background: var(--admin-control, rgb(var(--color-vellum) / 0.95));
   padding: 0.9rem 1rem;
 }
 
@@ -1400,27 +1400,27 @@ void Promise.all([
 }
 
 .topup-summary-card {
-  border: 1px solid var(--admin-border-strong, rgba(31, 26, 18, 0.32));
+  border: 1px solid var(--admin-border-strong, rgb(var(--color-ink) / 0.32));
   border-radius: 8px;
   background:
-    linear-gradient(180deg, rgba(154, 59, 31, 0.08), transparent 70%),
-    var(--admin-surface, rgba(250, 246, 236, 0.96));
+    linear-gradient(180deg, rgb(var(--color-terracotta) / 0.08), transparent 70%),
+    var(--admin-surface, rgb(var(--color-marble) / 0.96));
   padding: 1.5rem;
-  box-shadow: var(--admin-shadow-sm, 0 8px 24px rgba(49, 38, 20, 0.08));
+  box-shadow: var(--admin-shadow-sm, 0 8px 24px rgb(var(--shadow-ink) / 0.08));
 }
 
 .topup-summary-card--apex {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  border-color: rgba(255, 216, 141, 0.5);
+  border-color: rgb(var(--gild-500) / 0.5);
   background:
-    linear-gradient(135deg, rgba(255, 221, 146, 0.14), rgba(154, 59, 31, 0.1) 42%, transparent 72%),
+    linear-gradient(135deg, rgb(var(--gild-500) / 0.14), rgb(var(--color-terracotta) / 0.1) 42%, transparent 72%),
     linear-gradient(120deg, rgb(var(--lacquer-rest-top)) 0%, rgb(var(--lacquer-rest-mid)) 52%, rgb(var(--lacquer-base)) 100%);
   color: rgb(var(--gild-100));
   box-shadow:
-    0 24px 70px rgba(31, 17, 8, 0.24),
-    inset 0 0 0 1px rgba(255, 216, 141, 0.16);
+    0 24px 70px rgb(var(--shadow-ink) / 0.24),
+    inset 0 0 0 1px rgb(var(--gild-500) / 0.16);
 }
 
 .topup-summary-card--apex::before {
@@ -1430,8 +1430,8 @@ void Promise.all([
   inset: 0;
   opacity: 0.68;
   background:
-    linear-gradient(90deg, transparent 0%, rgba(255, 221, 146, 0.18) 48%, transparent 60%),
-    repeating-linear-gradient(90deg, rgba(255, 216, 141, 0.07) 0 1px, transparent 1px 3.25rem);
+    linear-gradient(90deg, transparent 0%, rgb(var(--gild-500) / 0.18) 48%, transparent 60%),
+    repeating-linear-gradient(90deg, rgb(var(--gild-500) / 0.07) 0 1px, transparent 1px 3.25rem);
   transform: translateX(-44%);
   animation: topup-apex-sweep 7.4s ease-in-out infinite;
 }
@@ -1447,8 +1447,8 @@ void Promise.all([
   pointer-events: none;
   border-radius: inherit;
   background:
-    linear-gradient(110deg, transparent 0%, rgba(255, 240, 175, 0.52) 36%, rgba(213, 136, 49, 0.36) 50%, transparent 66%),
-    linear-gradient(180deg, rgba(255, 216, 141, 0.32), transparent 36%, rgba(255, 216, 141, 0.14));
+    linear-gradient(110deg, transparent 0%, rgb(var(--gild-400) / 0.52) 36%, rgb(var(--gild-700) / 0.36) 50%, transparent 66%),
+    linear-gradient(180deg, rgb(var(--gild-500) / 0.32), transparent 36%, rgb(var(--gild-500) / 0.14));
   opacity: 0;
   animation: topup-apex-panel-flare 0.98s ease-out both;
 }
@@ -1467,7 +1467,7 @@ void Promise.all([
 }
 
 .topup-summary-card--apex .topup-summary-kicker {
-  color: rgba(255, 246, 219, 0.74);
+  color: rgb(var(--gild-200) / 0.74);
 }
 
 .topup-summary-title {
@@ -1482,14 +1482,14 @@ void Promise.all([
   color: rgb(var(--gild-200));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: clamp(2rem, 4vw, 2.45rem);
-  text-shadow: 0 0 20px rgba(255, 216, 141, 0.2);
+  text-shadow: 0 0 20px rgb(var(--gild-500) / 0.2);
 }
 
 .topup-price-chip {
   flex: 0 0 auto;
-  border: 1px solid rgba(154, 59, 31, 0.2);
+  border: 1px solid rgb(var(--color-terracotta) / 0.2);
   border-radius: 4px;
-  background: rgba(154, 59, 31, 0.1);
+  background: rgb(var(--color-terracotta) / 0.1);
   color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
   padding: 0.45rem 0.65rem;
   font-size: 0.9rem;
@@ -1497,14 +1497,14 @@ void Promise.all([
 }
 
 .topup-price-chip--muted {
-  border-color: var(--admin-border, rgba(31, 26, 18, 0.14));
-  background: var(--admin-surface-soft, rgba(239, 230, 207, 0.78));
+  border-color: var(--admin-border, rgb(var(--color-ink) / 0.14));
+  background: var(--admin-surface-soft, rgb(var(--color-stone) / 0.78));
   color: var(--admin-muted, rgb(var(--color-muted)));
 }
 
 .topup-summary-card--apex .topup-price-chip--muted {
-  border-color: rgba(255, 216, 141, 0.42);
-  background: rgba(255, 216, 141, 0.1);
+  border-color: rgb(var(--gild-500) / 0.42);
+  background: rgb(var(--gild-500) / 0.1);
   color: rgb(var(--gild-500));
 }
 
@@ -1565,9 +1565,9 @@ void Promise.all([
 .topup-monthly-prices div,
 .topup-monthly-quota,
 .topup-token-grid article {
-  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
-  background: rgba(255, 252, 245, 0.58);
+  background: rgb(var(--color-vellum) / 0.58);
   padding: 0.85rem;
 }
 
@@ -1594,8 +1594,8 @@ void Promise.all([
 
 .topup-monthly-quota {
   background:
-    linear-gradient(180deg, rgba(154, 59, 31, 0.08), transparent 100%),
-    rgba(255, 252, 245, 0.64);
+    linear-gradient(180deg, rgb(var(--color-terracotta) / 0.08), transparent 100%),
+    rgb(var(--color-vellum) / 0.64);
 }
 
 .topup-monthly-quota strong {
@@ -1632,9 +1632,9 @@ void Promise.all([
 
 .topup-token-note {
   margin: 0;
-  border: 1px solid rgba(154, 106, 31, 0.18);
+  border: 1px solid rgb(var(--color-warning) / 0.18);
   border-radius: 8px;
-  background: rgba(154, 106, 31, 0.08);
+  background: rgb(var(--color-warning) / 0.08);
   color: var(--admin-muted, rgb(var(--color-muted)));
   padding: 0.8rem 0.9rem;
   font-size: 0.8rem;
@@ -1643,9 +1643,9 @@ void Promise.all([
 
 .topup-apex-lore {
   margin: 0;
-  border-left: 2px solid rgba(255, 216, 141, 0.56);
+  border-left: 2px solid rgb(var(--gild-500) / 0.56);
   padding-left: 0.85rem;
-  color: rgba(255, 239, 191, 0.88);
+  color: rgb(var(--gild-300) / 0.88);
   font-size: 0.9rem;
   font-weight: 650;
   line-height: 1.85;
@@ -1654,16 +1654,16 @@ void Promise.all([
 .topup-monthly-detail--apex .topup-monthly-prices div,
 .topup-monthly-detail--apex .topup-monthly-quota,
 .topup-monthly-detail--apex .topup-token-grid article {
-  border-color: rgba(255, 216, 141, 0.24);
+  border-color: rgb(var(--gild-500) / 0.24);
   background:
-    linear-gradient(135deg, rgba(255, 216, 141, 0.12), rgba(255, 118, 70, 0.07)),
-    rgba(8, 7, 6, 0.46);
+    linear-gradient(135deg, rgb(var(--gild-500) / 0.12), rgb(var(--color-primary-400) / 0.07)),
+    rgb(var(--lacquer-base) / 0.46);
 }
 
 .topup-monthly-detail--apex .topup-monthly-prices span,
 .topup-monthly-detail--apex .topup-monthly-quota span,
 .topup-monthly-detail--apex .topup-token-grid span {
-  color: rgba(255, 246, 219, 0.72);
+  color: rgb(var(--gild-200) / 0.72);
 }
 
 .topup-monthly-detail--apex .topup-monthly-prices strong,
@@ -1674,7 +1674,7 @@ void Promise.all([
 
 .topup-monthly-detail--apex .topup-monthly-quota small,
 .topup-monthly-detail--apex .topup-token-grid small {
-  color: rgba(255, 246, 219, 0.7);
+  color: rgb(var(--gild-200) / 0.7);
 }
 
 .topup-monthly-detail--apex .topup-token-grid small {
@@ -1682,28 +1682,28 @@ void Promise.all([
 }
 
 .topup-monthly-detail--apex .topup-token-note {
-  border-color: rgba(255, 216, 141, 0.22);
-  background: rgba(255, 216, 141, 0.08);
-  color: rgba(255, 246, 219, 0.72);
+  border-color: rgb(var(--gild-500) / 0.22);
+  background: rgb(var(--gild-500) / 0.08);
+  color: rgb(var(--gild-200) / 0.72);
 }
 
 .dark .topup-monthly-prices div,
 .dark .topup-monthly-quota,
 .dark .topup-token-grid article {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(22, 19, 15, 0.86);
+  border-color: rgb(var(--color-vellum) / 0.12);
+  background: rgb(var(--color-gray-900) / 0.86);
 }
 
 .dark .topup-monthly-quota {
   background:
-    linear-gradient(180deg, rgba(226, 123, 81, 0.12), transparent 100%),
-    rgba(22, 19, 15, 0.9);
+    linear-gradient(180deg, rgb(var(--color-primary-400) / 0.12), transparent 100%),
+    rgb(var(--color-gray-900) / 0.9);
 }
 
 .dark .topup-monthly-prices span,
 .dark .topup-monthly-quota span,
 .dark .topup-token-grid span {
-  color: rgba(232, 220, 198, 0.78);
+  color: rgb(var(--color-stone) / 0.78);
 }
 
 .dark .topup-monthly-prices strong,
@@ -1714,7 +1714,7 @@ void Promise.all([
 
 .dark .topup-monthly-quota small,
 .dark .topup-token-grid small {
-  color: rgba(232, 220, 198, 0.72);
+  color: rgb(var(--color-stone) / 0.72);
 }
 
 .dark .topup-token-grid small {
@@ -1722,10 +1722,10 @@ void Promise.all([
 }
 
 .dark .topup-token-note {
-  border-color: rgba(226, 123, 81, 0.28);
+  border-color: rgb(var(--color-primary-400) / 0.28);
   background:
-    linear-gradient(180deg, rgba(226, 123, 81, 0.1), transparent 100%),
-    rgba(22, 19, 15, 0.92);
+    linear-gradient(180deg, rgb(var(--color-primary-400) / 0.1), transparent 100%),
+    rgb(var(--color-gray-900) / 0.92);
   color: rgb(var(--gild-50));
   font-weight: 650;
 }
@@ -1733,16 +1733,16 @@ void Promise.all([
 .dark .topup-monthly-detail--apex .topup-monthly-prices div,
 .dark .topup-monthly-detail--apex .topup-monthly-quota,
 .dark .topup-monthly-detail--apex .topup-token-grid article {
-  border-color: rgba(255, 216, 141, 0.24);
+  border-color: rgb(var(--gild-500) / 0.24);
   background:
-    linear-gradient(135deg, rgba(255, 216, 141, 0.12), rgba(255, 118, 70, 0.07)),
-    rgba(8, 7, 6, 0.5);
+    linear-gradient(135deg, rgb(var(--gild-500) / 0.12), rgb(var(--color-primary-400) / 0.07)),
+    rgb(var(--lacquer-base) / 0.5);
 }
 
 .dark .topup-monthly-detail--apex .topup-monthly-prices span,
 .dark .topup-monthly-detail--apex .topup-monthly-quota span,
 .dark .topup-monthly-detail--apex .topup-token-grid span {
-  color: rgba(255, 246, 219, 0.72);
+  color: rgb(var(--gild-200) / 0.72);
 }
 
 .dark .topup-monthly-detail--apex .topup-monthly-prices strong,
@@ -1753,7 +1753,7 @@ void Promise.all([
 
 .dark .topup-monthly-detail--apex .topup-monthly-quota small,
 .dark .topup-monthly-detail--apex .topup-token-grid small {
-  color: rgba(255, 246, 219, 0.7);
+  color: rgb(var(--gild-200) / 0.7);
 }
 
 .dark .topup-monthly-detail--apex .topup-token-grid small {
@@ -1783,7 +1783,7 @@ void Promise.all([
   border: 1px solid var(--admin-terracotta, rgb(var(--color-terracotta)));
   background: var(--admin-terracotta, rgb(var(--color-terracotta)));
   color: var(--admin-marble, rgb(var(--color-marble))) !important;
-  box-shadow: 0 12px 24px rgba(154, 59, 31, 0.18);
+  box-shadow: 0 12px 24px rgb(var(--color-terracotta) / 0.18);
 }
 
 .topup-primary-action:hover:not(:disabled) {
@@ -1816,26 +1816,26 @@ void Promise.all([
   background:
     linear-gradient(135deg, rgb(var(--gild-500)) 0%, rgb(var(--gild-700)) 44%, rgb(var(--gild-900)) 100%);
   color: rgb(var(--color-dark-950)) !important;
-  box-shadow: 0 16px 34px rgba(213, 136, 49, 0.28);
+  box-shadow: 0 16px 34px rgb(var(--gild-700) / 0.28);
 }
 
 .topup-summary-card--apex .topup-primary-action:disabled {
-  border-color: rgba(255, 216, 141, 0.2);
-  background: rgba(255, 216, 141, 0.12);
-  color: rgba(255, 246, 219, 0.52) !important;
+  border-color: rgb(var(--gild-500) / 0.2);
+  background: rgb(var(--gild-500) / 0.12);
+  color: rgb(var(--gild-200) / 0.52) !important;
   opacity: 1;
   box-shadow: none;
 }
 
 .topup-summary-card--apex .topup-secondary-action {
-  border-color: rgba(255, 216, 141, 0.28);
-  background: rgba(255, 246, 219, 0.06);
+  border-color: rgb(var(--gild-500) / 0.28);
+  background: rgb(var(--gild-200) / 0.06);
   color: rgb(var(--gild-300));
 }
 
 .topup-summary-card--apex .topup-secondary-action:hover {
-  border-color: rgba(255, 216, 141, 0.5);
-  background: rgba(255, 216, 141, 0.12);
+  border-color: rgb(var(--gild-500) / 0.5);
+  background: rgb(var(--gild-500) / 0.12);
   color: rgb(var(--gild-100));
 }
 
@@ -1860,13 +1860,13 @@ void Promise.all([
 }
 
 .topup-secondary-action {
-  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
-  background: var(--admin-control, rgba(255, 252, 245, 0.95));
+  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
+  background: var(--admin-control, rgb(var(--color-vellum) / 0.95));
   color: var(--admin-ink, rgb(var(--color-ink)));
 }
 
 .topup-secondary-action:hover {
-  border-color: var(--admin-border-strong, rgba(31, 26, 18, 0.32));
+  border-color: var(--admin-border-strong, rgb(var(--color-ink) / 0.32));
   background: var(--admin-parchment, rgb(var(--color-parchment)));
   color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
 }
@@ -1899,15 +1899,15 @@ void Promise.all([
   0% {
     transform: translateY(0) scale(1);
     box-shadow:
-      0 0 0 rgba(255, 216, 141, 0),
-      inset 0 0 0 1px rgba(255, 220, 138, 0.12);
+      0 0 0 rgb(var(--gild-500) / 0),
+      inset 0 0 0 1px rgb(var(--gild-500) / 0.12);
   }
   34% {
     transform: translateY(-4px) scale(1.015);
     box-shadow:
-      0 0 0 5px rgba(255, 216, 141, 0.15),
-      0 26px 78px rgba(213, 136, 49, 0.34),
-      inset 0 0 44px rgba(255, 216, 141, 0.16);
+      0 0 0 5px rgb(var(--gild-500) / 0.15),
+      0 26px 78px rgb(var(--gild-700) / 0.34),
+      inset 0 0 44px rgb(var(--gild-500) / 0.16);
   }
   100% {
     transform: translateY(-2px) scale(1);
@@ -1918,15 +1918,15 @@ void Promise.all([
   0% {
     transform: translateY(0) scale(1);
     box-shadow:
-      0 24px 70px rgba(31, 17, 8, 0.24),
-      inset 0 0 0 1px rgba(255, 216, 141, 0.16);
+      0 24px 70px rgb(var(--shadow-ink) / 0.24),
+      inset 0 0 0 1px rgb(var(--gild-500) / 0.16);
   }
   32% {
     transform: translateY(-5px) scale(1.012);
     box-shadow:
-      0 0 0 5px rgba(255, 216, 141, 0.16),
-      0 32px 86px rgba(213, 136, 49, 0.32),
-      inset 0 0 54px rgba(255, 216, 141, 0.18);
+      0 0 0 5px rgb(var(--gild-500) / 0.16),
+      0 32px 86px rgb(var(--gild-700) / 0.32),
+      inset 0 0 54px rgb(var(--gild-500) / 0.18);
   }
   100% {
     transform: translateY(0) scale(1);
@@ -1978,17 +1978,17 @@ void Promise.all([
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(19, 16, 11, 0.42);
+  background: rgb(var(--color-ink-deep) / 0.42);
 }
 
 .topup-direct-modal {
   width: min(28rem, 100%);
-  border: 1px solid var(--admin-border-strong, rgba(31, 26, 18, 0.32));
+  border: 1px solid var(--admin-border-strong, rgb(var(--color-ink) / 0.32));
   border-radius: 8px;
   padding: 1.25rem;
   background: var(--admin-surface, rgb(var(--color-marble)));
   color: var(--admin-ink, rgb(var(--color-ink)));
-  box-shadow: 0 24px 60px rgba(31, 26, 18, 0.24);
+  box-shadow: 0 24px 60px rgb(var(--color-ink) / 0.24);
 }
 
 .topup-direct-modal__head {
@@ -2012,10 +2012,10 @@ void Promise.all([
   width: 2rem;
   height: 2rem;
   place-items: center;
-  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 6px;
   color: var(--admin-muted, rgb(var(--color-muted)));
-  background: var(--admin-control, rgba(255, 252, 245, 0.95));
+  background: var(--admin-control, rgb(var(--color-vellum) / 0.95));
   font-size: 1.35rem;
   line-height: 1;
 }
@@ -2025,9 +2025,9 @@ void Promise.all([
   min-height: 14rem;
   place-items: center;
   margin-top: 1.25rem;
-  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
-  background: rgba(255, 252, 245, 0.78);
+  background: rgb(var(--color-vellum) / 0.78);
 }
 
 .topup-direct-qr img {
@@ -2047,9 +2047,9 @@ void Promise.all([
   min-height: 8.5rem;
   place-items: center;
   margin-top: 1.25rem;
-  border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
-  background: rgba(255, 252, 245, 0.78);
+  background: rgb(var(--color-vellum) / 0.78);
   text-align: center;
 }
 
@@ -2127,7 +2127,7 @@ void Promise.all([
   }
 
   .topup-main {
-    border-right: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
+    border-right: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
     border-bottom: 0;
   }
 

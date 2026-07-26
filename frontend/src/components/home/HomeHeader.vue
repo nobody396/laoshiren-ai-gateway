@@ -104,16 +104,16 @@ defineProps<{
   left: 0;
   right: 0;
   z-index: 50;
-  background: rgba(248, 243, 231, 0.92);
-  border-bottom: 1px solid rgba(63, 90, 58, 0.12);
+  background: rgb(var(--color-papyrus) / 0.92);
+  border-bottom: 1px solid rgb(var(--color-laurel) / 0.12);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   transition: background 0.4s ease, border-color 0.4s ease, backdrop-filter 0.4s ease;
 }
 
 .home-header.is-scrolled {
-  background: rgba(248, 243, 231, 0.96);
-  border-bottom-color: rgba(63, 90, 58, 0.2);
+  background: rgb(var(--color-papyrus) / 0.96);
+  border-bottom-color: rgb(var(--color-laurel) / 0.2);
 }
 
 /* 内部布局 - 水平三栏 */
@@ -147,7 +147,7 @@ defineProps<{
   justify-content: center;
   overflow: hidden;
   background: rgb(var(--color-terracotta));
-  box-shadow: inset 0 0 0 2px rgba(250, 246, 236, 0.42), 0 0 0 1px rgb(var(--color-terracotta-dark));
+  box-shadow: inset 0 0 0 2px rgb(var(--color-marble) / 0.42), 0 0 0 1px rgb(var(--color-terracotta-dark));
 }
 
 .home-header__logo {

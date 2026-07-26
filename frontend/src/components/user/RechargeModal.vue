@@ -246,7 +246,7 @@
               <span class="font-semibold text-primary-600 dark:text-primary-400">${{ displayUSDText }}</span>
             </div>
 
-            <p class="text-xs text-gray-400 dark:text-dark-500">{{ t('topup.waitingPayment') }}</p>
+            <p class="text-xs text-gray-400 dark:text-dark-400">{{ t('topup.waitingPayment') }}</p>
           </div>
         </div>
       </div>

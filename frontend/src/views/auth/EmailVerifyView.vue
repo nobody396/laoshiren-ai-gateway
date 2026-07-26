@@ -132,7 +132,7 @@
             v-if="countdown > 0"
             type="button"
             disabled
-            class="cursor-not-allowed text-sm text-gray-400 dark:text-dark-500"
+            class="cursor-not-allowed text-sm text-gray-400 dark:text-dark-400"
           >
             {{ t('auth.resendCountdown', { countdown }) }}
           </button>

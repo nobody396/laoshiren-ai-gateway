@@ -118,7 +118,7 @@ defineProps<{
   height: 2.5rem;
   object-fit: cover;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 2px rgba(250, 246, 236, 0.35), 0 0 0 1px rgb(var(--color-terracotta-dark));
+  box-shadow: inset 0 0 0 2px rgb(var(--color-marble) / 0.35), 0 0 0 1px rgb(var(--color-terracotta-dark));
 }
 
 .brand-name,
@@ -136,7 +136,7 @@ defineProps<{
 
 .brand-tag {
   margin-top: 0.125rem;
-  color: rgba(248, 243, 231, 0.55);
+  color: rgb(var(--color-papyrus) / 0.55);
   font-family: 'Inter', sans-serif;
   font-size: 0.62rem;
   letter-spacing: 0.18em;
@@ -146,7 +146,7 @@ defineProps<{
 .home-footer__brand p {
   max-width: 32ch;
   margin: 1rem 0 0;
-  color: rgba(248, 243, 231, 0.7);
+  color: rgb(var(--color-papyrus) / 0.7);
   font-size: 1rem;
   font-style: italic;
   line-height: 1.55;
@@ -154,7 +154,7 @@ defineProps<{
 
 .home-footer__column h3 {
   margin: 0 0 1.125rem;
-  color: rgba(248, 243, 231, 0.58);
+  color: rgb(var(--color-papyrus) / 0.58);
   font-family: 'Inter', sans-serif;
   font-size: 0.75rem;
   font-weight: 600;
@@ -188,12 +188,12 @@ defineProps<{
   justify-content: space-between;
   gap: 1rem;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(248, 243, 231, 0.15);
+  border-top: 1px solid rgb(var(--color-papyrus) / 0.15);
 }
 
 .home-footer__bottom p {
   margin: 0;
-  color: rgba(248, 243, 231, 0.55);
+  color: rgb(var(--color-papyrus) / 0.55);
   font-size: 0.9rem;
   font-style: italic;
 }

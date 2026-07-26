@@ -513,7 +513,7 @@ const trendChartData = computed(() => {
         label: t('usage.accountBilled') + ' (USD)',
         data: stats.value.history.map((h) => h.actual_cost),
         borderColor: chartColor(0),
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        backgroundColor: chartColor(0, 0.1),
         fill: true,
         tension: 0.3,
         yAxisID: 'y'
@@ -522,7 +522,7 @@ const trendChartData = computed(() => {
         label: t('usage.userBilled') + ' (USD)',
         data: stats.value.history.map((h) => h.user_cost),
         borderColor: chartColor(1),
-        backgroundColor: 'rgba(16, 185, 129, 0.08)',
+        backgroundColor: chartColor(1, 0.08),
         fill: false,
         tension: 0.3,
         borderDash: [5, 5],
@@ -532,7 +532,7 @@ const trendChartData = computed(() => {
         label: t('admin.accounts.stats.requests'),
         data: stats.value.history.map((h) => h.requests),
         borderColor: chartColor(2),
-        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+        backgroundColor: chartColor(2, 0.1),
         fill: false,
         tension: 0.3,
         yAxisID: 'y1'

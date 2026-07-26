@@ -27,12 +27,12 @@
 
   *:hover,
   *:focus-within {
-    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+    scrollbar-color: rgb(var(--color-gray-400) / 0.5) transparent;
   }
 
   .dark *:hover,
   .dark *:focus-within {
-    scrollbar-color: rgba(75, 85, 99, 0.5) transparent;
+    scrollbar-color: rgb(var(--color-gray-600) / 0.5) transparent;
   }
 
   ::-webkit-scrollbar {
@@ -75,10 +75,10 @@
    */
   .table-wrapper {
     scrollbar-width: auto;
-    scrollbar-color: rgba(156, 163, 175, 0.7) transparent;
+    scrollbar-color: rgb(var(--color-gray-400) / 0.7) transparent;
   }
   .dark .table-wrapper {
-    scrollbar-color: rgba(75, 85, 99, 0.7) transparent;
+    scrollbar-color: rgb(var(--color-gray-600) / 0.7) transparent;
   }
   /* 旧版 Chrome (< 121) 兼容回退 */
   .table-wrapper::-webkit-scrollbar {

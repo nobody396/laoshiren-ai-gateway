@@ -1060,7 +1060,7 @@ function handleToolbarRefresh() {
                   :r="radius"
                   :stroke-width="strokeWidth"
                   fill="transparent"
-                  class="text-gray-200 dark:text-dark-700"
+                  class="text-gray-200 dark:text-dark-400"
                   stroke="currentColor"
                 />
                 <circle

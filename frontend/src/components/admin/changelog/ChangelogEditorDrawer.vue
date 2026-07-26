@@ -266,7 +266,7 @@ watch(() => [props.show, props.entry?.id], ([show]) => {
   z-index: 100;
   display: flex;
   justify-content: flex-end;
-  background: rgba(15, 23, 42, 0.42);
+  background: rgb(var(--color-indigo-900) / 0.42);
   backdrop-filter: blur(2px);
 }
 
@@ -276,7 +276,7 @@ watch(() => [props.show, props.entry?.id], ([show]) => {
   height: 100%;
   flex-direction: column;
   background: rgb(var(--color-marble));
-  box-shadow: -20px 0 60px rgba(15, 23, 42, 0.16);
+  box-shadow: -20px 0 60px rgb(var(--shadow-ink) / 0.16);
 }
 
 .dark .changelog-drawer-panel { background: rgb(var(--color-gray-900)); }
@@ -295,8 +295,8 @@ watch(() => [props.show, props.entry?.id], ([show]) => {
 .dark .changelog-drawer-panel > header,
 .dark .changelog-drawer-panel > footer { border-color: rgb(var(--color-slate-700)); }
 
-.changelog-drawer-panel h2 { margin: 0; color: rgb(var(--color-gray-900)); font-size: 1.15rem; font-weight: 700; }
-.changelog-drawer-panel header p { margin: 0.2rem 0 0; color: rgb(var(--color-gray-500)); font-size: 0.78rem; }
+.changelog-drawer-panel h2 { margin: 0; color: rgb(var(--color-ink-deep)); font-size: 1.15rem; font-weight: 700; }
+.changelog-drawer-panel header p { margin: 0.2rem 0 0; color: rgb(var(--color-muted)); font-size: 0.78rem; }
 .dark .changelog-drawer-panel h2 { color: rgb(var(--color-gray-50)); }
 
 .changelog-drawer-close {
@@ -307,9 +307,9 @@ watch(() => [props.show, props.entry?.id], ([show]) => {
   border: 0;
   border-radius: 0.5rem;
   background: transparent;
-  color: rgb(var(--color-gray-500));
+  color: rgb(var(--color-muted));
 }
-.changelog-drawer-close:hover { background: rgb(var(--color-gray-100)); color: rgb(var(--color-gray-900)); }
+.changelog-drawer-close:hover { background: rgb(var(--color-parchment)); color: rgb(var(--color-ink-deep)); }
 
 .changelog-drawer-body {
   display: grid;
@@ -337,7 +337,7 @@ watch(() => [props.show, props.entry?.id], ([show]) => {
 
 .changelog-editor-preview > span {
   display: block;
-  color: rgb(var(--color-gray-500));
+  color: rgb(var(--color-muted));
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -345,11 +345,11 @@ watch(() => [props.show, props.entry?.id], ([show]) => {
 }
 .changelog-editor-preview time { display: block; margin-top: 1.5rem; color: rgb(var(--color-muted)); font-family: 'EB Garamond', serif; }
 .changelog-editor-preview small { display: block; margin-top: 0.35rem; color: rgb(var(--color-laurel)); }
-.changelog-editor-preview h3 { margin: 0.75rem 0 0; color: rgb(var(--color-gray-900)); font-family: 'Noto Serif SC', serif; font-size: 1.35rem; line-height: 1.4; }
-.changelog-editor-preview > p { color: rgb(var(--color-gray-600)); font-size: 0.9rem; line-height: 1.65; }
+.changelog-editor-preview h3 { margin: 0.75rem 0 0; color: rgb(var(--color-ink-deep)); font-family: 'Noto Serif SC', serif; font-size: 1.35rem; line-height: 1.4; }
+.changelog-editor-preview > p { color: rgb(var(--color-muted)); font-size: 0.9rem; line-height: 1.65; }
 .changelog-editor-preview dl { margin-top: 1.5rem; border-left: 2px solid rgb(var(--color-laurel)); padding-left: 0.8rem; }
-.changelog-editor-preview dt { color: rgb(var(--color-gray-700)); font-size: 0.75rem; font-weight: 700; }
-.changelog-editor-preview dd { margin: 0.25rem 0 1rem; color: rgb(var(--color-gray-500)); font-size: 0.84rem; line-height: 1.55; }
+.changelog-editor-preview dt { color: rgb(var(--color-ink)); font-size: 0.75rem; font-weight: 700; }
+.changelog-editor-preview dd { margin: 0.25rem 0 1rem; color: rgb(var(--color-muted)); font-size: 0.84rem; line-height: 1.55; }
 .dark .changelog-editor-preview h3 { color: rgb(var(--color-gray-50)); }
 .dark .changelog-editor-preview > p,
 .dark .changelog-editor-preview dd { color: rgb(var(--color-slate-300)); }
@@ -368,9 +368,9 @@ watch(() => [props.show, props.entry?.id], ([show]) => {
   padding: 0.9rem;
 }
 .dark .changelog-git-details { border-color: rgb(var(--color-slate-700)); }
-.changelog-git-details summary { color: rgb(var(--color-gray-700)); font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+.changelog-git-details summary { color: rgb(var(--color-ink)); font-size: 0.86rem; font-weight: 600; cursor: pointer; }
 .dark .changelog-git-details summary { color: rgb(var(--color-gray-200)); }
-.changelog-git-details > p { margin: 0.55rem 0 1rem; color: rgb(var(--color-gray-500)); font-size: 0.75rem; }
+.changelog-git-details > p { margin: 0.55rem 0 1rem; color: rgb(var(--color-muted)); font-size: 0.75rem; }
 .changelog-git-details > div + div { margin-top: 1rem; }
 
 .changelog-drawer-enter-active,

@@ -22,7 +22,7 @@
 .driver-active-element {
   position: relative !important;
   z-index: 99999999 !important;
-  outline: 4px solid rgba(20, 184, 166, 0.2) !important;
+  outline: 4px solid rgb(var(--color-terracotta) / 0.2) !important;
   border-radius: 4px !important;
 }
 
@@ -32,7 +32,7 @@
   z-index: 100000000 !important;
   background-color: rgb(var(--color-marble)) !important;
   border: 1px solid rgb(var(--color-gray-200)) !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0 20px 25px -5px rgb(var(--shadow-ink) / 0.1), 0 10px 10px -5px rgb(var(--shadow-ink) / 0.04) !important;
   border-radius: 12px !important;
   padding: 0 !important;
   max-width: min(440px, 90vw) !important; /* Responsive on small screens */
@@ -101,7 +101,7 @@
 
 .dark .theme-tour-popover .driver-popover-description div[style*="background"],
 .dark .theme-tour-popover .driver-popover-description p[style*="background"] {
-  background: rgba(15, 23, 42, 0.72) !important;
+  background: rgb(var(--color-indigo-900) / 0.72) !important;
   color: rgb(var(--color-slate-200)) !important;
   border-left-color: rgb(var(--color-info)) !important;
 }
@@ -199,7 +199,7 @@
   font-size: 11px !important;
   font-weight: 600 !important;
   color: rgb(var(--color-gray-600)) !important;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.05) !important;
+  box-shadow: 0 1px 0 rgb(var(--shadow-ink) / 0.05) !important;
   min-width: 20px !important;
   text-align: center !important;
   display: inline-block !important;
@@ -237,7 +237,7 @@
   background-color: rgb(var(--color-terracotta)) !important;
   color: rgb(var(--color-vellum)) !important;
   font-weight: 700 !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 2px 0 rgb(var(--shadow-ink) / 0.05) !important;
 }
 .theme-tour-popover .driver-popover-next-btn:hover { background-color: rgb(var(--color-terracotta-dark)) !important; }
 
@@ -246,7 +246,7 @@
   color: rgb(var(--color-gray-700)) !important;
   border: 1px solid rgb(var(--color-gray-200)) !important;
   font-weight: 700 !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 2px 0 rgb(var(--shadow-ink) / 0.05) !important;
 }
 .theme-tour-popover .driver-popover-prev-btn:hover { background-color: rgb(var(--color-gray-50)) !important; color: rgb(var(--color-gray-700)) !important; }
 .dark .theme-tour-popover .driver-popover-prev-btn {

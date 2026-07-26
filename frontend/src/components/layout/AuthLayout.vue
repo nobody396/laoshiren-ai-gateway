@@ -67,7 +67,7 @@ onMounted(() => {
   min-height: 100vh;
   overflow: hidden;
   background:
-    radial-gradient(circle at 18% 0%, rgba(242, 233, 210, 0.95) 0%, rgba(242, 233, 210, 0) 54%),
+    radial-gradient(circle at 18% 0%, rgb(var(--color-parchment) / 0.95) 0%, rgb(var(--color-parchment) / 0) 54%),
     rgb(var(--color-papyrus));
   color: rgb(var(--color-ink));
   font-family: 'EB Garamond', 'Noto Serif SC', Georgia, serif;
@@ -119,7 +119,7 @@ onMounted(() => {
   overflow: hidden;
   border-radius: 50%;
   background: rgb(var(--color-terracotta));
-  box-shadow: inset 0 0 0 2px rgba(250, 246, 236, 0.42), 0 0 0 1px rgb(var(--color-terracotta-dark));
+  box-shadow: inset 0 0 0 2px rgb(var(--color-marble) / 0.42), 0 0 0 1px rgb(var(--color-terracotta-dark));
 }
 
 .auth-shell__seal img {
@@ -185,7 +185,7 @@ onMounted(() => {
 .auth-shell__quote {
   margin: 3rem 0 0;
   padding: 1.25rem 1.5rem;
-  background: rgba(239, 230, 207, 0.48);
+  background: rgb(var(--color-stone) / 0.48);
 }
 
 .auth-shell__quote p {
@@ -212,9 +212,9 @@ onMounted(() => {
 }
 
 .auth-shell__form-card {
-  background: rgba(250, 246, 236, 0.94);
-  border: 1px solid rgba(63, 90, 58, 0.2);
-  box-shadow: 0 1.5rem 4rem rgba(31, 26, 18, 0.14);
+  background: rgb(var(--color-marble) / 0.94);
+  border: 1px solid rgb(var(--color-laurel) / 0.2);
+  box-shadow: 0 1.5rem 4rem rgb(var(--color-ink) / 0.14);
   padding: 2rem;
 }
 
@@ -225,7 +225,7 @@ onMounted(() => {
 }
 
 .auth-shell__footer :deep(p) {
-  color: rgb(var(--color-gray-600)) !important;
+  color: rgb(var(--color-muted)) !important;
 }
 
 .auth-shell__footer :deep(a) {
@@ -247,7 +247,7 @@ onMounted(() => {
 }
 
 .auth-shell__form-card :deep(.text-center > p) {
-  color: rgb(var(--color-gray-600)) !important;
+  color: rgb(var(--color-muted)) !important;
   font-family: 'Inter', sans-serif;
 }
 
@@ -259,12 +259,12 @@ onMounted(() => {
 }
 
 .auth-shell__form-card :deep(.border-red-200) {
-  border-color: rgba(154, 59, 31, 0.46) !important;
-  background: rgba(154, 59, 31, 0.12) !important;
+  border-color: rgb(var(--color-terracotta) / 0.46) !important;
+  background: rgb(var(--color-terracotta) / 0.12) !important;
 }
 
 .auth-shell__form-card :deep(.bg-red-100) {
-  background: rgba(154, 59, 31, 0.16) !important;
+  background: rgb(var(--color-terracotta) / 0.16) !important;
 }
 
 .auth-shell__form-card :deep(.text-red-800),
@@ -275,12 +275,12 @@ onMounted(() => {
 }
 
 .auth-shell__form-card :deep(.border-green-200) {
-  border-color: rgba(63, 90, 58, 0.42) !important;
-  background: rgba(63, 90, 58, 0.12) !important;
+  border-color: rgb(var(--color-laurel) / 0.42) !important;
+  background: rgb(var(--color-laurel) / 0.12) !important;
 }
 
 .auth-shell__form-card :deep(.bg-green-100) {
-  background: rgba(63, 90, 58, 0.16) !important;
+  background: rgb(var(--color-laurel) / 0.16) !important;
 }
 
 .auth-shell__form-card :deep(.text-green-800),
@@ -304,20 +304,20 @@ onMounted(() => {
 
 .auth-shell :deep(.btn-secondary) {
   background: rgb(var(--color-marble));
-  border-color: rgba(63, 90, 58, 0.22);
+  border-color: rgb(var(--color-laurel) / 0.22);
   color: rgb(var(--color-ink));
   box-shadow: none;
 }
 
 .auth-shell :deep(.btn-secondary:hover) {
   background: rgb(var(--color-parchment));
-  border-color: rgba(63, 90, 58, 0.36);
+  border-color: rgb(var(--color-laurel) / 0.36);
 }
 
 .auth-shell :deep(.input) {
   border-radius: 0;
-  background: rgba(255, 252, 245, 0.94);
-  border-color: rgba(63, 90, 58, 0.22);
+  background: rgb(var(--color-vellum) / 0.94);
+  border-color: rgb(var(--color-laurel) / 0.22);
   color: rgb(var(--color-ink));
 }
 
@@ -328,7 +328,7 @@ onMounted(() => {
 
 .auth-shell :deep(.input:focus) {
   border-color: rgb(var(--color-terracotta));
-  --tw-ring-color: rgba(154, 59, 31, 0.24);
+  --tw-ring-color: rgb(var(--color-terracotta) / 0.24);
 }
 
 .auth-shell :deep(.input-label) {
@@ -351,7 +351,7 @@ onMounted(() => {
     min-height: auto;
     padding: 0 0 2rem;
     border-left: 0;
-    border-bottom: 1px solid rgba(63, 90, 58, 0.18);
+    border-bottom: 1px solid rgb(var(--color-laurel) / 0.18);
   }
 
   .auth-shell__copy {

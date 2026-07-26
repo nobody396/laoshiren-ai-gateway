@@ -52,7 +52,7 @@ const ui = computed(() => (isEnglish.value
 .vip-tiers {
   padding: 5rem 0 6rem;
   background:
-    linear-gradient(rgba(31, 26, 18, 0.02), rgba(31, 26, 18, 0.02)),
+    linear-gradient(rgb(var(--color-ink) / 0.02), rgb(var(--color-ink) / 0.02)),
     rgb(var(--color-marble));
 }
 
@@ -73,7 +73,7 @@ const ui = computed(() => (isEnglish.value
   height: 4rem;
   object-fit: cover;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 2px rgba(250, 246, 236, 0.42), 0 0 0 1px rgb(var(--color-terracotta-dark));
+  box-shadow: inset 0 0 0 2px rgb(var(--color-marble) / 0.42), 0 0 0 1px rgb(var(--color-terracotta-dark));
 }
 
 .trusted-title {
@@ -119,7 +119,7 @@ const ui = computed(() => (isEnglish.value
 .stat-divider {
   width: 1px;
   height: 3.75rem;
-  background: rgba(63, 90, 58, 0.18);
+  background: rgb(var(--color-laurel) / 0.18);
 }
 
 @media (max-width: 760px) {

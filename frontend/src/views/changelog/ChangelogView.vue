@@ -266,7 +266,7 @@ onBeforeUnmount(() => {
 
 .changelog-hero p {
   margin: 1.25rem 0 0;
-  color: rgb(var(--color-dark-600));
+  color: rgb(var(--color-muted));
   font-family: 'EB Garamond', 'Noto Serif SC', serif;
   font-size: clamp(1.15rem, 2vw, 1.45rem);
   letter-spacing: 0.04em;
@@ -284,7 +284,7 @@ onBeforeUnmount(() => {
   position: absolute;
   top: 50%;
   width: calc(50% - 2.2rem);
-  border-top: 1px solid rgba(138, 125, 99, 0.8);
+  border-top: 1px solid rgb(var(--color-muted) / 0.8);
 }
 
 .changelog-rule::before { left: 0; }
@@ -333,7 +333,7 @@ onBeforeUnmount(() => {
   position: relative;
   border: 0;
   background: transparent;
-  color: rgb(var(--color-dark-800));
+  color: rgb(var(--color-ink));
   font-family: 'Noto Serif SC', 'EB Garamond', serif;
   font-size: 1rem;
   cursor: pointer;
@@ -361,7 +361,7 @@ onBeforeUnmount(() => {
   width: min(100%, 18rem);
   align-items: center;
   gap: 0.65rem;
-  border: 1px solid rgba(138, 125, 99, 0.52);
+  border: 1px solid rgb(var(--color-muted) / 0.52);
   padding: 0.72rem 0.9rem;
   color: rgb(var(--color-muted));
 }
@@ -378,7 +378,7 @@ onBeforeUnmount(() => {
 
 .changelog-search:focus-within {
   border-color: rgb(var(--color-laurel));
-  box-shadow: 0 0 0 2px rgba(63, 90, 58, 0.12);
+  box-shadow: 0 0 0 2px rgb(var(--color-laurel) / 0.12);
 }
 
 .changelog-month + .changelog-month { margin-top: 4.5rem; }
@@ -431,7 +431,7 @@ onBeforeUnmount(() => {
 
 .changelog-node {
   position: relative;
-  border-left: 1px solid rgba(138, 125, 99, 0.68);
+  border-left: 1px solid rgb(var(--color-muted) / 0.68);
 }
 
 .changelog-node::before {
@@ -450,7 +450,7 @@ onBeforeUnmount(() => {
 
 .changelog-timeline article {
   padding: 1.35rem 0 1.65rem 1rem;
-  border-bottom: 1px solid rgba(63, 90, 58, 0.28);
+  border-bottom: 1px solid rgb(var(--color-laurel) / 0.28);
 }
 
 .changelog-entry-heading,
@@ -498,7 +498,7 @@ onBeforeUnmount(() => {
 .changelog-rationale,
 .changelog-products {
   margin: 0.7rem 0 0;
-  color: rgb(var(--color-dark-600));
+  color: rgb(var(--color-muted));
   font-size: 0.96rem;
   line-height: 1.75;
 }
@@ -506,7 +506,7 @@ onBeforeUnmount(() => {
 .changelog-rationale,
 .changelog-products { margin-top: 0.24rem; }
 .changelog-rationale strong,
-.changelog-products strong { color: rgb(var(--color-dark-800)); font-weight: 600; }
+.changelog-products strong { color: rgb(var(--color-ink)); font-weight: 600; }
 
 .changelog-load-more {
   display: flex;
@@ -530,27 +530,27 @@ onBeforeUnmount(() => {
 .changelog-load-more button:disabled { opacity: 0.55; cursor: wait; }
 
 .changelog-empty {
-  border-block: 1px solid rgba(138, 125, 99, 0.4);
+  border-block: 1px solid rgb(var(--color-muted) / 0.4);
   padding: 5rem 1rem;
   text-align: center;
 }
 
 .changelog-empty h3 { margin: 0; font-family: 'Noto Serif SC', serif; font-size: 1.4rem; }
-.changelog-empty p { margin: 0.8rem auto 1rem; color: rgb(var(--color-gray-600)); }
+.changelog-empty p { margin: 0.8rem auto 1rem; color: rgb(var(--color-muted)); }
 
 .changelog-skeleton {
   display: grid;
   grid-template-columns: 8rem 1fr;
   gap: 2rem;
   padding: 1.5rem 0;
-  border-bottom: 1px solid rgba(138, 125, 99, 0.2);
+  border-bottom: 1px solid rgb(var(--color-muted) / 0.2);
 }
 
 .changelog-skeleton > span,
 .changelog-skeleton i {
   display: block;
   height: 1rem;
-  background: rgba(138, 125, 99, 0.16);
+  background: rgb(var(--color-muted) / 0.16);
   animation: changelog-pulse 1.5s ease-in-out infinite;
 }
 
@@ -586,7 +586,7 @@ onBeforeUnmount(() => {
   .changelog-timeline > li {
     grid-template-columns: 1fr;
     padding-left: 1.2rem;
-    border-left: 1px solid rgba(138, 125, 99, 0.68);
+    border-left: 1px solid rgb(var(--color-muted) / 0.68);
   }
   .changelog-date { padding: 1.4rem 0 0.4rem 1rem; }
   .changelog-date time { display: inline; }

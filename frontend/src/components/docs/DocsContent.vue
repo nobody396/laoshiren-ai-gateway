@@ -134,8 +134,8 @@ onBeforeUnmount(() => {
   z-index: 1;
   border: 1px solid rgb(var(--color-gray-200));
   border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.92);
-  color: rgb(var(--color-gray-700));
+  background: rgb(var(--color-vellum) / 0.92);
+  color: rgb(var(--color-ink));
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1;
@@ -161,7 +161,7 @@ onBeforeUnmount(() => {
 
 /* Markdown rendering styles for docs */
 .docs-markdown {
-  color: rgb(var(--color-gray-700));
+  color: rgb(var(--color-ink));
   line-height: 1.75;
   font-size: 1rem;
 }
@@ -172,7 +172,7 @@ onBeforeUnmount(() => {
 
 .dark .docs-doc-copy-btn {
   border-color: rgb(var(--color-slate-700));
-  background: rgba(15, 23, 42, 0.9);
+  background: rgb(var(--color-indigo-900) / 0.9);
   color: rgb(var(--color-gray-200));
 }
 
@@ -180,7 +180,7 @@ onBeforeUnmount(() => {
   font-size: 2rem;
   font-weight: 700;
   margin-bottom: 1rem;
-  color: rgb(var(--color-gray-900));
+  color: rgb(var(--color-ink-deep));
   line-height: 1.3;
 }
 
@@ -195,7 +195,7 @@ onBeforeUnmount(() => {
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid rgb(var(--color-gray-200));
-  color: rgb(var(--color-gray-800));
+  color: rgb(var(--color-ink));
 }
 
 .dark .docs-markdown h2 {
@@ -208,7 +208,7 @@ onBeforeUnmount(() => {
   font-weight: 600;
   margin-top: 2rem;
   margin-bottom: 0.5rem;
-  color: rgb(var(--color-gray-800));
+  color: rgb(var(--color-ink));
 }
 
 .dark .docs-markdown h3 {
@@ -220,7 +220,7 @@ onBeforeUnmount(() => {
   font-weight: 600;
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
-  color: rgb(var(--color-gray-700));
+  color: rgb(var(--color-ink));
 }
 
 .dark .docs-markdown h4 {
@@ -243,7 +243,7 @@ onBeforeUnmount(() => {
 
 .docs-markdown strong {
   font-weight: 600;
-  color: rgb(var(--color-gray-900));
+  color: rgb(var(--color-ink-deep));
 }
 
 .dark .docs-markdown strong {
@@ -284,7 +284,7 @@ onBeforeUnmount(() => {
 }
 
 .dark .docs-markdown blockquote {
-  background-color: rgba(216, 119, 87, 0.1);
+  background-color: rgb(var(--color-terracotta) / 0.1);
   color: rgb(var(--color-primary-300));
 }
 
@@ -379,9 +379,9 @@ onBeforeUnmount(() => {
   gap: 0.25rem;
   height: 2rem;
   padding: 0 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgb(var(--color-vellum) / 0.15);
   border-radius: 0.375rem;
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgb(var(--color-vellum) / 0.08);
   color: rgb(var(--color-slate-400));
   cursor: pointer;
   opacity: 0;
@@ -396,15 +396,15 @@ onBeforeUnmount(() => {
 }
 
 .code-copy-btn:hover {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgb(var(--color-vellum) / 0.15);
   color: rgb(var(--color-slate-200));
 }
 
 .code-copy-btn.copied {
   opacity: 1;
   color: rgb(var(--color-green-400));
-  border-color: rgba(74, 222, 128, 0.3);
-  background-color: rgba(74, 222, 128, 0.1);
+  border-color: rgb(var(--color-success) / 0.3);
+  background-color: rgb(var(--color-success) / 0.1);
 }
 
 .code-copy-label {

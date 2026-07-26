@@ -126,7 +126,7 @@ defineProps<{
 .pillars {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  border: 1px solid rgba(63, 90, 58, 0.16);
+  border: 1px solid rgb(var(--color-laurel) / 0.16);
   border-top: 0;
 }
 
@@ -135,7 +135,7 @@ defineProps<{
   padding: 3rem 2rem 3.25rem;
   text-align: center;
   background: rgb(var(--color-marble));
-  border-right: 1px solid rgba(63, 90, 58, 0.18);
+  border-right: 1px solid rgb(var(--color-laurel) / 0.18);
 }
 
 .pillar:nth-child(even) {
@@ -210,7 +210,7 @@ defineProps<{
   .pillar {
     min-height: auto;
     border-right: 0;
-    border-bottom: 1px solid rgba(63, 90, 58, 0.18);
+    border-bottom: 1px solid rgb(var(--color-laurel) / 0.18);
   }
 
   .pillar:last-child {

@@ -109,13 +109,13 @@ const icons = [
   min-height: 18rem;
   padding: 2.25rem 1.65rem;
   background: rgb(var(--color-stone));
-  border: 1px solid rgba(63, 90, 58, 0.16);
+  border: 1px solid rgb(var(--color-laurel) / 0.16);
   transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
 }
 
 .virtue-card:hover {
   background: rgb(var(--color-marble));
-  border-color: rgba(63, 90, 58, 0.34);
+  border-color: rgb(var(--color-laurel) / 0.34);
   transform: translateY(-2px);
 }
 

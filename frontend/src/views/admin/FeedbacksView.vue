@@ -64,7 +64,7 @@
           <template #cell-last_reply_at="{ row }">
             <div class="space-y-1 text-sm">
               <div class="text-gray-500 dark:text-dark-400">{{ row.last_reply_at ? formatDateTime(row.last_reply_at) : '-' }}</div>
-              <div v-if="row.last_reply_role" class="text-xs text-gray-400 dark:text-dark-500">{{ t(`feedback.reply.${row.last_reply_role}`) }}</div>
+              <div v-if="row.last_reply_role" class="text-xs text-gray-400 dark:text-dark-400">{{ t(`feedback.reply.${row.last_reply_role}`) }}</div>
             </div>
           </template>
 

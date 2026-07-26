@@ -105,7 +105,7 @@ defineProps<{
   padding: 11rem 0 5rem;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 0%, rgba(242, 233, 210, 0.9) 0%, rgba(242, 233, 210, 0) 62%),
+    radial-gradient(circle at 50% 0%, rgb(var(--color-parchment) / 0.9) 0%, rgb(var(--color-parchment) / 0) 62%),
     linear-gradient(180deg, rgb(var(--color-papyrus)) 0%, rgb(var(--color-marble)) 100%);
 }
 
@@ -124,8 +124,8 @@ defineProps<{
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(38% 44% at 22% 32%, rgba(154, 59, 31, 0.055) 0%, rgba(154, 59, 31, 0) 70%),
-    radial-gradient(34% 40% at 78% 62%, rgba(63, 90, 58, 0.05) 0%, rgba(63, 90, 58, 0) 70%);
+    radial-gradient(38% 44% at 22% 32%, rgb(var(--color-terracotta) / 0.055) 0%, rgb(var(--color-terracotta) / 0) 70%),
+    radial-gradient(34% 40% at 78% 62%, rgb(var(--color-laurel) / 0.05) 0%, rgb(var(--color-laurel) / 0) 70%);
   animation: heroGlowDrift 26s var(--ease-standard, ease-in-out) infinite alternate;
 }
 
@@ -281,8 +281,8 @@ defineProps<{
 .hero-section__quote {
   border-left: 2px solid rgb(var(--color-laurel));
   padding: 1.65rem 1.9rem;
-  background: rgba(239, 230, 207, 0.42);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  background: rgb(var(--color-stone) / 0.42);
+  box-shadow: inset 0 1px 0 rgb(var(--color-vellum) / 0.42);
 }
 
 .hero-section__quote-text {

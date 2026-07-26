@@ -1199,7 +1199,7 @@ onUnmounted(() => {
 .monthly-credit-section {
   padding: 6rem 0 5.25rem;
   background:
-    linear-gradient(180deg, rgba(239, 230, 207, 0.18), rgba(250, 246, 236, 0.58)),
+    linear-gradient(180deg, rgb(var(--color-stone) / 0.18), rgb(var(--color-marble) / 0.58)),
     var(--papyrus);
   scroll-margin-top: 88px;
 }

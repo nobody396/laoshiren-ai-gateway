@@ -263,6 +263,7 @@ import Icon from '@/components/icons/Icon.vue'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { useAppStore } from '@/stores'
 import type { CardShopProduct } from '@/types'
+import { BALANCE_TOPUP_PRESETS, isSupportedBalanceTopupAmount } from '@/constants/balanceTopups'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -274,7 +275,7 @@ const emit = defineEmits<{
   'success': []
 }>()
 
-const presets = [20, 50, 100, 200, 1000, 2000]
+const presets = BALANCE_TOPUP_PRESETS
 const QR_TTL_SECONDS = 300 // 5 分钟
 type TopupChannel = 'card_shop' | 'qr'
 
@@ -305,7 +306,12 @@ const hasAvailablePayType = computed(() => canUseAlipay.value || canUseWechat.va
 const qrTopupAvailable = computed(() => hasAvailablePayType.value)
 const activeCardShopProducts = computed<CardShopProduct[]>(() =>
   [...(appStore.cachedPublicSettings?.card_shop_products ?? [])]
-    .filter((product) => product.enabled && product.url && product.amount_cny > 0)
+    .filter(
+      (product) =>
+        product.enabled &&
+        product.url &&
+        isSupportedBalanceTopupAmount(product.amount_cny)
+    )
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.amount_cny - b.amount_cny)
 )
 const cardShopMode = computed(

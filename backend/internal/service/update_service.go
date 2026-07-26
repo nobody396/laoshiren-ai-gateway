@@ -110,6 +110,7 @@ type GitHubAsset struct {
 	Name               string `json:"name"`
 	BrowserDownloadURL string `json:"browser_download_url"`
 	Size               int64  `json:"size"`
+	Digest             string `json:"digest"`
 }
 
 // CheckUpdate checks for available updates

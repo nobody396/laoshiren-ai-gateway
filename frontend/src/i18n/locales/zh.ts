@@ -962,7 +962,7 @@ export default {
       copied: '已复制',
       commandCopied: '诊断修复命令已复制，请打开终端粘贴并按回车',
       automaticTitle: '脚本会替你判断',
-      automaticDescription: '它会自动检查 CC Switch 是否存在、版本是否过旧、Deep Link 是否失效；能修复的直接修复，需要升级时会自动打开官方下载页。',
+      automaticDescription: '它会自动检查 CC Switch 是否存在、版本是否过旧、Deep Link 是否失效；缺失或需要升级时，优先从老实人 AI 本站缓存下载、校验并自动安装，本站不可用才访问官方 GitHub，只有自动处理失败才打开官方下载页。',
       privacyNote: '诊断脚本只检查本机 CC Switch 的程序路径、版本和 ccswitch:// 协议，不会读取或上传你的 API Key。'
     },
     // 配额和有效期

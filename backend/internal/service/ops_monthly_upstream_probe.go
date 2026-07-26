@@ -39,11 +39,13 @@ const (
 )
 
 type monthlyUpstreamProbeTargetSpec struct {
+	Role     string
 	Platform string
 	Model    string
 }
 
 type monthlyUpstreamProbeResolvedTarget struct {
+	Role        string
 	AccountName string
 	Platform    string
 	Model       string
@@ -54,17 +56,33 @@ type monthlyUpstreamProbeResolvedTarget struct {
 }
 
 var monthlyUpstreamProbeTargetSpecs = []monthlyUpstreamProbeTargetSpec{
-	{Platform: PlatformOpenAI, Model: "gpt-5.4-mini"},
-	{Platform: PlatformAnthropic, Model: "claude-haiku-4-5"},
+	{Role: "gpt", Platform: PlatformOpenAI, Model: "gpt-5.4-mini"},
+	{Role: "claude", Platform: PlatformAnthropic, Model: "claude-haiku-4-5"},
+	{Role: "grok", Platform: PlatformAnthropic, Model: "grok-4.5"},
 }
 
-func monthlyUpstreamProbeSpecForPlatform(platform string) (monthlyUpstreamProbeTargetSpec, bool) {
+func monthlyUpstreamProbeSpecForRole(role string) (monthlyUpstreamProbeTargetSpec, bool) {
 	for _, spec := range monthlyUpstreamProbeTargetSpecs {
-		if spec.Platform == platform {
+		if spec.Role == role {
 			return spec, true
 		}
 	}
 	return monthlyUpstreamProbeTargetSpec{}, false
+}
+
+func monthlyUpstreamProbeSpecForAccount(account Account) (monthlyUpstreamProbeTargetSpec, bool) {
+	name := strings.ToLower(strings.TrimSpace(account.Name))
+	if strings.Contains(name, "grok") {
+		return monthlyUpstreamProbeSpecForRole("grok")
+	}
+	switch account.Platform {
+	case PlatformOpenAI:
+		return monthlyUpstreamProbeSpecForRole("gpt")
+	case PlatformAnthropic:
+		return monthlyUpstreamProbeSpecForRole("claude")
+	default:
+		return monthlyUpstreamProbeTargetSpec{}, false
+	}
 }
 
 func monthlyUpstreamProbeTargetByAccountName(targets []monthlyUpstreamProbeResolvedTarget, accountName string) (monthlyUpstreamProbeResolvedTarget, bool) {
@@ -89,6 +107,7 @@ func monthlyUpstreamProbeTargetNameSet(targets []monthlyUpstreamProbeResolvedTar
 func monthlyUpstreamProbeTargetFromAccount(account Account, spec monthlyUpstreamProbeTargetSpec) monthlyUpstreamProbeResolvedTarget {
 	accountCopy := account
 	return monthlyUpstreamProbeResolvedTarget{
+		Role:        spec.Role,
 		AccountName: account.Name,
 		Platform:    spec.Platform,
 		Model:       spec.Model,
@@ -99,25 +118,28 @@ func monthlyUpstreamProbeTargetFromAccount(account Account, spec monthlyUpstream
 
 func monthlyUpstreamProbeDedupKey(account Account, spec monthlyUpstreamProbeTargetSpec) string {
 	if account.ID > 0 {
-		return spec.Platform + ":" + strconv.FormatInt(account.ID, 10)
+		return spec.Role + ":" + strconv.FormatInt(account.ID, 10)
 	}
-	return spec.Platform + ":" + account.Name
+	return spec.Role + ":" + account.Name
 }
 
-func monthlyUpstreamProbeChannelAccountName(platform string) string {
-	switch platform {
-	case PlatformOpenAI:
+func monthlyUpstreamProbeChannelAccountName(role string) string {
+	switch role {
+	case "gpt":
 		return "monthly-codex-gateway"
-	case PlatformAnthropic:
+	case "claude":
 		return "monthly-claude-gateway"
+	case "grok":
+		return "monthly-grok-gateway"
 	default:
-		return "monthly-" + strings.ToLower(strings.TrimSpace(platform)) + "-gateway"
+		return "monthly-" + strings.ToLower(strings.TrimSpace(role)) + "-gateway"
 	}
 }
 
 func monthlyUpstreamProbeTargetFromGroup(group *MonthlyCardPublicPlanGroup, spec monthlyUpstreamProbeTargetSpec, accounts []Account) monthlyUpstreamProbeResolvedTarget {
 	target := monthlyUpstreamProbeResolvedTarget{
-		AccountName: monthlyUpstreamProbeChannelAccountName(spec.Platform),
+		Role:        spec.Role,
+		AccountName: monthlyUpstreamProbeChannelAccountName(spec.Role),
 		Platform:    spec.Platform,
 		Model:       spec.Model,
 		Accounts:    append([]Account(nil), accounts...),
@@ -552,8 +574,8 @@ func (s *OpsService) GetMonthlyCardPublicStatusSnapshot(ctx context.Context, win
 		}
 
 		accounts = append(accounts, MonthlyCardPublicStatusAccount{
-			DisplayName:     monthlyCardPublicDisplayName(account.Platform),
-			Channel:         monthlyCardPublicChannelName(account.Platform),
+			DisplayName:     monthlyCardPublicDisplayName(account.AccountName, account.Model, account.Platform),
+			Channel:         monthlyCardPublicChannelName(account.AccountName, account.Model, account.Platform),
 			Status:          account.LatestStatus,
 			LatestCheckedAt: account.LatestCheckedAt,
 			Uptime:          account.Uptime,
@@ -685,23 +707,32 @@ func monthlyCardPublicSortRank(channel string) int {
 		return 1
 	case "Claude":
 		return 2
+	case "Grok":
+		return 3
 	default:
 		return 99
 	}
 }
 
-func monthlyCardPublicDisplayName(platform string) string {
-	switch platform {
-	case PlatformOpenAI:
-		return "Codex 月卡"
-	case PlatformAnthropic:
-		return "Claude 月卡"
-	default:
+func monthlyCardPublicDisplayName(accountName, model, platform string) string {
+	channel := monthlyCardPublicChannelName(accountName, model, platform)
+	if channel == "" {
 		return "月卡通道"
 	}
+	return channel + " 月卡"
 }
 
-func monthlyCardPublicChannelName(platform string) string {
+func monthlyCardPublicChannelName(accountName, model, platform string) string {
+	identity := strings.ToLower(strings.TrimSpace(accountName + " " + model))
+	if strings.Contains(identity, "grok") {
+		return "Grok"
+	}
+	if strings.Contains(identity, "codex") || strings.HasPrefix(strings.ToLower(strings.TrimSpace(model)), "gpt-") {
+		return "Codex"
+	}
+	if strings.Contains(identity, "claude") {
+		return "Claude"
+	}
 	switch platform {
 	case PlatformOpenAI:
 		return "Codex"
@@ -936,18 +967,27 @@ func (s *OpsService) loadMonthlyUpstreamProbeTargetsFromGroups(ctx context.Conte
 	seen := make(map[string]struct{})
 
 	for _, plan := range plans {
-		for _, group := range []*MonthlyCardPublicPlanGroup{plan.GPTGroup, plan.ClaudeGroup} {
+		groupsByRole := []struct {
+			role  string
+			group *MonthlyCardPublicPlanGroup
+		}{
+			{role: "gpt", group: plan.GPTGroup},
+			{role: "claude", group: plan.ClaudeGroup},
+			{role: "grok", group: plan.GrokGroup},
+		}
+		for _, candidate := range groupsByRole {
+			group := candidate.group
 			if group == nil {
 				continue
 			}
-			spec, ok := monthlyUpstreamProbeSpecForPlatform(group.Platform)
+			spec, ok := monthlyUpstreamProbeSpecForRole(candidate.role)
 			if !ok {
 				continue
 			}
-			if _, exists := seen[spec.Platform]; exists {
+			if _, exists := seen[spec.Role]; exists {
 				continue
 			}
-			seen[spec.Platform] = struct{}{}
+			seen[spec.Role] = struct{}{}
 			accounts, err := s.accountRepo.ListByGroup(ctx, group.ID)
 			if err != nil {
 				return nil, err
@@ -967,7 +1007,7 @@ func (s *OpsService) loadMonthlyUpstreamProbeTargetsByNameSearch(ctx context.Con
 	targets := make([]monthlyUpstreamProbeResolvedTarget, 0, len(accounts))
 	seen := make(map[string]struct{})
 	for _, account := range accounts {
-		spec, ok := monthlyUpstreamProbeSpecForPlatform(account.Platform)
+		spec, ok := monthlyUpstreamProbeSpecForAccount(account)
 		if !ok || account.Name == "" {
 			continue
 		}
@@ -984,8 +1024,8 @@ func (s *OpsService) loadMonthlyUpstreamProbeTargetsByNameSearch(ctx context.Con
 
 func sortMonthlyUpstreamProbeTargets(targets []monthlyUpstreamProbeResolvedTarget) {
 	sort.SliceStable(targets, func(i, j int) bool {
-		leftRank := monthlyCardPublicSortRank(monthlyCardPublicChannelName(targets[i].Platform))
-		rightRank := monthlyCardPublicSortRank(monthlyCardPublicChannelName(targets[j].Platform))
+		leftRank := monthlyCardPublicSortRank(monthlyCardPublicChannelName(targets[i].AccountName, targets[i].Model, targets[i].Platform))
+		rightRank := monthlyCardPublicSortRank(monthlyCardPublicChannelName(targets[j].AccountName, targets[j].Model, targets[j].Platform))
 		if leftRank != rightRank {
 			return leftRank < rightRank
 		}

@@ -14,7 +14,7 @@
             </span>
           </div>
           <p class="mt-1 text-sm text-gray-500 dark:text-dark-300">
-            Codex / Claude 月卡通道最近 {{ windowMinutes }} 分钟运行概览
+            Codex / Claude / Grok 月卡通道最近 {{ windowMinutes }} 分钟运行概览
           </p>
         </div>
       </div>
@@ -38,7 +38,7 @@
         <p class="mt-1 text-sm text-gray-500 dark:text-dark-300">月卡通道状态会在这里展示。</p>
       </div>
 
-      <div v-else class="grid gap-4 lg:grid-cols-2">
+      <div v-else class="grid gap-4 lg:grid-cols-3">
         <article
           v-for="account in accounts"
           :key="`${account.channel}-${account.display_name}`"

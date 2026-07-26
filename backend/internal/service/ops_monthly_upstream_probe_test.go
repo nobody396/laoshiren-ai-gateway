@@ -294,6 +294,26 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 						RateMultiplier: &rate,
 					},
 				},
+				11: {
+					{
+						ID:             20,
+						Name:           "claude-monthly",
+						Platform:       PlatformAnthropic,
+						Status:         StatusActive,
+						Schedulable:    true,
+						RateMultiplier: &rate,
+					},
+				},
+				35: {
+					{
+						ID:             26,
+						Name:           "pomoai-grok",
+						Platform:       PlatformAnthropic,
+						Status:         StatusActive,
+						Schedulable:    true,
+						RateMultiplier: &rate,
+					},
+				},
 			},
 		},
 		groupRepo: &monthlyProbeGroupRepoStub{
@@ -305,6 +325,20 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 					Status:           StatusActive,
 					SubscriptionType: SubscriptionTypeCredit,
 				},
+				11: {
+					ID:               11,
+					Name:             "Claude Lite 月卡组",
+					Platform:         PlatformAnthropic,
+					Status:           StatusActive,
+					SubscriptionType: SubscriptionTypeCredit,
+				},
+				35: {
+					ID:               35,
+					Name:             "Grok Lite 月卡组",
+					Platform:         PlatformAnthropic,
+					Status:           StatusActive,
+					SubscriptionType: SubscriptionTypeCredit,
+				},
 			},
 		},
 	}
@@ -312,13 +346,27 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 	targets, err := svc.loadMonthlyUpstreamProbeTargets(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, targets, 1)
+	require.Len(t, targets, 3)
 	require.Equal(t, "monthly-codex-gateway", targets[0].AccountName)
 	require.Equal(t, PlatformOpenAI, targets[0].Platform)
 	require.Equal(t, "gpt-5.4-mini", targets[0].Model)
 	require.Equal(t, int64(7), targets[0].GroupID)
 	require.NotNil(t, targets[0].Account)
 	require.InDelta(t, 0.2, targets[0].Account.BillingRateMultiplier(), 0.0001)
+	require.Equal(t, "monthly-claude-gateway", targets[1].AccountName)
+	require.Equal(t, PlatformAnthropic, targets[1].Platform)
+	require.Equal(t, "claude-haiku-4-5", targets[1].Model)
+	require.Equal(t, int64(11), targets[1].GroupID)
+	require.Equal(t, "monthly-grok-gateway", targets[2].AccountName)
+	require.Equal(t, PlatformAnthropic, targets[2].Platform)
+	require.Equal(t, "grok-4.5", targets[2].Model)
+	require.Equal(t, int64(35), targets[2].GroupID)
+}
+
+func TestMonthlyCardPublicStatusLabelsGrokIndependentlyFromAnthropicProtocol(t *testing.T) {
+	require.Equal(t, "Grok", monthlyCardPublicChannelName("monthly-grok-gateway", "grok-4.5", PlatformAnthropic))
+	require.Equal(t, "Grok 月卡", monthlyCardPublicDisplayName("monthly-grok-gateway", "grok-4.5", PlatformAnthropic))
+	require.Equal(t, "Claude", monthlyCardPublicChannelName("monthly-claude-gateway", "claude-haiku-4-5", PlatformAnthropic))
 }
 
 func TestMonthlyUpstreamProbeSnapshotFiltersObsoleteRenamedAccountPoints(t *testing.T) {

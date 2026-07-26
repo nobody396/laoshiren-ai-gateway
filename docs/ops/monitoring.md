@@ -6,9 +6,11 @@ failure domain.
 ## 1. Monthly upstream probe
 
 The application-owned monthly upstream probe runs every two minutes and checks
-the real monthly-card gateway path. When that path fails, it also performs a
-direct-upstream diagnostic so operations can distinguish gateway/routing
-failures from upstream failures.
+the real Codex, Claude, and Grok monthly-card gateway paths. Probe targets are
+selected by monthly-card role rather than by transport platform, because Claude
+and Grok both use the Anthropic-compatible gateway transport. When a path fails,
+the probe also performs a direct-upstream diagnostic so operations can
+distinguish gateway/routing failures from upstream failures.
 
 This probe answers:
 
@@ -40,10 +42,9 @@ The external monitor must:
 - not consume private-repository GitHub-hosted runner minutes;
 - check every five minutes and alert on down and recovery events.
 
-UptimeRobot's external free monitor is the selected control plane. It becomes
-active only after the owner confirms the activation email. Activation and
-notification contacts live in UptimeRobot; no UptimeRobot credentials are
-stored in this repository.
+UptimeRobot's external free monitor is the selected control plane. The owner
+confirmed activation on 2026-07-26. Activation and notification contacts live
+in UptimeRobot; no UptimeRobot credentials are stored in this repository.
 
 ## Retired implementation
 

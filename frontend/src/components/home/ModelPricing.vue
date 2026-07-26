@@ -396,7 +396,7 @@ const specialProviderGroups = computed(() => [
   justify-items: center;
   gap: 0.18rem;
   min-width: max-content;
-  color: #c5482a;
+  color: rgb(var(--color-terracotta));
   line-height: 1;
   transform: translateX(-50%);
 }
@@ -422,7 +422,7 @@ const specialProviderGroups = computed(() => [
 
 .provider-card__header p {
   margin: 0;
-  color: #6f634f;
+  color: rgb(var(--color-gray-600));
   font-family: 'Inter', sans-serif;
   font-size: 0.76rem;
   font-weight: 800;
@@ -579,7 +579,7 @@ const specialProviderGroups = computed(() => [
 
 .pricing-frame__header p {
   margin: 0.35rem 0 0;
-  color: #6f634f;
+  color: rgb(var(--color-gray-600));
   font-size: 0.98rem;
   line-height: 1.45;
 }

@@ -273,6 +273,43 @@
   --chart-10: 38 54 31; /* #26361f laurel-dark */
   --chart-11: 111 139 128; /* #6f8b80 sage */
   --chart-12: 168 95 66; /* #a85f42 clay */
+
+  /* ---------------------------------------------------------------------
+   * gild-50…900 — the gold leaf, used only on premium surfaces: the apex
+   * monthly card, VIP tier badges, the summary card's gilded edge. This is
+   * the one warm accent that is allowed to be brighter than the paper.
+   *
+   * Not a general-purpose ramp. If something ordinary needs "gold", it
+   * almost certainly wants --color-warning instead — reserve the gild for
+   * things the user paid for.
+   * --------------------------------------------------------------------- */
+  --gild-50: 255 250 240; /* #fffaf0 */
+  --gild-100: 255 247 223; /* #fff7df — gilded card body text */
+  --gild-200: 255 246 219; /* #fff6db */
+  --gild-300: 255 243 201; /* #fff3c9 */
+  --gild-400: 255 240 175; /* #fff0af — gradient highlight */
+  --gild-500: 255 216 141; /* #ffd88d — the leading gold: borders, active edge */
+  --gild-600: 230 183 90; /* #e6b75a */
+  --gild-700: 213 136 49; /* #d58831 */
+  --gild-800: 183 122 40; /* #b77a28 */
+  --gild-900: 142 43 24; /* #8e2b18 — where gold meets terracotta */
+
+  /* ---------------------------------------------------------------------
+   * lacquer — the near-black ground under the gild. Three gradient stops
+   * per interaction state; the card lifts as it goes rest → hover → active,
+   * which is why the stops differ rather than being one shared pair.
+   *
+   * The base stop is shared by every state on purpose: the card brightens
+   * from the top-left while its far corner stays put, so the gradient reads
+   * as light falling across lacquer rather than the whole card fading up.
+   * --------------------------------------------------------------------- */
+  --lacquer-base: 9 8 7; /* #090807 — constant far corner, all states */
+  --lacquer-rest-top: 17 13 9; /* #110d09 */
+  --lacquer-rest-mid: 39 28 19; /* #271c13 */
+  --lacquer-hover-top: 23 16 10; /* #17100a */
+  --lacquer-hover-mid: 48 33 22; /* #302116 */
+  --lacquer-active-top: 27 18 10; /* #1b120a */
+  --lacquer-active-mid: 55 35 21; /* #372315 */
 }
 
 /*

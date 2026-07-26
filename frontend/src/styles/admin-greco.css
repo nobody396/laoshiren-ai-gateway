@@ -16,47 +16,42 @@ body.admin-console-active {
   --admin-ink: rgb(var(--color-ink));
   --admin-ink-deep: rgb(var(--color-ink-deep));
   --admin-muted: rgb(var(--color-muted));
-  --admin-border: rgba(63, 90, 58, 0.18);
-  --admin-border-strong: rgba(31, 26, 18, 0.42);
-  --admin-surface: rgba(250, 246, 236, 0.96);
-  --admin-surface-soft: rgba(239, 230, 207, 0.78);
-  --admin-control: rgba(255, 252, 245, 0.95);
-  --admin-table-alt: rgba(239, 230, 207, 0.42);
+  --admin-border: rgb(var(--color-laurel) / 0.18);
+  --admin-border-strong: rgb(var(--color-ink) / 0.42);
+  --admin-surface: rgb(var(--color-marble) / 0.96);
+  --admin-surface-soft: rgb(var(--color-stone) / 0.78);
+  --admin-control: rgb(var(--color-vellum) / 0.95);
+  --admin-table-alt: rgb(var(--color-stone) / 0.42);
   --admin-shadow: 0 18px 48px rgba(49, 38, 20, 0.11);
   --admin-shadow-sm: 0 8px 24px rgba(49, 38, 20, 0.08);
-  --admin-ring: rgba(154, 59, 31, 0.24);
+  --admin-ring: rgb(var(--color-terracotta) / 0.24);
   --admin-danger: rgb(var(--color-danger));
   --admin-success: rgb(var(--color-success));
   --admin-warning: rgb(var(--color-warning));
   --admin-info: rgb(var(--color-info));
 }
 
+/*
+ * Dark overrides.
+ *
+ * Only the composites are listed. Every plain color (--admin-papyrus, -ink,
+ * -laurel, -danger, …) is deliberately absent: the block above already binds
+ * them to rgb(var(--color-*)), and theme.css flips those tokens under .dark.
+ * This block used to restate all twelve as literal hexes — values that were
+ * byte-for-byte equal to what the tokens already resolved to, so the only
+ * thing they achieved was a second place to forget to update.
+ */
 .dark .admin-console-shell,
 .dark body.admin-console-active {
-  --admin-papyrus: #2a251d;
-  --admin-parchment: #3a3122;
-  --admin-marble: #332d23;
-  --admin-stone: #433824;
-  --admin-terracotta: #e18a68;
-  --admin-terracotta-dark: #ffb18b;
-  --admin-laurel: #b9c99e;
-  --admin-laurel-dark: #edf4d3;
-  --admin-ink: #f2ead6;
-  --admin-ink-deep: #fff8e8;
-  --admin-muted: #d1c3a5;
-  --admin-border: rgba(237, 244, 211, 0.2);
-  --admin-border-strong: rgba(255, 248, 232, 0.38);
-  --admin-surface: rgba(42, 38, 31, 0.96);
-  --admin-surface-soft: rgba(58, 49, 33, 0.82);
-  --admin-control: rgba(35, 31, 24, 0.94);
-  --admin-table-alt: rgba(58, 49, 33, 0.42);
-  --admin-shadow: 0 18px 48px rgba(10, 8, 5, 0.24);
-  --admin-shadow-sm: 0 8px 24px rgba(10, 8, 5, 0.18);
-  --admin-ring: rgba(225, 138, 104, 0.3);
-  --admin-danger: #ff9b86;
-  --admin-success: #b8d89f;
-  --admin-warning: #f0c77a;
-  --admin-info: #9fd0dc;
+  --admin-border: rgb(var(--color-laurel-dark) / 0.2);
+  --admin-border-strong: rgb(var(--color-ink-deep) / 0.38);
+  --admin-surface: rgb(var(--color-papyrus) / 0.96);
+  --admin-surface-soft: rgb(var(--color-parchment) / 0.82);
+  --admin-control: rgb(var(--color-vellum) / 0.94);
+  --admin-table-alt: rgb(var(--color-parchment) / 0.42);
+  --admin-shadow: 0 18px 48px rgb(var(--lacquer-base) / 0.24);
+  --admin-shadow-sm: 0 8px 24px rgb(var(--lacquer-base) / 0.18);
+  --admin-ring: rgb(var(--color-terracotta) / 0.3);
 }
 
 body.admin-console-active {
@@ -211,7 +206,7 @@ body.admin-console-active {
 }
 
 .dark .admin-console-shell .sidebar-link {
-  color: #d8ccb1;
+  color: rgb(var(--color-dark-200));
 }
 
 .admin-console-shell .sidebar-link::before {
@@ -372,7 +367,7 @@ body.admin-console-active {
 .dark .admin-console-shell .dark\:text-gray-200,
 .dark .admin-console-shell .text-dark-300,
 .dark .admin-console-shell .text-dark-200 {
-  color: #eadfc6 !important;
+  color: rgb(var(--color-dark-100)) !important;
 }
 
 .dark .admin-console-shell .dark\:text-white,
@@ -721,8 +716,8 @@ body.admin-console-active .select-search-input {
 
 .dark .admin-console-shell .admin-stat-card > .flex > div:first-child,
 .dark .admin-console-shell .admin-stat-icon {
-  background: #f0a37f !important;
-  color: #22180f !important;
+  background: rgb(var(--color-primary-300)) !important;
+  color: rgb(var(--color-dark-900)) !important;
   box-shadow:
     inset 0 0 0 1px rgba(255, 248, 232, 0.36),
     0 8px 18px rgba(225, 138, 104, 0.2);

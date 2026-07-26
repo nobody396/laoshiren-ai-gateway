@@ -225,7 +225,7 @@ onMounted(() => {
 }
 
 .auth-shell__footer :deep(p) {
-  color: #6f634f !important;
+  color: rgb(var(--color-gray-600)) !important;
 }
 
 .auth-shell__footer :deep(a) {
@@ -247,7 +247,7 @@ onMounted(() => {
 }
 
 .auth-shell__form-card :deep(.text-center > p) {
-  color: #6f634f !important;
+  color: rgb(var(--color-gray-600)) !important;
   font-family: 'Inter', sans-serif;
 }
 

@@ -1099,7 +1099,7 @@ void Promise.all([
 }
 
 .topup-monthly-product--pro::before {
-  background: #4b6faf;
+  background: rgb(var(--color-info));
 }
 
 .topup-monthly-product--max::before {
@@ -1117,8 +1117,8 @@ void Promise.all([
   border-color: rgba(230, 183, 90, 0.52);
   background:
     linear-gradient(135deg, rgba(255, 221, 146, 0.14), rgba(122, 28, 16, 0.12) 42%, transparent 70%),
-    linear-gradient(118deg, #110d09 0%, #271c13 48%, #090807 100%);
-  color: #fff7df;
+    linear-gradient(118deg, rgb(var(--lacquer-rest-top)) 0%, rgb(var(--lacquer-rest-mid)) 48%, rgb(var(--lacquer-base)) 100%);
+  color: rgb(var(--gild-100));
   box-shadow:
     0 18px 48px rgba(31, 17, 8, 0.2),
     inset 0 0 0 1px rgba(255, 220, 138, 0.14);
@@ -1126,7 +1126,7 @@ void Promise.all([
 
 .topup-monthly-product--apex::before {
   height: 0.32rem;
-  background: linear-gradient(90deg, #8e2b18, #e6b75a 25%, #fff0af 52%, #d58831 78%, #0d0907);
+  background: linear-gradient(90deg, rgb(var(--gild-900)), rgb(var(--gild-600)) 25%, rgb(var(--gild-400)) 52%, rgb(var(--gild-700)) 78%, rgb(var(--lacquer-base)));
   box-shadow: 0 0 22px rgba(230, 183, 90, 0.42);
 }
 
@@ -1162,17 +1162,17 @@ void Promise.all([
   border-color: rgba(255, 220, 138, 0.82);
   background:
     linear-gradient(135deg, rgba(255, 221, 146, 0.2), rgba(154, 59, 31, 0.14) 44%, transparent 72%),
-    linear-gradient(118deg, #17100a 0%, #302116 48%, #090807 100%);
+    linear-gradient(118deg, rgb(var(--lacquer-hover-top)) 0%, rgb(var(--lacquer-hover-mid)) 48%, rgb(var(--lacquer-base)) 100%);
   box-shadow:
     0 22px 58px rgba(31, 17, 8, 0.24),
     inset 0 0 0 1px rgba(255, 220, 138, 0.18);
 }
 
 .topup-monthly-product--apex.topup-monthly-product--active {
-  border-color: #ffd88d;
+  border-color: rgb(var(--gild-500));
   background:
     linear-gradient(135deg, rgba(255, 221, 146, 0.24), rgba(154, 59, 31, 0.16) 46%, transparent 72%),
-    linear-gradient(118deg, #1b120a 0%, #372315 50%, #090807 100%);
+    linear-gradient(118deg, rgb(var(--lacquer-active-top)) 0%, rgb(var(--lacquer-active-mid)) 50%, rgb(var(--lacquer-base)) 100%);
   box-shadow:
     0 0 0 1px rgba(255, 216, 141, 0.36),
     0 22px 66px rgba(115, 49, 17, 0.28),
@@ -1198,7 +1198,7 @@ void Promise.all([
 .topup-monthly-product__rarity {
   display: block;
   margin-bottom: 0.32rem;
-  color: #ffd88d;
+  color: rgb(var(--gild-500));
   font-size: 0.64rem;
   font-weight: 900;
   letter-spacing: 0.16em;
@@ -1207,7 +1207,7 @@ void Promise.all([
 }
 
 .topup-monthly-product--apex .topup-product-title {
-  color: #fff6db;
+  color: rgb(var(--gild-200));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: 1.35rem;
   letter-spacing: 0;
@@ -1217,7 +1217,7 @@ void Promise.all([
 .topup-monthly-product--apex .topup-status--available {
   border-color: rgba(255, 216, 141, 0.38);
   background: rgba(255, 216, 141, 0.1);
-  color: #ffd88d;
+  color: rgb(var(--gild-500));
 }
 
 .topup-monthly-product__price {
@@ -1230,7 +1230,7 @@ void Promise.all([
 }
 
 .topup-monthly-product--apex .topup-monthly-product__price {
-  color: #fff3c9;
+  color: rgb(var(--gild-300));
   font-size: 2rem;
 }
 
@@ -1416,8 +1416,8 @@ void Promise.all([
   border-color: rgba(255, 216, 141, 0.5);
   background:
     linear-gradient(135deg, rgba(255, 221, 146, 0.14), rgba(154, 59, 31, 0.1) 42%, transparent 72%),
-    linear-gradient(120deg, #120d09 0%, #2b1e14 52%, #090807 100%);
-  color: #fff7df;
+    linear-gradient(120deg, rgb(var(--lacquer-rest-top)) 0%, rgb(var(--lacquer-rest-mid)) 52%, rgb(var(--lacquer-base)) 100%);
+  color: rgb(var(--gild-100));
   box-shadow:
     0 24px 70px rgba(31, 17, 8, 0.24),
     inset 0 0 0 1px rgba(255, 216, 141, 0.16);
@@ -1479,7 +1479,7 @@ void Promise.all([
 }
 
 .topup-summary-card--apex .topup-summary-title {
-  color: #fff6db;
+  color: rgb(var(--gild-200));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: clamp(2rem, 4vw, 2.45rem);
   text-shadow: 0 0 20px rgba(255, 216, 141, 0.2);
@@ -1505,7 +1505,7 @@ void Promise.all([
 .topup-summary-card--apex .topup-price-chip--muted {
   border-color: rgba(255, 216, 141, 0.42);
   background: rgba(255, 216, 141, 0.1);
-  color: #ffd88d;
+  color: rgb(var(--gild-500));
 }
 
 .topup-summary-rows {
@@ -1669,7 +1669,7 @@ void Promise.all([
 .topup-monthly-detail--apex .topup-monthly-prices strong,
 .topup-monthly-detail--apex .topup-monthly-quota strong,
 .topup-monthly-detail--apex .topup-token-grid strong {
-  color: #fff7df;
+  color: rgb(var(--gild-100));
 }
 
 .topup-monthly-detail--apex .topup-monthly-quota small,
@@ -1678,7 +1678,7 @@ void Promise.all([
 }
 
 .topup-monthly-detail--apex .topup-token-grid small {
-  color: #ffb37b;
+  color: rgb(var(--color-terracotta-dark));
 }
 
 .topup-monthly-detail--apex .topup-token-note {
@@ -1709,7 +1709,7 @@ void Promise.all([
 .dark .topup-monthly-prices strong,
 .dark .topup-monthly-quota strong,
 .dark .topup-token-grid strong {
-  color: #fffaf0;
+  color: rgb(var(--gild-50));
 }
 
 .dark .topup-monthly-quota small,
@@ -1718,7 +1718,7 @@ void Promise.all([
 }
 
 .dark .topup-token-grid small {
-  color: #f2a477;
+  color: rgb(var(--color-primary-400));
 }
 
 .dark .topup-token-note {
@@ -1726,7 +1726,7 @@ void Promise.all([
   background:
     linear-gradient(180deg, rgba(226, 123, 81, 0.1), transparent 100%),
     rgba(22, 19, 15, 0.92);
-  color: #fffaf0;
+  color: rgb(var(--gild-50));
   font-weight: 650;
 }
 
@@ -1748,7 +1748,7 @@ void Promise.all([
 .dark .topup-monthly-detail--apex .topup-monthly-prices strong,
 .dark .topup-monthly-detail--apex .topup-monthly-quota strong,
 .dark .topup-monthly-detail--apex .topup-token-grid strong {
-  color: #fff7df;
+  color: rgb(var(--gild-100));
 }
 
 .dark .topup-monthly-detail--apex .topup-monthly-quota small,
@@ -1757,7 +1757,7 @@ void Promise.all([
 }
 
 .dark .topup-monthly-detail--apex .topup-token-grid small {
-  color: #ffb37b;
+  color: rgb(var(--color-terracotta-dark));
 }
 
 .topup-primary-action,
@@ -1812,10 +1812,10 @@ void Promise.all([
 }
 
 .topup-summary-card--apex .topup-primary-action {
-  border-color: #d58831;
+  border-color: rgb(var(--gild-700));
   background:
-    linear-gradient(135deg, #ffd88d 0%, #d58831 44%, #8e2b18 100%);
-  color: #1d1208 !important;
+    linear-gradient(135deg, rgb(var(--gild-500)) 0%, rgb(var(--gild-700)) 44%, rgb(var(--gild-900)) 100%);
+  color: rgb(var(--color-dark-950)) !important;
   box-shadow: 0 16px 34px rgba(213, 136, 49, 0.28);
 }
 
@@ -1830,13 +1830,13 @@ void Promise.all([
 .topup-summary-card--apex .topup-secondary-action {
   border-color: rgba(255, 216, 141, 0.28);
   background: rgba(255, 246, 219, 0.06);
-  color: #fff3c9;
+  color: rgb(var(--gild-300));
 }
 
 .topup-summary-card--apex .topup-secondary-action:hover {
   border-color: rgba(255, 216, 141, 0.5);
   background: rgba(255, 216, 141, 0.12);
-  color: #fff7df;
+  color: rgb(var(--gild-100));
 }
 
 .topup-monthly-action {
@@ -1876,7 +1876,7 @@ void Promise.all([
 }
 
 .dark .topup-primary-action {
-  color: var(--admin-marble, #332d23) !important;
+  color: var(--admin-marble, rgb(var(--color-dark-800))) !important;
 }
 
 @keyframes topup-apex-sweep {

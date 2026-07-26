@@ -240,7 +240,7 @@
 </template>
 
 <script setup lang="ts">
-import { useChartPalette } from '@/utils/chartPalette'
+import { chartColor, useChartPalette } from '@/utils/chartPalette'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
@@ -370,7 +370,7 @@ const rankingChartData = computed(() => {
   if (otherRankingItem.value) {
     labels.push(t('admin.dashboard.spendingRankingOther'))
     data.push(otherRankingItem.value.actual_cost)
-    backgroundColor.push('#94a3b8')
+    backgroundColor.push(chartColor(6)) // 第 7 位是中性色，专给「其他」
   }
 
   return {

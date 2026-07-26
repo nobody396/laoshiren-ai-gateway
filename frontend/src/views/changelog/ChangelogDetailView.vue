@@ -172,7 +172,7 @@ onMounted(() => void loadEntry())
 
 .changelog-detail-summary {
   margin: 1.25rem 0 0;
-  color: #514a3c;
+  color: rgb(var(--color-dark-600));
   font-family: 'Noto Serif SC', serif;
   font-size: 1.2rem;
   line-height: 1.8;
@@ -185,17 +185,17 @@ onMounted(() => void loadEntry())
   margin-top: 1.4rem;
   border-left: 2px solid rgb(var(--color-laurel));
   padding: 0.2rem 0 0.2rem 1rem;
-  color: #4d4536;
+  color: rgb(var(--color-dark-600));
   line-height: 1.7;
 }
 
 .changelog-detail-rationale strong,
 .changelog-detail-products strong {
-  color: #2d291f;
+  color: rgb(var(--color-dark-800));
   font-weight: 600;
 }
 
-.changelog-detail-products { color: #6d6453; font-size: 0.92rem; }
+.changelog-detail-products { color: rgb(var(--color-gray-600)); font-size: 0.92rem; }
 
 .changelog-detail-rule {
   margin: 2.8rem 0;
@@ -203,7 +203,7 @@ onMounted(() => void loadEntry())
 }
 
 .changelog-markdown {
-  color: #312d24;
+  color: rgb(var(--color-dark-700));
   font-size: 1.02rem;
   line-height: 1.85;
 }
@@ -218,7 +218,7 @@ onMounted(() => void loadEntry())
 
 .changelog-markdown :deep(h3) {
   margin: 2rem 0 0.75rem;
-  color: #1e1a13;
+  color: rgb(var(--color-dark-900));
   font-family: 'Noto Serif SC', serif;
   font-size: 1.3rem;
 }
@@ -235,7 +235,7 @@ onMounted(() => void loadEntry())
 }
 .changelog-markdown :deep(pre) {
   overflow-x: auto;
-  background: #1b1914;
+  background: rgb(var(--color-dark-900));
   color: rgb(var(--color-papyrus));
   padding: 1.2rem;
 }
@@ -244,7 +244,7 @@ onMounted(() => void loadEntry())
   margin: 1.5rem 0;
   border-left: 2px solid rgb(var(--color-terracotta));
   padding-left: 1rem;
-  color: #655d4e;
+  color: rgb(var(--color-gray-600));
 }
 .changelog-markdown :deep(img) { max-width: 100%; }
 
@@ -272,7 +272,7 @@ onMounted(() => void loadEntry())
 
 .changelog-detail-error { padding: 6rem 0; text-align: center; }
 .changelog-detail-error h1 { font-size: 2.4rem; }
-.changelog-detail-error p { color: #6d6453; }
+.changelog-detail-error p { color: rgb(var(--color-gray-600)); }
 .changelog-detail-error a { color: rgb(var(--color-laurel)); }
 
 @media (max-width: 640px) {

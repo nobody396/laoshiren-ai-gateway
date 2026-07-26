@@ -266,7 +266,7 @@ onBeforeUnmount(() => {
 
 .changelog-hero p {
   margin: 1.25rem 0 0;
-  color: #4d4536;
+  color: rgb(var(--color-dark-600));
   font-family: 'EB Garamond', 'Noto Serif SC', serif;
   font-size: clamp(1.15rem, 2vw, 1.45rem);
   letter-spacing: 0.04em;
@@ -333,7 +333,7 @@ onBeforeUnmount(() => {
   position: relative;
   border: 0;
   background: transparent;
-  color: #2d291f;
+  color: rgb(var(--color-dark-800));
   font-family: 'Noto Serif SC', 'EB Garamond', serif;
   font-size: 1rem;
   cursor: pointer;
@@ -498,7 +498,7 @@ onBeforeUnmount(() => {
 .changelog-rationale,
 .changelog-products {
   margin: 0.7rem 0 0;
-  color: #514a3c;
+  color: rgb(var(--color-dark-600));
   font-size: 0.96rem;
   line-height: 1.75;
 }
@@ -506,7 +506,7 @@ onBeforeUnmount(() => {
 .changelog-rationale,
 .changelog-products { margin-top: 0.24rem; }
 .changelog-rationale strong,
-.changelog-products strong { color: #2a261d; font-weight: 600; }
+.changelog-products strong { color: rgb(var(--color-dark-800)); font-weight: 600; }
 
 .changelog-load-more {
   display: flex;
@@ -536,7 +536,7 @@ onBeforeUnmount(() => {
 }
 
 .changelog-empty h3 { margin: 0; font-family: 'Noto Serif SC', serif; font-size: 1.4rem; }
-.changelog-empty p { margin: 0.8rem auto 1rem; color: #6d6453; }
+.changelog-empty p { margin: 0.8rem auto 1rem; color: rgb(var(--color-gray-600)); }
 
 .changelog-skeleton {
   display: grid;

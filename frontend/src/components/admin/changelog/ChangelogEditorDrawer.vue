@@ -275,7 +275,7 @@ watch(() => [props.show, props.entry?.id], ([show]) => {
   width: min(1100px, 86vw);
   height: 100%;
   flex-direction: column;
-  background: #fff;
+  background: rgb(var(--color-marble));
   box-shadow: -20px 0 60px rgba(15, 23, 42, 0.16);
 }
 
@@ -330,7 +330,7 @@ watch(() => [props.show, props.entry?.id], ([show]) => {
 .changelog-editor-preview {
   overflow-y: auto;
   border-left: 1px solid rgb(var(--color-gray-200));
-  background: #fafafa;
+  background: rgb(var(--color-marble));
   padding: 1.5rem;
 }
 .dark .changelog-editor-preview { border-color: rgb(var(--color-slate-700)); background: rgb(var(--color-slate-900)); }

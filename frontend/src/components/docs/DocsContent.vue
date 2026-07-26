@@ -146,13 +146,13 @@ onBeforeUnmount(() => {
 }
 
 .docs-doc-copy-btn:hover {
-  border-color: #d87757;
-  color: #d87757;
-  background: #fff7f3;
+  border-color: rgb(var(--color-terracotta));
+  color: rgb(var(--color-terracotta));
+  background: rgb(var(--color-primary-50));
 }
 
 .docs-doc-copy-btn:active {
-  background: #fdf0ea;
+  background: rgb(var(--color-primary-50));
 }
 
 .docs-markdown--with-copy h1:first-child {
@@ -232,13 +232,13 @@ onBeforeUnmount(() => {
 }
 
 .docs-markdown a {
-  color: #D87757;
+  color: rgb(var(--color-terracotta));
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .docs-markdown a:hover {
-  color: #c96442;
+  color: rgb(var(--color-terracotta));
 }
 
 .docs-markdown strong {
@@ -275,17 +275,17 @@ onBeforeUnmount(() => {
 }
 
 .docs-markdown blockquote {
-  border-left: 4px solid #D87757;
+  border-left: 4px solid rgb(var(--color-terracotta));
   padding: 0.5rem 1rem;
   margin: 1rem 0;
-  background-color: #fdf5f2;
+  background-color: rgb(var(--color-primary-50));
   border-radius: 0 0.375rem 0.375rem 0;
-  color: #6f3829;
+  color: rgb(var(--color-primary-800));
 }
 
 .dark .docs-markdown blockquote {
   background-color: rgba(216, 119, 87, 0.1);
-  color: #f0ad94;
+  color: rgb(var(--color-primary-300));
 }
 
 .docs-markdown code {
@@ -294,12 +294,12 @@ onBeforeUnmount(() => {
   border-radius: 0.25rem;
   font-size: 0.875em;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: #D87757;
+  color: rgb(var(--color-terracotta));
 }
 
 .dark .docs-markdown code {
   background-color: rgb(var(--color-slate-800));
-  color: #f0ad94;
+  color: rgb(var(--color-primary-300));
 }
 
 .docs-markdown pre {

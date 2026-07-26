@@ -99,7 +99,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   --membership-border: rgba(31, 26, 18, 0.14);
   --membership-border-strong: rgba(31, 26, 18, 0.26);
   --membership-ink: rgb(var(--color-ink));
-  --membership-muted: #7b705d;
+  --membership-muted: rgb(var(--color-gray-600));
   --membership-accent: rgb(var(--color-terracotta));
   --membership-shadow: 0 18px 46px rgba(49, 38, 20, 0.1);
   color: var(--membership-ink);
@@ -184,7 +184,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   background:
     linear-gradient(135deg, rgba(255, 236, 182, 0.12), rgba(132, 24, 18, 0.08) 38%, transparent 62%),
     linear-gradient(115deg, rgba(17, 13, 9, 0.96), rgba(35, 28, 20, 0.98) 48%, rgba(9, 8, 7, 0.96));
-  color: #fff7df;
+  color: rgb(var(--gild-100));
   box-shadow:
     0 26px 70px rgba(31, 17, 8, 0.22),
     inset 0 0 0 1px rgba(255, 220, 138, 0.14);
@@ -216,7 +216,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--pro::before {
-  background: #4b6faf;
+  background: rgb(var(--color-info));
 }
 
 .monthly-credit-card--max::before {
@@ -229,14 +229,14 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 
 .monthly-credit-card--apex::before {
   height: 0.34rem;
-  background: linear-gradient(90deg, #8e2b18, #e6b75a 24%, #fff0af 50%, #d58831 76%, #0d0907);
+  background: linear-gradient(90deg, rgb(var(--gild-900)), rgb(var(--gild-600)) 24%, rgb(var(--gild-400)) 50%, rgb(var(--gild-700)) 76%, rgb(var(--lacquer-base)));
   box-shadow: 0 0 22px rgba(230, 183, 90, 0.46);
 }
 
 .monthly-credit-card__rarity {
   display: inline-flex;
   margin-bottom: 0.55rem;
-  color: #ffd88d;
+  color: rgb(var(--gild-500));
   font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.16em;
@@ -263,7 +263,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--apex h3 {
-  color: #fff6db;
+  color: rgb(var(--gild-200));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: clamp(1.45rem, 2.5vw, 2rem);
   letter-spacing: 0;
@@ -301,7 +301,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 .monthly-credit-card--apex .monthly-credit-card__stock {
   border-color: rgba(255, 216, 141, 0.42);
   background: rgba(255, 216, 141, 0.1);
-  color: #ffd88d;
+  color: rgb(var(--gild-500));
   box-shadow: inset 0 0 18px rgba(255, 216, 141, 0.08);
 }
 
@@ -321,7 +321,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--apex .monthly-credit-card__price strong {
-  color: #fff3c9;
+  color: rgb(var(--gild-300));
   font-size: clamp(2.2rem, 4vw, 3rem);
 }
 
@@ -377,7 +377,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--apex .monthly-credit-card__credits strong {
-  color: #fff7df;
+  color: rgb(var(--gild-100));
   font-size: clamp(1rem, 2vw, 1.22rem);
 }
 
@@ -449,7 +449,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--apex .monthly-credit-card__usage dd strong {
-  color: #fff7df;
+  color: rgb(var(--gild-100));
 }
 
 .monthly-credit-card__usage dd span {
@@ -459,7 +459,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--apex .monthly-credit-card__usage dd span {
-  color: #ffb37b;
+  color: rgb(var(--color-terracotta-dark));
 }
 
 .monthly-credit-card__button {
@@ -481,7 +481,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 .monthly-credit-card--apex .monthly-credit-card__button {
   border-color: rgba(255, 216, 141, 0.42);
   background: rgba(255, 216, 141, 0.12);
-  color: #ffd88d;
+  color: rgb(var(--gild-500));
 }
 
 .monthly-credit-plans__note {

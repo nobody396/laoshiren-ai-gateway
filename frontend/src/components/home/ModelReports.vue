@@ -318,7 +318,7 @@ const averageScore = computed(() => {
 
 .report-card__body p {
   margin: 1rem 0 0;
-  color: #6f634f;
+  color: rgb(var(--color-gray-600));
   font-family: 'Inter', sans-serif;
   font-size: 0.8rem;
   line-height: 1.55;

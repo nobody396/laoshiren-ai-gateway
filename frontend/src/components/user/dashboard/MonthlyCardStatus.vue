@@ -21,7 +21,7 @@
 
       <RouterLink
         to="/get-subscription"
-        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[rgb(var(--color-terracotta-dark))]/20 bg-[rgb(var(--color-terracotta))] px-4 text-sm font-semibold text-[rgb(var(--color-marble))] shadow-sm shadow-[rgb(var(--color-terracotta))]/20 transition hover:-translate-y-0.5 hover:bg-[rgb(var(--color-terracotta-dark))] hover:shadow-md hover:shadow-[rgb(var(--color-terracotta))]/25 dark:border-[#ffb18b]/25 dark:bg-[#e18a68] dark:text-[rgb(var(--color-ink-deep))] dark:shadow-[#e18a68]/10 dark:hover:bg-[#ffb18b]"
+        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[rgb(var(--color-terracotta-dark))]/20 bg-[rgb(var(--color-terracotta))] px-4 text-sm font-semibold text-[rgb(var(--color-marble))] shadow-sm shadow-[rgb(var(--color-terracotta))]/20 transition hover:-translate-y-0.5 hover:bg-[rgb(var(--color-terracotta-dark))] hover:shadow-md hover:shadow-[rgb(var(--color-terracotta))]/25 dark:border-[rgb(var(--color-terracotta-dark))]/25 dark:bg-[rgb(var(--color-terracotta))] dark:text-[rgb(var(--color-ink-deep))] dark:shadow-[rgb(var(--color-terracotta))]/10 dark:hover:bg-[rgb(var(--color-terracotta-dark))]"
       >
         <Icon name="creditCard" size="sm" :stroke-width="2" />
         开通月卡

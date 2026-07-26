@@ -63,7 +63,7 @@ watch(
 <style scoped>
 .public-info-page {
   min-height: 100vh;
-  background: #ffffff;
+  background: rgb(var(--color-vellum));
   color: rgb(var(--color-gray-700));
   color-scheme: light;
 }
@@ -115,7 +115,7 @@ watch(
 
 .public-info-header nav a:hover,
 .public-info-header nav a.router-link-active {
-  color: #d87757;
+  color: rgb(var(--color-terracotta));
 }
 
 .public-info-main {
@@ -131,9 +131,9 @@ watch(
 }
 
 .public-info-page :deep(.docs-doc-copy-btn:hover) {
-  border-color: #d87757;
-  background: #fff7f3;
-  color: #d87757;
+  border-color: rgb(var(--color-terracotta));
+  background: rgb(var(--color-primary-50));
+  color: rgb(var(--color-terracotta));
 }
 
 .public-info-page :deep(.docs-markdown) {
@@ -162,13 +162,13 @@ watch(
 }
 
 .public-info-page :deep(.docs-markdown blockquote) {
-  background-color: #fdf5f2;
-  color: #6f3829;
+  background-color: rgb(var(--color-primary-50));
+  color: rgb(var(--color-primary-800));
 }
 
 .public-info-page :deep(.docs-markdown code) {
   background-color: rgb(var(--color-gray-100));
-  color: #d87757;
+  color: rgb(var(--color-terracotta));
 }
 
 .public-info-page :deep(.docs-markdown pre) {

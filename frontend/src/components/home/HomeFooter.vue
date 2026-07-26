@@ -179,7 +179,7 @@ defineProps<{
 }
 
 .home-footer__column a:hover {
-  color: #d68a6a;
+  color: rgb(var(--color-primary-300));
 }
 
 .home-footer__bottom {

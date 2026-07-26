@@ -257,6 +257,74 @@ class ReleaseContractTests(unittest.TestCase):
             self.assertIn("exact commit", result.stderr)
             self.assertFalse(docker_log.exists(), "Docker must not run for a moving tag")
 
+    def test_shell_resolver_retries_transient_registry_pull_failures(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            docker_log = tmp_path / "docker.log"
+            attempt_file = tmp_path / "attempts"
+            inspect_path = tmp_path / "inspect.json"
+            inspect_path.write_text(docker_inspect_payload(), encoding="utf-8")
+
+            fake_docker = tmp_path / "docker"
+            fake_docker.write_text(
+                textwrap.dedent(
+                    """\
+                    #!/usr/bin/env bash
+                    set -euo pipefail
+                    printf '%s\\n' "$*" >> "$FAKE_DOCKER_LOG"
+                    if [[ "$1" == "pull" ]]; then
+                      attempt=0
+                      if [[ -f "$FAKE_ATTEMPT_FILE" ]]; then
+                        attempt="$(cat "$FAKE_ATTEMPT_FILE")"
+                      fi
+                      attempt=$((attempt + 1))
+                      printf '%s\\n' "$attempt" > "$FAKE_ATTEMPT_FILE"
+                      if ((attempt < 3)); then
+                        exit 1
+                      fi
+                    elif [[ "$1 $2" == "image inspect" ]]; then
+                      cat "$FAKE_INSPECT_JSON"
+                    fi
+                    """
+                ),
+                encoding="utf-8",
+            )
+            fake_docker.chmod(0o755)
+
+            env = os.environ.copy()
+            env["PATH"] = f"{tmp_path}:{env['PATH']}"
+            env["FAKE_DOCKER_LOG"] = str(docker_log)
+            env["FAKE_ATTEMPT_FILE"] = str(attempt_file)
+            env["FAKE_INSPECT_JSON"] = str(inspect_path)
+            env["PULL_RETRY_SECONDS"] = "0"
+
+            result = subprocess.run(
+                [
+                    "bash",
+                    str(RELEASE_DIR / "resolve_image_digest.sh"),
+                    IMAGE_TAG,
+                    COMMIT,
+                    DIGEST,
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), IMAGE_REF)
+            self.assertEqual(attempt_file.read_text(encoding="utf-8").strip(), "3")
+            self.assertEqual(
+                docker_log.read_text(encoding="utf-8").splitlines(),
+                [
+                    f"pull --quiet --platform linux/amd64 {IMAGE_TAG}",
+                    f"pull --quiet --platform linux/amd64 {IMAGE_TAG}",
+                    f"pull --quiet --platform linux/amd64 {IMAGE_TAG}",
+                    f"image inspect {IMAGE_TAG}",
+                ],
+            )
+
     def test_image_publication_is_only_called_from_the_required_ci_gate(self) -> None:
         ci_workflow = (REPO_ROOT / ".github/workflows/ci.yml").read_text(
             encoding="utf-8"

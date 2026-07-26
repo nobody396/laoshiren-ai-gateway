@@ -416,6 +416,7 @@ import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/ap
 import { useAppStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import type { CardShopProduct } from '@/types'
+import { BALANCE_TOPUP_PRESETS, isSupportedBalanceTopupAmount } from '@/constants/balanceTopups'
 import { type MonthlyCreditCardPlan } from '@/constants/monthlyCreditCards'
 import { useMonthlyCreditCardPlans } from '@/composables/useMonthlyCreditCardPlans'
 
@@ -423,7 +424,7 @@ const { t } = useI18n()
 const appStore = useAppStore()
 const router = useRouter()
 
-const presets = [20, 50, 100, 200, 1000, 2000]
+const presets = BALANCE_TOPUP_PRESETS
 const QR_TTL_SECONDS = 300
 type TopupChannel = 'card_shop' | 'qr'
 type SelectedProductKind = 'balance' | 'monthly'
@@ -465,7 +466,12 @@ const qrTopupAvailable = computed(() => hasAvailablePayType.value)
 const hasMultiplePayTypes = computed(() => canUseAlipay.value && canUseWechat.value)
 const activeCardShopProducts = computed<CardShopProduct[]>(() =>
   [...(appStore.cachedPublicSettings?.card_shop_products ?? [])]
-    .filter((product) => product.enabled && product.url && product.amount_cny > 0)
+    .filter(
+      (product) =>
+        product.enabled &&
+        product.url &&
+        isSupportedBalanceTopupAmount(product.amount_cny)
+    )
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.amount_cny - b.amount_cny)
 )
 const cardShopMode = computed(

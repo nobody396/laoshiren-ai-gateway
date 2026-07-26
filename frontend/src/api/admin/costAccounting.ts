@@ -62,11 +62,13 @@ export interface CostAccountingPayAsYouGoGroup {
   group_id: number
   group_name: string
   product: string
+  platform: string
   group_rate_multiplier: number
   primary_account_rate_multiplier: number
   worst_account_rate_multiplier: number
   schedulable_account_count: number
   topup_100_cny_scenario?: CostAccountingMoney
+  real_usage: CostAccountingRealUsage
   warning?: string
 }
 
@@ -76,6 +78,9 @@ export interface CostAccountingOverview {
   usage_window_start: string
   usage_window_end: string
   pricing_source_note: string
+  scope_note: string
+  legacy_monthly_card_group_count: number
+  legacy_monthly_card_real_usage: CostAccountingRealUsage
   monthly_cards: CostAccountingMonthlyPlan[]
   pay_as_you_go: CostAccountingPayAsYouGoGroup[]
 }

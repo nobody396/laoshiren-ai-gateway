@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/handler/dto"
@@ -49,6 +51,7 @@ type SettingHandler struct {
 	emailService     *service.EmailService
 	turnstileService *service.TurnstileService
 	opsService       *service.OpsService
+	updateMu         sync.Mutex
 }
 
 // NewSettingHandler 创建系统设置处理器
@@ -384,6 +387,361 @@ type UpdateSettingsRequest struct {
 	PaymentCancelRateLimitWindow  *int    `json:"payment_cancel_rate_limit_window"`
 	PaymentCancelRateLimitUnit    *string `json:"payment_cancel_rate_limit_unit"`
 	PaymentCancelRateLimitMode    *string `json:"payment_cancel_rate_limit_window_mode"`
+
+	providedFields map[string]json.RawMessage
+}
+
+// UnmarshalJSON records which fields were present so PUT can safely support
+// partial payloads without confusing an omitted value with a zero value.
+func (r *UpdateSettingsRequest) UnmarshalJSON(data []byte) error {
+	type requestAlias UpdateSettingsRequest
+
+	var decoded requestAlias
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+
+	var provided map[string]json.RawMessage
+	if err := json.Unmarshal(data, &provided); err != nil {
+		return err
+	}
+
+	*r = UpdateSettingsRequest(decoded)
+	r.providedFields = provided
+	return nil
+}
+
+func (r *UpdateSettingsRequest) fieldProvided(name string) bool {
+	if r == nil {
+		return false
+	}
+	raw, ok := r.providedFields[name]
+	return ok && string(bytes.TrimSpace(raw)) != "null"
+}
+
+func (r *UpdateSettingsRequest) providedSettingKeys() map[string]struct{} {
+	keys := make(map[string]struct{}, len(r.providedFields))
+	for name, raw := range r.providedFields {
+		raw = bytes.TrimSpace(raw)
+		if string(raw) == "null" {
+			continue
+		}
+
+		// Blank secrets intentionally mean "keep the persisted secret". Some
+		// validation paths hydrate the request with that persisted value, so
+		// exclude blank secret inputs from the persistence mask up front.
+		switch name {
+		case "smtp_password",
+			"turnstile_secret_key",
+			"linuxdo_connect_client_secret",
+			"oidc_connect_client_secret",
+			"github_oauth_client_secret",
+			"stripe_secret_key",
+			"stripe_webhook_secret",
+			"alipay_private_key",
+			"alipay_public_key",
+			"xunhu_alipay_key",
+			"xunhu_wechat_key":
+			var value string
+			if err := json.Unmarshal(raw, &value); err != nil || strings.TrimSpace(value) == "" {
+				continue
+			}
+		}
+
+		// The external DTO uses smtp_from_email while the persisted setting key
+		// is smtp_from. All other settings handled by SettingService currently
+		// share their JSON and persistence key names.
+		if name == "smtp_from_email" {
+			name = service.SettingKeySMTPFrom
+		}
+		keys[name] = struct{}{}
+	}
+	return keys
+}
+
+func (r *UpdateSettingsRequest) nonEmptySecretProvided(name string) bool {
+	if r == nil {
+		return false
+	}
+	raw, ok := r.providedFields[name]
+	if !ok || string(bytes.TrimSpace(raw)) == "null" {
+		return false
+	}
+	var value string
+	return json.Unmarshal(raw, &value) == nil && strings.TrimSpace(value) != ""
+}
+
+// mergeOmittedSettings keeps the current value for every non-pointer request
+// field that was omitted. Pointer fields already carry presence information and
+// are merged at their validation sites. Sensitive values are intentionally not
+// copied here: an empty sensitive field keeps its existing persisted value in
+// SettingService.UpdateSettings.
+func mergeOmittedSettings(req *UpdateSettingsRequest, current *service.SystemSettings) {
+	if req == nil || current == nil {
+		return
+	}
+
+	if !req.fieldProvided("registration_enabled") {
+		req.RegistrationEnabled = current.RegistrationEnabled
+	}
+	if !req.fieldProvided("email_verify_enabled") {
+		req.EmailVerifyEnabled = current.EmailVerifyEnabled
+	}
+	if !req.fieldProvided("registration_email_suffix_whitelist") {
+		req.RegistrationEmailSuffixWhitelist = append([]string(nil), current.RegistrationEmailSuffixWhitelist...)
+	}
+	if !req.fieldProvided("promo_code_enabled") {
+		req.PromoCodeEnabled = current.PromoCodeEnabled
+	}
+	if !req.fieldProvided("password_reset_enabled") {
+		req.PasswordResetEnabled = current.PasswordResetEnabled
+	}
+	if !req.fieldProvided("frontend_url") {
+		req.FrontendURL = current.FrontendURL
+	}
+	if !req.fieldProvided("invitation_code_enabled") {
+		req.InvitationCodeEnabled = current.InvitationCodeEnabled
+	}
+	if !req.fieldProvided("totp_enabled") {
+		req.TotpEnabled = current.TotpEnabled
+	}
+
+	if !req.fieldProvided("smtp_host") {
+		req.SMTPHost = current.SMTPHost
+	}
+	if !req.fieldProvided("smtp_port") {
+		req.SMTPPort = current.SMTPPort
+	}
+	if !req.fieldProvided("smtp_username") {
+		req.SMTPUsername = current.SMTPUsername
+	}
+	if !req.fieldProvided("smtp_from_email") {
+		req.SMTPFrom = current.SMTPFrom
+	}
+	if !req.fieldProvided("smtp_from_name") {
+		req.SMTPFromName = current.SMTPFromName
+	}
+	if !req.fieldProvided("smtp_use_tls") {
+		req.SMTPUseTLS = current.SMTPUseTLS
+	}
+	if !req.fieldProvided("feedback_notify_email") {
+		req.FeedbackNotifyEmail = current.FeedbackNotifyEmail
+	}
+
+	if !req.fieldProvided("turnstile_enabled") {
+		req.TurnstileEnabled = current.TurnstileEnabled
+	}
+	if !req.fieldProvided("turnstile_site_key") {
+		req.TurnstileSiteKey = current.TurnstileSiteKey
+	}
+
+	if !req.fieldProvided("linuxdo_connect_enabled") {
+		req.LinuxDoConnectEnabled = current.LinuxDoConnectEnabled
+	}
+	if !req.fieldProvided("linuxdo_connect_client_id") {
+		req.LinuxDoConnectClientID = current.LinuxDoConnectClientID
+	}
+	if !req.fieldProvided("linuxdo_connect_redirect_url") {
+		req.LinuxDoConnectRedirectURL = current.LinuxDoConnectRedirectURL
+	}
+
+	if !req.fieldProvided("oidc_connect_enabled") {
+		req.OIDCConnectEnabled = current.OIDCConnectEnabled
+	}
+	if !req.fieldProvided("oidc_connect_provider_name") {
+		req.OIDCConnectProviderName = current.OIDCConnectProviderName
+	}
+	if !req.fieldProvided("oidc_connect_client_id") {
+		req.OIDCConnectClientID = current.OIDCConnectClientID
+	}
+	if !req.fieldProvided("oidc_connect_issuer_url") {
+		req.OIDCConnectIssuerURL = current.OIDCConnectIssuerURL
+	}
+	if !req.fieldProvided("oidc_connect_discovery_url") {
+		req.OIDCConnectDiscoveryURL = current.OIDCConnectDiscoveryURL
+	}
+	if !req.fieldProvided("oidc_connect_authorize_url") {
+		req.OIDCConnectAuthorizeURL = current.OIDCConnectAuthorizeURL
+	}
+	if !req.fieldProvided("oidc_connect_token_url") {
+		req.OIDCConnectTokenURL = current.OIDCConnectTokenURL
+	}
+	if !req.fieldProvided("oidc_connect_userinfo_url") {
+		req.OIDCConnectUserInfoURL = current.OIDCConnectUserInfoURL
+	}
+	if !req.fieldProvided("oidc_connect_jwks_url") {
+		req.OIDCConnectJWKSURL = current.OIDCConnectJWKSURL
+	}
+	if !req.fieldProvided("oidc_connect_scopes") {
+		req.OIDCConnectScopes = current.OIDCConnectScopes
+	}
+	if !req.fieldProvided("oidc_connect_redirect_url") {
+		req.OIDCConnectRedirectURL = current.OIDCConnectRedirectURL
+	}
+	if !req.fieldProvided("oidc_connect_frontend_redirect_url") {
+		req.OIDCConnectFrontendRedirectURL = current.OIDCConnectFrontendRedirectURL
+	}
+	if !req.fieldProvided("oidc_connect_token_auth_method") {
+		req.OIDCConnectTokenAuthMethod = current.OIDCConnectTokenAuthMethod
+	}
+	if !req.fieldProvided("oidc_connect_use_pkce") {
+		req.OIDCConnectUsePKCE = current.OIDCConnectUsePKCE
+	}
+	if !req.fieldProvided("oidc_connect_validate_id_token") {
+		req.OIDCConnectValidateIDToken = current.OIDCConnectValidateIDToken
+	}
+	if !req.fieldProvided("oidc_connect_allowed_signing_algs") {
+		req.OIDCConnectAllowedSigningAlgs = current.OIDCConnectAllowedSigningAlgs
+	}
+	if !req.fieldProvided("oidc_connect_clock_skew_seconds") {
+		req.OIDCConnectClockSkewSeconds = current.OIDCConnectClockSkewSeconds
+	}
+	if !req.fieldProvided("oidc_connect_require_email_verified") {
+		req.OIDCConnectRequireEmailVerified = current.OIDCConnectRequireEmailVerified
+	}
+	if !req.fieldProvided("oidc_connect_userinfo_email_path") {
+		req.OIDCConnectUserInfoEmailPath = current.OIDCConnectUserInfoEmailPath
+	}
+	if !req.fieldProvided("oidc_connect_userinfo_id_path") {
+		req.OIDCConnectUserInfoIDPath = current.OIDCConnectUserInfoIDPath
+	}
+	if !req.fieldProvided("oidc_connect_userinfo_username_path") {
+		req.OIDCConnectUserInfoUsernamePath = current.OIDCConnectUserInfoUsernamePath
+	}
+
+	if !req.fieldProvided("github_oauth_enabled") {
+		req.GitHubOAuthEnabled = current.GitHubOAuthEnabled
+	}
+	if !req.fieldProvided("github_oauth_client_id") {
+		req.GitHubOAuthClientID = current.GitHubOAuthClientID
+	}
+	if !req.fieldProvided("github_oauth_redirect_url") {
+		req.GitHubOAuthRedirectURL = current.GitHubOAuthRedirectURL
+	}
+	if !req.fieldProvided("github_oauth_frontend_redirect_url") {
+		req.GitHubOAuthFrontendRedirectURL = current.GitHubOAuthFrontendRedirectURL
+	}
+
+	if !req.fieldProvided("site_name") {
+		req.SiteName = current.SiteName
+	}
+	if !req.fieldProvided("site_logo") {
+		req.SiteLogo = current.SiteLogo
+	}
+	if !req.fieldProvided("site_subtitle") {
+		req.SiteSubtitle = current.SiteSubtitle
+	}
+	if !req.fieldProvided("api_base_url") {
+		req.APIBaseURL = current.APIBaseURL
+	}
+	if !req.fieldProvided("contact_info") {
+		req.ContactInfo = current.ContactInfo
+	}
+	if !req.fieldProvided("tech_support_qrcode") {
+		req.TechSupportQRCode = current.TechSupportQRCode
+	}
+	if !req.fieldProvided("after_sales_qrcode") {
+		req.AfterSalesQRCode = current.AfterSalesQRCode
+	}
+	if !req.fieldProvided("doc_url") {
+		req.DocURL = current.DocURL
+	}
+	if !req.fieldProvided("chatbot_url") {
+		req.ChatbotURL = current.ChatbotURL
+	}
+	if !req.fieldProvided("home_content") {
+		req.HomeContent = current.HomeContent
+	}
+	if !req.fieldProvided("hide_ccs_import_button") {
+		req.HideCcsImportButton = current.HideCcsImportButton
+	}
+	if !req.fieldProvided("sora_client_enabled") {
+		req.SoraClientEnabled = current.SoraClientEnabled
+	}
+	if !req.fieldProvided("table_default_page_size") {
+		req.TableDefaultPageSize = current.TableDefaultPageSize
+	}
+	if !req.fieldProvided("table_page_size_options") {
+		req.TablePageSizeOptions = append([]int(nil), current.TablePageSizeOptions...)
+	}
+
+	if !req.fieldProvided("default_concurrency") {
+		req.DefaultConcurrency = current.DefaultConcurrency
+	}
+	if !req.fieldProvided("default_balance") {
+		req.DefaultBalance = current.DefaultBalance
+	}
+	if !req.fieldProvided("default_subscriptions") {
+		req.DefaultSubscriptions = make([]dto.DefaultSubscriptionSetting, 0, len(current.DefaultSubscriptions))
+		for _, sub := range current.DefaultSubscriptions {
+			req.DefaultSubscriptions = append(req.DefaultSubscriptions, dto.DefaultSubscriptionSetting{
+				GroupID:      sub.GroupID,
+				ValidityDays: sub.ValidityDays,
+			})
+		}
+	}
+
+	if !req.fieldProvided("enable_model_fallback") {
+		req.EnableModelFallback = current.EnableModelFallback
+	}
+	if !req.fieldProvided("fallback_model_anthropic") {
+		req.FallbackModelAnthropic = current.FallbackModelAnthropic
+	}
+	if !req.fieldProvided("fallback_model_openai") {
+		req.FallbackModelOpenAI = current.FallbackModelOpenAI
+	}
+	if !req.fieldProvided("fallback_model_gemini") {
+		req.FallbackModelGemini = current.FallbackModelGemini
+	}
+	if !req.fieldProvided("fallback_model_antigravity") {
+		req.FallbackModelAntigravity = current.FallbackModelAntigravity
+	}
+	if !req.fieldProvided("enable_identity_patch") {
+		req.EnableIdentityPatch = current.EnableIdentityPatch
+	}
+	if !req.fieldProvided("identity_patch_prompt") {
+		req.IdentityPatchPrompt = current.IdentityPatchPrompt
+	}
+	if !req.fieldProvided("min_claude_code_version") {
+		req.MinClaudeCodeVersion = current.MinClaudeCodeVersion
+	}
+	if !req.fieldProvided("max_claude_code_version") {
+		req.MaxClaudeCodeVersion = current.MaxClaudeCodeVersion
+	}
+	if !req.fieldProvided("allow_ungrouped_key_scheduling") {
+		req.AllowUngroupedKeyScheduling = current.AllowUngroupedKeyScheduling
+	}
+	if !req.fieldProvided("backend_mode_enabled") {
+		req.BackendModeEnabled = current.BackendModeEnabled
+	}
+
+	if !req.fieldProvided("stripe_enabled") {
+		req.StripeEnabled = current.StripeEnabled
+	}
+	if !req.fieldProvided("alipay_enabled") {
+		req.AlipayEnabled = current.AlipayEnabled
+	}
+	if !req.fieldProvided("alipay_app_id") {
+		req.AlipayAppID = current.AlipayAppID
+	}
+	if !req.fieldProvided("alipay_notify_url") {
+		req.AlipayNotifyURL = current.AlipayNotifyURL
+	}
+	if !req.fieldProvided("xunhu_alipay_enabled") {
+		req.XunhuAlipayEnabled = current.XunhuAlipayEnabled
+	}
+	if !req.fieldProvided("xunhu_alipay_appid") {
+		req.XunhuAlipayAppID = current.XunhuAlipayAppID
+	}
+	if !req.fieldProvided("xunhu_wechat_enabled") {
+		req.XunhuWechatEnabled = current.XunhuWechatEnabled
+	}
+	if !req.fieldProvided("xunhu_wechat_appid") {
+		req.XunhuWechatAppID = current.XunhuWechatAppID
+	}
+	if !req.fieldProvided("xunhu_notify_url") {
+		req.XunhuNotifyURL = current.XunhuNotifyURL
+	}
 }
 
 // UpdateSettings 更新系统设置
@@ -395,11 +753,19 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		return
 	}
 
+	// Keep read/merge/validate/write atomic within this process so concurrent
+	// partial updates cannot violate cross-field invariants (for example,
+	// enabling a shop while another request clears its products).
+	h.updateMu.Lock()
+	defer h.updateMu.Unlock()
+
 	previousSettings, err := h.settingService.GetAllSettings(c.Request.Context())
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
+	mergeOmittedSettings(&req, previousSettings)
+	providedSettingKeys := req.providedSettingKeys()
 
 	// 验证参数
 	if req.DefaultConcurrency < 1 {
@@ -425,15 +791,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	}
 	req.DefaultSubscriptions = normalizeDefaultSubscriptions(req.DefaultSubscriptions)
 
-	// SMTP 配置保护：如果请求中 smtp_host 为空但数据库中已有配置，则保留已有 SMTP 配置
-	// 防止前端加载设置失败时空表单覆盖已保存的 SMTP 配置
-	if req.SMTPHost == "" && previousSettings.SMTPHost != "" {
-		req.SMTPHost = previousSettings.SMTPHost
-		req.SMTPPort = previousSettings.SMTPPort
-		req.SMTPUsername = previousSettings.SMTPUsername
-		req.SMTPFrom = previousSettings.SMTPFrom
-		req.SMTPFromName = previousSettings.SMTPFromName
-		req.SMTPUseTLS = previousSettings.SMTPUseTLS
+	req.APIBaseURL = strings.TrimSpace(req.APIBaseURL)
+	if req.APIBaseURL != "" {
+		if err := config.ValidateAbsoluteHTTPURL(req.APIBaseURL); err != nil {
+			response.BadRequest(c, "API Base URL must be an absolute http(s) URL")
+			return
+		}
 	}
 
 	// Turnstile 参数验证
@@ -1167,7 +1530,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		XunhuNotifyURL:      req.XunhuNotifyURL,
 	}
 
-	if err := h.settingService.UpdateSettings(c.Request.Context(), settings); err != nil {
+	if err := h.settingService.UpdateSettingsPartial(c.Request.Context(), settings, providedSettingKeys); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -1424,7 +1787,7 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.SMTPUsername != after.SMTPUsername {
 		changed = append(changed, "smtp_username")
 	}
-	if req.SMTPPassword != "" {
+	if req.nonEmptySecretProvided("smtp_password") {
 		changed = append(changed, "smtp_password")
 	}
 	if before.SMTPFrom != after.SMTPFrom {
@@ -1442,7 +1805,7 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.TurnstileSiteKey != after.TurnstileSiteKey {
 		changed = append(changed, "turnstile_site_key")
 	}
-	if req.TurnstileSecretKey != "" {
+	if req.nonEmptySecretProvided("turnstile_secret_key") {
 		changed = append(changed, "turnstile_secret_key")
 	}
 	if before.LinuxDoConnectEnabled != after.LinuxDoConnectEnabled {
@@ -1451,7 +1814,7 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.LinuxDoConnectClientID != after.LinuxDoConnectClientID {
 		changed = append(changed, "linuxdo_connect_client_id")
 	}
-	if req.LinuxDoConnectClientSecret != "" {
+	if req.nonEmptySecretProvided("linuxdo_connect_client_secret") {
 		changed = append(changed, "linuxdo_connect_client_secret")
 	}
 	if before.LinuxDoConnectRedirectURL != after.LinuxDoConnectRedirectURL {
@@ -1466,7 +1829,7 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.OIDCConnectClientID != after.OIDCConnectClientID {
 		changed = append(changed, "oidc_connect_client_id")
 	}
-	if req.OIDCConnectClientSecret != "" {
+	if req.nonEmptySecretProvided("oidc_connect_client_secret") {
 		changed = append(changed, "oidc_connect_client_secret")
 	}
 	if before.OIDCConnectIssuerURL != after.OIDCConnectIssuerURL {
@@ -1529,7 +1892,7 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.GitHubOAuthClientID != after.GitHubOAuthClientID {
 		changed = append(changed, "github_oauth_client_id")
 	}
-	if req.GitHubOAuthClientSecret != "" {
+	if req.nonEmptySecretProvided("github_oauth_client_secret") {
 		changed = append(changed, "github_oauth_client_secret")
 	}
 	if before.GitHubOAuthRedirectURL != after.GitHubOAuthRedirectURL {

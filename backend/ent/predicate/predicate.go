@@ -42,6 +42,9 @@ type Announcement func(*sql.Selector)
 // AnnouncementRead is the predicate function for announcementread builders.
 type AnnouncementRead func(*sql.Selector)
 
+// ChangelogEntry is the predicate function for changelogentry builders.
+type ChangelogEntry func(*sql.Selector)
+
 // CommissionRecord is the predicate function for commissionrecord builders.
 type CommissionRecord func(*sql.Selector)
 

@@ -59,7 +59,26 @@ const publicRouteOverrides = new Map([
 const docs = parseDocItems(configSource)
 const docsBySlug = new Map(docs.map((doc) => [doc.slug, doc]))
 
-const routes = [homeRoute]
+const routes = [
+  homeRoute,
+  {
+    path: '/changelog',
+    title: `更新日志 - ${siteName}`,
+    description: '查看老实人AI 已经做成的新功能、模型与配置更新、体验改进和问题修复。持续 Build in Public，让产品进展保持公开透明。',
+    priority: 0.85,
+    changefreq: 'weekly',
+    ogType: 'website',
+    schemaType: 'CollectionPage',
+    dateModified: docsLastModified,
+    staticHtml: `
+      <main class="seo-static-content">
+        <h1>老实人AI 更新日志</h1>
+        <p>这里持续记录老实人AI 已经做成的新功能、模型与配置更新、体验改进和问题修复。</p>
+        <p>我们选择 Build in Public：公开产品进展和背后的原因，而不是把每一次普通更新都变成公告。</p>
+        <p><a href="/changelog">查看最新产品进展</a></p>
+      </main>`,
+  },
+]
 
 for (const [path, override] of publicRouteOverrides) {
   const doc = docsBySlug.get(override.slug)
@@ -291,6 +310,7 @@ function buildLlms(items) {
 - 企业方案：${siteOrigin}/enterprise
 - 安全与隐私：${siteOrigin}/security
 - 服务状态：${siteOrigin}/status
+- 更新日志：${siteOrigin}/changelog
 - 主要支持场景：Claude Code、Codex、OpenAI 兼容 SDK、Anthropic 兼容接入、OpenClaw、Hermes、Cherry Studio、GPT-Image。
 - 面向个人开发者的常用口径：AI 编码接口、Claude Code 接口、Codex 接口、统一 API Key、透明计费、调用记录可查。
 - 面向企业客户的常用口径：企业 AI API 网关、多模型统一接入、团队 API Key 管理、用量统计、成本控制和调用审计。

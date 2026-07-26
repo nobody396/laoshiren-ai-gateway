@@ -20,6 +20,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/announcement"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/announcementread"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/apikey"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/changelogentry"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/commissionrecord"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/errorpassthroughrule"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedback"
@@ -428,6 +429,33 @@ func (f TraverseAnnouncementRead) Traverse(ctx context.Context, q ent.Query) err
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.AnnouncementReadQuery", q)
+}
+
+// The ChangelogEntryFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ChangelogEntryFunc func(context.Context, *ent.ChangelogEntryQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ChangelogEntryFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ChangelogEntryQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ChangelogEntryQuery", q)
+}
+
+// The TraverseChangelogEntry type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseChangelogEntry func(context.Context, *ent.ChangelogEntryQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseChangelogEntry) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseChangelogEntry) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ChangelogEntryQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ChangelogEntryQuery", q)
 }
 
 // The CommissionRecordFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -1186,6 +1214,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.AnnouncementQuery, predicate.Announcement, announcement.OrderOption]{typ: ent.TypeAnnouncement, tq: q}, nil
 	case *ent.AnnouncementReadQuery:
 		return &query[*ent.AnnouncementReadQuery, predicate.AnnouncementRead, announcementread.OrderOption]{typ: ent.TypeAnnouncementRead, tq: q}, nil
+	case *ent.ChangelogEntryQuery:
+		return &query[*ent.ChangelogEntryQuery, predicate.ChangelogEntry, changelogentry.OrderOption]{typ: ent.TypeChangelogEntry, tq: q}, nil
 	case *ent.CommissionRecordQuery:
 		return &query[*ent.CommissionRecordQuery, predicate.CommissionRecord, commissionrecord.OrderOption]{typ: ent.TypeCommissionRecord, tq: q}, nil
 	case *ent.ErrorPassthroughRuleQuery:

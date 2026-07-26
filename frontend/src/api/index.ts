@@ -17,6 +17,7 @@ export { redeemAPI, type RedeemHistoryItem } from './redeem'
 export { userGroupsAPI } from './groups'
 export { totpAPI } from './totp'
 export { default as announcementsAPI } from './announcements'
+export { default as changelogAPI } from './changelog'
 export { invoiceAPI } from './invoice'
 export { resourcesAPI } from './resources'
 

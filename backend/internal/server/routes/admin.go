@@ -35,6 +35,7 @@ func RegisterAdminRoutes(
 
 		// 公告管理
 		registerAnnouncementRoutes(admin, h)
+		registerChangelogRoutes(admin, h)
 		registerFeedbackRoutes(admin, h)
 
 		// 财务记账（真实现金流水，独立于成本核算理论毛利率）
@@ -393,6 +394,17 @@ func registerAnnouncementRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		announcements.PUT("/:id", h.Admin.Announcement.Update)
 		announcements.DELETE("/:id", h.Admin.Announcement.Delete)
 		announcements.GET("/:id/read-status", h.Admin.Announcement.ListReadStatus)
+	}
+}
+
+func registerChangelogRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	changelog := admin.Group("/changelog")
+	{
+		changelog.GET("", h.Admin.Changelog.List)
+		changelog.POST("", h.Admin.Changelog.Create)
+		changelog.GET("/:id", h.Admin.Changelog.GetByID)
+		changelog.PUT("/:id", h.Admin.Changelog.Update)
+		changelog.DELETE("/:id", h.Admin.Changelog.Delete)
 	}
 }
 

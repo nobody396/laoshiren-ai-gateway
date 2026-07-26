@@ -47,6 +47,26 @@ const routes: RouteRecordRaw[] = [
     path: '/home',
     redirect: '/'
   },
+  {
+    path: '/changelog',
+    name: 'Changelog',
+    component: () => import('@/views/changelog/ChangelogView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: '更新日志',
+      description: '查看老实人AI 已经做成的新功能、模型与配置更新、体验改进和问题修复。持续 Build in Public，让产品进展保持公开透明。'
+    }
+  },
+  {
+    path: '/changelog/:slug',
+    name: 'ChangelogDetail',
+    component: () => import('@/views/changelog/ChangelogDetailView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: '更新日志',
+      description: '老实人AI Build in Public 进展记录，说明我们做成了什么，以及为什么这样做。'
+    }
+  },
 
   // ==================== Documentation Routes ====================
   {
@@ -652,6 +672,19 @@ const routes: RouteRecordRaw[] = [
       title: 'Announcements',
       titleKey: 'admin.announcements.title',
       descriptionKey: 'admin.announcements.description'
+    }
+  },
+  {
+    path: '/admin/changelog',
+    name: 'AdminChangelog',
+    component: () => import('@/views/admin/ChangelogView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      permission: 'admin:changelog',
+      title: 'Changelog',
+      titleKey: 'admin.changelog.title',
+      descriptionKey: 'admin.changelog.description'
     }
   },
   {

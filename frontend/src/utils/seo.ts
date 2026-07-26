@@ -12,6 +12,8 @@ const DOCS_DESCRIPTION = '老实人AI 文档中心提供 Claude Code、Codex、O
 
 const INDEXABLE_ROUTE_NAMES = new Set([
   'Home',
+  'Changelog',
+  'ChangelogDetail',
   'Docs',
   'DocsPage',
   'Enterprise',
@@ -27,6 +29,7 @@ type SeoOptions = {
   siteName?: string
   siteLogo?: string
   customTitle?: string
+  customDescription?: string
 }
 
 type RouteSeo = {
@@ -240,6 +243,31 @@ function buildStructuredData(route: RouteLocationNormalizedLoaded, seo: Omit<Rou
     }
   }
 
+  if (route.name === 'Changelog' || route.name === 'ChangelogDetail') {
+    const isDetail = route.name === 'ChangelogDetail'
+    return {
+      '@context': 'https://schema.org',
+      '@graph': [
+        org,
+        {
+          '@type': isDetail ? 'Article' : 'CollectionPage',
+          '@id': `${seo.canonicalUrl}#${isDetail ? 'article' : 'webpage'}`,
+          url: seo.canonicalUrl,
+          ...(isDetail ? { headline: seo.title, mainEntityOfPage: seo.canonicalUrl } : { name: seo.title }),
+          description: seo.description,
+          author: { '@id': org['@id'] },
+          publisher: { '@id': org['@id'] },
+          inLanguage: 'zh-CN'
+        },
+        buildBreadcrumb([
+          { name: siteName, url: absoluteUrl('/') },
+          { name: '更新日志', url: absoluteUrl('/changelog') },
+          ...(isDetail ? [{ name: seo.title, url: seo.canonicalUrl }] : [])
+        ])
+      ]
+    }
+  }
+
   if (route.name !== 'DocsPage') {
     return {
       '@context': 'https://schema.org',
@@ -292,9 +320,10 @@ function resolveRouteSeo(route: RouteLocationNormalizedLoaded, options: SeoOptio
   const siteName = options.siteName?.trim() || DEFAULT_SITE_NAME
   const canonicalUrl = absoluteUrl(resolveCanonicalPath(route))
   const title = resolveTitle(route, siteName, options.customTitle)
-  const description = resolveDescription(route)
+  const description = options.customDescription?.trim() || resolveDescription(route)
   const robots = isIndexableRoute(route) ? 'index,follow' : 'noindex,nofollow'
-  const ogType: RouteSeo['ogType'] = route.name === 'DocsPage' ? 'article' : 'website'
+  const ogType: RouteSeo['ogType'] =
+    route.name === 'DocsPage' || route.name === 'ChangelogDetail' ? 'article' : 'website'
   const withoutStructuredData = { title, description, canonicalUrl, robots, ogType }
   return {
     ...withoutStructuredData,

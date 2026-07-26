@@ -104,30 +104,30 @@ const monthlyCreditTitle = computed(() => (isEnglish.value ? 'Developer Monthly 
 const navItems = computed(() => {
   const labels = isEnglish.value
     ? {
-      home: 'Home',
       enterprise: 'Enterprise',
       reports: 'Reports',
       pricing: 'Pricing',
       status: 'Status',
+      changelog: 'Changelog',
       docs: 'Docs'
     }
     : {
-      home: '首页',
       enterprise: '企业',
       reports: '报告',
       pricing: '定价',
       status: '服务状态',
+      changelog: '更新日志',
       docs: '文档'
     }
 
   return [
-    { label: labels.home, href: '#', active: true, external: false, routerPush: false },
     { label: labels.enterprise, href: '/enterprise', active: false, external: false, routerPush: true },
     ...(showModelReports.value
       ? [{ label: labels.reports, href: '#model-reports', active: false, external: false, routerPush: false }]
       : []),
     { label: labels.pricing, href: '#model-pricing', active: false, external: false, routerPush: false },
     { label: labels.status, href: '/status', active: false, external: false, routerPush: true },
+    { label: labels.changelog, href: '/changelog', active: false, external: false, routerPush: true },
     { label: labels.docs, href: '/docs', active: false, external: false, routerPush: true }
   ]
 })
@@ -1007,6 +1007,7 @@ const footerSections = computed(() => {
       reports: 'Model verification reports',
       pricing: 'Pricing',
       enterprise: 'Enterprise',
+      changelog: 'Build in Public',
       login: 'Login',
       guides: 'Guides',
       claudeCodeChina: 'Claude Code in China',
@@ -1028,6 +1029,7 @@ const footerSections = computed(() => {
       reports: '模型检测报告',
       pricing: '价格方案',
       enterprise: '企业方案',
+      changelog: '公开构建',
       login: '登录',
       guides: '高意图指南',
       claudeCodeChina: 'Claude Code 国内使用',
@@ -1054,6 +1056,7 @@ const footerSections = computed(() => {
           : []),
         { label: labels.pricing, href: '#model-pricing', external: false },
         { label: labels.enterprise, href: '/enterprise', external: false },
+        { label: labels.changelog, href: '/changelog', external: false },
         { label: labels.login, href: '/login', external: false }
       ]
     },

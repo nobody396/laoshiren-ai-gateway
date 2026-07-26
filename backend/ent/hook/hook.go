@@ -153,6 +153,18 @@ func (f AnnouncementReadFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.V
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AnnouncementReadMutation", m)
 }
 
+// The ChangelogEntryFunc type is an adapter to allow the use of ordinary
+// function as ChangelogEntry mutator.
+type ChangelogEntryFunc func(context.Context, *ent.ChangelogEntryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ChangelogEntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ChangelogEntryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ChangelogEntryMutation", m)
+}
+
 // The CommissionRecordFunc type is an adapter to allow the use of ordinary
 // function as CommissionRecord mutator.
 type CommissionRecordFunc func(context.Context, *ent.CommissionRecordMutation) (ent.Value, error)

@@ -366,6 +366,8 @@ export default {
     copied: 'Copied',
     copy: 'Copy',
     copyFailed: 'Failed to copy',
+    preview: 'Preview',
+    retry: 'Retry',
     prev: 'Prev',
     showing: 'Showing',
     user: 'User',
@@ -410,6 +412,7 @@ export default {
   nav: {
     dashboard: 'Dashboard',
     announcements: 'Announcements',
+    changelog: 'Changelog',
     financeTransactions: 'Finance Ledger',
     apiKeys: 'API Keys',
     usage: 'Usage',
@@ -3982,6 +3985,72 @@ export default {
       deleteConfirm: 'Are you sure you want to delete this announcement? This action cannot be undone.'
     },
 
+    changelog: {
+      title: 'Changelog',
+      description: 'Write, preview, and publish Build in Public updates',
+      createEntry: 'Record an update',
+      editEntry: 'Edit update',
+      editorDescription: 'Record what we built and why. Git metadata stays internal.',
+      search: 'Search title or summary...',
+      allStatuses: 'All statuses',
+      allCategories: 'All categories',
+      saveDraft: 'Save draft',
+      publish: 'Publish',
+      updatePublished: 'Update published entry',
+      republish: 'Publish again',
+      archive: 'Archive',
+      archived: 'Archived',
+      copyLink: 'Copy public link',
+      publicPreview: 'Public preview',
+      linkCopied: 'Public link copied',
+      draftSaved: 'Draft saved',
+      published: 'Published',
+      updated: 'Changes saved',
+      deleted: 'Draft deleted',
+      loadFailed: 'Failed to load changelog',
+      saveFailed: 'Failed to save changelog entry',
+      deleteFailed: 'Failed to delete draft',
+      deleteTitle: 'Delete draft',
+      deleteConfirm: 'Delete this draft? This action cannot be undone.',
+      emptyTitle: 'No updates yet',
+      emptyDescription: 'Start with the first Build in Public entry.',
+      previewTitle: 'We just shipped something new',
+      previewSummary: 'Summarize what was completed in one sentence.',
+      previewRationale: 'Explain why we chose to build it.',
+      columns: {
+        title: 'Title',
+        category: 'Category',
+        status: 'Status',
+        publishedAt: 'Published at',
+        publicLink: 'Public link',
+        actions: 'Actions'
+      },
+      statuses: {
+        draft: 'Draft',
+        published: 'Published',
+        scheduled: 'Scheduled',
+        archived: 'Archived'
+      },
+      form: {
+        title: 'Title',
+        summary: 'One-line summary',
+        summaryHint: 'Describe only what has shipped, without asking users to take action.',
+        rationale: 'Why we built it',
+        category: 'Category',
+        publishedAt: 'Publish date',
+        relatedProducts: 'Related products',
+        relatedProductsPlaceholder: 'For example: Claude Code, Codex',
+        relatedProductsHint: 'Separate multiple products with commas.',
+        content: 'Full update',
+        contentPlaceholder: 'Describe what shipped, the tradeoffs, and what changed...',
+        editorFallback: 'The Markdown editor failed to load, so plain text input is being used.',
+        gitTraceability: 'Internal traceability (optional)',
+        gitTraceabilityHint: 'Commits and PRs are internal only. They never appear publicly or create changelog entries automatically.',
+        slug: 'Public URL slug',
+        slugPlaceholder: 'Leave empty to generate automatically'
+      }
+    },
+
     // Finance Ledger (manual bookkeeping of real cash in/out, independent of the
     // theoretical cost-accounting margin calculator)
     financeTransactions: {
@@ -5743,6 +5812,32 @@ export default {
     emptyDescription: 'There are no system announcements at this time',
     readStatus: 'You have read this announcement',
     markReadHint: 'Click "Mark as read" to mark this announcement'
+  },
+
+  changelog: {
+    title: 'What we have been building',
+    subtitle: 'A running record of features, configurations, and experience improvements we have shipped. Building in public, one step at a time.',
+    feedTitle: 'Product updates',
+    filterLabel: 'Filter by update type',
+    search: 'Search updates...',
+    whyBuilt: 'Why we built it',
+    relatedProducts: 'Related products',
+    viewDetails: 'Read the full update',
+    loadMore: 'Load more',
+    loadFailed: 'Failed to load the changelog',
+    emptyTitle: 'The first update is on its way',
+    emptyDescription: 'We will keep recording what we build here.',
+    backToList: 'Back to changelog',
+    copyLink: 'Copy link',
+    newUpdate: 'New product update available',
+    notFound: 'This update does not exist or is not public yet.',
+    categories: {
+      all: 'All',
+      feature: 'New feature',
+      modelConfig: 'Models & config',
+      improvement: 'Improvement',
+      fix: 'Fix'
+    }
   },
 
   feedback: {

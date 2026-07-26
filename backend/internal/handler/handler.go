@@ -12,6 +12,7 @@ type AdminHandlers struct {
 	Group                 *admin.GroupHandler
 	Account               *admin.AccountHandler
 	Announcement          *admin.AnnouncementHandler
+	Changelog             *admin.ChangelogHandler
 	Feedback              *admin.FeedbackHandler
 	FinanceTransaction    *admin.FinanceTransactionHandler
 	DataManagement        *admin.DataManagementHandler
@@ -49,6 +50,7 @@ type Handlers struct {
 	Redeem        *RedeemHandler
 	Subscription  *SubscriptionHandler
 	Announcement  *AnnouncementHandler
+	Changelog     *ChangelogHandler
 	Invoice       *InvoiceHandler
 	Feedback      *FeedbackHandler
 	Admin         *AdminHandlers

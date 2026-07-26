@@ -100,6 +100,14 @@ func RegisterAuthRoutes(
 		settings.GET("/public", h.Setting.GetPublicSettings)
 	}
 
+	// Build in Public 更新日志（公开、无鉴权）。
+	changelog := v1.Group("/changelog")
+	{
+		changelog.GET("", h.Changelog.List)
+		changelog.GET("/latest", h.Changelog.Latest)
+		changelog.GET("/:slug", h.Changelog.GetBySlug)
+	}
+
 	// 月卡公开配置（无需认证，落地页和充值页用于展示额度）
 	if h.Admin != nil && h.Admin.Ops != nil {
 		v1.GET("/monthly-card/status", h.Admin.Ops.GetPublicMonthlyCardStatus)

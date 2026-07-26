@@ -27,6 +27,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/announcement"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/announcementread"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/apikey"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/changelogentry"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/commissionrecord"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/errorpassthroughrule"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedback"
@@ -87,6 +88,8 @@ type Client struct {
 	Announcement *AnnouncementClient
 	// AnnouncementRead is the client for interacting with the AnnouncementRead builders.
 	AnnouncementRead *AnnouncementReadClient
+	// ChangelogEntry is the client for interacting with the ChangelogEntry builders.
+	ChangelogEntry *ChangelogEntryClient
 	// CommissionRecord is the client for interacting with the CommissionRecord builders.
 	CommissionRecord *CommissionRecordClient
 	// ErrorPassthroughRule is the client for interacting with the ErrorPassthroughRule builders.
@@ -164,6 +167,7 @@ func (c *Client) init() {
 	c.AdminUserRole = NewAdminUserRoleClient(c.config)
 	c.Announcement = NewAnnouncementClient(c.config)
 	c.AnnouncementRead = NewAnnouncementReadClient(c.config)
+	c.ChangelogEntry = NewChangelogEntryClient(c.config)
 	c.CommissionRecord = NewCommissionRecordClient(c.config)
 	c.ErrorPassthroughRule = NewErrorPassthroughRuleClient(c.config)
 	c.Feedback = NewFeedbackClient(c.config)
@@ -295,6 +299,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		AdminUserRole:           NewAdminUserRoleClient(cfg),
 		Announcement:            NewAnnouncementClient(cfg),
 		AnnouncementRead:        NewAnnouncementReadClient(cfg),
+		ChangelogEntry:          NewChangelogEntryClient(cfg),
 		CommissionRecord:        NewCommissionRecordClient(cfg),
 		ErrorPassthroughRule:    NewErrorPassthroughRuleClient(cfg),
 		Feedback:                NewFeedbackClient(cfg),
@@ -353,6 +358,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		AdminUserRole:           NewAdminUserRoleClient(cfg),
 		Announcement:            NewAnnouncementClient(cfg),
 		AnnouncementRead:        NewAnnouncementReadClient(cfg),
+		ChangelogEntry:          NewChangelogEntryClient(cfg),
 		CommissionRecord:        NewCommissionRecordClient(cfg),
 		ErrorPassthroughRule:    NewErrorPassthroughRuleClient(cfg),
 		Feedback:                NewFeedbackClient(cfg),
@@ -411,13 +417,14 @@ func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.APIKey, c.Account, c.AccountChangeRecord, c.AccountGroup, c.AdminAPI,
 		c.AdminMenu, c.AdminRole, c.AdminRoleAPI, c.AdminRoleMenu, c.AdminUserRole,
-		c.Announcement, c.AnnouncementRead, c.CommissionRecord, c.ErrorPassthroughRule,
-		c.Feedback, c.FeedbackReply, c.FinanceTransaction, c.Group,
-		c.IdempotencyRecord, c.InvoiceProfile, c.InvoiceRequest, c.InvoiceRequestOrder,
-		c.PaymentOrder, c.PromoCode, c.PromoCodeUsage, c.Proxy, c.RedeemCode,
-		c.RedeemCodeBatch, c.SecuritySecret, c.Setting, c.TLSFingerprintProfile,
-		c.TopupOrder, c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
-		c.UserAttributeDefinition, c.UserAttributeValue, c.UserSubscription,
+		c.Announcement, c.AnnouncementRead, c.ChangelogEntry, c.CommissionRecord,
+		c.ErrorPassthroughRule, c.Feedback, c.FeedbackReply, c.FinanceTransaction,
+		c.Group, c.IdempotencyRecord, c.InvoiceProfile, c.InvoiceRequest,
+		c.InvoiceRequestOrder, c.PaymentOrder, c.PromoCode, c.PromoCodeUsage, c.Proxy,
+		c.RedeemCode, c.RedeemCodeBatch, c.SecuritySecret, c.Setting,
+		c.TLSFingerprintProfile, c.TopupOrder, c.UsageCleanupTask, c.UsageLog, c.User,
+		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.UserSubscription,
 	} {
 		n.Use(hooks...)
 	}
@@ -429,13 +436,14 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.APIKey, c.Account, c.AccountChangeRecord, c.AccountGroup, c.AdminAPI,
 		c.AdminMenu, c.AdminRole, c.AdminRoleAPI, c.AdminRoleMenu, c.AdminUserRole,
-		c.Announcement, c.AnnouncementRead, c.CommissionRecord, c.ErrorPassthroughRule,
-		c.Feedback, c.FeedbackReply, c.FinanceTransaction, c.Group,
-		c.IdempotencyRecord, c.InvoiceProfile, c.InvoiceRequest, c.InvoiceRequestOrder,
-		c.PaymentOrder, c.PromoCode, c.PromoCodeUsage, c.Proxy, c.RedeemCode,
-		c.RedeemCodeBatch, c.SecuritySecret, c.Setting, c.TLSFingerprintProfile,
-		c.TopupOrder, c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
-		c.UserAttributeDefinition, c.UserAttributeValue, c.UserSubscription,
+		c.Announcement, c.AnnouncementRead, c.ChangelogEntry, c.CommissionRecord,
+		c.ErrorPassthroughRule, c.Feedback, c.FeedbackReply, c.FinanceTransaction,
+		c.Group, c.IdempotencyRecord, c.InvoiceProfile, c.InvoiceRequest,
+		c.InvoiceRequestOrder, c.PaymentOrder, c.PromoCode, c.PromoCodeUsage, c.Proxy,
+		c.RedeemCode, c.RedeemCodeBatch, c.SecuritySecret, c.Setting,
+		c.TLSFingerprintProfile, c.TopupOrder, c.UsageCleanupTask, c.UsageLog, c.User,
+		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -468,6 +476,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Announcement.mutate(ctx, m)
 	case *AnnouncementReadMutation:
 		return c.AnnouncementRead.mutate(ctx, m)
+	case *ChangelogEntryMutation:
+		return c.ChangelogEntry.mutate(ctx, m)
 	case *CommissionRecordMutation:
 		return c.CommissionRecord.mutate(ctx, m)
 	case *ErrorPassthroughRuleMutation:
@@ -2299,6 +2309,139 @@ func (c *AnnouncementReadClient) mutate(ctx context.Context, m *AnnouncementRead
 		return (&AnnouncementReadDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown AnnouncementRead mutation op: %q", m.Op())
+	}
+}
+
+// ChangelogEntryClient is a client for the ChangelogEntry schema.
+type ChangelogEntryClient struct {
+	config
+}
+
+// NewChangelogEntryClient returns a client for the ChangelogEntry from the given config.
+func NewChangelogEntryClient(c config) *ChangelogEntryClient {
+	return &ChangelogEntryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `changelogentry.Hooks(f(g(h())))`.
+func (c *ChangelogEntryClient) Use(hooks ...Hook) {
+	c.hooks.ChangelogEntry = append(c.hooks.ChangelogEntry, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `changelogentry.Intercept(f(g(h())))`.
+func (c *ChangelogEntryClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ChangelogEntry = append(c.inters.ChangelogEntry, interceptors...)
+}
+
+// Create returns a builder for creating a ChangelogEntry entity.
+func (c *ChangelogEntryClient) Create() *ChangelogEntryCreate {
+	mutation := newChangelogEntryMutation(c.config, OpCreate)
+	return &ChangelogEntryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ChangelogEntry entities.
+func (c *ChangelogEntryClient) CreateBulk(builders ...*ChangelogEntryCreate) *ChangelogEntryCreateBulk {
+	return &ChangelogEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ChangelogEntryClient) MapCreateBulk(slice any, setFunc func(*ChangelogEntryCreate, int)) *ChangelogEntryCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ChangelogEntryCreateBulk{err: fmt.Errorf("calling to ChangelogEntryClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ChangelogEntryCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ChangelogEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ChangelogEntry.
+func (c *ChangelogEntryClient) Update() *ChangelogEntryUpdate {
+	mutation := newChangelogEntryMutation(c.config, OpUpdate)
+	return &ChangelogEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ChangelogEntryClient) UpdateOne(_m *ChangelogEntry) *ChangelogEntryUpdateOne {
+	mutation := newChangelogEntryMutation(c.config, OpUpdateOne, withChangelogEntry(_m))
+	return &ChangelogEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ChangelogEntryClient) UpdateOneID(id int64) *ChangelogEntryUpdateOne {
+	mutation := newChangelogEntryMutation(c.config, OpUpdateOne, withChangelogEntryID(id))
+	return &ChangelogEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ChangelogEntry.
+func (c *ChangelogEntryClient) Delete() *ChangelogEntryDelete {
+	mutation := newChangelogEntryMutation(c.config, OpDelete)
+	return &ChangelogEntryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ChangelogEntryClient) DeleteOne(_m *ChangelogEntry) *ChangelogEntryDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ChangelogEntryClient) DeleteOneID(id int64) *ChangelogEntryDeleteOne {
+	builder := c.Delete().Where(changelogentry.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ChangelogEntryDeleteOne{builder}
+}
+
+// Query returns a query builder for ChangelogEntry.
+func (c *ChangelogEntryClient) Query() *ChangelogEntryQuery {
+	return &ChangelogEntryQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeChangelogEntry},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ChangelogEntry entity by its id.
+func (c *ChangelogEntryClient) Get(ctx context.Context, id int64) (*ChangelogEntry, error) {
+	return c.Query().Where(changelogentry.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ChangelogEntryClient) GetX(ctx context.Context, id int64) *ChangelogEntry {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *ChangelogEntryClient) Hooks() []Hook {
+	return c.hooks.ChangelogEntry
+}
+
+// Interceptors returns the client interceptors.
+func (c *ChangelogEntryClient) Interceptors() []Interceptor {
+	return c.inters.ChangelogEntry
+}
+
+func (c *ChangelogEntryClient) mutate(ctx context.Context, m *ChangelogEntryMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ChangelogEntryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ChangelogEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ChangelogEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ChangelogEntryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ChangelogEntry mutation op: %q", m.Op())
 	}
 }
 
@@ -6885,10 +7028,10 @@ type (
 	hooks struct {
 		APIKey, Account, AccountChangeRecord, AccountGroup, AdminAPI, AdminMenu,
 		AdminRole, AdminRoleAPI, AdminRoleMenu, AdminUserRole, Announcement,
-		AnnouncementRead, CommissionRecord, ErrorPassthroughRule, Feedback,
-		FeedbackReply, FinanceTransaction, Group, IdempotencyRecord, InvoiceProfile,
-		InvoiceRequest, InvoiceRequestOrder, PaymentOrder, PromoCode, PromoCodeUsage,
-		Proxy, RedeemCode, RedeemCodeBatch, SecuritySecret, Setting,
+		AnnouncementRead, ChangelogEntry, CommissionRecord, ErrorPassthroughRule,
+		Feedback, FeedbackReply, FinanceTransaction, Group, IdempotencyRecord,
+		InvoiceProfile, InvoiceRequest, InvoiceRequestOrder, PaymentOrder, PromoCode,
+		PromoCodeUsage, Proxy, RedeemCode, RedeemCodeBatch, SecuritySecret, Setting,
 		TLSFingerprintProfile, TopupOrder, UsageCleanupTask, UsageLog, User,
 		UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
 		UserSubscription []ent.Hook
@@ -6896,10 +7039,10 @@ type (
 	inters struct {
 		APIKey, Account, AccountChangeRecord, AccountGroup, AdminAPI, AdminMenu,
 		AdminRole, AdminRoleAPI, AdminRoleMenu, AdminUserRole, Announcement,
-		AnnouncementRead, CommissionRecord, ErrorPassthroughRule, Feedback,
-		FeedbackReply, FinanceTransaction, Group, IdempotencyRecord, InvoiceProfile,
-		InvoiceRequest, InvoiceRequestOrder, PaymentOrder, PromoCode, PromoCodeUsage,
-		Proxy, RedeemCode, RedeemCodeBatch, SecuritySecret, Setting,
+		AnnouncementRead, ChangelogEntry, CommissionRecord, ErrorPassthroughRule,
+		Feedback, FeedbackReply, FinanceTransaction, Group, IdempotencyRecord,
+		InvoiceProfile, InvoiceRequest, InvoiceRequestOrder, PaymentOrder, PromoCode,
+		PromoCodeUsage, Proxy, RedeemCode, RedeemCodeBatch, SecuritySecret, Setting,
 		TLSFingerprintProfile, TopupOrder, UsageCleanupTask, UsageLog, User,
 		UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
 		UserSubscription []ent.Interceptor

@@ -51,13 +51,14 @@ var scannerGroupMap = map[string]string{
 	"topup":                "充值订单",  // 菜单 id=34 (API 路径 /admin/topup/orders)
 	"invoice":              "开票管理",  // 菜单 id=35 (API 路径 /admin/invoice/requests)
 	"announcements":        "公告管理",  // 菜单 id=41
-	"feedbacks":            "反馈管理",  // 菜单 id=42
-	"finance-transactions": "财务记账",  // 菜单 route=/admin/finance-transactions
-	"proxies":              "代理管理",  // 菜单 id=51
-	"usage":                "使用记录",  // 菜单 id=52
-	"ops":                  "运维监控",  // 菜单 id=53
-	"settings":             "系统设置",  // 菜单 id=54
-	"rbac":                 "角色管理",  // 菜单 id=61 (/admin/rbac/roles/*, /admin/rbac/menu, /admin/rbac/me/*, /admin/rbac/users/:id/roles)
+	"changelog":            "更新日志管理",
+	"feedbacks":            "反馈管理", // 菜单 id=42
+	"finance-transactions": "财务记账", // 菜单 route=/admin/finance-transactions
+	"proxies":              "代理管理", // 菜单 id=51
+	"usage":                "使用记录", // 菜单 id=52
+	"ops":                  "运维监控", // 菜单 id=53
+	"settings":             "系统设置", // 菜单 id=54
+	"rbac":                 "角色管理", // 菜单 id=61 (/admin/rbac/roles/*, /admin/rbac/menu, /admin/rbac/me/*, /admin/rbac/users/:id/roles)
 
 	// 左侧菜单中无独立入口, 保留独立分组名仅便于运营识别, 未来若新增菜单需同步更新此处文案.
 	"api-keys":                 "API Key",

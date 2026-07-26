@@ -132,10 +132,10 @@ onBeforeUnmount(() => {
   top: 0.125rem;
   right: 0;
   z-index: 1;
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgb(var(--color-gray-200));
   border-radius: 0.75rem;
   background: rgba(255, 255, 255, 0.92);
-  color: #374151;
+  color: rgb(var(--color-gray-700));
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1;
@@ -161,31 +161,31 @@ onBeforeUnmount(() => {
 
 /* Markdown rendering styles for docs */
 .docs-markdown {
-  color: #374151;
+  color: rgb(var(--color-gray-700));
   line-height: 1.75;
   font-size: 1rem;
 }
 
 .dark .docs-markdown {
-  color: #d1d5db;
+  color: rgb(var(--color-gray-300));
 }
 
 .dark .docs-doc-copy-btn {
-  border-color: #334155;
+  border-color: rgb(var(--color-slate-700));
   background: rgba(15, 23, 42, 0.9);
-  color: #e5e7eb;
+  color: rgb(var(--color-gray-200));
 }
 
 .docs-markdown h1 {
   font-size: 2rem;
   font-weight: 700;
   margin-bottom: 1rem;
-  color: #111827;
+  color: rgb(var(--color-gray-900));
   line-height: 1.3;
 }
 
 .dark .docs-markdown h1 {
-  color: #f9fafb;
+  color: rgb(var(--color-gray-50));
 }
 
 .docs-markdown h2 {
@@ -194,13 +194,13 @@ onBeforeUnmount(() => {
   margin-top: 2.5rem;
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  color: #1f2937;
+  border-bottom: 1px solid rgb(var(--color-gray-200));
+  color: rgb(var(--color-gray-800));
 }
 
 .dark .docs-markdown h2 {
-  border-bottom-color: #334155;
-  color: #f3f4f6;
+  border-bottom-color: rgb(var(--color-slate-700));
+  color: rgb(var(--color-gray-100));
 }
 
 .docs-markdown h3 {
@@ -208,11 +208,11 @@ onBeforeUnmount(() => {
   font-weight: 600;
   margin-top: 2rem;
   margin-bottom: 0.5rem;
-  color: #1f2937;
+  color: rgb(var(--color-gray-800));
 }
 
 .dark .docs-markdown h3 {
-  color: #f3f4f6;
+  color: rgb(var(--color-gray-100));
 }
 
 .docs-markdown h4 {
@@ -220,11 +220,11 @@ onBeforeUnmount(() => {
   font-weight: 600;
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
-  color: #374151;
+  color: rgb(var(--color-gray-700));
 }
 
 .dark .docs-markdown h4 {
-  color: #e5e7eb;
+  color: rgb(var(--color-gray-200));
 }
 
 .docs-markdown p {
@@ -243,11 +243,11 @@ onBeforeUnmount(() => {
 
 .docs-markdown strong {
   font-weight: 600;
-  color: #111827;
+  color: rgb(var(--color-gray-900));
 }
 
 .dark .docs-markdown strong {
-  color: #f9fafb;
+  color: rgb(var(--color-gray-50));
 }
 
 .docs-markdown ul,
@@ -289,7 +289,7 @@ onBeforeUnmount(() => {
 }
 
 .docs-markdown code {
-  background-color: #f3f4f6;
+  background-color: rgb(var(--color-gray-100));
   padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
   font-size: 0.875em;
@@ -298,13 +298,13 @@ onBeforeUnmount(() => {
 }
 
 .dark .docs-markdown code {
-  background-color: #1e293b;
+  background-color: rgb(var(--color-slate-800));
   color: #f0ad94;
 }
 
 .docs-markdown pre {
-  background-color: #1e293b;
-  color: #e2e8f0;
+  background-color: rgb(var(--color-slate-800));
+  color: rgb(var(--color-slate-200));
   padding: 1rem;
   border-radius: 0.5rem;
   overflow-x: auto;
@@ -322,12 +322,12 @@ onBeforeUnmount(() => {
 
 .docs-markdown hr {
   border: 0;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid rgb(var(--color-gray-200));
   margin: 2rem 0;
 }
 
 .dark .docs-markdown hr {
-  border-top-color: #334155;
+  border-top-color: rgb(var(--color-slate-700));
 }
 
 .docs-markdown table {
@@ -339,23 +339,23 @@ onBeforeUnmount(() => {
 
 .docs-markdown th,
 .docs-markdown td {
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgb(var(--color-gray-200));
   padding: 0.5rem 0.75rem;
   text-align: left;
 }
 
 .dark .docs-markdown th,
 .dark .docs-markdown td {
-  border-color: #334155;
+  border-color: rgb(var(--color-slate-700));
 }
 
 .docs-markdown th {
-  background-color: #f9fafb;
+  background-color: rgb(var(--color-gray-50));
   font-weight: 600;
 }
 
 .dark .docs-markdown th {
-  background-color: #1e293b;
+  background-color: rgb(var(--color-slate-800));
 }
 
 .docs-markdown img {
@@ -382,7 +382,7 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 0.375rem;
   background-color: rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
+  color: rgb(var(--color-slate-400));
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.2s, background-color 0.2s, color 0.2s;
@@ -397,12 +397,12 @@ onBeforeUnmount(() => {
 
 .code-copy-btn:hover {
   background-color: rgba(255, 255, 255, 0.15);
-  color: #e2e8f0;
+  color: rgb(var(--color-slate-200));
 }
 
 .code-copy-btn.copied {
   opacity: 1;
-  color: #4ade80;
+  color: rgb(var(--color-green-400));
   border-color: rgba(74, 222, 128, 0.3);
   background-color: rgba(74, 222, 128, 0.1);
 }

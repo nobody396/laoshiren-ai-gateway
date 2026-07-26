@@ -129,7 +129,7 @@ const footerSections = computed(() => {
 <style scoped>
 .changelog-shell {
   min-height: 100vh;
-  background: #f8f3e7;
-  color: #13100b;
+  background: rgb(var(--color-papyrus));
+  color: rgb(var(--color-ink-deep));
 }
 </style>

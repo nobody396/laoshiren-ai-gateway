@@ -5,17 +5,17 @@
  */
 .admin-console-shell,
 body.admin-console-active {
-  --admin-papyrus: #f8f3e7;
-  --admin-parchment: #f2e9d2;
-  --admin-marble: #faf6ec;
-  --admin-stone: #efe6cf;
-  --admin-terracotta: #9a3b1f;
-  --admin-terracotta-dark: #7a2d17;
-  --admin-laurel: #3f5a3a;
-  --admin-laurel-dark: #26361f;
-  --admin-ink: #1f1a12;
-  --admin-ink-deep: #13100b;
-  --admin-muted: #8a7d63;
+  --admin-papyrus: rgb(var(--color-papyrus));
+  --admin-parchment: rgb(var(--color-parchment));
+  --admin-marble: rgb(var(--color-marble));
+  --admin-stone: rgb(var(--color-stone));
+  --admin-terracotta: rgb(var(--color-terracotta));
+  --admin-terracotta-dark: rgb(var(--color-terracotta-dark));
+  --admin-laurel: rgb(var(--color-laurel));
+  --admin-laurel-dark: rgb(var(--color-laurel-dark));
+  --admin-ink: rgb(var(--color-ink));
+  --admin-ink-deep: rgb(var(--color-ink-deep));
+  --admin-muted: rgb(var(--color-muted));
   --admin-border: rgba(63, 90, 58, 0.18);
   --admin-border-strong: rgba(31, 26, 18, 0.42);
   --admin-surface: rgba(250, 246, 236, 0.96);
@@ -25,10 +25,10 @@ body.admin-console-active {
   --admin-shadow: 0 18px 48px rgba(49, 38, 20, 0.11);
   --admin-shadow-sm: 0 8px 24px rgba(49, 38, 20, 0.08);
   --admin-ring: rgba(154, 59, 31, 0.24);
-  --admin-danger: #9f2f23;
-  --admin-success: #3f6f43;
-  --admin-warning: #9a6a1f;
-  --admin-info: #315f71;
+  --admin-danger: rgb(var(--color-danger));
+  --admin-success: rgb(var(--color-success));
+  --admin-warning: rgb(var(--color-warning));
+  --admin-info: rgb(var(--color-info));
 }
 
 .dark .admin-console-shell,

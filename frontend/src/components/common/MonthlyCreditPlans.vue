@@ -98,9 +98,9 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   --membership-surface-soft: rgba(242, 233, 210, 0.58);
   --membership-border: rgba(31, 26, 18, 0.14);
   --membership-border-strong: rgba(31, 26, 18, 0.26);
-  --membership-ink: #1f1a12;
+  --membership-ink: rgb(var(--color-ink));
   --membership-muted: #7b705d;
-  --membership-accent: #9a3b1f;
+  --membership-accent: rgb(var(--color-terracotta));
   --membership-shadow: 0 18px 46px rgba(49, 38, 20, 0.1);
   color: var(--membership-ink);
 }
@@ -208,11 +208,11 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   position: absolute;
   inset: 0 0 auto;
   height: 0.28rem;
-  background: #8a7d63;
+  background: rgb(var(--color-muted));
 }
 
 .monthly-credit-card--lite::before {
-  background: #3f5a3a;
+  background: rgb(var(--color-laurel));
 }
 
 .monthly-credit-card--pro::before {
@@ -220,11 +220,11 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--max::before {
-  background: #9a3b1f;
+  background: rgb(var(--color-terracotta));
 }
 
 .monthly-credit-card--ultra::before {
-  background: #13100b;
+  background: rgb(var(--color-ink-deep));
 }
 
 .monthly-credit-card--apex::before {
@@ -292,7 +292,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   border: 1px solid rgba(154, 59, 31, 0.22);
   border-radius: 999px;
   background: rgba(154, 59, 31, 0.08);
-  color: #9a3b1f;
+  color: rgb(var(--color-terracotta));
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
@@ -496,9 +496,9 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   --membership-surface-soft: var(--admin-surface-soft, rgba(239, 230, 207, 0.72));
   --membership-border: var(--admin-border, rgba(31, 26, 18, 0.14));
   --membership-border-strong: var(--admin-border-strong, rgba(31, 26, 18, 0.32));
-  --membership-ink: var(--admin-ink, #1f1a12);
-  --membership-muted: var(--admin-muted, #8a7d63);
-  --membership-accent: var(--admin-terracotta-dark, #7a2d17);
+  --membership-ink: var(--admin-ink, rgb(var(--color-ink)));
+  --membership-muted: var(--admin-muted, rgb(var(--color-muted)));
+  --membership-accent: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
   --membership-shadow: var(--admin-shadow-sm, 0 8px 24px rgba(49, 38, 20, 0.08));
 }
 
@@ -507,9 +507,9 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   --membership-surface-soft: rgba(42, 47, 55, 0.82);
   --membership-border: rgba(255, 255, 255, 0.1);
   --membership-border-strong: rgba(255, 255, 255, 0.18);
-  --membership-ink: #f8fafc;
-  --membership-muted: #9ca3af;
-  --membership-accent: #f59e0b;
+  --membership-ink: rgb(var(--color-slate-50));
+  --membership-muted: rgb(var(--color-gray-400));
+  --membership-accent: rgb(var(--color-amber-500));
   --membership-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
 }
 

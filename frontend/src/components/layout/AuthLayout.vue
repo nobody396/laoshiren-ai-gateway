@@ -68,8 +68,8 @@ onMounted(() => {
   overflow: hidden;
   background:
     radial-gradient(circle at 18% 0%, rgba(242, 233, 210, 0.95) 0%, rgba(242, 233, 210, 0) 54%),
-    #f8f3e7;
-  color: #1f1a12;
+    rgb(var(--color-papyrus));
+  color: rgb(var(--color-ink));
   font-family: 'EB Garamond', 'Noto Serif SC', Georgia, serif;
 }
 
@@ -101,7 +101,7 @@ onMounted(() => {
   min-height: 36rem;
   flex-direction: column;
   justify-content: space-between;
-  border-left: 2px solid #3f5a3a;
+  border-left: 2px solid rgb(var(--color-laurel));
   padding: 1.5rem 0 1.5rem 2rem;
 }
 
@@ -118,8 +118,8 @@ onMounted(() => {
   height: 3rem;
   overflow: hidden;
   border-radius: 50%;
-  background: #9a3b1f;
-  box-shadow: inset 0 0 0 2px rgba(250, 246, 236, 0.42), 0 0 0 1px #7a2d17;
+  background: rgb(var(--color-terracotta));
+  box-shadow: inset 0 0 0 2px rgba(250, 246, 236, 0.42), 0 0 0 1px rgb(var(--color-terracotta-dark));
 }
 
 .auth-shell__seal img {
@@ -134,7 +134,7 @@ onMounted(() => {
 }
 
 .auth-shell__brand-name {
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: 1.18rem;
   font-weight: 600;
@@ -144,7 +144,7 @@ onMounted(() => {
 
 .auth-shell__brand-tag {
   margin-top: 0.2rem;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.64rem;
   font-weight: 600;
@@ -155,7 +155,7 @@ onMounted(() => {
 
 .auth-shell__eyebrow {
   margin: 0 0 1rem;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.75rem;
   font-weight: 600;
@@ -166,7 +166,7 @@ onMounted(() => {
 .auth-shell__copy h1 {
   max-width: 10ch;
   margin: 0 0 1.25rem;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: clamp(3.1rem, 6vw, 5rem);
   font-weight: 500;
@@ -176,7 +176,7 @@ onMounted(() => {
 .auth-shell__copy p:last-child {
   max-width: 34rem;
   margin: 0;
-  color: #1f1a12;
+  color: rgb(var(--color-ink));
   font-size: 1.28rem;
   font-style: italic;
   line-height: 1.6;
@@ -190,7 +190,7 @@ onMounted(() => {
 
 .auth-shell__quote p {
   margin: 0 0 0.75rem;
-  color: #1f1a12;
+  color: rgb(var(--color-ink));
   font-size: 1.2rem;
   font-style: italic;
   font-weight: 600;
@@ -198,7 +198,7 @@ onMounted(() => {
 }
 
 .auth-shell__quote cite {
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.65rem;
   font-style: normal;
@@ -229,18 +229,18 @@ onMounted(() => {
 }
 
 .auth-shell__footer :deep(a) {
-  color: #9a3b1f !important;
+  color: rgb(var(--color-terracotta)) !important;
 }
 
 .auth-shell__copyright {
   margin-top: 2rem;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-size: 0.82rem;
   text-align: center;
 }
 
 .auth-shell__form-card :deep(.text-center > h2) {
-  color: #1f1a12 !important;
+  color: rgb(var(--color-ink)) !important;
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-weight: 600;
   letter-spacing: 0;
@@ -255,7 +255,7 @@ onMounted(() => {
 .auth-shell__form-card :deep(.text-primary-500),
 .auth-shell__form-card :deep(.text-primary-400),
 .auth-shell__form-card :deep(.text-primary-300) {
-  color: #9a3b1f !important;
+  color: rgb(var(--color-terracotta)) !important;
 }
 
 .auth-shell__form-card :deep(.border-red-200) {
@@ -271,7 +271,7 @@ onMounted(() => {
 .auth-shell__form-card :deep(.text-red-700),
 .auth-shell__form-card :deep(.text-red-600),
 .auth-shell__form-card :deep(.text-red-500) {
-  color: #7a2d17 !important;
+  color: rgb(var(--color-terracotta-dark)) !important;
 }
 
 .auth-shell__form-card :deep(.border-green-200) {
@@ -286,7 +286,7 @@ onMounted(() => {
 .auth-shell__form-card :deep(.text-green-800),
 .auth-shell__form-card :deep(.text-green-700),
 .auth-shell__form-card :deep(.text-green-600) {
-  color: #3f5a3a !important;
+  color: rgb(var(--color-laurel)) !important;
 }
 
 .auth-shell :deep(.btn) {
@@ -294,23 +294,23 @@ onMounted(() => {
 }
 
 .auth-shell :deep(.btn-primary) {
-  background: #9a3b1f;
+  background: rgb(var(--color-terracotta));
   box-shadow: none;
 }
 
 .auth-shell :deep(.btn-primary:hover) {
-  background: #7a2d17;
+  background: rgb(var(--color-terracotta-dark));
 }
 
 .auth-shell :deep(.btn-secondary) {
-  background: #faf6ec;
+  background: rgb(var(--color-marble));
   border-color: rgba(63, 90, 58, 0.22);
-  color: #1f1a12;
+  color: rgb(var(--color-ink));
   box-shadow: none;
 }
 
 .auth-shell :deep(.btn-secondary:hover) {
-  background: #f2e9d2;
+  background: rgb(var(--color-parchment));
   border-color: rgba(63, 90, 58, 0.36);
 }
 
@@ -318,21 +318,21 @@ onMounted(() => {
   border-radius: 0;
   background: rgba(255, 252, 245, 0.94);
   border-color: rgba(63, 90, 58, 0.22);
-  color: #1f1a12;
+  color: rgb(var(--color-ink));
 }
 
 .auth-shell :deep(.input::placeholder) {
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   opacity: 0.78;
 }
 
 .auth-shell :deep(.input:focus) {
-  border-color: #9a3b1f;
+  border-color: rgb(var(--color-terracotta));
   --tw-ring-color: rgba(154, 59, 31, 0.24);
 }
 
 .auth-shell :deep(.input-label) {
-  color: #1f1a12;
+  color: rgb(var(--color-ink));
   font-family: 'Inter', sans-serif;
   font-size: 0.78rem;
   letter-spacing: 0.06em;

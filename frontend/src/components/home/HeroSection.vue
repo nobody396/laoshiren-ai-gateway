@@ -106,7 +106,7 @@ defineProps<{
   overflow: hidden;
   background:
     radial-gradient(circle at 50% 0%, rgba(242, 233, 210, 0.9) 0%, rgba(242, 233, 210, 0) 62%),
-    linear-gradient(180deg, #f8f3e7 0%, #faf6ec 100%);
+    linear-gradient(180deg, rgb(var(--color-papyrus)) 0%, rgb(var(--color-marble)) 100%);
 }
 
 /* ── L1 环境层 ────────────────────────────────────────────────
@@ -191,7 +191,7 @@ defineProps<{
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
 }
 
 .hero-section__title {
@@ -201,7 +201,7 @@ defineProps<{
   gap: 0.22em;
   max-width: 760px;
   margin: 0 0 1.75rem;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: clamp(4rem, 7vw, 5.9rem);
   font-weight: 600;
@@ -210,7 +210,7 @@ defineProps<{
 }
 
 .hero-section__title em {
-  color: #9a3b1f;
+  color: rgb(var(--color-terracotta));
   font-family: 'EB Garamond', 'Noto Serif SC', serif;
   font-style: italic;
   font-weight: 500;
@@ -219,7 +219,7 @@ defineProps<{
 .hero-section__desc {
   max-width: 44rem;
   margin: 0 0 2.5rem;
-  color: #1f1a12;
+  color: rgb(var(--color-ink));
   font-family: 'EB Garamond', 'Noto Serif SC', serif;
   font-size: 1.45rem;
   font-style: italic;
@@ -256,30 +256,30 @@ defineProps<{
 }
 
 .hero-section__btn--primary {
-  background: #9a3b1f;
-  color: #faf6ec;
-  border: 1.5px solid #9a3b1f;
+  background: rgb(var(--color-terracotta));
+  color: rgb(var(--color-marble));
+  border: 1.5px solid rgb(var(--color-terracotta));
 }
 
 .hero-section__btn--primary:hover {
-  background: #7a2d17;
+  background: rgb(var(--color-terracotta-dark));
   transform: translateY(-1px);
 }
 
 .hero-section__btn--outline {
   background: transparent;
-  color: #1f1a12;
-  border: 1.5px solid #1f1a12;
+  color: rgb(var(--color-ink));
+  border: 1.5px solid rgb(var(--color-ink));
 }
 
 .hero-section__btn--outline:hover {
-  background: #1f1a12;
-  color: #f8f3e7;
+  background: rgb(var(--color-ink));
+  color: rgb(var(--color-papyrus));
   transform: translateY(-1px);
 }
 
 .hero-section__quote {
-  border-left: 2px solid #3f5a3a;
+  border-left: 2px solid rgb(var(--color-laurel));
   padding: 1.65rem 1.9rem;
   background: rgba(239, 230, 207, 0.42);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
@@ -287,7 +287,7 @@ defineProps<{
 
 .hero-section__quote-text {
   margin: 0 0 0.9rem;
-  color: #1f1a12;
+  color: rgb(var(--color-ink));
   font-family: 'EB Garamond', 'Noto Serif SC', serif;
   font-size: 1.45rem;
   font-style: italic;
@@ -297,7 +297,7 @@ defineProps<{
 
 .hero-section__quote-author {
   margin: 0;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -307,7 +307,7 @@ defineProps<{
 
 .hero-section__quote-greek {
   margin: 1.25rem 0 0;
-  color: #3f5a3a;
+  color: rgb(var(--color-laurel));
   font-family: 'EB Garamond', serif;
   font-size: 1rem;
   font-style: italic;

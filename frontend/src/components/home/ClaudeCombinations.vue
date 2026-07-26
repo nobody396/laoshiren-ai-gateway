@@ -54,7 +54,7 @@ defineProps<{
 <style scoped>
 .claude-combinations {
   padding: 6rem 0;
-  background: #faf6ec;
+  background: rgb(var(--color-marble));
 }
 
 .claude-combinations__container {
@@ -64,7 +64,7 @@ defineProps<{
 
 .section-eyebrow {
   margin: 0 0 0.875rem;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.75rem;
   font-weight: 600;
@@ -75,7 +75,7 @@ defineProps<{
 
 .section-title {
   margin: 0;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: clamp(2.2rem, 4vw, 3rem);
   font-weight: 500;
@@ -86,7 +86,7 @@ defineProps<{
 .section-lede {
   max-width: 58ch;
   margin: 1.125rem auto 4rem;
-  color: #1f1a12;
+  color: rgb(var(--color-ink));
   font-size: 1.18rem;
   font-style: italic;
   line-height: 1.65;
@@ -101,7 +101,7 @@ defineProps<{
 .pillars-architrave {
   height: 0.5rem;
   margin: 0 -1.25rem;
-  background: #1f1a12;
+  background: rgb(var(--color-ink));
   position: relative;
 }
 
@@ -112,7 +112,7 @@ defineProps<{
   top: -0.25rem;
   width: 2.5rem;
   height: 1rem;
-  background: #1f1a12;
+  background: rgb(var(--color-ink));
 }
 
 .pillars-architrave::before {
@@ -134,12 +134,12 @@ defineProps<{
   min-height: 25rem;
   padding: 3rem 2rem 3.25rem;
   text-align: center;
-  background: #faf6ec;
+  background: rgb(var(--color-marble));
   border-right: 1px solid rgba(63, 90, 58, 0.18);
 }
 
 .pillar:nth-child(even) {
-  background: #efe6cf;
+  background: rgb(var(--color-stone));
 }
 
 .pillar:last-child {
@@ -159,7 +159,7 @@ defineProps<{
   position: absolute;
   left: 0;
   right: 0;
-  background: #1f1a12;
+  background: rgb(var(--color-ink));
 }
 
 .pillar-capital::before {
@@ -176,7 +176,7 @@ defineProps<{
 
 .pillar-name {
   margin: 0 0 0.5rem;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Cinzel', serif;
   font-size: 2rem;
   font-weight: 600;
@@ -185,7 +185,7 @@ defineProps<{
 
 .pillar-role {
   margin: 0 0 1.125rem;
-  color: #9a3b1f;
+  color: rgb(var(--color-terracotta));
   font-size: 1rem;
   font-style: italic;
 }
@@ -193,7 +193,7 @@ defineProps<{
 .pillar-desc {
   max-width: 22rem;
   margin: 0 auto;
-  color: #1f1a12;
+  color: rgb(var(--color-ink));
   font-size: 1rem;
   line-height: 1.65;
 }

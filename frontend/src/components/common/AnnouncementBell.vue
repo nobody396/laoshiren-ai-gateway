@@ -453,20 +453,20 @@ useBodyScrollLock(computed(
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #cbd5e1, #94a3b8);
+  background: linear-gradient(to bottom, rgb(var(--color-slate-300)), rgb(var(--color-slate-400)));
   border-radius: 4px;
 }
 
 .dark .overflow-y-auto::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #4b5563, #374151);
+  background: linear-gradient(to bottom, rgb(var(--color-gray-600)), rgb(var(--color-gray-700)));
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #94a3b8, #64748b);
+  background: linear-gradient(to bottom, rgb(var(--color-slate-400)), rgb(var(--color-slate-500)));
 }
 
 .dark .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #6b7280, #4b5563);
+  background: linear-gradient(to bottom, rgb(var(--color-gray-500)), rgb(var(--color-gray-600)));
 }
 </style>
 

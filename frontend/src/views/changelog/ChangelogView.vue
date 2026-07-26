@@ -256,7 +256,7 @@ onBeforeUnmount(() => {
 
 .changelog-hero h1 {
   margin: 0;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Noto Serif SC', 'EB Garamond', serif;
   font-size: clamp(3.4rem, 7vw, 6.2rem);
   font-weight: 600;
@@ -296,7 +296,7 @@ onBeforeUnmount(() => {
   left: 50%;
   width: 1.2rem;
   height: 1.2rem;
-  border: 1px solid #8a7d63;
+  border: 1px solid rgb(var(--color-muted));
   border-radius: 50%;
   transform: translate(-50%, -50%);
 }
@@ -307,7 +307,7 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 50% auto auto 50%;
   width: 3rem;
-  border-top: 1px solid #8a7d63;
+  border-top: 1px solid rgb(var(--color-muted));
   transform: translate(-50%, -50%) rotate(90deg);
 }
 
@@ -347,13 +347,13 @@ onBeforeUnmount(() => {
   bottom: 0;
   left: 0;
   height: 2px;
-  background: #3f5a3a;
+  background: rgb(var(--color-laurel));
   transform: scaleX(0);
   transition: transform 180ms ease;
 }
 
 .changelog-categories button:hover,
-.changelog-categories button.is-active { color: #3f5a3a; }
+.changelog-categories button.is-active { color: rgb(var(--color-laurel)); }
 .changelog-categories button.is-active::after { transform: scaleX(1); }
 
 .changelog-search {
@@ -363,7 +363,7 @@ onBeforeUnmount(() => {
   gap: 0.65rem;
   border: 1px solid rgba(138, 125, 99, 0.52);
   padding: 0.72rem 0.9rem;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
 }
 
 .changelog-search input {
@@ -372,12 +372,12 @@ onBeforeUnmount(() => {
   border: 0;
   outline: none;
   background: transparent;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-size: 0.95rem;
 }
 
 .changelog-search:focus-within {
-  border-color: #3f5a3a;
+  border-color: rgb(var(--color-laurel));
   box-shadow: 0 0 0 2px rgba(63, 90, 58, 0.12);
 }
 
@@ -385,7 +385,7 @@ onBeforeUnmount(() => {
 
 .changelog-month > h2 {
   margin: 0 0 0.6rem;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Noto Serif SC', 'EB Garamond', serif;
   font-size: 1.3rem;
   font-weight: 600;
@@ -420,8 +420,8 @@ onBeforeUnmount(() => {
 .changelog-new {
   display: inline-block;
   margin-top: 0.55rem;
-  border: 1px solid #9a3b1f;
-  color: #9a3b1f;
+  border: 1px solid rgb(var(--color-terracotta));
+  color: rgb(var(--color-terracotta));
   font-family: 'Cinzel', serif;
   font-size: 0.68rem;
   letter-spacing: 0.12em;
@@ -441,10 +441,10 @@ onBeforeUnmount(() => {
   left: 0;
   width: 0.72rem;
   height: 0.72rem;
-  border: 2px solid #f8f3e7;
+  border: 2px solid rgb(var(--color-papyrus));
   border-radius: 50%;
-  background: #3f5a3a;
-  box-shadow: 0 0 0 1px #3f5a3a;
+  background: rgb(var(--color-laurel));
+  box-shadow: 0 0 0 1px rgb(var(--color-laurel));
   transform: translateX(-50%);
 }
 
@@ -470,14 +470,14 @@ onBeforeUnmount(() => {
 }
 
 .changelog-entry-heading h3 a {
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   text-decoration: none;
 }
 
-.changelog-entry-heading h3 a:hover { color: #3f5a3a; }
+.changelog-entry-heading h3 a:hover { color: rgb(var(--color-laurel)); }
 
 .changelog-category {
-  color: #3f5a3a;
+  color: rgb(var(--color-laurel));
   font-size: 0.78rem;
   white-space: nowrap;
 }
@@ -486,7 +486,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  color: #3f5a3a;
+  color: rgb(var(--color-laurel));
   font-family: 'Noto Serif SC', serif;
   font-size: 0.92rem;
   text-decoration: underline;
@@ -521,7 +521,7 @@ onBeforeUnmount(() => {
   gap: 0.5rem;
   border: 0;
   background: transparent;
-  color: #3f5a3a;
+  color: rgb(var(--color-laurel));
   font-family: 'Noto Serif SC', serif;
   font-size: 1rem;
   cursor: pointer;

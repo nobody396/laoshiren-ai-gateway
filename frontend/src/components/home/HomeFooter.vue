@@ -80,8 +80,8 @@ defineProps<{
 <style scoped>
 .home-footer {
   padding: 4rem 0 2rem;
-  background: #13100b;
-  color: #f8f3e7;
+  background: rgb(var(--color-ink-deep));
+  color: rgb(var(--color-papyrus));
 }
 
 .home-footer__container {
@@ -118,7 +118,7 @@ defineProps<{
   height: 2.5rem;
   object-fit: cover;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 2px rgba(250, 246, 236, 0.35), 0 0 0 1px #7a2d17;
+  box-shadow: inset 0 0 0 2px rgba(250, 246, 236, 0.35), 0 0 0 1px rgb(var(--color-terracotta-dark));
 }
 
 .brand-name,
@@ -127,7 +127,7 @@ defineProps<{
 }
 
 .brand-name {
-  color: #f8f3e7;
+  color: rgb(var(--color-papyrus));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: 1.1rem;
   font-weight: 600;
@@ -172,7 +172,7 @@ defineProps<{
 }
 
 .home-footer__column a {
-  color: #f8f3e7;
+  color: rgb(var(--color-papyrus));
   font-size: 0.98rem;
   text-decoration: none;
   transition: color 0.2s ease;

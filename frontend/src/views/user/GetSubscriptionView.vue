@@ -831,7 +831,7 @@ void Promise.all([
   background:
     linear-gradient(135deg, var(--admin-surface, rgba(250, 246, 236, 0.96)), var(--admin-surface-soft, rgba(239, 230, 207, 0.78)));
   box-shadow: var(--admin-shadow, 0 18px 48px rgba(49, 38, 20, 0.11));
-  color: var(--admin-ink, #1f1a12);
+  color: var(--admin-ink, rgb(var(--color-ink)));
 }
 
 .topup-grid {
@@ -856,7 +856,7 @@ void Promise.all([
   border: 1px solid var(--admin-border-strong, rgba(31, 26, 18, 0.32));
   border-radius: 4px;
   padding: 0.35rem 0.65rem;
-  color: var(--admin-terracotta-dark, #7a2d17);
+  color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
   background: rgba(154, 59, 31, 0.08);
   font-size: 0.72rem;
   font-weight: 700;
@@ -865,7 +865,7 @@ void Promise.all([
 
 .topup-heading {
   margin-top: 1.25rem;
-  color: var(--admin-ink-deep, #13100b);
+  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
   font-size: clamp(2rem, 4vw, 2.6rem);
   font-weight: 650;
   line-height: 1.16;
@@ -875,7 +875,7 @@ void Promise.all([
 .topup-copy {
   max-width: 38rem;
   margin-top: 0.85rem;
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.95rem;
   line-height: 1.85;
 }
@@ -895,7 +895,7 @@ void Promise.all([
 
 .topup-label {
   margin-bottom: 0.9rem;
-  color: var(--admin-ink, #1f1a12);
+  color: var(--admin-ink, rgb(var(--color-ink)));
   font-size: 0.92rem;
   font-weight: 650;
 }
@@ -933,7 +933,7 @@ void Promise.all([
   border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
   border-radius: 8px;
   background: var(--admin-control, rgba(255, 252, 245, 0.95));
-  color: var(--admin-ink, #1f1a12);
+  color: var(--admin-ink, rgb(var(--color-ink)));
   text-align: left;
   transition:
     border-color 0.18s ease,
@@ -946,7 +946,7 @@ void Promise.all([
 .topup-product:hover,
 .topup-pay-option:hover {
   border-color: var(--admin-border-strong, rgba(31, 26, 18, 0.32));
-  background: var(--admin-parchment, #f2e9d2);
+  background: var(--admin-parchment, rgb(var(--color-parchment)));
   transform: translateY(-1px);
   box-shadow: var(--admin-shadow-sm, 0 8px 24px rgba(49, 38, 20, 0.08));
 }
@@ -980,7 +980,7 @@ void Promise.all([
 .topup-choice--active,
 .topup-product--active,
 .topup-pay-option--active {
-  border-color: var(--admin-terracotta, #9a3b1f);
+  border-color: var(--admin-terracotta, rgb(var(--color-terracotta)));
   background:
     linear-gradient(180deg, rgba(154, 59, 31, 0.1), transparent 100%),
     var(--admin-control, rgba(255, 252, 245, 0.95));
@@ -1000,11 +1000,11 @@ void Promise.all([
 }
 
 .topup-choice-icon--warm {
-  color: var(--admin-terracotta-dark, #7a2d17);
+  color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
 }
 
 .topup-choice-icon--laurel {
-  color: var(--admin-laurel, #3f5a3a);
+  color: var(--admin-laurel, rgb(var(--color-laurel)));
   background: rgba(63, 90, 58, 0.1);
 }
 
@@ -1015,7 +1015,7 @@ void Promise.all([
 .topup-choice-title,
 .topup-product-title {
   display: block;
-  color: var(--admin-ink-deep, #13100b);
+  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
   font-weight: 700;
   line-height: 1.4;
 }
@@ -1028,7 +1028,7 @@ void Promise.all([
 .topup-product-desc {
   display: block;
   margin-top: 0.35rem;
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.88rem;
   line-height: 1.55;
 }
@@ -1046,13 +1046,13 @@ void Promise.all([
 .topup-status--available {
   border-color: rgba(63, 90, 58, 0.24);
   background: rgba(63, 90, 58, 0.1);
-  color: var(--admin-laurel-dark, #26361f);
+  color: var(--admin-laurel-dark, rgb(var(--color-laurel-dark)));
 }
 
 .topup-status--disabled {
   border-color: var(--admin-border, rgba(31, 26, 18, 0.14));
   background: var(--admin-surface-soft, rgba(239, 230, 207, 0.78));
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
 }
 
 .topup-product {
@@ -1076,7 +1076,7 @@ void Promise.all([
   border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
   border-radius: 8px;
   background: var(--admin-control, rgba(255, 252, 245, 0.95));
-  color: var(--admin-ink, #1f1a12);
+  color: var(--admin-ink, rgb(var(--color-ink)));
   padding: 1rem;
   text-align: left;
   transition:
@@ -1091,11 +1091,11 @@ void Promise.all([
   position: absolute;
   inset: 0 0 auto;
   height: 0.25rem;
-  background: var(--admin-muted, #8a7d63);
+  background: var(--admin-muted, rgb(var(--color-muted)));
 }
 
 .topup-monthly-product--lite::before {
-  background: #3f5a3a;
+  background: rgb(var(--color-laurel));
 }
 
 .topup-monthly-product--pro::before {
@@ -1103,11 +1103,11 @@ void Promise.all([
 }
 
 .topup-monthly-product--max::before {
-  background: #9a3b1f;
+  background: rgb(var(--color-terracotta));
 }
 
 .topup-monthly-product--ultra::before {
-  background: #13100b;
+  background: rgb(var(--color-ink-deep));
 }
 
 .topup-monthly-product--apex {
@@ -1145,13 +1145,13 @@ void Promise.all([
 
 .topup-monthly-product:hover {
   border-color: var(--admin-border-strong, rgba(31, 26, 18, 0.32));
-  background: var(--admin-parchment, #f2e9d2);
+  background: var(--admin-parchment, rgb(var(--color-parchment)));
   transform: translateY(-1px);
   box-shadow: var(--admin-shadow-sm, 0 8px 24px rgba(49, 38, 20, 0.08));
 }
 
 .topup-monthly-product--active {
-  border-color: var(--admin-terracotta, #9a3b1f);
+  border-color: var(--admin-terracotta, rgb(var(--color-terracotta)));
   background:
     linear-gradient(180deg, rgba(154, 59, 31, 0.1), transparent 100%),
     var(--admin-control, rgba(255, 252, 245, 0.95));
@@ -1223,7 +1223,7 @@ void Promise.all([
 .topup-monthly-product__price {
   display: block;
   margin-top: 1.25rem;
-  color: var(--admin-ink-deep, #13100b);
+  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
   font-size: 1.65rem;
   font-weight: 850;
   line-height: 1;
@@ -1235,7 +1235,7 @@ void Promise.all([
 }
 
 .topup-monthly-product__price small {
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.82rem;
   font-weight: 650;
 }
@@ -1259,7 +1259,7 @@ void Promise.all([
   border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
   border-radius: 8px;
   background: rgba(154, 59, 31, 0.08);
-  color: var(--admin-terracotta-dark, #7a2d17);
+  color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
   padding: 0.9rem 1rem;
   font-size: 0.9rem;
   line-height: 1.75;
@@ -1267,12 +1267,12 @@ void Promise.all([
 
 .topup-warning {
   background: rgba(154, 106, 31, 0.12);
-  color: var(--admin-warning, #9a6a1f);
+  color: var(--admin-warning, rgb(var(--color-warning)));
 }
 
 .topup-success {
   background: rgba(63, 90, 58, 0.12);
-  color: var(--admin-laurel-dark, #26361f);
+  color: var(--admin-laurel-dark, rgb(var(--color-laurel-dark)));
 }
 
 .topup-input-wrap {
@@ -1283,7 +1283,7 @@ void Promise.all([
   position: absolute;
   top: 50%;
   left: 1rem;
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 1rem;
   font-weight: 700;
   transform: translateY(-50%);
@@ -1294,7 +1294,7 @@ void Promise.all([
   border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
   border-radius: 8px;
   background: var(--admin-control, rgba(255, 252, 245, 0.95));
-  color: var(--admin-ink-deep, #13100b);
+  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
   padding: 0.95rem 1rem 0.95rem 2.8rem;
   font-size: 1rem;
   transition:
@@ -1304,19 +1304,19 @@ void Promise.all([
 }
 
 .topup-input::placeholder {
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   opacity: 0.72;
 }
 
 .topup-input--active,
 .topup-input:focus {
-  border-color: var(--admin-terracotta, #9a3b1f);
+  border-color: var(--admin-terracotta, rgb(var(--color-terracotta)));
   background: var(--admin-control, rgba(255, 252, 245, 0.95));
 }
 
 .topup-error {
   margin-top: 0.55rem;
-  color: var(--admin-danger, #9f2f23);
+  color: var(--admin-danger, rgb(var(--color-danger)));
   font-size: 0.86rem;
 }
 
@@ -1362,7 +1362,7 @@ void Promise.all([
 .topup-qr-empty {
   display: grid;
   gap: 0.8rem;
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.9rem;
   text-align: center;
 }
@@ -1381,7 +1381,7 @@ void Promise.all([
 }
 
 .topup-meta-label {
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -1390,13 +1390,13 @@ void Promise.all([
 
 .topup-meta-value {
   margin-top: 0.3rem;
-  color: var(--admin-ink-deep, #13100b);
+  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
   font-size: 1.12rem;
   font-weight: 700;
 }
 
 .topup-meta-value--accent {
-  color: var(--admin-terracotta-dark, #7a2d17);
+  color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
 }
 
 .topup-summary-card {
@@ -1461,7 +1461,7 @@ void Promise.all([
 }
 
 .topup-summary-kicker {
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.86rem;
   font-weight: 650;
 }
@@ -1472,7 +1472,7 @@ void Promise.all([
 
 .topup-summary-title {
   margin-top: 0.45rem;
-  color: var(--admin-ink-deep, #13100b);
+  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
   font-size: 1.85rem;
   font-weight: 650;
   line-height: 1.2;
@@ -1490,7 +1490,7 @@ void Promise.all([
   border: 1px solid rgba(154, 59, 31, 0.2);
   border-radius: 4px;
   background: rgba(154, 59, 31, 0.1);
-  color: var(--admin-terracotta-dark, #7a2d17);
+  color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
   padding: 0.45rem 0.65rem;
   font-size: 0.9rem;
   font-weight: 700;
@@ -1499,7 +1499,7 @@ void Promise.all([
 .topup-price-chip--muted {
   border-color: var(--admin-border, rgba(31, 26, 18, 0.14));
   background: var(--admin-surface-soft, rgba(239, 230, 207, 0.78));
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
 }
 
 .topup-summary-card--apex .topup-price-chip--muted {
@@ -1519,12 +1519,12 @@ void Promise.all([
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.92rem;
 }
 
 .topup-summary-row strong {
-  color: var(--admin-ink-deep, #13100b);
+  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
   font-weight: 700;
   text-align: right;
 }
@@ -1535,7 +1535,7 @@ void Promise.all([
 }
 
 .topup-summary-limit small {
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.74rem;
   font-weight: 650;
   line-height: 1.35;
@@ -1575,7 +1575,7 @@ void Promise.all([
 .topup-monthly-quota span,
 .topup-token-grid span {
   display: block;
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.35;
@@ -1586,7 +1586,7 @@ void Promise.all([
 .topup-token-grid strong {
   display: block;
   margin-top: 0.42rem;
-  color: var(--admin-ink-deep, #13100b);
+  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
   font-size: 1.05rem;
   font-weight: 800;
   line-height: 1.28;
@@ -1606,7 +1606,7 @@ void Promise.all([
 .topup-token-grid small {
   display: block;
   margin-top: 0.35rem;
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.76rem;
   font-weight: 650;
   line-height: 1.45;
@@ -1627,7 +1627,7 @@ void Promise.all([
 }
 
 .topup-token-grid small {
-  color: var(--admin-terracotta-dark, #7a2d17);
+  color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
 }
 
 .topup-token-note {
@@ -1635,7 +1635,7 @@ void Promise.all([
   border: 1px solid rgba(154, 106, 31, 0.18);
   border-radius: 8px;
   background: rgba(154, 106, 31, 0.08);
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   padding: 0.8rem 0.9rem;
   font-size: 0.8rem;
   line-height: 1.65;
@@ -1780,15 +1780,15 @@ void Promise.all([
 
 .topup-primary-action {
   margin-top: 2rem;
-  border: 1px solid var(--admin-terracotta, #9a3b1f);
-  background: var(--admin-terracotta, #9a3b1f);
-  color: var(--admin-marble, #faf6ec) !important;
+  border: 1px solid var(--admin-terracotta, rgb(var(--color-terracotta)));
+  background: var(--admin-terracotta, rgb(var(--color-terracotta)));
+  color: var(--admin-marble, rgb(var(--color-marble))) !important;
   box-shadow: 0 12px 24px rgba(154, 59, 31, 0.18);
 }
 
 .topup-primary-action:hover:not(:disabled) {
-  border-color: var(--admin-terracotta-dark, #7a2d17);
-  background: var(--admin-terracotta-dark, #7a2d17);
+  border-color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
+  background: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
   transform: translateY(-1px);
 }
 
@@ -1862,13 +1862,13 @@ void Promise.all([
 .topup-secondary-action {
   border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
   background: var(--admin-control, rgba(255, 252, 245, 0.95));
-  color: var(--admin-ink, #1f1a12);
+  color: var(--admin-ink, rgb(var(--color-ink)));
 }
 
 .topup-secondary-action:hover {
   border-color: var(--admin-border-strong, rgba(31, 26, 18, 0.32));
-  background: var(--admin-parchment, #f2e9d2);
-  color: var(--admin-ink-deep, #13100b);
+  background: var(--admin-parchment, rgb(var(--color-parchment)));
+  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
 }
 
 .topup-secondary-action--stacked {
@@ -1986,8 +1986,8 @@ void Promise.all([
   border: 1px solid var(--admin-border-strong, rgba(31, 26, 18, 0.32));
   border-radius: 8px;
   padding: 1.25rem;
-  background: var(--admin-surface, #faf6ec);
-  color: var(--admin-ink, #1f1a12);
+  background: var(--admin-surface, rgb(var(--color-marble)));
+  color: var(--admin-ink, rgb(var(--color-ink)));
   box-shadow: 0 24px 60px rgba(31, 26, 18, 0.24);
 }
 
@@ -2000,7 +2000,7 @@ void Promise.all([
 
 .topup-direct-modal__head h2 {
   margin-top: 0.25rem;
-  color: var(--admin-ink-deep, #13100b);
+  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
   font-size: 1.55rem;
   font-weight: 750;
   line-height: 1.2;
@@ -2014,7 +2014,7 @@ void Promise.all([
   place-items: center;
   border: 1px solid var(--admin-border, rgba(31, 26, 18, 0.14));
   border-radius: 6px;
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   background: var(--admin-control, rgba(255, 252, 245, 0.95));
   font-size: 1.35rem;
   line-height: 1;
@@ -2038,7 +2038,7 @@ void Promise.all([
 }
 
 .topup-direct-qr--empty {
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   font-weight: 650;
 }
 
@@ -2054,13 +2054,13 @@ void Promise.all([
 }
 
 .topup-direct-contact span {
-  color: var(--admin-muted, #8a7d63);
+  color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.86rem;
   font-weight: 650;
 }
 
 .topup-direct-contact strong {
-  color: var(--admin-ink-deep, #13100b);
+  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
   font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -2069,7 +2069,7 @@ void Promise.all([
 
 .topup-direct-copy {
   margin-top: 1rem;
-  color: var(--admin-ink-deep, #13100b);
+  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
   font-size: 1rem;
   font-weight: 750;
   line-height: 1.65;

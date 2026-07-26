@@ -1161,17 +1161,17 @@ onUnmounted(() => {
 
 <style scoped>
 .home-page {
-  --papyrus: #f8f3e7;
-  --papyrus-100: #efe6cf;
-  --marble: #faf6ec;
-  --parchment: #f2e9d2;
-  --terracotta: #9a3b1f;
-  --terracotta-dark: #7a2d17;
-  --laurel: #3f5a3a;
-  --laurel-dark: #26361f;
-  --ink: #1f1a12;
-  --ink-deep: #13100b;
-  --ink-fade: #8a7d63;
+  --papyrus: rgb(var(--color-papyrus));
+  --papyrus-100: rgb(var(--color-stone));
+  --marble: rgb(var(--color-marble));
+  --parchment: rgb(var(--color-parchment));
+  --terracotta: rgb(var(--color-terracotta));
+  --terracotta-dark: rgb(var(--color-terracotta-dark));
+  --laurel: rgb(var(--color-laurel));
+  --laurel-dark: rgb(var(--color-laurel-dark));
+  --ink: rgb(var(--color-ink));
+  --ink-deep: rgb(var(--color-ink-deep));
+  --ink-fade: rgb(var(--color-muted));
   min-height: 100vh;
   background: var(--papyrus);
   color: var(--ink);

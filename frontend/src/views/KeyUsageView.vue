@@ -876,13 +876,13 @@ onUnmounted(() => {
   100% { background-position: 200% 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background: linear-gradient(90deg, rgb(var(--color-gray-200)) 25%, rgb(var(--color-gray-100)) 50%, rgb(var(--color-gray-200)) 75%);
   background-size: 200% 100%;
   animation: shimmer-kv 1.8s ease-in-out infinite;
   border-radius: 8px;
 }
 :global(.dark) .skeleton {
-  background: linear-gradient(90deg, #334155 25%, #1e293b 50%, #334155 75%);
+  background: linear-gradient(90deg, rgb(var(--color-slate-700)) 25%, rgb(var(--color-slate-800)) 50%, rgb(var(--color-slate-700)) 75%);
   background-size: 200% 100%;
 }
 

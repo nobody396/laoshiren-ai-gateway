@@ -240,6 +240,33 @@
   --color-slate-800: 33 58 63; /* #213a3f */
   --color-slate-900: 24 40 44; /* #18282c */
   --color-slate-950: 14 23 25; /* #0e1719 */
+
+  /* ---------------------------------------------------------------------
+   * Chart series — the one place a *sequence* of colors matters more than
+   * meaning. Charts previously reached for Tailwind's stock accents
+   * (#3b82f6 #10b981 #f97316 #8b5cf6 #14b8a6 #6366f1), which is why every
+   * dashboard read as a different product than the page around it.
+   *
+   * Ordered for adjacent-slice contrast, not by hue family: each step swings
+   * hue AND lightness, so a pie chart stays legible without borders and so
+   * does a grayscale printout. All eight sit in the same warm register as
+   * the page, so a chart no longer announces itself as foreign.
+   *
+   * Use in order, do not skip. If a chart needs a ninth series it needs
+   * grouping, not another color.
+   *
+   * NOTE: RGB triples, like every other token here. Canvas cannot read CSS
+   * variables, so chart code must resolve these at runtime — see
+   * src/utils/themeColors.ts.
+   * --------------------------------------------------------------------- */
+  --chart-1: 154 59 31; /* #9a3b1f terracotta — always the primary series */
+  --chart-2: 63 90 58; /* #3f5a3a laurel */
+  --chart-3: 154 106 31; /* #9a6a1f amber-ochre */
+  --chart-4: 49 95 113; /* #315f71 info-teal */
+  --chart-5: 122 79 43; /* #7a4f2b umber */
+  --chart-6: 111 79 135; /* #6f4f87 muted plum */
+  --chart-7: 138 125 99; /* #8a7d63 muted — the neutral/"other" series */
+  --chart-8: 90 45 23; /* #5a2d17 deep terracotta */
 }
 
 /*

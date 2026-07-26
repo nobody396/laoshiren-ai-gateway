@@ -2,7 +2,7 @@
   <router-link
     to="/changelog"
     data-testid="changelog-header-link"
-    class="relative flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-600 transition-all hover:scale-105 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-800 dark:hover:text-white"
+    class="relative flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-600 transition-all hover:scale-105 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-800 dark:hover:text-white"
     :class="{ 'text-blue-600 dark:text-blue-400': hasNewChangelog }"
     :aria-label="hasNewChangelog ? t('changelog.newUpdate') : t('nav.changelog')"
     :title="hasNewChangelog ? t('changelog.newUpdate') : t('nav.changelog')"
@@ -16,7 +16,9 @@
         aria-hidden="true"
       ></span>
     </span>
-    <span class="hidden sm:inline">{{ t('nav.changelog') }}</span>
+    <span data-testid="changelog-header-label" class="hidden 2xl:inline">{{
+      t('nav.changelog')
+    }}</span>
   </router-link>
 </template>
 

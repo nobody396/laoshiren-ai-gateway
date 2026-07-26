@@ -2,7 +2,10 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -77,6 +80,70 @@ func TestDownloadResourceServiceSyncCCSwitchCachesInstallAssets(t *testing.T) {
 	content, err := os.ReadFile(file.Path)
 	require.NoError(t, err)
 	require.Equal(t, "windows", string(content))
+}
+
+func TestDownloadResourceServiceSyncCCSwitchVerifiesOfficialDigest(t *testing.T) {
+	dir := t.TempDir()
+	content := []byte("verified-windows-installer")
+	digest := fmt.Sprintf("sha256:%x", sha256.Sum256(content))
+	stub := &downloadResourceGitHubStub{
+		release: &GitHubRelease{
+			TagName: "v3.18.0",
+			Name:    "CC Switch v3.18.0",
+			Assets: []GitHubAsset{{
+				Name:               "CC-Switch-v3.18.0-Windows.msi",
+				BrowserDownloadURL: "https://example.test/windows",
+				Size:               int64(len(content)),
+				Digest:             digest,
+			}},
+		},
+		files: map[string][]byte{"https://example.test/windows": content},
+	}
+	svc := NewDownloadResourceService(&config.Config{
+		Downloads: config.DownloadsConfig{
+			Enabled:             true,
+			CacheDir:            dir,
+			UpdateIntervalHours: 1,
+			CCSwitchRepo:        "farion1231/cc-switch",
+			MaxAssetBytes:       1024,
+		},
+	}, stub)
+
+	require.NoError(t, svc.SyncCCSwitch(context.Background()))
+	manifest, err := svc.ListCCSwitch(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, digest[len("sha256:"):], manifest.Assets[0].SHA256)
+}
+
+func TestDownloadResourceServiceSyncCCSwitchRejectsDigestMismatch(t *testing.T) {
+	dir := t.TempDir()
+	content := []byte("tampered-windows-installer")
+	stub := &downloadResourceGitHubStub{
+		release: &GitHubRelease{
+			TagName: "v3.18.0",
+			Name:    "CC Switch v3.18.0",
+			Assets: []GitHubAsset{{
+				Name:               "CC-Switch-v3.18.0-Windows.msi",
+				BrowserDownloadURL: "https://example.test/windows",
+				Size:               int64(len(content)),
+				Digest:             "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			}},
+		},
+		files: map[string][]byte{"https://example.test/windows": content},
+	}
+	svc := NewDownloadResourceService(&config.Config{
+		Downloads: config.DownloadsConfig{
+			Enabled:             true,
+			CacheDir:            dir,
+			UpdateIntervalHours: 1,
+			CCSwitchRepo:        "farion1231/cc-switch",
+			MaxAssetBytes:       1024,
+		},
+	}, stub)
+
+	err := svc.SyncCCSwitch(context.Background())
+	require.ErrorContains(t, err, "checksum mismatch")
+	require.NoFileExists(t, filepath.Join(dir, ccSwitchToolID, "v3.18.0", "CC-Switch-v3.18.0-Windows.msi"))
 }
 
 func TestDownloadResourceServiceGetCCSwitchAssetNotReady(t *testing.T) {

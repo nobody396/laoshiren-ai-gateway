@@ -367,6 +367,17 @@ func (s *DownloadResourceService) cacheGitHubAsset(ctx context.Context, toolID, 
 	if err != nil {
 		return nil, fmt.Errorf("checksum asset %s: %w", asset.Name, err)
 	}
+	if digest := strings.TrimSpace(asset.Digest); digest != "" {
+		const sha256Prefix = "sha256:"
+		if !strings.HasPrefix(strings.ToLower(digest), sha256Prefix) {
+			return nil, fmt.Errorf("asset %s has unsupported digest: %s", asset.Name, digest)
+		}
+		expected := strings.TrimSpace(digest[len(sha256Prefix):])
+		if len(expected) != sha256.Size*2 || !strings.EqualFold(sum, expected) {
+			_ = os.Remove(dest)
+			return nil, fmt.Errorf("asset %s checksum mismatch", asset.Name)
+		}
+	}
 	return &CachedDownloadAsset{
 		ID:       makeAssetID(asset.Name),
 		Name:     asset.Name,

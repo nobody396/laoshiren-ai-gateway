@@ -958,7 +958,7 @@ export default {
       copied: 'Copied',
       commandCopied: 'Diagnostic command copied. Paste it into your terminal and press Enter.',
       automaticTitle: 'The script makes the decision',
-      automaticDescription: 'It checks whether CC Switch exists, whether the version is too old, and whether the Deep Link handler is broken. It repairs what it can and opens the official download page only when an upgrade is required.',
+      automaticDescription: 'It checks whether CC Switch is installed, outdated, or missing its Deep Link handler. When installation or an upgrade is required, it downloads and verifies the laoshirenai.com cache first, then falls back to the official GitHub release. The download page is only a final fallback.',
       privacyNote: 'The diagnostic script only checks the local CC Switch path, version, and ccswitch:// handler. It does not read or upload your API key.',
     },
     // Quota and expiration

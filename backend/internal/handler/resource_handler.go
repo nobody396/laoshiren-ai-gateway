@@ -19,6 +19,7 @@ const (
 	codexWindowsPublicBase = "https://laoshirenai.com/api/v1/public-downloads/codex/windows-x64"
 	codexPackageName       = "OpenAI.Codex"
 	codexPackagePublisher  = "CN=50BDFD77-8903-4850-9FFE-6E8522F64D5B"
+	ccSwitchPublicBase     = "https://laoshirenai.com/api/v1/public-downloads/cc-switch"
 )
 
 var codexWindowsMSIXVersion = regexp.MustCompile(`(?i)^OpenAI\.Codex_([0-9]+(?:\.[0-9]+){3})_x64__.*\.msix$`)
@@ -27,8 +28,50 @@ type ResourceHandler struct {
 	downloads *service.DownloadResourceService
 }
 
+type publicDownloadManifest struct {
+	Tool        string                `json:"tool"`
+	Version     string                `json:"version"`
+	ReleaseName string                `json:"release_name"`
+	PublishedAt string                `json:"published_at"`
+	UpdatedAt   string                `json:"updated_at"`
+	Assets      []publicDownloadAsset `json:"assets"`
+}
+
+type publicDownloadAsset struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Size        int64  `json:"size"`
+	SHA256      string `json:"sha256"`
+	Platform    string `json:"platform"`
+	Arch        string `json:"arch"`
+	DownloadURL string `json:"download_url"`
+}
+
 func NewResourceHandler(downloads *service.DownloadResourceService) *ResourceHandler {
 	return &ResourceHandler{downloads: downloads}
+}
+
+func buildPublicDownloadManifest(manifest *service.CachedDownloadManifest, publicBase string) publicDownloadManifest {
+	result := publicDownloadManifest{
+		Tool:        manifest.Tool,
+		Version:     manifest.Version,
+		ReleaseName: manifest.ReleaseName,
+		PublishedAt: manifest.PublishedAt,
+		UpdatedAt:   manifest.UpdatedAt,
+		Assets:      make([]publicDownloadAsset, 0, len(manifest.Assets)),
+	}
+	for _, asset := range manifest.Assets {
+		result.Assets = append(result.Assets, publicDownloadAsset{
+			ID:          asset.ID,
+			Name:        asset.Name,
+			Size:        asset.Size,
+			SHA256:      asset.SHA256,
+			Platform:    asset.Platform,
+			Arch:        asset.Arch,
+			DownloadURL: fmt.Sprintf("%s/packages/%s", strings.TrimRight(publicBase, "/"), asset.ID),
+		})
+	}
+	return result
 }
 
 func (h *ResourceHandler) ListTool(c *gin.Context) {
@@ -122,6 +165,36 @@ func (h *ResourceHandler) DownloadCodexWindowsLatest(c *gin.Context) {
 	c.Header("Content-Type", "application/msix")
 	c.Header("Cache-Control", "public, max-age=300")
 	c.FileAttachment(file.Path, file.Asset.Name)
+}
+
+func (h *ResourceHandler) CodexWindowsLatestManifest(c *gin.Context) {
+	file, err := h.downloads.GetCodexWindowsDesktopAsset(c.Request.Context())
+	if err != nil {
+		handlePublicDownloadError(c, err)
+		return
+	}
+	manifest, err := h.downloads.ListTool(c.Request.Context(), "codex")
+	if err != nil {
+		handlePublicDownloadError(c, err)
+		return
+	}
+	c.Header("Cache-Control", "public, max-age=300")
+	c.JSON(http.StatusOK, publicDownloadManifest{
+		Tool:        manifest.Tool,
+		Version:     manifest.Version,
+		ReleaseName: manifest.ReleaseName,
+		PublishedAt: manifest.PublishedAt,
+		UpdatedAt:   manifest.UpdatedAt,
+		Assets: []publicDownloadAsset{{
+			ID:          file.Asset.ID,
+			Name:        file.Asset.Name,
+			Size:        file.Asset.Size,
+			SHA256:      file.Asset.SHA256,
+			Platform:    file.Asset.Platform,
+			Arch:        file.Asset.Arch,
+			DownloadURL: fmt.Sprintf("%s/packages/%s", codexWindowsPublicBase, file.Asset.ID),
+		}},
+	})
 }
 
 func (h *ResourceHandler) DownloadCodexWindowsPackage(c *gin.Context) {
@@ -224,4 +297,36 @@ func (h *ResourceHandler) DownloadCCSwitch(c *gin.Context) {
 	}
 	c.Header("Cache-Control", "private, max-age=3600")
 	c.FileAttachment(file.Path, file.Asset.Name)
+}
+
+func (h *ResourceHandler) CCSwitchLatestManifest(c *gin.Context) {
+	manifest, err := h.downloads.ListCCSwitch(c.Request.Context())
+	if err != nil {
+		handleCCSwitchPublicDownloadError(c, err)
+		return
+	}
+	c.Header("Cache-Control", "public, max-age=300")
+	c.JSON(http.StatusOK, buildPublicDownloadManifest(manifest, ccSwitchPublicBase))
+}
+
+func (h *ResourceHandler) DownloadCCSwitchPackage(c *gin.Context) {
+	file, err := h.downloads.GetCCSwitchAsset(c.Request.Context(), c.Param("assetID"))
+	if err != nil {
+		handleCCSwitchPublicDownloadError(c, err)
+		return
+	}
+	c.Header("Cache-Control", "public, max-age=31536000, immutable")
+	c.FileAttachment(file.Path, file.Asset.Name)
+}
+
+func handleCCSwitchPublicDownloadError(c *gin.Context, err error) {
+	if errors.Is(err, service.ErrDownloadManifestNotReady) {
+		response.Error(c, http.StatusServiceUnavailable, "CC Switch 安装包正在同步，请稍后再试")
+		return
+	}
+	if errors.Is(err, service.ErrDownloadToolNotFound) || errors.Is(err, service.ErrDownloadAssetNotFound) {
+		response.NotFound(c, "CC Switch 安装包不存在")
+		return
+	}
+	response.InternalError(c, "读取 CC Switch 安装包失败")
 }

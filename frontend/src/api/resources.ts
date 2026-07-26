@@ -26,6 +26,16 @@ export interface DownloadURLResponse {
   expires_at: string
 }
 
+export type ClientSetupTarget = 'claude' | 'codex'
+
+export interface ClientSetupTicket {
+  ticket: string
+  expires_in: number
+  target: ClientSetupTarget
+  key_name: string
+  group_name: string
+}
+
 export async function getDownloads(tool: DownloadToolID): Promise<DownloadManifest> {
   const { data } = await apiClient.get<DownloadManifest>(`/resources/${tool}`)
   return data
@@ -56,11 +66,17 @@ export async function downloadCCSwitchAsset(asset: DownloadAsset): Promise<void>
   return downloadAsset('cc-switch', asset)
 }
 
+export async function createClientSetupTicket(target: ClientSetupTarget): Promise<ClientSetupTicket> {
+  const { data } = await apiClient.post<ClientSetupTicket>('/resources/setup-ticket', { target })
+  return data
+}
+
 export const resourcesAPI = {
   getDownloads,
   createDownloadURL,
   buildResourceDownloadURL,
   downloadAsset,
   getCCSwitchDownloads,
-  downloadCCSwitchAsset
+  downloadCCSwitchAsset,
+  createClientSetupTicket
 }

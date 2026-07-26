@@ -90,7 +90,7 @@ func TestCCSwitchPublicEndpointsServeCachedManifestAndPackageWithoutAuthenticati
 			CacheDir: cacheDir,
 		},
 	}, nil)
-	handler := NewResourceHandler(downloads)
+	handler := NewResourceHandler(downloads, nil)
 	router := gin.New()
 	router.GET("/latest.json", handler.CCSwitchLatestManifest)
 	router.GET("/packages/:assetID", handler.DownloadCCSwitchPackage)
@@ -106,4 +106,47 @@ func TestCCSwitchPublicEndpointsServeCachedManifestAndPackageWithoutAuthenticati
 	require.Equal(t, http.StatusOK, packageRecorder.Code)
 	require.Contains(t, packageRecorder.Header().Get("Cache-Control"), "immutable")
 	require.Equal(t, "verified-msi", packageRecorder.Body.String())
+}
+
+func TestCodexPublicEndpointsExposeCrossPlatformDesktopPackages(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cacheDir := t.TempDir()
+	versionDir := filepath.Join(cacheDir, "codex", "codex-app-26.721.4979")
+	require.NoError(t, os.MkdirAll(versionDir, 0755))
+	assetName := "Codex-mac-arm64.dmg"
+	assetID := "codex-mac-arm64.dmg"
+	require.NoError(t, os.WriteFile(filepath.Join(versionDir, assetName), []byte("verified-dmg"), 0644))
+	rawManifest, err := json.Marshal(service.CachedDownloadManifest{
+		Tool:    "codex",
+		Version: "codex-app-26.721.4979",
+		Assets: []service.CachedDownloadAsset{{
+			ID:       assetID,
+			Name:     assetName,
+			Size:     int64(len("verified-dmg")),
+			SHA256:   "2f135f56ac6277ae11f773cd5ffb3756ca59ab4d7799a0eb344fe34da0df7ea2",
+			Platform: "macos",
+			Arch:     "arm64",
+		}},
+	})
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "codex", "manifest.json"), rawManifest, 0644))
+
+	downloads := service.NewDownloadResourceService(&config.Config{
+		Downloads: config.DownloadsConfig{Enabled: true, CacheDir: cacheDir},
+	}, nil)
+	handler := NewResourceHandler(downloads, nil)
+	router := gin.New()
+	router.GET("/latest.json", handler.CodexLatestManifest)
+	router.GET("/packages/:assetID", handler.DownloadCodexPackage)
+
+	manifestRecorder := httptest.NewRecorder()
+	router.ServeHTTP(manifestRecorder, httptest.NewRequest(http.MethodGet, "/latest.json", nil))
+	require.Equal(t, http.StatusOK, manifestRecorder.Code)
+	require.Contains(t, manifestRecorder.Body.String(), codexPublicBase+"/packages/"+assetID)
+
+	packageRecorder := httptest.NewRecorder()
+	router.ServeHTTP(packageRecorder, httptest.NewRequest(http.MethodGet, "/packages/"+assetID, nil))
+	require.Equal(t, http.StatusOK, packageRecorder.Code)
+	require.Equal(t, "application/x-apple-diskimage", packageRecorder.Header().Get("Content-Type"))
+	require.Equal(t, "verified-dmg", packageRecorder.Body.String())
 }

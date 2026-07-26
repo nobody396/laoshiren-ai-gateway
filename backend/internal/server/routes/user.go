@@ -22,6 +22,9 @@ func RegisterUserRoutes(
 	v1.GET("/public-downloads/codex/windows-x64/latest.appinstaller", h.Resource.CodexWindowsAppInstaller)
 	v1.GET("/public-downloads/codex/windows-x64/latest.msix", h.Resource.DownloadCodexWindowsLatest)
 	v1.GET("/public-downloads/codex/windows-x64/packages/:assetID", h.Resource.DownloadCodexWindowsPackage)
+	v1.GET("/public-downloads/codex/latest.json", h.Resource.CodexLatestManifest)
+	v1.GET("/public-downloads/codex/packages/:assetID", h.Resource.DownloadCodexPackage)
+	v1.POST("/public-setup/exchange", h.Resource.ExchangeSetupTicket)
 
 	authenticated := v1.Group("")
 	authenticated.Use(gin.HandlerFunc(jwtAuth))
@@ -116,6 +119,7 @@ func RegisterUserRoutes(
 
 		resources := authenticated.Group("/resources")
 		{
+			resources.POST("/setup-ticket", h.Resource.CreateSetupTicket)
 			resources.GET("/:tool", h.Resource.ListTool)
 			resources.POST("/:tool/download-url/:assetID", h.Resource.CreateDownloadURL)
 			resources.GET("/:tool/download/:assetID", h.Resource.DownloadTool)

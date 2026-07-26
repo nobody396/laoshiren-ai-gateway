@@ -256,14 +256,19 @@ func TestDownloadResourceServiceSyncCodexCachesSelectedAssets(t *testing.T) {
 				PublishedAt: "2026-07-10T03:42:05Z",
 				Assets: []GitHubAsset{
 					{Name: "OpenAI.Codex_26.707.3748.0_x64__2p2nqsd0c76g0.Msix", BrowserDownloadURL: "https://example.test/codex-msix", Size: int64(len("codex-msix"))},
-					{Name: "OpenAI.Codex_26.707.3748.0_arm64__2p2nqsd0c76g0.Msix", BrowserDownloadURL: "https://example.test/skip-arm64", Size: int64(len("skip"))},
+					{Name: "OpenAI.Codex_26.707.3748.0_arm64__2p2nqsd0c76g0.Msix", BrowserDownloadURL: "https://example.test/codex-msix-arm64", Size: int64(len("codex-msix-arm64"))},
+					{Name: "Codex-mac-arm64.dmg", BrowserDownloadURL: "https://example.test/codex-mac-app-arm64", Size: int64(len("codex-mac-app-arm64"))},
+					{Name: "Codex-mac-x64.dmg", BrowserDownloadURL: "https://example.test/codex-mac-app-x64", Size: int64(len("codex-mac-app-x64"))},
 				},
 			},
 		},
 		files: map[string][]byte{
-			"https://example.test/codex-mac":  []byte("codex-mac"),
-			"https://example.test/codex-app":  []byte("codex-app"),
-			"https://example.test/codex-msix": []byte("codex-msix"),
+			"https://example.test/codex-mac":           []byte("codex-mac"),
+			"https://example.test/codex-app":           []byte("codex-app"),
+			"https://example.test/codex-msix":          []byte("codex-msix"),
+			"https://example.test/codex-msix-arm64":    []byte("codex-msix-arm64"),
+			"https://example.test/codex-mac-app-arm64": []byte("codex-mac-app-arm64"),
+			"https://example.test/codex-mac-app-x64":   []byte("codex-mac-app-x64"),
 		},
 	}
 	svc := NewDownloadResourceService(&config.Config{
@@ -283,10 +288,14 @@ func TestDownloadResourceServiceSyncCodexCachesSelectedAssets(t *testing.T) {
 	manifest, err := svc.ListTool(context.Background(), codexToolID)
 	require.NoError(t, err)
 	require.Equal(t, "codex-app-26.707.31428", manifest.Version)
-	require.Len(t, manifest.Assets, 2)
+	require.Len(t, manifest.Assets, 5)
 	require.Equal(t, "macos", manifest.Assets[0].Platform)
 	require.Equal(t, "windows", manifest.Assets[1].Platform)
 	require.Equal(t, "x64", manifest.Assets[1].Arch)
+	require.Equal(t, "arm64", manifest.Assets[2].Arch)
+	require.Equal(t, "macos", manifest.Assets[3].Platform)
+	require.Equal(t, "arm64", manifest.Assets[3].Arch)
+	require.Equal(t, "x64", manifest.Assets[4].Arch)
 	require.NotEmpty(t, manifest.Assets[0].SHA256)
 }
 

@@ -1,8 +1,11 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.4.0'
+$ScriptVersion = '0.5.0'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
+$DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
+$DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
+$DefaultTopupUrl = 'https://laoshirenai.com/get-subscription'
 $DefaultTools = 'all'
 $DefaultNodeIndexPrimary = 'https://npmmirror.com/mirrors/node/index.json'
 $DefaultNodeIndexFallback = 'https://nodejs.org/dist/index.json'
@@ -36,6 +39,11 @@ if ([string]::IsNullOrWhiteSpace($CodexApiKey) -and -not [string]::IsNullOrWhite
 $NodeVersionOverride = if ($env:LAOSHIRENAI_NODE_VERSION) { $env:LAOSHIRENAI_NODE_VERSION } else { '' }
 $SkipClientInstall = $env:LAOSHIRENAI_SKIP_CLIENT_INSTALL -eq '1'
 $ForceClientInstall = $env:LAOSHIRENAI_FORCE_CLIENT_INSTALL -eq '1'
+$InstallCodexApp = $env:LAOSHIRENAI_INSTALL_CODEX_APP -eq '1'
+$SetupToken = if ($env:LAOSHIRENAI_SETUP_TOKEN) { $env:LAOSHIRENAI_SETUP_TOKEN } else { '' }
+$SetupExchangeUrl = if ($env:LAOSHIRENAI_SETUP_EXCHANGE_URL) { $env:LAOSHIRENAI_SETUP_EXCHANGE_URL } else { $DefaultSetupExchangeUrl }
+$CodexManifestUrl = if ($env:LAOSHIRENAI_CODEX_MANIFEST_URL) { $env:LAOSHIRENAI_CODEX_MANIFEST_URL } else { $DefaultCodexManifestUrl }
+$script:BalanceReady = $true
 
 $script:NodeExe = ''
 $script:NpmCmd = ''
@@ -131,6 +139,9 @@ function Parse-Arguments {
       '--force-client-install' {
         $script:ForceClientInstall = $true
       }
+      '--install-codex-app' {
+        $script:InstallCodexApp = $true
+      }
       '--help' {
         @'
 老实人 AI 一键安装与自动配置脚本
@@ -153,6 +164,7 @@ function Parse-Arguments {
   --node-version         指定 Node.js 版本，例如 v24.11.0
   --skip-client-install  仅写配置，不安装 claude/codex 包
   --force-client-install 即使检测到已有客户端，也重新安装所选 CLI
+  --install-codex-app    同时安装或更新与当前 Windows 架构匹配的 Codex App
 '@ | Write-Host
         exit 0
       }
@@ -179,6 +191,10 @@ function Read-SecureInput {
 
 # 根据用户选择的工具范围，分别提示输入 Claude 和 Codex 的 API Key。
 function Prompt-ApiKeys {
+  if (-not [string]::IsNullOrWhiteSpace($script:SetupToken)) {
+    Write-Info '检测到一次性安装凭证，将自动领取对应客户端的专用配置'
+    return
+  }
   # Claude API Key
   if ($script:Tools -in @('all', 'claude') -and [string]::IsNullOrWhiteSpace($script:ClaudeApiKey)) {
     $script:ClaudeApiKey = Read-SecureInput -Prompt '请输入 Claude Code API Key'
@@ -194,6 +210,44 @@ function Prompt-ApiKeys {
       Stop-Script 'Codex API Key 不能为空'
     }
   }
+}
+
+# 用一次性凭证领取当前目标的专用 API Key。凭证和 Key 均不会打印到终端。
+function Exchange-SetupTicket {
+  if ([string]::IsNullOrWhiteSpace($script:SetupToken)) {
+    return
+  }
+
+  Write-Info '正在领取一次性安装配置'
+  try {
+    $Response = Invoke-RestMethod -Uri $script:SetupExchangeUrl `
+      -Method POST `
+      -ContentType 'application/json' `
+      -Body (@{ ticket = $script:SetupToken } | ConvertTo-Json -Compress)
+  } catch {
+    Stop-Script '一次性安装凭证无效、已过期或已使用，请回到下载资源页重新生成'
+  }
+
+  $Data = $Response.data
+  if ($null -eq $Data -or
+      $Data.target -notin @('claude', 'codex') -or
+      [string]::IsNullOrWhiteSpace([string]$Data.api_key) -or
+      [string]::IsNullOrWhiteSpace([string]$Data.base_url)) {
+    Stop-Script '服务器返回的一键安装配置格式无效'
+  }
+  if ([string]$Data.target -ne $script:Tools) {
+    Stop-Script '安装凭证与当前工具不匹配，请重新生成'
+  }
+
+  $script:BaseUrl = [string]$Data.base_url
+  if ($Data.target -eq 'claude') {
+    $script:ClaudeApiKey = [string]$Data.api_key
+  } else {
+    $script:CodexApiKey = [string]$Data.api_key
+  }
+  $script:SetupToken = ''
+  Remove-Item Env:LAOSHIRENAI_SETUP_TOKEN -ErrorAction SilentlyContinue
+  Write-Info '专用配置领取成功'
 }
 
 # 查找一个真正可执行的现有 CLI。仅 PATH 中存在但无法运行的残留命令不算已安装。
@@ -285,21 +339,19 @@ function Resolve-ClientInstallPlan {
     $script:ExistingCodexCommand = Get-UsableClientCommand -CommandName 'codex'
     if (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexCommand)) {
       Write-Info "检测到现有 Codex CLI，跳过重复安装: $($script:ExistingCodexCommand)"
-    } else {
-      $script:ExistingCodexApp = Get-InstalledCodexApp
-      if (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexApp)) {
-        Write-Info '检测到现有 Codex App，跳过重复下载 Codex CLI'
-      }
+    }
+    $script:ExistingCodexApp = Get-InstalledCodexApp
+    if (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexApp)) {
+      Write-Info '检测到现有 Codex App；App 与 CLI 将分别检查，不再互相替代'
     }
 
     if ($script:ForceClientInstall) {
       $script:InstallCodexClient = $true
       Write-Info '已要求强制重新安装 Codex CLI'
-    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexCommand) -or
-            -not [string]::IsNullOrWhiteSpace($script:ExistingCodexApp)) {
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexCommand)) {
       $script:InstallCodexClient = $false
     } elseif ($script:SkipClientInstall) {
-      Write-WarnMessage '未检测到 Codex App 或可用的 Codex CLI，但已按要求跳过安装'
+      Write-WarnMessage '未检测到可用的 Codex CLI，但已按要求跳过安装'
     } else {
       $script:InstallCodexClient = $true
     }
@@ -680,6 +732,88 @@ function Install-RequestedClients {
   }
 }
 
+function Install-CodexAppIfRequested {
+  if (-not $script:InstallCodexApp) {
+    return
+  }
+  if (-not (Test-UsesCodex)) {
+    Stop-Script '--install-codex-app 只能与 Codex 一起使用'
+  }
+
+  $NativeArch = if (-not [string]::IsNullOrWhiteSpace($env:PROCESSOR_ARCHITEW6432)) {
+    $env:PROCESSOR_ARCHITEW6432
+  } else {
+    $env:PROCESSOR_ARCHITECTURE
+  }
+  $TargetArch = if ($NativeArch -eq 'ARM64') { 'arm64' } else { 'x64' }
+
+  Write-Info "正在读取本站 Codex App 最新版本清单 ($TargetArch)"
+  try {
+    $Manifest = Invoke-RestMethod -Uri $script:CodexManifestUrl -Method GET
+  } catch {
+    Stop-Script "无法读取本站 Codex App 最新版本清单: $_"
+  }
+  $Asset = $Manifest.assets |
+    Where-Object {
+      $_.platform -eq 'windows' -and
+      $_.arch -eq $TargetArch -and
+      ([string]$_.name).EndsWith('.msix', [StringComparison]::OrdinalIgnoreCase)
+    } |
+    Select-Object -First 1
+  if ($null -eq $Asset) {
+    Stop-Script "本站缓存中暂时没有适合 Windows $TargetArch 的 Codex App"
+  }
+  $DownloadUrl = [string]$Asset.download_url
+  if (-not $DownloadUrl.StartsWith('https://laoshirenai.com/api/v1/public-downloads/codex/packages/', [StringComparison]::OrdinalIgnoreCase)) {
+    Stop-Script 'Codex App 下载地址未通过同站校验'
+  }
+  $ExpectedSha = ([string]$Asset.sha256).ToLowerInvariant()
+  if ($ExpectedSha -notmatch '^[a-f0-9]{64}$') {
+    Stop-Script 'Codex App 下载清单缺少有效的 SHA256'
+  }
+
+  $LatestVersion = ''
+  if ([string]$Asset.name -match '^OpenAI\.Codex_([0-9]+(?:\.[0-9]+){3})_') {
+    $LatestVersion = $Matches[1]
+  }
+  $Installed = Get-AppxPackage -Name 'OpenAI.Codex' -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+  if ($null -ne $Installed -and
+      -not [string]::IsNullOrWhiteSpace($LatestVersion) -and
+      [string]$Installed.Version -eq $LatestVersion) {
+    $script:ExistingCodexApp = [string]$Installed.PackageFullName
+    Write-Info "Codex App 已是最新版本 ($LatestVersion)"
+    return
+  }
+
+  $TempDir = Join-Path ([IO.Path]::GetTempPath()) ("laoshirenai-codex-app-" + [guid]::NewGuid().ToString('N'))
+  Ensure-Directory $TempDir
+  $PackagePath = Join-Path $TempDir ([IO.Path]::GetFileName([string]$Asset.name))
+  try {
+    Write-Info "正在从本站缓存下载最新 Codex App ($TargetArch)"
+    Invoke-WebRequest -Uri $DownloadUrl -OutFile $PackagePath
+    $ActualSha = (Get-FileHash -LiteralPath $PackagePath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($ActualSha -ne $ExpectedSha) {
+      Stop-Script 'Codex App SHA256 校验失败，已停止安装'
+    }
+
+    if ($null -ne $Installed) {
+      Write-WarnMessage '检测到旧版 Codex App；更新时会安全关闭正在运行的 Codex，请先保存工作'
+      Add-AppxPackage -Path $PackagePath -ForceApplicationShutdown
+    } else {
+      Add-AppxPackage -Path $PackagePath
+    }
+    $script:ExistingCodexApp = Get-InstalledCodexApp
+    if ([string]::IsNullOrWhiteSpace($script:ExistingCodexApp)) {
+      Stop-Script 'Codex App 安装结束但未能检测到应用'
+    }
+    $VersionSuffix = if ([string]::IsNullOrWhiteSpace($LatestVersion)) { '' } else { " ($LatestVersion)" }
+    Write-Info "Codex App 安装完成$VersionSuffix"
+  } finally {
+    Remove-Item -LiteralPath $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+  }
+}
+
 # 写入 Claude Code 配置，并尽量保留用户原有 JSON 字段。
 function Write-ClaudeConfig {
   Backup-IfNeeded $ClaudeSettingsPath
@@ -746,8 +880,8 @@ function Write-CodexTomlConfig {
   # 用无 BOM 的 UTF-8 写入，同上
   $toml = @"
 model_provider = "OpenAI"
-model = "gpt-5.4"
-review_model = "gpt-5.4"
+model = "gpt-5.6-sol"
+review_model = "gpt-5.6-sol"
 model_reasoning_effort = "high"
 disable_response_storage = true
 network_access = "enabled"
@@ -781,22 +915,47 @@ function Get-OpenAIV1BaseUrl {
   return "$NormalizedUrl/v1"
 }
 
-function Test-ClaudeApiKey {
-  if (-not (Test-UsesClaude)) {
-    return
+function Test-ApiKeyReadiness {
+  param(
+    [string]$Label,
+    [string]$ApiKey
+  )
+  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  Write-Info "正在检查 $Label 专用 Key 和账户余额"
+
+  try {
+    $Usage = Invoke-RestMethod -Uri "$ApiBaseUrl/usage" -Headers @{
+      Authorization = "Bearer $ApiKey"
+    } -Method GET
+  } catch {
+    $Status = '请求失败'
+    $ResponseProperty = $_.Exception.PSObject.Properties['Response']
+    if ($null -ne $ResponseProperty -and $null -ne $ResponseProperty.Value -and $ResponseProperty.Value.StatusCode) {
+      $Status = "HTTP $([int]$ResponseProperty.Value.StatusCode)"
+    }
+    Stop-Script "$Label 专用 Key 验证失败: $ApiBaseUrl/usage 返回 $Status"
   }
 
-  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
-  Write-Info '正在测试 Claude Code API Key'
+  $RemainingProperty = $Usage.PSObject.Properties['remaining']
+  if ($null -ne $RemainingProperty -and
+      $null -ne $RemainingProperty.Value -and
+      [double]$RemainingProperty.Value -le 0) {
+    $script:BalanceReady = $false
+    Write-WarnMessage "$Label 已安装并配置完成，但当前余额/套餐额度不足"
+    return
+  }
+  if ($Usage.mode -eq 'quota_limited' -and
+      -not [string]::IsNullOrWhiteSpace([string]$Usage.status) -and
+      $Usage.status -notin @('active', 'quota_exhausted')) {
+    Stop-Script "$Label 专用 Key 当前不可用，请在网站检查 Key 状态"
+  }
 
   try {
     $Response = Invoke-WebRequest -Uri "$ApiBaseUrl/models" -Headers @{
-      Authorization = "Bearer $script:ClaudeApiKey"
-      'anthropic-version' = '2023-06-01'
+      Authorization = "Bearer $ApiKey"
     } -Method GET
-
     if ([int]$Response.StatusCode -ne 200) {
-      Stop-Script "Claude Code API Key 测试失败: $ApiBaseUrl/models 返回 HTTP $($Response.StatusCode)，请检查 Key、分组和 API 地址"
+      Stop-Script "$Label 连通性测试失败: $ApiBaseUrl/models 返回 HTTP $($Response.StatusCode)"
     }
   } catch {
     $Status = '请求失败'
@@ -804,38 +963,21 @@ function Test-ClaudeApiKey {
     if ($null -ne $ResponseProperty -and $null -ne $ResponseProperty.Value -and $ResponseProperty.Value.StatusCode) {
       $Status = "HTTP $([int]$ResponseProperty.Value.StatusCode)"
     }
-    Stop-Script "Claude Code API Key 测试失败: $ApiBaseUrl/models 返回 $Status，请检查 Key、分组和 API 地址"
+    Stop-Script "$Label 连通性测试失败: $ApiBaseUrl/models 返回 $Status"
   }
+  Write-Info "$Label 专用 Key、余额和连通性检查通过"
+}
 
-  Write-Info 'Claude Code API Key 测试通过'
+function Test-ClaudeApiKey {
+  if (Test-UsesClaude) {
+    Test-ApiKeyReadiness -Label 'Claude Code' -ApiKey $script:ClaudeApiKey
+  }
 }
 
 function Test-CodexApiKey {
-  if (-not (Test-UsesCodex)) {
-    return
+  if (Test-UsesCodex) {
+    Test-ApiKeyReadiness -Label 'Codex' -ApiKey $script:CodexApiKey
   }
-
-  $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
-  Write-Info '正在测试 Codex API Key'
-
-  try {
-    $Response = Invoke-WebRequest -Uri "$ApiBaseUrl/models" -Headers @{
-      Authorization = "Bearer $script:CodexApiKey"
-    } -Method GET
-
-    if ([int]$Response.StatusCode -ne 200) {
-      Stop-Script "Codex API Key 测试失败: $ApiBaseUrl/models 返回 HTTP $($Response.StatusCode)，请检查 Key、分组和 API 地址"
-    }
-  } catch {
-    $Status = '请求失败'
-    $ResponseProperty = $_.Exception.PSObject.Properties['Response']
-    if ($null -ne $ResponseProperty -and $null -ne $ResponseProperty.Value -and $ResponseProperty.Value.StatusCode) {
-      $Status = "HTTP $([int]$ResponseProperty.Value.StatusCode)"
-    }
-    Stop-Script "Codex API Key 测试失败: $ApiBaseUrl/models 返回 $Status，请检查 Key、分组和 API 地址"
-  }
-
-  Write-Info 'Codex API Key 测试通过'
 }
 
 # 根据用户选择写入 Claude Code 配置。
@@ -906,7 +1048,7 @@ function Print-Summary {
   Write-Host "  - Codex 鉴权: $CodexAuthPath"
   Write-Host "  - Codex 配置: $CodexConfigPath"
   if (Test-UsesClaude) {
-    Write-Host '  - Claude Code API Key 测试: 已通过'
+    Write-Host '  - Claude Code 专用 Key: 已配置'
     if ($script:InstallClaudeClient) {
       Write-Host '  - Claude Code CLI: 本次已安装'
     } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingClaudeCommand)) {
@@ -914,7 +1056,7 @@ function Print-Summary {
     }
   }
   if (Test-UsesCodex) {
-    Write-Host '  - Codex API Key 测试: 已通过'
+    Write-Host '  - Codex 专用 Key: 已配置'
     if ($script:InstallCodexClient) {
       Write-Host '  - Codex CLI: 本次已安装'
     } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexCommand)) {
@@ -922,6 +1064,13 @@ function Print-Summary {
     } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexApp)) {
       Write-Host '  - Codex App: 已保留现有安装，未重复下载'
     }
+  }
+  Write-Host ''
+  if ($script:BalanceReady) {
+    Write-Host '✅ 余额/套餐额度充足，现在可以直接使用。'
+  } else {
+    Write-Warning '安装和配置已经完成，但余额/套餐额度不足。'
+    Write-Host "请充值或购买套餐后直接打开使用：$DefaultTopupUrl"
   }
   Write-Host ''
   Write-Host '下一步:'
@@ -950,6 +1099,7 @@ function Main {
     Parse-Arguments -ArgsList $args
   }
   Prompt-ApiKeys
+  Exchange-SetupTicket
   Resolve-ClientInstallPlan
   if (Test-NeedsClientInstall) {
     Ensure-NodeRuntime
@@ -959,6 +1109,7 @@ function Main {
     Write-Info '检测到所选客户端已存在或已要求跳过安装；不下载 Node.js、不修改 PATH'
   }
   Install-RequestedClients
+  Install-CodexAppIfRequested
   Configure-Claude
   Configure-Codex
   Test-ClaudeApiKey

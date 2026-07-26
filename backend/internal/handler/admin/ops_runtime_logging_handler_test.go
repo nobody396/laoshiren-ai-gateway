@@ -16,7 +16,8 @@ import (
 )
 
 type testSettingRepo struct {
-	values map[string]string
+	values          map[string]string
+	lastSetMultiple map[string]string
 }
 
 func newTestSettingRepo() *testSettingRepo {
@@ -51,8 +52,10 @@ func (s *testSettingRepo) GetMultiple(ctx context.Context, keys []string) (map[s
 	return out, nil
 }
 func (s *testSettingRepo) SetMultiple(ctx context.Context, settings map[string]string) error {
+	s.lastSetMultiple = make(map[string]string, len(settings))
 	for k, v := range settings {
 		s.values[k] = v
+		s.lastSetMultiple[k] = v
 	}
 	return nil
 }

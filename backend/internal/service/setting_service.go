@@ -738,8 +738,22 @@ func publicCardShopProducts(items []CardShopProduct) []CardShopProduct {
 	return out
 }
 
-// UpdateSettings 更新系统设置
+// UpdateSettings replaces all system settings represented by settings.
 func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSettings) error {
+	return s.updateSettings(ctx, settings, nil)
+}
+
+// UpdateSettingsPartial persists only the supplied setting keys. The settings
+// value must contain the merged final state so validation and cache refreshes
+// see a coherent configuration.
+func (s *SettingService) UpdateSettingsPartial(ctx context.Context, settings *SystemSettings, keys map[string]struct{}) error {
+	if keys == nil {
+		keys = map[string]struct{}{}
+	}
+	return s.updateSettings(ctx, settings, keys)
+}
+
+func (s *SettingService) updateSettings(ctx context.Context, settings *SystemSettings, keys map[string]struct{}) error {
 	if err := s.validateDefaultSubscriptionGroups(ctx, settings.DefaultSubscriptions); err != nil {
 		return err
 	}
@@ -929,9 +943,7 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 
 	// 支付宝支付设置
 	updates[SettingKeyAlipayEnabled] = strconv.FormatBool(settings.AlipayEnabled)
-	if settings.AlipayAppID != "" {
-		updates[SettingKeyAlipayAppID] = settings.AlipayAppID
-	}
+	updates[SettingKeyAlipayAppID] = settings.AlipayAppID
 	if settings.AlipayPrivateKey != "" {
 		updates[SettingKeyAlipayPrivateKey] = settings.AlipayPrivateKey
 	}
@@ -942,16 +954,12 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 
 	// 虎皮椒聚合支付设置
 	updates[SettingKeyXunhuAlipayEnabled] = strconv.FormatBool(settings.XunhuAlipayEnabled)
-	if settings.XunhuAlipayAppID != "" {
-		updates[SettingKeyXunhuAlipayAppID] = settings.XunhuAlipayAppID
-	}
+	updates[SettingKeyXunhuAlipayAppID] = settings.XunhuAlipayAppID
 	if settings.XunhuAlipayKey != "" {
 		updates[SettingKeyXunhuAlipayKey] = settings.XunhuAlipayKey
 	}
 	updates[SettingKeyXunhuWechatEnabled] = strconv.FormatBool(settings.XunhuWechatEnabled)
-	if settings.XunhuWechatAppID != "" {
-		updates[SettingKeyXunhuWechatAppID] = settings.XunhuWechatAppID
-	}
+	updates[SettingKeyXunhuWechatAppID] = settings.XunhuWechatAppID
 	if settings.XunhuWechatKey != "" {
 		updates[SettingKeyXunhuWechatKey] = settings.XunhuWechatKey
 	}
@@ -969,28 +977,51 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 	updates[SettingKeyAccountQuotaNotifyEnabled] = strconv.FormatBool(settings.AccountQuotaNotifyEnabled)
 	updates[SettingKeyAccountQuotaNotifyEmails] = MarshalNotifyEmails(settings.AccountQuotaNotifyEmails)
 
+	if keys != nil {
+		for key := range updates {
+			if _, ok := keys[key]; !ok {
+				delete(updates, key)
+			}
+		}
+	}
+	if len(updates) == 0 {
+		return nil
+	}
+
 	err = s.settingRepo.SetMultiple(ctx, updates)
 	if err == nil {
 		// 先使 inflight singleflight 失效，再刷新缓存，缩小旧值覆盖新值的竞态窗口
-		versionBoundsSF.Forget("version_bounds")
-		versionBoundsCache.Store(&cachedVersionBounds{
-			min:       settings.MinClaudeCodeVersion,
-			max:       settings.MaxClaudeCodeVersion,
-			expiresAt: time.Now().Add(versionBoundsCacheTTL).UnixNano(),
-		})
-		backendModeSF.Forget("backend_mode")
-		backendModeCache.Store(&cachedBackendMode{
-			value:     settings.BackendModeEnabled,
-			expiresAt: time.Now().Add(backendModeCacheTTL).UnixNano(),
-		})
-		gatewayForwardingSF.Forget("gateway_forwarding")
-		gatewayForwardingCache.Store(&cachedGatewayForwardingSettings{
-			fingerprintUnification:       settings.EnableFingerprintUnification,
-			metadataPassthrough:          settings.EnableMetadataPassthrough,
-			cchSigning:                   settings.EnableCCHSigning,
-			anthropicCacheTTL1hInjection: settings.EnableAnthropicCacheTTL1hInjection,
-			expiresAt:                    time.Now().Add(gatewayForwardingCacheTTL).UnixNano(),
-		})
+		_, minVersionUpdated := updates[SettingKeyMinClaudeCodeVersion]
+		_, maxVersionUpdated := updates[SettingKeyMaxClaudeCodeVersion]
+		if minVersionUpdated || maxVersionUpdated {
+			versionBoundsSF.Forget("version_bounds")
+			versionBoundsCache.Store(&cachedVersionBounds{
+				min:       settings.MinClaudeCodeVersion,
+				max:       settings.MaxClaudeCodeVersion,
+				expiresAt: time.Now().Add(versionBoundsCacheTTL).UnixNano(),
+			})
+		}
+		if _, backendModeUpdated := updates[SettingKeyBackendModeEnabled]; backendModeUpdated {
+			backendModeSF.Forget("backend_mode")
+			backendModeCache.Store(&cachedBackendMode{
+				value:     settings.BackendModeEnabled,
+				expiresAt: time.Now().Add(backendModeCacheTTL).UnixNano(),
+			})
+		}
+		_, fingerprintUpdated := updates[SettingKeyEnableFingerprintUnification]
+		_, metadataUpdated := updates[SettingKeyEnableMetadataPassthrough]
+		_, cchUpdated := updates[SettingKeyEnableCCHSigning]
+		_, cacheTTLUpdated := updates[SettingKeyEnableAnthropicCacheTTL1hInjection]
+		if fingerprintUpdated || metadataUpdated || cchUpdated || cacheTTLUpdated {
+			gatewayForwardingSF.Forget("gateway_forwarding")
+			gatewayForwardingCache.Store(&cachedGatewayForwardingSettings{
+				fingerprintUnification:       settings.EnableFingerprintUnification,
+				metadataPassthrough:          settings.EnableMetadataPassthrough,
+				cchSigning:                   settings.EnableCCHSigning,
+				anthropicCacheTTL1hInjection: settings.EnableAnthropicCacheTTL1hInjection,
+				expiresAt:                    time.Now().Add(gatewayForwardingCacheTTL).UnixNano(),
+			})
+		}
 		if s.onUpdate != nil {
 			s.onUpdate() // Invalidate cache after settings update
 		}

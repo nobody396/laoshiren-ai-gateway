@@ -16,7 +16,7 @@
         aria-hidden="true"
       ></span>
     </span>
-    <span data-testid="changelog-header-label" class="hidden 2xl:inline">{{
+    <span data-testid="changelog-header-label" class="hidden sm:inline">{{
       t('nav.changelog')
     }}</span>
   </router-link>

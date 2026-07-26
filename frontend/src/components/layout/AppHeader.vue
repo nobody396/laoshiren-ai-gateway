@@ -21,8 +21,8 @@
         </div>
       </div>
 
-      <!-- Right: Support + Announcements + Docs + Language + Subscriptions + Balance + User Dropdown -->
-      <div class="flex items-center gap-2">
+      <!-- Right: direct actions + account controls -->
+      <div class="ml-auto flex items-center gap-2">
         <!-- 官网入口 -->
         <a
           v-if="user"
@@ -55,7 +55,7 @@
           class="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white"
         >
           <Icon name="book" size="xs" />
-          <span class="hidden sm:inline">{{ t('nav.docs') }}</span>
+          <span class="hidden md:inline">{{ t('nav.docs') }}</span>
         </a>
 
         <!-- Chatbot Link -->
@@ -66,7 +66,7 @@
           class="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white"
         >
           <Icon name="chat" size="xs" />
-          <span class="hidden sm:inline">聊天</span>
+          <span class="hidden md:inline">聊天</span>
         </button>
 
         <!-- Language Switcher -->
@@ -78,7 +78,7 @@
         <!-- Balance Display -->
         <div
           v-if="user"
-          class="hidden items-center gap-2 rounded-xl bg-primary-50 px-3 py-1.5 dark:bg-primary-900/20 sm:flex"
+          class="hidden items-center gap-2 rounded-xl bg-primary-50 px-3 py-1.5 dark:bg-primary-900/20 md:flex"
         >
           <svg
             class="h-4 w-4 text-primary-600 dark:text-primary-400"
@@ -110,7 +110,7 @@
             >
               {{ userInitials }}
             </div>
-            <div class="hidden text-left md:block">
+            <div class="hidden text-left xl:block">
               <div class="text-sm font-medium text-gray-900 dark:text-white">
                 {{ displayName }}
               </div>
@@ -118,7 +118,7 @@
                 {{ user.role }}
               </div>
             </div>
-            <Icon name="chevronDown" size="sm" class="hidden text-gray-400 md:block" />
+            <Icon name="chevronDown" size="sm" class="hidden text-gray-400 xl:block" />
           </button>
 
           <!-- Dropdown Menu -->

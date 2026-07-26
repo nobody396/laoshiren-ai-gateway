@@ -34,7 +34,7 @@ env:
 jobs:
   build:
     name: Build exact linux/amd64 commit
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
     timeout-minutes: 35
     outputs:
       image_ref: ${{ steps.resolve.outputs.image_ref }}
@@ -72,8 +72,14 @@ jobs:
       - name: Test immutable release contract
         run: python3 tools/release/test_release_contract.py
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Use persistent Docker Desktop builder
+        shell: bash
+        run: |
+          # Docker Desktop owns this builder and its cache. Unlike a temporary
+          # docker-container builder, it also inherits Docker Desktop's network
+          # and proxy configuration on this Mac.
+          docker buildx use desktop-linux
+          docker buildx inspect --bootstrap
 
       - name: Log in to GitHub Container Registry
         if: ${{ inputs.publish }}
@@ -91,8 +97,6 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: ${{ inputs.publish }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.commit_sha }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
@@ -106,8 +110,6 @@ jobs:
           file: ./deploy/maintenance/Dockerfile
           platforms: linux/amd64
           push: ${{ inputs.publish }}
-          cache-from: type=gha,scope=maintenance
-          cache-to: type=gha,mode=max,scope=maintenance
           tags: ${{ env.REGISTRY }}/${{ env.MAINTENANCE_IMAGE_NAME }}:${{ inputs.commit_sha }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}

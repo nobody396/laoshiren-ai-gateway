@@ -1,6 +1,6 @@
 <template>
   <!-- 客服入口按钮：点击弹出客服联系方式弹窗 -->
-  <div v-if="hasCustomerServiceContact">
+  <div data-testid="customer-service-entry">
     <button
       @click="openModal"
       class="relative flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-600 transition-all hover:scale-105 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-800 dark:hover:text-white"
@@ -156,16 +156,18 @@ const { t } = useI18n()
 const appStore = useAppStore()
 const { contactInfo, techSupportQRCode, afterSalesQRCode } = storeToRefs(appStore)
 
-const supportContact = computed(() => contactInfo.value.trim())
+const DEFAULT_SUPPORT_CONTACT = 'Jac_Hh'
+const supportContact = computed(() => {
+  const configuredContact = contactInfo.value.trim()
+  if (configuredContact) {
+    return configuredContact
+  }
+  return techSupportQRCode.value || afterSalesQRCode.value ? '' : DEFAULT_SUPPORT_CONTACT
+})
 const showAfterSalesContact = computed(() => !!afterSalesQRCode.value || !!supportContact.value)
 const showTechSupportContact = computed(() => !!techSupportQRCode.value || !!supportContact.value)
 const showSingleContact = computed(
   () => !!supportContact.value && !afterSalesQRCode.value && !techSupportQRCode.value
-)
-
-// 至少有一个二维码或客服联系方式配置时才显示按钮
-const hasCustomerServiceContact = computed(
-  () => showAfterSalesContact.value || showTechSupportContact.value
 )
 
 // 弹窗开关状态

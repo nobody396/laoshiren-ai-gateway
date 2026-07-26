@@ -26,9 +26,10 @@
 
         <div class="report-grid">
           <article
-            v-for="report in reports"
+            v-for="(report, index) in reports"
             :key="report.sourceUrl"
-            class="report-card"
+            class="report-card mirror-reveal"
+            :style="{ '--reveal-i': index + 1 }"
           >
             <div class="report-card__topline">
               <span class="report-badge">{{ report.provider }}</span>

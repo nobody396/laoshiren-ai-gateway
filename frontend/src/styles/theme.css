@@ -391,18 +391,28 @@
   --duration-fast: 150ms;      /* 房子默认：hover 换色 */
   --duration-base: 200ms;      /* 下拉、tooltip、tab 切换 */
   --duration-slow: 300ms;      /* 抽屉、弹窗、侧栏折叠 */
-  --duration-reveal: 500ms;    /* 落地页区块入场（原 800ms，偏拖沓） */
+  --duration-reveal: 620ms;    /* 落地页区块入场 */
   --duration-ambient: 2s;      /* 骨架屏微光循环 */
+
+  /* 首屏书写：单独一档，因为它不是"入场"而是"写字"。
+   * 观感慢不慢由时长和缓动共同决定，只调时长没用 ——
+   * expo 把八成位移压在前四分之一时间里，标称 1100ms 看着只有 300ms。 */
+  --duration-ink-write: 2400ms;  /* 斜体产品名被一笔写出 */
+  --duration-ink-settle: 1700ms; /* 罗马大写收字距 */
 
   /* 缓动 */
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);   /* 默认，对称无过冲 */
   --ease-out: cubic-bezier(0, 0, 0.2, 1);          /* 入场 */
   --ease-in: cubic-bezier(0.4, 0, 1, 1);           /* 退场 */
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);      /* 落地页入场专用：快出长收 */
+  /* 笔速：刻意贴近匀速。前一版 (0.32,0.18,0.24,1) 仍然前冲——实测
+   * 走到一半时长时已经写完八成，剩下一半时间在做几乎看不见的收尾。
+   * y1≈x1 让中段匀速，y2 略高于 x2 只在收笔处轻轻提起。 */
+  --ease-ink: cubic-bezier(0.3, 0.28, 0.5, 0.95);
 
   /* 入场编排 */
-  --reveal-lift: 16px;         /* 上移距离（原 24px，配 500ms 更利落） */
-  --reveal-stagger: 120ms;     /* 逐层间隔 —— 约为时长的 1/4，层次才看得出来 */
+  --reveal-lift: 22px;         /* 上移距离 */
+  --reveal-stagger: 110ms;     /* 逐层间隔 —— 约为时长的 1/5，层次才看得出来 */
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -412,6 +422,8 @@
     --duration-base: 1ms;
     --duration-slow: 1ms;
     --duration-reveal: 1ms;
+    --duration-ink-write: 1ms;
+    --duration-ink-settle: 1ms;
     --reveal-lift: 0px;
     --reveal-stagger: 0ms;
   }

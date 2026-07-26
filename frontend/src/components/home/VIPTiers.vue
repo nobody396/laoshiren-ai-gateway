@@ -8,7 +8,7 @@
       <div class="stats-list">
         <template v-for="(stat, index) in ui.stats" :key="stat.label">
           <div v-if="index > 0" class="stat-divider"></div>
-          <div class="stat-item">
+          <div class="stat-item mirror-reveal" :style="{ '--reveal-i': index + 1 }">
             <span class="stat-num">{{ stat.value }}</span>
             <span class="stat-label">{{ stat.label }}</span>
           </div>

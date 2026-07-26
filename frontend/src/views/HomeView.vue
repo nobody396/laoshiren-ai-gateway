@@ -1099,6 +1099,24 @@ function revealAllSections(): void {
   })
 }
 
+/**
+ * 兜底只负责"首屏别空着"，不负责整页。
+ *
+ * 原来的兜底是 1.6 秒后无条件 revealAllSections()，包括视口外几千像素的区块 ——
+ * 于是用户滚下去时每一屏都已经是终态，滚动入场动效等于不存在。这正是"每个章节
+ * 都没有入场动画"的由来，不是动效没写，是被兜底提前拆了。
+ *
+ * 现在兜底只揭开当前视口里的元素；视口外的继续交给 observer。真正需要全量兜底的
+ * 只有 IntersectionObserver 不可用的情况，那条路径仍然直接调 revealAllSections()。
+ */
+function revealVisibleSections(): void {
+  const vh = window.innerHeight || 0
+  document.querySelectorAll('.mirror-reveal').forEach((node) => {
+    const r = node.getBoundingClientRect()
+    if (r.top < vh && r.bottom > 0) node.classList.add('is-visible')
+  })
+}
+
 onMounted(() => {
   // 认证检查
   authStore.checkAuth()
@@ -1144,7 +1162,7 @@ onMounted(() => {
           revealNodes.forEach((node) => observer?.observe(node))
         })
       })
-      revealFallbackTimer = window.setTimeout(revealAllSections, 1600)
+      revealFallbackTimer = window.setTimeout(revealVisibleSections, 1600)
     } catch {
       revealAllSections()
     }
@@ -1225,23 +1243,41 @@ onUnmounted(() => {
 /* 时长/缓动/位移全部取自 theme.css，调节奏改那一处即可。
  * 原来还动了 filter: blur(12px) —— 去掉了：blur 触发重绘，而且在纸质系统里
  * 那种"糊一下再清晰"的观感偏廉价。只动 transform 和 opacity。 */
+/* 入场用 animation 而不是 transition —— 这是被迫的，也是对的：
+ *
+ * 组件自己的 `transition:` 简写会把这里的整条 transition 覆盖掉。实测
+ * .virtue-card 声明了 `transition: background .25s, border-color .25s,
+ * transform .25s`，于是 .mirror-reveal 的 opacity/transform 过渡连同
+ * transition-delay 一起归零 —— 元素在一帧内从 0 跳到 1，既没有淡入也没有
+ * 错峰。改成 animation 就与组件的 transition 各走各的，互不覆盖。
+ *
+ * 附带好处和首屏书写那处一样：animation 不需要"隐藏态先被绘制过一帧"，
+ * 挂上就一定完整播完，不受 observer 回调时机影响。 */
+@keyframes mirrorRise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--reveal-lift));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .mirror-reveal {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity var(--duration-reveal) var(--ease-expo),
-              transform var(--duration-reveal) var(--ease-expo);
-  will-change: opacity, transform;
 }
 
 .home-page--reveal-ready .mirror-reveal:not(.is-visible) {
   opacity: 0;
-  transform: translateY(var(--reveal-lift));
 }
 
-.mirror-reveal.is-visible {
-  opacity: 1;
-  transform: translateY(0);
-  will-change: auto;
+.home-page--reveal-ready .mirror-reveal.is-visible {
+  /* 错峰：--reveal-i 由模板内联给出（v-for 的 index），没给就是 0，
+   * 所以整块容器自身不延迟、块内卡片依次跟上。 */
+  animation: mirrorRise var(--duration-reveal) var(--ease-expo) both;
+  animation-delay: calc(var(--reveal-stagger) * var(--reveal-i, 0));
 }
 
 /* ── L2 排版层：让排版本身成为动效 ───────────────────────────────
@@ -1278,7 +1314,7 @@ onUnmounted(() => {
 }
 
 .home-page--reveal-ready .hero-section__title span.is-visible {
-  animation: heroLetterSettle 900ms var(--ease-expo) both;
+  animation: heroLetterSettle var(--duration-ink-settle) var(--ease-ink) both;
   animation-delay: calc(var(--reveal-stagger) * 1);
 }
 
@@ -1298,8 +1334,8 @@ onUnmounted(() => {
 }
 
 .home-page--reveal-ready .hero-section__title em.is-visible {
-  animation: heroInkWrite 1100ms var(--ease-expo) both;
-  animation-delay: calc(var(--reveal-stagger) * 2);
+  animation: heroInkWrite var(--duration-ink-write) var(--ease-ink) both;
+  animation-delay: calc(var(--reveal-stagger) * 4);
 }
 
 /* 希腊文逐字浮现 —— 全站独有、竞品抄不走的一个动作 */

@@ -388,7 +388,11 @@ body.admin-console-active {
 
 .admin-console-shell .modal-overlay,
 .admin-console-shell .dialog-overlay {
-  background: rgb(var(--color-ink-deep) / 0.5) !important;
+  /* Scrims must always darken. --color-ink-deep flips light under .dark, which
+   * turned this veil into a 42% *brightener* — the page behind the modal stayed
+   * fully legible and competed with it. --lacquer-base is one of the few tokens
+   * that deliberately holds its value in both themes, which is what a scrim needs. */
+  background: rgb(var(--lacquer-base) / 0.62) !important;
 }
 
 .dark .admin-console-shell .modal-overlay,

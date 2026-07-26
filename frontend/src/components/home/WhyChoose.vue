@@ -9,7 +9,8 @@
         <article
           v-for="(card, index) in featureCards"
           :key="card.title"
-          class="virtue-card"
+          class="virtue-card mirror-reveal"
+          :style="{ '--reveal-i': index + 1 }"
         >
           <div class="virtue-card__icon" v-html="icons[index]"></div>
           <p class="virtue-card__number">0{{ index + 1 }}</p>

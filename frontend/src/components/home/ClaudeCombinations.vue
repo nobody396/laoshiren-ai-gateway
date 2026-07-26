@@ -8,7 +8,12 @@
       <div class="pillars-wrap">
         <div class="pillars-architrave" aria-hidden="true"></div>
         <div class="pillars">
-          <article v-for="model in models" :key="model.name" class="pillar">
+          <article
+            v-for="(model, index) in models"
+            :key="model.name"
+            class="pillar mirror-reveal"
+            :style="{ '--reveal-i': index + 1 }"
+          >
             <div class="pillar-capital" aria-hidden="true"></div>
             <p class="pillar-name">{{ model.name }}</p>
             <p class="pillar-role">{{ model.eyebrow }} · {{ model.subtitle }}</p>

@@ -16,7 +16,7 @@
       </div>
 
       <div class="pricing-provider-grid" :aria-label="ui.providerGridAria">
-        <article class="provider-card provider-card--gpt" :aria-label="ui.openaiAria">
+        <article class="provider-card provider-card--gpt mirror-reveal" :style="{ '--reveal-i': 1 }" :aria-label="ui.openaiAria">
           <header class="provider-card__header">
             <div class="provider-card__brand">
               <strong>OpenAI</strong>
@@ -43,7 +43,7 @@
           </div>
         </article>
 
-        <article class="provider-card provider-card--claude" :aria-label="ui.anthropicAria">
+        <article class="provider-card provider-card--claude mirror-reveal" :style="{ '--reveal-i': 2 }" :aria-label="ui.anthropicAria">
           <header class="provider-card__header">
             <div class="provider-card__brand">
               <strong>Anthropic</strong>
@@ -72,10 +72,11 @@
         </article>
 
         <article
-          v-for="group in specialProviderGroups"
+          v-for="(group, index) in specialProviderGroups"
           :key="group.key"
-          class="provider-card"
+          class="provider-card mirror-reveal"
           :class="`provider-card--${group.key}`"
+          :style="{ '--reveal-i': index + 3 }"
           :aria-label="`${group.name} ${ui.priceAriaSuffix}`"
         >
           <header class="provider-card__header">

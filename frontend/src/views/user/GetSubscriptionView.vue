@@ -936,10 +936,10 @@ void Promise.all([
   color: var(--admin-ink, rgb(var(--color-ink)));
   text-align: left;
   transition:
-    border-color 0.18s ease,
-    background-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
+    border-color var(--duration-base) var(--ease-standard),
+    background-color var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-out),
+    transform var(--duration-base) var(--ease-out);
 }
 
 .topup-choice:hover,
@@ -1080,10 +1080,10 @@ void Promise.all([
   padding: 1rem;
   text-align: left;
   transition:
-    border-color 0.18s ease,
-    background-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
+    border-color var(--duration-base) var(--ease-standard),
+    background-color var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-out),
+    transform var(--duration-base) var(--ease-out);
 }
 
 .topup-monthly-product::before {
@@ -1092,6 +1092,42 @@ void Promise.all([
   inset: 0 0 auto;
   height: 0.25rem;
   background: var(--admin-muted, rgb(var(--color-muted)));
+  /* 顶栏是这张卡的身份色，hover 时加粗到三倍——比整卡换底色克制，
+   * 但视线一定会被它带过去。transform 而不是改 height，避免触发布局。 */
+  transform-origin: top;
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+.topup-monthly-product:not(.topup-monthly-product--apex):hover::before,
+.topup-monthly-product:not(.topup-monthly-product--apex).topup-monthly-product--active::before {
+  transform: scaleY(3);
+}
+
+/* 扫光：一道极淡的斜向高光从左掠过，只在 hover 时跑一次。
+ * 纸面系统里不能做成"发光卡"，所以峰值只有 7%，掠过即止。 */
+.topup-monthly-product:not(.topup-monthly-product--apex)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgb(var(--color-vellum) / 0.07) 48%,
+    transparent 58%
+  );
+  transform: translateX(-120%);
+  opacity: 0;
+}
+
+/* apex 卡自己有一条 7s 常驻扫光（topup-apex-sweep），不叠这一层 */
+.topup-monthly-product:not(.topup-monthly-product--apex):hover::after {
+  animation: cardSheen 620ms var(--ease-out) both;
+}
+
+@keyframes cardSheen {
+  from { transform: translateX(-120%); opacity: 1; }
+  to   { transform: translateX(120%); opacity: 1; }
 }
 
 .topup-monthly-product--lite::before {
@@ -1143,19 +1179,41 @@ void Promise.all([
   animation: topup-apex-sweep 7s ease-in-out infinite;
 }
 
+/* 抬起 1px 等于没抬 —— 这是"卡片没有动效"的直接原因。6px 加上一层随之
+ * 变深、变散的投影，才读得出"纸被拿起来了"。位移之外不加 scale：
+ * 纸不会变大，而且缩放会让 1px 边框和小字发虚。 */
 .topup-monthly-product:hover {
   border-color: var(--admin-border-strong, rgb(var(--color-ink) / 0.32));
   background: var(--admin-parchment, rgb(var(--color-parchment)));
-  transform: translateY(-1px);
-  box-shadow: var(--admin-shadow-sm, 0 8px 24px rgb(var(--shadow-ink) / 0.08));
+  transform: translateY(-6px);
+  box-shadow: 0 16px 34px rgb(var(--shadow-ink) / 0.16);
 }
 
+.topup-monthly-product:active {
+  transform: translateY(-2px);
+  transition-duration: var(--duration-instant);
+}
+
+/* 选中态比 hover 更高、投影更实，并且不随鼠标移开而落下 —— 选中是状态，
+ * hover 是反馈，两者叠加时选中态应当占上风。 */
 .topup-monthly-product--active {
   border-color: var(--admin-terracotta, rgb(var(--color-terracotta)));
   background:
     linear-gradient(180deg, rgb(var(--color-terracotta) / 0.1), transparent 100%),
     var(--admin-control, rgb(var(--color-vellum) / 0.95));
-  box-shadow: inset 0 0 0 1px rgb(var(--color-terracotta) / 0.12);
+  transform: translateY(-4px);
+  box-shadow:
+    inset 0 0 0 1px rgb(var(--color-terracotta) / 0.12),
+    0 0 0 3px rgb(var(--color-terracotta) / 0.14),
+    0 14px 30px rgb(var(--shadow-ink) / 0.14);
+}
+
+.topup-monthly-product--active:hover {
+  transform: translateY(-7px);
+  box-shadow:
+    inset 0 0 0 1px rgb(var(--color-terracotta) / 0.16),
+    0 0 0 3px rgb(var(--color-terracotta) / 0.2),
+    0 18px 38px rgb(var(--shadow-ink) / 0.18);
 }
 
 .topup-monthly-product--apex:hover {
@@ -1978,7 +2036,11 @@ void Promise.all([
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgb(var(--color-ink-deep) / 0.42);
+  /* Scrims must always darken. --color-ink-deep flips light under .dark, which
+   * turned this veil into a 42% *brightener* — the page behind the modal stayed
+   * fully legible and competed with it. --lacquer-base is one of the few tokens
+   * that deliberately holds its value in both themes, which is what a scrim needs. */
+  background: rgb(var(--lacquer-base) / 0.62);
 }
 
 .topup-direct-modal {

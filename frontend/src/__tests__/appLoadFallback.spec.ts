@@ -64,4 +64,43 @@ describe('app loading fallback', () => {
     expect(document.documentElement.classList.contains('app-load-slow')).toBe(false)
     expect(document.documentElement.classList.contains('app-load-failed')).toBe(false)
   })
+
+  it('ignores failures from optional third-party scripts', () => {
+    expect(bootstrapScript).toBeTruthy()
+    window.eval(bootstrapScript!)
+
+    const optionalScript = document.createElement('script')
+    optionalScript.src = 'https://www.googletagmanager.com/gtag/js?id=test'
+    document.head.appendChild(optionalScript)
+    optionalScript.dispatchEvent(new Event('error'))
+
+    expect(document.documentElement.classList.contains('app-load-failed')).toBe(false)
+    expect(window.sessionStorage.getItem('laoshirenai-app-load-retry')).toBeNull()
+  })
+
+  it('shows the retry state when the first-party app entry fails', () => {
+    expect(bootstrapScript).toBeTruthy()
+    window.eval(bootstrapScript!)
+
+    const appEntry = document.createElement('script')
+    appEntry.type = 'module'
+    appEntry.src = '/src/main.ts'
+    document.head.appendChild(appEntry)
+    appEntry.dispatchEvent(new Event('error'))
+
+    expect(document.documentElement.classList.contains('app-load-failed')).toBe(true)
+    expect(window.sessionStorage.getItem('laoshirenai-app-load-retry')).toBe('1')
+  })
+
+  it('cancels a pending automatic retry after the Vue app mounts', () => {
+    expect(bootstrapScript).toBeTruthy()
+    window.eval(bootstrapScript!)
+
+    window.__APP_LOAD_STATE__?.fail('bootstrap')
+    window.__APP_LOAD_STATE__?.succeed()
+    vi.advanceTimersByTime(1_500)
+
+    expect(document.documentElement.classList.contains('app-mounted')).toBe(true)
+    expect(window.sessionStorage.getItem('laoshirenai-app-load-retry')).toBeNull()
+  })
 })

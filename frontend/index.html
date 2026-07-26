@@ -29,6 +29,7 @@
         var root = document.documentElement
         var retryKey = 'laoshirenai-app-load-retry'
         var slowTimer
+        var retryTimer
 
         root.classList.add('js')
 
@@ -37,6 +38,15 @@
           var messageNode = document.getElementById('app-load-message')
           if (titleNode) titleNode.textContent = title
           if (messageNode) messageNode.textContent = message
+        }
+
+        function isAppEntryScript(target) {
+          if (!target || target.tagName !== 'SCRIPT' || target.type !== 'module') return false
+          try {
+            return new URL(target.src, window.location.href).origin === window.location.origin
+          } catch (_) {
+            return false
+          }
         }
 
         function reload() {
@@ -54,7 +64,8 @@
             return false
           }
 
-          window.setTimeout(function () {
+          retryTimer = window.setTimeout(function () {
+            if (root.classList.contains('app-mounted')) return
             window.location.reload()
           }, 1500)
           return true
@@ -81,6 +92,7 @@
 
         function succeed() {
           window.clearTimeout(slowTimer)
+          window.clearTimeout(retryTimer)
           root.classList.remove('app-load-slow', 'app-load-failed')
           root.classList.add('app-mounted')
           try {
@@ -96,18 +108,12 @@
           function (event) {
             if (root.classList.contains('app-mounted')) return
             var target = event.target
-            if (target && target.tagName === 'SCRIPT') {
+            if (isAppEntryScript(target)) {
               fail('script')
-              return
             }
-            if (event.error) fail('runtime')
           },
           true
         )
-
-        window.addEventListener('unhandledrejection', function () {
-          if (!root.classList.contains('app-mounted')) fail('promise')
-        })
 
         document.addEventListener('DOMContentLoaded', function () {
           var retryButton = document.getElementById('app-load-retry')

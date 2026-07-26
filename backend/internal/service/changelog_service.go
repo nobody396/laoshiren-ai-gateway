@@ -202,14 +202,14 @@ func (s *ChangelogService) GetPublishedBySlug(ctx context.Context, slug string) 
 func (s *ChangelogService) List(ctx context.Context, params pagination.PaginationParams, filters ChangelogListFilters) ([]ChangelogEntry, *pagination.PaginationResult, error) {
 	filters.Status = strings.TrimSpace(strings.ToLower(filters.Status))
 	filters.Category = strings.TrimSpace(strings.ToLower(filters.Category))
-	filters.Search = strings.TrimSpace(filters.Search)
+	filters.Search = normalizeChangelogSearch(filters.Search)
 	return s.repo.List(ctx, params, filters)
 }
 
 func (s *ChangelogService) ListPublished(ctx context.Context, params pagination.PaginationParams, filters ChangelogListFilters) ([]ChangelogEntry, *pagination.PaginationResult, error) {
 	filters.Status = ChangelogStatusPublished
 	filters.Category = strings.TrimSpace(strings.ToLower(filters.Category))
-	filters.Search = strings.TrimSpace(filters.Search)
+	filters.Search = normalizeChangelogSearch(filters.Search)
 	return s.repo.ListPublished(ctx, params, filters, s.now())
 }
 
@@ -290,6 +290,15 @@ func normalizeRelatedProducts(items []string) []string {
 		out = append(out, value)
 	}
 	return out
+}
+
+func normalizeChangelogSearch(value string) string {
+	normalized := strings.TrimSpace(value)
+	runes := []rune(normalized)
+	if len(runes) > 200 {
+		return string(runes[:200])
+	}
+	return normalized
 }
 
 func normalizeCommitSHA(value *string) (*string, error) {

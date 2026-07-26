@@ -45,4 +45,22 @@ describe('useChangelogFreshness', () => {
 
     expect(freshness.hasNewChangelog.value).toBe(false)
   })
+
+  it('does not move the last-seen watermark backward for an older detail page', async () => {
+    mockLatest.mockResolvedValue({
+      id: 2,
+      slug: 'latest-update',
+      published_at: '2026-07-25T12:00:00Z'
+    })
+    const { useChangelogFreshness } = await import('../useChangelogFreshness')
+    const freshness = useChangelogFreshness()
+
+    await freshness.refreshChangelogFreshness()
+    freshness.markChangelogSeen('2026-07-25T12:00:00Z')
+    freshness.markChangelogSeen('2026-07-20T12:00:00Z')
+
+    expect(freshness.hasNewChangelog.value).toBe(false)
+    expect(window.localStorage.getItem('laoshirenai:changelog:last-seen-at'))
+      .toBe('2026-07-25T12:00:00Z')
+  })
 })

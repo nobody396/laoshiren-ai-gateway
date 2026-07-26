@@ -23,9 +23,6 @@ func NewChangelogHandler(changelogService *service.ChangelogService) *ChangelogH
 func (h *ChangelogHandler) List(c *gin.Context) {
 	page, pageSize := response.ParsePagination(c)
 	search := strings.TrimSpace(c.Query("search"))
-	if len(search) > 200 {
-		search = search[:200]
-	}
 	params := pagination.PaginationParams{
 		Page:      page,
 		PageSize:  pageSize,

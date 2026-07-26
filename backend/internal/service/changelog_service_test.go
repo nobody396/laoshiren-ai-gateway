@@ -2,16 +2,19 @@ package service
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
 )
 
 type changelogRepositoryStub struct {
-	entries map[int64]*ChangelogEntry
-	nextID  int64
+	entries     map[int64]*ChangelogEntry
+	nextID      int64
+	lastFilters ChangelogListFilters
 }
 
 func newChangelogRepositoryStub(entries ...*ChangelogEntry) *changelogRepositoryStub {
@@ -66,10 +69,12 @@ func (r *changelogRepositoryStub) Delete(_ context.Context, id int64) error {
 }
 
 func (r *changelogRepositoryStub) List(_ context.Context, params pagination.PaginationParams, filters ChangelogListFilters) ([]ChangelogEntry, *pagination.PaginationResult, error) {
+	r.lastFilters = filters
 	return r.list(params, filters, time.Time{}, false)
 }
 
 func (r *changelogRepositoryStub) ListPublished(_ context.Context, params pagination.PaginationParams, filters ChangelogListFilters, now time.Time) ([]ChangelogEntry, *pagination.PaginationResult, error) {
+	r.lastFilters = filters
 	return r.list(params, filters, now, true)
 }
 
@@ -157,6 +162,23 @@ func TestChangelogPublishedFeedExcludesDraftAndScheduledEntries(t *testing.T) {
 	require.Equal(t, int64(1), result.Total)
 	require.Len(t, items, 1)
 	require.Equal(t, "public", items[0].Slug)
+}
+
+func TestChangelogSearchLimitPreservesUTF8(t *testing.T) {
+	t.Parallel()
+
+	repo := newChangelogRepositoryStub()
+	svc := NewChangelogService(repo)
+
+	_, _, err := svc.ListPublished(
+		context.Background(),
+		pagination.DefaultPagination(),
+		ChangelogListFilters{Search: strings.Repeat("更", 201)},
+	)
+
+	require.NoError(t, err)
+	require.True(t, utf8.ValidString(repo.lastFilters.Search))
+	require.Len(t, []rune(repo.lastFilters.Search), 200)
 }
 
 func TestChangelogPublishedEntryMustBeArchivedBeforeDelete(t *testing.T) {

@@ -36,7 +36,11 @@ export function useChangelogFreshness() {
   }
 
   function markChangelogSeen(publishedAt?: string | null) {
-    const value = publishedAt || latestPublishedAt.value || new Date().toISOString()
+    const candidate = publishedAt || latestPublishedAt.value || new Date().toISOString()
+    const current = lastSeenAt.value
+    const value = current && timestampMillis(current) > timestampMillis(candidate)
+      ? current
+      : candidate
     lastSeenAt.value = value
     latestPublishedAt.value = latestPublishedAt.value || value
     try {
@@ -52,4 +56,9 @@ export function useChangelogFreshness() {
     refreshChangelogFreshness,
     markChangelogSeen
   }
+}
+
+function timestampMillis(value: string): number {
+  const milliseconds = new Date(value).getTime()
+  return Number.isFinite(milliseconds) ? milliseconds : Number.NEGATIVE_INFINITY
 }

@@ -4,6 +4,7 @@ import { changelogAPI } from '@/api'
 const STORAGE_KEY = 'laoshirenai:changelog:last-seen-at'
 const latestPublishedAt = ref<string | null>(null)
 const initialized = ref(false)
+let refreshPromise: Promise<void> | null = null
 
 function readLastSeen(): string | null {
   try {
@@ -26,13 +27,21 @@ export function useChangelogFreshness() {
 
   async function refreshChangelogFreshness(force = false) {
     if (initialized.value && !force) return
-    try {
-      const latest = await changelogAPI.latest()
-      latestPublishedAt.value = latest?.published_at ?? null
-      initialized.value = true
-    } catch (error) {
-      console.error('Failed to check changelog freshness:', error)
-    }
+    if (refreshPromise) return refreshPromise
+
+    refreshPromise = (async () => {
+      try {
+        const latest = await changelogAPI.latest()
+        latestPublishedAt.value = latest?.published_at ?? null
+        initialized.value = true
+      } catch (error) {
+        console.error('Failed to check changelog freshness:', error)
+      } finally {
+        refreshPromise = null
+      }
+    })()
+
+    return refreshPromise
   }
 
   function markChangelogSeen(publishedAt?: string | null) {

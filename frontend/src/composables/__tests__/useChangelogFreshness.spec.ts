@@ -63,4 +63,28 @@ describe('useChangelogFreshness', () => {
     expect(window.localStorage.getItem('laoshirenai:changelog:last-seen-at'))
       .toBe('2026-07-25T12:00:00Z')
   })
+
+  it('deduplicates concurrent freshness checks from the header and sidebar', async () => {
+    let resolveLatest: ((value: unknown) => void) | undefined
+    mockLatest.mockImplementation(() => new Promise((resolve) => {
+      resolveLatest = resolve
+    }))
+    const { useChangelogFreshness } = await import('../useChangelogFreshness')
+    const headerFreshness = useChangelogFreshness()
+    const sidebarFreshness = useChangelogFreshness()
+
+    const headerRequest = headerFreshness.refreshChangelogFreshness()
+    const sidebarRequest = sidebarFreshness.refreshChangelogFreshness()
+
+    expect(mockLatest).toHaveBeenCalledTimes(1)
+    resolveLatest?.({
+      id: 3,
+      slug: 'shared-update',
+      published_at: '2026-07-25T12:00:00Z'
+    })
+    await Promise.all([headerRequest, sidebarRequest])
+
+    expect(headerFreshness.hasNewChangelog.value).toBe(true)
+    expect(sidebarFreshness.hasNewChangelog.value).toBe(true)
+  })
 })

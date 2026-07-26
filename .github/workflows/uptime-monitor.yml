@@ -15,7 +15,10 @@ concurrency:
 jobs:
   check:
     name: Check production availability
-    runs-on: ubuntu-latest
+    # Keep the production alarm independent of GitHub-hosted runner billing.
+    # The dedicated pool is also shared by CI, so any of its three runners can
+    # pick up this lightweight check.
+    runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
     timeout-minutes: 5
     env:
       # Beijing 2026-07-11 01:00-05:00. Before the window the live legacy
@@ -88,7 +91,10 @@ jobs:
 
             for attempt in 1 2 3; do
               rm -f "$body_file" "$error_file"
-              output="$(curl -sS -o "$body_file" -w '%{http_code} %{time_connect} %{time_appconnect} %{time_starttransfer} %{time_total} %{remote_ip}' --connect-timeout 10 --max-time 20 "$url" 2>"$error_file" || true)"
+              # Do not inherit a local developer/VPN proxy from a self-hosted
+              # runner. Probe the public route directly so a proxy outage is
+              # not misclassified as a production outage.
+              output="$(curl --noproxy '*' -sS -o "$body_file" -w '%{http_code} %{time_connect} %{time_appconnect} %{time_starttransfer} %{time_total} %{remote_ip}' --connect-timeout 10 --max-time 20 "$url" 2>"$error_file" || true)"
               read -r code connect tls first_byte seconds remote_ip <<< "${output:-}"
 
               if status_is_allowed "${code:-}" "$allowed_statuses" && awk -v t="${seconds:-999}" -v m="$max_seconds" 'BEGIN { exit !(t <= m) }'; then

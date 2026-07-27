@@ -1,0 +1,115 @@
+name: laoshirenai-affiliate-v2-staging
+
+services:
+  app:
+    image: "laoshirenai-affiliate-v2-staging:${GIT_SHA:-local}"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${AFFILIATE_STAGING_PORT:-18080}:8080"
+    volumes:
+      - affiliate_v2_app_data:/app/data
+    environment:
+      AUTO_SETUP: "true"
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8080
+      SERVER_MODE: release
+      RUN_MODE: standard
+      LOG_LEVEL: info
+      LOG_FORMAT: json
+      LOG_ENV: affiliate-v2-staging
+      LOG_SERVICE_NAME: laoshirenai-affiliate-v2-staging
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: affiliate_staging
+      DATABASE_PASSWORD: "${AFFILIATE_STAGING_POSTGRES_PASSWORD:?staging postgres password is required}"
+      DATABASE_DBNAME: affiliate_staging
+      DATABASE_SSLMODE: disable
+      DATABASE_MAX_OPEN_CONNS: 25
+      DATABASE_MAX_IDLE_CONNS: 5
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: "${AFFILIATE_STAGING_REDIS_PASSWORD:?staging redis password is required}"
+      REDIS_DB: 0
+      REDIS_POOL_SIZE: 128
+      REDIS_MIN_IDLE_CONNS: 5
+      ADMIN_EMAIL: "${AFFILIATE_STAGING_ADMIN_EMAIL:-affiliate-staging@local.invalid}"
+      ADMIN_PASSWORD: "${AFFILIATE_STAGING_ADMIN_PASSWORD:?staging admin password is required}"
+      JWT_SECRET: "${AFFILIATE_STAGING_JWT_SECRET:?staging jwt secret is required}"
+      JWT_EXPIRE_HOUR: 24
+      TOTP_ENCRYPTION_KEY: "${AFFILIATE_STAGING_TOTP_ENCRYPTION_KEY:?staging totp key is required}"
+      TZ: Asia/Shanghai
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-T", "5", "-O", "/dev/null", "http://localhost:8080/readyz"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - affiliate_v2_staging
+    labels:
+      com.laoshirenai.environment: affiliate-v2-staging
+      com.laoshirenai.production-replacement: "false"
+
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    volumes:
+      - affiliate_v2_postgres_data:/var/lib/postgresql/data
+    environment:
+      PGDATA: /var/lib/postgresql/data
+      POSTGRES_USER: affiliate_staging
+      POSTGRES_PASSWORD: "${AFFILIATE_STAGING_POSTGRES_PASSWORD:?staging postgres password is required}"
+      POSTGRES_DB: affiliate_staging
+      TZ: Asia/Shanghai
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U affiliate_staging -d affiliate_staging"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks:
+      - affiliate_v2_staging
+    labels:
+      com.laoshirenai.environment: affiliate-v2-staging
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    volumes:
+      - affiliate_v2_redis_data:/data
+    command:
+      - sh
+      - -ec
+      - exec redis-server --save 60 1 --appendonly yes --appendfsync everysec --requirepass "$$REDIS_PASSWORD"
+    environment:
+      REDIS_PASSWORD: "${AFFILIATE_STAGING_REDIS_PASSWORD:?staging redis password is required}"
+      REDISCLI_AUTH: "${AFFILIATE_STAGING_REDIS_PASSWORD:?staging redis password is required}"
+      TZ: Asia/Shanghai
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    networks:
+      - affiliate_v2_staging
+    labels:
+      com.laoshirenai.environment: affiliate-v2-staging
+
+volumes:
+  affiliate_v2_app_data:
+  affiliate_v2_postgres_data:
+  affiliate_v2_redis_data:
+
+networks:
+  affiliate_v2_staging:
+    driver: bridge
+    internal: false

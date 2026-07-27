@@ -19,6 +19,7 @@ type PaymentService struct {
 	settingService       *SettingService
 	entClient            *dbent.Client
 	affiliateConsumption AffiliateConsumptionRepository
+	affiliateRewards     *AffiliateRewardService
 }
 
 // NewPaymentService creates a new PaymentService
@@ -28,6 +29,7 @@ func NewPaymentService(
 	settingService *SettingService,
 	entClient *dbent.Client,
 	affiliateConsumption AffiliateConsumptionRepository,
+	affiliateRewards *AffiliateRewardService,
 ) *PaymentService {
 	return &PaymentService{
 		paymentRepo:          paymentRepo,
@@ -35,6 +37,7 @@ func NewPaymentService(
 		settingService:       settingService,
 		entClient:            entClient,
 		affiliateConsumption: affiliateConsumption,
+		affiliateRewards:     affiliateRewards,
 	}
 }
 
@@ -270,6 +273,18 @@ func (s *PaymentService) completeOrder(ctx context.Context, orderNo string, alip
 				}},
 			}); err != nil {
 				return fmt.Errorf("record affiliate monthly entitlement: %w", err)
+			}
+			if s.affiliateRewards != nil {
+				if _, err := s.affiliateRewards.ProcessFirstPaidPurchase(txCtx, AffiliateFirstPaidPurchaseInput{
+					UserID:       order.UserID,
+					PurchaseType: AffiliatePurchaseMonthlyPayment,
+					SourceID:     order.ID,
+					PurchaseKey:  fmt.Sprintf("payment:subscription:%d", order.ID),
+					AmountMicros: int64(order.AmountCents) * 10_000,
+					OccurredAt:   time.Now(),
+				}); err != nil {
+					return fmt.Errorf("process affiliate first paid monthly purchase: %w", err)
+				}
 			}
 		}
 	}

@@ -175,6 +175,16 @@ WHERE id = 1
 	requireColumn(t, tx, "monthly_entitlement_cycles", "confirmed_consumption_micros", "bigint", 0, false)
 	requireIndex(t, tx, "balance_lots", "idx_balance_lots_fifo")
 	requireIndex(t, tx, "monthly_entitlement_cycle_subscriptions", "idx_monthly_cycle_subscription_lookup")
+
+	// migration 151: first-paid reward claim and maturity.
+	var firstPaidRegclass sql.NullString
+	require.NoError(t, tx.QueryRowContext(
+		context.Background(),
+		"SELECT to_regclass('public.affiliate_first_paid_purchases')",
+	).Scan(&firstPaidRegclass))
+	require.True(t, firstPaidRegclass.Valid)
+	requireColumn(t, tx, "affiliate_first_paid_purchases", "amount_micros", "bigint", 0, false)
+	requireColumn(t, tx, "affiliate_reward_entries", "posted_at", "timestamp with time zone", 0, true)
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

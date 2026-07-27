@@ -567,6 +567,7 @@ var ProviderSet = wire.NewSet(
 	NewModelPricingResolver,
 	NewCommissionService,
 	NewAffiliateProgramService,
+	NewAffiliateRewardService,
 	NewPaymentService,
 	NewTopupService,
 	NewRBACService,
@@ -633,6 +634,7 @@ func ProvideRootLifecycle(
 	downloadResources *DownloadResourceService,
 	backupService *BackupService,
 	pendingAuthCleanup *PendingAuthSessionCleanupService,
+	affiliateRewards *AffiliateRewardService,
 ) *Lifecycle {
 	component := func(name string, start func(), stop func()) LifecycleComponent {
 		return LifecycleFunc{
@@ -702,6 +704,7 @@ func ProvideRootLifecycle(
 		component("download-resources", downloadResources.Start, downloadResources.Stop),
 		component("backup", backupService.Start, backupService.Stop),
 		component("pending-auth-cleanup", pendingAuthCleanup.Start, pendingAuthCleanup.Stop),
+		component("affiliate-reward-maturity", affiliateRewards.Start, affiliateRewards.Stop),
 	}
 	return NewLifecycle(components...)
 }

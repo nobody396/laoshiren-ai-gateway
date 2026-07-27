@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	entsql "entgo.io/ent/dialect/sql"
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 )
@@ -65,7 +66,7 @@ func (r *affiliateConsumptionRepository) RecordMonthlyEntitlement(ctx context.Co
 	}
 
 	var cycleID int64
-	rows := &sql.Rows{}
+	rows := &entsql.Rows{}
 	if err := client.Driver().Query(ctx, `
 		INSERT INTO monthly_entitlement_cycles (
 			user_id, source_type, source_id, source_key, product_code,

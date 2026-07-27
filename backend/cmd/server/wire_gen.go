@@ -83,7 +83,9 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	accountChangeRecordRepository := repository.NewAccountChangeRecordRepository(client)
 	redeemCache := repository.NewRedeemCache(redisClient)
 	affiliateConsumptionRepository := repository.NewAffiliateConsumptionRepository(client)
-	redeemService := service.NewRedeemService(redeemCodeRepository, accountChangeRecordRepository, userRepository, subscriptionService, redeemCache, billingCacheService, client, apiKeyAuthCacheInvalidator, commissionService, balanceAlertService, affiliateConsumptionRepository)
+	affiliateRewardRepository := repository.NewAffiliateRewardRepository(client, db)
+	affiliateRewardService := service.NewAffiliateRewardService(affiliateRewardRepository)
+	redeemService := service.NewRedeemService(redeemCodeRepository, accountChangeRecordRepository, userRepository, subscriptionService, redeemCache, billingCacheService, client, apiKeyAuthCacheInvalidator, commissionService, balanceAlertService, affiliateConsumptionRepository, affiliateRewardService)
 	secretEncryptor, err := repository.NewAESEncryptor(configConfig)
 	if err != nil {
 		return nil, err
@@ -263,10 +265,10 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	handlerSettingHandler := handler.ProvideSettingHandler(settingService, commissionService, buildInfo)
 	totpHandler := handler.NewTotpHandler(totpService)
 	paymentOrderRepository := repository.NewPaymentOrderRepository(client)
-	paymentService := service.NewPaymentService(paymentOrderRepository, subscriptionService, settingService, client, affiliateConsumptionRepository)
+	paymentService := service.NewPaymentService(paymentOrderRepository, subscriptionService, settingService, client, affiliateConsumptionRepository, affiliateRewardService)
 	paymentHandler := handler.NewPaymentHandler(paymentService)
 	topupOrderRepository := repository.NewTopupOrderRepository(client)
-	topupService := service.NewTopupService(topupOrderRepository, settingService, userRepository, accountChangeRecordRepository, client, billingCacheService, apiKeyAuthCacheInvalidator, commissionService, balanceAlertService, affiliateConsumptionRepository)
+	topupService := service.NewTopupService(topupOrderRepository, settingService, userRepository, accountChangeRecordRepository, client, billingCacheService, apiKeyAuthCacheInvalidator, commissionService, balanceAlertService, affiliateConsumptionRepository, affiliateRewardService)
 	topupHandler := handler.NewTopupHandler(topupService)
 	balanceAlertHandler := handler.NewBalanceAlertHandler(balanceAlertService)
 	downloadResourceService := service.ProvideDownloadResourceService(configConfig, gitHubReleaseClient)
@@ -292,7 +294,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	opsCleanupService := service.ProvideOpsCleanupService(opsRepository, db, redisClient, configConfig)
 	opsScheduledReportService := service.ProvideOpsScheduledReportService(opsService, userService, emailService, redisClient, configConfig)
 	scheduledTestRunnerService := service.ProvideScheduledTestRunnerService(scheduledTestPlanRepository, scheduledTestService, accountTestService, rateLimitService, configConfig)
-	lifecycle := service.ProvideRootLifecycle(configConfig, accountRepository, pricingService, apiKeyService, billingCacheService, emailQueueService, subscriptionService, accountingWorker, usageRecordWorkerPool, timingWheelService, dashboardAggregationService, deferredService, schedulerSnapshotService, concurrencyService, userMessageQueueService, tokenRefreshService, accountExpiryService, subscriptionExpiryService, usageCleanupService, agentLevelEvaluatorService, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, idempotencyCleanupService, scheduledTestRunnerService, downloadResourceService, backupService, pendingAuthSessionCleanupService)
+	lifecycle := service.ProvideRootLifecycle(configConfig, accountRepository, pricingService, apiKeyService, billingCacheService, emailQueueService, subscriptionService, accountingWorker, usageRecordWorkerPool, timingWheelService, dashboardAggregationService, deferredService, schedulerSnapshotService, concurrencyService, userMessageQueueService, tokenRefreshService, accountExpiryService, subscriptionExpiryService, usageCleanupService, agentLevelEvaluatorService, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, idempotencyCleanupService, scheduledTestRunnerService, downloadResourceService, backupService, pendingAuthSessionCleanupService, affiliateRewardService)
 	v2 := provideCleanup(client, redisClient, lifecycle)
 	application := &Application{
 		Server:    httpServer,

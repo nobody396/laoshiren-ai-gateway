@@ -40,6 +40,7 @@ type TopupService struct {
 	commissionService    *CommissionService
 	balanceAlertService  *BalanceAlertService
 	affiliateConsumption AffiliateConsumptionRepository
+	affiliateRewards     *AffiliateRewardService
 }
 
 // NewTopupService creates a new TopupService
@@ -54,6 +55,7 @@ func NewTopupService(
 	commissionService *CommissionService,
 	balanceAlertService *BalanceAlertService,
 	affiliateConsumption AffiliateConsumptionRepository,
+	affiliateRewards *AffiliateRewardService,
 ) *TopupService {
 	return &TopupService{
 		topupRepo:            topupRepo,
@@ -66,6 +68,7 @@ func NewTopupService(
 		commissionService:    commissionService,
 		balanceAlertService:  balanceAlertService,
 		affiliateConsumption: affiliateConsumption,
+		affiliateRewards:     affiliateRewards,
 	}
 }
 
@@ -331,6 +334,7 @@ func (s *TopupService) QueryOrderStatus(ctx context.Context, orderNo string, use
 func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order *TopupOrder, xunhuTradeNo *string) error {
 	// 充值金额换算（1 CNY = 1 USD，单位：分 → USD）
 	amountUSD := float64(order.AmountCNYFen) * topupCNYFenToUSD
+	affiliateV2Live := false
 
 	// 开事务
 	tx, err := s.entClient.Tx(ctx)
@@ -355,6 +359,7 @@ func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order 
 		return fmt.Errorf("update user balance: %w", err)
 	}
 	if s.affiliateConsumption != nil {
+		occurredAt := time.Now()
 		if err := s.affiliateConsumption.RecordBalanceLot(txCtx, AffiliateBalanceLotInput{
 			UserID:            order.UserID,
 			SourceType:        AffiliateSourcePaidTopup,
@@ -362,9 +367,23 @@ func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order 
 			SourceKey:         fmt.Sprintf("topup:balance:%d", order.ID),
 			AmountMicros:      int64(order.AmountCNYFen) * 10_000,
 			AffiliateEligible: order.AmountCNYFen > 0,
-			OccurredAt:        time.Now(),
+			OccurredAt:        occurredAt,
 		}); err != nil {
 			return fmt.Errorf("record affiliate balance lot: %w", err)
+		}
+		if s.affiliateRewards != nil {
+			rewardResult, err := s.affiliateRewards.ProcessFirstPaidPurchase(txCtx, AffiliateFirstPaidPurchaseInput{
+				UserID:       order.UserID,
+				PurchaseType: AffiliatePurchaseBalanceTopup,
+				SourceID:     order.ID,
+				PurchaseKey:  fmt.Sprintf("topup:balance:%d", order.ID),
+				AmountMicros: int64(order.AmountCNYFen) * 10_000,
+				OccurredAt:   occurredAt,
+			})
+			if err != nil {
+				return fmt.Errorf("process affiliate first paid topup: %w", err)
+			}
+			affiliateV2Live = rewardResult.ProgramLive
 		}
 	}
 
@@ -420,7 +439,7 @@ func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order 
 	}
 
 	// 异步触发“被邀请用户首次虎皮椒充值”奖励（幂等，不影响主流程）
-	if s.commissionService != nil {
+	if s.commissionService != nil && !affiliateV2Live {
 		uid := order.UserID
 		topupOrderID := order.ID
 		go func() {

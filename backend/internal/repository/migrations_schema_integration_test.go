@@ -154,6 +154,27 @@ WHERE id = 1
 	require.Equal(t, "v2", affiliateVersion)
 	require.Equal(t, 1000, agentPoolRateBPS)
 	require.Equal(t, 3500, marginFloorBPS)
+
+	// migration 150: source-aware paid balance/monthly-card attribution.
+	for _, table := range []string{
+		"balance_lots",
+		"balance_lot_consumptions",
+		"monthly_entitlement_cycles",
+		"monthly_entitlement_cycle_subscriptions",
+	} {
+		var regclass sql.NullString
+		require.NoError(t, tx.QueryRowContext(
+			context.Background(),
+			"SELECT to_regclass('public.' || $1)",
+			table,
+		).Scan(&regclass))
+		require.True(t, regclass.Valid, "expected %s table to exist", table)
+	}
+	requireColumn(t, tx, "balance_lots", "remaining_amount_micros", "bigint", 0, false)
+	requireColumn(t, tx, "balance_lot_consumptions", "affiliate_eligible_amount_micros", "bigint", 0, false)
+	requireColumn(t, tx, "monthly_entitlement_cycles", "confirmed_consumption_micros", "bigint", 0, false)
+	requireIndex(t, tx, "balance_lots", "idx_balance_lots_fifo")
+	requireIndex(t, tx, "monthly_entitlement_cycle_subscriptions", "idx_monthly_cycle_subscription_lookup")
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

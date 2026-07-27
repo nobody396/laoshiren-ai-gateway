@@ -30,15 +30,16 @@ const (
 
 // TopupService 处理虎皮椒充值业务
 type TopupService struct {
-	topupRepo           TopupOrderRepository
-	settingService      *SettingService
-	userRepo            UserRepository
-	accountChangeRepo   AccountChangeRecordRepository
-	entClient           *dbent.Client
-	billingCache        *BillingCacheService
-	authInvalidator     APIKeyAuthCacheInvalidator
-	commissionService   *CommissionService
-	balanceAlertService *BalanceAlertService
+	topupRepo            TopupOrderRepository
+	settingService       *SettingService
+	userRepo             UserRepository
+	accountChangeRepo    AccountChangeRecordRepository
+	entClient            *dbent.Client
+	billingCache         *BillingCacheService
+	authInvalidator      APIKeyAuthCacheInvalidator
+	commissionService    *CommissionService
+	balanceAlertService  *BalanceAlertService
+	affiliateConsumption AffiliateConsumptionRepository
 }
 
 // NewTopupService creates a new TopupService
@@ -52,17 +53,19 @@ func NewTopupService(
 	authInvalidator APIKeyAuthCacheInvalidator,
 	commissionService *CommissionService,
 	balanceAlertService *BalanceAlertService,
+	affiliateConsumption AffiliateConsumptionRepository,
 ) *TopupService {
 	return &TopupService{
-		topupRepo:           topupRepo,
-		settingService:      settingService,
-		userRepo:            userRepo,
-		accountChangeRepo:   accountChangeRepo,
-		entClient:           entClient,
-		billingCache:        billingCache,
-		authInvalidator:     authInvalidator,
-		commissionService:   commissionService,
-		balanceAlertService: balanceAlertService,
+		topupRepo:            topupRepo,
+		settingService:       settingService,
+		userRepo:             userRepo,
+		accountChangeRepo:    accountChangeRepo,
+		entClient:            entClient,
+		billingCache:         billingCache,
+		authInvalidator:      authInvalidator,
+		commissionService:    commissionService,
+		balanceAlertService:  balanceAlertService,
+		affiliateConsumption: affiliateConsumption,
 	}
 }
 
@@ -350,6 +353,19 @@ func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order 
 	// 增加余额
 	if err := s.userRepo.UpdateBalance(txCtx, order.UserID, amountUSD); err != nil {
 		return fmt.Errorf("update user balance: %w", err)
+	}
+	if s.affiliateConsumption != nil {
+		if err := s.affiliateConsumption.RecordBalanceLot(txCtx, AffiliateBalanceLotInput{
+			UserID:            order.UserID,
+			SourceType:        AffiliateSourcePaidTopup,
+			SourceID:          order.ID,
+			SourceKey:         fmt.Sprintf("topup:balance:%d", order.ID),
+			AmountMicros:      int64(order.AmountCNYFen) * 10_000,
+			AffiliateEligible: order.AmountCNYFen > 0,
+			OccurredAt:        time.Now(),
+		}); err != nil {
+			return fmt.Errorf("record affiliate balance lot: %w", err)
+		}
 	}
 
 	if err := tx.User.UpdateOneID(order.UserID).AddTotalRecharged(amountUSD).Exec(txCtx); err != nil {

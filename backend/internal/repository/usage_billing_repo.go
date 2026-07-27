@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
@@ -112,6 +114,19 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 			return err
 		}
 		result.SubscriptionUsageUpdates = updates
+		if cmd.UsageLogID > 0 {
+			confirmedMicros, err := attributeUsageBillingMonthlyConsumption(
+				ctx,
+				tx,
+				cmd,
+				service.AffiliateMicrosFromFloat(cmd.SubscriptionCost),
+			)
+			if err != nil {
+				return err
+			}
+			result.MonthlyConfirmedMicros = confirmedMicros
+			result.ConfirmedConsumptionMicros += confirmedMicros
+		}
 	}
 
 	if cmd.BalanceCost > 0 {
@@ -120,6 +135,19 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 			return err
 		}
 		result.NewBalance = &newBalance
+		if cmd.UsageLogID > 0 {
+			confirmedMicros, err := attributeUsageBillingBalanceConsumption(
+				ctx,
+				tx,
+				cmd,
+				service.AffiliateMicrosFromFloat(cmd.BalanceCost),
+			)
+			if err != nil {
+				return err
+			}
+			result.BalanceConfirmedMicros = confirmedMicros
+			result.ConfirmedConsumptionMicros += confirmedMicros
+		}
 	}
 
 	if cmd.APIKeyQuotaCost > 0 {
@@ -145,6 +173,282 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 	}
 
 	return nil
+}
+
+type usageBillingBalanceLot struct {
+	ID                int64
+	RemainingMicros   int64
+	AffiliateEligible bool
+}
+
+func attributeUsageBillingBalanceConsumption(
+	ctx context.Context,
+	tx *sql.Tx,
+	cmd *service.UsageBillingCommand,
+	amountMicros int64,
+) (int64, error) {
+	if amountMicros <= 0 {
+		return 0, nil
+	}
+	rows, err := tx.QueryContext(ctx, `
+		SELECT id, remaining_amount_micros, affiliate_eligible
+		FROM balance_lots
+		WHERE user_id = $1
+			AND remaining_amount_micros > 0
+		ORDER BY occurred_at, id
+		FOR UPDATE
+	`, cmd.UserID)
+	if err != nil {
+		return 0, err
+	}
+	lots := make([]usageBillingBalanceLot, 0, 4)
+	for rows.Next() {
+		var lot usageBillingBalanceLot
+		if err := rows.Scan(&lot.ID, &lot.RemainingMicros, &lot.AffiliateEligible); err != nil {
+			_ = rows.Close()
+			return 0, err
+		}
+		lots = append(lots, lot)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return 0, err
+	}
+	if err := rows.Close(); err != nil {
+		return 0, err
+	}
+
+	availableMicros := int64(0)
+	for _, lot := range lots {
+		if lot.RemainingMicros > amountMicros-availableMicros {
+			availableMicros = amountMicros
+			break
+		}
+		availableMicros += lot.RemainingMicros
+	}
+	if gapMicros := amountMicros - availableMicros; gapMicros > 0 {
+		var reconciliationLotID int64
+		err := tx.QueryRowContext(ctx, `
+			INSERT INTO balance_lots (
+				user_id, source_type, source_key,
+				original_amount_micros, remaining_amount_micros,
+				affiliate_eligible, occurred_at
+			)
+			VALUES ($1, 'legacy_unattributed', $2, $3, $3, FALSE, NOW())
+			ON CONFLICT (source_key) DO UPDATE
+			SET source_key = EXCLUDED.source_key
+			RETURNING id
+		`,
+			cmd.UserID,
+			fmt.Sprintf("legacy_reconcile:usage:%d", cmd.UsageLogID),
+			gapMicros,
+		).Scan(&reconciliationLotID)
+		if err != nil {
+			return 0, err
+		}
+		lots = append(lots, usageBillingBalanceLot{
+			ID:              reconciliationLotID,
+			RemainingMicros: gapMicros,
+		})
+	}
+
+	eventKey := fmt.Sprintf("usage:%d:balance", cmd.UsageLogID)
+	remainingMicros := amountMicros
+	eligibleMicros := int64(0)
+	for _, lot := range lots {
+		if remainingMicros <= 0 {
+			break
+		}
+		consumeMicros := lot.RemainingMicros
+		if consumeMicros > remainingMicros {
+			consumeMicros = remainingMicros
+		}
+		if consumeMicros <= 0 {
+			continue
+		}
+		eligiblePart := int64(0)
+		if lot.AffiliateEligible {
+			eligiblePart = consumeMicros
+		}
+		result, err := tx.ExecContext(ctx, `
+			UPDATE balance_lots
+			SET remaining_amount_micros = remaining_amount_micros - $1,
+				updated_at = NOW()
+			WHERE id = $2
+				AND remaining_amount_micros >= $1
+		`, consumeMicros, lot.ID)
+		if err != nil {
+			return 0, err
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return 0, err
+		}
+		if affected != 1 {
+			return 0, errors.New("affiliate balance lot changed while locked")
+		}
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO balance_lot_consumptions (
+				balance_lot_id, user_id, usage_log_id, usage_event_key,
+				amount_micros, affiliate_eligible_amount_micros
+			)
+			VALUES ($1, $2, $3, $4, $5, $6)
+			ON CONFLICT (balance_lot_id, usage_event_key) DO NOTHING
+		`, lot.ID, cmd.UserID, cmd.UsageLogID, eventKey, consumeMicros, eligiblePart); err != nil {
+			return 0, err
+		}
+		eligibleMicros += eligiblePart
+		remainingMicros -= consumeMicros
+	}
+	if remainingMicros != 0 {
+		return 0, errors.New("affiliate balance attribution did not consume requested amount")
+	}
+	if eligibleMicros > 0 {
+		if err := recordUsageBillingPerformanceEvent(
+			ctx,
+			tx,
+			cmd.UserID,
+			cmd.UsageLogID,
+			"balance_usage",
+			fmt.Sprintf("confirmed:usage:%d:balance", cmd.UsageLogID),
+			eligibleMicros,
+		); err != nil {
+			return 0, err
+		}
+	}
+	return eligibleMicros, nil
+}
+
+func attributeUsageBillingMonthlyConsumption(
+	ctx context.Context,
+	tx *sql.Tx,
+	cmd *service.UsageBillingCommand,
+	creditMicros int64,
+) (int64, error) {
+	if cmd.SubscriptionID == nil || creditMicros <= 0 {
+		return 0, nil
+	}
+	var (
+		affiliateEligible bool
+		confirmedMicros   int64
+	)
+	err := tx.QueryRowContext(ctx, `
+		WITH candidate AS (
+			SELECT c.id, c.confirmed_consumption_micros
+			FROM monthly_entitlement_cycles c
+			JOIN monthly_entitlement_cycle_subscriptions cs
+				ON cs.cycle_id = c.id
+			WHERE cs.user_subscription_id = $1
+				AND c.user_id = $2
+				AND c.starts_at <= NOW()
+				AND c.ends_at > NOW()
+				AND c.used_credit_micros < c.credit_limit_micros
+			ORDER BY c.starts_at, c.id
+			LIMIT 1
+			FOR UPDATE OF c
+		),
+		updated AS (
+			UPDATE monthly_entitlement_cycles c
+			SET
+				used_credit_micros = LEAST(c.credit_limit_micros, c.used_credit_micros + $3),
+				confirmed_consumption_micros = CASE
+					WHEN c.affiliate_eligible THEN LEAST(
+						c.sale_price_micros,
+						FLOOR(
+							c.sale_price_micros::numeric
+							* LEAST(c.credit_limit_micros, c.used_credit_micros + $3)::numeric
+							/ c.credit_limit_micros::numeric
+						)::bigint
+					)
+					ELSE 0
+				END,
+				updated_at = NOW()
+			FROM candidate
+			WHERE c.id = candidate.id
+			RETURNING
+				c.affiliate_eligible,
+				c.confirmed_consumption_micros
+					- candidate.confirmed_consumption_micros AS confirmed_delta_micros
+		)
+		SELECT affiliate_eligible, GREATEST(0, confirmed_delta_micros)
+		FROM updated
+	`, *cmd.SubscriptionID, cmd.UserID, creditMicros).Scan(&affiliateEligible, &confirmedMicros)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	if affiliateEligible && confirmedMicros > 0 {
+		if err := recordUsageBillingPerformanceEvent(
+			ctx,
+			tx,
+			cmd.UserID,
+			cmd.UsageLogID,
+			"monthly_usage",
+			fmt.Sprintf("confirmed:usage:%d:monthly", cmd.UsageLogID),
+			confirmedMicros,
+		); err != nil {
+			return 0, err
+		}
+	}
+	return confirmedMicros, nil
+}
+
+func recordUsageBillingPerformanceEvent(
+	ctx context.Context,
+	tx *sql.Tx,
+	userID int64,
+	usageLogID int64,
+	sourceType string,
+	eventKey string,
+	amountMicros int64,
+) error {
+	var (
+		mode      string
+		startedAt sql.NullTime
+	)
+	if err := tx.QueryRowContext(ctx, `
+		SELECT mode, started_at
+		FROM affiliate_program_settings
+		WHERE id = 1
+	`).Scan(&mode, &startedAt); err != nil {
+		return err
+	}
+	if mode == service.AffiliateProgramModeOff {
+		return nil
+	}
+	if mode == service.AffiliateProgramModeLive && (!startedAt.Valid || startedAt.Time.After(time.Now())) {
+		return nil
+	}
+	_, err := tx.ExecContext(ctx, `
+		INSERT INTO affiliate_performance_events (
+			user_id,
+			direct_agent_id,
+			event_type,
+			amount_micros,
+			source_type,
+			source_id,
+			event_key,
+			occurred_at,
+			metadata
+		)
+		SELECT
+			$1,
+			b.inviter_user_id,
+			'confirmed_consumption',
+			$2,
+			$3,
+			$4,
+			$5,
+			NOW(),
+			jsonb_build_object('program_mode', $6::text)
+		FROM (SELECT 1) seed
+		LEFT JOIN affiliate_bindings b
+			ON b.customer_user_id = $1
+		ON CONFLICT (event_key) DO NOTHING
+	`, userID, amountMicros, sourceType, usageLogID, eventKey, mode)
+	return err
 }
 
 type usageBillingSubscriptionTarget struct {

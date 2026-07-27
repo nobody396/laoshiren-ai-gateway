@@ -121,7 +121,10 @@ type UsageBillingApplyResult struct {
 	NewBalance           *float64
 	QuotaState           *AccountQuotaState
 
-	SubscriptionUsageUpdates []SubscriptionUsageUpdate
+	SubscriptionUsageUpdates   []SubscriptionUsageUpdate
+	BalanceConfirmedMicros     int64
+	MonthlyConfirmedMicros     int64
+	ConfirmedConsumptionMicros int64
 }
 
 type SubscriptionUsageUpdate struct {

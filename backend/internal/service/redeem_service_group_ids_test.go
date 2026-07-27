@@ -35,7 +35,7 @@ func TestSubscriptionRedeemNotesMarksSharedQuotaForMultiGroupCodes(t *testing.T)
 
 func TestRedeemServiceCreateCodePersistsSubscriptionGroupIDs(t *testing.T) {
 	repo := &redeemCreateRepoCapture{}
-	svc := NewRedeemService(repo, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc := NewRedeemService(repo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	code := &RedeemCode{
 		Code:         "BUNDLE-GPT-CLAUDE",

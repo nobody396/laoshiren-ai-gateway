@@ -82,7 +82,8 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	userService := service.ProvideUserService(userRepository, settingRepository, apiKeyAuthCacheInvalidator, billingCache)
 	accountChangeRecordRepository := repository.NewAccountChangeRecordRepository(client)
 	redeemCache := repository.NewRedeemCache(redisClient)
-	redeemService := service.NewRedeemService(redeemCodeRepository, accountChangeRecordRepository, userRepository, subscriptionService, redeemCache, billingCacheService, client, apiKeyAuthCacheInvalidator, commissionService, balanceAlertService)
+	affiliateConsumptionRepository := repository.NewAffiliateConsumptionRepository(client)
+	redeemService := service.NewRedeemService(redeemCodeRepository, accountChangeRecordRepository, userRepository, subscriptionService, redeemCache, billingCacheService, client, apiKeyAuthCacheInvalidator, commissionService, balanceAlertService, affiliateConsumptionRepository)
 	secretEncryptor, err := repository.NewAESEncryptor(configConfig)
 	if err != nil {
 		return nil, err
@@ -262,10 +263,10 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	handlerSettingHandler := handler.ProvideSettingHandler(settingService, commissionService, buildInfo)
 	totpHandler := handler.NewTotpHandler(totpService)
 	paymentOrderRepository := repository.NewPaymentOrderRepository(client)
-	paymentService := service.NewPaymentService(paymentOrderRepository, subscriptionService, settingService, client)
+	paymentService := service.NewPaymentService(paymentOrderRepository, subscriptionService, settingService, client, affiliateConsumptionRepository)
 	paymentHandler := handler.NewPaymentHandler(paymentService)
 	topupOrderRepository := repository.NewTopupOrderRepository(client)
-	topupService := service.NewTopupService(topupOrderRepository, settingService, userRepository, accountChangeRecordRepository, client, billingCacheService, apiKeyAuthCacheInvalidator, commissionService, balanceAlertService)
+	topupService := service.NewTopupService(topupOrderRepository, settingService, userRepository, accountChangeRecordRepository, client, billingCacheService, apiKeyAuthCacheInvalidator, commissionService, balanceAlertService, affiliateConsumptionRepository)
 	topupHandler := handler.NewTopupHandler(topupService)
 	balanceAlertHandler := handler.NewBalanceAlertHandler(balanceAlertService)
 	downloadResourceService := service.ProvideDownloadResourceService(configConfig, gitHubReleaseClient)

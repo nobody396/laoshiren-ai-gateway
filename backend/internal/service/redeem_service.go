@@ -83,6 +83,7 @@ type RedeemService struct {
 	authCacheInvalidator APIKeyAuthCacheInvalidator
 	commissionService    *CommissionService
 	balanceAlertService  *BalanceAlertService
+	affiliateConsumption AffiliateConsumptionRepository
 }
 
 // NewRedeemService 创建兑换码服务实例
@@ -97,6 +98,7 @@ func NewRedeemService(
 	authCacheInvalidator APIKeyAuthCacheInvalidator,
 	commissionService *CommissionService,
 	balanceAlertService *BalanceAlertService,
+	affiliateConsumption AffiliateConsumptionRepository,
 ) *RedeemService {
 	return &RedeemService{
 		redeemRepo:           redeemRepo,
@@ -109,6 +111,7 @@ func NewRedeemService(
 		authCacheInvalidator: authCacheInvalidator,
 		commissionService:    commissionService,
 		balanceAlertService:  balanceAlertService,
+		affiliateConsumption: affiliateConsumption,
 	}
 }
 
@@ -340,6 +343,20 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 		if err := s.userRepo.UpdateBalance(txCtx, userID, redeemCode.Value); err != nil {
 			return nil, fmt.Errorf("update user balance: %w", err)
 		}
+		if s.affiliateConsumption != nil {
+			sourceType, eligible := AffiliateSourceFromRedeem(redeemCode.Purpose, redeemCode.SalesStatus)
+			if err := s.affiliateConsumption.RecordBalanceLot(txCtx, AffiliateBalanceLotInput{
+				UserID:            userID,
+				SourceType:        sourceType,
+				SourceID:          redeemCode.ID,
+				SourceKey:         fmt.Sprintf("redeem:balance:%d", redeemCode.ID),
+				AmountMicros:      AffiliateMicrosFromFloat(redeemCode.Value),
+				AffiliateEligible: eligible,
+				OccurredAt:        time.Now(),
+			}); err != nil {
+				return nil, fmt.Errorf("record affiliate balance lot: %w", err)
+			}
+		}
 
 	case RedeemTypeConcurrency:
 		// 增加用户并发数
@@ -354,8 +371,12 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 		}
 		groupIDs := subscriptionRedeemGroupIDs(redeemCode)
 		notes := subscriptionRedeemNotes(redeemCode.Code, len(groupIDs) > 1)
+		affiliateSubscriptions := make([]AffiliateMonthlySubscription, 0, len(groupIDs))
+		affiliateGroups := make([]*Group, 0, len(groupIDs))
+		var cycleStartsAt time.Time
+		var cycleEndsAt time.Time
 		for _, groupID := range groupIDs {
-			_, _, err := s.subscriptionService.AssignOrExtendSubscription(txCtx, &AssignSubscriptionInput{
+			subscription, _, err := s.subscriptionService.AssignOrExtendSubscription(txCtx, &AssignSubscriptionInput{
 				UserID:       userID,
 				GroupID:      groupID,
 				ValidityDays: validityDays,
@@ -364,6 +385,44 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 			})
 			if err != nil {
 				return nil, fmt.Errorf("assign or extend subscription group %d: %w", groupID, err)
+			}
+			group, err := s.subscriptionService.groupRepo.GetByID(txCtx, groupID)
+			if err != nil {
+				return nil, fmt.Errorf("load subscription group %d for affiliate attribution: %w", groupID, err)
+			}
+			affiliateGroups = append(affiliateGroups, group)
+			affiliateSubscriptions = append(affiliateSubscriptions, AffiliateMonthlySubscription{
+				UserSubscriptionID: subscription.ID,
+				GroupID:            groupID,
+			})
+			subscriptionCycleStart := subscription.ExpiresAt.AddDate(0, 0, -validityDays)
+			if cycleStartsAt.IsZero() || subscriptionCycleStart.After(cycleStartsAt) {
+				cycleStartsAt = subscriptionCycleStart
+			}
+			if cycleEndsAt.IsZero() || subscription.ExpiresAt.Before(cycleEndsAt) {
+				cycleEndsAt = subscription.ExpiresAt
+			}
+		}
+		if s.affiliateConsumption != nil {
+			sourceType, eligible := AffiliateSourceFromRedeem(redeemCode.Purpose, redeemCode.SalesStatus)
+			creditLimitMicros := AffiliateMonthlyCreditLimitMicros(affiliateGroups, validityDays)
+			salePriceMicros := AffiliateMicrosFromFloat(redeemCode.Value)
+			if creditLimitMicros > 0 {
+				if err := s.affiliateConsumption.RecordMonthlyEntitlement(txCtx, AffiliateMonthlyEntitlementInput{
+					UserID:            userID,
+					SourceType:        sourceType,
+					SourceID:          redeemCode.ID,
+					SourceKey:         fmt.Sprintf("redeem:subscription:%d", redeemCode.ID),
+					ProductCode:       fmt.Sprintf("redeem-%d", redeemCode.ID),
+					SalePriceMicros:   salePriceMicros,
+					CreditLimitMicros: creditLimitMicros,
+					AffiliateEligible: eligible && salePriceMicros > 0,
+					StartsAt:          cycleStartsAt,
+					EndsAt:            cycleEndsAt,
+					Subscriptions:     affiliateSubscriptions,
+				}); err != nil {
+					return nil, fmt.Errorf("record affiliate monthly entitlement: %w", err)
+				}
 			}
 		}
 

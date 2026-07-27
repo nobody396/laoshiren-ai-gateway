@@ -83,6 +83,148 @@ func TestUsageBillingRepositoryApply_DeduplicatesBalanceBilling(t *testing.T) {
 	require.Equal(t, 1, dedupCount)
 }
 
+func TestUsageBillingRepositoryApply_AttributesOnlyPaidBalanceLots(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-affiliate-balance-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+		Balance:      20,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID: user.ID,
+		Key:    "sk-usage-billing-affiliate-balance-" + uuid.NewString(),
+		Name:   "affiliate-balance",
+	})
+	usageLogID := time.Now().UnixNano()
+
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO balance_lots (
+			user_id, source_type, source_key,
+			original_amount_micros, remaining_amount_micros,
+			affiliate_eligible
+		)
+		VALUES
+			($1, 'gift', $2, 3000000, 3000000, FALSE),
+			($1, 'paid_redeem', $3, 17000000, 17000000, TRUE)
+	`, user.ID, "test-gift:"+uuid.NewString(), "test-paid:"+uuid.NewString())
+	require.NoError(t, err)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	result, err := repo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:   uuid.NewString(),
+		APIKeyID:    apiKey.ID,
+		UsageLogID:  usageLogID,
+		UserID:      user.ID,
+		BalanceCost: 5,
+	})
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.Equal(t, int64(2_000_000), result.BalanceConfirmedMicros)
+	require.Equal(t, int64(2_000_000), result.ConfirmedConsumptionMicros)
+
+	var eventAmount int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT amount_micros
+		FROM affiliate_performance_events
+		WHERE event_key = $1
+	`, fmt.Sprintf("confirmed:usage:%d:balance", usageLogID)).Scan(&eventAmount))
+	require.Equal(t, int64(2_000_000), eventAmount)
+}
+
+func TestUsageBillingRepositoryApply_AttributesMonthlyConsumptionProRata(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-affiliate-monthly-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	limit := 100.0
+	group := mustCreateGroup(t, client, &service.Group{
+		Name:             "usage-billing-affiliate-monthly-" + uuid.NewString(),
+		Platform:         service.PlatformOpenAI,
+		SubscriptionType: service.SubscriptionTypeCredit,
+		DailyLimitUSD:    &limit,
+		WeeklyLimitUSD:   &limit,
+		MonthlyLimitUSD:  &limit,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID:  user.ID,
+		GroupID: &group.ID,
+		Key:     "sk-usage-billing-affiliate-monthly-" + uuid.NewString(),
+		Name:    "affiliate-monthly",
+	})
+	subscription := mustCreateSubscription(t, client, &service.UserSubscription{
+		UserID:  user.ID,
+		GroupID: group.ID,
+	})
+	var cycleID int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		INSERT INTO monthly_entitlement_cycles (
+			user_id, source_type, source_key, product_code,
+			sale_price_micros, credit_limit_micros,
+			affiliate_eligible, starts_at, ends_at
+		)
+		VALUES ($1, 'paid_topup', $2, 'test-monthly', 50000000, 100000000, TRUE, NOW() - INTERVAL '1 minute', NOW() + INTERVAL '31 days')
+		RETURNING id
+	`, user.ID, "test-monthly:"+uuid.NewString()).Scan(&cycleID))
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO monthly_entitlement_cycle_subscriptions (
+			cycle_id, user_subscription_id, group_id
+		)
+		VALUES ($1, $2, $3)
+	`, cycleID, subscription.ID, group.ID)
+	require.NoError(t, err)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+	usageLogID := time.Now().UnixNano()
+
+	result, err := repo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:        uuid.NewString(),
+		APIKeyID:         apiKey.ID,
+		UsageLogID:       usageLogID,
+		UserID:           user.ID,
+		SubscriptionID:   &subscription.ID,
+		SubscriptionCost: 10,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(5_000_000), result.MonthlyConfirmedMicros)
+	require.Equal(t, int64(5_000_000), result.ConfirmedConsumptionMicros)
+
+	var usedCredit, confirmed int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT used_credit_micros, confirmed_consumption_micros
+		FROM monthly_entitlement_cycles
+		WHERE id = $1
+	`, cycleID).Scan(&usedCredit, &confirmed))
+	require.Equal(t, int64(10_000_000), usedCredit)
+	require.Equal(t, int64(5_000_000), confirmed)
+}
+
+func setAffiliateProgramLiveForIntegrationTest(t *testing.T, ctx context.Context) {
+	t.Helper()
+	_, err := integrationDB.ExecContext(ctx, `
+		UPDATE affiliate_program_settings
+		SET mode = 'live',
+			started_at = NOW() - INTERVAL '1 minute',
+			updated_at = NOW()
+		WHERE id = 1
+	`)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(), `
+			UPDATE affiliate_program_settings
+			SET mode = 'off',
+				started_at = NULL,
+				updated_at = NOW()
+			WHERE id = 1
+		`)
+	})
+}
+
 func TestUsageBillingRepositoryApply_DeduplicatesSubscriptionBilling(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)

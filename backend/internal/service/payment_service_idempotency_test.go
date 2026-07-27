@@ -133,7 +133,7 @@ func newPaymentCompleteOrderService(t *testing.T, repo PaymentOrderRepository, s
 		group: &Group{ID: 7, SubscriptionType: SubscriptionTypeSubscription},
 	}
 	subscriptionSvc := NewSubscriptionService(groupRepo, subRepo, nil, nil, nil)
-	return NewPaymentService(repo, subscriptionSvc, nil, newPaymentServiceTestEntClient(t))
+	return NewPaymentService(repo, subscriptionSvc, nil, newPaymentServiceTestEntClient(t), nil)
 }
 
 func newPendingPaymentOrderForIdempotencyTest() *PaymentOrder {

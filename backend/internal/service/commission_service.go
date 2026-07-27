@@ -34,6 +34,7 @@ type CommissionService struct {
 	adminRepo      AgentCommissionAdminRepository
 	levelRepo      AgentLevelRepository
 	paymentRepo    AgentPaymentRepository
+	paymentReview  AgentPaymentReviewRepository
 	affiliateLinks AffiliateLinkRepository
 	nowFunc        func() time.Time
 }
@@ -59,6 +60,9 @@ func NewCommissionService(userRepo UserRepository, commissionRepo CommissionRepo
 	}
 	if repo, ok := commissionRepo.(AgentPaymentRepository); ok {
 		s.paymentRepo = repo
+	}
+	if repo, ok := commissionRepo.(AgentPaymentReviewRepository); ok {
+		s.paymentReview = repo
 	}
 	return s
 }

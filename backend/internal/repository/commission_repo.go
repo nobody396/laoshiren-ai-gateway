@@ -16,11 +16,12 @@ import (
 type commissionRepository struct {
 	client *dbent.Client
 	sql    sqlExecutor
+	db     *sql.DB
 }
 
 // NewCommissionRepository 创建分佣记录仓储实例
 func NewCommissionRepository(client *dbent.Client, sqlDB *sql.DB) service.CommissionRepository {
-	return &commissionRepository{client: client, sql: sqlDB}
+	return &commissionRepository{client: client, sql: sqlDB, db: sqlDB}
 }
 
 // Create 创建分佣记录。

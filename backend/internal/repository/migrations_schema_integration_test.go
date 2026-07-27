@@ -193,6 +193,12 @@ WHERE id = 1
 	// migration 153: bounded direct-team qualification scans.
 	requireIndex(t, tx, "affiliate_performance_events", "idx_affiliate_performance_direct_consumption")
 	requireIndex(t, tx, "affiliate_performance_events", "idx_affiliate_performance_user_consumption")
+
+	// migration 154: reviewed Alipay profiles and one-principal identity guard.
+	requireColumn(t, tx, "agent_payment_profiles", "verification_status", "character varying", 24, false)
+	requireColumn(t, tx, "agent_payment_profiles", "identity_fingerprint_hash", "character varying", 64, false)
+	requireIndex(t, tx, "agent_payment_profiles", "uq_agent_payment_verified_identity")
+	requireIndex(t, tx, "agent_payment_profiles", "idx_agent_payment_verification_queue")
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

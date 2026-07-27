@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -20,6 +22,17 @@ const (
 	defaultAgentSettlementMinimumAmount = 50.0
 	agentSettlementAmountEpsilon        = 0.00000001
 	agentPaymentQRCodeMaxSize           = 5 << 20
+)
+
+var (
+	ErrAgentPaymentProfileIncomplete = infraerrors.Conflict(
+		"AGENT_PAYMENT_PROFILE_INCOMPLETE",
+		"agent payment profile is incomplete",
+	)
+	ErrAgentPaymentIdentityConflict = infraerrors.Conflict(
+		"AGENT_PAYMENT_IDENTITY_CONFLICT",
+		"this verified payment identity is already bound to another agent",
+	)
 )
 
 type AgentPaymentQRCodeUpload struct {
@@ -103,10 +116,55 @@ func (s *CommissionService) UpdateAgentPaymentProfile(ctx context.Context, profi
 	if len([]rune(profile.PaymentNote)) > 500 {
 		return nil, infraerrors.BadRequest("INVALID_PAYMENT_NOTE", "payment note is too long")
 	}
+	profile.IdentityFingerprintHash = agentPaymentIdentityFingerprint(
+		profile.AlipayRealName,
+		profile.AlipayAccount,
+	)
 	if err := s.paymentRepo.UpsertAgentPaymentProfile(ctx, profile); err != nil {
 		return nil, fmt.Errorf("update agent payment profile: %w", err)
 	}
 	return s.GetAgentPaymentProfile(ctx, profile.AgentID)
+}
+
+func (s *CommissionService) ReviewAgentPaymentProfile(
+	ctx context.Context,
+	agentID int64,
+	reviewerID int64,
+	status string,
+	note string,
+) (*AgentPaymentProfile, error) {
+	if s.paymentReview == nil {
+		return nil, errors.New("agent payment review repository is not configured")
+	}
+	if err := s.ensureAgent(ctx, agentID); err != nil {
+		return nil, err
+	}
+	if reviewerID <= 0 {
+		return nil, infraerrors.BadRequest("INVALID_REVIEWER", "invalid payment-profile reviewer")
+	}
+	status = strings.TrimSpace(strings.ToLower(status))
+	if status != "verified" && status != "rejected" {
+		return nil, infraerrors.BadRequest(
+			"INVALID_PAYMENT_VERIFICATION_STATUS",
+			"verification status must be verified or rejected",
+		)
+	}
+	note = strings.TrimSpace(note)
+	if len([]rune(note)) > 500 {
+		return nil, infraerrors.BadRequest("INVALID_VERIFICATION_NOTE", "verification note is too long")
+	}
+	profile, err := s.paymentReview.ReviewAgentPaymentProfile(
+		ctx,
+		agentID,
+		reviewerID,
+		status,
+		note,
+	)
+	if err != nil {
+		return nil, err
+	}
+	normalizeAgentPaymentProfile(profile)
+	return profile, nil
 }
 
 func (s *CommissionService) UploadAgentPaymentQRCode(ctx context.Context, agentID int64, upload AgentPaymentQRCodeUpload) (*AgentPaymentProfile, error) {
@@ -229,8 +287,25 @@ func normalizeAgentPaymentProfile(profile *AgentPaymentProfile) {
 	profile.AlipayQRCodeObjectKey = strings.TrimSpace(profile.AlipayQRCodeObjectKey)
 	profile.AlipayQRCodeContentType = strings.TrimSpace(profile.AlipayQRCodeContentType)
 	profile.AlipayQRCodeOriginalName = strings.TrimSpace(profile.AlipayQRCodeOriginalName)
+	profile.IdentityFingerprintHash = strings.TrimSpace(profile.IdentityFingerprintHash)
+	profile.VerificationStatus = strings.TrimSpace(profile.VerificationStatus)
+	profile.VerificationNote = strings.TrimSpace(profile.VerificationNote)
+	if profile.VerificationStatus == "" {
+		profile.VerificationStatus = "incomplete"
+	}
 	profile.HasAlipayQRCode = profile.AlipayQRCodeObjectKey != ""
 	profile.Complete = profile.AlipayRealName != "" && profile.AlipayAccount != "" && profile.HasAlipayQRCode
+	profile.Verified = profile.Complete && profile.VerificationStatus == "verified"
+}
+
+func agentPaymentIdentityFingerprint(realName, account string) string {
+	realName = strings.ToLower(strings.TrimSpace(realName))
+	account = strings.ToLower(strings.TrimSpace(account))
+	if realName == "" || account == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(realName + "\x00" + account))
+	return hex.EncodeToString(sum[:])
 }
 
 func settlementGap(unsettled, minimum float64) float64 {

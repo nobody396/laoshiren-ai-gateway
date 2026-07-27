@@ -47,6 +47,11 @@ type updateAgentSettlementSettingsRequest struct {
 	MinimumAmount float64 `json:"minimum_amount"`
 }
 
+type reviewAgentPaymentProfileRequest struct {
+	Status string `json:"status" binding:"required"`
+	Note   string `json:"note"`
+}
+
 type bindAgentUserRequest struct {
 	Email          string `json:"email" binding:"required,email"`
 	OverwriteAgent bool   `json:"overwrite_agent"`
@@ -239,6 +244,36 @@ func (h *AgentHandler) GetPaymentQRCode(c *gin.Context) {
 	}
 	c.Header("Content-Type", contentType)
 	c.File(file.Path)
+}
+
+func (h *AgentHandler) ReviewPaymentProfile(c *gin.Context) {
+	agentID, ok := parseAgentIDParam(c)
+	if !ok {
+		return
+	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req reviewAgentPaymentProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	profile, err := h.commissionService.ReviewAgentPaymentProfile(
+		c.Request.Context(),
+		agentID,
+		subject.UserID,
+		req.Status,
+		req.Note,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	profile.AlipayQRCodeURL = "/api/v1/admin/agents/" + strconv.FormatInt(agentID, 10) + "/payment-profile/alipay-qr"
+	response.Success(c, profile)
 }
 
 func (h *AgentHandler) GetSettlementSettings(c *gin.Context) {

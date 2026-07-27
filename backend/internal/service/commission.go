@@ -149,6 +149,12 @@ type AgentPaymentProfile struct {
 	AlipayAccount            string     `json:"alipay_account"`
 	ContactPhone             string     `json:"contact_phone"`
 	PaymentNote              string     `json:"payment_note"`
+	IdentityFingerprintHash  string     `json:"-"`
+	VerificationStatus       string     `json:"verification_status"`
+	VerificationNote         string     `json:"verification_note,omitempty"`
+	VerifiedAt               *time.Time `json:"verified_at,omitempty"`
+	VerifiedBy               *int64     `json:"verified_by,omitempty"`
+	Verified                 bool       `json:"verified"`
 	AlipayQRCodeObjectKey    string     `json:"-"`
 	AlipayQRCodeContentType  string     `json:"-"`
 	AlipayQRCodeOriginalName string     `json:"alipay_qr_original_filename,omitempty"`
@@ -284,6 +290,10 @@ type AgentPaymentRepository interface {
 	GetAgentPaymentProfile(ctx context.Context, agentID int64) (*AgentPaymentProfile, error)
 	UpsertAgentPaymentProfile(ctx context.Context, profile *AgentPaymentProfile) error
 	UpdateAgentPaymentQRCode(ctx context.Context, agentID int64, objectKey, contentType, originalName string, size int64) (*AgentPaymentProfile, error)
+}
+
+type AgentPaymentReviewRepository interface {
+	ReviewAgentPaymentProfile(ctx context.Context, agentID, reviewerID int64, status, note string) (*AgentPaymentProfile, error)
 }
 
 // CommissionRepository 分佣记录数据访问接口

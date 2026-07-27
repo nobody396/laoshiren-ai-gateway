@@ -156,9 +156,9 @@ func (s *AffiliateCommunityService) UploadQRCode(
 	if upload.Size > agentPaymentQRCodeMaxSize {
 		return nil, infraerrors.BadRequest("COMMUNITY_QR_TOO_LARGE", "community QR image must be at most 5MB")
 	}
-	ext, ok := agentPaymentQRExt(upload.Filename, upload.ContentType)
-	if !ok {
-		return nil, infraerrors.BadRequest("COMMUNITY_QR_UNSUPPORTED", "only jpg/png/webp images are supported")
+	sanitized, err := sanitizeAgentQRCode(upload.Body, upload.Size, upload.ContentType)
+	if err != nil {
+		return nil, err
 	}
 	token, err := randomPaymentHex(12)
 	if err != nil {
@@ -166,7 +166,7 @@ func (s *AffiliateCommunityService) UploadQRCode(
 	}
 	objectKey := filepath.ToSlash(filepath.Join(
 		"affiliate-community",
-		time.Now().UTC().Format("20060102T150405Z")+"_"+strconv.FormatInt(updatedBy, 10)+"_"+token+ext,
+		time.Now().UTC().Format("20060102T150405Z")+"_"+strconv.FormatInt(updatedBy, 10)+"_"+token+sanitized.Extension,
 	))
 	path, err := affiliateCommunityObjectPath(objectKey)
 	if err != nil {
@@ -179,26 +179,26 @@ func (s *AffiliateCommunityService) UploadQRCode(
 	if err != nil {
 		return nil, fmt.Errorf("create community QR file: %w", err)
 	}
-	written, copyErr := io.Copy(file, io.LimitReader(upload.Body, upload.Size+1))
+	written, writeErr := file.Write(sanitized.Data)
 	closeErr := file.Close()
-	if copyErr != nil {
+	if writeErr != nil {
 		_ = os.Remove(path)
-		return nil, fmt.Errorf("save community QR file: %w", copyErr)
+		return nil, fmt.Errorf("save community QR file: %w", writeErr)
 	}
 	if closeErr != nil {
 		_ = os.Remove(path)
 		return nil, fmt.Errorf("close community QR file: %w", closeErr)
 	}
-	if written != upload.Size {
+	if written != len(sanitized.Data) {
 		_ = os.Remove(path)
-		return nil, infraerrors.BadRequest("COMMUNITY_QR_INVALID_SIZE", "community QR file size does not match upload size")
+		return nil, errors.New("sanitized community QR file write was incomplete")
 	}
 	settings, err := s.repo.UpdateCommunityQRCode(
 		ctx,
 		objectKey,
-		upload.ContentType,
+		sanitized.ContentType,
 		filepath.Base(upload.Filename),
-		upload.Size,
+		int64(len(sanitized.Data)),
 		updatedBy,
 	)
 	if err != nil {

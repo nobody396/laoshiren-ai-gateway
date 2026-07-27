@@ -452,6 +452,10 @@ async function loadAgentData() {
   notices.value = agentNotices
   community.value = agentCommunity
   applyPaymentProfile(profile)
+  void loadOptionalPreviews(profile, agentCommunity)
+}
+
+async function loadOptionalPreviews(profile: AgentPaymentProfile, agentCommunity: AffiliateCommunity) {
   if (profile.has_alipay_qr) {
     try { setBlobPreview(paymentQRPreview, await getAgentPaymentQRCode()) } catch { /* optional preview */ }
   }

@@ -38,7 +38,7 @@
             :key="`${i}-${ch}`"
             aria-hidden="true"
             :style="{ transitionDelay: `calc(var(--reveal-stagger) * 3 + ${i * 26}ms)` }"
-          >{{ ch === ' ' ? ' ' : ch }}</span>
+          >{{ ch === ' ' ? NBSP : ch }}</span>
         </p>
       </aside>
     </div>
@@ -46,6 +46,11 @@
 </template>
 
 <script setup lang="ts">
+// 逐字拆开后每个字符都是 inline-block，普通空格会被折叠掉，词与词粘连。
+// 用不断行空格顶住。写成常量而不是模板里的字面量：U+00A0 在源码里不可见，
+// eslint 的 no-irregular-whitespace 会报错，而且下一个人看不出它是有意的。
+const NBSP = '\u00A0'
+
 /**
  * Hero 主视觉区域组件
  */

@@ -167,8 +167,8 @@ jobs:
       - name: Run deterministic backend integration gate
         run: make test-backend-integration
 
-  frontend-typecheck:
-    name: Frontend typecheck and boundaries
+  frontend-tests:
+    name: Frontend tests and boundaries
     needs: [changes, release-proof]
     if: ${{ needs.release-proof.outputs.fast_path != 'true' && needs.changes.outputs.frontend == 'true' }}
     runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
@@ -182,26 +182,8 @@ jobs:
         run: corepack enable && corepack prepare pnpm@10.33.0 --activate
       - name: Install frontend dependencies
         run: pnpm --dir frontend install --frozen-lockfile
-      - name: Run frontend typecheck
-        run: pnpm --dir frontend run typecheck
       - name: Enforce frontend dependency boundaries
         run: pnpm --dir frontend run boundary:check
-
-  frontend-tests:
-    name: Frontend tests
-    needs: [changes, release-proof]
-    if: ${{ needs.release-proof.outputs.fast_path != 'true' && needs.changes.outputs.frontend == 'true' }}
-    runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - name: Enable pnpm
-        run: corepack enable && corepack prepare pnpm@10.33.0 --activate
-      - name: Install frontend dependencies
-        run: pnpm --dir frontend install --frozen-lockfile
       - name: Run frontend tests
         run: pnpm --dir frontend run test:run
 
@@ -244,7 +226,6 @@ jobs:
       - release-proof
       - backend
       - backend-integration
-      - frontend-typecheck
       - frontend-tests
       - frontend-build
       - docker-pr
@@ -253,7 +234,7 @@ jobs:
           (needs.changes.outputs.backend != 'true' || needs.backend.result == 'success') &&
           (needs.changes.outputs.integration != 'true' || needs.backend-integration.result == 'success') &&
           (needs.changes.outputs.frontend != 'true' ||
-            (needs.frontend-typecheck.result == 'success' && needs.frontend-tests.result == 'success' && needs.frontend-build.result == 'success')) &&
+            (needs.frontend-tests.result == 'success' && needs.frontend-build.result == 'success')) &&
           (needs.changes.outputs.docker != 'true' || needs.docker-pr.result == 'success') }}
     runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
     timeout-minutes: 5
@@ -294,7 +275,6 @@ jobs:
       - release-proof
       - backend
       - backend-integration
-      - frontend-typecheck
       - frontend-tests
       - frontend-build
     if: >-
@@ -304,7 +284,7 @@ jobs:
             ((needs.changes.outputs.backend != 'true' || needs.backend.result == 'success') &&
              (needs.changes.outputs.integration != 'true' || needs.backend-integration.result == 'success') &&
              (needs.changes.outputs.frontend != 'true' ||
-               (needs.frontend-typecheck.result == 'success' && needs.frontend-tests.result == 'success' && needs.frontend-build.result == 'success')))) }}
+               (needs.frontend-tests.result == 'success' && needs.frontend-build.result == 'success')))) }}
     permissions:
       contents: read
       packages: write
@@ -320,7 +300,6 @@ jobs:
       - release-proof
       - backend
       - backend-integration
-      - frontend-typecheck
       - frontend-tests
       - frontend-build
       - docker-pr

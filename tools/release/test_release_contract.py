@@ -340,7 +340,7 @@ class ReleaseContractTests(unittest.TestCase):
         self.assertIn("uses: ./.github/workflows/docker-image.yml", ci_workflow)
         self.assertNotIn("docker/build-push-action", ci_workflow)
         self.assertIn("- backend-integration", ci_workflow)
-        self.assertIn("- frontend-typecheck", ci_workflow)
+        self.assertIn("- frontend-tests", ci_workflow)
         self.assertIn("tested-tree-", ci_workflow)
         self.assertIn("needs.release-proof.outputs.fast_path == 'true'", ci_workflow)
 

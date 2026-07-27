@@ -37,7 +37,7 @@ PR CI classifies changed paths and runs only the smallest safe matrix:
 
 | Change | Required work |
 | --- | --- |
-| Frontend only | typecheck/boundaries, frontend tests, production build/budget, non-publishing Docker build |
+| Frontend only | production build/typecheck/budget, frontend tests/boundaries, non-publishing Docker build |
 | Backend only | backend tests/lint, deterministic integration, non-publishing Docker build |
 | Docs only | path classification and tested-tree attestation |
 | CI/release/unknown | full matrix |

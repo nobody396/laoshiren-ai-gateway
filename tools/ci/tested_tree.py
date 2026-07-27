@@ -91,6 +91,30 @@ def fallback(reason: str) -> dict:
     return {"fast_path": False, "reason": reason}
 
 
+def successful_pr_runs(workflow_runs: object, head_sha: str) -> list[dict]:
+    """Return successful PR runs for the exact head, newest first.
+
+    GitHub may return an empty ``pull_requests`` array for a completed
+    pull_request workflow after the PR is squash-merged. The exact-head query
+    plus the signed-in repository boundary identifies candidate runs; the
+    downloaded attestation still binds the selected run to the PR number,
+    repository, and head SHA before the fast path can be enabled.
+    """
+    if not isinstance(workflow_runs, list):
+        return []
+    candidates = [
+        run
+        for run in workflow_runs
+        if isinstance(run, dict)
+        and run.get("event") == "pull_request"
+        and run.get("status") == "completed"
+        and run.get("conclusion") == "success"
+        and run.get("head_sha") == head_sha
+        and isinstance(run.get("id"), int)
+    ]
+    return sorted(candidates, key=lambda item: int(item["id"]), reverse=True)
+
+
 def resolve_attestation(
     *,
     repo: Path,
@@ -129,23 +153,10 @@ def resolve_attestation(
     workflow_runs = runs_response.get("workflow_runs")
     if not isinstance(workflow_runs, list):
         return fallback("workflow_runs_payload_invalid")
-    candidates = []
-    for run in workflow_runs:
-        if not isinstance(run, dict) or run.get("conclusion") != "success":
-            continue
-        pull_requests = run.get("pull_requests")
-        if not isinstance(pull_requests, list):
-            continue
-        numbers = {
-            int(item["number"])
-            for item in pull_requests
-            if isinstance(item, dict) and "number" in item
-        }
-        if pr_number in numbers:
-            candidates.append(run)
+    candidates = successful_pr_runs(workflow_runs, head_sha)
     if not candidates:
         return fallback("successful_pr_run_not_found")
-    run = max(candidates, key=lambda item: int(item["id"]))
+    run = candidates[0]
     run_id = int(run["id"])
 
     artifacts_response = api.request_json(f"/actions/runs/{run_id}/artifacts")

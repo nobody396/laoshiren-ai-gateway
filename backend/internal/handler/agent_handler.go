@@ -21,11 +21,20 @@ import (
 type AgentHandler struct {
 	commissionService *service.CommissionService
 	affiliateLinks    *service.AffiliateLinkService
+	affiliateAgents   *service.AffiliateAgentService
 }
 
 // NewAgentHandler 创建 AgentHandler
-func NewAgentHandler(commissionService *service.CommissionService, affiliateLinks *service.AffiliateLinkService) *AgentHandler {
-	return &AgentHandler{commissionService: commissionService, affiliateLinks: affiliateLinks}
+func NewAgentHandler(
+	commissionService *service.CommissionService,
+	affiliateLinks *service.AffiliateLinkService,
+	affiliateAgents *service.AffiliateAgentService,
+) *AgentHandler {
+	return &AgentHandler{
+		commissionService: commissionService,
+		affiliateLinks:    affiliateLinks,
+		affiliateAgents:   affiliateAgents,
+	}
 }
 
 // GetInviteCode 获取或生成当前用户的邀请码
@@ -229,6 +238,34 @@ func (h *AgentHandler) UpdateAffiliateLinkStatus(c *gin.Context) {
 		return
 	}
 	response.Success(c, link)
+}
+
+func (h *AgentHandler) GetAffiliateQualification(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	qualification, err := h.affiliateAgents.GetQualification(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, qualification)
+}
+
+func (h *AgentHandler) ActivateAffiliateAgent(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	activation, err := h.affiliateAgents.Activate(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, activation)
 }
 
 type updateAgentPaymentProfileRequest struct {

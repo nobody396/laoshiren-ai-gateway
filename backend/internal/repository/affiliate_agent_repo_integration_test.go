@@ -1,0 +1,138 @@
+//go:build integration
+
+package repository
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
+	"github.com/stretchr/testify/require"
+)
+
+func TestAffiliateAgentRepository_QualifiesActivatesAndPreservesUpstream(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateAgentRepository(integrationDB)
+	agentService := service.NewAffiliateAgentService(repo)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	upstream := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-upstream-%d@example.com", time.Now().UnixNano()),
+	})
+	candidate := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-candidate-%d@example.com", time.Now().UnixNano()),
+	})
+	_, err := integrationDB.ExecContext(ctx, `
+		UPDATE users
+		SET inviter_id = $1
+		WHERE id = $2
+	`, upstream.ID, candidate.ID)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_bindings (
+			customer_user_id, inviter_user_id, binding_kind,
+			customer_rebate_rate_snapshot_bps,
+			agent_commission_rate_snapshot_bps
+		)
+		VALUES ($1, $2, 'ordinary', 0, 0)
+	`, candidate.ID, upstream.ID)
+	require.NoError(t, err)
+
+	for i := 0; i < 10; i++ {
+		direct := mustCreateUser(t, client, &service.User{
+			Email: fmt.Sprintf("affiliate-direct-%d-%d@example.com", time.Now().UnixNano(), i),
+		})
+		_, err = integrationDB.ExecContext(ctx, `
+			INSERT INTO affiliate_bindings (
+				customer_user_id, inviter_user_id, binding_kind,
+				customer_rebate_rate_snapshot_bps,
+				agent_commission_rate_snapshot_bps
+			)
+			VALUES ($1, $2, 'ordinary', 0, 0)
+		`, direct.ID, candidate.ID)
+		require.NoError(t, err)
+		_, err = integrationDB.ExecContext(ctx, `
+			INSERT INTO affiliate_performance_events (
+				user_id, direct_agent_id, event_type, amount_micros,
+				source_type, source_id, event_key, occurred_at, metadata
+			)
+			VALUES (
+				$1, $2, 'confirmed_consumption', 100000000,
+				'integration', $3, $4, NOW(),
+				'{"program_mode":"live"}'::jsonb
+			)
+		`, direct.ID, candidate.ID, i+1, fmt.Sprintf("qualification:%d:%d", candidate.ID, i))
+		require.NoError(t, err)
+	}
+
+	qualification, err := agentService.GetQualification(ctx, candidate.ID)
+	require.NoError(t, err)
+	require.True(t, qualification.DirectRouteQualified)
+	require.False(t, qualification.CombinedRouteQualified)
+	require.True(t, qualification.Qualified)
+	require.True(t, qualification.CanActivate)
+	require.Equal(t, "direct_team", qualification.QualificationRoute)
+	require.Equal(t, int32(10), qualification.ValidDirectUserCount)
+	require.Equal(t, int64(1_000_000_000), qualification.DirectTeamConsumptionMicros)
+
+	activation, err := agentService.Activate(ctx, candidate.ID)
+	require.NoError(t, err)
+	require.Equal(t, "active", activation.Qualification.AgentStatus)
+	require.False(t, activation.Qualification.CanActivate)
+	require.True(t, activation.DefaultLink.IsDefault)
+	require.Equal(t, service.AffiliateDefaultCustomerRebateRateBPS, activation.DefaultLink.CustomerRebateRateBPS)
+	require.Equal(t, int32(500), activation.DefaultLink.AgentCommissionRateBPS)
+
+	var role string
+	var inviterID int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT role, inviter_id
+		FROM users
+		WHERE id = $1
+	`, candidate.ID).Scan(&role, &inviterID))
+	require.Equal(t, service.RoleAgent, role)
+	require.Equal(t, upstream.ID, inviterID, "activation must preserve the agent's own upstream edge")
+
+	var principalStatus string
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT status
+		FROM agent_principals
+		WHERE agent_id = $1
+	`, candidate.ID).Scan(&principalStatus))
+	require.Equal(t, "active", principalStatus)
+
+	second, err := agentService.Activate(ctx, candidate.ID)
+	require.NoError(t, err)
+	require.Equal(t, activation.DefaultLink.ID, second.DefaultLink.ID)
+	var defaultCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM affiliate_links
+		WHERE agent_id = $1
+			AND is_default = TRUE
+	`, candidate.ID).Scan(&defaultCount))
+	require.Equal(t, 1, defaultCount)
+}
+
+func TestAffiliateAgentRepository_RejectsUnqualifiedActivation(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateAgentRepository(integrationDB)
+	agentService := service.NewAffiliateAgentService(repo)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	user := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-unqualified-%d@example.com", time.Now().UnixNano()),
+	})
+	qualification, err := agentService.GetQualification(ctx, user.ID)
+	require.NoError(t, err)
+	require.False(t, qualification.Qualified)
+	require.False(t, qualification.CanActivate)
+
+	_, err = agentService.Activate(ctx, user.ID)
+	require.True(t, errors.Is(err, service.ErrAffiliateQualificationNotMet), "unexpected error: %v", err)
+}

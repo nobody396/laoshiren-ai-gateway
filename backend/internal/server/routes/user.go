@@ -129,6 +129,8 @@ func RegisterUserRoutes(
 		user.GET("/invite-code", h.Agent.GetMyInviteCode)
 		// 用户邀请看板��邀请统计、佣金）
 		user.GET("/referral/dashboard", h.User.GetReferralDashboard)
+		user.GET("/affiliate/qualification", h.Agent.GetAffiliateQualification)
+		user.POST("/affiliate/activate", h.Agent.ActivateAffiliateAgent)
 
 		// 代理商路由（需要 agent 或 admin 角色）
 		agent := authenticated.Group("/agent")

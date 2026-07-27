@@ -57,6 +57,7 @@ var ProviderSet = wire.NewSet(
 	NewAffiliateConsumptionRepository,
 	NewAffiliateRewardRepository,
 	NewAffiliateLinkRepository,
+	NewAffiliateAgentRepository,
 	NewAPIKeyRepository,
 	NewGroupRepository,
 	NewAccountRepository,

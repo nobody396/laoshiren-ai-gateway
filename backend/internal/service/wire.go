@@ -569,6 +569,7 @@ var ProviderSet = wire.NewSet(
 	NewAffiliateProgramService,
 	NewAffiliateRewardService,
 	NewAffiliateLinkService,
+	NewAffiliateAgentService,
 	NewPaymentService,
 	NewTopupService,
 	NewRBACService,

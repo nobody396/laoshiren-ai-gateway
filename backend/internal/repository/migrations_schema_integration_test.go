@@ -189,6 +189,10 @@ WHERE id = 1
 	// migration 152: dynamic link lookup and direct-edge indexes.
 	requireIndex(t, tx, "affiliate_links", "idx_affiliate_links_code_active")
 	requireIndex(t, tx, "affiliate_bindings", "idx_affiliate_bindings_agent_link")
+
+	// migration 153: bounded direct-team qualification scans.
+	requireIndex(t, tx, "affiliate_performance_events", "idx_affiliate_performance_direct_consumption")
+	requireIndex(t, tx, "affiliate_performance_events", "idx_affiliate_performance_user_consumption")
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

@@ -254,6 +254,76 @@ BEGIN
   SELECT id INTO ordinary_id FROM users WHERE email = 'ordinary-referrer@demo.local' AND deleted_at IS NULL;
   SELECT id INTO invitee_id FROM users WHERE email = 'ordinary-invitee@demo.local' AND deleted_at IS NULL;
 
+  -- Keep repeated API/UI E2E runs deterministic. The E2E script intentionally
+  -- creates random idempotency keys, so a re-seed must remove only those
+  -- staging test conversion/withdrawal rows before recreating the fixed demo
+  -- ledger below.
+  DELETE FROM agent_payment_qr_access_events
+  WHERE withdrawal_id IN (
+    SELECT id
+    FROM agent_withdrawal_requests
+    WHERE agent_id = alpha_id
+      AND idempotency_key LIKE 'e2e-withdraw-%'
+  );
+  DELETE FROM agent_withdrawal_events
+  WHERE withdrawal_id IN (
+    SELECT id
+    FROM agent_withdrawal_requests
+    WHERE agent_id = alpha_id
+      AND idempotency_key LIKE 'e2e-withdraw-%'
+  );
+  DELETE FROM agent_cash_commission_entries
+  WHERE agent_id = alpha_id
+    AND (
+      idempotency_key LIKE 'e2e-%'
+      OR (
+        source_type = 'withdrawal'
+        AND source_id IN (
+          SELECT id
+          FROM agent_withdrawal_requests
+          WHERE agent_id = alpha_id
+            AND idempotency_key LIKE 'e2e-withdraw-%'
+        )
+      )
+      OR (
+        source_type = 'withdrawal_request'
+        AND idempotency_key LIKE 'withdrawal:%:hold'
+      )
+      OR (
+        source_type = 'commission_conversion'
+        AND source_id IN (
+          SELECT id
+          FROM agent_commission_conversions
+          WHERE agent_id = alpha_id
+            AND (
+              idempotency_key LIKE 'e2e-convert-%'
+              OR idempotency_key LIKE 'affiliate-convert-%'
+            )
+        )
+      )
+    );
+  DELETE FROM balance_lots
+  WHERE user_id = alpha_id
+    AND source_type = 'commission_conversion'
+    AND source_id IN (
+      SELECT id
+      FROM agent_commission_conversions
+      WHERE agent_id = alpha_id
+        AND (
+          idempotency_key LIKE 'e2e-convert-%'
+          OR idempotency_key LIKE 'affiliate-convert-%'
+        )
+    );
+  DELETE FROM agent_commission_conversions
+  WHERE agent_id = alpha_id
+    AND (
+      idempotency_key LIKE 'e2e-convert-%'
+      OR idempotency_key LIKE 'affiliate-convert-%'
+    );
+  DELETE FROM agent_withdrawal_requests
+  WHERE agent_id = alpha_id
+    AND idempotency_key LIKE 'e2e-withdraw-%';
+
   -- Keep the qualified candidate reusable across repeated E2E runs. If a
   -- previous staging test clicked "立即成为合伙人", reset only this demo
   -- candidate back to the pre-activation state so the upgrade path remains

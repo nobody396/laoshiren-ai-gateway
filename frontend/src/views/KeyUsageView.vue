@@ -356,6 +356,7 @@
 
 <script setup lang="ts">
 import { themeColor } from '@/utils/chartPalette'
+import { applyThemeClass, isDarkTheme, setTheme } from '@/utils/theme'
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores'
@@ -384,7 +385,7 @@ const isDark = ref(document.documentElement.classList.contains('dark'))
 function toggleTheme() {
   isDark.value = !isDark.value
   document.documentElement.classList.toggle('dark', isDark.value)
-  localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
+  setTheme(isDark.value)
 }
 
 const currentYear = computed(() => new Date().getFullYear())
@@ -825,11 +826,8 @@ async function queryKey() {
 // ==================== Lifecycle ====================
 
 function initTheme() {
-  const savedTheme = localStorage.getItem('theme')
-  if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    isDark.value = true
-    document.documentElement.classList.add('dark')
-  }
+  isDark.value = isDarkTheme()
+  applyThemeClass(isDark.value)
 }
 
 function formatResetTime(resetAt: string | null | undefined): string {

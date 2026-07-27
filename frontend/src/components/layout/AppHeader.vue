@@ -114,8 +114,8 @@
               <div class="text-sm font-medium text-gray-900 dark:text-white">
                 {{ displayName }}
               </div>
-              <div class="text-xs capitalize text-gray-500 dark:text-dark-400">
-                {{ user.role }}
+              <div class="text-xs text-gray-500 dark:text-dark-400">
+                {{ userRoleLabel }}
               </div>
             </div>
             <Icon name="chevronDown" size="sm" class="hidden text-gray-400 xl:block" />
@@ -271,6 +271,19 @@ const userInitials = computed(() => {
 const displayName = computed(() => {
   if (!user.value) return ''
   return user.value.username || user.value.email?.split('@')[0] || ''
+})
+
+const userRoleLabel = computed(() => {
+  switch (user.value?.role) {
+    case 'agent':
+      return t('common.roles.partner')
+    case 'admin':
+      return t('common.roles.admin')
+    case 'user':
+      return t('common.roles.user')
+    default:
+      return user.value?.role || ''
+  }
 })
 
 const pageTitle = computed(() => {

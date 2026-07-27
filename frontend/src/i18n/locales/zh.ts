@@ -353,6 +353,11 @@ export default {
     critical: '严重',
     warning: '警告',
     info: '提示',
+    roles: {
+      user: '用户',
+      admin: '管理员',
+      partner: '合伙人'
+    },
     active: '启用',
     inactive: '禁用',
     more: '更多',

@@ -578,9 +578,10 @@ func (h *AgentHandler) GetAffiliateCommunityQRCode(c *gin.Context) {
 	c.File(file.Path)
 }
 
-func (h *AgentHandler) ListProcessingAffiliateWithdrawals(c *gin.Context) {
-	items, err := h.affiliateWallet.ListProcessing(
+func (h *AgentHandler) ListAffiliateWithdrawals(c *gin.Context) {
+	items, err := h.affiliateWallet.ListAdminWithdrawals(
 		c.Request.Context(),
+		c.DefaultQuery("status", "processing"),
 		parsePositiveInt(c.Query("limit"), 100),
 	)
 	if err != nil {

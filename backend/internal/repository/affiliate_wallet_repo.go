@@ -516,29 +516,38 @@ func (r *affiliateWalletRepository) RecordAffiliateWithdrawalQRCodeAccess(
 	return nil
 }
 
-func (r *affiliateWalletRepository) ListProcessingAffiliateWithdrawals(
+func (r *affiliateWalletRepository) ListAdminAffiliateWithdrawals(
 	ctx context.Context,
+	status string,
 	limit int,
 ) ([]service.AffiliateWithdrawal, error) {
-	rows, err := r.db.QueryContext(ctx, `
-		SELECT
-			id, agent_id, amount_micros, status,
-			COALESCE((
-				SELECT risk_status
-				FROM agent_principals
-				WHERE agent_id = agent_withdrawal_requests.agent_id
-			), 'blocked') AS agent_risk_status,
-			payment_alipay_real_name, payment_alipay_account,
-			payment_contact_phone, payment_note,
-			payment_qr_object_key, payment_qr_content_type,
-			payment_qr_original_filename,
-			requested_at, due_at, paid_at, failed_at,
-			handled_by, payment_reference, failure_reason
-		FROM agent_withdrawal_requests
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	var suffix string
+	switch status {
+	case "paid":
+		suffix = `
+		WHERE status = 'paid'
+		ORDER BY paid_at DESC NULLS LAST, id DESC
+		LIMIT $1`
+	case "failed":
+		suffix = `
+		WHERE status = 'failed'
+		ORDER BY failed_at DESC NULLS LAST, id DESC
+		LIMIT $1`
+	case "all":
+		suffix = `
+		WHERE status IN ('processing', 'paid', 'failed')
+		ORDER BY requested_at DESC, id DESC
+		LIMIT $1`
+	default:
+		suffix = `
 		WHERE status = 'processing'
 		ORDER BY due_at, id
-		LIMIT $1
-	`, limit)
+		LIMIT $1`
+	}
+	rows, err := r.db.QueryContext(ctx, affiliateWithdrawalSelect(suffix), limit)
 	if err != nil {
 		return nil, err
 	}

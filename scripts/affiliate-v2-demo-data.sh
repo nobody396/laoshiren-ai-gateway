@@ -139,6 +139,15 @@ BEGIN
   SET email = 'ops-admin@partner.local', username = '运营管理员', notes = '运营管理账号', updated_at = NOW()
   WHERE id = admin_id;
 
+  INSERT INTO settings (key, value, updated_at)
+  VALUES
+    ('site_name', '老实人AI', NOW()),
+    ('registration_enabled', 'true', NOW()),
+    ('invitation_code_enabled', 'false', NOW())
+  ON CONFLICT (key) DO UPDATE SET
+    value = EXCLUDED.value,
+    updated_at = EXCLUDED.updated_at;
+
   UPDATE affiliate_program_settings
   SET mode = 'live',
       started_at = NOW() - INTERVAL '14 days',

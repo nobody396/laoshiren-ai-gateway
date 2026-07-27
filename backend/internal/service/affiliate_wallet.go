@@ -115,7 +115,7 @@ type AffiliateWalletRepository interface {
 	CompleteAffiliateWithdrawal(ctx context.Context, withdrawalID, operatorID int64, paymentReference string) (*AffiliateWithdrawal, error)
 	FailAffiliateWithdrawal(ctx context.Context, withdrawalID, operatorID int64, reason string) (*AffiliateWithdrawal, error)
 	GetAffiliateWithdrawal(ctx context.Context, withdrawalID int64) (*AffiliateWithdrawal, error)
-	ListProcessingAffiliateWithdrawals(ctx context.Context, limit int) ([]AffiliateWithdrawal, error)
+	ListAdminAffiliateWithdrawals(ctx context.Context, status string, limit int) ([]AffiliateWithdrawal, error)
 	ConvertAffiliateCommission(ctx context.Context, agentID, amountMicros int64, idempotencyKey string) (*AffiliateCommissionConversion, error)
 	ListAffiliateAgentNotices(ctx context.Context, agentID int64, limit int) ([]AffiliateAgentNotice, error)
 	MarkAffiliateAgentNoticeRead(ctx context.Context, agentID, noticeID int64) error
@@ -221,10 +221,27 @@ func (s *AffiliateWalletService) ListProcessing(
 	ctx context.Context,
 	limit int,
 ) ([]AffiliateWithdrawal, error) {
+	return s.ListAdminWithdrawals(ctx, "processing", limit)
+}
+
+func (s *AffiliateWalletService) ListAdminWithdrawals(
+	ctx context.Context,
+	status string,
+	limit int,
+) ([]AffiliateWithdrawal, error) {
 	if limit <= 0 || limit > 500 {
 		limit = 100
 	}
-	return s.repo.ListProcessingAffiliateWithdrawals(ctx, limit)
+	status = strings.ToLower(strings.TrimSpace(status))
+	if status == "" {
+		status = "processing"
+	}
+	switch status {
+	case "processing", "paid", "failed", "all":
+	default:
+		return nil, ErrInvalidInput
+	}
+	return s.repo.ListAdminAffiliateWithdrawals(ctx, status, limit)
 }
 
 func (s *AffiliateWalletService) CompleteWithdrawal(

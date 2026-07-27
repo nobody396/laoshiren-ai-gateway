@@ -225,7 +225,7 @@ export interface AdminAffiliateWithdrawal {
   id: number
   agent_id: number
   amount_micros: number
-  status: 'processing'
+  status: 'processing' | 'paid' | 'failed'
   agent_risk_status: AffiliateRiskStatus
   payment_alipay_real_name: string
   payment_alipay_account: string
@@ -233,7 +233,14 @@ export interface AdminAffiliateWithdrawal {
   payment_note?: string
   requested_at: string
   due_at: string
+  paid_at?: string
+  failed_at?: string
+  handled_by?: number
+  payment_reference?: string
+  failure_reason?: string
 }
+
+export type AdminAffiliateWithdrawalListStatus = AdminAffiliateWithdrawal['status'] | 'all'
 
 export type AffiliateRiskStatus = 'clear' | 'review' | 'blocked'
 
@@ -450,9 +457,12 @@ export async function getAffiliateCommunityQRCode(): Promise<Blob> {
   return data
 }
 
-export async function listAffiliateWithdrawals(limit = 100): Promise<AdminAffiliateWithdrawal[]> {
+export async function listAffiliateWithdrawals(
+  status: AdminAffiliateWithdrawalListStatus = 'processing',
+  limit = 100
+): Promise<AdminAffiliateWithdrawal[]> {
   const { data } = await apiClient.get<{ items: AdminAffiliateWithdrawal[] }>('/admin/agents/affiliate-withdrawals', {
-    params: { limit }
+    params: { status, limit }
   })
   return data.items ?? []
 }

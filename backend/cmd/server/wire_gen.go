@@ -134,7 +134,9 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	}
 	dashboardAggregationService := service.ProvideDashboardAggregationService(dashboardAggregationRepository, timingWheelService, configConfig)
 	dashboardHandler := admin.NewDashboardHandler(dashboardService, dashboardAggregationService)
-	adminAgentHandler := admin.NewAgentHandler(commissionService, affiliateCommunityService, affiliateWalletService)
+	affiliateProgramRepository := repository.NewAffiliateProgramRepository(db)
+	affiliateProgramService := service.NewAffiliateProgramService(affiliateProgramRepository)
+	adminAgentHandler := admin.NewAgentHandler(commissionService, affiliateProgramService, affiliateCommunityService, affiliateWalletService)
 	schedulerCache := repository.NewSchedulerCache(redisClient)
 	accountRepository := repository.NewAccountRepository(client, db, schedulerCache)
 	proxyExitInfoProber := repository.NewProxyExitInfoProber(configConfig)

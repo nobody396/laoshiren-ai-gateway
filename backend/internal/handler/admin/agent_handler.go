@@ -19,17 +19,20 @@ import (
 
 type AgentHandler struct {
 	commissionService  *service.CommissionService
+	affiliateProgram   *service.AffiliateProgramService
 	affiliateCommunity *service.AffiliateCommunityService
 	affiliateWallet    *service.AffiliateWalletService
 }
 
 func NewAgentHandler(
 	commissionService *service.CommissionService,
+	affiliateProgram *service.AffiliateProgramService,
 	affiliateCommunity *service.AffiliateCommunityService,
 	affiliateWallet *service.AffiliateWalletService,
 ) *AgentHandler {
 	return &AgentHandler{
 		commissionService:  commissionService,
+		affiliateProgram:   affiliateProgram,
 		affiliateCommunity: affiliateCommunity,
 		affiliateWallet:    affiliateWallet,
 	}
@@ -303,6 +306,65 @@ func (h *AgentHandler) ReviewPaymentProfile(c *gin.Context) {
 	}
 	profile.AlipayQRCodeURL = "/api/v1/admin/agents/" + strconv.FormatInt(agentID, 10) + "/payment-profile/alipay-qr"
 	response.Success(c, profile)
+}
+
+func (h *AgentHandler) ListPendingPaymentProfiles(c *gin.Context) {
+	items, err := h.commissionService.ListPendingAgentPaymentProfiles(
+		c.Request.Context(),
+		parsePositiveInt(c.Query("limit"), 100),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	for index := range items {
+		items[index].AlipayQRCodeURL = "/api/v1/admin/agents/" +
+			strconv.FormatInt(items[index].AgentID, 10) +
+			"/payment-profile/alipay-qr"
+	}
+	response.Success(c, gin.H{"items": items})
+}
+
+func (h *AgentHandler) GetAffiliateProgram(c *gin.Context) {
+	settings, err := h.affiliateProgram.GetSettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, settings)
+}
+
+func (h *AgentHandler) UpdateAffiliateProgram(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var next service.AffiliateProgramSettings
+	if err := c.ShouldBindJSON(&next); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	current, err := h.affiliateProgram.GetSettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if next.Mode == service.AffiliateProgramModeLive && current.StartedAt == nil {
+		startedAt := time.Now().UTC()
+		next.StartedAt = &startedAt
+	}
+	settings, err := h.affiliateProgram.UpdateSettings(
+		c.Request.Context(),
+		next,
+		next.Revision,
+		subject.UserID,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, settings)
 }
 
 func (h *AgentHandler) GetAffiliateCommunity(c *gin.Context) {

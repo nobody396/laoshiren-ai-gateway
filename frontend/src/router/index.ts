@@ -606,6 +606,17 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/affiliate',
+    name: 'AdminAffiliateOperations',
+    component: () => import('@/views/admin/AffiliateOperationsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      permission: 'admin:agents',
+      title: '联盟运营台'
+    }
+  },
+  {
     path: '/admin/groups',
     name: 'AdminGroups',
     component: () => import('@/views/admin/GroupsView.vue'),

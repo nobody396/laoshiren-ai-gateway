@@ -294,6 +294,7 @@ type AgentPaymentRepository interface {
 
 type AgentPaymentReviewRepository interface {
 	ReviewAgentPaymentProfile(ctx context.Context, agentID, reviewerID int64, status, note string) (*AgentPaymentProfile, error)
+	ListPendingAgentPaymentProfiles(ctx context.Context, limit int) ([]AgentPaymentProfile, error)
 }
 
 // CommissionRepository 分佣记录数据访问接口

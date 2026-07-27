@@ -450,6 +450,7 @@ export default {
     agentConsole: 'Agent Console',
     agentManagement: 'Agent Management',
     affiliateCenter: 'Affiliate Program',
+    affiliateOperations: 'Affiliate Operations',
     agentDashboard: 'Agent Dashboard',
     agentUsers: 'Invited Users',
     agentCommissions: 'Revenue Share Records',

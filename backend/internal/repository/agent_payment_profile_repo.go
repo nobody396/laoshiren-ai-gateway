@@ -343,3 +343,76 @@ func (r *commissionRepository) ReviewAgentPaymentProfile(
 	}
 	return r.GetAgentPaymentProfile(ctx, agentID)
 }
+
+func (r *commissionRepository) ListPendingAgentPaymentProfiles(
+	ctx context.Context,
+	limit int,
+) ([]service.AgentPaymentProfile, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("sql db is not configured")
+	}
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT
+			agent_id,
+			alipay_real_name,
+			alipay_account,
+			contact_phone,
+			payment_note,
+			identity_fingerprint_hash,
+			verification_status,
+			verification_note,
+			verified_at,
+			verified_by,
+			alipay_qr_object_key,
+			alipay_qr_content_type,
+			alipay_qr_original_filename,
+			alipay_qr_size,
+			created_at,
+			updated_at
+		FROM agent_payment_profiles
+		WHERE verification_status = 'pending_review'
+		ORDER BY updated_at ASC, agent_id ASC
+		LIMIT $1
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make([]service.AgentPaymentProfile, 0)
+	for rows.Next() {
+		var item service.AgentPaymentProfile
+		var createdAt, updatedAt sql.NullTime
+		if err := rows.Scan(
+			&item.AgentID,
+			&item.AlipayRealName,
+			&item.AlipayAccount,
+			&item.ContactPhone,
+			&item.PaymentNote,
+			&item.IdentityFingerprintHash,
+			&item.VerificationStatus,
+			&item.VerificationNote,
+			&item.VerifiedAt,
+			&item.VerifiedBy,
+			&item.AlipayQRCodeObjectKey,
+			&item.AlipayQRCodeContentType,
+			&item.AlipayQRCodeOriginalName,
+			&item.AlipayQRCodeSize,
+			&createdAt,
+			&updatedAt,
+		); err != nil {
+			return nil, err
+		}
+		if createdAt.Valid {
+			item.CreatedAt = &createdAt.Time
+		}
+		if updatedAt.Valid {
+			item.UpdatedAt = &updatedAt.Time
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

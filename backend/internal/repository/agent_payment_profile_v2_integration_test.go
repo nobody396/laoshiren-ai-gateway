@@ -52,6 +52,9 @@ func TestAgentPaymentProfileV2_VerificationAndPrincipalIdentityGuard(t *testing.
 	require.NoError(t, err)
 	require.True(t, firstProfile.Complete)
 	require.Equal(t, "pending_review", firstProfile.VerificationStatus)
+	pending, err := commissionService.ListPendingAgentPaymentProfiles(ctx, 100)
+	require.NoError(t, err)
+	require.Contains(t, pendingAgentPaymentProfileIDs(pending), first.ID)
 
 	firstProfile, err = commissionService.ReviewAgentPaymentProfile(
 		ctx,
@@ -65,6 +68,9 @@ func TestAgentPaymentProfileV2_VerificationAndPrincipalIdentityGuard(t *testing.
 	require.NotNil(t, firstProfile.VerifiedAt)
 	require.NotNil(t, firstProfile.VerifiedBy)
 	require.Equal(t, admin.ID, *firstProfile.VerifiedBy)
+	pending, err = commissionService.ListPendingAgentPaymentProfiles(ctx, 100)
+	require.NoError(t, err)
+	require.NotContains(t, pendingAgentPaymentProfileIDs(pending), first.ID)
 
 	var firstPrincipalHash string
 	require.NoError(t, integrationDB.QueryRowContext(ctx, `
@@ -113,6 +119,14 @@ func TestAgentPaymentProfileV2_VerificationAndPrincipalIdentityGuard(t *testing.
 		WHERE agent_id = $1
 	`, first.ID).Scan(&clearedHash))
 	require.Nil(t, clearedHash, "editing a verified profile must revoke its principal fingerprint")
+}
+
+func pendingAgentPaymentProfileIDs(items []service.AgentPaymentProfile) []int64 {
+	ids := make([]int64, 0, len(items))
+	for _, item := range items {
+		ids = append(ids, item.AgentID)
+	}
+	return ids
 }
 
 func createActiveAffiliatePaymentAgent(

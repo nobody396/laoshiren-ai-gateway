@@ -144,8 +144,60 @@ export interface AgentPaymentProfile {
   alipay_qr_url?: string
   has_alipay_qr: boolean
   complete: boolean
+  verification_status: 'incomplete' | 'pending_review' | 'verified' | 'rejected'
+  verification_note?: string
+  verified_at?: string
+  verified_by?: number
+  verified: boolean
   created_at?: string
   updated_at?: string
+}
+
+export interface AffiliateProgramSettings {
+  id: number
+  program_version: 'v2'
+  mode: 'off' | 'shadow' | 'live'
+  started_at?: string
+  ordinary_referral_rate_bps: number
+  first_paid_bonus_threshold_micros: number
+  first_paid_bonus_micros: number
+  agent_pool_rate_bps: number
+  qualification_direct_user_count: number
+  qualification_min_user_consumption_micros: number
+  qualification_direct_team_consumption_micros: number
+  qualification_combined_consumption_micros: number
+  max_campaign_links: number
+  commission_conversion_multiplier_millis: number
+  withdrawal_min_micros: number
+  withdrawal_sla_hours: number
+  margin_floor_bps: number
+  revision: number
+  updated_at: string
+}
+
+export interface AffiliateCommunitySettings {
+  enabled: boolean
+  title: string
+  message: string
+  qr_original_filename?: string
+  qr_size: number
+  has_qr_code: boolean
+  qr_code_url?: string
+  revision: number
+  updated_at?: string
+}
+
+export interface AdminAffiliateWithdrawal {
+  id: number
+  agent_id: number
+  amount_micros: number
+  status: 'processing'
+  payment_alipay_real_name: string
+  payment_alipay_account: string
+  payment_contact_phone: string
+  payment_note?: string
+  requested_at: string
+  due_at: string
 }
 
 export interface AgentLevelRule {
@@ -263,6 +315,82 @@ export async function getPaymentQRCode(agentId: number): Promise<Blob> {
   return data
 }
 
+export async function listPendingPaymentProfiles(limit = 100): Promise<AgentPaymentProfile[]> {
+  const { data } = await apiClient.get<{ items: AgentPaymentProfile[] }>('/admin/agents/payment-profiles/pending', {
+    params: { limit }
+  })
+  return data.items ?? []
+}
+
+export async function reviewPaymentProfile(
+  agentId: number,
+  payload: { status: 'verified' | 'rejected'; note?: string }
+): Promise<AgentPaymentProfile> {
+  const { data } = await apiClient.put<AgentPaymentProfile>(
+    `/admin/agents/${agentId}/payment-profile/verification`,
+    payload
+  )
+  return data
+}
+
+export async function getAffiliateProgram(): Promise<AffiliateProgramSettings> {
+  const { data } = await apiClient.get<AffiliateProgramSettings>('/admin/agents/affiliate-program')
+  return data
+}
+
+export async function updateAffiliateProgram(payload: AffiliateProgramSettings): Promise<AffiliateProgramSettings> {
+  const { data } = await apiClient.put<AffiliateProgramSettings>('/admin/agents/affiliate-program', payload)
+  return data
+}
+
+export async function getAffiliateCommunity(): Promise<AffiliateCommunitySettings> {
+  const { data } = await apiClient.get<AffiliateCommunitySettings>('/admin/agents/affiliate-community')
+  return data
+}
+
+export async function updateAffiliateCommunity(payload: Pick<AffiliateCommunitySettings, 'enabled' | 'title' | 'message' | 'revision'>): Promise<AffiliateCommunitySettings> {
+  const { data } = await apiClient.put<AffiliateCommunitySettings>('/admin/agents/affiliate-community', payload)
+  return data
+}
+
+export async function uploadAffiliateCommunityQRCode(file: File): Promise<AffiliateCommunitySettings> {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await apiClient.post<AffiliateCommunitySettings>('/admin/agents/affiliate-community/qr', form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+  return data
+}
+
+export async function getAffiliateCommunityQRCode(): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>('/admin/agents/affiliate-community/qr', { responseType: 'blob' })
+  return data
+}
+
+export async function listAffiliateWithdrawals(limit = 100): Promise<AdminAffiliateWithdrawal[]> {
+  const { data } = await apiClient.get<{ items: AdminAffiliateWithdrawal[] }>('/admin/agents/affiliate-withdrawals', {
+    params: { limit }
+  })
+  return data.items ?? []
+}
+
+export async function completeAffiliateWithdrawal(id: number, paymentReference = ''): Promise<void> {
+  await apiClient.post(`/admin/agents/affiliate-withdrawals/${id}/complete`, {
+    payment_reference: paymentReference
+  })
+}
+
+export async function failAffiliateWithdrawal(id: number, reason: string): Promise<void> {
+  await apiClient.post(`/admin/agents/affiliate-withdrawals/${id}/fail`, { reason })
+}
+
+export async function getAffiliateWithdrawalQRCode(id: number): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>(`/admin/agents/affiliate-withdrawals/${id}/payment-qr`, {
+    responseType: 'blob'
+  })
+  return data
+}
+
 export async function getRates(): Promise<CommissionRates> {
   const { data } = await apiClient.get<CommissionRates>('/admin/agents/rates')
   return data
@@ -344,6 +472,18 @@ export const agentsAPI = {
   updateSettlementSettings,
   getPaymentProfile,
   getPaymentQRCode,
+  listPendingPaymentProfiles,
+  reviewPaymentProfile,
+  getAffiliateProgram,
+  updateAffiliateProgram,
+  getAffiliateCommunity,
+  updateAffiliateCommunity,
+  uploadAffiliateCommunityQRCode,
+  getAffiliateCommunityQRCode,
+  listAffiliateWithdrawals,
+  completeAffiliateWithdrawal,
+  failAffiliateWithdrawal,
+  getAffiliateWithdrawalQRCode,
   getRates,
   updateRates,
   getInviteActivity,

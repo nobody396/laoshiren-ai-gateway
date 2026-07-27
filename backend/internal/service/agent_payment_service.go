@@ -167,6 +167,26 @@ func (s *CommissionService) ReviewAgentPaymentProfile(
 	return profile, nil
 }
 
+func (s *CommissionService) ListPendingAgentPaymentProfiles(
+	ctx context.Context,
+	limit int,
+) ([]AgentPaymentProfile, error) {
+	if s.paymentReview == nil {
+		return nil, errors.New("agent payment review repository is not configured")
+	}
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	items, err := s.paymentReview.ListPendingAgentPaymentProfiles(ctx, limit)
+	if err != nil {
+		return nil, err
+	}
+	for index := range items {
+		normalizeAgentPaymentProfile(&items[index])
+	}
+	return items, nil
+}
+
 func (s *CommissionService) UploadAgentPaymentQRCode(ctx context.Context, agentID int64, upload AgentPaymentQRCodeUpload) (*AgentPaymentProfile, error) {
 	if s.paymentRepo == nil {
 		return nil, fmt.Errorf("agent payment repository is not configured")

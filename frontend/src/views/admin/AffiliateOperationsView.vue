@@ -51,7 +51,7 @@
               <NumberField v-model="programForm.maxCampaignLinks" label="最多活动链接" suffix="条" :min="0" :max="100" :step="1" />
               <NumberField v-model="programForm.conversionMultiplier" label="现金转额度倍率" suffix="×" :min="1" :step="0.1" />
               <NumberField v-model="programForm.withdrawalMinimum" label="最低提现金额" prefix="¥" :min="1" :step="1" />
-              <NumberField v-model="programForm.withdrawalSLAHours" label="处理 SLA" suffix="小时" :min="1" :max="168" :step="1" />
+              <NumberField v-model="programForm.withdrawalSLAHours" label="处理时限" suffix="小时" :min="1" :max="168" :step="1" />
               <NumberField v-model="programForm.marginFloor" label="压力毛利率底线" suffix="%" :min="35" :max="100" :step="1" />
               <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900 sm:col-span-2 lg:col-span-3">
                 <p class="text-xs text-gray-600 dark:text-dark-300">合伙人奖励池</p>
@@ -61,7 +61,7 @@
             </div>
             <div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-5 dark:border-dark-800">
               <p class="text-xs leading-5 text-gray-600 dark:text-dark-300">
-                {{ program.started_at ? `首次 Live：${formatBeijingTime(program.started_at)}` : '尚未进入过 Live；首次启用时间将由服务器以 UTC 保存，并按北京时间展示。' }}
+                {{ program.started_at ? `首次正式启用：${formatBeijingTime(program.started_at)}` : '尚未进入正式模式；首次启用时间将由服务器保存，并按北京时间展示。' }}
               </p>
               <button class="btn btn-primary" :disabled="programSaving">{{ programSaving ? '保存中…' : '保存计划设置' }}</button>
             </div>
@@ -121,7 +121,7 @@
           </p>
         </section>
 
-        <section class="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+        <section class="space-y-6">
           <article class="card overflow-hidden">
             <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
               <div>
@@ -159,40 +159,78 @@
                 <p class="mt-1 text-2xl font-bold text-gray-950 dark:text-white">{{ withdrawals.length }}</p>
               </div>
             </div>
-            <div class="max-h-[42rem] divide-y divide-gray-100 overflow-y-auto dark:divide-dark-800">
-              <div v-for="item in riskPrincipals" :key="item.agent_id" class="p-5">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p class="font-semibold text-gray-900 dark:text-white">合伙人 #{{ item.agent_id }} · {{ item.username || item.email }}</p>
-                    <p class="mt-1 text-xs text-gray-600 dark:text-dark-300">{{ item.email }}</p>
-                  </div>
-                  <div class="flex flex-wrap justify-end gap-2">
-                    <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="agentStatusClass(item.agent_status)">
-                      {{ formatAgentStatus(item.agent_status) }}
-                    </span>
-                    <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="riskStatusClass(item.risk_status)">
-                      {{ formatRiskStatus(item.risk_status) }}
-                    </span>
-                  </div>
-                </div>
-                <div class="mt-3 grid gap-2 rounded-xl bg-gray-50 p-3 text-xs text-gray-600 dark:bg-dark-900 dark:text-dark-300 sm:grid-cols-2">
-                  <p>暂缓发放给客户的额度：{{ formatMicros(item.held_reward_micros, '⚡') }} · {{ item.held_reward_count }} 笔</p>
-                  <p>暂缓发放给合伙人的现金：{{ formatMicros(item.held_cash_micros, '¥') }} · {{ item.held_cash_count }} 笔</p>
-                </div>
-                <p v-if="item.risk_note" class="mt-2 text-xs text-gray-600 dark:text-dark-300">最近原因：{{ item.risk_note }}</p>
-                <div class="mt-4 grid gap-3 sm:grid-cols-[9rem_1fr_auto]">
-                  <select v-model="riskTargets[item.agent_id]" class="input">
-                    <option value="clear">正常开放</option>
-                    <option value="review">先暂停，待确认</option>
-                    <option value="blocked">暂停合作</option>
-                  </select>
-                  <input v-model.trim="riskReasons[item.agent_id]" maxlength="500" class="input" placeholder="写清楚原因，方便后面查看">
-                  <button class="btn btn-primary" :disabled="riskUpdatingId === item.agent_id" @click="applyRiskStatus(item)">
-                    {{ riskUpdatingId === item.agent_id ? '保存中…' : '保存状态' }}
-                  </button>
-                </div>
-              </div>
-              <div v-if="!riskPrincipals.length" class="p-12 text-center text-sm text-gray-600 dark:text-dark-300">尚无合伙人</div>
+            <div class="max-h-[34rem] overflow-auto">
+              <table class="min-w-[1280px] table-fixed divide-y divide-gray-100 text-sm dark:divide-dark-800">
+                <colgroup>
+                  <col class="w-[250px]">
+                  <col class="w-[130px]">
+                  <col class="w-[110px]">
+                  <col class="w-[110px]">
+                  <col class="w-[220px]">
+                  <col class="w-[170px]">
+                  <col class="w-[220px]">
+                  <col class="w-[120px]">
+                </colgroup>
+                <thead class="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wider text-gray-600 dark:bg-dark-900 dark:text-dark-300">
+                  <tr>
+                    <th class="px-5 py-3 text-left font-medium">合伙人</th>
+                    <th class="px-5 py-3 text-left font-medium">状态</th>
+                    <th class="px-5 py-3 text-right font-medium">暂缓额度</th>
+                    <th class="px-5 py-3 text-right font-medium">暂缓现金</th>
+                    <th class="px-5 py-3 text-left font-medium">最近原因</th>
+                    <th class="px-5 py-3 text-left font-medium">处理状态</th>
+                    <th class="px-5 py-3 text-left font-medium">处理说明</th>
+                    <th class="sticky right-0 border-l border-gray-100 bg-gray-50 px-5 py-3 text-right font-medium dark:border-dark-800 dark:bg-dark-900">操作</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-dark-800">
+                  <tr v-for="item in riskPrincipals" :key="item.agent_id" class="align-top hover:bg-gray-50/70 dark:hover:bg-dark-800/60">
+                    <td class="whitespace-nowrap px-5 py-4">
+                      <p class="font-semibold text-gray-900 dark:text-white">#{{ item.agent_id }} · {{ item.username || item.email }}</p>
+                      <p class="mt-1 text-xs text-gray-600 dark:text-dark-300">{{ item.email }}</p>
+                    </td>
+                    <td class="whitespace-nowrap px-5 py-4">
+                      <div class="flex flex-col items-start gap-2">
+                        <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="agentStatusClass(item.agent_status)">
+                          {{ formatAgentStatus(item.agent_status) }}
+                        </span>
+                        <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="riskStatusClass(item.risk_status)">
+                          {{ formatRiskStatus(item.risk_status) }}
+                        </span>
+                      </div>
+                    </td>
+                    <td class="px-5 py-4 text-right text-gray-700 dark:text-dark-200">
+                      <p class="font-semibold">{{ formatMicros(item.held_reward_micros, '⚡') }}</p>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ item.held_reward_count }} 笔</p>
+                    </td>
+                    <td class="px-5 py-4 text-right text-gray-700 dark:text-dark-200">
+                      <p class="font-semibold">{{ formatMicros(item.held_cash_micros, '¥') }}</p>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ item.held_cash_count }} 笔</p>
+                    </td>
+                    <td class="px-5 py-4 text-xs leading-5 text-gray-600 dark:text-dark-300">
+                      {{ item.risk_note || '—' }}
+                    </td>
+                    <td class="whitespace-nowrap px-5 py-4">
+                      <select v-model="riskTargets[item.agent_id]" class="input min-w-36">
+                        <option value="clear">正常开放</option>
+                        <option value="review">先暂停，待确认</option>
+                        <option value="blocked">暂停合作</option>
+                      </select>
+                    </td>
+                    <td class="px-5 py-4">
+                      <input v-model.trim="riskReasons[item.agent_id]" maxlength="500" class="input min-w-44" placeholder="处理原因">
+                    </td>
+                    <td class="sticky right-0 border-l border-gray-100 bg-white px-5 py-4 text-right dark:border-dark-800 dark:bg-dark-900">
+                      <button class="btn btn-primary btn-sm whitespace-nowrap" :disabled="riskUpdatingId === item.agent_id" @click="applyRiskStatus(item)">
+                        {{ riskUpdatingId === item.agent_id ? '保存中…' : '保存状态' }}
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="!riskPrincipals.length">
+                    <td colspan="8" class="px-5 py-12 text-center text-sm text-gray-600 dark:text-dark-300">尚无合伙人</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </article>
 
@@ -222,7 +260,7 @@
           </article>
         </section>
 
-        <section class="grid gap-6 xl:grid-cols-2">
+        <section class="space-y-6">
           <article class="card overflow-hidden">
             <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
               <div>
@@ -231,23 +269,50 @@
               </div>
               <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-dark-800 dark:text-dark-300">{{ pendingProfiles.length }} 待审</span>
             </div>
-            <div class="max-h-[42rem] divide-y divide-gray-100 overflow-y-auto dark:divide-dark-800">
-              <div v-for="profile in pendingProfiles" :key="profile.agent_id" class="p-5">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p class="font-semibold text-gray-900 dark:text-white">合伙人 #{{ profile.agent_id }} · {{ profile.alipay_real_name }}</p>
-                    <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">{{ profile.alipay_account }} · {{ profile.contact_phone }}</p>
-                    <p v-if="profile.payment_note" class="mt-1 text-xs text-gray-600 dark:text-dark-300">{{ profile.payment_note }}</p>
-                  </div>
-                  <button class="btn btn-secondary btn-sm" @click="previewPaymentProfile(profile)">查看收款码</button>
-                </div>
-                <input v-model="reviewNotes[profile.agent_id]" maxlength="500" class="input mt-4" placeholder="审核备注；拒绝时必填">
-                <div class="mt-3 flex justify-end gap-2">
-                  <button class="btn btn-secondary btn-sm" :disabled="reviewingId === profile.agent_id" @click="rejectPaymentProfile(profile)">拒绝并退回</button>
-                  <button class="btn btn-primary btn-sm" :disabled="reviewingId === profile.agent_id" @click="verifyPaymentProfile(profile)">验证通过</button>
-                </div>
-              </div>
-              <div v-if="!pendingProfiles.length" class="p-12 text-center text-sm text-gray-600 dark:text-dark-300">当前没有待审核资料</div>
+            <div class="max-h-[30rem] overflow-auto">
+              <table class="min-w-[1100px] table-fixed divide-y divide-gray-100 text-sm dark:divide-dark-800">
+                <colgroup>
+                  <col class="w-[190px]">
+                  <col class="w-[230px]">
+                  <col class="w-[190px]">
+                  <col class="w-[240px]">
+                  <col class="w-[250px]">
+                </colgroup>
+                <thead class="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wider text-gray-600 dark:bg-dark-900 dark:text-dark-300">
+                  <tr>
+                    <th class="px-5 py-3 text-left font-medium">合伙人</th>
+                    <th class="px-5 py-3 text-left font-medium">支付宝资料</th>
+                    <th class="px-5 py-3 text-left font-medium">资料备注</th>
+                    <th class="px-5 py-3 text-left font-medium">审核备注</th>
+                    <th class="sticky right-0 border-l border-gray-100 bg-gray-50 px-5 py-3 text-right font-medium dark:border-dark-800 dark:bg-dark-900">操作</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-dark-800">
+                  <tr v-for="profile in pendingProfiles" :key="profile.agent_id" class="align-top hover:bg-gray-50/70 dark:hover:bg-dark-800/60">
+                    <td class="whitespace-nowrap px-5 py-4">
+                      <p class="font-semibold text-gray-900 dark:text-white">#{{ profile.agent_id }} · {{ profile.alipay_real_name }}</p>
+                      <p class="mt-1 text-xs text-gray-600 dark:text-dark-300">{{ profile.contact_phone }}</p>
+                    </td>
+                    <td class="whitespace-nowrap px-5 py-4 text-gray-700 dark:text-dark-200">{{ profile.alipay_account }}</td>
+                    <td class="px-5 py-4 text-xs leading-5 text-gray-600 dark:text-dark-300">
+                      {{ profile.payment_note || '—' }}
+                    </td>
+                    <td class="px-5 py-4">
+                      <input v-model="reviewNotes[profile.agent_id]" maxlength="500" class="input min-w-52" placeholder="拒绝时必填">
+                    </td>
+                    <td class="sticky right-0 border-l border-gray-100 bg-white px-5 py-4 dark:border-dark-800 dark:bg-dark-900">
+                      <div class="flex justify-end gap-2">
+                        <button class="btn btn-secondary btn-sm whitespace-nowrap" @click="previewPaymentProfile(profile)">查看收款码</button>
+                        <button class="btn btn-secondary btn-sm whitespace-nowrap" :disabled="reviewingId === profile.agent_id" @click="rejectPaymentProfile(profile)">拒绝并退回</button>
+                        <button class="btn btn-primary btn-sm whitespace-nowrap" :disabled="reviewingId === profile.agent_id" @click="verifyPaymentProfile(profile)">验证通过</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr v-if="!pendingProfiles.length">
+                    <td colspan="5" class="px-5 py-12 text-center text-sm text-gray-600 dark:text-dark-300">当前没有待审核资料</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </article>
 
@@ -259,24 +324,51 @@
               </div>
               <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">{{ withdrawals.length }} 处理中</span>
             </div>
-            <div class="max-h-[42rem] divide-y divide-gray-100 overflow-y-auto dark:divide-dark-800">
-              <div v-for="withdrawal in withdrawals" :key="withdrawal.id" class="p-5">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p class="text-2xl font-bold text-gray-950 dark:text-white">{{ formatMicros(withdrawal.amount_micros, '¥') }}</p>
-                    <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">合伙人 #{{ withdrawal.agent_id }} · {{ withdrawal.payment_alipay_real_name }}</p>
-                    <p class="mt-1 text-xs text-gray-600 dark:text-dark-300">{{ withdrawal.payment_alipay_account }} · 截止 {{ formatBeijingTime(withdrawal.due_at) }}</p>
-                    <p v-if="withdrawal.agent_risk_status !== 'clear'" class="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">该合伙人当前已暂停，暂时不能确认打款</p>
-                  </div>
-                  <button class="btn btn-secondary btn-sm" @click="previewWithdrawalQR(withdrawal)">扫码打款</button>
-                </div>
-                <input v-model="paymentReferences[withdrawal.id]" maxlength="200" class="input mt-4" placeholder="支付宝流水号（可选）">
-                <div class="mt-3 flex justify-end gap-2">
-                  <button class="btn btn-secondary btn-sm" :disabled="processingWithdrawalId === withdrawal.id" @click="failWithdrawal(withdrawal)">打款失败</button>
-                  <button class="btn btn-primary btn-sm" :disabled="processingWithdrawalId === withdrawal.id || withdrawal.agent_risk_status !== 'clear'" @click="completeWithdrawal(withdrawal)">标记已到账</button>
-                </div>
-              </div>
-              <div v-if="!withdrawals.length" class="p-12 text-center text-sm text-gray-600 dark:text-dark-300">当前没有待打款申请</div>
+            <div class="max-h-[30rem] overflow-auto">
+              <table class="min-w-[1120px] table-fixed divide-y divide-gray-100 text-sm dark:divide-dark-800">
+                <colgroup>
+                  <col class="w-[100px]">
+                  <col class="w-[200px]">
+                  <col class="w-[230px]">
+                  <col class="w-[150px]">
+                  <col class="w-[220px]">
+                  <col class="w-[220px]">
+                </colgroup>
+                <thead class="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wider text-gray-600 dark:bg-dark-900 dark:text-dark-300">
+                  <tr>
+                    <th class="px-5 py-3 text-right font-medium">金额</th>
+                    <th class="px-5 py-3 text-left font-medium">合伙人</th>
+                    <th class="px-5 py-3 text-left font-medium">支付宝账号</th>
+                    <th class="px-5 py-3 text-left font-medium">截止时间</th>
+                    <th class="px-5 py-3 text-left font-medium">流水/失败原因</th>
+                    <th class="sticky right-0 border-l border-gray-100 bg-gray-50 px-5 py-3 text-right font-medium dark:border-dark-800 dark:bg-dark-900">操作</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-dark-800">
+                  <tr v-for="withdrawal in withdrawals" :key="withdrawal.id" class="align-top hover:bg-gray-50/70 dark:hover:bg-dark-800/60">
+                    <td class="whitespace-nowrap px-5 py-4 text-right text-base font-bold text-gray-950 dark:text-white">{{ formatMicros(withdrawal.amount_micros, '¥') }}</td>
+                    <td class="whitespace-nowrap px-5 py-4">
+                      <p class="font-semibold text-gray-900 dark:text-white">#{{ withdrawal.agent_id }} · {{ withdrawal.payment_alipay_real_name }}</p>
+                      <p v-if="withdrawal.agent_risk_status !== 'clear'" class="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">当前已暂停，暂时不能确认打款</p>
+                    </td>
+                    <td class="whitespace-nowrap px-5 py-4 text-gray-700 dark:text-dark-200">{{ withdrawal.payment_alipay_account }}</td>
+                    <td class="whitespace-nowrap px-5 py-4 text-xs text-gray-600 dark:text-dark-300">{{ formatBeijingTime(withdrawal.due_at) }}</td>
+                    <td class="px-5 py-4">
+                      <input v-model="paymentReferences[withdrawal.id]" maxlength="200" class="input min-w-52" placeholder="支付宝流水号（可选）">
+                    </td>
+                    <td class="sticky right-0 border-l border-gray-100 bg-white px-5 py-4 dark:border-dark-800 dark:bg-dark-900">
+                      <div class="flex justify-end gap-2">
+                        <button class="btn btn-secondary btn-sm whitespace-nowrap" @click="previewWithdrawalQR(withdrawal)">扫码打款</button>
+                        <button class="btn btn-secondary btn-sm whitespace-nowrap" :disabled="processingWithdrawalId === withdrawal.id" @click="failWithdrawal(withdrawal)">打款失败</button>
+                        <button class="btn btn-primary btn-sm whitespace-nowrap" :disabled="processingWithdrawalId === withdrawal.id || withdrawal.agent_risk_status !== 'clear'" @click="completeWithdrawal(withdrawal)">标记已到账</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr v-if="!withdrawals.length">
+                    <td colspan="6" class="px-5 py-12 text-center text-sm text-gray-600 dark:text-dark-300">当前没有待打款申请</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </article>
         </section>

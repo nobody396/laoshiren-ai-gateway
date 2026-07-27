@@ -208,6 +208,25 @@ WHERE id = 1
 	).Scan(&affiliateCommunityRegclass))
 	require.True(t, affiliateCommunityRegclass.Valid)
 	requireColumn(t, tx, "affiliate_community_settings", "revision", "bigint", 0, false)
+
+	// migration 156: on-demand withdrawal, conversion, and exception notices.
+	for _, table := range []string{
+		"agent_withdrawal_requests",
+		"agent_commission_conversions",
+		"affiliate_agent_notices",
+	} {
+		var regclass sql.NullString
+		require.NoError(t, tx.QueryRowContext(
+			context.Background(),
+			"SELECT to_regclass('public.' || $1)",
+			table,
+		).Scan(&regclass))
+		require.True(t, regclass.Valid, "expected %s table to exist", table)
+	}
+	requireColumn(t, tx, "agent_withdrawal_requests", "amount_micros", "bigint", 0, false)
+	requireIndex(t, tx, "agent_withdrawal_requests", "idx_agent_withdrawals_processing_due")
+	requireIndex(t, tx, "agent_commission_conversions", "idx_agent_conversions_agent_time")
+	requireIndex(t, tx, "affiliate_agent_notices", "idx_affiliate_agent_notices_unread")
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

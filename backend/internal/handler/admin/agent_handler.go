@@ -20,15 +20,18 @@ import (
 type AgentHandler struct {
 	commissionService  *service.CommissionService
 	affiliateCommunity *service.AffiliateCommunityService
+	affiliateWallet    *service.AffiliateWalletService
 }
 
 func NewAgentHandler(
 	commissionService *service.CommissionService,
 	affiliateCommunity *service.AffiliateCommunityService,
+	affiliateWallet *service.AffiliateWalletService,
 ) *AgentHandler {
 	return &AgentHandler{
 		commissionService:  commissionService,
 		affiliateCommunity: affiliateCommunity,
+		affiliateWallet:    affiliateWallet,
 	}
 }
 
@@ -68,6 +71,14 @@ type updateAffiliateCommunityRequest struct {
 	Title    string `json:"title" binding:"required"`
 	Message  string `json:"message"`
 	Revision int64  `json:"revision" binding:"required"`
+}
+
+type completeAffiliateWithdrawalRequest struct {
+	PaymentReference string `json:"payment_reference"`
+}
+
+type failAffiliateWithdrawalRequest struct {
+	Reason string `json:"reason" binding:"required"`
 }
 
 type bindAgentUserRequest struct {
@@ -402,6 +413,110 @@ func (h *AgentHandler) GetAffiliateCommunityQRCode(c *gin.Context) {
 	c.Header("Content-Type", contentType)
 	c.Header("Cache-Control", "private, no-store")
 	c.File(file.Path)
+}
+
+func (h *AgentHandler) ListProcessingAffiliateWithdrawals(c *gin.Context) {
+	items, err := h.affiliateWallet.ListProcessing(
+		c.Request.Context(),
+		parsePositiveInt(c.Query("limit"), 100),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"items": items})
+}
+
+func (h *AgentHandler) CompleteAffiliateWithdrawal(c *gin.Context) {
+	withdrawalID, ok := parseAffiliateWithdrawalID(c)
+	if !ok {
+		return
+	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req completeAffiliateWithdrawalRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	item, err := h.affiliateWallet.CompleteWithdrawal(
+		c.Request.Context(),
+		withdrawalID,
+		subject.UserID,
+		req.PaymentReference,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, item)
+}
+
+func (h *AgentHandler) FailAffiliateWithdrawal(c *gin.Context) {
+	withdrawalID, ok := parseAffiliateWithdrawalID(c)
+	if !ok {
+		return
+	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req failAffiliateWithdrawalRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	item, err := h.affiliateWallet.FailWithdrawal(
+		c.Request.Context(),
+		withdrawalID,
+		subject.UserID,
+		req.Reason,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, item)
+}
+
+func (h *AgentHandler) GetAffiliateWithdrawalQRCode(c *gin.Context) {
+	withdrawalID, ok := parseAffiliateWithdrawalID(c)
+	if !ok {
+		return
+	}
+	file, err := h.affiliateWallet.GetWithdrawalQRCodeFile(c.Request.Context(), withdrawalID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	contentType := file.ContentType
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	c.Header("Content-Type", contentType)
+	c.Header("Cache-Control", "private, no-store")
+	c.File(file.Path)
+}
+
+func parseAffiliateWithdrawalID(c *gin.Context) (int64, bool) {
+	id, err := strconv.ParseInt(c.Param("withdrawal_id"), 10, 64)
+	if err != nil || id <= 0 {
+		response.BadRequest(c, "Invalid withdrawal id")
+		return 0, false
+	}
+	return id, true
+}
+
+func parsePositiveInt(value string, fallback int) int {
+	n, err := strconv.Atoi(value)
+	if err != nil || n <= 0 {
+		return fallback
+	}
+	return n
 }
 
 func (h *AgentHandler) GetSettlementSettings(c *gin.Context) {

@@ -23,6 +23,7 @@ type AgentHandler struct {
 	affiliateLinks     *service.AffiliateLinkService
 	affiliateAgents    *service.AffiliateAgentService
 	affiliateCommunity *service.AffiliateCommunityService
+	affiliateWallet    *service.AffiliateWalletService
 }
 
 // NewAgentHandler 创建 AgentHandler
@@ -31,12 +32,14 @@ func NewAgentHandler(
 	affiliateLinks *service.AffiliateLinkService,
 	affiliateAgents *service.AffiliateAgentService,
 	affiliateCommunity *service.AffiliateCommunityService,
+	affiliateWallet *service.AffiliateWalletService,
 ) *AgentHandler {
 	return &AgentHandler{
 		commissionService:  commissionService,
 		affiliateLinks:     affiliateLinks,
 		affiliateAgents:    affiliateAgents,
 		affiliateCommunity: affiliateCommunity,
+		affiliateWallet:    affiliateWallet,
 	}
 }
 
@@ -296,6 +299,118 @@ func (h *AgentHandler) GetAffiliateCommunityQRCode(c *gin.Context) {
 	c.Header("Content-Type", contentType)
 	c.Header("Cache-Control", "private, no-store")
 	c.File(file.Path)
+}
+
+type affiliateWalletAmountRequest struct {
+	AmountMicros int64 `json:"amount_micros"`
+}
+
+func (h *AgentHandler) GetAffiliateWallet(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	wallet, err := h.affiliateWallet.GetWallet(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, wallet)
+}
+
+func (h *AgentHandler) ListAffiliateWithdrawals(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	items, err := h.affiliateWallet.ListWithdrawals(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"items": items})
+}
+
+func (h *AgentHandler) RequestAffiliateWithdrawal(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req affiliateWalletAmountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	item, err := h.affiliateWallet.RequestWithdrawal(
+		c.Request.Context(),
+		subject.UserID,
+		req.AmountMicros,
+		c.GetHeader("Idempotency-Key"),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Created(c, item)
+}
+
+func (h *AgentHandler) ConvertAffiliateCommission(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req affiliateWalletAmountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	item, err := h.affiliateWallet.Convert(
+		c.Request.Context(),
+		subject.UserID,
+		req.AmountMicros,
+		c.GetHeader("Idempotency-Key"),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Created(c, item)
+}
+
+func (h *AgentHandler) ListAffiliateNotices(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	items, err := h.affiliateWallet.ListNotices(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"items": items})
+}
+
+func (h *AgentHandler) ReadAffiliateNotice(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	noticeID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || noticeID <= 0 {
+		response.BadRequest(c, "Invalid notice id")
+		return
+	}
+	if err := h.affiliateWallet.MarkNoticeRead(c.Request.Context(), subject.UserID, noticeID); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"read": true})
 }
 
 type updateAgentPaymentProfileRequest struct {

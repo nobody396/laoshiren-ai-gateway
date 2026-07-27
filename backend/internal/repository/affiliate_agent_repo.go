@@ -201,6 +201,23 @@ func (r *affiliateAgentRepository) ActivateQualifiedAgent(
 	); err != nil {
 		return nil, err
 	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO affiliate_agent_notices (
+			agent_id, notice_type, title, message,
+			source_type, source_id, idempotency_key,
+			metadata
+		)
+		SELECT
+			$1, 'community_invite', s.title, s.message,
+			'agent_activation', $1, $2,
+			jsonb_build_object('has_qr_code', BTRIM(s.qr_object_key) <> '')
+		FROM affiliate_community_settings s
+		WHERE s.id = 1
+			AND s.enabled = TRUE
+		ON CONFLICT (idempotency_key) DO NOTHING
+	`, userID, fmt.Sprintf("agent-activated:user:%d:community", userID)); err != nil {
+		return nil, err
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}

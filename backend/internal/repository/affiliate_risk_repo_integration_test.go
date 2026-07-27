@@ -149,7 +149,16 @@ func insertAffiliateRiskIntegrationHolds(
 			'customer_rebate', 5000000, 100000000,
 			500, 'risk_hold', NOW(),
 			'confirmed_consumption', $2, $3
-		);
+		)
+	`,
+		customerID,
+		eventID,
+		fmt.Sprintf("risk-reward:%d", eventID),
+	)
+	if err != nil {
+		return err
+	}
+	_, err = integrationDB.ExecContext(ctx, `
 		INSERT INTO agent_cash_commission_entries (
 			agent_id, consumer_user_id, entry_type,
 			amount_micros, source_amount_micros,
@@ -158,17 +167,16 @@ func insertAffiliateRiskIntegrationHolds(
 			idempotency_key, occurred_at
 		)
 		VALUES (
-			$4, $1, 'earned',
+			$1, $2, 'earned',
 			5000000, 100000000,
 			500, 500,
-			'risk_hold', 'confirmed_consumption', $2,
-			$5, NOW()
+			'risk_hold', 'confirmed_consumption', $3,
+			$4, NOW()
 		)
 	`,
+		agentID,
 		customerID,
 		eventID,
-		fmt.Sprintf("risk-reward:%d", eventID),
-		agentID,
 		fmt.Sprintf("risk-cash:%d", eventID),
 	)
 	return err

@@ -675,7 +675,7 @@ func reverseAffiliateEventRewards(
 				$1, $2,
 				'reversal', 'platform_credit',
 				$3, $4,
-				$5, NOW(), CASE WHEN $5::text = 'posted' THEN NOW() ELSE NULL END,
+				$5::varchar, NOW(), CASE WHEN $5::varchar = 'posted' THEN NOW() ELSE NULL END,
 				'performance_reversal', $6, $7,
 				$8, jsonb_build_object(
 					'direction', 'debit',

@@ -118,7 +118,33 @@ func enhanceCSPPolicy(policy string) string {
 		policy = addToDirective(policy, "script-src", GoogleTagManagerDomain)
 	}
 
+	// Allow local object URLs for authenticated image previews such as payment
+	// QR codes. The API returns binary blobs and the Vue app renders them through
+	// URL.createObjectURL, which is blocked unless img-src includes blob:.
+	if !directiveHasValue(policy, "img-src", "blob:") {
+		policy = addToDirective(policy, "img-src", "blob:")
+	}
+
 	return policy
+}
+
+func directiveHasValue(policy, directive, value string) bool {
+	directivePrefix := directive + " "
+	idx := strings.Index(policy, directivePrefix)
+	if idx == -1 {
+		return false
+	}
+	endIdx := strings.Index(policy[idx:], ";")
+	segment := policy[idx:]
+	if endIdx != -1 {
+		segment = policy[idx : idx+endIdx]
+	}
+	for _, field := range strings.Fields(segment) {
+		if field == value {
+			return true
+		}
+	}
+	return false
 }
 
 // addToDirective adds a value to a specific CSP directive.

@@ -5,7 +5,7 @@
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary-700 dark:text-primary-300">Affiliate V2.1</p>
           <h1 class="mt-1 text-3xl font-bold tracking-tight text-gray-950 dark:text-white">联盟运营台</h1>
-          <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">计划开关、代理商总览、收款审核、人工打款和私域社群的单一操作入口。</p>
+          <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">计划开关、合伙人总览、收款审核、人工打款和社群引导的单一操作入口。</p>
         </div>
         <button class="btn btn-secondary" :disabled="loading" @click="loadAll">刷新</button>
       </header>
@@ -54,9 +54,9 @@
               <NumberField v-model="programForm.withdrawalSLAHours" label="处理 SLA" suffix="小时" :min="1" :max="168" :step="1" />
               <NumberField v-model="programForm.marginFloor" label="压力毛利率底线" suffix="%" :min="35" :max="100" :step="1" />
               <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900 sm:col-span-2 lg:col-span-3">
-                <p class="text-xs text-gray-500 dark:text-dark-400">Agent 固定奖励池</p>
+                <p class="text-xs text-gray-500 dark:text-dark-400">合伙人奖励池</p>
                 <p class="mt-1 text-xl font-bold text-gray-950 dark:text-white">{{ program.agent_pool_rate_bps / 100 }}%</p>
-                <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">该值由后端锁死，不可扩大，客户返利与 Agent 现金佣金之和始终等于 10%。</p>
+                <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">该值由后端锁死，不可扩大；客户返利 + 合伙人现金佣金固定共 10%。</p>
               </div>
             </div>
             <div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-5 dark:border-dark-800">
@@ -125,12 +125,12 @@
           <article class="card overflow-hidden">
             <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
               <div>
-                <h2 class="text-xl font-semibold text-gray-950 dark:text-white">代理商总览与风控</h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">这里就是当前全部 Agent / 代理商列表；复核或阻断后禁止新增绑定、提现和转换。</p>
+                <h2 class="text-xl font-semibold text-gray-950 dark:text-white">合伙人管理</h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">查看当前全部合伙人；发现异常时可先暂停邀请、提现和佣金转额度，确认没问题后再恢复。</p>
               </div>
               <div class="flex flex-wrap justify-end gap-2">
                 <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-dark-800 dark:text-dark-300">
-                  共 {{ agentOverviewStats.total }} 个代理商
+                  共 {{ agentOverviewStats.total }} 位合伙人
                 </span>
                 <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">
                   {{ agentOverviewStats.abnormal }} 个异常
@@ -139,15 +139,15 @@
             </div>
             <div class="grid gap-3 border-b border-gray-100 p-5 dark:border-dark-800 sm:grid-cols-2 lg:grid-cols-5">
               <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
-                <p class="text-xs text-gray-500 dark:text-dark-400">代理商总数</p>
+                <p class="text-xs text-gray-500 dark:text-dark-400">合伙人总数</p>
                 <p class="mt-1 text-2xl font-bold text-gray-950 dark:text-white">{{ agentOverviewStats.total }}</p>
               </div>
               <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
-                <p class="text-xs text-gray-500 dark:text-dark-400">正常代理</p>
+                <p class="text-xs text-gray-500 dark:text-dark-400">正常合伙人</p>
                 <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">{{ agentOverviewStats.clear }}</p>
               </div>
               <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
-                <p class="text-xs text-gray-500 dark:text-dark-400">复核 / 阻断</p>
+                <p class="text-xs text-gray-500 dark:text-dark-400">需处理</p>
                 <p class="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{{ agentOverviewStats.abnormal }}</p>
               </div>
               <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
@@ -163,7 +163,7 @@
               <div v-for="item in riskPrincipals" :key="item.agent_id" class="p-5">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p class="font-semibold text-gray-900 dark:text-white">Agent #{{ item.agent_id }} · {{ item.username || item.email }}</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">合伙人 #{{ item.agent_id }} · {{ item.username || item.email }}</p>
                     <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ item.email }}</p>
                   </div>
                   <div class="flex flex-wrap justify-end gap-2">
@@ -171,52 +171,52 @@
                       {{ formatAgentStatus(item.agent_status) }}
                     </span>
                     <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="riskStatusClass(item.risk_status)">
-                      {{ item.risk_status.toUpperCase() }}
+                      {{ formatRiskStatus(item.risk_status) }}
                     </span>
                   </div>
                 </div>
                 <div class="mt-3 grid gap-2 rounded-xl bg-gray-50 p-3 text-xs text-gray-600 dark:bg-dark-900 dark:text-dark-300 sm:grid-cols-2">
-                  <p>冻结客户额度：{{ formatMicros(item.held_reward_micros, '⚡') }} · {{ item.held_reward_count }} 笔</p>
-                  <p>冻结现金佣金：{{ formatMicros(item.held_cash_micros, '¥') }} · {{ item.held_cash_count }} 笔</p>
+                  <p>暂缓发放给客户的额度：{{ formatMicros(item.held_reward_micros, '⚡') }} · {{ item.held_reward_count }} 笔</p>
+                  <p>暂缓发放给合伙人的现金：{{ formatMicros(item.held_cash_micros, '¥') }} · {{ item.held_cash_count }} 笔</p>
                 </div>
                 <p v-if="item.risk_note" class="mt-2 text-xs text-gray-500 dark:text-dark-400">最近原因：{{ item.risk_note }}</p>
                 <div class="mt-4 grid gap-3 sm:grid-cols-[9rem_1fr_auto]">
                   <select v-model="riskTargets[item.agent_id]" class="input">
-                    <option value="clear">Clear · 恢复</option>
-                    <option value="review">Review · 复核</option>
-                    <option value="blocked">Blocked · 阻断</option>
+                    <option value="clear">正常开放</option>
+                    <option value="review">先暂停，待确认</option>
+                    <option value="blocked">暂停合作</option>
                   </select>
-                  <input v-model.trim="riskReasons[item.agent_id]" maxlength="500" class="input" placeholder="必填：变更原因">
+                  <input v-model.trim="riskReasons[item.agent_id]" maxlength="500" class="input" placeholder="写清楚原因，方便后面查看">
                   <button class="btn btn-primary" :disabled="riskUpdatingId === item.agent_id" @click="applyRiskStatus(item)">
-                    {{ riskUpdatingId === item.agent_id ? '处理中…' : '执行' }}
+                    {{ riskUpdatingId === item.agent_id ? '保存中…' : '保存状态' }}
                   </button>
                 </div>
               </div>
-              <div v-if="!riskPrincipals.length" class="p-12 text-center text-sm text-gray-500 dark:text-dark-400">尚无代理商</div>
+              <div v-if="!riskPrincipals.length" class="p-12 text-center text-sm text-gray-500 dark:text-dark-400">尚无合伙人</div>
             </div>
           </article>
 
           <article class="card p-6">
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">Exactly-once reversal</p>
-            <h2 class="mt-2 text-xl font-semibold text-gray-950 dark:text-white">确认消费冲正</h2>
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">订单修正</p>
+            <h2 class="mt-2 text-xl font-semibold text-gray-950 dark:text-white">撤回一笔确认消费</h2>
             <p class="mt-2 text-sm leading-6 text-gray-500 dark:text-dark-400">
-              仅接受 Affiliate V2 Live 的确认消费事件。一次性冲正资格消费、客户额度与 Agent 现金佣金；重复请求不会重复扣款。
+              用于订单退款或误记账。填写原消费记录 ID 后，系统会撤回这笔消费带来的资格进度、客户返利和合伙人佣金；同一笔不会重复撤回。
             </p>
             <form class="mt-5 space-y-4" @submit.prevent="submitReversal">
               <label class="block">
-                <span class="mb-1 block text-xs font-medium text-gray-600 dark:text-dark-300">原确认消费 Event ID</span>
+                <span class="mb-1 block text-xs font-medium text-gray-600 dark:text-dark-300">原消费记录 ID</span>
                 <input v-model.number="reversalForm.eventId" type="number" min="1" required class="input">
               </label>
               <label class="block">
-                <span class="mb-1 block text-xs font-medium text-gray-600 dark:text-dark-300">冲正原因</span>
+                <span class="mb-1 block text-xs font-medium text-gray-600 dark:text-dark-300">处理说明</span>
                 <textarea v-model.trim="reversalForm.reason" required maxlength="500" class="input min-h-28" placeholder="例如：订单退款、异常账号确认" />
               </label>
               <button class="btn w-full bg-red-600 text-white hover:bg-red-700" :disabled="reversalProcessing">
-                {{ reversalProcessing ? '冲正中…' : '确认执行冲正' }}
+                {{ reversalProcessing ? '处理中…' : '确认撤回' }}
               </button>
             </form>
             <div v-if="lastReversal" class="mt-5 rounded-xl bg-green-50 p-4 text-sm text-green-800 dark:bg-green-950 dark:text-green-200">
-              <p class="font-semibold">冲正 #{{ lastReversal.id }} 已完成</p>
+              <p class="font-semibold">已撤回记录 #{{ lastReversal.id }}</p>
               <p class="mt-1">消费 {{ formatMicros(lastReversal.amount_micros, '¥') }} · 客户额度 {{ formatMicros(lastReversal.reversed_reward_micros, '⚡') }} · 现金 {{ formatMicros(lastReversal.reversed_cash_micros, '¥') }}</p>
             </div>
           </article>
@@ -226,7 +226,7 @@
           <article class="card overflow-hidden">
             <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
               <div>
-                <h2 class="text-xl font-semibold text-gray-950 dark:text-white">支付宝资料审核</h2>
+                <h2 class="text-xl font-semibold text-gray-950 dark:text-white">收款资料审核</h2>
                 <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">只有实名、账号和收款码通过审核后才允许提现。</p>
               </div>
               <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-dark-800 dark:text-dark-300">{{ pendingProfiles.length }} 待审</span>
@@ -235,7 +235,7 @@
               <div v-for="profile in pendingProfiles" :key="profile.agent_id" class="p-5">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p class="font-semibold text-gray-900 dark:text-white">Agent #{{ profile.agent_id }} · {{ profile.alipay_real_name }}</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">合伙人 #{{ profile.agent_id }} · {{ profile.alipay_real_name }}</p>
                     <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">{{ profile.alipay_account }} · {{ profile.contact_phone }}</p>
                     <p v-if="profile.payment_note" class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ profile.payment_note }}</p>
                   </div>
@@ -264,9 +264,9 @@
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p class="text-2xl font-bold text-gray-950 dark:text-white">{{ formatMicros(withdrawal.amount_micros, '¥') }}</p>
-                    <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">Agent #{{ withdrawal.agent_id }} · {{ withdrawal.payment_alipay_real_name }}</p>
+                    <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">合伙人 #{{ withdrawal.agent_id }} · {{ withdrawal.payment_alipay_real_name }}</p>
                     <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ withdrawal.payment_alipay_account }} · 截止 {{ formatBeijingTime(withdrawal.due_at) }}</p>
-                    <p v-if="withdrawal.agent_risk_status !== 'clear'" class="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">风控状态 {{ withdrawal.agent_risk_status.toUpperCase() }}，禁止确认打款</p>
+                    <p v-if="withdrawal.agent_risk_status !== 'clear'" class="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">该合伙人当前已暂停，暂时不能确认打款</p>
                   </div>
                   <button class="btn btn-secondary btn-sm" @click="previewWithdrawalQR(withdrawal)">扫码打款</button>
                 </div>
@@ -283,14 +283,14 @@
 
         <section v-if="community" class="card overflow-hidden">
           <div class="border-b border-gray-100 px-6 py-5 dark:border-dark-800">
-            <h2 class="text-xl font-semibold text-gray-950 dark:text-white">Agent 私域社群卡片</h2>
-            <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">启用后，仅已开通 Agent 能看到文字与二维码；二维码接口禁止公开缓存。</p>
+            <h2 class="text-xl font-semibold text-gray-950 dark:text-white">合伙人社群引导</h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">启用后，仅已成为合伙人的用户能看到文字与二维码；二维码接口禁止公开缓存。</p>
           </div>
           <form class="grid gap-6 p-6 lg:grid-cols-[1fr_20rem]" @submit.prevent="saveCommunity">
             <div class="space-y-4">
               <label class="flex items-center gap-3">
                 <input v-model="communityForm.enabled" type="checkbox" class="h-4 w-4 accent-primary-600">
-                <span class="text-sm font-medium text-gray-800 dark:text-dark-200">启用 Agent 社群引导</span>
+                <span class="text-sm font-medium text-gray-800 dark:text-dark-200">启用合伙人社群引导</span>
               </label>
               <label class="block">
                 <span class="mb-1 block text-xs font-medium text-gray-600 dark:text-dark-300">标题</span>
@@ -307,7 +307,7 @@
                 <input type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" @change="uploadCommunityQR">
                 {{ community.has_qr_code ? '更换社群二维码' : '上传社群二维码' }}
               </label>
-              <img v-if="communityQRPreview" :src="communityQRPreview" alt="Agent 社群二维码预览" class="mx-auto mt-4 max-h-64 rounded-xl border border-gray-200 p-2 dark:border-dark-700">
+              <img v-if="communityQRPreview" :src="communityQRPreview" alt="合伙人社群二维码预览" class="mx-auto mt-4 max-h-64 rounded-xl border border-gray-200 p-2 dark:border-dark-700">
               <p v-else class="mt-4 rounded-xl bg-gray-50 p-6 text-center text-sm text-gray-500 dark:bg-dark-900 dark:text-dark-400">尚未上传二维码</p>
             </div>
           </form>
@@ -510,10 +510,17 @@ function agentStatusClass(status: string) {
 }
 
 function formatAgentStatus(status: string) {
-  if (status === 'active') return 'ACTIVE'
-  if (status === 'suspended') return 'SUSPENDED'
-  if (status === 'disabled') return 'DISABLED'
-  return status.toUpperCase()
+  if (status === 'active') return '正常'
+  if (status === 'suspended') return '已暂停'
+  if (status === 'disabled') return '已停用'
+  return status
+}
+
+function formatRiskStatus(status: AffiliateRiskStatus) {
+  if (status === 'clear') return '正常'
+  if (status === 'review') return '先暂停，待确认'
+  if (status === 'blocked') return '暂停合作'
+  return status
 }
 
 function setObjectURL(target: typeof communityQRPreview, blob: Blob) {
@@ -584,7 +591,7 @@ async function saveProgram() {
 async function applyRiskStatus(item: AffiliateRiskPrincipal) {
   const reason = (riskReasons[item.agent_id] || '').trim()
   if (!reason) {
-    appStore.showError('风控状态变更必须填写原因')
+    appStore.showError('请先填写处理原因')
     return
   }
   riskUpdatingId.value = item.agent_id
@@ -603,9 +610,9 @@ async function applyRiskStatus(item: AffiliateRiskPrincipal) {
     }
     riskReasons[item.agent_id] = ''
     withdrawals.value = await listAffiliateWithdrawals()
-    appStore.showSuccess(`Agent #${item.agent_id} 风控状态已更新为 ${action.next_risk_status.toUpperCase()}`)
+    appStore.showSuccess(`合伙人 #${item.agent_id} 状态已更新为「${formatRiskStatus(action.next_risk_status)}」`)
   } catch (cause: unknown) {
-    appStore.showError(buildAuthErrorMessage(cause, { fallback: '风控状态更新失败' }))
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '合伙人状态更新失败' }))
   } finally {
     riskUpdatingId.value = null
   }
@@ -615,10 +622,10 @@ async function submitReversal() {
   const eventId = Math.trunc(reversalForm.eventId)
   const reason = reversalForm.reason.trim()
   if (eventId <= 0 || !reason) {
-    appStore.showError('请输入有效的 Event ID 和冲正原因')
+    appStore.showError('请输入有效的消费记录 ID 和处理说明')
     return
   }
-  if (!window.confirm(`确认完整冲正消费事件 #${eventId}？该操作不可撤销。`)) return
+  if (!window.confirm(`确认撤回消费记录 #${eventId}？该操作不可撤销。`)) return
   reversalProcessing.value = true
   try {
     lastReversal.value = await reverseAffiliatePerformance(eventId, reason)
@@ -628,9 +635,9 @@ async function submitReversal() {
     for (const item of riskPrincipals.value) {
       riskTargets[item.agent_id] = item.risk_status
     }
-    appStore.showSuccess(`消费事件 #${eventId} 已完成冲正`)
+    appStore.showSuccess(`消费记录 #${eventId} 已撤回`)
   } catch (cause: unknown) {
-    appStore.showError(buildAuthErrorMessage(cause, { fallback: '消费冲正失败' }))
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '消费记录撤回失败' }))
   } finally {
     reversalProcessing.value = false
   }
@@ -641,7 +648,7 @@ async function verifyPaymentProfile(profile: AgentPaymentProfile) {
   try {
     await reviewPaymentProfile(profile.agent_id, { status: 'verified', note: reviewNotes[profile.agent_id] || '' })
     pendingProfiles.value = pendingProfiles.value.filter(item => item.agent_id !== profile.agent_id)
-    appStore.showSuccess(`Agent #${profile.agent_id} 收款资料已验证`)
+    appStore.showSuccess(`合伙人 #${profile.agent_id} 收款资料已验证`)
   } catch (cause: unknown) {
     appStore.showError(buildAuthErrorMessage(cause, { fallback: '验证失败' }))
   } finally {
@@ -659,7 +666,7 @@ async function rejectPaymentProfile(profile: AgentPaymentProfile) {
   try {
     await reviewPaymentProfile(profile.agent_id, { status: 'rejected', note })
     pendingProfiles.value = pendingProfiles.value.filter(item => item.agent_id !== profile.agent_id)
-    appStore.showSuccess(`Agent #${profile.agent_id} 资料已退回`)
+    appStore.showSuccess(`合伙人 #${profile.agent_id} 资料已退回`)
   } catch (cause: unknown) {
     appStore.showError(buildAuthErrorMessage(cause, { fallback: '退回失败' }))
   } finally {
@@ -670,7 +677,7 @@ async function rejectPaymentProfile(profile: AgentPaymentProfile) {
 async function previewPaymentProfile(profile: AgentPaymentProfile) {
   try {
     setObjectURL(qrPreviewURL, await getPaymentQRCode(profile.agent_id))
-    qrPreviewTitle.value = `Agent #${profile.agent_id} · ${profile.alipay_real_name}`
+    qrPreviewTitle.value = `合伙人 #${profile.agent_id} · ${profile.alipay_real_name}`
   } catch (cause: unknown) {
     appStore.showError(buildAuthErrorMessage(cause, { fallback: '收款码加载失败' }))
   }

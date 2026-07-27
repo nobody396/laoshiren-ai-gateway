@@ -665,7 +665,7 @@ export default {
     userLabel: '用户',
     myInviteCode: '我的邀请码及邀请链接',
     inviteCodeHint: '分享此邀请码给好友，好友注册时填入，好友首次充值时好友账户余额将获得对应首充奖励。',
-    inviteCodeHintWithRate: '该历史邀请码会自动使用您的默认 Agent 链接；请前往联盟中心设置动态返利比例并复制推广链接。',
+    inviteCodeHintWithRate: '该历史邀请码会自动使用您的默认合伙人链接；请前往联盟中心设置动态返利比例并复制推广链接。',
     viewInvitedUsers: '邀请用户列表',
     viewInvitedUsersDesc: '按日期筛选查看邀请用户的消费与长效分润数据',
     viewCommissions: '分润记录',

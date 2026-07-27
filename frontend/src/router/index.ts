@@ -479,7 +479,7 @@ const routes: RouteRecordRaw[] = [
     }
   },
 
-  // ==================== Affiliate & Agent Routes ====================
+  // ==================== Affiliate & Partner Routes ====================
   {
     path: '/affiliate',
     name: 'AffiliateCenter',
@@ -500,7 +500,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAgent: true,
-      title: 'Agent Dashboard',
+      title: '合伙人总览',
       titleKey: 'agent.dashboard'
     }
   },

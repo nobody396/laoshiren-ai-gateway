@@ -5,13 +5,13 @@
         <div class="relative grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-end">
           <div>
             <p class="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-primary-700 dark:text-primary-300">
-              AFFILIATE · 联盟计划
+              合伙人计划
             </p>
             <h1 class="max-w-2xl text-3xl font-bold tracking-tight text-gray-950 dark:text-white sm:text-4xl">
               一条真实邀请，<br class="hidden sm:block">一份长期回报。
             </h1>
             <p class="mt-4 max-w-2xl text-sm leading-7 text-gray-600 dark:text-dark-300">
-              普通用户邀请首笔真实付费即可获得 5% ⚡平台额度；满足消费门槛后，可升级为 Agent，使用动态返利链接分享固定 10% 奖励池。
+              普通用户邀请首笔真实付费即可获得 5% ⚡平台额度；满足消费门槛后，可升级为合伙人，使用动态返利链接分享固定 10% 奖励池。
             </p>
           </div>
           <div class="rounded-2xl border border-primary-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-primary-900 dark:bg-dark-900/80">
@@ -42,8 +42,8 @@
           <div class="border-b border-gray-100 px-6 py-5 dark:border-dark-800">
             <div class="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">Agent Qualification</p>
-                <h2 class="mt-1 text-xl font-semibold text-gray-950 dark:text-white">Agent 资格进度</h2>
+                <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">合伙人资格</p>
+                <h2 class="mt-1 text-xl font-semibold text-gray-950 dark:text-white">合伙人资格进度</h2>
                 <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">仅统计计划启用后的真实消费，永久直属关系不会因升级改变。</p>
               </div>
               <span class="rounded-full border px-3 py-1 text-xs font-medium" :class="qualificationBadgeClass">
@@ -99,7 +99,7 @@
           <div v-if="qualification.can_activate" class="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 bg-gray-50 px-6 py-4 dark:border-dark-800 dark:bg-dark-900">
             <p class="text-sm text-gray-600 dark:text-dark-300">资格已达成。确认后立即创建默认 5% / 5% 动态链接。</p>
             <button class="btn btn-primary" :disabled="activating" @click="activateAgent">
-              {{ activating ? '正在开通…' : '立即成为 Agent' }}
+              {{ activating ? '正在开通…' : '立即成为合伙人' }}
             </button>
           </div>
         </section>
@@ -119,7 +119,7 @@
             <div class="card overflow-hidden">
               <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
                 <div>
-                  <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">Fixed 10% Pool</p>
+                  <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">固定 10% 奖励池</p>
                   <h2 class="mt-1 text-xl font-semibold text-gray-950 dark:text-white">动态返利链接</h2>
                 </div>
                 <button class="btn btn-secondary btn-sm" :disabled="links.length >= 6" @click="showCreateLink = !showCreateLink">
@@ -164,7 +164,7 @@
                         <span v-if="link.customer_rebate_rate_bps > 0">客户 {{ link.customer_rebate_rate_bps / 100 }}%</span>
                       </div>
                       <div class="flex flex-1 items-center justify-center bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900">
-                        Agent {{ link.agent_commission_rate_bps / 100 }}%
+                        合伙人 {{ link.agent_commission_rate_bps / 100 }}%
                       </div>
                     </div>
                   </div>
@@ -260,7 +260,7 @@
                 <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">Private Community</p>
                 <h2 class="mt-1 text-lg font-semibold text-gray-950 dark:text-white">{{ community.title }}</h2>
                 <p class="mt-2 whitespace-pre-line text-sm leading-6 text-gray-600 dark:text-dark-300">{{ community.message }}</p>
-                <img v-if="communityQRPreview" :src="communityQRPreview" alt="Agent 社群二维码" class="mx-auto mt-4 max-h-56 rounded-xl border border-gray-200 p-2 dark:border-dark-700">
+                <img v-if="communityQRPreview" :src="communityQRPreview" alt="合伙人社群二维码" class="mx-auto mt-4 max-h-56 rounded-xl border border-gray-200 p-2 dark:border-dark-700">
               </section>
             </aside>
           </section>
@@ -378,7 +378,7 @@ const primaryInviteURL = computed(() =>
     ? affiliateURL(defaultAgentLink.value.code)
     : ordinaryInviteURL.value
 )
-const primaryInviteLabel = computed(() => isActiveAgent.value ? '我的默认 Agent 链接' : '我的普通邀请链接')
+const primaryInviteLabel = computed(() => isActiveAgent.value ? '我的默认合伙人链接' : '我的普通邀请链接')
 const primaryInviteHint = computed(() =>
   isActiveAgent.value
     ? '默认链接使用固定 10% 奖励池；可在下方动态调整客户返利与现金佣金的分配。'
@@ -386,7 +386,7 @@ const primaryInviteHint = computed(() =>
 )
 const unreadNotices = computed(() => notices.value.filter(item => !item.read_at))
 const qualificationStatusLabel = computed(() => {
-  if (isActiveAgent.value) return 'Agent 已开通'
+  if (isActiveAgent.value) return '合伙人已开通'
   if (qualification.value?.can_activate) return '可立即开通'
   if (qualification.value?.program_mode === 'off') return '计划尚未开放'
   return '资格积累中'
@@ -476,7 +476,7 @@ async function loadPage() {
 }
 
 async function copyPrimaryInvite() {
-  await copyToClipboard(primaryInviteURL.value, isActiveAgent.value ? '默认 Agent 链接已复制' : '普通邀请链接已复制')
+  await copyToClipboard(primaryInviteURL.value, isActiveAgent.value ? '默认合伙人链接已复制' : '普通邀请链接已复制')
 }
 
 async function activateAgent() {
@@ -486,9 +486,9 @@ async function activateAgent() {
     qualification.value = result.qualification
     await authStore.refreshUser()
     await loadAgentData()
-    appStore.showSuccess('Agent 已开通，默认动态链接已经生成')
+    appStore.showSuccess('合伙人已开通，默认动态链接已经生成')
   } catch (cause: unknown) {
-    appStore.showError(buildAuthErrorMessage(cause, { fallback: 'Agent 开通失败' }))
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '合伙人开通失败' }))
   } finally {
     activating.value = false
   }

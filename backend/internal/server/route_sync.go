@@ -40,7 +40,7 @@ var scannerGroupMap = map[string]string{
 	// 单段 (与菜单 admin_menus.name 一一对齐, 条目顺序按菜单 sort_order).
 	"dashboard":            "管理仪表盘", // 菜单 id=2
 	"users":                "用户管理",  // 菜单 route=/admin/users
-	"agents":               "代理商管理", // 菜单 route=/admin/agents
+	"agents":               "合伙人管理", // 菜单 route=/admin/agents
 	"accounts":             "账号管理",  // 菜单 id=21
 	"groups":               "分组管理",  // 菜单 id=22
 	"channels":             "渠道管理",  // 菜单 route=/admin/channels

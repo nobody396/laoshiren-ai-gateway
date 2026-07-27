@@ -78,7 +78,7 @@ PY
   docker cp "$tmp_png" "$APP_CONTAINER:/app/data/uploads/agent-payment-qrcodes/demo-review.png"
   docker cp "$tmp_png" "$APP_CONTAINER:/app/data/uploads/agent-payment-qrcodes/demo-blocked.png"
   docker cp "$tmp_png" "$APP_CONTAINER:/app/data/uploads/affiliate-community/demo-community.png"
-  docker exec --user 0 "$APP_CONTAINER" chmod 600 \
+  docker exec --user 0 "$APP_CONTAINER" chmod 644 \
     /app/data/uploads/agent-payment-qrcodes/demo-alpha.png \
     /app/data/uploads/agent-payment-qrcodes/demo-review.png \
     /app/data/uploads/agent-payment-qrcodes/demo-blocked.png \
@@ -143,8 +143,8 @@ BEGIN
 
   UPDATE affiliate_community_settings
   SET enabled = TRUE,
-      title = 'Agent 内测私域群',
-      message = '这里是 staging 演示数据：成为 Agent 后会看到这张加群卡片。实际生产可以替换成飞书群、微信群或运营群二维码。',
+      title = '合伙人内测社群',
+      message = '这里是 staging 演示数据：成为合伙人后会看到这张加群卡片。实际生产可以替换成飞书群、微信群或运营群二维码。',
       qr_object_key = 'affiliate-community/demo-community.png',
       qr_content_type = 'image/png',
       qr_original_filename = 'demo-community.png',
@@ -228,9 +228,9 @@ BEGIN
 
   INSERT INTO users (email, password_hash, role, balance, concurrency, status, username, notes, invite_code, total_recharged, first_recharged, last_active_at, wechat)
   VALUES
-    ('agent-alpha@demo.local', demo_password_hash, 'agent', 0, 8, 'active', 'Alpha 代理商', 'staging demo active agent', 'AGENTALPHA', 3888, TRUE, NOW() - INTERVAL '1 hour', 'alpha-demo'),
-    ('agent-review@demo.local', demo_password_hash, 'agent', 0, 8, 'active', 'Review 风控代理', 'staging demo review agent', 'AGENTREVIEW', 860, TRUE, NOW() - INTERVAL '2 hours', 'review-demo'),
-    ('agent-blocked@demo.local', demo_password_hash, 'agent', 0, 8, 'active', 'Blocked 阻断代理', 'staging demo blocked agent', 'AGENTBLOCK', 640, TRUE, NOW() - INTERVAL '3 hours', 'blocked-demo'),
+    ('agent-alpha@demo.local', demo_password_hash, 'agent', 0, 8, 'active', 'Alpha 合伙人', 'staging demo active partner', 'AGENTALPHA', 3888, TRUE, NOW() - INTERVAL '1 hour', 'alpha-demo'),
+    ('agent-review@demo.local', demo_password_hash, 'agent', 0, 8, 'active', '待确认合伙人', 'staging demo review partner', 'AGENTREVIEW', 860, TRUE, NOW() - INTERVAL '2 hours', 'review-demo'),
+    ('agent-blocked@demo.local', demo_password_hash, 'agent', 0, 8, 'active', '已暂停合伙人', 'staging demo paused partner', 'AGENTBLOCK', 640, TRUE, NOW() - INTERVAL '3 hours', 'blocked-demo'),
     ('agent-candidate@demo.local', demo_password_hash, 'user', 0, 5, 'active', 'Candidate 待升级用户', 'staging demo qualified candidate', 'CANDIDATE', 220, TRUE, NOW() - INTERVAL '4 hours', 'candidate-demo'),
     ('ordinary-referrer@demo.local', demo_password_hash, 'user', 0, 5, 'active', '普通邀请人', 'staging demo ordinary referrer', 'ORDREF', 160, TRUE, NOW() - INTERVAL '5 hours', 'ordinary-demo'),
     ('ordinary-invitee@demo.local', demo_password_hash, 'user', 0, 5, 'active', '普通被邀请人', 'staging demo ordinary invitee', 'ORDINVITEE', 80, TRUE, NOW() - INTERVAL '6 hours', 'invitee-demo')
@@ -254,11 +254,23 @@ BEGIN
   SELECT id INTO ordinary_id FROM users WHERE email = 'ordinary-referrer@demo.local' AND deleted_at IS NULL;
   SELECT id INTO invitee_id FROM users WHERE email = 'ordinary-invitee@demo.local' AND deleted_at IS NULL;
 
+  -- The production guard correctly prevents payment-profile edits while a
+  -- withdrawal is processing. For this staging demo re-seed, temporarily move
+  -- our own demo processing withdrawals out of the way; the demo withdrawals
+  -- are re-created as processing with fresh snapshots later in this script.
+  UPDATE agent_withdrawal_requests
+  SET status = 'failed',
+      failed_at = NOW(),
+      failure_reason = 'staging demo refresh',
+      updated_at = NOW()
+  WHERE idempotency_key IN ('demo:withdrawal:alpha:processing', 'demo:withdrawal:review:processing')
+    AND status = 'processing';
+
   INSERT INTO agent_principals (agent_id, status, risk_status, risk_note, qualified_at, activated_at, reviewed_at, reviewed_by)
   VALUES
     (alpha_id, 'active', 'clear', '', NOW() - INTERVAL '10 days', NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days', admin_id),
-    (review_id, 'active', 'review', 'staging 演示：异常订单复核中，冻结奖励不可释放。', NOW() - INTERVAL '8 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '1 day', admin_id),
-    (blocked_id, 'active', 'blocked', 'staging 演示：疑似自循环拉新，阻断新增绑定和提现。', NOW() - INTERVAL '8 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '1 day', admin_id)
+    (review_id, 'active', 'review', 'staging 演示：有异常订单，先暂停发放，确认后再恢复。', NOW() - INTERVAL '8 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '1 day', admin_id),
+    (blocked_id, 'active', 'blocked', 'staging 演示：疑似用小号互刷，已暂停邀请和提现。', NOW() - INTERVAL '8 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '1 day', admin_id)
   ON CONFLICT (agent_id) DO UPDATE SET
     status = EXCLUDED.status,
     risk_status = EXCLUDED.risk_status,
@@ -275,9 +287,9 @@ BEGIN
     identity_fingerprint_hash, verification_status, verification_note, verified_at, verified_by
   )
   VALUES
-    (alpha_id, '张三 Alpha', 'alpha-pay@example.com', '13800000001', '演示账号，可扫码预览。', 'agent-payment-qrcodes/demo-alpha.png', 'image/png', 'demo-alpha.png', 1200, 'demo-alpha-fingerprint', 'verified', 'staging verified', NOW() - INTERVAL '6 days', admin_id),
-    (review_id, '李四 Review', 'review-pay@example.com', '13800000002', '演示：待审核资料。', 'agent-payment-qrcodes/demo-review.png', 'image/png', 'demo-review.png', 1200, 'demo-review-fingerprint', 'pending_review', '', NULL, NULL),
-    (blocked_id, '王五 Blocked', 'blocked-pay@example.com', '13800000003', '演示：已阻断 Agent 的收款资料。', 'agent-payment-qrcodes/demo-blocked.png', 'image/png', 'demo-blocked.png', 1200, 'demo-blocked-fingerprint', 'verified', 'staging verified', NOW() - INTERVAL '5 days', admin_id)
+    (alpha_id, '张三', 'alpha-pay@example.com', '13800000001', '演示账号，可扫码预览。', 'agent-payment-qrcodes/demo-alpha.png', 'image/png', 'demo-alpha.png', 1200, 'demo-alpha-fingerprint', 'verified', 'staging verified', NOW() - INTERVAL '6 days', admin_id),
+    (review_id, '李四', 'review-pay@example.com', '13800000002', '演示：待审核资料。', 'agent-payment-qrcodes/demo-review.png', 'image/png', 'demo-review.png', 1200, 'demo-review-fingerprint', 'pending_review', '', NULL, NULL),
+    (blocked_id, '王五', 'blocked-pay@example.com', '13800000003', '演示：已暂停合伙人的收款资料。', 'agent-payment-qrcodes/demo-blocked.png', 'image/png', 'demo-blocked.png', 1200, 'demo-blocked-fingerprint', 'verified', 'staging verified', NOW() - INTERVAL '5 days', admin_id)
   ON CONFLICT (agent_id) DO UPDATE SET
     alipay_real_name = EXCLUDED.alipay_real_name,
     alipay_account = EXCLUDED.alipay_account,
@@ -354,7 +366,7 @@ BEGIN
     effective_at = EXCLUDED.effective_at;
 
   INSERT INTO affiliate_links (agent_id, code, name, channel, is_default, status, current_rate_version)
-  VALUES (review_id, 'AGREVIEW5', '复核中默认链接', 'default', TRUE, 'active', 1)
+  VALUES (review_id, 'AGREVIEW5', '待确认默认链接', 'default', TRUE, 'active', 1)
   ON CONFLICT (code) DO UPDATE SET
     name = EXCLUDED.name, channel = EXCLUDED.channel, is_default = EXCLUDED.is_default,
     status = EXCLUDED.status, current_rate_version = EXCLUDED.current_rate_version, updated_at = NOW()
@@ -368,7 +380,7 @@ BEGIN
     effective_at = EXCLUDED.effective_at;
 
   INSERT INTO affiliate_links (agent_id, code, name, channel, is_default, status, current_rate_version)
-  VALUES (blocked_id, 'AGBLOCK5', '阻断演示链接', 'default', TRUE, 'active', 1)
+  VALUES (blocked_id, 'AGBLOCK5', '暂停演示链接', 'default', TRUE, 'active', 1)
   ON CONFLICT (code) DO UPDATE SET
     name = EXCLUDED.name, channel = EXCLUDED.channel, is_default = EXCLUDED.is_default,
     status = EXCLUDED.status, current_rate_version = EXCLUDED.current_rate_version, updated_at = NOW()
@@ -739,7 +751,7 @@ BEGIN
     available_at = EXCLUDED.available_at,
     source_id = EXCLUDED.source_id;
 
-  -- 风控冻结演示：review / blocked 各一条消费事件、客户额度冻结、现金冻结。
+  -- 暂缓发放演示：review / blocked 各一条消费事件、客户额度暂缓发放、现金暂缓发放。
   FOR i IN 1..2 LOOP
     IF i = 1 THEN
       customer_email := 'review-customer-01@demo.local';
@@ -747,7 +759,7 @@ BEGIN
       amount_micros := 400000000;
       customer_id := NULL;
       INSERT INTO users (email, password_hash, role, balance, concurrency, status, username, notes, invite_code, inviter_id, agent_id, total_recharged, first_recharged, wechat)
-      VALUES (customer_email, demo_password_hash, 'user', 0, 5, 'active', 'Review 风控客户', 'staging demo review customer', 'REVCUST01', review_id, review_id, 400, TRUE, '')
+      VALUES (customer_email, demo_password_hash, 'user', 0, 5, 'active', '待确认客户', 'staging demo review customer', 'REVCUST01', review_id, review_id, 400, TRUE, '')
       ON CONFLICT (email) WHERE deleted_at IS NULL DO UPDATE SET
         inviter_id = EXCLUDED.inviter_id, agent_id = EXCLUDED.agent_id, username = EXCLUDED.username, updated_at = NOW()
       RETURNING id INTO customer_id;
@@ -772,7 +784,7 @@ BEGIN
       amount_micros := 300000000;
       customer_id := NULL;
       INSERT INTO users (email, password_hash, role, balance, concurrency, status, username, notes, invite_code, inviter_id, agent_id, total_recharged, first_recharged, wechat)
-      VALUES (customer_email, demo_password_hash, 'user', 0, 5, 'active', 'Blocked 风控客户', 'staging demo blocked customer', 'BLKCUST01', blocked_id, blocked_id, 300, TRUE, '')
+      VALUES (customer_email, demo_password_hash, 'user', 0, 5, 'active', '暂停演示客户', 'staging demo paused customer', 'BLKCUST01', blocked_id, blocked_id, 300, TRUE, '')
       ON CONFLICT (email) WHERE deleted_at IS NULL DO UPDATE SET
         inviter_id = EXCLUDED.inviter_id, agent_id = EXCLUDED.agent_id, username = EXCLUDED.username, updated_at = NOW()
       RETURNING id INTO customer_id;
@@ -795,8 +807,8 @@ BEGIN
   END LOOP;
 
   INSERT INTO affiliate_risk_actions (agent_id, action_type, previous_risk_status, next_risk_status, reason, released_reward_count, released_reward_micros, released_cash_count, released_cash_micros, operator_id, metadata)
-  SELECT review_id, 'review', 'clear', 'review', 'staging 演示：异常订单复核', 0, 0, 0, 0, admin_id, '{"staging_demo":true}'::jsonb
-  WHERE NOT EXISTS (SELECT 1 FROM affiliate_risk_actions WHERE agent_id = review_id AND next_risk_status = 'review' AND reason = 'staging 演示：异常订单复核');
+  SELECT review_id, 'review', 'clear', 'review', 'staging 演示：异常订单待确认', 0, 0, 0, 0, admin_id, '{"staging_demo":true}'::jsonb
+  WHERE NOT EXISTS (SELECT 1 FROM affiliate_risk_actions WHERE agent_id = review_id AND next_risk_status = 'review' AND reason = 'staging 演示：异常订单待确认');
 
   INSERT INTO affiliate_risk_actions (agent_id, action_type, previous_risk_status, next_risk_status, reason, released_reward_count, released_reward_micros, released_cash_count, released_cash_micros, operator_id, metadata)
   SELECT blocked_id, 'block', 'clear', 'blocked', 'staging 演示：疑似自循环拉新', 0, 0, 0, 0, admin_id, '{"staging_demo":true}'::jsonb
@@ -841,13 +853,20 @@ BEGIN
   )
   VALUES (
     alpha_id, 120000000, 'processing', 'demo:withdrawal:alpha:processing',
-    '张三 Alpha', 'alpha-pay@example.com', '13800000001', '演示账号，可扫码预览。',
+    '张三', 'alpha-pay@example.com', '13800000001', '演示账号，可扫码预览。',
     'agent-payment-qrcodes/demo-alpha.png', 'image/png', 'demo-alpha.png',
     NOW() - INTERVAL '6 hours', NOW() + INTERVAL '18 hours', '', ''
   )
   ON CONFLICT (agent_id, idempotency_key) DO UPDATE SET
     amount_micros = EXCLUDED.amount_micros,
     status = EXCLUDED.status,
+    payment_alipay_real_name = EXCLUDED.payment_alipay_real_name,
+    payment_alipay_account = EXCLUDED.payment_alipay_account,
+    payment_contact_phone = EXCLUDED.payment_contact_phone,
+    payment_note = EXCLUDED.payment_note,
+    payment_qr_object_key = EXCLUDED.payment_qr_object_key,
+    payment_qr_content_type = EXCLUDED.payment_qr_content_type,
+    payment_qr_original_filename = EXCLUDED.payment_qr_original_filename,
     requested_at = EXCLUDED.requested_at,
     due_at = EXCLUDED.due_at,
     paid_at = NULL,
@@ -871,13 +890,20 @@ BEGIN
   )
   VALUES (
     alpha_id, 80000000, 'paid', 'demo:withdrawal:alpha:paid',
-    '张三 Alpha', 'alpha-pay@example.com', '13800000001', '演示账号，可扫码预览。',
+    '张三', 'alpha-pay@example.com', '13800000001', '演示账号，可扫码预览。',
     'agent-payment-qrcodes/demo-alpha.png', 'image/png', 'demo-alpha.png',
     NOW() - INTERVAL '4 days', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days', admin_id, 'ALI-DEMO-PAID-001', ''
   )
   ON CONFLICT (agent_id, idempotency_key) DO UPDATE SET
     amount_micros = EXCLUDED.amount_micros,
     status = EXCLUDED.status,
+    payment_alipay_real_name = EXCLUDED.payment_alipay_real_name,
+    payment_alipay_account = EXCLUDED.payment_alipay_account,
+    payment_contact_phone = EXCLUDED.payment_contact_phone,
+    payment_note = EXCLUDED.payment_note,
+    payment_qr_object_key = EXCLUDED.payment_qr_object_key,
+    payment_qr_content_type = EXCLUDED.payment_qr_content_type,
+    payment_qr_original_filename = EXCLUDED.payment_qr_original_filename,
     requested_at = EXCLUDED.requested_at,
     due_at = EXCLUDED.due_at,
     paid_at = EXCLUDED.paid_at,
@@ -898,13 +924,20 @@ BEGIN
   )
   VALUES (
     review_id, 60000000, 'processing', 'demo:withdrawal:review:processing',
-    '李四 Review', 'review-pay@example.com', '13800000002', '演示：待审核资料。',
+    '李四', 'review-pay@example.com', '13800000002', '演示：待审核资料。',
     'agent-payment-qrcodes/demo-review.png', 'image/png', 'demo-review.png',
     NOW() - INTERVAL '12 hours', NOW() + INTERVAL '12 hours', '', ''
   )
   ON CONFLICT (agent_id, idempotency_key) DO UPDATE SET
     amount_micros = EXCLUDED.amount_micros,
     status = EXCLUDED.status,
+    payment_alipay_real_name = EXCLUDED.payment_alipay_real_name,
+    payment_alipay_account = EXCLUDED.payment_alipay_account,
+    payment_contact_phone = EXCLUDED.payment_contact_phone,
+    payment_note = EXCLUDED.payment_note,
+    payment_qr_object_key = EXCLUDED.payment_qr_object_key,
+    payment_qr_content_type = EXCLUDED.payment_qr_content_type,
+    payment_qr_original_filename = EXCLUDED.payment_qr_original_filename,
     requested_at = EXCLUDED.requested_at,
     due_at = EXCLUDED.due_at,
     paid_at = NULL,
@@ -916,9 +949,9 @@ BEGIN
 
   INSERT INTO affiliate_agent_notices (agent_id, notice_type, title, message, source_type, source_id, idempotency_key, metadata, created_at)
   VALUES
-    (alpha_id, 'community_invite', '欢迎加入 Agent 私域群', '你的 Agent 权限已开通。扫码加入私域群，获取素材、话术和结算通知。', 'agent_activation', alpha_id, 'demo:notice:alpha:community', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '6 days'),
+    (alpha_id, 'community_invite', '欢迎加入合伙人社群', '你的合伙人权限已开通。扫码加入社群，获取素材、话术和结算通知。', 'agent_activation', alpha_id, 'demo:notice:alpha:community', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '6 days'),
     (alpha_id, 'withdrawal_paid', '一笔提现已到账', '演示：¥80 提现已标记到账，用户侧只看到“已到账”。', 'withdrawal', NULL, 'demo:notice:alpha:paid', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '3 days'),
-    (review_id, 'risk_review', '账户进入复核', '演示：复核中会冻结奖励，并禁止新增链接、提现和转换。', 'risk', NULL, 'demo:notice:review:risk', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '1 day')
+    (review_id, 'risk_review', '账户状态待确认', '演示：待确认期间会暂缓发放奖励，并暂停新增链接、提现和转换。', 'risk', NULL, 'demo:notice:review:risk', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '1 day')
   ON CONFLICT (idempotency_key) DO UPDATE SET
     title = EXCLUDED.title,
     message = EXCLUDED.message,

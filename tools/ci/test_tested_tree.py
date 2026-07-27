@@ -2,11 +2,34 @@ import tempfile
 import unittest
 from pathlib import Path
 import subprocess
+import urllib.request
 
-from tested_tree import fallback, record_attestation, successful_pr_runs
+from tested_tree import (
+    CrossOriginRedirectHandler,
+    fallback,
+    record_attestation,
+    successful_pr_runs,
+)
 
 
 class TestedTreeTests(unittest.TestCase):
+    def test_cross_origin_redirect_drops_authorization(self) -> None:
+        request = urllib.request.Request(
+            "https://api.github.com/repos/owner/repo/actions/artifacts/1/zip",
+            headers={"Authorization": "Bearer test-token"},
+        )
+        redirected = CrossOriginRedirectHandler().redirect_request(
+            request,
+            None,
+            302,
+            "Found",
+            {},
+            "https://artifact.example.test/signed-download",
+        )
+
+        self.assertIsNotNone(redirected)
+        self.assertIsNone(redirected.get_header("Authorization"))
+
     def test_fallback_is_fail_closed(self) -> None:
         self.assertEqual(
             fallback("missing"),

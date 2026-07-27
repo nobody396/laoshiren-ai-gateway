@@ -22,6 +22,20 @@ import urllib.request
 import zipfile
 
 
+class CrossOriginRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Drop repository credentials when GitHub redirects to artifact storage."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected is None:
+            return None
+        source = urllib.parse.urlsplit(req.full_url)
+        target = urllib.parse.urlsplit(newurl)
+        if (source.scheme, source.netloc) != (target.scheme, target.netloc):
+            redirected.remove_header("Authorization")
+        return redirected
+
+
 def git_value(repo: Path, *args: str) -> str:
     return subprocess.run(
         ["git", "-C", str(repo), *args],
@@ -83,7 +97,8 @@ class GitHubAPI:
                 "User-Agent": "laoshirenai-tested-tree",
             },
         )
-        with urllib.request.urlopen(request, timeout=30) as response:
+        opener = urllib.request.build_opener(CrossOriginRedirectHandler())
+        with opener.open(request, timeout=30) as response:
             return response.read()
 
 

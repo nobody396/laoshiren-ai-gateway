@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 import subprocess
 
-from tested_tree import fallback, record_attestation
+from tested_tree import fallback, record_attestation, successful_pr_runs
 
 
 class TestedTreeTests(unittest.TestCase):
@@ -41,6 +41,40 @@ class TestedTreeTests(unittest.TestCase):
             self.assertEqual(result["workflow_run_id"], 123)
             self.assertEqual(len(result["tested_commit"]), 40)
             self.assertEqual(len(result["tested_tree"]), 40)
+
+    def test_successful_pr_runs_does_not_depend_on_pull_requests_array(self) -> None:
+        head_sha = "a" * 40
+        runs = [
+            {
+                "id": 12,
+                "event": "pull_request",
+                "status": "completed",
+                "conclusion": "success",
+                "head_sha": head_sha,
+                "pull_requests": [],
+            },
+            {
+                "id": 11,
+                "event": "pull_request",
+                "status": "completed",
+                "conclusion": "success",
+                "head_sha": head_sha,
+                "pull_requests": [{"number": 52}],
+            },
+            {
+                "id": 13,
+                "event": "push",
+                "status": "completed",
+                "conclusion": "success",
+                "head_sha": head_sha,
+                "pull_requests": [],
+            },
+        ]
+
+        self.assertEqual(
+            [run["id"] for run in successful_pr_runs(runs, head_sha)],
+            [12, 11],
+        )
 
 
 if __name__ == "__main__":

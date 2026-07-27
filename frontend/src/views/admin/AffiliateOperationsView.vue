@@ -5,7 +5,7 @@
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary-700 dark:text-primary-300">Affiliate V2.1</p>
           <h1 class="mt-1 text-3xl font-bold tracking-tight text-gray-950 dark:text-white">联盟运营台</h1>
-          <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">计划开关、收款审核、人工打款和私域社群的单一操作入口。</p>
+          <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">计划开关、代理商总览、收款审核、人工打款和私域社群的单一操作入口。</p>
         </div>
         <button class="btn btn-secondary" :disabled="loading" @click="loadAll">刷新</button>
       </header>
@@ -125,12 +125,39 @@
           <article class="card overflow-hidden">
             <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
               <div>
-                <h2 class="text-xl font-semibold text-gray-950 dark:text-white">Agent 风控与冻结释放</h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">复核或阻断后禁止新增绑定、提现和转换；恢复 Clear 时原子释放冻结奖励。</p>
+                <h2 class="text-xl font-semibold text-gray-950 dark:text-white">代理商总览与风控</h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">这里就是当前全部 Agent / 代理商列表；复核或阻断后禁止新增绑定、提现和转换。</p>
               </div>
-              <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-dark-800 dark:text-dark-300">
-                {{ riskPrincipals.filter(item => item.risk_status !== 'clear').length }} 个异常
-              </span>
+              <div class="flex flex-wrap justify-end gap-2">
+                <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-dark-800 dark:text-dark-300">
+                  共 {{ agentOverviewStats.total }} 个代理商
+                </span>
+                <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                  {{ agentOverviewStats.abnormal }} 个异常
+                </span>
+              </div>
+            </div>
+            <div class="grid gap-3 border-b border-gray-100 p-5 dark:border-dark-800 sm:grid-cols-2 lg:grid-cols-5">
+              <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
+                <p class="text-xs text-gray-500 dark:text-dark-400">代理商总数</p>
+                <p class="mt-1 text-2xl font-bold text-gray-950 dark:text-white">{{ agentOverviewStats.total }}</p>
+              </div>
+              <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
+                <p class="text-xs text-gray-500 dark:text-dark-400">正常代理</p>
+                <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">{{ agentOverviewStats.clear }}</p>
+              </div>
+              <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
+                <p class="text-xs text-gray-500 dark:text-dark-400">复核 / 阻断</p>
+                <p class="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{{ agentOverviewStats.abnormal }}</p>
+              </div>
+              <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
+                <p class="text-xs text-gray-500 dark:text-dark-400">待审收款码</p>
+                <p class="mt-1 text-2xl font-bold text-gray-950 dark:text-white">{{ pendingProfiles.length }}</p>
+              </div>
+              <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
+                <p class="text-xs text-gray-500 dark:text-dark-400">提现处理中</p>
+                <p class="mt-1 text-2xl font-bold text-gray-950 dark:text-white">{{ withdrawals.length }}</p>
+              </div>
             </div>
             <div class="max-h-[42rem] divide-y divide-gray-100 overflow-y-auto dark:divide-dark-800">
               <div v-for="item in riskPrincipals" :key="item.agent_id" class="p-5">
@@ -139,9 +166,14 @@
                     <p class="font-semibold text-gray-900 dark:text-white">Agent #{{ item.agent_id }} · {{ item.username || item.email }}</p>
                     <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ item.email }}</p>
                   </div>
-                  <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="riskStatusClass(item.risk_status)">
-                    {{ item.risk_status.toUpperCase() }}
-                  </span>
+                  <div class="flex flex-wrap justify-end gap-2">
+                    <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="agentStatusClass(item.agent_status)">
+                      {{ formatAgentStatus(item.agent_status) }}
+                    </span>
+                    <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="riskStatusClass(item.risk_status)">
+                      {{ item.risk_status.toUpperCase() }}
+                    </span>
+                  </div>
                 </div>
                 <div class="mt-3 grid gap-2 rounded-xl bg-gray-50 p-3 text-xs text-gray-600 dark:bg-dark-900 dark:text-dark-300 sm:grid-cols-2">
                   <p>冻结客户额度：{{ formatMicros(item.held_reward_micros, '⚡') }} · {{ item.held_reward_count }} 笔</p>
@@ -160,7 +192,7 @@
                   </button>
                 </div>
               </div>
-              <div v-if="!riskPrincipals.length" class="p-12 text-center text-sm text-gray-500 dark:text-dark-400">尚无 Agent 主体</div>
+              <div v-if="!riskPrincipals.length" class="p-12 text-center text-sm text-gray-500 dark:text-dark-400">尚无代理商</div>
             </div>
           </article>
 
@@ -408,6 +440,15 @@ const programModeClass = computed(() => (
       : 'bg-gray-100 text-gray-600 dark:bg-dark-800 dark:text-dark-300'
 ))
 
+const agentOverviewStats = computed(() => {
+  const items = riskPrincipals.value
+  return {
+    total: items.length,
+    clear: items.filter(item => item.risk_status === 'clear').length,
+    abnormal: items.filter(item => item.risk_status !== 'clear').length
+  }
+})
+
 watch(program, value => {
   if (!value) return
   programForm.mode = value.mode
@@ -462,6 +503,19 @@ function riskStatusClass(status: AffiliateRiskStatus) {
   return 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
 }
 
+function agentStatusClass(status: string) {
+  if (status === 'active') return 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
+  if (status === 'suspended' || status === 'disabled') return 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+  return 'bg-gray-100 text-gray-600 dark:bg-dark-800 dark:text-dark-300'
+}
+
+function formatAgentStatus(status: string) {
+  if (status === 'active') return 'ACTIVE'
+  if (status === 'suspended') return 'SUSPENDED'
+  if (status === 'disabled') return 'DISABLED'
+  return status.toUpperCase()
+}
+
 function setObjectURL(target: typeof communityQRPreview, blob: Blob) {
   if (target.value.startsWith('blob:')) URL.revokeObjectURL(target.value)
   target.value = URL.createObjectURL(blob)
@@ -477,7 +531,7 @@ async function loadAll() {
       getAffiliateCommunity(),
       listPendingPaymentProfiles(),
       listAffiliateWithdrawals(),
-      listAffiliateRiskPrincipals()
+      listAffiliateRiskPrincipals(500)
     ])
     program.value = settings
     commercialPolicy.value = policy
@@ -570,7 +624,7 @@ async function submitReversal() {
     lastReversal.value = await reverseAffiliatePerformance(eventId, reason)
     reversalForm.eventId = 0
     reversalForm.reason = ''
-    riskPrincipals.value = await listAffiliateRiskPrincipals()
+    riskPrincipals.value = await listAffiliateRiskPrincipals(500)
     for (const item of riskPrincipals.value) {
       riskTargets[item.agent_id] = item.risk_status
     }

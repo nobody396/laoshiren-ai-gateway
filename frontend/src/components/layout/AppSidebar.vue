@@ -785,7 +785,6 @@ const navPermissionMap: Record<string, string> = {
   '/admin/monthly-upstreams': 'admin:ops',
   '/admin/cost-accounting': 'admin:ops',
   '/admin/users': 'admin:users',
-  '/admin/agents': 'admin:agents',
   '/admin/affiliate': 'admin:agents',
   '/admin/groups': 'admin:groups',
   '/admin/channels': 'admin:channels',
@@ -836,12 +835,6 @@ const adminNavItems = computed((): NavItem[] => {
       path: '/admin/users',
       label: resolveAdminMenuLabel('/admin/users', t('nav.users')),
       icon: UsersIcon,
-      hideInSimpleMode: true
-    },
-    {
-      path: '/admin/agents',
-      label: resolveAdminMenuLabel('/admin/agents', t('nav.agentManagement')),
-      icon: AgentIcon,
       hideInSimpleMode: true
     },
     {

@@ -594,16 +594,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin/agents',
-    name: 'AdminAgents',
-    component: () => import('@/views/admin/AgentsView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      permission: 'admin:agents',
-      title: 'Agent Management',
-      titleKey: 'admin.agents.title',
-      descriptionKey: 'admin.agents.description'
-    }
+    redirect: '/admin/affiliate'
   },
   {
     path: '/admin/affiliate',

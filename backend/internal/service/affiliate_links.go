@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -137,15 +136,18 @@ func (s *AffiliateLinkService) SetStatus(
 	status string,
 ) (*AffiliateLink, error) {
 	status = strings.TrimSpace(strings.ToLower(status))
+	if status == "disabled" {
+		status = "paused"
+	}
 	if status != "active" && status != "paused" {
-		return nil, fmt.Errorf("%w: invalid affiliate link status", ErrInvalidInput)
+		return nil, infraerrors.BadRequest("AFFILIATE_LINK_INVALID_STATUS", "合伙人链接状态只能是使用中或已停用")
 	}
 	return s.repo.SetLinkStatus(ctx, agentID, linkID, status)
 }
 
 func validateAffiliateCustomerRate(rateBPS int32) error {
 	if rateBPS < 0 || rateBPS > AffiliateAgentPoolRateBPS || rateBPS%100 != 0 {
-		return fmt.Errorf("%w: customer rebate must be 0%% to 10%% in 1%% steps", ErrInvalidInput)
+		return infraerrors.BadRequest("AFFILIATE_LINK_INVALID_RATE", "客户返利比例必须是 0% 到 10%，并按 1% 调整")
 	}
 	return nil
 }

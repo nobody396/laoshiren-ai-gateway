@@ -539,7 +539,7 @@ async function changeLinkRate(link: AffiliateLink, event: Event) {
 
 async function toggleLink(link: AffiliateLink) {
   try {
-    const updated = await updateAffiliateLinkStatus(link.id, link.status === 'active' ? 'disabled' : 'active')
+    const updated = await updateAffiliateLinkStatus(link.id, link.status === 'active' ? 'paused' : 'active')
     links.value = links.value.map(item => item.id === link.id ? updated : item)
   } catch (cause: unknown) {
     appStore.showError(buildAuthErrorMessage(cause, { fallback: '链接状态更新失败' }))

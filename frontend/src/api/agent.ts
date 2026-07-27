@@ -143,7 +143,7 @@ export interface AffiliateLink {
   name: string
   channel: string
   is_default: boolean
-  status: 'active' | 'disabled'
+  status: 'active' | 'paused'
   rate_version: number
   customer_rebate_rate_bps: number
   agent_commission_rate_bps: number
@@ -345,7 +345,7 @@ export async function updateAffiliateLinkRate(id: number, customerRebateRateBPS:
   return data
 }
 
-export async function updateAffiliateLinkStatus(id: number, status: 'active' | 'disabled'): Promise<AffiliateLink> {
+export async function updateAffiliateLinkStatus(id: number, status: 'active' | 'paused'): Promise<AffiliateLink> {
   const { data } = await apiClient.put<AffiliateLink>(`/agent/affiliate/links/${id}/status`, { status })
   return data
 }

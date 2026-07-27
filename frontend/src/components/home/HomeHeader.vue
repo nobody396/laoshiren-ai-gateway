@@ -104,16 +104,16 @@ defineProps<{
   left: 0;
   right: 0;
   z-index: 50;
-  background: rgba(248, 243, 231, 0.92);
-  border-bottom: 1px solid rgba(63, 90, 58, 0.12);
+  background: rgb(var(--color-papyrus) / 0.92);
+  border-bottom: 1px solid rgb(var(--color-laurel) / 0.12);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   transition: background 0.4s ease, border-color 0.4s ease, backdrop-filter 0.4s ease;
 }
 
 .home-header.is-scrolled {
-  background: rgba(248, 243, 231, 0.96);
-  border-bottom-color: rgba(63, 90, 58, 0.2);
+  background: rgb(var(--color-papyrus) / 0.96);
+  border-bottom-color: rgb(var(--color-laurel) / 0.2);
 }
 
 /* 内部布局 - 水平三栏 */
@@ -146,8 +146,8 @@ defineProps<{
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #9a3b1f;
-  box-shadow: inset 0 0 0 2px rgba(250, 246, 236, 0.42), 0 0 0 1px #7a2d17;
+  background: rgb(var(--color-terracotta));
+  box-shadow: inset 0 0 0 2px rgb(var(--color-marble) / 0.42), 0 0 0 1px rgb(var(--color-terracotta-dark));
 }
 
 .home-header__logo {
@@ -168,7 +168,7 @@ defineProps<{
   font-size: 1.0625rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   white-space: nowrap;
 }
 
@@ -178,7 +178,7 @@ defineProps<{
   font-size: 0.625rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   white-space: nowrap;
 }
 
@@ -193,7 +193,7 @@ defineProps<{
 .home-header__link {
   display: inline-flex;
   align-items: center;
-  color: #1f1a12;
+  color: rgb(var(--color-ink));
   font-family: 'EB Garamond', 'Noto Serif SC', serif;
   font-size: 1.0625rem;
   font-style: italic;
@@ -203,7 +203,7 @@ defineProps<{
 }
 
 .home-header__link:hover {
-  color: #9a3b1f;
+  color: rgb(var(--color-terracotta));
 }
 
 .home-header__link.is-active {
@@ -231,8 +231,8 @@ defineProps<{
   min-height: 2.625rem;
   padding: 0 1.25rem;
   background: transparent;
-  color: #1f1a12;
-  border: 1.5px solid #1f1a12;
+  color: rgb(var(--color-ink));
+  border: 1.5px solid rgb(var(--color-ink));
   font-family: 'Inter', sans-serif;
   font-size: 0.8125rem;
   font-weight: 500;
@@ -243,8 +243,8 @@ defineProps<{
 }
 
 .home-header__cta:hover {
-  background: #1f1a12;
-  color: #f8f3e7;
+  background: rgb(var(--color-ink));
+  color: rgb(var(--color-papyrus));
 }
 
 @media (max-width: 800px) {

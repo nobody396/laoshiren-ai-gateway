@@ -507,8 +507,8 @@ onMounted(() => {
 
 .cost-hero-grid {
   background:
-    radial-gradient(circle at 85% 20%, rgba(251, 191, 36, 0.18), transparent 26rem),
-    linear-gradient(115deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    radial-gradient(circle at 85% 20%, rgb(var(--gild-600) / 0.18), transparent 26rem),
+    linear-gradient(115deg, rgb(var(--color-vellum) / 0.04) 1px, transparent 1px);
   background-size: auto, 2rem 2rem;
 }
 

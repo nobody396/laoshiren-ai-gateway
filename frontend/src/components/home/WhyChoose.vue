@@ -9,7 +9,8 @@
         <article
           v-for="(card, index) in featureCards"
           :key="card.title"
-          class="virtue-card"
+          class="virtue-card mirror-reveal"
+          :style="{ '--reveal-i': index + 1 }"
         >
           <div class="virtue-card__icon" v-html="icons[index]"></div>
           <p class="virtue-card__number">0{{ index + 1 }}</p>
@@ -59,7 +60,7 @@ const icons = [
 <style scoped>
 .why-choose {
   padding: 5rem 0 6rem;
-  background: #f8f3e7;
+  background: rgb(var(--color-papyrus));
 }
 
 .why-choose__container {
@@ -69,7 +70,7 @@ const icons = [
 
 .section-eyebrow {
   margin: 0 0 0.875rem;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.75rem;
   font-weight: 600;
@@ -80,7 +81,7 @@ const icons = [
 
 .section-title {
   margin: 0;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: clamp(2.2rem, 4vw, 3rem);
   font-weight: 500;
@@ -91,7 +92,7 @@ const icons = [
 .section-lede {
   max-width: 100%;
   margin: 1.125rem auto 3.75rem;
-  color: #1f1a12;
+  color: rgb(var(--color-ink));
   font-size: 1.18rem;
   font-style: italic;
   line-height: 1.65;
@@ -108,14 +109,14 @@ const icons = [
 .virtue-card {
   min-height: 18rem;
   padding: 2.25rem 1.65rem;
-  background: #efe6cf;
-  border: 1px solid rgba(63, 90, 58, 0.16);
+  background: rgb(var(--color-stone));
+  border: 1px solid rgb(var(--color-laurel) / 0.16);
   transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
 }
 
 .virtue-card:hover {
-  background: #faf6ec;
-  border-color: rgba(63, 90, 58, 0.34);
+  background: rgb(var(--color-marble));
+  border-color: rgb(var(--color-laurel) / 0.34);
   transform: translateY(-2px);
 }
 
@@ -123,7 +124,7 @@ const icons = [
   width: 3rem;
   height: 3rem;
   margin-bottom: 1.35rem;
-  color: #9a3b1f;
+  color: rgb(var(--color-terracotta));
 }
 
 .virtue-card__icon :deep(svg) {
@@ -133,7 +134,7 @@ const icons = [
 
 .virtue-card__number {
   margin: 0 0 0.5rem;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Cinzel', serif;
   font-size: 0.85rem;
   letter-spacing: 0.12em;
@@ -141,7 +142,7 @@ const icons = [
 
 .virtue-card h3 {
   margin: 0 0 0.875rem;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: 1.15rem;
   font-weight: 500;
@@ -150,7 +151,7 @@ const icons = [
 
 .virtue-card p:last-child {
   margin: 0;
-  color: #1f1a12;
+  color: rgb(var(--color-ink));
   font-size: 1rem;
   line-height: 1.65;
 }

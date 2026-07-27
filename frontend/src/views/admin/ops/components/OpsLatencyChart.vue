@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useChartSemantic, useChartInk } from '@/utils/chartPalette'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Chart as ChartJS, BarElement, CategoryScale, Legend, LinearScale, Tooltip } from 'chart.js'
@@ -18,11 +19,12 @@ interface Props {
 const props = defineProps<Props>()
 const { t } = useI18n()
 
-const isDarkMode = computed(() => document.documentElement.classList.contains('dark'))
+const semantic = useChartSemantic()
+const ink = useChartInk()
 const colors = computed(() => ({
-  blue: '#3b82f6',
-  grid: isDarkMode.value ? '#374151' : '#f3f4f6',
-  text: isDarkMode.value ? '#9ca3af' : '#6b7280'
+  blue: semantic.value.info,
+  grid: ink.value.grid,
+  text: ink.value.muted
 }))
 
 const hasData = computed(() => (props.latencyData?.total_requests ?? 0) > 0)

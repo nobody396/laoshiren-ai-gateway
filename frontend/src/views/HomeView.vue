@@ -1099,6 +1099,24 @@ function revealAllSections(): void {
   })
 }
 
+/**
+ * 兜底只负责"首屏别空着"，不负责整页。
+ *
+ * 原来的兜底是 1.6 秒后无条件 revealAllSections()，包括视口外几千像素的区块 ——
+ * 于是用户滚下去时每一屏都已经是终态，滚动入场动效等于不存在。这正是"每个章节
+ * 都没有入场动画"的由来，不是动效没写，是被兜底提前拆了。
+ *
+ * 现在兜底只揭开当前视口里的元素；视口外的继续交给 observer。真正需要全量兜底的
+ * 只有 IntersectionObserver 不可用的情况，那条路径仍然直接调 revealAllSections()。
+ */
+function revealVisibleSections(): void {
+  const vh = window.innerHeight || 0
+  document.querySelectorAll('.mirror-reveal').forEach((node) => {
+    const r = node.getBoundingClientRect()
+    if (r.top < vh && r.bottom > 0) node.classList.add('is-visible')
+  })
+}
+
 onMounted(() => {
   // 认证检查
   authStore.checkAuth()
@@ -1130,9 +1148,21 @@ onMounted(() => {
         { threshold: 0.12, rootMargin: '0px 0px -48px 0px' }
       )
 
-      revealNodes.forEach((node) => observer?.observe(node))
+      // 顺序很关键，反了首屏就没有入场动效。
+      //
+      // observe() 对已在视口内的元素会立刻回调并打上 is-visible。如果先 observe
+      // 再挂门控类，两者落在同一帧，浏览器从来没画出过
+      // `.home-page--reveal-ready .mirror-reveal:not(.is-visible)` 这个隐藏态 ——
+      // 没有隐藏态就没有过渡，首屏元素直接以最终样式出现。
+      //
+      // 所以：先挂门控类 → 双 rAF 确保隐藏态真的被绘制过 → 再启动 observer。
       revealReady.value = true
-      revealFallbackTimer = window.setTimeout(revealAllSections, 1200)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          revealNodes.forEach((node) => observer?.observe(node))
+        })
+      })
+      revealFallbackTimer = window.setTimeout(revealVisibleSections, 1600)
     } catch {
       revealAllSections()
     }
@@ -1149,17 +1179,17 @@ onUnmounted(() => {
 
 <style scoped>
 .home-page {
-  --papyrus: #f8f3e7;
-  --papyrus-100: #efe6cf;
-  --marble: #faf6ec;
-  --parchment: #f2e9d2;
-  --terracotta: #9a3b1f;
-  --terracotta-dark: #7a2d17;
-  --laurel: #3f5a3a;
-  --laurel-dark: #26361f;
-  --ink: #1f1a12;
-  --ink-deep: #13100b;
-  --ink-fade: #8a7d63;
+  --papyrus: rgb(var(--color-papyrus));
+  --papyrus-100: rgb(var(--color-stone));
+  --marble: rgb(var(--color-marble));
+  --parchment: rgb(var(--color-parchment));
+  --terracotta: rgb(var(--color-terracotta));
+  --terracotta-dark: rgb(var(--color-terracotta-dark));
+  --laurel: rgb(var(--color-laurel));
+  --laurel-dark: rgb(var(--color-laurel-dark));
+  --ink: rgb(var(--color-ink));
+  --ink-deep: rgb(var(--color-ink-deep));
+  --ink-fade: rgb(var(--color-muted));
   min-height: 100vh;
   background: var(--papyrus);
   color: var(--ink);
@@ -1187,7 +1217,7 @@ onUnmounted(() => {
 .monthly-credit-section {
   padding: 6rem 0 5.25rem;
   background:
-    linear-gradient(180deg, rgba(239, 230, 207, 0.18), rgba(250, 246, 236, 0.58)),
+    linear-gradient(180deg, rgb(var(--color-stone) / 0.18), rgb(var(--color-marble) / 0.58)),
     var(--papyrus);
   scroll-margin-top: 88px;
 }
@@ -1210,36 +1240,146 @@ onUnmounted(() => {
 
 <style>
 /* 全局滚动进场动画（需要非 scoped 以穿透子组件） */
+/* 时长/缓动/位移全部取自 theme.css，调节奏改那一处即可。
+ * 原来还动了 filter: blur(12px) —— 去掉了：blur 触发重绘，而且在纸质系统里
+ * 那种"糊一下再清晰"的观感偏廉价。只动 transform 和 opacity。 */
+/* 入场用 animation 而不是 transition —— 这是被迫的，也是对的：
+ *
+ * 组件自己的 `transition:` 简写会把这里的整条 transition 覆盖掉。实测
+ * .virtue-card 声明了 `transition: background .25s, border-color .25s,
+ * transform .25s`，于是 .mirror-reveal 的 opacity/transform 过渡连同
+ * transition-delay 一起归零 —— 元素在一帧内从 0 跳到 1，既没有淡入也没有
+ * 错峰。改成 animation 就与组件的 transition 各走各的，互不覆盖。
+ *
+ * 附带好处和首屏书写那处一样：animation 不需要"隐藏态先被绘制过一帧"，
+ * 挂上就一定完整播完，不受 observer 回调时机影响。 */
+@keyframes mirrorRise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--reveal-lift));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .mirror-reveal {
   opacity: 1;
   transform: translateY(0);
-  filter: blur(0);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .home-page--reveal-ready .mirror-reveal:not(.is-visible) {
   opacity: 0;
-  transform: translateY(24px);
-  filter: blur(12px);
 }
 
-.mirror-reveal.is-visible {
-  opacity: 1;
-  transform: translateY(0);
-  filter: blur(0);
+.home-page--reveal-ready .mirror-reveal.is-visible {
+  /* 错峰：--reveal-i 由模板内联给出（v-for 的 index），没给就是 0，
+   * 所以整块容器自身不延迟、块内卡片依次跟上。 */
+  animation: mirrorRise var(--duration-reveal) var(--ease-expo) both;
+  animation-delay: calc(var(--reveal-stagger) * var(--reveal-i, 0));
 }
+
+/* ── L2 排版层：让排版本身成为动效 ───────────────────────────────
+ * 必须放在这个非 scoped 块里。写在 HeroSection 的 scoped 块里时，
+ * `:global(.home-page--reveal-ready) .hero-section__title span` 这类
+ * 「全局祖先 + 局部后代」的选择器会被 Vue 的 scoped 编译器整条丢掉
+ * （实测编译产物里一条都不剩），规则根本不进样式表。
+ *
+ * 时长/缓动/间隔全部取自 theme.css，调节奏改那一处。
+ * ─────────────────────────────────────────────────────────── */
+
+/* transition 里必须把 opacity/transform 一起声明。
+ * 这条选择器特异性高于 .mirror-reveal，只写 letter-spacing 会把
+ * 入场的淡入上浮整个覆盖掉。 */
+.hero-section__title span,
+.hero-section__title em {
+  transition:
+    opacity var(--duration-reveal) var(--ease-expo),
+    transform var(--duration-reveal) var(--ease-expo),
+    letter-spacing 900ms var(--ease-expo);
+}
+
+/* 字距收敛：Cinzel 品牌名从散开收紧到定位，像铅字被压进版盘。
+ * 只给罗马大写做，斜体不参与（斜体收字距会糊）。
+ *
+ * 这里用 keyframes 而不是 transition，是踩过坑之后的选择：
+ * transition 需要从元素的"当前计算值"插值，而 letter-spacing 的零值
+ * 会被 Chrome 归一化成关键字 `normal`（继承也是 `normal`），
+ * CSS 无法在 `normal` 与长度之间插值 —— 过渡静默失效，一次都不触发。
+ * keyframes 两端都显式写成长度，绕开这个问题。 */
+@keyframes heroLetterSettle {
+  from { letter-spacing: 0.16em; }
+  to   { letter-spacing: 0.002em; }
+}
+
+.home-page--reveal-ready .hero-section__title span.is-visible {
+  animation: heroLetterSettle var(--duration-ink-settle) var(--ease-ink) both;
+  animation-delay: calc(var(--reveal-stagger) * 1);
+}
+
+/* 斜体产品名：从左往右揭开，像被一笔写出来。
+ *
+ * 同样用 keyframes 而不是 transition，原因和上面字距一样：
+ * transition 依赖"隐藏态先被浏览器绘制过一帧"，而这个元素拿到 is-visible
+ * 的时机太早，隐藏态从没上过屏 —— 实测采样第一帧时 clip-path 已经是终态，
+ * 揭开过程整个没播。keyframes 不依赖起始计算值，挂上就一定完整播完。 */
+@keyframes heroInkWrite {
+  from { clip-path: inset(0 100% -0.25em 0); }
+  to   { clip-path: inset(0 -0.12em -0.25em 0); }
+}
+
+.hero-section__title em {
+  clip-path: inset(0 -0.12em -0.25em 0);
+}
+
+.home-page--reveal-ready .hero-section__title em.is-visible {
+  animation: heroInkWrite var(--duration-ink-write) var(--ease-ink) both;
+  animation-delay: calc(var(--reveal-stagger) * 4);
+}
+
+/* 希腊文逐字浮现 —— 全站独有、竞品抄不走的一个动作 */
+.hero-section__quote-greek span {
+  display: inline-block;
+  white-space: pre;
+  transition: opacity 420ms var(--ease-out),
+              transform 420ms var(--ease-out);
+}
+
+.home-page--reveal-ready .hero-section__quote:not(.is-visible) .hero-section__quote-greek span {
+  opacity: 0;
+  transform: translateY(0.16em);
+}
+
+/* 初始态一律挂在 --reveal-ready 门控下：JS 没跑起来时直接是最终样式，
+ * 不会出现标题一直散着或被裁着的降级事故。 */
 
 @media (prefers-reduced-motion: reduce) {
-  .mirror-reveal {
-    transition-duration: 1ms;
-  }
-
   .home-page--reveal-ready .mirror-reveal:not(.is-visible) {
     opacity: 1;
     transform: translateY(0);
-    filter: blur(0);
+  }
+
+  .hero-section__title span,
+  .hero-section__title em,
+  .hero-section__quote-greek span {
+    transition-duration: 1ms;
+    transition-delay: 0ms;
+  }
+
+  .home-page--reveal-ready .hero-section__title span.is-visible {
+    animation: none;
+    letter-spacing: 0.002em;
+  }
+
+  .home-page--reveal-ready .hero-section__title em.is-visible {
+    animation: none;
+    clip-path: inset(0 -0.12em -0.25em 0);
+  }
+
+  .home-page--reveal-ready .hero-section__quote:not(.is-visible) .hero-section__quote-greek span {
+    opacity: 1;
+    transform: none;
   }
 }
 </style>

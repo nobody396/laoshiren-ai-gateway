@@ -63,9 +63,12 @@ watch(
 <style scoped>
 .public-info-page {
   min-height: 100vh;
-  background: #ffffff;
-  color: #374151;
-  color-scheme: light;
+  background: rgb(var(--color-vellum));
+  color: rgb(var(--color-ink));
+  /* No color-scheme lock. This page used to pin itself light with a literal
+   * #ffffff ground; now that both ground and text run through tokens it
+   * follows the site theme, and a light island inside a dark site was the
+   * thing that looked broken. */
 }
 
 .public-info-header {
@@ -77,8 +80,8 @@ watch(
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid rgb(var(--color-gray-200));
+  background: rgb(var(--color-vellum) / 0.92);
   padding: 0 2rem;
   backdrop-filter: blur(10px);
 }
@@ -87,7 +90,7 @@ watch(
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
-  color: #111827;
+  color: rgb(var(--color-ink-deep));
   font-weight: 700;
   text-decoration: none;
 }
@@ -107,7 +110,7 @@ watch(
 }
 
 .public-info-header nav a {
-  color: #4b5563;
+  color: rgb(var(--color-muted));
   font-size: 0.95rem;
   font-weight: 600;
   text-decoration: none;
@@ -115,7 +118,7 @@ watch(
 
 .public-info-header nav a:hover,
 .public-info-header nav a.router-link-active {
-  color: #d87757;
+  color: rgb(var(--color-terracotta));
 }
 
 .public-info-main {
@@ -125,55 +128,55 @@ watch(
 }
 
 .public-info-page :deep(.docs-doc-copy-btn) {
-  border-color: #e5e7eb;
-  background: rgba(255, 255, 255, 0.92);
-  color: #374151;
+  border-color: rgb(var(--color-stone));
+  background: rgb(var(--color-vellum) / 0.92);
+  color: rgb(var(--color-ink));
 }
 
 .public-info-page :deep(.docs-doc-copy-btn:hover) {
-  border-color: #d87757;
-  background: #fff7f3;
-  color: #d87757;
+  border-color: rgb(var(--color-terracotta));
+  background: rgb(var(--color-primary-50));
+  color: rgb(var(--color-terracotta));
 }
 
 .public-info-page :deep(.docs-markdown) {
-  color: #374151;
+  color: rgb(var(--color-ink));
 }
 
 .public-info-page :deep(.docs-markdown h1) {
-  color: #111827;
+  color: rgb(var(--color-ink-deep));
 }
 
 .public-info-page :deep(.docs-markdown h2),
 .public-info-page :deep(.docs-markdown h3) {
-  color: #1f2937;
+  color: rgb(var(--color-ink));
 }
 
 .public-info-page :deep(.docs-markdown h2) {
-  border-bottom-color: #e5e7eb;
+  border-bottom-color: rgb(var(--color-gray-200));
 }
 
 .public-info-page :deep(.docs-markdown h4) {
-  color: #374151;
+  color: rgb(var(--color-ink));
 }
 
 .public-info-page :deep(.docs-markdown strong) {
-  color: #111827;
+  color: rgb(var(--color-ink-deep));
 }
 
 .public-info-page :deep(.docs-markdown blockquote) {
-  background-color: #fdf5f2;
-  color: #6f3829;
+  background-color: rgb(var(--color-primary-50));
+  color: rgb(var(--color-primary-800));
 }
 
 .public-info-page :deep(.docs-markdown code) {
-  background-color: #f3f4f6;
-  color: #d87757;
+  background-color: rgb(var(--color-parchment));
+  color: rgb(var(--color-terracotta));
 }
 
 .public-info-page :deep(.docs-markdown pre) {
-  background-color: #1e293b;
-  color: #e2e8f0;
+  background-color: rgb(var(--color-slate-800));
+  color: rgb(var(--color-slate-200));
 }
 
 .public-info-page :deep(.docs-markdown pre code) {
@@ -182,16 +185,16 @@ watch(
 }
 
 .public-info-page :deep(.docs-markdown hr) {
-  border-top-color: #e5e7eb;
+  border-top-color: rgb(var(--color-stone));
 }
 
 .public-info-page :deep(.docs-markdown th),
 .public-info-page :deep(.docs-markdown td) {
-  border-color: #e5e7eb;
+  border-color: rgb(var(--color-stone));
 }
 
 .public-info-page :deep(.docs-markdown th) {
-  background-color: #f9fafb;
+  background-color: rgb(var(--color-parchment));
 }
 
 @media (max-width: 640px) {

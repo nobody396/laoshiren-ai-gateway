@@ -16,7 +16,7 @@
       </div>
 
       <div class="pricing-provider-grid" :aria-label="ui.providerGridAria">
-        <article class="provider-card provider-card--gpt" :aria-label="ui.openaiAria">
+        <article class="provider-card provider-card--gpt mirror-reveal" :style="{ '--reveal-i': 1 }" :aria-label="ui.openaiAria">
           <header class="provider-card__header">
             <div class="provider-card__brand">
               <strong>OpenAI</strong>
@@ -43,7 +43,7 @@
           </div>
         </article>
 
-        <article class="provider-card provider-card--claude" :aria-label="ui.anthropicAria">
+        <article class="provider-card provider-card--claude mirror-reveal" :style="{ '--reveal-i': 2 }" :aria-label="ui.anthropicAria">
           <header class="provider-card__header">
             <div class="provider-card__brand">
               <strong>Anthropic</strong>
@@ -72,10 +72,11 @@
         </article>
 
         <article
-          v-for="group in specialProviderGroups"
+          v-for="(group, index) in specialProviderGroups"
           :key="group.key"
-          class="provider-card"
+          class="provider-card mirror-reveal"
           :class="`provider-card--${group.key}`"
+          :style="{ '--reveal-i': index + 3 }"
           :aria-label="`${group.name} ${ui.priceAriaSuffix}`"
         >
           <header class="provider-card__header">
@@ -274,7 +275,7 @@ const specialProviderGroups = computed(() => [
 <style scoped>
 .model-pricing {
   padding: 6rem 0 5.5rem;
-  background: #f8f3e7;
+  background: rgb(var(--color-papyrus));
   scroll-margin-top: 88px;
 }
 
@@ -299,7 +300,7 @@ const specialProviderGroups = computed(() => [
 
 .section-eyebrow {
   margin: 0 0 0.875rem;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.75rem;
   font-weight: 600;
@@ -309,7 +310,7 @@ const specialProviderGroups = computed(() => [
 
 .section-title {
   margin: 0;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: clamp(2.5rem, 4.4vw, 3.75rem);
   font-weight: 500;
@@ -318,7 +319,7 @@ const specialProviderGroups = computed(() => [
 
 .section-lede {
   margin: 1rem auto 0;
-  color: #1f1a12;
+  color: rgb(var(--color-ink));
   font-size: 1.18rem;
   font-style: italic;
   line-height: 1.65;
@@ -337,9 +338,9 @@ const specialProviderGroups = computed(() => [
   align-items: center;
   min-height: 2.25rem;
   padding: 0.45rem 0.9rem;
-  border: 1px solid rgba(63, 90, 58, 0.22);
-  background: rgba(250, 246, 236, 0.72);
-  color: #1f1a12;
+  border: 1px solid rgb(var(--color-laurel) / 0.22);
+  background: rgb(var(--color-marble) / 0.72);
+  color: rgb(var(--color-ink));
   font-family: 'Inter', sans-serif;
   font-size: 0.78rem;
   letter-spacing: 0.02em;
@@ -347,7 +348,7 @@ const specialProviderGroups = computed(() => [
 
 .discount-ledger strong {
   margin-right: 0.4rem;
-  color: #9a3b1f;
+  color: rgb(var(--color-terracotta));
 }
 
 .pricing-provider-grid {
@@ -362,9 +363,9 @@ const specialProviderGroups = computed(() => [
   position: relative;
   min-height: 20rem;
   padding: 1rem;
-  background: #faf6ec;
-  border: 1px solid rgba(154, 59, 31, 0.34);
-  box-shadow: 0 1rem 2.6rem rgba(63, 90, 58, 0.08), inset 0 0 0 1px rgba(250, 246, 236, 0.7);
+  background: rgb(var(--color-marble));
+  border: 1px solid rgb(var(--color-terracotta) / 0.34);
+  box-shadow: 0 1rem 2.6rem rgb(var(--color-laurel) / 0.08), inset 0 0 0 1px rgb(var(--color-marble) / 0.7);
 }
 
 .provider-card--claude {
@@ -384,7 +385,7 @@ const specialProviderGroups = computed(() => [
   justify-content: center;
   min-height: 2.55rem;
   padding: 0.65rem 0.75rem 0.95rem;
-  border-bottom: 1px solid rgba(63, 90, 58, 0.12);
+  border-bottom: 1px solid rgb(var(--color-laurel) / 0.12);
   text-align: center;
 }
 
@@ -396,7 +397,7 @@ const specialProviderGroups = computed(() => [
   justify-items: center;
   gap: 0.18rem;
   min-width: max-content;
-  color: #c5482a;
+  color: rgb(var(--color-terracotta));
   line-height: 1;
   transform: translateX(-50%);
 }
@@ -411,7 +412,7 @@ const specialProviderGroups = computed(() => [
 }
 
 .provider-card__brand span {
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', 'Noto Sans SC', sans-serif;
   font-size: 0.56rem;
   font-weight: 800;
@@ -422,7 +423,7 @@ const specialProviderGroups = computed(() => [
 
 .provider-card__header p {
   margin: 0;
-  color: #6f634f;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.76rem;
   font-weight: 800;
@@ -437,7 +438,7 @@ const specialProviderGroups = computed(() => [
   max-height: 32rem;
   overflow-y: auto;
   padding: 0.95rem 0.1rem 0.1rem;
-  scrollbar-color: rgba(154, 59, 31, 0.42) transparent;
+  scrollbar-color: rgb(var(--color-terracotta) / 0.42) transparent;
   scrollbar-width: thin;
 }
 
@@ -449,8 +450,8 @@ const specialProviderGroups = computed(() => [
   display: grid;
   gap: 0.72rem;
   padding: 0.82rem;
-  background: #f8f3e7;
-  border: 1px solid rgba(63, 90, 58, 0.14);
+  background: rgb(var(--color-papyrus));
+  border: 1px solid rgb(var(--color-laurel) / 0.14);
 }
 
 .compact-model {
@@ -466,7 +467,7 @@ const specialProviderGroups = computed(() => [
 
 .compact-model strong {
   display: block;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'EB Garamond', 'Noto Serif SC', serif;
   font-feature-settings: 'lnum' 1, 'tnum' 1;
   font-size: 1.02rem;
@@ -477,7 +478,7 @@ const specialProviderGroups = computed(() => [
 .compact-model em {
   display: block;
   margin-top: 0.2rem;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.62rem;
   font-style: normal;
@@ -490,8 +491,8 @@ const specialProviderGroups = computed(() => [
 .compact-model b {
   flex: 0 0 auto;
   padding: 0.22rem 0.48rem;
-  background: #9a3b1f;
-  color: #faf6ec;
+  background: rgb(var(--color-terracotta));
+  color: rgb(var(--color-marble));
   font-family: 'Inter', sans-serif;
   font-size: 0.58rem;
   font-weight: 800;
@@ -516,13 +517,13 @@ const specialProviderGroups = computed(() => [
   gap: 0.18rem;
   min-height: 4.35rem;
   padding: 0.52rem 0.48rem;
-  background: rgba(250, 246, 236, 0.88);
-  border: 1px solid rgba(63, 90, 58, 0.1);
+  background: rgb(var(--color-marble) / 0.88);
+  border: 1px solid rgb(var(--color-laurel) / 0.1);
 }
 
 .compact-rates strong,
 .compact-rates small {
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.54rem;
   font-weight: 800;
@@ -532,7 +533,7 @@ const specialProviderGroups = computed(() => [
 }
 
 .compact-rates em {
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'EB Garamond', 'Noto Serif SC', serif;
   font-feature-settings: 'lnum' 1, 'tnum' 1;
   font-size: 1.02rem;
@@ -555,9 +556,9 @@ const specialProviderGroups = computed(() => [
 
 .pricing-frame {
   padding: 0.5rem;
-  background: #faf6ec;
-  border: 1px solid rgba(63, 90, 58, 0.18);
-  box-shadow: 0 1px 0 rgba(63, 90, 58, 0.08), 0 0 0 1px rgba(63, 90, 58, 0.04);
+  background: rgb(var(--color-marble));
+  border: 1px solid rgb(var(--color-laurel) / 0.18);
+  box-shadow: 0 1px 0 rgb(var(--color-laurel) / 0.08), 0 0 0 1px rgb(var(--color-laurel) / 0.04);
 }
 
 .pricing-frame__header {
@@ -565,12 +566,12 @@ const specialProviderGroups = computed(() => [
   align-items: flex-start;
   gap: 1rem;
   padding: 1.25rem 1.25rem 1rem;
-  border-bottom: 1px solid rgba(63, 90, 58, 0.14);
+  border-bottom: 1px solid rgb(var(--color-laurel) / 0.14);
 }
 
 .pricing-frame__header h3 {
   margin: 0;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: 1.35rem;
   font-weight: 600;
@@ -579,7 +580,7 @@ const specialProviderGroups = computed(() => [
 
 .pricing-frame__header p {
   margin: 0.35rem 0 0;
-  color: #6f634f;
+  color: rgb(var(--color-muted));
   font-size: 0.98rem;
   line-height: 1.45;
 }
@@ -609,8 +610,8 @@ const specialProviderGroups = computed(() => [
 
 .pricing-table th {
   padding: 1.125rem 0.875rem;
-  border-bottom: 1.5px solid #1f1a12;
-  color: #8a7d63;
+  border-bottom: 1.5px solid rgb(var(--color-ink));
+  color: rgb(var(--color-muted));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: 0.7rem;
   font-weight: 500;
@@ -622,19 +623,19 @@ const specialProviderGroups = computed(() => [
 
 .pricing-table td {
   padding: 1.125rem 0.875rem;
-  border-bottom: 1px solid rgba(63, 90, 58, 0.1);
-  color: #1f1a12;
+  border-bottom: 1px solid rgb(var(--color-laurel) / 0.1);
+  color: rgb(var(--color-ink));
   font-size: 1rem;
   text-align: center;
   vertical-align: middle;
 }
 
 .pricing-table tr:nth-child(even) td {
-  background: #efe6cf;
+  background: rgb(var(--color-stone));
 }
 
 .pricing-table tr:hover td {
-  background: #f2e9d2;
+  background: rgb(var(--color-parchment));
 }
 
 .pricing-table tr:last-child td {
@@ -642,7 +643,7 @@ const specialProviderGroups = computed(() => [
 }
 
 .model-name {
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-feature-settings: 'lnum' 1, 'tnum' 1;
   min-width: 11.5rem;
   white-space: nowrap;
@@ -658,7 +659,7 @@ const specialProviderGroups = computed(() => [
 .model-name span {
   display: block;
   margin-top: 0.22rem;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.66rem;
   font-weight: 700;
@@ -676,12 +677,12 @@ const specialProviderGroups = computed(() => [
   display: grid;
   justify-items: center;
   gap: 0.16rem;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-feature-settings: 'lnum' 1, 'tnum' 1;
 }
 
 .rate-stack strong {
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.64rem;
   font-weight: 700;
@@ -690,7 +691,7 @@ const specialProviderGroups = computed(() => [
 }
 
 .rate-stack em {
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-size: 1.05rem;
   font-style: normal;
   font-weight: 600;
@@ -699,7 +700,7 @@ const specialProviderGroups = computed(() => [
 
 .pricing-footnote {
   margin: 1.25rem 0 0;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.78rem;
   line-height: 1.6;
@@ -718,9 +719,9 @@ const specialProviderGroups = computed(() => [
   justify-content: center;
   min-height: 3.5rem;
   padding: 1rem 3rem;
-  background: #1f1a12;
-  border: 1.5px solid #1f1a12;
-  color: #f8f3e7;
+  background: rgb(var(--color-ink));
+  border: 1.5px solid rgb(var(--color-ink));
+  color: rgb(var(--color-papyrus));
   font-family: 'Inter', sans-serif;
   font-size: 0.85rem;
   font-weight: 700;
@@ -731,8 +732,8 @@ const specialProviderGroups = computed(() => [
 }
 
 .cta-btn:hover {
-  background: #9a3b1f;
-  border-color: #9a3b1f;
+  background: rgb(var(--color-terracotta));
+  border-color: rgb(var(--color-terracotta));
   transform: translateY(-1px);
 }
 

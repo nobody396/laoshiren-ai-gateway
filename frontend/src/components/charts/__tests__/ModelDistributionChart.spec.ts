@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 
 import ModelDistributionChart from '../ModelDistributionChart.vue'
+import { chartColor } from '@/utils/chartPalette'
 
 const messages: Record<string, string> = {
   'admin.dashboard.modelDistribution': 'Model Distribution',
@@ -157,8 +158,12 @@ describe('ModelDistributionChart', () => {
       'Others',
     ])
     expect(chartData.datasets[0].data).toEqual([12, 8, 10])
-    expect(chartData.datasets[0].backgroundColor[0]).toBe('#3b82f6')
-    expect(chartData.datasets[0].backgroundColor[2]).toBe('#94a3b8')
+    // 颜色从 chartPalette 取，不写死字面量：这里要保的是「排名色按序取、
+    // Others 用中性色且与第一名可区分」，具体色值属于主题，改主题不该让
+    // 这条测试假失败。原来断言的 #3b82f6 / #94a3b8 是 Tailwind 默认冷色，
+    // 已随主题统一移除。
+    expect(chartData.datasets[0].backgroundColor[0]).toBe(chartColor(0))
+    expect(chartData.datasets[0].backgroundColor[2]).toBe(chartColor(6))
     expect(chartData.datasets[0].backgroundColor[2]).not.toBe(chartData.datasets[0].backgroundColor[0])
 
     const rows = wrapper.findAll('tbody tr')

@@ -1,4 +1,5 @@
 @import './styles/local-fonts.css';
+@import './styles/theme.css';
 
 @tailwind base;
 @tailwind components;
@@ -26,12 +27,12 @@
 
   *:hover,
   *:focus-within {
-    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+    scrollbar-color: rgb(var(--color-gray-400) / 0.5) transparent;
   }
 
   .dark *:hover,
   .dark *:focus-within {
-    scrollbar-color: rgba(75, 85, 99, 0.5) transparent;
+    scrollbar-color: rgb(var(--color-gray-600) / 0.5) transparent;
   }
 
   ::-webkit-scrollbar {
@@ -74,10 +75,10 @@
    */
   .table-wrapper {
     scrollbar-width: auto;
-    scrollbar-color: rgba(156, 163, 175, 0.7) transparent;
+    scrollbar-color: rgb(var(--color-gray-400) / 0.7) transparent;
   }
   .dark .table-wrapper {
-    scrollbar-color: rgba(75, 85, 99, 0.7) transparent;
+    scrollbar-color: rgb(var(--color-gray-600) / 0.7) transparent;
   }
   /* 旧版 Chrome (< 121) 兼容回退 */
   .table-wrapper::-webkit-scrollbar {
@@ -731,7 +732,7 @@
 @layer utilities {
   /* 文字渐变 */
   .text-gradient {
-    @apply bg-gradient-to-r from-[#b45309] to-[#D87757] bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-[rgb(var(--color-amber-700))] to-[rgb(var(--color-terracotta))] bg-clip-text text-transparent;
   }
 
   /* 玻璃效果 */

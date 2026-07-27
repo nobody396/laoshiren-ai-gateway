@@ -26,9 +26,10 @@
 
         <div class="report-grid">
           <article
-            v-for="report in reports"
+            v-for="(report, index) in reports"
             :key="report.sourceUrl"
-            class="report-card"
+            class="report-card mirror-reveal"
+            :style="{ '--reveal-i': index + 1 }"
           >
             <div class="report-card__topline">
               <span class="report-badge">{{ report.provider }}</span>
@@ -163,7 +164,7 @@ const averageScore = computed(() => {
 <style scoped>
 .model-reports {
   padding: 6rem 0;
-  background: #f8f3e7;
+  background: rgb(var(--color-papyrus));
   scroll-margin-top: 88px;
 }
 
@@ -188,7 +189,7 @@ const averageScore = computed(() => {
 
 .section-eyebrow {
   margin: 0 0 0.875rem;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.75rem;
   font-weight: 600;
@@ -198,7 +199,7 @@ const averageScore = computed(() => {
 
 .section-title {
   margin: 0;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: clamp(2.4rem, 4.2vw, 3.5rem);
   font-weight: 500;
@@ -207,7 +208,7 @@ const averageScore = computed(() => {
 
 .section-lede {
   margin: 1rem auto 4rem;
-  color: #1f1a12;
+  color: rgb(var(--color-ink));
   font-size: 1.18rem;
   font-style: italic;
   line-height: 1.65;
@@ -215,30 +216,30 @@ const averageScore = computed(() => {
 
 .report-board {
   padding: 0.5rem;
-  background: #faf6ec;
-  border: 1px solid rgba(63, 90, 58, 0.18);
-  box-shadow: 0 1px 0 rgba(63, 90, 58, 0.08), 0 0 0 1px rgba(63, 90, 58, 0.04);
+  background: rgb(var(--color-marble));
+  border: 1px solid rgb(var(--color-laurel) / 0.18);
+  box-shadow: 0 1px 0 rgb(var(--color-laurel) / 0.08), 0 0 0 1px rgb(var(--color-laurel) / 0.04);
 }
 
 .report-board__summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1px;
-  background: rgba(63, 90, 58, 0.14);
-  border-bottom: 1px solid rgba(63, 90, 58, 0.14);
+  background: rgb(var(--color-laurel) / 0.14);
+  border-bottom: 1px solid rgb(var(--color-laurel) / 0.14);
 }
 
 .report-board__summary div {
   min-height: 7.5rem;
   padding: 1.35rem 1.5rem;
-  background: #faf6ec;
+  background: rgb(var(--color-marble));
 }
 
 .report-board__summary span,
 .report-facts dt,
 .metric-strip span {
   display: block;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.64rem;
   font-weight: 700;
@@ -249,7 +250,7 @@ const averageScore = computed(() => {
 .report-board__summary strong {
   display: block;
   margin-top: 0.6rem;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: clamp(2rem, 4vw, 3.1rem);
   font-weight: 600;
@@ -260,7 +261,7 @@ const averageScore = computed(() => {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
-  background: rgba(63, 90, 58, 0.14);
+  background: rgb(var(--color-laurel) / 0.14);
 }
 
 .report-card {
@@ -268,7 +269,7 @@ const averageScore = computed(() => {
   grid-template-rows: auto auto 1fr auto auto;
   min-height: 31rem;
   padding: 1.35rem;
-  background: #faf6ec;
+  background: rgb(var(--color-marble));
 }
 
 .report-card__topline {
@@ -292,13 +293,13 @@ const averageScore = computed(() => {
 }
 
 .report-badge {
-  background: rgba(63, 90, 58, 0.12);
-  color: #26361f;
+  background: rgb(var(--color-laurel) / 0.12);
+  color: rgb(var(--color-laurel-dark));
 }
 
 .score-pill {
-  background: #1f1a12;
-  color: #f8f3e7;
+  background: rgb(var(--color-ink));
+  color: rgb(var(--color-papyrus));
   white-space: nowrap;
 }
 
@@ -309,7 +310,7 @@ const averageScore = computed(() => {
 
 .report-card__body h3 {
   margin: 0;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: clamp(1.45rem, 2.1vw, 2rem);
   font-weight: 500;
@@ -318,7 +319,7 @@ const averageScore = computed(() => {
 
 .report-card__body p {
   margin: 1rem 0 0;
-  color: #6f634f;
+  color: rgb(var(--color-muted));
   font-family: 'Inter', sans-serif;
   font-size: 0.8rem;
   line-height: 1.55;
@@ -330,8 +331,8 @@ const averageScore = computed(() => {
   gap: 0.9rem;
   margin: 0;
   padding: 1.25rem 0;
-  border-top: 1px solid rgba(63, 90, 58, 0.14);
-  border-bottom: 1px solid rgba(63, 90, 58, 0.14);
+  border-top: 1px solid rgb(var(--color-laurel) / 0.14);
+  border-bottom: 1px solid rgb(var(--color-laurel) / 0.14);
 }
 
 .report-facts div {
@@ -341,7 +342,7 @@ const averageScore = computed(() => {
 
 .report-facts dd {
   margin: 0;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'EB Garamond', 'Noto Serif SC', serif;
   font-size: 1rem;
   font-weight: 700;
@@ -353,19 +354,19 @@ const averageScore = computed(() => {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
   margin-top: 1.25rem;
-  background: rgba(63, 90, 58, 0.12);
+  background: rgb(var(--color-laurel) / 0.12);
 }
 
 .metric-strip div {
   min-height: 4.35rem;
   padding: 0.8rem;
-  background: #efe6cf;
+  background: rgb(var(--color-stone));
 }
 
 .metric-strip strong {
   display: block;
   margin-top: 0.35rem;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: 1.12rem;
   font-weight: 600;
@@ -379,8 +380,8 @@ const averageScore = computed(() => {
   min-height: 2.75rem;
   margin-top: 1.25rem;
   padding: 0.75rem 1rem;
-  border: 1.5px solid #1f1a12;
-  color: #1f1a12;
+  border: 1.5px solid rgb(var(--color-ink));
+  color: rgb(var(--color-ink));
   font-family: 'Inter', sans-serif;
   font-size: 0.72rem;
   font-weight: 700;
@@ -392,8 +393,8 @@ const averageScore = computed(() => {
 }
 
 .report-link:hover {
-  background: #1f1a12;
-  color: #f8f3e7;
+  background: rgb(var(--color-ink));
+  color: rgb(var(--color-papyrus));
 }
 
 @media (max-width: 900px) {

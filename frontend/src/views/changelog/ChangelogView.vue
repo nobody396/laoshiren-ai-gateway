@@ -256,7 +256,7 @@ onBeforeUnmount(() => {
 
 .changelog-hero h1 {
   margin: 0;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Noto Serif SC', 'EB Garamond', serif;
   font-size: clamp(3.4rem, 7vw, 6.2rem);
   font-weight: 600;
@@ -266,7 +266,7 @@ onBeforeUnmount(() => {
 
 .changelog-hero p {
   margin: 1.25rem 0 0;
-  color: #4d4536;
+  color: rgb(var(--color-muted));
   font-family: 'EB Garamond', 'Noto Serif SC', serif;
   font-size: clamp(1.15rem, 2vw, 1.45rem);
   letter-spacing: 0.04em;
@@ -284,7 +284,7 @@ onBeforeUnmount(() => {
   position: absolute;
   top: 50%;
   width: calc(50% - 2.2rem);
-  border-top: 1px solid rgba(138, 125, 99, 0.8);
+  border-top: 1px solid rgb(var(--color-muted) / 0.8);
 }
 
 .changelog-rule::before { left: 0; }
@@ -296,7 +296,7 @@ onBeforeUnmount(() => {
   left: 50%;
   width: 1.2rem;
   height: 1.2rem;
-  border: 1px solid #8a7d63;
+  border: 1px solid rgb(var(--color-muted));
   border-radius: 50%;
   transform: translate(-50%, -50%);
 }
@@ -307,7 +307,7 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 50% auto auto 50%;
   width: 3rem;
-  border-top: 1px solid #8a7d63;
+  border-top: 1px solid rgb(var(--color-muted));
   transform: translate(-50%, -50%) rotate(90deg);
 }
 
@@ -333,7 +333,7 @@ onBeforeUnmount(() => {
   position: relative;
   border: 0;
   background: transparent;
-  color: #2d291f;
+  color: rgb(var(--color-ink));
   font-family: 'Noto Serif SC', 'EB Garamond', serif;
   font-size: 1rem;
   cursor: pointer;
@@ -347,13 +347,13 @@ onBeforeUnmount(() => {
   bottom: 0;
   left: 0;
   height: 2px;
-  background: #3f5a3a;
+  background: rgb(var(--color-laurel));
   transform: scaleX(0);
   transition: transform 180ms ease;
 }
 
 .changelog-categories button:hover,
-.changelog-categories button.is-active { color: #3f5a3a; }
+.changelog-categories button.is-active { color: rgb(var(--color-laurel)); }
 .changelog-categories button.is-active::after { transform: scaleX(1); }
 
 .changelog-search {
@@ -361,9 +361,9 @@ onBeforeUnmount(() => {
   width: min(100%, 18rem);
   align-items: center;
   gap: 0.65rem;
-  border: 1px solid rgba(138, 125, 99, 0.52);
+  border: 1px solid rgb(var(--color-muted) / 0.52);
   padding: 0.72rem 0.9rem;
-  color: #8a7d63;
+  color: rgb(var(--color-muted));
 }
 
 .changelog-search input {
@@ -372,20 +372,20 @@ onBeforeUnmount(() => {
   border: 0;
   outline: none;
   background: transparent;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-size: 0.95rem;
 }
 
 .changelog-search:focus-within {
-  border-color: #3f5a3a;
-  box-shadow: 0 0 0 2px rgba(63, 90, 58, 0.12);
+  border-color: rgb(var(--color-laurel));
+  box-shadow: 0 0 0 2px rgb(var(--color-laurel) / 0.12);
 }
 
 .changelog-month + .changelog-month { margin-top: 4.5rem; }
 
 .changelog-month > h2 {
   margin: 0 0 0.6rem;
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   font-family: 'Noto Serif SC', 'EB Garamond', serif;
   font-size: 1.3rem;
   font-weight: 600;
@@ -420,8 +420,8 @@ onBeforeUnmount(() => {
 .changelog-new {
   display: inline-block;
   margin-top: 0.55rem;
-  border: 1px solid #9a3b1f;
-  color: #9a3b1f;
+  border: 1px solid rgb(var(--color-terracotta));
+  color: rgb(var(--color-terracotta));
   font-family: 'Cinzel', serif;
   font-size: 0.68rem;
   letter-spacing: 0.12em;
@@ -431,7 +431,7 @@ onBeforeUnmount(() => {
 
 .changelog-node {
   position: relative;
-  border-left: 1px solid rgba(138, 125, 99, 0.68);
+  border-left: 1px solid rgb(var(--color-muted) / 0.68);
 }
 
 .changelog-node::before {
@@ -441,16 +441,16 @@ onBeforeUnmount(() => {
   left: 0;
   width: 0.72rem;
   height: 0.72rem;
-  border: 2px solid #f8f3e7;
+  border: 2px solid rgb(var(--color-papyrus));
   border-radius: 50%;
-  background: #3f5a3a;
-  box-shadow: 0 0 0 1px #3f5a3a;
+  background: rgb(var(--color-laurel));
+  box-shadow: 0 0 0 1px rgb(var(--color-laurel));
   transform: translateX(-50%);
 }
 
 .changelog-timeline article {
   padding: 1.35rem 0 1.65rem 1rem;
-  border-bottom: 1px solid rgba(63, 90, 58, 0.28);
+  border-bottom: 1px solid rgb(var(--color-laurel) / 0.28);
 }
 
 .changelog-entry-heading,
@@ -470,14 +470,14 @@ onBeforeUnmount(() => {
 }
 
 .changelog-entry-heading h3 a {
-  color: #13100b;
+  color: rgb(var(--color-ink-deep));
   text-decoration: none;
 }
 
-.changelog-entry-heading h3 a:hover { color: #3f5a3a; }
+.changelog-entry-heading h3 a:hover { color: rgb(var(--color-laurel)); }
 
 .changelog-category {
-  color: #3f5a3a;
+  color: rgb(var(--color-laurel));
   font-size: 0.78rem;
   white-space: nowrap;
 }
@@ -486,7 +486,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  color: #3f5a3a;
+  color: rgb(var(--color-laurel));
   font-family: 'Noto Serif SC', serif;
   font-size: 0.92rem;
   text-decoration: underline;
@@ -498,7 +498,7 @@ onBeforeUnmount(() => {
 .changelog-rationale,
 .changelog-products {
   margin: 0.7rem 0 0;
-  color: #514a3c;
+  color: rgb(var(--color-muted));
   font-size: 0.96rem;
   line-height: 1.75;
 }
@@ -506,7 +506,7 @@ onBeforeUnmount(() => {
 .changelog-rationale,
 .changelog-products { margin-top: 0.24rem; }
 .changelog-rationale strong,
-.changelog-products strong { color: #2a261d; font-weight: 600; }
+.changelog-products strong { color: rgb(var(--color-ink)); font-weight: 600; }
 
 .changelog-load-more {
   display: flex;
@@ -521,7 +521,7 @@ onBeforeUnmount(() => {
   gap: 0.5rem;
   border: 0;
   background: transparent;
-  color: #3f5a3a;
+  color: rgb(var(--color-laurel));
   font-family: 'Noto Serif SC', serif;
   font-size: 1rem;
   cursor: pointer;
@@ -530,27 +530,27 @@ onBeforeUnmount(() => {
 .changelog-load-more button:disabled { opacity: 0.55; cursor: wait; }
 
 .changelog-empty {
-  border-block: 1px solid rgba(138, 125, 99, 0.4);
+  border-block: 1px solid rgb(var(--color-muted) / 0.4);
   padding: 5rem 1rem;
   text-align: center;
 }
 
 .changelog-empty h3 { margin: 0; font-family: 'Noto Serif SC', serif; font-size: 1.4rem; }
-.changelog-empty p { margin: 0.8rem auto 1rem; color: #6d6453; }
+.changelog-empty p { margin: 0.8rem auto 1rem; color: rgb(var(--color-muted)); }
 
 .changelog-skeleton {
   display: grid;
   grid-template-columns: 8rem 1fr;
   gap: 2rem;
   padding: 1.5rem 0;
-  border-bottom: 1px solid rgba(138, 125, 99, 0.2);
+  border-bottom: 1px solid rgb(var(--color-muted) / 0.2);
 }
 
 .changelog-skeleton > span,
 .changelog-skeleton i {
   display: block;
   height: 1rem;
-  background: rgba(138, 125, 99, 0.16);
+  background: rgb(var(--color-muted) / 0.16);
   animation: changelog-pulse 1.5s ease-in-out infinite;
 }
 
@@ -586,7 +586,7 @@ onBeforeUnmount(() => {
   .changelog-timeline > li {
     grid-template-columns: 1fr;
     padding-left: 1.2rem;
-    border-left: 1px solid rgba(138, 125, 99, 0.68);
+    border-left: 1px solid rgb(var(--color-muted) / 0.68);
   }
   .changelog-date { padding: 1.4rem 0 0.4rem 1rem; }
   .changelog-date time { display: inline; }

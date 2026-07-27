@@ -547,6 +547,7 @@
 </template>
 
 <script setup lang="ts">
+import { chartColor, chartSemantic } from '@/utils/chartPalette'
 import { computed, h, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -871,10 +872,10 @@ function expenseGroupKeyForCategory(category: FinanceTransactionCategory): Expen
 }
 
 const EXPENSE_GROUP_META: Array<{ key: ExpenseGroupKey; color: string }> = [
-  { key: 'fixed_business', color: '#f59e0b' },
-  { key: 'procurement', color: '#ef4444' },
-  { key: 'setup', color: '#8b5cf6' },
-  { key: 'other', color: '#64748b' }
+  { key: 'fixed_business', color: chartColor(2) },
+  { key: 'procurement', color: chartColor(4) },
+  { key: 'setup', color: chartColor(5) },
+  { key: 'other', color: chartColor(6) }
 ]
 
 const expenseGroups = computed(() =>
@@ -894,11 +895,11 @@ const expenseGroups = computed(() =>
 )
 
 const INCOME_CHANNEL_COLORS: Record<FinancePaymentChannel, string> = {
-  wechat: '#22c55e',
-  alipay: '#1677ff',
-  liandong_shop: '#f97316',
-  bank_transfer: '#8b5cf6',
-  other: '#94a3b8'
+  wechat: chartColor(1),
+  alipay: chartColor(3),
+  liandong_shop: chartColor(0),
+  bank_transfer: chartColor(5),
+  other: chartColor(6)
 }
 
 const incomeChannelTotals = computed(() =>
@@ -982,13 +983,13 @@ const trendChartData = computed(() => ({
     {
       label: t('admin.financeTransactions.summary.income'),
       data: trendSeries.value.map((item) => item.total_income_fen / 100),
-      backgroundColor: '#10b981',
+      backgroundColor: chartSemantic().success,
       borderRadius: 4
     },
     {
       label: t('admin.financeTransactions.summary.expense'),
       data: trendSeries.value.map((item) => item.total_expense_fen / 100),
-      backgroundColor: '#ef4444',
+      backgroundColor: chartSemantic().danger,
       borderRadius: 4
     }
   ]

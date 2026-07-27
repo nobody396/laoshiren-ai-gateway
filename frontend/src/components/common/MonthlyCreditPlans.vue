@@ -94,14 +94,14 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 
 <style scoped>
 .monthly-credit-plans {
-  --membership-surface: rgba(255, 252, 245, 0.94);
-  --membership-surface-soft: rgba(242, 233, 210, 0.58);
-  --membership-border: rgba(31, 26, 18, 0.14);
-  --membership-border-strong: rgba(31, 26, 18, 0.26);
-  --membership-ink: #1f1a12;
-  --membership-muted: #7b705d;
-  --membership-accent: #9a3b1f;
-  --membership-shadow: 0 18px 46px rgba(49, 38, 20, 0.1);
+  --membership-surface: rgb(var(--color-vellum) / 0.94);
+  --membership-surface-soft: rgb(var(--color-parchment) / 0.58);
+  --membership-border: rgb(var(--color-ink) / 0.14);
+  --membership-border-strong: rgb(var(--color-ink) / 0.26);
+  --membership-ink: rgb(var(--color-ink));
+  --membership-muted: rgb(var(--color-gray-600));
+  --membership-accent: rgb(var(--color-terracotta));
+  --membership-shadow: 0 18px 46px rgb(var(--shadow-ink) / 0.1);
   color: var(--membership-ink);
 }
 
@@ -171,7 +171,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   border: 1px solid var(--membership-border);
   border-radius: 8px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.46), transparent 42%),
+    linear-gradient(180deg, rgb(var(--color-vellum) / 0.46), transparent 42%),
     var(--membership-surface);
   box-shadow: var(--membership-shadow);
 }
@@ -180,14 +180,14 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   grid-column: 1 / -1;
   min-height: 20rem;
   isolation: isolate;
-  border-color: rgba(236, 186, 92, 0.62);
+  border-color: rgb(var(--gild-600) / 0.62);
   background:
-    linear-gradient(135deg, rgba(255, 236, 182, 0.12), rgba(132, 24, 18, 0.08) 38%, transparent 62%),
-    linear-gradient(115deg, rgba(17, 13, 9, 0.96), rgba(35, 28, 20, 0.98) 48%, rgba(9, 8, 7, 0.96));
-  color: #fff7df;
+    linear-gradient(135deg, rgb(var(--gild-400) / 0.12), rgb(var(--gild-900) / 0.08) 38%, transparent 62%),
+    linear-gradient(115deg, rgb(var(--lacquer-rest-top) / 0.96), rgb(var(--color-dark-800) / 0.98) 48%, rgb(var(--lacquer-base) / 0.96));
+  color: rgb(var(--gild-100));
   box-shadow:
-    0 26px 70px rgba(31, 17, 8, 0.22),
-    inset 0 0 0 1px rgba(255, 220, 138, 0.14);
+    0 26px 70px rgb(var(--shadow-ink) / 0.22),
+    inset 0 0 0 1px rgb(var(--gild-500) / 0.14);
 }
 
 .monthly-credit-card--apex::after {
@@ -197,8 +197,8 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   inset: 0;
   opacity: 0.92;
   background:
-    linear-gradient(90deg, transparent 0%, rgba(255, 218, 137, 0.18) 46%, transparent 58%),
-    repeating-linear-gradient(90deg, rgba(255, 220, 138, 0.08) 0 1px, transparent 1px 3.1rem);
+    linear-gradient(90deg, transparent 0%, rgb(var(--gild-500) / 0.18) 46%, transparent 58%),
+    repeating-linear-gradient(90deg, rgb(var(--gild-500) / 0.08) 0 1px, transparent 1px 3.1rem);
   transform: translateX(-42%);
   animation: monthly-apex-sheen 6.8s ease-in-out infinite;
 }
@@ -208,35 +208,35 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   position: absolute;
   inset: 0 0 auto;
   height: 0.28rem;
-  background: #8a7d63;
+  background: rgb(var(--color-muted));
 }
 
 .monthly-credit-card--lite::before {
-  background: #3f5a3a;
+  background: rgb(var(--color-laurel));
 }
 
 .monthly-credit-card--pro::before {
-  background: #4b6faf;
+  background: rgb(var(--color-info));
 }
 
 .monthly-credit-card--max::before {
-  background: #9a3b1f;
+  background: rgb(var(--color-terracotta));
 }
 
 .monthly-credit-card--ultra::before {
-  background: #13100b;
+  background: rgb(var(--color-ink-deep));
 }
 
 .monthly-credit-card--apex::before {
   height: 0.34rem;
-  background: linear-gradient(90deg, #8e2b18, #e6b75a 24%, #fff0af 50%, #d58831 76%, #0d0907);
-  box-shadow: 0 0 22px rgba(230, 183, 90, 0.46);
+  background: linear-gradient(90deg, rgb(var(--gild-900)), rgb(var(--gild-600)) 24%, rgb(var(--gild-400)) 50%, rgb(var(--gild-700)) 76%, rgb(var(--lacquer-base)));
+  box-shadow: 0 0 22px rgb(var(--gild-600) / 0.46);
 }
 
 .monthly-credit-card__rarity {
   display: inline-flex;
   margin-bottom: 0.55rem;
-  color: #ffd88d;
+  color: rgb(var(--gild-500));
   font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.16em;
@@ -263,11 +263,11 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--apex h3 {
-  color: #fff6db;
+  color: rgb(var(--gild-200));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: clamp(1.45rem, 2.5vw, 2rem);
   letter-spacing: 0;
-  text-shadow: 0 0 18px rgba(255, 216, 141, 0.2);
+  text-shadow: 0 0 18px rgb(var(--gild-500) / 0.2);
 }
 
 .monthly-credit-card p {
@@ -280,7 +280,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 
 .monthly-credit-card--apex p {
   max-width: 45rem;
-  color: rgba(255, 246, 219, 0.74);
+  color: rgb(var(--gild-200) / 0.74);
 }
 
 .monthly-credit-card__stock {
@@ -289,20 +289,20 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   align-items: center;
   min-height: 1.55rem;
   padding: 0.2rem 0.55rem;
-  border: 1px solid rgba(154, 59, 31, 0.22);
+  border: 1px solid rgb(var(--color-terracotta) / 0.22);
   border-radius: 999px;
-  background: rgba(154, 59, 31, 0.08);
-  color: #9a3b1f;
+  background: rgb(var(--color-terracotta) / 0.08);
+  color: rgb(var(--color-terracotta));
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
 }
 
 .monthly-credit-card--apex .monthly-credit-card__stock {
-  border-color: rgba(255, 216, 141, 0.42);
-  background: rgba(255, 216, 141, 0.1);
-  color: #ffd88d;
-  box-shadow: inset 0 0 18px rgba(255, 216, 141, 0.08);
+  border-color: rgb(var(--gild-500) / 0.42);
+  background: rgb(var(--gild-500) / 0.1);
+  color: rgb(var(--gild-500));
+  box-shadow: inset 0 0 18px rgb(var(--gild-500) / 0.08);
 }
 
 .monthly-credit-card__price {
@@ -321,7 +321,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--apex .monthly-credit-card__price strong {
-  color: #fff3c9;
+  color: rgb(var(--gild-300));
   font-size: clamp(2.2rem, 4vw, 3rem);
 }
 
@@ -331,7 +331,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--apex .monthly-credit-card__price span {
-  color: rgba(255, 246, 219, 0.7);
+  color: rgb(var(--gild-200) / 0.7);
 }
 
 .monthly-credit-card__credits {
@@ -346,10 +346,10 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 
 .monthly-credit-card--apex .monthly-credit-card__credits {
   margin-top: 1.25rem;
-  border-color: rgba(255, 216, 141, 0.28);
+  border-color: rgb(var(--gild-500) / 0.28);
   background:
-    linear-gradient(135deg, rgba(255, 216, 141, 0.16), rgba(255, 118, 70, 0.08)),
-    rgba(8, 7, 6, 0.44);
+    linear-gradient(135deg, rgb(var(--gild-500) / 0.16), rgb(var(--color-primary-400) / 0.08)),
+    rgb(var(--lacquer-base) / 0.44);
 }
 
 .monthly-credit-card__credits div {
@@ -366,7 +366,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--apex .monthly-credit-card__credits span {
-  color: rgba(255, 246, 219, 0.72);
+  color: rgb(var(--gild-200) / 0.72);
 }
 
 .monthly-credit-card__credits strong {
@@ -377,16 +377,16 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--apex .monthly-credit-card__credits strong {
-  color: #fff7df;
+  color: rgb(var(--gild-100));
   font-size: clamp(1rem, 2vw, 1.22rem);
 }
 
 .monthly-credit-card__legend {
   min-height: 0 !important;
   margin-top: 1rem !important;
-  border-left: 2px solid rgba(255, 216, 141, 0.54);
+  border-left: 2px solid rgb(var(--gild-500) / 0.54);
   padding-left: 0.8rem;
-  color: rgba(255, 239, 191, 0.86) !important;
+  color: rgb(var(--gild-300) / 0.86) !important;
   font-size: 0.86rem !important;
   font-weight: 650;
   line-height: 1.8 !important;
@@ -409,14 +409,14 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   justify-content: space-between;
   gap: 0.75rem;
   min-height: 2.2rem;
-  border-bottom: 1px solid rgba(31, 26, 18, 0.08);
+  border-bottom: 1px solid rgb(var(--color-ink) / 0.08);
 }
 
 .monthly-credit-card--apex .monthly-credit-card__usage div {
   min-height: 4.2rem;
-  border: 1px solid rgba(255, 216, 141, 0.22);
+  border: 1px solid rgb(var(--gild-500) / 0.22);
   border-radius: 7px;
-  background: rgba(255, 246, 219, 0.06);
+  background: rgb(var(--gild-200) / 0.06);
   padding: 0.85rem;
 }
 
@@ -432,7 +432,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--apex .monthly-credit-card__usage dt {
-  color: rgba(255, 246, 219, 0.72);
+  color: rgb(var(--gild-200) / 0.72);
 }
 
 .monthly-credit-card__usage dd {
@@ -449,7 +449,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--apex .monthly-credit-card__usage dd strong {
-  color: #fff7df;
+  color: rgb(var(--gild-100));
 }
 
 .monthly-credit-card__usage dd span {
@@ -459,7 +459,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--apex .monthly-credit-card__usage dd span {
-  color: #ffb37b;
+  color: rgb(var(--color-terracotta-dark));
 }
 
 .monthly-credit-card__button {
@@ -471,7 +471,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   margin-top: 1.1rem;
   border: 1px solid var(--membership-border-strong);
   border-radius: 6px;
-  background: rgba(31, 26, 18, 0.08);
+  background: rgb(var(--color-ink) / 0.08);
   color: var(--membership-muted);
   font-size: 0.88rem;
   font-weight: 800;
@@ -479,9 +479,9 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-card--apex .monthly-credit-card__button {
-  border-color: rgba(255, 216, 141, 0.42);
-  background: rgba(255, 216, 141, 0.12);
-  color: #ffd88d;
+  border-color: rgb(var(--gild-500) / 0.42);
+  background: rgb(var(--gild-500) / 0.12);
+  color: rgb(var(--gild-500));
 }
 
 .monthly-credit-plans__note {
@@ -492,29 +492,29 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
 }
 
 .monthly-credit-plans--app {
-  --membership-surface: var(--admin-control, rgba(255, 252, 245, 0.95));
-  --membership-surface-soft: var(--admin-surface-soft, rgba(239, 230, 207, 0.72));
-  --membership-border: var(--admin-border, rgba(31, 26, 18, 0.14));
-  --membership-border-strong: var(--admin-border-strong, rgba(31, 26, 18, 0.32));
-  --membership-ink: var(--admin-ink, #1f1a12);
-  --membership-muted: var(--admin-muted, #8a7d63);
-  --membership-accent: var(--admin-terracotta-dark, #7a2d17);
-  --membership-shadow: var(--admin-shadow-sm, 0 8px 24px rgba(49, 38, 20, 0.08));
+  --membership-surface: var(--admin-control, rgb(var(--color-vellum) / 0.95));
+  --membership-surface-soft: var(--admin-surface-soft, rgb(var(--color-stone) / 0.72));
+  --membership-border: var(--admin-border, rgb(var(--color-ink) / 0.14));
+  --membership-border-strong: var(--admin-border-strong, rgb(var(--color-ink) / 0.32));
+  --membership-ink: var(--admin-ink, rgb(var(--color-ink)));
+  --membership-muted: var(--admin-muted, rgb(var(--color-muted)));
+  --membership-accent: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
+  --membership-shadow: var(--admin-shadow-sm, 0 8px 24px rgb(var(--shadow-ink) / 0.08));
 }
 
 .dark .monthly-credit-plans--app {
-  --membership-surface: rgba(26, 31, 38, 0.96);
-  --membership-surface-soft: rgba(42, 47, 55, 0.82);
-  --membership-border: rgba(255, 255, 255, 0.1);
-  --membership-border-strong: rgba(255, 255, 255, 0.18);
-  --membership-ink: #f8fafc;
-  --membership-muted: #9ca3af;
-  --membership-accent: #f59e0b;
-  --membership-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+  --membership-surface: rgb(var(--color-indigo-900) / 0.96);
+  --membership-surface-soft: rgb(var(--color-indigo-800) / 0.82);
+  --membership-border: rgb(var(--color-vellum) / 0.1);
+  --membership-border-strong: rgb(var(--color-vellum) / 0.18);
+  --membership-ink: rgb(var(--color-slate-50));
+  --membership-muted: rgb(var(--color-gray-400));
+  --membership-accent: rgb(var(--color-amber-500));
+  --membership-shadow: 0 12px 32px rgb(var(--lacquer-base) / 0.22);
 }
 
 .dark .monthly-credit-card__usage div {
-  border-bottom-color: rgba(255, 255, 255, 0.08);
+  border-bottom-color: rgb(var(--color-vellum) / 0.08);
 }
 
 @keyframes monthly-apex-sheen {

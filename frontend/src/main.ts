@@ -10,19 +10,12 @@ import { initAnalytics } from '@/utils/analytics'
 import { vPermission } from './directives/permission'
 import { authSession } from '@/auth'
 import { configureApiRuntime } from '@/api/runtime'
+import { applyThemeClass } from '@/utils/theme'
 import './style.css'
-
-function initThemeClass() {
-  const savedTheme = localStorage.getItem('theme')
-  const shouldUseDark =
-    savedTheme === 'dark' ||
-    (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)
-  document.documentElement.classList.toggle('dark', shouldUseDark)
-}
 
 async function bootstrap() {
   // Apply theme class globally before app mount to keep all routes consistent.
-  initThemeClass()
+  applyThemeClass()
 
   const app = createApp(App)
   const pinia = createPinia()

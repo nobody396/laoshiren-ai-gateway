@@ -22,7 +22,6 @@
             :show-source-toggle="true"
             :start-date="startDate"
             :end-date="endDate"
-            palette="greco"
           />
           <GroupDistributionChart
             v-model:metric="groupDistributionMetric"
@@ -31,7 +30,6 @@
             :show-metric-toggle="true"
             :start-date="startDate"
             :end-date="endDate"
-            palette="greco"
           />
         </div>
         <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
@@ -47,14 +45,12 @@
             :title="t('usage.endpointDistribution')"
             :start-date="startDate"
             :end-date="endDate"
-            palette="greco"
           />
           <TokenUsageTrend
             :trend-data="trendData"
             :loading="chartsLoading"
             :start-date="startDate"
             :granularity="granularity"
-            palette="greco"
           />
         </div>
       </div>

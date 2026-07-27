@@ -80,8 +80,8 @@ defineProps<{
 <style scoped>
 .home-footer {
   padding: 4rem 0 2rem;
-  background: #13100b;
-  color: #f8f3e7;
+  background: rgb(var(--color-ink-deep));
+  color: rgb(var(--color-papyrus));
 }
 
 .home-footer__container {
@@ -118,7 +118,7 @@ defineProps<{
   height: 2.5rem;
   object-fit: cover;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 2px rgba(250, 246, 236, 0.35), 0 0 0 1px #7a2d17;
+  box-shadow: inset 0 0 0 2px rgb(var(--color-marble) / 0.35), 0 0 0 1px rgb(var(--color-terracotta-dark));
 }
 
 .brand-name,
@@ -127,7 +127,7 @@ defineProps<{
 }
 
 .brand-name {
-  color: #f8f3e7;
+  color: rgb(var(--color-papyrus));
   font-family: 'Cinzel', 'Noto Serif SC', serif;
   font-size: 1.1rem;
   font-weight: 600;
@@ -136,7 +136,7 @@ defineProps<{
 
 .brand-tag {
   margin-top: 0.125rem;
-  color: rgba(248, 243, 231, 0.55);
+  color: rgb(var(--color-papyrus) / 0.55);
   font-family: 'Inter', sans-serif;
   font-size: 0.62rem;
   letter-spacing: 0.18em;
@@ -146,7 +146,7 @@ defineProps<{
 .home-footer__brand p {
   max-width: 32ch;
   margin: 1rem 0 0;
-  color: rgba(248, 243, 231, 0.7);
+  color: rgb(var(--color-papyrus) / 0.7);
   font-size: 1rem;
   font-style: italic;
   line-height: 1.55;
@@ -154,7 +154,7 @@ defineProps<{
 
 .home-footer__column h3 {
   margin: 0 0 1.125rem;
-  color: rgba(248, 243, 231, 0.58);
+  color: rgb(var(--color-papyrus) / 0.58);
   font-family: 'Inter', sans-serif;
   font-size: 0.75rem;
   font-weight: 600;
@@ -172,14 +172,14 @@ defineProps<{
 }
 
 .home-footer__column a {
-  color: #f8f3e7;
+  color: rgb(var(--color-papyrus));
   font-size: 0.98rem;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 .home-footer__column a:hover {
-  color: #d68a6a;
+  color: rgb(var(--color-primary-300));
 }
 
 .home-footer__bottom {
@@ -188,12 +188,12 @@ defineProps<{
   justify-content: space-between;
   gap: 1rem;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(248, 243, 231, 0.15);
+  border-top: 1px solid rgb(var(--color-papyrus) / 0.15);
 }
 
 .home-footer__bottom p {
   margin: 0;
-  color: rgba(248, 243, 231, 0.55);
+  color: rgb(var(--color-papyrus) / 0.55);
   font-size: 0.9rem;
   font-style: italic;
 }

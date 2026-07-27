@@ -19,7 +19,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useChartPalette, useChartInk } from '@/utils/chartPalette'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   Chart as ChartJS,
@@ -53,7 +54,6 @@ const { t } = useI18n()
 const props = defineProps<{
   trendData: TrendDataPoint[]
   loading?: boolean
-  palette?: 'default' | 'greco'
   startDate?: string
   granularity?: TrendGranularity
 }>()
@@ -62,44 +62,34 @@ const normalizedTrendData = computed(() =>
   fillUsageTrendBuckets(props.trendData, props.startDate, props.granularity)
 )
 
-const isDarkMode = ref(document.documentElement.classList.contains('dark'))
-let themeObserver: MutationObserver | null = null
+// The four series are fixed and meaningful (input / output / cache write /
+// cache read), so they take the first four chart tokens by position rather
+// than a lookup — series 1 is always the primary terracotta. Light and dark
+// values both come from --chart-1…4, so the local dark-mode MutationObserver
+// this component used to run is gone; useChartPalette owns that now, with one
+// observer shared by every chart.
+const seriesColors = useChartPalette()
+// Area fills, at the same 12.5% the old `${color}20` hex-alpha suffix gave.
+// That suffix cannot be used any more: the palette now returns rgb() strings,
+// and "rgb(154 59 31)20" is not a color — the fill would silently vanish.
+const fillColors = useChartPalette(0.125)
+const ink = useChartInk()
 
-onMounted(() => {
-  themeObserver = new MutationObserver(() => {
-    isDarkMode.value = document.documentElement.classList.contains('dark')
-  })
-  themeObserver.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ['class']
-  })
-})
+const chartColors = computed(() => ({
+  text: ink.value.text,
+  grid: ink.value.grid,
+  input: seriesColors.value[0],
+  output: seriesColors.value[1],
+  cacheCreation: seriesColors.value[2],
+  cacheRead: seriesColors.value[3]
+}))
 
-onBeforeUnmount(() => {
-  themeObserver?.disconnect()
-})
-
-const chartColors = computed(() => {
-  if (props.palette === 'greco') {
-    return {
-      text: isDarkMode.value ? '#eee4ce' : '#1f1a12',
-      grid: isDarkMode.value ? 'rgba(215, 226, 197, 0.18)' : 'rgba(63, 90, 58, 0.2)',
-      input: isDarkMode.value ? '#d87757' : '#9a3b1f',
-      output: isDarkMode.value ? '#9eb48b' : '#3f5a3a',
-      cacheCreation: isDarkMode.value ? '#e0b36a' : '#9a6a1f',
-      cacheRead: isDarkMode.value ? '#8fb7c4' : '#315f71'
-    }
-  }
-
-  return {
-    text: isDarkMode.value ? '#e5e7eb' : '#374151',
-    grid: isDarkMode.value ? '#374151' : '#e5e7eb',
-    input: '#3b82f6',
-    output: '#10b981',
-    cacheCreation: '#f59e0b',
-    cacheRead: '#06b6d4'
-  }
-})
+const chartFills = computed(() => ({
+  input: fillColors.value[0],
+  output: fillColors.value[1],
+  cacheCreation: fillColors.value[2],
+  cacheRead: fillColors.value[3]
+}))
 
 const chartData = computed(() => {
   if (!normalizedTrendData.value.length) return null
@@ -111,7 +101,7 @@ const chartData = computed(() => {
         label: 'Input',
         data: normalizedTrendData.value.map((d) => d.input_tokens),
         borderColor: chartColors.value.input,
-        backgroundColor: `${chartColors.value.input}20`,
+        backgroundColor: chartFills.value.input,
         fill: true,
         tension: 0.3
       },
@@ -119,7 +109,7 @@ const chartData = computed(() => {
         label: 'Output',
         data: normalizedTrendData.value.map((d) => d.output_tokens),
         borderColor: chartColors.value.output,
-        backgroundColor: `${chartColors.value.output}20`,
+        backgroundColor: chartFills.value.output,
         fill: true,
         tension: 0.3
       },
@@ -127,7 +117,7 @@ const chartData = computed(() => {
         label: 'Cache Creation',
         data: normalizedTrendData.value.map((d) => d.cache_creation_tokens),
         borderColor: chartColors.value.cacheCreation,
-        backgroundColor: `${chartColors.value.cacheCreation}20`,
+        backgroundColor: chartFills.value.cacheCreation,
         fill: true,
         tension: 0.3
       },
@@ -135,7 +125,7 @@ const chartData = computed(() => {
         label: 'Cache Read',
         data: normalizedTrendData.value.map((d) => d.cache_read_tokens),
         borderColor: chartColors.value.cacheRead,
-        backgroundColor: `${chartColors.value.cacheRead}20`,
+        backgroundColor: chartFills.value.cacheRead,
         fill: true,
         tension: 0.3
       }

@@ -45,7 +45,7 @@
           </thead>
           <tbody class="divide-y divide-gray-100 dark:divide-dark-700">
             <tr v-if="rows.length === 0">
-              <td colspan="10" class="py-12 text-center text-sm text-gray-400 dark:text-dark-500">
+              <td colspan="10" class="py-12 text-center text-sm text-gray-400 dark:text-dark-400">
                 {{ t('admin.ops.errorLog.noErrors') }}
               </td>
             </tr>

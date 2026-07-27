@@ -194,6 +194,7 @@
 </template>
 
 <script setup lang="ts">
+import { applyThemeClass, isDarkTheme, setTheme } from '@/utils/theme'
 import { computed, h, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -1003,7 +1004,7 @@ function toggleSidebar() {
 function toggleTheme() {
   isDark.value = !isDark.value
   document.documentElement.classList.toggle('dark', isDark.value)
-  localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
+  setTheme(isDark.value)
 }
 
 function closeMobile() {
@@ -1047,14 +1048,8 @@ function isActive(path: string): boolean {
 }
 
 // Initialize theme
-const savedTheme = localStorage.getItem('theme')
-if (
-  savedTheme === 'dark' ||
-  (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)
-) {
-  isDark.value = true
-  document.documentElement.classList.add('dark')
-}
+isDark.value = isDarkTheme()
+applyThemeClass(isDark.value)
 
 // Fetch admin settings (for feature-gated nav items like Ops).
 watch(

@@ -199,6 +199,15 @@ WHERE id = 1
 	requireColumn(t, tx, "agent_payment_profiles", "identity_fingerprint_hash", "character varying", 64, false)
 	requireIndex(t, tx, "agent_payment_profiles", "uq_agent_payment_verified_identity")
 	requireIndex(t, tx, "agent_payment_profiles", "idx_agent_payment_verification_queue")
+
+	// migration 155: private agent-community image + text configuration.
+	var affiliateCommunityRegclass sql.NullString
+	require.NoError(t, tx.QueryRowContext(
+		context.Background(),
+		"SELECT to_regclass('public.affiliate_community_settings')",
+	).Scan(&affiliateCommunityRegclass))
+	require.True(t, affiliateCommunityRegclass.Valid)
+	requireColumn(t, tx, "affiliate_community_settings", "revision", "bigint", 0, false)
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

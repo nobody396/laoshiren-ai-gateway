@@ -144,6 +144,8 @@ func RegisterUserRoutes(
 			agent.POST("/affiliate/links", h.Agent.CreateAffiliateLink)
 			agent.PUT("/affiliate/links/:id/rate", h.Agent.UpdateAffiliateLinkRate)
 			agent.PUT("/affiliate/links/:id/status", h.Agent.UpdateAffiliateLinkStatus)
+			agent.GET("/affiliate/community", h.Agent.GetAffiliateCommunity)
+			agent.GET("/affiliate/community/qr", h.Agent.GetAffiliateCommunityQRCode)
 			agent.GET("/payment-profile", h.Agent.GetPaymentProfile)
 			agent.PUT("/payment-profile", h.Agent.UpdatePaymentProfile)
 			agent.POST("/payment-profile/alipay-qr", h.Agent.UploadPaymentQRCode)

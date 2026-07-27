@@ -1,6 +1,10 @@
 package admin
 
 import (
+	"errors"
+	"io"
+	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -14,11 +18,18 @@ import (
 )
 
 type AgentHandler struct {
-	commissionService *service.CommissionService
+	commissionService  *service.CommissionService
+	affiliateCommunity *service.AffiliateCommunityService
 }
 
-func NewAgentHandler(commissionService *service.CommissionService) *AgentHandler {
-	return &AgentHandler{commissionService: commissionService}
+func NewAgentHandler(
+	commissionService *service.CommissionService,
+	affiliateCommunity *service.AffiliateCommunityService,
+) *AgentHandler {
+	return &AgentHandler{
+		commissionService:  commissionService,
+		affiliateCommunity: affiliateCommunity,
+	}
 }
 
 type updateCommissionRatesRequest struct {
@@ -50,6 +61,13 @@ type updateAgentSettlementSettingsRequest struct {
 type reviewAgentPaymentProfileRequest struct {
 	Status string `json:"status" binding:"required"`
 	Note   string `json:"note"`
+}
+
+type updateAffiliateCommunityRequest struct {
+	Enabled  bool   `json:"enabled"`
+	Title    string `json:"title" binding:"required"`
+	Message  string `json:"message"`
+	Revision int64  `json:"revision" binding:"required"`
 }
 
 type bindAgentUserRequest struct {
@@ -274,6 +292,116 @@ func (h *AgentHandler) ReviewPaymentProfile(c *gin.Context) {
 	}
 	profile.AlipayQRCodeURL = "/api/v1/admin/agents/" + strconv.FormatInt(agentID, 10) + "/payment-profile/alipay-qr"
 	response.Success(c, profile)
+}
+
+func (h *AgentHandler) GetAffiliateCommunity(c *gin.Context) {
+	settings, err := h.affiliateCommunity.Get(c.Request.Context(), false)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if settings.HasQRCode {
+		settings.QRCodeURL = "/api/v1/admin/agents/affiliate-community/qr"
+	}
+	response.Success(c, settings)
+}
+
+func (h *AgentHandler) UpdateAffiliateCommunity(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req updateAffiliateCommunityRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	settings, err := h.affiliateCommunity.Update(
+		c.Request.Context(),
+		req.Title,
+		req.Message,
+		req.Enabled,
+		subject.UserID,
+		req.Revision,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if settings.HasQRCode {
+		settings.QRCodeURL = "/api/v1/admin/agents/affiliate-community/qr"
+	}
+	response.Success(c, settings)
+}
+
+func (h *AgentHandler) UploadAffiliateCommunityQRCode(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	header, err := c.FormFile("file")
+	if err != nil {
+		response.BadRequest(c, "file is required")
+		return
+	}
+	if header.Size <= 0 || header.Size > 5<<20 {
+		response.BadRequest(c, "file size must be between 1 byte and 5MB")
+		return
+	}
+	file, err := header.Open()
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	defer func() { _ = file.Close() }()
+	sniff := make([]byte, 512)
+	n, readErr := file.Read(sniff)
+	if readErr != nil && !errors.Is(readErr, io.EOF) {
+		response.ErrorFrom(c, readErr)
+		return
+	}
+	contentType := http.DetectContentType(sniff[:n])
+	if seeker, ok := file.(interface {
+		Seek(offset int64, whence int) (int64, error)
+	}); ok {
+		if _, err := seeker.Seek(0, 0); err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+	}
+	settings, err := h.affiliateCommunity.UploadQRCode(
+		c.Request.Context(),
+		subject.UserID,
+		service.AffiliateCommunityQRCodeUpload{
+			Filename:    filepath.Base(header.Filename),
+			ContentType: contentType,
+			Size:        header.Size,
+			Body:        file,
+		},
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	settings.QRCodeURL = "/api/v1/admin/agents/affiliate-community/qr"
+	response.Created(c, settings)
+}
+
+func (h *AgentHandler) GetAffiliateCommunityQRCode(c *gin.Context) {
+	file, err := h.affiliateCommunity.GetQRCodeFile(c.Request.Context(), false)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	contentType := file.ContentType
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	c.Header("Content-Type", contentType)
+	c.Header("Cache-Control", "private, no-store")
+	c.File(file.Path)
 }
 
 func (h *AgentHandler) GetSettlementSettings(c *gin.Context) {

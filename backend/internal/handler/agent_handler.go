@@ -19,9 +19,10 @@ import (
 
 // AgentHandler 代理商相关请求处理
 type AgentHandler struct {
-	commissionService *service.CommissionService
-	affiliateLinks    *service.AffiliateLinkService
-	affiliateAgents   *service.AffiliateAgentService
+	commissionService  *service.CommissionService
+	affiliateLinks     *service.AffiliateLinkService
+	affiliateAgents    *service.AffiliateAgentService
+	affiliateCommunity *service.AffiliateCommunityService
 }
 
 // NewAgentHandler 创建 AgentHandler
@@ -29,11 +30,13 @@ func NewAgentHandler(
 	commissionService *service.CommissionService,
 	affiliateLinks *service.AffiliateLinkService,
 	affiliateAgents *service.AffiliateAgentService,
+	affiliateCommunity *service.AffiliateCommunityService,
 ) *AgentHandler {
 	return &AgentHandler{
-		commissionService: commissionService,
-		affiliateLinks:    affiliateLinks,
-		affiliateAgents:   affiliateAgents,
+		commissionService:  commissionService,
+		affiliateLinks:     affiliateLinks,
+		affiliateAgents:    affiliateAgents,
+		affiliateCommunity: affiliateCommunity,
 	}
 }
 
@@ -266,6 +269,33 @@ func (h *AgentHandler) ActivateAffiliateAgent(c *gin.Context) {
 		return
 	}
 	response.Success(c, activation)
+}
+
+func (h *AgentHandler) GetAffiliateCommunity(c *gin.Context) {
+	settings, err := h.affiliateCommunity.Get(c.Request.Context(), true)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if settings.Enabled && settings.HasQRCode {
+		settings.QRCodeURL = "/api/v1/agent/affiliate/community/qr"
+	}
+	response.Success(c, settings)
+}
+
+func (h *AgentHandler) GetAffiliateCommunityQRCode(c *gin.Context) {
+	file, err := h.affiliateCommunity.GetQRCodeFile(c.Request.Context(), true)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	contentType := file.ContentType
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	c.Header("Content-Type", contentType)
+	c.Header("Cache-Control", "private, no-store")
+	c.File(file.Path)
 }
 
 type updateAgentPaymentProfileRequest struct {

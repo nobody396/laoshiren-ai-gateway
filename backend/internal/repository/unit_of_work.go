@@ -22,6 +22,22 @@ type transactionResources struct {
 	sql    *sql.Tx
 }
 
+// borrowedTxDriver exposes an already-open *sql.Tx to Ent. Some Ent mutations
+// request a nested dialect transaction internally (for example UpdateOne).
+// Returning a no-op transaction keeps those mutations on the borrowed SQL
+// transaction while leaving commit/rollback ownership with unitOfWork.
+type borrowedTxDriver struct {
+	dialect.Driver
+}
+
+func (d *borrowedTxDriver) Tx(context.Context) (dialect.Tx, error) {
+	return dialect.NopTx(d), nil
+}
+
+func (*borrowedTxDriver) Close() error {
+	return nil
+}
+
 type unitOfWork struct {
 	db *sql.DB
 }
@@ -53,7 +69,9 @@ func (u *unitOfWork) WithinTx(ctx context.Context, fn func(context.Context) erro
 	if err != nil {
 		return err
 	}
-	driver := entsql.NewDriver(dialect.Postgres, entsql.Conn{ExecQuerier: tx})
+	driver := &borrowedTxDriver{
+		Driver: entsql.NewDriver(dialect.Postgres, entsql.Conn{ExecQuerier: tx}),
+	}
 	client := dbent.NewClient(dbent.Driver(driver))
 	txCtx := context.WithValue(ctx, unitOfWorkContextKey{}, &transactionResources{
 		client: client,

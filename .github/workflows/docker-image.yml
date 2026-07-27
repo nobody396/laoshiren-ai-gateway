@@ -1,8 +1,9 @@
 name: Build immutable Docker image
 
-# This workflow has no push or manual trigger. The required CI workflow is its
-# only caller, so image publication cannot race ahead of backend integration,
-# frontend, and production-image gates.
+# This workflow has no push or manual trigger. PR CI may call it speculatively
+# with publish=false while validation jobs run in parallel. Only main CI may
+# call it with publish=true, after either a verified tested-tree fast path or
+# the complete fallback gate set succeeds.
 on:
   workflow_call:
     inputs:

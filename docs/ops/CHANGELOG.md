@@ -53,3 +53,16 @@ future `published_at` are treated as scheduled and stay private until that time.
 
 Public responses intentionally exclude workflow state, editor identity, commit SHA,
 and pull request URL.
+
+## Stable public detail links
+
+- A published entry is directly reachable at `/changelog/:slug`; refresh,
+  unfurled social links and crawlers receive HTTP `200`, the entry title and
+  summary, a canonical URL, Open Graph metadata and `Article` structured data.
+- A draft, archived, scheduled-future or unknown slug receives a real HTTP
+  `404` plus `noindex`; the SPA still renders its normal not-found experience.
+- If the publication lookup is temporarily unavailable, the server returns
+  `503` rather than incorrectly caching or indexing a false `404`.
+- The browser continues to fetch the full Markdown content from the public API.
+  Server rendering exposes only the already-public title and summary needed for
+  link reliability and discovery.

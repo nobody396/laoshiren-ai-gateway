@@ -15,8 +15,8 @@ def validate(registry_path: Path, checkout_path: Path, action: str, now: datetim
         raise ValueError(f"unregistered checkout: {checkout}")
     if action not in entry["allowed_actions"]:
         raise ValueError(f"checkout kind {entry['kind']} forbids action {action}")
-    if action == "release" and entry["kind"] != "canonical":
-        raise ValueError("release requires canonical checkout")
+    if action == "release" and entry["kind"] not in {"canonical", "release-only"}:
+        raise ValueError("release requires canonical or release-only checkout")
     if entry.get("ttl"):
         deadline = datetime.fromisoformat(entry["ttl"])
         current = now or datetime.now(deadline.tzinfo)

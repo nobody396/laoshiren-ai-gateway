@@ -65,7 +65,11 @@ git push origin feat/short-description
 - AI review does not find blocking risk
 - a human accepts the product change
 
-8. After merge, required GitHub Actions builds the exact commit and records its immutable `image@sha256` artifact. Moving tags are not release evidence.
+8. After merge, main CI first proves whether the merged tree is byte-for-byte
+   identical to the successful PR-tested tree. A match skips duplicated tests;
+   any missing or mismatched proof automatically falls back to the full gates.
+   Main CI then publishes the exact commit and records its immutable
+   `image@sha256` artifact. Moving tags are not release evidence.
 
 9. Stop. Do not deploy production unless the owner explicitly asks.
 
@@ -99,7 +103,21 @@ Production release is separate from merge.
 
 Only after the owner explicitly requests production release, use the documented deploy process in `AGENTS.md` and `docs/ops/ENVIRONMENTS.md`.
 
-Local release commands must run from the canonical checkout registered in `docs/ops/checkouts.json`; report-only clones and temporary worktrees fail closed. CI build checkouts are ephemeral and may build, but production consumes only their verified immutable artifact.
+The preferred release controller is the clean, registered
+`/Users/fujunhao/laoshirenai/local/release-worktree`. The deploy Skill creates
+or refreshes it as a detached checkout of exact `origin/main`, so local feature
+work in the canonical checkout cannot block a production release. The canonical
+checkout remains allowed for compatibility. Report-only and temporary worktrees
+fail closed. CI build checkouts are ephemeral and may build, but production
+consumes only their verified immutable artifact.
+
+Before an agent-driven merge, start four local CI runners with the deploy Skill.
+PR Docker prebuild and validation gates run in parallel, and the runners remain
+warm for ten minutes so main CI can begin immediately after the human-approved
+merge. Human confirmation remains mandatory; merge still does not deploy.
+
+See `docs/ops/FAST_RELEASE.md` for the complete optimized path and fallback
+rules.
 
 The production app service is:
 

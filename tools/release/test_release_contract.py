@@ -325,7 +325,7 @@ class ReleaseContractTests(unittest.TestCase):
                 ],
             )
 
-    def test_image_publication_is_only_called_from_the_required_ci_gate(self) -> None:
+    def test_image_publication_requires_main_fast_path_or_fallback_gates(self) -> None:
         ci_workflow = (REPO_ROOT / ".github/workflows/ci.yml").read_text(
             encoding="utf-8"
         )
@@ -340,10 +340,19 @@ class ReleaseContractTests(unittest.TestCase):
         self.assertIn("uses: ./.github/workflows/docker-image.yml", ci_workflow)
         self.assertNotIn("docker/build-push-action", ci_workflow)
         self.assertIn("- backend-integration", ci_workflow)
-        self.assertIn("- frontend", ci_workflow)
+        self.assertIn("- frontend-tests", ci_workflow)
+        self.assertIn("tested-tree-", ci_workflow)
+        self.assertIn("needs.release-proof.outputs.fast_path == 'true'", ci_workflow)
+
+        pr_start = ci_workflow.index("  docker-pr:")
+        main_start = ci_workflow.index("  docker-main:")
+        required_start = ci_workflow.index("  required:")
+        self.assertIn("publish: false", ci_workflow[pr_start:main_start])
+        self.assertNotIn("publish: true", ci_workflow[pr_start:main_start])
+        self.assertIn("publish: true", ci_workflow[main_start:required_start])
         self.assertIn(
-            "publish: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}",
-            ci_workflow,
+            "github.event_name == 'push' || github.event_name == 'workflow_dispatch'",
+            ci_workflow[main_start:required_start],
         )
         self.assertIn(
             "tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.commit_sha }}",

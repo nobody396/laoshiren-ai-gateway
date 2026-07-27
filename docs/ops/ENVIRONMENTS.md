@@ -35,12 +35,13 @@ flowchart LR
 | --- | --- | --- |
 | 总工作区 | `/Users/fujunhao/laoshirenai` | 项目总目录 |
 | 源码仓库 | `/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API` | canonical checkout；独立改造使用已登记 worktree |
+| 发布工作树 | `/Users/fujunhao/laoshirenai/local/release-worktree` | release-only；由部署 Skill 自动创建/刷新，不在这里开发 |
 | 部署日志 | `/Users/fujunhao/laoshirenai/log.md` | 关键操作、错误和解决方式都追加在这里 |
 | 环境资产清单 | `docs/ops/ENVIRONMENTS.md` | 本文件，团队共享版本 |
 | 运维教程目录 | `/Users/fujunhao/laoshirenai/tutorials/03-operation` | 运行、备份、排错教程 |
 | Secret/MCP 控制面 | Agent Switch | 只用 CLI 管理 secret name/value；值不进项目文件或输出 |
 | 部署 Skill 源 | `/Users/fujunhao/AgentWorkspace/skill-hub/own/laoshirenai-skills/skills/laoshirenai-deploy/SKILL.md` | Skill Hub 管理；后续改代码/推送/上线必须先读 |
-| Checkout registry | `docs/ops/checkouts.json` | canonical/report-only/temporary owner, actions and TTL; only canonical may release |
+| Checkout registry | `docs/ops/checkouts.json` | canonical/release-only/report-only/temporary owner, actions and TTL |
 
 ## 后续线程必须遵守的规则
 
@@ -356,26 +357,31 @@ curl -fsS 'https://dns.google/resolve?name=api.laoshirenai.com&type=A' | jq
 
 ## 发布与不上线规则
 
-默认只测试、提交和推送分支，不上线。只有合并并推送到 `main` 后，required
-CI 才会构建可发布 artifact：
+默认只测试、提交和推送分支，不上线。PR CI 会并行运行安全的最小测试矩阵与
+不发布镜像的 Docker 预构建。只有人工确认并合并到 `main` 后，main CI 才会
+验证 PR tested-tree 证明；证明一致时跳过重复测试，缺失或不一致时自动跑完整
+fallback gates，最终构建可发布 artifact：
 
 ```bash
-cd /Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API
-git status --short
-# 修改代码、测试、commit、push
-/Users/fujunhao/.agents/skills/laoshirenai-deploy/scripts/release-after-push.sh
+/Users/fujunhao/laoshirenai/.agents/skills/laoshirenai-deploy/scripts/release-after-push.sh
 ```
 
 脚本必须等待精确 main commit 的 `ci.yml` push run，下载并严格解析
 `immutable-image-<SHA>` artifact，验证 app/maintenance digest；默认只报告，
-不部署。只有用户明确要求“上线 / 发布 / 部署到生产”时，才允许执行：
+不部署。脚本使用已登记的
+`/Users/fujunhao/laoshirenai/local/release-worktree`，不会被 canonical
+checkout 中无关的本地修改阻塞。只有用户明确要求“上线 / 发布 / 部署到生产”
+时，才允许执行：
 
 ```bash
-/Users/fujunhao/.agents/skills/laoshirenai-deploy/scripts/release-after-push.sh --deploy --confirm-production-deploy
+/Users/fujunhao/laoshirenai/.agents/skills/laoshirenai-deploy/scripts/release-after-push.sh --deploy --confirm-production-deploy
 ```
 
 维护发布还必须遵循 `docs/ops/maintenance-window-runbook.md` 的路由、停写、
 备份、内部 readiness 和回滚顺序；部署 Skill 不是停机编排器。
+
+并行 Runner、tested-tree fast path、release-only checkout、健康检查与失败
+fallback 的完整设计见 `docs/ops/FAST_RELEASE.md`。
 
 生产服务手动更新只允许使用已验证的精确 digest：
 

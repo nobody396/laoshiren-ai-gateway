@@ -5,10 +5,12 @@ package web
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
 	"github.com/gin-gonic/gin"
@@ -145,6 +147,21 @@ type mockSettingsProvider struct {
 	settings any
 	err      error
 	called   int
+}
+
+type mockChangelogPageResolver struct {
+	pages map[string]*ChangelogPage
+	err   error
+}
+
+func (m *mockChangelogPageResolver) ResolvePublishedChangelogPage(
+	_ context.Context,
+	slug string,
+) (*ChangelogPage, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return m.pages[slug], nil
 }
 
 func (m *mockSettingsProvider) GetPublicSettingsForInjection(ctx context.Context) (any, error) {
@@ -563,6 +580,84 @@ func TestFrontendServer_Middleware(t *testing.T) {
 		assert.Contains(t, body, "页面未找到")
 	})
 
+	t.Run("serves_published_changelog_detail_with_200_and_metadata", func(t *testing.T) {
+		provider := &mockSettingsProvider{
+			settings: map[string]string{"test": "value"},
+		}
+		publishedAt := time.Date(2026, 7, 27, 2, 15, 17, 0, time.UTC)
+		resolver := &mockChangelogPageResolver{pages: map[string]*ChangelogPage{
+			"visual-refresh": {
+				Slug:        "visual-refresh",
+				Title:       "全站视觉体验焕新",
+				Summary:     "首页与控制台使用一致的视觉语言。",
+				PublishedAt: &publishedAt,
+				UpdatedAt:   publishedAt,
+			},
+		}}
+
+		server, err := NewFrontendServer(provider, resolver)
+		require.NoError(t, err)
+
+		router := gin.New()
+		router.Use(func(c *gin.Context) {
+			c.Set(middleware.CSPNonceKey, "test-nonce")
+			c.Next()
+		})
+		router.Use(server.Middleware())
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/changelog/visual-refresh", nil)
+		router.ServeHTTP(w, req)
+
+		body := w.Body.String()
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, body, "<title>全站视觉体验焕新 - 更新日志 - 老实人AI</title>")
+		assert.Contains(t, body, `href="https://laoshirenai.com/changelog/visual-refresh"`)
+		assert.Contains(t, body, `property="og:type" content="article"`)
+		assert.Contains(t, body, `"@type":"Article"`)
+		assert.Contains(t, body, `<h1>全站视觉体验焕新</h1>`)
+		assert.NotContains(t, body, "noindex,nofollow")
+	})
+
+	t.Run("serves_404_for_missing_changelog_detail", func(t *testing.T) {
+		provider := &mockSettingsProvider{
+			settings: map[string]string{"test": "value"},
+		}
+		server, err := NewFrontendServer(provider, &mockChangelogPageResolver{
+			pages: map[string]*ChangelogPage{},
+		})
+		require.NoError(t, err)
+
+		router := gin.New()
+		router.Use(server.Middleware())
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/changelog/not-published", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Contains(t, w.Body.String(), `<meta name="robots" content="noindex,nofollow"`)
+	})
+
+	t.Run("serves_503_when_changelog_resolution_fails", func(t *testing.T) {
+		provider := &mockSettingsProvider{
+			settings: map[string]string{"test": "value"},
+		}
+		server, err := NewFrontendServer(provider, &mockChangelogPageResolver{
+			err: errors.New("database unavailable"),
+		})
+		require.NoError(t, err)
+
+		router := gin.New()
+		router.Use(server.Middleware())
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/changelog/visual-refresh", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	})
+
 	t.Run("serves_static_files", func(t *testing.T) {
 		provider := &mockSettingsProvider{
 			settings: map[string]string{"test": "value"},
@@ -614,6 +709,28 @@ func TestFrontendServer_Middleware(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestChangelogSlugFromPath(t *testing.T) {
+	tests := []struct {
+		path string
+		slug string
+		ok   bool
+	}{
+		{path: "/changelog/visual-refresh", slug: "visual-refresh", ok: true},
+		{path: "/changelog/visual-refresh/", slug: "visual-refresh", ok: true},
+		{path: "/changelog", ok: false},
+		{path: "/changelog/", ok: false},
+		{path: "/changelog/nested/value", ok: false},
+		{path: "/docs/visual-refresh", ok: false},
+	}
+	for _, test := range tests {
+		t.Run(test.path, func(t *testing.T) {
+			slug, ok := changelogSlugFromPath(test.path)
+			assert.Equal(t, test.ok, ok)
+			assert.Equal(t, test.slug, slug)
+		})
+	}
 }
 
 func TestNewFrontendServer(t *testing.T) {

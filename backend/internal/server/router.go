@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"log"
 	"sync/atomic"
 	"time"
@@ -19,6 +20,30 @@ import (
 
 const frameSrcRefreshTimeout = 5 * time.Second
 
+type changelogPageResolver struct {
+	service *service.ChangelogService
+}
+
+func (r changelogPageResolver) ResolvePublishedChangelogPage(
+	ctx context.Context,
+	slug string,
+) (*web.ChangelogPage, error) {
+	entry, err := r.service.GetPublishedBySlug(ctx, slug)
+	if errors.Is(err, service.ErrChangelogNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &web.ChangelogPage{
+		Slug:        entry.Slug,
+		Title:       entry.Title,
+		Summary:     entry.Summary,
+		PublishedAt: entry.PublishedAt,
+		UpdatedAt:   entry.UpdatedAt,
+	}, nil
+}
+
 // SetupRouter 配置路由器中间件和路由
 func SetupRouter(
 	r *gin.Engine,
@@ -30,6 +55,7 @@ func SetupRouter(
 	subscriptionService *service.SubscriptionService,
 	opsService *service.OpsService,
 	settingService *service.SettingService,
+	changelogService *service.ChangelogService,
 	cfg *config.Config,
 	redisClient *redis.Client,
 	rbacService *service.RBACService,
@@ -71,7 +97,10 @@ func SetupRouter(
 
 	// Serve embedded frontend with settings injection if available
 	if web.HasEmbeddedFrontend() {
-		frontendServer, err := web.NewFrontendServer(settingService)
+		frontendServer, err := web.NewFrontendServer(
+			settingService,
+			changelogPageResolver{service: changelogService},
+		)
 		if err != nil {
 			log.Printf("Warning: Failed to create frontend server with settings injection: %v, using legacy mode", err)
 			r.Use(web.ServeEmbeddedFrontend())

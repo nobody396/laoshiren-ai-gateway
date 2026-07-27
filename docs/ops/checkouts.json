@@ -8,6 +8,13 @@
       "allowed_actions": ["develop", "test", "release"]
     },
     {
+      "path": "/Users/fujunhao/laoshirenai/local/release-worktree",
+      "owner": "production-release-controller",
+      "kind": "release-only",
+      "allowed_actions": ["release"],
+      "ttl": null
+    },
+    {
       "path": "/Users/fujunhao/laoshirenai/code/laoshirenai-Sub2API-monthly-only",
       "owner": "monthly-card-automation",
       "kind": "report-only",
@@ -34,6 +41,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-07-29T23:59:59-04:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/release-pipeline-v2",
+      "owner": "codex-release-optimization-20260727",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-07-30T23:59:59-04:00"
     }
   ]
 }

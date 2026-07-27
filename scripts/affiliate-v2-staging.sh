@@ -266,6 +266,10 @@ case "$command" in
     wait_ready
     run_authenticated_smoke
     ;;
+  seed-demo)
+    require_checkout
+    "$EXPECTED_WORKTREE/scripts/affiliate-v2-demo-data.sh"
+    ;;
   logs)
     require_checkout
     load_secrets
@@ -299,6 +303,7 @@ Commands:
   up            Build current worktree and start isolated staging
   status        Show isolated staging containers
   smoke         Run health plus authenticated Affiliate V2 API checks
+  seed-demo     Seed isolated staging with demo Affiliate V2 users and queues
   logs          Show application logs
   down          Stop staging without deleting data
   reset --confirm-staging-data-reset

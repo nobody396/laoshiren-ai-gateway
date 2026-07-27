@@ -360,6 +360,7 @@ const paymentProfile = ref<AgentPaymentProfile | null>(null)
 const paymentQRPreview = ref('')
 const communityQRPreview = ref('')
 const showCreateLink = ref(false)
+const activationConfirmed = ref(false)
 const newLink = reactive({ name: '', channel: '', rate: 5 })
 const withdrawAmount = ref<number | null>(null)
 const convertAmount = ref<number | null>(null)
@@ -371,7 +372,7 @@ const paymentForm = reactive({
 })
 
 const ordinaryInviteURL = computed(() => inviteCode.value ? `${window.location.origin}/register?ref=${inviteCode.value}` : '')
-const isActiveAgent = computed(() => authStore.user?.role === 'agent')
+const isActiveAgent = computed(() => authStore.user?.role === 'agent' || activationConfirmed.value)
 const defaultAgentLink = computed(() => links.value.find(item => item.is_default && item.status === 'active'))
 const primaryInviteURL = computed(() =>
   isActiveAgent.value && defaultAgentLink.value
@@ -488,6 +489,7 @@ async function activateAgent() {
   try {
     const result = await activateAffiliateAgent()
     qualification.value = result.qualification
+    activationConfirmed.value = true
     await authStore.refreshUser()
     await loadAgentData()
     appStore.showSuccess('合伙人已开通，默认动态链接已经生成')

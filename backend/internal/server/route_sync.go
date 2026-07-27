@@ -54,7 +54,7 @@ var scannerGroupMap = map[string]string{
 	"changelog":            "更新日志管理",
 	"feedbacks":            "反馈管理", // 菜单 id=42
 	"finance-transactions": "财务记账", // 菜单 route=/admin/finance-transactions
-	"proxies":              "代理管理", // 菜单 id=51
+	"proxies":              "代理节点", // 菜单 id=51
 	"usage":                "使用记录", // 菜单 id=52
 	"ops":                  "运维监控", // 菜单 id=53
 	"settings":             "系统设置", // 菜单 id=54

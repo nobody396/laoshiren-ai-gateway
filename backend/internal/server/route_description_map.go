@@ -172,7 +172,7 @@ var scannerDescMap = map[string]string{
 	"POST /admin/antigravity/oauth/exchange-code": "交换 Antigravity 授权码",
 	"POST /admin/antigravity/oauth/refresh-token": "刷新 Antigravity 令牌",
 
-	// ==================== 代理管理 (proxies) ====================
+	// ==================== 代理节点 (proxies) ====================
 	"GET /admin/proxies":                    "分页查询代理列表",
 	"GET /admin/proxies/all":                "获取全部代理",
 	"GET /admin/proxies/data":               "导出代理数据",

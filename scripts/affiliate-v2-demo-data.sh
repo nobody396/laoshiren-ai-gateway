@@ -651,7 +651,7 @@ BEGIN
     source_type, source_id, idempotency_key, metadata, occurred_at
   )
   VALUES (
-    alpha_id, 'earned', 200000000, 'posted',
+    alpha_id, 'earned', 220000000, 'posted',
     'staging_demo_adjustment', NULL, 'demo:cash:alpha:e2e-withdrawable-topup',
     '{"staging_demo":true,"purpose":"e2e_withdrawal_coverage"}'::jsonb,
     NOW() - INTERVAL '2 hours'

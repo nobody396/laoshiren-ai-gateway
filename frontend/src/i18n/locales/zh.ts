@@ -429,7 +429,7 @@ export default {
     suppliers: '供应商考察',
     subscriptions: '订阅管理',
     accounts: '账号管理',
-    proxies: 'IP管理',
+    proxies: '代理节点',
     redeemCodes: '兑换码',
     billing: '账单管理',
     ops: '运维监控',
@@ -3680,8 +3680,8 @@ export default {
 
     // Proxies Management
     proxies: {
-      title: 'IP管理',
-      description: '管理代理服务器配置',
+      title: '代理节点',
+      description: '管理上游代理节点配置',
       createProxy: '添加代理',
       editProxy: '编辑代理',
       deleteProxy: '删除代理',

@@ -429,7 +429,7 @@ export default {
     suppliers: 'Suppliers',
     subscriptions: 'Subscriptions',
     accounts: 'Accounts',
-    proxies: 'Proxies',
+    proxies: 'Proxy Nodes',
     redeemCodes: 'Redeem Codes',
     billing: 'Billing',
     ops: 'Ops',
@@ -3587,8 +3587,8 @@ export default {
 
     // Proxies
     proxies: {
-      title: 'Proxy Management',
-      description: 'Manage proxy servers for accounts',
+      title: 'Proxy Nodes',
+      description: 'Manage upstream proxy nodes for accounts',
       createProxy: 'Create Proxy',
       editProxy: 'Edit Proxy',
       deleteProxy: 'Delete Proxy',

@@ -372,7 +372,7 @@ const paymentForm = reactive({
 })
 
 const ordinaryInviteURL = computed(() => inviteCode.value ? `${window.location.origin}/register?ref=${inviteCode.value}` : '')
-const isActiveAgent = computed(() => authStore.user?.role === 'agent' || activationConfirmed.value)
+const isActiveAgent = computed(() => qualification.value?.agent_status === 'active' || activationConfirmed.value)
 const defaultAgentLink = computed(() => links.value.find(item => item.is_default && item.status === 'active'))
 const primaryInviteURL = computed(() =>
   isActiveAgent.value && defaultAgentLink.value
@@ -472,7 +472,7 @@ async function loadPage() {
     const [invite, currentQualification] = await Promise.all([getMyInviteCode(), getAffiliateQualification()])
     inviteCode.value = invite.invite_code
     qualification.value = currentQualification
-    if (currentQualification.agent_status === 'active' || authStore.user?.role === 'agent') await loadAgentData()
+    if (currentQualification.agent_status === 'active' || activationConfirmed.value) await loadAgentData()
   } catch (cause: unknown) {
     error.value = buildAuthErrorMessage(cause, { fallback: '联盟计划加载失败，请稍后重试。' })
   } finally {

@@ -118,6 +118,42 @@ WHERE description = '[fresh-install compatibility template] Disabled source for 
   AND status <> 'disabled'
 `).Scan(&unsafeFreshCompatibilityGroups))
 	require.Zero(t, unsafeFreshCompatibilityGroups, "fresh-install compatibility groups must remain disabled")
+
+	// migration 149: Affiliate V2 is additive, fixed-point, and disabled by default.
+	for _, table := range []string{
+		"affiliate_program_settings",
+		"agent_principals",
+		"affiliate_links",
+		"affiliate_link_rate_versions",
+		"affiliate_bindings",
+		"affiliate_reward_entries",
+		"affiliate_performance_events",
+		"affiliate_qualification_states",
+		"agent_cash_commission_entries",
+	} {
+		var regclass sql.NullString
+		require.NoError(t, tx.QueryRowContext(
+			context.Background(),
+			"SELECT to_regclass('public.' || $1)",
+			table,
+		).Scan(&regclass))
+		require.True(t, regclass.Valid, "expected %s table to exist", table)
+	}
+	requireColumn(t, tx, "affiliate_program_settings", "withdrawal_min_micros", "bigint", 0, false)
+	requireColumn(t, tx, "affiliate_reward_entries", "amount_micros", "bigint", 0, false)
+	requireColumn(t, tx, "agent_cash_commission_entries", "amount_micros", "bigint", 0, false)
+
+	var affiliateMode, affiliateVersion string
+	var agentPoolRateBPS, marginFloorBPS int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT mode, program_version, agent_pool_rate_bps, margin_floor_bps
+FROM affiliate_program_settings
+WHERE id = 1
+`).Scan(&affiliateMode, &affiliateVersion, &agentPoolRateBPS, &marginFloorBPS))
+	require.Equal(t, "off", affiliateMode)
+	require.Equal(t, "v2", affiliateVersion)
+	require.Equal(t, 1000, agentPoolRateBPS)
+	require.Equal(t, 3500, marginFloorBPS)
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

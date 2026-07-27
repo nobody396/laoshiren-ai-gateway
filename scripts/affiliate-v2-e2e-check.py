@@ -108,7 +108,7 @@ def main():
     rated = req('/agent/affiliate/links/%s/rate' % created['id'], method='PUT', token=candidate_token, payload={'customer_rebate_rate_bps': 700})
     assert rated['customer_rebate_rate_bps'] == 700 and rated['agent_commission_rate_bps'] == 300, rated
     disabled = req('/agent/affiliate/links/%s/status' % created['id'], method='PUT', token=candidate_token, payload={'status': 'paused'})
-    assert disabled['status'] == 'disabled', disabled
+    assert disabled['status'] == 'paused', disabled
     enabled = req('/agent/affiliate/links/%s/status' % created['id'], method='PUT', token=candidate_token, payload={'status': 'active'})
     assert enabled['status'] == 'active', enabled
     ok('dynamic link lifecycle', 'link=%s rate=7/3 toggled' % created['code'])

@@ -74,15 +74,15 @@ PY
   docker exec "$APP_CONTAINER" mkdir -p \
     /app/data/uploads/agent-payment-qrcodes \
     /app/data/uploads/affiliate-community
-  docker cp "$tmp_png" "$APP_CONTAINER:/app/data/uploads/agent-payment-qrcodes/demo-alpha.png"
-  docker cp "$tmp_png" "$APP_CONTAINER:/app/data/uploads/agent-payment-qrcodes/demo-review.png"
-  docker cp "$tmp_png" "$APP_CONTAINER:/app/data/uploads/agent-payment-qrcodes/demo-blocked.png"
-  docker cp "$tmp_png" "$APP_CONTAINER:/app/data/uploads/affiliate-community/demo-community.png"
+  docker cp "$tmp_png" "$APP_CONTAINER:/app/data/uploads/agent-payment-qrcodes/partner-alpha.png"
+  docker cp "$tmp_png" "$APP_CONTAINER:/app/data/uploads/agent-payment-qrcodes/partner-review.png"
+  docker cp "$tmp_png" "$APP_CONTAINER:/app/data/uploads/agent-payment-qrcodes/partner-blocked.png"
+  docker cp "$tmp_png" "$APP_CONTAINER:/app/data/uploads/affiliate-community/community.png"
   docker exec --user 0 "$APP_CONTAINER" chmod 644 \
-    /app/data/uploads/agent-payment-qrcodes/demo-alpha.png \
-    /app/data/uploads/agent-payment-qrcodes/demo-review.png \
-    /app/data/uploads/agent-payment-qrcodes/demo-blocked.png \
-    /app/data/uploads/affiliate-community/demo-community.png
+    /app/data/uploads/agent-payment-qrcodes/partner-alpha.png \
+    /app/data/uploads/agent-payment-qrcodes/partner-review.png \
+    /app/data/uploads/agent-payment-qrcodes/partner-blocked.png \
+    /app/data/uploads/affiliate-community/community.png
 }
 
 seed_database() {
@@ -121,17 +121,23 @@ DECLARE
   customer_bps integer;
   agent_bps integer;
   customer_email text;
+  legacy_email text;
   demo_order_no text;
   usage_id bigint;
 BEGIN
   SELECT id INTO admin_id
   FROM users
-  WHERE email = 'affiliate-staging@local.invalid'
+  WHERE email IN ('ops-admin@partner.local', 'affiliate-staging@local.invalid')
     AND deleted_at IS NULL
+  ORDER BY CASE WHEN email = 'ops-admin@partner.local' THEN 0 ELSE 1 END
   LIMIT 1;
   IF admin_id IS NULL THEN
-    RAISE EXCEPTION 'staging admin user is missing';
+    RAISE EXCEPTION 'admin user is missing';
   END IF;
+
+  UPDATE users
+  SET email = 'ops-admin@partner.local', username = '运营管理员', notes = '运营管理账号', updated_at = NOW()
+  WHERE id = admin_id;
 
   UPDATE affiliate_program_settings
   SET mode = 'live',
@@ -143,11 +149,11 @@ BEGIN
 
   UPDATE affiliate_community_settings
   SET enabled = TRUE,
-      title = '合伙人内测社群',
-      message = '这里是 staging 演示数据：成为合伙人后会看到这张加群卡片。实际生产可以替换成飞书群、微信群或运营群二维码。',
-      qr_object_key = 'affiliate-community/demo-community.png',
+      title = '合伙人社群',
+      message = '扫码加入合伙人社群，获取最新物料、运营通知和结算提醒。',
+      qr_object_key = 'affiliate-community/community.png',
       qr_content_type = 'image/png',
-      qr_original_filename = 'demo-community.png',
+      qr_original_filename = 'community.png',
       qr_size = 1200,
       revision = revision + 1,
       updated_by = admin_id,
@@ -163,8 +169,8 @@ BEGIN
     ('GPT Starter 月卡组', '', 0.5000, 'active', 'openai', 'credit', 240, 8, 31, 710, '["openai"]'::jsonb),
     ('GPT Lite 月卡组', '', 0.5000, 'active', 'openai', 'credit', 450, 15, 31, 720, '["openai"]'::jsonb),
     ('GPT Pro 月卡组', '', 0.5000, 'active', 'openai', 'credit', 850, 28, 31, 730, '["openai"]'::jsonb),
-    ('Claude Lite 演示组', '', 2.4000, 'active', 'anthropic', 'credit', 450, 15, 31, 820, '["claude"]'::jsonb),
-    ('Grok Lite 演示组', '', 0.4000, 'active', 'openai', 'credit', 450, 15, 31, 920, '["openai"]'::jsonb)
+    ('Claude Lite 月卡组', '', 2.4000, 'active', 'anthropic', 'credit', 450, 15, 31, 820, '["claude"]'::jsonb),
+    ('Grok Lite 月卡组', '', 0.4000, 'active', 'openai', 'credit', 450, 15, 31, 920, '["openai"]'::jsonb)
   ON CONFLICT (name) WHERE deleted_at IS NULL DO UPDATE SET
     rate_multiplier = EXCLUDED.rate_multiplier,
     status = EXCLUDED.status,
@@ -191,7 +197,7 @@ BEGIN
 
   SELECT id INTO demo_account_id
   FROM accounts
-  WHERE name = 'Demo GPT upstream · staging only'
+  WHERE name = 'GPT 混合上游账号'
     AND deleted_at IS NULL
   ORDER BY id
   LIMIT 1;
@@ -201,22 +207,22 @@ BEGIN
       schedulable, rate_multiplier, notes
     )
     VALUES (
-      'Demo GPT upstream · staging only', 'openai', 'demo',
+      'GPT 混合上游账号', 'openai', 'openai',
       '{}'::jsonb, '{"staging_demo": true}'::jsonb, 20, 10, 'active',
-      TRUE, 0.1850, 'staging demo data only'
+      TRUE, 0.1850, 'GPT 混合成本账号'
     )
     RETURNING id INTO demo_account_id;
   ELSE
     UPDATE accounts
     SET platform = 'openai',
-        type = 'demo',
+        type = 'openai',
         extra = '{"staging_demo": true}'::jsonb,
         concurrency = 20,
         priority = 10,
         status = 'active',
         schedulable = TRUE,
         rate_multiplier = 0.1850,
-        notes = 'staging demo data only',
+        notes = 'GPT 混合成本账号',
         updated_at = NOW()
     WHERE id = demo_account_id;
   END IF;
@@ -226,14 +232,74 @@ BEGIN
   ON CONFLICT (account_id, group_id) DO UPDATE SET
     priority = EXCLUDED.priority;
 
+  UPDATE users u
+  SET email = REPLACE(u.email, '@demo.local', '@partner.local'), updated_at = NOW()
+  WHERE u.email LIKE '%@demo.local'
+    AND u.deleted_at IS NULL
+    AND NOT EXISTS (
+      SELECT 1
+      FROM users existing
+      WHERE existing.email = REPLACE(u.email, '@demo.local', '@partner.local')
+        AND existing.id <> u.id
+        AND existing.deleted_at IS NULL
+    );
+
+  -- Normalize older local seed rows so repeat runs stay production-like instead
+  -- of showing legacy technical names in the UI.
+  UPDATE users duplicate
+  SET deleted_at = COALESCE(duplicate.deleted_at, NOW()),
+      email = duplicate.email || '.archived-' || duplicate.id::text,
+      invite_code = NULL,
+      updated_at = NOW()
+  WHERE duplicate.email = 'partner-upgrade@partner.local'
+    AND duplicate.deleted_at IS NULL
+    AND EXISTS (
+      SELECT 1 FROM users legacy
+      WHERE legacy.email = 'agent-candidate@partner.local'
+        AND legacy.deleted_at IS NULL
+    );
+
+  UPDATE users
+  SET email = 'partner-upgrade@partner.local',
+      invite_code = 'UPGRADE',
+      wechat = 'upgrade-partner',
+      updated_at = NOW()
+  WHERE email = 'agent-candidate@partner.local'
+    AND deleted_at IS NULL;
+
+  FOR i IN 1..10 LOOP
+    legacy_email := 'candidate-customer-' || lpad(i::text, 2, '0') || '@partner.local';
+    customer_email := 'upgrade-customer-' || lpad(i::text, 2, '0') || '@partner.local';
+
+    UPDATE users duplicate
+    SET deleted_at = COALESCE(duplicate.deleted_at, NOW()),
+        email = duplicate.email || '.archived-' || duplicate.id::text,
+        invite_code = NULL,
+        updated_at = NOW()
+    WHERE duplicate.email = customer_email
+      AND duplicate.deleted_at IS NULL
+      AND EXISTS (
+        SELECT 1 FROM users legacy
+        WHERE legacy.email = legacy_email
+          AND legacy.deleted_at IS NULL
+      );
+
+    UPDATE users
+    SET email = customer_email,
+        invite_code = 'UPCUST' || lpad(i::text, 2, '0'),
+        updated_at = NOW()
+    WHERE email = legacy_email
+      AND deleted_at IS NULL;
+  END LOOP;
+
   INSERT INTO users (email, password_hash, role, balance, concurrency, status, username, notes, invite_code, total_recharged, first_recharged, last_active_at, wechat)
   VALUES
-    ('agent-alpha@demo.local', demo_password_hash, 'agent', 0, 8, 'active', 'Alpha 合伙人', 'staging demo active partner', 'AGENTALPHA', 3888, TRUE, NOW() - INTERVAL '1 hour', 'alpha-demo'),
-    ('agent-review@demo.local', demo_password_hash, 'agent', 0, 8, 'active', '待确认合伙人', 'staging demo review partner', 'AGENTREVIEW', 860, TRUE, NOW() - INTERVAL '2 hours', 'review-demo'),
-    ('agent-blocked@demo.local', demo_password_hash, 'agent', 0, 8, 'active', '已暂停合伙人', 'staging demo paused partner', 'AGENTBLOCK', 640, TRUE, NOW() - INTERVAL '3 hours', 'blocked-demo'),
-    ('agent-candidate@demo.local', demo_password_hash, 'user', 0, 5, 'active', 'Candidate 待升级用户', 'staging demo qualified candidate', 'CANDIDATE', 220, TRUE, NOW() - INTERVAL '4 hours', 'candidate-demo'),
-    ('ordinary-referrer@demo.local', demo_password_hash, 'user', 0, 5, 'active', '普通邀请人', 'staging demo ordinary referrer', 'ORDREF', 160, TRUE, NOW() - INTERVAL '5 hours', 'ordinary-demo'),
-    ('ordinary-invitee@demo.local', demo_password_hash, 'user', 0, 5, 'active', '普通被邀请人', 'staging demo ordinary invitee', 'ORDINVITEE', 80, TRUE, NOW() - INTERVAL '6 hours', 'invitee-demo')
+    ('agent-alpha@partner.local', demo_password_hash, 'agent', 0, 8, 'active', 'Alpha 合伙人', '合伙人账号', 'AGENTALPHA', 3888, TRUE, NOW() - INTERVAL '1 hour', 'alpha-partner'),
+    ('agent-review@partner.local', demo_password_hash, 'agent', 0, 8, 'active', '待确认合伙人', '待确认合伙人账号', 'AGENTREVIEW', 860, TRUE, NOW() - INTERVAL '2 hours', 'review-partner'),
+    ('agent-blocked@partner.local', demo_password_hash, 'agent', 0, 8, 'active', '已暂停合伙人', '已暂停合伙人账号', 'AGENTBLOCK', 640, TRUE, NOW() - INTERVAL '3 hours', 'blocked-partner'),
+    ('partner-upgrade@partner.local', demo_password_hash, 'user', 0, 5, 'active', '待升级用户', '已满足合伙人开通条件', 'UPGRADE', 220, TRUE, NOW() - INTERVAL '4 hours', 'upgrade-partner'),
+    ('ordinary-referrer@partner.local', demo_password_hash, 'user', 0, 5, 'active', '普通邀请人', '普通邀请账号', 'ORDREF', 160, TRUE, NOW() - INTERVAL '5 hours', 'ordinary-partner'),
+    ('ordinary-invitee@partner.local', demo_password_hash, 'user', 0, 5, 'active', '普通被邀请人', '普通被邀请账号', 'ORDINVITEE', 80, TRUE, NOW() - INTERVAL '6 hours', 'invitee-partner')
   ON CONFLICT (email) WHERE deleted_at IS NULL DO UPDATE SET
     password_hash = EXCLUDED.password_hash,
     role = EXCLUDED.role,
@@ -247,12 +313,12 @@ BEGIN
     wechat = EXCLUDED.wechat,
     updated_at = NOW();
 
-  SELECT id INTO alpha_id FROM users WHERE email = 'agent-alpha@demo.local' AND deleted_at IS NULL;
-  SELECT id INTO review_id FROM users WHERE email = 'agent-review@demo.local' AND deleted_at IS NULL;
-  SELECT id INTO blocked_id FROM users WHERE email = 'agent-blocked@demo.local' AND deleted_at IS NULL;
-  SELECT id INTO candidate_id FROM users WHERE email = 'agent-candidate@demo.local' AND deleted_at IS NULL;
-  SELECT id INTO ordinary_id FROM users WHERE email = 'ordinary-referrer@demo.local' AND deleted_at IS NULL;
-  SELECT id INTO invitee_id FROM users WHERE email = 'ordinary-invitee@demo.local' AND deleted_at IS NULL;
+  SELECT id INTO alpha_id FROM users WHERE email = 'agent-alpha@partner.local' AND deleted_at IS NULL;
+  SELECT id INTO review_id FROM users WHERE email = 'agent-review@partner.local' AND deleted_at IS NULL;
+  SELECT id INTO blocked_id FROM users WHERE email = 'agent-blocked@partner.local' AND deleted_at IS NULL;
+  SELECT id INTO candidate_id FROM users WHERE email = 'partner-upgrade@partner.local' AND deleted_at IS NULL;
+  SELECT id INTO ordinary_id FROM users WHERE email = 'ordinary-referrer@partner.local' AND deleted_at IS NULL;
+  SELECT id INTO invitee_id FROM users WHERE email = 'ordinary-invitee@partner.local' AND deleted_at IS NULL;
 
   -- Keep repeated API/UI E2E runs deterministic. The E2E script intentionally
   -- creates random idempotency keys, so a re-seed must remove only those
@@ -263,7 +329,7 @@ BEGIN
     SELECT id
     FROM agent_withdrawal_requests
     WHERE agent_id = alpha_id
-      AND idempotency_key LIKE 'e2e-withdraw-%'
+      AND (idempotency_key LIKE 'e2e-withdraw-%' OR idempotency_key LIKE 'affiliate-withdraw-%')
   );
   DELETE FROM agent_withdrawal_events
   WHERE withdrawal_id IN (
@@ -282,7 +348,7 @@ BEGIN
           SELECT id
           FROM agent_withdrawal_requests
           WHERE agent_id = alpha_id
-            AND idempotency_key LIKE 'e2e-withdraw-%'
+            AND (idempotency_key LIKE 'e2e-withdraw-%' OR idempotency_key LIKE 'affiliate-withdraw-%')
         )
       )
       OR (
@@ -320,9 +386,31 @@ BEGIN
       idempotency_key LIKE 'e2e-convert-%'
       OR idempotency_key LIKE 'affiliate-convert-%'
     );
+  DELETE FROM agent_withdrawal_events
+  WHERE withdrawal_id IN (
+    SELECT id
+    FROM agent_withdrawal_requests
+    WHERE agent_id = alpha_id
+      AND (idempotency_key LIKE 'e2e-withdraw-%' OR idempotency_key LIKE 'affiliate-withdraw-%')
+  );
   DELETE FROM agent_withdrawal_requests
   WHERE agent_id = alpha_id
-    AND idempotency_key LIKE 'e2e-withdraw-%';
+    AND (idempotency_key LIKE 'e2e-withdraw-%' OR idempotency_key LIKE 'affiliate-withdraw-%');
+
+  DELETE FROM affiliate_link_rate_versions
+  WHERE link_id IN (
+    SELECT id
+    FROM affiliate_links
+    WHERE agent_id = alpha_id
+      AND code NOT IN ('AGALPHA5', 'AGALPHA0', 'AGALPHA8', 'AGALPHAPAUSE')
+  );
+  DELETE FROM affiliate_links
+  WHERE agent_id = alpha_id
+    AND code NOT IN ('AGALPHA5', 'AGALPHA0', 'AGALPHA8', 'AGALPHAPAUSE');
+
+  DELETE FROM affiliate_agent_notices
+  WHERE agent_id IN (alpha_id, review_id, blocked_id)
+    AND idempotency_key LIKE 'withdrawal:%:paid-notice';
 
   -- Keep the qualified candidate reusable across repeated E2E runs. If a
   -- previous staging test clicked "立即成为合伙人", reset only this demo
@@ -331,7 +419,7 @@ BEGIN
   UPDATE agent_withdrawal_requests
   SET status = 'failed',
       failed_at = NOW(),
-      failure_reason = 'staging demo candidate reset',
+      failure_reason = '数据重置',
       updated_at = NOW()
   WHERE agent_id = candidate_id
     AND status = 'processing';
@@ -371,16 +459,25 @@ BEGIN
   UPDATE agent_withdrawal_requests
   SET status = 'failed',
       failed_at = NOW(),
-      failure_reason = 'staging demo refresh',
+      failure_reason = '数据刷新',
       updated_at = NOW()
-  WHERE idempotency_key IN ('demo:withdrawal:alpha:processing', 'demo:withdrawal:review:processing')
+  WHERE idempotency_key IN ('demo:withdrawal:alpha:processing', 'demo:withdrawal:review:processing', 'demo:withdrawal:blocked:processing')
     AND status = 'processing';
+
+  UPDATE affiliate_risk_actions
+  SET reason = CASE
+      WHEN reason LIKE '%异常订单%' THEN '异常订单待确认'
+      WHEN reason LIKE '%自循环%' OR reason LIKE '%小号%' OR reason LIKE '%互刷%' THEN '异常邀请行为待处理'
+      ELSE reason
+    END
+  WHERE agent_id IN (review_id, blocked_id)
+    AND (reason LIKE '%staging%' OR reason LIKE '%演示%' OR reason LIKE '%小号%' OR reason LIKE '%互刷%' OR reason LIKE '%自循环%');
 
   INSERT INTO agent_principals (agent_id, status, risk_status, risk_note, qualified_at, activated_at, reviewed_at, reviewed_by)
   VALUES
     (alpha_id, 'active', 'clear', '', NOW() - INTERVAL '10 days', NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days', admin_id),
-    (review_id, 'active', 'review', 'staging 演示：有异常订单，先暂停发放，确认后再恢复。', NOW() - INTERVAL '8 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '1 day', admin_id),
-    (blocked_id, 'active', 'blocked', 'staging 演示：疑似用小号互刷，已暂停邀请和提现。', NOW() - INTERVAL '8 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '1 day', admin_id)
+    (review_id, 'active', 'review', '存在异常订单，先暂停发放，确认后再恢复。', NOW() - INTERVAL '8 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '1 day', admin_id),
+    (blocked_id, 'active', 'blocked', '存在异常邀请行为，已暂停邀请和提现。', NOW() - INTERVAL '8 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '1 day', admin_id)
   ON CONFLICT (agent_id) DO UPDATE SET
     status = EXCLUDED.status,
     risk_status = EXCLUDED.risk_status,
@@ -397,9 +494,9 @@ BEGIN
     identity_fingerprint_hash, verification_status, verification_note, verified_at, verified_by
   )
   VALUES
-    (alpha_id, '张三', 'alpha-pay@example.com', '13800000001', '演示账号，可扫码预览。', 'agent-payment-qrcodes/demo-alpha.png', 'image/png', 'demo-alpha.png', 1200, 'demo-alpha-fingerprint', 'verified', 'staging verified', NOW() - INTERVAL '6 days', admin_id),
-    (review_id, '李四', 'review-pay@example.com', '13800000002', '演示：待审核资料。', 'agent-payment-qrcodes/demo-review.png', 'image/png', 'demo-review.png', 1200, 'demo-review-fingerprint', 'pending_review', '', NULL, NULL),
-    (blocked_id, '王五', 'blocked-pay@example.com', '13800000003', '演示：已暂停合伙人的收款资料。', 'agent-payment-qrcodes/demo-blocked.png', 'image/png', 'demo-blocked.png', 1200, 'demo-blocked-fingerprint', 'verified', 'staging verified', NOW() - INTERVAL '5 days', admin_id)
+    (alpha_id, '张三', 'alpha-pay@example.com', '13800000001', '常用收款账号，可扫码打款。', 'agent-payment-qrcodes/partner-alpha.png', 'image/png', 'partner-alpha.png', 1200, 'partner-alpha-fingerprint', 'verified', '已核对', NOW() - INTERVAL '6 days', admin_id),
+    (review_id, '李四', 'review-pay@example.com', '13800000002', '资料待确认，请核对实名和收款码。', 'agent-payment-qrcodes/partner-review.png', 'image/png', 'partner-review.png', 1200, 'partner-review-fingerprint', 'pending_review', '', NULL, NULL),
+    (blocked_id, '王五', 'blocked-pay@example.com', '13800000003', '当前合作已暂停，收款资料暂不处理。', 'agent-payment-qrcodes/partner-blocked.png', 'image/png', 'partner-blocked.png', 1200, 'partner-blocked-fingerprint', 'verified', '已核对', NOW() - INTERVAL '5 days', admin_id)
   ON CONFLICT (agent_id) DO UPDATE SET
     alipay_real_name = EXCLUDED.alipay_real_name,
     alipay_account = EXCLUDED.alipay_account,
@@ -490,7 +587,7 @@ BEGIN
     effective_at = EXCLUDED.effective_at;
 
   INSERT INTO affiliate_links (agent_id, code, name, channel, is_default, status, current_rate_version)
-  VALUES (blocked_id, 'AGBLOCK5', '暂停演示链接', 'default', TRUE, 'active', 1)
+  VALUES (blocked_id, 'AGBLOCK5', '暂停链接', 'default', TRUE, 'active', 1)
   ON CONFLICT (code) DO UPDATE SET
     name = EXCLUDED.name, channel = EXCLUDED.channel, is_default = EXCLUDED.is_default,
     status = EXCLUDED.status, current_rate_version = EXCLUDED.current_rate_version, updated_at = NOW()
@@ -521,7 +618,7 @@ BEGIN
     metadata = EXCLUDED.metadata;
 
   FOR i IN 1..12 LOOP
-    customer_email := 'alpha-customer-' || lpad(i::text, 2, '0') || '@demo.local';
+    customer_email := 'alpha-customer-' || lpad(i::text, 2, '0') || '@partner.local';
     amount_micros := (550 + i * 55)::bigint * 1000000;
     IF i <= 6 THEN
       selected_link_id := alpha_default_link_id;
@@ -540,7 +637,7 @@ BEGIN
     INSERT INTO users (email, password_hash, role, balance, concurrency, status, username, notes, invite_code, inviter_id, agent_id, total_recharged, first_recharged, first_invited_topup_at, last_active_at, wechat)
     VALUES (
       customer_email, demo_password_hash, 'user', 0, 5, 'active',
-      'Alpha 客户 ' || lpad(i::text, 2, '0'), 'staging demo alpha customer',
+      'Alpha 客户 ' || lpad(i::text, 2, '0'), 'Alpha 直属客户',
       'ALPHACUST' || lpad(i::text, 2, '0'), alpha_id, alpha_id,
       (amount_micros::numeric / 1000000), TRUE, NOW() - (i || ' days')::interval, NOW() - (i || ' hours')::interval, ''
     )
@@ -575,7 +672,7 @@ BEGIN
       agent_commission_rate_snapshot_bps = EXCLUDED.agent_commission_rate_snapshot_bps,
       updated_at = NOW();
 
-    demo_order_no := 'DEMO-TOPUP-ALPHA-' || lpad(i::text, 2, '0');
+    demo_order_no := 'TOPUP-ALPHA-' || lpad(i::text, 2, '0');
     INSERT INTO topup_orders (order_no, user_id, amount_cny_fen, pay_type, status, completed_at, invoice_status)
     VALUES (demo_order_no, customer_id, (amount_micros / 10000)::integer, 'alipay', 'completed', NOW() - (i || ' days')::interval, 'none')
     ON CONFLICT (order_no) DO UPDATE SET
@@ -677,7 +774,7 @@ BEGIN
     END IF;
 
     INSERT INTO api_keys (user_id, key, name, group_id, status, quota, quota_used, last_used_at)
-    VALUES (customer_id, 'sk-demo-alpha-' || lpad(i::text, 2, '0'), 'Demo Alpha Key ' || lpad(i::text, 2, '0'), demo_group_id, 'active', 0, amount_micros::numeric / 1000000, NOW() - (i || ' hours')::interval)
+    VALUES (customer_id, 'sk-alpha-' || lpad(i::text, 2, '0'), 'Alpha Key ' || lpad(i::text, 2, '0'), demo_group_id, 'active', 0, amount_micros::numeric / 1000000, NOW() - (i || ' hours')::interval)
     ON CONFLICT (key) DO UPDATE SET
       user_id = EXCLUDED.user_id,
       name = EXCLUDED.name,
@@ -714,7 +811,7 @@ BEGIN
     RETURNING id INTO usage_id;
   END LOOP;
 
-  -- E2E 可提现余额补足：Alpha 演示账号需要在“佣金转额度”之后仍能发起一笔真实提现，
+  -- E2E 可提现余额补足：Alpha 账号需要在“佣金转额度”之后仍能发起一笔真实提现，
   -- 否则提现申请 -> 后台扫码打款 -> 标记到账这条链路只能被脚本跳过。
   INSERT INTO agent_cash_commission_entries (
     agent_id, entry_type, amount_micros, posting_status,
@@ -736,13 +833,13 @@ BEGIN
     occurred_at = EXCLUDED.occurred_at;
 
   FOR i IN 1..10 LOOP
-    customer_email := 'candidate-customer-' || lpad(i::text, 2, '0') || '@demo.local';
+    customer_email := 'upgrade-customer-' || lpad(i::text, 2, '0') || '@partner.local';
     amount_micros := 120000000;
     INSERT INTO users (email, password_hash, role, balance, concurrency, status, username, notes, invite_code, inviter_id, total_recharged, first_recharged, first_invited_topup_at, last_active_at, wechat)
     VALUES (
       customer_email, demo_password_hash, 'user', 0, 5, 'active',
-      'Candidate 客户 ' || lpad(i::text, 2, '0'), 'staging demo candidate customer',
-      'CANDCUST' || lpad(i::text, 2, '0'), candidate_id,
+      '待升级用户客户 ' || lpad(i::text, 2, '0'), '待升级用户直属客户',
+      'UPCUST' || lpad(i::text, 2, '0'), candidate_id,
       120, TRUE, NOW() - (i || ' days')::interval, NOW() - (i || ' hours')::interval, ''
     )
     ON CONFLICT (email) WHERE deleted_at IS NULL DO UPDATE SET
@@ -816,7 +913,7 @@ BEGIN
   WHERE id = invitee_id;
 
   INSERT INTO topup_orders (order_no, user_id, amount_cny_fen, pay_type, status, completed_at, invoice_status)
-  VALUES ('DEMO-TOPUP-ORDINARY-80', invitee_id, 8000, 'alipay', 'completed', NOW() - INTERVAL '2 days', 'none')
+  VALUES ('TOPUP-ORDINARY-80', invitee_id, 8000, 'alipay', 'completed', NOW() - INTERVAL '2 days', 'none')
   ON CONFLICT (order_no) DO UPDATE SET
     user_id = EXCLUDED.user_id,
     amount_cny_fen = EXCLUDED.amount_cny_fen,
@@ -882,15 +979,15 @@ BEGIN
     available_at = EXCLUDED.available_at,
     source_id = EXCLUDED.source_id;
 
-  -- 暂缓发放演示：review / blocked 各一条消费事件、客户额度暂缓发放、现金暂缓发放。
+  -- 暂缓发放：review / blocked 各一条消费事件、客户额度暂缓发放、现金暂缓发放。
   FOR i IN 1..2 LOOP
     IF i = 1 THEN
-      customer_email := 'review-customer-01@demo.local';
+      customer_email := 'review-customer-01@partner.local';
       selected_link_id := review_default_link_id;
       amount_micros := 400000000;
       customer_id := NULL;
       INSERT INTO users (email, password_hash, role, balance, concurrency, status, username, notes, invite_code, inviter_id, agent_id, total_recharged, first_recharged, wechat)
-      VALUES (customer_email, demo_password_hash, 'user', 0, 5, 'active', '待确认客户', 'staging demo review customer', 'REVCUST01', review_id, review_id, 400, TRUE, '')
+      VALUES (customer_email, demo_password_hash, 'user', 0, 5, 'active', '待确认客户', '待确认合伙人直属客户', 'REVCUST01', review_id, review_id, 400, TRUE, '')
       ON CONFLICT (email) WHERE deleted_at IS NULL DO UPDATE SET
         inviter_id = EXCLUDED.inviter_id, agent_id = EXCLUDED.agent_id, username = EXCLUDED.username, updated_at = NOW()
       RETURNING id INTO customer_id;
@@ -910,12 +1007,12 @@ BEGIN
       VALUES (review_id, customer_id, 'earned', 20000000, amount_micros, 500, 500, 'risk_hold', 'confirmed_consumption', event_id, 'demo:cash:review-hold', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '2 days')
       ON CONFLICT (idempotency_key) DO UPDATE SET agent_id = EXCLUDED.agent_id, consumer_user_id = EXCLUDED.consumer_user_id, amount_micros = EXCLUDED.amount_micros, source_amount_micros = EXCLUDED.source_amount_micros, posting_status = EXCLUDED.posting_status, source_id = EXCLUDED.source_id, occurred_at = EXCLUDED.occurred_at;
     ELSE
-      customer_email := 'blocked-customer-01@demo.local';
+      customer_email := 'blocked-customer-01@partner.local';
       selected_link_id := blocked_default_link_id;
       amount_micros := 300000000;
       customer_id := NULL;
       INSERT INTO users (email, password_hash, role, balance, concurrency, status, username, notes, invite_code, inviter_id, agent_id, total_recharged, first_recharged, wechat)
-      VALUES (customer_email, demo_password_hash, 'user', 0, 5, 'active', '暂停演示客户', 'staging demo paused customer', 'BLKCUST01', blocked_id, blocked_id, 300, TRUE, '')
+      VALUES (customer_email, demo_password_hash, 'user', 0, 5, 'active', '暂停客户', '已暂停合伙人直属客户', 'BLKCUST01', blocked_id, blocked_id, 300, TRUE, '')
       ON CONFLICT (email) WHERE deleted_at IS NULL DO UPDATE SET
         inviter_id = EXCLUDED.inviter_id, agent_id = EXCLUDED.agent_id, username = EXCLUDED.username, updated_at = NOW()
       RETURNING id INTO customer_id;
@@ -938,12 +1035,12 @@ BEGIN
   END LOOP;
 
   INSERT INTO affiliate_risk_actions (agent_id, action_type, previous_risk_status, next_risk_status, reason, released_reward_count, released_reward_micros, released_cash_count, released_cash_micros, operator_id, metadata)
-  SELECT review_id, 'review', 'clear', 'review', 'staging 演示：异常订单待确认', 0, 0, 0, 0, admin_id, '{"staging_demo":true}'::jsonb
-  WHERE NOT EXISTS (SELECT 1 FROM affiliate_risk_actions WHERE agent_id = review_id AND next_risk_status = 'review' AND reason = 'staging 演示：异常订单待确认');
+  SELECT review_id, 'review', 'clear', 'review', '异常订单待确认', 0, 0, 0, 0, admin_id, '{"staging_demo":true}'::jsonb
+  WHERE NOT EXISTS (SELECT 1 FROM affiliate_risk_actions WHERE agent_id = review_id AND next_risk_status = 'review' AND reason = '异常订单待确认');
 
   INSERT INTO affiliate_risk_actions (agent_id, action_type, previous_risk_status, next_risk_status, reason, released_reward_count, released_reward_micros, released_cash_count, released_cash_micros, operator_id, metadata)
-  SELECT blocked_id, 'block', 'clear', 'blocked', 'staging 演示：疑似自循环拉新', 0, 0, 0, 0, admin_id, '{"staging_demo":true}'::jsonb
-  WHERE NOT EXISTS (SELECT 1 FROM affiliate_risk_actions WHERE agent_id = blocked_id AND next_risk_status = 'blocked' AND reason = 'staging 演示：疑似自循环拉新');
+  SELECT blocked_id, 'block', 'clear', 'blocked', '异常邀请行为待处理', 0, 0, 0, 0, admin_id, '{"staging_demo":true}'::jsonb
+  WHERE NOT EXISTS (SELECT 1 FROM affiliate_risk_actions WHERE agent_id = blocked_id AND next_risk_status = 'blocked' AND reason = '异常邀请行为待处理');
 
   INSERT INTO agent_commission_conversions (agent_id, cash_amount_micros, credit_amount_micros, multiplier_millis, idempotency_key)
   VALUES (alpha_id, 50000000, 60000000, 1200, 'demo:conversion:alpha:50')
@@ -984,8 +1081,8 @@ BEGIN
   )
   VALUES (
     alpha_id, 120000000, 'processing', 'demo:withdrawal:alpha:processing',
-    '张三', 'alpha-pay@example.com', '13800000001', '演示账号，可扫码预览。',
-    'agent-payment-qrcodes/demo-alpha.png', 'image/png', 'demo-alpha.png',
+    '张三', 'alpha-pay@example.com', '13800000001', '常用收款账号，可扫码打款。',
+    'agent-payment-qrcodes/partner-alpha.png', 'image/png', 'partner-alpha.png',
     NOW() - INTERVAL '6 hours', NOW() + INTERVAL '18 hours', '', ''
   )
   ON CONFLICT (agent_id, idempotency_key) DO UPDATE SET
@@ -1010,7 +1107,7 @@ BEGIN
   VALUES (alpha_id, 'withdrawal_hold', -120000000, 'posted', 'withdrawal', withdrawal_request_id, 'demo:cash:withdrawal-hold:alpha:processing', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '6 hours')
   ON CONFLICT (idempotency_key) DO UPDATE SET amount_micros = EXCLUDED.amount_micros, source_id = EXCLUDED.source_id, occurred_at = EXCLUDED.occurred_at;
   INSERT INTO agent_withdrawal_events (withdrawal_id, agent_id, event_type, previous_status, next_status, operator_id, note, metadata, created_at)
-  SELECT withdrawal_request_id, alpha_id, 'requested', NULL, 'processing', alpha_id, 'staging demo request', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '6 hours'
+  SELECT withdrawal_request_id, alpha_id, 'requested', NULL, 'processing', alpha_id, '用户提交提现申请', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '6 hours'
   WHERE NOT EXISTS (SELECT 1 FROM agent_withdrawal_events WHERE agent_withdrawal_events.withdrawal_id = withdrawal_request_id AND event_type = 'requested');
 
   INSERT INTO agent_withdrawal_requests (
@@ -1021,8 +1118,8 @@ BEGIN
   )
   VALUES (
     alpha_id, 80000000, 'paid', 'demo:withdrawal:alpha:paid',
-    '张三', 'alpha-pay@example.com', '13800000001', '演示账号，可扫码预览。',
-    'agent-payment-qrcodes/demo-alpha.png', 'image/png', 'demo-alpha.png',
+    '张三', 'alpha-pay@example.com', '13800000001', '常用收款账号，可扫码打款。',
+    'agent-payment-qrcodes/partner-alpha.png', 'image/png', 'partner-alpha.png',
     NOW() - INTERVAL '4 days', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days', admin_id, 'ALI-DEMO-PAID-001', ''
   )
   ON CONFLICT (agent_id, idempotency_key) DO UPDATE SET
@@ -1054,9 +1151,9 @@ BEGIN
     requested_at, due_at, payment_reference, failure_reason
   )
   VALUES (
-    review_id, 60000000, 'processing', 'demo:withdrawal:review:processing',
-    '李四', 'review-pay@example.com', '13800000002', '演示：待审核资料。',
-    'agent-payment-qrcodes/demo-review.png', 'image/png', 'demo-review.png',
+    blocked_id, 60000000, 'processing', 'demo:withdrawal:blocked:processing',
+    '王五', 'blocked-pay@example.com', '13800000003', '当前合作已暂停，收款资料暂不处理。',
+    'agent-payment-qrcodes/partner-blocked.png', 'image/png', 'partner-blocked.png',
     NOW() - INTERVAL '12 hours', NOW() + INTERVAL '12 hours', '', ''
   )
   ON CONFLICT (agent_id, idempotency_key) DO UPDATE SET
@@ -1081,8 +1178,8 @@ BEGIN
   INSERT INTO affiliate_agent_notices (agent_id, notice_type, title, message, source_type, source_id, idempotency_key, metadata, created_at)
   VALUES
     (alpha_id, 'community_invite', '欢迎加入合伙人社群', '你的合伙人权限已开通。扫码加入社群，获取素材、话术和结算通知。', 'agent_activation', alpha_id, 'demo:notice:alpha:community', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '6 days'),
-    (alpha_id, 'withdrawal_paid', '一笔提现已到账', '演示：¥80 提现已标记到账，用户侧只看到“已到账”。', 'withdrawal', NULL, 'demo:notice:alpha:paid', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '3 days'),
-    (review_id, 'risk_review', '账户状态待确认', '演示：待确认期间会暂缓发放奖励，并暂停新增链接、提现和转换。', 'risk', NULL, 'demo:notice:review:risk', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '1 day')
+    (alpha_id, 'withdrawal_paid', '一笔提现已到账', '¥80 提现已标记到账。', 'withdrawal', NULL, 'demo:notice:alpha:paid', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '3 days'),
+    (review_id, 'risk_review', '账户状态待确认', '待确认期间会暂缓发放奖励，并暂停新增链接、提现和转换。', 'risk', NULL, 'demo:notice:review:risk', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '1 day')
   ON CONFLICT (idempotency_key) DO UPDATE SET
     title = EXCLUDED.title,
     message = EXCLUDED.message,
@@ -1117,13 +1214,13 @@ BEGIN
       WHERE bl.user_id = u.id
     ), 0),
     updated_at = NOW()
-  WHERE u.email LIKE '%@demo.local'
+  WHERE u.email LIKE '%@partner.local'
     AND u.deleted_at IS NULL;
 END $$;
 
-SELECT 'demo users' AS section, id, email, role, username, balance, invite_code
+SELECT 'sample users' AS section, id, email, role, username, balance, invite_code
 FROM users
-WHERE email LIKE '%@demo.local'
+WHERE email LIKE '%@partner.local'
 ORDER BY id
 LIMIT 20;
 
@@ -1148,8 +1245,8 @@ main() {
   require_containers
   write_demo_qr_assets
   seed_database
-  echo "affiliate v2 staging demo data seeded"
-  echo "demo login password: Demo123456"
+  echo "affiliate v2 sample data seeded"
+  echo "login password: Demo123456"
 }
 
 main "$@"

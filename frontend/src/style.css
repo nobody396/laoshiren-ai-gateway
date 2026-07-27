@@ -547,7 +547,7 @@
   .sidebar-link {
     @apply flex items-center gap-3 rounded-xl px-3 py-2.5;
     @apply text-sm font-medium;
-    @apply text-gray-600 dark:text-dark-300;
+    @apply text-gray-700 dark:text-dark-200;
     @apply transition-all duration-200;
     @apply hover:bg-gray-100 dark:hover:bg-dark-800;
     @apply hover:text-gray-900 dark:hover:text-white;
@@ -555,7 +555,7 @@
 
   .sidebar-link-active {
     @apply bg-primary-50 dark:bg-primary-900/20;
-    @apply text-primary-600 dark:text-primary-400;
+    @apply text-primary-800 dark:text-primary-300;
     @apply hover:bg-primary-100 dark:hover:bg-primary-900/30;
   }
 
@@ -566,7 +566,7 @@
   .sidebar-section-title {
     @apply mb-2 px-3;
     @apply text-xs font-semibold uppercase tracking-wider;
-    @apply text-gray-400 dark:text-dark-500;
+    @apply text-gray-600 dark:text-dark-300;
   }
 
   /* ============ 页面头部 ============ */

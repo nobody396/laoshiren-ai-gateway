@@ -15,14 +15,14 @@
             </p>
           </div>
           <div class="rounded-2xl border border-primary-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-primary-900 dark:bg-dark-900/80">
-            <p class="text-xs text-gray-500 dark:text-dark-400">{{ primaryInviteLabel }}</p>
+            <p class="text-xs text-gray-600 dark:text-dark-300">{{ primaryInviteLabel }}</p>
             <div class="mt-2 flex gap-2">
               <input :value="primaryInviteURL" readonly class="input min-w-0 flex-1 text-sm" :aria-label="primaryInviteLabel">
               <button class="btn btn-primary shrink-0" :disabled="!primaryInviteURL" @click="copyPrimaryInvite">
                 {{ copied ? '已复制' : '复制' }}
               </button>
             </div>
-            <p class="mt-2 text-xs leading-5 text-gray-500 dark:text-dark-400">
+            <p class="mt-2 text-xs leading-5 text-gray-600 dark:text-dark-300">
               {{ primaryInviteHint }}
             </p>
           </div>
@@ -44,7 +44,7 @@
               <div>
                 <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">合伙人资格</p>
                 <h2 class="mt-1 text-xl font-semibold text-gray-950 dark:text-white">合伙人资格进度</h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">仅统计计划启用后的真实消费，永久直属关系不会因升级改变。</p>
+                <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">仅统计计划启用后的真实消费，永久直属关系不会因升级改变。</p>
               </div>
               <span class="rounded-full border px-3 py-1 text-xs font-medium" :class="qualificationBadgeClass">
                 {{ qualificationStatusLabel }}
@@ -56,7 +56,7 @@
             <article class="rounded-2xl border p-5" :class="qualification.direct_route_qualified ? 'border-green-300 bg-green-50 dark:border-green-900 dark:bg-green-950' : 'border-gray-200 dark:border-dark-700'">
               <div class="flex items-center justify-between gap-3">
                 <h3 class="font-semibold text-gray-900 dark:text-white">路线 A · 直属团队</h3>
-                <span class="text-xs font-medium text-gray-500 dark:text-dark-400">{{ qualification.direct_route_qualified ? '已达成' : '进行中' }}</span>
+                <span class="text-xs font-medium text-gray-600 dark:text-dark-300">{{ qualification.direct_route_qualified ? '已达成' : '进行中' }}</span>
               </div>
               <dl class="mt-5 space-y-4">
                 <ProgressRow
@@ -72,7 +72,7 @@
                   prefix="¥"
                 />
               </dl>
-              <p class="mt-4 text-xs leading-5 text-gray-500 dark:text-dark-400">
+              <p class="mt-4 text-xs leading-5 text-gray-600 dark:text-dark-300">
                 每位有效用户需确认消费至少 ¥{{ formatAmount(microsToYuan(qualification.required_per_user_micros)) }}。
               </p>
             </article>
@@ -80,7 +80,7 @@
             <article class="rounded-2xl border p-5" :class="qualification.combined_route_qualified ? 'border-green-300 bg-green-50 dark:border-green-900 dark:bg-green-950' : 'border-gray-200 dark:border-dark-700'">
               <div class="flex items-center justify-between gap-3">
                 <h3 class="font-semibold text-gray-900 dark:text-white">路线 B · 合并消费</h3>
-                <span class="text-xs font-medium text-gray-500 dark:text-dark-400">{{ qualification.combined_route_qualified ? '已达成' : '进行中' }}</span>
+                <span class="text-xs font-medium text-gray-600 dark:text-dark-300">{{ qualification.combined_route_qualified ? '已达成' : '进行中' }}</span>
               </div>
               <dl class="mt-5">
                 <ProgressRow
@@ -90,7 +90,7 @@
                   prefix="¥"
                 />
               </dl>
-              <p class="mt-4 text-xs leading-5 text-gray-500 dark:text-dark-400">
+              <p class="mt-4 text-xs leading-5 text-gray-600 dark:text-dark-300">
                 当前本人 ¥{{ formatAmount(microsToYuan(qualification.self_consumption_micros)) }}，直属团队 ¥{{ formatAmount(microsToYuan(qualification.direct_team_consumption_micros)) }}。
               </p>
             </article>
@@ -132,7 +132,7 @@
                 <input v-model.trim="newLink.channel" maxlength="80" class="input" placeholder="渠道（可选）">
                 <button class="btn btn-primary" :disabled="linkSaving">创建</button>
                 <div class="sm:col-span-3">
-                  <label class="mb-2 flex justify-between text-xs text-gray-500 dark:text-dark-400">
+                  <label class="mb-2 flex justify-between text-xs text-gray-600 dark:text-dark-300">
                     <span>客户返利</span><span>{{ newLink.rate }}% ⚡ / {{ 10 - newLink.rate }}% 现金佣金</span>
                   </label>
                   <input v-model.number="newLink.rate" type="range" min="0" max="10" step="1" class="w-full accent-primary-600">
@@ -150,7 +150,7 @@
                           {{ link.status === 'active' ? '使用中' : '已停用' }}
                         </span>
                       </div>
-                      <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ link.channel || '通用渠道' }} · {{ affiliateURL(link.code) }}</p>
+                      <p class="mt-1 text-xs text-gray-600 dark:text-dark-300">{{ link.channel || '通用渠道' }} · {{ affiliateURL(link.code) }}</p>
                     </div>
                     <div class="flex gap-2">
                       <button class="btn btn-secondary btn-sm" @click="copyLink(link)">复制</button>
@@ -183,7 +183,7 @@
                     <span class="w-14 text-right text-sm font-semibold text-gray-900 dark:text-white">{{ link.customer_rebate_rate_bps / 100 }}%</span>
                   </div>
                 </article>
-                <div v-if="!links.length" class="p-10 text-center text-sm text-gray-500 dark:text-dark-400">暂无动态链接</div>
+                <div v-if="!links.length" class="p-10 text-center text-sm text-gray-600 dark:text-dark-300">暂无动态链接</div>
               </div>
               <p class="border-t border-gray-100 px-5 py-4 text-xs leading-5 text-gray-500 dark:border-dark-800 dark:text-dark-400">
                 奖励池始终为 10%。返给客户的比例可按 1% 步进动态调整；已经绑定的客户只升不降，历史关系不会被新设置覆盖。
@@ -203,18 +203,18 @@
 
                 <div class="mt-5 space-y-4 border-t border-gray-100 pt-5 dark:border-dark-800">
                   <label class="block">
-                    <span class="mb-1 block text-xs text-gray-500 dark:text-dark-400">提现金额（¥）</span>
+                    <span class="mb-1 block text-xs text-gray-600 dark:text-dark-300">提现金额（¥）</span>
                     <div class="flex gap-2">
                       <input v-model.number="withdrawAmount" min="0" step="0.01" type="number" class="input min-w-0 flex-1">
                       <button class="btn btn-primary shrink-0" :disabled="walletBusy || !wallet?.can_withdraw" @click="requestWithdrawal">申请提现</button>
                     </div>
                   </label>
-                  <p class="text-xs leading-5 text-gray-500 dark:text-dark-400">
+                  <p class="text-xs leading-5 text-gray-600 dark:text-dark-300">
                     最低 {{ formatMicros(wallet?.withdrawal_minimum_micros, '¥') }}；提交即显示“处理中”，预计 {{ wallet?.withdrawal_sla_hours ?? 24 }} 小时内到账（北京时间）。
                   </p>
 
                   <label class="block">
-                    <span class="mb-1 block text-xs text-gray-500 dark:text-dark-400">转为 ⚡平台额度</span>
+                    <span class="mb-1 block text-xs text-gray-600 dark:text-dark-300">转为 ⚡平台额度</span>
                     <div class="flex gap-2">
                       <input v-model.number="convertAmount" min="0" step="0.01" type="number" class="input min-w-0 flex-1">
                       <button class="btn btn-secondary shrink-0" :disabled="walletBusy" @click="convertCommission">立即转换</button>
@@ -223,7 +223,7 @@
                 </div>
 
                 <div v-if="withdrawals.length" class="mt-5 border-t border-gray-100 pt-4 dark:border-dark-800">
-                  <p class="mb-2 text-xs font-medium text-gray-500 dark:text-dark-400">最近提现</p>
+                  <p class="mb-2 text-xs font-medium text-gray-600 dark:text-dark-300">最近提现</p>
                   <div v-for="item in withdrawals.slice(0, 4)" :key="item.id" class="flex items-center justify-between py-2 text-sm">
                     <span class="text-gray-700 dark:text-dark-200">{{ formatMicros(item.amount_micros, '¥') }}</span>
                     <span :class="item.status === 'paid' ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'">
@@ -334,7 +334,7 @@ const MetricTile = defineComponent({
   props: { label: { type: String, required: true }, value: { type: String, required: true } },
   setup(props) {
     return () => h('div', { class: 'rounded-xl bg-gray-50 p-3 dark:bg-dark-900' }, [
-      h('p', { class: 'text-xs text-gray-500 dark:text-dark-400' }, props.label),
+      h('p', { class: 'text-xs text-gray-600 dark:text-dark-300' }, props.label),
       h('p', { class: 'mt-1 text-lg font-bold text-gray-950 dark:text-white' }, props.value)
     ])
   }
@@ -583,6 +583,10 @@ async function convertCommission() {
 }
 
 async function savePaymentProfile() {
+  if (!paymentProfile.value?.has_alipay_qr) {
+    appStore.showError('请先上传支付宝收款码，再提交审核')
+    return
+  }
   paymentSaving.value = true
   try {
     applyPaymentProfile(await updateAgentPaymentProfile(paymentForm))

@@ -42,7 +42,7 @@ var (
 	)
 	ErrAgentPaymentProfileLocked = infraerrors.Conflict(
 		"AGENT_PAYMENT_PROFILE_LOCKED",
-		"agent payment profile cannot change while a withdrawal is processing",
+		"该合伙人还有提现处理中，收款资料暂时不能变更",
 	)
 )
 

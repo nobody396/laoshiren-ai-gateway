@@ -85,7 +85,7 @@ def main():
     if candidate_user.get('role') == 'agent':
         raise RuntimeError('candidate unexpectedly already agent before activation')
     invite = req('/user/invite-code', token=candidate_token)
-    assert invite['invite_code'] == 'CANDIDATE', invite
+    assert invite['invite_code'] == 'UPGRADE', invite
     qual = req('/user/affiliate/qualification', token=candidate_token)
     assert qual['can_activate'] is True and qual['valid_direct_user_count'] >= 10, qual
     ok('ordinary invite + qualification', 'invite=%s can_activate=%s' % (invite['invite_code'], qual['can_activate']))

@@ -361,12 +361,18 @@ func (r *commissionRepository) ReviewAgentPaymentProfile(
 		WHERE agent_id = $4
 	`, status, note, reviewerID, agentID)
 	if err != nil {
+		if isAgentPaymentProfileLockedError(err) {
+			return nil, service.ErrAgentPaymentProfileLocked
+		}
 		if isPostgresUniqueViolation(err) {
 			return nil, service.ErrAgentPaymentIdentityConflict
 		}
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
+		if isAgentPaymentProfileLockedError(err) {
+			return nil, service.ErrAgentPaymentProfileLocked
+		}
 		if isPostgresUniqueViolation(err) {
 			return nil, service.ErrAgentPaymentIdentityConflict
 		}

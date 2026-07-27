@@ -3,9 +3,9 @@
     <main class="mx-auto max-w-7xl space-y-6 pb-12">
       <header class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary-700 dark:text-primary-300">Affiliate V2.1</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary-700 dark:text-primary-300">合伙人计划 V2.1</p>
           <h1 class="mt-1 text-3xl font-bold tracking-tight text-gray-950 dark:text-white">联盟运营台</h1>
-          <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">计划开关、合伙人总览、收款审核、人工打款和社群引导的单一操作入口。</p>
+          <p class="mt-2 text-sm text-gray-600 dark:text-dark-300">计划开关、合伙人总览、收款审核、人工打款和社群引导的单一操作入口。</p>
         </div>
         <button class="btn btn-secondary" :disabled="loading" @click="loadAll">刷新</button>
       </header>
@@ -23,11 +23,11 @@
           <div class="flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
             <div>
               <h2 class="text-xl font-semibold text-gray-950 dark:text-white">计划模式与核心规则</h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">必须先经过 Shadow 验证，才能进入 Live；金额按固定精度保存。</p>
+              <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">必须先经过观察模式验证，才能进入正式模式；金额按固定精度保存。</p>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-xs text-gray-500 dark:text-dark-400">Revision {{ program.revision }}</span>
-              <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="programModeClass">{{ program.mode.toUpperCase() }}</span>
+              <span class="text-xs text-gray-600 dark:text-dark-300">版本 {{ program.revision }}</span>
+              <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="programModeClass">{{ formatProgramMode(program.mode) }}</span>
             </div>
           </div>
 
@@ -36,9 +36,9 @@
               <label class="block">
                 <span class="mb-1 block text-xs font-medium text-gray-600 dark:text-dark-300">运行模式</span>
                 <select v-model="programForm.mode" class="input">
-                  <option value="off">Off · 不记录不入账</option>
-                  <option value="shadow">Shadow · 只观察不入账</option>
-                  <option value="live" :disabled="program.mode === 'off'">Live · 正式入账</option>
+                  <option value="off">关闭 · 不记录不入账</option>
+                  <option value="shadow">观察 · 只观察不入账</option>
+                  <option value="live" :disabled="program.mode === 'off'">正式 · 正式入账</option>
                 </select>
               </label>
               <NumberField v-model="programForm.ordinaryReferralRate" label="普通邀请奖励" suffix="%" :min="0" :max="10" :step="1" />
@@ -54,13 +54,13 @@
               <NumberField v-model="programForm.withdrawalSLAHours" label="处理 SLA" suffix="小时" :min="1" :max="168" :step="1" />
               <NumberField v-model="programForm.marginFloor" label="压力毛利率底线" suffix="%" :min="35" :max="100" :step="1" />
               <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900 sm:col-span-2 lg:col-span-3">
-                <p class="text-xs text-gray-500 dark:text-dark-400">合伙人奖励池</p>
+                <p class="text-xs text-gray-600 dark:text-dark-300">合伙人奖励池</p>
                 <p class="mt-1 text-xl font-bold text-gray-950 dark:text-white">{{ program.agent_pool_rate_bps / 100 }}%</p>
-                <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">该值由后端锁死，不可扩大；客户返利 + 合伙人现金佣金固定共 10%。</p>
+                <p class="mt-1 text-xs text-gray-600 dark:text-dark-300">该值由后端锁死，不可扩大；客户返利 + 合伙人现金佣金固定共 10%。</p>
               </div>
             </div>
             <div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-5 dark:border-dark-800">
-              <p class="text-xs leading-5 text-gray-500 dark:text-dark-400">
+              <p class="text-xs leading-5 text-gray-600 dark:text-dark-300">
                 {{ program.started_at ? `首次 Live：${formatBeijingTime(program.started_at)}` : '尚未进入过 Live；首次启用时间将由服务器以 UTC 保存，并按北京时间展示。' }}
               </p>
               <button class="btn btn-primary" :disabled="programSaving">{{ programSaving ? '保存中…' : '保存计划设置' }}</button>
@@ -72,8 +72,8 @@
           <div class="flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
             <div>
               <h2 class="text-xl font-semibold text-gray-950 dark:text-white">35% 压力毛利门禁</h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">
-                已扣除链动小铺 3% 手续费、完整 10% 联盟奖励池，并按每单位原始额度 ¥0.50 的保守成本压力测试。
+              <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">
+                已扣除链动小铺 3% 手续费、完整 10% 联盟奖励池，并按每单位原始额度 ¥0.50 的保守成本测算。
               </p>
             </div>
             <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="commercialPolicy.passes_configured_margin_gate ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'">
@@ -112,7 +112,7 @@
           </div>
           <div class="grid gap-3 border-t border-gray-100 p-5 dark:border-dark-800 sm:grid-cols-2 lg:grid-cols-4">
             <div v-for="target in commercialPolicy.group_targets" :key="target.id" class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
-              <p class="text-xs text-gray-500 dark:text-dark-400">{{ target.name }}</p>
+              <p class="text-xs text-gray-600 dark:text-dark-300">{{ target.name }}</p>
               <p class="mt-1 text-lg font-bold text-gray-950 dark:text-white">{{ target.rate_multiplier.toFixed(2) }}×</p>
             </div>
           </div>
@@ -126,7 +126,7 @@
             <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
               <div>
                 <h2 class="text-xl font-semibold text-gray-950 dark:text-white">合伙人管理</h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">查看当前全部合伙人；发现异常时可先暂停邀请、提现和佣金转额度，确认没问题后再恢复。</p>
+                <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">查看当前全部合伙人；发现异常时可先暂停邀请、提现和佣金转额度，确认没问题后再恢复。</p>
               </div>
               <div class="flex flex-wrap justify-end gap-2">
                 <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-dark-800 dark:text-dark-300">
@@ -139,23 +139,23 @@
             </div>
             <div class="grid gap-3 border-b border-gray-100 p-5 dark:border-dark-800 sm:grid-cols-2 lg:grid-cols-5">
               <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
-                <p class="text-xs text-gray-500 dark:text-dark-400">合伙人总数</p>
+                <p class="text-xs text-gray-600 dark:text-dark-300">合伙人总数</p>
                 <p class="mt-1 text-2xl font-bold text-gray-950 dark:text-white">{{ agentOverviewStats.total }}</p>
               </div>
               <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
-                <p class="text-xs text-gray-500 dark:text-dark-400">正常合伙人</p>
+                <p class="text-xs text-gray-600 dark:text-dark-300">正常合伙人</p>
                 <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">{{ agentOverviewStats.clear }}</p>
               </div>
               <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
-                <p class="text-xs text-gray-500 dark:text-dark-400">需处理</p>
+                <p class="text-xs text-gray-600 dark:text-dark-300">需处理</p>
                 <p class="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{{ agentOverviewStats.abnormal }}</p>
               </div>
               <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
-                <p class="text-xs text-gray-500 dark:text-dark-400">待审收款码</p>
+                <p class="text-xs text-gray-600 dark:text-dark-300">待审收款码</p>
                 <p class="mt-1 text-2xl font-bold text-gray-950 dark:text-white">{{ pendingProfiles.length }}</p>
               </div>
               <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
-                <p class="text-xs text-gray-500 dark:text-dark-400">提现处理中</p>
+                <p class="text-xs text-gray-600 dark:text-dark-300">提现处理中</p>
                 <p class="mt-1 text-2xl font-bold text-gray-950 dark:text-white">{{ withdrawals.length }}</p>
               </div>
             </div>
@@ -164,7 +164,7 @@
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p class="font-semibold text-gray-900 dark:text-white">合伙人 #{{ item.agent_id }} · {{ item.username || item.email }}</p>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ item.email }}</p>
+                    <p class="mt-1 text-xs text-gray-600 dark:text-dark-300">{{ item.email }}</p>
                   </div>
                   <div class="flex flex-wrap justify-end gap-2">
                     <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="agentStatusClass(item.agent_status)">
@@ -179,7 +179,7 @@
                   <p>暂缓发放给客户的额度：{{ formatMicros(item.held_reward_micros, '⚡') }} · {{ item.held_reward_count }} 笔</p>
                   <p>暂缓发放给合伙人的现金：{{ formatMicros(item.held_cash_micros, '¥') }} · {{ item.held_cash_count }} 笔</p>
                 </div>
-                <p v-if="item.risk_note" class="mt-2 text-xs text-gray-500 dark:text-dark-400">最近原因：{{ item.risk_note }}</p>
+                <p v-if="item.risk_note" class="mt-2 text-xs text-gray-600 dark:text-dark-300">最近原因：{{ item.risk_note }}</p>
                 <div class="mt-4 grid gap-3 sm:grid-cols-[9rem_1fr_auto]">
                   <select v-model="riskTargets[item.agent_id]" class="input">
                     <option value="clear">正常开放</option>
@@ -192,14 +192,14 @@
                   </button>
                 </div>
               </div>
-              <div v-if="!riskPrincipals.length" class="p-12 text-center text-sm text-gray-500 dark:text-dark-400">尚无合伙人</div>
+              <div v-if="!riskPrincipals.length" class="p-12 text-center text-sm text-gray-600 dark:text-dark-300">尚无合伙人</div>
             </div>
           </article>
 
           <article class="card p-6">
             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">订单修正</p>
             <h2 class="mt-2 text-xl font-semibold text-gray-950 dark:text-white">撤回一笔确认消费</h2>
-            <p class="mt-2 text-sm leading-6 text-gray-500 dark:text-dark-400">
+            <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-dark-300">
               用于订单退款或误记账。填写原消费记录 ID 后，系统会撤回这笔消费带来的资格进度、客户返利和合伙人佣金；同一笔不会重复撤回。
             </p>
             <form class="mt-5 space-y-4" @submit.prevent="submitReversal">
@@ -227,7 +227,7 @@
             <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
               <div>
                 <h2 class="text-xl font-semibold text-gray-950 dark:text-white">收款资料审核</h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">只有实名、账号和收款码通过审核后才允许提现。</p>
+                <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">只有实名、账号和收款码通过审核后才允许提现。</p>
               </div>
               <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-dark-800 dark:text-dark-300">{{ pendingProfiles.length }} 待审</span>
             </div>
@@ -237,7 +237,7 @@
                   <div>
                     <p class="font-semibold text-gray-900 dark:text-white">合伙人 #{{ profile.agent_id }} · {{ profile.alipay_real_name }}</p>
                     <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">{{ profile.alipay_account }} · {{ profile.contact_phone }}</p>
-                    <p v-if="profile.payment_note" class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ profile.payment_note }}</p>
+                    <p v-if="profile.payment_note" class="mt-1 text-xs text-gray-600 dark:text-dark-300">{{ profile.payment_note }}</p>
                   </div>
                   <button class="btn btn-secondary btn-sm" @click="previewPaymentProfile(profile)">查看收款码</button>
                 </div>
@@ -247,7 +247,7 @@
                   <button class="btn btn-primary btn-sm" :disabled="reviewingId === profile.agent_id" @click="verifyPaymentProfile(profile)">验证通过</button>
                 </div>
               </div>
-              <div v-if="!pendingProfiles.length" class="p-12 text-center text-sm text-gray-500 dark:text-dark-400">当前没有待审核资料</div>
+              <div v-if="!pendingProfiles.length" class="p-12 text-center text-sm text-gray-600 dark:text-dark-300">当前没有待审核资料</div>
             </div>
           </article>
 
@@ -255,7 +255,7 @@
             <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
               <div>
                 <h2 class="text-xl font-semibold text-gray-950 dark:text-white">提现打款队列</h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">提交即“处理中”；人工扫码后只需标记“已到账”。</p>
+                <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">提交即“处理中”；人工扫码后只需标记“已到账”。</p>
               </div>
               <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">{{ withdrawals.length }} 处理中</span>
             </div>
@@ -265,7 +265,7 @@
                   <div>
                     <p class="text-2xl font-bold text-gray-950 dark:text-white">{{ formatMicros(withdrawal.amount_micros, '¥') }}</p>
                     <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">合伙人 #{{ withdrawal.agent_id }} · {{ withdrawal.payment_alipay_real_name }}</p>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ withdrawal.payment_alipay_account }} · 截止 {{ formatBeijingTime(withdrawal.due_at) }}</p>
+                    <p class="mt-1 text-xs text-gray-600 dark:text-dark-300">{{ withdrawal.payment_alipay_account }} · 截止 {{ formatBeijingTime(withdrawal.due_at) }}</p>
                     <p v-if="withdrawal.agent_risk_status !== 'clear'" class="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">该合伙人当前已暂停，暂时不能确认打款</p>
                   </div>
                   <button class="btn btn-secondary btn-sm" @click="previewWithdrawalQR(withdrawal)">扫码打款</button>
@@ -276,7 +276,7 @@
                   <button class="btn btn-primary btn-sm" :disabled="processingWithdrawalId === withdrawal.id || withdrawal.agent_risk_status !== 'clear'" @click="completeWithdrawal(withdrawal)">标记已到账</button>
                 </div>
               </div>
-              <div v-if="!withdrawals.length" class="p-12 text-center text-sm text-gray-500 dark:text-dark-400">当前没有待打款申请</div>
+              <div v-if="!withdrawals.length" class="p-12 text-center text-sm text-gray-600 dark:text-dark-300">当前没有待打款申请</div>
             </div>
           </article>
         </section>
@@ -284,7 +284,7 @@
         <section v-if="community" class="card overflow-hidden">
           <div class="border-b border-gray-100 px-6 py-5 dark:border-dark-800">
             <h2 class="text-xl font-semibold text-gray-950 dark:text-white">合伙人社群引导</h2>
-            <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">启用后，仅已成为合伙人的用户能看到文字与二维码；二维码接口禁止公开缓存。</p>
+            <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">启用后，仅已成为合伙人的用户能看到文字与二维码；二维码接口禁止公开缓存。</p>
           </div>
           <form class="grid gap-6 p-6 lg:grid-cols-[1fr_20rem]" @submit.prevent="saveCommunity">
             <div class="space-y-4">
@@ -375,7 +375,7 @@ const NumberField = defineComponent({
     return () => h('label', { class: 'block' }, [
       h('span', { class: 'mb-1 block text-xs font-medium text-gray-600 dark:text-dark-300' }, props.label),
       h('div', { class: 'relative' }, [
-        props.prefix ? h('span', { class: 'pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-dark-400' }, props.prefix) : null,
+        props.prefix ? h('span', { class: 'pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-600 dark:text-dark-300' }, props.prefix) : null,
         h('input', {
           value: props.modelValue,
           type: 'number',
@@ -385,7 +385,7 @@ const NumberField = defineComponent({
           class: ['input', props.prefix ? 'pl-8' : '', props.suffix ? 'pr-14' : ''],
           onInput: (event: Event) => emit('update:modelValue', Number((event.target as HTMLInputElement).value))
         }),
-        props.suffix ? h('span', { class: 'pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-dark-400' }, props.suffix) : null
+        props.suffix ? h('span', { class: 'pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600 dark:text-dark-300' }, props.suffix) : null
       ])
     ])
   }
@@ -485,6 +485,12 @@ function formatMicros(value: number, symbol: string) {
   return `${symbol}${new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(microsToUnits(value))}`
 }
 
+function formatProgramMode(mode: AffiliateProgramSettings['mode']) {
+  if (mode === 'live') return '正式'
+  if (mode === 'shadow') return '观察'
+  return '关闭'
+}
+
 function formatBeijingTime(value: string) {
   return new Intl.DateTimeFormat('zh-CN', {
     timeZone: 'Asia/Shanghai',
@@ -513,6 +519,9 @@ function formatAgentStatus(status: string) {
   if (status === 'active') return '正常'
   if (status === 'suspended') return '已暂停'
   if (status === 'disabled') return '已停用'
+  if (status === 'candidate') return '待升级'
+  if (status === 'pending_review') return '待审核'
+  if (status === 'rejected') return '未通过'
   return status
 }
 

@@ -37,6 +37,10 @@ var (
 		"AFFILIATE_WITHDRAWAL_NOT_FOUND",
 		"withdrawal request not found",
 	)
+	ErrAffiliateWithdrawalAlreadyProcessing = infraerrors.Conflict(
+		"AFFILIATE_WITHDRAWAL_ALREADY_PROCESSING",
+		"another affiliate withdrawal is already processing",
+	)
 	ErrAffiliateNoticeNotFound = infraerrors.NotFound(
 		"AFFILIATE_NOTICE_NOT_FOUND",
 		"affiliate notice not found",
@@ -67,6 +71,7 @@ type AffiliateWithdrawal struct {
 	AgentID               int64      `json:"agent_id"`
 	AmountMicros          int64      `json:"amount_micros"`
 	Status                string     `json:"status"`
+	AgentRiskStatus       string     `json:"agent_risk_status"`
 	PaymentAlipayRealName string     `json:"payment_alipay_real_name,omitempty"`
 	PaymentAlipayAccount  string     `json:"payment_alipay_account,omitempty"`
 	PaymentContactPhone   string     `json:"payment_contact_phone,omitempty"`
@@ -114,6 +119,14 @@ type AffiliateWalletRepository interface {
 	ConvertAffiliateCommission(ctx context.Context, agentID, amountMicros int64, idempotencyKey string) (*AffiliateCommissionConversion, error)
 	ListAffiliateAgentNotices(ctx context.Context, agentID int64, limit int) ([]AffiliateAgentNotice, error)
 	MarkAffiliateAgentNoticeRead(ctx context.Context, agentID, noticeID int64) error
+}
+
+type affiliateWithdrawalQRCodeAccessAuditor interface {
+	RecordAffiliateWithdrawalQRCodeAccess(
+		ctx context.Context,
+		withdrawalID int64,
+		accessorUserID int64,
+	) error
 }
 
 type AffiliateWalletService struct {
@@ -241,7 +254,11 @@ func (s *AffiliateWalletService) FailWithdrawal(
 func (s *AffiliateWalletService) GetWithdrawalQRCodeFile(
 	ctx context.Context,
 	withdrawalID int64,
+	accessorUserID int64,
 ) (*AgentPaymentQRCodeFile, error) {
+	if withdrawalID <= 0 || accessorUserID <= 0 {
+		return nil, ErrInvalidInput
+	}
 	withdrawal, err := s.repo.GetAffiliateWithdrawal(ctx, withdrawalID)
 	if err != nil {
 		return nil, err
@@ -249,6 +266,15 @@ func (s *AffiliateWalletService) GetWithdrawalQRCodeFile(
 	path, err := agentPaymentObjectPath(withdrawal.PaymentQRObjectKey)
 	if err != nil {
 		return nil, err
+	}
+	if auditor, ok := s.repo.(affiliateWithdrawalQRCodeAccessAuditor); ok {
+		if err := auditor.RecordAffiliateWithdrawalQRCodeAccess(
+			ctx,
+			withdrawalID,
+			accessorUserID,
+		); err != nil {
+			return nil, err
+		}
 	}
 	return &AgentPaymentQRCodeFile{
 		Path:        path,

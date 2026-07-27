@@ -22,6 +22,7 @@ type AgentHandler struct {
 	affiliateProgram   *service.AffiliateProgramService
 	affiliateCommunity *service.AffiliateCommunityService
 	affiliateWallet    *service.AffiliateWalletService
+	affiliateRisk      *service.AffiliateRiskService
 }
 
 func NewAgentHandler(
@@ -29,12 +30,14 @@ func NewAgentHandler(
 	affiliateProgram *service.AffiliateProgramService,
 	affiliateCommunity *service.AffiliateCommunityService,
 	affiliateWallet *service.AffiliateWalletService,
+	affiliateRisk *service.AffiliateRiskService,
 ) *AgentHandler {
 	return &AgentHandler{
 		commissionService:  commissionService,
 		affiliateProgram:   affiliateProgram,
 		affiliateCommunity: affiliateCommunity,
 		affiliateWallet:    affiliateWallet,
+		affiliateRisk:      affiliateRisk,
 	}
 }
 
@@ -82,6 +85,16 @@ type completeAffiliateWithdrawalRequest struct {
 
 type failAffiliateWithdrawalRequest struct {
 	Reason string `json:"reason" binding:"required"`
+}
+
+type updateAffiliateRiskRequest struct {
+	Status string `json:"status" binding:"required"`
+	Reason string `json:"reason" binding:"required"`
+}
+
+type reverseAffiliatePerformanceRequest struct {
+	EventID int64  `json:"event_id" binding:"required"`
+	Reason  string `json:"reason" binding:"required"`
 }
 
 type bindAgentUserRequest struct {
@@ -265,8 +278,22 @@ func (h *AgentHandler) GetPaymentQRCode(c *gin.Context) {
 	if !ok {
 		return
 	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
 	file, err := h.commissionService.GetAgentPaymentQRCodeFile(c.Request.Context(), agentID)
 	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if err := h.commissionService.RecordAgentPaymentQRCodeAccess(
+		c.Request.Context(),
+		agentID,
+		subject.UserID,
+		"admin_profile",
+	); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -341,6 +368,71 @@ func (h *AgentHandler) GetAffiliateCommercialPolicy(c *gin.Context) {
 		return
 	}
 	response.Success(c, service.BuildAffiliateCommercialPolicy(settings.MarginFloorBPS))
+}
+
+func (h *AgentHandler) ListAffiliateRiskPrincipals(c *gin.Context) {
+	items, err := h.affiliateRisk.List(
+		c.Request.Context(),
+		parsePositiveInt(c.Query("limit"), 100),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"items": items})
+}
+
+func (h *AgentHandler) UpdateAffiliateRisk(c *gin.Context) {
+	agentID, ok := parseAgentIDParam(c)
+	if !ok {
+		return
+	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req updateAffiliateRiskRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	result, err := h.affiliateRisk.SetAgentRisk(
+		c.Request.Context(),
+		agentID,
+		req.Status,
+		req.Reason,
+		subject.UserID,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+func (h *AgentHandler) ReverseAffiliatePerformance(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req reverseAffiliatePerformanceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	result, err := h.affiliateRisk.ReversePerformanceEvent(
+		c.Request.Context(),
+		req.EventID,
+		req.Reason,
+		subject.UserID,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
 }
 
 func (h *AgentHandler) UpdateAffiliateProgram(c *gin.Context) {
@@ -559,7 +651,16 @@ func (h *AgentHandler) GetAffiliateWithdrawalQRCode(c *gin.Context) {
 	if !ok {
 		return
 	}
-	file, err := h.affiliateWallet.GetWithdrawalQRCodeFile(c.Request.Context(), withdrawalID)
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	file, err := h.affiliateWallet.GetWithdrawalQRCodeFile(
+		c.Request.Context(),
+		withdrawalID,
+		subject.UserID,
+	)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

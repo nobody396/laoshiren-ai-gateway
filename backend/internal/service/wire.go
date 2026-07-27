@@ -572,6 +572,7 @@ var ProviderSet = wire.NewSet(
 	NewAffiliateAgentService,
 	NewAffiliateCommunityService,
 	ProvideAffiliateWalletService,
+	ProvideAffiliateRiskService,
 	NewPaymentService,
 	NewTopupService,
 	NewRBACService,
@@ -616,6 +617,15 @@ func ProvideAffiliateWalletService(
 	balanceCache *BillingCacheService,
 ) *AffiliateWalletService {
 	svc := NewAffiliateWalletService(repo)
+	svc.SetBalanceCache(balanceCache)
+	return svc
+}
+
+func ProvideAffiliateRiskService(
+	repo AffiliateRiskRepository,
+	balanceCache *BillingCacheService,
+) *AffiliateRiskService {
+	svc := NewAffiliateRiskService(repo)
 	svc.SetBalanceCache(balanceCache)
 	return svc
 }

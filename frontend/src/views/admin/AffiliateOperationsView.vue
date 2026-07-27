@@ -121,6 +121,75 @@
           </p>
         </section>
 
+        <section class="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+          <article class="card overflow-hidden">
+            <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
+              <div>
+                <h2 class="text-xl font-semibold text-gray-950 dark:text-white">Agent 风控与冻结释放</h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">复核或阻断后禁止新增绑定、提现和转换；恢复 Clear 时原子释放冻结奖励。</p>
+              </div>
+              <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-dark-800 dark:text-dark-300">
+                {{ riskPrincipals.filter(item => item.risk_status !== 'clear').length }} 个异常
+              </span>
+            </div>
+            <div class="max-h-[42rem] divide-y divide-gray-100 overflow-y-auto dark:divide-dark-800">
+              <div v-for="item in riskPrincipals" :key="item.agent_id" class="p-5">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p class="font-semibold text-gray-900 dark:text-white">Agent #{{ item.agent_id }} · {{ item.username || item.email }}</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ item.email }}</p>
+                  </div>
+                  <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="riskStatusClass(item.risk_status)">
+                    {{ item.risk_status.toUpperCase() }}
+                  </span>
+                </div>
+                <div class="mt-3 grid gap-2 rounded-xl bg-gray-50 p-3 text-xs text-gray-600 dark:bg-dark-900 dark:text-dark-300 sm:grid-cols-2">
+                  <p>冻结客户额度：{{ formatMicros(item.held_reward_micros, '⚡') }} · {{ item.held_reward_count }} 笔</p>
+                  <p>冻结现金佣金：{{ formatMicros(item.held_cash_micros, '¥') }} · {{ item.held_cash_count }} 笔</p>
+                </div>
+                <p v-if="item.risk_note" class="mt-2 text-xs text-gray-500 dark:text-dark-400">最近原因：{{ item.risk_note }}</p>
+                <div class="mt-4 grid gap-3 sm:grid-cols-[9rem_1fr_auto]">
+                  <select v-model="riskTargets[item.agent_id]" class="input">
+                    <option value="clear">Clear · 恢复</option>
+                    <option value="review">Review · 复核</option>
+                    <option value="blocked">Blocked · 阻断</option>
+                  </select>
+                  <input v-model.trim="riskReasons[item.agent_id]" maxlength="500" class="input" placeholder="必填：变更原因">
+                  <button class="btn btn-primary" :disabled="riskUpdatingId === item.agent_id" @click="applyRiskStatus(item)">
+                    {{ riskUpdatingId === item.agent_id ? '处理中…' : '执行' }}
+                  </button>
+                </div>
+              </div>
+              <div v-if="!riskPrincipals.length" class="p-12 text-center text-sm text-gray-500 dark:text-dark-400">尚无 Agent 主体</div>
+            </div>
+          </article>
+
+          <article class="card p-6">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">Exactly-once reversal</p>
+            <h2 class="mt-2 text-xl font-semibold text-gray-950 dark:text-white">确认消费冲正</h2>
+            <p class="mt-2 text-sm leading-6 text-gray-500 dark:text-dark-400">
+              仅接受 Affiliate V2 Live 的确认消费事件。一次性冲正资格消费、客户额度与 Agent 现金佣金；重复请求不会重复扣款。
+            </p>
+            <form class="mt-5 space-y-4" @submit.prevent="submitReversal">
+              <label class="block">
+                <span class="mb-1 block text-xs font-medium text-gray-600 dark:text-dark-300">原确认消费 Event ID</span>
+                <input v-model.number="reversalForm.eventId" type="number" min="1" required class="input">
+              </label>
+              <label class="block">
+                <span class="mb-1 block text-xs font-medium text-gray-600 dark:text-dark-300">冲正原因</span>
+                <textarea v-model.trim="reversalForm.reason" required maxlength="500" class="input min-h-28" placeholder="例如：订单退款、异常账号确认" />
+              </label>
+              <button class="btn w-full bg-red-600 text-white hover:bg-red-700" :disabled="reversalProcessing">
+                {{ reversalProcessing ? '冲正中…' : '确认执行冲正' }}
+              </button>
+            </form>
+            <div v-if="lastReversal" class="mt-5 rounded-xl bg-green-50 p-4 text-sm text-green-800 dark:bg-green-950 dark:text-green-200">
+              <p class="font-semibold">冲正 #{{ lastReversal.id }} 已完成</p>
+              <p class="mt-1">消费 {{ formatMicros(lastReversal.amount_micros, '¥') }} · 客户额度 {{ formatMicros(lastReversal.reversed_reward_micros, '⚡') }} · 现金 {{ formatMicros(lastReversal.reversed_cash_micros, '¥') }}</p>
+            </div>
+          </article>
+        </section>
+
         <section class="grid gap-6 xl:grid-cols-2">
           <article class="card overflow-hidden">
             <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
@@ -165,13 +234,14 @@
                     <p class="text-2xl font-bold text-gray-950 dark:text-white">{{ formatMicros(withdrawal.amount_micros, '¥') }}</p>
                     <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">Agent #{{ withdrawal.agent_id }} · {{ withdrawal.payment_alipay_real_name }}</p>
                     <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ withdrawal.payment_alipay_account }} · 截止 {{ formatBeijingTime(withdrawal.due_at) }}</p>
+                    <p v-if="withdrawal.agent_risk_status !== 'clear'" class="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">风控状态 {{ withdrawal.agent_risk_status.toUpperCase() }}，禁止确认打款</p>
                   </div>
                   <button class="btn btn-secondary btn-sm" @click="previewWithdrawalQR(withdrawal)">扫码打款</button>
                 </div>
                 <input v-model="paymentReferences[withdrawal.id]" maxlength="200" class="input mt-4" placeholder="支付宝流水号（可选）">
                 <div class="mt-3 flex justify-end gap-2">
                   <button class="btn btn-secondary btn-sm" :disabled="processingWithdrawalId === withdrawal.id" @click="failWithdrawal(withdrawal)">打款失败</button>
-                  <button class="btn btn-primary btn-sm" :disabled="processingWithdrawalId === withdrawal.id" @click="completeWithdrawal(withdrawal)">标记已到账</button>
+                  <button class="btn btn-primary btn-sm" :disabled="processingWithdrawalId === withdrawal.id || withdrawal.agent_risk_status !== 'clear'" @click="completeWithdrawal(withdrawal)">标记已到账</button>
                 </div>
               </div>
               <div v-if="!withdrawals.length" class="p-12 text-center text-sm text-gray-500 dark:text-dark-400">当前没有待打款申请</div>
@@ -237,16 +307,22 @@ import {
   getAffiliateProgram,
   getAffiliateWithdrawalQRCode,
   getPaymentQRCode,
+  listAffiliateRiskPrincipals,
   listAffiliateWithdrawals,
   listPendingPaymentProfiles,
+  reverseAffiliatePerformance,
   reviewPaymentProfile,
+  updateAffiliateRisk,
   updateAffiliateCommunity,
   updateAffiliateProgram,
   uploadAffiliateCommunityQRCode,
   type AdminAffiliateWithdrawal,
   type AffiliateCommunitySettings,
   type AffiliateCommercialPolicy,
+  type AffiliatePerformanceReversal,
   type AffiliateProgramSettings,
+  type AffiliateRiskPrincipal,
+  type AffiliateRiskStatus,
   type AgentPaymentProfile
 } from '@/api/admin/agents'
 import { useAppStore } from '@/stores/app'
@@ -290,13 +366,20 @@ const programSaving = ref(false)
 const communitySaving = ref(false)
 const reviewingId = ref<number | null>(null)
 const processingWithdrawalId = ref<number | null>(null)
+const riskUpdatingId = ref<number | null>(null)
+const reversalProcessing = ref(false)
 const program = ref<AffiliateProgramSettings | null>(null)
 const commercialPolicy = ref<AffiliateCommercialPolicy | null>(null)
 const community = ref<AffiliateCommunitySettings | null>(null)
 const pendingProfiles = ref<AgentPaymentProfile[]>([])
 const withdrawals = ref<AdminAffiliateWithdrawal[]>([])
+const riskPrincipals = ref<AffiliateRiskPrincipal[]>([])
 const reviewNotes = reactive<Record<number, string>>({})
 const paymentReferences = reactive<Record<number, string>>({})
+const riskReasons = reactive<Record<number, string>>({})
+const riskTargets = reactive<Record<number, AffiliateRiskStatus>>({})
+const reversalForm = reactive({ eventId: 0, reason: '' })
+const lastReversal = ref<AffiliatePerformanceReversal | null>(null)
 const communityQRPreview = ref('')
 const qrPreviewURL = ref('')
 const qrPreviewTitle = ref('')
@@ -373,6 +456,12 @@ function formatBeijingTime(value: string) {
   }).format(new Date(value))
 }
 
+function riskStatusClass(status: AffiliateRiskStatus) {
+  if (status === 'blocked') return 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+  if (status === 'review') return 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+  return 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
+}
+
 function setObjectURL(target: typeof communityQRPreview, blob: Blob) {
   if (target.value.startsWith('blob:')) URL.revokeObjectURL(target.value)
   target.value = URL.createObjectURL(blob)
@@ -382,18 +471,23 @@ async function loadAll() {
   loading.value = true
   error.value = ''
   try {
-    const [settings, policy, communitySettings, profiles, payoutQueue] = await Promise.all([
+    const [settings, policy, communitySettings, profiles, payoutQueue, principals] = await Promise.all([
       getAffiliateProgram(),
       getAffiliateCommercialPolicy(),
       getAffiliateCommunity(),
       listPendingPaymentProfiles(),
-      listAffiliateWithdrawals()
+      listAffiliateWithdrawals(),
+      listAffiliateRiskPrincipals()
     ])
     program.value = settings
     commercialPolicy.value = policy
     community.value = communitySettings
     pendingProfiles.value = profiles
     withdrawals.value = payoutQueue
+    riskPrincipals.value = principals
+    for (const item of principals) {
+      riskTargets[item.agent_id] = item.risk_status
+    }
     if (communitySettings.has_qr_code) {
       try { setObjectURL(communityQRPreview, await getAffiliateCommunityQRCode()) } catch { /* optional preview */ }
     }
@@ -430,6 +524,61 @@ async function saveProgram() {
     appStore.showError(buildAuthErrorMessage(cause, { fallback: '计划设置保存失败' }))
   } finally {
     programSaving.value = false
+  }
+}
+
+async function applyRiskStatus(item: AffiliateRiskPrincipal) {
+  const reason = (riskReasons[item.agent_id] || '').trim()
+  if (!reason) {
+    appStore.showError('风控状态变更必须填写原因')
+    return
+  }
+  riskUpdatingId.value = item.agent_id
+  try {
+    const action = await updateAffiliateRisk(item.agent_id, {
+      status: riskTargets[item.agent_id] || item.risk_status,
+      reason
+    })
+    item.risk_status = action.next_risk_status
+    item.risk_note = action.reason
+    if (action.next_risk_status === 'clear') {
+      item.held_reward_count = 0
+      item.held_reward_micros = 0
+      item.held_cash_count = 0
+      item.held_cash_micros = 0
+    }
+    riskReasons[item.agent_id] = ''
+    withdrawals.value = await listAffiliateWithdrawals()
+    appStore.showSuccess(`Agent #${item.agent_id} 风控状态已更新为 ${action.next_risk_status.toUpperCase()}`)
+  } catch (cause: unknown) {
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '风控状态更新失败' }))
+  } finally {
+    riskUpdatingId.value = null
+  }
+}
+
+async function submitReversal() {
+  const eventId = Math.trunc(reversalForm.eventId)
+  const reason = reversalForm.reason.trim()
+  if (eventId <= 0 || !reason) {
+    appStore.showError('请输入有效的 Event ID 和冲正原因')
+    return
+  }
+  if (!window.confirm(`确认完整冲正消费事件 #${eventId}？该操作不可撤销。`)) return
+  reversalProcessing.value = true
+  try {
+    lastReversal.value = await reverseAffiliatePerformance(eventId, reason)
+    reversalForm.eventId = 0
+    reversalForm.reason = ''
+    riskPrincipals.value = await listAffiliateRiskPrincipals()
+    for (const item of riskPrincipals.value) {
+      riskTargets[item.agent_id] = item.risk_status
+    }
+    appStore.showSuccess(`消费事件 #${eventId} 已完成冲正`)
+  } catch (cause: unknown) {
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '消费冲正失败' }))
+  } finally {
+    reversalProcessing.value = false
   }
 }
 

@@ -89,6 +89,11 @@ func (r *affiliateWalletRepository) ListAffiliateWithdrawals(
 	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			id, agent_id, amount_micros, status,
+			COALESCE((
+				SELECT risk_status
+				FROM agent_principals
+				WHERE agent_id = agent_withdrawal_requests.agent_id
+			), 'blocked') AS agent_risk_status,
 			payment_alipay_real_name, payment_alipay_account,
 			payment_contact_phone, payment_note,
 			payment_qr_object_key, payment_qr_content_type,
@@ -215,6 +220,20 @@ func (r *affiliateWalletRepository) CreateAffiliateWithdrawal(
 		strings.TrimSpace(qrObjectKey) == "" {
 		return nil, service.ErrAffiliatePaymentNotVerified
 	}
+	var processingExists bool
+	if err := tx.QueryRowContext(ctx, `
+		SELECT EXISTS(
+			SELECT 1
+			FROM agent_withdrawal_requests
+			WHERE agent_id = $1
+				AND status = 'processing'
+		)
+	`, agentID).Scan(&processingExists); err != nil {
+		return nil, err
+	}
+	if processingExists {
+		return nil, service.ErrAffiliateWithdrawalAlreadyProcessing
+	}
 
 	availableMicros, err := lockAffiliateAvailableCash(ctx, tx, agentID)
 	if err != nil {
@@ -253,6 +272,21 @@ func (r *affiliateWalletRepository) CreateAffiliateWithdrawal(
 		slaHours,
 	).Scan(&withdrawalID)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO agent_withdrawal_events (
+			withdrawal_id, agent_id, event_type,
+			previous_status, next_status,
+			metadata
+		)
+		VALUES (
+			$1, $2, 'requested',
+			NULL, 'processing',
+			jsonb_build_object('timezone', 'Asia/Shanghai')
+		)
+		ON CONFLICT (withdrawal_id, event_type) DO NOTHING
+	`, withdrawalID, agentID); err != nil {
 		return nil, err
 	}
 	if _, err := tx.ExecContext(ctx, `
@@ -302,6 +336,18 @@ func (r *affiliateWalletRepository) CompleteAffiliateWithdrawal(
 	if item.Status != "processing" {
 		return nil, service.ErrAffiliateWithdrawalNotProcessing
 	}
+	var riskStatus string
+	if err := tx.QueryRowContext(ctx, `
+		SELECT risk_status
+		FROM agent_principals
+		WHERE agent_id = $1
+		FOR SHARE
+	`, item.AgentID).Scan(&riskStatus); err != nil {
+		return nil, err
+	}
+	if riskStatus != service.AffiliateRiskStatusClear {
+		return nil, service.ErrAffiliateWalletNotAvailable
+	}
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE agent_withdrawal_requests
 		SET status = 'paid',
@@ -311,6 +357,21 @@ func (r *affiliateWalletRepository) CompleteAffiliateWithdrawal(
 			updated_at = NOW()
 		WHERE id = $3
 	`, operatorID, paymentReference, withdrawalID); err != nil {
+		return nil, err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO agent_withdrawal_events (
+			withdrawal_id, agent_id, event_type,
+			previous_status, next_status,
+			operator_id, note, metadata
+		)
+		VALUES (
+			$1, $2, 'paid',
+			'processing', 'paid',
+			$3, $4, jsonb_build_object('timezone', 'Asia/Shanghai')
+		)
+		ON CONFLICT (withdrawal_id, event_type) DO NOTHING
+	`, withdrawalID, item.AgentID, operatorID, paymentReference); err != nil {
 		return nil, err
 	}
 	if err := insertAffiliateAgentNotice(
@@ -366,6 +427,21 @@ func (r *affiliateWalletRepository) FailAffiliateWithdrawal(
 		return nil, err
 	}
 	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO agent_withdrawal_events (
+			withdrawal_id, agent_id, event_type,
+			previous_status, next_status,
+			operator_id, note, metadata
+		)
+		VALUES (
+			$1, $2, 'failed',
+			'processing', 'failed',
+			$3, $4, jsonb_build_object('timezone', 'Asia/Shanghai')
+		)
+		ON CONFLICT (withdrawal_id, event_type) DO NOTHING
+	`, withdrawalID, item.AgentID, operatorID, reason); err != nil {
+		return nil, err
+	}
+	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO agent_cash_commission_entries (
 			agent_id, entry_type, amount_micros,
 			posting_status, source_type, source_id,
@@ -411,6 +487,35 @@ func (r *affiliateWalletRepository) GetAffiliateWithdrawal(
 	return item, err
 }
 
+func (r *affiliateWalletRepository) RecordAffiliateWithdrawalQRCodeAccess(
+	ctx context.Context,
+	withdrawalID int64,
+	accessorUserID int64,
+) error {
+	result, err := r.db.ExecContext(ctx, `
+		INSERT INTO agent_payment_qr_access_events (
+			agent_id, withdrawal_id,
+			accessor_user_id, access_context
+		)
+		SELECT
+			agent_id, id,
+			$2, 'withdrawal_snapshot'
+		FROM agent_withdrawal_requests
+		WHERE id = $1
+	`, withdrawalID, accessorUserID)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected != 1 {
+		return service.ErrAffiliateWithdrawalNotFound
+	}
+	return nil
+}
+
 func (r *affiliateWalletRepository) ListProcessingAffiliateWithdrawals(
 	ctx context.Context,
 	limit int,
@@ -418,6 +523,11 @@ func (r *affiliateWalletRepository) ListProcessingAffiliateWithdrawals(
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT
 			id, agent_id, amount_micros, status,
+			COALESCE((
+				SELECT risk_status
+				FROM agent_principals
+				WHERE agent_id = agent_withdrawal_requests.agent_id
+			), 'blocked') AS agent_risk_status,
 			payment_alipay_real_name, payment_alipay_account,
 			payment_contact_phone, payment_note,
 			payment_qr_object_key, payment_qr_content_type,
@@ -673,6 +783,7 @@ func scanAffiliateWithdrawal(scanner affiliateWithdrawalScanner) (*service.Affil
 		&out.AgentID,
 		&out.AmountMicros,
 		&out.Status,
+		&out.AgentRiskStatus,
 		&out.PaymentAlipayRealName,
 		&out.PaymentAlipayAccount,
 		&out.PaymentContactPhone,
@@ -732,6 +843,11 @@ func affiliateWithdrawalSelect(suffix string) string {
 	return `
 		SELECT
 			id, agent_id, amount_micros, status,
+			COALESCE((
+				SELECT risk_status
+				FROM agent_principals
+				WHERE agent_id = agent_withdrawal_requests.agent_id
+			), 'blocked') AS agent_risk_status,
 			payment_alipay_real_name, payment_alipay_account,
 			payment_contact_phone, payment_note,
 			payment_qr_object_key, payment_qr_content_type,

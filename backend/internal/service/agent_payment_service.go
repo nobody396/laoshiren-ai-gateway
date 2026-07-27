@@ -33,6 +33,10 @@ var (
 		"AGENT_PAYMENT_IDENTITY_CONFLICT",
 		"this verified payment identity is already bound to another agent",
 	)
+	ErrAgentPaymentProfileLocked = infraerrors.Conflict(
+		"AGENT_PAYMENT_PROFILE_LOCKED",
+		"agent payment profile cannot change while a withdrawal is processing",
+	)
 )
 
 type AgentPaymentQRCodeUpload struct {
@@ -46,6 +50,15 @@ type AgentPaymentQRCodeFile struct {
 	Path        string
 	ContentType string
 	Filename    string
+}
+
+type agentPaymentQRCodeAccessAuditor interface {
+	RecordAgentPaymentQRCodeAccess(
+		ctx context.Context,
+		agentID int64,
+		accessorUserID int64,
+		accessContext string,
+	) error
 }
 
 func (s *CommissionService) GetAgentSettlementSettings(ctx context.Context) (*AgentSettlementSettings, error) {
@@ -272,6 +285,32 @@ func (s *CommissionService) GetAgentPaymentQRCodeFile(ctx context.Context, agent
 		ContentType: profile.AlipayQRCodeContentType,
 		Filename:    profile.AlipayQRCodeOriginalName,
 	}, nil
+}
+
+func (s *CommissionService) RecordAgentPaymentQRCodeAccess(
+	ctx context.Context,
+	agentID int64,
+	accessorUserID int64,
+	accessContext string,
+) error {
+	if agentID <= 0 || accessorUserID <= 0 {
+		return ErrInvalidInput
+	}
+	switch accessContext {
+	case "agent_self", "admin_profile":
+	default:
+		return ErrInvalidInput
+	}
+	auditor, ok := s.paymentRepo.(agentPaymentQRCodeAccessAuditor)
+	if !ok {
+		return nil
+	}
+	return auditor.RecordAgentPaymentQRCodeAccess(
+		ctx,
+		agentID,
+		accessorUserID,
+		accessContext,
+	)
 }
 
 func (s *CommissionService) ListAdminAgentSettlementCandidates(ctx context.Context, params pagination.PaginationParams, filters AdminAgentListFilters) ([]AdminAgentSummary, *pagination.PaginationResult, error) {

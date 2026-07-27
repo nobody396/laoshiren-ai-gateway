@@ -40,6 +40,7 @@ func (r *affiliateLinkRepository) ResolveActiveLink(ctx context.Context, code st
 		WHERE l.code = $1
 			AND l.status = 'active'
 			AND ap.status = 'active'
+			AND ap.risk_status = 'clear'
 	`, strings.TrimSpace(code)).Scan(
 		&out.AgentID,
 		&out.LinkID,
@@ -88,6 +89,7 @@ func (r *affiliateLinkRepository) BindAgentReferral(
 			AND l.agent_id = $2
 			AND l.status = 'active'
 			AND ap.status = 'active'
+			AND ap.risk_status = 'clear'
 		FOR SHARE OF l, ap, rv
 	`, referral.LinkID, referral.AgentID).Scan(
 		&current.AgentID,
@@ -220,19 +222,19 @@ func (r *affiliateLinkRepository) CreateLink(
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	var status string
+	var status, riskStatus string
 	if err := tx.QueryRowContext(ctx, `
-		SELECT status
+		SELECT status, risk_status
 		FROM agent_principals
 		WHERE agent_id = $1
 		FOR UPDATE
-	`, input.AgentID).Scan(&status); err != nil {
+	`, input.AgentID).Scan(&status, &riskStatus); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, service.ErrAffiliateAgentNotActive
 		}
 		return nil, err
 	}
-	if status != "active" {
+	if status != "active" || riskStatus != service.AffiliateRiskStatusClear {
 		return nil, service.ErrAffiliateAgentNotActive
 	}
 	if !input.IsDefault {
@@ -315,6 +317,7 @@ func (r *affiliateLinkRepository) UpdateLinkRate(
 		WHERE l.id = $1
 			AND l.agent_id = $2
 			AND ap.status = 'active'
+			AND ap.risk_status = 'clear'
 		FOR UPDATE OF l
 	`, linkID, agentID).Scan(&currentVersion)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -377,6 +380,7 @@ func (r *affiliateLinkRepository) SetLinkStatus(
 			AND l.agent_id = $3
 			AND ap.agent_id = l.agent_id
 			AND ap.status = 'active'
+			AND ap.risk_status = 'clear'
 	`, status, linkID, agentID)
 	if err != nil {
 		return nil, err

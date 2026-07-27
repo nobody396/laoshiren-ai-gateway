@@ -226,12 +226,56 @@ export interface AdminAffiliateWithdrawal {
   agent_id: number
   amount_micros: number
   status: 'processing'
+  agent_risk_status: AffiliateRiskStatus
   payment_alipay_real_name: string
   payment_alipay_account: string
   payment_contact_phone: string
   payment_note?: string
   requested_at: string
   due_at: string
+}
+
+export type AffiliateRiskStatus = 'clear' | 'review' | 'blocked'
+
+export interface AffiliateRiskPrincipal {
+  agent_id: number
+  email: string
+  username: string
+  agent_status: string
+  risk_status: AffiliateRiskStatus
+  risk_note: string
+  held_reward_count: number
+  held_reward_micros: number
+  held_cash_count: number
+  held_cash_micros: number
+  updated_at: string
+}
+
+export interface AffiliateRiskActionResult {
+  id: number
+  agent_id: number
+  previous_risk_status: AffiliateRiskStatus
+  next_risk_status: AffiliateRiskStatus
+  reason: string
+  released_reward_count: number
+  released_reward_micros: number
+  released_cash_count: number
+  released_cash_micros: number
+  created_at: string
+}
+
+export interface AffiliatePerformanceReversal {
+  id: number
+  original_event_id: number
+  reversal_event_id: number
+  consumer_user_id: number
+  direct_agent_id?: number
+  amount_micros: number
+  reversed_reward_micros: number
+  reversed_cash_micros: number
+  reason: string
+  operator_id: number
+  created_at: string
 }
 
 export interface AgentLevelRule {
@@ -430,6 +474,35 @@ export async function getAffiliateWithdrawalQRCode(id: number): Promise<Blob> {
   return data
 }
 
+export async function listAffiliateRiskPrincipals(limit = 100): Promise<AffiliateRiskPrincipal[]> {
+  const { data } = await apiClient.get<{ items: AffiliateRiskPrincipal[] }>('/admin/agents/affiliate-risk', {
+    params: { limit }
+  })
+  return data.items ?? []
+}
+
+export async function updateAffiliateRisk(
+  agentId: number,
+  payload: { status: AffiliateRiskStatus; reason: string }
+): Promise<AffiliateRiskActionResult> {
+  const { data } = await apiClient.put<AffiliateRiskActionResult>(
+    `/admin/agents/${agentId}/affiliate-risk`,
+    payload
+  )
+  return data
+}
+
+export async function reverseAffiliatePerformance(
+  eventId: number,
+  reason: string
+): Promise<AffiliatePerformanceReversal> {
+  const { data } = await apiClient.post<AffiliatePerformanceReversal>('/admin/agents/affiliate-reversals', {
+    event_id: eventId,
+    reason
+  })
+  return data
+}
+
 export async function getRates(): Promise<CommissionRates> {
   const { data } = await apiClient.get<CommissionRates>('/admin/agents/rates')
   return data
@@ -524,6 +597,9 @@ export const agentsAPI = {
   completeAffiliateWithdrawal,
   failAffiliateWithdrawal,
   getAffiliateWithdrawalQRCode,
+  listAffiliateRiskPrincipals,
+  updateAffiliateRisk,
+  reverseAffiliatePerformance,
   getRates,
   updateRates,
   getInviteActivity,

@@ -227,6 +227,28 @@ WHERE id = 1
 	requireIndex(t, tx, "agent_withdrawal_requests", "idx_agent_withdrawals_processing_due")
 	requireIndex(t, tx, "agent_commission_conversions", "idx_agent_conversions_agent_time")
 	requireIndex(t, tx, "affiliate_agent_notices", "idx_affiliate_agent_notices_unread")
+
+	// migration 157: risk release, exactly-once reversals, and withdrawal audit.
+	for _, table := range []string{
+		"affiliate_risk_actions",
+		"affiliate_performance_reversals",
+		"agent_withdrawal_events",
+		"agent_payment_qr_access_events",
+	} {
+		var regclass sql.NullString
+		require.NoError(t, tx.QueryRowContext(
+			context.Background(),
+			"SELECT to_regclass('public.' || $1)",
+			table,
+		).Scan(&regclass))
+		require.True(t, regclass.Valid, "expected %s table to exist", table)
+	}
+	requireColumn(t, tx, "affiliate_risk_actions", "released_cash_micros", "bigint", 0, false)
+	requireColumn(t, tx, "affiliate_performance_reversals", "original_event_id", "bigint", 0, false)
+	requireIndex(t, tx, "affiliate_reward_entries", "uq_affiliate_reward_reversal")
+	requireIndex(t, tx, "agent_cash_commission_entries", "uq_agent_cash_reversal")
+	requireIndex(t, tx, "agent_withdrawal_events", "uq_agent_withdrawal_event_once")
+	requireIndex(t, tx, "agent_payment_qr_access_events", "idx_agent_payment_qr_access_agent_time")
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

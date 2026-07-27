@@ -145,6 +145,9 @@ func (r *commissionRepository) UpsertAgentPaymentProfile(ctx context.Context, pr
 		profile.IdentityFingerprintHash,
 	}, &createdAt, &updatedAt)
 	if err != nil {
+		if isAgentPaymentProfileLockedError(err) {
+			return service.ErrAgentPaymentProfileLocked
+		}
 		return err
 	}
 	profile.CreatedAt = &createdAt
@@ -226,6 +229,9 @@ func (r *commissionRepository) UpdateAgentPaymentQRCode(ctx context.Context, age
 		&updatedAt,
 	)
 	if err != nil {
+		if isAgentPaymentProfileLockedError(err) {
+			return nil, service.ErrAgentPaymentProfileLocked
+		}
 		return nil, err
 	}
 	if createdAt.Valid {
@@ -243,6 +249,31 @@ func (r *commissionRepository) UpdateAgentPaymentQRCode(ctx context.Context, age
 		return nil, err
 	}
 	return &profile, nil
+}
+
+func isAgentPaymentProfileLockedError(err error) bool {
+	return err != nil &&
+		strings.Contains(strings.ToLower(err.Error()), "payment profile is locked by a processing withdrawal")
+}
+
+func (r *commissionRepository) RecordAgentPaymentQRCodeAccess(
+	ctx context.Context,
+	agentID int64,
+	accessorUserID int64,
+	accessContext string,
+) error {
+	if r.sql == nil {
+		return fmt.Errorf("sql executor is not configured")
+	}
+	_, err := r.sql.ExecContext(ctx, `
+		INSERT INTO agent_payment_qr_access_events (
+			agent_id, accessor_user_id, access_context
+		)
+		SELECT agent_id, $2, $3
+		FROM agent_principals
+		WHERE agent_id = $1
+	`, agentID, accessorUserID, accessContext)
+	return err
 }
 
 func (r *commissionRepository) ReviewAgentPaymentProfile(

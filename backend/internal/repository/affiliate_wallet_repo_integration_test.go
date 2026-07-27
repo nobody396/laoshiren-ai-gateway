@@ -77,6 +77,32 @@ func TestAffiliateWalletRepository_OnDemandWithdrawalFailureAndConversion(t *tes
 	)
 	require.NoError(t, err)
 	require.Equal(t, failedRequest.ID, idempotent.ID)
+	_, err = walletService.RequestWithdrawal(
+		ctx,
+		agent.ID,
+		100_000_000,
+		"wallet-withdraw-second-processing",
+	)
+	require.ErrorIs(t, err, service.ErrAffiliateWithdrawalAlreadyProcessing)
+	_, err = walletService.GetWithdrawalQRCodeFile(ctx, failedRequest.ID, admin.ID)
+	require.NoError(t, err)
+	var qrAccessCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM agent_payment_qr_access_events
+		WHERE withdrawal_id = $1
+			AND accessor_user_id = $2
+			AND access_context = 'withdrawal_snapshot'
+	`, failedRequest.ID, admin.ID).Scan(&qrAccessCount))
+	require.Equal(t, 1, qrAccessCount)
+
+	paymentRepo := NewCommissionRepository(client, integrationDB).(service.AgentPaymentRepository)
+	err = paymentRepo.UpsertAgentPaymentProfile(ctx, &service.AgentPaymentProfile{
+		AgentID:        agent.ID,
+		AlipayRealName: "处理中不可修改",
+		AlipayAccount:  "locked@example.com",
+	})
+	require.ErrorIs(t, err, service.ErrAgentPaymentProfileLocked)
 
 	wallet, err = walletService.GetWallet(ctx, agent.ID)
 	require.NoError(t, err)
@@ -120,6 +146,19 @@ func TestAffiliateWalletRepository_OnDemandWithdrawalFailureAndConversion(t *tes
 	require.NoError(t, err)
 	require.Equal(t, "paid", paidRequest.Status)
 	require.NotNil(t, paidRequest.PaidAt)
+
+	var requestedEvents, paidEvents, failedEvents int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT
+			COUNT(*) FILTER (WHERE event_type = 'requested'),
+			COUNT(*) FILTER (WHERE event_type = 'paid'),
+			COUNT(*) FILTER (WHERE event_type = 'failed')
+		FROM agent_withdrawal_events
+		WHERE agent_id = $1
+	`, agent.ID).Scan(&requestedEvents, &paidEvents, &failedEvents))
+	require.Equal(t, 2, requestedEvents)
+	require.Equal(t, 1, paidEvents)
+	require.Equal(t, 1, failedEvents)
 
 	conversion, err := walletService.Convert(
 		ctx,

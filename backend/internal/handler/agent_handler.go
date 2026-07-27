@@ -547,8 +547,22 @@ func (h *AgentHandler) uploadPaymentQRCode(c *gin.Context, agentID int64) (*serv
 }
 
 func (h *AgentHandler) servePaymentQRCode(c *gin.Context, agentID int64) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
 	file, err := h.commissionService.GetAgentPaymentQRCodeFile(c.Request.Context(), agentID)
 	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if err := h.commissionService.RecordAgentPaymentQRCodeAccess(
+		c.Request.Context(),
+		agentID,
+		subject.UserID,
+		"agent_self",
+	); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}

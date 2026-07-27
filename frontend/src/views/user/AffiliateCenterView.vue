@@ -15,15 +15,15 @@
             </p>
           </div>
           <div class="rounded-2xl border border-primary-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-primary-900 dark:bg-dark-900/80">
-            <p class="text-xs text-gray-500 dark:text-dark-400">我的普通邀请链接</p>
+            <p class="text-xs text-gray-500 dark:text-dark-400">{{ primaryInviteLabel }}</p>
             <div class="mt-2 flex gap-2">
-              <input :value="ordinaryInviteURL" readonly class="input min-w-0 flex-1 text-sm" aria-label="普通邀请链接">
-              <button class="btn btn-primary shrink-0" :disabled="!ordinaryInviteURL" @click="copyOrdinaryInvite">
+              <input :value="primaryInviteURL" readonly class="input min-w-0 flex-1 text-sm" :aria-label="primaryInviteLabel">
+              <button class="btn btn-primary shrink-0" :disabled="!primaryInviteURL" @click="copyPrimaryInvite">
                 {{ copied ? '已复制' : '复制' }}
               </button>
             </div>
             <p class="mt-2 text-xs leading-5 text-gray-500 dark:text-dark-400">
-              邀请人奖励 T+0；被邀请人首笔实付严格大于 ¥50 时，T+1 额外获得 ⚡5。
+              {{ primaryInviteHint }}
             </p>
           </div>
         </div>
@@ -154,7 +154,7 @@
                     </div>
                     <div class="flex gap-2">
                       <button class="btn btn-secondary btn-sm" @click="copyLink(link)">复制</button>
-                      <button class="btn btn-secondary btn-sm" @click="toggleLink(link)">{{ link.status === 'active' ? '停用' : '启用' }}</button>
+                      <button v-if="!link.is_default" class="btn btn-secondary btn-sm" @click="toggleLink(link)">{{ link.status === 'active' ? '停用' : '启用' }}</button>
                     </div>
                   </div>
 
@@ -372,6 +372,18 @@ const paymentForm = reactive({
 
 const ordinaryInviteURL = computed(() => inviteCode.value ? `${window.location.origin}/register?ref=${inviteCode.value}` : '')
 const isActiveAgent = computed(() => qualification.value?.agent_status === 'active' || authStore.user?.role === 'agent')
+const defaultAgentLink = computed(() => links.value.find(item => item.is_default && item.status === 'active'))
+const primaryInviteURL = computed(() =>
+  isActiveAgent.value && defaultAgentLink.value
+    ? affiliateURL(defaultAgentLink.value.code)
+    : ordinaryInviteURL.value
+)
+const primaryInviteLabel = computed(() => isActiveAgent.value ? '我的默认 Agent 链接' : '我的普通邀请链接')
+const primaryInviteHint = computed(() =>
+  isActiveAgent.value
+    ? '默认链接使用固定 10% 奖励池；可在下方动态调整客户返利与现金佣金的分配。'
+    : '邀请人奖励 T+0；被邀请人首笔实付严格大于 ¥50 时，T+1 额外获得 ⚡5。'
+)
 const unreadNotices = computed(() => notices.value.filter(item => !item.read_at))
 const qualificationStatusLabel = computed(() => {
   if (isActiveAgent.value) return 'Agent 已开通'
@@ -463,8 +475,8 @@ async function loadPage() {
   }
 }
 
-async function copyOrdinaryInvite() {
-  await copyToClipboard(ordinaryInviteURL.value, '普通邀请链接已复制')
+async function copyPrimaryInvite() {
+  await copyToClipboard(primaryInviteURL.value, isActiveAgent.value ? '默认 Agent 链接已复制' : '普通邀请链接已复制')
 }
 
 async function activateAgent() {

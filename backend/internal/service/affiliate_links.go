@@ -11,10 +11,14 @@ import (
 )
 
 var (
-	ErrAffiliateAgentNotActive = infraerrors.Forbidden("AFFILIATE_AGENT_NOT_ACTIVE", "affiliate agent is not active")
-	ErrAffiliateLinkNotFound   = infraerrors.NotFound("AFFILIATE_LINK_NOT_FOUND", "affiliate link not found")
-	ErrAffiliateLinkLimit      = infraerrors.Conflict("AFFILIATE_LINK_LIMIT", "affiliate campaign link limit reached")
-	ErrAffiliateLinkConflict   = infraerrors.Conflict("AFFILIATE_LINK_CONFLICT", "affiliate link code conflict")
+	ErrAffiliateAgentNotActive      = infraerrors.Forbidden("AFFILIATE_AGENT_NOT_ACTIVE", "affiliate agent is not active")
+	ErrAffiliateLinkNotFound        = infraerrors.NotFound("AFFILIATE_LINK_NOT_FOUND", "affiliate link not found")
+	ErrAffiliateLinkLimit           = infraerrors.Conflict("AFFILIATE_LINK_LIMIT", "affiliate campaign link limit reached")
+	ErrAffiliateLinkConflict        = infraerrors.Conflict("AFFILIATE_LINK_CONFLICT", "affiliate link code conflict")
+	ErrAffiliateDefaultLinkRequired = infraerrors.Conflict(
+		"AFFILIATE_DEFAULT_LINK_REQUIRED",
+		"default affiliate link must remain active",
+	)
 )
 
 type AffiliateLink struct {
@@ -52,6 +56,7 @@ type CreateAffiliateLinkInput struct {
 
 type AffiliateLinkRepository interface {
 	ResolveActiveLink(ctx context.Context, code string) (*AffiliateLinkReferral, error)
+	ResolveDefaultAgentLink(ctx context.Context, agentID int64) (*AffiliateLinkReferral, error)
 	BindAgentReferral(ctx context.Context, customerUserID int64, referral AffiliateLinkReferral) error
 	ListLinks(ctx context.Context, agentID int64) ([]AffiliateLink, error)
 	CreateLink(ctx context.Context, input CreateAffiliateLinkInput) (*AffiliateLink, error)

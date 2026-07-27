@@ -133,6 +133,15 @@ func (s *CommissionService) ValidateAndGetInviter(ctx context.Context, inviteCod
 		}
 		return nil, fmt.Errorf("get inviter by code: %w", err)
 	}
+	if user.Role == RoleAgent && s.affiliateLinks != nil {
+		_, linkErr := s.affiliateLinks.ResolveDefaultAgentLink(ctx, user.ID)
+		if linkErr == nil {
+			return user, nil
+		}
+		if !errors.Is(linkErr, ErrAffiliateLinkNotFound) {
+			return nil, fmt.Errorf("resolve default affiliate link: %w", linkErr)
+		}
+	}
 	return user, nil
 }
 
@@ -145,6 +154,18 @@ func (s *CommissionService) BindReferralCode(ctx context.Context, userID int64, 
 	}
 	inviter, err := s.userRepo.GetByInviteCode(ctx, code)
 	if err == nil {
+		if inviter.Role == RoleAgent && s.affiliateLinks != nil {
+			referral, linkErr := s.affiliateLinks.ResolveDefaultAgentLink(ctx, inviter.ID)
+			if linkErr == nil {
+				if err := s.affiliateLinks.BindAgentReferral(ctx, userID, *referral); err != nil {
+					return fmt.Errorf("bind default agent referral link: %w", err)
+				}
+				return nil
+			}
+			if !errors.Is(linkErr, ErrAffiliateLinkNotFound) {
+				return fmt.Errorf("resolve default affiliate link: %w", linkErr)
+			}
+		}
 		var legacyAgentID *int64
 		if inviter.Role == RoleAgent {
 			legacyAgentID = &inviter.ID

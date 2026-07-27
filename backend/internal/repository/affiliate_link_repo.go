@@ -57,6 +57,65 @@ func (r *affiliateLinkRepository) ResolveActiveLink(ctx context.Context, code st
 	return out, nil
 }
 
+// ResolveDefaultAgentLink upgrades an active V2 Agent's historical user invite
+// code to the Agent's default 10% pool link. A missing principal means this is
+// a legacy Agent and callers may retain the legacy ordinary-invite behavior.
+// Once a V2 principal exists, a blocked Agent or unavailable default link must
+// never silently fall back to the ordinary 5% reward path.
+func (r *affiliateLinkRepository) ResolveDefaultAgentLink(
+	ctx context.Context,
+	agentID int64,
+) (*service.AffiliateLinkReferral, error) {
+	if r == nil || r.db == nil {
+		return nil, errors.New("affiliate link repository db is nil")
+	}
+	var status, riskStatus string
+	err := r.db.QueryRowContext(ctx, `
+		SELECT status, risk_status
+		FROM agent_principals
+		WHERE agent_id = $1
+	`, agentID).Scan(&status, &riskStatus)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, service.ErrAffiliateLinkNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	if status != "active" || riskStatus != service.AffiliateRiskStatusClear {
+		return nil, service.ErrAffiliateAgentNotActive
+	}
+
+	out := &service.AffiliateLinkReferral{}
+	err = r.db.QueryRowContext(ctx, `
+		SELECT
+			l.agent_id,
+			l.id,
+			l.current_rate_version,
+			rv.customer_rebate_rate_bps,
+			rv.agent_commission_rate_bps
+		FROM affiliate_links l
+		JOIN affiliate_link_rate_versions rv
+			ON rv.link_id = l.id
+			AND rv.version = l.current_rate_version
+		WHERE l.agent_id = $1
+			AND l.is_default = TRUE
+			AND l.status = 'active'
+	`, agentID).Scan(
+		&out.AgentID,
+		&out.LinkID,
+		&out.RateVersion,
+		&out.CustomerRebateRateBPS,
+		&out.AgentCommissionRateBPS,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, service.ErrAffiliateAgentNotActive
+	}
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (r *affiliateLinkRepository) BindAgentReferral(
 	ctx context.Context,
 	customerUserID int64,
@@ -371,6 +430,27 @@ func (r *affiliateLinkRepository) SetLinkStatus(
 	agentID, linkID int64,
 	status string,
 ) (*service.AffiliateLink, error) {
+	if status != "active" {
+		var isDefault bool
+		err := r.db.QueryRowContext(ctx, `
+			SELECT l.is_default
+			FROM affiliate_links l
+			JOIN agent_principals ap ON ap.agent_id = l.agent_id
+			WHERE l.id = $1
+				AND l.agent_id = $2
+				AND ap.status = 'active'
+				AND ap.risk_status = 'clear'
+		`, linkID, agentID).Scan(&isDefault)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, service.ErrAffiliateLinkNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		if isDefault {
+			return nil, service.ErrAffiliateDefaultLinkRequired
+		}
+	}
 	result, err := r.db.ExecContext(ctx, `
 		UPDATE affiliate_links l
 		SET status = $1,

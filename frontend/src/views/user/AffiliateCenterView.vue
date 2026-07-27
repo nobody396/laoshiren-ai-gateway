@@ -192,7 +192,7 @@
 
             <aside class="space-y-6">
               <section class="card p-5">
-                <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">Cash Wallet</p>
+                <p class="text-xs font-semibold tracking-wider text-primary-700 dark:text-primary-300">佣金与提现</p>
                 <h2 class="mt-1 text-xl font-semibold text-gray-950 dark:text-white">佣金钱包</h2>
                 <div class="mt-5 grid grid-cols-2 gap-3">
                   <MetricTile label="可提现" :value="formatMicros(wallet?.available_cash_micros, '¥')" />
@@ -236,7 +236,7 @@
               <section class="card p-5">
                 <div class="flex items-start justify-between gap-3">
                   <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">Payout</p>
+                    <p class="text-xs font-semibold tracking-wider text-primary-700 dark:text-primary-300">收款信息</p>
                     <h2 class="mt-1 text-lg font-semibold text-gray-950 dark:text-white">支付宝收款资料</h2>
                   </div>
                   <span class="rounded-full px-2 py-1 text-xs font-medium" :class="paymentVerificationClass">{{ paymentVerificationLabel }}</span>
@@ -257,7 +257,7 @@
               </section>
 
               <section v-if="community?.enabled" class="card p-5">
-                <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">Private Community</p>
+                <p class="text-xs font-semibold tracking-wider text-primary-700 dark:text-primary-300">合伙人社群</p>
                 <h2 class="mt-1 text-lg font-semibold text-gray-950 dark:text-white">{{ community.title }}</h2>
                 <p class="mt-2 whitespace-pre-line text-sm leading-6 text-gray-600 dark:text-dark-300">{{ community.message }}</p>
                 <img v-if="communityQRPreview" :src="communityQRPreview" alt="合伙人社群二维码" class="mx-auto mt-4 max-h-56 rounded-xl border border-gray-200 p-2 dark:border-dark-700">
@@ -371,7 +371,7 @@ const paymentForm = reactive({
 })
 
 const ordinaryInviteURL = computed(() => inviteCode.value ? `${window.location.origin}/register?ref=${inviteCode.value}` : '')
-const isActiveAgent = computed(() => qualification.value?.agent_status === 'active' || authStore.user?.role === 'agent')
+const isActiveAgent = computed(() => authStore.user?.role === 'agent')
 const defaultAgentLink = computed(() => links.value.find(item => item.is_default && item.status === 'active'))
 const primaryInviteURL = computed(() =>
   isActiveAgent.value && defaultAgentLink.value

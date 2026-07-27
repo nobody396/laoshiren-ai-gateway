@@ -254,6 +254,46 @@ BEGIN
   SELECT id INTO ordinary_id FROM users WHERE email = 'ordinary-referrer@demo.local' AND deleted_at IS NULL;
   SELECT id INTO invitee_id FROM users WHERE email = 'ordinary-invitee@demo.local' AND deleted_at IS NULL;
 
+  -- Keep the qualified candidate reusable across repeated E2E runs. If a
+  -- previous staging test clicked "立即成为合伙人", reset only this demo
+  -- candidate back to the pre-activation state so the upgrade path remains
+  -- testable without wiping the whole staging database.
+  UPDATE agent_withdrawal_requests
+  SET status = 'failed',
+      failed_at = NOW(),
+      failure_reason = 'staging demo candidate reset',
+      updated_at = NOW()
+  WHERE agent_id = candidate_id
+    AND status = 'processing';
+
+  DELETE FROM agent_withdrawal_events
+  WHERE withdrawal_id IN (
+    SELECT id FROM agent_withdrawal_requests WHERE agent_id = candidate_id
+  );
+  DELETE FROM agent_withdrawal_requests WHERE agent_id = candidate_id;
+  DELETE FROM agent_commission_conversions WHERE agent_id = candidate_id;
+  DELETE FROM agent_cash_commission_entries WHERE agent_id = candidate_id;
+  DELETE FROM agent_payment_qr_access_events WHERE agent_id = candidate_id;
+  DELETE FROM agent_payment_profiles WHERE agent_id = candidate_id;
+  DELETE FROM affiliate_agent_notices WHERE agent_id = candidate_id;
+  DELETE FROM affiliate_bindings WHERE agent_id = candidate_id;
+  DELETE FROM affiliate_link_rate_versions
+  WHERE link_id IN (SELECT id FROM affiliate_links WHERE agent_id = candidate_id);
+  DELETE FROM affiliate_links WHERE agent_id = candidate_id;
+  DELETE FROM affiliate_performance_events
+  WHERE (user_id = candidate_id AND event_type = 'agent_activated')
+     OR direct_agent_id = candidate_id;
+  UPDATE agent_principals
+  SET status = 'candidate',
+      risk_status = 'clear',
+      risk_note = '',
+      qualified_at = NULL,
+      activated_at = NULL,
+      reviewed_at = NULL,
+      reviewed_by = NULL,
+      updated_at = NOW()
+  WHERE agent_id = candidate_id;
+
   -- The production guard correctly prevents payment-profile edits while a
   -- withdrawal is processing. For this staging demo re-seed, temporarily move
   -- our own demo processing withdrawals out of the way; the demo withdrawals

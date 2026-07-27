@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type SEOManifest struct {
@@ -121,6 +122,71 @@ func (m *SEOManifest) renderNotFoundHTML(base []byte, requestPath string) []byte
 	out = replaceOrInsertHead(out, twitterTitlePattern, `<meta name="twitter:title" content="页面未找到 - 老实人AI" />`)
 	out = replaceOrInsertHead(out, twitterDescPattern, `<meta name="twitter:description" content="这个页面不存在，请返回老实人AI文档中心或首页查找 Claude Code、Codex 和 AI API 网关相关指南。" />`)
 	return injectStaticHTML(out, `<main class="seo-static-content"><h1>页面未找到</h1><p>这个页面不存在。你可以返回 <a href="/">老实人AI首页</a> 或 <a href="/docs">文档中心</a>，查看 Claude Code、Codex、API Key 和 Base URL 配置指南。</p></main>`)
+}
+
+func (m *SEOManifest) renderChangelogHTML(
+	base []byte,
+	requestPath string,
+	page *ChangelogPage,
+) []byte {
+	if page == nil {
+		return base
+	}
+	siteName := "老实人AI"
+	siteOrigin := "https://laoshirenai.com"
+	if m != nil {
+		if strings.TrimSpace(m.SiteName) != "" {
+			siteName = strings.TrimSpace(m.SiteName)
+		}
+		if strings.TrimSpace(m.SiteOrigin) != "" {
+			siteOrigin = strings.TrimRight(m.SiteOrigin, "/")
+		}
+	}
+
+	title := strings.TrimSpace(page.Title) + " - 更新日志 - " + siteName
+	description := strings.TrimSpace(page.Summary)
+	canonicalURL := siteOrigin + normalizeSEOPath(requestPath)
+	out := base
+	out = replaceOrInsertHead(out, titleTagPattern, `<title>`+escapeText(title)+`</title>`)
+	out = replaceOrInsertHead(out, descriptionMetaPattern, `<meta name="description" content="`+escapeAttr(description)+`" />`)
+	out = replaceOrInsertHead(out, robotsMetaPattern, `<meta name="robots" content="index,follow" />`)
+	out = replaceOrInsertHead(out, canonicalLinkPattern, `<link rel="canonical" href="`+escapeAttr(canonicalURL)+`" />`)
+	out = replaceOrInsertHead(out, ogTypePattern, `<meta property="og:type" content="article" />`)
+	out = replaceOrInsertHead(out, ogTitlePattern, `<meta property="og:title" content="`+escapeAttr(title)+`" />`)
+	out = replaceOrInsertHead(out, ogDescriptionPattern, `<meta property="og:description" content="`+escapeAttr(description)+`" />`)
+	out = replaceOrInsertHead(out, ogURLPattern, `<meta property="og:url" content="`+escapeAttr(canonicalURL)+`" />`)
+	out = replaceOrInsertHead(out, twitterTitlePattern, `<meta name="twitter:title" content="`+escapeAttr(title)+`" />`)
+	out = replaceOrInsertHead(out, twitterDescPattern, `<meta name="twitter:description" content="`+escapeAttr(description)+`" />`)
+
+	article := map[string]any{
+		"@context":    "https://schema.org",
+		"@type":       "Article",
+		"headline":    strings.TrimSpace(page.Title),
+		"description": description,
+		"url":         canonicalURL,
+		"inLanguage":  "zh-CN",
+		"publisher": map[string]any{
+			"@type": "Organization",
+			"name":  siteName,
+			"url":   siteOrigin,
+		},
+	}
+	if page.PublishedAt != nil {
+		article["datePublished"] = page.PublishedAt.UTC().Format(time.RFC3339)
+	}
+	if !page.UpdatedAt.IsZero() {
+		article["dateModified"] = page.UpdatedAt.UTC().Format(time.RFC3339)
+	}
+	if data, err := json.Marshal(article); err == nil {
+		script := `<script type="application/ld+json" data-seo="server-structured-data" data-canonical="` +
+			escapeAttr(canonicalURL) + `" nonce="` + NonceHTMLPlaceholder + `">` + string(data) + `</script>`
+		out = replaceOrInsertHead(out, serverSchemaPattern, script)
+	}
+	return injectStaticHTML(
+		out,
+		`<main class="seo-static-content"><h1>`+escapeText(page.Title)+`</h1><p>`+
+			escapeText(description)+`</p></main>`,
+	)
 }
 
 func (m *SEOManifest) routeForPath(path string) *SEORoute {

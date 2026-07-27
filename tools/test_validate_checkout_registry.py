@@ -14,13 +14,19 @@ class CheckoutRegistryTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         self.canonical = self.root / "canonical"
+        self.release_only = self.root / "release-only"
         self.report = self.root / "report"
         self.unknown = self.root / "unknown"
-        for path in (self.canonical, self.report, self.unknown):
+        for path in (self.canonical, self.release_only, self.report, self.unknown):
             path.mkdir()
         self.registry = self.root / "registry.json"
         self.registry.write_text(json.dumps({"checkouts": [
             {"path": str(self.canonical), "kind": "canonical", "allowed_actions": ["release"]},
+            {
+                "path": str(self.release_only),
+                "kind": "release-only",
+                "allowed_actions": ["release"],
+            },
             {"path": str(self.report), "kind": "report-only", "allowed_actions": ["report"]}
         ]}), encoding="utf-8")
 
@@ -29,6 +35,12 @@ class CheckoutRegistryTests(unittest.TestCase):
 
     def test_canonical_release_passes(self) -> None:
         self.assertEqual(validate(self.registry, self.canonical, "release")["kind"], "canonical")
+
+    def test_release_only_release_passes(self) -> None:
+        self.assertEqual(
+            validate(self.registry, self.release_only, "release")["kind"],
+            "release-only",
+        )
 
     def test_report_checkout_cannot_release(self) -> None:
         with self.assertRaisesRegex(ValueError, "forbids action"):

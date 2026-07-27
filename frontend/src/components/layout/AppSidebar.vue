@@ -639,7 +639,7 @@ const AgentIcon = {
 
 // Agent navigation items (shown for role=agent)
 const agentNavItems = computed((): NavItem[] => [
-  { path: '/agent/dashboard', label: t('nav.agentDashboard'), icon: AgentIcon },
+  { path: '/affiliate', label: t('nav.affiliateCenter'), icon: AgentIcon },
   { path: '/agent/users', label: t('nav.agentUsers'), icon: UsersIcon },
   { path: '/agent/commissions', label: t('nav.agentCommissions'), icon: ChartIcon },
 ])
@@ -678,6 +678,7 @@ const userNavItems = computed((): NavItem[] => {
     { path: '/get-subscription', label: t('nav.getSubscription'), icon: RechargeSubscriptionIcon },
     createModelPricingNavItem(),
     { path: '/topup/orders', label: t('nav.topupOrders'), icon: CreditCardIcon },
+    { path: '/affiliate', label: t('nav.affiliateCenter'), icon: AgentIcon },
     ...(invoiceManagementEnabled.value
       ? [{ path: '/invoice', label: t('nav.invoiceManagement'), icon: TicketIcon }]
       : []),

@@ -449,6 +449,7 @@ export default {
     feedbackAdmin: '反馈管理',
     agentConsole: '合伙人中心',
     agentManagement: '合伙人管理',
+    affiliateCenter: '联盟计划',
     agentDashboard: '合伙人总览',
     agentUsers: '邀请用户',
     agentCommissions: '分润记录',

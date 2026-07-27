@@ -1,0 +1,612 @@
+<template>
+  <AppLayout>
+    <main class="mx-auto max-w-6xl space-y-6 pb-12">
+      <header class="relative overflow-hidden rounded-3xl border border-primary-200 bg-primary-50 p-6 dark:border-primary-900 dark:bg-primary-950 sm:p-8">
+        <div class="relative grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-end">
+          <div>
+            <p class="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-primary-700 dark:text-primary-300">
+              AFFILIATE · 联盟计划
+            </p>
+            <h1 class="max-w-2xl text-3xl font-bold tracking-tight text-gray-950 dark:text-white sm:text-4xl">
+              一条真实邀请，<br class="hidden sm:block">一份长期回报。
+            </h1>
+            <p class="mt-4 max-w-2xl text-sm leading-7 text-gray-600 dark:text-dark-300">
+              普通用户邀请首笔真实付费即可获得 5% ⚡平台额度；满足消费门槛后，可升级为 Agent，使用动态返利链接分享固定 10% 奖励池。
+            </p>
+          </div>
+          <div class="rounded-2xl border border-primary-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-primary-900 dark:bg-dark-900/80">
+            <p class="text-xs text-gray-500 dark:text-dark-400">我的普通邀请链接</p>
+            <div class="mt-2 flex gap-2">
+              <input :value="ordinaryInviteURL" readonly class="input min-w-0 flex-1 text-sm" aria-label="普通邀请链接">
+              <button class="btn btn-primary shrink-0" :disabled="!ordinaryInviteURL" @click="copyOrdinaryInvite">
+                {{ copied ? '已复制' : '复制' }}
+              </button>
+            </div>
+            <p class="mt-2 text-xs leading-5 text-gray-500 dark:text-dark-400">
+              邀请人奖励 T+0；被邀请人首笔实付严格大于 ¥50 时，T+1 额外获得 ⚡5。
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <div v-if="error" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+        {{ error }}
+      </div>
+
+      <section v-if="loading" class="grid gap-4 md:grid-cols-3" aria-label="加载中">
+        <div v-for="item in 3" :key="item" class="card h-40 animate-pulse bg-gray-100 dark:bg-dark-800" />
+      </section>
+
+      <template v-else>
+        <section v-if="qualification" class="card overflow-hidden">
+          <div class="border-b border-gray-100 px-6 py-5 dark:border-dark-800">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">Agent Qualification</p>
+                <h2 class="mt-1 text-xl font-semibold text-gray-950 dark:text-white">Agent 资格进度</h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">仅统计计划启用后的真实消费，永久直属关系不会因升级改变。</p>
+              </div>
+              <span class="rounded-full border px-3 py-1 text-xs font-medium" :class="qualificationBadgeClass">
+                {{ qualificationStatusLabel }}
+              </span>
+            </div>
+          </div>
+
+          <div class="grid gap-4 p-6 lg:grid-cols-2">
+            <article class="rounded-2xl border p-5" :class="qualification.direct_route_qualified ? 'border-green-300 bg-green-50 dark:border-green-900 dark:bg-green-950' : 'border-gray-200 dark:border-dark-700'">
+              <div class="flex items-center justify-between gap-3">
+                <h3 class="font-semibold text-gray-900 dark:text-white">路线 A · 直属团队</h3>
+                <span class="text-xs font-medium text-gray-500 dark:text-dark-400">{{ qualification.direct_route_qualified ? '已达成' : '进行中' }}</span>
+              </div>
+              <dl class="mt-5 space-y-4">
+                <ProgressRow
+                  label="有效直属用户"
+                  :value="qualification.valid_direct_user_count"
+                  :target="qualification.required_direct_user_count"
+                  suffix=" 人"
+                />
+                <ProgressRow
+                  label="直属团队确认消费"
+                  :value="microsToYuan(qualification.direct_team_consumption_micros)"
+                  :target="microsToYuan(qualification.required_direct_team_micros)"
+                  prefix="¥"
+                />
+              </dl>
+              <p class="mt-4 text-xs leading-5 text-gray-500 dark:text-dark-400">
+                每位有效用户需确认消费至少 ¥{{ formatAmount(microsToYuan(qualification.required_per_user_micros)) }}。
+              </p>
+            </article>
+
+            <article class="rounded-2xl border p-5" :class="qualification.combined_route_qualified ? 'border-green-300 bg-green-50 dark:border-green-900 dark:bg-green-950' : 'border-gray-200 dark:border-dark-700'">
+              <div class="flex items-center justify-between gap-3">
+                <h3 class="font-semibold text-gray-900 dark:text-white">路线 B · 合并消费</h3>
+                <span class="text-xs font-medium text-gray-500 dark:text-dark-400">{{ qualification.combined_route_qualified ? '已达成' : '进行中' }}</span>
+              </div>
+              <dl class="mt-5">
+                <ProgressRow
+                  label="本人 + 直属团队确认消费"
+                  :value="microsToYuan(qualification.combined_consumption_micros)"
+                  :target="microsToYuan(qualification.required_combined_micros)"
+                  prefix="¥"
+                />
+              </dl>
+              <p class="mt-4 text-xs leading-5 text-gray-500 dark:text-dark-400">
+                当前本人 ¥{{ formatAmount(microsToYuan(qualification.self_consumption_micros)) }}，直属团队 ¥{{ formatAmount(microsToYuan(qualification.direct_team_consumption_micros)) }}。
+              </p>
+            </article>
+          </div>
+
+          <div v-if="qualification.can_activate" class="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 bg-gray-50 px-6 py-4 dark:border-dark-800 dark:bg-dark-900">
+            <p class="text-sm text-gray-600 dark:text-dark-300">资格已达成。确认后立即创建默认 5% / 5% 动态链接。</p>
+            <button class="btn btn-primary" :disabled="activating" @click="activateAgent">
+              {{ activating ? '正在开通…' : '立即成为 Agent' }}
+            </button>
+          </div>
+        </section>
+
+        <template v-if="isActiveAgent">
+          <section v-if="unreadNotices.length" class="space-y-3">
+            <article v-for="notice in unreadNotices" :key="notice.id" class="flex gap-4 rounded-2xl border border-primary-200 bg-primary-50 p-4 dark:border-primary-900 dark:bg-primary-950">
+              <div class="min-w-0 flex-1">
+                <h3 class="font-semibold text-gray-900 dark:text-white">{{ notice.title }}</h3>
+                <p class="mt-1 whitespace-pre-line text-sm leading-6 text-gray-600 dark:text-dark-300">{{ notice.message }}</p>
+              </div>
+              <button class="btn btn-secondary btn-sm shrink-0 self-start" @click="markNoticeRead(notice.id)">知道了</button>
+            </article>
+          </section>
+
+          <section class="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+            <div class="card overflow-hidden">
+              <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">Fixed 10% Pool</p>
+                  <h2 class="mt-1 text-xl font-semibold text-gray-950 dark:text-white">动态返利链接</h2>
+                </div>
+                <button class="btn btn-secondary btn-sm" :disabled="links.length >= 6" @click="showCreateLink = !showCreateLink">
+                  新建活动链接
+                </button>
+              </div>
+
+              <form v-if="showCreateLink" class="grid gap-3 border-b border-gray-100 bg-gray-50 p-5 dark:border-dark-800 dark:bg-dark-900 sm:grid-cols-[1fr_1fr_auto]" @submit.prevent="createLink">
+                <input v-model.trim="newLink.name" required maxlength="80" class="input" placeholder="活动名称">
+                <input v-model.trim="newLink.channel" maxlength="80" class="input" placeholder="渠道（可选）">
+                <button class="btn btn-primary" :disabled="linkSaving">创建</button>
+                <div class="sm:col-span-3">
+                  <label class="mb-2 flex justify-between text-xs text-gray-500 dark:text-dark-400">
+                    <span>客户返利</span><span>{{ newLink.rate }}% ⚡ / {{ 10 - newLink.rate }}% 现金佣金</span>
+                  </label>
+                  <input v-model.number="newLink.rate" type="range" min="0" max="10" step="1" class="w-full accent-primary-600">
+                </div>
+              </form>
+
+              <div class="divide-y divide-gray-100 dark:divide-dark-800">
+                <article v-for="link in links" :key="link.id" class="p-5">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="font-semibold text-gray-900 dark:text-white">{{ link.name }}</h3>
+                        <span v-if="link.is_default" class="rounded-full bg-primary-100 px-2 py-0.5 text-[11px] font-medium text-primary-700 dark:bg-primary-950 dark:text-primary-300">默认</span>
+                        <span class="rounded-full px-2 py-0.5 text-[11px] font-medium" :class="link.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-dark-800 dark:text-dark-400'">
+                          {{ link.status === 'active' ? '使用中' : '已停用' }}
+                        </span>
+                      </div>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ link.channel || '通用渠道' }} · {{ affiliateURL(link.code) }}</p>
+                    </div>
+                    <div class="flex gap-2">
+                      <button class="btn btn-secondary btn-sm" @click="copyLink(link)">复制</button>
+                      <button class="btn btn-secondary btn-sm" @click="toggleLink(link)">{{ link.status === 'active' ? '停用' : '启用' }}</button>
+                    </div>
+                  </div>
+
+                  <div class="mt-5 overflow-hidden rounded-full bg-gray-100 dark:bg-dark-800">
+                    <div class="flex h-9 text-xs font-semibold">
+                      <div class="flex items-center justify-center bg-primary-500 text-white transition-[width]" :style="{ width: `${link.customer_rebate_rate_bps / 1000 * 100}%` }">
+                        <span v-if="link.customer_rebate_rate_bps > 0">客户 {{ link.customer_rebate_rate_bps / 100 }}%</span>
+                      </div>
+                      <div class="flex flex-1 items-center justify-center bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900">
+                        Agent {{ link.agent_commission_rate_bps / 100 }}%
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="mt-4 flex items-center gap-3">
+                    <input
+                      :value="link.customer_rebate_rate_bps / 100"
+                      type="range"
+                      min="0"
+                      max="10"
+                      step="1"
+                      class="min-w-0 flex-1 accent-primary-600"
+                      :aria-label="`${link.name} 客户返利率`"
+                      @change="changeLinkRate(link, $event)"
+                    >
+                    <span class="w-14 text-right text-sm font-semibold text-gray-900 dark:text-white">{{ link.customer_rebate_rate_bps / 100 }}%</span>
+                  </div>
+                </article>
+                <div v-if="!links.length" class="p-10 text-center text-sm text-gray-500 dark:text-dark-400">暂无动态链接</div>
+              </div>
+              <p class="border-t border-gray-100 px-5 py-4 text-xs leading-5 text-gray-500 dark:border-dark-800 dark:text-dark-400">
+                奖励池始终为 10%。返给客户的比例可按 1% 步进动态调整；已经绑定的客户只升不降，历史关系不会被新设置覆盖。
+              </p>
+            </div>
+
+            <aside class="space-y-6">
+              <section class="card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">Cash Wallet</p>
+                <h2 class="mt-1 text-xl font-semibold text-gray-950 dark:text-white">佣金钱包</h2>
+                <div class="mt-5 grid grid-cols-2 gap-3">
+                  <MetricTile label="可提现" :value="formatMicros(wallet?.available_cash_micros, '¥')" />
+                  <MetricTile label="处理中" :value="formatMicros(wallet?.processing_withdrawal_micros, '¥')" />
+                  <MetricTile label="累计佣金" :value="formatMicros(wallet?.lifetime_earned_micros, '¥')" />
+                  <MetricTile label="转额度倍率" :value="`${(wallet?.conversion_multiplier_millis ?? 1200) / 1000}×`" />
+                </div>
+
+                <div class="mt-5 space-y-4 border-t border-gray-100 pt-5 dark:border-dark-800">
+                  <label class="block">
+                    <span class="mb-1 block text-xs text-gray-500 dark:text-dark-400">提现金额（¥）</span>
+                    <div class="flex gap-2">
+                      <input v-model.number="withdrawAmount" min="0" step="0.01" type="number" class="input min-w-0 flex-1">
+                      <button class="btn btn-primary shrink-0" :disabled="walletBusy || !wallet?.can_withdraw" @click="requestWithdrawal">申请提现</button>
+                    </div>
+                  </label>
+                  <p class="text-xs leading-5 text-gray-500 dark:text-dark-400">
+                    最低 {{ formatMicros(wallet?.withdrawal_minimum_micros, '¥') }}；提交即显示“处理中”，预计 {{ wallet?.withdrawal_sla_hours ?? 24 }} 小时内到账（北京时间）。
+                  </p>
+
+                  <label class="block">
+                    <span class="mb-1 block text-xs text-gray-500 dark:text-dark-400">转为 ⚡平台额度</span>
+                    <div class="flex gap-2">
+                      <input v-model.number="convertAmount" min="0" step="0.01" type="number" class="input min-w-0 flex-1">
+                      <button class="btn btn-secondary shrink-0" :disabled="walletBusy" @click="convertCommission">立即转换</button>
+                    </div>
+                  </label>
+                </div>
+
+                <div v-if="withdrawals.length" class="mt-5 border-t border-gray-100 pt-4 dark:border-dark-800">
+                  <p class="mb-2 text-xs font-medium text-gray-500 dark:text-dark-400">最近提现</p>
+                  <div v-for="item in withdrawals.slice(0, 4)" :key="item.id" class="flex items-center justify-between py-2 text-sm">
+                    <span class="text-gray-700 dark:text-dark-200">{{ formatMicros(item.amount_micros, '¥') }}</span>
+                    <span :class="item.status === 'paid' ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'">
+                      {{ item.status === 'paid' ? '已到账' : '处理中' }}
+                    </span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="card p-5">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">Payout</p>
+                    <h2 class="mt-1 text-lg font-semibold text-gray-950 dark:text-white">支付宝收款资料</h2>
+                  </div>
+                  <span class="rounded-full px-2 py-1 text-xs font-medium" :class="paymentVerificationClass">{{ paymentVerificationLabel }}</span>
+                </div>
+                <form class="mt-4 space-y-3" @submit.prevent="savePaymentProfile">
+                  <input v-model.trim="paymentForm.alipay_real_name" required class="input" placeholder="支付宝实名">
+                  <input v-model.trim="paymentForm.alipay_account" required class="input" placeholder="支付宝账号">
+                  <input v-model.trim="paymentForm.contact_phone" required class="input" placeholder="联系电话">
+                  <textarea v-model.trim="paymentForm.payment_note" class="input min-h-20" placeholder="打款备注（可选）" />
+                  <label class="block rounded-xl border border-dashed border-gray-300 p-3 text-center text-sm text-gray-600 hover:border-primary-400 dark:border-dark-600 dark:text-dark-300">
+                    <input type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" @change="uploadPaymentQR">
+                    {{ paymentQRPreview ? '更换支付宝收款码' : '上传支付宝收款码' }}
+                  </label>
+                  <img v-if="paymentQRPreview" :src="paymentQRPreview" alt="支付宝收款码预览" class="mx-auto max-h-48 rounded-xl border border-gray-200 p-2 dark:border-dark-700">
+                  <button class="btn btn-primary w-full" :disabled="paymentSaving">保存并提交审核</button>
+                </form>
+                <p v-if="paymentProfile?.verification_note" class="mt-3 text-xs text-red-600 dark:text-red-400">{{ paymentProfile.verification_note }}</p>
+              </section>
+
+              <section v-if="community?.enabled" class="card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">Private Community</p>
+                <h2 class="mt-1 text-lg font-semibold text-gray-950 dark:text-white">{{ community.title }}</h2>
+                <p class="mt-2 whitespace-pre-line text-sm leading-6 text-gray-600 dark:text-dark-300">{{ community.message }}</p>
+                <img v-if="communityQRPreview" :src="communityQRPreview" alt="Agent 社群二维码" class="mx-auto mt-4 max-h-56 rounded-xl border border-gray-200 p-2 dark:border-dark-700">
+              </section>
+            </aside>
+          </section>
+        </template>
+      </template>
+    </main>
+  </AppLayout>
+</template>
+
+<script setup lang="ts">
+import { computed, defineComponent, h, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import AppLayout from '@/components/layout/AppLayout.vue'
+import {
+  activateAffiliateAgent,
+  convertAffiliateCommission,
+  createAffiliateLink,
+  getAffiliateCommunity,
+  getAffiliateCommunityQRCode,
+  getAffiliateQualification,
+  getAffiliateWallet,
+  getAgentPaymentProfile,
+  getAgentPaymentQRCode,
+  getMyInviteCode,
+  listAffiliateLinks,
+  listAffiliateNotices,
+  listAffiliateWithdrawals,
+  readAffiliateNotice,
+  requestAffiliateWithdrawal,
+  updateAffiliateLinkRate,
+  updateAffiliateLinkStatus,
+  updateAgentPaymentProfile,
+  uploadAgentPaymentQRCode,
+  type AffiliateAgentNotice,
+  type AffiliateAgentQualification,
+  type AffiliateCommunity,
+  type AffiliateLink,
+  type AffiliateWallet,
+  type AffiliateWithdrawal,
+  type AgentPaymentProfile
+} from '@/api/agent'
+import { useAppStore } from '@/stores/app'
+import { useAuthStore } from '@/stores/auth'
+import { useClipboard } from '@/composables/useClipboard'
+import { buildAuthErrorMessage } from '@/utils/authError'
+
+const ProgressRow = defineComponent({
+  props: {
+    label: { type: String, required: true },
+    value: { type: Number, required: true },
+    target: { type: Number, required: true },
+    prefix: { type: String, default: '' },
+    suffix: { type: String, default: '' }
+  },
+  setup(props) {
+    return () => h('div', [
+      h('div', { class: 'mb-2 flex items-center justify-between gap-3 text-sm' }, [
+        h('dt', { class: 'text-gray-600 dark:text-dark-300' }, props.label),
+        h('dd', { class: 'font-semibold text-gray-900 dark:text-white' }, `${props.prefix}${formatAmount(props.value)} / ${props.prefix}${formatAmount(props.target)}${props.suffix}`)
+      ]),
+      h('div', { class: 'h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-dark-800' }, [
+        h('div', {
+          class: 'h-full rounded-full bg-primary-500',
+          style: { width: `${Math.min(100, props.target > 0 ? props.value / props.target * 100 : 100)}%` }
+        })
+      ])
+    ])
+  }
+})
+
+const MetricTile = defineComponent({
+  props: { label: { type: String, required: true }, value: { type: String, required: true } },
+  setup(props) {
+    return () => h('div', { class: 'rounded-xl bg-gray-50 p-3 dark:bg-dark-900' }, [
+      h('p', { class: 'text-xs text-gray-500 dark:text-dark-400' }, props.label),
+      h('p', { class: 'mt-1 text-lg font-bold text-gray-950 dark:text-white' }, props.value)
+    ])
+  }
+})
+
+const appStore = useAppStore()
+const authStore = useAuthStore()
+const { copied, copyToClipboard } = useClipboard()
+const loading = ref(true)
+const error = ref('')
+const activating = ref(false)
+const linkSaving = ref(false)
+const walletBusy = ref(false)
+const paymentSaving = ref(false)
+const inviteCode = ref('')
+const qualification = ref<AffiliateAgentQualification | null>(null)
+const links = ref<AffiliateLink[]>([])
+const wallet = ref<AffiliateWallet | null>(null)
+const withdrawals = ref<AffiliateWithdrawal[]>([])
+const notices = ref<AffiliateAgentNotice[]>([])
+const community = ref<AffiliateCommunity | null>(null)
+const paymentProfile = ref<AgentPaymentProfile | null>(null)
+const paymentQRPreview = ref('')
+const communityQRPreview = ref('')
+const showCreateLink = ref(false)
+const newLink = reactive({ name: '', channel: '', rate: 5 })
+const withdrawAmount = ref<number | null>(null)
+const convertAmount = ref<number | null>(null)
+const paymentForm = reactive({
+  alipay_real_name: '',
+  alipay_account: '',
+  contact_phone: '',
+  payment_note: ''
+})
+
+const ordinaryInviteURL = computed(() => inviteCode.value ? `${window.location.origin}/register?ref=${inviteCode.value}` : '')
+const isActiveAgent = computed(() => qualification.value?.agent_status === 'active' || authStore.user?.role === 'agent')
+const unreadNotices = computed(() => notices.value.filter(item => !item.read_at))
+const qualificationStatusLabel = computed(() => {
+  if (isActiveAgent.value) return 'Agent 已开通'
+  if (qualification.value?.can_activate) return '可立即开通'
+  if (qualification.value?.program_mode === 'off') return '计划尚未开放'
+  return '资格积累中'
+})
+const qualificationBadgeClass = computed(() => (
+  isActiveAgent.value || qualification.value?.can_activate
+    ? 'border-green-300 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300'
+    : 'border-gray-200 bg-gray-50 text-gray-600 dark:border-dark-700 dark:bg-dark-900 dark:text-dark-300'
+))
+const paymentVerificationLabel = computed(() => {
+  const status = paymentProfile.value?.verification_status
+  return status === 'verified' ? '已验证' : status === 'pending_review' ? '审核中' : status === 'rejected' ? '需修改' : '未提交'
+})
+const paymentVerificationClass = computed(() => (
+  paymentProfile.value?.verification_status === 'verified'
+    ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
+    : paymentProfile.value?.verification_status === 'rejected'
+      ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+      : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+))
+
+function affiliateURL(code: string) {
+  return `${window.location.origin}/register?ref=${code}`
+}
+
+function microsToYuan(value?: number) {
+  return (value ?? 0) / 1_000_000
+}
+
+function formatAmount(value?: number) {
+  return new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value ?? 0)
+}
+
+function formatMicros(value: number | undefined, symbol: string) {
+  return `${symbol}${formatAmount(microsToYuan(value))}`
+}
+
+function setBlobPreview(target: typeof paymentQRPreview, blob: Blob) {
+  if (target.value.startsWith('blob:')) URL.revokeObjectURL(target.value)
+  target.value = URL.createObjectURL(blob)
+}
+
+function applyPaymentProfile(profile: AgentPaymentProfile) {
+  paymentProfile.value = profile
+  paymentForm.alipay_real_name = profile.alipay_real_name || ''
+  paymentForm.alipay_account = profile.alipay_account || ''
+  paymentForm.contact_phone = profile.contact_phone || ''
+  paymentForm.payment_note = profile.payment_note || ''
+}
+
+async function loadAgentData() {
+  const [agentLinks, agentWallet, agentWithdrawals, agentNotices, agentCommunity, profile] = await Promise.all([
+    listAffiliateLinks(),
+    getAffiliateWallet(),
+    listAffiliateWithdrawals(),
+    listAffiliateNotices(),
+    getAffiliateCommunity(),
+    getAgentPaymentProfile()
+  ])
+  links.value = agentLinks
+  wallet.value = agentWallet
+  withdrawals.value = agentWithdrawals
+  notices.value = agentNotices
+  community.value = agentCommunity
+  applyPaymentProfile(profile)
+  if (profile.has_alipay_qr) {
+    try { setBlobPreview(paymentQRPreview, await getAgentPaymentQRCode()) } catch { /* optional preview */ }
+  }
+  if (agentCommunity.enabled && agentCommunity.has_qr_code) {
+    try { setBlobPreview(communityQRPreview, await getAffiliateCommunityQRCode()) } catch { /* optional preview */ }
+  }
+}
+
+async function loadPage() {
+  loading.value = true
+  error.value = ''
+  try {
+    const [invite, currentQualification] = await Promise.all([getMyInviteCode(), getAffiliateQualification()])
+    inviteCode.value = invite.invite_code
+    qualification.value = currentQualification
+    if (currentQualification.agent_status === 'active' || authStore.user?.role === 'agent') await loadAgentData()
+  } catch (cause: unknown) {
+    error.value = buildAuthErrorMessage(cause, { fallback: '联盟计划加载失败，请稍后重试。' })
+  } finally {
+    loading.value = false
+  }
+}
+
+async function copyOrdinaryInvite() {
+  await copyToClipboard(ordinaryInviteURL.value, '普通邀请链接已复制')
+}
+
+async function activateAgent() {
+  activating.value = true
+  try {
+    const result = await activateAffiliateAgent()
+    qualification.value = result.qualification
+    await authStore.refreshUser()
+    await loadAgentData()
+    appStore.showSuccess('Agent 已开通，默认动态链接已经生成')
+  } catch (cause: unknown) {
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: 'Agent 开通失败' }))
+  } finally {
+    activating.value = false
+  }
+}
+
+async function copyLink(link: AffiliateLink) {
+  await copyToClipboard(affiliateURL(link.code), `${link.name}链接已复制`)
+}
+
+async function createLink() {
+  linkSaving.value = true
+  try {
+    links.value.push(await createAffiliateLink({
+      name: newLink.name,
+      channel: newLink.channel,
+      customer_rebate_rate_bps: newLink.rate * 100
+    }))
+    newLink.name = ''
+    newLink.channel = ''
+    newLink.rate = 5
+    showCreateLink.value = false
+    appStore.showSuccess('活动链接已创建')
+  } catch (cause: unknown) {
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '创建链接失败' }))
+  } finally {
+    linkSaving.value = false
+  }
+}
+
+async function changeLinkRate(link: AffiliateLink, event: Event) {
+  const rate = Number((event.target as HTMLInputElement).value)
+  try {
+    const updated = await updateAffiliateLinkRate(link.id, rate * 100)
+    links.value = links.value.map(item => item.id === link.id ? updated : item)
+    appStore.showSuccess('返利比例已更新，新绑定按新比例执行')
+  } catch (cause: unknown) {
+    const rateInput = event.target as HTMLInputElement
+    rateInput.value = String(link.customer_rebate_rate_bps / 100)
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '比例更新失败' }))
+  }
+}
+
+async function toggleLink(link: AffiliateLink) {
+  try {
+    const updated = await updateAffiliateLinkStatus(link.id, link.status === 'active' ? 'disabled' : 'active')
+    links.value = links.value.map(item => item.id === link.id ? updated : item)
+  } catch (cause: unknown) {
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '链接状态更新失败' }))
+  }
+}
+
+async function refreshWallet() {
+  const [summary, items] = await Promise.all([getAffiliateWallet(), listAffiliateWithdrawals()])
+  wallet.value = summary
+  withdrawals.value = items
+}
+
+async function requestWithdrawal() {
+  if (!withdrawAmount.value || withdrawAmount.value <= 0) return
+  walletBusy.value = true
+  try {
+    await requestAffiliateWithdrawal(Math.round(withdrawAmount.value * 1_000_000))
+    withdrawAmount.value = null
+    await refreshWallet()
+    appStore.showSuccess('提现已进入处理中，预计 24 小时内到账')
+  } catch (cause: unknown) {
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '提现申请失败' }))
+  } finally {
+    walletBusy.value = false
+  }
+}
+
+async function convertCommission() {
+  if (!convertAmount.value || convertAmount.value <= 0) return
+  walletBusy.value = true
+  try {
+    const result = await convertAffiliateCommission(Math.round(convertAmount.value * 1_000_000))
+    convertAmount.value = null
+    await Promise.all([refreshWallet(), authStore.refreshUser()])
+    appStore.showSuccess(`已转换为 ${formatMicros(result.credit_amount_micros, '⚡')} 平台额度`)
+  } catch (cause: unknown) {
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '佣金转换失败' }))
+  } finally {
+    walletBusy.value = false
+  }
+}
+
+async function savePaymentProfile() {
+  paymentSaving.value = true
+  try {
+    applyPaymentProfile(await updateAgentPaymentProfile(paymentForm))
+    wallet.value = await getAffiliateWallet()
+    appStore.showSuccess('收款资料已保存，正在等待审核')
+  } catch (cause: unknown) {
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '收款资料保存失败' }))
+  } finally {
+    paymentSaving.value = false
+  }
+}
+
+async function uploadPaymentQR(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  paymentSaving.value = true
+  try {
+    applyPaymentProfile(await updateAgentPaymentProfile(paymentForm))
+    applyPaymentProfile(await uploadAgentPaymentQRCode(file))
+    setBlobPreview(paymentQRPreview, file)
+    appStore.showSuccess('收款码已上传，资料进入审核')
+  } catch (cause: unknown) {
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '收款码上传失败' }))
+  } finally {
+    paymentSaving.value = false
+    input.value = ''
+  }
+}
+
+async function markNoticeRead(id: number) {
+  try {
+    await readAffiliateNotice(id)
+    notices.value = notices.value.map(item => item.id === id ? { ...item, read_at: new Date().toISOString() } : item)
+  } catch (cause: unknown) {
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '通知状态更新失败' }))
+  }
+}
+
+onMounted(loadPage)
+onBeforeUnmount(() => {
+  if (paymentQRPreview.value.startsWith('blob:')) URL.revokeObjectURL(paymentQRPreview.value)
+  if (communityQRPreview.value.startsWith('blob:')) URL.revokeObjectURL(communityQRPreview.value)
+})
+</script>

@@ -449,6 +449,7 @@ export default {
     feedbackAdmin: 'Feedback Admin',
     agentConsole: 'Agent Console',
     agentManagement: 'Agent Management',
+    affiliateCenter: 'Affiliate Program',
     agentDashboard: 'Agent Dashboard',
     agentUsers: 'Invited Users',
     agentCommissions: 'Revenue Share Records',

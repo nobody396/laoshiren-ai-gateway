@@ -479,10 +479,19 @@ const routes: RouteRecordRaw[] = [
     }
   },
 
-  // ==================== Agent Routes ====================
+  // ==================== Affiliate & Agent Routes ====================
+  {
+    path: '/affiliate',
+    name: 'AffiliateCenter',
+    component: () => import('@/views/user/AffiliateCenterView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: '联盟计划'
+    }
+  },
   {
     path: '/agent',
-    redirect: '/agent/dashboard'
+    redirect: '/affiliate'
   },
   {
     path: '/agent/dashboard',

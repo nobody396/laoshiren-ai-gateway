@@ -7193,7 +7193,8 @@ type postUsageBillingParams struct {
 	AccountRateMultiplier float64
 	APIKeyService         APIKeyQuotaUpdater
 	// UsageLogID 写入 usage_log 后的记录 ID，用于分佣记录的 source_id 关联
-	UsageLogID *int64
+	UsageLogID      *int64
+	AffiliateV2Live bool
 }
 
 // postUsageBilling 统一处理使用量记录后的扣费逻辑：
@@ -7376,6 +7377,7 @@ func applyUsageBilling(ctx context.Context, requestID string, usageLog *UsageLog
 		deps.deferredService.ScheduleLastUsedUpdate(p.Account.ID)
 		return false, nil
 	}
+	p.AffiliateV2Live = result.AffiliateProgramMode == AffiliateProgramModeLive
 
 	if result.APIKeyQuotaExhausted {
 		if invalidator, ok := p.APIKeyService.(apiKeyAuthCacheInvalidator); ok && p.APIKey != nil && p.APIKey.Key != "" {
@@ -7419,7 +7421,22 @@ func finalizePostUsageBilling(p *postUsageBillingParams, deps *billingDeps, resu
 			}
 		}
 	} else if p.Cost.ActualCost > 0 && p.User != nil {
-		deps.billingCacheService.QueueDeductBalance(p.User.ID, p.Cost.ActualCost)
+		if result != nil && result.AffiliateCustomerRebateMicros > 0 {
+			cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			if err := deps.billingCacheService.InvalidateUserBalance(cacheCtx, p.User.ID); err != nil {
+				slog.Error("invalidate affiliate rebate balance cache failed", "user_id", p.User.ID, "error", err)
+			}
+			cancel()
+		} else {
+			deps.billingCacheService.QueueDeductBalance(p.User.ID, p.Cost.ActualCost)
+		}
+	}
+	if p.IsSubscriptionBill && p.User != nil && result != nil && result.AffiliateCustomerRebateMicros > 0 {
+		cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		if err := deps.billingCacheService.InvalidateUserBalance(cacheCtx, p.User.ID); err != nil {
+			slog.Error("invalidate affiliate subscription rebate balance cache failed", "user_id", p.User.ID, "error", err)
+		}
+		cancel()
 	}
 
 	if p.Cost.ActualCost > 0 && p.APIKey != nil && p.APIKey.HasRateLimits() {
@@ -7444,6 +7461,9 @@ func finalizePostUsageBilling(p *postUsageBillingParams, deps *billingDeps, resu
 // 所以即便同一 usage_log 被误触发多次，也只会落一条 commission_records。
 func triggerConsumptionCommission(applied bool, usageLog *UsageLog, p *postUsageBillingParams, deps *billingDeps) {
 	if !applied || p == nil || deps == nil || deps.commissionService == nil {
+		return
+	}
+	if p.AffiliateV2Live {
 		return
 	}
 	if p.IsSubscriptionBill {

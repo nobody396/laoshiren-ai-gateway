@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -108,6 +109,15 @@ func (r *usageBillingRepository) claimUsageBillingKey(ctx context.Context, tx *s
 }
 
 func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, tx *sql.Tx, cmd *service.UsageBillingCommand, result *service.UsageBillingApplyResult) error {
+	if cmd.UsageLogID > 0 {
+		if err := tx.QueryRowContext(ctx, `
+			SELECT mode
+			FROM affiliate_program_settings
+			WHERE id = 1
+		`).Scan(&result.AffiliateProgramMode); err != nil {
+			return err
+		}
+	}
 	if cmd.SubscriptionCost > 0 && cmd.SubscriptionID != nil {
 		updates, err := incrementUsageBillingSubscription(ctx, tx, *cmd.SubscriptionID, cmd.SubscriptionCost)
 		if err != nil {
@@ -115,17 +125,21 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 		}
 		result.SubscriptionUsageUpdates = updates
 		if cmd.UsageLogID > 0 {
+			settlement := usageBillingAffiliateSettlement{}
 			confirmedMicros, err := attributeUsageBillingMonthlyConsumption(
 				ctx,
 				tx,
 				cmd,
 				service.AffiliateMicrosFromFloat(cmd.SubscriptionCost),
+				&settlement,
 			)
 			if err != nil {
 				return err
 			}
 			result.MonthlyConfirmedMicros = confirmedMicros
 			result.ConfirmedConsumptionMicros += confirmedMicros
+			result.AffiliateCustomerRebateMicros += settlement.CustomerRebateMicros
+			result.AffiliateAgentCommissionMicros += settlement.AgentCommissionMicros
 		}
 	}
 
@@ -136,17 +150,21 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 		}
 		result.NewBalance = &newBalance
 		if cmd.UsageLogID > 0 {
+			settlement := usageBillingAffiliateSettlement{}
 			confirmedMicros, err := attributeUsageBillingBalanceConsumption(
 				ctx,
 				tx,
 				cmd,
 				service.AffiliateMicrosFromFloat(cmd.BalanceCost),
+				&settlement,
 			)
 			if err != nil {
 				return err
 			}
 			result.BalanceConfirmedMicros = confirmedMicros
 			result.ConfirmedConsumptionMicros += confirmedMicros
+			result.AffiliateCustomerRebateMicros += settlement.CustomerRebateMicros
+			result.AffiliateAgentCommissionMicros += settlement.AgentCommissionMicros
 		}
 	}
 
@@ -171,8 +189,25 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 		}
 		result.QuotaState = quotaState
 	}
+	if result.AffiliateCustomerRebateMicros > 0 {
+		var currentBalance float64
+		if err := tx.QueryRowContext(ctx, `
+			SELECT balance
+			FROM users
+			WHERE id = $1
+				AND deleted_at IS NULL
+		`, cmd.UserID).Scan(&currentBalance); err != nil {
+			return err
+		}
+		result.NewBalance = &currentBalance
+	}
 
 	return nil
+}
+
+type usageBillingAffiliateSettlement struct {
+	CustomerRebateMicros  int64
+	AgentCommissionMicros int64
 }
 
 type usageBillingBalanceLot struct {
@@ -186,6 +221,7 @@ func attributeUsageBillingBalanceConsumption(
 	tx *sql.Tx,
 	cmd *service.UsageBillingCommand,
 	amountMicros int64,
+	settlement *usageBillingAffiliateSettlement,
 ) (int64, error) {
 	if amountMicros <= 0 {
 		return 0, nil
@@ -304,7 +340,7 @@ func attributeUsageBillingBalanceConsumption(
 		return 0, errors.New("affiliate balance attribution did not consume requested amount")
 	}
 	if eligibleMicros > 0 {
-		if err := recordUsageBillingPerformanceEvent(
+		affiliateSettlement, err := recordUsageBillingPerformanceEvent(
 			ctx,
 			tx,
 			cmd.UserID,
@@ -312,8 +348,12 @@ func attributeUsageBillingBalanceConsumption(
 			"balance_usage",
 			fmt.Sprintf("confirmed:usage:%d:balance", cmd.UsageLogID),
 			eligibleMicros,
-		); err != nil {
+		)
+		if err != nil {
 			return 0, err
+		}
+		if settlement != nil {
+			*settlement = affiliateSettlement
 		}
 	}
 	return eligibleMicros, nil
@@ -324,6 +364,7 @@ func attributeUsageBillingMonthlyConsumption(
 	tx *sql.Tx,
 	cmd *service.UsageBillingCommand,
 	creditMicros int64,
+	settlement *usageBillingAffiliateSettlement,
 ) (int64, error) {
 	if cmd.SubscriptionID == nil || creditMicros <= 0 {
 		return 0, nil
@@ -380,7 +421,7 @@ func attributeUsageBillingMonthlyConsumption(
 		return 0, err
 	}
 	if affiliateEligible && confirmedMicros > 0 {
-		if err := recordUsageBillingPerformanceEvent(
+		affiliateSettlement, err := recordUsageBillingPerformanceEvent(
 			ctx,
 			tx,
 			cmd.UserID,
@@ -388,8 +429,12 @@ func attributeUsageBillingMonthlyConsumption(
 			"monthly_usage",
 			fmt.Sprintf("confirmed:usage:%d:monthly", cmd.UsageLogID),
 			confirmedMicros,
-		); err != nil {
+		)
+		if err != nil {
 			return 0, err
+		}
+		if settlement != nil {
+			*settlement = affiliateSettlement
 		}
 	}
 	return confirmedMicros, nil
@@ -403,7 +448,7 @@ func recordUsageBillingPerformanceEvent(
 	sourceType string,
 	eventKey string,
 	amountMicros int64,
-) error {
+) (usageBillingAffiliateSettlement, error) {
 	var (
 		mode      string
 		startedAt sql.NullTime
@@ -413,15 +458,16 @@ func recordUsageBillingPerformanceEvent(
 		FROM affiliate_program_settings
 		WHERE id = 1
 	`).Scan(&mode, &startedAt); err != nil {
-		return err
+		return usageBillingAffiliateSettlement{}, err
 	}
 	if mode == service.AffiliateProgramModeOff {
-		return nil
+		return usageBillingAffiliateSettlement{}, nil
 	}
 	if mode == service.AffiliateProgramModeLive && (!startedAt.Valid || startedAt.Time.After(time.Now())) {
-		return nil
+		return usageBillingAffiliateSettlement{}, nil
 	}
-	_, err := tx.ExecContext(ctx, `
+	var performanceEventID int64
+	err := tx.QueryRowContext(ctx, `
 		INSERT INTO affiliate_performance_events (
 			user_id,
 			direct_agent_id,
@@ -447,8 +493,199 @@ func recordUsageBillingPerformanceEvent(
 		LEFT JOIN affiliate_bindings b
 			ON b.customer_user_id = $1
 		ON CONFLICT (event_key) DO NOTHING
-	`, userID, amountMicros, sourceType, usageLogID, eventKey, mode)
-	return err
+		RETURNING id
+	`, userID, amountMicros, sourceType, usageLogID, eventKey, mode).Scan(&performanceEventID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return usageBillingAffiliateSettlement{}, nil
+	}
+	if err != nil {
+		return usageBillingAffiliateSettlement{}, err
+	}
+	if mode != service.AffiliateProgramModeLive {
+		return usageBillingAffiliateSettlement{}, nil
+	}
+	return settleUsageBillingAgentPool(ctx, tx, performanceEventID, userID, amountMicros)
+}
+
+func settleUsageBillingAgentPool(
+	ctx context.Context,
+	tx *sql.Tx,
+	performanceEventID int64,
+	consumerUserID int64,
+	sourceAmountMicros int64,
+) (usageBillingAffiliateSettlement, error) {
+	var (
+		bindingKind     string
+		agentID         sql.NullInt64
+		customerRateBPS int32
+		agentRateBPS    int32
+		agentStatus     sql.NullString
+		agentRiskStatus sql.NullString
+	)
+	err := tx.QueryRowContext(ctx, `
+		SELECT
+			b.binding_kind,
+			b.agent_id,
+			b.customer_rebate_rate_snapshot_bps,
+			b.agent_commission_rate_snapshot_bps,
+			ap.status,
+			ap.risk_status
+		FROM affiliate_bindings b
+		LEFT JOIN agent_principals ap
+			ON ap.agent_id = b.agent_id
+		WHERE b.customer_user_id = $1
+	`, consumerUserID).Scan(
+		&bindingKind,
+		&agentID,
+		&customerRateBPS,
+		&agentRateBPS,
+		&agentStatus,
+		&agentRiskStatus,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return usageBillingAffiliateSettlement{}, nil
+	}
+	if err != nil {
+		return usageBillingAffiliateSettlement{}, err
+	}
+	if bindingKind != service.AffiliateBindingAgent || !agentID.Valid {
+		return usageBillingAffiliateSettlement{}, nil
+	}
+	if customerRateBPS < 0 ||
+		agentRateBPS < 0 ||
+		customerRateBPS+agentRateBPS != service.AffiliateAgentPoolRateBPS {
+		return usageBillingAffiliateSettlement{}, errors.New("invalid affiliate binding pool snapshot")
+	}
+	riskClear := agentStatus.Valid &&
+		agentStatus.String == "active" &&
+		agentRiskStatus.Valid &&
+		agentRiskStatus.String == "clear"
+	settlement := usageBillingAffiliateSettlement{}
+
+	customerRebateMicros := usageBillingRateAmountMicros(sourceAmountMicros, customerRateBPS)
+	if customerRebateMicros > 0 {
+		rewardStatus := "risk_hold"
+		if riskClear {
+			rewardStatus = "posted"
+		}
+		var rewardID int64
+		err := tx.QueryRowContext(ctx, `
+			INSERT INTO affiliate_reward_entries (
+				beneficiary_user_id, consumer_user_id, reward_type,
+				amount_micros, source_amount_micros, rate_bps,
+				status, available_at, posted_at,
+				source_type, source_id, idempotency_key, metadata
+			)
+			VALUES (
+				$1, $1, 'customer_rebate',
+				$2, $3, $4,
+				$5::varchar, NOW(), CASE WHEN $5::text = 'posted' THEN NOW() ELSE NULL END,
+				'confirmed_consumption', $6, $7,
+				jsonb_build_object('asset_symbol', '⚡')
+			)
+			ON CONFLICT (idempotency_key) DO NOTHING
+			RETURNING id
+		`,
+			consumerUserID,
+			customerRebateMicros,
+			sourceAmountMicros,
+			customerRateBPS,
+			rewardStatus,
+			performanceEventID,
+			fmt.Sprintf("confirmed:%d:customer-rebate", performanceEventID),
+		).Scan(&rewardID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return usageBillingAffiliateSettlement{}, err
+		}
+		if err == nil && rewardStatus == "posted" {
+			result, err := tx.ExecContext(ctx, `
+				UPDATE users
+				SET balance = balance + ($1::numeric / 1000000),
+					updated_at = NOW()
+				WHERE id = $2
+					AND deleted_at IS NULL
+			`, customerRebateMicros, consumerUserID)
+			if err != nil {
+				return usageBillingAffiliateSettlement{}, err
+			}
+			affected, err := result.RowsAffected()
+			if err != nil {
+				return usageBillingAffiliateSettlement{}, err
+			}
+			if affected != 1 {
+				return usageBillingAffiliateSettlement{}, service.ErrUserNotFound
+			}
+			if _, err := tx.ExecContext(ctx, `
+				INSERT INTO balance_lots (
+					user_id, source_type, source_id, source_key,
+					original_amount_micros, remaining_amount_micros,
+					affiliate_eligible, occurred_at
+				)
+				VALUES ($1, 'customer_rebate', $2, $3, $4, $4, FALSE, NOW())
+				ON CONFLICT (source_key) DO NOTHING
+			`, consumerUserID, rewardID, fmt.Sprintf("affiliate_reward:%d", rewardID), customerRebateMicros); err != nil {
+				return usageBillingAffiliateSettlement{}, err
+			}
+			settlement.CustomerRebateMicros = customerRebateMicros
+		}
+	}
+
+	agentCommissionMicros := usageBillingRateAmountMicros(sourceAmountMicros, agentRateBPS)
+	if agentCommissionMicros > 0 {
+		postingStatus := "risk_hold"
+		if riskClear {
+			postingStatus = "posted"
+		}
+		result, err := tx.ExecContext(ctx, `
+			INSERT INTO agent_cash_commission_entries (
+				agent_id, consumer_user_id, entry_type,
+				amount_micros, source_amount_micros,
+				customer_rebate_rate_bps, agent_commission_rate_bps,
+				posting_status, source_type, source_id,
+				idempotency_key, metadata, occurred_at
+			)
+			VALUES (
+				$1, $2, 'earned',
+				$3, $4, $5, $6,
+				$7, 'confirmed_consumption', $8,
+				$9, '{}'::jsonb, NOW()
+			)
+			ON CONFLICT (idempotency_key) DO NOTHING
+		`,
+			agentID.Int64,
+			consumerUserID,
+			agentCommissionMicros,
+			sourceAmountMicros,
+			customerRateBPS,
+			agentRateBPS,
+			postingStatus,
+			performanceEventID,
+			fmt.Sprintf("confirmed:%d:agent-cash", performanceEventID),
+		)
+		if err != nil {
+			return usageBillingAffiliateSettlement{}, err
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return usageBillingAffiliateSettlement{}, err
+		}
+		if affected == 1 && postingStatus == "posted" {
+			settlement.AgentCommissionMicros = agentCommissionMicros
+		}
+	}
+	return settlement, nil
+}
+
+func usageBillingRateAmountMicros(sourceMicros int64, rateBPS int32) int64 {
+	if sourceMicros <= 0 || rateBPS <= 0 {
+		return 0
+	}
+	value := new(big.Int).Mul(big.NewInt(sourceMicros), big.NewInt(int64(rateBPS)))
+	value.Quo(value, big.NewInt(10_000))
+	if !value.IsInt64() {
+		return 0
+	}
+	return value.Int64()
 }
 
 type usageBillingSubscriptionTarget struct {

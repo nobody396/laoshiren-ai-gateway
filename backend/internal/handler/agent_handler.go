@@ -20,11 +20,12 @@ import (
 // AgentHandler 代理商相关请求处理
 type AgentHandler struct {
 	commissionService *service.CommissionService
+	affiliateLinks    *service.AffiliateLinkService
 }
 
 // NewAgentHandler 创建 AgentHandler
-func NewAgentHandler(commissionService *service.CommissionService) *AgentHandler {
-	return &AgentHandler{commissionService: commissionService}
+func NewAgentHandler(commissionService *service.CommissionService, affiliateLinks *service.AffiliateLinkService) *AgentHandler {
+	return &AgentHandler{commissionService: commissionService, affiliateLinks: affiliateLinks}
 }
 
 // GetInviteCode 获取或生成当前用户的邀请码
@@ -117,6 +118,117 @@ func (h *AgentHandler) GetCommissions(c *gin.Context) {
 		"items":      records,
 		"pagination": paginationResult,
 	})
+}
+
+type createAffiliateLinkRequest struct {
+	Name                  string `json:"name" binding:"required"`
+	Channel               string `json:"channel"`
+	CustomerRebateRateBPS int32  `json:"customer_rebate_rate_bps"`
+}
+
+type updateAffiliateLinkRateRequest struct {
+	CustomerRebateRateBPS int32 `json:"customer_rebate_rate_bps"`
+}
+
+type updateAffiliateLinkStatusRequest struct {
+	Status string `json:"status" binding:"required"`
+}
+
+func (h *AgentHandler) ListAffiliateLinks(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	links, err := h.affiliateLinks.List(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"items": links})
+}
+
+func (h *AgentHandler) CreateAffiliateLink(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req createAffiliateLinkRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	link, err := h.affiliateLinks.Create(
+		c.Request.Context(),
+		subject.UserID,
+		req.Name,
+		req.Channel,
+		req.CustomerRebateRateBPS,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Created(c, link)
+}
+
+func (h *AgentHandler) UpdateAffiliateLinkRate(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	linkID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || linkID <= 0 {
+		response.BadRequest(c, "Invalid affiliate link id")
+		return
+	}
+	var req updateAffiliateLinkRateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	link, err := h.affiliateLinks.UpdateRate(
+		c.Request.Context(),
+		subject.UserID,
+		linkID,
+		req.CustomerRebateRateBPS,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, link)
+}
+
+func (h *AgentHandler) UpdateAffiliateLinkStatus(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	linkID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || linkID <= 0 {
+		response.BadRequest(c, "Invalid affiliate link id")
+		return
+	}
+	var req updateAffiliateLinkStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	link, err := h.affiliateLinks.SetStatus(
+		c.Request.Context(),
+		subject.UserID,
+		linkID,
+		req.Status,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, link)
 }
 
 type updateAgentPaymentProfileRequest struct {

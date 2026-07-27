@@ -761,20 +761,8 @@ func (s *AuthService) bindReferralCode(ctx context.Context, userID int64, referr
 	if referralCode == "" || s.commissionService == nil {
 		return
 	}
-	inviter, err := s.commissionService.ValidateAndGetInviter(ctx, referralCode)
-	if err != nil {
-		logger.LegacyPrintf("service.auth", "[Auth] Failed to validate referral code for user %d: %v", userID, err)
-		return
-	}
-	if inviter == nil {
-		return
-	}
-	var agentID *int64
-	if inviter.Role == RoleAgent {
-		agentID = &inviter.ID
-	}
-	if err := s.userRepo.SetInviterAndAgent(ctx, userID, inviter.ID, agentID); err != nil {
-		logger.LegacyPrintf("service.auth", "[Auth] Failed to set inviter for user %d: %v", userID, err)
+	if err := s.commissionService.BindReferralCode(ctx, userID, referralCode); err != nil {
+		logger.LegacyPrintf("service.auth", "[Auth] Failed to bind referral code for user %d: %v", userID, err)
 	}
 }
 

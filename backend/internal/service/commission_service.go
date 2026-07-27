@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
@@ -33,6 +34,7 @@ type CommissionService struct {
 	adminRepo      AgentCommissionAdminRepository
 	levelRepo      AgentLevelRepository
 	paymentRepo    AgentPaymentRepository
+	affiliateLinks AffiliateLinkRepository
 	nowFunc        func() time.Time
 }
 
@@ -59,6 +61,12 @@ func NewCommissionService(userRepo UserRepository, commissionRepo CommissionRepo
 		s.paymentRepo = repo
 	}
 	return s
+}
+
+func (s *CommissionService) SetAffiliateLinkRepository(repo AffiliateLinkRepository) {
+	if s != nil {
+		s.affiliateLinks = repo
+	}
 }
 
 // GetOrCreateInviteCode 获取或生成用户的邀请码
@@ -103,11 +111,59 @@ func (s *CommissionService) ValidateAndGetInviter(ctx context.Context, inviteCod
 	user, err := s.userRepo.GetByInviteCode(ctx, inviteCode)
 	if err != nil {
 		if isNotFound(err) {
-			return nil, nil
+			if s.affiliateLinks == nil {
+				return nil, nil
+			}
+			referral, linkErr := s.affiliateLinks.ResolveActiveLink(ctx, inviteCode)
+			if errors.Is(linkErr, ErrAffiliateLinkNotFound) {
+				return nil, nil
+			}
+			if linkErr != nil {
+				return nil, fmt.Errorf("resolve affiliate link: %w", linkErr)
+			}
+			inviter, inviterErr := s.userRepo.GetByID(ctx, referral.AgentID)
+			if inviterErr != nil {
+				return nil, fmt.Errorf("get affiliate agent: %w", inviterErr)
+			}
+			return inviter, nil
 		}
 		return nil, fmt.Errorf("get inviter by code: %w", err)
 	}
 	return user, nil
+}
+
+// BindReferralCode resolves one code into exactly one permanent direct edge.
+// Ordinary user codes and agent campaign links intentionally do not stack.
+func (s *CommissionService) BindReferralCode(ctx context.Context, userID int64, code string) error {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return nil
+	}
+	inviter, err := s.userRepo.GetByInviteCode(ctx, code)
+	if err == nil {
+		var legacyAgentID *int64
+		if inviter.Role == RoleAgent {
+			legacyAgentID = &inviter.ID
+		}
+		return s.userRepo.SetInviterAndAgent(ctx, userID, inviter.ID, legacyAgentID)
+	}
+	if !isNotFound(err) {
+		return fmt.Errorf("resolve ordinary referral code: %w", err)
+	}
+	if s.affiliateLinks == nil {
+		return nil
+	}
+	referral, err := s.affiliateLinks.ResolveActiveLink(ctx, code)
+	if errors.Is(err, ErrAffiliateLinkNotFound) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("resolve agent referral link: %w", err)
+	}
+	if err := s.affiliateLinks.BindAgentReferral(ctx, userID, *referral); err != nil {
+		return fmt.Errorf("bind agent referral link: %w", err)
+	}
+	return nil
 }
 
 // ProcessConsumptionCommission 处理 API 消耗分佣记录。

@@ -565,9 +565,10 @@ var ProviderSet = wire.NewSet(
 	NewChannelService,
 	ProvideSupplierService,
 	NewModelPricingResolver,
-	NewCommissionService,
+	ProvideCommissionService,
 	NewAffiliateProgramService,
 	NewAffiliateRewardService,
+	NewAffiliateLinkService,
 	NewPaymentService,
 	NewTopupService,
 	NewRBACService,
@@ -595,6 +596,16 @@ func ProvideBalanceAlertService(
 	userRepo UserRepository,
 ) *BalanceAlertService {
 	return NewBalanceAlertService(alertCache, attrDefRepo, attrValRepo, settingRepo, emailQueue, userRepo)
+}
+
+func ProvideCommissionService(
+	userRepo UserRepository,
+	commissionRepo CommissionRepository,
+	affiliateLinks AffiliateLinkRepository,
+) *CommissionService {
+	svc := NewCommissionService(userRepo, commissionRepo)
+	svc.SetAffiliateLinkRepository(affiliateLinks)
+	return svc
 }
 
 func ProvidePendingAuthSessionCleanupService(identityService *IdentityService) *PendingAuthSessionCleanupService {

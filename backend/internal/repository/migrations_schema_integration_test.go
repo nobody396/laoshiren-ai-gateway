@@ -185,6 +185,10 @@ WHERE id = 1
 	require.True(t, firstPaidRegclass.Valid)
 	requireColumn(t, tx, "affiliate_first_paid_purchases", "amount_micros", "bigint", 0, false)
 	requireColumn(t, tx, "affiliate_reward_entries", "posted_at", "timestamp with time zone", 0, true)
+
+	// migration 152: dynamic link lookup and direct-edge indexes.
+	requireIndex(t, tx, "affiliate_links", "idx_affiliate_links_code_active")
+	requireIndex(t, tx, "affiliate_bindings", "idx_affiliate_bindings_agent_link")
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

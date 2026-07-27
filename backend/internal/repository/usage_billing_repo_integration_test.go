@@ -204,6 +204,177 @@ func TestUsageBillingRepositoryApply_AttributesMonthlyConsumptionProRata(t *test
 	require.Equal(t, int64(5_000_000), confirmed)
 }
 
+func TestUsageBillingRepositoryApply_SettlesFixedAgentPoolOnConfirmedConsumption(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+	linkRepo := NewAffiliateLinkRepository(integrationDB)
+	linkService := service.NewAffiliateLinkService(linkRepo)
+
+	agent := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-agent-pool-agent-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	customer := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-agent-pool-customer-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+		Balance:      100,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID: customer.ID,
+		Key:    "sk-usage-billing-agent-pool-" + uuid.NewString(),
+		Name:   "agent-pool",
+	})
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_principals (
+			agent_id, status, risk_status, qualified_at, activated_at
+		)
+		VALUES ($1, 'active', 'clear', NOW(), NOW())
+	`, agent.ID)
+	require.NoError(t, err)
+	link, err := linkService.Create(ctx, agent.ID, "三七分成", "integration", 300)
+	require.NoError(t, err)
+	referral, err := linkRepo.ResolveActiveLink(ctx, link.Code)
+	require.NoError(t, err)
+	require.NoError(t, linkRepo.BindAgentReferral(ctx, customer.ID, *referral))
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO balance_lots (
+			user_id, source_type, source_key,
+			original_amount_micros, remaining_amount_micros,
+			affiliate_eligible
+		)
+		VALUES ($1, 'paid_topup', $2, 100000000, 100000000, TRUE)
+	`, customer.ID, "agent-pool-paid:"+uuid.NewString())
+	require.NoError(t, err)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+	usageLogID := time.Now().UnixNano()
+	cmd := &service.UsageBillingCommand{
+		RequestID:   uuid.NewString(),
+		APIKeyID:    apiKey.ID,
+		UsageLogID:  usageLogID,
+		UserID:      customer.ID,
+		BalanceCost: 10,
+	}
+
+	result, err := repo.Apply(ctx, cmd)
+	require.NoError(t, err)
+	require.Equal(t, service.AffiliateProgramModeLive, result.AffiliateProgramMode)
+	require.Equal(t, int64(300_000), result.AffiliateCustomerRebateMicros)
+	require.Equal(t, int64(700_000), result.AffiliateAgentCommissionMicros)
+	require.NotNil(t, result.NewBalance)
+	require.InDelta(t, 90.3, *result.NewBalance, 0.000001)
+
+	var cashMicros int64
+	var postingStatus string
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT amount_micros, posting_status
+		FROM agent_cash_commission_entries
+		WHERE agent_id = $1
+			AND consumer_user_id = $2
+			AND source_type = 'confirmed_consumption'
+	`, agent.ID, customer.ID).Scan(&cashMicros, &postingStatus))
+	require.Equal(t, int64(700_000), cashMicros)
+	require.Equal(t, "posted", postingStatus)
+
+	replay, err := repo.Apply(ctx, cmd)
+	require.NoError(t, err)
+	require.False(t, replay.Applied)
+	var cashCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM agent_cash_commission_entries
+		WHERE agent_id = $1
+			AND consumer_user_id = $2
+	`, agent.ID, customer.ID).Scan(&cashCount))
+	require.Equal(t, 1, cashCount)
+}
+
+func TestUsageBillingAffiliateSettlement_ShadowObservesWithoutMoney(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	agent := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-shadow-agent-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	customer := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-shadow-customer-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_principals (
+			agent_id, status, risk_status, qualified_at, activated_at
+		)
+		VALUES ($1, 'active', 'clear', NOW(), NOW())
+	`, agent.ID)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_links (
+			agent_id, code, name, is_default, status, current_rate_version
+		)
+		VALUES ($1, $2, 'shadow', TRUE, 'active', 1)
+	`, agent.ID, "shadow-link-"+uuid.NewString())
+	require.NoError(t, err)
+	var linkID int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT id FROM affiliate_links WHERE agent_id=$1 AND is_default=TRUE
+	`, agent.ID).Scan(&linkID))
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_link_rate_versions (
+			link_id, version, customer_rebate_rate_bps,
+			agent_commission_rate_bps, effective_at
+		)
+		VALUES ($1, 1, 300, 700, NOW())
+	`, linkID)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_bindings (
+			customer_user_id, inviter_user_id, binding_kind,
+			agent_id, affiliate_link_id, link_rate_version,
+			customer_rebate_rate_snapshot_bps,
+			agent_commission_rate_snapshot_bps
+		)
+		VALUES ($2, $3, 'agent', $3, $1, 1, 300, 700)
+	`, linkID, customer.ID, agent.ID)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		UPDATE affiliate_program_settings
+		SET mode='shadow', started_at=NULL
+		WHERE id=1
+	`)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(), `
+			UPDATE affiliate_program_settings SET mode='off', started_at=NULL WHERE id=1
+		`)
+	})
+
+	tx, err := integrationDB.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	settlement, err := recordUsageBillingPerformanceEvent(
+		ctx,
+		tx,
+		customer.ID,
+		time.Now().UnixNano(),
+		"balance_usage",
+		"shadow-event:"+uuid.NewString(),
+		10_000_000,
+	)
+	require.NoError(t, err)
+	require.Zero(t, settlement.CustomerRebateMicros)
+	require.Zero(t, settlement.AgentCommissionMicros)
+	require.NoError(t, tx.Commit())
+
+	var rewards, cash int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM affiliate_reward_entries WHERE consumer_user_id=$1
+	`, customer.ID).Scan(&rewards))
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM agent_cash_commission_entries WHERE consumer_user_id=$1
+	`, customer.ID).Scan(&cash))
+	require.Zero(t, rewards)
+	require.Zero(t, cash)
+}
+
 func setAffiliateProgramLiveForIntegrationTest(t *testing.T, ctx context.Context) {
 	t.Helper()
 	_, err := integrationDB.ExecContext(ctx, `

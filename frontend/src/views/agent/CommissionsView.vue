@@ -50,8 +50,8 @@
                   </span>
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-500 dark:text-dark-400">#{{ record.user_id }}</td>
-                <td class="px-6 py-4 text-right text-sm text-gray-700 dark:text-dark-300">${{ record.source_amount.toFixed(4) }}</td>
-                <td class="px-6 py-4 text-right text-sm font-semibold text-green-600 dark:text-green-400">+${{ record.amount.toFixed(4) }}</td>
+                <td class="px-6 py-4 text-right text-sm text-gray-700 dark:text-dark-300">⚡{{ record.source_amount.toFixed(4) }}</td>
+                <td class="px-6 py-4 text-right text-sm font-semibold text-green-600 dark:text-green-400">+¥{{ record.amount.toFixed(4) }}</td>
                 <td class="px-6 py-4 text-sm text-gray-500 dark:text-dark-400">{{ formatDate(record.created_at) }}</td>
               </tr>
             </tbody>

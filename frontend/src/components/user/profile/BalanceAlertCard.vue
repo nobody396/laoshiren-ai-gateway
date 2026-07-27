@@ -32,7 +32,7 @@
               step="0.01"
               min="0.10"
               class="input"
-              :placeholder="effectiveThreshold ? `${t('profile.balanceAlert.default')}: $${effectiveThreshold}` : '$5.00'"
+              :placeholder="effectiveThreshold ? `${t('profile.balanceAlert.default')}: ⚡${effectiveThreshold}` : '⚡5.00'"
             />
             <p class="input-hint">{{ t('profile.balanceAlert.thresholdHint') }}</p>
           </div>

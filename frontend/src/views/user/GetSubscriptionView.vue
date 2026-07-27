@@ -153,8 +153,8 @@
                     <p class="topup-meta-value">¥{{ displayAmountText }}</p>
                   </div>
                   <div>
-                    <p class="topup-meta-label">USD</p>
-                    <p class="topup-meta-value topup-meta-value--accent">${{ displayUSDText }}</p>
+                    <p class="topup-meta-label">平台额度</p>
+                    <p class="topup-meta-value topup-meta-value--accent">⚡{{ displayUSDText }}</p>
                   </div>
                 </div>
               </div>
@@ -181,7 +181,7 @@
                     </p>
                   </div>
                   <div v-if="showingQrTopup" class="topup-price-chip">
-                    ${{ displayUSDText }}
+                    ⚡{{ displayUSDText }}
                   </div>
                   <div v-else-if="selectedProductKind === 'monthly'" class="topup-price-chip topup-price-chip--muted">
                     {{ selectedMonthlyPlan?.rarityLabel ?? t('topup.monthlyPlanStatus') }}

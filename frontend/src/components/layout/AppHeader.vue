@@ -94,7 +94,7 @@
             />
           </svg>
           <span class="text-sm font-semibold text-primary-700 dark:text-primary-300">
-            ${{ user.balance?.toFixed(2) || '0.00' }}
+            ⚡{{ user.balance?.toFixed(2) || '0.00' }}
           </span>
         </div>
 
@@ -138,7 +138,7 @@
                   {{ t('common.balance') }}
                 </div>
                 <div class="text-sm font-semibold text-primary-600 dark:text-primary-400">
-                  ${{ user.balance?.toFixed(2) || '0.00' }}
+                  ⚡{{ user.balance?.toFixed(2) || '0.00' }}
                 </div>
               </div>
 

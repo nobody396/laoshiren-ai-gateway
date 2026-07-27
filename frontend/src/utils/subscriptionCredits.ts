@@ -46,8 +46,8 @@ export function formatSubscriptionCredits(value: number | null | undefined): str
   }).format(credits)
 }
 
-function formatUsd(value: number | null | undefined): string {
-  return `$${safeNumber(value).toFixed(2)}`
+function formatPlatformCredit(value: number | null | undefined): string {
+  return `⚡${safeNumber(value).toFixed(2)}`
 }
 
 export function formatSubscriptionUsageValue(
@@ -57,7 +57,7 @@ export function formatSubscriptionUsageValue(
   if (isCreditSubscriptionGroup(group)) {
     return `${formatSubscriptionCredits(value)} credits`
   }
-  return formatUsd(value)
+  return formatPlatformCredit(value)
 }
 
 export function formatSubscriptionUsageRatio(
@@ -69,12 +69,12 @@ export function formatSubscriptionUsageRatio(
     if (isCreditSubscriptionGroup(group)) {
       return `${formatSubscriptionCredits(used)} / ∞ credits`
     }
-    return `${formatUsd(used)} / ∞`
+    return `${formatPlatformCredit(used)} / ∞`
   }
   if (isCreditSubscriptionGroup(group)) {
     return `${formatSubscriptionCredits(used)} / ${formatSubscriptionCredits(limit)} credits`
   }
-  return `${formatUsd(used)} / ${formatUsd(limit)}`
+  return `${formatPlatformCredit(used)} / ${formatPlatformCredit(limit)}`
 }
 
 export function formatSubscriptionUsageDisplay(

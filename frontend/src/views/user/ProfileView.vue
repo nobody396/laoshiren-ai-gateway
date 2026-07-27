@@ -118,6 +118,6 @@ onMounted(async () => {
   }
 })
 
-const formatCurrency = (v: number) => `$${v.toFixed(2)}`
+const formatCurrency = (v: number) => `⚡${v.toFixed(2)}`
 const formatRate = (v: number) => `${(v * 100).toFixed(2)}%`
 </script>

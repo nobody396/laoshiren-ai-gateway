@@ -47,7 +47,7 @@ describe('subscriptionCredits utils', () => {
 
   it('keeps legacy subscription groups in USD display', () => {
     expect(formatSubscriptionUsageDisplay(1.81, 105, subscriptionGroup)).toBe(
-      '$1.81 / $105.00 · 已用 1.7%'
+      '⚡1.81 / ⚡105.00 · 已用 1.7%'
     )
   })
 

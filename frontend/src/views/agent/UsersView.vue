@@ -47,8 +47,8 @@
                   <div v-if="getSecondaryText(user)" class="text-xs text-gray-400">{{ getSecondaryText(user) }}</div>
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-500 dark:text-dark-400">{{ formatDate(user.joined_at) }}</td>
-                <td class="px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-white">${{ user.total_consumption.toFixed(4) }}</td>
-                <td class="px-6 py-4 text-right text-sm font-medium text-green-600 dark:text-green-400">${{ user.total_commission.toFixed(4) }}</td>
+                <td class="px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-white">⚡{{ user.total_consumption.toFixed(4) }}</td>
+                <td class="px-6 py-4 text-right text-sm font-medium text-green-600 dark:text-green-400">¥{{ user.total_commission.toFixed(4) }}</td>
               </tr>
             </tbody>
           </table>

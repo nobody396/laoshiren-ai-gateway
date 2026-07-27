@@ -157,6 +157,79 @@ wait_ready() {
   curl --fail --silent --show-error "$DEFAULT_URL/health" >/dev/null
 }
 
+run_authenticated_smoke() {
+  python3 - "$DEFAULT_URL" "$AFFILIATE_STAGING_ADMIN_EMAIL" <<'PY'
+import json
+import os
+import sys
+import urllib.error
+import urllib.request
+
+base_url = sys.argv[1].rstrip("/")
+email = sys.argv[2]
+password = os.environ["AFFILIATE_STAGING_ADMIN_PASSWORD"]
+
+
+def request(path, *, method="GET", payload=None, token=None):
+    headers = {"Accept": "application/json"}
+    data = None
+    if payload is not None:
+        headers["Content-Type"] = "application/json"
+        data = json.dumps(payload).encode("utf-8")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    req = urllib.request.Request(
+        f"{base_url}{path}",
+        data=data,
+        headers=headers,
+        method=method,
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=20) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"{method} {path} failed with HTTP {exc.code}: {body[:500]}") from exc
+
+
+login = request(
+    "/api/v1/auth/login",
+    method="POST",
+    payload={"email": email, "password": password},
+)
+login_data = login.get("data", login)
+token = login_data.get("access_token")
+if not token:
+    raise RuntimeError("staging admin login did not return an access token")
+
+settings_response = request("/api/v1/admin/agents/affiliate-program", token=token)
+settings = settings_response.get("data", settings_response)
+if settings.get("mode") not in {"off", "shadow", "live"}:
+    raise RuntimeError(f"unexpected affiliate mode: {settings.get('mode')!r}")
+
+policy_response = request("/api/v1/admin/agents/affiliate-commercial-policy", token=token)
+policy = policy_response.get("data", policy_response)
+if policy.get("credit_asset_symbol") != "⚡":
+    raise RuntimeError("affiliate commercial policy does not expose the ⚡ credit symbol")
+if not policy.get("passes_configured_margin_gate"):
+    raise RuntimeError("affiliate commercial catalog failed its configured margin gate")
+if float(policy.get("minimum_stress_margin_percent", 0)) < 35:
+    raise RuntimeError("affiliate commercial catalog fell below the 35% stress margin")
+
+risk_response = request("/api/v1/admin/agents/affiliate-risk", token=token)
+risk = risk_response.get("data", risk_response)
+if risk is None:
+    raise RuntimeError("affiliate risk queue response is missing data")
+
+print(
+    "authenticated staging smoke passed: "
+    f"mode={settings['mode']} "
+    f"margin_floor={settings['margin_floor_bps'] / 100:.2f}% "
+    f"minimum_stress_margin={policy['minimum_stress_margin_percent']:.2f}%"
+)
+PY
+}
+
 command="${1:-help}"
 case "$command" in
   init-secrets)
@@ -186,6 +259,12 @@ case "$command" in
     require_checkout
     load_secrets
     compose ps
+    ;;
+  smoke)
+    require_checkout
+    load_secrets
+    wait_ready
+    run_authenticated_smoke
     ;;
   logs)
     require_checkout
@@ -219,6 +298,7 @@ Commands:
   validate      Validate the isolated Docker Compose configuration
   up            Build current worktree and start isolated staging
   status        Show isolated staging containers
+  smoke         Run health plus authenticated Affiliate V2 API checks
   logs          Show application logs
   down          Stop staging without deleting data
   reset --confirm-staging-data-reset

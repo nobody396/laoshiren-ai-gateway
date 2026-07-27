@@ -30,6 +30,7 @@ cd /Users/fujunhao/laoshirenai/worktrees/affiliate-program-v2
 ./scripts/affiliate-v2-staging.sh validate
 ./scripts/affiliate-v2-staging.sh up
 ./scripts/affiliate-v2-staging.sh status
+./scripts/affiliate-v2-staging.sh smoke
 ./scripts/affiliate-v2-staging.sh logs
 ./scripts/affiliate-v2-staging.sh down
 ```
@@ -53,3 +54,49 @@ process.
 4. Acceptance first uses `shadow` mode to prove calculations create no money.
 5. `live` mode is used only inside this isolated staging database.
 6. A staging pass does not authorize production deployment or data migration.
+
+## Acceptance sequence
+
+The admin entry is `/login`; the staging-only admin email is
+`affiliate-staging@local.invalid`. Its password remains in Agent Switch and is
+never written to the checkout or printed by the launcher.
+
+1. Keep the program in `off` and verify the commercial catalog, 35% margin
+   floor, platform-credit symbol and configuration defaults.
+2. Change `off -> shadow`. Register ordinary users, bind both ordinary and Agent
+   links, redeem paid cards and generate usage. Confirm performance events are
+   observable but no platform reward, cash commission or wallet balance is
+   credited.
+3. Change `shadow -> live` inside this isolated database. Repeat with new
+   purchases and usage after `started_at`.
+4. Verify ordinary first-paid settlement: inviter receives 5% `⚡` immediately;
+   a first purchase strictly above ¥50 schedules fixed `⚡5` for the invitee on
+   the next Beijing calendar day; exactly ¥50 does not.
+5. Verify Agent qualification using either:
+   - ten direct consumers, each at least ¥20, and at least ¥1,000 direct-team
+     confirmed consumption; or
+   - at least ¥2,000 combined self plus direct-team confirmed consumption.
+6. Activate the qualified Agent and verify one permanent upstream edge, one
+   always-active default link, at most five campaign links, and dynamic
+   customer rebate from 0% to 10% in 1% increments.
+7. Verify each Agent-bound consumption creates exactly one fixed 10% pool:
+   customer `⚡` plus direct Agent cash; no recursive or self commission.
+8. Submit Alipay payout details and QR, verify them in Admin, create a partial
+   withdrawal, and confirm the user-visible path is only
+   `处理中 -> 已到账`. A failed payment must restore available cash.
+9. Convert available commission to `⚡` and verify the configured 1.2x value,
+   non-withdrawable source lot and no further affiliate eligibility.
+10. Put an Agent in review/blocked risk state, verify new links, withdrawals and
+    settlement are blocked, then test hold release and one-time reversal.
+
+`./scripts/affiliate-v2-staging.sh smoke` performs the non-mutating health,
+admin-login, program-setting, commercial-margin and risk-queue checks without
+printing credentials or access tokens.
+
+## External commerce boundary
+
+The isolated stack intentionally does not contact LDXP, production Alipay,
+upstream model accounts or production storage. Purchase callbacks and QR
+payments must be validated with staging fixtures or manual card redemption.
+The external catalog cutover is separately gated by
+`docs/ops/AFFILIATE_V2_COMMERCIAL_CUTOVER.md`.

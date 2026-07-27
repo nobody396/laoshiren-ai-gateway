@@ -39,7 +39,7 @@ secret-scan:
 checkout-validate:
 	@python3 tools/validate_checkout_registry.py --action develop
 
-.PHONY: affiliate-staging-init affiliate-staging-validate affiliate-staging-up affiliate-staging-down affiliate-staging-status
+.PHONY: affiliate-staging-init affiliate-staging-validate affiliate-staging-up affiliate-staging-down affiliate-staging-status affiliate-staging-smoke
 
 affiliate-staging-init:
 	@./scripts/affiliate-v2-staging.sh init-secrets
@@ -55,3 +55,6 @@ affiliate-staging-down:
 
 affiliate-staging-status:
 	@./scripts/affiliate-v2-staging.sh status
+
+affiliate-staging-smoke:
+	@./scripts/affiliate-v2-staging.sh smoke

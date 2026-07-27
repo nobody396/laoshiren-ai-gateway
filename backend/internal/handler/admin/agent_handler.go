@@ -334,6 +334,15 @@ func (h *AgentHandler) GetAffiliateProgram(c *gin.Context) {
 	response.Success(c, settings)
 }
 
+func (h *AgentHandler) GetAffiliateCommercialPolicy(c *gin.Context) {
+	settings, err := h.affiliateProgram.GetSettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, service.BuildAffiliateCommercialPolicy(settings.MarginFloorBPS))
+}
+
 func (h *AgentHandler) UpdateAffiliateProgram(c *gin.Context) {
 	subject, ok := middleware2.GetAuthSubjectFromContext(c)
 	if !ok {

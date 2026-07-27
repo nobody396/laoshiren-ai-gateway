@@ -187,6 +187,40 @@ export interface AffiliateCommunitySettings {
   updated_at?: string
 }
 
+export interface AffiliateCommercialPackage {
+  id: string
+  name: string
+  kind: 'payg' | 'monthly'
+  shop_price_cny: number
+  direct_price_cny: number
+  platform_credits: number
+  daily_platform_credits?: number
+  stress_cost_cny: number
+  shop_stress_margin_percent: number
+  direct_stress_margin_percent: number
+  passes_configured_margin_gate: boolean
+}
+
+export interface AffiliateCommercialPolicy {
+  cash_asset_symbol: string
+  credit_asset_symbol: string
+  shop_fee_bps: number
+  max_reward_pool_bps: number
+  margin_floor_bps: number
+  stress_cost_per_credit: number
+  gpt_cost_mix: {
+    cheap_account_multiplier: number
+    expensive_account_multiplier: number
+    cheap_traffic_percent: number
+    expensive_traffic_percent: number
+    blended_account_multiplier: number
+  }
+  group_targets: Array<{ id: string; name: string; rate_multiplier: number }>
+  packages: AffiliateCommercialPackage[]
+  minimum_stress_margin_percent: number
+  passes_configured_margin_gate: boolean
+}
+
 export interface AdminAffiliateWithdrawal {
   id: number
   agent_id: number
@@ -343,6 +377,11 @@ export async function updateAffiliateProgram(payload: AffiliateProgramSettings):
   return data
 }
 
+export async function getAffiliateCommercialPolicy(): Promise<AffiliateCommercialPolicy> {
+  const { data } = await apiClient.get<AffiliateCommercialPolicy>('/admin/agents/affiliate-commercial-policy')
+  return data
+}
+
 export async function getAffiliateCommunity(): Promise<AffiliateCommunitySettings> {
   const { data } = await apiClient.get<AffiliateCommunitySettings>('/admin/agents/affiliate-community')
   return data
@@ -476,6 +515,7 @@ export const agentsAPI = {
   reviewPaymentProfile,
   getAffiliateProgram,
   updateAffiliateProgram,
+  getAffiliateCommercialPolicy,
   getAffiliateCommunity,
   updateAffiliateCommunity,
   uploadAffiliateCommunityQRCode,

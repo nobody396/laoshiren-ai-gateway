@@ -1,7 +1,7 @@
 import { SUBSCRIPTION_CREDIT_DISPLAY_SCALE, formatSubscriptionCredits } from '@/utils/subscriptionCredits'
 
 export type MonthlyCreditCardPlan = {
-  id: 'lite' | 'pro' | 'max' | 'ultra' | 'apex'
+  id: 'starter' | 'lite' | 'pro' | 'max' | 'ultra' | 'apex'
   name: string
   priceCny: number
   directPriceCny: number
@@ -50,9 +50,8 @@ export type MonthlyCreditCardPlanEntitlement = {
   claude_group?: MonthlyCreditCardPlanGroupEntitlement | null
 }
 
-const monthlyCardDays = 31
-const defaultGptCreditsPerUsd = 0.4
-const defaultClaudeCreditsPerUsd = 1.25
+const defaultGptCreditsPerUsd = 0.42
+const defaultClaudeCreditsPerUsd = 2.4
 const millionTokens = 1_000_000
 const gptWeightedUsdPerMillionTokens = 1.035
 const claudeWeightedUsdPerMillionTokens = 1.0175
@@ -81,7 +80,6 @@ function createMonthlyCreditCardPlan(
     | 'price'
     | 'directPrice'
     | 'weeklyCredits'
-    | 'monthlyCredits'
     | 'displayDailyCredits'
     | 'displayWeeklyCredits'
     | 'displayMonthlyCredits'
@@ -103,7 +101,7 @@ function createMonthlyCreditCardPlan(
   const weeklyCredits = input.disableWeeklyLimit
     ? 0
     : resolveSharedLimit(entitlement, 'weekly_limit_usd') ?? 0
-  const monthlyCredits = resolveSharedLimit(entitlement, 'monthly_limit_usd') ?? input.dailyCredits * monthlyCardDays
+  const monthlyCredits = input.monthlyCredits
   const displayDailyCredits = input.dailyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE
   const displayWeeklyCredits = weeklyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE
   const displayMonthlyCredits = monthlyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE
@@ -151,24 +149,38 @@ function resolveSharedLimit(
 
 const monthlyCreditCardPlanInputs = [
   {
+    id: 'starter',
+    name: 'Starter 月卡',
+    priceCny: 259,
+    directPriceCny: 249,
+    dailyCredits: 8,
+    monthlyCredits: 240,
+    description: '面向第一次稳定使用编码模型的开发者，入门价格连续，额度边界清晰。',
+    accent: 'lite',
+    cardShopUrl: '',
+    disableWeeklyLimit: true
+  },
+  {
     id: 'lite',
     name: 'Lite 月卡',
-    priceCny: 329,
-    directPriceCny: 319,
+    priceCny: 469,
+    directPriceCny: 459,
     dailyCredits: 15,
-    description: '适合首次尝鲜，一份额度池同时覆盖 GPT Pro 与 Claude Max。',
-    accent: 'lite',
+    monthlyCredits: 450,
+    description: '适合稳定日常开发，一份额度池同时覆盖 GPT Pro 与 Claude Max。',
+    accent: 'pro',
     cardShopUrl: 'https://pay.ldxp.cn/item/ul7lg1',
     disableWeeklyLimit: true
   },
   {
     id: 'pro',
     name: 'Pro 月卡',
-    priceCny: 639,
-    directPriceCny: 619,
-    dailyCredits: 30,
-    description: '适合稳定日常开发，两个高阶分组共用同一份总额度。',
-    accent: 'pro',
+    priceCny: 869,
+    directPriceCny: 839,
+    dailyCredits: 28,
+    monthlyCredits: 850,
+    description: '适合高频长任务与重度开发，保留足够余量并守住压力毛利底线。',
+    accent: 'max',
     cardShopUrl: 'https://pay.ldxp.cn/item/efaklw',
     disableWeeklyLimit: true
   },
@@ -178,6 +190,7 @@ const monthlyCreditCardPlanInputs = [
     priceCny: 699,
     directPriceCny: 685,
     dailyCredits: 40,
+    monthlyCredits: 1200,
     description: '适合重度开发者，共享池在复杂任务和长会话里留出余量。',
     accent: 'max',
     cardShopUrl: 'https://pay.ldxp.cn/item/lhd7pa',
@@ -190,6 +203,7 @@ const monthlyCreditCardPlanInputs = [
     priceCny: 899,
     directPriceCny: 879,
     dailyCredits: 50,
+    monthlyCredits: 1500,
     description: '适合长期高频使用，两条高阶渠道共用同一份月度额度。',
     accent: 'ultra',
     cardShopUrl: 'https://pay.ldxp.cn/item/kqbjn9',
@@ -202,6 +216,7 @@ const monthlyCreditCardPlanInputs = [
     priceCny: 1299,
     directPriceCny: 1275,
     dailyCredits: 96.6,
+    monthlyCredits: 2898,
     description: '传说级长任务通行证，面向连续编排、海量审查与整月高频开发。',
     legendaryCopy: '黑金权限已铸成：适合把大型重构、长上下文代理和批量审查一次推到底。',
     rarityLabel: 'Legendary Apex',

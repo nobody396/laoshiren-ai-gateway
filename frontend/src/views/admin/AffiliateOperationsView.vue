@@ -68,6 +68,59 @@
           </form>
         </section>
 
+        <section v-if="commercialPolicy" class="card overflow-hidden">
+          <div class="flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
+            <div>
+              <h2 class="text-xl font-semibold text-gray-950 dark:text-white">35% 压力毛利门禁</h2>
+              <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">
+                已扣除链动小铺 3% 手续费、完整 10% 联盟奖励池，并按每单位原始额度 ¥0.50 的保守成本压力测试。
+              </p>
+            </div>
+            <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="commercialPolicy.passes_configured_margin_gate ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'">
+              {{ commercialPolicy.passes_configured_margin_gate ? `通过 · 最低 ${commercialPolicy.minimum_stress_margin_percent.toFixed(2)}%` : '未通过 · 禁止保存' }}
+            </span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100 text-sm dark:divide-dark-800">
+              <thead class="bg-gray-50 text-xs text-gray-500 dark:bg-dark-900 dark:text-dark-400">
+                <tr>
+                  <th class="px-5 py-3 text-left font-medium">产品</th>
+                  <th class="px-5 py-3 text-right font-medium">售价</th>
+                  <th class="px-5 py-3 text-right font-medium">平台额度</th>
+                  <th class="px-5 py-3 text-right font-medium">压力成本</th>
+                  <th class="px-5 py-3 text-right font-medium">小铺毛利率</th>
+                  <th class="px-5 py-3 text-right font-medium">直付毛利率</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-dark-800">
+                <tr v-for="item in commercialPolicy.packages" :key="item.id">
+                  <td class="px-5 py-3 font-medium text-gray-900 dark:text-white">{{ item.name }}</td>
+                  <td class="px-5 py-3 text-right text-gray-700 dark:text-dark-200">
+                    ¥{{ item.shop_price_cny }} / ¥{{ item.direct_price_cny }}
+                  </td>
+                  <td class="px-5 py-3 text-right text-gray-700 dark:text-dark-200">⚡{{ item.platform_credits.toLocaleString() }}</td>
+                  <td class="px-5 py-3 text-right text-gray-700 dark:text-dark-200">¥{{ item.stress_cost_cny.toFixed(2) }}</td>
+                  <td class="px-5 py-3 text-right font-semibold" :class="item.passes_configured_margin_gate ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                    {{ item.shop_stress_margin_percent.toFixed(2) }}%
+                  </td>
+                  <td class="px-5 py-3 text-right font-semibold" :class="item.passes_configured_margin_gate ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                    {{ item.direct_stress_margin_percent.toFixed(2) }}%
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="grid gap-3 border-t border-gray-100 p-5 dark:border-dark-800 sm:grid-cols-2 lg:grid-cols-4">
+            <div v-for="target in commercialPolicy.group_targets" :key="target.id" class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900">
+              <p class="text-xs text-gray-500 dark:text-dark-400">{{ target.name }}</p>
+              <p class="mt-1 text-lg font-bold text-gray-950 dark:text-white">{{ target.rate_multiplier.toFixed(2) }}×</p>
+            </div>
+          </div>
+          <p class="border-t border-gray-100 px-5 py-4 text-xs text-gray-500 dark:border-dark-800 dark:text-dark-400">
+            GPT 成本按便宜账号 30%（0.15）+ 贵账号 70%（0.20）计算，混合账号倍率 {{ commercialPolicy.gpt_cost_mix.blended_account_multiplier.toFixed(3) }}。
+          </p>
+        </section>
+
         <section class="grid gap-6 xl:grid-cols-2">
           <article class="card overflow-hidden">
             <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
@@ -180,6 +233,7 @@ import {
   failAffiliateWithdrawal,
   getAffiliateCommunity,
   getAffiliateCommunityQRCode,
+  getAffiliateCommercialPolicy,
   getAffiliateProgram,
   getAffiliateWithdrawalQRCode,
   getPaymentQRCode,
@@ -191,6 +245,7 @@ import {
   uploadAffiliateCommunityQRCode,
   type AdminAffiliateWithdrawal,
   type AffiliateCommunitySettings,
+  type AffiliateCommercialPolicy,
   type AffiliateProgramSettings,
   type AgentPaymentProfile
 } from '@/api/admin/agents'
@@ -236,6 +291,7 @@ const communitySaving = ref(false)
 const reviewingId = ref<number | null>(null)
 const processingWithdrawalId = ref<number | null>(null)
 const program = ref<AffiliateProgramSettings | null>(null)
+const commercialPolicy = ref<AffiliateCommercialPolicy | null>(null)
 const community = ref<AffiliateCommunitySettings | null>(null)
 const pendingProfiles = ref<AgentPaymentProfile[]>([])
 const withdrawals = ref<AdminAffiliateWithdrawal[]>([])
@@ -326,13 +382,15 @@ async function loadAll() {
   loading.value = true
   error.value = ''
   try {
-    const [settings, communitySettings, profiles, payoutQueue] = await Promise.all([
+    const [settings, policy, communitySettings, profiles, payoutQueue] = await Promise.all([
       getAffiliateProgram(),
+      getAffiliateCommercialPolicy(),
       getAffiliateCommunity(),
       listPendingPaymentProfiles(),
       listAffiliateWithdrawals()
     ])
     program.value = settings
+    commercialPolicy.value = policy
     community.value = communitySettings
     pendingProfiles.value = profiles
     withdrawals.value = payoutQueue
@@ -366,6 +424,7 @@ async function saveProgram() {
       withdrawal_sla_hours: Math.round(programForm.withdrawalSLAHours),
       margin_floor_bps: Math.round(programForm.marginFloor * 100)
     })
+    commercialPolicy.value = await getAffiliateCommercialPolicy()
     appStore.showSuccess('联盟计划设置已保存')
   } catch (cause: unknown) {
     appStore.showError(buildAuthErrorMessage(cause, { fallback: '计划设置保存失败' }))

@@ -119,6 +119,9 @@ func (s AffiliateProgramSettings) Validate() error {
 	if s.MarginFloorBPS < 3500 || s.MarginFloorBPS > 10000 {
 		return invalid("margin floor must be between 3500 and 10000 bps")
 	}
+	if err := ValidateAffiliateCommercialMarginFloor(s.MarginFloorBPS); err != nil {
+		return err
+	}
 	if s.Revision <= 0 {
 		return invalid("revision must be positive")
 	}

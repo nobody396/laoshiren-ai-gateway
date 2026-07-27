@@ -11,7 +11,7 @@ describe('monthlyCreditCardPlans', () => {
   })
 
   it('ignores weekly entitlement snapshots while preserving monthly limits', () => {
-    const [lite] = buildMonthlyCreditCardPlans([
+    const plans = buildMonthlyCreditCardPlans([
       {
         id: 'lite',
         gpt_group: {
@@ -33,8 +33,23 @@ describe('monthlyCreditCardPlans', () => {
       }
     ])
 
-    expect(lite.showWeeklyLimit).toBe(false)
-    expect(lite.weeklyCredits).toBe(0)
-    expect(lite.monthlyCredits).toBe(450)
+    const lite = plans.find((plan) => plan.id === 'lite')
+    expect(lite?.showWeeklyLimit).toBe(false)
+    expect(lite?.weeklyCredits).toBe(0)
+    expect(lite?.monthlyCredits).toBe(450)
+  })
+
+  it('publishes the three margin-gated plans with continuous entry pricing', () => {
+    expect(monthlyCreditCardPlans.map((plan) => ({
+      id: plan.id,
+      shop: plan.priceCny,
+      direct: plan.directPriceCny,
+      daily: plan.displayDailyCredits,
+      monthly: plan.displayMonthlyCredits
+    }))).toEqual([
+      { id: 'starter', shop: 259, direct: 249, daily: 80, monthly: 2400 },
+      { id: 'lite', shop: 469, direct: 459, daily: 150, monthly: 4500 },
+      { id: 'pro', shop: 869, direct: 839, daily: 280, monthly: 8500 }
+    ])
   })
 })

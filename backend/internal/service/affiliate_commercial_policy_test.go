@@ -52,7 +52,7 @@ func TestAffiliateCommercialPolicy_GroupTargets(t *testing.T) {
 	for _, item := range policy.GroupTargets {
 		targets[item.ID] = item.RateMultiplier
 	}
-	require.Equal(t, 0.42, targets["gpt"])
+	require.Equal(t, 0.50, targets["gpt"])
 	require.Equal(t, 2.40, targets["claude-max"])
 	require.Equal(t, 2.80, targets["glm"])
 	require.Equal(t, 0.40, targets["grok"])

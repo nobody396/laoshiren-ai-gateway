@@ -50,7 +50,7 @@ export type MonthlyCreditCardPlanEntitlement = {
   claude_group?: MonthlyCreditCardPlanGroupEntitlement | null
 }
 
-const defaultGptCreditsPerUsd = 0.42
+const defaultGptCreditsPerUsd = 0.5
 const defaultClaudeCreditsPerUsd = 2.4
 const millionTokens = 1_000_000
 const gptWeightedUsdPerMillionTokens = 1.035

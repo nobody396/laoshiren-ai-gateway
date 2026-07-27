@@ -71,7 +71,7 @@ var affiliateCommercialPackageCatalog = []affiliateCommercialPackageInput{
 }
 
 var affiliateCommercialGroupTargets = []AffiliateCommercialGroupTarget{
-	{ID: "gpt", Name: "GPT", RateMultiplier: 0.42},
+	{ID: "gpt", Name: "GPT", RateMultiplier: 0.50},
 	{ID: "claude-max", Name: "Claude / MAX", RateMultiplier: 2.40},
 	{ID: "glm", Name: "GLM", RateMultiplier: 2.80},
 	{ID: "grok", Name: "Grok", RateMultiplier: 0.40},

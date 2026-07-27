@@ -127,7 +127,8 @@ def main():
     assert len(qr) > 100, len(qr)
     ok('payment profile submit + QR', 'status=%s qr_bytes=%d' % (profile2['verification_status'], len(qr)))
 
-    alpha_token, _ = login('agent-alpha@demo.local')
+    admin_token, _ = login(ADMIN_EMAIL, ADMIN_PASS)
+    alpha_token, alpha_user = login('agent-alpha@demo.local')
     wallet = req('/agent/affiliate/wallet', token=alpha_token)
     assert wallet['conversion_multiplier_millis'] == 1200, wallet
     available = int(wallet['available_cash_micros'])
@@ -137,6 +138,14 @@ def main():
         ok('wallet conversion', '¥10 cash -> ⚡12')
     else:
         ok('wallet conversion skipped', 'available=%d' % available)
+    admin_wds_before = req('/admin/agents/affiliate-withdrawals', token=admin_token)['items']
+    alpha_processing = [item for item in admin_wds_before if item.get('agent_id') == alpha_user.get('id')]
+    for item in alpha_processing:
+        admin_wd_qr = req('/admin/agents/affiliate-withdrawals/%s/payment-qr' % item['id'], token=admin_token, expect_bytes=True)
+        assert len(admin_wd_qr) > 100, len(admin_wd_qr)
+        req('/admin/agents/affiliate-withdrawals/%s/complete' % item['id'], method='POST', token=admin_token, payload={'payment_reference': 'E2E-CLEAR-' + uuid.uuid4().hex[:8]})
+    ok('preexisting withdrawal clear', 'alpha_processing_cleared=%d' % len(alpha_processing))
+
     wallet2 = req('/agent/affiliate/wallet', token=alpha_token)
     if int(wallet2['available_cash_micros']) >= int(wallet2['withdrawal_minimum_micros']):
         wd = req('/agent/affiliate/withdrawals', method='POST', token=alpha_token, payload={'amount_micros': int(wallet2['withdrawal_minimum_micros'])}, headers={'Idempotency-Key': 'e2e-withdraw-' + uuid.uuid4().hex})
@@ -146,7 +155,6 @@ def main():
         wd = None
         ok('withdrawal request skipped', 'available=%s' % wallet2['available_cash_micros'])
 
-    admin_token, _ = login(ADMIN_EMAIL, ADMIN_PASS)
     program = req('/admin/agents/affiliate-program', token=admin_token)
     assert program['mode'] == 'live' and program['revision'] >= 1, program
     program_update_payload = dict(program)

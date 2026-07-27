@@ -644,6 +644,27 @@ BEGIN
     RETURNING id INTO usage_id;
   END LOOP;
 
+  -- E2E 可提现余额补足：Alpha 演示账号需要在“佣金转额度”之后仍能发起一笔真实提现，
+  -- 否则提现申请 -> 后台扫码打款 -> 标记到账这条链路只能被脚本跳过。
+  INSERT INTO agent_cash_commission_entries (
+    agent_id, entry_type, amount_micros, posting_status,
+    source_type, source_id, idempotency_key, metadata, occurred_at
+  )
+  VALUES (
+    alpha_id, 'earned', 200000000, 'posted',
+    'staging_demo_adjustment', NULL, 'demo:cash:alpha:e2e-withdrawable-topup',
+    '{"staging_demo":true,"purpose":"e2e_withdrawal_coverage"}'::jsonb,
+    NOW() - INTERVAL '2 hours'
+  )
+  ON CONFLICT (idempotency_key) DO UPDATE SET
+    agent_id = EXCLUDED.agent_id,
+    amount_micros = EXCLUDED.amount_micros,
+    posting_status = EXCLUDED.posting_status,
+    source_type = EXCLUDED.source_type,
+    source_id = EXCLUDED.source_id,
+    metadata = EXCLUDED.metadata,
+    occurred_at = EXCLUDED.occurred_at;
+
   FOR i IN 1..10 LOOP
     customer_email := 'candidate-customer-' || lpad(i::text, 2, '0') || '@demo.local';
     amount_micros := 120000000;

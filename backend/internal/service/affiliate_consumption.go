@@ -73,6 +73,14 @@ type AffiliateConsumptionRepository interface {
 	RecordMonthlyEntitlement(ctx context.Context, input AffiliateMonthlyEntitlementInput) error
 }
 
+// AffiliateProgramHandlesPurchase reports whether Affiliate V3 owns the
+// purchase path. Shadow owns it for projection purposes and must suppress
+// legacy monetary reward writers just like live mode does.
+func AffiliateProgramHandlesPurchase(result *AffiliateFirstPaidPurchaseResult) bool {
+	return result != nil &&
+		(result.ProgramLive || result.ProgramMode == AffiliateProgramModeShadow)
+}
+
 func AffiliatePolicyFromPurchaseResult(
 	paid bool,
 	result *AffiliateFirstPaidPurchaseResult,
@@ -80,7 +88,7 @@ func AffiliatePolicyFromPurchaseResult(
 	if !paid {
 		return AffiliateSourcePolicyNone, 0, 0, 0
 	}
-	if result == nil || !result.ProgramLive {
+	if !AffiliateProgramHandlesPurchase(result) {
 		return AffiliateSourcePolicyNone, 0, 0, 0
 	}
 	switch result.SourcePolicy {

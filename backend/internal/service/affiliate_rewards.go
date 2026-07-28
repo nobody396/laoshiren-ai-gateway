@@ -37,6 +37,7 @@ type AffiliateFirstPaidPurchaseInput struct {
 }
 
 type AffiliateFirstPaidContext struct {
+	ProgramMode               string
 	ProgramLive               bool
 	Claimed                   bool
 	PurchaseID                int64
@@ -72,6 +73,7 @@ type AffiliateRewardRepository interface {
 }
 
 type AffiliateFirstPaidPurchaseResult struct {
+	ProgramMode              string
 	ProgramLive              bool
 	Claimed                  bool
 	OrdinaryReferralMicros   int64
@@ -116,11 +118,12 @@ func (s *AffiliateRewardService) ProcessFirstPaidPurchase(
 		return nil, err
 	}
 	result := &AffiliateFirstPaidPurchaseResult{
+		ProgramMode:  firstPaid.ProgramMode,
 		ProgramLive:  firstPaid.ProgramLive,
 		Claimed:      firstPaid.Claimed,
 		SourcePolicy: AffiliateSourcePolicyNone,
 	}
-	if !firstPaid.ProgramLive {
+	if firstPaid.ProgramMode != AffiliateProgramModeShadow && !firstPaid.ProgramLive {
 		return result, nil
 	}
 
@@ -148,6 +151,13 @@ func (s *AffiliateRewardService) ProcessFirstPaidPurchase(
 		result.DirectPartnerID = 0
 	case firstPaid.BindingKind == AffiliateBindingOrdinary && firstPaid.InviterUserID > 0:
 		result.SourcePolicy = AffiliateSourcePolicyOrdinaryFirstPaid
+	}
+
+	// Shadow mode must preserve the exact projected source policy used by the
+	// real purchase-to-usage path, but it must never claim the first purchase or
+	// post platform-credit rewards.
+	if firstPaid.ProgramMode == AffiliateProgramModeShadow {
+		return result, nil
 	}
 
 	if !firstPaid.Claimed || result.SourcePolicy != AffiliateSourcePolicyOrdinaryFirstPaid {

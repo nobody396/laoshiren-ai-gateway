@@ -334,7 +334,7 @@ func (s *TopupService) QueryOrderStatus(ctx context.Context, orderNo string, use
 func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order *TopupOrder, xunhuTradeNo *string) error {
 	// 充值金额换算（1 CNY = 1 USD，单位：分 → USD）
 	amountUSD := float64(order.AmountCNYFen) * topupCNYFenToUSD
-	affiliateV2Live := false
+	affiliateV3Active := false
 
 	// 开事务
 	tx, err := s.entClient.Tx(ctx)
@@ -373,7 +373,7 @@ func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order 
 			if err != nil {
 				return fmt.Errorf("process affiliate first paid topup: %w", err)
 			}
-			affiliateV2Live = rewardResult.ProgramLive
+			affiliateV3Active = AffiliateProgramHandlesPurchase(rewardResult)
 		}
 		policy, partnerID, customerRate, partnerRate := AffiliatePolicyFromPurchaseResult(
 			order.AmountCNYFen > 0,
@@ -447,7 +447,7 @@ func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order 
 	}
 
 	// 异步触发“被邀请用户首次虎皮椒充值”奖励（幂等，不影响主流程）
-	if s.commissionService != nil && !affiliateV2Live {
+	if s.commissionService != nil && !affiliateV3Active {
 		uid := order.UserID
 		topupOrderID := order.ID
 		go func() {

@@ -118,6 +118,91 @@ func TestAffiliateFirstPaidRewards_AgentBindingDoesNotStackOrdinaryReward(t *tes
 	}
 }
 
+func TestAffiliateFirstPaidRewards_ShadowProjectsPartnerPolicyWithoutMoney(t *testing.T) {
+	t.Parallel()
+	repo := &affiliateRewardRepoStub{firstPaid: AffiliateFirstPaidContext{
+		ProgramMode:               AffiliateProgramModeShadow,
+		ProgramLive:               false,
+		Claimed:                   false,
+		BindingKind:               AffiliateBindingAgent,
+		InviterUserID:             7,
+		BindingAgentID:            7,
+		BindingCustomerRateBPS:    300,
+		BindingPartnerRateBPS:     700,
+		OrdinaryReferralRateBPS:   500,
+		OrdinaryInviteeRateBPS:    500,
+		InviterPartnerStatus:      "active",
+		InviterPartnerActivatedAt: nil,
+	}}
+	svc := NewAffiliateRewardService(repo)
+	result, err := svc.ProcessFirstPaidPurchase(context.Background(), AffiliateFirstPaidPurchaseInput{
+		UserID:       11,
+		PurchaseType: AffiliatePurchaseBalanceRedeem,
+		SourceID:     103,
+		PurchaseKey:  "shadow-redeem:103",
+		AmountMicros: 100_000_000,
+		OccurredAt:   time.Now(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.ProgramMode != AffiliateProgramModeShadow ||
+		result.ProgramLive ||
+		result.Claimed ||
+		result.SourcePolicy != AffiliateSourcePolicyPartnerUsage ||
+		result.DirectPartnerID != 7 ||
+		result.CustomerRebateRateBPS != 300 ||
+		result.PartnerCommissionRateBPS != 700 {
+		t.Fatalf("shadow projection = %+v", result)
+	}
+	if len(repo.posted) != 0 || len(repo.scheduled) != 0 {
+		t.Fatalf("shadow wrote rewards: posted=%d scheduled=%d", len(repo.posted), len(repo.scheduled))
+	}
+	policy, partnerID, customerRate, partnerRate := AffiliatePolicyFromPurchaseResult(true, result)
+	if policy != AffiliateSourcePolicyPartnerUsage ||
+		partnerID != 7 ||
+		customerRate != 300 ||
+		partnerRate != 700 {
+		t.Fatalf("shadow consumption policy = (%s,%d,%d,%d)", policy, partnerID, customerRate, partnerRate)
+	}
+}
+
+func TestAffiliatePolicyFromPurchaseResult_OffDoesNotTrackConsumption(t *testing.T) {
+	t.Parallel()
+	policy, partnerID, customerRate, partnerRate := AffiliatePolicyFromPurchaseResult(
+		true,
+		&AffiliateFirstPaidPurchaseResult{
+			ProgramMode:              AffiliateProgramModeOff,
+			SourcePolicy:             AffiliateSourcePolicyPartnerUsage,
+			DirectPartnerID:          7,
+			CustomerRebateRateBPS:    300,
+			PartnerCommissionRateBPS: 700,
+		},
+	)
+	if policy != AffiliateSourcePolicyNone ||
+		partnerID != 0 ||
+		customerRate != 0 ||
+		partnerRate != 0 {
+		t.Fatalf("off policy = (%s,%d,%d,%d)", policy, partnerID, customerRate, partnerRate)
+	}
+}
+
+func TestAffiliateProgramHandlesPurchase_ShadowSuppressesLegacyRewards(t *testing.T) {
+	t.Parallel()
+	if AffiliateProgramHandlesPurchase(nil) {
+		t.Fatal("nil result must not suppress the legacy writer")
+	}
+	if AffiliateProgramHandlesPurchase(&AffiliateFirstPaidPurchaseResult{ProgramMode: AffiliateProgramModeOff}) {
+		t.Fatal("off mode must not suppress the legacy writer")
+	}
+	if !AffiliateProgramHandlesPurchase(&AffiliateFirstPaidPurchaseResult{ProgramMode: AffiliateProgramModeShadow}) {
+		t.Fatal("shadow mode must suppress the legacy monetary writer")
+	}
+	if !AffiliateProgramHandlesPurchase(&AffiliateFirstPaidPurchaseResult{ProgramLive: true}) {
+		t.Fatal("live mode must suppress the legacy monetary writer")
+	}
+}
+
 func TestAffiliateHistoricalDirectStartsPartnerUsageOnlyAfterActivation(t *testing.T) {
 	t.Parallel()
 	activatedAt := time.Date(2026, 7, 28, 8, 0, 0, 0, time.UTC)

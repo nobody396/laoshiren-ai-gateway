@@ -38,7 +38,6 @@
             :title="monthlyCreditTitle"
             summary=""
             :plans="monthlyPlans"
-            :show-entitlement-details="true"
             :show-action="false"
           />
         </div>

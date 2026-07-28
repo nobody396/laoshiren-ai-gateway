@@ -219,22 +219,6 @@
                         </div>
                       </div>
 
-                      <div class="topup-token-grid">
-                        <article>
-                          <span>GPT Pro</span>
-                          <strong>{{ selectedMonthlyPlan?.gptMonthlyUsage }}</strong>
-                          <small>{{ selectedMonthlyPlan?.gptMonthlyTokensText }}</small>
-                        </article>
-                        <article>
-                          <span>Claude Max</span>
-                          <strong>{{ selectedMonthlyPlan?.claudeMonthlyUsage }}</strong>
-                          <small>{{ selectedMonthlyPlan?.claudeMonthlyTokensText }}</small>
-                        </article>
-                      </div>
-
-                      <p class="topup-token-note">
-                        {{ t('topup.monthlyPlanTokenNote') }}
-                      </p>
                     </section>
                   </template>
                   <template v-else>
@@ -1587,8 +1571,7 @@ void Promise.all([
 }
 
 .topup-monthly-prices div,
-.topup-monthly-quota,
-.topup-token-grid article {
+.topup-monthly-quota {
   border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
   background: rgb(var(--color-vellum) / 0.58);
@@ -1596,8 +1579,7 @@ void Promise.all([
 }
 
 .topup-monthly-prices span,
-.topup-monthly-quota span,
-.topup-token-grid span {
+.topup-monthly-quota span {
   display: block;
   color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.78rem;
@@ -1606,8 +1588,7 @@ void Promise.all([
 }
 
 .topup-monthly-prices strong,
-.topup-monthly-quota strong,
-.topup-token-grid strong {
+.topup-monthly-quota strong {
   display: block;
   margin-top: 0.42rem;
   color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
@@ -1626,43 +1607,13 @@ void Promise.all([
   font-size: 1.22rem;
 }
 
-.topup-monthly-quota small,
-.topup-token-grid small {
+.topup-monthly-quota small {
   display: block;
   margin-top: 0.35rem;
   color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.76rem;
   font-weight: 650;
   line-height: 1.45;
-}
-
-.topup-token-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-.topup-token-grid article {
-  min-width: 0;
-}
-
-.topup-token-grid strong {
-  font-size: 0.98rem;
-}
-
-.topup-token-grid small {
-  color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
-}
-
-.topup-token-note {
-  margin: 0;
-  border: 1px solid rgb(var(--color-warning) / 0.18);
-  border-radius: 8px;
-  background: rgb(var(--color-warning) / 0.08);
-  color: var(--admin-muted, rgb(var(--color-muted)));
-  padding: 0.8rem 0.9rem;
-  font-size: 0.8rem;
-  line-height: 1.65;
 }
 
 .topup-apex-lore {
@@ -1676,8 +1627,7 @@ void Promise.all([
 }
 
 .topup-monthly-detail--apex .topup-monthly-prices div,
-.topup-monthly-detail--apex .topup-monthly-quota,
-.topup-monthly-detail--apex .topup-token-grid article {
+.topup-monthly-detail--apex .topup-monthly-quota {
   border-color: rgb(var(--gild-500) / 0.24);
   background:
     linear-gradient(135deg, rgb(var(--gild-500) / 0.12), rgb(var(--color-primary-400) / 0.07)),
@@ -1685,35 +1635,21 @@ void Promise.all([
 }
 
 .topup-monthly-detail--apex .topup-monthly-prices span,
-.topup-monthly-detail--apex .topup-monthly-quota span,
-.topup-monthly-detail--apex .topup-token-grid span {
+.topup-monthly-detail--apex .topup-monthly-quota span {
   color: rgb(var(--gild-200) / 0.72);
 }
 
 .topup-monthly-detail--apex .topup-monthly-prices strong,
-.topup-monthly-detail--apex .topup-monthly-quota strong,
-.topup-monthly-detail--apex .topup-token-grid strong {
+.topup-monthly-detail--apex .topup-monthly-quota strong {
   color: rgb(var(--gild-100));
 }
 
-.topup-monthly-detail--apex .topup-monthly-quota small,
-.topup-monthly-detail--apex .topup-token-grid small {
+.topup-monthly-detail--apex .topup-monthly-quota small {
   color: rgb(var(--gild-200) / 0.7);
 }
 
-.topup-monthly-detail--apex .topup-token-grid small {
-  color: rgb(var(--color-terracotta-dark));
-}
-
-.topup-monthly-detail--apex .topup-token-note {
-  border-color: rgb(var(--gild-500) / 0.22);
-  background: rgb(var(--gild-500) / 0.08);
-  color: rgb(var(--gild-200) / 0.72);
-}
-
 .dark .topup-monthly-prices div,
-.dark .topup-monthly-quota,
-.dark .topup-token-grid article {
+.dark .topup-monthly-quota {
   border-color: rgb(var(--color-vellum) / 0.12);
   background: rgb(var(--color-gray-900) / 0.86);
 }
@@ -1725,38 +1661,21 @@ void Promise.all([
 }
 
 .dark .topup-monthly-prices span,
-.dark .topup-monthly-quota span,
-.dark .topup-token-grid span {
+.dark .topup-monthly-quota span {
   color: rgb(var(--color-stone) / 0.78);
 }
 
 .dark .topup-monthly-prices strong,
-.dark .topup-monthly-quota strong,
-.dark .topup-token-grid strong {
+.dark .topup-monthly-quota strong {
   color: rgb(var(--gild-50));
 }
 
-.dark .topup-monthly-quota small,
-.dark .topup-token-grid small {
+.dark .topup-monthly-quota small {
   color: rgb(var(--color-stone) / 0.72);
 }
 
-.dark .topup-token-grid small {
-  color: rgb(var(--color-primary-400));
-}
-
-.dark .topup-token-note {
-  border-color: rgb(var(--color-primary-400) / 0.28);
-  background:
-    linear-gradient(180deg, rgb(var(--color-primary-400) / 0.1), transparent 100%),
-    rgb(var(--color-gray-900) / 0.92);
-  color: rgb(var(--gild-50));
-  font-weight: 650;
-}
-
 .dark .topup-monthly-detail--apex .topup-monthly-prices div,
-.dark .topup-monthly-detail--apex .topup-monthly-quota,
-.dark .topup-monthly-detail--apex .topup-token-grid article {
+.dark .topup-monthly-detail--apex .topup-monthly-quota {
   border-color: rgb(var(--gild-500) / 0.24);
   background:
     linear-gradient(135deg, rgb(var(--gild-500) / 0.12), rgb(var(--color-primary-400) / 0.07)),
@@ -1764,24 +1683,17 @@ void Promise.all([
 }
 
 .dark .topup-monthly-detail--apex .topup-monthly-prices span,
-.dark .topup-monthly-detail--apex .topup-monthly-quota span,
-.dark .topup-monthly-detail--apex .topup-token-grid span {
+.dark .topup-monthly-detail--apex .topup-monthly-quota span {
   color: rgb(var(--gild-200) / 0.72);
 }
 
 .dark .topup-monthly-detail--apex .topup-monthly-prices strong,
-.dark .topup-monthly-detail--apex .topup-monthly-quota strong,
-.dark .topup-monthly-detail--apex .topup-token-grid strong {
+.dark .topup-monthly-detail--apex .topup-monthly-quota strong {
   color: rgb(var(--gild-100));
 }
 
-.dark .topup-monthly-detail--apex .topup-monthly-quota small,
-.dark .topup-monthly-detail--apex .topup-token-grid small {
+.dark .topup-monthly-detail--apex .topup-monthly-quota small {
   color: rgb(var(--gild-200) / 0.7);
-}
-
-.dark .topup-monthly-detail--apex .topup-token-grid small {
-  color: rgb(var(--color-terracotta-dark));
 }
 
 .topup-primary-action,
@@ -2110,8 +2022,7 @@ void Promise.all([
   }
 
   .topup-monthly-prices,
-  .topup-quota-grid,
-  .topup-token-grid {
+  .topup-quota-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -91,6 +91,7 @@ DO $$
 DECLARE
   demo_password_hash text := '$2a$10$8F1HImqy1ZYH8EJevN6BEulUZrKn2k2JMkOoy2BnYJUlRUPptzvz6';
   admin_id bigint;
+  browser_admin_id bigint;
   demo_group_id bigint;
   demo_account_id bigint;
   demo_claude_account_id bigint;
@@ -363,12 +364,19 @@ BEGIN
     updated_at = NOW();
 
   SELECT id INTO alpha_id FROM users WHERE email = 'agent-alpha@partner.local' AND deleted_at IS NULL;
+  SELECT id INTO browser_admin_id FROM users WHERE email = 'browser-admin@partner.local' AND deleted_at IS NULL;
   SELECT id INTO review_id FROM users WHERE email = 'agent-review@partner.local' AND deleted_at IS NULL;
   SELECT id INTO blocked_id FROM users WHERE email = 'agent-blocked@partner.local' AND deleted_at IS NULL;
   SELECT id INTO candidate_id FROM users WHERE email = 'partner-upgrade@partner.local' AND deleted_at IS NULL;
   SELECT id INTO applicant_id FROM users WHERE email = 'partner-applicant@partner.local' AND deleted_at IS NULL;
   SELECT id INTO ordinary_id FROM users WHERE email = 'ordinary-referrer@partner.local' AND deleted_at IS NULL;
   SELECT id INTO invitee_id FROM users WHERE email = 'ordinary-invitee@partner.local' AND deleted_at IS NULL;
+
+  INSERT INTO admin_user_roles (user_id, role_id)
+  SELECT browser_admin_id, role_id
+  FROM admin_user_roles
+  WHERE user_id = admin_id
+  ON CONFLICT (user_id, role_id) DO NOTHING;
 
   -- Keep repeated API/UI E2E runs deterministic. The E2E script intentionally
   -- creates random idempotency keys, so a re-seed must remove only those

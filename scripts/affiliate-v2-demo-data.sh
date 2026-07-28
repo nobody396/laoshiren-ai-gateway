@@ -600,6 +600,78 @@ BEGIN
     '用户提交合伙人申请', event_id, NOW() - INTERVAL '1 day'
   );
 
+  -- The pending application must be backed by the same immutable consumption
+  -- ledger used during real approval. Otherwise the admin table would show a
+  -- qualified snapshot that the review endpoint correctly refuses to approve.
+  FOR i IN 1..7 LOOP
+    customer_email := 'applicant-customer-' || lpad(i::text, 2, '0') || '@partner.local';
+    amount_micros := CASE WHEN i = 7 THEN 480000000 ELSE 300000000 END;
+    INSERT INTO users (
+      email, password_hash, role, balance, concurrency, status,
+      username, notes, invite_code, inviter_id,
+      total_recharged, first_recharged, first_invited_topup_at,
+      last_active_at, wechat
+    )
+    VALUES (
+      customer_email, demo_password_hash, 'user', 0, 5, 'active',
+      '申请审核用户客户 ' || lpad(i::text, 2, '0'), '申请审核用户直属客户',
+      'APPCUST' || lpad(i::text, 2, '0'), applicant_id,
+      amount_micros::numeric / 1000000, TRUE,
+      NOW() - (i || ' days')::interval,
+      NOW() - (i || ' hours')::interval, ''
+    )
+    ON CONFLICT (email) WHERE deleted_at IS NULL DO UPDATE SET
+      password_hash = EXCLUDED.password_hash,
+      username = EXCLUDED.username,
+      notes = EXCLUDED.notes,
+      invite_code = EXCLUDED.invite_code,
+      inviter_id = EXCLUDED.inviter_id,
+      agent_id = NULL,
+      total_recharged = EXCLUDED.total_recharged,
+      first_recharged = EXCLUDED.first_recharged,
+      first_invited_topup_at = EXCLUDED.first_invited_topup_at,
+      last_active_at = EXCLUDED.last_active_at,
+      updated_at = NOW()
+    RETURNING id INTO customer_id;
+
+    INSERT INTO affiliate_bindings (
+      customer_user_id, inviter_user_id, binding_kind,
+      customer_rebate_rate_snapshot_bps,
+      agent_commission_rate_snapshot_bps,
+      bound_at
+    )
+    VALUES (
+      customer_id, applicant_id, 'ordinary',
+      0, 0, NOW() - INTERVAL '7 days'
+    )
+    ON CONFLICT (customer_user_id) DO UPDATE SET
+      inviter_user_id = EXCLUDED.inviter_user_id,
+      binding_kind = EXCLUDED.binding_kind,
+      agent_id = NULL,
+      affiliate_link_id = NULL,
+      link_rate_version = NULL,
+      customer_rebate_rate_snapshot_bps = 0,
+      agent_commission_rate_snapshot_bps = 0,
+      updated_at = NOW();
+
+    INSERT INTO affiliate_performance_events (
+      user_id, direct_agent_id, event_type, amount_micros,
+      source_type, source_id, event_key, occurred_at, metadata
+    )
+    VALUES (
+      customer_id, applicant_id, 'confirmed_consumption', amount_micros,
+      'usage', NULL, 'demo:confirmed:applicant:' || i,
+      NOW() - (i || ' days')::interval,
+      '{"program_mode":"live","staging_demo":true,"ordinary_invite":true}'::jsonb
+    )
+    ON CONFLICT (event_key) DO UPDATE SET
+      user_id = EXCLUDED.user_id,
+      direct_agent_id = EXCLUDED.direct_agent_id,
+      amount_micros = EXCLUDED.amount_micros,
+      occurred_at = EXCLUDED.occurred_at,
+      metadata = EXCLUDED.metadata;
+  END LOOP;
+
   INSERT INTO agent_payment_profiles (
     agent_id, alipay_real_name, alipay_account, contact_phone, payment_note,
     alipay_qr_object_key, alipay_qr_content_type, alipay_qr_original_filename, alipay_qr_size,

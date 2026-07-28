@@ -90,12 +90,14 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 	if err := rows.Close(); err != nil {
 		return nil, err
 	}
+	result.ProgramMode = mode
 	result.ProgramLive = mode == service.AffiliateProgramModeLive
-	if !result.ProgramLive ||
-		!startedAt.Valid ||
-		input.OccurredAt.Before(startedAt.Time) ||
+	if mode == service.AffiliateProgramModeOff ||
 		!bindingKind.Valid ||
 		!inviterID.Valid {
+		return result, nil
+	}
+	if result.ProgramLive && (!startedAt.Valid || input.OccurredAt.Before(startedAt.Time)) {
 		return result, nil
 	}
 	result.BindingKind = bindingKind.String
@@ -108,6 +110,9 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 	}
 	if inviterActivatedAt.Valid {
 		result.InviterPartnerActivatedAt = &inviterActivatedAt.Time
+	}
+	if mode == service.AffiliateProgramModeShadow {
+		return result, nil
 	}
 
 	insertRows := &entsql.Rows{}

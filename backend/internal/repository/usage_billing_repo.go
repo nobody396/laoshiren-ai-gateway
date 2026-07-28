@@ -218,6 +218,7 @@ type usageBillingBalanceLot struct {
 	DirectPartnerID          sql.NullInt64
 	CustomerRebateRateBPS    int32
 	PartnerCommissionRateBPS int32
+	AcquiredAt               time.Time
 }
 
 func attributeUsageBillingBalanceConsumption(
@@ -234,7 +235,8 @@ func attributeUsageBillingBalanceConsumption(
 		SELECT
 			id, remaining_amount_micros, affiliate_eligible,
 			affiliate_policy, direct_partner_id,
-			customer_rebate_rate_bps, partner_commission_rate_bps
+			customer_rebate_rate_bps, partner_commission_rate_bps,
+			occurred_at
 		FROM balance_lots
 		WHERE user_id = $1
 			AND remaining_amount_micros > 0
@@ -255,6 +257,7 @@ func attributeUsageBillingBalanceConsumption(
 			&lot.DirectPartnerID,
 			&lot.CustomerRebateRateBPS,
 			&lot.PartnerCommissionRateBPS,
+			&lot.AcquiredAt,
 		); err != nil {
 			_ = rows.Close()
 			return 0, err
@@ -368,6 +371,7 @@ func attributeUsageBillingBalanceConsumption(
 				directPartnerID,
 				lot.CustomerRebateRateBPS,
 				lot.PartnerCommissionRateBPS,
+				lot.AcquiredAt,
 			)
 			if err != nil {
 				return 0, err
@@ -401,6 +405,7 @@ func attributeUsageBillingMonthlyConsumption(
 		customerRateBPS   int32
 		partnerRateBPS    int32
 		confirmedMicros   int64
+		acquiredAt        time.Time
 	)
 	err := tx.QueryRowContext(ctx, `
 		WITH candidate AS (
@@ -441,6 +446,7 @@ func attributeUsageBillingMonthlyConsumption(
 				c.direct_partner_id,
 				c.customer_rebate_rate_bps,
 				c.partner_commission_rate_bps,
+				c.created_at,
 				c.confirmed_consumption_micros
 					- candidate.confirmed_consumption_micros AS confirmed_delta_micros
 		)
@@ -450,6 +456,7 @@ func attributeUsageBillingMonthlyConsumption(
 			direct_partner_id,
 			customer_rebate_rate_bps,
 			partner_commission_rate_bps,
+			created_at,
 			GREATEST(0, confirmed_delta_micros)
 		FROM updated
 	`, *cmd.SubscriptionID, cmd.UserID, creditMicros).Scan(
@@ -458,6 +465,7 @@ func attributeUsageBillingMonthlyConsumption(
 		&directPartnerID,
 		&customerRateBPS,
 		&partnerRateBPS,
+		&acquiredAt,
 		&confirmedMicros,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -479,6 +487,7 @@ func attributeUsageBillingMonthlyConsumption(
 			directPartnerID.Int64,
 			customerRateBPS,
 			partnerRateBPS,
+			acquiredAt,
 		)
 		if err != nil {
 			return 0, err
@@ -502,6 +511,7 @@ func recordUsageBillingPerformanceEvent(
 	directPartnerID int64,
 	customerRateBPS int32,
 	partnerRateBPS int32,
+	acquiredAt time.Time,
 ) (usageBillingAffiliateSettlement, error) {
 	var (
 		mode      string
@@ -517,8 +527,16 @@ func recordUsageBillingPerformanceEvent(
 	if mode == service.AffiliateProgramModeOff {
 		return usageBillingAffiliateSettlement{}, nil
 	}
-	if mode == service.AffiliateProgramModeLive && (!startedAt.Valid || startedAt.Time.After(time.Now())) {
-		return usageBillingAffiliateSettlement{}, nil
+	if mode == service.AffiliateProgramModeLive {
+		// Fail closed for any source acquired before the frozen live cutover.
+		// Shadow lots retain projected attribution for observability, but can
+		// never become payable merely because the program later switches live.
+		if !startedAt.Valid ||
+			acquiredAt.IsZero() ||
+			acquiredAt.Before(startedAt.Time) ||
+			startedAt.Time.After(time.Now()) {
+			return usageBillingAffiliateSettlement{}, nil
+		}
 	}
 	var performanceEventID int64
 	err := tx.QueryRowContext(ctx, `

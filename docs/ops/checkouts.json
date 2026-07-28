@@ -55,6 +55,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-31T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/affiliate-shadow-cutover-20260728",
+      "owner": "affiliate-shadow-cutover-20260728",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-04T23:59:59+08:00"
     }
   ]
 }

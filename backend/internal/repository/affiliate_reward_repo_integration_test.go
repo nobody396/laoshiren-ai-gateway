@@ -10,6 +10,7 @@ import (
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -107,4 +108,87 @@ func TestAffiliateRewardRepository_FirstPaidFivePlusFiveT0IsIdempotent(t *testin
 		WHERE consumer_user_id=$1
 	`, invitee.ID).Scan(&rewardCount))
 	require.Equal(t, 2, rewardCount)
+}
+
+func TestAffiliateRewardRepository_ShadowResolvesBindingWithoutClaimOrReward(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	rewardService := service.NewAffiliateRewardService(NewAffiliateRewardRepository(client, integrationDB))
+	linkRepo := NewAffiliateLinkRepository(integrationDB)
+	linkService := service.NewAffiliateLinkService(linkRepo)
+	agent := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("affiliate-shadow-agent-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	customer := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("affiliate-shadow-customer-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_principals (
+			agent_id, status, risk_status, qualified_at, activated_at
+		)
+		VALUES ($1, 'active', 'clear', NOW(), NOW())
+	`, agent.ID)
+	require.NoError(t, err)
+	link, err := linkService.Create(ctx, agent.ID, "shadow-三七", "integration", 300)
+	require.NoError(t, err)
+	referral, err := linkRepo.ResolveActiveLink(ctx, link.Code)
+	require.NoError(t, err)
+	require.NoError(t, linkRepo.BindAgentReferral(ctx, customer.ID, *referral))
+	setAffiliateProgramShadowForIntegrationTest(t, ctx)
+
+	tx, err := client.Tx(ctx)
+	require.NoError(t, err)
+	result, err := rewardService.ProcessFirstPaidPurchase(
+		dbent.NewTxContext(ctx, tx),
+		service.AffiliateFirstPaidPurchaseInput{
+			UserID:       customer.ID,
+			PurchaseType: service.AffiliatePurchaseBalanceRedeem,
+			SourceID:     8101,
+			PurchaseKey:  "shadow-redeem:" + uuid.NewString(),
+			AmountMicros: 100_000_000,
+			OccurredAt:   time.Now(),
+		},
+	)
+	require.NoError(t, err)
+	require.Equal(t, service.AffiliateProgramModeShadow, result.ProgramMode)
+	require.False(t, result.ProgramLive)
+	require.False(t, result.Claimed)
+	require.Equal(t, service.AffiliateSourcePolicyPartnerUsage, result.SourcePolicy)
+	require.Equal(t, agent.ID, result.DirectPartnerID)
+	require.Equal(t, int32(300), result.CustomerRebateRateBPS)
+	require.Equal(t, int32(700), result.PartnerCommissionRateBPS)
+	require.NoError(t, tx.Commit())
+
+	var firstPaidCount, rewardCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM affiliate_first_paid_purchases WHERE user_id=$1
+	`, customer.ID).Scan(&firstPaidCount))
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM affiliate_reward_entries WHERE consumer_user_id=$1
+	`, customer.ID).Scan(&rewardCount))
+	require.Zero(t, firstPaidCount)
+	require.Zero(t, rewardCount)
+}
+
+func setAffiliateProgramShadowForIntegrationTest(t *testing.T, ctx context.Context) {
+	t.Helper()
+	_, err := integrationDB.ExecContext(ctx, `
+		UPDATE affiliate_program_settings
+		SET mode = 'shadow',
+			started_at = NULL,
+			updated_at = NOW()
+		WHERE id = 1
+	`)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(), `
+			UPDATE affiliate_program_settings
+			SET mode = 'off',
+				started_at = NULL,
+				updated_at = NOW()
+			WHERE id = 1
+		`)
+	})
 }

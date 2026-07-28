@@ -363,6 +363,7 @@ func TestUsageBillingAffiliateSettlement_ShadowObservesWithoutMoney(t *testing.T
 		agent.ID,
 		300,
 		700,
+		time.Now(),
 	)
 	require.NoError(t, err)
 	require.Zero(t, settlement.CustomerRebateMicros)
@@ -378,6 +379,394 @@ func TestUsageBillingAffiliateSettlement_ShadowObservesWithoutMoney(t *testing.T
 	`, customer.ID).Scan(&cash))
 	require.Zero(t, rewards)
 	require.Zero(t, cash)
+}
+
+func TestUsageBillingAffiliateSettlement_RealRedeemShadowThenLiveCutover(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	usageRepo := NewUsageBillingRepository(client, integrationDB)
+	userRepo := newUserRepositoryWithSQL(client, integrationDB)
+	redeemRepo := NewRedeemCodeRepository(client)
+	consumptionRepo := NewAffiliateConsumptionRepository(client)
+	rewardService := service.NewAffiliateRewardService(NewAffiliateRewardRepository(client, integrationDB))
+	redeemService := service.NewRedeemService(
+		redeemRepo,
+		nil,
+		userRepo,
+		nil,
+		nil,
+		nil,
+		client,
+		nil,
+		nil,
+		nil,
+		consumptionRepo,
+		rewardService,
+	)
+	linkRepo := NewAffiliateLinkRepository(integrationDB)
+	linkService := service.NewAffiliateLinkService(linkRepo)
+
+	agent := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-real-shadow-agent-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	customer := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-real-shadow-customer-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID: customer.ID,
+		Key:    "sk-usage-billing-real-shadow-" + uuid.NewString(),
+		Name:   "real-shadow-cutover",
+	})
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_principals (
+			agent_id, status, risk_status, qualified_at, activated_at
+		)
+		VALUES ($1, 'active', 'clear', NOW(), NOW())
+	`, agent.ID)
+	require.NoError(t, err)
+	link, err := linkService.Create(ctx, agent.ID, "真实观察三七", "integration", 300)
+	require.NoError(t, err)
+	referral, err := linkRepo.ResolveActiveLink(ctx, link.Code)
+	require.NoError(t, err)
+	require.NoError(t, linkRepo.BindAgentReferral(ctx, customer.ID, *referral))
+	setAffiliateProgramShadowForIntegrationTest(t, ctx)
+
+	shadowCode := &service.RedeemCode{
+		Code:        fmt.Sprintf("SHADOW-%d", time.Now().UnixNano()),
+		Type:        service.RedeemTypeBalance,
+		Value:       10,
+		Status:      service.StatusUnused,
+		Purpose:     service.RedeemCodePurposeSaleRecharge,
+		SalesStatus: service.RedeemCodeSalesStatusSold,
+	}
+	require.NoError(t, redeemRepo.Create(ctx, shadowCode))
+	_, err = redeemService.Redeem(ctx, customer.ID, shadowCode.Code)
+	require.NoError(t, err)
+
+	var (
+		shadowLotPolicy        string
+		shadowLotPartnerID     int64
+		shadowLotCustomerRate  int32
+		shadowLotPartnerRate   int32
+		shadowLotAcquiredAt    time.Time
+		shadowFirstPaidRecords int
+	)
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT
+			affiliate_policy,
+			direct_partner_id,
+			customer_rebate_rate_bps,
+			partner_commission_rate_bps,
+			occurred_at
+		FROM balance_lots
+		WHERE source_key=$1
+	`, fmt.Sprintf("redeem:balance:%d", shadowCode.ID)).Scan(
+		&shadowLotPolicy,
+		&shadowLotPartnerID,
+		&shadowLotCustomerRate,
+		&shadowLotPartnerRate,
+		&shadowLotAcquiredAt,
+	))
+	require.Equal(t, service.AffiliateSourcePolicyPartnerUsage, shadowLotPolicy)
+	require.Equal(t, agent.ID, shadowLotPartnerID)
+	require.Equal(t, int32(300), shadowLotCustomerRate)
+	require.Equal(t, int32(700), shadowLotPartnerRate)
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM affiliate_first_paid_purchases WHERE user_id=$1
+	`, customer.ID).Scan(&shadowFirstPaidRecords))
+	require.Zero(t, shadowFirstPaidRecords)
+
+	shadowUsageLogID := time.Now().UnixNano()
+	shadowCommand := &service.UsageBillingCommand{
+		RequestID:   uuid.NewString(),
+		APIKeyID:    apiKey.ID,
+		UsageLogID:  shadowUsageLogID,
+		UserID:      customer.ID,
+		BalanceCost: 3,
+	}
+	shadowResult, err := usageRepo.Apply(ctx, shadowCommand)
+	require.NoError(t, err)
+	require.True(t, shadowResult.Applied)
+	require.Equal(t, service.AffiliateProgramModeShadow, shadowResult.AffiliateProgramMode)
+	require.Zero(t, shadowResult.AffiliateCustomerRebateMicros)
+	require.Zero(t, shadowResult.AffiliateAgentCommissionMicros)
+
+	var (
+		shadowEventCount  int
+		shadowEventAmount int64
+		shadowEventMode   string
+		rewardCount       int
+		cashCount         int
+	)
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT
+			COUNT(*),
+			COALESCE(SUM(amount_micros), 0),
+			COALESCE(MAX(metadata ->> 'program_mode'), '')
+		FROM affiliate_performance_events
+		WHERE user_id=$1
+			AND source_type='balance_usage'
+			AND source_id=$2
+	`, customer.ID, shadowUsageLogID).Scan(&shadowEventCount, &shadowEventAmount, &shadowEventMode))
+	require.Equal(t, 1, shadowEventCount)
+	require.Equal(t, int64(3_000_000), shadowEventAmount)
+	require.Equal(t, service.AffiliateProgramModeShadow, shadowEventMode)
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM affiliate_reward_entries WHERE consumer_user_id=$1
+	`, customer.ID).Scan(&rewardCount))
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM agent_cash_commission_entries WHERE consumer_user_id=$1
+	`, customer.ID).Scan(&cashCount))
+	require.Zero(t, rewardCount)
+	require.Zero(t, cashCount)
+
+	replay, err := usageRepo.Apply(ctx, shadowCommand)
+	require.NoError(t, err)
+	require.False(t, replay.Applied)
+
+	var liveStartedAt time.Time
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		UPDATE affiliate_program_settings
+		SET mode='live', started_at=NOW(), updated_at=NOW()
+		WHERE id=1
+		RETURNING started_at
+	`).Scan(&liveStartedAt))
+	require.True(t, shadowLotAcquiredAt.Before(liveStartedAt))
+
+	blockedShadowUsageLogID := time.Now().UnixNano()
+	blockedResult, err := usageRepo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:   uuid.NewString(),
+		APIKeyID:    apiKey.ID,
+		UsageLogID:  blockedShadowUsageLogID,
+		UserID:      customer.ID,
+		BalanceCost: 7,
+	})
+	require.NoError(t, err)
+	require.True(t, blockedResult.Applied)
+	require.Equal(t, service.AffiliateProgramModeLive, blockedResult.AffiliateProgramMode)
+	require.Zero(t, blockedResult.AffiliateCustomerRebateMicros)
+	require.Zero(t, blockedResult.AffiliateAgentCommissionMicros)
+	var blockedEventCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM affiliate_performance_events
+		WHERE user_id=$1 AND source_id=$2
+	`, customer.ID, blockedShadowUsageLogID).Scan(&blockedEventCount))
+	require.Zero(t, blockedEventCount)
+
+	liveCode := &service.RedeemCode{
+		Code:        fmt.Sprintf("LIVE-%d", time.Now().UnixNano()),
+		Type:        service.RedeemTypeBalance,
+		Value:       10,
+		Status:      service.StatusUnused,
+		Purpose:     service.RedeemCodePurposeSaleRecharge,
+		SalesStatus: service.RedeemCodeSalesStatusSold,
+	}
+	require.NoError(t, redeemRepo.Create(ctx, liveCode))
+	_, err = redeemService.Redeem(ctx, customer.ID, liveCode.Code)
+	require.NoError(t, err)
+	liveUsageLogID := time.Now().UnixNano()
+	liveResult, err := usageRepo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:   uuid.NewString(),
+		APIKeyID:    apiKey.ID,
+		UsageLogID:  liveUsageLogID,
+		UserID:      customer.ID,
+		BalanceCost: 5,
+	})
+	require.NoError(t, err)
+	require.True(t, liveResult.Applied)
+	require.Equal(t, int64(150_000), liveResult.AffiliateCustomerRebateMicros)
+	require.Equal(t, int64(350_000), liveResult.AffiliateAgentCommissionMicros)
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM affiliate_reward_entries
+		WHERE consumer_user_id=$1 AND reward_type='customer_rebate'
+	`, customer.ID).Scan(&rewardCount))
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM agent_cash_commission_entries
+		WHERE consumer_user_id=$1 AND entry_type='earned'
+	`, customer.ID).Scan(&cashCount))
+	require.Equal(t, 1, rewardCount)
+	require.Equal(t, 1, cashCount)
+}
+
+func TestUsageBillingAffiliateSettlement_MonthlyRedeemShadowNeverSettlesAfterCutover(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	usageRepo := NewUsageBillingRepository(client, integrationDB)
+	userRepo := newUserRepositoryWithSQL(client, integrationDB)
+	redeemRepo := NewRedeemCodeRepository(client)
+	groupRepo := NewGroupRepository(client, integrationDB)
+	subscriptionRepo := NewUserSubscriptionRepository(client)
+	subscriptionService := service.NewSubscriptionService(groupRepo, subscriptionRepo, nil, client, nil)
+	consumptionRepo := NewAffiliateConsumptionRepository(client)
+	rewardService := service.NewAffiliateRewardService(NewAffiliateRewardRepository(client, integrationDB))
+	redeemService := service.NewRedeemService(
+		redeemRepo,
+		nil,
+		userRepo,
+		subscriptionService,
+		nil,
+		nil,
+		client,
+		nil,
+		nil,
+		nil,
+		consumptionRepo,
+		rewardService,
+	)
+	linkRepo := NewAffiliateLinkRepository(integrationDB)
+	linkService := service.NewAffiliateLinkService(linkRepo)
+
+	agent := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-monthly-shadow-agent-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	customer := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-monthly-shadow-customer-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	limit := 100.0
+	group := mustCreateGroup(t, client, &service.Group{
+		Name:             "usage-monthly-shadow-" + uuid.NewString(),
+		Platform:         service.PlatformOpenAI,
+		SubscriptionType: service.SubscriptionTypeCredit,
+		MonthlyLimitUSD:  &limit,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID:  customer.ID,
+		GroupID: &group.ID,
+		Key:     "sk-usage-monthly-shadow-" + uuid.NewString(),
+		Name:    "monthly-shadow-cutover",
+	})
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_principals (
+			agent_id, status, risk_status, qualified_at, activated_at
+		)
+		VALUES ($1, 'active', 'clear', NOW(), NOW())
+	`, agent.ID)
+	require.NoError(t, err)
+	link, err := linkService.Create(ctx, agent.ID, "月卡观察三七", "integration", 300)
+	require.NoError(t, err)
+	referral, err := linkRepo.ResolveActiveLink(ctx, link.Code)
+	require.NoError(t, err)
+	require.NoError(t, linkRepo.BindAgentReferral(ctx, customer.ID, *referral))
+	setAffiliateProgramShadowForIntegrationTest(t, ctx)
+
+	monthlyCode := &service.RedeemCode{
+		Code:         fmt.Sprintf("MONTHLY-%d", time.Now().UnixNano()),
+		Type:         service.RedeemTypeSubscription,
+		Value:        10,
+		Status:       service.StatusUnused,
+		GroupID:      &group.ID,
+		GroupIDs:     []int64{group.ID},
+		ValidityDays: 31,
+		Purpose:      service.RedeemCodePurposeSaleRecharge,
+		SalesStatus:  service.RedeemCodeSalesStatusSold,
+	}
+	require.NoError(t, redeemRepo.Create(ctx, monthlyCode))
+	_, err = redeemService.Redeem(ctx, customer.ID, monthlyCode.Code)
+	require.NoError(t, err)
+	subscription, err := subscriptionRepo.GetByUserIDAndGroupID(ctx, customer.ID, group.ID)
+	require.NoError(t, err)
+
+	var (
+		cyclePolicy     string
+		cyclePartnerID  int64
+		cycleCreatedAt  time.Time
+		cycleSaleMicros int64
+		cycleLimit      int64
+	)
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT
+			affiliate_policy,
+			direct_partner_id,
+			created_at,
+			sale_price_micros,
+			credit_limit_micros
+		FROM monthly_entitlement_cycles
+		WHERE source_key=$1
+	`, fmt.Sprintf("redeem:subscription:%d", monthlyCode.ID)).Scan(
+		&cyclePolicy,
+		&cyclePartnerID,
+		&cycleCreatedAt,
+		&cycleSaleMicros,
+		&cycleLimit,
+	))
+	require.Equal(t, service.AffiliateSourcePolicyPartnerUsage, cyclePolicy)
+	require.Equal(t, agent.ID, cyclePartnerID)
+	require.Equal(t, int64(10_000_000), cycleSaleMicros)
+	require.Equal(t, int64(100_000_000), cycleLimit)
+
+	shadowUsageLogID := time.Now().UnixNano()
+	shadowResult, err := usageRepo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:        uuid.NewString(),
+		APIKeyID:         apiKey.ID,
+		UsageLogID:       shadowUsageLogID,
+		UserID:           customer.ID,
+		SubscriptionID:   &subscription.ID,
+		SubscriptionCost: 30,
+	})
+	require.NoError(t, err)
+	require.True(t, shadowResult.Applied)
+	require.Equal(t, service.AffiliateProgramModeShadow, shadowResult.AffiliateProgramMode)
+	require.Equal(t, int64(3_000_000), shadowResult.MonthlyConfirmedMicros)
+	require.Zero(t, shadowResult.AffiliateCustomerRebateMicros)
+	require.Zero(t, shadowResult.AffiliateAgentCommissionMicros)
+
+	var shadowEventCount, rewardCount, cashCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM affiliate_performance_events
+		WHERE user_id=$1
+			AND source_id=$2
+			AND metadata ->> 'program_mode'='shadow'
+	`, customer.ID, shadowUsageLogID).Scan(&shadowEventCount))
+	require.Equal(t, 1, shadowEventCount)
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM affiliate_reward_entries WHERE consumer_user_id=$1
+	`, customer.ID).Scan(&rewardCount))
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM agent_cash_commission_entries WHERE consumer_user_id=$1
+	`, customer.ID).Scan(&cashCount))
+	require.Zero(t, rewardCount)
+	require.Zero(t, cashCount)
+
+	var liveStartedAt time.Time
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		UPDATE affiliate_program_settings
+		SET mode='live', started_at=NOW(), updated_at=NOW()
+		WHERE id=1
+		RETURNING started_at
+	`).Scan(&liveStartedAt))
+	require.True(t, cycleCreatedAt.Before(liveStartedAt))
+	blockedUsageLogID := time.Now().UnixNano()
+	blockedResult, err := usageRepo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:        uuid.NewString(),
+		APIKeyID:         apiKey.ID,
+		UsageLogID:       blockedUsageLogID,
+		UserID:           customer.ID,
+		SubscriptionID:   &subscription.ID,
+		SubscriptionCost: 70,
+	})
+	require.NoError(t, err)
+	require.True(t, blockedResult.Applied)
+	require.Equal(t, int64(7_000_000), blockedResult.MonthlyConfirmedMicros)
+	require.Zero(t, blockedResult.AffiliateCustomerRebateMicros)
+	require.Zero(t, blockedResult.AffiliateAgentCommissionMicros)
+	var blockedEventCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM affiliate_performance_events
+		WHERE user_id=$1 AND source_id=$2
+	`, customer.ID, blockedUsageLogID).Scan(&blockedEventCount))
+	require.Zero(t, blockedEventCount)
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM affiliate_reward_entries WHERE consumer_user_id=$1
+	`, customer.ID).Scan(&rewardCount))
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM agent_cash_commission_entries WHERE consumer_user_id=$1
+	`, customer.ID).Scan(&cashCount))
+	require.Zero(t, rewardCount)
+	require.Zero(t, cashCount)
 }
 
 func setAffiliateProgramLiveForIntegrationTest(t *testing.T, ctx context.Context) {

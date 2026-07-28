@@ -31,6 +31,33 @@ func (s *UserRepoSuite) SetupTest() {
 	// foreign-key cleanup failures from earlier integration fixtures.
 	_, err := integrationDB.ExecContext(s.ctx, "TRUNCATE TABLE users CASCADE")
 	s.Require().NoError(err, "reset user integration fixtures")
+	_, err = integrationDB.ExecContext(s.ctx, `
+		INSERT INTO affiliate_program_settings (id)
+		VALUES (1)
+		ON CONFLICT (id) DO NOTHING
+	`)
+	s.Require().NoError(err, "restore affiliate singleton after cascade reset")
+}
+
+func (s *UserRepoSuite) TestCreateAssignsInviteCodeAndPersistsOrdinaryBinding() {
+	inviter := s.mustCreateUser(&service.User{})
+	invitee := s.mustCreateUser(&service.User{})
+	s.Require().NotNil(inviter.InviteCode)
+	s.Require().NotEmpty(*inviter.InviteCode)
+	s.Require().NotNil(invitee.InviteCode)
+	s.Require().NotEqual(*inviter.InviteCode, *invitee.InviteCode)
+
+	s.Require().NoError(s.repo.SetInviterAndAgent(s.ctx, invitee.ID, inviter.ID, nil))
+
+	var bindingKind string
+	var boundInviterID int64
+	s.Require().NoError(integrationDB.QueryRowContext(s.ctx, `
+		SELECT binding_kind, inviter_user_id
+		FROM affiliate_bindings
+		WHERE customer_user_id = $1
+	`, invitee.ID).Scan(&bindingKind, &boundInviterID))
+	s.Equal(service.AffiliateBindingOrdinary, bindingKind)
+	s.Equal(inviter.ID, boundInviterID)
 }
 
 func TestUserRepoSuite(t *testing.T) {

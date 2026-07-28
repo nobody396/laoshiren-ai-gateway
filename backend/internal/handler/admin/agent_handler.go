@@ -1,6 +1,10 @@
 package admin
 
 import (
+	"errors"
+	"io"
+	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -14,11 +18,30 @@ import (
 )
 
 type AgentHandler struct {
-	commissionService *service.CommissionService
+	commissionService  *service.CommissionService
+	affiliateProgram   *service.AffiliateProgramService
+	affiliateCommunity *service.AffiliateCommunityService
+	affiliateWallet    *service.AffiliateWalletService
+	affiliateRisk      *service.AffiliateRiskService
+	affiliateAgents    *service.AffiliateAgentService
 }
 
-func NewAgentHandler(commissionService *service.CommissionService) *AgentHandler {
-	return &AgentHandler{commissionService: commissionService}
+func NewAgentHandler(
+	commissionService *service.CommissionService,
+	affiliateProgram *service.AffiliateProgramService,
+	affiliateCommunity *service.AffiliateCommunityService,
+	affiliateWallet *service.AffiliateWalletService,
+	affiliateRisk *service.AffiliateRiskService,
+	affiliateAgents *service.AffiliateAgentService,
+) *AgentHandler {
+	return &AgentHandler{
+		commissionService:  commissionService,
+		affiliateProgram:   affiliateProgram,
+		affiliateCommunity: affiliateCommunity,
+		affiliateWallet:    affiliateWallet,
+		affiliateRisk:      affiliateRisk,
+		affiliateAgents:    affiliateAgents,
+	}
 }
 
 type updateCommissionRatesRequest struct {
@@ -45,6 +68,41 @@ type createSettlementRequest struct {
 
 type updateAgentSettlementSettingsRequest struct {
 	MinimumAmount float64 `json:"minimum_amount"`
+}
+
+type reviewAgentPaymentProfileRequest struct {
+	Status string `json:"status" binding:"required"`
+	Note   string `json:"note"`
+}
+
+type updateAffiliateCommunityRequest struct {
+	Enabled  bool   `json:"enabled"`
+	Title    string `json:"title" binding:"required"`
+	Message  string `json:"message"`
+	Revision int64  `json:"revision" binding:"required"`
+}
+
+type completeAffiliateWithdrawalRequest struct {
+	PaymentReference string `json:"payment_reference"`
+}
+
+type failAffiliateWithdrawalRequest struct {
+	Reason string `json:"reason" binding:"required"`
+}
+
+type updateAffiliateRiskRequest struct {
+	Status string `json:"status" binding:"required"`
+	Reason string `json:"reason" binding:"required"`
+}
+
+type reverseAffiliatePerformanceRequest struct {
+	EventID int64  `json:"event_id" binding:"required"`
+	Reason  string `json:"reason" binding:"required"`
+}
+
+type reviewAffiliateApplicationRequest struct {
+	Approve bool   `json:"approve"`
+	Note    string `json:"note"`
 }
 
 type bindAgentUserRequest struct {
@@ -228,8 +286,22 @@ func (h *AgentHandler) GetPaymentQRCode(c *gin.Context) {
 	if !ok {
 		return
 	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
 	file, err := h.commissionService.GetAgentPaymentQRCodeFile(c.Request.Context(), agentID)
 	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if err := h.commissionService.RecordAgentPaymentQRCodeAccess(
+		c.Request.Context(),
+		agentID,
+		subject.UserID,
+		"admin_profile",
+	); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -239,6 +311,436 @@ func (h *AgentHandler) GetPaymentQRCode(c *gin.Context) {
 	}
 	c.Header("Content-Type", contentType)
 	c.File(file.Path)
+}
+
+func (h *AgentHandler) ReviewPaymentProfile(c *gin.Context) {
+	agentID, ok := parseAgentIDParam(c)
+	if !ok {
+		return
+	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req reviewAgentPaymentProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	profile, err := h.commissionService.ReviewAgentPaymentProfile(
+		c.Request.Context(),
+		agentID,
+		subject.UserID,
+		req.Status,
+		req.Note,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	profile.AlipayQRCodeURL = "/api/v1/admin/agents/" + strconv.FormatInt(agentID, 10) + "/payment-profile/alipay-qr"
+	response.Success(c, profile)
+}
+
+func (h *AgentHandler) ListPendingPaymentProfiles(c *gin.Context) {
+	items, err := h.commissionService.ListPendingAgentPaymentProfiles(
+		c.Request.Context(),
+		parsePositiveInt(c.Query("limit"), 100),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	for index := range items {
+		items[index].AlipayQRCodeURL = "/api/v1/admin/agents/" +
+			strconv.FormatInt(items[index].AgentID, 10) +
+			"/payment-profile/alipay-qr"
+	}
+	response.Success(c, gin.H{"items": items})
+}
+
+func (h *AgentHandler) GetAffiliateProgram(c *gin.Context) {
+	settings, err := h.affiliateProgram.GetSettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, settings)
+}
+
+func (h *AgentHandler) GetAffiliateCommercialPolicy(c *gin.Context) {
+	settings, err := h.affiliateProgram.GetSettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, service.BuildAffiliateCommercialPolicyFromSettings(*settings))
+}
+
+func (h *AgentHandler) ListAffiliateRiskPrincipals(c *gin.Context) {
+	items, err := h.affiliateRisk.List(
+		c.Request.Context(),
+		parsePositiveInt(c.Query("limit"), 100),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"items": items})
+}
+
+func (h *AgentHandler) ListAffiliateApplications(c *gin.Context) {
+	items, err := h.affiliateAgents.ListApplications(
+		c.Request.Context(),
+		c.DefaultQuery("status", "pending_review"),
+		parsePositiveInt(c.Query("limit"), 100),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"items": items})
+}
+
+func (h *AgentHandler) ReviewAffiliateApplication(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	applicationID, err := strconv.ParseInt(c.Param("application_id"), 10, 64)
+	if err != nil || applicationID <= 0 {
+		response.BadRequest(c, "Invalid application id")
+		return
+	}
+	var req reviewAffiliateApplicationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	result, err := h.affiliateAgents.ReviewApplication(
+		c.Request.Context(),
+		applicationID,
+		req.Approve,
+		req.Note,
+		subject.UserID,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+func (h *AgentHandler) UpdateAffiliateRisk(c *gin.Context) {
+	agentID, ok := parseAgentIDParam(c)
+	if !ok {
+		return
+	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req updateAffiliateRiskRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	result, err := h.affiliateRisk.SetAgentRisk(
+		c.Request.Context(),
+		agentID,
+		req.Status,
+		req.Reason,
+		subject.UserID,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+func (h *AgentHandler) ReverseAffiliatePerformance(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req reverseAffiliatePerformanceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	result, err := h.affiliateRisk.ReversePerformanceEvent(
+		c.Request.Context(),
+		req.EventID,
+		req.Reason,
+		subject.UserID,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+func (h *AgentHandler) UpdateAffiliateProgram(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var next service.AffiliateProgramSettings
+	if err := c.ShouldBindJSON(&next); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	current, err := h.affiliateProgram.GetSettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if next.Mode == service.AffiliateProgramModeLive && current.StartedAt == nil {
+		startedAt := time.Now().UTC()
+		next.StartedAt = &startedAt
+	}
+	settings, err := h.affiliateProgram.UpdateSettings(
+		c.Request.Context(),
+		next,
+		next.Revision,
+		subject.UserID,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, settings)
+}
+
+func (h *AgentHandler) GetAffiliateCommunity(c *gin.Context) {
+	settings, err := h.affiliateCommunity.Get(c.Request.Context(), false)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if settings.HasQRCode {
+		settings.QRCodeURL = "/api/v1/admin/agents/affiliate-community/qr"
+	}
+	response.Success(c, settings)
+}
+
+func (h *AgentHandler) UpdateAffiliateCommunity(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req updateAffiliateCommunityRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	settings, err := h.affiliateCommunity.Update(
+		c.Request.Context(),
+		req.Title,
+		req.Message,
+		req.Enabled,
+		subject.UserID,
+		req.Revision,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if settings.HasQRCode {
+		settings.QRCodeURL = "/api/v1/admin/agents/affiliate-community/qr"
+	}
+	response.Success(c, settings)
+}
+
+func (h *AgentHandler) UploadAffiliateCommunityQRCode(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	header, err := c.FormFile("file")
+	if err != nil {
+		response.BadRequest(c, "file is required")
+		return
+	}
+	if header.Size <= 0 || header.Size > 5<<20 {
+		response.BadRequest(c, "file size must be between 1 byte and 5MB")
+		return
+	}
+	file, err := header.Open()
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	defer func() { _ = file.Close() }()
+	sniff := make([]byte, 512)
+	n, readErr := file.Read(sniff)
+	if readErr != nil && !errors.Is(readErr, io.EOF) {
+		response.ErrorFrom(c, readErr)
+		return
+	}
+	contentType := http.DetectContentType(sniff[:n])
+	if seeker, ok := file.(interface {
+		Seek(offset int64, whence int) (int64, error)
+	}); ok {
+		if _, err := seeker.Seek(0, 0); err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+	}
+	settings, err := h.affiliateCommunity.UploadQRCode(
+		c.Request.Context(),
+		subject.UserID,
+		service.AffiliateCommunityQRCodeUpload{
+			Filename:    filepath.Base(header.Filename),
+			ContentType: contentType,
+			Size:        header.Size,
+			Body:        file,
+		},
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	settings.QRCodeURL = "/api/v1/admin/agents/affiliate-community/qr"
+	response.Created(c, settings)
+}
+
+func (h *AgentHandler) GetAffiliateCommunityQRCode(c *gin.Context) {
+	file, err := h.affiliateCommunity.GetQRCodeFile(c.Request.Context(), false)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	contentType := file.ContentType
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	c.Header("Content-Type", contentType)
+	c.Header("Cache-Control", "private, no-store")
+	c.File(file.Path)
+}
+
+func (h *AgentHandler) ListAffiliateWithdrawals(c *gin.Context) {
+	items, err := h.affiliateWallet.ListAdminWithdrawals(
+		c.Request.Context(),
+		c.DefaultQuery("status", "processing"),
+		parsePositiveInt(c.Query("limit"), 100),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"items": items})
+}
+
+func (h *AgentHandler) CompleteAffiliateWithdrawal(c *gin.Context) {
+	withdrawalID, ok := parseAffiliateWithdrawalID(c)
+	if !ok {
+		return
+	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req completeAffiliateWithdrawalRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	item, err := h.affiliateWallet.CompleteWithdrawal(
+		c.Request.Context(),
+		withdrawalID,
+		subject.UserID,
+		req.PaymentReference,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, item)
+}
+
+func (h *AgentHandler) FailAffiliateWithdrawal(c *gin.Context) {
+	withdrawalID, ok := parseAffiliateWithdrawalID(c)
+	if !ok {
+		return
+	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req failAffiliateWithdrawalRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	item, err := h.affiliateWallet.FailWithdrawal(
+		c.Request.Context(),
+		withdrawalID,
+		subject.UserID,
+		req.Reason,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, item)
+}
+
+func (h *AgentHandler) GetAffiliateWithdrawalQRCode(c *gin.Context) {
+	withdrawalID, ok := parseAffiliateWithdrawalID(c)
+	if !ok {
+		return
+	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	file, err := h.affiliateWallet.GetWithdrawalQRCodeFile(
+		c.Request.Context(),
+		withdrawalID,
+		subject.UserID,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	contentType := file.ContentType
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	c.Header("Content-Type", contentType)
+	c.Header("Cache-Control", "private, no-store")
+	c.File(file.Path)
+}
+
+func parseAffiliateWithdrawalID(c *gin.Context) (int64, bool) {
+	id, err := strconv.ParseInt(c.Param("withdrawal_id"), 10, 64)
+	if err != nil || id <= 0 {
+		response.BadRequest(c, "Invalid withdrawal id")
+		return 0, false
+	}
+	return id, true
+}
+
+func parsePositiveInt(value string, fallback int) int {
+	n, err := strconv.Atoi(value)
+	if err != nil || n <= 0 {
+		return fallback
+	}
+	return n
 }
 
 func (h *AgentHandler) GetSettlementSettings(c *gin.Context) {

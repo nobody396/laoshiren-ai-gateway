@@ -1,40 +1,47 @@
 import { describe, expect, it } from 'vitest'
 import { buildMonthlyCreditCardPlans, monthlyCreditCardPlans } from '../monthlyCreditCards'
 
-describe('monthlyCreditCardPlans', () => {
-  it('keeps weekly limits hidden for every monthly card', () => {
-    for (const plan of monthlyCreditCardPlans) {
-      expect(plan.showWeeklyLimit, plan.id).toBe(false)
-      expect(plan.weeklyCredits, plan.id).toBe(0)
-      expect(plan.displayWeeklyCredits, plan.id).toBe(0)
-    }
+describe('monthlyCreditCardPlans V3', () => {
+  it('publishes Plus, Pro and Max with monthly-only limits', () => {
+    expect(monthlyCreditCardPlans.map((plan) => ({
+      id: plan.id,
+      shop: plan.priceCny,
+      direct: plan.directPriceCny,
+      daily: plan.displayDailyCredits,
+      weekly: plan.displayWeeklyCredits,
+      monthly: plan.displayMonthlyCredits
+    }))).toEqual([
+      { id: 'plus', shop: 259, direct: 249, daily: 0, weekly: 0, monthly: 2200 },
+      { id: 'pro', shop: 729, direct: 699, daily: 0, weekly: 0, monthly: 6500 },
+      { id: 'max', shop: 1549, direct: 1499, daily: 0, weekly: 0, monthly: 14000 }
+    ])
   })
 
-  it('ignores weekly entitlement snapshots while preserving monthly limits', () => {
-    const [lite] = buildMonthlyCreditCardPlans([
-      {
-        id: 'lite',
-        gpt_group: {
-          id: 7,
-          name: 'Lite GPT',
-          platform: 'openai',
-          rate_multiplier: 0.4,
-          weekly_limit_usd: 105,
-          monthly_limit_usd: 450
-        },
-        claude_group: {
-          id: 11,
-          name: 'Lite Claude',
-          platform: 'claude',
-          rate_multiplier: 1.25,
-          weekly_limit_usd: 105,
-          monthly_limit_usd: 450
-        }
+  it('uses fixed public multipliers without allowing entitlement limits to rewrite the SKU', () => {
+    const plans = buildMonthlyCreditCardPlans([{
+      id: 'plus',
+      gpt_group: {
+        id: 101,
+        name: 'GPT Plus 月卡组',
+        platform: 'openai',
+        rate_multiplier: 999,
+        weekly_limit_usd: 999,
+        monthly_limit_usd: 999
+      },
+      claude_group: {
+        id: 102,
+        name: 'Claude Plus 月卡组',
+        platform: 'anthropic',
+        rate_multiplier: 999,
+        weekly_limit_usd: 999,
+        monthly_limit_usd: 999
       }
-    ])
-
-    expect(lite.showWeeklyLimit).toBe(false)
-    expect(lite.weeklyCredits).toBe(0)
-    expect(lite.monthlyCredits).toBe(450)
+    }])
+    const plus = plans[0]
+    expect(plus.id).toBe('plus')
+    expect(plus.monthlyCredits).toBe(220)
+    expect(plus.weeklyCredits).toBe(0)
+    expect(plus.gptDisplayRate).toContain('5')
+    expect(plus.claudeDisplayRate).toContain('24')
   })
 })

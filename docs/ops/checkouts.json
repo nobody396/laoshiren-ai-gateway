@@ -48,6 +48,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-07-30T23:59:59-04:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/affiliate-program-v2",
+      "owner": "affiliate-program-v2-20260726",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-31T23:59:59+08:00"
     }
   ]
 }

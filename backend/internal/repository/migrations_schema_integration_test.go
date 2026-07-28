@@ -118,6 +118,234 @@ WHERE description = '[fresh-install compatibility template] Disabled source for 
   AND status <> 'disabled'
 `).Scan(&unsafeFreshCompatibilityGroups))
 	require.Zero(t, unsafeFreshCompatibilityGroups, "fresh-install compatibility groups must remain disabled")
+
+	// migration 149: Affiliate V2 is additive, fixed-point, and disabled by default.
+	for _, table := range []string{
+		"affiliate_program_settings",
+		"agent_principals",
+		"affiliate_links",
+		"affiliate_link_rate_versions",
+		"affiliate_bindings",
+		"affiliate_reward_entries",
+		"affiliate_performance_events",
+		"affiliate_qualification_states",
+		"agent_cash_commission_entries",
+	} {
+		var regclass sql.NullString
+		require.NoError(t, tx.QueryRowContext(
+			context.Background(),
+			"SELECT to_regclass('public.' || $1)",
+			table,
+		).Scan(&regclass))
+		require.True(t, regclass.Valid, "expected %s table to exist", table)
+	}
+	requireColumn(t, tx, "affiliate_program_settings", "withdrawal_min_micros", "bigint", 0, false)
+	requireColumn(t, tx, "affiliate_reward_entries", "amount_micros", "bigint", 0, false)
+	requireColumn(t, tx, "agent_cash_commission_entries", "amount_micros", "bigint", 0, false)
+
+	var affiliateMode, affiliateVersion string
+	var agentPoolRateBPS, marginFloorBPS int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT mode, program_version, agent_pool_rate_bps, margin_floor_bps
+FROM affiliate_program_settings
+WHERE id = 1
+`).Scan(&affiliateMode, &affiliateVersion, &agentPoolRateBPS, &marginFloorBPS))
+	require.Equal(t, "off", affiliateMode)
+	require.Equal(t, "v3", affiliateVersion)
+	require.Equal(t, 1000, agentPoolRateBPS)
+	require.Equal(t, 3500, marginFloorBPS)
+
+	// migration 150: source-aware paid balance/monthly-card attribution.
+	for _, table := range []string{
+		"balance_lots",
+		"balance_lot_consumptions",
+		"monthly_entitlement_cycles",
+		"monthly_entitlement_cycle_subscriptions",
+	} {
+		var regclass sql.NullString
+		require.NoError(t, tx.QueryRowContext(
+			context.Background(),
+			"SELECT to_regclass('public.' || $1)",
+			table,
+		).Scan(&regclass))
+		require.True(t, regclass.Valid, "expected %s table to exist", table)
+	}
+	requireColumn(t, tx, "balance_lots", "remaining_amount_micros", "bigint", 0, false)
+	requireColumn(t, tx, "balance_lot_consumptions", "affiliate_eligible_amount_micros", "bigint", 0, false)
+	requireColumn(t, tx, "monthly_entitlement_cycles", "confirmed_consumption_micros", "bigint", 0, false)
+	requireIndex(t, tx, "balance_lots", "idx_balance_lots_fifo")
+	requireIndex(t, tx, "monthly_entitlement_cycle_subscriptions", "idx_monthly_cycle_subscription_lookup")
+
+	// migration 151: first-paid reward claim and maturity.
+	var firstPaidRegclass sql.NullString
+	require.NoError(t, tx.QueryRowContext(
+		context.Background(),
+		"SELECT to_regclass('public.affiliate_first_paid_purchases')",
+	).Scan(&firstPaidRegclass))
+	require.True(t, firstPaidRegclass.Valid)
+	requireColumn(t, tx, "affiliate_first_paid_purchases", "amount_micros", "bigint", 0, false)
+	requireColumn(t, tx, "affiliate_reward_entries", "posted_at", "timestamp with time zone", 0, true)
+
+	// migration 152: dynamic link lookup and direct-edge indexes.
+	requireIndex(t, tx, "affiliate_links", "idx_affiliate_links_code_active")
+	requireIndex(t, tx, "affiliate_bindings", "idx_affiliate_bindings_agent_link")
+
+	// migration 153: bounded direct-team qualification scans.
+	requireIndex(t, tx, "affiliate_performance_events", "idx_affiliate_performance_direct_consumption")
+	requireIndex(t, tx, "affiliate_performance_events", "idx_affiliate_performance_user_consumption")
+
+	// migration 154: reviewed Alipay profiles and one-principal identity guard.
+	requireColumn(t, tx, "agent_payment_profiles", "verification_status", "character varying", 24, false)
+	requireColumn(t, tx, "agent_payment_profiles", "identity_fingerprint_hash", "character varying", 64, false)
+	requireIndex(t, tx, "agent_payment_profiles", "uq_agent_payment_verified_identity")
+	requireIndex(t, tx, "agent_payment_profiles", "idx_agent_payment_verification_queue")
+
+	// migration 155: private agent-community image + text configuration.
+	var affiliateCommunityRegclass sql.NullString
+	require.NoError(t, tx.QueryRowContext(
+		context.Background(),
+		"SELECT to_regclass('public.affiliate_community_settings')",
+	).Scan(&affiliateCommunityRegclass))
+	require.True(t, affiliateCommunityRegclass.Valid)
+	requireColumn(t, tx, "affiliate_community_settings", "revision", "bigint", 0, false)
+
+	// migration 156: on-demand withdrawal, conversion, and exception notices.
+	for _, table := range []string{
+		"agent_withdrawal_requests",
+		"agent_commission_conversions",
+		"affiliate_agent_notices",
+	} {
+		var regclass sql.NullString
+		require.NoError(t, tx.QueryRowContext(
+			context.Background(),
+			"SELECT to_regclass('public.' || $1)",
+			table,
+		).Scan(&regclass))
+		require.True(t, regclass.Valid, "expected %s table to exist", table)
+	}
+	requireColumn(t, tx, "agent_withdrawal_requests", "amount_micros", "bigint", 0, false)
+	requireIndex(t, tx, "agent_withdrawal_requests", "idx_agent_withdrawals_processing_due")
+	requireIndex(t, tx, "agent_commission_conversions", "idx_agent_conversions_agent_time")
+	requireIndex(t, tx, "affiliate_agent_notices", "idx_affiliate_agent_notices_unread")
+
+	// migration 157: risk release, exactly-once reversals, and withdrawal audit.
+	for _, table := range []string{
+		"affiliate_risk_actions",
+		"affiliate_performance_reversals",
+		"agent_withdrawal_events",
+		"agent_payment_qr_access_events",
+	} {
+		var regclass sql.NullString
+		require.NoError(t, tx.QueryRowContext(
+			context.Background(),
+			"SELECT to_regclass('public.' || $1)",
+			table,
+		).Scan(&regclass))
+		require.True(t, regclass.Valid, "expected %s table to exist", table)
+	}
+	requireColumn(t, tx, "affiliate_risk_actions", "released_cash_micros", "bigint", 0, false)
+	requireColumn(t, tx, "affiliate_performance_reversals", "original_event_id", "bigint", 0, false)
+	requireIndex(t, tx, "affiliate_reward_entries", "uq_affiliate_reward_reversal")
+	requireIndex(t, tx, "agent_cash_commission_entries", "uq_agent_cash_reversal")
+	requireIndex(t, tx, "agent_withdrawal_events", "uq_agent_withdrawal_event_once")
+	requireIndex(t, tx, "agent_payment_qr_access_events", "idx_agent_payment_qr_access_agent_time")
+
+	// migration 160: V3 manual review, immutable source policy, and margin inputs.
+	for _, table := range []string{
+		"affiliate_agent_applications",
+		"affiliate_agent_status_events",
+	} {
+		var regclass sql.NullString
+		require.NoError(t, tx.QueryRowContext(
+			context.Background(),
+			"SELECT to_regclass('public.' || $1)",
+			table,
+		).Scan(&regclass))
+		require.True(t, regclass.Valid, "expected %s table to exist", table)
+	}
+	requireColumn(t, tx, "affiliate_program_settings", "ordinary_invitee_rate_bps", "integer", 0, false)
+	requireColumn(t, tx, "affiliate_program_settings", "stress_cost_per_raw_credit_micros", "bigint", 0, false)
+	requireColumn(t, tx, "agent_principals", "applied_at", "timestamp with time zone", 0, true)
+	requireColumn(t, tx, "balance_lots", "affiliate_policy", "character varying", 32, false)
+	requireColumn(t, tx, "monthly_entitlement_cycles", "affiliate_policy", "character varying", 32, false)
+	requireColumn(t, tx, "monthly_entitlement_cycles", "pricing_table_version", "character varying", 32, false)
+	requireColumn(t, tx, "affiliate_performance_events", "affiliate_policy", "character varying", 32, false)
+	requireIndex(t, tx, "affiliate_agent_applications", "uq_affiliate_application_pending")
+	requireIndex(t, tx, "affiliate_agent_status_events", "idx_affiliate_status_events_agent_time")
+	requireIndex(t, tx, "agent_withdrawal_requests", "uq_agent_withdrawal_payment_reference")
+
+	var ordinaryReferralRateBPS, ordinaryInviteeRateBPS, fixedBonusMicros, conversionMillis, reserveBPS int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT
+    ordinary_referral_rate_bps,
+    ordinary_invitee_rate_bps,
+    first_paid_bonus_micros,
+    commission_conversion_multiplier_millis,
+    operational_reserve_bps
+FROM affiliate_program_settings
+WHERE id = 1
+`).Scan(
+		&ordinaryReferralRateBPS,
+		&ordinaryInviteeRateBPS,
+		&fixedBonusMicros,
+		&conversionMillis,
+		&reserveBPS,
+	))
+	require.Equal(t, 500, ordinaryReferralRateBPS)
+	require.Equal(t, 500, ordinaryInviteeRateBPS)
+	require.Zero(t, fixedBonusMicros)
+	require.Equal(t, 1200, conversionMillis)
+	require.Equal(t, 200, reserveBPS)
+
+	// migration 161: additive monthly-only V3 groups.  Historical groups stay
+	// untouched while new cards target these six rows.
+	for _, groupName := range []string{
+		"GPT Plus 月卡组", "Claude Plus 月卡组",
+		"GPT Pro V3 月卡组", "Claude Pro V3 月卡组",
+		"GPT Max V3 月卡组", "Claude Max V3 月卡组",
+	} {
+		var count int
+		var description string
+		var daily, weekly sql.NullFloat64
+		var validity int
+		require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT COUNT(*), MAX(description), MAX(daily_limit_usd), MAX(weekly_limit_usd), MAX(default_validity_days)
+FROM groups
+WHERE deleted_at IS NULL AND name = $1
+`, groupName).Scan(&count, &description, &daily, &weekly, &validity))
+		require.Equal(t, 1, count, "expected one active V3 group %s", groupName)
+		require.Empty(t, description, "V3 group %s description must stay empty", groupName)
+		require.False(t, daily.Valid, "V3 group %s must not have a daily limit", groupName)
+		require.False(t, weekly.Valid, "V3 group %s must not have a weekly limit", groupName)
+		require.Equal(t, 31, validity)
+	}
+
+	// migration 162: the persisted qualification-state constraint must accept
+	// the V3 direct-volume route used by manual approval.
+	var qualificationRouteConstraint string
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT pg_get_constraintdef(oid)
+FROM pg_constraint
+WHERE conrelid = 'affiliate_qualification_states'::regclass
+  AND conname = 'chk_affiliate_qualification_route'
+`).Scan(&qualificationRouteConstraint))
+	require.Contains(t, qualificationRouteConstraint, "direct_volume")
+	require.NotContains(t, qualificationRouteConstraint, "'combined'")
+
+	// migration 163: the manual conservative cost remains guarded by the
+	// margin floor, without a fake time-based snapshot expiry.
+	requireColumnAbsent(t, tx, "affiliate_program_settings", "stress_cost_snapshot_at")
+	requireColumnAbsent(t, tx, "affiliate_program_settings", "cost_snapshot_max_age_hours")
+	var programVersionDefault sql.NullString
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT column_default
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'affiliate_program_settings'
+  AND column_name = 'program_version'
+`).Scan(&programVersionDefault))
+	require.True(t, programVersionDefault.Valid)
+	require.Contains(t, programVersionDefault.String, "'v3'")
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {
@@ -186,4 +414,21 @@ WHERE table_schema = 'public'
 	} else {
 		require.Equal(t, "NO", row.Nullable, "nullable mismatch for %s.%s", table, column)
 	}
+}
+
+func requireColumnAbsent(t *testing.T, tx *sql.Tx, table, column string) {
+	t.Helper()
+
+	var exists bool
+	err := tx.QueryRowContext(context.Background(), `
+SELECT EXISTS (
+	SELECT 1
+	FROM information_schema.columns
+	WHERE table_schema = 'public'
+	  AND table_name = $1
+	  AND column_name = $2
+)
+`, table, column).Scan(&exists)
+	require.NoError(t, err, "query information_schema.columns for %s.%s", table, column)
+	require.False(t, exists, "expected column %s.%s to be absent", table, column)
 }

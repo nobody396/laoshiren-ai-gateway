@@ -29,7 +29,7 @@
               {{ t('purchase.stripe.currentBalance') }}
             </h3>
             <p class="mt-2 text-3xl font-bold text-primary-600 dark:text-primary-400">
-              ${{ currentBalance.toFixed(2) }}
+              ⚡{{ currentBalance.toFixed(2) }}
             </p>
           </div>
 

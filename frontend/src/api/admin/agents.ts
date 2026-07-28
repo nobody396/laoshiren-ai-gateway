@@ -144,8 +144,167 @@ export interface AgentPaymentProfile {
   alipay_qr_url?: string
   has_alipay_qr: boolean
   complete: boolean
+  verification_status: 'incomplete' | 'pending_review' | 'verified' | 'rejected'
+  verification_note?: string
+  verified_at?: string
+  verified_by?: number
+  verified: boolean
   created_at?: string
   updated_at?: string
+}
+
+export interface AffiliateProgramSettings {
+  id: number
+  program_version: 'v3'
+  mode: 'off' | 'shadow' | 'live'
+  started_at?: string
+  ordinary_referral_rate_bps: number
+  ordinary_invitee_rate_bps: number
+  first_paid_bonus_threshold_micros: number
+  first_paid_bonus_micros: number
+  agent_pool_rate_bps: number
+  qualification_direct_user_count: number
+  qualification_min_user_consumption_micros: number
+  qualification_direct_team_consumption_micros: number
+  qualification_combined_consumption_micros: number
+  max_campaign_links: number
+  commission_conversion_multiplier_millis: number
+  withdrawal_min_micros: number
+  withdrawal_sla_hours: number
+  margin_floor_bps: number
+  operational_reserve_bps: number
+  stress_cost_per_raw_credit_micros: number
+  revision: number
+  updated_at: string
+}
+
+export interface AffiliateAgentApplication {
+  id: number
+  user_id: number
+  email: string
+  username: string
+  status: 'pending_review' | 'approved' | 'rejected' | 'cancelled'
+  qualifying_route: 'direct_team' | 'direct_volume'
+  valid_direct_user_count: number
+  direct_team_consumption_micros: number
+  application_note: string
+  decision_note: string
+  submitted_at: string
+  reviewed_at?: string
+  reviewed_by?: number
+}
+
+export interface AffiliateCommunitySettings {
+  enabled: boolean
+  title: string
+  message: string
+  qr_original_filename?: string
+  qr_size: number
+  has_qr_code: boolean
+  qr_code_url?: string
+  revision: number
+  updated_at?: string
+}
+
+export interface AffiliateCommercialPackage {
+  id: string
+  name: string
+  kind: 'payg' | 'monthly'
+  shop_price_cny: number
+  direct_price_cny: number
+  platform_credits: number
+  daily_platform_credits?: number
+  stress_cost_cny: number
+  shop_stress_margin_percent: number
+  direct_stress_margin_percent: number
+  passes_configured_margin_gate: boolean
+}
+
+export interface AffiliateCommercialPolicy {
+  cash_asset_symbol: string
+  credit_asset_symbol: string
+  shop_fee_bps: number
+  max_reward_pool_bps: number
+  max_reward_burden_bps: number
+  operational_reserve_bps: number
+  margin_floor_bps: number
+  stress_cost_per_credit: number
+  pricing_table_version: string
+  gpt_cost_mix: {
+    cheap_account_multiplier: number
+    expensive_account_multiplier: number
+    cheap_traffic_percent: number
+    expensive_traffic_percent: number
+    blended_account_multiplier: number
+  }
+  group_targets: Array<{ id: string; name: string; rate_multiplier: number }>
+  packages: AffiliateCommercialPackage[]
+  minimum_stress_margin_percent: number
+  passes_configured_margin_gate: boolean
+}
+
+export interface AdminAffiliateWithdrawal {
+  id: number
+  agent_id: number
+  amount_micros: number
+  status: 'processing' | 'paid' | 'failed'
+  agent_risk_status: AffiliateRiskStatus
+  payment_alipay_real_name: string
+  payment_alipay_account: string
+  payment_contact_phone: string
+  payment_note?: string
+  requested_at: string
+  due_at: string
+  paid_at?: string
+  failed_at?: string
+  handled_by?: number
+  payment_reference?: string
+  failure_reason?: string
+}
+
+export type AdminAffiliateWithdrawalListStatus = AdminAffiliateWithdrawal['status'] | 'all'
+
+export type AffiliateRiskStatus = 'clear' | 'review' | 'blocked'
+
+export interface AffiliateRiskPrincipal {
+  agent_id: number
+  email: string
+  username: string
+  agent_status: string
+  risk_status: AffiliateRiskStatus
+  risk_note: string
+  held_reward_count: number
+  held_reward_micros: number
+  held_cash_count: number
+  held_cash_micros: number
+  updated_at: string
+}
+
+export interface AffiliateRiskActionResult {
+  id: number
+  agent_id: number
+  previous_risk_status: AffiliateRiskStatus
+  next_risk_status: AffiliateRiskStatus
+  reason: string
+  released_reward_count: number
+  released_reward_micros: number
+  released_cash_count: number
+  released_cash_micros: number
+  created_at: string
+}
+
+export interface AffiliatePerformanceReversal {
+  id: number
+  original_event_id: number
+  reversal_event_id: number
+  consumer_user_id: number
+  direct_agent_id?: number
+  amount_micros: number
+  reversed_reward_micros: number
+  reversed_cash_micros: number
+  reason: string
+  operator_id: number
+  created_at: string
 }
 
 export interface AgentLevelRule {
@@ -263,6 +422,140 @@ export async function getPaymentQRCode(agentId: number): Promise<Blob> {
   return data
 }
 
+export async function listPendingPaymentProfiles(limit = 100): Promise<AgentPaymentProfile[]> {
+  const { data } = await apiClient.get<{ items: AgentPaymentProfile[] }>('/admin/agents/payment-profiles/pending', {
+    params: { limit }
+  })
+  return data.items ?? []
+}
+
+export async function reviewPaymentProfile(
+  agentId: number,
+  payload: { status: 'verified' | 'rejected'; note?: string }
+): Promise<AgentPaymentProfile> {
+  const { data } = await apiClient.put<AgentPaymentProfile>(
+    `/admin/agents/${agentId}/payment-profile/verification`,
+    payload
+  )
+  return data
+}
+
+export async function getAffiliateProgram(): Promise<AffiliateProgramSettings> {
+  const { data } = await apiClient.get<AffiliateProgramSettings>('/admin/agents/affiliate-program')
+  return data
+}
+
+export async function updateAffiliateProgram(payload: AffiliateProgramSettings): Promise<AffiliateProgramSettings> {
+  const { data } = await apiClient.put<AffiliateProgramSettings>('/admin/agents/affiliate-program', payload)
+  return data
+}
+
+export async function listAffiliateApplications(
+  status: AffiliateAgentApplication['status'] | 'all' = 'pending_review',
+  limit = 100
+): Promise<AffiliateAgentApplication[]> {
+  const { data } = await apiClient.get<{ items: AffiliateAgentApplication[] }>('/admin/agents/affiliate-applications', {
+    params: { status, limit }
+  })
+  return data.items ?? []
+}
+
+export async function reviewAffiliateApplication(
+  applicationId: number,
+  payload: { approve: boolean; note?: string }
+): Promise<{ application: AffiliateAgentApplication }> {
+  const { data } = await apiClient.post<{ application: AffiliateAgentApplication }>(
+    `/admin/agents/affiliate-applications/${applicationId}/review`,
+    payload
+  )
+  return data
+}
+
+export async function getAffiliateCommercialPolicy(): Promise<AffiliateCommercialPolicy> {
+  const { data } = await apiClient.get<AffiliateCommercialPolicy>('/admin/agents/affiliate-commercial-policy')
+  return data
+}
+
+export async function getAffiliateCommunity(): Promise<AffiliateCommunitySettings> {
+  const { data } = await apiClient.get<AffiliateCommunitySettings>('/admin/agents/affiliate-community')
+  return data
+}
+
+export async function updateAffiliateCommunity(payload: Pick<AffiliateCommunitySettings, 'enabled' | 'title' | 'message' | 'revision'>): Promise<AffiliateCommunitySettings> {
+  const { data } = await apiClient.put<AffiliateCommunitySettings>('/admin/agents/affiliate-community', payload)
+  return data
+}
+
+export async function uploadAffiliateCommunityQRCode(file: File): Promise<AffiliateCommunitySettings> {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await apiClient.post<AffiliateCommunitySettings>('/admin/agents/affiliate-community/qr', form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+  return data
+}
+
+export async function getAffiliateCommunityQRCode(): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>('/admin/agents/affiliate-community/qr', { responseType: 'blob' })
+  return data
+}
+
+export async function listAffiliateWithdrawals(
+  status: AdminAffiliateWithdrawalListStatus = 'processing',
+  limit = 100
+): Promise<AdminAffiliateWithdrawal[]> {
+  const { data } = await apiClient.get<{ items: AdminAffiliateWithdrawal[] }>('/admin/agents/affiliate-withdrawals', {
+    params: { status, limit }
+  })
+  return data.items ?? []
+}
+
+export async function completeAffiliateWithdrawal(id: number, paymentReference = ''): Promise<void> {
+  await apiClient.post(`/admin/agents/affiliate-withdrawals/${id}/complete`, {
+    payment_reference: paymentReference
+  })
+}
+
+export async function failAffiliateWithdrawal(id: number, reason: string): Promise<void> {
+  await apiClient.post(`/admin/agents/affiliate-withdrawals/${id}/fail`, { reason })
+}
+
+export async function getAffiliateWithdrawalQRCode(id: number): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>(`/admin/agents/affiliate-withdrawals/${id}/payment-qr`, {
+    responseType: 'blob'
+  })
+  return data
+}
+
+export async function listAffiliateRiskPrincipals(limit = 100): Promise<AffiliateRiskPrincipal[]> {
+  const { data } = await apiClient.get<{ items: AffiliateRiskPrincipal[] }>('/admin/agents/affiliate-risk', {
+    params: { limit }
+  })
+  return data.items ?? []
+}
+
+export async function updateAffiliateRisk(
+  agentId: number,
+  payload: { status: AffiliateRiskStatus; reason: string }
+): Promise<AffiliateRiskActionResult> {
+  const { data } = await apiClient.put<AffiliateRiskActionResult>(
+    `/admin/agents/${agentId}/affiliate-risk`,
+    payload
+  )
+  return data
+}
+
+export async function reverseAffiliatePerformance(
+  eventId: number,
+  reason: string
+): Promise<AffiliatePerformanceReversal> {
+  const { data } = await apiClient.post<AffiliatePerformanceReversal>('/admin/agents/affiliate-reversals', {
+    event_id: eventId,
+    reason
+  })
+  return data
+}
+
 export async function getRates(): Promise<CommissionRates> {
   const { data } = await apiClient.get<CommissionRates>('/admin/agents/rates')
   return data
@@ -344,6 +637,24 @@ export const agentsAPI = {
   updateSettlementSettings,
   getPaymentProfile,
   getPaymentQRCode,
+  listPendingPaymentProfiles,
+  reviewPaymentProfile,
+  getAffiliateProgram,
+  updateAffiliateProgram,
+  listAffiliateApplications,
+  reviewAffiliateApplication,
+  getAffiliateCommercialPolicy,
+  getAffiliateCommunity,
+  updateAffiliateCommunity,
+  uploadAffiliateCommunityQRCode,
+  getAffiliateCommunityQRCode,
+  listAffiliateWithdrawals,
+  completeAffiliateWithdrawal,
+  failAffiliateWithdrawal,
+  getAffiliateWithdrawalQRCode,
+  listAffiliateRiskPrincipals,
+  updateAffiliateRisk,
+  reverseAffiliatePerformance,
   getRates,
   updateRates,
   getInviteActivity,

@@ -243,7 +243,7 @@
               <span class="text-gray-500 dark:text-dark-400">充值金额：</span>
               <span class="font-semibold text-gray-900 dark:text-white">¥{{ displayAmountText }}</span>
               <span class="text-gray-400 mx-2">→</span>
-              <span class="font-semibold text-primary-600 dark:text-primary-400">${{ displayUSDText }}</span>
+              <span class="font-semibold text-primary-600 dark:text-primary-400">⚡{{ displayUSDText }}</span>
             </div>
 
             <p class="text-xs text-gray-400 dark:text-dark-400">{{ t('topup.waitingPayment') }}</p>

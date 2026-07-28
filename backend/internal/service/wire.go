@@ -565,7 +565,14 @@ var ProviderSet = wire.NewSet(
 	NewChannelService,
 	ProvideSupplierService,
 	NewModelPricingResolver,
-	NewCommissionService,
+	ProvideCommissionService,
+	NewAffiliateProgramService,
+	NewAffiliateRewardService,
+	NewAffiliateLinkService,
+	NewAffiliateAgentService,
+	NewAffiliateCommunityService,
+	ProvideAffiliateWalletService,
+	ProvideAffiliateRiskService,
 	NewPaymentService,
 	NewTopupService,
 	NewRBACService,
@@ -593,6 +600,34 @@ func ProvideBalanceAlertService(
 	userRepo UserRepository,
 ) *BalanceAlertService {
 	return NewBalanceAlertService(alertCache, attrDefRepo, attrValRepo, settingRepo, emailQueue, userRepo)
+}
+
+func ProvideCommissionService(
+	userRepo UserRepository,
+	commissionRepo CommissionRepository,
+	affiliateLinks AffiliateLinkRepository,
+) *CommissionService {
+	svc := NewCommissionService(userRepo, commissionRepo)
+	svc.SetAffiliateLinkRepository(affiliateLinks)
+	return svc
+}
+
+func ProvideAffiliateWalletService(
+	repo AffiliateWalletRepository,
+	balanceCache *BillingCacheService,
+) *AffiliateWalletService {
+	svc := NewAffiliateWalletService(repo)
+	svc.SetBalanceCache(balanceCache)
+	return svc
+}
+
+func ProvideAffiliateRiskService(
+	repo AffiliateRiskRepository,
+	balanceCache *BillingCacheService,
+) *AffiliateRiskService {
+	svc := NewAffiliateRiskService(repo)
+	svc.SetBalanceCache(balanceCache)
+	return svc
 }
 
 func ProvidePendingAuthSessionCleanupService(identityService *IdentityService) *PendingAuthSessionCleanupService {
@@ -632,6 +667,7 @@ func ProvideRootLifecycle(
 	downloadResources *DownloadResourceService,
 	backupService *BackupService,
 	pendingAuthCleanup *PendingAuthSessionCleanupService,
+	affiliateRewards *AffiliateRewardService,
 ) *Lifecycle {
 	component := func(name string, start func(), stop func()) LifecycleComponent {
 		return LifecycleFunc{
@@ -701,6 +737,7 @@ func ProvideRootLifecycle(
 		component("download-resources", downloadResources.Start, downloadResources.Stop),
 		component("backup", backupService.Start, backupService.Stop),
 		component("pending-auth-cleanup", pendingAuthCleanup.Start, pendingAuthCleanup.Stop),
+		component("affiliate-reward-maturity", affiliateRewards.Start, affiliateRewards.Stop),
 	}
 	return NewLifecycle(components...)
 }

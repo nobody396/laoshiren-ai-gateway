@@ -30,7 +30,7 @@ test-integration:
 		log_file="$$(mktemp -t sub2api-integration.XXXXXX)"; \
 		trap 'rm -f "$$log_file"' EXIT HUP INT TERM; \
 		set +e; \
-		go test -tags=integration -count=1 -timeout=$(INTEGRATION_TIMEOUT) -v $(INTEGRATION_PACKAGES) >"$$log_file" 2>&1; \
+		go test -p=1 -tags=integration -count=1 -timeout=$(INTEGRATION_TIMEOUT) -v $(INTEGRATION_PACKAGES) >"$$log_file" 2>&1; \
 		test_status=$$?; \
 		set -e; \
 		cat "$$log_file"; \

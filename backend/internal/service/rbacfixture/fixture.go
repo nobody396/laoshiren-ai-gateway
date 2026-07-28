@@ -52,7 +52,7 @@ func BaselineMenus() []*service.AdminMenu {
 		newBaselineMenu(43, "更新日志管理", "/admin/changelog", "edit", "admin:changelog", 14),
 		newBaselineMenu(42, "反馈管理", "/admin/feedbacks", "feedback", "admin:feedbacks", 15),
 		// 系统管理
-		newBaselineMenu(51, "代理管理", "/admin/proxies", "server", "admin:proxies", 16),
+		newBaselineMenu(51, "代理节点", "/admin/proxies", "server", "admin:proxies", 16),
 		newBaselineMenu(52, "使用记录", "/admin/usage", "chart", "admin:usage", 17),
 		newBaselineMenu(53, "运维监控", "/admin/ops", "chart", "admin:ops", 18),
 		newBaselineMenu(54, "系统设置", "/admin/settings", "cog", "admin:settings", 19),
@@ -80,7 +80,7 @@ var menuGroupName = map[int64]string{
 	41: "公告管理",
 	43: "更新日志管理",
 	42: "反馈管理",
-	51: "代理管理",
+	51: "代理节点",
 	52: "使用记录",
 	53: "运维监控",
 	54: "系统设置",
@@ -249,7 +249,7 @@ func BaselineAPIs() []*service.AdminAPI {
 	add("POST", "/admin/antigravity/oauth/exchange-code", 21, 49)
 	add("POST", "/admin/antigravity/oauth/refresh-token", 21, 50)
 
-	// ===== Proxies (parent=51 代理管理) =====
+	// ===== Proxies (parent=51 代理节点) =====
 	add("GET", "/admin/proxies", 51, 1)
 	add("GET", "/admin/proxies/all", 51, 2)
 	add("GET", "/admin/proxies/data", 51, 3)

@@ -53,6 +53,7 @@ export interface InvitedUserStat {
   email: string
   username: string
   joined_at: string
+  total_recharge: number
   total_consumption: number
   total_commission: number
 }
@@ -61,6 +62,8 @@ export interface CommissionRecord {
   id: number
   beneficiary_id: number
   user_id: number
+  user_email?: string
+  username?: string
   amount: number
   source_amount: number
   type: string
@@ -105,7 +108,126 @@ export interface AgentPaymentProfile {
   alipay_qr_url?: string
   has_alipay_qr: boolean
   complete: boolean
+  verification_status: 'incomplete' | 'pending_review' | 'verified' | 'rejected'
+  verification_note?: string
+  verified_at?: string
+  verified_by?: number
+  verified: boolean
   created_at?: string
+  updated_at?: string
+}
+
+export interface AffiliateAgentQualification {
+  user_id: number
+  program_mode: 'off' | 'shadow' | 'live'
+  program_started_at?: string
+  agent_status: string
+  risk_status: string
+  self_consumption_micros: number
+  direct_team_consumption_micros: number
+  combined_consumption_micros: number
+  valid_direct_user_count: number
+  required_direct_user_count: number
+  required_per_user_micros: number
+  required_direct_team_micros: number
+  required_combined_micros: number
+  direct_route_qualified: boolean
+  combined_route_qualified: boolean
+  qualified: boolean
+  qualification_route?: 'direct_team' | 'direct_volume'
+  can_activate: boolean
+  can_apply: boolean
+  activated_at?: string
+}
+
+export interface AffiliateLink {
+  id: number
+  agent_id: number
+  code: string
+  name: string
+  channel: string
+  is_default: boolean
+  status: 'active' | 'paused'
+  rate_version: number
+  customer_rebate_rate_bps: number
+  agent_commission_rate_bps: number
+  created_at: string
+  updated_at: string
+}
+
+export interface AffiliateAgentActivation {
+  qualification: AffiliateAgentQualification
+  default_link: AffiliateLink
+}
+
+export interface AffiliateAgentApplication {
+  id: number
+  user_id: number
+  status: 'pending_review' | 'approved' | 'rejected' | 'cancelled'
+  qualifying_route: 'direct_team' | 'direct_volume'
+  valid_direct_user_count: number
+  direct_team_consumption_micros: number
+  application_note: string
+  decision_note: string
+  submitted_at: string
+  reviewed_at?: string
+}
+
+export interface AffiliateWallet {
+  agent_id: number
+  available_cash_micros: number
+  processing_withdrawal_micros: number
+  lifetime_earned_micros: number
+  withdrawal_minimum_micros: number
+  withdrawal_sla_hours: number
+  conversion_multiplier_millis: number
+  payment_profile_verified: boolean
+  can_withdraw: boolean
+  cash_asset_symbol: string
+  credit_asset_symbol: string
+  display_timezone: string
+}
+
+export interface AffiliateWithdrawal {
+  id: number
+  agent_id: number
+  amount_micros: number
+  status: 'processing' | 'paid'
+  requested_at: string
+  due_at: string
+  paid_at?: string
+  payment_reference?: string
+}
+
+export interface AffiliateCommissionConversion {
+  id: number
+  agent_id: number
+  cash_amount_micros: number
+  credit_amount_micros: number
+  multiplier_millis: number
+  created_at: string
+}
+
+export interface AffiliateAgentNotice {
+  id: number
+  notice_type: string
+  title: string
+  message: string
+  source_type: string
+  source_id?: number
+  read_at?: string
+  created_at: string
+}
+
+export interface AffiliateCommunity {
+  enabled: boolean
+  title: string
+  message: string
+  qr_original_filename?: string
+  qr_size: number
+  has_qr_code: boolean
+  qr_code_url?: string
+  revision: number
   updated_at?: string
 }
 
@@ -139,6 +261,7 @@ function normalizeInvitedUser(value: unknown): InvitedUserStat {
     email: toStringValue(raw.email ?? raw.Email),
     username: toStringValue(raw.username ?? raw.Username),
     joined_at: toStringValue(raw.joined_at ?? raw.joinedAt ?? raw.RegisteredAt),
+    total_recharge: toNumber(raw.total_recharge ?? raw.totalRecharge ?? raw.recharged_amount ?? raw.RechargedAmount),
     total_consumption: toNumber(raw.total_consumption ?? raw.totalConsumption ?? raw.consumed_amount ?? raw.ConsumedAmount),
     total_commission: toNumber(raw.total_commission ?? raw.totalCommission ?? raw.commission_amount ?? raw.CommissionAmount)
   }
@@ -152,6 +275,8 @@ function normalizeCommissionRecord(value: unknown): CommissionRecord {
     id: toNumber(raw.id ?? raw.ID),
     beneficiary_id: toNumber(raw.beneficiary_id ?? raw.beneficiaryId ?? raw.BeneficiaryID),
     user_id: toNumber(raw.user_id ?? raw.userId ?? raw.UserID),
+    user_email: toStringValue(raw.user_email ?? raw.userEmail ?? raw.UserEmail) || undefined,
+    username: toStringValue(raw.username ?? raw.Username) || undefined,
     amount: toNumber(raw.amount ?? raw.Amount),
     source_amount: toNumber(raw.source_amount ?? raw.sourceAmount ?? raw.SourceAmount),
     type: toStringValue(raw.type ?? raw.Type),
@@ -209,6 +334,96 @@ export async function getAgentPaymentQRCode(): Promise<Blob> {
   return data
 }
 
+export async function getAffiliateQualification(): Promise<AffiliateAgentQualification> {
+  const { data } = await apiClient.get<AffiliateAgentQualification>('/user/affiliate/qualification')
+  return data
+}
+
+export async function applyAffiliateAgent(note = ''): Promise<AffiliateAgentApplication> {
+  const { data } = await apiClient.post<AffiliateAgentApplication>('/user/affiliate/applications', { note })
+  return data
+}
+
+export async function listAffiliateLinks(): Promise<AffiliateLink[]> {
+  const { data } = await apiClient.get<{ items: AffiliateLink[] }>('/agent/affiliate/links')
+  return data.items ?? []
+}
+
+export async function createAffiliateLink(payload: {
+  name: string
+  channel?: string
+  customer_rebate_rate_bps: number
+}): Promise<AffiliateLink> {
+  const { data } = await apiClient.post<AffiliateLink>('/agent/affiliate/links', payload)
+  return data
+}
+
+export async function updateAffiliateLinkRate(id: number, customerRebateRateBPS: number): Promise<AffiliateLink> {
+  const { data } = await apiClient.put<AffiliateLink>(`/agent/affiliate/links/${id}/rate`, {
+    customer_rebate_rate_bps: customerRebateRateBPS
+  })
+  return data
+}
+
+export async function updateAffiliateLinkStatus(id: number, status: 'active' | 'paused'): Promise<AffiliateLink> {
+  const { data } = await apiClient.put<AffiliateLink>(`/agent/affiliate/links/${id}/status`, { status })
+  return data
+}
+
+export async function getAffiliateWallet(): Promise<AffiliateWallet> {
+  const { data } = await apiClient.get<AffiliateWallet>('/agent/affiliate/wallet')
+  return data
+}
+
+export async function listAffiliateWithdrawals(): Promise<AffiliateWithdrawal[]> {
+  const { data } = await apiClient.get<{ items: AffiliateWithdrawal[] }>('/agent/affiliate/withdrawals')
+  return data.items ?? []
+}
+
+function affiliateIdempotencyKey(action: string): string {
+  const id = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  return `affiliate-${action}-${id}`
+}
+
+export async function requestAffiliateWithdrawal(amountMicros: number): Promise<AffiliateWithdrawal> {
+  const { data } = await apiClient.post<AffiliateWithdrawal>(
+    '/agent/affiliate/withdrawals',
+    { amount_micros: amountMicros },
+    { headers: { 'Idempotency-Key': affiliateIdempotencyKey('withdraw') } }
+  )
+  return data
+}
+
+export async function convertAffiliateCommission(amountMicros: number): Promise<AffiliateCommissionConversion> {
+  const { data } = await apiClient.post<AffiliateCommissionConversion>(
+    '/agent/affiliate/wallet/convert',
+    { amount_micros: amountMicros },
+    { headers: { 'Idempotency-Key': affiliateIdempotencyKey('convert') } }
+  )
+  return data
+}
+
+export async function listAffiliateNotices(): Promise<AffiliateAgentNotice[]> {
+  const { data } = await apiClient.get<{ items: AffiliateAgentNotice[] }>('/agent/affiliate/notices')
+  return data.items ?? []
+}
+
+export async function readAffiliateNotice(id: number): Promise<void> {
+  await apiClient.post(`/agent/affiliate/notices/${id}/read`)
+}
+
+export async function getAffiliateCommunity(): Promise<AffiliateCommunity> {
+  const { data } = await apiClient.get<AffiliateCommunity>('/agent/affiliate/community')
+  return data
+}
+
+export async function getAffiliateCommunityQRCode(): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>('/agent/affiliate/community/qr', { responseType: 'blob' })
+  return data
+}
+
 /**
  * Get invited users list with consumption stats
  */
@@ -260,6 +475,20 @@ export const agentAPI = {
   updateAgentPaymentProfile,
   uploadAgentPaymentQRCode,
   getAgentPaymentQRCode,
+  getAffiliateQualification,
+  applyAffiliateAgent,
+  listAffiliateLinks,
+  createAffiliateLink,
+  updateAffiliateLinkRate,
+  updateAffiliateLinkStatus,
+  getAffiliateWallet,
+  listAffiliateWithdrawals,
+  requestAffiliateWithdrawal,
+  convertAffiliateCommission,
+  listAffiliateNotices,
+  readAffiliateNotice,
+  getAffiliateCommunity,
+  getAffiliateCommunityQRCode,
   getAgentInvitedUsers,
   getAgentCommissions,
   validateReferralCode

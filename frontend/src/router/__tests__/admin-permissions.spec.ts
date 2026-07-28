@@ -26,7 +26,7 @@ describe('后台路由权限声明', () => {
       '/admin/ops': 'admin:ops',
       '/admin/monthly-upstreams': 'admin:ops',
       '/admin/users': 'admin:users',
-      '/admin/agents': 'admin:agents',
+      '/admin/affiliate': 'admin:agents',
       '/admin/groups': 'admin:groups',
       '/admin/channels': 'admin:channels',
       '/admin/suppliers': 'admin:suppliers',

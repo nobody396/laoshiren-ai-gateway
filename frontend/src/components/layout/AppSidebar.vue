@@ -639,7 +639,7 @@ const AgentIcon = {
 
 // Agent navigation items (shown for role=agent)
 const agentNavItems = computed((): NavItem[] => [
-  { path: '/agent/dashboard', label: t('nav.agentDashboard'), icon: AgentIcon },
+  { path: '/affiliate', label: t('nav.affiliateCenter'), icon: AgentIcon },
   { path: '/agent/users', label: t('nav.agentUsers'), icon: UsersIcon },
   { path: '/agent/commissions', label: t('nav.agentCommissions'), icon: ChartIcon },
 ])
@@ -678,6 +678,9 @@ const userNavItems = computed((): NavItem[] => {
     { path: '/get-subscription', label: t('nav.getSubscription'), icon: RechargeSubscriptionIcon },
     createModelPricingNavItem(),
     { path: '/topup/orders', label: t('nav.topupOrders'), icon: CreditCardIcon },
+    ...(!isAgent.value
+      ? [{ path: '/affiliate', label: t('nav.affiliateCenter'), icon: AgentIcon }]
+      : []),
     ...(invoiceManagementEnabled.value
       ? [{ path: '/invoice', label: t('nav.invoiceManagement'), icon: TicketIcon }]
       : []),
@@ -784,7 +787,7 @@ const navPermissionMap: Record<string, string> = {
   '/admin/monthly-upstreams': 'admin:ops',
   '/admin/cost-accounting': 'admin:ops',
   '/admin/users': 'admin:users',
-  '/admin/agents': 'admin:agents',
+  '/admin/affiliate': 'admin:agents',
   '/admin/groups': 'admin:groups',
   '/admin/channels': 'admin:channels',
   '/admin/suppliers': 'admin:suppliers',
@@ -837,9 +840,9 @@ const adminNavItems = computed((): NavItem[] => {
       hideInSimpleMode: true
     },
     {
-      path: '/admin/agents',
-      label: resolveAdminMenuLabel('/admin/agents', t('nav.agentManagement')),
-      icon: AgentIcon,
+      path: '/admin/affiliate',
+      label: resolveAdminMenuLabel('/admin/affiliate', t('nav.affiliateOperations')),
+      icon: GiftIcon,
       hideInSimpleMode: true
     },
     {

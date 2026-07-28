@@ -21,13 +21,13 @@
             <!-- 累计佣金 -->
             <div class="rounded-lg bg-gray-50 dark:bg-dark-800 p-4 text-center">
               <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('user.referral.totalCommission') }}</p>
-              <p class="mt-1 text-2xl font-bold text-primary-600 dark:text-primary-400">${{ referralStats?.total_commission.toFixed(4) ?? '0.0000' }}</p>
+              <p class="mt-1 text-2xl font-bold text-primary-600 dark:text-primary-400">⚡{{ referralStats?.total_commission.toFixed(4) ?? '0.0000' }}</p>
             </div>
 
             <!-- 本月佣金 -->
             <div class="rounded-lg bg-gray-50 dark:bg-dark-800 p-4 text-center">
               <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('user.referral.thisMonthCommission') }}</p>
-              <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">${{ referralStats?.this_month_commission.toFixed(4) ?? '0.0000' }}</p>
+              <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">⚡{{ referralStats?.this_month_commission.toFixed(4) ?? '0.0000' }}</p>
             </div>
           </div>
 

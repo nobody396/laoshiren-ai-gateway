@@ -479,10 +479,19 @@ const routes: RouteRecordRaw[] = [
     }
   },
 
-  // ==================== Agent Routes ====================
+  // ==================== Affiliate & Partner Routes ====================
+  {
+    path: '/affiliate',
+    name: 'AffiliateCenter',
+    component: () => import('@/views/user/AffiliateCenterView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: '联盟计划'
+    }
+  },
   {
     path: '/agent',
-    redirect: '/agent/dashboard'
+    redirect: '/affiliate'
   },
   {
     path: '/agent/dashboard',
@@ -491,7 +500,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAgent: true,
-      title: 'Agent Dashboard',
+      title: '合伙人总览',
       titleKey: 'agent.dashboard'
     }
   },
@@ -585,15 +594,17 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin/agents',
-    name: 'AdminAgents',
-    component: () => import('@/views/admin/AgentsView.vue'),
+    redirect: '/admin/affiliate'
+  },
+  {
+    path: '/admin/affiliate',
+    name: 'AdminAffiliateOperations',
+    component: () => import('@/views/admin/AffiliateOperationsView.vue'),
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
       permission: 'admin:agents',
-      title: 'Agent Management',
-      titleKey: 'admin.agents.title',
-      descriptionKey: 'admin.agents.description'
+      title: '联盟运营台'
     }
   },
   {

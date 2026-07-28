@@ -176,7 +176,7 @@ import { AuthLayout } from '@/components/layout'
 import Icon from '@/components/icons/Icon.vue'
 import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { useAuthStore, useAppStore } from '@/stores'
-import { getPublicSettings, sendVerifyCode } from '@/api/auth'
+import { sendVerifyCode } from '@/api/auth'
 import { buildAuthErrorMessage } from '@/utils/authError'
 import { trackEvent } from '@/utils/analytics'
 import {
@@ -249,7 +249,10 @@ onMounted(async () => {
 
   // Load public settings
   try {
-    const settings = await getPublicSettings()
+    const settings = await appStore.fetchPublicSettings(true)
+    if (!settings) {
+      throw new Error('public settings are loading')
+    }
     turnstileEnabled.value = settings.turnstile_enabled
     turnstileSiteKey.value = settings.turnstile_site_key || ''
     siteName.value = settings.site_name || '老实人AI'

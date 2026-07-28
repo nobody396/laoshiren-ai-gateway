@@ -57,6 +57,11 @@ func (r *commissionRepository) GetAgentPaymentProfile(ctx context.Context, agent
 			alipay_account,
 			contact_phone,
 			payment_note,
+			identity_fingerprint_hash,
+			verification_status,
+			verification_note,
+			verified_at,
+			verified_by,
 			alipay_qr_object_key,
 			alipay_qr_content_type,
 			alipay_qr_original_filename,
@@ -71,6 +76,11 @@ func (r *commissionRepository) GetAgentPaymentProfile(ctx context.Context, agent
 		&profile.AlipayAccount,
 		&profile.ContactPhone,
 		&profile.PaymentNote,
+		&profile.IdentityFingerprintHash,
+		&profile.VerificationStatus,
+		&profile.VerificationNote,
+		&profile.VerifiedAt,
+		&profile.VerifiedBy,
 		&profile.AlipayQRCodeObjectKey,
 		&profile.AlipayQRCodeContentType,
 		&profile.AlipayQRCodeOriginalName,
@@ -104,14 +114,26 @@ func (r *commissionRepository) UpsertAgentPaymentProfile(ctx context.Context, pr
 			alipay_real_name,
 			alipay_account,
 			contact_phone,
-			payment_note
+			payment_note,
+			identity_fingerprint_hash
 		)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT (agent_id) DO UPDATE SET
 			alipay_real_name = EXCLUDED.alipay_real_name,
 			alipay_account = EXCLUDED.alipay_account,
 			contact_phone = EXCLUDED.contact_phone,
 			payment_note = EXCLUDED.payment_note,
+			identity_fingerprint_hash = EXCLUDED.identity_fingerprint_hash,
+			verification_status = CASE
+				WHEN BTRIM(EXCLUDED.alipay_real_name) <> ''
+				 AND BTRIM(EXCLUDED.alipay_account) <> ''
+				 AND BTRIM(agent_payment_profiles.alipay_qr_object_key) <> ''
+				THEN 'pending_review'
+				ELSE 'incomplete'
+			END,
+			verification_note = '',
+			verified_at = NULL,
+			verified_by = NULL,
 			updated_at = NOW()
 		RETURNING created_at, updated_at
 	`, []any{
@@ -120,12 +142,24 @@ func (r *commissionRepository) UpsertAgentPaymentProfile(ctx context.Context, pr
 		profile.AlipayAccount,
 		profile.ContactPhone,
 		profile.PaymentNote,
+		profile.IdentityFingerprintHash,
 	}, &createdAt, &updatedAt)
 	if err != nil {
+		if isAgentPaymentProfileLockedError(err) {
+			return service.ErrAgentPaymentProfileLocked
+		}
 		return err
 	}
 	profile.CreatedAt = &createdAt
 	profile.UpdatedAt = &updatedAt
+	if _, err := r.sql.ExecContext(ctx, `
+		UPDATE agent_principals
+		SET principal_key_hash = NULL,
+			updated_at = NOW()
+		WHERE agent_id = $1
+	`, profile.AgentID); err != nil && !isMissingAgentManagementRelation(err) {
+		return err
+	}
 	return nil
 }
 
@@ -149,6 +183,15 @@ func (r *commissionRepository) UpdateAgentPaymentQRCode(ctx context.Context, age
 			alipay_qr_content_type = EXCLUDED.alipay_qr_content_type,
 			alipay_qr_original_filename = EXCLUDED.alipay_qr_original_filename,
 			alipay_qr_size = EXCLUDED.alipay_qr_size,
+			verification_status = CASE
+				WHEN BTRIM(agent_payment_profiles.alipay_real_name) <> ''
+				 AND BTRIM(agent_payment_profiles.alipay_account) <> ''
+				THEN 'pending_review'
+				ELSE 'incomplete'
+			END,
+			verification_note = '',
+			verified_at = NULL,
+			verified_by = NULL,
 			updated_at = NOW()
 		RETURNING
 			agent_id,
@@ -156,6 +199,11 @@ func (r *commissionRepository) UpdateAgentPaymentQRCode(ctx context.Context, age
 			alipay_account,
 			contact_phone,
 			payment_note,
+			identity_fingerprint_hash,
+			verification_status,
+			verification_note,
+			verified_at,
+			verified_by,
 			alipay_qr_object_key,
 			alipay_qr_content_type,
 			alipay_qr_original_filename,
@@ -168,6 +216,11 @@ func (r *commissionRepository) UpdateAgentPaymentQRCode(ctx context.Context, age
 		&profile.AlipayAccount,
 		&profile.ContactPhone,
 		&profile.PaymentNote,
+		&profile.IdentityFingerprintHash,
+		&profile.VerificationStatus,
+		&profile.VerificationNote,
+		&profile.VerifiedAt,
+		&profile.VerifiedBy,
 		&profile.AlipayQRCodeObjectKey,
 		&profile.AlipayQRCodeContentType,
 		&profile.AlipayQRCodeOriginalName,
@@ -176,6 +229,9 @@ func (r *commissionRepository) UpdateAgentPaymentQRCode(ctx context.Context, age
 		&updatedAt,
 	)
 	if err != nil {
+		if isAgentPaymentProfileLockedError(err) {
+			return nil, service.ErrAgentPaymentProfileLocked
+		}
 		return nil, err
 	}
 	if createdAt.Valid {
@@ -184,5 +240,216 @@ func (r *commissionRepository) UpdateAgentPaymentQRCode(ctx context.Context, age
 	if updatedAt.Valid {
 		profile.UpdatedAt = &updatedAt.Time
 	}
+	if _, err := r.sql.ExecContext(ctx, `
+		UPDATE agent_principals
+		SET principal_key_hash = NULL,
+			updated_at = NOW()
+		WHERE agent_id = $1
+	`, agentID); err != nil && !isMissingAgentManagementRelation(err) {
+		return nil, err
+	}
 	return &profile, nil
+}
+
+func isAgentPaymentProfileLockedError(err error) bool {
+	return err != nil &&
+		strings.Contains(strings.ToLower(err.Error()), "payment profile is locked by a processing withdrawal")
+}
+
+func (r *commissionRepository) RecordAgentPaymentQRCodeAccess(
+	ctx context.Context,
+	agentID int64,
+	accessorUserID int64,
+	accessContext string,
+) error {
+	if r.sql == nil {
+		return fmt.Errorf("sql executor is not configured")
+	}
+	_, err := r.sql.ExecContext(ctx, `
+		INSERT INTO agent_payment_qr_access_events (
+			agent_id, accessor_user_id, access_context
+		)
+		SELECT agent_id, $2, $3
+		FROM agent_principals
+		WHERE agent_id = $1
+	`, agentID, accessorUserID, accessContext)
+	return err
+}
+
+func (r *commissionRepository) ReviewAgentPaymentProfile(
+	ctx context.Context,
+	agentID, reviewerID int64,
+	status, note string,
+) (_ *service.AgentPaymentProfile, err error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("sql db is not configured")
+	}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var (
+		realName    string
+		account     string
+		qrObjectKey string
+		fingerprint string
+	)
+	err = tx.QueryRowContext(ctx, `
+		SELECT
+			alipay_real_name,
+			alipay_account,
+			alipay_qr_object_key,
+			identity_fingerprint_hash
+		FROM agent_payment_profiles
+		WHERE agent_id = $1
+		FOR UPDATE
+	`, agentID).Scan(&realName, &account, &qrObjectKey, &fingerprint)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, service.ErrAgentPaymentProfileIncomplete
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if status == "verified" {
+		if strings.TrimSpace(realName) == "" ||
+			strings.TrimSpace(account) == "" ||
+			strings.TrimSpace(qrObjectKey) == "" ||
+			strings.TrimSpace(fingerprint) == "" {
+			return nil, service.ErrAgentPaymentProfileIncomplete
+		}
+		result, err := tx.ExecContext(ctx, `
+			UPDATE agent_principals
+			SET principal_key_hash = $1,
+				updated_at = NOW()
+			WHERE agent_id = $2
+				AND status = 'active'
+		`, fingerprint, agentID)
+		if err != nil {
+			if isPostgresUniqueViolation(err) {
+				return nil, service.ErrAgentPaymentIdentityConflict
+			}
+			return nil, err
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return nil, err
+		}
+		if affected != 1 {
+			return nil, service.ErrAffiliateAgentNotActive
+		}
+	} else {
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE agent_principals
+			SET principal_key_hash = NULL,
+				updated_at = NOW()
+			WHERE agent_id = $1
+		`, agentID); err != nil {
+			return nil, err
+		}
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		UPDATE agent_payment_profiles
+		SET verification_status = $1::varchar,
+			verification_note = $2,
+			verified_at = CASE WHEN $1::text = 'verified' THEN NOW() ELSE NULL END,
+			verified_by = $3,
+			updated_at = NOW()
+		WHERE agent_id = $4
+	`, status, note, reviewerID, agentID)
+	if err != nil {
+		if isAgentPaymentProfileLockedError(err) {
+			return nil, service.ErrAgentPaymentProfileLocked
+		}
+		if isPostgresUniqueViolation(err) {
+			return nil, service.ErrAgentPaymentIdentityConflict
+		}
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		if isAgentPaymentProfileLockedError(err) {
+			return nil, service.ErrAgentPaymentProfileLocked
+		}
+		if isPostgresUniqueViolation(err) {
+			return nil, service.ErrAgentPaymentIdentityConflict
+		}
+		return nil, err
+	}
+	return r.GetAgentPaymentProfile(ctx, agentID)
+}
+
+func (r *commissionRepository) ListPendingAgentPaymentProfiles(
+	ctx context.Context,
+	limit int,
+) ([]service.AgentPaymentProfile, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("sql db is not configured")
+	}
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT
+			agent_id,
+			alipay_real_name,
+			alipay_account,
+			contact_phone,
+			payment_note,
+			identity_fingerprint_hash,
+			verification_status,
+			verification_note,
+			verified_at,
+			verified_by,
+			alipay_qr_object_key,
+			alipay_qr_content_type,
+			alipay_qr_original_filename,
+			alipay_qr_size,
+			created_at,
+			updated_at
+		FROM agent_payment_profiles
+		WHERE verification_status = 'pending_review'
+		ORDER BY updated_at ASC, agent_id ASC
+		LIMIT $1
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	items := make([]service.AgentPaymentProfile, 0)
+	for rows.Next() {
+		var item service.AgentPaymentProfile
+		var createdAt, updatedAt sql.NullTime
+		if err := rows.Scan(
+			&item.AgentID,
+			&item.AlipayRealName,
+			&item.AlipayAccount,
+			&item.ContactPhone,
+			&item.PaymentNote,
+			&item.IdentityFingerprintHash,
+			&item.VerificationStatus,
+			&item.VerificationNote,
+			&item.VerifiedAt,
+			&item.VerifiedBy,
+			&item.AlipayQRCodeObjectKey,
+			&item.AlipayQRCodeContentType,
+			&item.AlipayQRCodeOriginalName,
+			&item.AlipayQRCodeSize,
+			&createdAt,
+			&updatedAt,
+		); err != nil {
+			return nil, err
+		}
+		if createdAt.Valid {
+			item.CreatedAt = &createdAt.Time
+		}
+		if updatedAt.Valid {
+			item.UpdatedAt = &updatedAt.Time
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

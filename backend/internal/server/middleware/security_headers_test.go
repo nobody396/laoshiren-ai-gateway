@@ -130,6 +130,7 @@ func TestSecurityHeaders(t *testing.T) {
 		assert.Contains(t, csp, "'nonce-")
 		assert.Contains(t, csp, CloudflareInsightsDomain)
 		assert.Contains(t, csp, GoogleTagManagerDomain)
+		assert.Contains(t, csp, "img-src 'self' blob:")
 	})
 
 	t.Run("api_route_skips_csp_nonce_generation", func(t *testing.T) {
@@ -298,6 +299,7 @@ func TestEnhanceCSPPolicy(t *testing.T) {
 		assert.Contains(t, enhanced, NonceTemplate)
 		assert.Contains(t, enhanced, CloudflareInsightsDomain)
 		assert.Contains(t, enhanced, GoogleTagManagerDomain)
+		assert.Contains(t, enhanced, "img-src 'self' blob:")
 	})
 
 	t.Run("does_not_duplicate_nonce_placeholder", func(t *testing.T) {
@@ -333,6 +335,15 @@ func TestEnhanceCSPPolicy(t *testing.T) {
 		assert.Contains(t, enhanced, NonceTemplate)
 		assert.Contains(t, enhanced, CloudflareInsightsDomain)
 		assert.Contains(t, enhanced, GoogleTagManagerDomain)
+		assert.Contains(t, enhanced, "img-src 'self' blob:")
+	})
+
+	t.Run("does_not_duplicate_img_blob_source", func(t *testing.T) {
+		policy := "default-src 'self'; img-src 'self' data: blob: https:"
+		enhanced := enhanceCSPPolicy(policy)
+
+		count := strings.Count(enhanced, "blob:")
+		assert.Equal(t, 1, count)
 	})
 
 	t.Run("preserves_existing_nonce", func(t *testing.T) {

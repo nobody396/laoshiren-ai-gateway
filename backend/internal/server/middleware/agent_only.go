@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AgentOrAdmin 代理商或管理员权限中间件
+// AgentOrAdmin 合伙人或管理员权限中间件
 // 允许 role=agent 或 role=admin 的用户访问
 // 必须在 JWTAuth 中间件之后使用
 func AgentOrAdmin() gin.HandlerFunc {
@@ -18,7 +18,7 @@ func AgentOrAdmin() gin.HandlerFunc {
 		}
 
 		if role != service.RoleAgent && role != service.RoleAdmin {
-			AbortWithError(c, 403, "FORBIDDEN", "Agent or admin access required")
+			AbortWithError(c, 403, "FORBIDDEN", "合伙人或管理员权限不足")
 			return
 		}
 

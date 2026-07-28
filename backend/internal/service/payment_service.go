@@ -14,10 +14,12 @@ import (
 
 // PaymentService handles Alipay Face-to-Face payment logic
 type PaymentService struct {
-	paymentRepo         PaymentOrderRepository
-	subscriptionService *SubscriptionService
-	settingService      *SettingService
-	entClient           *dbent.Client
+	paymentRepo          PaymentOrderRepository
+	subscriptionService  *SubscriptionService
+	settingService       *SettingService
+	entClient            *dbent.Client
+	affiliateConsumption AffiliateConsumptionRepository
+	affiliateRewards     *AffiliateRewardService
 }
 
 // NewPaymentService creates a new PaymentService
@@ -26,12 +28,16 @@ func NewPaymentService(
 	subscriptionService *SubscriptionService,
 	settingService *SettingService,
 	entClient *dbent.Client,
+	affiliateConsumption AffiliateConsumptionRepository,
+	affiliateRewards *AffiliateRewardService,
 ) *PaymentService {
 	return &PaymentService{
-		paymentRepo:         paymentRepo,
-		subscriptionService: subscriptionService,
-		settingService:      settingService,
-		entClient:           entClient,
+		paymentRepo:          paymentRepo,
+		subscriptionService:  subscriptionService,
+		settingService:       settingService,
+		entClient:            entClient,
+		affiliateConsumption: affiliateConsumption,
+		affiliateRewards:     affiliateRewards,
 	}
 }
 
@@ -232,7 +238,7 @@ func (s *PaymentService) completeOrder(ctx context.Context, orderNo string, alip
 	}
 
 	// Assign or extend subscription
-	_, _, err = s.subscriptionService.AssignOrExtendSubscription(txCtx, &AssignSubscriptionInput{
+	subscription, _, err := s.subscriptionService.AssignOrExtendSubscription(txCtx, &AssignSubscriptionInput{
 		UserID:       order.UserID,
 		GroupID:      order.GroupID,
 		ValidityDays: order.ValidityDays,
@@ -241,6 +247,58 @@ func (s *PaymentService) completeOrder(ctx context.Context, orderNo string, alip
 	})
 	if err != nil {
 		return fmt.Errorf("assign subscription: %w", err)
+	}
+	if s.affiliateConsumption != nil {
+		group, err := s.subscriptionService.groupRepo.GetByID(txCtx, order.GroupID)
+		if err != nil {
+			return fmt.Errorf("load subscription group for affiliate attribution: %w", err)
+		}
+		creditLimitMicros := AffiliateMonthlyCreditLimitMicros([]*Group{group}, order.ValidityDays)
+		if creditLimitMicros > 0 {
+			cycleStartsAt := subscription.ExpiresAt.AddDate(0, 0, -order.ValidityDays)
+			occurredAt := time.Now()
+			var rewardResult *AffiliateFirstPaidPurchaseResult
+			if s.affiliateRewards != nil {
+				rewardResult, err = s.affiliateRewards.ProcessFirstPaidPurchase(txCtx, AffiliateFirstPaidPurchaseInput{
+					UserID:       order.UserID,
+					PurchaseType: AffiliatePurchaseMonthlyPayment,
+					SourceID:     order.ID,
+					PurchaseKey:  fmt.Sprintf("payment:subscription:%d", order.ID),
+					AmountMicros: int64(order.AmountCents) * 10_000,
+					OccurredAt:   occurredAt,
+				})
+				if err != nil {
+					return fmt.Errorf("process affiliate first paid monthly purchase: %w", err)
+				}
+			}
+			policy, partnerID, customerRate, partnerRate := AffiliatePolicyFromPurchaseResult(
+				order.AmountCents > 0,
+				rewardResult,
+			)
+			_, pricingTableVersion := AffiliateMonthlyCatalogIdentity([]*Group{group})
+			if err := s.affiliateConsumption.RecordMonthlyEntitlement(txCtx, AffiliateMonthlyEntitlementInput{
+				UserID:                   order.UserID,
+				SourceType:               AffiliateSourcePaidTopup,
+				SourceID:                 order.ID,
+				SourceKey:                fmt.Sprintf("payment:subscription:%d", order.ID),
+				ProductCode:              order.PlanID,
+				SalePriceMicros:          int64(order.AmountCents) * 10_000,
+				CreditLimitMicros:        creditLimitMicros,
+				AffiliatePolicy:          policy,
+				DirectPartnerID:          partnerID,
+				CustomerRebateRateBPS:    customerRate,
+				PartnerCommissionRateBPS: partnerRate,
+				PricingTableVersion:      pricingTableVersion,
+				StartsAt:                 cycleStartsAt,
+				EndsAt:                   subscription.ExpiresAt,
+				Subscriptions: []AffiliateMonthlySubscription{{
+					UserSubscriptionID: subscription.ID,
+					GroupID:            order.GroupID,
+				}},
+			}); err != nil {
+				return fmt.Errorf("record affiliate monthly entitlement: %w", err)
+			}
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

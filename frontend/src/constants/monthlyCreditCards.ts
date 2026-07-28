@@ -1,7 +1,7 @@
 import { SUBSCRIPTION_CREDIT_DISPLAY_SCALE, formatSubscriptionCredits } from '@/utils/subscriptionCredits'
 
 export type MonthlyCreditCardPlan = {
-  id: 'lite' | 'pro' | 'max' | 'ultra' | 'apex'
+  id: 'plus' | 'pro' | 'max'
   name: string
   priceCny: number
   directPriceCny: number
@@ -30,8 +30,6 @@ export type MonthlyCreditCardPlan = {
   rarityLabel?: string
   accent: string
   cardShopUrl: string
-  disableWeeklyLimit?: boolean
-  retired?: boolean
 }
 
 export type MonthlyCreditCardPlanGroupEntitlement = {
@@ -50,9 +48,8 @@ export type MonthlyCreditCardPlanEntitlement = {
   claude_group?: MonthlyCreditCardPlanGroupEntitlement | null
 }
 
-const monthlyCardDays = 31
-const defaultGptCreditsPerUsd = 0.4
-const defaultClaudeCreditsPerUsd = 1.25
+const defaultGptCreditsPerUsd = 0.5
+const defaultClaudeCreditsPerUsd = 2.4
 const millionTokens = 1_000_000
 const gptWeightedUsdPerMillionTokens = 1.035
 const claudeWeightedUsdPerMillionTokens = 1.0175
@@ -68,159 +65,87 @@ function formatEstimatedTokens(usdValue: number, usdPerMillionTokens: number): s
   if (!Number.isFinite(usdValue) || usdValue <= 0 || usdPerMillionTokens <= 0) return '约 0 token'
   const tokens = (usdValue / usdPerMillionTokens) * millionTokens
   const yi = tokens / 100_000_000
-  if (yi >= 1) {
-    return `约 ${yi.toFixed(yi >= 10 ? 1 : 2).replace(/\.0$/, '')} 亿 token`
-  }
+  if (yi >= 1) return `约 ${yi.toFixed(yi >= 10 ? 1 : 2).replace(/\.0$/, '')} 亿 token`
   const wan = tokens / 10_000
   return `约 ${wan.toFixed(wan >= 100 ? 0 : 1).replace(/\.0$/, '')} 万 token`
 }
 
-function createMonthlyCreditCardPlan(
-  input: Omit<
-    MonthlyCreditCardPlan,
-    | 'price'
-    | 'directPrice'
-    | 'weeklyCredits'
-    | 'monthlyCredits'
-    | 'displayDailyCredits'
-    | 'displayWeeklyCredits'
-    | 'displayMonthlyCredits'
-    | 'displayDailyCreditsText'
-    | 'displayWeeklyCreditsText'
-    | 'displayMonthlyCreditsText'
-    | 'showWeeklyLimit'
-    | 'gptDisplayRate'
-    | 'claudeDisplayRate'
-    | 'gptWeeklyUsage'
-    | 'claudeWeeklyUsage'
-    | 'gptMonthlyUsage'
-    | 'claudeMonthlyUsage'
-    | 'gptMonthlyTokensText'
-    | 'claudeMonthlyTokensText'
-  >,
-  entitlement?: MonthlyCreditCardPlanEntitlement
-): MonthlyCreditCardPlan {
-  const weeklyCredits = input.disableWeeklyLimit
-    ? 0
-    : resolveSharedLimit(entitlement, 'weekly_limit_usd') ?? 0
-  const monthlyCredits = resolveSharedLimit(entitlement, 'monthly_limit_usd') ?? input.dailyCredits * monthlyCardDays
-  const displayDailyCredits = input.dailyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE
-  const displayWeeklyCredits = weeklyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE
-  const displayMonthlyCredits = monthlyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE
-  const gptCreditsPerUsd = normalizeCreditsPerUsd(entitlement?.gpt_group?.rate_multiplier, defaultGptCreditsPerUsd)
-  const claudeCreditsPerUsd = normalizeCreditsPerUsd(entitlement?.claude_group?.rate_multiplier, defaultClaudeCreditsPerUsd)
+type PlanInput = Pick<MonthlyCreditCardPlan,
+  'id' | 'name' | 'priceCny' | 'directPriceCny' | 'monthlyCredits' | 'description' | 'accent' | 'cardShopUrl'
+>
+
+function createMonthlyCreditCardPlan(input: PlanInput, entitlement?: MonthlyCreditCardPlanEntitlement): MonthlyCreditCardPlan {
+  // Catalog limits are immutable SKU values.  The live entitlement is used for
+  // availability/status only; stale group values must never silently change a
+  // published quota or multiplier.
+  const monthlyCredits = input.monthlyCredits
+  void entitlement
+  const gptCreditsPerUsd = defaultGptCreditsPerUsd
+  const claudeCreditsPerUsd = defaultClaudeCreditsPerUsd
   const gptMonthlyUsd = monthlyCredits / gptCreditsPerUsd
   const claudeMonthlyUsd = monthlyCredits / claudeCreditsPerUsd
   return {
     ...input,
     price: `¥${input.priceCny}`,
     directPrice: `¥${input.directPriceCny}`,
-    weeklyCredits,
-    monthlyCredits,
-    displayDailyCredits,
-    displayWeeklyCredits,
-    displayMonthlyCredits,
-    displayDailyCreditsText: formatSubscriptionCredits(input.dailyCredits),
-    displayWeeklyCreditsText: formatSubscriptionCredits(weeklyCredits),
+    dailyCredits: 0,
+    weeklyCredits: 0,
+    displayDailyCredits: 0,
+    displayWeeklyCredits: 0,
+    displayMonthlyCredits: monthlyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE,
+    displayDailyCreditsText: formatSubscriptionCredits(0),
+    displayWeeklyCreditsText: formatSubscriptionCredits(0),
     displayMonthlyCreditsText: formatSubscriptionCredits(monthlyCredits),
-    showWeeklyLimit: weeklyCredits > 0,
+    showWeeklyLimit: false,
     gptDisplayRate: `${formatSubscriptionCredits(gptCreditsPerUsd)} AI credits / 刀`,
     claudeDisplayRate: `${formatSubscriptionCredits(claudeCreditsPerUsd)} AI credits / 刀`,
-    gptWeeklyUsage: `约 ${formatUsd(weeklyCredits / gptCreditsPerUsd)} / 周`,
-    claudeWeeklyUsage: `约 ${formatUsd(weeklyCredits / claudeCreditsPerUsd)} / 周`,
-    gptMonthlyUsage: `约 ${formatUsd(gptMonthlyUsd)} / 月`,
-    claudeMonthlyUsage: `约 ${formatUsd(claudeMonthlyUsd)} / 月`,
+    gptWeeklyUsage: '不设周限额',
+    claudeWeeklyUsage: '不设周限额',
+    gptMonthlyUsage: `约 ${formatUsd(gptMonthlyUsd)} / 31 天`,
+    claudeMonthlyUsage: `约 ${formatUsd(claudeMonthlyUsd)} / 31 天`,
     gptMonthlyTokensText: formatEstimatedTokens(gptMonthlyUsd, gptWeightedUsdPerMillionTokens),
     claudeMonthlyTokensText: formatEstimatedTokens(claudeMonthlyUsd, claudeWeightedUsdPerMillionTokens)
   }
 }
 
-function normalizeCreditsPerUsd(value: number | null | undefined, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : fallback
-}
-
-function resolveSharedLimit(
-  entitlement: MonthlyCreditCardPlanEntitlement | undefined,
-  field: 'weekly_limit_usd' | 'monthly_limit_usd'
-): number | null {
-  const limits = [entitlement?.gpt_group?.[field], entitlement?.claude_group?.[field]]
-    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0)
-  if (limits.length === 0) return null
-  return Math.min(...limits)
-}
-
-const monthlyCreditCardPlanInputs = [
+const monthlyCreditCardPlanInputs: PlanInput[] = [
   {
-    id: 'lite',
-    name: 'Lite 月卡',
-    priceCny: 329,
-    directPriceCny: 319,
-    dailyCredits: 15,
-    description: '适合首次尝鲜，一份额度池同时覆盖 GPT Pro 与 Claude Max。',
-    accent: 'lite',
-    cardShopUrl: 'https://pay.ldxp.cn/item/ul7lg1',
-    disableWeeklyLimit: true
+    id: 'plus',
+    name: 'Plus',
+    priceCny: 259,
+    directPriceCny: 249,
+    monthlyCredits: 220,
+    description: '轻量但完整的 31 天开发额度，适合日常编码、问答与短任务。',
+    accent: 'plus',
+    cardShopUrl: ''
   },
   {
     id: 'pro',
-    name: 'Pro 月卡',
-    priceCny: 639,
-    directPriceCny: 619,
-    dailyCredits: 30,
-    description: '适合稳定日常开发，两个高阶分组共用同一份总额度。',
+    name: 'Pro',
+    priceCny: 729,
+    directPriceCny: 699,
+    monthlyCredits: 650,
+    description: '面向稳定高频开发与多轮代理任务，整月额度可自由安排。',
     accent: 'pro',
-    cardShopUrl: 'https://pay.ldxp.cn/item/efaklw',
-    disableWeeklyLimit: true
+    cardShopUrl: ''
   },
   {
     id: 'max',
-    name: 'Max 月卡',
-    priceCny: 699,
-    directPriceCny: 685,
-    dailyCredits: 40,
-    description: '适合重度开发者，共享池在复杂任务和长会话里留出余量。',
+    name: 'Max',
+    priceCny: 1549,
+    directPriceCny: 1499,
+    monthlyCredits: 1400,
+    description: '为大型重构、长上下文与连续高强度开发保留更大额度。',
     accent: 'max',
-    cardShopUrl: 'https://pay.ldxp.cn/item/lhd7pa',
-    disableWeeklyLimit: true,
-    retired: true
-  },
-  {
-    id: 'ultra',
-    name: 'Ultra 月卡',
-    priceCny: 899,
-    directPriceCny: 879,
-    dailyCredits: 50,
-    description: '适合长期高频使用，两条高阶渠道共用同一份月度额度。',
-    accent: 'ultra',
-    cardShopUrl: 'https://pay.ldxp.cn/item/kqbjn9',
-    disableWeeklyLimit: true,
-    retired: true
-  },
-  {
-    id: 'apex',
-    name: 'Apex 月卡',
-    priceCny: 1299,
-    directPriceCny: 1275,
-    dailyCredits: 96.6,
-    description: '传说级长任务通行证，面向连续编排、海量审查与整月高频开发。',
-    legendaryCopy: '黑金权限已铸成：适合把大型重构、长上下文代理和批量审查一次推到底。',
-    rarityLabel: 'Legendary Apex',
-    accent: 'apex',
-    cardShopUrl: 'https://pay.ldxp.cn/item/pb4se8',
-    disableWeeklyLimit: true,
-    retired: true
+    cardShopUrl: ''
   }
-] satisfies Array<Parameters<typeof createMonthlyCreditCardPlan>[0]>
+]
 
 export function buildMonthlyCreditCardPlans(
   entitlements: MonthlyCreditCardPlanEntitlement[] | null | undefined
 ): MonthlyCreditCardPlan[] {
   const entitlementByID = new Map((entitlements ?? []).map((item) => [item.id, item]))
-  return monthlyCreditCardPlanInputs
-    .filter((input) => !input.retired)
-    .map((input) => createMonthlyCreditCardPlan(input, entitlementByID.get(input.id)))
+  return monthlyCreditCardPlanInputs.map((input) => createMonthlyCreditCardPlan(input, entitlementByID.get(input.id)))
 }
 
-export const monthlyCreditCardPlans: MonthlyCreditCardPlan[] = [
-  ...buildMonthlyCreditCardPlans(null)
-]
+export const monthlyCreditCardPlans = buildMonthlyCreditCardPlans(null)

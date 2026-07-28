@@ -26,7 +26,7 @@ export interface MonthlyCardPlanGroup {
 }
 
 export interface MonthlyCardPlanEntitlement {
-  id: 'lite' | 'pro' | 'max' | 'ultra'
+  id: 'plus' | 'pro' | 'max'
   name: string
   gpt_group?: MonthlyCardPlanGroup | null
   claude_group?: MonthlyCardPlanGroup | null

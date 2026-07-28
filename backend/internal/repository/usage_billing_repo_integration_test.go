@@ -83,6 +83,324 @@ func TestUsageBillingRepositoryApply_DeduplicatesBalanceBilling(t *testing.T) {
 	require.Equal(t, 1, dedupCount)
 }
 
+func TestUsageBillingRepositoryApply_AttributesOnlyPaidBalanceLots(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-affiliate-balance-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+		Balance:      20,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID: user.ID,
+		Key:    "sk-usage-billing-affiliate-balance-" + uuid.NewString(),
+		Name:   "affiliate-balance",
+	})
+	usageLogID := time.Now().UnixNano()
+
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO balance_lots (
+			user_id, source_type, source_key,
+			original_amount_micros, remaining_amount_micros,
+			affiliate_eligible, affiliate_policy
+		)
+		VALUES
+			($1, 'gift', $2, 3000000, 3000000, FALSE, 'NONE'),
+			($1, 'paid_redeem', $3, 17000000, 17000000, TRUE, 'ORDINARY_FIRST_PAID')
+	`, user.ID, "test-gift:"+uuid.NewString(), "test-paid:"+uuid.NewString())
+	require.NoError(t, err)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	result, err := repo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:   uuid.NewString(),
+		APIKeyID:    apiKey.ID,
+		UsageLogID:  usageLogID,
+		UserID:      user.ID,
+		BalanceCost: 5,
+	})
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.Equal(t, int64(2_000_000), result.BalanceConfirmedMicros)
+	require.Equal(t, int64(2_000_000), result.ConfirmedConsumptionMicros)
+
+	var eventAmount int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COALESCE(SUM(amount_micros), 0)
+		FROM affiliate_performance_events
+		WHERE event_key LIKE $1
+	`, fmt.Sprintf("confirmed:usage:%d:balance:lot:%%", usageLogID)).Scan(&eventAmount))
+	require.Equal(t, int64(2_000_000), eventAmount)
+}
+
+func TestUsageBillingRepositoryApply_AttributesMonthlyConsumptionProRata(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-affiliate-monthly-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	limit := 100.0
+	group := mustCreateGroup(t, client, &service.Group{
+		Name:             "usage-billing-affiliate-monthly-" + uuid.NewString(),
+		Platform:         service.PlatformOpenAI,
+		SubscriptionType: service.SubscriptionTypeCredit,
+		DailyLimitUSD:    &limit,
+		WeeklyLimitUSD:   &limit,
+		MonthlyLimitUSD:  &limit,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID:  user.ID,
+		GroupID: &group.ID,
+		Key:     "sk-usage-billing-affiliate-monthly-" + uuid.NewString(),
+		Name:    "affiliate-monthly",
+	})
+	subscription := mustCreateSubscription(t, client, &service.UserSubscription{
+		UserID:  user.ID,
+		GroupID: group.ID,
+	})
+	var cycleID int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		INSERT INTO monthly_entitlement_cycles (
+			user_id, source_type, source_key, product_code,
+			sale_price_micros, credit_limit_micros,
+			affiliate_eligible, affiliate_policy, starts_at, ends_at
+		)
+		VALUES ($1, 'paid_topup', $2, 'test-monthly', 50000000, 100000000, TRUE, 'ORDINARY_FIRST_PAID', NOW() - INTERVAL '1 minute', NOW() + INTERVAL '31 days')
+		RETURNING id
+	`, user.ID, "test-monthly:"+uuid.NewString()).Scan(&cycleID))
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO monthly_entitlement_cycle_subscriptions (
+			cycle_id, user_subscription_id, group_id
+		)
+		VALUES ($1, $2, $3)
+	`, cycleID, subscription.ID, group.ID)
+	require.NoError(t, err)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+	usageLogID := time.Now().UnixNano()
+
+	result, err := repo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:        uuid.NewString(),
+		APIKeyID:         apiKey.ID,
+		UsageLogID:       usageLogID,
+		UserID:           user.ID,
+		SubscriptionID:   &subscription.ID,
+		SubscriptionCost: 10,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(5_000_000), result.MonthlyConfirmedMicros)
+	require.Equal(t, int64(5_000_000), result.ConfirmedConsumptionMicros)
+
+	var usedCredit, confirmed int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT used_credit_micros, confirmed_consumption_micros
+		FROM monthly_entitlement_cycles
+		WHERE id = $1
+	`, cycleID).Scan(&usedCredit, &confirmed))
+	require.Equal(t, int64(10_000_000), usedCredit)
+	require.Equal(t, int64(5_000_000), confirmed)
+}
+
+func TestUsageBillingRepositoryApply_SettlesFixedAgentPoolOnConfirmedConsumption(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+	linkRepo := NewAffiliateLinkRepository(integrationDB)
+	linkService := service.NewAffiliateLinkService(linkRepo)
+
+	agent := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-agent-pool-agent-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	customer := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-agent-pool-customer-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+		Balance:      100,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID: customer.ID,
+		Key:    "sk-usage-billing-agent-pool-" + uuid.NewString(),
+		Name:   "agent-pool",
+	})
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_principals (
+			agent_id, status, risk_status, qualified_at, activated_at
+		)
+		VALUES ($1, 'active', 'clear', NOW(), NOW())
+	`, agent.ID)
+	require.NoError(t, err)
+	link, err := linkService.Create(ctx, agent.ID, "三七分成", "integration", 300)
+	require.NoError(t, err)
+	referral, err := linkRepo.ResolveActiveLink(ctx, link.Code)
+	require.NoError(t, err)
+	require.NoError(t, linkRepo.BindAgentReferral(ctx, customer.ID, *referral))
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO balance_lots (
+			user_id, source_type, source_key,
+			original_amount_micros, remaining_amount_micros,
+			affiliate_eligible, affiliate_policy, direct_partner_id,
+			customer_rebate_rate_bps, partner_commission_rate_bps
+		)
+		VALUES ($1, 'paid_topup', $2, 100000000, 100000000, TRUE, 'PARTNER_USAGE', $3, 300, 700)
+	`, customer.ID, "agent-pool-paid:"+uuid.NewString(), agent.ID)
+	require.NoError(t, err)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+	usageLogID := time.Now().UnixNano()
+	cmd := &service.UsageBillingCommand{
+		RequestID:   uuid.NewString(),
+		APIKeyID:    apiKey.ID,
+		UsageLogID:  usageLogID,
+		UserID:      customer.ID,
+		BalanceCost: 10,
+	}
+
+	result, err := repo.Apply(ctx, cmd)
+	require.NoError(t, err)
+	require.Equal(t, service.AffiliateProgramModeLive, result.AffiliateProgramMode)
+	require.Equal(t, int64(300_000), result.AffiliateCustomerRebateMicros)
+	require.Equal(t, int64(700_000), result.AffiliateAgentCommissionMicros)
+	require.NotNil(t, result.NewBalance)
+	require.InDelta(t, 90.3, *result.NewBalance, 0.000001)
+
+	var cashMicros int64
+	var postingStatus string
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT amount_micros, posting_status
+		FROM agent_cash_commission_entries
+		WHERE agent_id = $1
+			AND consumer_user_id = $2
+			AND source_type = 'confirmed_consumption'
+	`, agent.ID, customer.ID).Scan(&cashMicros, &postingStatus))
+	require.Equal(t, int64(700_000), cashMicros)
+	require.Equal(t, "posted", postingStatus)
+
+	replay, err := repo.Apply(ctx, cmd)
+	require.NoError(t, err)
+	require.False(t, replay.Applied)
+	var cashCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM agent_cash_commission_entries
+		WHERE agent_id = $1
+			AND consumer_user_id = $2
+	`, agent.ID, customer.ID).Scan(&cashCount))
+	require.Equal(t, 1, cashCount)
+}
+
+func TestUsageBillingAffiliateSettlement_ShadowObservesWithoutMoney(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	agent := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-shadow-agent-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	customer := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-shadow-customer-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_principals (
+			agent_id, status, risk_status, qualified_at, activated_at
+		)
+		VALUES ($1, 'active', 'clear', NOW(), NOW())
+	`, agent.ID)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_links (
+			agent_id, code, name, is_default, status, current_rate_version
+		)
+		VALUES ($1, $2, 'shadow', TRUE, 'active', 1)
+	`, agent.ID, "shadow-link-"+uuid.NewString())
+	require.NoError(t, err)
+	var linkID int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT id FROM affiliate_links WHERE agent_id=$1 AND is_default=TRUE
+	`, agent.ID).Scan(&linkID))
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_link_rate_versions (
+			link_id, version, customer_rebate_rate_bps,
+			agent_commission_rate_bps, effective_at
+		)
+		VALUES ($1, 1, 300, 700, NOW())
+	`, linkID)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_bindings (
+			customer_user_id, inviter_user_id, binding_kind,
+			agent_id, affiliate_link_id, link_rate_version,
+			customer_rebate_rate_snapshot_bps,
+			agent_commission_rate_snapshot_bps
+		)
+		VALUES ($2, $3, 'agent', $3, $1, 1, 300, 700)
+	`, linkID, customer.ID, agent.ID)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		UPDATE affiliate_program_settings
+		SET mode='shadow', started_at=NULL
+		WHERE id=1
+	`)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(), `
+			UPDATE affiliate_program_settings SET mode='off', started_at=NULL WHERE id=1
+		`)
+	})
+
+	tx, err := integrationDB.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	settlement, err := recordUsageBillingPerformanceEvent(
+		ctx,
+		tx,
+		customer.ID,
+		time.Now().UnixNano(),
+		"balance_usage",
+		"shadow-event:"+uuid.NewString(),
+		10_000_000,
+		service.AffiliateSourcePolicyPartnerUsage,
+		agent.ID,
+		300,
+		700,
+	)
+	require.NoError(t, err)
+	require.Zero(t, settlement.CustomerRebateMicros)
+	require.Zero(t, settlement.AgentCommissionMicros)
+	require.NoError(t, tx.Commit())
+
+	var rewards, cash int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM affiliate_reward_entries WHERE consumer_user_id=$1
+	`, customer.ID).Scan(&rewards))
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM agent_cash_commission_entries WHERE consumer_user_id=$1
+	`, customer.ID).Scan(&cash))
+	require.Zero(t, rewards)
+	require.Zero(t, cash)
+}
+
+func setAffiliateProgramLiveForIntegrationTest(t *testing.T, ctx context.Context) {
+	t.Helper()
+	_, err := integrationDB.ExecContext(ctx, `
+		UPDATE affiliate_program_settings
+		SET mode = 'live',
+			started_at = NOW() - INTERVAL '1 minute',
+			updated_at = NOW()
+		WHERE id = 1
+	`)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(), `
+			UPDATE affiliate_program_settings
+			SET mode = 'off',
+				started_at = NULL,
+				updated_at = NOW()
+			WHERE id = 1
+		`)
+	})
+}
+
 func TestUsageBillingRepositoryApply_DeduplicatesSubscriptionBilling(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)

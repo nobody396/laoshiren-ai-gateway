@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -459,6 +460,7 @@ type adminServiceImpl struct {
 	authCacheInvalidator APIKeyAuthCacheInvalidator
 	entClient            *dbent.Client // 用于开启数据库事务
 	settingService       *SettingService
+	affiliateProgram     *AffiliateProgramService
 	defaultSubAssigner   DefaultSubscriptionAssigner
 	userSubRepo          UserSubscriptionRepository
 	privacyClientFactory PrivacyClientFactory
@@ -484,6 +486,7 @@ func NewAdminService(
 	authCacheInvalidator APIKeyAuthCacheInvalidator,
 	entClient *dbent.Client,
 	settingService *SettingService,
+	affiliateProgram *AffiliateProgramService,
 	defaultSubAssigner DefaultSubscriptionAssigner,
 	userSubRepo UserSubscriptionRepository,
 	privacyClientFactory PrivacyClientFactory,
@@ -503,6 +506,7 @@ func NewAdminService(
 		authCacheInvalidator: authCacheInvalidator,
 		entClient:            entClient,
 		settingService:       settingService,
+		affiliateProgram:     affiliateProgram,
 		defaultSubAssigner:   defaultSubAssigner,
 		userSubRepo:          userSubRepo,
 		privacyClientFactory: privacyClientFactory,
@@ -860,6 +864,9 @@ func (s *adminServiceImpl) GetGroup(ctx context.Context, id int64) (*Group, erro
 }
 
 func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupInput) (*Group, error) {
+	if _, _, ok := currentMonthlyCatalogGroupExpectation(strings.TrimSpace(input.Name)); ok {
+		return nil, errors.New("current monthly-card group names are reserved and can only be created by the catalog migration")
+	}
 	platform := input.Platform
 	if platform == "" {
 		platform = PlatformAnthropic
@@ -1132,6 +1139,8 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	if err != nil {
 		return nil, err
 	}
+	originalName := group.Name
+	_, _, protectedCurrentMonthlyGroup := currentMonthlyCatalogGroupExpectation(originalName)
 
 	if input.Name != "" {
 		group.Name = input.Name
@@ -1253,6 +1262,16 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 		group.MessagesDispatchModelConfig = normalizeOpenAIMessagesDispatchModelConfig(*input.MessagesDispatchModelConfig)
 	}
 	sanitizeGroupMessagesDispatchFields(group)
+	if protectedCurrentMonthlyGroup {
+		if group.Name != originalName {
+			return nil, errors.New("current monthly-card groups cannot be renamed")
+		}
+		if err := validateCurrentMonthlyCatalogGroupShape(*group); err != nil {
+			return nil, err
+		}
+	} else if _, _, reserved := currentMonthlyCatalogGroupExpectation(group.Name); reserved {
+		return nil, errors.New("current monthly-card group names are reserved")
+	}
 
 	if err := s.groupRepo.Update(ctx, group); err != nil {
 		return nil, err
@@ -1312,6 +1331,13 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 }
 
 func (s *adminServiceImpl) DeleteGroup(ctx context.Context, id int64) error {
+	group, err := s.groupRepo.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if _, _, protected := currentMonthlyCatalogGroupExpectation(group.Name); protected {
+		return errors.New("current monthly-card groups cannot be deleted")
+	}
 	var groupKeys []string
 	if s.authCacheInvalidator != nil {
 		keys, err := s.apiKeyRepo.ListKeysByGroupID(ctx, id)
@@ -2144,12 +2170,14 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 	createdBy := normalizeRedeemBatchCreatedBy(input.CreatedBy)
 
 	groupIDs := normalizeSubscriptionRedeemGroupIDs(input.GroupID, input.GroupIDs)
+	currentV3MonthlyCard := false
 
 	// 如果是订阅类型，验证必须有 GroupID 或 GroupIDs
 	if codeType == RedeemTypeSubscription {
 		if len(groupIDs) == 0 {
 			return nil, errors.New("group_id or group_ids is required for subscription type")
 		}
+		groups := make([]Group, 0, len(groupIDs))
 		for _, groupID := range groupIDs {
 			// 验证分组存在且为订阅类型
 			group, err := s.groupRepo.GetByID(ctx, groupID)
@@ -2159,6 +2187,12 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 			if !group.IsSubscriptionType() {
 				return nil, fmt.Errorf("group %d must be subscription type", groupID)
 			}
+			groups = append(groups, *group)
+		}
+		var err error
+		currentV3MonthlyCard, err = s.guardCurrentMonthlyCardGeneration(ctx, groups, input.ValidityDays, input.Value)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -2209,7 +2243,11 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 			}
 			code.ValidityDays = input.ValidityDays
 			if code.ValidityDays <= 0 {
-				code.ValidityDays = 30 // 默认30天
+				if currentV3MonthlyCard {
+					code.ValidityDays = 31
+				} else {
+					code.ValidityDays = 30
+				}
 			}
 		}
 		if err := s.redeemCodeRepo.Create(ctx, &code); err != nil {
@@ -2218,6 +2256,136 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 		codes = append(codes, code)
 	}
 	return codes, nil
+}
+
+func (s *adminServiceImpl) guardCurrentMonthlyCardGeneration(
+	ctx context.Context,
+	groups []Group,
+	requestedValidityDays int,
+	salePrice float64,
+) (bool, error) {
+	selectedPlan := ""
+	selectedNames := make(map[string]struct{}, len(groups))
+	for _, group := range groups {
+		planID := ""
+		for candidatePlan, names := range costAccountingMonthlyCardGroupNames {
+			for _, name := range names {
+				if group.Name == name {
+					planID = candidatePlan
+					break
+				}
+			}
+			if planID != "" {
+				break
+			}
+		}
+		if planID == "" {
+			if selectedPlan != "" {
+				return true, fmt.Errorf("current monthly card cannot be bundled with a legacy or unrelated group")
+			}
+			continue
+		}
+		if selectedPlan != "" && selectedPlan != planID {
+			return true, fmt.Errorf("current monthly card groups must belong to the same plan")
+		}
+		selectedPlan = planID
+		selectedNames[group.Name] = struct{}{}
+	}
+	if selectedPlan == "" {
+		return false, nil
+	}
+	expected := costAccountingMonthlyCardGroupNames[selectedPlan]
+	if len(groups) != len(expected) || len(selectedNames) != len(expected) {
+		return true, fmt.Errorf("current %s monthly card requires the complete GPT and Claude group bundle", selectedPlan)
+	}
+	for product, name := range expected {
+		if _, ok := selectedNames[name]; !ok {
+			return true, fmt.Errorf("current %s monthly card is missing its %s group", selectedPlan, product)
+		}
+	}
+	if s.accountRepo == nil {
+		return true, fmt.Errorf("current monthly card account guard is not configured")
+	}
+	for _, group := range groups {
+		if err := validateCurrentMonthlyCatalogGroupShape(group); err != nil {
+			return true, fmt.Errorf("current %s monthly card group %q does not match the guarded catalog", selectedPlan, group.Name)
+		}
+		accounts, err := s.accountRepo.ListByGroup(ctx, group.ID)
+		if err != nil {
+			return true, fmt.Errorf("load current monthly card group %q accounts: %w", group.Name, err)
+		}
+		schedulable := false
+		for i := range accounts {
+			if accounts[i].IsSchedulable() {
+				schedulable = true
+				break
+			}
+		}
+		if !schedulable {
+			return true, fmt.Errorf("current monthly card group %q has no schedulable account", group.Name)
+		}
+	}
+	if requestedValidityDays != 0 && requestedValidityDays != 31 {
+		return true, fmt.Errorf("current monthly cards must use a 31-day validity period")
+	}
+	pricing, ok := costAccountingPlanPricing[selectedPlan]
+	if !ok ||
+		(math.Abs(salePrice-pricing.DirectPriceCNY) > 0.000001 &&
+			math.Abs(salePrice-pricing.ShopPriceCNY) > 0.000001) {
+		return true, fmt.Errorf(
+			"current %s monthly card face value must match its guarded direct or shop price",
+			selectedPlan,
+		)
+	}
+	if s.affiliateProgram == nil {
+		return true, fmt.Errorf("current monthly card margin guard is not configured")
+	}
+	settings, err := s.affiliateProgram.GetSettings(ctx)
+	if err != nil {
+		return true, fmt.Errorf("load current monthly card margin guard: %w", err)
+	}
+	if err := ValidateAffiliateCommercialSettings(*settings); err != nil {
+		return true, fmt.Errorf("current monthly card margin guard rejected generation: %w", err)
+	}
+	return true, nil
+}
+
+func currentMonthlyCatalogGroupExpectation(name string) (planID, product string, ok bool) {
+	for candidatePlan, names := range costAccountingMonthlyCardGroupNames {
+		for candidateProduct, expectedName := range names {
+			if name == expectedName {
+				return candidatePlan, candidateProduct, true
+			}
+		}
+	}
+	return "", "", false
+}
+
+func validateCurrentMonthlyCatalogGroupShape(group Group) error {
+	planID, product, ok := currentMonthlyCatalogGroupExpectation(group.Name)
+	if !ok {
+		return nil
+	}
+	expectedLimit := map[string]float64{"plus": 220, "pro": 650, "max": 1400}[planID]
+	expectedRate := 0.50
+	expectedPlatform := PlatformOpenAI
+	if product == "claude" {
+		expectedRate = 2.40
+		expectedPlatform = PlatformAnthropic
+	}
+	if strings.TrimSpace(group.Description) != "" ||
+		group.Status != StatusActive ||
+		group.SubscriptionType != SubscriptionTypeCredit ||
+		group.Platform != expectedPlatform ||
+		group.DailyLimitUSD != nil ||
+		group.WeeklyLimitUSD != nil ||
+		group.MonthlyLimitUSD == nil ||
+		math.Abs(*group.MonthlyLimitUSD-expectedLimit) > 0.000001 ||
+		math.Abs(group.RateMultiplier-expectedRate) > 0.000001 ||
+		group.DefaultValidityDays != 31 {
+		return fmt.Errorf("current %s monthly-card group %q is immutable outside account routing", planID, group.Name)
+	}
+	return nil
 }
 
 func normalizeSubscriptionRedeemGroupIDs(groupID *int64, groupIDs []int64) []int64 {

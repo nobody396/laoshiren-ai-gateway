@@ -26,8 +26,9 @@
 
         <div class="monthly-credit-card__price">
           <strong>{{ plan.price }}</strong>
-          <span>/ 月</span>
+          <span>/ 31 天</span>
         </div>
+        <p class="monthly-credit-card__direct-price">直售 {{ plan.directPrice }}</p>
 
         <div class="monthly-credit-card__credits">
           <div>
@@ -64,7 +65,7 @@
     </div>
 
     <p class="monthly-credit-plans__note">
-      一个订阅共享 GPT Pro 与 Claude Max 两个分组的额度池；额度按官方 API 计费折算，token 为真实长任务工作场景估算，实际随具体任务和缓存输出占比浮动。
+      只限制 31 天月度总额度，不设置每日或每周额度。GPT 与 Claude 共用同一份月度额度；当前周期的计费倍率和额度不会被后续调价追溯修改。
     </p>
   </section>
 </template>
@@ -211,7 +212,7 @@ const displayPlans = computed(() => props.plans?.length ? props.plans : monthlyC
   background: rgb(var(--color-muted));
 }
 
-.monthly-credit-card--lite::before {
+.monthly-credit-card--plus::before {
   background: rgb(var(--color-laurel));
 }
 

@@ -320,7 +320,7 @@ import OAuthProviderSection from '@/components/auth/OAuthProviderSection.vue'
 import Icon from '@/components/icons/Icon.vue'
 import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { useAuthStore, useAppStore } from '@/stores'
-import { getPublicSettings, validatePromoCode, validateInvitationCode } from '@/api/auth'
+import { validatePromoCode, validateInvitationCode } from '@/api/auth'
 import { buildAuthErrorMessage } from '@/utils/authError'
 import { trackEvent } from '@/utils/analytics'
 import {
@@ -426,7 +426,10 @@ const oauthProviders = computed<RegisterOAuthProvider[]>(() => {
 
 onMounted(async () => {
   try {
-    const settings = await getPublicSettings()
+    const settings = await appStore.fetchPublicSettings(true)
+    if (!settings) {
+      throw new Error('public settings are loading')
+    }
     registrationEnabled.value = settings.registration_enabled
     emailVerifyEnabled.value = settings.email_verify_enabled
     promoCodeEnabled.value = settings.promo_code_enabled

@@ -15,7 +15,7 @@ body.admin-console-active {
   --admin-laurel-dark: rgb(var(--color-laurel-dark));
   --admin-ink: rgb(var(--color-ink));
   --admin-ink-deep: rgb(var(--color-ink-deep));
-  --admin-muted: rgb(var(--color-muted));
+  --admin-muted: rgb(var(--color-ink) / 0.76);
   --admin-border: rgb(var(--color-laurel) / 0.18);
   --admin-border-strong: rgb(var(--color-ink) / 0.42);
   --admin-surface: rgb(var(--color-marble) / 0.96);
@@ -230,7 +230,7 @@ body.admin-console-active {
 
 .admin-console-shell .sidebar-link-active {
   background: rgb(var(--color-terracotta) / 0.13) !important;
-  color: var(--admin-terracotta-dark) !important;
+  color: var(--admin-ink-deep) !important;
 }
 
 .dark .admin-console-shell .sidebar-link-active {

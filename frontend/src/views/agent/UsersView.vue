@@ -8,7 +8,7 @@
           <input v-model="startDate" type="date" class="input w-auto text-sm" :max="endDate || undefined" />
           <span class="text-gray-400">—</span>
           <input v-model="endDate" type="date" class="input w-auto text-sm" :min="startDate || undefined" />
-          <button @click="fetchData" class="btn btn-primary btn-sm">{{ t('common.refresh') }}</button>
+          <button @click="fetchData()" class="btn btn-primary btn-sm">{{ t('common.refresh') }}</button>
           <button @click="clearFilters" class="btn btn-secondary btn-sm">{{ t('common.reset') }}</button>
         </div>
       </div>
@@ -36,6 +36,7 @@
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('agent.userLabel') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('agent.joinedAt') }}</th>
+                <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('agent.totalRecharge') }}</th>
                 <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('agent.totalConsumption') }}</th>
                 <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('agent.totalCommission') }}</th>
               </tr>
@@ -47,8 +48,9 @@
                   <div v-if="getSecondaryText(user)" class="text-xs text-gray-400">{{ getSecondaryText(user) }}</div>
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-500 dark:text-dark-400">{{ formatDate(user.joined_at) }}</td>
-                <td class="px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-white">${{ user.total_consumption.toFixed(4) }}</td>
-                <td class="px-6 py-4 text-right text-sm font-medium text-green-600 dark:text-green-400">${{ user.total_commission.toFixed(4) }}</td>
+                <td class="px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-white">¥{{ user.total_recharge.toFixed(4) }}</td>
+                <td class="px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-white">¥{{ user.total_consumption.toFixed(2) }}</td>
+                <td class="px-6 py-4 text-right text-sm font-medium text-green-600 dark:text-green-400">¥{{ user.total_commission.toFixed(2) }}</td>
               </tr>
             </tbody>
           </table>
@@ -83,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { getAgentInvitedUsers, type InvitedUserStat, type PaginationResult } from '@/api/agent'
@@ -96,6 +98,7 @@ const error = ref('')
 const users = ref<InvitedUserStat[]>([])
 const pagination = ref<PaginationResult | null>(null)
 const currentPage = ref(1)
+const refreshTimer = ref<number | null>(null)
 
 function getDefaultDates() {
   const now = new Date()
@@ -104,9 +107,8 @@ function getDefaultDates() {
   return { start, end }
 }
 
-const { start: defaultStart, end: defaultEnd } = getDefaultDates()
-const startDate = ref(defaultStart)
-const endDate = ref(defaultEnd)
+const startDate = ref('')
+const endDate = ref('')
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString()
@@ -128,8 +130,10 @@ function getSecondaryText(user: InvitedUserStat): string {
   return username && email ? email : ''
 }
 
-async function fetchData() {
-  loading.value = true
+async function fetchData(options: { silent?: boolean } = {}) {
+  if (!options.silent) {
+    loading.value = true
+  }
   error.value = ''
   try {
     const params: Record<string, string | number> = { page: currentPage.value, page_size: 20 }
@@ -141,7 +145,9 @@ async function fetchData() {
   } catch (e: unknown) {
     error.value = buildAuthErrorMessage(e, { fallback: t('common.error') })
   } finally {
-    loading.value = false
+    if (!options.silent) {
+      loading.value = false
+    }
   }
 }
 
@@ -158,5 +164,17 @@ function clearFilters() {
   fetchData()
 }
 
-onMounted(() => fetchData())
+onMounted(() => {
+  fetchData()
+  refreshTimer.value = window.setInterval(() => {
+    if (!document.hidden) fetchData({ silent: true })
+  }, 5000)
+})
+
+onBeforeUnmount(() => {
+  if (refreshTimer.value !== null) {
+    window.clearInterval(refreshTimer.value)
+    refreshTimer.value = null
+  }
+})
 </script>

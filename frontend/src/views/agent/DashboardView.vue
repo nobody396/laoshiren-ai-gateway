@@ -35,11 +35,11 @@
         <div class="admin-stat-card card p-5">
           <div class="flex items-center gap-3">
             <div class="admin-stat-icon flex h-10 w-10 flex-shrink-0 items-center justify-center">
-              <Icon name="dollar" size="md" :stroke-width="2" />
+              <Icon name="creditCard" size="md" :stroke-width="2" />
             </div>
             <div class="min-w-0">
               <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.totalCommission') }}</p>
-              <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">${{ dashboard?.total_commission.toFixed(4) ?? '0.0000' }}</p>
+              <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">¥{{ dashboard?.total_commission.toFixed(4) ?? '0.0000' }}</p>
             </div>
           </div>
         </div>
@@ -50,7 +50,7 @@
             </div>
             <div class="min-w-0">
               <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.settledCommission') }}</p>
-              <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">${{ dashboard?.settled_commission.toFixed(4) ?? '0.0000' }}</p>
+              <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">¥{{ dashboard?.settled_commission.toFixed(4) ?? '0.0000' }}</p>
             </div>
           </div>
         </div>
@@ -61,7 +61,7 @@
             </div>
             <div class="min-w-0">
               <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.unsettledCommission') }}</p>
-              <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">${{ dashboard?.unsettled_commission.toFixed(4) ?? '0.0000' }}</p>
+              <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">¥{{ dashboard?.unsettled_commission.toFixed(4) ?? '0.0000' }}</p>
             </div>
           </div>
         </div>
@@ -72,7 +72,7 @@
             </div>
             <div class="min-w-0">
               <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.thisMonthCommission') }}</p>
-              <p class="mt-1 text-2xl font-bold text-primary-600 dark:text-primary-400">${{ dashboard?.this_month_commission.toFixed(4) ?? '0.0000' }}</p>
+              <p class="mt-1 text-2xl font-bold text-primary-600 dark:text-primary-400">¥{{ dashboard?.this_month_commission.toFixed(4) ?? '0.0000' }}</p>
             </div>
           </div>
         </div>
@@ -83,7 +83,7 @@
             </div>
             <div class="min-w-0">
               <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('agent.periodCommission') }}</p>
-              <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">${{ dashboard?.period_commission.toFixed(4) ?? '0.0000' }}</p>
+              <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">¥{{ dashboard?.period_commission.toFixed(4) ?? '0.0000' }}</p>
               <p class="mt-1 text-xs text-gray-400">{{ startDate && endDate ? `${startDate} ~ ${endDate}` : t('agent.allTime') }}</p>
             </div>
           </div>
@@ -552,7 +552,7 @@ function formatRate(value?: number): string {
 
 function formatMoney(value?: number | null): string {
   if (value == null) return '—'
-  return `$${value.toFixed(2)}`
+  return `¥${value.toFixed(2)}`
 }
 
 function progressPercent(progress?: AgentLevelProgress | null): string {

@@ -12,6 +12,8 @@ type CommissionRecord struct {
 	ID            int64     `json:"id"`
 	BeneficiaryID int64     `json:"beneficiary_id"` // 获得分佣/奖励的用户
 	UserID        int64     `json:"user_id"`        // 触发分佣的用户（消费方/充值方）
+	UserEmail     string    `json:"user_email,omitempty"`
+	Username      string    `json:"username,omitempty"`
 	Amount        float64   `json:"amount"`         // 分佣/奖励金额
 	SourceAmount  float64   `json:"source_amount"`  // 原始触发金额
 	Type          string    `json:"type"`           // 分佣类型，见 domain.CommissionType* 常量
@@ -28,6 +30,8 @@ type InvitedUserStat struct {
 	Email        string    `json:"email"`
 	Username     string    `json:"username"`
 	RegisteredAt time.Time `json:"joined_at"`
+	// 指定日期范围内的真实付费/充值总额。
+	RechargedAmount float64 `json:"total_recharge"`
 	// 指定日期范围内的消费总额（usage_logs.actual_cost 汇总）
 	ConsumedAmount float64 `json:"total_consumption"`
 	// 产生的分佣总额（commission_records.amount 汇总，兼容 consumption / consumption_commission）
@@ -149,6 +153,12 @@ type AgentPaymentProfile struct {
 	AlipayAccount            string     `json:"alipay_account"`
 	ContactPhone             string     `json:"contact_phone"`
 	PaymentNote              string     `json:"payment_note"`
+	IdentityFingerprintHash  string     `json:"-"`
+	VerificationStatus       string     `json:"verification_status"`
+	VerificationNote         string     `json:"verification_note,omitempty"`
+	VerifiedAt               *time.Time `json:"verified_at,omitempty"`
+	VerifiedBy               *int64     `json:"verified_by,omitempty"`
+	Verified                 bool       `json:"verified"`
 	AlipayQRCodeObjectKey    string     `json:"-"`
 	AlipayQRCodeContentType  string     `json:"-"`
 	AlipayQRCodeOriginalName string     `json:"alipay_qr_original_filename,omitempty"`
@@ -284,6 +294,11 @@ type AgentPaymentRepository interface {
 	GetAgentPaymentProfile(ctx context.Context, agentID int64) (*AgentPaymentProfile, error)
 	UpsertAgentPaymentProfile(ctx context.Context, profile *AgentPaymentProfile) error
 	UpdateAgentPaymentQRCode(ctx context.Context, agentID int64, objectKey, contentType, originalName string, size int64) (*AgentPaymentProfile, error)
+}
+
+type AgentPaymentReviewRepository interface {
+	ReviewAgentPaymentProfile(ctx context.Context, agentID, reviewerID int64, status, note string) (*AgentPaymentProfile, error)
+	ListPendingAgentPaymentProfiles(ctx context.Context, limit int) ([]AgentPaymentProfile, error)
 }
 
 // CommissionRepository 分佣记录数据访问接口

@@ -2,7 +2,9 @@ package repository
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"sort"
@@ -70,6 +72,25 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	if err != nil {
 		return translatePersistenceError(err, nil, service.ErrEmailExists)
 	}
+	var inviteCode string
+	inviteCodeSaved := false
+	for attempt := 0; attempt < 10; attempt++ {
+		inviteCode = defaultAffiliateInviteCode(created.ID, attempt)
+		if _, err := txClient.User.UpdateOneID(created.ID).
+			SetInviteCode(inviteCode).
+			Save(ctx); err != nil {
+			if dbent.IsConstraintError(err) {
+				continue
+			}
+			return translatePersistenceError(err, service.ErrUserNotFound, nil)
+		}
+		inviteCodeSaved = true
+		break
+	}
+	if !inviteCodeSaved {
+		return errors.New("failed to allocate affiliate invite code")
+	}
+	created.InviteCode = &inviteCode
 
 	if err := r.syncUserAllowedGroupsWithClient(ctx, txClient, created.ID, userIn.AllowedGroups); err != nil {
 		return err
@@ -83,6 +104,11 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 
 	applyUserEntityToService(userIn, created)
 	return nil
+}
+
+func defaultAffiliateInviteCode(userID int64, attempt int) string {
+	sum := sha256.Sum256([]byte(fmt.Sprintf("%d:%d", userID, attempt)))
+	return "U" + strings.ToUpper(hex.EncodeToString(sum[:])[:15])
 }
 
 func (r *userRepository) GetByID(ctx context.Context, id int64) (*service.User, error) {
@@ -537,6 +563,7 @@ func applyUserEntityToService(dst *service.User, src *dbent.User) {
 	}
 	dst.ID = src.ID
 	dst.TokenVersion = src.TokenVersion
+	dst.InviteCode = src.InviteCode
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
 }
@@ -625,15 +652,16 @@ func (r *userRepository) SetInviterAndAgent(ctx context.Context, userID, inviter
 	if r.sql == nil {
 		return fmt.Errorf("sql executor is not configured")
 	}
+	executor := sqlExecutorFromContext(ctx, r.sql)
 	var res interface{ RowsAffected() (int64, error) }
 	var err error
 	if agentID != nil {
-		res, err = r.sql.ExecContext(ctx,
+		res, err = executor.ExecContext(ctx,
 			`UPDATE users SET inviter_id=$1, agent_id=$2 WHERE id=$3 AND inviter_id IS NULL`,
 			inviterID, *agentID, userID,
 		)
 	} else {
-		res, err = r.sql.ExecContext(ctx,
+		res, err = executor.ExecContext(ctx,
 			`UPDATE users SET inviter_id=$1 WHERE id=$2 AND inviter_id IS NULL`,
 			inviterID, userID,
 		)
@@ -645,6 +673,40 @@ func (r *userRepository) SetInviterAndAgent(ctx context.Context, userID, inviter
 	if n == 0 {
 		// 用户不存在或已绑定邀请人，幂等忽略
 		return nil
+	}
+	if _, err := executor.ExecContext(ctx, `
+		INSERT INTO affiliate_bindings (
+			customer_user_id,
+			inviter_user_id,
+			binding_kind,
+			customer_rebate_rate_snapshot_bps,
+			agent_commission_rate_snapshot_bps,
+			bound_at
+		)
+		VALUES ($1, $2, 'ordinary', 0, 0, NOW())
+		ON CONFLICT (customer_user_id) DO NOTHING
+	`, userID, inviterID); err != nil {
+		return fmt.Errorf("create affiliate binding: %w", err)
+	}
+	if _, err := executor.ExecContext(ctx, `
+		INSERT INTO affiliate_performance_events (
+			user_id,
+			direct_agent_id,
+			event_type,
+			amount_micros,
+			source_type,
+			source_id,
+			event_key,
+			occurred_at,
+			metadata
+		)
+		VALUES (
+			$1, $2, 'binding_created', 0,
+			'referral_registration', $1, $3, NOW(), '{}'::jsonb
+		)
+		ON CONFLICT (event_key) DO NOTHING
+	`, userID, inviterID, fmt.Sprintf("binding:user:%d", userID)); err != nil {
+		return fmt.Errorf("create affiliate binding event: %w", err)
 	}
 	return nil
 }

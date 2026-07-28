@@ -129,6 +129,8 @@ func RegisterUserRoutes(
 		user.GET("/invite-code", h.Agent.GetMyInviteCode)
 		// 用户邀请看板��邀请统计、佣金）
 		user.GET("/referral/dashboard", h.User.GetReferralDashboard)
+		user.GET("/affiliate/qualification", h.Agent.GetAffiliateQualification)
+		user.POST("/affiliate/applications", h.Agent.ApplyAffiliateAgent)
 
 		// 代理商路由（需要 agent 或 admin 角色）
 		agent := authenticated.Group("/agent")
@@ -138,6 +140,18 @@ func RegisterUserRoutes(
 			agent.GET("/dashboard", h.Agent.GetDashboard)
 			agent.GET("/users", h.Agent.GetInvitedUsers)
 			agent.GET("/commissions", h.Agent.GetCommissions)
+			agent.GET("/affiliate/links", h.Agent.ListAffiliateLinks)
+			agent.POST("/affiliate/links", h.Agent.CreateAffiliateLink)
+			agent.PUT("/affiliate/links/:id/rate", h.Agent.UpdateAffiliateLinkRate)
+			agent.PUT("/affiliate/links/:id/status", h.Agent.UpdateAffiliateLinkStatus)
+			agent.GET("/affiliate/community", h.Agent.GetAffiliateCommunity)
+			agent.GET("/affiliate/community/qr", h.Agent.GetAffiliateCommunityQRCode)
+			agent.GET("/affiliate/wallet", h.Agent.GetAffiliateWallet)
+			agent.GET("/affiliate/withdrawals", h.Agent.ListAffiliateWithdrawals)
+			agent.POST("/affiliate/withdrawals", h.Agent.RequestAffiliateWithdrawal)
+			agent.POST("/affiliate/wallet/convert", h.Agent.ConvertAffiliateCommission)
+			agent.GET("/affiliate/notices", h.Agent.ListAffiliateNotices)
+			agent.POST("/affiliate/notices/:id/read", h.Agent.ReadAffiliateNotice)
 			agent.GET("/payment-profile", h.Agent.GetPaymentProfile)
 			agent.PUT("/payment-profile", h.Agent.UpdatePaymentProfile)
 			agent.POST("/payment-profile/alipay-qr", h.Agent.UploadPaymentQRCode)

@@ -30,15 +30,17 @@ const (
 
 // TopupService 处理虎皮椒充值业务
 type TopupService struct {
-	topupRepo           TopupOrderRepository
-	settingService      *SettingService
-	userRepo            UserRepository
-	accountChangeRepo   AccountChangeRecordRepository
-	entClient           *dbent.Client
-	billingCache        *BillingCacheService
-	authInvalidator     APIKeyAuthCacheInvalidator
-	commissionService   *CommissionService
-	balanceAlertService *BalanceAlertService
+	topupRepo            TopupOrderRepository
+	settingService       *SettingService
+	userRepo             UserRepository
+	accountChangeRepo    AccountChangeRecordRepository
+	entClient            *dbent.Client
+	billingCache         *BillingCacheService
+	authInvalidator      APIKeyAuthCacheInvalidator
+	commissionService    *CommissionService
+	balanceAlertService  *BalanceAlertService
+	affiliateConsumption AffiliateConsumptionRepository
+	affiliateRewards     *AffiliateRewardService
 }
 
 // NewTopupService creates a new TopupService
@@ -52,17 +54,21 @@ func NewTopupService(
 	authInvalidator APIKeyAuthCacheInvalidator,
 	commissionService *CommissionService,
 	balanceAlertService *BalanceAlertService,
+	affiliateConsumption AffiliateConsumptionRepository,
+	affiliateRewards *AffiliateRewardService,
 ) *TopupService {
 	return &TopupService{
-		topupRepo:           topupRepo,
-		settingService:      settingService,
-		userRepo:            userRepo,
-		accountChangeRepo:   accountChangeRepo,
-		entClient:           entClient,
-		billingCache:        billingCache,
-		authInvalidator:     authInvalidator,
-		commissionService:   commissionService,
-		balanceAlertService: balanceAlertService,
+		topupRepo:            topupRepo,
+		settingService:       settingService,
+		userRepo:             userRepo,
+		accountChangeRepo:    accountChangeRepo,
+		entClient:            entClient,
+		billingCache:         billingCache,
+		authInvalidator:      authInvalidator,
+		commissionService:    commissionService,
+		balanceAlertService:  balanceAlertService,
+		affiliateConsumption: affiliateConsumption,
+		affiliateRewards:     affiliateRewards,
 	}
 }
 
@@ -328,6 +334,7 @@ func (s *TopupService) QueryOrderStatus(ctx context.Context, orderNo string, use
 func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order *TopupOrder, xunhuTradeNo *string) error {
 	// 充值金额换算（1 CNY = 1 USD，单位：分 → USD）
 	amountUSD := float64(order.AmountCNYFen) * topupCNYFenToUSD
+	affiliateV2Live := false
 
 	// 开事务
 	tx, err := s.entClient.Tx(ctx)
@@ -350,6 +357,42 @@ func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order 
 	// 增加余额
 	if err := s.userRepo.UpdateBalance(txCtx, order.UserID, amountUSD); err != nil {
 		return fmt.Errorf("update user balance: %w", err)
+	}
+	if s.affiliateConsumption != nil {
+		occurredAt := time.Now()
+		var rewardResult *AffiliateFirstPaidPurchaseResult
+		if s.affiliateRewards != nil {
+			rewardResult, err = s.affiliateRewards.ProcessFirstPaidPurchase(txCtx, AffiliateFirstPaidPurchaseInput{
+				UserID:       order.UserID,
+				PurchaseType: AffiliatePurchaseBalanceTopup,
+				SourceID:     order.ID,
+				PurchaseKey:  fmt.Sprintf("topup:balance:%d", order.ID),
+				AmountMicros: int64(order.AmountCNYFen) * 10_000,
+				OccurredAt:   occurredAt,
+			})
+			if err != nil {
+				return fmt.Errorf("process affiliate first paid topup: %w", err)
+			}
+			affiliateV2Live = rewardResult.ProgramLive
+		}
+		policy, partnerID, customerRate, partnerRate := AffiliatePolicyFromPurchaseResult(
+			order.AmountCNYFen > 0,
+			rewardResult,
+		)
+		if err := s.affiliateConsumption.RecordBalanceLot(txCtx, AffiliateBalanceLotInput{
+			UserID:                   order.UserID,
+			SourceType:               AffiliateSourcePaidTopup,
+			SourceID:                 order.ID,
+			SourceKey:                fmt.Sprintf("topup:balance:%d", order.ID),
+			AmountMicros:             int64(order.AmountCNYFen) * 10_000,
+			AffiliatePolicy:          policy,
+			DirectPartnerID:          partnerID,
+			CustomerRebateRateBPS:    customerRate,
+			PartnerCommissionRateBPS: partnerRate,
+			OccurredAt:               occurredAt,
+		}); err != nil {
+			return fmt.Errorf("record affiliate balance lot: %w", err)
+		}
 	}
 
 	if err := tx.User.UpdateOneID(order.UserID).AddTotalRecharged(amountUSD).Exec(txCtx); err != nil {
@@ -404,7 +447,7 @@ func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order 
 	}
 
 	// 异步触发“被邀请用户首次虎皮椒充值”奖励（幂等，不影响主流程）
-	if s.commissionService != nil {
+	if s.commissionService != nil && !affiliateV2Live {
 		uid := order.UserID
 		topupOrderID := order.ID
 		go func() {

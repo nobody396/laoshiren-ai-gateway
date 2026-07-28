@@ -244,7 +244,7 @@ case "$command" in
     require_checkout
     load_secrets
     compose config --quiet
-    echo "affiliate v2 staging config is valid"
+    echo "affiliate v3 staging config is valid"
     ;;
   up)
     require_checkout
@@ -253,7 +253,7 @@ case "$command" in
     ensure_fresh_install_prerequisites
     wait_ready
     retire_fresh_install_prerequisites
-    echo "affiliate v2 staging ready: $DEFAULT_URL"
+    echo "affiliate v3 staging ready: $DEFAULT_URL"
     ;;
   status)
     require_checkout
@@ -265,6 +265,13 @@ case "$command" in
     load_secrets
     wait_ready
     run_authenticated_smoke
+    ;;
+  e2e)
+    require_checkout
+    load_secrets
+    wait_ready
+    AFFILIATE_STAGING_URL="$DEFAULT_URL" \
+      "$EXPECTED_WORKTREE/scripts/affiliate-v2-e2e-check.py"
     ;;
   seed-demo)
     require_checkout
@@ -288,7 +295,7 @@ case "$command" in
     }
     load_secrets
     compose down --volumes --remove-orphans
-    echo "affiliate v2 staging data reset"
+    echo "affiliate v3 staging data reset"
     ;;
   url)
     echo "$DEFAULT_URL"
@@ -302,8 +309,9 @@ Commands:
   validate      Validate the isolated Docker Compose configuration
   up            Build current worktree and start isolated staging
   status        Show isolated staging containers
-  smoke         Run health plus authenticated Affiliate V2 API checks
-  seed-demo     Seed isolated staging with demo Affiliate V2 users and queues
+  smoke         Run health plus authenticated Affiliate V3 API checks
+  e2e           Run the authenticated Affiliate V3 API acceptance flow
+  seed-demo     Seed isolated staging with Affiliate V3 acceptance users and queues
   logs          Show application logs
   down          Stop staging without deleting data
   reset --confirm-staging-data-reset

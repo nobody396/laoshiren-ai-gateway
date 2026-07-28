@@ -93,10 +93,12 @@ DECLARE
   admin_id bigint;
   demo_group_id bigint;
   demo_account_id bigint;
+  demo_claude_account_id bigint;
   alpha_id bigint;
   review_id bigint;
   blocked_id bigint;
   candidate_id bigint;
+  applicant_id bigint;
   ordinary_id bigint;
   invitee_id bigint;
   customer_id bigint;
@@ -152,6 +154,13 @@ BEGIN
   UPDATE affiliate_program_settings
   SET mode = 'live',
       started_at = NOW() - INTERVAL '14 days',
+      ordinary_referral_rate_bps = 500,
+      ordinary_invitee_rate_bps = 500,
+      first_paid_bonus_threshold_micros = 0,
+      first_paid_bonus_micros = 0,
+      stress_cost_per_raw_credit_micros = 530000,
+      stress_cost_snapshot_at = NOW(),
+      cost_snapshot_max_age_hours = 24,
       revision = revision + 1,
       updated_by = admin_id,
       updated_at = NOW()
@@ -170,38 +179,22 @@ BEGIN
       updated_at = NOW()
   WHERE id = 1;
 
-  INSERT INTO groups (
-    name, description, rate_multiplier, status, platform, subscription_type,
-    monthly_limit_usd, daily_limit_usd, default_validity_days, sort_order,
-    supported_model_scopes
-  )
-  VALUES
-    ('GPT Starter 月卡组', '', 0.5000, 'active', 'openai', 'credit', 240, 8, 31, 710, '["openai"]'::jsonb),
-    ('GPT Lite 月卡组', '', 0.5000, 'active', 'openai', 'credit', 450, 15, 31, 720, '["openai"]'::jsonb),
-    ('GPT Pro 月卡组', '', 0.5000, 'active', 'openai', 'credit', 850, 28, 31, 730, '["openai"]'::jsonb),
-    ('Claude Lite 月卡组', '', 2.4000, 'active', 'anthropic', 'credit', 450, 15, 31, 820, '["claude"]'::jsonb),
-    ('Grok Lite 月卡组', '', 0.4000, 'active', 'openai', 'credit', 450, 15, 31, 920, '["openai"]'::jsonb)
-  ON CONFLICT (name) WHERE deleted_at IS NULL DO UPDATE SET
-    rate_multiplier = EXCLUDED.rate_multiplier,
-    status = EXCLUDED.status,
-    platform = EXCLUDED.platform,
-    subscription_type = EXCLUDED.subscription_type,
-    monthly_limit_usd = EXCLUDED.monthly_limit_usd,
-    daily_limit_usd = EXCLUDED.daily_limit_usd,
-    default_validity_days = EXCLUDED.default_validity_days,
-    sort_order = EXCLUDED.sort_order,
-    supported_model_scopes = EXCLUDED.supported_model_scopes,
-    updated_at = NOW();
-
-  UPDATE groups
-  SET rate_multiplier = 0.5000,
-      updated_at = NOW()
-  WHERE deleted_at IS NULL
-    AND name LIKE 'GPT %月卡组';
+  IF (
+    SELECT COUNT(*)
+    FROM groups
+    WHERE deleted_at IS NULL
+      AND name IN (
+        'GPT Plus 月卡组', 'Claude Plus 月卡组',
+        'GPT Pro V3 月卡组', 'Claude Pro V3 月卡组',
+        'GPT Max V3 月卡组', 'Claude Max V3 月卡组'
+      )
+  ) <> 6 THEN
+    RAISE EXCEPTION 'V3 Plus/Pro/Max monthly groups are missing';
+  END IF;
 
   SELECT id INTO demo_group_id
   FROM groups
-  WHERE name = 'GPT Lite 月卡组'
+  WHERE name = 'GPT Plus 月卡组'
     AND deleted_at IS NULL
   LIMIT 1;
 
@@ -238,7 +231,50 @@ BEGIN
   END IF;
 
   INSERT INTO account_groups (account_id, group_id, priority)
-  VALUES (demo_account_id, demo_group_id, 1)
+  SELECT demo_account_id, id, 1
+  FROM groups
+  WHERE deleted_at IS NULL
+    AND name IN ('GPT Plus 月卡组', 'GPT Pro V3 月卡组', 'GPT Max V3 月卡组')
+  ON CONFLICT (account_id, group_id) DO UPDATE SET
+    priority = EXCLUDED.priority;
+
+  SELECT id INTO demo_claude_account_id
+  FROM accounts
+  WHERE name = 'Claude 月卡上游账号'
+    AND deleted_at IS NULL
+  ORDER BY id
+  LIMIT 1;
+  IF demo_claude_account_id IS NULL THEN
+    INSERT INTO accounts (
+      name, platform, type, credentials, extra, concurrency, priority, status,
+      schedulable, rate_multiplier, notes
+    )
+    VALUES (
+      'Claude 月卡上游账号', 'anthropic', 'apikey',
+      '{}'::jsonb, '{"staging_demo": true}'::jsonb, 20, 10, 'active',
+      TRUE, 1.0000, 'Claude 月卡路由账号'
+    )
+    RETURNING id INTO demo_claude_account_id;
+  ELSE
+    UPDATE accounts
+    SET platform = 'anthropic',
+        type = 'apikey',
+        extra = '{"staging_demo": true}'::jsonb,
+        concurrency = 20,
+        priority = 10,
+        status = 'active',
+        schedulable = TRUE,
+        rate_multiplier = 1.0000,
+        notes = 'Claude 月卡路由账号',
+        updated_at = NOW()
+    WHERE id = demo_claude_account_id;
+  END IF;
+
+  INSERT INTO account_groups (account_id, group_id, priority)
+  SELECT demo_claude_account_id, id, 1
+  FROM groups
+  WHERE deleted_at IS NULL
+    AND name IN ('Claude Plus 月卡组', 'Claude Pro V3 月卡组', 'Claude Max V3 月卡组')
   ON CONFLICT (account_id, group_id) DO UPDATE SET
     priority = EXCLUDED.priority;
 
@@ -308,6 +344,7 @@ BEGIN
     ('agent-review@partner.local', demo_password_hash, 'agent', 0, 8, 'active', '待确认合伙人', '待确认合伙人账号', 'AGENTREVIEW', 860, TRUE, NOW() - INTERVAL '2 hours', 'review-partner'),
     ('agent-blocked@partner.local', demo_password_hash, 'agent', 0, 8, 'active', '已暂停合伙人', '已暂停合伙人账号', 'AGENTBLOCK', 640, TRUE, NOW() - INTERVAL '3 hours', 'blocked-partner'),
     ('partner-upgrade@partner.local', demo_password_hash, 'user', 0, 5, 'active', '待升级用户', '已满足合伙人开通条件', 'UPGRADE', 220, TRUE, NOW() - INTERVAL '4 hours', 'upgrade-partner'),
+    ('partner-applicant@partner.local', demo_password_hash, 'user', 0, 5, 'active', '申请审核用户', '已提交合伙人申请', 'APPLICANT', 260, TRUE, NOW() - INTERVAL '4 hours', 'applicant-partner'),
     ('ordinary-referrer@partner.local', demo_password_hash, 'user', 0, 5, 'active', '普通邀请人', '普通邀请账号', 'ORDREF', 160, TRUE, NOW() - INTERVAL '5 hours', 'ordinary-partner'),
     ('ordinary-invitee@partner.local', demo_password_hash, 'user', 0, 5, 'active', '普通被邀请人', '普通被邀请账号', 'ORDINVITEE', 80, TRUE, NOW() - INTERVAL '6 hours', 'invitee-partner')
   ON CONFLICT (email) WHERE deleted_at IS NULL DO UPDATE SET
@@ -327,6 +364,7 @@ BEGIN
   SELECT id INTO review_id FROM users WHERE email = 'agent-review@partner.local' AND deleted_at IS NULL;
   SELECT id INTO blocked_id FROM users WHERE email = 'agent-blocked@partner.local' AND deleted_at IS NULL;
   SELECT id INTO candidate_id FROM users WHERE email = 'partner-upgrade@partner.local' AND deleted_at IS NULL;
+  SELECT id INTO applicant_id FROM users WHERE email = 'partner-applicant@partner.local' AND deleted_at IS NULL;
   SELECT id INTO ordinary_id FROM users WHERE email = 'ordinary-referrer@partner.local' AND deleted_at IS NULL;
   SELECT id INTO invitee_id FROM users WHERE email = 'ordinary-invitee@partner.local' AND deleted_at IS NULL;
 
@@ -448,6 +486,10 @@ BEGIN
   DELETE FROM affiliate_link_rate_versions
   WHERE link_id IN (SELECT id FROM affiliate_links WHERE agent_id = candidate_id);
   DELETE FROM affiliate_links WHERE agent_id = candidate_id;
+  DELETE FROM affiliate_agent_status_events
+  WHERE agent_id IN (candidate_id, applicant_id);
+  DELETE FROM affiliate_agent_applications
+  WHERE user_id IN (candidate_id, applicant_id);
   DELETE FROM affiliate_performance_events
   WHERE (user_id = candidate_id AND event_type = 'agent_activated')
      OR direct_agent_id = candidate_id;
@@ -457,8 +499,12 @@ BEGIN
       risk_note = '',
       qualified_at = NULL,
       activated_at = NULL,
+      applied_at = NULL,
+      application_note = '',
+      decision_note = '',
       reviewed_at = NULL,
       reviewed_by = NULL,
+      terminated_at = NULL,
       updated_at = NOW()
   WHERE agent_id = candidate_id;
 
@@ -497,6 +543,50 @@ BEGIN
     reviewed_at = EXCLUDED.reviewed_at,
     reviewed_by = EXCLUDED.reviewed_by,
     updated_at = NOW();
+
+  INSERT INTO agent_principals (
+    agent_id, status, risk_status, risk_note,
+    qualified_at, applied_at, application_note
+  )
+  VALUES (
+    applicant_id, 'pending_review', 'clear', '',
+    NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day',
+    '主要服务独立开发者，计划通过技术社群进行真实分享。'
+  )
+  ON CONFLICT (agent_id) DO UPDATE SET
+    status = EXCLUDED.status,
+    risk_status = EXCLUDED.risk_status,
+    risk_note = EXCLUDED.risk_note,
+    qualified_at = EXCLUDED.qualified_at,
+    applied_at = EXCLUDED.applied_at,
+    application_note = EXCLUDED.application_note,
+    activated_at = NULL,
+    reviewed_at = NULL,
+    reviewed_by = NULL,
+    decision_note = '',
+    terminated_at = NULL,
+    updated_at = NOW();
+
+  INSERT INTO affiliate_agent_applications (
+    user_id, status, qualifying_route,
+    direct_valid_consumer_count, direct_team_consumption_micros,
+    application_note, submitted_at
+  )
+  VALUES (
+    applicant_id, 'pending_review', 'direct_volume',
+    7, 2280000000,
+    '主要服务独立开发者，计划通过技术社群进行真实分享。',
+    NOW() - INTERVAL '1 day'
+  )
+  RETURNING id INTO event_id;
+
+  INSERT INTO affiliate_agent_status_events (
+    agent_id, previous_status, next_status, reason, application_id, effective_at
+  )
+  VALUES (
+    applicant_id, 'candidate', 'pending_review',
+    '用户提交合伙人申请', event_id, NOW() - INTERVAL '1 day'
+  );
 
   INSERT INTO agent_payment_profiles (
     agent_id, alipay_real_name, alipay_account, contact_phone, payment_note,
@@ -942,6 +1032,23 @@ BEGIN
     amount_micros = EXCLUDED.amount_micros,
     occurred_at = EXCLUDED.occurred_at;
 
+  INSERT INTO balance_lots (
+    user_id, source_type, source_id, source_key,
+    original_amount_micros, remaining_amount_micros,
+    affiliate_eligible, affiliate_policy, occurred_at
+  )
+  VALUES (
+    invitee_id, 'paid_topup', topup_id, 'demo:lot:ordinary-invitee-paid',
+    80000000, 80000000, FALSE, 'NONE', NOW() - INTERVAL '2 days'
+  )
+  ON CONFLICT (source_key) DO UPDATE SET
+    source_id = EXCLUDED.source_id,
+    original_amount_micros = EXCLUDED.original_amount_micros,
+    remaining_amount_micros = EXCLUDED.remaining_amount_micros,
+    affiliate_eligible = FALSE,
+    affiliate_policy = 'NONE',
+    updated_at = NOW();
+
   INSERT INTO affiliate_reward_entries (
     beneficiary_user_id, consumer_user_id, reward_type, asset_type,
     amount_micros, source_amount_micros, rate_bps, status, available_at,
@@ -972,13 +1079,13 @@ BEGIN
   INSERT INTO affiliate_reward_entries (
     beneficiary_user_id, consumer_user_id, reward_type, asset_type,
     amount_micros, source_amount_micros, rate_bps, status, available_at,
-    source_type, source_id, idempotency_key, metadata
+    source_type, source_id, idempotency_key, metadata, posted_at
   )
   VALUES (
-    invitee_id, invitee_id, 'first_paid_bonus', 'platform_credit',
-    5000000, 80000000, NULL, 'pending', NOW() + INTERVAL '1 day',
-    'first_paid_purchase', topup_id, 'demo:reward:ordinary-invitee-t1',
-    '{"staging_demo":true,"beijing_t_plus_1":true}'::jsonb
+    invitee_id, invitee_id, 'ordinary_invitee', 'platform_credit',
+    4000000, 80000000, 500, 'posted', NOW() - INTERVAL '2 days',
+    'first_paid_purchase', topup_id, 'demo:reward:ordinary-invitee',
+    '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '2 days'
   )
   ON CONFLICT (idempotency_key) DO UPDATE SET
     beneficiary_user_id = EXCLUDED.beneficiary_user_id,
@@ -987,7 +1094,32 @@ BEGIN
     source_amount_micros = EXCLUDED.source_amount_micros,
     status = EXCLUDED.status,
     available_at = EXCLUDED.available_at,
-    source_id = EXCLUDED.source_id;
+    source_id = EXCLUDED.source_id,
+    posted_at = EXCLUDED.posted_at
+  RETURNING id INTO reward_id;
+
+  DELETE FROM affiliate_reward_entries
+  WHERE idempotency_key = 'demo:reward:ordinary-invitee-t1';
+
+  INSERT INTO balance_lots (
+    user_id, source_type, source_id, source_key,
+    original_amount_micros, remaining_amount_micros,
+    affiliate_eligible, affiliate_policy, occurred_at
+  )
+  VALUES (
+    invitee_id, 'referral_bonus', reward_id, 'demo:lot:ordinary-invitee',
+    4000000, 4000000, FALSE, 'NONE', NOW() - INTERVAL '2 days'
+  )
+  ON CONFLICT (source_key) DO UPDATE SET
+    source_id = EXCLUDED.source_id,
+    original_amount_micros = EXCLUDED.original_amount_micros,
+    remaining_amount_micros = EXCLUDED.remaining_amount_micros,
+    affiliate_eligible = FALSE,
+    affiliate_policy = 'NONE',
+    updated_at = NOW();
+
+  UPDATE users SET balance = 4, updated_at = NOW() WHERE id = ordinary_id;
+  UPDATE users SET balance = 84, updated_at = NOW() WHERE id = invitee_id;
 
   -- 暂缓发放：review / blocked 各一条消费事件、客户额度暂缓发放、现金暂缓发放。
   FOR i IN 1..2 LOOP
@@ -1255,7 +1387,7 @@ main() {
   require_containers
   write_demo_qr_assets
   seed_database
-  echo "affiliate v2 sample data seeded"
+  echo "affiliate v3 acceptance data seeded"
   echo "login password: Demo123456"
 }
 

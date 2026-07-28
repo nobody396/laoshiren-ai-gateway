@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Affiliate V2 staging end-to-end API checks.
+"""Affiliate V3 staging end-to-end API checks.
 
 The script expects AFFILIATE_STAGING_ADMIN_PASSWORD in the environment.
 It never prints the password. It uses demo users seeded by affiliate-v2-demo-data.sh.
@@ -81,21 +81,60 @@ def multipart_png_body(file_path: Path):
 
 
 def main():
-    candidate_token, candidate_user = login('agent-candidate@demo.local')
+    ordinary_token, _ = login('ordinary-referrer@partner.local')
+    ordinary_dashboard = req('/user/referral/dashboard', token=ordinary_token)
+    assert abs(float(ordinary_dashboard['first_recharge_referral_rate']) - 0.05) < 1e-9, ordinary_dashboard
+    assert abs(float(ordinary_dashboard['first_recharge_invitee_rate']) - 0.05) < 1e-9, ordinary_dashboard
+    assert float(ordinary_dashboard['total_commission']) >= 4, ordinary_dashboard
+    ok('ordinary first-paid five plus five', 'inviter_total=%.2f rates=5%%/5%%' % float(ordinary_dashboard['total_commission']))
+
+    public_monthly = req('/monthly-card/status')
+    plans = public_monthly.get('plans') or []
+    assert [plan['id'] for plan in plans] == ['plus', 'pro', 'max'], plans
+    for plan in plans:
+        assert plan.get('gpt_group') and plan.get('claude_group'), plan
+        assert plan['gpt_group']['weekly_limit_usd'] is None, plan
+        assert plan['claude_group']['weekly_limit_usd'] is None, plan
+        assert abs(float(plan['gpt_group']['rate_multiplier']) - 0.5) < 1e-9, plan
+        assert abs(float(plan['claude_group']['rate_multiplier']) - 2.4) < 1e-9, plan
+    ok('monthly Plus Pro Max public catalog', 'plans=plus,pro,max monthly-only')
+
+    candidate_token, candidate_user = login('partner-upgrade@partner.local')
     if candidate_user.get('role') == 'agent':
-        raise RuntimeError('candidate unexpectedly already agent before activation')
+        raise RuntimeError('candidate unexpectedly already partner before application')
     invite = req('/user/invite-code', token=candidate_token)
     assert invite['invite_code'] == 'UPGRADE', invite
     qual = req('/user/affiliate/qualification', token=candidate_token)
-    assert qual['can_activate'] is True and qual['valid_direct_user_count'] >= 10, qual
-    ok('ordinary invite + qualification', 'invite=%s can_activate=%s' % (invite['invite_code'], qual['can_activate']))
+    assert qual['can_apply'] is True and qual['valid_direct_user_count'] >= 10, qual
+    ok('ordinary invite + qualification', 'invite=%s can_apply=%s' % (invite['invite_code'], qual['can_apply']))
 
-    activation = req('/user/affiliate/activate', method='POST', token=candidate_token)
+    application = req(
+        '/user/affiliate/applications',
+        method='POST',
+        token=candidate_token,
+        payload={'note': '希望长期维护客户并参与合伙人计划'},
+    )
+    assert application['status'] == 'pending_review', application
+    after_apply = req('/user/affiliate/qualification', token=candidate_token)
+    assert after_apply['agent_status'] == 'pending_review' and after_apply['can_apply'] is False, after_apply
+    ok('partner application', 'application=%s status=%s' % (application['id'], application['status']))
+
+    admin_token, _ = login(ADMIN_EMAIL, ADMIN_PASS)
+    pending_applications = req('/admin/agents/affiliate-applications?status=pending_review&limit=100', token=admin_token)['items']
+    assert any(item['id'] == application['id'] for item in pending_applications), pending_applications
+    review = req(
+        '/admin/agents/affiliate-applications/%s/review' % application['id'],
+        method='POST',
+        token=admin_token,
+        payload={'approve': True, 'note': '资格与客户质量已确认'},
+    )
+    assert review['application']['status'] == 'approved', review
+    activation = review['activation']
     default_link = activation['default_link']
     assert default_link['is_default'] is True and default_link['customer_rebate_rate_bps'] == 500, default_link
     me_after = req('/auth/me', token=candidate_token)
     assert me_after['role'] == 'agent', me_after
-    ok('candidate activation', 'default_ref=%s role=%s' % (default_link['code'], me_after['role']))
+    ok('admin partner approval', 'default_ref=%s role=%s' % (default_link['code'], me_after['role']))
 
     links = req('/agent/affiliate/links', token=candidate_token)['items']
     assert any(item['is_default'] for item in links), links
@@ -127,8 +166,7 @@ def main():
     assert len(qr) > 100, len(qr)
     ok('payment profile submit + QR', 'status=%s qr_bytes=%d' % (profile2['verification_status'], len(qr)))
 
-    admin_token, _ = login(ADMIN_EMAIL, ADMIN_PASS)
-    alpha_token, alpha_user = login('agent-alpha@demo.local')
+    alpha_token, alpha_user = login('agent-alpha@partner.local')
     wallet = req('/agent/affiliate/wallet', token=alpha_token)
     assert wallet['conversion_multiplier_millis'] == 1200, wallet
     available = int(wallet['available_cash_micros'])
@@ -156,15 +194,28 @@ def main():
         ok('withdrawal request skipped', 'available=%s' % wallet2['available_cash_micros'])
 
     program = req('/admin/agents/affiliate-program', token=admin_token)
-    assert program['mode'] == 'live' and program['revision'] >= 1, program
+    assert program['mode'] == 'live' and program['program_version'] == 'v3' and program['revision'] >= 1, program
+    assert program['ordinary_referral_rate_bps'] == 500 and program['ordinary_invitee_rate_bps'] == 500, program
+    assert program['first_paid_bonus_micros'] == 0, program
     program_update_payload = dict(program)
     program_update_payload['withdrawal_sla_hours'] = program['withdrawal_sla_hours']
     program2 = req('/admin/agents/affiliate-program', method='PUT', token=admin_token, payload=program_update_payload)
     assert program2['mode'] == 'live', program2
     policy = req('/admin/agents/affiliate-commercial-policy', token=admin_token)
     assert policy['credit_asset_symbol'] == '⚡' and policy['passes_configured_margin_gate'] is True, policy
-    assert all(abs(float(group['rate_multiplier']) - 0.5) < 1e-9 for group in policy['group_targets'] if group['name'].startswith('GPT ')), policy['group_targets']
-    ok('admin program + commercial policy', 'margin=%s gpt_targets=%d' % (policy['minimum_stress_margin_percent'], len(policy['group_targets'])))
+    assert policy['max_reward_burden_bps'] == 1200 and policy['operational_reserve_bps'] == 200, policy
+    monthly_packages = [item for item in policy['packages'] if item['kind'] == 'monthly']
+    assert [
+        (item['id'], item['direct_price_cny'], item['shop_price_cny'], item['platform_credits'])
+        for item in monthly_packages
+    ] == [
+        ('plus', 249, 259, 2200),
+        ('pro', 699, 729, 6500),
+        ('max', 1499, 1549, 14000),
+    ], monthly_packages
+    gpt_targets = [group for group in policy['group_targets'] if group['id'] == 'gpt']
+    assert len(gpt_targets) == 1 and abs(float(gpt_targets[0]['rate_multiplier']) - 0.5) < 1e-9, policy['group_targets']
+    ok('admin program + commercial policy', 'version=v3 margin=%s' % policy['minimum_stress_margin_percent'])
 
     pending = req('/admin/agents/payment-profiles/pending', token=admin_token)['items']
     if not any(item['agent_id'] == profile2['agent_id'] for item in pending):

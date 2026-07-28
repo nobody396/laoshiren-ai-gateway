@@ -15,7 +15,7 @@ import (
 var (
 	ErrAffiliateWalletNotAvailable = infraerrors.Forbidden(
 		"AFFILIATE_WALLET_NOT_AVAILABLE",
-		"affiliate cash wallet is not available",
+		"合伙人钱包暂不可用，有疑问请联系客服。",
 	)
 	ErrAffiliateInsufficientCash = infraerrors.Conflict(
 		"AFFILIATE_INSUFFICIENT_CASH",

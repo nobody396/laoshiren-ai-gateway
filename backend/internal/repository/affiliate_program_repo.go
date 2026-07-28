@@ -47,8 +47,6 @@ func (r *affiliateProgramRepository) GetSettings(ctx context.Context) (*service.
 			margin_floor_bps,
 			operational_reserve_bps,
 			stress_cost_per_raw_credit_micros,
-			stress_cost_snapshot_at,
-			cost_snapshot_max_age_hours,
 			revision,
 			updated_by,
 			created_at,
@@ -76,8 +74,6 @@ func (r *affiliateProgramRepository) GetSettings(ctx context.Context) (*service.
 		&settings.MarginFloorBPS,
 		&settings.OperationalReserveBPS,
 		&settings.StressCostPerRawCreditMicros,
-		&settings.StressCostSnapshotAt,
-		&settings.CostSnapshotMaxAgeHours,
 		&settings.Revision,
 		&updatedBy,
 		&settings.CreatedAt,
@@ -130,12 +126,10 @@ func (r *affiliateProgramRepository) UpdateSettings(
 			margin_floor_bps = $16,
 			operational_reserve_bps = $17,
 			stress_cost_per_raw_credit_micros = $18,
-			stress_cost_snapshot_at = $19,
-			cost_snapshot_max_age_hours = $20,
-			updated_by = $21,
+			updated_by = $19,
 			revision = revision + 1,
 			updated_at = NOW()
-		WHERE id = 1 AND revision = $22
+		WHERE id = 1 AND revision = $20
 		RETURNING revision, updated_at
 	`, []any{
 		settings.Mode,
@@ -156,8 +150,6 @@ func (r *affiliateProgramRepository) UpdateSettings(
 		settings.MarginFloorBPS,
 		settings.OperationalReserveBPS,
 		settings.StressCostPerRawCreditMicros,
-		settings.StressCostSnapshotAt,
-		settings.CostSnapshotMaxAgeHours,
 		settings.UpdatedBy,
 		expectedRevision,
 	}, &revision, &updatedAt)

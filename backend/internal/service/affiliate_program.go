@@ -47,8 +47,6 @@ type AffiliateProgramSettings struct {
 	MarginFloorBPS                           int32      `json:"margin_floor_bps"`
 	OperationalReserveBPS                    int32      `json:"operational_reserve_bps"`
 	StressCostPerRawCreditMicros             int64      `json:"stress_cost_per_raw_credit_micros"`
-	StressCostSnapshotAt                     time.Time  `json:"stress_cost_snapshot_at"`
-	CostSnapshotMaxAgeHours                  int32      `json:"cost_snapshot_max_age_hours"`
 	Revision                                 int64      `json:"revision"`
 	UpdatedBy                                *int64     `json:"updated_by,omitempty"`
 	CreatedAt                                time.Time  `json:"created_at"`
@@ -76,8 +74,6 @@ func DefaultAffiliateProgramSettings() AffiliateProgramSettings {
 		MarginFloorBPS:                           3500,
 		OperationalReserveBPS:                    AffiliateCommercialOperationalReserveBPS,
 		StressCostPerRawCreditMicros:             530_000,
-		StressCostSnapshotAt:                     time.Now(),
-		CostSnapshotMaxAgeHours:                  24,
 		Revision:                                 1,
 	}
 }
@@ -140,12 +136,6 @@ func (s AffiliateProgramSettings) Validate() error {
 	}
 	if s.StressCostPerRawCreditMicros <= 0 {
 		return invalid("stress cost per raw credit must be positive")
-	}
-	if s.StressCostSnapshotAt.IsZero() {
-		return invalid("stress cost snapshot time is required")
-	}
-	if s.CostSnapshotMaxAgeHours <= 0 || s.CostSnapshotMaxAgeHours > 720 {
-		return invalid("cost snapshot max age must be between 1 and 720 hours")
 	}
 	if err := ValidateAffiliateCommercialSettings(s); err != nil {
 		return err

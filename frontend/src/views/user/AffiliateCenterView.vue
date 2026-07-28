@@ -33,6 +33,16 @@
         {{ error }}
       </div>
 
+      <div
+        v-if="partnerAccessCopy.banner"
+        class="rounded-2xl border px-4 py-3 text-sm"
+        :class="partnerAccessState === 'under_review'
+          ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200'
+          : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300'"
+      >
+        {{ partnerAccessCopy.banner }}
+      </div>
+
       <section v-if="loading" class="grid gap-4 md:grid-cols-3" aria-label="加载中">
         <div v-for="item in 3" :key="item" class="card h-40 animate-pulse bg-gray-100 dark:bg-dark-800" />
       </section>
@@ -112,7 +122,7 @@
           </div>
         </section>
 
-        <template v-if="isActiveAgent">
+        <template v-if="isPartnerAvailable">
           <section v-if="unreadNotices.length" class="space-y-3">
             <article v-for="notice in unreadNotices" :key="notice.id" class="flex gap-4 rounded-2xl border border-primary-200 bg-primary-50 p-4 dark:border-primary-900 dark:bg-primary-950">
               <div class="min-w-0 flex-1">
@@ -313,6 +323,7 @@ import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { useClipboard } from '@/composables/useClipboard'
 import { buildAuthErrorMessage } from '@/utils/authError'
+import { getPartnerAccessCopy, resolvePartnerAccessState } from '@/features/affiliate/partnerAccess'
 
 const ProgressRow = defineComponent({
   props: {
@@ -383,32 +394,42 @@ let refreshTimer: ReturnType<typeof setInterval> | null = null
 let refreshInFlight = false
 
 const ordinaryInviteURL = computed(() => inviteCode.value ? `${window.location.origin}/register?ref=${inviteCode.value}` : '')
-const isActiveAgent = computed(() => qualification.value?.agent_status === 'active')
+const partnerAccessState = computed(() => resolvePartnerAccessState(
+  qualification.value?.agent_status,
+  qualification.value?.risk_status
+))
+const partnerAccessCopy = computed(() => getPartnerAccessCopy(partnerAccessState.value))
+const isApprovedPartner = computed(() => qualification.value?.agent_status === 'active')
+const isPartnerAvailable = computed(() => partnerAccessState.value === 'available')
 const defaultAgentLink = computed(() => links.value.find(item => item.is_default && item.status === 'active'))
 const primaryInviteURL = computed(() =>
-  isActiveAgent.value && defaultAgentLink.value
+  isPartnerAvailable.value && defaultAgentLink.value
     ? affiliateURL(defaultAgentLink.value.code)
-    : ordinaryInviteURL.value
+    : isApprovedPartner.value
+      ? ''
+      : ordinaryInviteURL.value
 )
-const primaryInviteLabel = computed(() => isActiveAgent.value ? '我的默认合伙人链接' : '我的普通邀请链接')
-const primaryInviteHint = computed(() =>
-  isActiveAgent.value
-    ? '默认链接使用固定 10% 奖励池；可在下方动态调整客户返利与现金佣金的分配。'
-    : '首笔真实付费后，邀请人与被邀请人各获得实付金额 5% 的 ⚡，均为 T+0；不设最低金额，也没有固定奖励。'
-)
+const primaryInviteLabel = computed(() => partnerAccessCopy.value.inviteLabel)
+const primaryInviteHint = computed(() => partnerAccessCopy.value.inviteHint)
 const unreadNotices = computed(() => notices.value.filter(item => !item.read_at))
 const qualificationStatusLabel = computed(() => {
-  if (isActiveAgent.value) return '合伙人已开通'
+  if (isApprovedPartner.value) return partnerAccessCopy.value.badge
   if (qualification.value?.agent_status === 'pending_review' || applicationSubmitted.value) return '审核中'
   if (qualification.value?.can_apply) return '可以申请'
   if (qualification.value?.program_mode === 'off') return '计划尚未开放'
   return '资格积累中'
 })
-const qualificationBadgeClass = computed(() => (
-  isActiveAgent.value || qualification.value?.can_apply
+const qualificationBadgeClass = computed(() => {
+  if (partnerAccessState.value === 'under_review') {
+    return 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300'
+  }
+  if (partnerAccessState.value === 'suspended') {
+    return 'border-red-300 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300'
+  }
+  return isPartnerAvailable.value || qualification.value?.can_apply
     ? 'border-green-300 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300'
     : 'border-gray-200 bg-gray-50 text-gray-600 dark:border-dark-700 dark:bg-dark-900 dark:text-dark-300'
-))
+})
 const paymentVerificationLabel = computed(() => {
   const status = paymentProfile.value?.verification_status
   return status === 'verified' ? '已验证' : status === 'pending_review' ? '审核中' : status === 'rejected' ? '需修改' : '未提交'
@@ -468,6 +489,19 @@ async function loadAgentData() {
   void loadOptionalPreviews(profile, agentCommunity)
 }
 
+function clearPartnerData() {
+  links.value = []
+  wallet.value = null
+  withdrawals.value = []
+  notices.value = []
+  community.value = null
+  paymentProfile.value = null
+  if (paymentQRPreview.value.startsWith('blob:')) URL.revokeObjectURL(paymentQRPreview.value)
+  if (communityQRPreview.value.startsWith('blob:')) URL.revokeObjectURL(communityQRPreview.value)
+  paymentQRPreview.value = ''
+  communityQRPreview.value = ''
+}
+
 async function loadOptionalPreviews(profile: AgentPaymentProfile, agentCommunity: AffiliateCommunity) {
   if (profile.has_alipay_qr) {
     try { setBlobPreview(paymentQRPreview, await getAgentPaymentQRCode()) } catch { /* optional preview */ }
@@ -484,7 +518,9 @@ async function loadPage() {
     const [invite, currentQualification] = await Promise.all([getMyInviteCode(), getAffiliateQualification()])
     inviteCode.value = invite.invite_code
     qualification.value = currentQualification
-    if (currentQualification.agent_status === 'active') await loadAgentData()
+    if (resolvePartnerAccessState(currentQualification.agent_status, currentQualification.risk_status) === 'available') {
+      await loadAgentData()
+    }
   } catch (cause: unknown) {
     error.value = buildAuthErrorMessage(cause, { fallback: '联盟计划加载失败，请稍后重试。' })
   } finally {
@@ -497,11 +533,14 @@ async function refreshLiveData() {
   refreshInFlight = true
   try {
     const latest = await getAffiliateQualification()
-    const becameActive = qualification.value?.agent_status !== 'active' && latest.agent_status === 'active'
+    const previousAccessState = partnerAccessState.value
     qualification.value = latest
-    if (latest.agent_status === 'active') {
-      if (becameActive) await authStore.refreshUser()
+    const latestAccessState = resolvePartnerAccessState(latest.agent_status, latest.risk_status)
+    if (latestAccessState === 'available') {
+      if (previousAccessState !== 'available') await authStore.refreshUser()
       await loadAgentData()
+    } else if (latest.agent_status === 'active') {
+      clearPartnerData()
     }
   } catch {
     // Background refresh must not replace the last usable page with an error.
@@ -511,7 +550,8 @@ async function refreshLiveData() {
 }
 
 async function copyPrimaryInvite() {
-  await copyToClipboard(primaryInviteURL.value, isActiveAgent.value ? '默认合伙人链接已复制' : '普通邀请链接已复制')
+  if (!primaryInviteURL.value) return
+  await copyToClipboard(primaryInviteURL.value, isPartnerAvailable.value ? '默认合伙人链接已复制' : '普通邀请链接已复制')
 }
 
 async function applyForPartner() {

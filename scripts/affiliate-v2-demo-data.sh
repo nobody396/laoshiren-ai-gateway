@@ -163,8 +163,6 @@ BEGIN
       first_paid_bonus_threshold_micros = 0,
       first_paid_bonus_micros = 0,
       stress_cost_per_raw_credit_micros = 530000,
-      stress_cost_snapshot_at = NOW(),
-      cost_snapshot_max_age_hours = 24,
       revision = revision + 1,
       updated_by = admin_id,
       updated_at = NOW()
@@ -346,7 +344,7 @@ BEGIN
   VALUES
     ('browser-admin@partner.local', demo_password_hash, 'admin', 0, 20, 'active', '浏览器验收管理员', '仅限隔离 Staging 的浏览器验收账号', 'BROWSERADMIN', 0, FALSE, NOW(), 'browser-admin'),
     ('agent-alpha@partner.local', demo_password_hash, 'agent', 0, 8, 'active', 'Alpha 合伙人', '合伙人账号', 'AGENTALPHA', 3888, TRUE, NOW() - INTERVAL '1 hour', 'alpha-partner'),
-    ('agent-review@partner.local', demo_password_hash, 'agent', 0, 8, 'active', '待确认合伙人', '待确认合伙人账号', 'AGENTREVIEW', 860, TRUE, NOW() - INTERVAL '2 hours', 'review-partner'),
+    ('agent-review@partner.local', demo_password_hash, 'agent', 0, 8, 'active', '待审核合伙人', '待审核合伙人账号', 'AGENTREVIEW', 860, TRUE, NOW() - INTERVAL '2 hours', 'review-partner'),
     ('agent-blocked@partner.local', demo_password_hash, 'agent', 0, 8, 'active', '已暂停合伙人', '已暂停合伙人账号', 'AGENTBLOCK', 640, TRUE, NOW() - INTERVAL '3 hours', 'blocked-partner'),
     ('partner-upgrade@partner.local', demo_password_hash, 'user', 0, 5, 'active', '待升级用户', '已满足合伙人开通条件', 'UPGRADE', 220, TRUE, NOW() - INTERVAL '4 hours', 'upgrade-partner'),
     ('partner-applicant@partner.local', demo_password_hash, 'user', 0, 5, 'active', '申请审核用户', '已提交合伙人申请', 'APPLICANT', 260, TRUE, NOW() - INTERVAL '4 hours', 'applicant-partner'),
@@ -534,7 +532,7 @@ BEGIN
 
   UPDATE affiliate_risk_actions
   SET reason = CASE
-      WHEN reason LIKE '%异常订单%' THEN '异常订单待确认'
+      WHEN reason LIKE '%异常订单%' THEN '异常订单待审核'
       WHEN reason LIKE '%自循环%' OR reason LIKE '%小号%' OR reason LIKE '%互刷%' THEN '异常邀请行为待处理'
       ELSE reason
     END
@@ -544,7 +542,7 @@ BEGIN
   INSERT INTO agent_principals (agent_id, status, risk_status, risk_note, qualified_at, activated_at, reviewed_at, reviewed_by)
   VALUES
     (alpha_id, 'active', 'clear', '', NOW() - INTERVAL '10 days', NOW() - INTERVAL '9 days', NOW() - INTERVAL '9 days', admin_id),
-    (review_id, 'active', 'review', '存在异常订单，先暂停发放，确认后再恢复。', NOW() - INTERVAL '8 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '1 day', admin_id),
+    (review_id, 'active', 'review', '存在异常订单，正在审核；审核完成后再恢复。', NOW() - INTERVAL '8 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '1 day', admin_id),
     (blocked_id, 'active', 'blocked', '存在异常邀请行为，已暂停邀请和提现。', NOW() - INTERVAL '8 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '1 day', admin_id)
   ON CONFLICT (agent_id) DO UPDATE SET
     status = EXCLUDED.status,
@@ -679,7 +677,7 @@ BEGIN
   )
   VALUES
     (alpha_id, '张三', 'alpha-pay@example.com', '13800000001', '常用收款账号，可扫码打款。', 'agent-payment-qrcodes/partner-alpha.png', 'image/png', 'partner-alpha.png', 1200, 'partner-alpha-fingerprint', 'verified', '已核对', NOW() - INTERVAL '6 days', admin_id),
-    (review_id, '李四', 'review-pay@example.com', '13800000002', '资料待确认，请核对实名和收款码。', 'agent-payment-qrcodes/partner-review.png', 'image/png', 'partner-review.png', 1200, 'partner-review-fingerprint', 'pending_review', '', NULL, NULL),
+    (review_id, '李四', 'review-pay@example.com', '13800000002', '资料待审核，请核对实名和收款码。', 'agent-payment-qrcodes/partner-review.png', 'image/png', 'partner-review.png', 1200, 'partner-review-fingerprint', 'pending_review', '', NULL, NULL),
     (blocked_id, '王五', 'blocked-pay@example.com', '13800000003', '当前合作已暂停，收款资料暂不处理。', 'agent-payment-qrcodes/partner-blocked.png', 'image/png', 'partner-blocked.png', 1200, 'partner-blocked-fingerprint', 'verified', '已核对', NOW() - INTERVAL '5 days', admin_id)
   ON CONFLICT (agent_id) DO UPDATE SET
     alipay_real_name = EXCLUDED.alipay_real_name,
@@ -757,7 +755,7 @@ BEGIN
     effective_at = EXCLUDED.effective_at;
 
   INSERT INTO affiliate_links (agent_id, code, name, channel, is_default, status, current_rate_version)
-  VALUES (review_id, 'AGREVIEW5', '待确认默认链接', 'default', TRUE, 'active', 1)
+  VALUES (review_id, 'AGREVIEW5', '待审核默认链接', 'default', TRUE, 'active', 1)
   ON CONFLICT (code) DO UPDATE SET
     name = EXCLUDED.name, channel = EXCLUDED.channel, is_default = EXCLUDED.is_default,
     status = EXCLUDED.status, current_rate_version = EXCLUDED.current_rate_version, updated_at = NOW()
@@ -1216,7 +1214,7 @@ BEGIN
       amount_micros := 400000000;
       customer_id := NULL;
       INSERT INTO users (email, password_hash, role, balance, concurrency, status, username, notes, invite_code, inviter_id, agent_id, total_recharged, first_recharged, wechat)
-      VALUES (customer_email, demo_password_hash, 'user', 0, 5, 'active', '待确认客户', '待确认合伙人直属客户', 'REVCUST01', review_id, review_id, 400, TRUE, '')
+      VALUES (customer_email, demo_password_hash, 'user', 0, 5, 'active', '待审核客户', '待审核合伙人直属客户', 'REVCUST01', review_id, review_id, 400, TRUE, '')
       ON CONFLICT (email) WHERE deleted_at IS NULL DO UPDATE SET
         inviter_id = EXCLUDED.inviter_id, agent_id = EXCLUDED.agent_id, username = EXCLUDED.username, updated_at = NOW()
       RETURNING id INTO customer_id;
@@ -1264,8 +1262,8 @@ BEGIN
   END LOOP;
 
   INSERT INTO affiliate_risk_actions (agent_id, action_type, previous_risk_status, next_risk_status, reason, released_reward_count, released_reward_micros, released_cash_count, released_cash_micros, operator_id, metadata)
-  SELECT review_id, 'review', 'clear', 'review', '异常订单待确认', 0, 0, 0, 0, admin_id, '{"staging_demo":true}'::jsonb
-  WHERE NOT EXISTS (SELECT 1 FROM affiliate_risk_actions WHERE agent_id = review_id AND next_risk_status = 'review' AND reason = '异常订单待确认');
+  SELECT review_id, 'review', 'clear', 'review', '异常订单待审核', 0, 0, 0, 0, admin_id, '{"staging_demo":true}'::jsonb
+  WHERE NOT EXISTS (SELECT 1 FROM affiliate_risk_actions WHERE agent_id = review_id AND next_risk_status = 'review' AND reason = '异常订单待审核');
 
   INSERT INTO affiliate_risk_actions (agent_id, action_type, previous_risk_status, next_risk_status, reason, released_reward_count, released_reward_micros, released_cash_count, released_cash_micros, operator_id, metadata)
   SELECT blocked_id, 'block', 'clear', 'blocked', '异常邀请行为待处理', 0, 0, 0, 0, admin_id, '{"staging_demo":true}'::jsonb
@@ -1408,7 +1406,7 @@ BEGIN
   VALUES
     (alpha_id, 'community_invite', '欢迎加入合伙人社群', '你的合伙人权限已开通。扫码加入社群，获取素材、话术和结算通知。', 'agent_activation', alpha_id, 'demo:notice:alpha:community', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '6 days'),
     (alpha_id, 'withdrawal_paid', '一笔提现已到账', '¥80 提现已标记到账。', 'withdrawal', NULL, 'demo:notice:alpha:paid', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '3 days'),
-    (review_id, 'risk_review', '账户状态待确认', '待确认期间会暂缓发放奖励，并暂停新增链接、提现和转换。', 'risk', NULL, 'demo:notice:review:risk', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '1 day')
+    (review_id, 'risk_review', '合伙人权限待审核', '审核期间会暂缓发放奖励，并暂停新增链接、提现和转换。', 'risk', NULL, 'demo:notice:review:risk', '{"staging_demo":true}'::jsonb, NOW() - INTERVAL '1 day')
   ON CONFLICT (idempotency_key) DO UPDATE SET
     title = EXCLUDED.title,
     message = EXCLUDED.message,

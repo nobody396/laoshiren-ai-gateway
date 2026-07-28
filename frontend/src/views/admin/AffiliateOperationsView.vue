@@ -74,9 +74,8 @@
               <NumberField v-model="programForm.withdrawalMinimum" label="最低提现金额" prefix="¥" :min="1" :step="1" />
               <NumberField v-model="programForm.withdrawalSLAHours" label="处理时限" suffix="小时" :min="1" :max="168" :step="1" />
               <NumberField v-model="programForm.marginFloor" label="压力毛利率底线" suffix="%" :min="35" :max="100" :step="1" />
-              <NumberField v-model="programForm.stressCostPerRawCredit" label="每单位额度压力成本" prefix="¥" :min="0.01" :step="0.01" />
-              <NumberField v-model="programForm.operationalReserve" label="运营储备" suffix="%" :min="2" :max="30" :step="0.5" />
-              <NumberField v-model="programForm.costSnapshotMaxAgeHours" label="成本快照有效期" suffix="小时" :min="1" :max="720" :step="1" />
+              <NumberField v-model="programForm.stressCostPerRawCredit" label="每1个原始额度的保守成本" prefix="¥" :min="0.01" :step="0.01" />
+              <NumberField v-model="programForm.operationalReserve" label="额外风险预留（按售价）" suffix="%" :min="2" :max="30" :step="0.5" />
               <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900 sm:col-span-2 lg:col-span-3">
                 <p class="text-xs text-gray-600 dark:text-dark-300">合伙人奖励池</p>
                 <p class="mt-1 text-xl font-bold text-gray-950 dark:text-white">{{ program.agent_pool_rate_bps / 100 }}%</p>
@@ -86,7 +85,7 @@
             <div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-5 dark:border-dark-800">
               <p class="text-xs leading-5 text-gray-600 dark:text-dark-300">
                 {{ program.started_at ? `首次正式启用：${formatBeijingTime(program.started_at)}` : '尚未进入正式模式；首次启用时间将由服务器保存，并按北京时间展示。' }}
-                当前成本快照：{{ formatBeijingTime(program.stress_cost_snapshot_at) }}；保存设置即确认并刷新快照时间。
+                月卡 1 个原始额度等于用户看到的 10⚡；保存时会立即校验全部在售套餐的 35% 毛利底线。
               </p>
               <button class="btn btn-primary" :disabled="programSaving">{{ programSaving ? '保存中…' : '保存计划设置' }}</button>
             </div>
@@ -283,8 +282,8 @@
                     <td class="whitespace-nowrap px-5 py-4">
                       <select v-model="riskTargets[item.agent_id]" class="input min-w-36">
                         <option value="clear">正常开放</option>
-                        <option value="review">先暂停，待确认</option>
-                        <option value="blocked">暂停合作</option>
+                        <option value="review">待审核（暂时停用）</option>
+                        <option value="blocked">已暂停</option>
                       </select>
                     </td>
                     <td class="px-5 py-4">
@@ -656,8 +655,7 @@ const programForm = reactive({
   withdrawalSLAHours: 24,
   marginFloor: 35,
   stressCostPerRawCredit: 0.53,
-  operationalReserve: 2,
-  costSnapshotMaxAgeHours: 24
+  operationalReserve: 2
 })
 const communityForm = reactive({ enabled: false, title: '', message: '' })
 
@@ -708,7 +706,6 @@ watch(program, value => {
   programForm.marginFloor = value.margin_floor_bps / 100
   programForm.stressCostPerRawCredit = value.stress_cost_per_raw_credit_micros / 1_000_000
   programForm.operationalReserve = value.operational_reserve_bps / 100
-  programForm.costSnapshotMaxAgeHours = value.cost_snapshot_max_age_hours
 }, { immediate: true })
 
 watch(community, value => {
@@ -776,8 +773,8 @@ function formatAgentStatus(status: string) {
 
 function formatRiskStatus(status: AffiliateRiskStatus) {
   if (status === 'clear') return '正常'
-  if (status === 'review') return '先暂停，待确认'
-  if (status === 'blocked') return '暂停合作'
+  if (status === 'review') return '待审核'
+  if (status === 'blocked') return '已暂停'
   return status
 }
 
@@ -842,9 +839,7 @@ async function saveProgram() {
       withdrawal_sla_hours: Math.round(programForm.withdrawalSLAHours),
       margin_floor_bps: Math.round(programForm.marginFloor * 100),
       operational_reserve_bps: Math.round(programForm.operationalReserve * 100),
-      stress_cost_per_raw_credit_micros: unitsToMicros(programForm.stressCostPerRawCredit),
-      stress_cost_snapshot_at: new Date().toISOString(),
-      cost_snapshot_max_age_hours: Math.round(programForm.costSnapshotMaxAgeHours)
+      stress_cost_per_raw_credit_micros: unitsToMicros(programForm.stressCostPerRawCredit)
     })
     commercialPolicy.value = await getAffiliateCommercialPolicy()
     appStore.showSuccess('联盟计划设置已保存')

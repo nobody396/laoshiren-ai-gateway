@@ -174,8 +174,6 @@ export interface AffiliateProgramSettings {
   margin_floor_bps: number
   operational_reserve_bps: number
   stress_cost_per_raw_credit_micros: number
-  stress_cost_snapshot_at: string
-  cost_snapshot_max_age_hours: number
   revision: number
   updated_at: string
 }

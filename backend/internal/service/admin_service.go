@@ -2344,14 +2344,6 @@ func (s *adminServiceImpl) guardCurrentMonthlyCardGeneration(
 	if err != nil {
 		return true, fmt.Errorf("load current monthly card margin guard: %w", err)
 	}
-	now := time.Now()
-	maxAge := time.Duration(settings.CostSnapshotMaxAgeHours) * time.Hour
-	if settings.StressCostSnapshotAt.After(now.Add(5*time.Minute)) ||
-		now.Sub(settings.StressCostSnapshotAt) > maxAge {
-		return true, fmt.Errorf(
-			"current monthly card cost snapshot is stale; refresh it before generating new cards",
-		)
-	}
 	if err := ValidateAffiliateCommercialSettings(*settings); err != nil {
 		return true, fmt.Errorf("current monthly card margin guard rejected generation: %w", err)
 	}

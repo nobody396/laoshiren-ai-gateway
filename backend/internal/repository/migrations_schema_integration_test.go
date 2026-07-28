@@ -331,6 +331,21 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 `).Scan(&qualificationRouteConstraint))
 	require.Contains(t, qualificationRouteConstraint, "direct_volume")
 	require.NotContains(t, qualificationRouteConstraint, "'combined'")
+
+	// migration 163: the manual conservative cost remains guarded by the
+	// margin floor, without a fake time-based snapshot expiry.
+	requireColumnAbsent(t, tx, "affiliate_program_settings", "stress_cost_snapshot_at")
+	requireColumnAbsent(t, tx, "affiliate_program_settings", "cost_snapshot_max_age_hours")
+	var programVersionDefault sql.NullString
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT column_default
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'affiliate_program_settings'
+  AND column_name = 'program_version'
+`).Scan(&programVersionDefault))
+	require.True(t, programVersionDefault.Valid)
+	require.Contains(t, programVersionDefault.String, "'v3'")
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {
@@ -399,4 +414,21 @@ WHERE table_schema = 'public'
 	} else {
 		require.Equal(t, "NO", row.Nullable, "nullable mismatch for %s.%s", table, column)
 	}
+}
+
+func requireColumnAbsent(t *testing.T, tx *sql.Tx, table, column string) {
+	t.Helper()
+
+	var exists bool
+	err := tx.QueryRowContext(context.Background(), `
+SELECT EXISTS (
+	SELECT 1
+	FROM information_schema.columns
+	WHERE table_schema = 'public'
+	  AND table_name = $1
+	  AND column_name = $2
+)
+`, table, column).Scan(&exists)
+	require.NoError(t, err, "query information_schema.columns for %s.%s", table, column)
+	require.False(t, exists, "expected column %s.%s to be absent", table, column)
 }

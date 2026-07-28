@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +44,6 @@ func guardedMonthlyTestGroup(id int64, name, platform string, rate, limit float6
 
 func TestCurrentMonthlyCardGenerationGuardAcceptsFreshCompleteBundle(t *testing.T) {
 	settings := DefaultAffiliateProgramSettings()
-	settings.StressCostSnapshotAt = time.Now()
 	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 220)
 	claude := guardedMonthlyTestGroup(102, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 220)
 	svc := &adminServiceImpl{
@@ -62,29 +60,8 @@ func TestCurrentMonthlyCardGenerationGuardAcceptsFreshCompleteBundle(t *testing.
 	require.True(t, current)
 }
 
-func TestCurrentMonthlyCardGenerationGuardRejectsStaleCostSnapshot(t *testing.T) {
-	settings := DefaultAffiliateProgramSettings()
-	settings.CostSnapshotMaxAgeHours = 24
-	settings.StressCostSnapshotAt = time.Now().Add(-25 * time.Hour)
-	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 220)
-	claude := guardedMonthlyTestGroup(102, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 220)
-	svc := &adminServiceImpl{
-		accountRepo: &currentMonthlyAccountRepoStub{accounts: map[int64][]Account{
-			101: {{ID: 1, Status: StatusActive, Schedulable: true}},
-			102: {{ID: 2, Status: StatusActive, Schedulable: true}},
-		}},
-		affiliateProgram: NewAffiliateProgramService(&currentMonthlyProgramRepoStub{settings: settings}),
-	}
-
-	current, err := svc.guardCurrentMonthlyCardGeneration(context.Background(), []Group{gpt, claude}, 31, 249)
-
-	require.True(t, current)
-	require.ErrorContains(t, err, "cost snapshot is stale")
-}
-
 func TestCurrentMonthlyCardGenerationGuardRejectsPartialBundle(t *testing.T) {
 	settings := DefaultAffiliateProgramSettings()
-	settings.StressCostSnapshotAt = time.Now()
 	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 220)
 	svc := &adminServiceImpl{
 		accountRepo: &currentMonthlyAccountRepoStub{accounts: map[int64][]Account{
@@ -101,7 +78,6 @@ func TestCurrentMonthlyCardGenerationGuardRejectsPartialBundle(t *testing.T) {
 
 func TestCurrentMonthlyCardGenerationGuardRejectsUnpricedFaceValue(t *testing.T) {
 	settings := DefaultAffiliateProgramSettings()
-	settings.StressCostSnapshotAt = time.Now()
 	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 220)
 	claude := guardedMonthlyTestGroup(102, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 220)
 	svc := &adminServiceImpl{

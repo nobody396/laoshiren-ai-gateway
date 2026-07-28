@@ -27,8 +27,7 @@ func TestAffiliateProgramRepositoryGetSettings(t *testing.T) {
 		"qualification_combined_consumption_micros", "max_campaign_links",
 		"commission_conversion_multiplier_millis", "withdrawal_min_micros", "withdrawal_sla_hours",
 		"margin_floor_bps", "operational_reserve_bps",
-		"stress_cost_per_raw_credit_micros", "stress_cost_snapshot_at",
-		"cost_snapshot_max_age_hours",
+		"stress_cost_per_raw_credit_micros",
 		"revision", "updated_by", "created_at", "updated_at",
 	}
 	mock.ExpectQuery(`(?s)SELECT\s+id,.*FROM affiliate_program_settings`).
@@ -37,7 +36,7 @@ func TestAffiliateProgramRepositoryGetSettings(t *testing.T) {
 			int32(500), int32(500), int64(0), int64(0),
 			int32(1000), int32(10), int64(20_000_000), int64(1_000_000_000),
 			int64(2_000_000_000), int32(5), int32(1200), int64(100_000_000), int32(24),
-			int32(3500), int32(200), int64(530_000), createdAt, int32(24),
+			int32(3500), int32(200), int64(530_000),
 			int64(1), nil, createdAt, updatedAt,
 		))
 
@@ -62,7 +61,7 @@ func TestAffiliateProgramRepositoryUpdateSettingsUsesRevisionLock(t *testing.T) 
 	settings.UpdatedBy = &actorID
 	updatedAt := time.Now().UTC()
 
-	mock.ExpectQuery(`(?s)UPDATE affiliate_program_settings.*WHERE id = 1 AND revision = \$22`).
+	mock.ExpectQuery(`(?s)UPDATE affiliate_program_settings.*WHERE id = 1 AND revision = \$20`).
 		WithArgs(
 			settings.Mode,
 			settings.StartedAt,
@@ -82,8 +81,6 @@ func TestAffiliateProgramRepositoryUpdateSettingsUsesRevisionLock(t *testing.T) 
 			settings.MarginFloorBPS,
 			settings.OperationalReserveBPS,
 			settings.StressCostPerRawCreditMicros,
-			settings.StressCostSnapshotAt,
-			settings.CostSnapshotMaxAgeHours,
 			settings.UpdatedBy,
 			int64(1),
 		).

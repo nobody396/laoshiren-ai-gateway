@@ -69,13 +69,13 @@ never written to the checkout or printed by the launcher.
    credited.
 3. Change `shadow -> live` inside this isolated database. Repeat with new
    purchases and usage after `started_at`.
-4. Verify ordinary first-paid settlement: inviter receives 5% `⚡` immediately;
-   a first purchase strictly above ¥50 schedules fixed `⚡5` for the invitee on
-   the next Beijing calendar day; exactly ¥50 does not.
+4. Verify ordinary first-paid settlement: inviter and invitee each receive 5%
+   platform credits at T+0. There is no minimum amount and no fixed `⚡5`.
 5. Verify Agent qualification using either:
    - ten direct consumers, each at least ¥20, and at least ¥1,000 direct-team
      confirmed consumption; or
-   - at least ¥2,000 combined self plus direct-team confirmed consumption.
+   - at least ¥2,000 direct-team confirmed consumption. The applicant's own
+     consumption does not count.
 6. Activate the qualified Agent and verify one permanent upstream edge, one
    always-active default link, at most five campaign links, and dynamic
    customer rebate from 0% to 10% in 1% increments.

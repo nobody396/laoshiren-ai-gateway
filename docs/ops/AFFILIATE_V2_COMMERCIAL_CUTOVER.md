@@ -1,61 +1,89 @@
-# Affiliate V2 commercial cutover
+# Affiliate V3 commercial cutover
 
-This runbook separates code acceptance from external commerce changes. None of
-the items below is authorized for production merely because the Affiliate V2
-staging stack passes.
+This runbook separates code deployment from monetary activation. Passing the
+isolated staging stack authorizes neither a production deploy nor switching the
+affiliate program to `live`.
 
-## Target catalog
+## Final catalog
 
-| Product | LDXP price | Direct price | Internal monthly credits | Customer display | Daily internal | Daily display |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Starter | ¥259 | ¥249 | 240 | ⚡2400 | 8 | ⚡80 |
-| Lite | ¥469 | ¥459 | 450 | ⚡4500 | 15 | ⚡150 |
-| Pro | ¥869 | ¥839 | 850 | ⚡8500 | 28 | ⚡280 |
+All three products last 31 days and have one monthly quota only. There is no
+daily or weekly limit.
+
+| Product | LDXP price | Direct price | Internal monthly credits | Customer display |
+| --- | ---: | ---: | ---: | ---: |
+| Plus | ¥259 | ¥249 | 220 | ⚡2,200 |
+| Pro | ¥729 | ¥699 | 650 | ⚡6,500 |
+| Max | ¥1,549 | ¥1,499 | 1,400 | ⚡14,000 |
 
 The customer display scale is 10x. Accounting, subscription limits and
-confirmed-consumption proration use the internal units; customer-facing pages
-show the scaled `⚡` values. GPT target multiplier is 0.42 and Claude/MAX is
-2.40.
+confirmed-consumption proration use internal credits; customer-facing pages
+show scaled `⚡` values. The fixed public group multipliers are GPT `0.50` and
+Claude/MAX `2.40`.
+
+## Final referral and partner rules
+
+- Ordinary first paid purchase: inviter and invitee each receive 5% platform
+  credits at T+0. There is no fixed `⚡5` reward and no minimum purchase amount.
+- Partner qualification route A: ten direct users, each with at least ¥20
+  confirmed consumption, and at least ¥1,000 direct-team confirmed consumption.
+- Partner qualification route B: at least ¥2,000 direct-team confirmed
+  consumption. The applicant's own consumption does not count.
+- Reaching a threshold only enables an application. The platform must approve
+  the applicant before partner privileges become active.
+- Each partner-bound confirmed-consumption event has one fixed 10% pool.
+  Customer platform-credit rebate plus direct partner cash commission must equal
+  10%; there is no recursive or self commission.
+- Mature cash is T+0. A withdrawal is user-requested and user-visible only as
+  `处理中 -> 已到账`. Cash-to-credit conversion uses the fixed 1.2x multiplier.
 
 ## Production prerequisites
 
-1. Create or update the paired GPT and Claude/MAX credit subscription groups
-   for Starter, Lite and Pro with one shared logical quota per product.
-2. Verify the group limits are respectively 240/8, 450/15 and 850/28 internal
-   monthly/daily credits and that the customer UI shows the 10x values.
-3. Create a dedicated Starter LDXP item. The staging branch intentionally keeps
-   its external URL blank until that item exists.
-4. Update the existing Lite and Pro LDXP item prices. Their current URLs remain
-   wired in the staging branch, but the external item prices are not changed by
-   this repository.
+1. Create or update the paired GPT and Claude/MAX `credit` subscription groups
+   for Plus, Pro and Max.
+2. Verify monthly limits are respectively `220`, `650` and `1400` internal
+   credits; daily and weekly limits must be unset/zero; validity is 31 days.
+3. Verify group multipliers are GPT `0.50` and Claude/MAX `2.40`.
+4. Create or update one LDXP item for each SKU with prices ¥259, ¥729 and
+   ¥1,549. Record the final item URL for the matching frontend catalog entry.
+   The LDXP purchase button must remain disabled while a URL is blank.
 5. Generate only sale-attributed subscription cards with the actual sale price
-   recorded in `redeem_codes.value`; inventory, gift, compensation, internal
-   test and migration cards must remain affiliate-ineligible.
-6. Verify each LDXP delivery maps to the correct paired group IDs, validity
-   window and card face value before publishing the item.
-7. Re-run the commercial policy gate with 3% shop fee, full 10% alliance pool
-   and 35% minimum stress margin.
-8. Reconcile one test order per SKU through LDXP order, redeem code, monthly
-   entitlement, pro-rata confirmed consumption and finance ledger.
+   recorded in `redeem_codes.value`. Inventory, gift, compensation, internal
+   test and migration cards remain affiliate-ineligible.
+6. Verify every LDXP delivery maps to the correct group IDs, 31-day validity and
+   card face value before publishing the item.
+7. Re-run the commercial policy gate with 3% shop fee, maximum 12% converted
+   alliance burden, 2% operational reserve, ¥0.53 conservative cost per
+   internal credit and 35% minimum stress margin.
+8. Reconcile one owned test order through card delivery, redemption, monthly
+   entitlement, pro-rata confirmed consumption, reward/commission projection
+   and finance ledger. Never use a customer identity for release testing.
 
 ## Controlled release
 
-1. Deploy code with Affiliate V2 mode `off`.
-2. Apply migrations and verify all new tables, indexes and triggers.
-3. Validate the external catalog and group mapping while rewards remain off.
-4. Enter `shadow` and observe at least one complete paid and usage cycle without
-   any reward or cash writes.
-5. Reconcile shadow calculations against the finance ledger and margin gate.
-6. Only after explicit production approval, enter `live` with a frozen
-   `started_at`; historical purchases, balances and usage remain ineligible.
-7. Keep legacy `commission_records` and `agent_settlements` read-only for V2
-   events. The gateway and first-paid hooks stop legacy reward generation once
-   V2 is live.
+1. Merge the exact tested tree to `main`, require successful push CI and select
+   only the immutable image digest from its verified artifact.
+2. Deploy code with Affiliate V3 mode `off`.
+3. Verify migrations, indexes, constraints, triggers, `/livez`, `/readyz`,
+   static assets and authentication boundaries. No reward writes are allowed.
+4. Validate the production group/catalog mapping and LDXP delivery while the
+   program remains `off`.
+5. Enter `shadow` and run one complete owned paid-card and usage cycle. Shadow
+   must calculate expected rewards and commissions without writing platform
+   credits, cash wallet entries or withdrawals.
+6. Reconcile the shadow projection against the finance ledger, subscription
+   usage and the 35% margin gate. Any duplicate, omission or imbalance blocks
+   activation.
+7. Only after the owner has explicitly authorized this release and every prior
+   gate is green, enter `live` with a frozen `started_at`. Historical purchases,
+   balances and usage remain ineligible.
+8. Run the smallest owned-identity production smoke, record non-sensitive
+   evidence and complete the mandatory public Changelog assessment.
 
 ## Rollback boundary
 
 - `live -> shadow` stops new monetary settlement while retaining observability.
-- `shadow -> off` stops new Affiliate V2 performance recording.
+- `shadow -> off` stops new Affiliate V3 performance recording.
 - Existing posted rewards, cash commission and withdrawals are never deleted;
   corrections use audited holds and reversals.
-- Do not roll back by pointing the staging database or volumes at production.
+- Application rollback uses the previously verified immutable image digest.
+- Never point staging databases or volumes at production.

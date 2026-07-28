@@ -51,8 +51,7 @@ Use `purpose=compensation` for customer make-good credits and `purpose=internal_
 
 ## Subscription Monthly Cards
 
-Use this when cards grant a monthly subscription group, including Lite 月卡,
-Pro 月卡, Max 月卡, and Ultra 月卡.
+Use this when cards grant a Plus, Pro or Max monthly subscription group.
 
 Generation fields:
 
@@ -62,8 +61,9 @@ Generation fields:
 - `purpose`: `sale_recharge` for sellable inventory
 - `sales_status`: `inventory`
 - `sales_channel`: `liandong_shop` when the batch is for Liandong card shop
-- `batch_name`: include product name, daily credits, and date
-- `internal_notes`: include the daily credits and GPT Pro / Claude Max usage copy
+- `batch_name`: include product name and date
+- `internal_notes`: include monthly internal credits, customer display credits,
+  fixed group multiplier version and 31-day validity
 
 Runtime behavior:
 

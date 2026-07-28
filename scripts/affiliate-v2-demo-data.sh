@@ -118,6 +118,7 @@ DECLARE
   withdrawal_request_id bigint;
   i integer;
   amount_micros bigint;
+  topup_micros bigint;
   reward_micros bigint;
   cash_micros bigint;
   customer_bps integer;
@@ -721,6 +722,9 @@ BEGIN
   FOR i IN 1..12 LOOP
     customer_email := 'alpha-customer-' || lpad(i::text, 2, '0') || '@partner.local';
     amount_micros := (550 + i * 55)::bigint * 1000000;
+    -- Keep recharge and confirmed consumption deliberately different so the
+    -- partner table demonstrates the real meanings of both columns.
+    topup_micros := amount_micros + (90 + i * 10)::bigint * 1000000;
     IF i <= 6 THEN
       selected_link_id := alpha_default_link_id;
       customer_bps := 500;
@@ -740,7 +744,7 @@ BEGIN
       customer_email, demo_password_hash, 'user', 0, 5, 'active',
       'Alpha 客户 ' || lpad(i::text, 2, '0'), 'Alpha 直属客户',
       'ALPHACUST' || lpad(i::text, 2, '0'), alpha_id, alpha_id,
-      (amount_micros::numeric / 1000000), TRUE, NOW() - (i || ' days')::interval, NOW() - (i || ' hours')::interval, ''
+      (topup_micros::numeric / 1000000), TRUE, NOW() - (i || ' days')::interval, NOW() - (i || ' hours')::interval, ''
     )
     ON CONFLICT (email) WHERE deleted_at IS NULL DO UPDATE SET
       password_hash = EXCLUDED.password_hash,
@@ -775,7 +779,7 @@ BEGIN
 
     demo_order_no := 'TOPUP-ALPHA-' || lpad(i::text, 2, '0');
     INSERT INTO topup_orders (order_no, user_id, amount_cny_fen, pay_type, status, completed_at, invoice_status)
-    VALUES (demo_order_no, customer_id, (amount_micros / 10000)::integer, 'alipay', 'completed', NOW() - (i || ' days')::interval, 'none')
+    VALUES (demo_order_no, customer_id, (topup_micros / 10000)::integer, 'alipay', 'completed', NOW() - (i || ' days')::interval, 'none')
     ON CONFLICT (order_no) DO UPDATE SET
       user_id = EXCLUDED.user_id,
       amount_cny_fen = EXCLUDED.amount_cny_fen,
@@ -787,7 +791,7 @@ BEGIN
     RETURNING id INTO topup_id;
 
     INSERT INTO affiliate_first_paid_purchases (user_id, purchase_type, source_id, purchase_key, amount_micros, occurred_at)
-    VALUES (customer_id, 'balance_topup', topup_id, 'demo:first-paid:alpha:' || i, amount_micros, NOW() - (i || ' days')::interval)
+    VALUES (customer_id, 'balance_topup', topup_id, 'demo:first-paid:alpha:' || i, topup_micros, NOW() - (i || ' days')::interval)
     ON CONFLICT (user_id) DO UPDATE SET
       purchase_type = EXCLUDED.purchase_type,
       source_id = EXCLUDED.source_id,

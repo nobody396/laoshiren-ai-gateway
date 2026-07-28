@@ -319,6 +319,18 @@ WHERE deleted_at IS NULL AND name = $1
 		require.False(t, weekly.Valid, "V3 group %s must not have a weekly limit", groupName)
 		require.Equal(t, 31, validity)
 	}
+
+	// migration 162: the persisted qualification-state constraint must accept
+	// the V3 direct-volume route used by manual approval.
+	var qualificationRouteConstraint string
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT pg_get_constraintdef(oid)
+FROM pg_constraint
+WHERE conrelid = 'affiliate_qualification_states'::regclass
+  AND conname = 'chk_affiliate_qualification_route'
+`).Scan(&qualificationRouteConstraint))
+	require.Contains(t, qualificationRouteConstraint, "direct_volume")
+	require.NotContains(t, qualificationRouteConstraint, "'combined'")
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

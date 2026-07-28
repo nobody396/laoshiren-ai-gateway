@@ -143,7 +143,8 @@ BEGIN
   VALUES
     ('site_name', '老实人AI', NOW()),
     ('registration_enabled', 'true', NOW()),
-    ('invitation_code_enabled', 'false', NOW())
+    ('invitation_code_enabled', 'false', NOW()),
+    ('promo_code_enabled', 'false', NOW())
   ON CONFLICT (key) DO UPDATE SET
     value = EXCLUDED.value,
     updated_at = EXCLUDED.updated_at;

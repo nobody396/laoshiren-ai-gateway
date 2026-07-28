@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAffiliateLinkRepository_DynamicRatesPreserveCustomerFloor(t *testing.T) {
+func TestAffiliateLinkRepository_DynamicRatesPreserveExactCustomerSnapshot(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)
 	repo := NewAffiliateLinkRepository(integrationDB)
@@ -54,7 +54,7 @@ func TestAffiliateLinkRepository_DynamicRatesPreserveCustomerFloor(t *testing.T)
 		FROM affiliate_bindings
 		WHERE customer_user_id = $1
 	`, customer.ID).Scan(&customerRate, &agentRate))
-	require.Equal(t, int32(300), customerRate, "existing customer rebate cannot decrease")
+	require.Equal(t, int32(300), customerRate, "existing customer rebate cannot be changed")
 	require.Equal(t, int32(700), agentRate)
 
 	link, err = linkService.UpdateRate(ctx, agent.ID, link.ID, 500)
@@ -66,8 +66,8 @@ func TestAffiliateLinkRepository_DynamicRatesPreserveCustomerFloor(t *testing.T)
 		FROM affiliate_bindings
 		WHERE customer_user_id = $1
 	`, customer.ID).Scan(&customerRate, &agentRate))
-	require.Equal(t, int32(500), customerRate, "existing customer rebate may increase")
-	require.Equal(t, int32(500), agentRate)
+	require.Equal(t, int32(300), customerRate, "existing customer rebate cannot be changed")
+	require.Equal(t, int32(700), agentRate)
 
 	for i := 0; i < 4; i++ {
 		_, err := linkService.Create(ctx, agent.ID, fmt.Sprintf("活动-%d", i), "campaign", int32(i)*100)

@@ -104,11 +104,11 @@ func TestUsageBillingRepositoryApply_AttributesOnlyPaidBalanceLots(t *testing.T)
 		INSERT INTO balance_lots (
 			user_id, source_type, source_key,
 			original_amount_micros, remaining_amount_micros,
-			affiliate_eligible
+			affiliate_eligible, affiliate_policy
 		)
 		VALUES
-			($1, 'gift', $2, 3000000, 3000000, FALSE),
-			($1, 'paid_redeem', $3, 17000000, 17000000, TRUE)
+			($1, 'gift', $2, 3000000, 3000000, FALSE, 'NONE'),
+			($1, 'paid_redeem', $3, 17000000, 17000000, TRUE, 'ORDINARY_FIRST_PAID')
 	`, user.ID, "test-gift:"+uuid.NewString(), "test-paid:"+uuid.NewString())
 	require.NoError(t, err)
 	setAffiliateProgramLiveForIntegrationTest(t, ctx)
@@ -127,10 +127,10 @@ func TestUsageBillingRepositoryApply_AttributesOnlyPaidBalanceLots(t *testing.T)
 
 	var eventAmount int64
 	require.NoError(t, integrationDB.QueryRowContext(ctx, `
-		SELECT amount_micros
+		SELECT COALESCE(SUM(amount_micros), 0)
 		FROM affiliate_performance_events
-		WHERE event_key = $1
-	`, fmt.Sprintf("confirmed:usage:%d:balance", usageLogID)).Scan(&eventAmount))
+		WHERE event_key LIKE $1
+	`, fmt.Sprintf("confirmed:usage:%d:balance:lot:%%", usageLogID)).Scan(&eventAmount))
 	require.Equal(t, int64(2_000_000), eventAmount)
 }
 
@@ -167,9 +167,9 @@ func TestUsageBillingRepositoryApply_AttributesMonthlyConsumptionProRata(t *test
 		INSERT INTO monthly_entitlement_cycles (
 			user_id, source_type, source_key, product_code,
 			sale_price_micros, credit_limit_micros,
-			affiliate_eligible, starts_at, ends_at
+			affiliate_eligible, affiliate_policy, starts_at, ends_at
 		)
-		VALUES ($1, 'paid_topup', $2, 'test-monthly', 50000000, 100000000, TRUE, NOW() - INTERVAL '1 minute', NOW() + INTERVAL '31 days')
+		VALUES ($1, 'paid_topup', $2, 'test-monthly', 50000000, 100000000, TRUE, 'ORDINARY_FIRST_PAID', NOW() - INTERVAL '1 minute', NOW() + INTERVAL '31 days')
 		RETURNING id
 	`, user.ID, "test-monthly:"+uuid.NewString()).Scan(&cycleID))
 	_, err := integrationDB.ExecContext(ctx, `
@@ -241,10 +241,11 @@ func TestUsageBillingRepositoryApply_SettlesFixedAgentPoolOnConfirmedConsumption
 		INSERT INTO balance_lots (
 			user_id, source_type, source_key,
 			original_amount_micros, remaining_amount_micros,
-			affiliate_eligible
+			affiliate_eligible, affiliate_policy, direct_partner_id,
+			customer_rebate_rate_bps, partner_commission_rate_bps
 		)
-		VALUES ($1, 'paid_topup', $2, 100000000, 100000000, TRUE)
-	`, customer.ID, "agent-pool-paid:"+uuid.NewString())
+		VALUES ($1, 'paid_topup', $2, 100000000, 100000000, TRUE, 'PARTNER_USAGE', $3, 300, 700)
+	`, customer.ID, "agent-pool-paid:"+uuid.NewString(), agent.ID)
 	require.NoError(t, err)
 	setAffiliateProgramLiveForIntegrationTest(t, ctx)
 	usageLogID := time.Now().UnixNano()
@@ -358,6 +359,10 @@ func TestUsageBillingAffiliateSettlement_ShadowObservesWithoutMoney(t *testing.T
 		"balance_usage",
 		"shadow-event:"+uuid.NewString(),
 		10_000_000,
+		service.AffiliateSourcePolicyPartnerUsage,
+		agent.ID,
+		300,
+		700,
 	)
 	require.NoError(t, err)
 	require.Zero(t, settlement.CustomerRebateMicros)

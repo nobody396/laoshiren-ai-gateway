@@ -38,27 +38,16 @@ func TestAffiliateRateAmountMicrosFloors(t *testing.T) {
 	}
 }
 
-func TestAffiliateNextBeijingDay(t *testing.T) {
-	t.Parallel()
-	at := time.Date(2026, 7, 26, 15, 59, 59, 0, time.UTC) // 23:59:59 BJT
-	got := affiliateNextBeijingDay(at)
-	want := time.Date(2026, 7, 27, 0, 0, 0, 0, time.FixedZone("CST", 8*60*60))
-	if !got.Equal(want) {
-		t.Fatalf("next Beijing day = %s, want %s", got, want)
-	}
-}
-
-func TestAffiliateFirstPaidRewards_InclusiveThresholdAndOrdinaryFivePercent(t *testing.T) {
+func TestAffiliateFirstPaidRewards_OrdinaryInviterAndInviteeReceiveFivePercentTZero(t *testing.T) {
 	t.Parallel()
 	repo := &affiliateRewardRepoStub{firstPaid: AffiliateFirstPaidContext{
-		ProgramLive:                   true,
-		Claimed:                       true,
-		PurchaseID:                    88,
-		BindingKind:                   AffiliateBindingOrdinary,
-		InviterUserID:                 7,
-		OrdinaryReferralRateBPS:       500,
-		FirstPaidBonusThresholdMicros: 50_000_000,
-		FirstPaidBonusMicros:          5_000_000,
+		ProgramLive:             true,
+		Claimed:                 true,
+		PurchaseID:              88,
+		BindingKind:             AffiliateBindingOrdinary,
+		InviterUserID:           7,
+		OrdinaryReferralRateBPS: 500,
+		OrdinaryInviteeRateBPS:  500,
 	}}
 	svc := NewAffiliateRewardService(repo)
 	at := time.Date(2026, 7, 26, 12, 0, 0, 0, time.UTC)
@@ -74,44 +63,37 @@ func TestAffiliateFirstPaidRewards_InclusiveThresholdAndOrdinaryFivePercent(t *t
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.OrdinaryReferralMicros != 2_500_000 || len(repo.posted) != 1 {
+	if result.OrdinaryReferralMicros != 2_500_000 ||
+		result.OrdinaryInviteeMicros != 2_500_000 ||
+		len(repo.posted) != 2 {
 		t.Fatalf("ordinary referral result = %+v, posted=%d", result, len(repo.posted))
 	}
-	if !result.FirstPaidBonusScheduled || len(repo.scheduled) != 1 {
-		t.Fatalf("exactly ¥50 must schedule fixed bonus: result=%+v scheduled=%d", result, len(repo.scheduled))
+	if len(repo.scheduled) != 0 {
+		t.Fatalf("v3 must not schedule a fixed T+1 bonus")
 	}
-
-	repo.firstPaid.PurchaseID = 89
-	result, err = svc.ProcessFirstPaidPurchase(context.Background(), AffiliateFirstPaidPurchaseInput{
-		UserID:       10,
-		PurchaseType: AffiliatePurchaseBalanceTopup,
-		SourceID:     101,
-		PurchaseKey:  "topup:101",
-		AmountMicros: 50_000_001,
-		OccurredAt:   at,
-	})
-	if err != nil {
-		t.Fatal(err)
+	if result.SourcePolicy != AffiliateSourcePolicyOrdinaryFirstPaid || result.DirectPartnerID != 7 {
+		t.Fatalf("ordinary source policy = %+v", result)
 	}
-	if !result.FirstPaidBonusScheduled || len(repo.scheduled) != 2 {
-		t.Fatalf("over ¥50 must schedule another fixed bonus: result=%+v scheduled=%d", result, len(repo.scheduled))
-	}
-	if repo.scheduled[1].AmountMicros != 5_000_000 {
-		t.Fatalf("fixed bonus = %d", repo.scheduled[1].AmountMicros)
+	for _, posted := range repo.posted {
+		if !posted.AvailableAt.Equal(at) {
+			t.Fatalf("reward is not T+0: %+v", posted)
+		}
 	}
 }
 
 func TestAffiliateFirstPaidRewards_AgentBindingDoesNotStackOrdinaryReward(t *testing.T) {
 	t.Parallel()
 	repo := &affiliateRewardRepoStub{firstPaid: AffiliateFirstPaidContext{
-		ProgramLive:                   true,
-		Claimed:                       true,
-		PurchaseID:                    90,
-		BindingKind:                   AffiliateBindingAgent,
-		InviterUserID:                 7,
-		OrdinaryReferralRateBPS:       500,
-		FirstPaidBonusThresholdMicros: 50_000_000,
-		FirstPaidBonusMicros:          5_000_000,
+		ProgramLive:             true,
+		Claimed:                 true,
+		PurchaseID:              90,
+		BindingKind:             AffiliateBindingAgent,
+		InviterUserID:           7,
+		BindingAgentID:          7,
+		BindingCustomerRateBPS:  300,
+		BindingPartnerRateBPS:   700,
+		OrdinaryReferralRateBPS: 500,
+		OrdinaryInviteeRateBPS:  500,
 	}}
 	svc := NewAffiliateRewardService(repo)
 	result, err := svc.ProcessFirstPaidPurchase(context.Background(), AffiliateFirstPaidPurchaseInput{
@@ -128,7 +110,88 @@ func TestAffiliateFirstPaidRewards_AgentBindingDoesNotStackOrdinaryReward(t *tes
 	if result.OrdinaryReferralMicros != 0 || len(repo.posted) != 0 {
 		t.Fatalf("agent binding stacked ordinary reward: result=%+v posted=%d", result, len(repo.posted))
 	}
-	if len(repo.scheduled) != 1 {
-		t.Fatalf("agent-bound invitee should still get fixed T+1 bonus")
+	if len(repo.scheduled) != 0 ||
+		result.SourcePolicy != AffiliateSourcePolicyPartnerUsage ||
+		result.CustomerRebateRateBPS != 300 ||
+		result.PartnerCommissionRateBPS != 700 {
+		t.Fatalf("agent-bound source policy is incorrect: %+v", result)
+	}
+}
+
+func TestAffiliateHistoricalDirectStartsPartnerUsageOnlyAfterActivation(t *testing.T) {
+	t.Parallel()
+	activatedAt := time.Date(2026, 7, 28, 8, 0, 0, 0, time.UTC)
+	repo := &affiliateRewardRepoStub{firstPaid: AffiliateFirstPaidContext{
+		ProgramLive:               true,
+		BindingKind:               AffiliateBindingOrdinary,
+		InviterUserID:             7,
+		InviterPartnerStatus:      "active",
+		InviterPartnerActivatedAt: &activatedAt,
+	}}
+	svc := NewAffiliateRewardService(repo)
+
+	before, err := svc.ProcessFirstPaidPurchase(context.Background(), AffiliateFirstPaidPurchaseInput{
+		UserID:       11,
+		PurchaseType: AffiliatePurchaseBalanceTopup,
+		PurchaseKey:  "before",
+		AmountMicros: 20_000_000,
+		OccurredAt:   activatedAt.Add(-time.Second),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before.SourcePolicy != AffiliateSourcePolicyOrdinaryFirstPaid {
+		t.Fatalf("pre-activation policy = %s", before.SourcePolicy)
+	}
+
+	after, err := svc.ProcessFirstPaidPurchase(context.Background(), AffiliateFirstPaidPurchaseInput{
+		UserID:       11,
+		PurchaseType: AffiliatePurchaseBalanceTopup,
+		PurchaseKey:  "after",
+		AmountMicros: 20_000_000,
+		OccurredAt:   activatedAt,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.SourcePolicy != AffiliateSourcePolicyPartnerUsage ||
+		after.CustomerRebateRateBPS != 0 ||
+		after.PartnerCommissionRateBPS != 1000 {
+		t.Fatalf("post-activation policy = %+v", after)
+	}
+}
+
+func TestAffiliateTerminatedHistoricalInviterCannotFallBackToOrdinaryReward(t *testing.T) {
+	t.Parallel()
+	activatedAt := time.Date(2026, 7, 20, 8, 0, 0, 0, time.UTC)
+	repo := &affiliateRewardRepoStub{firstPaid: AffiliateFirstPaidContext{
+		ProgramLive:               true,
+		Claimed:                   true,
+		PurchaseID:                120,
+		BindingKind:               AffiliateBindingOrdinary,
+		InviterUserID:             7,
+		InviterPartnerStatus:      "terminated",
+		InviterPartnerActivatedAt: &activatedAt,
+		OrdinaryReferralRateBPS:   500,
+		OrdinaryInviteeRateBPS:    500,
+	}}
+	svc := NewAffiliateRewardService(repo)
+
+	result, err := svc.ProcessFirstPaidPurchase(context.Background(), AffiliateFirstPaidPurchaseInput{
+		UserID:       11,
+		PurchaseType: AffiliatePurchaseBalanceTopup,
+		PurchaseKey:  "after-termination",
+		AmountMicros: 100_000_000,
+		OccurredAt:   activatedAt.Add(24 * time.Hour),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.SourcePolicy != AffiliateSourcePolicyNone ||
+		result.DirectPartnerID != 0 ||
+		result.OrdinaryReferralMicros != 0 ||
+		result.OrdinaryInviteeMicros != 0 ||
+		len(repo.posted) != 0 {
+		t.Fatalf("terminated inviter received fallback reward: result=%+v posted=%d", result, len(repo.posted))
 	}
 }

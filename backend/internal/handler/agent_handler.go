@@ -260,18 +260,27 @@ func (h *AgentHandler) GetAffiliateQualification(c *gin.Context) {
 	response.Success(c, qualification)
 }
 
-func (h *AgentHandler) ActivateAffiliateAgent(c *gin.Context) {
+type applyAffiliateAgentRequest struct {
+	Note string `json:"note"`
+}
+
+func (h *AgentHandler) ApplyAffiliateAgent(c *gin.Context) {
 	subject, ok := middleware2.GetAuthSubjectFromContext(c)
 	if !ok {
 		response.Unauthorized(c, "User not authenticated")
 		return
 	}
-	activation, err := h.affiliateAgents.Activate(c.Request.Context(), subject.UserID)
+	var req applyAffiliateAgentRequest
+	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	application, err := h.affiliateAgents.Apply(c.Request.Context(), subject.UserID, req.Note)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
-	response.Success(c, activation)
+	response.Created(c, application)
 }
 
 func (h *AgentHandler) GetAffiliateCommunity(c *gin.Context) {

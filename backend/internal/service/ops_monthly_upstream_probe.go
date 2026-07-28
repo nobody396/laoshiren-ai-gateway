@@ -624,11 +624,9 @@ var monthlyCardPublicPlanDefinitions = []struct {
 	ClaudeGroupID   int64
 	GrokGroupID     int64
 }{
-	{ID: "lite", Name: "Lite 月卡", GPTGroupName: "GPT Lite 月卡组", ClaudeGroupName: "Claude Lite 月卡组", GrokGroupName: "Grok Lite 月卡组", GPTGroupID: 7, ClaudeGroupID: 11, GrokGroupID: 35},
-	{ID: "pro", Name: "Pro 月卡", GPTGroupName: "GPT Pro 月卡组", ClaudeGroupName: "Claude Pro 月卡组", GrokGroupName: "Grok Pro 月卡组", GPTGroupID: 8, ClaudeGroupID: 12, GrokGroupID: 36},
-	{ID: "max", Name: "Max 月卡", GPTGroupName: "GPT Max 月卡组", ClaudeGroupName: "Claude Max 月卡组", GrokGroupName: "Grok Max 月卡组", GPTGroupID: 9, ClaudeGroupID: 13, GrokGroupID: 37},
-	{ID: "ultra", Name: "Ultra 月卡", GPTGroupName: "GPT Ultra 月卡组", ClaudeGroupName: "Claude Ultra 月卡组", GrokGroupName: "Grok Ultra 月卡组", GPTGroupID: 10, ClaudeGroupID: 14, GrokGroupID: 38},
-	{ID: "apex", Name: "Apex 月卡", GPTGroupName: "GPT Apex 月卡组", ClaudeGroupName: "Claude Apex 月卡组", GrokGroupName: "Grok Apex 月卡组", GrokGroupID: 39},
+	{ID: "plus", Name: "Plus", GPTGroupName: "GPT Plus 月卡组", ClaudeGroupName: "Claude Plus 月卡组"},
+	{ID: "pro", Name: "Pro", GPTGroupName: "GPT Pro V3 月卡组", ClaudeGroupName: "Claude Pro V3 月卡组"},
+	{ID: "max", Name: "Max", GPTGroupName: "GPT Max V3 月卡组", ClaudeGroupName: "Claude Max V3 月卡组"},
 }
 
 func (s *OpsService) loadMonthlyCardPublicPlans(ctx context.Context) []MonthlyCardPublicPlan {

@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCostAccountingCurrentMonthlyCatalogOnlyContainsLiteAndPro(t *testing.T) {
-	require.Equal(t, []string{"lite", "pro"}, costAccountingMonthlyCardPlanOrder)
-	require.ElementsMatch(t, []string{"lite", "pro"}, mapKeys(costAccountingMonthlyCardGroupIDs))
-	require.ElementsMatch(t, []string{"lite", "pro"}, mapKeys(costAccountingPlanPricing))
+func TestCostAccountingCurrentMonthlyCatalogContainsOnlyV3Plans(t *testing.T) {
+	require.Equal(t, []string{"plus", "pro", "max"}, costAccountingMonthlyCardPlanOrder)
+	require.ElementsMatch(t, []string{"plus", "pro", "max"}, mapKeys(costAccountingMonthlyCardGroupNames))
+	require.ElementsMatch(t, []string{"plus", "pro", "max"}, mapKeys(costAccountingPlanPricing))
 }
 
 func TestCostAccountingPayAsYouGoTargetsDiscoversAllPublicStandardGroups(t *testing.T) {

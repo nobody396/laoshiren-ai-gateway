@@ -151,7 +151,7 @@ FROM affiliate_program_settings
 WHERE id = 1
 `).Scan(&affiliateMode, &affiliateVersion, &agentPoolRateBPS, &marginFloorBPS))
 	require.Equal(t, "off", affiliateMode)
-	require.Equal(t, "v2", affiliateVersion)
+	require.Equal(t, "v3", affiliateVersion)
 	require.Equal(t, 1000, agentPoolRateBPS)
 	require.Equal(t, 3500, marginFloorBPS)
 
@@ -249,6 +249,76 @@ WHERE id = 1
 	requireIndex(t, tx, "agent_cash_commission_entries", "uq_agent_cash_reversal")
 	requireIndex(t, tx, "agent_withdrawal_events", "uq_agent_withdrawal_event_once")
 	requireIndex(t, tx, "agent_payment_qr_access_events", "idx_agent_payment_qr_access_agent_time")
+
+	// migration 160: V3 manual review, immutable source policy, and margin inputs.
+	for _, table := range []string{
+		"affiliate_agent_applications",
+		"affiliate_agent_status_events",
+	} {
+		var regclass sql.NullString
+		require.NoError(t, tx.QueryRowContext(
+			context.Background(),
+			"SELECT to_regclass('public.' || $1)",
+			table,
+		).Scan(&regclass))
+		require.True(t, regclass.Valid, "expected %s table to exist", table)
+	}
+	requireColumn(t, tx, "affiliate_program_settings", "ordinary_invitee_rate_bps", "integer", 0, false)
+	requireColumn(t, tx, "affiliate_program_settings", "stress_cost_per_raw_credit_micros", "bigint", 0, false)
+	requireColumn(t, tx, "agent_principals", "applied_at", "timestamp with time zone", 0, true)
+	requireColumn(t, tx, "balance_lots", "affiliate_policy", "character varying", 32, false)
+	requireColumn(t, tx, "monthly_entitlement_cycles", "affiliate_policy", "character varying", 32, false)
+	requireColumn(t, tx, "monthly_entitlement_cycles", "pricing_table_version", "character varying", 32, false)
+	requireColumn(t, tx, "affiliate_performance_events", "affiliate_policy", "character varying", 32, false)
+	requireIndex(t, tx, "affiliate_agent_applications", "uq_affiliate_application_pending")
+	requireIndex(t, tx, "affiliate_agent_status_events", "idx_affiliate_status_events_agent_time")
+	requireIndex(t, tx, "agent_withdrawal_requests", "uq_agent_withdrawal_payment_reference")
+
+	var ordinaryReferralRateBPS, ordinaryInviteeRateBPS, fixedBonusMicros, conversionMillis, reserveBPS int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT
+    ordinary_referral_rate_bps,
+    ordinary_invitee_rate_bps,
+    first_paid_bonus_micros,
+    commission_conversion_multiplier_millis,
+    operational_reserve_bps
+FROM affiliate_program_settings
+WHERE id = 1
+`).Scan(
+		&ordinaryReferralRateBPS,
+		&ordinaryInviteeRateBPS,
+		&fixedBonusMicros,
+		&conversionMillis,
+		&reserveBPS,
+	))
+	require.Equal(t, 500, ordinaryReferralRateBPS)
+	require.Equal(t, 500, ordinaryInviteeRateBPS)
+	require.Zero(t, fixedBonusMicros)
+	require.Equal(t, 1200, conversionMillis)
+	require.Equal(t, 200, reserveBPS)
+
+	// migration 161: additive monthly-only V3 groups.  Historical groups stay
+	// untouched while new cards target these six rows.
+	for _, groupName := range []string{
+		"GPT Plus 月卡组", "Claude Plus 月卡组",
+		"GPT Pro V3 月卡组", "Claude Pro V3 月卡组",
+		"GPT Max V3 月卡组", "Claude Max V3 月卡组",
+	} {
+		var count int
+		var description string
+		var daily, weekly sql.NullFloat64
+		var validity int
+		require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT COUNT(*), MAX(description), MAX(daily_limit_usd), MAX(weekly_limit_usd), MAX(default_validity_days)
+FROM groups
+WHERE deleted_at IS NULL AND name = $1
+`, groupName).Scan(&count, &description, &daily, &weekly, &validity))
+		require.Equal(t, 1, count, "expected one active V3 group %s", groupName)
+		require.Empty(t, description, "V3 group %s description must stay empty", groupName)
+		require.False(t, daily.Valid, "V3 group %s must not have a daily limit", groupName)
+		require.False(t, weekly.Valid, "V3 group %s must not have a weekly limit", groupName)
+		require.Equal(t, 31, validity)
+	}
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

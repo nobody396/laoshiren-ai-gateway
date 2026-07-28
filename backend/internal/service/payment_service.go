@@ -256,35 +256,47 @@ func (s *PaymentService) completeOrder(ctx context.Context, orderNo string, alip
 		creditLimitMicros := AffiliateMonthlyCreditLimitMicros([]*Group{group}, order.ValidityDays)
 		if creditLimitMicros > 0 {
 			cycleStartsAt := subscription.ExpiresAt.AddDate(0, 0, -order.ValidityDays)
+			occurredAt := time.Now()
+			var rewardResult *AffiliateFirstPaidPurchaseResult
+			if s.affiliateRewards != nil {
+				rewardResult, err = s.affiliateRewards.ProcessFirstPaidPurchase(txCtx, AffiliateFirstPaidPurchaseInput{
+					UserID:       order.UserID,
+					PurchaseType: AffiliatePurchaseMonthlyPayment,
+					SourceID:     order.ID,
+					PurchaseKey:  fmt.Sprintf("payment:subscription:%d", order.ID),
+					AmountMicros: int64(order.AmountCents) * 10_000,
+					OccurredAt:   occurredAt,
+				})
+				if err != nil {
+					return fmt.Errorf("process affiliate first paid monthly purchase: %w", err)
+				}
+			}
+			policy, partnerID, customerRate, partnerRate := AffiliatePolicyFromPurchaseResult(
+				order.AmountCents > 0,
+				rewardResult,
+			)
+			_, pricingTableVersion := AffiliateMonthlyCatalogIdentity([]*Group{group})
 			if err := s.affiliateConsumption.RecordMonthlyEntitlement(txCtx, AffiliateMonthlyEntitlementInput{
-				UserID:            order.UserID,
-				SourceType:        AffiliateSourcePaidTopup,
-				SourceID:          order.ID,
-				SourceKey:         fmt.Sprintf("payment:subscription:%d", order.ID),
-				ProductCode:       order.PlanID,
-				SalePriceMicros:   int64(order.AmountCents) * 10_000,
-				CreditLimitMicros: creditLimitMicros,
-				AffiliateEligible: order.AmountCents > 0,
-				StartsAt:          cycleStartsAt,
-				EndsAt:            subscription.ExpiresAt,
+				UserID:                   order.UserID,
+				SourceType:               AffiliateSourcePaidTopup,
+				SourceID:                 order.ID,
+				SourceKey:                fmt.Sprintf("payment:subscription:%d", order.ID),
+				ProductCode:              order.PlanID,
+				SalePriceMicros:          int64(order.AmountCents) * 10_000,
+				CreditLimitMicros:        creditLimitMicros,
+				AffiliatePolicy:          policy,
+				DirectPartnerID:          partnerID,
+				CustomerRebateRateBPS:    customerRate,
+				PartnerCommissionRateBPS: partnerRate,
+				PricingTableVersion:      pricingTableVersion,
+				StartsAt:                 cycleStartsAt,
+				EndsAt:                   subscription.ExpiresAt,
 				Subscriptions: []AffiliateMonthlySubscription{{
 					UserSubscriptionID: subscription.ID,
 					GroupID:            order.GroupID,
 				}},
 			}); err != nil {
 				return fmt.Errorf("record affiliate monthly entitlement: %w", err)
-			}
-			if s.affiliateRewards != nil {
-				if _, err := s.affiliateRewards.ProcessFirstPaidPurchase(txCtx, AffiliateFirstPaidPurchaseInput{
-					UserID:       order.UserID,
-					PurchaseType: AffiliatePurchaseMonthlyPayment,
-					SourceID:     order.ID,
-					PurchaseKey:  fmt.Sprintf("payment:subscription:%d", order.ID),
-					AmountMicros: int64(order.AmountCents) * 10_000,
-					OccurredAt:   time.Now(),
-				}); err != nil {
-					return fmt.Errorf("process affiliate first paid monthly purchase: %w", err)
-				}
 			}
 		}
 	}

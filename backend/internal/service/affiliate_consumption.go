@@ -33,13 +33,16 @@ func AffiliateMicrosFromFloat(value float64) int64 {
 }
 
 type AffiliateBalanceLotInput struct {
-	UserID            int64
-	SourceType        string
-	SourceID          int64
-	SourceKey         string
-	AmountMicros      int64
-	AffiliateEligible bool
-	OccurredAt        time.Time
+	UserID                   int64
+	SourceType               string
+	SourceID                 int64
+	SourceKey                string
+	AmountMicros             int64
+	AffiliatePolicy          string
+	DirectPartnerID          int64
+	CustomerRebateRateBPS    int32
+	PartnerCommissionRateBPS int32
+	OccurredAt               time.Time
 }
 
 type AffiliateMonthlySubscription struct {
@@ -48,22 +51,79 @@ type AffiliateMonthlySubscription struct {
 }
 
 type AffiliateMonthlyEntitlementInput struct {
-	UserID            int64
-	SourceType        string
-	SourceID          int64
-	SourceKey         string
-	ProductCode       string
-	SalePriceMicros   int64
-	CreditLimitMicros int64
-	AffiliateEligible bool
-	StartsAt          time.Time
-	EndsAt            time.Time
-	Subscriptions     []AffiliateMonthlySubscription
+	UserID                   int64
+	SourceType               string
+	SourceID                 int64
+	SourceKey                string
+	ProductCode              string
+	SalePriceMicros          int64
+	CreditLimitMicros        int64
+	AffiliatePolicy          string
+	DirectPartnerID          int64
+	CustomerRebateRateBPS    int32
+	PartnerCommissionRateBPS int32
+	PricingTableVersion      string
+	StartsAt                 time.Time
+	EndsAt                   time.Time
+	Subscriptions            []AffiliateMonthlySubscription
 }
 
 type AffiliateConsumptionRepository interface {
 	RecordBalanceLot(ctx context.Context, input AffiliateBalanceLotInput) error
 	RecordMonthlyEntitlement(ctx context.Context, input AffiliateMonthlyEntitlementInput) error
+}
+
+func AffiliatePolicyFromPurchaseResult(
+	paid bool,
+	result *AffiliateFirstPaidPurchaseResult,
+) (policy string, directPartnerID int64, customerRateBPS, partnerRateBPS int32) {
+	if !paid {
+		return AffiliateSourcePolicyNone, 0, 0, 0
+	}
+	if result == nil || !result.ProgramLive {
+		return AffiliateSourcePolicyNone, 0, 0, 0
+	}
+	switch result.SourcePolicy {
+	case AffiliateSourcePolicyOrdinaryFirstPaid:
+		return result.SourcePolicy, result.DirectPartnerID, 0, 0
+	case AffiliateSourcePolicyPartnerUsage:
+		return result.SourcePolicy, result.DirectPartnerID, result.CustomerRebateRateBPS, result.PartnerCommissionRateBPS
+	default:
+		return AffiliateSourcePolicyNone, 0, 0, 0
+	}
+}
+
+func AffiliatePolicyTracksConsumption(policy string) bool {
+	return policy == AffiliateSourcePolicyOrdinaryFirstPaid ||
+		policy == AffiliateSourcePolicyPartnerUsage
+}
+
+func AffiliateMonthlyCatalogIdentity(groups []*Group) (productCode, pricingTableVersion string) {
+	if len(groups) == 2 {
+		names := map[string]struct{}{}
+		for _, group := range groups {
+			if group == nil {
+				return "", "legacy"
+			}
+			names[group.Name] = struct{}{}
+		}
+		for planID, expected := range costAccountingMonthlyCardGroupNames {
+			if len(expected) != len(names) {
+				continue
+			}
+			complete := true
+			for _, name := range expected {
+				if _, ok := names[name]; !ok {
+					complete = false
+					break
+				}
+			}
+			if complete {
+				return "monthly-" + planID + "-v3-20260728", AffiliateCommercialPricingTableVersionV3
+			}
+		}
+	}
+	return "", "legacy"
 }
 
 func AffiliateSourceFromRedeem(purpose, salesStatus string) (sourceType string, eligible bool) {

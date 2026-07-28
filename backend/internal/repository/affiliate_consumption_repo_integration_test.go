@@ -28,13 +28,13 @@ func TestAffiliateConsumptionRepository_ReusesEntTransaction(t *testing.T) {
 	require.NoError(t, err)
 	txCtx := dbent.NewTxContext(ctx, tx)
 	require.NoError(t, repo.RecordBalanceLot(txCtx, service.AffiliateBalanceLotInput{
-		UserID:            user.ID,
-		SourceType:        service.AffiliateSourcePaidRedeem,
-		SourceID:          987,
-		SourceKey:         sourceKey,
-		AmountMicros:      20_000_000,
-		AffiliateEligible: true,
-		OccurredAt:        time.Now(),
+		UserID:          user.ID,
+		SourceType:      service.AffiliateSourcePaidRedeem,
+		SourceID:        987,
+		SourceKey:       sourceKey,
+		AmountMicros:    20_000_000,
+		AffiliatePolicy: service.AffiliateSourcePolicyNone,
+		OccurredAt:      time.Now(),
 	}))
 	require.NoError(t, tx.Rollback())
 

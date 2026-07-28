@@ -23,6 +23,7 @@ type AgentHandler struct {
 	affiliateCommunity *service.AffiliateCommunityService
 	affiliateWallet    *service.AffiliateWalletService
 	affiliateRisk      *service.AffiliateRiskService
+	affiliateAgents    *service.AffiliateAgentService
 }
 
 func NewAgentHandler(
@@ -31,6 +32,7 @@ func NewAgentHandler(
 	affiliateCommunity *service.AffiliateCommunityService,
 	affiliateWallet *service.AffiliateWalletService,
 	affiliateRisk *service.AffiliateRiskService,
+	affiliateAgents *service.AffiliateAgentService,
 ) *AgentHandler {
 	return &AgentHandler{
 		commissionService:  commissionService,
@@ -38,6 +40,7 @@ func NewAgentHandler(
 		affiliateCommunity: affiliateCommunity,
 		affiliateWallet:    affiliateWallet,
 		affiliateRisk:      affiliateRisk,
+		affiliateAgents:    affiliateAgents,
 	}
 }
 
@@ -95,6 +98,11 @@ type updateAffiliateRiskRequest struct {
 type reverseAffiliatePerformanceRequest struct {
 	EventID int64  `json:"event_id" binding:"required"`
 	Reason  string `json:"reason" binding:"required"`
+}
+
+type reviewAffiliateApplicationRequest struct {
+	Approve bool   `json:"approve"`
+	Note    string `json:"note"`
 }
 
 type bindAgentUserRequest struct {
@@ -367,7 +375,7 @@ func (h *AgentHandler) GetAffiliateCommercialPolicy(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	response.Success(c, service.BuildAffiliateCommercialPolicy(settings.MarginFloorBPS))
+	response.Success(c, service.BuildAffiliateCommercialPolicyFromSettings(*settings))
 }
 
 func (h *AgentHandler) ListAffiliateRiskPrincipals(c *gin.Context) {
@@ -380,6 +388,49 @@ func (h *AgentHandler) ListAffiliateRiskPrincipals(c *gin.Context) {
 		return
 	}
 	response.Success(c, gin.H{"items": items})
+}
+
+func (h *AgentHandler) ListAffiliateApplications(c *gin.Context) {
+	items, err := h.affiliateAgents.ListApplications(
+		c.Request.Context(),
+		c.DefaultQuery("status", "pending_review"),
+		parsePositiveInt(c.Query("limit"), 100),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"items": items})
+}
+
+func (h *AgentHandler) ReviewAffiliateApplication(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	applicationID, err := strconv.ParseInt(c.Param("application_id"), 10, 64)
+	if err != nil || applicationID <= 0 {
+		response.BadRequest(c, "Invalid application id")
+		return
+	}
+	var req reviewAffiliateApplicationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	result, err := h.affiliateAgents.ReviewApplication(
+		c.Request.Context(),
+		applicationID,
+		req.Approve,
+		req.Note,
+		subject.UserID,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
 }
 
 func (h *AgentHandler) UpdateAffiliateRisk(c *gin.Context) {

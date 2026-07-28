@@ -347,30 +347,36 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 			return nil, fmt.Errorf("update user balance: %w", err)
 		}
 		if s.affiliateConsumption != nil {
-			sourceType, eligible := AffiliateSourceFromRedeem(redeemCode.Purpose, redeemCode.SalesStatus)
+			sourceType, paid := AffiliateSourceFromRedeem(redeemCode.Purpose, redeemCode.SalesStatus)
 			occurredAt := time.Now()
-			if err := s.affiliateConsumption.RecordBalanceLot(txCtx, AffiliateBalanceLotInput{
-				UserID:            userID,
-				SourceType:        sourceType,
-				SourceID:          redeemCode.ID,
-				SourceKey:         fmt.Sprintf("redeem:balance:%d", redeemCode.ID),
-				AmountMicros:      AffiliateMicrosFromFloat(redeemCode.Value),
-				AffiliateEligible: eligible,
-				OccurredAt:        occurredAt,
-			}); err != nil {
-				return nil, fmt.Errorf("record affiliate balance lot: %w", err)
-			}
-			if eligible && s.affiliateRewards != nil {
-				if _, err := s.affiliateRewards.ProcessFirstPaidPurchase(txCtx, AffiliateFirstPaidPurchaseInput{
+			var rewardResult *AffiliateFirstPaidPurchaseResult
+			if paid && s.affiliateRewards != nil {
+				rewardResult, err = s.affiliateRewards.ProcessFirstPaidPurchase(txCtx, AffiliateFirstPaidPurchaseInput{
 					UserID:       userID,
 					PurchaseType: AffiliatePurchaseBalanceRedeem,
 					SourceID:     redeemCode.ID,
 					PurchaseKey:  fmt.Sprintf("redeem:balance:%d", redeemCode.ID),
 					AmountMicros: AffiliateMicrosFromFloat(redeemCode.Value),
 					OccurredAt:   occurredAt,
-				}); err != nil {
+				})
+				if err != nil {
 					return nil, fmt.Errorf("process affiliate first paid balance purchase: %w", err)
 				}
+			}
+			policy, partnerID, customerRate, partnerRate := AffiliatePolicyFromPurchaseResult(paid, rewardResult)
+			if err := s.affiliateConsumption.RecordBalanceLot(txCtx, AffiliateBalanceLotInput{
+				UserID:                   userID,
+				SourceType:               sourceType,
+				SourceID:                 redeemCode.ID,
+				SourceKey:                fmt.Sprintf("redeem:balance:%d", redeemCode.ID),
+				AmountMicros:             AffiliateMicrosFromFloat(redeemCode.Value),
+				AffiliatePolicy:          policy,
+				DirectPartnerID:          partnerID,
+				CustomerRebateRateBPS:    customerRate,
+				PartnerCommissionRateBPS: partnerRate,
+				OccurredAt:               occurredAt,
+			}); err != nil {
+				return nil, fmt.Errorf("record affiliate balance lot: %w", err)
 			}
 		}
 
@@ -420,37 +426,51 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 			}
 		}
 		if s.affiliateConsumption != nil {
-			sourceType, eligible := AffiliateSourceFromRedeem(redeemCode.Purpose, redeemCode.SalesStatus)
+			sourceType, paid := AffiliateSourceFromRedeem(redeemCode.Purpose, redeemCode.SalesStatus)
 			creditLimitMicros := AffiliateMonthlyCreditLimitMicros(affiliateGroups, validityDays)
 			salePriceMicros := AffiliateMicrosFromFloat(redeemCode.Value)
 			if creditLimitMicros > 0 {
 				occurredAt := time.Now()
-				if err := s.affiliateConsumption.RecordMonthlyEntitlement(txCtx, AffiliateMonthlyEntitlementInput{
-					UserID:            userID,
-					SourceType:        sourceType,
-					SourceID:          redeemCode.ID,
-					SourceKey:         fmt.Sprintf("redeem:subscription:%d", redeemCode.ID),
-					ProductCode:       fmt.Sprintf("redeem-%d", redeemCode.ID),
-					SalePriceMicros:   salePriceMicros,
-					CreditLimitMicros: creditLimitMicros,
-					AffiliateEligible: eligible && salePriceMicros > 0,
-					StartsAt:          cycleStartsAt,
-					EndsAt:            cycleEndsAt,
-					Subscriptions:     affiliateSubscriptions,
-				}); err != nil {
-					return nil, fmt.Errorf("record affiliate monthly entitlement: %w", err)
-				}
-				if eligible && salePriceMicros > 0 && s.affiliateRewards != nil {
-					if _, err := s.affiliateRewards.ProcessFirstPaidPurchase(txCtx, AffiliateFirstPaidPurchaseInput{
+				var rewardResult *AffiliateFirstPaidPurchaseResult
+				if paid && salePriceMicros > 0 && s.affiliateRewards != nil {
+					rewardResult, err = s.affiliateRewards.ProcessFirstPaidPurchase(txCtx, AffiliateFirstPaidPurchaseInput{
 						UserID:       userID,
 						PurchaseType: AffiliatePurchaseMonthlyRedeem,
 						SourceID:     redeemCode.ID,
 						PurchaseKey:  fmt.Sprintf("redeem:subscription:%d", redeemCode.ID),
 						AmountMicros: salePriceMicros,
 						OccurredAt:   occurredAt,
-					}); err != nil {
+					})
+					if err != nil {
 						return nil, fmt.Errorf("process affiliate first paid monthly purchase: %w", err)
 					}
+				}
+				policy, partnerID, customerRate, partnerRate := AffiliatePolicyFromPurchaseResult(
+					paid && salePriceMicros > 0,
+					rewardResult,
+				)
+				productCode, pricingTableVersion := AffiliateMonthlyCatalogIdentity(affiliateGroups)
+				if productCode == "" {
+					productCode = fmt.Sprintf("redeem-%d", redeemCode.ID)
+				}
+				if err := s.affiliateConsumption.RecordMonthlyEntitlement(txCtx, AffiliateMonthlyEntitlementInput{
+					UserID:                   userID,
+					SourceType:               sourceType,
+					SourceID:                 redeemCode.ID,
+					SourceKey:                fmt.Sprintf("redeem:subscription:%d", redeemCode.ID),
+					ProductCode:              productCode,
+					SalePriceMicros:          salePriceMicros,
+					CreditLimitMicros:        creditLimitMicros,
+					AffiliatePolicy:          policy,
+					DirectPartnerID:          partnerID,
+					CustomerRebateRateBPS:    customerRate,
+					PartnerCommissionRateBPS: partnerRate,
+					PricingTableVersion:      pricingTableVersion,
+					StartsAt:                 cycleStartsAt,
+					EndsAt:                   cycleEndsAt,
+					Subscriptions:            affiliateSubscriptions,
+				}); err != nil {
+					return nil, fmt.Errorf("record affiliate monthly entitlement: %w", err)
 				}
 			}
 		}

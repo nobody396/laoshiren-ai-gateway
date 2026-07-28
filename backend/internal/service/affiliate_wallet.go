@@ -250,7 +250,10 @@ func (s *AffiliateWalletService) CompleteWithdrawal(
 	paymentReference string,
 ) (*AffiliateWithdrawal, error) {
 	paymentReference = strings.TrimSpace(paymentReference)
-	if withdrawalID <= 0 || operatorID <= 0 || len([]rune(paymentReference)) > 200 {
+	if withdrawalID <= 0 ||
+		operatorID <= 0 ||
+		paymentReference == "" ||
+		len([]rune(paymentReference)) > 200 {
 		return nil, ErrInvalidInput
 	}
 	return s.repo.CompleteAffiliateWithdrawal(ctx, withdrawalID, operatorID, paymentReference)

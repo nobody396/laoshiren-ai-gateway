@@ -14,6 +14,10 @@ func TestAffiliateCommercialPolicy_CatalogAndMarginGate(t *testing.T) {
 	require.Equal(t, "⚡", policy.CreditAssetSymbol)
 	require.Equal(t, int32(300), policy.ShopFeeBPS)
 	require.Equal(t, int32(1000), policy.MaxRewardPoolBPS)
+	require.Equal(t, int32(1200), policy.MaxRewardBurdenBPS)
+	require.Equal(t, int32(200), policy.OperationalReserveBPS)
+	require.Equal(t, 0.53, policy.StressCostPerCredit)
+	require.Equal(t, AffiliateCommercialPricingTableVersionV3, policy.PricingTableVersion)
 	require.Equal(t, 0.185, policy.GPTCostMix.BlendedAccountMultiplier)
 	require.True(t, policy.PassesConfiguredMarginGate)
 	require.GreaterOrEqual(t, policy.MinimumStressMargin, 35.0)
@@ -26,24 +30,38 @@ func TestAffiliateCommercialPolicy_CatalogAndMarginGate(t *testing.T) {
 	}
 	require.Equal(t, float64(20), byID["payg-20"].ShopPriceCNY)
 	require.Equal(t, float64(20), byID["payg-20"].PlatformCredits)
-	require.Equal(t, float64(259), byID["starter"].ShopPriceCNY)
-	require.Equal(t, float64(249), byID["starter"].DirectPriceCNY)
-	require.Equal(t, float64(2400), byID["starter"].PlatformCredits)
-	require.Equal(t, float64(80), byID["starter"].DailyPlatformCredits)
-	require.Equal(t, float64(469), byID["lite"].ShopPriceCNY)
-	require.Equal(t, float64(459), byID["lite"].DirectPriceCNY)
-	require.Equal(t, float64(4500), byID["lite"].PlatformCredits)
-	require.Equal(t, float64(150), byID["lite"].DailyPlatformCredits)
-	require.Equal(t, float64(869), byID["pro"].ShopPriceCNY)
-	require.Equal(t, float64(839), byID["pro"].DirectPriceCNY)
-	require.Equal(t, float64(8500), byID["pro"].PlatformCredits)
-	require.Equal(t, float64(280), byID["pro"].DailyPlatformCredits)
+	require.Equal(t, float64(259), byID["plus"].ShopPriceCNY)
+	require.Equal(t, float64(249), byID["plus"].DirectPriceCNY)
+	require.Equal(t, float64(2200), byID["plus"].PlatformCredits)
+	require.Zero(t, byID["plus"].DailyPlatformCredits)
+	require.Equal(t, float64(729), byID["pro"].ShopPriceCNY)
+	require.Equal(t, float64(699), byID["pro"].DirectPriceCNY)
+	require.Equal(t, float64(6500), byID["pro"].PlatformCredits)
+	require.Zero(t, byID["pro"].DailyPlatformCredits)
+	require.Equal(t, float64(1549), byID["max"].ShopPriceCNY)
+	require.Equal(t, float64(1499), byID["max"].DirectPriceCNY)
+	require.Equal(t, float64(14000), byID["max"].PlatformCredits)
+	require.Zero(t, byID["max"].DailyPlatformCredits)
+	require.InDelta(t, 35.10, byID["max"].ShopStressMarginPercent, 0.01)
 }
 
 func TestAffiliateCommercialPolicy_RejectsUnmetHigherMarginFloor(t *testing.T) {
 	err := ValidateAffiliateCommercialMarginFloor(4000)
 	require.Error(t, err)
 	require.True(t, errors.Is(err, ErrAffiliateProgramSettingsInvalid))
+}
+
+func TestAffiliateCommercialPolicy_UsesPersistedStressSnapshotInputs(t *testing.T) {
+	settings := DefaultAffiliateProgramSettings()
+	settings.StressCostPerRawCreditMicros = 540_000
+	settings.OperationalReserveBPS = 250
+
+	policy := BuildAffiliateCommercialPolicyFromSettings(settings)
+
+	require.Equal(t, 0.54, policy.StressCostPerCredit)
+	require.Equal(t, int32(250), policy.OperationalReserveBPS)
+	require.False(t, policy.PassesConfiguredMarginGate)
+	require.Error(t, ValidateAffiliateCommercialSettings(settings))
 }
 
 func TestAffiliateCommercialPolicy_GroupTargets(t *testing.T) {

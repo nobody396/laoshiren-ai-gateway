@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAffiliateRewardRepository_FirstPaidT0AndT1AreIdempotent(t *testing.T) {
+func TestAffiliateRewardRepository_FirstPaidFivePlusFiveT0IsIdempotent(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)
 	repo := NewAffiliateRewardRepository(client, integrationDB)
@@ -52,39 +52,38 @@ func TestAffiliateRewardRepository_FirstPaidT0AndT1AreIdempotent(t *testing.T) {
 	require.True(t, result.ProgramLive)
 	require.True(t, result.Claimed)
 	require.Equal(t, int64(5_000_000), result.OrdinaryReferralMicros)
-	require.True(t, result.FirstPaidBonusScheduled)
+	require.Equal(t, int64(5_000_000), result.OrdinaryInviteeMicros)
 	require.NoError(t, tx.Commit())
 
 	var inviterBalance, inviteeBalance float64
 	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT balance FROM users WHERE id=$1", inviter.ID).Scan(&inviterBalance))
 	require.InDelta(t, 5, inviterBalance, 0.000001)
 	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT balance FROM users WHERE id=$1", invitee.ID).Scan(&inviteeBalance))
-	require.InDelta(t, 0, inviteeBalance, 0.000001)
+	require.InDelta(t, 5, inviteeBalance, 0.000001)
 
-	var postedCount, pendingCount int
+	var inviterPostedCount, inviteePostedCount, pendingCount int
 	require.NoError(t, integrationDB.QueryRowContext(ctx, `
 		SELECT
 			COUNT(*) FILTER (WHERE reward_type='ordinary_referral' AND status='posted'),
-			COUNT(*) FILTER (WHERE reward_type='first_paid_bonus' AND status='pending')
+			COUNT(*) FILTER (WHERE reward_type='ordinary_invitee' AND status='posted'),
+			COUNT(*) FILTER (WHERE status='pending')
 		FROM affiliate_reward_entries
 		WHERE consumer_user_id=$1
-	`, invitee.ID).Scan(&postedCount, &pendingCount))
-	require.Equal(t, 1, postedCount)
-	require.Equal(t, 1, pendingCount)
+	`, invitee.ID).Scan(&inviterPostedCount, &inviteePostedCount, &pendingCount))
+	require.Equal(t, 1, inviterPostedCount)
+	require.Equal(t, 1, inviteePostedCount)
+	require.Zero(t, pendingCount)
 
-	_, err = integrationDB.ExecContext(ctx, `
-		UPDATE affiliate_reward_entries
-		SET available_at = NOW() - INTERVAL '1 second'
-		WHERE consumer_user_id=$1
-			AND reward_type='first_paid_bonus'
-			AND status='pending'
-	`, invitee.ID)
+	commissionRepo := NewCommissionRepository(client, integrationDB)
+	referralTotal, err := commissionRepo.SumByBeneficiaryTypeAndPeriod(
+		ctx,
+		inviter.ID,
+		service.CommissionTypeFirstRechargeReferral,
+		nil,
+		nil,
+	)
 	require.NoError(t, err)
-	matured, err := repo.PostDuePlatformRewards(ctx, 100)
-	require.NoError(t, err)
-	require.Equal(t, 1, matured)
-	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT balance FROM users WHERE id=$1", invitee.ID).Scan(&inviteeBalance))
-	require.InDelta(t, 5, inviteeBalance, 0.000001)
+	require.InDelta(t, 5, referralTotal, 0.000001)
 
 	tx, err = client.Tx(ctx)
 	require.NoError(t, err)

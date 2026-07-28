@@ -320,14 +320,14 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 			groups: map[int64]*Group{
 				7: {
 					ID:               7,
-					Name:             "GPT Lite 月卡组",
+					Name:             "GPT Plus 月卡组",
 					Platform:         PlatformOpenAI,
 					Status:           StatusActive,
 					SubscriptionType: SubscriptionTypeCredit,
 				},
 				11: {
 					ID:               11,
-					Name:             "Claude Lite 月卡组",
+					Name:             "Claude Plus 月卡组",
 					Platform:         PlatformAnthropic,
 					Status:           StatusActive,
 					SubscriptionType: SubscriptionTypeCredit,
@@ -346,7 +346,7 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 	targets, err := svc.loadMonthlyUpstreamProbeTargets(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, targets, 3)
+	require.Len(t, targets, 2)
 	require.Equal(t, "monthly-codex-gateway", targets[0].AccountName)
 	require.Equal(t, PlatformOpenAI, targets[0].Platform)
 	require.Equal(t, "gpt-5.4-mini", targets[0].Model)
@@ -357,10 +357,6 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 	require.Equal(t, PlatformAnthropic, targets[1].Platform)
 	require.Equal(t, "claude-haiku-4-5", targets[1].Model)
 	require.Equal(t, int64(11), targets[1].GroupID)
-	require.Equal(t, "monthly-grok-gateway", targets[2].AccountName)
-	require.Equal(t, PlatformAnthropic, targets[2].Platform)
-	require.Equal(t, "grok-4.5", targets[2].Model)
-	require.Equal(t, int64(35), targets[2].GroupID)
 }
 
 func TestMonthlyCardPublicStatusLabelsGrokIndependentlyFromAnthropicProtocol(t *testing.T) {
@@ -420,7 +416,7 @@ func TestMonthlyUpstreamProbeSnapshotFiltersObsoleteRenamedAccountPoints(t *test
 			groups: map[int64]*Group{
 				7: {
 					ID:               7,
-					Name:             "GPT Lite 月卡组",
+					Name:             "GPT Plus 月卡组",
 					Platform:         PlatformOpenAI,
 					Status:           StatusActive,
 					SubscriptionType: SubscriptionTypeCredit,

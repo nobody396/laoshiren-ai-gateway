@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	AffiliateProgramVersionV2 = "v2"
+	AffiliateProgramVersionV3 = "v3"
 
 	AffiliateProgramModeOff    = "off"
 	AffiliateProgramModeShadow = "shadow"
@@ -32,6 +32,7 @@ type AffiliateProgramSettings struct {
 	Mode                                     string     `json:"mode"`
 	StartedAt                                *time.Time `json:"started_at,omitempty"`
 	OrdinaryReferralRateBPS                  int32      `json:"ordinary_referral_rate_bps"`
+	OrdinaryInviteeRateBPS                   int32      `json:"ordinary_invitee_rate_bps"`
 	FirstPaidBonusThresholdMicros            int64      `json:"first_paid_bonus_threshold_micros"`
 	FirstPaidBonusMicros                     int64      `json:"first_paid_bonus_micros"`
 	AgentPoolRateBPS                         int32      `json:"agent_pool_rate_bps"`
@@ -44,6 +45,10 @@ type AffiliateProgramSettings struct {
 	WithdrawalMinMicros                      int64      `json:"withdrawal_min_micros"`
 	WithdrawalSLAHours                       int32      `json:"withdrawal_sla_hours"`
 	MarginFloorBPS                           int32      `json:"margin_floor_bps"`
+	OperationalReserveBPS                    int32      `json:"operational_reserve_bps"`
+	StressCostPerRawCreditMicros             int64      `json:"stress_cost_per_raw_credit_micros"`
+	StressCostSnapshotAt                     time.Time  `json:"stress_cost_snapshot_at"`
+	CostSnapshotMaxAgeHours                  int32      `json:"cost_snapshot_max_age_hours"`
 	Revision                                 int64      `json:"revision"`
 	UpdatedBy                                *int64     `json:"updated_by,omitempty"`
 	CreatedAt                                time.Time  `json:"created_at"`
@@ -53,11 +58,12 @@ type AffiliateProgramSettings struct {
 func DefaultAffiliateProgramSettings() AffiliateProgramSettings {
 	return AffiliateProgramSettings{
 		ID:                                       1,
-		ProgramVersion:                           AffiliateProgramVersionV2,
+		ProgramVersion:                           AffiliateProgramVersionV3,
 		Mode:                                     AffiliateProgramModeOff,
 		OrdinaryReferralRateBPS:                  500,
-		FirstPaidBonusThresholdMicros:            50_000_000,
-		FirstPaidBonusMicros:                     5_000_000,
+		OrdinaryInviteeRateBPS:                   500,
+		FirstPaidBonusThresholdMicros:            0,
+		FirstPaidBonusMicros:                     0,
 		AgentPoolRateBPS:                         AffiliateAgentPoolRateBPS,
 		QualificationDirectUserCount:             10,
 		QualificationMinUserConsumptionMicros:    20_000_000,
@@ -68,6 +74,10 @@ func DefaultAffiliateProgramSettings() AffiliateProgramSettings {
 		WithdrawalMinMicros:                      100_000_000,
 		WithdrawalSLAHours:                       24,
 		MarginFloorBPS:                           3500,
+		OperationalReserveBPS:                    AffiliateCommercialOperationalReserveBPS,
+		StressCostPerRawCreditMicros:             530_000,
+		StressCostSnapshotAt:                     time.Now(),
+		CostSnapshotMaxAgeHours:                  24,
 		Revision:                                 1,
 	}
 }
@@ -80,8 +90,8 @@ func (s AffiliateProgramSettings) Validate() error {
 	if s.ID != 1 {
 		return invalid("id must be 1")
 	}
-	if s.ProgramVersion != AffiliateProgramVersionV2 {
-		return invalid("program_version must be %q", AffiliateProgramVersionV2)
+	if s.ProgramVersion != AffiliateProgramVersionV3 {
+		return invalid("program_version must be %q", AffiliateProgramVersionV3)
 	}
 	if !isAffiliateProgramMode(s.Mode) {
 		return invalid("unsupported mode %q", s.Mode)
@@ -89,14 +99,20 @@ func (s AffiliateProgramSettings) Validate() error {
 	if s.Mode == AffiliateProgramModeLive && s.StartedAt == nil {
 		return invalid("live mode requires started_at")
 	}
-	if s.OrdinaryReferralRateBPS < 0 || s.OrdinaryReferralRateBPS > AffiliateAgentPoolRateBPS {
-		return invalid("ordinary referral rate must be between 0 and %d bps", AffiliateAgentPoolRateBPS)
+	if s.OrdinaryReferralRateBPS != 500 {
+		return invalid("ordinary referral rate must remain fixed at 500 bps")
+	}
+	if s.OrdinaryInviteeRateBPS != 500 {
+		return invalid("ordinary invitee rate must remain fixed at 500 bps")
 	}
 	if s.AgentPoolRateBPS != AffiliateAgentPoolRateBPS {
 		return invalid("agent pool rate must remain fixed at %d bps", AffiliateAgentPoolRateBPS)
 	}
 	if s.FirstPaidBonusThresholdMicros < 0 || s.FirstPaidBonusMicros < 0 {
 		return invalid("first-paid bonus values cannot be negative")
+	}
+	if s.FirstPaidBonusThresholdMicros != 0 || s.FirstPaidBonusMicros != 0 {
+		return invalid("fixed first-paid bonus is disabled in v3")
 	}
 	if s.QualificationDirectUserCount <= 0 ||
 		s.QualificationMinUserConsumptionMicros <= 0 ||
@@ -107,8 +123,8 @@ func (s AffiliateProgramSettings) Validate() error {
 	if s.MaxCampaignLinks < 0 || s.MaxCampaignLinks > 100 {
 		return invalid("max campaign links must be between 0 and 100")
 	}
-	if s.CommissionConversionMultiplierMillis < 1000 {
-		return invalid("commission conversion multiplier cannot be below 1.0")
+	if s.CommissionConversionMultiplierMillis != 1200 {
+		return invalid("commission conversion multiplier must remain fixed at 1.2")
 	}
 	if s.WithdrawalMinMicros <= 0 {
 		return invalid("withdrawal minimum must be positive")
@@ -119,7 +135,19 @@ func (s AffiliateProgramSettings) Validate() error {
 	if s.MarginFloorBPS < 3500 || s.MarginFloorBPS > 10000 {
 		return invalid("margin floor must be between 3500 and 10000 bps")
 	}
-	if err := ValidateAffiliateCommercialMarginFloor(s.MarginFloorBPS); err != nil {
+	if s.OperationalReserveBPS < AffiliateCommercialOperationalReserveBPS || s.OperationalReserveBPS > 3000 {
+		return invalid("operational reserve must be between %d and 3000 bps", AffiliateCommercialOperationalReserveBPS)
+	}
+	if s.StressCostPerRawCreditMicros <= 0 {
+		return invalid("stress cost per raw credit must be positive")
+	}
+	if s.StressCostSnapshotAt.IsZero() {
+		return invalid("stress cost snapshot time is required")
+	}
+	if s.CostSnapshotMaxAgeHours <= 0 || s.CostSnapshotMaxAgeHours > 720 {
+		return invalid("cost snapshot max age must be between 1 and 720 hours")
+	}
+	if err := ValidateAffiliateCommercialSettings(s); err != nil {
 		return err
 	}
 	if s.Revision <= 0 {
@@ -251,7 +279,7 @@ func (s *AffiliateProgramService) UpdateSettings(
 	}
 
 	next.ID = 1
-	next.ProgramVersion = AffiliateProgramVersionV2
+	next.ProgramVersion = AffiliateProgramVersionV3
 	next.Revision = expectedRevision
 	next.CreatedAt = current.CreatedAt
 	next.UpdatedBy = &actorID

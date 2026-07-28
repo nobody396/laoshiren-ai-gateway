@@ -32,10 +32,13 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 	}
 	result := &service.AffiliateFirstPaidContext{}
 	var (
-		startedAt   sql.NullTime
-		bindingKind sql.NullString
-		inviterID   sql.NullInt64
-		mode        string
+		startedAt            sql.NullTime
+		bindingKind          sql.NullString
+		inviterID            sql.NullInt64
+		bindingAgentID       sql.NullInt64
+		inviterPartnerStatus sql.NullString
+		inviterActivatedAt   sql.NullTime
+		mode                 string
 	)
 	rows := &entsql.Rows{}
 	if err := client.Driver().Query(ctx, `
@@ -43,13 +46,19 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 			s.mode,
 			s.started_at,
 			s.ordinary_referral_rate_bps,
-			s.first_paid_bonus_threshold_micros,
-			s.first_paid_bonus_micros,
+			s.ordinary_invitee_rate_bps,
 			b.binding_kind,
-			b.inviter_user_id
+			b.inviter_user_id,
+			b.agent_id,
+			COALESCE(b.customer_rebate_rate_snapshot_bps, 0),
+			COALESCE(b.agent_commission_rate_snapshot_bps, 0),
+			ap.status,
+			ap.activated_at
 		FROM affiliate_program_settings s
 		LEFT JOIN affiliate_bindings b
 			ON b.customer_user_id = $1
+		LEFT JOIN agent_principals ap
+			ON ap.agent_id = b.inviter_user_id
 		WHERE s.id = 1
 		FOR SHARE OF s
 	`, []any{input.UserID}, rows); err != nil {
@@ -66,10 +75,14 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 		&mode,
 		&startedAt,
 		&result.OrdinaryReferralRateBPS,
-		&result.FirstPaidBonusThresholdMicros,
-		&result.FirstPaidBonusMicros,
+		&result.OrdinaryInviteeRateBPS,
 		&bindingKind,
 		&inviterID,
+		&bindingAgentID,
+		&result.BindingCustomerRateBPS,
+		&result.BindingPartnerRateBPS,
+		&inviterPartnerStatus,
+		&inviterActivatedAt,
 	); err != nil {
 		_ = rows.Close()
 		return nil, err
@@ -87,6 +100,15 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 	}
 	result.BindingKind = bindingKind.String
 	result.InviterUserID = inviterID.Int64
+	if bindingAgentID.Valid {
+		result.BindingAgentID = bindingAgentID.Int64
+	}
+	if inviterPartnerStatus.Valid {
+		result.InviterPartnerStatus = inviterPartnerStatus.String
+	}
+	if inviterActivatedAt.Valid {
+		result.InviterPartnerActivatedAt = &inviterActivatedAt.Time
+	}
 
 	insertRows := &entsql.Rows{}
 	if err := client.Driver().Query(ctx, `

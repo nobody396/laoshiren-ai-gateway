@@ -20,20 +20,25 @@ func TestAffiliateProgramRepositoryGetSettings(t *testing.T) {
 	updatedAt := createdAt.Add(time.Hour)
 	columns := []string{
 		"id", "program_version", "mode", "started_at",
-		"ordinary_referral_rate_bps", "first_paid_bonus_threshold_micros", "first_paid_bonus_micros",
+		"ordinary_referral_rate_bps", "ordinary_invitee_rate_bps",
+		"first_paid_bonus_threshold_micros", "first_paid_bonus_micros",
 		"agent_pool_rate_bps", "qualification_direct_user_count",
 		"qualification_min_user_consumption_micros", "qualification_direct_team_consumption_micros",
 		"qualification_combined_consumption_micros", "max_campaign_links",
 		"commission_conversion_multiplier_millis", "withdrawal_min_micros", "withdrawal_sla_hours",
-		"margin_floor_bps", "revision", "updated_by", "created_at", "updated_at",
+		"margin_floor_bps", "operational_reserve_bps",
+		"stress_cost_per_raw_credit_micros", "stress_cost_snapshot_at",
+		"cost_snapshot_max_age_hours",
+		"revision", "updated_by", "created_at", "updated_at",
 	}
 	mock.ExpectQuery(`(?s)SELECT\s+id,.*FROM affiliate_program_settings`).
 		WillReturnRows(sqlmock.NewRows(columns).AddRow(
-			int16(1), "v2", "off", nil,
-			int32(500), int64(50_000_000), int64(5_000_000),
+			int16(1), "v3", "off", nil,
+			int32(500), int32(500), int64(0), int64(0),
 			int32(1000), int32(10), int64(20_000_000), int64(1_000_000_000),
 			int64(2_000_000_000), int32(5), int32(1200), int64(100_000_000), int32(24),
-			int32(3500), int64(1), nil, createdAt, updatedAt,
+			int32(3500), int32(200), int64(530_000), createdAt, int32(24),
+			int64(1), nil, createdAt, updatedAt,
 		))
 
 	repo := NewAffiliateProgramRepository(db)
@@ -57,11 +62,12 @@ func TestAffiliateProgramRepositoryUpdateSettingsUsesRevisionLock(t *testing.T) 
 	settings.UpdatedBy = &actorID
 	updatedAt := time.Now().UTC()
 
-	mock.ExpectQuery(`(?s)UPDATE affiliate_program_settings.*WHERE id = 1 AND revision = \$17`).
+	mock.ExpectQuery(`(?s)UPDATE affiliate_program_settings.*WHERE id = 1 AND revision = \$22`).
 		WithArgs(
 			settings.Mode,
 			settings.StartedAt,
 			settings.OrdinaryReferralRateBPS,
+			settings.OrdinaryInviteeRateBPS,
 			settings.FirstPaidBonusThresholdMicros,
 			settings.FirstPaidBonusMicros,
 			settings.AgentPoolRateBPS,
@@ -74,6 +80,10 @@ func TestAffiliateProgramRepositoryUpdateSettingsUsesRevisionLock(t *testing.T) 
 			settings.WithdrawalMinMicros,
 			settings.WithdrawalSLAHours,
 			settings.MarginFloorBPS,
+			settings.OperationalReserveBPS,
+			settings.StressCostPerRawCreditMicros,
+			settings.StressCostSnapshotAt,
+			settings.CostSnapshotMaxAgeHours,
 			settings.UpdatedBy,
 			int64(1),
 		).

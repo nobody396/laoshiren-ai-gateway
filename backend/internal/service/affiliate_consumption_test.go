@@ -57,3 +57,22 @@ func TestAffiliateMonthlyCreditLimitUsesOneSharedPool(t *testing.T) {
 		t.Fatalf("limit = %d, want %d", got, int64(4_000_000_000))
 	}
 }
+
+func TestAffiliateMonthlyCatalogIdentityLocksOnlyCompleteCurrentBundle(t *testing.T) {
+	t.Parallel()
+	productCode, version := AffiliateMonthlyCatalogIdentity([]*Group{
+		{Name: "Claude Max V3 月卡组"},
+		{Name: "GPT Max V3 月卡组"},
+	})
+	if productCode != "monthly-max-v3-20260728" ||
+		version != AffiliateCommercialPricingTableVersionV3 {
+		t.Fatalf("current bundle identity = (%q, %q)", productCode, version)
+	}
+
+	productCode, version = AffiliateMonthlyCatalogIdentity([]*Group{
+		{Name: "GPT Max V3 月卡组"},
+	})
+	if productCode != "" || version != "legacy" {
+		t.Fatalf("partial bundle identity = (%q, %q)", productCode, version)
+	}
+}

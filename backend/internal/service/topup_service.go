@@ -360,19 +360,9 @@ func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order 
 	}
 	if s.affiliateConsumption != nil {
 		occurredAt := time.Now()
-		if err := s.affiliateConsumption.RecordBalanceLot(txCtx, AffiliateBalanceLotInput{
-			UserID:            order.UserID,
-			SourceType:        AffiliateSourcePaidTopup,
-			SourceID:          order.ID,
-			SourceKey:         fmt.Sprintf("topup:balance:%d", order.ID),
-			AmountMicros:      int64(order.AmountCNYFen) * 10_000,
-			AffiliateEligible: order.AmountCNYFen > 0,
-			OccurredAt:        occurredAt,
-		}); err != nil {
-			return fmt.Errorf("record affiliate balance lot: %w", err)
-		}
+		var rewardResult *AffiliateFirstPaidPurchaseResult
 		if s.affiliateRewards != nil {
-			rewardResult, err := s.affiliateRewards.ProcessFirstPaidPurchase(txCtx, AffiliateFirstPaidPurchaseInput{
+			rewardResult, err = s.affiliateRewards.ProcessFirstPaidPurchase(txCtx, AffiliateFirstPaidPurchaseInput{
 				UserID:       order.UserID,
 				PurchaseType: AffiliatePurchaseBalanceTopup,
 				SourceID:     order.ID,
@@ -384,6 +374,24 @@ func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order 
 				return fmt.Errorf("process affiliate first paid topup: %w", err)
 			}
 			affiliateV2Live = rewardResult.ProgramLive
+		}
+		policy, partnerID, customerRate, partnerRate := AffiliatePolicyFromPurchaseResult(
+			order.AmountCNYFen > 0,
+			rewardResult,
+		)
+		if err := s.affiliateConsumption.RecordBalanceLot(txCtx, AffiliateBalanceLotInput{
+			UserID:                   order.UserID,
+			SourceType:               AffiliateSourcePaidTopup,
+			SourceID:                 order.ID,
+			SourceKey:                fmt.Sprintf("topup:balance:%d", order.ID),
+			AmountMicros:             int64(order.AmountCNYFen) * 10_000,
+			AffiliatePolicy:          policy,
+			DirectPartnerID:          partnerID,
+			CustomerRebateRateBPS:    customerRate,
+			PartnerCommissionRateBPS: partnerRate,
+			OccurredAt:               occurredAt,
+		}); err != nil {
+			return fmt.Errorf("record affiliate balance lot: %w", err)
 		}
 	}
 

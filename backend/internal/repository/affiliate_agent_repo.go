@@ -27,12 +27,15 @@ func (r *affiliateAgentRepository) GetAgentQualification(
 	return queryAffiliateAgentQualification(ctx, r.db, userID)
 }
 
-func (r *affiliateAgentRepository) ActivateQualifiedAgent(
+func (r *affiliateAgentRepository) ReviewAgentApplication(
 	ctx context.Context,
-	userID int64,
+	applicationID int64,
+	approve bool,
+	decisionNote string,
+	operatorID int64,
 	defaultCode string,
 	defaultCustomerRateBPS int32,
-) (_ *service.AffiliateAgentActivation, err error) {
+) (_ *service.AffiliateAgentReviewResult, err error) {
 	if r == nil || r.db == nil {
 		return nil, errors.New("affiliate agent repository db is nil")
 	}
@@ -41,6 +44,70 @@ func (r *affiliateAgentRepository) ActivateQualifiedAgent(
 		return nil, err
 	}
 	defer func() { _ = tx.Rollback() }()
+
+	var (
+		userID            int64
+		applicationStatus string
+	)
+	if err := tx.QueryRowContext(ctx, `
+		SELECT user_id, status
+		FROM affiliate_agent_applications
+		WHERE id = $1
+		FOR UPDATE
+	`, applicationID).Scan(&userID, &applicationStatus); errors.Is(err, sql.ErrNoRows) {
+		return nil, service.ErrAffiliateApplicationNotFound
+	} else if err != nil {
+		return nil, err
+	}
+	if applicationStatus != "pending_review" {
+		return nil, service.ErrAffiliateAgentActivationBlocked
+	}
+	if !approve {
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE affiliate_agent_applications
+			SET status = 'rejected',
+				decision_note = $2,
+				reviewed_at = NOW(),
+				reviewed_by = $3,
+				updated_at = NOW()
+			WHERE id = $1
+				AND status = 'pending_review'
+		`, applicationID, decisionNote, operatorID); err != nil {
+			return nil, err
+		}
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO agent_principals (
+				agent_id, status, risk_status,
+				applied_at, reviewed_at, reviewed_by, decision_note
+			)
+			VALUES ($1, 'rejected', 'clear', NOW(), NOW(), $2, $3)
+			ON CONFLICT (agent_id) DO UPDATE SET
+				status = 'rejected',
+				reviewed_at = NOW(),
+				reviewed_by = $2,
+				decision_note = $3,
+				updated_at = NOW()
+		`, userID, operatorID, decisionNote); err != nil {
+			return nil, err
+		}
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO affiliate_agent_status_events (
+				agent_id, previous_status, next_status, reason,
+				application_id, operator_id
+			)
+			VALUES ($1, 'pending_review', 'rejected', $2, $3, $4)
+		`, userID, decisionNote, applicationID, operatorID); err != nil {
+			return nil, err
+		}
+		application, err := queryAffiliateAgentApplication(ctx, tx, applicationID)
+		if err != nil {
+			return nil, err
+		}
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return &service.AffiliateAgentReviewResult{Application: *application}, nil
+	}
 
 	var userStatus string
 	if err := tx.QueryRowContext(ctx, `
@@ -92,16 +159,20 @@ func (r *affiliateAgentRepository) ActivateQualifiedAgent(
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO agent_principals (
 			agent_id, status, risk_status,
-			qualified_at, activated_at
+			qualified_at, activated_at,
+			applied_at, reviewed_at, reviewed_by, decision_note
 		)
-		VALUES ($1, 'active', 'clear', NOW(), NOW())
+		VALUES ($1, 'active', 'clear', NOW(), NOW(), NOW(), NOW(), $2, $3)
 		ON CONFLICT (agent_id) DO UPDATE SET
 			status = 'active',
 			qualified_at = COALESCE(agent_principals.qualified_at, NOW()),
 			activated_at = COALESCE(agent_principals.activated_at, NOW()),
+			reviewed_at = NOW(),
+			reviewed_by = $2,
+			decision_note = $3,
 			updated_at = NOW()
 		WHERE agent_principals.status NOT IN ('suspended', 'rejected')
-	`, userID); err != nil {
+	`, userID, operatorID, decisionNote); err != nil {
 		return nil, err
 	}
 
@@ -218,6 +289,31 @@ func (r *affiliateAgentRepository) ActivateQualifiedAgent(
 	`, userID, fmt.Sprintf("agent-activated:user:%d:community", userID)); err != nil {
 		return nil, err
 	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE affiliate_agent_applications
+		SET status = 'approved',
+			decision_note = $2,
+			reviewed_at = NOW(),
+			reviewed_by = $3,
+			updated_at = NOW()
+		WHERE id = $1
+			AND status = 'pending_review'
+	`, applicationID, decisionNote, operatorID); err != nil {
+		return nil, err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO affiliate_agent_status_events (
+			agent_id, previous_status, next_status, reason,
+			application_id, operator_id
+		)
+		VALUES ($1, 'pending_review', 'active', $2, $3, $4)
+	`, userID, decisionNote, applicationID, operatorID); err != nil {
+		return nil, err
+	}
+	application, err := queryAffiliateAgentApplication(ctx, tx, applicationID)
+	if err != nil {
+		return nil, err
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -226,9 +322,12 @@ func (r *affiliateAgentRepository) ActivateQualifiedAgent(
 	if err != nil {
 		return nil, err
 	}
-	return &service.AffiliateAgentActivation{
-		Qualification: *finalQualification,
-		DefaultLink:   *defaultLink,
+	return &service.AffiliateAgentReviewResult{
+		Application: *application,
+		Activation: &service.AffiliateAgentActivation{
+			Qualification: *finalQualification,
+			DefaultLink:   *defaultLink,
+		},
 	}, nil
 }
 
@@ -310,7 +409,7 @@ func queryAffiliateAgentQualification(
 			ap.activated_at,
 			t.self_micros,
 			t.direct_micros,
-			(t.self_micros + t.direct_micros)::bigint,
+			t.direct_micros,
 			t.valid_direct_count,
 			s.qualification_direct_user_count,
 			s.qualification_min_user_consumption_micros,
@@ -359,13 +458,13 @@ func queryAffiliateAgentQualification(
 		out.ValidDirectUserCount >= out.RequiredDirectUserCount &&
 			out.DirectTeamConsumptionMicros >= out.RequiredDirectTeamMicros
 	out.CombinedRouteQualified =
-		out.CombinedConsumptionMicros >= out.RequiredCombinedMicros
+		out.DirectTeamConsumptionMicros >= out.RequiredCombinedMicros
 	out.Qualified = out.DirectRouteQualified || out.CombinedRouteQualified
 	switch {
 	case out.DirectRouteQualified:
 		out.QualificationRoute = "direct_team"
 	case out.CombinedRouteQualified:
-		out.QualificationRoute = "combined"
+		out.QualificationRoute = "direct_volume"
 	}
 	if out.AgentStatus == "active" {
 		out.Qualified = true
@@ -373,13 +472,15 @@ func queryAffiliateAgentQualification(
 	} else if out.Qualified && out.AgentStatus == "not_qualified" {
 		out.AgentStatus = "qualified"
 	}
-	out.CanActivate =
+	out.CanActivate = false
+	out.CanApply =
 		out.ProgramMode == service.AffiliateProgramModeLive &&
 			out.ProgramStartedAt != nil &&
 			out.Qualified &&
 			out.AgentStatus != "active" &&
+			out.AgentStatus != "pending_review" &&
 			out.AgentStatus != "suspended" &&
-			out.AgentStatus != "rejected" &&
+			out.AgentStatus != "terminated" &&
 			out.RiskStatus == "clear"
 	return out, nil
 }

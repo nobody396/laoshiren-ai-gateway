@@ -404,21 +404,9 @@ func (r *affiliateLinkRepository) UpdateLinkRate(
 	`, nextVersion, linkID); err != nil {
 		return nil, err
 	}
-	// Existing customers have a rebate floor: lower link rates only affect
-	// future bindings, while higher rates upgrade all current direct customers.
-	if _, err := tx.ExecContext(ctx, `
-		UPDATE affiliate_bindings
-		SET
-			link_rate_version = $1,
-			customer_rebate_rate_snapshot_bps = $2,
-			agent_commission_rate_snapshot_bps = $3,
-			updated_at = NOW()
-		WHERE affiliate_link_id = $4
-			AND binding_kind = 'agent'
-			AND customer_rebate_rate_snapshot_bps < $2
-	`, nextVersion, customerRate, agentRate, linkID); err != nil {
-		return nil, err
-	}
+	// A link edit creates a new immutable version for future bindings only.
+	// Existing customers keep the exact rate version promised when they bound,
+	// regardless of whether the new link rate is higher or lower.
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}

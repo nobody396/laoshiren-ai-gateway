@@ -45,7 +45,7 @@ func (r *affiliateWalletRepository) GetAffiliateWallet(
 				FROM agent_cash_commission_entries
 				WHERE agent_id = ap.agent_id
 					AND posting_status = 'posted'
-					AND entry_type IN ('earned', 'risk_release')
+					AND entry_type IN ('earned', 'risk_release', 'reversal')
 			), 0)::bigint AS lifetime_earned_micros,
 			s.withdrawal_min_micros,
 			s.withdrawal_sla_hours,
@@ -357,6 +357,9 @@ func (r *affiliateWalletRepository) CompleteAffiliateWithdrawal(
 			updated_at = NOW()
 		WHERE id = $3
 	`, operatorID, paymentReference, withdrawalID); err != nil {
+		if isPostgresUniqueViolation(err) {
+			return nil, service.ErrInvalidInput
+		}
 		return nil, err
 	}
 	if _, err := tx.ExecContext(ctx, `

@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAffiliateAgentRepository_QualifiesActivatesAndPreservesUpstream(t *testing.T) {
+func TestAffiliateAgentRepository_QualifiesAppliesReviewsAndPreservesUpstream(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)
 	repo := NewAffiliateAgentRepository(integrationDB)
@@ -25,6 +25,9 @@ func TestAffiliateAgentRepository_QualifiesActivatesAndPreservesUpstream(t *test
 	})
 	candidate := mustCreateUser(t, client, &service.User{
 		Email: fmt.Sprintf("affiliate-candidate-%d@example.com", time.Now().UnixNano()),
+	})
+	operator := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-reviewer-%d@example.com", time.Now().UnixNano()),
 	})
 	_, err := integrationDB.ExecContext(ctx, `
 		UPDATE users
@@ -74,15 +77,23 @@ func TestAffiliateAgentRepository_QualifiesActivatesAndPreservesUpstream(t *test
 	require.True(t, qualification.DirectRouteQualified)
 	require.False(t, qualification.CombinedRouteQualified)
 	require.True(t, qualification.Qualified)
-	require.True(t, qualification.CanActivate)
+	require.False(t, qualification.CanActivate)
+	require.True(t, qualification.CanApply)
 	require.Equal(t, "direct_team", qualification.QualificationRoute)
 	require.Equal(t, int32(10), qualification.ValidDirectUserCount)
 	require.Equal(t, int64(1_000_000_000), qualification.DirectTeamConsumptionMicros)
 
-	activation, err := agentService.Activate(ctx, candidate.ID)
+	application, err := agentService.Apply(ctx, candidate.ID, "申请成为合伙人")
 	require.NoError(t, err)
+	require.Equal(t, "pending_review", application.Status)
+
+	review, err := agentService.ReviewApplication(ctx, application.ID, true, "资料与消费确认无误", operator.ID)
+	require.NoError(t, err)
+	require.NotNil(t, review.Activation)
+	activation := review.Activation
 	require.Equal(t, "active", activation.Qualification.AgentStatus)
 	require.False(t, activation.Qualification.CanActivate)
+	require.False(t, activation.Qualification.CanApply)
 	require.True(t, activation.DefaultLink.IsDefault)
 	require.Equal(t, service.AffiliateDefaultCustomerRebateRateBPS, activation.DefaultLink.CustomerRebateRateBPS)
 	require.Equal(t, int32(500), activation.DefaultLink.AgentCommissionRateBPS)
@@ -105,9 +116,6 @@ func TestAffiliateAgentRepository_QualifiesActivatesAndPreservesUpstream(t *test
 	`, candidate.ID).Scan(&principalStatus))
 	require.Equal(t, "active", principalStatus)
 
-	second, err := agentService.Activate(ctx, candidate.ID)
-	require.NoError(t, err)
-	require.Equal(t, activation.DefaultLink.ID, second.DefaultLink.ID)
 	var defaultCount int
 	require.NoError(t, integrationDB.QueryRowContext(ctx, `
 		SELECT COUNT(*)
@@ -118,7 +126,7 @@ func TestAffiliateAgentRepository_QualifiesActivatesAndPreservesUpstream(t *test
 	require.Equal(t, 1, defaultCount)
 }
 
-func TestAffiliateAgentRepository_RejectsUnqualifiedActivation(t *testing.T) {
+func TestAffiliateAgentRepository_RejectsUnqualifiedApplication(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)
 	repo := NewAffiliateAgentRepository(integrationDB)
@@ -132,7 +140,8 @@ func TestAffiliateAgentRepository_RejectsUnqualifiedActivation(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, qualification.Qualified)
 	require.False(t, qualification.CanActivate)
+	require.False(t, qualification.CanApply)
 
-	_, err = agentService.Activate(ctx, user.ID)
+	_, err = agentService.Apply(ctx, user.ID, "")
 	require.True(t, errors.Is(err, service.ErrAffiliateQualificationNotMet), "unexpected error: %v", err)
 }

@@ -45,8 +45,12 @@ func TestAffiliateProgramSettingsRejectUnsafeValues(t *testing.T) {
 		mutate func(*AffiliateProgramSettings)
 	}{
 		{name: "agent pool is not fixed", mutate: func(s *AffiliateProgramSettings) { s.AgentPoolRateBPS = 900 }},
+		{name: "ordinary inviter rate is not fixed", mutate: func(s *AffiliateProgramSettings) { s.OrdinaryReferralRateBPS = 600 }},
+		{name: "ordinary invitee rate is not fixed", mutate: func(s *AffiliateProgramSettings) { s.OrdinaryInviteeRateBPS = 400 }},
 		{name: "margin below 35 percent", mutate: func(s *AffiliateProgramSettings) { s.MarginFloorBPS = 3499 }},
 		{name: "conversion multiplier below one", mutate: func(s *AffiliateProgramSettings) { s.CommissionConversionMultiplierMillis = 999 }},
+		{name: "conversion multiplier above approved value", mutate: func(s *AffiliateProgramSettings) { s.CommissionConversionMultiplierMillis = 1300 }},
+		{name: "reserve below approved minimum", mutate: func(s *AffiliateProgramSettings) { s.OperationalReserveBPS = 199 }},
 		{name: "withdrawal sla too long", mutate: func(s *AffiliateProgramSettings) { s.WithdrawalSLAHours = 169 }},
 		{name: "live without start", mutate: func(s *AffiliateProgramSettings) { s.Mode = AffiliateProgramModeLive }},
 	}

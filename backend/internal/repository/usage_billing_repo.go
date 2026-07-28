@@ -211,9 +211,13 @@ type usageBillingAffiliateSettlement struct {
 }
 
 type usageBillingBalanceLot struct {
-	ID                int64
-	RemainingMicros   int64
-	AffiliateEligible bool
+	ID                       int64
+	RemainingMicros          int64
+	AffiliateEligible        bool
+	AffiliatePolicy          string
+	DirectPartnerID          sql.NullInt64
+	CustomerRebateRateBPS    int32
+	PartnerCommissionRateBPS int32
 }
 
 func attributeUsageBillingBalanceConsumption(
@@ -227,7 +231,10 @@ func attributeUsageBillingBalanceConsumption(
 		return 0, nil
 	}
 	rows, err := tx.QueryContext(ctx, `
-		SELECT id, remaining_amount_micros, affiliate_eligible
+		SELECT
+			id, remaining_amount_micros, affiliate_eligible,
+			affiliate_policy, direct_partner_id,
+			customer_rebate_rate_bps, partner_commission_rate_bps
 		FROM balance_lots
 		WHERE user_id = $1
 			AND remaining_amount_micros > 0
@@ -240,7 +247,15 @@ func attributeUsageBillingBalanceConsumption(
 	lots := make([]usageBillingBalanceLot, 0, 4)
 	for rows.Next() {
 		var lot usageBillingBalanceLot
-		if err := rows.Scan(&lot.ID, &lot.RemainingMicros, &lot.AffiliateEligible); err != nil {
+		if err := rows.Scan(
+			&lot.ID,
+			&lot.RemainingMicros,
+			&lot.AffiliateEligible,
+			&lot.AffiliatePolicy,
+			&lot.DirectPartnerID,
+			&lot.CustomerRebateRateBPS,
+			&lot.PartnerCommissionRateBPS,
+		); err != nil {
 			_ = rows.Close()
 			return 0, err
 		}
@@ -285,6 +300,7 @@ func attributeUsageBillingBalanceConsumption(
 		lots = append(lots, usageBillingBalanceLot{
 			ID:              reconciliationLotID,
 			RemainingMicros: gapMicros,
+			AffiliatePolicy: service.AffiliateSourcePolicyNone,
 		})
 	}
 
@@ -335,26 +351,35 @@ func attributeUsageBillingBalanceConsumption(
 		}
 		eligibleMicros += eligiblePart
 		remainingMicros -= consumeMicros
+		if eligiblePart > 0 {
+			directPartnerID := int64(0)
+			if lot.DirectPartnerID.Valid {
+				directPartnerID = lot.DirectPartnerID.Int64
+			}
+			affiliateSettlement, err := recordUsageBillingPerformanceEvent(
+				ctx,
+				tx,
+				cmd.UserID,
+				cmd.UsageLogID,
+				"balance_usage",
+				fmt.Sprintf("confirmed:usage:%d:balance:lot:%d", cmd.UsageLogID, lot.ID),
+				eligiblePart,
+				lot.AffiliatePolicy,
+				directPartnerID,
+				lot.CustomerRebateRateBPS,
+				lot.PartnerCommissionRateBPS,
+			)
+			if err != nil {
+				return 0, err
+			}
+			if settlement != nil {
+				settlement.CustomerRebateMicros += affiliateSettlement.CustomerRebateMicros
+				settlement.AgentCommissionMicros += affiliateSettlement.AgentCommissionMicros
+			}
+		}
 	}
 	if remainingMicros != 0 {
 		return 0, errors.New("affiliate balance attribution did not consume requested amount")
-	}
-	if eligibleMicros > 0 {
-		affiliateSettlement, err := recordUsageBillingPerformanceEvent(
-			ctx,
-			tx,
-			cmd.UserID,
-			cmd.UsageLogID,
-			"balance_usage",
-			fmt.Sprintf("confirmed:usage:%d:balance", cmd.UsageLogID),
-			eligibleMicros,
-		)
-		if err != nil {
-			return 0, err
-		}
-		if settlement != nil {
-			*settlement = affiliateSettlement
-		}
 	}
 	return eligibleMicros, nil
 }
@@ -371,6 +396,10 @@ func attributeUsageBillingMonthlyConsumption(
 	}
 	var (
 		affiliateEligible bool
+		affiliatePolicy   string
+		directPartnerID   sql.NullInt64
+		customerRateBPS   int32
+		partnerRateBPS    int32
 		confirmedMicros   int64
 	)
 	err := tx.QueryRowContext(ctx, `
@@ -408,12 +437,29 @@ func attributeUsageBillingMonthlyConsumption(
 			WHERE c.id = candidate.id
 			RETURNING
 				c.affiliate_eligible,
+				c.affiliate_policy,
+				c.direct_partner_id,
+				c.customer_rebate_rate_bps,
+				c.partner_commission_rate_bps,
 				c.confirmed_consumption_micros
 					- candidate.confirmed_consumption_micros AS confirmed_delta_micros
 		)
-		SELECT affiliate_eligible, GREATEST(0, confirmed_delta_micros)
+		SELECT
+			affiliate_eligible,
+			affiliate_policy,
+			direct_partner_id,
+			customer_rebate_rate_bps,
+			partner_commission_rate_bps,
+			GREATEST(0, confirmed_delta_micros)
 		FROM updated
-	`, *cmd.SubscriptionID, cmd.UserID, creditMicros).Scan(&affiliateEligible, &confirmedMicros)
+	`, *cmd.SubscriptionID, cmd.UserID, creditMicros).Scan(
+		&affiliateEligible,
+		&affiliatePolicy,
+		&directPartnerID,
+		&customerRateBPS,
+		&partnerRateBPS,
+		&confirmedMicros,
+	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, nil
 	}
@@ -429,6 +475,10 @@ func attributeUsageBillingMonthlyConsumption(
 			"monthly_usage",
 			fmt.Sprintf("confirmed:usage:%d:monthly", cmd.UsageLogID),
 			confirmedMicros,
+			affiliatePolicy,
+			directPartnerID.Int64,
+			customerRateBPS,
+			partnerRateBPS,
 		)
 		if err != nil {
 			return 0, err
@@ -448,6 +498,10 @@ func recordUsageBillingPerformanceEvent(
 	sourceType string,
 	eventKey string,
 	amountMicros int64,
+	affiliatePolicy string,
+	directPartnerID int64,
+	customerRateBPS int32,
+	partnerRateBPS int32,
 ) (usageBillingAffiliateSettlement, error) {
 	var (
 		mode      string
@@ -473,28 +527,43 @@ func recordUsageBillingPerformanceEvent(
 			direct_agent_id,
 			event_type,
 			amount_micros,
+			affiliate_policy,
+			customer_rebate_rate_bps,
+			partner_commission_rate_bps,
 			source_type,
 			source_id,
 			event_key,
 			occurred_at,
 			metadata
 		)
-		SELECT
+		VALUES (
 			$1,
-			b.inviter_user_id,
+			NULLIF($6, 0),
 			'confirmed_consumption',
 			$2,
+			$7,
+			$8,
+			$9,
 			$3,
 			$4,
 			$5,
 			NOW(),
-			jsonb_build_object('program_mode', $6::text)
-		FROM (SELECT 1) seed
-		LEFT JOIN affiliate_bindings b
-			ON b.customer_user_id = $1
+			jsonb_build_object('program_mode', $10::text)
+		)
 		ON CONFLICT (event_key) DO NOTHING
 		RETURNING id
-	`, userID, amountMicros, sourceType, usageLogID, eventKey, mode).Scan(&performanceEventID)
+	`,
+		userID,
+		amountMicros,
+		sourceType,
+		usageLogID,
+		eventKey,
+		directPartnerID,
+		affiliatePolicy,
+		customerRateBPS,
+		partnerRateBPS,
+		mode,
+	).Scan(&performanceEventID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return usageBillingAffiliateSettlement{}, nil
 	}
@@ -504,7 +573,19 @@ func recordUsageBillingPerformanceEvent(
 	if mode != service.AffiliateProgramModeLive {
 		return usageBillingAffiliateSettlement{}, nil
 	}
-	return settleUsageBillingAgentPool(ctx, tx, performanceEventID, userID, amountMicros)
+	if affiliatePolicy != service.AffiliateSourcePolicyPartnerUsage {
+		return usageBillingAffiliateSettlement{}, nil
+	}
+	return settleUsageBillingAgentPool(
+		ctx,
+		tx,
+		performanceEventID,
+		userID,
+		directPartnerID,
+		amountMicros,
+		customerRateBPS,
+		partnerRateBPS,
+	)
 }
 
 func settleUsageBillingAgentPool(
@@ -512,62 +593,51 @@ func settleUsageBillingAgentPool(
 	tx *sql.Tx,
 	performanceEventID int64,
 	consumerUserID int64,
+	agentID int64,
 	sourceAmountMicros int64,
+	customerRateBPS int32,
+	agentRateBPS int32,
 ) (usageBillingAffiliateSettlement, error) {
 	var (
-		bindingKind     string
-		agentID         sql.NullInt64
-		customerRateBPS int32
-		agentRateBPS    int32
 		agentStatus     sql.NullString
 		agentRiskStatus sql.NullString
 	)
+	if agentID <= 0 || agentID == consumerUserID {
+		return usageBillingAffiliateSettlement{}, errors.New("invalid direct partner attribution")
+	}
 	err := tx.QueryRowContext(ctx, `
-		SELECT
-			b.binding_kind,
-			b.agent_id,
-			b.customer_rebate_rate_snapshot_bps,
-			b.agent_commission_rate_snapshot_bps,
-			ap.status,
-			ap.risk_status
-		FROM affiliate_bindings b
-		LEFT JOIN agent_principals ap
-			ON ap.agent_id = b.agent_id
-		WHERE b.customer_user_id = $1
-	`, consumerUserID).Scan(
-		&bindingKind,
-		&agentID,
-		&customerRateBPS,
-		&agentRateBPS,
+		SELECT status, risk_status
+		FROM agent_principals
+		WHERE agent_id = $1
+	`, agentID).Scan(
 		&agentStatus,
 		&agentRiskStatus,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
-		return usageBillingAffiliateSettlement{}, nil
-	}
-	if err != nil {
+		agentStatus = sql.NullString{String: "terminated", Valid: true}
+		agentRiskStatus = sql.NullString{String: "blocked", Valid: true}
+	} else if err != nil {
 		return usageBillingAffiliateSettlement{}, err
-	}
-	if bindingKind != service.AffiliateBindingAgent || !agentID.Valid {
-		return usageBillingAffiliateSettlement{}, nil
 	}
 	if customerRateBPS < 0 ||
 		agentRateBPS < 0 ||
 		customerRateBPS+agentRateBPS != service.AffiliateAgentPoolRateBPS {
-		return usageBillingAffiliateSettlement{}, errors.New("invalid affiliate binding pool snapshot")
+		return usageBillingAffiliateSettlement{}, errors.New("invalid affiliate source pool snapshot")
 	}
-	riskClear := agentStatus.Valid &&
+	partnerCashPosted := agentStatus.Valid &&
 		agentStatus.String == "active" &&
 		agentRiskStatus.Valid &&
 		agentRiskStatus.String == "clear"
+	partnerTerminated := agentStatus.Valid && agentStatus.String == "terminated"
 	settlement := usageBillingAffiliateSettlement{}
 
+	totalPoolMicros := usageBillingRateAmountMicros(sourceAmountMicros, service.AffiliateAgentPoolRateBPS)
 	customerRebateMicros := usageBillingRateAmountMicros(sourceAmountMicros, customerRateBPS)
+	agentCommissionMicros := totalPoolMicros - customerRebateMicros
 	if customerRebateMicros > 0 {
-		rewardStatus := "risk_hold"
-		if riskClear {
-			rewardStatus = "posted"
-		}
+		// The customer rebate belongs to the customer's binding snapshot and is
+		// never frozen merely because the partner is under review.
+		rewardStatus := "posted"
 		var rewardID int64
 		err := tx.QueryRowContext(ctx, `
 			INSERT INTO affiliate_reward_entries (
@@ -630,10 +700,9 @@ func settleUsageBillingAgentPool(
 		}
 	}
 
-	agentCommissionMicros := usageBillingRateAmountMicros(sourceAmountMicros, agentRateBPS)
-	if agentCommissionMicros > 0 {
+	if agentCommissionMicros > 0 && !partnerTerminated {
 		postingStatus := "risk_hold"
-		if riskClear {
+		if partnerCashPosted {
 			postingStatus = "posted"
 		}
 		result, err := tx.ExecContext(ctx, `
@@ -652,7 +721,7 @@ func settleUsageBillingAgentPool(
 			)
 			ON CONFLICT (idempotency_key) DO NOTHING
 		`,
-			agentID.Int64,
+			agentID,
 			consumerUserID,
 			agentCommissionMicros,
 			sourceAmountMicros,

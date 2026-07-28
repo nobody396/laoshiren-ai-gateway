@@ -20,7 +20,11 @@ const (
 	AffiliateBindingAgent    = "agent"
 
 	AffiliateRewardOrdinaryReferral = "ordinary_referral"
-	AffiliateRewardFirstPaidBonus   = "first_paid_bonus"
+	AffiliateRewardOrdinaryInvitee  = "ordinary_invitee"
+
+	AffiliateSourcePolicyNone              = "NONE"
+	AffiliateSourcePolicyOrdinaryFirstPaid = "ORDINARY_FIRST_PAID"
+	AffiliateSourcePolicyPartnerUsage      = "PARTNER_USAGE"
 )
 
 type AffiliateFirstPaidPurchaseInput struct {
@@ -33,14 +37,18 @@ type AffiliateFirstPaidPurchaseInput struct {
 }
 
 type AffiliateFirstPaidContext struct {
-	ProgramLive                   bool
-	Claimed                       bool
-	PurchaseID                    int64
-	BindingKind                   string
-	InviterUserID                 int64
-	OrdinaryReferralRateBPS       int32
-	FirstPaidBonusThresholdMicros int64
-	FirstPaidBonusMicros          int64
+	ProgramLive               bool
+	Claimed                   bool
+	PurchaseID                int64
+	BindingKind               string
+	InviterUserID             int64
+	OrdinaryReferralRateBPS   int32
+	OrdinaryInviteeRateBPS    int32
+	BindingAgentID            int64
+	BindingCustomerRateBPS    int32
+	BindingPartnerRateBPS     int32
+	InviterPartnerStatus      string
+	InviterPartnerActivatedAt *time.Time
 }
 
 type AffiliatePlatformRewardInput struct {
@@ -64,10 +72,14 @@ type AffiliateRewardRepository interface {
 }
 
 type AffiliateFirstPaidPurchaseResult struct {
-	ProgramLive             bool
-	Claimed                 bool
-	OrdinaryReferralMicros  int64
-	FirstPaidBonusScheduled bool
+	ProgramLive              bool
+	Claimed                  bool
+	OrdinaryReferralMicros   int64
+	OrdinaryInviteeMicros    int64
+	SourcePolicy             string
+	DirectPartnerID          int64
+	CustomerRebateRateBPS    int32
+	PartnerCommissionRateBPS int32
 }
 
 type AffiliateRewardService struct {
@@ -104,14 +116,45 @@ func (s *AffiliateRewardService) ProcessFirstPaidPurchase(
 		return nil, err
 	}
 	result := &AffiliateFirstPaidPurchaseResult{
-		ProgramLive: firstPaid.ProgramLive,
-		Claimed:     firstPaid.Claimed,
+		ProgramLive:  firstPaid.ProgramLive,
+		Claimed:      firstPaid.Claimed,
+		SourcePolicy: AffiliateSourcePolicyNone,
 	}
-	if !firstPaid.ProgramLive || !firstPaid.Claimed {
+	if !firstPaid.ProgramLive {
 		return result, nil
 	}
 
-	if firstPaid.BindingKind == AffiliateBindingOrdinary && firstPaid.OrdinaryReferralRateBPS > 0 {
+	result.DirectPartnerID = firstPaid.InviterUserID
+	switch {
+	case firstPaid.BindingKind == AffiliateBindingAgent && firstPaid.BindingAgentID > 0:
+		result.SourcePolicy = AffiliateSourcePolicyPartnerUsage
+		result.DirectPartnerID = firstPaid.BindingAgentID
+		result.CustomerRebateRateBPS = firstPaid.BindingCustomerRateBPS
+		result.PartnerCommissionRateBPS = firstPaid.BindingPartnerRateBPS
+	case firstPaid.BindingKind == AffiliateBindingOrdinary &&
+		firstPaid.InviterUserID > 0 &&
+		affiliatePartnerStatusEarnsOrHolds(firstPaid.InviterPartnerStatus) &&
+		firstPaid.InviterPartnerActivatedAt != nil &&
+		!input.OccurredAt.Before(*firstPaid.InviterPartnerActivatedAt):
+		result.SourcePolicy = AffiliateSourcePolicyPartnerUsage
+		result.CustomerRebateRateBPS = 0
+		result.PartnerCommissionRateBPS = AffiliateAgentPoolRateBPS
+	case firstPaid.BindingKind == AffiliateBindingOrdinary &&
+		firstPaid.InviterUserID > 0 &&
+		firstPaid.InviterPartnerStatus == "terminated":
+		// A terminated former partner cannot fall back to the ordinary 5%
+		// referral reward. The permanent binding remains for audit only.
+		result.SourcePolicy = AffiliateSourcePolicyNone
+		result.DirectPartnerID = 0
+	case firstPaid.BindingKind == AffiliateBindingOrdinary && firstPaid.InviterUserID > 0:
+		result.SourcePolicy = AffiliateSourcePolicyOrdinaryFirstPaid
+	}
+
+	if !firstPaid.Claimed || result.SourcePolicy != AffiliateSourcePolicyOrdinaryFirstPaid {
+		return result, nil
+	}
+
+	if firstPaid.OrdinaryReferralRateBPS > 0 {
 		rewardMicros := affiliateRateAmountMicros(input.AmountMicros, firstPaid.OrdinaryReferralRateBPS)
 		if rewardMicros > 0 {
 			rate := firstPaid.OrdinaryReferralRateBPS
@@ -133,27 +176,38 @@ func (s *AffiliateRewardService) ProcessFirstPaidPurchase(
 		}
 	}
 
-	// The fixed invitee bonus is available once the first real payment reaches
-	// the configured threshold. For the default ¥50 balance card, exactly ¥50
-	// should be eligible.
-	if input.AmountMicros >= firstPaid.FirstPaidBonusThresholdMicros &&
-		firstPaid.FirstPaidBonusMicros > 0 {
-		if err := s.repo.SchedulePlatformReward(ctx, AffiliatePlatformRewardInput{
+	if firstPaid.OrdinaryInviteeRateBPS > 0 {
+		rewardMicros := affiliateRateAmountMicros(input.AmountMicros, firstPaid.OrdinaryInviteeRateBPS)
+		if rewardMicros <= 0 {
+			return result, nil
+		}
+		rate := firstPaid.OrdinaryInviteeRateBPS
+		if err := s.repo.PostPlatformReward(ctx, AffiliatePlatformRewardInput{
 			BeneficiaryUserID:  input.UserID,
 			ConsumerUserID:     input.UserID,
-			RewardType:         AffiliateRewardFirstPaidBonus,
-			AmountMicros:       firstPaid.FirstPaidBonusMicros,
+			RewardType:         AffiliateRewardOrdinaryInvitee,
+			AmountMicros:       rewardMicros,
 			SourceAmountMicros: input.AmountMicros,
-			AvailableAt:        affiliateNextBeijingDay(input.OccurredAt),
+			RateBPS:            &rate,
+			AvailableAt:        input.OccurredAt,
 			SourceType:         input.PurchaseType,
 			SourceID:           input.SourceID,
-			IdempotencyKey:     fmt.Sprintf("first-paid:%d:invitee-bonus", firstPaid.PurchaseID),
+			IdempotencyKey:     fmt.Sprintf("first-paid:%d:ordinary-invitee", firstPaid.PurchaseID),
 		}); err != nil {
 			return nil, err
 		}
-		result.FirstPaidBonusScheduled = true
+		result.OrdinaryInviteeMicros = rewardMicros
 	}
 	return result, nil
+}
+
+func affiliatePartnerStatusEarnsOrHolds(status string) bool {
+	switch status {
+	case "active", "suspended":
+		return true
+	default:
+		return false
+	}
 }
 
 func affiliateRateAmountMicros(sourceMicros int64, rateBPS int32) int64 {
@@ -166,15 +220,6 @@ func affiliateRateAmountMicros(sourceMicros int64, rateBPS int32) int64 {
 		return 0
 	}
 	return product.Int64()
-}
-
-func affiliateNextBeijingDay(at time.Time) time.Time {
-	location, err := time.LoadLocation("Asia/Shanghai")
-	if err != nil {
-		location = time.FixedZone("CST", 8*60*60)
-	}
-	local := at.In(location)
-	return time.Date(local.Year(), local.Month(), local.Day()+1, 0, 0, 0, 0, location)
 }
 
 func (s *AffiliateRewardService) Start() {

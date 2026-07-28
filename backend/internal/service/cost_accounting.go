@@ -22,16 +22,35 @@ var costAccountingPlanPricing = map[string]struct {
 	ShopPriceCNY   float64
 	DirectPriceCNY float64
 }{
-	"lite": {Name: "Lite", ShopPriceCNY: 329, DirectPriceCNY: 319},
-	"pro":  {Name: "Pro", ShopPriceCNY: 639, DirectPriceCNY: 619},
+	"plus": {Name: "Plus", ShopPriceCNY: 259, DirectPriceCNY: 249},
+	"pro":  {Name: "Pro", ShopPriceCNY: 729, DirectPriceCNY: 699},
+	"max":  {Name: "Max", ShopPriceCNY: 1549, DirectPriceCNY: 1499},
 }
 
-var costAccountingMonthlyCardGroupIDs = map[string]map[string]int64{
-	"lite": {"gpt": 7, "claude": 11, "grok": 35},
-	"pro":  {"gpt": 8, "claude": 12, "grok": 36},
+var costAccountingMonthlyCardGroupNames = map[string]map[string]string{
+	"plus": {"gpt": "GPT Plus 月卡组", "claude": "Claude Plus 月卡组"},
+	"pro":  {"gpt": "GPT Pro V3 月卡组", "claude": "Claude Pro V3 月卡组"},
+	"max":  {"gpt": "GPT Max V3 月卡组", "claude": "Claude Max V3 月卡组"},
 }
 
-var costAccountingMonthlyCardPlanOrder = []string{"lite", "pro"}
+var costAccountingMonthlyCardPlanOrder = []string{"plus", "pro", "max"}
+
+func costAccountingResolveMonthlyGroupIDs(groups []Group) map[string]map[string]int64 {
+	groupIDByName := make(map[string]int64, len(groups))
+	for _, group := range groups {
+		if group.Status == StatusActive {
+			groupIDByName[group.Name] = group.ID
+		}
+	}
+	resolved := make(map[string]map[string]int64, len(costAccountingMonthlyCardGroupNames))
+	for planID, productNames := range costAccountingMonthlyCardGroupNames {
+		resolved[planID] = make(map[string]int64, len(productNames))
+		for product, name := range productNames {
+			resolved[planID][product] = groupIDByName[name]
+		}
+	}
+	return resolved
+}
 
 const costAccountingPayAsYouGoTopupCNY = 100.0
 
@@ -230,7 +249,7 @@ func costAccountingProductForGroup(group Group) string {
 }
 
 // GetCostAccountingOverview computes a full cost/margin snapshot across
-// the current monthly-card products (GPT/Claude/Grok x Lite/Pro) and every
+// the current monthly-card products (GPT/Claude x Plus/Pro/Max) and every
 // active public standard-billing group, including this month's real usage mix.
 // Historical monthly-card groups remain available for existing entitlements
 // but are intentionally excluded from the current commercial catalog.
@@ -251,11 +270,12 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 		return nil, fmt.Errorf("cost accounting: list active groups: %w", err)
 	}
 	payAsYouGoTargets := costAccountingPayAsYouGoTargets(activeGroups)
+	monthlyGroupIDs := costAccountingResolveMonthlyGroupIDs(activeGroups)
 
 	allGroupIDs := make([]int64, 0, 32)
 	currentMonthlyGroupIDs := make(map[int64]struct{}, 8)
 	for _, plan := range costAccountingMonthlyCardPlanOrder {
-		for _, gid := range costAccountingMonthlyCardGroupIDs[plan] {
+		for _, gid := range monthlyGroupIDs[plan] {
 			currentMonthlyGroupIDs[gid] = struct{}{}
 			allGroupIDs = append(allGroupIDs, gid)
 		}
@@ -282,13 +302,12 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 	}
 
 	overview := &CostAccountingOverview{
-		GeneratedAt:           now,
-		ShopChannelFeePercent: ShopChannelFeePercent,
-		UsageWindowStart:      windowStart,
-		UsageWindowEnd:        now,
-		PricingSourceNote: "shop/direct prices are hardcoded in this handler; keep in sync with " +
-			"frontend/src/constants/monthlyCreditCards.ts and the monthly-cards skill's config/monthly_plans.json",
-		ScopeNote:                   "当前月卡只展示在售 Lite/Pro；历史月卡分组不再作为产品卡展示，但其真实请求成本仍计入本月实际上游成本。按量付费自动读取全部启用的公开标准计费分组。",
+		GeneratedAt:                 now,
+		ShopChannelFeePercent:       ShopChannelFeePercent,
+		UsageWindowStart:            windowStart,
+		UsageWindowEnd:              now,
+		PricingSourceNote:           "guarded V3 catalog shared with redeem-code generation; keep the frontend product cards in sync",
+		ScopeNote:                   "当前月卡只展示在售 Plus / Pro / Max；历史月卡分组不再作为产品卡展示，但其真实请求成本仍计入本月实际上游成本。按量付费自动读取全部启用的公开标准计费分组。",
 		LegacyMonthlyCardGroupCount: len(legacyMonthlyCardGroupIDs),
 		LegacyMonthlyCardRealUsage:  CostAccountingRealUsage{Available: false, Note: "usage query unavailable"},
 	}
@@ -320,14 +339,17 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 		if !ok {
 			continue
 		}
-		groupIDs := costAccountingMonthlyCardGroupIDs[planID]
+		groupIDs := monthlyGroupIDs[planID]
 		products := map[string]CostAccountingRate{}
 		worstCostPerCredit := map[string]float64{}
 		primaryCostPerCredit := map[string]float64{}
 		var monthlyCredits float64
 
-		for _, product := range []string{"gpt", "claude", "grok"} {
+		for _, product := range []string{"gpt", "claude"} {
 			gid := groupIDs[product]
+			if gid <= 0 {
+				return nil, fmt.Errorf("cost accounting: V3 monthly group missing (%s/%s)", planID, product)
+			}
 			group, accounts, err := s.loadGroupAndAccounts(ctx, gid)
 			if err != nil {
 				return nil, fmt.Errorf("cost accounting: load group %d (%s/%s): %w", gid, planID, product, err)
@@ -355,13 +377,11 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 
 		scenarios := map[string]CostAccountingScenario{}
 		conservativeCP := 0.0
-		balancedSum := 0.0
-		for _, product := range []string{"gpt", "claude", "grok"} {
+		for _, product := range []string{"gpt", "claude"} {
 			cp := worstCostPerCredit[product]
 			if cp > conservativeCP {
 				conservativeCP = cp
 			}
-			balancedSum += primaryCostPerCredit[product]
 			cost := monthlyCredits * cp
 			scenarios["all_"+product] = CostAccountingScenario{
 				CostPerCreditWorstAccount: round4(cp),
@@ -369,11 +389,8 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 				VsDirectPrice:             money(direct, cost),
 			}
 		}
-		balancedCP := balancedSum / 3
 		conservativeCost := monthlyCredits * conservativeCP
-		balancedCost := monthlyCredits * balancedCP
 		conservativeMargin := money(direct, conservativeCost).MarginPercent
-		balancedMargin := money(direct, balancedCost).MarginPercent
 
 		// Best case: all traffic goes through whichever product's cheapest
 		// (primary/highest-priority) bound account is cheapest overall — e.g.
@@ -383,7 +400,7 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 		// the same number as the worst/conservative case.
 		bestCP := 0.0
 		haveBestCP := false
-		for _, product := range []string{"gpt", "claude", "grok"} {
+		for _, product := range []string{"gpt", "claude"} {
 			cp, ok := primaryCostPerCredit[product]
 			if !ok {
 				continue
@@ -402,7 +419,7 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 			var rawTotal, costTotal float64
 			var requestTotal int64
 			mix := map[string]float64{}
-			for _, product := range []string{"gpt", "claude", "grok"} {
+			for _, product := range []string{"gpt", "claude"} {
 				row := usageByGroup[groupIDs[product]]
 				mix[product] = row.RawCredits
 				rawTotal += row.RawCredits
@@ -454,7 +471,6 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 				RealPercent:         realPercentPtr,
 			},
 		})
-		_ = balancedMargin
 	}
 
 	for _, group := range payAsYouGoTargets {

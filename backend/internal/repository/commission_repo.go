@@ -229,25 +229,54 @@ func (r *commissionRepository) listByBeneficiaryAffiliateAware(
 			UNION ALL
 
 			SELECT
-				(1000000000000 + cash.id)::bigint AS id,
+				(1000000000000 + MIN(cash.id))::bigint AS id,
 				cash.agent_id::bigint AS beneficiary_id,
 				COALESCE(cash.consumer_user_id, 0)::bigint AS user_id,
 				COALESCE(u.email, '') AS user_email,
 				COALESCE(u.username, '') AS username,
-				(cash.amount_micros::numeric / 1000000)::double precision AS amount,
-				(COALESCE(cash.source_amount_micros, 0)::numeric / 1000000)::double precision AS source_amount,
+				(SUM(cash.amount_micros)::numeric / 1000000)::double precision AS amount,
+				(
+					SUM(
+						CASE
+							WHEN cash.entry_type = 'reversal'
+								THEN -COALESCE(cash.source_amount_micros, 0)
+							ELSE COALESCE(cash.source_amount_micros, 0)
+						END
+					)::numeric / 1000000
+				)::double precision AS source_amount,
 				CASE
-					WHEN cash.entry_type = 'reversal' THEN 'consumption_reversal'
+					WHEN BOOL_AND(cash.entry_type = 'reversal') THEN 'consumption_reversal'
 					ELSE 'consumption_commission'
 				END AS type,
-				(COALESCE(cash.agent_commission_rate_bps, 0)::numeric / 10000)::double precision AS rate,
-				'affiliate_v2'::text AS rate_source,
-				cash.source_id::bigint AS source_id,
 				CASE
-					WHEN cash.posting_status = 'risk_hold' THEN '分润待确认'
+					WHEN SUM(
+						CASE
+							WHEN cash.entry_type = 'reversal'
+								THEN -COALESCE(cash.source_amount_micros, 0)
+							ELSE COALESCE(cash.source_amount_micros, 0)
+						END
+					) = 0 THEN 0
+					ELSE (
+						SUM(cash.amount_micros)::numeric
+						/ SUM(
+							CASE
+								WHEN cash.entry_type = 'reversal'
+									THEN -COALESCE(cash.source_amount_micros, 0)
+								ELSE COALESCE(cash.source_amount_micros, 0)
+							END
+						)::numeric
+					)::double precision
+				END AS rate,
+				'affiliate_v3_daily'::text AS rate_source,
+				NULL::bigint AS source_id,
+				CASE
+					WHEN BOOL_OR(cash.posting_status = 'risk_hold') THEN '含待确认分润'
 					ELSE NULL
 				END AS note,
-				cash.occurred_at AS created_at
+				(
+					(cash.occurred_at AT TIME ZONE 'Asia/Shanghai')::date::timestamp
+					AT TIME ZONE 'Asia/Shanghai'
+				) AS created_at
 			FROM agent_cash_commission_entries cash
 			LEFT JOIN users u ON u.id = cash.consumer_user_id
 			WHERE cash.agent_id = $1
@@ -257,6 +286,12 @@ func (r *commissionRepository) listByBeneficiaryAffiliateAware(
 			  AND cash.posting_status <> 'reversed'
 			  AND ($5::timestamptz IS NULL OR cash.occurred_at >= $5::timestamptz)
 			  AND ($6::timestamptz IS NULL OR cash.occurred_at <= $6::timestamptz)
+			GROUP BY
+				cash.agent_id,
+				cash.consumer_user_id,
+				u.email,
+				u.username,
+				(cash.occurred_at AT TIME ZONE 'Asia/Shanghai')::date
 		)
 	`
 
@@ -312,6 +347,7 @@ func (r *commissionRepository) listByBeneficiaryAffiliateAware(
 			value := note.String
 			item.Note = &value
 		}
+		item.UserEmail = service.MaskEmail(item.UserEmail)
 		result = append(result, item)
 	}
 	if err := rows.Err(); err != nil {
@@ -330,7 +366,7 @@ func (r *commissionRepository) SumByBeneficiaryAndPeriod(
 		return 0, fmt.Errorf("sql executor is not configured")
 	}
 	if r.affiliateV2ReportingTablesAvailable(ctx) {
-		return r.sumAffiliateAwareCommission(ctx, beneficiaryID, true, nil, start, end)
+		return r.sumAffiliateAwareCommission(ctx, beneficiaryID, true, true, nil, start, end)
 	}
 
 	clauses := []string{"beneficiary_id = $1"}
@@ -373,7 +409,8 @@ func (r *commissionRepository) SumByBeneficiaryTypeAndPeriod(
 	if r.affiliateV2ReportingTablesAvailable(ctx) {
 		legacyTypes := expandCommissionTypes(commType)
 		includeAffiliate := commType == service.CommissionTypeConsumption || commType == "consumption_commission" || commType == "consumption_reversal"
-		return r.sumAffiliateAwareCommission(ctx, beneficiaryID, includeAffiliate, legacyTypes, start, end)
+		includeOrdinaryRewards := commType == service.CommissionTypeFirstRechargeReferral
+		return r.sumAffiliateAwareCommission(ctx, beneficiaryID, includeAffiliate, includeOrdinaryRewards, legacyTypes, start, end)
 	}
 
 	typeValues := expandCommissionTypes(commType)
@@ -416,6 +453,7 @@ func (r *commissionRepository) sumAffiliateAwareCommission(
 	ctx context.Context,
 	beneficiaryID int64,
 	includeAffiliate bool,
+	includeOrdinaryRewards bool,
 	legacyTypes []string,
 	start, end *time.Time,
 ) (float64, error) {
@@ -426,6 +464,7 @@ func (r *commissionRepository) sumAffiliateAwareCommission(
 	args := []any{
 		beneficiaryID,
 		includeAffiliate,
+		includeOrdinaryRewards,
 		typeFilterEnabled,
 		pq.Array(legacyTypes),
 		nullableTime(start),
@@ -438,9 +477,9 @@ func (r *commissionRepository) sumAffiliateAwareCommission(
 				SELECT SUM(cr.amount)
 				FROM commission_records cr
 				WHERE cr.beneficiary_id = $1
-				  AND (NOT $3::boolean OR cr.type = ANY($4::text[]))
-				  AND ($5::timestamptz IS NULL OR cr.created_at >= $5::timestamptz)
-				  AND ($6::timestamptz IS NULL OR cr.created_at <= $6::timestamptz)
+				  AND (NOT $4::boolean OR cr.type = ANY($5::text[]))
+				  AND ($6::timestamptz IS NULL OR cr.created_at >= $6::timestamptz)
+				  AND ($7::timestamptz IS NULL OR cr.created_at <= $7::timestamptz)
 			), 0)::double precision
 			+
 			COALESCE((
@@ -450,8 +489,19 @@ func (r *commissionRepository) sumAffiliateAwareCommission(
 				  AND $2::boolean
 				  AND cash.entry_type IN ('earned', 'risk_release', 'reversal')
 				  AND cash.posting_status <> 'reversed'
-				  AND ($5::timestamptz IS NULL OR cash.occurred_at >= $5::timestamptz)
-				  AND ($6::timestamptz IS NULL OR cash.occurred_at <= $6::timestamptz)
+				  AND ($6::timestamptz IS NULL OR cash.occurred_at >= $6::timestamptz)
+				  AND ($7::timestamptz IS NULL OR cash.occurred_at <= $7::timestamptz)
+			), 0)::double precision
+			+
+			COALESCE((
+				SELECT SUM(reward.amount_micros::numeric / 1000000)
+				FROM affiliate_reward_entries reward
+				WHERE reward.beneficiary_user_id = $1
+				  AND $3::boolean
+				  AND reward.reward_type = 'ordinary_referral'
+				  AND reward.status = 'posted'
+				  AND ($6::timestamptz IS NULL OR reward.posted_at >= $6::timestamptz)
+				  AND ($7::timestamptz IS NULL OR reward.posted_at <= $7::timestamptz)
 			), 0)::double precision
 	`, args, &total)
 	if err != nil {
@@ -578,9 +628,9 @@ func (r *commissionRepository) listInvitedUsersWithAffiliateStats(
 			FROM users u
 			LEFT JOIN affiliate_bindings ab
 				ON ab.customer_user_id = u.id
-				AND ab.agent_id = $1
+				AND (ab.agent_id = $1 OR ab.inviter_user_id = $1)
 			WHERE u.deleted_at IS NULL
-			  AND (u.agent_id = $1 OR ab.agent_id = $1)
+			  AND (u.agent_id = $1 OR ab.agent_id = $1 OR ab.inviter_user_id = $1)
 			ORDER BY u.id, u.created_at DESC
 		)
 	`
@@ -703,6 +753,7 @@ func (r *commissionRepository) listInvitedUsersWithAffiliateStats(
 		); err != nil {
 			return nil, nil, fmt.Errorf("scan affiliate invited user stat: %w", err)
 		}
+		stat.Email = service.MaskEmail(stat.Email)
 		result = append(result, stat)
 	}
 	if err := rows.Err(); err != nil {

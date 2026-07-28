@@ -21,7 +21,7 @@ const (
 
 	// 分佣比例
 	commissionRateConsumption           = 0.06 // 代理商消耗长效分润 6%
-	commissionRateFirstRechargeInvitee  = 0.10 // 被邀请用户首充奖励 10%
+	commissionRateFirstRechargeInvitee  = 0.05 // 被邀请用户首次实付奖励 5%
 	commissionRateFirstRechargeReferral = 0.05 // 普通用户邀请首充奖励 5%
 )
 

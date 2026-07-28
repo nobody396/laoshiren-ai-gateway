@@ -69,6 +69,7 @@ func (r *affiliateRiskRepository) ListAffiliateRiskPrincipals(
 		JOIN users u
 			ON u.id = ap.agent_id
 			AND u.deleted_at IS NULL
+		WHERE ap.status IN ('active', 'suspended')
 		ORDER BY
 			CASE ap.risk_status
 				WHEN 'blocked' THEN 0

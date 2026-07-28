@@ -340,6 +340,7 @@ BEGIN
 
   INSERT INTO users (email, password_hash, role, balance, concurrency, status, username, notes, invite_code, total_recharged, first_recharged, last_active_at, wechat)
   VALUES
+    ('browser-admin@partner.local', demo_password_hash, 'admin', 0, 20, 'active', '浏览器验收管理员', '仅限隔离 Staging 的浏览器验收账号', 'BROWSERADMIN', 0, FALSE, NOW(), 'browser-admin'),
     ('agent-alpha@partner.local', demo_password_hash, 'agent', 0, 8, 'active', 'Alpha 合伙人', '合伙人账号', 'AGENTALPHA', 3888, TRUE, NOW() - INTERVAL '1 hour', 'alpha-partner'),
     ('agent-review@partner.local', demo_password_hash, 'agent', 0, 8, 'active', '待确认合伙人', '待确认合伙人账号', 'AGENTREVIEW', 860, TRUE, NOW() - INTERVAL '2 hours', 'review-partner'),
     ('agent-blocked@partner.local', demo_password_hash, 'agent', 0, 8, 'active', '已暂停合伙人', '已暂停合伙人账号', 'AGENTBLOCK', 640, TRUE, NOW() - INTERVAL '3 hours', 'blocked-partner'),

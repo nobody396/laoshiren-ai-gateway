@@ -75,7 +75,7 @@ const monthlyCreditCardPlanInputs: PlanInput[] = [
     monthlyCredits: 220,
     description: '轻量但完整的 31 天开发额度，适合日常编码、问答与短任务。',
     accent: 'plus',
-    cardShopUrl: ''
+    cardShopUrl: 'https://pay.ldxp.cn/item/c0dudc'
   },
   {
     id: 'pro',
@@ -85,7 +85,7 @@ const monthlyCreditCardPlanInputs: PlanInput[] = [
     monthlyCredits: 650,
     description: '面向稳定高频开发与多轮代理任务，整月额度可自由安排。',
     accent: 'pro',
-    cardShopUrl: ''
+    cardShopUrl: 'https://pay.ldxp.cn/item/x4dup4'
   },
   {
     id: 'max',
@@ -95,7 +95,7 @@ const monthlyCreditCardPlanInputs: PlanInput[] = [
     monthlyCredits: 1400,
     description: '为大型重构、长上下文与连续高强度开发保留更大额度。',
     accent: 'max',
-    cardShopUrl: ''
+    cardShopUrl: 'https://pay.ldxp.cn/item/db9f6w'
   }
 ]
 

@@ -62,6 +62,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-04T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/monthly-v3-ldxp-links-20260728",
+      "owner": "monthly-v3-ldxp-links-20260728",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-04T23:59:59-04:00"
     }
   ]
 }

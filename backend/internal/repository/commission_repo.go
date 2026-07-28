@@ -11,6 +11,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/commissionrecord"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
+	"github.com/lib/pq"
 )
 
 type commissionRepository struct {
@@ -134,6 +135,19 @@ func (r *commissionRepository) ListByBeneficiary(
 	typeFilter string,
 	start, end *time.Time,
 ) ([]service.CommissionRecord, *pagination.PaginationResult, error) {
+	if r.sql != nil && r.affiliateV2ReportingTablesAvailable(ctx) {
+		return r.listByBeneficiaryAffiliateAware(ctx, beneficiaryID, params, typeFilter, start, end)
+	}
+	return r.listByBeneficiaryLegacy(ctx, beneficiaryID, params, typeFilter, start, end)
+}
+
+func (r *commissionRepository) listByBeneficiaryLegacy(
+	ctx context.Context,
+	beneficiaryID int64,
+	params pagination.PaginationParams,
+	typeFilter string,
+	start, end *time.Time,
+) ([]service.CommissionRecord, *pagination.PaginationResult, error) {
 	q := r.client.CommissionRecord.Query().
 		Where(commissionrecord.BeneficiaryIDEQ(beneficiaryID))
 
@@ -168,6 +182,144 @@ func (r *commissionRepository) ListByBeneficiary(
 	return result, paginationResultFromTotal(int64(total), params), nil
 }
 
+func (r *commissionRepository) listByBeneficiaryAffiliateAware(
+	ctx context.Context,
+	beneficiaryID int64,
+	params pagination.PaginationParams,
+	typeFilter string,
+	start, end *time.Time,
+) ([]service.CommissionRecord, *pagination.PaginationResult, error) {
+	legacyTypes := expandCommissionTypes(typeFilter)
+	affiliateTypeAllowed := typeFilter == "" ||
+		typeFilter == service.CommissionTypeConsumption ||
+		typeFilter == "consumption_commission" ||
+		typeFilter == "consumption_reversal"
+	args := []any{
+		beneficiaryID,
+		pq.Array(legacyTypes),
+		typeFilter,
+		affiliateTypeAllowed,
+		nullableTime(start),
+		nullableTime(end),
+	}
+
+	const recordsCTE = `
+		WITH records AS (
+			SELECT
+				cr.id::bigint AS id,
+				cr.beneficiary_id::bigint AS beneficiary_id,
+				cr.user_id::bigint AS user_id,
+				COALESCE(u.email, '') AS user_email,
+				COALESCE(u.username, '') AS username,
+				cr.amount::double precision AS amount,
+				cr.source_amount::double precision AS source_amount,
+				cr.type::text AS type,
+				COALESCE(cr.rate, 0)::double precision AS rate,
+				COALESCE(cr.rate_source, '')::text AS rate_source,
+				cr.source_id::bigint AS source_id,
+				cr.note::text AS note,
+				cr.created_at AS created_at
+			FROM commission_records cr
+			LEFT JOIN users u ON u.id = cr.user_id
+			WHERE cr.beneficiary_id = $1
+			  AND ($3 = '' OR cr.type = ANY($2::text[]))
+			  AND ($5::timestamptz IS NULL OR cr.created_at >= $5::timestamptz)
+			  AND ($6::timestamptz IS NULL OR cr.created_at <= $6::timestamptz)
+
+			UNION ALL
+
+			SELECT
+				(1000000000000 + cash.id)::bigint AS id,
+				cash.agent_id::bigint AS beneficiary_id,
+				COALESCE(cash.consumer_user_id, 0)::bigint AS user_id,
+				COALESCE(u.email, '') AS user_email,
+				COALESCE(u.username, '') AS username,
+				(cash.amount_micros::numeric / 1000000)::double precision AS amount,
+				(COALESCE(cash.source_amount_micros, 0)::numeric / 1000000)::double precision AS source_amount,
+				CASE
+					WHEN cash.entry_type = 'reversal' THEN 'consumption_reversal'
+					ELSE 'consumption_commission'
+				END AS type,
+				(COALESCE(cash.agent_commission_rate_bps, 0)::numeric / 10000)::double precision AS rate,
+				'affiliate_v2'::text AS rate_source,
+				cash.source_id::bigint AS source_id,
+				CASE
+					WHEN cash.posting_status = 'risk_hold' THEN '分润待确认'
+					ELSE NULL
+				END AS note,
+				cash.occurred_at AS created_at
+			FROM agent_cash_commission_entries cash
+			LEFT JOIN users u ON u.id = cash.consumer_user_id
+			WHERE cash.agent_id = $1
+			  AND $4::boolean
+			  AND cash.consumer_user_id IS NOT NULL
+			  AND cash.entry_type IN ('earned', 'risk_release', 'reversal')
+			  AND cash.posting_status <> 'reversed'
+			  AND ($5::timestamptz IS NULL OR cash.occurred_at >= $5::timestamptz)
+			  AND ($6::timestamptz IS NULL OR cash.occurred_at <= $6::timestamptz)
+		)
+	`
+
+	var total int64
+	if err := scanSingleRow(ctx, r.sql, recordsCTE+`SELECT COUNT(*) FROM records`, args, &total); err != nil {
+		return nil, nil, fmt.Errorf("count affiliate-aware commission records: %w", err)
+	}
+
+	rows, err := r.sql.QueryContext(
+		ctx,
+		recordsCTE+`
+			SELECT
+				id, beneficiary_id, user_id, user_email, username,
+				amount, source_amount, type, rate, rate_source,
+				source_id, note, created_at
+			FROM records
+			ORDER BY created_at DESC, id DESC
+			LIMIT $7 OFFSET $8
+		`,
+		append(args, params.Limit(), params.Offset())...,
+	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("list affiliate-aware commission records: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	result := make([]service.CommissionRecord, 0)
+	for rows.Next() {
+		var item service.CommissionRecord
+		var sourceID sql.NullInt64
+		var note sql.NullString
+		if err := rows.Scan(
+			&item.ID,
+			&item.BeneficiaryID,
+			&item.UserID,
+			&item.UserEmail,
+			&item.Username,
+			&item.Amount,
+			&item.SourceAmount,
+			&item.Type,
+			&item.Rate,
+			&item.RateSource,
+			&sourceID,
+			&note,
+			&item.CreatedAt,
+		); err != nil {
+			return nil, nil, fmt.Errorf("scan affiliate-aware commission record: %w", err)
+		}
+		if sourceID.Valid {
+			item.SourceID = &sourceID.Int64
+		}
+		if note.Valid && strings.TrimSpace(note.String) != "" {
+			value := note.String
+			item.Note = &value
+		}
+		result = append(result, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+	return result, paginationResultFromTotal(total, params), nil
+}
+
 // SumByBeneficiaryAndPeriod 统计收益人在指定日期范围内的分佣总额
 func (r *commissionRepository) SumByBeneficiaryAndPeriod(
 	ctx context.Context,
@@ -176,6 +328,9 @@ func (r *commissionRepository) SumByBeneficiaryAndPeriod(
 ) (float64, error) {
 	if r.sql == nil {
 		return 0, fmt.Errorf("sql executor is not configured")
+	}
+	if r.affiliateV2ReportingTablesAvailable(ctx) {
+		return r.sumAffiliateAwareCommission(ctx, beneficiaryID, true, nil, start, end)
 	}
 
 	clauses := []string{"beneficiary_id = $1"}
@@ -215,6 +370,11 @@ func (r *commissionRepository) SumByBeneficiaryTypeAndPeriod(
 	if r.sql == nil {
 		return 0, fmt.Errorf("sql executor is not configured")
 	}
+	if r.affiliateV2ReportingTablesAvailable(ctx) {
+		legacyTypes := expandCommissionTypes(commType)
+		includeAffiliate := commType == service.CommissionTypeConsumption || commType == "consumption_commission" || commType == "consumption_reversal"
+		return r.sumAffiliateAwareCommission(ctx, beneficiaryID, includeAffiliate, legacyTypes, start, end)
+	}
 
 	typeValues := expandCommissionTypes(commType)
 	clauses := []string{"beneficiary_id = $1"}
@@ -252,6 +412,54 @@ func (r *commissionRepository) SumByBeneficiaryTypeAndPeriod(
 	return total, nil
 }
 
+func (r *commissionRepository) sumAffiliateAwareCommission(
+	ctx context.Context,
+	beneficiaryID int64,
+	includeAffiliate bool,
+	legacyTypes []string,
+	start, end *time.Time,
+) (float64, error) {
+	typeFilterEnabled := len(legacyTypes) > 0
+	if !typeFilterEnabled {
+		legacyTypes = []string{""}
+	}
+	args := []any{
+		beneficiaryID,
+		includeAffiliate,
+		typeFilterEnabled,
+		pq.Array(legacyTypes),
+		nullableTime(start),
+		nullableTime(end),
+	}
+	var total float64
+	err := scanSingleRow(ctx, r.sql, `
+		SELECT
+			COALESCE((
+				SELECT SUM(cr.amount)
+				FROM commission_records cr
+				WHERE cr.beneficiary_id = $1
+				  AND (NOT $3::boolean OR cr.type = ANY($4::text[]))
+				  AND ($5::timestamptz IS NULL OR cr.created_at >= $5::timestamptz)
+				  AND ($6::timestamptz IS NULL OR cr.created_at <= $6::timestamptz)
+			), 0)::double precision
+			+
+			COALESCE((
+				SELECT SUM(cash.amount_micros::numeric / 1000000)
+				FROM agent_cash_commission_entries cash
+				WHERE cash.agent_id = $1
+				  AND $2::boolean
+				  AND cash.entry_type IN ('earned', 'risk_release', 'reversal')
+				  AND cash.posting_status <> 'reversed'
+				  AND ($5::timestamptz IS NULL OR cash.occurred_at >= $5::timestamptz)
+				  AND ($6::timestamptz IS NULL OR cash.occurred_at <= $6::timestamptz)
+			), 0)::double precision
+	`, args, &total)
+	if err != nil {
+		return 0, fmt.Errorf("sum affiliate-aware commission: %w", err)
+	}
+	return total, nil
+}
+
 // ListInvitedUsersWithStats 查询代理商旗下用户列表及其消费/分佣统计
 func (r *commissionRepository) ListInvitedUsersWithStats(
 	ctx context.Context,
@@ -261,6 +469,9 @@ func (r *commissionRepository) ListInvitedUsersWithStats(
 ) ([]service.InvitedUserStat, *pagination.PaginationResult, error) {
 	if r.sql == nil {
 		return nil, nil, fmt.Errorf("sql executor is not configured")
+	}
+	if r.affiliateV2ReportingTablesAvailable(ctx) {
+		return r.listInvitedUsersWithAffiliateStats(ctx, agentID, params, start, end)
 	}
 
 	// 时间条件（用于 usage_logs 和 commission_records 的子查询）
@@ -294,6 +505,7 @@ func (r *commissionRepository) ListInvitedUsersWithStats(
 			u.email,
 			u.username,
 			u.created_at,
+			COALESCE(u.total_recharged, 0) AS recharged_amount,
 			COALESCE(consume.total, 0) AS consumed_amount,
 			COALESCE(comm.total, 0)    AS commission_amount
 		FROM users u
@@ -333,6 +545,7 @@ func (r *commissionRepository) ListInvitedUsersWithStats(
 			&stat.Email,
 			&stat.Username,
 			&stat.RegisteredAt,
+			&stat.RechargedAmount,
 			&stat.ConsumedAmount,
 			&stat.CommissionAmount,
 		); err != nil {
@@ -345,6 +558,179 @@ func (r *commissionRepository) ListInvitedUsersWithStats(
 	}
 
 	return result, paginationResultFromTotal(total, params), nil
+}
+
+func (r *commissionRepository) listInvitedUsersWithAffiliateStats(
+	ctx context.Context,
+	agentID int64,
+	params pagination.PaginationParams,
+	start, end *time.Time,
+) ([]service.InvitedUserStat, *pagination.PaginationResult, error) {
+	args := []any{agentID, nullableTime(start), nullableTime(end)}
+	const directUsersCTE = `
+		WITH direct_users AS (
+			SELECT DISTINCT ON (u.id)
+				u.id,
+				COALESCE(u.email, '') AS email,
+				COALESCE(u.username, '') AS username,
+				u.created_at,
+				COALESCE(u.total_recharged, 0)::double precision AS user_total_recharged
+			FROM users u
+			LEFT JOIN affiliate_bindings ab
+				ON ab.customer_user_id = u.id
+				AND ab.agent_id = $1
+			WHERE u.deleted_at IS NULL
+			  AND (u.agent_id = $1 OR ab.agent_id = $1)
+			ORDER BY u.id, u.created_at DESC
+		)
+	`
+
+	var total int64
+	if err := scanSingleRow(ctx, r.sql, directUsersCTE+`SELECT COUNT(*) FROM direct_users`, []any{agentID}, &total); err != nil {
+		return nil, nil, fmt.Errorf("count affiliate invited users: %w", err)
+	}
+
+	query := directUsersCTE + `
+		, recharge_totals AS (
+			SELECT user_id, SUM(amount)::double precision AS total
+			FROM (
+				SELECT
+					user_id,
+					(amount_cny_fen::numeric / 100)::double precision AS amount
+				FROM topup_orders
+				WHERE status = 'completed'
+				  AND user_id IN (SELECT id FROM direct_users)
+				  AND ($2::timestamptz IS NULL OR COALESCE(completed_at, updated_at, created_at) >= $2::timestamptz)
+				  AND ($3::timestamptz IS NULL OR COALESCE(completed_at, updated_at, created_at) <= $3::timestamptz)
+
+				UNION ALL
+
+				SELECT
+					used_by AS user_id,
+					value::double precision AS amount
+				FROM redeem_codes
+				WHERE status = 'used'
+				  AND used_by IS NOT NULL
+				  AND used_by IN (SELECT id FROM direct_users)
+				  AND COALESCE(purpose, 'sale_recharge') = 'sale_recharge'
+				  AND ($2::timestamptz IS NULL OR used_at >= $2::timestamptz)
+				  AND ($3::timestamptz IS NULL OR used_at <= $3::timestamptz)
+			) paid
+			GROUP BY user_id
+		),
+		usage_totals AS (
+			SELECT user_id, SUM(actual_cost)::double precision AS total
+			FROM usage_logs
+			WHERE user_id IN (SELECT id FROM direct_users)
+			  AND ($2::timestamptz IS NULL OR created_at >= $2::timestamptz)
+			  AND ($3::timestamptz IS NULL OR created_at <= $3::timestamptz)
+			GROUP BY user_id
+		),
+		performance_totals AS (
+			SELECT user_id, SUM(amount_micros)::bigint AS total_micros
+			FROM affiliate_performance_events
+			WHERE direct_agent_id = $1
+			  AND user_id IN (SELECT id FROM direct_users)
+			  AND event_type = 'confirmed_consumption'
+			  AND ($2::timestamptz IS NULL OR occurred_at >= $2::timestamptz)
+			  AND ($3::timestamptz IS NULL OR occurred_at <= $3::timestamptz)
+			GROUP BY user_id
+		),
+		cash_totals AS (
+			SELECT consumer_user_id AS user_id, SUM(amount_micros)::bigint AS total_micros
+			FROM agent_cash_commission_entries
+			WHERE agent_id = $1
+			  AND consumer_user_id IN (SELECT id FROM direct_users)
+			  AND entry_type IN ('earned', 'risk_release', 'reversal')
+			  AND posting_status <> 'reversed'
+			  AND ($2::timestamptz IS NULL OR occurred_at >= $2::timestamptz)
+			  AND ($3::timestamptz IS NULL OR occurred_at <= $3::timestamptz)
+			GROUP BY consumer_user_id
+		),
+		legacy_commission_totals AS (
+			SELECT user_id, SUM(amount)::double precision AS total
+			FROM commission_records cr
+			WHERE cr.beneficiary_id = $1
+			  AND cr.user_id IN (SELECT id FROM direct_users)
+			  AND cr.type IN ('consumption', 'consumption_commission')
+			  AND ($2::timestamptz IS NULL OR cr.created_at >= $2::timestamptz)
+			  AND ($3::timestamptz IS NULL OR cr.created_at <= $3::timestamptz)
+			GROUP BY user_id
+		)
+		SELECT
+			d.id,
+			d.email,
+			d.username,
+			d.created_at,
+			COALESCE(NULLIF(d.user_total_recharged, 0), recharge_totals.total, 0)::double precision AS recharged_amount,
+			COALESCE(
+				(performance_totals.total_micros::numeric / 1000000)::double precision,
+				usage_totals.total,
+				0
+			)::double precision AS consumed_amount,
+			COALESCE(
+				(cash_totals.total_micros::numeric / 1000000)::double precision,
+				legacy_commission_totals.total,
+				0
+			)::double precision AS commission_amount
+		FROM direct_users d
+		LEFT JOIN recharge_totals ON recharge_totals.user_id = d.id
+		LEFT JOIN usage_totals ON usage_totals.user_id = d.id
+		LEFT JOIN performance_totals ON performance_totals.user_id = d.id
+		LEFT JOIN cash_totals ON cash_totals.user_id = d.id
+		LEFT JOIN legacy_commission_totals ON legacy_commission_totals.user_id = d.id
+		ORDER BY d.created_at DESC
+		LIMIT $4 OFFSET $5
+	`
+
+	rows, err := r.sql.QueryContext(ctx, query, append(args, params.Limit(), params.Offset())...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("list affiliate invited users: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	result := make([]service.InvitedUserStat, 0)
+	for rows.Next() {
+		var stat service.InvitedUserStat
+		if err := rows.Scan(
+			&stat.UserID,
+			&stat.Email,
+			&stat.Username,
+			&stat.RegisteredAt,
+			&stat.RechargedAmount,
+			&stat.ConsumedAmount,
+			&stat.CommissionAmount,
+		); err != nil {
+			return nil, nil, fmt.Errorf("scan affiliate invited user stat: %w", err)
+		}
+		result = append(result, stat)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	return result, paginationResultFromTotal(total, params), nil
+}
+
+func (r *commissionRepository) affiliateV2ReportingTablesAvailable(ctx context.Context) bool {
+	if r == nil || r.sql == nil {
+		return false
+	}
+	var exists bool
+	err := scanSingleRow(ctx, r.sql, `
+		SELECT
+			COALESCE(to_regclass('public.affiliate_bindings') IS NOT NULL, FALSE)
+			AND COALESCE(to_regclass('public.affiliate_performance_events') IS NOT NULL, FALSE)
+			AND COALESCE(to_regclass('public.agent_cash_commission_entries') IS NOT NULL, FALSE)
+	`, nil, &exists)
+	return err == nil && exists
+}
+
+func nullableTime(value *time.Time) any {
+	if value == nil {
+		return nil
+	}
+	return *value
 }
 
 func expandCommissionTypes(typeFilter string) []string {

@@ -383,7 +383,7 @@ const primaryInviteLabel = computed(() => isActiveAgent.value ? '我的默认合
 const primaryInviteHint = computed(() =>
   isActiveAgent.value
     ? '默认链接使用固定 10% 奖励池；可在下方动态调整客户返利与现金佣金的分配。'
-    : '邀请人奖励 T+0；被邀请人首笔实付严格大于 ¥50 时，T+1 额外获得 ⚡5。'
+    : '邀请人奖励 T+0；被邀请人首笔实付大于等于 ¥50 时，T+1 额外获得 ⚡5。'
 )
 const unreadNotices = computed(() => notices.value.filter(item => !item.read_at))
 const qualificationStatusLabel = computed(() => {

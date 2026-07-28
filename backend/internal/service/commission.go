@@ -12,6 +12,8 @@ type CommissionRecord struct {
 	ID            int64     `json:"id"`
 	BeneficiaryID int64     `json:"beneficiary_id"` // 获得分佣/奖励的用户
 	UserID        int64     `json:"user_id"`        // 触发分佣的用户（消费方/充值方）
+	UserEmail     string    `json:"user_email,omitempty"`
+	Username      string    `json:"username,omitempty"`
 	Amount        float64   `json:"amount"`         // 分佣/奖励金额
 	SourceAmount  float64   `json:"source_amount"`  // 原始触发金额
 	Type          string    `json:"type"`           // 分佣类型，见 domain.CommissionType* 常量
@@ -28,6 +30,8 @@ type InvitedUserStat struct {
 	Email        string    `json:"email"`
 	Username     string    `json:"username"`
 	RegisteredAt time.Time `json:"joined_at"`
+	// 指定日期范围内的真实付费/充值总额。
+	RechargedAmount float64 `json:"total_recharge"`
 	// 指定日期范围内的消费总额（usage_logs.actual_cost 汇总）
 	ConsumedAmount float64 `json:"total_consumption"`
 	// 产生的分佣总额（commission_records.amount 汇总，兼容 consumption / consumption_commission）

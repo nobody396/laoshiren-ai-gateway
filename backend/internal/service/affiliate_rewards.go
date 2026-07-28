@@ -133,8 +133,10 @@ func (s *AffiliateRewardService) ProcessFirstPaidPurchase(
 		}
 	}
 
-	// Strictly greater than ¥50. Exactly ¥50 is intentionally ineligible.
-	if input.AmountMicros > firstPaid.FirstPaidBonusThresholdMicros &&
+	// The fixed invitee bonus is available once the first real payment reaches
+	// the configured threshold. For the default ¥50 balance card, exactly ¥50
+	// should be eligible.
+	if input.AmountMicros >= firstPaid.FirstPaidBonusThresholdMicros &&
 		firstPaid.FirstPaidBonusMicros > 0 {
 		if err := s.repo.SchedulePlatformReward(ctx, AffiliatePlatformRewardInput{
 			BeneficiaryUserID:  input.UserID,

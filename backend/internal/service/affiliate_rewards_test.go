@@ -48,7 +48,7 @@ func TestAffiliateNextBeijingDay(t *testing.T) {
 	}
 }
 
-func TestAffiliateFirstPaidRewards_StrictThresholdAndOrdinaryFivePercent(t *testing.T) {
+func TestAffiliateFirstPaidRewards_InclusiveThresholdAndOrdinaryFivePercent(t *testing.T) {
 	t.Parallel()
 	repo := &affiliateRewardRepoStub{firstPaid: AffiliateFirstPaidContext{
 		ProgramLive:                   true,
@@ -77,8 +77,8 @@ func TestAffiliateFirstPaidRewards_StrictThresholdAndOrdinaryFivePercent(t *test
 	if result.OrdinaryReferralMicros != 2_500_000 || len(repo.posted) != 1 {
 		t.Fatalf("ordinary referral result = %+v, posted=%d", result, len(repo.posted))
 	}
-	if len(repo.scheduled) != 0 {
-		t.Fatalf("exactly ¥50 must not schedule fixed bonus")
+	if !result.FirstPaidBonusScheduled || len(repo.scheduled) != 1 {
+		t.Fatalf("exactly ¥50 must schedule fixed bonus: result=%+v scheduled=%d", result, len(repo.scheduled))
 	}
 
 	repo.firstPaid.PurchaseID = 89
@@ -93,11 +93,11 @@ func TestAffiliateFirstPaidRewards_StrictThresholdAndOrdinaryFivePercent(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !result.FirstPaidBonusScheduled || len(repo.scheduled) != 1 {
-		t.Fatalf("over ¥50 must schedule one fixed bonus: result=%+v scheduled=%d", result, len(repo.scheduled))
+	if !result.FirstPaidBonusScheduled || len(repo.scheduled) != 2 {
+		t.Fatalf("over ¥50 must schedule another fixed bonus: result=%+v scheduled=%d", result, len(repo.scheduled))
 	}
-	if repo.scheduled[0].AmountMicros != 5_000_000 {
-		t.Fatalf("fixed bonus = %d", repo.scheduled[0].AmountMicros)
+	if repo.scheduled[1].AmountMicros != 5_000_000 {
+		t.Fatalf("fixed bonus = %d", repo.scheduled[1].AmountMicros)
 	}
 }
 

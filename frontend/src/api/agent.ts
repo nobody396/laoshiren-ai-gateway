@@ -53,6 +53,7 @@ export interface InvitedUserStat {
   email: string
   username: string
   joined_at: string
+  total_recharge: number
   total_consumption: number
   total_commission: number
 }
@@ -61,6 +62,8 @@ export interface CommissionRecord {
   id: number
   beneficiary_id: number
   user_id: number
+  user_email?: string
+  username?: string
   amount: number
   source_amount: number
   type: string
@@ -244,6 +247,7 @@ function normalizeInvitedUser(value: unknown): InvitedUserStat {
     email: toStringValue(raw.email ?? raw.Email),
     username: toStringValue(raw.username ?? raw.Username),
     joined_at: toStringValue(raw.joined_at ?? raw.joinedAt ?? raw.RegisteredAt),
+    total_recharge: toNumber(raw.total_recharge ?? raw.totalRecharge ?? raw.recharged_amount ?? raw.RechargedAmount),
     total_consumption: toNumber(raw.total_consumption ?? raw.totalConsumption ?? raw.consumed_amount ?? raw.ConsumedAmount),
     total_commission: toNumber(raw.total_commission ?? raw.totalCommission ?? raw.commission_amount ?? raw.CommissionAmount)
   }
@@ -257,6 +261,8 @@ function normalizeCommissionRecord(value: unknown): CommissionRecord {
     id: toNumber(raw.id ?? raw.ID),
     beneficiary_id: toNumber(raw.beneficiary_id ?? raw.beneficiaryId ?? raw.BeneficiaryID),
     user_id: toNumber(raw.user_id ?? raw.userId ?? raw.UserID),
+    user_email: toStringValue(raw.user_email ?? raw.userEmail ?? raw.UserEmail) || undefined,
+    username: toStringValue(raw.username ?? raw.Username) || undefined,
     amount: toNumber(raw.amount ?? raw.Amount),
     source_amount: toNumber(raw.source_amount ?? raw.sourceAmount ?? raw.SourceAmount),
     type: toStringValue(raw.type ?? raw.Type),

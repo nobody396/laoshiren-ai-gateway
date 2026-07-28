@@ -678,7 +678,9 @@ const userNavItems = computed((): NavItem[] => {
     { path: '/get-subscription', label: t('nav.getSubscription'), icon: RechargeSubscriptionIcon },
     createModelPricingNavItem(),
     { path: '/topup/orders', label: t('nav.topupOrders'), icon: CreditCardIcon },
-    { path: '/affiliate', label: t('nav.affiliateCenter'), icon: AgentIcon },
+    ...(!isAgent.value
+      ? [{ path: '/affiliate', label: t('nav.affiliateCenter'), icon: AgentIcon }]
+      : []),
     ...(invoiceManagementEnabled.value
       ? [{ path: '/invoice', label: t('nav.invoiceManagement'), icon: TicketIcon }]
       : []),

@@ -13,7 +13,7 @@
           <input v-model="startDate" type="date" class="input w-auto text-sm" :max="endDate || undefined" />
           <span class="text-gray-400">—</span>
           <input v-model="endDate" type="date" class="input w-auto text-sm" :min="startDate || undefined" />
-          <button @click="fetchData" class="btn btn-primary btn-sm">{{ t('common.refresh') }}</button>
+          <button @click="fetchData()" class="btn btn-primary btn-sm">{{ t('common.refresh') }}</button>
           <button @click="clearFilters" class="btn btn-secondary btn-sm">{{ t('common.reset') }}</button>
         </div>
       </div>
@@ -49,7 +49,10 @@
                     {{ t(`agent.type_${record.type}`) }}
                   </span>
                 </td>
-                <td class="px-6 py-4 text-sm text-gray-500 dark:text-dark-400">#{{ record.user_id }}</td>
+                <td class="px-6 py-4 text-sm text-gray-500 dark:text-dark-400">
+                  <div class="font-medium text-gray-800 dark:text-dark-200">{{ getTriggerDisplayName(record) }}</div>
+                  <div v-if="getTriggerSecondaryText(record)" class="text-xs text-gray-400">{{ getTriggerSecondaryText(record) }}</div>
+                </td>
                 <td class="px-6 py-4 text-right text-sm text-gray-700 dark:text-dark-300">⚡{{ record.source_amount.toFixed(4) }}</td>
                 <td class="px-6 py-4 text-right text-sm font-semibold text-green-600 dark:text-green-400">+¥{{ record.amount.toFixed(4) }}</td>
                 <td class="px-6 py-4 text-sm text-gray-500 dark:text-dark-400">{{ formatDate(record.created_at) }}</td>
@@ -84,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { getAgentCommissions, type CommissionRecord, type PaginationResult } from '@/api/agent'
@@ -98,6 +101,7 @@ const records = ref<CommissionRecord[]>([])
 const pagination = ref<PaginationResult | null>(null)
 const currentPage = ref(1)
 const typeFilter = ref('')
+const refreshTimer = ref<number | null>(null)
 
 function getDefaultDates() {
   const now = new Date()
@@ -132,8 +136,26 @@ function typeClass(type: string): string {
   }
 }
 
-async function fetchData() {
-  loading.value = true
+function getTextValue(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function getTriggerDisplayName(record: CommissionRecord): string {
+  const username = getTextValue(record.username)
+  const email = getTextValue(record.user_email)
+  return username || email || `#${record.user_id}`
+}
+
+function getTriggerSecondaryText(record: CommissionRecord): string {
+  const username = getTextValue(record.username)
+  const email = getTextValue(record.user_email)
+  return username && email ? email : ''
+}
+
+async function fetchData(options: { silent?: boolean } = {}) {
+  if (!options.silent) {
+    loading.value = true
+  }
   error.value = ''
   try {
     const params: Record<string, string | number> = { page: currentPage.value, page_size: 20 }
@@ -146,7 +168,9 @@ async function fetchData() {
   } catch (e: unknown) {
     error.value = buildAuthErrorMessage(e, { fallback: t('common.error') })
   } finally {
-    loading.value = false
+    if (!options.silent) {
+      loading.value = false
+    }
   }
 }
 
@@ -164,5 +188,17 @@ function clearFilters() {
   fetchData()
 }
 
-onMounted(() => fetchData())
+onMounted(() => {
+  fetchData()
+  refreshTimer.value = window.setInterval(() => {
+    fetchData({ silent: true })
+  }, 5000)
+})
+
+onBeforeUnmount(() => {
+  if (refreshTimer.value !== null) {
+    window.clearInterval(refreshTimer.value)
+    refreshTimer.value = null
+  }
+})
 </script>

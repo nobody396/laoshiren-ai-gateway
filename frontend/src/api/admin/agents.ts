@@ -155,10 +155,11 @@ export interface AgentPaymentProfile {
 
 export interface AffiliateProgramSettings {
   id: number
-  program_version: 'v2'
+  program_version: 'v3'
   mode: 'off' | 'shadow' | 'live'
   started_at?: string
   ordinary_referral_rate_bps: number
+  ordinary_invitee_rate_bps: number
   first_paid_bonus_threshold_micros: number
   first_paid_bonus_micros: number
   agent_pool_rate_bps: number
@@ -171,8 +172,28 @@ export interface AffiliateProgramSettings {
   withdrawal_min_micros: number
   withdrawal_sla_hours: number
   margin_floor_bps: number
+  operational_reserve_bps: number
+  stress_cost_per_raw_credit_micros: number
+  stress_cost_snapshot_at: string
+  cost_snapshot_max_age_hours: number
   revision: number
   updated_at: string
+}
+
+export interface AffiliateAgentApplication {
+  id: number
+  user_id: number
+  email: string
+  username: string
+  status: 'pending_review' | 'approved' | 'rejected' | 'cancelled'
+  qualifying_route: 'direct_team' | 'direct_volume'
+  valid_direct_user_count: number
+  direct_team_consumption_micros: number
+  application_note: string
+  decision_note: string
+  submitted_at: string
+  reviewed_at?: string
+  reviewed_by?: number
 }
 
 export interface AffiliateCommunitySettings {
@@ -206,8 +227,11 @@ export interface AffiliateCommercialPolicy {
   credit_asset_symbol: string
   shop_fee_bps: number
   max_reward_pool_bps: number
+  max_reward_burden_bps: number
+  operational_reserve_bps: number
   margin_floor_bps: number
   stress_cost_per_credit: number
+  pricing_table_version: string
   gpt_cost_mix: {
     cheap_account_multiplier: number
     expensive_account_multiplier: number
@@ -428,6 +452,27 @@ export async function updateAffiliateProgram(payload: AffiliateProgramSettings):
   return data
 }
 
+export async function listAffiliateApplications(
+  status: AffiliateAgentApplication['status'] | 'all' = 'pending_review',
+  limit = 100
+): Promise<AffiliateAgentApplication[]> {
+  const { data } = await apiClient.get<{ items: AffiliateAgentApplication[] }>('/admin/agents/affiliate-applications', {
+    params: { status, limit }
+  })
+  return data.items ?? []
+}
+
+export async function reviewAffiliateApplication(
+  applicationId: number,
+  payload: { approve: boolean; note?: string }
+): Promise<{ application: AffiliateAgentApplication }> {
+  const { data } = await apiClient.post<{ application: AffiliateAgentApplication }>(
+    `/admin/agents/affiliate-applications/${applicationId}/review`,
+    payload
+  )
+  return data
+}
+
 export async function getAffiliateCommercialPolicy(): Promise<AffiliateCommercialPolicy> {
   const { data } = await apiClient.get<AffiliateCommercialPolicy>('/admin/agents/affiliate-commercial-policy')
   return data
@@ -598,6 +643,8 @@ export const agentsAPI = {
   reviewPaymentProfile,
   getAffiliateProgram,
   updateAffiliateProgram,
+  listAffiliateApplications,
+  reviewAffiliateApplication,
   getAffiliateCommercialPolicy,
   getAffiliateCommunity,
   updateAffiliateCommunity,

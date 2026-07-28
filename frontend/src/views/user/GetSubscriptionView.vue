@@ -55,7 +55,6 @@
                         `topup-monthly-product--${plan.accent}`,
                         {
                           'topup-monthly-product--active': selectedProductKind === 'monthly' && selectedMonthlyPlan?.id === plan.id,
-                          'topup-monthly-product--apex-activate': isApexActivation(plan)
                         }
                       ]"
                     >
@@ -66,7 +65,7 @@
                         </span>
                         <span class="topup-status topup-status--available">{{ t('topup.monthlyPlanStatus') }}</span>
                       </span>
-                      <span class="topup-monthly-product__price">{{ plan.price }} <small>/ 月</small></span>
+                      <span class="topup-monthly-product__price">{{ plan.price }} <small>/ 31 天</small></span>
                       <span v-if="plan.legendaryCopy" class="topup-monthly-product__legend">
                         {{ plan.description }}
                       </span>
@@ -163,10 +162,6 @@
             <div class="topup-summary">
               <div
                 class="topup-summary-card"
-                :class="{
-                  'topup-summary-card--apex': selectedProductKind === 'monthly' && selectedMonthlyPlan?.accent === 'apex',
-                  'topup-summary-card--apex-activate': apexActivationActive && selectedProductKind === 'monthly' && selectedMonthlyPlan?.accent === 'apex'
-                }"
               >
                 <div class="topup-summary-head">
                   <div>
@@ -192,7 +187,6 @@
                   <template v-if="selectedProductKind === 'monthly'">
                     <section
                       class="topup-monthly-detail"
-                      :class="{ 'topup-monthly-detail--apex': selectedMonthlyPlan?.accent === 'apex' }"
                     >
                       <p v-if="selectedMonthlyPlan?.legendaryCopy" class="topup-apex-lore">
                         {{ selectedMonthlyPlan.legendaryCopy }}
@@ -201,11 +195,11 @@
                       <div class="topup-monthly-prices">
                         <div>
                           <span>{{ t('topup.monthlyPlanPrice') }}</span>
-                          <strong>{{ selectedMonthlyPlan?.price }} / 月</strong>
+                          <strong>{{ selectedMonthlyPlan?.price }} / 31 天</strong>
                         </div>
                         <div>
                           <span>{{ t('topup.monthlyPlanDirectPrice') }}</span>
-                          <strong>{{ selectedMonthlyPlan?.directPrice }} / 月</strong>
+                          <strong>{{ selectedMonthlyPlan?.directPrice }} / 31 天</strong>
                         </div>
                       </div>
 
@@ -439,7 +433,7 @@ const step = ref<1 | 2>(1)
 const selectedTopupChannel = ref<TopupChannel>('card_shop')
 const selectedProductKind = ref<SelectedProductKind>('balance')
 const selectedBalanceProductId = ref('')
-const selectedMonthlyPlanId = ref<MonthlyCreditCardPlan['id']>('starter')
+const selectedMonthlyPlanId = ref<MonthlyCreditCardPlan['id']>('plus')
 const payType = ref<TopupPayType>('alipay')
 const submitting = ref(false)
 const qrCodeURL = ref('')
@@ -448,12 +442,10 @@ const qrExpired = ref(false)
 const countdown = ref(QR_TTL_SECONDS)
 const activeOrderAmountYuan = ref(0)
 const showMonthlyDirectPurchase = ref(false)
-const apexActivationActive = ref(false)
 const { plans: monthlyCreditCardPlans, loadMonthlyCreditCardPlans } = useMonthlyCreditCardPlans()
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
-let apexActivationTimer: ReturnType<typeof setTimeout> | null = null
 let pollInFlight = false
 
 // 根据公开设置决定用户侧可见支付渠道；关闭的渠道直接不展示。
@@ -585,28 +577,6 @@ function selectBalanceProduct(product: BalanceProduct) {
 function selectMonthlyPlan(plan: MonthlyCreditCardPlan) {
   selectedProductKind.value = 'monthly'
   selectedMonthlyPlanId.value = plan.id
-  if (plan.accent === 'apex') {
-    triggerApexActivation()
-  }
-}
-
-function isApexActivation(plan: MonthlyCreditCardPlan) {
-  return apexActivationActive.value && selectedProductKind.value === 'monthly' && selectedMonthlyPlanId.value === plan.id && plan.accent === 'apex'
-}
-
-function triggerApexActivation() {
-  if (apexActivationTimer) {
-    clearTimeout(apexActivationTimer)
-    apexActivationTimer = null
-  }
-  apexActivationActive.value = false
-  window.requestAnimationFrame(() => {
-    apexActivationActive.value = true
-    apexActivationTimer = setTimeout(() => {
-      apexActivationActive.value = false
-      apexActivationTimer = null
-    }, 980)
-  })
 }
 
 function selectTopupChannel(channel: TopupChannel) {
@@ -779,10 +749,6 @@ async function pollOrderStatus() {
 
 onUnmounted(() => {
   stopTimers()
-  if (apexActivationTimer) {
-    clearTimeout(apexActivationTimer)
-    apexActivationTimer = null
-  }
 })
 
 void Promise.all([

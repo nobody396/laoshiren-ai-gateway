@@ -49,8 +49,8 @@
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-500 dark:text-dark-400">{{ formatDate(user.joined_at) }}</td>
                 <td class="px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-white">¥{{ user.total_recharge.toFixed(4) }}</td>
-                <td class="px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-white">⚡{{ user.total_consumption.toFixed(4) }}</td>
-                <td class="px-6 py-4 text-right text-sm font-medium text-green-600 dark:text-green-400">¥{{ user.total_commission.toFixed(4) }}</td>
+                <td class="px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-white">¥{{ user.total_consumption.toFixed(2) }}</td>
+                <td class="px-6 py-4 text-right text-sm font-medium text-green-600 dark:text-green-400">¥{{ user.total_commission.toFixed(2) }}</td>
               </tr>
             </tbody>
           </table>
@@ -107,9 +107,8 @@ function getDefaultDates() {
   return { start, end }
 }
 
-const { start: defaultStart, end: defaultEnd } = getDefaultDates()
-const startDate = ref(defaultStart)
-const endDate = ref(defaultEnd)
+const startDate = ref('')
+const endDate = ref('')
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString()
@@ -168,7 +167,7 @@ function clearFilters() {
 onMounted(() => {
   fetchData()
   refreshTimer.value = window.setInterval(() => {
-    fetchData({ silent: true })
+    if (!document.hidden) fetchData({ silent: true })
   }, 5000)
 })
 

@@ -25,14 +25,14 @@ const usage = {
   observed_request_count: 10,
   observed_raw_credits_consumed: 20,
   observed_real_cost_cny: 12.5,
-  product_mix_percent: { gpt: 50, claude: 30, grok: 20 },
+  product_mix_percent: { gpt: 60, claude: 40 },
   blended_cost_per_credit: 0.625,
   projected_full_quota_cost_cny: 281.25,
   vs_shop_net_price: { cost_cny: 281.25, profit_cny: 37.88, margin_percent: 11.87 },
   vs_direct_price: { cost_cny: 281.25, profit_cny: 37.75, margin_percent: 11.83 }
 }
 
-function plan(id: 'lite' | 'pro', name: string) {
+function plan(id: 'plus' | 'pro' | 'max', name: string) {
   const product = (groupId: number, groupName: string) => ({
     group_id: groupId,
     group_name: groupName,
@@ -49,20 +49,18 @@ function plan(id: 'lite' | 'pro', name: string) {
   return {
     id,
     name,
-    shop_price_cny: id === 'lite' ? 329 : 639,
+    shop_price_cny: id === 'plus' ? 259 : id === 'pro' ? 729 : 1549,
     shop_fee_percent: 3,
-    shop_net_price_cny: id === 'lite' ? 319.13 : 619.83,
-    direct_price_cny: id === 'lite' ? 319 : 619,
-    monthly_credits: id === 'lite' ? 450 : 900,
+    shop_net_price_cny: id === 'plus' ? 251.23 : id === 'pro' ? 707.13 : 1502.53,
+    direct_price_cny: id === 'plus' ? 249 : id === 'pro' ? 699 : 1499,
+    monthly_credits: id === 'plus' ? 220 : id === 'pro' ? 650 : 1400,
     products: {
-      gpt: product(id === 'lite' ? 7 : 8, `${name} GPT`),
-      claude: product(id === 'lite' ? 11 : 12, `${name} Claude`),
-      grok: product(id === 'lite' ? 35 : 36, `${name} Grok`)
+      gpt: product(id === 'plus' ? 7 : id === 'pro' ? 8 : 9, `${name} GPT`),
+      claude: product(id === 'plus' ? 11 : id === 'pro' ? 12 : 13, `${name} Claude`)
     },
     single_product_scenarios: {
       all_gpt: scenario,
-      all_claude: scenario,
-      all_grok: scenario
+      all_claude: scenario
     },
     real_usage: usage,
     best_case_scenario: { cost_cny: 112.5, profit_cny: 206.5, margin_percent: 64.73 },
@@ -81,10 +79,10 @@ const overview = {
   usage_window_start: '2026-07-01T00:00:00+08:00',
   usage_window_end: '2026-07-25T12:00:00+08:00',
   pricing_source_note: 'test',
-  scope_note: '当前月卡只核算在售 Lite/Pro。',
+  scope_note: '当前月卡只核算在售 Plus/Pro/Max。',
   legacy_monthly_card_group_count: 9,
   legacy_monthly_card_real_usage: { ...usage, observed_real_cost_cny: 2 },
-  monthly_cards: [plan('lite', 'Lite'), plan('pro', 'Pro')],
+  monthly_cards: [plan('plus', 'Plus'), plan('pro', 'Pro'), plan('max', 'Max')],
   pay_as_you_go: [
     {
       group_id: 5,
@@ -159,12 +157,13 @@ describe('admin CostAccountingView', () => {
     )
   })
 
-  it('renders the current Lite/Pro catalog and every pay-as-you-go group returned by the backend', async () => {
+  it('renders the current Plus/Pro/Max catalog and every pay-as-you-go group returned by the backend', async () => {
     const wrapper = mountView()
     await flushPromises()
 
-    expect(wrapper.find('[data-test="plan-lite"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="plan-plus"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="plan-pro"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="plan-max"]').exists()).toBe(true)
     expect(wrapper.findAll('[data-test^="paygo-"]')).toHaveLength(2)
     expect(wrapper.text()).toContain('Claude AWS Bedrock 分组')
   })
@@ -176,6 +175,6 @@ describe('admin CostAccountingView', () => {
     expect(wrapper.text()).toContain('其中上游充值')
     expect(wrapper.text()).toContain('¥200.00')
     expect(wrapper.text()).toContain('本月实际上游成本')
-    expect(wrapper.text()).toContain('¥35.00')
+    expect(wrapper.text()).toContain('¥47.50')
   })
 })

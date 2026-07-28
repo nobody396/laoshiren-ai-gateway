@@ -41,7 +41,7 @@ export interface CostAccountingMarginRange {
   real_percent?: number
 }
 
-export type CostAccountingProduct = 'gpt' | 'claude' | 'grok'
+export type CostAccountingProduct = 'gpt' | 'claude'
 
 export interface CostAccountingMonthlyPlan {
   id: string

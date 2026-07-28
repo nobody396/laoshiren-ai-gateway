@@ -3,7 +3,7 @@
     <main class="mx-auto max-w-7xl space-y-6 pb-12">
       <header class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary-700 dark:text-primary-300">合伙人计划 V2.1</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary-700 dark:text-primary-300">合伙人计划 V3</p>
           <h1 class="mt-1 text-3xl font-bold tracking-tight text-gray-950 dark:text-white">联盟运营台</h1>
           <p class="mt-2 text-sm text-gray-600 dark:text-dark-300">计划开关、合伙人总览、收款审核、人工打款和社群引导的单一操作入口。</p>
         </div>
@@ -63,18 +63,20 @@
                   <option value="live" :disabled="program.mode === 'off'">正式 · 正式入账</option>
                 </select>
               </label>
-              <NumberField v-model="programForm.ordinaryReferralRate" label="普通邀请奖励" suffix="%" :min="0" :max="10" :step="1" />
-              <NumberField v-model="programForm.firstPaidThreshold" label="首笔奖励门槛" prefix="¥" :min="0" :step="1" />
-              <NumberField v-model="programForm.firstPaidBonus" label="被邀请人固定奖励" prefix="⚡" :min="0" :step="1" />
+              <NumberField v-model="programForm.ordinaryReferralRate" label="邀请人首付奖励（固定）" suffix="%" :disabled="true" />
+              <NumberField v-model="programForm.ordinaryInviteeRate" label="被邀请人首付奖励（固定）" suffix="%" :disabled="true" />
               <NumberField v-model="programForm.directUserCount" label="路线 A 有效用户" suffix="人" :min="1" :step="1" />
               <NumberField v-model="programForm.perUserConsumption" label="单个有效用户消费" prefix="¥" :min="1" :step="1" />
               <NumberField v-model="programForm.directTeamConsumption" label="路线 A 团队消费" prefix="¥" :min="1" :step="1" />
-              <NumberField v-model="programForm.combinedConsumption" label="路线 B 合并消费" prefix="¥" :min="1" :step="1" />
+              <NumberField v-model="programForm.combinedConsumption" label="路线 B 直属消费" prefix="¥" :min="1" :step="1" />
               <NumberField v-model="programForm.maxCampaignLinks" label="最多活动链接" suffix="条" :min="0" :max="100" :step="1" />
-              <NumberField v-model="programForm.conversionMultiplier" label="现金转额度倍率" suffix="×" :min="1" :step="0.1" />
+              <NumberField v-model="programForm.conversionMultiplier" label="现金转额度倍率（固定）" suffix="×" :disabled="true" />
               <NumberField v-model="programForm.withdrawalMinimum" label="最低提现金额" prefix="¥" :min="1" :step="1" />
               <NumberField v-model="programForm.withdrawalSLAHours" label="处理时限" suffix="小时" :min="1" :max="168" :step="1" />
               <NumberField v-model="programForm.marginFloor" label="压力毛利率底线" suffix="%" :min="35" :max="100" :step="1" />
+              <NumberField v-model="programForm.stressCostPerRawCredit" label="每单位额度压力成本" prefix="¥" :min="0.01" :step="0.01" />
+              <NumberField v-model="programForm.operationalReserve" label="运营储备" suffix="%" :min="2" :max="30" :step="0.5" />
+              <NumberField v-model="programForm.costSnapshotMaxAgeHours" label="成本快照有效期" suffix="小时" :min="1" :max="720" :step="1" />
               <div class="rounded-xl bg-gray-50 p-3 dark:bg-dark-900 sm:col-span-2 lg:col-span-3">
                 <p class="text-xs text-gray-600 dark:text-dark-300">合伙人奖励池</p>
                 <p class="mt-1 text-xl font-bold text-gray-950 dark:text-white">{{ program.agent_pool_rate_bps / 100 }}%</p>
@@ -84,6 +86,7 @@
             <div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-5 dark:border-dark-800">
               <p class="text-xs leading-5 text-gray-600 dark:text-dark-300">
                 {{ program.started_at ? `首次正式启用：${formatBeijingTime(program.started_at)}` : '尚未进入正式模式；首次启用时间将由服务器保存，并按北京时间展示。' }}
+                当前成本快照：{{ formatBeijingTime(program.stress_cost_snapshot_at) }}；保存设置即确认并刷新快照时间。
               </p>
               <button class="btn btn-primary" :disabled="programSaving">{{ programSaving ? '保存中…' : '保存计划设置' }}</button>
             </div>
@@ -95,7 +98,7 @@
             <div>
               <h2 class="text-xl font-semibold text-gray-950 dark:text-white">35% 压力毛利门禁</h2>
               <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">
-                已扣除链动小铺 3% 手续费、完整 10% 联盟奖励池，并按每单位原始额度 ¥0.50 的保守成本测算。
+                已扣除链动小铺 3% 手续费、佣金转额度后的 12% 最坏联盟负担、{{ (commercialPolicy.operational_reserve_bps / 100).toFixed(1) }}% 运营储备，并按每单位原始额度 ¥{{ commercialPolicy.stress_cost_per_credit.toFixed(2) }} 测算。
               </p>
             </div>
             <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="commercialPolicy.passes_configured_margin_gate ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'">
@@ -143,8 +146,53 @@
           </p>
         </section>
 
-        <section v-if="activeTab === 'partners'" class="space-y-6">
-          <article class="card overflow-hidden">
+        <section v-if="activeTab === 'applications'" class="card overflow-hidden">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
+            <div>
+              <h2 class="text-xl font-semibold text-gray-950 dark:text-white">合伙人申请</h2>
+              <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">达到消费门槛只获得申请资格；审核通过后才会开通现金分润和动态链接。</p>
+            </div>
+            <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">{{ applications.length }} 待审核</span>
+          </div>
+          <div class="max-h-[38rem] overflow-auto">
+            <table class="min-w-[1050px] table-fixed divide-y divide-gray-100 text-sm dark:divide-dark-800">
+              <thead class="sticky top-0 z-10 bg-gray-50 text-xs text-gray-600 dark:bg-dark-900 dark:text-dark-300">
+                <tr>
+                  <th class="px-5 py-3 text-left font-medium">申请人</th>
+                  <th class="px-5 py-3 text-left font-medium">达标路线</th>
+                  <th class="px-5 py-3 text-right font-medium">有效直属</th>
+                  <th class="px-5 py-3 text-right font-medium">直属确认消费</th>
+                  <th class="px-5 py-3 text-left font-medium">申请说明</th>
+                  <th class="px-5 py-3 text-left font-medium">审核说明</th>
+                  <th class="sticky right-0 bg-gray-50 px-5 py-3 text-right font-medium dark:bg-dark-900">操作</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-dark-800">
+                <tr v-for="item in applications" :key="item.id" class="align-top">
+                  <td class="px-5 py-4">
+                    <p class="font-semibold text-gray-900 dark:text-white">#{{ item.user_id }} · {{ item.username || item.email }}</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ formatOptionalBeijingTime(item.submitted_at) }}</p>
+                  </td>
+                  <td class="px-5 py-4">{{ item.qualifying_route === 'direct_team' ? '路线 A · 稳定团队' : '路线 B · 直属消费' }}</td>
+                  <td class="px-5 py-4 text-right">{{ item.valid_direct_user_count }} 人</td>
+                  <td class="px-5 py-4 text-right">{{ formatMicros(item.direct_team_consumption_micros, '¥') }}</td>
+                  <td class="px-5 py-4 text-gray-600 dark:text-dark-300">{{ item.application_note || '—' }}</td>
+                  <td class="px-5 py-4"><input v-model.trim="applicationNotes[item.id]" maxlength="500" class="input min-w-48" placeholder="审核说明"></td>
+                  <td class="sticky right-0 bg-white px-5 py-4 text-right dark:bg-dark-900">
+                    <div class="flex justify-end gap-2">
+                      <button class="btn btn-secondary btn-sm" :disabled="applicationReviewingId === item.id" @click="reviewApplication(item, false)">不通过</button>
+                      <button class="btn btn-primary btn-sm" :disabled="applicationReviewingId === item.id" @click="reviewApplication(item, true)">通过并开通</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="!applications.length"><td colspan="7" class="px-5 py-12 text-center text-gray-600 dark:text-dark-300">暂无待审核申请</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section v-if="activeTab === 'partners' || activeTab === 'risk'" class="space-y-6">
+          <article v-if="activeTab === 'partners'" class="card overflow-hidden">
             <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
               <div>
                 <h2 class="text-xl font-semibold text-gray-950 dark:text-white">合伙人管理</h2>
@@ -256,7 +304,7 @@
             </div>
           </article>
 
-          <article class="card p-6">
+          <article v-if="activeTab === 'risk'" class="card p-6">
             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-red-600 dark:text-red-400">订单修正</p>
             <h2 class="mt-2 text-xl font-semibold text-gray-950 dark:text-white">撤回一笔确认消费</h2>
             <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-dark-300">
@@ -379,13 +427,13 @@
                     <td class="whitespace-nowrap px-5 py-4 text-gray-700 dark:text-dark-200">{{ withdrawal.payment_alipay_account }}</td>
                     <td class="whitespace-nowrap px-5 py-4 text-xs text-gray-600 dark:text-dark-300">{{ formatBeijingTime(withdrawal.due_at) }}</td>
                     <td class="px-5 py-4">
-                      <input v-model="paymentReferences[withdrawal.id]" maxlength="200" class="input min-w-52" placeholder="支付宝流水号（可选）">
+                      <input v-model="paymentReferences[withdrawal.id]" maxlength="200" class="input min-w-52" placeholder="支付宝流水号（必填）">
                     </td>
                     <td class="sticky right-0 border-l border-gray-100 bg-white px-5 py-4 dark:border-dark-800 dark:bg-dark-900">
                       <div class="flex justify-end gap-2">
                         <button class="btn btn-secondary btn-sm whitespace-nowrap" @click="previewWithdrawalQR(withdrawal)">扫码打款</button>
                         <button class="btn btn-secondary btn-sm whitespace-nowrap" :disabled="processingWithdrawalId === withdrawal.id" @click="failWithdrawal(withdrawal)">打款失败</button>
-                        <button class="btn btn-primary btn-sm whitespace-nowrap" :disabled="processingWithdrawalId === withdrawal.id || withdrawal.agent_risk_status !== 'clear'" @click="completeWithdrawal(withdrawal)">标记已到账</button>
+                        <button class="btn btn-primary btn-sm whitespace-nowrap" :disabled="processingWithdrawalId === withdrawal.id || withdrawal.agent_risk_status !== 'clear' || !(paymentReferences[withdrawal.id] || '').trim()" @click="completeWithdrawal(withdrawal)">标记已到账</button>
                       </div>
                     </td>
                   </tr>
@@ -510,15 +558,18 @@ import {
   getAffiliateWithdrawalQRCode,
   getPaymentQRCode,
   listAffiliateRiskPrincipals,
+  listAffiliateApplications,
   listAffiliateWithdrawals,
   listPendingPaymentProfiles,
   reverseAffiliatePerformance,
   reviewPaymentProfile,
+  reviewAffiliateApplication,
   updateAffiliateRisk,
   updateAffiliateCommunity,
   updateAffiliateProgram,
   uploadAffiliateCommunityQRCode,
   type AdminAffiliateWithdrawal,
+  type AffiliateAgentApplication,
   type AffiliateCommunitySettings,
   type AffiliateCommercialPolicy,
   type AffiliatePerformanceReversal,
@@ -538,7 +589,8 @@ const NumberField = defineComponent({
     suffix: { type: String, default: '' },
     min: { type: Number, default: undefined },
     max: { type: Number, default: undefined },
-    step: { type: Number, default: 1 }
+    step: { type: Number, default: 1 },
+    disabled: { type: Boolean, default: false }
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
@@ -552,7 +604,8 @@ const NumberField = defineComponent({
           min: props.min,
           max: props.max,
           step: props.step,
-          class: ['input', props.prefix ? 'pl-8' : '', props.suffix ? 'pr-14' : ''],
+          disabled: props.disabled,
+          class: ['input', props.prefix ? 'pl-8' : '', props.suffix ? 'pr-14' : '', props.disabled ? 'cursor-not-allowed opacity-60' : ''],
           onInput: (event: Event) => emit('update:modelValue', Number((event.target as HTMLInputElement).value))
         }),
         props.suffix ? h('span', { class: 'pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600 dark:text-dark-300' }, props.suffix) : null
@@ -567,6 +620,7 @@ const error = ref('')
 const programSaving = ref(false)
 const communitySaving = ref(false)
 const reviewingId = ref<number | null>(null)
+const applicationReviewingId = ref<number | null>(null)
 const processingWithdrawalId = ref<number | null>(null)
 const riskUpdatingId = ref<number | null>(null)
 const reversalProcessing = ref(false)
@@ -577,6 +631,8 @@ const pendingProfiles = ref<AgentPaymentProfile[]>([])
 const withdrawals = ref<AdminAffiliateWithdrawal[]>([])
 const paidWithdrawals = ref<AdminAffiliateWithdrawal[]>([])
 const riskPrincipals = ref<AffiliateRiskPrincipal[]>([])
+const applications = ref<AffiliateAgentApplication[]>([])
+const applicationNotes = reactive<Record<number, string>>({})
 const reviewNotes = reactive<Record<number, string>>({})
 const paymentReferences = reactive<Record<number, string>>({})
 const riskReasons = reactive<Record<number, string>>({})
@@ -589,8 +645,7 @@ const qrPreviewTitle = ref('')
 const programForm = reactive({
   mode: 'off' as AffiliateProgramSettings['mode'],
   ordinaryReferralRate: 5,
-  firstPaidThreshold: 50,
-  firstPaidBonus: 5,
+  ordinaryInviteeRate: 5,
   directUserCount: 10,
   perUserConsumption: 20,
   directTeamConsumption: 1000,
@@ -599,19 +654,24 @@ const programForm = reactive({
   conversionMultiplier: 1.2,
   withdrawalMinimum: 100,
   withdrawalSLAHours: 24,
-  marginFloor: 35
+  marginFloor: 35,
+  stressCostPerRawCredit: 0.53,
+  operationalReserve: 2,
+  costSnapshotMaxAgeHours: 24
 })
 const communityForm = reactive({ enabled: false, title: '', message: '' })
 
-type AffiliateOperationsTab = 'rules' | 'partners' | 'profiles' | 'payouts' | 'archive' | 'community'
+type AffiliateOperationsTab = 'rules' | 'applications' | 'partners' | 'profiles' | 'payouts' | 'archive' | 'risk' | 'community'
 const activeTab = ref<AffiliateOperationsTab>('rules')
 
 const affiliateTabs = computed<Array<{ id: AffiliateOperationsTab; label: string; count: number | null }>>(() => [
   { id: 'rules', label: '计划规则', count: null },
+  { id: 'applications', label: '合伙人申请', count: applications.value.length },
   { id: 'partners', label: '合伙人管理', count: riskPrincipals.value.length },
   { id: 'profiles', label: '资料审核', count: pendingProfiles.value.length },
   { id: 'payouts', label: '提现打款', count: withdrawals.value.length },
   { id: 'archive', label: '已到账归档', count: paidWithdrawals.value.length },
+  { id: 'risk', label: '异常与冲销', count: agentOverviewStats.value.abnormal },
   { id: 'community', label: '社群引导', count: null }
 ])
 
@@ -636,8 +696,7 @@ watch(program, value => {
   if (!value) return
   programForm.mode = value.mode
   programForm.ordinaryReferralRate = value.ordinary_referral_rate_bps / 100
-  programForm.firstPaidThreshold = microsToUnits(value.first_paid_bonus_threshold_micros)
-  programForm.firstPaidBonus = microsToUnits(value.first_paid_bonus_micros)
+  programForm.ordinaryInviteeRate = value.ordinary_invitee_rate_bps / 100
   programForm.directUserCount = value.qualification_direct_user_count
   programForm.perUserConsumption = microsToUnits(value.qualification_min_user_consumption_micros)
   programForm.directTeamConsumption = microsToUnits(value.qualification_direct_team_consumption_micros)
@@ -647,6 +706,9 @@ watch(program, value => {
   programForm.withdrawalMinimum = microsToUnits(value.withdrawal_min_micros)
   programForm.withdrawalSLAHours = value.withdrawal_sla_hours
   programForm.marginFloor = value.margin_floor_bps / 100
+  programForm.stressCostPerRawCredit = value.stress_cost_per_raw_credit_micros / 1_000_000
+  programForm.operationalReserve = value.operational_reserve_bps / 100
+  programForm.costSnapshotMaxAgeHours = value.cost_snapshot_max_age_hours
 }, { immediate: true })
 
 watch(community, value => {
@@ -728,10 +790,11 @@ async function loadAll() {
   loading.value = true
   error.value = ''
   try {
-    const [settings, policy, communitySettings, profiles, payoutQueue, paidQueue, principals] = await Promise.all([
+    const [settings, policy, communitySettings, applicationQueue, profiles, payoutQueue, paidQueue, principals] = await Promise.all([
       getAffiliateProgram(),
       getAffiliateCommercialPolicy(),
       getAffiliateCommunity(),
+      listAffiliateApplications('pending_review', 500),
       listPendingPaymentProfiles(),
       listAffiliateWithdrawals('processing'),
       listAffiliateWithdrawals('paid'),
@@ -740,6 +803,7 @@ async function loadAll() {
     program.value = settings
     commercialPolicy.value = policy
     community.value = communitySettings
+    applications.value = applicationQueue
     pendingProfiles.value = profiles
     withdrawals.value = payoutQueue
     paidWithdrawals.value = paidQueue
@@ -765,8 +829,9 @@ async function saveProgram() {
       ...program.value,
       mode: programForm.mode,
       ordinary_referral_rate_bps: Math.round(programForm.ordinaryReferralRate * 100),
-      first_paid_bonus_threshold_micros: unitsToMicros(programForm.firstPaidThreshold),
-      first_paid_bonus_micros: unitsToMicros(programForm.firstPaidBonus),
+      ordinary_invitee_rate_bps: Math.round(programForm.ordinaryInviteeRate * 100),
+      first_paid_bonus_threshold_micros: 0,
+      first_paid_bonus_micros: 0,
       qualification_direct_user_count: Math.round(programForm.directUserCount),
       qualification_min_user_consumption_micros: unitsToMicros(programForm.perUserConsumption),
       qualification_direct_team_consumption_micros: unitsToMicros(programForm.directTeamConsumption),
@@ -775,7 +840,11 @@ async function saveProgram() {
       commission_conversion_multiplier_millis: Math.round(programForm.conversionMultiplier * 1000),
       withdrawal_min_micros: unitsToMicros(programForm.withdrawalMinimum),
       withdrawal_sla_hours: Math.round(programForm.withdrawalSLAHours),
-      margin_floor_bps: Math.round(programForm.marginFloor * 100)
+      margin_floor_bps: Math.round(programForm.marginFloor * 100),
+      operational_reserve_bps: Math.round(programForm.operationalReserve * 100),
+      stress_cost_per_raw_credit_micros: unitsToMicros(programForm.stressCostPerRawCredit),
+      stress_cost_snapshot_at: new Date().toISOString(),
+      cost_snapshot_max_age_hours: Math.round(programForm.costSnapshotMaxAgeHours)
     })
     commercialPolicy.value = await getAffiliateCommercialPolicy()
     appStore.showSuccess('联盟计划设置已保存')
@@ -783,6 +852,23 @@ async function saveProgram() {
     appStore.showError(buildAuthErrorMessage(cause, { fallback: '计划设置保存失败' }))
   } finally {
     programSaving.value = false
+  }
+}
+
+async function reviewApplication(item: AffiliateAgentApplication, approve: boolean) {
+  applicationReviewingId.value = item.id
+  try {
+    await reviewAffiliateApplication(item.id, {
+      approve,
+      note: (applicationNotes[item.id] || '').trim()
+    })
+    applications.value = applications.value.filter(application => application.id !== item.id)
+    riskPrincipals.value = await listAffiliateRiskPrincipals(500)
+    appStore.showSuccess(approve ? '申请已通过，合伙人已开通' : '申请已标记为未通过')
+  } catch (cause: unknown) {
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '申请处理失败' }))
+  } finally {
+    applicationReviewingId.value = null
   }
 }
 

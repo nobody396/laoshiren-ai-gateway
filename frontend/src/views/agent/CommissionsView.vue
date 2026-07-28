@@ -37,7 +37,7 @@
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('agent.commissionType') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('agent.triggeredBy') }}</th>
-                <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('agent.sourceAmount') }}</th>
+                <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">客户确认消费</th>
                 <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('agent.commissionAmount') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('agent.commissionTime') }}</th>
               </tr>
@@ -53,7 +53,7 @@
                   <div class="font-medium text-gray-800 dark:text-dark-200">{{ getTriggerDisplayName(record) }}</div>
                   <div v-if="getTriggerSecondaryText(record)" class="text-xs text-gray-400">{{ getTriggerSecondaryText(record) }}</div>
                 </td>
-                <td class="px-6 py-4 text-right text-sm text-gray-700 dark:text-dark-300">⚡{{ record.source_amount.toFixed(4) }}</td>
+                <td class="px-6 py-4 text-right text-sm text-gray-700 dark:text-dark-300">¥{{ record.source_amount.toFixed(2) }}</td>
                 <td class="px-6 py-4 text-right text-sm font-semibold text-green-600 dark:text-green-400">+¥{{ record.amount.toFixed(4) }}</td>
                 <td class="px-6 py-4 text-sm text-gray-500 dark:text-dark-400">{{ formatDate(record.created_at) }}</td>
               </tr>
@@ -191,7 +191,7 @@ function clearFilters() {
 onMounted(() => {
   fetchData()
   refreshTimer.value = window.setInterval(() => {
-    fetchData({ silent: true })
+    if (!document.hidden) fetchData({ silent: true })
   }, 5000)
 })
 

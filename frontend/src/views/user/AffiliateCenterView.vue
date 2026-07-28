@@ -11,7 +11,7 @@
               一条真实邀请，<br class="hidden sm:block">一份长期回报。
             </h1>
             <p class="mt-4 max-w-2xl text-sm leading-7 text-gray-600 dark:text-dark-300">
-              普通用户邀请首笔真实付费即可获得 5% ⚡平台额度；满足消费门槛后，可升级为合伙人，使用动态返利链接分享固定 10% 奖励池。
+              普通邀请的首笔真实付费，邀请人与被邀请人各得 5% ⚡；满足消费门槛后可申请成为合伙人，审核通过后使用动态链接分配固定 10% 奖励池。
             </p>
           </div>
           <div class="rounded-2xl border border-primary-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-primary-900 dark:bg-dark-900/80">
@@ -79,28 +79,36 @@
 
             <article class="rounded-2xl border p-5" :class="qualification.combined_route_qualified ? 'border-green-300 bg-green-50 dark:border-green-900 dark:bg-green-950' : 'border-gray-200 dark:border-dark-700'">
               <div class="flex items-center justify-between gap-3">
-                <h3 class="font-semibold text-gray-900 dark:text-white">路线 B · 合并消费</h3>
+                <h3 class="font-semibold text-gray-900 dark:text-white">路线 B · 高质量直属消费</h3>
                 <span class="text-xs font-medium text-gray-600 dark:text-dark-300">{{ qualification.combined_route_qualified ? '已达成' : '进行中' }}</span>
               </div>
               <dl class="mt-5">
                 <ProgressRow
-                  label="本人 + 直属团队确认消费"
+                  label="直属团队确认消费"
                   :value="microsToYuan(qualification.combined_consumption_micros)"
                   :target="microsToYuan(qualification.required_combined_micros)"
                   prefix="¥"
                 />
               </dl>
               <p class="mt-4 text-xs leading-5 text-gray-600 dark:text-dark-300">
-                当前本人 ¥{{ formatAmount(microsToYuan(qualification.self_consumption_micros)) }}，直属团队 ¥{{ formatAmount(microsToYuan(qualification.direct_team_consumption_micros)) }}。
+                本人消费不计入申请门槛；达到路线 B 后仍需提交申请并由平台审核。
               </p>
             </article>
           </div>
 
-          <div v-if="qualification.can_activate" class="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 bg-gray-50 px-6 py-4 dark:border-dark-800 dark:bg-dark-900">
-            <p class="text-sm text-gray-600 dark:text-dark-300">资格已达成。确认后立即创建默认 5% / 5% 动态链接。</p>
-            <button class="btn btn-primary" :disabled="activating" @click="activateAgent">
-              {{ activating ? '正在开通…' : '立即成为合伙人' }}
-            </button>
+          <div v-if="qualification.can_apply" class="border-t border-gray-100 bg-gray-50 px-6 py-4 dark:border-dark-800 dark:bg-dark-900">
+            <div class="flex flex-wrap items-end justify-between gap-4">
+              <label class="min-w-0 flex-1">
+                <span class="mb-1 block text-sm font-medium text-gray-800 dark:text-dark-100">资格已达成，可以申请成为合伙人</span>
+                <textarea v-model.trim="applicationNote" maxlength="500" class="input min-h-20" placeholder="可选：简单介绍你的客户和推广方式" />
+              </label>
+              <button class="btn btn-primary" :disabled="applying" @click="applyForPartner">
+                {{ applying ? '正在提交…' : '提交合伙人申请' }}
+              </button>
+            </div>
+          </div>
+          <div v-else-if="qualification.agent_status === 'pending_review'" class="border-t border-amber-200 bg-amber-50 px-6 py-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+            申请已进入审核中。审核通过后，这里会自动切换为合伙人中心。
           </div>
         </section>
 
@@ -186,7 +194,7 @@
                 <div v-if="!links.length" class="p-10 text-center text-sm text-gray-600 dark:text-dark-300">暂无动态链接</div>
               </div>
               <p class="border-t border-gray-100 px-5 py-4 text-xs leading-5 text-gray-500 dark:border-dark-800 dark:text-dark-400">
-                奖励池始终为 10%。返给客户的比例可按 1% 步进动态调整；已经绑定的客户只升不降，历史关系不会被新设置覆盖。
+                奖励池始终为 10%。返给客户的比例可按 1% 步进动态调整；新比例只用于之后绑定的客户，已经绑定的客户保持原比例。
               </p>
             </div>
 
@@ -274,7 +282,7 @@
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import {
-  activateAffiliateAgent,
+  applyAffiliateAgent,
   convertAffiliateCommission,
   createAffiliateLink,
   getAffiliateCommunity,
@@ -345,7 +353,7 @@ const authStore = useAuthStore()
 const { copied, copyToClipboard } = useClipboard()
 const loading = ref(true)
 const error = ref('')
-const activating = ref(false)
+const applying = ref(false)
 const linkSaving = ref(false)
 const walletBusy = ref(false)
 const paymentSaving = ref(false)
@@ -360,7 +368,8 @@ const paymentProfile = ref<AgentPaymentProfile | null>(null)
 const paymentQRPreview = ref('')
 const communityQRPreview = ref('')
 const showCreateLink = ref(false)
-const activationConfirmed = ref(false)
+const applicationSubmitted = ref(false)
+const applicationNote = ref('')
 const newLink = reactive({ name: '', channel: '', rate: 5 })
 const withdrawAmount = ref<number | null>(null)
 const convertAmount = ref<number | null>(null)
@@ -370,9 +379,11 @@ const paymentForm = reactive({
   contact_phone: '',
   payment_note: ''
 })
+let refreshTimer: ReturnType<typeof setInterval> | null = null
+let refreshInFlight = false
 
 const ordinaryInviteURL = computed(() => inviteCode.value ? `${window.location.origin}/register?ref=${inviteCode.value}` : '')
-const isActiveAgent = computed(() => qualification.value?.agent_status === 'active' || activationConfirmed.value)
+const isActiveAgent = computed(() => qualification.value?.agent_status === 'active')
 const defaultAgentLink = computed(() => links.value.find(item => item.is_default && item.status === 'active'))
 const primaryInviteURL = computed(() =>
   isActiveAgent.value && defaultAgentLink.value
@@ -383,17 +394,18 @@ const primaryInviteLabel = computed(() => isActiveAgent.value ? '我的默认合
 const primaryInviteHint = computed(() =>
   isActiveAgent.value
     ? '默认链接使用固定 10% 奖励池；可在下方动态调整客户返利与现金佣金的分配。'
-    : '邀请人奖励 T+0；被邀请人首笔实付大于等于 ¥50 时，T+1 额外获得 ⚡5。'
+    : '首笔真实付费后，邀请人与被邀请人各获得实付金额 5% 的 ⚡，均为 T+0；不设最低金额，也没有固定奖励。'
 )
 const unreadNotices = computed(() => notices.value.filter(item => !item.read_at))
 const qualificationStatusLabel = computed(() => {
   if (isActiveAgent.value) return '合伙人已开通'
-  if (qualification.value?.can_activate) return '可立即开通'
+  if (qualification.value?.agent_status === 'pending_review' || applicationSubmitted.value) return '审核中'
+  if (qualification.value?.can_apply) return '可以申请'
   if (qualification.value?.program_mode === 'off') return '计划尚未开放'
   return '资格积累中'
 })
 const qualificationBadgeClass = computed(() => (
-  isActiveAgent.value || qualification.value?.can_activate
+  isActiveAgent.value || qualification.value?.can_apply
     ? 'border-green-300 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300'
     : 'border-gray-200 bg-gray-50 text-gray-600 dark:border-dark-700 dark:bg-dark-900 dark:text-dark-300'
 ))
@@ -472,7 +484,7 @@ async function loadPage() {
     const [invite, currentQualification] = await Promise.all([getMyInviteCode(), getAffiliateQualification()])
     inviteCode.value = invite.invite_code
     qualification.value = currentQualification
-    if (currentQualification.agent_status === 'active' || activationConfirmed.value) await loadAgentData()
+    if (currentQualification.agent_status === 'active') await loadAgentData()
   } catch (cause: unknown) {
     error.value = buildAuthErrorMessage(cause, { fallback: '联盟计划加载失败，请稍后重试。' })
   } finally {
@@ -480,23 +492,39 @@ async function loadPage() {
   }
 }
 
+async function refreshLiveData() {
+  if (document.hidden || refreshInFlight) return
+  refreshInFlight = true
+  try {
+    const latest = await getAffiliateQualification()
+    const becameActive = qualification.value?.agent_status !== 'active' && latest.agent_status === 'active'
+    qualification.value = latest
+    if (latest.agent_status === 'active') {
+      if (becameActive) await authStore.refreshUser()
+      await loadAgentData()
+    }
+  } catch {
+    // Background refresh must not replace the last usable page with an error.
+  } finally {
+    refreshInFlight = false
+  }
+}
+
 async function copyPrimaryInvite() {
   await copyToClipboard(primaryInviteURL.value, isActiveAgent.value ? '默认合伙人链接已复制' : '普通邀请链接已复制')
 }
 
-async function activateAgent() {
-  activating.value = true
+async function applyForPartner() {
+  applying.value = true
   try {
-    const result = await activateAffiliateAgent()
-    qualification.value = result.qualification
-    activationConfirmed.value = true
-    await authStore.refreshUser()
-    await loadAgentData()
-    appStore.showSuccess('合伙人已开通，默认动态链接已经生成')
+    await applyAffiliateAgent(applicationNote.value)
+    applicationSubmitted.value = true
+    qualification.value = await getAffiliateQualification()
+    appStore.showSuccess('申请已提交，审核通过后会自动开通合伙人中心')
   } catch (cause: unknown) {
-    appStore.showError(buildAuthErrorMessage(cause, { fallback: '合伙人开通失败' }))
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '合伙人申请提交失败' }))
   } finally {
-    activating.value = false
+    applying.value = false
   }
 }
 
@@ -626,8 +654,12 @@ async function markNoticeRead(id: number) {
   }
 }
 
-onMounted(loadPage)
+onMounted(async () => {
+  await loadPage()
+  refreshTimer = setInterval(() => { void refreshLiveData() }, 5000)
+})
 onBeforeUnmount(() => {
+  if (refreshTimer) clearInterval(refreshTimer)
   if (paymentQRPreview.value.startsWith('blob:')) URL.revokeObjectURL(paymentQRPreview.value)
   if (communityQRPreview.value.startsWith('blob:')) URL.revokeObjectURL(communityQRPreview.value)
 })

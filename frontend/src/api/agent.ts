@@ -134,8 +134,9 @@ export interface AffiliateAgentQualification {
   direct_route_qualified: boolean
   combined_route_qualified: boolean
   qualified: boolean
-  qualification_route?: 'direct_team' | 'combined'
+  qualification_route?: 'direct_team' | 'direct_volume'
   can_activate: boolean
+  can_apply: boolean
   activated_at?: string
 }
 
@@ -157,6 +158,19 @@ export interface AffiliateLink {
 export interface AffiliateAgentActivation {
   qualification: AffiliateAgentQualification
   default_link: AffiliateLink
+}
+
+export interface AffiliateAgentApplication {
+  id: number
+  user_id: number
+  status: 'pending_review' | 'approved' | 'rejected' | 'cancelled'
+  qualifying_route: 'direct_team' | 'direct_volume'
+  valid_direct_user_count: number
+  direct_team_consumption_micros: number
+  application_note: string
+  decision_note: string
+  submitted_at: string
+  reviewed_at?: string
 }
 
 export interface AffiliateWallet {
@@ -325,8 +339,8 @@ export async function getAffiliateQualification(): Promise<AffiliateAgentQualifi
   return data
 }
 
-export async function activateAffiliateAgent(): Promise<AffiliateAgentActivation> {
-  const { data } = await apiClient.post<AffiliateAgentActivation>('/user/affiliate/activate')
+export async function applyAffiliateAgent(note = ''): Promise<AffiliateAgentApplication> {
+  const { data } = await apiClient.post<AffiliateAgentApplication>('/user/affiliate/applications', { note })
   return data
 }
 
@@ -462,7 +476,7 @@ export const agentAPI = {
   uploadAgentPaymentQRCode,
   getAgentPaymentQRCode,
   getAffiliateQualification,
-  activateAffiliateAgent,
+  applyAffiliateAgent,
   listAffiliateLinks,
   createAffiliateLink,
   updateAffiliateLinkRate,

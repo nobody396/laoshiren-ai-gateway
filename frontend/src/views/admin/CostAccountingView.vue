@@ -11,7 +11,7 @@
               </div>
               <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">成本核算</h1>
               <p class="mt-3 max-w-2xl text-sm leading-6 text-stone-300">
-                只看当前在售的 Lite、Pro，并自动纳入全部启用的按量付费公开分组。
+                只看当前在售的 Plus、Pro、Max，并自动纳入全部启用的按量付费公开分组。
                 这里回答“实际用了多少成本”，财务记账回答“现金收支是多少”。
               </p>
               <p v-if="overview" class="mt-4 text-xs text-stone-400">
@@ -52,7 +52,7 @@
               当前在售
             </div>
             <div class="metric-value">{{ overview.monthly_cards.length }} <span>款月卡</span></div>
-            <p>仅 Lite / Pro；历史产品不参与当前核算</p>
+            <p>仅 Plus / Pro / Max；历史产品不参与当前核算</p>
           </article>
           <article class="metric-card">
             <div class="metric-kicker">
@@ -145,7 +145,7 @@
             <div>
               <p class="section-eyebrow">Monthly cards</p>
               <h2>当前月卡经济模型</h2>
-              <p>同一张卡的 GPT、Claude、Grok 共享额度；真实毛利按本月实际流量结构推算。</p>
+              <p>同一张卡的 GPT、Claude 共享额度；真实毛利按本月实际流量结构推算。</p>
             </div>
             <span class="text-xs text-stone-500 dark:text-dark-400">渠道手续费：小铺 {{ overview.shop_channel_fee_percent.toFixed(0) }}%</span>
           </div>
@@ -157,7 +157,7 @@
               class="plan-card border border-stone-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-800"
               :data-test="`plan-${plan.id}`"
             >
-              <div class="plan-band" :class="plan.id === 'lite' ? 'plan-band-lite' : 'plan-band-pro'"></div>
+              <div class="plan-band" :class="`plan-band-${plan.id}`"></div>
               <div class="p-6">
                 <div class="flex flex-wrap items-start justify-between gap-4">
                   <div>
@@ -385,7 +385,7 @@ const appStore = useAppStore()
 const overview = ref<CostAccountingOverview | null>(null)
 const financeSummary = ref<FinanceTransactionSummary | null>(null)
 const loading = ref(false)
-const productKeys: CostAccountingProduct[] = ['gpt', 'claude', 'grok']
+const productKeys: CostAccountingProduct[] = ['gpt', 'claude']
 
 const observedDirectCostCNY = computed(() => {
   if (!overview.value) return 0
@@ -482,8 +482,7 @@ function productLabel(product: string): string {
 function mixColor(product: CostAccountingProduct): string {
   return {
     gpt: 'bg-blue-500',
-    claude: 'bg-amber-500',
-    grok: 'bg-fuchsia-500'
+    claude: 'bg-amber-500'
   }[product]
 }
 
@@ -631,12 +630,16 @@ onMounted(() => {
   height: 0.3rem;
 }
 
-.plan-band-lite {
+.plan-band-plus {
   background: linear-gradient(90deg, rgb(14 165 233), rgb(34 197 94));
 }
 
 .plan-band-pro {
   background: linear-gradient(90deg, rgb(124 58 237), rgb(236 72 153));
+}
+
+.plan-band-max {
+  background: linear-gradient(90deg, rgb(245 158 11), rgb(220 38 38));
 }
 
 .price-cell {

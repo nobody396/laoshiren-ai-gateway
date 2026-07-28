@@ -414,7 +414,7 @@ func (r *commissionRepository) ListPendingAgentPaymentProfiles(
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	items := make([]service.AgentPaymentProfile, 0)
 	for rows.Next() {

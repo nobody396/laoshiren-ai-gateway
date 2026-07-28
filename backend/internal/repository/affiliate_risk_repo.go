@@ -772,7 +772,8 @@ func reverseAffiliateEventCash(
 	var total int64
 	for _, entry := range entries {
 		reversalStatus := "reversed"
-		if entry.status == "risk_hold" {
+		switch entry.status {
+		case "risk_hold":
 			if _, err := tx.ExecContext(ctx, `
 				UPDATE agent_cash_commission_entries
 				SET posting_status = 'reversed',
@@ -785,7 +786,7 @@ func reverseAffiliateEventCash(
 			`, entry.id, operatorID, reason); err != nil {
 				return 0, err
 			}
-		} else if entry.status == "posted" {
+		case "posted":
 			reversalStatus = "posted"
 		}
 		if _, err := tx.ExecContext(ctx, `

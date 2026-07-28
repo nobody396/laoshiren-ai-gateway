@@ -6,6 +6,7 @@ readonly EXPECTED_WORKTREE="/Users/fujunhao/laoshirenai/worktrees/affiliate-prog
 readonly EXPECTED_BRANCH="feat/affiliate-program-v2-20260726"
 readonly PG_CONTAINER="laoshirenai-affiliate-v2-staging-postgres-1"
 readonly APP_CONTAINER="laoshirenai-affiliate-v2-staging-app-1"
+readonly REDIS_CONTAINER="laoshirenai-affiliate-v2-staging-redis-1"
 
 require_checkout() {
   local current_root current_branch
@@ -24,6 +25,7 @@ require_checkout() {
 require_containers() {
   docker inspect "$PG_CONTAINER" >/dev/null
   docker inspect "$APP_CONTAINER" >/dev/null
+  docker inspect "$REDIS_CONTAINER" >/dev/null
 }
 
 write_demo_qr_assets() {
@@ -1395,11 +1397,29 @@ SELECT
 SQL
 }
 
+invalidate_browser_admin_rbac_cache() {
+  local browser_admin_id
+  browser_admin_id="$(
+    docker exec "$PG_CONTAINER" \
+      psql -U affiliate_staging -d affiliate_staging -Atc \
+      "SELECT id FROM users WHERE email = 'browser-admin@partner.local' AND deleted_at IS NULL"
+  )"
+  [[ "$browser_admin_id" =~ ^[0-9]+$ ]] || {
+    echo "browser admin fixture is missing" >&2
+    exit 1
+  }
+  docker exec "$REDIS_CONTAINER" redis-cli DEL \
+    "rbac:perms:${browser_admin_id}" \
+    "rbac:perms:${browser_admin_id}:empty" \
+    "rbac:menu:${browser_admin_id}" >/dev/null
+}
+
 main() {
   require_checkout
   require_containers
   write_demo_qr_assets
   seed_database
+  invalidate_browser_admin_rbac_cache
   echo "affiliate v3 acceptance data seeded"
   echo "login password: Demo123456"
 }

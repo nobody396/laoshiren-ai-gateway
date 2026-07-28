@@ -9,11 +9,36 @@ describe('monthlyCreditCardPlans V3', () => {
       direct: plan.directPriceCny,
       daily: plan.displayDailyCredits,
       weekly: plan.displayWeeklyCredits,
-      monthly: plan.displayMonthlyCredits
+      monthly: plan.displayMonthlyCredits,
+      cardShopUrl: plan.cardShopUrl
     }))).toEqual([
-      { id: 'plus', shop: 259, direct: 249, daily: 0, weekly: 0, monthly: 2200 },
-      { id: 'pro', shop: 729, direct: 699, daily: 0, weekly: 0, monthly: 6500 },
-      { id: 'max', shop: 1549, direct: 1499, daily: 0, weekly: 0, monthly: 14000 }
+      {
+        id: 'plus',
+        shop: 259,
+        direct: 249,
+        daily: 0,
+        weekly: 0,
+        monthly: 2200,
+        cardShopUrl: 'https://pay.ldxp.cn/item/c0dudc'
+      },
+      {
+        id: 'pro',
+        shop: 729,
+        direct: 699,
+        daily: 0,
+        weekly: 0,
+        monthly: 6500,
+        cardShopUrl: 'https://pay.ldxp.cn/item/x4dup4'
+      },
+      {
+        id: 'max',
+        shop: 1549,
+        direct: 1499,
+        daily: 0,
+        weekly: 0,
+        monthly: 14000,
+        cardShopUrl: 'https://pay.ldxp.cn/item/db9f6w'
+      }
     ])
   })
 

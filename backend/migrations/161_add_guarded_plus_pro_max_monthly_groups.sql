@@ -43,13 +43,38 @@ BEGIN
                 INTO source_group_id
                 FROM groups
                 WHERE deleted_at IS NULL
-                  AND name = channel.prefix || ' Ultra 月卡组'
-                ORDER BY id
+                  AND name IN (
+                      channel.prefix || ' Apex 月卡组',
+                      channel.prefix || ' Pro 月卡组',
+                      channel.prefix || ' Lite 月卡组',
+                      channel.prefix || ' Ultra 月卡组'
+                  )
+                ORDER BY CASE name
+                    WHEN channel.prefix || ' Apex 月卡组' THEN 1
+                    WHEN channel.prefix || ' Pro 月卡组' THEN 2
+                    WHEN channel.prefix || ' Lite 月卡组' THEN 3
+                    ELSE 4
+                END, id
                 LIMIT 1;
             END IF;
 
             IF source_group_id IS NULL THEN
-                RAISE EXCEPTION 'source monthly group missing for channel: %', channel.prefix;
+                SELECT id
+                INTO source_group_id
+                FROM groups
+                WHERE deleted_at IS NULL
+                  AND platform = channel.platform_name
+                ORDER BY
+                    CASE WHEN subscription_type = 'credit' THEN 0 ELSE 1 END,
+                    id
+                LIMIT 1;
+            END IF;
+
+            IF source_group_id IS NULL THEN
+                RAISE EXCEPTION
+                    'source group missing for channel: % (platform=%)',
+                    channel.prefix,
+                    channel.platform_name;
             END IF;
 
             target_group_name := CASE

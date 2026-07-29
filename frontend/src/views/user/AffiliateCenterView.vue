@@ -74,7 +74,7 @@
               <div>
                 <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">合伙人资格</p>
                 <h2 class="mt-1 text-xl font-semibold text-gray-950 dark:text-white">合伙人资格进度</h2>
-                <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">仅统计计划启用后的真实消费，永久直属关系不会因升级改变。</p>
+                <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">仅统计真实付费额度的确认消费；已核验的历史记录也会计入资格，永久直属关系不会因升级改变。</p>
               </div>
               <span class="rounded-full border px-3 py-1 text-xs font-medium" :class="qualificationBadgeClass">
                 {{ qualificationStatusLabel }}
@@ -109,19 +109,19 @@
 
             <article class="rounded-2xl border p-5" :class="qualification.combined_route_qualified ? 'border-green-300 bg-green-50 dark:border-green-900 dark:bg-green-950' : 'border-gray-200 dark:border-dark-700'">
               <div class="flex items-center justify-between gap-3">
-                <h3 class="font-semibold text-gray-900 dark:text-white">路线 B · 高质量直属消费</h3>
+                <h3 class="font-semibold text-gray-900 dark:text-white">路线 B · 本人 + 直属消费</h3>
                 <span class="text-xs font-medium text-gray-600 dark:text-dark-300">{{ qualification.combined_route_qualified ? '已达成' : '进行中' }}</span>
               </div>
               <dl class="mt-5">
                 <ProgressRow
-                  label="直属团队确认消费"
+                  label="本人 + 直属确认消费"
                   :value="microsToYuan(qualification.combined_consumption_micros)"
                   :target="microsToYuan(qualification.required_combined_micros)"
                   prefix="¥"
                 />
               </dl>
               <p class="mt-4 text-xs leading-5 text-gray-600 dark:text-dark-300">
-                本人消费不计入申请门槛；达到路线 B 后仍需提交申请并由平台审核。
+                本人和直属用户的确认消费合并计算；达到路线 B 后仍需提交申请并由平台审核。
               </p>
             </article>
           </div>

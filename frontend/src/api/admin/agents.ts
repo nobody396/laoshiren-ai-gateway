@@ -186,7 +186,9 @@ export interface AffiliateAgentApplication {
   status: 'pending_review' | 'approved' | 'rejected' | 'cancelled'
   qualifying_route: 'direct_team' | 'direct_volume'
   valid_direct_user_count: number
+  self_consumption_micros: number
   direct_team_consumption_micros: number
+  combined_consumption_micros: number
   application_note: string
   decision_note: string
   submitted_at: string

@@ -359,10 +359,19 @@ func queryAffiliateAgentQualification(
 			FROM affiliate_program_settings
 			WHERE id = 1
 		),
+		baseline_net AS (
+			SELECT
+				e.user_id,
+				SUM(e.confirmed_consumption_micros)::bigint AS amount_micros
+			FROM affiliate_qualification_baseline_entries e
+			CROSS JOIN settings s
+			WHERE s.started_at IS NOT NULL
+				AND e.cutoff_at <= s.started_at
+			GROUP BY e.user_id
+		),
 		live_net AS (
 			SELECT
 				e.user_id,
-				e.direct_agent_id,
 				SUM(
 					CASE e.event_type
 						WHEN 'confirmed_consumption' THEN e.amount_micros
@@ -376,22 +385,33 @@ func queryAffiliateAgentQualification(
 				AND s.started_at IS NOT NULL
 				AND e.occurred_at >= s.started_at
 				AND COALESCE(e.metadata ->> 'program_mode', '') = 'live'
-			GROUP BY e.user_id, e.direct_agent_id
+			GROUP BY e.user_id
 		),
-		direct_users AS (
+		user_net AS (
 			SELECT
 				user_id,
 				GREATEST(SUM(amount_micros), 0)::bigint AS amount_micros
-			FROM live_net
-			WHERE direct_agent_id = $1
-				AND user_id <> $1
+			FROM (
+				SELECT user_id, amount_micros FROM baseline_net
+				UNION ALL
+				SELECT user_id, amount_micros FROM live_net
+			) amounts
 			GROUP BY user_id
+		),
+		direct_users AS (
+			SELECT
+				b.customer_user_id AS user_id,
+				COALESCE(n.amount_micros, 0)::bigint AS amount_micros
+			FROM affiliate_bindings b
+			LEFT JOIN user_net n ON n.user_id = b.customer_user_id
+			WHERE b.inviter_user_id = $1
+				AND b.customer_user_id <> $1
 		),
 		totals AS (
 			SELECT
 				COALESCE((
-					SELECT GREATEST(SUM(amount_micros), 0)::bigint
-					FROM live_net
+					SELECT amount_micros
+					FROM user_net
 					WHERE user_id = $1
 				), 0)::bigint AS self_micros,
 				COALESCE((SELECT SUM(amount_micros) FROM direct_users), 0)::bigint AS direct_micros,
@@ -409,7 +429,7 @@ func queryAffiliateAgentQualification(
 			ap.activated_at,
 			t.self_micros,
 			t.direct_micros,
-			t.direct_micros,
+			(t.self_micros + t.direct_micros)::bigint,
 			t.valid_direct_count,
 			s.qualification_direct_user_count,
 			s.qualification_min_user_consumption_micros,
@@ -458,7 +478,7 @@ func queryAffiliateAgentQualification(
 		out.ValidDirectUserCount >= out.RequiredDirectUserCount &&
 			out.DirectTeamConsumptionMicros >= out.RequiredDirectTeamMicros
 	out.CombinedRouteQualified =
-		out.DirectTeamConsumptionMicros >= out.RequiredCombinedMicros
+		out.CombinedConsumptionMicros >= out.RequiredCombinedMicros
 	out.Qualified = out.DirectRouteQualified || out.CombinedRouteQualified
 	switch {
 	case out.DirectRouteQualified:

@@ -350,6 +350,29 @@ WHERE table_schema = 'public'
 	// migration 165: separate consent audit for sensitive payout information.
 	requireColumn(t, tx, "agent_payment_profiles", "privacy_consent_version", "character varying", 80, false)
 	requireColumn(t, tx, "agent_payment_profiles", "privacy_consented_at", "timestamp with time zone", 0, true)
+
+	// migration 166: immutable, qualification-only historical baseline. Values
+	// are internal 1-unit-equals-1-CNY micros and never use an FX conversion.
+	var qualificationBaselineRegclass sql.NullString
+	require.NoError(t, tx.QueryRowContext(
+		context.Background(),
+		"SELECT to_regclass('public.affiliate_qualification_baseline_entries')",
+	).Scan(&qualificationBaselineRegclass))
+	require.True(t, qualificationBaselineRegclass.Valid)
+	requireColumn(t, tx, "affiliate_qualification_baseline_entries", "confirmed_consumption_micros", "bigint", 0, false)
+	requireColumn(t, tx, "affiliate_qualification_baseline_entries", "cutoff_at", "timestamp with time zone", 0, false)
+	requireIndex(t, tx, "affiliate_qualification_baseline_entries", "idx_affiliate_qualification_baseline_user")
+	var refreshFunctionRegprocedure sql.NullString
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT to_regprocedure(
+	'refresh_affiliate_qualification_legacy_baseline(timestamp with time zone)'
+)
+`).Scan(&refreshFunctionRegprocedure))
+	require.True(t, refreshFunctionRegprocedure.Valid)
+
+	// migration 167: review records preserve the complete Route B snapshot.
+	requireColumn(t, tx, "affiliate_agent_applications", "self_consumption_micros", "bigint", 0, false)
+	requireColumn(t, tx, "affiliate_agent_applications", "combined_consumption_micros", "bigint", 0, false)
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

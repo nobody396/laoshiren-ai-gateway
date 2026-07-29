@@ -69,16 +69,20 @@ func (r *affiliateAgentRepository) SubmitAgentApplication(
 		INSERT INTO affiliate_agent_applications (
 			user_id, status, qualifying_route,
 			direct_valid_consumer_count,
+			self_consumption_micros,
 			direct_team_consumption_micros,
+			combined_consumption_micros,
 			application_note
 		)
-		VALUES ($1, 'pending_review', $2, $3, $4, $5)
+		VALUES ($1, 'pending_review', $2, $3, $4, $5, $6, $7)
 		RETURNING id
 	`,
 		userID,
 		route,
 		qualification.ValidDirectUserCount,
+		qualification.SelfConsumptionMicros,
 		qualification.DirectTeamConsumptionMicros,
+		qualification.CombinedConsumptionMicros,
 		note,
 	).Scan(&applicationID)
 	if err != nil {
@@ -147,7 +151,9 @@ func (r *affiliateAgentRepository) ListAgentApplications(
 			COALESCE(u.email, ''), COALESCE(u.username, ''),
 			a.status, a.qualifying_route,
 			a.direct_valid_consumer_count,
+			a.self_consumption_micros,
 			a.direct_team_consumption_micros,
+			a.combined_consumption_micros,
 			a.application_note, a.decision_note,
 			a.submitted_at, a.reviewed_at, a.reviewed_by
 		FROM affiliate_agent_applications a
@@ -176,7 +182,9 @@ func (r *affiliateAgentRepository) ListAgentApplications(
 			&item.Status,
 			&item.QualifyingRoute,
 			&item.ValidDirectUserCount,
+			&item.SelfConsumptionMicros,
 			&item.DirectTeamConsumptionMicros,
+			&item.CombinedConsumptionMicros,
 			&item.ApplicationNote,
 			&item.DecisionNote,
 			&item.SubmittedAt,
@@ -213,7 +221,9 @@ func queryAffiliateAgentApplication(
 			COALESCE(u.email, ''), COALESCE(u.username, ''),
 			a.status, a.qualifying_route,
 			a.direct_valid_consumer_count,
+			a.self_consumption_micros,
 			a.direct_team_consumption_micros,
+			a.combined_consumption_micros,
 			a.application_note, a.decision_note,
 			a.submitted_at, a.reviewed_at, a.reviewed_by
 		FROM affiliate_agent_applications a
@@ -227,7 +237,9 @@ func queryAffiliateAgentApplication(
 		&item.Status,
 		&item.QualifyingRoute,
 		&item.ValidDirectUserCount,
+		&item.SelfConsumptionMicros,
 		&item.DirectTeamConsumptionMicros,
+		&item.CombinedConsumptionMicros,
 		&item.ApplicationNote,
 		&item.DecisionNote,
 		&item.SubmittedAt,

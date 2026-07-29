@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -86,6 +87,9 @@ func TestAffiliateAgentRepository_QualifiesAppliesReviewsAndPreservesUpstream(t 
 	application, err := agentService.Apply(ctx, candidate.ID, "申请成为合伙人")
 	require.NoError(t, err)
 	require.Equal(t, "pending_review", application.Status)
+	require.Zero(t, application.SelfConsumptionMicros)
+	require.Equal(t, int64(1_000_000_000), application.DirectTeamConsumptionMicros)
+	require.Equal(t, int64(1_000_000_000), application.CombinedConsumptionMicros)
 
 	review, err := agentService.ReviewApplication(ctx, application.ID, true, "资料与消费确认无误", operator.ID)
 	require.NoError(t, err)
@@ -144,4 +148,111 @@ func TestAffiliateAgentRepository_RejectsUnqualifiedApplication(t *testing.T) {
 
 	_, err = agentService.Apply(ctx, user.ID, "")
 	require.True(t, errors.Is(err, service.ErrAffiliateQualificationNotMet), "unexpected error: %v", err)
+}
+
+func TestAffiliateAgentRepository_QualificationCombinesFrozenHistoryAndLivePaidUsage(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateAgentRepository(integrationDB)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	_, err := integrationDB.ExecContext(ctx, `
+		UPDATE affiliate_program_settings
+		SET qualification_direct_user_count = 5,
+			qualification_min_user_consumption_micros = 20000000,
+			qualification_direct_team_consumption_micros = 500000000,
+			qualification_combined_consumption_micros = 1000000000
+		WHERE id = 1
+	`)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(), `
+			UPDATE affiliate_program_settings
+			SET qualification_direct_user_count = 10,
+				qualification_min_user_consumption_micros = 20000000,
+				qualification_direct_team_consumption_micros = 1000000000,
+				qualification_combined_consumption_micros = 2000000000
+			WHERE id = 1
+		`)
+	})
+
+	candidate := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-combined-candidate-%d@example.com", time.Now().UnixNano()),
+	})
+	var startedAt time.Time
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT started_at
+		FROM affiliate_program_settings
+		WHERE id = 1
+	`).Scan(&startedAt))
+
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_qualification_baseline_entries (
+			user_id, source_key, source_type,
+			confirmed_consumption_micros, cutoff_at, metadata
+		)
+		VALUES ($1, $2, 'manual_verified', 400000000, $3, '{"test":true}'::jsonb)
+	`, candidate.ID, "qualification-self:"+uuid.NewString(), startedAt)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_performance_events (
+			user_id, event_type, amount_micros, affiliate_policy,
+			source_type, source_id, event_key, occurred_at, metadata
+		)
+		VALUES (
+			$1, 'confirmed_consumption', 100000000, 'NONE',
+			'integration', 1, $2, NOW(), '{"program_mode":"live"}'::jsonb
+		)
+	`, candidate.ID, "qualification-self-live:"+uuid.NewString())
+	require.NoError(t, err)
+
+	for i := 0; i < 5; i++ {
+		direct := mustCreateUser(t, client, &service.User{
+			Email: fmt.Sprintf("affiliate-combined-direct-%d-%d@example.com", time.Now().UnixNano(), i),
+		})
+		_, err = integrationDB.ExecContext(ctx, `
+			INSERT INTO affiliate_bindings (
+				customer_user_id, inviter_user_id, binding_kind,
+				customer_rebate_rate_snapshot_bps,
+				agent_commission_rate_snapshot_bps
+			)
+			VALUES ($1, $2, 'ordinary', 0, 0)
+		`, direct.ID, candidate.ID)
+		require.NoError(t, err)
+		_, err = integrationDB.ExecContext(ctx, `
+			INSERT INTO affiliate_qualification_baseline_entries (
+				user_id, source_key, source_type,
+				confirmed_consumption_micros, cutoff_at, metadata
+			)
+			VALUES ($1, $2, 'manual_verified', 10000000, $3, '{"test":true}'::jsonb)
+		`, direct.ID, "qualification-direct:"+uuid.NewString(), startedAt)
+		require.NoError(t, err)
+		_, err = integrationDB.ExecContext(ctx, `
+			INSERT INTO affiliate_performance_events (
+				user_id, event_type, amount_micros, affiliate_policy,
+				source_type, source_id, event_key, occurred_at, metadata
+			)
+			VALUES (
+				$1, 'confirmed_consumption', 90000000, 'NONE',
+				'integration', $2, $3, NOW(), '{"program_mode":"live"}'::jsonb
+			)
+		`, direct.ID, i+1, "qualification-direct-live:"+uuid.NewString())
+		require.NoError(t, err)
+	}
+
+	qualification, err := repo.GetAgentQualification(ctx, candidate.ID)
+	require.NoError(t, err)
+	require.Equal(t, int32(5), qualification.ValidDirectUserCount)
+	require.Equal(t, int64(500_000_000), qualification.SelfConsumptionMicros)
+	require.Equal(t, int64(500_000_000), qualification.DirectTeamConsumptionMicros)
+	require.Equal(t, int64(1_000_000_000), qualification.CombinedConsumptionMicros)
+	require.True(t, qualification.DirectRouteQualified)
+	require.True(t, qualification.CombinedRouteQualified)
+	require.True(t, qualification.CanApply)
+
+	application, err := repo.SubmitAgentApplication(ctx, candidate.ID, "路线 B 快照测试")
+	require.NoError(t, err)
+	require.Equal(t, int64(500_000_000), application.SelfConsumptionMicros)
+	require.Equal(t, int64(500_000_000), application.DirectTeamConsumptionMicros)
+	require.Equal(t, int64(1_000_000_000), application.CombinedConsumptionMicros)
 }

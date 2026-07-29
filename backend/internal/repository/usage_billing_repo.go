@@ -212,6 +212,7 @@ type usageBillingAffiliateSettlement struct {
 
 type usageBillingBalanceLot struct {
 	ID                       int64
+	SourceType               string
 	RemainingMicros          int64
 	AffiliateEligible        bool
 	AffiliatePolicy          string
@@ -233,7 +234,7 @@ func attributeUsageBillingBalanceConsumption(
 	}
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id, remaining_amount_micros, affiliate_eligible,
+			id, source_type, remaining_amount_micros, affiliate_eligible,
 			affiliate_policy, direct_partner_id,
 			customer_rebate_rate_bps, partner_commission_rate_bps,
 			occurred_at
@@ -251,6 +252,7 @@ func attributeUsageBillingBalanceConsumption(
 		var lot usageBillingBalanceLot
 		if err := rows.Scan(
 			&lot.ID,
+			&lot.SourceType,
 			&lot.RemainingMicros,
 			&lot.AffiliateEligible,
 			&lot.AffiliatePolicy,
@@ -302,6 +304,7 @@ func attributeUsageBillingBalanceConsumption(
 		}
 		lots = append(lots, usageBillingBalanceLot{
 			ID:              reconciliationLotID,
+			SourceType:      service.AffiliateSourceLegacyUnattributed,
 			RemainingMicros: gapMicros,
 			AffiliatePolicy: service.AffiliateSourcePolicyNone,
 		})
@@ -309,7 +312,7 @@ func attributeUsageBillingBalanceConsumption(
 
 	eventKey := fmt.Sprintf("usage:%d:balance", cmd.UsageLogID)
 	remainingMicros := amountMicros
-	eligibleMicros := int64(0)
+	confirmedMicros := int64(0)
 	for _, lot := range lots {
 		if remainingMicros <= 0 {
 			break
@@ -324,6 +327,10 @@ func attributeUsageBillingBalanceConsumption(
 		eligiblePart := int64(0)
 		if lot.AffiliateEligible {
 			eligiblePart = consumeMicros
+		}
+		qualificationPart := int64(0)
+		if service.AffiliateSourceTracksQualification(lot.SourceType) {
+			qualificationPart = consumeMicros
 		}
 		result, err := tx.ExecContext(ctx, `
 			UPDATE balance_lots
@@ -352,12 +359,22 @@ func attributeUsageBillingBalanceConsumption(
 		`, lot.ID, cmd.UserID, cmd.UsageLogID, eventKey, consumeMicros, eligiblePart); err != nil {
 			return 0, err
 		}
-		eligibleMicros += eligiblePart
+		confirmedMicros += qualificationPart
 		remainingMicros -= consumeMicros
-		if eligiblePart > 0 {
+		if qualificationPart > 0 {
 			directPartnerID := int64(0)
 			if lot.DirectPartnerID.Valid {
 				directPartnerID = lot.DirectPartnerID.Int64
+			}
+			affiliatePolicy := service.AffiliateSourcePolicyNone
+			customerRateBPS := int32(0)
+			partnerRateBPS := int32(0)
+			if lot.AffiliateEligible {
+				affiliatePolicy = lot.AffiliatePolicy
+				customerRateBPS = lot.CustomerRebateRateBPS
+				partnerRateBPS = lot.PartnerCommissionRateBPS
+			} else {
+				directPartnerID = 0
 			}
 			affiliateSettlement, err := recordUsageBillingPerformanceEvent(
 				ctx,
@@ -366,11 +383,11 @@ func attributeUsageBillingBalanceConsumption(
 				cmd.UsageLogID,
 				"balance_usage",
 				fmt.Sprintf("confirmed:usage:%d:balance:lot:%d", cmd.UsageLogID, lot.ID),
-				eligiblePart,
-				lot.AffiliatePolicy,
+				qualificationPart,
+				affiliatePolicy,
 				directPartnerID,
-				lot.CustomerRebateRateBPS,
-				lot.PartnerCommissionRateBPS,
+				customerRateBPS,
+				partnerRateBPS,
 				lot.AcquiredAt,
 			)
 			if err != nil {
@@ -385,7 +402,7 @@ func attributeUsageBillingBalanceConsumption(
 	if remainingMicros != 0 {
 		return 0, errors.New("affiliate balance attribution did not consume requested amount")
 	}
-	return eligibleMicros, nil
+	return confirmedMicros, nil
 }
 
 func attributeUsageBillingMonthlyConsumption(
@@ -399,6 +416,7 @@ func attributeUsageBillingMonthlyConsumption(
 		return 0, nil
 	}
 	var (
+		sourceType        string
 		affiliateEligible bool
 		affiliatePolicy   string
 		directPartnerID   sql.NullInt64
@@ -409,7 +427,11 @@ func attributeUsageBillingMonthlyConsumption(
 	)
 	err := tx.QueryRowContext(ctx, `
 		WITH candidate AS (
-			SELECT c.id, c.confirmed_consumption_micros
+			SELECT
+				c.id,
+				c.confirmed_consumption_micros,
+				c.source_type IN ('paid_redeem', 'paid_topup')
+					AS qualification_eligible
 			FROM monthly_entitlement_cycles c
 			JOIN monthly_entitlement_cycle_subscriptions cs
 				ON cs.cycle_id = c.id
@@ -427,7 +449,7 @@ func attributeUsageBillingMonthlyConsumption(
 			SET
 				used_credit_micros = LEAST(c.credit_limit_micros, c.used_credit_micros + $3),
 				confirmed_consumption_micros = CASE
-					WHEN c.affiliate_eligible THEN LEAST(
+					WHEN candidate.qualification_eligible THEN LEAST(
 						c.sale_price_micros,
 						FLOOR(
 							c.sale_price_micros::numeric
@@ -441,6 +463,7 @@ func attributeUsageBillingMonthlyConsumption(
 			FROM candidate
 			WHERE c.id = candidate.id
 			RETURNING
+				c.source_type,
 				c.affiliate_eligible,
 				c.affiliate_policy,
 				c.direct_partner_id,
@@ -451,6 +474,7 @@ func attributeUsageBillingMonthlyConsumption(
 					- candidate.confirmed_consumption_micros AS confirmed_delta_micros
 		)
 		SELECT
+			source_type,
 			affiliate_eligible,
 			affiliate_policy,
 			direct_partner_id,
@@ -460,6 +484,7 @@ func attributeUsageBillingMonthlyConsumption(
 			GREATEST(0, confirmed_delta_micros)
 		FROM updated
 	`, *cmd.SubscriptionID, cmd.UserID, creditMicros).Scan(
+		&sourceType,
 		&affiliateEligible,
 		&affiliatePolicy,
 		&directPartnerID,
@@ -474,7 +499,19 @@ func attributeUsageBillingMonthlyConsumption(
 	if err != nil {
 		return 0, err
 	}
-	if affiliateEligible && confirmedMicros > 0 {
+	if service.AffiliateSourceTracksQualification(sourceType) && confirmedMicros > 0 {
+		affiliatePolicyForEvent := service.AffiliateSourcePolicyNone
+		directPartnerIDForEvent := int64(0)
+		customerRateBPSForEvent := int32(0)
+		partnerRateBPSForEvent := int32(0)
+		if affiliateEligible {
+			affiliatePolicyForEvent = affiliatePolicy
+			if directPartnerID.Valid {
+				directPartnerIDForEvent = directPartnerID.Int64
+			}
+			customerRateBPSForEvent = customerRateBPS
+			partnerRateBPSForEvent = partnerRateBPS
+		}
 		affiliateSettlement, err := recordUsageBillingPerformanceEvent(
 			ctx,
 			tx,
@@ -483,10 +520,10 @@ func attributeUsageBillingMonthlyConsumption(
 			"monthly_usage",
 			fmt.Sprintf("confirmed:usage:%d:monthly", cmd.UsageLogID),
 			confirmedMicros,
-			affiliatePolicy,
-			directPartnerID.Int64,
-			customerRateBPS,
-			partnerRateBPS,
+			affiliatePolicyForEvent,
+			directPartnerIDForEvent,
+			customerRateBPSForEvent,
+			partnerRateBPSForEvent,
 			acquiredAt,
 		)
 		if err != nil {

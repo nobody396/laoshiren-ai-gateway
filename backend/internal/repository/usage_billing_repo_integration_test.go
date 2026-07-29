@@ -108,7 +108,7 @@ func TestUsageBillingRepositoryApply_AttributesOnlyPaidBalanceLots(t *testing.T)
 		)
 		VALUES
 			($1, 'gift', $2, 3000000, 3000000, FALSE, 'NONE'),
-			($1, 'paid_redeem', $3, 17000000, 17000000, TRUE, 'ORDINARY_FIRST_PAID')
+			($1, 'paid_redeem', $3, 17000000, 17000000, FALSE, 'NONE')
 	`, user.ID, "test-gift:"+uuid.NewString(), "test-paid:"+uuid.NewString())
 	require.NoError(t, err)
 	setAffiliateProgramLiveForIntegrationTest(t, ctx)
@@ -126,12 +126,17 @@ func TestUsageBillingRepositoryApply_AttributesOnlyPaidBalanceLots(t *testing.T)
 	require.Equal(t, int64(2_000_000), result.ConfirmedConsumptionMicros)
 
 	var eventAmount int64
+	var eventPolicy string
 	require.NoError(t, integrationDB.QueryRowContext(ctx, `
-		SELECT COALESCE(SUM(amount_micros), 0)
+		SELECT COALESCE(SUM(amount_micros), 0), MAX(affiliate_policy)
 		FROM affiliate_performance_events
 		WHERE event_key LIKE $1
-	`, fmt.Sprintf("confirmed:usage:%d:balance:lot:%%", usageLogID)).Scan(&eventAmount))
+	`, fmt.Sprintf("confirmed:usage:%d:balance:lot:%%", usageLogID)).Scan(
+		&eventAmount,
+		&eventPolicy,
+	))
 	require.Equal(t, int64(2_000_000), eventAmount)
+	require.Equal(t, service.AffiliateSourcePolicyNone, eventPolicy)
 }
 
 func TestUsageBillingRepositoryApply_AttributesMonthlyConsumptionProRata(t *testing.T) {
@@ -169,7 +174,7 @@ func TestUsageBillingRepositoryApply_AttributesMonthlyConsumptionProRata(t *test
 			sale_price_micros, credit_limit_micros,
 			affiliate_eligible, affiliate_policy, starts_at, ends_at
 		)
-		VALUES ($1, 'paid_topup', $2, 'test-monthly', 50000000, 100000000, TRUE, 'ORDINARY_FIRST_PAID', NOW() - INTERVAL '1 minute', NOW() + INTERVAL '31 days')
+		VALUES ($1, 'paid_topup', $2, 'test-monthly', 50000000, 100000000, FALSE, 'NONE', NOW() - INTERVAL '1 minute', NOW() + INTERVAL '31 days')
 		RETURNING id
 	`, user.ID, "test-monthly:"+uuid.NewString()).Scan(&cycleID))
 	_, err := integrationDB.ExecContext(ctx, `
@@ -202,6 +207,19 @@ func TestUsageBillingRepositoryApply_AttributesMonthlyConsumptionProRata(t *test
 	`, cycleID).Scan(&usedCredit, &confirmed))
 	require.Equal(t, int64(10_000_000), usedCredit)
 	require.Equal(t, int64(5_000_000), confirmed)
+
+	var eventAmount int64
+	var eventPolicy string
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT amount_micros, affiliate_policy
+		FROM affiliate_performance_events
+		WHERE event_key = $1
+	`, fmt.Sprintf("confirmed:usage:%d:monthly", usageLogID)).Scan(
+		&eventAmount,
+		&eventPolicy,
+	))
+	require.Equal(t, int64(5_000_000), eventAmount)
+	require.Equal(t, service.AffiliateSourcePolicyNone, eventPolicy)
 }
 
 func TestUsageBillingRepositoryApply_SettlesFixedAgentPoolOnConfirmedConsumption(t *testing.T) {

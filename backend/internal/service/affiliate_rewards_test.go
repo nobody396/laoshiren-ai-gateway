@@ -40,17 +40,21 @@ func TestAffiliateRateAmountMicrosFloors(t *testing.T) {
 
 func TestAffiliateFirstPaidRewards_OrdinaryInviterAndInviteeReceiveFivePercentTZero(t *testing.T) {
 	t.Parallel()
+	at := time.Date(2026, 7, 26, 12, 0, 0, 0, time.UTC)
+	startedAt := at.Add(-2 * time.Hour)
+	boundAt := at.Add(-time.Hour)
 	repo := &affiliateRewardRepoStub{firstPaid: AffiliateFirstPaidContext{
 		ProgramLive:             true,
+		ProgramStartedAt:        &startedAt,
 		Claimed:                 true,
 		PurchaseID:              88,
 		BindingKind:             AffiliateBindingOrdinary,
+		BindingBoundAt:          &boundAt,
 		InviterUserID:           7,
 		OrdinaryReferralRateBPS: 500,
 		OrdinaryInviteeRateBPS:  500,
 	}}
 	svc := NewAffiliateRewardService(repo)
-	at := time.Date(2026, 7, 26, 12, 0, 0, 0, time.UTC)
 
 	result, err := svc.ProcessFirstPaidPurchase(context.Background(), AffiliateFirstPaidPurchaseInput{
 		UserID:       9,
@@ -206,9 +210,13 @@ func TestAffiliateProgramHandlesPurchase_ShadowSuppressesLegacyRewards(t *testin
 func TestAffiliateHistoricalDirectStartsPartnerUsageOnlyAfterActivation(t *testing.T) {
 	t.Parallel()
 	activatedAt := time.Date(2026, 7, 28, 8, 0, 0, 0, time.UTC)
+	startedAt := activatedAt.Add(-48 * time.Hour)
+	boundAt := activatedAt.Add(-24 * time.Hour)
 	repo := &affiliateRewardRepoStub{firstPaid: AffiliateFirstPaidContext{
 		ProgramLive:               true,
+		ProgramStartedAt:          &startedAt,
 		BindingKind:               AffiliateBindingOrdinary,
+		BindingBoundAt:            &boundAt,
 		InviterUserID:             7,
 		InviterPartnerStatus:      "active",
 		InviterPartnerActivatedAt: &activatedAt,
@@ -243,6 +251,42 @@ func TestAffiliateHistoricalDirectStartsPartnerUsageOnlyAfterActivation(t *testi
 		after.CustomerRebateRateBPS != 0 ||
 		after.PartnerCommissionRateBPS != 1000 {
 		t.Fatalf("post-activation policy = %+v", after)
+	}
+}
+
+func TestAffiliatePreLiveOrdinaryBindingCannotClaimLaunchReward(t *testing.T) {
+	t.Parallel()
+	startedAt := time.Date(2026, 7, 30, 0, 0, 0, 0, time.UTC)
+	boundAt := startedAt.Add(-time.Hour)
+	repo := &affiliateRewardRepoStub{firstPaid: AffiliateFirstPaidContext{
+		ProgramLive:             true,
+		ProgramStartedAt:        &startedAt,
+		Claimed:                 true,
+		PurchaseID:              121,
+		BindingKind:             AffiliateBindingOrdinary,
+		BindingBoundAt:          &boundAt,
+		InviterUserID:           7,
+		OrdinaryReferralRateBPS: 500,
+		OrdinaryInviteeRateBPS:  500,
+	}}
+
+	result, err := NewAffiliateRewardService(repo).ProcessFirstPaidPurchase(
+		context.Background(),
+		AffiliateFirstPaidPurchaseInput{
+			UserID:       11,
+			PurchaseType: AffiliatePurchaseBalanceTopup,
+			PurchaseKey:  "pre-live-binding",
+			AmountMicros: 100_000_000,
+			OccurredAt:   startedAt.Add(time.Hour),
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.SourcePolicy != AffiliateSourcePolicyNone ||
+		result.DirectPartnerID != 0 ||
+		len(repo.posted) != 0 {
+		t.Fatalf("pre-live binding received launch reward: result=%+v posted=%d", result, len(repo.posted))
 	}
 }
 

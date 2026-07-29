@@ -68,7 +68,7 @@
               <NumberField v-model="programForm.directUserCount" label="路线 A 有效用户" suffix="人" :min="1" :step="1" />
               <NumberField v-model="programForm.perUserConsumption" label="单个有效用户消费" prefix="¥" :min="1" :step="1" />
               <NumberField v-model="programForm.directTeamConsumption" label="路线 A 团队消费" prefix="¥" :min="1" :step="1" />
-              <NumberField v-model="programForm.combinedConsumption" label="路线 B 直属消费" prefix="¥" :min="1" :step="1" />
+              <NumberField v-model="programForm.combinedConsumption" label="路线 B 本人 + 直属消费" prefix="¥" :min="1" :step="1" />
               <NumberField v-model="programForm.maxCampaignLinks" label="最多活动链接" suffix="条" :min="0" :max="100" :step="1" />
               <NumberField v-model="programForm.conversionMultiplier" label="现金转额度倍率（固定）" suffix="×" :disabled="true" />
               <NumberField v-model="programForm.withdrawalMinimum" label="最低提现金额" prefix="¥" :min="1" :step="1" />
@@ -154,13 +154,15 @@
             <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">{{ applications.length }} 待审核</span>
           </div>
           <div class="max-h-[38rem] overflow-auto">
-            <table class="min-w-[1050px] table-fixed divide-y divide-gray-100 text-sm dark:divide-dark-800">
+            <table class="min-w-[1350px] table-fixed divide-y divide-gray-100 text-sm dark:divide-dark-800">
               <thead class="sticky top-0 z-10 bg-gray-50 text-xs text-gray-600 dark:bg-dark-900 dark:text-dark-300">
                 <tr>
                   <th class="px-5 py-3 text-left font-medium">申请人</th>
                   <th class="px-5 py-3 text-left font-medium">达标路线</th>
                   <th class="px-5 py-3 text-right font-medium">有效直属</th>
+                  <th class="px-5 py-3 text-right font-medium">本人确认消费</th>
                   <th class="px-5 py-3 text-right font-medium">直属确认消费</th>
+                  <th class="px-5 py-3 text-right font-medium">合并确认消费</th>
                   <th class="px-5 py-3 text-left font-medium">申请说明</th>
                   <th class="px-5 py-3 text-left font-medium">审核说明</th>
                   <th class="sticky right-0 bg-gray-50 px-5 py-3 text-right font-medium dark:bg-dark-900">操作</th>
@@ -172,9 +174,11 @@
                     <p class="font-semibold text-gray-900 dark:text-white">#{{ item.user_id }} · {{ item.username || item.email }}</p>
                     <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ formatOptionalBeijingTime(item.submitted_at) }}</p>
                   </td>
-                  <td class="px-5 py-4">{{ item.qualifying_route === 'direct_team' ? '路线 A · 稳定团队' : '路线 B · 直属消费' }}</td>
+                  <td class="px-5 py-4">{{ item.qualifying_route === 'direct_team' ? '路线 A · 稳定团队' : '路线 B · 本人 + 直属' }}</td>
                   <td class="px-5 py-4 text-right">{{ item.valid_direct_user_count }} 人</td>
+                  <td class="px-5 py-4 text-right">{{ formatMicros(item.self_consumption_micros, '¥') }}</td>
                   <td class="px-5 py-4 text-right">{{ formatMicros(item.direct_team_consumption_micros, '¥') }}</td>
+                  <td class="px-5 py-4 text-right">{{ formatMicros(item.combined_consumption_micros, '¥') }}</td>
                   <td class="px-5 py-4 text-gray-600 dark:text-dark-300">{{ item.application_note || '—' }}</td>
                   <td class="px-5 py-4"><input v-model.trim="applicationNotes[item.id]" maxlength="500" class="input min-w-48" placeholder="审核说明"></td>
                   <td class="sticky right-0 bg-white px-5 py-4 text-right dark:bg-dark-900">
@@ -184,7 +188,7 @@
                     </div>
                   </td>
                 </tr>
-                <tr v-if="!applications.length"><td colspan="7" class="px-5 py-12 text-center text-gray-600 dark:text-dark-300">暂无待审核申请</td></tr>
+                <tr v-if="!applications.length"><td colspan="9" class="px-5 py-12 text-center text-gray-600 dark:text-dark-300">暂无待审核申请</td></tr>
               </tbody>
             </table>
           </div>

@@ -106,6 +106,20 @@ func AffiliatePolicyTracksConsumption(policy string) bool {
 		policy == AffiliateSourcePolicyPartnerUsage
 }
 
+// AffiliateSourceTracksQualification reports whether consumption from this
+// source may count toward partner qualification. Qualification follows paid
+// value, not reward eligibility: an unbound customer still builds their own
+// qualification progress, while gifts, compensation, tests, and adjustments
+// never do.
+func AffiliateSourceTracksQualification(sourceType string) bool {
+	switch strings.TrimSpace(strings.ToLower(sourceType)) {
+	case AffiliateSourcePaidRedeem, AffiliateSourcePaidTopup:
+		return true
+	default:
+		return false
+	}
+}
+
 func AffiliateMonthlyCatalogIdentity(groups []*Group) (productCode, pricingTableVersion string) {
 	if len(groups) == 2 {
 		names := map[string]struct{}{}

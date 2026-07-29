@@ -71,7 +71,9 @@ type AffiliateAgentApplication struct {
 	Status                      string     `json:"status"`
 	QualifyingRoute             string     `json:"qualifying_route"`
 	ValidDirectUserCount        int32      `json:"valid_direct_user_count"`
+	SelfConsumptionMicros       int64      `json:"self_consumption_micros"`
 	DirectTeamConsumptionMicros int64      `json:"direct_team_consumption_micros"`
+	CombinedConsumptionMicros   int64      `json:"combined_consumption_micros"`
 	ApplicationNote             string     `json:"application_note"`
 	DecisionNote                string     `json:"decision_note"`
 	SubmittedAt                 time.Time  `json:"submitted_at"`

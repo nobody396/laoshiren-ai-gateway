@@ -87,6 +87,9 @@ func TestAffiliateAgentRepository_QualifiesAppliesReviewsAndPreservesUpstream(t 
 	application, err := agentService.Apply(ctx, candidate.ID, "申请成为合伙人")
 	require.NoError(t, err)
 	require.Equal(t, "pending_review", application.Status)
+	require.Zero(t, application.SelfConsumptionMicros)
+	require.Equal(t, int64(1_000_000_000), application.DirectTeamConsumptionMicros)
+	require.Equal(t, int64(1_000_000_000), application.CombinedConsumptionMicros)
 
 	review, err := agentService.ReviewApplication(ctx, application.ID, true, "资料与消费确认无误", operator.ID)
 	require.NoError(t, err)
@@ -246,4 +249,10 @@ func TestAffiliateAgentRepository_QualificationCombinesFrozenHistoryAndLivePaidU
 	require.True(t, qualification.DirectRouteQualified)
 	require.True(t, qualification.CombinedRouteQualified)
 	require.True(t, qualification.CanApply)
+
+	application, err := repo.SubmitAgentApplication(ctx, candidate.ID, "路线 B 快照测试")
+	require.NoError(t, err)
+	require.Equal(t, int64(500_000_000), application.SelfConsumptionMicros)
+	require.Equal(t, int64(500_000_000), application.DirectTeamConsumptionMicros)
+	require.Equal(t, int64(1_000_000_000), application.CombinedConsumptionMicros)
 }

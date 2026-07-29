@@ -369,6 +369,10 @@ SELECT to_regprocedure(
 )
 `).Scan(&refreshFunctionRegprocedure))
 	require.True(t, refreshFunctionRegprocedure.Valid)
+
+	// migration 167: review records preserve the complete Route B snapshot.
+	requireColumn(t, tx, "affiliate_agent_applications", "self_consumption_micros", "bigint", 0, false)
+	requireColumn(t, tx, "affiliate_agent_applications", "combined_consumption_micros", "bigint", 0, false)
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

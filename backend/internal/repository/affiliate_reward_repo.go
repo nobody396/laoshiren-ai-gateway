@@ -34,6 +34,7 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 	var (
 		startedAt            sql.NullTime
 		bindingKind          sql.NullString
+		bindingBoundAt       sql.NullTime
 		inviterID            sql.NullInt64
 		bindingAgentID       sql.NullInt64
 		inviterPartnerStatus sql.NullString
@@ -48,6 +49,7 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 			s.ordinary_referral_rate_bps,
 			s.ordinary_invitee_rate_bps,
 			b.binding_kind,
+			b.bound_at,
 			b.inviter_user_id,
 			b.agent_id,
 			COALESCE(b.customer_rebate_rate_snapshot_bps, 0),
@@ -77,6 +79,7 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 		&result.OrdinaryReferralRateBPS,
 		&result.OrdinaryInviteeRateBPS,
 		&bindingKind,
+		&bindingBoundAt,
 		&inviterID,
 		&bindingAgentID,
 		&result.BindingCustomerRateBPS,
@@ -92,6 +95,9 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 	}
 	result.ProgramMode = mode
 	result.ProgramLive = mode == service.AffiliateProgramModeLive
+	if startedAt.Valid {
+		result.ProgramStartedAt = &startedAt.Time
+	}
 	if mode == service.AffiliateProgramModeOff ||
 		!bindingKind.Valid ||
 		!inviterID.Valid {
@@ -101,6 +107,9 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 		return result, nil
 	}
 	result.BindingKind = bindingKind.String
+	if bindingBoundAt.Valid {
+		result.BindingBoundAt = &bindingBoundAt.Time
+	}
 	result.InviterUserID = inviterID.Int64
 	if bindingAgentID.Valid {
 		result.BindingAgentID = bindingAgentID.Int64

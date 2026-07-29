@@ -39,9 +39,11 @@ type AffiliateFirstPaidPurchaseInput struct {
 type AffiliateFirstPaidContext struct {
 	ProgramMode               string
 	ProgramLive               bool
+	ProgramStartedAt          *time.Time
 	Claimed                   bool
 	PurchaseID                int64
 	BindingKind               string
+	BindingBoundAt            *time.Time
 	InviterUserID             int64
 	OrdinaryReferralRateBPS   int32
 	OrdinaryInviteeRateBPS    int32
@@ -127,7 +129,6 @@ func (s *AffiliateRewardService) ProcessFirstPaidPurchase(
 		return result, nil
 	}
 
-	result.DirectPartnerID = firstPaid.InviterUserID
 	switch {
 	case firstPaid.BindingKind == AffiliateBindingAgent && firstPaid.BindingAgentID > 0:
 		result.SourcePolicy = AffiliateSourcePolicyPartnerUsage
@@ -140,6 +141,7 @@ func (s *AffiliateRewardService) ProcessFirstPaidPurchase(
 		firstPaid.InviterPartnerActivatedAt != nil &&
 		!input.OccurredAt.Before(*firstPaid.InviterPartnerActivatedAt):
 		result.SourcePolicy = AffiliateSourcePolicyPartnerUsage
+		result.DirectPartnerID = firstPaid.InviterUserID
 		result.CustomerRebateRateBPS = 0
 		result.PartnerCommissionRateBPS = AffiliateAgentPoolRateBPS
 	case firstPaid.BindingKind == AffiliateBindingOrdinary &&
@@ -149,8 +151,14 @@ func (s *AffiliateRewardService) ProcessFirstPaidPurchase(
 		// referral reward. The permanent binding remains for audit only.
 		result.SourcePolicy = AffiliateSourcePolicyNone
 		result.DirectPartnerID = 0
-	case firstPaid.BindingKind == AffiliateBindingOrdinary && firstPaid.InviterUserID > 0:
+	case firstPaid.BindingKind == AffiliateBindingOrdinary &&
+		firstPaid.InviterUserID > 0 &&
+		(!firstPaid.ProgramLive ||
+			(firstPaid.ProgramStartedAt != nil &&
+				firstPaid.BindingBoundAt != nil &&
+				!firstPaid.BindingBoundAt.Before(*firstPaid.ProgramStartedAt))):
 		result.SourcePolicy = AffiliateSourcePolicyOrdinaryFirstPaid
+		result.DirectPartnerID = firstPaid.InviterUserID
 	}
 
 	// Shadow mode must preserve the exact projected source policy used by the

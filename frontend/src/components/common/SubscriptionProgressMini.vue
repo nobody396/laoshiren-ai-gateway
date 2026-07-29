@@ -46,7 +46,11 @@
           >
             <div class="mb-2 flex items-center justify-between">
               <span class="text-sm font-medium text-gray-900 dark:text-white">
-                {{ subscription.group?.name || `Group #${subscription.group_id}` }}
+                {{
+                  subscription.group?.name
+                    ? publicGroupDisplayName(subscription.group.name)
+                    : `Group #${subscription.group_id}`
+                }}
               </span>
               <span
                 v-if="subscription.expires_at"
@@ -198,6 +202,7 @@ import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import { useSubscriptionStore } from '@/stores'
 import type { UserSubscription } from '@/types'
+import { publicGroupDisplayName } from '@/utils/groupDisplayName'
 import {
   formatSubscriptionUsageDisplay,
   subscriptionUsagePercent

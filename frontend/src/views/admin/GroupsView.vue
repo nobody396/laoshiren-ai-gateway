@@ -2040,7 +2040,7 @@ const capacityLoading = ref(false)
 const searchQuery = ref('')
 const filters = reactive({
   platform: '',
-  status: '',
+  status: 'active',
   is_exclusive: ''
 })
 const pagination = reactive({

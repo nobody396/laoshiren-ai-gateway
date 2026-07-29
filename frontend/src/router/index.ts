@@ -171,6 +171,17 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/legal/affiliate-program',
+    name: 'LegalAffiliateProgram',
+    component: () => import('@/views/PublicInfoView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: '联盟计划规则',
+      description: '老实人AI联盟计划规则，说明普通邀请奖励、合伙人门槛、10% 奖励池、直属关系、提现、冲正和风险处理。',
+      publicDocSlug: 'legal-affiliate-program'
+    }
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/auth/LoginView.vue'),

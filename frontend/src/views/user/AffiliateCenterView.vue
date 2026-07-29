@@ -13,6 +13,9 @@
             <p class="mt-4 max-w-2xl text-sm leading-7 text-gray-600 dark:text-dark-300">
               普通邀请的首笔真实付费，邀请人与被邀请人各得 5% ⚡；满足消费门槛后可申请成为合伙人，审核通过后使用动态链接分配固定 10% 奖励池。
             </p>
+            <router-link to="/legal/affiliate-program" class="mt-4 inline-flex text-sm font-semibold text-primary-700 hover:underline dark:text-primary-300">
+              查看完整联盟计划规则
+            </router-link>
           </div>
           <div class="rounded-2xl border border-primary-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-primary-900 dark:bg-dark-900/80">
             <p class="text-xs text-gray-600 dark:text-dark-300">{{ primaryInviteLabel }}</p>
@@ -40,7 +43,10 @@
         <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-gray-600 dark:text-dark-300">
           {{ unavailableDescription }}
         </p>
-        <router-link to="/dashboard" class="btn btn-primary mt-7">返回控制台</router-link>
+        <div class="mt-7 flex flex-wrap justify-center gap-3">
+          <router-link to="/dashboard" class="btn btn-primary">返回控制台</router-link>
+          <router-link to="/legal/affiliate-program" class="btn btn-secondary">查看联盟计划规则</router-link>
+        </div>
       </section>
 
       <div v-if="error" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">

@@ -22,7 +22,8 @@ const INDEXABLE_ROUTE_NAMES = new Set([
   'LegalTerms',
   'LegalUsagePolicy',
   'LegalSupportedRegions',
-  'LegalServiceSpecificTerms'
+  'LegalServiceSpecificTerms',
+  'LegalAffiliateProgram'
 ])
 
 type SeoOptions = {

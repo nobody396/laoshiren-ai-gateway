@@ -37,6 +37,10 @@ func TestDefaultAffiliateProgramSettingsValidate(t *testing.T) {
 	require.Equal(t, int32(3500), settings.MarginFloorBPS)
 	require.Equal(t, int64(100_000_000), settings.WithdrawalMinMicros)
 	require.Equal(t, int32(24), settings.WithdrawalSLAHours)
+	require.Equal(t, int32(5), settings.QualificationDirectUserCount)
+	require.Equal(t, int64(20_000_000), settings.QualificationMinUserConsumptionMicros)
+	require.Equal(t, int64(1_000_000_000), settings.QualificationDirectTeamConsumptionMicros)
+	require.Equal(t, int64(500_000_000), settings.QualificationSelfConsumptionMicros)
 }
 
 func TestAffiliateProgramSettingsRejectUnsafeValues(t *testing.T) {

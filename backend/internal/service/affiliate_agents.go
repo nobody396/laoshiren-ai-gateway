@@ -48,9 +48,9 @@ type AffiliateAgentQualification struct {
 	RequiredDirectUserCount     int32      `json:"required_direct_user_count"`
 	RequiredPerUserMicros       int64      `json:"required_per_user_micros"`
 	RequiredDirectTeamMicros    int64      `json:"required_direct_team_micros"`
-	RequiredCombinedMicros      int64      `json:"required_combined_micros"`
+	RequiredSelfMicros          int64      `json:"required_self_micros"`
 	DirectRouteQualified        bool       `json:"direct_route_qualified"`
-	CombinedRouteQualified      bool       `json:"combined_route_qualified"`
+	SelfRouteQualified          bool       `json:"self_route_qualified"`
 	Qualified                   bool       `json:"qualified"`
 	QualificationRoute          string     `json:"qualification_route,omitempty"`
 	CanActivate                 bool       `json:"can_activate"`

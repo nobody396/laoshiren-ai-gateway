@@ -373,6 +373,47 @@ SELECT to_regprocedure(
 	// migration 167: review records preserve the complete Route B snapshot.
 	requireColumn(t, tx, "affiliate_agent_applications", "self_consumption_micros", "bigint", 0, false)
 	requireColumn(t, tx, "affiliate_agent_applications", "combined_consumption_micros", "bigint", 0, false)
+
+	// migration 168: Route B is now based on the applicant's own confirmed
+	// consumption. Legacy route/threshold fields remain rollback-compatible.
+	requireColumn(t, tx, "affiliate_program_settings", "qualification_self_consumption_micros", "bigint", 0, false)
+	var (
+		directUserCount  int
+		perUserMicros    int64
+		directTeamMicros int64
+		selfMicros       int64
+	)
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT
+	qualification_direct_user_count,
+	qualification_min_user_consumption_micros,
+	qualification_direct_team_consumption_micros,
+	qualification_self_consumption_micros
+FROM affiliate_program_settings
+WHERE id = 1
+`).Scan(&directUserCount, &perUserMicros, &directTeamMicros, &selfMicros))
+	require.Equal(t, 5, directUserCount)
+	require.Equal(t, int64(20_000_000), perUserMicros)
+	require.Equal(t, int64(1_000_000_000), directTeamMicros)
+	require.Equal(t, int64(500_000_000), selfMicros)
+
+	var applicationRouteConstraint string
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT pg_get_constraintdef(oid)
+FROM pg_constraint
+WHERE conrelid = 'affiliate_agent_applications'::regclass
+  AND conname = 'chk_affiliate_application_route'
+`).Scan(&applicationRouteConstraint))
+	require.Contains(t, applicationRouteConstraint, "self_consumption")
+	require.Contains(t, applicationRouteConstraint, "direct_volume")
+
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT pg_get_constraintdef(oid)
+FROM pg_constraint
+WHERE conrelid = 'affiliate_qualification_states'::regclass
+  AND conname = 'chk_affiliate_qualification_route'
+`).Scan(&qualificationRouteConstraint))
+	require.Contains(t, qualificationRouteConstraint, "self_consumption")
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

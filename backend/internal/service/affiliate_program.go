@@ -39,7 +39,7 @@ type AffiliateProgramSettings struct {
 	QualificationDirectUserCount             int32      `json:"qualification_direct_user_count"`
 	QualificationMinUserConsumptionMicros    int64      `json:"qualification_min_user_consumption_micros"`
 	QualificationDirectTeamConsumptionMicros int64      `json:"qualification_direct_team_consumption_micros"`
-	QualificationCombinedConsumptionMicros   int64      `json:"qualification_combined_consumption_micros"`
+	QualificationSelfConsumptionMicros       int64      `json:"qualification_self_consumption_micros"`
 	MaxCampaignLinks                         int32      `json:"max_campaign_links"`
 	CommissionConversionMultiplierMillis     int32      `json:"commission_conversion_multiplier_millis"`
 	WithdrawalMinMicros                      int64      `json:"withdrawal_min_micros"`
@@ -63,10 +63,10 @@ func DefaultAffiliateProgramSettings() AffiliateProgramSettings {
 		FirstPaidBonusThresholdMicros:            0,
 		FirstPaidBonusMicros:                     0,
 		AgentPoolRateBPS:                         AffiliateAgentPoolRateBPS,
-		QualificationDirectUserCount:             10,
+		QualificationDirectUserCount:             5,
 		QualificationMinUserConsumptionMicros:    20_000_000,
 		QualificationDirectTeamConsumptionMicros: 1_000_000_000,
-		QualificationCombinedConsumptionMicros:   2_000_000_000,
+		QualificationSelfConsumptionMicros:       500_000_000,
 		MaxCampaignLinks:                         5,
 		CommissionConversionMultiplierMillis:     1200,
 		WithdrawalMinMicros:                      100_000_000,
@@ -113,7 +113,7 @@ func (s AffiliateProgramSettings) Validate() error {
 	if s.QualificationDirectUserCount <= 0 ||
 		s.QualificationMinUserConsumptionMicros <= 0 ||
 		s.QualificationDirectTeamConsumptionMicros <= 0 ||
-		s.QualificationCombinedConsumptionMicros <= 0 {
+		s.QualificationSelfConsumptionMicros <= 0 {
 		return invalid("qualification thresholds must be positive")
 	}
 	if s.MaxCampaignLinks < 0 || s.MaxCampaignLinks > 100 {

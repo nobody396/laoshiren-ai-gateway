@@ -355,7 +355,7 @@ func queryAffiliateAgentQualification(
 				qualification_direct_user_count,
 				qualification_min_user_consumption_micros,
 				qualification_direct_team_consumption_micros,
-				qualification_combined_consumption_micros
+				qualification_self_consumption_micros
 			FROM affiliate_program_settings
 			WHERE id = 1
 		),
@@ -414,7 +414,11 @@ func queryAffiliateAgentQualification(
 					FROM user_net
 					WHERE user_id = $1
 				), 0)::bigint AS self_micros,
-				COALESCE((SELECT SUM(amount_micros) FROM direct_users), 0)::bigint AS direct_micros,
+				COALESCE((
+					SELECT SUM(direct_users.amount_micros)
+					FROM direct_users, settings
+					WHERE direct_users.amount_micros >= settings.qualification_min_user_consumption_micros
+				), 0)::bigint AS direct_micros,
 				COALESCE((
 					SELECT COUNT(*)
 					FROM direct_users, settings
@@ -434,7 +438,7 @@ func queryAffiliateAgentQualification(
 			s.qualification_direct_user_count,
 			s.qualification_min_user_consumption_micros,
 			s.qualification_direct_team_consumption_micros,
-			s.qualification_combined_consumption_micros
+			s.qualification_self_consumption_micros
 		FROM settings s
 		CROSS JOIN totals t
 		LEFT JOIN agent_principals ap ON ap.agent_id = $1
@@ -452,7 +456,7 @@ func queryAffiliateAgentQualification(
 		&out.RequiredDirectUserCount,
 		&out.RequiredPerUserMicros,
 		&out.RequiredDirectTeamMicros,
-		&out.RequiredCombinedMicros,
+		&out.RequiredSelfMicros,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, service.ErrUserNotFound
@@ -477,14 +481,14 @@ func queryAffiliateAgentQualification(
 	out.DirectRouteQualified =
 		out.ValidDirectUserCount >= out.RequiredDirectUserCount &&
 			out.DirectTeamConsumptionMicros >= out.RequiredDirectTeamMicros
-	out.CombinedRouteQualified =
-		out.CombinedConsumptionMicros >= out.RequiredCombinedMicros
-	out.Qualified = out.DirectRouteQualified || out.CombinedRouteQualified
+	out.SelfRouteQualified =
+		out.SelfConsumptionMicros >= out.RequiredSelfMicros
+	out.Qualified = out.DirectRouteQualified || out.SelfRouteQualified
 	switch {
 	case out.DirectRouteQualified:
 		out.QualificationRoute = "direct_team"
-	case out.CombinedRouteQualified:
-		out.QualificationRoute = "direct_volume"
+	case out.SelfRouteQualified:
+		out.QualificationRoute = "self_consumption"
 	}
 	if out.AgentStatus == "active" {
 		out.Qualified = true

@@ -1,7 +1,7 @@
 <template>
   <AppLayout>
     <main class="mx-auto max-w-6xl space-y-6 pb-12">
-      <header class="relative overflow-hidden rounded-3xl border border-primary-200 bg-primary-50 p-6 dark:border-primary-900 dark:bg-primary-950 sm:p-8">
+      <header v-if="programIsLive" class="relative overflow-hidden rounded-3xl border border-primary-200 bg-primary-50 p-6 dark:border-primary-900 dark:bg-primary-950 sm:p-8">
         <div class="relative grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-end">
           <div>
             <p class="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-primary-700 dark:text-primary-300">
@@ -29,12 +29,26 @@
         </div>
       </header>
 
+      <section
+        v-else-if="!loading && qualification"
+        class="relative overflow-hidden rounded-3xl border border-primary-200 bg-primary-50 px-6 py-14 text-center dark:border-primary-900 dark:bg-primary-950 sm:px-10"
+      >
+        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-primary-700 dark:text-primary-300">联盟计划</p>
+        <h1 class="mt-4 text-3xl font-bold tracking-tight text-gray-950 dark:text-white sm:text-4xl">
+          {{ unavailableTitle }}
+        </h1>
+        <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-gray-600 dark:text-dark-300">
+          {{ unavailableDescription }}
+        </p>
+        <router-link to="/dashboard" class="btn btn-primary mt-7">返回控制台</router-link>
+      </section>
+
       <div v-if="error" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
         {{ error }}
       </div>
 
       <div
-        v-if="partnerAccessCopy.banner"
+        v-if="programIsLive && partnerAccessCopy.banner"
         class="rounded-2xl border px-4 py-3 text-sm"
         :class="partnerAccessState === 'under_review'
           ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200'
@@ -47,7 +61,7 @@
         <div v-for="item in 3" :key="item" class="card h-40 animate-pulse bg-gray-100 dark:bg-dark-800" />
       </section>
 
-      <template v-else>
+      <template v-else-if="programIsLive">
         <section v-if="qualification" class="card overflow-hidden">
           <div class="border-b border-gray-100 px-6 py-5 dark:border-dark-800">
             <div class="flex flex-wrap items-start justify-between gap-4">
@@ -321,6 +335,7 @@ import {
 } from '@/api/agent'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
+import { useAffiliateProgramStore } from '@/stores/affiliateProgram'
 import { useClipboard } from '@/composables/useClipboard'
 import { buildAuthErrorMessage } from '@/utils/authError'
 import { getPartnerAccessCopy, resolvePartnerAccessState } from '@/features/affiliate/partnerAccess'
@@ -361,6 +376,7 @@ const MetricTile = defineComponent({
 
 const appStore = useAppStore()
 const authStore = useAuthStore()
+const affiliateProgramStore = useAffiliateProgramStore()
 const { copied, copyToClipboard } = useClipboard()
 const loading = ref(true)
 const error = ref('')
@@ -394,6 +410,15 @@ let refreshTimer: ReturnType<typeof setInterval> | null = null
 let refreshInFlight = false
 
 const ordinaryInviteURL = computed(() => inviteCode.value ? `${window.location.origin}/register?ref=${inviteCode.value}` : '')
+const programIsLive = computed(() => qualification.value?.program_mode === 'live')
+const unavailableTitle = computed(() =>
+  qualification.value?.program_mode === 'shadow' ? '联盟计划即将开放' : '联盟计划暂未开放'
+)
+const unavailableDescription = computed(() =>
+  qualification.value?.program_mode === 'shadow'
+    ? '我们正在完成正式开放前的最后检查。开放后，控制台会显示邀请入口和完整规则。'
+    : '当前暂不接受邀请与合伙人申请。正式开放时间以后续通知为准。'
+)
 const partnerAccessState = computed(() => resolvePartnerAccessState(
   qualification.value?.agent_status,
   qualification.value?.risk_status
@@ -403,7 +428,9 @@ const isApprovedPartner = computed(() => qualification.value?.agent_status === '
 const isPartnerAvailable = computed(() => partnerAccessState.value === 'available')
 const defaultAgentLink = computed(() => links.value.find(item => item.is_default && item.status === 'active'))
 const primaryInviteURL = computed(() =>
-  isPartnerAvailable.value && defaultAgentLink.value
+  !programIsLive.value
+    ? ''
+    : isPartnerAvailable.value && defaultAgentLink.value
     ? affiliateURL(defaultAgentLink.value.code)
     : isApprovedPartner.value
       ? ''
@@ -515,9 +542,14 @@ async function loadPage() {
   loading.value = true
   error.value = ''
   try {
-    const [invite, currentQualification] = await Promise.all([getMyInviteCode(), getAffiliateQualification()])
-    inviteCode.value = invite.invite_code
+    const currentQualification = await affiliateProgramStore.refresh(true)
     qualification.value = currentQualification
+    if (currentQualification.program_mode !== 'live') {
+      inviteCode.value = ''
+      clearPartnerData()
+      return
+    }
+    inviteCode.value = (await getMyInviteCode()).invite_code
     if (resolvePartnerAccessState(currentQualification.agent_status, currentQualification.risk_status) === 'available') {
       await loadAgentData()
     }
@@ -533,8 +565,15 @@ async function refreshLiveData() {
   refreshInFlight = true
   try {
     const latest = await getAffiliateQualification()
+    affiliateProgramStore.setQualification(latest)
     const previousAccessState = partnerAccessState.value
     qualification.value = latest
+    if (latest.program_mode !== 'live') {
+      inviteCode.value = ''
+      clearPartnerData()
+      return
+    }
+    if (!inviteCode.value) inviteCode.value = (await getMyInviteCode()).invite_code
     const latestAccessState = resolvePartnerAccessState(latest.agent_status, latest.risk_status)
     if (latestAccessState === 'available') {
       if (previousAccessState !== 'available') await authStore.refreshUser()

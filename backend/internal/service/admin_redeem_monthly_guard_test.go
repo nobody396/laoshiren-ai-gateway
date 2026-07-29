@@ -44,8 +44,8 @@ func guardedMonthlyTestGroup(id int64, name, platform string, rate, limit float6
 
 func TestCurrentMonthlyCardGenerationGuardAcceptsFreshCompleteBundle(t *testing.T) {
 	settings := DefaultAffiliateProgramSettings()
-	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 220)
-	claude := guardedMonthlyTestGroup(102, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 220)
+	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 300)
+	claude := guardedMonthlyTestGroup(102, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 300)
 	svc := &adminServiceImpl{
 		accountRepo: &currentMonthlyAccountRepoStub{accounts: map[int64][]Account{
 			101: {{ID: 1, Status: StatusActive, Schedulable: true}},
@@ -62,7 +62,7 @@ func TestCurrentMonthlyCardGenerationGuardAcceptsFreshCompleteBundle(t *testing.
 
 func TestCurrentMonthlyCardGenerationGuardRejectsPartialBundle(t *testing.T) {
 	settings := DefaultAffiliateProgramSettings()
-	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 220)
+	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 300)
 	svc := &adminServiceImpl{
 		accountRepo: &currentMonthlyAccountRepoStub{accounts: map[int64][]Account{
 			101: {{ID: 1, Status: StatusActive, Schedulable: true}},
@@ -78,8 +78,8 @@ func TestCurrentMonthlyCardGenerationGuardRejectsPartialBundle(t *testing.T) {
 
 func TestCurrentMonthlyCardGenerationGuardRejectsUnpricedFaceValue(t *testing.T) {
 	settings := DefaultAffiliateProgramSettings()
-	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 220)
-	claude := guardedMonthlyTestGroup(102, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 220)
+	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 300)
+	claude := guardedMonthlyTestGroup(102, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 300)
 	svc := &adminServiceImpl{
 		accountRepo: &currentMonthlyAccountRepoStub{accounts: map[int64][]Account{
 			101: {{ID: 1, Status: StatusActive, Schedulable: true}},
@@ -95,7 +95,7 @@ func TestCurrentMonthlyCardGenerationGuardRejectsUnpricedFaceValue(t *testing.T)
 }
 
 func TestCurrentMonthlyCatalogGroupShapeIsImmutable(t *testing.T) {
-	group := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 220)
+	group := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 300)
 	require.NoError(t, validateCurrentMonthlyCatalogGroupShape(group))
 
 	group.RateMultiplier = 0.51

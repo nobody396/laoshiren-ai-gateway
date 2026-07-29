@@ -18,7 +18,7 @@ describe('monthlyCreditCardPlans V3', () => {
         direct: 249,
         daily: 0,
         weekly: 0,
-        monthly: 2200,
+        monthly: 3000,
         cardShopUrl: 'https://pay.ldxp.cn/item/c0dudc'
       },
       {
@@ -27,7 +27,7 @@ describe('monthlyCreditCardPlans V3', () => {
         direct: 699,
         daily: 0,
         weekly: 0,
-        monthly: 6500,
+        monthly: 9000,
         cardShopUrl: 'https://pay.ldxp.cn/item/x4dup4'
       },
       {
@@ -36,7 +36,7 @@ describe('monthlyCreditCardPlans V3', () => {
         direct: 1499,
         daily: 0,
         weekly: 0,
-        monthly: 14000,
+        monthly: 20000,
         cardShopUrl: 'https://pay.ldxp.cn/item/db9f6w'
       }
     ])
@@ -64,9 +64,9 @@ describe('monthlyCreditCardPlans V3', () => {
     }])
     const plus = plans[0]
     expect(plus.id).toBe('plus')
-    expect(plus.monthlyCredits).toBe(220)
+    expect(plus.monthlyCredits).toBe(300)
     expect(plus.weeklyCredits).toBe(0)
-    expect(plus.displayMonthlyCreditsText).toBe('2,200')
+    expect(plus.displayMonthlyCreditsText).toBe('3,000')
     expect(Object.keys(plus)).not.toContain('gptMonthlyUsage')
     expect(Object.keys(plus)).not.toContain('claudeMonthlyUsage')
   })

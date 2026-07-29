@@ -11,9 +11,9 @@ daily or weekly limit.
 
 | Product | LDXP price | Direct price | Internal monthly credits | Customer display |
 | --- | ---: | ---: | ---: | ---: |
-| Plus | ¥259 | ¥249 | 220 | ⚡2,200 |
-| Pro | ¥729 | ¥699 | 650 | ⚡6,500 |
-| Max | ¥1,549 | ¥1,499 | 1,400 | ⚡14,000 |
+| Plus | ¥259 | ¥249 | 300 | ⚡3,000 |
+| Pro | ¥729 | ¥699 | 900 | ⚡9,000 |
+| Max | ¥1,549 | ¥1,499 | 2,000 | ⚡20,000 |
 
 The customer display scale is 10x. Accounting, subscription limits and
 confirmed-consumption proration use internal credits; customer-facing pages
@@ -40,7 +40,7 @@ Claude/MAX `2.40`.
 
 1. Create or update the paired GPT and Claude/MAX `credit` subscription groups
    for Plus, Pro and Max.
-2. Verify monthly limits are respectively `220`, `650` and `1400` internal
+2. Verify monthly limits are respectively `300`, `900` and `2000` internal
    credits; daily and weekly limits must be unset/zero; validity is 31 days.
 3. Verify group multipliers are GPT `0.50` and Claude/MAX `2.40`.
 4. Create or update one LDXP item for each SKU with prices ¥259, ¥729 and
@@ -52,7 +52,7 @@ Claude/MAX `2.40`.
 6. Verify every LDXP delivery maps to the correct group IDs, 31-day validity and
    card face value before publishing the item.
 7. Re-run the commercial policy gate with 3% shop fee, maximum 12% converted
-   alliance burden, 2% operational reserve, ¥0.53 conservative cost per
+   alliance burden, 2% operational reserve, ¥0.37 blended pressure cost per
    internal credit and 35% minimum stress margin.
 8. Reconcile one owned test order through card delivery, redemption, monthly
    entitlement, pro-rata confirmed consumption, reward/commission projection

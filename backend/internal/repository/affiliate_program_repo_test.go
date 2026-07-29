@@ -36,7 +36,7 @@ func TestAffiliateProgramRepositoryGetSettings(t *testing.T) {
 			int32(500), int32(500), int64(0), int64(0),
 			int32(1000), int32(10), int64(20_000_000), int64(1_000_000_000),
 			int64(2_000_000_000), int32(5), int32(1200), int64(100_000_000), int32(24),
-			int32(3500), int32(200), int64(530_000),
+			int32(3500), int32(200), int64(370_000),
 			int64(1), nil, createdAt, updatedAt,
 		))
 

@@ -42,7 +42,11 @@
               </div>
               <div>
                 <h3 class="font-semibold text-gray-900 dark:text-white">
-                  {{ subscription.group?.name || `Group #${subscription.group_id}` }}
+                  {{
+                    subscription.group?.name
+                      ? publicGroupDisplayName(subscription.group.name)
+                      : `Group #${subscription.group_id}`
+                  }}
                 </h3>
               </div>
             </div>
@@ -257,6 +261,7 @@ import type { UserSubscription } from '@/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { formatDateOnly } from '@/utils/format'
+import { publicGroupDisplayName } from '@/utils/groupDisplayName'
 import {
   formatSubscriptionUsageDisplay,
   subscriptionUsagePercent

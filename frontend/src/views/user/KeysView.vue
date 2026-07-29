@@ -1278,7 +1278,8 @@
 	import { useI18n } from 'vue-i18n'
 	import { useAppStore } from '@/stores/app'
 	import { useOnboardingStore } from '@/stores/onboarding'
-	import { useSubscriptionStore } from '@/stores/subscriptions'
+import { useSubscriptionStore } from '@/stores/subscriptions'
+import { publicGroupDisplayName } from '@/utils/groupDisplayName'
 	import { useClipboard } from '@/composables/useClipboard'
 
 const { t } = useI18n()
@@ -1587,7 +1588,7 @@ const baseGroupOptions = computed<GroupOption[]>(() =>
     const subscriptionType = group.subscription_type
     return {
       value: group.id,
-      label: group.name,
+      label: publicGroupDisplayName(group.name),
       description: group.description,
       rate: group.rate_multiplier,
       userRate: userGroupRates.value[group.id] ?? null,

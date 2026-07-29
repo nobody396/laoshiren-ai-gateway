@@ -198,7 +198,13 @@ import { applyThemeClass, isDarkTheme, setTheme } from '@/utils/theme'
 import { computed, h, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useAdminSettingsStore, useAppStore, useAuthStore, useOnboardingStore } from '@/stores'
+import {
+  useAdminSettingsStore,
+  useAffiliateProgramStore,
+  useAppStore,
+  useAuthStore,
+  useOnboardingStore
+} from '@/stores'
 import { usePermissionStore } from '@/stores/permission'
 import { sanitizeSvg } from '@/utils/sanitize'
 import { useChangelogFreshness } from '@/composables/useChangelogFreshness'
@@ -226,6 +232,7 @@ const appStore = useAppStore()
 const authStore = useAuthStore()
 const onboardingStore = useOnboardingStore()
 const adminSettingsStore = useAdminSettingsStore()
+const affiliateProgramStore = useAffiliateProgramStore()
 const permStore = usePermissionStore()
 const { hasNewChangelog, refreshChangelogFreshness } = useChangelogFreshness()
 
@@ -233,6 +240,7 @@ const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)
 const mobileOpen = computed(() => appStore.mobileOpen)
 const isAdmin = computed(() => authStore.isAdmin)
 const isAgent = computed(() => authStore.user?.role === 'agent')
+const showAffiliateEntry = computed(() => affiliateProgramStore.isLive)
 const isDark = ref(document.documentElement.classList.contains('dark'))
 
 // Site settings from appStore (cached, no flicker)
@@ -639,9 +647,11 @@ const AgentIcon = {
 
 // Agent navigation items (shown for role=agent)
 const agentNavItems = computed((): NavItem[] => [
-  { path: '/affiliate', label: t('nav.affiliateCenter'), icon: AgentIcon },
+  ...(showAffiliateEntry.value
+    ? [{ path: '/affiliate', label: t('nav.affiliateCenter'), icon: AgentIcon }]
+    : []),
   { path: '/agent/users', label: t('nav.agentUsers'), icon: UsersIcon },
-  { path: '/agent/commissions', label: t('nav.agentCommissions'), icon: ChartIcon },
+  { path: '/agent/commissions', label: t('nav.agentCommissions'), icon: ChartIcon }
 ])
 
 /**
@@ -678,7 +688,7 @@ const userNavItems = computed((): NavItem[] => {
     { path: '/get-subscription', label: t('nav.getSubscription'), icon: RechargeSubscriptionIcon },
     createModelPricingNavItem(),
     { path: '/topup/orders', label: t('nav.topupOrders'), icon: CreditCardIcon },
-    ...(!isAgent.value
+    ...(!isAgent.value && showAffiliateEntry.value
       ? [{ path: '/affiliate', label: t('nav.affiliateCenter'), icon: AgentIcon }]
       : []),
     ...(invoiceManagementEnabled.value
@@ -1067,6 +1077,11 @@ watch(
 
 onMounted(() => {
   void refreshChangelogFreshness()
+  if (!isAdmin.value) {
+    void affiliateProgramStore.refresh().catch(() => {
+      // 联盟入口失败关闭；接口不可用时不向用户展示尚未确认开放的计划。
+    })
+  }
   if (isAdmin.value) {
     adminSettingsStore.fetch()
   }

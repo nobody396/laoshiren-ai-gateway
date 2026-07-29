@@ -357,6 +357,17 @@ describe('路由守卫逻辑', () => {
       expect(redirect).toBeNull()
     })
 
+    it('unauthenticated: /legal/affiliate-program is allowed', () => {
+      const authState: MockAuthState = {
+        isAuthenticated: false,
+        isAdmin: false,
+        isSimpleMode: false,
+        backendModeEnabled: true,
+      }
+      const redirect = simulateGuard('/legal/affiliate-program', { requiresAuth: false }, authState)
+      expect(redirect).toBeNull()
+    })
+
     it('admin: /admin/dashboard is allowed', () => {
       const authState: MockAuthState = {
         isAuthenticated: true,

@@ -69,6 +69,7 @@ const footerSections = computed(() => {
       security: 'Security & privacy',
       terms: 'Terms of service',
       usage: 'Usage policy',
+      affiliate: 'Affiliate program rules',
       account: 'Account',
       login: 'Login',
       dashboard: 'Dashboard'
@@ -86,6 +87,7 @@ const footerSections = computed(() => {
       security: '安全与隐私',
       terms: '服务条款',
       usage: '使用政策',
+      affiliate: '联盟计划规则',
       account: '账户',
       login: '登录',
       dashboard: '控制台'
@@ -112,7 +114,8 @@ const footerSections = computed(() => {
       links: [
         { label: labels.security, href: '/security' },
         { label: labels.terms, href: '/legal/terms' },
-        { label: labels.usage, href: '/legal/usage-policy' }
+        { label: labels.usage, href: '/legal/usage-policy' },
+        { label: labels.affiliate, href: '/legal/affiliate-program' }
       ]
     },
     {

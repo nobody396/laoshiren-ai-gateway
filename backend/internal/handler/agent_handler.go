@@ -423,10 +423,12 @@ func (h *AgentHandler) ReadAffiliateNotice(c *gin.Context) {
 }
 
 type updateAgentPaymentProfileRequest struct {
-	AlipayRealName string `json:"alipay_real_name"`
-	AlipayAccount  string `json:"alipay_account"`
-	ContactPhone   string `json:"contact_phone"`
-	PaymentNote    string `json:"payment_note"`
+	AlipayRealName         string `json:"alipay_real_name"`
+	AlipayAccount          string `json:"alipay_account"`
+	ContactPhone           string `json:"contact_phone"`
+	PaymentNote            string `json:"payment_note"`
+	PrivacyConsentAccepted bool   `json:"privacy_consent_accepted"`
+	PrivacyConsentVersion  string `json:"privacy_consent_version"`
 }
 
 func (h *AgentHandler) GetPaymentProfile(c *gin.Context) {
@@ -456,11 +458,13 @@ func (h *AgentHandler) UpdatePaymentProfile(c *gin.Context) {
 		return
 	}
 	profile, err := h.commissionService.UpdateAgentPaymentProfile(c.Request.Context(), &service.AgentPaymentProfile{
-		AgentID:        subject.UserID,
-		AlipayRealName: req.AlipayRealName,
-		AlipayAccount:  req.AlipayAccount,
-		ContactPhone:   req.ContactPhone,
-		PaymentNote:    req.PaymentNote,
+		AgentID:                subject.UserID,
+		AlipayRealName:         req.AlipayRealName,
+		AlipayAccount:          req.AlipayAccount,
+		ContactPhone:           req.ContactPhone,
+		PaymentNote:            req.PaymentNote,
+		PrivacyConsentAccepted: req.PrivacyConsentAccepted,
+		PrivacyConsentVersion:  req.PrivacyConsentVersion,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)

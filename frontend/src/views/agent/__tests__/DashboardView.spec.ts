@@ -23,6 +23,7 @@ const showSuccess = vi.hoisted(() => vi.fn())
 const showError = vi.hoisted(() => vi.fn())
 
 vi.mock('@/api/agent', () => ({
+  AGENT_PAYMENT_PRIVACY_NOTICE_VERSION: 'affiliate-payment-profile-privacy-v1',
   getAgentDashboard,
   getAgentInviteCode,
   getAgentPaymentProfile,
@@ -99,6 +100,10 @@ const createProfile = (overrides = {}) => ({
   payment_note: '',
   has_alipay_qr: false,
   complete: false,
+  verification_status: 'incomplete',
+  verified: false,
+  privacy_consent_version: '',
+  privacy_consent_current: false,
   updated_at: '',
   ...overrides
 })
@@ -118,7 +123,11 @@ describe('agent DashboardView payment profile', () => {
     getAgentInviteCode.mockResolvedValue({ invite_code: 'ABC123' })
     getAgentPaymentProfile.mockResolvedValue(createProfile())
     getAgentPaymentQRCode.mockResolvedValue(new Blob(['png'], { type: 'image/png' }))
-    updateAgentPaymentProfile.mockImplementation(async (payload) => createProfile(payload))
+    updateAgentPaymentProfile.mockImplementation(async (payload) => createProfile({
+      ...payload,
+      privacy_consent_version: 'affiliate-payment-profile-privacy-v1',
+      privacy_consent_current: true
+    }))
     uploadAgentPaymentQRCode.mockImplementation(async () => createProfile({
       alipay_real_name: '傅俊豪',
       alipay_account: 'agent@example.com',
@@ -145,6 +154,7 @@ describe('agent DashboardView payment profile', () => {
     await wrapper.find('input[placeholder="agent.alipayRealNamePlaceholder"]').setValue('傅俊豪')
     await wrapper.find('input[placeholder="agent.alipayAccountPlaceholder"]').setValue('agent@example.com')
     await wrapper.find('input[placeholder="agent.optional"]').setValue('13800000000')
+    await wrapper.find('input[type="checkbox"]').setValue(true)
 
     const file = new File(['fake png data'], 'alipay.png', { type: 'image/png' })
     const fileInput = wrapper.find('input[type="file"]')
@@ -160,7 +170,9 @@ describe('agent DashboardView payment profile', () => {
       alipay_real_name: '傅俊豪',
       alipay_account: 'agent@example.com',
       contact_phone: '13800000000',
-      payment_note: ''
+      payment_note: '',
+      privacy_consent_accepted: true,
+      privacy_consent_version: 'affiliate-payment-profile-privacy-v1'
     })
     expect(uploadAgentPaymentQRCode).toHaveBeenCalledWith(file)
     expect(updateAgentPaymentProfile.mock.invocationCallOrder[0]).toBeLessThan(

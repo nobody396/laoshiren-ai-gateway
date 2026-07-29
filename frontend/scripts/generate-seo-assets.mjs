@@ -54,6 +54,8 @@ const publicRouteOverrides = new Map([
   ['/legal/usage-policy', { slug: 'legal-usage-policy', title: '使用政策 - 老实人AI', description: '老实人AI 使用政策，说明禁止行为、安全边界、隐私保护、高风险使用、下游用户管理和违规处理规则。', priority: 0.7, changefreq: 'monthly', ogType: 'website', schemaType: 'WebPage' }],
   ['/legal/supported-regions', { slug: 'legal-supported-regions', title: '支持的国家和地区 - 老实人AI', description: '老实人AI 支持的国家和地区说明，明确中国大陆地区不支持使用以及地区、制裁、出口管制和上游政策限制。', priority: 0.7, changefreq: 'monthly', ogType: 'website', schemaType: 'WebPage' }],
   ['/legal/service-specific-terms', { slug: 'legal-service-specific-terms', title: '服务特定条款 - 老实人AI', description: '老实人AI 服务特定条款，说明模型接入、AI 编码工具、上游凭证、计费、文件数据、Beta 能力和企业管理员责任。', priority: 0.7, changefreq: 'monthly', ogType: 'website', schemaType: 'WebPage' }],
+  ['/legal/affiliate-program', { slug: 'legal-affiliate-program', title: '联盟计划规则 - 老实人AI', description: '老实人AI联盟计划规则，说明普通邀请奖励、合伙人门槛、10% 奖励池、直属关系、提现、冲正和风险处理。', priority: 0.7, changefreq: 'monthly', ogType: 'website', schemaType: 'WebPage', lastModified: '2026-07-30' }],
+  ['/legal/affiliate-payment-privacy', { slug: 'legal-affiliate-payment-privacy', title: '合伙人收款资料隐私告知 - 老实人AI', description: '老实人AI合伙人收款资料隐私告知，说明支付宝收款资料的处理目的、范围、保存期限、安全措施和用户权利。', priority: 0.65, changefreq: 'monthly', ogType: 'website', schemaType: 'WebPage', lastModified: '2026-07-30' }],
 ])
 
 const docs = parseDocItems(configSource)
@@ -91,7 +93,7 @@ for (const [path, override] of publicRouteOverrides) {
     changefreq: override.changefreq,
     ogType: override.ogType,
     schemaType: override.schemaType,
-    dateModified: doc?.lastModified || docsLastModified,
+    dateModified: override.lastModified || doc?.lastModified || docsLastModified,
     staticHtml: markdownToStaticHtml(markdown, doc?.title || override.title),
     faq: extractFaq(markdown),
   })

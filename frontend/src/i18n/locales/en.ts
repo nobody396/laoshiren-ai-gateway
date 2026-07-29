@@ -721,6 +721,10 @@ export default {
     noAlipayQRCode: 'No QR code uploaded',
     paymentProfileSaved: 'Payment info saved',
     alipayQRCodeSaved: 'QR code uploaded',
+    paymentPrivacySummary: 'We use this information only for partner review, Alipay payouts, risk control, and dispute handling. The Alipay account and payment QR code are sensitive personal information.',
+    paymentPrivacyNotice: 'Read the Partner Payout Information Privacy Notice',
+    paymentPrivacyConsent: 'I have read and separately consent to the processing of my Alipay payout information for review and commission payouts.',
+    paymentPrivacyConsentRequired: 'Read and separately consent to the Partner Payout Information Privacy Notice first.',
     paymentProfileNotSaved: 'Payment info not saved yet',
     paymentProfileUpdatedAt: 'Updated at {time}',
     commissionTime: 'Time'

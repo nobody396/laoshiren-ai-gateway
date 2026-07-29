@@ -30,14 +30,18 @@ func TestAgentPaymentProfileV2_VerificationAndPrincipalIdentityGuard(t *testing.
 	second := createActiveAffiliatePaymentAgent(t, ctx, client, "payment-agent-second")
 
 	firstProfile, err := commissionService.UpdateAgentPaymentProfile(ctx, &service.AgentPaymentProfile{
-		AgentID:        first.ID,
-		AlipayRealName: "测试姓名",
-		AlipayAccount:  "same-account@example.com",
-		ContactPhone:   "13800000000",
+		AgentID:                first.ID,
+		AlipayRealName:         "测试姓名",
+		AlipayAccount:          "same-account@example.com",
+		ContactPhone:           "13800000000",
+		PrivacyConsentAccepted: true,
+		PrivacyConsentVersion:  service.AgentPaymentPrivacyNoticeVersion,
 	})
 	require.NoError(t, err)
 	require.Equal(t, "incomplete", firstProfile.VerificationStatus)
 	require.False(t, firstProfile.Verified)
+	require.True(t, firstProfile.PrivacyConsentCurrent)
+	require.NotNil(t, firstProfile.PrivacyConsentedAt)
 
 	_, err = paymentRepo.UpdateAgentPaymentQRCode(
 		ctx,
@@ -81,9 +85,11 @@ func TestAgentPaymentProfileV2_VerificationAndPrincipalIdentityGuard(t *testing.
 	require.NotEmpty(t, firstPrincipalHash)
 
 	_, err = commissionService.UpdateAgentPaymentProfile(ctx, &service.AgentPaymentProfile{
-		AgentID:        second.ID,
-		AlipayRealName: "测试姓名",
-		AlipayAccount:  "SAME-ACCOUNT@example.com",
+		AgentID:                second.ID,
+		AlipayRealName:         "测试姓名",
+		AlipayAccount:          "SAME-ACCOUNT@example.com",
+		PrivacyConsentAccepted: true,
+		PrivacyConsentVersion:  service.AgentPaymentPrivacyNoticeVersion,
 	})
 	require.NoError(t, err)
 	_, err = paymentRepo.UpdateAgentPaymentQRCode(
@@ -105,9 +111,11 @@ func TestAgentPaymentProfileV2_VerificationAndPrincipalIdentityGuard(t *testing.
 	require.True(t, errors.Is(err, service.ErrAgentPaymentIdentityConflict), "unexpected error: %v", err)
 
 	firstProfile, err = commissionService.UpdateAgentPaymentProfile(ctx, &service.AgentPaymentProfile{
-		AgentID:        first.ID,
-		AlipayRealName: "测试姓名",
-		AlipayAccount:  "new-account@example.com",
+		AgentID:                first.ID,
+		AlipayRealName:         "测试姓名",
+		AlipayAccount:          "new-account@example.com",
+		PrivacyConsentAccepted: true,
+		PrivacyConsentVersion:  service.AgentPaymentPrivacyNoticeVersion,
 	})
 	require.NoError(t, err)
 	require.Equal(t, "pending_review", firstProfile.VerificationStatus)
@@ -119,6 +127,42 @@ func TestAgentPaymentProfileV2_VerificationAndPrincipalIdentityGuard(t *testing.
 		WHERE agent_id = $1
 	`, first.ID).Scan(&clearedHash))
 	require.Nil(t, clearedHash, "editing a verified profile must revoke its principal fingerprint")
+
+	_, err = commissionService.UpdateAgentPaymentProfile(ctx, &service.AgentPaymentProfile{
+		AgentID:        second.ID,
+		AlipayRealName: "未同意",
+		AlipayAccount:  "missing-consent@example.com",
+	})
+	require.ErrorIs(t, err, service.ErrAgentPaymentPrivacyConsentRequired)
+
+	legacy := createActiveAffiliatePaymentAgent(t, ctx, client, "payment-agent-legacy")
+	require.NoError(t, paymentRepo.UpsertAgentPaymentProfile(ctx, &service.AgentPaymentProfile{
+		AgentID:        legacy.ID,
+		AlipayRealName: "历史资料",
+		AlipayAccount:  "legacy@example.com",
+	}))
+	_, err = paymentRepo.UpdateAgentPaymentQRCode(
+		ctx,
+		legacy.ID,
+		"agent-payment-qrcodes/test/legacy.png",
+		"image/png",
+		"legacy.png",
+		128,
+	)
+	require.NoError(t, err)
+	pending, err = commissionService.ListPendingAgentPaymentProfiles(ctx, 100)
+	require.NoError(t, err)
+	require.NotContains(t, pendingAgentPaymentProfileIDs(pending), legacy.ID)
+	_, err = commissionService.ReviewAgentPaymentProfile(
+		ctx,
+		legacy.ID,
+		admin.ID,
+		"verified",
+		"",
+	)
+	require.ErrorIs(t, err, service.ErrAgentPaymentProfileIncomplete)
+	_, err = commissionService.UploadAgentPaymentQRCode(ctx, legacy.ID, service.AgentPaymentQRCodeUpload{})
+	require.ErrorIs(t, err, service.ErrAgentPaymentPrivacyConsentRequired)
 }
 
 func pendingAgentPaymentProfileIDs(items []service.AgentPaymentProfile) []int64 {

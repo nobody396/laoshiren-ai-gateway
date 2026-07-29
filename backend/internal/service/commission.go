@@ -164,6 +164,10 @@ type AgentPaymentProfile struct {
 	AlipayQRCodeOriginalName string     `json:"alipay_qr_original_filename,omitempty"`
 	AlipayQRCodeSize         int64      `json:"alipay_qr_size,omitempty"`
 	AlipayQRCodeURL          string     `json:"alipay_qr_url,omitempty"`
+	PrivacyConsentVersion    string     `json:"privacy_consent_version"`
+	PrivacyConsentedAt       *time.Time `json:"privacy_consented_at,omitempty"`
+	PrivacyConsentCurrent    bool       `json:"privacy_consent_current"`
+	PrivacyConsentAccepted   bool       `json:"-"`
 	HasAlipayQRCode          bool       `json:"has_alipay_qr"`
 	Complete                 bool       `json:"complete"`
 	CreatedAt                *time.Time `json:"created_at,omitempty"`

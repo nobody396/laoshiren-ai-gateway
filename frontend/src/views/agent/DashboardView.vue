@@ -256,14 +256,24 @@
             </div>
             <div>
               <label class="input-label">{{ t('agent.alipayQRCode') }}</label>
-              <input type="file" accept="image/png,image/jpeg,image/webp" class="input text-sm" :disabled="qrUploading" @change="handleQRCodeChange" />
+              <input type="file" accept="image/png,image/jpeg,image/webp" class="input text-sm" :disabled="qrUploading || !paymentPrivacyConsent" @change="handleQRCodeChange" />
             </div>
             <div class="sm:col-span-2">
               <label class="input-label">{{ t('agent.paymentNote') }}</label>
               <textarea v-model.trim="paymentForm.payment_note" class="input min-h-20" :placeholder="t('agent.optional')" />
             </div>
+            <div class="sm:col-span-2 rounded-lg border border-primary-200 bg-primary-50 p-3 text-xs leading-5 text-gray-700 dark:border-primary-900 dark:bg-primary-950 dark:text-dark-200">
+              {{ t('agent.paymentPrivacySummary') }}
+              <router-link to="/legal/affiliate-payment-privacy" class="font-semibold text-primary-700 hover:underline dark:text-primary-300">
+                {{ t('agent.paymentPrivacyNotice') }}
+              </router-link>
+            </div>
+            <label class="sm:col-span-2 flex items-start gap-2 text-xs leading-5 text-gray-700 dark:text-dark-200">
+              <input v-model="paymentPrivacyConsent" type="checkbox" class="mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+              <span>{{ t('agent.paymentPrivacyConsent') }}</span>
+            </label>
             <div class="sm:col-span-2 flex flex-wrap items-center gap-3">
-              <button class="btn btn-primary btn-sm" :disabled="paymentSaving" @click="savePaymentProfile">
+              <button class="btn btn-primary btn-sm" :disabled="paymentSaving || !paymentPrivacyConsent" @click="savePaymentProfile">
                 {{ paymentSaving ? t('common.saving') : t('common.save') }}
               </button>
               <span class="text-xs text-gray-500 dark:text-dark-400">{{ paymentProfileUpdatedLabel }}</span>
@@ -325,6 +335,7 @@ import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import {
+  AGENT_PAYMENT_PRIVACY_NOTICE_VERSION,
   getAgentDashboard,
   getAgentInviteCode,
   getAgentPaymentProfile,
@@ -333,7 +344,8 @@ import {
   uploadAgentPaymentQRCode,
   type AgentDashboard,
   type AgentLevelProgress,
-  type AgentPaymentProfile
+  type AgentPaymentProfile,
+  type AgentPaymentProfileUpdate
 } from '@/api/agent'
 import { buildAuthErrorMessage } from '@/utils/authError'
 import { imageBlobToDataURL } from '@/utils/imagePreview'
@@ -356,6 +368,7 @@ const endDate = ref('')
 const defaultInviteeBonusRate = 0.10
 const paymentSaving = ref(false)
 const qrUploading = ref(false)
+const paymentPrivacyConsent = ref(false)
 const qrPreviewUrl = ref('')
 const paymentForm = reactive<Pick<AgentPaymentProfile, 'alipay_real_name' | 'alipay_account' | 'contact_phone' | 'payment_note'>>({
   alipay_real_name: '',
@@ -462,14 +475,13 @@ async function fetchPaymentProfile() {
 }
 
 async function savePaymentProfile() {
+  if (!paymentPrivacyConsent.value) {
+    appStore.showError(t('agent.paymentPrivacyConsentRequired'))
+    return
+  }
   paymentSaving.value = true
   try {
-    const profile = await updateAgentPaymentProfile({
-      alipay_real_name: paymentForm.alipay_real_name,
-      alipay_account: paymentForm.alipay_account,
-      contact_phone: paymentForm.contact_phone,
-      payment_note: paymentForm.payment_note
-    })
+    const profile = await updateAgentPaymentProfile(paymentProfilePayload())
     applyPaymentProfile(profile)
     appStore.showSuccess(t('agent.paymentProfileSaved'))
     await fetchDashboard()
@@ -484,14 +496,14 @@ async function handleQRCodeChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
+  if (!paymentPrivacyConsent.value) {
+    appStore.showError(t('agent.paymentPrivacyConsentRequired'))
+    input.value = ''
+    return
+  }
   qrUploading.value = true
   try {
-    const savedProfile = await updateAgentPaymentProfile({
-      alipay_real_name: paymentForm.alipay_real_name,
-      alipay_account: paymentForm.alipay_account,
-      contact_phone: paymentForm.contact_phone,
-      payment_note: paymentForm.payment_note
-    })
+    const savedProfile = await updateAgentPaymentProfile(paymentProfilePayload())
     applyPaymentProfile(savedProfile)
 
     const profile = await uploadAgentPaymentQRCode(file)
@@ -514,6 +526,18 @@ function applyPaymentProfile(profile: AgentPaymentProfile) {
   paymentForm.contact_phone = profile.contact_phone || ''
   paymentForm.payment_note = profile.payment_note || ''
   paymentProfileUpdatedAt.value = profile.updated_at || ''
+  paymentPrivacyConsent.value = profile.privacy_consent_current
+}
+
+function paymentProfilePayload(): AgentPaymentProfileUpdate {
+  return {
+    alipay_real_name: paymentForm.alipay_real_name,
+    alipay_account: paymentForm.alipay_account,
+    contact_phone: paymentForm.contact_phone,
+    payment_note: paymentForm.payment_note,
+    privacy_consent_accepted: true as const,
+    privacy_consent_version: AGENT_PAYMENT_PRIVACY_NOTICE_VERSION
+  }
 }
 
 async function refreshQRCodePreview(options: { clearOnError?: boolean } = {}) {

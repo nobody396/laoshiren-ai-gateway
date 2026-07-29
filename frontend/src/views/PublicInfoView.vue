@@ -11,6 +11,7 @@
         <router-link to="/status">状态</router-link>
         <router-link to="/changelog">更新日志</router-link>
         <router-link to="/legal/terms">条款</router-link>
+        <router-link to="/legal/affiliate-program">联盟规则</router-link>
         <router-link to="/docs">文档</router-link>
         <router-link to="/login">登录</router-link>
       </nav>

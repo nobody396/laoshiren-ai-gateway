@@ -1020,7 +1020,8 @@ const footerSections = computed(() => {
       terms: 'Terms of service',
       usage: 'Usage policy',
       regions: 'Supported countries and regions',
-      specific: 'Service-specific terms'
+      specific: 'Service-specific terms',
+      affiliate: 'Affiliate program rules'
     }
     : {
       product: '产品',
@@ -1042,7 +1043,8 @@ const footerSections = computed(() => {
       terms: '服务条款',
       usage: '使用政策',
       regions: '支持的国家和地区',
-      specific: '服务特定条款'
+      specific: '服务特定条款',
+      affiliate: '联盟计划规则'
     }
 
   return [
@@ -1081,7 +1083,8 @@ const footerSections = computed(() => {
         { label: labels.terms, href: '/legal/terms', external: false },
         { label: labels.usage, href: '/legal/usage-policy', external: false },
         { label: labels.regions, href: '/legal/supported-regions', external: false },
-        { label: labels.specific, href: '/legal/service-specific-terms', external: false }
+        { label: labels.specific, href: '/legal/service-specific-terms', external: false },
+        { label: labels.affiliate, href: '/legal/affiliate-program', external: false }
       ]
     }
   ]

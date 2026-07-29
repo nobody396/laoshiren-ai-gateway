@@ -1,7 +1,7 @@
 <template>
   <AppLayout>
     <main class="mx-auto max-w-6xl space-y-6 pb-12">
-      <header class="relative overflow-hidden rounded-3xl border border-primary-200 bg-primary-50 p-6 dark:border-primary-900 dark:bg-primary-950 sm:p-8">
+      <header v-if="programIsLive" class="relative overflow-hidden rounded-3xl border border-primary-200 bg-primary-50 p-6 dark:border-primary-900 dark:bg-primary-950 sm:p-8">
         <div class="relative grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-end">
           <div>
             <p class="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-primary-700 dark:text-primary-300">
@@ -13,6 +13,9 @@
             <p class="mt-4 max-w-2xl text-sm leading-7 text-gray-600 dark:text-dark-300">
               普通邀请的首笔真实付费，邀请人与被邀请人各得 5% ⚡；满足消费门槛后可申请成为合伙人，审核通过后使用动态链接分配固定 10% 奖励池。
             </p>
+            <router-link to="/legal/affiliate-program" class="mt-4 inline-flex text-sm font-semibold text-primary-700 hover:underline dark:text-primary-300">
+              查看完整联盟计划规则
+            </router-link>
           </div>
           <div class="rounded-2xl border border-primary-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-primary-900 dark:bg-dark-900/80">
             <p class="text-xs text-gray-600 dark:text-dark-300">{{ primaryInviteLabel }}</p>
@@ -29,12 +32,29 @@
         </div>
       </header>
 
+      <section
+        v-else-if="!loading && qualification"
+        class="relative overflow-hidden rounded-3xl border border-primary-200 bg-primary-50 px-6 py-14 text-center dark:border-primary-900 dark:bg-primary-950 sm:px-10"
+      >
+        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-primary-700 dark:text-primary-300">联盟计划</p>
+        <h1 class="mt-4 text-3xl font-bold tracking-tight text-gray-950 dark:text-white sm:text-4xl">
+          {{ unavailableTitle }}
+        </h1>
+        <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-gray-600 dark:text-dark-300">
+          {{ unavailableDescription }}
+        </p>
+        <div class="mt-7 flex flex-wrap justify-center gap-3">
+          <router-link to="/dashboard" class="btn btn-primary">返回控制台</router-link>
+          <router-link to="/legal/affiliate-program" class="btn btn-secondary">查看联盟计划规则</router-link>
+        </div>
+      </section>
+
       <div v-if="error" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
         {{ error }}
       </div>
 
       <div
-        v-if="partnerAccessCopy.banner"
+        v-if="programIsLive && partnerAccessCopy.banner"
         class="rounded-2xl border px-4 py-3 text-sm"
         :class="partnerAccessState === 'under_review'
           ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200'
@@ -47,7 +67,7 @@
         <div v-for="item in 3" :key="item" class="card h-40 animate-pulse bg-gray-100 dark:bg-dark-800" />
       </section>
 
-      <template v-else>
+      <template v-else-if="programIsLive">
         <section v-if="qualification" class="card overflow-hidden">
           <div class="border-b border-gray-100 px-6 py-5 dark:border-dark-800">
             <div class="flex flex-wrap items-start justify-between gap-4">
@@ -264,12 +284,22 @@
                   <input v-model.trim="paymentForm.alipay_account" required class="input" placeholder="支付宝账号">
                   <input v-model.trim="paymentForm.contact_phone" required class="input" placeholder="联系电话">
                   <textarea v-model.trim="paymentForm.payment_note" class="input min-h-20" placeholder="打款备注（可选）" />
+                  <div class="rounded-xl border border-primary-200 bg-primary-50 p-3 text-xs leading-5 text-gray-700 dark:border-primary-900 dark:bg-primary-950 dark:text-dark-200">
+                    我们仅为审核合伙人身份、支付宝打款、风控与争议处理使用上述资料。支付宝账号和收款码属于敏感个人信息。
+                    <router-link to="/legal/affiliate-payment-privacy" class="font-semibold text-primary-700 hover:underline dark:text-primary-300">
+                      查看《合伙人收款资料隐私告知》
+                    </router-link>
+                  </div>
+                  <label class="flex items-start gap-2 text-xs leading-5 text-gray-700 dark:text-dark-200">
+                    <input v-model="paymentPrivacyConsent" type="checkbox" class="mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                    <span>我已阅读并单独同意平台按上述告知处理我的支付宝收款资料，用于审核和佣金打款。</span>
+                  </label>
                   <label class="block rounded-xl border border-dashed border-gray-300 p-3 text-center text-sm text-gray-600 hover:border-primary-400 dark:border-dark-600 dark:text-dark-300">
-                    <input type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" @change="uploadPaymentQR">
+                    <input type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" :disabled="paymentSaving || !paymentPrivacyConsent" @change="uploadPaymentQR">
                     {{ paymentQRPreview ? '更换支付宝收款码' : '上传支付宝收款码' }}
                   </label>
                   <img v-if="paymentQRPreview" :src="paymentQRPreview" alt="支付宝收款码预览" class="mx-auto max-h-48 rounded-xl border border-gray-200 p-2 dark:border-dark-700">
-                  <button class="btn btn-primary w-full" :disabled="paymentSaving">保存并提交审核</button>
+                  <button class="btn btn-primary w-full" :disabled="paymentSaving || !paymentPrivacyConsent">保存并提交审核</button>
                 </form>
                 <p v-if="paymentProfile?.verification_note" class="mt-3 text-xs text-red-600 dark:text-red-400">{{ paymentProfile.verification_note }}</p>
               </section>
@@ -292,6 +322,7 @@
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import {
+  AGENT_PAYMENT_PRIVACY_NOTICE_VERSION,
   applyAffiliateAgent,
   convertAffiliateCommission,
   createAffiliateLink,
@@ -317,10 +348,12 @@ import {
   type AffiliateLink,
   type AffiliateWallet,
   type AffiliateWithdrawal,
-  type AgentPaymentProfile
+  type AgentPaymentProfile,
+  type AgentPaymentProfileUpdate
 } from '@/api/agent'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
+import { useAffiliateProgramStore } from '@/stores/affiliateProgram'
 import { useClipboard } from '@/composables/useClipboard'
 import { buildAuthErrorMessage } from '@/utils/authError'
 import { getPartnerAccessCopy, resolvePartnerAccessState } from '@/features/affiliate/partnerAccess'
@@ -361,6 +394,7 @@ const MetricTile = defineComponent({
 
 const appStore = useAppStore()
 const authStore = useAuthStore()
+const affiliateProgramStore = useAffiliateProgramStore()
 const { copied, copyToClipboard } = useClipboard()
 const loading = ref(true)
 const error = ref('')
@@ -376,6 +410,7 @@ const withdrawals = ref<AffiliateWithdrawal[]>([])
 const notices = ref<AffiliateAgentNotice[]>([])
 const community = ref<AffiliateCommunity | null>(null)
 const paymentProfile = ref<AgentPaymentProfile | null>(null)
+const paymentPrivacyConsent = ref(false)
 const paymentQRPreview = ref('')
 const communityQRPreview = ref('')
 const showCreateLink = ref(false)
@@ -394,6 +429,15 @@ let refreshTimer: ReturnType<typeof setInterval> | null = null
 let refreshInFlight = false
 
 const ordinaryInviteURL = computed(() => inviteCode.value ? `${window.location.origin}/register?ref=${inviteCode.value}` : '')
+const programIsLive = computed(() => qualification.value?.program_mode === 'live')
+const unavailableTitle = computed(() =>
+  qualification.value?.program_mode === 'shadow' ? '联盟计划即将开放' : '联盟计划暂未开放'
+)
+const unavailableDescription = computed(() =>
+  qualification.value?.program_mode === 'shadow'
+    ? '我们正在完成正式开放前的最后检查。开放后，控制台会显示邀请入口和完整规则。'
+    : '当前暂不接受邀请与合伙人申请。正式开放时间以后续通知为准。'
+)
 const partnerAccessState = computed(() => resolvePartnerAccessState(
   qualification.value?.agent_status,
   qualification.value?.risk_status
@@ -403,7 +447,9 @@ const isApprovedPartner = computed(() => qualification.value?.agent_status === '
 const isPartnerAvailable = computed(() => partnerAccessState.value === 'available')
 const defaultAgentLink = computed(() => links.value.find(item => item.is_default && item.status === 'active'))
 const primaryInviteURL = computed(() =>
-  isPartnerAvailable.value && defaultAgentLink.value
+  !programIsLive.value
+    ? ''
+    : isPartnerAvailable.value && defaultAgentLink.value
     ? affiliateURL(defaultAgentLink.value.code)
     : isApprovedPartner.value
       ? ''
@@ -432,10 +478,12 @@ const qualificationBadgeClass = computed(() => {
 })
 const paymentVerificationLabel = computed(() => {
   const status = paymentProfile.value?.verification_status
-  return status === 'verified' ? '已验证' : status === 'pending_review' ? '审核中' : status === 'rejected' ? '需修改' : '未提交'
+  if (paymentProfile.value?.verified) return '已验证'
+  if (status === 'verified' && !paymentProfile.value?.privacy_consent_current) return '需重新确认'
+  return status === 'pending_review' ? '审核中' : status === 'rejected' ? '需修改' : '未提交'
 })
 const paymentVerificationClass = computed(() => (
-  paymentProfile.value?.verification_status === 'verified'
+  paymentProfile.value?.verified
     ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
     : paymentProfile.value?.verification_status === 'rejected'
       ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
@@ -469,6 +517,15 @@ function applyPaymentProfile(profile: AgentPaymentProfile) {
   paymentForm.alipay_account = profile.alipay_account || ''
   paymentForm.contact_phone = profile.contact_phone || ''
   paymentForm.payment_note = profile.payment_note || ''
+  paymentPrivacyConsent.value = profile.privacy_consent_current
+}
+
+function paymentProfilePayload(): AgentPaymentProfileUpdate {
+  return {
+    ...paymentForm,
+    privacy_consent_accepted: true as const,
+    privacy_consent_version: AGENT_PAYMENT_PRIVACY_NOTICE_VERSION
+  }
 }
 
 async function loadAgentData() {
@@ -515,9 +572,14 @@ async function loadPage() {
   loading.value = true
   error.value = ''
   try {
-    const [invite, currentQualification] = await Promise.all([getMyInviteCode(), getAffiliateQualification()])
-    inviteCode.value = invite.invite_code
+    const currentQualification = await affiliateProgramStore.refresh(true)
     qualification.value = currentQualification
+    if (currentQualification.program_mode !== 'live') {
+      inviteCode.value = ''
+      clearPartnerData()
+      return
+    }
+    inviteCode.value = (await getMyInviteCode()).invite_code
     if (resolvePartnerAccessState(currentQualification.agent_status, currentQualification.risk_status) === 'available') {
       await loadAgentData()
     }
@@ -533,8 +595,15 @@ async function refreshLiveData() {
   refreshInFlight = true
   try {
     const latest = await getAffiliateQualification()
+    affiliateProgramStore.setQualification(latest)
     const previousAccessState = partnerAccessState.value
     qualification.value = latest
+    if (latest.program_mode !== 'live') {
+      inviteCode.value = ''
+      clearPartnerData()
+      return
+    }
+    if (!inviteCode.value) inviteCode.value = (await getMyInviteCode()).invite_code
     const latestAccessState = resolvePartnerAccessState(latest.agent_status, latest.risk_status)
     if (latestAccessState === 'available') {
       if (previousAccessState !== 'available') await authStore.refreshUser()
@@ -651,13 +720,17 @@ async function convertCommission() {
 }
 
 async function savePaymentProfile() {
+  if (!paymentPrivacyConsent.value) {
+    appStore.showError('请先阅读并单独同意《合伙人收款资料隐私告知》')
+    return
+  }
   if (!paymentProfile.value?.has_alipay_qr) {
     appStore.showError('请先上传支付宝收款码，再提交审核')
     return
   }
   paymentSaving.value = true
   try {
-    applyPaymentProfile(await updateAgentPaymentProfile(paymentForm))
+    applyPaymentProfile(await updateAgentPaymentProfile(paymentProfilePayload()))
     wallet.value = await getAffiliateWallet()
     appStore.showSuccess('收款资料已保存，正在等待审核')
   } catch (cause: unknown) {
@@ -671,9 +744,14 @@ async function uploadPaymentQR(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
+  if (!paymentPrivacyConsent.value) {
+    appStore.showError('请先阅读并单独同意《合伙人收款资料隐私告知》')
+    input.value = ''
+    return
+  }
   paymentSaving.value = true
   try {
-    applyPaymentProfile(await updateAgentPaymentProfile(paymentForm))
+    applyPaymentProfile(await updateAgentPaymentProfile(paymentProfilePayload()))
     applyPaymentProfile(await uploadAgentPaymentQRCode(file))
     setBlobPreview(paymentQRPreview, file)
     appStore.showSuccess('收款码已上传，资料进入审核')

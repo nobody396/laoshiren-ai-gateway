@@ -66,6 +66,8 @@ func (r *commissionRepository) GetAgentPaymentProfile(ctx context.Context, agent
 			alipay_qr_content_type,
 			alipay_qr_original_filename,
 			alipay_qr_size,
+			privacy_consent_version,
+			privacy_consented_at,
 			created_at,
 			updated_at
 		FROM agent_payment_profiles
@@ -85,6 +87,8 @@ func (r *commissionRepository) GetAgentPaymentProfile(ctx context.Context, agent
 		&profile.AlipayQRCodeContentType,
 		&profile.AlipayQRCodeOriginalName,
 		&profile.AlipayQRCodeSize,
+		&profile.PrivacyConsentVersion,
+		&profile.PrivacyConsentedAt,
 		&createdAt,
 		&updatedAt,
 	)
@@ -115,15 +119,19 @@ func (r *commissionRepository) UpsertAgentPaymentProfile(ctx context.Context, pr
 			alipay_account,
 			contact_phone,
 			payment_note,
-			identity_fingerprint_hash
+			identity_fingerprint_hash,
+			privacy_consent_version,
+			privacy_consented_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (agent_id) DO UPDATE SET
 			alipay_real_name = EXCLUDED.alipay_real_name,
 			alipay_account = EXCLUDED.alipay_account,
 			contact_phone = EXCLUDED.contact_phone,
 			payment_note = EXCLUDED.payment_note,
 			identity_fingerprint_hash = EXCLUDED.identity_fingerprint_hash,
+			privacy_consent_version = EXCLUDED.privacy_consent_version,
+			privacy_consented_at = EXCLUDED.privacy_consented_at,
 			verification_status = CASE
 				WHEN BTRIM(EXCLUDED.alipay_real_name) <> ''
 				 AND BTRIM(EXCLUDED.alipay_account) <> ''
@@ -143,6 +151,8 @@ func (r *commissionRepository) UpsertAgentPaymentProfile(ctx context.Context, pr
 		profile.ContactPhone,
 		profile.PaymentNote,
 		profile.IdentityFingerprintHash,
+		profile.PrivacyConsentVersion,
+		profile.PrivacyConsentedAt,
 	}, &createdAt, &updatedAt)
 	if err != nil {
 		if isAgentPaymentProfileLockedError(err) {
@@ -208,6 +218,8 @@ func (r *commissionRepository) UpdateAgentPaymentQRCode(ctx context.Context, age
 			alipay_qr_content_type,
 			alipay_qr_original_filename,
 			alipay_qr_size,
+			privacy_consent_version,
+			privacy_consented_at,
 			created_at,
 			updated_at
 	`, []any{agentID, objectKey, contentType, originalName, size},
@@ -225,6 +237,8 @@ func (r *commissionRepository) UpdateAgentPaymentQRCode(ctx context.Context, age
 		&profile.AlipayQRCodeContentType,
 		&profile.AlipayQRCodeOriginalName,
 		&profile.AlipayQRCodeSize,
+		&profile.PrivacyConsentVersion,
+		&profile.PrivacyConsentedAt,
 		&createdAt,
 		&updatedAt,
 	)
@@ -291,21 +305,32 @@ func (r *commissionRepository) ReviewAgentPaymentProfile(
 	defer func() { _ = tx.Rollback() }()
 
 	var (
-		realName    string
-		account     string
-		qrObjectKey string
-		fingerprint string
+		realName              string
+		account               string
+		qrObjectKey           string
+		fingerprint           string
+		privacyConsentVersion string
+		privacyConsentedAt    sql.NullTime
 	)
 	err = tx.QueryRowContext(ctx, `
 		SELECT
 			alipay_real_name,
 			alipay_account,
 			alipay_qr_object_key,
-			identity_fingerprint_hash
+			identity_fingerprint_hash,
+			privacy_consent_version,
+			privacy_consented_at
 		FROM agent_payment_profiles
 		WHERE agent_id = $1
 		FOR UPDATE
-	`, agentID).Scan(&realName, &account, &qrObjectKey, &fingerprint)
+	`, agentID).Scan(
+		&realName,
+		&account,
+		&qrObjectKey,
+		&fingerprint,
+		&privacyConsentVersion,
+		&privacyConsentedAt,
+	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, service.ErrAgentPaymentProfileIncomplete
 	}
@@ -317,7 +342,9 @@ func (r *commissionRepository) ReviewAgentPaymentProfile(
 		if strings.TrimSpace(realName) == "" ||
 			strings.TrimSpace(account) == "" ||
 			strings.TrimSpace(qrObjectKey) == "" ||
-			strings.TrimSpace(fingerprint) == "" {
+			strings.TrimSpace(fingerprint) == "" ||
+			strings.TrimSpace(privacyConsentVersion) != service.AgentPaymentPrivacyNoticeVersion ||
+			!privacyConsentedAt.Valid {
 			return nil, service.ErrAgentPaymentProfileIncomplete
 		}
 		result, err := tx.ExecContext(ctx, `
@@ -404,13 +431,17 @@ func (r *commissionRepository) ListPendingAgentPaymentProfiles(
 			alipay_qr_content_type,
 			alipay_qr_original_filename,
 			alipay_qr_size,
+			privacy_consent_version,
+			privacy_consented_at,
 			created_at,
 			updated_at
 		FROM agent_payment_profiles
 		WHERE verification_status = 'pending_review'
+			AND privacy_consent_version = $2
+			AND privacy_consented_at IS NOT NULL
 		ORDER BY updated_at ASC, agent_id ASC
 		LIMIT $1
-	`, limit)
+	`, limit, service.AgentPaymentPrivacyNoticeVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -435,6 +466,8 @@ func (r *commissionRepository) ListPendingAgentPaymentProfiles(
 			&item.AlipayQRCodeContentType,
 			&item.AlipayQRCodeOriginalName,
 			&item.AlipayQRCodeSize,
+			&item.PrivacyConsentVersion,
+			&item.PrivacyConsentedAt,
 			&createdAt,
 			&updatedAt,
 		); err != nil {

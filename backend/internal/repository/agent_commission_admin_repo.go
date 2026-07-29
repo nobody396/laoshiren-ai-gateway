@@ -291,6 +291,8 @@ func (r *commissionRepository) listAdminAgents(
 	monthStartIdx := len(args)
 	args = append(args, monthEnd)
 	monthEndIdx := len(args)
+	args = append(args, service.AgentPaymentPrivacyNoticeVersion)
+	paymentPrivacyVersionIdx := len(args)
 
 	orderBy := adminAgentOuterOrderBy(params.SortBy)
 	sortOrder := params.NormalizedSortOrder(pagination.SortOrderDesc)
@@ -338,7 +340,9 @@ func (r *commissionRepository) listAdminAgents(
 			(
 				NULLIF(TRIM(COALESCE(app.alipay_real_name, '')), '') IS NOT NULL AND
 				NULLIF(TRIM(COALESCE(app.alipay_account, '')), '') IS NOT NULL AND
-				NULLIF(TRIM(COALESCE(app.alipay_qr_object_key, '')), '') IS NOT NULL
+				NULLIF(TRIM(COALESCE(app.alipay_qr_object_key, '')), '') IS NOT NULL AND
+				COALESCE(app.privacy_consent_version, '') = $%d AND
+				app.privacy_consented_at IS NOT NULL
 			) AS payment_profile_complete,
 			app.updated_at AS payment_profile_updated_at
 		FROM users u
@@ -391,7 +395,7 @@ func (r *commissionRepository) listAdminAgents(
 		LEFT JOIN agent_payment_profiles app ON app.agent_id = u.id
 		WHERE gs.id = 1 AND %s
 		)
-	`, periodUsageCond, periodCommissionCond, monthStartIdx, monthEndIdx, whereSQL)
+	`, paymentPrivacyVersionIdx, periodUsageCond, periodCommissionCond, monthStartIdx, monthEndIdx, whereSQL)
 
 	countQuery := baseQuery + ` SELECT COUNT(*) FROM agent_rows ` + settlementWhere
 	var total int64

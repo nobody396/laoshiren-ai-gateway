@@ -46,6 +46,31 @@ func TestAffiliateSourceFromRedeem(t *testing.T) {
 	}
 }
 
+func TestAffiliateSourceTracksQualificationOnlyForPaidValue(t *testing.T) {
+	t.Parallel()
+	for _, sourceType := range []string{
+		AffiliateSourcePaidRedeem,
+		AffiliateSourcePaidTopup,
+		" PAID_REDEEM ",
+	} {
+		if !AffiliateSourceTracksQualification(sourceType) {
+			t.Fatalf("paid source %q must track qualification", sourceType)
+		}
+	}
+	for _, sourceType := range []string{
+		AffiliateSourceGift,
+		AffiliateSourceCompensation,
+		AffiliateSourceInternalTest,
+		AffiliateSourceLegacyUnattributed,
+		AffiliateSourceAdminAdjustment,
+		"",
+	} {
+		if AffiliateSourceTracksQualification(sourceType) {
+			t.Fatalf("non-paid source %q must not track qualification", sourceType)
+		}
+	}
+}
+
 func TestAffiliateMonthlyCreditLimitUsesOneSharedPool(t *testing.T) {
 	t.Parallel()
 	a, b := 4_500.0, 4_000.0

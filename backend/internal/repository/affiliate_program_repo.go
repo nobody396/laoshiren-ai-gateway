@@ -103,9 +103,47 @@ func (r *affiliateProgramRepository) UpdateSettings(
 		return errors.New("affiliate program repository: nil settings")
 	}
 
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin affiliate program settings update: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var (
+		currentMode      string
+		currentStartedAt sql.NullTime
+	)
+	err = tx.QueryRowContext(ctx, `
+		SELECT mode, started_at
+		FROM affiliate_program_settings
+		WHERE id = 1 AND revision = $1
+		FOR UPDATE
+	`, expectedRevision).Scan(&currentMode, &currentStartedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return service.ErrAffiliateProgramRevisionConflict
+	}
+	if err != nil {
+		return fmt.Errorf("lock affiliate program settings: %w", err)
+	}
+
+	// Freeze the historical qualification baseline in the same transaction as
+	// the first Live cutover. A failed baseline must fail the cutover; a later
+	// settings edit must never move or recalculate this monetary boundary.
+	if !currentStartedAt.Valid &&
+		currentMode != service.AffiliateProgramModeLive &&
+		settings.Mode == service.AffiliateProgramModeLive &&
+		settings.StartedAt != nil {
+		var baselineRows int64
+		if err := tx.QueryRowContext(ctx, `
+			SELECT refresh_affiliate_qualification_legacy_baseline($1)
+		`, *settings.StartedAt).Scan(&baselineRows); err != nil {
+			return fmt.Errorf("freeze affiliate qualification baseline: %w", err)
+		}
+	}
+
 	var revision int64
 	var updatedAt sql.NullTime
-	err := scanSingleRow(ctx, r.db, `
+	err = tx.QueryRowContext(ctx, `
 		UPDATE affiliate_program_settings
 		SET
 			mode = $1,
@@ -131,7 +169,7 @@ func (r *affiliateProgramRepository) UpdateSettings(
 			updated_at = NOW()
 		WHERE id = 1 AND revision = $20
 		RETURNING revision, updated_at
-	`, []any{
+	`,
 		settings.Mode,
 		settings.StartedAt,
 		settings.OrdinaryReferralRateBPS,
@@ -152,12 +190,15 @@ func (r *affiliateProgramRepository) UpdateSettings(
 		settings.StressCostPerRawCreditMicros,
 		settings.UpdatedBy,
 		expectedRevision,
-	}, &revision, &updatedAt)
+	).Scan(&revision, &updatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return service.ErrAffiliateProgramRevisionConflict
 	}
 	if err != nil {
 		return fmt.Errorf("update affiliate program settings: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit affiliate program settings: %w", err)
 	}
 	settings.Revision = revision
 	if updatedAt.Valid {

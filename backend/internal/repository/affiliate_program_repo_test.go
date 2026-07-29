@@ -61,6 +61,11 @@ func TestAffiliateProgramRepositoryUpdateSettingsUsesRevisionLock(t *testing.T) 
 	settings.UpdatedBy = &actorID
 	updatedAt := time.Now().UTC()
 
+	mock.ExpectBegin()
+	mock.ExpectQuery(`(?s)SELECT mode, started_at.*WHERE id = 1 AND revision = \$1.*FOR UPDATE`).
+		WithArgs(int64(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"mode", "started_at"}).
+			AddRow(service.AffiliateProgramModeOff, nil))
 	mock.ExpectQuery(`(?s)UPDATE affiliate_program_settings.*WHERE id = 1 AND revision = \$20`).
 		WithArgs(
 			settings.Mode,
@@ -85,6 +90,7 @@ func TestAffiliateProgramRepositoryUpdateSettingsUsesRevisionLock(t *testing.T) 
 			int64(1),
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"revision", "updated_at"}).AddRow(int64(2), updatedAt))
+	mock.ExpectCommit()
 
 	repo := NewAffiliateProgramRepository(db)
 	err = repo.UpdateSettings(context.Background(), &settings, 1)
@@ -100,11 +106,67 @@ func TestAffiliateProgramRepositoryUpdateSettingsDetectsConflict(t *testing.T) {
 	t.Cleanup(func() { _ = db.Close() })
 
 	settings := service.DefaultAffiliateProgramSettings()
-	mock.ExpectQuery(`(?s)UPDATE affiliate_program_settings.*RETURNING revision, updated_at`).
+	mock.ExpectBegin()
+	mock.ExpectQuery(`(?s)SELECT mode, started_at.*WHERE id = 1 AND revision = \$1.*FOR UPDATE`).
+		WithArgs(int64(99)).
 		WillReturnError(sql.ErrNoRows)
+	mock.ExpectRollback()
 
 	repo := NewAffiliateProgramRepository(db)
 	err = repo.UpdateSettings(context.Background(), &settings, 99)
 	require.ErrorIs(t, err, service.ErrAffiliateProgramRevisionConflict)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAffiliateProgramRepositoryFirstLiveCutoverFreezesBaselineAtomically(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	settings := service.DefaultAffiliateProgramSettings()
+	settings.Mode = service.AffiliateProgramModeLive
+	startedAt := time.Date(2026, 7, 30, 12, 0, 0, 0, time.UTC)
+	settings.StartedAt = &startedAt
+	updatedAt := startedAt.Add(time.Second)
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(`(?s)SELECT mode, started_at.*WHERE id = 1 AND revision = \$1.*FOR UPDATE`).
+		WithArgs(int64(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"mode", "started_at"}).
+			AddRow(service.AffiliateProgramModeShadow, nil))
+	mock.ExpectQuery(`SELECT refresh_affiliate_qualification_legacy_baseline\(\$1\)`).
+		WithArgs(startedAt).
+		WillReturnRows(sqlmock.NewRows([]string{"affected_rows"}).AddRow(int64(12)))
+	mock.ExpectQuery(`(?s)UPDATE affiliate_program_settings.*WHERE id = 1 AND revision = \$20`).
+		WithArgs(
+			settings.Mode,
+			settings.StartedAt,
+			settings.OrdinaryReferralRateBPS,
+			settings.OrdinaryInviteeRateBPS,
+			settings.FirstPaidBonusThresholdMicros,
+			settings.FirstPaidBonusMicros,
+			settings.AgentPoolRateBPS,
+			settings.QualificationDirectUserCount,
+			settings.QualificationMinUserConsumptionMicros,
+			settings.QualificationDirectTeamConsumptionMicros,
+			settings.QualificationCombinedConsumptionMicros,
+			settings.MaxCampaignLinks,
+			settings.CommissionConversionMultiplierMillis,
+			settings.WithdrawalMinMicros,
+			settings.WithdrawalSLAHours,
+			settings.MarginFloorBPS,
+			settings.OperationalReserveBPS,
+			settings.StressCostPerRawCreditMicros,
+			settings.UpdatedBy,
+			int64(1),
+		).
+		WillReturnRows(sqlmock.NewRows([]string{"revision", "updated_at"}).
+			AddRow(int64(2), updatedAt))
+	mock.ExpectCommit()
+
+	repo := NewAffiliateProgramRepository(db)
+	require.NoError(t, repo.UpdateSettings(context.Background(), &settings, 1))
+	require.Equal(t, int64(2), settings.Revision)
+	require.Equal(t, updatedAt, settings.UpdatedAt)
 	require.NoError(t, mock.ExpectationsWereMet())
 }

@@ -654,7 +654,7 @@ const programForm = reactive({
   withdrawalMinimum: 100,
   withdrawalSLAHours: 24,
   marginFloor: 35,
-  stressCostPerRawCredit: 0.53,
+  stressCostPerRawCredit: 0.37,
   operationalReserve: 2
 })
 const communityForm = reactive({ enabled: false, title: '', message: '' })

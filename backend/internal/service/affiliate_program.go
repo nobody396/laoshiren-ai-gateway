@@ -73,7 +73,7 @@ func DefaultAffiliateProgramSettings() AffiliateProgramSettings {
 		WithdrawalSLAHours:                       24,
 		MarginFloorBPS:                           3500,
 		OperationalReserveBPS:                    AffiliateCommercialOperationalReserveBPS,
-		StressCostPerRawCreditMicros:             530_000,
+		StressCostPerRawCreditMicros:             370_000,
 		Revision:                                 1,
 	}
 }

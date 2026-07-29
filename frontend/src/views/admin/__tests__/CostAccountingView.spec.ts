@@ -53,7 +53,7 @@ function plan(id: 'plus' | 'pro' | 'max', name: string) {
     shop_fee_percent: 3,
     shop_net_price_cny: id === 'plus' ? 251.23 : id === 'pro' ? 707.13 : 1502.53,
     direct_price_cny: id === 'plus' ? 249 : id === 'pro' ? 699 : 1499,
-    monthly_credits: id === 'plus' ? 220 : id === 'pro' ? 650 : 1400,
+    monthly_credits: id === 'plus' ? 300 : id === 'pro' ? 900 : 2000,
     products: {
       gpt: product(id === 'plus' ? 7 : id === 'pro' ? 8 : 9, `${name} GPT`),
       claude: product(id === 'plus' ? 11 : id === 'pro' ? 12 : 13, `${name} Claude`)

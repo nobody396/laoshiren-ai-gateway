@@ -20,9 +20,9 @@ card grants or queues a 31-day subscription entitlement.
 
 | Product | LDXP price | Direct price | Internal monthly credits | Customer display | Validity |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Plus | ¥259 | ¥249 | 220 | ⚡2,200 | 31 days |
-| Pro | ¥729 | ¥699 | 650 | ⚡6,500 | 31 days |
-| Max | ¥1,549 | ¥1,499 | 1,400 | ⚡14,000 | 31 days |
+| Plus | ¥259 | ¥249 | 300 | ⚡3,000 | 31 days |
+| Pro | ¥729 | ¥699 | 900 | ⚡9,000 | 31 days |
+| Max | ¥1,549 | ¥1,499 | 2,000 | ⚡20,000 | 31 days |
 
 ## Group configuration
 
@@ -31,9 +31,9 @@ Daily and weekly limits are unset/zero.
 
 | Product | GPT group | Claude/MAX group | monthly_limit_usd | validity_days |
 | --- | --- | --- | ---: | ---: |
-| Plus | `GPT Plus 月卡组` | `Claude Plus 月卡组` | 220 | 31 |
-| Pro | `GPT Pro V3 月卡组` | `Claude Pro V3 月卡组` | 650 | 31 |
-| Max | `GPT Max V3 月卡组` | `Claude Max V3 月卡组` | 1,400 | 31 |
+| Plus | `GPT Plus 月卡组` | `Claude Plus 月卡组` | 300 | 31 |
+| Pro | `GPT Pro V3 月卡组` | `Claude Pro V3 月卡组` | 900 | 31 |
+| Max | `GPT Max V3 月卡组` | `Claude Max V3 月卡组` | 2,000 | 31 |
 
 Group `rate_multiplier` targets:
 
@@ -70,7 +70,7 @@ bound group.
   "purpose": "sale_recharge",
   "sales_status": "inventory",
   "sales_channel": "liandong_shop",
-  "internal_notes": "Plus; 220 internal monthly credits; display 2200; 31 days"
+  "internal_notes": "Plus; 300 internal monthly credits; display 3000; 31 days"
 }
 ```
 

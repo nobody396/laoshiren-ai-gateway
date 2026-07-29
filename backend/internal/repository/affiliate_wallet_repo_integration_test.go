@@ -26,17 +26,19 @@ func TestAffiliateWalletRepository_OnDemandWithdrawalFailureAndConversion(t *tes
 		INSERT INTO agent_payment_profiles (
 			agent_id, alipay_real_name, alipay_account,
 			alipay_qr_object_key, alipay_qr_content_type,
-			alipay_qr_original_filename, alipay_qr_size,
-			identity_fingerprint_hash, verification_status,
-			verified_at, verified_by
+				alipay_qr_original_filename, alipay_qr_size,
+				identity_fingerprint_hash, verification_status,
+				verified_at, verified_by,
+				privacy_consent_version, privacy_consented_at
 		)
 		VALUES (
 			$1, '钱包测试', 'wallet@example.com',
 			'agent-payment-qrcodes/test/wallet.png', 'image/png',
 			'wallet.png', 128,
-			$2, 'verified', NOW(), $3
-		)
-	`, agent.ID, fmt.Sprintf("%064d", agent.ID), admin.ID)
+				$2, 'verified', NOW(), $3,
+				$4, NOW()
+			)
+		`, agent.ID, fmt.Sprintf("%064d", agent.ID), admin.ID, service.AgentPaymentPrivacyNoticeVersion)
 	require.NoError(t, err)
 	_, err = integrationDB.ExecContext(ctx, `
 		INSERT INTO agent_cash_commission_entries (
@@ -98,9 +100,11 @@ func TestAffiliateWalletRepository_OnDemandWithdrawalFailureAndConversion(t *tes
 
 	paymentRepo := NewCommissionRepository(client, integrationDB).(service.AgentPaymentRepository)
 	err = paymentRepo.UpsertAgentPaymentProfile(ctx, &service.AgentPaymentProfile{
-		AgentID:        agent.ID,
-		AlipayRealName: "处理中不可修改",
-		AlipayAccount:  "locked@example.com",
+		AgentID:               agent.ID,
+		AlipayRealName:        "处理中不可修改",
+		AlipayAccount:         "locked@example.com",
+		PrivacyConsentVersion: service.AgentPaymentPrivacyNoticeVersion,
+		PrivacyConsentedAt:    func() *time.Time { value := time.Now(); return &value }(),
 	})
 	require.ErrorIs(t, err, service.ErrAgentPaymentProfileLocked)
 

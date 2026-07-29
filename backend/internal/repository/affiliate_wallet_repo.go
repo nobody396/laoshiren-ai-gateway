@@ -50,7 +50,12 @@ func (r *affiliateWalletRepository) GetAffiliateWallet(
 			s.withdrawal_min_micros,
 			s.withdrawal_sla_hours,
 			s.commission_conversion_multiplier_millis,
-			COALESCE(p.verification_status = 'verified', FALSE)
+			COALESCE(
+				p.verification_status = 'verified'
+					AND p.privacy_consent_version = $2
+					AND p.privacy_consented_at IS NOT NULL,
+				FALSE
+			)
 		FROM agent_principals ap
 		CROSS JOIN affiliate_program_settings s
 		LEFT JOIN agent_payment_profiles p ON p.agent_id = ap.agent_id
@@ -58,7 +63,7 @@ func (r *affiliateWalletRepository) GetAffiliateWallet(
 			AND ap.status = 'active'
 			AND ap.risk_status = 'clear'
 			AND s.id = 1
-	`, agentID).Scan(
+		`, agentID, service.AgentPaymentPrivacyNoticeVersion).Scan(
 		&out.AvailableCashMicros,
 		&out.ProcessingWithdrawalMicros,
 		&out.LifetimeEarnedMicros,
@@ -176,14 +181,16 @@ func (r *affiliateWalletRepository) CreateAffiliateWithdrawal(
 	}
 
 	var (
-		profileStatus  string
-		realName       string
-		account        string
-		phone          string
-		note           string
-		qrObjectKey    string
-		qrContentType  string
-		qrOriginalName string
+		profileStatus         string
+		realName              string
+		account               string
+		phone                 string
+		note                  string
+		qrObjectKey           string
+		qrContentType         string
+		qrOriginalName        string
+		privacyConsentVersion string
+		privacyConsentedAt    sql.NullTime
 	)
 	err = tx.QueryRowContext(ctx, `
 		SELECT
@@ -194,7 +201,9 @@ func (r *affiliateWalletRepository) CreateAffiliateWithdrawal(
 			payment_note,
 			alipay_qr_object_key,
 			alipay_qr_content_type,
-			alipay_qr_original_filename
+			alipay_qr_original_filename,
+			privacy_consent_version,
+			privacy_consented_at
 		FROM agent_payment_profiles
 		WHERE agent_id = $1
 		FOR UPDATE
@@ -207,6 +216,8 @@ func (r *affiliateWalletRepository) CreateAffiliateWithdrawal(
 		&qrObjectKey,
 		&qrContentType,
 		&qrOriginalName,
+		&privacyConsentVersion,
+		&privacyConsentedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, service.ErrAffiliatePaymentNotVerified
@@ -215,6 +226,8 @@ func (r *affiliateWalletRepository) CreateAffiliateWithdrawal(
 		return nil, err
 	}
 	if profileStatus != "verified" ||
+		strings.TrimSpace(privacyConsentVersion) != service.AgentPaymentPrivacyNoticeVersion ||
+		!privacyConsentedAt.Valid ||
 		strings.TrimSpace(realName) == "" ||
 		strings.TrimSpace(account) == "" ||
 		strings.TrimSpace(qrObjectKey) == "" {

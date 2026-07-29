@@ -113,8 +113,21 @@ export interface AgentPaymentProfile {
   verified_at?: string
   verified_by?: number
   verified: boolean
+  privacy_consent_version: string
+  privacy_consented_at?: string
+  privacy_consent_current: boolean
   created_at?: string
   updated_at?: string
+}
+
+export const AGENT_PAYMENT_PRIVACY_NOTICE_VERSION = 'affiliate-payment-profile-privacy-v1'
+
+export type AgentPaymentProfileUpdate = Pick<
+  AgentPaymentProfile,
+  'alipay_real_name' | 'alipay_account' | 'contact_phone' | 'payment_note'
+> & {
+  privacy_consent_accepted: true
+  privacy_consent_version: typeof AGENT_PAYMENT_PRIVACY_NOTICE_VERSION
 }
 
 export interface AffiliateAgentQualification {
@@ -315,7 +328,7 @@ export async function getAgentPaymentProfile(): Promise<AgentPaymentProfile> {
   return data
 }
 
-export async function updateAgentPaymentProfile(payload: Pick<AgentPaymentProfile, 'alipay_real_name' | 'alipay_account' | 'contact_phone' | 'payment_note'>): Promise<AgentPaymentProfile> {
+export async function updateAgentPaymentProfile(payload: AgentPaymentProfileUpdate): Promise<AgentPaymentProfile> {
   const { data } = await apiClient.put<AgentPaymentProfile>('/agent/payment-profile', payload)
   return data
 }

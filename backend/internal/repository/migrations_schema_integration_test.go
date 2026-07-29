@@ -346,6 +346,10 @@ WHERE table_schema = 'public'
 `).Scan(&programVersionDefault))
 	require.True(t, programVersionDefault.Valid)
 	require.Contains(t, programVersionDefault.String, "'v3'")
+
+	// migration 165: separate consent audit for sensitive payout information.
+	requireColumn(t, tx, "agent_payment_profiles", "privacy_consent_version", "character varying", 80, false)
+	requireColumn(t, tx, "agent_payment_profiles", "privacy_consented_at", "timestamp with time zone", 0, true)
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

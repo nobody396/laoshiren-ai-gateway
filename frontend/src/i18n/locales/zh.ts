@@ -721,6 +721,10 @@ export default {
     noAlipayQRCode: '暂未上传收款码',
     paymentProfileSaved: '收款信息已保存',
     alipayQRCodeSaved: '收款码已上传',
+    paymentPrivacySummary: '平台仅为合伙人资料审核、支付宝打款、风控与争议处理使用上述资料。支付宝账号和收款码属于敏感个人信息。',
+    paymentPrivacyNotice: '查看《合伙人收款资料隐私告知》',
+    paymentPrivacyConsent: '我已阅读并单独同意平台按上述告知处理我的支付宝收款资料，用于审核和佣金打款。',
+    paymentPrivacyConsentRequired: '请先阅读并单独同意《合伙人收款资料隐私告知》',
     paymentProfileNotSaved: '暂未保存收款资料',
     paymentProfileUpdatedAt: '上次更新：{time}',
     commissionTime: '时间'

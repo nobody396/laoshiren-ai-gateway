@@ -29,6 +29,7 @@ const (
 	agentPaymentQRCodeMaxSize           = 5 << 20
 	agentPaymentQRCodeMaxDimension      = 4096
 	agentPaymentQRCodeMaxPixels         = 16_000_000
+	AgentPaymentPrivacyNoticeVersion    = "affiliate-payment-profile-privacy-v1"
 )
 
 var (
@@ -43,6 +44,10 @@ var (
 	ErrAgentPaymentProfileLocked = infraerrors.Conflict(
 		"AGENT_PAYMENT_PROFILE_LOCKED",
 		"该合伙人还有提现处理中，收款资料暂时不能变更",
+	)
+	ErrAgentPaymentPrivacyConsentRequired = infraerrors.BadRequest(
+		"AGENT_PAYMENT_PRIVACY_CONSENT_REQUIRED",
+		"请先阅读《合伙人收款资料隐私告知》并单独同意后再提交",
 	)
 )
 
@@ -124,6 +129,16 @@ func (s *CommissionService) UpdateAgentPaymentProfile(ctx context.Context, profi
 		return nil, err
 	}
 	normalizeAgentPaymentProfile(profile)
+	if !profile.PrivacyConsentAccepted ||
+		profile.PrivacyConsentVersion != AgentPaymentPrivacyNoticeVersion {
+		return nil, ErrAgentPaymentPrivacyConsentRequired
+	}
+	consentedAt := time.Now()
+	if s.nowFunc != nil {
+		consentedAt = s.nowFunc()
+	}
+	profile.PrivacyConsentedAt = &consentedAt
+	profile.PrivacyConsentCurrent = true
 	if len([]rune(profile.AlipayRealName)) > 80 {
 		return nil, infraerrors.BadRequest("INVALID_ALIPAY_REAL_NAME", "alipay real name is too long")
 	}
@@ -213,6 +228,15 @@ func (s *CommissionService) UploadAgentPaymentQRCode(ctx context.Context, agentI
 	}
 	if err := s.ensureAgent(ctx, agentID); err != nil {
 		return nil, err
+	}
+	currentProfile, err := s.paymentRepo.GetAgentPaymentProfile(ctx, agentID)
+	if err != nil {
+		return nil, fmt.Errorf("get payment profile consent: %w", err)
+	}
+	if currentProfile == nil ||
+		strings.TrimSpace(currentProfile.PrivacyConsentVersion) != AgentPaymentPrivacyNoticeVersion ||
+		currentProfile.PrivacyConsentedAt == nil {
+		return nil, ErrAgentPaymentPrivacyConsentRequired
 	}
 	if upload.Body == nil {
 		return nil, infraerrors.BadRequest("PAYMENT_QR_REQUIRED", "payment QR file is required")
@@ -357,6 +381,7 @@ func normalizeAgentPaymentProfile(profile *AgentPaymentProfile) {
 	profile.AlipayAccount = strings.TrimSpace(profile.AlipayAccount)
 	profile.ContactPhone = strings.TrimSpace(profile.ContactPhone)
 	profile.PaymentNote = strings.TrimSpace(profile.PaymentNote)
+	profile.PrivacyConsentVersion = strings.TrimSpace(profile.PrivacyConsentVersion)
 	profile.AlipayQRCodeObjectKey = strings.TrimSpace(profile.AlipayQRCodeObjectKey)
 	profile.AlipayQRCodeContentType = strings.TrimSpace(profile.AlipayQRCodeContentType)
 	profile.AlipayQRCodeOriginalName = strings.TrimSpace(profile.AlipayQRCodeOriginalName)
@@ -368,7 +393,13 @@ func normalizeAgentPaymentProfile(profile *AgentPaymentProfile) {
 	}
 	profile.HasAlipayQRCode = profile.AlipayQRCodeObjectKey != ""
 	profile.Complete = profile.AlipayRealName != "" && profile.AlipayAccount != "" && profile.HasAlipayQRCode
-	profile.Verified = profile.Complete && profile.VerificationStatus == "verified"
+	profile.PrivacyConsentCurrent =
+		profile.PrivacyConsentVersion == AgentPaymentPrivacyNoticeVersion &&
+			profile.PrivacyConsentedAt != nil
+	profile.Verified =
+		profile.Complete &&
+			profile.VerificationStatus == "verified" &&
+			profile.PrivacyConsentCurrent
 }
 
 func agentPaymentIdentityFingerprint(realName, account string) string {

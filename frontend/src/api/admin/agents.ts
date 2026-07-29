@@ -166,7 +166,7 @@ export interface AffiliateProgramSettings {
   qualification_direct_user_count: number
   qualification_min_user_consumption_micros: number
   qualification_direct_team_consumption_micros: number
-  qualification_combined_consumption_micros: number
+  qualification_self_consumption_micros: number
   max_campaign_links: number
   commission_conversion_multiplier_millis: number
   withdrawal_min_micros: number
@@ -184,7 +184,7 @@ export interface AffiliateAgentApplication {
   email: string
   username: string
   status: 'pending_review' | 'approved' | 'rejected' | 'cancelled'
-  qualifying_route: 'direct_team' | 'direct_volume'
+  qualifying_route: 'direct_team' | 'self_consumption' | 'direct_volume'
   valid_direct_user_count: number
   self_consumption_micros: number
   direct_team_consumption_micros: number

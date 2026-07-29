@@ -143,11 +143,11 @@ export interface AffiliateAgentQualification {
   required_direct_user_count: number
   required_per_user_micros: number
   required_direct_team_micros: number
-  required_combined_micros: number
+  required_self_micros: number
   direct_route_qualified: boolean
-  combined_route_qualified: boolean
+  self_route_qualified: boolean
   qualified: boolean
-  qualification_route?: 'direct_team' | 'direct_volume'
+  qualification_route?: 'direct_team' | 'self_consumption'
   can_activate: boolean
   can_apply: boolean
   activated_at?: string
@@ -177,7 +177,7 @@ export interface AffiliateAgentApplication {
   id: number
   user_id: number
   status: 'pending_review' | 'approved' | 'rejected' | 'cancelled'
-  qualifying_route: 'direct_team' | 'direct_volume'
+  qualifying_route: 'direct_team' | 'self_consumption' | 'direct_volume'
   valid_direct_user_count: number
   self_consumption_micros: number
   direct_team_consumption_micros: number

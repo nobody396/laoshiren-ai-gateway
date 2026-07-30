@@ -102,6 +102,7 @@ type AdminService interface {
 	BatchDeleteRedeemCodes(ctx context.Context, ids []int64) (int64, error)
 	ExpireRedeemCode(ctx context.Context, id int64) (*RedeemCode, error)
 	ListRedeemCodeBilling(ctx context.Context, page, pageSize int, filters RedeemCodeBillingFilters) (*RedeemCodeBillingResult, error)
+	ListRedeemCodeClassificationAnomalies(ctx context.Context) (*RedeemCodeClassificationAnomalyResult, error)
 	ResetAccountQuota(ctx context.Context, id int64) error
 }
 

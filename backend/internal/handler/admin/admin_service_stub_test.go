@@ -430,6 +430,10 @@ func (s *stubAdminService) ListRedeemCodeBilling(ctx context.Context, page, page
 	}, nil
 }
 
+func (s *stubAdminService) ListRedeemCodeClassificationAnomalies(ctx context.Context) (*service.RedeemCodeClassificationAnomalyResult, error) {
+	return &service.RedeemCodeClassificationAnomalyResult{}, nil
+}
+
 func (s *stubAdminService) DeleteRedeemCode(ctx context.Context, id int64) error {
 	return nil
 }

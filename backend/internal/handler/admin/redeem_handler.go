@@ -440,6 +440,18 @@ func (h *RedeemHandler) ListBilling(c *gin.Context) {
 	response.Success(c, result)
 }
 
+// ListClassificationAnomalies lists redeemed paid-inventory candidates that
+// require evidence review instead of automatic sale inference.
+// GET /api/v1/admin/redeem-codes/classification-anomalies
+func (h *RedeemHandler) ListClassificationAnomalies(c *gin.Context) {
+	result, err := h.adminService.ListRedeemCodeClassificationAnomalies(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
 func parseOptionalInt64Query(raw string) (*int64, error) {
 	value := strings.TrimSpace(raw)
 	if value == "" {

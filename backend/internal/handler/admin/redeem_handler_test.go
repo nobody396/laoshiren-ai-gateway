@@ -254,6 +254,22 @@ func TestRedeemBilling_ParsesFilters(t *testing.T) {
 	require.NotNil(t, svc.lastBillingFilters.UsedEndTime)
 }
 
+func TestRedeemClassificationAnomalies_ReturnsReviewQueue(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(
+		http.MethodGet,
+		"/api/v1/admin/redeem-codes/classification-anomalies",
+		nil,
+	)
+
+	NewRedeemHandler(newStubAdminService(), nil).ListClassificationAnomalies(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Contains(t, w.Body.String(), `"total":0`)
+}
+
 func TestRedeemExport_IncludesRedeemURL(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()

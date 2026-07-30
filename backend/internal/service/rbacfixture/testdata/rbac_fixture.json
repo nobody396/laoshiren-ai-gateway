@@ -3348,6 +3348,15 @@
       "description": "POST /admin/redeem-codes/batch-update",
       "sort_order": 11,
       "status": "active"
+    },
+    {
+      "id": 446,
+      "group": "卡密管理",
+      "path": "/admin/redeem-codes/classification-anomalies",
+      "method": "GET",
+      "description": "GET /admin/redeem-codes/classification-anomalies",
+      "sort_order": 12,
+      "status": "active"
     }
   ]
 }

@@ -157,6 +157,8 @@ def main():
         'alipay_account': 'api-e2e-alipay@example.com',
         'contact_phone': '13800002222',
         'payment_note': 'API E2E 自动测试',
+        'privacy_consent_accepted': True,
+        'privacy_consent_version': 'affiliate-payment-profile-privacy-v1',
     })
     assert profile['alipay_account'] == 'api-e2e-alipay@example.com', profile
     body, headers = multipart_png_body(ROOT / 'frontend/public/favicon.png')

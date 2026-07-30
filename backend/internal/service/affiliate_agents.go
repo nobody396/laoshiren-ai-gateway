@@ -81,6 +81,21 @@ type AffiliateAgentApplication struct {
 	ReviewedBy                  *int64     `json:"reviewed_by,omitempty"`
 }
 
+// AffiliateQualifiedCandidate is a user who currently satisfies at least one
+// partner qualification route but has not submitted an application yet.
+// Listing candidates is read-only: it must never create a principal,
+// application, reward, or commission entry.
+type AffiliateQualifiedCandidate struct {
+	UserID                      int64  `json:"user_id"`
+	Email                       string `json:"email,omitempty"`
+	Username                    string `json:"username,omitempty"`
+	QualificationRoute          string `json:"qualification_route"`
+	ValidDirectUserCount        int32  `json:"valid_direct_user_count"`
+	SelfConsumptionMicros       int64  `json:"self_consumption_micros"`
+	DirectTeamConsumptionMicros int64  `json:"direct_team_consumption_micros"`
+	CombinedConsumptionMicros   int64  `json:"combined_consumption_micros"`
+}
+
 type AffiliateAgentReviewResult struct {
 	Application AffiliateAgentApplication `json:"application"`
 	Activation  *AffiliateAgentActivation `json:"activation,omitempty"`
@@ -98,6 +113,10 @@ type AffiliateAgentRepository interface {
 		status string,
 		limit int,
 	) ([]AffiliateAgentApplication, error)
+	ListQualifiedCandidates(
+		ctx context.Context,
+		limit int,
+	) ([]AffiliateQualifiedCandidate, error)
 	ReviewAgentApplication(
 		ctx context.Context,
 		applicationID int64,
@@ -169,6 +188,19 @@ func (s *AffiliateAgentService) ListApplications(
 		limit = 100
 	}
 	return s.repo.ListAgentApplications(ctx, status, limit)
+}
+
+func (s *AffiliateAgentService) ListQualifiedCandidates(
+	ctx context.Context,
+	limit int,
+) ([]AffiliateQualifiedCandidate, error) {
+	if s == nil || s.repo == nil {
+		return nil, errors.New("affiliate agent repository is not configured")
+	}
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	return s.repo.ListQualifiedCandidates(ctx, limit)
 }
 
 func (s *AffiliateAgentService) ReviewApplication(

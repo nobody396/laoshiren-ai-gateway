@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '../../client'
-import { getInviteActivity, updateInviteActivity } from '../agents'
+import { getInviteActivity, listAffiliateQualifiedCandidates, updateInviteActivity } from '../agents'
 
 vi.mock('../../client', () => ({
   apiClient: {
@@ -19,6 +19,37 @@ beforeEach(() => {
 })
 
 describe('Admin agents API', () => {
+  it('lists users who qualified but have not applied', async () => {
+    mockClient.get.mockResolvedValue({
+      data: {
+        items: [{
+          user_id: 47,
+          email: 'qualified@example.com',
+          username: '',
+          qualification_route: 'self_consumption',
+          valid_direct_user_count: 0,
+          self_consumption_micros: 530_000_000,
+          direct_team_consumption_micros: 0,
+          combined_consumption_micros: 530_000_000
+        }]
+      }
+    })
+
+    const items = await listAffiliateQualifiedCandidates(500)
+
+    expect(mockClient.get).toHaveBeenCalledWith(
+      '/admin/agents/affiliate-qualified-candidates',
+      { params: { limit: 500 } }
+    )
+    expect(items).toEqual([
+      expect.objectContaining({
+        user_id: 47,
+        qualification_route: 'self_consumption',
+        self_consumption_micros: 530_000_000
+      })
+    ])
+  })
+
   it('reads invite activity config from GET /admin/agents/rates', async () => {
     mockClient.get.mockResolvedValue({
       data: {

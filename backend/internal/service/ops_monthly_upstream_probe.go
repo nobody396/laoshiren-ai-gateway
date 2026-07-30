@@ -629,6 +629,18 @@ var monthlyCardPublicPlanDefinitions = []struct {
 	{ID: "max", Name: "Max", GPTGroupName: "GPT Max V3 月卡组", ClaudeGroupName: "Claude Max V3 月卡组"},
 }
 
+// monthlyUpstreamProbeSupplementalGroupDefinitions keeps status monitoring
+// independent from the current sale catalog. Grok remains an active legacy
+// entitlement even though the current Plus/Pro/Max products do not advertise
+// a Grok member.
+var monthlyUpstreamProbeSupplementalGroupDefinitions = []struct {
+	Role      string
+	GroupName string
+	GroupID   int64
+}{
+	{Role: "grok", GroupName: "Grok Lite 月卡组", GroupID: 35},
+}
+
 func (s *OpsService) loadMonthlyCardPublicPlans(ctx context.Context) []MonthlyCardPublicPlan {
 	plans := make([]MonthlyCardPublicPlan, 0, len(monthlyCardPublicPlanDefinitions))
 	if s == nil || s.groupRepo == nil {
@@ -964,6 +976,26 @@ func (s *OpsService) loadMonthlyUpstreamProbeTargetsFromGroups(ctx context.Conte
 	targets := make([]monthlyUpstreamProbeResolvedTarget, 0, len(monthlyUpstreamProbeTargetSpecs))
 	seen := make(map[string]struct{})
 
+	appendTarget := func(role string, group *MonthlyCardPublicPlanGroup) error {
+		if group == nil {
+			return nil
+		}
+		spec, ok := monthlyUpstreamProbeSpecForRole(role)
+		if !ok {
+			return nil
+		}
+		if _, exists := seen[spec.Role]; exists {
+			return nil
+		}
+		accounts, err := s.accountRepo.ListByGroup(ctx, group.ID)
+		if err != nil {
+			return err
+		}
+		seen[spec.Role] = struct{}{}
+		targets = append(targets, monthlyUpstreamProbeTargetFromGroup(group, spec, accounts))
+		return nil
+	}
+
 	for _, plan := range plans {
 		groupsByRole := []struct {
 			role  string
@@ -974,25 +1006,20 @@ func (s *OpsService) loadMonthlyUpstreamProbeTargetsFromGroups(ctx context.Conte
 			{role: "grok", group: plan.GrokGroup},
 		}
 		for _, candidate := range groupsByRole {
-			group := candidate.group
-			if group == nil {
-				continue
-			}
-			spec, ok := monthlyUpstreamProbeSpecForRole(candidate.role)
-			if !ok {
-				continue
-			}
-			if _, exists := seen[spec.Role]; exists {
-				continue
-			}
-			seen[spec.Role] = struct{}{}
-			accounts, err := s.accountRepo.ListByGroup(ctx, group.ID)
-			if err != nil {
+			if err := appendTarget(candidate.role, candidate.group); err != nil {
 				return nil, err
 			}
-			targets = append(targets, monthlyUpstreamProbeTargetFromGroup(group, spec, accounts))
 		}
 	}
+
+	groupsByName := s.activeMonthlyCardGroupsByName(ctx)
+	for _, def := range monthlyUpstreamProbeSupplementalGroupDefinitions {
+		group := s.monthlyCardPublicPlanGroupByNameOrID(ctx, groupsByName, def.GroupName, def.GroupID)
+		if err := appendTarget(def.Role, group); err != nil {
+			return nil, err
+		}
+	}
+
 	sortMonthlyUpstreamProbeTargets(targets)
 	return targets, nil
 }

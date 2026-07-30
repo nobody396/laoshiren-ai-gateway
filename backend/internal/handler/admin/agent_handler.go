@@ -403,6 +403,18 @@ func (h *AgentHandler) ListAffiliateApplications(c *gin.Context) {
 	response.Success(c, gin.H{"items": items})
 }
 
+func (h *AgentHandler) ListAffiliateQualifiedCandidates(c *gin.Context) {
+	items, err := h.affiliateAgents.ListQualifiedCandidates(
+		c.Request.Context(),
+		parsePositiveInt(c.Query("limit"), 100),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"items": items})
+}
+
 func (h *AgentHandler) ReviewAffiliateApplication(c *gin.Context) {
 	subject, ok := middleware2.GetAuthSubjectFromContext(c)
 	if !ok {

@@ -296,6 +296,11 @@ export interface AffiliateRiskPrincipal {
   self_commission_rate_bps: number
   self_commission_effective_at?: string
   self_commission_revision: number
+  self_commission_reason?: string
+  self_commission_updated_by?: number
+  self_commission_updated_by_email?: string
+  self_commission_updated_by_username?: string
+  self_commission_updated_at?: string
   self_commission_eligible: boolean
   self_commission_block_reason?: string
 }

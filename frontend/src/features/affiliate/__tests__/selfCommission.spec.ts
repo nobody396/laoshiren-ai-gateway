@@ -3,6 +3,8 @@ import type { AffiliateRiskPrincipal } from '@/api/admin/agents'
 import type { CommissionRecord } from '@/api/agent'
 import {
   getCommissionDisplayType,
+  getSelfCommissionOperatorLabel,
+  getSelfCommissionPolicyErrorMessage,
   getSelfCommissionPresentation,
   isSelfConsumptionCommission
 } from '../selfCommission'
@@ -85,5 +87,34 @@ describe('self commission record labels', () => {
     const item = commission({ user_id: 19 })
     expect(isSelfConsumptionCommission(item)).toBe(false)
     expect(getCommissionDisplayType(item)).toBe('consumption_commission')
+  })
+})
+
+describe('self commission admin feedback', () => {
+  it('formats the latest operator without exposing backend field names', () => {
+    expect(getSelfCommissionOperatorLabel(principal({
+      self_commission_updated_by: 3,
+      self_commission_updated_by_username: '运营员',
+      self_commission_updated_by_email: 'ops@example.com'
+    }))).toBe('运营员（ops@example.com）')
+  })
+
+  it.each([
+    ['AFFILIATE_SELF_COMMISSION_POLICY_REVISION_CONFLICT', '设置已被其他管理员修改'],
+    ['AFFILIATE_SELF_COMMISSION_NOT_ELIGIBLE', '当前不符合开通条件'],
+    ['AFFILIATE_SELF_COMMISSION_AGENT_NOT_FOUND', '未找到该合伙人'],
+    ['FORBIDDEN', '没有修改本人消费返佣设置的权限']
+  ])('maps %s to Chinese operator guidance', (code, expected) => {
+    expect(getSelfCommissionPolicyErrorMessage({ code, status: 409, message: 'backend english' }))
+      .toContain(expected)
+  })
+
+  it.each([
+    [409, '设置保存冲突'],
+    [404, '未找到该合伙人'],
+    [403, '没有修改本人消费返佣设置的权限']
+  ])('maps HTTP %d when the backend omitted an error code', (status, expected) => {
+    expect(getSelfCommissionPolicyErrorMessage({ status, message: 'backend english' }))
+      .toContain(expected)
   })
 })

@@ -332,6 +332,12 @@
                           <p v-if="item.self_commission_effective_at" class="mt-1 text-xs text-gray-500 dark:text-dark-400">
                             生效时间：{{ formatBeijingTime(item.self_commission_effective_at) }}
                           </p>
+                          <div v-if="item.self_commission_revision > 0" class="mt-2 border-t border-gray-100 pt-2 text-xs leading-5 text-gray-500 dark:border-dark-700 dark:text-dark-400">
+                            <p>最近原因：{{ item.self_commission_reason || '—' }}</p>
+                            <p v-if="item.self_commission_updated_at">
+                              {{ formatBeijingTime(item.self_commission_updated_at) }} · {{ selfCommissionOperatorLabel(item) }}
+                            </p>
+                          </div>
                         </div>
                         <button
                           v-if="item.self_commission_enabled || selfCommissionPresentation(item).canEnable"
@@ -708,6 +714,8 @@ import {
 } from '@/api/admin/agents'
 import { useAppStore } from '@/stores/app'
 import {
+  getSelfCommissionOperatorLabel,
+  getSelfCommissionPolicyErrorMessage,
   getSelfCommissionPresentation,
   type SelfCommissionTone
 } from '@/features/affiliate/selfCommission'
@@ -927,6 +935,10 @@ function selfCommissionPresentation(item: AffiliateRiskPrincipal) {
   return getSelfCommissionPresentation(item)
 }
 
+function selfCommissionOperatorLabel(item: AffiliateRiskPrincipal) {
+  return getSelfCommissionOperatorLabel(item)
+}
+
 function selfCommissionStatusClass(tone: SelfCommissionTone) {
   if (tone === 'enabled') return 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
   if (tone === 'blocked') return 'bg-gray-100 text-gray-600 dark:bg-dark-800 dark:text-dark-300'
@@ -1091,22 +1103,38 @@ async function submitSelfCommissionPolicy() {
     item.self_commission_rate_bps = policy.rate_bps
     item.self_commission_effective_at = policy.effective_at
     item.self_commission_revision = policy.revision
+    item.self_commission_reason = policy.reason
+    item.self_commission_updated_by = policy.updated_by
+    item.self_commission_updated_by_email = ''
+    item.self_commission_updated_by_username = ''
+    item.self_commission_updated_at = policy.updated_at
     item.has_upstream = policy.has_upstream
     item.self_commission_eligible = policy.eligible
     item.self_commission_block_reason = policy.block_reason_code
-    appStore.showSuccess(policy.enabled ? '本人消费返佣已开启' : '本人消费返佣已关闭')
-    selfCommissionDialogItem.value = null
-    selfCommissionReason.value = ''
-  } catch (cause: unknown) {
-    appStore.showError(buildAuthErrorMessage(cause, { fallback: '本人消费返佣设置保存失败，请刷新后重试' }))
     try {
       riskPrincipals.value = await listAffiliateRiskPrincipals(500)
       for (const principal of riskPrincipals.value) {
         riskTargets[principal.agent_id] = principal.risk_status
       }
     } catch {
+      // The policy is already saved; keep the local response if the audit refresh fails.
+    }
+    appStore.showSuccess(policy.enabled ? '本人消费返佣已开启' : '本人消费返佣已关闭')
+    selfCommissionDialogItem.value = null
+    selfCommissionReason.value = ''
+  } catch (cause: unknown) {
+    let refreshed = false
+    try {
+      riskPrincipals.value = await listAffiliateRiskPrincipals(500)
+      for (const principal of riskPrincipals.value) {
+        riskTargets[principal.agent_id] = principal.risk_status
+      }
+      refreshed = true
+    } catch {
       // Keep the original error visible; the regular refresh path can recover later.
     }
+    const message = getSelfCommissionPolicyErrorMessage(cause)
+    appStore.showError(refreshed ? message : `${message} 当前数据刷新失败，请手动刷新页面。`)
     selfCommissionDialogItem.value = null
     selfCommissionReason.value = ''
   } finally {

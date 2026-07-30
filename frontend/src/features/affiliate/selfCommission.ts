@@ -1,5 +1,6 @@
 import type { AffiliateRiskPrincipal } from '@/api/admin/agents'
 import type { CommissionRecord } from '@/api/agent'
+import { extractApiErrorCode } from '@/utils/apiError'
 
 export type SelfCommissionTone = 'enabled' | 'disabled' | 'blocked'
 
@@ -78,4 +79,38 @@ export function isSelfConsumptionCommission(record: CommissionRecord): boolean {
 
 export function getCommissionDisplayType(record: CommissionRecord): string {
   return isSelfConsumptionCommission(record) ? 'self_consumption_commission' : record.type
+}
+
+export function getSelfCommissionOperatorLabel(item: AffiliateRiskPrincipal): string {
+  const username = item.self_commission_updated_by_username?.trim()
+  const email = item.self_commission_updated_by_email?.trim()
+  if (username && email) return `${username}（${email}）`
+  if (username || email) return username || email || '—'
+  return item.self_commission_updated_by ? `管理员 #${item.self_commission_updated_by}` : '—'
+}
+
+export function getSelfCommissionPolicyErrorMessage(error: unknown): string {
+  const code = extractApiErrorCode(error)
+  if (code === 'AFFILIATE_SELF_COMMISSION_POLICY_REVISION_CONFLICT') {
+    return '设置已被其他管理员修改，页面已刷新，请重新确认后再操作。'
+  }
+  if (code === 'AFFILIATE_SELF_COMMISSION_NOT_ELIGIBLE') {
+    return '该合伙人当前不符合开通条件，请检查上级关系及合伙人状态。'
+  }
+  if (code === 'AFFILIATE_SELF_COMMISSION_AGENT_NOT_FOUND') {
+    return '未找到该合伙人，可能已被移除或状态已经变化。'
+  }
+  if (code === 'FORBIDDEN') {
+    return '您没有修改本人消费返佣设置的权限。'
+  }
+
+  const candidate = (error && typeof error === 'object' ? error : {}) as {
+    status?: number
+    response?: { status?: number }
+  }
+  const status = candidate.status ?? candidate.response?.status
+  if (status === 409) return '设置保存冲突，页面已刷新，请重新确认后再操作。'
+  if (status === 404) return '未找到该合伙人，可能已被移除或状态已经变化。'
+  if (status === 403) return '您没有修改本人消费返佣设置的权限。'
+  return '本人消费返佣设置保存失败，请稍后重试。'
 }

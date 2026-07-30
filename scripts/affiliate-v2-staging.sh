@@ -280,6 +280,13 @@ case "$command" in
     AFFILIATE_STAGING_URL="$DEFAULT_URL" \
       "$EXPECTED_WORKTREE/scripts/affiliate-v2-e2e-check.py"
     ;;
+  self-e2e)
+    require_checkout
+    load_secrets
+    wait_ready
+    AFFILIATE_STAGING_URL="$DEFAULT_URL" \
+      "$EXPECTED_WORKTREE/scripts/affiliate-self-commission-e2e-check.sh"
+    ;;
   seed-demo)
     require_checkout
     "$EXPECTED_WORKTREE/scripts/affiliate-v2-demo-data.sh"
@@ -318,6 +325,7 @@ Commands:
   status        Show isolated staging containers
   smoke         Run health plus authenticated Affiliate V3 API checks
   e2e           Run the authenticated Affiliate V3 API acceptance flow
+  self-e2e      Run isolated ¥3 partner self-consumption settlement acceptance
   seed-demo     Seed isolated staging with Affiliate V3 acceptance users and queues
   logs          Show application logs
   down          Stop staging without deleting data

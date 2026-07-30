@@ -174,23 +174,25 @@ BEGIN
         END IF;
     END IF;
 
-    INSERT INTO affiliate_self_commission_relationship_guards (
-        user_id,
-        has_upstream,
-        self_commission_enabled
-    )
-    VALUES (NEW.agent_id, FALSE, NEW.enabled)
-    ON CONFLICT (user_id) DO UPDATE
-    SET self_commission_enabled = EXCLUDED.self_commission_enabled,
-        updated_at = NOW();
+    BEGIN
+        INSERT INTO affiliate_self_commission_relationship_guards (
+            user_id,
+            has_upstream,
+            self_commission_enabled
+        )
+        VALUES (NEW.agent_id, FALSE, NEW.enabled)
+        ON CONFLICT (user_id) DO UPDATE
+        SET self_commission_enabled = EXCLUDED.self_commission_enabled,
+            updated_at = NOW();
+    EXCEPTION
+        WHEN check_violation THEN
+            RAISE EXCEPTION 'affiliate partner already has an upstream relationship'
+                USING
+                    ERRCODE = '23514',
+                    CONSTRAINT = 'affiliate_self_commission_no_upstream';
+    END;
 
     RETURN NEW;
-EXCEPTION
-    WHEN check_violation THEN
-        RAISE EXCEPTION 'affiliate partner already has an upstream relationship'
-            USING
-                ERRCODE = '23514',
-                CONSTRAINT = 'affiliate_self_commission_no_upstream';
 END;
 $$;
 

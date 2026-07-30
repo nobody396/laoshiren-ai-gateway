@@ -296,6 +296,22 @@ func TestAffiliateSelfCommissionMigration_EnforcesAttributionShapes(t *testing.T
 	requirePostgresConstraint(t, err, "chk_balance_lot_affiliate_shape")
 
 	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO balance_lots (
+			user_id, source_type, source_key,
+			original_amount_micros, remaining_amount_micros,
+			affiliate_eligible, affiliate_policy, direct_partner_id,
+			customer_rebate_rate_bps, partner_commission_rate_bps
+		)
+		VALUES (
+			$1, 'paid_topup', $2,
+			100000000, 100000000,
+			TRUE, 'PARTNER_SELF_USAGE', NULL,
+			0, 1000
+		)
+	`, consumer.ID, "self-shape-null-partner:"+suffix)
+	requirePostgresConstraint(t, err, "chk_balance_lot_affiliate_shape")
+
+	_, err = integrationDB.ExecContext(ctx, `
 		INSERT INTO monthly_entitlement_cycles (
 			user_id, source_type, source_key, product_code,
 			sale_price_micros, credit_limit_micros,
@@ -314,6 +330,24 @@ func TestAffiliateSelfCommissionMigration_EnforcesAttributionShapes(t *testing.T
 	requirePostgresConstraint(t, err, "chk_monthly_entitlement_affiliate_shape")
 
 	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO monthly_entitlement_cycles (
+			user_id, source_type, source_key, product_code,
+			sale_price_micros, credit_limit_micros,
+			affiliate_eligible, affiliate_policy, direct_partner_id,
+			customer_rebate_rate_bps, partner_commission_rate_bps,
+			pricing_table_version, starts_at, ends_at
+		)
+		VALUES (
+			$1, 'paid_redeem', $2, 'self-shape',
+			100000000, 200000000,
+			TRUE, 'PARTNER_SELF_USAGE', NULL,
+			0, 1000,
+			'test', NOW(), NOW() + INTERVAL '31 days'
+		)
+	`, consumer.ID, "self-shape-null-monthly-partner:"+suffix)
+	requirePostgresConstraint(t, err, "chk_monthly_entitlement_affiliate_shape")
+
+	_, err = integrationDB.ExecContext(ctx, `
 		INSERT INTO affiliate_performance_events (
 			user_id, direct_agent_id, event_type, amount_micros,
 			affiliate_policy,
@@ -324,9 +358,27 @@ func TestAffiliateSelfCommissionMigration_EnforcesAttributionShapes(t *testing.T
 			$1, $2, 'confirmed_consumption', 10000000,
 			'PARTNER_SELF_USAGE',
 			0, 1000,
-			'integration', 1, $3, NOW(), '{}'::jsonb
+			'integration', 1, $3, NOW(),
+			jsonb_build_object('attribution_policy', 'PARTNER_SELF_USAGE')
 		)
 	`, consumer.ID, other.ID, "self-shape-wrong-event:"+suffix)
+	requirePostgresConstraint(t, err, "chk_affiliate_performance_rates")
+
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_performance_events (
+			user_id, direct_agent_id, event_type, amount_micros,
+			affiliate_policy,
+			customer_rebate_rate_bps, partner_commission_rate_bps,
+			source_type, source_id, event_key, occurred_at, metadata
+		)
+		VALUES (
+			$1, NULL, 'confirmed_consumption', 10000000,
+			'PARTNER_SELF_USAGE',
+			0, 1000,
+			'integration', 1, $2, NOW(),
+			jsonb_build_object('attribution_policy', 'PARTNER_SELF_USAGE')
+		)
+	`, consumer.ID, "self-shape-null-event-partner:"+suffix)
 	requirePostgresConstraint(t, err, "chk_affiliate_performance_rates")
 
 	_, err = integrationDB.ExecContext(ctx, `
@@ -340,7 +392,25 @@ func TestAffiliateSelfCommissionMigration_EnforcesAttributionShapes(t *testing.T
 			$1, $1, 'confirmed_consumption', 10000000,
 			'PARTNER_SELF_USAGE',
 			0, 1000,
-			'integration', 1, $2, NOW(), '{}'::jsonb
+			'integration', 1, $2, NOW(),
+			jsonb_build_object('program_mode', 'live')
+		)
+	`, consumer.ID, "self-shape-missing-event-policy:"+suffix)
+	requirePostgresConstraint(t, err, "chk_affiliate_performance_rates")
+
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_performance_events (
+			user_id, direct_agent_id, event_type, amount_micros,
+			affiliate_policy,
+			customer_rebate_rate_bps, partner_commission_rate_bps,
+			source_type, source_id, event_key, occurred_at, metadata
+		)
+		VALUES (
+			$1, $1, 'confirmed_consumption', 10000000,
+			'PARTNER_SELF_USAGE',
+			0, 1000,
+			'integration', 1, $2, NOW(),
+			jsonb_build_object('attribution_policy', 'PARTNER_SELF_USAGE')
 		)
 	`, consumer.ID, "self-shape-valid-event:"+suffix)
 	require.NoError(t, err)
@@ -361,6 +431,60 @@ func TestAffiliateSelfCommissionMigration_EnforcesAttributionShapes(t *testing.T
 			$2, '{}'::jsonb
 		)
 	`, consumer.ID, "self-shape-split-cash:"+suffix)
+	requirePostgresConstraint(t, err, "chk_agent_cash_self_commission_shape")
+
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_cash_commission_entries (
+			agent_id, consumer_user_id, entry_type,
+			amount_micros, source_amount_micros,
+			customer_rebate_rate_bps, agent_commission_rate_bps,
+			posting_status, source_type, source_id,
+			idempotency_key, metadata
+		)
+		VALUES (
+			$1, $1, 'earned',
+			10000000, 100000000,
+			NULL, 1000,
+			'posted', 'integration', 1,
+			$2, jsonb_build_object('attribution_policy', 'PARTNER_SELF_USAGE')
+		)
+	`, consumer.ID, "self-shape-null-customer-rate:"+suffix)
+	requirePostgresConstraint(t, err, "chk_agent_cash_self_commission_shape")
+
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_cash_commission_entries (
+			agent_id, consumer_user_id, entry_type,
+			amount_micros, source_amount_micros,
+			customer_rebate_rate_bps, agent_commission_rate_bps,
+			posting_status, source_type, source_id,
+			idempotency_key, metadata
+		)
+		VALUES (
+			$1, $1, 'earned',
+			10000000, 100000000,
+			0, NULL,
+			'posted', 'integration', 1,
+			$2, jsonb_build_object('attribution_policy', 'PARTNER_SELF_USAGE')
+		)
+	`, consumer.ID, "self-shape-null-agent-rate:"+suffix)
+	requirePostgresConstraint(t, err, "chk_agent_cash_self_commission_shape")
+
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_cash_commission_entries (
+			agent_id, consumer_user_id, entry_type,
+			amount_micros, source_amount_micros,
+			customer_rebate_rate_bps, agent_commission_rate_bps,
+			posting_status, source_type, source_id,
+			idempotency_key, metadata
+		)
+		VALUES (
+			$1, $1, 'earned',
+			10000000, 100000000,
+			0, 1000,
+			'posted', 'integration', 1,
+			$2, '{}'::jsonb
+		)
+	`, consumer.ID, "self-shape-missing-cash-policy:"+suffix)
 	requirePostgresConstraint(t, err, "chk_agent_cash_self_commission_shape")
 
 	_, err = integrationDB.ExecContext(ctx, `

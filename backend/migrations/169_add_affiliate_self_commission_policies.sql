@@ -366,6 +366,7 @@ ALTER TABLE balance_lots
         (
             affiliate_policy = 'PARTNER_SELF_USAGE'
             AND affiliate_eligible = TRUE
+            AND direct_partner_id IS NOT NULL
             AND direct_partner_id = user_id
             AND customer_rebate_rate_bps = 0
             AND partner_commission_rate_bps = 1000
@@ -404,6 +405,7 @@ ALTER TABLE monthly_entitlement_cycles
         (
             affiliate_policy = 'PARTNER_SELF_USAGE'
             AND affiliate_eligible = TRUE
+            AND direct_partner_id IS NOT NULL
             AND direct_partner_id = user_id
             AND customer_rebate_rate_bps = 0
             AND partner_commission_rate_bps = 1000
@@ -443,9 +445,12 @@ ALTER TABLE affiliate_performance_events
             OR
             (
                 affiliate_policy = 'PARTNER_SELF_USAGE'
+                AND direct_agent_id IS NOT NULL
                 AND direct_agent_id = user_id
                 AND customer_rebate_rate_bps = 0
                 AND partner_commission_rate_bps = 1000
+                AND (metadata ->> 'attribution_policy')
+                    IS NOT DISTINCT FROM 'PARTNER_SELF_USAGE'
             )
             OR
             (
@@ -461,12 +466,13 @@ ALTER TABLE agent_cash_commission_entries
     ADD CONSTRAINT chk_agent_cash_self_commission_shape CHECK (
         entry_type <> 'earned'
         OR consumer_user_id IS NULL
-        OR agent_id <> consumer_user_id
+        OR agent_id IS DISTINCT FROM consumer_user_id
         OR (
-            agent_id = consumer_user_id
-            AND customer_rebate_rate_bps = 0
-            AND agent_commission_rate_bps = 1000
-            AND metadata ->> 'attribution_policy' = 'PARTNER_SELF_USAGE'
+            agent_id IS NOT DISTINCT FROM consumer_user_id
+            AND customer_rebate_rate_bps IS NOT DISTINCT FROM 0
+            AND agent_commission_rate_bps IS NOT DISTINCT FROM 1000
+            AND (metadata ->> 'attribution_policy')
+                IS NOT DISTINCT FROM 'PARTNER_SELF_USAGE'
         )
     );
 

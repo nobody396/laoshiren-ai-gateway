@@ -753,26 +753,24 @@ func (s *adminServiceImpl) UpdateUserBalance(ctx context.Context, userID int64, 
 		return nil, err
 	}
 
-	oldBalance := user.Balance
-
-	switch operation {
-	case "set":
-		user.Balance = balance
-	case "add":
-		user.Balance += balance
-	case "subtract":
-		user.Balance -= balance
+	adjustmentRepo, ok := s.userRepo.(adminBalanceAdjustmentRepository)
+	if !ok {
+		return nil, errAdminBalanceAdjustmentGuardUnavailable
 	}
-
-	if user.Balance < 0 {
-		return nil, fmt.Errorf("balance cannot be negative, current balance: %.2f, requested operation would result in: %.2f", oldBalance, user.Balance)
-	}
-
-	if err := s.userRepo.Update(ctx, user); err != nil {
+	adjustment, err := adjustmentRepo.ApplyAdminBalanceAdjustment(ctx, userID, balance, operation)
+	if err != nil {
 		return nil, err
 	}
-	balanceDiff := user.Balance - oldBalance
-	if s.authCacheInvalidator != nil && balanceDiff != 0 {
+	if adjustment == nil {
+		return nil, errAdminBalanceAdjustmentGuardUnavailable
+	}
+	user.Balance = adjustment.NewBalance
+	balanceDiff := adjustment.NewBalance - adjustment.OldBalance
+	if balanceDiff == 0 {
+		return user, nil
+	}
+
+	if s.authCacheInvalidator != nil {
 		s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, userID)
 	}
 
@@ -786,20 +784,18 @@ func (s *adminServiceImpl) UpdateUserBalance(ctx context.Context, userID int64, 
 		}()
 	}
 
-	if balanceDiff != 0 {
-		if s.accountChangeRepo != nil {
-			record := &AccountChangeRecord{
-				UserID:     user.ID,
-				AssetType:  AccountChangeAssetBalance,
-				Reason:     AccountChangeReasonAdminAdjustment,
-				Delta:      balanceDiff,
-				SourceType: AccountChangeSourceAdminManual,
-				Notes:      notes,
-				CreatedAt:  time.Now(),
-			}
-			if err := s.accountChangeRepo.Create(ctx, record); err != nil {
-				logger.LegacyPrintf("service.admin", "failed to create balance account change record: %v", err)
-			}
+	if s.accountChangeRepo != nil {
+		record := &AccountChangeRecord{
+			UserID:     user.ID,
+			AssetType:  AccountChangeAssetBalance,
+			Reason:     AccountChangeReasonAdminAdjustment,
+			Delta:      balanceDiff,
+			SourceType: AccountChangeSourceAdminManual,
+			Notes:      notes,
+			CreatedAt:  time.Now(),
+		}
+		if err := s.accountChangeRepo.Create(ctx, record); err != nil {
+			logger.LegacyPrintf("service.admin", "failed to create balance account change record: %v", err)
 		}
 	}
 

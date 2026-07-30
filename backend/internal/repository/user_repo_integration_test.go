@@ -4,6 +4,8 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -475,6 +477,119 @@ func (s *UserRepoSuite) TestUpdateBalance_Negative() {
 	got, err := s.repo.GetByID(s.ctx, user.ID)
 	s.Require().NoError(err)
 	s.Require().InDelta(7.0, got.Balance, 1e-6)
+}
+
+func (s *UserRepoSuite) TestApplyAdminBalanceAdjustment_BlocksNegativeChangeWithEligibleLot() {
+	user := s.mustCreateUser(&service.User{Email: "admin-guard-user@test.com", Balance: 10})
+	partner := s.mustCreateUser(&service.User{Email: "admin-guard-partner@test.com"})
+	_, err := integrationDB.ExecContext(s.ctx, `
+		INSERT INTO balance_lots (
+			user_id, source_type, source_key,
+			original_amount_micros, remaining_amount_micros,
+			affiliate_eligible, affiliate_policy, direct_partner_id,
+			customer_rebate_rate_bps, partner_commission_rate_bps
+		)
+		VALUES ($1, 'paid_topup', $2, 10000000, 10000000, TRUE, 'PARTNER_USAGE', $3, 500, 500)
+	`, user.ID, fmt.Sprintf("test:admin-guard:%d", user.ID), partner.ID)
+	s.Require().NoError(err)
+
+	_, err = s.repo.ApplyAdminBalanceAdjustment(s.ctx, user.ID, 1, "subtract")
+	s.Require().ErrorIs(err, service.ErrAdminBalanceSourceReversalRequired)
+
+	got, err := s.repo.GetByID(s.ctx, user.ID)
+	s.Require().NoError(err)
+	s.Require().InDelta(10, got.Balance, 1e-6)
+}
+
+func (s *UserRepoSuite) TestApplyAdminBalanceAdjustment_AddAndNoopNeverCreateEligibleLot() {
+	user := s.mustCreateUser(&service.User{Email: "admin-add-ineligible@test.com", Balance: 10})
+
+	result, err := s.repo.ApplyAdminBalanceAdjustment(s.ctx, user.ID, 2, "add")
+	s.Require().NoError(err)
+	s.Require().InDelta(10, result.OldBalance, 1e-6)
+	s.Require().InDelta(12, result.NewBalance, 1e-6)
+
+	result, err = s.repo.ApplyAdminBalanceAdjustment(s.ctx, user.ID, 12, "set")
+	s.Require().NoError(err)
+	s.Require().InDelta(12, result.OldBalance, 1e-6)
+	s.Require().InDelta(12, result.NewBalance, 1e-6)
+
+	var (
+		sourceType        string
+		affiliateEligible bool
+		affiliatePolicy   string
+		remainingMicros   int64
+		lotCount          int
+	)
+	s.Require().NoError(integrationDB.QueryRowContext(s.ctx, `
+		SELECT source_type, affiliate_eligible, affiliate_policy, remaining_amount_micros
+		FROM balance_lots
+		WHERE user_id = $1
+	`, user.ID).Scan(&sourceType, &affiliateEligible, &affiliatePolicy, &remainingMicros))
+	s.Equal(service.AffiliateSourceAdminAdjustment, sourceType)
+	s.False(affiliateEligible, "manual positive balance must not inherit an affiliate policy")
+	s.Equal(service.AffiliateSourcePolicyNone, affiliatePolicy)
+	s.Equal(int64(2_000_000), remainingMicros)
+	s.Require().NoError(integrationDB.QueryRowContext(s.ctx, `
+		SELECT COUNT(*)
+		FROM balance_lots
+		WHERE user_id = $1
+	`, user.ID).Scan(&lotCount))
+	s.Equal(1, lotCount, "a no-op must not create another balance lot")
+}
+
+func (s *UserRepoSuite) TestApplyAdminBalanceAdjustment_SubtractWithoutEligibleLot() {
+	user := s.mustCreateUser(&service.User{Email: "admin-subtract-safe@test.com", Balance: 10})
+
+	result, err := s.repo.ApplyAdminBalanceAdjustment(s.ctx, user.ID, 2, "subtract")
+	s.Require().NoError(err)
+	s.Require().InDelta(10, result.OldBalance, 1e-6)
+	s.Require().InDelta(8, result.NewBalance, 1e-6)
+}
+
+func (s *UserRepoSuite) TestApplyAdminBalanceAdjustment_WaitsForConcurrentEligiblePurchase() {
+	user := s.mustCreateUser(&service.User{Email: "admin-guard-race-user@test.com", Balance: 10})
+	partner := s.mustCreateUser(&service.User{Email: "admin-guard-race-partner@test.com"})
+
+	purchaseTx, err := integrationDB.BeginTx(s.ctx, nil)
+	s.Require().NoError(err)
+	defer func() { _ = purchaseTx.Rollback() }()
+	_, err = purchaseTx.ExecContext(s.ctx, `
+		UPDATE users
+		SET balance = balance + 5
+		WHERE id = $1
+	`, user.ID)
+	s.Require().NoError(err)
+	_, err = purchaseTx.ExecContext(s.ctx, `
+		INSERT INTO balance_lots (
+			user_id, source_type, source_key,
+			original_amount_micros, remaining_amount_micros,
+			affiliate_eligible, affiliate_policy, direct_partner_id,
+			customer_rebate_rate_bps, partner_commission_rate_bps
+		)
+		VALUES ($1, 'paid_topup', $2, 5000000, 5000000, TRUE, 'PARTNER_USAGE', $3, 500, 500)
+	`, user.ID, fmt.Sprintf("test:admin-guard-race:%d", user.ID), partner.ID)
+	s.Require().NoError(err)
+
+	errCh := make(chan error, 1)
+	go func() {
+		_, adjustErr := s.repo.ApplyAdminBalanceAdjustment(context.Background(), user.ID, 1, "subtract")
+		errCh <- adjustErr
+	}()
+
+	select {
+	case err := <-errCh:
+		s.Fail("negative adjustment did not wait for the purchase transaction", "error: %v", err)
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	s.Require().NoError(purchaseTx.Commit())
+	err = <-errCh
+	s.Require().True(errors.Is(err, service.ErrAdminBalanceSourceReversalRequired), "unexpected error: %v", err)
+
+	got, err := s.repo.GetByID(s.ctx, user.ID)
+	s.Require().NoError(err)
+	s.Require().InDelta(15, got.Balance, 1e-6)
 }
 
 func (s *UserRepoSuite) TestDeductBalance() {

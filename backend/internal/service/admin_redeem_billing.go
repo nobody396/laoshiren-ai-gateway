@@ -63,6 +63,40 @@ func (s *adminServiceImpl) ListRedeemCodeBilling(ctx context.Context, page, page
 	}, nil
 }
 
+// ListRedeemCodeClassificationAnomalies returns fail-closed records that were
+// redeemed while still classified as unsold inventory. These records require
+// evidence review; callers must never infer "sold" from redemption alone.
+func (s *adminServiceImpl) ListRedeemCodeClassificationAnomalies(
+	ctx context.Context,
+) (*RedeemCodeClassificationAnomalyResult, error) {
+	if s.entClient == nil {
+		return nil, errors.New("entClient is nil")
+	}
+	query := s.entClient.RedeemCode.Query().Where(
+		redeemcode.StatusEQ(StatusUsed),
+		redeemcode.PurposeEQ(RedeemCodePurposeSaleRecharge),
+		redeemcode.SalesStatusEQ(RedeemCodeSalesStatusInventory),
+	)
+	total, err := query.Clone().Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	codes, err := query.
+		WithUser().
+		WithBatch().
+		Order(dbent.Desc(redeemcode.FieldID)).
+		Limit(200).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]RedeemCodeBillingItem, 0, len(codes))
+	for _, code := range codes {
+		items = append(items, redeemCodeBillingItemFromEntity(code, nil))
+	}
+	return &RedeemCodeClassificationAnomalyResult{Items: items, Total: int64(total)}, nil
+}
+
 func (s *adminServiceImpl) applyRedeemCodeBillingFilters(query *dbent.RedeemCodeQuery, filters RedeemCodeBillingFilters) *dbent.RedeemCodeQuery {
 	query = query.Where(redeemcode.TypeEQ(RedeemTypeBalance))
 

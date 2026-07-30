@@ -171,6 +171,61 @@ func TestRedeemGenerate_AcceptsBillingMetadata(t *testing.T) {
 	require.Equal(t, "buyer@example.com", svc.generatedRedeemInput.SoldToNote)
 }
 
+func TestRedeemBatchUpdateBilling_MapsOnlyReconciliationFields(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	body := map[string]any{
+		"ids": []int64{4839, 4840},
+		"fields": map[string]any{
+			"purpose":        "internal_test",
+			"sales_status":   "void",
+			"internal_notes": "verified administrator redemption test",
+		},
+	}
+	jsonBytes, err := json.Marshal(body)
+	require.NoError(t, err)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/v1/admin/redeem-codes/batch-update", bytes.NewReader(jsonBytes))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	svc := newStubAdminService()
+	NewRedeemHandler(svc, nil).BatchUpdateBilling(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.NotNil(t, svc.batchRedeemInput)
+	require.Equal(t, []int64{4839, 4840}, svc.batchRedeemInput.IDs)
+	require.NotNil(t, svc.batchRedeemInput.Fields.Purpose)
+	require.Equal(t, service.RedeemCodePurposeInternalTest, *svc.batchRedeemInput.Fields.Purpose)
+	require.NotNil(t, svc.batchRedeemInput.Fields.SalesStatus)
+	require.Equal(t, service.RedeemCodeSalesStatusVoid, *svc.batchRedeemInput.Fields.SalesStatus)
+}
+
+func TestRedeemBatchUpdateBilling_RejectsEntitlementFields(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	body := map[string]any{
+		"ids": []int64{4839},
+		"fields": map[string]any{
+			"value":         0,
+			"validity_days": 0,
+			"group_ids":     []int64{},
+		},
+	}
+	jsonBytes, err := json.Marshal(body)
+	require.NoError(t, err)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/v1/admin/redeem-codes/batch-update", bytes.NewReader(jsonBytes))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	svc := newStubAdminService()
+	NewRedeemHandler(svc, nil).BatchUpdateBilling(c)
+
+	// Unknown fields cannot be mapped into the billing-only input, so the
+	// request is rejected before any service write can occur.
+	require.Equal(t, http.StatusBadRequest, w.Code)
+	require.Nil(t, svc.batchRedeemInput)
+}
+
 func TestRedeemBilling_ParsesFilters(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
@@ -197,6 +252,22 @@ func TestRedeemBilling_ParsesFilters(t *testing.T) {
 	assert.InDelta(t, 30, *svc.lastBillingFilters.AmountMax, 0.001)
 	require.NotNil(t, svc.lastBillingFilters.UsedStartTime)
 	require.NotNil(t, svc.lastBillingFilters.UsedEndTime)
+}
+
+func TestRedeemClassificationAnomalies_ReturnsReviewQueue(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(
+		http.MethodGet,
+		"/api/v1/admin/redeem-codes/classification-anomalies",
+		nil,
+	)
+
+	NewRedeemHandler(newStubAdminService(), nil).ListClassificationAnomalies(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Contains(t, w.Body.String(), `"total":0`)
 }
 
 func TestRedeemExport_IncludesRedeemURL(t *testing.T) {

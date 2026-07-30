@@ -26,6 +26,11 @@ type RedeemCodeBillingResult struct {
 	Pages    int                      `json:"pages"`
 }
 
+type RedeemCodeClassificationAnomalyResult struct {
+	Items []RedeemCodeBillingItem `json:"items"`
+	Total int64                   `json:"total"`
+}
+
 type RedeemCodeBillingItem struct {
 	ID                 int64      `json:"id"`
 	Code               string     `json:"code"`

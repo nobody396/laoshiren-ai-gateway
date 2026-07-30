@@ -3339,6 +3339,15 @@
       "description": "POST /admin/rbac/apis/sync",
       "sort_order": 8,
       "status": "active"
+    },
+    {
+      "id": 445,
+      "group": "卡密管理",
+      "path": "/admin/redeem-codes/batch-update",
+      "method": "POST",
+      "description": "POST /admin/redeem-codes/batch-update",
+      "sort_order": 11,
+      "status": "active"
     }
   ]
 }

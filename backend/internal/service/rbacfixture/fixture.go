@@ -515,6 +515,9 @@ func BaselineAPIs() []*service.AdminAPI {
 	add("DELETE", "/admin/rbac/apis", 63, 7)
 	add("POST", "/admin/rbac/apis/sync", 63, 8)
 
+	// Appended to preserve the stable IDs of the existing RBAC fixture.
+	add("POST", "/admin/redeem-codes/batch-update", 32, 11)
+
 	return out
 }
 

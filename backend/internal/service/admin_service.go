@@ -97,6 +97,7 @@ type AdminService interface {
 	ListRedeemCodes(ctx context.Context, page, pageSize int, codeType, status, search string) ([]RedeemCode, int64, error)
 	GetRedeemCode(ctx context.Context, id int64) (*RedeemCode, error)
 	GenerateRedeemCodes(ctx context.Context, input *GenerateRedeemCodesInput) ([]RedeemCode, error)
+	BatchUpdateRedeemCodeBilling(ctx context.Context, input *BatchUpdateRedeemCodeBillingInput) ([]RedeemCode, error)
 	DeleteRedeemCode(ctx context.Context, id int64) error
 	BatchDeleteRedeemCodes(ctx context.Context, ids []int64) (int64, error)
 	ExpireRedeemCode(ctx context.Context, id int64) (*RedeemCode, error)
@@ -332,6 +333,23 @@ type GenerateRedeemCodesInput struct {
 	ExternalOrderURL string
 	InternalNotes    string
 	CreatedBy        *int64
+}
+
+// BatchUpdateRedeemCodeBillingInput changes billing/reconciliation metadata
+// only. Redeem status, recipient, value, groups, validity, and user entitlement
+// fields are intentionally not exposed here.
+type BatchUpdateRedeemCodeBillingInput struct {
+	IDs    []int64
+	Fields RedeemCodeBillingUpdateFields
+}
+
+type RedeemCodeBillingUpdateFields struct {
+	Purpose          *string
+	SalesStatus      *string
+	SoldToNote       *string
+	ExternalOrderNo  *string
+	ExternalOrderURL *string
+	InternalNotes    *string
 }
 
 type ProxyBatchDeleteResult struct {
@@ -2159,6 +2177,14 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 	}
 	purpose := normalizeRedeemCodePurposeForService(codeType, input.Purpose)
 	salesStatus := normalizeRedeemCodeSalesStatusForService(purpose, input.SalesStatus)
+	if err := validateRedeemCodeSaleEvidence(
+		purpose,
+		salesStatus,
+		input.ExternalOrderNo,
+		input.ExternalOrderURL,
+	); err != nil {
+		return nil, err
+	}
 	soldAt := input.SoldAt
 	if salesStatus == RedeemCodeSalesStatusSold && soldAt == nil {
 		now := time.Now()
@@ -2408,6 +2434,144 @@ func normalizeSubscriptionRedeemGroupIDs(groupID *int64, groupIDs []int64) []int
 		add(*groupID)
 	}
 	return out
+}
+
+func (s *adminServiceImpl) BatchUpdateRedeemCodeBilling(
+	ctx context.Context,
+	input *BatchUpdateRedeemCodeBillingInput,
+) ([]RedeemCode, error) {
+	if input == nil || len(input.IDs) == 0 {
+		return nil, infraerrors.BadRequest("REDEEM_CODE_IDS_REQUIRED", "at least one redeem code id is required")
+	}
+	if len(input.IDs) > 100 {
+		return nil, infraerrors.BadRequest("REDEEM_CODE_BATCH_LIMIT", "at most 100 redeem codes can be updated")
+	}
+	if !hasRedeemCodeBillingUpdate(input.Fields) {
+		return nil, infraerrors.BadRequest("REDEEM_CODE_FIELDS_REQUIRED", "at least one billing field is required")
+	}
+	if s.entClient == nil {
+		return nil, errors.New("entClient is nil")
+	}
+
+	seen := make(map[int64]struct{}, len(input.IDs))
+	for _, id := range input.IDs {
+		if id <= 0 {
+			return nil, infraerrors.BadRequest("INVALID_REDEEM_CODE_ID", "redeem code ids must be positive")
+		}
+		if _, ok := seen[id]; ok {
+			return nil, infraerrors.BadRequest("DUPLICATE_REDEEM_CODE_ID", "redeem code ids must be unique")
+		}
+		seen[id] = struct{}{}
+	}
+
+	tx, err := s.entClient.Tx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin redeem code billing update: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	txCtx := dbent.NewTxContext(ctx, tx)
+	updated := make([]RedeemCode, 0, len(input.IDs))
+	for _, id := range input.IDs {
+		code, getErr := s.redeemCodeRepo.GetByID(txCtx, id)
+		if getErr != nil {
+			return nil, getErr
+		}
+		applyRedeemCodeBillingUpdate(code, input.Fields)
+		if err := validateRedeemCodeBillingClassification(code); err != nil {
+			return nil, err
+		}
+		if err := s.redeemCodeRepo.Update(txCtx, code); err != nil {
+			return nil, err
+		}
+		updated = append(updated, *code)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit redeem code billing update: %w", err)
+	}
+	return updated, nil
+}
+
+func hasRedeemCodeBillingUpdate(fields RedeemCodeBillingUpdateFields) bool {
+	return fields.Purpose != nil ||
+		fields.SalesStatus != nil ||
+		fields.SoldToNote != nil ||
+		fields.ExternalOrderNo != nil ||
+		fields.ExternalOrderURL != nil ||
+		fields.InternalNotes != nil
+}
+
+func applyRedeemCodeBillingUpdate(code *RedeemCode, fields RedeemCodeBillingUpdateFields) {
+	if fields.Purpose != nil {
+		code.Purpose = strings.TrimSpace(strings.ToLower(*fields.Purpose))
+	}
+	if fields.SalesStatus != nil {
+		code.SalesStatus = strings.TrimSpace(strings.ToLower(*fields.SalesStatus))
+	}
+	if fields.SoldToNote != nil {
+		code.SoldToNote = strings.TrimSpace(*fields.SoldToNote)
+	}
+	if fields.ExternalOrderNo != nil {
+		code.ExternalOrderNo = strings.TrimSpace(*fields.ExternalOrderNo)
+	}
+	if fields.ExternalOrderURL != nil {
+		code.ExternalOrderURL = strings.TrimSpace(*fields.ExternalOrderURL)
+	}
+	if fields.InternalNotes != nil {
+		code.InternalNotes = strings.TrimSpace(*fields.InternalNotes)
+	}
+	if code.SalesStatus == RedeemCodeSalesStatusSold && code.SoldAt == nil {
+		now := time.Now()
+		code.SoldAt = &now
+	}
+}
+
+func validateRedeemCodeBillingClassification(code *RedeemCode) error {
+	if code == nil {
+		return infraerrors.BadRequest("INVALID_REDEEM_CODE", "redeem code is required")
+	}
+	switch code.Purpose {
+	case RedeemCodePurposeSaleRecharge,
+		RedeemCodePurposeGift,
+		RedeemCodePurposeCompensation,
+		RedeemCodePurposeInternalTest,
+		RedeemCodePurposeMigration:
+	default:
+		return infraerrors.BadRequest("INVALID_REDEEM_CODE_PURPOSE", "invalid redeem code purpose")
+	}
+	switch code.SalesStatus {
+	case RedeemCodeSalesStatusInventory,
+		RedeemCodeSalesStatusSold,
+		RedeemCodeSalesStatusGifted,
+		RedeemCodeSalesStatusVoid:
+	default:
+		return infraerrors.BadRequest("INVALID_REDEEM_CODE_SALES_STATUS", "invalid redeem code sales status")
+	}
+	return validateRedeemCodeSaleEvidence(
+		code.Purpose,
+		code.SalesStatus,
+		code.ExternalOrderNo,
+		code.ExternalOrderURL,
+	)
+}
+
+func validateRedeemCodeSaleEvidence(purpose, salesStatus, externalOrderNo, externalOrderURL string) error {
+	if salesStatus != RedeemCodeSalesStatusSold {
+		return nil
+	}
+	if purpose != RedeemCodePurposeSaleRecharge {
+		return infraerrors.BadRequest(
+			"INVALID_SOLD_REDEEM_CODE_PURPOSE",
+			"only sale_recharge codes can be marked sold",
+		)
+	}
+	if strings.TrimSpace(externalOrderNo) == "" && strings.TrimSpace(externalOrderURL) == "" {
+		return infraerrors.BadRequest(
+			"REDEEM_CODE_SALE_EVIDENCE_REQUIRED",
+			"external_order_no or external_order_url is required before marking a redeem code sold",
+		)
+	}
+	return nil
 }
 
 func (s *adminServiceImpl) DeleteRedeemCode(ctx context.Context, id int64) error {

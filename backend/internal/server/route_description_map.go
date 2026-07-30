@@ -196,6 +196,7 @@ var scannerDescMap = map[string]string{
 	"GET /admin/redeem-codes/:id":                "卡密详情",
 	"POST /admin/redeem-codes/create-and-redeem": "创建并立即兑换卡密",
 	"POST /admin/redeem-codes/generate":          "批量生成卡密",
+	"POST /admin/redeem-codes/batch-update":      "批量修正卡密财务属性",
 	"DELETE /admin/redeem-codes/:id":             "删除卡密",
 	"POST /admin/redeem-codes/batch-delete":      "批量删除卡密",
 	"POST /admin/redeem-codes/:id/expire":        "作废卡密",

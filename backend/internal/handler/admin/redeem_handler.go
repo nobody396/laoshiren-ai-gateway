@@ -66,6 +66,20 @@ type CreateAndRedeemCodeRequest struct {
 	Notes        string  `json:"notes"`
 }
 
+type BatchUpdateRedeemCodeBillingRequest struct {
+	IDs    []int64                            `json:"ids" binding:"required,min=1,max=100,dive,gt=0"`
+	Fields BatchUpdateRedeemCodeBillingFields `json:"fields" binding:"required"`
+}
+
+type BatchUpdateRedeemCodeBillingFields struct {
+	Purpose          *string `json:"purpose" binding:"omitempty,oneof=sale_recharge gift compensation internal_test migration"`
+	SalesStatus      *string `json:"sales_status" binding:"omitempty,oneof=inventory sold gifted void"`
+	SoldToNote       *string `json:"sold_to_note"`
+	ExternalOrderNo  *string `json:"external_order_no"`
+	ExternalOrderURL *string `json:"external_order_url"`
+	InternalNotes    *string `json:"internal_notes"`
+}
+
 // List handles listing all redeem codes with pagination
 // GET /api/v1/admin/redeem-codes
 func (h *RedeemHandler) List(c *gin.Context) {
@@ -154,6 +168,52 @@ func (h *RedeemHandler) Generate(c *gin.Context) {
 		}
 		return out, nil
 	})
+}
+
+// BatchUpdateBilling changes reconciliation metadata only. It deliberately
+// cannot alter the redeemed user, code status, value, groups, validity, or any
+// entitlement granted by a prior redemption.
+// POST /api/v1/admin/redeem-codes/batch-update
+func (h *RedeemHandler) BatchUpdateBilling(c *gin.Context) {
+	var req BatchUpdateRedeemCodeBillingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if req.Fields.Purpose == nil &&
+		req.Fields.SalesStatus == nil &&
+		req.Fields.SoldToNote == nil &&
+		req.Fields.ExternalOrderNo == nil &&
+		req.Fields.ExternalOrderURL == nil &&
+		req.Fields.InternalNotes == nil {
+		response.BadRequest(c, "At least one billing field is required")
+		return
+	}
+
+	updated, err := h.adminService.BatchUpdateRedeemCodeBilling(
+		c.Request.Context(),
+		&service.BatchUpdateRedeemCodeBillingInput{
+			IDs: req.IDs,
+			Fields: service.RedeemCodeBillingUpdateFields{
+				Purpose:          req.Fields.Purpose,
+				SalesStatus:      req.Fields.SalesStatus,
+				SoldToNote:       req.Fields.SoldToNote,
+				ExternalOrderNo:  req.Fields.ExternalOrderNo,
+				ExternalOrderURL: req.Fields.ExternalOrderURL,
+				InternalNotes:    req.Fields.InternalNotes,
+			},
+		},
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	out := make([]dto.AdminRedeemCode, 0, len(updated))
+	for i := range updated {
+		out = append(out, *dto.RedeemCodeFromServiceAdmin(&updated[i]))
+	}
+	response.Success(c, gin.H{"updated": out, "count": len(out)})
 }
 
 // CreateAndRedeem creates a fixed redeem code and redeems it for a target user in one step.

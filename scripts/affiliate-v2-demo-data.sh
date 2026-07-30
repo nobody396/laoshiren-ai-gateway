@@ -589,11 +589,13 @@ BEGIN
   INSERT INTO affiliate_agent_applications (
     user_id, status, qualifying_route,
     direct_valid_consumer_count, direct_team_consumption_micros,
+    self_consumption_micros, combined_consumption_micros,
     application_note, submitted_at
   )
   VALUES (
     applicant_id, 'pending_review', 'direct_volume',
     7, 2280000000,
+    0, 2280000000,
     '主要服务独立开发者，计划通过技术社群进行真实分享。',
     NOW() - INTERVAL '1 day'
   )

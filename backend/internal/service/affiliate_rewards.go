@@ -25,6 +25,7 @@ const (
 	AffiliateSourcePolicyNone              = "NONE"
 	AffiliateSourcePolicyOrdinaryFirstPaid = "ORDINARY_FIRST_PAID"
 	AffiliateSourcePolicyPartnerUsage      = "PARTNER_USAGE"
+	AffiliateSourcePolicyPartnerSelfUsage  = "PARTNER_SELF_USAGE"
 )
 
 type AffiliateFirstPaidPurchaseInput struct {
@@ -52,6 +53,12 @@ type AffiliateFirstPaidContext struct {
 	BindingPartnerRateBPS     int32
 	InviterPartnerStatus      string
 	InviterPartnerActivatedAt *time.Time
+	HasUpstreamRelationship   bool
+	SelfPartnerStatus         string
+	SelfPartnerRiskStatus     string
+	SelfCommissionEnabled     bool
+	SelfCommissionRateBPS     int32
+	SelfCommissionEffectiveAt *time.Time
 }
 
 type AffiliatePlatformRewardInput struct {
@@ -159,6 +166,25 @@ func (s *AffiliateRewardService) ProcessFirstPaidPurchase(
 				!firstPaid.BindingBoundAt.Before(*firstPaid.ProgramStartedAt))):
 		result.SourcePolicy = AffiliateSourcePolicyOrdinaryFirstPaid
 		result.DirectPartnerID = firstPaid.InviterUserID
+	case firstPaid.BindingKind == "" &&
+		!firstPaid.HasUpstreamRelationship &&
+		(!firstPaid.ProgramLive ||
+			(firstPaid.ProgramStartedAt != nil &&
+				!input.OccurredAt.Before(*firstPaid.ProgramStartedAt))) &&
+		firstPaid.SelfPartnerStatus == "active" &&
+		firstPaid.SelfPartnerRiskStatus == "clear" &&
+		firstPaid.SelfCommissionEnabled &&
+		firstPaid.SelfCommissionRateBPS == AffiliateAgentPoolRateBPS &&
+		firstPaid.SelfCommissionEffectiveAt != nil &&
+		!input.OccurredAt.Before(*firstPaid.SelfCommissionEffectiveAt):
+		// Self-consumption commission is a separately administered policy. It
+		// never creates a synthetic self-binding and it is considered only
+		// after every real binding path above, so an upstream relationship
+		// always wins and the fixed 10% pool can never stack.
+		result.SourcePolicy = AffiliateSourcePolicyPartnerSelfUsage
+		result.DirectPartnerID = input.UserID
+		result.CustomerRebateRateBPS = 0
+		result.PartnerCommissionRateBPS = AffiliateAgentPoolRateBPS
 	}
 
 	// Shadow mode must preserve the exact projected source policy used by the

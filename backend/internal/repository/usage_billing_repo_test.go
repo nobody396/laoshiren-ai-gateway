@@ -152,6 +152,156 @@ func TestUsageBillingRepositoryApply_SharedSubscriptionIgnoresNilWeeklyLimit(t *
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestSettleUsageBillingSelfPoolPostsFixedCashCommission(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+
+	mock.ExpectBegin()
+	tx, err := db.BeginTx(context.Background(), nil)
+	require.NoError(t, err)
+	mock.ExpectQuery(`SELECT status, risk_status\s+FROM agent_principals`).
+		WithArgs(int64(11)).
+		WillReturnRows(sqlmock.NewRows([]string{"status", "risk_status"}).
+			AddRow("active", "clear"))
+	mock.ExpectExec(`INSERT INTO agent_cash_commission_entries`).
+		WithArgs(
+			int64(11),
+			int64(1_000_000),
+			int64(10_000_000),
+			service.AffiliateAgentPoolRateBPS,
+			"posted",
+			int64(99),
+			"confirmed:99:self-cash",
+		).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	settlement, err := settleUsageBillingSelfPool(
+		context.Background(),
+		tx,
+		99,
+		11,
+		11,
+		10_000_000,
+		0,
+		service.AffiliateAgentPoolRateBPS,
+	)
+	require.NoError(t, err)
+	require.Zero(t, settlement.CustomerRebateMicros)
+	require.Equal(t, int64(1_000_000), settlement.AgentCommissionMicros)
+	mock.ExpectCommit()
+	require.NoError(t, tx.Commit())
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSettleUsageBillingSelfPoolHoldsRiskAndStopsTerminated(t *testing.T) {
+	t.Run("risk hold", func(t *testing.T) {
+		db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
+		require.NoError(t, err)
+		defer func() { _ = db.Close() }()
+
+		mock.ExpectBegin()
+		tx, err := db.BeginTx(context.Background(), nil)
+		require.NoError(t, err)
+		mock.ExpectQuery(`SELECT status, risk_status\s+FROM agent_principals`).
+			WithArgs(int64(12)).
+			WillReturnRows(sqlmock.NewRows([]string{"status", "risk_status"}).
+				AddRow("suspended", "review"))
+		mock.ExpectExec(`INSERT INTO agent_cash_commission_entries`).
+			WithArgs(
+				int64(12),
+				int64(500_000),
+				int64(5_000_000),
+				service.AffiliateAgentPoolRateBPS,
+				"risk_hold",
+				int64(100),
+				"confirmed:100:self-cash",
+			).
+			WillReturnResult(sqlmock.NewResult(0, 1))
+
+		settlement, err := settleUsageBillingSelfPool(
+			context.Background(),
+			tx,
+			100,
+			12,
+			12,
+			5_000_000,
+			0,
+			service.AffiliateAgentPoolRateBPS,
+		)
+		require.NoError(t, err)
+		require.Zero(t, settlement.AgentCommissionMicros)
+		mock.ExpectCommit()
+		require.NoError(t, tx.Commit())
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("terminated", func(t *testing.T) {
+		db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
+		require.NoError(t, err)
+		defer func() { _ = db.Close() }()
+
+		mock.ExpectBegin()
+		tx, err := db.BeginTx(context.Background(), nil)
+		require.NoError(t, err)
+		mock.ExpectQuery(`SELECT status, risk_status\s+FROM agent_principals`).
+			WithArgs(int64(13)).
+			WillReturnRows(sqlmock.NewRows([]string{"status", "risk_status"}).
+				AddRow("terminated", "blocked"))
+
+		settlement, err := settleUsageBillingSelfPool(
+			context.Background(),
+			tx,
+			101,
+			13,
+			13,
+			5_000_000,
+			0,
+			service.AffiliateAgentPoolRateBPS,
+		)
+		require.NoError(t, err)
+		require.Zero(t, settlement.AgentCommissionMicros)
+		mock.ExpectCommit()
+		require.NoError(t, tx.Commit())
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+}
+
+func TestSettleUsageBillingSelfPoolRejectsAnyNonSelfOrSplitPool(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+	mock.ExpectBegin()
+	tx, err := db.BeginTx(context.Background(), nil)
+	require.NoError(t, err)
+
+	_, err = settleUsageBillingSelfPool(
+		context.Background(),
+		tx,
+		102,
+		14,
+		15,
+		5_000_000,
+		0,
+		service.AffiliateAgentPoolRateBPS,
+	)
+	require.Error(t, err)
+	_, err = settleUsageBillingSelfPool(
+		context.Background(),
+		tx,
+		102,
+		14,
+		14,
+		5_000_000,
+		500,
+		500,
+	)
+	require.Error(t, err)
+	mock.ExpectRollback()
+	require.NoError(t, tx.Rollback())
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestUsageBillingRepositoryApply_SharedSubscriptionCapsMonthlyOverageWithNilWeeklyLimit(t *testing.T) {
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
 	require.NoError(t, err)

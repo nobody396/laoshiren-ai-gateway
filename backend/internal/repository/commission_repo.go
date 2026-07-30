@@ -193,6 +193,7 @@ func (r *commissionRepository) listByBeneficiaryAffiliateAware(
 	affiliateTypeAllowed := typeFilter == "" ||
 		typeFilter == service.CommissionTypeConsumption ||
 		typeFilter == "consumption_commission" ||
+		typeFilter == "self_consumption_commission" ||
 		typeFilter == "consumption_reversal"
 	args := []any{
 		beneficiaryID,
@@ -245,6 +246,8 @@ func (r *commissionRepository) listByBeneficiaryAffiliateAware(
 					)::numeric / 1000000
 				)::double precision AS source_amount,
 				CASE
+					WHEN cash.consumer_user_id = cash.agent_id
+						THEN 'self_consumption_commission'
 					WHEN BOOL_AND(cash.entry_type = 'reversal') THEN 'consumption_reversal'
 					ELSE 'consumption_commission'
 				END AS type,
@@ -292,6 +295,23 @@ func (r *commissionRepository) listByBeneficiaryAffiliateAware(
 				u.email,
 				u.username,
 				(cash.occurred_at AT TIME ZONE 'Asia/Shanghai')::date
+			HAVING
+				$3 = ''
+				OR $3 = 'consumption'
+				OR (
+					$3 = 'self_consumption_commission'
+					AND cash.consumer_user_id = cash.agent_id
+				)
+				OR (
+					$3 = 'consumption_commission'
+					AND cash.consumer_user_id <> cash.agent_id
+					AND NOT BOOL_AND(cash.entry_type = 'reversal')
+				)
+				OR (
+					$3 = 'consumption_reversal'
+					AND cash.consumer_user_id <> cash.agent_id
+					AND BOOL_AND(cash.entry_type = 'reversal')
+				)
 		)
 	`
 
@@ -366,7 +386,7 @@ func (r *commissionRepository) SumByBeneficiaryAndPeriod(
 		return 0, fmt.Errorf("sql executor is not configured")
 	}
 	if r.affiliateV2ReportingTablesAvailable(ctx) {
-		return r.sumAffiliateAwareCommission(ctx, beneficiaryID, true, true, nil, start, end)
+		return r.sumAffiliateAwareCommission(ctx, beneficiaryID, "all", true, nil, start, end)
 	}
 
 	clauses := []string{"beneficiary_id = $1"}
@@ -408,9 +428,19 @@ func (r *commissionRepository) SumByBeneficiaryTypeAndPeriod(
 	}
 	if r.affiliateV2ReportingTablesAvailable(ctx) {
 		legacyTypes := expandCommissionTypes(commType)
-		includeAffiliate := commType == service.CommissionTypeConsumption || commType == "consumption_commission" || commType == "consumption_reversal"
+		affiliateTypeFilter := ""
+		switch commType {
+		case service.CommissionTypeConsumption:
+			affiliateTypeFilter = "all"
+		case "consumption_commission":
+			affiliateTypeFilter = "regular"
+		case "self_consumption_commission":
+			affiliateTypeFilter = "self"
+		case "consumption_reversal":
+			affiliateTypeFilter = "reversal"
+		}
 		includeOrdinaryRewards := commType == service.CommissionTypeFirstRechargeReferral
-		return r.sumAffiliateAwareCommission(ctx, beneficiaryID, includeAffiliate, includeOrdinaryRewards, legacyTypes, start, end)
+		return r.sumAffiliateAwareCommission(ctx, beneficiaryID, affiliateTypeFilter, includeOrdinaryRewards, legacyTypes, start, end)
 	}
 
 	typeValues := expandCommissionTypes(commType)
@@ -452,7 +482,7 @@ func (r *commissionRepository) SumByBeneficiaryTypeAndPeriod(
 func (r *commissionRepository) sumAffiliateAwareCommission(
 	ctx context.Context,
 	beneficiaryID int64,
-	includeAffiliate bool,
+	affiliateTypeFilter string,
 	includeOrdinaryRewards bool,
 	legacyTypes []string,
 	start, end *time.Time,
@@ -463,7 +493,7 @@ func (r *commissionRepository) sumAffiliateAwareCommission(
 	}
 	args := []any{
 		beneficiaryID,
-		includeAffiliate,
+		affiliateTypeFilter,
 		includeOrdinaryRewards,
 		typeFilterEnabled,
 		pq.Array(legacyTypes),
@@ -486,7 +516,21 @@ func (r *commissionRepository) sumAffiliateAwareCommission(
 				SELECT SUM(cash.amount_micros::numeric / 1000000)
 				FROM agent_cash_commission_entries cash
 				WHERE cash.agent_id = $1
-				  AND $2::boolean
+				  AND $2::text <> ''
+				  AND (
+						$2::text = 'all'
+						OR ($2::text = 'self' AND cash.consumer_user_id = cash.agent_id)
+						OR (
+							$2::text = 'regular'
+							AND cash.consumer_user_id IS DISTINCT FROM cash.agent_id
+							AND cash.entry_type <> 'reversal'
+						)
+						OR (
+							$2::text = 'reversal'
+							AND cash.consumer_user_id IS DISTINCT FROM cash.agent_id
+							AND cash.entry_type = 'reversal'
+						)
+				  )
 				  AND cash.entry_type IN ('earned', 'risk_release', 'reversal')
 				  AND cash.posting_status <> 'reversed'
 				  AND ($6::timestamptz IS NULL OR cash.occurred_at >= $6::timestamptz)

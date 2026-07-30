@@ -39,6 +39,13 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 		bindingAgentID       sql.NullInt64
 		inviterPartnerStatus sql.NullString
 		inviterActivatedAt   sql.NullTime
+		legacyInviterID      sql.NullInt64
+		legacyAgentID        sql.NullInt64
+		selfPartnerStatus    sql.NullString
+		selfPartnerRisk      sql.NullString
+		selfPolicyEnabled    sql.NullBool
+		selfPolicyRateBPS    sql.NullInt32
+		selfPolicyEffective  sql.NullTime
 		mode                 string
 	)
 	rows := &entsql.Rows{}
@@ -55,12 +62,26 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 			COALESCE(b.customer_rebate_rate_snapshot_bps, 0),
 			COALESCE(b.agent_commission_rate_snapshot_bps, 0),
 			ap.status,
-			ap.activated_at
+			ap.activated_at,
+			u.inviter_id,
+			u.agent_id,
+			self_ap.status,
+			self_ap.risk_status,
+			self_policy.enabled,
+			self_policy.rate_bps,
+			self_policy.effective_at
 		FROM affiliate_program_settings s
+		LEFT JOIN users u
+			ON u.id = $1
+			AND u.deleted_at IS NULL
 		LEFT JOIN affiliate_bindings b
 			ON b.customer_user_id = $1
 		LEFT JOIN agent_principals ap
 			ON ap.agent_id = b.inviter_user_id
+		LEFT JOIN agent_principals self_ap
+			ON self_ap.agent_id = $1
+		LEFT JOIN affiliate_agent_self_commission_policies self_policy
+			ON self_policy.agent_id = $1
 		WHERE s.id = 1
 		FOR SHARE OF s
 	`, []any{input.UserID}, rows); err != nil {
@@ -86,6 +107,13 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 		&result.BindingPartnerRateBPS,
 		&inviterPartnerStatus,
 		&inviterActivatedAt,
+		&legacyInviterID,
+		&legacyAgentID,
+		&selfPartnerStatus,
+		&selfPartnerRisk,
+		&selfPolicyEnabled,
+		&selfPolicyRateBPS,
+		&selfPolicyEffective,
 	); err != nil {
 		_ = rows.Close()
 		return nil, err
@@ -98,29 +126,51 @@ func (r *affiliateRewardRepository) ClaimFirstPaidPurchase(
 	if startedAt.Valid {
 		result.ProgramStartedAt = &startedAt.Time
 	}
-	if mode == service.AffiliateProgramModeOff ||
-		!bindingKind.Valid ||
-		!inviterID.Valid {
+	result.HasUpstreamRelationship = bindingKind.Valid ||
+		legacyInviterID.Valid ||
+		legacyAgentID.Valid
+	if selfPartnerStatus.Valid {
+		result.SelfPartnerStatus = selfPartnerStatus.String
+	}
+	if selfPartnerRisk.Valid {
+		result.SelfPartnerRiskStatus = selfPartnerRisk.String
+	}
+	result.SelfCommissionEnabled = selfPolicyEnabled.Valid && selfPolicyEnabled.Bool
+	if selfPolicyRateBPS.Valid {
+		result.SelfCommissionRateBPS = selfPolicyRateBPS.Int32
+	}
+	if selfPolicyEffective.Valid {
+		result.SelfCommissionEffectiveAt = &selfPolicyEffective.Time
+	}
+	if mode == service.AffiliateProgramModeOff {
 		return result, nil
 	}
 	if result.ProgramLive && (!startedAt.Valid || input.OccurredAt.Before(startedAt.Time)) {
 		return result, nil
 	}
-	result.BindingKind = bindingKind.String
-	if bindingBoundAt.Valid {
-		result.BindingBoundAt = &bindingBoundAt.Time
-	}
-	result.InviterUserID = inviterID.Int64
-	if bindingAgentID.Valid {
-		result.BindingAgentID = bindingAgentID.Int64
-	}
-	if inviterPartnerStatus.Valid {
-		result.InviterPartnerStatus = inviterPartnerStatus.String
-	}
-	if inviterActivatedAt.Valid {
-		result.InviterPartnerActivatedAt = &inviterActivatedAt.Time
+	if bindingKind.Valid && inviterID.Valid {
+		result.BindingKind = bindingKind.String
+		if bindingBoundAt.Valid {
+			result.BindingBoundAt = &bindingBoundAt.Time
+		}
+		result.InviterUserID = inviterID.Int64
+		if bindingAgentID.Valid {
+			result.BindingAgentID = bindingAgentID.Int64
+		}
+		if inviterPartnerStatus.Valid {
+			result.InviterPartnerStatus = inviterPartnerStatus.String
+		}
+		if inviterActivatedAt.Valid {
+			result.InviterPartnerActivatedAt = &inviterActivatedAt.Time
+		}
 	}
 	if mode == service.AffiliateProgramModeShadow {
+		return result, nil
+	}
+	if result.BindingKind == "" {
+		// Self-attributed purchases never consume the one-time ordinary
+		// first-paid claim. The policy is snapshotted onto every future paid
+		// lot/entitlement by the service result instead.
 		return result, nil
 	}
 

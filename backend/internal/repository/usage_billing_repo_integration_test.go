@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 )
 
@@ -1259,4 +1260,400 @@ func TestUsageBillingRepositoryApply_DeduplicatesAgainstArchivedKey(t *testing.T
 	var balance float64
 	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT balance FROM users WHERE id = $1", user.ID).Scan(&balance))
 	require.InDelta(t, 98.75, balance, 0.000001)
+}
+
+func TestUsageBillingPartnerSelfBalanceCommissionIsIdempotentReportableAndReversible(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-self-balance-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+		Balance:      20,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID: user.ID,
+		Key:    "sk-usage-self-balance-" + uuid.NewString(),
+		Name:   "self-balance",
+	})
+	admin := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-self-admin-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+		Role:         service.RoleAdmin,
+	})
+	createSelfCommissionIntegrationPartner(t, ctx, user.ID)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	rewardResult, err := service.NewAffiliateRewardService(
+		NewAffiliateRewardRepository(client, integrationDB),
+	).ProcessFirstPaidPurchase(ctx, service.AffiliateFirstPaidPurchaseInput{
+		UserID:       user.ID,
+		PurchaseType: service.AffiliatePurchaseBalanceTopup,
+		SourceID:     91001,
+		PurchaseKey:  "self-balance:" + uuid.NewString(),
+		AmountMicros: 20_000_000,
+		OccurredAt:   time.Now(),
+	})
+	require.NoError(t, err)
+	require.Equal(t, service.AffiliateSourcePolicyPartnerSelfUsage, rewardResult.SourcePolicy)
+	require.Equal(t, user.ID, rewardResult.DirectPartnerID)
+	require.Zero(t, rewardResult.CustomerRebateRateBPS)
+	require.Equal(t, service.AffiliateAgentPoolRateBPS, rewardResult.PartnerCommissionRateBPS)
+	var firstPaidClaims int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM affiliate_first_paid_purchases WHERE user_id=$1
+	`, user.ID).Scan(&firstPaidClaims))
+	require.Zero(t, firstPaidClaims, "self policy must not consume the ordinary first-paid claim")
+
+	policy, partnerID, customerRate, partnerRate := service.AffiliatePolicyFromPurchaseResult(true, rewardResult)
+	require.NoError(t, NewAffiliateConsumptionRepository(client).RecordBalanceLot(
+		ctx,
+		service.AffiliateBalanceLotInput{
+			UserID:                   user.ID,
+			SourceType:               service.AffiliateSourcePaidTopup,
+			SourceID:                 91001,
+			SourceKey:                "self-balance-lot:" + uuid.NewString(),
+			AmountMicros:             20_000_000,
+			AffiliatePolicy:          policy,
+			DirectPartnerID:          partnerID,
+			CustomerRebateRateBPS:    customerRate,
+			PartnerCommissionRateBPS: partnerRate,
+			OccurredAt:               time.Now(),
+		},
+	))
+
+	usageLogID := time.Now().UnixNano()
+	command := &service.UsageBillingCommand{
+		RequestID:   uuid.NewString(),
+		APIKeyID:    apiKey.ID,
+		UsageLogID:  usageLogID,
+		UserID:      user.ID,
+		BalanceCost: 10,
+	}
+	billingRepo := NewUsageBillingRepository(client, integrationDB)
+	result, err := billingRepo.Apply(ctx, command)
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.Zero(t, result.AffiliateCustomerRebateMicros)
+	require.Equal(t, int64(1_000_000), result.AffiliateAgentCommissionMicros)
+	require.NotNil(t, result.NewBalance)
+	require.InDelta(t, 10, *result.NewBalance, 0.000001)
+
+	var (
+		eventID             int64
+		eventPolicy         string
+		eventMetadataPolicy string
+	)
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT id, affiliate_policy, metadata ->> 'attribution_policy'
+		FROM affiliate_performance_events
+		WHERE user_id=$1 AND source_id=$2 AND source_type='balance_usage'
+	`, user.ID, usageLogID).Scan(&eventID, &eventPolicy, &eventMetadataPolicy))
+	require.Equal(t, service.AffiliateSourcePolicyPartnerSelfUsage, eventPolicy)
+	require.Equal(t, service.AffiliateSourcePolicyPartnerSelfUsage, eventMetadataPolicy)
+
+	var (
+		cashMicros       int64
+		cashStatus       string
+		cashKey          string
+		cashPolicy       string
+		cashDisplayType  string
+		customerCashRate int32
+		partnerCashRate  int32
+	)
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT
+			amount_micros,
+			posting_status,
+			idempotency_key,
+			metadata ->> 'attribution_policy',
+			metadata ->> 'display_type',
+			customer_rebate_rate_bps,
+			agent_commission_rate_bps
+		FROM agent_cash_commission_entries
+		WHERE source_type='confirmed_consumption' AND source_id=$1
+	`, eventID).Scan(
+		&cashMicros,
+		&cashStatus,
+		&cashKey,
+		&cashPolicy,
+		&cashDisplayType,
+		&customerCashRate,
+		&partnerCashRate,
+	))
+	require.Equal(t, int64(1_000_000), cashMicros)
+	require.Equal(t, "posted", cashStatus)
+	require.Equal(t, fmt.Sprintf("confirmed:%d:self-cash", eventID), cashKey)
+	require.Equal(t, service.AffiliateSourcePolicyPartnerSelfUsage, cashPolicy)
+	require.Equal(t, "self_consumption_commission", cashDisplayType)
+	require.Zero(t, customerCashRate)
+	require.Equal(t, service.AffiliateAgentPoolRateBPS, partnerCashRate)
+
+	commissionRepo := NewCommissionRepository(client, integrationDB)
+	records, page, err := commissionRepo.ListByBeneficiary(
+		ctx,
+		user.ID,
+		pagination.DefaultPagination(),
+		"self_consumption_commission",
+		nil,
+		nil,
+	)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), page.Total)
+	require.Len(t, records, 1)
+	require.Equal(t, "self_consumption_commission", records[0].Type)
+	require.Equal(t, user.ID, records[0].UserID)
+	require.InDelta(t, 1, records[0].Amount, 0.000001)
+	selfTotal, err := commissionRepo.SumByBeneficiaryTypeAndPeriod(
+		ctx,
+		user.ID,
+		"self_consumption_commission",
+		nil,
+		nil,
+	)
+	require.NoError(t, err)
+	require.InDelta(t, 1, selfTotal, 0.000001)
+	regularTotal, err := commissionRepo.SumByBeneficiaryTypeAndPeriod(
+		ctx,
+		user.ID,
+		"consumption_commission",
+		nil,
+		nil,
+	)
+	require.NoError(t, err)
+	require.Zero(t, regularTotal)
+
+	replay, err := billingRepo.Apply(ctx, command)
+	require.NoError(t, err)
+	require.False(t, replay.Applied)
+	var earnedCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM agent_cash_commission_entries
+		WHERE source_type='confirmed_consumption' AND source_id=$1
+	`, eventID).Scan(&earnedCount))
+	require.Equal(t, 1, earnedCount)
+
+	riskService := service.NewAffiliateRiskService(NewAffiliateRiskRepository(integrationDB))
+	reversal, err := riskService.ReversePerformanceEvent(ctx, eventID, "本人消费测试冲正", admin.ID)
+	require.NoError(t, err)
+	require.Equal(t, int64(1_000_000), reversal.ReversedCashMicros)
+	secondReversal, err := riskService.ReversePerformanceEvent(ctx, eventID, "重复冲正", admin.ID)
+	require.NoError(t, err)
+	require.Equal(t, reversal.ID, secondReversal.ID)
+
+	var cashBalance int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COALESCE(SUM(amount_micros), 0)::bigint
+		FROM agent_cash_commission_entries
+		WHERE agent_id=$1 AND posting_status='posted'
+	`, user.ID).Scan(&cashBalance))
+	require.Zero(t, cashBalance)
+}
+
+func TestUsageBillingPartnerSelfMonthlyCommissionUsesConfirmedSaleValue(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-self-monthly-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	limit := 100.0
+	group := mustCreateGroup(t, client, &service.Group{
+		Name:             "usage-self-monthly-" + uuid.NewString(),
+		Platform:         service.PlatformOpenAI,
+		SubscriptionType: service.SubscriptionTypeCredit,
+		MonthlyLimitUSD:  &limit,
+	})
+	subscription := mustCreateSubscription(t, client, &service.UserSubscription{
+		UserID:  user.ID,
+		GroupID: group.ID,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID:  user.ID,
+		GroupID: &group.ID,
+		Key:     "sk-usage-self-monthly-" + uuid.NewString(),
+		Name:    "self-monthly",
+	})
+	createSelfCommissionIntegrationPartner(t, ctx, user.ID)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	rewardResult, err := service.NewAffiliateRewardService(
+		NewAffiliateRewardRepository(client, integrationDB),
+	).ProcessFirstPaidPurchase(ctx, service.AffiliateFirstPaidPurchaseInput{
+		UserID:       user.ID,
+		PurchaseType: service.AffiliatePurchaseMonthlyPayment,
+		SourceID:     92001,
+		PurchaseKey:  "self-monthly:" + uuid.NewString(),
+		AmountMicros: 100_000_000,
+		OccurredAt:   time.Now(),
+	})
+	require.NoError(t, err)
+	policy, partnerID, customerRate, partnerRate := service.AffiliatePolicyFromPurchaseResult(true, rewardResult)
+	require.Equal(t, service.AffiliateSourcePolicyPartnerSelfUsage, policy)
+	require.NoError(t, NewAffiliateConsumptionRepository(client).RecordMonthlyEntitlement(
+		ctx,
+		service.AffiliateMonthlyEntitlementInput{
+			UserID:                   user.ID,
+			SourceType:               service.AffiliateSourcePaidTopup,
+			SourceID:                 92001,
+			SourceKey:                "self-monthly-cycle:" + uuid.NewString(),
+			ProductCode:              "integration-self-monthly",
+			SalePriceMicros:          100_000_000,
+			CreditLimitMicros:        100_000_000,
+			AffiliatePolicy:          policy,
+			DirectPartnerID:          partnerID,
+			CustomerRebateRateBPS:    customerRate,
+			PartnerCommissionRateBPS: partnerRate,
+			PricingTableVersion:      service.AffiliateCommercialPricingTableVersionV3,
+			StartsAt:                 time.Now().Add(-time.Minute),
+			EndsAt:                   time.Now().AddDate(0, 1, 0),
+			Subscriptions: []service.AffiliateMonthlySubscription{{
+				UserSubscriptionID: subscription.ID,
+				GroupID:            group.ID,
+			}},
+		},
+	))
+
+	usageLogID := time.Now().UnixNano()
+	result, err := NewUsageBillingRepository(client, integrationDB).Apply(
+		ctx,
+		&service.UsageBillingCommand{
+			RequestID:        uuid.NewString(),
+			APIKeyID:         apiKey.ID,
+			UsageLogID:       usageLogID,
+			UserID:           user.ID,
+			SubscriptionID:   &subscription.ID,
+			SubscriptionCost: 25,
+		},
+	)
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.Equal(t, int64(25_000_000), result.MonthlyConfirmedMicros)
+	require.Zero(t, result.AffiliateCustomerRebateMicros)
+	require.Equal(t, int64(2_500_000), result.AffiliateAgentCommissionMicros)
+
+	var (
+		eventPolicy        string
+		sourceAmountMicros int64
+		cashMicros         int64
+	)
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT
+			event.affiliate_policy,
+			cash.source_amount_micros,
+			cash.amount_micros
+		FROM affiliate_performance_events event
+		JOIN agent_cash_commission_entries cash
+			ON cash.source_type='confirmed_consumption'
+			AND cash.source_id=event.id
+		WHERE event.user_id=$1
+			AND event.source_id=$2
+			AND event.source_type='monthly_usage'
+	`, user.ID, usageLogID).Scan(
+		&eventPolicy,
+		&sourceAmountMicros,
+		&cashMicros,
+	))
+	require.Equal(t, service.AffiliateSourcePolicyPartnerSelfUsage, eventPolicy)
+	require.Equal(t, int64(25_000_000), sourceAmountMicros)
+	require.Equal(t, int64(2_500_000), cashMicros)
+}
+
+func TestUsageBillingPartnerSelfCommissionRespectsRiskHoldAndTermination(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-self-risk-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	createSelfCommissionIntegrationPartner(t, ctx, user.ID)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	record := func(key string) usageBillingAffiliateSettlement {
+		t.Helper()
+		tx, err := integrationDB.BeginTx(ctx, nil)
+		require.NoError(t, err)
+		settlement, err := recordUsageBillingPerformanceEvent(
+			ctx,
+			tx,
+			user.ID,
+			time.Now().UnixNano(),
+			"balance_usage",
+			key,
+			10_000_000,
+			service.AffiliateSourcePolicyPartnerSelfUsage,
+			user.ID,
+			0,
+			service.AffiliateAgentPoolRateBPS,
+			time.Now(),
+		)
+		require.NoError(t, err)
+		require.NoError(t, tx.Commit())
+		return settlement
+	}
+
+	posted := record("self-risk-posted:" + uuid.NewString())
+	require.Equal(t, int64(1_000_000), posted.AgentCommissionMicros)
+
+	_, err := integrationDB.ExecContext(ctx, `
+		UPDATE agent_principals
+		SET risk_status='review', updated_at=NOW()
+		WHERE agent_id=$1
+	`, user.ID)
+	require.NoError(t, err)
+	held := record("self-risk-held:" + uuid.NewString())
+	require.Zero(t, held.AgentCommissionMicros)
+
+	var heldCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM agent_cash_commission_entries
+		WHERE agent_id=$1
+			AND consumer_user_id=$1
+			AND posting_status='risk_hold'
+			AND metadata ->> 'attribution_policy'='PARTNER_SELF_USAGE'
+	`, user.ID).Scan(&heldCount))
+	require.Equal(t, 1, heldCount)
+
+	_, err = integrationDB.ExecContext(ctx, `
+		UPDATE agent_principals
+		SET status='terminated', updated_at=NOW()
+		WHERE agent_id=$1
+	`, user.ID)
+	require.NoError(t, err)
+	terminated := record("self-risk-terminated:" + uuid.NewString())
+	require.Zero(t, terminated.AgentCommissionMicros)
+
+	var earnedCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM agent_cash_commission_entries
+		WHERE agent_id=$1
+			AND consumer_user_id=$1
+			AND entry_type='earned'
+			AND metadata ->> 'attribution_policy'='PARTNER_SELF_USAGE'
+	`, user.ID).Scan(&earnedCount))
+	require.Equal(t, 2, earnedCount, "terminated partner must not receive another cash entry")
+}
+
+func createSelfCommissionIntegrationPartner(
+	t *testing.T,
+	ctx context.Context,
+	userID int64,
+) {
+	t.Helper()
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_principals (
+			agent_id, status, risk_status, qualified_at, activated_at
+		)
+		VALUES ($1, 'active', 'clear', NOW(), NOW())
+	`, userID)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_agent_self_commission_policies (
+			agent_id, enabled, rate_bps, effective_at, revision, reason
+		)
+		VALUES ($1, TRUE, 1000, NOW() - INTERVAL '5 minutes', 1, 'integration test')
+	`, userID)
+	require.NoError(t, err)
 }

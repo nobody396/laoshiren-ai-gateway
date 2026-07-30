@@ -603,7 +603,10 @@ func recordUsageBillingPerformanceEvent(
 			$4,
 			$5,
 			NOW(),
-			jsonb_build_object('program_mode', $10::text)
+			jsonb_build_object(
+				'program_mode', $10::text,
+				'attribution_policy', $7::text
+			)
 		)
 		ON CONFLICT (event_key) DO NOTHING
 		RETURNING id
@@ -628,19 +631,32 @@ func recordUsageBillingPerformanceEvent(
 	if mode != service.AffiliateProgramModeLive {
 		return usageBillingAffiliateSettlement{}, nil
 	}
-	if affiliatePolicy != service.AffiliateSourcePolicyPartnerUsage {
+	switch affiliatePolicy {
+	case service.AffiliateSourcePolicyPartnerUsage:
+		return settleUsageBillingAgentPool(
+			ctx,
+			tx,
+			performanceEventID,
+			userID,
+			directPartnerID,
+			amountMicros,
+			customerRateBPS,
+			partnerRateBPS,
+		)
+	case service.AffiliateSourcePolicyPartnerSelfUsage:
+		return settleUsageBillingSelfPool(
+			ctx,
+			tx,
+			performanceEventID,
+			userID,
+			directPartnerID,
+			amountMicros,
+			customerRateBPS,
+			partnerRateBPS,
+		)
+	default:
 		return usageBillingAffiliateSettlement{}, nil
 	}
-	return settleUsageBillingAgentPool(
-		ctx,
-		tx,
-		performanceEventID,
-		userID,
-		directPartnerID,
-		amountMicros,
-		customerRateBPS,
-		partnerRateBPS,
-	)
 }
 
 func settleUsageBillingAgentPool(
@@ -798,6 +814,95 @@ func settleUsageBillingAgentPool(
 		}
 	}
 	return settlement, nil
+}
+
+func settleUsageBillingSelfPool(
+	ctx context.Context,
+	tx *sql.Tx,
+	performanceEventID int64,
+	consumerUserID int64,
+	agentID int64,
+	sourceAmountMicros int64,
+	customerRateBPS int32,
+	agentRateBPS int32,
+) (usageBillingAffiliateSettlement, error) {
+	if agentID <= 0 || agentID != consumerUserID {
+		return usageBillingAffiliateSettlement{}, errors.New("invalid partner self attribution")
+	}
+	if customerRateBPS != 0 || agentRateBPS != service.AffiliateAgentPoolRateBPS {
+		return usageBillingAffiliateSettlement{}, errors.New("invalid partner self source pool snapshot")
+	}
+
+	var agentStatus, agentRiskStatus string
+	err := tx.QueryRowContext(ctx, `
+		SELECT status, risk_status
+		FROM agent_principals
+		WHERE agent_id = $1
+	`, agentID).Scan(&agentStatus, &agentRiskStatus)
+	if errors.Is(err, sql.ErrNoRows) {
+		// Missing principals are semantically terminated: historical
+		// attribution stays auditable but can no longer earn cash.
+		return usageBillingAffiliateSettlement{}, nil
+	}
+	if err != nil {
+		return usageBillingAffiliateSettlement{}, err
+	}
+	if agentStatus == "terminated" {
+		return usageBillingAffiliateSettlement{}, nil
+	}
+
+	postingStatus := "risk_hold"
+	if agentStatus == "active" && agentRiskStatus == "clear" {
+		postingStatus = "posted"
+	}
+	commissionMicros := usageBillingRateAmountMicros(
+		sourceAmountMicros,
+		service.AffiliateAgentPoolRateBPS,
+	)
+	if commissionMicros <= 0 {
+		return usageBillingAffiliateSettlement{}, nil
+	}
+	result, err := tx.ExecContext(ctx, `
+		INSERT INTO agent_cash_commission_entries (
+			agent_id, consumer_user_id, entry_type,
+			amount_micros, source_amount_micros,
+			customer_rebate_rate_bps, agent_commission_rate_bps,
+			posting_status, source_type, source_id,
+			idempotency_key, metadata, occurred_at
+		)
+		VALUES (
+			$1, $1, 'earned',
+			$2, $3,
+			0, $4,
+			$5, 'confirmed_consumption', $6,
+			$7,
+			jsonb_build_object(
+				'attribution_policy', 'PARTNER_SELF_USAGE',
+				'display_type', 'self_consumption_commission'
+			),
+			NOW()
+		)
+		ON CONFLICT (idempotency_key) DO NOTHING
+	`,
+		agentID,
+		commissionMicros,
+		sourceAmountMicros,
+		agentRateBPS,
+		postingStatus,
+		performanceEventID,
+		fmt.Sprintf("confirmed:%d:self-cash", performanceEventID),
+	)
+	if err != nil {
+		return usageBillingAffiliateSettlement{}, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return usageBillingAffiliateSettlement{}, err
+	}
+	if affected == 1 && postingStatus == "posted" {
+		return usageBillingAffiliateSettlement{AgentCommissionMicros: commissionMicros}, nil
+	}
+	return usageBillingAffiliateSettlement{}, nil
 }
 
 func usageBillingRateAmountMicros(sourceMicros int64, rateBPS int32) int64 {

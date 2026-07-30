@@ -324,3 +324,199 @@ func TestAffiliateTerminatedHistoricalInviterCannotFallBackToOrdinaryReward(t *t
 		t.Fatalf("terminated inviter received fallback reward: result=%+v posted=%d", result, len(repo.posted))
 	}
 }
+
+func TestAffiliateSelfCommissionSnapshotsEveryFuturePaidPurchase(t *testing.T) {
+	t.Parallel()
+	at := time.Date(2026, 7, 30, 9, 0, 0, 0, time.UTC)
+	startedAt := at.Add(-time.Hour)
+	effectiveAt := at.Add(-time.Minute)
+	for _, purchaseType := range []string{
+		AffiliatePurchaseBalanceRedeem,
+		AffiliatePurchaseBalanceTopup,
+		AffiliatePurchaseMonthlyRedeem,
+		AffiliatePurchaseMonthlyPayment,
+	} {
+		purchaseType := purchaseType
+		t.Run(purchaseType, func(t *testing.T) {
+			t.Parallel()
+			repo := &affiliateRewardRepoStub{firstPaid: AffiliateFirstPaidContext{
+				ProgramMode:               AffiliateProgramModeLive,
+				ProgramLive:               true,
+				ProgramStartedAt:          &startedAt,
+				SelfPartnerStatus:         "active",
+				SelfPartnerRiskStatus:     "clear",
+				SelfCommissionEnabled:     true,
+				SelfCommissionRateBPS:     AffiliateAgentPoolRateBPS,
+				SelfCommissionEffectiveAt: &effectiveAt,
+			}}
+			result, err := NewAffiliateRewardService(repo).ProcessFirstPaidPurchase(
+				context.Background(),
+				AffiliateFirstPaidPurchaseInput{
+					UserID:       41,
+					PurchaseType: purchaseType,
+					PurchaseKey:  purchaseType + ":41",
+					AmountMicros: 20_000_000,
+					OccurredAt:   at,
+				},
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.SourcePolicy != AffiliateSourcePolicyPartnerSelfUsage ||
+				result.DirectPartnerID != 41 ||
+				result.CustomerRebateRateBPS != 0 ||
+				result.PartnerCommissionRateBPS != AffiliateAgentPoolRateBPS {
+				t.Fatalf("self purchase policy = %+v", result)
+			}
+			if result.Claimed || len(repo.posted) != 0 || len(repo.scheduled) != 0 {
+				t.Fatalf("self purchase must not claim first-paid rewards: %+v", result)
+			}
+		})
+	}
+}
+
+func TestAffiliateSelfCommissionRequiresClearActiveUnboundEffectivePolicy(t *testing.T) {
+	t.Parallel()
+	at := time.Date(2026, 7, 30, 9, 0, 0, 0, time.UTC)
+	programStarted := at.Add(-time.Hour)
+	futureProgramStart := at.Add(time.Hour)
+	past := at.Add(-time.Minute)
+	future := at.Add(time.Minute)
+	tests := []struct {
+		name   string
+		mutate func(*AffiliateFirstPaidContext)
+	}{
+		{
+			name: "program not started",
+			mutate: func(value *AffiliateFirstPaidContext) {
+				value.ProgramStartedAt = &futureProgramStart
+			},
+		},
+		{
+			name: "legacy upstream",
+			mutate: func(value *AffiliateFirstPaidContext) {
+				value.HasUpstreamRelationship = true
+			},
+		},
+		{
+			name: "suspended",
+			mutate: func(value *AffiliateFirstPaidContext) {
+				value.SelfPartnerStatus = "suspended"
+			},
+		},
+		{
+			name: "risk hold",
+			mutate: func(value *AffiliateFirstPaidContext) {
+				value.SelfPartnerRiskStatus = "review"
+			},
+		},
+		{
+			name: "disabled",
+			mutate: func(value *AffiliateFirstPaidContext) {
+				value.SelfCommissionEnabled = false
+			},
+		},
+		{
+			name: "invalid rate",
+			mutate: func(value *AffiliateFirstPaidContext) {
+				value.SelfCommissionRateBPS = 900
+			},
+		},
+		{
+			name: "not effective",
+			mutate: func(value *AffiliateFirstPaidContext) {
+				value.SelfCommissionEffectiveAt = &future
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			firstPaid := AffiliateFirstPaidContext{
+				ProgramMode:               AffiliateProgramModeLive,
+				ProgramLive:               true,
+				ProgramStartedAt:          &programStarted,
+				SelfPartnerStatus:         "active",
+				SelfPartnerRiskStatus:     "clear",
+				SelfCommissionEnabled:     true,
+				SelfCommissionRateBPS:     AffiliateAgentPoolRateBPS,
+				SelfCommissionEffectiveAt: &past,
+			}
+			tt.mutate(&firstPaid)
+			result, err := NewAffiliateRewardService(
+				&affiliateRewardRepoStub{firstPaid: firstPaid},
+			).ProcessFirstPaidPurchase(context.Background(), AffiliateFirstPaidPurchaseInput{
+				UserID:       42,
+				PurchaseType: AffiliatePurchaseBalanceTopup,
+				PurchaseKey:  "gated:" + tt.name,
+				AmountMicros: 20_000_000,
+				OccurredAt:   at,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.SourcePolicy != AffiliateSourcePolicyNone ||
+				result.DirectPartnerID != 0 {
+				t.Fatalf("gated self policy = %+v", result)
+			}
+		})
+	}
+}
+
+func TestAffiliateBindingAlwaysPrecedesSelfCommission(t *testing.T) {
+	t.Parallel()
+	effectiveAt := time.Now().Add(-time.Hour)
+	result, err := NewAffiliateRewardService(
+		&affiliateRewardRepoStub{firstPaid: AffiliateFirstPaidContext{
+			ProgramMode:               AffiliateProgramModeLive,
+			ProgramLive:               true,
+			BindingKind:               AffiliateBindingAgent,
+			InviterUserID:             7,
+			BindingAgentID:            7,
+			BindingCustomerRateBPS:    300,
+			BindingPartnerRateBPS:     700,
+			SelfPartnerStatus:         "active",
+			SelfPartnerRiskStatus:     "clear",
+			SelfCommissionEnabled:     true,
+			SelfCommissionRateBPS:     AffiliateAgentPoolRateBPS,
+			SelfCommissionEffectiveAt: &effectiveAt,
+		}},
+	).ProcessFirstPaidPurchase(context.Background(), AffiliateFirstPaidPurchaseInput{
+		UserID:       43,
+		PurchaseType: AffiliatePurchaseBalanceTopup,
+		PurchaseKey:  "binding-precedence",
+		AmountMicros: 20_000_000,
+		OccurredAt:   time.Now(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.SourcePolicy != AffiliateSourcePolicyPartnerUsage ||
+		result.DirectPartnerID != 7 ||
+		result.CustomerRebateRateBPS != 300 ||
+		result.PartnerCommissionRateBPS != 700 {
+		t.Fatalf("binding did not precede self policy: %+v", result)
+	}
+}
+
+func TestAffiliatePolicyFromPurchaseResultPreservesSelfPolicy(t *testing.T) {
+	t.Parallel()
+	policy, partnerID, customerRate, partnerRate := AffiliatePolicyFromPurchaseResult(
+		true,
+		&AffiliateFirstPaidPurchaseResult{
+			ProgramMode:              AffiliateProgramModeLive,
+			ProgramLive:              true,
+			SourcePolicy:             AffiliateSourcePolicyPartnerSelfUsage,
+			DirectPartnerID:          44,
+			CustomerRebateRateBPS:    0,
+			PartnerCommissionRateBPS: AffiliateAgentPoolRateBPS,
+		},
+	)
+	if policy != AffiliateSourcePolicyPartnerSelfUsage ||
+		partnerID != 44 ||
+		customerRate != 0 ||
+		partnerRate != AffiliateAgentPoolRateBPS {
+		t.Fatalf("self consumption policy = (%s,%d,%d,%d)", policy, partnerID, customerRate, partnerRate)
+	}
+}

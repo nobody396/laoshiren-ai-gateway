@@ -25,6 +25,11 @@ func TestExpandCommissionTypes(t *testing.T) {
 			expect: []string{service.CommissionTypeConsumption, "consumption_commission"},
 		},
 		{
+			name:   "self consumption remains independently filterable",
+			input:  "self_consumption_commission",
+			expect: []string{"self_consumption_commission"},
+		},
+		{
 			name:   "canonical referral expands with legacy alias",
 			input:  service.CommissionTypeFirstRechargeReferral,
 			expect: []string{service.CommissionTypeFirstRechargeReferral, "first_recharge_referral_bonus"},

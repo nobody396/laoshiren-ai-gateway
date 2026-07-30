@@ -25,6 +25,7 @@ func (r *affiliateConsumptionRepository) RecordBalanceLot(ctx context.Context, i
 		return errors.New("invalid affiliate balance lot input")
 	}
 	if err := validateAffiliateSourcePolicy(
+		input.UserID,
 		input.AffiliatePolicy,
 		input.DirectPartnerID,
 		input.CustomerRebateRateBPS,
@@ -78,6 +79,7 @@ func (r *affiliateConsumptionRepository) RecordMonthlyEntitlement(ctx context.Co
 		return errors.New("invalid affiliate monthly entitlement input")
 	}
 	if err := validateAffiliateSourcePolicy(
+		input.UserID,
 		input.AffiliatePolicy,
 		input.DirectPartnerID,
 		input.CustomerRebateRateBPS,
@@ -169,6 +171,7 @@ func (r *affiliateConsumptionRepository) RecordMonthlyEntitlement(ctx context.Co
 }
 
 func validateAffiliateSourcePolicy(
+	userID int64,
 	policy string,
 	directPartnerID int64,
 	customerRateBPS int32,
@@ -185,10 +188,18 @@ func validateAffiliateSourcePolicy(
 		}
 	case service.AffiliateSourcePolicyPartnerUsage:
 		if directPartnerID <= 0 ||
+			directPartnerID == userID ||
 			customerRateBPS < 0 ||
 			partnerRateBPS < 0 ||
 			customerRateBPS+partnerRateBPS != service.AffiliateAgentPoolRateBPS {
 			return errors.New("partner affiliate source requires one fixed 10 percent pool")
+		}
+	case service.AffiliateSourcePolicyPartnerSelfUsage:
+		if directPartnerID <= 0 ||
+			directPartnerID != userID ||
+			customerRateBPS != 0 ||
+			partnerRateBPS != service.AffiliateAgentPoolRateBPS {
+			return errors.New("partner self affiliate source requires the consumer's fixed 10 percent cash pool")
 		}
 	default:
 		return errors.New("invalid affiliate source policy")

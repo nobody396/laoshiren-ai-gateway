@@ -346,7 +346,7 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 	targets, err := svc.loadMonthlyUpstreamProbeTargets(ctx)
 
 	require.NoError(t, err)
-	require.Len(t, targets, 2)
+	require.Len(t, targets, 3)
 	require.Equal(t, "monthly-codex-gateway", targets[0].AccountName)
 	require.Equal(t, PlatformOpenAI, targets[0].Platform)
 	require.Equal(t, "gpt-5.4-mini", targets[0].Model)
@@ -357,6 +357,32 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 	require.Equal(t, PlatformAnthropic, targets[1].Platform)
 	require.Equal(t, "claude-haiku-4-5", targets[1].Model)
 	require.Equal(t, int64(11), targets[1].GroupID)
+	require.Equal(t, "monthly-grok-gateway", targets[2].AccountName)
+	require.Equal(t, PlatformAnthropic, targets[2].Platform)
+	require.Equal(t, "grok-4.5", targets[2].Model)
+	require.Equal(t, int64(35), targets[2].GroupID)
+
+	plans := svc.loadMonthlyCardPublicPlans(ctx)
+	require.Len(t, plans, 3)
+	require.Nil(t, plans[0].GrokGroup)
+
+	svc.opsRepo = &opsRepoMock{
+		ListMonthlyUpstreamProbeResultsFn: func(ctx context.Context, since time.Time) ([]MonthlyUpstreamProbePoint, error) {
+			return []MonthlyUpstreamProbePoint{}, nil
+		},
+	}
+	svc.settingRepo = &monthlyStatusSettingRepoStub{
+		values: map[string]string{
+			SettingKeyMonthlyUpstreamProbeEnabled:    "true",
+			SettingKeyMonthlyCardPublicStatusEnabled: "true",
+		},
+	}
+	publicSnapshot, err := svc.GetMonthlyCardPublicStatusSnapshot(ctx, 60)
+	require.NoError(t, err)
+	require.Len(t, publicSnapshot.Accounts, 3)
+	require.Equal(t, "Codex", publicSnapshot.Accounts[0].Channel)
+	require.Equal(t, "Claude", publicSnapshot.Accounts[1].Channel)
+	require.Equal(t, "Grok", publicSnapshot.Accounts[2].Channel)
 }
 
 func TestMonthlyCardPublicStatusLabelsGrokIndependentlyFromAnthropicProtocol(t *testing.T) {

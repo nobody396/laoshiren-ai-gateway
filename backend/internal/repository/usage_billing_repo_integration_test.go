@@ -1474,6 +1474,93 @@ func TestUsageBillingPartnerSelfBalanceCommissionIsIdempotentReportableAndRevers
 	require.Zero(t, cashBalance)
 }
 
+func TestAdminBalanceRoundTripDoesNotShadowPartnerSelfCommission(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("admin-roundtrip-self-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID: user.ID,
+		Key:    "sk-admin-roundtrip-self-" + uuid.NewString(),
+		Name:   "admin-roundtrip-self",
+	})
+	createSelfCommissionIntegrationPartner(t, ctx, user.ID)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	userRepo := newUserRepositoryWithSQL(client, integrationDB)
+	_, err := userRepo.ApplyAdminBalanceAdjustment(ctx, user.ID, 100, "add")
+	require.NoError(t, err)
+	_, err = userRepo.ApplyAdminBalanceAdjustment(ctx, user.ID, 100, "subtract")
+	require.NoError(t, err)
+
+	var adminLotRemaining int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT remaining_amount_micros
+		FROM balance_lots
+		WHERE user_id = $1
+			AND source_type = 'admin_adjustment'
+	`, user.ID).Scan(&adminLotRemaining))
+	require.Zero(t, adminLotRemaining)
+
+	const paidSourceID int64 = 92001
+	rewardResult, err := service.NewAffiliateRewardService(
+		NewAffiliateRewardRepository(client, integrationDB),
+	).ProcessFirstPaidPurchase(ctx, service.AffiliateFirstPaidPurchaseInput{
+		UserID:       user.ID,
+		PurchaseType: service.AffiliatePurchaseBalanceTopup,
+		SourceID:     paidSourceID,
+		PurchaseKey:  "admin-roundtrip-self-paid:" + uuid.NewString(),
+		AmountMicros: 100_000_000,
+		OccurredAt:   time.Now(),
+	})
+	require.NoError(t, err)
+	require.Equal(t, service.AffiliateSourcePolicyPartnerSelfUsage, rewardResult.SourcePolicy)
+	policy, partnerID, customerRate, partnerRate := service.AffiliatePolicyFromPurchaseResult(true, rewardResult)
+
+	require.NoError(t, userRepo.UpdateBalance(ctx, user.ID, 100))
+	require.NoError(t, NewAffiliateConsumptionRepository(client).RecordBalanceLot(
+		ctx,
+		service.AffiliateBalanceLotInput{
+			UserID:                   user.ID,
+			SourceType:               service.AffiliateSourcePaidTopup,
+			SourceID:                 paidSourceID,
+			SourceKey:                "admin-roundtrip-self-lot:" + uuid.NewString(),
+			AmountMicros:             100_000_000,
+			AffiliatePolicy:          policy,
+			DirectPartnerID:          partnerID,
+			CustomerRebateRateBPS:    customerRate,
+			PartnerCommissionRateBPS: partnerRate,
+			OccurredAt:               time.Now(),
+		},
+	))
+
+	usageLogID := time.Now().UnixNano()
+	result, err := NewUsageBillingRepository(client, integrationDB).Apply(ctx, &service.UsageBillingCommand{
+		RequestID:   uuid.NewString(),
+		APIKeyID:    apiKey.ID,
+		UsageLogID:  usageLogID,
+		UserID:      user.ID,
+		BalanceCost: 100,
+	})
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.Equal(t, int64(10_000_000), result.AffiliateAgentCommissionMicros)
+	require.NotNil(t, result.NewBalance)
+	require.InDelta(t, 0, *result.NewBalance, 0.000001)
+
+	var cashMicros int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT amount_micros
+		FROM agent_cash_commission_entries
+		WHERE agent_id = $1
+			AND consumer_user_id = $1
+			AND source_type = 'confirmed_consumption'
+	`, user.ID).Scan(&cashMicros))
+	require.Equal(t, int64(10_000_000), cashMicros)
+}
+
 func TestUsageBillingPartnerSelfMonthlyCommissionUsesConfirmedSaleValue(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)

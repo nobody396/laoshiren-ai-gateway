@@ -13,7 +13,7 @@ var (
 	// remain consistent.
 	ErrAdminBalanceSourceReversalRequired = infraerrors.Conflict(
 		"ADMIN_BALANCE_SOURCE_REVERSAL_REQUIRED",
-		"该用户仍有可参与联盟分润的余额，不能直接减少余额；请从原充值订单或卡密记录发起来源冲正。",
+		"该笔减额无法安全匹配到足额的非分润余额（可能包含可分润额度），不能直接减少；请从原充值订单或卡密记录发起来源冲正。",
 	)
 	errAdminBalanceAdjustmentGuardUnavailable = infraerrors.InternalServer(
 		"ADMIN_BALANCE_ADJUSTMENT_GUARD_UNAVAILABLE",

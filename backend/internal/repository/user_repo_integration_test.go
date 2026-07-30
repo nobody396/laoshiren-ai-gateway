@@ -539,12 +539,80 @@ func (s *UserRepoSuite) TestApplyAdminBalanceAdjustment_AddAndNoopNeverCreateEli
 }
 
 func (s *UserRepoSuite) TestApplyAdminBalanceAdjustment_SubtractWithoutEligibleLot() {
-	user := s.mustCreateUser(&service.User{Email: "admin-subtract-safe@test.com", Balance: 10})
+	user := s.mustCreateUser(&service.User{Email: "admin-subtract-safe@test.com"})
+
+	_, err := s.repo.ApplyAdminBalanceAdjustment(s.ctx, user.ID, 10, "add")
+	s.Require().NoError(err)
 
 	result, err := s.repo.ApplyAdminBalanceAdjustment(s.ctx, user.ID, 2, "subtract")
 	s.Require().NoError(err)
 	s.Require().InDelta(10, result.OldBalance, 1e-6)
 	s.Require().InDelta(8, result.NewBalance, 1e-6)
+
+	var remainingMicros int64
+	s.Require().NoError(integrationDB.QueryRowContext(s.ctx, `
+		SELECT remaining_amount_micros
+		FROM balance_lots
+		WHERE user_id = $1
+	`, user.ID).Scan(&remainingMicros))
+	s.Equal(int64(8_000_000), remainingMicros)
+}
+
+func (s *UserRepoSuite) TestApplyAdminBalanceAdjustment_SetAndSubtractConsumeMultipleLotsFIFO() {
+	user := s.mustCreateUser(&service.User{Email: "admin-multi-lot@test.com"})
+
+	_, err := s.repo.ApplyAdminBalanceAdjustment(s.ctx, user.ID, 4, "add")
+	s.Require().NoError(err)
+	_, err = s.repo.ApplyAdminBalanceAdjustment(s.ctx, user.ID, 6, "add")
+	s.Require().NoError(err)
+
+	result, err := s.repo.ApplyAdminBalanceAdjustment(s.ctx, user.ID, 5, "set")
+	s.Require().NoError(err)
+	s.Require().InDelta(10, result.OldBalance, 1e-6)
+	s.Require().InDelta(5, result.NewBalance, 1e-6)
+
+	rows, err := integrationDB.QueryContext(s.ctx, `
+		SELECT remaining_amount_micros
+		FROM balance_lots
+		WHERE user_id = $1
+		ORDER BY occurred_at, id
+	`, user.ID)
+	s.Require().NoError(err)
+	defer func() { _ = rows.Close() }()
+	var remaining []int64
+	for rows.Next() {
+		var amount int64
+		s.Require().NoError(rows.Scan(&amount))
+		remaining = append(remaining, amount)
+	}
+	s.Require().NoError(rows.Err())
+	s.Equal([]int64{0, 5_000_000}, remaining)
+
+	_, err = s.repo.ApplyAdminBalanceAdjustment(s.ctx, user.ID, 2, "add")
+	s.Require().NoError(err)
+	result, err = s.repo.ApplyAdminBalanceAdjustment(s.ctx, user.ID, 6, "subtract")
+	s.Require().NoError(err)
+	s.Require().InDelta(7, result.OldBalance, 1e-6)
+	s.Require().InDelta(1, result.NewBalance, 1e-6)
+
+	var totalRemaining int64
+	s.Require().NoError(integrationDB.QueryRowContext(s.ctx, `
+		SELECT COALESCE(SUM(remaining_amount_micros), 0)
+		FROM balance_lots
+		WHERE user_id = $1
+	`, user.ID).Scan(&totalRemaining))
+	s.Equal(int64(1_000_000), totalRemaining)
+}
+
+func (s *UserRepoSuite) TestApplyAdminBalanceAdjustment_InsufficientAttributedLotsFailsClosed() {
+	user := s.mustCreateUser(&service.User{Email: "admin-insufficient-lots@test.com", Balance: 10})
+
+	_, err := s.repo.ApplyAdminBalanceAdjustment(s.ctx, user.ID, 1, "subtract")
+	s.Require().ErrorIs(err, service.ErrAdminBalanceSourceReversalRequired)
+
+	got, err := s.repo.GetByID(s.ctx, user.ID)
+	s.Require().NoError(err)
+	s.Require().InDelta(10, got.Balance, 1e-6)
 }
 
 func (s *UserRepoSuite) TestApplyAdminBalanceAdjustment_WaitsForConcurrentEligiblePurchase() {

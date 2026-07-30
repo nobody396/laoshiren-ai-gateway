@@ -83,30 +83,89 @@ func (r *userRepository) ApplyAdminBalanceAdjustment(
 		}
 
 		if newBalance < oldBalance {
+			decreaseMicros := service.AffiliateMicrosFromFloat(oldBalance - newBalance)
+			if decreaseMicros <= 0 {
+				return service.ErrAdminBalanceSourceReversalRequired
+			}
 			lotRows := &entsql.Rows{}
 			if err := driver.Query(ctx, `
-				SELECT id
+				SELECT id, remaining_amount_micros, affiliate_eligible
 				FROM balance_lots
 				WHERE user_id = $1
 					AND remaining_amount_micros > 0
-					AND affiliate_eligible = TRUE
-				ORDER BY id
-				LIMIT 1
+				ORDER BY occurred_at, id
 				FOR UPDATE
 			`, []any{userID}, lotRows); err != nil {
 				return err
 			}
-			hasEligibleLot := lotRows.Next()
-			if !hasEligibleLot {
-				rowErr := lotRows.Err()
-				_ = lotRows.Close()
-				if rowErr != nil {
-					return rowErr
+			type balanceLot struct {
+				id                int64
+				remainingMicros   int64
+				affiliateEligible bool
+			}
+			lots := make([]balanceLot, 0, 4)
+			var safeMicros int64
+			for lotRows.Next() {
+				var lot balanceLot
+				if err := lotRows.Scan(&lot.id, &lot.remainingMicros, &lot.affiliateEligible); err != nil {
+					_ = lotRows.Close()
+					return err
 				}
-			} else if err := lotRows.Close(); err != nil {
+				if lot.affiliateEligible {
+					_ = lotRows.Close()
+					return service.ErrAdminBalanceSourceReversalRequired
+				}
+				lots = append(lots, lot)
+				if safeMicros < decreaseMicros {
+					remainingNeeded := decreaseMicros - safeMicros
+					if lot.remainingMicros >= remainingNeeded {
+						safeMicros = decreaseMicros
+					} else {
+						safeMicros += lot.remainingMicros
+					}
+				}
+			}
+			if err := lotRows.Err(); err != nil {
+				_ = lotRows.Close()
 				return err
 			}
-			if hasEligibleLot {
+			if err := lotRows.Close(); err != nil {
+				return err
+			}
+			if safeMicros < decreaseMicros {
+				return service.ErrAdminBalanceSourceReversalRequired
+			}
+
+			remainingDecrease := decreaseMicros
+			for _, lot := range lots {
+				if remainingDecrease <= 0 {
+					break
+				}
+				consumeMicros := lot.remainingMicros
+				if consumeMicros > remainingDecrease {
+					consumeMicros = remainingDecrease
+				}
+				var lotResult sql.Result
+				if err := driver.Exec(ctx, `
+					UPDATE balance_lots
+					SET remaining_amount_micros = remaining_amount_micros - $1,
+						updated_at = NOW()
+					WHERE id = $2
+						AND affiliate_eligible = FALSE
+						AND remaining_amount_micros >= $1
+				`, []any{consumeMicros, lot.id}, &lotResult); err != nil {
+					return err
+				}
+				affected, err := lotResult.RowsAffected()
+				if err != nil {
+					return err
+				}
+				if affected != 1 {
+					return errors.New("admin balance lot changed while locked")
+				}
+				remainingDecrease -= consumeMicros
+			}
+			if remainingDecrease != 0 {
 				return service.ErrAdminBalanceSourceReversalRequired
 			}
 		}

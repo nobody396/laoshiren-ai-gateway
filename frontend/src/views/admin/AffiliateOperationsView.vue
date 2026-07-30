@@ -240,6 +240,9 @@
               <div>
                 <h2 class="text-xl font-semibold text-gray-950 dark:text-white">合伙人管理</h2>
                 <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">查看当前全部合伙人；发现异常时可先暂停邀请、提现和佣金转额度，确认没问题后再恢复。</p>
+                <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-dark-400">
+                  本人消费返佣仅适用于单独开启后新购买并实际使用的付费权益。关闭只影响关闭后新购买的权益；如需立即停止结算，请将合伙人状态改为“待审核”或“已暂停”。
+                </p>
               </div>
               <div class="flex flex-wrap justify-end gap-2">
                 <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-dark-800 dark:text-dark-300">
@@ -273,10 +276,11 @@
               </div>
             </div>
             <div class="max-h-[34rem] overflow-auto">
-              <table class="min-w-[1280px] table-fixed divide-y divide-gray-100 text-sm dark:divide-dark-800">
+              <table class="min-w-[1540px] table-fixed divide-y divide-gray-100 text-sm dark:divide-dark-800">
                 <colgroup>
                   <col class="w-[250px]">
                   <col class="w-[130px]">
+                  <col class="w-[260px]">
                   <col class="w-[110px]">
                   <col class="w-[110px]">
                   <col class="w-[220px]">
@@ -288,6 +292,7 @@
                   <tr>
                     <th class="px-5 py-3 text-left font-medium">合伙人</th>
                     <th class="px-5 py-3 text-left font-medium">状态</th>
+                    <th class="px-5 py-3 text-left font-medium">本人消费返佣</th>
                     <th class="px-5 py-3 text-right font-medium">暂缓额度</th>
                     <th class="px-5 py-3 text-right font-medium">暂缓现金</th>
                     <th class="px-5 py-3 text-left font-medium">最近原因</th>
@@ -310,6 +315,32 @@
                         <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="riskStatusClass(item.risk_status)">
                           {{ formatRiskStatus(item.risk_status) }}
                         </span>
+                      </div>
+                    </td>
+                    <td class="px-5 py-4">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                          <span
+                            class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+                            :class="selfCommissionStatusClass(selfCommissionPresentation(item).tone)"
+                          >
+                            {{ selfCommissionPresentation(item).label }}
+                          </span>
+                          <p class="mt-2 text-xs leading-5 text-gray-600 dark:text-dark-300">
+                            {{ selfCommissionPresentation(item).detail }}
+                          </p>
+                          <p v-if="item.self_commission_effective_at" class="mt-1 text-xs text-gray-500 dark:text-dark-400">
+                            生效时间：{{ formatBeijingTime(item.self_commission_effective_at) }}
+                          </p>
+                        </div>
+                        <button
+                          v-if="item.self_commission_enabled || selfCommissionPresentation(item).canEnable"
+                          class="btn btn-secondary btn-sm shrink-0 whitespace-nowrap"
+                          :disabled="selfCommissionUpdatingId === item.agent_id"
+                          @click="openSelfCommissionDialog(item, !item.self_commission_enabled)"
+                        >
+                          {{ item.self_commission_enabled ? '关闭' : '开启' }}
+                        </button>
                       </div>
                     </td>
                     <td class="px-5 py-4 text-right text-gray-700 dark:text-dark-200">
@@ -340,7 +371,7 @@
                     </td>
                   </tr>
                   <tr v-if="!riskPrincipals.length">
-                    <td colspan="8" class="px-5 py-12 text-center text-sm text-gray-600 dark:text-dark-300">尚无合伙人</td>
+                    <td colspan="9" class="px-5 py-12 text-center text-sm text-gray-600 dark:text-dark-300">尚无合伙人</td>
                   </tr>
                 </tbody>
               </table>
@@ -575,6 +606,57 @@
         </section>
       </template>
 
+      <div
+        v-if="selfCommissionDialogItem"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="self-commission-dialog-title"
+        @click.self="closeSelfCommissionDialog"
+      >
+        <form class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-dark-900" @submit.prevent="submitSelfCommissionPolicy">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h2 id="self-commission-dialog-title" class="text-lg font-semibold text-gray-950 dark:text-white">
+                {{ selfCommissionNextEnabled ? '开启本人消费返佣' : '关闭本人消费返佣' }}
+              </h2>
+              <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">
+                合伙人 #{{ selfCommissionDialogItem.agent_id }} · {{ selfCommissionDialogItem.username || selfCommissionDialogItem.email }}
+              </p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" :disabled="selfCommissionUpdatingId !== null" @click="closeSelfCommissionDialog">关闭</button>
+          </div>
+
+          <div class="mt-5 rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+            <template v-if="selfCommissionNextEnabled">
+              开启后，仅新购买并实际使用的付费余额卡和月卡参与本人消费返佣，历史余额、赠送额度和此前购买的权益不会补算；返佣比例固定为 10%。
+            </template>
+            <template v-else>
+              关闭只影响关闭后新购买的付费权益，已经按购买时规则获得资格的权益仍会继续结算。如需立即停止，请先将该合伙人状态改为“待审核”或“已暂停”。
+            </template>
+          </div>
+
+          <label class="mt-5 block">
+            <span class="mb-1 block text-sm font-medium text-gray-800 dark:text-dark-200">操作原因</span>
+            <textarea
+              v-model.trim="selfCommissionReason"
+              required
+              maxlength="500"
+              class="input min-h-28"
+              placeholder="请填写本次开启或关闭的原因，便于后续核对"
+            />
+            <span class="mt-1 block text-xs text-gray-500 dark:text-dark-400">{{ selfCommissionReason.length }}/500</span>
+          </label>
+
+          <div class="mt-6 flex justify-end gap-3">
+            <button type="button" class="btn btn-secondary" :disabled="selfCommissionUpdatingId !== null" @click="closeSelfCommissionDialog">取消</button>
+            <button class="btn btn-primary" :disabled="selfCommissionUpdatingId !== null || !selfCommissionReason.trim()">
+              {{ selfCommissionUpdatingId !== null ? '保存中…' : (selfCommissionNextEnabled ? '确认开启' : '确认关闭') }}
+            </button>
+          </div>
+        </form>
+      </div>
+
       <div v-if="qrPreviewURL" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" @click.self="closeQRPreview">
         <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl dark:bg-dark-900">
           <div class="flex items-center justify-between gap-3">
@@ -609,6 +691,7 @@ import {
   reviewPaymentProfile,
   reviewAffiliateApplication,
   updateAffiliateRisk,
+  updateAffiliateSelfCommissionPolicy,
   updateAffiliateCommunity,
   updateAffiliateProgram,
   uploadAffiliateCommunityQRCode,
@@ -624,6 +707,10 @@ import {
   type AgentPaymentProfile
 } from '@/api/admin/agents'
 import { useAppStore } from '@/stores/app'
+import {
+  getSelfCommissionPresentation,
+  type SelfCommissionTone
+} from '@/features/affiliate/selfCommission'
 import { buildAuthErrorMessage } from '@/utils/authError'
 
 const NumberField = defineComponent({
@@ -668,6 +755,10 @@ const reviewingId = ref<number | null>(null)
 const applicationReviewingId = ref<number | null>(null)
 const processingWithdrawalId = ref<number | null>(null)
 const riskUpdatingId = ref<number | null>(null)
+const selfCommissionUpdatingId = ref<number | null>(null)
+const selfCommissionDialogItem = ref<AffiliateRiskPrincipal | null>(null)
+const selfCommissionNextEnabled = ref(false)
+const selfCommissionReason = ref('')
 const reversalProcessing = ref(false)
 const program = ref<AffiliateProgramSettings | null>(null)
 const commercialPolicy = ref<AffiliateCommercialPolicy | null>(null)
@@ -832,6 +923,16 @@ function formatRiskStatus(status: AffiliateRiskStatus) {
   return status
 }
 
+function selfCommissionPresentation(item: AffiliateRiskPrincipal) {
+  return getSelfCommissionPresentation(item)
+}
+
+function selfCommissionStatusClass(tone: SelfCommissionTone) {
+  if (tone === 'enabled') return 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
+  if (tone === 'blocked') return 'bg-gray-100 text-gray-600 dark:bg-dark-800 dark:text-dark-300'
+  return 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+}
+
 function setObjectURL(target: typeof communityQRPreview, blob: Blob) {
   if (target.value.startsWith('blob:')) URL.revokeObjectURL(target.value)
   target.value = URL.createObjectURL(blob)
@@ -937,6 +1038,9 @@ async function applyRiskStatus(item: AffiliateRiskPrincipal) {
     })
     item.risk_status = action.next_risk_status
     item.risk_note = action.reason
+    item.self_commission_eligible = !item.has_upstream &&
+      item.agent_status === 'active' &&
+      action.next_risk_status === 'clear'
     if (action.next_risk_status === 'clear') {
       item.held_reward_count = 0
       item.held_reward_micros = 0
@@ -950,6 +1054,63 @@ async function applyRiskStatus(item: AffiliateRiskPrincipal) {
     appStore.showError(buildAuthErrorMessage(cause, { fallback: '合伙人状态更新失败' }))
   } finally {
     riskUpdatingId.value = null
+  }
+}
+
+function openSelfCommissionDialog(item: AffiliateRiskPrincipal, enabled: boolean) {
+  if (enabled && !getSelfCommissionPresentation(item).canEnable) {
+    appStore.showError(getSelfCommissionPresentation(item).detail)
+    return
+  }
+  selfCommissionDialogItem.value = item
+  selfCommissionNextEnabled.value = enabled
+  selfCommissionReason.value = ''
+}
+
+function closeSelfCommissionDialog() {
+  if (selfCommissionUpdatingId.value !== null) return
+  selfCommissionDialogItem.value = null
+  selfCommissionReason.value = ''
+}
+
+async function submitSelfCommissionPolicy() {
+  const item = selfCommissionDialogItem.value
+  const reason = selfCommissionReason.value.trim()
+  if (!item || !reason) {
+    appStore.showError('请填写操作原因')
+    return
+  }
+  selfCommissionUpdatingId.value = item.agent_id
+  try {
+    const policy = await updateAffiliateSelfCommissionPolicy(item.agent_id, {
+      enabled: selfCommissionNextEnabled.value,
+      expected_revision: item.self_commission_revision,
+      reason
+    })
+    item.self_commission_enabled = policy.enabled
+    item.self_commission_rate_bps = policy.rate_bps
+    item.self_commission_effective_at = policy.effective_at
+    item.self_commission_revision = policy.revision
+    item.has_upstream = policy.has_upstream
+    item.self_commission_eligible = policy.eligible
+    item.self_commission_block_reason = policy.block_reason_code
+    appStore.showSuccess(policy.enabled ? '本人消费返佣已开启' : '本人消费返佣已关闭')
+    selfCommissionDialogItem.value = null
+    selfCommissionReason.value = ''
+  } catch (cause: unknown) {
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '本人消费返佣设置保存失败，请刷新后重试' }))
+    try {
+      riskPrincipals.value = await listAffiliateRiskPrincipals(500)
+      for (const principal of riskPrincipals.value) {
+        riskTargets[principal.agent_id] = principal.risk_status
+      }
+    } catch {
+      // Keep the original error visible; the regular refresh path can recover later.
+    }
+    selfCommissionDialogItem.value = null
+    selfCommissionReason.value = ''
+  } finally {
+    selfCommissionUpdatingId.value = null
   }
 }
 

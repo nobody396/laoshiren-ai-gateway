@@ -7,6 +7,7 @@
           <select v-model="typeFilter" class="input w-auto text-sm">
             <option value="">{{ t('agent.allTypes') }}</option>
             <option value="consumption">{{ t('agent.typeConsumption') }}</option>
+            <option value="self_consumption_commission">{{ t('agent.typeSelfConsumption') }}</option>
             <option value="first_recharge_invitee">{{ t('agent.typeFirstRechargeInvitee') }}</option>
             <option value="first_recharge_referral">{{ t('agent.typeFirstRechargeReferral') }}</option>
           </select>
@@ -45,8 +46,8 @@
             <tbody class="divide-y divide-gray-50 dark:divide-dark-800">
               <tr v-for="record in records" :key="record.id" class="hover:bg-gray-50 dark:hover:bg-dark-800/30 transition-colors">
                 <td class="px-6 py-4">
-                  <span :class="typeClass(record.type)" class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium">
-                    {{ t(`agent.type_${record.type}`) }}
+                  <span :class="typeClass(getCommissionDisplayType(record))" class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium">
+                    {{ t(`agent.type_${getCommissionDisplayType(record)}`) }}
                   </span>
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-500 dark:text-dark-400">
@@ -91,6 +92,10 @@ import { ref, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { getAgentCommissions, type CommissionRecord, type PaginationResult } from '@/api/agent'
+import {
+  getCommissionDisplayType,
+  isSelfConsumptionCommission
+} from '@/features/affiliate/selfCommission'
 import { buildAuthErrorMessage } from '@/utils/authError'
 
 const { t } = useI18n()
@@ -123,6 +128,8 @@ function typeClass(type: string): string {
     case 'consumption':
     case 'consumption_commission':
       return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+    case 'self_consumption_commission':
+      return 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
     case 'first_recharge_invitee':
     case 'first_recharge_invitee_bonus':
       return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
@@ -141,12 +148,14 @@ function getTextValue(value: unknown): string {
 }
 
 function getTriggerDisplayName(record: CommissionRecord): string {
+  if (isSelfConsumptionCommission(record)) return t('agent.selfConsumptionTrigger')
   const username = getTextValue(record.username)
   const email = getTextValue(record.user_email)
   return username || email || `#${record.user_id}`
 }
 
 function getTriggerSecondaryText(record: CommissionRecord): string {
+  if (isSelfConsumptionCommission(record)) return ''
   const username = getTextValue(record.username)
   const email = getTextValue(record.user_email)
   return username && email ? email : ''

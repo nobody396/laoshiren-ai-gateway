@@ -2,9 +2,10 @@
 set -euo pipefail
 set +x
 
-readonly EXPECTED_WORKTREE="/Users/fujunhao/laoshirenai/worktrees/affiliate-program-v2"
-readonly EXPECTED_BRANCH="feat/affiliate-program-v2-20260726"
-readonly PROJECT_NAME="laoshirenai-affiliate-v2-staging"
+readonly SCRIPT_WORKTREE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly EXPECTED_WORKTREE="${AFFILIATE_STAGING_WORKTREE:-$SCRIPT_WORKTREE}"
+readonly EXPECTED_BRANCH="${AFFILIATE_STAGING_BRANCH:-$(git -C "$EXPECTED_WORKTREE" branch --show-current)}"
+readonly PROJECT_NAME="${AFFILIATE_STAGING_PROJECT_NAME:-laoshirenai-affiliate-v2-staging}"
 readonly COMPOSE_FILE="$EXPECTED_WORKTREE/deploy/staging/affiliate-v2.compose.yml"
 readonly DEFAULT_URL="http://127.0.0.1:${AFFILIATE_STAGING_PORT:-18080}"
 
@@ -26,6 +27,12 @@ require_checkout() {
     echo "unexpected staging branch: $current_branch" >&2
     exit 1
   }
+  case "$current_branch" in
+    main|master|release/*)
+      echo "staging must run from a non-release feature or fix branch: $current_branch" >&2
+      exit 1
+      ;;
+  esac
   make -C "$EXPECTED_WORKTREE" checkout-validate >/dev/null
 }
 

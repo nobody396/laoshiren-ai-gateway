@@ -1,12 +1,12 @@
 # Affiliate V2 isolated staging
 
-This staging stack is exclusively for the Affiliate V2 worktree and is not a
-production release path.
+This staging stack is exclusively for a registered, non-release feature/fix
+worktree and is not a production release path.
 
 ## Isolation boundary
 
-- Worktree: `/Users/fujunhao/laoshirenai/worktrees/affiliate-program-v2`
-- Branch: `feat/affiliate-program-v2-20260726`
+- Worktree: the repository containing the invoked staging script
+- Branch: the currently checked-out non-release feature/fix branch
 - Compose project: `laoshirenai-affiliate-v2-staging`
 - URL: `http://127.0.0.1:18080`
 - Dedicated PostgreSQL, Redis, application data, network, image and volumes
@@ -25,7 +25,7 @@ release policy in `AGENTS.md`.
 ## Commands
 
 ```bash
-cd /Users/fujunhao/laoshirenai/worktrees/affiliate-program-v2
+cd /path/to/a/registered/temporary/worktree
 ./scripts/affiliate-v2-staging.sh init-secrets
 ./scripts/affiliate-v2-staging.sh validate
 ./scripts/affiliate-v2-staging.sh up
@@ -34,6 +34,11 @@ cd /Users/fujunhao/laoshirenai/worktrees/affiliate-program-v2
 ./scripts/affiliate-v2-staging.sh logs
 ./scripts/affiliate-v2-staging.sh down
 ```
+
+Use `AFFILIATE_STAGING_PROJECT_NAME` and `AFFILIATE_STAGING_PORT` to run an
+additional isolated stack without replacing another local staging stack. The
+script rejects `main`, `master`, and `release/*` branches and still requires the
+checkout registry to allow development.
 
 Reset only the isolated staging data:
 

@@ -2,11 +2,13 @@
 set -euo pipefail
 set +x
 
-readonly EXPECTED_WORKTREE="/Users/fujunhao/laoshirenai/worktrees/affiliate-program-v2"
-readonly EXPECTED_BRANCH="feat/affiliate-program-v2-20260726"
-readonly PG_CONTAINER="laoshirenai-affiliate-v2-staging-postgres-1"
-readonly APP_CONTAINER="laoshirenai-affiliate-v2-staging-app-1"
-readonly REDIS_CONTAINER="laoshirenai-affiliate-v2-staging-redis-1"
+readonly SCRIPT_WORKTREE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly EXPECTED_WORKTREE="${AFFILIATE_STAGING_WORKTREE:-$SCRIPT_WORKTREE}"
+readonly EXPECTED_BRANCH="${AFFILIATE_STAGING_BRANCH:-$(git -C "$EXPECTED_WORKTREE" branch --show-current)}"
+readonly PROJECT_NAME="${AFFILIATE_STAGING_PROJECT_NAME:-laoshirenai-affiliate-v2-staging}"
+readonly PG_CONTAINER="${PROJECT_NAME}-postgres-1"
+readonly APP_CONTAINER="${PROJECT_NAME}-app-1"
+readonly REDIS_CONTAINER="${PROJECT_NAME}-redis-1"
 
 require_checkout() {
   local current_root current_branch
@@ -20,6 +22,13 @@ require_checkout() {
     echo "unexpected staging branch: $current_branch" >&2
     exit 1
   }
+  case "$current_branch" in
+    main|master|release/*)
+      echo "staging demo data must target a non-release feature or fix branch: $current_branch" >&2
+      exit 1
+      ;;
+  esac
+  make -C "$EXPECTED_WORKTREE" checkout-validate >/dev/null
 }
 
 require_containers() {

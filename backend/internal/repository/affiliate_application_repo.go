@@ -61,9 +61,6 @@ func (r *affiliateAgentRepository) SubmitAgentApplication(
 	}
 
 	route := qualification.QualificationRoute
-	if route == "combined" {
-		route = "direct_volume"
-	}
 	var applicationID int64
 	err = tx.QueryRowContext(ctx, `
 		INSERT INTO affiliate_agent_applications (

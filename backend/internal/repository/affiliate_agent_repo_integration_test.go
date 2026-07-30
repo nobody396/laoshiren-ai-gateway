@@ -46,7 +46,7 @@ func TestAffiliateAgentRepository_QualifiesAppliesReviewsAndPreservesUpstream(t 
 	`, candidate.ID, upstream.ID)
 	require.NoError(t, err)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 5; i++ {
 		direct := mustCreateUser(t, client, &service.User{
 			Email: fmt.Sprintf("affiliate-direct-%d-%d@example.com", time.Now().UnixNano(), i),
 		})
@@ -65,7 +65,7 @@ func TestAffiliateAgentRepository_QualifiesAppliesReviewsAndPreservesUpstream(t 
 				source_type, source_id, event_key, occurred_at, metadata
 			)
 			VALUES (
-				$1, $2, 'confirmed_consumption', 100000000,
+				$1, $2, 'confirmed_consumption', 200000000,
 				'integration', $3, $4, NOW(),
 				'{"program_mode":"live"}'::jsonb
 			)
@@ -76,12 +76,12 @@ func TestAffiliateAgentRepository_QualifiesAppliesReviewsAndPreservesUpstream(t 
 	qualification, err := agentService.GetQualification(ctx, candidate.ID)
 	require.NoError(t, err)
 	require.True(t, qualification.DirectRouteQualified)
-	require.False(t, qualification.CombinedRouteQualified)
+	require.False(t, qualification.SelfRouteQualified)
 	require.True(t, qualification.Qualified)
 	require.False(t, qualification.CanActivate)
 	require.True(t, qualification.CanApply)
 	require.Equal(t, "direct_team", qualification.QualificationRoute)
-	require.Equal(t, int32(10), qualification.ValidDirectUserCount)
+	require.Equal(t, int32(5), qualification.ValidDirectUserCount)
 	require.Equal(t, int64(1_000_000_000), qualification.DirectTeamConsumptionMicros)
 
 	application, err := agentService.Apply(ctx, candidate.ID, "申请成为合伙人")
@@ -150,34 +150,90 @@ func TestAffiliateAgentRepository_RejectsUnqualifiedApplication(t *testing.T) {
 	require.True(t, errors.Is(err, service.ErrAffiliateQualificationNotMet), "unexpected error: %v", err)
 }
 
-func TestAffiliateAgentRepository_QualificationCombinesFrozenHistoryAndLivePaidUsage(t *testing.T) {
+func TestAffiliateAgentRepository_RouteAOnlySumsValidDirectUsers(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)
 	repo := NewAffiliateAgentRepository(integrationDB)
 	setAffiliateProgramLiveForIntegrationTest(t, ctx)
 
-	_, err := integrationDB.ExecContext(ctx, `
-		UPDATE affiliate_program_settings
-		SET qualification_direct_user_count = 5,
-			qualification_min_user_consumption_micros = 20000000,
-			qualification_direct_team_consumption_micros = 500000000,
-			qualification_combined_consumption_micros = 1000000000
-		WHERE id = 1
-	`)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		_, _ = integrationDB.ExecContext(context.Background(), `
-			UPDATE affiliate_program_settings
-			SET qualification_direct_user_count = 10,
-				qualification_min_user_consumption_micros = 20000000,
-				qualification_direct_team_consumption_micros = 1000000000,
-				qualification_combined_consumption_micros = 2000000000
-			WHERE id = 1
-		`)
+	candidate := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-route-a-candidate-%d@example.com", time.Now().UnixNano()),
 	})
+	validDirectIDs := make([]int64, 0, 5)
+
+	addDirectConsumption := func(index int, amountMicros int64, valid bool) int64 {
+		direct := mustCreateUser(t, client, &service.User{
+			Email: fmt.Sprintf("affiliate-route-a-direct-%d-%d@example.com", time.Now().UnixNano(), index),
+		})
+		_, err := integrationDB.ExecContext(ctx, `
+			INSERT INTO affiliate_bindings (
+				customer_user_id, inviter_user_id, binding_kind,
+				customer_rebate_rate_snapshot_bps,
+				agent_commission_rate_snapshot_bps
+			)
+			VALUES ($1, $2, 'ordinary', 0, 0)
+		`, direct.ID, candidate.ID)
+		require.NoError(t, err)
+		_, err = integrationDB.ExecContext(ctx, `
+			INSERT INTO affiliate_performance_events (
+				user_id, direct_agent_id, event_type, amount_micros,
+				source_type, source_id, event_key, occurred_at, metadata
+			)
+			VALUES (
+				$1, $2, 'confirmed_consumption', $3,
+				'integration', $4, $5, NOW(),
+				'{"program_mode":"live"}'::jsonb
+			)
+		`, direct.ID, candidate.ID, amountMicros, index+1, "route-a:"+uuid.NewString())
+		require.NoError(t, err)
+		if valid {
+			validDirectIDs = append(validDirectIDs, direct.ID)
+		}
+		return direct.ID
+	}
+
+	for i := 0; i < 5; i++ {
+		addDirectConsumption(i, 180_000_000, true)
+	}
+	for i := 0; i < 6; i++ {
+		addDirectConsumption(100+i, 19_000_000, false)
+	}
+
+	qualification, err := repo.GetAgentQualification(ctx, candidate.ID)
+	require.NoError(t, err)
+	require.Equal(t, int32(5), qualification.ValidDirectUserCount)
+	require.Equal(t, int64(900_000_000), qualification.DirectTeamConsumptionMicros)
+	require.False(t, qualification.DirectRouteQualified)
+	require.False(t, qualification.Qualified)
+
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_performance_events (
+			user_id, direct_agent_id, event_type, amount_micros,
+			source_type, source_id, event_key, occurred_at, metadata
+		)
+		VALUES (
+			$1, $2, 'confirmed_consumption', 100000000,
+			'integration', 999, $3, NOW(),
+			'{"program_mode":"live"}'::jsonb
+		)
+	`, validDirectIDs[0], candidate.ID, "route-a-topup:"+uuid.NewString())
+	require.NoError(t, err)
+
+	qualification, err = repo.GetAgentQualification(ctx, candidate.ID)
+	require.NoError(t, err)
+	require.Equal(t, int64(1_000_000_000), qualification.DirectTeamConsumptionMicros)
+	require.True(t, qualification.DirectRouteQualified)
+	require.Equal(t, "direct_team", qualification.QualificationRoute)
+}
+
+func TestAffiliateAgentRepository_QualificationUsesSelfOnlyForRouteB(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateAgentRepository(integrationDB)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
 
 	candidate := mustCreateUser(t, client, &service.User{
-		Email: fmt.Sprintf("affiliate-combined-candidate-%d@example.com", time.Now().UnixNano()),
+		Email: fmt.Sprintf("affiliate-self-candidate-%d@example.com", time.Now().UnixNano()),
 	})
 	var startedAt time.Time
 	require.NoError(t, integrationDB.QueryRowContext(ctx, `
@@ -186,7 +242,7 @@ func TestAffiliateAgentRepository_QualificationCombinesFrozenHistoryAndLivePaidU
 		WHERE id = 1
 	`).Scan(&startedAt))
 
-	_, err = integrationDB.ExecContext(ctx, `
+	_, err := integrationDB.ExecContext(ctx, `
 		INSERT INTO affiliate_qualification_baseline_entries (
 			user_id, source_key, source_type,
 			confirmed_consumption_micros, cutoff_at, metadata
@@ -194,18 +250,6 @@ func TestAffiliateAgentRepository_QualificationCombinesFrozenHistoryAndLivePaidU
 		VALUES ($1, $2, 'manual_verified', 400000000, $3, '{"test":true}'::jsonb)
 	`, candidate.ID, "qualification-self:"+uuid.NewString(), startedAt)
 	require.NoError(t, err)
-	_, err = integrationDB.ExecContext(ctx, `
-		INSERT INTO affiliate_performance_events (
-			user_id, event_type, amount_micros, affiliate_policy,
-			source_type, source_id, event_key, occurred_at, metadata
-		)
-		VALUES (
-			$1, 'confirmed_consumption', 100000000, 'NONE',
-			'integration', 1, $2, NOW(), '{"program_mode":"live"}'::jsonb
-		)
-	`, candidate.ID, "qualification-self-live:"+uuid.NewString())
-	require.NoError(t, err)
-
 	for i := 0; i < 5; i++ {
 		direct := mustCreateUser(t, client, &service.User{
 			Email: fmt.Sprintf("affiliate-combined-direct-%d-%d@example.com", time.Now().UnixNano(), i),
@@ -243,15 +287,37 @@ func TestAffiliateAgentRepository_QualificationCombinesFrozenHistoryAndLivePaidU
 	qualification, err := repo.GetAgentQualification(ctx, candidate.ID)
 	require.NoError(t, err)
 	require.Equal(t, int32(5), qualification.ValidDirectUserCount)
-	require.Equal(t, int64(500_000_000), qualification.SelfConsumptionMicros)
+	require.Equal(t, int64(400_000_000), qualification.SelfConsumptionMicros)
 	require.Equal(t, int64(500_000_000), qualification.DirectTeamConsumptionMicros)
-	require.Equal(t, int64(1_000_000_000), qualification.CombinedConsumptionMicros)
-	require.True(t, qualification.DirectRouteQualified)
-	require.True(t, qualification.CombinedRouteQualified)
+	require.Equal(t, int64(900_000_000), qualification.CombinedConsumptionMicros)
+	require.False(t, qualification.DirectRouteQualified)
+	require.False(t, qualification.SelfRouteQualified, "direct users must not help Route B")
+	require.False(t, qualification.Qualified)
+	require.False(t, qualification.CanApply)
+
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_performance_events (
+			user_id, event_type, amount_micros, affiliate_policy,
+			source_type, source_id, event_key, occurred_at, metadata
+		)
+		VALUES (
+			$1, 'confirmed_consumption', 100000000, 'NONE',
+			'integration', 1, $2, NOW(), '{"program_mode":"live"}'::jsonb
+		)
+	`, candidate.ID, "qualification-self-live:"+uuid.NewString())
+	require.NoError(t, err)
+
+	qualification, err = repo.GetAgentQualification(ctx, candidate.ID)
+	require.NoError(t, err)
+	require.Equal(t, int64(500_000_000), qualification.SelfConsumptionMicros)
+	require.False(t, qualification.DirectRouteQualified)
+	require.True(t, qualification.SelfRouteQualified)
+	require.Equal(t, "self_consumption", qualification.QualificationRoute)
 	require.True(t, qualification.CanApply)
 
-	application, err := repo.SubmitAgentApplication(ctx, candidate.ID, "路线 B 快照测试")
+	application, err := repo.SubmitAgentApplication(ctx, candidate.ID, "路线 B 本人消费快照测试")
 	require.NoError(t, err)
+	require.Equal(t, "self_consumption", application.QualifyingRoute)
 	require.Equal(t, int64(500_000_000), application.SelfConsumptionMicros)
 	require.Equal(t, int64(500_000_000), application.DirectTeamConsumptionMicros)
 	require.Equal(t, int64(1_000_000_000), application.CombinedConsumptionMicros)

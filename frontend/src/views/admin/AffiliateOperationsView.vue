@@ -68,7 +68,7 @@
               <NumberField v-model="programForm.directUserCount" label="路线 A 有效用户" suffix="人" :min="1" :step="1" />
               <NumberField v-model="programForm.perUserConsumption" label="单个有效用户消费" prefix="¥" :min="1" :step="1" />
               <NumberField v-model="programForm.directTeamConsumption" label="路线 A 团队消费" prefix="¥" :min="1" :step="1" />
-              <NumberField v-model="programForm.combinedConsumption" label="路线 B 本人 + 直属消费" prefix="¥" :min="1" :step="1" />
+              <NumberField v-model="programForm.selfConsumption" label="路线 B 本人消费" prefix="¥" :min="1" :step="1" />
               <NumberField v-model="programForm.maxCampaignLinks" label="最多活动链接" suffix="条" :min="0" :max="100" :step="1" />
               <NumberField v-model="programForm.conversionMultiplier" label="现金转额度倍率（固定）" suffix="×" :disabled="true" />
               <NumberField v-model="programForm.withdrawalMinimum" label="最低提现金额" prefix="¥" :min="1" :step="1" />
@@ -174,7 +174,7 @@
                     <p class="font-semibold text-gray-900 dark:text-white">#{{ item.user_id }} · {{ item.username || item.email }}</p>
                     <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ formatOptionalBeijingTime(item.submitted_at) }}</p>
                   </td>
-                  <td class="px-5 py-4">{{ item.qualifying_route === 'direct_team' ? '路线 A · 稳定团队' : '路线 B · 本人 + 直属' }}</td>
+                  <td class="px-5 py-4">{{ formatQualificationRoute(item.qualifying_route) }}</td>
                   <td class="px-5 py-4 text-right">{{ item.valid_direct_user_count }} 人</td>
                   <td class="px-5 py-4 text-right">{{ formatMicros(item.self_consumption_micros, '¥') }}</td>
                   <td class="px-5 py-4 text-right">{{ formatMicros(item.direct_team_consumption_micros, '¥') }}</td>
@@ -649,10 +649,10 @@ const programForm = reactive({
   mode: 'off' as AffiliateProgramSettings['mode'],
   ordinaryReferralRate: 5,
   ordinaryInviteeRate: 5,
-  directUserCount: 10,
+  directUserCount: 5,
   perUserConsumption: 20,
   directTeamConsumption: 1000,
-  combinedConsumption: 2000,
+  selfConsumption: 500,
   maxCampaignLinks: 5,
   conversionMultiplier: 1.2,
   withdrawalMinimum: 100,
@@ -702,7 +702,7 @@ watch(program, value => {
   programForm.directUserCount = value.qualification_direct_user_count
   programForm.perUserConsumption = microsToUnits(value.qualification_min_user_consumption_micros)
   programForm.directTeamConsumption = microsToUnits(value.qualification_direct_team_consumption_micros)
-  programForm.combinedConsumption = microsToUnits(value.qualification_combined_consumption_micros)
+  programForm.selfConsumption = microsToUnits(value.qualification_self_consumption_micros)
   programForm.maxCampaignLinks = value.max_campaign_links
   programForm.conversionMultiplier = value.commission_conversion_multiplier_millis / 1000
   programForm.withdrawalMinimum = microsToUnits(value.withdrawal_min_micros)
@@ -735,6 +735,12 @@ function formatProgramMode(mode: AffiliateProgramSettings['mode']) {
   if (mode === 'live') return '正式'
   if (mode === 'shadow') return '观察'
   return '关闭'
+}
+
+function formatQualificationRoute(route: AffiliateAgentApplication['qualifying_route']) {
+  if (route === 'direct_team') return '路线 A · 直属团队'
+  if (route === 'self_consumption') return '路线 B · 本人消费'
+  return '历史路线 B · 本人 + 直属'
 }
 
 function formatBeijingTime(value: string) {
@@ -836,7 +842,7 @@ async function saveProgram() {
       qualification_direct_user_count: Math.round(programForm.directUserCount),
       qualification_min_user_consumption_micros: unitsToMicros(programForm.perUserConsumption),
       qualification_direct_team_consumption_micros: unitsToMicros(programForm.directTeamConsumption),
-      qualification_combined_consumption_micros: unitsToMicros(programForm.combinedConsumption),
+      qualification_self_consumption_micros: unitsToMicros(programForm.selfConsumption),
       max_campaign_links: Math.round(programForm.maxCampaignLinks),
       commission_conversion_multiplier_millis: Math.round(programForm.conversionMultiplier * 1000),
       withdrawal_min_micros: unitsToMicros(programForm.withdrawalMinimum),

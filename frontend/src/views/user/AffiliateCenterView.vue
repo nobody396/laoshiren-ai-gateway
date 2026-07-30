@@ -107,21 +107,21 @@
               </p>
             </article>
 
-            <article class="rounded-2xl border p-5" :class="qualification.combined_route_qualified ? 'border-green-300 bg-green-50 dark:border-green-900 dark:bg-green-950' : 'border-gray-200 dark:border-dark-700'">
+            <article class="rounded-2xl border p-5" :class="qualification.self_route_qualified ? 'border-green-300 bg-green-50 dark:border-green-900 dark:bg-green-950' : 'border-gray-200 dark:border-dark-700'">
               <div class="flex items-center justify-between gap-3">
-                <h3 class="font-semibold text-gray-900 dark:text-white">路线 B · 本人 + 直属消费</h3>
-                <span class="text-xs font-medium text-gray-600 dark:text-dark-300">{{ qualification.combined_route_qualified ? '已达成' : '进行中' }}</span>
+                <h3 class="font-semibold text-gray-900 dark:text-white">路线 B · 本人消费</h3>
+                <span class="text-xs font-medium text-gray-600 dark:text-dark-300">{{ qualification.self_route_qualified ? '已达成' : '进行中' }}</span>
               </div>
               <dl class="mt-5">
                 <ProgressRow
-                  label="本人 + 直属确认消费"
-                  :value="microsToYuan(qualification.combined_consumption_micros)"
-                  :target="microsToYuan(qualification.required_combined_micros)"
+                  label="本人确认消费"
+                  :value="microsToYuan(qualification.self_consumption_micros)"
+                  :target="microsToYuan(qualification.required_self_micros)"
                   prefix="¥"
                 />
               </dl>
               <p class="mt-4 text-xs leading-5 text-gray-600 dark:text-dark-300">
-                本人和直属用户的确认消费合并计算；达到路线 B 后仍需提交申请并由平台审核。
+                只统计本人的确认消费，不要求邀请用户；达到路线 B 后仍需提交申请并由平台审核。
               </p>
             </article>
           </div>

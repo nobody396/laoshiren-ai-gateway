@@ -596,7 +596,7 @@ func recordUsageBillingPerformanceEvent(
 			NULLIF($6, 0),
 			'confirmed_consumption',
 			$2,
-			$7,
+			$7::varchar,
 			$8,
 			$9,
 			$3,
@@ -605,7 +605,7 @@ func recordUsageBillingPerformanceEvent(
 			NOW(),
 			jsonb_build_object(
 				'program_mode', $10::text,
-				'attribution_policy', $7::text
+				'attribution_policy', $7::varchar
 			)
 		)
 		ON CONFLICT (event_key) DO NOTHING

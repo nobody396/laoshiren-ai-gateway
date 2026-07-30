@@ -1268,7 +1268,7 @@ func TestUsageBillingPartnerSelfBalanceCommissionIsIdempotentReportableAndRevers
 	user := mustCreateUser(t, client, &service.User{
 		Email:        fmt.Sprintf("usage-self-balance-%d@example.com", time.Now().UnixNano()),
 		PasswordHash: "hash",
-		Balance:      20,
+		Balance:      25,
 	})
 	apiKey := mustCreateApiKey(t, client, &service.APIKey{
 		UserID: user.ID,
@@ -1308,6 +1308,18 @@ func TestUsageBillingPartnerSelfBalanceCommissionIsIdempotentReportableAndRevers
 	require.NoError(t, NewAffiliateConsumptionRepository(client).RecordBalanceLot(
 		ctx,
 		service.AffiliateBalanceLotInput{
+			UserID:          user.ID,
+			SourceType:      service.AffiliateSourcePaidTopup,
+			SourceID:        91000,
+			SourceKey:       "pre-self-balance-lot:" + uuid.NewString(),
+			AmountMicros:    5_000_000,
+			AffiliatePolicy: service.AffiliateSourcePolicyNone,
+			OccurredAt:      time.Now().Add(-10 * time.Minute),
+		},
+	))
+	require.NoError(t, NewAffiliateConsumptionRepository(client).RecordBalanceLot(
+		ctx,
+		service.AffiliateBalanceLotInput{
 			UserID:                   user.ID,
 			SourceType:               service.AffiliateSourcePaidTopup,
 			SourceID:                 91001,
@@ -1321,6 +1333,19 @@ func TestUsageBillingPartnerSelfBalanceCommissionIsIdempotentReportableAndRevers
 		},
 	))
 
+	billingRepo := NewUsageBillingRepository(client, integrationDB)
+	historicalResult, err := billingRepo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID:   uuid.NewString(),
+		APIKeyID:    apiKey.ID,
+		UsageLogID:  time.Now().UnixNano(),
+		UserID:      user.ID,
+		BalanceCost: 5,
+	})
+	require.NoError(t, err)
+	require.True(t, historicalResult.Applied)
+	require.Zero(t, historicalResult.AffiliateCustomerRebateMicros)
+	require.Zero(t, historicalResult.AffiliateAgentCommissionMicros)
+
 	usageLogID := time.Now().UnixNano()
 	command := &service.UsageBillingCommand{
 		RequestID:   uuid.NewString(),
@@ -1329,7 +1354,6 @@ func TestUsageBillingPartnerSelfBalanceCommissionIsIdempotentReportableAndRevers
 		UserID:      user.ID,
 		BalanceCost: 10,
 	}
-	billingRepo := NewUsageBillingRepository(client, integrationDB)
 	result, err := billingRepo.Apply(ctx, command)
 	require.NoError(t, err)
 	require.True(t, result.Applied)
@@ -1557,6 +1581,31 @@ func TestUsageBillingPartnerSelfMonthlyCommissionUsesConfirmedSaleValue(t *testi
 	require.Equal(t, service.AffiliateSourcePolicyPartnerSelfUsage, eventPolicy)
 	require.Equal(t, int64(25_000_000), sourceAmountMicros)
 	require.Equal(t, int64(2_500_000), cashMicros)
+
+	secondResult, err := NewUsageBillingRepository(client, integrationDB).Apply(
+		ctx,
+		&service.UsageBillingCommand{
+			RequestID:        uuid.NewString(),
+			APIKeyID:         apiKey.ID,
+			UsageLogID:       time.Now().UnixNano(),
+			UserID:           user.ID,
+			SubscriptionID:   &subscription.ID,
+			SubscriptionCost: 75,
+		},
+	)
+	require.NoError(t, err)
+	require.Equal(t, int64(75_000_000), secondResult.MonthlyConfirmedMicros)
+	require.Equal(t, int64(7_500_000), secondResult.AffiliateAgentCommissionMicros)
+	var totalCashMicros int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COALESCE(SUM(amount_micros), 0)::bigint
+		FROM agent_cash_commission_entries
+		WHERE agent_id=$1
+			AND consumer_user_id=$1
+			AND entry_type='earned'
+			AND metadata ->> 'attribution_policy'='PARTNER_SELF_USAGE'
+	`, user.ID).Scan(&totalCashMicros))
+	require.Equal(t, int64(10_000_000), totalCashMicros, "monthly cash must cap at 10% of sale price")
 }
 
 func TestUsageBillingPartnerSelfCommissionRespectsRiskHoldAndTermination(t *testing.T) {
@@ -1617,7 +1666,7 @@ func TestUsageBillingPartnerSelfCommissionRespectsRiskHoldAndTermination(t *test
 
 	_, err = integrationDB.ExecContext(ctx, `
 		UPDATE agent_principals
-		SET status='terminated', updated_at=NOW()
+		SET status='terminated', terminated_at=NOW(), updated_at=NOW()
 		WHERE agent_id=$1
 	`, user.ID)
 	require.NoError(t, err)

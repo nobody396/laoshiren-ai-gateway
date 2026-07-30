@@ -171,7 +171,7 @@ BEGIN
       ordinary_invitee_rate_bps = 500,
       first_paid_bonus_threshold_micros = 0,
       first_paid_bonus_micros = 0,
-      stress_cost_per_raw_credit_micros = 530000,
+      stress_cost_per_raw_credit_micros = 370000,
       revision = revision + 1,
       updated_by = admin_id,
       updated_at = NOW()

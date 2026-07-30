@@ -684,12 +684,13 @@ BEGIN
   INSERT INTO agent_payment_profiles (
     agent_id, alipay_real_name, alipay_account, contact_phone, payment_note,
     alipay_qr_object_key, alipay_qr_content_type, alipay_qr_original_filename, alipay_qr_size,
-    identity_fingerprint_hash, verification_status, verification_note, verified_at, verified_by
+    identity_fingerprint_hash, verification_status, verification_note, verified_at, verified_by,
+    privacy_consent_version, privacy_consented_at
   )
   VALUES
-    (alpha_id, '张三', 'alpha-pay@example.com', '13800000001', '常用收款账号，可扫码打款。', 'agent-payment-qrcodes/partner-alpha.png', 'image/png', 'partner-alpha.png', 1200, 'partner-alpha-fingerprint', 'verified', '已核对', NOW() - INTERVAL '6 days', admin_id),
-    (review_id, '李四', 'review-pay@example.com', '13800000002', '资料待审核，请核对实名和收款码。', 'agent-payment-qrcodes/partner-review.png', 'image/png', 'partner-review.png', 1200, 'partner-review-fingerprint', 'pending_review', '', NULL, NULL),
-    (blocked_id, '王五', 'blocked-pay@example.com', '13800000003', '当前合作已暂停，收款资料暂不处理。', 'agent-payment-qrcodes/partner-blocked.png', 'image/png', 'partner-blocked.png', 1200, 'partner-blocked-fingerprint', 'verified', '已核对', NOW() - INTERVAL '5 days', admin_id)
+    (alpha_id, '张三', 'alpha-pay@example.com', '13800000001', '常用收款账号，可扫码打款。', 'agent-payment-qrcodes/partner-alpha.png', 'image/png', 'partner-alpha.png', 1200, 'partner-alpha-fingerprint', 'verified', '已核对', NOW() - INTERVAL '6 days', admin_id, 'affiliate-payment-profile-privacy-v1', NOW() - INTERVAL '6 days'),
+    (review_id, '李四', 'review-pay@example.com', '13800000002', '资料待审核，请核对实名和收款码。', 'agent-payment-qrcodes/partner-review.png', 'image/png', 'partner-review.png', 1200, 'partner-review-fingerprint', 'pending_review', '', NULL, NULL, 'affiliate-payment-profile-privacy-v1', NOW() - INTERVAL '2 days'),
+    (blocked_id, '王五', 'blocked-pay@example.com', '13800000003', '当前合作已暂停，收款资料暂不处理。', 'agent-payment-qrcodes/partner-blocked.png', 'image/png', 'partner-blocked.png', 1200, 'partner-blocked-fingerprint', 'verified', '已核对', NOW() - INTERVAL '5 days', admin_id, 'affiliate-payment-profile-privacy-v1', NOW() - INTERVAL '5 days')
   ON CONFLICT (agent_id) DO UPDATE SET
     alipay_real_name = EXCLUDED.alipay_real_name,
     alipay_account = EXCLUDED.alipay_account,
@@ -704,6 +705,8 @@ BEGIN
     verification_note = EXCLUDED.verification_note,
     verified_at = EXCLUDED.verified_at,
     verified_by = EXCLUDED.verified_by,
+    privacy_consent_version = EXCLUDED.privacy_consent_version,
+    privacy_consented_at = EXCLUDED.privacy_consented_at,
     updated_at = NOW()
   WHERE NOT EXISTS (
     SELECT 1

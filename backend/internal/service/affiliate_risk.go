@@ -33,24 +33,29 @@ var (
 )
 
 type AffiliateRiskPrincipal struct {
-	AgentID                   int64      `json:"agent_id"`
-	Email                     string     `json:"email"`
-	Username                  string     `json:"username"`
-	AgentStatus               string     `json:"agent_status"`
-	RiskStatus                string     `json:"risk_status"`
-	RiskNote                  string     `json:"risk_note"`
-	SelfCommissionEnabled     bool       `json:"self_commission_enabled"`
-	SelfCommissionRateBPS     int        `json:"self_commission_rate_bps"`
-	SelfCommissionEffectiveAt *time.Time `json:"self_commission_effective_at,omitempty"`
-	SelfCommissionRevision    int64      `json:"self_commission_revision"`
-	HasUpstream               bool       `json:"has_upstream"`
-	SelfCommissionEligible    bool       `json:"self_commission_eligible"`
-	SelfCommissionBlockReason string     `json:"self_commission_block_reason,omitempty"`
-	HeldRewardCount           int32      `json:"held_reward_count"`
-	HeldRewardMicros          int64      `json:"held_reward_micros"`
-	HeldCashCount             int32      `json:"held_cash_count"`
-	HeldCashMicros            int64      `json:"held_cash_micros"`
-	UpdatedAt                 time.Time  `json:"updated_at"`
+	AgentID                         int64      `json:"agent_id"`
+	Email                           string     `json:"email"`
+	Username                        string     `json:"username"`
+	AgentStatus                     string     `json:"agent_status"`
+	RiskStatus                      string     `json:"risk_status"`
+	RiskNote                        string     `json:"risk_note"`
+	SelfCommissionEnabled           bool       `json:"self_commission_enabled"`
+	SelfCommissionRateBPS           int        `json:"self_commission_rate_bps"`
+	SelfCommissionEffectiveAt       *time.Time `json:"self_commission_effective_at,omitempty"`
+	SelfCommissionRevision          int64      `json:"self_commission_revision"`
+	SelfCommissionReason            string     `json:"self_commission_reason,omitempty"`
+	SelfCommissionUpdatedBy         *int64     `json:"self_commission_updated_by,omitempty"`
+	SelfCommissionUpdatedByEmail    string     `json:"self_commission_updated_by_email,omitempty"`
+	SelfCommissionUpdatedByUsername string     `json:"self_commission_updated_by_username,omitempty"`
+	SelfCommissionUpdatedAt         *time.Time `json:"self_commission_updated_at,omitempty"`
+	HasUpstream                     bool       `json:"has_upstream"`
+	SelfCommissionEligible          bool       `json:"self_commission_eligible"`
+	SelfCommissionBlockReason       string     `json:"self_commission_block_reason,omitempty"`
+	HeldRewardCount                 int32      `json:"held_reward_count"`
+	HeldRewardMicros                int64      `json:"held_reward_micros"`
+	HeldCashCount                   int32      `json:"held_cash_count"`
+	HeldCashMicros                  int64      `json:"held_cash_micros"`
+	UpdatedAt                       time.Time  `json:"updated_at"`
 }
 
 type AffiliateRiskActionResult struct {

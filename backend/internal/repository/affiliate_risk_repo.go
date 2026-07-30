@@ -36,6 +36,11 @@ func (r *affiliateRiskRepository) ListAffiliateRiskPrincipals(
 			COALESCE(self_policy.rate_bps, 1000),
 			self_policy.effective_at,
 			COALESCE(self_policy.revision, 0),
+			COALESCE(self_policy.reason, ''),
+			self_policy.updated_by,
+			COALESCE(self_operator.email, ''),
+			COALESCE(self_operator.username, ''),
+			self_policy.updated_at,
 			upstream.has_upstream,
 			(
 				ap.status = 'active'
@@ -87,6 +92,8 @@ func (r *affiliateRiskRepository) ListAffiliateRiskPrincipals(
 			AND u.deleted_at IS NULL
 		LEFT JOIN affiliate_agent_self_commission_policies self_policy
 			ON self_policy.agent_id = ap.agent_id
+		LEFT JOIN users self_operator
+			ON self_operator.id = self_policy.updated_by
 		CROSS JOIN LATERAL (
 			SELECT (
 				u.inviter_id IS NOT NULL
@@ -128,6 +135,11 @@ func (r *affiliateRiskRepository) ListAffiliateRiskPrincipals(
 			&item.SelfCommissionRateBPS,
 			&item.SelfCommissionEffectiveAt,
 			&item.SelfCommissionRevision,
+			&item.SelfCommissionReason,
+			&item.SelfCommissionUpdatedBy,
+			&item.SelfCommissionUpdatedByEmail,
+			&item.SelfCommissionUpdatedByUsername,
+			&item.SelfCommissionUpdatedAt,
 			&item.HasUpstream,
 			&item.SelfCommissionEligible,
 			&item.SelfCommissionBlockReason,

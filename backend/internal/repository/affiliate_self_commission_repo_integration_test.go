@@ -18,8 +18,9 @@ func TestAffiliateSelfCommissionPolicyRepository_GuardsEligibilityAndAudit(t *te
 	ctx := context.Background()
 	client := testEntClient(t)
 	admin := mustCreateUser(t, client, &service.User{
-		Email: fmt.Sprintf("self-commission-admin-%d@example.com", time.Now().UnixNano()),
-		Role:  service.RoleAdmin,
+		Email:    fmt.Sprintf("self-commission-admin-%d@example.com", time.Now().UnixNano()),
+		Username: "联盟审核员",
+		Role:     service.RoleAdmin,
 	})
 	partner := createActiveAffiliatePaymentAgent(t, ctx, client, "self-commission-partner")
 	upstream := mustCreateUser(t, client, &service.User{
@@ -110,6 +111,12 @@ func TestAffiliateSelfCommissionPolicyRepository_GuardsEligibilityAndAudit(t *te
 	require.Equal(t, service.AffiliateSelfCommissionRateBPS, listed.SelfCommissionRateBPS)
 	require.Equal(t, int64(1), listed.SelfCommissionRevision)
 	require.NotNil(t, listed.SelfCommissionEffectiveAt)
+	require.Equal(t, "无上级合伙人本人返佣", listed.SelfCommissionReason)
+	require.NotNil(t, listed.SelfCommissionUpdatedBy)
+	require.Equal(t, admin.ID, *listed.SelfCommissionUpdatedBy)
+	require.Equal(t, admin.Email, listed.SelfCommissionUpdatedByEmail)
+	require.Equal(t, admin.Username, listed.SelfCommissionUpdatedByUsername)
+	require.NotNil(t, listed.SelfCommissionUpdatedAt)
 	require.False(t, listed.HasUpstream)
 	require.True(t, listed.SelfCommissionEligible)
 	require.Empty(t, listed.SelfCommissionBlockReason)

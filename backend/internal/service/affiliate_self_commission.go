@@ -22,15 +22,15 @@ const (
 var (
 	ErrAffiliateSelfCommissionAgentNotFound = infraerrors.NotFound(
 		"AFFILIATE_SELF_COMMISSION_AGENT_NOT_FOUND",
-		"affiliate partner not found",
+		"未找到该合伙人",
 	)
 	ErrAffiliateSelfCommissionRevisionConflict = infraerrors.Conflict(
 		"AFFILIATE_SELF_COMMISSION_POLICY_REVISION_CONFLICT",
-		"self-commission policy changed; reload and retry",
+		"本人消费返佣设置已被其他操作更新，请刷新后重试",
 	)
 	ErrAffiliateSelfCommissionNotEligible = infraerrors.Conflict(
 		"AFFILIATE_SELF_COMMISSION_NOT_ELIGIBLE",
-		"partner is not eligible for self-consumption commission",
+		"该合伙人暂不符合本人消费返佣开通条件",
 	)
 )
 

@@ -134,10 +134,11 @@ def prepare():
     records_before = req(
         "/agent/commissions?"
         + urllib.parse.urlencode(
-            {"page": 1, "page_size": 1, "type": "self_consumption_commission"}
+            {"page": 1, "page_size": 100, "type": "self_consumption_commission"}
         ),
         token=partner_token,
     )
+    records_before_items = records_before.get("items") or []
     redeemed = req(
         "/redeem",
         method="POST",
@@ -168,10 +169,11 @@ def prepare():
                 "balance_before_micros": int(round(balance_before * 1_000_000)),
                 "available_cash_before": int(wallet_before["available_cash_micros"]),
                 "lifetime_earned_before": int(wallet_before["lifetime_earned_micros"]),
-                "record_count_before": int(
-                    records_before["pagination"].get(
-                        "total", records_before["pagination"].get("Total", 0)
-                    )
+                "commission_amount_before": sum(
+                    float(item.get("amount", 0)) for item in records_before_items
+                ),
+                "commission_source_before": sum(
+                    float(item.get("source_amount", 0)) for item in records_before_items
                 ),
             }
         ),
@@ -191,27 +193,24 @@ def verify():
         raise RuntimeError("expected lifetime earnings to increase by exactly ¥0.30: %s" % wallet)
 
     query = urllib.parse.urlencode(
-        {"page": 1, "page_size": 20, "type": "self_consumption_commission"}
+        {"page": 1, "page_size": 100, "type": "self_consumption_commission"}
     )
     records = req("/agent/commissions?" + query, token=token)
     items = records.get("items") or []
-    record_total = int(
-        records["pagination"].get("total", records["pagination"].get("Total", 0))
-    )
-    if record_total != context["record_count_before"] + 1:
-        raise RuntimeError("expected one additional partner self-consumption commission record")
     if not items:
         raise RuntimeError("expected a partner self-consumption commission record")
-    record = items[0]
+    if any(item.get("type") != "self_consumption_commission" for item in items):
+        raise RuntimeError("unexpected commission type in self-consumption filter")
+    commission_amount = sum(float(item.get("amount", 0)) for item in items)
+    commission_source = sum(float(item.get("source_amount", 0)) for item in items)
     if (
-        record.get("type") != "self_consumption_commission"
-        or abs(float(record.get("amount", -1)) - 0.3) > 1e-9
-        or abs(float(record.get("source_amount", -1)) - 3.0) > 1e-9
+        abs(commission_amount - context["commission_amount_before"] - 0.3) > 1e-9
+        or abs(commission_source - context["commission_source_before"] - 3.0) > 1e-9
     ):
-        raise RuntimeError("unexpected self-consumption commission record: %s" % record)
+        raise RuntimeError("daily self-consumption commission aggregate did not increase correctly")
 
     print(
-        "OK real billing settlement + partner UI APIs - ¥3 consumed, ¥0.30 cash commission, one record"
+        "OK real billing settlement + partner UI APIs - ¥3 consumed, ¥0.30 cash commission, daily record updated"
     )
     print("SUMMARY self-consumption commission Stage E2E passed")
 

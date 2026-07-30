@@ -573,6 +573,7 @@ var ProviderSet = wire.NewSet(
 	NewAffiliateCommunityService,
 	ProvideAffiliateWalletService,
 	ProvideAffiliateRiskService,
+	NewAffiliateSelfCommissionPolicyService,
 	NewPaymentService,
 	NewTopupService,
 	NewRBACService,

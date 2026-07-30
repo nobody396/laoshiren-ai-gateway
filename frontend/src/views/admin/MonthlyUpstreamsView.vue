@@ -115,7 +115,7 @@
                   {{ account.latest_error_code || 'probe_error' }}：{{ account.latest_error }}
                 </p>
                 <p
-                  v-if="account.latest_direct_upstream"
+                  v-if="account.latest_direct_upstream && !isDirectUpstreamDiagnosticStale(account)"
                   class="mt-3 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600 dark:bg-dark-800 dark:text-dark-300"
                 >
                   直连上游诊断：
@@ -184,6 +184,7 @@ import Toggle from '@/components/common/Toggle.vue'
 import { adminAPI } from '@/api/admin'
 import type { MonthlyUpstreamProbeAccount, MonthlyUpstreamProbePoint, MonthlyUpstreamProbeSnapshot, MonthlyUpstreamProbeStatus } from '@/api/admin/monthlyUpstreams'
 import { useAppStore } from '@/stores/app'
+import { isDirectUpstreamDiagnosticStale } from '@/utils/monthlyUpstreamProbe'
 
 type TimelineSlot = {
   key: string

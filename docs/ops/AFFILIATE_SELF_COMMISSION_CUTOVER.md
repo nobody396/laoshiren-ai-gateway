@@ -58,4 +58,3 @@ migration 169 还要求本人消费事件明确携带
 - 不使用移动 tag，不使用模糊的 `docker service rollback`。
 - 不删除 migration 169 的表、事件或约束。
 - 不通过手工改余额补偿；所有退款和冲正必须走来源明确的资金路径。
-

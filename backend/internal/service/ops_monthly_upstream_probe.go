@@ -20,8 +20,10 @@ import (
 )
 
 const (
-	monthlyUpstreamProbeInterval = 2 * time.Minute
-	monthlyUpstreamProbeTimeout  = 25 * time.Second
+	monthlyUpstreamProbeInterval      = 2 * time.Minute
+	monthlyUpstreamProbeTimeout       = 25 * time.Second
+	monthlyUpstreamProbeGrokTimeout   = 45 * time.Second
+	monthlyUpstreamProbeRunnerTimeout = 2 * time.Minute
 
 	monthlyOpenAIProbeEstimatedInputTokens     = 18
 	monthlyOpenAIProbeEstimatedOutputTokens    = 1
@@ -59,6 +61,13 @@ var monthlyUpstreamProbeTargetSpecs = []monthlyUpstreamProbeTargetSpec{
 	{Role: "gpt", Platform: PlatformOpenAI, Model: "gpt-5.4-mini"},
 	{Role: "claude", Platform: PlatformAnthropic, Model: "claude-haiku-4-5"},
 	{Role: "grok", Platform: PlatformAnthropic, Model: "grok-4.5"},
+}
+
+func monthlyUpstreamProbeTimeoutForModel(model string) time.Duration {
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(model)), "grok-") {
+		return monthlyUpstreamProbeGrokTimeout
+	}
+	return monthlyUpstreamProbeTimeout
 }
 
 func monthlyUpstreamProbeSpecForRole(role string) (monthlyUpstreamProbeTargetSpec, bool) {
@@ -298,7 +307,7 @@ func (s *OpsService) startMonthlyUpstreamProbeRunner() {
 		defer timer.Stop()
 		for {
 			<-timer.C
-			ctx, cancel := context.WithTimeout(context.Background(), 2*monthlyUpstreamProbeTimeout)
+			ctx, cancel := context.WithTimeout(context.Background(), monthlyUpstreamProbeRunnerTimeout)
 			if s.IsMonthlyUpstreamProbeEnabled(ctx) {
 				_ = s.RunMonthlyUpstreamProbeOnce(ctx)
 			}
@@ -862,7 +871,7 @@ func (s *OpsService) probeMonthlyOpenAIGroupThroughGateway(ctx context.Context, 
 	}
 
 	body, _ := json.Marshal(createOpenAICompactProbePayload(target.Model))
-	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeout)
+	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeoutForModel(target.Model))
 	defer cancel()
 	c, recorder := newMonthlyProbeGinContext(probeCtx, "/v1/responses", body)
 	SetOpenAIClientTransport(c, OpenAIClientTransportHTTP)
@@ -920,7 +929,7 @@ func (s *OpsService) probeMonthlyAnthropicGroupThroughGateway(ctx context.Contex
 		return monthlyProbeTargetLocalFailure(target, "build_gateway_request_failed", err.Error()), nil
 	}
 
-	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeout)
+	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeoutForModel(target.Model))
 	defer cancel()
 	c, recorder := newMonthlyProbeGinContext(probeCtx, "/v1/messages", body)
 	c.Request.Header.Set("User-Agent", "claude-cli/2.1.84 (external, cli) monthly-gateway-probe")
@@ -1186,7 +1195,7 @@ func probeMonthlyDirectUpstreamAccount(ctx context.Context, account *Account, mo
 
 func (s *OpsService) probeMonthlyOpenAIThroughGateway(ctx context.Context, account *Account, model string) MonthlyUpstreamProbePoint {
 	body, _ := json.Marshal(createOpenAICompactProbePayload(model))
-	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeout)
+	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeoutForModel(model))
 	defer cancel()
 	c, recorder := newMonthlyProbeGinContext(probeCtx, "/v1/responses", body)
 	SetOpenAIClientTransport(c, OpenAIClientTransportHTTP)
@@ -1220,7 +1229,7 @@ func (s *OpsService) probeMonthlyAnthropicThroughGateway(ctx context.Context, ac
 		return monthlyProbeLocalFailure(account, model, "build_gateway_request_failed", err.Error())
 	}
 
-	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeout)
+	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeoutForModel(model))
 	defer cancel()
 	c, recorder := newMonthlyProbeGinContext(probeCtx, "/v1/messages", body)
 	c.Request.Header.Set("User-Agent", "claude-cli/2.1.84 (external, cli) monthly-gateway-probe")
@@ -1449,7 +1458,7 @@ func probeMonthlyAnthropicUpstream(ctx context.Context, account *Account, model 
 }
 
 func executeMonthlyProbeHTTP(ctx context.Context, account *Account, model string, url string, headers map[string]string, body []byte) MonthlyUpstreamProbePoint {
-	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeout)
+	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeoutForModel(model))
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(probeCtx, http.MethodPost, url, bytes.NewReader(body))

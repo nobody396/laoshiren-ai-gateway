@@ -542,6 +542,13 @@ func TestMonthlyGatewayProbePointClassifiesGenericGatewayFailure(t *testing.T) {
 	require.Contains(t, point.ErrorMessage, "deadline exceeded")
 }
 
+func TestMonthlyUpstreamProbeTimeoutForModelWidensOnlyGrok(t *testing.T) {
+	require.Equal(t, 45*time.Second, monthlyUpstreamProbeTimeoutForModel("grok-4.5"))
+	require.Equal(t, 45*time.Second, monthlyUpstreamProbeTimeoutForModel(" GROK-4.5 "))
+	require.Equal(t, 25*time.Second, monthlyUpstreamProbeTimeoutForModel("claude-haiku-4-5"))
+	require.Equal(t, 25*time.Second, monthlyUpstreamProbeTimeoutForModel("gpt-5.4-mini"))
+}
+
 func monthlyStatusBoolPtr(value bool) *bool {
 	return &value
 }

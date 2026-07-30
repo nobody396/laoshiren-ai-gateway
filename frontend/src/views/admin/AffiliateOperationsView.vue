@@ -145,6 +145,46 @@
           </p>
         </section>
 
+        <section v-if="activeTab === 'qualified'" class="card overflow-hidden">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
+            <div>
+              <h2 class="text-xl font-semibold text-gray-950 dark:text-white">已达标待申请</h2>
+              <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">这些用户已满足当前消费门槛，但尚未主动提交申请。这里只用于运营跟进，不会自动开通合伙人或产生佣金。</p>
+            </div>
+            <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">{{ qualifiedCandidates.length }} 人待申请</span>
+          </div>
+          <div class="max-h-[38rem] overflow-auto">
+            <table class="min-w-[1100px] table-fixed divide-y divide-gray-100 text-sm dark:divide-dark-800">
+              <thead class="sticky top-0 z-10 bg-gray-50 text-xs text-gray-600 dark:bg-dark-900 dark:text-dark-300">
+                <tr>
+                  <th class="px-5 py-3 text-left font-medium">用户</th>
+                  <th class="px-5 py-3 text-left font-medium">达标路线</th>
+                  <th class="px-5 py-3 text-right font-medium">有效直属</th>
+                  <th class="px-5 py-3 text-right font-medium">本人确认消费</th>
+                  <th class="px-5 py-3 text-right font-medium">直属确认消费</th>
+                  <th class="px-5 py-3 text-right font-medium">合计确认消费</th>
+                  <th class="px-5 py-3 text-left font-medium">下一步</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-dark-800">
+                <tr v-for="item in qualifiedCandidates" :key="item.user_id" class="align-top">
+                  <td class="px-5 py-4">
+                    <p class="font-semibold text-gray-900 dark:text-white">#{{ item.user_id }} · {{ item.username || item.email }}</p>
+                    <p v-if="item.username" class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ item.email }}</p>
+                  </td>
+                  <td class="px-5 py-4">{{ formatQualificationRoute(item.qualification_route) }}</td>
+                  <td class="px-5 py-4 text-right">{{ item.valid_direct_user_count }} 人</td>
+                  <td class="px-5 py-4 text-right">{{ formatMicros(item.self_consumption_micros, '¥') }}</td>
+                  <td class="px-5 py-4 text-right">{{ formatMicros(item.direct_team_consumption_micros, '¥') }}</td>
+                  <td class="px-5 py-4 text-right font-semibold text-gray-900 dark:text-white">{{ formatMicros(item.combined_consumption_micros, '¥') }}</td>
+                  <td class="px-5 py-4 text-gray-600 dark:text-dark-300">等待用户在联盟计划页面提交申请</td>
+                </tr>
+                <tr v-if="!qualifiedCandidates.length"><td colspan="7" class="px-5 py-12 text-center text-gray-600 dark:text-dark-300">当前没有已达标但尚未申请的用户</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         <section v-if="activeTab === 'applications'" class="card overflow-hidden">
           <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
             <div>
@@ -562,6 +602,7 @@ import {
   getPaymentQRCode,
   listAffiliateRiskPrincipals,
   listAffiliateApplications,
+  listAffiliateQualifiedCandidates,
   listAffiliateWithdrawals,
   listPendingPaymentProfiles,
   reverseAffiliatePerformance,
@@ -573,6 +614,7 @@ import {
   uploadAffiliateCommunityQRCode,
   type AdminAffiliateWithdrawal,
   type AffiliateAgentApplication,
+  type AffiliateQualifiedCandidate,
   type AffiliateCommunitySettings,
   type AffiliateCommercialPolicy,
   type AffiliatePerformanceReversal,
@@ -635,6 +677,7 @@ const withdrawals = ref<AdminAffiliateWithdrawal[]>([])
 const paidWithdrawals = ref<AdminAffiliateWithdrawal[]>([])
 const riskPrincipals = ref<AffiliateRiskPrincipal[]>([])
 const applications = ref<AffiliateAgentApplication[]>([])
+const qualifiedCandidates = ref<AffiliateQualifiedCandidate[]>([])
 const applicationNotes = reactive<Record<number, string>>({})
 const reviewNotes = reactive<Record<number, string>>({})
 const paymentReferences = reactive<Record<number, string>>({})
@@ -663,11 +706,12 @@ const programForm = reactive({
 })
 const communityForm = reactive({ enabled: false, title: '', message: '' })
 
-type AffiliateOperationsTab = 'rules' | 'applications' | 'partners' | 'profiles' | 'payouts' | 'archive' | 'risk' | 'community'
+type AffiliateOperationsTab = 'rules' | 'qualified' | 'applications' | 'partners' | 'profiles' | 'payouts' | 'archive' | 'risk' | 'community'
 const activeTab = ref<AffiliateOperationsTab>('rules')
 
 const affiliateTabs = computed<Array<{ id: AffiliateOperationsTab; label: string; count: number | null }>>(() => [
   { id: 'rules', label: '计划规则', count: null },
+  { id: 'qualified', label: '已达标待申请', count: qualifiedCandidates.value.length },
   { id: 'applications', label: '合伙人申请', count: applications.value.length },
   { id: 'partners', label: '合伙人管理', count: riskPrincipals.value.length },
   { id: 'profiles', label: '资料审核', count: pendingProfiles.value.length },
@@ -797,10 +841,11 @@ async function loadAll() {
   loading.value = true
   error.value = ''
   try {
-    const [settings, policy, communitySettings, applicationQueue, profiles, payoutQueue, paidQueue, principals] = await Promise.all([
+    const [settings, policy, communitySettings, qualifiedQueue, applicationQueue, profiles, payoutQueue, paidQueue, principals] = await Promise.all([
       getAffiliateProgram(),
       getAffiliateCommercialPolicy(),
       getAffiliateCommunity(),
+      listAffiliateQualifiedCandidates(500),
       listAffiliateApplications('pending_review', 500),
       listPendingPaymentProfiles(),
       listAffiliateWithdrawals('processing'),
@@ -810,6 +855,7 @@ async function loadAll() {
     program.value = settings
     commercialPolicy.value = policy
     community.value = communitySettings
+    qualifiedCandidates.value = qualifiedQueue
     applications.value = applicationQueue
     pendingProfiles.value = profiles
     withdrawals.value = payoutQueue

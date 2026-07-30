@@ -27,6 +27,164 @@ func (r *affiliateAgentRepository) GetAgentQualification(
 	return queryAffiliateAgentQualification(ctx, r.db, userID)
 }
 
+func (r *affiliateAgentRepository) ListQualifiedCandidates(
+	ctx context.Context,
+	limit int,
+) ([]service.AffiliateQualifiedCandidate, error) {
+	if r == nil || r.db == nil {
+		return nil, errors.New("affiliate agent repository db is nil")
+	}
+	// Keep this set-based for the admin queue: candidate discovery must not run
+	// one qualification query per user as the customer base grows.
+	rows, err := r.db.QueryContext(ctx, `
+		WITH settings AS (
+			SELECT
+				mode,
+				started_at,
+				qualification_direct_user_count,
+				qualification_min_user_consumption_micros,
+				qualification_direct_team_consumption_micros,
+				qualification_self_consumption_micros
+			FROM affiliate_program_settings
+			WHERE id = 1
+		),
+		baseline_net AS (
+			SELECT
+				e.user_id,
+				SUM(e.confirmed_consumption_micros)::bigint AS amount_micros
+			FROM affiliate_qualification_baseline_entries e
+			CROSS JOIN settings s
+			WHERE s.started_at IS NOT NULL
+				AND e.cutoff_at <= s.started_at
+			GROUP BY e.user_id
+		),
+		live_net AS (
+			SELECT
+				e.user_id,
+				SUM(
+					CASE e.event_type
+						WHEN 'confirmed_consumption' THEN e.amount_micros
+						WHEN 'consumption_reversal' THEN -e.amount_micros
+						ELSE 0
+					END
+				)::bigint AS amount_micros
+			FROM affiliate_performance_events e
+			CROSS JOIN settings s
+			WHERE e.event_type IN ('confirmed_consumption', 'consumption_reversal')
+				AND s.started_at IS NOT NULL
+				AND e.occurred_at >= s.started_at
+				AND COALESCE(e.metadata ->> 'program_mode', '') = 'live'
+			GROUP BY e.user_id
+		),
+		user_net AS (
+			SELECT
+				user_id,
+				GREATEST(SUM(amount_micros), 0)::bigint AS amount_micros
+			FROM (
+				SELECT user_id, amount_micros FROM baseline_net
+				UNION ALL
+				SELECT user_id, amount_micros FROM live_net
+			) amounts
+			GROUP BY user_id
+		),
+		direct_totals AS (
+			SELECT
+				b.inviter_user_id AS user_id,
+				COUNT(*) FILTER (
+					WHERE n.amount_micros >= s.qualification_min_user_consumption_micros
+				)::integer AS valid_direct_count,
+				COALESCE(SUM(n.amount_micros) FILTER (
+					WHERE n.amount_micros >= s.qualification_min_user_consumption_micros
+				), 0)::bigint AS direct_micros
+			FROM affiliate_bindings b
+			JOIN user_net n ON n.user_id = b.customer_user_id
+			CROSS JOIN settings s
+			WHERE b.customer_user_id <> b.inviter_user_id
+			GROUP BY b.inviter_user_id
+		),
+		candidates AS (
+			SELECT
+				u.id AS user_id,
+				COALESCE(u.email, '') AS email,
+				COALESCE(u.username, '') AS username,
+				COALESCE(n.amount_micros, 0)::bigint AS self_micros,
+				COALESCE(d.direct_micros, 0)::bigint AS direct_micros,
+				COALESCE(d.valid_direct_count, 0)::integer AS valid_direct_count,
+				(
+					COALESCE(d.valid_direct_count, 0) >= s.qualification_direct_user_count
+					AND COALESCE(d.direct_micros, 0) >= s.qualification_direct_team_consumption_micros
+				) AS direct_qualified,
+				(
+					COALESCE(n.amount_micros, 0) >= s.qualification_self_consumption_micros
+				) AS self_qualified
+			FROM users u
+			CROSS JOIN settings s
+			LEFT JOIN user_net n ON n.user_id = u.id
+			LEFT JOIN direct_totals d ON d.user_id = u.id
+			LEFT JOIN agent_principals ap ON ap.agent_id = u.id
+			WHERE s.mode = 'live'
+				AND s.started_at IS NOT NULL
+				AND u.deleted_at IS NULL
+				AND u.status = 'active'
+				AND COALESCE(ap.status, 'candidate') NOT IN (
+					'pending_review', 'active', 'suspended', 'terminated'
+				)
+				AND COALESCE(ap.risk_status, 'clear') = 'clear'
+				AND NOT EXISTS (
+					SELECT 1
+					FROM affiliate_agent_applications a
+					WHERE a.user_id = u.id
+						AND a.status = 'pending_review'
+				)
+		)
+		SELECT
+			user_id,
+			email,
+			username,
+			CASE
+				WHEN direct_qualified THEN 'direct_team'
+				ELSE 'self_consumption'
+			END AS qualification_route,
+			valid_direct_count,
+			self_micros,
+			direct_micros,
+			(self_micros + direct_micros)::bigint AS combined_micros
+		FROM candidates
+		WHERE direct_qualified OR self_qualified
+		ORDER BY
+			CASE WHEN direct_qualified THEN 0 ELSE 1 END,
+			(self_micros + direct_micros) DESC,
+			user_id
+		LIMIT $1
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	items := make([]service.AffiliateQualifiedCandidate, 0, limit)
+	for rows.Next() {
+		var item service.AffiliateQualifiedCandidate
+		if err := rows.Scan(
+			&item.UserID,
+			&item.Email,
+			&item.Username,
+			&item.QualificationRoute,
+			&item.ValidDirectUserCount,
+			&item.SelfConsumptionMicros,
+			&item.DirectTeamConsumptionMicros,
+			&item.CombinedConsumptionMicros,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 func (r *affiliateAgentRepository) ReviewAgentApplication(
 	ctx context.Context,
 	applicationID int64,

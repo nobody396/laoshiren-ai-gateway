@@ -322,3 +322,58 @@ func TestAffiliateAgentRepository_QualificationUsesSelfOnlyForRouteB(t *testing.
 	require.Equal(t, int64(500_000_000), application.DirectTeamConsumptionMicros)
 	require.Equal(t, int64(1_000_000_000), application.CombinedConsumptionMicros)
 }
+
+func TestAffiliateAgentRepository_ListsQualifiedUsersUntilTheyApply(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateAgentRepository(integrationDB)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	candidate := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-qualified-waiting-%d@example.com", time.Now().UnixNano()),
+	})
+	var startedAt time.Time
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT started_at
+		FROM affiliate_program_settings
+		WHERE id = 1
+	`).Scan(&startedAt))
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_qualification_baseline_entries (
+			user_id, source_key, source_type,
+			confirmed_consumption_micros, cutoff_at, metadata
+		)
+		VALUES ($1, $2, 'manual_verified', 530000000, $3, '{"test":true}'::jsonb)
+	`, candidate.ID, "qualification-candidate:"+uuid.NewString(), startedAt)
+	require.NoError(t, err)
+
+	items, err := repo.ListQualifiedCandidates(ctx, 500)
+	require.NoError(t, err)
+	var listed *service.AffiliateQualifiedCandidate
+	for i := range items {
+		if items[i].UserID == candidate.ID {
+			listed = &items[i]
+			break
+		}
+	}
+	require.NotNil(t, listed)
+	require.Equal(t, "self_consumption", listed.QualificationRoute)
+	require.Equal(t, int64(530_000_000), listed.SelfConsumptionMicros)
+	var mutationCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT
+			(SELECT COUNT(*) FROM agent_principals WHERE agent_id = $1)
+			+
+			(SELECT COUNT(*) FROM affiliate_agent_applications WHERE user_id = $1)
+	`, candidate.ID).Scan(&mutationCount))
+	require.Zero(t, mutationCount, "listing a qualified candidate must remain read-only")
+
+	_, err = repo.SubmitAgentApplication(ctx, candidate.ID, "已达标待申请列表测试")
+	require.NoError(t, err)
+
+	items, err = repo.ListQualifiedCandidates(ctx, 500)
+	require.NoError(t, err)
+	for i := range items {
+		require.NotEqual(t, candidate.ID, items[i].UserID, "pending applicants must leave the waiting list")
+	}
+}

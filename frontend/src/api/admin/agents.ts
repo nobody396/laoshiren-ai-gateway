@@ -196,6 +196,17 @@ export interface AffiliateAgentApplication {
   reviewed_by?: number
 }
 
+export interface AffiliateQualifiedCandidate {
+  user_id: number
+  email: string
+  username: string
+  qualification_route: 'direct_team' | 'self_consumption'
+  valid_direct_user_count: number
+  self_consumption_micros: number
+  direct_team_consumption_micros: number
+  combined_consumption_micros: number
+}
+
 export interface AffiliateCommunitySettings {
   enabled: boolean
   title: string
@@ -462,6 +473,14 @@ export async function listAffiliateApplications(
   return data.items ?? []
 }
 
+export async function listAffiliateQualifiedCandidates(limit = 100): Promise<AffiliateQualifiedCandidate[]> {
+  const { data } = await apiClient.get<{ items: AffiliateQualifiedCandidate[] }>(
+    '/admin/agents/affiliate-qualified-candidates',
+    { params: { limit } }
+  )
+  return data.items ?? []
+}
+
 export async function reviewAffiliateApplication(
   applicationId: number,
   payload: { approve: boolean; note?: string }
@@ -643,6 +662,7 @@ export const agentsAPI = {
   reviewPaymentProfile,
   getAffiliateProgram,
   updateAffiliateProgram,
+  listAffiliateQualifiedCandidates,
   listAffiliateApplications,
   reviewAffiliateApplication,
   getAffiliateCommercialPolicy,

@@ -207,6 +207,70 @@ export interface AffiliateQualifiedCandidate {
   combined_consumption_micros: number
 }
 
+export interface AffiliateOperationsSummary {
+  qualified_followup: number
+  pending_applications: number
+  pending_payment_profiles: number
+  processing_withdrawals: number
+  overdue_withdrawals: number
+  abnormal_partners: number
+  actionable_total: number
+}
+
+export interface AffiliatePartnerPerformance {
+  agent_id: number
+  email: string
+  username: string
+  activated_at: string
+  direct_user_count: number
+  paid_direct_user_count: number
+  self_recharge_micros: number
+  direct_team_recharge_micros: number
+  self_consumption_micros: number
+  direct_team_consumption_micros: number
+  recent_30d_consumption_micros: number
+  lifetime_earned_micros: number
+  available_commission_micros: number
+  processing_withdrawal_micros: number
+  paid_commission_micros: number
+}
+
+export interface AffiliatePartnerUserPerformance {
+  user_id: number
+  email: string
+  username: string
+  joined_at: string
+  recharge_micros: number
+  consumption_micros: number
+  generated_commission_micros: number
+}
+
+export interface AffiliatePartnerCommissionEntry {
+  id: number
+  consumer_user_id: number
+  entry_type: string
+  posting_status: string
+  amount_micros: number
+  occurred_at: string
+}
+
+export interface AffiliatePartnerPerformanceDetail {
+  summary: AffiliatePartnerPerformance
+  period_start: string
+  period_end: string
+  direct_users: AffiliatePartnerUserPerformance[]
+  commission_ledger: AffiliatePartnerCommissionEntry[]
+  withdrawals: Array<{
+    id: number
+    amount_micros: number
+    status: string
+    requested_at: string
+    paid_at?: string
+    payment_reference?: string
+    failure_reason?: string
+  }>
+}
+
 export interface AffiliateCommunitySettings {
   enabled: boolean
   title: string
@@ -508,6 +572,29 @@ export async function listAffiliateQualifiedCandidates(limit = 100): Promise<Aff
   return data.items ?? []
 }
 
+export async function getAffiliateOperationsSummary(): Promise<AffiliateOperationsSummary> {
+  const { data } = await apiClient.get<AffiliateOperationsSummary>('/admin/agents/affiliate-operations-summary')
+  return data
+}
+
+export async function listAffiliatePartnerPerformance(limit = 100): Promise<AffiliatePartnerPerformance[]> {
+  const { data } = await apiClient.get<{ items: AffiliatePartnerPerformance[] }>('/admin/agents/affiliate-performance', {
+    params: { limit }
+  })
+  return data.items ?? []
+}
+
+export async function getAffiliatePartnerPerformance(
+  agentId: number,
+  params?: { start?: string; end?: string }
+): Promise<AffiliatePartnerPerformanceDetail> {
+  const { data } = await apiClient.get<AffiliatePartnerPerformanceDetail>(
+    `/admin/agents/${agentId}/affiliate-performance`,
+    { params }
+  )
+  return data
+}
+
 export async function reviewAffiliateApplication(
   applicationId: number,
   payload: { approve: boolean; note?: string }
@@ -701,6 +788,9 @@ export const agentsAPI = {
   getAffiliateProgram,
   updateAffiliateProgram,
   listAffiliateQualifiedCandidates,
+  getAffiliateOperationsSummary,
+  listAffiliatePartnerPerformance,
+  getAffiliatePartnerPerformance,
   listAffiliateApplications,
   reviewAffiliateApplication,
   getAffiliateCommercialPolicy,

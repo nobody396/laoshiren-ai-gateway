@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '../../client'
 import {
   getInviteActivity,
+  getAffiliateOperationsSummary,
+  getAffiliatePartnerPerformance,
+  listAffiliatePartnerPerformance,
   listAffiliateQualifiedCandidates,
   updateAffiliateSelfCommissionPolicy,
   updateInviteActivity
@@ -87,6 +90,29 @@ describe('Admin agents API', () => {
         self_consumption_micros: 530_000_000
       })
     ])
+  })
+
+  it('loads exact operations counts instead of deriving badges from capped lists', async () => {
+    mockClient.get.mockResolvedValue({ data: { actionable_total: 7, pending_applications: 2 } })
+
+    const summary = await getAffiliateOperationsSummary()
+
+    expect(mockClient.get).toHaveBeenCalledWith('/admin/agents/affiliate-operations-summary')
+    expect(summary.actionable_total).toBe(7)
+  })
+
+  it('loads partner performance list and date-filtered detail', async () => {
+    mockClient.get
+      .mockResolvedValueOnce({ data: { items: [{ agent_id: 47 }] } })
+      .mockResolvedValueOnce({ data: { summary: { agent_id: 47 }, direct_users: [] } })
+
+    await listAffiliatePartnerPerformance(500)
+    await getAffiliatePartnerPerformance(47, { start: '2026-07-01', end: '2026-07-31' })
+
+    expect(mockClient.get).toHaveBeenNthCalledWith(1, '/admin/agents/affiliate-performance', { params: { limit: 500 } })
+    expect(mockClient.get).toHaveBeenNthCalledWith(2, '/admin/agents/47/affiliate-performance', {
+      params: { start: '2026-07-01', end: '2026-07-31' }
+    })
   })
 
   it('reads invite activity config from GET /admin/agents/rates', async () => {

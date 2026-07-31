@@ -424,6 +424,41 @@ func (h *AgentHandler) ListAffiliateQualifiedCandidates(c *gin.Context) {
 	response.Success(c, gin.H{"items": items})
 }
 
+func (h *AgentHandler) GetAffiliateOperationsSummary(c *gin.Context) {
+	item, err := h.affiliateAgents.GetOperationsSummary(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, item)
+}
+
+func (h *AgentHandler) ListAffiliatePartnerPerformance(c *gin.Context) {
+	items, err := h.affiliateAgents.ListPartnerPerformance(
+		c.Request.Context(),
+		parsePositiveInt(c.Query("limit"), 100),
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"items": items})
+}
+
+func (h *AgentHandler) GetAffiliatePartnerPerformance(c *gin.Context) {
+	agentID, ok := parseAgentIDParam(c)
+	if !ok {
+		return
+	}
+	start, end := parseAgentDateRange(c)
+	item, err := h.affiliateAgents.GetPartnerPerformance(c.Request.Context(), agentID, start, end)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, item)
+}
+
 func (h *AgentHandler) ReviewAffiliateApplication(c *gin.Context) {
 	subject, ok := middleware2.GetAuthSubjectFromContext(c)
 	if !ok {

@@ -92,6 +92,13 @@
       "ttl": "2026-08-06T23:59:59-04:00"
     },
     {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/affiliate-self-commission-20260730",
+      "owner": "affiliate-self-commission-20260730",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-06T23:59:59-04:00"
+    },
+    {
       "path": "/Users/fujunhao/laoshirenai/worktrees/fix-grok-probe-timeout-20260730",
       "owner": "fix-grok-probe-timeout-20260730",
       "kind": "temporary",

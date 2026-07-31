@@ -11,8 +11,11 @@ import (
 
 type balanceUserRepoStub struct {
 	*userRepoStub
-	updateErr error
-	updated   []*User
+	updateErr          error
+	adjustmentErr      error
+	adjustmentCalls    int
+	adjustmentEligible bool
+	updated            []*User
 }
 
 func (s *balanceUserRepoStub) Update(ctx context.Context, user *User) error {
@@ -28,6 +31,36 @@ func (s *balanceUserRepoStub) Update(ctx context.Context, user *User) error {
 		s.userRepoStub.user = &clone
 	}
 	return nil
+}
+
+func (s *balanceUserRepoStub) ApplyAdminBalanceAdjustment(
+	_ context.Context,
+	_ int64,
+	amount float64,
+	operation string,
+) (*AdminBalanceAdjustmentResult, error) {
+	s.adjustmentCalls++
+	if s.adjustmentErr != nil {
+		return nil, s.adjustmentErr
+	}
+	oldBalance := s.userRepoStub.user.Balance
+	newBalance := oldBalance
+	switch operation {
+	case "set":
+		newBalance = amount
+	case "add":
+		newBalance += amount
+	case "subtract":
+		newBalance -= amount
+	}
+	if newBalance < oldBalance && s.adjustmentEligible {
+		return nil, ErrAdminBalanceSourceReversalRequired
+	}
+	s.userRepoStub.user.Balance = newBalance
+	return &AdminBalanceAdjustmentResult{
+		OldBalance: oldBalance,
+		NewBalance: newBalance,
+	}, nil
 }
 
 type balanceRedeemRepoStub struct {
@@ -94,4 +127,68 @@ func TestAdminService_UpdateUserBalance_NoChangeNoInvalidate(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, invalidator.userIDs)
 	require.Empty(t, redeemRepo.created)
+	require.Equal(t, 1, repo.adjustmentCalls)
+}
+
+func TestAdminService_UpdateUserBalance_SetDecreaseBlockedByEligibleLot(t *testing.T) {
+	baseRepo := &userRepoStub{user: &User{ID: 7, Balance: 10}}
+	repo := &balanceUserRepoStub{
+		userRepoStub:       baseRepo,
+		adjustmentEligible: true,
+	}
+	invalidator := &authCacheInvalidatorStub{}
+	svc := &adminServiceImpl{
+		userRepo:             repo,
+		authCacheInvalidator: invalidator,
+	}
+
+	_, err := svc.UpdateUserBalance(context.Background(), 7, 5, "set", "")
+	require.ErrorIs(t, err, ErrAdminBalanceSourceReversalRequired)
+	require.Equal(t, 10.0, baseRepo.user.Balance)
+	require.Empty(t, invalidator.userIDs)
+}
+
+func TestAdminService_UpdateUserBalance_SubtractBlockedByEligibleLot(t *testing.T) {
+	baseRepo := &userRepoStub{user: &User{ID: 7, Balance: 10}}
+	repo := &balanceUserRepoStub{
+		userRepoStub:       baseRepo,
+		adjustmentEligible: true,
+	}
+	svc := &adminServiceImpl{userRepo: repo}
+
+	_, err := svc.UpdateUserBalance(context.Background(), 7, 1, "subtract", "")
+	require.ErrorIs(t, err, ErrAdminBalanceSourceReversalRequired)
+	require.Equal(t, 10.0, baseRepo.user.Balance)
+}
+
+func TestAdminService_UpdateUserBalance_AddAllowedWithEligibleLot(t *testing.T) {
+	baseRepo := &userRepoStub{user: &User{ID: 7, Balance: 10}}
+	repo := &balanceUserRepoStub{
+		userRepoStub:       baseRepo,
+		adjustmentEligible: true,
+	}
+	svc := &adminServiceImpl{userRepo: repo}
+
+	user, err := svc.UpdateUserBalance(context.Background(), 7, 2, "add", "")
+	require.NoError(t, err)
+	require.Equal(t, 12.0, user.Balance)
+	require.Equal(t, 12.0, baseRepo.user.Balance)
+}
+
+func TestAdminService_UpdateUserBalance_SetSameValueAllowedWithEligibleLot(t *testing.T) {
+	baseRepo := &userRepoStub{user: &User{ID: 7, Balance: 10}}
+	repo := &balanceUserRepoStub{
+		userRepoStub:       baseRepo,
+		adjustmentEligible: true,
+	}
+	invalidator := &authCacheInvalidatorStub{}
+	svc := &adminServiceImpl{
+		userRepo:             repo,
+		authCacheInvalidator: invalidator,
+	}
+
+	user, err := svc.UpdateUserBalance(context.Background(), 7, 10, "set", "")
+	require.NoError(t, err)
+	require.Equal(t, 10.0, user.Balance)
+	require.Empty(t, invalidator.userIDs)
 }

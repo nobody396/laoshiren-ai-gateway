@@ -2,9 +2,10 @@
 set -euo pipefail
 set +x
 
-readonly EXPECTED_WORKTREE="/Users/fujunhao/laoshirenai/worktrees/affiliate-program-v2"
-readonly EXPECTED_BRANCH="feat/affiliate-program-v2-20260726"
-readonly PROJECT_NAME="laoshirenai-affiliate-v2-staging"
+readonly SCRIPT_WORKTREE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly EXPECTED_WORKTREE="${AFFILIATE_STAGING_WORKTREE:-$SCRIPT_WORKTREE}"
+readonly EXPECTED_BRANCH="${AFFILIATE_STAGING_BRANCH:-$(git -C "$EXPECTED_WORKTREE" branch --show-current)}"
+readonly PROJECT_NAME="${AFFILIATE_STAGING_PROJECT_NAME:-laoshirenai-affiliate-v2-staging}"
 readonly COMPOSE_FILE="$EXPECTED_WORKTREE/deploy/staging/affiliate-v2.compose.yml"
 readonly DEFAULT_URL="http://127.0.0.1:${AFFILIATE_STAGING_PORT:-18080}"
 
@@ -26,6 +27,12 @@ require_checkout() {
     echo "unexpected staging branch: $current_branch" >&2
     exit 1
   }
+  case "$current_branch" in
+    main|master|release/*)
+      echo "staging must run from a non-release feature or fix branch: $current_branch" >&2
+      exit 1
+      ;;
+  esac
   make -C "$EXPECTED_WORKTREE" checkout-validate >/dev/null
 }
 
@@ -273,6 +280,13 @@ case "$command" in
     AFFILIATE_STAGING_URL="$DEFAULT_URL" \
       "$EXPECTED_WORKTREE/scripts/affiliate-v2-e2e-check.py"
     ;;
+  self-e2e)
+    require_checkout
+    load_secrets
+    wait_ready
+    AFFILIATE_STAGING_URL="$DEFAULT_URL" \
+      "$EXPECTED_WORKTREE/scripts/affiliate-self-commission-e2e-check.sh"
+    ;;
   seed-demo)
     require_checkout
     "$EXPECTED_WORKTREE/scripts/affiliate-v2-demo-data.sh"
@@ -311,6 +325,7 @@ Commands:
   status        Show isolated staging containers
   smoke         Run health plus authenticated Affiliate V3 API checks
   e2e           Run the authenticated Affiliate V3 API acceptance flow
+  self-e2e      Run isolated ¥3 partner self-consumption settlement acceptance
   seed-demo     Seed isolated staging with Affiliate V3 acceptance users and queues
   logs          Show application logs
   down          Stop staging without deleting data

@@ -94,7 +94,7 @@ func AffiliatePolicyFromPurchaseResult(
 	switch result.SourcePolicy {
 	case AffiliateSourcePolicyOrdinaryFirstPaid:
 		return result.SourcePolicy, result.DirectPartnerID, 0, 0
-	case AffiliateSourcePolicyPartnerUsage:
+	case AffiliateSourcePolicyPartnerUsage, AffiliateSourcePolicyPartnerSelfUsage:
 		return result.SourcePolicy, result.DirectPartnerID, result.CustomerRebateRateBPS, result.PartnerCommissionRateBPS
 	default:
 		return AffiliateSourcePolicyNone, 0, 0, 0
@@ -103,7 +103,8 @@ func AffiliatePolicyFromPurchaseResult(
 
 func AffiliatePolicyTracksConsumption(policy string) bool {
 	return policy == AffiliateSourcePolicyOrdinaryFirstPaid ||
-		policy == AffiliateSourcePolicyPartnerUsage
+		policy == AffiliateSourcePolicyPartnerUsage ||
+		policy == AffiliateSourcePolicyPartnerSelfUsage
 }
 
 // AffiliateSourceTracksQualification reports whether consumption from this

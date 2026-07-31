@@ -32,6 +32,27 @@ func (r *affiliateRiskRepository) ListAffiliateRiskPrincipals(
 			ap.status,
 			ap.risk_status,
 			ap.risk_note,
+			COALESCE(self_policy.enabled, FALSE),
+			COALESCE(self_policy.rate_bps, 1000),
+			self_policy.effective_at,
+			COALESCE(self_policy.revision, 0),
+			COALESCE(self_policy.reason, ''),
+			self_policy.updated_by,
+			COALESCE(self_operator.email, ''),
+			COALESCE(self_operator.username, ''),
+			self_policy.updated_at,
+			upstream.has_upstream,
+			(
+				ap.status = 'active'
+				AND ap.risk_status = 'clear'
+				AND NOT upstream.has_upstream
+			),
+			CASE
+				WHEN upstream.has_upstream THEN 'has_upstream'
+				WHEN ap.status <> 'active' THEN 'agent_not_active'
+				WHEN ap.risk_status <> 'clear' THEN 'risk_not_clear'
+				ELSE ''
+			END,
 			COALESCE((
 				SELECT COUNT(*)
 				FROM affiliate_reward_entries reward
@@ -69,6 +90,21 @@ func (r *affiliateRiskRepository) ListAffiliateRiskPrincipals(
 		JOIN users u
 			ON u.id = ap.agent_id
 			AND u.deleted_at IS NULL
+		LEFT JOIN affiliate_agent_self_commission_policies self_policy
+			ON self_policy.agent_id = ap.agent_id
+		LEFT JOIN users self_operator
+			ON self_operator.id = self_policy.updated_by
+		CROSS JOIN LATERAL (
+			SELECT (
+				u.inviter_id IS NOT NULL
+				OR u.agent_id IS NOT NULL
+				OR EXISTS (
+					SELECT 1
+					FROM affiliate_bindings binding
+					WHERE binding.customer_user_id = u.id
+				)
+			) AS has_upstream
+		) upstream
 		WHERE ap.status IN ('active', 'suspended')
 		ORDER BY
 			CASE ap.risk_status
@@ -95,6 +131,18 @@ func (r *affiliateRiskRepository) ListAffiliateRiskPrincipals(
 			&item.AgentStatus,
 			&item.RiskStatus,
 			&item.RiskNote,
+			&item.SelfCommissionEnabled,
+			&item.SelfCommissionRateBPS,
+			&item.SelfCommissionEffectiveAt,
+			&item.SelfCommissionRevision,
+			&item.SelfCommissionReason,
+			&item.SelfCommissionUpdatedBy,
+			&item.SelfCommissionUpdatedByEmail,
+			&item.SelfCommissionUpdatedByUsername,
+			&item.SelfCommissionUpdatedAt,
+			&item.HasUpstream,
+			&item.SelfCommissionEligible,
+			&item.SelfCommissionBlockReason,
 			&item.HeldRewardCount,
 			&item.HeldRewardMicros,
 			&item.HeldCashCount,

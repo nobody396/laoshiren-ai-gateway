@@ -291,6 +291,33 @@ export interface AffiliateRiskPrincipal {
   held_cash_count: number
   held_cash_micros: number
   updated_at: string
+  has_upstream: boolean
+  self_commission_enabled: boolean
+  self_commission_rate_bps: number
+  self_commission_effective_at?: string
+  self_commission_revision: number
+  self_commission_reason?: string
+  self_commission_updated_by?: number
+  self_commission_updated_by_email?: string
+  self_commission_updated_by_username?: string
+  self_commission_updated_at?: string
+  self_commission_eligible: boolean
+  self_commission_block_reason?: string
+}
+
+export interface AffiliateSelfCommissionPolicy {
+  agent_id: number
+  enabled: boolean
+  rate_bps: number
+  effective_at?: string
+  revision: number
+  updated_by?: number
+  reason?: string
+  created_at?: string
+  updated_at?: string
+  has_upstream: boolean
+  eligible: boolean
+  block_reason_code?: string
 }
 
 export interface AffiliateRiskActionResult {
@@ -566,6 +593,17 @@ export async function updateAffiliateRisk(
   return data
 }
 
+export async function updateAffiliateSelfCommissionPolicy(
+  agentId: number,
+  payload: { enabled: boolean; expected_revision: number; reason: string }
+): Promise<AffiliateSelfCommissionPolicy> {
+  const { data } = await apiClient.put<AffiliateSelfCommissionPolicy>(
+    `/admin/agents/${agentId}/self-commission-policy`,
+    payload
+  )
+  return data
+}
+
 export async function reverseAffiliatePerformance(
   eventId: number,
   reason: string
@@ -676,6 +714,7 @@ export const agentsAPI = {
   getAffiliateWithdrawalQRCode,
   listAffiliateRiskPrincipals,
   updateAffiliateRisk,
+  updateAffiliateSelfCommissionPolicy,
   reverseAffiliatePerformance,
   getRates,
   updateRates,

@@ -157,6 +157,8 @@ def main():
         'alipay_account': 'api-e2e-alipay@example.com',
         'contact_phone': '13800002222',
         'payment_note': 'API E2E 自动测试',
+        'privacy_consent_accepted': True,
+        'privacy_consent_version': 'affiliate-payment-profile-privacy-v1',
     })
     assert profile['alipay_account'] == 'api-e2e-alipay@example.com', profile
     body, headers = multipart_png_body(ROOT / 'frontend/public/favicon.png')
@@ -209,9 +211,9 @@ def main():
         (item['id'], item['direct_price_cny'], item['shop_price_cny'], item['platform_credits'])
         for item in monthly_packages
     ] == [
-        ('plus', 249, 259, 2200),
-        ('pro', 699, 729, 6500),
-        ('max', 1499, 1549, 14000),
+        ('plus', 249, 259, 3000),
+        ('pro', 699, 729, 9000),
+        ('max', 1499, 1549, 20000),
     ], monthly_packages
     gpt_targets = [group for group in policy['group_targets'] if group['id'] == 'gpt']
     assert len(gpt_targets) == 1 and abs(float(gpt_targets[0]['rate_multiplier']) - 0.5) < 1e-9, policy['group_targets']

@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '../../client'
-import { getInviteActivity, listAffiliateQualifiedCandidates, updateInviteActivity } from '../agents'
+import {
+  getInviteActivity,
+  listAffiliateQualifiedCandidates,
+  updateAffiliateSelfCommissionPolicy,
+  updateInviteActivity
+} from '../agents'
 
 vi.mock('../../client', () => ({
   apiClient: {
@@ -19,6 +24,40 @@ beforeEach(() => {
 })
 
 describe('Admin agents API', () => {
+  it('updates one partner self-consumption policy with optimistic locking and a reason', async () => {
+    mockClient.put.mockResolvedValue({
+      data: {
+        agent_id: 47,
+        enabled: true,
+        rate_bps: 1000,
+        revision: 3,
+        has_upstream: false,
+        eligible: true
+      }
+    })
+
+    const policy = await updateAffiliateSelfCommissionPolicy(47, {
+      enabled: true,
+      expected_revision: 2,
+      reason: '无上级合伙人，批准本人消费返佣'
+    })
+
+    expect(mockClient.put).toHaveBeenCalledWith(
+      '/admin/agents/47/self-commission-policy',
+      {
+        enabled: true,
+        expected_revision: 2,
+        reason: '无上级合伙人，批准本人消费返佣'
+      }
+    )
+    expect(policy).toEqual(expect.objectContaining({
+      agent_id: 47,
+      enabled: true,
+      rate_bps: 1000,
+      revision: 3
+    }))
+  })
+
   it('lists users who qualified but have not applied', async () => {
     mockClient.get.mockResolvedValue({
       data: {

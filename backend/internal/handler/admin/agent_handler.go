@@ -23,6 +23,7 @@ type AgentHandler struct {
 	affiliateCommunity *service.AffiliateCommunityService
 	affiliateWallet    *service.AffiliateWalletService
 	affiliateRisk      *service.AffiliateRiskService
+	selfCommission     *service.AffiliateSelfCommissionPolicyService
 	affiliateAgents    *service.AffiliateAgentService
 }
 
@@ -32,6 +33,7 @@ func NewAgentHandler(
 	affiliateCommunity *service.AffiliateCommunityService,
 	affiliateWallet *service.AffiliateWalletService,
 	affiliateRisk *service.AffiliateRiskService,
+	selfCommission *service.AffiliateSelfCommissionPolicyService,
 	affiliateAgents *service.AffiliateAgentService,
 ) *AgentHandler {
 	return &AgentHandler{
@@ -40,6 +42,7 @@ func NewAgentHandler(
 		affiliateCommunity: affiliateCommunity,
 		affiliateWallet:    affiliateWallet,
 		affiliateRisk:      affiliateRisk,
+		selfCommission:     selfCommission,
 		affiliateAgents:    affiliateAgents,
 	}
 }
@@ -93,6 +96,12 @@ type failAffiliateWithdrawalRequest struct {
 type updateAffiliateRiskRequest struct {
 	Status string `json:"status" binding:"required"`
 	Reason string `json:"reason" binding:"required"`
+}
+
+type updateAffiliateSelfCommissionPolicyRequest struct {
+	Enabled          *bool  `json:"enabled" binding:"required"`
+	ExpectedRevision *int64 `json:"expected_revision" binding:"required"`
+	Reason           string `json:"reason" binding:"required"`
 }
 
 type reverseAffiliatePerformanceRequest struct {
@@ -464,6 +473,36 @@ func (h *AgentHandler) UpdateAffiliateRisk(c *gin.Context) {
 		c.Request.Context(),
 		agentID,
 		req.Status,
+		req.Reason,
+		subject.UserID,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+func (h *AgentHandler) UpdateAffiliateSelfCommissionPolicy(c *gin.Context) {
+	agentID, ok := parseAgentIDParam(c)
+	if !ok {
+		return
+	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	var req updateAffiliateSelfCommissionPolicyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	result, err := h.selfCommission.Update(
+		c.Request.Context(),
+		agentID,
+		*req.Enabled,
+		*req.ExpectedRevision,
 		req.Reason,
 		subject.UserID,
 	)

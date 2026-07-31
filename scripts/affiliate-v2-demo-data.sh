@@ -2,11 +2,13 @@
 set -euo pipefail
 set +x
 
-readonly EXPECTED_WORKTREE="/Users/fujunhao/laoshirenai/worktrees/affiliate-program-v2"
-readonly EXPECTED_BRANCH="feat/affiliate-program-v2-20260726"
-readonly PG_CONTAINER="laoshirenai-affiliate-v2-staging-postgres-1"
-readonly APP_CONTAINER="laoshirenai-affiliate-v2-staging-app-1"
-readonly REDIS_CONTAINER="laoshirenai-affiliate-v2-staging-redis-1"
+readonly SCRIPT_WORKTREE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly EXPECTED_WORKTREE="${AFFILIATE_STAGING_WORKTREE:-$SCRIPT_WORKTREE}"
+readonly EXPECTED_BRANCH="${AFFILIATE_STAGING_BRANCH:-$(git -C "$EXPECTED_WORKTREE" branch --show-current)}"
+readonly PROJECT_NAME="${AFFILIATE_STAGING_PROJECT_NAME:-laoshirenai-affiliate-v2-staging}"
+readonly PG_CONTAINER="${PROJECT_NAME}-postgres-1"
+readonly APP_CONTAINER="${PROJECT_NAME}-app-1"
+readonly REDIS_CONTAINER="${PROJECT_NAME}-redis-1"
 
 require_checkout() {
   local current_root current_branch
@@ -20,6 +22,13 @@ require_checkout() {
     echo "unexpected staging branch: $current_branch" >&2
     exit 1
   }
+  case "$current_branch" in
+    main|master|release/*)
+      echo "staging demo data must target a non-release feature or fix branch: $current_branch" >&2
+      exit 1
+      ;;
+  esac
+  make -C "$EXPECTED_WORKTREE" checkout-validate >/dev/null
 }
 
 require_containers() {
@@ -162,7 +171,7 @@ BEGIN
       ordinary_invitee_rate_bps = 500,
       first_paid_bonus_threshold_micros = 0,
       first_paid_bonus_micros = 0,
-      stress_cost_per_raw_credit_micros = 530000,
+      stress_cost_per_raw_credit_micros = 370000,
       revision = revision + 1,
       updated_by = admin_id,
       updated_at = NOW()
@@ -580,11 +589,13 @@ BEGIN
   INSERT INTO affiliate_agent_applications (
     user_id, status, qualifying_route,
     direct_valid_consumer_count, direct_team_consumption_micros,
+    self_consumption_micros, combined_consumption_micros,
     application_note, submitted_at
   )
   VALUES (
     applicant_id, 'pending_review', 'direct_volume',
     7, 2280000000,
+    0, 2280000000,
     '主要服务独立开发者，计划通过技术社群进行真实分享。',
     NOW() - INTERVAL '1 day'
   )
@@ -673,12 +684,13 @@ BEGIN
   INSERT INTO agent_payment_profiles (
     agent_id, alipay_real_name, alipay_account, contact_phone, payment_note,
     alipay_qr_object_key, alipay_qr_content_type, alipay_qr_original_filename, alipay_qr_size,
-    identity_fingerprint_hash, verification_status, verification_note, verified_at, verified_by
+    identity_fingerprint_hash, verification_status, verification_note, verified_at, verified_by,
+    privacy_consent_version, privacy_consented_at
   )
   VALUES
-    (alpha_id, '张三', 'alpha-pay@example.com', '13800000001', '常用收款账号，可扫码打款。', 'agent-payment-qrcodes/partner-alpha.png', 'image/png', 'partner-alpha.png', 1200, 'partner-alpha-fingerprint', 'verified', '已核对', NOW() - INTERVAL '6 days', admin_id),
-    (review_id, '李四', 'review-pay@example.com', '13800000002', '资料待审核，请核对实名和收款码。', 'agent-payment-qrcodes/partner-review.png', 'image/png', 'partner-review.png', 1200, 'partner-review-fingerprint', 'pending_review', '', NULL, NULL),
-    (blocked_id, '王五', 'blocked-pay@example.com', '13800000003', '当前合作已暂停，收款资料暂不处理。', 'agent-payment-qrcodes/partner-blocked.png', 'image/png', 'partner-blocked.png', 1200, 'partner-blocked-fingerprint', 'verified', '已核对', NOW() - INTERVAL '5 days', admin_id)
+    (alpha_id, '张三', 'alpha-pay@example.com', '13800000001', '常用收款账号，可扫码打款。', 'agent-payment-qrcodes/partner-alpha.png', 'image/png', 'partner-alpha.png', 1200, 'partner-alpha-fingerprint', 'verified', '已核对', NOW() - INTERVAL '6 days', admin_id, 'affiliate-payment-profile-privacy-v1', NOW() - INTERVAL '6 days'),
+    (review_id, '李四', 'review-pay@example.com', '13800000002', '资料待审核，请核对实名和收款码。', 'agent-payment-qrcodes/partner-review.png', 'image/png', 'partner-review.png', 1200, 'partner-review-fingerprint', 'pending_review', '', NULL, NULL, 'affiliate-payment-profile-privacy-v1', NOW() - INTERVAL '2 days'),
+    (blocked_id, '王五', 'blocked-pay@example.com', '13800000003', '当前合作已暂停，收款资料暂不处理。', 'agent-payment-qrcodes/partner-blocked.png', 'image/png', 'partner-blocked.png', 1200, 'partner-blocked-fingerprint', 'verified', '已核对', NOW() - INTERVAL '5 days', admin_id, 'affiliate-payment-profile-privacy-v1', NOW() - INTERVAL '5 days')
   ON CONFLICT (agent_id) DO UPDATE SET
     alipay_real_name = EXCLUDED.alipay_real_name,
     alipay_account = EXCLUDED.alipay_account,
@@ -693,6 +705,8 @@ BEGIN
     verification_note = EXCLUDED.verification_note,
     verified_at = EXCLUDED.verified_at,
     verified_by = EXCLUDED.verified_by,
+    privacy_consent_version = EXCLUDED.privacy_consent_version,
+    privacy_consented_at = EXCLUDED.privacy_consented_at,
     updated_at = NOW()
   WHERE NOT EXISTS (
     SELECT 1

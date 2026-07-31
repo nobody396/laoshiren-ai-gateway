@@ -86,4 +86,8 @@ Claude/MAX `2.40`.
 - Existing posted rewards, cash commission and withdrawals are never deleted;
   corrections use audited holds and reversals.
 - Application rollback uses the previously verified immutable image digest.
+- If partner self-consumption commission has ever produced a
+  `PARTNER_SELF_USAGE` purchase lot, follow
+  `docs/ops/AFFILIATE_SELF_COMMISSION_CUTOVER.md`; rollback below its recorded
+  minimum compatible digest is forbidden.
 - Never point staging databases or volumes at production.

@@ -19,6 +19,27 @@
       </section>
 
       <template v-else>
+        <section v-if="operationsSummary && (operationsSummary.actionable_total > 0 || operationsSummary.qualified_followup > 0)" class="card flex flex-wrap items-center gap-3 p-4" aria-label="联盟待处理事项">
+          <button v-if="operationsSummary.actionable_total > 0" type="button" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white" @click="openFirstActionableQueue">
+            待处理
+            <span class="rounded-full bg-white/20 px-2 py-0.5 text-xs">{{ operationsSummary.actionable_total }}</span>
+          </button>
+          <button
+            v-for="item in operationsQueueChips"
+            :key="item.tab"
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium"
+            :class="item.tone === 'danger'
+              ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300'
+              : item.tone === 'info'
+                ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300'
+                : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300'"
+            @click="activeTab = item.tab"
+          >
+            {{ item.label }} <span class="font-bold">{{ item.count }}</span>
+          </button>
+        </section>
+
         <nav class="card flex flex-wrap gap-2 p-2" aria-label="联盟运营台子页面">
           <button
             v-for="tab in affiliateTabs"
@@ -32,7 +53,7 @@
           >
             <span>{{ tab.label }}</span>
             <span
-              v-if="tab.count !== null"
+              v-if="tab.count !== null && tab.count > 0"
               class="rounded-full px-2 py-0.5 text-xs"
               :class="activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600 dark:bg-dark-700 dark:text-dark-300'"
             >
@@ -251,6 +272,52 @@
                 <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">
                   {{ agentOverviewStats.abnormal }} 个异常
                 </span>
+              </div>
+            </div>
+            <div class="border-b border-gray-100 dark:border-dark-800">
+              <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+                <div>
+                  <h3 class="font-semibold text-gray-950 dark:text-white">合伙人业绩</h3>
+                  <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">默认统计成为合伙人以来；充值仅计真实付费权益，消费仅计联盟确认消费并扣除冲销。</p>
+                </div>
+                <span class="text-xs text-gray-500 dark:text-dark-400">点击“查看明细”可按时间筛选直属用户、佣金和提现记录</span>
+              </div>
+              <div class="max-h-[30rem] overflow-auto">
+                <table class="min-w-[1880px] table-fixed divide-y divide-gray-100 text-sm dark:divide-dark-800">
+                  <thead class="sticky top-0 z-10 bg-gray-50 text-xs text-gray-600 dark:bg-dark-900 dark:text-dark-300">
+                    <tr>
+                      <th class="px-5 py-3 text-left font-medium">合伙人</th>
+                      <th class="px-5 py-3 text-right font-medium">直属 / 付费</th>
+                      <th class="px-5 py-3 text-right font-medium">本人充值</th>
+                      <th class="px-5 py-3 text-right font-medium">本人消费</th>
+                      <th class="px-5 py-3 text-right font-medium">团队充值</th>
+                      <th class="px-5 py-3 text-right font-medium">团队消费</th>
+                      <th class="px-5 py-3 text-right font-medium">近30天消费</th>
+                      <th class="px-5 py-3 text-right font-medium">累计佣金</th>
+                      <th class="px-5 py-3 text-right font-medium">可提现</th>
+                      <th class="px-5 py-3 text-right font-medium">提现中</th>
+                      <th class="px-5 py-3 text-right font-medium">已返佣</th>
+                      <th class="sticky right-0 bg-gray-50 px-5 py-3 text-right font-medium dark:bg-dark-900">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-dark-800">
+                    <tr v-for="item in partnerPerformance" :key="item.agent_id">
+                      <td class="px-5 py-4"><p class="font-semibold text-gray-900 dark:text-white">#{{ item.agent_id }} · {{ item.username || item.email }}</p><p class="mt-1 text-xs text-gray-500 dark:text-dark-400">开通 {{ formatBeijingDate(item.activated_at) }}</p></td>
+                      <td class="px-5 py-4 text-right">{{ item.direct_user_count }} / {{ item.paid_direct_user_count }}</td>
+                      <td class="px-5 py-4 text-right">{{ formatMicros(item.self_recharge_micros, '¥') }}</td>
+                      <td class="px-5 py-4 text-right">{{ formatMicros(item.self_consumption_micros, '¥') }}</td>
+                      <td class="px-5 py-4 text-right">{{ formatMicros(item.direct_team_recharge_micros, '¥') }}</td>
+                      <td class="px-5 py-4 text-right font-semibold">{{ formatMicros(item.direct_team_consumption_micros, '¥') }}</td>
+                      <td class="px-5 py-4 text-right">{{ formatMicros(item.recent_30d_consumption_micros, '¥') }}</td>
+                      <td class="px-5 py-4 text-right">{{ formatMicros(item.lifetime_earned_micros, '¥') }}</td>
+                      <td class="px-5 py-4 text-right font-semibold text-green-600 dark:text-green-400">{{ formatMicros(item.available_commission_micros, '¥') }}</td>
+                      <td class="px-5 py-4 text-right">{{ formatMicros(item.processing_withdrawal_micros, '¥') }}</td>
+                      <td class="px-5 py-4 text-right">{{ formatMicros(item.paid_commission_micros, '¥') }}</td>
+                      <td class="sticky right-0 bg-white px-5 py-4 text-right dark:bg-dark-900"><button class="btn btn-secondary btn-sm whitespace-nowrap" @click="openPerformanceDetail(item)">查看明细</button></td>
+                    </tr>
+                    <tr v-if="!partnerPerformance.length"><td colspan="12" class="px-5 py-10 text-center text-gray-500 dark:text-dark-400">暂无合伙人业绩</td></tr>
+                  </tbody>
+                </table>
               </div>
             </div>
             <div class="grid gap-3 border-b border-gray-100 p-5 dark:border-dark-800 sm:grid-cols-2 lg:grid-cols-5">
@@ -612,6 +679,42 @@
         </section>
       </template>
 
+      <div v-if="performanceDetailAgent" class="fixed inset-0 z-50 flex justify-end bg-black/60" role="dialog" aria-modal="true" aria-labelledby="performance-detail-title" @click.self="closePerformanceDetail">
+        <section class="h-full w-full max-w-5xl overflow-y-auto bg-white shadow-xl dark:bg-dark-900">
+          <header class="sticky top-0 z-20 flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 bg-white px-6 py-5 dark:border-dark-800 dark:bg-dark-900">
+            <div>
+              <p class="text-xs font-semibold text-primary-700 dark:text-primary-300">合伙人业绩明细</p>
+              <h2 id="performance-detail-title" class="mt-1 text-xl font-bold text-gray-950 dark:text-white">#{{ performanceDetailAgent.agent_id }} · {{ performanceDetailAgent.username || performanceDetailAgent.email }}</h2>
+            </div>
+            <button class="btn btn-secondary btn-sm" @click="closePerformanceDetail">关闭</button>
+          </header>
+          <div class="space-y-6 p-6">
+            <div class="flex flex-wrap items-end gap-3">
+              <label class="block"><span class="mb-1 block text-xs text-gray-500 dark:text-dark-400">统计区间</span><select v-model="performancePeriod" class="input min-w-44" @change="loadPerformanceDetail"><option value="since_activation">成为合伙人以来</option><option value="30d">最近30天</option><option value="month">本月</option><option value="custom">自定义</option></select></label>
+              <template v-if="performancePeriod === 'custom'">
+                <label class="block"><span class="mb-1 block text-xs text-gray-500 dark:text-dark-400">开始日期</span><input v-model="performanceCustomStart" type="date" class="input"></label>
+                <label class="block"><span class="mb-1 block text-xs text-gray-500 dark:text-dark-400">结束日期</span><input v-model="performanceCustomEnd" type="date" class="input"></label>
+                <button class="btn btn-primary" @click="loadPerformanceDetail">查询</button>
+              </template>
+            </div>
+            <div v-if="performanceDetailLoading" class="card h-36 animate-pulse bg-gray-100 dark:bg-dark-800" />
+            <template v-else-if="performanceDetail">
+              <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div v-for="metric in performanceDetailMetrics" :key="metric.label" class="rounded-xl bg-gray-50 p-4 dark:bg-dark-800"><p class="text-xs text-gray-500 dark:text-dark-400">{{ metric.label }}</p><p class="mt-1 text-xl font-bold text-gray-950 dark:text-white">{{ metric.value }}</p></div>
+              </div>
+              <section class="card overflow-hidden">
+                <div class="border-b border-gray-100 px-5 py-4 dark:border-dark-800"><h3 class="font-semibold text-gray-950 dark:text-white">直属用户业绩</h3></div>
+                <div class="max-h-80 overflow-auto"><table class="min-w-[900px] divide-y divide-gray-100 text-sm dark:divide-dark-800"><thead class="sticky top-0 bg-gray-50 text-xs text-gray-500 dark:bg-dark-900 dark:text-dark-400"><tr><th class="px-4 py-3 text-left">用户</th><th class="px-4 py-3 text-left">加入时间</th><th class="px-4 py-3 text-right">充值</th><th class="px-4 py-3 text-right">消费</th><th class="px-4 py-3 text-right">产生佣金</th></tr></thead><tbody class="divide-y divide-gray-100 dark:divide-dark-800"><tr v-for="user in performanceDetail.direct_users" :key="user.user_id"><td class="px-4 py-3"><p class="font-medium">#{{ user.user_id }} · {{ user.username || user.email }}</p><p class="text-xs text-gray-500">{{ user.email }}</p></td><td class="px-4 py-3">{{ formatBeijingDate(user.joined_at) }}</td><td class="px-4 py-3 text-right">{{ formatMicros(user.recharge_micros, '¥') }}</td><td class="px-4 py-3 text-right">{{ formatMicros(user.consumption_micros, '¥') }}</td><td class="px-4 py-3 text-right">{{ formatMicros(user.generated_commission_micros, '¥') }}</td></tr><tr v-if="!performanceDetail.direct_users.length"><td colspan="5" class="px-4 py-8 text-center text-gray-500">该区间暂无直属用户业绩</td></tr></tbody></table></div>
+              </section>
+              <div class="grid gap-6 xl:grid-cols-2">
+                <section class="card overflow-hidden"><div class="border-b border-gray-100 px-5 py-4 dark:border-dark-800"><h3 class="font-semibold">佣金流水（最近100笔）</h3></div><div class="max-h-80 overflow-auto"><div v-for="entry in performanceDetail.commission_ledger" :key="entry.id" class="flex items-center justify-between gap-4 border-b border-gray-100 px-5 py-3 text-sm dark:border-dark-800"><div><p>#{{ entry.id }} · 用户 #{{ entry.consumer_user_id }}</p><p class="text-xs text-gray-500">{{ formatCommissionEntryType(entry.entry_type) }} · {{ formatBeijingTime(entry.occurred_at) }}</p></div><strong :class="entry.amount_micros < 0 ? 'text-red-600' : 'text-green-600'">{{ formatMicros(entry.amount_micros, '¥') }}</strong></div><p v-if="!performanceDetail.commission_ledger.length" class="p-6 text-center text-sm text-gray-500">暂无佣金流水</p></div></section>
+                <section class="card overflow-hidden"><div class="border-b border-gray-100 px-5 py-4 dark:border-dark-800"><h3 class="font-semibold">提现记录（最近100笔）</h3></div><div class="max-h-80 overflow-auto"><div v-for="withdrawal in performanceDetail.withdrawals" :key="withdrawal.id" class="flex items-center justify-between gap-4 border-b border-gray-100 px-5 py-3 text-sm dark:border-dark-800"><div><p>#{{ withdrawal.id }} · {{ formatWithdrawalStatus(withdrawal.status) }}</p><p class="text-xs text-gray-500">{{ formatBeijingTime(withdrawal.requested_at) }} · {{ withdrawal.payment_reference || withdrawal.failure_reason || '—' }}</p></div><strong>{{ formatMicros(withdrawal.amount_micros, '¥') }}</strong></div><p v-if="!performanceDetail.withdrawals.length" class="p-6 text-center text-sm text-gray-500">暂无提现记录</p></div></section>
+              </div>
+            </template>
+          </div>
+        </section>
+      </div>
+
       <div
         v-if="selfCommissionDialogItem"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
@@ -685,12 +788,15 @@ import {
   getAffiliateCommunity,
   getAffiliateCommunityQRCode,
   getAffiliateCommercialPolicy,
+  getAffiliateOperationsSummary,
+  getAffiliatePartnerPerformance,
   getAffiliateProgram,
   getAffiliateWithdrawalQRCode,
   getPaymentQRCode,
   listAffiliateRiskPrincipals,
   listAffiliateApplications,
   listAffiliateQualifiedCandidates,
+  listAffiliatePartnerPerformance,
   listAffiliateWithdrawals,
   listPendingPaymentProfiles,
   reverseAffiliatePerformance,
@@ -707,6 +813,9 @@ import {
   type AffiliateCommunitySettings,
   type AffiliateCommercialPolicy,
   type AffiliatePerformanceReversal,
+  type AffiliateOperationsSummary,
+  type AffiliatePartnerPerformance,
+  type AffiliatePartnerPerformanceDetail,
   type AffiliateProgramSettings,
   type AffiliateRiskPrincipal,
   type AffiliateRiskStatus,
@@ -777,6 +886,15 @@ const paidWithdrawals = ref<AdminAffiliateWithdrawal[]>([])
 const riskPrincipals = ref<AffiliateRiskPrincipal[]>([])
 const applications = ref<AffiliateAgentApplication[]>([])
 const qualifiedCandidates = ref<AffiliateQualifiedCandidate[]>([])
+const operationsSummary = ref<AffiliateOperationsSummary | null>(null)
+const partnerPerformance = ref<AffiliatePartnerPerformance[]>([])
+const performanceDetailAgent = ref<AffiliatePartnerPerformance | null>(null)
+const performanceDetail = ref<AffiliatePartnerPerformanceDetail | null>(null)
+const performanceDetailLoading = ref(false)
+const performancePeriod = ref<'since_activation' | '30d' | 'month' | 'custom'>('since_activation')
+const performanceCustomStart = ref('')
+const performanceCustomEnd = ref('')
+let summaryRefreshTimer: ReturnType<typeof setInterval> | undefined
 const applicationNotes = reactive<Record<number, string>>({})
 const reviewNotes = reactive<Record<number, string>>({})
 const paymentReferences = reactive<Record<number, string>>({})
@@ -810,15 +928,42 @@ const activeTab = ref<AffiliateOperationsTab>('rules')
 
 const affiliateTabs = computed<Array<{ id: AffiliateOperationsTab; label: string; count: number | null }>>(() => [
   { id: 'rules', label: '计划规则', count: null },
-  { id: 'qualified', label: '已达标待申请', count: qualifiedCandidates.value.length },
-  { id: 'applications', label: '合伙人申请', count: applications.value.length },
-  { id: 'partners', label: '合伙人管理', count: riskPrincipals.value.length },
-  { id: 'profiles', label: '资料审核', count: pendingProfiles.value.length },
-  { id: 'payouts', label: '提现打款', count: withdrawals.value.length },
-  { id: 'archive', label: '已到账归档', count: paidWithdrawals.value.length },
-  { id: 'risk', label: '异常与冲销', count: agentOverviewStats.value.abnormal },
+  { id: 'qualified', label: '已达标待申请', count: operationsSummary.value?.qualified_followup ?? 0 },
+  { id: 'applications', label: '合伙人申请', count: operationsSummary.value?.pending_applications ?? 0 },
+  { id: 'partners', label: '合伙人管理', count: null },
+  { id: 'profiles', label: '资料审核', count: operationsSummary.value?.pending_payment_profiles ?? 0 },
+  { id: 'payouts', label: '提现打款', count: operationsSummary.value?.processing_withdrawals ?? 0 },
+  { id: 'archive', label: '已到账归档', count: null },
+  { id: 'risk', label: '异常与冲销', count: operationsSummary.value?.abnormal_partners ?? 0 },
   { id: 'community', label: '社群引导', count: null }
 ])
+
+const operationsQueueChips = computed(() => {
+  const summary = operationsSummary.value
+  if (!summary) return []
+  return [
+    { tab: 'qualified' as const, label: '已达标待申请', count: summary.qualified_followup, tone: 'info' },
+    { tab: 'applications' as const, label: '合伙人申请', count: summary.pending_applications, tone: 'warning' },
+    { tab: 'profiles' as const, label: '资料审核', count: summary.pending_payment_profiles, tone: 'warning' },
+    { tab: 'payouts' as const, label: summary.overdue_withdrawals > 0 ? `提现打款（逾期 ${summary.overdue_withdrawals}）` : '提现打款', count: summary.processing_withdrawals, tone: summary.overdue_withdrawals > 0 ? 'danger' : 'warning' },
+    { tab: 'risk' as const, label: '异常与冲销', count: summary.abnormal_partners, tone: 'danger' }
+  ].filter(item => item.count > 0)
+})
+
+const performanceDetailMetrics = computed(() => {
+  const item = performanceDetail.value?.summary
+  if (!item) return []
+  return [
+    { label: '直属用户 / 付费用户', value: `${item.direct_user_count} / ${item.paid_direct_user_count}` },
+    { label: '本人充值', value: formatMicros(item.self_recharge_micros, '¥') },
+    { label: '本人确认消费', value: formatMicros(item.self_consumption_micros, '¥') },
+    { label: '直属团队充值', value: formatMicros(item.direct_team_recharge_micros, '¥') },
+    { label: '直属团队确认消费', value: formatMicros(item.direct_team_consumption_micros, '¥') },
+    { label: '期间累计佣金', value: formatMicros(item.lifetime_earned_micros, '¥') },
+    { label: '当前可提现', value: formatMicros(item.available_commission_micros, '¥') },
+    { label: '提现中 / 已返佣', value: `${formatMicros(item.processing_withdrawal_micros, '¥')} / ${formatMicros(item.paid_commission_micros, '¥')}` }
+  ]
+})
 
 const programModeClass = computed(() => (
   program.value?.mode === 'live'
@@ -902,6 +1047,87 @@ function formatOptionalBeijingTime(value?: string) {
   return value ? formatBeijingTime(value) : '—'
 }
 
+function formatBeijingDate(value: string) {
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date(value))
+}
+
+function formatCommissionEntryType(type: string) {
+  const labels: Record<string, string> = {
+    earned: '佣金入账', risk_release: '风险释放', reversal: '冲销',
+    withdrawal_hold: '提现冻结', withdrawal_release: '提现退回', conversion: '转额度'
+  }
+  return labels[type] || type
+}
+
+function formatWithdrawalStatus(status: string) {
+  if (status === 'processing') return '处理中'
+  if (status === 'paid') return '已到账'
+  if (status === 'failed') return '已退回'
+  return status
+}
+
+function openFirstActionableQueue() {
+  const summary = operationsSummary.value
+  if (!summary) return
+  if (summary.pending_applications > 0) activeTab.value = 'applications'
+  else if (summary.pending_payment_profiles > 0) activeTab.value = 'profiles'
+  else if (summary.processing_withdrawals > 0) activeTab.value = 'payouts'
+  else if (summary.abnormal_partners > 0) activeTab.value = 'risk'
+  else if (summary.qualified_followup > 0) activeTab.value = 'qualified'
+}
+
+function performanceDateParams() {
+  const now = new Date()
+  if (performancePeriod.value === '30d') {
+    const start = new Date(now)
+    start.setDate(start.getDate() - 30)
+    return { start: start.toISOString().slice(0, 10), end: now.toISOString().slice(0, 10) }
+  }
+  if (performancePeriod.value === 'month') {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1)
+    return { start: start.toISOString().slice(0, 10), end: now.toISOString().slice(0, 10) }
+  }
+  if (performancePeriod.value === 'custom' && performanceCustomStart.value && performanceCustomEnd.value) {
+    return { start: performanceCustomStart.value, end: performanceCustomEnd.value }
+  }
+  return undefined
+}
+
+async function openPerformanceDetail(item: AffiliatePartnerPerformance) {
+  performanceDetailAgent.value = item
+  performancePeriod.value = 'since_activation'
+  performanceCustomStart.value = ''
+  performanceCustomEnd.value = ''
+  await loadPerformanceDetail()
+}
+
+async function loadPerformanceDetail() {
+  const item = performanceDetailAgent.value
+  if (!item || (performancePeriod.value === 'custom' && (!performanceCustomStart.value || !performanceCustomEnd.value))) return
+  performanceDetailLoading.value = true
+  try {
+    performanceDetail.value = await getAffiliatePartnerPerformance(item.agent_id, performanceDateParams())
+  } catch (cause: unknown) {
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '合伙人业绩明细加载失败' }))
+  } finally {
+    performanceDetailLoading.value = false
+  }
+}
+
+function closePerformanceDetail() {
+  performanceDetailAgent.value = null
+  performanceDetail.value = null
+}
+
+async function refreshOperationsSummary() {
+  if (document.visibilityState !== 'visible') return
+  try {
+    operationsSummary.value = await getAffiliateOperationsSummary()
+  } catch { /* 主数据刷新会展示错误，后台轮询保持安静 */ }
+}
+
 function riskStatusClass(status: AffiliateRiskStatus) {
   if (status === 'blocked') return 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
   if (status === 'review') return 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
@@ -954,10 +1180,12 @@ async function loadAll() {
   loading.value = true
   error.value = ''
   try {
-    const [settings, policy, communitySettings, qualifiedQueue, applicationQueue, profiles, payoutQueue, paidQueue, principals] = await Promise.all([
+    const [settings, policy, communitySettings, summary, performance, qualifiedQueue, applicationQueue, profiles, payoutQueue, paidQueue, principals] = await Promise.all([
       getAffiliateProgram(),
       getAffiliateCommercialPolicy(),
       getAffiliateCommunity(),
+      getAffiliateOperationsSummary(),
+      listAffiliatePartnerPerformance(500),
       listAffiliateQualifiedCandidates(500),
       listAffiliateApplications('pending_review', 500),
       listPendingPaymentProfiles(),
@@ -968,6 +1196,8 @@ async function loadAll() {
     program.value = settings
     commercialPolicy.value = policy
     community.value = communitySettings
+    operationsSummary.value = summary
+    partnerPerformance.value = performance
     qualifiedCandidates.value = qualifiedQueue
     applications.value = applicationQueue
     pendingProfiles.value = profiles
@@ -1028,6 +1258,8 @@ async function reviewApplication(item: AffiliateAgentApplication, approve: boole
     })
     applications.value = applications.value.filter(application => application.id !== item.id)
     riskPrincipals.value = await listAffiliateRiskPrincipals(500)
+    partnerPerformance.value = await listAffiliatePartnerPerformance(500)
+    void refreshOperationsSummary()
     appStore.showSuccess(approve ? '申请已通过，合伙人已开通' : '申请已标记为未通过')
   } catch (cause: unknown) {
     appStore.showError(buildAuthErrorMessage(cause, { fallback: '申请处理失败' }))
@@ -1061,6 +1293,7 @@ async function applyRiskStatus(item: AffiliateRiskPrincipal) {
     }
     riskReasons[item.agent_id] = ''
     withdrawals.value = await listAffiliateWithdrawals('processing')
+    void refreshOperationsSummary()
     appStore.showSuccess(`合伙人 #${item.agent_id} 状态已更新为「${formatRiskStatus(action.next_risk_status)}」`)
   } catch (cause: unknown) {
     appStore.showError(buildAuthErrorMessage(cause, { fallback: '合伙人状态更新失败' }))
@@ -1156,6 +1389,8 @@ async function submitReversal() {
     reversalForm.eventId = 0
     reversalForm.reason = ''
     riskPrincipals.value = await listAffiliateRiskPrincipals(500)
+    partnerPerformance.value = await listAffiliatePartnerPerformance(500)
+    void refreshOperationsSummary()
     for (const item of riskPrincipals.value) {
       riskTargets[item.agent_id] = item.risk_status
     }
@@ -1172,6 +1407,7 @@ async function verifyPaymentProfile(profile: AgentPaymentProfile) {
   try {
     await reviewPaymentProfile(profile.agent_id, { status: 'verified', note: reviewNotes[profile.agent_id] || '' })
     pendingProfiles.value = pendingProfiles.value.filter(item => item.agent_id !== profile.agent_id)
+    void refreshOperationsSummary()
     appStore.showSuccess(`合伙人 #${profile.agent_id} 收款资料已验证`)
   } catch (cause: unknown) {
     appStore.showError(buildAuthErrorMessage(cause, { fallback: '验证失败' }))
@@ -1190,6 +1426,7 @@ async function rejectPaymentProfile(profile: AgentPaymentProfile) {
   try {
     await reviewPaymentProfile(profile.agent_id, { status: 'rejected', note })
     pendingProfiles.value = pendingProfiles.value.filter(item => item.agent_id !== profile.agent_id)
+    void refreshOperationsSummary()
     appStore.showSuccess(`合伙人 #${profile.agent_id} 资料已退回`)
   } catch (cause: unknown) {
     appStore.showError(buildAuthErrorMessage(cause, { fallback: '退回失败' }))
@@ -1228,6 +1465,8 @@ async function completeWithdrawal(withdrawal: AdminAffiliateWithdrawal) {
     await completeAffiliateWithdrawal(withdrawal.id, paymentReferences[withdrawal.id] || '')
     withdrawals.value = withdrawals.value.filter(item => item.id !== withdrawal.id)
     paidWithdrawals.value = await listAffiliateWithdrawals('paid')
+    partnerPerformance.value = await listAffiliatePartnerPerformance(500)
+    void refreshOperationsSummary()
     appStore.showSuccess(`提现 #${withdrawal.id} 已标记到账`)
   } catch (cause: unknown) {
     appStore.showError(buildAuthErrorMessage(cause, { fallback: '到账确认失败' }))
@@ -1246,6 +1485,8 @@ async function failWithdrawal(withdrawal: AdminAffiliateWithdrawal) {
   try {
     await failAffiliateWithdrawal(withdrawal.id, reason)
     withdrawals.value = withdrawals.value.filter(item => item.id !== withdrawal.id)
+    partnerPerformance.value = await listAffiliatePartnerPerformance(500)
+    void refreshOperationsSummary()
     appStore.showSuccess(`提现 #${withdrawal.id} 已退回余额`)
   } catch (cause: unknown) {
     appStore.showError(buildAuthErrorMessage(cause, { fallback: '提现退回失败' }))
@@ -1289,8 +1530,12 @@ async function uploadCommunityQR(event: Event) {
   }
 }
 
-onMounted(loadAll)
+onMounted(() => {
+  void loadAll()
+  summaryRefreshTimer = setInterval(() => { void refreshOperationsSummary() }, 60_000)
+})
 onBeforeUnmount(() => {
+  if (summaryRefreshTimer) clearInterval(summaryRefreshTimer)
   closeQRPreview()
   if (communityQRPreview.value.startsWith('blob:')) URL.revokeObjectURL(communityQRPreview.value)
 })

@@ -130,6 +130,102 @@ func TestAffiliateAgentRepository_QualifiesAppliesReviewsAndPreservesUpstream(t 
 	require.Equal(t, 1, defaultCount)
 }
 
+func TestAffiliateAgentRepository_OperationsSummaryAndPartnerPerformance(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	agent := createActiveAffiliatePaymentAgent(t, ctx, client, "affiliate-performance-agent")
+	direct := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-performance-direct-%d@example.com", time.Now().UnixNano()),
+	})
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_bindings (
+			customer_user_id, inviter_user_id, binding_kind,
+			customer_rebate_rate_snapshot_bps, agent_commission_rate_snapshot_bps
+		) VALUES ($1, $2, 'ordinary', 0, 0)
+	`, direct.ID, agent.ID)
+	require.NoError(t, err)
+
+	key := uuid.NewString()
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO balance_lots (
+			user_id, source_type, source_key, original_amount_micros,
+			remaining_amount_micros, affiliate_eligible, occurred_at
+		) VALUES
+			($1, 'paid_topup', $3 || ':self', 10000000, 10000000, FALSE, NOW()),
+			($2, 'paid_redeem', $3 || ':direct', 20000000, 20000000, FALSE, NOW())
+	`, agent.ID, direct.ID, key)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO monthly_entitlement_cycles (
+			user_id, source_type, source_key, product_code, sale_price_micros,
+			credit_limit_micros, affiliate_eligible, starts_at, ends_at
+		) VALUES ($1, 'paid_redeem', $2, 'integration-monthly', 30000000,
+			30000000, FALSE, NOW(), NOW() + INTERVAL '30 days')
+	`, direct.ID, key+":monthly")
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_performance_events (
+			user_id, direct_agent_id, event_type, amount_micros,
+			source_type, source_id, event_key, occurred_at, metadata
+		) VALUES
+			($1, $1, 'confirmed_consumption', 4000000, 'integration', 1, $3 || ':self-use', NOW(), '{"program_mode":"live"}'),
+			($2, $1, 'confirmed_consumption', 7000000, 'integration', 2, $3 || ':team-use', NOW(), '{"program_mode":"live"}'),
+			($2, $1, 'consumption_reversal', 2000000, 'integration', 3, $3 || ':team-reversal', NOW(), '{"program_mode":"live"}')
+	`, agent.ID, direct.ID, key)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_cash_commission_entries (
+			agent_id, consumer_user_id, entry_type, amount_micros, posting_status,
+			source_type, source_id, idempotency_key, occurred_at
+		) VALUES
+			($1, $2, 'earned', 1000000, 'posted', 'integration', 1, $3 || ':earned', NOW()),
+			($1, NULL, 'withdrawal_hold', -400000, 'posted', 'integration', 2, $3 || ':hold', NOW())
+	`, agent.ID, direct.ID, key)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_withdrawal_requests (
+			agent_id, amount_micros, status, idempotency_key,
+			payment_alipay_real_name, payment_alipay_account, payment_qr_object_key,
+			requested_at, due_at, paid_at, payment_reference
+		) VALUES ($1, 300000, 'paid', $2, '测试', 'test@example.com', 'integration/test.png',
+			NOW(), NOW() + INTERVAL '1 day', NOW(), 'integration-ref')
+	`, agent.ID, key+":withdrawal")
+	require.NoError(t, err)
+
+	repo := NewAffiliateAgentRepository(integrationDB)
+	items, err := repo.ListPartnerPerformance(ctx, 500)
+	require.NoError(t, err)
+	var listed *service.AffiliatePartnerPerformance
+	for index := range items {
+		if items[index].AgentID == agent.ID {
+			listed = &items[index]
+			break
+		}
+	}
+	require.NotNil(t, listed)
+	require.Equal(t, int64(1), listed.DirectUserCount)
+	require.Equal(t, int64(1), listed.PaidDirectUserCount)
+	require.Equal(t, int64(10_000_000), listed.SelfRechargeMicros)
+	require.Equal(t, int64(50_000_000), listed.DirectTeamRechargeMicros)
+	require.Equal(t, int64(4_000_000), listed.SelfConsumptionMicros)
+	require.Equal(t, int64(5_000_000), listed.DirectTeamConsumptionMicros)
+	require.Equal(t, int64(1_000_000), listed.LifetimeEarnedMicros)
+	require.Equal(t, int64(600_000), listed.AvailableCommissionMicros)
+	require.Equal(t, int64(300_000), listed.PaidCommissionMicros)
+
+	detail, err := repo.GetPartnerPerformance(ctx, agent.ID, time.Time{}, time.Now().Add(time.Hour))
+	require.NoError(t, err)
+	require.Len(t, detail.DirectUsers, 1)
+	require.Equal(t, int64(50_000_000), detail.DirectUsers[0].RechargeMicros)
+	require.Equal(t, int64(5_000_000), detail.DirectUsers[0].ConsumptionMicros)
+	require.Len(t, detail.CommissionLedger, 2)
+	require.Len(t, detail.Withdrawals, 1)
+
+	summary, err := repo.GetOperationsSummary(ctx)
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, summary.ActionableTotal, int64(0))
+}
+
 func TestAffiliateAgentRepository_RejectsUnqualifiedApplication(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)

@@ -33,6 +33,10 @@ var (
 		"AFFILIATE_APPLICATION_NOT_FOUND",
 		"partner application not found",
 	)
+	ErrAffiliatePartnerPerformanceNotFound = infraerrors.NotFound(
+		"AFFILIATE_PARTNER_PERFORMANCE_NOT_FOUND",
+		"affiliate partner not found",
+	)
 )
 
 type AffiliateAgentQualification struct {
@@ -96,6 +100,75 @@ type AffiliateQualifiedCandidate struct {
 	CombinedConsumptionMicros   int64  `json:"combined_consumption_micros"`
 }
 
+// AffiliateOperationsSummary contains queue counts used by the admin console
+// and sidebar. ActionableTotal deliberately excludes qualified users (follow-up
+// only) and historical paid withdrawals.
+type AffiliateOperationsSummary struct {
+	QualifiedFollowup      int64 `json:"qualified_followup"`
+	PendingApplications    int64 `json:"pending_applications"`
+	PendingPaymentProfiles int64 `json:"pending_payment_profiles"`
+	ProcessingWithdrawals  int64 `json:"processing_withdrawals"`
+	OverdueWithdrawals     int64 `json:"overdue_withdrawals"`
+	AbnormalPartners       int64 `json:"abnormal_partners"`
+	ActionableTotal        int64 `json:"actionable_total"`
+}
+
+type AffiliatePartnerPerformance struct {
+	AgentID                     int64     `json:"agent_id"`
+	Email                       string    `json:"email"`
+	Username                    string    `json:"username"`
+	ActivatedAt                 time.Time `json:"activated_at"`
+	DirectUserCount             int64     `json:"direct_user_count"`
+	PaidDirectUserCount         int64     `json:"paid_direct_user_count"`
+	SelfRechargeMicros          int64     `json:"self_recharge_micros"`
+	DirectTeamRechargeMicros    int64     `json:"direct_team_recharge_micros"`
+	SelfConsumptionMicros       int64     `json:"self_consumption_micros"`
+	DirectTeamConsumptionMicros int64     `json:"direct_team_consumption_micros"`
+	Recent30dConsumptionMicros  int64     `json:"recent_30d_consumption_micros"`
+	LifetimeEarnedMicros        int64     `json:"lifetime_earned_micros"`
+	AvailableCommissionMicros   int64     `json:"available_commission_micros"`
+	ProcessingWithdrawalMicros  int64     `json:"processing_withdrawal_micros"`
+	PaidCommissionMicros        int64     `json:"paid_commission_micros"`
+}
+
+type AffiliatePartnerUserPerformance struct {
+	UserID                    int64     `json:"user_id"`
+	Email                     string    `json:"email"`
+	Username                  string    `json:"username"`
+	JoinedAt                  time.Time `json:"joined_at"`
+	RechargeMicros            int64     `json:"recharge_micros"`
+	ConsumptionMicros         int64     `json:"consumption_micros"`
+	GeneratedCommissionMicros int64     `json:"generated_commission_micros"`
+}
+
+type AffiliatePartnerCommissionEntry struct {
+	ID             int64     `json:"id"`
+	ConsumerUserID int64     `json:"consumer_user_id"`
+	EntryType      string    `json:"entry_type"`
+	PostingStatus  string    `json:"posting_status"`
+	AmountMicros   int64     `json:"amount_micros"`
+	OccurredAt     time.Time `json:"occurred_at"`
+}
+
+type AffiliatePartnerWithdrawal struct {
+	ID               int64      `json:"id"`
+	AmountMicros     int64      `json:"amount_micros"`
+	Status           string     `json:"status"`
+	RequestedAt      time.Time  `json:"requested_at"`
+	PaidAt           *time.Time `json:"paid_at,omitempty"`
+	PaymentReference string     `json:"payment_reference,omitempty"`
+	FailureReason    string     `json:"failure_reason,omitempty"`
+}
+
+type AffiliatePartnerPerformanceDetail struct {
+	Summary          AffiliatePartnerPerformance       `json:"summary"`
+	PeriodStart      time.Time                         `json:"period_start"`
+	PeriodEnd        time.Time                         `json:"period_end"`
+	DirectUsers      []AffiliatePartnerUserPerformance `json:"direct_users"`
+	CommissionLedger []AffiliatePartnerCommissionEntry `json:"commission_ledger"`
+	Withdrawals      []AffiliatePartnerWithdrawal      `json:"withdrawals"`
+}
+
 type AffiliateAgentReviewResult struct {
 	Application AffiliateAgentApplication `json:"application"`
 	Activation  *AffiliateAgentActivation `json:"activation,omitempty"`
@@ -117,6 +190,14 @@ type AffiliateAgentRepository interface {
 		ctx context.Context,
 		limit int,
 	) ([]AffiliateQualifiedCandidate, error)
+	GetOperationsSummary(ctx context.Context) (*AffiliateOperationsSummary, error)
+	ListPartnerPerformance(ctx context.Context, limit int) ([]AffiliatePartnerPerformance, error)
+	GetPartnerPerformance(
+		ctx context.Context,
+		agentID int64,
+		start time.Time,
+		end time.Time,
+	) (*AffiliatePartnerPerformanceDetail, error)
 	ReviewAgentApplication(
 		ctx context.Context,
 		applicationID int64,
@@ -188,6 +269,52 @@ func (s *AffiliateAgentService) ListApplications(
 		limit = 100
 	}
 	return s.repo.ListAgentApplications(ctx, status, limit)
+}
+
+func (s *AffiliateAgentService) GetOperationsSummary(ctx context.Context) (*AffiliateOperationsSummary, error) {
+	if s == nil || s.repo == nil {
+		return nil, errors.New("affiliate agent repository is not configured")
+	}
+	return s.repo.GetOperationsSummary(ctx)
+}
+
+func (s *AffiliateAgentService) ListPartnerPerformance(
+	ctx context.Context,
+	limit int,
+) ([]AffiliatePartnerPerformance, error) {
+	if s == nil || s.repo == nil {
+		return nil, errors.New("affiliate agent repository is not configured")
+	}
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	return s.repo.ListPartnerPerformance(ctx, limit)
+}
+
+func (s *AffiliateAgentService) GetPartnerPerformance(
+	ctx context.Context,
+	agentID int64,
+	start *time.Time,
+	end *time.Time,
+) (*AffiliatePartnerPerformanceDetail, error) {
+	if s == nil || s.repo == nil {
+		return nil, errors.New("affiliate agent repository is not configured")
+	}
+	if agentID <= 0 {
+		return nil, ErrInvalidInput
+	}
+	periodEnd := time.Now().UTC()
+	if end != nil {
+		periodEnd = end.UTC()
+	}
+	periodStart := time.Time{}
+	if start != nil {
+		periodStart = start.UTC()
+	}
+	if !periodStart.IsZero() && !periodStart.Before(periodEnd) {
+		return nil, ErrInvalidInput
+	}
+	return s.repo.GetPartnerPerformance(ctx, agentID, periodStart, periodEnd)
 }
 
 func (s *AffiliateAgentService) ListQualifiedCandidates(

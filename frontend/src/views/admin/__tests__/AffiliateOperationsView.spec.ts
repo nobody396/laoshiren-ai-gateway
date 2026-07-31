@@ -10,11 +10,14 @@ const api = vi.hoisted(() => ({
   getAffiliateCommunityQRCode: vi.fn(),
   getAffiliateCommercialPolicy: vi.fn(),
   getAffiliateProgram: vi.fn(),
+  getAffiliateOperationsSummary: vi.fn(),
+  getAffiliatePartnerPerformance: vi.fn(),
   getAffiliateWithdrawalQRCode: vi.fn(),
   getPaymentQRCode: vi.fn(),
   listAffiliateRiskPrincipals: vi.fn(),
   listAffiliateApplications: vi.fn(),
   listAffiliateQualifiedCandidates: vi.fn(),
+  listAffiliatePartnerPerformance: vi.fn(),
   listAffiliateWithdrawals: vi.fn(),
   listPendingPaymentProfiles: vi.fn(),
   reverseAffiliatePerformance: vi.fn(),
@@ -87,6 +90,16 @@ beforeEach(() => {
     has_qr_code: false,
     revision: 0
   })
+  api.getAffiliateOperationsSummary.mockResolvedValue({
+    qualified_followup: 0,
+    pending_applications: 0,
+    pending_payment_profiles: 0,
+    processing_withdrawals: 0,
+    overdue_withdrawals: 0,
+    abnormal_partners: 0,
+    actionable_total: 0
+  })
+  api.listAffiliatePartnerPerformance.mockResolvedValue([])
   api.listAffiliateQualifiedCandidates.mockResolvedValue([])
   api.listAffiliateApplications.mockResolvedValue([])
   api.listPendingPaymentProfiles.mockResolvedValue([])
@@ -166,5 +179,70 @@ describe('AffiliateOperationsView self-consumption policy controls', () => {
     expect(api.listAffiliateRiskPrincipals).toHaveBeenCalledTimes(2)
     expect(showError).toHaveBeenCalledWith('设置已被其他管理员修改，页面已刷新，请重新确认后再操作。')
     expect(showError).not.toHaveBeenCalledWith(expect.stringContaining('self-commission policy changed'))
+  })
+})
+
+describe('AffiliateOperationsView actionable queues and performance', () => {
+  it('shows only non-zero queue badges and does not present partner totals as pending work', async () => {
+    api.getAffiliateOperationsSummary.mockResolvedValue({
+      qualified_followup: 3,
+      pending_applications: 2,
+      pending_payment_profiles: 0,
+      processing_withdrawals: 1,
+      overdue_withdrawals: 1,
+      abnormal_partners: 0,
+      actionable_total: 3
+    })
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('待处理 3')
+    expect(wrapper.text()).toContain('已达标待申请 3')
+    expect(wrapper.text()).toContain('合伙人申请 2')
+    expect(wrapper.text()).toContain('提现打款（逾期 1） 1')
+    const partnerTab = wrapper.findAll('button').find(item => item.text() === '合伙人管理')
+    expect(partnerTab).toBeDefined()
+  })
+
+  it('opens a period-filterable partner performance detail with direct-user metrics', async () => {
+    api.listAffiliatePartnerPerformance.mockResolvedValue([{
+      agent_id: 8,
+      email: 'partner@example.com',
+      username: '合伙人甲',
+      activated_at: '2026-07-01T00:00:00Z',
+      direct_user_count: 2,
+      paid_direct_user_count: 1,
+      self_recharge_micros: 100000000,
+      direct_team_recharge_micros: 200000000,
+      self_consumption_micros: 50000000,
+      direct_team_consumption_micros: 120000000,
+      recent_30d_consumption_micros: 170000000,
+      lifetime_earned_micros: 12000000,
+      available_commission_micros: 7000000,
+      processing_withdrawal_micros: 2000000,
+      paid_commission_micros: 3000000
+    }])
+    api.getAffiliatePartnerPerformance.mockResolvedValue({
+      summary: (await api.listAffiliatePartnerPerformance())[0],
+      period_start: '2026-07-01T00:00:00Z',
+      period_end: '2026-07-31T00:00:00Z',
+      direct_users: [{
+        user_id: 9, email: 'user@example.com', username: '用户乙', joined_at: '2026-07-02T00:00:00Z',
+        recharge_micros: 200000000, consumption_micros: 120000000, generated_commission_micros: 12000000
+      }],
+      commission_ledger: [],
+      withdrawals: []
+    })
+    const wrapper = mountView()
+    await openPartnersTab(wrapper)
+    const detailButton = wrapper.findAll('button').find(item => item.text() === '查看明细')
+    expect(detailButton).toBeDefined()
+    await detailButton!.trigger('click')
+    await flushPromises()
+
+    expect(api.getAffiliatePartnerPerformance).toHaveBeenCalledWith(8, undefined)
+    expect(wrapper.text()).toContain('直属用户业绩')
+    expect(wrapper.text()).toContain('用户乙')
+    expect(wrapper.text()).toContain('¥200')
   })
 })

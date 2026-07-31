@@ -51,6 +51,11 @@
               <span v-if="!sidebarCollapsed">{{ item.label }}</span>
             </transition>
             <span
+              v-if="item.badge && item.badge > 0"
+              class="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-red-100 px-1.5 py-0.5 text-xs font-bold text-red-700 dark:bg-red-950 dark:text-red-300"
+              :aria-label="`${item.badge} 个待处理事项`"
+            >{{ item.badge > 99 ? '99+' : item.badge }}</span>
+            <span
               v-if="item.showDot"
               class="ml-auto h-2 w-2 flex-shrink-0 rounded-full bg-primary-500 ring-2 ring-primary-100 dark:ring-primary-900"
               :aria-label="t('changelog.newUpdate')"
@@ -195,7 +200,7 @@
 
 <script setup lang="ts">
 import { applyThemeClass, isDarkTheme, setTheme } from '@/utils/theme'
-import { computed, h, onMounted, ref, watch } from 'vue'
+import { computed, h, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
@@ -208,6 +213,7 @@ import {
 import { usePermissionStore } from '@/stores/permission'
 import { sanitizeSvg } from '@/utils/sanitize'
 import { useChangelogFreshness } from '@/composables/useChangelogFreshness'
+import { getAffiliateOperationsSummary } from '@/api/admin/agents'
 
 interface NavItem {
   path: string
@@ -217,6 +223,7 @@ interface NavItem {
   hideInSimpleMode?: boolean
   external?: boolean
   showDot?: boolean
+  badge?: number
 }
 
 interface AdminMenuOverride {
@@ -242,6 +249,29 @@ const isAdmin = computed(() => authStore.isAdmin)
 const isAgent = computed(() => authStore.user?.role === 'agent')
 const showAffiliateEntry = computed(() => affiliateProgramStore.isLive)
 const isDark = ref(document.documentElement.classList.contains('dark'))
+const affiliateActionCount = ref(0)
+let affiliateSummaryTimer: ReturnType<typeof setInterval> | undefined
+
+async function refreshAffiliateActionCount() {
+  if (!isAdmin.value || document.visibilityState !== 'visible') return
+  try {
+    affiliateActionCount.value = (await getAffiliateOperationsSummary()).actionable_total
+  } catch {
+    affiliateActionCount.value = 0
+  }
+}
+
+function startAffiliateSummaryPolling() {
+  if (affiliateSummaryTimer) clearInterval(affiliateSummaryTimer)
+  void refreshAffiliateActionCount()
+  affiliateSummaryTimer = setInterval(() => { void refreshAffiliateActionCount() }, 60_000)
+}
+
+function stopAffiliateSummaryPolling() {
+  if (affiliateSummaryTimer) clearInterval(affiliateSummaryTimer)
+  affiliateSummaryTimer = undefined
+  affiliateActionCount.value = 0
+}
 
 // Site settings from appStore (cached, no flicker)
 const siteName = computed(() => appStore.siteName)
@@ -853,7 +883,8 @@ const adminNavItems = computed((): NavItem[] => {
       path: '/admin/affiliate',
       label: resolveAdminMenuLabel('/admin/affiliate', t('nav.affiliateOperations')),
       icon: GiftIcon,
-      hideInSimpleMode: true
+      hideInSimpleMode: true,
+      badge: affiliateActionCount.value
     },
     {
       path: '/admin/groups',
@@ -1070,6 +1101,9 @@ watch(
   (v) => {
     if (v) {
       adminSettingsStore.fetch()
+      startAffiliateSummaryPolling()
+    } else {
+      stopAffiliateSummaryPolling()
     }
   },
   { immediate: true }
@@ -1085,6 +1119,10 @@ onMounted(() => {
   if (isAdmin.value) {
     adminSettingsStore.fetch()
   }
+})
+
+onBeforeUnmount(() => {
+  stopAffiliateSummaryPolling()
 })
 </script>
 

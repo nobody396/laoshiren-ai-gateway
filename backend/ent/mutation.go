@@ -29706,6 +29706,8 @@ type RedeemCodeMutation struct {
 	_type              *string
 	value              *float64
 	addvalue           *float64
+	paid_value         *float64
+	addpaid_value      *float64
 	status             *string
 	used_at            *time.Time
 	notes              *string
@@ -29958,6 +29960,62 @@ func (m *RedeemCodeMutation) AddedValue() (r float64, exists bool) {
 func (m *RedeemCodeMutation) ResetValue() {
 	m.value = nil
 	m.addvalue = nil
+}
+
+// SetPaidValue sets the "paid_value" field.
+func (m *RedeemCodeMutation) SetPaidValue(f float64) {
+	m.paid_value = &f
+	m.addpaid_value = nil
+}
+
+// PaidValue returns the value of the "paid_value" field in the mutation.
+func (m *RedeemCodeMutation) PaidValue() (r float64, exists bool) {
+	v := m.paid_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPaidValue returns the old "paid_value" field's value of the RedeemCode entity.
+// If the RedeemCode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RedeemCodeMutation) OldPaidValue(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPaidValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPaidValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPaidValue: %w", err)
+	}
+	return oldValue.PaidValue, nil
+}
+
+// AddPaidValue adds f to the "paid_value" field.
+func (m *RedeemCodeMutation) AddPaidValue(f float64) {
+	if m.addpaid_value != nil {
+		*m.addpaid_value += f
+	} else {
+		m.addpaid_value = &f
+	}
+}
+
+// AddedPaidValue returns the value that was added to the "paid_value" field in this mutation.
+func (m *RedeemCodeMutation) AddedPaidValue() (r float64, exists bool) {
+	v := m.addpaid_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetPaidValue resets all changes to the "paid_value" field.
+func (m *RedeemCodeMutation) ResetPaidValue() {
+	m.paid_value = nil
+	m.addpaid_value = nil
 }
 
 // SetStatus sets the "status" field.
@@ -30865,7 +30923,7 @@ func (m *RedeemCodeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RedeemCodeMutation) Fields() []string {
-	fields := make([]string, 0, 20)
+	fields := make([]string, 0, 21)
 	if m.code != nil {
 		fields = append(fields, redeemcode.FieldCode)
 	}
@@ -30874,6 +30932,9 @@ func (m *RedeemCodeMutation) Fields() []string {
 	}
 	if m.value != nil {
 		fields = append(fields, redeemcode.FieldValue)
+	}
+	if m.paid_value != nil {
+		fields = append(fields, redeemcode.FieldPaidValue)
 	}
 	if m.status != nil {
 		fields = append(fields, redeemcode.FieldStatus)
@@ -30940,6 +31001,8 @@ func (m *RedeemCodeMutation) Field(name string) (ent.Value, bool) {
 		return m.GetType()
 	case redeemcode.FieldValue:
 		return m.Value()
+	case redeemcode.FieldPaidValue:
+		return m.PaidValue()
 	case redeemcode.FieldStatus:
 		return m.Status()
 	case redeemcode.FieldUsedBy:
@@ -30989,6 +31052,8 @@ func (m *RedeemCodeMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldType(ctx)
 	case redeemcode.FieldValue:
 		return m.OldValue(ctx)
+	case redeemcode.FieldPaidValue:
+		return m.OldPaidValue(ctx)
 	case redeemcode.FieldStatus:
 		return m.OldStatus(ctx)
 	case redeemcode.FieldUsedBy:
@@ -31052,6 +31117,13 @@ func (m *RedeemCodeMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetValue(v)
+		return nil
+	case redeemcode.FieldPaidValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPaidValue(v)
 		return nil
 	case redeemcode.FieldStatus:
 		v, ok := value.(string)
@@ -31183,6 +31255,9 @@ func (m *RedeemCodeMutation) AddedFields() []string {
 	if m.addvalue != nil {
 		fields = append(fields, redeemcode.FieldValue)
 	}
+	if m.addpaid_value != nil {
+		fields = append(fields, redeemcode.FieldPaidValue)
+	}
 	if m.addvalidity_days != nil {
 		fields = append(fields, redeemcode.FieldValidityDays)
 	}
@@ -31196,6 +31271,8 @@ func (m *RedeemCodeMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case redeemcode.FieldValue:
 		return m.AddedValue()
+	case redeemcode.FieldPaidValue:
+		return m.AddedPaidValue()
 	case redeemcode.FieldValidityDays:
 		return m.AddedValidityDays()
 	}
@@ -31213,6 +31290,13 @@ func (m *RedeemCodeMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddValue(v)
+		return nil
+	case redeemcode.FieldPaidValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPaidValue(v)
 		return nil
 	case redeemcode.FieldValidityDays:
 		v, ok := value.(int)
@@ -31319,6 +31403,9 @@ func (m *RedeemCodeMutation) ResetField(name string) error {
 		return nil
 	case redeemcode.FieldValue:
 		m.ResetValue()
+		return nil
+	case redeemcode.FieldPaidValue:
+		m.ResetPaidValue()
 		return nil
 	case redeemcode.FieldStatus:
 		m.ResetStatus()

@@ -12,7 +12,10 @@ export const PROMOTIONAL_BALANCE_TOPUPS: readonly PromotionalBalanceTopup[] = [
   { paidAmountCny: 1000, bonusAmountCny: 200, creditedAmountCny: 1200, bonusPercent: 20 }
 ] as const
 
-const supportedBalanceTopupAmounts = new Set<number>(BALANCE_TOPUP_PRESETS)
+const supportedBalanceTopupAmounts = new Set<number>([
+  ...BALANCE_TOPUP_PRESETS,
+  ...PROMOTIONAL_BALANCE_TOPUPS.map((product) => product.paidAmountCny)
+])
 
 export function isSupportedBalanceTopupAmount(amount: number): boolean {
   return supportedBalanceTopupAmounts.has(amount)

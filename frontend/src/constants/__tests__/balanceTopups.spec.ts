@@ -12,13 +12,16 @@ describe('balanceTopups', () => {
     expect(BALANCE_TOPUP_PRESETS).toEqual([20, 50, 100])
   })
 
-  it('rejects legacy shop denominations', () => {
-    for (const amount of [1, 5, 10, 200, 300, 500, 1000, 2000]) {
+  it('allows only ordinary and promotional shop denominations', () => {
+    for (const amount of [1, 5, 10, 200, 300, 600, 2000]) {
       expect(isSupportedBalanceTopupAmount(amount), String(amount)).toBe(false)
     }
 
     for (const amount of BALANCE_TOPUP_PRESETS) {
       expect(isSupportedBalanceTopupAmount(amount), String(amount)).toBe(true)
+    }
+    for (const product of PROMOTIONAL_BALANCE_TOPUPS) {
+      expect(isSupportedBalanceTopupAmount(product.paidAmountCny), String(product.paidAmountCny)).toBe(true)
     }
   })
 

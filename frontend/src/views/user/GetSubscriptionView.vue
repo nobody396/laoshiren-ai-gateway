@@ -471,8 +471,9 @@ const cardShopMode = computed(
   () => (appStore.cachedPublicSettings?.card_shop_enabled ?? false) && activeCardShopProducts.value.length > 0
 )
 const balanceProducts = computed<BalanceProduct[]>(() => {
+	const promotionalAmounts = new Set(PROMOTIONAL_BALANCE_TOPUPS.map((product) => product.paidAmountCny))
   const standardProducts: BalanceProduct[] = activeCardShopProducts.value.length > 0
-    ? activeCardShopProducts.value.map((product) => ({
+	? activeCardShopProducts.value.filter((product) => !promotionalAmounts.has(product.amount_cny)).map((product) => ({
       id: product.id,
       label: product.label || `¥${product.amount_cny} 余额卡`,
       amountCny: product.amount_cny,
@@ -483,14 +484,18 @@ const balanceProducts = computed<BalanceProduct[]>(() => {
       label: `¥${amount} 余额卡`,
       amountCny: amount
     }))
-  const promotionalProducts: BalanceProduct[] = PROMOTIONAL_BALANCE_TOPUPS.map((product) => ({
-    id: `qr-promotion-${product.paidAmountCny}`,
+	const promotionalProducts: BalanceProduct[] = PROMOTIONAL_BALANCE_TOPUPS.map((product) => {
+	  const cardShopProduct = activeCardShopProducts.value.find((candidate) => candidate.amount_cny === product.paidAmountCny)
+	  return {
+	    id: `promotion-${product.paidAmountCny}`,
     label: t('topup.promotionalCardTitle', { paid: product.paidAmountCny }),
     amountCny: product.paidAmountCny,
     creditedAmountCny: product.creditedAmountCny,
     bonusAmountCny: product.bonusAmountCny,
-    promotional: true
-  }))
+	    promotional: true,
+	    cardShopProduct
+	  }
+	})
   return [...standardProducts, ...promotionalProducts]
 })
 const selectedBalanceProduct = computed<BalanceProduct | undefined>(

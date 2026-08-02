@@ -3920,6 +3920,8 @@ export default {
       codesCreated: '已创建 {count} 个兑换码',
       codeType: '类型',
       amount: '平台额度 (⚡)',
+	  paidValue: '实际售价（元）',
+	  paidValueHint: '普通卡填 0；优惠卡填写实际收款金额。到账额度与售价的差额自动作为赠送额度，不参与联盟佣金。',
       value: '面值',
       count: '数量',
       generate: '生成',

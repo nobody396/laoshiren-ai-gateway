@@ -1464,44 +1464,48 @@ func init() {
 	redeemcodeDescValue := redeemcodeFields[2].Descriptor()
 	// redeemcode.DefaultValue holds the default value on creation for the value field.
 	redeemcode.DefaultValue = redeemcodeDescValue.Default.(float64)
+	// redeemcodeDescPaidValue is the schema descriptor for paid_value field.
+	redeemcodeDescPaidValue := redeemcodeFields[3].Descriptor()
+	// redeemcode.DefaultPaidValue holds the default value on creation for the paid_value field.
+	redeemcode.DefaultPaidValue = redeemcodeDescPaidValue.Default.(float64)
 	// redeemcodeDescStatus is the schema descriptor for status field.
-	redeemcodeDescStatus := redeemcodeFields[3].Descriptor()
+	redeemcodeDescStatus := redeemcodeFields[4].Descriptor()
 	// redeemcode.DefaultStatus holds the default value on creation for the status field.
 	redeemcode.DefaultStatus = redeemcodeDescStatus.Default.(string)
 	// redeemcode.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	redeemcode.StatusValidator = redeemcodeDescStatus.Validators[0].(func(string) error)
 	// redeemcodeDescPurpose is the schema descriptor for purpose field.
-	redeemcodeDescPurpose := redeemcodeFields[8].Descriptor()
+	redeemcodeDescPurpose := redeemcodeFields[9].Descriptor()
 	// redeemcode.DefaultPurpose holds the default value on creation for the purpose field.
 	redeemcode.DefaultPurpose = redeemcodeDescPurpose.Default.(string)
 	// redeemcode.PurposeValidator is a validator for the "purpose" field. It is called by the builders before save.
 	redeemcode.PurposeValidator = redeemcodeDescPurpose.Validators[0].(func(string) error)
 	// redeemcodeDescSalesStatus is the schema descriptor for sales_status field.
-	redeemcodeDescSalesStatus := redeemcodeFields[9].Descriptor()
+	redeemcodeDescSalesStatus := redeemcodeFields[10].Descriptor()
 	// redeemcode.DefaultSalesStatus holds the default value on creation for the sales_status field.
 	redeemcode.DefaultSalesStatus = redeemcodeDescSalesStatus.Default.(string)
 	// redeemcode.SalesStatusValidator is a validator for the "sales_status" field. It is called by the builders before save.
 	redeemcode.SalesStatusValidator = redeemcodeDescSalesStatus.Validators[0].(func(string) error)
 	// redeemcodeDescExternalOrderNo is the schema descriptor for external_order_no field.
-	redeemcodeDescExternalOrderNo := redeemcodeFields[12].Descriptor()
+	redeemcodeDescExternalOrderNo := redeemcodeFields[13].Descriptor()
 	// redeemcode.ExternalOrderNoValidator is a validator for the "external_order_no" field. It is called by the builders before save.
 	redeemcode.ExternalOrderNoValidator = redeemcodeDescExternalOrderNo.Validators[0].(func(string) error)
 	// redeemcodeDescCreatedAt is the schema descriptor for created_at field.
-	redeemcodeDescCreatedAt := redeemcodeFields[15].Descriptor()
+	redeemcodeDescCreatedAt := redeemcodeFields[16].Descriptor()
 	// redeemcode.DefaultCreatedAt holds the default value on creation for the created_at field.
 	redeemcode.DefaultCreatedAt = redeemcodeDescCreatedAt.Default.(func() time.Time)
 	// redeemcodeDescUpdatedAt is the schema descriptor for updated_at field.
-	redeemcodeDescUpdatedAt := redeemcodeFields[16].Descriptor()
+	redeemcodeDescUpdatedAt := redeemcodeFields[17].Descriptor()
 	// redeemcode.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	redeemcode.DefaultUpdatedAt = redeemcodeDescUpdatedAt.Default.(func() time.Time)
 	// redeemcode.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	redeemcode.UpdateDefaultUpdatedAt = redeemcodeDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// redeemcodeDescGroupIds is the schema descriptor for group_ids field.
-	redeemcodeDescGroupIds := redeemcodeFields[18].Descriptor()
+	redeemcodeDescGroupIds := redeemcodeFields[19].Descriptor()
 	// redeemcode.DefaultGroupIds holds the default value on creation for the group_ids field.
 	redeemcode.DefaultGroupIds = redeemcodeDescGroupIds.Default.([]int64)
 	// redeemcodeDescValidityDays is the schema descriptor for validity_days field.
-	redeemcodeDescValidityDays := redeemcodeFields[19].Descriptor()
+	redeemcodeDescValidityDays := redeemcodeFields[20].Descriptor()
 	// redeemcode.DefaultValidityDays holds the default value on creation for the validity_days field.
 	redeemcode.DefaultValidityDays = redeemcodeDescValidityDays.Default.(int)
 	redeemcodebatchFields := schema.RedeemCodeBatch{}.Fields()

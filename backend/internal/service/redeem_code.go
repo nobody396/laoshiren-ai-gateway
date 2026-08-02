@@ -11,6 +11,7 @@ type RedeemCode struct {
 	Code      string
 	Type      string
 	Value     float64
+	PaidValue float64
 	Status    string
 	UsedBy    *int64
 	UsedAt    *time.Time

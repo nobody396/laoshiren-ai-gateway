@@ -25,6 +25,7 @@ func (r *redeemCodeRepository) Create(ctx context.Context, code *service.RedeemC
 		SetCode(code.Code).
 		SetType(code.Type).
 		SetValue(code.Value).
+		SetPaidValue(code.PaidValue).
 		SetStatus(code.Status).
 		SetNotes(code.Notes).
 		SetValidityDays(code.ValidityDays).
@@ -61,6 +62,7 @@ func (r *redeemCodeRepository) CreateBatch(ctx context.Context, codes []service.
 			SetCode(c.Code).
 			SetType(c.Type).
 			SetValue(c.Value).
+			SetPaidValue(c.PaidValue).
 			SetStatus(c.Status).
 			SetNotes(c.Notes).
 			SetValidityDays(c.ValidityDays).
@@ -175,6 +177,7 @@ func (r *redeemCodeRepository) Update(ctx context.Context, code *service.RedeemC
 		SetCode(code.Code).
 		SetType(code.Type).
 		SetValue(code.Value).
+		SetPaidValue(code.PaidValue).
 		SetStatus(code.Status).
 		SetNotes(code.Notes).
 		SetValidityDays(code.ValidityDays).
@@ -331,6 +334,7 @@ func redeemCodeEntityToService(m *dbent.RedeemCode) *service.RedeemCode {
 		Code:             m.Code,
 		Type:             m.Type,
 		Value:            m.Value,
+		PaidValue:        m.PaidValue,
 		Status:           m.Status,
 		UsedBy:           m.UsedBy,
 		UsedAt:           m.UsedAt,

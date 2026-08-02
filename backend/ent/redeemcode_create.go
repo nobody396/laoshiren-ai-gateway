@@ -59,6 +59,20 @@ func (_c *RedeemCodeCreate) SetNillableValue(v *float64) *RedeemCodeCreate {
 	return _c
 }
 
+// SetPaidValue sets the "paid_value" field.
+func (_c *RedeemCodeCreate) SetPaidValue(v float64) *RedeemCodeCreate {
+	_c.mutation.SetPaidValue(v)
+	return _c
+}
+
+// SetNillablePaidValue sets the "paid_value" field if the given value is not nil.
+func (_c *RedeemCodeCreate) SetNillablePaidValue(v *float64) *RedeemCodeCreate {
+	if v != nil {
+		_c.SetPaidValue(*v)
+	}
+	return _c
+}
+
 // SetStatus sets the "status" field.
 func (_c *RedeemCodeCreate) SetStatus(v string) *RedeemCodeCreate {
 	_c.mutation.SetStatus(v)
@@ -361,6 +375,10 @@ func (_c *RedeemCodeCreate) defaults() {
 		v := redeemcode.DefaultValue
 		_c.mutation.SetValue(v)
 	}
+	if _, ok := _c.mutation.PaidValue(); !ok {
+		v := redeemcode.DefaultPaidValue
+		_c.mutation.SetPaidValue(v)
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		v := redeemcode.DefaultStatus
 		_c.mutation.SetStatus(v)
@@ -411,6 +429,9 @@ func (_c *RedeemCodeCreate) check() error {
 	}
 	if _, ok := _c.mutation.Value(); !ok {
 		return &ValidationError{Name: "value", err: errors.New(`ent: missing required field "RedeemCode.value"`)}
+	}
+	if _, ok := _c.mutation.PaidValue(); !ok {
+		return &ValidationError{Name: "paid_value", err: errors.New(`ent: missing required field "RedeemCode.paid_value"`)}
 	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "RedeemCode.status"`)}
@@ -491,6 +512,10 @@ func (_c *RedeemCodeCreate) createSpec() (*RedeemCode, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Value(); ok {
 		_spec.SetField(redeemcode.FieldValue, field.TypeFloat64, value)
 		_node.Value = value
+	}
+	if value, ok := _c.mutation.PaidValue(); ok {
+		_spec.SetField(redeemcode.FieldPaidValue, field.TypeFloat64, value)
+		_node.PaidValue = value
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(redeemcode.FieldStatus, field.TypeString, value)
@@ -690,6 +715,24 @@ func (u *RedeemCodeUpsert) UpdateValue() *RedeemCodeUpsert {
 // AddValue adds v to the "value" field.
 func (u *RedeemCodeUpsert) AddValue(v float64) *RedeemCodeUpsert {
 	u.Add(redeemcode.FieldValue, v)
+	return u
+}
+
+// SetPaidValue sets the "paid_value" field.
+func (u *RedeemCodeUpsert) SetPaidValue(v float64) *RedeemCodeUpsert {
+	u.Set(redeemcode.FieldPaidValue, v)
+	return u
+}
+
+// UpdatePaidValue sets the "paid_value" field to the value that was provided on create.
+func (u *RedeemCodeUpsert) UpdatePaidValue() *RedeemCodeUpsert {
+	u.SetExcluded(redeemcode.FieldPaidValue)
+	return u
+}
+
+// AddPaidValue adds v to the "paid_value" field.
+func (u *RedeemCodeUpsert) AddPaidValue(v float64) *RedeemCodeUpsert {
+	u.Add(redeemcode.FieldPaidValue, v)
 	return u
 }
 
@@ -1042,6 +1085,27 @@ func (u *RedeemCodeUpsertOne) AddValue(v float64) *RedeemCodeUpsertOne {
 func (u *RedeemCodeUpsertOne) UpdateValue() *RedeemCodeUpsertOne {
 	return u.Update(func(s *RedeemCodeUpsert) {
 		s.UpdateValue()
+	})
+}
+
+// SetPaidValue sets the "paid_value" field.
+func (u *RedeemCodeUpsertOne) SetPaidValue(v float64) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetPaidValue(v)
+	})
+}
+
+// AddPaidValue adds v to the "paid_value" field.
+func (u *RedeemCodeUpsertOne) AddPaidValue(v float64) *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.AddPaidValue(v)
+	})
+}
+
+// UpdatePaidValue sets the "paid_value" field to the value that was provided on create.
+func (u *RedeemCodeUpsertOne) UpdatePaidValue() *RedeemCodeUpsertOne {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdatePaidValue()
 	})
 }
 
@@ -1603,6 +1667,27 @@ func (u *RedeemCodeUpsertBulk) AddValue(v float64) *RedeemCodeUpsertBulk {
 func (u *RedeemCodeUpsertBulk) UpdateValue() *RedeemCodeUpsertBulk {
 	return u.Update(func(s *RedeemCodeUpsert) {
 		s.UpdateValue()
+	})
+}
+
+// SetPaidValue sets the "paid_value" field.
+func (u *RedeemCodeUpsertBulk) SetPaidValue(v float64) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.SetPaidValue(v)
+	})
+}
+
+// AddPaidValue adds v to the "paid_value" field.
+func (u *RedeemCodeUpsertBulk) AddPaidValue(v float64) *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.AddPaidValue(v)
+	})
+}
+
+// UpdatePaidValue sets the "paid_value" field to the value that was provided on create.
+func (u *RedeemCodeUpsertBulk) UpdatePaidValue() *RedeemCodeUpsertBulk {
+	return u.Update(func(s *RedeemCodeUpsert) {
+		s.UpdatePaidValue()
 	})
 }
 

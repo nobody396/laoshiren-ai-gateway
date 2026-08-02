@@ -1351,6 +1351,7 @@ export interface RedeemCode {
   code: string
   type: RedeemCodeType
   value: number
+  paid_value?: number
   status: 'active' | 'used' | 'expired' | 'unused'
   used_by: number | null
   used_at: string | null
@@ -1390,6 +1391,7 @@ export interface GenerateRedeemCodesRequest {
   count: number
   type: RedeemCodeType
   value: number
+  paid_value?: number
   group_id?: number | null // 订阅类型旧版单分组字段
   group_ids?: number[] // 订阅组合包字段
   validity_days?: number // 订阅类型专用
@@ -1426,6 +1428,7 @@ export interface RedeemCodeBillingItem {
   code: string
   type: RedeemCodeType
   value: number
+  paid_value: number
   purpose: RedeemCodePurpose
   sales_status: RedeemCodeSalesStatus
   redeem_status: 'unused' | 'used' | 'expired'

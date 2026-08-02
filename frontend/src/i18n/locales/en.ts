@@ -3791,6 +3791,8 @@ export default {
       codesCreated: '{count} redeem code(s) created',
       codeType: 'Code Type',
       amount: 'Platform credit (⚡)',
+	  paidValue: 'Actual sale price',
+	  paidValueHint: 'Use 0 for standard cards. For promotional cards, the difference is recorded as a commission-ineligible gift.',
       value: 'Value',
       count: 'Count',
       generating: 'Generating...',

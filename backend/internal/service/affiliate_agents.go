@@ -142,12 +142,16 @@ type AffiliatePartnerUserPerformance struct {
 }
 
 type AffiliatePartnerCommissionEntry struct {
-	ID             int64     `json:"id"`
-	ConsumerUserID int64     `json:"consumer_user_id"`
-	EntryType      string    `json:"entry_type"`
-	PostingStatus  string    `json:"posting_status"`
-	AmountMicros   int64     `json:"amount_micros"`
-	OccurredAt     time.Time `json:"occurred_at"`
+	ID                     int64     `json:"id"`
+	ConsumerUserID         int64     `json:"consumer_user_id"`
+	EntryType              string    `json:"entry_type"`
+	PostingStatus          string    `json:"posting_status"`
+	AmountMicros           int64     `json:"amount_micros"`
+	SourceAmountMicros     int64     `json:"source_amount_micros"`
+	CustomerRebateRateBPS  int32     `json:"customer_rebate_rate_bps"`
+	AgentCommissionRateBPS int32     `json:"agent_commission_rate_bps"`
+	SourceType             string    `json:"source_type"`
+	OccurredAt             time.Time `json:"occurred_at"`
 }
 
 type AffiliatePartnerWithdrawal struct {

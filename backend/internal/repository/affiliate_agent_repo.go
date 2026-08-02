@@ -514,7 +514,9 @@ func (r *affiliateAgentRepository) listPartnerCommissionEntries(
 	ctx context.Context, agentID int64, start time.Time, end time.Time,
 ) ([]service.AffiliatePartnerCommissionEntry, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, COALESCE(consumer_user_id, 0), entry_type, posting_status, amount_micros, occurred_at
+		SELECT id, COALESCE(consumer_user_id, 0), entry_type, posting_status, amount_micros,
+			COALESCE(source_amount_micros, 0), COALESCE(customer_rebate_rate_bps, 0),
+			COALESCE(agent_commission_rate_bps, 0), source_type, occurred_at
 		FROM agent_cash_commission_entries
 		WHERE agent_id = $1 AND occurred_at >= $2 AND occurred_at < $3
 		ORDER BY occurred_at DESC, id DESC LIMIT 100
@@ -526,7 +528,11 @@ func (r *affiliateAgentRepository) listPartnerCommissionEntries(
 	items := make([]service.AffiliatePartnerCommissionEntry, 0)
 	for rows.Next() {
 		var item service.AffiliatePartnerCommissionEntry
-		if err := rows.Scan(&item.ID, &item.ConsumerUserID, &item.EntryType, &item.PostingStatus, &item.AmountMicros, &item.OccurredAt); err != nil {
+		if err := rows.Scan(
+			&item.ID, &item.ConsumerUserID, &item.EntryType, &item.PostingStatus, &item.AmountMicros,
+			&item.SourceAmountMicros, &item.CustomerRebateRateBPS, &item.AgentCommissionRateBPS,
+			&item.SourceType, &item.OccurredAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, item)

@@ -458,11 +458,12 @@ func TestUsageBillingAffiliateSettlement_RealRedeemShadowThenLiveCutover(t *test
 		Value:       10,
 		Status:      service.StatusUnused,
 		Purpose:     service.RedeemCodePurposeSaleRecharge,
-		SalesStatus: service.RedeemCodeSalesStatusSold,
+		SalesStatus: service.RedeemCodeSalesStatusInventory,
 	}
 	require.NoError(t, redeemRepo.Create(ctx, shadowCode))
-	_, err = redeemService.Redeem(ctx, customer.ID, shadowCode.Code)
+	redeemedShadowCode, err := redeemService.Redeem(ctx, customer.ID, shadowCode.Code)
 	require.NoError(t, err)
+	require.Equal(t, service.RedeemCodeSalesStatusSold, redeemedShadowCode.SalesStatus)
 
 	var (
 		shadowLotPolicy        string
@@ -580,11 +581,12 @@ func TestUsageBillingAffiliateSettlement_RealRedeemShadowThenLiveCutover(t *test
 		Value:       10,
 		Status:      service.StatusUnused,
 		Purpose:     service.RedeemCodePurposeSaleRecharge,
-		SalesStatus: service.RedeemCodeSalesStatusSold,
+		SalesStatus: service.RedeemCodeSalesStatusInventory,
 	}
 	require.NoError(t, redeemRepo.Create(ctx, liveCode))
-	_, err = redeemService.Redeem(ctx, customer.ID, liveCode.Code)
+	redeemedLiveCode, err := redeemService.Redeem(ctx, customer.ID, liveCode.Code)
 	require.NoError(t, err)
+	require.Equal(t, service.RedeemCodeSalesStatusSold, redeemedLiveCode.SalesStatus)
 	liveUsageLogID := time.Now().UnixNano()
 	liveResult, err := usageRepo.Apply(ctx, &service.UsageBillingCommand{
 		RequestID:   uuid.NewString(),

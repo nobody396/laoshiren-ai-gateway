@@ -339,6 +339,15 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 		return nil, fmt.Errorf("mark code as used: %w", err)
 	}
 
+	// Use may transition a paid sale_recharge code from inventory to sold.
+	// Reload it inside the same transaction before deriving affiliate policy so
+	// the balance lot reflects the persisted sale state rather than the stale
+	// pre-use snapshot.
+	redeemCode, err = s.redeemRepo.GetByID(txCtx, redeemCode.ID)
+	if err != nil {
+		return nil, fmt.Errorf("reload redeemed code: %w", err)
+	}
+
 	// 执行兑换逻辑（兑换码已被锁定，此时可安全操作）
 	switch redeemCode.Type {
 	case RedeemTypeBalance:

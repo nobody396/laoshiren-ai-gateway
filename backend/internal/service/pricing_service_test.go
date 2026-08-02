@@ -176,13 +176,16 @@ func TestGetModelPricing_Gpt56UsesOfficialStaticFallback(t *testing.T) {
 	svc := &PricingService{pricingData: map[string]*LiteLLMModelPricing{}}
 
 	cases := map[string]struct {
-		model  string
-		input  float64
-		output float64
+		model       string
+		input       float64
+		output      float64
+		cacheWrite  float64
+		cacheRead   float64
+		longContext bool
 	}{
-		"sol":   {model: "gpt-5.6-sol", input: 5e-6, output: 30e-6},
-		"terra": {model: "gpt-5.6-terra-high", input: 2.5e-6, output: 15e-6},
-		"luna":  {model: "gpt-5.6-luna", input: 1e-6, output: 6e-6},
+		"sol":   {model: "gpt-5.6-sol", input: 5e-6, output: 30e-6, cacheWrite: 5e-6, cacheRead: 0.5e-6},
+		"terra": {model: "gpt-5.6-terra-high", input: 2e-6, output: 12e-6, cacheWrite: 2.5e-6, cacheRead: 0.2e-6, longContext: true},
+		"luna":  {model: "gpt-5.6-luna", input: 0.2e-6, output: 1.2e-6, cacheWrite: 0.25e-6, cacheRead: 0.02e-6, longContext: true},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -190,6 +193,13 @@ func TestGetModelPricing_Gpt56UsesOfficialStaticFallback(t *testing.T) {
 			require.NotNil(t, got)
 			require.InDelta(t, tc.input, got.InputCostPerToken, 1e-12)
 			require.InDelta(t, tc.output, got.OutputCostPerToken, 1e-12)
+			require.InDelta(t, tc.cacheWrite, got.CacheCreationInputTokenCost, 1e-12)
+			require.InDelta(t, tc.cacheRead, got.CacheReadInputTokenCost, 1e-12)
+			if tc.longContext {
+				require.Equal(t, 272000, got.LongContextInputTokenThreshold)
+				require.InDelta(t, 2.0, got.LongContextInputCostMultiplier, 1e-12)
+				require.InDelta(t, 1.5, got.LongContextOutputCostMultiplier, 1e-12)
+			}
 		})
 	}
 }

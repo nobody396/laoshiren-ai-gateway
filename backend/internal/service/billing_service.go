@@ -238,18 +238,24 @@ func (s *BillingService) initFallbackPricing() {
 		SupportsCacheBreakdown:     false,
 	}
 	s.fallbackPrices["gpt-5.6-terra"] = &ModelPricing{
-		InputPricePerToken:         2.5e-6,
-		OutputPricePerToken:        15e-6,
-		CacheCreationPricePerToken: 2.5e-6,
-		CacheReadPricePerToken:     0.25e-6,
-		SupportsCacheBreakdown:     false,
+		InputPricePerToken:          2e-6,
+		OutputPricePerToken:         12e-6,
+		CacheCreationPricePerToken:  2.5e-6, // cache writes: 1.25x input
+		CacheReadPricePerToken:      0.2e-6,
+		SupportsCacheBreakdown:      false,
+		LongContextInputThreshold:   openAIGPT54LongContextInputThreshold,
+		LongContextInputMultiplier:  openAIGPT54LongContextInputMultiplier,
+		LongContextOutputMultiplier: openAIGPT54LongContextOutputMultiplier,
 	}
 	s.fallbackPrices["gpt-5.6-luna"] = &ModelPricing{
-		InputPricePerToken:         1e-6,
-		OutputPricePerToken:        6e-6,
-		CacheCreationPricePerToken: 1e-6,
-		CacheReadPricePerToken:     0.1e-6,
-		SupportsCacheBreakdown:     false,
+		InputPricePerToken:          0.2e-6,
+		OutputPricePerToken:         1.2e-6,
+		CacheCreationPricePerToken:  0.25e-6, // cache writes: 1.25x input
+		CacheReadPricePerToken:      0.02e-6,
+		SupportsCacheBreakdown:      false,
+		LongContextInputThreshold:   openAIGPT54LongContextInputThreshold,
+		LongContextInputMultiplier:  openAIGPT54LongContextInputMultiplier,
+		LongContextOutputMultiplier: openAIGPT54LongContextOutputMultiplier,
 	}
 	// OpenAI GPT-5.4（官方基础价格）
 	s.fallbackPrices["gpt-5.4"] = &ModelPricing{

@@ -103,6 +103,11 @@ func (h *ResourceHandler) ListTool(c *gin.Context) {
 	response.Success(c, manifest)
 }
 
+func (h *ResourceHandler) ListVersionStatus(c *gin.Context) {
+	c.Header("Cache-Control", "private, max-age=300")
+	response.Success(c, h.downloads.ListVersionStatus(c.Request.Context()))
+}
+
 func (h *ResourceHandler) DownloadTool(c *gin.Context) {
 	file, err := h.downloads.GetToolAsset(c.Request.Context(), c.Param("tool"), c.Param("assetID"))
 	if err != nil {

@@ -684,6 +684,8 @@ install_codex_app_if_requested() {
   local actual_sha
   local mount_dir
   local source_app
+  local app_name
+  local process_name
   local destination_root
   local destination_app
   local source_version
@@ -714,7 +716,7 @@ const manifest = JSON.parse(fs.readFileSync(process.env.MANIFEST_PATH, 'utf8'))
 const assets = Array.isArray(manifest.assets) ? manifest.assets : []
 const asset = assets.find((item) =>
   item.platform === 'macos' &&
-  item.arch === process.env.TARGET_ARCH &&
+  (item.arch === process.env.TARGET_ARCH || item.arch === 'universal') &&
   String(item.name || '').toLowerCase().endsWith('.dmg'))
 if (!asset || !asset.download_url || !/^[a-f0-9]{64}$/i.test(String(asset.sha256 || ''))) process.exit(2)
 process.stdout.write([
@@ -737,7 +739,7 @@ EOF
   esac
 
   dmg_path="${tmp_dir}/${asset_name}"
-  log_info "正在从本站缓存下载最新 Codex App (${target_arch})"
+  log_info "正在从本站缓存下载 OpenAI 官方 Codex App (${target_arch})"
   curl -fL --retry 3 --retry-delay 2 "$asset_url" -o "$dmg_path" || {
     rm -rf "$tmp_dir"
     log_error "Codex App 下载失败，请检查网络后重试"
@@ -754,15 +756,17 @@ EOF
     rm -rf "$tmp_dir"
     log_error "Codex App 镜像挂载失败"
   }
-  source_app="$(find "$mount_dir" -maxdepth 2 -type d -name 'Codex.app' -print -quit)"
+  source_app="$(find "$mount_dir" -maxdepth 2 -type d \( -name 'ChatGPT.app' -o -name 'Codex.app' \) -print -quit)"
   if [ -z "$source_app" ] || ! codesign --verify --deep --strict "$source_app" >/dev/null 2>&1; then
     hdiutil detach "$mount_dir" -quiet >/dev/null 2>&1 || true
     rm -rf "$tmp_dir"
     log_error "Codex App 签名校验失败，已停止安装"
   fi
 
+  app_name="$(basename "$source_app")"
+  process_name="${app_name%.app}"
   source_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$source_app/Contents/Info.plist" 2>/dev/null || true)"
-  for candidate in "/Applications/Codex.app" "$HOME/Applications/Codex.app"; do
+  for candidate in "/Applications/${app_name}" "$HOME/Applications/${app_name}"; do
     if [ -d "$candidate" ]; then
       current_app="$candidate"
       current_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$candidate/Contents/Info.plist" 2>/dev/null || true)"
@@ -773,11 +777,11 @@ EOF
     log_info "Codex App 已是最新版本 (${source_version})"
   else
     destination_root="$HOME/Applications"
-    destination_app="${destination_root}/Codex.app"
+    destination_app="${destination_root}/${app_name}"
     mkdir -p "$destination_root"
-    if pgrep -x Codex >/dev/null 2>&1; then
+    if pgrep -x "$process_name" >/dev/null 2>&1; then
       log_warn "检测到 Codex App 正在运行，将先安全退出再更新"
-      osascript -e 'tell application "Codex" to quit' >/dev/null 2>&1 || true
+      osascript -e "tell application \"${process_name}\" to quit" >/dev/null 2>&1 || true
       sleep 2
     fi
     rm -rf "$destination_app"

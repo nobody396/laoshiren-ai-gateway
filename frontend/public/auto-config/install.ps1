@@ -5,6 +5,7 @@ $ScriptVersion = '0.5.1'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
 $DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
+$DefaultCodexAppInstallerUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/windows-x64/latest.appinstaller'
 $DefaultTopupUrl = 'https://laoshirenai.com/get-subscription'
 $DefaultTools = 'all'
 $DefaultNodeIndexPrimary = 'https://npmmirror.com/mirrors/node/index.json'
@@ -43,6 +44,7 @@ $InstallCodexApp = $env:LAOSHIRENAI_INSTALL_CODEX_APP -eq '1'
 $SetupToken = if ($env:LAOSHIRENAI_SETUP_TOKEN) { $env:LAOSHIRENAI_SETUP_TOKEN } else { '' }
 $SetupExchangeUrl = if ($env:LAOSHIRENAI_SETUP_EXCHANGE_URL) { $env:LAOSHIRENAI_SETUP_EXCHANGE_URL } else { $DefaultSetupExchangeUrl }
 $CodexManifestUrl = if ($env:LAOSHIRENAI_CODEX_MANIFEST_URL) { $env:LAOSHIRENAI_CODEX_MANIFEST_URL } else { $DefaultCodexManifestUrl }
+$CodexAppInstallerUrl = if ($env:LAOSHIRENAI_CODEX_APPINSTALLER_URL) { $env:LAOSHIRENAI_CODEX_APPINSTALLER_URL } else { $DefaultCodexAppInstallerUrl }
 $script:BalanceReady = $true
 
 $script:NodeExe = ''
@@ -783,6 +785,7 @@ function Install-CodexAppIfRequested {
       [string]$Installed.Version -eq $LatestVersion) {
     $script:ExistingCodexApp = [string]$Installed.PackageFullName
     Write-Info "Codex App 已是最新版本 ($LatestVersion)"
+    Enable-CodexAppAutoUpdate -InstalledPackage $Installed -TargetArch $TargetArch
     return
   }
 
@@ -790,6 +793,25 @@ function Install-CodexAppIfRequested {
   Ensure-Directory $TempDir
   $PackagePath = Join-Path $TempDir ([IO.Path]::GetFileName([string]$Asset.name))
   try {
+    if ($TargetArch -eq 'x64') {
+      $AppInstallerPath = Join-Path $TempDir 'Codex-Windows-x64.appinstaller'
+      try {
+        Write-Info '正在通过本站 AppInstaller 安装 Codex App 并登记自动更新'
+        Invoke-WebRequest -Uri $CodexAppInstallerUrl -OutFile $AppInstallerPath
+        Add-AppxPackage -AppInstallerFile $AppInstallerPath
+        $Installed = Get-AppxPackage -Name 'OpenAI.Codex' -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($null -ne $Installed) {
+          $script:ExistingCodexApp = [string]$Installed.PackageFullName
+          Enable-CodexAppAutoUpdate -InstalledPackage $Installed -TargetArch $TargetArch
+          Write-Info 'Codex App 安装完成，并已登记启动时自动检查更新'
+          return
+        }
+        throw 'AppInstaller 执行结束但未检测到 Codex App'
+      } catch {
+        Write-WarnMessage "AppInstaller 安装失败，将降级为直接安装本站缓存 MSIX: $_"
+      }
+    }
+
     Write-Info "正在从本站缓存下载最新 Codex App ($TargetArch)"
     Invoke-WebRequest -Uri $DownloadUrl -OutFile $PackagePath
     $ActualSha = (Get-FileHash -LiteralPath $PackagePath -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -807,10 +829,38 @@ function Install-CodexAppIfRequested {
     if ([string]::IsNullOrWhiteSpace($script:ExistingCodexApp)) {
       Stop-Script 'Codex App 安装结束但未能检测到应用'
     }
+    $Installed = Get-AppxPackage -Name 'OpenAI.Codex' -ErrorAction SilentlyContinue | Select-Object -First 1
+    Enable-CodexAppAutoUpdate -InstalledPackage $Installed -TargetArch $TargetArch
     $VersionSuffix = if ([string]::IsNullOrWhiteSpace($LatestVersion)) { '' } else { " ($LatestVersion)" }
     Write-Info "Codex App 安装完成$VersionSuffix"
   } finally {
     Remove-Item -LiteralPath $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+  }
+}
+
+# Windows x64 安装后登记本站 AppInstaller 更新源。新系统会在 Codex App
+# 启动时检查更新；旧系统不支持该命令时保持现有安装，不阻断主流程。
+function Enable-CodexAppAutoUpdate {
+  param($InstalledPackage, [string]$TargetArch)
+
+  if ($TargetArch -ne 'x64' -or $null -eq $InstalledPackage) {
+    return
+  }
+  $Command = Get-Command 'Set-AppxPackageAutoUpdateSettings' -ErrorAction SilentlyContinue
+  if ($null -eq $Command) {
+    Write-WarnMessage '当前 Windows 暂不支持登记 Codex App 自动更新；以后可重新运行本命令检查最新版'
+    return
+  }
+  try {
+    Set-AppxPackageAutoUpdateSettings `
+      -PackageFamilyName ([string]$InstalledPackage.PackageFamilyName) `
+      -AppInstallerUri $CodexAppInstallerUrl `
+      -CheckOnLaunch `
+      -HoursBetweenUpdateChecks 24 `
+      -Confirm:$false
+    Write-Info 'Codex App 已开启启动时自动检查更新'
+  } catch {
+    Write-WarnMessage "Codex App 自动更新登记失败；以后可重新运行本命令检查最新版: $_"
   }
 }
 

@@ -449,6 +449,7 @@ export default {
     invoiceManagement: 'Invoices',
     buySubscription: 'Recharge / Subscription',
     resources: 'Downloads',
+    versionStatus: 'Version Status',
     docs: 'Docs',
     feedback: 'Feedback',
     feedbackAdmin: 'Feedback Admin',
@@ -469,6 +470,11 @@ export default {
   resources: {
     title: 'Downloads',
     description: 'Install Claude Code, Codex, Claude Desktop, and CC Switch'
+  },
+
+  resourceStatus: {
+    title: 'Version Status',
+    description: 'Compare cached installers with official latest versions'
   },
 
   // Auth

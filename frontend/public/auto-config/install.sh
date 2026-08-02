@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="0.5.0"
+SCRIPT_VERSION="0.5.1"
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
 DEFAULT_CODEX_MANIFEST_URL="https://laoshirenai.com/api/v1/public-downloads/codex/latest.json"
@@ -817,6 +817,8 @@ if (!config.env || typeof config.env !== 'object' || Array.isArray(config.env)) 
   config.env = {}
 }
 
+config.model = 'claude-opus-5'
+config.effortLevel = 'xhigh'
 config.env.ANTHROPIC_BASE_URL = baseUrl
 config.env.ANTHROPIC_AUTH_TOKEN = apiKey
 config.env.CLAUDE_CODE_ATTRIBUTION_HEADER = '0'
@@ -863,7 +865,7 @@ write_codex_config() {
 model_provider = "OpenAI"
 model = "gpt-5.6-sol"
 review_model = "gpt-5.6-sol"
-model_reasoning_effort = "high"
+model_reasoning_effort = "xhigh"
 disable_response_storage = true
 network_access = "enabled"
 preferred_auth_method = "apikey"

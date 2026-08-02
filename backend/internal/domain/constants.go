@@ -4,9 +4,9 @@ import "strings"
 
 // Canonical model aliases and hidden system aliases.
 const (
-	ClaudeOpusCurrentModelID     = "claude-opus-4-8"
-	ClaudeOpusCurrentModelLabel  = "Claude Opus 4.8"
-	ClaudeOpusCurrentVersionText = "4.8"
+	ClaudeOpusCurrentModelID     = "claude-opus-5"
+	ClaudeOpusCurrentModelLabel  = "Claude Opus 5"
+	ClaudeOpusCurrentVersionText = "5"
 	CodexAutoReviewModelID       = "codex-auto-review"
 	CodexAutoReviewTargetModelID = "gpt-5.5"
 )

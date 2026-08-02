@@ -35,7 +35,7 @@ export const DEFAULT_OPENAI_MODEL = 'gpt-5.6-sol'
 const DEFAULT_CLAUDE_MODELS = {
   haiku: 'claude-haiku-4-5',
   sonnet: 'claude-sonnet-4-6[1M]',
-  opus: 'claude-opus-4-8[1M]'
+  opus: 'claude-opus-5[1M]'
 } as const
 
 /**
@@ -195,6 +195,7 @@ export const buildCcsImportDeeplink = ({
   }
 
   if (target === 'claude') {
+    params.set('model', 'claude-opus-5')
     const groupModel = key.group?.default_mapped_model?.trim()
     if (platform === 'anthropic' && groupModel) {
       params.set('haikuModel', groupModel)

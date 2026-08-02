@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.5.0'
+$ScriptVersion = '0.5.1'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
 $DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
@@ -839,6 +839,8 @@ function Write-ClaudeConfig {
     $Config | Add-Member -NotePropertyName env -NotePropertyValue ([pscustomobject]@{}) -Force
   }
 
+  $Config | Add-Member -NotePropertyName model -NotePropertyValue 'claude-opus-5' -Force
+  $Config | Add-Member -NotePropertyName effortLevel -NotePropertyValue 'xhigh' -Force
   $Config.env | Add-Member -NotePropertyName ANTHROPIC_BASE_URL -NotePropertyValue $BaseUrl -Force
   $Config.env | Add-Member -NotePropertyName ANTHROPIC_AUTH_TOKEN -NotePropertyValue $ClaudeApiKey -Force
   $Config.env | Add-Member -NotePropertyName CLAUDE_CODE_ATTRIBUTION_HEADER -NotePropertyValue '0' -Force
@@ -882,7 +884,7 @@ function Write-CodexTomlConfig {
 model_provider = "OpenAI"
 model = "gpt-5.6-sol"
 review_model = "gpt-5.6-sol"
-model_reasoning_effort = "high"
+model_reasoning_effort = "xhigh"
 disable_response_storage = true
 network_access = "enabled"
 preferred_auth_method = "apikey"

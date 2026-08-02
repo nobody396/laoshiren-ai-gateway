@@ -554,6 +554,8 @@ $env:ANTHROPIC_AUTH_TOKEN="${apiKey}"`
     : '%userprofile%\\.claude\\settings.json'
 
   const vscodeContent = `{
+  "model": "claude-opus-5",
+  "effortLevel": "xhigh",
   "env": {
     "ANTHROPIC_BASE_URL": "${baseUrl}",
     "ANTHROPIC_AUTH_TOKEN": "${apiKey}",

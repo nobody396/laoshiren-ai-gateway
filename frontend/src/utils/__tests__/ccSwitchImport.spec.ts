@@ -81,7 +81,9 @@ describe('CC Switch provider deeplinks', () => {
     const url = parseDeepLink('claude', true)
     expect(url.searchParams.get('app')).toBe('claude')
     expect(url.searchParams.get('endpoint')).toBe('https://api.laoshirenai.com')
+    expect(url.searchParams.get('model')).toBe('claude-opus-5')
     expect(url.searchParams.get('sonnetModel')).toBe('claude-sonnet-4-6[1M]')
+    expect(url.searchParams.get('opusModel')).toBe('claude-opus-5[1M]')
   })
 
   it('avoids duplicating /v1 when the public API base already includes it', () => {

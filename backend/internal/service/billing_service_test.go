@@ -196,13 +196,16 @@ func TestGetModelPricing_OpenAIGPT56OfficialPricing(t *testing.T) {
 	svc := newTestBillingService()
 
 	cases := map[string]struct {
-		model  string
-		input  float64
-		output float64
+		model       string
+		input       float64
+		output      float64
+		cacheWrite  float64
+		cacheRead   float64
+		longContext bool
 	}{
-		"sol":   {model: "gpt-5.6-sol", input: 5e-6, output: 30e-6},
-		"terra": {model: "gpt-5.6-terra-high", input: 2.5e-6, output: 15e-6},
-		"luna":  {model: "gpt-5.6-luna", input: 1e-6, output: 6e-6},
+		"sol":   {model: "gpt-5.6-sol", input: 5e-6, output: 30e-6, cacheWrite: 5e-6, cacheRead: 0.5e-6},
+		"terra": {model: "gpt-5.6-terra-high", input: 2e-6, output: 12e-6, cacheWrite: 2.5e-6, cacheRead: 0.2e-6, longContext: true},
+		"luna":  {model: "gpt-5.6-luna", input: 0.2e-6, output: 1.2e-6, cacheWrite: 0.25e-6, cacheRead: 0.02e-6, longContext: true},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -210,6 +213,13 @@ func TestGetModelPricing_OpenAIGPT56OfficialPricing(t *testing.T) {
 			require.NoError(t, err)
 			require.InDelta(t, tc.input, pricing.InputPricePerToken, 1e-12)
 			require.InDelta(t, tc.output, pricing.OutputPricePerToken, 1e-12)
+			require.InDelta(t, tc.cacheWrite, pricing.CacheCreationPricePerToken, 1e-12)
+			require.InDelta(t, tc.cacheRead, pricing.CacheReadPricePerToken, 1e-12)
+			if tc.longContext {
+				require.Equal(t, 272000, pricing.LongContextInputThreshold)
+				require.InDelta(t, 2.0, pricing.LongContextInputMultiplier, 1e-12)
+				require.InDelta(t, 1.5, pricing.LongContextOutputMultiplier, 1e-12)
+			}
 		})
 	}
 }
@@ -422,8 +432,8 @@ func TestGetFallbackPricing_FamilyMatching(t *testing.T) {
 		{name: "gemini explicit fallback", model: "gemini-3-1-pro", expectedInput: 2e-6},
 		{name: "gemini unknown no fallback", model: "gemini-2.0-pro", expectNilPricing: true},
 		{name: "openai gpt5.6 sol", model: "gpt-5.6-sol", expectedInput: 5e-6},
-		{name: "openai gpt5.6 terra", model: "gpt-5.6-terra-high", expectedInput: 2.5e-6},
-		{name: "openai gpt5.6 luna", model: "gpt-5.6-luna", expectedInput: 1e-6},
+		{name: "openai gpt5.6 terra", model: "gpt-5.6-terra-high", expectedInput: 2e-6},
+		{name: "openai gpt5.6 luna", model: "gpt-5.6-luna", expectedInput: 0.2e-6},
 		{name: "openai gpt5.5", model: "gpt-5.5-openai-compact", expectedInput: 5e-6},
 		{name: "openai gpt5.1", model: "gpt-5.1", expectedInput: 1.25e-6},
 		{name: "openai gpt5.4", model: "gpt-5.4", expectedInput: 2.5e-6},

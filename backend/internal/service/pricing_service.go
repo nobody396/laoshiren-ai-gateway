@@ -32,22 +32,28 @@ var (
 		SupportsPromptCaching:       true,
 	}
 	openAIGPT56TerraFallbackPricing = &LiteLLMModelPricing{
-		InputCostPerToken:           2.5e-06, // $2.50 per MTok
-		OutputCostPerToken:          1.5e-05, // $15 per MTok
-		CacheCreationInputTokenCost: 2.5e-06,
-		CacheReadInputTokenCost:     2.5e-07,
-		LiteLLMProvider:             "openai",
-		Mode:                        "chat",
-		SupportsPromptCaching:       true,
+		InputCostPerToken:               2e-06,   // $2 per MTok
+		OutputCostPerToken:              1.2e-05, // $12 per MTok
+		CacheCreationInputTokenCost:     2.5e-06, // 1.25x input
+		CacheReadInputTokenCost:         2e-07,
+		LongContextInputTokenThreshold:  272000,
+		LongContextInputCostMultiplier:  2.0,
+		LongContextOutputCostMultiplier: 1.5,
+		LiteLLMProvider:                 "openai",
+		Mode:                            "chat",
+		SupportsPromptCaching:           true,
 	}
 	openAIGPT56LunaFallbackPricing = &LiteLLMModelPricing{
-		InputCostPerToken:           1e-06, // $1 per MTok
-		OutputCostPerToken:          6e-06, // $6 per MTok
-		CacheCreationInputTokenCost: 1e-06,
-		CacheReadInputTokenCost:     1e-07,
-		LiteLLMProvider:             "openai",
-		Mode:                        "chat",
-		SupportsPromptCaching:       true,
+		InputCostPerToken:               2e-07,   // $0.20 per MTok
+		OutputCostPerToken:              1.2e-06, // $1.20 per MTok
+		CacheCreationInputTokenCost:     2.5e-07, // 1.25x input
+		CacheReadInputTokenCost:         2e-08,
+		LongContextInputTokenThreshold:  272000,
+		LongContextInputCostMultiplier:  2.0,
+		LongContextOutputCostMultiplier: 1.5,
+		LiteLLMProvider:                 "openai",
+		Mode:                            "chat",
+		SupportsPromptCaching:           true,
 	}
 	openAIModelDatePattern     = regexp.MustCompile(`-\d{8}$`)
 	openAIModelBasePattern     = regexp.MustCompile(`^(gpt-\d+(?:\.\d+)?)(?:-|$)`)

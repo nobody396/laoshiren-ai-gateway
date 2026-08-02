@@ -348,7 +348,7 @@
               <div
                 v-if="getAutoConfigTargetForKey(row) || (!publicSettings?.hide_ccs_import_button && canImportToCcs(row))"
                 class="flex items-center gap-1 rounded-lg"
-                :data-tour="onboardingCreatedKeyId === row.id ? 'keys-created-setup-options' : undefined"
+                data-tour="keys-setup-options"
               >
                 <!-- Client Auto Config Button -->
                 <button
@@ -1429,7 +1429,6 @@ const selectedKey = ref<ApiKey | null>(null)
 const copiedKeyId = ref<number | null>(null)
 const copiedBaseUrl = ref(false)
 const configuringKeyId = ref<number | null>(null)
-const onboardingCreatedKeyId = ref<number | null>(null)
 const groupSelectorKeyId = ref<number | null>(null)
 const publicSettings = ref<PublicSettings | null>(null)
 const dropdownRef = ref<HTMLElement | null>(null)
@@ -2043,7 +2042,7 @@ const handleSubmit = async () => {
       appStore.showSuccess(t('keys.keyUpdatedSuccess'))
     } else {
       const customKey = formData.value.use_custom_key ? formData.value.custom_key : undefined
-      const createdKey = await keysAPI.create(
+      await keysAPI.create(
         formData.value.name,
         formData.value.group_id,
         customKey,
@@ -2057,7 +2056,6 @@ const handleSubmit = async () => {
       // Only advance tour if active, on submit step, and creation succeeded
       shouldAdvanceKeyCreationTour = onboardingStore.isCurrentStep('[data-tour="key-form-submit"]')
       if (shouldAdvanceKeyCreationTour) {
-        onboardingCreatedKeyId.value = createdKey.id
         filterSearch.value = ''
         filterStatus.value = ''
         filterGroupId.value = ''

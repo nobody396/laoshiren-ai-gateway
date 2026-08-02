@@ -4,6 +4,14 @@ export type TourStep = DriveStep & {
   optional?: boolean
 }
 
+const visibleTourElement = (selector: string): (() => Element) => () => {
+  const candidates = Array.from(document.querySelectorAll<HTMLElement>(selector))
+  return candidates.find((element) => {
+    const rect = element.getBoundingClientRect()
+    return rect.width > 0 && rect.height > 0
+  }) as Element
+}
+
 /**
  * 管理员完整引导流程
  * 交互式引导：指引用户实际操作
@@ -341,7 +349,9 @@ export const getUserSteps = (t: (key: string) => string): TourStep[] => [
     }
   },
   {
-    element: '[data-tour="keys-created-setup-options"]',
+    // DataTable renders separate mobile and desktop action slots. Pick the
+    // currently visible one so Driver.js does not attach to the hidden copy.
+    element: visibleTourElement('[data-tour="keys-setup-options"]'),
     optional: true,
     popover: {
       title: t('onboarding.user.useOptions.title'),

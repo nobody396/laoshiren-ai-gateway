@@ -17,10 +17,25 @@ describe('user onboarding flow', () => {
       '[data-tour="keys-create-btn"]',
       '[data-tour="key-form-name"]',
       '[data-tour="key-form-group"]',
-      '[data-tour="key-form-submit"]',
-      '[data-tour="keys-created-setup-options"]'
+      '[data-tour="key-form-submit"]'
     ])
+    expect(typeof steps.at(-1)?.element).toBe('function')
     expect(steps.at(-1)?.optional).toBe(true)
+  })
+
+  it('highlights the visible setup actions instead of DataTable hidden duplicate', () => {
+    document.body.innerHTML = `
+      <div data-tour="keys-setup-options" id="hidden"></div>
+      <div data-tour="keys-setup-options" id="visible"></div>
+    `
+    const hidden = document.querySelector<HTMLElement>('#hidden')!
+    const visible = document.querySelector<HTMLElement>('#visible')!
+    hidden.getBoundingClientRect = () => ({ width: 0, height: 0 }) as DOMRect
+    visible.getBoundingClientRect = () => ({ width: 160, height: 46 }) as DOMRect
+
+    const element = getUserSteps((key) => key).at(-1)?.element
+    expect(typeof element).toBe('function')
+    expect((element as () => Element)()).toBe(visible)
   })
 
   it('does not route the main onboarding through docs or a separate CC Switch step', () => {

@@ -6,11 +6,14 @@ import { describe, expect, it } from 'vitest'
 const readPublicScript = (name: string) =>
   readFileSync(resolve(process.cwd(), 'public', 'auto-config', name), 'utf8')
 
+const readUseKeyModal = () =>
+  readFileSync(resolve(process.cwd(), 'src', 'components', 'keys', 'UseKeyModal.vue'), 'utf8')
+
 describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on macOS and Linux', () => {
     const script = readPublicScript('install.sh')
 
-    expect(script).toContain('SCRIPT_VERSION="0.5.0"')
+    expect(script).toContain('SCRIPT_VERSION="0.5.1"')
     expect(script).toContain('EXISTING_CLAUDE_COMMAND="$(get_usable_client_command claude || true)"')
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('exchange_setup_ticket')
@@ -22,7 +25,7 @@ describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on Windows', () => {
     const script = readPublicScript('install.ps1')
 
-    expect(script).toContain("$ScriptVersion = '0.5.0'")
+    expect(script).toContain("$ScriptVersion = '0.5.1'")
     expect(script).toContain("Get-UsableClientCommand -CommandName 'claude'")
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('Exchange-SetupTicket')
@@ -37,8 +40,25 @@ describe('client auto-config scripts', () => {
       expect(script).toContain('ANTHROPIC_BASE_URL')
       expect(script).toContain('ANTHROPIC_AUTH_TOKEN')
       expect(script).toContain('CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY')
+      expect(script).toContain('claude-opus-5')
+      expect(script).toContain('effortLevel')
+      expect(script).toContain('xhigh')
       expect(script).toContain('model = "gpt-5.6-sol"')
       expect(script).not.toContain('model = "gpt-5.6"')
     }
+  })
+
+  it('uses xhigh as the explicit Codex reasoning default on every platform', () => {
+    for (const name of ['install.sh', 'install.ps1']) {
+      const script = readPublicScript(name)
+      expect(script).toContain('model_reasoning_effort = "xhigh"')
+      expect(script).not.toContain('model_reasoning_effort = "high"')
+    }
+  })
+
+  it('uses xhigh as the Claude Code default in the manual settings template', () => {
+    const modal = readUseKeyModal()
+    expect(modal).toContain('"model": "claude-opus-5"')
+    expect(modal).toContain('"effortLevel": "xhigh"')
   })
 })

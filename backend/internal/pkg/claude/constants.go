@@ -105,6 +105,12 @@ var DefaultModels = []Model{
 		ID:          domain.ClaudeOpusCurrentModelID,
 		Type:        "model",
 		DisplayName: domain.ClaudeOpusCurrentModelLabel,
+		CreatedAt:   "2026-08-02T00:00:00Z",
+	},
+	{
+		ID:          "claude-opus-4-8",
+		Type:        "model",
+		DisplayName: "Claude Opus 4.8",
 		CreatedAt:   "2026-05-28T00:00:00Z",
 	},
 	{

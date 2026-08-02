@@ -176,10 +176,11 @@ func TestAffiliateAgentRepository_OperationsSummaryAndPartnerPerformance(t *test
 	_, err = integrationDB.ExecContext(ctx, `
 		INSERT INTO agent_cash_commission_entries (
 			agent_id, consumer_user_id, entry_type, amount_micros, posting_status,
+			source_amount_micros, customer_rebate_rate_bps, agent_commission_rate_bps,
 			source_type, source_id, idempotency_key, occurred_at
 		) VALUES
-			($1, $2, 'earned', 1000000, 'posted', 'integration', 1, $3 || ':earned', NOW()),
-			($1, NULL, 'withdrawal_hold', -400000, 'posted', 'integration', 2, $3 || ':hold', NOW())
+			($1, $2, 'earned', 1000000, 'posted', 20000000, 500, 500, 'integration', 1, $3 || ':earned', NOW()),
+			($1, NULL, 'withdrawal_hold', -400000, 'posted', NULL, NULL, NULL, 'integration', 2, $3 || ':hold', NOW())
 	`, agent.ID, direct.ID, key)
 	require.NoError(t, err)
 	_, err = integrationDB.ExecContext(ctx, `
@@ -219,6 +220,18 @@ func TestAffiliateAgentRepository_OperationsSummaryAndPartnerPerformance(t *test
 	require.Equal(t, int64(50_000_000), detail.DirectUsers[0].RechargeMicros)
 	require.Equal(t, int64(5_000_000), detail.DirectUsers[0].ConsumptionMicros)
 	require.Len(t, detail.CommissionLedger, 2)
+	var earned *service.AffiliatePartnerCommissionEntry
+	for index := range detail.CommissionLedger {
+		if detail.CommissionLedger[index].EntryType == "earned" {
+			earned = &detail.CommissionLedger[index]
+			break
+		}
+	}
+	require.NotNil(t, earned)
+	require.Equal(t, int64(20_000_000), earned.SourceAmountMicros)
+	require.Equal(t, int32(500), earned.CustomerRebateRateBPS)
+	require.Equal(t, int32(500), earned.AgentCommissionRateBPS)
+	require.Equal(t, "integration", earned.SourceType)
 	require.Len(t, detail.Withdrawals, 1)
 
 	summary, err := repo.GetOperationsSummary(ctx)

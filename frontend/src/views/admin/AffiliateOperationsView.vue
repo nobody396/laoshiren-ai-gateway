@@ -679,14 +679,23 @@
         </section>
       </template>
 
-      <div v-if="performanceDetailAgent" class="fixed inset-0 z-50 flex justify-end bg-black/60" role="dialog" aria-modal="true" aria-labelledby="performance-detail-title" @click.self="closePerformanceDetail">
-        <section class="h-full w-full max-w-5xl overflow-y-auto bg-white shadow-xl dark:bg-dark-900">
+      <Teleport to="body">
+        <div
+          v-if="performanceDetailAgent"
+          data-testid="affiliate-performance-detail"
+          class="fixed inset-0 z-[60] flex justify-end bg-black/60"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="performance-detail-title"
+          @click.self="closePerformanceDetail"
+        >
+          <section class="h-[100dvh] w-full max-w-5xl overscroll-contain overflow-y-auto bg-white shadow-xl dark:bg-dark-900">
           <header class="sticky top-0 z-20 flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 bg-white px-6 py-5 dark:border-dark-800 dark:bg-dark-900">
-            <div>
+            <div class="min-w-0 flex-1">
               <p class="text-xs font-semibold text-primary-700 dark:text-primary-300">合伙人业绩明细</p>
-              <h2 id="performance-detail-title" class="mt-1 text-xl font-bold text-gray-950 dark:text-white">#{{ performanceDetailAgent.agent_id }} · {{ performanceDetailAgent.username || performanceDetailAgent.email }}</h2>
+              <h2 id="performance-detail-title" class="mt-1 break-all text-xl font-bold text-gray-950 dark:text-white">#{{ performanceDetailAgent.agent_id }} · {{ performanceDetailAgent.username || performanceDetailAgent.email }}</h2>
             </div>
-            <button class="btn btn-secondary btn-sm" @click="closePerformanceDetail">关闭</button>
+            <button class="btn btn-secondary btn-sm shrink-0" @click="closePerformanceDetail">关闭</button>
           </header>
           <div class="space-y-6 p-6">
             <div class="flex flex-wrap items-end gap-3">
@@ -707,13 +716,32 @@
                 <div class="max-h-80 overflow-auto"><table class="min-w-[900px] divide-y divide-gray-100 text-sm dark:divide-dark-800"><thead class="sticky top-0 bg-gray-50 text-xs text-gray-500 dark:bg-dark-900 dark:text-dark-400"><tr><th class="px-4 py-3 text-left">用户</th><th class="px-4 py-3 text-left">加入时间</th><th class="px-4 py-3 text-right">充值</th><th class="px-4 py-3 text-right">消费</th><th class="px-4 py-3 text-right">产生佣金</th></tr></thead><tbody class="divide-y divide-gray-100 dark:divide-dark-800"><tr v-for="user in performanceDetail.direct_users" :key="user.user_id"><td class="px-4 py-3"><p class="font-medium">#{{ user.user_id }} · {{ user.username || user.email }}</p><p class="text-xs text-gray-500">{{ user.email }}</p></td><td class="px-4 py-3">{{ formatBeijingDate(user.joined_at) }}</td><td class="px-4 py-3 text-right">{{ formatMicros(user.recharge_micros, '¥') }}</td><td class="px-4 py-3 text-right">{{ formatMicros(user.consumption_micros, '¥') }}</td><td class="px-4 py-3 text-right">{{ formatMicros(user.generated_commission_micros, '¥') }}</td></tr><tr v-if="!performanceDetail.direct_users.length"><td colspan="5" class="px-4 py-8 text-center text-gray-500">该区间暂无直属用户业绩</td></tr></tbody></table></div>
               </section>
               <div class="grid gap-6 xl:grid-cols-2">
-                <section class="card overflow-hidden"><div class="border-b border-gray-100 px-5 py-4 dark:border-dark-800"><h3 class="font-semibold">佣金流水（最近100笔）</h3></div><div class="max-h-80 overflow-auto"><div v-for="entry in performanceDetail.commission_ledger" :key="entry.id" class="flex items-center justify-between gap-4 border-b border-gray-100 px-5 py-3 text-sm dark:border-dark-800"><div><p>#{{ entry.id }} · 用户 #{{ entry.consumer_user_id }}</p><p class="text-xs text-gray-500">{{ formatCommissionEntryType(entry.entry_type) }} · {{ formatBeijingTime(entry.occurred_at) }}</p></div><strong :class="entry.amount_micros < 0 ? 'text-red-600' : 'text-green-600'">{{ formatMicros(entry.amount_micros, '¥') }}</strong></div><p v-if="!performanceDetail.commission_ledger.length" class="p-6 text-center text-sm text-gray-500">暂无佣金流水</p></div></section>
+                <section class="card overflow-hidden">
+                  <div class="border-b border-gray-100 px-5 py-4 dark:border-dark-800">
+                    <h3 class="font-semibold">佣金流水（最近100笔）</h3>
+                    <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-dark-400">逐笔佣金按微单位精确记录；不足 0.01 元时展示到 6 位小数，不是 0 元。</p>
+                  </div>
+                  <div class="max-h-80 overflow-auto">
+                    <div v-for="entry in performanceDetail.commission_ledger" :key="entry.id" class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-gray-100 px-5 py-3 text-sm dark:border-dark-800">
+                      <div class="min-w-0">
+                        <p>#{{ entry.id }} · {{ entry.consumer_user_id ? `用户 #${entry.consumer_user_id}` : '系统流水' }}</p>
+                        <p class="text-xs text-gray-500 dark:text-dark-400">{{ formatCommissionEntryType(entry.entry_type) }} · {{ formatBeijingTime(entry.occurred_at) }}</p>
+                        <p v-if="entry.source_amount_micros" class="mt-1 break-words text-xs text-gray-500 dark:text-dark-400">
+                          对应消费 {{ formatPreciseMicros(entry.source_amount_micros, '¥') }}<template v-if="entry.customer_rebate_rate_bps"> · 用户返利 {{ formatRateBPS(entry.customer_rebate_rate_bps) }}</template><template v-if="entry.agent_commission_rate_bps"> · 合伙人 {{ formatRateBPS(entry.agent_commission_rate_bps) }}</template>
+                        </p>
+                      </div>
+                      <strong class="whitespace-nowrap tabular-nums" :class="entry.amount_micros < 0 ? 'text-red-600' : 'text-green-600'">{{ formatPreciseMicros(entry.amount_micros, '¥') }}</strong>
+                    </div>
+                    <p v-if="!performanceDetail.commission_ledger.length" class="p-6 text-center text-sm text-gray-500">暂无佣金流水</p>
+                  </div>
+                </section>
                 <section class="card overflow-hidden"><div class="border-b border-gray-100 px-5 py-4 dark:border-dark-800"><h3 class="font-semibold">提现记录（最近100笔）</h3></div><div class="max-h-80 overflow-auto"><div v-for="withdrawal in performanceDetail.withdrawals" :key="withdrawal.id" class="flex items-center justify-between gap-4 border-b border-gray-100 px-5 py-3 text-sm dark:border-dark-800"><div><p>#{{ withdrawal.id }} · {{ formatWithdrawalStatus(withdrawal.status) }}</p><p class="text-xs text-gray-500">{{ formatBeijingTime(withdrawal.requested_at) }} · {{ withdrawal.payment_reference || withdrawal.failure_reason || '—' }}</p></div><strong>{{ formatMicros(withdrawal.amount_micros, '¥') }}</strong></div><p v-if="!performanceDetail.withdrawals.length" class="p-6 text-center text-sm text-gray-500">暂无提现记录</p></div></section>
               </div>
             </template>
           </div>
-        </section>
-      </div>
+          </section>
+        </div>
+      </Teleport>
 
       <div
         v-if="selfCommissionDialogItem"
@@ -1017,6 +1045,17 @@ function unitsToMicros(value: number) {
 
 function formatMicros(value: number, symbol: string) {
   return `${symbol}${new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(microsToUnits(value))}`
+}
+
+function formatPreciseMicros(value: number, symbol: string) {
+  return `${symbol}${new Intl.NumberFormat('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6
+  }).format(microsToUnits(value))}`
+}
+
+function formatRateBPS(value: number) {
+  return `${new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value / 100)}%`
 }
 
 function formatProgramMode(mode: AffiliateProgramSettings['mode']) {

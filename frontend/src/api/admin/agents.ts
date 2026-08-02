@@ -251,6 +251,10 @@ export interface AffiliatePartnerCommissionEntry {
   entry_type: string
   posting_status: string
   amount_micros: number
+  source_amount_micros: number
+  customer_rebate_rate_bps: number
+  agent_commission_rate_bps: number
+  source_type: string
   occurred_at: string
 }
 

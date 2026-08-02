@@ -80,6 +80,7 @@ async function openPartnersTab(wrapper: ReturnType<typeof mountView>) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  document.body.innerHTML = ''
   api.getAffiliateProgram.mockResolvedValue(null)
   api.getAffiliateCommercialPolicy.mockResolvedValue(null)
   api.getAffiliateCommunity.mockResolvedValue({
@@ -230,7 +231,18 @@ describe('AffiliateOperationsView actionable queues and performance', () => {
         user_id: 9, email: 'user@example.com', username: '用户乙', joined_at: '2026-07-02T00:00:00Z',
         recharge_micros: 200000000, consumption_micros: 120000000, generated_commission_micros: 12000000
       }],
-      commission_ledger: [],
+      commission_ledger: [{
+        id: 92,
+        consumer_user_id: 9,
+        entry_type: 'earned',
+        posting_status: 'posted',
+        amount_micros: 901,
+        source_amount_micros: 18025,
+        customer_rebate_rate_bps: 500,
+        agent_commission_rate_bps: 500,
+        source_type: 'confirmed_consumption',
+        occurred_at: '2026-07-02T00:00:00Z'
+      }],
       withdrawals: []
     })
     const wrapper = mountView()
@@ -241,8 +253,14 @@ describe('AffiliateOperationsView actionable queues and performance', () => {
     await flushPromises()
 
     expect(api.getAffiliatePartnerPerformance).toHaveBeenCalledWith(8, undefined)
-    expect(wrapper.text()).toContain('直属用户业绩')
-    expect(wrapper.text()).toContain('用户乙')
-    expect(wrapper.text()).toContain('¥200')
+    const detail = document.body.querySelector('[data-testid="affiliate-performance-detail"]')
+    expect(detail).not.toBeNull()
+    expect(detail?.classList.contains('z-[60]')).toBe(true)
+    expect(detail?.textContent).toContain('直属用户业绩')
+    expect(detail?.textContent).toContain('用户乙')
+    expect(detail?.textContent).toContain('¥200')
+    expect(detail?.textContent).toContain('¥0.000901')
+    expect(detail?.textContent).toContain('对应消费 ¥0.018025 · 用户返利 5% · 合伙人 5%')
+    wrapper.unmount()
   })
 })

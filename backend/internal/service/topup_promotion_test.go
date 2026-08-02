@@ -16,9 +16,9 @@ func TestQuoteTopupCredit(t *testing.T) {
 	}{
 		{name: "ordinary 100", paidFen: 10_000, bonusFen: 0, creditFen: 10_000},
 		{name: "ordinary 499", paidFen: 49_900, bonusFen: 0, creditFen: 49_900},
-		{name: "promotion 500", paidFen: 50_000, bonusFen: 7_500, creditFen: 57_500},
+		{name: "promotion 500", paidFen: 50_000, bonusFen: 5_000, creditFen: 55_000},
 		{name: "non-card 600", paidFen: 60_000, bonusFen: 0, creditFen: 60_000},
-		{name: "promotion 1000", paidFen: 100_000, bonusFen: 20_000, creditFen: 120_000},
+		{name: "promotion 1000", paidFen: 100_000, bonusFen: 10_000, creditFen: 110_000},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -35,6 +35,21 @@ func TestStoredTopupCreditQuoteDoesNotRetroactivelyPromoteHistoricalOrder(t *tes
 	quote := StoredTopupCreditQuote(TopupPromotion500PaidFen, 0)
 	require.Equal(t, TopupPromotion500PaidFen, quote.CreditedAmountCNYFen)
 	require.Zero(t, quote.BonusAmountCNYFen)
+}
+
+func TestTopupPromotionCatalogKeepsThirtyPercentShopStressMargin(t *testing.T) {
+	for _, paidFen := range []int{TopupPromotion500PaidFen, TopupPromotion1000PaidFen} {
+		quote := QuoteTopupCredit(paidFen)
+		paid := float64(quote.PaidAmountCNYFen) / 100
+		credited := float64(quote.CreditedAmountCNYFen) / 100
+		margin := affiliateContributionMargin(
+			paid,
+			credited*affiliatePayAsYouGoStressCostPerCredit,
+			AffiliateCommercialShopFeeBPS,
+			AffiliateCommercialMaxRewardPoolBPS+AffiliateCommercialOperationalReserveBPS,
+		)
+		require.InDelta(t, 30.0, margin, 0.000001, "paid=%v credited=%v", paid, credited)
+	}
 }
 
 func TestBuildTopupBalanceLotsExcludesPromotionFromAffiliate(t *testing.T) {
@@ -61,7 +76,7 @@ func TestBuildTopupBalanceLotsExcludesPromotionFromAffiliate(t *testing.T) {
 
 	bonus := lots[1]
 	require.Equal(t, AffiliateSourceGift, bonus.SourceType)
-	require.Equal(t, int64(200_000_000), bonus.AmountMicros)
+	require.Equal(t, int64(100_000_000), bonus.AmountMicros)
 	require.Equal(t, AffiliateSourcePolicyNone, bonus.AffiliatePolicy)
 	require.Zero(t, bonus.DirectPartnerID)
 	require.Zero(t, bonus.CustomerRebateRateBPS)

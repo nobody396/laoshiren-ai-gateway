@@ -7,9 +7,9 @@ import (
 
 const (
 	TopupPromotion500PaidFen     = 50_000
-	TopupPromotion500BonusFen    = 7_500
+	TopupPromotion500BonusFen    = 5_000
 	TopupPromotion1000PaidFen    = 100_000
-	TopupPromotion1000BonusFen   = 20_000
+	TopupPromotion1000BonusFen   = 10_000
 	topupCNYFenToAffiliateMicros = int64(10_000)
 )
 

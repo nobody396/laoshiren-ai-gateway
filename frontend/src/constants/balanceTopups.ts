@@ -8,8 +8,8 @@ export type PromotionalBalanceTopup = {
 }
 
 export const PROMOTIONAL_BALANCE_TOPUPS: readonly PromotionalBalanceTopup[] = [
-  { paidAmountCny: 500, bonusAmountCny: 75, creditedAmountCny: 575, bonusPercent: 15 },
-  { paidAmountCny: 1000, bonusAmountCny: 200, creditedAmountCny: 1200, bonusPercent: 20 }
+  { paidAmountCny: 500, bonusAmountCny: 50, creditedAmountCny: 550, bonusPercent: 10 },
+  { paidAmountCny: 1000, bonusAmountCny: 100, creditedAmountCny: 1100, bonusPercent: 10 }
 ] as const
 
 const supportedBalanceTopupAmounts = new Set<number>([

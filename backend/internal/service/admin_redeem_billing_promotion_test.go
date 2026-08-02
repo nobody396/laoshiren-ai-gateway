@@ -11,7 +11,7 @@ func TestSummarizeRedeemCodeBillingUsesActualPaidValue(t *testing.T) {
 	codes := []*dbent.RedeemCode{
 		{
 			ID:          1,
-			Value:       575,
+			Value:       550,
 			PaidValue:   500,
 			Purpose:     RedeemCodePurposeSaleRecharge,
 			SalesStatus: RedeemCodeSalesStatusSold,

@@ -35,5 +35,5 @@ func TestTopupOrderRepositoryPersistsPromotionBonus(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, service.TopupPromotion1000PaidFen, got.AmountCNYFen)
 	require.Equal(t, service.TopupPromotion1000BonusFen, got.BonusAmountCNYFen)
-	require.Equal(t, 120_000, service.StoredTopupCreditQuote(got.AmountCNYFen, got.BonusAmountCNYFen).CreditedAmountCNYFen)
+	require.Equal(t, 110_000, service.StoredTopupCreditQuote(got.AmountCNYFen, got.BonusAmountCNYFen).CreditedAmountCNYFen)
 }

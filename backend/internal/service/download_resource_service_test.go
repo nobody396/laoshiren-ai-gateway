@@ -257,18 +257,16 @@ func TestDownloadResourceServiceSyncCodexCachesSelectedAssets(t *testing.T) {
 				Assets: []GitHubAsset{
 					{Name: "OpenAI.Codex_26.707.3748.0_x64__2p2nqsd0c76g0.Msix", BrowserDownloadURL: "https://example.test/codex-msix", Size: int64(len("codex-msix"))},
 					{Name: "OpenAI.Codex_26.707.3748.0_arm64__2p2nqsd0c76g0.Msix", BrowserDownloadURL: "https://example.test/codex-msix-arm64", Size: int64(len("codex-msix-arm64"))},
-					{Name: "Codex-mac-arm64.dmg", BrowserDownloadURL: "https://example.test/codex-mac-app-arm64", Size: int64(len("codex-mac-app-arm64"))},
-					{Name: "Codex-mac-x64.dmg", BrowserDownloadURL: "https://example.test/codex-mac-app-x64", Size: int64(len("codex-mac-app-x64"))},
+					{Name: "Codex-mac-arm64.dmg", BrowserDownloadURL: "https://example.test/skip-mirror-mac", Size: int64(len("skip-mirror-mac"))},
 				},
 			},
 		},
 		files: map[string][]byte{
-			"https://example.test/codex-mac":           []byte("codex-mac"),
-			"https://example.test/codex-app":           []byte("codex-app"),
-			"https://example.test/codex-msix":          []byte("codex-msix"),
-			"https://example.test/codex-msix-arm64":    []byte("codex-msix-arm64"),
-			"https://example.test/codex-mac-app-arm64": []byte("codex-mac-app-arm64"),
-			"https://example.test/codex-mac-app-x64":   []byte("codex-mac-app-x64"),
+			"https://example.test/codex-mac":        []byte("codex-mac"),
+			"https://example.test/codex-app":        []byte("codex-app"),
+			"https://example.test/codex-msix":       []byte("codex-msix"),
+			"https://example.test/codex-msix-arm64": []byte("codex-msix-arm64"),
+			"https://example.test/chatgpt.dmg":      []byte("official-chatgpt-mac"),
 		},
 	}
 	svc := NewDownloadResourceService(&config.Config{
@@ -278,6 +276,7 @@ func TestDownloadResourceServiceSyncCodexCachesSelectedAssets(t *testing.T) {
 			UpdateIntervalHours:    1,
 			CodexRepo:              "openai/codex",
 			CodexWindowsMirrorRepo: "Wangnov/codex-app-mirror",
+			CodexMacOfficialURL:    "https://example.test/chatgpt.dmg",
 			MaxAssetBytes:          1024,
 		},
 	}, stub)
@@ -288,14 +287,14 @@ func TestDownloadResourceServiceSyncCodexCachesSelectedAssets(t *testing.T) {
 	manifest, err := svc.ListTool(context.Background(), codexToolID)
 	require.NoError(t, err)
 	require.Equal(t, "codex-app-26.707.31428", manifest.Version)
-	require.Len(t, manifest.Assets, 5)
+	require.Len(t, manifest.Assets, 4)
 	require.Equal(t, "macos", manifest.Assets[0].Platform)
 	require.Equal(t, "windows", manifest.Assets[1].Platform)
 	require.Equal(t, "x64", manifest.Assets[1].Arch)
 	require.Equal(t, "arm64", manifest.Assets[2].Arch)
 	require.Equal(t, "macos", manifest.Assets[3].Platform)
-	require.Equal(t, "arm64", manifest.Assets[3].Arch)
-	require.Equal(t, "x64", manifest.Assets[4].Arch)
+	require.Equal(t, "universal", manifest.Assets[3].Arch)
+	require.Equal(t, "ChatGPT.dmg", manifest.Assets[3].Name)
 	require.NotEmpty(t, manifest.Assets[0].SHA256)
 }
 
@@ -372,4 +371,27 @@ func TestDownloadResourceServiceSyncClaudeDesktopCachesStaticAssets(t *testing.T
 	require.Equal(t, "macos", manifest.Assets[0].Platform)
 	require.Equal(t, "windows", manifest.Assets[1].Platform)
 	require.Equal(t, "x64", manifest.Assets[1].Arch)
+}
+
+func TestDownloadResourceServiceListVersionStatusDistinguishesCacheModes(t *testing.T) {
+	dir := t.TempDir()
+	stub := &downloadResourceGitHubStub{releases: map[string]*GitHubRelease{
+		defaultCodexRepo:      {TagName: "rust-v0.62.0", PublishedAt: "2026-08-01T00:00:00Z"},
+		defaultClaudeCodeRepo: {TagName: "v1.0.80", PublishedAt: "2026-08-01T00:00:00Z"},
+		defaultCCSwitchRepo:   {TagName: "v3.18.0", PublishedAt: "2026-08-01T00:00:00Z"},
+	}}
+	svc := NewDownloadResourceService(&config.Config{Downloads: config.DownloadsConfig{CacheDir: dir}}, stub)
+	require.NoError(t, svc.writeManifest(CachedDownloadManifest{
+		Tool: ccSwitchToolID, Version: "3.18.0", UpdatedAt: "2026-08-02T00:00:00Z",
+	}))
+	require.NoError(t, svc.writeManifest(CachedDownloadManifest{
+		Tool: codexToolID, Version: "v0.12.0", UpdatedAt: "2026-08-02T00:00:00Z",
+	}))
+
+	items := svc.ListVersionStatus(context.Background())
+	require.Len(t, items, 3)
+	require.Equal(t, "cached", items[0].State)
+	require.Equal(t, "npm-mirror", items[1].State)
+	require.Empty(t, items[1].CachedVersion)
+	require.Equal(t, "current", items[2].State)
 }

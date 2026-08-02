@@ -26,6 +26,28 @@ export interface DownloadURLResponse {
   expires_at: string
 }
 
+export type DownloadVersionState =
+  | 'current'
+  | 'cached'
+  | 'npm-mirror'
+  | 'update-available'
+  | 'cache-missing'
+  | 'official-unavailable'
+  | 'unknown'
+
+export interface DownloadVersionStatus {
+  tool: 'codex' | 'claude-code' | 'cc-switch'
+  name: string
+  cached_version: string
+  cached_updated_at: string
+  official_version: string
+  official_published_at: string
+  official_url: string
+  cache_mode: 'cached' | 'npm-mirror'
+  state: DownloadVersionState
+  note: string
+}
+
 export type ClientSetupTarget = 'claude' | 'codex'
 
 export interface ClientSetupTicket {
@@ -71,6 +93,11 @@ export async function createClientSetupTicket(target: ClientSetupTarget): Promis
   return data
 }
 
+export async function getVersionStatus(): Promise<DownloadVersionStatus[]> {
+  const { data } = await apiClient.get<DownloadVersionStatus[]>('/resources/version-status')
+  return data
+}
+
 export const resourcesAPI = {
   getDownloads,
   createDownloadURL,
@@ -78,5 +105,6 @@ export const resourcesAPI = {
   downloadAsset,
   getCCSwitchDownloads,
   downloadCCSwitchAsset,
-  createClientSetupTicket
+  createClientSetupTicket,
+  getVersionStatus
 }

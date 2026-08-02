@@ -428,6 +428,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/resources/status',
+    name: 'ResourceStatus',
+    component: () => import('@/views/user/ResourceStatusView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Version Status',
+      titleKey: 'resourceStatus.title',
+      descriptionKey: 'resourceStatus.description'
+    }
+  },
+  {
     path: '/invoice',
     name: 'InvoiceManagement',
     component: () => import('@/views/user/InvoiceView.vue'),
@@ -918,6 +930,33 @@ const routes: RouteRecordRaw[] = [
 /**
  * Create router instance
  */
+if (import.meta.env.DEV) {
+  routes.push({
+    path: '/resources-preview',
+    name: 'ResourcesPreview',
+    component: () => import('@/views/user/ResourcesView.vue'),
+    meta: {
+      requiresAuth: false,
+      requiresAdmin: false,
+      title: 'Resource Preview',
+      titleKey: 'resources.title',
+      descriptionKey: 'resources.description'
+    }
+  })
+  routes.push({
+    path: '/resource-status-preview',
+    name: 'ResourceStatusPreview',
+    component: () => import('@/views/user/ResourceStatusView.vue'),
+    meta: {
+      requiresAuth: false,
+      requiresAdmin: false,
+      title: 'Version Status Preview',
+      titleKey: 'resourceStatus.title',
+      descriptionKey: 'resourceStatus.description'
+    }
+  })
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
@@ -1041,7 +1080,9 @@ router.beforeEach(async (to, _from, next) => {
     isAdmin: authStore.isAdmin,
     role: authStore.user?.role,
     isSimpleMode: authStore.isSimpleMode,
-    backendModeEnabled: appStore.backendModeEnabled,
+    backendModeEnabled: import.meta.env.DEV && to.name === 'ResourcesPreview'
+      ? false
+      : appStore.backendModeEnabled,
     permissionAllowed,
     invoiceManagementEnabled: appStore.cachedPublicSettings?.invoice_management_enabled === true,
     feedbackManagementEnabled: appStore.cachedPublicSettings?.feedback_management_enabled !== false,

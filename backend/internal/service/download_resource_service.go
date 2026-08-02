@@ -29,7 +29,9 @@ const (
 	defaultCCSwitchRepo           = "farion1231/cc-switch"
 	defaultCodexRepo              = "openai/codex"
 	defaultCodexWindowsMirrorRepo = "Wangnov/codex-app-mirror"
+	defaultCodexMacOfficialURL    = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT.dmg"
 	defaultCodexPPRepo            = "BigPizzaV3/CodexPlusPlus"
+	defaultClaudeCodeRepo         = "anthropics/claude-code"
 	defaultClaudeMacURL           = "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest/Claude.dmg"
 	defaultClaudeWinURL           = "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest-win-x64/Claude-Setup-x64.exe"
 	defaultClaudeARMURL           = "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest-win-arm64/Claude-Setup-arm64.exe"
@@ -58,6 +60,22 @@ type CachedDownloadManifest struct {
 	PublishedAt string                `json:"published_at"`
 	UpdatedAt   string                `json:"updated_at"`
 	Assets      []CachedDownloadAsset `json:"assets"`
+}
+
+// DownloadVersionStatus keeps the download page honest about where a package
+// comes from. Some tools are cached by us, while Claude Code currently uses
+// Anthropic's official installer directly.
+type DownloadVersionStatus struct {
+	Tool                string `json:"tool"`
+	Name                string `json:"name"`
+	CachedVersion       string `json:"cached_version"`
+	CachedUpdatedAt     string `json:"cached_updated_at"`
+	OfficialVersion     string `json:"official_version"`
+	OfficialPublishedAt string `json:"official_published_at"`
+	OfficialURL         string `json:"official_url"`
+	CacheMode           string `json:"cache_mode"`
+	State               string `json:"state"`
+	Note                string `json:"note"`
 }
 
 type CachedDownloadAsset struct {
@@ -107,6 +125,7 @@ func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseCl
 		CCSwitchRepo:                 defaultCCSwitchRepo,
 		CodexRepo:                    defaultCodexRepo,
 		CodexWindowsMirrorRepo:       defaultCodexWindowsMirrorRepo,
+		CodexMacOfficialURL:          defaultCodexMacOfficialURL,
 		CodexPlusPlusRepo:            defaultCodexPPRepo,
 		ClaudeDesktopMacURL:          defaultClaudeMacURL,
 		ClaudeDesktopWindowsX64URL:   defaultClaudeWinURL,
@@ -127,6 +146,9 @@ func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseCl
 	}
 	if strings.TrimSpace(downloadCfg.CodexWindowsMirrorRepo) == "" {
 		downloadCfg.CodexWindowsMirrorRepo = defaultCodexWindowsMirrorRepo
+	}
+	if strings.TrimSpace(downloadCfg.CodexMacOfficialURL) == "" {
+		downloadCfg.CodexMacOfficialURL = defaultCodexMacOfficialURL
 	}
 	if strings.TrimSpace(downloadCfg.CodexPlusPlusRepo) == "" {
 		downloadCfg.CodexPlusPlusRepo = defaultCodexPPRepo
@@ -239,22 +261,22 @@ func (s *DownloadResourceService) SyncCodex(ctx context.Context) error {
 		return errors.New("latest codex release has empty tag")
 	}
 
-	// The public OpenAI repository is authoritative for Codex CLI packages. The
-	// desktop installers are not published there, so only those missing artifacts
-	// come from the configured release mirror.
+	// OpenAI is authoritative for the CLI and macOS desktop installer. The
+	// configured mirror is used only for Windows MSIX packages that OpenAI does
+	// not publish through the public Codex release repository.
 	version := desktopRelease.TagName
 	versionDir := filepath.Join(s.cacheDir, codexToolID, sanitizePathSegment(version))
 	if err := os.MkdirAll(versionDir, 0755); err != nil {
 		return fmt.Errorf("create cache dir: %w", err)
 	}
 
-	assets := make([]CachedDownloadAsset, 0, len(officialRelease.Assets)+len(desktopRelease.Assets))
+	assets := make([]CachedDownloadAsset, 0, len(officialRelease.Assets)+len(desktopRelease.Assets)+1)
 	for _, source := range []struct {
 		release *GitHubRelease
 		include func(string) bool
 	}{
 		{release: officialRelease, include: isCodexInstallAsset},
-		{release: desktopRelease, include: isCodexDesktopAsset},
+		{release: desktopRelease, include: isCodexWindowsDesktopAsset},
 	} {
 		for _, asset := range source.release.Assets {
 			if !source.include(asset.Name) {
@@ -269,13 +291,32 @@ func (s *DownloadResourceService) SyncCodex(ctx context.Context) error {
 			}
 		}
 	}
+	if macURL := strings.TrimSpace(s.cfg.CodexMacOfficialURL); macURL != "" {
+		name := "ChatGPT.dmg"
+		dest := filepath.Join(versionDir, name)
+		if err := s.ensureStaticAsset(ctx, macURL, dest); err != nil {
+			return fmt.Errorf("cache official macOS Codex app: %w", err)
+		}
+		info, err := os.Stat(dest)
+		if err != nil {
+			return fmt.Errorf("stat official macOS Codex app: %w", err)
+		}
+		sum, err := fileSHA256(dest)
+		if err != nil {
+			return fmt.Errorf("checksum official macOS Codex app: %w", err)
+		}
+		assets = append(assets, CachedDownloadAsset{
+			ID: makeAssetID(name), Name: name, Size: info.Size(), SHA256: sum,
+			Platform: "macos", Arch: "universal", Path: dest,
+		})
+	}
 	if len(assets) == 0 {
 		return errors.New("latest codex releases have no downloadable installer assets")
 	}
 
 	manifest := CachedDownloadManifest{
 		Tool:        codexToolID,
-		Repo:        s.cfg.CodexRepo + ", " + s.cfg.CodexWindowsMirrorRepo,
+		Repo:        s.cfg.CodexRepo + ", " + s.cfg.CodexWindowsMirrorRepo + ", persistent.oaistatic.com",
 		Version:     version,
 		ReleaseName: desktopRelease.Name,
 		PublishedAt: desktopRelease.PublishedAt,
@@ -486,6 +527,13 @@ func (s *DownloadResourceService) downloadStaticAsset(ctx context.Context, url, 
 	return os.Rename(tmp, dest)
 }
 
+func (s *DownloadResourceService) ensureStaticAsset(ctx context.Context, url, dest string) error {
+	if info, err := os.Stat(dest); err == nil && info.Size() > 0 {
+		return nil
+	}
+	return s.downloadStaticAsset(ctx, url, dest)
+}
+
 func (s *DownloadResourceService) ListCCSwitch(ctx context.Context) (*CachedDownloadManifest, error) {
 	return s.ListTool(ctx, ccSwitchToolID)
 }
@@ -501,6 +549,99 @@ func (s *DownloadResourceService) ListTool(ctx context.Context, toolID string) (
 		return nil, ErrDownloadToolNotFound
 	}
 	return s.readManifest(toolID)
+}
+
+// ListVersionStatus compares the local download cache with each authoritative
+// upstream release. A failure for one upstream never hides the other tools.
+func (s *DownloadResourceService) ListVersionStatus(ctx context.Context) []DownloadVersionStatus {
+	items := []struct {
+		tool        string
+		name        string
+		manifest    string
+		repo        string
+		officialURL string
+		cacheMode   string
+		note        string
+		comparable  bool
+	}{
+		{
+			tool:        "codex",
+			name:        "Codex",
+			manifest:    codexToolID,
+			repo:        s.cfg.CodexRepo,
+			officialURL: "https://github.com/openai/codex/releases/latest",
+			cacheMode:   "cached",
+			note:        "macOS 缓存 OpenAI 官方安装包；Windows 缓存第三方镜像的 MSIX，并通过本站 AppInstaller 提供更新。",
+			comparable:  false,
+		},
+		{
+			tool:        "claude-code",
+			name:        "Claude Code",
+			repo:        defaultClaudeCodeRepo,
+			officialURL: "https://github.com/anthropics/claude-code/releases/latest",
+			cacheMode:   "npm-mirror",
+			note:        "一键安装优先使用国内 npm 镜像，失败后才回退官方 npm；不走 Anthropic 安装器直连。",
+			comparable:  false,
+		},
+		{
+			tool:        "cc-switch",
+			name:        "CC Switch",
+			manifest:    ccSwitchToolID,
+			repo:        s.cfg.CCSwitchRepo,
+			officialURL: "https://github.com/farion1231/cc-switch/releases/latest",
+			cacheMode:   "cached",
+			note:        "本站定时同步官方 Release，用户下载时不需要访问 GitHub。",
+			comparable:  true,
+		},
+	}
+
+	result := make([]DownloadVersionStatus, 0, len(items))
+	for _, item := range items {
+		status := DownloadVersionStatus{
+			Tool:        item.tool,
+			Name:        item.name,
+			OfficialURL: item.officialURL,
+			CacheMode:   item.cacheMode,
+			State:       "unknown",
+			Note:        item.note,
+		}
+		if item.manifest != "" {
+			if manifest, err := s.readManifest(item.manifest); err == nil {
+				status.CachedVersion = manifest.Version
+				status.CachedUpdatedAt = manifest.UpdatedAt
+			}
+		}
+
+		release, err := s.githubClient.FetchLatestRelease(ctx, item.repo)
+		if err == nil && release != nil {
+			status.OfficialVersion = release.TagName
+			status.OfficialPublishedAt = release.PublishedAt
+		}
+
+		switch {
+		case item.cacheMode == "npm-mirror" && status.OfficialVersion != "":
+			status.State = "npm-mirror"
+		case status.CachedVersion == "":
+			status.State = "cache-missing"
+		case status.OfficialVersion == "":
+			status.State = "official-unavailable"
+		case !item.comparable:
+			status.State = "cached"
+		case versionsEqual(status.CachedVersion, status.OfficialVersion):
+			status.State = "current"
+		default:
+			status.State = "update-available"
+		}
+		result = append(result, status)
+	}
+	return result
+}
+
+func versionsEqual(left, right string) bool {
+	normalize := func(value string) string {
+		return strings.TrimPrefix(strings.ToLower(strings.TrimSpace(value)), "v")
+	}
+	return normalize(left) != "" && normalize(left) == normalize(right)
 }
 
 func (s *DownloadResourceService) GetToolAsset(ctx context.Context, toolID, assetID string) (*DownloadAssetFile, error) {
@@ -728,16 +869,6 @@ func isCodexWindowsDesktopAsset(name string) bool {
 	lower := strings.ToLower(name)
 	return strings.HasSuffix(lower, ".msix") &&
 		(strings.Contains(lower, "_x64__") || strings.Contains(lower, "_arm64__"))
-}
-
-func isCodexDesktopAsset(name string) bool {
-	lower := strings.ToLower(name)
-	if isCodexWindowsDesktopAsset(name) {
-		return true
-	}
-	return strings.HasPrefix(lower, "codex-mac-") &&
-		strings.HasSuffix(lower, ".dmg") &&
-		(strings.Contains(lower, "arm64") || strings.Contains(lower, "x64"))
 }
 
 func isCodexPlusPlusInstallAsset(name string) bool {

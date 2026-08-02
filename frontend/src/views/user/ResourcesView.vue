@@ -1,251 +1,200 @@
 <template>
   <AppLayout>
-    <div class="mx-auto max-w-6xl space-y-6">
-      <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-dark-700 dark:bg-dark-900">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p class="text-sm font-medium text-primary-600 dark:text-primary-400">下载资源</p>
-            <h1 class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">AI 编码工具下载安装</h1>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-dark-300">
-              只保留普通用户最常用的 Windows 和 macOS 安装入口。Mac 用户按 Apple 芯片和 Intel 芯片选择，Windows 用户优先选 64 位安装包。
+    <div class="mx-auto max-w-5xl pb-12 pt-2 md:pt-6">
+      <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-900">
+        <div class="px-5 pb-6 pt-8 text-center sm:px-8 sm:pb-8 sm:pt-10 lg:px-12 lg:pb-10">
+          <div class="mx-auto max-w-3xl">
+            <h1 class="font-serif text-3xl font-semibold tracking-tight text-gray-950 dark:text-white sm:text-4xl">
+              你准备怎么样使用老实人AI？
+            </h1>
+            <p class="mt-3 text-sm leading-6 text-gray-500 dark:text-dark-300 sm:text-base">
+              选择一种方式，3 分钟完成安装和配置。
             </p>
           </div>
-          <a
-            href="/docs"
-            class="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-dark-700 dark:text-dark-200 dark:hover:bg-dark-800"
-          >
-            <Icon name="book" size="sm" />
-            查看文档
-          </a>
-        </div>
-      </section>
 
-      <section class="rounded-lg border border-emerald-200 bg-emerald-50/70 p-5 dark:border-emerald-900/60 dark:bg-emerald-950/20">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">小白一键安装</p>
-            <h2 class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">只选工具、复制一条命令</h2>
-            <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-700 dark:text-dark-200">
-              已识别当前电脑为 <strong>{{ detectedOSLabel }}</strong>。脚本会再次检测真实系统和芯片，安装正确版本、写入专用配置，并在最后检查余额。
-            </p>
-          </div>
-          <span class="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 shadow-sm dark:bg-dark-900 dark:text-emerald-300">
-            安装凭证一次性使用 · 10 分钟失效
-          </span>
-        </div>
-
-        <div class="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <article
-            v-for="setup in quickSetups"
-            :key="setup.id"
-            class="flex flex-col rounded-lg border border-white bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-900"
-          >
-            <div class="flex items-start gap-3">
-              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
-                <Icon :name="setup.icon" size="sm" />
-              </div>
-              <div>
-                <h3 class="font-semibold text-gray-900 dark:text-white">{{ setup.title }}</h3>
-                <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-dark-400">{{ setup.description }}</p>
-              </div>
-            </div>
-
-            <pre class="mt-4 min-h-[88px] overflow-x-auto whitespace-pre-wrap break-all rounded-lg bg-gray-950 p-3 text-xs leading-5 text-gray-100"><code>{{ quickCommandPreview(setup.id) }}</code></pre>
-            <p v-if="setupState[setup.id]?.groupName" class="mt-2 text-xs text-gray-500 dark:text-dark-400">
-              已准备专用 Key：{{ setupState[setup.id]?.keyName }} · {{ setupState[setup.id]?.groupName }}
-            </p>
-
+          <div class="mt-8 grid grid-cols-1 gap-3 text-left md:grid-cols-3">
             <button
+              v-for="setup in quickSetups"
+              :key="setup.id"
               type="button"
-              class="btn btn-primary mt-4 justify-center"
-              :disabled="setupState[setup.id]?.loading || detectedOS === 'unsupported'"
-              @click="prepareAndCopySetup(setup.id)"
+              class="group relative flex min-h-[92px] items-center gap-3 rounded-xl border px-4 py-4 transition-all duration-200"
+              :class="selectedSetup === setup.id
+                ? 'border-primary-600 bg-primary-50/60 shadow-[0_10px_30px_rgba(156,65,38,0.08)] dark:border-primary-500 dark:bg-primary-950/20'
+                : 'border-gray-200 bg-white hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-sm dark:border-dark-700 dark:bg-dark-900 dark:hover:border-dark-600'"
+              :aria-pressed="selectedSetup === setup.id"
+              @click="selectedSetup = setup.id"
             >
-              <Icon :name="setupState[setup.id]?.loading ? 'refresh' : 'copy'" size="sm" :class="{ 'animate-spin': setupState[setup.id]?.loading }" />
-              {{ setupState[setup.id]?.loading ? '正在生成…' : '生成并复制一键命令' }}
+              <span
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border"
+                :class="selectedSetup === setup.id
+                  ? 'border-primary-200 bg-white text-primary-700 dark:border-primary-900 dark:bg-dark-900 dark:text-primary-300'
+                  : 'border-gray-200 bg-gray-50 text-gray-500 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-300'"
+              >
+                <PlatformIcon v-if="setup.platform" :platform="setup.platform" size="lg" />
+                <Icon v-else :name="setup.icon" size="sm" />
+              </span>
+              <span class="min-w-0">
+                <span class="block font-semibold text-gray-900 dark:text-white">{{ setup.title }}</span>
+                <span class="mt-1 block text-xs leading-5 text-gray-500 dark:text-dark-400">{{ setup.description }}</span>
+              </span>
+              <span
+                v-if="selectedSetup === setup.id"
+                class="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-600 text-white"
+              >
+                <Icon name="check" size="xs" />
+              </span>
             </button>
-          </article>
-        </div>
+          </div>
 
-        <div class="mt-4 rounded-lg border border-emerald-200 bg-white/80 p-3 text-sm leading-6 text-gray-700 dark:border-emerald-900/50 dark:bg-dark-900/70 dark:text-dark-200">
-          <strong>执行结果：</strong>余额或订阅额度充足时会显示“可以直接使用”；余额不足时，安装和配置仍然完成，只会提醒前往
-          <a href="/get-subscription" class="font-medium text-primary-600 hover:underline dark:text-primary-400">充值/购买套餐</a>，不会误报成安装失败。
-        </div>
-      </section>
-
-      <section class="rounded-lg border border-primary-200 bg-primary-50 p-5 dark:border-primary-900/60 dark:bg-primary-950/20">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p class="text-sm font-semibold text-primary-700 dark:text-primary-300">Codex App 用户先看这里</p>
-            <h2 class="mt-2 text-xl font-semibold text-gray-900 dark:text-white">只用 API Key 启动时，部分 Codex App 功能会受限</h2>
-            <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-700 dark:text-dark-200">
-              原版 Codex App 在 API Key / 第三方 API 模式下，常见限制是插件入口提示需要 ChatGPT 登录、官方插件无法正常使用；原版会话列表通常只有归档，没有真正删除按钮。Codex++ 的思路是先保留 ChatGPT/OpenAI 官方登录态，再通过外部启动器注入增强功能，并可选把模型请求切到兼容 API。
-            </p>
-          </div>
-          <a
-            href="https://github.com/BigPizzaV3/CodexPlusPlus"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="btn btn-primary shrink-0 justify-center"
-          >
-            <Icon name="externalLink" size="sm" />
-            查看 Codex++ 项目
-          </a>
-        </div>
-        <div class="mt-4 grid grid-cols-1 gap-3 text-sm md:grid-cols-3">
-          <div class="rounded-md bg-white p-3 text-gray-700 shadow-sm dark:bg-dark-900 dark:text-dark-200">
-            <span class="font-medium text-gray-900 dark:text-white">原版 API Key 模式</span>
-            <p class="mt-1 leading-5">适合本地调用模型，但插件入口和官方账号能力可能不可用。</p>
-          </div>
-          <div class="rounded-md bg-white p-3 text-gray-700 shadow-sm dark:bg-dark-900 dark:text-dark-200">
-            <span class="font-medium text-gray-900 dark:text-white">官方登录态</span>
-            <p class="mt-1 leading-5">先在 Codex App 里登录 ChatGPT/OpenAI 账号，保留插件和账号能力。</p>
-          </div>
-          <div class="rounded-md bg-white p-3 text-gray-700 shadow-sm dark:bg-dark-900 dark:text-dark-200">
-            <span class="font-medium text-gray-900 dark:text-white">Codex++ 启动</span>
-            <p class="mt-1 leading-5">从 Codex++ 入口启动，解锁增强菜单、插件入口、会话删除和自定义接口注入。</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <article
-          v-for="resource in resources"
-          :key="resource.name"
-          class="flex min-h-[560px] flex-col rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-dark-700 dark:bg-dark-900"
-        >
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-950/40 dark:text-primary-300">
-                <Icon :name="resource.icon" size="md" />
+          <div class="mt-6 rounded-xl border border-gray-200 bg-gray-950 p-2 text-left shadow-inner dark:border-dark-700">
+            <div class="flex min-w-0 items-center gap-2">
+              <span class="hidden shrink-0 pl-3 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 sm:inline">Terminal</span>
+              <div class="min-w-0 flex-1 overflow-x-auto px-2 py-3 [scrollbar-width:thin]">
+                <code class="block whitespace-nowrap font-mono text-xs leading-5 text-gray-100 sm:text-[13px]">{{ selectedCommand }}</code>
               </div>
-              <div>
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ resource.name }}</h2>
-                <p class="text-xs text-gray-500 dark:text-dark-400">{{ resource.badge }}</p>
-              </div>
+              <button
+                type="button"
+                class="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="selectedState?.loading || detectedOS === 'unsupported'"
+                @click="prepareAndCopySetup(selectedSetup)"
+              >
+                <Icon :name="selectedState?.loading ? 'refresh' : 'copy'" size="sm" :class="{ 'animate-spin': selectedState?.loading }" />
+                <span class="hidden sm:inline">{{ selectedActionLabel }}</span>
+              </button>
             </div>
           </div>
 
-          <p class="mt-4 text-sm leading-6 text-gray-600 dark:text-dark-300">{{ resource.description }}</p>
-
-          <div class="mt-5 space-y-4">
-            <div v-for="command in resource.commands" :key="command.label">
-              <div class="mb-2 flex items-center justify-between gap-2">
-                <p class="text-sm font-medium text-gray-800 dark:text-dark-100">{{ command.label }}</p>
-                <button class="btn btn-secondary btn-sm" type="button" @click="copyCommand(command.command)">
-                  <Icon name="copy" size="xs" />
-                  复制
-                </button>
-              </div>
-              <pre class="overflow-x-auto rounded-lg bg-gray-950 p-3 text-xs leading-5 text-gray-100"><code>{{ command.command }}</code></pre>
-              <p v-if="command.note" class="mt-2 text-xs leading-5 text-gray-500 dark:text-dark-400">{{ command.note }}</p>
-            </div>
-
-            <div v-if="resource.downloadToolId" class="space-y-3">
-              <div class="flex items-center justify-between gap-2">
-                <p class="text-sm font-medium text-gray-800 dark:text-dark-100">{{ resource.downloadTitle || '本站缓存安装包' }}</p>
-                <span
-                  v-if="manifestFor(resource.downloadToolId)"
-                  class="rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                >
-                  {{ manifestFor(resource.downloadToolId)?.version }}
+          <div class="mt-5 grid grid-cols-1 gap-3 text-left sm:grid-cols-3">
+            <div v-for="(step, index) in quickSteps" :key="step.title" class="flex items-center gap-3 rounded-lg px-2 py-2">
+              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700 dark:bg-primary-950/50 dark:text-primary-300">{{ index + 1 }}</span>
+              <span>
+                <span class="block text-sm font-medium text-gray-800 dark:text-dark-100">{{ step.title }}</span>
+                <span class="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-gray-500 dark:text-dark-400">
+                  <template v-for="(keyLabel, keyIndex) in step.keys" :key="keyLabel">
+                    <kbd class="rounded border border-gray-200 bg-gray-50 px-1.5 py-0.5 font-sans text-[11px] font-semibold text-gray-700 shadow-sm dark:border-dark-600 dark:bg-dark-800 dark:text-dark-200">{{ keyLabel }}</kbd>
+                    <span v-if="keyIndex < step.keys.length - 1" aria-hidden="true">+</span>
+                  </template>
+                  <span>{{ step.description }}</span>
                 </span>
-              </div>
-              <p v-if="resource.downloadHint" class="text-xs leading-5 text-gray-500 dark:text-dark-400">
-                {{ resource.downloadHint }}
-              </p>
-
-              <div v-if="loadingFor(resource.downloadToolId)" class="space-y-2">
-                <div class="h-10 animate-pulse rounded-lg bg-gray-100 dark:bg-dark-800"></div>
-                <div class="h-10 animate-pulse rounded-lg bg-gray-100 dark:bg-dark-800"></div>
-              </div>
-
-              <div v-else-if="errorFor(resource.downloadToolId)" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
-                {{ errorFor(resource.downloadToolId) }}
-              </div>
-
-              <div v-else-if="preferredAssets(resource.downloadToolId).length === 0" class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-300">
-                暂无适合普通用户的 Windows 或 macOS 安装包，请先使用官方安装页。
-              </div>
-
-              <div v-else class="grid grid-cols-1 gap-2">
-                <button
-                  v-for="asset in preferredAssets(resource.downloadToolId)"
-                  :key="asset.id"
-                  class="inline-flex min-h-[56px] items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-all duration-150"
-                  :class="downloadButtonClass(resource.downloadToolId, asset)"
-                  type="button"
-                  :disabled="isDownloadPreparing(resource.downloadToolId, asset)"
-                  @click="downloadCachedAsset(resource.downloadToolId, asset)"
-                >
-                  <span class="min-w-0">
-                    <span class="block truncate font-medium text-gray-800 dark:text-dark-100">{{ formatAssetLabel(resource.downloadToolId, asset) }}</span>
-                    <span class="block truncate text-xs text-gray-500 dark:text-dark-400">{{ formatAssetDescription(asset) }} · {{ formatBytes(asset.size) }}</span>
-                  </span>
-                  <span class="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-dark-800 dark:text-dark-300">
-                    <Icon
-                      :name="downloadIcon(resource.downloadToolId, asset)"
-                      size="sm"
-                      :class="{ 'animate-spin': isDownloadPreparing(resource.downloadToolId, asset) }"
-                    />
-                  </span>
-                </button>
-              </div>
-
-              <p v-if="manifestFor(resource.downloadToolId)" class="text-xs leading-5 text-gray-500 dark:text-dark-400">
-                更新时间：{{ formatDate(manifestFor(resource.downloadToolId)?.updated_at || '') }}。SHA256 校验值已随缓存记录保存。
-              </p>
-            </div>
-
-            <div>
-              <div class="mb-2 flex items-center justify-between gap-2">
-                <p class="text-sm font-medium text-gray-800 dark:text-dark-100">安装后验证</p>
-                <button
-                  v-if="resource.verifyCommand"
-                  class="btn btn-secondary btn-sm"
-                  type="button"
-                  @click="copyCommand(resource.verifyCommand)"
-                >
-                  <Icon name="copy" size="xs" />
-                  复制
-                </button>
-              </div>
-              <pre
-                v-if="resource.verifyCommand"
-                class="overflow-x-auto rounded-lg bg-gray-950 p-3 text-xs leading-5 text-gray-100"
-              ><code>{{ resource.verifyCommand }}</code></pre>
-              <p v-else class="rounded-lg bg-gray-50 p-3 text-sm text-gray-600 dark:bg-dark-800 dark:text-dark-300">
-                {{ resource.verifyText }}
-              </p>
+              </span>
             </div>
           </div>
 
-          <div class="mt-auto pt-5">
-            <div v-if="resource.primaryLink || resource.docsLink" class="flex flex-col gap-2 sm:flex-row">
-              <a
-                v-if="resource.primaryLink"
-                :href="resource.primaryLink"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="btn btn-primary flex-1 justify-center"
-              >
-                <Icon name="download" size="sm" />
-                {{ resource.primaryAction }}
-              </a>
-              <a
-                v-if="resource.docsLink"
-                :href="resource.docsLink"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="btn btn-secondary flex-1 justify-center"
-              >
-                <Icon name="externalLink" size="sm" />
-                官方说明
-              </a>
-            </div>
-            <p class="mt-3 text-xs leading-5 text-gray-500 dark:text-dark-400">{{ resource.note }}</p>
+          <div class="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-dark-400">
+            <span>已识别：{{ detectedOSLabel }}</span>
+            <template v-if="selectedState?.groupName">
+              <span aria-hidden="true">·</span>
+              <span>已准备 {{ selectedState.keyName }} · {{ selectedState.groupName }}</span>
+            </template>
           </div>
-        </article>
+
+        </div>
+
+        <details class="group border-t border-gray-200 dark:border-dark-700">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 text-left sm:px-8 lg:px-12">
+            <span>
+              <span class="block text-sm font-semibold text-gray-900 dark:text-white">其他工具</span>
+              <span class="mt-1 block text-xs text-gray-500 dark:text-dark-400">Claude Desktop 需单独配置 · Codex++ 为可选增强</span>
+            </span>
+            <Icon name="chevronDown" size="sm" class="text-gray-400 transition-transform duration-200 group-open:rotate-180" />
+          </summary>
+
+          <div class="border-t border-gray-100 bg-gray-50/70 px-5 py-6 dark:border-dark-800 dark:bg-dark-950/30 sm:px-8 lg:px-12">
+            <section class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <article
+                v-for="resource in advancedResources"
+                :key="resource.name"
+                class="flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-dark-700 dark:bg-dark-900"
+              >
+                <div class="flex items-start gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-950/40 dark:text-primary-300">
+                    <Icon :name="resource.icon" size="md" />
+                  </div>
+                  <div>
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ resource.name }}</h2>
+                    <p class="text-xs text-gray-500 dark:text-dark-400">{{ resource.badge }}</p>
+                  </div>
+                </div>
+
+                <p class="mt-4 text-sm leading-6 text-gray-600 dark:text-dark-300">{{ resource.description }}</p>
+
+                <div v-if="resource.downloadToolId" class="mt-5 rounded-lg bg-gray-950 p-2">
+                  <div class="flex min-w-0 items-center gap-2">
+                    <div class="min-w-0 flex-1 overflow-x-auto px-2 py-2 [scrollbar-width:thin]">
+                      <code class="block whitespace-nowrap font-mono text-xs text-gray-100">{{ advancedInstallCommand(resource.downloadToolId) }}</code>
+                    </div>
+                    <button
+                      type="button"
+                      class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-primary-600 px-3 text-xs font-semibold text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      :disabled="loadingFor(resource.downloadToolId) || !!errorFor(resource.downloadToolId) || preferredAssets(resource.downloadToolId).length === 0 || advancedInstallState[resource.downloadToolId]?.loading"
+                      @click="prepareAdvancedInstallCommand(resource.downloadToolId)"
+                    >
+                      <Icon :name="advancedInstallState[resource.downloadToolId]?.loading ? 'refresh' : 'copy'" size="xs" :class="{ 'animate-spin': advancedInstallState[resource.downloadToolId]?.loading }" />
+                      复制一键安装命令
+                    </button>
+                  </div>
+                </div>
+
+                <div class="mt-5 space-y-4">
+                  <div v-for="command in resource.commands" :key="command.label">
+                    <div class="mb-2 flex items-center justify-between gap-2">
+                      <p class="text-sm font-medium text-gray-800 dark:text-dark-100">{{ command.label }}</p>
+                      <button class="btn btn-secondary btn-sm" type="button" @click="copyCommand(command.command)">
+                        <Icon name="copy" size="xs" />复制
+                      </button>
+                    </div>
+                    <pre class="overflow-x-auto whitespace-nowrap rounded-lg bg-gray-950 p-3 text-xs leading-5 text-gray-100"><code>{{ command.command }}</code></pre>
+                    <p v-if="command.note" class="mt-2 text-xs leading-5 text-gray-500 dark:text-dark-400">{{ command.note }}</p>
+                  </div>
+
+                  <div v-if="resource.downloadToolId" class="space-y-3">
+                    <div class="flex items-center justify-between gap-2">
+                      <p class="text-sm font-medium text-gray-800 dark:text-dark-100">{{ resource.downloadTitle || '本站缓存安装包' }}</p>
+                      <span v-if="manifestFor(resource.downloadToolId)" class="rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">{{ manifestFor(resource.downloadToolId)?.version }}</span>
+                    </div>
+                    <p v-if="resource.downloadHint" class="text-xs leading-5 text-gray-500 dark:text-dark-400">{{ resource.downloadHint }}</p>
+                    <div v-if="loadingFor(resource.downloadToolId)" class="space-y-2">
+                      <div class="h-10 animate-pulse rounded-lg bg-gray-100 dark:bg-dark-800"></div>
+                    </div>
+                    <div v-else-if="errorFor(resource.downloadToolId)" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">{{ errorFor(resource.downloadToolId) }}</div>
+                    <div v-else-if="preferredAssets(resource.downloadToolId).length === 0" class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-300">暂无适合普通用户的安装包，请使用官方安装页。</div>
+                    <div v-else class="grid grid-cols-1 gap-2">
+                      <button
+                        v-for="asset in preferredAssets(resource.downloadToolId)"
+                        :key="asset.id"
+                        class="inline-flex min-h-[56px] items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-all duration-150"
+                        :class="downloadButtonClass(resource.downloadToolId, asset)"
+                        type="button"
+                        :disabled="isDownloadPreparing(resource.downloadToolId, asset)"
+                        @click="downloadCachedAsset(resource.downloadToolId, asset)"
+                      >
+                        <span class="min-w-0">
+                          <span class="block truncate font-medium text-gray-800 dark:text-dark-100">{{ formatAssetLabel(resource.downloadToolId, asset) }}</span>
+                          <span class="block truncate text-xs text-gray-500 dark:text-dark-400">{{ formatAssetDescription(asset) }} · {{ formatBytes(asset.size) }}</span>
+                        </span>
+                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-dark-800 dark:text-dark-300">
+                          <Icon :name="downloadIcon(resource.downloadToolId, asset)" size="sm" :class="{ 'animate-spin': isDownloadPreparing(resource.downloadToolId, asset) }" />
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+
+                <div class="mt-auto pt-5">
+                  <div v-if="resource.primaryLink || resource.docsLink" class="flex flex-col gap-2 sm:flex-row">
+                    <a v-if="resource.primaryLink" :href="resource.primaryLink" target="_blank" rel="noopener noreferrer" class="btn btn-secondary flex-1 justify-center">
+                      <Icon name="download" size="sm" />{{ resource.primaryAction }}
+                    </a>
+                    <a v-if="resource.docsLink" :href="resource.docsLink" target="_blank" rel="noopener noreferrer" class="btn btn-secondary flex-1 justify-center">
+                      <Icon name="externalLink" size="sm" />官方说明
+                    </a>
+                  </div>
+                </div>
+              </article>
+            </section>
+          </div>
+        </details>
       </section>
     </div>
   </AppLayout>
@@ -255,6 +204,7 @@
 import { computed, onMounted, ref } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
+import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import { useClipboard } from '@/composables/useClipboard'
 import {
   resourcesAPI,
@@ -307,6 +257,11 @@ interface QuickSetupState {
   groupName?: string
 }
 
+interface AdvancedInstallState {
+  loading?: boolean
+  command?: string
+}
+
 const detectedOS = computed<DetectedOS>(() => {
   const agent = navigator.userAgent.toLowerCase()
   if (agent.includes('windows')) return 'windows'
@@ -319,31 +274,74 @@ const detectedOSLabel = computed(() => {
   return '暂不支持的系统'
 })
 const setupState = ref<Partial<Record<QuickSetupID, QuickSetupState>>>({})
+const advancedInstallState = ref<Partial<Record<DownloadToolID, AdvancedInstallState>>>({})
+const selectedSetup = ref<QuickSetupID>('codex')
 const quickSetups: Array<{
   id: QuickSetupID
   title: string
   description: string
   icon: IconName
+  platform?: 'openai' | 'anthropic'
 }> = [
   {
-    id: 'claude',
-    title: '1. Claude Code',
-    description: '自动创建 Claude 专用 Key，绑定 MAX 20X 分组，并安装配置 Claude Code CLI。',
-    icon: 'terminal'
+    id: 'codex',
+    title: '在 Codex 中使用',
+    description: '图形界面与 CLI，一次配置完成',
+    icon: 'cpu',
+    platform: 'openai'
   },
   {
-    id: 'codex',
-    title: '2. Codex CLI + App',
-    description: '自动创建 Codex 专用 Key，绑定 Pro 20X 分组，同时安装 CLI 与对应 Codex App。',
-    icon: 'cpu'
+    id: 'claude',
+    title: '在 Claude Code 中使用',
+    description: '在 CLI 中使用；Desktop 需单独配置',
+    icon: 'terminal',
+    platform: 'anthropic'
   },
   {
     id: 'cc-switch',
-    title: '3. CC Switch',
-    description: '从本站缓存下载并校验最新版本，按 Windows/macOS 自动安装或更新。',
+    title: '安装 CC Switch',
+    description: '使用 CC Switch 管理和切换配置',
     icon: 'swap'
   }
 ]
+
+const quickSteps = computed(() => {
+  if (detectedOS.value === 'windows') {
+    return [
+      { title: '生成并复制命令', description: '点击上方按钮', keys: [] as string[] },
+      { title: '打开 PowerShell', description: '输入“PowerShell”并回车', keys: ['Win', 'S'] },
+      { title: '粘贴并运行', description: '然后按 Enter', keys: ['Ctrl', 'V'] }
+    ]
+  }
+
+  if (detectedOS.value === 'macos') {
+    return [
+      { title: '生成并复制命令', description: '点击上方按钮', keys: [] as string[] },
+      { title: '打开终端', description: '输入“终端”并回车', keys: ['⌘', 'Space'] },
+      { title: '粘贴并运行', description: '然后按 Enter', keys: ['⌘', 'V'] }
+    ]
+  }
+
+  return [
+    { title: '生成并复制命令', description: '点击上方按钮', keys: [] as string[] },
+    { title: '打开终端', description: '打开系统自带终端', keys: [] as string[] },
+    { title: '粘贴并运行', description: '粘贴命令后按 Enter', keys: [] as string[] }
+  ]
+})
+
+const selectedState = computed(() => setupState.value[selectedSetup.value])
+const selectedCommand = computed(() => {
+  const command = selectedState.value?.command
+  if (command) return command
+  if (selectedSetup.value === 'cc-switch') return buildQuickSetupCommand('cc-switch')
+  return '点击右侧按钮生成一键安装配置命令'
+})
+const selectedActionLabel = computed(() => {
+  if (selectedState.value?.loading) return '正在生成'
+  if (selectedSetup.value === 'cc-switch') return '复制一键安装命令'
+  if (selectedState.value?.command) return '复制一键安装配置命令'
+  return '生成一键安装配置命令'
+})
 
 const resources: DownloadResource[] = [
   {
@@ -401,12 +399,12 @@ const resources: DownloadResource[] = [
   {
     name: 'Codex++',
     badge: 'Codex App 增强启动器',
-    description: '适合已经安装并登录 Codex App，但在 API Key / 第三方 API 模式下需要插件入口、会话删除、Markdown 导出、Timeline 和自定义接口注入能力的用户。使用时请从 Codex++ 入口启动，不要从原版 Codex App 入口打开。',
+    description: '为 Codex App 增加插件与自定义接口等增强功能。',
     icon: 'sparkles',
     commands: [],
     downloadToolId: 'codex-plus-plus',
     downloadTitle: '常用安装包',
-    downloadHint: 'Windows 选 64 位安装包；Mac 按芯片选择，M1/M2/M3/M4 选 Apple 芯片，老款 Mac 选 Intel。',
+    downloadHint: '选择与你的系统和芯片匹配的安装包。',
     verifyText: '安装后先打开 Codex++ 管理工具检查状态，再从 Codex++ 入口启动 Codex App。顶部出现 Codex++ 菜单即表示增强注入成功。',
     primaryLink: 'https://github.com/BigPizzaV3/CodexPlusPlus/releases/latest',
     docsLink: 'https://github.com/BigPizzaV3/CodexPlusPlus',
@@ -416,12 +414,12 @@ const resources: DownloadResource[] = [
   {
     name: 'Claude Desktop',
     badge: 'Claude 官方桌面 App',
-    description: 'Claude 桌面端集成聊天、Cowork 和 Code 标签页，适合需要图形界面的用户。',
+    description: 'Claude 官方桌面客户端。安装后需登录并单独配置，无法使用上方一键配置。',
     icon: 'cube',
     commands: [],
     downloadToolId: 'claude-desktop',
     downloadTitle: '常用安装包',
-    downloadHint: 'Windows 优先选择 64 位；macOS 官方包通常是通用版，Apple 芯片和 Intel Mac 都能用。',
+    downloadHint: '选择与你的系统匹配的安装包。',
     verifyText: '安装后打开 Claude Desktop，登录账号，并进入 Code 标签页确认可用。',
     primaryLink: 'https://claude.com/download',
     docsLink: 'https://support.claude.com/en/articles/10065433-install-claude-desktop',
@@ -443,8 +441,12 @@ const resources: DownloadResource[] = [
   }
 ]
 
+const advancedResources = computed(() => {
+  return resources.filter((resource) => resource.name === 'Codex++' || resource.name === 'Claude Desktop')
+})
+
 const downloadableTools = computed(() => {
-  return resources.map((resource) => resource.downloadToolId).filter(Boolean) as DownloadToolID[]
+  return advancedResources.value.map((resource) => resource.downloadToolId).filter(Boolean) as DownloadToolID[]
 })
 
 function manifestFor(tool: DownloadToolID): DownloadManifest | undefined {
@@ -558,10 +560,6 @@ function buildQuickSetupCommand(id: QuickSetupID, ticket?: string): string {
   return `curl -fsSL https://laoshirenai.com/auto-config/install.sh | ${env.join(' ')} bash`
 }
 
-function quickCommandPreview(id: QuickSetupID): string {
-  return setupState.value[id]?.command || buildQuickSetupCommand(id)
-}
-
 async function prepareAndCopySetup(id: QuickSetupID) {
   if (detectedOS.value === 'unsupported') {
     appStore.showError('目前一键安装只支持 Windows 和 macOS。')
@@ -602,16 +600,90 @@ async function copyCommand(command: string) {
   await copyToClipboard(command, '安装命令已复制')
 }
 
+function advancedInstallCommand(tool: DownloadToolID): string {
+  return advancedInstallState.value[tool]?.command || '点击右侧按钮生成一键下载安装命令'
+}
+
+function buildMacDesktopInstallCommand(urlByArch: { universal?: string; arm64?: string; x64?: string }): string {
+  const urlSelection = urlByArch.universal
+    ? `URL=${shellQuote(urlByArch.universal)}`
+    : `if [ "$(uname -m)" = 'arm64' ]; then URL=${shellQuote(urlByArch.arm64 || '')}; else URL=${shellQuote(urlByArch.x64 || '')}; fi`
+  return `TMP="$(mktemp -d)"; MOUNT="$TMP/mount"; mkdir -p "$MOUNT"; ${urlSelection}; curl -fL "$URL" -o "$TMP/app.dmg" && hdiutil attach "$TMP/app.dmg" -nobrowse -readonly -mountpoint "$MOUNT" >/dev/null && APP="$(find "$MOUNT" -maxdepth 1 -name '*.app' -print -quit)" && test -n "$APP" && codesign --verify --deep --strict "$APP" && mkdir -p "$HOME/Applications" && DEST="$HOME/Applications/$(basename "$APP")" && rm -rf "$DEST" && ditto "$APP" "$DEST"; hdiutil detach "$MOUNT" >/dev/null 2>&1 || true; rm -rf "$TMP"; test -n "$DEST" && open "$DEST"`
+}
+
+function buildWindowsDesktopInstallCommand(url: string, tool: DownloadToolID): string {
+  const fileName = tool === 'claude-desktop' ? 'Claude-Setup.exe' : 'CodexPlusPlus-Setup.exe'
+  return `$u=${powerShellQuote(url)}; $f=Join-Path $env:TEMP '${fileName}'; Invoke-WebRequest -Uri $u -OutFile $f; Start-Process -FilePath $f -ArgumentList '/S' -Wait; Remove-Item $f -Force -ErrorAction SilentlyContinue`
+}
+
+function absoluteResourceDownloadURL(token: string): string {
+  return new URL(resourcesAPI.buildResourceDownloadURL(token), window.location.origin).toString()
+}
+
+async function prepareAdvancedInstallCommand(tool: DownloadToolID) {
+  if (detectedOS.value === 'unsupported') {
+    appStore.showError('目前一键安装只支持 Windows 和 macOS。')
+    return
+  }
+
+  advancedInstallState.value = {
+    ...advancedInstallState.value,
+    [tool]: { ...advancedInstallState.value[tool], loading: true }
+  }
+
+  try {
+    const assets = preferredAssets(tool).filter((asset) => asset.platform === detectedOS.value)
+    if (assets.length === 0) throw new Error('暂无适合当前系统的安装包')
+
+    let command = ''
+    if (detectedOS.value === 'windows') {
+      const asset = assets.find((item) => item.arch === 'x64') || assets[0]
+      const { token } = await resourcesAPI.createDownloadURL(tool, asset)
+      command = buildWindowsDesktopInstallCommand(absoluteResourceDownloadURL(token), tool)
+    } else {
+      const universal = assets.find((item) => item.arch === 'universal')
+      if (universal) {
+        const { token } = await resourcesAPI.createDownloadURL(tool, universal)
+        command = buildMacDesktopInstallCommand({ universal: absoluteResourceDownloadURL(token) })
+      } else {
+        const arm64 = assets.find((item) => item.arch === 'arm64')
+        const x64 = assets.find((item) => item.arch === 'x64')
+        if (!arm64 || !x64) throw new Error('安装包缺少对应的 Mac 芯片版本')
+        const [armResult, x64Result] = await Promise.all([
+          resourcesAPI.createDownloadURL(tool, arm64),
+          resourcesAPI.createDownloadURL(tool, x64)
+        ])
+        command = buildMacDesktopInstallCommand({
+          arm64: absoluteResourceDownloadURL(armResult.token),
+          x64: absoluteResourceDownloadURL(x64Result.token)
+        })
+      }
+    }
+
+    advancedInstallState.value = {
+      ...advancedInstallState.value,
+      [tool]: { loading: false, command }
+    }
+    await copyToClipboard(command, '一键下载安装命令已复制')
+  } catch (error: any) {
+    advancedInstallState.value = {
+      ...advancedInstallState.value,
+      [tool]: { ...advancedInstallState.value[tool], loading: false }
+    }
+    appStore.showError(error?.message || '生成安装命令失败，请稍后重试。')
+  }
+}
+
 async function loadDownloads(tool: DownloadToolID) {
   loading.value = { ...loading.value, [tool]: true }
   errors.value = { ...errors.value, [tool]: '' }
   try {
     const manifest = await resourcesAPI.getDownloads(tool)
     manifests.value = { ...manifests.value, [tool]: manifest }
-  } catch (error: any) {
+  } catch {
     errors.value = {
       ...errors.value,
-      [tool]: error?.message || '安装包正在同步，请稍后刷新。'
+      [tool]: '安装包暂未加载，请稍后重试。'
     }
   } finally {
     loading.value = { ...loading.value, [tool]: false }
@@ -687,11 +759,6 @@ function formatBytes(bytes: number): string {
     idx += 1
   }
   return `${value.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`
-}
-
-function formatDate(value: string): string {
-  if (!value) return '-'
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 
 function formatAssetLabel(tool: DownloadToolID, asset: DownloadAsset): string {

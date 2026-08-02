@@ -449,6 +449,7 @@ export default {
     invoiceManagement: '发票管理',
     buySubscription: '充值/订阅',
     resources: '下载资源',
+    versionStatus: '版本状态',
     docs: '文档',
     feedback: '反馈',
     feedbackAdmin: '反馈管理',
@@ -469,6 +470,11 @@ export default {
   resources: {
     title: '下载资源',
     description: 'Claude Code、Codex、Claude Desktop、CC Switch 下载安装入口'
+  },
+
+  resourceStatus: {
+    title: '版本状态',
+    description: '查看本站安装包缓存版本与官方最新版本'
   },
 
   // Auth

@@ -414,6 +414,10 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
   AND conname = 'chk_affiliate_qualification_route'
 `).Scan(&qualificationRouteConstraint))
 	require.Contains(t, qualificationRouteConstraint, "self_consumption")
+
+	// migration 170: promotion value is locked on the order so historical
+	// ¥500/¥1000 orders are never retroactively treated as promotional.
+	requireColumn(t, tx, "topup_orders", "bonus_amount_cny_fen", "integer", 0, false)
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

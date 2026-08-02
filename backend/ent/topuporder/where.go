@@ -70,6 +70,11 @@ func AmountCnyFen(v int) predicate.TopupOrder {
 	return predicate.TopupOrder(sql.FieldEQ(FieldAmountCnyFen, v))
 }
 
+// BonusAmountCnyFen applies equality check predicate on the "bonus_amount_cny_fen" field. It's identical to BonusAmountCnyFenEQ.
+func BonusAmountCnyFen(v int) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldEQ(FieldBonusAmountCnyFen, v))
+}
+
 // PayType applies equality check predicate on the "pay_type" field. It's identical to PayTypeEQ.
 func PayType(v string) predicate.TopupOrder {
 	return predicate.TopupOrder(sql.FieldEQ(FieldPayType, v))
@@ -233,6 +238,46 @@ func AmountCnyFenLT(v int) predicate.TopupOrder {
 // AmountCnyFenLTE applies the LTE predicate on the "amount_cny_fen" field.
 func AmountCnyFenLTE(v int) predicate.TopupOrder {
 	return predicate.TopupOrder(sql.FieldLTE(FieldAmountCnyFen, v))
+}
+
+// BonusAmountCnyFenEQ applies the EQ predicate on the "bonus_amount_cny_fen" field.
+func BonusAmountCnyFenEQ(v int) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldEQ(FieldBonusAmountCnyFen, v))
+}
+
+// BonusAmountCnyFenNEQ applies the NEQ predicate on the "bonus_amount_cny_fen" field.
+func BonusAmountCnyFenNEQ(v int) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldNEQ(FieldBonusAmountCnyFen, v))
+}
+
+// BonusAmountCnyFenIn applies the In predicate on the "bonus_amount_cny_fen" field.
+func BonusAmountCnyFenIn(vs ...int) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldIn(FieldBonusAmountCnyFen, vs...))
+}
+
+// BonusAmountCnyFenNotIn applies the NotIn predicate on the "bonus_amount_cny_fen" field.
+func BonusAmountCnyFenNotIn(vs ...int) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldNotIn(FieldBonusAmountCnyFen, vs...))
+}
+
+// BonusAmountCnyFenGT applies the GT predicate on the "bonus_amount_cny_fen" field.
+func BonusAmountCnyFenGT(v int) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldGT(FieldBonusAmountCnyFen, v))
+}
+
+// BonusAmountCnyFenGTE applies the GTE predicate on the "bonus_amount_cny_fen" field.
+func BonusAmountCnyFenGTE(v int) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldGTE(FieldBonusAmountCnyFen, v))
+}
+
+// BonusAmountCnyFenLT applies the LT predicate on the "bonus_amount_cny_fen" field.
+func BonusAmountCnyFenLT(v int) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldLT(FieldBonusAmountCnyFen, v))
+}
+
+// BonusAmountCnyFenLTE applies the LTE predicate on the "bonus_amount_cny_fen" field.
+func BonusAmountCnyFenLTE(v int) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldLTE(FieldBonusAmountCnyFen, v))
 }
 
 // PayTypeEQ applies the EQ predicate on the "pay_type" field.

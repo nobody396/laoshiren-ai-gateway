@@ -1487,6 +1487,8 @@ export interface TopupOrderListItem {
   user_email?: string
   user_name?: string
   amount_cny_fen: number
+  bonus_amount_cny_fen: number
+  credited_amount_cny_fen: number
   pay_type: 'alipay' | 'wechat'
   status: TopupOrderPaymentStatus
   invoice_status: TopupOrderInvoiceStatus

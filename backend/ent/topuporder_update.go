@@ -79,6 +79,27 @@ func (_u *TopupOrderUpdate) AddAmountCnyFen(v int) *TopupOrderUpdate {
 	return _u
 }
 
+// SetBonusAmountCnyFen sets the "bonus_amount_cny_fen" field.
+func (_u *TopupOrderUpdate) SetBonusAmountCnyFen(v int) *TopupOrderUpdate {
+	_u.mutation.ResetBonusAmountCnyFen()
+	_u.mutation.SetBonusAmountCnyFen(v)
+	return _u
+}
+
+// SetNillableBonusAmountCnyFen sets the "bonus_amount_cny_fen" field if the given value is not nil.
+func (_u *TopupOrderUpdate) SetNillableBonusAmountCnyFen(v *int) *TopupOrderUpdate {
+	if v != nil {
+		_u.SetBonusAmountCnyFen(*v)
+	}
+	return _u
+}
+
+// AddBonusAmountCnyFen adds value to the "bonus_amount_cny_fen" field.
+func (_u *TopupOrderUpdate) AddBonusAmountCnyFen(v int) *TopupOrderUpdate {
+	_u.mutation.AddBonusAmountCnyFen(v)
+	return _u
+}
+
 // SetPayType sets the "pay_type" field.
 func (_u *TopupOrderUpdate) SetPayType(v string) *TopupOrderUpdate {
 	_u.mutation.SetPayType(v)
@@ -287,6 +308,11 @@ func (_u *TopupOrderUpdate) check() error {
 			return &ValidationError{Name: "amount_cny_fen", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.amount_cny_fen": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.BonusAmountCnyFen(); ok {
+		if err := topuporder.BonusAmountCnyFenValidator(v); err != nil {
+			return &ValidationError{Name: "bonus_amount_cny_fen", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.bonus_amount_cny_fen": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.PayType(); ok {
 		if err := topuporder.PayTypeValidator(v); err != nil {
 			return &ValidationError{Name: "pay_type", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.pay_type": %w`, err)}
@@ -333,6 +359,12 @@ func (_u *TopupOrderUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	}
 	if value, ok := _u.mutation.AddedAmountCnyFen(); ok {
 		_spec.AddField(topuporder.FieldAmountCnyFen, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.BonusAmountCnyFen(); ok {
+		_spec.SetField(topuporder.FieldBonusAmountCnyFen, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedBonusAmountCnyFen(); ok {
+		_spec.AddField(topuporder.FieldBonusAmountCnyFen, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.PayType(); ok {
 		_spec.SetField(topuporder.FieldPayType, field.TypeString, value)
@@ -504,6 +536,27 @@ func (_u *TopupOrderUpdateOne) SetNillableAmountCnyFen(v *int) *TopupOrderUpdate
 // AddAmountCnyFen adds value to the "amount_cny_fen" field.
 func (_u *TopupOrderUpdateOne) AddAmountCnyFen(v int) *TopupOrderUpdateOne {
 	_u.mutation.AddAmountCnyFen(v)
+	return _u
+}
+
+// SetBonusAmountCnyFen sets the "bonus_amount_cny_fen" field.
+func (_u *TopupOrderUpdateOne) SetBonusAmountCnyFen(v int) *TopupOrderUpdateOne {
+	_u.mutation.ResetBonusAmountCnyFen()
+	_u.mutation.SetBonusAmountCnyFen(v)
+	return _u
+}
+
+// SetNillableBonusAmountCnyFen sets the "bonus_amount_cny_fen" field if the given value is not nil.
+func (_u *TopupOrderUpdateOne) SetNillableBonusAmountCnyFen(v *int) *TopupOrderUpdateOne {
+	if v != nil {
+		_u.SetBonusAmountCnyFen(*v)
+	}
+	return _u
+}
+
+// AddBonusAmountCnyFen adds value to the "bonus_amount_cny_fen" field.
+func (_u *TopupOrderUpdateOne) AddBonusAmountCnyFen(v int) *TopupOrderUpdateOne {
+	_u.mutation.AddBonusAmountCnyFen(v)
 	return _u
 }
 
@@ -728,6 +781,11 @@ func (_u *TopupOrderUpdateOne) check() error {
 			return &ValidationError{Name: "amount_cny_fen", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.amount_cny_fen": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.BonusAmountCnyFen(); ok {
+		if err := topuporder.BonusAmountCnyFenValidator(v); err != nil {
+			return &ValidationError{Name: "bonus_amount_cny_fen", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.bonus_amount_cny_fen": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.PayType(); ok {
 		if err := topuporder.PayTypeValidator(v); err != nil {
 			return &ValidationError{Name: "pay_type", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.pay_type": %w`, err)}
@@ -791,6 +849,12 @@ func (_u *TopupOrderUpdateOne) sqlSave(ctx context.Context) (_node *TopupOrder, 
 	}
 	if value, ok := _u.mutation.AddedAmountCnyFen(); ok {
 		_spec.AddField(topuporder.FieldAmountCnyFen, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.BonusAmountCnyFen(); ok {
+		_spec.SetField(topuporder.FieldBonusAmountCnyFen, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedBonusAmountCnyFen(); ok {
+		_spec.AddField(topuporder.FieldBonusAmountCnyFen, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.PayType(); ok {
 		_spec.SetField(topuporder.FieldPayType, field.TypeString, value)

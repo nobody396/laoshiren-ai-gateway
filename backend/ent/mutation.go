@@ -34850,6 +34850,8 @@ type TopupOrderMutation struct {
 	order_no                      *string
 	amount_cny_fen                *int
 	addamount_cny_fen             *int
+	bonus_amount_cny_fen          *int
+	addbonus_amount_cny_fen       *int
 	pay_type                      *string
 	status                        *string
 	invoice_status                *string
@@ -35093,6 +35095,62 @@ func (m *TopupOrderMutation) AddedAmountCnyFen() (r int, exists bool) {
 func (m *TopupOrderMutation) ResetAmountCnyFen() {
 	m.amount_cny_fen = nil
 	m.addamount_cny_fen = nil
+}
+
+// SetBonusAmountCnyFen sets the "bonus_amount_cny_fen" field.
+func (m *TopupOrderMutation) SetBonusAmountCnyFen(i int) {
+	m.bonus_amount_cny_fen = &i
+	m.addbonus_amount_cny_fen = nil
+}
+
+// BonusAmountCnyFen returns the value of the "bonus_amount_cny_fen" field in the mutation.
+func (m *TopupOrderMutation) BonusAmountCnyFen() (r int, exists bool) {
+	v := m.bonus_amount_cny_fen
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBonusAmountCnyFen returns the old "bonus_amount_cny_fen" field's value of the TopupOrder entity.
+// If the TopupOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TopupOrderMutation) OldBonusAmountCnyFen(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBonusAmountCnyFen is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBonusAmountCnyFen requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBonusAmountCnyFen: %w", err)
+	}
+	return oldValue.BonusAmountCnyFen, nil
+}
+
+// AddBonusAmountCnyFen adds i to the "bonus_amount_cny_fen" field.
+func (m *TopupOrderMutation) AddBonusAmountCnyFen(i int) {
+	if m.addbonus_amount_cny_fen != nil {
+		*m.addbonus_amount_cny_fen += i
+	} else {
+		m.addbonus_amount_cny_fen = &i
+	}
+}
+
+// AddedBonusAmountCnyFen returns the value that was added to the "bonus_amount_cny_fen" field in this mutation.
+func (m *TopupOrderMutation) AddedBonusAmountCnyFen() (r int, exists bool) {
+	v := m.addbonus_amount_cny_fen
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetBonusAmountCnyFen resets all changes to the "bonus_amount_cny_fen" field.
+func (m *TopupOrderMutation) ResetBonusAmountCnyFen() {
+	m.bonus_amount_cny_fen = nil
+	m.addbonus_amount_cny_fen = nil
 }
 
 // SetPayType sets the "pay_type" field.
@@ -35537,7 +35595,7 @@ func (m *TopupOrderMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TopupOrderMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.order_no != nil {
 		fields = append(fields, topuporder.FieldOrderNo)
 	}
@@ -35546,6 +35604,9 @@ func (m *TopupOrderMutation) Fields() []string {
 	}
 	if m.amount_cny_fen != nil {
 		fields = append(fields, topuporder.FieldAmountCnyFen)
+	}
+	if m.bonus_amount_cny_fen != nil {
+		fields = append(fields, topuporder.FieldBonusAmountCnyFen)
 	}
 	if m.pay_type != nil {
 		fields = append(fields, topuporder.FieldPayType)
@@ -35585,6 +35646,8 @@ func (m *TopupOrderMutation) Field(name string) (ent.Value, bool) {
 		return m.UserID()
 	case topuporder.FieldAmountCnyFen:
 		return m.AmountCnyFen()
+	case topuporder.FieldBonusAmountCnyFen:
+		return m.BonusAmountCnyFen()
 	case topuporder.FieldPayType:
 		return m.PayType()
 	case topuporder.FieldStatus:
@@ -35616,6 +35679,8 @@ func (m *TopupOrderMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldUserID(ctx)
 	case topuporder.FieldAmountCnyFen:
 		return m.OldAmountCnyFen(ctx)
+	case topuporder.FieldBonusAmountCnyFen:
+		return m.OldBonusAmountCnyFen(ctx)
 	case topuporder.FieldPayType:
 		return m.OldPayType(ctx)
 	case topuporder.FieldStatus:
@@ -35661,6 +35726,13 @@ func (m *TopupOrderMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetAmountCnyFen(v)
+		return nil
+	case topuporder.FieldBonusAmountCnyFen:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBonusAmountCnyFen(v)
 		return nil
 	case topuporder.FieldPayType:
 		v, ok := value.(string)
@@ -35729,6 +35801,9 @@ func (m *TopupOrderMutation) AddedFields() []string {
 	if m.addamount_cny_fen != nil {
 		fields = append(fields, topuporder.FieldAmountCnyFen)
 	}
+	if m.addbonus_amount_cny_fen != nil {
+		fields = append(fields, topuporder.FieldBonusAmountCnyFen)
+	}
 	return fields
 }
 
@@ -35739,6 +35814,8 @@ func (m *TopupOrderMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case topuporder.FieldAmountCnyFen:
 		return m.AddedAmountCnyFen()
+	case topuporder.FieldBonusAmountCnyFen:
+		return m.AddedBonusAmountCnyFen()
 	}
 	return nil, false
 }
@@ -35754,6 +35831,13 @@ func (m *TopupOrderMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddAmountCnyFen(v)
+		return nil
+	case topuporder.FieldBonusAmountCnyFen:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddBonusAmountCnyFen(v)
 		return nil
 	}
 	return fmt.Errorf("unknown TopupOrder numeric field %s", name)
@@ -35811,6 +35895,9 @@ func (m *TopupOrderMutation) ResetField(name string) error {
 		return nil
 	case topuporder.FieldAmountCnyFen:
 		m.ResetAmountCnyFen()
+		return nil
+	case topuporder.FieldBonusAmountCnyFen:
+		m.ResetBonusAmountCnyFen()
 		return nil
 	case topuporder.FieldPayType:
 		m.ResetPayType()

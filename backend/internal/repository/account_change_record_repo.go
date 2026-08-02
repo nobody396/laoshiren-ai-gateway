@@ -150,6 +150,11 @@ func (r *accountChangeRecordRepository) applyFilters(query *dbent.AccountChangeR
 			accountchangerecord.AssetTypeEQ(service.AccountChangeAssetBalance),
 			accountchangerecord.ReasonEQ(service.AccountChangeReasonTopup),
 		)
+	case service.AccountChangeDisplayTopupPromotion:
+		return query.Where(
+			accountchangerecord.AssetTypeEQ(service.AccountChangeAssetBalance),
+			accountchangerecord.ReasonEQ(service.AccountChangeReasonTopupPromotion),
+		)
 	case service.RedeemTypeConcurrency:
 		return query.Where(
 			accountchangerecord.AssetTypeEQ(service.AccountChangeAssetConcurrency),

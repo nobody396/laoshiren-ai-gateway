@@ -33,6 +33,10 @@ func (TopupOrder) Fields() []ent.Field {
 		// 充值金额，单位：分（人民币）。例如 2000 = ¥20
 		field.Int("amount_cny_fen").
 			Positive(),
+		// 活动赠送额度，单位：分。历史订单默认为 0，避免按金额追溯套用新活动。
+		field.Int("bonus_amount_cny_fen").
+			NonNegative().
+			Default(0),
 		// 支付渠道：alipay 或 wechat
 		field.String("pay_type").
 			MaxLen(16),

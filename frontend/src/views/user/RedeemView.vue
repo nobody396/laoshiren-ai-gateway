@@ -425,7 +425,7 @@ const applyQueryRedeemCode = () => {
 
 // Helper functions for history display
 const isBalanceType = (type: string) => {
-  return type === 'balance' || type === 'admin_balance' || type === 'topup'
+  return type === 'balance' || type === 'admin_balance' || type === 'topup' || type === 'topup_promotion'
 }
 
 const isSubscriptionType = (type: string) => {
@@ -441,6 +441,8 @@ const getHistoryItemTitle = (item: RedeemHistoryItem) => {
     return t('redeem.balanceAddedRedeem')
   } else if (item.type === 'topup') {
     return t('redeem.balanceAddedTopup')
+  } else if (item.type === 'topup_promotion') {
+    return t('redeem.balanceAddedTopupPromotion')
   } else if (item.type === 'admin_balance') {
     return item.value >= 0 ? t('redeem.balanceAddedAdmin') : t('redeem.balanceDeductedAdmin')
   } else if (item.type === 'concurrency') {

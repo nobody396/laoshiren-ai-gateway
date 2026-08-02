@@ -30,8 +30,13 @@
                 <p class="text-xs text-gray-500 dark:text-dark-400">{{ row.user_name || `ID ${row.user_id}` }}</p>
               </div>
             </template>
-            <template #cell-amount_cny_fen="{ value }">
-              <span class="font-medium text-gray-900 dark:text-white">¥{{ formatFen(value) }}</span>
+            <template #cell-amount_cny_fen="{ value, row }">
+              <div>
+                <span class="font-medium text-gray-900 dark:text-white">¥{{ formatFen(value) }}</span>
+                <p v-if="row.bonus_amount_cny_fen > 0" class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                  到账 ⚡{{ formatFen(row.credited_amount_cny_fen) }}（活动赠送 {{ formatFen(row.bonus_amount_cny_fen) }}）
+                </p>
+              </div>
             </template>
             <template #cell-status="{ value }">
               <span class="badge" :class="statusBadgeClass(value)">{{ statusLabel(value) }}</span>

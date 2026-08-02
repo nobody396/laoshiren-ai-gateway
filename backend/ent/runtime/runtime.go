@@ -1680,32 +1680,38 @@ func init() {
 	topuporderDescAmountCnyFen := topuporderFields[2].Descriptor()
 	// topuporder.AmountCnyFenValidator is a validator for the "amount_cny_fen" field. It is called by the builders before save.
 	topuporder.AmountCnyFenValidator = topuporderDescAmountCnyFen.Validators[0].(func(int) error)
+	// topuporderDescBonusAmountCnyFen is the schema descriptor for bonus_amount_cny_fen field.
+	topuporderDescBonusAmountCnyFen := topuporderFields[3].Descriptor()
+	// topuporder.DefaultBonusAmountCnyFen holds the default value on creation for the bonus_amount_cny_fen field.
+	topuporder.DefaultBonusAmountCnyFen = topuporderDescBonusAmountCnyFen.Default.(int)
+	// topuporder.BonusAmountCnyFenValidator is a validator for the "bonus_amount_cny_fen" field. It is called by the builders before save.
+	topuporder.BonusAmountCnyFenValidator = topuporderDescBonusAmountCnyFen.Validators[0].(func(int) error)
 	// topuporderDescPayType is the schema descriptor for pay_type field.
-	topuporderDescPayType := topuporderFields[3].Descriptor()
+	topuporderDescPayType := topuporderFields[4].Descriptor()
 	// topuporder.PayTypeValidator is a validator for the "pay_type" field. It is called by the builders before save.
 	topuporder.PayTypeValidator = topuporderDescPayType.Validators[0].(func(string) error)
 	// topuporderDescStatus is the schema descriptor for status field.
-	topuporderDescStatus := topuporderFields[4].Descriptor()
+	topuporderDescStatus := topuporderFields[5].Descriptor()
 	// topuporder.DefaultStatus holds the default value on creation for the status field.
 	topuporder.DefaultStatus = topuporderDescStatus.Default.(string)
 	// topuporder.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	topuporder.StatusValidator = topuporderDescStatus.Validators[0].(func(string) error)
 	// topuporderDescInvoiceStatus is the schema descriptor for invoice_status field.
-	topuporderDescInvoiceStatus := topuporderFields[5].Descriptor()
+	topuporderDescInvoiceStatus := topuporderFields[6].Descriptor()
 	// topuporder.DefaultInvoiceStatus holds the default value on creation for the invoice_status field.
 	topuporder.DefaultInvoiceStatus = topuporderDescInvoiceStatus.Default.(string)
 	// topuporder.InvoiceStatusValidator is a validator for the "invoice_status" field. It is called by the builders before save.
 	topuporder.InvoiceStatusValidator = topuporderDescInvoiceStatus.Validators[0].(func(string) error)
 	// topuporderDescXunhuTradeNo is the schema descriptor for xunhu_trade_no field.
-	topuporderDescXunhuTradeNo := topuporderFields[6].Descriptor()
+	topuporderDescXunhuTradeNo := topuporderFields[7].Descriptor()
 	// topuporder.XunhuTradeNoValidator is a validator for the "xunhu_trade_no" field. It is called by the builders before save.
 	topuporder.XunhuTradeNoValidator = topuporderDescXunhuTradeNo.Validators[0].(func(string) error)
 	// topuporderDescCreatedAt is the schema descriptor for created_at field.
-	topuporderDescCreatedAt := topuporderFields[9].Descriptor()
+	topuporderDescCreatedAt := topuporderFields[10].Descriptor()
 	// topuporder.DefaultCreatedAt holds the default value on creation for the created_at field.
 	topuporder.DefaultCreatedAt = topuporderDescCreatedAt.Default.(func() time.Time)
 	// topuporderDescUpdatedAt is the schema descriptor for updated_at field.
-	topuporderDescUpdatedAt := topuporderFields[10].Descriptor()
+	topuporderDescUpdatedAt := topuporderFields[11].Descriptor()
 	// topuporder.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	topuporder.DefaultUpdatedAt = topuporderDescUpdatedAt.Default.(func() time.Time)
 	// topuporder.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

@@ -73,18 +73,20 @@ type InvoiceProfileInput struct {
 }
 
 type InvoiceTopupOrder struct {
-	ID            int64      `json:"id"`
-	OrderNo       string     `json:"order_no"`
-	UserID        int64      `json:"user_id"`
-	UserEmail     string     `json:"user_email,omitempty"`
-	UserName      string     `json:"user_name,omitempty"`
-	AmountCNYFen  int        `json:"amount_cny_fen"`
-	PayType       string     `json:"pay_type"`
-	Status        string     `json:"status"`
-	InvoiceStatus string     `json:"invoice_status"`
-	CompletedAt   *time.Time `json:"completed_at,omitempty"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID                   int64      `json:"id"`
+	OrderNo              string     `json:"order_no"`
+	UserID               int64      `json:"user_id"`
+	UserEmail            string     `json:"user_email,omitempty"`
+	UserName             string     `json:"user_name,omitempty"`
+	AmountCNYFen         int        `json:"amount_cny_fen"`
+	BonusAmountCNYFen    int        `json:"bonus_amount_cny_fen"`
+	CreditedAmountCNYFen int        `json:"credited_amount_cny_fen"`
+	PayType              string     `json:"pay_type"`
+	Status               string     `json:"status"`
+	InvoiceStatus        string     `json:"invoice_status"`
+	CompletedAt          *time.Time `json:"completed_at,omitempty"`
+	CreatedAt            time.Time  `json:"created_at"`
+	UpdatedAt            time.Time  `json:"updated_at"`
 }
 
 type InvoiceTopupOrderListFilters struct {

@@ -517,17 +517,20 @@ func testMapTopupOrder(e *dbent.TopupOrder) InvoiceTopupOrder {
 	if e == nil {
 		return InvoiceTopupOrder{}
 	}
+	quote := StoredTopupCreditQuote(e.AmountCnyFen, e.BonusAmountCnyFen)
 	item := InvoiceTopupOrder{
-		ID:            e.ID,
-		OrderNo:       e.OrderNo,
-		UserID:        e.UserID,
-		AmountCNYFen:  e.AmountCnyFen,
-		PayType:       e.PayType,
-		Status:        e.Status,
-		InvoiceStatus: e.InvoiceStatus,
-		CompletedAt:   e.CompletedAt,
-		CreatedAt:     e.CreatedAt,
-		UpdatedAt:     e.UpdatedAt,
+		ID:                   e.ID,
+		OrderNo:              e.OrderNo,
+		UserID:               e.UserID,
+		AmountCNYFen:         e.AmountCnyFen,
+		BonusAmountCNYFen:    quote.BonusAmountCNYFen,
+		CreditedAmountCNYFen: quote.CreditedAmountCNYFen,
+		PayType:              e.PayType,
+		Status:               e.Status,
+		InvoiceStatus:        e.InvoiceStatus,
+		CompletedAt:          e.CompletedAt,
+		CreatedAt:            e.CreatedAt,
+		UpdatedAt:            e.UpdatedAt,
 	}
 	if e.Edges.User != nil {
 		item.UserEmail = e.Edges.User.Email

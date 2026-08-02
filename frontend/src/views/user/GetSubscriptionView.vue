@@ -28,13 +28,21 @@
                       type="button"
                       @click="selectBalanceProduct(product)"
                       class="topup-product"
-                      :class="{ 'topup-product--active': selectedProductKind === 'balance' && selectedBalanceProduct?.id === product.id }"
+                      :class="{
+                        'topup-product--active': selectedProductKind === 'balance' && selectedBalanceProduct?.id === product.id,
+                        'topup-product--promotion': product.promotional
+                      }"
                     >
-                      <span class="topup-product-title">
-                        {{ product.label }}
+                      <span class="topup-product-title topup-product-title--row">
+                        <span>{{ product.label }}</span>
+                        <span v-if="product.promotional" class="topup-promotion-badge">{{ t('topup.promotionalCardBadge') }}</span>
                       </span>
                       <span class="topup-product-desc">
-                        {{ t('topup.cardShopAmount', { amount: product.amountCny }) }}
+                        <template v-if="product.promotional">
+                          {{ t('topup.promotionalCardCredit', { credited: product.creditedAmountCny }) }} ·
+                          {{ t('topup.promotionalCardBonus', { bonus: product.bonusAmountCny }) }}
+                        </template>
+                        <template v-else>{{ t('topup.cardShopAmount', { amount: product.amountCny }) }}</template>
                       </span>
                     </button>
                   </div>
@@ -153,7 +161,7 @@
                   </div>
                   <div>
                     <p class="topup-meta-label">平台额度</p>
-                    <p class="topup-meta-value topup-meta-value--accent">⚡{{ displayUSDText }}</p>
+                    <p class="topup-meta-value topup-meta-value--accent">⚡{{ displayCreditedText }}</p>
                   </div>
                 </div>
               </div>
@@ -176,7 +184,7 @@
                     </p>
                   </div>
                   <div v-if="showingQrTopup" class="topup-price-chip">
-                    ⚡{{ displayUSDText }}
+                    ⚡{{ displayCreditedText }}
                   </div>
                   <div v-else-if="selectedProductKind === 'monthly'" class="topup-price-chip topup-price-chip--muted">
                     {{ selectedMonthlyPlan?.rarityLabel ?? t('topup.monthlyPlanStatus') }}
@@ -394,7 +402,12 @@ import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/ap
 import { useAppStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import type { CardShopProduct } from '@/types'
-import { BALANCE_TOPUP_PRESETS, isSupportedBalanceTopupAmount } from '@/constants/balanceTopups'
+import {
+  BALANCE_TOPUP_PRESETS,
+  PROMOTIONAL_BALANCE_TOPUPS,
+  getCreditedBalanceTopupAmount,
+  isSupportedBalanceTopupAmount
+} from '@/constants/balanceTopups'
 import { type MonthlyCreditCardPlan } from '@/constants/monthlyCreditCards'
 import { useMonthlyCreditCardPlans } from '@/composables/useMonthlyCreditCardPlans'
 
@@ -411,6 +424,9 @@ type BalanceProduct = {
   label: string
   amountCny: number
   cardShopProduct?: CardShopProduct
+  creditedAmountCny?: number
+  bonusAmountCny?: number
+  promotional?: boolean
 }
 
 const step = ref<1 | 2>(1)
@@ -425,6 +441,7 @@ const orderNo = ref('')
 const qrExpired = ref(false)
 const countdown = ref(QR_TTL_SECONDS)
 const activeOrderAmountYuan = ref(0)
+const activeOrderCreditedAmountYuan = ref(0)
 const showMonthlyDirectPurchase = ref(false)
 const { plans: monthlyCreditCardPlans, loadMonthlyCreditCardPlans } = useMonthlyCreditCardPlans()
 
@@ -454,19 +471,32 @@ const cardShopMode = computed(
   () => (appStore.cachedPublicSettings?.card_shop_enabled ?? false) && activeCardShopProducts.value.length > 0
 )
 const balanceProducts = computed<BalanceProduct[]>(() => {
-  if (activeCardShopProducts.value.length > 0) {
-    return activeCardShopProducts.value.map((product) => ({
+	const promotionalAmounts = new Set(PROMOTIONAL_BALANCE_TOPUPS.map((product) => product.paidAmountCny))
+  const standardProducts: BalanceProduct[] = activeCardShopProducts.value.length > 0
+	? activeCardShopProducts.value.filter((product) => !promotionalAmounts.has(product.amount_cny)).map((product) => ({
       id: product.id,
       label: product.label || `¥${product.amount_cny} 余额卡`,
       amountCny: product.amount_cny,
       cardShopProduct: product
     }))
-  }
-  return presets.map((amount) => ({
-    id: `qr-${amount}`,
-    label: `¥${amount} 余额卡`,
-    amountCny: amount
-  }))
+    : presets.map((amount) => ({
+      id: `qr-${amount}`,
+      label: `¥${amount} 余额卡`,
+      amountCny: amount
+    }))
+	const promotionalProducts: BalanceProduct[] = PROMOTIONAL_BALANCE_TOPUPS.map((product) => {
+	  const cardShopProduct = activeCardShopProducts.value.find((candidate) => candidate.amount_cny === product.paidAmountCny)
+	  return {
+	    id: `promotion-${product.paidAmountCny}`,
+    label: t('topup.promotionalCardTitle', { paid: product.paidAmountCny }),
+    amountCny: product.paidAmountCny,
+    creditedAmountCny: product.creditedAmountCny,
+    bonusAmountCny: product.bonusAmountCny,
+	    promotional: true,
+	    cardShopProduct
+	  }
+	})
+  return [...standardProducts, ...promotionalProducts]
 })
 const selectedBalanceProduct = computed<BalanceProduct | undefined>(
   () => balanceProducts.value.find((product) => product.id === selectedBalanceProductId.value) ?? balanceProducts.value[0]
@@ -511,7 +541,13 @@ const displayAmountYuan = computed(() => {
 })
 
 const displayAmountText = computed(() => formatMoney(displayAmountYuan.value, false))
-const displayUSDText = computed(() => formatMoney(displayAmountYuan.value, true))
+const displayCreditedAmountYuan = computed(() => {
+  if (step.value === 2 && activeOrderCreditedAmountYuan.value > 0) {
+    return activeOrderCreditedAmountYuan.value
+  }
+  return getCreditedBalanceTopupAmount(displayAmountYuan.value)
+})
+const displayCreditedText = computed(() => formatMoney(displayCreditedAmountYuan.value, true))
 
 const amountError = computed<string>(() => {
   if (selectedProductKind.value !== 'balance' || selectedTopupChannel.value !== 'qr') return ''
@@ -639,12 +675,21 @@ function resetToForm() {
   qrExpired.value = false
   countdown.value = QR_TTL_SECONDS
   activeOrderAmountYuan.value = 0
+  activeOrderCreditedAmountYuan.value = 0
   submitting.value = false
 }
 
-function updateActiveOrderMeta(meta: { amount_cny_fen?: number; pay_type?: TopupPayType; qr_code_url?: string | null }) {
+function updateActiveOrderMeta(meta: {
+  amount_cny_fen?: number
+  credited_amount_cny_fen?: number
+  pay_type?: TopupPayType
+  qr_code_url?: string | null
+}) {
   if (typeof meta.amount_cny_fen === 'number' && Number.isFinite(meta.amount_cny_fen) && meta.amount_cny_fen > 0) {
     activeOrderAmountYuan.value = meta.amount_cny_fen / 100
+  }
+  if (typeof meta.credited_amount_cny_fen === 'number' && meta.credited_amount_cny_fen > 0) {
+    activeOrderCreditedAmountYuan.value = meta.credited_amount_cny_fen / 100
   }
   if (meta.pay_type === 'alipay' || meta.pay_type === 'wechat') {
     payType.value = meta.pay_type
@@ -665,6 +710,7 @@ async function submitOrder() {
     orderNo.value = response.order_no
     qrCodeURL.value = response.qr_code_url
     activeOrderAmountYuan.value = orderAmountYuan
+    activeOrderCreditedAmountYuan.value = getCreditedBalanceTopupAmount(orderAmountYuan)
     updateActiveOrderMeta(response)
     qrExpired.value = false
     countdown.value = QR_TTL_SECONDS
@@ -718,7 +764,7 @@ async function pollOrderStatus() {
     updateActiveOrderMeta(status)
     if (status.status === 'completed') {
       stopTimers()
-      appStore.showSuccess(t('topup.paySuccess'))
+      appStore.showSuccess(t('topup.paySuccessWithCredit', { amount: displayCreditedText.value }))
       resetToForm()
     } else if (status.status === 'expired') {
       qrExpired.value = true
@@ -1016,6 +1062,31 @@ void Promise.all([
 
 .topup-product-title {
   font-size: 1.15rem;
+}
+
+.topup-product-title--row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.topup-product--promotion {
+  border-color: rgb(var(--color-terracotta) / 0.42);
+  background:
+    linear-gradient(135deg, rgb(var(--color-terracotta) / 0.1), transparent 64%),
+    var(--admin-control, rgb(var(--color-vellum) / 0.95));
+}
+
+.topup-promotion-badge {
+  flex: 0 0 auto;
+  border: 1px solid rgb(var(--color-terracotta) / 0.28);
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  background: rgb(var(--color-terracotta) / 0.1);
+  color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
+  font-size: 0.7rem;
+  font-weight: 750;
 }
 
 .topup-monthly-product {

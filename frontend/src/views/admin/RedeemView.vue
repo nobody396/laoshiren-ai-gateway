@@ -279,6 +279,18 @@
                 class="input"
               />
             </div>
+            <div v-if="generateForm.type === 'balance' && generateForm.purpose === 'sale_recharge'">
+              <label class="input-label">{{ t('admin.redeem.paidValue') }}</label>
+              <input
+                v-model.number="generateForm.paid_value"
+                type="number"
+                step="0.01"
+                min="0"
+                :max="generateForm.value"
+                class="input"
+              />
+              <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ t('admin.redeem.paidValueHint') }}</p>
+            </div>
             <!-- 邀请码类型：显示提示信息 -->
             <div v-if="generateForm.type === 'invitation'" class="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
               <p class="text-sm text-blue-700 dark:text-blue-300">
@@ -749,6 +761,7 @@ const copiedCode = ref<string | null>(null)
 const generateForm = reactive({
   type: 'balance' as RedeemCodeType,
   value: 10,
+  paid_value: 0,
   count: 1,
   group_id: null as number | null,
   validity_days: 31,
@@ -900,6 +913,10 @@ const handleGenerateCodes = async () => {
     } as const
     const result = await adminAPI.redeem.generate({
       ...payload,
+      paid_value:
+        generateForm.type === 'balance' && generateForm.purpose === 'sale_recharge' && generateForm.paid_value > 0
+          ? generateForm.paid_value
+          : undefined,
       group_id: generateForm.type === 'subscription' ? generateForm.group_id : undefined,
       validity_days: generateForm.type === 'subscription' ? generateForm.validity_days : undefined,
       batch_name: generateForm.type === 'balance' ? generateForm.batch_name : undefined,
@@ -919,6 +936,7 @@ const handleGenerateCodes = async () => {
     showResultDialog.value = true
     // 重置表单
     generateForm.group_id = null
+	generateForm.paid_value = 0
     generateForm.validity_days = 31
     generateForm.batch_name = ''
     generateForm.sales_channel = ''

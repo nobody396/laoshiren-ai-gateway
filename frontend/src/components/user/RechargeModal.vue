@@ -114,6 +114,34 @@
             </div>
           </div>
 
+          <div>
+            <p class="text-sm font-medium text-gray-700 dark:text-dark-300 mb-3">{{ t('topup.promotionalCardsTitle') }}</p>
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                v-for="product in promotionalTopups"
+                :key="product.paidAmountCny"
+                type="button"
+                @click="selectPreset(product.paidAmountCny)"
+                :class="[
+                  'rounded-xl border-2 px-3 py-3 text-left transition-all',
+                  selectedPreset === product.paidAmountCny && !useCustom
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                    : 'border-amber-200 bg-amber-50/60 hover:border-amber-400 dark:border-amber-900/50 dark:bg-amber-900/10'
+                ]"
+              >
+                <span class="block text-sm font-semibold text-gray-900 dark:text-white">
+                  {{ t('topup.promotionalCardTitle', { paid: product.paidAmountCny }) }}
+                </span>
+                <span class="mt-1 block text-sm font-semibold text-primary-600 dark:text-primary-400">
+                  {{ t('topup.promotionalCardCredit', { credited: product.creditedAmountCny }) }}
+                </span>
+                <span class="mt-1 block text-xs text-amber-700 dark:text-amber-300">
+                  {{ t('topup.promotionalCardBonus', { bonus: product.bonusAmountCny }) }}
+                </span>
+              </button>
+            </div>
+          </div>
+
           <!-- Custom amount -->
           <div>
             <p class="text-sm font-medium text-gray-700 dark:text-dark-300 mb-1.5">{{ t('topup.customAmount') }}</p>
@@ -243,7 +271,7 @@
               <span class="text-gray-500 dark:text-dark-400">充值金额：</span>
               <span class="font-semibold text-gray-900 dark:text-white">¥{{ displayAmountText }}</span>
               <span class="text-gray-400 mx-2">→</span>
-              <span class="font-semibold text-primary-600 dark:text-primary-400">⚡{{ displayUSDText }}</span>
+              <span class="font-semibold text-primary-600 dark:text-primary-400">⚡{{ displayCreditedText }}</span>
             </div>
 
             <p class="text-xs text-gray-400 dark:text-dark-400">{{ t('topup.waitingPayment') }}</p>
@@ -263,7 +291,12 @@ import Icon from '@/components/icons/Icon.vue'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { useAppStore } from '@/stores'
 import type { CardShopProduct } from '@/types'
-import { BALANCE_TOPUP_PRESETS, isSupportedBalanceTopupAmount } from '@/constants/balanceTopups'
+import {
+  BALANCE_TOPUP_PRESETS,
+  PROMOTIONAL_BALANCE_TOPUPS,
+  getCreditedBalanceTopupAmount,
+  isSupportedBalanceTopupAmount
+} from '@/constants/balanceTopups'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -276,6 +309,7 @@ const emit = defineEmits<{
 }>()
 
 const presets = BALANCE_TOPUP_PRESETS
+const promotionalTopups = PROMOTIONAL_BALANCE_TOPUPS
 const QR_TTL_SECONDS = 300 // 5 分钟
 type TopupChannel = 'card_shop' | 'qr'
 
@@ -292,6 +326,7 @@ const orderNo = ref('')
 const qrExpired = ref(false)
 const countdown = ref(QR_TTL_SECONDS)
 const activeOrderAmountYuan = ref(0)
+const activeOrderCreditedAmountYuan = ref(0)
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
@@ -338,7 +373,13 @@ const displayAmountYuan = computed(() => {
 })
 
 const displayAmountText = computed(() => formatMoney(displayAmountYuan.value, false))
-const displayUSDText = computed(() => formatMoney(displayAmountYuan.value, true))
+const displayCreditedAmountYuan = computed(() => {
+  if (step.value === 2 && activeOrderCreditedAmountYuan.value > 0) {
+    return activeOrderCreditedAmountYuan.value
+  }
+  return getCreditedBalanceTopupAmount(displayAmountYuan.value)
+})
+const displayCreditedText = computed(() => formatMoney(displayCreditedAmountYuan.value, true))
 
 const amountError = computed<string>(() => {
   if (effectiveAmountYuan.value > 0 && effectiveAmountYuan.value < 20) {
@@ -428,13 +469,22 @@ function reset() {
   qrExpired.value = false
   countdown.value = QR_TTL_SECONDS
   activeOrderAmountYuan.value = 0
+  activeOrderCreditedAmountYuan.value = 0
   submitting.value = false
   stopTimers()
 }
 
-function updateActiveOrderMeta(meta: { amount_cny_fen?: number; pay_type?: TopupPayType; qr_code_url?: string | null }) {
+function updateActiveOrderMeta(meta: {
+  amount_cny_fen?: number
+  credited_amount_cny_fen?: number
+  pay_type?: TopupPayType
+  qr_code_url?: string | null
+}) {
   if (typeof meta.amount_cny_fen === 'number' && Number.isFinite(meta.amount_cny_fen) && meta.amount_cny_fen > 0) {
     activeOrderAmountYuan.value = meta.amount_cny_fen / 100
+  }
+  if (typeof meta.credited_amount_cny_fen === 'number' && meta.credited_amount_cny_fen > 0) {
+    activeOrderCreditedAmountYuan.value = meta.credited_amount_cny_fen / 100
   }
   if (meta.pay_type === 'alipay' || meta.pay_type === 'wechat') {
     payType.value = meta.pay_type
@@ -454,6 +504,7 @@ async function submitOrder() {
     orderNo.value = res.order_no
     qrCodeURL.value = res.qr_code_url
     activeOrderAmountYuan.value = orderAmountYuan
+    activeOrderCreditedAmountYuan.value = getCreditedBalanceTopupAmount(orderAmountYuan)
     updateActiveOrderMeta(res)
     step.value = 2
     startCountdown()

@@ -42,6 +42,20 @@ func (_c *TopupOrderCreate) SetAmountCnyFen(v int) *TopupOrderCreate {
 	return _c
 }
 
+// SetBonusAmountCnyFen sets the "bonus_amount_cny_fen" field.
+func (_c *TopupOrderCreate) SetBonusAmountCnyFen(v int) *TopupOrderCreate {
+	_c.mutation.SetBonusAmountCnyFen(v)
+	return _c
+}
+
+// SetNillableBonusAmountCnyFen sets the "bonus_amount_cny_fen" field if the given value is not nil.
+func (_c *TopupOrderCreate) SetNillableBonusAmountCnyFen(v *int) *TopupOrderCreate {
+	if v != nil {
+		_c.SetBonusAmountCnyFen(*v)
+	}
+	return _c
+}
+
 // SetPayType sets the "pay_type" field.
 func (_c *TopupOrderCreate) SetPayType(v string) *TopupOrderCreate {
 	_c.mutation.SetPayType(v)
@@ -201,6 +215,10 @@ func (_c *TopupOrderCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *TopupOrderCreate) defaults() {
+	if _, ok := _c.mutation.BonusAmountCnyFen(); !ok {
+		v := topuporder.DefaultBonusAmountCnyFen
+		_c.mutation.SetBonusAmountCnyFen(v)
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		v := topuporder.DefaultStatus
 		_c.mutation.SetStatus(v)
@@ -238,6 +256,14 @@ func (_c *TopupOrderCreate) check() error {
 	if v, ok := _c.mutation.AmountCnyFen(); ok {
 		if err := topuporder.AmountCnyFenValidator(v); err != nil {
 			return &ValidationError{Name: "amount_cny_fen", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.amount_cny_fen": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.BonusAmountCnyFen(); !ok {
+		return &ValidationError{Name: "bonus_amount_cny_fen", err: errors.New(`ent: missing required field "TopupOrder.bonus_amount_cny_fen"`)}
+	}
+	if v, ok := _c.mutation.BonusAmountCnyFen(); ok {
+		if err := topuporder.BonusAmountCnyFenValidator(v); err != nil {
+			return &ValidationError{Name: "bonus_amount_cny_fen", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.bonus_amount_cny_fen": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.PayType(); !ok {
@@ -312,6 +338,10 @@ func (_c *TopupOrderCreate) createSpec() (*TopupOrder, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.AmountCnyFen(); ok {
 		_spec.SetField(topuporder.FieldAmountCnyFen, field.TypeInt, value)
 		_node.AmountCnyFen = value
+	}
+	if value, ok := _c.mutation.BonusAmountCnyFen(); ok {
+		_spec.SetField(topuporder.FieldBonusAmountCnyFen, field.TypeInt, value)
+		_node.BonusAmountCnyFen = value
 	}
 	if value, ok := _c.mutation.PayType(); ok {
 		_spec.SetField(topuporder.FieldPayType, field.TypeString, value)
@@ -469,6 +499,24 @@ func (u *TopupOrderUpsert) UpdateAmountCnyFen() *TopupOrderUpsert {
 // AddAmountCnyFen adds v to the "amount_cny_fen" field.
 func (u *TopupOrderUpsert) AddAmountCnyFen(v int) *TopupOrderUpsert {
 	u.Add(topuporder.FieldAmountCnyFen, v)
+	return u
+}
+
+// SetBonusAmountCnyFen sets the "bonus_amount_cny_fen" field.
+func (u *TopupOrderUpsert) SetBonusAmountCnyFen(v int) *TopupOrderUpsert {
+	u.Set(topuporder.FieldBonusAmountCnyFen, v)
+	return u
+}
+
+// UpdateBonusAmountCnyFen sets the "bonus_amount_cny_fen" field to the value that was provided on create.
+func (u *TopupOrderUpsert) UpdateBonusAmountCnyFen() *TopupOrderUpsert {
+	u.SetExcluded(topuporder.FieldBonusAmountCnyFen)
+	return u
+}
+
+// AddBonusAmountCnyFen adds v to the "bonus_amount_cny_fen" field.
+func (u *TopupOrderUpsert) AddBonusAmountCnyFen(v int) *TopupOrderUpsert {
+	u.Add(topuporder.FieldBonusAmountCnyFen, v)
 	return u
 }
 
@@ -665,6 +713,27 @@ func (u *TopupOrderUpsertOne) AddAmountCnyFen(v int) *TopupOrderUpsertOne {
 func (u *TopupOrderUpsertOne) UpdateAmountCnyFen() *TopupOrderUpsertOne {
 	return u.Update(func(s *TopupOrderUpsert) {
 		s.UpdateAmountCnyFen()
+	})
+}
+
+// SetBonusAmountCnyFen sets the "bonus_amount_cny_fen" field.
+func (u *TopupOrderUpsertOne) SetBonusAmountCnyFen(v int) *TopupOrderUpsertOne {
+	return u.Update(func(s *TopupOrderUpsert) {
+		s.SetBonusAmountCnyFen(v)
+	})
+}
+
+// AddBonusAmountCnyFen adds v to the "bonus_amount_cny_fen" field.
+func (u *TopupOrderUpsertOne) AddBonusAmountCnyFen(v int) *TopupOrderUpsertOne {
+	return u.Update(func(s *TopupOrderUpsert) {
+		s.AddBonusAmountCnyFen(v)
+	})
+}
+
+// UpdateBonusAmountCnyFen sets the "bonus_amount_cny_fen" field to the value that was provided on create.
+func (u *TopupOrderUpsertOne) UpdateBonusAmountCnyFen() *TopupOrderUpsertOne {
+	return u.Update(func(s *TopupOrderUpsert) {
+		s.UpdateBonusAmountCnyFen()
 	})
 }
 
@@ -1044,6 +1113,27 @@ func (u *TopupOrderUpsertBulk) AddAmountCnyFen(v int) *TopupOrderUpsertBulk {
 func (u *TopupOrderUpsertBulk) UpdateAmountCnyFen() *TopupOrderUpsertBulk {
 	return u.Update(func(s *TopupOrderUpsert) {
 		s.UpdateAmountCnyFen()
+	})
+}
+
+// SetBonusAmountCnyFen sets the "bonus_amount_cny_fen" field.
+func (u *TopupOrderUpsertBulk) SetBonusAmountCnyFen(v int) *TopupOrderUpsertBulk {
+	return u.Update(func(s *TopupOrderUpsert) {
+		s.SetBonusAmountCnyFen(v)
+	})
+}
+
+// AddBonusAmountCnyFen adds v to the "bonus_amount_cny_fen" field.
+func (u *TopupOrderUpsertBulk) AddBonusAmountCnyFen(v int) *TopupOrderUpsertBulk {
+	return u.Update(func(s *TopupOrderUpsert) {
+		s.AddBonusAmountCnyFen(v)
+	})
+}
+
+// UpdateBonusAmountCnyFen sets the "bonus_amount_cny_fen" field to the value that was provided on create.
+func (u *TopupOrderUpsertBulk) UpdateBonusAmountCnyFen() *TopupOrderUpsertBulk {
+	return u.Update(func(s *TopupOrderUpsert) {
+		s.UpdateBonusAmountCnyFen()
 	})
 }
 

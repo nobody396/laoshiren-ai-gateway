@@ -357,6 +357,7 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 		}
 		if s.affiliateConsumption != nil {
 			sourceType, paid := AffiliateSourceFromRedeem(redeemCode.Purpose, redeemCode.SalesStatus)
+			paidValue := RedeemPaidValue(redeemCode)
 			occurredAt := time.Now()
 			var rewardResult *AffiliateFirstPaidPurchaseResult
 			if paid && s.affiliateRewards != nil {
@@ -365,7 +366,7 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 					PurchaseType: AffiliatePurchaseBalanceRedeem,
 					SourceID:     redeemCode.ID,
 					PurchaseKey:  fmt.Sprintf("redeem:balance:%d", redeemCode.ID),
-					AmountMicros: AffiliateMicrosFromFloat(redeemCode.Value),
+					AmountMicros: AffiliateMicrosFromFloat(paidValue),
 					OccurredAt:   occurredAt,
 				})
 				if err != nil {
@@ -373,19 +374,10 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 				}
 			}
 			policy, partnerID, customerRate, partnerRate := AffiliatePolicyFromPurchaseResult(paid, rewardResult)
-			if err := s.affiliateConsumption.RecordBalanceLot(txCtx, AffiliateBalanceLotInput{
-				UserID:                   userID,
-				SourceType:               sourceType,
-				SourceID:                 redeemCode.ID,
-				SourceKey:                fmt.Sprintf("redeem:balance:%d", redeemCode.ID),
-				AmountMicros:             AffiliateMicrosFromFloat(redeemCode.Value),
-				AffiliatePolicy:          policy,
-				DirectPartnerID:          partnerID,
-				CustomerRebateRateBPS:    customerRate,
-				PartnerCommissionRateBPS: partnerRate,
-				OccurredAt:               occurredAt,
-			}); err != nil {
-				return nil, fmt.Errorf("record affiliate balance lot: %w", err)
+			for _, lot := range buildRedeemBalanceLots(redeemCode, userID, sourceType, paid, policy, partnerID, customerRate, partnerRate, occurredAt) {
+				if err := s.affiliateConsumption.RecordBalanceLot(txCtx, lot); err != nil {
+					return nil, fmt.Errorf("record affiliate balance lot: %w", err)
+				}
 			}
 		}
 

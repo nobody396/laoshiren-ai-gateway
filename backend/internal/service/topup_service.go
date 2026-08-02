@@ -187,11 +187,12 @@ func (s *TopupService) CreateTopupOrder(ctx context.Context, userID int64, amoun
 
 	// 写入 DB（pending 状态）
 	order := &TopupOrder{
-		OrderNo:      orderNo,
-		UserID:       userID,
-		AmountCNYFen: amountCNYFen,
-		PayType:      payType,
-		Status:       TopupStatusPending,
+		OrderNo:           orderNo,
+		UserID:            userID,
+		AmountCNYFen:      amountCNYFen,
+		BonusAmountCNYFen: QuoteTopupCredit(amountCNYFen).BonusAmountCNYFen,
+		PayType:           payType,
+		Status:            TopupStatusPending,
 	}
 	if err := s.topupRepo.Create(ctx, order); err != nil {
 		return "", "", fmt.Errorf("create topup order: %w", err)
@@ -332,8 +333,11 @@ func (s *TopupService) QueryOrderStatus(ctx context.Context, orderNo string, use
 
 // completeOrder 幂等完成订单：写余额、写流水、触发首充奖励
 func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order *TopupOrder, xunhuTradeNo *string) error {
-	// 充值金额换算（1 CNY = 1 USD，单位：分 → USD）
-	amountUSD := float64(order.AmountCNYFen) * topupCNYFenToUSD
+	// 付费金额用于订单、开票和联盟结算；活动赠送只增加余额。
+	quote := StoredTopupCreditQuote(order.AmountCNYFen, order.BonusAmountCNYFen)
+	amountUSD := float64(quote.PaidAmountCNYFen) * topupCNYFenToUSD
+	bonusUSD := float64(quote.BonusAmountCNYFen) * topupCNYFenToUSD
+	creditedUSD := float64(quote.CreditedAmountCNYFen) * topupCNYFenToUSD
 	affiliateV3Active := false
 
 	// 开事务
@@ -355,7 +359,7 @@ func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order 
 	}
 
 	// 增加余额
-	if err := s.userRepo.UpdateBalance(txCtx, order.UserID, amountUSD); err != nil {
+	if err := s.userRepo.UpdateBalance(txCtx, order.UserID, creditedUSD); err != nil {
 		return fmt.Errorf("update user balance: %w", err)
 	}
 	if s.affiliateConsumption != nil {
@@ -379,19 +383,10 @@ func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order 
 			order.AmountCNYFen > 0,
 			rewardResult,
 		)
-		if err := s.affiliateConsumption.RecordBalanceLot(txCtx, AffiliateBalanceLotInput{
-			UserID:                   order.UserID,
-			SourceType:               AffiliateSourcePaidTopup,
-			SourceID:                 order.ID,
-			SourceKey:                fmt.Sprintf("topup:balance:%d", order.ID),
-			AmountMicros:             int64(order.AmountCNYFen) * 10_000,
-			AffiliatePolicy:          policy,
-			DirectPartnerID:          partnerID,
-			CustomerRebateRateBPS:    customerRate,
-			PartnerCommissionRateBPS: partnerRate,
-			OccurredAt:               occurredAt,
-		}); err != nil {
-			return fmt.Errorf("record affiliate balance lot: %w", err)
+		for _, lot := range buildTopupBalanceLots(order, quote, policy, partnerID, customerRate, partnerRate, occurredAt) {
+			if err := s.affiliateConsumption.RecordBalanceLot(txCtx, lot); err != nil {
+				return fmt.Errorf("record affiliate balance lot: %w", err)
+			}
 		}
 	}
 
@@ -415,6 +410,23 @@ func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order 
 		}
 		if err := s.accountChangeRepo.Create(txCtx, record); err != nil {
 			return fmt.Errorf("create account change record: %w", err)
+		}
+		if bonusUSD > 0 {
+			bonusRecord := &AccountChangeRecord{
+				UserID:      order.UserID,
+				AssetType:   AccountChangeAssetBalance,
+				Reason:      AccountChangeReasonTopupPromotion,
+				Delta:       bonusUSD,
+				SourceType:  AccountChangeSourceTopupOrder,
+				SourceID:    &order.ID,
+				ReferenceNo: orderNo,
+				Notes:       fmt.Sprintf("优惠充值赠送，订单号: %s", orderNo),
+				CreatedAt:   now,
+				DedupeKey:   ptrString(fmt.Sprintf("topup_order:%d:promotion", order.ID)),
+			}
+			if err := s.accountChangeRepo.Create(txCtx, bonusRecord); err != nil {
+				return fmt.Errorf("create promotional topup account change record: %w", err)
+			}
 		}
 	}
 

@@ -24,6 +24,8 @@ type TopupOrder struct {
 	UserID int64 `json:"user_id,omitempty"`
 	// AmountCnyFen holds the value of the "amount_cny_fen" field.
 	AmountCnyFen int `json:"amount_cny_fen,omitempty"`
+	// BonusAmountCnyFen holds the value of the "bonus_amount_cny_fen" field.
+	BonusAmountCnyFen int `json:"bonus_amount_cny_fen,omitempty"`
 	// PayType holds the value of the "pay_type" field.
 	PayType string `json:"pay_type,omitempty"`
 	// Status holds the value of the "status" field.
@@ -82,7 +84,7 @@ func (*TopupOrder) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case topuporder.FieldID, topuporder.FieldUserID, topuporder.FieldAmountCnyFen:
+		case topuporder.FieldID, topuporder.FieldUserID, topuporder.FieldAmountCnyFen, topuporder.FieldBonusAmountCnyFen:
 			values[i] = new(sql.NullInt64)
 		case topuporder.FieldOrderNo, topuporder.FieldPayType, topuporder.FieldStatus, topuporder.FieldInvoiceStatus, topuporder.FieldXunhuTradeNo, topuporder.FieldQrCodeURL:
 			values[i] = new(sql.NullString)
@@ -126,6 +128,12 @@ func (_m *TopupOrder) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field amount_cny_fen", values[i])
 			} else if value.Valid {
 				_m.AmountCnyFen = int(value.Int64)
+			}
+		case topuporder.FieldBonusAmountCnyFen:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field bonus_amount_cny_fen", values[i])
+			} else if value.Valid {
+				_m.BonusAmountCnyFen = int(value.Int64)
 			}
 		case topuporder.FieldPayType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -232,6 +240,9 @@ func (_m *TopupOrder) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("amount_cny_fen=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AmountCnyFen))
+	builder.WriteString(", ")
+	builder.WriteString("bonus_amount_cny_fen=")
+	builder.WriteString(fmt.Sprintf("%v", _m.BonusAmountCnyFen))
 	builder.WriteString(", ")
 	builder.WriteString("pay_type=")
 	builder.WriteString(_m.PayType)

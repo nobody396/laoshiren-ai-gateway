@@ -1288,6 +1288,7 @@ var (
 		{Name: "code", Type: field.TypeString, Unique: true, Size: 32},
 		{Name: "type", Type: field.TypeString, Size: 20, Default: "balance"},
 		{Name: "value", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "paid_value", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
 		{Name: "status", Type: field.TypeString, Size: 20, Default: "unused"},
 		{Name: "used_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "notes", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
@@ -1314,19 +1315,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "redeem_codes_groups_redeem_codes",
-				Columns:    []*schema.Column{RedeemCodesColumns[18]},
+				Columns:    []*schema.Column{RedeemCodesColumns[19]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "redeem_codes_redeem_code_batches_redeem_codes",
-				Columns:    []*schema.Column{RedeemCodesColumns[19]},
+				Columns:    []*schema.Column{RedeemCodesColumns[20]},
 				RefColumns: []*schema.Column{RedeemCodeBatchesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "redeem_codes_users_redeem_codes",
-				Columns:    []*schema.Column{RedeemCodesColumns[20]},
+				Columns:    []*schema.Column{RedeemCodesColumns[21]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -1335,47 +1336,47 @@ var (
 			{
 				Name:    "redeemcode_status",
 				Unique:  false,
-				Columns: []*schema.Column{RedeemCodesColumns[4]},
+				Columns: []*schema.Column{RedeemCodesColumns[5]},
 			},
 			{
 				Name:    "redeemcode_used_by",
 				Unique:  false,
-				Columns: []*schema.Column{RedeemCodesColumns[20]},
+				Columns: []*schema.Column{RedeemCodesColumns[21]},
 			},
 			{
 				Name:    "redeemcode_group_id",
 				Unique:  false,
-				Columns: []*schema.Column{RedeemCodesColumns[18]},
+				Columns: []*schema.Column{RedeemCodesColumns[19]},
 			},
 			{
 				Name:    "redeemcode_batch_id",
 				Unique:  false,
-				Columns: []*schema.Column{RedeemCodesColumns[19]},
+				Columns: []*schema.Column{RedeemCodesColumns[20]},
 			},
 			{
 				Name:    "redeemcode_purpose",
 				Unique:  false,
-				Columns: []*schema.Column{RedeemCodesColumns[7]},
+				Columns: []*schema.Column{RedeemCodesColumns[8]},
 			},
 			{
 				Name:    "redeemcode_sales_status",
 				Unique:  false,
-				Columns: []*schema.Column{RedeemCodesColumns[8]},
+				Columns: []*schema.Column{RedeemCodesColumns[9]},
 			},
 			{
 				Name:    "redeemcode_purpose_sales_status",
 				Unique:  false,
-				Columns: []*schema.Column{RedeemCodesColumns[7], RedeemCodesColumns[8]},
+				Columns: []*schema.Column{RedeemCodesColumns[8], RedeemCodesColumns[9]},
 			},
 			{
 				Name:    "redeemcode_used_at",
 				Unique:  false,
-				Columns: []*schema.Column{RedeemCodesColumns[5]},
+				Columns: []*schema.Column{RedeemCodesColumns[6]},
 			},
 			{
 				Name:    "redeemcode_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{RedeemCodesColumns[14]},
+				Columns: []*schema.Column{RedeemCodesColumns[15]},
 			},
 		},
 	}
@@ -1475,6 +1476,7 @@ var (
 		{Name: "id", Type: field.TypeInt64, Increment: true},
 		{Name: "order_no", Type: field.TypeString, Unique: true, Size: 32},
 		{Name: "amount_cny_fen", Type: field.TypeInt},
+		{Name: "bonus_amount_cny_fen", Type: field.TypeInt, Default: 0},
 		{Name: "pay_type", Type: field.TypeString, Size: 16},
 		{Name: "status", Type: field.TypeString, Size: 20, Default: "pending"},
 		{Name: "invoice_status", Type: field.TypeString, Size: 20, Default: "none"},
@@ -1493,7 +1495,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "topup_orders_users_topup_orders",
-				Columns:    []*schema.Column{TopupOrdersColumns[11]},
+				Columns:    []*schema.Column{TopupOrdersColumns[12]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1502,17 +1504,17 @@ var (
 			{
 				Name:    "topuporder_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{TopupOrdersColumns[11]},
+				Columns: []*schema.Column{TopupOrdersColumns[12]},
 			},
 			{
 				Name:    "topuporder_status",
 				Unique:  false,
-				Columns: []*schema.Column{TopupOrdersColumns[4]},
+				Columns: []*schema.Column{TopupOrdersColumns[5]},
 			},
 			{
 				Name:    "topuporder_invoice_status",
 				Unique:  false,
-				Columns: []*schema.Column{TopupOrdersColumns[5]},
+				Columns: []*schema.Column{TopupOrdersColumns[6]},
 			},
 			{
 				Name:    "topuporder_order_no",
@@ -1522,12 +1524,12 @@ var (
 			{
 				Name:    "topuporder_user_id_invoice_status_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{TopupOrdersColumns[11], TopupOrdersColumns[5], TopupOrdersColumns[9]},
+				Columns: []*schema.Column{TopupOrdersColumns[12], TopupOrdersColumns[6], TopupOrdersColumns[10]},
 			},
 			{
 				Name:    "topuporder_invoice_status_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{TopupOrdersColumns[5], TopupOrdersColumns[9]},
+				Columns: []*schema.Column{TopupOrdersColumns[6], TopupOrdersColumns[10]},
 			},
 		},
 	}

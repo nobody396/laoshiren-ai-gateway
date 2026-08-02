@@ -20,6 +20,8 @@ const (
 	FieldUserID = "user_id"
 	// FieldAmountCnyFen holds the string denoting the amount_cny_fen field in the database.
 	FieldAmountCnyFen = "amount_cny_fen"
+	// FieldBonusAmountCnyFen holds the string denoting the bonus_amount_cny_fen field in the database.
+	FieldBonusAmountCnyFen = "bonus_amount_cny_fen"
 	// FieldPayType holds the string denoting the pay_type field in the database.
 	FieldPayType = "pay_type"
 	// FieldStatus holds the string denoting the status field in the database.
@@ -64,6 +66,7 @@ var Columns = []string{
 	FieldOrderNo,
 	FieldUserID,
 	FieldAmountCnyFen,
+	FieldBonusAmountCnyFen,
 	FieldPayType,
 	FieldStatus,
 	FieldInvoiceStatus,
@@ -89,6 +92,10 @@ var (
 	OrderNoValidator func(string) error
 	// AmountCnyFenValidator is a validator for the "amount_cny_fen" field. It is called by the builders before save.
 	AmountCnyFenValidator func(int) error
+	// DefaultBonusAmountCnyFen holds the default value on creation for the "bonus_amount_cny_fen" field.
+	DefaultBonusAmountCnyFen int
+	// BonusAmountCnyFenValidator is a validator for the "bonus_amount_cny_fen" field. It is called by the builders before save.
+	BonusAmountCnyFenValidator func(int) error
 	// PayTypeValidator is a validator for the "pay_type" field. It is called by the builders before save.
 	PayTypeValidator func(string) error
 	// DefaultStatus holds the default value on creation for the "status" field.
@@ -130,6 +137,11 @@ func ByUserID(opts ...sql.OrderTermOption) OrderOption {
 // ByAmountCnyFen orders the results by the amount_cny_fen field.
 func ByAmountCnyFen(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAmountCnyFen, opts...).ToFunc()
+}
+
+// ByBonusAmountCnyFen orders the results by the bonus_amount_cny_fen field.
+func ByBonusAmountCnyFen(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBonusAmountCnyFen, opts...).ToFunc()
 }
 
 // ByPayType orders the results by the pay_type field.

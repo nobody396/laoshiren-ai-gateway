@@ -181,7 +181,10 @@
                     </div>
                   </td>
                   <td class="table-td">
-                    <div class="font-medium text-gray-900 dark:text-white">{{ formatMoney(item.value) }}</div>
+                    <div class="font-medium text-gray-900 dark:text-white">{{ formatMoney(item.paid_value) }}</div>
+                    <div v-if="item.value > item.paid_value" class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                      到账 {{ formatMoney(item.value) }}
+                    </div>
                   </td>
                   <td class="table-td">
                     <div class="max-w-56 truncate text-sm text-gray-900 dark:text-white">

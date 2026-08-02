@@ -53,11 +53,14 @@ func (h *TopupHandler) CreateTopupOrder(c *gin.Context) {
 		return
 	}
 
+	quote := service.QuoteTopupCredit(req.AmountCNYFen)
 	response.Success(c, gin.H{
-		"order_no":       orderNo,
-		"qr_code_url":    qrCodeURL,
-		"amount_cny_fen": req.AmountCNYFen,
-		"pay_type":       req.PayType,
+		"order_no":                orderNo,
+		"qr_code_url":             qrCodeURL,
+		"amount_cny_fen":          req.AmountCNYFen,
+		"bonus_amount_cny_fen":    quote.BonusAmountCNYFen,
+		"credited_amount_cny_fen": quote.CreditedAmountCNYFen,
+		"pay_type":                req.PayType,
 	})
 }
 
@@ -82,12 +85,15 @@ func (h *TopupHandler) QueryTopupOrderStatus(c *gin.Context) {
 		return
 	}
 
+	quote := service.StoredTopupCreditQuote(order.AmountCNYFen, order.BonusAmountCNYFen)
 	response.Success(c, gin.H{
-		"order_no":       order.OrderNo,
-		"status":         order.Status,
-		"amount_cny_fen": order.AmountCNYFen,
-		"pay_type":       order.PayType,
-		"qr_code_url":    order.QRCodeURL,
+		"order_no":                order.OrderNo,
+		"status":                  order.Status,
+		"amount_cny_fen":          order.AmountCNYFen,
+		"bonus_amount_cny_fen":    quote.BonusAmountCNYFen,
+		"credited_amount_cny_fen": quote.CreditedAmountCNYFen,
+		"pay_type":                order.PayType,
+		"qr_code_url":             order.QRCodeURL,
 	})
 }
 

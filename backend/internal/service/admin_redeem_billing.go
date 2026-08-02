@@ -194,6 +194,7 @@ func redeemCodeBillingItemFromEntity(code *dbent.RedeemCode, ledger *dbent.Accou
 		Code:             code.Code,
 		Type:             code.Type,
 		Value:            code.Value,
+		PaidValue:        redeemPaidValueFromEntity(code),
 		Purpose:          code.Purpose,
 		SalesStatus:      code.SalesStatus,
 		RedeemStatus:     code.Status,
@@ -245,9 +246,10 @@ func summarizeRedeemCodeBilling(codes []*dbent.RedeemCode, ledgerBySourceID map[
 			summary.SaleFaceValue += code.Value
 		}
 		if code.Purpose == RedeemCodePurposeSaleRecharge && code.SalesStatus == RedeemCodeSalesStatusSold {
-			summary.SoldFaceValue += code.Value
+			paidValue := redeemPaidValueFromEntity(code)
+			summary.SoldFaceValue += paidValue
 			if code.Status == StatusUnused {
-				summary.SoldUnredeemedFaceValue += code.Value
+				summary.SoldUnredeemedFaceValue += paidValue
 			}
 		}
 		if code.Status != StatusUsed {
@@ -255,7 +257,7 @@ func summarizeRedeemCodeBilling(codes []*dbent.RedeemCode, ledgerBySourceID map[
 		}
 		switch code.Purpose {
 		case RedeemCodePurposeSaleRecharge:
-			summary.RedeemedSaleAmount += code.Value
+			summary.RedeemedSaleAmount += redeemPaidValueFromEntity(code)
 		case RedeemCodePurposeGift:
 			summary.GiftRedeemedAmount += code.Value
 		case RedeemCodePurposeCompensation:
@@ -268,6 +270,16 @@ func summarizeRedeemCodeBilling(codes []*dbent.RedeemCode, ledgerBySourceID map[
 		}
 	}
 	return summary
+}
+
+func redeemPaidValueFromEntity(code *dbent.RedeemCode) float64 {
+	if code == nil || code.Purpose != RedeemCodePurposeSaleRecharge {
+		return 0
+	}
+	if code.PaidValue > 0 && code.PaidValue <= code.Value {
+		return code.PaidValue
+	}
+	return code.Value
 }
 
 func normalizeRedeemCodePurposeForService(codeType, purpose string) string {

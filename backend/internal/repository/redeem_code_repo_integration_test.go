@@ -52,10 +52,11 @@ func (s *RedeemCodeRepoSuite) createGroup(name string) *dbent.Group {
 
 func (s *RedeemCodeRepoSuite) TestCreate() {
 	code := &service.RedeemCode{
-		Code:   "TEST-CREATE",
-		Type:   service.RedeemTypeBalance,
-		Value:  100,
-		Status: service.StatusUnused,
+		Code:      "TEST-CREATE",
+		Type:      service.RedeemTypeBalance,
+		Value:     100,
+		PaidValue: 75,
+		Status:    service.StatusUnused,
 	}
 
 	err := s.repo.Create(s.ctx, code)
@@ -65,6 +66,7 @@ func (s *RedeemCodeRepoSuite) TestCreate() {
 	got, err := s.repo.GetByID(s.ctx, code.ID)
 	s.Require().NoError(err, "GetByID")
 	s.Require().Equal("TEST-CREATE", got.Code)
+	s.Require().Equal(float64(75), got.PaidValue)
 }
 
 func (s *RedeemCodeRepoSuite) TestCreateBatch() {

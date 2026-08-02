@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.5.1'
+$ScriptVersion = '0.5.2'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
 $DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
@@ -227,7 +227,7 @@ function Exchange-SetupTicket {
       -ContentType 'application/json' `
       -Body (@{ ticket = $script:SetupToken } | ConvertTo-Json -Compress)
   } catch {
-    Stop-Script '一次性安装凭证无效、已过期或已使用，请回到下载资源页重新生成'
+    Stop-Script '一次性配置命令无效、已过期或已使用，请回到 API 密钥页或安装与下载页重新生成'
   }
 
   $Data = $Response.data

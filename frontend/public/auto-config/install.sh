@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="0.5.1"
+SCRIPT_VERSION="0.5.2"
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
 DEFAULT_CODEX_MANIFEST_URL="https://laoshirenai.com/api/v1/public-downloads/codex/latest.json"
@@ -579,7 +579,7 @@ EOF
   rm -f "$request_path"
   if [ "$status_code" != "200" ]; then
     rm -rf "$tmp_dir"
-    log_error "一次性安装凭证无效、已过期或已使用，请回到下载资源页重新生成"
+    log_error "一次性配置命令无效、已过期或已使用，请回到 API 密钥页或安装与下载页重新生成"
   fi
 
   parsed="$(SETUP_RESPONSE_PATH="$response_path" "$NODE_BIN" <<'EOF'
@@ -1062,9 +1062,9 @@ main() {
   parse_args "$@"
   TOOLS="$(normalize_tools "$TOOLS")"
   prompt_for_api_keys
+  exchange_setup_ticket
   resolve_client_install_plan
   ensure_node_runtime
-  exchange_setup_ticket
   if needs_client_install; then
     ensure_profile_exports
   else

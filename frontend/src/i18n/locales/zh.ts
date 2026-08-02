@@ -840,8 +840,9 @@ export default {
     importToCcSwitch: '导入 CC Switch',
     importToCcSwitchHint: '打开 CC Switch，并导入当前 API Key 的兼容工具配置',
     configureClient: '一键配置',
-    configureClientHint: '复制一行命令：已有 {client} 只更新配置，缺失时才安装，并测试 API Key',
-    autoConfigCommandCopied: '{client} 一键配置命令已复制，请粘贴到终端运行',
+    configureClientHint: '生成 10 分钟有效的一次性命令：已有 {client} 只更新配置，缺失时才安装',
+    autoConfigCommandCopied: '{client} 一键配置命令已复制，10 分钟内粘贴到终端运行（仅可使用一次）',
+    autoConfigTicketFailed: '生成一次性配置命令失败，请稍后重试',
     keyMustBeActiveForAutoConfig: '请先启用该 API Key，再复制一键配置命令',
     saveOfficialProvider: '保存官方订阅',
     saveOfficialProviderHint: '复制脚本命令，把本机 OpenAI 官方登录保存成 CC Switch Provider',
@@ -6290,7 +6291,7 @@ export default {
       welcome: {
         title: '👋 欢迎使用 老实人 AI',
         description:
-          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">欢迎来到 老实人 AI。这里会带你走完最重要的几步：充值、看价格、创建 API 密钥，然后选择自动导入或手动配置。</p><p style="color: #10b981; font-weight: 600;">我们一步一步来，不需要一次看懂所有功能。</p></div>',
+          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">3 分钟完成首次使用：了解充值和价格，创建 API 密钥，再一键配置 Codex 或 Claude Code。</p><p style="color: #10b981; font-weight: 600;">跟着高亮位置操作即可。</p></div>',
         nextBtn: '开始 🚀',
         prevBtn: '跳过'
       },
@@ -6317,7 +6318,7 @@ export default {
       createKey: {
         title: '➕ 创建新密钥',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">点击按钮创建您的第一个 API 密钥。</p><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 提示：</b>创建后密钥只显示一次，请务必复制保存</p><p style="margin-top: 12px; color: #10b981; font-weight: 600;">👉 点击"创建密钥"</p></div>'
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">每把 API 密钥绑定一个分组，并单独记录用量。</p><p style="margin-top: 12px; color: #10b981; font-weight: 600;">👉 点击「创建密钥」</p></div>'
       },
       keyName: {
         title: '✏️ 密钥名称',
@@ -6342,9 +6343,9 @@ export default {
           '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">如果你已经在 Codex App 或 Codex CLI 里登录了 OpenAI 官方订阅，建议先点这里复制脚本命令，把官方登录保存成 CC Switch Provider。</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px; font-size: 13px;"><b>只适用于 OpenAI / Codex：</b>这样之后在 CC Switch 里可以在「OpenAI 官方订阅」和「老实人 AI API 服务」之间切换，不会只剩接口配置可用。</p></div>'
       },
       useOptions: {
-        title: '现在选择怎么使用',
+        title: '选择配置方式',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">密钥已经创建好了。接下来有几种方式：</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>推荐 Codex / Claude Code 新手：</b>点「一键配置」复制一行命令；OpenAI 分组自动配置 Codex，Anthropic / Antigravity 分组自动配置 Claude Code。已有客户端时只更新配置，缺失时才安装，并测试 API Key。</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>已有 OpenAI 官方订阅：</b>先用「保存官方订阅」保存官方 Provider，再导入老实人 AI 接口配置，之后就能两边切换。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>需要多 Provider 切换：</b>点「导入 CC Switch」导入当前密钥配置；不想装工具也可以点「使用密钥」手动复制配置。</p></div></div>'
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">两种方式调用同一把密钥，区别只在配置如何管理：</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>一键配置（推荐）：</b>生成一条 10 分钟有效、仅可使用一次的命令。运行后自动检测客户端，并把接口配置写入 Codex 或 Claude Code；命令中不包含明文 API Key。</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>导入 CC Switch：</b>把当前密钥交给 CC Switch 集中管理，适合多个工具、多个 Key 或经常切换配置。</p></div><p style="margin-top: 12px; color: #10b981; font-weight: 600;">新手直接点「一键配置」即可。</p></div>'
       },
       docs: {
         title: '📚 教程和下载说明',

@@ -341,32 +341,12 @@ export const getUserSteps = (t: (key: string) => string): TourStep[] => [
     }
   },
   {
-    element: '[data-tour="keys-save-official-provider"]',
+    element: '[data-tour="keys-created-setup-options"]',
     optional: true,
-    popover: {
-      title: t('onboarding.user.saveOfficialProvider.title'),
-      description: t('onboarding.user.saveOfficialProvider.description'),
-      side: 'bottom',
-      align: 'end',
-      showButtons: ['next', 'previous']
-    }
-  },
-  {
-    element: '[data-tour="keys-use-options"]',
     popover: {
       title: t('onboarding.user.useOptions.title'),
       description: t('onboarding.user.useOptions.description'),
       side: 'left',
-      align: 'center',
-      showButtons: ['next', 'previous']
-    }
-  },
-  {
-    element: '[data-tour="sidebar-docs"]',
-    popover: {
-      title: t('onboarding.user.docs.title'),
-      description: t('onboarding.user.docs.description'),
-      side: 'right',
       align: 'center',
       showButtons: ['next', 'previous']
     }

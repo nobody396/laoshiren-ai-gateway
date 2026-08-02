@@ -13,7 +13,7 @@ describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on macOS and Linux', () => {
     const script = readPublicScript('install.sh')
 
-    expect(script).toContain('SCRIPT_VERSION="0.5.1"')
+    expect(script).toContain('SCRIPT_VERSION="0.5.2"')
     expect(script).toContain('EXISTING_CLAUDE_COMMAND="$(get_usable_client_command claude || true)"')
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('exchange_setup_ticket')
@@ -22,12 +22,13 @@ describe('client auto-config scripts', () => {
     expect(script).toContain("-name 'ChatGPT.app'")
     expect(script).toContain('${api_base_url}/usage')
     expect(script).toContain('余额/套餐额度不足')
+    expect(script.indexOf('exchange_setup_ticket\n')).toBeLessThan(script.indexOf('ensure_node_runtime\n'))
   })
 
   it('reuses an existing Claude Code CLI on Windows', () => {
     const script = readPublicScript('install.ps1')
 
-    expect(script).toContain("$ScriptVersion = '0.5.1'")
+    expect(script).toContain("$ScriptVersion = '0.5.2'")
     expect(script).toContain("Get-UsableClientCommand -CommandName 'claude'")
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('Exchange-SetupTicket')
@@ -36,6 +37,7 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('Set-AppxPackageAutoUpdateSettings')
     expect(script).toContain('$ApiBaseUrl/usage')
     expect(script).toContain('余额/套餐额度不足')
+    expect(script.indexOf('Exchange-SetupTicket\n')).toBeLessThan(script.indexOf('Resolve-ClientInstallPlan\n'))
   })
 
   it('writes Claude settings without replacing unrelated JSON fields', () => {

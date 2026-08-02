@@ -29,57 +29,49 @@ describe('client auto-config target selection', () => {
 })
 
 describe('client auto-config commands', () => {
-  it('builds the existing Windows Codex setup command', () => {
+  it('builds a Windows Codex command with a one-time ticket instead of an API key', () => {
     expect(buildClientAutoConfigCommand({
       target: 'codex',
-      platform: 'openai',
-      apiKey: 'sk-codex-test',
-      baseUrl: 'https://api.laoshirenai.com/',
+      ticket: 'ticket-codex-test',
       isWindows: true
     })).toBe(
-      "$env:LAOSHIRENAI_CODEX_API_KEY='sk-codex-test'; " +
+      "$env:LAOSHIRENAI_SETUP_TOKEN='ticket-codex-test'; " +
       "$env:LAOSHIRENAI_TOOLS='codex'; " +
-      "$env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; " +
       'irm https://laoshirenai.com/auto-config/install.ps1 | iex'
     )
   })
 
-  it('builds a one-line Windows Claude Code setup command', () => {
-    expect(buildClientAutoConfigCommand({
-      target: 'claude',
-      platform: 'anthropic',
-      apiKey: "sk-claude'test",
-      baseUrl: 'https://api.laoshirenai.com',
-      isWindows: true
-    })).toContain(
-      "$env:LAOSHIRENAI_CLAUDE_API_KEY='sk-claude''test'; $env:LAOSHIRENAI_TOOLS='claude'"
-    )
-  })
-
-  it('builds a one-line macOS Claude Code setup command with the Antigravity endpoint', () => {
-    expect(buildClientAutoConfigCommand({
-      target: 'claude',
-      platform: 'antigravity',
-      apiKey: 'sk-antigravity-test',
-      baseUrl: 'https://api.laoshirenai.com/',
-      isWindows: false
-    })).toBe(
-      "curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- " +
-      "--api-key 'sk-antigravity-test' --tools claude " +
-      "--base-url 'https://api.laoshirenai.com/antigravity'"
-    )
-  })
-
-  it('does not duplicate an existing Antigravity path', () => {
+  it('escapes a one-time ticket in a Windows Claude Code command', () => {
     const command = buildClientAutoConfigCommand({
       target: 'claude',
-      platform: 'antigravity',
-      apiKey: 'sk-antigravity-test',
-      baseUrl: 'https://api.laoshirenai.com/antigravity/',
+      ticket: "ticket-claude'test",
+      isWindows: true
+    })
+
+    expect(command).toContain("$env:LAOSHIRENAI_SETUP_TOKEN='ticket-claude''test'")
+    expect(command).not.toContain('LAOSHIRENAI_CLAUDE_API_KEY')
+  })
+
+  it('builds a one-line macOS Claude Code command with a one-time ticket', () => {
+    expect(buildClientAutoConfigCommand({
+      target: 'claude',
+      ticket: 'ticket-claude-test',
+      isWindows: false
+    })).toBe(
+      "curl -fsSL https://laoshirenai.com/auto-config/install.sh | " +
+      "LAOSHIRENAI_SETUP_TOKEN='ticket-claude-test' LAOSHIRENAI_TOOLS='claude' bash"
+    )
+  })
+
+  it('never places a raw API key or base URL in the copied command', () => {
+    const command = buildClientAutoConfigCommand({
+      target: 'claude',
+      ticket: '0123456789abcdef',
       isWindows: false
     })
 
-    expect(command).toContain("--base-url 'https://api.laoshirenai.com/antigravity'")
-    expect(command).not.toContain('/antigravity/antigravity')
+    expect(command).toContain('LAOSHIRENAI_SETUP_TOKEN=')
+    expect(command).not.toContain('sk-')
+    expect(command).not.toContain('api.laoshirenai.com')
   })
 })

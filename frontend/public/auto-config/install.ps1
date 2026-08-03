@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.5.2'
+$ScriptVersion = '0.6.0'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
 $DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
@@ -356,6 +356,58 @@ function Resolve-ClientInstallPlan {
       Write-WarnMessage '未检测到可用的 Codex CLI，但已按要求跳过安装'
     } else {
       $script:InstallCodexClient = $true
+    }
+  }
+}
+
+function Get-ClientVersion {
+  param([string]$CommandPath)
+  try {
+    $Text = (& $CommandPath --version 2>$null | Out-String).Trim()
+    $Match = [regex]::Match($Text, '\d+(?:\.\d+){1,3}')
+    if ($Match.Success) { return $Match.Value }
+  } catch {}
+  return ''
+}
+
+function Get-LatestPackageVersion {
+  param([string]$PackagePath)
+  foreach ($Registry in @($DefaultNpmRegistry, $FallbackNpmRegistry)) {
+    try {
+      $Result = Invoke-RestMethod -Uri "$Registry/$PackagePath/latest" -Method GET
+      if (-not [string]::IsNullOrWhiteSpace([string]$Result.version)) {
+        return [string]$Result.version
+      }
+    } catch {
+      Write-WarnMessage "读取 $Registry 最新版本失败，尝试下一个地址"
+    }
+  }
+  return ''
+}
+
+function Test-VersionOlder {
+  param([string]$Current, [string]$Latest)
+  try { return ([version]$Current -lt [version]$Latest) } catch { return $false }
+}
+
+function Resolve-ClientUpdatePlan {
+  if ($script:SkipClientInstall -or $script:ForceClientInstall) { return }
+
+  $Checks = @(
+    @{ Label = 'Claude Code CLI'; Command = $script:ExistingClaudeCommand; Package = '@anthropic-ai%2Fclaude-code'; Flag = 'InstallClaudeClient' },
+    @{ Label = 'Codex CLI'; Command = $script:ExistingCodexCommand; Package = '@openai%2Fcodex'; Flag = 'InstallCodexClient' }
+  )
+  foreach ($Check in $Checks) {
+    if ([string]::IsNullOrWhiteSpace([string]$Check.Command) -or (Get-Variable -Scope Script -Name $Check.Flag).Value) { continue }
+    $Current = Get-ClientVersion -CommandPath $Check.Command
+    $Latest = Get-LatestPackageVersion -PackagePath $Check.Package
+    if ([string]::IsNullOrWhiteSpace($Current) -or [string]::IsNullOrWhiteSpace($Latest)) {
+      Write-WarnMessage "无法比较 $($Check.Label) 版本，本次保留现有可用版本并继续配置测试"
+    } elseif (Test-VersionOlder -Current $Current -Latest $Latest) {
+      Set-Variable -Scope Script -Name $Check.Flag -Value $true
+      Write-Info "检测到 $($Check.Label) 可更新: $Current -> $Latest"
+    } else {
+      Write-Info "$($Check.Label) 已是当前版本: $Current"
     }
   }
 }
@@ -724,12 +776,12 @@ function Install-RequestedClients {
   Ensure-NpmRegistry -Registry $DefaultNpmRegistry
 
   if ($script:InstallClaudeClient) {
-    Write-Info '正在安装 Claude Code'
+    Write-Info '正在安装或更新 Claude Code'
     Install-NpmPackageWithFallback -PackageName '@anthropic-ai/claude-code@latest'
   }
 
   if ($script:InstallCodexClient) {
-    Write-Info '正在安装 Codex'
+    Write-Info '正在安装或更新 Codex'
     Install-NpmPackageWithFallback -PackageName '@openai/codex@latest'
   }
 }
@@ -994,7 +1046,6 @@ function Test-ApiKeyReadiness {
       [double]$RemainingProperty.Value -le 0) {
     $script:BalanceReady = $false
     Write-WarnMessage "$Label 已安装并配置完成，但当前余额/套餐额度不足"
-    return
   }
   if ($Usage.mode -eq 'quota_limited' -and
       -not [string]::IsNullOrWhiteSpace([string]$Usage.status) -and
@@ -1062,10 +1113,10 @@ function Verify-ClientCommands {
         & $ClaudeCmd --version | Out-Null
         Write-Info "Claude Code 验证通过"
       } catch {
-        Write-WarnMessage "Claude Code 自检失败（可忽略，重新打开终端后再试）: $_"
+        Stop-Script "Claude Code 安装验证失败: $_"
       }
     } elseif ($script:InstallClaudeClient) {
-      Write-WarnMessage "未找到 $ClaudeCmd，请重新打开终端后执行 claude --version 确认"
+      Stop-Script "Claude Code 安装验证失败：未找到 $ClaudeCmd"
     }
   }
 
@@ -1080,12 +1131,12 @@ function Verify-ClientCommands {
         & $CodexCmd --version | Out-Null
         Write-Info "Codex 验证通过"
       } catch {
-        Write-WarnMessage "Codex 自检失败（可忽略，重新打开终端后再试）: $_"
+        Stop-Script "Codex 安装验证失败: $_"
       }
     } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexApp)) {
       Write-Info 'Codex App 已检测到，配置文件写入完成；无需执行 CLI 版本检查'
     } elseif ($script:InstallCodexClient) {
-      Write-WarnMessage "未找到 $CodexCmd，请重新打开终端后执行 codex --version 确认"
+      Stop-Script "Codex 安装验证失败：未找到 $CodexCmd"
     }
   }
 }
@@ -1153,6 +1204,7 @@ function Main {
   Prompt-ApiKeys
   Exchange-SetupTicket
   Resolve-ClientInstallPlan
+  Resolve-ClientUpdatePlan
   if (Test-NeedsClientInstall) {
     Ensure-NodeRuntime
     Ensure-GitBash

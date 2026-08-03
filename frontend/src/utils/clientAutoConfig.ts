@@ -6,6 +6,7 @@ export interface BuildClientAutoConfigCommandInput {
   target: ClientAutoConfigTarget
   ticket: string
   isWindows?: boolean
+  installCodexApp?: boolean
 }
 
 const shellSingleQuote = (value: string): string => {
@@ -40,21 +41,28 @@ export const getClientAutoConfigName = (target: ClientAutoConfigTarget): string 
 export const buildClientAutoConfigCommand = ({
   target,
   ticket,
+  installCodexApp = false,
   isWindows = typeof navigator !== 'undefined' &&
     navigator.userAgent.toLowerCase().includes('windows')
 }: BuildClientAutoConfigCommandInput): string => {
   if (isWindows) {
-    return [
+    const parts = [
       `$env:LAOSHIRENAI_SETUP_TOKEN=${powerShellSingleQuote(ticket)}`,
-      `$env:LAOSHIRENAI_TOOLS='${target}'`,
-      'irm https://laoshirenai.com/auto-config/install.ps1 | iex'
-    ].join('; ')
+      `$env:LAOSHIRENAI_TOOLS='${target}'`
+    ]
+    if (target === 'codex' && installCodexApp) {
+      parts.push("$env:LAOSHIRENAI_INSTALL_CODEX_APP='1'")
+    }
+    parts.push('irm https://laoshirenai.com/auto-config/install.ps1 | iex')
+    return parts.join('; ')
   }
 
-  return [
-    'curl -fsSL https://laoshirenai.com/auto-config/install.sh |',
+  const environment = [
     `LAOSHIRENAI_SETUP_TOKEN=${shellSingleQuote(ticket)}`,
-    `LAOSHIRENAI_TOOLS=${shellSingleQuote(target)}`,
-    'bash'
-  ].join(' ')
+    `LAOSHIRENAI_TOOLS=${shellSingleQuote(target)}`
+  ]
+  if (target === 'codex' && installCodexApp) {
+    environment.push("LAOSHIRENAI_INSTALL_CODEX_APP='1'")
+  }
+  return `curl -fsSL https://laoshirenai.com/auto-config/install.sh | ${environment.join(' ')} bash`
 }

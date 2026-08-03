@@ -1015,6 +1015,45 @@
       @close="closeUseKeyModal"
     />
 
+    <!-- Codex Setup Scope Dialog -->
+    <BaseDialog
+      :show="showCodexSetupChoice"
+      :title="t('keys.codexSetupChoice.title')"
+      width="narrow"
+      @close="closeCodexSetupChoice"
+    >
+      <div class="space-y-3">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          {{ t('keys.codexSetupChoice.description') }}
+        </p>
+        <button
+          type="button"
+          class="group flex w-full items-start gap-3 rounded-2xl border border-primary-200 bg-primary-50/70 p-4 text-left transition hover:border-primary-400 hover:shadow-sm dark:border-primary-800 dark:bg-primary-900/20"
+          @click="confirmCodexSetup(true)"
+        >
+          <span class="rounded-xl bg-primary-600 p-2 text-white"><Icon name="download" size="sm" /></span>
+          <span class="min-w-0">
+            <span class="block font-semibold text-gray-900 dark:text-white">{{ t('keys.codexSetupChoice.appAndCli') }}</span>
+            <span class="mt-1 block text-xs leading-5 text-gray-600 dark:text-gray-400">{{ t('keys.codexSetupChoice.appAndCliHint') }}</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          class="group flex w-full items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4 text-left transition hover:border-gray-400 hover:shadow-sm dark:border-dark-600 dark:bg-dark-800"
+          @click="confirmCodexSetup(false)"
+        >
+          <span class="rounded-xl bg-gray-100 p-2 text-gray-700 dark:bg-dark-700 dark:text-gray-200"><Icon name="terminal" size="sm" /></span>
+          <span class="min-w-0">
+            <span class="block font-semibold text-gray-900 dark:text-white">{{ t('keys.codexSetupChoice.cliOnly') }}</span>
+            <span class="mt-1 block text-xs leading-5 text-gray-600 dark:text-gray-400">{{ t('keys.codexSetupChoice.cliOnlyHint') }}</span>
+          </span>
+        </button>
+        <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">
+          {{ t('keys.codexSetupChoice.autoDetectHint') }}
+        </p>
+      </div>
+    </BaseDialog>
+
     <!-- CCS Client Selection Dialog -->
     <BaseDialog
       :show="showCcsClientSelect"
@@ -1419,6 +1458,8 @@ const showDeleteDialog = ref(false)
 const showResetQuotaDialog = ref(false)
 const showResetRateLimitDialog = ref(false)
 const showUseKeyModal = ref(false)
+const showCodexSetupChoice = ref(false)
+const pendingAutoConfigRow = ref<ApiKey | null>(null)
 const showCcsClientSelect = ref(false)
 const showCcsDiagnostics = ref(false)
 const pendingCcsRow = ref<ApiKey | null>(null)
@@ -1727,7 +1768,7 @@ const getAutoConfigClientName = (row: ApiKey): string => {
   return target ? getClientAutoConfigName(target) : ''
 }
 
-const copyClientAutoConfigCommand = async (row: ApiKey) => {
+const generateAndCopyClientAutoConfigCommand = async (row: ApiKey, installCodexApp = false) => {
   if (row.status !== 'active') {
     appStore.showError(t('keys.keyMustBeActiveForAutoConfig'))
     return
@@ -1742,13 +1783,45 @@ const copyClientAutoConfigCommand = async (row: ApiKey) => {
   try {
     const setup = await resourcesAPI.createClientSetupTicketForAPIKey(row.id)
     const clientName = getClientAutoConfigName(setup.target)
-    const command = buildClientAutoConfigCommand({ target: setup.target, ticket: setup.ticket })
+    const command = buildClientAutoConfigCommand({
+      target: setup.target,
+      ticket: setup.ticket,
+      installCodexApp
+    })
     await clipboardCopy(command, t('keys.autoConfigCommandCopied', { client: clientName }))
   } catch (error: any) {
     appStore.showError(error?.message || t('keys.autoConfigTicketFailed'))
   } finally {
     configuringKeyId.value = null
   }
+}
+
+const copyClientAutoConfigCommand = async (row: ApiKey) => {
+  if (row.status !== 'active') {
+    appStore.showError(t('keys.keyMustBeActiveForAutoConfig'))
+    return
+  }
+
+  const target = getAutoConfigTargetForKey(row)
+  if (!target || !row.group) return
+  if (target === 'codex') {
+    pendingAutoConfigRow.value = row
+    showCodexSetupChoice.value = true
+    return
+  }
+
+  await generateAndCopyClientAutoConfigCommand(row)
+}
+
+const closeCodexSetupChoice = () => {
+  showCodexSetupChoice.value = false
+  pendingAutoConfigRow.value = null
+}
+
+const confirmCodexSetup = async (installCodexApp: boolean) => {
+  const row = pendingAutoConfigRow.value
+  closeCodexSetupChoice()
+  if (row) await generateAndCopyClientAutoConfigCommand(row, installCodexApp)
 }
 
 const isAbortError = (error: unknown) => {

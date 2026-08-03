@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="0.5.2"
+SCRIPT_VERSION="0.6.0"
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
 DEFAULT_CODEX_MANIFEST_URL="https://laoshirenai.com/api/v1/public-downloads/codex/latest.json"
@@ -406,6 +406,64 @@ resolve_client_install_plan() {
   fi
 }
 
+# 从 npm registry 读取最新稳定版本；国内镜像失败时回退官方源。
+get_latest_package_version() {
+  local package_path="$1"
+  local registry response version
+
+  for registry in "$DEFAULT_NPM_REGISTRY" "$FALLBACK_NPM_REGISTRY"; do
+    response="$(curl -fsSL "${registry}/${package_path}/latest" 2>/dev/null || true)"
+    version="$(printf '%s' "$response" | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+    if [ -n "$version" ]; then
+      printf '%s' "$version"
+      return 0
+    fi
+  done
+  return 1
+}
+
+get_client_version() {
+  "$1" --version 2>/dev/null | sed -n 's/[^0-9]*\([0-9][0-9]*\(\.[0-9][0-9]*\)\{1,3\}\).*/\1/p' | head -n 1
+}
+
+# 仅当本机版本确实低于 registry 最新版本时更新，避免重复安装或意外降级。
+version_is_older() {
+  awk -v current="$1" -v latest="$2" 'BEGIN {
+    n = split(current, a, "."); m = split(latest, b, "."); max = n > m ? n : m;
+    for (i = 1; i <= max; i++) {
+      av = (i <= n ? a[i] + 0 : 0); bv = (i <= m ? b[i] + 0 : 0);
+      if (av < bv) exit 0; if (av > bv) exit 1;
+    }
+    exit 1;
+  }'
+}
+
+check_client_update() {
+  local label="$1" command_path="$2" package_path="$3" install_variable="$4"
+  local current_version latest_version
+
+  [ -n "$command_path" ] || return 0
+  current_version="$(get_client_version "$command_path" || true)"
+  latest_version="$(get_latest_package_version "$package_path" || true)"
+  if [ -z "$current_version" ] || [ -z "$latest_version" ]; then
+    log_warn "无法比较 ${label} 版本，本次保留现有可用版本并继续配置测试"
+    return 0
+  fi
+  if version_is_older "$current_version" "$latest_version"; then
+    printf -v "$install_variable" '%s' 1
+    log_info "检测到 ${label} 可更新: ${current_version} -> ${latest_version}"
+  else
+    log_info "${label} 已是当前版本: ${current_version}"
+  fi
+}
+
+resolve_client_update_plan() {
+  [ "$SKIP_CLIENT_INSTALL" -eq 0 ] || return 0
+  [ "$FORCE_CLIENT_INSTALL" -eq 0 ] || return 0
+  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || check_client_update "Claude Code CLI" "$EXISTING_CLAUDE_COMMAND" '@anthropic-ai%2Fclaude-code' INSTALL_CLAUDE_CLIENT
+  [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || check_client_update "Codex CLI" "$EXISTING_CODEX_COMMAND" '@openai%2Fcodex' INSTALL_CODEX_CLIENT
+}
+
 needs_client_install() {
   [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ]
 }
@@ -657,12 +715,12 @@ install_requested_clients() {
   ensure_npm_registry "$DEFAULT_NPM_REGISTRY"
 
   if [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ]; then
-    log_info "正在安装 Claude Code"
+    log_info "正在安装或更新 Claude Code"
     npm_install_with_fallback "@anthropic-ai/claude-code@latest"
   fi
 
   if [ "$INSTALL_CODEX_CLIENT" -eq 1 ]; then
-    log_info "正在安装 Codex"
+    log_info "正在安装或更新 Codex"
     npm_install_with_fallback "@openai/codex@latest"
   fi
 }
@@ -946,9 +1004,7 @@ EOF
   if [ "$readiness" = "insufficient" ]; then
     BALANCE_READY=0
     log_warn "${label} 已安装并配置完成，但当前余额/套餐额度不足"
-    return 0
-  fi
-  if [ "$readiness" != "ready" ]; then
+  elif [ "$readiness" != "ready" ]; then
     log_error "${label} 专用 Key 当前不可用，请在网站检查 Key 状态"
   fi
 
@@ -1062,9 +1118,11 @@ main() {
   parse_args "$@"
   TOOLS="$(normalize_tools "$TOOLS")"
   prompt_for_api_keys
+  # 一次性凭证和配置文件都使用 Node 做严格 JSON 解析，因此先确保运行时可用。
+  ensure_node_runtime
   exchange_setup_ticket
   resolve_client_install_plan
-  ensure_node_runtime
+  resolve_client_update_plan
   if needs_client_install; then
     ensure_profile_exports
   else

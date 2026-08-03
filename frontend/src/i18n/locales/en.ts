@@ -840,7 +840,16 @@ export default {
     importToCcSwitch: 'Import to CC Switch',
     importToCcSwitchHint: 'Open CC Switch and import compatible app settings for this API key',
     configureClient: 'One-click Setup',
-    configureClientHint: 'Generate a single-use command valid for 10 minutes; reuse {client} if installed or install it if missing',
+    configureClientHint: 'Generate a single-use command valid for 10 minutes; detect, install or update {client}, configure it, and verify readiness',
+    codexSetupChoice: {
+      title: 'Choose Codex setup scope',
+      description: 'Only Codex is affected. Claude Code will not be installed.',
+      appAndCli: 'Codex App + CLI (recommended)',
+      appAndCliHint: 'Best for beginners: detect the App and CLI, install missing or update outdated versions, then configure and test.',
+      cliOnly: 'Codex CLI only',
+      cliOnlyHint: 'Do not download Codex App. Detect, install or update the CLI, then configure and test.',
+      autoDetectHint: 'Current installed versions are reused and are not installed again.'
+    },
     autoConfigCommandCopied: '{client} setup command copied. Run it within 10 minutes; it can only be used once.',
     autoConfigTicketFailed: 'Could not generate the one-time setup command. Please try again.',
     keyMustBeActiveForAutoConfig: 'Enable this API key before copying the setup command',

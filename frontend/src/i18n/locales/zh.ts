@@ -840,7 +840,16 @@ export default {
     importToCcSwitch: '导入 CC Switch',
     importToCcSwitchHint: '打开 CC Switch，并导入当前 API Key 的兼容工具配置',
     configureClient: '一键配置',
-    configureClientHint: '生成 10 分钟有效的一次性命令：已有 {client} 只更新配置，缺失时才安装',
+    configureClientHint: '生成 10 分钟有效的一次性命令：自动检测、安装或更新 {client}，写入配置并测试可用性',
+    codexSetupChoice: {
+      title: '选择 Codex 安装范围',
+      description: '只处理 Codex，不会安装 Claude Code。',
+      appAndCli: 'Codex App + CLI（推荐）',
+      appAndCliHint: '适合新手：自动检测 App 与 CLI，缺失时安装、旧版时更新，然后配置并测试。',
+      cliOnly: '仅 Codex CLI',
+      cliOnlyHint: '不下载安装 Codex App，只检测、安装或更新 CLI，然后配置并测试。',
+      autoDetectHint: '已经安装的当前版本会直接复用，不会重复安装。'
+    },
     autoConfigCommandCopied: '{client} 一键配置命令已复制，10 分钟内粘贴到终端运行（仅可使用一次）',
     autoConfigTicketFailed: '生成一次性配置命令失败，请稍后重试',
     keyMustBeActiveForAutoConfig: '请先启用该 API Key，再复制一键配置命令',

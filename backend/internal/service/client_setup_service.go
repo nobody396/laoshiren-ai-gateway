@@ -27,9 +27,10 @@ const (
 )
 
 var (
-	ErrInvalidClientSetupTarget = infraerrors.BadRequest("INVALID_CLIENT_SETUP_TARGET", "不支持的一键安装目标")
-	ErrClientSetupGroupMissing  = infraerrors.Forbidden("CLIENT_SETUP_GROUP_MISSING", "当前账户没有可用于该客户端的分组")
-	ErrInvalidClientSetupTicket = infraerrors.Unauthorized("INVALID_CLIENT_SETUP_TICKET", "一键安装凭证无效、已过期或已使用")
+	ErrInvalidClientSetupTarget  = infraerrors.BadRequest("INVALID_CLIENT_SETUP_TARGET", "不支持的一键安装目标")
+	ErrClientSetupGroupMissing   = infraerrors.Forbidden("CLIENT_SETUP_GROUP_MISSING", "当前账户没有可用于该客户端的分组")
+	ErrClientSetupKeyUnavailable = infraerrors.Forbidden("CLIENT_SETUP_KEY_UNAVAILABLE", "当前 API 密钥无法用于一键配置")
+	ErrInvalidClientSetupTicket  = infraerrors.Unauthorized("INVALID_CLIENT_SETUP_TICKET", "一键安装凭证无效、已过期或已使用")
 )
 
 type ClientSetupTicket struct {
@@ -46,10 +47,17 @@ type ClientSetupCredential struct {
 	BaseURL string
 }
 
-// ClientSetupService creates dedicated per-client API keys lazily and hides
-// their raw values behind a short-lived, one-time setup ticket.
+type clientSetupAPIKeyService interface {
+	Create(ctx context.Context, userID int64, req CreateAPIKeyRequest) (*APIKey, error)
+	GetByID(ctx context.Context, id int64) (*APIKey, error)
+	GetAvailableGroups(ctx context.Context, userID int64) ([]Group, error)
+	List(ctx context.Context, userID int64, params pagination.PaginationParams, filters APIKeyListFilters) ([]APIKey, *pagination.PaginationResult, error)
+}
+
+// ClientSetupService binds either a lazily-created install key or a user-selected
+// existing key to a short-lived, one-time setup ticket.
 type ClientSetupService struct {
-	apiKeys *APIKeyService
+	apiKeys clientSetupAPIKeyService
 	tickets SSOTicketCache
 	ensure  singleflight.Group
 }
@@ -78,6 +86,30 @@ func (s *ClientSetupService) IssueTicket(ctx context.Context, userID int64, targ
 		return nil, fmt.Errorf("ensure client setup API key returned an unexpected value")
 	}
 
+	return s.issueTicketForAPIKey(ctx, userID, target, apiKey)
+}
+
+// IssueTicketForAPIKey creates a short-lived, one-time setup ticket for an
+// existing key owned by the current user. The target is derived from the key's
+// group so callers cannot pair an OpenAI key with Claude Code, or vice versa.
+func (s *ClientSetupService) IssueTicketForAPIKey(ctx context.Context, userID, apiKeyID int64) (*ClientSetupTicket, error) {
+	if s == nil || s.apiKeys == nil || s.tickets == nil || userID <= 0 || apiKeyID <= 0 {
+		return nil, ErrClientSetupKeyUnavailable
+	}
+
+	apiKey, err := s.apiKeys.GetByID(ctx, apiKeyID)
+	if err != nil || apiKey == nil || apiKey.UserID != userID || apiKey.Status != StatusActive || apiKey.Group == nil {
+		return nil, ErrClientSetupKeyUnavailable
+	}
+	target := clientSetupTargetForGroup(apiKey.Group)
+	if target == "" {
+		return nil, ErrClientSetupKeyUnavailable
+	}
+
+	return s.issueTicketForAPIKey(ctx, userID, target, apiKey)
+}
+
+func (s *ClientSetupService) issueTicketForAPIKey(ctx context.Context, userID int64, target string, apiKey *APIKey) (*ClientSetupTicket, error) {
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
 		return nil, fmt.Errorf("generate client setup ticket: %w", err)
@@ -147,7 +179,7 @@ func (s *ClientSetupService) ExchangeTicket(ctx context.Context, ticket string) 
 	if apiKey.UserID != data.UserID ||
 		apiKey.Status != StatusActive ||
 		apiKey.Group == nil ||
-		!clientSetupGroupMatchesTarget(target, apiKey.Group) {
+		!clientSetupGroupCompatible(target, apiKey.Group) {
 		return nil, ErrInvalidClientSetupTicket
 	}
 
@@ -160,6 +192,20 @@ func (s *ClientSetupService) ExchangeTicket(ctx context.Context, ticket string) 
 		APIKey:  apiKey.Key,
 		BaseURL: baseURL,
 	}, nil
+}
+
+func clientSetupTargetForGroup(group *Group) string {
+	if group == nil || !group.IsActive() {
+		return ""
+	}
+	switch group.Platform {
+	case PlatformOpenAI:
+		return ClientSetupTargetCodex
+	case PlatformAnthropic, PlatformAntigravity:
+		return ClientSetupTargetClaude
+	default:
+		return ""
+	}
 }
 
 func (s *ClientSetupService) ensureAPIKey(ctx context.Context, userID int64, target string) (*APIKey, error) {

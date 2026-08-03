@@ -840,8 +840,18 @@ export default {
     importToCcSwitch: 'Import to CC Switch',
     importToCcSwitchHint: 'Open CC Switch and import compatible app settings for this API key',
     configureClient: 'One-click Setup',
-    configureClientHint: 'Copy one command: reuse an existing {client} install, install only if missing, then test the API key',
-    autoConfigCommandCopied: '{client} setup command copied. Paste it into your terminal to run.',
+    configureClientHint: 'Generate a single-use command valid for 10 minutes; detect, install or update {client}, configure it, and verify readiness',
+    codexSetupChoice: {
+      title: 'Choose Codex setup scope',
+      description: 'Only Codex is affected. Claude Code will not be installed.',
+      appAndCli: 'Codex App + CLI (recommended)',
+      appAndCliHint: 'Best for beginners: detect the App and CLI, install missing or update outdated versions, then configure and test.',
+      cliOnly: 'Codex CLI only',
+      cliOnlyHint: 'Do not download Codex App. Detect, install or update the CLI, then configure and test.',
+      autoDetectHint: 'Current installed versions are reused and are not installed again.'
+    },
+    autoConfigCommandCopied: '{client} setup command copied. Run it within 10 minutes; it can only be used once.',
+    autoConfigTicketFailed: 'Could not generate the one-time setup command. Please try again.',
     keyMustBeActiveForAutoConfig: 'Enable this API key before copying the setup command',
     saveOfficialProvider: 'Save Official',
     saveOfficialProviderHint: 'Copy a script command that saves the local OpenAI official login as a CC Switch Provider',
@@ -6124,7 +6134,7 @@ export default {
     user: {
       welcome: {
         title: '👋 Welcome to 老实人 AI',
-        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Welcome to 老实人 AI. This tour covers the essentials: top up, understand pricing, create an API key, then choose automatic import or manual setup.</p><p style="color: #10b981; font-weight: 600;">We will go step by step. You do not need to learn everything at once.</p></div>',
+        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Get started in 3 minutes: learn top-ups and pricing, create an API key, then configure Codex or Claude Code.</p><p style="color: #10b981; font-weight: 600;">Follow each highlighted action.</p></div>',
         nextBtn: 'Start 🚀',
         prevBtn: 'Skip'
       },
@@ -6146,7 +6156,7 @@ export default {
       },
       createKey: {
         title: '➕ Create New Key',
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Click the button to create your first API key.</p><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 Tip:</b> Key is only shown once after creation, make sure to copy and save</p><p style="margin-top: 12px; color: #10b981; font-weight: 600;">👉 Click "Create Key"</p></div>'
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Each API key belongs to one group and tracks usage separately.</p><p style="margin-top: 12px; color: #10b981; font-weight: 600;">👉 Click "Create Key"</p></div>'
       },
       keyName: {
         title: '✏️ Key Name',
@@ -6167,8 +6177,8 @@ export default {
         description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">If you already signed in to an OpenAI official plan in Codex App or Codex CLI, click here to copy a script command that saves that login as a CC Switch Provider.</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px; font-size: 13px;"><b>OpenAI / Codex only:</b> this lets you switch between your OpenAI official plan and 老实人 AI gateway later, instead of being stuck with only the gateway provider.</p></div>'
       },
       useOptions: {
-        title: 'Choose how to use it',
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Your key is ready. There are a few paths:</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>Recommended for Codex / Claude Code beginners:</b> click "One-click Setup" to copy one terminal command. OpenAI groups configure Codex, while Anthropic / Antigravity groups configure Claude Code. Existing clients are reused, missing clients are installed, and the API key is tested.</p><p style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px;"><b>Already have an OpenAI official plan:</b> save the official Provider first, then import the gateway, so you can switch between both.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>Need multiple Provider switching:</b> click "Import to CC Switch" to import this API key configuration. Without extra tools, use "Use Key" and copy the config manually.</p></div></div>'
+        title: 'Choose a setup method',
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Both methods use the same API key; only configuration management differs:</p><div style="display: grid; gap: 8px; font-size: 13px;"><p style="padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px;"><b>One-click Setup (recommended):</b> creates a single-use command valid for 10 minutes. It detects the client and writes the Codex or Claude Code configuration without putting the raw API key in the command.</p><p style="padding: 8px 12px; background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;"><b>Import to CC Switch:</b> centrally manage this key when you use multiple tools, keys, or configurations.</p></div><p style="margin-top: 12px; color: #10b981; font-weight: 600;">For the fastest start, choose One-click Setup.</p></div>'
       },
       docs: {
         title: '📚 Tutorials and download guide',

@@ -214,6 +214,7 @@ import {
   type DownloadToolID
 } from '@/api/resources'
 import { useAppStore } from '@/stores/app'
+import { buildClientAutoConfigCommand } from '@/utils/clientAutoConfig'
 
 type IconName = InstanceType<typeof Icon>['$props']['name']
 
@@ -536,28 +537,12 @@ function buildQuickSetupCommand(id: QuickSetupID, ticket?: string): string {
     }
     return 'curl -fsSL https://laoshirenai.com/auto-config/diagnose-cc-switch.sh | bash'
   }
-
-  const token = ticket || '<点击生成一次性安装凭证>'
-  if (detectedOS.value === 'windows') {
-    const parts = [
-      `$env:LAOSHIRENAI_SETUP_TOKEN=${powerShellQuote(token)}`,
-      `$env:LAOSHIRENAI_TOOLS='${id}'`
-    ]
-    if (id === 'codex') {
-      parts.push("$env:LAOSHIRENAI_INSTALL_CODEX_APP='1'")
-    }
-    parts.push('irm https://laoshirenai.com/auto-config/install.ps1 | iex')
-    return parts.join('; ')
-  }
-
-  const env = [
-    `LAOSHIRENAI_SETUP_TOKEN=${shellQuote(token)}`,
-    `LAOSHIRENAI_TOOLS='${id}'`
-  ]
-  if (id === 'codex') {
-    env.push("LAOSHIRENAI_INSTALL_CODEX_APP='1'")
-  }
-  return `curl -fsSL https://laoshirenai.com/auto-config/install.sh | ${env.join(' ')} bash`
+  return buildClientAutoConfigCommand({
+    target: id,
+    ticket: ticket || '<点击生成一次性安装凭证>',
+    isWindows: detectedOS.value === 'windows',
+    installCodexApp: id === 'codex'
+  })
 }
 
 async function prepareAndCopySetup(id: QuickSetupID) {

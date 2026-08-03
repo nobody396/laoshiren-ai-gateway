@@ -33,7 +33,8 @@ type ResourceHandler struct {
 }
 
 type clientSetupTicketRequest struct {
-	Target string `json:"target" binding:"required,oneof=claude codex"`
+	Target   string `json:"target"`
+	APIKeyID *int64 `json:"api_key_id"`
 }
 
 type clientSetupExchangeRequest struct {
@@ -181,10 +182,18 @@ func (h *ResourceHandler) CreateSetupTicket(c *gin.Context) {
 	}
 	var req clientSetupTicketRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "请选择 Claude Code 或 Codex")
+		response.BadRequest(c, "请选择 API 密钥或一键安装目标")
 		return
 	}
-	ticket, err := h.setup.IssueTicket(c.Request.Context(), subject.UserID, req.Target)
+	var (
+		ticket *service.ClientSetupTicket
+		err    error
+	)
+	if req.APIKeyID != nil {
+		ticket, err = h.setup.IssueTicketForAPIKey(c.Request.Context(), subject.UserID, *req.APIKeyID)
+	} else {
+		ticket, err = h.setup.IssueTicket(c.Request.Context(), subject.UserID, req.Target)
+	}
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

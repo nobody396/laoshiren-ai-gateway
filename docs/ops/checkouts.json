@@ -118,6 +118,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-09T23:59:59-04:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/onboarding-safe-config-20260802",
+      "owner": "onboarding-safe-config-20260802",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-09T23:59:59-04:00"
     }
   ]
 }

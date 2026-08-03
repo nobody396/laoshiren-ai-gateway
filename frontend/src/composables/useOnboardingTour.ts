@@ -15,7 +15,7 @@ export function useOnboardingTour(options: OnboardingOptions) {
   const { t } = useI18n()
   const userStore = useUserStore()
   const onboardingStore = useOnboardingStore()
-  const storageVersion = 'v5_official_provider' // Bump version when tour content changes
+  const storageVersion = 'v6_safe_setup_choices' // Bump version when tour content changes
 
   // Timing constants for better maintainability
   const TIMING = {

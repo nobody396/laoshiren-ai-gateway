@@ -93,6 +93,13 @@ export async function createClientSetupTicket(target: ClientSetupTarget): Promis
   return data
 }
 
+export async function createClientSetupTicketForAPIKey(apiKeyId: number): Promise<ClientSetupTicket> {
+  const { data } = await apiClient.post<ClientSetupTicket>('/resources/setup-ticket', {
+    api_key_id: apiKeyId
+  })
+  return data
+}
+
 export async function getVersionStatus(): Promise<DownloadVersionStatus[]> {
   const { data } = await apiClient.get<DownloadVersionStatus[]>('/resources/version-status')
   return data
@@ -106,5 +113,6 @@ export const resourcesAPI = {
   getCCSwitchDownloads,
   downloadCCSwitchAsset,
   createClientSetupTicket,
+  createClientSetupTicketForAPIKey,
   getVersionStatus
 }

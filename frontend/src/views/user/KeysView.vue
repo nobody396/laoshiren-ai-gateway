@@ -335,7 +335,7 @@
           </template>
 
           <template #cell-actions="{ row }">
-            <div class="flex items-center gap-1" data-tour="keys-use-options">
+            <div class="flex items-center gap-1">
               <!-- Use Key Button -->
               <button
                 @click="openUseKeyModal(row)"
@@ -345,27 +345,34 @@
                 <Icon name="terminal" size="sm" />
                 <span class="text-xs">{{ t('keys.useKey') }}</span>
               </button>
-              <!-- Client Auto Config Button -->
-              <button
-                v-if="getAutoConfigTargetForKey(row)"
-                @click="copyClientAutoConfigCommand(row)"
-                :title="t('keys.configureClientHint', { client: getAutoConfigClientName(row) })"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
+              <div
+                v-if="getAutoConfigTargetForKey(row) || (!publicSettings?.hide_ccs_import_button && canImportToCcs(row))"
+                class="flex items-center gap-1 rounded-lg"
+                data-tour="keys-setup-options"
               >
-                <Icon name="terminal" size="sm" />
-                <span class="text-xs">{{ t('keys.configureClient') }}</span>
-              </button>
-              <!-- Import to CC Switch Button -->
-              <button
-                v-if="!publicSettings?.hide_ccs_import_button && canImportToCcs(row)"
-                @click="importToCcswitch(row)"
-                :title="t('keys.importToCcSwitchHint')"
-                data-tour="keys-import-ccs"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
-              >
-                <Icon name="upload" size="sm" />
-                <span class="text-xs">{{ t('keys.importToCcSwitch') }}</span>
-              </button>
+                <!-- Client Auto Config Button -->
+                <button
+                  v-if="getAutoConfigTargetForKey(row)"
+                  @click="copyClientAutoConfigCommand(row)"
+                  :disabled="configuringKeyId === row.id"
+                  :title="t('keys.configureClientHint', { client: getAutoConfigClientName(row) })"
+                  class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-indigo-50 hover:text-indigo-600 disabled:cursor-wait disabled:opacity-60 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
+                >
+                  <Icon :name="configuringKeyId === row.id ? 'refresh' : 'terminal'" size="sm" :class="configuringKeyId === row.id ? 'animate-spin' : ''" />
+                  <span class="text-xs">{{ t('keys.configureClient') }}</span>
+                </button>
+                <!-- Import to CC Switch Button -->
+                <button
+                  v-if="!publicSettings?.hide_ccs_import_button && canImportToCcs(row)"
+                  @click="importToCcswitch(row)"
+                  :title="t('keys.importToCcSwitchHint')"
+                  data-tour="keys-import-ccs"
+                  class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
+                >
+                  <Icon name="upload" size="sm" />
+                  <span class="text-xs">{{ t('keys.importToCcSwitch') }}</span>
+                </button>
+              </div>
               <!-- Chat with this API Key -->
               <button
                 v-if="publicSettings?.chatbot_url && row.group?.chatbot_enabled"
@@ -1008,6 +1015,45 @@
       @close="closeUseKeyModal"
     />
 
+    <!-- Codex Setup Scope Dialog -->
+    <BaseDialog
+      :show="showCodexSetupChoice"
+      :title="t('keys.codexSetupChoice.title')"
+      width="narrow"
+      @close="closeCodexSetupChoice"
+    >
+      <div class="space-y-3">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          {{ t('keys.codexSetupChoice.description') }}
+        </p>
+        <button
+          type="button"
+          class="group flex w-full items-start gap-3 rounded-2xl border border-primary-200 bg-primary-50/70 p-4 text-left transition hover:border-primary-400 hover:shadow-sm dark:border-primary-800 dark:bg-primary-900/20"
+          @click="confirmCodexSetup(true)"
+        >
+          <span class="rounded-xl bg-primary-600 p-2 text-white"><Icon name="download" size="sm" /></span>
+          <span class="min-w-0">
+            <span class="block font-semibold text-gray-900 dark:text-white">{{ t('keys.codexSetupChoice.appAndCli') }}</span>
+            <span class="mt-1 block text-xs leading-5 text-gray-600 dark:text-gray-400">{{ t('keys.codexSetupChoice.appAndCliHint') }}</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          class="group flex w-full items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4 text-left transition hover:border-gray-400 hover:shadow-sm dark:border-dark-600 dark:bg-dark-800"
+          @click="confirmCodexSetup(false)"
+        >
+          <span class="rounded-xl bg-gray-100 p-2 text-gray-700 dark:bg-dark-700 dark:text-gray-200"><Icon name="terminal" size="sm" /></span>
+          <span class="min-w-0">
+            <span class="block font-semibold text-gray-900 dark:text-white">{{ t('keys.codexSetupChoice.cliOnly') }}</span>
+            <span class="mt-1 block text-xs leading-5 text-gray-600 dark:text-gray-400">{{ t('keys.codexSetupChoice.cliOnlyHint') }}</span>
+          </span>
+        </button>
+        <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">
+          {{ t('keys.codexSetupChoice.autoDetectHint') }}
+        </p>
+      </div>
+    </BaseDialog>
+
     <!-- CCS Client Selection Dialog -->
     <BaseDialog
       :show="showCcsClientSelect"
@@ -1283,7 +1329,7 @@ import { publicGroupDisplayName } from '@/utils/groupDisplayName'
 	import { useClipboard } from '@/composables/useClipboard'
 
 const { t } = useI18n()
-import { keysAPI, authAPI, usageAPI, userGroupsAPI } from '@/api'
+import { keysAPI, authAPI, usageAPI, userGroupsAPI, resourcesAPI } from '@/api'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import DataTable from '@/components/common/DataTable.vue'
@@ -1412,6 +1458,8 @@ const showDeleteDialog = ref(false)
 const showResetQuotaDialog = ref(false)
 const showResetRateLimitDialog = ref(false)
 const showUseKeyModal = ref(false)
+const showCodexSetupChoice = ref(false)
+const pendingAutoConfigRow = ref<ApiKey | null>(null)
 const showCcsClientSelect = ref(false)
 const showCcsDiagnostics = ref(false)
 const pendingCcsRow = ref<ApiKey | null>(null)
@@ -1421,6 +1469,7 @@ const ccsDiagnosticsAutoPrompt = ref(false)
 const selectedKey = ref<ApiKey | null>(null)
 const copiedKeyId = ref<number | null>(null)
 const copiedBaseUrl = ref(false)
+const configuringKeyId = ref<number | null>(null)
 const groupSelectorKeyId = ref<number | null>(null)
 const publicSettings = ref<PublicSettings | null>(null)
 const dropdownRef = ref<HTMLElement | null>(null)
@@ -1719,7 +1768,7 @@ const getAutoConfigClientName = (row: ApiKey): string => {
   return target ? getClientAutoConfigName(target) : ''
 }
 
-const copyClientAutoConfigCommand = async (row: ApiKey) => {
+const generateAndCopyClientAutoConfigCommand = async (row: ApiKey, installCodexApp = false) => {
   if (row.status !== 'active') {
     appStore.showError(t('keys.keyMustBeActiveForAutoConfig'))
     return
@@ -1730,14 +1779,49 @@ const copyClientAutoConfigCommand = async (row: ApiKey) => {
     return
   }
 
-  const clientName = getClientAutoConfigName(target)
-  const command = buildClientAutoConfigCommand({
-    target,
-    platform: row.group.platform,
-    apiKey: row.key,
-    baseUrl: displayApiBaseUrl.value
-  })
-  await clipboardCopy(command, t('keys.autoConfigCommandCopied', { client: clientName }))
+  configuringKeyId.value = row.id
+  try {
+    const setup = await resourcesAPI.createClientSetupTicketForAPIKey(row.id)
+    const clientName = getClientAutoConfigName(setup.target)
+    const command = buildClientAutoConfigCommand({
+      target: setup.target,
+      ticket: setup.ticket,
+      installCodexApp
+    })
+    await clipboardCopy(command, t('keys.autoConfigCommandCopied', { client: clientName }))
+  } catch (error: any) {
+    appStore.showError(error?.message || t('keys.autoConfigTicketFailed'))
+  } finally {
+    configuringKeyId.value = null
+  }
+}
+
+const copyClientAutoConfigCommand = async (row: ApiKey) => {
+  if (row.status !== 'active') {
+    appStore.showError(t('keys.keyMustBeActiveForAutoConfig'))
+    return
+  }
+
+  const target = getAutoConfigTargetForKey(row)
+  if (!target || !row.group) return
+  if (target === 'codex') {
+    pendingAutoConfigRow.value = row
+    showCodexSetupChoice.value = true
+    return
+  }
+
+  await generateAndCopyClientAutoConfigCommand(row)
+}
+
+const closeCodexSetupChoice = () => {
+  showCodexSetupChoice.value = false
+  pendingAutoConfigRow.value = null
+}
+
+const confirmCodexSetup = async (installCodexApp: boolean) => {
+  const row = pendingAutoConfigRow.value
+  closeCodexSetupChoice()
+  if (row) await generateAndCopyClientAutoConfigCommand(row, installCodexApp)
 }
 
 const isAbortError = (error: unknown) => {
@@ -2044,6 +2128,12 @@ const handleSubmit = async () => {
       appStore.showSuccess(t('keys.keyCreatedSuccess'))
       // Only advance tour if active, on submit step, and creation succeeded
       shouldAdvanceKeyCreationTour = onboardingStore.isCurrentStep('[data-tour="key-form-submit"]')
+      if (shouldAdvanceKeyCreationTour) {
+        filterSearch.value = ''
+        filterStatus.value = ''
+        filterGroupId.value = ''
+        pagination.value.page = 1
+      }
     }
     closeModals()
     await loadApiKeys()

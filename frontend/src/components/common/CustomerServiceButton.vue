@@ -53,14 +53,17 @@
               <div
                 class="flex flex-col items-center rounded-2xl border border-gray-100 bg-gray-50/50 p-6 text-center dark:border-dark-700 dark:bg-dark-900/30"
               >
-                <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
-                  <Icon name="headphones" size="lg" />
-                </div>
-                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('common.wechatId') }}
+                <img
+                  :src="defaultSupportQRCode"
+                  :alt="t('common.scanToAddSupport')"
+                  class="h-64 w-64 max-w-full rounded-2xl border border-gray-200 bg-white object-contain p-2 shadow-sm dark:border-dark-600"
+                  data-testid="default-support-qr"
+                />
+                <span class="mt-4 text-sm font-semibold text-gray-900 dark:text-white">
+                  {{ t('common.scanToAddSupport') }}
                 </span>
-                <span class="mt-2 break-all text-2xl font-semibold text-gray-900 dark:text-white">
-                  {{ supportContact }}
+                <span class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('common.wechatId') }}：{{ supportContact }}
                 </span>
               </div>
             </div>
@@ -151,6 +154,7 @@ import { storeToRefs } from 'pinia'
 import { useAppStore } from '@/stores/app'
 import Icon from '@/components/icons/Icon.vue'
 import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
+import defaultSupportQRCode from '@/assets/support/wechat-jac-hh.png'
 
 const { t } = useI18n()
 const appStore = useAppStore()

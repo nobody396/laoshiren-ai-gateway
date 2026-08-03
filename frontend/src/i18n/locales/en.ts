@@ -317,6 +317,7 @@ export default {
     landingPage: 'Home',
     customerService: 'Customer Service',
     wechatId: 'WeChat ID',
+    scanToAddSupport: 'Scan with WeChat to add support',
     afterSalesTitle: 'After-Sales',
     afterSalesDesc: 'Handles account recharge, promotions and other after-sales matters',
     techSupportTitle: 'Tech Support',

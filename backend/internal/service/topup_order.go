@@ -28,16 +28,17 @@ const (
 
 // TopupOrder represents a topup order domain model
 type TopupOrder struct {
-	ID            int64      `json:"id"`
-	OrderNo       string     `json:"order_no"`
-	UserID        int64      `json:"user_id"`
-	AmountCNYFen  int        `json:"amount_cny_fen"` // 充值金额，单位：分（CNY）
-	PayType       string     `json:"pay_type"`       // alipay / wechat
-	Status        string     `json:"status"`
-	InvoiceStatus string     `json:"invoice_status"`
-	XunhuTradeNo  *string    `json:"xunhu_trade_no,omitempty"`
-	QRCodeURL     *string    `json:"qr_code_url,omitempty"`
-	CompletedAt   *time.Time `json:"completed_at,omitempty"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID                int64      `json:"id"`
+	OrderNo           string     `json:"order_no"`
+	UserID            int64      `json:"user_id"`
+	AmountCNYFen      int        `json:"amount_cny_fen"`       // 充值金额，单位：分（CNY）
+	BonusAmountCNYFen int        `json:"bonus_amount_cny_fen"` // 下单时锁定的活动赠送额度，单位：分
+	PayType           string     `json:"pay_type"`             // alipay / wechat
+	Status            string     `json:"status"`
+	InvoiceStatus     string     `json:"invoice_status"`
+	XunhuTradeNo      *string    `json:"xunhu_trade_no,omitempty"`
+	QRCodeURL         *string    `json:"qr_code_url,omitempty"`
+	CompletedAt       *time.Time `json:"completed_at,omitempty"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
 }

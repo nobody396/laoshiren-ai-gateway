@@ -24,6 +24,7 @@ func (r *topupOrderRepository) Create(ctx context.Context, order *service.TopupO
 		SetOrderNo(order.OrderNo).
 		SetUserID(order.UserID).
 		SetAmountCnyFen(order.AmountCNYFen).
+		SetBonusAmountCnyFen(order.BonusAmountCNYFen).
 		SetPayType(order.PayType).
 		SetStatus(order.Status).
 		Save(ctx)
@@ -96,17 +97,18 @@ func topupOrderEntityToService(m *dbent.TopupOrder) *service.TopupOrder {
 		return nil
 	}
 	return &service.TopupOrder{
-		ID:            m.ID,
-		OrderNo:       m.OrderNo,
-		UserID:        m.UserID,
-		AmountCNYFen:  m.AmountCnyFen,
-		PayType:       m.PayType,
-		Status:        m.Status,
-		InvoiceStatus: m.InvoiceStatus,
-		XunhuTradeNo:  m.XunhuTradeNo,
-		QRCodeURL:     m.QrCodeURL,
-		CompletedAt:   m.CompletedAt,
-		CreatedAt:     m.CreatedAt,
-		UpdatedAt:     m.UpdatedAt,
+		ID:                m.ID,
+		OrderNo:           m.OrderNo,
+		UserID:            m.UserID,
+		AmountCNYFen:      m.AmountCnyFen,
+		BonusAmountCNYFen: m.BonusAmountCnyFen,
+		PayType:           m.PayType,
+		Status:            m.Status,
+		InvoiceStatus:     m.InvoiceStatus,
+		XunhuTradeNo:      m.XunhuTradeNo,
+		QRCodeURL:         m.QrCodeURL,
+		CompletedAt:       m.CompletedAt,
+		CreatedAt:         m.CreatedAt,
+		UpdatedAt:         m.UpdatedAt,
 	}
 }

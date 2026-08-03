@@ -70,6 +70,11 @@ func Value(v float64) predicate.RedeemCode {
 	return predicate.RedeemCode(sql.FieldEQ(FieldValue, v))
 }
 
+// PaidValue applies equality check predicate on the "paid_value" field. It's identical to PaidValueEQ.
+func PaidValue(v float64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldPaidValue, v))
+}
+
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v string) predicate.RedeemCode {
 	return predicate.RedeemCode(sql.FieldEQ(FieldStatus, v))
@@ -318,6 +323,46 @@ func ValueLT(v float64) predicate.RedeemCode {
 // ValueLTE applies the LTE predicate on the "value" field.
 func ValueLTE(v float64) predicate.RedeemCode {
 	return predicate.RedeemCode(sql.FieldLTE(FieldValue, v))
+}
+
+// PaidValueEQ applies the EQ predicate on the "paid_value" field.
+func PaidValueEQ(v float64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldPaidValue, v))
+}
+
+// PaidValueNEQ applies the NEQ predicate on the "paid_value" field.
+func PaidValueNEQ(v float64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNEQ(FieldPaidValue, v))
+}
+
+// PaidValueIn applies the In predicate on the "paid_value" field.
+func PaidValueIn(vs ...float64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldIn(FieldPaidValue, vs...))
+}
+
+// PaidValueNotIn applies the NotIn predicate on the "paid_value" field.
+func PaidValueNotIn(vs ...float64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNotIn(FieldPaidValue, vs...))
+}
+
+// PaidValueGT applies the GT predicate on the "paid_value" field.
+func PaidValueGT(v float64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGT(FieldPaidValue, v))
+}
+
+// PaidValueGTE applies the GTE predicate on the "paid_value" field.
+func PaidValueGTE(v float64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGTE(FieldPaidValue, v))
+}
+
+// PaidValueLT applies the LT predicate on the "paid_value" field.
+func PaidValueLT(v float64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLT(FieldPaidValue, v))
+}
+
+// PaidValueLTE applies the LTE predicate on the "paid_value" field.
+func PaidValueLTE(v float64) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLTE(FieldPaidValue, v))
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.

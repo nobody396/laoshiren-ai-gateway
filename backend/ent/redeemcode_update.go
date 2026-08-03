@@ -81,6 +81,27 @@ func (_u *RedeemCodeUpdate) AddValue(v float64) *RedeemCodeUpdate {
 	return _u
 }
 
+// SetPaidValue sets the "paid_value" field.
+func (_u *RedeemCodeUpdate) SetPaidValue(v float64) *RedeemCodeUpdate {
+	_u.mutation.ResetPaidValue()
+	_u.mutation.SetPaidValue(v)
+	return _u
+}
+
+// SetNillablePaidValue sets the "paid_value" field if the given value is not nil.
+func (_u *RedeemCodeUpdate) SetNillablePaidValue(v *float64) *RedeemCodeUpdate {
+	if v != nil {
+		_u.SetPaidValue(*v)
+	}
+	return _u
+}
+
+// AddPaidValue adds value to the "paid_value" field.
+func (_u *RedeemCodeUpdate) AddPaidValue(v float64) *RedeemCodeUpdate {
+	_u.mutation.AddPaidValue(v)
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *RedeemCodeUpdate) SetStatus(v string) *RedeemCodeUpdate {
 	_u.mutation.SetStatus(v)
@@ -509,6 +530,12 @@ func (_u *RedeemCodeUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.AddedValue(); ok {
 		_spec.AddField(redeemcode.FieldValue, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.PaidValue(); ok {
+		_spec.SetField(redeemcode.FieldPaidValue, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedPaidValue(); ok {
+		_spec.AddField(redeemcode.FieldPaidValue, field.TypeFloat64, value)
+	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(redeemcode.FieldStatus, field.TypeString, value)
 	}
@@ -730,6 +757,27 @@ func (_u *RedeemCodeUpdateOne) SetNillableValue(v *float64) *RedeemCodeUpdateOne
 // AddValue adds value to the "value" field.
 func (_u *RedeemCodeUpdateOne) AddValue(v float64) *RedeemCodeUpdateOne {
 	_u.mutation.AddValue(v)
+	return _u
+}
+
+// SetPaidValue sets the "paid_value" field.
+func (_u *RedeemCodeUpdateOne) SetPaidValue(v float64) *RedeemCodeUpdateOne {
+	_u.mutation.ResetPaidValue()
+	_u.mutation.SetPaidValue(v)
+	return _u
+}
+
+// SetNillablePaidValue sets the "paid_value" field if the given value is not nil.
+func (_u *RedeemCodeUpdateOne) SetNillablePaidValue(v *float64) *RedeemCodeUpdateOne {
+	if v != nil {
+		_u.SetPaidValue(*v)
+	}
+	return _u
+}
+
+// AddPaidValue adds value to the "paid_value" field.
+func (_u *RedeemCodeUpdateOne) AddPaidValue(v float64) *RedeemCodeUpdateOne {
+	_u.mutation.AddPaidValue(v)
 	return _u
 }
 
@@ -1190,6 +1238,12 @@ func (_u *RedeemCodeUpdateOne) sqlSave(ctx context.Context) (_node *RedeemCode, 
 	}
 	if value, ok := _u.mutation.AddedValue(); ok {
 		_spec.AddField(redeemcode.FieldValue, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.PaidValue(); ok {
+		_spec.SetField(redeemcode.FieldPaidValue, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedPaidValue(); ok {
+		_spec.AddField(redeemcode.FieldPaidValue, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(redeemcode.FieldStatus, field.TypeString, value)

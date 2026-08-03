@@ -319,6 +319,7 @@ type GenerateRedeemCodesInput struct {
 	Count        int
 	Type         string
 	Value        float64
+	PaidValue    float64
 	GroupID      *int64 // 订阅类型专用：关联的分组ID
 	GroupIDs     []int64
 	ValidityDays int // 订阅类型专用：有效天数
@@ -2174,6 +2175,12 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 	}
 	purpose := normalizeRedeemCodePurposeForService(codeType, input.Purpose)
 	salesStatus := normalizeRedeemCodeSalesStatusForService(purpose, input.SalesStatus)
+	if input.PaidValue < 0 || input.PaidValue > input.Value {
+		return nil, errors.New("paid_value must be between 0 and value")
+	}
+	if input.PaidValue > 0 && (codeType != RedeemTypeBalance || purpose != RedeemCodePurposeSaleRecharge) {
+		return nil, errors.New("paid_value is only supported for sale_recharge balance codes")
+	}
 	if err := validateRedeemCodeSaleEvidence(
 		purpose,
 		salesStatus,
@@ -2247,6 +2254,7 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 			Code:             codeValue,
 			Type:             codeType,
 			Value:            input.Value,
+			PaidValue:        input.PaidValue,
 			Status:           StatusUnused,
 			BatchID:          batchID,
 			Purpose:          purpose,

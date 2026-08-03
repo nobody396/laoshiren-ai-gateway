@@ -9,6 +9,7 @@ const (
 
 	AccountChangeReasonRedeemCode      = "redeem_code"
 	AccountChangeReasonTopup           = "topup"
+	AccountChangeReasonTopupPromotion  = "topup_promotion"
 	AccountChangeReasonAdminAdjustment = "admin_adjustment"
 
 	AccountChangeSourceRedeemCode       = "redeem_code"
@@ -16,7 +17,8 @@ const (
 	AccountChangeSourceAdminManual      = "admin_manual"
 	AccountChangeSourceLegacyRedeemCode = "legacy_redeem_code"
 
-	AccountChangeDisplayTopup = "topup"
+	AccountChangeDisplayTopup          = "topup"
+	AccountChangeDisplayTopupPromotion = "topup_promotion"
 )
 
 type AccountChangeRecord struct {
@@ -51,6 +53,8 @@ func (r *AccountChangeRecord) DisplayType() string {
 	switch r.Reason {
 	case AccountChangeReasonTopup:
 		return AccountChangeDisplayTopup
+	case AccountChangeReasonTopupPromotion:
+		return AccountChangeDisplayTopupPromotion
 	case AccountChangeReasonAdminAdjustment:
 		switch r.AssetType {
 		case AccountChangeAssetBalance:

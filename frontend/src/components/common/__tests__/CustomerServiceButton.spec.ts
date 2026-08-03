@@ -10,6 +10,7 @@ vi.mock('vue-i18n', async () => {
   const messages: Record<string, string> = {
     'common.customerService': '客服',
     'common.wechatId': '微信号',
+    'common.scanToAddSupport': '微信扫码添加客服',
     'common.close': '关闭',
     'common.afterSalesTitle': '售后客服',
     'common.afterSalesDesc': '处理账号和订单问题',
@@ -54,7 +55,10 @@ describe('CustomerServiceButton', () => {
 
     await wrapper.get('button').trigger('click')
 
-    expect(wrapper.text()).toContain('微信号')
+    expect(wrapper.text()).toContain('微信扫码添加客服')
+    expect(wrapper.get('[data-testid="default-support-qr"]').attributes('src')).toContain(
+      'wechat-jac-hh.png'
+    )
     expect(wrapper.text()).toContain('Jac_Hh')
   })
 

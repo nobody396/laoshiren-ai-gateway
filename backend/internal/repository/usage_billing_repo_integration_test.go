@@ -4,7 +4,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -954,7 +953,7 @@ func TestUsageBillingRepositoryApply_SharedSubscriptionBillingUsesOneQuotaPool(t
 	require.Equal(t, 1, dedupCount)
 }
 
-func TestUsageBillingRepositoryApply_BalanceFinalLimitRejectsInsufficientFunds(t *testing.T) {
+func TestUsageBillingRepositoryApply_BalanceFinalLimitClampsInsufficientFundsToZero(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)
 	repo := NewUsageBillingRepository(client, integrationDB)
@@ -970,22 +969,28 @@ func TestUsageBillingRepositoryApply_BalanceFinalLimitRejectsInsufficientFunds(t
 		Name:   "billing-low-balance",
 	})
 
+	// 余额 $0.01 < 成本 $1.00：扣费必须成功并把余额扣到 0（不透支、不回滚），
+	// 否则余额会永远停留在正的零头，前置余额闸门（balance <= 0 才拦截）
+	// 永远拦不住，用户可以无限免费使用。
 	requestID := uuid.NewString()
-	_, err := repo.Apply(ctx, &service.UsageBillingCommand{
+	result, err := repo.Apply(ctx, &service.UsageBillingCommand{
 		RequestID:   requestID,
 		APIKeyID:    apiKey.ID,
 		UserID:      user.ID,
 		BalanceCost: 1.00,
 	})
-	require.ErrorIs(t, err, service.ErrInsufficientBalance)
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.NotNil(t, result.NewBalance)
+	require.InDelta(t, 0.00, *result.NewBalance, 0.000001)
 
 	var balance float64
 	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT balance FROM users WHERE id = $1", user.ID).Scan(&balance))
-	require.InDelta(t, 0.01, balance, 0.000001)
+	require.InDelta(t, 0.00, balance, 0.000001)
 
 	var dedupCount int
 	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM usage_billing_dedup WHERE request_id = $1 AND api_key_id = $2", requestID, apiKey.ID).Scan(&dedupCount))
-	require.Equal(t, 0, dedupCount)
+	require.Equal(t, 1, dedupCount)
 }
 
 func TestUsageBillingRepositoryApply_SubscriptionFinalLimitCapsOverage(t *testing.T) {
@@ -1051,7 +1056,7 @@ func TestUsageBillingRepositoryApply_SubscriptionFinalLimitCapsOverage(t *testin
 	require.Equal(t, 1, dedupCount)
 }
 
-func TestUsageBillingRepositoryApply_ConcurrentBalanceFinalLimitPreventsOverspend(t *testing.T) {
+func TestUsageBillingRepositoryApply_ConcurrentBalanceFinalLimitNeverOverdrafts(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)
 	repo := NewUsageBillingRepository(client, integrationDB)
@@ -1067,6 +1072,8 @@ func TestUsageBillingRepositoryApply_ConcurrentBalanceFinalLimitPreventsOverspen
 		Name:   "billing-concurrent-balance",
 	})
 
+	// 并发两笔各 $0.75 的扣费（余额 $1.00）：两笔都必须成功提交，
+	// 余额被扣到 0 且绝不为负（GREATEST 钳制 + 行锁串行化）。
 	const workers = 2
 	var start sync.WaitGroup
 	start.Add(1)
@@ -1091,27 +1098,23 @@ func TestUsageBillingRepositoryApply_ConcurrentBalanceFinalLimitPreventsOverspen
 	close(errCh)
 
 	var successes int32
-	var insufficient int32
 	for err := range errCh {
-		switch {
-		case err == nil:
+		if err == nil {
 			atomic.AddInt32(&successes, 1)
-		case errors.Is(err, service.ErrInsufficientBalance):
-			atomic.AddInt32(&insufficient, 1)
-		default:
-			require.NoError(t, err)
+			continue
 		}
+		require.NoError(t, err)
 	}
-	require.Equal(t, int32(1), successes)
-	require.Equal(t, int32(1), insufficient)
+	require.Equal(t, int32(workers), successes)
 
 	var balance float64
 	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT balance FROM users WHERE id = $1", user.ID).Scan(&balance))
-	require.InDelta(t, 0.25, balance, 0.000001)
+	require.InDelta(t, 0.00, balance, 0.000001)
+	require.GreaterOrEqual(t, balance, 0.0)
 
 	var dedupCount int
 	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM usage_billing_dedup WHERE api_key_id = $1", apiKey.ID).Scan(&dedupCount))
-	require.Equal(t, 1, dedupCount)
+	require.Equal(t, workers, dedupCount)
 }
 
 func TestUsageBillingRepositoryApply_RequestFingerprintConflict(t *testing.T) {

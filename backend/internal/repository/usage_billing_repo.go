@@ -1318,44 +1318,30 @@ func usageBillingLimitExceeded(current float64, limit sql.NullFloat64, cost floa
 	return limit.Valid && limit.Float64 > 0 && current+cost > limit.Float64
 }
 
+// deductUsageBillingBalance 从用户余额扣费并返回扣后余额。
+//
+// 余额不足全额时扣到 0（不透支），而不是报 ErrInsufficientBalance 回滚：
+// 计费发生在上游请求完成之后，回滚并不会挽回已产生的成本，反而会让余额
+// 永远停留在正的零头（如 $0.004）。此时前置闸门（balance <= 0 才拦截）
+// 永远放行、最终扣费永远失败，用户即可无限免费使用。扣到 0 后，
+// 下一个请求就会被余额闸门正常拦截。扣减通过 GREATEST(balance - $1, 0)
+// 在单条 UPDATE 内完成，依赖行锁串行化，余额不会变负。
 func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, amount float64) (float64, error) {
 	var newBalance float64
 	err := tx.QueryRowContext(ctx, `
 		UPDATE users
-		SET balance = balance - $1,
+		SET balance = GREATEST(balance - $1, 0),
 			updated_at = NOW()
-		WHERE id = $2 AND deleted_at IS NULL AND balance >= $1
+		WHERE id = $2 AND deleted_at IS NULL
 		RETURNING balance
 	`, amount, userID).Scan(&newBalance)
 	if errors.Is(err, sql.ErrNoRows) {
-		exists, existsErr := usageBillingUserExists(ctx, tx, userID)
-		if existsErr != nil {
-			return 0, existsErr
-		}
-		if exists {
-			return 0, service.ErrInsufficientBalance
-		}
 		return 0, service.ErrUserNotFound
 	}
 	if err != nil {
 		return 0, err
 	}
 	return newBalance, nil
-}
-
-func usageBillingUserExists(ctx context.Context, tx *sql.Tx, userID int64) (bool, error) {
-	var exists bool
-	err := tx.QueryRowContext(ctx, `
-		SELECT EXISTS(
-			SELECT 1
-			FROM users
-			WHERE id = $1 AND deleted_at IS NULL
-		)
-	`, userID).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
 }
 
 func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID int64, amount float64) (bool, error) {

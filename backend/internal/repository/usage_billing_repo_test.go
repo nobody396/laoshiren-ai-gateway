@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUsageBillingRepositoryApply_BalanceFinalLimitRollbackOnInsufficientFunds(t *testing.T) {
+func TestUsageBillingRepositoryApply_BalanceFinalLimitClampsToZeroOnInsufficientFunds(t *testing.T) {
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
 	require.NoError(t, err)
 	defer func() { _ = db.Close() }()
@@ -26,19 +26,19 @@ func TestUsageBillingRepositoryApply_BalanceFinalLimitRollbackOnInsufficientFund
 		WillReturnError(sql.ErrNoRows)
 	mock.ExpectQuery(`UPDATE users`).
 		WithArgs(1.00, int64(11)).
-		WillReturnError(sql.ErrNoRows)
-	mock.ExpectQuery(`SELECT EXISTS`).
-		WithArgs(int64(11)).
-		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
-	mock.ExpectRollback()
+		WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(0.00))
+	mock.ExpectCommit()
 
-	_, err = repo.Apply(context.Background(), &service.UsageBillingCommand{
+	result, err := repo.Apply(context.Background(), &service.UsageBillingCommand{
 		RequestID:   "req-low-balance",
 		APIKeyID:    22,
 		UserID:      11,
 		BalanceCost: 1.00,
 	})
-	require.ErrorIs(t, err, service.ErrInsufficientBalance)
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.NotNil(t, result.NewBalance)
+	require.InDelta(t, 0.00, *result.NewBalance, 0.000001)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 

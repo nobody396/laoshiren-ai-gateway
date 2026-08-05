@@ -11,7 +11,7 @@
               一条真实邀请，<br class="hidden sm:block">一份长期回报。
             </h1>
             <p class="mt-4 max-w-2xl text-sm leading-7 text-gray-600 dark:text-dark-300">
-              普通邀请的首笔真实付费，邀请人与被邀请人各得 5% ⚡；满足消费门槛后可申请成为合伙人，审核通过后使用动态链接分配固定 10% 奖励池。
+              普通邀请的首笔真实付费，邀请人与被邀请人各得 5% ⚡；满足消费门槛后自动开通合伙人，使用动态链接分配固定 10% 奖励池。
             </p>
             <router-link to="/legal/affiliate-program" class="mt-4 inline-flex text-sm font-semibold text-primary-700 hover:underline dark:text-primary-300">
               查看完整联盟计划规则
@@ -74,7 +74,7 @@
               <div>
                 <p class="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">合伙人资格</p>
                 <h2 class="mt-1 text-xl font-semibold text-gray-950 dark:text-white">合伙人资格进度</h2>
-                <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">仅统计真实付费额度的确认消费；已核验的历史记录也会计入资格，永久直属关系不会因升级改变。</p>
+                <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">好友注册即永久绑定，好友消费你永久分佣——打造你的被动收入。仅统计真实付费额度的确认消费；已核验的历史记录也会计入资格，永久直属关系不会因升级改变。</p>
               </div>
               <span class="rounded-full border px-3 py-1 text-xs font-medium" :class="qualificationBadgeClass">
                 {{ qualificationStatusLabel }}
@@ -121,7 +121,7 @@
                 />
               </dl>
               <p class="mt-4 text-xs leading-5 text-gray-600 dark:text-dark-300">
-                只统计本人的确认消费，不要求邀请用户；达到路线 B 后仍需提交申请并由平台审核。
+                只统计本人的确认消费，不要求邀请用户；达到路线 B 后自动开通合伙人。
               </p>
             </article>
           </div>
@@ -129,16 +129,16 @@
           <div v-if="qualification.can_apply" class="border-t border-gray-100 bg-gray-50 px-6 py-4 dark:border-dark-800 dark:bg-dark-900">
             <div class="flex flex-wrap items-end justify-between gap-4">
               <label class="min-w-0 flex-1">
-                <span class="mb-1 block text-sm font-medium text-gray-800 dark:text-dark-100">资格已达成，可以申请成为合伙人</span>
+                <span class="mb-1 block text-sm font-medium text-gray-800 dark:text-dark-100">资格已达成，开通后立即生成默认推广链接</span>
                 <textarea v-model.trim="applicationNote" maxlength="500" class="input min-h-20" placeholder="可选：简单介绍你的客户和推广方式" />
               </label>
               <button class="btn btn-primary" :disabled="applying" @click="applyForPartner">
-                {{ applying ? '正在提交…' : '提交合伙人申请' }}
+                {{ applying ? '正在开通…' : '立即开通合伙人' }}
               </button>
             </div>
           </div>
           <div v-else-if="qualification.agent_status === 'pending_review'" class="border-t border-amber-200 bg-amber-50 px-6 py-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
-            申请已进入审核中。审核通过后，这里会自动切换为合伙人中心。
+            资格确认中，开通后这里会自动切换为合伙人中心。
           </div>
         </section>
 
@@ -461,7 +461,7 @@ const unreadNotices = computed(() => notices.value.filter(item => !item.read_at)
 const qualificationStatusLabel = computed(() => {
   if (isApprovedPartner.value) return partnerAccessCopy.value.badge
   if (qualification.value?.agent_status === 'pending_review' || applicationSubmitted.value) return '审核中'
-  if (qualification.value?.can_apply) return '可以申请'
+  if (qualification.value?.can_apply) return '可立即开通'
   if (qualification.value?.program_mode === 'off') return '计划尚未开放'
   return '资格积累中'
 })
@@ -628,10 +628,18 @@ async function applyForPartner() {
   try {
     await applyAffiliateAgent(applicationNote.value)
     applicationSubmitted.value = true
-    qualification.value = await getAffiliateQualification()
-    appStore.showSuccess('申请已提交，审核通过后会自动开通合伙人中心')
+    const latest = await getAffiliateQualification()
+    affiliateProgramStore.setQualification(latest)
+    qualification.value = latest
+    if (resolvePartnerAccessState(latest.agent_status, latest.risk_status) === 'available') {
+      await authStore.refreshUser()
+      await loadAgentData()
+      appStore.showSuccess('合伙人已开通，默认推广链接已生成')
+    } else {
+      appStore.showSuccess('申请已提交，开通后会自动切换为合伙人中心')
+    }
   } catch (cause: unknown) {
-    appStore.showError(buildAuthErrorMessage(cause, { fallback: '合伙人申请提交失败' }))
+    appStore.showError(buildAuthErrorMessage(cause, { fallback: '合伙人开通失败' }))
   } finally {
     applying.value = false
   }

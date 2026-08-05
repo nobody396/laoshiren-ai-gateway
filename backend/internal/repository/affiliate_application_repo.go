@@ -6,7 +6,18 @@ import (
 	"errors"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
+	"github.com/lib/pq"
 )
+
+// isPostgresRetryableTransactionError reports serialization failures and
+// deadlocks (SQLSTATE 40001/40P01) that disappear on a whole-transaction retry.
+func isPostgresRetryableTransactionError(err error) bool {
+	var pqErr *pq.Error
+	if !errors.As(err, &pqErr) {
+		return false
+	}
+	return string(pqErr.Code) == "40001" || string(pqErr.Code) == "40P01"
+}
 
 func (r *affiliateAgentRepository) SubmitAgentApplication(
 	ctx context.Context,
@@ -132,6 +143,210 @@ func affiliatePersistedAgentStatus(status string) string {
 	default:
 		return "candidate"
 	}
+}
+
+// AutoActivateAgent activates a qualified user without manual review. It is
+// idempotent: an already-active agent only gets the default-link repair, a
+// legacy pending application is converged to approved in place, and every
+// event/notice insert carries a deterministic conflict key. The decision note
+// is fixed to service.AffiliateAgentAutoActivationNote and reviewed_by stays
+// NULL so the record is distinguishable from a manual approval.
+func (r *affiliateAgentRepository) AutoActivateAgent(
+	ctx context.Context,
+	userID int64,
+	applicationNote string,
+	defaultCode string,
+	defaultCustomerRateBPS int32,
+) (_ *service.AffiliateAgentReviewResult, err error) {
+	if r == nil || r.db == nil {
+		return nil, errors.New("affiliate agent repository db is nil")
+	}
+	defer func() {
+		if err != nil && isPostgresRetryableTransactionError(err) {
+			err = service.ErrAffiliateActivationConflict
+		}
+	}()
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var userStatus string
+	if err := tx.QueryRowContext(ctx, `
+		SELECT status
+		FROM users
+		WHERE id = $1
+			AND deleted_at IS NULL
+		FOR UPDATE
+	`, userID).Scan(&userStatus); errors.Is(err, sql.ErrNoRows) {
+		return nil, service.ErrUserNotFound
+	} else if err != nil {
+		return nil, err
+	}
+	if userStatus != service.StatusActive {
+		return nil, service.ErrAffiliateAgentActivationBlocked
+	}
+
+	qualification, err := queryAffiliateAgentQualification(ctx, tx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if qualification.ProgramMode != service.AffiliateProgramModeLive ||
+		qualification.ProgramStartedAt == nil {
+		return nil, service.ErrAffiliateProgramNotLive
+	}
+	switch qualification.AgentStatus {
+	case "active":
+		// Idempotent repair below ensures legacy/partial activation has a default link.
+	case "suspended", "rejected", "terminated":
+		return nil, service.ErrAffiliateAgentActivationBlocked
+	default:
+		if !qualification.Qualified {
+			return nil, service.ErrAffiliateQualificationNotMet
+		}
+	}
+	if qualification.RiskStatus != "clear" {
+		return nil, service.ErrAffiliateAgentActivationBlocked
+	}
+
+	var pendingApplicationID int64
+	hasPendingApplication := true
+	if err := tx.QueryRowContext(ctx, `
+		SELECT id
+		FROM affiliate_agent_applications
+		WHERE user_id = $1
+			AND status = 'pending_review'
+		ORDER BY id DESC
+		LIMIT 1
+		FOR UPDATE
+	`, userID).Scan(&pendingApplicationID); errors.Is(err, sql.ErrNoRows) {
+		hasPendingApplication = false
+	} else if err != nil {
+		return nil, err
+	}
+
+	defaultLink, newlyActivated, err := activateAffiliateAgentInTx(
+		ctx,
+		tx,
+		qualification,
+		nil,
+		service.AffiliateAgentAutoActivationNote,
+		defaultCode,
+		defaultCustomerRateBPS,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var application *service.AffiliateAgentApplication
+	switch {
+	case hasPendingApplication:
+		// Converge the legacy pending application instead of leaving it queued
+		// for a manual review that will never come.
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE affiliate_agent_applications
+			SET status = 'approved',
+				decision_note = $2,
+				reviewed_at = NOW(),
+				reviewed_by = NULL,
+				updated_at = NOW()
+			WHERE id = $1
+				AND status = 'pending_review'
+		`, pendingApplicationID, service.AffiliateAgentAutoActivationNote); err != nil {
+			return nil, err
+		}
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO affiliate_agent_status_events (
+				agent_id, previous_status, next_status, reason,
+				application_id
+			)
+			VALUES ($1, 'pending_review', 'active', $2, $3)
+		`, userID, service.AffiliateAgentAutoActivationNote, pendingApplicationID); err != nil {
+			return nil, err
+		}
+		application, err = queryAffiliateAgentApplication(ctx, tx, pendingApplicationID)
+		if err != nil {
+			return nil, err
+		}
+	case qualification.AgentStatus != "active":
+		var applicationID int64
+		err = tx.QueryRowContext(ctx, `
+			INSERT INTO affiliate_agent_applications (
+				user_id, status, qualifying_route,
+				direct_valid_consumer_count,
+				self_consumption_micros,
+				direct_team_consumption_micros,
+				combined_consumption_micros,
+				application_note, decision_note,
+				reviewed_at
+			)
+			VALUES ($1, 'approved', $2, $3, $4, $5, $6, $7, $8, NOW())
+			RETURNING id
+		`,
+			userID,
+			qualification.QualificationRoute,
+			qualification.ValidDirectUserCount,
+			qualification.SelfConsumptionMicros,
+			qualification.DirectTeamConsumptionMicros,
+			qualification.CombinedConsumptionMicros,
+			applicationNote,
+			service.AffiliateAgentAutoActivationNote,
+		).Scan(&applicationID)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO affiliate_agent_status_events (
+				agent_id, previous_status, next_status, reason,
+				application_id
+			)
+			VALUES ($1, $2, 'active', $3, $4)
+		`, userID, affiliatePersistedAgentStatus(qualification.AgentStatus), service.AffiliateAgentAutoActivationNote, applicationID); err != nil {
+			return nil, err
+		}
+		application, err = queryAffiliateAgentApplication(ctx, tx, applicationID)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		// Already active (a concurrent activation won): return the latest
+		// application for reference when one exists.
+		var latestApplicationID int64
+		if err := tx.QueryRowContext(ctx, `
+			SELECT id
+			FROM affiliate_agent_applications
+			WHERE user_id = $1
+			ORDER BY id DESC
+			LIMIT 1
+		`, userID).Scan(&latestApplicationID); err == nil {
+			application, err = queryAffiliateAgentApplication(ctx, tx, latestApplicationID)
+			if err != nil {
+				return nil, err
+			}
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	finalQualification, err := r.GetAgentQualification(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	result := &service.AffiliateAgentReviewResult{
+		Activation: &service.AffiliateAgentActivation{
+			Qualification: *finalQualification,
+			DefaultLink:   *defaultLink,
+		},
+		NewlyActivated: newlyActivated,
+	}
+	if application != nil {
+		result.Application = *application
+	}
+	return result, nil
 }
 
 func (r *affiliateAgentRepository) ListAgentApplications(

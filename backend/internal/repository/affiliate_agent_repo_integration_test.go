@@ -4,8 +4,10 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -19,6 +21,8 @@ func TestAffiliateAgentRepository_QualifiesAppliesReviewsAndPreservesUpstream(t 
 	client := testEntClient(t)
 	repo := NewAffiliateAgentRepository(integrationDB)
 	agentService := service.NewAffiliateAgentService(repo)
+	reviewEmailQueue := &activationEmailQueueFake{}
+	agentService.SetActivationNotificationDeps(activationUserLookupFake{}, activationSettingsFake{}, reviewEmailQueue)
 	setAffiliateProgramLiveForIntegrationTest(t, ctx)
 
 	upstream := mustCreateUser(t, client, &service.User{
@@ -73,7 +77,7 @@ func TestAffiliateAgentRepository_QualifiesAppliesReviewsAndPreservesUpstream(t 
 		require.NoError(t, err)
 	}
 
-	qualification, err := agentService.GetQualification(ctx, candidate.ID)
+	qualification, err := repo.GetAgentQualification(ctx, candidate.ID)
 	require.NoError(t, err)
 	require.True(t, qualification.DirectRouteQualified)
 	require.False(t, qualification.SelfRouteQualified)
@@ -84,7 +88,9 @@ func TestAffiliateAgentRepository_QualifiesAppliesReviewsAndPreservesUpstream(t 
 	require.Equal(t, int32(5), qualification.ValidDirectUserCount)
 	require.Equal(t, int64(1_000_000_000), qualification.DirectTeamConsumptionMicros)
 
-	application, err := agentService.Apply(ctx, candidate.ID, "申请成为合伙人")
+	// The repo-level submit preserves the legacy pending flow that an admin
+	// reviews manually; the service-level Apply auto-activates instead.
+	application, err := repo.SubmitAgentApplication(ctx, candidate.ID, "申请成为合伙人")
 	require.NoError(t, err)
 	require.Equal(t, "pending_review", application.Status)
 	require.Zero(t, application.SelfConsumptionMicros)
@@ -128,6 +134,10 @@ func TestAffiliateAgentRepository_QualifiesAppliesReviewsAndPreservesUpstream(t 
 			AND is_default = TRUE
 	`, candidate.ID).Scan(&defaultCount))
 	require.Equal(t, 1, defaultCount)
+
+	// Manual approval fires the same activation side effects as auto activation.
+	requireAgentActivatedNoticeCount(t, ctx, candidate.ID, 1)
+	require.Equal(t, 1, reviewEmailQueue.count(), "manual approval must enqueue the activation email once")
 }
 
 func TestAffiliateAgentRepository_OperationsSummaryAndPartnerPerformance(t *testing.T) {
@@ -257,6 +267,17 @@ func TestAffiliateAgentRepository_RejectsUnqualifiedApplication(t *testing.T) {
 
 	_, err = agentService.Apply(ctx, user.ID, "")
 	require.True(t, errors.Is(err, service.ErrAffiliateQualificationNotMet), "unexpected error: %v", err)
+
+	var sideEffects int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT
+			(SELECT COUNT(*) FROM agent_principals WHERE agent_id = $1)
+			+
+			(SELECT COUNT(*) FROM affiliate_agent_applications WHERE user_id = $1)
+			+
+			(SELECT COUNT(*) FROM affiliate_links WHERE agent_id = $1)
+	`, user.ID).Scan(&sideEffects))
+	require.Zero(t, sideEffects, "viewing qualification while unqualified must not activate anything")
 }
 
 func TestAffiliateAgentRepository_RouteAOnlySumsValidDirectUsers(t *testing.T) {
@@ -485,4 +506,326 @@ func TestAffiliateAgentRepository_ListsQualifiedUsersUntilTheyApply(t *testing.T
 	for i := range items {
 		require.NotEqual(t, candidate.ID, items[i].UserID, "pending applicants must leave the waiting list")
 	}
+}
+
+func seedAffiliateSelfQualifiedUser(t *testing.T, ctx context.Context, userID int64, amountMicros int64) {
+	t.Helper()
+	var startedAt time.Time
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT started_at
+		FROM affiliate_program_settings
+		WHERE id = 1
+	`).Scan(&startedAt))
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_qualification_baseline_entries (
+			user_id, source_key, source_type,
+			confirmed_consumption_micros, cutoff_at, metadata
+		)
+		VALUES ($1, $2, 'manual_verified', $3, $4, '{"test":true}'::jsonb)
+	`, userID, "auto-activate:"+uuid.NewString(), amountMicros, startedAt)
+	require.NoError(t, err)
+}
+
+func requireAffiliateActivationCounts(t *testing.T, ctx context.Context, userID int64, links, applications, activationEvents int) {
+	t.Helper()
+	var linkCount, applicationCount, eventCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT
+			(SELECT COUNT(*) FROM affiliate_links WHERE agent_id = $1 AND is_default = TRUE),
+			(SELECT COUNT(*) FROM affiliate_agent_applications WHERE user_id = $1),
+			(
+				SELECT COUNT(*)
+				FROM affiliate_performance_events
+				WHERE user_id = $1
+					AND event_type = 'agent_activated'
+			)
+	`, userID).Scan(&linkCount, &applicationCount, &eventCount))
+	require.Equal(t, links, linkCount, "default link count")
+	require.Equal(t, applications, applicationCount, "application count")
+	require.Equal(t, activationEvents, eventCount, "agent_activated event count")
+}
+
+type activationEmailQueueFake struct {
+	mu     sync.Mutex
+	emails []string
+}
+
+func (f *activationEmailQueueFake) EnqueueAffiliateAgentActivated(email, _, _ string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.emails = append(f.emails, email)
+	return nil
+}
+
+func (f *activationEmailQueueFake) count() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.emails)
+}
+
+type activationUserLookupFake struct{}
+
+func (activationUserLookupFake) GetByID(_ context.Context, id int64) (*service.User, error) {
+	return &service.User{ID: id, Email: "activated-partner@example.com"}, nil
+}
+
+type activationSettingsFake struct{}
+
+func (activationSettingsFake) GetFrontendURL(context.Context) string {
+	return "https://laoshirenai.com"
+}
+func (activationSettingsFake) GetSiteName(context.Context) string { return "老实人AI" }
+
+func requireAgentActivatedNoticeCount(t *testing.T, ctx context.Context, userID int64, expected int) {
+	t.Helper()
+	var count int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM affiliate_agent_notices
+		WHERE agent_id = $1
+			AND notice_type = 'agent_activated'
+	`, userID).Scan(&count))
+	require.Equal(t, expected, count, "agent_activated notice count")
+}
+
+func TestAffiliateAgentRepository_AutoActivatesQualifiedUserOnQualificationView(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateAgentRepository(integrationDB)
+	agentService := service.NewAffiliateAgentService(repo)
+	emailQueue := &activationEmailQueueFake{}
+	agentService.SetActivationNotificationDeps(activationUserLookupFake{}, activationSettingsFake{}, emailQueue)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	candidate := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-auto-activate-%d@example.com", time.Now().UnixNano()),
+	})
+	seedAffiliateSelfQualifiedUser(t, ctx, candidate.ID, 530_000_000)
+
+	qualification, err := agentService.GetQualification(ctx, candidate.ID)
+	require.NoError(t, err)
+	require.Equal(t, "active", qualification.AgentStatus)
+	require.False(t, qualification.CanApply)
+	require.NotNil(t, qualification.ActivatedAt)
+	require.Equal(t, 1, emailQueue.count(), "fresh activation must enqueue the email once")
+	requireAgentActivatedNoticeCount(t, ctx, candidate.ID, 1)
+
+	var role string
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT role FROM users WHERE id = $1
+	`, candidate.ID).Scan(&role))
+	require.Equal(t, service.RoleAgent, role)
+
+	var principalStatus, principalDecision string
+	var reviewedBy sql.NullInt64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT status, decision_note, reviewed_by
+		FROM agent_principals
+		WHERE agent_id = $1
+	`, candidate.ID).Scan(&principalStatus, &principalDecision, &reviewedBy))
+	require.Equal(t, "active", principalStatus)
+	require.Equal(t, service.AffiliateAgentAutoActivationNote, principalDecision)
+	require.False(t, reviewedBy.Valid, "auto activation must not impersonate a reviewer")
+
+	var customerRate, agentRate int32
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT rv.customer_rebate_rate_bps, rv.agent_commission_rate_bps
+		FROM affiliate_links l
+		JOIN affiliate_link_rate_versions rv
+			ON rv.link_id = l.id
+			AND rv.version = l.current_rate_version
+		WHERE l.agent_id = $1
+			AND l.is_default = TRUE
+	`, candidate.ID).Scan(&customerRate, &agentRate))
+	require.Equal(t, service.AffiliateDefaultCustomerRebateRateBPS, customerRate)
+	require.Equal(t, service.AffiliateAgentPoolRateBPS-service.AffiliateDefaultCustomerRebateRateBPS, agentRate)
+
+	var applicationStatus, applicationDecision string
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT status, decision_note
+		FROM affiliate_agent_applications
+		WHERE user_id = $1
+	`, candidate.ID).Scan(&applicationStatus, &applicationDecision))
+	require.Equal(t, "approved", applicationStatus)
+	require.Equal(t, service.AffiliateAgentAutoActivationNote, applicationDecision)
+
+	requireAffiliateActivationCounts(t, ctx, candidate.ID, 1, 1, 1)
+
+	// Viewing again is a harmless no-op.
+	qualification, err = agentService.GetQualification(ctx, candidate.ID)
+	require.NoError(t, err)
+	require.Equal(t, "active", qualification.AgentStatus)
+
+	// Applying again keeps the legacy blocked semantics for active agents and
+	// must not duplicate links, applications, or events.
+	_, err = agentService.Apply(ctx, candidate.ID, "重复点击")
+	require.True(t, errors.Is(err, service.ErrAffiliateAgentActivationBlocked), "unexpected error: %v", err)
+
+	requireAffiliateActivationCounts(t, ctx, candidate.ID, 1, 1, 1)
+	requireAgentActivatedNoticeCount(t, ctx, candidate.ID, 1)
+	require.Equal(t, 1, emailQueue.count(), "idempotent triggers must not resend the activation email")
+}
+
+func TestAffiliateAgentRepository_AutoActivationConvergesPendingApplication(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateAgentRepository(integrationDB)
+	agentService := service.NewAffiliateAgentService(repo)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	candidate := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-auto-pending-%d@example.com", time.Now().UnixNano()),
+	})
+	seedAffiliateSelfQualifiedUser(t, ctx, candidate.ID, 530_000_000)
+
+	legacy, err := repo.SubmitAgentApplication(ctx, candidate.ID, "旧流程待审申请")
+	require.NoError(t, err)
+	require.Equal(t, "pending_review", legacy.Status)
+
+	qualification, err := agentService.GetQualification(ctx, candidate.ID)
+	require.NoError(t, err)
+	require.Equal(t, "active", qualification.AgentStatus)
+
+	var status, decisionNote string
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT status, decision_note
+		FROM affiliate_agent_applications
+		WHERE id = $1
+	`, legacy.ID).Scan(&status, &decisionNote))
+	require.Equal(t, "approved", status, "auto activation must converge the legacy pending application")
+	require.Equal(t, service.AffiliateAgentAutoActivationNote, decisionNote)
+
+	requireAffiliateActivationCounts(t, ctx, candidate.ID, 1, 1, 1)
+}
+
+func TestAffiliateAgentRepository_AutoActivationSkippedWhenRiskNotClear(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateAgentRepository(integrationDB)
+	agentService := service.NewAffiliateAgentService(repo)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	candidate := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-auto-risk-%d@example.com", time.Now().UnixNano()),
+	})
+	seedAffiliateSelfQualifiedUser(t, ctx, candidate.ID, 530_000_000)
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_principals (agent_id, status, risk_status)
+		VALUES ($1, 'candidate', 'review')
+	`, candidate.ID)
+	require.NoError(t, err)
+
+	qualification, err := agentService.GetQualification(ctx, candidate.ID)
+	require.NoError(t, err)
+	require.Equal(t, "review", qualification.RiskStatus)
+	require.NotEqual(t, "active", qualification.AgentStatus)
+
+	_, err = agentService.Apply(ctx, candidate.ID, "")
+	require.True(t, errors.Is(err, service.ErrAffiliateAgentActivationBlocked), "unexpected error: %v", err)
+
+	var role string
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT role FROM users WHERE id = $1
+	`, candidate.ID).Scan(&role))
+	require.NotEqual(t, service.RoleAgent, role)
+	requireAffiliateActivationCounts(t, ctx, candidate.ID, 0, 0, 0)
+}
+
+func TestAffiliateAgentRepository_ConcurrentQualificationViewsActivateOnce(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateAgentRepository(integrationDB)
+	emailQueue := &activationEmailQueueFake{}
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	candidate := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-auto-concurrent-%d@example.com", time.Now().UnixNano()),
+	})
+	seedAffiliateSelfQualifiedUser(t, ctx, candidate.ID, 530_000_000)
+
+	const viewers = 4
+	errCh := make(chan error, viewers)
+	var wg sync.WaitGroup
+	for i := 0; i < viewers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			svc := service.NewAffiliateAgentService(repo)
+			svc.SetActivationNotificationDeps(activationUserLookupFake{}, activationSettingsFake{}, emailQueue)
+			_, err := svc.GetQualification(ctx, candidate.ID)
+			errCh <- err
+		}()
+	}
+	wg.Wait()
+	close(errCh)
+	for err := range errCh {
+		require.NoError(t, err)
+	}
+
+	qualification, err := repo.GetAgentQualification(ctx, candidate.ID)
+	require.NoError(t, err)
+	require.Equal(t, "active", qualification.AgentStatus)
+	requireAffiliateActivationCounts(t, ctx, candidate.ID, 1, 1, 1)
+	requireAgentActivatedNoticeCount(t, ctx, candidate.ID, 1)
+	require.Equal(t, 1, emailQueue.count(), "concurrent activations must send exactly one email")
+}
+
+func TestAffiliateAgentRepository_DailySweepActivatesQualifiedUserOnce(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewAffiliateAgentRepository(integrationDB)
+	agentService := service.NewAffiliateAgentService(repo)
+	emailQueue := &activationEmailQueueFake{}
+	agentService.SetActivationNotificationDeps(activationUserLookupFake{}, activationSettingsFake{}, emailQueue)
+	scheduler := service.NewAffiliateAgentActivationScheduler(agentService)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+
+	// Qualified but never visits the partner page.
+	idle := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-sweep-idle-%d@example.com", time.Now().UnixNano()),
+	})
+	seedAffiliateSelfQualifiedUser(t, ctx, idle.ID, 530_000_000)
+	// Not qualified: below the self-consumption threshold.
+	unqualified := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-sweep-unqualified-%d@example.com", time.Now().UnixNano()),
+	})
+	seedAffiliateSelfQualifiedUser(t, ctx, unqualified.ID, 100_000_000)
+	// Qualified but under risk review: excluded from the candidate list.
+	risky := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-sweep-risky-%d@example.com", time.Now().UnixNano()),
+	})
+	seedAffiliateSelfQualifiedUser(t, ctx, risky.ID, 530_000_000)
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_principals (agent_id, status, risk_status)
+		VALUES ($1, 'candidate', 'review')
+	`, risky.ID)
+	require.NoError(t, err)
+
+	scheduler.RunOnce(ctx)
+
+	qualification, err := repo.GetAgentQualification(ctx, idle.ID)
+	require.NoError(t, err)
+	require.Equal(t, "active", qualification.AgentStatus)
+	requireAffiliateActivationCounts(t, ctx, idle.ID, 1, 1, 1)
+	requireAgentActivatedNoticeCount(t, ctx, idle.ID, 1)
+	// The sweep covers every qualified candidate in the shared test database,
+	// so earlier tests' leftovers may also be activated here; what matters is
+	// the idle user got exactly one email.
+	firstSweepEmails := emailQueue.count()
+	require.GreaterOrEqual(t, firstSweepEmails, 1)
+
+	for _, unaffected := range []int64{unqualified.ID, risky.ID} {
+		other, err := repo.GetAgentQualification(ctx, unaffected)
+		require.NoError(t, err)
+		require.NotEqual(t, "active", other.AgentStatus)
+		requireAffiliateActivationCounts(t, ctx, unaffected, 0, 0, 0)
+		requireAgentActivatedNoticeCount(t, ctx, unaffected, 0)
+	}
+
+	// A second sweep the same day is a no-op: nothing newly activated, no
+	// duplicate notice or email.
+	scheduler.RunOnce(ctx)
+	requireAffiliateActivationCounts(t, ctx, idle.ID, 1, 1, 1)
+	requireAgentActivatedNoticeCount(t, ctx, idle.ID, 1)
+	require.Equal(t, firstSweepEmails, emailQueue.count(), "repeat sweep must not resend activation emails")
 }

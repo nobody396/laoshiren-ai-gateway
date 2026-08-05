@@ -8,9 +8,14 @@ import (
 	"time"
 
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
 )
 
 const AffiliateDefaultCustomerRebateRateBPS int32 = 500
+
+// AffiliateAgentAutoActivationNote marks applications approved by the
+// qualify-and-activate flow so they stay distinguishable from manual reviews.
+const AffiliateAgentAutoActivationNote = "auto"
 
 var (
 	ErrAffiliateProgramNotLive = infraerrors.Conflict(
@@ -36,6 +41,13 @@ var (
 	ErrAffiliatePartnerPerformanceNotFound = infraerrors.NotFound(
 		"AFFILIATE_PARTNER_PERFORMANCE_NOT_FOUND",
 		"affiliate partner not found",
+	)
+	// ErrAffiliateActivationConflict marks a serialization/deadlock race
+	// between concurrent activation attempts. Every activation write is
+	// idempotent, so callers should simply retry the whole transaction.
+	ErrAffiliateActivationConflict = infraerrors.Conflict(
+		"AFFILIATE_ACTIVATION_CONFLICT",
+		"affiliate agent activation raced with a concurrent update",
 	)
 )
 
@@ -176,6 +188,10 @@ type AffiliatePartnerPerformanceDetail struct {
 type AffiliateAgentReviewResult struct {
 	Application AffiliateAgentApplication `json:"application"`
 	Activation  *AffiliateAgentActivation `json:"activation,omitempty"`
+	// NewlyActivated reports whether this call performed a fresh activation
+	// (as opposed to the idempotent repair path). Internal only: it drives
+	// one-time side effects such as the activation email.
+	NewlyActivated bool `json:"-"`
 }
 
 type AffiliateAgentRepository interface {
@@ -211,14 +227,76 @@ type AffiliateAgentRepository interface {
 		defaultCode string,
 		defaultCustomerRebateRateBPS int32,
 	) (*AffiliateAgentReviewResult, error)
+	AutoActivateAgent(
+		ctx context.Context,
+		userID int64,
+		applicationNote string,
+		defaultCode string,
+		defaultCustomerRebateRateBPS int32,
+	) (*AffiliateAgentReviewResult, error)
 }
 
 type AffiliateAgentService struct {
 	repo AffiliateAgentRepository
+
+	userRepo   affiliateActivationUserLookup
+	settings   affiliateActivationSettings
+	emailQueue affiliateActivationEmailQueue
+}
+
+// affiliateActivationSettings narrows SettingService to what the activation
+// email needs, keeping the dependency fakeable in tests.
+type affiliateActivationSettings interface {
+	GetFrontendURL(ctx context.Context) string
+	GetSiteName(ctx context.Context) string
+}
+
+// affiliateActivationUserLookup narrows UserRepository to the single read the
+// activation email needs, keeping the dependency fakeable in tests.
+type affiliateActivationUserLookup interface {
+	GetByID(ctx context.Context, id int64) (*User, error)
+}
+
+// affiliateActivationEmailQueue narrows EmailQueueService to the activation
+// email task, keeping the dependency fakeable in tests.
+type affiliateActivationEmailQueue interface {
+	EnqueueAffiliateAgentActivated(email, siteName, partnerCenterURL string) error
 }
 
 func NewAffiliateAgentService(repo AffiliateAgentRepository) *AffiliateAgentService {
 	return &AffiliateAgentService{repo: repo}
+}
+
+// SetActivationNotificationDeps wires the optional activation email
+// dependencies. Without them activation still succeeds; only the email is
+// skipped (the in-app notice is written inside the activation transaction).
+func (s *AffiliateAgentService) SetActivationNotificationDeps(
+	userRepo affiliateActivationUserLookup,
+	settings affiliateActivationSettings,
+	emailQueue affiliateActivationEmailQueue,
+) {
+	s.userRepo = userRepo
+	s.settings = settings
+	s.emailQueue = emailQueue
+}
+
+// enqueueActivationEmail sends the "partner activated" email after the
+// activation transaction committed. Failures are logged-and-forget, matching
+// the feedback reply email path.
+func (s *AffiliateAgentService) enqueueActivationEmail(ctx context.Context, userID int64) {
+	if s == nil || s.userRepo == nil || s.settings == nil || s.emailQueue == nil {
+		return
+	}
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil || user == nil || strings.TrimSpace(user.Email) == "" {
+		return
+	}
+	partnerCenterURL := strings.TrimRight(s.settings.GetFrontendURL(ctx), "/") + "/affiliate"
+	_ = s.emailQueue.EnqueueAffiliateAgentActivated(
+		user.Email,
+		s.settings.GetSiteName(ctx),
+		partnerCenterURL,
+	)
 }
 
 func (s *AffiliateAgentService) GetQualification(
@@ -230,6 +308,21 @@ func (s *AffiliateAgentService) GetQualification(
 	}
 	if userID <= 0 {
 		return nil, ErrInvalidInput
+	}
+	qualification, err := s.repo.GetAgentQualification(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !affiliateAutoActivationEligible(qualification) {
+		return qualification, nil
+	}
+	if _, err := s.activateQualifiedAgent(ctx, userID, ""); err != nil {
+		if isAffiliateActivationStateError(err) {
+			// State changed between the read and the activation transaction
+			// (e.g. a concurrent activation won). Return the fresh snapshot.
+			return s.repo.GetAgentQualification(ctx, userID)
+		}
+		return nil, err
 	}
 	return s.repo.GetAgentQualification(ctx, userID)
 }
@@ -249,7 +342,132 @@ func (s *AffiliateAgentService) Apply(
 	if len([]rune(note)) > 500 {
 		return nil, ErrInvalidInput
 	}
+	qualification, err := s.repo.GetAgentQualification(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if affiliateAutoActivationEligible(qualification) {
+		result, err := s.activateQualifiedAgent(ctx, userID, note)
+		if err != nil {
+			if isAffiliateActivationStateError(err) {
+				// State changed between the read and the activation
+				// transaction; fall back to the legacy submit path so the
+				// caller still gets the canonical error for the new state.
+				return s.repo.SubmitAgentApplication(ctx, userID, note)
+			}
+			return nil, err
+		}
+		if result != nil && result.Application.ID > 0 {
+			return &result.Application, nil
+		}
+		// Already activated by a concurrent request without any application
+		// row on record; there is nothing left to submit.
+		return nil, ErrAffiliateAgentActivationBlocked
+	}
 	return s.repo.SubmitAgentApplication(ctx, userID, note)
+}
+
+// ActivateQualifiedCandidates activates every qualified-but-unactivated user
+// (the same set ListQualifiedCandidates reports) through the exact same path
+// as the lazy GET/apply triggers, so notices and emails stay idempotent. Each
+// user runs in an independent transaction; one failure is logged and skipped
+// without blocking the rest of the batch.
+func (s *AffiliateAgentService) ActivateQualifiedCandidates(
+	ctx context.Context,
+	limit int,
+) (scanned, activated, failed int, err error) {
+	if s == nil || s.repo == nil {
+		return 0, 0, 0, errors.New("affiliate agent repository is not configured")
+	}
+	if limit <= 0 || limit > 500 {
+		limit = 500
+	}
+	candidates, err := s.repo.ListQualifiedCandidates(ctx, limit)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	scanned = len(candidates)
+	for _, candidate := range candidates {
+		result, activateErr := s.activateQualifiedAgent(ctx, candidate.UserID, "")
+		switch {
+		case activateErr == nil && result != nil && result.NewlyActivated:
+			activated++
+		case activateErr == nil || isAffiliateActivationStateError(activateErr):
+			// Already activated by a concurrent trigger, or the state flipped
+			// between listing and activation: both are harmless no-ops.
+		default:
+			failed++
+			logger.LegacyPrintf(
+				"service.affiliate_activation",
+				"[AffiliateActivation] Failed to activate user %d: %v",
+				candidate.UserID, activateErr,
+			)
+		}
+	}
+	return scanned, activated, failed, nil
+}
+
+// affiliateAutoActivationEligible reports whether viewing the qualification
+// page or calling the apply endpoint should activate the user immediately.
+// Pending-review applications are eligible on purpose: auto activation
+// converges them to approved instead of leaving them queued for a manual
+// review that no longer exists.
+func affiliateAutoActivationEligible(q *AffiliateAgentQualification) bool {
+	if q == nil {
+		return false
+	}
+	if q.ProgramMode != AffiliateProgramModeLive ||
+		q.ProgramStartedAt == nil ||
+		!q.Qualified ||
+		q.RiskStatus != "clear" {
+		return false
+	}
+	switch q.AgentStatus {
+	case "active", "suspended", "terminated", "rejected":
+		return false
+	}
+	return true
+}
+
+// isAffiliateActivationStateError marks errors caused by legitimate state
+// changes between the eligibility read and the activation transaction, as
+// opposed to real failures (conflicts, db errors) that callers should see.
+func isAffiliateActivationStateError(err error) bool {
+	return errors.Is(err, ErrAffiliateQualificationNotMet) ||
+		errors.Is(err, ErrAffiliateAgentActivationBlocked) ||
+		errors.Is(err, ErrAffiliateProgramNotLive) ||
+		errors.Is(err, ErrUserNotFound)
+}
+
+// activateQualifiedAgent runs the shared auto-activation path for both user
+// entry points, minting the default link exactly like an admin approval:
+// "A" + random invite code, default customer rebate rate, retry on collision.
+func (s *AffiliateAgentService) activateQualifiedAgent(
+	ctx context.Context,
+	userID int64,
+	applicationNote string,
+) (*AffiliateAgentReviewResult, error) {
+	for attempt := 0; attempt < 10; attempt++ {
+		code, err := generateInviteCode()
+		if err != nil {
+			return nil, fmt.Errorf("generate default affiliate link: %w", err)
+		}
+		result, err := s.repo.AutoActivateAgent(
+			ctx,
+			userID,
+			applicationNote,
+			"A"+code,
+			AffiliateDefaultCustomerRebateRateBPS,
+		)
+		if errors.Is(err, ErrAffiliateLinkConflict) || errors.Is(err, ErrAffiliateActivationConflict) {
+			continue
+		}
+		if err == nil && result != nil && result.NewlyActivated {
+			s.enqueueActivationEmail(ctx, userID)
+		}
+		return result, err
+	}
+	return nil, ErrAffiliateLinkConflict
 }
 
 func (s *AffiliateAgentService) ListApplications(
@@ -375,6 +593,9 @@ func (s *AffiliateAgentService) ReviewApplication(
 		)
 		if errors.Is(err, ErrAffiliateLinkConflict) {
 			continue
+		}
+		if err == nil && result != nil && result.NewlyActivated {
+			s.enqueueActivationEmail(ctx, result.Application.UserID)
 		}
 		return result, err
 	}

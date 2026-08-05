@@ -748,3 +748,30 @@ func (s *EmailService) buildBalanceAlertEmailBody(siteName, username, balance, t
 </html>
 `, siteName, username, balance, threshold, topUpSection)
 }
+
+// SendAffiliateAgentActivated notifies a freshly activated partner that the
+// default invite link is ready in the partner center.
+func (s *EmailService) SendAffiliateAgentActivated(ctx context.Context, email, siteName, partnerCenterURL string) error {
+	subject := fmt.Sprintf("[%s] 合伙人已开通", siteName)
+	return s.SendEmail(ctx, email, subject, buildAffiliateAgentActivatedEmailBody(siteName, partnerCenterURL))
+}
+
+func buildAffiliateAgentActivatedEmailBody(siteName, partnerCenterURL string) string {
+	safeSiteName := html.EscapeString(siteName)
+	safeCenterURL := html.EscapeString(partnerCenterURL)
+	body := fmt.Sprintf(`
+            <p style="font-size:16px;line-height:1.8;margin:0 0 20px;color:#5f574d;">恭喜你正式成为 <strong>%s</strong> 合伙人！你的专属推广链接已经生成——好友通过链接注册即永久绑定，好友消费你<strong>永久分佣</strong>，打造你的被动收入。</p>
+            <div style="border:1px solid #e5d8c5;background:#fbf7ed;border-radius:10px;padding:16px 18px;margin:22px 0;">
+                <p style="margin:0 0 8px;color:#4f463d;font-size:14px;line-height:1.7;">好友通过你的链接注册并消费后：默认<strong>好友立返 5%% ⚡、你再赚 5%% 现金佣金</strong>，按确认消费实时结算，永久有效。返佣比例可在合伙人中心自由调整（双边合计 10%% 不变）。</p>
+                <p style="margin:0;color:#8a7d6d;font-size:13px;line-height:1.7;">佣金满额即可申请提现，支付宝打款，人工审核后到账。有任何问题随时联系客服。</p>
+            </div>
+            <div style="text-align:center;margin:28px 0;">
+                <a href="%s" style="display:inline-block;padding:13px 24px;border-radius:8px;background:#9a4d32;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;">前往合伙人中心复制推广链接</a>
+            </div>
+            <div style="color:#8a7d6d;font-size:12px;line-height:1.7;word-break:break-all;margin-top:18px;">
+                <p style="margin:0 0 6px;">如果按钮无法点击，请复制以下链接到浏览器中打开：</p>
+                <p style="margin:0;">%s</p>
+            </div>
+`, safeSiteName, safeCenterURL, safeCenterURL)
+	return buildBrandedEmailHTML(safeSiteName, "合伙人已开通", "Partner Program", body)
+}

@@ -97,7 +97,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	userHandler := handler.ProvideUserHandler(userService, commissionService, identityService, settingService, configConfig)
 	affiliateLinkService := service.NewAffiliateLinkService(affiliateLinkRepository)
 	affiliateAgentRepository := repository.NewAffiliateAgentRepository(db)
-	affiliateAgentService := service.NewAffiliateAgentService(affiliateAgentRepository)
+	affiliateAgentService := service.ProvideAffiliateAgentService(affiliateAgentRepository, userRepository, settingService, emailQueueService)
 	affiliateCommunityRepository := repository.NewAffiliateCommunityRepository(db)
 	affiliateCommunityService := service.NewAffiliateCommunityService(affiliateCommunityRepository)
 	affiliateWalletRepository := repository.NewAffiliateWalletRepository(db)
@@ -308,7 +308,8 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	opsCleanupService := service.ProvideOpsCleanupService(opsRepository, db, redisClient, configConfig)
 	opsScheduledReportService := service.ProvideOpsScheduledReportService(opsService, userService, emailService, redisClient, configConfig)
 	scheduledTestRunnerService := service.ProvideScheduledTestRunnerService(scheduledTestPlanRepository, scheduledTestService, accountTestService, rateLimitService, configConfig)
-	lifecycle := service.ProvideRootLifecycle(configConfig, accountRepository, pricingService, apiKeyService, billingCacheService, emailQueueService, subscriptionService, accountingWorker, usageRecordWorkerPool, timingWheelService, dashboardAggregationService, deferredService, schedulerSnapshotService, concurrencyService, userMessageQueueService, tokenRefreshService, accountExpiryService, subscriptionExpiryService, usageCleanupService, agentLevelEvaluatorService, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, idempotencyCleanupService, scheduledTestRunnerService, downloadResourceService, backupService, pendingAuthSessionCleanupService, affiliateRewardService)
+	affiliateAgentActivationScheduler := service.NewAffiliateAgentActivationScheduler(affiliateAgentService)
+	lifecycle := service.ProvideRootLifecycle(configConfig, accountRepository, pricingService, apiKeyService, billingCacheService, emailQueueService, subscriptionService, accountingWorker, usageRecordWorkerPool, timingWheelService, dashboardAggregationService, deferredService, schedulerSnapshotService, concurrencyService, userMessageQueueService, tokenRefreshService, accountExpiryService, subscriptionExpiryService, usageCleanupService, agentLevelEvaluatorService, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, idempotencyCleanupService, scheduledTestRunnerService, downloadResourceService, backupService, pendingAuthSessionCleanupService, affiliateRewardService, affiliateAgentActivationScheduler)
 	v2 := provideCleanup(client, redisClient, lifecycle)
 	application := &Application{
 		Server:    httpServer,

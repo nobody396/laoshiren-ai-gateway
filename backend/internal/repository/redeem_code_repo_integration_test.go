@@ -282,6 +282,52 @@ func (s *RedeemCodeRepoSuite) TestUse_DoesNotMarkGiftSold() {
 	s.Require().Nil(got.SoldAt)
 }
 
+func (s *RedeemCodeRepoSuite) TestUse_MarksSubscriptionSaleRechargeInventorySold() {
+	user := s.createUser(uniqueTestValue(s.T(), "use-sub-sale") + "@example.com")
+	code := &service.RedeemCode{
+		Code:        "USE-SUB-SALE",
+		Type:        service.RedeemTypeSubscription,
+		Value:       20,
+		Status:      service.StatusUnused,
+		Purpose:     service.RedeemCodePurposeSaleRecharge,
+		SalesStatus: service.RedeemCodeSalesStatusInventory,
+	}
+	s.Require().NoError(s.repo.Create(s.ctx, code))
+
+	err := s.repo.Use(s.ctx, code.ID, user.ID)
+	s.Require().NoError(err, "Use")
+
+	got, err := s.repo.GetByID(s.ctx, code.ID)
+	s.Require().NoError(err)
+	s.Require().Equal(service.StatusUsed, got.Status)
+	s.Require().Equal(service.RedeemCodeSalesStatusSold, got.SalesStatus)
+	s.Require().NotNil(got.SoldAt)
+	s.Require().NotNil(got.UsedAt)
+	s.Require().Equal(got.UsedAt.UTC(), got.SoldAt.UTC())
+}
+
+func (s *RedeemCodeRepoSuite) TestUse_DoesNotMarkSubscriptionGiftSold() {
+	user := s.createUser(uniqueTestValue(s.T(), "use-sub-gift") + "@example.com")
+	code := &service.RedeemCode{
+		Code:        "USE-SUB-GIFT",
+		Type:        service.RedeemTypeSubscription,
+		Value:       20,
+		Status:      service.StatusUnused,
+		Purpose:     service.RedeemCodePurposeGift,
+		SalesStatus: service.RedeemCodeSalesStatusGifted,
+	}
+	s.Require().NoError(s.repo.Create(s.ctx, code))
+
+	err := s.repo.Use(s.ctx, code.ID, user.ID)
+	s.Require().NoError(err, "Use")
+
+	got, err := s.repo.GetByID(s.ctx, code.ID)
+	s.Require().NoError(err)
+	s.Require().Equal(service.StatusUsed, got.Status)
+	s.Require().Equal(service.RedeemCodeSalesStatusGifted, got.SalesStatus)
+	s.Require().Nil(got.SoldAt)
+}
+
 func (s *RedeemCodeRepoSuite) TestUse_Idempotency() {
 	user := s.createUser(uniqueTestValue(s.T(), "idem") + "@example.com")
 	code := &service.RedeemCode{Code: "IDEM-CODE", Type: service.RedeemTypeBalance, Value: 0, Status: service.StatusUnused}

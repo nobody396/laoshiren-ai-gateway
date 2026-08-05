@@ -120,7 +120,7 @@ func (s *AffiliateAgentActivationScheduler) RunOnce(ctx context.Context) {
 	s.mu.Unlock()
 	logger.LegacyPrintf(
 		"service.affiliate_activation",
-		"[AffiliateActivation] Daily sweep done: scanned=%d activated=%d failed=%d",
+		"[AffiliateActivation] Daily sweep done: scanned=%d activated=%d failures=%d",
 		scanned, activated, failed,
 	)
 }

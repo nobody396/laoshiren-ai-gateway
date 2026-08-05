@@ -682,16 +682,21 @@ func TestUsageBillingAffiliateSettlement_MonthlyRedeemShadowNeverSettlesAfterCut
 		GroupIDs:     []int64{group.ID},
 		ValidityDays: 31,
 		Purpose:      service.RedeemCodePurposeSaleRecharge,
-		SalesStatus:  service.RedeemCodeSalesStatusSold,
+		SalesStatus:  service.RedeemCodeSalesStatusInventory,
 	}
 	require.NoError(t, redeemRepo.Create(ctx, monthlyCode))
-	_, err = redeemService.Redeem(ctx, customer.ID, monthlyCode.Code)
+	redeemedMonthlyCode, err := redeemService.Redeem(ctx, customer.ID, monthlyCode.Code)
 	require.NoError(t, err)
+	// Redeeming an unsold sale_recharge monthly card must flip it to sold so the
+	// entitlement cycle below is attributed as a paid purchase, not an admin
+	// adjustment.
+	require.Equal(t, service.RedeemCodeSalesStatusSold, redeemedMonthlyCode.SalesStatus)
 	subscription, err := subscriptionRepo.GetByUserIDAndGroupID(ctx, customer.ID, group.ID)
 	require.NoError(t, err)
 
 	var (
 		cyclePolicy     string
+		cycleSourceType string
 		cyclePartnerID  int64
 		cycleCreatedAt  time.Time
 		cycleSaleMicros int64
@@ -700,6 +705,7 @@ func TestUsageBillingAffiliateSettlement_MonthlyRedeemShadowNeverSettlesAfterCut
 	require.NoError(t, integrationDB.QueryRowContext(ctx, `
 		SELECT
 			affiliate_policy,
+			source_type,
 			direct_partner_id,
 			created_at,
 			sale_price_micros,
@@ -708,11 +714,13 @@ func TestUsageBillingAffiliateSettlement_MonthlyRedeemShadowNeverSettlesAfterCut
 		WHERE source_key=$1
 	`, fmt.Sprintf("redeem:subscription:%d", monthlyCode.ID)).Scan(
 		&cyclePolicy,
+		&cycleSourceType,
 		&cyclePartnerID,
 		&cycleCreatedAt,
 		&cycleSaleMicros,
 		&cycleLimit,
 	))
+	require.Equal(t, service.AffiliateSourcePaidRedeem, cycleSourceType)
 	require.Equal(t, service.AffiliateSourcePolicyPartnerUsage, cyclePolicy)
 	require.Equal(t, agent.ID, cyclePartnerID)
 	require.Equal(t, int64(10_000_000), cycleSaleMicros)

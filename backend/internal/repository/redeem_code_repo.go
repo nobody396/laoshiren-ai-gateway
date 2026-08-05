@@ -241,7 +241,7 @@ func (r *redeemCodeRepository) Use(ctx context.Context, id, userID int64) error 
 	_, err = client.RedeemCode.Update().
 		Where(
 			redeemcode.IDEQ(id),
-			redeemcode.TypeEQ(service.RedeemTypeBalance),
+			redeemcode.TypeIn(service.RedeemTypeBalance, service.RedeemTypeSubscription),
 			redeemcode.PurposeEQ(service.RedeemCodePurposeSaleRecharge),
 			redeemcode.SalesStatusEQ(service.RedeemCodeSalesStatusInventory),
 		).

@@ -686,148 +686,14 @@ func (r *affiliateAgentRepository) ReviewAgentApplication(
 		return nil, service.ErrAffiliateAgentActivationBlocked
 	}
 
-	if _, err := tx.ExecContext(ctx, `
-		UPDATE users
-		SET role = 'agent',
-			updated_at = NOW()
-		WHERE id = $1
-			AND deleted_at IS NULL
-	`, userID); err != nil {
-		return nil, err
-	}
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO agent_principals (
-			agent_id, status, risk_status,
-			qualified_at, activated_at,
-			applied_at, reviewed_at, reviewed_by, decision_note
-		)
-		VALUES ($1, 'active', 'clear', NOW(), NOW(), NOW(), NOW(), $2, $3)
-		ON CONFLICT (agent_id) DO UPDATE SET
-			status = 'active',
-			qualified_at = COALESCE(agent_principals.qualified_at, NOW()),
-			activated_at = COALESCE(agent_principals.activated_at, NOW()),
-			reviewed_at = NOW(),
-			reviewed_by = $2,
-			decision_note = $3,
-			updated_at = NOW()
-		WHERE agent_principals.status NOT IN ('suspended', 'rejected')
-	`, userID, operatorID, decisionNote); err != nil {
-		return nil, err
-	}
-
-	defaultLink, err := getDefaultAffiliateLink(ctx, tx, userID)
-	if errors.Is(err, sql.ErrNoRows) {
-		var codeCollision bool
-		if err := tx.QueryRowContext(ctx, `
-			SELECT EXISTS(
-				SELECT 1 FROM users WHERE invite_code = $1
-			)
-		`, defaultCode).Scan(&codeCollision); err != nil {
-			return nil, err
-		}
-		if codeCollision {
-			return nil, service.ErrAffiliateLinkConflict
-		}
-		agentRateBPS := service.AffiliateAgentPoolRateBPS - defaultCustomerRateBPS
-		var linkID int64
-		err = tx.QueryRowContext(ctx, `
-			INSERT INTO affiliate_links (
-				agent_id, code, name, channel,
-				is_default, status, current_rate_version
-			)
-			VALUES ($1, $2, '默认推广链接', 'default', TRUE, 'active', 1)
-			RETURNING id
-		`, userID, defaultCode).Scan(&linkID)
-		if err != nil {
-			if isPostgresUniqueViolation(err) {
-				return nil, service.ErrAffiliateLinkConflict
-			}
-			return nil, err
-		}
-		if _, err := tx.ExecContext(ctx, `
-			INSERT INTO affiliate_link_rate_versions (
-				link_id, version,
-				customer_rebate_rate_bps,
-				agent_commission_rate_bps,
-				created_by, effective_at
-			)
-			VALUES ($1, 1, $2, $3, $4, NOW())
-		`, linkID, defaultCustomerRateBPS, agentRateBPS, userID); err != nil {
-			return nil, err
-		}
-		defaultLink, err = getDefaultAffiliateLink(ctx, tx, userID)
-	}
+	reviewedBy := operatorID
+	defaultLink, newlyActivated, err := activateAffiliateAgentInTx(
+		ctx, tx, qualification, &reviewedBy, decisionNote, defaultCode, defaultCustomerRateBPS,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO affiliate_performance_events (
-			user_id, direct_agent_id, event_type, amount_micros,
-			source_type, source_id, event_key, occurred_at, metadata
-		)
-		VALUES (
-			$1, NULL, 'agent_activated', 0,
-			'qualification', NULL, $2, NOW(),
-			jsonb_build_object(
-				'qualification_route', $3::text,
-				'program_mode', 'live'
-			)
-		)
-		ON CONFLICT (event_key) DO NOTHING
-	`, userID, fmt.Sprintf("agent-activated:user:%d", userID), qualification.QualificationRoute); err != nil {
-		return nil, err
-	}
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO affiliate_qualification_states (
-			user_id,
-			direct_valid_consumer_count,
-			direct_team_consumption_micros,
-			self_consumption_micros,
-			combined_consumption_micros,
-			qualifying_route,
-			status,
-			qualified_at,
-			evaluated_at,
-			updated_at
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), NOW(), NOW())
-		ON CONFLICT (user_id) DO UPDATE SET
-			direct_valid_consumer_count = EXCLUDED.direct_valid_consumer_count,
-			direct_team_consumption_micros = EXCLUDED.direct_team_consumption_micros,
-			self_consumption_micros = EXCLUDED.self_consumption_micros,
-			combined_consumption_micros = EXCLUDED.combined_consumption_micros,
-			qualifying_route = EXCLUDED.qualifying_route,
-			status = 'active',
-			qualified_at = COALESCE(affiliate_qualification_states.qualified_at, NOW()),
-			evaluated_at = NOW(),
-			updated_at = NOW()
-	`, userID,
-		qualification.ValidDirectUserCount,
-		qualification.DirectTeamConsumptionMicros,
-		qualification.SelfConsumptionMicros,
-		qualification.CombinedConsumptionMicros,
-		qualification.QualificationRoute,
-	); err != nil {
-		return nil, err
-	}
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO affiliate_agent_notices (
-			agent_id, notice_type, title, message,
-			source_type, source_id, idempotency_key,
-			metadata
-		)
-		SELECT
-			$1, 'community_invite', s.title, s.message,
-			'agent_activation', $1, $2,
-			jsonb_build_object('has_qr_code', BTRIM(s.qr_object_key) <> '')
-		FROM affiliate_community_settings s
-		WHERE s.id = 1
-			AND s.enabled = TRUE
-		ON CONFLICT (idempotency_key) DO NOTHING
-	`, userID, fmt.Sprintf("agent-activated:user:%d:community", userID)); err != nil {
-		return nil, err
-	}
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE affiliate_agent_applications
 		SET status = 'approved',
@@ -867,7 +733,195 @@ func (r *affiliateAgentRepository) ReviewAgentApplication(
 			Qualification: *finalQualification,
 			DefaultLink:   *defaultLink,
 		},
+		NewlyActivated: newlyActivated,
 	}, nil
+}
+
+// Affiliate agent activation notice copy, shared by the admin approval and the
+// automatic qualify-and-activate paths.
+const (
+	affiliateAgentActivatedNoticeTitle   = "合伙人已开通"
+	affiliateAgentActivatedNoticeMessage = "恭喜你正式成为合伙人！你的专属推广链接已生成：好友通过链接注册即永久绑定，好友消费你永久分佣——默认好友立返 5% ⚡、你再赚 5% 现金佣金，按确认消费实时结算，打造你的被动收入；返佣比例可在合伙人中心自由调整（双边合计 10% 不变）。前往「合伙人中心」复制默认推广链接，开始你的第一单推广吧！有任何问题随时联系客服。"
+)
+
+// activateAffiliateAgentInTx performs the activation writes shared by the admin
+// review path and the user-facing auto activation: role upgrade, principal
+// upsert, default link repair/creation, activation performance event,
+// qualification state snapshot, and the community invite notice. Application
+// rows and status events stay with the callers because their previous status
+// and reviewer differ. reviewedBy is nil for automatic activation. The bool
+// result reports whether this call performed a fresh activation (false on the
+// idempotent repair path for an already-active agent), so callers can fire
+// one-time side effects such as the activation email.
+func activateAffiliateAgentInTx(
+	ctx context.Context,
+	tx *sql.Tx,
+	qualification *service.AffiliateAgentQualification,
+	reviewedBy *int64,
+	decisionNote string,
+	defaultCode string,
+	defaultCustomerRateBPS int32,
+) (*service.AffiliateLink, bool, error) {
+	userID := qualification.UserID
+	newlyActivated := qualification.AgentStatus != "active"
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE users
+		SET role = 'agent',
+			updated_at = NOW()
+		WHERE id = $1
+			AND deleted_at IS NULL
+	`, userID); err != nil {
+		return nil, false, err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO agent_principals (
+			agent_id, status, risk_status,
+			qualified_at, activated_at,
+			applied_at, reviewed_at, reviewed_by, decision_note
+		)
+		VALUES ($1, 'active', 'clear', NOW(), NOW(), NOW(), NOW(), $2, $3)
+		ON CONFLICT (agent_id) DO UPDATE SET
+			status = 'active',
+			qualified_at = COALESCE(agent_principals.qualified_at, NOW()),
+			activated_at = COALESCE(agent_principals.activated_at, NOW()),
+			reviewed_at = NOW(),
+			reviewed_by = $2,
+			decision_note = $3,
+			updated_at = NOW()
+		WHERE agent_principals.status NOT IN ('suspended', 'rejected')
+	`, userID, reviewedBy, decisionNote); err != nil {
+		return nil, false, err
+	}
+
+	defaultLink, err := getDefaultAffiliateLink(ctx, tx, userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		var codeCollision bool
+		if err := tx.QueryRowContext(ctx, `
+			SELECT EXISTS(
+				SELECT 1 FROM users WHERE invite_code = $1
+			)
+		`, defaultCode).Scan(&codeCollision); err != nil {
+			return nil, false, err
+		}
+		if codeCollision {
+			return nil, false, service.ErrAffiliateLinkConflict
+		}
+		agentRateBPS := service.AffiliateAgentPoolRateBPS - defaultCustomerRateBPS
+		var linkID int64
+		err = tx.QueryRowContext(ctx, `
+			INSERT INTO affiliate_links (
+				agent_id, code, name, channel,
+				is_default, status, current_rate_version
+			)
+			VALUES ($1, $2, '默认推广链接', 'default', TRUE, 'active', 1)
+			RETURNING id
+		`, userID, defaultCode).Scan(&linkID)
+		if err != nil {
+			if isPostgresUniqueViolation(err) {
+				return nil, false, service.ErrAffiliateLinkConflict
+			}
+			return nil, false, err
+		}
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO affiliate_link_rate_versions (
+				link_id, version,
+				customer_rebate_rate_bps,
+				agent_commission_rate_bps,
+				created_by, effective_at
+			)
+			VALUES ($1, 1, $2, $3, $4, NOW())
+		`, linkID, defaultCustomerRateBPS, agentRateBPS, userID); err != nil {
+			return nil, false, err
+		}
+		defaultLink, err = getDefaultAffiliateLink(ctx, tx, userID)
+	}
+	if err != nil {
+		return nil, false, err
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO affiliate_performance_events (
+			user_id, direct_agent_id, event_type, amount_micros,
+			source_type, source_id, event_key, occurred_at, metadata
+		)
+		VALUES (
+			$1, NULL, 'agent_activated', 0,
+			'qualification', NULL, $2, NOW(),
+			jsonb_build_object(
+				'qualification_route', $3::text,
+				'program_mode', 'live'
+			)
+		)
+		ON CONFLICT (event_key) DO NOTHING
+	`, userID, fmt.Sprintf("agent-activated:user:%d", userID), qualification.QualificationRoute); err != nil {
+		return nil, false, err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO affiliate_qualification_states (
+			user_id,
+			direct_valid_consumer_count,
+			direct_team_consumption_micros,
+			self_consumption_micros,
+			combined_consumption_micros,
+			qualifying_route,
+			status,
+			qualified_at,
+			evaluated_at,
+			updated_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), NOW(), NOW())
+		ON CONFLICT (user_id) DO UPDATE SET
+			direct_valid_consumer_count = EXCLUDED.direct_valid_consumer_count,
+			direct_team_consumption_micros = EXCLUDED.direct_team_consumption_micros,
+			self_consumption_micros = EXCLUDED.self_consumption_micros,
+			combined_consumption_micros = EXCLUDED.combined_consumption_micros,
+			qualifying_route = EXCLUDED.qualifying_route,
+			status = 'active',
+			qualified_at = COALESCE(affiliate_qualification_states.qualified_at, NOW()),
+			evaluated_at = NOW(),
+			updated_at = NOW()
+	`, userID,
+		qualification.ValidDirectUserCount,
+		qualification.DirectTeamConsumptionMicros,
+		qualification.SelfConsumptionMicros,
+		qualification.CombinedConsumptionMicros,
+		qualification.QualificationRoute,
+	); err != nil {
+		return nil, false, err
+	}
+	if newlyActivated {
+		if err := insertAffiliateAgentNotice(
+			ctx,
+			tx,
+			userID,
+			"agent_activated",
+			affiliateAgentActivatedNoticeTitle,
+			affiliateAgentActivatedNoticeMessage,
+			"agent_activation",
+			userID,
+			fmt.Sprintf("agent-activated:user:%d:notice", userID),
+		); err != nil {
+			return nil, false, err
+		}
+	}
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO affiliate_agent_notices (
+			agent_id, notice_type, title, message,
+			source_type, source_id, idempotency_key,
+			metadata
+		)
+		SELECT
+			$1, 'community_invite', s.title, s.message,
+			'agent_activation', $1, $2,
+			jsonb_build_object('has_qr_code', BTRIM(s.qr_object_key) <> '')
+		FROM affiliate_community_settings s
+		WHERE s.id = 1
+			AND s.enabled = TRUE
+		ON CONFLICT (idempotency_key) DO NOTHING
+	`, userID, fmt.Sprintf("agent-activated:user:%d:community", userID)); err != nil {
+		return nil, false, err
+	}
+	return defaultLink, newlyActivated, nil
 }
 
 type affiliateQualificationQuerier interface {

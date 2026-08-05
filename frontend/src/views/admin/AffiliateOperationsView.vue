@@ -210,9 +210,9 @@
           <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-6 py-5 dark:border-dark-800">
             <div>
               <h2 class="text-xl font-semibold text-gray-950 dark:text-white">合伙人申请</h2>
-              <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">达到消费门槛只获得申请资格；审核通过后才会开通现金分润和动态链接。</p>
+              <p class="mt-1 text-sm text-gray-600 dark:text-dark-300">达标后系统自动开通合伙人并生成默认链接；此处保留全部申请与开通记录备查，遗留待审记录仍可人工处理。</p>
             </div>
-            <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">{{ applications.length }} 待审核</span>
+            <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">{{ pendingApplications.length }} 待审核</span>
           </div>
           <div class="max-h-[38rem] overflow-auto">
             <table class="min-w-[1350px] table-fixed divide-y divide-gray-100 text-sm dark:divide-dark-800">
@@ -241,15 +241,21 @@
                   <td class="px-5 py-4 text-right">{{ formatMicros(item.direct_team_consumption_micros, '¥') }}</td>
                   <td class="px-5 py-4 text-right">{{ formatMicros(item.combined_consumption_micros, '¥') }}</td>
                   <td class="px-5 py-4 text-gray-600 dark:text-dark-300">{{ item.application_note || '—' }}</td>
-                  <td class="px-5 py-4"><input v-model.trim="applicationNotes[item.id]" maxlength="500" class="input min-w-48" placeholder="审核说明"></td>
+                  <td class="px-5 py-4">
+                    <input v-if="item.status === 'pending_review'" v-model.trim="applicationNotes[item.id]" maxlength="500" class="input min-w-48" placeholder="审核说明">
+                    <span v-else class="text-gray-600 dark:text-dark-300">{{ formatApplicationDecision(item) }}</span>
+                  </td>
                   <td class="sticky right-0 bg-white px-5 py-4 text-right dark:bg-dark-900">
-                    <div class="flex justify-end gap-2">
+                    <div v-if="item.status === 'pending_review'" class="flex justify-end gap-2">
                       <button class="btn btn-secondary btn-sm" :disabled="applicationReviewingId === item.id" @click="reviewApplication(item, false)">不通过</button>
                       <button class="btn btn-primary btn-sm" :disabled="applicationReviewingId === item.id" @click="reviewApplication(item, true)">通过并开通</button>
                     </div>
+                    <span v-else class="rounded-full px-2 py-1 text-xs font-medium" :class="applicationStatusClass(item.status)">
+                      {{ formatApplicationStatus(item.status) }}
+                    </span>
                   </td>
                 </tr>
-                <tr v-if="!applications.length"><td colspan="9" class="px-5 py-12 text-center text-gray-600 dark:text-dark-300">暂无待审核申请</td></tr>
+                <tr v-if="!applications.length"><td colspan="9" class="px-5 py-12 text-center text-gray-600 dark:text-dark-300">暂无申请记录</td></tr>
               </tbody>
             </table>
           </div>
@@ -913,6 +919,7 @@ const withdrawals = ref<AdminAffiliateWithdrawal[]>([])
 const paidWithdrawals = ref<AdminAffiliateWithdrawal[]>([])
 const riskPrincipals = ref<AffiliateRiskPrincipal[]>([])
 const applications = ref<AffiliateAgentApplication[]>([])
+const pendingApplications = computed(() => applications.value.filter(item => item.status === 'pending_review'))
 const qualifiedCandidates = ref<AffiliateQualifiedCandidate[]>([])
 const operationsSummary = ref<AffiliateOperationsSummary | null>(null)
 const partnerPerformance = ref<AffiliatePartnerPerformance[]>([])
@@ -1189,6 +1196,24 @@ function formatAgentStatus(status: string) {
   return status
 }
 
+function formatApplicationStatus(status: string) {
+  if (status === 'approved') return '已开通'
+  if (status === 'rejected') return '未通过'
+  if (status === 'cancelled') return '已取消'
+  return '待审核'
+}
+
+function applicationStatusClass(status: string) {
+  if (status === 'approved') return 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
+  if (status === 'rejected') return 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+  return 'bg-gray-100 text-gray-600 dark:bg-dark-800 dark:text-dark-300'
+}
+
+function formatApplicationDecision(item: AffiliateAgentApplication) {
+  if (item.status === 'approved' && item.decision_note === 'auto') return '达标自动开通'
+  return item.decision_note || '—'
+}
+
 function formatRiskStatus(status: AffiliateRiskStatus) {
   if (status === 'clear') return '正常'
   if (status === 'review') return '待审核'
@@ -1226,7 +1251,7 @@ async function loadAll() {
       getAffiliateOperationsSummary(),
       listAffiliatePartnerPerformance(500),
       listAffiliateQualifiedCandidates(500),
-      listAffiliateApplications('pending_review', 500),
+      listAffiliateApplications('all', 500),
       listPendingPaymentProfiles(),
       listAffiliateWithdrawals('processing'),
       listAffiliateWithdrawals('paid'),
@@ -1291,11 +1316,11 @@ async function saveProgram() {
 async function reviewApplication(item: AffiliateAgentApplication, approve: boolean) {
   applicationReviewingId.value = item.id
   try {
-    await reviewAffiliateApplication(item.id, {
+    const { application } = await reviewAffiliateApplication(item.id, {
       approve,
       note: (applicationNotes[item.id] || '').trim()
     })
-    applications.value = applications.value.filter(application => application.id !== item.id)
+    applications.value = applications.value.map(entry => entry.id === item.id ? application : entry)
     riskPrincipals.value = await listAffiliateRiskPrincipals(500)
     partnerPerformance.value = await listAffiliatePartnerPerformance(500)
     void refreshOperationsSummary()

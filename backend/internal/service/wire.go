@@ -569,7 +569,8 @@ var ProviderSet = wire.NewSet(
 	NewAffiliateProgramService,
 	NewAffiliateRewardService,
 	NewAffiliateLinkService,
-	NewAffiliateAgentService,
+	ProvideAffiliateAgentService,
+	NewAffiliateAgentActivationScheduler,
 	NewAffiliateCommunityService,
 	ProvideAffiliateWalletService,
 	ProvideAffiliateRiskService,
@@ -622,6 +623,17 @@ func ProvideAffiliateWalletService(
 	return svc
 }
 
+func ProvideAffiliateAgentService(
+	repo AffiliateAgentRepository,
+	userRepo UserRepository,
+	settingService *SettingService,
+	emailQueue *EmailQueueService,
+) *AffiliateAgentService {
+	svc := NewAffiliateAgentService(repo)
+	svc.SetActivationNotificationDeps(userRepo, settingService, emailQueue)
+	return svc
+}
+
 func ProvideAffiliateRiskService(
 	repo AffiliateRiskRepository,
 	balanceCache *BillingCacheService,
@@ -669,6 +681,7 @@ func ProvideRootLifecycle(
 	backupService *BackupService,
 	pendingAuthCleanup *PendingAuthSessionCleanupService,
 	affiliateRewards *AffiliateRewardService,
+	affiliateActivation *AffiliateAgentActivationScheduler,
 ) *Lifecycle {
 	component := func(name string, start func(), stop func()) LifecycleComponent {
 		return LifecycleFunc{
@@ -739,6 +752,7 @@ func ProvideRootLifecycle(
 		component("backup", backupService.Start, backupService.Stop),
 		component("pending-auth-cleanup", pendingAuthCleanup.Start, pendingAuthCleanup.Stop),
 		component("affiliate-reward-maturity", affiliateRewards.Start, affiliateRewards.Stop),
+		component("affiliate-activation-sweep", affiliateActivation.Start, affiliateActivation.Stop),
 	}
 	return NewLifecycle(components...)
 }

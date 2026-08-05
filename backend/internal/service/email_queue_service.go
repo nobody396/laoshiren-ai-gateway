@@ -11,31 +11,33 @@ import (
 
 // Task type constants
 const (
-	TaskTypeVerifyCode    = "verify_code"
-	TaskTypePasswordReset = "password_reset"
-	TaskTypeBalanceAlert  = "balance_alert"
-	TaskTypeFeedbackNew   = "feedback_new"
-	TaskTypeFeedbackReply = "feedback_reply"
+	TaskTypeVerifyCode     = "verify_code"
+	TaskTypePasswordReset  = "password_reset"
+	TaskTypeBalanceAlert   = "balance_alert"
+	TaskTypeFeedbackNew    = "feedback_new"
+	TaskTypeFeedbackReply  = "feedback_reply"
+	TaskTypeAgentActivated = "affiliate_agent_activated"
 )
 
 // EmailTask 邮件发送任务
 type EmailTask struct {
-	Email          string
-	SiteName       string
-	TaskType       string
-	ResetURL       string
-	FeedbackID     int64
-	Title          string
-	Category       string
-	Priority       string
-	Summary        string
-	FeedbackURL    string
-	Username       string
-	UserEmail      string
-	Balance        string
-	AlertThreshold string
-	TopUpURL       string
-	AlertUserID    int64
+	Email            string
+	SiteName         string
+	TaskType         string
+	ResetURL         string
+	FeedbackID       int64
+	Title            string
+	Category         string
+	Priority         string
+	Summary          string
+	FeedbackURL      string
+	Username         string
+	UserEmail        string
+	Balance          string
+	AlertThreshold   string
+	TopUpURL         string
+	AlertUserID      int64
+	PartnerCenterURL string
 }
 
 // EmailQueueService 异步邮件队列服务
@@ -138,6 +140,12 @@ func (s *EmailQueueService) processTask(workerID int, task EmailTask) {
 			logger.LegacyPrintf("service.email_queue", "[EmailQueue] Worker %d failed to send feedback_reply to %s: %v", workerID, task.Email, err)
 		} else {
 			logger.LegacyPrintf("service.email_queue", "[EmailQueue] Worker %d sent feedback_reply to %s", workerID, task.Email)
+		}
+	case TaskTypeAgentActivated:
+		if err := s.emailService.SendAffiliateAgentActivated(ctx, task.Email, task.SiteName, task.PartnerCenterURL); err != nil {
+			logger.LegacyPrintf("service.email_queue", "[EmailQueue] Worker %d failed to send agent activation to %s: %v", workerID, task.Email, err)
+		} else {
+			logger.LegacyPrintf("service.email_queue", "[EmailQueue] Worker %d sent agent activation to %s", workerID, task.Email)
 		}
 	default:
 		logger.LegacyPrintf("service.email_queue", "[EmailQueue] Worker %d unknown task type: %s", workerID, task.TaskType)
@@ -265,6 +273,25 @@ func (s *EmailQueueService) EnqueueFeedbackReply(email, siteName string, feedbac
 	select {
 	case s.taskChan <- task:
 		logger.LegacyPrintf("service.email_queue", "[EmailQueue] Enqueued feedback_reply task for %s", email)
+		return nil
+	default:
+		return fmt.Errorf("email queue is full")
+	}
+}
+
+// EnqueueAffiliateAgentActivated 将合伙人开通通知邮件加入队列。
+// Callers enqueue only after a confirmed new activation, so the task itself
+// carries no extra dedup state, matching EnqueueFeedbackReply.
+func (s *EmailQueueService) EnqueueAffiliateAgentActivated(email, siteName, partnerCenterURL string) error {
+	task := EmailTask{
+		Email:            email,
+		SiteName:         siteName,
+		TaskType:         TaskTypeAgentActivated,
+		PartnerCenterURL: partnerCenterURL,
+	}
+	select {
+	case s.taskChan <- task:
+		logger.LegacyPrintf("service.email_queue", "[EmailQueue] Enqueued agent activation task for %s", email)
 		return nil
 	default:
 		return fmt.Errorf("email queue is full")

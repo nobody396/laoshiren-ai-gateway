@@ -216,6 +216,9 @@ type UserDashboardStats struct {
 	TotalCost                float64 `json:"total_cost"`        // 累计标准计费
 	TotalActualCost          float64 `json:"total_actual_cost"` // 累计实际扣除
 
+	// 累计客户返利（affiliate_reward_entries 中 reward_type='customer_rebate' 且 status='posted' 的总额，单位：人民币元，1 余额单位 = 1 元）
+	TotalCustomerRebate float64 `json:"total_customer_rebate"`
+
 	// 今日 Token 使用统计
 	TodayRequests            int64   `json:"today_requests"`
 	TodayInputTokens         int64   `json:"today_input_tokens"`

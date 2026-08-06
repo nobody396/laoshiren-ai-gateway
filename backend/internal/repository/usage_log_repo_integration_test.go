@@ -867,6 +867,39 @@ func (s *UsageLogRepoSuite) TestGetUserDashboardStats() {
 	s.Require().Equal(int64(1), stats.TotalRequests)
 }
 
+func (s *UsageLogRepoSuite) TestGetUserDashboardStats_CustomerRebate() {
+	user := mustCreateUser(s.T(), s.client, &service.User{Email: "userdash-rebate@test.com"})
+	other := mustCreateUser(s.T(), s.client, &service.User{Email: "userdash-rebate-other@test.com"})
+
+	// 仅计入 beneficiary=当前用户 且 reward_type='customer_rebate' 且 status='posted' 的记录
+	// amount_micros 为微单位，1 余额单位 = 1 元人民币
+	insertReward := func(beneficiary, consumer int64, rewardType, status string, amountMicros int64, key string) {
+		_, err := s.tx.ExecContext(s.ctx, `
+			INSERT INTO affiliate_reward_entries (
+				beneficiary_user_id, consumer_user_id, reward_type,
+				amount_micros, source_amount_micros,
+				status, source_type, idempotency_key
+			) VALUES ($1, $2, $3, $4, 0, $5, 'confirmed_consumption', $6)
+		`, beneficiary, consumer, rewardType, amountMicros, status, key)
+		s.Require().NoError(err)
+	}
+	insertReward(user.ID, user.ID, "customer_rebate", "posted", 1_500_000, "dash-rebate-1")  // ¥1.5，计入
+	insertReward(user.ID, user.ID, "customer_rebate", "posted", 500_000, "dash-rebate-2")    // ¥0.5，计入
+	insertReward(user.ID, user.ID, "customer_rebate", "risk_hold", 9_000_000, "dash-rebate-3") // 非 posted，不计入
+	insertReward(user.ID, user.ID, "ordinary_referral", "posted", 9_000_000, "dash-rebate-4")  // 其他类型，不计入
+	insertReward(other.ID, other.ID, "customer_rebate", "posted", 9_000_000, "dash-rebate-5")  // 其他用户，不计入
+
+	stats, err := s.repo.GetUserDashboardStats(s.ctx, user.ID)
+	s.Require().NoError(err, "GetUserDashboardStats")
+	s.Require().InDelta(2.0, stats.TotalCustomerRebate, 0.000001)
+
+	// 无任何返利记录的用户应为 0
+	fresh := mustCreateUser(s.T(), s.client, &service.User{Email: "userdash-rebate-fresh@test.com"})
+	freshStats, err := s.repo.GetUserDashboardStats(s.ctx, fresh.ID)
+	s.Require().NoError(err, "GetUserDashboardStats fresh user")
+	s.Require().Equal(0.0, freshStats.TotalCustomerRebate)
+}
+
 // --- GetAccountTodayStats ---
 
 func (s *UsageLogRepoSuite) TestGetAccountTodayStats() {

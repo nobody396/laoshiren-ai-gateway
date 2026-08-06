@@ -2498,6 +2498,20 @@ func (r *usageLogRepository) GetUserDashboardStats(ctx context.Context, userID i
 	}
 	stats.TodayTokens = stats.TodayInputTokens + stats.TodayOutputTokens + stats.TodayCacheCreationTokens + stats.TodayCacheReadTokens
 
+	// 累计客户返利：affiliate_reward_entries 中 reward_type='customer_rebate' 且 status='posted' 的总额
+	// amount_micros 为微单位，1 余额单位 = 1 元人民币，故除以 1e6 得到元
+	if err := scanSingleRow(
+		ctx,
+		r.sql,
+		`SELECT COALESCE(SUM(amount_micros), 0) / 1000000.0
+			FROM affiliate_reward_entries
+			WHERE beneficiary_user_id = $1 AND reward_type = 'customer_rebate' AND status = 'posted'`,
+		[]any{userID},
+		&stats.TotalCustomerRebate,
+	); err != nil {
+		return nil, err
+	}
+
 	// 性能指标：RPM 和 TPM（最近1分钟，仅统计该用户的请求）
 	rpm, tpm, err := r.getPerformanceStats(ctx, userID)
 	if err != nil {

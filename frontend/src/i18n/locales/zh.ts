@@ -742,6 +742,14 @@ export default {
 
   // 用户邀请模块
   user: {
+    savings: {
+      title: '省钱看板',
+      totalSpent: '我的累计消费',
+      officialPrice: '官方价',
+      saved: '已为你节省',
+      discountEquivalent: '相当于官方价 {discount} 折',
+      totalRebate: '累计已返余额'
+    },
     referral: {
       title: '邀请金',
       bindingStatus: '我的邀请绑定状态',

@@ -5,6 +5,7 @@
       <template v-else-if="stats">
         <UserDashboardStats :stats="stats" :balance="user?.balance || 0" :is-simple="authStore.isSimpleMode" @recharge="showRechargeModal = true" />
         <MonthlyCardStatus />
+        <UserSavingsCard />
 
         <!-- 邀请看板（暂时隐藏） -->
         <div class="card p-6 space-y-5">
@@ -71,6 +72,7 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import UserDashboardStats from '@/components/user/dashboard/UserDashboardStats.vue'
 import MonthlyCardStatus from '@/components/user/dashboard/MonthlyCardStatus.vue'
+import UserSavingsCard from '@/components/user/dashboard/UserSavingsCard.vue'
 import UserDashboardCharts from '@/components/user/dashboard/UserDashboardCharts.vue'
 import UserDashboardRecentUsage from '@/components/user/dashboard/UserDashboardRecentUsage.vue'
 import UserDashboardQuickActions from '@/components/user/dashboard/UserDashboardQuickActions.vue'

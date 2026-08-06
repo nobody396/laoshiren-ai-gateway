@@ -26,6 +26,7 @@ export interface UserDashboardStats {
   total_tokens: number
   total_cost: number // 标准计费
   total_actual_cost: number // 实际扣除
+  total_customer_rebate: number // 累计客户返利（人民币元，1 余额单位 = 1 元）
   today_requests: number
   today_input_tokens: number
   today_output_tokens: number

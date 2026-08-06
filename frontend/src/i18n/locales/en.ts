@@ -742,6 +742,14 @@ export default {
 
   // User referral module
   user: {
+    savings: {
+      title: 'Savings',
+      totalSpent: 'My Total Spend',
+      officialPrice: 'Official Price',
+      saved: 'Saved for You',
+      discountEquivalent: 'You pay about {percent}% of the official price',
+      totalRebate: 'Total Rebates Received'
+    },
     referral: {
       title: 'Invite Bonus',
       bindingStatus: 'My Invite Binding',

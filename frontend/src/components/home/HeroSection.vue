@@ -19,7 +19,7 @@
             {{ isAuthenticated ? ui.dashboardCta : ui.beginCta }}
           </a>
           <a
-            href="#model-pricing"
+            href="/models"
             class="hero-section__btn hero-section__btn--outline"
           >
             {{ ui.pricingCta }}

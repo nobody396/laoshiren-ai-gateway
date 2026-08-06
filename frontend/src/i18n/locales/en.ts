@@ -6196,4 +6196,58 @@ export default {
     }
   },
 
+  modelPricing: {
+    title: 'Model Pricing',
+    lede: 'Per-group real prices for every model, per 1M tokens (input / output / cache read). Computed live as official price × the group multiplier.',
+    updatedAt: 'Updated',
+    rateMultiplier: 'Group multiplier',
+    exclusive: 'Exclusive',
+    subscription: 'Subscription',
+    noModels: 'No models available in this group yet',
+    loading: 'Loading model prices…',
+    error: 'Failed to load',
+    retry: 'Retry',
+    empty: 'No models available',
+    table: {
+      model: 'Model',
+      input: 'Input',
+      output: 'Output',
+      cacheRead: 'Cache read'
+    },
+    block: {
+      gpt: 'GPT / OpenAI',
+      claude: 'Claude / Anthropic',
+      grok: 'Grok',
+      glm: 'GLM',
+      deepseek: 'DeepSeek',
+      qwen: 'Qwen',
+      minimax: 'MiniMax',
+      other: 'Others'
+    },
+    billing: {
+      title: 'How billing works',
+      rateNote: 'The group multiplier converts official USD pricing into CNY. 0.5× means ¥0.5 CNY is treated as official $1 of usage. Lower multiplier = better value.',
+      example: 'Billing example',
+      exampleSub: 'For GPT-5.6 Sol, with official prices "Input $5 / 1M tokens, Output $30 / 1M tokens, Cache read $0.5 / 1M tokens", one request:',
+      colItem: 'Item',
+      colUsage: 'Usage',
+      colUnitPrice: 'Official unit price',
+      colAmount: 'Official amount',
+      rowInput: 'Input',
+      rowOutput: 'Output',
+      rowCache: 'Cache read',
+      total: 'Official total',
+      stepRate: 'Official total $26 × group multiplier 0.5 = 13 ⚡',
+      stepTopup: 'Top-up rate: ¥1 CNY = 1 ⚡ → this request costs ¥13',
+      bottomLine: 'So 0.5× means ¥0.5 CNY is treated as official $1 of usage.'
+    },
+    nav: {
+      enterprise: 'Enterprise',
+      security: 'Security',
+      status: 'Status',
+      docs: 'Docs',
+      login: 'Sign in'
+    }
+  },
+
 }

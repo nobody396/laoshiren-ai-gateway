@@ -1,0 +1,272 @@
+package service
+
+import (
+	"context"
+	"testing"
+
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
+)
+
+// --- stubs ---
+
+type modelPricingGroupRepoStub struct {
+	groups          []Group
+	err             error
+	listActiveCalls int
+}
+
+func (s *modelPricingGroupRepoStub) ListActive(_ context.Context) ([]Group, error) {
+	s.listActiveCalls++
+	return s.groups, s.err
+}
+
+func (s *modelPricingGroupRepoStub) Create(_ context.Context, _ *Group) error { return nil }
+func (s *modelPricingGroupRepoStub) GetByID(_ context.Context, _ int64) (*Group, error) {
+	return nil, nil
+}
+func (s *modelPricingGroupRepoStub) GetByIDLite(_ context.Context, _ int64) (*Group, error) {
+	return nil, nil
+}
+func (s *modelPricingGroupRepoStub) Update(_ context.Context, _ *Group) error { return nil }
+func (s *modelPricingGroupRepoStub) Delete(_ context.Context, _ int64) error  { return nil }
+func (s *modelPricingGroupRepoStub) DeleteCascade(_ context.Context, _ int64) ([]int64, error) {
+	return nil, nil
+}
+func (s *modelPricingGroupRepoStub) List(_ context.Context, _ pagination.PaginationParams) ([]Group, *pagination.PaginationResult, error) {
+	return nil, nil, nil
+}
+func (s *modelPricingGroupRepoStub) ListWithFilters(_ context.Context, _ pagination.PaginationParams, _, _, _ string, _ *bool) ([]Group, *pagination.PaginationResult, error) {
+	return nil, nil, nil
+}
+func (s *modelPricingGroupRepoStub) ListActiveByPlatform(_ context.Context, _ string) ([]Group, error) {
+	return nil, nil
+}
+func (s *modelPricingGroupRepoStub) ExistsByName(_ context.Context, _ string) (bool, error) {
+	return false, nil
+}
+func (s *modelPricingGroupRepoStub) GetAccountCount(_ context.Context, _ int64) (int64, error) {
+	return 0, nil
+}
+func (s *modelPricingGroupRepoStub) DeleteAccountGroupsByGroupID(_ context.Context, _ int64) (int64, error) {
+	return 0, nil
+}
+func (s *modelPricingGroupRepoStub) GetAccountIDsByGroupIDs(_ context.Context, _ []int64) ([]int64, error) {
+	return nil, nil
+}
+func (s *modelPricingGroupRepoStub) BindAccountsToGroup(_ context.Context, _ int64, _ []int64) error {
+	return nil
+}
+func (s *modelPricingGroupRepoStub) UpdateSortOrders(_ context.Context, _ []GroupSortOrderUpdate) error {
+	return nil
+}
+
+type modelPricingProviderStub struct {
+	prices map[string]*LiteLLMModelPricing
+}
+
+func (s *modelPricingProviderStub) GetModelPricing(model string) *LiteLLMModelPricing {
+	return s.prices[model]
+}
+
+type modelsListerStub struct {
+	models map[int64][]string
+	calls  int
+}
+
+func (s *modelsListerStub) GetAvailableModels(_ context.Context, groupID *int64, _ string) []string {
+	s.calls++
+	id := int64(0)
+	if groupID != nil {
+		id = *groupID
+	}
+	return s.models[id]
+}
+
+// --- tests ---
+
+func newModelPricingServiceForTest(groups []Group, prices map[string]*LiteLLMModelPricing, models map[int64][]string) (*ModelPricingService, *modelPricingGroupRepoStub, *modelsListerStub) {
+	repo := &modelPricingGroupRepoStub{groups: groups}
+	lister := &modelsListerStub{models: models}
+	svc := NewModelPricingService(repo, &modelPricingProviderStub{prices: prices}, lister)
+	return svc, repo, lister
+}
+
+func TestModelPricingPriceFormula(t *testing.T) {
+	groups := []Group{{ID: 1, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5}}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-5.4": {
+			InputCostPerToken:       2.5e-6, // $2.5 / 1M
+			OutputCostPerToken:      1.5e-5, // $15 / 1M
+			CacheReadInputTokenCost: 2.5e-7, // $0.25 / 1M
+		},
+	}
+	models := map[int64][]string{1: {"gpt-5.4"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 1 {
+		t.Fatalf("expected 1 group, got %d", len(catalog.Groups))
+	}
+	g := catalog.Groups[0]
+	if g.GroupID != 1 || g.RateMultiplier != 0.5 {
+		t.Fatalf("unexpected group: %+v", g)
+	}
+	if len(g.Models) != 1 {
+		t.Fatalf("expected 1 model, got %d", len(g.Models))
+	}
+	m := g.Models[0]
+	if m.Model != "gpt-5.4" {
+		t.Fatalf("unexpected model: %s", m.Model)
+	}
+	assertPrice(t, "input", m.InputPrice, 1.25)
+	assertPrice(t, "output", m.OutputPrice, 7.5)
+	assertPrice(t, "cache_read", m.CacheReadPrice, 0.125)
+}
+
+func TestModelPricingFiltersInternalGroups(t *testing.T) {
+	groups := []Group{
+		{ID: 46, Name: "测试专用月卡 · GPT", Platform: "openai", RateMultiplier: 0.5},
+		{ID: 47, Name: "测试专用月卡 · Claude", Platform: "anthropic", RateMultiplier: 2.4},
+		{ID: 99, Name: "内部测试组", Platform: "openai", RateMultiplier: 1},
+		{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5},
+	}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-5.4": {InputCostPerToken: 2.5e-6, OutputCostPerToken: 1.5e-5, CacheReadInputTokenCost: 2.5e-7},
+	}
+	models := map[int64][]string{46: {"gpt-5.4"}, 47: {"gpt-5.4"}, 99: {"gpt-5.4"}, 6: {"gpt-5.4"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 1 {
+		t.Fatalf("expected only the public group, got %d groups", len(catalog.Groups))
+	}
+	if catalog.Groups[0].GroupID != 6 {
+		t.Fatalf("expected group 6 to survive, got %d", catalog.Groups[0].GroupID)
+	}
+}
+
+func TestModelPricingHidesGPTLite(t *testing.T) {
+	groups := []Group{{ID: 7, Name: "GPT Lite 月卡组", Platform: "openai", RateMultiplier: 0.3774}}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-5.4": {InputCostPerToken: 2.5e-6, OutputCostPerToken: 1.5e-5, CacheReadInputTokenCost: 2.5e-7},
+	}
+	models := map[int64][]string{7: {"gpt-5.4"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 0 {
+		t.Fatalf("expected GPT Lite 月卡组 (id=7) to be hidden, got %d groups", len(catalog.Groups))
+	}
+}
+
+func TestModelPricingStripsV3FromGroupName(t *testing.T) {
+	groups := []Group{{ID: 42, Name: "GPT Pro V3 月卡组", Platform: "openai", RateMultiplier: 0.5}}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-5.4": {InputCostPerToken: 2.5e-6, OutputCostPerToken: 1.5e-5, CacheReadInputTokenCost: 2.5e-7},
+	}
+	models := map[int64][]string{42: {"gpt-5.4"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 1 {
+		t.Fatalf("expected 1 group, got %d", len(catalog.Groups))
+	}
+	if catalog.Groups[0].Name != "GPT Pro 月卡组" {
+		t.Fatalf("expected display name 'GPT Pro 月卡组', got %q", catalog.Groups[0].Name)
+	}
+}
+
+func TestModelPricingManualFallback(t *testing.T) {
+	groups := []Group{{ID: 34, Name: "Grok 4.5 分组", Platform: "anthropic", RateMultiplier: 0.4}}
+	// grok-4.5 不在 LiteLLM 价表里（prices 无此 key），走手动价表：$2 / $6 / 缓存 $0.3
+	models := map[int64][]string{34: {"grok-4.5"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, nil, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 1 || len(catalog.Groups[0].Models) != 1 {
+		t.Fatalf("expected 1 group with 1 model, got %d/%d", len(catalog.Groups), len(catalog.Groups[0].Models))
+	}
+	m := catalog.Groups[0].Models[0]
+	assertPrice(t, "input", m.InputPrice, 0.8)           // 2.0 × 0.4
+	assertPrice(t, "output", m.OutputPrice, 2.4)         // 6.0 × 0.4
+	assertPrice(t, "cache_read", m.CacheReadPrice, 0.12) // 0.3 × 0.4
+}
+
+func TestModelPricingSkipsUnknownModel(t *testing.T) {
+	groups := []Group{{ID: 34, Name: "Grok 4.5 分组", Platform: "anthropic", RateMultiplier: 0.4}}
+	models := map[int64][]string{34: {"grok-4.5", "totally-unknown-model"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, nil, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 1 {
+		t.Fatalf("expected 1 group, got %d", len(catalog.Groups))
+	}
+	if len(catalog.Groups[0].Models) != 1 || catalog.Groups[0].Models[0].Model != "grok-4.5" {
+		t.Fatalf("expected only grok-4.5 to survive, got %+v", catalog.Groups[0].Models)
+	}
+}
+
+func TestModelPricingGroupWithoutPricedModelsDropped(t *testing.T) {
+	groups := []Group{{ID: 7, Name: "GPT Lite 月卡组", Platform: "openai", RateMultiplier: 0.5}}
+	models := map[int64][]string{7: {"unknown-model-1"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, nil, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 0 {
+		t.Fatalf("expected no groups (no priced models), got %d", len(catalog.Groups))
+	}
+}
+
+func TestModelPricingCatalogCache(t *testing.T) {
+	groups := []Group{{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5}}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-5.4": {InputCostPerToken: 2.5e-6, OutputCostPerToken: 1.5e-5, CacheReadInputTokenCost: 2.5e-7},
+	}
+	models := map[int64][]string{6: {"gpt-5.4"}}
+
+	svc, repo, lister := newModelPricingServiceForTest(groups, prices, models)
+	ctx := context.Background()
+	if _, err := svc.GetPublicModelPricing(ctx); err != nil {
+		t.Fatalf("first call: %v", err)
+	}
+	if _, err := svc.GetPublicModelPricing(ctx); err != nil {
+		t.Fatalf("second call: %v", err)
+	}
+	if lister.calls != 1 {
+		t.Fatalf("expected lister called once (cached), got %d", lister.calls)
+	}
+	if repo.listActiveCalls != 1 {
+		t.Fatalf("expected ListActive called once (cached), got %d", repo.listActiveCalls)
+	}
+}
+
+func assertPrice(t *testing.T, field string, got *float64, want float64) {
+	t.Helper()
+	if got == nil {
+		t.Fatalf("%s: expected non-nil price, got nil", field)
+	}
+	if *got != want {
+		t.Fatalf("%s: expected %v, got %v", field, want, *got)
+	}
+}

@@ -6383,4 +6383,58 @@ export default {
     }
   },
 
+  modelPricing: {
+    title: '模型价格',
+    lede: '按分组展示每个模型的实付价格，统一按每 1M tokens 计算（输入 / 输出 / 缓存读取）。价格为官方价乘以对应分组倍率实时计算。',
+    updatedAt: '更新于',
+    rateMultiplier: '分组倍率',
+    exclusive: '专属',
+    subscription: '订阅',
+    noModels: '该分组暂无可展示的模型',
+    loading: '正在加载模型价格…',
+    error: '加载失败',
+    retry: '重试',
+    empty: '暂无可用模型',
+    table: {
+      model: '模型',
+      input: '输入',
+      output: '输出',
+      cacheRead: '缓存读取'
+    },
+    block: {
+      gpt: 'GPT / OpenAI',
+      claude: 'Claude / Anthropic',
+      grok: 'Grok',
+      glm: 'GLM',
+      deepseek: 'DeepSeek',
+      qwen: 'Qwen',
+      minimax: 'MiniMax',
+      other: '其他'
+    },
+    billing: {
+      title: '如何计费',
+      rateNote: '分组倍率 = 按官方美元价折算成人民币的倍率。0.5 倍 = 0.5 元人民币当官方 1 美金用量使用,倍率越低越划算。',
+      example: '扣费示例',
+      exampleSub: '以 GPT-5.6 Sol 官方价「输入 $5 / 百万 token、输出 $30 / 百万 token、缓存读取 $0.5 / 百万 token」为例,一次请求:',
+      colItem: '项目',
+      colUsage: '用量',
+      colUnitPrice: '官方单价',
+      colAmount: '官方金额',
+      rowInput: '输入',
+      rowOutput: '输出',
+      rowCache: '缓存读取',
+      total: '官方合计',
+      stepRate: '官方合计 $26 × 分组倍率 0.5 = 13 ⚡',
+      stepTopup: '充值比例 1 元人民币 = 1 ⚡ → 本次请求扣费 ¥13',
+      bottomLine: '所以 0.5 倍率 = 0.5 元人民币当 1 美金使用。'
+    },
+    nav: {
+      enterprise: '企业',
+      security: '安全',
+      status: '状态',
+      docs: '文档',
+      login: '登录'
+    }
+  },
+
 }

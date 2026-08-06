@@ -19,6 +19,7 @@ const INDEXABLE_ROUTE_NAMES = new Set([
   'Enterprise',
   'Security',
   'Status',
+  'ModelPricing',
   'LegalTerms',
   'LegalUsagePolicy',
   'LegalSupportedRegions',

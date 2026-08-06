@@ -110,6 +110,7 @@ func ProvideHandlers(
 	gatewayHandler *GatewayHandler,
 	openaiGatewayHandler *OpenAIGatewayHandler,
 	settingHandler *SettingHandler,
+	modelPricingHandler *ModelPricingHandler,
 	totpHandler *TotpHandler,
 	paymentHandler *PaymentHandler,
 	topupHandler *TopupHandler,
@@ -135,6 +136,7 @@ func ProvideHandlers(
 		Gateway:       gatewayHandler,
 		OpenAIGateway: openaiGatewayHandler,
 		Setting:       settingHandler,
+		ModelPricing:  modelPricingHandler,
 		Totp:          totpHandler,
 		Payment:       paymentHandler,
 		Topup:         topupHandler,
@@ -164,6 +166,7 @@ var ProviderSet = wire.NewSet(
 	NewTopupHandler,
 	NewBalanceAlertHandler,
 	NewResourceHandler,
+	NewModelPricingHandler,
 	ProvideSettingHandler,
 
 	// Admin handlers

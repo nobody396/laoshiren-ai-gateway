@@ -702,10 +702,10 @@ function createChangelogNavItem(): NavItem {
 
 function createModelPricingNavItem(): NavItem {
   return {
-    path: '/#model-pricing',
+    path: '/models',
     label: t('nav.modelPricing'),
     icon: ChartIcon,
-    external: true
+    external: false
   }
 }
 
@@ -1061,7 +1061,7 @@ function getNavTourAttr(path: string): string | undefined {
   const pathToTour: Record<string, string> = {
     '/keys': 'sidebar-my-keys',
     '/get-subscription': 'sidebar-topup',
-    '/#model-pricing': 'sidebar-model-pricing',
+    '/models': 'sidebar-model-pricing',
     '/docs': 'sidebar-docs'
   }
   return pathToTour[path]

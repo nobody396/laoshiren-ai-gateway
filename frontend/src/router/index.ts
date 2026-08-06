@@ -123,6 +123,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/models',
+    name: 'ModelPricing',
+    component: () => import('@/views/PublicModelPricingView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: '模型价格',
+      description:
+        '老实人AI 全部分组模型价格：按分组展示各模型输入、输出、缓存读取价格（元/1M tokens），随官方价格与分组倍率实时计算。',
+      titleSiteNameFirst: true
+    }
+  },
+  {
     path: '/legal',
     redirect: '/legal/terms'
   },

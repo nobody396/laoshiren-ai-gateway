@@ -113,6 +113,11 @@ func RegisterAuthRoutes(
 		v1.GET("/monthly-card/status", h.Admin.Ops.GetPublicMonthlyCardStatus)
 	}
 
+	// 公开模型价格目录（无需认证，独立价格页使用）
+	if h.ModelPricing != nil {
+		v1.GET("/public/model-pricing", h.ModelPricing.GetModelPricing)
+	}
+
 	// 公开邀请码验证（无需认证，注册页使用）
 	v1.GET("/validate-referral-code", h.Agent.ValidateReferralCode)
 

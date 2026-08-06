@@ -111,6 +111,30 @@ routes.push({
   staticHtml: docsIndexHtml(docs),
 })
 
+routes.push({
+  path: '/models',
+  title: '模型价格 - 老实人AI',
+  description:
+    '老实人AI 全部分组模型价格：按分组展示各模型输入、输出、缓存读取价格（元/1M tokens），随官方价格与分组倍率实时计算。',
+  priority: 0.85,
+  changefreq: 'weekly',
+  ogType: 'website',
+  schemaType: 'WebPage',
+  dateModified: docsLastModified,
+  staticHtml: `
+    <main class="seo-static-content">
+      <h1>模型价格</h1>
+      <p>老实人AI 按分组展示全部可用模型的实付价格（元/1M tokens）。价格为官方价乘以对应分组倍率实时计算，涵盖 GPT、Claude、Grok 及 GLM、DeepSeek 等模型。</p>
+      <p>具体模型、分组与价格以官网当前页面为准。</p>
+      <nav aria-label="相关页面">
+        <ul>
+          <li><a href="/">首页</a></li>
+          <li><a href="/docs">文档中心</a></li>
+        </ul>
+      </nav>
+    </main>`,
+})
+
 for (const doc of docs) {
   const markdown = readMarkdown(doc.slug)
   routes.push({

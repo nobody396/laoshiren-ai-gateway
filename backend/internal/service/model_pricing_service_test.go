@@ -188,6 +188,104 @@ func TestModelPricingStripsV3FromGroupName(t *testing.T) {
 	}
 }
 
+func TestModelPricingHidesGPT56(t *testing.T) {
+	groups := []Group{{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5}}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-5.6":       {InputCostPerToken: 1.25e-6, OutputCostPerToken: 1e-5},
+		"gpt-5.6-sol":   {InputCostPerToken: 5e-6, OutputCostPerToken: 3e-5},
+		"gpt-5.6-terra": {InputCostPerToken: 2e-6, OutputCostPerToken: 1.2e-5},
+		"gpt-5.6-luna":  {InputCostPerToken: 2e-7, OutputCostPerToken: 1.2e-6},
+	}
+	models := map[int64][]string{6: {"gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := make([]string, 0, 3)
+	for _, m := range catalog.Groups[0].Models {
+		got = append(got, m.Model)
+	}
+	for _, name := range got {
+		if name == "gpt-5.6" {
+			t.Fatalf("gpt-5.6 should be hidden from display, got %v", got)
+		}
+	}
+	want := []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"}
+	if len(got) != len(want) {
+		t.Fatalf("expected %v, got %v", want, got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("expected %v, got %v", want, got)
+		}
+	}
+}
+
+func TestModelPricingSortsGPTNewestFirst(t *testing.T) {
+	groups := []Group{{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5}}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-5.4-mini": {InputCostPerToken: 7.5e-7, OutputCostPerToken: 4.5e-6},
+		"gpt-5.4":      {InputCostPerToken: 2.5e-6, OutputCostPerToken: 1.5e-5},
+		"gpt-5.5":      {InputCostPerToken: 5e-6, OutputCostPerToken: 3e-5},
+		"gpt-5.6-sol":  {InputCostPerToken: 5e-6, OutputCostPerToken: 3e-5},
+		"gpt-5.6-luna": {InputCostPerToken: 2e-7, OutputCostPerToken: 1.2e-6},
+	}
+	// 故意乱序
+	models := map[int64][]string{6: {"gpt-5.4-mini", "gpt-5.5", "gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.4"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := make([]string, 0, 5)
+	for _, m := range catalog.Groups[0].Models {
+		got = append(got, m.Model)
+	}
+	want := []string{"gpt-5.6-sol", "gpt-5.6-luna", "gpt-5.5", "gpt-5.4", "gpt-5.4-mini"}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("GPT sort: expected %v, got %v", want, got)
+		}
+	}
+}
+
+func TestModelPricingSortsClaudeFamilyThenVersion(t *testing.T) {
+	groups := []Group{{ID: 5, Name: "Claude MAX 20X 分组", Platform: "anthropic", RateMultiplier: 2.4}}
+	prices := map[string]*LiteLLMModelPricing{}
+	modelsList := []string{
+		"claude-sonnet-5", "claude-opus-4-7", "claude-fable-5", "claude-opus-5",
+		"claude-sonnet-4-5", "claude-haiku-4-5", "claude-opus-4-5", "claude-opus-4-8",
+		"claude-sonnet-4-6", "claude-opus-4-6",
+	}
+	for _, m := range modelsList {
+		prices[m] = &LiteLLMModelPricing{InputCostPerToken: 5e-6, OutputCostPerToken: 2.5e-5}
+	}
+	models := map[int64][]string{5: modelsList}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := make([]string, 0, len(modelsList))
+	for _, m := range catalog.Groups[0].Models {
+		got = append(got, m.Model)
+	}
+	want := []string{
+		"claude-fable-5", "claude-opus-5", "claude-opus-4-8", "claude-opus-4-7",
+		"claude-opus-4-6", "claude-opus-4-5", "claude-sonnet-5", "claude-sonnet-4-6",
+		"claude-sonnet-4-5", "claude-haiku-4-5",
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("Claude sort: expected %v, got %v", want, got)
+		}
+	}
+}
+
 func TestModelPricingManualFallback(t *testing.T) {
 	groups := []Group{{ID: 34, Name: "Grok 4.5 分组", Platform: "anthropic", RateMultiplier: 0.4}}
 	// grok-4.5 不在 LiteLLM 价表里（prices 无此 key），走手动价表：$2 / $6 / 缓存 $0.3

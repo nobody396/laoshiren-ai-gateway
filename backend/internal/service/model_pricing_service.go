@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -43,6 +45,17 @@ var defaultHiddenPublicModelPricingGroupIDs = map[int64]struct{}{
 	35: {}, // Grok Lite 月卡组
 	36: {}, // Grok Pro 月卡组
 	39: {}, // Grok Apex 月卡组
+}
+
+// displayHiddenModelNames 不在价格页展示但仍可正常请求的模型别名。
+// gpt-5.6 是 OpenAI 官方别名(路由到 GPT-5.6 Sol),与 sol 重复展示没有意义。
+var displayHiddenModelNames = map[string]struct{}{
+	"gpt-5.6": {},
+}
+
+func (s *ModelPricingService) isDisplayHiddenModel(model string) bool {
+	_, ok := displayHiddenModelNames[strings.ToLower(strings.TrimSpace(model))]
+	return ok
 }
 
 // manualOfficialPrices 手动维护的官方价表（USD per 1M tokens）。
@@ -153,6 +166,9 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 		}
 		prices := make([]PublicModelPrice, 0, len(models))
 		for _, model := range models {
+			if s.isDisplayHiddenModel(model) {
+				continue
+			}
 			price, ok := s.priceForModel(model, g.RateMultiplier)
 			if !ok {
 				slog.Debug("model_pricing: skip model without official price",
@@ -164,6 +180,9 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 		if len(prices) == 0 {
 			continue
 		}
+		sort.Slice(prices, func(i, j int) bool {
+			return modelDisplayLess(prices[i], prices[j])
+		})
 		catalog.Groups = append(catalog.Groups, PublicModelPricingGroup{
 			GroupID:          g.ID,
 			Name:             publicGroupDisplayName(g.Name),
@@ -247,4 +266,91 @@ func cloneCatalog(c *PublicModelPricingCatalog) *PublicModelPricingCatalog {
 		out.Groups[i].Models = append([]PublicModelPrice(nil), g.Models...)
 	}
 	return &out
+}
+
+// modelVersionPattern 匹配模型版本号,兼容 "5.6"、"4-8"、"5"(单独大版本)等格式。
+// 例如 claude-opus-5 → (5,0);claude-opus-4-8 → (4,8);gpt-5.6-luna → (5,6)。
+var modelVersionPattern = regexp.MustCompile(`(\d+)(?:[.\-](\d+))?`)
+
+// modelDisplayRankValue 模型展示排序键:家族 → 大版本 → 小版本 → 档位。
+type modelDisplayRankValue struct {
+	family int
+	major  int
+	minor  int
+	tier   int
+}
+
+// modelDisplayLess 分组内模型展示顺序:
+//   - 家族在前(Claude: Fable < Opus < Sonnet < Haiku),再版本从新到旧,
+//   - 档位(旗舰/最贵)在前(sol > terra > luna;完整版 > mini/nano),
+//   - 同版本同档位按输入价从高到低,再按名称兜底。
+//
+// 效果:GPT → 5.6(sol/terra/luna) → 5.5 → 5.4 → 5.4-mini;
+// Claude → Fable 5 → Opus 5 → Opus 4.8/4.7/4.6/4.5 → Sonnet 5 → Sonnet 4.6/4.5 → Haiku。
+func modelDisplayLess(a, b PublicModelPrice) bool {
+	ra, rb := modelDisplayRank(a.Model), modelDisplayRank(b.Model)
+	if ra.family != rb.family {
+		return ra.family < rb.family
+	}
+	if ra.major != rb.major {
+		return ra.major > rb.major
+	}
+	if ra.minor != rb.minor {
+		return ra.minor > rb.minor
+	}
+	if ra.tier != rb.tier {
+		return ra.tier < rb.tier
+	}
+	pa, pb := priceVal(a.InputPrice), priceVal(b.InputPrice)
+	if pa != pb {
+		return pa > pb
+	}
+	return a.Model < b.Model
+}
+
+func modelDisplayRank(model string) modelDisplayRankValue {
+	m := strings.ToLower(strings.TrimSpace(model))
+	r := modelDisplayRankValue{family: 4}
+	switch {
+	case strings.Contains(m, "fable"):
+		r.family = 0
+	case strings.Contains(m, "opus"):
+		r.family = 1
+	case strings.Contains(m, "sonnet"):
+		r.family = 2
+	case strings.Contains(m, "haiku"):
+		r.family = 3
+	}
+	if mm := modelVersionPattern.FindStringSubmatch(m); len(mm) >= 2 {
+		r.major, _ = strconv.Atoi(mm[1])
+		if len(mm) >= 3 {
+			r.minor, _ = strconv.Atoi(mm[2])
+		}
+	}
+	switch {
+	case strings.Contains(m, "sol"):
+		r.tier = 0
+	case strings.Contains(m, "terra"):
+		r.tier = 1
+	case strings.Contains(m, "luna"):
+		r.tier = 2
+	case strings.Contains(m, "pro"):
+		r.tier = 0
+	case strings.Contains(m, "codex"):
+		r.tier = 3
+	case strings.Contains(m, "mini"):
+		r.tier = 4
+	case strings.Contains(m, "nano"):
+		r.tier = 5
+	default:
+		r.tier = 1 // 无后缀基础档
+	}
+	return r
+}
+
+func priceVal(p *float64) float64 {
+	if p == nil {
+		return 0
+	}
+	return *p
 }

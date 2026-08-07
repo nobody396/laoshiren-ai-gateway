@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -16,7 +17,25 @@ const (
 	ClientMessageResourceNotFound    = "The requested resource could not be found."
 	ClientMessageRequestTimeout      = "The request timed out. Please try again later."
 	ClientCodeRequestBodyTooLarge    = "request_body_too_large"
+	ClientCodeModelNotSupported      = "model_not_supported"
 )
+
+// ModelPricingPageURL 用户可查看全部已上架支持模型的公开页面。
+const ModelPricingPageURL = "https://laoshirenai.com/models"
+
+// ClientMessageModelNotSupported 生成模型不支持的用户侧错误文案，
+// 动态带上请求的模型名与支持模型查看入口。
+func ClientMessageModelNotSupported(model string) string {
+	model = strings.TrimSpace(model)
+	if model == "" {
+		model = "the requested model"
+	}
+	return fmt.Sprintf(
+		"The model %q is not supported. Please switch to a supported model. You can view all supported models at %s",
+		model,
+		ModelPricingPageURL,
+	)
+}
 
 type ClientUpstreamError struct {
 	StatusCode int

@@ -138,6 +138,11 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 				zap.Int("excluded_account_count", len(failedAccountIDs)),
 			)
 			if len(failedAccountIDs) == 0 {
+				var modelErr *service.ModelNotSupportedError
+				if errors.As(err, &modelErr) {
+					h.handleOpenAIModelNotSupportedError(c, modelErr.RequestedModel, streamStarted)
+					return
+				}
 				h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable", streamStarted)
 				return
 			} else {

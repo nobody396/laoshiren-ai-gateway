@@ -643,7 +643,7 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 		})
 	}
 	if len(filtered) == 0 {
-		return nil, 0, 0, 0, noAvailableOpenAISelectionError(req.RequestedModel, compactBlocked)
+		return nil, 0, 0, 0, noAvailableOpenAISelectionError(req.RequestedModel, compactBlocked, accounts, req.ExcludedIDs)
 	}
 
 	loadMap := map[int64]*AccountLoadInfo{}
@@ -788,7 +788,7 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 		}, len(candidates), topK, loadSkew, nil
 	}
 
-	return nil, len(candidates), topK, loadSkew, noAvailableOpenAISelectionError(req.RequestedModel, compactBlocked)
+	return nil, len(candidates), topK, loadSkew, noAvailableOpenAISelectionError(req.RequestedModel, compactBlocked, accounts, req.ExcludedIDs)
 }
 
 func (s *defaultOpenAIAccountScheduler) isAccountTransportCompatible(account *Account, requiredTransport OpenAIUpstreamTransport) bool {

@@ -353,6 +353,28 @@ var systemBlockFilterPrefixes = []string{
 // ErrNoAvailableAccounts 表示没有可用的账号
 var ErrNoAvailableAccounts = errors.New("no available accounts")
 
+// ModelNotSupportedError 表示请求的模型未被该分组任何账号的 model_mapping 支持，
+// 属于用户侧误用（请求了平台未上架的模型），handler 应返回 400 model_not_supported
+// 而不是 503 服务不可用。Error 文案保留 "no available accounts" 前缀以兼容
+// ops 错误日志的既有字符串分类与过滤规则。
+type ModelNotSupportedError struct {
+	RequestedModel string
+	Platform       string
+}
+
+func (e *ModelNotSupportedError) Error() string {
+	if e == nil {
+		return ErrNoAvailableAccounts.Error()
+	}
+	return fmt.Sprintf("%s supporting model: %s (model not supported)", ErrNoAvailableAccounts, e.RequestedModel)
+}
+
+// Unwrap 保持 errors.Is(err, ErrNoAvailableAccounts) 与旧行为一致，
+// 让既有依赖 ErrNoAvailableAccounts 的错误处理与日志分类不受影响。
+func (e *ModelNotSupportedError) Unwrap() error {
+	return ErrNoAvailableAccounts
+}
+
 // ErrClaudeCodeOnly 表示分组仅允许 Claude Code 客户端访问
 var ErrClaudeCodeOnly = errors.New("this group only allows Claude Code clients")
 
@@ -2813,6 +2835,9 @@ func (s *GatewayService) selectAccountForModelWithPlatform(ctx context.Context, 
 	if selected == nil {
 		stats := s.logDetailedSelectionFailure(ctx, groupID, sessionHash, requestedModel, platform, accounts, excludedIDs, false)
 		if requestedModel != "" {
+			if len(excludedIDs) == 0 && stats.Total > 0 && stats.ModelUnsupported == stats.Total {
+				return nil, &ModelNotSupportedError{RequestedModel: requestedModel, Platform: platform}
+			}
 			return nil, fmt.Errorf("%w supporting model: %s (%s)", ErrNoAvailableAccounts, requestedModel, summarizeSelectionFailureStats(stats))
 		}
 		return nil, ErrNoAvailableAccounts
@@ -3051,6 +3076,9 @@ func (s *GatewayService) selectAccountWithMixedScheduling(ctx context.Context, g
 	if selected == nil {
 		stats := s.logDetailedSelectionFailure(ctx, groupID, sessionHash, requestedModel, nativePlatform, accounts, excludedIDs, true)
 		if requestedModel != "" {
+			if len(excludedIDs) == 0 && stats.Total > 0 && stats.ModelUnsupported == stats.Total {
+				return nil, &ModelNotSupportedError{RequestedModel: requestedModel, Platform: nativePlatform}
+			}
 			return nil, fmt.Errorf("%w supporting model: %s (%s)", ErrNoAvailableAccounts, requestedModel, summarizeSelectionFailureStats(stats))
 		}
 		return nil, ErrNoAvailableAccounts

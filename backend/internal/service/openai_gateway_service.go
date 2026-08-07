@@ -480,11 +480,40 @@ func (s *OpenAIGatewayService) isUpstreamModelRestrictedByChannel(ctx context.Co
 	return s.channelService.IsModelRestricted(ctx, groupID, upstreamModel)
 }
 
-func noAvailableOpenAISelectionError(requestedModel string, compactBlocked bool) error {
+// allOpenAICandidatesModelUnsupported 判断排除 excluded 之后，剩余候选账号是否
+// 全部因 model_mapping 不支持请求模型而被过滤（无映射的账号视为支持任意模型）。
+// 注意仅统计 OpenAI 平台账号，非 OpenAI 账号属于平台不匹配而非模型不支持。
+func allOpenAICandidatesModelUnsupported(accounts []Account, excludedIDs map[int64]struct{}, requestedModel string) bool {
+	if requestedModel == "" || len(accounts) == 0 {
+		return false
+	}
+	total, unsupported := 0, 0
+	for i := range accounts {
+		acc := &accounts[i]
+		if excludedIDs != nil {
+			if _, excluded := excludedIDs[acc.ID]; excluded {
+				continue
+			}
+		}
+		if !acc.IsOpenAI() || !acc.IsSchedulable() {
+			continue
+		}
+		total++
+		if !acc.IsModelSupported(requestedModel) {
+			unsupported++
+		}
+	}
+	return total > 0 && unsupported == total
+}
+
+func noAvailableOpenAISelectionError(requestedModel string, compactBlocked bool, accounts []Account, excludedIDs map[int64]struct{}) error {
 	if compactBlocked {
 		return ErrNoAvailableCompactAccounts
 	}
 	if requestedModel != "" {
+		if allOpenAICandidatesModelUnsupported(accounts, excludedIDs, requestedModel) {
+			return &ModelNotSupportedError{RequestedModel: requestedModel, Platform: PlatformOpenAI}
+		}
 		return fmt.Errorf("no available OpenAI accounts supporting model: %s", requestedModel)
 	}
 	return errors.New("no available OpenAI accounts")
@@ -1326,7 +1355,7 @@ func (s *OpenAIGatewayService) selectAccountForModelWithExclusions(ctx context.C
 	selected, compactBlocked := s.selectBestAccount(ctx, groupID, accounts, requestedModel, excludedIDs, requireCompact)
 
 	if selected == nil {
-		return nil, noAvailableOpenAISelectionError(requestedModel, compactBlocked)
+		return nil, noAvailableOpenAISelectionError(requestedModel, compactBlocked, accounts, excludedIDs)
 	}
 
 	// 4. 设置粘性会话绑定
@@ -1626,7 +1655,7 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 	}
 
 	if len(candidates) == 0 {
-		return nil, noAvailableOpenAISelectionError(requestedModel, compactBlocked)
+		return nil, noAvailableOpenAISelectionError(requestedModel, compactBlocked, accounts, excludedIDs)
 	}
 
 	accountLoads := make([]AccountWithConcurrency, 0, len(candidates))
@@ -1731,7 +1760,7 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 		})
 	}
 
-	return nil, noAvailableOpenAISelectionError(requestedModel, compactBlocked)
+	return nil, noAvailableOpenAISelectionError(requestedModel, compactBlocked, accounts, excludedIDs)
 }
 
 func (s *OpenAIGatewayService) listSchedulableAccounts(ctx context.Context, groupID *int64) ([]Account, error) {

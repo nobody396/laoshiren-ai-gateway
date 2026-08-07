@@ -116,6 +116,62 @@ func TestOpenAIHandleStreamingAwareError_NonStreaming(t *testing.T) {
 	assert.Equal(t, "test error", errorObj["message"])
 }
 
+func TestOpenAIHandleModelNotSupportedError_DynamicModelName(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	for _, model := range []string{"mimo-v2.5-pro", "mimo-v5.5-pro", "grok-5-latest", "unknown-model-xyz"} {
+		t.Run(model, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
+			c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkey.RequestID, "req-model-"+model))
+
+			h := &OpenAIGatewayHandler{}
+			h.handleOpenAIModelNotSupportedError(c, model, false)
+
+			require.Equal(t, http.StatusBadRequest, w.Code)
+			var parsed map[string]any
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &parsed))
+			errorObj, ok := parsed["error"].(map[string]any)
+			require.True(t, ok)
+			require.Equal(t, "invalid_request_error", errorObj["type"])
+			require.Equal(t, service.ClientCodeModelNotSupported, errorObj["code"])
+			msg, _ := errorObj["message"].(string)
+			require.Contains(t, msg, model, "message 必须包含用户请求的动态模型名")
+			require.Contains(t, msg, "is not supported")
+			require.Contains(t, msg, service.ModelPricingPageURL)
+			require.Equal(t, "req-model-"+model, errorObj["request_id"])
+		})
+	}
+}
+
+func TestAnthropicHandleModelNotSupportedError_DynamicModelName(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+
+	h := &OpenAIGatewayHandler{}
+	h.handleAnthropicModelNotSupportedError(c, "mimo-v5.5-pro", false)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+	var parsed map[string]any
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &parsed))
+	require.Equal(t, "error", parsed["type"])
+	errorObj, ok := parsed["error"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "invalid_request_error", errorObj["type"])
+	msg, _ := errorObj["message"].(string)
+	require.Contains(t, msg, "mimo-v5.5-pro")
+	require.Contains(t, msg, service.ModelPricingPageURL)
+}
+
+func TestClientMessageModelNotSupported(t *testing.T) {
+	require.Contains(t, service.ClientMessageModelNotSupported("mimo-v2.5-pro"), "mimo-v2.5-pro")
+	require.Contains(t, service.ClientMessageModelNotSupported("mimo-v2.5-pro"), "not supported")
+	require.Contains(t, service.ClientMessageModelNotSupported("mimo-v2.5-pro"), service.ModelPricingPageURL)
+	require.Equal(t, service.ClientMessageModelNotSupported(""), service.ClientMessageModelNotSupported(" "))
+}
+
 func TestReadRequestBodyWithPrealloc(t *testing.T) {
 	payload := `{"model":"gpt-5","input":"hello"}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(payload))

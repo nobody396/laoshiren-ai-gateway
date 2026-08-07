@@ -291,6 +291,11 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 				zap.Int("excluded_account_count", len(failedAccountIDs)),
 			)
 			if len(failedAccountIDs) == 0 {
+				var modelErr *service.ModelNotSupportedError
+				if errors.As(err, &modelErr) {
+					h.handleOpenAIModelNotSupportedError(c, modelErr.RequestedModel, streamStarted)
+					return
+				}
 				if errors.Is(err, service.ErrNoAvailableCompactAccounts) {
 					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", service.ClientMessageServiceUnavailable, streamStarted)
 					return
@@ -692,6 +697,11 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 				zap.Int("excluded_account_count", len(failedAccountIDs)),
 			)
 			if len(failedAccountIDs) == 0 {
+				var modelErr *service.ModelNotSupportedError
+				if errors.As(err, &modelErr) {
+					h.handleAnthropicModelNotSupportedError(c, modelErr.RequestedModel, streamStarted)
+					return
+				}
 				if err != nil {
 					h.anthropicStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", service.ClientMessageServiceUnavailable, streamStarted)
 					return
@@ -861,6 +871,40 @@ func (h *OpenAIGatewayHandler) anthropicStreamingAwareError(c *gin.Context, stat
 		return
 	}
 	h.anthropicErrorResponse(c, status, errType, message)
+}
+
+// handleOpenAIModelNotSupportedError 返回 400 model_not_supported，明确告知用户
+// 请求的模型未上架（用户侧误用），而不是笼统的 503 服务不可用。
+func (h *OpenAIGatewayHandler) handleOpenAIModelNotSupportedError(c *gin.Context, model string, streamStarted bool) {
+	message := service.ClientMessageModelNotSupported(model)
+	if streamStarted {
+		flusher, ok := c.Writer.(http.Flusher)
+		if ok {
+			errPayload, _ := json.Marshal(service.OpenAIClientErrorEnvelopeWithCode(c, "invalid_request_error", service.ClientCodeModelNotSupported, message))
+			if _, err := fmt.Fprintf(c.Writer, "event: error\ndata: %s\n\n", errPayload); err != nil {
+				_ = c.Error(err)
+			}
+			flusher.Flush()
+		}
+		return
+	}
+	h.errorResponseWithCode(c, http.StatusBadRequest, "invalid_request_error", service.ClientCodeModelNotSupported, message)
+}
+
+// handleAnthropicModelNotSupportedError 与 handleOpenAIModelNotSupportedError 同义，
+// 但使用 Anthropic Messages API 错误格式。
+func (h *OpenAIGatewayHandler) handleAnthropicModelNotSupportedError(c *gin.Context, model string, streamStarted bool) {
+	message := service.ClientMessageModelNotSupported(model)
+	if streamStarted {
+		flusher, ok := c.Writer.(http.Flusher)
+		if ok {
+			errPayload, _ := json.Marshal(service.ClientErrorEnvelope(c, "invalid_request_error", message))
+			fmt.Fprintf(c.Writer, "event: error\ndata: %s\n\n", errPayload) //nolint:errcheck
+			flusher.Flush()
+		}
+		return
+	}
+	h.anthropicErrorResponse(c, http.StatusBadRequest, "invalid_request_error", message)
 }
 
 // handleAnthropicFailoverExhausted maps upstream failover errors to Anthropic format.
@@ -1217,6 +1261,11 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 	)
 	if err != nil {
 		reqLog.Warn("openai.websocket_account_select_failed", zap.Error(err))
+		var modelErr *service.ModelNotSupportedError
+		if errors.As(err, &modelErr) {
+			closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, service.ClientMessageModelNotSupported(modelErr.RequestedModel))
+			return
+		}
 		closeOpenAIClientWS(wsConn, coderws.StatusTryAgainLater, "no available account")
 		return
 	}

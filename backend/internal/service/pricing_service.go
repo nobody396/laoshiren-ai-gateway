@@ -117,6 +117,9 @@ func openAIGPT56PricingForModel(model string) *LiteLLMModelPricing {
 		return openAIGPT56TerraFallbackPricing
 	case strings.HasPrefix(normalized, "gpt-5.6-luna"):
 		return openAIGPT56LunaFallbackPricing
+	case strings.HasPrefix(normalized, "gpt-5.6"):
+		// 无后缀 gpt-5.6 是 OpenAI 官方别名(路由到 GPT-5.6 Sol),统一按 Sol 计费。
+		return openAIGPT56SolFallbackPricing
 	default:
 		return nil
 	}

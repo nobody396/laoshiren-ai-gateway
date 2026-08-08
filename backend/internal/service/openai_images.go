@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,7 +16,36 @@ import (
 	"github.com/tidwall/sjson"
 )
 
-const openAIImagesGenerationsEndpoint = "/v1/images/generations"
+const (
+	openAIImagesGenerationsEndpoint = "/v1/images/generations"
+	openAIImageMaxUploadPartSize    = 20 << 20
+)
+
+// OpenAIImagesUpload is shared by native OpenAI image edits and Grok media
+// normalization. The byte slice is bounded by the request-body limits before
+// it reaches either upstream.
+type OpenAIImagesUpload struct {
+	FieldName   string
+	FileName    string
+	ContentType string
+	Data        []byte
+	Width       int
+	Height      int
+}
+
+func (u OpenAIImagesUpload) ModerationDataURL() string {
+	if len(u.Data) == 0 {
+		return ""
+	}
+	contentType := strings.TrimSpace(u.ContentType)
+	if contentType == "" {
+		contentType = http.DetectContentType(u.Data)
+	}
+	if !strings.HasPrefix(strings.ToLower(contentType), "image/") {
+		return ""
+	}
+	return fmt.Sprintf("data:%s;base64,%s", contentType, base64.StdEncoding.EncodeToString(u.Data))
+}
 
 type OpenAIImagesRequest struct {
 	Model          string

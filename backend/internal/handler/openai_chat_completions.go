@@ -76,6 +76,12 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 	reqStream := gjson.GetBytes(body, "stream").Bool()
 
 	reqLog = reqLog.With(zap.String("model", reqModel), zap.Bool("stream", reqStream))
+	if apiKey.Group != nil && apiKey.Group.Platform == service.PlatformGrok &&
+		service.IsExplicitGrokImageGenerationIntent(reqModel, body) &&
+		!service.GroupAllowsImageGeneration(apiKey.Group) {
+		h.errorResponse(c, http.StatusForbidden, "permission_error", service.ImageGenerationPermissionMessage())
+		return
+	}
 
 	setOpsRequestContext(c, reqModel, reqStream, body)
 	setOpsEndpointContext(c, "", int16(service.RequestTypeFromLegacy(reqStream, false)))
@@ -123,14 +129,16 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 
 	for {
 		reqLog.Debug("openai_chat_completions.account_selecting", zap.Int("excluded_account_count", len(failedAccountIDs)))
-		selection, scheduleDecision, err := h.gatewayService.SelectAccountWithScheduler(
+		selection, scheduleDecision, err := h.gatewayService.SelectOpenAICompatibleAccountWithScheduler(
 			c.Request.Context(),
+			openAICompatibleRequestPlatform(apiKey),
 			apiKey.GroupID,
 			"",
 			sessionHash,
 			reqModel,
 			failedAccountIDs,
 			service.OpenAIUpstreamTransportAny,
+			false,
 		)
 		if err != nil {
 			reqLog.Warn("openai_chat_completions.account_select_failed",

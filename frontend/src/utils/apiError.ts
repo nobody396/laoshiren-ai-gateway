@@ -31,6 +31,28 @@ export function extractApiErrorCode(err: unknown): string | undefined {
   return code != null ? String(code) : undefined
 }
 
+export function extractApiErrorMetadata(err: unknown): Record<string, unknown> | undefined {
+  if (!err || typeof err !== 'object') return undefined
+  return (err as ApiErrorLike).metadata
+}
+
+type TranslateFn = (key: string, params?: Record<string, unknown>) => string
+
+export function extractI18nErrorMessage(
+  err: unknown,
+  t: TranslateFn,
+  namespace: string,
+  fallback: string
+): string {
+  const code = extractApiErrorCode(err)
+  if (code) {
+    const key = `${namespace}.${code}`
+    const translated = t(key, extractApiErrorMetadata(err) ?? {})
+    if (translated !== key) return translated
+  }
+  return extractApiErrorMessage(err, fallback)
+}
+
 /**
  * Extract a displayable error message from an API error.
  *

@@ -14,7 +14,7 @@ import (
 func setupAccountCredentialsRedactionRouter(adminSvc *stubAdminService) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	handler := NewAccountHandler(adminSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	handler := NewAccountHandler(adminSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	router.GET("/api/v1/admin/accounts", handler.List)
 	router.GET("/api/v1/admin/accounts/:id", handler.GetByID)
 	return router

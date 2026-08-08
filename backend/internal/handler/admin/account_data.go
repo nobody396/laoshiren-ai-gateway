@@ -314,7 +314,8 @@ func (h *AccountHandler) importData(ctx context.Context, req DataImportRequest) 
 			SkipDefaultGroupBind: skipDefaultGroupBind,
 		}
 
-		if _, err := h.adminService.CreateAccount(ctx, accountInput); err != nil {
+		created, err := h.adminService.CreateAccount(ctx, accountInput)
+		if err != nil {
 			result.AccountFailed++
 			result.Errors = append(result.Errors, DataImportError{
 				Kind:    "account",
@@ -323,6 +324,7 @@ func (h *AccountHandler) importData(ctx context.Context, req DataImportRequest) 
 			})
 			continue
 		}
+		h.scheduleGrokImportProbe(created)
 		result.AccountCreated++
 	}
 
@@ -514,7 +516,7 @@ func validateDataAccount(item DataAccount) error {
 		return errors.New("account type is required")
 	}
 	switch strings.ToLower(strings.TrimSpace(item.Platform)) {
-	case service.PlatformAnthropic, service.PlatformOpenAI, service.PlatformGemini, service.PlatformAntigravity, service.PlatformGPTImage:
+	case service.PlatformAnthropic, service.PlatformOpenAI, service.PlatformGemini, service.PlatformAntigravity, service.PlatformGPTImage, service.PlatformGrok:
 	default:
 		return fmt.Errorf("account platform is invalid: %s", item.Platform)
 	}

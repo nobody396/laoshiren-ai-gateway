@@ -1,8 +1,35 @@
 <template>
   <div ref="rootRef" v-if="showUsageWindows">
+    <template v-if="account.platform === 'grok'">
+      <div v-if="loading" class="text-xs text-gray-400">{{ t('common.loading') }}</div>
+      <div v-else class="space-y-1">
+        <UsageProgressBar
+          v-if="grokRequestUsage"
+          label="req"
+          :utilization="grokRequestUsage.utilization"
+          :resets-at="grokRequestUsage.resetsAt"
+          color="indigo"
+        />
+        <UsageProgressBar
+          v-if="grokTokenUsage"
+          label="tok"
+          :utilization="grokTokenUsage.utilization"
+          :resets-at="grokTokenUsage.resetsAt"
+          color="emerald"
+        />
+        <div v-if="usageInfo?.grok_billing?.usage_percent != null" class="text-[10px] text-gray-500 dark:text-gray-400">
+          {{ t('admin.accounts.usageWindow.grokWeeklyUsage', { percent: Math.round(usageInfo.grok_billing.usage_percent) }) }}
+        </div>
+        <div v-if="usageInfo?.grok_entitlement_status" class="text-[10px] text-gray-500 dark:text-gray-400">
+          {{ usageInfo.grok_entitlement_status }}
+        </div>
+        <GrokQuotaProbeCell :account="account" @probed="handleGrokProbed" />
+      </div>
+    </template>
+
     <!-- Anthropic OAuth and Setup Token accounts: fetch real usage data -->
     <template
-      v-if="
+      v-else-if="
         account.platform === 'anthropic' &&
         (account.type === 'oauth' || account.type === 'setup-token')
       "
@@ -449,6 +476,8 @@ import { enqueueUsageRequest } from '@/utils/usageLoadQueue'
 import { formatCompactNumber } from '@/utils/format'
 import UsageProgressBar from './UsageProgressBar.vue'
 import AccountQuotaInfo from './AccountQuotaInfo.vue'
+import GrokQuotaProbeCell from './GrokQuotaProbeCell.vue'
+import type { GrokQuotaProbeResult, GrokQuotaWindow } from '@/api/admin/grok'
 
 // Module-level cache shared across all AccountUsageCell instances
 const _usageCache = new Map<number, { data: AccountUsageInfo; ts: number }>()
@@ -511,8 +540,36 @@ const shouldFetchUsage = computed(() => {
   if (props.account.platform === 'openai') {
     return props.account.type === 'oauth'
   }
+  if (props.account.platform === 'grok') {
+    return props.account.type === 'oauth'
+  }
   return false
 })
+
+const grokQuotaProgress = (window?: GrokQuotaWindow | null) => {
+  if (!window || window.limit == null || window.limit <= 0 || window.remaining == null) return null
+  const utilization = Math.max(0, Math.min(100, ((window.limit - window.remaining) / window.limit) * 100))
+  return { utilization, resetsAt: window.reset_at ?? null }
+}
+
+const grokRequestUsage = computed(() => grokQuotaProgress(usageInfo.value?.grok_request_quota))
+const grokTokenUsage = computed(() => grokQuotaProgress(usageInfo.value?.grok_token_quota))
+
+const handleGrokProbed = (result: GrokQuotaProbeResult) => {
+  if (!usageInfo.value) {
+    usageInfo.value = {
+      updated_at: result.snapshot?.updated_at ?? null,
+      five_hour: null,
+      seven_day: null,
+      seven_day_sonnet: null
+    }
+  }
+  usageInfo.value.grok_request_quota = result.snapshot?.requests ?? null
+  usageInfo.value.grok_token_quota = result.snapshot?.tokens ?? null
+  usageInfo.value.grok_retry_after_seconds = result.snapshot?.retry_after_seconds ?? null
+  usageInfo.value.grok_entitlement_status = result.snapshot?.entitlement_status
+  usageInfo.value.grok_billing = result.billing ?? null
+}
 
 const geminiUsageAvailable = computed(() => {
   return (

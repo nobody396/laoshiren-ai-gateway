@@ -81,6 +81,15 @@ func DeriveUpstreamEndpoint(inbound, rawRequestPath, platform string) string {
 		}
 		return EndpointResponses
 
+	case service.PlatformGrok:
+		if inbound == EndpointImages || strings.Contains(inbound, "/videos") {
+			return inbound
+		}
+		if suffix := responsesSubpathSuffix(rawRequestPath); suffix != "" {
+			return EndpointResponses + suffix
+		}
+		return EndpointResponses
+
 	case service.PlatformAnthropic:
 		return EndpointMessages
 

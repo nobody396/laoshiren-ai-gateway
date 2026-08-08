@@ -73,7 +73,18 @@ func (Group) Fields() []ent.Field {
 		field.Int("default_validity_days").
 			Default(30),
 
-		// 图片生成计费配置（antigravity、gemini 和 gpt-image 平台使用）
+		// 图片/媒体生成能力与计费配置（Grok 图片和视频共用能力开关）
+		field.Bool("allow_image_generation").
+			Default(false).
+			Comment("是否允许该分组使用图片/媒体生成能力"),
+		field.Bool("image_rate_independent").
+			Default(false).
+			Comment("图片生成是否使用独立倍率；false 表示共享分组有效倍率"),
+		field.Float("image_rate_multiplier").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}).
+			Default(1.0).
+			Comment("图片生成独立倍率，仅 image_rate_independent=true 时生效"),
+		// 图片生成价格（antigravity、gemini、gpt-image 和 grok 平台使用）
 		field.Float("image_price_1k").
 			Optional().
 			Nillable().
@@ -91,6 +102,29 @@ func (Group) Fields() []ent.Field {
 			Nillable().
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}).
 			Comment("GPT-Image 旧版固定每次调用价格（未配置分辨率价格时兜底）"),
+		// Grok 视频按输出秒数和分辨率计费；默认沿用分组有效倍率。
+		field.Bool("video_rate_independent").
+			Default(false).
+			Comment("视频生成是否使用独立倍率；false 表示共享分组有效倍率"),
+		field.Float("video_rate_multiplier").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}).
+			Default(1.0).
+			Comment("视频生成独立倍率，仅 video_rate_independent=true 时生效"),
+		field.Float("video_price_480p").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}).
+			Comment("480p 视频生成每秒单价 (USD/s)"),
+		field.Float("video_price_720p").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}).
+			Comment("720p 视频生成每秒单价 (USD/s)"),
+		field.Float("video_price_1080p").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}).
+			Comment("1080p 视频生成每秒单价 (USD/s)"),
 
 		// Claude Code 客户端限制 (added by migration 029)
 		field.Bool("claude_code_only").

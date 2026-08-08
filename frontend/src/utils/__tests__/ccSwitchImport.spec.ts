@@ -56,6 +56,16 @@ describe('CC Switch import compatibility', () => {
   it('does not offer coding-agent imports for image-only groups', () => {
     expect(getCompatibleCcsTargets('gpt-image')).toEqual([])
   })
+
+  it('offers Grok groups to every protocol bridge supported by the gateway', () => {
+    expect(getCompatibleCcsTargets('grok')).toEqual([
+      'claude',
+      'codex',
+      'opencode',
+      'openclaw',
+      'hermes'
+    ])
+  })
 })
 
 describe('CC Switch provider deeplinks', () => {
@@ -99,4 +109,31 @@ describe('CC Switch provider deeplinks', () => {
     expect(url.searchParams.get('endpoint')).toBe('https://api.laoshirenai.com/v1')
     expect(url.searchParams.get('usageBaseUrl')).toBe('https://api.laoshirenai.com')
   })
+
+  it.each(['claude', 'codex', 'opencode', 'openclaw', 'hermes'] as CcsImportTarget[])(
+    'maps a Grok group imported into %s to grok-4.5',
+    (target) => {
+      const url = new URL(buildCcsImportDeeplink({
+        apiBaseUrl: 'https://api.laoshirenai.com/v1',
+        siteName: '老实人 AI',
+        target,
+        key: {
+          key: 'test-grok-key-placeholder',
+          group: { platform: 'grok', name: 'Grok 月卡' }
+        }
+      }))
+
+      expect(url.searchParams.get('model')).toBe('grok-4.5')
+      expect(url.searchParams.get('endpoint')).toBe(
+        target === 'claude'
+          ? 'https://api.laoshirenai.com'
+          : 'https://api.laoshirenai.com/v1'
+      )
+      if (target === 'claude') {
+        expect(url.searchParams.get('haikuModel')).toBe('grok-4.5')
+        expect(url.searchParams.get('sonnetModel')).toBe('grok-4.5')
+        expect(url.searchParams.get('opusModel')).toBe('grok-4.5')
+      }
+    }
+  )
 })

@@ -367,6 +367,107 @@ func TestOpenAIGatewayServiceRecordUsage_FallsBackToGPTImageFixedCallPrice(t *te
 	require.Equal(t, 1, userRepo.deductCalls)
 }
 
+func TestOpenAIGatewayServiceRecordUsage_GrokVideoUsesVideoPriceAndMultiplier(t *testing.T) {
+	groupID := int64(78)
+	videoPrice480P := 0.08
+
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	svc := newOpenAIRecordUsageServiceForTest(
+		usageRepo,
+		userRepo,
+		&openAIRecordUsageSubRepoStub{},
+		&openAIUserGroupRateRepoStub{},
+	)
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID:            "video-request-123",
+			ResponseID:           "video-request-123",
+			Model:                "grok-imagine-video-1.5",
+			BillingModel:         "grok-imagine-video-1.5",
+			ImageCount:           1,
+			VideoCount:           1,
+			VideoResolution:      VideoBillingResolution480P,
+			VideoDurationSeconds: 10,
+			Duration:             time.Second,
+		},
+		APIKey: &APIKey{
+			ID:      7002,
+			GroupID: i64p(groupID),
+			Group: &Group{
+				ID:                   groupID,
+				Platform:             PlatformGrok,
+				RateMultiplier:       0.15,
+				VideoRateIndependent: true,
+				VideoRateMultiplier:  0.25,
+				VideoPrice480P:       &videoPrice480P,
+			},
+		},
+		User:    &User{ID: 8002},
+		Account: &Account{ID: 9002, Platform: PlatformGrok},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.InDelta(t, 0.8, usageRepo.lastLog.TotalCost, 1e-12)
+	require.InDelta(t, 0.2, usageRepo.lastLog.ActualCost, 1e-12)
+	require.InDelta(t, 0.25, usageRepo.lastLog.RateMultiplier, 1e-12)
+	require.NotNil(t, usageRepo.lastLog.BillingMode)
+	require.Equal(t, string(BillingModeVideo), *usageRepo.lastLog.BillingMode)
+	require.Equal(t, 1, usageRepo.lastLog.VideoCount)
+	require.NotNil(t, usageRepo.lastLog.VideoResolution)
+	require.Equal(t, VideoBillingResolution480P, *usageRepo.lastLog.VideoResolution)
+	require.NotNil(t, usageRepo.lastLog.VideoDurationSeconds)
+	require.Equal(t, 10, *usageRepo.lastLog.VideoDurationSeconds)
+	require.InDelta(t, 0.2, userRepo.lastAmount, 1e-12)
+}
+
+func TestOpenAIGatewayServiceRecordUsage_GrokImageUsesIndependentMultiplier(t *testing.T) {
+	groupID := int64(79)
+	imagePrice2K := 0.04
+
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	svc := newOpenAIRecordUsageServiceForTest(
+		usageRepo,
+		userRepo,
+		&openAIRecordUsageSubRepoStub{},
+		&openAIUserGroupRateRepoStub{},
+	)
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID:  "grok-image-independent-rate",
+			Model:      "grok-imagine-image",
+			ImageCount: 2,
+			ImageSize:  ImageBillingSize2K,
+			Duration:   time.Second,
+		},
+		APIKey: &APIKey{
+			ID:      7003,
+			GroupID: i64p(groupID),
+			Group: &Group{
+				ID:                   groupID,
+				Platform:             PlatformGrok,
+				RateMultiplier:       0.15,
+				ImageRateIndependent: true,
+				ImageRateMultiplier:  0.25,
+				ImagePrice2K:         &imagePrice2K,
+			},
+		},
+		User:    &User{ID: 8003},
+		Account: &Account{ID: 9003, Platform: PlatformGrok},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.InDelta(t, 0.08, usageRepo.lastLog.TotalCost, 1e-12)
+	require.InDelta(t, 0.02, usageRepo.lastLog.ActualCost, 1e-12)
+	require.InDelta(t, 0.25, usageRepo.lastLog.RateMultiplier, 1e-12)
+	require.InDelta(t, 0.02, userRepo.lastAmount, 1e-12)
+}
+
 func TestOpenAIGatewayServiceRecordUsage_FallsBackToGroupDefaultRateOnResolverError(t *testing.T) {
 	groupID := int64(12)
 	groupRate := 1.6

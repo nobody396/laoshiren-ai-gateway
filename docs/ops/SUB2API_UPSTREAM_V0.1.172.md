@@ -17,7 +17,8 @@
 | 项目 | 值 |
 | --- | --- |
 | 本地基线 | `origin/main@ce5874e05f099c51978d20475f67ffc0bb5c8afe` |
-| 上游 Release | `wei-shaw/v0.1.172@61ba94d2e85a00ba639fc870b91946b1bd2f990d` |
+| 上游 Release commit | `wei-shaw/v0.1.172^{commit}@155c494964c3ea6ecc31f52679525c1034bf0f16` |
+| 上游 annotated tag object | `61ba94d2e85a00ba639fc870b91946b1bd2f990d`（不是代码 commit） |
 | 上游上次本地正式基线 | `wei-shaw/v0.1.136@a2f76e411d3b97811f262bdfd569bc9901706068` |
 | 工作分支 | `upgrade/sub2api-v0.1.172-p0` |
 | 工作树 | `/Users/fujunhao/laoshirenai/worktrees/sub2api-v0.1.172-p0-20260808` |
@@ -104,7 +105,7 @@
 这些能力与本地平台、数据模型和前端强耦合，必须独立 PR，不能混进本轮生产热修：
 
 1. **上游 response model 审计**（`db0bff82c`）：上游一次改动 76 个文件，新增字段、索引、聚合、各协议 observer 和前端筛选。本地已经记录客户端请求模型、渠道映射链和实际出站 `upstream_model`，但尚未单独持久化“供应商响应体自报模型”。这是可观测性增强，不是当前账单错误；后续可按本地 migration 编号独立落地。
-2. **Grok / Antigravity 新能力**：本地已有独立且大量定制的 Grok、Antigravity、图片/视频路由，不能用上游 service/schema 覆盖。需按真实客户需求逐能力回移。
+2. **Grok / Antigravity 新能力**：此处旧稿把“兼容模型调用”误判为“本地已有原生 Grok 子系统”。该结论已纠正：`origin/main` 当时并没有 `PlatformGrok`、Grok OAuth/配额/媒体/原生调度。当前准确缺口与决策见 `SUB2API_UPSTREAM_FEATURE_GAPS_V0.1.172.md`；仍然不能用上游 service/schema 整树覆盖，只能按本地架构逐能力回移。
 3. **Composite group / profit control / model plaza**：涉及调度、价格、分组、管理 API 和前端产品语义；本地月卡与分组模型不同，必须单独做产品与财务评审。
 4. **验证码、Passkey、Live、通用支付提供商**：属于新产品能力而非本轮重大后端 bug 修复，不与 02:00 维护窗口的热修包一起发布。
 
@@ -166,6 +167,6 @@ b8fdf3f3c test(failover): assert cache billing only on account switch
 - 前端：108 个测试文件、579 项测试通过；`vue-tsc -b` 与 production build 通过；production audit 为 `No known vulnerabilities found`。
 - 资金链路：Affiliate Testcontainers 集成测试覆盖“按实际收款结算”和“低余额 clamp”，通过；测试容器已清理。
 - 结构审计：相对 `origin/main` 没有新增 migration 或 Ent schema diff；`git diff --check` 通过。
-- 基线复核：`origin/main@ce5874e05f099c51978d20475f67ffc0bb5c8afe`、`wei-shaw/v0.1.172@61ba94d2e85a00ba639fc870b91946b1bd2f990d`，两者仍无共同 merge-base。
+- 基线复核：`origin/main@ce5874e05f099c51978d20475f67ffc0bb5c8afe`、`wei-shaw/v0.1.172^{commit}@155c494964c3ea6ecc31f52679525c1034bf0f16`，两者仍无共同 merge-base；annotated tag object 为 `61ba94d2e85a00ba639fc870b91946b1bd2f990d`。
 
 仍待完成的门禁仅为远端阶段：推送分支、PR CI、合并 main、锁定 CI 发布的不可变镜像 digest，以及在约定维护窗口执行生产更新和健康/回滚检查。

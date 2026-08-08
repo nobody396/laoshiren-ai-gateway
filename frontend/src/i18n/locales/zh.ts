@@ -901,6 +901,7 @@ export default {
       copy: '复制',
       copied: '已复制',
       note: '这些环境变量将在当前终端会话中生效。如需永久配置，请将其添加到 ~/.bashrc、~/.zshrc 或相应的配置文件中。',
+      claudeSettingsHint: '用户级持久配置。此文件包含 API 密钥，请勿提交到项目仓库。',
       noGroupTitle: '请先分配分组',
       noGroupDescription:
         '此 API 密钥尚未分配分组，请先在密钥列表中点击分组列进行分配，然后才能查看使用配置。',
@@ -916,6 +917,7 @@ export default {
         geminiCli: 'Gemini CLI',
         codexCli: 'Codex CLI',
         codexCliWs: 'Codex CLI (WebSocket)',
+        grokCli: 'Grok CLI',
         opencode: 'OpenCode',
         gptImageApi: 'GPT-Image API'
       },
@@ -939,6 +941,18 @@ export default {
           '将以下环境变量添加到您的终端配置文件或直接在终端中运行，以配置 Gemini CLI 访问。',
         modelComment: '如果你有 Gemini 3 权限可以填：gemini-3-pro-preview',
         note: '这些环境变量将在当前终端会话中生效。如需永久配置，请将其添加到 ~/.bashrc、~/.zshrc 或相应的配置文件中。'
+      },
+      grok: {
+        description: '配置 Grok CLI、Claude Code、Codex 或 OpenCode，让请求通过当前 Grok 分组发送。',
+        claudeDescription: '配置 Claude Code，让 Messages API 请求通过当前 Grok 分组发送。',
+        codexDescription: '配置 Codex，让 Responses API 请求通过当前 Grok 分组发送。',
+        configTomlHint: '如已有 config.toml，请先备份再合并此模型配置。保存后运行 grok inspect 验证生效配置。',
+        codexConfigTomlHint: '如已有 config.toml，请先备份再合并此服务商配置。',
+        note: '保存为 ~/.grok/config.toml，然后运行 grok inspect，并在 /model 中选择 grok。',
+        noteWindows: '保存为 %USERPROFILE%\\.grok\\config.toml，然后运行 grok inspect，并在 /model 中选择 grok。',
+        claudeNote: '二选一即可：终端命令仅在当前会话生效；保存 settings.json 可作为用户级持久配置。',
+        codexNote: '将 config.toml 保存到 ~/.codex，并在启动 Codex 前设置 LAOSHIRENAI_GROK_API_KEY。',
+        codexNoteWindows: '将 config.toml 保存到 %USERPROFILE%\\.codex，并在 PowerShell 中设置 LAOSHIRENAI_GROK_API_KEY 后启动 Codex。'
       },
       opencode: {
         title: 'OpenCode 配置示例',
@@ -2348,6 +2362,7 @@ export default {
         openai: 'OpenAI',
         gemini: 'Gemini',
         antigravity: 'Antigravity',
+        grok: 'Grok',
         'gpt-image': 'GPT-Image'
       },
       saving: '保存中...',
@@ -2895,6 +2910,7 @@ export default {
         anthropic: 'Anthropic',
         gemini: 'Gemini',
         antigravity: 'Antigravity',
+        grok: 'Grok',
         'gpt-image': 'GPT-Image'
       },
       types: {
@@ -2904,6 +2920,7 @@ export default {
         googleOauth: 'Google OAuth',
         codeAssist: 'Code Assist',
         antigravityOauth: 'Antigravity OAuth',
+        grokOauth: 'Grok OAuth',
         antigravityApikey: '通过 Base URL + API Key 连接',
         upstream: '对接上游',
         upstreamDesc: '通过 Base URL + API Key 连接上游',
@@ -2980,7 +2997,16 @@ export default {
         gemini3Pro: 'G3P',
         gemini3Flash: 'G3F',
         gemini3Image: 'G31FI',
-        claude: 'Claude'
+        claude: 'Claude',
+        grokRequests: '请求',
+        grokTokens: 'Token',
+        grokWeeklyUsage: '周额度已用 {percent}%',
+        grokRetryAfter: '{time} 后重试',
+        grokProbe: '探测',
+        grokProbeTooltip: '发送最小 xAI Responses 探测并读取配额响应头',
+        grokResetUnsupported: '不支持重置',
+        grokResetUnsupportedTooltip: 'xAI 未开放额度重置接口',
+        grokNoHeaders: '未观察到配额响应头'
       },
       tier: {
         free: 'Free',
@@ -3324,6 +3350,23 @@ export default {
         pleaseEnterBaseUrl: '请输入上游 Base URL',
         pleaseEnterApiKey: '请输入上游 API Key'
       },
+      grokCustomBaseUrl: {
+        title: 'Grok 上游地址',
+        hint: '控制对话、媒体和探测流量；OAuth 授权与刷新仍走官方端点。',
+        placeholder: 'https://api.x.ai/v1',
+        required: '请输入 Grok 上游地址，或关闭自定义端点开关。',
+        invalid: '上游地址格式不正确（需为完整的 http(s) URL）',
+        presets: { cli: 'Grok Build CLI', official: '官方 API' }
+      },
+      grokClientToolCache: {
+        title: '客户端工具提示词缓存',
+        hint: '缓存 Grok 客户端工具提示词，减少重复上下文并改善响应速度。'
+      },
+      grokHeaders: {
+        title: '自定义请求头',
+        hint: '填写请求头名称与字符串值组成的 JSON 对象；鉴权和传输层请求头会被禁止覆盖。',
+        invalid: '自定义请求头必须是 JSON 对象，并且名称和值都不能为空。'
+      },
       // OAuth flow
       oauth: {
         title: 'Claude 账号授权',
@@ -3395,6 +3438,44 @@ export default {
           validateAndCreate: '验证并创建账号',
           pleaseEnterRefreshToken: '请输入 Refresh Token',
           pleaseEnterSessionToken: '请输入 Session Token'
+        },
+        grok: {
+          title: 'Grok 账号授权',
+          followSteps: '请按照以下步骤授权您的 xAI/Grok 账号：',
+          step1GenerateUrl: '生成 xAI 授权链接',
+          generateAuthUrl: '生成授权链接',
+          step2OpenUrl: '在浏览器中打开链接并完成授权',
+          openUrlDesc: '在新标签页中打开授权链接，登录 xAI 并授权 API 访问。',
+          importantNotice: '浏览器跳转到本地 callback URL 后，请复制完整 URL 或 code 回填。',
+          step3EnterCode: '输入授权链接或 Code',
+          authCodeDesc: '粘贴 callback URL、查询字符串或授权码：',
+          authCode: '授权链接或 Code',
+          authCodePlaceholder: '粘贴完整 callback URL、?code=... 查询字符串或 code 值',
+          authCodeHint: '支持完整 callback URL、查询字符串或裸 code。',
+          refreshTokenAuth: '手动输入 RT',
+          refreshTokenDesc: '输入已有的 xAI refresh token，支持每行一个批量导入。',
+          refreshTokenPlaceholder: '每行一个 xAI refresh token',
+          ssoCookieAuth: 'SSO Cookie 导入',
+          ssoCookieDesc: '每行粘贴一个 Grok Web SSO key，服务端会转换为 Grok OAuth 凭据。',
+          ssoCookiePlaceholder: '每行一个 SSO key',
+          convertSSOAndCreate: '转换并创建账号',
+          validating: '验证中...',
+          validateAndCreate: '验证并创建账号',
+          pleaseEnterRefreshToken: '请输入 Refresh Token',
+          failedToGenerateUrl: '生成 Grok 授权链接失败',
+          missingExchangeParams: '缺少授权码、state 或 OAuth 会话',
+          failedToExchangeCode: 'Grok 授权码兑换失败',
+          failedToValidateRT: '验证 Grok refresh token 失败',
+          failedToConvertSSO: 'Grok SSO 转换失败',
+          errors: {
+            GROK_OAUTH_SESSION_NOT_FOUND: 'Grok OAuth 会话不存在或已过期，请重新生成链接。',
+            GROK_OAUTH_INVALID_STATE: 'Grok OAuth state 与当前会话不匹配。',
+            GROK_OAUTH_STATE_REQUIRED: '回调链接缺少 OAuth state。',
+            GROK_OAUTH_CODE_REQUIRED: '缺少 Grok 授权码。',
+            GROK_OAUTH_NO_REFRESH_TOKEN: 'Grok 响应未返回 refresh token。',
+            GROK_OAUTH_PROXY_NOT_AVAILABLE: '无法查询 Grok OAuth 代理配置。',
+            GROK_OAUTH_PROXY_NOT_FOUND: '找不到所选代理。'
+          }
         },
         // Gemini specific
         gemini: {

@@ -5,6 +5,8 @@ package service
 import (
 	"context"
 	"errors"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,14 +16,24 @@ import (
 
 type tokenRefreshAccountRepo struct {
 	mockAccountRepoForGemini
-	updateCalls            int
-	fullUpdateCalls        int
-	updateCredentialsCalls int
-	setErrorCalls          int
-	clearTempCalls         int
-	setTempUnschedCalls    int
-	lastAccount            *Account
-	updateErr              error
+	updateCalls               int
+	fullUpdateCalls           int
+	updateCredentialsCalls    int
+	setErrorCalls             int
+	clearTempCalls            int
+	setTempUnschedCalls       int
+	lastErrorMessage          string
+	lastTempUnschedReason     string
+	lastAccount               *Account
+	updateErr                 error
+	setErrorErr               error
+	setTempUnschedErr         error
+	conditionalSuccessCalls   int
+	conditionalSuccessErr     error
+	conditionalErrorCalls     int
+	conditionalTempCalls      int
+	conditionalReconcileCalls int
+	beforeConditionalState    func()
 }
 
 func (r *tokenRefreshAccountRepo) Update(ctx context.Context, account *Account) error {
@@ -51,7 +63,8 @@ func (r *tokenRefreshAccountRepo) UpdateCredentials(ctx context.Context, id int6
 
 func (r *tokenRefreshAccountRepo) SetError(ctx context.Context, id int64, errorMsg string) error {
 	r.setErrorCalls++
-	return nil
+	r.lastErrorMessage = errorMsg
+	return r.setErrorErr
 }
 
 func (r *tokenRefreshAccountRepo) ClearTempUnschedulable(ctx context.Context, id int64) error {
@@ -61,7 +74,177 @@ func (r *tokenRefreshAccountRepo) ClearTempUnschedulable(ctx context.Context, id
 
 func (r *tokenRefreshAccountRepo) SetTempUnschedulable(ctx context.Context, id int64, until time.Time, reason string) error {
 	r.setTempUnschedCalls++
-	return nil
+	r.lastTempUnschedReason = reason
+	return r.setTempUnschedErr
+}
+
+func (r *tokenRefreshAccountRepo) SetGrokCredentialErrorIfMatch(
+	_ context.Context,
+	id int64,
+	snapshot GrokCredentialMutationSnapshot,
+	errorMsg string,
+) (bool, error) {
+	if r.beforeConditionalState != nil {
+		hook := r.beforeConditionalState
+		r.beforeConditionalState = nil
+		hook()
+	}
+	account := r.accountsByID[id]
+	if !grokCredentialSnapshotMatchesAccount(account, snapshot) ||
+		(errorMsg == string(GrokCredentialReasonProxyInvalid) && account.Proxy != nil) {
+		return false, nil
+	}
+	r.setErrorCalls++
+	r.lastErrorMessage = errorMsg
+	if r.setErrorErr != nil {
+		return false, r.setErrorErr
+	}
+	account.Status = StatusError
+	account.Schedulable = false
+	account.ErrorMessage = errorMsg
+	return true, nil
+}
+
+func (r *tokenRefreshAccountRepo) SetGrokCredentialTempUnschedulableIfMatch(
+	_ context.Context,
+	id int64,
+	snapshot GrokCredentialMutationSnapshot,
+	until time.Time,
+	reason string,
+) (bool, error) {
+	if r.beforeConditionalState != nil {
+		hook := r.beforeConditionalState
+		r.beforeConditionalState = nil
+		hook()
+	}
+	account := r.accountsByID[id]
+	if !grokCredentialSnapshotMatchesAccount(account, snapshot) {
+		return false, nil
+	}
+	r.setTempUnschedCalls++
+	r.lastTempUnschedReason = reason
+	if r.setTempUnschedErr != nil {
+		return false, r.setTempUnschedErr
+	}
+	value := until
+	account.TempUnschedulableUntil = &value
+	account.TempUnschedulableReason = reason
+	return true, nil
+}
+
+func grokCredentialSnapshotMatchesAccount(account *Account, snapshot GrokCredentialMutationSnapshot) bool {
+	return account != nil && account.IsGrokOAuth() && account.IsSchedulable() &&
+		grokCredentialMutationSnapshot(account).CredentialsJSON == snapshot.CredentialsJSON &&
+		grokCredentialProxyIDsEqual(account.ProxyID, snapshot.ProxyID)
+}
+
+func (r *tokenRefreshAccountRepo) UpdateGrokOAuthCredentialsIfUnchanged(
+	_ context.Context,
+	id int64,
+	expectedCredentials map[string]any,
+	expectedProxyID *int64,
+	credentials map[string]any,
+) (bool, error) {
+	r.conditionalSuccessCalls++
+	if r.conditionalSuccessErr != nil {
+		return false, r.conditionalSuccessErr
+	}
+	account := r.accountsByID[id]
+	if account == nil || account.Platform != PlatformGrok || account.Type != AccountTypeOAuth ||
+		!reflect.DeepEqual(account.Credentials, expectedCredentials) || !reflect.DeepEqual(account.ProxyID, expectedProxyID) {
+		return false, nil
+	}
+	r.updateCalls++
+	r.updateCredentialsCalls++
+	account.Credentials = shallowCopyMap(credentials)
+	r.lastAccount = account
+	return true, nil
+}
+
+func (r *tokenRefreshAccountRepo) SetGrokOAuthRefreshErrorIfCredentialsUnchanged(
+	_ context.Context,
+	id int64,
+	expectedCredentials map[string]any,
+	expectedProxyID *int64,
+	errorMsg string,
+) (bool, error) {
+	r.conditionalErrorCalls++
+	if r.beforeConditionalState != nil {
+		hook := r.beforeConditionalState
+		r.beforeConditionalState = nil
+		hook()
+	}
+	account := r.accountsByID[id]
+	if account == nil || !account.IsGrokOAuth() ||
+		!reflect.DeepEqual(account.Credentials, expectedCredentials) || !reflect.DeepEqual(account.ProxyID, expectedProxyID) {
+		return false, nil
+	}
+	if r.setErrorErr != nil {
+		return false, r.setErrorErr
+	}
+	r.setErrorCalls++
+	r.lastErrorMessage = errorMsg
+	account.Status = StatusError
+	account.Schedulable = false
+	account.ErrorMessage = errorMsg
+	return true, nil
+}
+
+func (r *tokenRefreshAccountRepo) SetGrokOAuthErrorIfCredentialsUnchanged(
+	_ context.Context,
+	id int64,
+	expectedCredentials map[string]any,
+	errorMsg string,
+) (bool, error) {
+	r.conditionalReconcileCalls++
+	if r.beforeConditionalState != nil {
+		hook := r.beforeConditionalState
+		r.beforeConditionalState = nil
+		hook()
+	}
+	account := r.accountsByID[id]
+	if account == nil || !account.IsGrokOAuth() || account.Status != StatusActive ||
+		strings.TrimSpace(account.GetGrokRefreshToken()) != "" || !reflect.DeepEqual(account.Credentials, expectedCredentials) {
+		return false, nil
+	}
+	if r.setErrorErr != nil {
+		return false, r.setErrorErr
+	}
+	r.setErrorCalls++
+	r.lastErrorMessage = errorMsg
+	account.Status = StatusError
+	account.Schedulable = false
+	account.ErrorMessage = errorMsg
+	return true, nil
+}
+
+func (r *tokenRefreshAccountRepo) SetGrokOAuthRefreshTempUnschedulableIfCredentialsUnchanged(
+	_ context.Context,
+	id int64,
+	expectedCredentials map[string]any,
+	expectedProxyID *int64,
+	until time.Time,
+	reason string,
+) (bool, error) {
+	r.conditionalTempCalls++
+	if r.beforeConditionalState != nil {
+		hook := r.beforeConditionalState
+		r.beforeConditionalState = nil
+		hook()
+	}
+	account := r.accountsByID[id]
+	if account == nil || !account.IsGrokOAuth() ||
+		!reflect.DeepEqual(account.Credentials, expectedCredentials) || !reflect.DeepEqual(account.ProxyID, expectedProxyID) {
+		return false, nil
+	}
+	if r.setTempUnschedErr != nil {
+		return false, r.setTempUnschedErr
+	}
+	r.setTempUnschedCalls++
+	r.lastTempUnschedReason = reason
+	account.TempUnschedulableUntil = &until
+	account.TempUnschedulableReason = reason
+	return true, nil
 }
 
 type tokenCacheInvalidatorStub struct {
@@ -604,6 +787,7 @@ func TestPathA_Success(t *testing.T) {
 		ID:       100,
 		Platform: PlatformGemini,
 		Type:     AccountTypeOAuth,
+		Status:   StatusActive,
 	}
 	repo := &tokenRefreshAccountRepo{}
 	repo.accountsByID = map[int64]*Account{account.ID: account}
@@ -625,6 +809,7 @@ func TestPathA_LockHeld(t *testing.T) {
 		ID:       101,
 		Platform: PlatformGemini,
 		Type:     AccountTypeOAuth,
+		Status:   StatusActive,
 	}
 	repo := &tokenRefreshAccountRepo{}
 	invalidator := &tokenCacheInvalidatorStub{}
@@ -645,6 +830,7 @@ func TestPathA_AlreadyRefreshed(t *testing.T) {
 		ID:       102,
 		Platform: PlatformGemini,
 		Type:     AccountTypeOAuth,
+		Status:   StatusActive,
 	}
 	repo := &tokenRefreshAccountRepo{}
 	repo.accountsByID = map[int64]*Account{account.ID: account}
@@ -684,6 +870,7 @@ func TestPathA_NonRetryableError(t *testing.T) {
 		ID:       103,
 		Platform: PlatformGemini,
 		Type:     AccountTypeOAuth,
+		Status:   StatusActive,
 	}
 	repo := &tokenRefreshAccountRepo{}
 	repo.accountsByID = map[int64]*Account{account.ID: account}
@@ -709,6 +896,7 @@ func TestPathA_RetryableErrorExhausted(t *testing.T) {
 		ID:       104,
 		Platform: PlatformGemini,
 		Type:     AccountTypeOAuth,
+		Status:   StatusActive,
 	}
 	repo := &tokenRefreshAccountRepo{}
 	repo.accountsByID = map[int64]*Account{account.ID: account}
@@ -742,6 +930,7 @@ func TestPathA_DBUpdateFailed(t *testing.T) {
 		ID:       105,
 		Platform: PlatformGemini,
 		Type:     AccountTypeOAuth,
+		Status:   StatusActive,
 	}
 	repo := &tokenRefreshAccountRepo{updateErr: errors.New("db connection lost")}
 	repo.accountsByID = map[int64]*Account{account.ID: account}
@@ -752,7 +941,106 @@ func TestPathA_DBUpdateFailed(t *testing.T) {
 
 	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "DB update failed")
+	require.Contains(t, err.Error(), "credential persistence failed")
+	require.Contains(t, err.Error(), "db connection lost")
 	require.Equal(t, 1, repo.updateCalls)  // DB 更新被尝试
 	require.Equal(t, 0, invalidator.calls) // DB 失败时不应触发缓存失效
+}
+
+func TestPathA_GrokNonRetryableFailureUsesExactStateCAS(t *testing.T) {
+	account := &Account{
+		ID:          106,
+		Platform:    PlatformGrok,
+		Type:        AccountTypeOAuth,
+		Status:      StatusActive,
+		Schedulable: true,
+		Credentials: map[string]any{"refresh_token": "old-refresh", "access_token": "old-access"},
+	}
+	repo := &tokenRefreshAccountRepo{}
+	repo.accountsByID = map[int64]*Account{account.ID: account}
+	invalidator := &tokenCacheInvalidatorStub{}
+	service, _ := buildPathAService(repo, &mockTokenCacheForRefreshAPI{lockResult: true}, invalidator)
+	refresher := &tokenRefresherStub{err: errors.New("invalid_grant: token revoked")}
+
+	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
+	require.ErrorContains(t, err, "invalid_grant")
+	require.Equal(t, 1, repo.conditionalErrorCalls)
+	require.Equal(t, 1, repo.setErrorCalls)
+	require.Equal(t, StatusError, account.Status)
+	require.False(t, account.Schedulable)
+	require.Equal(t, 1, invalidator.calls)
+}
+
+func TestPathA_GrokNonRetryableFailureCannotDisableReauthorizedAccount(t *testing.T) {
+	account := &Account{
+		ID:          107,
+		Platform:    PlatformGrok,
+		Type:        AccountTypeOAuth,
+		Status:      StatusActive,
+		Schedulable: true,
+		Credentials: map[string]any{"refresh_token": "old-refresh", "access_token": "old-access"},
+	}
+	repo := &tokenRefreshAccountRepo{}
+	repo.accountsByID = map[int64]*Account{account.ID: account}
+	repo.beforeConditionalState = func() {
+		account.Credentials = map[string]any{"refresh_token": "new-refresh", "access_token": "new-access"}
+	}
+	invalidator := &tokenCacheInvalidatorStub{}
+	service, _ := buildPathAService(repo, &mockTokenCacheForRefreshAPI{lockResult: true}, invalidator)
+	refresher := &tokenRefresherStub{err: errors.New("invalid_grant: stale token revoked")}
+
+	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
+	require.ErrorIs(t, err, errRefreshSkipped)
+	require.Equal(t, 1, repo.conditionalErrorCalls)
+	require.Zero(t, repo.setErrorCalls)
+	require.Equal(t, StatusActive, account.Status)
+	require.True(t, account.Schedulable)
+	require.Equal(t, "new-refresh", account.GetCredential("refresh_token"))
+	require.Zero(t, invalidator.calls)
+}
+
+func TestPathA_GrokTransientFailureUsesExactStateCooldownCAS(t *testing.T) {
+	account := &Account{
+		ID:          108,
+		Platform:    PlatformGrok,
+		Type:        AccountTypeOAuth,
+		Status:      StatusActive,
+		Schedulable: true,
+		Credentials: map[string]any{"refresh_token": "refresh", "access_token": "access"},
+	}
+	repo := &tokenRefreshAccountRepo{}
+	repo.accountsByID = map[int64]*Account{account.ID: account}
+	service, _ := buildPathAService(repo, &mockTokenCacheForRefreshAPI{lockResult: true}, &tokenCacheInvalidatorStub{})
+	refresher := &tokenRefresherStub{err: errors.New("network timeout")}
+
+	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
+	require.ErrorContains(t, err, "network timeout")
+	require.Equal(t, 1, repo.conditionalTempCalls)
+	require.Equal(t, 1, repo.setTempUnschedCalls)
+	require.NotNil(t, account.TempUnschedulableUntil)
+	require.Contains(t, account.TempUnschedulableReason, "network timeout")
+}
+
+func TestPathA_GrokProviderConfigurationFailureDoesNotMutateAccount(t *testing.T) {
+	account := &Account{
+		ID:          109,
+		Platform:    PlatformGrok,
+		Type:        AccountTypeOAuth,
+		Status:      StatusActive,
+		Schedulable: true,
+		Credentials: map[string]any{"refresh_token": "refresh", "access_token": "access"},
+	}
+	repo := &tokenRefreshAccountRepo{}
+	repo.accountsByID = map[int64]*Account{account.ID: account}
+	service, _ := buildPathAService(repo, &mockTokenCacheForRefreshAPI{lockResult: true}, &tokenCacheInvalidatorStub{})
+	refresher := &tokenRefresherStub{err: errors.New("invalid_client: provider OAuth configuration rejected")}
+
+	err := service.refreshWithRetry(context.Background(), account, refresher, refresher, time.Hour)
+	var providerErr *providerConfigurationRefreshError
+	require.ErrorAs(t, err, &providerErr)
+	require.Zero(t, repo.conditionalErrorCalls)
+	require.Zero(t, repo.setErrorCalls)
+	require.Zero(t, repo.conditionalTempCalls)
+	require.Equal(t, StatusActive, account.Status)
+	require.True(t, account.Schedulable)
 }

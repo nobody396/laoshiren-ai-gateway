@@ -1442,7 +1442,7 @@ func probeMonthlyOpenAIUpstream(ctx context.Context, account *Account, model str
 }
 
 func probeMonthlyGrokUpstream(ctx context.Context, account *Account, model string) MonthlyUpstreamProbePoint {
-	token := strings.TrimSpace(account.GetGrokAccessToken())
+	token := monthlyProbeGrokCredential(account)
 	if token == "" {
 		return monthlyProbeLocalFailure(account, model, "missing_api_key", "missing upstream Grok credential")
 	}
@@ -1467,6 +1467,16 @@ func probeMonthlyGrokUpstream(ctx context.Context, account *Account, model strin
 		}
 	}
 	return executeMonthlyProbeHTTP(ctx, account, model, targetURL, headers, body)
+}
+
+func monthlyProbeGrokCredential(account *Account) string {
+	if account == nil || !account.IsGrok() {
+		return ""
+	}
+	if account.IsGrokOAuth() {
+		return strings.TrimSpace(account.GetGrokAccessToken())
+	}
+	return strings.TrimSpace(account.GetCredential("api_key"))
 }
 
 func buildMonthlyUpstreamProbeCostEstimate(accountName, platform, model string, account *Account) *MonthlyUpstreamProbeCostEstimate {

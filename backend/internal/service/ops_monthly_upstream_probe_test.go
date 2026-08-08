@@ -117,6 +117,25 @@ func TestMonthlyCardPublicStatusSnapshotHiddenByDefault(t *testing.T) {
 	require.Equal(t, 0, called)
 }
 
+func TestMonthlyProbeGrokCredentialUsesAccountTypeContract(t *testing.T) {
+	require.Equal(t, "native-key", monthlyProbeGrokCredential(&Account{
+		Platform: PlatformGrok,
+		Type:     AccountTypeAPIKey,
+		Credentials: map[string]any{
+			"api_key":      "native-key",
+			"access_token": "wrong-field",
+		},
+	}))
+	require.Equal(t, "oauth-token", monthlyProbeGrokCredential(&Account{
+		Platform: PlatformGrok,
+		Type:     AccountTypeOAuth,
+		Credentials: map[string]any{
+			"api_key":      "wrong-field",
+			"access_token": "oauth-token",
+		},
+	}))
+}
+
 func TestMonthlyCardPublicStatusSnapshotVisibleWhenEnabled(t *testing.T) {
 	ctx := context.Background()
 	checkedAt := time.Now().Add(-time.Minute)

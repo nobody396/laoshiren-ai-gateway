@@ -472,6 +472,7 @@ func ProvideOpenAIGatewayService(
 	gptImageS3Storage *GPTImageS3Storage,
 	settingService *SettingService,
 	accountingService *AccountingService,
+	openAIRouteController *OpenAIRouteController,
 ) *OpenAIGatewayService {
 	svc := NewOpenAIGatewayService(
 		accountRepo, usageLogRepo, usageBillingRepo, userRepo, userSubRepo,
@@ -487,7 +488,15 @@ func ProvideOpenAIGatewayService(
 		NewAccountingPipelineMeter(accountingService),
 	))
 	svc.SetGrokTokenProvider(grokTokenProvider)
+	svc.SetOpenAIRouteEvaluator(openAIRouteController)
+	if settingService != nil && openAIRouteController != nil {
+		settingService.AddOnUpdateCallback(openAIRouteController.InvalidatePolicyCache)
+	}
 	return svc
+}
+
+func ProvideOpenAIRoutePolicyReader(settingRepo SettingRepository) OpenAIRoutePolicyReader {
+	return settingRepo
 }
 
 // ProvideAuthService injects the application UnitOfWork without expanding the
@@ -561,6 +570,8 @@ var ProviderSet = wire.NewSet(
 	NewAdminService,
 	NewGatewayService,
 	ProvideOpenAIGatewayService,
+	ProvideOpenAIRoutePolicyReader,
+	NewOpenAIRouteController,
 	NewOAuthService,
 	NewOpenAIOAuthService,
 	NewGrokOAuthService,

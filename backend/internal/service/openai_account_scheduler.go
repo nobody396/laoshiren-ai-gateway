@@ -18,6 +18,7 @@ const (
 	openAIAccountScheduleLayerPreviousResponse = "previous_response_id"
 	openAIAccountScheduleLayerSessionSticky    = "session_hash"
 	openAIAccountScheduleLayerLoadBalance      = "load_balance"
+	openAIRouteShadowEvaluationTimeout         = 25 * time.Millisecond
 )
 
 type OpenAIAccountScheduleRequest struct {
@@ -41,6 +42,17 @@ type OpenAIAccountScheduleDecision struct {
 	LoadSkew            float64
 	SelectedAccountID   int64
 	SelectedAccountType string
+
+	RoutePolicyMode           OpenAIRoutePolicyMode
+	RoutePolicyVersion        int
+	RoutePolicyReason         string
+	LegacySelectedAccountID   int64
+	AdaptiveSelectedAccountID int64
+	AdaptiveSelectedRate      float64
+	AdaptiveCandidateCount    int
+	AdaptiveExcludedCount     int
+	AdaptiveDiverged          bool
+	AdaptiveEmergency         bool
 }
 
 type OpenAIAccountSchedulerMetricsSnapshot struct {
@@ -199,6 +211,14 @@ func (s *openAIAccountRuntimeStats) snapshot(accountID int64) (errorRate float64
 	return errorRate, ttftValue, true
 }
 
+func (s *openAIAccountRuntimeStats) hasSample(accountID int64) bool {
+	if s == nil || accountID <= 0 {
+		return false
+	}
+	_, ok := s.accounts.Load(accountID)
+	return ok
+}
+
 func (s *openAIAccountRuntimeStats) size() int {
 	if s == nil {
 		return 0
@@ -286,6 +306,7 @@ func (s *defaultOpenAIAccountScheduler) Select(
 		return nil, decision, err
 	}
 	if selection != nil && selection.Account != nil {
+		applyOpenAIRouteShadowScheduleDecision(&decision, selection.OpenAIRouteShadow)
 		decision.SelectedAccountID = selection.Account.ID
 		decision.SelectedAccountType = selection.Account.Type
 	}
@@ -731,6 +752,8 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 			weights.TTFT*ttftFactor
 	}
 
+	shadow := s.evaluateOpenAIRouteShadow(ctx, req, candidates)
+
 	topK := s.service.openAIWSLBTopK()
 	if topK > len(candidates) {
 		topK = len(candidates)
@@ -758,10 +781,12 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 			if req.SessionHash != "" {
 				_ = s.service.BindStickySession(ctx, req.GroupID, req.SessionHash, fresh.ID)
 			}
+			finalizeOpenAIRouteShadowDecision(shadow, fresh.ID)
 			return &AccountSelectionResult{
-				Account:     fresh,
-				Acquired:    true,
-				ReleaseFunc: result.ReleaseFunc,
+				Account:           fresh,
+				Acquired:          true,
+				ReleaseFunc:       result.ReleaseFunc,
+				OpenAIRouteShadow: shadow,
 			}, len(candidates), topK, loadSkew, nil
 		}
 	}
@@ -777,6 +802,7 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 			compactBlocked = true
 			continue
 		}
+		finalizeOpenAIRouteShadowDecision(shadow, fresh.ID)
 		return &AccountSelectionResult{
 			Account: fresh,
 			WaitPlan: &AccountWaitPlan{
@@ -785,10 +811,110 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 				Timeout:        cfg.FallbackWaitTimeout,
 				MaxWaiting:     cfg.FallbackMaxWaiting,
 			},
+			OpenAIRouteShadow: shadow,
 		}, len(candidates), topK, loadSkew, nil
 	}
 
 	return nil, len(candidates), topK, loadSkew, noAvailableOpenAISelectionError(req.RequestedModel, compactBlocked, accounts, req.ExcludedIDs)
+}
+
+func (s *defaultOpenAIAccountScheduler) evaluateOpenAIRouteShadow(
+	ctx context.Context,
+	req OpenAIAccountScheduleRequest,
+	candidates []openAIAccountCandidateScore,
+) *OpenAIRouteShadowDecision {
+	if s == nil || s.service == nil || s.service.openAIRouteEvaluator == nil || req.GroupID == nil || *req.GroupID <= 0 {
+		return nil
+	}
+
+	projected := make([]OpenAIRouteShadowCandidate, 0, len(candidates))
+	for _, candidate := range candidates {
+		if candidate.account == nil || candidate.loadInfo == nil {
+			continue
+		}
+		transport := s.service.getOpenAIWSProtocolResolver().Resolve(candidate.account).Transport
+		projected = append(projected, OpenAIRouteShadowCandidate{
+			Account:              candidate.account,
+			Endpoint:             openAIRouteEndpointForAccount(candidate.account),
+			Transport:            string(transport),
+			Priority:             candidate.priority,
+			HasReliabilitySample: s.stats.hasSample(candidate.account.ID),
+			SuccessLowerBound:    1 - clamp01(candidate.errorRate),
+			TTFTMilliseconds:     candidate.ttft,
+			LoadRatio:            clamp01(float64(candidate.loadInfo.LoadRate) / 100),
+			WaitingCount:         candidate.loadInfo.WaitingCount,
+		})
+	}
+
+	evaluationCtx, cancel := context.WithTimeout(ctx, openAIRouteShadowEvaluationTimeout)
+	defer cancel()
+	decision, err := s.service.openAIRouteEvaluator.EvaluateShadow(evaluationCtx, OpenAIRouteShadowRequest{
+		GroupID:    *req.GroupID,
+		Model:      req.RequestedModel,
+		Seed:       deriveOpenAISelectionSeed(req),
+		Candidates: projected,
+	})
+	if err != nil {
+		decision.Evaluated = false
+		decision.Mode = OpenAIRoutePolicyLegacy
+		decision.Reason = openAIRouteShadowEvaluationErrorReason(err)
+	}
+	return &decision
+}
+
+func openAIRouteEndpointForAccount(account *Account) string {
+	if account == nil {
+		return ""
+	}
+	if account.Type == AccountTypeOAuth {
+		return chatgptCodexURL
+	}
+	baseURL := strings.TrimSpace(account.GetOpenAIBaseURL())
+	if baseURL == "" {
+		return ""
+	}
+	return buildOpenAIResponsesURL(baseURL)
+}
+
+func openAIRouteShadowEvaluationErrorReason(err error) string {
+	switch {
+	case errors.Is(err, ErrOpenAIRouteEnforceDisabled):
+		return "enforce_disabled"
+	case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+		return "evaluation_timeout"
+	case errors.Is(err, ErrOpenAIRouteInvalidPolicy):
+		return "policy_invalid"
+	case errors.Is(err, ErrOpenAIRouteBudgetExhausted):
+		return "budget_exhausted"
+	case errors.Is(err, ErrOpenAIRouteNoCandidate):
+		return "no_shadow_candidate"
+	default:
+		return "runtime_unavailable"
+	}
+}
+
+func finalizeOpenAIRouteShadowDecision(decision *OpenAIRouteShadowDecision, legacyAccountID int64) {
+	if decision == nil {
+		return
+	}
+	decision.LegacySelectedAccountID = legacyAccountID
+	decision.Diverged = decision.Evaluated && decision.SelectedAccountID > 0 && decision.SelectedAccountID != legacyAccountID
+}
+
+func applyOpenAIRouteShadowScheduleDecision(target *OpenAIAccountScheduleDecision, shadow *OpenAIRouteShadowDecision) {
+	if target == nil || shadow == nil {
+		return
+	}
+	target.RoutePolicyMode = shadow.Mode
+	target.RoutePolicyVersion = shadow.Version
+	target.RoutePolicyReason = shadow.Reason
+	target.LegacySelectedAccountID = shadow.LegacySelectedAccountID
+	target.AdaptiveSelectedAccountID = shadow.SelectedAccountID
+	target.AdaptiveSelectedRate = shadow.SelectedRate
+	target.AdaptiveCandidateCount = shadow.CandidateCount
+	target.AdaptiveExcludedCount = shadow.ExcludedCount
+	target.AdaptiveDiverged = shadow.Diverged
+	target.AdaptiveEmergency = shadow.Emergency
 }
 
 func (s *defaultOpenAIAccountScheduler) isAccountTransportCompatible(account *Account, requiredTransport OpenAIUpstreamTransport) bool {

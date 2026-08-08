@@ -355,6 +355,7 @@ type OpenAIGatewayService struct {
 	gptImageTaskRepo         GPTImageTaskRepository
 	gptImageS3Storage        *GPTImageS3Storage
 	settingService           *SettingService
+	openAIRouteEvaluator     OpenAIRouteShadowEvaluator
 	pipeline                 *GatewayPipeline
 
 	openaiWSPoolOnce                    sync.Once
@@ -383,6 +384,14 @@ type OpenAIGatewayService struct {
 func (s *OpenAIGatewayService) SetGrokTokenProvider(provider *GrokTokenProvider) {
 	if s != nil {
 		s.grokTokenProvider = provider
+	}
+}
+
+// SetOpenAIRouteEvaluator enables diagnostic shadow evaluation. The evaluator
+// cannot change the selected account in this release.
+func (s *OpenAIGatewayService) SetOpenAIRouteEvaluator(evaluator OpenAIRouteShadowEvaluator) {
+	if s != nil {
+		s.openAIRouteEvaluator = evaluator
 	}
 }
 

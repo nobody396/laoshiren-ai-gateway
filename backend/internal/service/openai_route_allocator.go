@@ -149,7 +149,7 @@ func BuildOpenAIRouteAllocationPlan(req OpenAIRouteAllocationRequest) (OpenAIRou
 		latencyFactor := openAIRouteLatencyFactor(candidate.P90TTFTMilliseconds, minTTFT, policy.LatencyBeta)
 		headroomFactor := openAIRouteHeadroomFactor(candidate.LoadRatio, candidate.WaitingCount)
 		priceFactor := openAIRoutePriceFactor(candidate.RateMultiplier, minRate, policy.PriceExponent)
-		priorityFactor := 1 / (1 + policy.PriorityPenalty*float64(maxInt(candidate.Priority-minPriority, 0)))
+		priorityFactor := 1 / (1 + policy.PriorityPenalty*float64(maxOpenAIRouteInt(candidate.Priority-minPriority, 0)))
 		explorationBoost := candidate.ExplorationBoost
 		if explorationBoost <= 0 || math.IsNaN(explorationBoost) || math.IsInf(explorationBoost, 0) {
 			explorationBoost = 1
@@ -361,7 +361,7 @@ func openAIRouteWeightedOrder(candidates []OpenAIRouteWeightedCandidate, seed ui
 	return ordered
 }
 
-func maxInt(left, right int) int {
+func maxOpenAIRouteInt(left, right int) int {
 	if left > right {
 		return left
 	}

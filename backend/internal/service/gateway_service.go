@@ -496,10 +496,11 @@ type AccountWaitPlan struct {
 }
 
 type AccountSelectionResult struct {
-	Account     *Account
-	Acquired    bool
-	ReleaseFunc func()
-	WaitPlan    *AccountWaitPlan // nil means no wait allowed
+	Account           *Account
+	Acquired          bool
+	ReleaseFunc       func()
+	WaitPlan          *AccountWaitPlan // nil means no wait allowed
+	OpenAIRouteShadow *OpenAIRouteShadowDecision
 }
 
 // ClaudeUsage 表示Claude API返回的usage信息

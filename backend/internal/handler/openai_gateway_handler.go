@@ -364,6 +364,16 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 			zap.Int("top_k", scheduleDecision.TopK),
 			zap.Int64("latency_ms", scheduleDecision.LatencyMs),
 			zap.Float64("load_skew", scheduleDecision.LoadSkew),
+			zap.String("route_policy_mode", string(scheduleDecision.RoutePolicyMode)),
+			zap.Int("route_policy_version", scheduleDecision.RoutePolicyVersion),
+			zap.String("route_policy_reason", scheduleDecision.RoutePolicyReason),
+			zap.Int64("legacy_selected_account_id", scheduleDecision.LegacySelectedAccountID),
+			zap.Int64("adaptive_selected_account_id", scheduleDecision.AdaptiveSelectedAccountID),
+			zap.Float64("adaptive_selected_rate", scheduleDecision.AdaptiveSelectedRate),
+			zap.Int("adaptive_candidate_count", scheduleDecision.AdaptiveCandidateCount),
+			zap.Int("adaptive_excluded_count", scheduleDecision.AdaptiveExcludedCount),
+			zap.Bool("adaptive_diverged", scheduleDecision.AdaptiveDiverged),
+			zap.Bool("adaptive_emergency", scheduleDecision.AdaptiveEmergency),
 		)
 		account := selection.Account
 		sessionHash = ensureOpenAIPoolModeSessionHash(sessionHash, account)
@@ -764,7 +774,18 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 		account := selection.Account
 		sessionHash = ensureOpenAIPoolModeSessionHash(sessionHash, account)
 		reqLog.Debug("openai_messages.account_selected", zap.Int64("account_id", account.ID), zap.String("account_name", account.Name))
-		_ = scheduleDecision
+		reqLog.Debug("openai_messages.route_shadow_decision",
+			zap.String("route_policy_mode", string(scheduleDecision.RoutePolicyMode)),
+			zap.Int("route_policy_version", scheduleDecision.RoutePolicyVersion),
+			zap.String("route_policy_reason", scheduleDecision.RoutePolicyReason),
+			zap.Int64("legacy_selected_account_id", scheduleDecision.LegacySelectedAccountID),
+			zap.Int64("adaptive_selected_account_id", scheduleDecision.AdaptiveSelectedAccountID),
+			zap.Float64("adaptive_selected_rate", scheduleDecision.AdaptiveSelectedRate),
+			zap.Int("adaptive_candidate_count", scheduleDecision.AdaptiveCandidateCount),
+			zap.Int("adaptive_excluded_count", scheduleDecision.AdaptiveExcludedCount),
+			zap.Bool("adaptive_diverged", scheduleDecision.AdaptiveDiverged),
+			zap.Bool("adaptive_emergency", scheduleDecision.AdaptiveEmergency),
+		)
 		setOpsSelectedAccount(c, account.ID, account.Platform)
 
 		accountReleaseFunc, acquired := h.acquireResponsesAccountSlot(c, apiKey.GroupID, sessionHash, selection, reqStream, &streamStarted, reqLog)

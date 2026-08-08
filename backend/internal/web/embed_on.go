@@ -193,13 +193,6 @@ func (s *FrontendServer) serveIndexHTMLWithStatusAndChangelog(
 	cached := s.cache.Get()
 	if cached != nil {
 		etag := routeAwareETag(cached.ETag, requestPath)
-		// Check If-None-Match for 304 response
-		if match := c.GetHeader("If-None-Match"); match == etag {
-			c.Status(http.StatusNotModified)
-			c.Abort()
-			return
-		}
-
 		rendered := s.seo.renderHTML(cached.Content, requestPath)
 		if changelogPage != nil {
 			rendered = s.seo.renderChangelogHTML(cached.Content, requestPath, changelogPage)
@@ -210,7 +203,7 @@ func (s *FrontendServer) serveIndexHTMLWithStatusAndChangelog(
 		content := replaceNoncePlaceholder(rendered, nonce)
 
 		c.Header("ETag", etag)
-		c.Header("Cache-Control", "no-cache") // Must revalidate
+		setNonceHTMLNoStore(c)
 		c.Data(status, "text/html; charset=utf-8", content)
 		c.Abort()
 		return
@@ -230,6 +223,7 @@ func (s *FrontendServer) serveIndexHTMLWithStatusAndChangelog(
 			rendered = s.seo.renderNotFoundHTML(s.baseHTML, requestPath)
 		}
 		content := replaceNoncePlaceholder(rendered, nonce)
+		setNonceHTMLNoStore(c)
 		c.Data(status, "text/html; charset=utf-8", content)
 		c.Abort()
 		return
@@ -245,6 +239,7 @@ func (s *FrontendServer) serveIndexHTMLWithStatusAndChangelog(
 			rendered = s.seo.renderNotFoundHTML(s.baseHTML, requestPath)
 		}
 		content := replaceNoncePlaceholder(rendered, nonce)
+		setNonceHTMLNoStore(c)
 		c.Data(status, "text/html; charset=utf-8", content)
 		c.Abort()
 		return
@@ -266,9 +261,17 @@ func (s *FrontendServer) serveIndexHTMLWithStatusAndChangelog(
 	if cached != nil {
 		c.Header("ETag", routeAwareETag(cached.ETag, requestPath))
 	}
-	c.Header("Cache-Control", "no-cache")
+	setNonceHTMLNoStore(c)
 	c.Data(status, "text/html; charset=utf-8", content)
 	c.Abort()
+}
+
+// A CSP nonce is unique to each response. Returning 304 would make the browser
+// reuse HTML containing the previous nonce while applying the new response's
+// CSP header, so every inline bootstrap script would be rejected. Always send
+// fresh nonce-bearing HTML and prevent browser storage of that document.
+func setNonceHTMLNoStore(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
 }
 
 func (s *FrontendServer) injectSettings(settingsJSON []byte) []byte {

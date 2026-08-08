@@ -3,6 +3,7 @@ import type { GroupPlatform } from '@/types'
 export type CcsImportTarget =
   | 'claude'
   | 'codex'
+  | 'grokbuild'
   | 'opencode'
   | 'openclaw'
   | 'hermes'
@@ -65,7 +66,7 @@ export const getCompatibleCcsTargets = (
     case 'gpt-image':
       return []
     case 'grok':
-      return ['claude', 'codex', 'opencode', 'openclaw', 'hermes']
+      return ['grokbuild']
   }
 }
 
@@ -92,6 +93,8 @@ const appLabelForTarget = (target: CcsImportTarget): string => {
       return 'Claude Code'
     case 'codex':
       return 'Codex'
+    case 'grokbuild':
+      return 'Grok Build'
     case 'opencode':
       return 'OpenCode'
     case 'openclaw':
@@ -111,7 +114,13 @@ const endpointForTarget = (
   if (platform === 'antigravity') {
     return appendPath(gatewayBaseUrl, 'antigravity')
   }
-  if (target === 'codex' || target === 'opencode' || target === 'openclaw' || target === 'hermes') {
+  if (
+    target === 'codex' ||
+    target === 'grokbuild' ||
+    target === 'opencode' ||
+    target === 'openclaw' ||
+    target === 'hermes'
+  ) {
     return appendPath(gatewayBaseUrl, 'v1')
   }
   return gatewayBaseUrl
@@ -192,18 +201,21 @@ export const buildCcsImportDeeplink = ({
     usageAutoInterval: '30'
   })
 
-  if (target === 'codex' || target === 'opencode' || target === 'openclaw' || target === 'hermes') {
-    params.set('model', platform === 'grok' ? 'grok-4.5' : DEFAULT_OPENAI_MODEL)
+  if (target === 'grokbuild') {
+    params.set('model', 'grok-4.5')
+  } else if (
+    target === 'codex' ||
+    target === 'opencode' ||
+    target === 'openclaw' ||
+    target === 'hermes'
+  ) {
+    params.set('model', DEFAULT_OPENAI_MODEL)
   }
 
   if (target === 'claude') {
-    params.set('model', platform === 'grok' ? 'grok-4.5' : 'claude-opus-5')
+    params.set('model', 'claude-opus-5')
     const groupModel = key.group?.default_mapped_model?.trim()
-    if (platform === 'grok') {
-      params.set('haikuModel', 'grok-4.5')
-      params.set('sonnetModel', 'grok-4.5')
-      params.set('opusModel', 'grok-4.5')
-    } else if (platform === 'anthropic' && groupModel) {
+    if (platform === 'anthropic' && groupModel) {
       params.set('haikuModel', groupModel)
       params.set('sonnetModel', groupModel)
       params.set('opusModel', groupModel)

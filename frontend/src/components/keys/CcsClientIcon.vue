@@ -37,6 +37,7 @@ const props = defineProps<{
 const iconSources: Record<CcsImportTarget, string> = {
   claude: '/brand/client-tools/claude.svg',
   codex: '/brand/client-tools/codex-light.png',
+  grokbuild: '/brand/client-tools/grok.svg',
   opencode: '/brand/client-tools/opencode.svg',
   openclaw: '/brand/client-tools/openclaw.svg',
   hermes: '/brand/client-tools/hermes.png',
@@ -50,6 +51,8 @@ const iconSizeClass = computed(() => {
     case 'claude':
     case 'gemini':
       return 'h-[62%] w-[62%]'
+    case 'grokbuild':
+      return 'h-[62%] w-[62%] dark:invert'
     case 'openclaw':
       return 'h-[80%] w-[80%]'
     default:

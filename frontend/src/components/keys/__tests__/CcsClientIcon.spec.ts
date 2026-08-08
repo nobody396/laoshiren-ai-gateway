@@ -6,6 +6,7 @@ import type { CcsImportTarget } from '@/utils/ccSwitchImport'
 
 const expectedSources: Record<Exclude<CcsImportTarget, 'codex'>, string> = {
   claude: '/brand/client-tools/claude.svg',
+  grokbuild: '/brand/client-tools/grok.svg',
   opencode: '/brand/client-tools/opencode.svg',
   openclaw: '/brand/client-tools/openclaw.svg',
   hermes: '/brand/client-tools/hermes.png',
@@ -35,5 +36,13 @@ describe('CcsClientIcon', () => {
       '/brand/client-tools/codex-light.png',
       '/brand/client-tools/codex-dark.png'
     ])
+  })
+
+  it('keeps the monochrome Grok icon visible in dark mode', () => {
+    const wrapper = mount(CcsClientIcon, {
+      props: { client: 'grokbuild' }
+    })
+
+    expect(wrapper.get('img').classes()).toContain('dark:invert')
   })
 })

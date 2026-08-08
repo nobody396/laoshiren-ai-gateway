@@ -1509,6 +1509,12 @@ const ccsClientOptions = computed<CcsClientOption[]>(() => {
           label: t('keys.ccsClientSelect.codex'),
           description: t('keys.ccsClientSelect.codexDesc')
         }
+      case 'grokbuild':
+        return {
+          value: target,
+          label: t('keys.ccsClientSelect.grokBuild'),
+          description: t('keys.ccsClientSelect.grokBuildDesc')
+        }
       case 'opencode':
         return {
           value: target,

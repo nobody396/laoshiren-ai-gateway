@@ -104,8 +104,8 @@ func TestLoadDefaultOpenAIWSConfig(t *testing.T) {
 	if cfg.Gateway.OpenAIWS.APIKeyMaxConnsFactor != 1.0 {
 		t.Fatalf("Gateway.OpenAIWS.APIKeyMaxConnsFactor = %v, want 1.0", cfg.Gateway.OpenAIWS.APIKeyMaxConnsFactor)
 	}
-	if cfg.Gateway.OpenAIWS.StickySessionTTLSeconds != 3600 {
-		t.Fatalf("Gateway.OpenAIWS.StickySessionTTLSeconds = %d, want 3600", cfg.Gateway.OpenAIWS.StickySessionTTLSeconds)
+	if cfg.Gateway.OpenAIWS.StickySessionTTLSeconds != 1800 {
+		t.Fatalf("Gateway.OpenAIWS.StickySessionTTLSeconds = %d, want 1800", cfg.Gateway.OpenAIWS.StickySessionTTLSeconds)
 	}
 	if !cfg.Gateway.OpenAIWS.SessionHashReadOldFallback {
 		t.Fatalf("Gateway.OpenAIWS.SessionHashReadOldFallback = false, want true")

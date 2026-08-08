@@ -3173,10 +3173,63 @@ func openAIStreamDataStartsClientOutput(data, eventType string) bool {
 	if trimmed == "" {
 		return false
 	}
-	if strings.TrimSpace(eventType) == "response.failed" {
+	switch strings.TrimSpace(eventType) {
+	case "response.failed":
 		return false
+	case "error":
+		// OpenAI can emit a retryable error frame immediately before
+		// response.failed. Flushing that frame would commit the downstream
+		// response and make the following pre-output account failover unsafe.
+		payload := []byte(trimmed)
+		return !openAIStreamFailedEventShouldFailover(payload, extractOpenAISSEErrorMessage(payload))
 	}
 	return !openAIStreamEventIsPreamble(eventType)
+}
+
+func openAIStreamFailedEventErrorCode(payload []byte) string {
+	code := strings.ToLower(strings.TrimSpace(gjson.GetBytes(payload, "response.error.code").String()))
+	if code == "" {
+		code = strings.ToLower(strings.TrimSpace(gjson.GetBytes(payload, "error.code").String()))
+	}
+	return code
+}
+
+// isOpenAIUpstreamCapacityShedEvent identifies the HTTP-200 stream failure
+// OpenAI uses when a request is shed before model output.
+func isOpenAIUpstreamCapacityShedEvent(payload []byte) bool {
+	switch openAIStreamFailedEventErrorCode(payload) {
+	case "server_is_overloaded", "slow_down":
+		return true
+	default:
+		return false
+	}
+}
+
+const openAICapacityShedRetryableClientCode = "server_error"
+
+// sanitizeOpenAICapacityShedErrorCodeForClient preserves the upstream message
+// while replacing capacity codes that Codex treats as terminal. Monitoring and
+// failover classification continue to use the original payload.
+func sanitizeOpenAICapacityShedErrorCodeForClient(payload []byte) ([]byte, bool) {
+	if len(payload) == 0 || !gjson.ValidBytes(payload) || !isOpenAIUpstreamCapacityShedEvent(payload) {
+		return payload, false
+	}
+	updated := payload
+	changed := false
+	for _, path := range []string{"response.error.code", "error.code"} {
+		switch strings.ToLower(strings.TrimSpace(gjson.GetBytes(updated, path).String())) {
+		case "server_is_overloaded", "slow_down":
+		default:
+			continue
+		}
+		next, err := sjson.SetBytes(updated, path, openAICapacityShedRetryableClientCode)
+		if err != nil {
+			return payload, false
+		}
+		updated = next
+		changed = true
+	}
+	return updated, changed
 }
 
 func openAIStreamFailedEventShouldFailover(payload []byte, message string) bool {
@@ -3250,8 +3303,9 @@ func (s *OpenAIGatewayService) newOpenAIStreamFailoverError(
 	safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
 	body, _ := json.Marshal(OpenAIClientErrorEnvelope(c, safeClientErr.Type, safeClientErr.Message))
 	return &UpstreamFailoverError{
-		StatusCode:   http.StatusBadGateway,
-		ResponseBody: body,
+		StatusCode:             http.StatusBadGateway,
+		ResponseBody:           body,
+		RetryableOnSameAccount: isOpenAIUpstreamCapacityShedEvent(payload),
 	}
 }
 
@@ -3333,6 +3387,12 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 				model := strings.TrimSpace(gjson.GetBytes(dataBytes, "response.model").String())
 				safePayload, _ := json.Marshal(OpenAIResponsesFailedEnvelope(c, responseID, model, "server_error", safeClientErr.Message))
 				line = "data: " + string(safePayload)
+			} else if eventType == "error" {
+				if safePayload, changed := sanitizeOpenAICapacityShedErrorCodeForClient(dataBytes); changed {
+					dataBytes = safePayload
+					trimmedData = string(safePayload)
+					line = "data: " + trimmedData
+				}
 			}
 			startsClientOutput := forceFlushFailedEvent || openAIStreamDataStartsClientOutput(trimmedData, eventType)
 			if firstTokenMs == nil && startsClientOutput {
@@ -4091,6 +4151,12 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 				dataBytes = safePayload
 				data = string(safePayload)
 				line = "data: " + data
+			} else if eventType == "error" {
+				if safePayload, changed := sanitizeOpenAICapacityShedErrorCodeForClient(dataBytes); changed {
+					dataBytes = safePayload
+					data = string(safePayload)
+					line = "data: " + data
+				}
 			}
 
 			// Correct Codex tool calls if needed (apply_patch -> edit, etc.)

@@ -87,8 +87,11 @@ func filterGrokResponsesBillingPings(
 	pingFrameBytes := 0
 	inPassthroughFrame := false
 	createdAtFallback := time.Now().Unix()
+	nextSequenceNumber := int64(0)
 	writeCompatLine := func(line []byte) error {
-		_, err := destination.Write(normalizeGrokResponsesCreatedAtSSELine(line, createdAtFallback))
+		normalized, next := normalizeGrokResponsesSSELine(line, createdAtFallback, nextSequenceNumber)
+		nextSequenceNumber = next
+		_, err := destination.Write(normalized)
 		return err
 	}
 
@@ -195,9 +198,10 @@ func filterGrokResponsesBillingPings(
 	_ = destination.Close()
 }
 
-// Some OpenAI-compatible Grok upstreams omit the required Response.created_at
-// field. Official xAI includes it, so canonical sub2api can pass events through;
-// add a stable request-time fallback only when the upstream omitted the field.
+// Some OpenAI-compatible Grok upstreams omit required Responses fields such as
+// Response.created_at and event sequence_number. Official xAI includes them, so
+// canonical sub2api can pass events through; compatibility fallbacks are added
+// only when the upstream omitted a required field.
 func ensureGrokResponsesCreatedAt(payload []byte, fallback int64) ([]byte, bool) {
 	if fallback <= 0 || !json.Valid(payload) {
 		return payload, false
@@ -225,22 +229,41 @@ func ensureGrokResponsesCreatedAt(payload []byte, fallback int64) ([]byte, bool)
 	return patched, changed
 }
 
-func normalizeGrokResponsesCreatedAtSSELine(rawLine []byte, fallback int64) []byte {
+func normalizeGrokResponsesSSELine(rawLine []byte, createdAtFallback, nextSequenceNumber int64) ([]byte, int64) {
 	line := trimSSELineEnding(rawLine)
 	data, ok := extractOpenAISSEDataLine(string(line))
 	if !ok || data == "" || data == "[DONE]" {
-		return rawLine
+		return rawLine, nextSequenceNumber
 	}
-	patched, changed := ensureGrokResponsesCreatedAt([]byte(data), fallback)
+	payload := []byte(data)
+	if !json.Valid(payload) {
+		return rawLine, nextSequenceNumber
+	}
+	patched, changed := ensureGrokResponsesCreatedAt(payload, createdAtFallback)
+	eventType := strings.TrimSpace(gjson.GetBytes(patched, "type").String())
+	if strings.HasPrefix(eventType, "response.") {
+		if sequence := gjson.GetBytes(patched, "sequence_number"); sequence.Exists() {
+			if observed := sequence.Int() + 1; observed > nextSequenceNumber {
+				nextSequenceNumber = observed
+			}
+		} else {
+			var err error
+			patched, err = sjson.SetBytes(patched, "sequence_number", nextSequenceNumber)
+			if err == nil {
+				nextSequenceNumber++
+				changed = true
+			}
+		}
+	}
 	if !changed {
-		return rawLine
+		return rawLine, nextSequenceNumber
 	}
 	prefixLen := len(line) - len(data)
 	result := make([]byte, 0, prefixLen+len(patched)+len(rawLine)-len(line))
 	result = append(result, line[:prefixLen]...)
 	result = append(result, patched...)
 	result = append(result, rawLine[len(line):]...)
-	return result
+	return result, nextSequenceNumber
 }
 
 func scanSSELinesPreservingEndings(data []byte, atEOF bool) (advance int, token []byte, err error) {

@@ -14,6 +14,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
 )
 
 func filterGrokPingTestInput(t *testing.T, input string) string {
@@ -62,6 +63,30 @@ func TestGrokResponsesBillingPingFilter(t *testing.T) {
 	require.Contains(t, result, `{"type":"future.vendor_event","value":1}`)
 	require.Contains(t, result, "event: response.completed")
 	require.Contains(t, result, `"usage":{"input_tokens":3,"output_tokens":5}`)
+}
+
+func TestGrokResponsesFilterAddsRequiredCreatedAt(t *testing.T) {
+	input := "event: response.created\n" +
+		`data: {"type":"response.created","response":{"id":"resp_1","object":"response","status":"in_progress"}}` + "\n\n"
+	result := filterGrokPingTestInput(t, input)
+	line := strings.Split(result, "\n")[1]
+	data, ok := extractOpenAISSEDataLine(line)
+	require.True(t, ok)
+	require.Positive(t, gjson.Get(data, "response.created_at").Int())
+}
+
+func TestGrokResponsesFilterPreservesUpstreamCreatedAt(t *testing.T) {
+	input := "event: response.completed\n" +
+		`data: {"type":"response.completed","response":{"id":"resp_1","object":"response","created_at":123,"status":"completed"}}` + "\n\n"
+	result := filterGrokPingTestInput(t, input)
+	require.Equal(t, input, result)
+}
+
+func TestEnsureGrokResponsesCreatedAtPatchesNonStreamingResponse(t *testing.T) {
+	payload := []byte(`{"id":"resp_1","object":"response","status":"completed","output":[],"usage":{"input_tokens":1,"output_tokens":1}}`)
+	patched, changed := ensureGrokResponsesCreatedAt(payload, 456)
+	require.True(t, changed)
+	require.Equal(t, int64(456), gjson.GetBytes(patched, "created_at").Int())
 }
 
 // Every `event: ping` frame is outside the Responses closed event enum and

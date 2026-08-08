@@ -4915,7 +4915,26 @@ func resolveOpenAICompactSessionID(c *gin.Context) string {
 	return uuid.NewString()
 }
 
+// openAIResponsesRequestPathSuffix returns only subpaths that are safe to append
+// to the upstream /responses URL. The route guard rejects unsafe requests; this
+// check remains as defense in depth for future call sites.
 func openAIResponsesRequestPathSuffix(c *gin.Context) string {
+	suffix, ok := sanitizedUpstreamPathSuffix(rawOpenAIResponsesRequestPathSuffix(c))
+	if !ok {
+		return ""
+	}
+	return suffix
+}
+
+// IsForwardableOpenAIResponsesRequestPath reports whether the inbound
+// /responses subpath can be forwarded without changing the upstream URL shape.
+func IsForwardableOpenAIResponsesRequestPath(c *gin.Context) bool {
+	_, ok := sanitizedUpstreamPathSuffix(rawOpenAIResponsesRequestPathSuffix(c))
+	return ok
+}
+
+// rawOpenAIResponsesRequestPathSuffix extracts the suffix without validating it.
+func rawOpenAIResponsesRequestPathSuffix(c *gin.Context) string {
 	if c == nil || c.Request == nil || c.Request.URL == nil {
 		return ""
 	}
@@ -4939,8 +4958,8 @@ func openAIResponsesRequestPathSuffix(c *gin.Context) string {
 
 func appendOpenAIResponsesRequestPathSuffix(baseURL, suffix string) string {
 	trimmedBase := strings.TrimRight(strings.TrimSpace(baseURL), "/")
-	trimmedSuffix := strings.TrimSpace(suffix)
-	if trimmedBase == "" || trimmedSuffix == "" {
+	trimmedSuffix, ok := sanitizedUpstreamPathSuffix(suffix)
+	if !ok || trimmedBase == "" || trimmedSuffix == "" {
 		return trimmedBase
 	}
 	return trimmedBase + trimmedSuffix

@@ -2496,10 +2496,11 @@ func validateCurrentMonthlyCatalogGroupShape(group Group) error {
 	expectedLimit := map[string]float64{"plus": 300, "pro": 900, "max": 2000}[planID]
 	expectedRate := 0.50
 	expectedPlatform := PlatformOpenAI
-	if product == "claude" {
+	switch product {
+	case "claude":
 		expectedRate = 2.40
 		expectedPlatform = PlatformAnthropic
-	} else if product == "grok" {
+	case "grok":
 		expectedRate = 0.40
 		expectedPlatform = PlatformGrok
 	}

@@ -58,7 +58,7 @@ func TestGrokResponsesBillingPingFilter(t *testing.T) {
 	require.Equal(t, 2, strings.Count(result, ": ping\n\n"))
 	require.Contains(t, result, ": upstream keepalive\n\n")
 	require.Contains(t, result, "event: response.output_text.delta")
-	require.Contains(t, result, `{"type":"response.output_text.delta","delta":"hello"}`)
+	require.Contains(t, result, `"delta":"hello"`)
 	require.Contains(t, result, "event: future.vendor_event")
 	require.Contains(t, result, `{"type":"future.vendor_event","value":1}`)
 	require.Contains(t, result, "event: response.completed")
@@ -73,11 +73,43 @@ func TestGrokResponsesFilterAddsRequiredCreatedAt(t *testing.T) {
 	data, ok := extractOpenAISSEDataLine(line)
 	require.True(t, ok)
 	require.Positive(t, gjson.Get(data, "response.created_at").Int())
+	require.Equal(t, int64(0), gjson.Get(data, "sequence_number").Int())
+}
+
+func TestGrokResponsesFilterAddsMonotonicSequenceNumbers(t *testing.T) {
+	input := strings.Join([]string{
+		"event: response.created",
+		`data: {"type":"response.created","response":{"id":"resp_1","object":"response","status":"in_progress"}}`,
+		"",
+		"event: response.output_text.delta",
+		`data: {"type":"response.output_text.delta","delta":"ok"}`,
+		"",
+		"event: response.completed",
+		`data: {"type":"response.completed","response":{"id":"resp_1","object":"response","status":"completed"}}`,
+		"",
+	}, "\n")
+	result := filterGrokPingTestInput(t, input)
+	sequences := make([]int64, 0, 3)
+	for _, line := range strings.Split(result, "\n") {
+		data, ok := extractOpenAISSEDataLine(line)
+		if ok {
+			sequences = append(sequences, gjson.Get(data, "sequence_number").Int())
+		}
+	}
+	require.Equal(t, []int64{0, 1, 2}, sequences)
+}
+
+func TestGrokResponsesFilterContinuesExistingSequenceNumbers(t *testing.T) {
+	input := "data: {\"type\":\"response.created\",\"sequence_number\":40,\"response\":{\"created_at\":123}}\n\n" +
+		"data: {\"type\":\"response.completed\",\"response\":{\"created_at\":123}}\n\n"
+	result := filterGrokPingTestInput(t, input)
+	require.Contains(t, result, `"sequence_number":40`)
+	require.Contains(t, result, `"sequence_number":41`)
 }
 
 func TestGrokResponsesFilterPreservesUpstreamCreatedAt(t *testing.T) {
 	input := "event: response.completed\n" +
-		`data: {"type":"response.completed","response":{"id":"resp_1","object":"response","created_at":123,"status":"completed"}}` + "\n\n"
+		`data: {"type":"response.completed","sequence_number":9,"response":{"id":"resp_1","object":"response","created_at":123,"status":"completed"}}` + "\n\n"
 	result := filterGrokPingTestInput(t, input)
 	require.Equal(t, input, result)
 }
@@ -119,7 +151,7 @@ func TestGrokResponsesBillingPingFilterPreservesNonPingFrames(t *testing.T) {
 		`data: {"type":" ping ","cost":0}`,
 		"",
 		"event: ping",
-		`data: {"type":"response.completed"}`,
+		`data: {"type":"response.completed","sequence_number":7}`,
 		"",
 		"event: custom",
 		`data: {"type":"ping","x-opencode-type":"inference-cost"}`,

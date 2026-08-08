@@ -50,7 +50,8 @@ func TestClassifyAnthropicResponseInputAsCacheRead(t *testing.T) {
 	require.Equal(t, 125, usage.CacheReadInputTokens)
 	var decoded map[string]any
 	require.NoError(t, json.Unmarshal(body, &decoded))
-	usageBody := decoded["usage"].(map[string]any)
+	usageBody, ok := decoded["usage"].(map[string]any)
+	require.True(t, ok)
 	require.Equal(t, float64(0), usageBody["input_tokens"])
 	require.Equal(t, float64(125), usageBody["cache_read_input_tokens"])
 }

@@ -3374,7 +3374,8 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 			eventType := strings.TrimSpace(gjson.GetBytes(dataBytes, "type").String())
 			usageDataBytes := dataBytes
 			forceFlushFailedEvent := false
-			if eventType == "response.failed" {
+			switch eventType {
+			case "response.failed":
 				failedMessage = extractOpenAISSEErrorMessage(dataBytes)
 				if !openAIStreamClientOutputStarted(c, clientOutputStarted) && openAIStreamFailedEventShouldFailover(dataBytes, failedMessage) {
 					return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs},
@@ -3387,9 +3388,8 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 				model := strings.TrimSpace(gjson.GetBytes(dataBytes, "response.model").String())
 				safePayload, _ := json.Marshal(OpenAIResponsesFailedEnvelope(c, responseID, model, "server_error", safeClientErr.Message))
 				line = "data: " + string(safePayload)
-			} else if eventType == "error" {
+			case "error":
 				if safePayload, changed := sanitizeOpenAICapacityShedErrorCodeForClient(dataBytes); changed {
-					dataBytes = safePayload
 					trimmedData = string(safePayload)
 					line = "data: " + trimmedData
 				}
@@ -4132,7 +4132,8 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 			eventType := strings.TrimSpace(gjson.GetBytes(dataBytes, "type").String())
 			usageDataBytes := dataBytes
 			forceFlushFailedEvent := false
-			if eventType == "response.failed" {
+			switch eventType {
+			case "response.failed":
 				failedMessage = extractOpenAISSEErrorMessage(dataBytes)
 				if !openAIStreamClientOutputStarted(c, clientOutputStarted) && openAIStreamFailedEventShouldFailover(dataBytes, failedMessage) {
 					sawFailedEvent = true
@@ -4151,7 +4152,7 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 				dataBytes = safePayload
 				data = string(safePayload)
 				line = "data: " + data
-			} else if eventType == "error" {
+			case "error":
 				if safePayload, changed := sanitizeOpenAICapacityShedErrorCodeForClient(dataBytes); changed {
 					dataBytes = safePayload
 					data = string(safePayload)

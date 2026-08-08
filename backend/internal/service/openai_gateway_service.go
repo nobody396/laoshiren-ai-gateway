@@ -4681,6 +4681,11 @@ func (s *OpenAIGatewayService) handleNonStreamingResponse(ctx context.Context, r
 			return nil, fmt.Errorf("convert Grok compact response: %w", err)
 		}
 	}
+	if account != nil && account.IsGrok() {
+		if patched, changed := ensureGrokResponsesCreatedAt(body, time.Now().Unix()); changed {
+			body = patched
+		}
+	}
 
 	usageValue, usageOK := extractOpenAIUsageFromJSONBytes(body)
 	if !usageOK {

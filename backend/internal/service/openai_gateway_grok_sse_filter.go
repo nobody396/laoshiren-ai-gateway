@@ -8,6 +8,10 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 // OpenAI Responses SSE event types are a closed enum for strict clients
@@ -82,10 +86,15 @@ func filterGrokResponsesBillingPings(
 	pingFrame := make([][]byte, 0, 3)
 	pingFrameBytes := 0
 	inPassthroughFrame := false
+	createdAtFallback := time.Now().Unix()
+	writeCompatLine := func(line []byte) error {
+		_, err := destination.Write(normalizeGrokResponsesCreatedAtSSELine(line, createdAtFallback))
+		return err
+	}
 
 	replayPingFrame := func() error {
 		for _, line := range pingFrame {
-			if _, err := destination.Write(line); err != nil {
+			if err := writeCompatLine(line); err != nil {
 				return err
 			}
 		}
@@ -119,7 +128,7 @@ func filterGrokResponsesBillingPings(
 		isBlank := len(trimSSELineEnding(line)) == 0
 
 		if inPassthroughFrame {
-			if _, err := destination.Write(line); err != nil {
+			if err := writeCompatLine(line); err != nil {
 				abort(err)
 				return
 			}
@@ -151,7 +160,7 @@ func filterGrokResponsesBillingPings(
 				abort(err)
 				return
 			}
-			if _, err := destination.Write(line); err != nil {
+			if err := writeCompatLine(line); err != nil {
 				abort(err)
 				return
 			}
@@ -167,7 +176,7 @@ func filterGrokResponsesBillingPings(
 				continue
 			}
 		}
-		if _, err := destination.Write(line); err != nil {
+		if err := writeCompatLine(line); err != nil {
 			abort(err)
 			return
 		}
@@ -184,6 +193,54 @@ func filterGrokResponsesBillingPings(
 		return
 	}
 	_ = destination.Close()
+}
+
+// Some OpenAI-compatible Grok upstreams omit the required Response.created_at
+// field. Official xAI includes it, so canonical sub2api can pass events through;
+// add a stable request-time fallback only when the upstream omitted the field.
+func ensureGrokResponsesCreatedAt(payload []byte, fallback int64) ([]byte, bool) {
+	if fallback <= 0 || !json.Valid(payload) {
+		return payload, false
+	}
+	patched := payload
+	changed := false
+	if response := gjson.GetBytes(patched, "response"); response.IsObject() &&
+		!gjson.GetBytes(patched, "response.created_at").Exists() {
+		var err error
+		patched, err = sjson.SetBytes(patched, "response.created_at", fallback)
+		if err != nil {
+			return payload, false
+		}
+		changed = true
+	}
+	if gjson.GetBytes(patched, "object").String() == "response" &&
+		!gjson.GetBytes(patched, "created_at").Exists() {
+		var err error
+		patched, err = sjson.SetBytes(patched, "created_at", fallback)
+		if err != nil {
+			return payload, false
+		}
+		changed = true
+	}
+	return patched, changed
+}
+
+func normalizeGrokResponsesCreatedAtSSELine(rawLine []byte, fallback int64) []byte {
+	line := trimSSELineEnding(rawLine)
+	data, ok := extractOpenAISSEDataLine(string(line))
+	if !ok || data == "" || data == "[DONE]" {
+		return rawLine
+	}
+	patched, changed := ensureGrokResponsesCreatedAt([]byte(data), fallback)
+	if !changed {
+		return rawLine
+	}
+	prefixLen := len(line) - len(data)
+	result := make([]byte, 0, prefixLen+len(patched)+len(rawLine)-len(line))
+	result = append(result, line[:prefixLen]...)
+	result = append(result, patched...)
+	result = append(result, rawLine[len(line):]...)
+	return result
 }
 
 func scanSSELinesPreservingEndings(data []byte, atEOF bool) (advance int, token []byte, err error) {

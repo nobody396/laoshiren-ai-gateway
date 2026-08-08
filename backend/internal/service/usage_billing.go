@@ -149,6 +149,7 @@ type UsageBillingApplyResult struct {
 	QuotaState           *AccountQuotaState
 
 	SubscriptionUsageUpdates       []SubscriptionUsageUpdate
+	BalanceDeductedMicros          int64
 	BalanceConfirmedMicros         int64
 	MonthlyConfirmedMicros         int64
 	ConfirmedConsumptionMicros     int64

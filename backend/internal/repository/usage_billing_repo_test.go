@@ -26,7 +26,7 @@ func TestUsageBillingRepositoryApply_BalanceFinalLimitClampsToZeroOnInsufficient
 		WillReturnError(sql.ErrNoRows)
 	mock.ExpectQuery(`UPDATE users`).
 		WithArgs(1.00, int64(11)).
-		WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(0.00))
+		WillReturnRows(sqlmock.NewRows([]string{"new_balance", "deducted_amount"}).AddRow(0.00, 0.01))
 	mock.ExpectCommit()
 
 	result, err := repo.Apply(context.Background(), &service.UsageBillingCommand{
@@ -39,6 +39,7 @@ func TestUsageBillingRepositoryApply_BalanceFinalLimitClampsToZeroOnInsufficient
 	require.True(t, result.Applied)
 	require.NotNil(t, result.NewBalance)
 	require.InDelta(t, 0.00, *result.NewBalance, 0.000001)
+	require.Equal(t, int64(10_000), result.BalanceDeductedMicros)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 

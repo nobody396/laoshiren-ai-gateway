@@ -308,6 +308,79 @@ func TestUsageBillingRepositoryApply_SettlesFixedAgentPoolOnConfirmedConsumption
 	require.Equal(t, 1, cashCount)
 }
 
+func TestUsageBillingRepositoryApply_SettlesAffiliateOnlyOnCollectedBalance(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+	agent := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("usage-billing-collected-agent-%d@example.com", time.Now().UnixNano()), PasswordHash: "hash",
+	})
+	customer := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("usage-billing-collected-customer-%d@example.com", time.Now().UnixNano()), PasswordHash: "hash", Balance: 0.01,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID: customer.ID, Key: "sk-usage-billing-collected-" + uuid.NewString(), Name: "collected-only",
+	})
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO agent_principals (agent_id, status, risk_status, qualified_at, activated_at)
+		VALUES ($1, 'active', 'clear', NOW(), NOW())
+	`, agent.ID)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO balance_lots (
+			user_id, source_type, source_key,
+			original_amount_micros, remaining_amount_micros,
+			affiliate_eligible, affiliate_policy, direct_partner_id,
+			customer_rebate_rate_bps, partner_commission_rate_bps
+		)
+		VALUES ($1, 'paid_topup', $2, 1000000, 1000000, TRUE, 'PARTNER_USAGE', $3, 300, 700)
+	`, customer.ID, "collected-only:"+uuid.NewString(), agent.ID)
+	require.NoError(t, err)
+	setAffiliateProgramLiveForIntegrationTest(t, ctx)
+	usageLogID := time.Now().UnixNano()
+
+	result, err := repo.Apply(ctx, &service.UsageBillingCommand{
+		RequestID: uuid.NewString(), APIKeyID: apiKey.ID, UsageLogID: usageLogID,
+		UserID: customer.ID, BalanceCost: 1.00,
+	})
+
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.Equal(t, int64(10_000), result.BalanceDeductedMicros)
+	require.Equal(t, int64(10_000), result.BalanceConfirmedMicros)
+	require.Equal(t, int64(300), result.AffiliateCustomerRebateMicros)
+	require.Equal(t, int64(700), result.AffiliateAgentCommissionMicros)
+	require.NotNil(t, result.NewBalance)
+	require.InDelta(t, 0.0003, *result.NewBalance, 0.00000001)
+
+	var eventAmount, rewardSourceAmount, cashSourceAmount, consumed, remaining int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT amount_micros FROM affiliate_performance_events
+		WHERE user_id=$1 AND source_id=$2 AND source_type='balance_usage'
+	`, customer.ID, usageLogID).Scan(&eventAmount))
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT source_amount_micros FROM affiliate_reward_entries
+		WHERE consumer_user_id=$1 AND source_type='confirmed_consumption'
+	`, customer.ID).Scan(&rewardSourceAmount))
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT source_amount_micros FROM agent_cash_commission_entries
+		WHERE consumer_user_id=$1 AND source_type='confirmed_consumption'
+	`, customer.ID).Scan(&cashSourceAmount))
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COALESCE(SUM(amount_micros), 0) FROM balance_lot_consumptions
+		WHERE user_id=$1 AND usage_log_id=$2
+	`, customer.ID, usageLogID).Scan(&consumed))
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT remaining_amount_micros FROM balance_lots
+		WHERE user_id=$1 AND source_key LIKE 'collected-only:%'
+	`, customer.ID).Scan(&remaining))
+	require.Equal(t, int64(10_000), eventAmount)
+	require.Equal(t, int64(10_000), rewardSourceAmount)
+	require.Equal(t, int64(10_000), cashSourceAmount)
+	require.Equal(t, int64(10_000), consumed)
+	require.Equal(t, int64(990_000), remaining)
+}
+
 func TestUsageBillingAffiliateSettlement_ShadowObservesWithoutMoney(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)
@@ -991,6 +1064,7 @@ func TestUsageBillingRepositoryApply_BalanceFinalLimitClampsInsufficientFundsToZ
 	require.True(t, result.Applied)
 	require.NotNil(t, result.NewBalance)
 	require.InDelta(t, 0.00, *result.NewBalance, 0.000001)
+	require.Equal(t, int64(10_000), result.BalanceDeductedMicros)
 
 	var balance float64
 	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT balance FROM users WHERE id = $1", user.ID).Scan(&balance))

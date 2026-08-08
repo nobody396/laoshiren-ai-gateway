@@ -401,6 +401,20 @@ func TestGatewayServiceRecordUsage_BillingPathUsesCreateForUsageLogID(t *testing
 	require.Equal(t, int64(991), usageRepo.lastLog.ID)
 }
 
+func TestWriteUsageLogBestEffort_DroppedFallsBackToCreate(t *testing.T) {
+	repo := &openAIRecordUsageBestEffortLogRepoStub{
+		bestEffortErr: MarkUsageLogCreateDropped(context.DeadlineExceeded),
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	writeUsageLogBestEffort(ctx, repo, &UsageLog{RequestID: "dropped-log"}, "test")
+
+	require.Equal(t, 1, repo.bestEffortCalls)
+	require.Equal(t, 1, repo.createCalls)
+	require.NoError(t, repo.lastCtxErr)
+}
+
 func TestGatewayServiceRecordUsage_TriggersCommissionWithPersistedUsageLogID(t *testing.T) {
 	agentID := int64(9001)
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true, assignID: 771}

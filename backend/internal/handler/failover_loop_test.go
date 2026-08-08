@@ -561,12 +561,13 @@ func TestHandleFailoverError_IntegrationScenario(t *testing.T) {
 			action := fs.HandleFailoverError(context.Background(), mock, 100, "openai", retryErr)
 			require.Equal(t, FailoverContinue, action)
 		}
-		require.True(t, fs.ForceCacheBilling, "hasBoundSession=true 应设置 ForceCacheBilling")
+		require.False(t, fs.ForceCacheBilling, "同账号原地重试不应切换缓存计费")
 
 		// 2. 账号 100 超过重试上限 → TempUnschedule + 切换
 		action := fs.HandleFailoverError(context.Background(), mock, 100, "openai", retryErr)
 		require.Equal(t, FailoverContinue, action)
 		require.Equal(t, 1, fs.SwitchCount)
+		require.True(t, fs.ForceCacheBilling, "重试耗尽并实际换号后应设置 ForceCacheBilling")
 		require.Len(t, mock.calls, 1)
 
 		// 3. 账号 200 遇到不可重试错误 → 直接切换

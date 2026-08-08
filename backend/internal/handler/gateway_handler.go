@@ -1797,6 +1797,11 @@ func sendMockInterceptResponse(c *gin.Context, model string, interceptType Inter
 }
 
 func billingErrorDetails(err error) (status int, code, message string) {
+	if errors.Is(err, service.ErrDailyLimitExceeded) ||
+		errors.Is(err, service.ErrWeeklyLimitExceeded) ||
+		errors.Is(err, service.ErrMonthlyLimitExceeded) {
+		return pkgerrors.Code(err), "subscription_error", pkgerrors.Message(err)
+	}
 	if errors.Is(err, service.ErrBillingServiceUnavailable) {
 		msg := pkgerrors.Message(err)
 		if msg == "" {

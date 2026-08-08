@@ -174,7 +174,38 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		require.Equal(t, http.StatusTooManyRequests, w.Code)
-		require.Contains(t, w.Body.String(), "USAGE_LIMIT_EXCEEDED")
+		require.Contains(t, w.Body.String(), "DAILY_LIMIT_EXCEEDED")
+	})
+
+	t.Run("monthly_plan_quota_exhaustion_is_clear_and_not_retryable", func(t *testing.T) {
+		cfg := &config.Config{RunMode: config.RunModeStandard}
+		apiKeyService := service.NewAPIKeyService(apiKeyRepo, nil, nil, nil, nil, nil, cfg)
+		group.DailyLimitUSD = nil
+		group.MonthlyLimitUSD = &limit
+		now := time.Now()
+		sub := &service.UserSubscription{
+			ID: 56, UserID: user.ID, GroupID: group.ID,
+			Status: service.SubscriptionStatusActive, ExpiresAt: now.Add(24 * time.Hour),
+			MonthlyWindowStart: &now, MonthlyUsageUSD: 10,
+		}
+		subscriptionRepo := &stubUserSubscriptionRepo{
+			getActive: func(context.Context, int64, int64) (*service.UserSubscription, error) {
+				clone := *sub
+				return &clone, nil
+			},
+		}
+		subscriptionService := service.NewSubscriptionService(nil, subscriptionRepo, nil, nil, cfg)
+		router := newAuthTestRouter(apiKeyService, subscriptionService, cfg)
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/t", nil)
+		req.Header.Set("x-api-key", apiKey.Key)
+		router.ServeHTTP(w, req)
+
+		require.Equal(t, http.StatusForbidden, w.Code)
+		require.Contains(t, w.Body.String(), "MONTHLY_LIMIT_EXCEEDED")
+		require.Contains(t, w.Body.String(), "monthly plan quota has been exhausted")
+		require.Contains(t, w.Body.String(), "not a service outage")
+		require.Contains(t, w.Body.String(), "Retrying will not help")
 	})
 }
 

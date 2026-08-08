@@ -229,6 +229,110 @@ func ensureGrokResponsesCreatedAt(payload []byte, fallback int64) ([]byte, bool)
 	return patched, changed
 }
 
+// ensureGrokResponsesStrictFields fills required Responses fields omitted by
+// some OpenAI-compatible relays. Existing fields are never overwritten, so an
+// official xAI response remains byte-for-byte unchanged.
+func ensureGrokResponsesStrictFields(payload []byte) ([]byte, bool) {
+	if !json.Valid(payload) {
+		return payload, false
+	}
+	patched := payload
+	changed := false
+	setIfMissing := func(path string, value any) bool {
+		if gjson.GetBytes(patched, path).Exists() {
+			return true
+		}
+		var err error
+		patched, err = sjson.SetBytes(patched, path, value)
+		if err != nil {
+			return false
+		}
+		changed = true
+		return true
+	}
+
+	// A strict Responses client expects logprobs on every text delta, even
+	// when the upstream did not request or return token log probabilities.
+	if gjson.GetBytes(patched, "type").String() == "response.output_text.delta" {
+		if !setIfMissing("logprobs", []any{}) {
+			return payload, false
+		}
+	}
+
+	responsePath := ""
+	if gjson.GetBytes(patched, "response").IsObject() {
+		responsePath = "response"
+	} else if gjson.GetBytes(patched, "object").String() == "response" {
+		responsePath = ""
+	}
+	responseField := func(field string) string {
+		if responsePath == "" {
+			return field
+		}
+		return responsePath + "." + field
+	}
+
+	if responsePath != "" || gjson.GetBytes(patched, "object").String() == "response" {
+		if usage := gjson.GetBytes(patched, responseField("usage")); usage.IsObject() {
+			if !setIfMissing(responseField("usage.input_tokens_details"), map[string]any{"cached_tokens": 0}) ||
+				!setIfMissing(responseField("usage.output_tokens_details"), map[string]any{"reasoning_tokens": 0}) {
+				return payload, false
+			}
+		}
+
+		responseID := gjson.GetBytes(patched, responseField("id")).String()
+		responseStatus := gjson.GetBytes(patched, responseField("status")).String()
+		if responseStatus == "" {
+			responseStatus = "completed"
+		}
+		for outputIndex, item := range gjson.GetBytes(patched, responseField("output")).Array() {
+			if item.Get("type").String() != "message" {
+				continue
+			}
+			itemPath := fmt.Sprintf("%s.%d", responseField("output"), outputIndex)
+			messageID := fmt.Sprintf("msg_%s_%d", strings.TrimPrefix(responseID, "resp_"), outputIndex)
+			if responseID == "" {
+				messageID = fmt.Sprintf("msg_%d", outputIndex)
+			}
+			if !setIfMissing(itemPath+".id", messageID) || !setIfMissing(itemPath+".status", responseStatus) {
+				return payload, false
+			}
+			for contentIndex, content := range item.Get("content").Array() {
+				if content.Get("type").String() != "output_text" {
+					continue
+				}
+				contentPath := fmt.Sprintf("%s.content.%d", itemPath, contentIndex)
+				if !setIfMissing(contentPath+".annotations", []any{}) || !setIfMissing(contentPath+".logprobs", []any{}) {
+					return payload, false
+				}
+			}
+		}
+	}
+
+	// Output-item/content-part events carry the same strict objects outside a
+	// full response envelope.
+	if item := gjson.GetBytes(patched, "item"); item.Get("type").String() == "message" {
+		if !setIfMissing("item.id", "msg_compat") || !setIfMissing("item.status", "in_progress") {
+			return payload, false
+		}
+		for contentIndex, content := range item.Get("content").Array() {
+			if content.Get("type").String() == "output_text" {
+				contentPath := fmt.Sprintf("item.content.%d", contentIndex)
+				if !setIfMissing(contentPath+".annotations", []any{}) || !setIfMissing(contentPath+".logprobs", []any{}) {
+					return payload, false
+				}
+			}
+		}
+	}
+	if part := gjson.GetBytes(patched, "part"); part.Get("type").String() == "output_text" {
+		if !setIfMissing("part.annotations", []any{}) || !setIfMissing("part.logprobs", []any{}) {
+			return payload, false
+		}
+	}
+
+	return patched, changed
+}
+
 func normalizeGrokResponsesSSELine(rawLine []byte, createdAtFallback, nextSequenceNumber int64) ([]byte, int64) {
 	line := trimSSELineEnding(rawLine)
 	data, ok := extractOpenAISSEDataLine(string(line))
@@ -240,6 +344,10 @@ func normalizeGrokResponsesSSELine(rawLine []byte, createdAtFallback, nextSequen
 		return rawLine, nextSequenceNumber
 	}
 	patched, changed := ensureGrokResponsesCreatedAt(payload, createdAtFallback)
+	if strictPatched, strictChanged := ensureGrokResponsesStrictFields(patched); strictChanged {
+		patched = strictPatched
+		changed = true
+	}
 	eventType := strings.TrimSpace(gjson.GetBytes(patched, "type").String())
 	if strings.HasPrefix(eventType, "response.") {
 		if sequence := gjson.GetBytes(patched, "sequence_number"); sequence.Exists() {

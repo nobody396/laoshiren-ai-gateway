@@ -65,8 +65,38 @@ Gemini 统一 URL 构造及回归测试。上游 Grok video `request_id` 补丁�
 服务端 pending session 中的 provider identity，不接受攻击者补填任意目标邮箱，
 因此不能复现该精确攻击链。
 
-这不代表 OAuth 全面审计结束；后续安全批次仍需检查本地 Google、GitHub、LinuxDo
-的“按 provider email 自动登录/注册”与 identity binding 约束。
+本地 OAuth 全链路复核结果：
+
+- LinuxDo 不用上游返回邮箱匹配本地账号，而是按稳定 provider subject 生成
+  `@linuxdo-connect.invalid` 合成邮箱；原始邮箱只保留在 provider claims 中。
+- 已绑定 identity 的登录按 `(provider, provider_user_id)` 找用户；绑定入口要求已认证
+  用户，pending session 固化目标 `user_id`，不会由回调参数改写。
+- GitHub 只接受 primary verified email；Google/OIDC 可以由管理员关闭
+  `require_email_verified`。此前该可选配置会让未验证的 provider email 参与本地邮箱
+  匹配，存在撞中已有账号的接管风险。
+
+本分支新增 provider email ownership 边界：外部 OAuth 将 `email_verified` 传入
+AuthService；未验证 claim 可以遵循现有配置创建新账号，但不能仅凭同邮箱登录已有
+账号，也不能在并发创建冲突后接管胜出的账号。已有兼容调用仍按“可信/已验证”处理，
+LinuxDo 因使用稳定合成邮箱而保持原有行为。新增三项回归测试覆盖未验证撞号拒绝、
+已验证邮箱兼容登录及并发唯一键冲突拒绝。
+
+### 依赖安全审计：已清除可达 Go 漏洞与前端生产依赖告警
+
+`govulncheck ./...` 首次确认 5 个代码可达漏洞：`GO-2026-5970`
+（`x/text`）、`GO-2026-5960`（`excelize`）、`GO-2026-5764`
+（AWS EventStream/S3）、`GO-2026-5061` 与 `GO-2026-4961`（`x/image`）。
+本分支升级到官方修复版本并运行全量 `go test ./...`；复扫结果为
+`Your code is affected by 0 vulnerabilities`。
+
+`pnpm audit --prod` 首次报告 20 个 high（无 critical），涉及 axios、form-data、
+linkify-it、postcss、nanoid 与旧 `xlsx`。前五类升级或用 pnpm workspace override
+锁定到修复版本。旧 npm `xlsx@0.18.5` 没有可用的 patched npm 版本，因此没有
+忽略告警，而是将管理员用量 XLSX 导出改为只负责生成文件的
+`write-excel-file`，保持文件名、工作表和字段不变，同时移除 `xlsx` 与
+`file-saver`。DOMPurify、Markdown-It、Mermaid、UUID、YAML 的中等级传递依赖也
+一并锁定到修复版本；最终 `pnpm audit --prod --audit-level moderate` 返回
+`No known vulnerabilities found`，frontend typecheck 与 578 项测试通过。
 
 ## 分批吸收顺序
 

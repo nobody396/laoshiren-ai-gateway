@@ -297,7 +297,7 @@ func (m *mockGroupRepoForGateway) UpdateSortOrders(ctx context.Context, updates 
 	return nil
 }
 
-func ptr[T any](v T) *T {
+func ptrValue[T any](v T) *T {
 	return &v
 }
 
@@ -369,8 +369,8 @@ func TestGatewayService_SelectAccountForModelWithPlatform_PriorityAndLastUsed(t 
 
 	repo := &mockAccountRepoForPlatform{
 		accounts: []Account{
-			{ID: 1, Platform: PlatformAnthropic, Priority: 1, Status: StatusActive, Schedulable: true, LastUsedAt: ptr(now.Add(-1 * time.Hour))},
-			{ID: 2, Platform: PlatformAnthropic, Priority: 1, Status: StatusActive, Schedulable: true, LastUsedAt: ptr(now.Add(-2 * time.Hour))},
+			{ID: 1, Platform: PlatformAnthropic, Priority: 1, Status: StatusActive, Schedulable: true, LastUsedAt: ptrValue(now.Add(-1 * time.Hour))},
+			{ID: 2, Platform: PlatformAnthropic, Priority: 1, Status: StatusActive, Schedulable: true, LastUsedAt: ptrValue(now.Add(-2 * time.Hour))},
 		},
 		accountsByID: map[int64]*Account{},
 	}
@@ -485,7 +485,7 @@ func TestGatewayService_SelectAccountForModelWithPlatform_Schedulability(t *test
 		{
 			name: "过载账户被跳过",
 			accounts: []Account{
-				{ID: 1, Platform: PlatformAnthropic, Priority: 1, Status: StatusActive, Schedulable: true, OverloadUntil: ptr(now.Add(1 * time.Hour))},
+				{ID: 1, Platform: PlatformAnthropic, Priority: 1, Status: StatusActive, Schedulable: true, OverloadUntil: ptrValue(now.Add(1 * time.Hour))},
 				{ID: 2, Platform: PlatformAnthropic, Priority: 2, Status: StatusActive, Schedulable: true},
 			},
 			expectedID: 2,
@@ -493,7 +493,7 @@ func TestGatewayService_SelectAccountForModelWithPlatform_Schedulability(t *test
 		{
 			name: "限流账户被跳过",
 			accounts: []Account{
-				{ID: 1, Platform: PlatformAnthropic, Priority: 1, Status: StatusActive, Schedulable: true, RateLimitResetAt: ptr(now.Add(1 * time.Hour))},
+				{ID: 1, Platform: PlatformAnthropic, Priority: 1, Status: StatusActive, Schedulable: true, RateLimitResetAt: ptrValue(now.Add(1 * time.Hour))},
 				{ID: 2, Platform: PlatformAnthropic, Priority: 2, Status: StatusActive, Schedulable: true},
 			},
 			expectedID: 2,
@@ -517,7 +517,7 @@ func TestGatewayService_SelectAccountForModelWithPlatform_Schedulability(t *test
 		{
 			name: "过期的过载账户可调度",
 			accounts: []Account{
-				{ID: 1, Platform: PlatformAnthropic, Priority: 1, Status: StatusActive, Schedulable: true, OverloadUntil: ptr(now.Add(-1 * time.Hour))},
+				{ID: 1, Platform: PlatformAnthropic, Priority: 1, Status: StatusActive, Schedulable: true, OverloadUntil: ptrValue(now.Add(-1 * time.Hour))},
 				{ID: 2, Platform: PlatformAnthropic, Priority: 2, Status: StatusActive, Schedulable: true},
 			},
 			expectedID: 1,

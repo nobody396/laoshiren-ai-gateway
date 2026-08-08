@@ -90,6 +90,7 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 			resetMonthly: func(ctx context.Context, id int64, start time.Time) error { return nil },
 		}
 		subscriptionService := service.NewSubscriptionService(nil, subscriptionRepo, nil, nil, cfg)
+		subscriptionService.Start()
 		t.Cleanup(subscriptionService.Stop)
 
 		router := newAuthTestRouter(apiKeyService, subscriptionService, cfg)

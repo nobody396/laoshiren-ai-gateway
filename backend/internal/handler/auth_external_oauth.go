@@ -273,7 +273,7 @@ func (h *AuthHandler) completeExternalOAuthLogin(
 		return
 	}
 
-	tokenPair, user, err := h.authService.LoginOrRegisterOAuthWithTokenPair(c.Request.Context(), identity.Email, identity.Username, oauthInvitationCodeFromSession(session), oauthReferralCodeFromSession(session))
+	tokenPair, user, err := h.authService.LoginOrRegisterOAuthIdentityWithTokenPair(c.Request.Context(), identity.Email, identity.Username, oauthInvitationCodeFromSession(session), oauthReferralCodeFromSession(session), identity.EmailVerified)
 	if err != nil {
 		if errors.Is(err, service.ErrOAuthInvitationRequired) {
 			fragment := url.Values{}
@@ -339,7 +339,7 @@ func (h *AuthHandler) completeExternalOAuthRegistration(c *gin.Context, provider
 	if referralCode == "" {
 		referralCode = oauthReferralCodeFromSession(session)
 	}
-	tokenPair, user, err := h.authService.LoginOrRegisterOAuthWithTokenPair(c.Request.Context(), identity.Email, identity.Username, req.InvitationCode, referralCode)
+	tokenPair, user, err := h.authService.LoginOrRegisterOAuthIdentityWithTokenPair(c.Request.Context(), identity.Email, identity.Username, req.InvitationCode, referralCode, identity.EmailVerified)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

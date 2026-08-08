@@ -680,3 +680,77 @@ func TestAuthService_LoginOrRegisterOAuthWithTokenPair_BindsReferralOnFirstRegis
 	require.NotNil(t, repo.setInviterCalls[0].AgentID)
 	require.Equal(t, agentID, *repo.setInviterCalls[0].AgentID)
 }
+
+func TestAuthService_LoginOrRegisterOAuthIdentityWithTokenPair_RejectsUnverifiedExistingEmail(t *testing.T) {
+	repo := &userRepoStub{
+		allowGetByEmail: true,
+		getByEmailUser: &User{
+			ID:       9,
+			Email:    "victim@example.com",
+			Username: "victim",
+			Status:   StatusActive,
+		},
+	}
+	service := newAuthService(repo, map[string]string{SettingKeyRegistrationEnabled: "true"}, nil)
+	service.refreshTokenCache = newMemoryRefreshTokenCache()
+
+	tokenPair, user, err := service.LoginOrRegisterOAuthIdentityWithTokenPair(
+		context.Background(),
+		"victim@example.com",
+		"attacker",
+		"",
+		"",
+		false,
+	)
+
+	require.ErrorIs(t, err, ErrOAuthEmailOwnership)
+	require.Nil(t, tokenPair)
+	require.Nil(t, user)
+}
+
+func TestAuthService_LoginOrRegisterOAuthIdentityWithTokenPair_AllowsVerifiedExistingEmail(t *testing.T) {
+	repo := &userRepoStub{
+		allowGetByEmail: true,
+		getByEmailUser: &User{
+			ID:       9,
+			Email:    "verified@example.com",
+			Username: "verified-user",
+			Status:   StatusActive,
+		},
+	}
+	service := newAuthService(repo, map[string]string{SettingKeyRegistrationEnabled: "true"}, nil)
+	service.refreshTokenCache = newMemoryRefreshTokenCache()
+
+	tokenPair, user, err := service.LoginOrRegisterOAuthIdentityWithTokenPair(
+		context.Background(),
+		"verified@example.com",
+		"verified-user",
+		"",
+		"",
+		true,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, tokenPair)
+	require.Equal(t, int64(9), user.ID)
+}
+
+func TestAuthService_LoginOrRegisterOAuthIdentityWithTokenPair_RejectsUnverifiedEmailRace(t *testing.T) {
+	repo := &userRepoStub{
+		allowGetByEmail: true,
+		createErr:       ErrEmailExists,
+	}
+	service := newAuthService(repo, map[string]string{SettingKeyRegistrationEnabled: "true"}, nil)
+	service.refreshTokenCache = newMemoryRefreshTokenCache()
+
+	_, _, err := service.LoginOrRegisterOAuthIdentityWithTokenPair(
+		context.Background(),
+		"racing@example.com",
+		"racing-user",
+		"",
+		"",
+		false,
+	)
+
+	require.ErrorIs(t, err, ErrOAuthEmailOwnership)
+}

@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 
 import UsageView from '../UsageView.vue'
 
-const { list, getStats, getSnapshotV2, getById } = vi.hoisted(() => {
+const { list, getStats, getSnapshotV2, getById, exportList, writeXlsxFile, toFile, showSuccess } = vi.hoisted(() => {
   vi.stubGlobal('localStorage', {
     getItem: vi.fn(() => null),
     setItem: vi.fn(),
@@ -15,6 +15,10 @@ const { list, getStats, getSnapshotV2, getById } = vi.hoisted(() => {
     getStats: vi.fn(),
     getSnapshotV2: vi.fn(),
     getById: vi.fn(),
+    exportList: vi.fn(),
+    writeXlsxFile: vi.fn(),
+    toFile: vi.fn(),
+    showSuccess: vi.fn(),
   }
 })
 
@@ -41,7 +45,7 @@ vi.mock('@/api/admin', () => ({
 
 vi.mock('@/api/admin/usage', () => ({
   adminUsageAPI: {
-    list: vi.fn(),
+    list: exportList,
   },
 }))
 
@@ -49,9 +53,13 @@ vi.mock('@/stores/app', () => ({
   useAppStore: () => ({
     showError: vi.fn(),
     showWarning: vi.fn(),
-    showSuccess: vi.fn(),
+    showSuccess,
     showInfo: vi.fn(),
   }),
+}))
+
+vi.mock('write-excel-file/browser', () => ({
+  default: writeXlsxFile,
 }))
 
 vi.mock('@/utils/format', () => ({
@@ -79,7 +87,10 @@ vi.mock('vue-router', () => ({
 }))
 
 const AppLayoutStub = { template: '<div><slot /></div>' }
-const UsageFiltersStub = { template: '<div><slot name="after-reset" /></div>' }
+const UsageFiltersStub = {
+  emits: ['export'],
+  template: '<div><button data-test="export" @click="$emit(\'export\')">export</button><slot name="after-reset" /></div>',
+}
 const ModelDistributionChartStub = {
   props: ['metric'],
   emits: ['update:metric'],
@@ -108,6 +119,13 @@ describe('admin UsageView distribution metric toggles', () => {
     getStats.mockReset()
     getSnapshotV2.mockReset()
     getById.mockReset()
+    exportList.mockReset()
+    writeXlsxFile.mockReset()
+    toFile.mockReset()
+    showSuccess.mockReset()
+
+    writeXlsxFile.mockReturnValue({ toFile })
+    toFile.mockResolvedValue(undefined)
 
     list.mockResolvedValue({
       items: [],
@@ -180,5 +198,53 @@ describe('admin UsageView distribution metric toggles', () => {
     expect(modelChart.find('.metric').text()).toBe('actual_cost')
     expect(groupChart.find('.metric').text()).toBe('actual_cost')
     expect(getSnapshotV2).toHaveBeenCalledTimes(1)
+  })
+
+  it('exports the same usage workbook through the audited writer', async () => {
+    exportList.mockResolvedValue({
+      total: 1,
+      items: [{
+        created_at: '2026-08-08T00:00:00Z',
+        model: 'gpt-5',
+        input_tokens: 10,
+        output_tokens: 20,
+        cache_read_tokens: 0,
+        cache_creation_tokens: 0,
+        duration_ms: 250,
+      }],
+    })
+
+    const wrapper = mount(UsageView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          UsageStatsCards: true,
+          UsageFilters: UsageFiltersStub,
+          UsageTable: true,
+          UsageExportProgress: true,
+          UsageCleanupDialog: true,
+          UserBalanceHistoryModal: true,
+          Pagination: true,
+          Select: true,
+          Icon: true,
+          TokenUsageTrend: true,
+          ModelDistributionChart: ModelDistributionChartStub,
+          GroupDistributionChart: GroupDistributionChartStub,
+        },
+      },
+    })
+
+    await wrapper.find('[data-test="export"]').trigger('click')
+    await flushPromises()
+
+    expect(exportList).toHaveBeenCalledTimes(1)
+    expect(writeXlsxFile).toHaveBeenCalledTimes(1)
+    const [rows, options] = writeXlsxFile.mock.calls[0]
+    expect(options).toEqual({ sheet: 'Usage' })
+    expect(rows[0][0]).toBe('usage.time')
+    expect(rows[1][0]).toBe('2026-08-08T00:00:00Z')
+    expect(rows[1][4]).toBe('gpt-5')
+    expect(toFile).toHaveBeenCalledWith(expect.stringMatching(/^usage_.+_to_.+\.xlsx$/))
+    expect(showSuccess).toHaveBeenCalledWith('usage.exportSuccess')
   })
 })

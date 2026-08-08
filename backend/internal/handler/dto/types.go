@@ -90,12 +90,20 @@ type Group struct {
 	WeeklyLimitUSD   *float64 `json:"weekly_limit_usd"`
 	MonthlyLimitUSD  *float64 `json:"monthly_limit_usd"`
 
-	// 图片生成计费配置（antigravity、gemini 和 gpt-image 平台使用）
-	ImagePrice1K *float64 `json:"image_price_1k"`
-	ImagePrice2K *float64 `json:"image_price_2k"`
-	ImagePrice4K *float64 `json:"image_price_4k"`
+	// 图片/媒体生成能力与计费配置
+	AllowImageGeneration bool     `json:"allow_image_generation"`
+	ImageRateIndependent bool     `json:"image_rate_independent"`
+	ImageRateMultiplier  float64  `json:"image_rate_multiplier"`
+	ImagePrice1K         *float64 `json:"image_price_1k"`
+	ImagePrice2K         *float64 `json:"image_price_2k"`
+	ImagePrice4K         *float64 `json:"image_price_4k"`
 	// GPT-Image 旧版固定每次调用价格（仅未配置分辨率价格时兜底使用）
-	GPTImageCallPrice *float64 `json:"gpt_image_call_price"`
+	GPTImageCallPrice    *float64 `json:"gpt_image_call_price"`
+	VideoRateIndependent bool     `json:"video_rate_independent"`
+	VideoRateMultiplier  float64  `json:"video_rate_multiplier"`
+	VideoPrice480P       *float64 `json:"video_price_480p"`
+	VideoPrice720P       *float64 `json:"video_price_720p"`
+	VideoPrice1080P      *float64 `json:"video_price_1080p"`
 
 	// Claude Code 客户端限制
 	ClaudeCodeOnly  bool   `json:"claude_code_only"`
@@ -422,10 +430,13 @@ type UsageLog struct {
 	FirstTokenMs *int   `json:"first_token_ms"`
 
 	// 图片生成字段
-	ImageCount      int      `json:"image_count"`
-	ImageSize       *string  `json:"image_size"`
-	MediaType       *string  `json:"media_type"`
-	ImageResultURLs []string `json:"image_result_urls,omitempty"`
+	ImageCount           int      `json:"image_count"`
+	ImageSize            *string  `json:"image_size"`
+	MediaType            *string  `json:"media_type"`
+	ImageResultURLs      []string `json:"image_result_urls,omitempty"`
+	VideoCount           int      `json:"video_count"`
+	VideoResolution      *string  `json:"video_resolution"`
+	VideoDurationSeconds *int     `json:"video_duration_seconds"`
 
 	// User-Agent
 	UserAgent *string `json:"user_agent"`

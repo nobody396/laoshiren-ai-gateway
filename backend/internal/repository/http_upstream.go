@@ -151,7 +151,7 @@ func (s *httpUpstreamService) Do(req *http.Request, proxyURL string, accountID i
 	}
 
 	// 执行请求
-	resp, err := entry.client.Do(req)
+	resp, err := httpClientForUpstreamRequest(entry.client, req).Do(req)
 	if err != nil {
 		// 请求失败，立即减少计数
 		atomic.AddInt64(&entry.inFlight, -1)
@@ -201,7 +201,7 @@ func (s *httpUpstreamService) DoWithTLS(req *http.Request, proxyURL string, acco
 		return nil, err
 	}
 
-	resp, err := entry.client.Do(req)
+	resp, err := httpClientForUpstreamRequest(entry.client, req).Do(req)
 	if err != nil {
 		atomic.AddInt64(&entry.inFlight, -1)
 		atomic.StoreInt64(&entry.lastUsed, time.Now().UnixNano())
@@ -217,6 +217,19 @@ func (s *httpUpstreamService) DoWithTLS(req *http.Request, proxyURL string, acco
 	})
 
 	return resp, nil
+}
+
+// httpClientForUpstreamRequest applies request-scoped redirect policy without
+// mutating a cached client shared by concurrent upstream requests.
+func httpClientForUpstreamRequest(client *http.Client, req *http.Request) *http.Client {
+	if client == nil || req == nil || !service.HTTPUpstreamRedirectsDisabled(req.Context()) {
+		return client
+	}
+	clone := *client
+	clone.CheckRedirect = func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	return &clone
 }
 
 // acquireClientWithTLS 获取或创建带 TLS 指纹的客户端

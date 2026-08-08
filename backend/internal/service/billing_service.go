@@ -333,6 +333,9 @@ func (s *BillingService) initFallbackPricing() {
 		SupportsCacheBreakdown:         false,
 	}
 	s.fallbackPrices["gpt-5.3-codex"] = s.fallbackPrices["gpt-5.1-codex"]
+	s.fallbackPrices["grok-4.5"] = &ModelPricing{InputPricePerToken: 2e-6, OutputPricePerToken: 6e-6, CacheReadPricePerToken: 0.5e-6}
+	s.fallbackPrices["grok-4.3"] = &ModelPricing{InputPricePerToken: 1.25e-6, OutputPricePerToken: 2.5e-6, CacheReadPricePerToken: 0.2e-6}
+	s.fallbackPrices["grok-build-0.1"] = &ModelPricing{InputPricePerToken: 1e-6, OutputPricePerToken: 2e-6, CacheReadPricePerToken: 0.2e-6}
 }
 
 // getFallbackPricing 根据模型系列获取回退价格
@@ -412,6 +415,14 @@ func (s *BillingService) getFallbackPricing(model string) *ModelPricing {
 		case "gpt-5.1":
 			return s.fallbackPrices["gpt-5.1"]
 		}
+	}
+	switch modelLower {
+	case "grok", "grok-latest", "grok-4.5", "grok-4.5-latest", "grok-build-latest":
+		return s.fallbackPrices["grok-4.5"]
+	case "grok-4.3", "grok-4.20-0309-reasoning", "grok-4.20-0309-non-reasoning", "grok-4.20-multi-agent-0309", "grok-4.20-reasoning", "grok-4.20-non-reasoning":
+		return s.fallbackPrices["grok-4.3"]
+	case "grok-build", "grok-build-0.1", "grok-composer", "grok-composer-2.5-fast", "composer-2.5":
+		return s.fallbackPrices["grok-build-0.1"]
 	}
 
 	return nil
@@ -559,7 +570,7 @@ func (s *BillingService) CalculateCostUnified(input CostInput) (*CostBreakdown, 
 	var breakdown *CostBreakdown
 	var err error
 	switch resolved.Mode {
-	case BillingModePerRequest, BillingModeImage:
+	case BillingModePerRequest, BillingModeImage, BillingModeVideo:
 		breakdown, err = s.calculatePerRequestCost(resolved, input)
 	default: // BillingModeToken
 		breakdown, err = s.calculateTokenCost(resolved, input)
@@ -931,6 +942,24 @@ type ImagePriceConfig struct {
 	Price4K *float64 // 4K 尺寸价格（nil 表示使用默认值）
 }
 
+type VideoPriceConfig struct {
+	Price480P  *float64
+	Price720P  *float64
+	Price1080P *float64
+}
+
+const (
+	defaultGrokImagineImagePrice1K        = 0.02
+	defaultGrokImagineImagePrice2K        = 0.02
+	defaultGrokImagineImageQualityPrice1K = 0.05
+	defaultGrokImagineImageQualityPrice2K = 0.07
+	defaultGrokImagineVideoPrice480P      = 0.05
+	defaultGrokImagineVideoPrice720P      = 0.07
+	defaultGrokImagineVideo15Price480P    = 0.08
+	defaultGrokImagineVideo15Price720P    = 0.14
+	defaultGrokImagineVideo15Price1080P   = 0.25
+)
+
 func (c *ImagePriceConfig) hasAnyPrice() bool {
 	return c != nil && (c.Price1K != nil || c.Price2K != nil || c.Price4K != nil)
 }
@@ -963,6 +992,37 @@ func (s *BillingService) CalculateImageCost(model string, imageSize string, imag
 		ActualCost:  actualCost,
 		BillingMode: string(BillingModeImage),
 	}
+}
+
+// CalculateVideoCost bills xAI video output per generated second.
+func (s *BillingService) CalculateVideoCost(model, resolution string, videoCount, durationSeconds int, groupConfig *VideoPriceConfig, rateMultiplier float64) *CostBreakdown {
+	if videoCount <= 0 {
+		return &CostBreakdown{}
+	}
+	resolution = NormalizeVideoBillingResolutionOrDefault(resolution)
+	durationSeconds = NormalizeVideoBillingDurationSecondsOrDefault(durationSeconds)
+	unitPrice := s.getDefaultVideoPrice(model, resolution)
+	if groupConfig != nil {
+		switch resolution {
+		case VideoBillingResolution480P:
+			if groupConfig.Price480P != nil {
+				unitPrice = *groupConfig.Price480P
+			}
+		case VideoBillingResolution720P:
+			if groupConfig.Price720P != nil {
+				unitPrice = *groupConfig.Price720P
+			}
+		case VideoBillingResolution1080P:
+			if groupConfig.Price1080P != nil {
+				unitPrice = *groupConfig.Price1080P
+			}
+		}
+	}
+	if rateMultiplier < 0 {
+		rateMultiplier = 0
+	}
+	total := unitPrice * float64(durationSeconds) * float64(videoCount)
+	return &CostBreakdown{TotalCost: total, ActualCost: total * rateMultiplier, BillingMode: string(BillingModeVideo)}
 }
 
 // CalculateGPTImageCallCost 计算 gpt-image 固定调用费用。
@@ -1010,6 +1070,9 @@ func (s *BillingService) getImageUnitPrice(model string, imageSize string, group
 
 // getDefaultImagePrice 获取 LiteLLM 默认图片价格
 func (s *BillingService) getDefaultImagePrice(model string, imageSize string) float64 {
+	if price, ok := getDefaultGrokImagineImagePrice(model, imageSize); ok {
+		return price
+	}
 	basePrice := 0.0
 
 	// 从 PricingService 获取 output_cost_per_image
@@ -1034,4 +1097,45 @@ func (s *BillingService) getDefaultImagePrice(model string, imageSize string) fl
 	}
 
 	return basePrice
+}
+
+func getDefaultGrokImagineImagePrice(model, size string) (float64, bool) {
+	model = strings.ToLower(strings.TrimSpace(model))
+	size = NormalizeImageBillingTierOrDefault(size)
+	switch model {
+	case "grok-imagine-image-quality":
+		if size == ImageBillingSize1K {
+			return defaultGrokImagineImageQualityPrice1K, true
+		}
+		return defaultGrokImagineImageQualityPrice2K, true
+	case "grok-imagine", "grok-imagine-image", "grok-imagine-edit":
+		if size == ImageBillingSize1K {
+			return defaultGrokImagineImagePrice1K, true
+		}
+		return defaultGrokImagineImagePrice2K, true
+	default:
+		return 0, false
+	}
+}
+
+func (s *BillingService) getDefaultVideoPrice(model, resolution string) float64 {
+	model = strings.ToLower(strings.TrimSpace(model))
+	resolution = NormalizeVideoBillingResolutionOrDefault(resolution)
+	if strings.HasPrefix(model, "grok-imagine-video-1.5") {
+		switch resolution {
+		case VideoBillingResolution720P:
+			return defaultGrokImagineVideo15Price720P
+		case VideoBillingResolution1080P:
+			return defaultGrokImagineVideo15Price1080P
+		default:
+			return defaultGrokImagineVideo15Price480P
+		}
+	}
+	if strings.HasPrefix(model, "grok-imagine-video") {
+		if resolution == VideoBillingResolution480P {
+			return defaultGrokImagineVideoPrice480P
+		}
+		return defaultGrokImagineVideoPrice720P
+	}
+	return s.getDefaultImagePrice(model, ImageBillingSize2K)
 }

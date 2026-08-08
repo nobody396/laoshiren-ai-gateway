@@ -83,7 +83,7 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 		return nil, fmt.Errorf("marshal responses request: %w", err)
 	}
 
-	if account.Type == AccountTypeOAuth {
+	if account.Type == AccountTypeOAuth && account.Platform != PlatformGrok {
 		var reqBody map[string]any
 		if err := json.Unmarshal(responsesBody, &reqBody); err != nil {
 			return nil, fmt.Errorf("unmarshal for codex transform: %w", err)
@@ -124,21 +124,44 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 		}
 	}
 
+	grokCacheIdentity := ""
+	if account.Platform == PlatformGrok {
+		intentBody := responsesBody
+		grokCacheIdentity = resolveGrokCacheIdentity(c, intentBody, promptCacheKey, upstreamModel)
+		patchedBody, patchErr := patchGrokResponsesBody(intentBody, upstreamModel)
+		if patchErr != nil {
+			return nil, fmt.Errorf("patch Grok messages request: %w", patchErr)
+		}
+		responsesBody, patchErr = applyGrokResponsesCacheIdentity(patchedBody, intentBody, grokCacheIdentity, account.IsGrokOAuth())
+		if patchErr != nil {
+			return nil, fmt.Errorf("apply Grok messages cache identity: %w", patchErr)
+		}
+		responsesBody, patchErr = applyGrokFreeMessagesFunctionToolCacheRoute(responsesBody, intentBody, account, grokCacheIdentity)
+		if patchErr != nil {
+			return nil, fmt.Errorf("apply Grok Free function-tool cache route: %w", patchErr)
+		}
+	}
+
 	// 5. Get access token
-	token, _, err := s.GetAccessToken(ctx, account)
+	token, _, err := s.getRequestCredential(ctx, c, account)
 	if err != nil {
 		return nil, fmt.Errorf("get access token: %w", err)
 	}
 
 	// 6. Build upstream request
-	upstreamReq, err := s.buildUpstreamRequest(ctx, c, account, responsesBody, token, isStream, promptCacheKey, false)
+	var upstreamReq *http.Request
+	if account.Platform == PlatformGrok {
+		upstreamReq, err = buildGrokResponsesRequest(ctx, c, account, responsesBody, token, grokCacheIdentity, s.cfg)
+	} else {
+		upstreamReq, err = s.buildUpstreamRequest(ctx, c, account, responsesBody, token, isStream, promptCacheKey, false)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("build upstream request: %w", err)
 	}
 
 	// Override session_id with a deterministic UUID derived from the isolated
 	// sticky session key so different API keys do not collide upstream.
-	if promptCacheKey != "" {
+	if account.Platform != PlatformGrok && promptCacheKey != "" {
 		apiKeyID := getAPIKeyIDFromContext(c)
 		upstreamReq.Header.Set("session_id", generateSessionUUID(isolateOpenAISessionID(apiKeyID, promptCacheKey)))
 	}
@@ -148,62 +171,69 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 	if account.Proxy != nil {
 		proxyURL = account.Proxy.URL()
 	}
-	resp, err := s.httpUpstream.Do(upstreamReq, proxyURL, account.ID, account.Concurrency)
-	if err != nil {
-		safeErr := sanitizeUpstreamErrorMessage(err.Error())
-		setOpsUpstreamError(c, 0, safeErr, "")
-		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
-			Platform:           account.Platform,
-			AccountID:          account.ID,
-			AccountName:        account.Name,
-			UpstreamStatusCode: 0,
-			Kind:               "request_error",
-			Message:            safeErr,
-		})
-		safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
-		writeAnthropicError(c, safeClientErr.StatusCode, safeClientErr.Type, safeClientErr.Message)
-		return nil, fmt.Errorf("upstream request failed: %s", safeErr)
+	var resp *http.Response
+	for attempt := 0; ; attempt++ {
+		if attempt > 0 {
+			upstreamReq, err = buildGrokResponsesRequest(ctx, c, account, responsesBody, token, grokCacheIdentity, s.cfg)
+			if err != nil {
+				return nil, fmt.Errorf("build Grok messages retry request: %w", err)
+			}
+		}
+		resp, err = s.httpUpstream.Do(upstreamReq, proxyURL, account.ID, account.Concurrency)
+		if err != nil {
+			return nil, s.handleOpenAIUpstreamTransportError(ctx, c, account, err, false)
+		}
+		if account.Platform != PlatformGrok || attempt > 0 || resp.StatusCode != http.StatusBadRequest {
+			break
+		}
+
+		respBody := s.readUpstreamErrorBody(resp)
+		if resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+		shouldStrip := isGrokInvalidEncryptedContentResponse(resp.StatusCode, respBody) ||
+			requestHasGrokEncryptedReasoning(responsesBody)
+		if !shouldStrip {
+			resp.Body = io.NopCloser(bytes.NewReader(respBody))
+			break
+		}
+		retryBody, changed, trimErr := trimGrokInvalidEncryptedContentRetryBody(responsesBody)
+		if trimErr != nil {
+			return nil, fmt.Errorf("prepare Grok messages invalid encrypted_content retry: %w", trimErr)
+		}
+		if !changed {
+			resp.Body = io.NopCloser(bytes.NewReader(respBody))
+			break
+		}
+		responsesBody = retryBody
+		logger.L().Info("openai messages: retrying after stripping invalid Grok encrypted_content",
+			zap.Int64("account_id", account.ID),
+			zap.Bool("cache_identity_present", strings.TrimSpace(grokCacheIdentity) != ""),
+		)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	// 8. Handle error response with failover
 	if resp.StatusCode >= 400 {
-		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
-		_ = resp.Body.Close()
-		resp.Body = io.NopCloser(bytes.NewReader(respBody))
-
-		upstreamMsg := strings.TrimSpace(extractUpstreamErrorMessage(respBody))
-		upstreamMsg = sanitizeUpstreamErrorMessage(upstreamMsg)
-		if s.shouldFailoverOpenAIUpstreamResponse(resp.StatusCode, upstreamMsg, respBody) {
-			upstreamDetail := ""
-			if s.cfg != nil && s.cfg.Gateway.LogUpstreamErrorBody {
-				maxBytes := s.cfg.Gateway.LogUpstreamErrorBodyMaxBytes
-				if maxBytes <= 0 {
-					maxBytes = 2048
-				}
-				upstreamDetail = truncateString(string(respBody), maxBytes)
+		respBody, upstreamMsg := s.readOpenAIUpstreamError(resp)
+		if account.Platform == PlatformGrok &&
+			isGrokInvalidEncryptedContentResponse(resp.StatusCode, respBody) &&
+			!grokEncryptedContentStripRetried(ctx) {
+			if strippedBody, ok := stripAnthropicThinkingSignatures(body); ok {
+				logger.L().Info("openai messages: stripping thinking signatures for Grok retry",
+					zap.Int64("account_id", account.ID),
+				)
+				return s.ForwardAsAnthropic(markGrokEncryptedContentStripRetried(ctx), c, account, strippedBody, promptCacheKey, defaultMappedModel)
 			}
-			appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
-				Platform:           account.Platform,
-				AccountID:          account.ID,
-				AccountName:        account.Name,
-				UpstreamStatusCode: resp.StatusCode,
-				UpstreamRequestID:  resp.Header.Get("x-request-id"),
-				Kind:               "failover",
-				Message:            upstreamMsg,
-				Detail:             upstreamDetail,
-			})
-			if s.rateLimitService != nil {
-				s.rateLimitService.HandleUpstreamError(ctx, account, resp.StatusCode, resp.Header, respBody)
-			}
-			return nil, &UpstreamFailoverError{
-				StatusCode:             resp.StatusCode,
-				ResponseBody:           respBody,
-				RetryableOnSameAccount: account.IsPoolMode() && (isPoolModeRetryableStatus(resp.StatusCode) || isOpenAITransientProcessingError(resp.StatusCode, upstreamMsg, respBody)),
-			}
+		}
+		if failoverErr := s.failoverOpenAIUpstreamHTTPError(ctx, c, account, resp, respBody, upstreamMsg, upstreamModel); failoverErr != nil {
+			return nil, failoverErr
 		}
 		// Non-failover error: return Anthropic-formatted error to client
 		return s.handleAnthropicErrorResponse(resp, c, account)
+	}
+	if account.Platform == PlatformGrok {
+		s.updateGrokUsageFromResponse(ctx, account, resp.Header, resp.StatusCode)
 	}
 
 	// 9. Handle normal response
@@ -230,7 +260,7 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 	}
 
 	// Extract and save Codex usage snapshot from response headers (for OAuth accounts)
-	if handleErr == nil && account.Type == AccountTypeOAuth {
+	if handleErr == nil && account.Type == AccountTypeOAuth && account.Platform != PlatformGrok {
 		if snapshot := ParseCodexRateLimitHeaders(resp.Header); snapshot != nil {
 			s.updateCodexUsageSnapshot(ctx, account.ID, snapshot)
 		}

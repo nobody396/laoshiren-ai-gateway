@@ -2401,6 +2401,9 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 	if strings.TrimSpace(token) == "" {
 		return errors.New("token is empty")
 	}
+	if account.Platform == PlatformGrok {
+		return s.proxyGrokResponsesWebSocketHTTPBridge(ctx, c, clientConn, account, token, firstClientMessage, hooks)
+	}
 
 	wsDecision := s.getOpenAIWSProtocolResolver().Resolve(account)
 	modeRouterV2Enabled := s != nil && s.cfg != nil && s.cfg.Gateway.OpenAIWS.ModeRouterV2Enabled

@@ -25,6 +25,7 @@ func ProvideAdminHandlers(
 	openaiOAuthHandler *admin.OpenAIOAuthHandler,
 	geminiOAuthHandler *admin.GeminiOAuthHandler,
 	antigravityOAuthHandler *admin.AntigravityOAuthHandler,
+	grokOAuthHandler *admin.GrokOAuthHandler,
 	proxyHandler *admin.ProxyHandler,
 	redeemHandler *admin.RedeemHandler,
 	promoHandler *admin.PromoHandler,
@@ -59,6 +60,7 @@ func ProvideAdminHandlers(
 		OpenAIOAuth:           openaiOAuthHandler,
 		GeminiOAuth:           geminiOAuthHandler,
 		AntigravityOAuth:      antigravityOAuthHandler,
+		GrokOAuth:             grokOAuthHandler,
 		Proxy:                 proxyHandler,
 		Redeem:                redeemHandler,
 		Promo:                 promoHandler,
@@ -91,6 +93,24 @@ func ProvideSettingHandler(settingService *service.SettingService, commissionSer
 
 func ProvideUserHandler(userService *service.UserService, commissionService *service.CommissionService, identityService *service.IdentityService, settingService *service.SettingService, cfg *config.Config) *UserHandler {
 	return NewUserHandler(userService, commissionService, identityService, settingService, cfg)
+}
+
+func ProvideOpenAIGatewayHandler(
+	gatewayService *service.OpenAIGatewayService,
+	concurrencyService *service.ConcurrencyService,
+	billingCacheService *service.BillingCacheService,
+	apiKeyService *service.APIKeyService,
+	usageRecordWorkerPool *service.UsageRecordWorkerPool,
+	errorPassthroughService *service.ErrorPassthroughService,
+	grokQuotaService *service.GrokQuotaService,
+	cfg *config.Config,
+) *OpenAIGatewayHandler {
+	h := NewOpenAIGatewayHandler(
+		gatewayService, concurrencyService, billingCacheService, apiKeyService,
+		usageRecordWorkerPool, errorPassthroughService, cfg,
+	)
+	h.SetGrokMediaEligibilityProber(grokQuotaService)
+	return h
 }
 
 // ProvideHandlers creates the Handlers struct
@@ -160,7 +180,7 @@ var ProviderSet = wire.NewSet(
 	NewInvoiceHandler,
 	NewFeedbackHandler,
 	NewGatewayHandler,
-	NewOpenAIGatewayHandler,
+	ProvideOpenAIGatewayHandler,
 	NewTotpHandler,
 	NewPaymentHandler,
 	NewTopupHandler,
@@ -174,7 +194,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewAgentHandler,
 	admin.NewUserHandler,
 	admin.NewGroupHandler,
-	admin.NewAccountHandler,
+	admin.ProvideAccountHandler,
 	admin.NewAnnouncementHandler,
 	admin.NewChangelogHandler,
 	admin.NewFeedbackHandler,
@@ -185,6 +205,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewOpenAIOAuthHandler,
 	admin.NewGeminiOAuthHandler,
 	admin.NewAntigravityOAuthHandler,
+	admin.NewGrokOAuthHandler,
 	admin.NewProxyHandler,
 	admin.NewRedeemHandler,
 	admin.NewPromoHandler,

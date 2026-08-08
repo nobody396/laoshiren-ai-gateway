@@ -48,6 +48,15 @@
                 t(getOAuthKey('refreshTokenAuth'))
               }}</span>
             </label>
+            <label v-if="showSsoOption" class="flex cursor-pointer items-center gap-2">
+              <input
+                v-model="inputMethod"
+                type="radio"
+                value="sso_cookie"
+                class="text-blue-600 focus:ring-blue-500"
+              />
+              <span class="text-sm text-blue-900 dark:text-blue-200">SSO Cookie</span>
+            </label>
           </div>
         </div>
 
@@ -131,6 +140,36 @@
                   ? t(getOAuthKey('validating'))
                   : t(getOAuthKey('validateAndCreate'))
               }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Grok Web SSO -> Grok OAuth batch import -->
+        <div v-if="inputMethod === 'sso_cookie'" class="space-y-4">
+          <div class="rounded-lg border border-blue-300 bg-white/80 p-4 dark:border-blue-600 dark:bg-gray-800/80">
+            <p class="mb-3 text-sm text-blue-700 dark:text-blue-300">
+              {{ t('admin.accounts.oauth.grok.ssoCookieDesc') }}
+            </p>
+            <textarea
+              v-model="ssoCookieInput"
+              rows="5"
+              class="input w-full resize-y font-mono text-sm"
+              :placeholder="t('admin.accounts.oauth.grok.ssoCookiePlaceholder')"
+              spellcheck="false"
+            ></textarea>
+            <p class="mt-1 text-xs text-blue-600 dark:text-blue-400">
+              {{ t('admin.accounts.oauth.batchCreateAccounts', { count: parsedSSOCount }) }}
+            </p>
+            <div v-if="error" class="my-3 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-700 dark:bg-red-900/30">
+              <p class="whitespace-pre-line text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+            </div>
+            <button
+              type="button"
+              class="btn btn-primary mt-4 w-full"
+              :disabled="loading || !ssoCookieInput.trim()"
+              @click="handleImportSSO"
+            >
+              {{ loading ? t('common.loading') : t('admin.accounts.oauth.grok.convertSSOAndCreate') }}
             </button>
           </div>
         </div>
@@ -525,6 +564,7 @@ interface Props {
   methodLabel?: string
   showCookieOption?: boolean // Whether to show cookie auto-auth option
   showRefreshTokenOption?: boolean // Whether to show refresh token input option
+  showSsoOption?: boolean
   platform?: AccountPlatform // Platform type for different UI/text
   showProjectId?: boolean // New prop to control project ID visibility
 }
@@ -540,6 +580,7 @@ const props = withDefaults(defineProps<Props>(), {
   methodLabel: 'Authorization Method',
   showCookieOption: true,
   showRefreshTokenOption: false,
+  showSsoOption: false,
   platform: 'anthropic',
   showProjectId: true
 })
@@ -549,6 +590,7 @@ const emit = defineEmits<{
   'exchange-code': [code: string]
   'cookie-auth': [sessionKey: string]
   'validate-refresh-token': [refreshToken: string]
+  'import-sso': [content: string]
   'update:inputMethod': [method: AuthInputMethod]
 }>()
 
@@ -561,6 +603,7 @@ const getOAuthKey = (key: string) => {
   if (props.platform === 'openai') return `admin.accounts.oauth.openai.${key}`
   if (props.platform === 'gemini') return `admin.accounts.oauth.gemini.${key}`
   if (props.platform === 'antigravity') return `admin.accounts.oauth.antigravity.${key}`
+  if (props.platform === 'grok') return `admin.accounts.oauth.grok.${key}`
   return `admin.accounts.oauth.${key}`
 }
 
@@ -587,12 +630,13 @@ const inputMethod = ref<AuthInputMethod>(props.showCookieOption ? 'manual' : 'ma
 const authCodeInput = ref('')
 const sessionKeyInput = ref('')
 const refreshTokenInput = ref('')
+const ssoCookieInput = ref('')
 const showHelpDialog = ref(false)
 const oauthState = ref('')
 const projectId = ref('')
 
 // Computed: show method selection when either cookie or refresh token option is enabled
-const showMethodSelection = computed(() => props.showCookieOption || props.showRefreshTokenOption)
+const showMethodSelection = computed(() => props.showCookieOption || props.showRefreshTokenOption || props.showSsoOption)
 
 // Clipboard
 const { copied, copyToClipboard } = useClipboard()
@@ -613,6 +657,13 @@ const parsedRefreshTokenCount = computed(() => {
     .filter((rt) => rt).length
 })
 
+const parsedSSOCount = computed(() => {
+  return ssoCookieInput.value
+    .split('\n')
+    .map((item) => item.trim())
+    .filter(Boolean).length
+})
+
 // Watchers
 watch(inputMethod, (newVal) => {
   emit('update:inputMethod', newVal)
@@ -621,7 +672,7 @@ watch(inputMethod, (newVal) => {
 // Auto-extract code from callback URL (OpenAI/Gemini/Antigravity)
 // e.g., http://localhost:8085/callback?code=xxx...&state=...
 watch(authCodeInput, (newVal) => {
-  if (props.platform !== 'openai' && props.platform !== 'gemini' && props.platform !== 'antigravity') return
+  if (props.platform !== 'openai' && props.platform !== 'gemini' && props.platform !== 'antigravity' && props.platform !== 'grok') return
 
   const trimmed = newVal.trim()
   // Check if it looks like a URL with code parameter
@@ -631,7 +682,7 @@ watch(authCodeInput, (newVal) => {
       const url = new URL(trimmed)
       const code = url.searchParams.get('code')
       const stateParam = url.searchParams.get('state')
-      if ((props.platform === 'openai' || props.platform === 'gemini' || props.platform === 'antigravity') && stateParam) {
+      if ((props.platform === 'openai' || props.platform === 'gemini' || props.platform === 'antigravity' || props.platform === 'grok') && stateParam) {
         oauthState.value = stateParam
       }
       if (code && code !== trimmed) {
@@ -642,7 +693,7 @@ watch(authCodeInput, (newVal) => {
       // If URL parsing fails, try regex extraction
       const match = trimmed.match(/[?&]code=([^&]+)/)
       const stateMatch = trimmed.match(/[?&]state=([^&]+)/)
-      if ((props.platform === 'openai' || props.platform === 'gemini' || props.platform === 'antigravity') && stateMatch && stateMatch[1]) {
+      if ((props.platform === 'openai' || props.platform === 'gemini' || props.platform === 'antigravity' || props.platform === 'grok') && stateMatch && stateMatch[1]) {
         oauthState.value = stateMatch[1]
       }
       if (match && match[1] && match[1] !== trimmed) {
@@ -680,6 +731,10 @@ const handleValidateRefreshToken = () => {
   }
 }
 
+const handleImportSSO = () => {
+  if (ssoCookieInput.value.trim()) emit('import-sso', ssoCookieInput.value.trim())
+}
+
 // Expose methods and state
 defineExpose({
   authCode: authCodeInput,
@@ -687,6 +742,7 @@ defineExpose({
   projectId,
   sessionKey: sessionKeyInput,
   refreshToken: refreshTokenInput,
+  ssoCookie: ssoCookieInput,
   inputMethod,
   reset: () => {
     authCodeInput.value = ''
@@ -694,6 +750,7 @@ defineExpose({
     projectId.value = ''
     sessionKeyInput.value = ''
     refreshTokenInput.value = ''
+    ssoCookieInput.value = ''
     inputMethod.value = 'manual'
     showHelpDialog.value = false
   }

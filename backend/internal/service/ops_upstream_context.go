@@ -39,8 +39,21 @@ const (
 
 	// ResponseCommittedKey 由 service 层错误写入函数在写完 HTTP 错误响应后设置。
 	// handler 层据此跳过兜底写入，避免在已完成的 JSON 后追加 SSE。
-	ResponseCommittedKey = "response_committed"
+	ResponseCommittedKey                            = "response_committed"
+	OpsClientBusinessLimitedKey                     = "ops_client_business_limited"
+	OpsClientBusinessLimitedReasonKey               = "ops_client_business_limited_reason"
+	OpsClientBusinessLimitedReasonLocalPolicyDenied = "local_policy_denied"
 )
+
+func MarkOpsClientBusinessLimited(c *gin.Context, reason string) {
+	if c == nil {
+		return
+	}
+	c.Set(OpsClientBusinessLimitedKey, true)
+	if reason = strings.TrimSpace(reason); reason != "" {
+		c.Set(OpsClientBusinessLimitedReasonKey, reason)
+	}
+}
 
 func MarkResponseCommitted(c *gin.Context) {
 	if c != nil {
@@ -117,6 +130,11 @@ type OpsUpstreamErrorEvent struct {
 
 	// Kind: http_error | request_error | retry_exhausted | failover
 	Kind string `json:"kind,omitempty"`
+	// Stable Grok/OpenAI failover dimensions. They are stored in the existing
+	// JSON context and therefore require no schema migration.
+	Stage  string `json:"stage,omitempty"`
+	Scope  string `json:"scope,omitempty"`
+	Reason string `json:"reason,omitempty"`
 
 	Message string `json:"message,omitempty"`
 	Detail  string `json:"detail,omitempty"`
@@ -134,6 +152,9 @@ func appendOpsUpstreamError(c *gin.Context, ev OpsUpstreamErrorEvent) {
 	ev.UpstreamRequestBody = strings.TrimSpace(ev.UpstreamRequestBody)
 	ev.UpstreamResponseBody = strings.TrimSpace(ev.UpstreamResponseBody)
 	ev.Kind = strings.TrimSpace(ev.Kind)
+	ev.Stage = strings.TrimSpace(ev.Stage)
+	ev.Scope = strings.TrimSpace(ev.Scope)
+	ev.Reason = strings.TrimSpace(ev.Reason)
 	ev.Message = strings.TrimSpace(ev.Message)
 	ev.Detail = strings.TrimSpace(ev.Detail)
 	if ev.Message != "" {

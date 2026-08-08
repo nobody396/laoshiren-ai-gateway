@@ -27,6 +27,7 @@ export const getClientAutoConfigTarget = (
     case 'antigravity':
       return 'claude'
     case 'gemini':
+    case 'grok':
     case 'gpt-image':
     case undefined:
     case null:

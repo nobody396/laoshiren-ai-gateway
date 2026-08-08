@@ -18,6 +18,7 @@ describe('client auto-config target selection', () => {
 
   it('does not offer an incompatible client setup', () => {
     expect(getClientAutoConfigTarget('gemini')).toBeNull()
+    expect(getClientAutoConfigTarget('grok')).toBeNull()
     expect(getClientAutoConfigTarget('gpt-image')).toBeNull()
     expect(getClientAutoConfigTarget()).toBeNull()
   })

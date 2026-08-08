@@ -49,6 +49,45 @@ func TestGatewayRoutesOpenAIResponsesCompactPathIsRegistered(t *testing.T) {
 	}
 }
 
+func TestGatewayRoutesGrokTextAndMediaAliasesAreRegistered(t *testing.T) {
+	router := newGatewayRoutesTestRouter()
+	routes := make(map[string]struct{})
+	for _, route := range router.Routes() {
+		routes[route.Method+" "+route.Path] = struct{}{}
+	}
+
+	for _, expected := range []string{
+		"POST /v1/messages",
+		"POST /v1/messages/count_tokens",
+		"POST /v1/responses",
+		"POST /v1/responses/*subpath",
+		"GET /v1/responses",
+		"POST /v1/chat/completions",
+		"POST /v1/images/generations",
+		"POST /v1/images/edits",
+		"POST /v1/videos/generations",
+		"POST /v1/videos/edits",
+		"POST /v1/videos/extensions",
+		"GET /v1/videos/:request_id",
+		"GET /v1/videos/:request_id/content",
+		"POST /responses",
+		"POST /responses/*subpath",
+		"GET /responses",
+		"POST /messages/count_tokens",
+		"POST /chat/completions",
+		"POST /images/generations",
+		"POST /images/edits",
+		"POST /videos/generations",
+		"POST /videos/edits",
+		"POST /videos/extensions",
+		"GET /videos/:request_id",
+		"GET /videos/:request_id/content",
+	} {
+		_, ok := routes[expected]
+		require.True(t, ok, "missing Grok-compatible gateway route %s", expected)
+	}
+}
+
 func TestGatewayRoutesResponsesSubpathRejectsNonConformingSubpaths(t *testing.T) {
 	router := newGatewayRoutesTestRouter()
 

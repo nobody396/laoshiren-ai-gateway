@@ -143,13 +143,21 @@ type CreateGroupInput struct {
 	DailyLimitUSD    *float64 // 日限额 (USD)
 	WeeklyLimitUSD   *float64 // 周限额 (USD)
 	MonthlyLimitUSD  *float64 // 月限额 (USD)
-	// 图片生成计费配置（antigravity、gemini 和 gpt-image 平台使用）
-	ImagePrice1K      *float64
-	ImagePrice2K      *float64
-	ImagePrice4K      *float64
-	GPTImageCallPrice *float64
-	ClaudeCodeOnly    bool   // 仅允许 Claude Code 客户端
-	FallbackGroupID   *int64 // 降级分组 ID
+	// 图片/媒体生成能力与计费配置
+	AllowImageGeneration *bool
+	ImageRateIndependent bool
+	ImageRateMultiplier  *float64
+	ImagePrice1K         *float64
+	ImagePrice2K         *float64
+	ImagePrice4K         *float64
+	GPTImageCallPrice    *float64
+	VideoRateIndependent bool
+	VideoRateMultiplier  *float64
+	VideoPrice480P       *float64
+	VideoPrice720P       *float64
+	VideoPrice1080P      *float64
+	ClaudeCodeOnly       bool   // 仅允许 Claude Code 客户端
+	FallbackGroupID      *int64 // 降级分组 ID
 	// 无效请求兜底分组 ID（仅 anthropic 平台使用）
 	FallbackGroupIDOnInvalidRequest *int64
 	// 模型路由配置（仅 anthropic 平台使用）
@@ -183,13 +191,21 @@ type UpdateGroupInput struct {
 	DailyLimitUSD   *float64 // 日限额 (USD)
 	WeeklyLimitUSD  *float64 // 周限额 (USD)
 	MonthlyLimitUSD *float64 // 月限额 (USD)
-	// 图片生成计费配置（antigravity、gemini 和 gpt-image 平台使用）
-	ImagePrice1K      *float64
-	ImagePrice2K      *float64
-	ImagePrice4K      *float64
-	GPTImageCallPrice *float64
-	ClaudeCodeOnly    *bool  // 仅允许 Claude Code 客户端
-	FallbackGroupID   *int64 // 降级分组 ID
+	// 图片/媒体生成能力与计费配置
+	AllowImageGeneration *bool
+	ImageRateIndependent *bool
+	ImageRateMultiplier  *float64
+	ImagePrice1K         *float64
+	ImagePrice2K         *float64
+	ImagePrice4K         *float64
+	GPTImageCallPrice    *float64
+	VideoRateIndependent *bool
+	VideoRateMultiplier  *float64
+	VideoPrice480P       *float64
+	VideoPrice720P       *float64
+	VideoPrice1080P      *float64
+	ClaudeCodeOnly       *bool  // 仅允许 Claude Code 客户端
+	FallbackGroupID      *int64 // 降级分组 ID
 	// 无效请求兜底分组 ID（仅 anthropic 平台使用）
 	FallbackGroupIDOnInvalidRequest *int64
 	// 模型路由配置（仅 anthropic 平台使用）
@@ -903,6 +919,27 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 	imagePrice2K := normalizePrice(input.ImagePrice2K)
 	imagePrice4K := normalizePrice(input.ImagePrice4K)
 	gptImageCallPrice := normalizePrice(input.GPTImageCallPrice)
+	videoPrice480P := normalizePrice(input.VideoPrice480P)
+	videoPrice720P := normalizePrice(input.VideoPrice720P)
+	videoPrice1080P := normalizePrice(input.VideoPrice1080P)
+	videoRateMultiplier := 1.0
+	if input.VideoRateMultiplier != nil {
+		if *input.VideoRateMultiplier < 0 {
+			return nil, errors.New("video rate multiplier must be non-negative")
+		}
+		videoRateMultiplier = *input.VideoRateMultiplier
+	}
+	imageRateMultiplier := 1.0
+	if input.ImageRateMultiplier != nil {
+		if *input.ImageRateMultiplier < 0 {
+			return nil, errors.New("image rate multiplier must be non-negative")
+		}
+		imageRateMultiplier = *input.ImageRateMultiplier
+	}
+	allowImageGeneration := platform == PlatformGrok
+	if input.AllowImageGeneration != nil {
+		allowImageGeneration = *input.AllowImageGeneration
+	}
 	if platform != PlatformGPTImage {
 		gptImageCallPrice = nil
 	}
@@ -973,10 +1010,18 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		DailyLimitUSD:                   dailyLimit,
 		WeeklyLimitUSD:                  weeklyLimit,
 		MonthlyLimitUSD:                 monthlyLimit,
+		AllowImageGeneration:            allowImageGeneration,
+		ImageRateIndependent:            input.ImageRateIndependent,
+		ImageRateMultiplier:             imageRateMultiplier,
 		ImagePrice1K:                    imagePrice1K,
 		ImagePrice2K:                    imagePrice2K,
 		ImagePrice4K:                    imagePrice4K,
 		GPTImageCallPrice:               gptImageCallPrice,
+		VideoRateIndependent:            input.VideoRateIndependent,
+		VideoRateMultiplier:             videoRateMultiplier,
+		VideoPrice480P:                  videoPrice480P,
+		VideoPrice720P:                  videoPrice720P,
+		VideoPrice1080P:                 videoPrice1080P,
 		ClaudeCodeOnly:                  input.ClaudeCodeOnly,
 		FallbackGroupID:                 input.FallbackGroupID,
 		FallbackGroupIDOnInvalidRequest: fallbackOnInvalidRequest,
@@ -1194,7 +1239,20 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	if input.MonthlyLimitUSD != nil {
 		group.MonthlyLimitUSD = normalizeLimit(input.MonthlyLimitUSD)
 	}
-	// 图片生成计费配置：负数表示清除（使用默认价格）
+	// 图片/媒体生成能力与计费配置
+	if input.AllowImageGeneration != nil {
+		group.AllowImageGeneration = *input.AllowImageGeneration
+	}
+	if input.ImageRateIndependent != nil {
+		group.ImageRateIndependent = *input.ImageRateIndependent
+	}
+	if input.ImageRateMultiplier != nil {
+		if *input.ImageRateMultiplier < 0 {
+			return nil, errors.New("image rate multiplier must be non-negative")
+		}
+		group.ImageRateMultiplier = *input.ImageRateMultiplier
+	}
+	// 图片价格：负数表示清除（使用默认价格）
 	if input.ImagePrice1K != nil {
 		group.ImagePrice1K = normalizePrice(input.ImagePrice1K)
 	}
@@ -1209,6 +1267,24 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	}
 	if group.Platform != PlatformGPTImage {
 		group.GPTImageCallPrice = nil
+	}
+	if input.VideoRateIndependent != nil {
+		group.VideoRateIndependent = *input.VideoRateIndependent
+	}
+	if input.VideoRateMultiplier != nil {
+		if *input.VideoRateMultiplier < 0 {
+			return nil, errors.New("video rate multiplier must be non-negative")
+		}
+		group.VideoRateMultiplier = *input.VideoRateMultiplier
+	}
+	if input.VideoPrice480P != nil {
+		group.VideoPrice480P = normalizePrice(input.VideoPrice480P)
+	}
+	if input.VideoPrice720P != nil {
+		group.VideoPrice720P = normalizePrice(input.VideoPrice720P)
+	}
+	if input.VideoPrice1080P != nil {
+		group.VideoPrice1080P = normalizePrice(input.VideoPrice1080P)
 	}
 
 	// Claude Code 客户端限制
@@ -1634,6 +1710,13 @@ func (s *adminServiceImpl) GetAccountsByIDs(ctx context.Context, ids []int64) ([
 }
 
 func (s *adminServiceImpl) CreateAccount(ctx context.Context, input *CreateAccountInput) (*Account, error) {
+	accountExtra, err := normalizeGrokMediaEligibilityExtra(input.Platform, input.Extra)
+	if err != nil {
+		return nil, err
+	}
+	if err := NormalizeHeaderOverrideCredentials(input.Credentials); err != nil {
+		return nil, err
+	}
 	if err := s.validateAccountPlatformConfig(input.Platform, input.Type, input.Credentials); err != nil {
 		return nil, err
 	}
@@ -1666,7 +1749,7 @@ func (s *adminServiceImpl) CreateAccount(ctx context.Context, input *CreateAccou
 		Platform:    input.Platform,
 		Type:        input.Type,
 		Credentials: input.Credentials,
-		Extra:       input.Extra,
+		Extra:       accountExtra,
 		ProxyID:     input.ProxyID,
 		Concurrency: input.Concurrency,
 		Priority:    input.Priority,
@@ -1721,6 +1804,13 @@ func (s *adminServiceImpl) UpdateAccount(ctx context.Context, id int64, input *U
 		return nil, err
 	}
 	wasOveragesEnabled := account.IsOveragesEnabled()
+	var normalizedExtra map[string]any
+	if input.Extra != nil {
+		normalizedExtra, err = normalizeGrokMediaEligibilityUpdateExtra(account, input, input.Extra)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	if input.Name != "" {
 		account.Name = input.Name
@@ -1734,14 +1824,14 @@ func (s *adminServiceImpl) UpdateAccount(ctx context.Context, id int64, input *U
 	if len(input.Credentials) > 0 {
 		account.Credentials = accountcredentials.MergeForUpdate(account.Credentials, input.Credentials)
 	}
-	if len(input.Extra) > 0 {
+	if len(normalizedExtra) > 0 || len(input.Extra) > 0 {
 		// 保留配额用量字段，防止编辑账号时意外重置
 		for _, key := range []string{"quota_used", "quota_daily_used", "quota_daily_start", "quota_weekly_used", "quota_weekly_start"} {
 			if v, ok := account.Extra[key]; ok {
-				input.Extra[key] = v
+				normalizedExtra[key] = v
 			}
 		}
-		account.Extra = input.Extra
+		account.Extra = normalizedExtra
 		if account.Platform == PlatformAntigravity && wasOveragesEnabled && !account.IsOveragesEnabled() {
 			delete(account.Extra, "antigravity_credits_overages") // 清理旧版 overages 运行态
 			// 清除 AICredits 限流 key
@@ -1804,6 +1894,9 @@ func (s *adminServiceImpl) UpdateAccount(ctx context.Context, id int64, input *U
 	}
 	if input.AutoPauseOnExpired != nil {
 		account.AutoPauseOnExpired = *input.AutoPauseOnExpired
+	}
+	if err := NormalizeHeaderOverrideCredentials(account.Credentials); err != nil {
+		return nil, err
 	}
 	if err := s.validateAccountPlatformConfig(account.Platform, account.Type, account.Credentials); err != nil {
 		return nil, err
@@ -1902,6 +1995,9 @@ func (s *adminServiceImpl) BulkUpdateAccounts(ctx context.Context, input *BulkUp
 		if *input.RateMultiplier < 0 {
 			return nil, errors.New("rate_multiplier must be >= 0")
 		}
+	}
+	if err := NormalizeHeaderOverrideCredentials(input.Credentials); err != nil {
+		return nil, err
 	}
 
 	// Prepare bulk updates for columns and JSONB fields.

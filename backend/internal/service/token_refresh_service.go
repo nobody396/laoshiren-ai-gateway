@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/util/logredact"
 )
 
 // tokenRefreshTempUnschedDuration token 刷新重试耗尽后临时不可调度的持续时间
@@ -19,6 +20,14 @@ const tokenRefreshTempUnschedDuration = 10 * time.Minute
 // unschedulable window on every refresh cycle while still refreshing it when the
 // account is about to become schedulable again.
 const tokenRefreshTempUnschedExtendThreshold = 2 * time.Minute
+
+// GrokOAuthRefreshMutationRepository keeps background refresh failures tied to
+// the exact credential/proxy version used by the upstream attempt. A concurrent
+// reauthorization must never be disabled by a stale refresh result.
+type GrokOAuthRefreshMutationRepository interface {
+	SetGrokOAuthRefreshErrorIfCredentialsUnchanged(ctx context.Context, id int64, expectedCredentials map[string]any, expectedProxyID *int64, errorMsg string) (bool, error)
+	SetGrokOAuthRefreshTempUnschedulableIfCredentialsUnchanged(ctx context.Context, id int64, expectedCredentials map[string]any, expectedProxyID *int64, until time.Time, reason string) (bool, error)
+}
 
 // TokenRefreshService OAuth token自动刷新服务
 // 定期检查并刷新即将过期的token
@@ -42,6 +51,39 @@ type TokenRefreshService struct {
 	wg       sync.WaitGroup
 }
 
+// These typed wrappers let request-path credential handling distinguish a
+// provider-wide OAuth configuration outage from an account credential failure.
+type providerConfigurationRefreshError struct{ err error }
+type providerCycleContainmentRefreshError struct{ err error }
+
+func (e *providerConfigurationRefreshError) Error() string {
+	return "provider OAuth configuration rejected"
+}
+func (e *providerConfigurationRefreshError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.err
+}
+func (e *providerCycleContainmentRefreshError) Error() string {
+	return "provider OAuth failure contained for this cycle"
+}
+func (e *providerCycleContainmentRefreshError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.err
+}
+
+func isProviderScopedTerminalRefreshError(err error) bool {
+	if err == nil {
+		return false
+	}
+	var configurationErr *providerConfigurationRefreshError
+	var containmentErr *providerCycleContainmentRefreshError
+	return errors.As(err, &configurationErr) || errors.As(err, &containmentErr)
+}
+
 // NewTokenRefreshService 创建token刷新服务
 func NewTokenRefreshService(
 	accountRepo AccountRepository,
@@ -53,6 +95,7 @@ func NewTokenRefreshService(
 	schedulerCache SchedulerCache,
 	cfg *config.Config,
 	tempUnschedCache TempUnschedCache,
+	grokOAuthServices ...GrokOAuthTokenService,
 ) *TokenRefreshService {
 	s := &TokenRefreshService{
 		accountRepo:      accountRepo,
@@ -84,6 +127,11 @@ func NewTokenRefreshService(
 		openAIRefresher,
 		geminiRefresher,
 		agRefresher,
+	}
+	if len(grokOAuthServices) > 0 && grokOAuthServices[0] != nil {
+		grokRefresher := NewGrokTokenRefresher(grokOAuthServices[0])
+		s.refreshers = append(s.refreshers, grokRefresher)
+		s.executors = append(s.executors, grokRefresher)
 	}
 
 	return s
@@ -174,6 +222,7 @@ func (s *TokenRefreshService) processRefresh() {
 	oauthAccounts := 0 // 可刷新的OAuth账号数
 	needsRefresh := 0  // 需要刷新的账号数
 	refreshed, failed, skipped := 0, 0, 0
+	containedProviders := make(map[string]bool)
 
 	for i := range accounts {
 		account := &accounts[i]
@@ -182,6 +231,10 @@ func (s *TokenRefreshService) processRefresh() {
 		for idx, refresher := range s.refreshers {
 			if !refresher.CanRefresh(account) {
 				continue
+			}
+			if containedProviders[account.Platform] {
+				skipped++
+				break
 			}
 
 			oauthAccounts++
@@ -204,6 +257,9 @@ func (s *TokenRefreshService) processRefresh() {
 				if errors.Is(err, errRefreshSkipped) {
 					skipped++
 				} else {
+					if isProviderScopedTerminalRefreshError(err) {
+						containedProviders[account.Platform] = true
+					}
 					slog.Warn("token_refresh.account_refresh_failed",
 						"account_id", account.ID,
 						"account_name", account.Name,
@@ -258,6 +314,11 @@ func (s *TokenRefreshService) refreshWithRetry(ctx context.Context, account *Acc
 		// 优先使用统一 API（带分布式锁 + DB 重读保护）
 		if s.refreshAPI != nil && executor != nil {
 			result, refreshErr := s.refreshAPI.RefreshIfNeeded(ctx, account, executor, refreshWindow)
+			if result != nil && result.Account != nil {
+				// On failure this is the immutable snapshot actually sent upstream;
+				// use it for exact-state conditional failure persistence.
+				account = result.Account
+			}
 			if refreshErr != nil {
 				err = refreshErr
 			} else if result.LockHeld {
@@ -285,15 +346,55 @@ func (s *TokenRefreshService) refreshWithRetry(ctx context.Context, account *Acc
 			s.postRefreshActions(ctx, account)
 			return nil
 		}
+		if isProviderScopedTerminalRefreshError(err) {
+			return err
+		}
+		var stateUnavailableErr *oauthRefreshStateUnavailableError
+		if errors.As(err, &stateUnavailableErr) {
+			return &providerCycleContainmentRefreshError{err: err}
+		}
+		if account.IsGrokOAuth() && isSharedProviderRefreshError(err) {
+			return &providerConfigurationRefreshError{err: err}
+		}
 
 		// 不可重试错误（invalid_grant/invalid_client 等）直接标记 error 状态并返回
 		if isNonRetryableRefreshError(err) {
-			errorMsg := fmt.Sprintf("Token refresh failed (non-retryable): %v", err)
-			if setErr := s.accountRepo.SetError(ctx, account.ID, errorMsg); setErr != nil {
+			errorMsg := fmt.Sprintf("Token refresh failed (non-retryable): %s", logredact.RedactText(err.Error()))
+			var setErr error
+			if account.IsGrokOAuth() {
+				conditionalRepo, ok := s.accountRepo.(GrokOAuthRefreshMutationRepository)
+				if !ok {
+					return &providerConfigurationRefreshError{err: errors.New("grok OAuth conditional refresh mutation repository is not configured")}
+				}
+				var applied bool
+				applied, setErr = conditionalRepo.SetGrokOAuthRefreshErrorIfCredentialsUnchanged(
+					ctx, account.ID, account.Credentials, account.ProxyID, errorMsg,
+				)
+				if setErr == nil && !applied {
+					slog.Info("token_refresh.grok_error_status_skipped_stale_credentials", "account_id", account.ID)
+					return errRefreshSkipped
+				}
+				if setErr == nil {
+					account.Status = StatusError
+					account.Schedulable = false
+					account.ErrorMessage = errorMsg
+					if s.cacheInvalidator != nil {
+						if invalidateErr := s.cacheInvalidator.InvalidateToken(ctx, account); invalidateErr != nil {
+							slog.Warn("token_refresh.invalidate_failed_token_cache_failed", "account_id", account.ID, "error", invalidateErr)
+						}
+					}
+				}
+			} else {
+				setErr = s.accountRepo.SetError(ctx, account.ID, errorMsg)
+			}
+			if setErr != nil {
 				slog.Error("token_refresh.set_error_status_failed",
 					"account_id", account.ID,
 					"error", setErr,
 				)
+				if account.IsGrokOAuth() {
+					return &providerCycleContainmentRefreshError{err: fmt.Errorf("failed to conditionally persist Grok OAuth refresh failure: %w", setErr)}
+				}
 			}
 			// 刷新失败但 access_token 可能仍有效，尝试设置隐私
 			s.ensureOpenAIPrivacy(ctx, account)
@@ -333,7 +434,25 @@ func (s *TokenRefreshService) refreshWithRetry(ctx context.Context, account *Acc
 		// 设置临时不可调度 10 分钟（不标记 error，保持 status=active 让下个刷新周期能继续尝试）
 		until := time.Now().Add(tokenRefreshTempUnschedDuration)
 		reason := fmt.Sprintf("token refresh retry exhausted: %v", lastErr)
-		if setErr := s.accountRepo.SetTempUnschedulable(ctx, account.ID, until, reason); setErr != nil {
+		if account.IsGrokOAuth() {
+			conditionalRepo, ok := s.accountRepo.(GrokOAuthRefreshMutationRepository)
+			if !ok {
+				return &providerConfigurationRefreshError{err: errors.New("grok OAuth conditional refresh mutation repository is not configured")}
+			}
+			applied, setErr := conditionalRepo.SetGrokOAuthRefreshTempUnschedulableIfCredentialsUnchanged(
+				ctx, account.ID, account.Credentials, account.ProxyID, until, reason,
+			)
+			if setErr != nil {
+				return &providerCycleContainmentRefreshError{err: fmt.Errorf("failed to conditionally persist Grok OAuth refresh cooldown: %w", setErr)}
+			}
+			if !applied {
+				slog.Info("token_refresh.grok_temp_unschedulable_skipped_stale_credentials", "account_id", account.ID)
+				return errRefreshSkipped
+			}
+			account.TempUnschedulableUntil = &until
+			account.TempUnschedulableReason = reason
+			slog.Info("token_refresh.temp_unschedulable_set", "account_id", account.ID, "until", until.Format(time.RFC3339))
+		} else if setErr := s.accountRepo.SetTempUnschedulable(ctx, account.ID, until, reason); setErr != nil {
 			slog.Warn("token_refresh.set_temp_unschedulable_failed",
 				"account_id", account.ID,
 				"error", setErr,
@@ -443,15 +562,38 @@ func isNonRetryableRefreshError(err error) bool {
 	}
 	msg := strings.ToLower(err.Error())
 	nonRetryable := []string{
-		"invalid_grant",        // refresh_token 已失效
-		"refresh_token_reused", // OpenAI refresh_token 已被使用，必须重新授权
-		"invalid_client",       // 客户端配置错误
-		"unauthorized_client",  // 客户端未授权
-		"access_denied",        // 访问被拒绝
-		"missing_project_id",   // 缺少 project_id
+		"invalid_grant",             // refresh_token 已失效
+		"invalid_refresh_token",     // refresh_token 无效
+		"token_expired",             // refresh_token 已过期
+		"app_session_terminated",    // 账号会话已结束
+		"refresh_token_reused",      // refresh_token 已被使用
+		"refresh_token_invalidated", // refresh_token 已失效
+		"invalid_client",            // 客户端配置错误
+		"unauthorized_client",       // 客户端未授权
+		"access_denied",             // 访问被拒绝
+		"missing_project_id",        // 缺少 project_id
 		"no refresh token available",
+		"grok_oauth_entitlement_denied",
+		"entitlement_denied",
+		"invalid_scope",
+		"unknown scope",
+		"subscription required",
+		"no active grok subscription",
 	}
 	for _, needle := range nonRetryable {
+		if strings.Contains(msg, needle) {
+			return true
+		}
+	}
+	return false
+}
+
+func isSharedProviderRefreshError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	for _, needle := range []string{"invalid_client", "unauthorized_client", "invalid_scope", "unknown scope"} {
 		if strings.Contains(msg, needle) {
 			return true
 		}

@@ -852,7 +852,8 @@ const platformOptions = computed(() => [
   { value: 'anthropic', label: t('admin.groups.platforms.anthropic') },
   { value: 'openai', label: t('admin.groups.platforms.openai') },
   { value: 'gemini', label: t('admin.groups.platforms.gemini') },
-  { value: 'antigravity', label: t('admin.groups.platforms.antigravity') }
+  { value: 'antigravity', label: t('admin.groups.platforms.antigravity') },
+  { value: 'grok', label: t('admin.groups.platforms.grok') }
 ])
 
 const subscriptions = ref<UserSubscription[]>([])

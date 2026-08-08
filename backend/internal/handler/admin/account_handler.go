@@ -50,6 +50,8 @@ type AccountHandler struct {
 	openaiOAuthService      *service.OpenAIOAuthService
 	geminiOAuthService      *service.GeminiOAuthService
 	antigravityOAuthService *service.AntigravityOAuthService
+	grokOAuthService        service.GrokOAuthTokenService
+	grokImportProber        grokImportProber
 	rateLimitService        *service.RateLimitService
 	accountUsageService     *service.AccountUsageService
 	accountTestService      *service.AccountTestService
@@ -67,6 +69,7 @@ func NewAccountHandler(
 	openaiOAuthService *service.OpenAIOAuthService,
 	geminiOAuthService *service.GeminiOAuthService,
 	antigravityOAuthService *service.AntigravityOAuthService,
+	grokOAuthService service.GrokOAuthTokenService,
 	rateLimitService *service.RateLimitService,
 	accountUsageService *service.AccountUsageService,
 	accountTestService *service.AccountTestService,
@@ -82,6 +85,7 @@ func NewAccountHandler(
 		openaiOAuthService:      openaiOAuthService,
 		geminiOAuthService:      geminiOAuthService,
 		antigravityOAuthService: antigravityOAuthService,
+		grokOAuthService:        grokOAuthService,
 		rateLimitService:        rateLimitService,
 		accountUsageService:     accountUsageService,
 		accountTestService:      accountTestService,
@@ -97,7 +101,7 @@ func NewAccountHandler(
 type CreateAccountRequest struct {
 	Name                    string         `json:"name" binding:"required"`
 	Notes                   *string        `json:"notes"`
-	Platform                string         `json:"platform" binding:"required,oneof=anthropic openai gemini antigravity gpt-image"`
+	Platform                string         `json:"platform" binding:"required,oneof=anthropic openai gemini antigravity gpt-image grok"`
 	Type                    string         `json:"type" binding:"required,oneof=oauth setup-token apikey upstream bedrock"`
 	Credentials             map[string]any `json:"credentials" binding:"required"`
 	Extra                   map[string]any `json:"extra"`
@@ -151,7 +155,7 @@ type BulkUpdateAccountsRequest struct {
 
 // CheckMixedChannelRequest represents check mixed channel risk request
 type CheckMixedChannelRequest struct {
-	Platform  string  `json:"platform" binding:"required,oneof=anthropic openai gemini antigravity gpt-image"`
+	Platform  string  `json:"platform" binding:"required,oneof=anthropic openai gemini antigravity gpt-image grok"`
 	GroupIDs  []int64 `json:"group_ids"`
 	AccountID *int64  `json:"account_id"`
 }
@@ -551,6 +555,7 @@ func (h *AccountHandler) Create(c *gin.Context) {
 		c.Header("X-Idempotency-Replayed", "true")
 	}
 	h.scheduleOpenAIResponsesProbe(createdAccount)
+	h.scheduleGrokImportProbe(createdAccount)
 	response.Success(c, result.Data)
 }
 
@@ -793,7 +798,26 @@ func (h *AccountHandler) refreshSingleAccount(ctx context.Context, account *serv
 
 	var newCredentials map[string]any
 
-	if account.IsOpenAI() {
+	if account.Platform == service.PlatformGrok {
+		if h.grokOAuthService == nil {
+			return nil, "", infraerrors.InternalServer("GROK_OAUTH_UNAVAILABLE", "Grok OAuth service is unavailable")
+		}
+		tokenInfo, err := h.grokOAuthService.RefreshAccountToken(ctx, account)
+		if err != nil {
+			return nil, "", err
+		}
+		newCredentials = h.grokOAuthService.BuildAccountCredentials(tokenInfo)
+		for k, v := range account.Credentials {
+			if _, exists := newCredentials[k]; !exists {
+				newCredentials[k] = v
+			}
+		}
+		// Refreshing tokens must not silently replace an administrator-selected
+		// regional/compatible xAI endpoint with the OAuth service default.
+		if oldBaseURL := strings.TrimSpace(account.GetCredential("base_url")); oldBaseURL != "" {
+			newCredentials["base_url"] = oldBaseURL
+		}
+	} else if account.IsOpenAI() {
 		tokenInfo, err := h.openaiOAuthService.RefreshAccountToken(ctx, account)
 		if err != nil {
 			return nil, "", err
@@ -1307,6 +1331,7 @@ func (h *AccountHandler) BatchCreate(c *gin.Context) {
 				continue
 			}
 			h.scheduleOpenAIResponsesProbe(account)
+			h.scheduleGrokImportProbe(account)
 			success++
 			results = append(results, gin.H{
 				"name":    item.Name,

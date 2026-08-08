@@ -56,6 +56,10 @@ describe('CC Switch import compatibility', () => {
   it('does not offer coding-agent imports for image-only groups', () => {
     expect(getCompatibleCcsTargets('gpt-image')).toEqual([])
   })
+
+  it('offers Grok groups only to the native Grok Build client', () => {
+    expect(getCompatibleCcsTargets('grok')).toEqual(['grokbuild'])
+  })
 })
 
 describe('CC Switch provider deeplinks', () => {
@@ -93,6 +97,54 @@ describe('CC Switch provider deeplinks', () => {
       key: {
         key: 'sk-test-not-a-secret',
         group: { platform: 'openai' }
+      }
+    }))
+
+    expect(url.searchParams.get('endpoint')).toBe('https://api.laoshirenai.com/v1')
+    expect(url.searchParams.get('usageBaseUrl')).toBe('https://api.laoshirenai.com')
+  })
+
+  it('builds the native Grok Build provider contract supported by CC Switch', () => {
+    const url = new URL(buildCcsImportDeeplink({
+      apiBaseUrl: 'https://api.laoshirenai.com/v1',
+      siteName: '老实人 AI',
+      target: 'grokbuild',
+      key: {
+        key: 'test-grok-key-placeholder',
+        group: { platform: 'grok', name: 'Grok 月卡' }
+      }
+    }))
+
+    expect(url.searchParams.get('resource')).toBe('provider')
+    expect(url.searchParams.get('app')).toBe('grokbuild')
+    expect(url.searchParams.get('endpoint')).toBe('https://api.laoshirenai.com/v1')
+    expect(url.searchParams.get('model')).toBe('grok-4.5')
+    expect(url.searchParams.get('name')).toContain('Grok Build')
+    expect(url.searchParams.get('haikuModel')).toBeNull()
+    expect(url.searchParams.get('sonnetModel')).toBeNull()
+    expect(url.searchParams.get('opusModel')).toBeNull()
+  })
+
+  it('rejects Anthropic and generic OpenAI bridge targets for a Grok group', () => {
+    for (const target of ['claude', 'codex', 'opencode', 'openclaw', 'hermes'] as CcsImportTarget[]) {
+      expect(() => buildCcsImportDeeplink({
+        apiBaseUrl: 'https://api.laoshirenai.com',
+        target,
+        key: {
+          key: 'test-grok-key-placeholder',
+          group: { platform: 'grok' }
+        }
+      })).toThrow(/not compatible/)
+    }
+  })
+
+  it('avoids duplicating /v1 for a native Grok Build provider', () => {
+    const url = new URL(buildCcsImportDeeplink({
+      apiBaseUrl: 'https://api.laoshirenai.com/v1/',
+      target: 'grokbuild',
+      key: {
+        key: 'test-grok-key-placeholder',
+        group: { platform: 'grok' }
       }
     }))
 

@@ -308,7 +308,7 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 					{
 						ID:             26,
 						Name:           "pomoai-grok",
-						Platform:       PlatformAnthropic,
+						Platform:       PlatformGrok,
 						Status:         StatusActive,
 						Schedulable:    true,
 						RateMultiplier: &rate,
@@ -335,7 +335,7 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 				35: {
 					ID:               35,
 					Name:             "Grok Lite 月卡组",
-					Platform:         PlatformAnthropic,
+					Platform:         PlatformGrok,
 					Status:           StatusActive,
 					SubscriptionType: SubscriptionTypeCredit,
 				},
@@ -358,7 +358,7 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 	require.Equal(t, "claude-haiku-4-5", targets[1].Model)
 	require.Equal(t, int64(11), targets[1].GroupID)
 	require.Equal(t, "monthly-grok-gateway", targets[2].AccountName)
-	require.Equal(t, PlatformAnthropic, targets[2].Platform)
+	require.Equal(t, PlatformGrok, targets[2].Platform)
 	require.Equal(t, "grok-4.5", targets[2].Model)
 	require.Equal(t, int64(35), targets[2].GroupID)
 
@@ -385,9 +385,9 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 	require.Equal(t, "Grok", publicSnapshot.Accounts[2].Channel)
 }
 
-func TestMonthlyCardPublicStatusLabelsGrokIndependentlyFromAnthropicProtocol(t *testing.T) {
-	require.Equal(t, "Grok", monthlyCardPublicChannelName("monthly-grok-gateway", "grok-4.5", PlatformAnthropic))
-	require.Equal(t, "Grok 月卡", monthlyCardPublicDisplayName("monthly-grok-gateway", "grok-4.5", PlatformAnthropic))
+func TestMonthlyCardPublicStatusLabelsNativeGrokProtocol(t *testing.T) {
+	require.Equal(t, "Grok", monthlyCardPublicChannelName("monthly-grok-gateway", "grok-4.5", PlatformGrok))
+	require.Equal(t, "Grok 月卡", monthlyCardPublicDisplayName("monthly-grok-gateway", "grok-4.5", PlatformGrok))
 	require.Equal(t, "Claude", monthlyCardPublicChannelName("monthly-claude-gateway", "claude-haiku-4-5", PlatformAnthropic))
 }
 

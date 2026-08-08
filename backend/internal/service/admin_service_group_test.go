@@ -177,6 +177,141 @@ func TestAdminService_CreateGroup_NilImagePricing(t *testing.T) {
 	require.Nil(t, repo.created.ImagePrice4K)
 }
 
+func TestAdminService_CreateGroup_WithGrokVideoPricing(t *testing.T) {
+	repo := &groupRepoStubForAdmin{}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	videoMultiplier := 0.25
+	price480P := 0.02
+	price720P := 0.04
+	price1080P := 0.08
+
+	group, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
+		Name:                 "grok-video",
+		Platform:             PlatformGrok,
+		RateMultiplier:       1,
+		VideoRateIndependent: true,
+		VideoRateMultiplier:  &videoMultiplier,
+		VideoPrice480P:       &price480P,
+		VideoPrice720P:       &price720P,
+		VideoPrice1080P:      &price1080P,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.created)
+	require.True(t, repo.created.VideoRateIndependent)
+	require.InDelta(t, 0.25, repo.created.VideoRateMultiplier, 0.0001)
+	require.NotNil(t, repo.created.VideoPrice480P)
+	require.NotNil(t, repo.created.VideoPrice720P)
+	require.NotNil(t, repo.created.VideoPrice1080P)
+	require.InDelta(t, 0.02, *repo.created.VideoPrice480P, 0.0001)
+	require.InDelta(t, 0.04, *repo.created.VideoPrice720P, 0.0001)
+	require.InDelta(t, 0.08, *repo.created.VideoPrice1080P, 0.0001)
+}
+
+func TestAdminService_CreateGroup_GrokMediaDefaultsEnabled(t *testing.T) {
+	repo := &groupRepoStubForAdmin{}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	group, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
+		Name:     "grok-media-default",
+		Platform: PlatformGrok,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.True(t, repo.created.AllowImageGeneration)
+	require.InDelta(t, 1.0, repo.created.ImageRateMultiplier, 0.0001)
+}
+
+func TestAdminService_CreateGroup_GrokMediaExplicitDisableIsRespected(t *testing.T) {
+	repo := &groupRepoStubForAdmin{}
+	svc := &adminServiceImpl{groupRepo: repo}
+	disabled := false
+
+	group, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
+		Name:                 "grok-media-disabled",
+		Platform:             PlatformGrok,
+		AllowImageGeneration: &disabled,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.False(t, repo.created.AllowImageGeneration)
+}
+
+func TestAdminService_UpdateGroup_CanDisableGrokMediaAndSetImageMultiplier(t *testing.T) {
+	existing := &Group{
+		ID:                   77,
+		Name:                 "grok-media",
+		Platform:             PlatformGrok,
+		Status:               StatusActive,
+		SubscriptionType:     SubscriptionTypeStandard,
+		AllowImageGeneration: true,
+		ImageRateMultiplier:  1,
+	}
+	repo := &groupRepoStubForAdmin{getByID: existing}
+	svc := &adminServiceImpl{groupRepo: repo}
+	disabled := false
+	independent := true
+	multiplier := 0.3
+
+	group, err := svc.UpdateGroup(context.Background(), existing.ID, &UpdateGroupInput{
+		AllowImageGeneration: &disabled,
+		ImageRateIndependent: &independent,
+		ImageRateMultiplier:  &multiplier,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.updated)
+	require.False(t, repo.updated.AllowImageGeneration)
+	require.True(t, repo.updated.ImageRateIndependent)
+	require.InDelta(t, 0.3, repo.updated.ImageRateMultiplier, 0.0001)
+}
+
+func TestAdminService_CreateGroup_DefaultsVideoMultiplierToOne(t *testing.T) {
+	repo := &groupRepoStubForAdmin{}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	group, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
+		Name:     "grok-default-video-rate",
+		Platform: PlatformGrok,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.created)
+	require.InDelta(t, 1.0, repo.created.VideoRateMultiplier, 0.0001)
+}
+
+func TestAdminService_CreateGroup_AllowsExplicitZeroVideoMultiplier(t *testing.T) {
+	repo := &groupRepoStubForAdmin{}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	zero := 0.0
+	group, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
+		Name:                "grok-free-video",
+		Platform:            PlatformGrok,
+		VideoRateMultiplier: &zero,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.created)
+	require.Zero(t, repo.created.VideoRateMultiplier)
+}
+
+func TestAdminService_CreateGroup_RejectsNegativeVideoMultiplier(t *testing.T) {
+	repo := &groupRepoStubForAdmin{}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	negative := -0.1
+	group, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
+		Name:                "grok-invalid-video-rate",
+		Platform:            PlatformGrok,
+		VideoRateMultiplier: &negative,
+	})
+	require.ErrorContains(t, err, "video rate multiplier must be non-negative")
+	require.Nil(t, group)
+	require.Nil(t, repo.created)
+}
+
 // TestAdminService_UpdateGroup_WithImagePricing 测试更新分组时 ImagePrice 字段正确更新
 func TestAdminService_UpdateGroup_WithImagePricing(t *testing.T) {
 	existingGroup := &Group{
@@ -210,6 +345,39 @@ func TestAdminService_UpdateGroup_WithImagePricing(t *testing.T) {
 	require.InDelta(t, 0.12, *repo.updated.ImagePrice1K, 0.0001)
 	require.InDelta(t, 0.18, *repo.updated.ImagePrice2K, 0.0001)
 	require.InDelta(t, 0.36, *repo.updated.ImagePrice4K, 0.0001)
+}
+
+func TestAdminService_UpdateGroup_WithGrokVideoPricing(t *testing.T) {
+	existingGroup := &Group{
+		ID:                  1,
+		Name:                "grok-existing",
+		Platform:            PlatformGrok,
+		Status:              StatusActive,
+		VideoRateMultiplier: 1,
+	}
+	repo := &groupRepoStubForAdmin{getByID: existingGroup}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	independent := true
+	multiplier := 0.5
+	price480P := 0.03
+	price720P := 0.06
+	price1080P := 0.12
+	group, err := svc.UpdateGroup(context.Background(), 1, &UpdateGroupInput{
+		VideoRateIndependent: &independent,
+		VideoRateMultiplier:  &multiplier,
+		VideoPrice480P:       &price480P,
+		VideoPrice720P:       &price720P,
+		VideoPrice1080P:      &price1080P,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.updated)
+	require.True(t, repo.updated.VideoRateIndependent)
+	require.InDelta(t, 0.5, repo.updated.VideoRateMultiplier, 0.0001)
+	require.InDelta(t, 0.03, *repo.updated.VideoPrice480P, 0.0001)
+	require.InDelta(t, 0.06, *repo.updated.VideoPrice720P, 0.0001)
+	require.InDelta(t, 0.12, *repo.updated.VideoPrice1080P, 0.0001)
 }
 
 func TestAdminService_UpdateGroup_PreservesLimitsWhenOmitted(t *testing.T) {

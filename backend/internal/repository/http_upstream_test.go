@@ -3,14 +3,44 @@ package repository
 import (
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
+
+func TestHTTPUpstreamDoCanDisableRedirectsPerRequest(t *testing.T) {
+	var redirectedCalls atomic.Int64
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		redirectedCalls.Add(1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(target.Close)
+	redirector := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL, http.StatusFound)
+	}))
+	t.Cleanup(redirector.Close)
+
+	upstream := NewHTTPUpstream(nil)
+	req, err := http.NewRequestWithContext(
+		service.WithHTTPUpstreamRedirectsDisabled(t.Context()),
+		http.MethodGet,
+		redirector.URL,
+		nil,
+	)
+	require.NoError(t, err)
+
+	resp, err := upstream.Do(req, "", 1, 1)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusFound, resp.StatusCode)
+	require.NoError(t, resp.Body.Close())
+	require.Zero(t, redirectedCalls.Load())
+}
 
 // HTTPUpstreamSuite HTTP 上游服务测试套件
 // 使用 testify/suite 组织测试，支持 SetupTest 初始化

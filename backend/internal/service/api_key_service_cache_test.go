@@ -202,13 +202,16 @@ func TestAPIKeyService_GetByKey_UsesL2Cache(t *testing.T) {
 				Concurrency: 3,
 			},
 			Group: &APIKeyAuthGroupSnapshot{
-				ID:                  groupID,
-				Name:                "g",
-				Platform:            PlatformAnthropic,
-				Status:              StatusActive,
-				SubscriptionType:    SubscriptionTypeStandard,
-				RateMultiplier:      1,
-				ModelRoutingEnabled: true,
+				ID:                   groupID,
+				Name:                 "g",
+				Platform:             PlatformGrok,
+				Status:               StatusActive,
+				SubscriptionType:     SubscriptionTypeStandard,
+				RateMultiplier:       1,
+				AllowImageGeneration: true,
+				ImageRateIndependent: true,
+				ImageRateMultiplier:  0.25,
+				ModelRoutingEnabled:  true,
 				ModelRouting: map[string][]int64{
 					"claude-opus-*": {1, 2},
 				},
@@ -226,6 +229,9 @@ func TestAPIKeyService_GetByKey_UsesL2Cache(t *testing.T) {
 	require.Equal(t, groupID, apiKey.Group.ID)
 	require.True(t, apiKey.Group.ModelRoutingEnabled)
 	require.Equal(t, map[string][]int64{"claude-opus-*": {1, 2}}, apiKey.Group.ModelRouting)
+	require.True(t, apiKey.Group.AllowImageGeneration)
+	require.True(t, apiKey.Group.ImageRateIndependent)
+	require.InDelta(t, 0.25, apiKey.Group.ImageRateMultiplier, 1e-12)
 }
 
 func TestAPIKeyService_GetByKey_NegativeCache(t *testing.T) {

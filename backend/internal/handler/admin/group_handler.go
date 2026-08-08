@@ -130,7 +130,7 @@ func NewGroupHandler(adminService service.AdminService, dashboardService *servic
 type CreateGroupRequest struct {
 	Name             string             `json:"name" binding:"required"`
 	Description      string             `json:"description"`
-	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity gpt-image"`
+	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity gpt-image grok"`
 	RateMultiplier   float64            `json:"rate_multiplier"`
 	IsExclusive      bool               `json:"is_exclusive"`
 	ChatbotEnabled   bool               `json:"chatbot_enabled"`
@@ -138,11 +138,19 @@ type CreateGroupRequest struct {
 	DailyLimitUSD    optionalLimitField `json:"daily_limit_usd"`
 	WeeklyLimitUSD   optionalLimitField `json:"weekly_limit_usd"`
 	MonthlyLimitUSD  optionalLimitField `json:"monthly_limit_usd"`
-	// 图片生成计费配置（antigravity 和 gemini 平台使用，负数表示清除配置）
+	// 图片/媒体生成能力与计费配置
+	AllowImageGeneration            *bool    `json:"allow_image_generation"`
+	ImageRateIndependent            bool     `json:"image_rate_independent"`
+	ImageRateMultiplier             *float64 `json:"image_rate_multiplier"`
 	ImagePrice1K                    *float64 `json:"image_price_1k"`
 	ImagePrice2K                    *float64 `json:"image_price_2k"`
 	ImagePrice4K                    *float64 `json:"image_price_4k"`
 	GPTImageCallPrice               *float64 `json:"gpt_image_call_price"`
+	VideoRateIndependent            bool     `json:"video_rate_independent"`
+	VideoRateMultiplier             *float64 `json:"video_rate_multiplier"`
+	VideoPrice480P                  *float64 `json:"video_price_480p"`
+	VideoPrice720P                  *float64 `json:"video_price_720p"`
+	VideoPrice1080P                 *float64 `json:"video_price_1080p"`
 	ClaudeCodeOnly                  bool     `json:"claude_code_only"`
 	FallbackGroupID                 *int64   `json:"fallback_group_id"`
 	FallbackGroupIDOnInvalidRequest *int64   `json:"fallback_group_id_on_invalid_request"`
@@ -166,7 +174,7 @@ type CreateGroupRequest struct {
 type UpdateGroupRequest struct {
 	Name             string              `json:"name"`
 	Description      optionalStringField `json:"description"`
-	Platform         string              `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity gpt-image"`
+	Platform         string              `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity gpt-image grok"`
 	RateMultiplier   *float64            `json:"rate_multiplier"`
 	IsExclusive      *bool               `json:"is_exclusive"`
 	ChatbotEnabled   *bool               `json:"chatbot_enabled"`
@@ -175,11 +183,19 @@ type UpdateGroupRequest struct {
 	DailyLimitUSD    optionalLimitField  `json:"daily_limit_usd"`
 	WeeklyLimitUSD   optionalLimitField  `json:"weekly_limit_usd"`
 	MonthlyLimitUSD  optionalLimitField  `json:"monthly_limit_usd"`
-	// 图片生成计费配置（antigravity 和 gemini 平台使用，负数表示清除配置）
+	// 图片/媒体生成能力与计费配置
+	AllowImageGeneration            *bool    `json:"allow_image_generation"`
+	ImageRateIndependent            *bool    `json:"image_rate_independent"`
+	ImageRateMultiplier             *float64 `json:"image_rate_multiplier"`
 	ImagePrice1K                    *float64 `json:"image_price_1k"`
 	ImagePrice2K                    *float64 `json:"image_price_2k"`
 	ImagePrice4K                    *float64 `json:"image_price_4k"`
 	GPTImageCallPrice               *float64 `json:"gpt_image_call_price"`
+	VideoRateIndependent            *bool    `json:"video_rate_independent"`
+	VideoRateMultiplier             *float64 `json:"video_rate_multiplier"`
+	VideoPrice480P                  *float64 `json:"video_price_480p"`
+	VideoPrice720P                  *float64 `json:"video_price_720p"`
+	VideoPrice1080P                 *float64 `json:"video_price_1080p"`
 	ClaudeCodeOnly                  *bool    `json:"claude_code_only"`
 	FallbackGroupID                 *int64   `json:"fallback_group_id"`
 	FallbackGroupIDOnInvalidRequest *int64   `json:"fallback_group_id_on_invalid_request"`
@@ -298,10 +314,18 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		DailyLimitUSD:                   req.DailyLimitUSD.ToServiceInput(),
 		WeeklyLimitUSD:                  req.WeeklyLimitUSD.ToServiceInput(),
 		MonthlyLimitUSD:                 req.MonthlyLimitUSD.ToServiceInput(),
+		AllowImageGeneration:            req.AllowImageGeneration,
+		ImageRateIndependent:            req.ImageRateIndependent,
+		ImageRateMultiplier:             req.ImageRateMultiplier,
 		ImagePrice1K:                    req.ImagePrice1K,
 		ImagePrice2K:                    req.ImagePrice2K,
 		ImagePrice4K:                    req.ImagePrice4K,
 		GPTImageCallPrice:               req.GPTImageCallPrice,
+		VideoRateIndependent:            req.VideoRateIndependent,
+		VideoRateMultiplier:             req.VideoRateMultiplier,
+		VideoPrice480P:                  req.VideoPrice480P,
+		VideoPrice720P:                  req.VideoPrice720P,
+		VideoPrice1080P:                 req.VideoPrice1080P,
 		ClaudeCodeOnly:                  req.ClaudeCodeOnly,
 		FallbackGroupID:                 req.FallbackGroupID,
 		FallbackGroupIDOnInvalidRequest: req.FallbackGroupIDOnInvalidRequest,
@@ -351,10 +375,18 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		DailyLimitUSD:                   req.DailyLimitUSD.ToServiceInput(),
 		WeeklyLimitUSD:                  req.WeeklyLimitUSD.ToServiceInput(),
 		MonthlyLimitUSD:                 req.MonthlyLimitUSD.ToServiceInput(),
+		AllowImageGeneration:            req.AllowImageGeneration,
+		ImageRateIndependent:            req.ImageRateIndependent,
+		ImageRateMultiplier:             req.ImageRateMultiplier,
 		ImagePrice1K:                    req.ImagePrice1K,
 		ImagePrice2K:                    req.ImagePrice2K,
 		ImagePrice4K:                    req.ImagePrice4K,
 		GPTImageCallPrice:               req.GPTImageCallPrice,
+		VideoRateIndependent:            req.VideoRateIndependent,
+		VideoRateMultiplier:             req.VideoRateMultiplier,
+		VideoPrice480P:                  req.VideoPrice480P,
+		VideoPrice720P:                  req.VideoPrice720P,
+		VideoPrice1080P:                 req.VideoPrice1080P,
 		ClaudeCodeOnly:                  req.ClaudeCodeOnly,
 		FallbackGroupID:                 req.FallbackGroupID,
 		FallbackGroupIDOnInvalidRequest: req.FallbackGroupIDOnInvalidRequest,

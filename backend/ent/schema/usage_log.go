@@ -155,6 +155,17 @@ func (UsageLog) Fields() []ent.Field {
 			MaxLen(16).
 			Optional().
 			Nillable(),
+		// Grok 视频按秒计费审计字段。image_count 仍保留为旧版媒体单位计数，
+		// video_count 明确区分视频用量，避免图片和视频报表混淆。
+		field.Int("video_count").
+			Default(0),
+		field.String("video_resolution").
+			MaxLen(10).
+			Optional().
+			Nillable(),
+		field.Int("video_duration_seconds").
+			Optional().
+			Nillable(),
 
 		// Cache TTL Override 标记（管理员强制替换了缓存 TTL 计费）
 		field.Bool("cache_ttl_overridden").

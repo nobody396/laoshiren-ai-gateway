@@ -13,7 +13,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 10 // v10: reload snapshots for group availability checks
+const apiKeyAuthSnapshotVersion = 11 // v11: include Grok media permission and image multiplier controls
 
 type apiKeyAuthCacheConfig struct {
 	l1Size        int
@@ -237,10 +237,18 @@ func (s *APIKeyService) snapshotFromAPIKey(apiKey *APIKey) *APIKeyAuthSnapshot {
 			DailyLimitUSD:                   apiKey.Group.DailyLimitUSD,
 			WeeklyLimitUSD:                  apiKey.Group.WeeklyLimitUSD,
 			MonthlyLimitUSD:                 apiKey.Group.MonthlyLimitUSD,
+			AllowImageGeneration:            apiKey.Group.AllowImageGeneration,
+			ImageRateIndependent:            apiKey.Group.ImageRateIndependent,
+			ImageRateMultiplier:             apiKey.Group.ImageRateMultiplier,
 			ImagePrice1K:                    apiKey.Group.ImagePrice1K,
 			ImagePrice2K:                    apiKey.Group.ImagePrice2K,
 			ImagePrice4K:                    apiKey.Group.ImagePrice4K,
 			GPTImageCallPrice:               apiKey.Group.GPTImageCallPrice,
+			VideoRateIndependent:            apiKey.Group.VideoRateIndependent,
+			VideoRateMultiplier:             apiKey.Group.VideoRateMultiplier,
+			VideoPrice480P:                  apiKey.Group.VideoPrice480P,
+			VideoPrice720P:                  apiKey.Group.VideoPrice720P,
+			VideoPrice1080P:                 apiKey.Group.VideoPrice1080P,
 			ClaudeCodeOnly:                  apiKey.Group.ClaudeCodeOnly,
 			FallbackGroupID:                 apiKey.Group.FallbackGroupID,
 			FallbackGroupIDOnInvalidRequest: apiKey.Group.FallbackGroupIDOnInvalidRequest,
@@ -294,10 +302,18 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 			DailyLimitUSD:                   snapshot.Group.DailyLimitUSD,
 			WeeklyLimitUSD:                  snapshot.Group.WeeklyLimitUSD,
 			MonthlyLimitUSD:                 snapshot.Group.MonthlyLimitUSD,
+			AllowImageGeneration:            snapshot.Group.AllowImageGeneration,
+			ImageRateIndependent:            snapshot.Group.ImageRateIndependent,
+			ImageRateMultiplier:             snapshot.Group.ImageRateMultiplier,
 			ImagePrice1K:                    snapshot.Group.ImagePrice1K,
 			ImagePrice2K:                    snapshot.Group.ImagePrice2K,
 			ImagePrice4K:                    snapshot.Group.ImagePrice4K,
 			GPTImageCallPrice:               snapshot.Group.GPTImageCallPrice,
+			VideoRateIndependent:            snapshot.Group.VideoRateIndependent,
+			VideoRateMultiplier:             snapshot.Group.VideoRateMultiplier,
+			VideoPrice480P:                  snapshot.Group.VideoPrice480P,
+			VideoPrice720P:                  snapshot.Group.VideoPrice720P,
+			VideoPrice1080P:                 snapshot.Group.VideoPrice1080P,
 			ClaudeCodeOnly:                  snapshot.Group.ClaudeCodeOnly,
 			FallbackGroupID:                 snapshot.Group.FallbackGroupID,
 			FallbackGroupIDOnInvalidRequest: snapshot.Group.FallbackGroupIDOnInvalidRequest,

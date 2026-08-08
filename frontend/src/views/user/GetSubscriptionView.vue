@@ -74,11 +74,22 @@
                         <span class="topup-status topup-status--available">{{ t('topup.monthlyPlanStatus') }}</span>
                       </span>
                       <span class="topup-monthly-product__price">{{ plan.price }} <small>/ 31 天</small></span>
+                      <span class="topup-monthly-product__energy">
+                        {{ t('topup.monthlyPlanEnergyValue', { amount: plan.displayMonthlyEnergyText }) }}
+                      </span>
+                      <span class="topup-monthly-product__equivalent">
+                        {{ t('topup.monthlyPlanPaygEquivalent', { amount: plan.paygEquivalentCny }) }}
+                      </span>
                       <span v-if="plan.legendaryCopy" class="topup-monthly-product__legend">
                         {{ plan.description }}
                       </span>
                     </button>
                   </div>
+                  <p class="topup-monthly-catalog-note">
+                    {{ t('topup.monthlyPlanSharedPool') }}。
+                    {{ t('topup.monthlyPlanModelsPrefix') }}
+                    <RouterLink to="/models">{{ t('topup.monthlyPlanModelsLink') }}</RouterLink>。
+                  </p>
                 </section>
 
                 <section v-if="selectedProductKind === 'balance'">
@@ -222,8 +233,17 @@
                         </div>
                         <div class="topup-monthly-quota">
                           <span>{{ t('topup.monthlyPlanMonthlyLimit') }}</span>
-                          <strong>{{ selectedMonthlyPlan?.displayMonthlyCreditsText }} AI credits / 月</strong>
+                          <strong>
+                            {{ t('topup.monthlyPlanEnergyValue', { amount: selectedMonthlyPlan?.displayMonthlyEnergyText }) }}
+                          </strong>
+                          <small class="topup-monthly-quota__equivalent">
+                            {{ t('topup.monthlyPlanPaygEquivalent', { amount: selectedMonthlyPlan?.paygEquivalentCny }) }}
+                          </small>
                           <small>{{ t('topup.monthlyPlanSharedPool') }}</small>
+                          <small class="topup-monthly-quota__models">
+                            {{ t('topup.monthlyPlanModelsPrefix') }}
+                            <RouterLink to="/models">{{ t('topup.monthlyPlanModelsLink') }}</RouterLink>。
+                          </small>
                         </div>
                       </div>
 
@@ -1319,6 +1339,40 @@ void Promise.all([
   font-weight: 650;
 }
 
+.topup-monthly-product__energy,
+.topup-monthly-product__equivalent {
+  display: block;
+  margin-top: 0.62rem;
+  color: var(--admin-ink, rgb(var(--color-ink)));
+  font-size: 0.88rem;
+  font-weight: 780;
+  line-height: 1.4;
+}
+
+.topup-monthly-product__equivalent {
+  margin-top: 0.24rem;
+  color: var(--admin-muted, rgb(var(--color-muted)));
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.topup-monthly-catalog-note {
+  margin: 0.75rem 0 0;
+  color: var(--admin-muted, rgb(var(--color-muted)));
+  font-size: 0.8rem;
+  font-weight: 620;
+  line-height: 1.65;
+}
+
+.topup-monthly-catalog-note a,
+.topup-monthly-quota__models a {
+  color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
+  font-weight: 760;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
 .topup-monthly-product--apex .topup-monthly-product__price small {
   color: rgb(var(--gild-200) / 0.72);
 }
@@ -1685,6 +1739,11 @@ void Promise.all([
   font-size: 0.76rem;
   font-weight: 650;
   line-height: 1.45;
+}
+
+.topup-monthly-quota .topup-monthly-quota__equivalent {
+  color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
+  font-weight: 760;
 }
 
 .topup-apex-lore {

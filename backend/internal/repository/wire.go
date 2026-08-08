@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"time"
 
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/bozhouDev/DragonCode-sub2api/ent"
@@ -45,6 +46,12 @@ func ProvideSessionLimitCache(rdb *redis.Client, cfg *config.Config) service.Ses
 		defaultIdleTimeoutMinutes = cfg.Gateway.SessionIdleTimeoutMinutes
 	}
 	return NewSessionLimitCache(rdb, defaultIdleTimeoutMinutes)
+}
+
+// ProvideOpenAIRouteHealthStore keeps runtime TTL choices internal to the
+// repository. Route policy backoff remains control-plane configurable.
+func ProvideOpenAIRouteHealthStore(rdb *redis.Client) service.OpenAIRouteHealthStore {
+	return NewOpenAIRouteHealthCache(rdb, 24*time.Hour, 30*time.Second)
 }
 
 // ProviderSet is the Wire provider set for all repositories
@@ -129,6 +136,8 @@ var ProviderSet = wire.NewSet(
 	NewTLSFingerprintProfileCache,
 	NewBalanceAlertCache,
 	NewRBACCache,
+	NewOpenAIRouteBudgetCache,
+	ProvideOpenAIRouteHealthStore,
 
 	// Encryptors
 	NewAESEncryptor,
@@ -146,6 +155,7 @@ var ProviderSet = wire.NewSet(
 	NewClaudeOAuthClient,
 	NewHTTPUpstream,
 	NewOpenAIOAuthClient,
+	NewGrokOAuthClient,
 	NewGeminiOAuthClient,
 	NewGeminiCliCodeAssistClient,
 	NewGeminiDriveClient,

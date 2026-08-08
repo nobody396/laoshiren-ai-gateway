@@ -8,6 +8,7 @@ import (
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/oauth"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/openai"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/xai"
 )
 
 // OpenAIOAuthClient interface for OpenAI OAuth operations
@@ -15,6 +16,21 @@ type OpenAIOAuthClient interface {
 	ExchangeCode(ctx context.Context, code, codeVerifier, redirectURI, proxyURL, clientID string) (*openai.TokenResponse, error)
 	RefreshToken(ctx context.Context, refreshToken, proxyURL string) (*openai.TokenResponse, error)
 	RefreshTokenWithClientID(ctx context.Context, refreshToken, proxyURL string, clientID string) (*openai.TokenResponse, error)
+}
+
+// GrokOAuthClient is the narrow xAI OAuth transport used by the Grok account
+// control plane. Keeping it beside the existing OAuth ports lets repository
+// implementations remain replaceable in tests.
+type GrokOAuthClient interface {
+	ExchangeCode(ctx context.Context, code, codeVerifier, redirectURI, proxyURL, clientID string) (*xai.TokenResponse, error)
+	RefreshToken(ctx context.Context, refreshToken, proxyURL, clientID string) (*xai.TokenResponse, error)
+	ConvertSSOToBuild(ctx context.Context, ssoToken, proxyURL string) (*xai.TokenResponse, error)
+}
+
+// GrokOAuthTokenService is the refresh port consumed by Grok token providers.
+type GrokOAuthTokenService interface {
+	RefreshAccountToken(ctx context.Context, account *Account) (*GrokTokenInfo, error)
+	BuildAccountCredentials(tokenInfo *GrokTokenInfo) map[string]any
 }
 
 // ClaudeOAuthClient handles HTTP requests for Claude OAuth flows

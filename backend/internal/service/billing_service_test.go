@@ -564,6 +564,50 @@ func TestCalculateImageCost(t *testing.T) {
 	require.InDelta(t, 0.134*3, cost.ActualCost, 1e-10)
 }
 
+func TestCalculateVideoCostUsesSeparateConfig(t *testing.T) {
+	svc := newTestBillingService()
+
+	imagePrice := 0.4
+	videoPrice := 0.08
+	imageCost := svc.CalculateImageCost("grok-imagine-video", "2K", 1, &ImagePriceConfig{Price2K: &imagePrice}, 1.0)
+	videoCost := svc.CalculateVideoCost("grok-imagine-video", "480p", 1, 10, &VideoPriceConfig{Price480P: &videoPrice}, 0.5)
+
+	require.InDelta(t, 0.4, imageCost.TotalCost, 1e-10)
+	require.InDelta(t, 0.8, videoCost.TotalCost, 1e-10)
+	require.InDelta(t, 0.4, videoCost.ActualCost, 1e-10)
+	require.Equal(t, string(BillingModeVideo), videoCost.BillingMode)
+}
+
+func TestCalculateVideoCostBillsPerSecond(t *testing.T) {
+	svc := newTestBillingService()
+
+	oneSecond := svc.CalculateVideoCost("grok-imagine-video", "720p", 1, 1, nil, 1.0)
+	fifteenSeconds := svc.CalculateVideoCost("grok-imagine-video", "720p", 1, 15, nil, 1.0)
+	defaultDuration := svc.CalculateVideoCost("grok-imagine-video", "720p", 1, 0, nil, 1.0)
+	clampedDuration := svc.CalculateVideoCost("grok-imagine-video", "720p", 1, 999, nil, 1.0)
+
+	require.InDelta(t, 0.07, oneSecond.TotalCost, 1e-10)
+	require.InDelta(t, 0.07*15, fifteenSeconds.TotalCost, 1e-10)
+	require.InDelta(t, 0.07*8, defaultDuration.TotalCost, 1e-10)
+	require.InDelta(t, 0.07*15, clampedDuration.TotalCost, 1e-10)
+}
+
+func TestCalculateGrokImagineRateCard(t *testing.T) {
+	svc := newTestBillingService()
+
+	image1K := svc.CalculateImageCost("grok-imagine-image", "1K", 1, nil, 1.0)
+	imageQuality2K := svc.CalculateImageCost("grok-imagine-image-quality", "2K", 1, nil, 1.0)
+	video480P := svc.CalculateVideoCost("grok-imagine-video", "480p", 1, 1, nil, 1.0)
+	video720P := svc.CalculateVideoCost("grok-imagine-video", "720p", 1, 1, nil, 1.0)
+	video15_1080P := svc.CalculateVideoCost("grok-imagine-video-1.5", "1080p", 1, 1, nil, 1.0)
+
+	require.InDelta(t, 0.02, image1K.TotalCost, 1e-10)
+	require.InDelta(t, 0.07, imageQuality2K.TotalCost, 1e-10)
+	require.InDelta(t, 0.05, video480P.TotalCost, 1e-10)
+	require.InDelta(t, 0.07, video720P.TotalCost, 1e-10)
+	require.InDelta(t, 0.25, video15_1080P.TotalCost, 1e-10)
+}
+
 func TestIsModelSupported(t *testing.T) {
 	svc := newTestBillingService()
 

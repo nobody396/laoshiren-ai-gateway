@@ -52,6 +52,9 @@ type AnthropicContentBlock struct {
 
 	// type=thinking
 	Thinking string `json:"thinking,omitempty"`
+	// Signature carries provider encrypted reasoning (e.g. xAI encrypted_content)
+	// so multi-turn Claude clients can round-trip it back on subsequent turns.
+	Signature string `json:"signature,omitempty"`
 
 	// type=image
 	Source *AnthropicImageSource `json:"source,omitempty"`
@@ -173,19 +176,27 @@ type AnthropicDelta struct {
 
 // ResponsesRequest is the request body for POST /v1/responses.
 type ResponsesRequest struct {
-	Model           string              `json:"model"`
-	Instructions    string              `json:"instructions,omitempty"`
-	Input           json.RawMessage     `json:"input"` // string or []ResponsesInputItem
-	MaxOutputTokens *int                `json:"max_output_tokens,omitempty"`
-	Temperature     *float64            `json:"temperature,omitempty"`
-	TopP            *float64            `json:"top_p,omitempty"`
-	Stream          bool                `json:"stream,omitempty"`
-	Tools           []ResponsesTool     `json:"tools,omitempty"`
-	Include         []string            `json:"include,omitempty"`
-	Store           *bool               `json:"store,omitempty"`
-	Reasoning       *ResponsesReasoning `json:"reasoning,omitempty"`
-	ToolChoice      json.RawMessage     `json:"tool_choice,omitempty"`
-	ServiceTier     string              `json:"service_tier,omitempty"`
+	Model             string              `json:"model"`
+	Instructions      string              `json:"instructions,omitempty"`
+	Input             json.RawMessage     `json:"input"` // string or []ResponsesInputItem
+	MaxOutputTokens   *int                `json:"max_output_tokens,omitempty"`
+	Temperature       *float64            `json:"temperature,omitempty"`
+	TopP              *float64            `json:"top_p,omitempty"`
+	Stream            bool                `json:"stream,omitempty"`
+	Tools             []ResponsesTool     `json:"tools,omitempty"`
+	Include           []string            `json:"include,omitempty"`
+	Store             *bool               `json:"store,omitempty"`
+	ParallelToolCalls *bool               `json:"parallel_tool_calls,omitempty"`
+	Reasoning         *ResponsesReasoning `json:"reasoning,omitempty"`
+	Text              *ResponsesText      `json:"text,omitempty"`
+	ToolChoice        json.RawMessage     `json:"tool_choice,omitempty"`
+	ServiceTier       string              `json:"service_tier,omitempty"`
+}
+
+// ResponsesText configures text output options in the Responses API.
+type ResponsesText struct {
+	Format    json.RawMessage `json:"format,omitempty"`
+	Verbosity string          `json:"verbosity,omitempty"`
 }
 
 // ResponsesReasoning configures reasoning effort in the Responses API.
@@ -204,10 +215,15 @@ type ResponsesInputItem struct {
 	Role    string          `json:"role,omitempty"`
 	Content json.RawMessage `json:"content,omitempty"` // string or []ResponsesContentPart
 
+	// type=reasoning (multi-turn replay of encrypted reasoning)
+	EncryptedContent string `json:"encrypted_content,omitempty"`
+
 	// type=function_call
 	CallID    string `json:"call_id,omitempty"`
 	Name      string `json:"name,omitempty"`
 	Arguments string `json:"arguments,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
+	Input     string `json:"input,omitempty"`
 	ID        string `json:"id,omitempty"`
 
 	// type=function_call_output
@@ -275,9 +291,78 @@ type ResponsesOutput struct {
 	CallID    string `json:"call_id,omitempty"`
 	Name      string `json:"name,omitempty"`
 	Arguments string `json:"arguments,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
+	Input     string `json:"input,omitempty"`
 
 	// type=web_search_call
 	Action *WebSearchAction `json:"action,omitempty"`
+}
+
+// MarshalJSON emits the client-side wire shape required by Codex for
+// tool_search_call. In particular, execution="client" is mandatory and the
+// arguments value is a JSON object rather than a function-call string.
+func (o ResponsesOutput) MarshalJSON() ([]byte, error) {
+	type responsesOutputAlias ResponsesOutput
+	if o.Type != "tool_search_call" {
+		return json.Marshal(responsesOutputAlias(o))
+	}
+	m := map[string]any{
+		"type":      o.Type,
+		"id":        o.ID,
+		"call_id":   o.CallID,
+		"execution": "client",
+		"arguments": toolSearchCallArgumentsJSON(o.Arguments),
+	}
+	if o.Status != "" {
+		m["status"] = o.Status
+	}
+	return json.Marshal(m)
+}
+
+// UnmarshalJSON accepts both function-call string arguments and the object
+// arguments used by tool_search_call, retaining the latter as raw JSON text.
+func (o *ResponsesOutput) UnmarshalJSON(data []byte) error {
+	type responsesOutputAlias ResponsesOutput
+	var kind struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &kind); err != nil {
+		return err
+	}
+	if kind.Type != "tool_search_call" {
+		var decoded responsesOutputAlias
+		if err := json.Unmarshal(data, &decoded); err != nil {
+			return err
+		}
+		*o = ResponsesOutput(decoded)
+		return nil
+	}
+
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	arguments, hasArguments := fields["arguments"]
+	delete(fields, "arguments")
+	normalized, err := json.Marshal(fields)
+	if err != nil {
+		return err
+	}
+	var decoded responsesOutputAlias
+	if err := json.Unmarshal(normalized, &decoded); err != nil {
+		return err
+	}
+	*o = ResponsesOutput(decoded)
+	if !hasArguments || string(arguments) == "null" {
+		return nil
+	}
+	var argumentString string
+	if err := json.Unmarshal(arguments, &argumentString); err == nil {
+		o.Arguments = argumentString
+	} else {
+		o.Arguments = string(arguments)
+	}
+	return nil
 }
 
 // WebSearchAction describes the search action in a web_search_call output item.
@@ -375,6 +460,9 @@ type ResponsesStreamEvent struct {
 	Name      string `json:"name,omitempty"`
 	Arguments string `json:"arguments,omitempty"`
 
+	// response.custom_tool_call_input.done
+	Input string `json:"input,omitempty"`
+
 	// response.reasoning_summary_text.delta / done
 	// Reuses Text/Delta fields above, SummaryIndex identifies which summary part
 	SummaryIndex int `json:"summary_index,omitempty"`
@@ -403,10 +491,12 @@ type ChatCompletionsRequest struct {
 	Stream              bool               `json:"stream,omitempty"`
 	StreamOptions       *ChatStreamOptions `json:"stream_options,omitempty"`
 	Tools               []ChatTool         `json:"tools,omitempty"`
+	ParallelToolCalls   *bool              `json:"parallel_tool_calls,omitempty"`
 	ToolChoice          json.RawMessage    `json:"tool_choice,omitempty"`
 	ReasoningEffort     string             `json:"reasoning_effort,omitempty"` // "low" | "medium" | "high"
 	ServiceTier         string             `json:"service_tier,omitempty"`
 	Stop                json.RawMessage    `json:"stop,omitempty"` // string or []string
+	ResponseFormat      json.RawMessage    `json:"response_format,omitempty"`
 
 	// Legacy function calling (deprecated but still supported)
 	Functions    []ChatFunction  `json:"functions,omitempty"`

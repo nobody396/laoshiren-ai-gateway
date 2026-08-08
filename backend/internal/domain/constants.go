@@ -47,6 +47,7 @@ const (
 	PlatformGemini      = "gemini"
 	PlatformAntigravity = "antigravity"
 	PlatformGPTImage    = "gpt-image"
+	PlatformGrok        = "grok"
 )
 
 // Account type constants

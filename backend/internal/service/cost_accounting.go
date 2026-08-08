@@ -28,9 +28,9 @@ var costAccountingPlanPricing = map[string]struct {
 }
 
 var costAccountingMonthlyCardGroupNames = map[string]map[string]string{
-	"plus": {"gpt": "GPT Plus 月卡组", "claude": "Claude Plus 月卡组"},
-	"pro":  {"gpt": "GPT Pro V3 月卡组", "claude": "Claude Pro V3 月卡组"},
-	"max":  {"gpt": "GPT Max V3 月卡组", "claude": "Claude Max V3 月卡组"},
+	"plus": {"gpt": "GPT Plus 月卡组", "claude": "Claude Plus 月卡组", "grok": "Grok Plus 月卡组"},
+	"pro":  {"gpt": "GPT Pro V3 月卡组", "claude": "Claude Pro V3 月卡组", "grok": "Grok Pro V3 月卡组"},
+	"max":  {"gpt": "GPT Max V3 月卡组", "claude": "Claude Max V3 月卡组", "grok": "Grok Max V3 月卡组"},
 }
 
 var costAccountingMonthlyCardPlanOrder = []string{"plus", "pro", "max"}

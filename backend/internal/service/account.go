@@ -6,6 +6,8 @@ import (
 	"errors"
 	"hash/fnv"
 	"log/slog"
+	"maps"
+	"net/http"
 	"reflect"
 	"sort"
 	"strconv"
@@ -14,6 +16,8 @@ import (
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/domain"
+	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/xai"
 )
 
 type Account struct {
@@ -64,6 +68,74 @@ type Account struct {
 	modelMappingCacheRawPtr         uintptr
 	modelMappingCacheRawLen         int
 	modelMappingCacheRawSig         uint64
+
+	// header_overrides hot-path cache (non-persistent, same lifecycle as model_mapping).
+	headerOverrideCache               map[string]string
+	headerOverrideCacheReady          bool
+	headerOverrideCacheCredentialsPtr uintptr
+	headerOverrideCacheRawPtr         uintptr
+	headerOverrideCacheRawLen         int
+	headerOverrideCacheRawSig         uint64
+}
+
+const GrokMediaEligibleExtraKey = "grok_media_eligible"
+
+// ValidateGrokMediaEligibilityExtra validates the optional administrator
+// override. null removes the override and restores provider-observation based
+// media routing.
+func ValidateGrokMediaEligibilityExtra(platform string, extra map[string]any) error {
+	if platform != PlatformGrok || extra == nil {
+		return nil
+	}
+	raw, exists := extra[GrokMediaEligibleExtraKey]
+	if !exists || raw == nil {
+		return nil
+	}
+	if _, ok := raw.(bool); !ok {
+		return infraerrors.BadRequest(
+			"GROK_MEDIA_ELIGIBILITY_INVALID",
+			"grok_media_eligible must be a boolean or null",
+		)
+	}
+	return nil
+}
+
+func normalizeGrokMediaEligibilityExtra(platform string, extra map[string]any) (map[string]any, error) {
+	if platform != PlatformGrok {
+		return extra, nil
+	}
+	if err := ValidateGrokMediaEligibilityExtra(platform, extra); err != nil {
+		return nil, err
+	}
+	normalized := maps.Clone(extra)
+	if normalized != nil && normalized[GrokMediaEligibleExtraKey] == nil {
+		delete(normalized, GrokMediaEligibleExtraKey)
+	}
+	return normalized, nil
+}
+
+func normalizeGrokMediaEligibilityUpdateExtra(account *Account, input *UpdateAccountInput, normalized map[string]any) (map[string]any, error) {
+	if account == nil || account.Platform != PlatformGrok {
+		return normalized, nil
+	}
+	if err := ValidateGrokMediaEligibilityExtra(account.Platform, input.Extra); err != nil {
+		return nil, err
+	}
+	normalized = maps.Clone(normalized)
+	if normalized == nil {
+		normalized = make(map[string]any)
+	}
+	raw, provided := input.Extra[GrokMediaEligibleExtraKey]
+	if provided {
+		if raw == nil {
+			delete(normalized, GrokMediaEligibleExtraKey)
+		}
+		return normalized, nil
+	}
+	if current, ok := account.Extra[GrokMediaEligibleExtraKey].(bool); ok {
+		normalized[GrokMediaEligibleExtraKey] = current
+	}
+	return normalized, nil
 }
 
 type TempUnschedulableRule struct {
@@ -183,6 +255,18 @@ func (a *Account) IsPrivacySet() bool {
 
 func (a *Account) IsGemini() bool {
 	return a.Platform == PlatformGemini
+}
+
+func (a *Account) IsGrok() bool {
+	return a != nil && a.Platform == PlatformGrok
+}
+
+func (a *Account) IsGrokOAuth() bool {
+	return a.IsGrok() && a.Type == AccountTypeOAuth
+}
+
+func (a *Account) IsOpenAICompatible() bool {
+	return a != nil && (a.Platform == PlatformOpenAI || a.Platform == PlatformGrok)
 }
 
 func (a *Account) GeminiOAuthType() string {
@@ -500,6 +584,9 @@ func (a *Account) resolveModelMapping(rawMapping map[string]any) map[string]stri
 		if a.Platform == domain.PlatformAntigravity {
 			return domain.DefaultAntigravityModelMapping
 		}
+		if a.Platform == domain.PlatformGrok {
+			return xai.DefaultModelMapping()
+		}
 		// Bedrock 默认映射由 forwardBedrock 统一处理（需配合 region prefix 调整）
 		return nil
 	}
@@ -507,6 +594,9 @@ func (a *Account) resolveModelMapping(rawMapping map[string]any) map[string]stri
 		// Antigravity 平台使用默认映射
 		if a.Platform == domain.PlatformAntigravity {
 			return domain.DefaultAntigravityModelMapping
+		}
+		if a.Platform == domain.PlatformGrok {
+			return xai.DefaultModelMapping()
 		}
 		return nil
 	}
@@ -531,6 +621,9 @@ func (a *Account) resolveModelMapping(rawMapping map[string]any) map[string]stri
 	// Antigravity 平台使用默认映射
 	if a.Platform == domain.PlatformAntigravity {
 		return domain.DefaultAntigravityModelMapping
+	}
+	if a.Platform == domain.PlatformGrok {
+		return xai.DefaultModelMapping()
 	}
 	return nil
 }
@@ -945,6 +1038,12 @@ func isPoolModeRetryableStatus(statusCode int) bool {
 	}
 }
 
+// IsPoolModeRetryableStatus is the account-scoped hook used by Grok. Local
+// accounts currently use the existing global retryable status list.
+func (a *Account) IsPoolModeRetryableStatus(statusCode int) bool {
+	return isPoolModeRetryableStatus(statusCode)
+}
+
 func (a *Account) GetCustomErrorCodes() []int {
 	if a.Credentials == nil {
 		return nil
@@ -1047,6 +1146,87 @@ func (a *Account) GetOpenAIRefreshToken() string {
 		return ""
 	}
 	return a.GetCredential("refresh_token")
+}
+
+// GetGrokBaseURL returns the configured Grok text endpoint. OAuth accounts
+// default to the official Grok Build CLI gateway; API-key accounts default to
+// the public xAI API.
+func (a *Account) GetGrokBaseURL() string {
+	if !a.IsGrok() {
+		return ""
+	}
+	baseURL := strings.TrimSpace(a.GetCredential("base_url"))
+	if a.IsGrokOAuth() {
+		if baseURL == "" || !xai.IsParseableBaseURL(baseURL) {
+			return xai.DefaultCLIBaseURL
+		}
+		return baseURL
+	}
+	if baseURL != "" {
+		return baseURL
+	}
+	return xai.DefaultBaseURL
+}
+
+// GetGrokMediaBaseURL bypasses the CLI gateway for large media payloads while
+// respecting explicitly configured official, regional, or third-party URLs.
+func (a *Account) GetGrokMediaBaseURL() string {
+	if !a.IsGrok() {
+		return ""
+	}
+	baseURL := a.GetGrokBaseURL()
+	if a.IsGrokOAuth() && isGrokCLIProxyTarget(baseURL) {
+		return xai.DefaultBaseURL
+	}
+	return baseURL
+}
+
+func (a *Account) GetGrokAccessToken() string {
+	if !a.IsGrok() {
+		return ""
+	}
+	return a.GetCredential("access_token")
+}
+
+func (a *Account) GetGrokRefreshToken() string {
+	if !a.IsGrokOAuth() {
+		return ""
+	}
+	return a.GetCredential("refresh_token")
+}
+
+// GrokMediaGenerationEligibility fails closed for OAuth accounts until the
+// billing probe confirms a paid entitlement. API-key accounts are eligible by
+// construction, and administrators may explicitly override a probe result.
+func (a *Account) GrokMediaGenerationEligibility() (bool, string) {
+	if a == nil || !a.IsGrok() {
+		return false, "not_grok"
+	}
+	if a.Extra != nil {
+		if value, ok := a.Extra[GrokMediaEligibleExtraKey].(bool); ok {
+			if value {
+				return true, "override_enabled"
+			}
+			return false, "override_disabled"
+		}
+	}
+	if a.Type != AccountTypeOAuth {
+		return true, "non_oauth"
+	}
+	billing, err := grokBillingSnapshotFromExtra(a.Extra)
+	if err != nil || billing == nil {
+		return false, "billing_unobserved"
+	}
+	if billing.StatusCode == http.StatusForbidden || billing.WeeklyStatusCode == http.StatusForbidden || billing.MonthlyStatusCode == http.StatusForbidden {
+		return false, "billing_forbidden"
+	}
+	if isKnownGrokFreeAccount(a) {
+		return false, "billing_free_tier"
+	}
+	if !grokBillingHasAuthoritativeQuota(billing) {
+		return false, "billing_inconclusive"
+	}
+	return true, "eligible"
 }
 
 func (a *Account) GetOpenAIIDToken() string {

@@ -76,6 +76,12 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 	reqStream := gjson.GetBytes(body, "stream").Bool()
 
 	reqLog = reqLog.With(zap.String("model", reqModel), zap.Bool("stream", reqStream))
+	if apiKey.Group != nil && apiKey.Group.Platform == service.PlatformGrok &&
+		service.IsExplicitGrokImageGenerationIntent(reqModel, body) &&
+		!service.GroupAllowsImageGeneration(apiKey.Group) {
+		h.errorResponse(c, http.StatusForbidden, "permission_error", service.ImageGenerationPermissionMessage())
+		return
+	}
 
 	setOpsRequestContext(c, reqModel, reqStream, body)
 	setOpsEndpointContext(c, "", int16(service.RequestTypeFromLegacy(reqStream, false)))
@@ -123,14 +129,16 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 
 	for {
 		reqLog.Debug("openai_chat_completions.account_selecting", zap.Int("excluded_account_count", len(failedAccountIDs)))
-		selection, scheduleDecision, err := h.gatewayService.SelectAccountWithScheduler(
+		selection, scheduleDecision, err := h.gatewayService.SelectOpenAICompatibleAccountWithScheduler(
 			c.Request.Context(),
+			openAICompatibleRequestPlatform(apiKey),
 			apiKey.GroupID,
 			"",
 			sessionHash,
 			reqModel,
 			failedAccountIDs,
 			service.OpenAIUpstreamTransportAny,
+			false,
 		)
 		if err != nil {
 			reqLog.Warn("openai_chat_completions.account_select_failed",
@@ -163,7 +171,18 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		account := selection.Account
 		sessionHash = ensureOpenAIPoolModeSessionHash(sessionHash, account)
 		reqLog.Debug("openai_chat_completions.account_selected", zap.Int64("account_id", account.ID), zap.String("account_name", account.Name))
-		_ = scheduleDecision
+		reqLog.Debug("openai_chat_completions.route_shadow_decision",
+			zap.String("route_policy_mode", string(scheduleDecision.RoutePolicyMode)),
+			zap.Int("route_policy_version", scheduleDecision.RoutePolicyVersion),
+			zap.String("route_policy_reason", scheduleDecision.RoutePolicyReason),
+			zap.Int64("legacy_selected_account_id", scheduleDecision.LegacySelectedAccountID),
+			zap.Int64("adaptive_selected_account_id", scheduleDecision.AdaptiveSelectedAccountID),
+			zap.Float64("adaptive_selected_rate", scheduleDecision.AdaptiveSelectedRate),
+			zap.Int("adaptive_candidate_count", scheduleDecision.AdaptiveCandidateCount),
+			zap.Int("adaptive_excluded_count", scheduleDecision.AdaptiveExcludedCount),
+			zap.Bool("adaptive_diverged", scheduleDecision.AdaptiveDiverged),
+			zap.Bool("adaptive_emergency", scheduleDecision.AdaptiveEmergency),
+		)
 		setOpsSelectedAccount(c, account.ID, account.Platform)
 
 		accountReleaseFunc, acquired := h.acquireResponsesAccountSlot(c, apiKey.GroupID, sessionHash, selection, reqStream, &streamStarted, reqLog)

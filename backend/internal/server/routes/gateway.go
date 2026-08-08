@@ -48,6 +48,48 @@ func RegisterGatewayRoutes(
 			next(c)
 		}
 	}
+	imagesHandler := func(c *gin.Context) {
+		if getGroupPlatform(c) == service.PlatformGrok {
+			h.OpenAIGateway.GrokImages(c)
+			return
+		}
+		h.OpenAIGateway.Images(c)
+	}
+	videoGenerationHandler := func(c *gin.Context) {
+		if getGroupPlatform(c) != service.PlatformGrok {
+			c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"type": "not_found_error", "message": "Videos API is not supported for this platform"}})
+			return
+		}
+		h.OpenAIGateway.GrokVideoGeneration(c)
+	}
+	videoEditHandler := func(c *gin.Context) {
+		if getGroupPlatform(c) != service.PlatformGrok {
+			c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"type": "not_found_error", "message": "Videos API is not supported for this platform"}})
+			return
+		}
+		h.OpenAIGateway.GrokVideoEdit(c)
+	}
+	videoExtensionHandler := func(c *gin.Context) {
+		if getGroupPlatform(c) != service.PlatformGrok {
+			c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"type": "not_found_error", "message": "Videos API is not supported for this platform"}})
+			return
+		}
+		h.OpenAIGateway.GrokVideoExtension(c)
+	}
+	videoStatusHandler := func(c *gin.Context) {
+		if getGroupPlatform(c) != service.PlatformGrok {
+			c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"type": "not_found_error", "message": "Videos API is not supported for this platform"}})
+			return
+		}
+		h.OpenAIGateway.GrokVideoStatus(c)
+	}
+	videoContentHandler := func(c *gin.Context) {
+		if getGroupPlatform(c) != service.PlatformGrok {
+			c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"type": "not_found_error", "message": "Videos API is not supported for this platform"}})
+			return
+		}
+		h.OpenAIGateway.GrokVideoContent(c)
+	}
 
 	// API网关（Claude API兼容）
 	gateway := r.Group("/v1")
@@ -60,15 +102,20 @@ func RegisterGatewayRoutes(
 	{
 		// /v1/messages: auto-route based on group platform
 		gateway.POST("/messages", func(c *gin.Context) {
-			if getGroupPlatform(c) == service.PlatformOpenAI {
+			if getGroupPlatform(c) == service.PlatformOpenAI || getGroupPlatform(c) == service.PlatformGrok {
 				h.OpenAIGateway.Messages(c)
 				return
 			}
 			h.Gateway.Messages(c)
 		})
-		// /v1/messages/count_tokens: OpenAI groups get 404
+		// /v1/messages/count_tokens: Grok estimates locally because xAI has no
+		// Anthropic-compatible token-counting endpoint. OpenAI remains unsupported.
 		gateway.POST("/messages/count_tokens", func(c *gin.Context) {
-			if getGroupPlatform(c) == service.PlatformOpenAI {
+			switch getGroupPlatform(c) {
+			case service.PlatformGrok:
+				h.OpenAIGateway.GrokCountTokens(c)
+				return
+			case service.PlatformOpenAI:
 				c.JSON(http.StatusNotFound, gin.H{
 					"type": "error",
 					"error": gin.H{
@@ -89,7 +136,13 @@ func RegisterGatewayRoutes(
 		// OpenAI Chat Completions API
 		gateway.POST("/chat/completions", h.OpenAIGateway.ChatCompletions)
 		// OpenAI Images API
-		gateway.POST("/images/generations", h.OpenAIGateway.Images)
+		gateway.POST("/images/generations", imagesHandler)
+		gateway.POST("/images/edits", imagesHandler)
+		gateway.POST("/videos/generations", videoGenerationHandler)
+		gateway.POST("/videos/edits", videoEditHandler)
+		gateway.POST("/videos/extensions", videoExtensionHandler)
+		gateway.GET("/videos/:request_id", videoStatusHandler)
+		gateway.GET("/videos/:request_id/content", videoContentHandler)
 	}
 
 	// Gemini 原生 API 兼容层（Gemini SDK/CLI 直连）
@@ -111,10 +164,27 @@ func RegisterGatewayRoutes(
 	r.POST("/responses", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, h.OpenAIGateway.Responses)
 	r.POST("/responses/*subpath", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, guardResponsesSubpath(h.OpenAIGateway.Responses))
 	r.GET("/responses", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, h.OpenAIGateway.ResponsesWebSocket)
+	r.POST("/messages/count_tokens", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, func(c *gin.Context) {
+		if getGroupPlatform(c) == service.PlatformGrok {
+			h.OpenAIGateway.GrokCountTokens(c)
+			return
+		}
+		if getGroupPlatform(c) == service.PlatformOpenAI {
+			c.JSON(http.StatusNotFound, gin.H{"type": "error", "error": gin.H{"type": "not_found_error", "message": "Token counting is not supported for this platform"}})
+			return
+		}
+		h.Gateway.CountTokens(c)
+	})
 	// OpenAI Chat Completions API（不带v1前缀的别名）
 	r.POST("/chat/completions", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, h.OpenAIGateway.ChatCompletions)
 	// OpenAI Images API（不带v1前缀的别名）
-	r.POST("/images/generations", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, h.OpenAIGateway.Images)
+	r.POST("/images/generations", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, imagesHandler)
+	r.POST("/images/edits", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, imagesHandler)
+	r.POST("/videos/generations", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, videoGenerationHandler)
+	r.POST("/videos/edits", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, videoEditHandler)
+	r.POST("/videos/extensions", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, videoExtensionHandler)
+	r.GET("/videos/:request_id", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, videoStatusHandler)
+	r.GET("/videos/:request_id/content", bodyLimit, clientRequestID, opsErrorLogger, endpointNorm, gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, videoContentHandler)
 
 	// Antigravity 模型列表
 	r.GET("/antigravity/models", gin.HandlerFunc(apiKeyAuth), requireGroupAnthropic, h.Gateway.AntigravityModels)

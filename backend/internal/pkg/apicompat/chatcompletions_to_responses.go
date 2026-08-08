@@ -27,12 +27,13 @@ func ChatCompletionsToResponses(req *ChatCompletionsRequest) (*ResponsesRequest,
 	}
 
 	out := &ResponsesRequest{
-		Model:        req.Model,
-		Instructions: req.Instructions,
-		Input:        inputJSON,
-		Stream:       true, // upstream always streams
-		Include:      []string{"reasoning.encrypted_content"},
-		ServiceTier:  req.ServiceTier,
+		Model:             req.Model,
+		Instructions:      req.Instructions,
+		Input:             inputJSON,
+		Stream:            true, // upstream always streams
+		Include:           []string{"reasoning.encrypted_content"},
+		ServiceTier:       req.ServiceTier,
+		ParallelToolCalls: req.ParallelToolCalls,
 	}
 
 	// Reasoning models (gpt-5.x) do not accept sampling parameters.
@@ -67,6 +68,13 @@ func ChatCompletionsToResponses(req *ChatCompletionsRequest) (*ResponsesRequest,
 			Effort:  req.ReasoningEffort,
 			Summary: "auto",
 		}
+	}
+
+	if format := chatResponseFormatToResponsesTextFormat(req.ResponseFormat); len(format) > 0 {
+		if out.Text == nil {
+			out.Text = &ResponsesText{}
+		}
+		out.Text.Format = format
 	}
 
 	// tools[] and legacy functions[] → ResponsesTool[]
@@ -324,6 +332,7 @@ func parseChatMessageContent(raw json.RawMessage) (chatMessageContent, error) {
 	if len(raw) == 0 {
 		return chatMessageContent{Text: stringPtr("")}, nil
 	}
+
 	var s string
 	if err := json.Unmarshal(raw, &s); err == nil {
 		return chatMessageContent{Text: &s}, nil
@@ -344,7 +353,8 @@ func marshalChatInputContent(content chatMessageContent) (json.RawMessage, error
 	parts := convertChatContentPartsToResponses(content.Parts)
 	if len(parts) == 0 {
 		// A nil slice marshals to JSON null, which the upstream Responses API
-		// rejects. Use an empty string when no usable parts remain.
+		// rejects ("expected an array of objects or string, but got null").
+		// Fall back to an empty string when no usable parts remain.
 		return json.Marshal("")
 	}
 	return json.Marshal(parts)
@@ -417,7 +427,7 @@ func convertChatToolsToResponses(tools []ChatTool, functions []ChatFunction) []R
 			Name:        t.Function.Name,
 			Description: t.Function.Description,
 			Parameters:  t.Function.Parameters,
-			Strict:      t.Function.Strict,
+			Strict:      defaultStrictFalse(t.Function.Strict),
 		}
 		out = append(out, rt)
 	}
@@ -429,12 +439,20 @@ func convertChatToolsToResponses(tools []ChatTool, functions []ChatFunction) []R
 			Name:        f.Name,
 			Description: f.Description,
 			Parameters:  f.Parameters,
-			Strict:      f.Strict,
+			Strict:      defaultStrictFalse(f.Strict),
 		}
 		out = append(out, rt)
 	}
 
 	return out
+}
+
+func defaultStrictFalse(src *bool) *bool {
+	if src == nil {
+		value := false
+		return &value
+	}
+	return src
 }
 
 // convertChatFunctionCallToToolChoice maps the legacy function_call field to a

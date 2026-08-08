@@ -1,6 +1,7 @@
 import type { CreateAccountRequest, UpdateAccountRequest } from '@/types'
 import {
   cloneRecord,
+  cloneAccountValue,
   hydrateAccountDraft,
   isSensitiveCredentialKey,
   stableEqual,
@@ -90,7 +91,7 @@ export function createPlatformAdapter(config: AdapterConfig): PlatformAccountAda
         const current = draft[field as keyof AccountDraft]
         const previous = original[field as keyof AccountDraft]
         if (!stableEqual(current, previous) && current !== undefined) {
-          mutablePayload[field] = structuredClone(current)
+          mutablePayload[field] = cloneAccountValue(current)
         }
       }
       if (!stableEqual(draft.credentials, original.credentials)) {
@@ -102,7 +103,7 @@ export function createPlatformAdapter(config: AdapterConfig): PlatformAccountAda
       return payload
     },
     toBulkPatch(patch) {
-      const payload = structuredClone(patch) as UpdateAccountRequest
+      const payload = cloneAccountValue(patch) as UpdateAccountRequest
       if (payload.credentials) payload.credentials = sanitizeCredentials(payload.credentials)
       return payload
     },

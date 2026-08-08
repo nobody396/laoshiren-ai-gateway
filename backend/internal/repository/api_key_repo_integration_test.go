@@ -81,6 +81,57 @@ func (s *APIKeyRepoSuite) TestGetByKey() {
 	s.Require().Equal(group.ID, got.Group.ID)
 }
 
+func (s *APIKeyRepoSuite) TestGetByKeyForAuth_HydratesMediaPermissionAndBillingFields() {
+	user := s.mustCreateUser("getbykey-auth-media@test.com")
+	group := s.mustCreateGroup("g-key-auth-media")
+
+	imagePrice1K := 0.11
+	imagePrice2K := 0.22
+	imagePrice4K := 0.44
+	videoPrice480P := 0.55
+	videoPrice720P := 0.77
+	videoPrice1080P := 0.99
+	_, err := s.client.Group.UpdateOneID(group.ID).
+		SetPlatform(service.PlatformGrok).
+		SetAllowImageGeneration(true).
+		SetImageRateIndependent(true).
+		SetImageRateMultiplier(0.15).
+		SetImagePrice1k(imagePrice1K).
+		SetImagePrice2k(imagePrice2K).
+		SetImagePrice4k(imagePrice4K).
+		SetVideoRateIndependent(true).
+		SetVideoRateMultiplier(0.20).
+		SetVideoPrice480p(videoPrice480P).
+		SetVideoPrice720p(videoPrice720P).
+		SetVideoPrice1080p(videoPrice1080P).
+		Save(s.ctx)
+	s.Require().NoError(err)
+
+	key := &service.APIKey{
+		UserID:  user.ID,
+		Key:     "sk-getbykey-auth-media",
+		Name:    "Media Auth Key",
+		GroupID: &group.ID,
+		Status:  service.StatusActive,
+	}
+	s.Require().NoError(s.repo.Create(s.ctx, key))
+
+	got, err := s.repo.GetByKeyForAuth(s.ctx, key.Key)
+	s.Require().NoError(err)
+	s.Require().NotNil(got.Group)
+	s.Require().True(got.Group.AllowImageGeneration)
+	s.Require().True(got.Group.ImageRateIndependent)
+	s.Require().InDelta(0.15, got.Group.ImageRateMultiplier, 1e-12)
+	s.Require().Equal(&imagePrice1K, got.Group.ImagePrice1K)
+	s.Require().Equal(&imagePrice2K, got.Group.ImagePrice2K)
+	s.Require().Equal(&imagePrice4K, got.Group.ImagePrice4K)
+	s.Require().True(got.Group.VideoRateIndependent)
+	s.Require().InDelta(0.20, got.Group.VideoRateMultiplier, 1e-12)
+	s.Require().Equal(&videoPrice480P, got.Group.VideoPrice480P)
+	s.Require().Equal(&videoPrice720P, got.Group.VideoPrice720P)
+	s.Require().Equal(&videoPrice1080P, got.Group.VideoPrice1080P)
+}
+
 func (s *APIKeyRepoSuite) TestGetByKey_NotFound() {
 	_, err := s.repo.GetByKey(s.ctx, "non-existent-key")
 	s.Require().Error(err, "expected error for non-existent key")

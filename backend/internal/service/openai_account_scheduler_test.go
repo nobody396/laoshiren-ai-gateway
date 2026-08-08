@@ -132,6 +132,72 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_UsesGroupPriorityBefore
 	}
 }
 
+type openAIRouteShadowEvaluatorStub struct {
+	request  OpenAIRouteShadowRequest
+	decision OpenAIRouteShadowDecision
+	err      error
+}
+
+func (s *openAIRouteShadowEvaluatorStub) EvaluateShadow(_ context.Context, req OpenAIRouteShadowRequest) (OpenAIRouteShadowDecision, error) {
+	s.request = req
+	return s.decision, s.err
+}
+
+func TestOpenAIGatewayService_SelectAccountWithScheduler_ShadowDecisionNeverOverridesLegacy(t *testing.T) {
+	ctx := context.Background()
+	groupID := int64(7001)
+	legacyRate := 0.20
+	adaptiveRate := 0.15
+	legacy := Account{
+		ID:             7101,
+		Platform:       PlatformOpenAI,
+		Type:           AccountTypeAPIKey,
+		Status:         StatusActive,
+		Schedulable:    true,
+		Concurrency:    2,
+		RateMultiplier: &legacyRate,
+		AccountGroups:  []AccountGroup{{AccountID: 7101, GroupID: groupID, Priority: 1}},
+	}
+	adaptive := Account{
+		ID:             7102,
+		Platform:       PlatformOpenAI,
+		Type:           AccountTypeAPIKey,
+		Status:         StatusActive,
+		Schedulable:    true,
+		Concurrency:    2,
+		RateMultiplier: &adaptiveRate,
+		AccountGroups:  []AccountGroup{{AccountID: 7102, GroupID: groupID, Priority: 2}},
+	}
+	evaluator := &openAIRouteShadowEvaluatorStub{decision: OpenAIRouteShadowDecision{
+		Evaluated:         true,
+		Mode:              OpenAIRoutePolicyShadow,
+		Version:           3,
+		Reason:            "shadow_selected",
+		SelectedAccountID: adaptive.ID,
+		SelectedRate:      adaptiveRate,
+	}}
+	svc := &OpenAIGatewayService{
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{adaptive, legacy}},
+		cfg:                &config.Config{},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
+	}
+	svc.SetOpenAIRouteEvaluator(evaluator)
+
+	selection, decision, err := svc.SelectAccountWithScheduler(ctx, &groupID, "", "", "gpt-5.6-sol", nil, OpenAIUpstreamTransportAny)
+	require.NoError(t, err)
+	require.NotNil(t, selection)
+	require.Equal(t, legacy.ID, selection.Account.ID, "shadow mode must preserve the legacy priority-bucket selection")
+	require.Equal(t, legacy.ID, decision.LegacySelectedAccountID)
+	require.Equal(t, adaptive.ID, decision.AdaptiveSelectedAccountID)
+	require.Equal(t, OpenAIRoutePolicyShadow, decision.RoutePolicyMode)
+	require.Equal(t, 3, decision.RoutePolicyVersion)
+	require.True(t, decision.AdaptiveDiverged)
+	require.Len(t, evaluator.request.Candidates, 2)
+	if selection.ReleaseFunc != nil {
+		selection.ReleaseFunc()
+	}
+}
+
 func TestOpenAIGatewayService_SelectAccountWithScheduler_FallsBackToNextGroupPriorityWhenPreferredExcluded(t *testing.T) {
 	ctx := context.Background()
 	groupID := int64(7)

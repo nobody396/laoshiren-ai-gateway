@@ -13,9 +13,12 @@ export type MonthlyCreditCardPlan = {
   displayDailyCredits: number
   displayWeeklyCredits: number
   displayMonthlyCredits: number
+  displayMonthlyEnergy: number
   displayDailyCreditsText: string
   displayWeeklyCreditsText: string
   displayMonthlyCreditsText: string
+  displayMonthlyEnergyText: string
+  paygEquivalentCny: number
   showWeeklyLimit: boolean
   description: string
   legendaryCopy?: string
@@ -59,9 +62,14 @@ function createMonthlyCreditCardPlan(input: PlanInput, entitlement?: MonthlyCred
     displayDailyCredits: 0,
     displayWeeklyCredits: 0,
     displayMonthlyCredits: monthlyCredits * SUBSCRIPTION_CREDIT_DISPLAY_SCALE,
+    displayMonthlyEnergy: monthlyCredits,
     displayDailyCreditsText: formatSubscriptionCredits(0),
     displayWeeklyCreditsText: formatSubscriptionCredits(0),
     displayMonthlyCreditsText: formatSubscriptionCredits(monthlyCredits),
+    displayMonthlyEnergyText: new Intl.NumberFormat('zh-CN', {
+      maximumFractionDigits: monthlyCredits >= 100 ? 0 : 1
+    }).format(monthlyCredits),
+    paygEquivalentCny: monthlyCredits,
     showWeeklyLimit: false
   }
 }

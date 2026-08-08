@@ -77,7 +77,6 @@ func TestApplyOpenAICompatModelNormalization(t *testing.T) {
 
 func TestForwardAsAnthropic_NormalizesRoutingAndEffortForGpt54XHigh(t *testing.T) {
 	t.Parallel()
-	gin.SetMode(gin.TestMode)
 
 	rec := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(rec)
@@ -131,7 +130,6 @@ func TestForwardAsAnthropic_NormalizesRoutingAndEffortForGpt54XHigh(t *testing.T
 
 func TestForwardAsAnthropic_ForcedCodexInstructionsTemplatePrependsRenderedInstructions(t *testing.T) {
 	t.Parallel()
-	gin.SetMode(gin.TestMode)
 
 	templateDir := t.TempDir()
 	templatePath := filepath.Join(templateDir, "codex-instructions.md.tmpl")
@@ -182,7 +180,6 @@ func TestForwardAsAnthropic_ForcedCodexInstructionsTemplatePrependsRenderedInstr
 
 func TestForwardAsAnthropic_ForcedCodexInstructionsTemplateUsesCachedTemplateContent(t *testing.T) {
 	t.Parallel()
-	gin.SetMode(gin.TestMode)
 
 	rec := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(rec)

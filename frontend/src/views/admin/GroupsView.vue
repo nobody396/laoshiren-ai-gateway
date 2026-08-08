@@ -524,14 +524,25 @@
           </div>
         </div>
 
-        <!-- 图片生成计费配置（antigravity、gemini 和 gpt-image 平台） -->
-        <div v-if="createForm.platform === 'antigravity' || createForm.platform === 'gemini' || createForm.platform === 'gpt-image'" class="border-t pt-4">
+        <!-- 图片/媒体生成能力与计费配置 -->
+        <div v-if="createForm.platform === 'antigravity' || createForm.platform === 'gemini' || createForm.platform === 'gpt-image' || createForm.platform === 'grok'" class="border-t pt-4">
           <label class="block mb-2 font-medium text-gray-700 dark:text-gray-300">
             {{ t('admin.groups.imagePricing.title') }}
           </label>
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
             {{ t('admin.groups.imagePricing.description') }}
           </p>
+          <label v-if="createForm.platform === 'grok'" class="mb-3 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+            <input v-model="createForm.allow_image_generation" type="checkbox" class="rounded" />
+            允许 Grok 图片/视频生成与编辑
+          </label>
+          <div v-if="createForm.platform === 'grok'" class="mb-3 grid grid-cols-2 gap-3">
+            <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <input v-model="createForm.image_rate_independent" type="checkbox" class="rounded" />
+              图片使用独立倍率
+            </label>
+            <div><label class="input-label">图片倍率</label><input v-model.number="createForm.image_rate_multiplier" type="number" step="0.01" min="0" class="input" /></div>
+          </div>
           <div class="grid grid-cols-3 gap-3">
             <div>
               <label class="input-label">1K ($)</label>
@@ -566,6 +577,20 @@
                 placeholder="0.268"
               />
             </div>
+          </div>
+        </div>
+
+        <div v-if="createForm.platform === 'grok'" class="border-t pt-4">
+          <label class="mb-2 block font-medium text-gray-700 dark:text-gray-300">Grok 视频计费（USD/秒）</label>
+          <label class="mb-3 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+            <input v-model="createForm.video_rate_independent" type="checkbox" class="rounded" />
+            使用独立视频倍率
+          </label>
+          <div class="grid grid-cols-4 gap-3">
+            <div><label class="input-label">视频倍率</label><input v-model.number="createForm.video_rate_multiplier" type="number" step="0.01" min="0" class="input" /></div>
+            <div><label class="input-label">480p ($/s)</label><input v-model.number="createForm.video_price_480p" type="number" step="0.001" min="0" class="input" placeholder="0.05" /></div>
+            <div><label class="input-label">720p ($/s)</label><input v-model.number="createForm.video_price_720p" type="number" step="0.001" min="0" class="input" placeholder="0.07" /></div>
+            <div><label class="input-label">1080p ($/s)</label><input v-model.number="createForm.video_price_1080p" type="number" step="0.001" min="0" class="input" placeholder="0.25" /></div>
           </div>
         </div>
 
@@ -1254,14 +1279,25 @@
           </div>
         </div>
 
-        <!-- 图片生成计费配置（antigravity、gemini 和 gpt-image 平台） -->
-        <div v-if="editForm.platform === 'antigravity' || editForm.platform === 'gemini' || editForm.platform === 'gpt-image'" class="border-t pt-4">
+        <!-- 图片/媒体生成能力与计费配置 -->
+        <div v-if="editForm.platform === 'antigravity' || editForm.platform === 'gemini' || editForm.platform === 'gpt-image' || editForm.platform === 'grok'" class="border-t pt-4">
           <label class="block mb-2 font-medium text-gray-700 dark:text-gray-300">
             {{ t('admin.groups.imagePricing.title') }}
           </label>
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
             {{ t('admin.groups.imagePricing.description') }}
           </p>
+          <label v-if="editForm.platform === 'grok'" class="mb-3 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+            <input v-model="editForm.allow_image_generation" type="checkbox" class="rounded" />
+            允许 Grok 图片/视频生成与编辑
+          </label>
+          <div v-if="editForm.platform === 'grok'" class="mb-3 grid grid-cols-2 gap-3">
+            <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <input v-model="editForm.image_rate_independent" type="checkbox" class="rounded" />
+              图片使用独立倍率
+            </label>
+            <div><label class="input-label">图片倍率</label><input v-model.number="editForm.image_rate_multiplier" type="number" step="0.01" min="0" class="input" /></div>
+          </div>
           <div class="grid grid-cols-3 gap-3">
             <div>
               <label class="input-label">1K ($)</label>
@@ -1296,6 +1332,20 @@
                 placeholder="0.268"
               />
             </div>
+          </div>
+        </div>
+
+        <div v-if="editForm.platform === 'grok'" class="border-t pt-4">
+          <label class="mb-2 block font-medium text-gray-700 dark:text-gray-300">Grok 视频计费（USD/秒）</label>
+          <label class="mb-3 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+            <input v-model="editForm.video_rate_independent" type="checkbox" class="rounded" />
+            使用独立视频倍率
+          </label>
+          <div class="grid grid-cols-4 gap-3">
+            <div><label class="input-label">视频倍率</label><input v-model.number="editForm.video_rate_multiplier" type="number" step="0.01" min="0" class="input" /></div>
+            <div><label class="input-label">480p ($/s)</label><input v-model.number="editForm.video_price_480p" type="number" step="0.001" min="0" class="input" /></div>
+            <div><label class="input-label">720p ($/s)</label><input v-model.number="editForm.video_price_720p" type="number" step="0.001" min="0" class="input" /></div>
+            <div><label class="input-label">1080p ($/s)</label><input v-model.number="editForm.video_price_1080p" type="number" step="0.001" min="0" class="input" /></div>
           </div>
         </div>
 
@@ -1920,6 +1970,7 @@ const platformOptions = computed(() => [
   { value: 'openai', label: 'OpenAI' },
   { value: 'gemini', label: 'Gemini' },
   { value: 'antigravity', label: 'Antigravity' },
+  { value: 'grok', label: 'Grok' },
   { value: 'gpt-image', label: 'GPT-Image' }
 ])
 
@@ -1929,6 +1980,7 @@ const platformFilterOptions = computed(() => [
   { value: 'openai', label: 'OpenAI' },
   { value: 'gemini', label: 'Gemini' },
   { value: 'antigravity', label: 'Antigravity' },
+  { value: 'grok', label: 'Grok' },
   { value: 'gpt-image', label: 'GPT-Image' }
 ])
 
@@ -2086,11 +2138,19 @@ const createForm = reactive({
   daily_limit_usd: null as number | null,
   weekly_limit_usd: null as number | null,
   monthly_limit_usd: null as number | null,
-  // 图片生成计费配置（antigravity、gemini 和 gpt-image 平台使用）
+  // 图片/媒体生成能力与计费配置
+  allow_image_generation: false,
+  image_rate_independent: false,
+  image_rate_multiplier: 1.0,
   image_price_1k: null as number | null,
   image_price_2k: null as number | null,
   image_price_4k: null as number | null,
   gpt_image_call_price: null as number | null,
+  video_rate_independent: false,
+  video_rate_multiplier: 1.0,
+  video_price_480p: null as number | null,
+  video_price_720p: null as number | null,
+  video_price_1080p: null as number | null,
   // Claude Code 客户端限制（仅 anthropic 平台使用）
   claude_code_only: false,
   fallback_group_id: null as number | null,
@@ -2334,11 +2394,19 @@ const editForm = reactive({
   daily_limit_usd: null as number | null,
   weekly_limit_usd: null as number | null,
   monthly_limit_usd: null as number | null,
-  // 图片生成计费配置（antigravity、gemini 和 gpt-image 平台使用）
+  // 图片/媒体生成能力与计费配置
+  allow_image_generation: false,
+  image_rate_independent: false,
+  image_rate_multiplier: 1.0,
   image_price_1k: null as number | null,
   image_price_2k: null as number | null,
   image_price_4k: null as number | null,
   gpt_image_call_price: null as number | null,
+  video_rate_independent: false,
+  video_rate_multiplier: 1.0,
+  video_price_480p: null as number | null,
+  video_price_720p: null as number | null,
+  video_price_1080p: null as number | null,
   // Claude Code 客户端限制（仅 anthropic 平台使用）
   claude_code_only: false,
   fallback_group_id: null as number | null,
@@ -2481,10 +2549,18 @@ const closeCreateModal = () => {
   createForm.daily_limit_usd = null
   createForm.weekly_limit_usd = null
   createForm.monthly_limit_usd = null
+  createForm.allow_image_generation = false
+  createForm.image_rate_independent = false
+  createForm.image_rate_multiplier = 1.0
   createForm.image_price_1k = null
   createForm.image_price_2k = null
   createForm.image_price_4k = null
   createForm.gpt_image_call_price = null
+  createForm.video_rate_independent = false
+  createForm.video_rate_multiplier = 1.0
+  createForm.video_price_480p = null
+  createForm.video_price_720p = null
+  createForm.video_price_1080p = null
   createForm.claude_code_only = false
   createForm.fallback_group_id = null
   createForm.fallback_group_id_on_invalid_request = null
@@ -2550,6 +2626,9 @@ const handleCreateGroup = async () => {
     requestData.image_price_4k = emptyToNull(requestData.image_price_4k)
     requestData.gpt_image_call_price =
       createForm.platform === 'gpt-image' ? emptyToNull(requestData.gpt_image_call_price) : null
+    requestData.video_price_480p = emptyToNull(requestData.video_price_480p)
+    requestData.video_price_720p = emptyToNull(requestData.video_price_720p)
+    requestData.video_price_1080p = emptyToNull(requestData.video_price_1080p)
     await adminAPI.groups.create(requestData)
     appStore.showSuccess(t('admin.groups.groupCreated'))
     closeCreateModal()
@@ -2580,10 +2659,18 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.daily_limit_usd = group.daily_limit_usd
   editForm.weekly_limit_usd = group.weekly_limit_usd
   editForm.monthly_limit_usd = group.monthly_limit_usd
+  editForm.allow_image_generation = group.allow_image_generation ?? group.platform === 'grok'
+  editForm.image_rate_independent = group.image_rate_independent ?? false
+  editForm.image_rate_multiplier = group.image_rate_multiplier ?? 1.0
   editForm.image_price_1k = group.image_price_1k
   editForm.image_price_2k = group.image_price_2k
   editForm.image_price_4k = group.image_price_4k
   editForm.gpt_image_call_price = group.gpt_image_call_price ?? null
+  editForm.video_rate_independent = group.video_rate_independent ?? false
+  editForm.video_rate_multiplier = group.video_rate_multiplier ?? 1.0
+  editForm.video_price_480p = group.video_price_480p ?? null
+  editForm.video_price_720p = group.video_price_720p ?? null
+  editForm.video_price_1080p = group.video_price_1080p ?? null
   editForm.claude_code_only = group.claude_code_only || false
   editForm.fallback_group_id = group.fallback_group_id
   editForm.fallback_group_id_on_invalid_request = group.fallback_group_id_on_invalid_request
@@ -2658,6 +2745,9 @@ const handleUpdateGroup = async () => {
     payload.image_price_4k = emptyToNull(payload.image_price_4k)
     payload.gpt_image_call_price =
       editForm.platform === 'gpt-image' ? emptyToNull(payload.gpt_image_call_price) : null
+    payload.video_price_480p = emptyToNull(payload.video_price_480p)
+    payload.video_price_720p = emptyToNull(payload.video_price_720p)
+    payload.video_price_1080p = emptyToNull(payload.video_price_1080p)
     await adminAPI.groups.update(editingGroup.value.id, payload)
     appStore.showSuccess(t('admin.groups.groupUpdated'))
     closeEditModal()
@@ -2731,6 +2821,7 @@ watch(
 watch(
   () => createForm.platform,
   (newVal) => {
+    createForm.allow_image_generation = newVal === 'grok'
     if (!['anthropic', 'antigravity'].includes(newVal)) {
       createForm.fallback_group_id_on_invalid_request = null
     }

@@ -27,17 +27,36 @@ import (
 
 // OpenAIGatewayHandler handles OpenAI API gateway requests
 type OpenAIGatewayHandler struct {
-	gatewayService          *service.OpenAIGatewayService
-	billingCacheService     *service.BillingCacheService
-	apiKeyService           *service.APIKeyService
-	usageRecordWorkerPool   *service.UsageRecordWorkerPool
-	errorPassthroughService *service.ErrorPassthroughService
-	concurrencyHelper       *ConcurrencyHelper
-	maxAccountSwitches      int
-	cfg                     *config.Config
+	gatewayService             *service.OpenAIGatewayService
+	billingCacheService        *service.BillingCacheService
+	apiKeyService              *service.APIKeyService
+	usageRecordWorkerPool      *service.UsageRecordWorkerPool
+	errorPassthroughService    *service.ErrorPassthroughService
+	concurrencyHelper          *ConcurrencyHelper
+	maxAccountSwitches         int
+	cfg                        *config.Config
+	grokMediaEligibilityProber interface {
+		ProbeMediaEligibility(context.Context, int64) (bool, string, error)
+	}
+}
+
+// SetGrokMediaEligibilityProber injects the optional xAI billing/entitlement
+// probe used before media generation. Keeping this as a setter preserves the
+// stable constructor used by focused handler tests.
+func (h *OpenAIGatewayHandler) SetGrokMediaEligibilityProber(prober interface {
+	ProbeMediaEligibility(context.Context, int64) (bool, string, error)
+}) {
+	h.grokMediaEligibilityProber = prober
 }
 
 var errOpenAIWSUnsupportedModelSwitch = errors.New("selected account does not support websocket model switch")
+
+func openAICompatibleRequestPlatform(apiKey *service.APIKey) string {
+	if apiKey != nil && apiKey.Group != nil && apiKey.Group.Platform == service.PlatformGrok {
+		return service.PlatformGrok
+	}
+	return service.PlatformOpenAI
+}
 
 func newOpenAIWSUnsupportedModelSwitchError(model string) error {
 	cause := fmt.Errorf("%w: model %q", errOpenAIWSUnsupportedModelSwitch, strings.TrimSpace(model))
@@ -207,6 +226,12 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	}
 	reqStream := streamResult.Bool()
 	reqLog = reqLog.With(zap.String("model", reqModel), zap.Bool("stream", reqStream))
+	if apiKey.Group != nil && apiKey.Group.Platform == service.PlatformGrok &&
+		service.IsExplicitGrokImageGenerationIntent(reqModel, body) &&
+		!service.GroupAllowsImageGeneration(apiKey.Group) {
+		h.errorResponse(c, http.StatusForbidden, "permission_error", service.ImageGenerationPermissionMessage())
+		return
+	}
 	previousResponseID := strings.TrimSpace(gjson.GetBytes(body, "previous_response_id").String())
 	if previousResponseID != "" {
 		previousResponseIDKind := service.ClassifyOpenAIPreviousResponseIDKind(previousResponseID)
@@ -287,8 +312,9 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	for {
 		// Select account supporting the requested model
 		reqLog.Debug("openai.account_selecting", zap.Int("excluded_account_count", len(failedAccountIDs)))
-		selection, scheduleDecision, err := h.gatewayService.SelectAccountWithSchedulerForRequest(
+		selection, scheduleDecision, err := h.gatewayService.SelectOpenAICompatibleAccountWithScheduler(
 			c.Request.Context(),
+			openAICompatibleRequestPlatform(apiKey),
 			apiKey.GroupID,
 			previousResponseID,
 			sessionHash,
@@ -338,6 +364,16 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 			zap.Int("top_k", scheduleDecision.TopK),
 			zap.Int64("latency_ms", scheduleDecision.LatencyMs),
 			zap.Float64("load_skew", scheduleDecision.LoadSkew),
+			zap.String("route_policy_mode", string(scheduleDecision.RoutePolicyMode)),
+			zap.Int("route_policy_version", scheduleDecision.RoutePolicyVersion),
+			zap.String("route_policy_reason", scheduleDecision.RoutePolicyReason),
+			zap.Int64("legacy_selected_account_id", scheduleDecision.LegacySelectedAccountID),
+			zap.Int64("adaptive_selected_account_id", scheduleDecision.AdaptiveSelectedAccountID),
+			zap.Float64("adaptive_selected_rate", scheduleDecision.AdaptiveSelectedRate),
+			zap.Int("adaptive_candidate_count", scheduleDecision.AdaptiveCandidateCount),
+			zap.Int("adaptive_excluded_count", scheduleDecision.AdaptiveExcludedCount),
+			zap.Bool("adaptive_diverged", scheduleDecision.AdaptiveDiverged),
+			zap.Bool("adaptive_emergency", scheduleDecision.AdaptiveEmergency),
 		)
 		account := selection.Account
 		sessionHash = ensureOpenAIPoolModeSessionHash(sessionHash, account)
@@ -585,7 +621,7 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 	)
 
 	// 检查分组是否允许 /v1/messages 调度
-	if apiKey.Group != nil && !apiKey.Group.AllowMessagesDispatch {
+	if apiKey.Group != nil && apiKey.Group.Platform != service.PlatformGrok && !apiKey.Group.AllowMessagesDispatch {
 		h.anthropicErrorResponse(c, http.StatusForbidden, "permission_error",
 			"This group does not allow /v1/messages dispatch")
 		return
@@ -694,14 +730,16 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 		if effectiveMappedModel != "" {
 			currentRoutingModel = effectiveMappedModel
 		}
-		selection, scheduleDecision, err := h.gatewayService.SelectAccountWithScheduler(
+		selection, scheduleDecision, err := h.gatewayService.SelectOpenAICompatibleAccountWithScheduler(
 			c.Request.Context(),
+			openAICompatibleRequestPlatform(apiKey),
 			apiKey.GroupID,
 			"", // no previous_response_id
 			sessionHash,
 			currentRoutingModel,
 			failedAccountIDs,
 			service.OpenAIUpstreamTransportAny,
+			false,
 		)
 		if err != nil {
 			reqLog.Warn("openai_messages.account_select_failed",
@@ -736,7 +774,18 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 		account := selection.Account
 		sessionHash = ensureOpenAIPoolModeSessionHash(sessionHash, account)
 		reqLog.Debug("openai_messages.account_selected", zap.Int64("account_id", account.ID), zap.String("account_name", account.Name))
-		_ = scheduleDecision
+		reqLog.Debug("openai_messages.route_shadow_decision",
+			zap.String("route_policy_mode", string(scheduleDecision.RoutePolicyMode)),
+			zap.Int("route_policy_version", scheduleDecision.RoutePolicyVersion),
+			zap.String("route_policy_reason", scheduleDecision.RoutePolicyReason),
+			zap.Int64("legacy_selected_account_id", scheduleDecision.LegacySelectedAccountID),
+			zap.Int64("adaptive_selected_account_id", scheduleDecision.AdaptiveSelectedAccountID),
+			zap.Float64("adaptive_selected_rate", scheduleDecision.AdaptiveSelectedRate),
+			zap.Int("adaptive_candidate_count", scheduleDecision.AdaptiveCandidateCount),
+			zap.Int("adaptive_excluded_count", scheduleDecision.AdaptiveExcludedCount),
+			zap.Bool("adaptive_diverged", scheduleDecision.AdaptiveDiverged),
+			zap.Bool("adaptive_emergency", scheduleDecision.AdaptiveEmergency),
+		)
 		setOpsSelectedAccount(c, account.ID, account.Platform)
 
 		accountReleaseFunc, acquired := h.acquireResponsesAccountSlot(c, apiKey.GroupID, sessionHash, selection, reqStream, &streamStarted, reqLog)
@@ -1213,6 +1262,12 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		zap.Bool("has_previous_response_id", previousResponseID != ""),
 		zap.String("previous_response_id_kind", previousResponseIDKind),
 	)
+	if apiKey.Group != nil && apiKey.Group.Platform == service.PlatformGrok &&
+		service.IsExplicitGrokImageGenerationIntent(reqModel, firstMessage) &&
+		!service.GroupAllowsImageGeneration(apiKey.Group) {
+		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, service.ImageGenerationPermissionMessage())
+		return
+	}
 	setOpsRequestContext(c, reqModel, true, firstMessage)
 	setOpsEndpointContext(c, "", int16(service.RequestTypeWSV2))
 	channelMappingWS, _ := h.gatewayService.ResolveChannelMappingAndRestrict(ctx, apiKey.GroupID, reqModel)
@@ -1264,14 +1319,21 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		firstMessage,
 		openAIWSIngressFallbackSessionSeed(subject.UserID, apiKey.ID, apiKey.GroupID),
 	)
-	selection, scheduleDecision, err := h.gatewayService.SelectAccountWithScheduler(
+	requestPlatform := openAICompatibleRequestPlatform(apiKey)
+	requiredTransport := service.OpenAIUpstreamTransportResponsesWebsocketV2
+	if requestPlatform == service.PlatformGrok {
+		requiredTransport = service.OpenAIUpstreamTransportHTTPSSE
+	}
+	selection, scheduleDecision, err := h.gatewayService.SelectOpenAICompatibleAccountWithScheduler(
 		ctx,
+		requestPlatform,
 		apiKey.GroupID,
 		previousResponseID,
 		sessionHash,
 		reqModel,
 		nil,
-		service.OpenAIUpstreamTransportResponsesWebsocketV2,
+		requiredTransport,
+		false,
 	)
 	if err != nil {
 		reqLog.Warn("openai.websocket_account_select_failed", zap.Error(err))

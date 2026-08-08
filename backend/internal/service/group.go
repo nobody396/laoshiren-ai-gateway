@@ -25,12 +25,21 @@ type Group struct {
 	MonthlyLimitUSD     *float64
 	DefaultValidityDays int
 
-	// 图片生成计费配置（antigravity、gemini 和 gpt-image 平台使用）
-	ImagePrice1K *float64
-	ImagePrice2K *float64
-	ImagePrice4K *float64
+	// 图片/媒体生成能力与计费配置。Grok 图片和视频共用能力开关。
+	AllowImageGeneration bool
+	ImageRateIndependent bool
+	ImageRateMultiplier  float64
+	ImagePrice1K         *float64
+	ImagePrice2K         *float64
+	ImagePrice4K         *float64
 	// GPT-Image 旧版固定每次调用价格（仅未配置分辨率价格时兜底使用）
 	GPTImageCallPrice *float64
+	// Grok 视频计费配置（价格单位 USD/s）。
+	VideoRateIndependent bool
+	VideoRateMultiplier  float64
+	VideoPrice480P       *float64
+	VideoPrice720P       *float64
+	VideoPrice1080P      *float64
 
 	// Claude Code 客户端限制
 	ClaudeCodeOnly  bool
@@ -68,6 +77,30 @@ type Group struct {
 	AccountCount            int64
 	ActiveAccountCount      int64
 	RateLimitedAccountCount int64
+}
+
+func (g *Group) GetVideoPrice(resolution string) *float64 {
+	switch NormalizeVideoBillingResolutionOrDefault(resolution) {
+	case VideoBillingResolution720P:
+		return g.VideoPrice720P
+	case VideoBillingResolution1080P:
+		return g.VideoPrice1080P
+	default:
+		return g.VideoPrice480P
+	}
+}
+
+const imageGenerationPermissionMessage = "Image and video generation is not enabled for this group"
+
+// ImageGenerationPermissionMessage returns stable end-user text for disabled media groups.
+func ImageGenerationPermissionMessage() string {
+	return imageGenerationPermissionMessage
+}
+
+// GroupAllowsImageGeneration keeps ungrouped-key behavior and enforces the group gate.
+// Grok uses this legacy image-generation flag for both image and video generation routes.
+func GroupAllowsImageGeneration(group *Group) bool {
+	return group == nil || group.AllowImageGeneration
 }
 
 type GroupCacheStats struct {

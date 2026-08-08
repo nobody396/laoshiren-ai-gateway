@@ -902,6 +902,7 @@ export default {
       copy: 'Copy',
       copied: 'Copied',
       note: 'These environment variables will be active in the current terminal session. For permanent configuration, add them to ~/.bashrc, ~/.zshrc, or the appropriate configuration file.',
+      claudeSettingsHint: 'User-level persistent configuration. Do not commit this file containing your API key to a project repository.',
       noGroupTitle: 'Please assign a group first',
       noGroupDescription: 'This API key has not been assigned to a group. Please click the group column in the key list to assign one before viewing the configuration.',
       openai: {
@@ -915,6 +916,7 @@ export default {
         geminiCli: 'Gemini CLI',
         codexCli: 'Codex CLI',
         codexCliWs: 'Codex CLI (WebSocket)',
+        grokCli: 'Grok CLI',
         opencode: 'OpenCode',
         gptImageApi: 'GPT-Image API',
       },
@@ -935,6 +937,18 @@ export default {
         description: 'Add the following environment variables to your terminal profile or run directly in terminal to configure Gemini CLI access.',
         modelComment: 'If you have Gemini 3 access, you can use: gemini-3-pro-preview',
         note: 'These environment variables will be active in the current terminal session. For permanent configuration, add them to ~/.bashrc, ~/.zshrc, or the appropriate configuration file.',
+      },
+      grok: {
+        description: 'Configure Grok CLI, Claude Code, Codex, or OpenCode to send requests through this Grok group.',
+        claudeDescription: 'Configure Claude Code to send Messages API traffic through this Grok group.',
+        codexDescription: 'Configure Codex to send Responses API traffic through this Grok group.',
+        configTomlHint: 'Back up an existing config.toml before merging this model entry. Run grok inspect after saving to verify the effective configuration.',
+        codexConfigTomlHint: 'Back up an existing config.toml before merging this provider configuration.',
+        note: 'Save the file as ~/.grok/config.toml, then run grok inspect and select grok from /model.',
+        noteWindows: 'Save the file as %USERPROFILE%\\.grok\\config.toml, then run grok inspect and select grok from /model.',
+        claudeNote: 'Choose one method: run the terminal commands for the current session, or save settings.json for user-level persistent configuration.',
+        codexNote: 'Save config.toml under ~/.codex and set LAOSHIRENAI_GROK_API_KEY before starting Codex.',
+        codexNoteWindows: 'Save config.toml under %USERPROFILE%\\.codex and set LAOSHIRENAI_GROK_API_KEY in PowerShell before starting Codex.',
       },
       opencode: {
         title: 'OpenCode Example',
@@ -959,12 +973,14 @@ export default {
     ccsClientSelect: {
       title: 'Choose an App',
       description: 'This key can be imported into the compatible apps below. CC Switch will write the selected configuration:',
-      compatibilityNote: 'Only apps compatible with this group protocol are shown, preventing imports that cannot make requests. OpenClaw and Hermes require CC Switch 3.16.5 or later.',
+      compatibilityNote: 'Only apps compatible with this group protocol are shown, preventing imports that cannot make requests. Grok Build requires CC Switch 3.18.0 or later; OpenClaw and Hermes require 3.16.5 or later.',
       claudeCodeCli: 'Claude Code CLI',
       claudeCodeCliDesc: 'Import as Claude Code terminal configuration',
       claudeDesktopManualNotice: 'Claude Desktop does not support provider deeplinks. Import Claude Code here first, then open the Claude Desktop page in CC Switch, click "Import existing providers from Claude Code", review model mapping, and enable it.',
       codex: 'Codex',
       codexDesc: 'Uses the OpenAI Responses protocol',
+      grokBuild: 'Grok CLI (Grok Build)',
+      grokBuildDesc: 'Imports with the native Grok Responses protocol',
       opencode: 'OpenCode',
       opencodeDesc: 'Uses the OpenAI Chat Completions protocol',
       openclaw: 'OpenClaw',
@@ -1181,7 +1197,11 @@ export default {
     monthlyPlanWeeklyLimit: 'Weekly limit',
     monthlyPlanMonthlyLimit: 'Monthly limit',
     monthlyPlanQuotaMode: 'Quota mode',
-    monthlyPlanSharedPool: 'GPT Pro and Claude Max share one quota pool',
+    monthlyPlanEnergyValue: '⚡{amount} energy / month',
+    monthlyPlanPaygEquivalent: 'Equivalent to ¥{amount} in pay-as-you-go API credit',
+    monthlyPlanSharedPool: 'Use it across GPT, Cloud, and Grok monthly services in one shared energy pool',
+    monthlyPlanModelsPrefix: 'See supported models on',
+    monthlyPlanModelsLink: 'Model Pricing',
     monthlyPlanGptRate: 'GPT Pro conversion',
     monthlyPlanClaudeRate: 'Claude Max conversion',
     monthlyPlanGptValue: 'GPT Pro value',
@@ -2320,6 +2340,7 @@ export default {
         openai: 'OpenAI',
         gemini: 'Gemini',
         antigravity: 'Antigravity',
+        grok: 'Grok',
         'gpt-image': 'GPT-Image'
       },
       deleteConfirm:
@@ -2721,6 +2742,7 @@ export default {
         openai: 'OpenAI',
         gemini: 'Gemini',
         antigravity: 'Antigravity',
+        grok: 'Grok',
         'gpt-image': 'GPT-Image'
       },
       types: {
@@ -2730,6 +2752,7 @@ export default {
         googleOauth: 'Google OAuth',
         codeAssist: 'Code Assist',
         antigravityOauth: 'Antigravity OAuth',
+        grokOauth: 'Grok OAuth',
         antigravityApikey: 'Connect via Base URL + API Key',
         upstream: 'Upstream',
         upstreamDesc: 'Connect via Base URL + API Key'
@@ -3187,6 +3210,23 @@ export default {
         pleaseEnterBaseUrl: 'Please enter upstream Base URL',
         pleaseEnterApiKey: 'Please enter upstream API Key'
       },
+      grokCustomBaseUrl: {
+        title: 'Grok Upstream URL',
+        hint: 'Controls chat, media, and probe traffic; OAuth authorization and refresh stay on official endpoints.',
+        placeholder: 'https://api.x.ai/v1',
+        required: 'Enter a Grok upstream URL or turn off the custom endpoint.',
+        invalid: 'Invalid upstream address (must be a full http(s) URL)',
+        presets: { cli: 'Grok Build CLI', official: 'Official API' }
+      },
+      grokClientToolCache: {
+        title: 'Client tool prompt cache',
+        hint: 'Cache Grok client-tool prompts to reduce repeated context and improve response speed.'
+      },
+      grokHeaders: {
+        title: 'Custom request headers',
+        hint: 'Enter a JSON object of header names and string values. Authentication and transport headers are blocked.',
+        invalid: 'Custom headers must be a JSON object with non-empty string values.'
+      },
       // OAuth flow
       oauth: {
         title: 'Claude Account Authorization',
@@ -3264,6 +3304,44 @@ export default {
           validateAndCreate: 'Validate & Create Account',
           pleaseEnterRefreshToken: 'Please enter Refresh Token',
           pleaseEnterSessionToken: 'Please enter Session Token'
+        },
+        grok: {
+          title: 'Grok Account Authorization',
+          followSteps: 'Follow these steps to authorize your xAI/Grok account:',
+          step1GenerateUrl: 'Generate the xAI authorization URL',
+          generateAuthUrl: 'Generate Auth URL',
+          step2OpenUrl: 'Open the URL in your browser and complete authorization',
+          openUrlDesc: 'Open the authorization URL in a new tab, sign in to xAI, and authorize API access.',
+          importantNotice: 'When the browser reaches the local callback URL, copy the full URL or code back here.',
+          step3EnterCode: 'Enter Authorization URL or Code',
+          authCodeDesc: 'Paste the callback URL, query string, or authorization code:',
+          authCode: 'Authorization URL or Code',
+          authCodePlaceholder: 'Paste the full callback URL, ?code=... query string, or code value',
+          authCodeHint: 'Full callback URLs, query strings, and bare codes are accepted.',
+          refreshTokenAuth: 'Manual RT Input',
+          refreshTokenDesc: 'Enter existing xAI refresh token(s), one per line.',
+          refreshTokenPlaceholder: 'Paste xAI refresh token(s), one per line',
+          ssoCookieAuth: 'SSO Cookie Import',
+          ssoCookieDesc: 'Paste one Grok Web SSO key per line. The server converts them into Grok OAuth credentials.',
+          ssoCookiePlaceholder: 'One SSO key per line',
+          convertSSOAndCreate: 'Convert & Create Account',
+          validating: 'Validating...',
+          validateAndCreate: 'Validate & Create Account',
+          pleaseEnterRefreshToken: 'Please enter Refresh Token',
+          failedToGenerateUrl: 'Failed to generate Grok auth URL',
+          missingExchangeParams: 'Missing authorization code, state, or OAuth session',
+          failedToExchangeCode: 'Failed to exchange Grok authorization code',
+          failedToValidateRT: 'Failed to validate Grok refresh token',
+          failedToConvertSSO: 'Failed to convert Grok SSO cookie',
+          errors: {
+            GROK_OAUTH_SESSION_NOT_FOUND: 'Grok OAuth session was not found or expired. Generate a new URL.',
+            GROK_OAUTH_INVALID_STATE: 'Grok OAuth state does not match this session.',
+            GROK_OAUTH_STATE_REQUIRED: 'The callback URL is missing OAuth state.',
+            GROK_OAUTH_CODE_REQUIRED: 'The Grok authorization code is missing.',
+            GROK_OAUTH_NO_REFRESH_TOKEN: 'The Grok response did not include a refresh token.',
+            GROK_OAUTH_PROXY_NOT_AVAILABLE: 'Grok OAuth proxy lookup is unavailable.',
+            GROK_OAUTH_PROXY_NOT_FOUND: 'The selected proxy could not be found.'
+          }
         },
         // Gemini specific
 	        gemini: {
@@ -3560,7 +3638,16 @@ export default {
         gemini3Pro: 'G3P',
         gemini3Flash: 'G3F',
         gemini3Image: 'G31FI',
-        claude: 'Claude'
+        claude: 'Claude',
+        grokRequests: 'Req',
+        grokTokens: 'Tok',
+        grokWeeklyUsage: 'Weekly {percent}%',
+        grokRetryAfter: 'Retry after {time}',
+        grokProbe: 'Probe',
+        grokProbeTooltip: 'Send a minimal xAI Responses probe and read quota headers',
+        grokResetUnsupported: 'Reset unsupported',
+        grokResetUnsupportedTooltip: 'xAI does not expose a quota reset API',
+        grokNoHeaders: 'No quota headers observed'
       },
       tier: {
         free: 'Free',

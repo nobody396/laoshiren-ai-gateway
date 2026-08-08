@@ -3,6 +3,7 @@ import type { GroupPlatform } from '@/types'
 export type CcsImportTarget =
   | 'claude'
   | 'codex'
+  | 'grokbuild'
   | 'opencode'
   | 'openclaw'
   | 'hermes'
@@ -64,6 +65,8 @@ export const getCompatibleCcsTargets = (
       return ['gemini']
     case 'gpt-image':
       return []
+    case 'grok':
+      return ['grokbuild']
   }
 }
 
@@ -90,6 +93,8 @@ const appLabelForTarget = (target: CcsImportTarget): string => {
       return 'Claude Code'
     case 'codex':
       return 'Codex'
+    case 'grokbuild':
+      return 'Grok Build'
     case 'opencode':
       return 'OpenCode'
     case 'openclaw':
@@ -109,7 +114,13 @@ const endpointForTarget = (
   if (platform === 'antigravity') {
     return appendPath(gatewayBaseUrl, 'antigravity')
   }
-  if (target === 'codex' || target === 'opencode' || target === 'openclaw' || target === 'hermes') {
+  if (
+    target === 'codex' ||
+    target === 'grokbuild' ||
+    target === 'opencode' ||
+    target === 'openclaw' ||
+    target === 'hermes'
+  ) {
     return appendPath(gatewayBaseUrl, 'v1')
   }
   return gatewayBaseUrl
@@ -190,7 +201,14 @@ export const buildCcsImportDeeplink = ({
     usageAutoInterval: '30'
   })
 
-  if (target === 'codex' || target === 'opencode' || target === 'openclaw' || target === 'hermes') {
+  if (target === 'grokbuild') {
+    params.set('model', 'grok-4.5')
+  } else if (
+    target === 'codex' ||
+    target === 'opencode' ||
+    target === 'openclaw' ||
+    target === 'hermes'
+  ) {
     params.set('model', DEFAULT_OPENAI_MODEL)
   }
 

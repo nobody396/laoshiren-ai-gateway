@@ -60,7 +60,7 @@ type monthlyUpstreamProbeResolvedTarget struct {
 var monthlyUpstreamProbeTargetSpecs = []monthlyUpstreamProbeTargetSpec{
 	{Role: "gpt", Platform: PlatformOpenAI, Model: "gpt-5.4-mini"},
 	{Role: "claude", Platform: PlatformAnthropic, Model: "claude-haiku-4-5"},
-	{Role: "grok", Platform: PlatformAnthropic, Model: "grok-4.5"},
+	{Role: "grok", Platform: PlatformGrok, Model: "grok-4.5"},
 }
 
 func monthlyUpstreamProbeTimeoutForModel(model string) time.Duration {
@@ -89,6 +89,8 @@ func monthlyUpstreamProbeSpecForAccount(account Account) (monthlyUpstreamProbeTa
 		return monthlyUpstreamProbeSpecForRole("gpt")
 	case PlatformAnthropic:
 		return monthlyUpstreamProbeSpecForRole("claude")
+	case PlatformGrok:
+		return monthlyUpstreamProbeSpecForRole("grok")
 	default:
 		return monthlyUpstreamProbeTargetSpec{}, false
 	}
@@ -633,15 +635,14 @@ var monthlyCardPublicPlanDefinitions = []struct {
 	ClaudeGroupID   int64
 	GrokGroupID     int64
 }{
-	{ID: "plus", Name: "Plus", GPTGroupName: "GPT Plus 月卡组", ClaudeGroupName: "Claude Plus 月卡组"},
-	{ID: "pro", Name: "Pro", GPTGroupName: "GPT Pro V3 月卡组", ClaudeGroupName: "Claude Pro V3 月卡组"},
-	{ID: "max", Name: "Max", GPTGroupName: "GPT Max V3 月卡组", ClaudeGroupName: "Claude Max V3 月卡组"},
+	{ID: "plus", Name: "Plus", GPTGroupName: "GPT Plus 月卡组", ClaudeGroupName: "Claude Plus 月卡组", GrokGroupName: "Grok Plus 月卡组"},
+	{ID: "pro", Name: "Pro", GPTGroupName: "GPT Pro V3 月卡组", ClaudeGroupName: "Claude Pro V3 月卡组", GrokGroupName: "Grok Pro V3 月卡组"},
+	{ID: "max", Name: "Max", GPTGroupName: "GPT Max V3 月卡组", ClaudeGroupName: "Claude Max V3 月卡组", GrokGroupName: "Grok Max V3 月卡组"},
 }
 
 // monthlyUpstreamProbeSupplementalGroupDefinitions keeps status monitoring
-// independent from the current sale catalog. Grok remains an active legacy
-// entitlement even though the current Plus/Pro/Max products do not advertise
-// a Grok member.
+// independent from the current sale catalog and preserves a fallback lookup
+// for installations that have not provisioned the current Grok groups yet.
 var monthlyUpstreamProbeSupplementalGroupDefinitions = []struct {
 	Role      string
 	GroupName string
@@ -757,6 +758,8 @@ func monthlyCardPublicChannelName(accountName, model, platform string) string {
 		return "Codex"
 	case PlatformAnthropic:
 		return "Claude"
+	case PlatformGrok:
+		return "Grok"
 	default:
 		return platform
 	}
@@ -835,9 +838,44 @@ func (s *OpsService) probeMonthlyGatewayTarget(ctx context.Context, target month
 		return s.probeMonthlyOpenAIGroupThroughGateway(ctx, target)
 	case PlatformAnthropic:
 		return s.probeMonthlyAnthropicGroupThroughGateway(ctx, target)
+	case PlatformGrok:
+		return s.probeMonthlyGrokGroupThroughGateway(ctx, target)
 	default:
 		return monthlyProbeTargetLocalFailure(target, "unsupported_platform", "unsupported platform for monthly upstream probe"), nil
 	}
+}
+
+func (s *OpsService) probeMonthlyGrokGroupThroughGateway(ctx context.Context, target monthlyUpstreamProbeResolvedTarget) (MonthlyUpstreamProbePoint, *Account) {
+	if s == nil || s.openAIGatewayService == nil {
+		return monthlyProbeTargetLocalFailure(target, "gateway_service_unavailable", "grok gateway service is not available"), nil
+	}
+	groupID := target.GroupID
+	sessionHash := monthlyGatewayProbeSessionHash(target)
+	selection, _, err := s.openAIGatewayService.SelectGrokAccountWithScheduler(
+		ctx,
+		&groupID,
+		sessionHash,
+		target.Model,
+		nil,
+		false,
+	)
+	if err != nil {
+		return monthlyProbeTargetLocalFailure(target, "account_select_failed", err.Error()), nil
+	}
+	if selection == nil || selection.Account == nil {
+		return monthlyProbeTargetLocalFailure(target, "missing_account", "monthly Grok account was not selected"), nil
+	}
+	if selection.Acquired && selection.ReleaseFunc != nil {
+		defer selection.ReleaseFunc()
+	} else if !selection.Acquired {
+		return monthlyProbeSelectedAccountBusy(target, selection.Account), selection.Account
+	}
+
+	point := s.probeMonthlyGrokThroughGateway(ctx, selection.Account, target.Model, sessionHash)
+	point.AccountName = target.AccountName
+	point.Platform = target.Platform
+	point.Model = target.Model
+	return point, selection.Account
 }
 
 func (s *OpsService) probeMonthlyOpenAIGroupThroughGateway(ctx context.Context, target monthlyUpstreamProbeResolvedTarget) (MonthlyUpstreamProbePoint, *Account) {
@@ -1144,6 +1182,11 @@ func (s *OpsService) probeMonthlyGatewayAccount(ctx context.Context, account *Ac
 			return monthlyProbeLocalFailure(account, model, "gateway_service_unavailable", "anthropic gateway service is not available")
 		}
 		return s.probeMonthlyAnthropicThroughGateway(ctx, account, model)
+	case PlatformGrok:
+		if s == nil || s.openAIGatewayService == nil {
+			return monthlyProbeLocalFailure(account, model, "gateway_service_unavailable", "grok gateway service is not available")
+		}
+		return s.probeMonthlyGrokThroughGateway(ctx, account, model, fmt.Sprintf("monthly_gateway_probe_%d", account.ID))
 	default:
 		return MonthlyUpstreamProbePoint{
 			AccountID:    account.ID,
@@ -1179,6 +1222,8 @@ func probeMonthlyDirectUpstreamAccount(ctx context.Context, account *Account, mo
 		return probeMonthlyOpenAIUpstream(ctx, account, model)
 	case PlatformAnthropic:
 		return probeMonthlyAnthropicUpstream(ctx, account, model)
+	case PlatformGrok:
+		return probeMonthlyGrokUpstream(ctx, account, model)
 	default:
 		return MonthlyUpstreamProbePoint{
 			AccountID:    account.ID,
@@ -1191,6 +1236,28 @@ func probeMonthlyDirectUpstreamAccount(ctx context.Context, account *Account, mo
 			CheckedAt:    time.Now(),
 		}
 	}
+}
+
+func (s *OpsService) probeMonthlyGrokThroughGateway(ctx context.Context, account *Account, model, sessionHash string) MonthlyUpstreamProbePoint {
+	body, _ := json.Marshal(createOpenAICompactProbePayload(model))
+	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeoutForModel(model))
+	defer cancel()
+	c, recorder := newMonthlyProbeGinContext(probeCtx, "/v1/responses", body)
+	SetOpenAIClientTransport(c, OpenAIClientTransportHTTP)
+	c.Request.Header.Set("OpenAI-Beta", "responses=experimental")
+	c.Request.Header.Set("Originator", "grok_cli_rs")
+	c.Request.Header.Set("User-Agent", "grok-cli monthly-gateway-probe")
+	c.Request.Header.Set("Session_ID", sessionHash)
+	c.Request.Header.Set("Conversation_ID", sessionHash)
+
+	started := time.Now()
+	result, err := s.openAIGatewayService.Forward(c.Request.Context(), c, account, body)
+	return monthlyGatewayProbePoint(account, model, recorder, started, err, func() time.Duration {
+		if result != nil {
+			return result.Duration
+		}
+		return 0
+	})
 }
 
 func (s *OpsService) probeMonthlyOpenAIThroughGateway(ctx context.Context, account *Account, model string) MonthlyUpstreamProbePoint {
@@ -1372,6 +1439,34 @@ func probeMonthlyOpenAIUpstream(ctx context.Context, account *Account, model str
 		"Session_ID":      fmt.Sprintf("monthly_probe_%d", account.ID),
 		"Conversation_ID": fmt.Sprintf("monthly_probe_%d", account.ID),
 	}, body)
+}
+
+func probeMonthlyGrokUpstream(ctx context.Context, account *Account, model string) MonthlyUpstreamProbePoint {
+	token := strings.TrimSpace(account.GetGrokAccessToken())
+	if token == "" {
+		return monthlyProbeLocalFailure(account, model, "missing_api_key", "missing upstream Grok credential")
+	}
+	targetURL, err := buildGrokResponsesURL(account, nil)
+	if err != nil {
+		return monthlyProbeLocalFailure(account, model, "invalid_base_url", err.Error())
+	}
+	body, _ := json.Marshal(createOpenAICompactProbePayload(model))
+	headers := map[string]string{
+		"Authorization": "Bearer " + token,
+		"Content-Type":  "application/json",
+		"Accept":        "application/json",
+		"User-Agent":    "grok-cli monthly-upstream-probe",
+	}
+	if account.IsGrokOAuth() {
+		cliHeaders := make(http.Header)
+		applyGrokCLIHeaders(cliHeaders)
+		for key, values := range cliHeaders {
+			if len(values) > 0 {
+				headers[key] = values[0]
+			}
+		}
+	}
+	return executeMonthlyProbeHTTP(ctx, account, model, targetURL, headers, body)
 }
 
 func buildMonthlyUpstreamProbeCostEstimate(accountName, platform, model string, account *Account) *MonthlyUpstreamProbeCostEstimate {

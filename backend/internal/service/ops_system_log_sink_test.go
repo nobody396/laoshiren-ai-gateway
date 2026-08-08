@@ -183,10 +183,18 @@ func TestOpsSystemLogSink_StartStopAndFlushSuccess(t *testing.T) {
 	if strings.TrimSpace(item.Message) == "" {
 		t.Fatalf("message should not be empty")
 	}
-	health := sink.Health()
-	if health.WrittenCount == 0 {
-		t.Fatalf("written_count should be >0")
+	// The repository callback signals before flush() records its post-write
+	// health counters. Under -race that small scheduling window is observable,
+	// so wait for the sink's public health state instead of assuming the
+	// callback and counter update are atomic.
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if sink.Health().WrittenCount > 0 {
+			return
+		}
+		time.Sleep(time.Millisecond)
 	}
+	t.Fatalf("written_count should be >0")
 }
 
 func TestOpsSystemLogSink_FlushFailureUpdatesHealth(t *testing.T) {

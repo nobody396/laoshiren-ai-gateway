@@ -224,13 +224,38 @@ func TestHandleFailoverError_BasicSwitch(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestHandleFailoverError_CacheBilling(t *testing.T) {
-	t.Run("hasBoundSession为true时设置ForceCacheBilling", func(t *testing.T) {
+	t.Run("hasBoundSession为true且实际切换时设置ForceCacheBilling", func(t *testing.T) {
 		mock := &mockTempUnscheduler{}
 		fs := NewFailoverState(3, true) // hasBoundSession=true
 		err := newTestFailoverErr(500, false, false)
 
 		fs.HandleFailoverError(context.Background(), mock, 100, "openai", err)
 		require.True(t, fs.ForceCacheBilling)
+	})
+
+	t.Run("同账号原地重试不触发缓存计费", func(t *testing.T) {
+		mock := &mockTempUnscheduler{}
+		fs := NewFailoverState(3, true)
+		err := newTestFailoverErr(500, true, false)
+
+		action := fs.HandleFailoverError(context.Background(), mock, 100, "openai", err)
+
+		require.Equal(t, FailoverContinue, action)
+		require.False(t, fs.ForceCacheBilling)
+		require.Zero(t, fs.SwitchCount)
+	})
+
+	t.Run("同账号重试耗尽并换号时触发缓存计费", func(t *testing.T) {
+		mock := &mockTempUnscheduler{}
+		fs := NewFailoverState(3, true)
+		err := newTestFailoverErr(500, true, false)
+		fs.SameAccountRetryCount[100] = maxSameAccountRetries
+
+		action := fs.HandleFailoverError(context.Background(), mock, 100, "openai", err)
+
+		require.Equal(t, FailoverContinue, action)
+		require.True(t, fs.ForceCacheBilling)
+		require.Equal(t, 1, fs.SwitchCount)
 	})
 
 	t.Run("failoverErr.ForceCacheBilling为true时设置", func(t *testing.T) {
@@ -240,6 +265,17 @@ func TestHandleFailoverError_CacheBilling(t *testing.T) {
 
 		fs.HandleFailoverError(context.Background(), mock, 100, "openai", err)
 		require.True(t, fs.ForceCacheBilling)
+	})
+
+	t.Run("上游显式要求时同账号重试仍触发缓存计费", func(t *testing.T) {
+		mock := &mockTempUnscheduler{}
+		fs := NewFailoverState(3, true)
+		err := newTestFailoverErr(500, true, true)
+
+		fs.HandleFailoverError(context.Background(), mock, 100, "openai", err)
+
+		require.True(t, fs.ForceCacheBilling)
+		require.Zero(t, fs.SwitchCount)
 	})
 
 	t.Run("两者均为false时不设置", func(t *testing.T) {
@@ -525,12 +561,13 @@ func TestHandleFailoverError_IntegrationScenario(t *testing.T) {
 			action := fs.HandleFailoverError(context.Background(), mock, 100, "openai", retryErr)
 			require.Equal(t, FailoverContinue, action)
 		}
-		require.True(t, fs.ForceCacheBilling, "hasBoundSession=true 应设置 ForceCacheBilling")
+		require.False(t, fs.ForceCacheBilling, "同账号原地重试不应切换缓存计费")
 
 		// 2. 账号 100 超过重试上限 → TempUnschedule + 切换
 		action := fs.HandleFailoverError(context.Background(), mock, 100, "openai", retryErr)
 		require.Equal(t, FailoverContinue, action)
 		require.Equal(t, 1, fs.SwitchCount)
+		require.True(t, fs.ForceCacheBilling, "重试耗尽并实际换号后应设置 ForceCacheBilling")
 		require.Len(t, mock.calls, 1)
 
 		// 3. 账号 200 遇到不可重试错误 → 直接切换

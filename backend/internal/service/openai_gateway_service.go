@@ -3173,10 +3173,63 @@ func openAIStreamDataStartsClientOutput(data, eventType string) bool {
 	if trimmed == "" {
 		return false
 	}
-	if strings.TrimSpace(eventType) == "response.failed" {
+	switch strings.TrimSpace(eventType) {
+	case "response.failed":
 		return false
+	case "error":
+		// OpenAI can emit a retryable error frame immediately before
+		// response.failed. Flushing that frame would commit the downstream
+		// response and make the following pre-output account failover unsafe.
+		payload := []byte(trimmed)
+		return !openAIStreamFailedEventShouldFailover(payload, extractOpenAISSEErrorMessage(payload))
 	}
 	return !openAIStreamEventIsPreamble(eventType)
+}
+
+func openAIStreamFailedEventErrorCode(payload []byte) string {
+	code := strings.ToLower(strings.TrimSpace(gjson.GetBytes(payload, "response.error.code").String()))
+	if code == "" {
+		code = strings.ToLower(strings.TrimSpace(gjson.GetBytes(payload, "error.code").String()))
+	}
+	return code
+}
+
+// isOpenAIUpstreamCapacityShedEvent identifies the HTTP-200 stream failure
+// OpenAI uses when a request is shed before model output.
+func isOpenAIUpstreamCapacityShedEvent(payload []byte) bool {
+	switch openAIStreamFailedEventErrorCode(payload) {
+	case "server_is_overloaded", "slow_down":
+		return true
+	default:
+		return false
+	}
+}
+
+const openAICapacityShedRetryableClientCode = "server_error"
+
+// sanitizeOpenAICapacityShedErrorCodeForClient preserves the upstream message
+// while replacing capacity codes that Codex treats as terminal. Monitoring and
+// failover classification continue to use the original payload.
+func sanitizeOpenAICapacityShedErrorCodeForClient(payload []byte) ([]byte, bool) {
+	if len(payload) == 0 || !gjson.ValidBytes(payload) || !isOpenAIUpstreamCapacityShedEvent(payload) {
+		return payload, false
+	}
+	updated := payload
+	changed := false
+	for _, path := range []string{"response.error.code", "error.code"} {
+		switch strings.ToLower(strings.TrimSpace(gjson.GetBytes(updated, path).String())) {
+		case "server_is_overloaded", "slow_down":
+		default:
+			continue
+		}
+		next, err := sjson.SetBytes(updated, path, openAICapacityShedRetryableClientCode)
+		if err != nil {
+			return payload, false
+		}
+		updated = next
+		changed = true
+	}
+	return updated, changed
 }
 
 func openAIStreamFailedEventShouldFailover(payload []byte, message string) bool {
@@ -3250,8 +3303,9 @@ func (s *OpenAIGatewayService) newOpenAIStreamFailoverError(
 	safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
 	body, _ := json.Marshal(OpenAIClientErrorEnvelope(c, safeClientErr.Type, safeClientErr.Message))
 	return &UpstreamFailoverError{
-		StatusCode:   http.StatusBadGateway,
-		ResponseBody: body,
+		StatusCode:             http.StatusBadGateway,
+		ResponseBody:           body,
+		RetryableOnSameAccount: isOpenAIUpstreamCapacityShedEvent(payload),
 	}
 }
 
@@ -3320,7 +3374,8 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 			eventType := strings.TrimSpace(gjson.GetBytes(dataBytes, "type").String())
 			usageDataBytes := dataBytes
 			forceFlushFailedEvent := false
-			if eventType == "response.failed" {
+			switch eventType {
+			case "response.failed":
 				failedMessage = extractOpenAISSEErrorMessage(dataBytes)
 				if !openAIStreamClientOutputStarted(c, clientOutputStarted) && openAIStreamFailedEventShouldFailover(dataBytes, failedMessage) {
 					return &openaiStreamingResultPassthrough{usage: usage, firstTokenMs: firstTokenMs},
@@ -3333,6 +3388,11 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 				model := strings.TrimSpace(gjson.GetBytes(dataBytes, "response.model").String())
 				safePayload, _ := json.Marshal(OpenAIResponsesFailedEnvelope(c, responseID, model, "server_error", safeClientErr.Message))
 				line = "data: " + string(safePayload)
+			case "error":
+				if safePayload, changed := sanitizeOpenAICapacityShedErrorCodeForClient(dataBytes); changed {
+					trimmedData = string(safePayload)
+					line = "data: " + trimmedData
+				}
 			}
 			startsClientOutput := forceFlushFailedEvent || openAIStreamDataStartsClientOutput(trimmedData, eventType)
 			if firstTokenMs == nil && startsClientOutput {
@@ -4072,7 +4132,8 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 			eventType := strings.TrimSpace(gjson.GetBytes(dataBytes, "type").String())
 			usageDataBytes := dataBytes
 			forceFlushFailedEvent := false
-			if eventType == "response.failed" {
+			switch eventType {
+			case "response.failed":
 				failedMessage = extractOpenAISSEErrorMessage(dataBytes)
 				if !openAIStreamClientOutputStarted(c, clientOutputStarted) && openAIStreamFailedEventShouldFailover(dataBytes, failedMessage) {
 					sawFailedEvent = true
@@ -4091,6 +4152,12 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 				dataBytes = safePayload
 				data = string(safePayload)
 				line = "data: " + data
+			case "error":
+				if safePayload, changed := sanitizeOpenAICapacityShedErrorCodeForClient(dataBytes); changed {
+					dataBytes = safePayload
+					data = string(safePayload)
+					line = "data: " + data
+				}
 			}
 
 			// Correct Codex tool calls if needed (apply_patch -> edit, etc.)
@@ -4429,7 +4496,8 @@ func (s *OpenAIGatewayService) parseSSEUsageBytes(data []byte, usage *OpenAIUsag
 		return
 	}
 	eventType := gjson.GetBytes(data, "type").String()
-	if eventType != "response.completed" && eventType != "response.done" {
+	if eventType != "response.completed" && eventType != "response.done" && eventType != "response.failed" &&
+		eventType != "response.incomplete" && eventType != "response.cancelled" && eventType != "response.canceled" {
 		return
 	}
 
@@ -4443,9 +4511,23 @@ func extractOpenAIUsageFromJSONBytes(body []byte) (OpenAIUsage, bool) {
 		return OpenAIUsage{}, false
 	}
 	if usage, ok := openAIUsageFromGJSON(gjson.GetBytes(body, "usage")); ok {
+		mergeHostedImageGenToolUsage(gjson.GetBytes(body, "tool_usage.image_gen"), &usage)
 		return usage, true
 	}
-	return openAIUsageFromGJSON(gjson.GetBytes(body, "response.usage"))
+	if usage, ok := openAIUsageFromGJSON(gjson.GetBytes(body, "response.usage")); ok {
+		mergeHostedImageGenToolUsage(gjson.GetBytes(body, "response.tool_usage.image_gen"), &usage)
+		return usage, true
+	}
+	return OpenAIUsage{}, false
+}
+
+func mergeHostedImageGenToolUsage(imageGen gjson.Result, usage *OpenAIUsage) {
+	if usage == nil || !imageGen.Exists() || !imageGen.IsObject() || usage.ImageOutputTokens > 0 {
+		return
+	}
+	if imageTokens := imageGen.Get("output_tokens_details.image_tokens").Int(); imageTokens > 0 {
+		usage.ImageOutputTokens = int(imageTokens)
+	}
 }
 
 func openAIUsageFromGJSON(value gjson.Result) (OpenAIUsage, bool) {
@@ -4915,7 +4997,26 @@ func resolveOpenAICompactSessionID(c *gin.Context) string {
 	return uuid.NewString()
 }
 
+// openAIResponsesRequestPathSuffix returns only subpaths that are safe to append
+// to the upstream /responses URL. The route guard rejects unsafe requests; this
+// check remains as defense in depth for future call sites.
 func openAIResponsesRequestPathSuffix(c *gin.Context) string {
+	suffix, ok := sanitizedUpstreamPathSuffix(rawOpenAIResponsesRequestPathSuffix(c))
+	if !ok {
+		return ""
+	}
+	return suffix
+}
+
+// IsForwardableOpenAIResponsesRequestPath reports whether the inbound
+// /responses subpath can be forwarded without changing the upstream URL shape.
+func IsForwardableOpenAIResponsesRequestPath(c *gin.Context) bool {
+	_, ok := sanitizedUpstreamPathSuffix(rawOpenAIResponsesRequestPathSuffix(c))
+	return ok
+}
+
+// rawOpenAIResponsesRequestPathSuffix extracts the suffix without validating it.
+func rawOpenAIResponsesRequestPathSuffix(c *gin.Context) string {
 	if c == nil || c.Request == nil || c.Request.URL == nil {
 		return ""
 	}
@@ -4939,8 +5040,8 @@ func openAIResponsesRequestPathSuffix(c *gin.Context) string {
 
 func appendOpenAIResponsesRequestPathSuffix(baseURL, suffix string) string {
 	trimmedBase := strings.TrimRight(strings.TrimSpace(baseURL), "/")
-	trimmedSuffix := strings.TrimSpace(suffix)
-	if trimmedBase == "" || trimmedSuffix == "" {
+	trimmedSuffix, ok := sanitizedUpstreamPathSuffix(suffix)
+	if !ok || trimmedBase == "" || trimmedSuffix == "" {
 		return trimmedBase
 	}
 	return trimmedBase + trimmedSuffix

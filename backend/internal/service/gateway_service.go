@@ -4480,6 +4480,9 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 					StatusCode: 403,
 				}
 			}
+			if partial := partialStreamUsageResult(resp, streamResult, originalModel, mappedModel, startTime, err); partial != nil {
+				return partial, err
+			}
 			return nil, err
 		}
 		usage = streamResult.usage
@@ -4733,6 +4736,9 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 	if reqStream {
 		streamResult, err := s.handleStreamingResponseAnthropicAPIKeyPassthrough(ctx, resp, c, account, startTime, reqModel)
 		if err != nil {
+			if partial := partialStreamUsageResult(resp, streamResult, originalModel, reqModel, startTime, err); partial != nil {
+				return partial, err
+			}
 			return nil, err
 		}
 		usage = streamResult.usage
@@ -5119,6 +5125,12 @@ func (s *GatewayService) handleNonStreamingResponseAnthropicAPIKeyPassthrough(
 	}
 
 	usage := parseClaudeUsageFromResponseBody(body)
+	if IsForceCacheBilling(ctx) && usage.InputTokens > 0 {
+		body, err = classifyAnthropicResponseInputAsCacheRead(body, usage)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	writeAnthropicResponseHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
 	contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
@@ -5127,6 +5139,20 @@ func (s *GatewayService) handleNonStreamingResponseAnthropicAPIKeyPassthrough(
 	}
 	c.Data(resp.StatusCode, contentType, body)
 	return usage, nil
+}
+
+func classifyAnthropicResponseInputAsCacheRead(body []byte, usage *ClaudeUsage) ([]byte, error) {
+	classified, err := sjson.SetBytes(body, "usage.input_tokens", 0)
+	if err != nil {
+		return nil, fmt.Errorf("classify forced cache billing input tokens: %w", err)
+	}
+	classified, err = sjson.SetBytes(classified, "usage.cache_read_input_tokens", usage.CacheReadInputTokens+usage.InputTokens)
+	if err != nil {
+		return nil, fmt.Errorf("classify forced cache billing cache read tokens: %w", err)
+	}
+	usage.CacheReadInputTokens += usage.InputTokens
+	usage.InputTokens = 0
+	return classified, nil
 }
 
 func writeAnthropicResponseHeaders(dst http.Header, src http.Header, filter *responseheaders.CompiledHeaderFilter) {
@@ -6480,6 +6506,39 @@ type streamingResult struct {
 	clientDisconnect bool // 客户端是否在流式传输过程中断开
 }
 
+func (u *ClaudeUsage) hasObservedTokens() bool {
+	if u == nil {
+		return false
+	}
+	return u.InputTokens > 0 || u.OutputTokens > 0 ||
+		u.CacheCreationInputTokens > 0 || u.CacheReadInputTokens > 0 ||
+		u.CacheCreation5mTokens > 0 || u.CacheCreation1hTokens > 0 ||
+		u.ImageOutputTokens > 0
+}
+
+// partialStreamUsageResult preserves upstream-observed usage when a stream
+// ends after the provider has already metered tokens. Failover errors remain
+// result-less so a later successful attempt cannot be billed twice.
+func partialStreamUsageResult(resp *http.Response, streamResult *streamingResult, model, upstreamModel string, startTime time.Time, err error) *ForwardResult {
+	if resp == nil || streamResult == nil || !streamResult.usage.hasObservedTokens() {
+		return nil
+	}
+	var failoverErr *UpstreamFailoverError
+	if errors.As(err, &failoverErr) {
+		return nil
+	}
+	return &ForwardResult{
+		RequestID:        resp.Header.Get("x-request-id"),
+		Usage:            *streamResult.usage,
+		Model:            model,
+		UpstreamModel:    upstreamModel,
+		Stream:           true,
+		Duration:         time.Since(startTime),
+		FirstTokenMs:     streamResult.firstTokenMs,
+		ClientDisconnect: streamResult.clientDisconnect,
+	}
+}
+
 func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http.Response, c *gin.Context, account *Account, startTime time.Time, originalModel, mappedModel string, mimicClaudeCode bool) (*streamingResult, error) {
 	// 更新5h窗口状态
 	s.rateLimitService.UpdateSessionWindow(ctx, account, resp.Header)
@@ -7610,10 +7669,13 @@ func writeUsageLogBestEffort(ctx context.Context, repo UsageLogRepository, usage
 	if writer, ok := repo.(usageLogBestEffortWriter); ok {
 		if err := writer.CreateBestEffort(usageCtx, usageLog); err != nil {
 			logger.LegacyPrintf(logKey, "Create usage log failed: %v", err)
-			if IsUsageLogCreateDropped(err) {
-				return
+			fallbackCtx := usageCtx
+			if usageCtx.Err() != nil {
+				var fallbackCancel context.CancelFunc
+				fallbackCtx, fallbackCancel = detachedBillingContext(context.Background())
+				defer fallbackCancel()
 			}
-			if _, syncErr := repo.Create(usageCtx, usageLog); syncErr != nil {
+			if _, syncErr := repo.Create(fallbackCtx, usageLog); syncErr != nil {
 				logger.LegacyPrintf(logKey, "Create usage log sync fallback failed: %v", syncErr)
 			}
 		}

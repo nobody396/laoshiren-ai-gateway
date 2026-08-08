@@ -125,6 +125,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-09T23:59:59-04:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/sub2api-v0.1.172-p0-20260808",
+      "owner": "sub2api-v0.1.172-backport",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-22T23:59:59+08:00"
     }
   ]
 }

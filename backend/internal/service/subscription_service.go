@@ -13,6 +13,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/timezone"
 	"github.com/dgraph-io/ristretto"
 	"golang.org/x/sync/singleflight"
 )
@@ -34,9 +35,12 @@ var (
 	ErrInvalidInput               = infraerrors.BadRequest("INVALID_INPUT", "at least one of resetDaily, resetWeekly, or resetMonthly must be true")
 	ErrDailyLimitExceeded         = infraerrors.TooManyRequests("DAILY_LIMIT_EXCEEDED", "daily usage limit exceeded")
 	ErrWeeklyLimitExceeded        = infraerrors.TooManyRequests("WEEKLY_LIMIT_EXCEEDED", "weekly usage limit exceeded")
-	ErrMonthlyLimitExceeded       = infraerrors.TooManyRequests("MONTHLY_LIMIT_EXCEEDED", "monthly usage limit exceeded")
-	ErrSubscriptionNilInput       = infraerrors.BadRequest("SUBSCRIPTION_NIL_INPUT", "subscription input cannot be nil")
-	ErrAdjustWouldExpire          = infraerrors.BadRequest("ADJUST_WOULD_EXPIRE", "adjustment would result in expired subscription (remaining days must be > 0)")
+	ErrMonthlyLimitExceeded       = infraerrors.Forbidden(
+		"MONTHLY_LIMIT_EXCEEDED",
+		"Your monthly plan quota has been exhausted. This is an account quota limit, not a service outage. Retrying will not help. Purchase and activate a new monthly plan, or switch to a pay-as-you-go API key with available balance.",
+	)
+	ErrSubscriptionNilInput = infraerrors.BadRequest("SUBSCRIPTION_NIL_INPUT", "subscription input cannot be nil")
+	ErrAdjustWouldExpire    = infraerrors.BadRequest("ADJUST_WOULD_EXPIRE", "adjustment would result in expired subscription (remaining days must be > 0)")
 )
 
 // SubscriptionService 订阅服务
@@ -637,11 +641,6 @@ func normalizeSubscriptionStatus(subs []UserSubscription) {
 	}
 }
 
-// startOfDay 返回给定时间所在日期的零点（保持原时区）。
-func startOfDay(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-}
-
 // rollingUsageWindowStart returns the exact activation/reset moment for usage
 // windows.
 //
@@ -659,9 +658,10 @@ func (s *SubscriptionService) CheckAndActivateWindow(ctx context.Context, sub *U
 		return nil
 	}
 
-	// 使用实际激活时刻作为窗口起始，避免 30 天/月卡窗口早于订阅过期时间重置。
-	windowStart := rollingUsageWindowStart(time.Now())
-	return s.userSubRepo.ActivateWindows(ctx, sub.ID, windowStart)
+	// Daily quota refreshes at configured local midnight. Weekly/monthly quota
+	// stays anchored to the exact activation time to avoid partial extra terms.
+	now := rollingUsageWindowStart(time.Now())
+	return s.userSubRepo.ActivateWindows(ctx, sub.ID, timezone.StartOfDay(now), now)
 }
 
 // AdminResetQuota manually resets the daily, weekly, and/or monthly usage windows.
@@ -677,7 +677,7 @@ func (s *SubscriptionService) AdminResetQuota(ctx context.Context, subscriptionI
 	}
 	windowStart := rollingUsageWindowStart(time.Now())
 	if resetDaily {
-		if err := s.userSubRepo.ResetDailyUsage(ctx, sub.ID, windowStart); err != nil {
+		if err := s.userSubRepo.ResetDailyUsage(ctx, sub.ID, timezone.StartOfDay(windowStart)); err != nil {
 			return nil, err
 		}
 	}
@@ -707,16 +707,17 @@ func (s *SubscriptionService) AdminResetQuota(ctx context.Context, subscriptionI
 
 // CheckAndResetWindows 检查并重置过期的窗口
 func (s *SubscriptionService) CheckAndResetWindows(ctx context.Context, sub *UserSubscription) error {
-	// 使用实际重置时刻作为新窗口起始时间，避免新窗口短于 24h/7d/30d。
+	// Weekly/monthly windows use the exact reset time; daily stays on midnight.
 	windowStart := rollingUsageWindowStart(time.Now())
 	needsInvalidateCache := false
 
-	// 日窗口重置（24小时）
+	// 日窗口重置（配置时区每天 0 点）
 	if sub.NeedsDailyReset() {
-		if err := s.userSubRepo.ResetDailyUsage(ctx, sub.ID, windowStart); err != nil {
+		dailyWindowStart := timezone.StartOfDay(windowStart)
+		if err := s.userSubRepo.ResetDailyUsage(ctx, sub.ID, dailyWindowStart); err != nil {
 			return err
 		}
-		sub.DailyWindowStart = &windowStart
+		sub.DailyWindowStart = &dailyWindowStart
 		sub.DailyUsageUSD = 0
 		needsInvalidateCache = true
 	}

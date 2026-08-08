@@ -41,6 +41,7 @@ var (
 	ErrInvitationCodeRequired  = infraerrors.BadRequest("INVITATION_CODE_REQUIRED", "invitation code is required")
 	ErrInvitationCodeInvalid   = infraerrors.BadRequest("INVITATION_CODE_INVALID", "invalid or used invitation code")
 	ErrOAuthInvitationRequired = infraerrors.Forbidden("OAUTH_INVITATION_REQUIRED", "invitation code required to complete oauth registration")
+	ErrOAuthEmailOwnership     = infraerrors.Forbidden("OAUTH_EMAIL_OWNERSHIP_REQUIRED", "existing account requires a verified provider email or authenticated identity binding")
 	ErrInvalidSSOTicket        = infraerrors.Unauthorized("INVALID_SSO_TICKET", "invalid or expired sso ticket")
 	ErrInvalidEmbedTicket      = infraerrors.Unauthorized("INVALID_EMBED_TICKET", "invalid or expired embed ticket")
 	ErrEmbedTargetUnavailable  = infraerrors.Forbidden("EMBED_TARGET_UNAVAILABLE", "embed target is unavailable")
@@ -591,6 +592,19 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 // 与 LoginOrRegisterOAuth 功能相同，但返回 TokenPair 而非单个 token。
 // invitationCode 仅在邀请码注册模式下新用户注册时使用；referralCode 仅在首次创建 OAuth 用户时绑定邀请关系。
 func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, email, username, invitationCode, referralCode string) (*TokenPair, *User, error) {
+	return s.loginOrRegisterOAuthWithTokenPair(ctx, email, username, invitationCode, referralCode, true)
+}
+
+// LoginOrRegisterOAuthIdentityWithTokenPair preserves the provider's email
+// verification boundary. An unverified provider claim may create a new account,
+// but it must never take over an existing local account solely by matching its
+// email address; existing accounts require a verified claim or an authenticated
+// identity-binding flow.
+func (s *AuthService) LoginOrRegisterOAuthIdentityWithTokenPair(ctx context.Context, email, username, invitationCode, referralCode string, emailVerified bool) (*TokenPair, *User, error) {
+	return s.loginOrRegisterOAuthWithTokenPair(ctx, email, username, invitationCode, referralCode, emailVerified)
+}
+
+func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, email, username, invitationCode, referralCode string, emailVerified bool) (*TokenPair, *User, error) {
 	// 检查 refreshTokenCache 是否可用
 	if s.refreshTokenCache == nil {
 		return nil, nil, errors.New("refresh token cache not configured")
@@ -612,6 +626,9 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 	createdNewUser := false
 
 	user, err := s.userRepo.GetByEmail(ctx, email)
+	if err == nil && !emailVerified {
+		return nil, nil, ErrOAuthEmailOwnership
+	}
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			// OAuth 首次登录视为注册
@@ -678,6 +695,9 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 			})
 			if createErr != nil {
 				if errors.Is(createErr, ErrEmailExists) {
+					if !emailVerified {
+						return nil, nil, ErrOAuthEmailOwnership
+					}
 					// The UnitOfWork has rolled back before reading the winner.
 					user, err = s.userRepo.GetByEmail(ctx, email)
 					if err != nil {

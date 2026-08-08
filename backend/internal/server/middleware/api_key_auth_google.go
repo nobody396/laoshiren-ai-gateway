@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/googleapi"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ip"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
@@ -119,13 +120,7 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 
 			needsMaintenance, err := subscriptionService.ValidateAndCheckLimits(subscription, apiKey.Group)
 			if err != nil {
-				status := 403
-				if errors.Is(err, service.ErrDailyLimitExceeded) ||
-					errors.Is(err, service.ErrWeeklyLimitExceeded) ||
-					errors.Is(err, service.ErrMonthlyLimitExceeded) {
-					status = 429
-				}
-				abortWithGoogleError(c, status, err.Error())
+				abortWithGoogleError(c, infraerrors.Code(err), infraerrors.Message(err))
 				return
 			}
 

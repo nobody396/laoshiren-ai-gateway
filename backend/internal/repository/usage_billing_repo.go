@@ -144,18 +144,19 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 	}
 
 	if cmd.BalanceCost > 0 {
-		newBalance, err := deductUsageBillingBalance(ctx, tx, cmd.UserID, cmd.BalanceCost)
+		newBalance, deductedAmount, err := deductUsageBillingBalance(ctx, tx, cmd.UserID, cmd.BalanceCost)
 		if err != nil {
 			return err
 		}
 		result.NewBalance = &newBalance
+		result.BalanceDeductedMicros = service.AffiliateMicrosFromFloat(deductedAmount)
 		if cmd.UsageLogID > 0 {
 			settlement := usageBillingAffiliateSettlement{}
 			confirmedMicros, err := attributeUsageBillingBalanceConsumption(
 				ctx,
 				tx,
 				cmd,
-				service.AffiliateMicrosFromFloat(cmd.BalanceCost),
+				result.BalanceDeductedMicros,
 				&settlement,
 			)
 			if err != nil {
@@ -1326,22 +1327,33 @@ func usageBillingLimitExceeded(current float64, limit sql.NullFloat64, cost floa
 // 永远放行、最终扣费永远失败，用户即可无限免费使用。扣到 0 后，
 // 下一个请求就会被余额闸门正常拦截。扣减通过 GREATEST(balance - $1, 0)
 // 在单条 UPDATE 内完成，依赖行锁串行化，余额不会变负。
-func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, amount float64) (float64, error) {
-	var newBalance float64
+func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, amount float64) (float64, float64, error) {
+	var newBalance, deductedAmount float64
 	err := tx.QueryRowContext(ctx, `
-		UPDATE users
-		SET balance = GREATEST(balance - $1, 0),
-			updated_at = NOW()
-		WHERE id = $2 AND deleted_at IS NULL
-		RETURNING balance
-	`, amount, userID).Scan(&newBalance)
+		WITH current_balance AS (
+			SELECT id, balance
+			FROM users
+			WHERE id = $2 AND deleted_at IS NULL
+			FOR UPDATE
+		), updated AS (
+			UPDATE users AS u
+			SET balance = GREATEST(current_balance.balance - $1::numeric, 0),
+				updated_at = NOW()
+			FROM current_balance
+			WHERE u.id = current_balance.id
+			RETURNING
+				u.balance AS new_balance,
+				LEAST(GREATEST(current_balance.balance, 0), $1::numeric) AS deducted_amount
+		)
+		SELECT new_balance, deducted_amount FROM updated
+	`, amount, userID).Scan(&newBalance, &deductedAmount)
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, service.ErrUserNotFound
+		return 0, 0, service.ErrUserNotFound
 	}
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
-	return newBalance, nil
+	return newBalance, deductedAmount, nil
 }
 
 func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID int64, amount float64) (bool, error) {

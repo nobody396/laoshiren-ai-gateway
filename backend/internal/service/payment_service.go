@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"strings"
 	"time"
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
@@ -143,7 +144,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, planID s
 	}
 
 	// Store QR code URL
-	_ = s.paymentRepo.UpdateQRCodeURL(ctx, order.ID, resp.QRCode)
+	_ = s.paymentRepo.UpdateQRCodeURL(ctx, order.ID, removePostgresTextNUL(resp.QRCode))
 
 	return orderNo, resp.QRCode, nil
 }
@@ -165,7 +166,8 @@ func (s *PaymentService) HandleNotify(ctx context.Context, values url.Values) er
 		return nil
 	}
 
-	return s.completeOrder(ctx, notification.OutTradeNo, &notification.TradeNo)
+	tradeNo := removePostgresTextNUL(notification.TradeNo)
+	return s.completeOrder(ctx, notification.OutTradeNo, &tradeNo)
 }
 
 // QueryOrderStatus queries the status of an order, checking Alipay if still pending
@@ -190,7 +192,7 @@ func (s *PaymentService) QueryOrderStatus(ctx context.Context, orderNo string, u
 			if err == nil && resp.IsSuccess() {
 				switch resp.TradeStatus {
 				case "TRADE_SUCCESS", "TRADE_FINISHED":
-					tradeNo := resp.TradeNo
+					tradeNo := removePostgresTextNUL(resp.TradeNo)
 					if completeErr := s.completeOrder(ctx, orderNo, &tradeNo); completeErr != nil {
 						slog.Error("failed to complete order from query", "orderNo", orderNo, "error", completeErr)
 					} else {
@@ -206,6 +208,15 @@ func (s *PaymentService) QueryOrderStatus(ctx context.Context, orderNo string, u
 	}
 
 	return order, nil
+}
+
+// PostgreSQL text columns reject U+0000. Payment providers are external input,
+// so sanitize persisted response details instead of turning a paid order into a 500.
+func removePostgresTextNUL(value string) string {
+	if !strings.ContainsRune(value, 0) {
+		return value
+	}
+	return strings.ReplaceAll(value, "\x00", "")
 }
 
 // completeOrder marks an order as completed and assigns the subscription (idempotent)

@@ -48,3 +48,26 @@ func TestGatewayRoutesOpenAIResponsesCompactPathIsRegistered(t *testing.T) {
 		require.NotEqual(t, http.StatusNotFound, w.Code, "path=%s should hit OpenAI responses handler", path)
 	}
 }
+
+func TestGatewayRoutesResponsesSubpathRejectsNonConformingSubpaths(t *testing.T) {
+	router := newGatewayRoutesTestRouter()
+
+	for _, path := range []string{
+		"/v1/responses/../../x/y",
+		"/v1/responses/..%2f..%2fx/y",
+		"/v1/responses/%2e%2e/%2e%2e/x",
+		"/responses/%2e%2e%2fx",
+		`/v1/responses/..\..\x`,
+		"/v1/responses/%3fa=b",
+		"/v1/responses/x%23frag",
+		"/v1/responses/compact%2f..",
+	} {
+		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(`{"model":"gpt-5"}`))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusNotFound, w.Code, "path=%s must be rejected at the edge", path)
+		require.Contains(t, w.Body.String(), "Unsupported responses subpath", "path=%s", path)
+	}
+}

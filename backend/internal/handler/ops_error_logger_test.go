@@ -273,6 +273,9 @@ func TestNormalizeOpsErrorType(t *testing.T) {
 		// Unknown type but known code still maps correctly.
 		{"nil with INSUFFICIENT_BALANCE code", "<nil>", "INSUFFICIENT_BALANCE", "billing_error"},
 		{"nil with USAGE_LIMIT_EXCEEDED code", "<nil>", "USAGE_LIMIT_EXCEEDED", "subscription_error"},
+		{"nil with DAILY_LIMIT_EXCEEDED code", "<nil>", "DAILY_LIMIT_EXCEEDED", "subscription_error"},
+		{"nil with WEEKLY_LIMIT_EXCEEDED code", "<nil>", "WEEKLY_LIMIT_EXCEEDED", "subscription_error"},
+		{"nil with MONTHLY_LIMIT_EXCEEDED code", "<nil>", "MONTHLY_LIMIT_EXCEEDED", "subscription_error"},
 
 		// Empty type falls through to code-based mapping.
 		{"empty type with balance code", "", "INSUFFICIENT_BALANCE", "billing_error"},
@@ -339,6 +342,23 @@ func TestClassifyOpsIsBusinessLimitedExcludesPolicyAndCapacity(t *testing.T) {
 			code:    "INSUFFICIENT_BALANCE",
 			status:  http.StatusPaymentRequired,
 			message: "insufficient balance",
+			want:    true,
+		},
+		{
+			name:    "monthly plan exhaustion is a client business limit",
+			errType: "subscription_error",
+			phase:   "request",
+			code:    "MONTHLY_LIMIT_EXCEEDED",
+			status:  http.StatusForbidden,
+			message: "Your monthly plan quota has been exhausted. Retrying will not help.",
+			want:    true,
+		},
+		{
+			name:    "subscription type alone stays business limited",
+			errType: "subscription_error",
+			phase:   "request",
+			status:  http.StatusForbidden,
+			message: "account quota limit",
 			want:    true,
 		},
 	}

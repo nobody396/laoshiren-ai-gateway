@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/timezone"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,8 +24,38 @@ func TestRollingUsageWindowStartPreservesActivationMoment(t *testing.T) {
 	windowStart := rollingUsageWindowStart(activation)
 
 	require.Equal(t, activation, windowStart)
-	require.NotEqual(t, startOfDay(activation), windowStart, "monthly windows must not be rounded down to midnight")
+	require.NotEqual(t, timezone.StartOfDay(activation), windowStart, "monthly windows must not be rounded down to midnight")
 	require.Equal(t, activation.Add(SubscriptionMonthlyWindowDuration), windowStart.Add(SubscriptionMonthlyWindowDuration))
+}
+
+func TestDailyQuotaResetsAtConfiguredMidnight(t *testing.T) {
+	loc := timezone.Location()
+	start := time.Date(2026, 8, 8, 23, 50, 0, 0, loc)
+	sub := &UserSubscription{DailyWindowStart: &start}
+
+	require.False(t, sub.NeedsDailyResetAt(time.Date(2026, 8, 8, 23, 59, 59, 0, loc)))
+	require.True(t, sub.NeedsDailyResetAt(time.Date(2026, 8, 9, 0, 0, 0, 0, loc)))
+	require.Equal(t, time.Date(2026, 8, 9, 0, 0, 0, 0, loc), *sub.DailyResetTime())
+}
+
+func TestDailyQuotaLegacyRollingAnchorSelfHealsNextMidnight(t *testing.T) {
+	loc := timezone.Location()
+	legacy := time.Date(2026, 8, 8, 12, 34, 56, 0, loc)
+	sub := &UserSubscription{DailyWindowStart: &legacy}
+
+	require.False(t, sub.NeedsDailyResetAt(time.Date(2026, 8, 8, 23, 59, 0, 0, loc)))
+	require.True(t, sub.NeedsDailyResetAt(time.Date(2026, 8, 9, 0, 1, 0, 0, loc)))
+}
+
+func TestDailyResetTimeIsCappedAtSubscriptionExpiry(t *testing.T) {
+	loc := timezone.Location()
+	start := time.Date(2026, 8, 8, 8, 0, 0, 0, loc)
+	expiresAt := time.Date(2026, 8, 8, 20, 0, 0, 0, loc)
+
+	resetAt := (&UserSubscription{DailyWindowStart: &start, ExpiresAt: expiresAt}).DailyResetTime()
+
+	require.NotNil(t, resetAt)
+	require.Equal(t, expiresAt, *resetAt)
 }
 
 func TestMonthlyResetTimeUsesThirtyOneDayCycle(t *testing.T) {

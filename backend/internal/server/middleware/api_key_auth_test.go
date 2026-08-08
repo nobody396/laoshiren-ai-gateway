@@ -81,7 +81,7 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 				return &clone, nil
 			},
 			updateStatus:   func(ctx context.Context, subscriptionID int64, status string) error { return nil },
-			activateWindow: func(ctx context.Context, id int64, start time.Time) error { return nil },
+			activateWindow: func(ctx context.Context, id int64, dailyStart, periodicStart time.Time) error { return nil },
 			resetDaily: func(ctx context.Context, id int64, start time.Time) error {
 				maintenanceCalled <- struct{}{}
 				return nil
@@ -90,6 +90,7 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 			resetMonthly: func(ctx context.Context, id int64, start time.Time) error { return nil },
 		}
 		subscriptionService := service.NewSubscriptionService(nil, subscriptionRepo, nil, nil, cfg)
+		subscriptionService.Start()
 		t.Cleanup(subscriptionService.Stop)
 
 		router := newAuthTestRouter(apiKeyService, subscriptionService, cfg)
@@ -159,7 +160,7 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 				return &clone, nil
 			},
 			updateStatus:   func(ctx context.Context, subscriptionID int64, status string) error { return nil },
-			activateWindow: func(ctx context.Context, id int64, start time.Time) error { return nil },
+			activateWindow: func(ctx context.Context, id int64, dailyStart, periodicStart time.Time) error { return nil },
 			resetDaily:     func(ctx context.Context, id int64, start time.Time) error { return nil },
 			resetWeekly:    func(ctx context.Context, id int64, start time.Time) error { return nil },
 			resetMonthly:   func(ctx context.Context, id int64, start time.Time) error { return nil },
@@ -173,7 +174,38 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		require.Equal(t, http.StatusTooManyRequests, w.Code)
-		require.Contains(t, w.Body.String(), "USAGE_LIMIT_EXCEEDED")
+		require.Contains(t, w.Body.String(), "DAILY_LIMIT_EXCEEDED")
+	})
+
+	t.Run("monthly_plan_quota_exhaustion_is_clear_and_not_retryable", func(t *testing.T) {
+		cfg := &config.Config{RunMode: config.RunModeStandard}
+		apiKeyService := service.NewAPIKeyService(apiKeyRepo, nil, nil, nil, nil, nil, cfg)
+		group.DailyLimitUSD = nil
+		group.MonthlyLimitUSD = &limit
+		now := time.Now()
+		sub := &service.UserSubscription{
+			ID: 56, UserID: user.ID, GroupID: group.ID,
+			Status: service.SubscriptionStatusActive, ExpiresAt: now.Add(24 * time.Hour),
+			MonthlyWindowStart: &now, MonthlyUsageUSD: 10,
+		}
+		subscriptionRepo := &stubUserSubscriptionRepo{
+			getActive: func(context.Context, int64, int64) (*service.UserSubscription, error) {
+				clone := *sub
+				return &clone, nil
+			},
+		}
+		subscriptionService := service.NewSubscriptionService(nil, subscriptionRepo, nil, nil, cfg)
+		router := newAuthTestRouter(apiKeyService, subscriptionService, cfg)
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/t", nil)
+		req.Header.Set("x-api-key", apiKey.Key)
+		router.ServeHTTP(w, req)
+
+		require.Equal(t, http.StatusForbidden, w.Code)
+		require.Contains(t, w.Body.String(), "MONTHLY_LIMIT_EXCEEDED")
+		require.Contains(t, w.Body.String(), "monthly plan quota has been exhausted")
+		require.Contains(t, w.Body.String(), "not a service outage")
+		require.Contains(t, w.Body.String(), "Retrying will not help")
 	})
 }
 
@@ -700,7 +732,7 @@ func (r *stubApiKeyRepo) GetRateLimitData(ctx context.Context, id int64) (*servi
 type stubUserSubscriptionRepo struct {
 	getActive      func(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error)
 	updateStatus   func(ctx context.Context, subscriptionID int64, status string) error
-	activateWindow func(ctx context.Context, id int64, start time.Time) error
+	activateWindow func(ctx context.Context, id int64, dailyStart, periodicStart time.Time) error
 	resetDaily     func(ctx context.Context, id int64, start time.Time) error
 	resetWeekly    func(ctx context.Context, id int64, start time.Time) error
 	resetMonthly   func(ctx context.Context, id int64, start time.Time) error
@@ -772,9 +804,9 @@ func (r *stubUserSubscriptionRepo) UpdateNotes(ctx context.Context, subscription
 	return errors.New("not implemented")
 }
 
-func (r *stubUserSubscriptionRepo) ActivateWindows(ctx context.Context, id int64, start time.Time) error {
+func (r *stubUserSubscriptionRepo) ActivateWindows(ctx context.Context, id int64, dailyStart, periodicStart time.Time) error {
 	if r.activateWindow != nil {
-		return r.activateWindow(ctx, id, start)
+		return r.activateWindow(ctx, id, dailyStart, periodicStart)
 	}
 	return errors.New("not implemented")
 }

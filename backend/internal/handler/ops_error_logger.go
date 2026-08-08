@@ -46,6 +46,9 @@ const (
 	// 上游错误码常量 — 错误分类 (normalizeOpsErrorType / classifyOpsPhase / classifyOpsIsBusinessLimited)
 	opsCodeInsufficientBalance  = "INSUFFICIENT_BALANCE"
 	opsCodeUsageLimitExceeded   = "USAGE_LIMIT_EXCEEDED"
+	opsCodeDailyLimitExceeded   = "DAILY_LIMIT_EXCEEDED"
+	opsCodeWeeklyLimitExceeded  = "WEEKLY_LIMIT_EXCEEDED"
+	opsCodeMonthlyLimitExceeded = "MONTHLY_LIMIT_EXCEEDED"
 	opsCodeSubscriptionNotFound = "SUBSCRIPTION_NOT_FOUND"
 	opsCodeSubscriptionInvalid  = "SUBSCRIPTION_INVALID"
 	opsCodeUserInactive         = "USER_INACTIVE"
@@ -1127,7 +1130,8 @@ func normalizeOpsErrorType(errType string, code string) string {
 	switch strings.TrimSpace(code) {
 	case opsCodeInsufficientBalance:
 		return "billing_error"
-	case opsCodeUsageLimitExceeded, opsCodeSubscriptionNotFound, opsCodeSubscriptionInvalid:
+	case opsCodeUsageLimitExceeded, opsCodeDailyLimitExceeded, opsCodeWeeklyLimitExceeded,
+		opsCodeMonthlyLimitExceeded, opsCodeSubscriptionNotFound, opsCodeSubscriptionInvalid:
 		return "subscription_error"
 	default:
 		return "api_error"
@@ -1139,7 +1143,9 @@ func classifyOpsPhase(errType, message, code string) string {
 	// Standardized phases: request|auth|routing|upstream|network|internal
 	// Map billing/concurrency/response => request; scheduling => routing.
 	switch strings.TrimSpace(code) {
-	case opsCodeInsufficientBalance, opsCodeUsageLimitExceeded, opsCodeSubscriptionNotFound, opsCodeSubscriptionInvalid:
+	case opsCodeInsufficientBalance, opsCodeUsageLimitExceeded, opsCodeDailyLimitExceeded,
+		opsCodeWeeklyLimitExceeded, opsCodeMonthlyLimitExceeded,
+		opsCodeSubscriptionNotFound, opsCodeSubscriptionInvalid:
 		return "request"
 	}
 
@@ -1204,7 +1210,12 @@ func classifyOpsIsRetryable(errType string, statusCode int) bool {
 
 func classifyOpsIsBusinessLimited(errType, phase, code string, status int, message string) bool {
 	switch strings.TrimSpace(code) {
-	case opsCodeInsufficientBalance, opsCodeUsageLimitExceeded, opsCodeSubscriptionNotFound, opsCodeSubscriptionInvalid, opsCodeUserInactive:
+	case opsCodeInsufficientBalance, opsCodeUsageLimitExceeded, opsCodeDailyLimitExceeded,
+		opsCodeWeeklyLimitExceeded, opsCodeMonthlyLimitExceeded,
+		opsCodeSubscriptionNotFound, opsCodeSubscriptionInvalid, opsCodeUserInactive:
+		return true
+	}
+	if errType == "billing_error" || errType == "subscription_error" {
 		return true
 	}
 	msg := strings.ToLower(strings.TrimSpace(message))

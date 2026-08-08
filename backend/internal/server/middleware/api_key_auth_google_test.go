@@ -27,7 +27,7 @@ type fakeAPIKeyRepo struct {
 type fakeGoogleSubscriptionRepo struct {
 	getActive      func(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error)
 	updateStatus   func(ctx context.Context, subscriptionID int64, status string) error
-	activateWindow func(ctx context.Context, id int64, start time.Time) error
+	activateWindow func(ctx context.Context, id int64, dailyStart, periodicStart time.Time) error
 	resetDaily     func(ctx context.Context, id int64, start time.Time) error
 	resetWeekly    func(ctx context.Context, id int64, start time.Time) error
 	resetMonthly   func(ctx context.Context, id int64, start time.Time) error
@@ -160,9 +160,9 @@ func (f fakeGoogleSubscriptionRepo) UpdateStatus(ctx context.Context, subscripti
 func (f fakeGoogleSubscriptionRepo) UpdateNotes(ctx context.Context, subscriptionID int64, notes string) error {
 	return errors.New("not implemented")
 }
-func (f fakeGoogleSubscriptionRepo) ActivateWindows(ctx context.Context, id int64, start time.Time) error {
+func (f fakeGoogleSubscriptionRepo) ActivateWindows(ctx context.Context, id int64, dailyStart, periodicStart time.Time) error {
 	if f.activateWindow != nil {
-		return f.activateWindow(ctx, id, start)
+		return f.activateWindow(ctx, id, dailyStart, periodicStart)
 	}
 	return errors.New("not implemented")
 }
@@ -873,7 +873,7 @@ func TestApiKeyAuthWithSubscriptionGoogle_SubscriptionLimitExceededReturns429(t 
 			return &clone, nil
 		},
 		updateStatus:   func(ctx context.Context, subscriptionID int64, status string) error { return nil },
-		activateWindow: func(ctx context.Context, id int64, start time.Time) error { return nil },
+		activateWindow: func(ctx context.Context, id int64, dailyStart, periodicStart time.Time) error { return nil },
 		resetDaily:     func(ctx context.Context, id int64, start time.Time) error { return nil },
 		resetWeekly:    func(ctx context.Context, id int64, start time.Time) error { return nil },
 		resetMonthly:   func(ctx context.Context, id int64, start time.Time) error { return nil },
@@ -894,4 +894,72 @@ func TestApiKeyAuthWithSubscriptionGoogle_SubscriptionLimitExceededReturns429(t 
 	require.Equal(t, http.StatusTooManyRequests, resp.Error.Code)
 	require.Equal(t, "RESOURCE_EXHAUSTED", resp.Error.Status)
 	require.Contains(t, resp.Error.Message, "daily usage limit exceeded")
+}
+
+func TestApiKeyAuthWithSubscriptionGoogle_MonthlyPlanExhaustionReturns403(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	limit := 1.0
+	group := &service.Group{
+		ID:               78,
+		Name:             "gemini-monthly-sub",
+		Status:           service.StatusActive,
+		Platform:         service.PlatformGemini,
+		Hydrated:         true,
+		SubscriptionType: service.SubscriptionTypeSubscription,
+		MonthlyLimitUSD:  &limit,
+	}
+	user := &service.User{ID: 1000, Role: service.RoleUser, Status: service.StatusActive, Balance: 10, Concurrency: 3}
+	apiKey := &service.APIKey{ID: 502, UserID: user.ID, Key: "google-monthly-limit", Status: service.StatusActive, User: user, Group: group}
+	apiKey.GroupID = &group.ID
+
+	apiKeyService := newTestAPIKeyService(fakeAPIKeyRepo{
+		getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
+			if key != apiKey.Key {
+				return nil, service.ErrAPIKeyNotFound
+			}
+			clone := *apiKey
+			return &clone, nil
+		},
+	})
+
+	now := time.Now()
+	sub := &service.UserSubscription{
+		ID:                 602,
+		UserID:             user.ID,
+		GroupID:            group.ID,
+		Status:             service.SubscriptionStatusActive,
+		ExpiresAt:          now.Add(24 * time.Hour),
+		MonthlyWindowStart: &now,
+		MonthlyUsageUSD:    10,
+	}
+	subscriptionService := service.NewSubscriptionService(nil, fakeGoogleSubscriptionRepo{
+		getActive: func(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
+			clone := *sub
+			return &clone, nil
+		},
+		updateStatus:   func(ctx context.Context, subscriptionID int64, status string) error { return nil },
+		activateWindow: func(ctx context.Context, id int64, dailyStart, periodicStart time.Time) error { return nil },
+		resetDaily:     func(ctx context.Context, id int64, start time.Time) error { return nil },
+		resetWeekly:    func(ctx context.Context, id int64, start time.Time) error { return nil },
+		resetMonthly:   func(ctx context.Context, id int64, start time.Time) error { return nil },
+	}, nil, nil, &config.Config{RunMode: config.RunModeStandard})
+
+	r := gin.New()
+	r.Use(APIKeyAuthWithSubscriptionGoogle(apiKeyService, subscriptionService, &config.Config{RunMode: config.RunModeStandard}))
+	r.GET("/v1beta/test", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"ok": true}) })
+
+	req := httptest.NewRequest(http.MethodGet, "/v1beta/test", nil)
+	req.Header.Set("x-goog-api-key", apiKey.Key)
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusForbidden, rec.Code)
+	var resp googleErrorResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, http.StatusForbidden, resp.Error.Code)
+	require.Equal(t, "PERMISSION_DENIED", resp.Error.Status)
+	require.Contains(t, resp.Error.Message, "monthly plan quota has been exhausted")
+	require.Contains(t, resp.Error.Message, "not a service outage")
+	require.Contains(t, resp.Error.Message, "Retrying will not help")
 }

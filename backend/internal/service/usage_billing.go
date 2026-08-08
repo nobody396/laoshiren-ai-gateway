@@ -6,8 +6,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"unicode"
+
+	"github.com/shopspring/decimal"
 )
 
 var ErrUsageBillingRequestIDRequired = errors.New("usage billing request_id is required")
@@ -53,6 +56,30 @@ func (c *UsageBillingCommand) Normalize() {
 	if strings.TrimSpace(c.RequestFingerprint) == "" {
 		c.RequestFingerprint = buildUsageBillingFingerprint(c)
 	}
+	// Keep the idempotency fingerprint derived from the original amount, then
+	// normalize every persisted monetary value to the database NUMERIC scale.
+	c.quantizeMonetaryFields()
+}
+
+// UsageBillingMonetaryScale matches the NUMERIC(20,8) columns used by billing.
+const UsageBillingMonetaryScale = 8
+
+func (c *UsageBillingCommand) quantizeMonetaryFields() {
+	c.BalanceCost = QuantizeUsageBillingAmount(c.BalanceCost)
+	c.SubscriptionCost = QuantizeUsageBillingAmount(c.SubscriptionCost)
+	c.APIKeyQuotaCost = QuantizeUsageBillingAmount(c.APIKeyQuotaCost)
+	c.APIKeyRateLimitCost = QuantizeUsageBillingAmount(c.APIKeyRateLimitCost)
+	c.AccountQuotaCost = QuantizeUsageBillingAmount(c.AccountQuotaCost)
+}
+
+// QuantizeUsageBillingAmount uses PostgreSQL NUMERIC's half-away-from-zero
+// behavior without introducing a binary multiply/divide rounding boundary.
+func QuantizeUsageBillingAmount(v float64) float64 {
+	if v == 0 || math.IsNaN(v) || math.IsInf(v, 0) {
+		return v
+	}
+	quantized, _ := decimal.NewFromFloat(v).Round(UsageBillingMonetaryScale).Float64()
+	return quantized
 }
 
 func buildUsageBillingFingerprint(c *UsageBillingCommand) string {
@@ -122,6 +149,7 @@ type UsageBillingApplyResult struct {
 	QuotaState           *AccountQuotaState
 
 	SubscriptionUsageUpdates       []SubscriptionUsageUpdate
+	BalanceDeductedMicros          int64
 	BalanceConfirmedMicros         int64
 	MonthlyConfirmedMicros         int64
 	ConfirmedConsumptionMicros     int64

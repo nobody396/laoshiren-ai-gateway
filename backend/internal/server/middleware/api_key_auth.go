@@ -7,6 +7,7 @@ import (
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
+	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ip"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 
@@ -182,15 +183,13 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 			if subscription != nil {
 				needsMaintenance, validateErr := subscriptionService.ValidateAndCheckLimits(subscription, apiKey.Group)
 				if validateErr != nil {
-					code := "SUBSCRIPTION_INVALID"
-					status := 403
-					if errors.Is(validateErr, service.ErrDailyLimitExceeded) ||
-						errors.Is(validateErr, service.ErrWeeklyLimitExceeded) ||
-						errors.Is(validateErr, service.ErrMonthlyLimitExceeded) {
-						code = "USAGE_LIMIT_EXCEEDED"
-						status = 429
+					status := infraerrors.Code(validateErr)
+					code := infraerrors.Reason(validateErr)
+					message := infraerrors.Message(validateErr)
+					if code == "" {
+						code = "SUBSCRIPTION_INVALID"
 					}
-					AbortWithError(c, status, code, validateErr.Error())
+					AbortWithError(c, status, code, message)
 					return
 				}
 

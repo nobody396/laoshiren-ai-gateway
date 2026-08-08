@@ -49,7 +49,7 @@
 - `govulncheck ./...`：从 5 个可达 Go 漏洞降至 0。
 - `pnpm audit --prod --audit-level moderate`：从 20 个 high 降至 0 已知漏洞。
 - 旧 `xlsx@0.18.5` 无 patched npm 版本，管理员 XLSX 导出已迁移到 `write-excel-file`，没有用 ignore 掩盖告警。
-- 前端 typecheck 与 578 项测试已通过。
+- 前端 typecheck 与 579 项测试已通过。
 
 ## 4. B1：资金、配额和 usage 正确性（已完成）
 
@@ -154,3 +154,18 @@ b8fdf3f3c test(failover): assert cache billing only on account switch
 5. migration/Ent schema diff 审计无意外 destructive change。
 6. 推送分支并通过 PR CI；合并后的发布镜像必须对应精确 `origin/main` commit/digest。
 7. 只在约定的北京时间维护窗口执行 start-first Swarm 更新；健康失败立即回滚到旧 digest。
+
+## 11. 2026-08-08 最终发布前验证证据
+
+以下命令均在独立工作树执行，未更新生产 Swarm 服务，因此不会影响在线客户：
+
+- 后端默认测试：`go test ./... -count=1`，通过。
+- 后端 unit tag 全量测试：`go test -tags=unit ./... -count=1`，通过。
+- 并发竞态检查：WebSocket 多轮模型和 ops log backoff 相关用例在 `go test -race -tags=unit` 下通过。
+- Go 漏洞扫描：Go 1.26.5、`govulncheck v1.6.0`、漏洞库更新时间 2026-07-27；0 个可达漏洞，0 个 imported package 漏洞。
+- 前端：108 个测试文件、579 项测试通过；`vue-tsc -b` 与 production build 通过；production audit 为 `No known vulnerabilities found`。
+- 资金链路：Affiliate Testcontainers 集成测试覆盖“按实际收款结算”和“低余额 clamp”，通过；测试容器已清理。
+- 结构审计：相对 `origin/main` 没有新增 migration 或 Ent schema diff；`git diff --check` 通过。
+- 基线复核：`origin/main@ce5874e05f099c51978d20475f67ffc0bb5c8afe`、`wei-shaw/v0.1.172@61ba94d2e85a00ba639fc870b91946b1bd2f990d`，两者仍无共同 merge-base。
+
+仍待完成的门禁仅为远端阶段：推送分支、PR CI、合并 main、锁定 CI 发布的不可变镜像 digest，以及在约定维护窗口执行生产更新和健康/回滚检查。

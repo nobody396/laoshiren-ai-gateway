@@ -219,8 +219,20 @@ func (e *OpenAIWSClientCloseError) Reason() string {
 
 // OpenAIWSIngressHooks 定义入站 WS 每个 turn 的生命周期回调。
 type OpenAIWSIngressHooks struct {
-	BeforeTurn func(turn int) error
-	AfterTurn  func(turn int, result *OpenAIForwardResult, turnErr error)
+	// InitialRequestModel is the client-facing model from the first frame.
+	InitialRequestModel string
+	BeforeTurn          func(turn int) error
+	// MapRequestModel resolves each turn's client model before account mapping.
+	MapRequestModel func(turn int, originalModel string) (string, error)
+	AfterTurn       func(turn int, result *OpenAIForwardResult, turnErr error)
+}
+
+func openAIWSDifferentModel(requestModel, upstreamModel string) string {
+	upstreamModel = strings.TrimSpace(upstreamModel)
+	if upstreamModel == "" || upstreamModel == strings.TrimSpace(requestModel) {
+		return ""
+	}
+	return upstreamModel
 }
 
 func normalizeOpenAIWSLogValue(value string) string {
@@ -2484,7 +2496,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 		return rebuilt, nil
 	}
 
-	parseClientPayload := func(raw []byte) (openAIWSClientPayload, error) {
+	parseClientPayload := func(turn int, raw []byte) (openAIWSClientPayload, error) {
 		trimmed := bytes.TrimSpace(raw)
 		if len(trimmed) == 0 {
 			return openAIWSClientPayload{}, NewOpenAIWSClientCloseError(coderws.StatusPolicyViolation, "empty websocket request payload", nil)
@@ -2544,7 +2556,17 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 			}
 			normalized = next
 		}
-		mappedModel := account.GetMappedModel(originalModel)
+		requestModel := originalModel
+		if hooks != nil && hooks.MapRequestModel != nil {
+			mappedModel, mapErr := hooks.MapRequestModel(turn, originalModel)
+			if mapErr != nil {
+				return openAIWSClientPayload{}, mapErr
+			}
+			if mappedModel = strings.TrimSpace(mappedModel); mappedModel != "" {
+				requestModel = mappedModel
+			}
+		}
+		mappedModel := account.GetMappedModel(requestModel)
 		if normalizedModel := normalizeCodexModel(mappedModel); normalizedModel != "" {
 			mappedModel = normalizedModel
 		}
@@ -2581,7 +2603,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 		}, nil
 	}
 
-	firstPayload, err := parseClientPayload(firstClientMessage)
+	firstPayload, err := parseClientPayload(1, firstClientMessage)
 	if err != nil {
 		return err
 	}
@@ -2820,9 +2842,12 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 		mappedModel := ""
 		var mappedModelBytes []byte
 		if originalModel != "" {
-			mappedModel = account.GetMappedModel(originalModel)
-			if normalizedModel := normalizeCodexModel(mappedModel); normalizedModel != "" {
-				mappedModel = normalizedModel
+			mappedModel = strings.TrimSpace(gjson.GetBytes(payload, "model").String())
+			if mappedModel == "" {
+				mappedModel = account.GetMappedModel(originalModel)
+				if normalizedModel := normalizeCodexModel(mappedModel); normalizedModel != "" {
+					mappedModel = normalizedModel
+				}
 			}
 			needModelReplace = mappedModel != "" && mappedModel != originalModel
 			if needModelReplace {
@@ -2990,6 +3015,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 					RequestID:       responseID,
 					Usage:           usage,
 					Model:           originalModel,
+					UpstreamModel:   openAIWSDifferentModel(originalModel, mappedModel),
 					ServiceTier:     extractOpenAIServiceTierFromBody(payload),
 					ReasoningEffort: extractOpenAIReasoningEffortFromBody(payload, originalModel),
 					Stream:          reqStream,
@@ -3533,7 +3559,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 			return fmt.Errorf("read client websocket request: %w", readErr)
 		}
 
-		nextPayload, parseErr := parseClientPayload(nextClientMessage)
+		nextPayload, parseErr := parseClientPayload(turn+1, nextClientMessage)
 		if parseErr != nil {
 			return parseErr
 		}

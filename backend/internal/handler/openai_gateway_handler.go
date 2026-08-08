@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
@@ -34,6 +35,17 @@ type OpenAIGatewayHandler struct {
 	concurrencyHelper       *ConcurrencyHelper
 	maxAccountSwitches      int
 	cfg                     *config.Config
+}
+
+var errOpenAIWSUnsupportedModelSwitch = errors.New("selected account does not support websocket model switch")
+
+func newOpenAIWSUnsupportedModelSwitchError(model string) error {
+	cause := fmt.Errorf("%w: model %q", errOpenAIWSUnsupportedModelSwitch, strings.TrimSpace(model))
+	return service.NewOpenAIWSClientCloseError(coderws.StatusPolicyViolation, "model switch requires reconnect", cause)
+}
+
+func shouldReportOpenAIWSProxyAccountFailure(err error) bool {
+	return err != nil && !errors.Is(err, errOpenAIWSUnsupportedModelSwitch)
 }
 
 func resolveOpenAIMessagesDispatchMappedModel(apiKey *service.APIKey, requestedModel string) string {
@@ -1204,6 +1216,8 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 	setOpsRequestContext(c, reqModel, true, firstMessage)
 	setOpsEndpointContext(c, "", int16(service.RequestTypeWSV2))
 	channelMappingWS, _ := h.gatewayService.ResolveChannelMappingAndRestrict(ctx, apiKey.GroupID, reqModel)
+	var turnMappingMu sync.RWMutex
+	turnMappings := map[int]service.ChannelMappingResult{1: channelMappingWS}
 
 	var currentUserRelease func()
 	var currentAccountRelease func()
@@ -1321,6 +1335,25 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 	)
 
 	hooks := &service.OpenAIWSIngressHooks{
+		InitialRequestModel: reqModel,
+		MapRequestModel: func(turn int, originalModel string) (string, error) {
+			model := strings.TrimSpace(originalModel)
+			if model == "" {
+				model = reqModel
+			}
+			mapping, _ := h.gatewayService.ResolveChannelMappingAndRestrict(ctx, apiKey.GroupID, model)
+			turnMappingMu.RLock()
+			previous, hasPrevious := turnMappings[turn-1]
+			turnMappingMu.RUnlock()
+			mappedModelUnchanged := hasPrevious && strings.TrimSpace(previous.MappedModel) == strings.TrimSpace(mapping.MappedModel)
+			if turn > 1 && !mappedModelUnchanged && !account.IsModelSupported(model) && !account.IsModelSupported(mapping.MappedModel) {
+				return "", newOpenAIWSUnsupportedModelSwitchError(mapping.MappedModel)
+			}
+			turnMappingMu.Lock()
+			turnMappings[turn] = mapping
+			turnMappingMu.Unlock()
+			return mapping.MappedModel, nil
+		},
 		BeforeTurn: func(turn int) error {
 			if turn == 1 {
 				return nil
@@ -1361,6 +1394,20 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 			if turnErr != nil || result == nil {
 				return
 			}
+			turnRequestedModel := strings.TrimSpace(result.Model)
+			if turnRequestedModel == "" {
+				turnRequestedModel = reqModel
+			}
+			turnUpstreamModel := strings.TrimSpace(result.UpstreamModel)
+			if turnUpstreamModel == "" {
+				turnUpstreamModel = turnRequestedModel
+			}
+			turnMappingMu.RLock()
+			turnMapping, ok := turnMappings[turn]
+			turnMappingMu.RUnlock()
+			if !ok {
+				turnMapping, _ = h.gatewayService.ResolveChannelMappingAndRestrict(ctx, apiKey.GroupID, turnRequestedModel)
+			}
 			if account.Type == service.AccountTypeOAuth {
 				h.gatewayService.UpdateCodexUsageSnapshotFromHeaders(ctx, account.ID, result.ResponseHeaders)
 			}
@@ -1378,7 +1425,7 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 					IPAddress:          clientIP,
 					RequestPayloadHash: service.HashUsageRequestPayload(firstMessage),
 					APIKeyService:      h.apiKeyService,
-					ChannelUsageFields: channelMappingWS.ToUsageFields(reqModel, result.UpstreamModel),
+					ChannelUsageFields: turnMapping.ToUsageFields(turnRequestedModel, turnUpstreamModel),
 				}); err != nil {
 					reqLog.Error("openai.websocket_record_usage_failed",
 						zap.Int64("account_id", account.ID),
@@ -1390,13 +1437,10 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		},
 	}
 
-	wsFirstMessage := firstMessage
-	if channelMappingWS.Mapped {
-		wsFirstMessage = h.gatewayService.ReplaceModelInBody(firstMessage, channelMappingWS.MappedModel)
-	}
-
-	if err := h.gatewayService.ProxyResponsesWebSocketFromClient(ctx, c, wsConn, account, token, wsFirstMessage, hooks); err != nil {
-		h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
+	if err := h.gatewayService.ProxyResponsesWebSocketFromClient(ctx, c, wsConn, account, token, firstMessage, hooks); err != nil {
+		if shouldReportOpenAIWSProxyAccountFailure(err) {
+			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
+		}
 		closeStatus, closeReason := summarizeWSCloseErrorForLog(err)
 		reqLog.Warn("openai.websocket_proxy_failed",
 			zap.Int64("account_id", account.ID),

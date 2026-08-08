@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -38,8 +39,8 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_KeepLeaseAcrossT
 
 	captureConn := &openAIWSCaptureConn{
 		events: [][]byte{
-			[]byte(`{"type":"response.completed","response":{"id":"resp_ingress_turn_1","model":"gpt-5.1","usage":{"input_tokens":1,"output_tokens":1}}}`),
-			[]byte(`{"type":"response.completed","response":{"id":"resp_ingress_turn_2","model":"gpt-5.1","usage":{"input_tokens":1,"output_tokens":1}}}`),
+			[]byte(`{"type":"response.completed","response":{"id":"resp_ingress_turn_1","model":"upstream-turn-1","usage":{"input_tokens":1,"output_tokens":1}}}`),
+			[]byte(`{"type":"response.completed","response":{"id":"resp_ingress_turn_2","model":"upstream-turn-2","usage":{"input_tokens":1,"output_tokens":1}}}`),
 		},
 	}
 	captureDialer := &openAIWSCaptureDialer{conn: captureConn}
@@ -72,11 +73,17 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_KeepLeaseAcrossT
 	}
 
 	serverErrCh := make(chan error, 1)
-	turnWSModeCh := make(chan bool, 2)
+	turnResultCh := make(chan *OpenAIForwardResult, 2)
 	hooks := &OpenAIWSIngressHooks{
+		MapRequestModel: func(turn int, originalModel string) (string, error) {
+			if originalModel != "client-turn-"+strconv.Itoa(turn) {
+				return "", errors.New("unexpected client model in ingress turn")
+			}
+			return "upstream-turn-" + strconv.Itoa(turn), nil
+		},
 		AfterTurn: func(_ int, result *OpenAIForwardResult, turnErr error) {
 			if turnErr == nil && result != nil {
-				turnWSModeCh <- result.OpenAIWSMode
+				turnResultCh <- result
 			}
 		},
 	}
@@ -137,17 +144,25 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_KeepLeaseAcrossT
 		return message
 	}
 
-	writeMessage(`{"type":"response.create","model":"gpt-5.1","stream":false}`)
+	writeMessage(`{"type":"response.create","model":"client-turn-1","stream":false}`)
 	firstTurnEvent := readMessage()
 	require.Equal(t, "response.completed", gjson.GetBytes(firstTurnEvent, "type").String())
 	require.Equal(t, "resp_ingress_turn_1", gjson.GetBytes(firstTurnEvent, "response.id").String())
+	require.Equal(t, "client-turn-1", gjson.GetBytes(firstTurnEvent, "response.model").String())
 
-	writeMessage(`{"type":"response.create","model":"gpt-5.1","stream":false,"previous_response_id":"resp_ingress_turn_1"}`)
+	writeMessage(`{"type":"response.create","model":"client-turn-2","stream":false,"previous_response_id":"resp_ingress_turn_1"}`)
 	secondTurnEvent := readMessage()
 	require.Equal(t, "response.completed", gjson.GetBytes(secondTurnEvent, "type").String())
 	require.Equal(t, "resp_ingress_turn_2", gjson.GetBytes(secondTurnEvent, "response.id").String())
-	require.True(t, <-turnWSModeCh, "首轮 turn 应标记为 WS 模式")
-	require.True(t, <-turnWSModeCh, "第二轮 turn 应标记为 WS 模式")
+	require.Equal(t, "client-turn-2", gjson.GetBytes(secondTurnEvent, "response.model").String())
+	firstResult := <-turnResultCh
+	secondResult := <-turnResultCh
+	require.True(t, firstResult.OpenAIWSMode, "首轮 turn 应标记为 WS 模式")
+	require.True(t, secondResult.OpenAIWSMode, "第二轮 turn 应标记为 WS 模式")
+	require.Equal(t, "client-turn-1", firstResult.Model)
+	require.Equal(t, "upstream-turn-1", firstResult.UpstreamModel)
+	require.Equal(t, "client-turn-2", secondResult.Model)
+	require.Equal(t, "upstream-turn-2", secondResult.UpstreamModel)
 
 	_ = clientConn.Close(coderws.StatusNormalClosure, "done")
 
@@ -162,6 +177,8 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_KeepLeaseAcrossT
 	require.Equal(t, int64(1), metrics.AcquireTotal, "同一 ingress 会话多 turn 应只获取一次上游 lease")
 	require.Equal(t, 1, captureDialer.DialCount(), "同一 ingress 会话应保持同一上游连接")
 	require.Len(t, captureConn.writes, 2, "应向同一上游连接发送两轮 response.create")
+	require.Equal(t, "upstream-turn-1", captureConn.writes[0]["model"])
+	require.Equal(t, "upstream-turn-2", captureConn.writes[1]["model"])
 }
 
 func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_DedicatedModeDoesNotReuseConnAcrossSessions(t *testing.T) {
@@ -315,8 +332,10 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_PassthroughModeR
 	cfg.Gateway.OpenAIWS.WriteTimeoutSeconds = 3
 
 	upstreamConn := &openAIWSCaptureConn{
+		readDelays: []time.Duration{0, 200 * time.Millisecond},
 		events: [][]byte{
-			[]byte(`{"type":"response.completed","response":{"id":"resp_passthrough_turn_1","model":"gpt-5.1","usage":{"input_tokens":2,"output_tokens":3}}}`),
+			[]byte(`{"type":"response.completed","response":{"id":"resp_passthrough_turn_1","model":"upstream-pass-1","usage":{"input_tokens":2,"output_tokens":3}}}`),
+			[]byte(`{"type":"response.completed","response":{"id":"resp_passthrough_turn_2","model":"upstream-pass-2","usage":{"input_tokens":4,"output_tokens":5}}}`),
 		},
 	}
 	captureDialer := &openAIWSCaptureDialer{conn: upstreamConn}
@@ -346,8 +365,15 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_PassthroughModeR
 	}
 
 	serverErrCh := make(chan error, 1)
-	resultCh := make(chan *OpenAIForwardResult, 1)
+	resultCh := make(chan *OpenAIForwardResult, 2)
 	hooks := &OpenAIWSIngressHooks{
+		InitialRequestModel: "client-pass-1",
+		MapRequestModel: func(turn int, originalModel string) (string, error) {
+			if originalModel != "client-pass-"+strconv.Itoa(turn) {
+				return "", errors.New("unexpected client model in passthrough turn")
+			}
+			return "upstream-pass-" + strconv.Itoa(turn), nil
+		},
 		AfterTurn: func(_ int, result *OpenAIForwardResult, turnErr error) {
 			if turnErr == nil && result != nil {
 				resultCh <- result
@@ -399,7 +425,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_PassthroughModeR
 	}()
 
 	writeCtx, cancelWrite := context.WithTimeout(context.Background(), 3*time.Second)
-	err = clientConn.Write(writeCtx, coderws.MessageText, []byte(`{"type":"response.create","model":"gpt-5.1","stream":false,"service_tier":"fast"}`))
+	err = clientConn.Write(writeCtx, coderws.MessageText, []byte(`{"type":"response.create","model":"client-pass-1","stream":false,"service_tier":"fast"}`))
 	cancelWrite()
 	require.NoError(t, err)
 
@@ -409,6 +435,18 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_PassthroughModeR
 	require.NoError(t, readErr)
 	require.Equal(t, "response.completed", gjson.GetBytes(event, "type").String())
 	require.Equal(t, "resp_passthrough_turn_1", gjson.GetBytes(event, "response.id").String())
+	require.Equal(t, "client-pass-1", gjson.GetBytes(event, "response.model").String())
+
+	writeCtx, cancelWrite = context.WithTimeout(context.Background(), 3*time.Second)
+	err = clientConn.Write(writeCtx, coderws.MessageText, []byte(`{"type":"response.create","model":"client-pass-2","stream":false,"service_tier":"fast"}`))
+	cancelWrite()
+	require.NoError(t, err)
+	readCtx, cancelRead = context.WithTimeout(context.Background(), 3*time.Second)
+	_, event, readErr = clientConn.Read(readCtx)
+	cancelRead()
+	require.NoError(t, readErr)
+	require.Equal(t, "resp_passthrough_turn_2", gjson.GetBytes(event, "response.id").String())
+	require.Equal(t, "client-pass-2", gjson.GetBytes(event, "response.model").String())
 	_ = clientConn.Close(coderws.StatusNormalClosure, "done")
 
 	select {
@@ -421,6 +459,8 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_PassthroughModeR
 	select {
 	case result := <-resultCh:
 		require.Equal(t, "resp_passthrough_turn_1", result.RequestID)
+		require.Equal(t, "client-pass-1", result.Model)
+		require.Equal(t, "upstream-pass-1", result.UpstreamModel)
 		require.True(t, result.OpenAIWSMode)
 		require.Equal(t, 2, result.Usage.InputTokens)
 		require.Equal(t, 3, result.Usage.OutputTokens)
@@ -429,9 +469,21 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_PassthroughModeR
 	case <-time.After(2 * time.Second):
 		t.Fatal("未收到 passthrough turn 结果回调")
 	}
+	select {
+	case result := <-resultCh:
+		require.Equal(t, "resp_passthrough_turn_2", result.RequestID)
+		require.Equal(t, "client-pass-2", result.Model)
+		require.Equal(t, "upstream-pass-2", result.UpstreamModel)
+		require.Equal(t, 4, result.Usage.InputTokens)
+		require.Equal(t, 5, result.Usage.OutputTokens)
+	case <-time.After(2 * time.Second):
+		t.Fatal("未收到 passthrough 第二轮结果回调")
+	}
 
 	require.Equal(t, 1, captureDialer.DialCount(), "passthrough 模式应直接建立上游 websocket")
-	require.Len(t, upstreamConn.writes, 1, "passthrough 模式应透传首条 response.create")
+	require.Len(t, upstreamConn.writes, 2, "passthrough 模式应逐轮转发 response.create")
+	require.Equal(t, "upstream-pass-1", upstreamConn.writes[0]["model"])
+	require.Equal(t, "upstream-pass-2", upstreamConn.writes[1]["model"])
 }
 
 func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_ModeOffReturnsPolicyViolation(t *testing.T) {

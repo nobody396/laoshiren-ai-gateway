@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/timezone"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,12 +19,25 @@ type resetQuotaUserSubRepoStub struct {
 
 	sub *UserSubscription
 
-	resetDailyCalled   bool
-	resetWeeklyCalled  bool
-	resetMonthlyCalled bool
-	resetDailyErr      error
-	resetWeeklyErr     error
-	resetMonthlyErr    error
+	resetDailyCalled    bool
+	resetWeeklyCalled   bool
+	resetMonthlyCalled  bool
+	resetDailyErr       error
+	resetWeeklyErr      error
+	resetMonthlyErr     error
+	resetDailyStart     time.Time
+	resetWeeklyStart    time.Time
+	resetMonthlyStart   time.Time
+	activateCalled      bool
+	activateDailyStart  time.Time
+	activatePeriodStart time.Time
+}
+
+func (r *resetQuotaUserSubRepoStub) ActivateWindows(_ context.Context, _ int64, dailyStart, periodicStart time.Time) error {
+	r.activateCalled = true
+	r.activateDailyStart = dailyStart
+	r.activatePeriodStart = periodicStart
+	return nil
 }
 
 func (r *resetQuotaUserSubRepoStub) GetByID(_ context.Context, id int64) (*UserSubscription, error) {
@@ -36,6 +50,7 @@ func (r *resetQuotaUserSubRepoStub) GetByID(_ context.Context, id int64) (*UserS
 
 func (r *resetQuotaUserSubRepoStub) ResetDailyUsage(_ context.Context, _ int64, windowStart time.Time) error {
 	r.resetDailyCalled = true
+	r.resetDailyStart = windowStart
 	if r.resetDailyErr == nil && r.sub != nil {
 		r.sub.DailyUsageUSD = 0
 		r.sub.DailyWindowStart = &windowStart
@@ -43,13 +58,15 @@ func (r *resetQuotaUserSubRepoStub) ResetDailyUsage(_ context.Context, _ int64, 
 	return r.resetDailyErr
 }
 
-func (r *resetQuotaUserSubRepoStub) ResetWeeklyUsage(_ context.Context, _ int64, _ time.Time) error {
+func (r *resetQuotaUserSubRepoStub) ResetWeeklyUsage(_ context.Context, _ int64, windowStart time.Time) error {
 	r.resetWeeklyCalled = true
+	r.resetWeeklyStart = windowStart
 	return r.resetWeeklyErr
 }
 
-func (r *resetQuotaUserSubRepoStub) ResetMonthlyUsage(_ context.Context, _ int64, _ time.Time) error {
+func (r *resetQuotaUserSubRepoStub) ResetMonthlyUsage(_ context.Context, _ int64, windowStart time.Time) error {
 	r.resetMonthlyCalled = true
+	r.resetMonthlyStart = windowStart
 	return r.resetMonthlyErr
 }
 
@@ -70,6 +87,24 @@ func TestAdminResetQuota_ResetBoth(t *testing.T) {
 	require.True(t, stub.resetDailyCalled, "应调用 ResetDailyUsage")
 	require.True(t, stub.resetWeeklyCalled, "应调用 ResetWeeklyUsage")
 	require.False(t, stub.resetMonthlyCalled, "不应调用 ResetMonthlyUsage")
+	require.Equal(t, timezone.StartOfDay(stub.resetWeeklyStart), stub.resetDailyStart)
+	require.False(t, stub.resetWeeklyStart.Equal(stub.resetDailyStart), "周窗口应保留实际重置时刻")
+}
+
+func TestCheckAndActivateWindow_UsesMidnightForDailyOnly(t *testing.T) {
+	stub := &resetQuotaUserSubRepoStub{}
+	svc := newResetQuotaSvc(stub)
+	sub := &UserSubscription{ID: 99}
+	before := time.Now()
+
+	err := svc.CheckAndActivateWindow(context.Background(), sub)
+
+	after := time.Now()
+	require.NoError(t, err)
+	require.True(t, stub.activateCalled)
+	require.False(t, stub.activatePeriodStart.Before(before))
+	require.False(t, stub.activatePeriodStart.After(after))
+	require.Equal(t, timezone.StartOfDay(stub.activatePeriodStart), stub.activateDailyStart)
 }
 
 func TestAdminResetQuota_ResetDailyOnly(t *testing.T) {

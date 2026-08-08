@@ -3,6 +3,8 @@ package service
 import (
 	"math"
 	"time"
+
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/timezone"
 )
 
 // SubscriptionUsageLimitEpsilonUSD is the smallest remaining subscription
@@ -65,10 +67,16 @@ func (s *UserSubscription) IsWindowActivated() bool {
 }
 
 func (s *UserSubscription) NeedsDailyReset() bool {
+	return s.NeedsDailyResetAt(time.Now())
+}
+
+// NeedsDailyResetAt keeps daily quota aligned to the configured calendar day.
+// A legacy rolling anchor is therefore repaired at the next local midnight.
+func (s *UserSubscription) NeedsDailyResetAt(now time.Time) bool {
 	if s.DailyWindowStart == nil {
 		return false
 	}
-	return time.Since(*s.DailyWindowStart) >= 24*time.Hour
+	return timezone.StartOfDay(now).After(timezone.StartOfDay(*s.DailyWindowStart))
 }
 
 func (s *UserSubscription) NeedsWeeklyReset() bool {
@@ -89,7 +97,10 @@ func (s *UserSubscription) DailyResetTime() *time.Time {
 	if s.DailyWindowStart == nil {
 		return nil
 	}
-	t := subscriptionWindowResetTime(*s.DailyWindowStart, 24*time.Hour, s.ExpiresAt)
+	t := timezone.StartOfDay(*s.DailyWindowStart).AddDate(0, 0, 1)
+	if !s.ExpiresAt.IsZero() && t.After(s.ExpiresAt) {
+		t = s.ExpiresAt
+	}
 	return &t
 }
 

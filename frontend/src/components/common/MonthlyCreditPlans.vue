@@ -32,8 +32,9 @@
 
         <div class="monthly-credit-card__credits">
           <div>
-            <span>每月额度</span>
-            <strong>{{ plan.displayMonthlyCreditsText }} AI credits</strong>
+            <span>月限制</span>
+            <strong>⚡{{ plan.displayMonthlyEnergyText }} 能量 / 月</strong>
+            <small>相当于 ¥{{ plan.paygEquivalentCny }} API 按量付费额度</small>
           </div>
         </div>
 
@@ -48,7 +49,8 @@
     </div>
 
     <p class="monthly-credit-plans__note">
-      只限制 31 天月度总额度，不设置每日或每周额度。GPT 与 Claude 共用同一份月度额度；当前周期的计费倍率和额度不会被后续调价追溯修改。
+      只限制 31 天月度总额度，不设置每日或每周额度。GPT 月卡、Cloud 月卡和 Grok 月卡共用同一份能量额度；
+      具体支持模型请查看 <RouterLink to="/models">模型定价</RouterLink>。当前周期的计费倍率和额度不会被后续调价追溯修改。
     </p>
   </section>
 </template>

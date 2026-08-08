@@ -10,6 +10,8 @@ describe('monthlyCreditCardPlans V3', () => {
       daily: plan.displayDailyCredits,
       weekly: plan.displayWeeklyCredits,
       monthly: plan.displayMonthlyCredits,
+      energy: plan.displayMonthlyEnergy,
+      paygEquivalentCny: plan.paygEquivalentCny,
       cardShopUrl: plan.cardShopUrl
     }))).toEqual([
       {
@@ -19,6 +21,8 @@ describe('monthlyCreditCardPlans V3', () => {
         daily: 0,
         weekly: 0,
         monthly: 3000,
+        energy: 300,
+        paygEquivalentCny: 300,
         cardShopUrl: 'https://pay.ldxp.cn/item/c0dudc'
       },
       {
@@ -28,6 +32,8 @@ describe('monthlyCreditCardPlans V3', () => {
         daily: 0,
         weekly: 0,
         monthly: 9000,
+        energy: 900,
+        paygEquivalentCny: 900,
         cardShopUrl: 'https://pay.ldxp.cn/item/x4dup4'
       },
       {
@@ -37,6 +43,8 @@ describe('monthlyCreditCardPlans V3', () => {
         daily: 0,
         weekly: 0,
         monthly: 20000,
+        energy: 2000,
+        paygEquivalentCny: 2000,
         cardShopUrl: 'https://pay.ldxp.cn/item/db9f6w'
       }
     ])
@@ -67,6 +75,7 @@ describe('monthlyCreditCardPlans V3', () => {
     expect(plus.monthlyCredits).toBe(300)
     expect(plus.weeklyCredits).toBe(0)
     expect(plus.displayMonthlyCreditsText).toBe('3,000')
+    expect(plus.displayMonthlyEnergyText).toBe('300')
     expect(Object.keys(plus)).not.toContain('gptMonthlyUsage')
     expect(Object.keys(plus)).not.toContain('claudeMonthlyUsage')
   })

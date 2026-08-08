@@ -1,0 +1,50 @@
+package service
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestOpenAIRouteFailureDomainID_UsesExplicitMetadataAndSafeFallback(t *testing.T) {
+	require.Equal(t, "", OpenAIRouteFailureDomainID(nil))
+	require.Equal(t, "account:28", OpenAIRouteFailureDomainID(&Account{ID: 28}))
+	require.Equal(t, "anyroute", OpenAIRouteFailureDomainID(&Account{
+		ID:    28,
+		Extra: map[string]any{openAIRouteFailureDomainExtraKey: " anyroute "},
+	}))
+	require.Equal(t, "pomo", OpenAIRouteFailureDomainID(&Account{
+		ID: 24,
+		Extra: map[string]any{
+			"routing": map[string]any{"failure_domain_id": " pomo "},
+		},
+	}))
+}
+
+func TestNewOpenAIRouteKey_DimensionsAccountModelEndpointTransport(t *testing.T) {
+	account := &Account{ID: 28, Extra: map[string]any{openAIRouteFailureDomainExtraKey: "anyroute"}}
+	key, err := NewOpenAIRouteKey(account, 7, " gpt-5.6-sol ", "https://us.example.invalid/v1/responses/", "sse")
+	require.NoError(t, err)
+	require.Equal(t, int64(7), key.GroupID)
+	require.Equal(t, int64(28), key.AccountID)
+	require.Equal(t, "gpt-5.6-sol", key.Model)
+	require.Equal(t, "sse", key.Transport)
+	require.Equal(t, "anyroute", key.FailureDomain)
+	require.Len(t, key.EndpointHash, 16)
+
+	same, err := NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", "https://us.example.invalid/v1/responses", "sse")
+	require.NoError(t, err)
+	require.Equal(t, key.EndpointHash, same.EndpointHash)
+
+	_, err = NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", "", "sse")
+	require.ErrorIs(t, err, ErrOpenAIRouteNoCandidate)
+	_, err = NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", "https://us.example.invalid/v1/responses", "")
+	require.ErrorIs(t, err, ErrOpenAIRouteNoCandidate)
+}
+
+func TestOpenAIRouteWilsonLowerBound_IsConservativeForSmallSamples(t *testing.T) {
+	require.Equal(t, 0.0, OpenAIRouteWilsonLowerBound(0, 0, 1.96))
+	require.Less(t, OpenAIRouteWilsonLowerBound(1, 1, 1.96), 0.30)
+	require.Greater(t, OpenAIRouteWilsonLowerBound(990, 1000, 1.96), 0.97)
+	require.Less(t, OpenAIRouteWilsonLowerBound(900, 1000, 1.96), 0.90)
+}

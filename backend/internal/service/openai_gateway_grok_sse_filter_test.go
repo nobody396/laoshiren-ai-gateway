@@ -62,7 +62,8 @@ func TestGrokResponsesBillingPingFilter(t *testing.T) {
 	require.Contains(t, result, "event: future.vendor_event")
 	require.Contains(t, result, `{"type":"future.vendor_event","value":1}`)
 	require.Contains(t, result, "event: response.completed")
-	require.Contains(t, result, `"usage":{"input_tokens":3,"output_tokens":5}`)
+	require.Contains(t, result, `"input_tokens":3`)
+	require.Contains(t, result, `"output_tokens":5`)
 }
 
 func TestGrokResponsesFilterAddsRequiredCreatedAt(t *testing.T) {
@@ -119,6 +120,47 @@ func TestEnsureGrokResponsesCreatedAtPatchesNonStreamingResponse(t *testing.T) {
 	patched, changed := ensureGrokResponsesCreatedAt(payload, 456)
 	require.True(t, changed)
 	require.Equal(t, int64(456), gjson.GetBytes(patched, "created_at").Int())
+}
+
+func TestGrokResponsesFilterAddsStrictTextFields(t *testing.T) {
+	input := strings.Join([]string{
+		"event: response.output_text.delta",
+		`data: {"type":"response.output_text.delta","content_index":0,"delta":"OK","item_id":"msg_upstream","output_index":0}`,
+		"",
+		"event: response.completed",
+		`data: {"type":"response.completed","response":{"created_at":123,"id":"resp_1","model":"grok-4.5","object":"response","output":[{"content":[{"text":"OK","type":"output_text"}],"role":"assistant","type":"message"}],"status":"completed","usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}}`,
+		"",
+	}, "\n")
+	result := filterGrokPingTestInput(t, input)
+	lines := strings.Split(result, "\n")
+	deltaData, ok := extractOpenAISSEDataLine(lines[1])
+	require.True(t, ok)
+	require.True(t, gjson.Get(deltaData, "logprobs").IsArray())
+
+	completedData, ok := extractOpenAISSEDataLine(lines[4])
+	require.True(t, ok)
+	require.Equal(t, "msg_1_0", gjson.Get(completedData, "response.output.0.id").String())
+	require.Equal(t, "completed", gjson.Get(completedData, "response.output.0.status").String())
+	require.True(t, gjson.Get(completedData, "response.output.0.content.0.annotations").IsArray())
+	require.True(t, gjson.Get(completedData, "response.output.0.content.0.logprobs").IsArray())
+	require.Equal(t, int64(0), gjson.Get(completedData, "response.usage.input_tokens_details.cached_tokens").Int())
+	require.Equal(t, int64(0), gjson.Get(completedData, "response.usage.output_tokens_details.reasoning_tokens").Int())
+}
+
+func TestEnsureGrokResponsesStrictFieldsPreservesCompliantPayload(t *testing.T) {
+	payload := []byte(`{"type":"response.completed","response":{"id":"resp_1","object":"response","created_at":123,"status":"completed","output":[{"id":"msg_1","type":"message","status":"completed","role":"assistant","content":[{"type":"output_text","text":"OK","annotations":[],"logprobs":[]}]}],"usage":{"input_tokens":1,"input_tokens_details":{"cached_tokens":0},"output_tokens":1,"output_tokens_details":{"reasoning_tokens":0},"total_tokens":2}},"sequence_number":2}`)
+	patched, changed := ensureGrokResponsesStrictFields(payload)
+	require.False(t, changed)
+	require.Equal(t, payload, patched)
+}
+
+func TestEnsureGrokResponsesStrictFieldsPatchesNonStreamingResponse(t *testing.T) {
+	payload := []byte(`{"id":"resp_1","object":"response","created_at":123,"status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"OK"}]}],"usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}`)
+	patched, changed := ensureGrokResponsesStrictFields(payload)
+	require.True(t, changed)
+	require.Equal(t, "msg_1_0", gjson.GetBytes(patched, "output.0.id").String())
+	require.True(t, gjson.GetBytes(patched, "output.0.content.0.annotations").IsArray())
+	require.True(t, gjson.GetBytes(patched, "output.0.content.0.logprobs").IsArray())
 }
 
 // Every `event: ping` frame is outside the Responses closed event enum and

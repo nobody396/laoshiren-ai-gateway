@@ -4685,6 +4685,9 @@ func (s *OpenAIGatewayService) handleNonStreamingResponse(ctx context.Context, r
 		if patched, changed := ensureGrokResponsesCreatedAt(body, time.Now().Unix()); changed {
 			body = patched
 		}
+		if patched, changed := ensureGrokResponsesStrictFields(body); changed {
+			body = patched
+		}
 	}
 
 	usageValue, usageOK := extractOpenAIUsageFromJSONBytes(body)

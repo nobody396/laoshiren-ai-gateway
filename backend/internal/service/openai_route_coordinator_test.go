@@ -20,7 +20,7 @@ func (f *fakeOpenAIRouteBudgetStore) GetLedgers(context.Context, []OpenAIRouteBu
 
 func (f *fakeOpenAIRouteBudgetStore) Reserve(_ context.Context, req OpenAIRouteBudgetStoreReserveRequest) (OpenAIRouteBudgetStoreReservation, error) {
 	f.reserveCalls = append(f.reserveCalls, req)
-	allowed := !(f.rejectFirst && len(f.reserveCalls) == 1)
+	allowed := !f.rejectFirst || len(f.reserveCalls) != 1
 	return OpenAIRouteBudgetStoreReservation{
 		ReservationID:  req.ReservationID,
 		RouteKey:       req.RouteKey,

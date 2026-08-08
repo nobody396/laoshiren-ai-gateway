@@ -88,8 +88,9 @@ func TestAffiliateMonthlyCatalogIdentityLocksOnlyCompleteCurrentBundle(t *testin
 	productCode, version := AffiliateMonthlyCatalogIdentity([]*Group{
 		{Name: "Claude Max V3 月卡组"},
 		{Name: "GPT Max V3 月卡组"},
+		{Name: "Grok Max V3 月卡组"},
 	})
-	if productCode != "monthly-max-v3-20260728" ||
+	if productCode != "monthly-max-v3-20260805" ||
 		version != AffiliateCommercialPricingTableVersionV3 {
 		t.Fatalf("current bundle identity = (%q, %q)", productCode, version)
 	}

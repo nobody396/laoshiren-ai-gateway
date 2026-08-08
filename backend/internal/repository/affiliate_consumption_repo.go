@@ -50,10 +50,10 @@ func (r *affiliateConsumptionRepository) RecordBalanceLot(ctx context.Context, i
 			customer_rebate_rate_bps, partner_commission_rate_bps,
 			occurred_at
 		)
-		VALUES (
-			$1, $2, NULLIF($3, 0), $4, $5, $5,
-			$6, $7, NULLIF($8, 0), $9, $10, $11
-		)
+			VALUES (
+				$1, $2, NULLIF($3, 0), $4, $5, $5,
+				$6, $7, NULLIF($8, 0), $9, $10, LEAST($11, CURRENT_TIMESTAMP)
+			)
 		ON CONFLICT (source_key) DO NOTHING
 	`, []any{
 		input.UserID,
@@ -107,8 +107,13 @@ func (r *affiliateConsumptionRepository) RecordMonthlyEntitlement(ctx context.Co
 		)
 		VALUES (
 			$1, $2, NULLIF($3, 0), $4, $5, $6, $7,
-			$8, $9, NULLIF($10, 0), $11, $12, $13, $14, $15
-		)
+				$8, $9, NULLIF($10, 0), $11, $12, $13,
+				CASE
+					WHEN $14 <= CURRENT_TIMESTAMP + INTERVAL '1 second' THEN CURRENT_TIMESTAMP
+					ELSE $14
+				END,
+				$15
+			)
 		ON CONFLICT (source_key) DO UPDATE
 		SET source_key = EXCLUDED.source_key
 		RETURNING id

@@ -46,15 +46,17 @@ func TestCurrentMonthlyCardGenerationGuardAcceptsFreshCompleteBundle(t *testing.
 	settings := DefaultAffiliateProgramSettings()
 	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 300)
 	claude := guardedMonthlyTestGroup(102, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 300)
+	grok := guardedMonthlyTestGroup(103, "Grok Plus 月卡组", PlatformGrok, 0.40, 300)
 	svc := &adminServiceImpl{
 		accountRepo: &currentMonthlyAccountRepoStub{accounts: map[int64][]Account{
 			101: {{ID: 1, Status: StatusActive, Schedulable: true}},
 			102: {{ID: 2, Status: StatusActive, Schedulable: true}},
+			103: {{ID: 3, Status: StatusActive, Schedulable: true}},
 		}},
 		affiliateProgram: NewAffiliateProgramService(&currentMonthlyProgramRepoStub{settings: settings}),
 	}
 
-	current, err := svc.guardCurrentMonthlyCardGeneration(context.Background(), []Group{gpt, claude}, 31, 249)
+	current, err := svc.guardCurrentMonthlyCardGeneration(context.Background(), []Group{gpt, claude, grok}, 31, 249)
 
 	require.NoError(t, err)
 	require.True(t, current)
@@ -73,22 +75,24 @@ func TestCurrentMonthlyCardGenerationGuardRejectsPartialBundle(t *testing.T) {
 	current, err := svc.guardCurrentMonthlyCardGeneration(context.Background(), []Group{gpt}, 31, 249)
 
 	require.True(t, current)
-	require.ErrorContains(t, err, "complete GPT and Claude group bundle")
+	require.ErrorContains(t, err, "complete GPT, Claude, and Grok group bundle")
 }
 
 func TestCurrentMonthlyCardGenerationGuardRejectsUnpricedFaceValue(t *testing.T) {
 	settings := DefaultAffiliateProgramSettings()
 	gpt := guardedMonthlyTestGroup(101, "GPT Plus 月卡组", PlatformOpenAI, 0.50, 300)
 	claude := guardedMonthlyTestGroup(102, "Claude Plus 月卡组", PlatformAnthropic, 2.40, 300)
+	grok := guardedMonthlyTestGroup(103, "Grok Plus 月卡组", PlatformGrok, 0.40, 300)
 	svc := &adminServiceImpl{
 		accountRepo: &currentMonthlyAccountRepoStub{accounts: map[int64][]Account{
 			101: {{ID: 1, Status: StatusActive, Schedulable: true}},
 			102: {{ID: 2, Status: StatusActive, Schedulable: true}},
+			103: {{ID: 3, Status: StatusActive, Schedulable: true}},
 		}},
 		affiliateProgram: NewAffiliateProgramService(&currentMonthlyProgramRepoStub{settings: settings}),
 	}
 
-	current, err := svc.guardCurrentMonthlyCardGeneration(context.Background(), []Group{gpt, claude}, 31, 1)
+	current, err := svc.guardCurrentMonthlyCardGeneration(context.Background(), []Group{gpt, claude, grok}, 31, 1)
 
 	require.True(t, current)
 	require.ErrorContains(t, err, "face value must match")
@@ -99,5 +103,13 @@ func TestCurrentMonthlyCatalogGroupShapeIsImmutable(t *testing.T) {
 	require.NoError(t, validateCurrentMonthlyCatalogGroupShape(group))
 
 	group.RateMultiplier = 0.51
+	require.ErrorContains(t, validateCurrentMonthlyCatalogGroupShape(group), "immutable")
+}
+
+func TestCurrentMonthlyCatalogGrokGroupUsesNativePlatform(t *testing.T) {
+	group := guardedMonthlyTestGroup(103, "Grok Plus 月卡组", PlatformGrok, 0.40, 300)
+	require.NoError(t, validateCurrentMonthlyCatalogGroupShape(group))
+
+	group.Platform = PlatformAnthropic
 	require.ErrorContains(t, validateCurrentMonthlyCatalogGroupShape(group), "immutable")
 }

@@ -10,6 +10,9 @@ func TestCostAccountingCurrentMonthlyCatalogContainsOnlyV3Plans(t *testing.T) {
 	require.Equal(t, []string{"plus", "pro", "max"}, costAccountingMonthlyCardPlanOrder)
 	require.ElementsMatch(t, []string{"plus", "pro", "max"}, mapKeys(costAccountingMonthlyCardGroupNames))
 	require.ElementsMatch(t, []string{"plus", "pro", "max"}, mapKeys(costAccountingPlanPricing))
+	for _, products := range costAccountingMonthlyCardGroupNames {
+		require.ElementsMatch(t, []string{"gpt", "claude", "grok"}, mapKeys(products))
+	}
 }
 
 func TestCostAccountingPayAsYouGoTargetsDiscoversAllPublicStandardGroups(t *testing.T) {

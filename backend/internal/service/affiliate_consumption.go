@@ -122,7 +122,7 @@ func AffiliateSourceTracksQualification(sourceType string) bool {
 }
 
 func AffiliateMonthlyCatalogIdentity(groups []*Group) (productCode, pricingTableVersion string) {
-	if len(groups) == 2 {
+	if len(groups) > 0 {
 		names := map[string]struct{}{}
 		for _, group := range groups {
 			if group == nil {
@@ -142,7 +142,7 @@ func AffiliateMonthlyCatalogIdentity(groups []*Group) (productCode, pricingTable
 				}
 			}
 			if complete {
-				return "monthly-" + planID + "-v3-20260728", AffiliateCommercialPricingTableVersionV3
+				return "monthly-" + planID + "-v3-20260805", AffiliateCommercialPricingTableVersionV3
 			}
 		}
 	}

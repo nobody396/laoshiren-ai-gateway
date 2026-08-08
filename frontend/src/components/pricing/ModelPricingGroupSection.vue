@@ -8,7 +8,7 @@
           class="pricing-group__platform"
           :class="platformBadgeClass(group.platform)"
         >
-          {{ group.platform }}
+          {{ platformLabel(group.platform) }}
         </span>
       </div>
       <div class="pricing-group__meta">
@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { platformBadgeClass } from '@/utils/platformColors'
+import { platformBadgeClass, platformLabel } from '@/utils/platformColors'
 import type { PublicPricingGroup } from '@/api/publicPricing'
 
 defineProps<{

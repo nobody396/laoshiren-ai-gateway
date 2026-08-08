@@ -7,9 +7,9 @@ failure domain.
 
 The application-owned monthly upstream probe runs every two minutes and checks
 the real Codex, Claude, and Grok monthly-card gateway paths. Probe targets are
-selected by monthly-card role rather than by transport platform, because Claude
-and Grok both use the Anthropic-compatible gateway transport. When a path fails,
-the probe also performs a direct-upstream diagnostic so operations can
+selected by monthly-card role and verified through each native transport:
+OpenAI Responses for Codex, Anthropic Messages for Claude, and native Grok
+Responses for Grok. When a path fails, the probe also performs a direct-upstream diagnostic so operations can
 distinguish gateway/routing failures from upstream failures.
 
 This probe answers:

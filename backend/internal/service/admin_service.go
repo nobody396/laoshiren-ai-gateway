@@ -2423,7 +2423,7 @@ func (s *adminServiceImpl) guardCurrentMonthlyCardGeneration(
 	}
 	expected := costAccountingMonthlyCardGroupNames[selectedPlan]
 	if len(groups) != len(expected) || len(selectedNames) != len(expected) {
-		return true, fmt.Errorf("current %s monthly card requires the complete GPT and Claude group bundle", selectedPlan)
+		return true, fmt.Errorf("current %s monthly card requires the complete GPT, Claude, and Grok group bundle", selectedPlan)
 	}
 	for product, name := range expected {
 		if _, ok := selectedNames[name]; !ok {
@@ -2499,6 +2499,9 @@ func validateCurrentMonthlyCatalogGroupShape(group Group) error {
 	if product == "claude" {
 		expectedRate = 2.40
 		expectedPlatform = PlatformAnthropic
+	} else if product == "grok" {
+		expectedRate = 0.40
+		expectedPlatform = PlatformGrok
 	}
 	if strings.TrimSpace(group.Description) != "" ||
 		group.Status != StatusActive ||

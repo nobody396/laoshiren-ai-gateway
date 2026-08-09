@@ -1079,9 +1079,10 @@ lines.push(
   'model = "grok-4.5"',
   `base_url = ${JSON.stringify(baseUrl)}`,
   'name = "Grok 4.5 · 老实人AI"',
+  'description = "Grok 4.5"',
   `api_key = ${JSON.stringify(apiKey)}`,
   'api_backend = "responses"',
-  'context_window = 262144',
+  'context_window = 500000',
   ''
 )
 fs.writeFileSync(path, lines.join('\n'), { encoding: 'utf8', mode: 0o600 })

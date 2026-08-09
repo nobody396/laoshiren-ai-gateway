@@ -1173,9 +1173,10 @@ function Write-GrokTomlConfig {
   $Lines.Add('model = "grok-4.5"')
   $Lines.Add("base_url = $(ConvertTo-TomlString $BaseV1)")
   $Lines.Add('name = "Grok 4.5 · 老实人AI"')
+  $Lines.Add('description = "Grok 4.5"')
   $Lines.Add("api_key = $(ConvertTo-TomlString $script:GrokApiKey)")
   $Lines.Add('api_backend = "responses"')
-  $Lines.Add('context_window = 262144')
+  $Lines.Add('context_window = 500000')
   $Lines.Add('')
   [System.IO.File]::WriteAllLines($GrokConfigPath, $Lines, [System.Text.UTF8Encoding]::new($false))
 }

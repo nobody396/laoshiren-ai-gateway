@@ -14,6 +14,36 @@ type clientSetupAPIKeysStub struct {
 	keys map[int64]*APIKey
 }
 
+type clientSetupEnsureAPIKeysStub struct {
+	keys        []APIKey
+	groups      []Group
+	createdUser int64
+	createdReq  CreateAPIKeyRequest
+}
+
+func (s *clientSetupEnsureAPIKeysStub) Create(_ context.Context, userID int64, req CreateAPIKeyRequest) (*APIKey, error) {
+	s.createdUser = userID
+	s.createdReq = req
+	return &APIKey{ID: 99, UserID: userID, Key: "sk-created", Name: req.Name, Status: StatusActive}, nil
+}
+
+func (s *clientSetupEnsureAPIKeysStub) GetByID(_ context.Context, id int64) (*APIKey, error) {
+	for i := range s.keys {
+		if s.keys[i].ID == id {
+			return &s.keys[i], nil
+		}
+	}
+	return nil, ErrAPIKeyNotFound
+}
+
+func (s *clientSetupEnsureAPIKeysStub) GetAvailableGroups(context.Context, int64) ([]Group, error) {
+	return s.groups, nil
+}
+
+func (s *clientSetupEnsureAPIKeysStub) List(context.Context, int64, pagination.PaginationParams, APIKeyListFilters) ([]APIKey, *pagination.PaginationResult, error) {
+	return s.keys, &pagination.PaginationResult{}, nil
+}
+
 func (s *clientSetupAPIKeysStub) Create(context.Context, int64, CreateAPIKeyRequest) (*APIKey, error) {
 	return nil, errors.New("unexpected Create call")
 }
@@ -94,6 +124,39 @@ func TestSelectClientSetupGroupUsesFixedGrokGroup(t *testing.T) {
 	selected := selectClientSetupGroup(ClientSetupTargetGrok, groups)
 	require.NotNil(t, selected)
 	require.Equal(t, int64(2), selected.ID)
+}
+
+func TestSelectClientSetupGroupFallsBackToOwnedGrokTier(t *testing.T) {
+	groups := []Group{
+		{ID: 35, Name: "Grok Lite 月卡组", Platform: PlatformGrok, Status: StatusActive},
+	}
+
+	selected := selectClientSetupGroup(ClientSetupTargetGrok, groups)
+	require.NotNil(t, selected)
+	require.Equal(t, int64(35), selected.ID)
+}
+
+func TestSelectClientSetupGroupDoesNotUseInactiveGrokTier(t *testing.T) {
+	groups := []Group{
+		{ID: 35, Name: "Grok Lite 月卡组", Platform: PlatformGrok, Status: "inactive"},
+	}
+
+	require.Nil(t, selectClientSetupGroup(ClientSetupTargetGrok, groups))
+}
+
+func TestIssueTicketCreatesGrokKeyForOwnedLiteTier(t *testing.T) {
+	apiKeys := &clientSetupEnsureAPIKeysStub{
+		groups: []Group{{ID: 35, Name: "Grok Lite 月卡组", Platform: PlatformGrok, Status: StatusActive}},
+	}
+	svc := &ClientSetupService{apiKeys: apiKeys, tickets: newClientSetupTicketCacheStub()}
+
+	ticket, err := svc.IssueTicket(context.Background(), 2, ClientSetupTargetGrok)
+	require.NoError(t, err)
+	require.Equal(t, ClientSetupTargetGrok, ticket.Target)
+	require.Equal(t, "Grok Lite 月卡组", ticket.GroupName)
+	require.Equal(t, int64(2), apiKeys.createdUser)
+	require.NotNil(t, apiKeys.createdReq.GroupID)
+	require.Equal(t, int64(35), *apiKeys.createdReq.GroupID)
 }
 
 func TestSelectClientSetupGroupDoesNotFallBack(t *testing.T) {

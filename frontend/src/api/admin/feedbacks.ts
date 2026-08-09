@@ -38,6 +38,20 @@ export async function listFeedbacks(params: AdminFeedbackListParams = {}): Promi
   return data
 }
 
+/**
+ * Agent 待核查队列也是管理员界面“新反馈”角标的唯一口径。
+ * 完成核查后工单会离开该队列，因此不需要再维护一套容易漂移的已读状态。
+ */
+export async function listAgentQueue(params: Pick<AdminFeedbackListParams, 'page' | 'pageSize'> = {}): Promise<BasePaginationResponse<FeedbackItem>> {
+  const { data } = await apiClient.get<BasePaginationResponse<FeedbackItem>>('/admin/feedbacks/agent-queue', {
+    params: {
+      page: params.page ?? 1,
+      page_size: params.pageSize ?? 5,
+    },
+  })
+  return data
+}
+
 export async function getFeedback(id: number): Promise<FeedbackDetail> {
   const { data } = await apiClient.get<FeedbackDetail>(`/admin/feedbacks/${id}`)
   return data
@@ -79,6 +93,7 @@ export async function listRewards(params: FeedbackRewardListParams = {}): Promis
 
 const adminFeedbacksAPI = {
   list: listFeedbacks,
+	listAgentQueue,
   getById: getFeedback,
   createReply,
   updateStatus,

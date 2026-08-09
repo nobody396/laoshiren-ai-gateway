@@ -6194,11 +6194,13 @@ export default {
     },
     detail: {
       title: '反馈详情',
+	  ticketTitle: '反馈 #{id}',
       view: '查看详情',
       timeline: '沟通记录',
       addReply: '补充信息',
       meta: '创建于 {createdAt}，当前共 {replies} 条回复',
 	  rewardGranted: '这条反馈已获得 {amount} 元共创额度',
+	  requestContext: 'Request ID / 报错信息',
     },
     edit: {
       title: '编辑反馈',
@@ -6237,6 +6239,8 @@ export default {
 	  notifyEmail: '备用通知邮箱（不自动发送）',
 	  notifyEmailPlaceholder: '仅用于经过明确授权后的人工邮件流程',
 	  notifyEmailHint: '系统不会自动发送反馈邮件；每一封邮件都必须单独获得明确授权。',
+	  pendingReview: '待核查反馈',
+	  pendingInbox: '{count} 条反馈待核查',
     },
 	verify: {
 	  title: '请验证修复结果',

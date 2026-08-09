@@ -16,7 +16,7 @@
                 <StatusBadge :label="t(`feedback.status.${detail.status}`)" :tone="feedbackStatusTone(detail.status)" />
                 <StatusBadge :label="t(`feedback.priority.${detail.priority}`)" :tone="feedbackPriorityTone(detail.priority)" />
               </div>
-              <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ detail.title }}</h1>
+              <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('feedback.detail.ticketTitle', { id: detail.id }) }}</h1>
               <p class="text-sm text-gray-500 dark:text-dark-400">
                 {{ t('feedback.detail.meta', { createdAt: formatDateTime(detail.created_at), replies: detail.reply_count }) }}
               </p>
@@ -35,7 +35,8 @@
             {{ t('feedback.form.contact') }}: {{ detail.contact }}
           </div>
 		  <div v-if="detail.request_id" class="rounded-2xl bg-gray-50 px-4 py-3 text-sm text-gray-600 dark:bg-dark-800 dark:text-dark-300">
-			{{ t('feedback.form.requestId') }}: <code>{{ detail.request_id }}</code>
+			<p class="font-medium">{{ t('feedback.detail.requestContext') }}</p>
+			<pre data-testid="feedback-request-context" class="mt-2 whitespace-pre-wrap break-words font-mono text-xs leading-5">{{ detail.request_id }}</pre>
 		  </div>
 		  <div v-if="detail.reward" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-900/20 dark:text-emerald-300">
 			{{ t('feedback.detail.rewardGranted', { amount: detail.reward.amount.toFixed(2) }) }}

@@ -50,9 +50,8 @@
             <p class="monthly-credit-card__direct-help">直售请登录后联系客服</p>
 
             <div class="monthly-credit-card__credits">
-              <span class="monthly-credit-card__credits-label">月限制</span>
-              <strong>⚡{{ plan.displayMonthlyEnergyText }}</strong>
-              <small>相当于 ¥{{ plan.paygEquivalentCny }} API 按量付费额度</small>
+              <span class="monthly-credit-card__credits-label">每月额度</span>
+              <strong>{{ plan.displayMonthlyCreditsText }} AI credits</strong>
             </div>
 
             <p v-if="plan.legendaryCopy" class="monthly-credit-card__legend">
@@ -79,7 +78,7 @@
     </div>
 
     <p class="monthly-credit-plans__note" :class="{ 'mirror-reveal': variant === 'home' }" style="--reveal-i: 4">
-      只限制 31 天月度总额度，不设置每日或每周额度。GPT 月卡、Claude 月卡和 Grok 月卡共用同一份能量额度；
+      只限制 31 天月度总额度，不设置每日或每周额度。GPT 月卡、Claude 月卡和 Grok 月卡共用同一份月度额度；
       具体支持模型请查看 <RouterLink to="/models">模型定价</RouterLink>。当前周期的计费倍率和额度不会被后续调价追溯修改。
     </p>
   </section>

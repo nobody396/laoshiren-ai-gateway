@@ -1358,7 +1358,6 @@ func monthlyGatewayProbePoint(account *Account, model string, recorder *httptest
 	if recorder != nil && recorder.Body != nil {
 		body = recorder.Body.Bytes()
 	}
-	point.ErrorCode, point.ErrorMessage = extractMonthlyProbeError(body)
 	var failoverErr *UpstreamFailoverError
 	if errors.As(forwardErr, &failoverErr) {
 		// A streaming response can commit HTTP 200 before the upstream later
@@ -1375,6 +1374,9 @@ func monthlyGatewayProbePoint(account *Account, model string, recorder *httptest
 		}
 	}
 	shouldCaptureResponseError := forwardErr != nil || statusCode == 0 || statusCode < 200 || statusCode >= 300
+	if shouldCaptureResponseError && point.ErrorMessage == "" {
+		point.ErrorCode, point.ErrorMessage = extractMonthlyProbeError(body)
+	}
 	if shouldCaptureResponseError && isMonthlyProbeGenericClientUnavailable(point.ErrorCode, point.ErrorMessage) {
 		point.ErrorCode = "gateway_forward_failed"
 		if forwardErr != nil {
@@ -1620,7 +1622,9 @@ func executeMonthlyProbeHTTP(ctx context.Context, account *Account, model string
 		LatencyMs:   time.Since(started).Milliseconds(),
 		CheckedAt:   time.Now(),
 	}
-	point.ErrorCode, point.ErrorMessage = extractMonthlyProbeError(raw)
+	if httpStatus < 200 || httpStatus >= 300 {
+		point.ErrorCode, point.ErrorMessage = extractMonthlyProbeError(raw)
+	}
 	switch {
 	case httpStatus >= 200 && httpStatus < 300:
 		if point.LatencyMs > 5000 {

@@ -2345,7 +2345,23 @@ export default {
         accountsPlaceholder: '选择账号（留空则不限制）',
         priorityLabel: '优先级',
         priorityHint: '数值越小优先级越高，用于账号调度',
-        statusLabel: '状态'
+		statusLabel: '状态',
+		maxReasoningEffort: '推理强度上限',
+		maxReasoningEffortUnlimited: '不限制（跟随请求）',
+		maxReasoningEffortHint:
+			'仅限制客户端主动请求的 OpenAI reasoning effort；超过上限时自动降档，不会为缺省请求主动开启推理。上限优先级高于映射。',
+		reasoningEffortMappings: '推理强度映射',
+		addReasoningEffortMapping: '添加映射',
+		removeReasoningEffortMapping: '删除映射',
+		reasoningEffortFrom: '请求值',
+		reasoningEffortTo: '转发值',
+		reasoningEffortFromPlaceholder: '请选择 A',
+		reasoningEffortToPlaceholder: '请选择 B',
+		fromRequired: '请选择请求值 A',
+		toRequired: '请选择转发值 B',
+		unsupportedFrom: '请求值不受当前平台支持',
+		unsupportedTo: '转发值不受当前平台支持',
+		duplicateFrom: '请求值 A 不能重复'
       },
       exclusiveObj: {
         yes: '是',
@@ -3149,6 +3165,7 @@ export default {
         wsModeOff: '关闭（off）',
         wsModeCtxPool: '上下文池（ctx_pool）',
         wsModePassthrough: '透传（passthrough）',
+        wsModeHttpBridge: 'HTTP 桥接（http_bridge）',
         wsModeShared: '共享（shared）',
         wsModeDedicated: '独享（dedicated）',
         wsModeConcurrencyHint: '启用 WS mode 后，该账号并发数将作为该账号 WS 连接池上限。',

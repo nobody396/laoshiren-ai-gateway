@@ -13,7 +13,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 11 // v11: include Grok media permission and image multiplier controls
+const apiKeyAuthSnapshotVersion = 12 // v12: include group reasoning effort ceiling and mappings
 
 type apiKeyAuthCacheConfig struct {
 	l1Size        int
@@ -259,6 +259,8 @@ func (s *APIKeyService) snapshotFromAPIKey(apiKey *APIKey) *APIKeyAuthSnapshot {
 			AllowMessagesDispatch:           apiKey.Group.AllowMessagesDispatch,
 			DefaultMappedModel:              apiKey.Group.DefaultMappedModel,
 			MessagesDispatchModelConfig:     apiKey.Group.MessagesDispatchModelConfig,
+			MaxReasoningEffort:              apiKey.Group.MaxReasoningEffort,
+			ReasoningEffortMappings:         append([]ReasoningEffortMapping(nil), apiKey.Group.ReasoningEffortMappings...),
 		}
 	}
 	return snapshot
@@ -324,6 +326,8 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 			AllowMessagesDispatch:           snapshot.Group.AllowMessagesDispatch,
 			DefaultMappedModel:              snapshot.Group.DefaultMappedModel,
 			MessagesDispatchModelConfig:     snapshot.Group.MessagesDispatchModelConfig,
+			MaxReasoningEffort:              snapshot.Group.MaxReasoningEffort,
+			ReasoningEffortMappings:         append([]ReasoningEffortMapping(nil), snapshot.Group.ReasoningEffortMappings...),
 		}
 	}
 	s.compileAPIKeyIPRules(apiKey)

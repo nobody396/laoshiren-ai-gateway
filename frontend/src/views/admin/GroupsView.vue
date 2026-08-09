@@ -833,6 +833,16 @@
           </div>
         </div>
 
+		<div v-if="createForm.platform === 'openai'" class="border-t border-gray-200 pt-4 dark:border-dark-400">
+			<ReasoningEffortPolicyFields
+				ref="createReasoningEffortPolicyRef"
+				id-prefix="create-group-reasoning"
+				:platform="createForm.platform"
+				v-model:max-effort="createForm.max_reasoning_effort"
+				v-model:mappings="createForm.reasoning_effort_mappings"
+			/>
+		</div>
+
         <!-- 无效请求兜底（仅 anthropic/antigravity 平台，且非订阅分组） -->
         <div
           v-if="['anthropic', 'antigravity'].includes(createForm.platform) && !isSubscriptionBillingType(createForm.subscription_type)"
@@ -1588,6 +1598,16 @@
           </div>
         </div>
 
+		<div v-if="editForm.platform === 'openai'" class="border-t border-gray-200 pt-4 dark:border-dark-400">
+			<ReasoningEffortPolicyFields
+				ref="editReasoningEffortPolicyRef"
+				id-prefix="edit-group-reasoning"
+				:platform="editForm.platform"
+				v-model:max-effort="editForm.max_reasoning_effort"
+				v-model:mappings="editForm.reasoning_effort_mappings"
+			/>
+		</div>
+
         <!-- 无效请求兜底（仅 anthropic/antigravity 平台，且非订阅分组） -->
         <div
           v-if="['anthropic', 'antigravity'].includes(editForm.platform) && !isSubscriptionBillingType(editForm.subscription_type)"
@@ -1914,6 +1934,7 @@ import Select from '@/components/common/Select.vue'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
 import GroupRateMultipliersModal from '@/components/admin/group/GroupRateMultipliersModal.vue'
+import ReasoningEffortPolicyFields from '@/components/admin/group/ReasoningEffortPolicyFields.vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import { createStableObjectKeyResolver } from '@/utils/stableObjectKey'
 import { useKeyedDebouncedSearch } from '@/composables/useKeyedDebouncedSearch'
@@ -1924,6 +1945,12 @@ import {
   resetMessagesDispatchFormState,
   type MessagesDispatchMappingRow
 } from './groupsMessagesDispatch'
+import {
+	normalizeReasoningEffortForPlatform,
+	reasoningEffortMappingsToAPI,
+	reasoningEffortMappingsToRows,
+	type ReasoningEffortMappingRow
+} from './groupsReasoningEffort'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -2126,6 +2153,12 @@ const rateMultipliersGroup = ref<AdminGroup | null>(null)
 const sortableGroups = ref<AdminGroup[]>([])
 const createMessagesDispatchDefaults = createDefaultMessagesDispatchFormState()
 const editMessagesDispatchDefaults = createDefaultMessagesDispatchFormState()
+type ReasoningEffortPolicyFieldsExpose = {
+	validate: () => boolean
+	resetValidation: () => void
+}
+const createReasoningEffortPolicyRef = ref<ReasoningEffortPolicyFieldsExpose | null>(null)
+const editReasoningEffortPolicyRef = ref<ReasoningEffortPolicyFieldsExpose | null>(null)
 
 const createForm = reactive({
   name: '',
@@ -2169,7 +2202,9 @@ const createForm = reactive({
   // MCP XML 协议注入开关（仅 antigravity 平台）
   mcp_xml_inject: true,
   // 从分组复制账号
-  copy_accounts_from_group_ids: [] as number[]
+  copy_accounts_from_group_ids: [] as number[],
+	max_reasoning_effort: '',
+	reasoning_effort_mappings: [] as ReasoningEffortMappingRow[]
 })
 
 // 简单账号类型（用于模型路由选择）
@@ -2425,7 +2460,9 @@ const editForm = reactive({
   // MCP XML 协议注入开关（仅 antigravity 平台）
   mcp_xml_inject: true,
   // 从分组复制账号
-  copy_accounts_from_group_ids: [] as number[]
+  copy_accounts_from_group_ids: [] as number[],
+	max_reasoning_effort: '',
+	reasoning_effort_mappings: [] as ReasoningEffortMappingRow[]
 })
 
 // 根据分组类型返回不同的删除确认消息
@@ -2570,6 +2607,9 @@ const closeCreateModal = () => {
   createForm.supported_model_scopes = ['claude', 'gemini_text', 'gemini_image']
   createForm.mcp_xml_inject = true
   createForm.copy_accounts_from_group_ids = []
+	createForm.max_reasoning_effort = ''
+	createForm.reasoning_effort_mappings = []
+	createReasoningEffortPolicyRef.value?.resetValidation()
   createModelRoutingRules.value = []
 }
 
@@ -2595,6 +2635,13 @@ const handleCreateGroup = async () => {
     appStore.showError(t('admin.groups.nameRequired'))
     return
   }
+	if (
+		createForm.platform === 'openai' &&
+		createReasoningEffortPolicyRef.value &&
+		!createReasoningEffortPolicyRef.value.validate()
+	) {
+		return
+	}
   submitting.value = true
   try {
     // 构建请求数据，包含模型路由配置
@@ -2614,7 +2661,8 @@ const handleCreateGroup = async () => {
               haiku_mapped_model: createForm.haiku_mapped_model,
               exact_model_mappings: createForm.exact_model_mappings
             })
-          : undefined
+          : undefined,
+		reasoning_effort_mappings: reasoningEffortMappingsToAPI(createForm.reasoning_effort_mappings)
     }
     // v-model.number 清空输入框时产生 ""，转为 null 让后端设为无限制
     const emptyToNull = (v: any) => v === '' ? null : v
@@ -2685,6 +2733,14 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.supported_model_scopes = group.supported_model_scopes || ['claude', 'gemini_text', 'gemini_image']
   editForm.mcp_xml_inject = group.mcp_xml_inject ?? true
   editForm.copy_accounts_from_group_ids = [] // 复制账号字段每次编辑时重置为空
+	editForm.max_reasoning_effort = normalizeReasoningEffortForPlatform(
+		group.platform,
+		group.max_reasoning_effort
+	)
+	editForm.reasoning_effort_mappings = reasoningEffortMappingsToRows(
+		group.reasoning_effort_mappings,
+		group.platform
+	)
   // 加载模型路由规则（异步加载账号名称）
   editModelRoutingRules.value = await convertApiFormatToRoutingRules(group.model_routing)
   showEditModal.value = true
@@ -2697,6 +2753,9 @@ const closeEditModal = () => {
   clearAllAccountSearchState()
   showEditModal.value = false
   editingGroup.value = null
+	editForm.max_reasoning_effort = ''
+	editForm.reasoning_effort_mappings = []
+	editReasoningEffortPolicyRef.value?.resetValidation()
   editModelRoutingRules.value = []
   editForm.copy_accounts_from_group_ids = []
   resetMessagesDispatchFormState(editForm)
@@ -2708,6 +2767,13 @@ const handleUpdateGroup = async () => {
     appStore.showError(t('admin.groups.nameRequired'))
     return
   }
+	if (
+		editForm.platform === 'openai' &&
+		editReasoningEffortPolicyRef.value &&
+		!editReasoningEffortPolicyRef.value.validate()
+	) {
+		return
+	}
 
   submitting.value = true
   try {
@@ -2733,7 +2799,8 @@ const handleUpdateGroup = async () => {
               haiku_mapped_model: editForm.haiku_mapped_model,
               exact_model_mappings: editForm.exact_model_mappings
             })
-          : undefined
+          : undefined,
+		reasoning_effort_mappings: reasoningEffortMappingsToAPI(editForm.reasoning_effort_mappings)
     }
     // v-model.number 清空输入框时产生 ""，转为 null 让后端设为无限制
     const emptyToNull = (v: any) => v === '' ? null : v
@@ -2829,6 +2896,15 @@ watch(
       createForm.default_mapped_model = ''
       resetMessagesDispatchFormState(createForm)
     }
+		createForm.max_reasoning_effort = normalizeReasoningEffortForPlatform(
+			newVal,
+			createForm.max_reasoning_effort
+		)
+		createForm.reasoning_effort_mappings = reasoningEffortMappingsToRows(
+			reasoningEffortMappingsToAPI(createForm.reasoning_effort_mappings),
+			newVal
+		)
+		createReasoningEffortPolicyRef.value?.resetValidation()
   }
 )
 

@@ -119,8 +119,10 @@ type Group struct {
 	DefaultMappedModel string `json:"default_mapped_model"`
 
 	// 账号过滤控制（仅 OpenAI/Antigravity/Anthropic/Gemini 平台有效）
-	RequireOAuthOnly  bool `json:"require_oauth_only"`
-	RequirePrivacySet bool `json:"require_privacy_set"`
+	RequireOAuthOnly        bool                            `json:"require_oauth_only"`
+	RequirePrivacySet       bool                            `json:"require_privacy_set"`
+	MaxReasoningEffort      string                          `json:"max_reasoning_effort"`
+	ReasoningEffortMappings []domain.ReasoningEffortMapping `json:"reasoning_effort_mappings"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/domain"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 )
 
@@ -228,6 +229,8 @@ func groupFromServiceBase(g *service.Group) Group {
 		DefaultMappedModel:              g.DefaultMappedModel,
 		RequireOAuthOnly:                g.RequireOAuthOnly,
 		RequirePrivacySet:               g.RequirePrivacySet,
+		MaxReasoningEffort:              g.MaxReasoningEffort,
+		ReasoningEffortMappings:         append([]domain.ReasoningEffortMapping(nil), g.ReasoningEffortMappings...),
 		CreatedAt:                       g.CreatedAt,
 		UpdatedAt:                       g.UpdatedAt,
 	}

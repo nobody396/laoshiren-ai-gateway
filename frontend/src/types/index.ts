@@ -673,12 +673,19 @@ export interface OpenAIMessagesDispatchModelConfig {
   exact_model_mappings?: Record<string, string>
 }
 
+export interface ReasoningEffortMapping {
+  from: string
+  to: string
+}
+
 export interface Group {
   id: number
   name: string
   description: string | null
   platform: GroupPlatform
   rate_multiplier: number
+	max_reasoning_effort?: string
+	reasoning_effort_mappings?: ReasoningEffortMapping[]
   is_exclusive: boolean
   chatbot_enabled: boolean
   status: 'active' | 'inactive'
@@ -733,6 +740,8 @@ export interface AdminGroup extends Group {
   // OpenAI Messages 调度配置（仅 openai 平台使用）
   // 注：default_mapped_model 已上移到基础 Group（用户接口亦返回），此处由继承获得。
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
+	max_reasoning_effort?: string
+	reasoning_effort_mappings?: ReasoningEffortMapping[]
 
   // 分组排序
   sort_order: number
@@ -828,6 +837,8 @@ export interface CreateGroupRequest {
   allow_messages_dispatch?: boolean
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
+	max_reasoning_effort?: string
+	reasoning_effort_mappings?: ReasoningEffortMapping[]
   // 从指定分组复制账号
   copy_accounts_from_group_ids?: number[]
 }

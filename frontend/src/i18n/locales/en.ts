@@ -2286,7 +2286,23 @@ export default {
         platform: 'Platform',
         rateMultiplier: 'Rate Multiplier',
         status: 'Status',
-        exclusive: 'Exclusive Group'
+        exclusive: 'Exclusive Group',
+		maxReasoningEffort: 'Max reasoning effort',
+		maxReasoningEffortUnlimited: 'Unlimited (follow request)',
+		maxReasoningEffortHint:
+			'Limits explicit OpenAI reasoning effort requests only. Higher values are capped; omitted effort stays omitted. The ceiling takes precedence over mappings.',
+		reasoningEffortMappings: 'Reasoning effort mappings',
+		addReasoningEffortMapping: 'Add mapping',
+		removeReasoningEffortMapping: 'Remove mapping',
+		reasoningEffortFrom: 'Request value',
+		reasoningEffortTo: 'Forwarded value',
+		reasoningEffortFromPlaceholder: 'Select A',
+		reasoningEffortToPlaceholder: 'Select B',
+		fromRequired: 'Select request value A',
+		toRequired: 'Select forwarded value B',
+		unsupportedFrom: 'Request value is not supported by this platform',
+		unsupportedTo: 'Forwarded value is not supported by this platform',
+		duplicateFrom: 'Request value A must be unique'
       },
       enterGroupName: 'Enter group name',
       optionalDescription: 'Optional description',
@@ -2997,6 +3013,7 @@ export default {
         wsModeOff: 'Off (off)',
         wsModeCtxPool: 'Context Pool (ctx_pool)',
         wsModePassthrough: 'Passthrough (passthrough)',
+        wsModeHttpBridge: 'HTTP Bridge (http_bridge)',
         wsModeShared: 'Shared (shared)',
         wsModeDedicated: 'Dedicated (dedicated)',
         wsModeConcurrencyHint:

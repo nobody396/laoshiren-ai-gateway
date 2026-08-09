@@ -12,12 +12,46 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/apicompat"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 )
 
-const openAIWSHTTPBridgeErrorBodyLimitBytes = 64 * 1024
+const (
+	openAIWSClientReadLimitBytesDefault     int64 = 64 * 1024 * 1024
+	openAIWSHTTPBridgeThresholdBytesDefault int64 = 15 * 1024 * 1024
+	openAIWSHTTPBridgeErrorBodyLimitBytes         = 64 * 1024
+)
+
+func ResolveOpenAIWSClientReadLimitBytes(cfg *config.Config) int64 {
+	if cfg == nil || cfg.Gateway.OpenAIWS.ClientReadLimitBytes <= 0 {
+		return openAIWSClientReadLimitBytesDefault
+	}
+	return cfg.Gateway.OpenAIWS.ClientReadLimitBytes
+}
+
+func (s *OpenAIGatewayService) openAIWSHTTPBridgeEnabled() bool {
+	return s != nil && s.cfg != nil && s.cfg.Gateway.OpenAIWS.HTTPBridgeEnabled
+}
+
+func (s *OpenAIGatewayService) openAIWSHTTPBridgeThresholdBytes() int64 {
+	if s == nil || s.cfg == nil || s.cfg.Gateway.OpenAIWS.HTTPBridgeThresholdBytes <= 0 {
+		return openAIWSHTTPBridgeThresholdBytesDefault
+	}
+	return s.cfg.Gateway.OpenAIWS.HTTPBridgeThresholdBytes
+}
+
+func (s *OpenAIGatewayService) shouldBridgeOpenAIWSHTTP(payloadBytes int, previousResponseID string) bool {
+	if !s.openAIWSHTTPBridgeEnabled() {
+		return false
+	}
+	if strings.TrimSpace(previousResponseID) != "" {
+		return false
+	}
+	threshold := s.openAIWSHTTPBridgeThresholdBytes()
+	return threshold > 0 && int64(payloadBytes) >= threshold
+}
 
 func prepareOpenAIWSHTTPBridgeBody(payload []byte) ([]byte, error) {
 	var body map[string]any
@@ -49,6 +83,58 @@ func buildOpenAIWSHTTPBridgeErrorEvent(statusCode int, message string) []byte {
 		return []byte(`{"type":"error","error":{"type":"upstream_error","message":"upstream request failed"}}`)
 	}
 	return body
+}
+
+type openAIWSToolCallReplayCollector struct {
+	items []json.RawMessage
+	seen  map[string]struct{}
+}
+
+func (c *openAIWSToolCallReplayCollector) AddEvent(eventType string, message []byte) {
+	switch strings.TrimSpace(eventType) {
+	case "response.output_item.done":
+		c.addItem(gjson.GetBytes(message, "item"))
+	case "response.completed", "response.done":
+		output := gjson.GetBytes(message, "response.output")
+		if !output.IsArray() {
+			return
+		}
+		for _, item := range output.Array() {
+			c.addItem(item)
+		}
+	}
+}
+
+func (c *openAIWSToolCallReplayCollector) Items() []json.RawMessage {
+	return cloneOpenAIWSRawMessages(c.items)
+}
+
+func (c *openAIWSToolCallReplayCollector) addItem(item gjson.Result) {
+	if !item.Exists() || item.Type != gjson.JSON {
+		return
+	}
+	raw := strings.TrimSpace(item.Raw)
+	if raw == "" || !strings.HasPrefix(raw, "{") {
+		return
+	}
+	if !isCodexToolCallContextItemType(item.Get("type").String()) {
+		return
+	}
+	key := strings.TrimSpace(item.Get("id").String())
+	if key == "" {
+		key = strings.TrimSpace(item.Get("call_id").String())
+	}
+	if key == "" {
+		key = raw
+	}
+	if c.seen == nil {
+		c.seen = make(map[string]struct{})
+	}
+	if _, ok := c.seen[key]; ok {
+		return
+	}
+	c.seen[key] = struct{}{}
+	c.items = append(c.items, json.RawMessage(raw))
 }
 
 // proxyOpenAIWSHTTPBridgeTurn is the callback-oriented bridge used by the WS
@@ -178,6 +264,7 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 	requestID := firstNonEmpty(resp.Header.Get("x-request-id"), resp.Header.Get("xai-request-id"))
 	var firstTokenMs *int
 	sawTerminal := false
+	replayCollector := &openAIWSToolCallReplayCollector{}
 	for scanner.Scan() {
 		data, ok := extractOpenAISSEDataLine(scanner.Text())
 		if !ok {
@@ -222,6 +309,7 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 		if upstreamModel != originalModel && bytes.Contains(message, []byte(upstreamModel)) && openAIWSEventMayContainModel(eventType) {
 			message = replaceOpenAIWSMessageModel(message, upstreamModel, originalModel)
 		}
+		replayCollector.AddEvent(eventType, message)
 		if err := writeClientMessage(message); err != nil {
 			return nil, err
 		}
@@ -236,11 +324,21 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 	if !sawTerminal {
 		return nil, errors.New("upstream HTTP bridge ended without terminal event")
 	}
-	return &OpenAIForwardResult{
+	if account.Platform != PlatformGrok && responseID != "" {
+		// OpenAI WS ingress uses the terminal response id as its request id,
+		// matching the native WS and upstream http_bridge implementations.
+		requestID = responseID
+	}
+	result := &OpenAIForwardResult{
 		RequestID: requestID, ResponseID: responseID, Usage: usage,
 		Model: originalModel, UpstreamModel: upstreamModel,
 		BillingModel: imageBillingModel, ImageSize: imageSizeTier, ImageInputSize: imageInputSize,
 		ServiceTier: extractOpenAIServiceTierFromBody(body), ReasoningEffort: extractOpenAIReasoningEffortFromBody(body, originalModel),
 		Stream: true, OpenAIWSMode: true, ResponseHeaders: resp.Header.Clone(), Duration: time.Since(startedAt), FirstTokenMs: firstTokenMs,
-	}, nil
+	}
+	if replayInput := replayCollector.Items(); len(replayInput) > 0 {
+		result.wsReplayInput = replayInput
+		result.wsReplayInputExists = true
+	}
+	return result, nil
 }

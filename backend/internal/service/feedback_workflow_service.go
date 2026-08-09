@@ -203,7 +203,7 @@ func (s *FeedbackService) AcceptBatch(ctx context.Context, input AcceptFeedbackB
 			continue
 		}
 		seen[id] = struct{}{}
-		result, err := s.acceptOne(ctx, id, batchID, positiveUserID(input.OperatorUserID))
+		result, err := s.acceptOne(ctx, id, batchID, positiveUserID(input.OperatorUserID), input.OwnerOverride)
 		if err != nil {
 			result.Error = err.Error()
 		}
@@ -212,7 +212,7 @@ func (s *FeedbackService) AcceptBatch(ctx context.Context, input AcceptFeedbackB
 	return results
 }
 
-func (s *FeedbackService) acceptOne(ctx context.Context, feedbackID int64, batchID string, operatorID *int64) (AcceptFeedbackResult, error) {
+func (s *FeedbackService) acceptOne(ctx context.Context, feedbackID int64, batchID string, operatorID *int64, ownerOverride bool) (AcceptFeedbackResult, error) {
 	result := AcceptFeedbackResult{FeedbackID: feedbackID}
 	if s.entClient == nil {
 		return result, fmt.Errorf("feedback workflow database is not configured")
@@ -234,7 +234,21 @@ func (s *FeedbackService) acceptOne(ctx context.Context, feedbackID int64, batch
 		return result, queryErr
 	}
 	if item.TriageStatus != domain.FeedbackTriageConfirmed {
-		return result, domain.ErrFeedbackNotConfirmed
+		if !ownerOverride || item.TriageStatus == domain.FeedbackTriageUnreviewed || item.OwnerDecision != domain.FeedbackDecisionPending {
+			return result, domain.ErrFeedbackNotConfirmed
+		}
+		previousStatus := item.TriageStatus
+		item, err = tx.Feedback.UpdateOne(item).SetTriageStatus(domain.FeedbackTriageConfirmed).Save(ctx)
+		if err != nil {
+			return result, err
+		}
+		if err := createFeedbackEvent(ctx, tx, feedbackID, domain.FeedbackEventTriaged, feedbackActorAdmin, operatorID, "负责人复核后确认采纳", map[string]string{
+			"owner_override":  "true",
+			"previous_result": previousStatus,
+			"result":          domain.FeedbackTriageConfirmed,
+		}); err != nil {
+			return result, err
+		}
 	}
 	now := time.Now()
 	if _, err := tx.User.UpdateOneID(item.UserID).AddBalance(domain.FeedbackRewardAmount).Save(ctx); err != nil {

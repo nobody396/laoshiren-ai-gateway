@@ -50,8 +50,9 @@ type triageFeedbackRequest struct {
 }
 
 type acceptFeedbackBatchRequest struct {
-	IDs     []int64 `json:"ids" binding:"required"`
-	BatchID string  `json:"batch_id" binding:"required"`
+	IDs           []int64 `json:"ids" binding:"required"`
+	BatchID       string  `json:"batch_id" binding:"required"`
+	OwnerOverride bool    `json:"owner_override"`
 }
 
 type completeFeedbackRequest struct {
@@ -150,7 +151,7 @@ func (h *FeedbackHandler) AcceptBatch(c *gin.Context) {
 	if subject, ok := middleware2.GetAuthSubjectFromContext(c); ok && subject.UserID > 0 {
 		operatorID = &subject.UserID
 	}
-	results := h.feedbackService.AcceptBatch(c.Request.Context(), service.AcceptFeedbackBatchInput{IDs: req.IDs, BatchID: req.BatchID, OperatorUserID: operatorID})
+	results := h.feedbackService.AcceptBatch(c.Request.Context(), service.AcceptFeedbackBatchInput{IDs: req.IDs, BatchID: req.BatchID, OperatorUserID: operatorID, OwnerOverride: req.OwnerOverride})
 	response.Success(c, gin.H{"results": results, "reward_amount": 5.0})
 }
 

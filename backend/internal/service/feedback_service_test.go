@@ -193,6 +193,59 @@ func TestFeedbackWorkflowRewardIsAtomicAndIdempotent(t *testing.T) {
 	require.Equal(t, 1, client.AccountChangeRecord.Query().CountX(ctx))
 }
 
+func TestFeedbackWorkflowOwnerOverrideConfirmsTriagedFeedbackBeforeAcceptance(t *testing.T) {
+	svc, client := newFeedbackServiceSQLite(t)
+	ctx := context.Background()
+	userID := mustCreateFeedbackUser(t, ctx, client, "feedback-owner-override@test.com")
+	created, err := svc.Create(ctx, userID, service.CreateFeedbackInput{Content: "Please reconsider this product request"})
+	require.NoError(t, err)
+
+	_, err = svc.TriageByAgent(ctx, created.ID, service.AgentTriageFeedbackInput{
+		TriageStatus:         "not_bug",
+		TriagePriority:       "P2",
+		TriageSummary:        "Current behavior matches the original policy",
+		RepairDifficulty:     "low",
+		RepairRecommendation: "Keep the current behavior",
+	})
+	require.NoError(t, err)
+
+	withoutOverride := svc.AcceptBatch(ctx, service.AcceptFeedbackBatchInput{
+		IDs: []int64{created.ID}, BatchID: "FB-20260810-01",
+	})
+	require.Contains(t, withoutOverride[0].Error, "feedback has not been confirmed")
+	require.Zero(t, client.FeedbackReward.Query().CountX(ctx))
+
+	withOverride := svc.AcceptBatch(ctx, service.AcceptFeedbackBatchInput{
+		IDs: []int64{created.ID}, BatchID: "FB-20260810-01", OwnerOverride: true,
+	})
+	require.Empty(t, withOverride[0].Error)
+	require.NotNil(t, withOverride[0].Reward)
+	require.Equal(t, 5.0, withOverride[0].Reward.Amount)
+
+	detail, err := svc.GetForAdmin(ctx, created.ID)
+	require.NoError(t, err)
+	require.Equal(t, "confirmed", detail.Feedback.TriageStatus)
+	require.Equal(t, "approved", detail.Feedback.OwnerDecision)
+	require.Equal(t, 5.0, client.User.GetX(ctx, userID).Balance)
+	require.Equal(t, 1, client.FeedbackReward.Query().CountX(ctx))
+	require.GreaterOrEqual(t, len(detail.Events), 5)
+}
+
+func TestFeedbackWorkflowOwnerOverrideDoesNotBypassInitialTriage(t *testing.T) {
+	svc, client := newFeedbackServiceSQLite(t)
+	ctx := context.Background()
+	userID := mustCreateFeedbackUser(t, ctx, client, "feedback-owner-override-unreviewed@test.com")
+	created, err := svc.Create(ctx, userID, service.CreateFeedbackInput{Content: "This still needs investigation"})
+	require.NoError(t, err)
+
+	result := svc.AcceptBatch(ctx, service.AcceptFeedbackBatchInput{
+		IDs: []int64{created.ID}, BatchID: "FB-20260810-02", OwnerOverride: true,
+	})
+	require.Contains(t, result[0].Error, "feedback has not been confirmed")
+	require.Zero(t, client.FeedbackReward.Query().CountX(ctx))
+	require.Zero(t, client.User.GetX(ctx, userID).Balance)
+}
+
 func TestFeedbackWorkflowCompleteNotifyAndUserVerification(t *testing.T) {
 	svc, client := newFeedbackServiceSQLite(t)
 	ctx := context.Background()

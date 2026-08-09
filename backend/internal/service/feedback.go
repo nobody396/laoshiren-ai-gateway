@@ -98,6 +98,7 @@ type AcceptFeedbackBatchInput struct {
 	IDs            []int64
 	BatchID        string
 	OperatorUserID *int64
+	OwnerOverride  bool
 }
 
 type AcceptFeedbackResult struct {

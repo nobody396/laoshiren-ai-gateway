@@ -208,7 +208,7 @@ func (h *OpenAIGatewayHandler) GPTImageGenerate(c *gin.Context) {
 			return
 		}
 
-		h.submitUsageRecordTask(func(ctx context.Context) {
+		h.submitUsageRecordTask(c.Request.Context(), func(ctx context.Context) {
 			if err := h.gatewayService.RecordUsage(ctx, &service.OpenAIRecordUsageInput{
 				Result:             result,
 				APIKey:             apiKey,
@@ -299,7 +299,7 @@ func (h *OpenAIGatewayHandler) GPTImageTask(c *gin.Context) {
 	result.ImageSize = claimed.Resolution
 	result.RequestID = "gpt-image-task:" + taskID
 
-	h.submitUsageRecordTask(func(ctx context.Context) {
+	h.submitUsageRecordTask(c.Request.Context(), func(ctx context.Context) {
 		if err := h.gatewayService.RecordUsage(ctx, &service.OpenAIRecordUsageInput{
 			Result:             result,
 			APIKey:             apiKey,

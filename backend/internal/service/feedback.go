@@ -182,5 +182,12 @@ type FeedbackImageStorage interface {
 	Enabled(ctx context.Context) bool
 	UploadObject(ctx context.Context, objectKey string, body io.Reader, size int64, contentType string) error
 	GetAccessURL(ctx context.Context, objectKey string) (string, error)
-	GetPresignedURLForToken(ctx context.Context, token string, expiry time.Duration) (string, error)
+	ResolveToken(ctx context.Context, token string, expiry time.Duration) (*FeedbackImageAccess, error)
+}
+
+type FeedbackImageAccess struct {
+	RedirectURL   string
+	Reader        io.ReadCloser
+	ContentType   string
+	ContentLength int64
 }

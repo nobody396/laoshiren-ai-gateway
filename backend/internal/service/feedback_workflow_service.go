@@ -514,15 +514,18 @@ func (s *FeedbackService) MarkAllNotificationsRead(ctx context.Context, userID i
 	return s.entClient.UserNotification.Update().Where(dbnotification.UserIDEQ(userID), dbnotification.ReadAtIsNil()).SetReadAt(time.Now()).Save(ctx)
 }
 
-func (s *FeedbackService) GetFeedbackImageAccess(ctx context.Context, token string) (string, error) {
-	url, err := s.imageStorage.GetPresignedURLForToken(ctx, token, 10*time.Minute)
+func (s *FeedbackService) GetFeedbackImageAccess(ctx context.Context, token string) (*FeedbackImageAccess, error) {
+	access, err := s.imageStorage.ResolveToken(ctx, token, 10*time.Minute)
 	if err != nil {
 		if errors.Is(err, ErrFeedbackImageTokenInvalid) {
-			return "", infraerrors.BadRequest("FEEDBACK_IMAGE_TOKEN_INVALID", "invalid feedback image token")
+			return nil, infraerrors.BadRequest("FEEDBACK_IMAGE_TOKEN_INVALID", "invalid feedback image token")
 		}
-		return "", fmt.Errorf("resolve feedback image: %w", err)
+		if errors.Is(err, ErrFeedbackImageNotFound) {
+			return nil, infraerrors.NotFound("FEEDBACK_IMAGE_NOT_FOUND", "feedback image not found")
+		}
+		return nil, fmt.Errorf("resolve feedback image: %w", err)
 	}
-	return url, nil
+	return access, nil
 }
 
 func createFeedbackEvent(ctx context.Context, tx *dbent.Tx, feedbackID int64, eventType, actorType string, actorID *int64, summary string, metadata map[string]string) error {

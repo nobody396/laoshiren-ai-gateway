@@ -244,12 +244,23 @@ func (h *FeedbackHandler) MarkAllNotificationsRead(c *gin.Context) {
 }
 
 func (h *FeedbackHandler) GetImage(c *gin.Context) {
-	url, err := h.feedbackService.GetFeedbackImageAccess(c.Request.Context(), c.Param("token"))
+	access, err := h.feedbackService.GetFeedbackImageAccess(c.Request.Context(), c.Param("token"))
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
-	c.Redirect(http.StatusTemporaryRedirect, url)
+	if access.RedirectURL != "" {
+		c.Redirect(http.StatusTemporaryRedirect, access.RedirectURL)
+		return
+	}
+	if access.Reader == nil {
+		response.InternalError(c, "feedback image is unavailable")
+		return
+	}
+	defer func() { _ = access.Reader.Close() }()
+	c.Header("Cache-Control", "private, max-age=300")
+	c.Header("X-Content-Type-Options", "nosniff")
+	c.DataFromReader(http.StatusOK, access.ContentLength, access.ContentType, access.Reader, nil)
 }
 
 func (h *FeedbackHandler) CreateReply(c *gin.Context) {

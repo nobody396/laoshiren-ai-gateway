@@ -372,61 +372,6 @@ func (s *FeedbackService) createReplyAndUpdateSummary(ctx context.Context, feedb
 	return nil
 }
 
-func (s *FeedbackService) enqueueNewFeedbackEmail(ctx context.Context, userID int64, feedback *Feedback) {
-	if s.emailQueue == nil || s.settingService == nil {
-		return
-	}
-
-	targetEmail := strings.TrimSpace(s.settingService.GetFeedbackNotifyEmail(ctx))
-	if targetEmail == "" {
-		adminUser, err := s.userRepo.GetFirstAdmin(ctx)
-		if err == nil && adminUser != nil {
-			targetEmail = strings.TrimSpace(adminUser.Email)
-		}
-	}
-	if targetEmail == "" {
-		return
-	}
-
-	user, err := s.userRepo.GetByID(ctx, userID)
-	if err != nil || user == nil {
-		return
-	}
-
-	feedbackURL := strings.TrimRight(s.settingService.GetFrontendURL(ctx), "/") + "/admin/feedbacks/" + strconv.FormatInt(feedback.ID, 10)
-	_ = s.emailQueue.EnqueueFeedbackNew(
-		targetEmail,
-		s.settingService.GetSiteName(ctx),
-		feedback.ID,
-		feedback.Title,
-		feedback.Category,
-		feedback.Priority,
-		user.Username,
-		user.Email,
-		feedbackURL,
-	)
-}
-
-func (s *FeedbackService) enqueueReplyEmail(ctx context.Context, feedback *Feedback, reply *FeedbackReply) {
-	if s.emailQueue == nil || s.settingService == nil {
-		return
-	}
-
-	user, err := s.userRepo.GetByID(ctx, feedback.UserID)
-	if err != nil || user == nil || strings.TrimSpace(user.Email) == "" {
-		return
-	}
-	feedbackURL := strings.TrimRight(s.settingService.GetFrontendURL(ctx), "/") + "/feedbacks/" + strconv.FormatInt(feedback.ID, 10)
-	_ = s.emailQueue.EnqueueFeedbackReply(
-		user.Email,
-		s.settingService.GetSiteName(ctx),
-		feedback.ID,
-		feedback.Title,
-		buildFeedbackSummary(reply.Content),
-		feedbackURL,
-	)
-}
-
 func normalizeFeedbackContent(category, title, content string, images []string, contact string) (string, string, []string, string, string, error) {
 	normalizedCategory := domain.NormalizeFeedbackCategory(category)
 	if !domain.IsValidFeedbackCategory(normalizedCategory) {
@@ -520,12 +465,4 @@ func feedbackExtFromFilename(filename, contentType string) string {
 	default:
 		return ".bin"
 	}
-}
-
-func buildFeedbackSummary(content string) string {
-	trimmed := strings.Join(strings.Fields(strings.TrimSpace(content)), " ")
-	if len([]rune(trimmed)) <= 120 {
-		return trimmed
-	}
-	return string([]rune(trimmed)[:120]) + "..."
 }

@@ -2,7 +2,7 @@
   <header class="glass sticky top-0 z-30 border-b border-gray-200/50 dark:border-dark-700/50">
     <div class="flex h-16 items-center justify-between px-4 md:px-6">
       <!-- Left: Mobile Menu Toggle + Page Title -->
-      <div class="flex items-center gap-4">
+      <div class="flex min-w-0 flex-1 items-center gap-4">
         <button
           @click="toggleMobileSidebar"
           class="btn-ghost btn-icon lg:hidden"
@@ -11,18 +11,18 @@
           <Icon name="menu" size="md" />
         </button>
 
-        <div class="hidden lg:block">
-          <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
+        <div class="hidden min-w-0 lg:block">
+          <h1 class="truncate whitespace-nowrap text-lg font-semibold text-gray-900 dark:text-white">
             {{ pageTitle }}
           </h1>
-          <p v-if="pageDescription" class="text-xs text-gray-500 dark:text-dark-400">
+          <p v-if="pageDescription" class="truncate whitespace-nowrap text-xs text-gray-500 dark:text-dark-400">
             {{ pageDescription }}
           </p>
         </div>
       </div>
 
       <!-- Right: direct actions + account controls -->
-      <div class="ml-auto flex items-center gap-2">
+      <div class="ml-auto flex shrink-0 items-center gap-2">
         <!-- 官网入口 -->
         <a
           v-if="user"
@@ -42,6 +42,7 @@
 
         <!-- Announcement Bell -->
         <AnnouncementBell v-if="user" />
+		<AdminFeedbackAlert v-if="authStore.isAdmin && feedbackManagementEnabled" />
 		<UserNotificationBell v-if="user" />
 
         <!-- Changelog with unread product-update indicator -->
@@ -230,6 +231,7 @@ import { useAdminSettingsStore } from '@/stores/adminSettings'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMini.vue'
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
+import AdminFeedbackAlert from '@/components/common/AdminFeedbackAlert.vue'
 import UserNotificationBell from '@/components/common/UserNotificationBell.vue'
 import ChangelogHeaderLink from '@/components/common/ChangelogHeaderLink.vue'
 import CustomerServiceButton from '@/components/common/CustomerServiceButton.vue'
@@ -250,6 +252,9 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const contactInfo = computed(() => appStore.contactInfo)
 const docUrl = computed(() => appStore.docUrl)
 const chatbotUrl = computed(() => (appStore.cachedPublicSettings?.chatbot_url || '').trim())
+const feedbackManagementEnabled = computed(
+  () => appStore.cachedPublicSettings?.feedback_management_enabled !== false
+)
 
 // 标准模式下，所有登录用户都可以随时重新查看新手引导。
 const showOnboardingButton = computed(() => {

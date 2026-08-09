@@ -101,6 +101,7 @@ function makeFeedbackDetail(overrides: Record<string, unknown> = {}) {
 
 const globalStubs = {
   AppLayout: AppLayoutStub,
+  RouterLink: defineComponent({ template: '<a><slot /></a>' }),
   StatusBadge: StatusBadgeStub,
   MarkdownPreview: MarkdownPreviewStub,
   MarkdownEditorField: MarkdownEditorFieldStub,
@@ -125,7 +126,7 @@ describe('User FeedbackDetailView', () => {
 
     // Should not crash — no image grid rendered
     expect(wrapper.find('img').exists()).toBe(false)
-    expect(wrapper.find('h1').text()).toBe('Test feedback')
+    expect(wrapper.find('h1').text()).toBe('feedback.detail.ticketTitle')
   })
 
   it('renders without crash when reply.images is null', async () => {
@@ -155,7 +156,7 @@ describe('User FeedbackDetailView', () => {
     })
     await flushPromises()
 
-    expect(wrapper.find('h1').text()).toBe('Test feedback')
+    expect(wrapper.find('h1').text()).toBe('feedback.detail.ticketTitle')
     expect(wrapper.findAll('img')).toHaveLength(0)
   })
 
@@ -178,5 +179,24 @@ describe('User FeedbackDetailView', () => {
     const images = wrapper.findAll('img')
     expect(images).toHaveLength(2)
     expect(images[0].attributes('src')).toBe('https://example.com/img1.png')
+  })
+
+  it('shows request and error details as preserved multiline context without the optional form label', async () => {
+    getByIdMock.mockResolvedValue(makeFeedbackDetail({
+      request_id: 'request-123\n报错信息：connection reset',
+      replies: [],
+    }))
+
+    const wrapper = mount(FeedbackDetailView, {
+      global: {
+        plugins: [createPinia()],
+        stubs: globalStubs,
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('feedback.detail.requestContext')
+    expect(wrapper.text()).not.toContain('feedback.form.requestId')
+    expect(wrapper.get('[data-testid="feedback-request-context"]').text()).toContain('request-123\n报错信息：connection reset')
   })
 })

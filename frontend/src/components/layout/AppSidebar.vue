@@ -206,6 +206,7 @@ import { useI18n } from 'vue-i18n'
 import {
   useAdminSettingsStore,
   useAffiliateProgramStore,
+  useAdminFeedbackInboxStore,
   useAppStore,
   useAuthStore,
   useOnboardingStore
@@ -240,6 +241,7 @@ const authStore = useAuthStore()
 const onboardingStore = useOnboardingStore()
 const adminSettingsStore = useAdminSettingsStore()
 const affiliateProgramStore = useAffiliateProgramStore()
+const adminFeedbackInboxStore = useAdminFeedbackInboxStore()
 const permStore = usePermissionStore()
 const { hasNewChangelog, refreshChangelogFreshness } = useChangelogFreshness()
 
@@ -930,7 +932,8 @@ const adminNavItems = computed((): NavItem[] => {
     {
       path: '/admin/feedbacks',
       label: resolveAdminMenuLabel('/admin/feedbacks', t('nav.feedbackAdmin')),
-      icon: FeedbackIcon
+      icon: FeedbackIcon,
+      badge: adminFeedbackInboxStore.pendingCount
     },
     {
       path: '/admin/finance-transactions',

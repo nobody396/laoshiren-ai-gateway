@@ -6039,11 +6039,13 @@ export default {
     },
     detail: {
       title: 'Feedback Detail',
+	  ticketTitle: 'Feedback #{id}',
       view: 'View',
       timeline: 'Conversation',
       addReply: 'Add Reply',
       meta: 'Created at {createdAt}, {replies} replies so far',
 	  rewardGranted: 'This feedback received {amount} in co-creation credit',
+	  requestContext: 'Request ID / error details',
     },
     edit: {
       title: 'Edit Feedback',
@@ -6082,6 +6084,8 @@ export default {
 	  notifyEmail: 'Fallback email (no auto-send)',
 	  notifyEmailPlaceholder: 'Used only by an explicitly authorized manual email workflow',
 	  notifyEmailHint: 'Feedback emails are never sent automatically. Every message requires separate explicit authorization.',
+	  pendingReview: 'Feedback review',
+	  pendingInbox: '{count} feedback items awaiting review',
     },
 	verify: {
 	  title: 'Verify the fix',

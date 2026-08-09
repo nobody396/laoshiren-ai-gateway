@@ -26,11 +26,8 @@ func NewFeedbackHandler(feedbackService *service.FeedbackService) *FeedbackHandl
 }
 
 type createFeedbackRequest struct {
-	Category  string   `json:"category" binding:"required"`
-	Title     string   `json:"title" binding:"required"`
 	Content   string   `json:"content" binding:"required"`
 	Images    []string `json:"images"`
-	Contact   string   `json:"contact"`
 	RequestID string   `json:"request_id"`
 }
 
@@ -40,11 +37,8 @@ type createFeedbackReplyRequest struct {
 }
 
 type updateFeedbackRequest struct {
-	Category  string   `json:"category" binding:"required"`
-	Title     string   `json:"title" binding:"required"`
 	Content   string   `json:"content" binding:"required"`
 	Images    []string `json:"images"`
-	Contact   string   `json:"contact"`
 	RequestID string   `json:"request_id"`
 }
 
@@ -71,11 +65,8 @@ func (h *FeedbackHandler) Create(c *gin.Context) {
 	}
 
 	feedback, err := h.feedbackService.Create(c.Request.Context(), subject.UserID, service.CreateFeedbackInput{
-		Category:  req.Category,
-		Title:     req.Title,
 		Content:   req.Content,
 		Images:    req.Images,
-		Contact:   req.Contact,
 		RequestID: req.RequestID,
 	})
 	if err != nil {
@@ -155,11 +146,8 @@ func (h *FeedbackHandler) Update(c *gin.Context) {
 	}
 
 	updated, err := h.feedbackService.UpdateByUser(c.Request.Context(), subject.UserID, feedbackID, service.UpdateFeedbackByUserInput{
-		Category:  req.Category,
-		Title:     req.Title,
 		Content:   req.Content,
 		Images:    req.Images,
-		Contact:   req.Contact,
 		RequestID: req.RequestID,
 	})
 	if err != nil {

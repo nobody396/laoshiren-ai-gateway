@@ -36,17 +36,6 @@ const AppLayoutStub = defineComponent({
   template: '<div><slot /></div>',
 })
 
-const SelectStub = defineComponent({
-  name: 'AppSelect',
-  props: ['modelValue', 'options'],
-  emits: ['update:modelValue'],
-  template: `
-    <select :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
-      <option v-for="option in options" :key="option.value" :value="option.value">{{ option.label }}</option>
-    </select>
-  `,
-})
-
 const MarkdownEditorFieldStub = defineComponent({
   name: 'MarkdownEditorField',
   props: ['modelValue'],
@@ -67,6 +56,7 @@ const baseFeedbackDetail = {
   category: 'suggestion',
   title: 'Add dark mode',
   content: 'Please add dark mode support',
+  request_id: 'request-old',
   images: ['https://example.com/img1.png'],
   contact: 'user@example.com',
   priority: 'normal',
@@ -83,7 +73,6 @@ function mountEditView() {
       plugins: [createPinia()],
       stubs: {
         AppLayout: AppLayoutStub,
-        Select: SelectStub,
         MarkdownEditorField: MarkdownEditorFieldStub,
         MultiImageUpload: MultiImageUploadStub,
         RouterLink: defineComponent({
@@ -111,39 +100,34 @@ describe('FeedbackEditView', () => {
 
     expect(getByIdMock).toHaveBeenCalledWith(42)
 
-    // Title should be pre-filled
-    const titleInput = wrapper.find('input[maxlength="200"]')
-    expect((titleInput.element as HTMLInputElement).value).toBe('Add dark mode')
-
     // Content should be pre-filled via textarea stub
     const textarea = wrapper.find('textarea')
     expect((textarea.element as HTMLTextAreaElement).value).toBe('Please add dark mode support')
 
-    // Contact should be pre-filled
-    const contactInput = wrapper.find('input.input')
-    expect((contactInput.element as HTMLInputElement).value).toBe('user@example.com')
+    const requestContext = wrapper.find('textarea.input[maxlength="2000"]')
+    expect((requestContext.element as HTMLTextAreaElement).value).toBe('request-old')
+    expect(wrapper.find('select').exists()).toBe(false)
+    expect(wrapper.find('input').exists()).toBe(false)
   })
 
   it('submits updated feedback and redirects to detail page', async () => {
     getByIdMock.mockResolvedValue(baseFeedbackDetail)
-    updateMock.mockResolvedValue({ ...baseFeedbackDetail, title: 'Updated title' })
+    updateMock.mockResolvedValue({ ...baseFeedbackDetail, content: 'Updated details' })
 
     const wrapper = mountEditView()
     await flushPromises()
 
-    // Update the title
-    await wrapper.find('input[maxlength="200"]').setValue('Updated title')
+    await wrapper.find('textarea').setValue('Updated details')
+    await wrapper.find('textarea.input[maxlength="2000"]').setValue('request-new\nerror details')
     await nextTick()
 
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
     expect(updateMock).toHaveBeenCalledWith(42, {
-      category: 'suggestion',
-      title: 'Updated title',
-      content: 'Please add dark mode support',
+      content: 'Updated details',
       images: ['https://example.com/img1.png'],
-      contact: 'user@example.com',
+      request_id: 'request-new\nerror details',
     })
     expect(pushMock).toHaveBeenCalledWith('/feedbacks/42')
   })

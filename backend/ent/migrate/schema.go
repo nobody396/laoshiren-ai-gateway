@@ -719,7 +719,7 @@ var (
 		{Name: "content", Type: field.TypeString, SchemaType: map[string]string{"postgres": "text"}},
 		{Name: "images", Type: field.TypeJSON, Nullable: true, SchemaType: map[string]string{"postgres": "jsonb"}},
 		{Name: "contact", Type: field.TypeString, Size: 255, Default: ""},
-		{Name: "request_id", Type: field.TypeString, Size: 128, Default: ""},
+		{Name: "request_id", Type: field.TypeString, Size: 2000, Default: "", SchemaType: map[string]string{"postgres": "text"}},
 		{Name: "priority", Type: field.TypeString, Size: 10, Default: "low"},
 		{Name: "status", Type: field.TypeString, Size: 20, Default: "pending"},
 		{Name: "triage_status", Type: field.TypeString, Size: 24, Default: "unreviewed"},
@@ -795,11 +795,6 @@ var (
 				Name:    "feedback_fix_status",
 				Unique:  false,
 				Columns: []*schema.Column{FeedbacksColumns[17]},
-			},
-			{
-				Name:    "feedback_request_id",
-				Unique:  false,
-				Columns: []*schema.Column{FeedbacksColumns[7]},
 			},
 			{
 				Name:    "feedback_created_at",

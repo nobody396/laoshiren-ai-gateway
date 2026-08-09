@@ -519,20 +519,14 @@ export interface UserNotification {
 }
 
 export interface CreateFeedbackRequest {
-  category: FeedbackCategory
-  title: string
   content: string
   images: string[]
-  contact?: string
   request_id?: string
 }
 
 export interface UpdateFeedbackRequest {
-  category: FeedbackCategory
-  title: string
   content: string
   images: string[]
-  contact?: string
   request_id?: string
 }
 

@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.7.0'
+$ScriptVersion = '0.7.1'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
 $DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
@@ -1148,9 +1148,10 @@ function Write-GrokTomlConfig {
   $Lines.Add('model = "grok-4.5"')
   $Lines.Add("base_url = $(ConvertTo-TomlString $BaseV1)")
   $Lines.Add('name = "Grok 4.5 · 老实人AI"')
+  $Lines.Add('description = "Grok 4.5"')
   $Lines.Add("api_key = $(ConvertTo-TomlString $script:GrokApiKey)")
   $Lines.Add('api_backend = "responses"')
-  $Lines.Add('context_window = 262144')
+  $Lines.Add('context_window = 500000')
   $Lines.Add('')
   [System.IO.File]::WriteAllLines($GrokConfigPath, $Lines, [System.Text.UTF8Encoding]::new($false))
 }

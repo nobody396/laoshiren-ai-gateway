@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="0.7.0"
+SCRIPT_VERSION="0.7.1"
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
 DEFAULT_CODEX_MANIFEST_URL="https://laoshirenai.com/api/v1/public-downloads/codex/latest.json"
@@ -1046,9 +1046,10 @@ lines.push(
   'model = "grok-4.5"',
   `base_url = ${JSON.stringify(baseUrl)}`,
   'name = "Grok 4.5 · 老实人AI"',
+  'description = "Grok 4.5"',
   `api_key = ${JSON.stringify(apiKey)}`,
   'api_backend = "responses"',
-  'context_window = 262144',
+  'context_window = 500000',
   ''
 )
 fs.writeFileSync(path, lines.join('\n'), { encoding: 'utf8', mode: 0o600 })

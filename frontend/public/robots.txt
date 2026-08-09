@@ -2,7 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 Disallow: /agent/
-Disallow: /dashboard
 Disallow: /key-usage
 Disallow: /keys
 Disallow: /usage

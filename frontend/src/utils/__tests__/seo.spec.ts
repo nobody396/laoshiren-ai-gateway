@@ -93,6 +93,23 @@ describe('updateRouteSeo', () => {
     expect(document.head.querySelectorAll('script[type="application/ld+json"]').length).toBe(0)
   })
 
+  it('keeps the affiliate payment privacy notice indexable', () => {
+    updateRouteSeo(route({
+      name: 'LegalAffiliatePaymentPrivacy',
+      path: '/legal/affiliate-payment-privacy',
+      meta: {
+        title: '合伙人收款资料隐私告知',
+        description: '说明合伙人收款资料的处理方式。',
+      },
+    }))
+
+    expect(content('meta[name="robots"]')).toBe('index,follow')
+    expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
+      'https://laoshirenai.com/legal/affiliate-payment-privacy'
+    )
+    expect(document.head.querySelectorAll('script[type="application/ld+json"]').length).toBe(1)
+  })
+
   it('updates existing tags instead of duplicating them', () => {
     updateRouteSeo(route({
       name: 'Home',

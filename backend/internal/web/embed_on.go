@@ -99,6 +99,12 @@ func (s *FrontendServer) Middleware() gin.HandlerFunc {
 			return
 		}
 
+		if target, ok := legacyFrontendRedirect(path); ok {
+			c.Redirect(http.StatusMovedPermanently, target)
+			c.Abort()
+			return
+		}
+
 		cleanPath := strings.TrimPrefix(path, "/")
 		if cleanPath == "" {
 			cleanPath = "index.html"
@@ -167,6 +173,15 @@ func changelogSlugFromPath(path string) (string, bool) {
 	return slug, true
 }
 
+func legacyFrontendRedirect(path string) (string, bool) {
+	switch normalizeSEOPath(path) {
+	case "/docs/backend/ai/claude-code":
+		return "/docs/claude-code-china-guide", true
+	default:
+		return "", false
+	}
+}
+
 func (s *FrontendServer) serveIndexHTML(c *gin.Context) {
 	s.serveIndexHTMLWithStatusAndChangelog(c, http.StatusOK, nil)
 }
@@ -198,6 +213,9 @@ func (s *FrontendServer) serveIndexHTMLWithStatusAndChangelog(
 			rendered = s.seo.renderChangelogHTML(cached.Content, requestPath, changelogPage)
 		} else if status == http.StatusNotFound {
 			rendered = s.seo.renderNotFoundHTML(cached.Content, requestPath)
+		} else if s.seo.shouldServeNoindex(requestPath) {
+			rendered = s.seo.renderNoindexHTML(rendered, requestPath)
+			c.Header("X-Robots-Tag", "noindex, nofollow")
 		}
 		// Replace nonce placeholder with actual nonce before serving
 		content := replaceNoncePlaceholder(rendered, nonce)
@@ -221,6 +239,9 @@ func (s *FrontendServer) serveIndexHTMLWithStatusAndChangelog(
 			rendered = s.seo.renderChangelogHTML(s.baseHTML, requestPath, changelogPage)
 		} else if status == http.StatusNotFound {
 			rendered = s.seo.renderNotFoundHTML(s.baseHTML, requestPath)
+		} else if s.seo.shouldServeNoindex(requestPath) {
+			rendered = s.seo.renderNoindexHTML(rendered, requestPath)
+			c.Header("X-Robots-Tag", "noindex, nofollow")
 		}
 		content := replaceNoncePlaceholder(rendered, nonce)
 		setNonceHTMLNoStore(c)
@@ -237,6 +258,9 @@ func (s *FrontendServer) serveIndexHTMLWithStatusAndChangelog(
 			rendered = s.seo.renderChangelogHTML(s.baseHTML, requestPath, changelogPage)
 		} else if status == http.StatusNotFound {
 			rendered = s.seo.renderNotFoundHTML(s.baseHTML, requestPath)
+		} else if s.seo.shouldServeNoindex(requestPath) {
+			rendered = s.seo.renderNoindexHTML(rendered, requestPath)
+			c.Header("X-Robots-Tag", "noindex, nofollow")
 		}
 		content := replaceNoncePlaceholder(rendered, nonce)
 		setNonceHTMLNoStore(c)
@@ -254,6 +278,9 @@ func (s *FrontendServer) serveIndexHTMLWithStatusAndChangelog(
 		rendered = s.seo.renderChangelogHTML(rendered, requestPath, changelogPage)
 	} else if status == http.StatusNotFound {
 		rendered = s.seo.renderNotFoundHTML(rendered, requestPath)
+	} else if s.seo.shouldServeNoindex(requestPath) {
+		rendered = s.seo.renderNoindexHTML(rendered, requestPath)
+		c.Header("X-Robots-Tag", "noindex, nofollow")
 	}
 	content := replaceNoncePlaceholder(rendered, nonce)
 

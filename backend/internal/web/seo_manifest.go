@@ -124,6 +124,16 @@ func (m *SEOManifest) renderNotFoundHTML(base []byte, requestPath string) []byte
 	return injectStaticHTML(out, `<main class="seo-static-content"><h1>页面未找到</h1><p>这个页面不存在。你可以返回 <a href="/">老实人AI首页</a> 或 <a href="/docs">文档中心</a>，查看 Claude Code、Codex、API Key 和 Base URL 配置指南。</p></main>`)
 }
 
+func (m *SEOManifest) renderNoindexHTML(base []byte, requestPath string) []byte {
+	if m == nil {
+		return base
+	}
+	canonicalURL := strings.TrimRight(m.SiteOrigin, "/") + normalizeSEOPath(requestPath)
+	out := replaceOrInsertHead(base, robotsMetaPattern, `<meta name="robots" content="noindex,nofollow" />`)
+	out = replaceOrInsertHead(out, canonicalLinkPattern, `<link rel="canonical" href="`+escapeAttr(canonicalURL)+`" />`)
+	return serverSchemaPattern.ReplaceAll(out, nil)
+}
+
 func (m *SEOManifest) renderChangelogHTML(
 	base []byte,
 	requestPath string,
@@ -292,6 +302,10 @@ func (m *SEOManifest) shouldServeNotFound(path string) bool {
 	}
 
 	return true
+}
+
+func (m *SEOManifest) shouldServeNoindex(path string) bool {
+	return isKnownSPARoute(normalizeSEOPath(path))
 }
 
 func isKnownSPARoute(path string) bool {

@@ -134,6 +134,14 @@ requires_openai_auth = true
   })
 }
 
+const buildClaudeImportConfig = (): string => {
+  return JSON.stringify({
+    env: {
+      CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY: '1'
+    }
+  })
+}
+
 const appLabelForTarget = (target: CcsImportTarget): string => {
   switch (target) {
     case 'claude':
@@ -266,6 +274,8 @@ export const buildCcsImportDeeplink = ({
 
   if (target === 'claude') {
     params.set('model', 'claude-opus-5')
+    params.set('configFormat', 'json')
+    params.set('config', encodeBase64Utf8(buildClaudeImportConfig()))
     const groupModel = key.group?.default_mapped_model?.trim()
     if (platform === 'anthropic' && groupModel) {
       params.set('haikuModel', groupModel)

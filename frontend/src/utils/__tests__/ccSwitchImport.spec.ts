@@ -108,6 +108,15 @@ describe('CC Switch provider deeplinks', () => {
     expect(url.searchParams.get('haikuModel')).toBe('claude-haiku-4-5')
     expect(url.searchParams.get('sonnetModel')).toBe('claude-sonnet-5')
     expect(url.searchParams.get('opusModel')).toBe('claude-opus-5')
+
+    const encodedConfig = url.searchParams.get('config')
+    expect(encodedConfig).not.toBeNull()
+    expect(url.searchParams.get('configFormat')).toBe('json')
+    expect(JSON.parse(decodeBase64Utf8(encodedConfig!))).toEqual({
+      env: {
+        CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY: '1'
+      }
+    })
   })
 
   it('avoids duplicating /v1 when the public API base already includes it', () => {

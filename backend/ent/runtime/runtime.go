@@ -21,7 +21,9 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/commissionrecord"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/errorpassthroughrule"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedback"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackevent"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackreply"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackreward"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/financetransaction"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/group"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/idempotencyrecord"
@@ -45,6 +47,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/userallowedgroup"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/userattributedefinition"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/userattributevalue"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/usernotification"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/usersubscription"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/domain"
 )
@@ -834,36 +837,100 @@ func init() {
 	feedback.DefaultContact = feedbackDescContact.Default.(string)
 	// feedback.ContactValidator is a validator for the "contact" field. It is called by the builders before save.
 	feedback.ContactValidator = feedbackDescContact.Validators[0].(func(string) error)
+	// feedbackDescRequestID is the schema descriptor for request_id field.
+	feedbackDescRequestID := feedbackFields[6].Descriptor()
+	// feedback.DefaultRequestID holds the default value on creation for the request_id field.
+	feedback.DefaultRequestID = feedbackDescRequestID.Default.(string)
+	// feedback.RequestIDValidator is a validator for the "request_id" field. It is called by the builders before save.
+	feedback.RequestIDValidator = feedbackDescRequestID.Validators[0].(func(string) error)
 	// feedbackDescPriority is the schema descriptor for priority field.
-	feedbackDescPriority := feedbackFields[6].Descriptor()
+	feedbackDescPriority := feedbackFields[7].Descriptor()
 	// feedback.DefaultPriority holds the default value on creation for the priority field.
 	feedback.DefaultPriority = feedbackDescPriority.Default.(string)
 	// feedback.PriorityValidator is a validator for the "priority" field. It is called by the builders before save.
 	feedback.PriorityValidator = feedbackDescPriority.Validators[0].(func(string) error)
 	// feedbackDescStatus is the schema descriptor for status field.
-	feedbackDescStatus := feedbackFields[7].Descriptor()
+	feedbackDescStatus := feedbackFields[8].Descriptor()
 	// feedback.DefaultStatus holds the default value on creation for the status field.
 	feedback.DefaultStatus = feedbackDescStatus.Default.(string)
 	// feedback.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	feedback.StatusValidator = feedbackDescStatus.Validators[0].(func(string) error)
+	// feedbackDescTriageStatus is the schema descriptor for triage_status field.
+	feedbackDescTriageStatus := feedbackFields[9].Descriptor()
+	// feedback.DefaultTriageStatus holds the default value on creation for the triage_status field.
+	feedback.DefaultTriageStatus = feedbackDescTriageStatus.Default.(string)
+	// feedback.TriageStatusValidator is a validator for the "triage_status" field. It is called by the builders before save.
+	feedback.TriageStatusValidator = feedbackDescTriageStatus.Validators[0].(func(string) error)
+	// feedbackDescTriagePriority is the schema descriptor for triage_priority field.
+	feedbackDescTriagePriority := feedbackFields[10].Descriptor()
+	// feedback.DefaultTriagePriority holds the default value on creation for the triage_priority field.
+	feedback.DefaultTriagePriority = feedbackDescTriagePriority.Default.(string)
+	// feedback.TriagePriorityValidator is a validator for the "triage_priority" field. It is called by the builders before save.
+	feedback.TriagePriorityValidator = feedbackDescTriagePriority.Validators[0].(func(string) error)
+	// feedbackDescTriageSummary is the schema descriptor for triage_summary field.
+	feedbackDescTriageSummary := feedbackFields[11].Descriptor()
+	// feedback.DefaultTriageSummary holds the default value on creation for the triage_summary field.
+	feedback.DefaultTriageSummary = feedbackDescTriageSummary.Default.(string)
+	// feedbackDescRepairDifficulty is the schema descriptor for repair_difficulty field.
+	feedbackDescRepairDifficulty := feedbackFields[13].Descriptor()
+	// feedback.DefaultRepairDifficulty holds the default value on creation for the repair_difficulty field.
+	feedback.DefaultRepairDifficulty = feedbackDescRepairDifficulty.Default.(string)
+	// feedback.RepairDifficultyValidator is a validator for the "repair_difficulty" field. It is called by the builders before save.
+	feedback.RepairDifficultyValidator = feedbackDescRepairDifficulty.Validators[0].(func(string) error)
+	// feedbackDescRepairRecommendation is the schema descriptor for repair_recommendation field.
+	feedbackDescRepairRecommendation := feedbackFields[14].Descriptor()
+	// feedback.DefaultRepairRecommendation holds the default value on creation for the repair_recommendation field.
+	feedback.DefaultRepairRecommendation = feedbackDescRepairRecommendation.Default.(string)
+	// feedbackDescOwnerDecision is the schema descriptor for owner_decision field.
+	feedbackDescOwnerDecision := feedbackFields[15].Descriptor()
+	// feedback.DefaultOwnerDecision holds the default value on creation for the owner_decision field.
+	feedback.DefaultOwnerDecision = feedbackDescOwnerDecision.Default.(string)
+	// feedback.OwnerDecisionValidator is a validator for the "owner_decision" field. It is called by the builders before save.
+	feedback.OwnerDecisionValidator = feedbackDescOwnerDecision.Validators[0].(func(string) error)
+	// feedbackDescFixStatus is the schema descriptor for fix_status field.
+	feedbackDescFixStatus := feedbackFields[16].Descriptor()
+	// feedback.DefaultFixStatus holds the default value on creation for the fix_status field.
+	feedback.DefaultFixStatus = feedbackDescFixStatus.Default.(string)
+	// feedback.FixStatusValidator is a validator for the "fix_status" field. It is called by the builders before save.
+	feedback.FixStatusValidator = feedbackDescFixStatus.Validators[0].(func(string) error)
+	// feedbackDescResolvedVersion is the schema descriptor for resolved_version field.
+	feedbackDescResolvedVersion := feedbackFields[18].Descriptor()
+	// feedback.DefaultResolvedVersion holds the default value on creation for the resolved_version field.
+	feedback.DefaultResolvedVersion = feedbackDescResolvedVersion.Default.(string)
+	// feedback.ResolvedVersionValidator is a validator for the "resolved_version" field. It is called by the builders before save.
+	feedback.ResolvedVersionValidator = feedbackDescResolvedVersion.Validators[0].(func(string) error)
 	// feedbackDescReplyCount is the schema descriptor for reply_count field.
-	feedbackDescReplyCount := feedbackFields[8].Descriptor()
+	feedbackDescReplyCount := feedbackFields[19].Descriptor()
 	// feedback.DefaultReplyCount holds the default value on creation for the reply_count field.
 	feedback.DefaultReplyCount = feedbackDescReplyCount.Default.(int)
 	// feedbackDescLastReplyRole is the schema descriptor for last_reply_role field.
-	feedbackDescLastReplyRole := feedbackFields[10].Descriptor()
+	feedbackDescLastReplyRole := feedbackFields[21].Descriptor()
 	// feedback.LastReplyRoleValidator is a validator for the "last_reply_role" field. It is called by the builders before save.
 	feedback.LastReplyRoleValidator = feedbackDescLastReplyRole.Validators[0].(func(string) error)
 	// feedbackDescCreatedAt is the schema descriptor for created_at field.
-	feedbackDescCreatedAt := feedbackFields[11].Descriptor()
+	feedbackDescCreatedAt := feedbackFields[25].Descriptor()
 	// feedback.DefaultCreatedAt holds the default value on creation for the created_at field.
 	feedback.DefaultCreatedAt = feedbackDescCreatedAt.Default.(func() time.Time)
 	// feedbackDescUpdatedAt is the schema descriptor for updated_at field.
-	feedbackDescUpdatedAt := feedbackFields[12].Descriptor()
+	feedbackDescUpdatedAt := feedbackFields[26].Descriptor()
 	// feedback.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	feedback.DefaultUpdatedAt = feedbackDescUpdatedAt.Default.(func() time.Time)
 	// feedback.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	feedback.UpdateDefaultUpdatedAt = feedbackDescUpdatedAt.UpdateDefault.(func() time.Time)
+	feedbackeventFields := schema.FeedbackEvent{}.Fields()
+	_ = feedbackeventFields
+	// feedbackeventDescEventType is the schema descriptor for event_type field.
+	feedbackeventDescEventType := feedbackeventFields[1].Descriptor()
+	// feedbackevent.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
+	feedbackevent.EventTypeValidator = feedbackeventDescEventType.Validators[0].(func(string) error)
+	// feedbackeventDescActorType is the schema descriptor for actor_type field.
+	feedbackeventDescActorType := feedbackeventFields[2].Descriptor()
+	// feedbackevent.ActorTypeValidator is a validator for the "actor_type" field. It is called by the builders before save.
+	feedbackevent.ActorTypeValidator = feedbackeventDescActorType.Validators[0].(func(string) error)
+	// feedbackeventDescCreatedAt is the schema descriptor for created_at field.
+	feedbackeventDescCreatedAt := feedbackeventFields[6].Descriptor()
+	// feedbackevent.DefaultCreatedAt holds the default value on creation for the created_at field.
+	feedbackevent.DefaultCreatedAt = feedbackeventDescCreatedAt.Default.(func() time.Time)
 	feedbackreplyFields := schema.FeedbackReply{}.Fields()
 	_ = feedbackreplyFields
 	// feedbackreplyDescRole is the schema descriptor for role field.
@@ -878,6 +945,24 @@ func init() {
 	feedbackreplyDescCreatedAt := feedbackreplyFields[5].Descriptor()
 	// feedbackreply.DefaultCreatedAt holds the default value on creation for the created_at field.
 	feedbackreply.DefaultCreatedAt = feedbackreplyDescCreatedAt.Default.(func() time.Time)
+	feedbackrewardFields := schema.FeedbackReward{}.Fields()
+	_ = feedbackrewardFields
+	// feedbackrewardDescReason is the schema descriptor for reason field.
+	feedbackrewardDescReason := feedbackrewardFields[3].Descriptor()
+	// feedbackreward.ReasonValidator is a validator for the "reason" field. It is called by the builders before save.
+	feedbackreward.ReasonValidator = feedbackrewardDescReason.Validators[0].(func(string) error)
+	// feedbackrewardDescBatchID is the schema descriptor for batch_id field.
+	feedbackrewardDescBatchID := feedbackrewardFields[4].Descriptor()
+	// feedbackreward.BatchIDValidator is a validator for the "batch_id" field. It is called by the builders before save.
+	feedbackreward.BatchIDValidator = feedbackrewardDescBatchID.Validators[0].(func(string) error)
+	// feedbackrewardDescGrantedAt is the schema descriptor for granted_at field.
+	feedbackrewardDescGrantedAt := feedbackrewardFields[7].Descriptor()
+	// feedbackreward.DefaultGrantedAt holds the default value on creation for the granted_at field.
+	feedbackreward.DefaultGrantedAt = feedbackrewardDescGrantedAt.Default.(func() time.Time)
+	// feedbackrewardDescCreatedAt is the schema descriptor for created_at field.
+	feedbackrewardDescCreatedAt := feedbackrewardFields[8].Descriptor()
+	// feedbackreward.DefaultCreatedAt holds the default value on creation for the created_at field.
+	feedbackreward.DefaultCreatedAt = feedbackrewardDescCreatedAt.Default.(func() time.Time)
 	financetransactionFields := schema.FinanceTransaction{}.Fields()
 	_ = financetransactionFields
 	// financetransactionDescType is the schema descriptor for type field.
@@ -2174,6 +2259,30 @@ func init() {
 	userattributevalueDescValue := userattributevalueFields[2].Descriptor()
 	// userattributevalue.DefaultValue holds the default value on creation for the value field.
 	userattributevalue.DefaultValue = userattributevalueDescValue.Default.(string)
+	usernotificationFields := schema.UserNotification{}.Fields()
+	_ = usernotificationFields
+	// usernotificationDescType is the schema descriptor for type field.
+	usernotificationDescType := usernotificationFields[2].Descriptor()
+	// usernotification.TypeValidator is a validator for the "type" field. It is called by the builders before save.
+	usernotification.TypeValidator = usernotificationDescType.Validators[0].(func(string) error)
+	// usernotificationDescTitle is the schema descriptor for title field.
+	usernotificationDescTitle := usernotificationFields[3].Descriptor()
+	// usernotification.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	usernotification.TitleValidator = usernotificationDescTitle.Validators[0].(func(string) error)
+	// usernotificationDescActionURL is the schema descriptor for action_url field.
+	usernotificationDescActionURL := usernotificationFields[5].Descriptor()
+	// usernotification.DefaultActionURL holds the default value on creation for the action_url field.
+	usernotification.DefaultActionURL = usernotificationDescActionURL.Default.(string)
+	// usernotification.ActionURLValidator is a validator for the "action_url" field. It is called by the builders before save.
+	usernotification.ActionURLValidator = usernotificationDescActionURL.Validators[0].(func(string) error)
+	// usernotificationDescDedupeKey is the schema descriptor for dedupe_key field.
+	usernotificationDescDedupeKey := usernotificationFields[6].Descriptor()
+	// usernotification.DedupeKeyValidator is a validator for the "dedupe_key" field. It is called by the builders before save.
+	usernotification.DedupeKeyValidator = usernotificationDescDedupeKey.Validators[0].(func(string) error)
+	// usernotificationDescCreatedAt is the schema descriptor for created_at field.
+	usernotificationDescCreatedAt := usernotificationFields[8].Descriptor()
+	// usernotification.DefaultCreatedAt holds the default value on creation for the created_at field.
+	usernotification.DefaultCreatedAt = usernotificationDescCreatedAt.Default.(func() time.Time)
 	usersubscriptionMixin := schema.UserSubscription{}.Mixin()
 	usersubscriptionMixinHooks1 := usersubscriptionMixin[1].Hooks()
 	usersubscription.Hooks[0] = usersubscriptionMixinHooks1[0]

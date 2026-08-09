@@ -422,6 +422,11 @@ export type FeedbackCategory = 'bug' | 'suggestion' | 'complaint' | 'other'
 export type FeedbackPriority = 'low' | 'normal' | 'high' | 'urgent'
 export type FeedbackStatus = 'pending' | 'processing' | 'replied' | 'closed'
 export type FeedbackReplyRole = 'user' | 'admin'
+export type FeedbackTriageStatus = 'unreviewed' | 'confirmed' | 'needs_info' | 'duplicate' | 'cannot_reproduce' | 'not_bug'
+export type FeedbackTriagePriority = '' | 'P0' | 'P1' | 'P2' | 'P3'
+export type FeedbackDifficulty = '' | 'unknown' | 'low' | 'medium' | 'high'
+export type FeedbackOwnerDecision = 'pending' | 'approved' | 'deferred' | 'rejected'
+export type FeedbackFixStatus = 'not_started' | 'fixing' | 'awaiting_verification' | 'verified' | 'reopened'
 
 export interface FeedbackUserSummary {
   id: number
@@ -448,8 +453,22 @@ export interface FeedbackItem {
   content: string
   images: string[]
   contact: string
+  request_id: string
   priority: FeedbackPriority
   status: FeedbackStatus
+  triage_status: FeedbackTriageStatus
+  triage_priority: FeedbackTriagePriority
+  triage_summary: string
+  triage_confidence?: number | null
+  repair_difficulty: FeedbackDifficulty
+  repair_recommendation: string
+  owner_decision: FeedbackOwnerDecision
+  fix_status: FeedbackFixStatus
+  duplicate_of_id?: number | null
+  resolved_version: string
+  accepted_at?: string | null
+  resolved_at?: string | null
+  verified_at?: string | null
   reply_count: number
   last_reply_at?: string | null
   last_reply_role?: FeedbackReplyRole | null
@@ -460,6 +479,43 @@ export interface FeedbackItem {
 
 export interface FeedbackDetail extends FeedbackItem {
   replies: FeedbackReply[]
+  events: FeedbackEvent[]
+  reward?: FeedbackReward | null
+}
+
+export interface FeedbackEvent {
+  id: number
+  feedback_id: number
+  event_type: string
+  actor_type: string
+  actor_user_id?: number | null
+  summary: string
+  metadata: Record<string, string>
+  created_at: string
+}
+
+export interface FeedbackReward {
+  id: number
+  feedback_id: number
+  user_id: number
+  amount: number
+  reason: string
+  batch_id: string
+  operator_user_id?: number | null
+  account_change_record_id?: number | null
+  granted_at: string
+  user?: FeedbackUserSummary
+}
+
+export interface UserNotification {
+  id: number
+  feedback_id?: number | null
+  type: string
+  title: string
+  body: string
+  action_url: string
+  read_at?: string | null
+  created_at: string
 }
 
 export interface CreateFeedbackRequest {
@@ -468,6 +524,7 @@ export interface CreateFeedbackRequest {
   content: string
   images: string[]
   contact?: string
+  request_id?: string
 }
 
 export interface UpdateFeedbackRequest {
@@ -476,6 +533,7 @@ export interface UpdateFeedbackRequest {
   content: string
   images: string[]
   contact?: string
+  request_id?: string
 }
 
 export interface CreateFeedbackReplyRequest {

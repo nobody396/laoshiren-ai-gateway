@@ -719,11 +719,25 @@ var (
 		{Name: "content", Type: field.TypeString, SchemaType: map[string]string{"postgres": "text"}},
 		{Name: "images", Type: field.TypeJSON, Nullable: true, SchemaType: map[string]string{"postgres": "jsonb"}},
 		{Name: "contact", Type: field.TypeString, Size: 255, Default: ""},
+		{Name: "request_id", Type: field.TypeString, Size: 128, Default: ""},
 		{Name: "priority", Type: field.TypeString, Size: 10, Default: "low"},
 		{Name: "status", Type: field.TypeString, Size: 20, Default: "pending"},
+		{Name: "triage_status", Type: field.TypeString, Size: 24, Default: "unreviewed"},
+		{Name: "triage_priority", Type: field.TypeString, Size: 4, Default: ""},
+		{Name: "triage_summary", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "triage_confidence", Type: field.TypeFloat64, Nullable: true},
+		{Name: "repair_difficulty", Type: field.TypeString, Size: 16, Default: "unknown"},
+		{Name: "repair_recommendation", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "owner_decision", Type: field.TypeString, Size: 16, Default: "pending"},
+		{Name: "fix_status", Type: field.TypeString, Size: 24, Default: "not_started"},
+		{Name: "duplicate_of_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "resolved_version", Type: field.TypeString, Size: 64, Default: ""},
 		{Name: "reply_count", Type: field.TypeInt, Default: 0},
 		{Name: "last_reply_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "last_reply_role", Type: field.TypeString, Nullable: true, Size: 20},
+		{Name: "accepted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "resolved_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "verified_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "user_id", Type: field.TypeInt64},
@@ -736,7 +750,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "feedbacks_users_feedbacks",
-				Columns:    []*schema.Column{FeedbacksColumns[14]},
+				Columns:    []*schema.Column{FeedbacksColumns[28]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -745,12 +759,12 @@ var (
 			{
 				Name:    "feedback_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{FeedbacksColumns[14]},
+				Columns: []*schema.Column{FeedbacksColumns[28]},
 			},
 			{
 				Name:    "feedback_status",
 				Unique:  false,
-				Columns: []*schema.Column{FeedbacksColumns[8]},
+				Columns: []*schema.Column{FeedbacksColumns[9]},
 			},
 			{
 				Name:    "feedback_category",
@@ -760,22 +774,76 @@ var (
 			{
 				Name:    "feedback_priority",
 				Unique:  false,
+				Columns: []*schema.Column{FeedbacksColumns[8]},
+			},
+			{
+				Name:    "feedback_triage_status",
+				Unique:  false,
+				Columns: []*schema.Column{FeedbacksColumns[10]},
+			},
+			{
+				Name:    "feedback_triage_priority",
+				Unique:  false,
+				Columns: []*schema.Column{FeedbacksColumns[11]},
+			},
+			{
+				Name:    "feedback_owner_decision",
+				Unique:  false,
+				Columns: []*schema.Column{FeedbacksColumns[16]},
+			},
+			{
+				Name:    "feedback_fix_status",
+				Unique:  false,
+				Columns: []*schema.Column{FeedbacksColumns[17]},
+			},
+			{
+				Name:    "feedback_request_id",
+				Unique:  false,
 				Columns: []*schema.Column{FeedbacksColumns[7]},
 			},
 			{
 				Name:    "feedback_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{FeedbacksColumns[12]},
+				Columns: []*schema.Column{FeedbacksColumns[26]},
 			},
 			{
 				Name:    "feedback_last_reply_at",
 				Unique:  false,
-				Columns: []*schema.Column{FeedbacksColumns[10]},
+				Columns: []*schema.Column{FeedbacksColumns[21]},
 			},
 			{
 				Name:    "feedback_deleted_at",
 				Unique:  false,
 				Columns: []*schema.Column{FeedbacksColumns[1]},
+			},
+		},
+	}
+	// FeedbackEventsColumns holds the columns for the "feedback_events" table.
+	FeedbackEventsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "feedback_id", Type: field.TypeInt64},
+		{Name: "event_type", Type: field.TypeString, Size: 40},
+		{Name: "actor_type", Type: field.TypeString, Size: 16},
+		{Name: "actor_user_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "summary", Type: field.TypeString, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true, SchemaType: map[string]string{"postgres": "jsonb"}},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// FeedbackEventsTable holds the schema information for the "feedback_events" table.
+	FeedbackEventsTable = &schema.Table{
+		Name:       "feedback_events",
+		Columns:    FeedbackEventsColumns,
+		PrimaryKey: []*schema.Column{FeedbackEventsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "feedbackevent_feedback_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{FeedbackEventsColumns[1], FeedbackEventsColumns[7]},
+			},
+			{
+				Name:    "feedbackevent_event_type",
+				Unique:  false,
+				Columns: []*schema.Column{FeedbackEventsColumns[2]},
 			},
 		},
 	}
@@ -813,6 +881,42 @@ var (
 				Name:    "feedbackreply_feedback_id",
 				Unique:  false,
 				Columns: []*schema.Column{FeedbackRepliesColumns[5]},
+			},
+		},
+	}
+	// FeedbackRewardsColumns holds the columns for the "feedback_rewards" table.
+	FeedbackRewardsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "feedback_id", Type: field.TypeInt64},
+		{Name: "user_id", Type: field.TypeInt64},
+		{Name: "amount", Type: field.TypeFloat64, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "reason", Type: field.TypeString, Size: 64},
+		{Name: "batch_id", Type: field.TypeString, Size: 64},
+		{Name: "operator_user_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "account_change_record_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "granted_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// FeedbackRewardsTable holds the schema information for the "feedback_rewards" table.
+	FeedbackRewardsTable = &schema.Table{
+		Name:       "feedback_rewards",
+		Columns:    FeedbackRewardsColumns,
+		PrimaryKey: []*schema.Column{FeedbackRewardsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "feedbackreward_feedback_id",
+				Unique:  true,
+				Columns: []*schema.Column{FeedbackRewardsColumns[1]},
+			},
+			{
+				Name:    "feedbackreward_user_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{FeedbackRewardsColumns[2], FeedbackRewardsColumns[9]},
+			},
+			{
+				Name:    "feedbackreward_batch_id",
+				Unique:  false,
+				Columns: []*schema.Column{FeedbackRewardsColumns[5]},
 			},
 		},
 	}
@@ -1886,6 +1990,42 @@ var (
 			},
 		},
 	}
+	// UserNotificationsColumns holds the columns for the "user_notifications" table.
+	UserNotificationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "user_id", Type: field.TypeInt64},
+		{Name: "feedback_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "type", Type: field.TypeString, Size: 40},
+		{Name: "title", Type: field.TypeString, Size: 200},
+		{Name: "body", Type: field.TypeString, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "action_url", Type: field.TypeString, Size: 500, Default: ""},
+		{Name: "dedupe_key", Type: field.TypeString, Nullable: true, Size: 128},
+		{Name: "read_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// UserNotificationsTable holds the schema information for the "user_notifications" table.
+	UserNotificationsTable = &schema.Table{
+		Name:       "user_notifications",
+		Columns:    UserNotificationsColumns,
+		PrimaryKey: []*schema.Column{UserNotificationsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "usernotification_user_id_read_at_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{UserNotificationsColumns[1], UserNotificationsColumns[8], UserNotificationsColumns[9]},
+			},
+			{
+				Name:    "usernotification_feedback_id",
+				Unique:  false,
+				Columns: []*schema.Column{UserNotificationsColumns[2]},
+			},
+			{
+				Name:    "usernotification_dedupe_key",
+				Unique:  true,
+				Columns: []*schema.Column{UserNotificationsColumns[7]},
+			},
+		},
+	}
 	// UserSubscriptionsColumns holds the columns for the "user_subscriptions" table.
 	UserSubscriptionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1993,7 +2133,9 @@ var (
 		CommissionRecordsTable,
 		ErrorPassthroughRulesTable,
 		FeedbacksTable,
+		FeedbackEventsTable,
 		FeedbackRepliesTable,
+		FeedbackRewardsTable,
 		FinanceTransactionsTable,
 		GroupsTable,
 		IdempotencyRecordsTable,
@@ -2016,6 +2158,7 @@ var (
 		UserAllowedGroupsTable,
 		UserAttributeDefinitionsTable,
 		UserAttributeValuesTable,
+		UserNotificationsTable,
 		UserSubscriptionsTable,
 	}
 )
@@ -2079,10 +2222,16 @@ func init() {
 	FeedbacksTable.Annotation = &entsql.Annotation{
 		Table: "feedbacks",
 	}
+	FeedbackEventsTable.Annotation = &entsql.Annotation{
+		Table: "feedback_events",
+	}
 	FeedbackRepliesTable.ForeignKeys[0].RefTable = FeedbacksTable
 	FeedbackRepliesTable.ForeignKeys[1].RefTable = UsersTable
 	FeedbackRepliesTable.Annotation = &entsql.Annotation{
 		Table: "feedback_replies",
+	}
+	FeedbackRewardsTable.Annotation = &entsql.Annotation{
+		Table: "feedback_rewards",
 	}
 	FinanceTransactionsTable.Annotation = &entsql.Annotation{
 		Table: "finance_transactions",
@@ -2171,6 +2320,9 @@ func init() {
 	UserAttributeValuesTable.ForeignKeys[1].RefTable = UserAttributeDefinitionsTable
 	UserAttributeValuesTable.Annotation = &entsql.Annotation{
 		Table: "user_attribute_values",
+	}
+	UserNotificationsTable.Annotation = &entsql.Annotation{
+		Table: "user_notifications",
 	}
 	UserSubscriptionsTable.ForeignKeys[0].RefTable = GroupsTable
 	UserSubscriptionsTable.ForeignKeys[1].RefTable = UsersTable

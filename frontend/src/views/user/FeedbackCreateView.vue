@@ -24,6 +24,12 @@
             <input v-model="form.title" class="input" :maxlength="200" required />
           </div>
 
+		  <div>
+			<label class="input-label">{{ t('feedback.form.requestId') }}</label>
+			<input v-model="form.requestId" class="input" :maxlength="128" :placeholder="t('feedback.form.requestIdPlaceholder')" />
+			<p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ t('feedback.form.requestIdHint') }}</p>
+		  </div>
+
           <div>
             <label class="input-label">{{ t('feedback.form.content') }}</label>
             <MarkdownEditorField
@@ -84,6 +90,7 @@ const form = reactive({
   content: '',
   images: [] as string[],
   contact: '',
+	requestId: '',
 })
 
 const categoryOptions = computed(() =>
@@ -114,6 +121,7 @@ async function handleSubmit() {
       content: form.content,
       images: form.images,
       contact: form.contact || undefined,
+	  ...(form.requestId ? { request_id: form.requestId } : {}),
     })
     appStore.showSuccess(t('feedback.message.created'))
     await router.push(`/feedbacks/${created.id}`)

@@ -47,26 +47,33 @@ var (
 type Feedback = domain.Feedback
 type FeedbackReply = domain.FeedbackReply
 type FeedbackUser = domain.FeedbackUser
+type FeedbackEvent = domain.FeedbackEvent
+type FeedbackReward = domain.FeedbackReward
+type UserNotification = domain.UserNotification
 
 type FeedbackListFilters struct {
 	Status string
 }
 
 type AdminFeedbackListFilters struct {
-	Category  string
-	Status    string
-	Priority  string
-	Search    string
-	StartTime *time.Time
-	EndTime   *time.Time
+	Category      string
+	Status        string
+	Priority      string
+	Search        string
+	StartTime     *time.Time
+	EndTime       *time.Time
+	TriageStatus  string
+	OwnerDecision string
+	FixStatus     string
 }
 
 type CreateFeedbackInput struct {
-	Category string
-	Title    string
-	Content  string
-	Images   []string
-	Contact  string
+	Category  string
+	Title     string
+	Content   string
+	Images    []string
+	Contact   string
+	RequestID string
 }
 
 type CreateFeedbackReplyInput struct {
@@ -75,11 +82,62 @@ type CreateFeedbackReplyInput struct {
 }
 
 type UpdateFeedbackByUserInput struct {
-	Category string
-	Title    string
-	Content  string
-	Images   []string
-	Contact  string
+	Category  string
+	Title     string
+	Content   string
+	Images    []string
+	Contact   string
+	RequestID string
+}
+
+type AgentTriageFeedbackInput struct {
+	TriageStatus         string
+	TriagePriority       string
+	TriageSummary        string
+	TriageConfidence     *float64
+	RepairDifficulty     string
+	RepairRecommendation string
+	DuplicateOfID        *int64
+}
+
+type AcceptFeedbackBatchInput struct {
+	IDs            []int64
+	BatchID        string
+	OperatorUserID *int64
+}
+
+type AcceptFeedbackResult struct {
+	FeedbackID      int64           `json:"feedback_id"`
+	Reward          *FeedbackReward `json:"reward,omitempty"`
+	AlreadyAccepted bool            `json:"already_accepted"`
+	Error           string          `json:"error,omitempty"`
+}
+
+type CompleteFeedbackInput struct {
+	ResolvedVersion string
+	NotifyInApp     bool
+	OperatorUserID  *int64
+}
+
+type RecordFeedbackNotificationInput struct {
+	Channel           string
+	DeliveryReference string
+	OperatorUserID    *int64
+}
+
+type VerifyFeedbackInput struct {
+	Resolved bool
+	Note     string
+}
+
+type FeedbackRewardListFilters struct {
+	UserID  *int64
+	BatchID string
+}
+
+type UserNotificationListResult struct {
+	Items       []UserNotification `json:"items"`
+	UnreadCount int                `json:"unread_count"`
 }
 
 type UpdateFeedbackStatusInput struct {
@@ -98,6 +156,8 @@ type BatchUpdateFeedbackStatusInput struct {
 type FeedbackDetail struct {
 	Feedback Feedback
 	Replies  []FeedbackReply
+	Events   []FeedbackEvent
+	Reward   *FeedbackReward
 }
 
 type FeedbackRepository interface {
@@ -122,4 +182,5 @@ type FeedbackImageStorage interface {
 	Enabled(ctx context.Context) bool
 	UploadObject(ctx context.Context, objectKey string, body io.Reader, size int64, contentType string) error
 	GetAccessURL(ctx context.Context, objectKey string) (string, error)
+	GetPresignedURLForToken(ctx context.Context, token string, expiry time.Duration) (string, error)
 }

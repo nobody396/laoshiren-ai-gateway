@@ -46,8 +46,12 @@ type Tx struct {
 	ErrorPassthroughRule *ErrorPassthroughRuleClient
 	// Feedback is the client for interacting with the Feedback builders.
 	Feedback *FeedbackClient
+	// FeedbackEvent is the client for interacting with the FeedbackEvent builders.
+	FeedbackEvent *FeedbackEventClient
 	// FeedbackReply is the client for interacting with the FeedbackReply builders.
 	FeedbackReply *FeedbackReplyClient
+	// FeedbackReward is the client for interacting with the FeedbackReward builders.
+	FeedbackReward *FeedbackRewardClient
 	// FinanceTransaction is the client for interacting with the FinanceTransaction builders.
 	FinanceTransaction *FinanceTransactionClient
 	// Group is the client for interacting with the Group builders.
@@ -92,6 +96,8 @@ type Tx struct {
 	UserAttributeDefinition *UserAttributeDefinitionClient
 	// UserAttributeValue is the client for interacting with the UserAttributeValue builders.
 	UserAttributeValue *UserAttributeValueClient
+	// UserNotification is the client for interacting with the UserNotification builders.
+	UserNotification *UserNotificationClient
 	// UserSubscription is the client for interacting with the UserSubscription builders.
 	UserSubscription *UserSubscriptionClient
 
@@ -241,7 +247,9 @@ func (tx *Tx) init() {
 	tx.CommissionRecord = NewCommissionRecordClient(tx.config)
 	tx.ErrorPassthroughRule = NewErrorPassthroughRuleClient(tx.config)
 	tx.Feedback = NewFeedbackClient(tx.config)
+	tx.FeedbackEvent = NewFeedbackEventClient(tx.config)
 	tx.FeedbackReply = NewFeedbackReplyClient(tx.config)
+	tx.FeedbackReward = NewFeedbackRewardClient(tx.config)
 	tx.FinanceTransaction = NewFinanceTransactionClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
 	tx.IdempotencyRecord = NewIdempotencyRecordClient(tx.config)
@@ -264,6 +272,7 @@ func (tx *Tx) init() {
 	tx.UserAllowedGroup = NewUserAllowedGroupClient(tx.config)
 	tx.UserAttributeDefinition = NewUserAttributeDefinitionClient(tx.config)
 	tx.UserAttributeValue = NewUserAttributeValueClient(tx.config)
+	tx.UserNotification = NewUserNotificationClient(tx.config)
 	tx.UserSubscription = NewUserSubscriptionClient(tx.config)
 }
 

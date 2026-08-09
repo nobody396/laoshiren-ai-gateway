@@ -19,6 +19,7 @@
 
       <template #actions>
         <div class="flex flex-wrap justify-end gap-3">
+		  <button class="btn btn-secondary" @click="toggleRewards">{{ t('feedback.admin.rewardLedger') }}</button>
           <Select v-model="batchStatus" :options="batchStatusOptions" class="w-40" />
           <button class="btn btn-secondary" :disabled="selectedIds.length === 0 || !batchStatus" @click="submitBatchStatus">
             {{ t('feedback.admin.batchUpdate') }}
@@ -101,6 +102,21 @@
       </template>
     </TablePageLayout>
 
+	<div v-if="showRewards" class="mx-4 mb-6 rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-900 md:mx-6">
+	  <div class="mb-4 flex items-center justify-between">
+		<h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('feedback.admin.rewardLedger') }}</h2>
+		<button class="btn btn-secondary btn-sm" @click="showRewards = false">{{ t('common.close') }}</button>
+	  </div>
+	  <div v-if="rewardsLoading" class="py-8 text-center text-sm text-gray-500">{{ t('common.loading') }}</div>
+	  <div v-else class="overflow-x-auto">
+		<table class="min-w-full text-sm">
+		  <thead class="text-left text-gray-500"><tr><th class="p-2">{{ t('feedback.admin.rewardColumns.feedback') }}</th><th class="p-2">{{ t('feedback.admin.rewardColumns.user') }}</th><th class="p-2">{{ t('feedback.admin.rewardColumns.amount') }}</th><th class="p-2">{{ t('feedback.admin.rewardColumns.batch') }}</th><th class="p-2">{{ t('feedback.admin.rewardColumns.ledger') }}</th><th class="p-2">{{ t('feedback.admin.rewardColumns.time') }}</th></tr></thead>
+		  <tbody><tr v-for="reward in rewards" :key="reward.id" class="border-t border-gray-100 dark:border-dark-700"><td class="p-2"><RouterLink class="text-primary-600 hover:underline" :to="`/admin/feedbacks/${reward.feedback_id}`">#{{ reward.feedback_id }}</RouterLink></td><td class="p-2">{{ reward.user?.username || reward.user?.email || `#${reward.user_id}` }}</td><td class="p-2 font-semibold text-emerald-600">+{{ reward.amount.toFixed(2) }}</td><td class="p-2"><code>{{ reward.batch_id }}</code></td><td class="p-2">{{ reward.account_change_record_id || '-' }}</td><td class="p-2">{{ formatDateTime(reward.granted_at) }}</td></tr></tbody>
+		</table>
+		<p v-if="rewards.length === 0" class="py-8 text-center text-gray-500">{{ t('feedback.admin.noRewards') }}</p>
+	  </div>
+	</div>
+
     <ConfirmDialog
       :show="showDeleteConfirm"
       :title="t('common.delete')"
@@ -125,7 +141,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Column } from '@/components/common/types'
-import type { FeedbackItem, FeedbackStatus } from '@/types'
+import type { FeedbackItem, FeedbackReward, FeedbackStatus } from '@/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import DataTable from '@/components/common/DataTable.vue'
@@ -157,6 +173,9 @@ const selectedIds = ref<number[]>([])
 const showDeleteConfirm = ref(false)
 const showBatchDeleteConfirm = ref(false)
 const deleteTargetId = ref<number | null>(null)
+const showRewards = ref(false)
+const rewardsLoading = ref(false)
+const rewards = ref<FeedbackReward[]>([])
 const pagination = ref({
   page: 1,
   page_size: 20,
@@ -300,4 +319,13 @@ function handlePageSizeChange(pageSize: number) {
 }
 
 onMounted(loadFeedbacks)
+
+async function toggleRewards() {
+  showRewards.value = !showRewards.value
+  if (!showRewards.value) return
+  rewardsLoading.value = true
+  try { rewards.value = (await adminFeedbacksAPI.listRewards({ pageSize: 100 })).items }
+  catch { appStore.showError(t('feedback.message.loadFailed')) }
+  finally { rewardsLoading.value = false }
+}
 </script>

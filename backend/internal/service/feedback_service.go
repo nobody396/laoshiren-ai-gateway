@@ -25,13 +25,15 @@ const (
 )
 
 type FeedbackService struct {
-	repo           FeedbackRepository
-	userRepo       UserRepository
-	settingService *SettingService
-	emailQueue     *EmailQueueService
-	rateLimitCache FeedbackRateLimitCache
-	imageStorage   FeedbackImageStorage
-	entClient      *dbent.Client
+	repo            FeedbackRepository
+	userRepo        UserRepository
+	settingService  *SettingService
+	emailQueue      *EmailQueueService
+	rateLimitCache  FeedbackRateLimitCache
+	imageStorage    FeedbackImageStorage
+	entClient       *dbent.Client
+	billingCache    BillingCache
+	authInvalidator APIKeyAuthCacheInvalidator
 }
 
 func NewFeedbackService(
@@ -42,15 +44,19 @@ func NewFeedbackService(
 	rateLimitCache FeedbackRateLimitCache,
 	imageStorage FeedbackImageStorage,
 	entClient *dbent.Client,
+	billingCache BillingCache,
+	authInvalidator APIKeyAuthCacheInvalidator,
 ) *FeedbackService {
 	return &FeedbackService{
-		repo:           repo,
-		userRepo:       userRepo,
-		settingService: settingService,
-		emailQueue:     emailQueue,
-		rateLimitCache: rateLimitCache,
-		imageStorage:   imageStorage,
-		entClient:      entClient,
+		repo:            repo,
+		userRepo:        userRepo,
+		settingService:  settingService,
+		emailQueue:      emailQueue,
+		rateLimitCache:  rateLimitCache,
+		imageStorage:    imageStorage,
+		entClient:       entClient,
+		billingCache:    billingCache,
+		authInvalidator: authInvalidator,
 	}
 }
 
@@ -63,23 +69,33 @@ func (s *FeedbackService) Create(ctx context.Context, userID int64, input Create
 	if err != nil {
 		return nil, err
 	}
+	requestID := strings.TrimSpace(input.RequestID)
+	if len([]rune(requestID)) > 128 {
+		return nil, infraerrors.BadRequest("FEEDBACK_REQUEST_ID_INVALID", "request id must be at most 128 characters")
+	}
 
 	feedback := &Feedback{
-		UserID:     userID,
-		Category:   category,
-		Title:      title,
-		Content:    content,
-		Images:     images,
-		Contact:    contact,
-		Priority:   domain.DefaultFeedbackPriority(category),
-		Status:     FeedbackStatusPending,
-		ReplyCount: 0,
+		UserID:           userID,
+		Category:         category,
+		Title:            title,
+		Content:          content,
+		Images:           images,
+		Contact:          contact,
+		RequestID:        requestID,
+		Priority:         domain.DefaultFeedbackPriority(category),
+		Status:           FeedbackStatusPending,
+		TriageStatus:     domain.FeedbackTriageUnreviewed,
+		RepairDifficulty: domain.FeedbackDifficultyUnknown,
+		OwnerDecision:    domain.FeedbackDecisionPending,
+		FixStatus:        domain.FeedbackFixNotStarted,
+		ReplyCount:       0,
 	}
-	if err := s.repo.Create(ctx, feedback); err != nil {
+	if err := s.createFeedbackWithEvent(ctx, feedback); err != nil {
 		return nil, fmt.Errorf("create feedback: %w", err)
 	}
 
-	s.enqueueNewFeedbackEmail(ctx, userID, feedback)
+	// Email is intentionally not sent automatically. A message-specific owner
+	// approval is required; the local feedback skill handles preview/send later.
 	return feedback, nil
 }
 
@@ -103,7 +119,11 @@ func (s *FeedbackService) GetByUser(ctx context.Context, userID, feedbackID int6
 	if err != nil {
 		return nil, fmt.Errorf("list feedback replies: %w", err)
 	}
-	return &FeedbackDetail{Feedback: *feedback, Replies: replies}, nil
+	detail := &FeedbackDetail{Feedback: *feedback, Replies: replies}
+	if err := s.appendWorkflowDetail(ctx, detail); err != nil {
+		return nil, fmt.Errorf("load feedback workflow: %w", err)
+	}
+	return detail, nil
 }
 
 func (s *FeedbackService) UpdateByUser(ctx context.Context, userID, feedbackID int64, input UpdateFeedbackByUserInput) (*Feedback, error) {
@@ -114,7 +134,7 @@ func (s *FeedbackService) UpdateByUser(ctx context.Context, userID, feedbackID i
 	if feedback.UserID != userID {
 		return nil, ErrFeedbackNotFound
 	}
-	if feedback.Status == FeedbackStatusClosed {
+	if feedback.Status == FeedbackStatusClosed || feedback.TriageStatus != domain.FeedbackTriageUnreviewed {
 		return nil, ErrFeedbackClosed
 	}
 
@@ -122,12 +142,17 @@ func (s *FeedbackService) UpdateByUser(ctx context.Context, userID, feedbackID i
 	if err != nil {
 		return nil, err
 	}
+	requestID := strings.TrimSpace(input.RequestID)
+	if len([]rune(requestID)) > 128 {
+		return nil, infraerrors.BadRequest("FEEDBACK_REQUEST_ID_INVALID", "request id must be at most 128 characters")
+	}
 
 	feedback.Category = category
 	feedback.Title = title
 	feedback.Content = content
 	feedback.Images = images
 	feedback.Contact = contact
+	feedback.RequestID = requestID
 	if err := s.repo.Update(ctx, feedback); err != nil {
 		return nil, fmt.Errorf("update feedback: %w", err)
 	}
@@ -158,6 +183,9 @@ func (s *FeedbackService) ReplyByUser(ctx context.Context, userID, feedbackID in
 		Content:    content,
 		Images:     images,
 	}
+	if feedback.TriageStatus == domain.FeedbackTriageNeedsInfo {
+		feedback.TriageStatus = domain.FeedbackTriageUnreviewed
+	}
 	if err := s.createReplyAndUpdateSummary(ctx, feedback, reply, FeedbackStatusProcessing); err != nil {
 		return nil, err
 	}
@@ -182,18 +210,15 @@ func (s *FeedbackService) GetForAdmin(ctx context.Context, feedbackID int64) (*F
 	if err != nil {
 		return nil, err
 	}
-	if feedback.Status == FeedbackStatusPending {
-		if err := s.repo.TransitionStatus(ctx, feedbackID, FeedbackStatusPending, FeedbackStatusProcessing); err == nil {
-			feedback.Status = FeedbackStatusProcessing
-		}
-		// Ignore transition error — viewing should still succeed
-	}
-
 	replies, err := s.repo.ListRepliesByFeedbackID(ctx, feedbackID)
 	if err != nil {
 		return nil, fmt.Errorf("list feedback replies: %w", err)
 	}
-	return &FeedbackDetail{Feedback: *feedback, Replies: replies}, nil
+	detail := &FeedbackDetail{Feedback: *feedback, Replies: replies}
+	if err := s.appendWorkflowDetail(ctx, detail); err != nil {
+		return nil, fmt.Errorf("load feedback workflow: %w", err)
+	}
+	return detail, nil
 }
 
 func (s *FeedbackService) ReplyByAdmin(ctx context.Context, adminUserID, feedbackID int64, input CreateFeedbackReplyInput) (*FeedbackReply, error) {
@@ -221,7 +246,6 @@ func (s *FeedbackService) ReplyByAdmin(ctx context.Context, adminUserID, feedbac
 		return nil, err
 	}
 
-	s.enqueueReplyEmail(ctx, feedback, reply)
 	return reply, nil
 }
 
@@ -455,6 +479,10 @@ func normalizeFeedbackImages(images []string) ([]string, error) {
 	for _, image := range images {
 		trimmed := strings.TrimSpace(image)
 		if trimmed == "" {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "/api/v1/feedback-images/") {
+			out = append(out, trimmed)
 			continue
 		}
 		u, err := url.Parse(trimmed)

@@ -201,6 +201,18 @@ func (f FeedbackFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FeedbackMutation", m)
 }
 
+// The FeedbackEventFunc type is an adapter to allow the use of ordinary
+// function as FeedbackEvent mutator.
+type FeedbackEventFunc func(context.Context, *ent.FeedbackEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FeedbackEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.FeedbackEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FeedbackEventMutation", m)
+}
+
 // The FeedbackReplyFunc type is an adapter to allow the use of ordinary
 // function as FeedbackReply mutator.
 type FeedbackReplyFunc func(context.Context, *ent.FeedbackReplyMutation) (ent.Value, error)
@@ -211,6 +223,18 @@ func (f FeedbackReplyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Valu
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FeedbackReplyMutation", m)
+}
+
+// The FeedbackRewardFunc type is an adapter to allow the use of ordinary
+// function as FeedbackReward mutator.
+type FeedbackRewardFunc func(context.Context, *ent.FeedbackRewardMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FeedbackRewardFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.FeedbackRewardMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FeedbackRewardMutation", m)
 }
 
 // The FinanceTransactionFunc type is an adapter to allow the use of ordinary
@@ -475,6 +499,18 @@ func (f UserAttributeValueFunc) Mutate(ctx context.Context, m ent.Mutation) (ent
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserAttributeValueMutation", m)
+}
+
+// The UserNotificationFunc type is an adapter to allow the use of ordinary
+// function as UserNotification mutator.
+type UserNotificationFunc func(context.Context, *ent.UserNotificationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f UserNotificationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.UserNotificationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserNotificationMutation", m)
 }
 
 // The UserSubscriptionFunc type is an adapter to allow the use of ordinary

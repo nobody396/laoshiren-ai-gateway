@@ -31,7 +31,9 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/commissionrecord"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/errorpassthroughrule"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedback"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackevent"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackreply"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackreward"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/financetransaction"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/group"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/idempotencyrecord"
@@ -54,6 +56,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/userallowedgroup"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/userattributedefinition"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/userattributevalue"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/usernotification"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/usersubscription"
 
 	stdsql "database/sql"
@@ -96,8 +99,12 @@ type Client struct {
 	ErrorPassthroughRule *ErrorPassthroughRuleClient
 	// Feedback is the client for interacting with the Feedback builders.
 	Feedback *FeedbackClient
+	// FeedbackEvent is the client for interacting with the FeedbackEvent builders.
+	FeedbackEvent *FeedbackEventClient
 	// FeedbackReply is the client for interacting with the FeedbackReply builders.
 	FeedbackReply *FeedbackReplyClient
+	// FeedbackReward is the client for interacting with the FeedbackReward builders.
+	FeedbackReward *FeedbackRewardClient
 	// FinanceTransaction is the client for interacting with the FinanceTransaction builders.
 	FinanceTransaction *FinanceTransactionClient
 	// Group is the client for interacting with the Group builders.
@@ -142,6 +149,8 @@ type Client struct {
 	UserAttributeDefinition *UserAttributeDefinitionClient
 	// UserAttributeValue is the client for interacting with the UserAttributeValue builders.
 	UserAttributeValue *UserAttributeValueClient
+	// UserNotification is the client for interacting with the UserNotification builders.
+	UserNotification *UserNotificationClient
 	// UserSubscription is the client for interacting with the UserSubscription builders.
 	UserSubscription *UserSubscriptionClient
 }
@@ -171,7 +180,9 @@ func (c *Client) init() {
 	c.CommissionRecord = NewCommissionRecordClient(c.config)
 	c.ErrorPassthroughRule = NewErrorPassthroughRuleClient(c.config)
 	c.Feedback = NewFeedbackClient(c.config)
+	c.FeedbackEvent = NewFeedbackEventClient(c.config)
 	c.FeedbackReply = NewFeedbackReplyClient(c.config)
+	c.FeedbackReward = NewFeedbackRewardClient(c.config)
 	c.FinanceTransaction = NewFinanceTransactionClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.IdempotencyRecord = NewIdempotencyRecordClient(c.config)
@@ -194,6 +205,7 @@ func (c *Client) init() {
 	c.UserAllowedGroup = NewUserAllowedGroupClient(c.config)
 	c.UserAttributeDefinition = NewUserAttributeDefinitionClient(c.config)
 	c.UserAttributeValue = NewUserAttributeValueClient(c.config)
+	c.UserNotification = NewUserNotificationClient(c.config)
 	c.UserSubscription = NewUserSubscriptionClient(c.config)
 }
 
@@ -303,7 +315,9 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		CommissionRecord:        NewCommissionRecordClient(cfg),
 		ErrorPassthroughRule:    NewErrorPassthroughRuleClient(cfg),
 		Feedback:                NewFeedbackClient(cfg),
+		FeedbackEvent:           NewFeedbackEventClient(cfg),
 		FeedbackReply:           NewFeedbackReplyClient(cfg),
+		FeedbackReward:          NewFeedbackRewardClient(cfg),
 		FinanceTransaction:      NewFinanceTransactionClient(cfg),
 		Group:                   NewGroupClient(cfg),
 		IdempotencyRecord:       NewIdempotencyRecordClient(cfg),
@@ -326,6 +340,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		UserAllowedGroup:        NewUserAllowedGroupClient(cfg),
 		UserAttributeDefinition: NewUserAttributeDefinitionClient(cfg),
 		UserAttributeValue:      NewUserAttributeValueClient(cfg),
+		UserNotification:        NewUserNotificationClient(cfg),
 		UserSubscription:        NewUserSubscriptionClient(cfg),
 	}, nil
 }
@@ -362,7 +377,9 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		CommissionRecord:        NewCommissionRecordClient(cfg),
 		ErrorPassthroughRule:    NewErrorPassthroughRuleClient(cfg),
 		Feedback:                NewFeedbackClient(cfg),
+		FeedbackEvent:           NewFeedbackEventClient(cfg),
 		FeedbackReply:           NewFeedbackReplyClient(cfg),
+		FeedbackReward:          NewFeedbackRewardClient(cfg),
 		FinanceTransaction:      NewFinanceTransactionClient(cfg),
 		Group:                   NewGroupClient(cfg),
 		IdempotencyRecord:       NewIdempotencyRecordClient(cfg),
@@ -385,6 +402,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		UserAllowedGroup:        NewUserAllowedGroupClient(cfg),
 		UserAttributeDefinition: NewUserAttributeDefinitionClient(cfg),
 		UserAttributeValue:      NewUserAttributeValueClient(cfg),
+		UserNotification:        NewUserNotificationClient(cfg),
 		UserSubscription:        NewUserSubscriptionClient(cfg),
 	}, nil
 }
@@ -418,12 +436,13 @@ func (c *Client) Use(hooks ...Hook) {
 		c.APIKey, c.Account, c.AccountChangeRecord, c.AccountGroup, c.AdminAPI,
 		c.AdminMenu, c.AdminRole, c.AdminRoleAPI, c.AdminRoleMenu, c.AdminUserRole,
 		c.Announcement, c.AnnouncementRead, c.ChangelogEntry, c.CommissionRecord,
-		c.ErrorPassthroughRule, c.Feedback, c.FeedbackReply, c.FinanceTransaction,
-		c.Group, c.IdempotencyRecord, c.InvoiceProfile, c.InvoiceRequest,
-		c.InvoiceRequestOrder, c.PaymentOrder, c.PromoCode, c.PromoCodeUsage, c.Proxy,
-		c.RedeemCode, c.RedeemCodeBatch, c.SecuritySecret, c.Setting,
-		c.TLSFingerprintProfile, c.TopupOrder, c.UsageCleanupTask, c.UsageLog, c.User,
-		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.ErrorPassthroughRule, c.Feedback, c.FeedbackEvent, c.FeedbackReply,
+		c.FeedbackReward, c.FinanceTransaction, c.Group, c.IdempotencyRecord,
+		c.InvoiceProfile, c.InvoiceRequest, c.InvoiceRequestOrder, c.PaymentOrder,
+		c.PromoCode, c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.RedeemCodeBatch,
+		c.SecuritySecret, c.Setting, c.TLSFingerprintProfile, c.TopupOrder,
+		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
+		c.UserAttributeDefinition, c.UserAttributeValue, c.UserNotification,
 		c.UserSubscription,
 	} {
 		n.Use(hooks...)
@@ -437,12 +456,13 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.APIKey, c.Account, c.AccountChangeRecord, c.AccountGroup, c.AdminAPI,
 		c.AdminMenu, c.AdminRole, c.AdminRoleAPI, c.AdminRoleMenu, c.AdminUserRole,
 		c.Announcement, c.AnnouncementRead, c.ChangelogEntry, c.CommissionRecord,
-		c.ErrorPassthroughRule, c.Feedback, c.FeedbackReply, c.FinanceTransaction,
-		c.Group, c.IdempotencyRecord, c.InvoiceProfile, c.InvoiceRequest,
-		c.InvoiceRequestOrder, c.PaymentOrder, c.PromoCode, c.PromoCodeUsage, c.Proxy,
-		c.RedeemCode, c.RedeemCodeBatch, c.SecuritySecret, c.Setting,
-		c.TLSFingerprintProfile, c.TopupOrder, c.UsageCleanupTask, c.UsageLog, c.User,
-		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.ErrorPassthroughRule, c.Feedback, c.FeedbackEvent, c.FeedbackReply,
+		c.FeedbackReward, c.FinanceTransaction, c.Group, c.IdempotencyRecord,
+		c.InvoiceProfile, c.InvoiceRequest, c.InvoiceRequestOrder, c.PaymentOrder,
+		c.PromoCode, c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.RedeemCodeBatch,
+		c.SecuritySecret, c.Setting, c.TLSFingerprintProfile, c.TopupOrder,
+		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
+		c.UserAttributeDefinition, c.UserAttributeValue, c.UserNotification,
 		c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
@@ -484,8 +504,12 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ErrorPassthroughRule.mutate(ctx, m)
 	case *FeedbackMutation:
 		return c.Feedback.mutate(ctx, m)
+	case *FeedbackEventMutation:
+		return c.FeedbackEvent.mutate(ctx, m)
 	case *FeedbackReplyMutation:
 		return c.FeedbackReply.mutate(ctx, m)
+	case *FeedbackRewardMutation:
+		return c.FeedbackReward.mutate(ctx, m)
 	case *FinanceTransactionMutation:
 		return c.FinanceTransaction.mutate(ctx, m)
 	case *GroupMutation:
@@ -530,6 +554,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.UserAttributeDefinition.mutate(ctx, m)
 	case *UserAttributeValueMutation:
 		return c.UserAttributeValue.mutate(ctx, m)
+	case *UserNotificationMutation:
+		return c.UserNotification.mutate(ctx, m)
 	case *UserSubscriptionMutation:
 		return c.UserSubscription.mutate(ctx, m)
 	default:
@@ -2878,6 +2904,139 @@ func (c *FeedbackClient) mutate(ctx context.Context, m *FeedbackMutation) (Value
 	}
 }
 
+// FeedbackEventClient is a client for the FeedbackEvent schema.
+type FeedbackEventClient struct {
+	config
+}
+
+// NewFeedbackEventClient returns a client for the FeedbackEvent from the given config.
+func NewFeedbackEventClient(c config) *FeedbackEventClient {
+	return &FeedbackEventClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `feedbackevent.Hooks(f(g(h())))`.
+func (c *FeedbackEventClient) Use(hooks ...Hook) {
+	c.hooks.FeedbackEvent = append(c.hooks.FeedbackEvent, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `feedbackevent.Intercept(f(g(h())))`.
+func (c *FeedbackEventClient) Intercept(interceptors ...Interceptor) {
+	c.inters.FeedbackEvent = append(c.inters.FeedbackEvent, interceptors...)
+}
+
+// Create returns a builder for creating a FeedbackEvent entity.
+func (c *FeedbackEventClient) Create() *FeedbackEventCreate {
+	mutation := newFeedbackEventMutation(c.config, OpCreate)
+	return &FeedbackEventCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of FeedbackEvent entities.
+func (c *FeedbackEventClient) CreateBulk(builders ...*FeedbackEventCreate) *FeedbackEventCreateBulk {
+	return &FeedbackEventCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FeedbackEventClient) MapCreateBulk(slice any, setFunc func(*FeedbackEventCreate, int)) *FeedbackEventCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FeedbackEventCreateBulk{err: fmt.Errorf("calling to FeedbackEventClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FeedbackEventCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FeedbackEventCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for FeedbackEvent.
+func (c *FeedbackEventClient) Update() *FeedbackEventUpdate {
+	mutation := newFeedbackEventMutation(c.config, OpUpdate)
+	return &FeedbackEventUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FeedbackEventClient) UpdateOne(_m *FeedbackEvent) *FeedbackEventUpdateOne {
+	mutation := newFeedbackEventMutation(c.config, OpUpdateOne, withFeedbackEvent(_m))
+	return &FeedbackEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FeedbackEventClient) UpdateOneID(id int64) *FeedbackEventUpdateOne {
+	mutation := newFeedbackEventMutation(c.config, OpUpdateOne, withFeedbackEventID(id))
+	return &FeedbackEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for FeedbackEvent.
+func (c *FeedbackEventClient) Delete() *FeedbackEventDelete {
+	mutation := newFeedbackEventMutation(c.config, OpDelete)
+	return &FeedbackEventDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FeedbackEventClient) DeleteOne(_m *FeedbackEvent) *FeedbackEventDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FeedbackEventClient) DeleteOneID(id int64) *FeedbackEventDeleteOne {
+	builder := c.Delete().Where(feedbackevent.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FeedbackEventDeleteOne{builder}
+}
+
+// Query returns a query builder for FeedbackEvent.
+func (c *FeedbackEventClient) Query() *FeedbackEventQuery {
+	return &FeedbackEventQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFeedbackEvent},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a FeedbackEvent entity by its id.
+func (c *FeedbackEventClient) Get(ctx context.Context, id int64) (*FeedbackEvent, error) {
+	return c.Query().Where(feedbackevent.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FeedbackEventClient) GetX(ctx context.Context, id int64) *FeedbackEvent {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *FeedbackEventClient) Hooks() []Hook {
+	return c.hooks.FeedbackEvent
+}
+
+// Interceptors returns the client interceptors.
+func (c *FeedbackEventClient) Interceptors() []Interceptor {
+	return c.inters.FeedbackEvent
+}
+
+func (c *FeedbackEventClient) mutate(ctx context.Context, m *FeedbackEventMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FeedbackEventCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FeedbackEventUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FeedbackEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FeedbackEventDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown FeedbackEvent mutation op: %q", m.Op())
+	}
+}
+
 // FeedbackReplyClient is a client for the FeedbackReply schema.
 type FeedbackReplyClient struct {
 	config
@@ -3040,6 +3199,139 @@ func (c *FeedbackReplyClient) mutate(ctx context.Context, m *FeedbackReplyMutati
 		return (&FeedbackReplyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown FeedbackReply mutation op: %q", m.Op())
+	}
+}
+
+// FeedbackRewardClient is a client for the FeedbackReward schema.
+type FeedbackRewardClient struct {
+	config
+}
+
+// NewFeedbackRewardClient returns a client for the FeedbackReward from the given config.
+func NewFeedbackRewardClient(c config) *FeedbackRewardClient {
+	return &FeedbackRewardClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `feedbackreward.Hooks(f(g(h())))`.
+func (c *FeedbackRewardClient) Use(hooks ...Hook) {
+	c.hooks.FeedbackReward = append(c.hooks.FeedbackReward, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `feedbackreward.Intercept(f(g(h())))`.
+func (c *FeedbackRewardClient) Intercept(interceptors ...Interceptor) {
+	c.inters.FeedbackReward = append(c.inters.FeedbackReward, interceptors...)
+}
+
+// Create returns a builder for creating a FeedbackReward entity.
+func (c *FeedbackRewardClient) Create() *FeedbackRewardCreate {
+	mutation := newFeedbackRewardMutation(c.config, OpCreate)
+	return &FeedbackRewardCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of FeedbackReward entities.
+func (c *FeedbackRewardClient) CreateBulk(builders ...*FeedbackRewardCreate) *FeedbackRewardCreateBulk {
+	return &FeedbackRewardCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FeedbackRewardClient) MapCreateBulk(slice any, setFunc func(*FeedbackRewardCreate, int)) *FeedbackRewardCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FeedbackRewardCreateBulk{err: fmt.Errorf("calling to FeedbackRewardClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FeedbackRewardCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FeedbackRewardCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for FeedbackReward.
+func (c *FeedbackRewardClient) Update() *FeedbackRewardUpdate {
+	mutation := newFeedbackRewardMutation(c.config, OpUpdate)
+	return &FeedbackRewardUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FeedbackRewardClient) UpdateOne(_m *FeedbackReward) *FeedbackRewardUpdateOne {
+	mutation := newFeedbackRewardMutation(c.config, OpUpdateOne, withFeedbackReward(_m))
+	return &FeedbackRewardUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FeedbackRewardClient) UpdateOneID(id int64) *FeedbackRewardUpdateOne {
+	mutation := newFeedbackRewardMutation(c.config, OpUpdateOne, withFeedbackRewardID(id))
+	return &FeedbackRewardUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for FeedbackReward.
+func (c *FeedbackRewardClient) Delete() *FeedbackRewardDelete {
+	mutation := newFeedbackRewardMutation(c.config, OpDelete)
+	return &FeedbackRewardDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FeedbackRewardClient) DeleteOne(_m *FeedbackReward) *FeedbackRewardDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FeedbackRewardClient) DeleteOneID(id int64) *FeedbackRewardDeleteOne {
+	builder := c.Delete().Where(feedbackreward.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FeedbackRewardDeleteOne{builder}
+}
+
+// Query returns a query builder for FeedbackReward.
+func (c *FeedbackRewardClient) Query() *FeedbackRewardQuery {
+	return &FeedbackRewardQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFeedbackReward},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a FeedbackReward entity by its id.
+func (c *FeedbackRewardClient) Get(ctx context.Context, id int64) (*FeedbackReward, error) {
+	return c.Query().Where(feedbackreward.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FeedbackRewardClient) GetX(ctx context.Context, id int64) *FeedbackReward {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *FeedbackRewardClient) Hooks() []Hook {
+	return c.hooks.FeedbackReward
+}
+
+// Interceptors returns the client interceptors.
+func (c *FeedbackRewardClient) Interceptors() []Interceptor {
+	return c.inters.FeedbackReward
+}
+
+func (c *FeedbackRewardClient) mutate(ctx context.Context, m *FeedbackRewardMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FeedbackRewardCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FeedbackRewardUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FeedbackRewardUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FeedbackRewardDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown FeedbackReward mutation op: %q", m.Op())
 	}
 }
 
@@ -6824,6 +7116,139 @@ func (c *UserAttributeValueClient) mutate(ctx context.Context, m *UserAttributeV
 	}
 }
 
+// UserNotificationClient is a client for the UserNotification schema.
+type UserNotificationClient struct {
+	config
+}
+
+// NewUserNotificationClient returns a client for the UserNotification from the given config.
+func NewUserNotificationClient(c config) *UserNotificationClient {
+	return &UserNotificationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `usernotification.Hooks(f(g(h())))`.
+func (c *UserNotificationClient) Use(hooks ...Hook) {
+	c.hooks.UserNotification = append(c.hooks.UserNotification, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `usernotification.Intercept(f(g(h())))`.
+func (c *UserNotificationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.UserNotification = append(c.inters.UserNotification, interceptors...)
+}
+
+// Create returns a builder for creating a UserNotification entity.
+func (c *UserNotificationClient) Create() *UserNotificationCreate {
+	mutation := newUserNotificationMutation(c.config, OpCreate)
+	return &UserNotificationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of UserNotification entities.
+func (c *UserNotificationClient) CreateBulk(builders ...*UserNotificationCreate) *UserNotificationCreateBulk {
+	return &UserNotificationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *UserNotificationClient) MapCreateBulk(slice any, setFunc func(*UserNotificationCreate, int)) *UserNotificationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &UserNotificationCreateBulk{err: fmt.Errorf("calling to UserNotificationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*UserNotificationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &UserNotificationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for UserNotification.
+func (c *UserNotificationClient) Update() *UserNotificationUpdate {
+	mutation := newUserNotificationMutation(c.config, OpUpdate)
+	return &UserNotificationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *UserNotificationClient) UpdateOne(_m *UserNotification) *UserNotificationUpdateOne {
+	mutation := newUserNotificationMutation(c.config, OpUpdateOne, withUserNotification(_m))
+	return &UserNotificationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *UserNotificationClient) UpdateOneID(id int64) *UserNotificationUpdateOne {
+	mutation := newUserNotificationMutation(c.config, OpUpdateOne, withUserNotificationID(id))
+	return &UserNotificationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for UserNotification.
+func (c *UserNotificationClient) Delete() *UserNotificationDelete {
+	mutation := newUserNotificationMutation(c.config, OpDelete)
+	return &UserNotificationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *UserNotificationClient) DeleteOne(_m *UserNotification) *UserNotificationDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *UserNotificationClient) DeleteOneID(id int64) *UserNotificationDeleteOne {
+	builder := c.Delete().Where(usernotification.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &UserNotificationDeleteOne{builder}
+}
+
+// Query returns a query builder for UserNotification.
+func (c *UserNotificationClient) Query() *UserNotificationQuery {
+	return &UserNotificationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeUserNotification},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a UserNotification entity by its id.
+func (c *UserNotificationClient) Get(ctx context.Context, id int64) (*UserNotification, error) {
+	return c.Query().Where(usernotification.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *UserNotificationClient) GetX(ctx context.Context, id int64) *UserNotification {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *UserNotificationClient) Hooks() []Hook {
+	return c.hooks.UserNotification
+}
+
+// Interceptors returns the client interceptors.
+func (c *UserNotificationClient) Interceptors() []Interceptor {
+	return c.inters.UserNotification
+}
+
+func (c *UserNotificationClient) mutate(ctx context.Context, m *UserNotificationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&UserNotificationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&UserNotificationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&UserNotificationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&UserNotificationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown UserNotification mutation op: %q", m.Op())
+	}
+}
+
 // UserSubscriptionClient is a client for the UserSubscription schema.
 type UserSubscriptionClient struct {
 	config
@@ -7029,23 +7454,23 @@ type (
 		APIKey, Account, AccountChangeRecord, AccountGroup, AdminAPI, AdminMenu,
 		AdminRole, AdminRoleAPI, AdminRoleMenu, AdminUserRole, Announcement,
 		AnnouncementRead, ChangelogEntry, CommissionRecord, ErrorPassthroughRule,
-		Feedback, FeedbackReply, FinanceTransaction, Group, IdempotencyRecord,
-		InvoiceProfile, InvoiceRequest, InvoiceRequestOrder, PaymentOrder, PromoCode,
-		PromoCodeUsage, Proxy, RedeemCode, RedeemCodeBatch, SecuritySecret, Setting,
-		TLSFingerprintProfile, TopupOrder, UsageCleanupTask, UsageLog, User,
-		UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
-		UserSubscription []ent.Hook
+		Feedback, FeedbackEvent, FeedbackReply, FeedbackReward, FinanceTransaction,
+		Group, IdempotencyRecord, InvoiceProfile, InvoiceRequest, InvoiceRequestOrder,
+		PaymentOrder, PromoCode, PromoCodeUsage, Proxy, RedeemCode, RedeemCodeBatch,
+		SecuritySecret, Setting, TLSFingerprintProfile, TopupOrder, UsageCleanupTask,
+		UsageLog, User, UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
+		UserNotification, UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountChangeRecord, AccountGroup, AdminAPI, AdminMenu,
 		AdminRole, AdminRoleAPI, AdminRoleMenu, AdminUserRole, Announcement,
 		AnnouncementRead, ChangelogEntry, CommissionRecord, ErrorPassthroughRule,
-		Feedback, FeedbackReply, FinanceTransaction, Group, IdempotencyRecord,
-		InvoiceProfile, InvoiceRequest, InvoiceRequestOrder, PaymentOrder, PromoCode,
-		PromoCodeUsage, Proxy, RedeemCode, RedeemCodeBatch, SecuritySecret, Setting,
-		TLSFingerprintProfile, TopupOrder, UsageCleanupTask, UsageLog, User,
-		UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
-		UserSubscription []ent.Interceptor
+		Feedback, FeedbackEvent, FeedbackReply, FeedbackReward, FinanceTransaction,
+		Group, IdempotencyRecord, InvoiceProfile, InvoiceRequest, InvoiceRequestOrder,
+		PaymentOrder, PromoCode, PromoCodeUsage, Proxy, RedeemCode, RedeemCodeBatch,
+		SecuritySecret, Setting, TLSFingerprintProfile, TopupOrder, UsageCleanupTask,
+		UsageLog, User, UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
+		UserNotification, UserSubscription []ent.Interceptor
 	}
 )
 

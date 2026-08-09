@@ -6133,6 +6133,12 @@ export default {
     }
   },
 
+	 notifications: {
+	   title: '通知',
+	   markAllRead: '全部已读',
+	   empty: '暂无通知',
+	 },
+
   feedback: {
     title: '反馈',
     description: '提交问题、建议和投诉，并跟踪处理进度。',
@@ -6176,6 +6182,9 @@ export default {
       contentPlaceholder: '请详细描述问题、现象和预期结果...',
       contact: '联系方式',
       contactPlaceholder: '微信、Telegram、邮箱等（选填）',
+	  requestId: 'Request ID（选填）',
+	  requestIdPlaceholder: '粘贴报错中的 Request ID',
+	  requestIdHint: '有 Request ID 时更容易定位对应请求；没有也可以提交。',
       images: '图片附件',
       imageHint: '最多 5 张，每张不超过 5MB，支持 jpg/png/gif/webp。',
       addImage: '添加图片',
@@ -6189,6 +6198,7 @@ export default {
       timeline: '沟通记录',
       addReply: '补充信息',
       meta: '创建于 {createdAt}，当前共 {replies} 条回复',
+	  rewardGranted: '这条反馈已获得 {amount} 元共创额度',
     },
     edit: {
       title: '编辑反馈',
@@ -6216,10 +6226,28 @@ export default {
       userInfo: '用户信息',
       manage: '处理设置',
       replyTitle: '管理员回复',
-      notifyEmail: '通知邮箱',
-      notifyEmailPlaceholder: '接收新反馈通知的管理员邮箱',
-      notifyEmailHint: '管理员回复给用户时会走用户邮箱，新反馈提醒会发到这里。',
+	  workflow: '处理进度',
+	  rewardLedger: '奖励流水',
+	  noRewards: '暂无奖励记录',
+	  triageLabel: '核查',
+	  decisionLabel: '决定',
+	  fixLabel: '修复',
+	  rewardCredit: '奖励额度 +{amount} · 流水 #{ledger}',
+	  rewardColumns: { feedback: '工单', user: '用户', amount: '额度', batch: '批次', ledger: '流水号', time: '时间' },
+	  notifyEmail: '备用通知邮箱（不自动发送）',
+	  notifyEmailPlaceholder: '仅用于经过明确授权后的人工邮件流程',
+	  notifyEmailHint: '系统不会自动发送反馈邮件；每一封邮件都必须单独获得明确授权。',
     },
+	verify: {
+	  title: '请验证修复结果',
+	  description: '问题已经修复上线，请确认现在是否可以正常使用。',
+	  notePlaceholder: '可以补充验证结果（选填）',
+	  resolved: '已解决',
+	  unresolved: '仍有问题',
+	  resolvedSuccess: '感谢确认，工单已完成',
+	  reopenedSuccess: '工单已重新打开，我们会继续处理',
+	  failed: '提交验证结果失败',
+	},
     message: {
       created: '反馈提交成功',
       createFailed: '反馈提交失败',

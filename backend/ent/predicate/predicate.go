@@ -54,8 +54,14 @@ type ErrorPassthroughRule func(*sql.Selector)
 // Feedback is the predicate function for feedback builders.
 type Feedback func(*sql.Selector)
 
+// FeedbackEvent is the predicate function for feedbackevent builders.
+type FeedbackEvent func(*sql.Selector)
+
 // FeedbackReply is the predicate function for feedbackreply builders.
 type FeedbackReply func(*sql.Selector)
+
+// FeedbackReward is the predicate function for feedbackreward builders.
+type FeedbackReward func(*sql.Selector)
 
 // FinanceTransaction is the predicate function for financetransaction builders.
 type FinanceTransaction func(*sql.Selector)
@@ -122,6 +128,9 @@ type UserAttributeDefinition func(*sql.Selector)
 
 // UserAttributeValue is the predicate function for userattributevalue builders.
 type UserAttributeValue func(*sql.Selector)
+
+// UserNotification is the predicate function for usernotification builders.
+type UserNotification func(*sql.Selector)
 
 // UserSubscription is the predicate function for usersubscription builders.
 type UserSubscription func(*sql.Selector)

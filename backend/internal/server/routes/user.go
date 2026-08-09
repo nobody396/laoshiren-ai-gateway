@@ -25,6 +25,9 @@ func RegisterUserRoutes(
 	v1.GET("/public-downloads/codex/latest.json", h.Resource.CodexLatestManifest)
 	v1.GET("/public-downloads/codex/packages/:assetID", h.Resource.DownloadCodexPackage)
 	v1.POST("/public-setup/exchange", h.Resource.ExchangeSetupTicket)
+	// HMAC-signed token lets normal <img> elements load screenshots without a
+	// bearer header; the S3 object itself remains private and short-lived.
+	v1.GET("/feedback-images/:token", h.Feedback.GetImage)
 
 	authenticated := v1.Group("")
 	authenticated.Use(gin.HandlerFunc(jwtAuth))
@@ -107,7 +110,14 @@ func RegisterUserRoutes(
 			feedbacks.GET("/:id", h.Feedback.GetByID)
 			feedbacks.PUT("/:id", h.Feedback.Update)
 			feedbacks.POST("/:id/replies", h.Feedback.CreateReply)
+			feedbacks.POST("/:id/verification", h.Feedback.Verify)
 			feedbacks.POST("/upload-image", h.Feedback.UploadImage)
+		}
+		notifications := authenticated.Group("/notifications")
+		{
+			notifications.GET("", h.Feedback.ListNotifications)
+			notifications.POST("/read-all", h.Feedback.MarkAllNotificationsRead)
+			notifications.POST("/:id/read", h.Feedback.MarkNotificationRead)
 		}
 
 		// 卡密兑换

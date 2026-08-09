@@ -1,0 +1,21 @@
+{
+  "siteUrl": "https://laoshirenai.com/",
+  "startDate": "2026-07-12",
+  "endDate": "2026-08-08",
+  "request": {
+    "startDate": "2026-07-12",
+    "endDate": "2026-08-08",
+    "type": "web",
+    "dataState": "final",
+    "aggregationType": "byProperty",
+    "rowLimit": 25000,
+    "startRow": 0
+  },
+  "responseAggregationType": "byProperty",
+  "totals": {
+    "clicks": 8,
+    "impressions": 139,
+    "ctr": 0.05755395683453238,
+    "position": 8.007194244604317
+  }
+}

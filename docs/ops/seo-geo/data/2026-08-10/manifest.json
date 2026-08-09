@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2026-08-09T18:11:50.550Z",
+  "siteOrigin": "https://laoshirenai.com",
+  "startDate": "2026-07-12",
+  "endDate": "2026-08-08",
+  "outputs": {
+    "technicalAudit": "/Users/fujunhao/laoshirenai/worktrees/seo-effect-optimization-20260810/docs/ops/seo-geo/data/2026-08-10/technical-audit.md",
+    "gsc": "/Users/fujunhao/laoshirenai/worktrees/seo-effect-optimization-20260810/docs/ops/seo-geo/data/2026-08-10/gsc-query-page.json",
+    "gscSummary": "/Users/fujunhao/laoshirenai/worktrees/seo-effect-optimization-20260810/docs/ops/seo-geo/data/2026-08-10/gsc-summary.json",
+    "gscPages": "/Users/fujunhao/laoshirenai/worktrees/seo-effect-optimization-20260810/docs/ops/seo-geo/data/2026-08-10/gsc-pages.json",
+    "gscQueryPage": "/Users/fujunhao/laoshirenai/worktrees/seo-effect-optimization-20260810/docs/ops/seo-geo/data/2026-08-10/gsc-query-page.json",
+    "ga4Pages": "/Users/fujunhao/laoshirenai/worktrees/seo-effect-optimization-20260810/docs/ops/seo-geo/data/2026-08-10/ga4-pages.json",
+    "ga4Events": "/Users/fujunhao/laoshirenai/worktrees/seo-effect-optimization-20260810/docs/ops/seo-geo/data/2026-08-10/ga4-events.json",
+    "ga4Realtime": "/Users/fujunhao/laoshirenai/worktrees/seo-effect-optimization-20260810/docs/ops/seo-geo/data/2026-08-10/ga4-realtime.json"
+  },
+  "skipped": [],
+  "failed": [],
+  "sourceMetadata": {
+    "gsc": {
+      "siteUrl": "https://laoshirenai.com/",
+      "searchType": "web",
+      "dataState": "final",
+      "dateTimezone": "America/Los_Angeles",
+      "filters": [],
+      "rowLimit": 25000,
+      "limitations": [
+        "Search Analytics returns top rows rather than a guaranteed exhaustive export.",
+        "Query dimensions may omit anonymized queries; query-page sums are lower bounds."
+      ]
+    }
+  }
+}

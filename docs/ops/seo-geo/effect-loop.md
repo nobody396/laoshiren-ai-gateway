@@ -25,6 +25,8 @@ docs/ops/seo-geo/data/YYYY-MM-DD/
   manifest.json
   README.md
   technical-audit.md
+  gsc-summary.json         # Property 聚合总量
+  gsc-pages.json           # Page 维度，用于页面决策
   gsc-query-page.json      # 有 GSC 凭证时
   ga4-pages.json           # 有 GA4 凭证时
   ga4-events.json          # 有 GA4 凭证时
@@ -50,11 +52,20 @@ docs/ops/seo-geo/backlog/faq-opportunities.md
 
 核心判断：
 
-- 曝光高、CTR 低：改 title / description / 首段。
+- GSC 总量以 property aggregate 为准；page 用于页面判断；query+page 只是可见查询下界，可能省略匿名查询且不保证穷尽。
+- 曝光高、点击低：先建立单变量 title 实验，不同时改 title / description / 首段。
 - 排名 8-20：补 FAQ、内容深度和内链。
 - 点击高、关键事件低：改 CTA、注册/创建 Key 路径。
 - GSC 有点击但 GA4 无会话：查 GA4 埋点或跨域路径。
 - 技术异常：优先修 HTTP、正文、schema、canonical、404。
+
+每个 finding 必须给出 evidence level（observed / inferred / missing_evidence）、
+impact、confidence、effort、dependencies 和 verification。每项结果分四阶段记录：
+implemented → deployed and observable → processed by search platform → outcome observed。
+
+每次报告还要保留 coverage ledger：discovered、selected、fetched、rendered、
+data_backed、failed 和 limitations。未运行渲染抓取时不能把静态 HTML 结论当成
+渲染后 DOM 结论。
 
 ### 3. 市场雷达
 

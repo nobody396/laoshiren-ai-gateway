@@ -1,0 +1,88 @@
+{
+  "siteUrl": "https://laoshirenai.com/",
+  "startDate": "2026-07-12",
+  "endDate": "2026-08-08",
+  "request": {
+    "startDate": "2026-07-12",
+    "endDate": "2026-08-08",
+    "type": "web",
+    "dataState": "final",
+    "aggregationType": "auto",
+    "rowLimit": 25000,
+    "startRow": 0,
+    "dimensions": [
+      "query",
+      "page"
+    ]
+  },
+  "responseAggregationType": "byPage",
+  "returnedRows": 8,
+  "truncated": false,
+  "exhaustive": false,
+  "rows": [
+    {
+      "query": "codex 免费 api",
+      "page": "https://laoshirenai.com/docs/codex-no-api-key-guide",
+      "clicks": 1,
+      "impressions": 2,
+      "ctr": 0.5,
+      "position": 18
+    },
+    {
+      "query": "codex api key free",
+      "page": "https://laoshirenai.com/docs/codex-no-api-key-guide",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "query": "codex free api key",
+      "page": "https://laoshirenai.com/docs/codex-no-api-key-guide",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "query": "codex 免费api",
+      "page": "https://laoshirenai.com/docs/codex-no-api-key-guide",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 18.5
+    },
+    {
+      "query": "codex 自定义api",
+      "page": "https://laoshirenai.com/docs/codex-custom-api-guide",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "query": "codex免费api",
+      "page": "https://laoshirenai.com/docs/codex-no-api-key-guide",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 16
+    },
+    {
+      "query": "codex支持的国家",
+      "page": "https://laoshirenai.com/docs/codex-no-api-key-guide",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 12
+    },
+    {
+      "query": "codex自定义api",
+      "page": "https://laoshirenai.com/docs/codex-custom-api-guide",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 6.5
+    }
+  ]
+}

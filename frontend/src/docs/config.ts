@@ -170,9 +170,10 @@ export const docsConfig: DocsConfig = [
         description: '解释 Codex ChatGPT 登录、API Key 登录、访问令牌和第三方接口之间的区别，避免把“免 API Key”误解成免费或无限制。'
       },
       {
-        title: 'Codex 自定义 API 配置教程',
+        title: 'Codex 自定义 API 配置：Base URL 与 config.toml',
         slug: 'codex-custom-api-guide',
-        description: '面向 Codex CLI/App 的自定义 API、Base URL、config.toml、auth.json、Responses 模式和第三方兼容接口配置指南。'
+        description: '面向 Codex CLI/App 的自定义 API、Base URL、config.toml、auth.json、Responses 模式和第三方兼容接口配置指南。',
+        lastModified: '2026-08-10'
       },
       {
         title: 'Claude Code 和 Codex 怎么选',

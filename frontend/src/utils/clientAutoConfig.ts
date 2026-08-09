@@ -17,6 +17,12 @@ const powerShellSingleQuote = (value: string): string => {
   return `'${value.replace(/'/g, "''")}'`
 }
 
+// Edge CDN keeps public installer paths for a long time. Version the copied
+// URL so a newly deployed setup contract cannot execute a stale installer.
+const CLIENT_AUTO_CONFIG_VERSION = '0.7.0'
+const SHELL_INSTALLER_URL = `https://laoshirenai.com/auto-config/install.sh?v=${CLIENT_AUTO_CONFIG_VERSION}`
+const POWERSHELL_INSTALLER_URL = `https://laoshirenai.com/auto-config/install.ps1?v=${CLIENT_AUTO_CONFIG_VERSION}`
+
 export const getClientAutoConfigTarget = (
   platform?: GroupPlatform | null
 ): ClientAutoConfigTarget | null => {
@@ -57,7 +63,7 @@ export const buildClientAutoConfigCommand = ({
     if (target === 'codex' && installCodexApp) {
       parts.push("$env:LAOSHIRENAI_INSTALL_CODEX_APP='1'")
     }
-    parts.push('irm https://laoshirenai.com/auto-config/install.ps1 | iex')
+    parts.push(`irm ${POWERSHELL_INSTALLER_URL} | iex`)
     return parts.join('; ')
   }
 
@@ -68,5 +74,5 @@ export const buildClientAutoConfigCommand = ({
   if (target === 'codex' && installCodexApp) {
     environment.push("LAOSHIRENAI_INSTALL_CODEX_APP='1'")
   }
-  return `curl -fsSL https://laoshirenai.com/auto-config/install.sh | ${environment.join(' ')} bash`
+  return `curl -fsSL ${SHELL_INSTALLER_URL} | ${environment.join(' ')} bash`
 }

@@ -17,11 +17,11 @@ import (
 )
 
 const (
-	feedbackCreateLimit  = 10
-	feedbackCreateWindow = time.Hour
-	feedbackMaxImages    = 5
-	feedbackMaxTitleLen  = 200
-	feedbackMaxBodyLen   = 5000
+	feedbackCreateLimit   = 10
+	feedbackCreateWindow  = time.Hour
+	feedbackMaxImages     = 5
+	feedbackMaxBodyLen    = 5000
+	feedbackMaxContextLen = 2000
 )
 
 type FeedbackService struct {
@@ -65,14 +65,16 @@ func (s *FeedbackService) Create(ctx context.Context, userID int64, input Create
 		return nil, err
 	}
 
-	title, content, images, contact, category, err := normalizeFeedbackContent(input.Category, input.Title, input.Content, input.Images, input.Contact)
+	content, images, requestID, err := normalizeFeedbackSubmission(input.Content, input.Images, input.RequestID)
 	if err != nil {
 		return nil, err
 	}
-	requestID := strings.TrimSpace(input.RequestID)
-	if len([]rune(requestID)) > 128 {
-		return nil, infraerrors.BadRequest("FEEDBACK_REQUEST_ID_INVALID", "request id must be at most 128 characters")
+	contact, err := s.registeredFeedbackContact(ctx, userID)
+	if err != nil {
+		return nil, err
 	}
+	category := domain.FeedbackCategoryOther
+	title := deriveFeedbackTitle(content)
 
 	feedback := &Feedback{
 		UserID:           userID,
@@ -138,17 +140,16 @@ func (s *FeedbackService) UpdateByUser(ctx context.Context, userID, feedbackID i
 		return nil, ErrFeedbackClosed
 	}
 
-	title, content, images, contact, category, err := normalizeFeedbackContent(input.Category, input.Title, input.Content, input.Images, input.Contact)
+	content, images, requestID, err := normalizeFeedbackSubmission(input.Content, input.Images, input.RequestID)
 	if err != nil {
 		return nil, err
 	}
-	requestID := strings.TrimSpace(input.RequestID)
-	if len([]rune(requestID)) > 128 {
-		return nil, infraerrors.BadRequest("FEEDBACK_REQUEST_ID_INVALID", "request id must be at most 128 characters")
+	contact, err := s.registeredFeedbackContact(ctx, userID)
+	if err != nil {
+		return nil, err
 	}
 
-	feedback.Category = category
-	feedback.Title = title
+	feedback.Title = deriveFeedbackTitle(content)
 	feedback.Content = content
 	feedback.Images = images
 	feedback.Contact = contact
@@ -372,36 +373,51 @@ func (s *FeedbackService) createReplyAndUpdateSummary(ctx context.Context, feedb
 	return nil
 }
 
-func normalizeFeedbackContent(category, title, content string, images []string, contact string) (string, string, []string, string, string, error) {
-	normalizedCategory := domain.NormalizeFeedbackCategory(category)
-	if !domain.IsValidFeedbackCategory(normalizedCategory) {
-		return "", "", nil, "", "", infraerrors.BadRequest("FEEDBACK_CATEGORY_INVALID", "invalid feedback category")
-	}
-
-	normalizedTitle := strings.TrimSpace(title)
-	if normalizedTitle == "" || len([]rune(normalizedTitle)) > feedbackMaxTitleLen {
-		return "", "", nil, "", "", infraerrors.BadRequest("FEEDBACK_TITLE_INVALID", "feedback title must be 1-200 characters")
-	}
-
+func normalizeFeedbackSubmission(content string, images []string, requestID string) (string, []string, string, error) {
 	normalizedContent := strings.TrimSpace(content)
 	if normalizedContent == "" || len([]rune(normalizedContent)) > feedbackMaxBodyLen {
-		return "", "", nil, "", "", infraerrors.BadRequest("FEEDBACK_CONTENT_INVALID", "feedback content must be 1-5000 characters")
+		return "", nil, "", infraerrors.BadRequest("FEEDBACK_CONTENT_INVALID", "feedback content must be 1-5000 characters")
 	}
 
 	normalizedImages, err := normalizeFeedbackImages(images)
 	if err != nil {
-		return "", "", nil, "", "", err
+		return "", nil, "", err
 	}
 	if len(normalizedImages) > feedbackMaxImages {
-		return "", "", nil, "", "", infraerrors.BadRequest("FEEDBACK_IMAGES_INVALID", "feedback supports at most 5 images")
+		return "", nil, "", infraerrors.BadRequest("FEEDBACK_IMAGES_INVALID", "feedback supports at most 5 images")
 	}
 
-	normalizedContact := strings.TrimSpace(contact)
-	if len([]rune(normalizedContact)) > 255 {
-		return "", "", nil, "", "", infraerrors.BadRequest("FEEDBACK_CONTACT_INVALID", "feedback contact must be at most 255 characters")
+	normalizedRequestID := strings.TrimSpace(requestID)
+	if len([]rune(normalizedRequestID)) > feedbackMaxContextLen {
+		return "", nil, "", infraerrors.BadRequest("FEEDBACK_REQUEST_ID_INVALID", "request id and error details must be at most 2000 characters")
 	}
 
-	return normalizedTitle, normalizedContent, normalizedImages, normalizedContact, normalizedCategory, nil
+	return normalizedContent, normalizedImages, normalizedRequestID, nil
+}
+
+func (s *FeedbackService) registeredFeedbackContact(ctx context.Context, userID int64) (string, error) {
+	if s.userRepo == nil {
+		return "", fmt.Errorf("feedback service user repository is not configured")
+	}
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return "", fmt.Errorf("get feedback user: %w", err)
+	}
+	contact := strings.TrimSpace(user.Email)
+	if contact == "" || len([]rune(contact)) > 255 {
+		return "", infraerrors.BadRequest("FEEDBACK_CONTACT_INVALID", "registered email is unavailable")
+	}
+	return contact, nil
+}
+
+func deriveFeedbackTitle(content string) string {
+	title := strings.Join(strings.Fields(content), " ")
+	runes := []rune(title)
+	const maxDerivedTitleLen = 60
+	if len(runes) > maxDerivedTitleLen {
+		return string(runes[:maxDerivedTitleLen]) + "…"
+	}
+	return title
 }
 
 func normalizeReplyContent(content string, images []string) (string, []string, error) {

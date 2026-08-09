@@ -179,24 +179,25 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
     nonce = time.strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(3)
     request_id = "feedback-e2e-" + nonce
-    title = "反馈共创生产链路验收 " + nonce
+    content = "反馈共创生产链路验收：页面提交后需要完整进入待处理队列。"
+    request_context = request_id + "\n报错信息：upstream timed out while waiting for a response; " + " ".join(["detail"] * 24)
     _, created_envelope = api.request(
         "POST",
         "/api/v1/feedbacks",
         token=user_token,
         payload={
-            "category": "bug",
-            "title": title,
-            "content": "这是自有测试账号发起的反馈共创端到端验收工单。",
+            "content": content,
             "images": image_urls,
-            "contact": "owned-e2e",
-            "request_id": request_id,
+            "request_id": request_context,
         },
         expected=(201,),
     )
     created = data(created_envelope)
     feedback_id = int(created["id"])
-    require(created.get("request_id") == request_id, "request id was not persisted")
+    require(created.get("request_id") == request_context, "request id and error details were not persisted")
+    require(created.get("category") == "other", "internal category was not safely defaulted")
+    require(created.get("title") == content, "internal title was not derived from feedback content")
+    require(created.get("contact") == email, "contact was not set to the registered email")
     require(created.get("triage_status") == "unreviewed", "new feedback was not queued")
 
     _, user_detail_envelope = api.request("GET", f"/api/v1/feedbacks/{feedback_id}", token=user_token)

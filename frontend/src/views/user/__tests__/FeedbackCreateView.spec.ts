@@ -33,17 +33,6 @@ const AppLayoutStub = defineComponent({
   template: '<div><slot /></div>',
 })
 
-const SelectStub = defineComponent({
-  name: 'AppSelect',
-  props: ['modelValue', 'options'],
-  emits: ['update:modelValue'],
-  template: `
-    <select :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
-      <option v-for="option in options" :key="option.value" :value="option.value">{{ option.label }}</option>
-    </select>
-  `,
-})
-
 const MarkdownEditorFieldStub = defineComponent({
   name: 'MarkdownEditorField',
   props: ['modelValue'],
@@ -72,7 +61,6 @@ describe('FeedbackCreateView', () => {
         ],
         stubs: {
           AppLayout: AppLayoutStub,
-          Select: SelectStub,
           MarkdownEditorField: MarkdownEditorFieldStub,
           MultiImageUpload: MultiImageUploadStub,
           RouterLink: defineComponent({
@@ -84,20 +72,20 @@ describe('FeedbackCreateView', () => {
       },
     })
 
-    await wrapper.find('input[maxlength="200"]').setValue('Broken request flow')
     await wrapper.find('textarea').setValue('Steps to reproduce')
+    await wrapper.find('textarea.input[maxlength="2000"]').setValue('request-123\nupstream timed out')
     await nextTick()
 
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
     expect(createFeedbackMock).toHaveBeenCalledWith({
-      category: 'bug',
-      title: 'Broken request flow',
       content: 'Steps to reproduce',
       images: [],
-      contact: undefined,
+      request_id: 'request-123\nupstream timed out',
     })
     expect(pushMock).toHaveBeenCalledWith('/feedbacks/18')
+    expect(wrapper.find('select').exists()).toBe(false)
+    expect(wrapper.find('input').exists()).toBe(false)
   })
 })

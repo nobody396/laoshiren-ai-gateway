@@ -26,26 +26,6 @@
           </div>
 
           <form class="space-y-6" @submit.prevent="handleSubmit">
-            <div class="grid gap-6 md:grid-cols-2">
-              <div>
-                <label class="input-label">{{ t('feedback.form.category') }}</label>
-                <Select v-model="form.category" :options="categoryOptions" />
-              </div>
-              <div>
-                <label class="input-label">{{ t('feedback.form.contact') }}</label>
-                <input v-model="form.contact" class="input" :placeholder="t('feedback.form.contactPlaceholder')" />
-              </div>
-            </div>
-
-            <div>
-              <label class="input-label">{{ t('feedback.form.titleLabel') }}</label>
-              <input v-model="form.title" class="input" :maxlength="200" required />
-            </div>
-			<div>
-			  <label class="input-label">{{ t('feedback.form.requestId') }}</label>
-			  <input v-model="form.requestId" class="input" :maxlength="128" :placeholder="t('feedback.form.requestIdPlaceholder')" />
-			</div>
-
             <div>
               <label class="input-label">{{ t('feedback.form.content') }}</label>
               <MarkdownEditorField
@@ -55,6 +35,17 @@
                 :fallback-message="t('feedback.form.editorFallback')"
                 @paste-image-blocked="handlePasteBlocked"
               />
+            </div>
+
+            <div>
+              <label class="input-label">{{ t('feedback.form.requestId') }}</label>
+              <textarea
+                v-model="form.requestId"
+                class="input min-h-28 resize-y"
+                :maxlength="2000"
+                :placeholder="t('feedback.form.requestIdPlaceholder')"
+              />
+              <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ t('feedback.form.requestIdHint') }}</p>
             </div>
 
             <div>
@@ -84,17 +75,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import Select from '@/components/common/Select.vue'
 import MarkdownEditorField from '@/components/feedback/MarkdownEditorField.vue'
 import MultiImageUpload from '@/components/feedback/MultiImageUpload.vue'
 import feedbacksAPI from '@/api/feedbacks'
-import { feedbackCategoryOptions } from '@/utils/feedback'
 import { useAppStore } from '@/stores'
-import type { FeedbackCategory, FeedbackDetail } from '@/types'
+import type { FeedbackDetail } from '@/types'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -106,20 +95,10 @@ const submitting = ref(false)
 const detail = ref<FeedbackDetail | null>(null)
 
 const form = reactive({
-  category: 'bug' as FeedbackCategory,
-  title: '',
   content: '',
   images: [] as string[],
-  contact: '',
-	requestId: '',
+  requestId: '',
 })
-
-const categoryOptions = computed(() =>
-  feedbackCategoryOptions.map((category) => ({
-    value: category,
-    label: t(`feedback.category.${category}`),
-  }))
-)
 
 async function uploadSingleImage(file: File): Promise<string> {
   return feedbacksAPI.uploadImage(file)
@@ -138,12 +117,9 @@ async function loadDetail() {
   try {
     const data = await feedbacksAPI.getById(Number(route.params.id))
     detail.value = data
-    form.category = data.category
-    form.title = data.title
     form.content = data.content
     form.images = data.images ?? []
-    form.contact = data.contact ?? ''
-	form.requestId = data.request_id ?? ''
+    form.requestId = data.request_id ?? ''
   } catch {
     appStore.showError(t('feedback.message.detailFailed'))
   } finally {
@@ -155,12 +131,9 @@ async function handleSubmit() {
   submitting.value = true
   try {
     await feedbacksAPI.update(Number(route.params.id), {
-      category: form.category,
-      title: form.title,
       content: form.content,
       images: form.images,
-      contact: form.contact || undefined,
-	  ...(form.requestId ? { request_id: form.requestId } : {}),
+      ...(form.requestId ? { request_id: form.requestId } : {}),
     })
     appStore.showSuccess(t('feedback.message.updated'))
     await router.push(`/feedbacks/${route.params.id}`)

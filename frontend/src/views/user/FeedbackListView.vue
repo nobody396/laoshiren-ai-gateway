@@ -29,10 +29,6 @@
 
       <template #table>
         <DataTable :columns="columns" :data="items" :loading="loading">
-          <template #cell-category="{ value }">
-            <StatusBadge :label="t(`feedback.category.${value}`)" tone="gray" />
-          </template>
-
           <template #cell-status="{ value }">
             <StatusBadge :label="t(`feedback.status.${value}`)" :tone="feedbackStatusTone(value)" />
           </template>
@@ -135,7 +131,6 @@ const statuses = computed(() =>
 )
 
 const columns = computed<Column[]>(() => [
-  { key: 'category', label: t('feedback.columns.category') },
   { key: 'title', label: t('feedback.columns.title') },
   { key: 'status', label: t('feedback.columns.status') },
   { key: 'priority', label: t('feedback.columns.priority') },

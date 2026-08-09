@@ -50,7 +50,8 @@ func (Feedback) Fields() []ent.Field {
 			MaxLen(255).
 			Default(""),
 		field.String("request_id").
-			MaxLen(128).
+			MaxLen(2000).
+			SchemaType(map[string]string{dialect.Postgres: "text"}).
 			Default(""),
 		field.String("priority").
 			MaxLen(10).
@@ -142,7 +143,6 @@ func (Feedback) Indexes() []ent.Index {
 		index.Fields("triage_priority"),
 		index.Fields("owner_decision"),
 		index.Fields("fix_status"),
-		index.Fields("request_id"),
 		index.Fields("created_at"),
 		index.Fields("last_reply_at"),
 		index.Fields("deleted_at"),

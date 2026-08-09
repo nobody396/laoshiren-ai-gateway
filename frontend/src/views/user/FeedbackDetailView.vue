@@ -13,7 +13,6 @@
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="space-y-2">
               <div class="flex flex-wrap items-center gap-2">
-                <StatusBadge :label="t(`feedback.category.${detail.category}`)" tone="gray" />
                 <StatusBadge :label="t(`feedback.status.${detail.status}`)" :tone="feedbackStatusTone(detail.status)" />
                 <StatusBadge :label="t(`feedback.priority.${detail.priority}`)" :tone="feedbackPriorityTone(detail.priority)" />
               </div>

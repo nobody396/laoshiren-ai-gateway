@@ -68,11 +68,8 @@ type AdminFeedbackListFilters struct {
 }
 
 type CreateFeedbackInput struct {
-	Category  string
-	Title     string
 	Content   string
 	Images    []string
-	Contact   string
 	RequestID string
 }
 
@@ -82,11 +79,8 @@ type CreateFeedbackReplyInput struct {
 }
 
 type UpdateFeedbackByUserInput struct {
-	Category  string
-	Title     string
 	Content   string
 	Images    []string
-	Contact   string
 	RequestID string
 }
 

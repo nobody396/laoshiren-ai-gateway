@@ -44,7 +44,7 @@ func newFeedbackServiceSQLite(t *testing.T) (*service.FeedbackService, *dbent.Cl
 
 	svc := service.NewFeedbackService(
 		repository.NewFeedbackRepository(client),
-		nil,
+		repository.NewUserRepository(client, db),
 		nil,
 		nil,
 		nil,
@@ -68,18 +68,21 @@ func mustCreateFeedbackUser(t *testing.T, ctx context.Context, client *dbent.Cli
 	return user.ID
 }
 
-func TestFeedbackServiceCreateAssignsDefaultPriority(t *testing.T) {
+func TestFeedbackServiceCreateDerivesInternalFields(t *testing.T) {
 	svc, client := newFeedbackServiceSQLite(t)
 	ctx := context.Background()
 	userID := mustCreateFeedbackUser(t, ctx, client, "feedback-create@test.com")
 
 	created, err := svc.Create(ctx, userID, service.CreateFeedbackInput{
-		Category: service.FeedbackCategoryComplaint,
-		Title:    "Need help",
-		Content:  "Something is wrong",
+		Content:   "Something is wrong and the page is confusing",
+		RequestID: "request-123\nupstream timed out",
 	})
 	require.NoError(t, err)
-	require.Equal(t, service.FeedbackPriorityUrgent, created.Priority)
+	require.Equal(t, service.FeedbackCategoryOther, created.Category)
+	require.Equal(t, "Something is wrong and the page is confusing", created.Title)
+	require.Equal(t, "feedback-create@test.com", created.Contact)
+	require.Equal(t, "request-123\nupstream timed out", created.RequestID)
+	require.Equal(t, service.FeedbackPriorityLow, created.Priority)
 	require.Equal(t, service.FeedbackStatusPending, created.Status)
 	require.Equal(t, 0, created.ReplyCount)
 }
@@ -90,9 +93,7 @@ func TestFeedbackServiceReplyByUserTransitionsToProcessing(t *testing.T) {
 	userID := mustCreateFeedbackUser(t, ctx, client, "feedback-reply-user@test.com")
 
 	created, err := svc.Create(ctx, userID, service.CreateFeedbackInput{
-		Category: service.FeedbackCategoryBug,
-		Title:    "Bug here",
-		Content:  "Initial content",
+		Content: "Initial content",
 	})
 	require.NoError(t, err)
 
@@ -118,9 +119,7 @@ func TestFeedbackServiceReplyByAdminTransitionsToReplied(t *testing.T) {
 	adminID := mustCreateFeedbackUser(t, ctx, client, "feedback-reply-admin@test.com")
 
 	created, err := svc.Create(ctx, userID, service.CreateFeedbackInput{
-		Category: service.FeedbackCategorySuggestion,
-		Title:    "Feature request",
-		Content:  "Please add this",
+		Content: "Please add this",
 	})
 	require.NoError(t, err)
 
@@ -153,9 +152,7 @@ func TestFeedbackServiceCreateReturnsRateLimitMetadata(t *testing.T) {
 	)
 
 	_, err := svc.Create(context.Background(), 1, service.CreateFeedbackInput{
-		Category: service.FeedbackCategoryBug,
-		Title:    "Too fast",
-		Content:  "Rate limited",
+		Content: "Rate limited",
 	})
 	require.Error(t, err)
 	require.True(t, errors.IsTooManyRequests(err))
@@ -167,7 +164,7 @@ func TestFeedbackWorkflowRewardIsAtomicAndIdempotent(t *testing.T) {
 	svc, client := newFeedbackServiceSQLite(t)
 	ctx := context.Background()
 	userID := mustCreateFeedbackUser(t, ctx, client, "feedback-reward@test.com")
-	created, err := svc.Create(ctx, userID, service.CreateFeedbackInput{Category: service.FeedbackCategoryBug, Title: "Import fails", Content: "Reproducible failure", RequestID: "req-123"})
+	created, err := svc.Create(ctx, userID, service.CreateFeedbackInput{Content: "Reproducible failure", RequestID: "req-123"})
 	require.NoError(t, err)
 
 	triaged, err := svc.TriageByAgent(ctx, created.ID, service.AgentTriageFeedbackInput{TriageStatus: "confirmed", TriagePriority: "P1", TriageSummary: "Reproduced with the submitted request", TriageConfidence: floatPtr(0.98), RepairDifficulty: "medium", RepairRecommendation: "Validate imported state"})
@@ -200,7 +197,7 @@ func TestFeedbackWorkflowCompleteNotifyAndUserVerification(t *testing.T) {
 	svc, client := newFeedbackServiceSQLite(t)
 	ctx := context.Background()
 	userID := mustCreateFeedbackUser(t, ctx, client, "feedback-verify@test.com")
-	created, err := svc.Create(ctx, userID, service.CreateFeedbackInput{Category: service.FeedbackCategorySuggestion, Title: "Unclear screen", Content: "The next step is unclear"})
+	created, err := svc.Create(ctx, userID, service.CreateFeedbackInput{Content: "The next step is unclear"})
 	require.NoError(t, err)
 	_, err = svc.TriageByAgent(ctx, created.ID, service.AgentTriageFeedbackInput{TriageStatus: "confirmed", TriagePriority: "P2", TriageSummary: "Confirmed usability issue", RepairDifficulty: "low", RepairRecommendation: "Add guidance"})
 	require.NoError(t, err)

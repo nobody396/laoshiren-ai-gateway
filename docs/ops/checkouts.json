@@ -153,6 +153,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-31T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/restore-monthly-ai-credits-20260809",
+      "owner": "restore-monthly-ai-credits-20260809",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-16T23:59:59+08:00"
     }
   ]
 }

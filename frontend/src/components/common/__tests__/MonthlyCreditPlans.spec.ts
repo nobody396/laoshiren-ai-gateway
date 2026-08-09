@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 
 import MonthlyCreditPlans from '../MonthlyCreditPlans.vue'
 
-describe('MonthlyCreditPlans monthly allowance copy', () => {
-  it('keeps every monthly limit compact and explains the pay-as-you-go equivalent', () => {
+describe('MonthlyCreditPlans AI credits copy', () => {
+  it('shows every plan with the full user-facing monthly AI credits', () => {
     const wrapper = mount(MonthlyCreditPlans, {
       global: {
         stubs: {
@@ -18,19 +18,17 @@ describe('MonthlyCreditPlans monthly allowance copy', () => {
 
     const text = wrapper.text().replace(/\s+/g, ' ')
     expect(wrapper.findAll('.monthly-credit-card__credits-label').map((label) => label.text())).toEqual([
-      '月限制',
-      '月限制',
-      '月限制'
+      '每月额度',
+      '每月额度',
+      '每月额度'
     ])
     expect(wrapper.findAll('.monthly-credit-card__credits strong').map((amount) => amount.text())).toEqual([
-      '⚡300',
-      '⚡900',
-      '⚡2,000'
+      '3,000 AI credits',
+      '9,000 AI credits',
+      '20,000 AI credits'
     ])
-    expect(text).toContain('相当于 ¥300 API 按量付费额度')
-    expect(text).toContain('相当于 ¥900 API 按量付费额度')
-    expect(text).toContain('相当于 ¥2000 API 按量付费额度')
-    expect(text).not.toContain('能量 / 月')
+    expect(text).not.toContain('能量')
+    expect(text).not.toContain('API 按量付费额度')
     expect(wrapper.findAll('.monthly-credit-card__direct-help').map((help) => help.text())).toEqual([
       '直售请登录后联系客服',
       '直售请登录后联系客服',

@@ -74,11 +74,8 @@
                         <span class="topup-status topup-status--available">{{ t('topup.monthlyPlanStatus') }}</span>
                       </span>
                       <span class="topup-monthly-product__price">{{ plan.price }} <small>/ 31 天</small></span>
-                      <span class="topup-monthly-product__energy">
-                        {{ t('topup.monthlyPlanEnergyValue', { amount: plan.displayMonthlyEnergyText }) }}
-                      </span>
-                      <span class="topup-monthly-product__equivalent">
-                        {{ t('topup.monthlyPlanPaygEquivalent', { amount: plan.paygEquivalentCny }) }}
+                      <span class="topup-monthly-product__credits">
+                        {{ t('topup.monthlyPlanCreditsValue', { amount: plan.displayMonthlyCreditsText }) }}
                       </span>
                       <span v-if="plan.legendaryCopy" class="topup-monthly-product__legend">
                         {{ plan.description }}
@@ -234,11 +231,8 @@
                         <div class="topup-monthly-quota">
                           <span>{{ t('topup.monthlyPlanMonthlyLimit') }}</span>
                           <strong>
-                            {{ t('topup.monthlyPlanEnergyValue', { amount: selectedMonthlyPlan?.displayMonthlyEnergyText }) }}
+                            {{ t('topup.monthlyPlanCreditsValue', { amount: selectedMonthlyPlan?.displayMonthlyCreditsText }) }}
                           </strong>
-                          <small class="topup-monthly-quota__equivalent">
-                            {{ t('topup.monthlyPlanPaygEquivalent', { amount: selectedMonthlyPlan?.paygEquivalentCny }) }}
-                          </small>
                           <small>{{ t('topup.monthlyPlanSharedPool') }}</small>
                           <small class="topup-monthly-quota__models">
                             {{ t('topup.monthlyPlanModelsPrefix') }}
@@ -1339,21 +1333,13 @@ void Promise.all([
   font-weight: 650;
 }
 
-.topup-monthly-product__energy,
-.topup-monthly-product__equivalent {
+.topup-monthly-product__credits {
   display: block;
   margin-top: 0.62rem;
   color: var(--admin-ink, rgb(var(--color-ink)));
   font-size: 0.88rem;
   font-weight: 780;
   line-height: 1.4;
-}
-
-.topup-monthly-product__equivalent {
-  margin-top: 0.24rem;
-  color: var(--admin-muted, rgb(var(--color-muted)));
-  font-size: 0.76rem;
-  font-weight: 650;
 }
 
 .topup-monthly-catalog-note {
@@ -1739,11 +1725,6 @@ void Promise.all([
   font-size: 0.76rem;
   font-weight: 650;
   line-height: 1.45;
-}
-
-.topup-monthly-quota .topup-monthly-quota__equivalent {
-  color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
-  font-weight: 760;
 }
 
 .topup-apex-lore {

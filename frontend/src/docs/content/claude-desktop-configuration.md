@@ -138,4 +138,4 @@ Windows 端的配置逻辑与 macOS 基本一致，仅开发者模式的入口�
 ## 相关资源
 
 - [Claude Desktop 官方文档](https://code.claude.com/docs/en/desktop-quickstart)
-- [Claude Code CLI 配置指南](/docs/backend/ai/claude-code)
+- [Claude Code 国内使用指南](/docs/claude-code-china-guide)

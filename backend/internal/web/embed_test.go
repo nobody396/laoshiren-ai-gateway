@@ -138,6 +138,19 @@ func TestSEOManifest_NotFound(t *testing.T) {
 	assert.Contains(t, body, `<h1>页面未找到</h1>`)
 }
 
+func TestSEOManifest_NoindexSPA(t *testing.T) {
+	manifest := &SEOManifest{SiteOrigin: "https://laoshirenai.com"}
+	base := []byte(`<!doctype html><html><head><meta name="robots" content="index,follow" /><link rel="canonical" href="https://laoshirenai.com/" /><script type="application/ld+json" data-seo="server-structured-data">{}</script></head><body><div id="app"></div></body></html>`)
+
+	body := string(manifest.renderNoindexHTML(base, "/dashboard"))
+
+	assert.Contains(t, body, `<meta name="robots" content="noindex,nofollow" />`)
+	assert.Contains(t, body, `<link rel="canonical" href="https://laoshirenai.com/dashboard" />`)
+	assert.NotContains(t, body, `data-seo="server-structured-data"`)
+	assert.True(t, manifest.shouldServeNoindex("/dashboard"))
+	assert.False(t, manifest.shouldServeNoindex("/docs/claude-code-china-guide"))
+}
+
 func TestRouteAwareETag(t *testing.T) {
 	assert.NotEqual(t, routeAwareETag(`"base"`, "/"), routeAwareETag(`"base"`, "/docs/base-url-guide"))
 	assert.Equal(t, routeAwareETag(`"base"`, "/docs/base-url-guide"), routeAwareETag(`"base"`, "/docs/base-url-guide?utm=1"))
@@ -536,6 +549,40 @@ func TestFrontendServer_Middleware(t *testing.T) {
 				assert.Contains(t, w.Header().Get("Content-Type"), "text/html")
 			})
 		}
+	})
+
+	t.Run("serves_private_spa_routes_with_noindex", func(t *testing.T) {
+		provider := &mockSettingsProvider{settings: map[string]string{"test": "value"}}
+		server, err := NewFrontendServer(provider)
+		require.NoError(t, err)
+
+		router := gin.New()
+		router.Use(server.Middleware())
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "noindex, nofollow", w.Header().Get("X-Robots-Tag"))
+		assert.Contains(t, w.Body.String(), `<meta name="robots" content="noindex,nofollow"`)
+		assert.Contains(t, w.Body.String(), `href="https://laoshirenai.com/dashboard"`)
+	})
+
+	t.Run("redirects_legacy_claude_code_doc", func(t *testing.T) {
+		provider := &mockSettingsProvider{settings: map[string]string{"test": "value"}}
+		server, err := NewFrontendServer(provider)
+		require.NoError(t, err)
+
+		router := gin.New()
+		router.Use(server.Middleware())
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/docs/backend/ai/claude-code", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusMovedPermanently, w.Code)
+		assert.Equal(t, "/docs/claude-code-china-guide", w.Header().Get("Location"))
 	})
 
 	t.Run("serves_static_seo_body_for_public_docs", func(t *testing.T) {

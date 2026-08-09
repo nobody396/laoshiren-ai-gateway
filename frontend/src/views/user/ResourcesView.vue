@@ -214,7 +214,7 @@ import {
   type DownloadToolID
 } from '@/api/resources'
 import { useAppStore } from '@/stores/app'
-import { buildClientAutoConfigCommand } from '@/utils/clientAutoConfig'
+import { buildClientAutoConfigCommand, getClientAutoConfigName } from '@/utils/clientAutoConfig'
 
 type IconName = InstanceType<typeof Icon>['$props']['name']
 
@@ -578,7 +578,7 @@ async function prepareAndCopySetup(id: QuickSetupID) {
         groupName: result.group_name
       }
     }
-    await copyToClipboard(command, `${id === 'claude' ? 'Claude Code' : 'Codex'} 一键命令已复制`)
+    await copyToClipboard(command, `${getClientAutoConfigName(id)} 一键命令已复制`)
   } catch (error: any) {
     setupState.value = {
       ...setupState.value,

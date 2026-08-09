@@ -24,7 +24,29 @@
     <meta name="twitter:title" content="老实人AI - AI 编码网关" />
     <meta name="twitter:description" content="老实人AI 提供面向开发者的 AI 编码接口与网关服务，支持 Claude Code、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。" />
     <meta name="twitter:image" content="https://laoshirenai.com/og-image.png" />
-    <script nonce="__CSP_NONCE_VALUE__">
+    <script async id="ga4-gtag-js" src="https://www.googletagmanager.com/gtag/js?id=G-KY7X4XJS6B"></script>
+    <script id="ga4-bootstrap" nonce="__CSP_NONCE_VALUE__">
+      ;(function () {
+        var measurementId = 'G-KY7X4XJS6B'
+        var pagePath = window.location.pathname || '/'
+
+        window.dataLayer = window.dataLayer || []
+        window.gtag = window.gtag || function () { window.dataLayer.push(arguments) }
+        window.gtag('js', new Date())
+        window.gtag('config', measurementId, { send_page_view: false })
+        window.gtag('event', 'page_view', {
+          page_path: pagePath,
+          page_location: window.location.origin + pagePath,
+          page_title: document.title
+        })
+        window.__GA4_BOOTSTRAP__ = {
+          measurementId: measurementId,
+          initialPagePath: pagePath,
+          initialPageViewConsumed: false
+        }
+      })()
+    </script>
+    <script id="app-load-bootstrap" nonce="__CSP_NONCE_VALUE__">
       ;(function () {
         var root = document.documentElement
         var retryKey = 'laoshirenai-app-load-retry'

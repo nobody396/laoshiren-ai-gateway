@@ -3,8 +3,15 @@ import { describe, expect, it } from 'vitest'
 import {
   buildCcsImportDeeplink,
   getCompatibleCcsTargets,
+  OPENAI_CODEX_MODELS,
   type CcsImportTarget
 } from '@/utils/ccSwitchImport'
+
+const decodeBase64Utf8 = (value: string): string => {
+  const binary = atob(value)
+  const bytes = Uint8Array.from(binary, char => char.charCodeAt(0))
+  return new TextDecoder().decode(bytes)
+}
 
 const parseDeepLink = (target: CcsImportTarget, allowMessagesDispatch = false) => {
   const deepLink = buildCcsImportDeeplink({
@@ -74,8 +81,20 @@ describe('CC Switch provider deeplinks', () => {
     }
   )
 
-  it('lets CC Switch build native app configuration from standard fields', () => {
-    expect(parseDeepLink('codex').searchParams.get('config')).toBeNull()
+  it('embeds the complete production Codex model catalog', () => {
+    const url = parseDeepLink('codex')
+    const encodedConfig = url.searchParams.get('config')
+    expect(encodedConfig).not.toBeNull()
+    expect(url.searchParams.get('configFormat')).toBe('json')
+
+    const config = JSON.parse(decodeBase64Utf8(encodedConfig!))
+    expect(config.modelCatalog.models).toEqual(OPENAI_CODEX_MODELS)
+    expect(config.config).toContain('model = "gpt-5.6-sol"')
+    expect(config.config).toContain('base_url = "https://api.laoshirenai.com/v1"')
+    expect(config.config).not.toContain('sk-test-not-a-secret')
+  })
+
+  it('keeps additive clients on their native standard-field contract', () => {
     expect(parseDeepLink('opencode').searchParams.get('config')).toBeNull()
   })
 
@@ -86,8 +105,9 @@ describe('CC Switch provider deeplinks', () => {
     expect(url.searchParams.get('app')).toBe('claude')
     expect(url.searchParams.get('endpoint')).toBe('https://api.laoshirenai.com')
     expect(url.searchParams.get('model')).toBe('claude-opus-5')
-    expect(url.searchParams.get('sonnetModel')).toBe('claude-sonnet-4-6[1M]')
-    expect(url.searchParams.get('opusModel')).toBe('claude-opus-5[1M]')
+    expect(url.searchParams.get('haikuModel')).toBe('claude-haiku-4-5')
+    expect(url.searchParams.get('sonnetModel')).toBe('claude-sonnet-5')
+    expect(url.searchParams.get('opusModel')).toBe('claude-opus-5')
   })
 
   it('avoids duplicating /v1 when the public API base already includes it', () => {

@@ -1,10 +1,11 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.7.0'
+$ScriptVersion = '0.7.1'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
 $DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
+$DefaultCodexModelCatalogUrl = 'https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.1'
 $DefaultCodexAppInstallerUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/windows-x64/latest.appinstaller'
 $DefaultTopupUrl = 'https://laoshirenai.com/get-subscription'
 $DefaultTools = 'all'
@@ -24,6 +25,7 @@ $ClaudeSettingsPath = Join-Path $HOME '.claude\settings.json'
 $CodexDir = Join-Path $HOME '.codex'
 $CodexAuthPath = Join-Path $CodexDir 'auth.json'
 $CodexConfigPath = Join-Path $CodexDir 'config.toml'
+$CodexModelCatalogPath = Join-Path $CodexDir 'laoshirenai-model-catalog.json'
 $GrokDir = Join-Path $HOME '.grok'
 $GrokConfigPath = Join-Path $GrokDir 'config.toml'
 $GrokBinDir = Join-Path $GrokDir 'bin'
@@ -1069,6 +1071,28 @@ function Write-CodexAuthConfig {
   [System.IO.File]::WriteAllText($CodexAuthPath, $json, [System.Text.UTF8Encoding]::new($false))
 }
 
+# 写入本站受支持模型目录，阻止 Codex 回退到官方缓存后展示网关不支持的模型。
+function Write-CodexModelCatalog {
+  Backup-IfNeeded $CodexModelCatalogPath
+  Ensure-Directory $CodexDir
+
+  $DownloadPath = "$CodexModelCatalogPath.download"
+  Download-FileWithFallback -OutputPath $DownloadPath -Urls @($DefaultCodexModelCatalogUrl)
+  $Source = Get-Content -LiteralPath $DownloadPath -Raw | ConvertFrom-Json
+  $Models = @($Source.models)
+  $RequiredFields = @('slug', 'base_instructions', 'supports_reasoning_summaries', 'context_window', 'visibility')
+  $HasMissingFields = @($Models | Where-Object {
+    $Model = $_
+    @($RequiredFields | Where-Object { -not ($Model.PSObject.Properties.Name -contains $_) }).Count -gt 0
+  }).Count -gt 0
+
+  if ($Models.Count -eq 0 -or $HasMissingFields -or @($Models | Where-Object { $_.slug -eq 'gpt-5.3-codex-spark' }).Count -gt 0) {
+    Stop-Script 'Codex 模型目录无效'
+  }
+
+  Move-Item -LiteralPath $DownloadPath -Destination $CodexModelCatalogPath -Force
+}
+
 # 写入 Codex 的 TOML 主配置，第一版采用备份后确定性覆盖策略。
 function Write-CodexTomlConfig {
   Backup-IfNeeded $CodexConfigPath
@@ -1080,6 +1104,7 @@ model_provider = "OpenAI"
 model = "gpt-5.6-sol"
 review_model = "gpt-5.6-sol"
 model_reasoning_effort = "xhigh"
+model_catalog_json = "laoshirenai-model-catalog.json"
 disable_response_storage = true
 network_access = "enabled"
 preferred_auth_method = "apikey"
@@ -1261,6 +1286,7 @@ function Configure-Codex {
   if ($script:Tools -in @('all', 'codex')) {
     Write-Info '正在写入 Codex 配置'
     Write-CodexAuthConfig
+    Write-CodexModelCatalog
     Write-CodexTomlConfig
   }
 }

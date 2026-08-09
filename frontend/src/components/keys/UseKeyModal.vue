@@ -140,6 +140,7 @@ import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useClipboard } from '@/composables/useClipboard'
+import { buildCodexModelCatalog } from '@/utils/ccSwitchImport'
 import type { GroupPlatform } from '@/types'
 
 interface Props {
@@ -780,6 +781,7 @@ function generateOpenAIFiles(baseUrl: string, apiKey: string): FileConfig[] {
 model = "gpt-5.5"
 review_model = "gpt-5.5"
 model_reasoning_effort = "xhigh"
+model_catalog_json = "laoshirenai-model-catalog.json"
 disable_response_storage = true
 network_access = "enabled"
 preferred_auth_method = "apikey"
@@ -807,6 +809,10 @@ requires_openai_auth = true`
     {
       path: `${configDir}/auth.json`,
       content: authContent
+    },
+    {
+      path: `${configDir}/laoshirenai-model-catalog.json`,
+      content: buildCodexModelCatalog()
     }
   ]
 }
@@ -820,6 +826,7 @@ function generateOpenAIWsFiles(baseUrl: string, apiKey: string): FileConfig[] {
 model = "gpt-5.5"
 review_model = "gpt-5.5"
 model_reasoning_effort = "xhigh"
+model_catalog_json = "laoshirenai-model-catalog.json"
 disable_response_storage = true
 network_access = "enabled"
 preferred_auth_method = "apikey"
@@ -851,6 +858,10 @@ responses_websockets_v2 = true`
     {
       path: `${configDir}/auth.json`,
       content: authContent
+    },
+    {
+      path: `${configDir}/laoshirenai-model-catalog.json`,
+      content: buildCodexModelCatalog()
     }
   ]
 }
@@ -947,22 +958,6 @@ function generateOpenCodeConfig(platform: string, baseUrl: string, apiKey: strin
       limit: {
         context: 400000,
         output: 128000
-      },
-      options: {
-        store: false
-      },
-      variants: {
-        low: {},
-        medium: {},
-        high: {},
-        xhigh: {}
-      }
-    },
-    'gpt-5.3-codex-spark': {
-      name: 'GPT-5.3 Codex Spark',
-      limit: {
-        context: 128000,
-        output: 32000
       },
       options: {
         store: false

@@ -12,6 +12,7 @@ export type CcsImportTarget =
 export type CcsApp = CcsImportTarget
 
 export interface CcsImportGroup {
+  id?: number
   platform: GroupPlatform
   name?: string | null
   allow_messages_dispatch?: boolean
@@ -33,10 +34,20 @@ export interface BuildCcsImportDeeplinkInput {
 
 export const DEFAULT_OPENAI_MODEL = 'gpt-5.6-sol'
 
+export const OPENAI_CODEX_MODELS = [
+  { model: 'gpt-5.6-sol', displayName: 'GPT-5.6-Sol', contextWindow: 272000 },
+  { model: 'gpt-5.6-terra', displayName: 'GPT-5.6-Terra', contextWindow: 272000 },
+  { model: 'gpt-5.6-luna', displayName: 'GPT-5.6-Luna', contextWindow: 272000 },
+  { model: 'gpt-5.6', displayName: 'GPT-5.6', contextWindow: 272000 },
+  { model: 'gpt-5.5', displayName: 'GPT-5.5', contextWindow: 272000 },
+  { model: 'gpt-5.4', displayName: 'GPT-5.4', contextWindow: 272000 },
+  { model: 'gpt-5.4-mini', displayName: 'GPT-5.4-Mini', contextWindow: 272000 }
+] as const
+
 const DEFAULT_CLAUDE_MODELS = {
   haiku: 'claude-haiku-4-5',
-  sonnet: 'claude-sonnet-4-6[1M]',
-  opus: 'claude-opus-5[1M]'
+  sonnet: 'claude-sonnet-5',
+  opus: 'claude-opus-5'
 } as const
 
 /**
@@ -85,6 +96,59 @@ const normalizeGatewayBaseUrl = (value: string): string => {
 
 const appendPath = (baseUrl: string, path: string): string => {
   return `${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
+}
+
+const encodeBase64Utf8 = (value: string): string => {
+  const bytes = new TextEncoder().encode(value)
+  let binary = ''
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte)
+  })
+  return btoa(binary)
+}
+
+const escapeTomlString = (value: string): string => {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r')
+}
+
+const buildCodexImportConfig = (endpoint: string, providerName: string): string => {
+  const safeEndpoint = escapeTomlString(endpoint)
+  const safeProviderName = escapeTomlString(providerName)
+  const safeModel = escapeTomlString(DEFAULT_OPENAI_MODEL)
+  const config = `model_provider = "custom"
+model = "${safeModel}"
+model_reasoning_effort = "high"
+disable_response_storage = true
+
+[model_providers.custom]
+name = "${safeProviderName}"
+base_url = "${safeEndpoint}"
+wire_api = "responses"
+requires_openai_auth = true
+`
+
+  return JSON.stringify({
+    config,
+    modelCatalog: {
+      models: OPENAI_CODEX_MODELS
+    }
+  })
+}
+
+const FABLE_ENABLED_CLAUDE_GROUP_IDS = new Set([5, 15])
+
+const buildClaudeImportConfig = (enableFable: boolean): string => {
+  const env: Record<string, string> = {
+    CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY: '1',
+    CLAUDE_CODE_EFFORT_LEVEL: 'high'
+  }
+  if (enableFable) {
+    env.ANTHROPIC_DEFAULT_FABLE_MODEL = 'claude-fable-5'
+  }
+
+  return JSON.stringify({
+    env
+  })
 }
 
 const appLabelForTarget = (target: CcsImportTarget): string => {
@@ -212,8 +276,18 @@ export const buildCcsImportDeeplink = ({
     params.set('model', DEFAULT_OPENAI_MODEL)
   }
 
+  if (target === 'codex') {
+    params.set('configFormat', 'json')
+    params.set('config', encodeBase64Utf8(buildCodexImportConfig(endpoint, providerName)))
+  }
+
   if (target === 'claude') {
     params.set('model', 'claude-opus-5')
+    params.set('configFormat', 'json')
+    params.set(
+      'config',
+      encodeBase64Utf8(buildClaudeImportConfig(FABLE_ENABLED_CLAUDE_GROUP_IDS.has(key.group?.id ?? -1)))
+    )
     const groupModel = key.group?.default_mapped_model?.trim()
     if (platform === 'anthropic' && groupModel) {
       params.set('haikuModel', groupModel)

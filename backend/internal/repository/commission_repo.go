@@ -797,7 +797,6 @@ func (r *commissionRepository) listInvitedUsersWithAffiliateStats(
 		); err != nil {
 			return nil, nil, fmt.Errorf("scan affiliate invited user stat: %w", err)
 		}
-		stat.Email = service.MaskEmail(stat.Email)
 		result = append(result, stat)
 	}
 	if err := rows.Err(); err != nil {

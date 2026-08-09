@@ -189,7 +189,7 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		clientIP := ip.GetClientIP(c)
 		requestPayloadHash := service.HashUsageRequestPayload(body)
 
-		h.submitUsageRecordTask(func(ctx context.Context) {
+		h.submitUsageRecordTask(c.Request.Context(), func(ctx context.Context) {
 			if err := h.gatewayService.RecordUsage(ctx, &service.OpenAIRecordUsageInput{
 				Result:             result,
 				APIKey:             apiKey,

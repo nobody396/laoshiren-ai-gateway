@@ -2,14 +2,48 @@ package handler
 
 import (
 	"context"
+	"strings"
 	"time"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"go.uber.org/zap"
 )
 
 const usageRecordSubmitFallbackTimeout = 10 * time.Second
+
+// withUsageRecordRequestCorrelation copies only the stable request identifiers
+// needed by asynchronous usage recording. The worker pool deliberately creates
+// a fresh bounded context, so passing the original request context would either
+// lose these identifiers or retain a canceled request and unrelated values.
+func withUsageRecordRequestCorrelation(requestCtx context.Context, task service.UsageRecordTask) service.UsageRecordTask {
+	if task == nil {
+		return nil
+	}
+	requestID, clientRequestID := usageRecordRequestCorrelation(requestCtx)
+	return func(workerCtx context.Context) {
+		if workerCtx == nil {
+			workerCtx = context.Background()
+		}
+		if requestID != "" {
+			workerCtx = context.WithValue(workerCtx, ctxkey.RequestID, requestID)
+		}
+		if clientRequestID != "" {
+			workerCtx = context.WithValue(workerCtx, ctxkey.ClientRequestID, clientRequestID)
+		}
+		task(workerCtx)
+	}
+}
+
+func usageRecordRequestCorrelation(ctx context.Context) (requestID, clientRequestID string) {
+	if ctx == nil {
+		return "", ""
+	}
+	requestID, _ = ctx.Value(ctxkey.RequestID).(string)
+	clientRequestID, _ = ctx.Value(ctxkey.ClientRequestID).(string)
+	return strings.TrimSpace(requestID), strings.TrimSpace(clientRequestID)
+}
 
 func submitUsageRecordTaskFailClosed(
 	pool *service.UsageRecordWorkerPool,

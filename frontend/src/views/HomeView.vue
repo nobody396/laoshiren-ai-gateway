@@ -176,10 +176,10 @@ const models = computed(() => (isEnglish.value
       description: 'A daily coding engine for generation, iteration, debugging, and fixes.'
     },
     {
-      eyebrow: 'Multimodal',
-      name: 'Gemini',
-      subtitle: 'Vision understanding and design tasks',
-      description: 'Useful for design-to-code, image understanding, and multimodal frontend workflows.'
+      eyebrow: 'Fast insight',
+      name: 'Grok',
+      subtitle: 'Rapid reasoning and information synthesis',
+      description: 'Best for fast reasoning, information synthesis, and exploratory analysis across complex tasks.'
     }
   ]
   : [
@@ -196,10 +196,10 @@ const models = computed(() => (isEnglish.value
       description: '擅长代码生成、功能迭代与调试修复，日常编码的主力引擎。'
     },
     {
-      eyebrow: '多模态设计',
-      name: 'Gemini',
-      subtitle: '图像理解与视觉任务',
-      description: '擅长设计稿转代码、图像理解与多模态任务，前端设计的得力助手。'
+      eyebrow: '快速洞察',
+      name: 'Grok',
+      subtitle: '快速推理与信息整合',
+      description: '擅长快速推理、信息整合与探索性分析，适合复杂任务的问题拆解。'
     }
   ]))
 

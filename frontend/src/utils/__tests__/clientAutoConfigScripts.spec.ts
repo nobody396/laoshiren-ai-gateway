@@ -13,7 +13,7 @@ describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on macOS and Linux', () => {
     const script = readPublicScript('install.sh')
 
-    expect(script).toContain('SCRIPT_VERSION="0.6.0"')
+    expect(script).toContain('SCRIPT_VERSION="0.7.0"')
     expect(script).toContain('EXISTING_CLAUDE_COMMAND="$(get_usable_client_command claude || true)"')
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('exchange_setup_ticket')
@@ -30,7 +30,7 @@ describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on Windows', () => {
     const script = readPublicScript('install.ps1')
 
-    expect(script).toContain("$ScriptVersion = '0.6.0'")
+    expect(script).toContain("$ScriptVersion = '0.7.0'")
     expect(script).toContain("Get-UsableClientCommand -CommandName 'claude'")
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('Exchange-SetupTicket')
@@ -69,5 +69,25 @@ describe('client auto-config scripts', () => {
     const modal = readUseKeyModal()
     expect(modal).toContain('"model": "claude-opus-5"')
     expect(modal).toContain('"effortLevel": "xhigh"')
+  })
+
+  it('installs and configures Grok Build with the native Responses model on macOS and Linux', () => {
+    const script = readPublicScript('install.sh')
+    expect(script).toContain('all|claude|codex|grok')
+    expect(script).toContain("curl -fsSL https://x.ai/cli/install.sh | bash")
+    expect(script).toContain("'[model.\"grok-4.5\"]'")
+    expect(script).toContain("'api_backend = \"responses\"'")
+    expect(script).toContain('verify_api_key_readiness "Grok Build" "$GROK_API_KEY"')
+    expect(script).toContain("['claude', 'codex', 'grok'].includes(data.target)")
+  })
+
+  it('installs and configures Grok Build with the native Responses model on Windows', () => {
+    const script = readPublicScript('install.ps1')
+    expect(script).toContain("@('all', 'claude', 'codex', 'grok')")
+    expect(script).toContain("'https://x.ai/cli'")
+    expect(script).toContain('grok-$Version-windows-$Arch.exe')
+    expect(script).toContain("$Lines.Add('[model.\"grok-4.5\"]')")
+    expect(script).toContain("$Lines.Add('api_backend = \"responses\"')")
+    expect(script).toContain("Test-ApiKeyReadiness -Label 'Grok Build' -ApiKey $script:GrokApiKey")
   })
 })

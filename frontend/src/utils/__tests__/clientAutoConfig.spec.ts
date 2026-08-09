@@ -16,9 +16,12 @@ describe('client auto-config target selection', () => {
     expect(getClientAutoConfigTarget('antigravity')).toBe('claude')
   })
 
+  it('maps native Grok groups to Grok Build', () => {
+    expect(getClientAutoConfigTarget('grok')).toBe('grok')
+  })
+
   it('does not offer an incompatible client setup', () => {
     expect(getClientAutoConfigTarget('gemini')).toBeNull()
-    expect(getClientAutoConfigTarget('grok')).toBeNull()
     expect(getClientAutoConfigTarget('gpt-image')).toBeNull()
     expect(getClientAutoConfigTarget()).toBeNull()
   })
@@ -26,6 +29,7 @@ describe('client auto-config target selection', () => {
   it('returns reader-facing client names', () => {
     expect(getClientAutoConfigName('claude')).toBe('Claude Code')
     expect(getClientAutoConfigName('codex')).toBe('Codex')
+    expect(getClientAutoConfigName('grok')).toBe('Grok Build')
   })
 })
 
@@ -88,6 +92,17 @@ describe('client auto-config commands', () => {
     })).toBe(
       "curl -fsSL https://laoshirenai.com/auto-config/install.sh | " +
       "LAOSHIRENAI_SETUP_TOKEN='ticket-claude-test' LAOSHIRENAI_TOOLS='claude' bash"
+    )
+  })
+
+  it('builds a one-line Grok Build command with a one-time ticket', () => {
+    expect(buildClientAutoConfigCommand({
+      target: 'grok',
+      ticket: 'ticket-grok-test',
+      isWindows: false
+    })).toBe(
+      "curl -fsSL https://laoshirenai.com/auto-config/install.sh | " +
+      "LAOSHIRENAI_SETUP_TOKEN='ticket-grok-test' LAOSHIRENAI_TOOLS='grok' bash"
     )
   })
 

@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.6.0'
+$ScriptVersion = '0.7.0'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
 $DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
@@ -24,18 +24,26 @@ $ClaudeSettingsPath = Join-Path $HOME '.claude\settings.json'
 $CodexDir = Join-Path $HOME '.codex'
 $CodexAuthPath = Join-Path $CodexDir 'auth.json'
 $CodexConfigPath = Join-Path $CodexDir 'config.toml'
+$GrokDir = Join-Path $HOME '.grok'
+$GrokConfigPath = Join-Path $GrokDir 'config.toml'
+$GrokBinDir = Join-Path $GrokDir 'bin'
+$GrokCommandPath = Join-Path $GrokBinDir 'grok.exe'
 
 # 支持通过环境变量传参，解决 `irm | iex` 管道模式下无法传命令行参数的问题
 $BaseUrl = if ($env:LAOSHIRENAI_BASE_URL) { $env:LAOSHIRENAI_BASE_URL } else { $DefaultBaseUrl }
 $Tools = if ($env:LAOSHIRENAI_TOOLS) { $env:LAOSHIRENAI_TOOLS.ToLowerInvariant() } else { $DefaultTools }
 $ClaudeApiKey = $env:LAOSHIRENAI_CLAUDE_API_KEY
 $CodexApiKey = $env:LAOSHIRENAI_CODEX_API_KEY
+$GrokApiKey = $env:LAOSHIRENAI_GROK_API_KEY
 $UnifiedApiKey = $env:LAOSHIRENAI_API_KEY
 if ([string]::IsNullOrWhiteSpace($ClaudeApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
   $ClaudeApiKey = $UnifiedApiKey
 }
 if ([string]::IsNullOrWhiteSpace($CodexApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
   $CodexApiKey = $UnifiedApiKey
+}
+if ([string]::IsNullOrWhiteSpace($GrokApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
+  $GrokApiKey = $UnifiedApiKey
 }
 $NodeVersionOverride = if ($env:LAOSHIRENAI_NODE_VERSION) { $env:LAOSHIRENAI_NODE_VERSION } else { '' }
 $SkipClientInstall = $env:LAOSHIRENAI_SKIP_CLIENT_INSTALL -eq '1'
@@ -53,8 +61,10 @@ $script:UseProxylessNpm = $false
 $script:ActiveNpmRegistry = $DefaultNpmRegistry
 $script:InstallClaudeClient = $false
 $script:InstallCodexClient = $false
+$script:InstallGrokClient = $false
 $script:ExistingClaudeCommand = ''
 $script:ExistingCodexCommand = ''
+$script:ExistingGrokCommand = ''
 $script:ExistingCodexApp = ''
 
 # 输出信息日志，方便用户了解当前执行到了哪一步。
@@ -116,6 +126,11 @@ function Parse-Arguments {
         if ($i -ge $ArgsList.Count) { Stop-Script '--codex-api-key 需要一个值' }
         $script:CodexApiKey = $ArgsList[$i]
       }
+      '--grok-api-key' {
+        $i++
+        if ($i -ge $ArgsList.Count) { Stop-Script '--grok-api-key 需要一个值' }
+        $script:GrokApiKey = $ArgsList[$i]
+      }
       '--base-url' {
         $i++
         if ($i -ge $ArgsList.Count) { Stop-Script '--base-url 需要一个值' }
@@ -125,8 +140,8 @@ function Parse-Arguments {
         $i++
         if ($i -ge $ArgsList.Count) { Stop-Script '--tools 需要一个值' }
         $Value = $ArgsList[$i].ToLowerInvariant()
-        if ($Value -notin @('all', 'claude', 'codex')) {
-          Stop-Script '不支持的 --tools 值，可选值为 all / claude / codex'
+        if ($Value -notin @('all', 'claude', 'codex', 'grok')) {
+          Stop-Script '不支持的 --tools 值，可选值为 all / claude / codex / grok'
         }
         $script:Tools = $Value
       }
@@ -150,7 +165,7 @@ function Parse-Arguments {
 
 用法:
   # 方式一：直接执行脚本文件，支持命令行参数
-  .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --tools all
+  .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
   $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
@@ -161,10 +176,11 @@ function Parse-Arguments {
 参数:
   --api-key              Claude Code API Key
   --codex-api-key        Codex API Key
+  --grok-api-key         Grok Build API Key
   --tools                需要配置的工具，默认 all
   --base-url             API 基础地址，默认 https://api.laoshirenai.com
   --node-version         指定 Node.js 版本，例如 v24.11.0
-  --skip-client-install  仅写配置，不安装 claude/codex 包
+  --skip-client-install  仅写配置，不安装客户端
   --force-client-install 即使检测到已有客户端，也重新安装所选 CLI
   --install-codex-app    同时安装或更新与当前 Windows 架构匹配的 Codex App
 '@ | Write-Host
@@ -212,6 +228,13 @@ function Prompt-ApiKeys {
       Stop-Script 'Codex API Key 不能为空'
     }
   }
+
+  if ($script:Tools -eq 'grok' -and [string]::IsNullOrWhiteSpace($script:GrokApiKey)) {
+    $script:GrokApiKey = Read-SecureInput -Prompt '请输入 Grok Build API Key'
+    if ([string]::IsNullOrWhiteSpace($script:GrokApiKey)) {
+      Stop-Script 'Grok Build API Key 不能为空'
+    }
+  }
 }
 
 # 用一次性凭证领取当前目标的专用 API Key。凭证和 Key 均不会打印到终端。
@@ -232,7 +255,7 @@ function Exchange-SetupTicket {
 
   $Data = $Response.data
   if ($null -eq $Data -or
-      $Data.target -notin @('claude', 'codex') -or
+      $Data.target -notin @('claude', 'codex', 'grok') -or
       [string]::IsNullOrWhiteSpace([string]$Data.api_key) -or
       [string]::IsNullOrWhiteSpace([string]$Data.base_url)) {
     Stop-Script '服务器返回的一键安装配置格式无效'
@@ -244,8 +267,10 @@ function Exchange-SetupTicket {
   $script:BaseUrl = [string]$Data.base_url
   if ($Data.target -eq 'claude') {
     $script:ClaudeApiKey = [string]$Data.api_key
-  } else {
+  } elseif ($Data.target -eq 'codex') {
     $script:CodexApiKey = [string]$Data.api_key
+  } else {
+    $script:GrokApiKey = [string]$Data.api_key
   }
   $script:SetupToken = ''
   Remove-Item Env:LAOSHIRENAI_SETUP_TOKEN -ErrorAction SilentlyContinue
@@ -322,6 +347,7 @@ function Resolve-ClientInstallPlan {
 
   $script:InstallClaudeClient = $false
   $script:InstallCodexClient = $false
+  $script:InstallGrokClient = $false
 
   if ($script:Tools -in @('all', 'claude')) {
     $script:ExistingClaudeCommand = Get-UsableClientCommand -CommandName 'claude'
@@ -356,6 +382,20 @@ function Resolve-ClientInstallPlan {
       Write-WarnMessage '未检测到可用的 Codex CLI，但已按要求跳过安装'
     } else {
       $script:InstallCodexClient = $true
+    }
+  }
+
+  if ($script:Tools -eq 'grok') {
+    $script:ExistingGrokCommand = Get-UsableClientCommand -CommandName 'grok'
+    if ($script:ForceClientInstall) {
+      $script:InstallGrokClient = $true
+      Write-Info '已要求强制重新安装 Grok Build'
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingGrokCommand)) {
+      Write-Info "检测到现有 Grok Build，跳过重复安装: $($script:ExistingGrokCommand)"
+    } elseif ($script:SkipClientInstall) {
+      Write-WarnMessage '未检测到可用的 Grok Build，但已按要求跳过安装'
+    } else {
+      $script:InstallGrokClient = $true
     }
   }
 }
@@ -413,6 +453,10 @@ function Resolve-ClientUpdatePlan {
 }
 
 function Test-NeedsClientInstall {
+  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGrokClient)
+}
+
+function Test-NeedsNpmClientInstall {
   return ($script:InstallClaudeClient -or $script:InstallCodexClient)
 }
 
@@ -706,7 +750,8 @@ function Ensure-UserPath {
   $RequiredEntries = @(
     $NodeCurrentDir,
     $NpmPrefix,
-    (Join-Path $NpmPrefix 'bin')
+    (Join-Path $NpmPrefix 'bin'),
+    $GrokBinDir
   ) | ForEach-Object { $_.TrimEnd('\') }
 
   $CurrentUserPath = [Environment]::GetEnvironmentVariable('Path', 'User')
@@ -761,6 +806,48 @@ function Install-NpmPackageWithFallback {
   }
 }
 
+function Install-GrokBuild {
+  $NativeArch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
+  $Arch = if ($NativeArch -eq 'Arm64') { 'aarch64' } elseif ($NativeArch -eq 'X64') { 'x86_64' } else { '' }
+  if ([string]::IsNullOrWhiteSpace($Arch)) {
+    Stop-Script "Grok Build 暂不支持当前 Windows 架构: $NativeArch"
+  }
+
+  $Bases = @('https://x.ai/cli', 'https://storage.googleapis.com/grok-build-public-artifacts/cli')
+  $Version = ''
+  $SelectedBase = ''
+  foreach ($Candidate in $Bases) {
+    try {
+      $Version = ([string](Invoke-RestMethod -Uri "$Candidate/stable" -Method GET)).Trim()
+      if ($Version -match '^\d+\.\d+\.\d+(?:-[A-Za-z0-9._]+)?$') {
+        $SelectedBase = $Candidate
+        break
+      }
+    } catch {
+      Write-WarnMessage "读取 Grok Build 版本失败，尝试下一个官方地址: $Candidate"
+    }
+  }
+  if ([string]::IsNullOrWhiteSpace($SelectedBase)) {
+    Stop-Script '无法读取 xAI 官方 Grok Build 稳定版本'
+  }
+
+  $DownloadsDir = Join-Path $GrokDir 'downloads'
+  Ensure-Directory $DownloadsDir
+  Ensure-Directory $GrokBinDir
+  $DownloadPath = Join-Path $DownloadsDir "grok-windows-$Arch.exe"
+  $Artifact = "$SelectedBase/grok-$Version-windows-$Arch.exe"
+  Write-Info "正在从 xAI 官方地址下载 Grok Build $Version (windows-$Arch)"
+  try {
+    Invoke-WebRequest -Uri $Artifact -OutFile "$DownloadPath.tmp"
+    Move-Item -LiteralPath "$DownloadPath.tmp" -Destination $DownloadPath -Force
+    Copy-Item -LiteralPath $DownloadPath -Destination $GrokCommandPath -Force
+    Copy-Item -LiteralPath $DownloadPath -Destination (Join-Path $GrokBinDir 'agent.exe') -Force
+  } catch {
+    Remove-Item -LiteralPath "$DownloadPath.tmp" -Force -ErrorAction SilentlyContinue
+    Stop-Script "Grok Build 下载或安装失败: $_"
+  }
+}
+
 # 安装用户选择的客户端包，并全部写入用户目录而非系统目录。
 function Install-RequestedClients {
   if (-not (Test-NeedsClientInstall)) {
@@ -768,12 +855,14 @@ function Install-RequestedClients {
     return
   }
 
-  Ensure-Directory $NpmPrefix
-  Detect-BrokenLocalProxy
-  if ($script:UseProxylessNpm) {
-    Write-WarnMessage '检测到本地代理环境变量，安装客户端时将临时绕过代理'
+  if (Test-NeedsNpmClientInstall) {
+    Ensure-Directory $NpmPrefix
+    Detect-BrokenLocalProxy
+    if ($script:UseProxylessNpm) {
+      Write-WarnMessage '检测到本地代理环境变量，安装客户端时将临时绕过代理'
+    }
+    Ensure-NpmRegistry -Registry $DefaultNpmRegistry
   }
-  Ensure-NpmRegistry -Registry $DefaultNpmRegistry
 
   if ($script:InstallClaudeClient) {
     Write-Info '正在安装或更新 Claude Code'
@@ -783,6 +872,10 @@ function Install-RequestedClients {
   if ($script:InstallCodexClient) {
     Write-Info '正在安装或更新 Codex'
     Install-NpmPackageWithFallback -PackageName '@openai/codex@latest'
+  }
+
+  if ($script:InstallGrokClient) {
+    Install-GrokBuild
   }
 }
 
@@ -1000,12 +1093,78 @@ requires_openai_auth = true
   [System.IO.File]::WriteAllText($CodexConfigPath, $toml, [System.Text.UTF8Encoding]::new($false))
 }
 
+function ConvertTo-TomlString {
+  param([string]$Value)
+  return ($Value | ConvertTo-Json -Compress)
+}
+
+function Write-GrokTomlConfig {
+  Backup-IfNeeded $GrokConfigPath
+  Ensure-Directory $GrokDir
+  $Lines = if (Test-Path -LiteralPath $GrokConfigPath) {
+    [System.Collections.Generic.List[string]]@(Get-Content -LiteralPath $GrokConfigPath)
+  } else {
+    [System.Collections.Generic.List[string]]@()
+  }
+
+  $Kept = [System.Collections.Generic.List[string]]@()
+  $DroppingModel = $false
+  foreach ($Line in $Lines) {
+    if ($Line.Trim() -match '^\[([^\]]+)\]$') {
+      $DroppingModel = $Matches[1] -in @('model.grok-4.5', 'model."grok-4.5"')
+    }
+    if (-not $DroppingModel) { $Kept.Add($Line) }
+  }
+  $Lines = $Kept
+
+  $ModelsHeader = -1
+  for ($i = 0; $i -lt $Lines.Count; $i++) {
+    if ($Lines[$i].Trim() -eq '[models]') { $ModelsHeader = $i; break }
+  }
+  if ($ModelsHeader -lt 0) {
+    $Lines.Add('')
+    $Lines.Add('[models]')
+    $Lines.Add('default = "grok-4.5"')
+  } else {
+    $End = $Lines.Count
+    for ($i = $ModelsHeader + 1; $i -lt $Lines.Count; $i++) {
+      if ($Lines[$i] -match '^\s*\[') { $End = $i; break }
+    }
+    $Replaced = $false
+    for ($i = $ModelsHeader + 1; $i -lt $End; $i++) {
+      if ($Lines[$i] -match '^\s*default\s*=') {
+        $Lines[$i] = 'default = "grok-4.5"'
+        $Replaced = $true
+        break
+      }
+    }
+    if (-not $Replaced) { $Lines.Insert($ModelsHeader + 1, 'default = "grok-4.5"') }
+  }
+
+  $BaseV1 = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  $Lines.Add('')
+  $Lines.Add('# Managed by laoshirenai one-click setup')
+  $Lines.Add('[model."grok-4.5"]')
+  $Lines.Add('model = "grok-4.5"')
+  $Lines.Add("base_url = $(ConvertTo-TomlString $BaseV1)")
+  $Lines.Add('name = "Grok 4.5 · 老实人AI"')
+  $Lines.Add("api_key = $(ConvertTo-TomlString $script:GrokApiKey)")
+  $Lines.Add('api_backend = "responses"')
+  $Lines.Add('context_window = 262144')
+  $Lines.Add('')
+  [System.IO.File]::WriteAllLines($GrokConfigPath, $Lines, [System.Text.UTF8Encoding]::new($false))
+}
+
 function Test-UsesCodex {
   return $script:Tools -in @('all', 'codex')
 }
 
 function Test-UsesClaude {
   return $script:Tools -in @('all', 'claude')
+}
+
+function Test-UsesGrok {
+  return $script:Tools -eq 'grok'
 }
 
 function Get-OpenAIV1BaseUrl {
@@ -1083,6 +1242,12 @@ function Test-CodexApiKey {
   }
 }
 
+function Test-GrokApiKey {
+  if (Test-UsesGrok) {
+    Test-ApiKeyReadiness -Label 'Grok Build' -ApiKey $script:GrokApiKey
+  }
+}
+
 # 根据用户选择写入 Claude Code 配置。
 function Configure-Claude {
   if ($script:Tools -in @('all', 'claude')) {
@@ -1097,6 +1262,13 @@ function Configure-Codex {
     Write-Info '正在写入 Codex 配置'
     Write-CodexAuthConfig
     Write-CodexTomlConfig
+  }
+}
+
+function Configure-Grok {
+  if (Test-UsesGrok) {
+    Write-Info '正在写入 Grok Build 原生模型配置'
+    Write-GrokTomlConfig
   }
 }
 
@@ -1139,6 +1311,20 @@ function Verify-ClientCommands {
       Stop-Script "Codex 安装验证失败：未找到 $CodexCmd"
     }
   }
+
+  if (Test-UsesGrok) {
+    $GrokCmd = if ($script:InstallGrokClient) { $GrokCommandPath } else { $script:ExistingGrokCommand }
+    if (-not [string]::IsNullOrWhiteSpace($GrokCmd) -and (Test-Path -LiteralPath $GrokCmd)) {
+      try {
+        & $GrokCmd --version | Out-Null
+        Write-Info 'Grok Build 验证通过'
+      } catch {
+        Stop-Script "Grok Build 安装验证失败: $_"
+      }
+    } elseif ($script:InstallGrokClient) {
+      Stop-Script "Grok Build 安装验证失败：未找到 $GrokCmd"
+    }
+  }
 }
 
 # 输出最终结果和下一步指引，帮助用户立即开始使用。
@@ -1150,6 +1336,9 @@ function Print-Summary {
   Write-Host "  - Claude 配置: $ClaudeSettingsPath"
   Write-Host "  - Codex 鉴权: $CodexAuthPath"
   Write-Host "  - Codex 配置: $CodexConfigPath"
+  if (Test-UsesGrok) {
+    Write-Host "  - Grok Build 配置: $GrokConfigPath"
+  }
   if (Test-UsesClaude) {
     Write-Host '  - Claude Code 专用 Key: 已配置'
     if ($script:InstallClaudeClient) {
@@ -1166,6 +1355,14 @@ function Print-Summary {
       Write-Host "  - Codex CLI: 已保留现有安装 ($($script:ExistingCodexCommand))"
     } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingCodexApp)) {
       Write-Host '  - Codex App: 已保留现有安装，未重复下载'
+    }
+  }
+  if (Test-UsesGrok) {
+    Write-Host '  - Grok Build 专用 Key: 已配置'
+    if ($script:InstallGrokClient) {
+      Write-Host '  - Grok Build CLI: 本次已安装'
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingGrokCommand)) {
+      Write-Host "  - Grok Build CLI: 已保留现有安装 ($($script:ExistingGrokCommand))"
     }
   }
   Write-Host ''
@@ -1189,6 +1386,10 @@ function Print-Summary {
       Write-Host '  - 重新打开 PowerShell 后执行 codex --version'
     }
   }
+  if (Test-UsesGrok) {
+    Write-Host '  - 重新打开 PowerShell 后执行 grok --version'
+    Write-Host '  - 再执行 grok -m grok-4.5 -p "只回复 OK"'
+  }
 }
 
 # 组织整个安装流程，确保安装、配置、校验按固定顺序执行。
@@ -1205,9 +1406,11 @@ function Main {
   Exchange-SetupTicket
   Resolve-ClientInstallPlan
   Resolve-ClientUpdatePlan
-  if (Test-NeedsClientInstall) {
+  if (Test-NeedsNpmClientInstall) {
     Ensure-NodeRuntime
     Ensure-GitBash
+  }
+  if (Test-NeedsClientInstall) {
     Ensure-UserPath
   } else {
     Write-Info '检测到所选客户端已存在或已要求跳过安装；不下载 Node.js、不修改 PATH'
@@ -1216,8 +1419,10 @@ function Main {
   Install-CodexAppIfRequested
   Configure-Claude
   Configure-Codex
+  Configure-Grok
   Test-ClaudeApiKey
   Test-CodexApiKey
+  Test-GrokApiKey
   Verify-ClientCommands
   Print-Summary
 }

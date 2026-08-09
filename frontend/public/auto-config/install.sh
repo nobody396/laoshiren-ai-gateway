@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="0.6.0"
+SCRIPT_VERSION="0.7.0"
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
 DEFAULT_CODEX_MANIFEST_URL="https://laoshirenai.com/api/v1/public-downloads/codex/latest.json"
@@ -25,11 +25,15 @@ CLAUDE_SETTINGS_PATH="${HOME}/.claude/settings.json"
 CODEX_DIR="${HOME}/.codex"
 CODEX_AUTH_PATH="${CODEX_DIR}/auth.json"
 CODEX_CONFIG_PATH="${CODEX_DIR}/config.toml"
+GROK_DIR="${HOME}/.grok"
+GROK_CONFIG_PATH="${GROK_DIR}/config.toml"
+GROK_BIN_PATH="${GROK_DIR}/bin/grok"
 
 BASE_URL="${DEFAULT_BASE_URL}"
 TOOLS="${DEFAULT_TOOLS}"
 CLAUDE_API_KEY="${LAOSHIRENAI_CLAUDE_API_KEY:-}"
 CODEX_API_KEY="${LAOSHIRENAI_CODEX_API_KEY:-}"
+GROK_API_KEY="${LAOSHIRENAI_GROK_API_KEY:-}"
 NODE_VERSION_OVERRIDE="${LAOSHIRENAI_NODE_VERSION:-}"
 SKIP_CLIENT_INSTALL=0
 FORCE_CLIENT_INSTALL=0
@@ -44,6 +48,7 @@ UNIFIED_API_KEY="${LAOSHIRENAI_API_KEY:-}"
 if [ -n "$UNIFIED_API_KEY" ]; then
   [ -n "$CLAUDE_API_KEY" ] || CLAUDE_API_KEY="$UNIFIED_API_KEY"
   [ -n "$CODEX_API_KEY" ] || CODEX_API_KEY="$UNIFIED_API_KEY"
+  [ -n "$GROK_API_KEY" ] || GROK_API_KEY="$UNIFIED_API_KEY"
 fi
 
 # 支持通过环境变量覆盖基础参数，兼容管道执行或预置 shell 环境。
@@ -64,8 +69,10 @@ USE_PROXYLESS_NPM=0
 ACTIVE_NPM_REGISTRY="${DEFAULT_NPM_REGISTRY}"
 INSTALL_CLAUDE_CLIENT=0
 INSTALL_CODEX_CLIENT=0
+INSTALL_GROK_CLIENT=0
 EXISTING_CLAUDE_COMMAND=""
 EXISTING_CODEX_COMMAND=""
+EXISTING_GROK_COMMAND=""
 
 # 输出信息日志，便于用户识别当前执行步骤。
 log_info() {
@@ -136,13 +143,22 @@ ensure_profile_exports() {
     {
       printf '\n%s\n' "$marker_begin"
       # shellcheck disable=SC2016 # Keep $PATH literal for future shells.
-      printf 'export PATH="%s/bin:%s/bin:%s:$PATH"\n' "$NODE_CURRENT_DIR" "$NPM_PREFIX" "$LOCAL_BIN_DIR"
+      printf 'export PATH="%s/bin:%s/bin:%s:%s/bin:$PATH"\n' "$NODE_CURRENT_DIR" "$NPM_PREFIX" "$LOCAL_BIN_DIR" "$GROK_DIR"
       printf '%s\n' "$marker_end"
     } >>"$PROFILE_FILE"
     log_info "已写入 PATH 到 ${PROFILE_FILE}"
+  elif ! grep -Fq "${GROK_DIR}/bin" "$PROFILE_FILE"; then
+    local profile_tmp
+    profile_tmp="$(mktemp)"
+    awk -v marker="$marker_end" -v grok_bin="${GROK_DIR}/bin" '
+      $0 == marker { printf "export PATH=\"%s:$PATH\"\n", grok_bin }
+      { print }
+    ' "$PROFILE_FILE" >"$profile_tmp"
+    mv "$profile_tmp" "$PROFILE_FILE"
+    log_info "已把 Grok Build 加入 PATH: ${PROFILE_FILE}"
   fi
 
-  export PATH="${NODE_CURRENT_DIR}/bin:${NPM_PREFIX}/bin:${LOCAL_BIN_DIR}:${PATH}"
+  export PATH="${NODE_CURRENT_DIR}/bin:${NPM_PREFIX}/bin:${LOCAL_BIN_DIR}:${GROK_DIR}/bin:${PATH}"
 }
 
 # 为 claude 和 codex 生成稳定包装脚本，避免用户切换终端后找不到 node 运行时。
@@ -235,11 +251,11 @@ normalize_tools() {
   normalized_value="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
 
   case "$normalized_value" in
-    all|claude|codex)
+    all|claude|codex|grok)
       printf '%s' "$normalized_value"
       ;;
     *)
-      log_error "不支持的 --tools 值: $1，可选值为 all / claude / codex"
+      log_error "不支持的 --tools 值: $1，可选值为 all / claude / codex / grok"
       ;;
   esac
 }
@@ -256,6 +272,11 @@ parse_args() {
       --codex-api-key)
         [ $# -ge 2 ] || log_error "--codex-api-key 需要一个值"
         CODEX_API_KEY="$2"
+        shift 2
+        ;;
+      --grok-api-key)
+        [ $# -ge 2 ] || log_error "--grok-api-key 需要一个值"
+        GROK_API_KEY="$2"
         shift 2
         ;;
       --base-url)
@@ -290,15 +311,16 @@ parse_args() {
 老实人 AI 一键安装与自动配置脚本
 
 用法:
-  bash install.sh --api-key <Claude_API_Key> [--codex-api-key <Codex_API_Key>] [--tools all|claude|codex] [--base-url https://api.laoshirenai.com]
+  bash install.sh --api-key <Claude_API_Key> [--codex-api-key <Codex_API_Key>] [--grok-api-key <Grok_API_Key>] [--tools all|claude|codex|grok] [--base-url https://api.laoshirenai.com]
 
 参数:
   --api-key             Claude Code API Key
   --codex-api-key       Codex API Key
+  --grok-api-key        Grok Build API Key
   --tools               需要配置的工具，默认 all
   --base-url            API 基础地址，默认 https://api.laoshirenai.com
   --node-version        指定 Node.js 版本，例如 v24.11.0
-  --skip-client-install 仅写配置，不安装 claude/codex 包
+  --skip-client-install 仅写配置，不安装客户端
   --force-client-install 即使检测到已有客户端，也重新安装所选 CLI
   --install-codex-app    同时安装或更新与当前 Mac 芯片匹配的 Codex App
 EOF
@@ -349,6 +371,10 @@ prompt_for_api_keys() {
       prompt_for_named_api_key "Codex API Key" "请输入 Codex API Key" "CODEX_API_KEY" "--codex-api-key" "LAOSHIRENAI_CODEX_API_KEY"
     fi
   fi
+
+  if [ "$TOOLS" = "grok" ] && [ -z "$GROK_API_KEY" ]; then
+    prompt_for_named_api_key "Grok Build API Key" "请输入 Grok Build API Key" "GROK_API_KEY" "--grok-api-key" "LAOSHIRENAI_GROK_API_KEY"
+  fi
 }
 
 # 返回一个真正可运行的现有 CLI；PATH 残留但无法执行的命令不算已安装。
@@ -376,6 +402,7 @@ resolve_client_install_plan() {
 
   INSTALL_CLAUDE_CLIENT=0
   INSTALL_CODEX_CLIENT=0
+  INSTALL_GROK_CLIENT=0
 
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]; then
     EXISTING_CLAUDE_COMMAND="$(get_usable_client_command claude || true)"
@@ -402,6 +429,20 @@ resolve_client_install_plan() {
       log_warn "未检测到可用的 Codex CLI，但已按要求跳过安装"
     else
       INSTALL_CODEX_CLIENT=1
+    fi
+  fi
+
+  if [ "$TOOLS" = "grok" ]; then
+    EXISTING_GROK_COMMAND="$(get_usable_client_command grok || true)"
+    if [ "$FORCE_CLIENT_INSTALL" -eq 1 ]; then
+      INSTALL_GROK_CLIENT=1
+      log_info "已要求强制重新安装 Grok Build"
+    elif [ -n "$EXISTING_GROK_COMMAND" ]; then
+      log_info "检测到现有 Grok Build，跳过重复安装: ${EXISTING_GROK_COMMAND}"
+    elif [ "$SKIP_CLIENT_INSTALL" -eq 1 ]; then
+      log_warn "未检测到可用的 Grok Build，但已按要求跳过安装"
+    else
+      INSTALL_GROK_CLIENT=1
     fi
   fi
 }
@@ -465,6 +506,10 @@ resolve_client_update_plan() {
 }
 
 needs_client_install() {
+  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || [ "$INSTALL_GROK_CLIENT" -eq 1 ]
+}
+
+needs_npm_client_install() {
   [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ]
 }
 
@@ -644,7 +689,7 @@ EOF
 const fs = require('node:fs')
 const body = JSON.parse(fs.readFileSync(process.env.SETUP_RESPONSE_PATH, 'utf8'))
 const data = body && body.data
-if (!data || !['claude', 'codex'].includes(data.target) || !data.api_key || !data.base_url) {
+if (!data || !['claude', 'codex', 'grok'].includes(data.target) || !data.api_key || !data.base_url) {
   process.exit(2)
 }
 process.stdout.write([
@@ -668,8 +713,10 @@ EOF
   BASE_URL="$received_base_url"
   if [ "$target" = "claude" ]; then
     CLAUDE_API_KEY="$received_key"
-  else
+  elif [ "$target" = "codex" ]; then
     CODEX_API_KEY="$received_key"
+  else
+    GROK_API_KEY="$received_key"
   fi
   SETUP_TOKEN=""
   unset LAOSHIRENAI_SETUP_TOKEN SETUP_TICKET
@@ -707,12 +754,14 @@ install_requested_clients() {
     return 0
   fi
 
-  ensure_dir "$NPM_PREFIX"
-  detect_broken_local_proxy
-  if [ "$USE_PROXYLESS_NPM" -eq 1 ]; then
-    log_warn "检测到本地代理环境变量，安装客户端时将临时绕过代理"
+  if needs_npm_client_install; then
+    ensure_dir "$NPM_PREFIX"
+    detect_broken_local_proxy
+    if [ "$USE_PROXYLESS_NPM" -eq 1 ]; then
+      log_warn "检测到本地代理环境变量，安装客户端时将临时绕过代理"
+    fi
+    ensure_npm_registry "$DEFAULT_NPM_REGISTRY"
   fi
-  ensure_npm_registry "$DEFAULT_NPM_REGISTRY"
 
   if [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ]; then
     log_info "正在安装或更新 Claude Code"
@@ -722,6 +771,11 @@ install_requested_clients() {
   if [ "$INSTALL_CODEX_CLIENT" -eq 1 ]; then
     log_info "正在安装或更新 Codex"
     npm_install_with_fallback "@openai/codex@latest"
+  fi
+
+  if [ "$INSTALL_GROK_CLIENT" -eq 1 ]; then
+    log_info "正在通过 xAI 官方安装器安装或更新 Grok Build"
+    curl -fsSL https://x.ai/cli/install.sh | bash || log_error "Grok Build 安装失败，请检查网络后重试"
   fi
 }
 
@@ -940,12 +994,78 @@ requires_openai_auth = true
 EOF
 }
 
+# 在保留其他 Grok 设置的前提下，确定性更新 Grok 月卡模型与默认模型。
+write_grok_config() {
+  create_backup_if_needed "$GROK_CONFIG_PATH"
+  ensure_dir "$GROK_DIR"
+
+  CONFIG_PATH="$GROK_CONFIG_PATH" CONFIG_BASE_URL="$(normalize_openai_v1_base_url "$BASE_URL")" CONFIG_API_KEY="$GROK_API_KEY" "$NODE_BIN" <<'EOF'
+const fs = require('node:fs')
+const path = process.env.CONFIG_PATH
+const baseUrl = process.env.CONFIG_BASE_URL
+const apiKey = process.env.CONFIG_API_KEY
+let text = fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : ''
+let lines = text.split(/\r?\n/)
+
+// Remove the model block previously managed by this installer.
+const kept = []
+let droppingModel = false
+for (const line of lines) {
+  const header = line.trim().match(/^\[([^\]]+)\]$/)
+  if (header) droppingModel = ['model.grok-4.5', 'model."grok-4.5"'].includes(header[1])
+  if (!droppingModel) kept.push(line)
+}
+lines = kept
+
+// Set the default model without duplicating an existing [models] table.
+let modelsHeader = lines.findIndex((line) => line.trim() === '[models]')
+if (modelsHeader < 0) {
+  while (lines.length && !lines[lines.length - 1].trim()) lines.pop()
+  lines.push('', '[models]', 'default = "grok-4.5"')
+} else {
+  let end = lines.length
+  for (let i = modelsHeader + 1; i < lines.length; i++) {
+    if (/^\s*\[/.test(lines[i])) { end = i; break }
+  }
+  let replaced = false
+  for (let i = modelsHeader + 1; i < end; i++) {
+    if (/^\s*default\s*=/.test(lines[i])) {
+      lines[i] = 'default = "grok-4.5"'
+      replaced = true
+      break
+    }
+  }
+  if (!replaced) lines.splice(modelsHeader + 1, 0, 'default = "grok-4.5"')
+}
+
+while (lines.length && !lines[lines.length - 1].trim()) lines.pop()
+lines.push(
+  '',
+  '# Managed by laoshirenai one-click setup',
+  '[model."grok-4.5"]',
+  'model = "grok-4.5"',
+  `base_url = ${JSON.stringify(baseUrl)}`,
+  'name = "Grok 4.5 · 老实人AI"',
+  `api_key = ${JSON.stringify(apiKey)}`,
+  'api_backend = "responses"',
+  'context_window = 262144',
+  ''
+)
+fs.writeFileSync(path, lines.join('\n'), { encoding: 'utf8', mode: 0o600 })
+try { fs.chmodSync(path, 0o600) } catch {}
+EOF
+}
+
 uses_codex() {
   [ "$TOOLS" = "all" ] || [ "$TOOLS" = "codex" ]
 }
 
 uses_claude() {
   [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]
+}
+
+uses_grok() {
+  [ "$TOOLS" = "grok" ]
 }
 
 normalize_openai_v1_base_url() {
@@ -1027,6 +1147,11 @@ verify_codex_api_key() {
   verify_api_key_readiness "Codex" "$CODEX_API_KEY"
 }
 
+verify_grok_api_key() {
+  uses_grok || return 0
+  verify_api_key_readiness "Grok Build" "$GROK_API_KEY"
+}
+
 # 根据用户选择写入 Claude Code 配置。
 configure_claude() {
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]; then
@@ -1041,6 +1166,13 @@ configure_codex() {
     log_info "正在写入 Codex 配置"
     write_codex_auth
     write_codex_config
+  fi
+}
+
+configure_grok() {
+  if uses_grok; then
+    log_info "正在写入 Grok Build 原生模型配置"
+    write_grok_config
   fi
 }
 
@@ -1061,6 +1193,12 @@ verify_client_commands() {
       "$EXISTING_CODEX_COMMAND" --version >/dev/null 2>&1 || log_error "现有 Codex CLI 验证失败"
     fi
   fi
+
+  if uses_grok; then
+    local grok_command="$EXISTING_GROK_COMMAND"
+    [ "$INSTALL_GROK_CLIENT" -eq 0 ] || grok_command="$GROK_BIN_PATH"
+    [ -n "$grok_command" ] && "$grok_command" --version >/dev/null 2>&1 || log_error "Grok Build 安装验证失败"
+  fi
 }
 
 # 输出最终结果和下一步指引，帮助用户在新终端中直接使用命令。
@@ -1072,6 +1210,9 @@ print_summary() {
   printf '  - Claude 配置: %s\n' "$CLAUDE_SETTINGS_PATH"
   printf '  - Codex 鉴权: %s\n' "$CODEX_AUTH_PATH"
   printf '  - Codex 配置: %s\n' "$CODEX_CONFIG_PATH"
+  if uses_grok; then
+    printf '  - Grok Build 配置: %s\n' "$GROK_CONFIG_PATH"
+  fi
   if uses_claude; then
     printf '  - Claude Code 专用 Key: 已配置\n'
     if [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ]; then
@@ -1086,6 +1227,14 @@ print_summary() {
       printf '  - Codex CLI: 本次已安装\n'
     elif [ -n "$EXISTING_CODEX_COMMAND" ]; then
       printf '  - Codex CLI: 已保留现有安装 (%s)\n' "$EXISTING_CODEX_COMMAND"
+    fi
+  fi
+  if uses_grok; then
+    printf '  - Grok Build 专用 Key: 已配置\n'
+    if [ "$INSTALL_GROK_CLIENT" -eq 1 ]; then
+      printf '  - Grok Build CLI: 本次已安装\n'
+    elif [ -n "$EXISTING_GROK_COMMAND" ]; then
+      printf '  - Grok Build CLI: 已保留现有安装 (%s)\n' "$EXISTING_GROK_COMMAND"
     fi
   fi
   if [ -n "$PROFILE_FILE" ]; then
@@ -1107,6 +1256,10 @@ print_summary() {
   fi
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "codex" ]; then
     printf '  codex --version\n'
+  fi
+  if uses_grok; then
+    printf '  grok --version\n'
+    printf '  grok -m grok-4.5 -p "只回复 OK"\n'
   fi
 }
 
@@ -1133,8 +1286,10 @@ main() {
   ensure_wrapper_scripts
   configure_claude
   configure_codex
+  configure_grok
   verify_claude_api_key
   verify_codex_api_key
+  verify_grok_api_key
   verify_client_commands
   print_summary
 }

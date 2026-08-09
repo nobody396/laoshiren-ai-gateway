@@ -84,6 +84,18 @@ func TestSelectClientSetupGroupUsesFixedClaudeGroup(t *testing.T) {
 	require.Equal(t, int64(2), selected.ID)
 }
 
+func TestSelectClientSetupGroupUsesFixedGrokGroup(t *testing.T) {
+	groups := []Group{
+		{ID: 1, Name: "Grok Plus V3 月卡组", Platform: PlatformGrok, Status: StatusActive},
+		{ID: 2, Name: "Grok Pro V3 月卡组", Platform: PlatformGrok, Status: StatusActive},
+		{ID: 3, Name: "Grok Max V3 月卡组", Platform: PlatformGrok, Status: StatusActive},
+	}
+
+	selected := selectClientSetupGroup(ClientSetupTargetGrok, groups)
+	require.NotNil(t, selected)
+	require.Equal(t, int64(2), selected.ID)
+}
+
 func TestSelectClientSetupGroupDoesNotFallBack(t *testing.T) {
 	groups := []Group{
 		{ID: 1, Name: "Codex 钱包", Platform: PlatformOpenAI, Status: StatusActive},
@@ -110,6 +122,14 @@ func TestClientSetupGroupCompatibility(t *testing.T) {
 		Platform: PlatformOpenAI,
 		Status:   StatusActive,
 	}))
+	require.True(t, clientSetupGroupCompatible(ClientSetupTargetGrok, &Group{
+		Platform: PlatformGrok,
+		Status:   StatusActive,
+	}))
+	require.False(t, clientSetupGroupCompatible(ClientSetupTargetGrok, &Group{
+		Platform: PlatformOpenAI,
+		Status:   StatusActive,
+	}))
 	require.False(t, clientSetupGroupCompatible(ClientSetupTargetCodex, &Group{
 		Platform: PlatformOpenAI,
 		Status:   "inactive",
@@ -125,8 +145,28 @@ func TestClientSetupTargetForGroup(t *testing.T) {
 	require.Equal(t, ClientSetupTargetCodex, clientSetupTargetForGroup(&Group{Platform: PlatformOpenAI, Status: StatusActive}))
 	require.Equal(t, ClientSetupTargetClaude, clientSetupTargetForGroup(&Group{Platform: PlatformAnthropic, Status: StatusActive}))
 	require.Equal(t, ClientSetupTargetClaude, clientSetupTargetForGroup(&Group{Platform: PlatformAntigravity, Status: StatusActive}))
+	require.Equal(t, ClientSetupTargetGrok, clientSetupTargetForGroup(&Group{Platform: PlatformGrok, Status: StatusActive}))
 	require.Empty(t, clientSetupTargetForGroup(&Group{Platform: PlatformGemini, Status: StatusActive}))
 	require.Empty(t, clientSetupTargetForGroup(&Group{Platform: PlatformOpenAI, Status: "inactive"}))
+}
+
+func TestIssueTicketForAPIKeyAndExchangeKeepsExistingGrokCredential(t *testing.T) {
+	group := &Group{ID: 49, Name: "Grok Pro V3 月卡组", Platform: PlatformGrok, Status: StatusActive}
+	key := &APIKey{ID: 45, UserID: 9, Key: "sk-existing-grok-key", Name: "我的 Grok", Status: StatusActive, Group: group}
+	svc := &ClientSetupService{
+		apiKeys: &clientSetupAPIKeysStub{keys: map[int64]*APIKey{key.ID: key}},
+		tickets: newClientSetupTicketCacheStub(),
+	}
+
+	ticket, err := svc.IssueTicketForAPIKey(context.Background(), key.UserID, key.ID)
+	require.NoError(t, err)
+	require.Equal(t, ClientSetupTargetGrok, ticket.Target)
+
+	credential, err := svc.ExchangeTicket(context.Background(), ticket.Ticket)
+	require.NoError(t, err)
+	require.Equal(t, ClientSetupTargetGrok, credential.Target)
+	require.Equal(t, key.Key, credential.APIKey)
+	require.Equal(t, clientSetupAPIBaseURL, credential.BaseURL)
 }
 
 func TestIssueTicketForAPIKeyAndExchangeKeepsExistingCodexCredential(t *testing.T) {

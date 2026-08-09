@@ -12,7 +12,7 @@
             </p>
           </div>
 
-          <div class="mt-8 grid grid-cols-1 gap-3 text-left md:grid-cols-3">
+          <div class="mt-8 grid grid-cols-1 gap-3 text-left sm:grid-cols-2 xl:grid-cols-4">
             <button
               v-for="setup in quickSetups"
               :key="setup.id"
@@ -282,7 +282,7 @@ const quickSetups: Array<{
   title: string
   description: string
   icon: IconName
-  platform?: 'openai' | 'anthropic'
+  platform?: 'openai' | 'anthropic' | 'grok'
 }> = [
   {
     id: 'codex',
@@ -297,6 +297,13 @@ const quickSetups: Array<{
     description: '在 CLI 中使用；Desktop 需单独配置',
     icon: 'terminal',
     platform: 'anthropic'
+  },
+  {
+    id: 'grok',
+    title: '在 Grok Build 中使用',
+    description: '原生 Grok 协议，一次安装并配置',
+    icon: 'terminal',
+    platform: 'grok'
   },
   {
     id: 'cc-switch',

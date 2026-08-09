@@ -166,6 +166,26 @@ func TestMonthlyGatewayProbePointSurfacesUpstreamFailureAfterStreamingHeaders(t 
 	require.Equal(t, "provider overloaded", point.ErrorMessage)
 }
 
+func TestMonthlyGatewayProbePointDoesNotTreatSuccessfulSSEAsError(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	recorder.Header().Set("Content-Type", "text/event-stream")
+	recorder.WriteHeader(200)
+	_, _ = recorder.WriteString("event: response.completed\ndata: {\"type\":\"response.completed\"}\n\n")
+
+	point := monthlyGatewayProbePoint(
+		&Account{ID: 29, Name: "grok-native", Platform: PlatformGrok},
+		"grok-4.5",
+		recorder,
+		time.Now(),
+		nil,
+		nil,
+	)
+
+	require.Equal(t, "ok", point.Status)
+	require.Empty(t, point.ErrorCode)
+	require.Empty(t, point.ErrorMessage)
+}
+
 func TestMonthlyCardPublicStatusSnapshotVisibleWhenEnabled(t *testing.T) {
 	ctx := context.Background()
 	checkedAt := time.Now().Add(-time.Minute)

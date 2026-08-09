@@ -17,6 +17,7 @@ import (
 const (
 	ClientSetupTargetClaude = "claude"
 	ClientSetupTargetCodex  = "codex"
+	ClientSetupTargetGrok   = "grok"
 
 	clientSetupTicketPurpose = "client_setup"
 	clientSetupTicketTTL     = 10 * time.Minute
@@ -24,6 +25,7 @@ const (
 
 	clientSetupClaudeGroupName = "MAX 20X"
 	clientSetupCodexGroupName  = "Pro 20X"
+	clientSetupGrokGroupName   = "Grok Pro V3"
 )
 
 var (
@@ -203,6 +205,8 @@ func clientSetupTargetForGroup(group *Group) string {
 		return ClientSetupTargetCodex
 	case PlatformAnthropic, PlatformAntigravity:
 		return ClientSetupTargetClaude
+	case PlatformGrok:
+		return ClientSetupTargetGrok
 	default:
 		return ""
 	}
@@ -251,16 +255,22 @@ func normalizeClientSetupTarget(target string) (string, error) {
 		return ClientSetupTargetClaude, nil
 	case ClientSetupTargetCodex:
 		return ClientSetupTargetCodex, nil
+	case ClientSetupTargetGrok:
+		return ClientSetupTargetGrok, nil
 	default:
 		return "", ErrInvalidClientSetupTarget
 	}
 }
 
 func clientSetupKeyName(target string) string {
-	if target == ClientSetupTargetClaude {
+	switch target {
+	case ClientSetupTargetClaude:
 		return "一键安装 · Claude Code"
+	case ClientSetupTargetGrok:
+		return "一键安装 · Grok Build"
+	default:
+		return "一键安装 · Codex"
 	}
-	return "一键安装 · Codex"
 }
 
 func clientSetupGroupCompatible(target string, group *Group) bool {
@@ -270,12 +280,18 @@ func clientSetupGroupCompatible(target string, group *Group) bool {
 	if target == ClientSetupTargetClaude {
 		return group.Platform == PlatformAnthropic || group.Platform == PlatformAntigravity
 	}
-	return target == ClientSetupTargetCodex && group.Platform == PlatformOpenAI
+	if target == ClientSetupTargetCodex {
+		return group.Platform == PlatformOpenAI
+	}
+	return target == ClientSetupTargetGrok && group.Platform == PlatformGrok
 }
 
 func clientSetupRequiredGroupName(target string) string {
 	if target == ClientSetupTargetClaude {
 		return clientSetupClaudeGroupName
+	}
+	if target == ClientSetupTargetGrok {
+		return clientSetupGrokGroupName
 	}
 	return clientSetupCodexGroupName
 }
@@ -293,7 +309,7 @@ func clientSetupGroupMatchesTarget(target string, group *Group) bool {
 
 func selectClientSetupGroup(target string, groups []Group) *Group {
 	// One-click onboarding is a fixed product rule: Claude Code keys use MAX
-	// 20X and Codex keys use Pro 20X. Never silently fall back to another
+	// 20X, Codex keys use Pro 20X, and Grok Build keys use Grok Pro V3. Never silently fall back to another
 	// compatible group because that can change both routing and billing.
 	for i := range groups {
 		if clientSetupGroupMatchesTarget(target, &groups[i]) {

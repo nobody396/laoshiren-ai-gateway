@@ -4,6 +4,7 @@ import (
 	"container/heap"
 	"context"
 	"errors"
+	"fmt"
 	"hash/fnv"
 	"math"
 	"sort"
@@ -12,6 +13,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
 )
 
 const (
@@ -753,6 +756,7 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 	}
 
 	shadow := s.evaluateOpenAIRouteShadow(ctx, req, candidates)
+	defer s.persistOpenAIRouteShadowDecision(ctx, req, shadow)
 
 	topK := s.service.openAIWSLBTopK()
 	if topK > len(candidates) {
@@ -762,6 +766,7 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 		topK = 1
 	}
 	selectionOrder := buildOpenAIPriorityAwareSelectionOrder(candidates, req, topK)
+	applyOpenAIRouteShadowLegacyAudit(shadow, candidates, selectionOrder, topK, loadSkew)
 
 	for i := 0; i < len(selectionOrder); i++ {
 		candidate := selectionOrder[i]
@@ -818,6 +823,43 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 	return nil, len(candidates), topK, loadSkew, noAvailableOpenAISelectionError(req.RequestedModel, compactBlocked, accounts, req.ExcludedIDs)
 }
 
+func applyOpenAIRouteShadowLegacyAudit(
+	decision *OpenAIRouteShadowDecision,
+	candidates []openAIAccountCandidateScore,
+	selectionOrder []openAIAccountCandidateScore,
+	topK int,
+	loadSkew float64,
+) {
+	if decision == nil || decision.Audit == nil {
+		return
+	}
+	decision.Audit.LegacyTopK = topK
+	decision.Audit.LegacyLoadSkew = loadSkew
+	byID := make(map[int64]*OpenAIRouteShadowAuditCandidate, len(decision.Audit.Candidates))
+	for idx := range decision.Audit.Candidates {
+		byID[decision.Audit.Candidates[idx].AccountID] = &decision.Audit.Candidates[idx]
+	}
+	for _, source := range candidates {
+		if source.account == nil {
+			continue
+		}
+		if candidate := byID[source.account.ID]; candidate != nil {
+			candidate.LegacyScore = source.score
+			candidate.LegacyCompactTier = source.compactTier
+		}
+	}
+	decision.Audit.LegacySelectionOrder = make([]int64, 0, len(selectionOrder))
+	for rank, source := range selectionOrder {
+		if source.account == nil {
+			continue
+		}
+		decision.Audit.LegacySelectionOrder = append(decision.Audit.LegacySelectionOrder, source.account.ID)
+		if candidate := byID[source.account.ID]; candidate != nil {
+			candidate.LegacyRank = rank + 1
+		}
+	}
+}
+
 func (s *defaultOpenAIAccountScheduler) evaluateOpenAIRouteShadow(
 	ctx context.Context,
 	req OpenAIAccountScheduleRequest,
@@ -825,6 +867,21 @@ func (s *defaultOpenAIAccountScheduler) evaluateOpenAIRouteShadow(
 ) *OpenAIRouteShadowDecision {
 	if s == nil || s.service == nil || s.service.openAIRouteEvaluator == nil || req.GroupID == nil || *req.GroupID <= 0 {
 		return nil
+	}
+	audit := s.service.openAIRouteAuditService
+	if _, productionController := s.service.openAIRouteEvaluator.(*OpenAIRouteController); productionController && audit == nil {
+		return &OpenAIRouteShadowDecision{
+			Mode:   OpenAIRoutePolicyLegacy,
+			Reason: "audit_unavailable",
+		}
+	}
+	if audit != nil && !audit.Health().Ready {
+		if health := audit.VerifyStorage(ctx); !health.Ready {
+			return &OpenAIRouteShadowDecision{
+				Mode:   OpenAIRoutePolicyLegacy,
+				Reason: "audit_unavailable",
+			}
+		}
 	}
 
 	projected := make([]OpenAIRouteShadowCandidate, 0, len(candidates))
@@ -848,18 +905,98 @@ func (s *defaultOpenAIAccountScheduler) evaluateOpenAIRouteShadow(
 
 	evaluationCtx, cancel := context.WithTimeout(ctx, openAIRouteShadowEvaluationTimeout)
 	defer cancel()
+	seed := deriveOpenAISelectionSeed(req)
 	decision, err := s.service.openAIRouteEvaluator.EvaluateShadow(evaluationCtx, OpenAIRouteShadowRequest{
 		GroupID:    *req.GroupID,
 		Model:      req.RequestedModel,
-		Seed:       deriveOpenAISelectionSeed(req),
+		Seed:       seed,
 		Candidates: projected,
 	})
+	if decision.Audit != nil {
+		decision.Audit.AdaptiveSeedHex = fmt.Sprintf("%016x", seed)
+		decision.Audit.RequiredTransport = string(req.RequiredTransport)
+		decision.Audit.RequireCompact = req.RequireCompact
+		decision.Audit.ExcludedAccountIDs = sortedOpenAIRouteExcludedAccountIDs(req.ExcludedIDs)
+	}
 	if err != nil {
 		decision.Evaluated = false
-		decision.Mode = OpenAIRoutePolicyLegacy
 		decision.Reason = openAIRouteShadowEvaluationErrorReason(err)
 	}
 	return &decision
+}
+
+func sortedOpenAIRouteExcludedAccountIDs(excluded map[int64]struct{}) []int64 {
+	if len(excluded) == 0 {
+		return []int64{}
+	}
+	ids := make([]int64, 0, len(excluded))
+	for accountID := range excluded {
+		if accountID > 0 {
+			ids = append(ids, accountID)
+		}
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	return ids
+}
+
+func (s *defaultOpenAIAccountScheduler) persistOpenAIRouteShadowDecision(
+	ctx context.Context,
+	req OpenAIAccountScheduleRequest,
+	decision *OpenAIRouteShadowDecision,
+) {
+	// A nil snapshot means the policy did not match (or a focused test supplied
+	// a lightweight evaluator). Only enabled, matched policies are persisted.
+	if decision == nil || decision.Audit == nil {
+		return
+	}
+	if s == nil || s.service == nil || s.service.openAIRouteAuditService == nil {
+		invalidateUnrecordedOpenAIRouteShadowDecision(decision, "audit_unavailable")
+		return
+	}
+
+	requestID := ""
+	clientRequestID := ""
+	if ctx != nil {
+		requestID, _ = ctx.Value(ctxkey.RequestID).(string)
+		clientRequestID, _ = ctx.Value(ctxkey.ClientRequestID).(string)
+	}
+	attempt := len(req.ExcludedIDs) + 1
+	record := &OpenAIRouteShadowDecisionRecord{
+		DecisionID:                decision.DecisionID,
+		RequestID:                 requestID,
+		ClientRequestID:           clientRequestID,
+		Attempt:                   attempt,
+		GroupID:                   *req.GroupID,
+		Model:                     req.RequestedModel,
+		PolicyMode:                decision.Mode,
+		PolicyVersion:             decision.Version,
+		Reason:                    decision.Reason,
+		Evaluated:                 decision.Evaluated,
+		EvaluationDurationMicros:  decision.EvaluationDurationMicros,
+		LegacySelectedAccountID:   decision.LegacySelectedAccountID,
+		AdaptiveSelectedAccountID: decision.SelectedAccountID,
+		AdaptiveSelectedRate:      decision.SelectedRate,
+		CandidateCount:            decision.CandidateCount,
+		ExcludedCount:             decision.ExcludedCount,
+		Diverged:                  decision.Diverged,
+		Emergency:                 decision.Emergency,
+		Snapshot:                  decision.Audit,
+		CreatedAt:                 time.Now().UTC(),
+	}
+	if err := s.service.openAIRouteAuditService.Record(ctx, record); err != nil {
+		invalidateUnrecordedOpenAIRouteShadowDecision(decision, "audit_persist_failed")
+	}
+}
+
+func invalidateUnrecordedOpenAIRouteShadowDecision(decision *OpenAIRouteShadowDecision, reason string) {
+	if decision == nil {
+		return
+	}
+	decision.Evaluated = false
+	decision.Mode = OpenAIRoutePolicyLegacy
+	decision.Reason = reason
+	decision.Diverged = false
+	decision.Emergency = false
 }
 
 func openAIRouteEndpointForAccount(account *Account) string {

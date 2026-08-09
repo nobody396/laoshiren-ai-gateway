@@ -328,6 +328,39 @@ func ProvideOpsSystemLogSink(opsRepo OpsRepository) *OpsSystemLogSink {
 	return sink
 }
 
+func ProvideOpsService(
+	opsRepo OpsRepository,
+	settingRepo SettingRepository,
+	cfg *config.Config,
+	accountRepo AccountRepository,
+	userRepo UserRepository,
+	concurrencyService *ConcurrencyService,
+	gatewayService *GatewayService,
+	openAIGatewayService *OpenAIGatewayService,
+	geminiCompatService *GeminiMessagesCompatService,
+	antigravityGatewayService *AntigravityGatewayService,
+	systemLogSink *OpsSystemLogSink,
+	groupRepo GroupRepository,
+	openAIRouteAuditService *OpenAIRouteAuditService,
+) *OpsService {
+	svc := NewOpsService(
+		opsRepo,
+		settingRepo,
+		cfg,
+		accountRepo,
+		userRepo,
+		concurrencyService,
+		gatewayService,
+		openAIGatewayService,
+		geminiCompatService,
+		antigravityGatewayService,
+		systemLogSink,
+		groupRepo,
+	)
+	svc.SetOpenAIRouteAuditService(openAIRouteAuditService)
+	return svc
+}
+
 func buildIdempotencyConfig(cfg *config.Config) IdempotencyConfig {
 	idempotencyCfg := DefaultIdempotencyConfig()
 	if cfg != nil {
@@ -473,6 +506,7 @@ func ProvideOpenAIGatewayService(
 	settingService *SettingService,
 	accountingService *AccountingService,
 	openAIRouteController *OpenAIRouteController,
+	openAIRouteAuditService *OpenAIRouteAuditService,
 ) *OpenAIGatewayService {
 	svc := NewOpenAIGatewayService(
 		accountRepo, usageLogRepo, usageBillingRepo, userRepo, userSubRepo,
@@ -489,6 +523,7 @@ func ProvideOpenAIGatewayService(
 	))
 	svc.SetGrokTokenProvider(grokTokenProvider)
 	svc.SetOpenAIRouteEvaluator(openAIRouteController)
+	svc.SetOpenAIRouteAuditService(openAIRouteAuditService)
 	if settingService != nil && openAIRouteController != nil {
 		settingService.AddOnUpdateCallback(openAIRouteController.InvalidatePolicyCache)
 	}
@@ -572,6 +607,7 @@ var ProviderSet = wire.NewSet(
 	ProvideOpenAIGatewayService,
 	ProvideOpenAIRoutePolicyReader,
 	NewOpenAIRouteController,
+	NewOpenAIRouteAuditService,
 	NewOAuthService,
 	NewOpenAIOAuthService,
 	NewGrokOAuthService,
@@ -597,7 +633,7 @@ var ProviderSet = wire.NewSet(
 	NewDataManagementService,
 	ProvideBackupService,
 	ProvideOpsSystemLogSink,
-	NewOpsService,
+	ProvideOpsService,
 	ProvideOpsMetricsCollector,
 	ProvideOpsAggregationService,
 	ProvideOpsAlertEvaluatorService,

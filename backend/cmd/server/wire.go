@@ -44,7 +44,6 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 
 		// Privacy client factory for OpenAI training opt-out
 		providePrivacyClientFactory,
-		provideOpsGroupRepositories,
 
 		// BuildInfo provider
 		provideServiceBuildInfo,
@@ -67,13 +66,6 @@ func provideServiceBuildInfo(buildInfo handler.BuildInfo) service.BuildInfo {
 		Version:   buildInfo.Version,
 		BuildType: buildInfo.BuildType,
 	}
-}
-
-// Wire models a variadic constructor parameter as a slice dependency. Keep the
-// generated graph reproducible while preserving NewOpsService's optional
-// group-repository compatibility signature.
-func provideOpsGroupRepositories(groupRepo service.GroupRepository) []service.GroupRepository {
-	return []service.GroupRepository{groupRepo}
 }
 
 func provideCleanup(

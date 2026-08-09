@@ -25,29 +25,46 @@ func AllocateAndReserveOpenAIRoute(
 	reservationID string,
 	reservationTTL time.Duration,
 ) (OpenAIRouteAllocationPlan, OpenAIRouteBudgetStoreReservation, error) {
+	plan, reservation, _, err := allocateAndReserveOpenAIRouteWithLedgers(
+		ctx, store, allocation, windows, reservationID, reservationTTL,
+	)
+	return plan, reservation, err
+}
+
+// allocateAndReserveOpenAIRouteWithLedgers returns the exact pre-reservation
+// ledger snapshot used by the allocator. The audit path needs this evidence;
+// the public coordinator keeps its original narrow signature.
+func allocateAndReserveOpenAIRouteWithLedgers(
+	ctx context.Context,
+	store OpenAIRouteBudgetStore,
+	allocation OpenAIRouteAllocationRequest,
+	windows []OpenAIRouteBudgetWindowConfig,
+	reservationID string,
+	reservationTTL time.Duration,
+) (OpenAIRouteAllocationPlan, OpenAIRouteBudgetStoreReservation, []OpenAIRouteBudgetLedger, error) {
 	emptyReservation := OpenAIRouteBudgetStoreReservation{
 		ReservationID:  strings.TrimSpace(reservationID),
 		RejectedWindow: -1,
 	}
 	if store == nil || emptyReservation.ReservationID == "" || reservationTTL <= 0 {
-		return OpenAIRouteAllocationPlan{}, emptyReservation, ErrOpenAIRouteInvalidCost
+		return OpenAIRouteAllocationPlan{}, emptyReservation, nil, ErrOpenAIRouteInvalidCost
 	}
 
 	policy, err := NormalizeOpenAIRoutePolicy(allocation.Policy)
 	if err != nil {
-		return OpenAIRouteAllocationPlan{}, emptyReservation, err
+		return OpenAIRouteAllocationPlan{}, emptyReservation, nil, err
 	}
 	ledgers, err := store.GetLedgers(ctx, windows)
 	if err != nil {
-		return OpenAIRouteAllocationPlan{}, emptyReservation, err
+		return OpenAIRouteAllocationPlan{}, emptyReservation, nil, err
 	}
 	if len(ledgers) == 0 || len(ledgers) != len(windows) {
-		return OpenAIRouteAllocationPlan{}, emptyReservation, ErrOpenAIRouteInvalidPolicy
+		return OpenAIRouteAllocationPlan{}, emptyReservation, ledgers, ErrOpenAIRouteInvalidPolicy
 	}
 	for _, ledger := range ledgers {
 		if math.Abs(ledger.TargetAverageMultiplier-policy.TargetAverageMultiplier) > 1e-12 ||
 			math.Abs(ledger.HardAverageMultiplier-policy.HardAverageMultiplier) > 1e-12 {
-			return OpenAIRouteAllocationPlan{}, emptyReservation, ErrOpenAIRouteInvalidPolicy
+			return OpenAIRouteAllocationPlan{}, emptyReservation, ledgers, ErrOpenAIRouteInvalidPolicy
 		}
 	}
 
@@ -55,7 +72,7 @@ func AllocateAndReserveOpenAIRoute(
 	allocation.Budgets = ledgers
 	plan, err := BuildOpenAIRouteAllocationPlan(allocation)
 	if err != nil {
-		return plan, emptyReservation, err
+		return plan, emptyReservation, ledgers, err
 	}
 
 	lastReservation := emptyReservation
@@ -69,7 +86,7 @@ func AllocateAndReserveOpenAIRoute(
 			ReservationTTL:       reservationTTL,
 		})
 		if reserveErr != nil {
-			return plan, reservation, reserveErr
+			return plan, reservation, ledgers, reserveErr
 		}
 		lastReservation = reservation
 		if !reservation.Allowed {
@@ -81,8 +98,8 @@ func AllocateAndReserveOpenAIRoute(
 		}
 		plan.Selected = ranked
 		plan.Emergency = reservation.Emergency
-		return plan, reservation, nil
+		return plan, reservation, ledgers, nil
 	}
 
-	return plan, lastReservation, ErrOpenAIRouteBudgetExhausted
+	return plan, lastReservation, ledgers, ErrOpenAIRouteBudgetExhausted
 }

@@ -291,6 +291,11 @@ func registerOpsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		ops.POST("/system-logs/cleanup", h.Admin.Ops.CleanupSystemLogs)
 		ops.GET("/system-logs/health", h.Admin.Ops.GetSystemLogIngestionHealth)
 
+		// Durable OpenAI shadow-routing decision evidence
+		ops.GET("/openai-route-shadow/decisions", h.Admin.Ops.ListOpenAIRouteShadowDecisions)
+		ops.GET("/openai-route-shadow/stats", h.Admin.Ops.GetOpenAIRouteShadowDecisionStats)
+		ops.GET("/openai-route-shadow/health", h.Admin.Ops.GetOpenAIRouteAuditHealth)
+
 		// Dashboard (vNext - raw path for MVP)
 		ops.GET("/dashboard/snapshot-v2", h.Admin.Ops.GetDashboardSnapshotV2)
 		ops.GET("/dashboard/overview", h.Admin.Ops.GetDashboardOverview)

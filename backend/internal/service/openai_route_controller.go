@@ -55,10 +55,12 @@ type OpenAIRouteShadowRequest struct {
 // OpenAIRouteShadowDecision is diagnostic-only in this release. The legacy
 // scheduler remains authoritative even when a shadow decision is available.
 type OpenAIRouteShadowDecision struct {
-	Evaluated bool
-	Mode      OpenAIRoutePolicyMode
-	Version   int
-	Reason    string
+	DecisionID               string
+	Evaluated                bool
+	Mode                     OpenAIRoutePolicyMode
+	Version                  int
+	Reason                   string
+	EvaluationDurationMicros int64
 
 	CandidateCount          int
 	ExcludedCount           int
@@ -67,6 +69,7 @@ type OpenAIRouteShadowDecision struct {
 	SelectedRate            float64
 	Diverged                bool
 	Emergency               bool
+	Audit                   *OpenAIRouteShadowAuditSnapshot
 }
 
 type OpenAIRouteShadowEvaluator interface {
@@ -148,8 +151,12 @@ func (c *OpenAIRouteController) InvalidatePolicyCache() {
 func (c *OpenAIRouteController) EvaluateShadow(
 	ctx context.Context,
 	req OpenAIRouteShadowRequest,
-) (OpenAIRouteShadowDecision, error) {
-	decision := OpenAIRouteShadowDecision{Mode: OpenAIRoutePolicyLegacy}
+) (decision OpenAIRouteShadowDecision, err error) {
+	startedAt := time.Now()
+	decision = OpenAIRouteShadowDecision{Mode: OpenAIRoutePolicyLegacy}
+	defer func() {
+		decision.EvaluationDurationMicros = time.Since(startedAt).Microseconds()
+	}()
 	if c == nil || c.reader == nil || c.healthStore == nil || c.budgetStore == nil {
 		decision.Reason = "runtime_unavailable"
 		return decision, nil
@@ -181,6 +188,14 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	if configuredMode == OpenAIRoutePolicyEnforce {
 		return decision, ErrOpenAIRouteEnforceDisabled
 	}
+	decisionID, err := newOpenAIRouteShadowReservationID()
+	if err != nil {
+		return decision, err
+	}
+	decision.DecisionID = decisionID
+	decision.Audit = &OpenAIRouteShadowAuditSnapshot{
+		EstimatedBaseCostUSD: config.EstimatedBaseCostUSD,
+	}
 	policy, err := config.normalizedPolicy()
 	if err != nil {
 		return decision, err
@@ -190,6 +205,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	if config.EstimatedBaseCostUSD <= 0 {
 		return decision, fmt.Errorf("%w: estimated_base_cost_usd must be positive", ErrOpenAIRouteInvalidPolicy)
 	}
+	decision.Audit.Policy = newOpenAIRouteShadowAuditPolicy(policy, config.HardShareCaps)
 
 	now := req.Now
 	if now.IsZero() {
@@ -203,45 +219,79 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		}
 		key, keyErr := NewOpenAIRouteKey(source.Account, req.GroupID, req.Model, source.Endpoint, source.Transport)
 		if keyErr != nil {
+			decision.Audit.Candidates = append(decision.Audit.Candidates, OpenAIRouteShadowAuditCandidate{
+				AccountID:      source.Account.ID,
+				RateMultiplier: source.Account.BillingRateMultiplier(),
+				Priority:       source.Priority,
+				Transport:      source.Transport,
+				ExclusionReasons: []OpenAIRouteExclusionReason{
+					OpenAIRouteExcludedInvalid,
+				},
+			})
+			decision.Audit.Exclusions = append(decision.Audit.Exclusions, OpenAIRouteExclusion{
+				AccountID: source.Account.ID,
+				Reason:    OpenAIRouteExcludedInvalid,
+			})
 			continue
 		}
-		routeHealth, getErr := c.healthStore.Get(ctx, OpenAIRouteHealthStoreKeyForRoute(key))
-		if getErr != nil {
-			return decision, getErr
-		}
-		providerHealth, getErr := c.healthStore.Get(ctx, OpenAIRouteHealthStoreKeyForProvider(key))
-		if getErr != nil {
-			return decision, getErr
-		}
-		candidates = append(candidates, OpenAIRouteCandidate{
+		candidate := OpenAIRouteCandidate{
 			Key:                  key,
 			RateMultiplier:       source.Account.BillingRateMultiplier(),
 			Priority:             source.Priority,
-			CircuitState:         routeHealth.State,
-			ProviderCircuitState: providerHealth.State,
-			RecoveryStep:         routeHealth.RecoveryStep,
 			HasReliabilitySample: source.HasReliabilitySample,
 			SuccessLowerBound:    source.SuccessLowerBound,
 			P90TTFTMilliseconds:  source.TTFTMilliseconds,
 			LoadRatio:            source.LoadRatio,
 			WaitingCount:         source.WaitingCount,
-		})
+		}
+		decision.Audit.Candidates = append(decision.Audit.Candidates, newOpenAIRouteShadowAuditCandidate(candidate))
+		auditIndex := len(decision.Audit.Candidates) - 1
+		routeHealth, getErr := c.healthStore.Get(ctx, OpenAIRouteHealthStoreKeyForRoute(key))
+		if getErr != nil {
+			decision.CandidateCount = len(decision.Audit.Candidates)
+			return decision, getErr
+		}
+		providerHealth, getErr := c.healthStore.Get(ctx, OpenAIRouteHealthStoreKeyForProvider(key))
+		if getErr != nil {
+			decision.CandidateCount = len(decision.Audit.Candidates)
+			return decision, getErr
+		}
+		candidate.CircuitState = routeHealth.State
+		candidate.ProviderCircuitState = providerHealth.State
+		candidate.RecoveryStep = routeHealth.RecoveryStep
+		decision.Audit.Candidates[auditIndex] = newOpenAIRouteShadowAuditCandidate(candidate)
+		candidates = append(candidates, candidate)
 	}
+	decision.CandidateCount = len(decision.Audit.Candidates)
 	if len(candidates) == 0 {
+		decision.ExcludedCount = len(decision.Audit.Exclusions)
 		return decision, ErrOpenAIRouteNoCandidate
 	}
 
-	reservationID, err := newOpenAIRouteShadowReservationID()
-	if err != nil {
-		return decision, err
-	}
-	plan, reservation, err := AllocateAndReserveOpenAIRoute(ctx, c.budgetStore, OpenAIRouteAllocationRequest{
+	plan, reservation, ledgers, err := allocateAndReserveOpenAIRouteWithLedgers(ctx, c.budgetStore, OpenAIRouteAllocationRequest{
 		Policy:               policy,
 		Candidates:           candidates,
 		EstimatedBaseCostUSD: config.EstimatedBaseCostUSD,
 		Seed:                 req.Seed,
 		HardShareCaps:        config.HardShareCaps,
-	}, windows, reservationID, time.Minute)
+	}, windows, decisionID, time.Minute)
+	selectedAccountID := int64(0)
+	selectedRate := 0.0
+	if err == nil {
+		selectedAccountID = plan.Selected.Candidate.Key.AccountID
+		selectedRate = plan.Selected.Candidate.RateMultiplier
+	}
+	decision.Audit.MinHealthyMultiplier = plan.MinHealthyMultiplier
+	decision.Audit.Exclusions = append(decision.Audit.Exclusions, plan.Excluded...)
+	decision.Audit.BudgetWindows = newOpenAIRouteShadowAuditBudgetWindows(
+		windows,
+		ledgers,
+		selectedAccountID,
+		selectedRate,
+		config.EstimatedBaseCostUSD,
+	)
+	applyOpenAIRouteShadowAuditPlan(decision.Audit, plan, selectedAccountID)
+	decision.ExcludedCount = len(decision.Audit.Exclusions)
 	if err != nil {
 		return decision, err
 	}
@@ -263,12 +313,125 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	}
 	decision.Evaluated = true
 	decision.Reason = "shadow_selected"
-	decision.CandidateCount = len(candidates)
-	decision.ExcludedCount = len(plan.Excluded)
+	decision.ExcludedCount = len(decision.Audit.Exclusions)
 	decision.SelectedAccountID = plan.Selected.Candidate.Key.AccountID
 	decision.SelectedRate = plan.Selected.Candidate.RateMultiplier
 	decision.Emergency = plan.Emergency
 	return decision, nil
+}
+
+func newOpenAIRouteShadowAuditPolicy(policy OpenAIRoutePolicy, hardShareCaps bool) OpenAIRouteShadowAuditPolicy {
+	backoff := make([]int64, 0, len(policy.ProbeBackoff))
+	for _, value := range policy.ProbeBackoff {
+		backoff = append(backoff, int64(value/time.Second))
+	}
+	return OpenAIRouteShadowAuditPolicy{
+		TargetAverageMultiplier: policy.TargetAverageMultiplier,
+		HardAverageMultiplier:   policy.HardAverageMultiplier,
+		EmergencyDebtLimitUSD:   policy.EmergencyDebtLimitUSD,
+		MaxCreditUSD:            policy.MaxCreditUSD,
+		PriceExponent:           policy.PriceExponent,
+		LatencyBeta:             policy.LatencyBeta,
+		PriorityPenalty:         policy.PriorityPenalty,
+		MinHealthFactor:         policy.MinHealthFactor,
+		MaxAccountShare:         policy.MaxAccountShare,
+		MaxProviderShare:        policy.MaxProviderShare,
+		NewAccountShare:         policy.NewAccountShare,
+		DegradedShare:           policy.DegradedShare,
+		RecoveryShares:          append([]float64(nil), policy.RecoveryShares...),
+		GenericFailThreshold:    policy.GenericFailThreshold,
+		FailureWindowSeconds:    int64(policy.FailureWindow / time.Second),
+		ProbeBackoffSeconds:     backoff,
+		HardShareCaps:           hardShareCaps,
+	}
+}
+
+func newOpenAIRouteShadowAuditCandidate(candidate OpenAIRouteCandidate) OpenAIRouteShadowAuditCandidate {
+	return OpenAIRouteShadowAuditCandidate{
+		AccountID:            candidate.Key.AccountID,
+		EndpointHash:         candidate.Key.EndpointHash,
+		FailureDomain:        candidate.Key.FailureDomain,
+		Transport:            candidate.Key.Transport,
+		RateMultiplier:       candidate.RateMultiplier,
+		Priority:             candidate.Priority,
+		CircuitState:         normalizeOpenAIRouteCircuitState(candidate.CircuitState),
+		ProviderCircuitState: normalizeOpenAIRouteProviderCircuitState(candidate.ProviderCircuitState),
+		RecoveryStep:         candidate.RecoveryStep,
+		HasReliabilitySample: candidate.HasReliabilitySample,
+		SuccessLowerBound:    candidate.SuccessLowerBound,
+		TTFTMilliseconds:     candidate.P90TTFTMilliseconds,
+		LoadRatio:            candidate.LoadRatio,
+		WaitingCount:         candidate.WaitingCount,
+		CurrentAccountShare:  candidate.CurrentAccountShare,
+		CurrentProviderShare: candidate.CurrentProviderShare,
+		ExplorationBoost:     candidate.ExplorationBoost,
+	}
+}
+
+func applyOpenAIRouteShadowAuditPlan(
+	snapshot *OpenAIRouteShadowAuditSnapshot,
+	plan OpenAIRouteAllocationPlan,
+	selectedAccountID int64,
+) {
+	if snapshot == nil {
+		return
+	}
+	byID := make(map[int64]*OpenAIRouteShadowAuditCandidate, len(snapshot.Candidates))
+	for idx := range snapshot.Candidates {
+		byID[snapshot.Candidates[idx].AccountID] = &snapshot.Candidates[idx]
+	}
+	for rank, item := range plan.Ranked {
+		candidate := byID[item.Candidate.Key.AccountID]
+		if candidate == nil {
+			continue
+		}
+		candidate.Rank = rank + 1
+		candidate.Selected = selectedAccountID > 0 && item.Candidate.Key.AccountID == selectedAccountID
+		candidate.Weight = item.Weight
+		candidate.HealthFactor = item.HealthFactor
+		candidate.LatencyFactor = item.LatencyFactor
+		candidate.HeadroomFactor = item.HeadroomFactor
+		candidate.PriceFactor = item.PriceFactor
+		candidate.PriorityFactor = item.PriorityFactor
+		candidate.PredictedExtraCostUSD = item.PredictedExtraCost
+		candidate.EmergencyBudgetUsed = item.EmergencyBudgetUsed
+	}
+	for _, exclusion := range plan.Excluded {
+		candidate := byID[exclusion.AccountID]
+		if candidate != nil {
+			candidate.ExclusionReasons = append(candidate.ExclusionReasons, exclusion.Reason)
+		}
+	}
+}
+
+func newOpenAIRouteShadowAuditBudgetWindows(
+	windows []OpenAIRouteBudgetWindowConfig,
+	ledgers []OpenAIRouteBudgetLedger,
+	selectedAccountID int64,
+	rateMultiplier float64,
+	estimatedBaseCostUSD float64,
+) []OpenAIRouteShadowAuditBudgetWindow {
+	out := make([]OpenAIRouteShadowAuditBudgetWindow, 0, len(windows))
+	for idx, window := range windows {
+		item := OpenAIRouteShadowAuditBudgetWindow{
+			Window:     window.Scope.Window,
+			Epoch:      window.Scope.Epoch,
+			TTLSeconds: int64(window.TTL / time.Second),
+		}
+		if idx < len(ledgers) {
+			item.Before = ledgers[idx]
+			item.ProjectedAfter = ledgers[idx]
+			if selectedAccountID > 0 {
+				reservation, reserveErr := item.ProjectedAfter.Reserve(rateMultiplier, estimatedBaseCostUSD)
+				if reserveErr == nil {
+					accountCost := estimatedBaseCostUSD * rateMultiplier
+					item.ProjectionValid = item.ProjectedAfter.Settle(reservation, estimatedBaseCostUSD, accountCost) == nil
+				}
+			}
+		}
+		out = append(out, item)
+	}
+	return out
 }
 
 func newOpenAIRouteShadowReservationID() (string, error) {

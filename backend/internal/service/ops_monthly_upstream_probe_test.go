@@ -136,6 +136,36 @@ func TestMonthlyProbeGrokCredentialUsesAccountTypeContract(t *testing.T) {
 	}))
 }
 
+func TestGrokMonthlyProbePayloadUsesNativeStreamingResponses(t *testing.T) {
+	payload := createGrokMonthlyProbePayload("grok-4.5")
+
+	require.Equal(t, "grok-4.5", payload["model"])
+	require.Equal(t, true, payload["stream"])
+	require.NotEmpty(t, payload["input"])
+}
+
+func TestMonthlyGatewayProbePointSurfacesUpstreamFailureAfterStreamingHeaders(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	recorder.WriteHeader(200)
+	point := monthlyGatewayProbePoint(
+		&Account{ID: 29, Name: "grok-native", Platform: PlatformGrok},
+		"grok-4.5",
+		recorder,
+		time.Now(),
+		&UpstreamFailoverError{
+			StatusCode:   500,
+			ResponseBody: []byte(`{"error":{"code":"upstream_overload","message":"provider overloaded"}}`),
+		},
+		nil,
+	)
+
+	require.Equal(t, "failed", point.Status)
+	require.NotNil(t, point.HTTPStatus)
+	require.Equal(t, 500, *point.HTTPStatus)
+	require.Equal(t, "upstream_overload", point.ErrorCode)
+	require.Equal(t, "provider overloaded", point.ErrorMessage)
+}
+
 func TestMonthlyCardPublicStatusSnapshotVisibleWhenEnabled(t *testing.T) {
 	ctx := context.Background()
 	checkedAt := time.Now().Add(-time.Minute)

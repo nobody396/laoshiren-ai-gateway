@@ -1239,7 +1239,7 @@ func probeMonthlyDirectUpstreamAccount(ctx context.Context, account *Account, mo
 }
 
 func (s *OpsService) probeMonthlyGrokThroughGateway(ctx context.Context, account *Account, model, sessionHash string) MonthlyUpstreamProbePoint {
-	body, _ := json.Marshal(createOpenAICompactProbePayload(model))
+	body, _ := json.Marshal(createGrokMonthlyProbePayload(model))
 	probeCtx, cancel := context.WithTimeout(ctx, monthlyUpstreamProbeTimeoutForModel(model))
 	defer cancel()
 	c, recorder := newMonthlyProbeGinContext(probeCtx, "/v1/responses", body)
@@ -1359,6 +1359,21 @@ func monthlyGatewayProbePoint(account *Account, model string, recorder *httptest
 		body = recorder.Body.Bytes()
 	}
 	point.ErrorCode, point.ErrorMessage = extractMonthlyProbeError(body)
+	var failoverErr *UpstreamFailoverError
+	if errors.As(forwardErr, &failoverErr) {
+		// A streaming response can commit HTTP 200 before the upstream later
+		// fails. Surface the actual upstream status and message instead of the
+		// misleading "HTTP 200 + failed" combination.
+		if failoverErr.StatusCode > 0 {
+			statusCode = failoverErr.StatusCode
+			httpStatus = &statusCode
+			point.HTTPStatus = httpStatus
+		}
+		if code, message := extractMonthlyProbeError(failoverErr.ResponseBody); message != "" {
+			point.ErrorCode = code
+			point.ErrorMessage = message
+		}
+	}
 	shouldCaptureResponseError := forwardErr != nil || statusCode == 0 || statusCode < 200 || statusCode >= 300
 	if shouldCaptureResponseError && isMonthlyProbeGenericClientUnavailable(point.ErrorCode, point.ErrorMessage) {
 		point.ErrorCode = "gateway_forward_failed"
@@ -1450,11 +1465,11 @@ func probeMonthlyGrokUpstream(ctx context.Context, account *Account, model strin
 	if err != nil {
 		return monthlyProbeLocalFailure(account, model, "invalid_base_url", err.Error())
 	}
-	body, _ := json.Marshal(createOpenAICompactProbePayload(model))
+	body, _ := json.Marshal(createGrokMonthlyProbePayload(model))
 	headers := map[string]string{
 		"Authorization": "Bearer " + token,
 		"Content-Type":  "application/json",
-		"Accept":        "application/json",
+		"Accept":        "text/event-stream",
 		"User-Agent":    "grok-cli monthly-upstream-probe",
 	}
 	if account.IsGrokOAuth() {
@@ -1467,6 +1482,16 @@ func probeMonthlyGrokUpstream(ctx context.Context, account *Account, model strin
 		}
 	}
 	return executeMonthlyProbeHTTP(ctx, account, model, targetURL, headers, body)
+}
+
+// createGrokMonthlyProbePayload mirrors the native Grok CLI Responses shape.
+// The generic OpenAI probe is non-streaming, but the production Grok clients
+// use streaming Responses and some compatible pools route the two shapes
+// differently. Monitoring must exercise the same transport as real traffic.
+func createGrokMonthlyProbePayload(model string) map[string]any {
+	payload := createOpenAICompactProbePayload(model)
+	payload["stream"] = true
+	return payload
 }
 
 func monthlyProbeGrokCredential(account *Account) string {

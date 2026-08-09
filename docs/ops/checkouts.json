@@ -160,6 +160,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-16T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/feedback-5-direct-invitee-details-20260810",
+      "owner": "feedback-5-direct-invitee-details-20260810",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-17T23:59:59+08:00"
     }
   ]
 }

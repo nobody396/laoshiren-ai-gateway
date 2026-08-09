@@ -12,6 +12,7 @@ export type CcsImportTarget =
 export type CcsApp = CcsImportTarget
 
 export interface CcsImportGroup {
+  id?: number
   platform: GroupPlatform
   name?: string | null
   allow_messages_dispatch?: boolean
@@ -134,11 +135,19 @@ requires_openai_auth = true
   })
 }
 
-const buildClaudeImportConfig = (): string => {
+const FABLE_ENABLED_CLAUDE_GROUP_IDS = new Set([5, 15])
+
+const buildClaudeImportConfig = (enableFable: boolean): string => {
+  const env: Record<string, string> = {
+    CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY: '1',
+    CLAUDE_CODE_EFFORT_LEVEL: 'high'
+  }
+  if (enableFable) {
+    env.ANTHROPIC_DEFAULT_FABLE_MODEL = 'claude-fable-5'
+  }
+
   return JSON.stringify({
-    env: {
-      CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY: '1'
-    }
+    env
   })
 }
 
@@ -275,7 +284,10 @@ export const buildCcsImportDeeplink = ({
   if (target === 'claude') {
     params.set('model', 'claude-opus-5')
     params.set('configFormat', 'json')
-    params.set('config', encodeBase64Utf8(buildClaudeImportConfig()))
+    params.set(
+      'config',
+      encodeBase64Utf8(buildClaudeImportConfig(FABLE_ENABLED_CLAUDE_GROUP_IDS.has(key.group?.id ?? -1)))
+    )
     const groupModel = key.group?.default_mapped_model?.trim()
     if (platform === 'anthropic' && groupModel) {
       params.set('haikuModel', groupModel)

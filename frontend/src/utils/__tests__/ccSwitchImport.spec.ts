@@ -114,9 +114,25 @@ describe('CC Switch provider deeplinks', () => {
     expect(url.searchParams.get('configFormat')).toBe('json')
     expect(JSON.parse(decodeBase64Utf8(encodedConfig!))).toEqual({
       env: {
-        CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY: '1'
+        CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY: '1',
+        CLAUDE_CODE_EFFORT_LEVEL: 'high'
       }
     })
+  })
+
+  it('adds Fable 5 only for Claude public groups whose complete pool supports it', () => {
+    const url = new URL(buildCcsImportDeeplink({
+      apiBaseUrl: 'https://api.laoshirenai.com',
+      target: 'claude',
+      key: {
+        key: 'sk-test-not-a-secret',
+        group: { id: 5, platform: 'anthropic' }
+      }
+    }))
+
+    const config = JSON.parse(decodeBase64Utf8(url.searchParams.get('config')!))
+    expect(config.env.ANTHROPIC_DEFAULT_FABLE_MODEL).toBe('claude-fable-5')
+    expect(config.env.CLAUDE_CODE_EFFORT_LEVEL).toBe('high')
   })
 
   it('avoids duplicating /v1 when the public API base already includes it', () => {

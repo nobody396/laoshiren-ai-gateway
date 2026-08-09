@@ -56,7 +56,7 @@
 - Claude Code 国内使用指南：https://laoshirenai.com/docs/claude-code-china-guide
 - Codex 国内使用指南：https://laoshirenai.com/docs/codex-china-guide
 - Codex 免 API Key 使用指南：https://laoshirenai.com/docs/codex-no-api-key-guide
-- Codex 自定义 API 配置教程：https://laoshirenai.com/docs/codex-custom-api-guide
+- Codex 自定义 API 配置：Base URL 与 config.toml：https://laoshirenai.com/docs/codex-custom-api-guide
 - Claude Code 和 Codex 怎么选：https://laoshirenai.com/docs/claude-code-vs-codex
 - AI API 网关和基础 API 接入有什么区别：https://laoshirenai.com/docs/ai-api-gateway-service
 - 企业方案：https://laoshirenai.com/docs/enterprise-ai-api-gateway

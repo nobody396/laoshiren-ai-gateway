@@ -1,0 +1,128 @@
+{
+  "siteUrl": "https://laoshirenai.com/",
+  "startDate": "2026-07-12",
+  "endDate": "2026-08-08",
+  "request": {
+    "startDate": "2026-07-12",
+    "endDate": "2026-08-08",
+    "type": "web",
+    "dataState": "final",
+    "aggregationType": "byPage",
+    "rowLimit": 25000,
+    "startRow": 0,
+    "dimensions": [
+      "page"
+    ]
+  },
+  "responseAggregationType": "byPage",
+  "returnedRows": 15,
+  "truncated": false,
+  "exhaustive": false,
+  "rows": [
+    {
+      "page": "https://laoshirenai.com/docs/codex-no-api-key-guide",
+      "clicks": 7,
+      "impressions": 93,
+      "ctr": 0.07526881720430108,
+      "position": 7.354838709677419
+    },
+    {
+      "page": "https://laoshirenai.com/",
+      "clicks": 1,
+      "impressions": 7,
+      "ctr": 0.14285714285714285,
+      "position": 4.142857142857142
+    },
+    {
+      "page": "https://laoshirenai.com/docs/ai-api-gateway-service",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 4
+    },
+    {
+      "page": "https://laoshirenai.com/docs/cherry-studio-quickstart",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 7
+    },
+    {
+      "page": "https://laoshirenai.com/docs/codex-custom-api-guide",
+      "clicks": 0,
+      "impressions": 22,
+      "ctr": 0,
+      "position": 8.90909090909091
+    },
+    {
+      "page": "https://laoshirenai.com/docs/codex-no-api-key-guide#%E4%B8%A4%E7%A7%8D%E6%96%B9%E5%BC%8F%E6%80%8E%E4%B9%88%E9%80%89",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "page": "https://laoshirenai.com/docs/codex-no-api-key-guide#%E5%85%88%E6%8A%8A%E4%B8%89%E4%B8%AA%E6%A6%82%E5%BF%B5%E5%88%86%E5%BC%80",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "page": "https://laoshirenai.com/docs/codex-no-api-key-guide#%E5%93%AA%E4%BA%9B%E6%83%85%E5%86%B5%E5%8F%AF%E4%BB%A5%E4%B8%8D%E6%89%8B%E5%8A%A8%E5%A1%AB-api-key",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "page": "https://laoshirenai.com/docs/codex-quickstart",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 14
+    },
+    {
+      "page": "https://laoshirenai.com/docs/doubao-geo-ai-coding",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 8.25
+    },
+    {
+      "page": "https://laoshirenai.com/docs/enterprise-ai-api-gateway",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 36.5
+    },
+    {
+      "page": "https://laoshirenai.com/docs/faq",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 2
+    },
+    {
+      "page": "https://laoshirenai.com/legal/supported-regions",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 4
+    },
+    {
+      "page": "https://laoshirenai.com/legal/terms",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "page": "https://laoshirenai.com/legal/usage-policy",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 7
+    }
+  ]
+}

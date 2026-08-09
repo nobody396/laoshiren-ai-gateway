@@ -46,6 +46,7 @@ const manifest = {
   outputs: {},
   skipped: [],
   failed: [],
+  sourceMetadata: {},
 }
 
 async function collectTechnicalAudit() {
@@ -69,19 +70,66 @@ async function collectGSC() {
   }
   const token = await googleAccessToken(serviceAccount, 'https://www.googleapis.com/auth/webmasters.readonly')
   const endpoint = `https://searchconsole.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`
-  const payload = {
+  const rowLimit = Math.min(Number(process.env.GSC_ROW_LIMIT || 25000), 25000)
+  const request = async ({ dimensions = [], aggregationType = 'auto' }) => {
+    const payload = {
+      startDate,
+      endDate,
+      type: 'web',
+      dataState: 'final',
+      aggregationType,
+      rowLimit,
+      startRow: 0,
+      ...(dimensions.length ? { dimensions } : {}),
+    }
+    const data = await httpJSON(endpoint, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    return { payload, data }
+  }
+
+  const summaryResult = await request({ aggregationType: 'byProperty' })
+  const summaryRow = summaryResult.data.rows?.[0] || {}
+  const summaryFile = path.join(outDir, 'gsc-summary.json')
+  writeJSON(summaryFile, {
+    siteUrl,
     startDate,
     endDate,
-    dimensions: ['query', 'page'],
-    rowLimit: Number(process.env.GSC_ROW_LIMIT || 25000),
-    startRow: 0,
-  }
-  const data = await httpJSON(endpoint, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-    body: JSON.stringify(payload),
+    request: summaryResult.payload,
+    responseAggregationType: summaryResult.data.responseAggregationType || '',
+    totals: {
+      clicks: summaryRow.clicks || 0,
+      impressions: summaryRow.impressions || 0,
+      ctr: summaryRow.ctr || 0,
+      position: summaryRow.position || 0,
+    },
   })
-  const rows = (data.rows || []).map((row) => ({
+
+  const pagesResult = await request({ dimensions: ['page'], aggregationType: 'byPage' })
+  const pageRows = (pagesResult.data.rows || []).map((row) => ({
+    page: row.keys?.[0] || '',
+    clicks: row.clicks || 0,
+    impressions: row.impressions || 0,
+    ctr: row.ctr || 0,
+    position: row.position || 0,
+  }))
+  const pagesFile = path.join(outDir, 'gsc-pages.json')
+  writeJSON(pagesFile, {
+    siteUrl,
+    startDate,
+    endDate,
+    request: pagesResult.payload,
+    responseAggregationType: pagesResult.data.responseAggregationType || '',
+    returnedRows: pageRows.length,
+    truncated: pageRows.length >= rowLimit,
+    exhaustive: false,
+    rows: pageRows,
+  })
+
+  const queryPageResult = await request({ dimensions: ['query', 'page'] })
+  const queryPageRows = (queryPageResult.data.rows || []).map((row) => ({
     query: row.keys?.[0] || '',
     page: row.keys?.[1] || '',
     clicks: row.clicks || 0,
@@ -89,8 +137,35 @@ async function collectGSC() {
     ctr: row.ctr || 0,
     position: row.position || 0,
   }))
-  writeJSON(path.join(outDir, 'gsc-query-page.json'), { siteUrl, startDate, endDate, rows })
-  manifest.outputs.gsc = path.join(outDir, 'gsc-query-page.json')
+  const queryPageFile = path.join(outDir, 'gsc-query-page.json')
+  writeJSON(queryPageFile, {
+    siteUrl,
+    startDate,
+    endDate,
+    request: queryPageResult.payload,
+    responseAggregationType: queryPageResult.data.responseAggregationType || '',
+    returnedRows: queryPageRows.length,
+    truncated: queryPageRows.length >= rowLimit,
+    exhaustive: false,
+    rows: queryPageRows,
+  })
+
+  manifest.outputs.gsc = queryPageFile
+  manifest.outputs.gscSummary = summaryFile
+  manifest.outputs.gscPages = pagesFile
+  manifest.outputs.gscQueryPage = queryPageFile
+  manifest.sourceMetadata.gsc = {
+    siteUrl,
+    searchType: 'web',
+    dataState: 'final',
+    dateTimezone: 'America/Los_Angeles',
+    filters: [],
+    rowLimit,
+    limitations: [
+      'Search Analytics returns top rows rather than a guaranteed exhaustive export.',
+      'Query dimensions may omit anonymized queries; query-page sums are lower bounds.',
+    ],
+  }
 }
 
 async function collectGA4() {

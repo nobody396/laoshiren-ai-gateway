@@ -94,7 +94,7 @@ func (c *clientSetupTicketCacheStub) ConsumeSSOTicket(_ context.Context, ticket 
 func TestSelectClientSetupGroupUsesFixedCodexGroup(t *testing.T) {
 	groups := []Group{
 		{ID: 1, Name: "Codex 钱包", Platform: PlatformOpenAI, Status: StatusActive, SortOrder: 1},
-		{ID: 2, Name: "Pro 20X", Platform: PlatformOpenAI, Status: StatusActive, SubscriptionType: SubscriptionTypeSubscription, SortOrder: 2},
+		{ID: 2, Name: "Pro 20X", Platform: PlatformOpenAI, Status: StatusActive, SubscriptionType: SubscriptionTypeStandard, SortOrder: 2},
 		{ID: 3, Name: "Codex 月卡 B", Platform: PlatformOpenAI, Status: StatusActive, SubscriptionType: SubscriptionTypeCredit, SortOrder: 3},
 	}
 
@@ -114,26 +114,24 @@ func TestSelectClientSetupGroupUsesFixedClaudeGroup(t *testing.T) {
 	require.Equal(t, int64(2), selected.ID)
 }
 
-func TestSelectClientSetupGroupUsesFixedGrokGroup(t *testing.T) {
+func TestSelectClientSetupGroupUsesPublicGrokBalanceGroup(t *testing.T) {
 	groups := []Group{
-		{ID: 1, Name: "Grok Plus V3 月卡组", Platform: PlatformGrok, Status: StatusActive},
-		{ID: 2, Name: "Grok Pro V3 月卡组", Platform: PlatformGrok, Status: StatusActive},
-		{ID: 3, Name: "Grok Max V3 月卡组", Platform: PlatformGrok, Status: StatusActive},
+		{ID: 35, Name: "Grok Lite 月卡组", Platform: PlatformGrok, Status: StatusActive, SubscriptionType: SubscriptionTypeCredit},
+		{ID: 34, Name: "Grok 4.5 分组", Platform: PlatformGrok, Status: StatusActive, SubscriptionType: SubscriptionTypeStandard},
+		{ID: 49, Name: "Grok Pro V3 月卡组", Platform: PlatformGrok, Status: StatusActive, SubscriptionType: SubscriptionTypeCredit},
 	}
 
 	selected := selectClientSetupGroup(ClientSetupTargetGrok, groups)
 	require.NotNil(t, selected)
-	require.Equal(t, int64(2), selected.ID)
+	require.Equal(t, int64(34), selected.ID)
 }
 
-func TestSelectClientSetupGroupFallsBackToOwnedGrokTier(t *testing.T) {
+func TestSelectClientSetupGroupDoesNotUseGrokMonthlyGroup(t *testing.T) {
 	groups := []Group{
-		{ID: 35, Name: "Grok Lite 月卡组", Platform: PlatformGrok, Status: StatusActive},
+		{ID: 35, Name: "Grok Lite 月卡组", Platform: PlatformGrok, Status: StatusActive, SubscriptionType: SubscriptionTypeCredit},
 	}
 
-	selected := selectClientSetupGroup(ClientSetupTargetGrok, groups)
-	require.NotNil(t, selected)
-	require.Equal(t, int64(35), selected.ID)
+	require.Nil(t, selectClientSetupGroup(ClientSetupTargetGrok, groups))
 }
 
 func TestSelectClientSetupGroupDoesNotUseInactiveGrokTier(t *testing.T) {
@@ -144,19 +142,51 @@ func TestSelectClientSetupGroupDoesNotUseInactiveGrokTier(t *testing.T) {
 	require.Nil(t, selectClientSetupGroup(ClientSetupTargetGrok, groups))
 }
 
-func TestIssueTicketCreatesGrokKeyForOwnedLiteTier(t *testing.T) {
+func TestIssueTicketCreatesGrokKeyForPublicBalanceGroup(t *testing.T) {
 	apiKeys := &clientSetupEnsureAPIKeysStub{
-		groups: []Group{{ID: 35, Name: "Grok Lite 月卡组", Platform: PlatformGrok, Status: StatusActive}},
+		groups: []Group{{ID: 34, Name: "Grok 4.5 分组", Platform: PlatformGrok, Status: StatusActive, SubscriptionType: SubscriptionTypeStandard}},
 	}
 	svc := &ClientSetupService{apiKeys: apiKeys, tickets: newClientSetupTicketCacheStub()}
 
 	ticket, err := svc.IssueTicket(context.Background(), 2, ClientSetupTargetGrok)
 	require.NoError(t, err)
 	require.Equal(t, ClientSetupTargetGrok, ticket.Target)
-	require.Equal(t, "Grok Lite 月卡组", ticket.GroupName)
+	require.Equal(t, "Grok 4.5 分组", ticket.GroupName)
 	require.Equal(t, int64(2), apiKeys.createdUser)
 	require.NotNil(t, apiKeys.createdReq.GroupID)
-	require.Equal(t, int64(35), *apiKeys.createdReq.GroupID)
+	require.Equal(t, int64(34), *apiKeys.createdReq.GroupID)
+}
+
+func TestIssueTicketDoesNotReuseMonthlyGrokSetupKey(t *testing.T) {
+	apiKeys := &clientSetupEnsureAPIKeysStub{
+		keys: []APIKey{{
+			ID:     88,
+			UserID: 2,
+			Name:   clientSetupKeyName(ClientSetupTargetGrok),
+			Status: StatusActive,
+			Group: &Group{
+				ID:               35,
+				Name:             "Grok Lite 月卡组",
+				Platform:         PlatformGrok,
+				Status:           StatusActive,
+				SubscriptionType: SubscriptionTypeCredit,
+			},
+		}},
+		groups: []Group{{
+			ID:               34,
+			Name:             "Grok 4.5 分组",
+			Platform:         PlatformGrok,
+			Status:           StatusActive,
+			SubscriptionType: SubscriptionTypeStandard,
+		}},
+	}
+	svc := &ClientSetupService{apiKeys: apiKeys, tickets: newClientSetupTicketCacheStub()}
+
+	ticket, err := svc.IssueTicket(context.Background(), 2, ClientSetupTargetGrok)
+	require.NoError(t, err)
+	require.Equal(t, "Grok 4.5 分组", ticket.GroupName)
+	require.NotNil(t, apiKeys.createdReq.GroupID)
+	require.Equal(t, int64(34), *apiKeys.createdReq.GroupID)
 }
 
 func TestSelectClientSetupGroupDoesNotFallBack(t *testing.T) {

@@ -25,7 +25,7 @@ const (
 
 	clientSetupClaudeGroupName = "MAX 20X"
 	clientSetupCodexGroupName  = "Pro 20X"
-	clientSetupGrokGroupName   = "Grok Pro V3"
+	clientSetupGrokGroupName   = "Grok 4.5"
 )
 
 var (
@@ -222,8 +222,7 @@ func (s *ClientSetupService) ensureAPIKey(ctx context.Context, userID int64, tar
 		return nil, err
 	}
 	for i := range keys {
-		if keys[i].Name == name && keys[i].Group != nil && (clientSetupGroupMatchesTarget(target, keys[i].Group) ||
-			(target == ClientSetupTargetGrok && clientSetupGroupCompatible(target, keys[i].Group))) {
+		if keys[i].Name == name && keys[i].Group != nil && clientSetupGroupMatchesTarget(target, keys[i].Group) {
 			return &keys[i], nil
 		}
 	}
@@ -298,14 +297,11 @@ func clientSetupRequiredGroupName(target string) string {
 }
 
 func clientSetupRequiredGroupDescription(target string) string {
-	if target == ClientSetupTargetGrok {
-		return "任意可用 Grok 分组"
-	}
 	return clientSetupRequiredGroupName(target)
 }
 
 func clientSetupGroupMatchesTarget(target string, group *Group) bool {
-	if !clientSetupGroupCompatible(target, group) {
+	if !clientSetupGroupCompatible(target, group) || group.IsSubscriptionType() {
 		return false
 	}
 	groupName := strings.ToLower(strings.Join(strings.Fields(group.Name), " "))
@@ -317,21 +313,12 @@ func clientSetupGroupMatchesTarget(target string, group *Group) bool {
 
 func selectClientSetupGroup(target string, groups []Group) *Group {
 	// One-click onboarding is a fixed product rule: Claude Code keys use MAX
-	// 20X and Codex keys use Pro 20X. Grok Build prefers Grok Pro V3, but a
-	// subscriber who only owns Lite, Plus, or Max must still be able to create
-	// a key for the Grok entitlement they actually have.
+	// 20X, Codex keys use Pro 20X, and Grok Build keys use the public Grok 4.5
+	// balance group. Subscription groups are deliberately not selected here.
 	for i := range groups {
 		if clientSetupGroupMatchesTarget(target, &groups[i]) {
 			group := groups[i]
 			return &group
-		}
-	}
-	if target == ClientSetupTargetGrok {
-		for i := range groups {
-			if clientSetupGroupCompatible(target, &groups[i]) {
-				group := groups[i]
-				return &group
-			}
 		}
 	}
 	return nil

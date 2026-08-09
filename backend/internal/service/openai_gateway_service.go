@@ -356,6 +356,7 @@ type OpenAIGatewayService struct {
 	gptImageS3Storage        *GPTImageS3Storage
 	settingService           *SettingService
 	openAIRouteEvaluator     OpenAIRouteShadowEvaluator
+	openAIRouteAuditService  *OpenAIRouteAuditService
 	pipeline                 *GatewayPipeline
 
 	openaiWSPoolOnce                    sync.Once
@@ -392,6 +393,12 @@ func (s *OpenAIGatewayService) SetGrokTokenProvider(provider *GrokTokenProvider)
 func (s *OpenAIGatewayService) SetOpenAIRouteEvaluator(evaluator OpenAIRouteShadowEvaluator) {
 	if s != nil {
 		s.openAIRouteEvaluator = evaluator
+	}
+}
+
+func (s *OpenAIGatewayService) SetOpenAIRouteAuditService(audit *OpenAIRouteAuditService) {
+	if s != nil {
+		s.openAIRouteAuditService = audit
 	}
 }
 

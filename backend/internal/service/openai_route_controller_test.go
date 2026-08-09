@@ -156,6 +156,17 @@ func TestOpenAIRouteController_ExactPolicyBeatsWildcardAndSelectsWithinBudget(t 
 	require.Equal(t, 9, decision.Version)
 	require.Equal(t, int64(1), decision.SelectedAccountID, "the 0.20 route has no earned credit and must be budget-filtered")
 	require.InDelta(t, 0.15, decision.SelectedRate, 1e-12)
+	require.NotEmpty(t, decision.DecisionID)
+	require.GreaterOrEqual(t, decision.EvaluationDurationMicros, int64(0))
+	require.NotNil(t, decision.Audit)
+	require.InDelta(t, 0.155, decision.Audit.Policy.TargetAverageMultiplier, 1e-12)
+	require.Len(t, decision.Audit.Candidates, 2)
+	require.Len(t, decision.Audit.BudgetWindows, 3)
+	require.True(t, decision.Audit.BudgetWindows[0].ProjectionValid)
+	require.Equal(t, int64(1), decision.Audit.Candidates[0].AccountID)
+	require.NotEmpty(t, decision.Audit.Candidates[0].EndpointHash)
+	require.Empty(t, decision.Audit.Candidates[0].ExclusionReasons)
+	require.Contains(t, decision.Audit.Candidates[1].ExclusionReasons, OpenAIRouteExcludedCost)
 	require.Len(t, budget.windows, 3)
 	require.Equal(t, 1, budget.reserveCalls)
 	require.Equal(t, 1, budget.settleCalls)
@@ -179,6 +190,41 @@ func TestOpenAIRouteController_EnforceModeIsHardDisabled(t *testing.T) {
 	require.ErrorIs(t, err, ErrOpenAIRouteEnforceDisabled)
 	require.False(t, decision.Evaluated)
 	require.Equal(t, OpenAIRoutePolicyEnforce, decision.Mode)
+}
+
+func TestOpenAIRouteController_BudgetFailureDoesNotClaimASelectedCandidate(t *testing.T) {
+	reader := &openAIRoutePolicyReaderStub{value: `{
+  "group_id":7,
+  "model":"gpt-5.6-sol",
+  "enabled":true,
+  "mode":"shadow",
+  "policy_version":10,
+  "target_avg_multiplier":0.10,
+  "hard_avg_multiplier":0.10,
+  "estimated_base_cost_usd":0.01
+}`}
+	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{})
+
+	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
+		GroupID: 7,
+		Model:   "gpt-5.6-sol",
+		Seed:    42,
+		Candidates: []OpenAIRouteShadowCandidate{{
+			Account:   testOpenAIRouteControllerAccount(1, 0.15),
+			Endpoint:  "https://example.invalid/v1/responses",
+			Transport: string(OpenAIUpstreamTransportHTTPSSE),
+		}},
+	})
+	require.ErrorIs(t, err, ErrOpenAIRouteBudgetExhausted)
+	require.False(t, decision.Evaluated)
+	require.Zero(t, decision.SelectedAccountID)
+	require.NotNil(t, decision.Audit)
+	require.Len(t, decision.Audit.Candidates, 1)
+	require.False(t, decision.Audit.Candidates[0].Selected)
+	require.Len(t, decision.Audit.BudgetWindows, 3)
+	for _, window := range decision.Audit.BudgetWindows {
+		require.False(t, window.ProjectionValid)
+	}
 }
 
 func TestDecodeOpenAIRoutePolicies_AcceptsSinglePolicyDocument(t *testing.T) {

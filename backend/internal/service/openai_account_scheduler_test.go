@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"sync"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
 	"github.com/stretchr/testify/require"
 )
 
@@ -193,6 +195,162 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_ShadowDecisionNeverOver
 	require.Equal(t, 3, decision.RoutePolicyVersion)
 	require.True(t, decision.AdaptiveDiverged)
 	require.Len(t, evaluator.request.Candidates, 2)
+	if selection.ReleaseFunc != nil {
+		selection.ReleaseFunc()
+	}
+}
+
+func TestOpenAIGatewayService_SelectAccountWithScheduler_PersistsCompleteShadowDecision(t *testing.T) {
+	groupID := int64(7002)
+	legacyRate := 0.20
+	adaptiveRate := 0.15
+	legacy := Account{
+		ID:             7201,
+		Platform:       PlatformOpenAI,
+		Type:           AccountTypeAPIKey,
+		Status:         StatusActive,
+		Schedulable:    true,
+		Concurrency:    2,
+		RateMultiplier: &legacyRate,
+		AccountGroups:  []AccountGroup{{AccountID: 7201, GroupID: groupID, Priority: 1}},
+	}
+	adaptive := Account{
+		ID:             7202,
+		Platform:       PlatformOpenAI,
+		Type:           AccountTypeAPIKey,
+		Status:         StatusActive,
+		Schedulable:    true,
+		Concurrency:    2,
+		RateMultiplier: &adaptiveRate,
+		AccountGroups:  []AccountGroup{{AccountID: 7202, GroupID: groupID, Priority: 2}},
+	}
+	evaluator := &openAIRouteShadowEvaluatorStub{decision: OpenAIRouteShadowDecision{
+		DecisionID:               "shadow:persisted",
+		Evaluated:                true,
+		Mode:                     OpenAIRoutePolicyShadow,
+		Version:                  4,
+		Reason:                   "shadow_selected",
+		SelectedAccountID:        adaptive.ID,
+		SelectedRate:             adaptiveRate,
+		CandidateCount:           2,
+		EvaluationDurationMicros: 123,
+		Audit:                    &OpenAIRouteShadowAuditSnapshot{},
+	}}
+	auditRepo := &openAIRouteDecisionRepositoryStub{}
+	svc := &OpenAIGatewayService{
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{adaptive, legacy}},
+		cfg:                &config.Config{},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
+	}
+	svc.SetOpenAIRouteEvaluator(evaluator)
+	svc.SetOpenAIRouteAuditService(NewOpenAIRouteAuditService(auditRepo))
+	ctx := context.WithValue(context.Background(), ctxkey.RequestID, "request-1")
+	ctx = context.WithValue(ctx, ctxkey.ClientRequestID, "client-1")
+
+	selection, decision, err := svc.SelectAccountWithScheduler(ctx, &groupID, "", "", "gpt-5.6-sol", map[int64]struct{}{999: {}}, OpenAIUpstreamTransportAny)
+	require.NoError(t, err)
+	require.NotNil(t, selection)
+	require.NotNil(t, auditRepo.record)
+	require.Equal(t, "shadow:persisted", auditRepo.record.DecisionID)
+	require.Equal(t, "request-1", auditRepo.record.RequestID)
+	require.Equal(t, "client-1", auditRepo.record.ClientRequestID)
+	require.Equal(t, 2, auditRepo.record.Attempt)
+	require.Equal(t, legacy.ID, auditRepo.record.LegacySelectedAccountID)
+	require.Equal(t, adaptive.ID, auditRepo.record.AdaptiveSelectedAccountID)
+	require.True(t, auditRepo.record.Diverged)
+	require.Greater(t, auditRepo.record.Snapshot.LegacyTopK, 0)
+	require.NotEmpty(t, auditRepo.record.Snapshot.LegacySelectionOrder)
+	require.Equal(t, legacy.ID, auditRepo.record.Snapshot.LegacySelectionOrder[0])
+	require.Len(t, auditRepo.record.Snapshot.AdaptiveSeedHex, 16)
+	require.Equal(t, []int64{999}, auditRepo.record.Snapshot.ExcludedAccountIDs)
+	require.False(t, auditRepo.record.Snapshot.RequireCompact)
+	require.Equal(t, string(OpenAIUpstreamTransportAny), auditRepo.record.Snapshot.RequiredTransport)
+	require.Equal(t, OpenAIRoutePolicyShadow, decision.RoutePolicyMode)
+	if selection.ReleaseFunc != nil {
+		selection.ReleaseFunc()
+	}
+}
+
+func TestOpenAIGatewayService_SelectAccountWithScheduler_InvalidatesUnrecordedShadowSample(t *testing.T) {
+	groupID := int64(7003)
+	rate := 0.15
+	account := Account{
+		ID:             7301,
+		Platform:       PlatformOpenAI,
+		Type:           AccountTypeAPIKey,
+		Status:         StatusActive,
+		Schedulable:    true,
+		Concurrency:    2,
+		RateMultiplier: &rate,
+		AccountGroups:  []AccountGroup{{AccountID: 7301, GroupID: groupID, Priority: 1}},
+	}
+	evaluator := &openAIRouteShadowEvaluatorStub{decision: OpenAIRouteShadowDecision{
+		DecisionID:        "shadow:not-written",
+		Evaluated:         true,
+		Mode:              OpenAIRoutePolicyShadow,
+		Version:           5,
+		Reason:            "shadow_selected",
+		SelectedAccountID: account.ID,
+		SelectedRate:      rate,
+		CandidateCount:    1,
+		Audit:             &OpenAIRouteShadowAuditSnapshot{},
+	}}
+	auditRepo := &openAIRouteDecisionRepositoryStub{err: errors.New("write failed")}
+	svc := &OpenAIGatewayService{
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{account}},
+		cfg:                &config.Config{},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
+	}
+	svc.SetOpenAIRouteEvaluator(evaluator)
+	svc.SetOpenAIRouteAuditService(NewOpenAIRouteAuditService(auditRepo))
+
+	selection, decision, err := svc.SelectAccountWithScheduler(context.Background(), &groupID, "", "", "gpt-5.6-sol", nil, OpenAIUpstreamTransportAny)
+	require.NoError(t, err)
+	require.NotNil(t, selection, "legacy routing must remain available when audit persistence fails")
+	require.Equal(t, OpenAIRoutePolicyLegacy, decision.RoutePolicyMode)
+	require.Equal(t, "audit_persist_failed", decision.RoutePolicyReason)
+	require.False(t, decision.AdaptiveDiverged)
+	if selection.ReleaseFunc != nil {
+		selection.ReleaseFunc()
+	}
+}
+
+func TestOpenAIGatewayService_SelectAccountWithScheduler_SkipsShadowWhenAuditStorageIsUnavailable(t *testing.T) {
+	groupID := int64(7004)
+	rate := 0.15
+	account := Account{
+		ID:             7401,
+		Platform:       PlatformOpenAI,
+		Type:           AccountTypeAPIKey,
+		Status:         StatusActive,
+		Schedulable:    true,
+		Concurrency:    2,
+		RateMultiplier: &rate,
+		AccountGroups:  []AccountGroup{{AccountID: 7401, GroupID: groupID, Priority: 1}},
+	}
+	evaluator := &openAIRouteShadowEvaluatorStub{decision: OpenAIRouteShadowDecision{
+		DecisionID: "shadow:must-not-run",
+		Evaluated:  true,
+		Mode:       OpenAIRoutePolicyShadow,
+		Version:    6,
+		Audit:      &OpenAIRouteShadowAuditSnapshot{},
+	}}
+	auditRepo := &openAIRouteDecisionRepositoryStub{checkErr: errors.New("audit table unavailable")}
+	svc := &OpenAIGatewayService{
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{account}},
+		cfg:                &config.Config{},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
+	}
+	svc.SetOpenAIRouteEvaluator(evaluator)
+	svc.SetOpenAIRouteAuditService(NewOpenAIRouteAuditService(auditRepo))
+
+	selection, decision, err := svc.SelectAccountWithScheduler(context.Background(), &groupID, "", "", "gpt-5.6-sol", nil, OpenAIUpstreamTransportAny)
+	require.NoError(t, err)
+	require.NotNil(t, selection)
+	require.Zero(t, evaluator.request.GroupID, "adaptive evaluation must not run without writable audit storage")
+	require.Equal(t, OpenAIRoutePolicyLegacy, decision.RoutePolicyMode)
+	require.Equal(t, "audit_unavailable", decision.RoutePolicyReason)
+	require.Nil(t, auditRepo.record)
 	if selection.ReleaseFunc != nil {
 		selection.ReleaseFunc()
 	}

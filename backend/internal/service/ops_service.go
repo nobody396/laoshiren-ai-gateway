@@ -55,6 +55,7 @@ type OpsService struct {
 	geminiCompatService       *GeminiMessagesCompatService
 	antigravityGatewayService *AntigravityGatewayService
 	systemLogSink             *OpsSystemLogSink
+	openAIRouteAuditService   *OpenAIRouteAuditService
 }
 
 func NewOpsService(
@@ -92,6 +93,12 @@ func NewOpsService(
 	svc.applyRuntimeLogConfigOnStartup(context.Background())
 	svc.startMonthlyUpstreamProbeRunner()
 	return svc
+}
+
+func (s *OpsService) SetOpenAIRouteAuditService(audit *OpenAIRouteAuditService) {
+	if s != nil {
+		s.openAIRouteAuditService = audit
+	}
 }
 
 func (s *OpsService) RequireMonitoringEnabled(ctx context.Context) error {

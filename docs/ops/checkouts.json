@@ -139,6 +139,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-31T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/shadow-routing-observability-20260809",
+      "owner": "shadow-routing-observability-20260809",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-31T23:59:59+08:00"
     }
   ]
 }

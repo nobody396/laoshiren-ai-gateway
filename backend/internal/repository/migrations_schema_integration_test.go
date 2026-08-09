@@ -54,6 +54,15 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	requireColumn(t, tx, "usage_logs", "video_resolution", "character varying", 10, true)
 	requireColumn(t, tx, "usage_logs", "video_duration_seconds", "integer", 0, true)
 
+	// openai_route_shadow_decisions: durable, append-only routing evidence
+	requireColumn(t, tx, "openai_route_shadow_decisions", "decision_id", "character varying", 64, false)
+	requireColumn(t, tx, "openai_route_shadow_decisions", "request_id", "character varying", 128, false)
+	requireColumn(t, tx, "openai_route_shadow_decisions", "client_request_id", "character varying", 128, false)
+	requireColumn(t, tx, "openai_route_shadow_decisions", "snapshot", "jsonb", 0, false)
+	requireColumn(t, tx, "openai_route_shadow_decisions", "created_at", "timestamp with time zone", 0, false)
+	requireIndex(t, tx, "openai_route_shadow_decisions", "idx_openai_route_shadow_decisions_created_at")
+	requireIndex(t, tx, "openai_route_shadow_decisions", "idx_openai_route_shadow_decisions_group_model_created")
+
 	// groups: Grok video billing controls (migration 173)
 	requireColumn(t, tx, "groups", "video_rate_independent", "boolean", 0, false)
 	requireColumn(t, tx, "groups", "video_rate_multiplier", "numeric", 0, false)

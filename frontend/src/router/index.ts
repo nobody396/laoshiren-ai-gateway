@@ -39,7 +39,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: false,
       title: 'AI 编码网关',
-      description: '老实人AI 提供面向开发者的 AI 编码接口与网关服务，支持 Claude Code、Codex、ChatGPT、Gemini 等主流编码模型，适合快速配置、精确计费和稳定调用。',
+      description: '老实人AI 提供面向开发者的 AI 编码接口与网关服务，支持 Claude Code、Codex、ChatGPT、Grok 等主流编码模型，适合快速配置、精确计费和稳定调用。',
       titleSiteNameFirst: true
     }
   },

@@ -67,7 +67,7 @@ const ui = computed(() => (isEnglish.value
     titleProduct: 'Coding Gateway',
     descriptionLines: [
       'Code with clarity. Every line should stand up to scrutiny.',
-      'Think with Claude Code, Codex, ChatGPT, and Gemini through one quiet gateway.'
+      'Think with Claude Code, Codex, ChatGPT, and Grok through one quiet gateway.'
     ],
     dashboardCta: 'Dashboard',
     beginCta: 'Begin the dialogue',
@@ -83,7 +83,7 @@ const ui = computed(() => (isEnglish.value
     descriptionLines: [
       '让每一行代码都经得起审视。',
       '像柏拉图与门徒在柱廊下对谈一样，',
-      '通过老实人AI与 Claude Code、Codex、ChatGPT、Gemini 一起思考。'
+      '通过老实人AI与 Claude Code、Codex、ChatGPT、Grok 一起思考。'
     ],
     dashboardCta: '进入控制台',
     beginCta: '开始对谈',

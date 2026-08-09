@@ -74,15 +74,16 @@ type FeedbackEvent struct {
 }
 
 type FeedbackReward struct {
-	ID                    int64     `json:"id"`
-	FeedbackID            int64     `json:"feedback_id"`
-	UserID                int64     `json:"user_id"`
-	Amount                float64   `json:"amount"`
-	Reason                string    `json:"reason"`
-	BatchID               string    `json:"batch_id"`
-	OperatorUserID        *int64    `json:"operator_user_id,omitempty"`
-	AccountChangeRecordID *int64    `json:"account_change_record_id,omitempty"`
-	GrantedAt             time.Time `json:"granted_at"`
+	ID                    int64         `json:"id"`
+	FeedbackID            int64         `json:"feedback_id"`
+	UserID                int64         `json:"user_id"`
+	Amount                float64       `json:"amount"`
+	Reason                string        `json:"reason"`
+	BatchID               string        `json:"batch_id"`
+	OperatorUserID        *int64        `json:"operator_user_id,omitempty"`
+	AccountChangeRecordID *int64        `json:"account_change_record_id,omitempty"`
+	GrantedAt             time.Time     `json:"granted_at"`
+	User                  *FeedbackUser `json:"user,omitempty"`
 }
 
 type UserNotification struct {
@@ -206,6 +207,27 @@ func FeedbackDetailFromService(item *service.FeedbackDetail) *FeedbackDetail {
 	if item.Reward != nil {
 		r := item.Reward
 		out.Reward = &FeedbackReward{ID: r.ID, FeedbackID: r.FeedbackID, UserID: r.UserID, Amount: r.Amount, Reason: r.Reason, BatchID: r.BatchID, OperatorUserID: r.OperatorUserID, AccountChangeRecordID: r.AccountChangeRecordID, GrantedAt: r.GrantedAt}
+	}
+	return out
+}
+
+func FeedbackRewardFromService(item *service.FeedbackReward) *FeedbackReward {
+	if item == nil {
+		return nil
+	}
+	out := &FeedbackReward{
+		ID:                    item.ID,
+		FeedbackID:            item.FeedbackID,
+		UserID:                item.UserID,
+		Amount:                item.Amount,
+		Reason:                item.Reason,
+		BatchID:               item.BatchID,
+		OperatorUserID:        item.OperatorUserID,
+		AccountChangeRecordID: item.AccountChangeRecordID,
+		GrantedAt:             item.GrantedAt,
+	}
+	if item.User != nil {
+		out.User = &FeedbackUser{ID: item.User.ID, Email: item.User.Email, Username: item.User.Username}
 	}
 	return out
 }

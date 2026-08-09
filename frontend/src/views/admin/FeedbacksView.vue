@@ -102,20 +102,16 @@
       </template>
     </TablePageLayout>
 
-	<div v-if="showRewards" class="mx-4 mb-6 rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-900 md:mx-6">
-	  <div class="mb-4 flex items-center justify-between">
-		<h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('feedback.admin.rewardLedger') }}</h2>
-		<button class="btn btn-secondary btn-sm" @click="showRewards = false">{{ t('common.close') }}</button>
-	  </div>
+	<BaseDialog :show="showRewards" :title="t('feedback.admin.rewardLedger')" width="extra-wide" @close="showRewards = false">
 	  <div v-if="rewardsLoading" class="py-8 text-center text-sm text-gray-500">{{ t('common.loading') }}</div>
 	  <div v-else class="overflow-x-auto">
 		<table class="min-w-full text-sm">
 		  <thead class="text-left text-gray-500"><tr><th class="p-2">{{ t('feedback.admin.rewardColumns.feedback') }}</th><th class="p-2">{{ t('feedback.admin.rewardColumns.user') }}</th><th class="p-2">{{ t('feedback.admin.rewardColumns.amount') }}</th><th class="p-2">{{ t('feedback.admin.rewardColumns.batch') }}</th><th class="p-2">{{ t('feedback.admin.rewardColumns.ledger') }}</th><th class="p-2">{{ t('feedback.admin.rewardColumns.time') }}</th></tr></thead>
-		  <tbody><tr v-for="reward in rewards" :key="reward.id" class="border-t border-gray-100 dark:border-dark-700"><td class="p-2"><RouterLink class="text-primary-600 hover:underline" :to="`/admin/feedbacks/${reward.feedback_id}`">#{{ reward.feedback_id }}</RouterLink></td><td class="p-2">{{ reward.user?.username || reward.user?.email || `#${reward.user_id}` }}</td><td class="p-2 font-semibold text-emerald-600">+{{ reward.amount.toFixed(2) }}</td><td class="p-2"><code>{{ reward.batch_id }}</code></td><td class="p-2">{{ reward.account_change_record_id || '-' }}</td><td class="p-2">{{ formatDateTime(reward.granted_at) }}</td></tr></tbody>
+		  <tbody><tr v-for="reward in rewards" :key="reward.id" class="border-t border-gray-100 dark:border-dark-700"><td class="p-2"><RouterLink class="text-primary-600 hover:underline" :to="`/admin/feedbacks/${reward.feedback_id}`">#{{ reward.feedback_id }}</RouterLink></td><td class="p-2"><div class="font-medium text-gray-900 dark:text-white">{{ reward.user?.email || reward.user?.username || '-' }}</div><div v-if="reward.user?.email && reward.user?.username" class="text-xs text-gray-500">{{ reward.user.username }}</div></td><td class="p-2 font-semibold text-emerald-600">+{{ reward.amount.toFixed(2) }}</td><td class="p-2"><code>{{ reward.batch_id }}</code></td><td class="p-2">{{ reward.account_change_record_id || '-' }}</td><td class="p-2">{{ formatDateTime(reward.granted_at) }}</td></tr></tbody>
 		</table>
 		<p v-if="rewards.length === 0" class="py-8 text-center text-gray-500">{{ t('feedback.admin.noRewards') }}</p>
 	  </div>
-	</div>
+	</BaseDialog>
 
     <ConfirmDialog
       :show="showDeleteConfirm"
@@ -152,6 +148,7 @@ import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import BaseDialog from '@/components/common/BaseDialog.vue'
 import adminFeedbacksAPI from '@/api/admin/feedbacks'
 import { formatDateTime } from '@/utils/format'
 import { feedbackCategoryOptions, feedbackPriorityOptions, feedbackPriorityTone, feedbackStatusOptions, feedbackStatusTone, toDayEndRFC3339, toDayStartRFC3339 } from '@/utils/feedback'

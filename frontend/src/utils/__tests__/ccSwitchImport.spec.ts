@@ -89,6 +89,8 @@ describe('CC Switch provider deeplinks', () => {
 
     const config = JSON.parse(decodeBase64Utf8(encodedConfig!))
     expect(config.modelCatalog.models).toEqual(OPENAI_CODEX_MODELS)
+    expect(config.modelCatalog.models.map((model: { model: string }) => model.model))
+      .not.toContain('gpt-5.3-codex-spark')
     expect(config.config).toContain('model = "gpt-5.6-sol"')
     expect(config.config).toContain('base_url = "https://api.laoshirenai.com/v1"')
     expect(config.config).not.toContain('sk-test-not-a-secret')

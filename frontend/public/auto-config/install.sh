@@ -2,10 +2,11 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="0.7.0"
+SCRIPT_VERSION="0.7.1"
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
 DEFAULT_CODEX_MANIFEST_URL="https://laoshirenai.com/api/v1/public-downloads/codex/latest.json"
+DEFAULT_CODEX_MODEL_CATALOG_URL="https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.1"
 DEFAULT_TOPUP_URL="https://laoshirenai.com/get-subscription"
 DEFAULT_TOOLS="all"
 DEFAULT_NODE_INDEX_PRIMARY="https://npmmirror.com/mirrors/node/index.tab"
@@ -25,6 +26,7 @@ CLAUDE_SETTINGS_PATH="${HOME}/.claude/settings.json"
 CODEX_DIR="${HOME}/.codex"
 CODEX_AUTH_PATH="${CODEX_DIR}/auth.json"
 CODEX_CONFIG_PATH="${CODEX_DIR}/config.toml"
+CODEX_MODEL_CATALOG_PATH="${CODEX_DIR}/laoshirenai-model-catalog.json"
 GROK_DIR="${HOME}/.grok"
 GROK_CONFIG_PATH="${GROK_DIR}/config.toml"
 GROK_BIN_PATH="${GROK_DIR}/bin/grok"
@@ -41,6 +43,7 @@ INSTALL_CODEX_APP=0
 SETUP_TOKEN="${LAOSHIRENAI_SETUP_TOKEN:-}"
 SETUP_EXCHANGE_URL="${LAOSHIRENAI_SETUP_EXCHANGE_URL:-$DEFAULT_SETUP_EXCHANGE_URL}"
 CODEX_MANIFEST_URL="${LAOSHIRENAI_CODEX_MANIFEST_URL:-$DEFAULT_CODEX_MANIFEST_URL}"
+CODEX_MODEL_CATALOG_URL="${LAOSHIRENAI_CODEX_MODEL_CATALOG_URL:-$DEFAULT_CODEX_MODEL_CATALOG_URL}"
 BALANCE_READY=1
 
 # 兼容统一 API Key 环境变量；若未提供专用 Key，则回退复用统一值。
@@ -972,6 +975,35 @@ fs.writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`, 'utf8')
 EOF
 }
 
+# 写入本站受支持模型目录，阻止 Codex 回退到官方缓存后展示网关不支持的模型。
+write_codex_model_catalog() {
+  create_backup_if_needed "$CODEX_MODEL_CATALOG_PATH"
+  ensure_dir "$CODEX_DIR"
+
+  local source_path="${CODEX_MODEL_CATALOG_PATH}.download"
+  download_to_file "$source_path" "$CODEX_MODEL_CATALOG_URL" || \
+    log_error "Codex 模型目录下载失败，请稍后重试"
+
+  SOURCE_PATH="$source_path" TARGET_PATH="$CODEX_MODEL_CATALOG_PATH" "$NODE_BIN" <<'EOF'
+const fs = require('node:fs')
+const sourcePath = process.env.SOURCE_PATH
+const targetPath = process.env.TARGET_PATH
+const source = JSON.parse(fs.readFileSync(sourcePath, 'utf8'))
+const models = Array.isArray(source.models) ? source.models : []
+const required = ['slug', 'base_instructions', 'supports_reasoning_summaries', 'context_window', 'visibility']
+
+if (
+  models.length === 0 ||
+  models.some((model) => model.slug === 'gpt-5.3-codex-spark') ||
+  models.some((model) => required.some((field) => !(field in model)))
+) {
+  throw new Error('invalid Codex model catalog')
+}
+
+fs.renameSync(sourcePath, targetPath)
+EOF
+}
+
 # 生成 Codex 的核心 TOML 配置，第一版采用确定性覆盖策略并配合备份保证可回滚。
 write_codex_config() {
   create_backup_if_needed "$CODEX_CONFIG_PATH"
@@ -982,6 +1014,7 @@ model_provider = "OpenAI"
 model = "gpt-5.6-sol"
 review_model = "gpt-5.6-sol"
 model_reasoning_effort = "xhigh"
+model_catalog_json = "laoshirenai-model-catalog.json"
 disable_response_storage = true
 network_access = "enabled"
 preferred_auth_method = "apikey"
@@ -1165,6 +1198,7 @@ configure_codex() {
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "codex" ]; then
     log_info "正在写入 Codex 配置"
     write_codex_auth
+    write_codex_model_catalog
     write_codex_config
   fi
 }

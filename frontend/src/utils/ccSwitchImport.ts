@@ -44,6 +44,44 @@ export const OPENAI_CODEX_MODELS = [
   { model: 'gpt-5.4-mini', displayName: 'GPT-5.4-Mini', contextWindow: 272000 }
 ] as const
 
+const CODEX_REASONING_LEVELS = [
+  { effort: 'low', description: 'Fast responses with lighter reasoning' },
+  { effort: 'medium', description: 'Balanced reasoning for everyday tasks' },
+  { effort: 'high', description: 'Greater reasoning depth for complex tasks' },
+  { effort: 'xhigh', description: 'Extra high reasoning depth' }
+] as const
+
+export const buildCodexModelCatalog = (): string => JSON.stringify({
+  models: OPENAI_CODEX_MODELS.map((model, index) => ({
+    slug: model.model,
+    display_name: model.displayName,
+    description: `${model.displayName} coding model.`,
+    base_instructions: 'You are Codex, a coding agent. You and the user share the same workspace and collaborate to achieve the user\'s goals.',
+    default_reasoning_level: 'high',
+    supported_reasoning_levels: CODEX_REASONING_LEVELS,
+    shell_type: 'shell_command',
+    visibility: 'list',
+    supported_in_api: true,
+    priority: index + 1,
+    supports_reasoning_summaries: true,
+    default_reasoning_summary: 'none',
+    support_verbosity: true,
+    truncation_policy: { mode: 'bytes', limit: 10000 },
+    supports_parallel_tool_calls: true,
+    supports_image_detail_original: false,
+    context_window: model.contextWindow,
+    max_context_window: model.contextWindow,
+    effective_context_window_percent: 100,
+    auto_compact_token_limit: null,
+    experimental_supported_tools: [],
+    input_modalities: ['text', 'image'],
+    supports_search_tool: true,
+    use_responses_lite: false,
+    availability_nux: null,
+    upgrade: null
+  }))
+}, null, 2)
+
 const DEFAULT_CLAUDE_MODELS = {
   haiku: 'claude-haiku-4-5',
   sonnet: 'claude-sonnet-5',

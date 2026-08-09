@@ -13,7 +13,7 @@ describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on macOS and Linux', () => {
     const script = readPublicScript('install.sh')
 
-    expect(script).toContain('SCRIPT_VERSION="0.7.0"')
+    expect(script).toContain('SCRIPT_VERSION="0.7.1"')
     expect(script).toContain('EXISTING_CLAUDE_COMMAND="$(get_usable_client_command claude || true)"')
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('exchange_setup_ticket')
@@ -30,7 +30,7 @@ describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on Windows', () => {
     const script = readPublicScript('install.ps1')
 
-    expect(script).toContain("$ScriptVersion = '0.7.0'")
+    expect(script).toContain("$ScriptVersion = '0.7.1'")
     expect(script).toContain("Get-UsableClientCommand -CommandName 'claude'")
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('Exchange-SetupTicket')
@@ -65,10 +65,44 @@ describe('client auto-config scripts', () => {
     }
   })
 
+  it('writes a provider-owned Codex catalog without unsupported Spark', () => {
+    const catalog = JSON.parse(readPublicScript('codex-model-catalog.json'))
+    const models = catalog.models.map((model: { slug: string }) => model.slug)
+
+    expect(models).toEqual([
+      'gpt-5.6-sol',
+      'gpt-5.6-terra',
+      'gpt-5.6-luna',
+      'gpt-5.6',
+      'gpt-5.5',
+      'gpt-5.4',
+      'gpt-5.4-mini'
+    ])
+    expect(models).not.toContain('gpt-5.3-codex-spark')
+    expect(catalog.template).toBeUndefined()
+    for (const model of catalog.models) {
+      expect(model.base_instructions).toBeTruthy()
+      expect(model.supports_reasoning_summaries).toBe(true)
+      expect(model.visibility).toBe('list')
+    }
+    for (const name of ['install.sh', 'install.ps1']) {
+      const script = readPublicScript(name)
+      expect(script).toContain('model_catalog_json = "laoshirenai-model-catalog.json"')
+      expect(script).toContain('gpt-5.3-codex-spark')
+    }
+  })
+
   it('uses xhigh as the Claude Code default in the manual settings template', () => {
     const modal = readUseKeyModal()
     expect(modal).toContain('"model": "claude-opus-5"')
     expect(modal).toContain('"effortLevel": "xhigh"')
+  })
+
+  it('shows the supported Codex catalog in the manual settings template', () => {
+    const modal = readUseKeyModal()
+    expect(modal).toContain('model_catalog_json = "laoshirenai-model-catalog.json"')
+    expect(modal).toContain('buildCodexModelCatalog()')
+    expect(modal).not.toContain("'gpt-5.3-codex-spark'")
   })
 
   it('installs and configures Grok Build with the native Responses model on macOS and Linux', () => {

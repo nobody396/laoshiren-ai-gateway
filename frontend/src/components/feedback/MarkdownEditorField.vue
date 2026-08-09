@@ -25,8 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onErrorCaptured } from 'vue'
-import { MdEditor } from 'md-editor-v3'
+import { computed, defineAsyncComponent, ref, onErrorCaptured } from 'vue'
 import type { ToolbarNames } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 
@@ -46,6 +45,15 @@ const emit = defineEmits<{
 }>()
 
 const loadFailed = ref(false)
+// Keep the editor behind a real dynamic import. A static import made Rollup's
+// optional editor chunk and this wrapper import each other in production.
+const MdEditor = defineAsyncComponent({
+  loader: () => import('md-editor-v3').then((module) => module.MdEditor),
+  onError(_error, _retry, fail) {
+    loadFailed.value = true
+    fail()
+  },
+})
 const theme = computed(() => document.documentElement.classList.contains('dark') ? 'dark' : 'light')
 const language = 'en-US'
 const toolbarsExclude: ToolbarNames[] = ['save', 'github', 'catalog', 'mermaid', 'katex', 'htmlPreview']

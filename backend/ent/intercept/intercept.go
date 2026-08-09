@@ -24,7 +24,9 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/commissionrecord"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/errorpassthroughrule"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedback"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackevent"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackreply"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackreward"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/financetransaction"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/group"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/idempotencyrecord"
@@ -48,6 +50,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/userallowedgroup"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/userattributedefinition"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/userattributevalue"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/usernotification"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/usersubscription"
 )
 
@@ -539,6 +542,33 @@ func (f TraverseFeedback) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.FeedbackQuery", q)
 }
 
+// The FeedbackEventFunc type is an adapter to allow the use of ordinary function as a Querier.
+type FeedbackEventFunc func(context.Context, *ent.FeedbackEventQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f FeedbackEventFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.FeedbackEventQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.FeedbackEventQuery", q)
+}
+
+// The TraverseFeedbackEvent type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseFeedbackEvent func(context.Context, *ent.FeedbackEventQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseFeedbackEvent) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseFeedbackEvent) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.FeedbackEventQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.FeedbackEventQuery", q)
+}
+
 // The FeedbackReplyFunc type is an adapter to allow the use of ordinary function as a Querier.
 type FeedbackReplyFunc func(context.Context, *ent.FeedbackReplyQuery) (ent.Value, error)
 
@@ -564,6 +594,33 @@ func (f TraverseFeedbackReply) Traverse(ctx context.Context, q ent.Query) error 
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.FeedbackReplyQuery", q)
+}
+
+// The FeedbackRewardFunc type is an adapter to allow the use of ordinary function as a Querier.
+type FeedbackRewardFunc func(context.Context, *ent.FeedbackRewardQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f FeedbackRewardFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.FeedbackRewardQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.FeedbackRewardQuery", q)
+}
+
+// The TraverseFeedbackReward type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseFeedbackReward func(context.Context, *ent.FeedbackRewardQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseFeedbackReward) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseFeedbackReward) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.FeedbackRewardQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.FeedbackRewardQuery", q)
 }
 
 // The FinanceTransactionFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -1160,6 +1217,33 @@ func (f TraverseUserAttributeValue) Traverse(ctx context.Context, q ent.Query) e
 	return fmt.Errorf("unexpected query type %T. expect *ent.UserAttributeValueQuery", q)
 }
 
+// The UserNotificationFunc type is an adapter to allow the use of ordinary function as a Querier.
+type UserNotificationFunc func(context.Context, *ent.UserNotificationQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f UserNotificationFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.UserNotificationQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.UserNotificationQuery", q)
+}
+
+// The TraverseUserNotification type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseUserNotification func(context.Context, *ent.UserNotificationQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseUserNotification) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseUserNotification) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.UserNotificationQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.UserNotificationQuery", q)
+}
+
 // The UserSubscriptionFunc type is an adapter to allow the use of ordinary function as a Querier.
 type UserSubscriptionFunc func(context.Context, *ent.UserSubscriptionQuery) (ent.Value, error)
 
@@ -1222,8 +1306,12 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.ErrorPassthroughRuleQuery, predicate.ErrorPassthroughRule, errorpassthroughrule.OrderOption]{typ: ent.TypeErrorPassthroughRule, tq: q}, nil
 	case *ent.FeedbackQuery:
 		return &query[*ent.FeedbackQuery, predicate.Feedback, feedback.OrderOption]{typ: ent.TypeFeedback, tq: q}, nil
+	case *ent.FeedbackEventQuery:
+		return &query[*ent.FeedbackEventQuery, predicate.FeedbackEvent, feedbackevent.OrderOption]{typ: ent.TypeFeedbackEvent, tq: q}, nil
 	case *ent.FeedbackReplyQuery:
 		return &query[*ent.FeedbackReplyQuery, predicate.FeedbackReply, feedbackreply.OrderOption]{typ: ent.TypeFeedbackReply, tq: q}, nil
+	case *ent.FeedbackRewardQuery:
+		return &query[*ent.FeedbackRewardQuery, predicate.FeedbackReward, feedbackreward.OrderOption]{typ: ent.TypeFeedbackReward, tq: q}, nil
 	case *ent.FinanceTransactionQuery:
 		return &query[*ent.FinanceTransactionQuery, predicate.FinanceTransaction, financetransaction.OrderOption]{typ: ent.TypeFinanceTransaction, tq: q}, nil
 	case *ent.GroupQuery:
@@ -1268,6 +1356,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.UserAttributeDefinitionQuery, predicate.UserAttributeDefinition, userattributedefinition.OrderOption]{typ: ent.TypeUserAttributeDefinition, tq: q}, nil
 	case *ent.UserAttributeValueQuery:
 		return &query[*ent.UserAttributeValueQuery, predicate.UserAttributeValue, userattributevalue.OrderOption]{typ: ent.TypeUserAttributeValue, tq: q}, nil
+	case *ent.UserNotificationQuery:
+		return &query[*ent.UserNotificationQuery, predicate.UserNotification, usernotification.OrderOption]{typ: ent.TypeUserNotification, tq: q}, nil
 	case *ent.UserSubscriptionQuery:
 		return &query[*ent.UserSubscriptionQuery, predicate.UserSubscription, usersubscription.OrderOption]{typ: ent.TypeUserSubscription, tq: q}, nil
 	default:

@@ -6,6 +6,7 @@ import type {
   FeedbackItem,
   FeedbackPriority,
   FeedbackStatus,
+	FeedbackReward,
 } from '@/types'
 
 export interface AdminFeedbackListParams {
@@ -18,6 +19,8 @@ export interface AdminFeedbackListParams {
   start_time?: string
   end_time?: string
 }
+
+export interface FeedbackRewardListParams { page?: number; pageSize?: number; user_id?: number; batch_id?: string }
 
 export async function listFeedbacks(params: AdminFeedbackListParams = {}): Promise<BasePaginationResponse<FeedbackItem>> {
   const { data } = await apiClient.get<BasePaginationResponse<FeedbackItem>>('/admin/feedbacks', {
@@ -69,6 +72,11 @@ export async function batchDeleteFeedbacks(ids: number[]): Promise<{ deleted: nu
   return data
 }
 
+export async function listRewards(params: FeedbackRewardListParams = {}): Promise<BasePaginationResponse<FeedbackReward>> {
+  const { data } = await apiClient.get<BasePaginationResponse<FeedbackReward>>('/admin/feedbacks/rewards', { params: { page: params.page ?? 1, page_size: params.pageSize ?? 20, user_id: params.user_id, batch_id: params.batch_id || undefined } })
+  return data
+}
+
 const adminFeedbacksAPI = {
   list: listFeedbacks,
   getById: getFeedback,
@@ -78,6 +86,7 @@ const adminFeedbacksAPI = {
   batchUpdateStatus,
   delete: deleteFeedback,
   batchDelete: batchDeleteFeedbacks,
+	listRewards,
 }
 
 export default adminFeedbacksAPI

@@ -402,6 +402,8 @@ type GatewayConfig struct {
 	GPTImageTaskSettlement GPTImageTaskSettlementConfig `mapstructure:"gpt_image_task_settlement"`
 	// FinanceReceiptS3: 财务记账凭证图片私有 S3 转存配置（复用同一套配置结构）。
 	FinanceReceiptS3 GPTImageS3Config `mapstructure:"finance_receipt_s3"`
+	// FeedbackS3: 用户反馈截图私有 S3 配置。未单独配置时复用 GPTImageS3 凭证。
+	FeedbackS3 GPTImageS3Config `mapstructure:"feedback_s3"`
 
 	// HTTP 上游连接池配置（性能优化：支持高并发场景调优）
 	// MaxIdleConns: 所有主机的最大空闲连接总数

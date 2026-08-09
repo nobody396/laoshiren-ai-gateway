@@ -24,7 +24,7 @@
             </div>
             <RouterLink to="/feedbacks" class="btn btn-secondary">{{ t('common.back') }}</RouterLink>
             <RouterLink
-              v-if="detail.status !== 'closed'"
+			  v-if="detail.status !== 'closed' && (!detail.triage_status || detail.triage_status === 'unreviewed')"
               :to="`/feedbacks/${detail.id}/edit`"
               class="btn btn-primary"
             >
@@ -35,6 +35,12 @@
           <div v-if="detail.contact" class="rounded-2xl bg-gray-50 px-4 py-3 text-sm text-gray-600 dark:bg-dark-800 dark:text-dark-300">
             {{ t('feedback.form.contact') }}: {{ detail.contact }}
           </div>
+		  <div v-if="detail.request_id" class="rounded-2xl bg-gray-50 px-4 py-3 text-sm text-gray-600 dark:bg-dark-800 dark:text-dark-300">
+			{{ t('feedback.form.requestId') }}: <code>{{ detail.request_id }}</code>
+		  </div>
+		  <div v-if="detail.reward" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-900/20 dark:text-emerald-300">
+			{{ t('feedback.detail.rewardGranted', { amount: detail.reward.amount.toFixed(2) }) }}
+		  </div>
 
           <MarkdownPreview :content="detail.content" :preview-id="`feedback-${detail.id}`" />
 
@@ -51,6 +57,15 @@
 
         <div class="card space-y-4 p-6">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('feedback.detail.timeline') }}</h2>
+		  <div v-if="detail.events?.length" class="space-y-3">
+			<div v-for="event in detail.events" :key="`event-${event.id}`" class="flex gap-3 rounded-2xl bg-gray-50 p-4 dark:bg-dark-800">
+			  <div class="mt-1 h-2.5 w-2.5 flex-none rounded-full bg-primary-500"></div>
+			  <div class="min-w-0">
+				<p class="text-sm font-medium text-gray-900 dark:text-white">{{ event.summary }}</p>
+				<p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ formatDateTime(event.created_at) }}</p>
+			  </div>
+			</div>
+		  </div>
           <div class="space-y-4">
             <div
               v-for="reply in detail.replies"
@@ -83,6 +98,18 @@
             </div>
           </div>
         </div>
+
+		<div v-if="detail.fix_status === 'awaiting_verification'" class="card space-y-4 border border-primary-200 p-6 dark:border-primary-900">
+		  <div>
+			<h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('feedback.verify.title') }}</h2>
+			<p class="mt-1 text-sm text-gray-500 dark:text-dark-400">{{ t('feedback.verify.description') }}</p>
+		  </div>
+		  <textarea v-model="verificationNote" class="input min-h-24" :placeholder="t('feedback.verify.notePlaceholder')"></textarea>
+		  <div class="flex flex-wrap gap-3">
+			<button class="btn btn-primary" :disabled="verificationSubmitting" @click="submitVerification(true)">{{ t('feedback.verify.resolved') }}</button>
+			<button class="btn btn-secondary" :disabled="verificationSubmitting" @click="submitVerification(false)">{{ t('feedback.verify.unresolved') }}</button>
+		  </div>
+		</div>
 
         <div v-if="detail.status !== 'closed'" class="card space-y-5 p-6">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('feedback.detail.addReply') }}</h2>
@@ -137,6 +164,8 @@ const replySubmitting = ref(false)
 const detail = ref<FeedbackDetail | null>(null)
 const replyContent = ref('')
 const replyImages = ref<string[]>([])
+const verificationNote = ref('')
+const verificationSubmitting = ref(false)
 
 async function uploadSingleImage(file: File): Promise<string> {
   return feedbacksAPI.uploadImage(file)
@@ -180,6 +209,20 @@ async function submitReply() {
     appStore.showError(error?.message || t('feedback.message.replyFailed'))
   } finally {
     replySubmitting.value = false
+  }
+}
+
+async function submitVerification(resolved: boolean) {
+  verificationSubmitting.value = true
+  try {
+	await feedbacksAPI.verify(Number(route.params.id), resolved, verificationNote.value)
+	appStore.showSuccess(resolved ? t('feedback.verify.resolvedSuccess') : t('feedback.verify.reopenedSuccess'))
+	verificationNote.value = ''
+	await loadDetail()
+  } catch (error: any) {
+	appStore.showError(error?.message || t('feedback.verify.failed'))
+  } finally {
+	verificationSubmitting.value = false
   }
 }
 

@@ -29,16 +29,44 @@ const (
 	FieldImages = "images"
 	// FieldContact holds the string denoting the contact field in the database.
 	FieldContact = "contact"
+	// FieldRequestID holds the string denoting the request_id field in the database.
+	FieldRequestID = "request_id"
 	// FieldPriority holds the string denoting the priority field in the database.
 	FieldPriority = "priority"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldTriageStatus holds the string denoting the triage_status field in the database.
+	FieldTriageStatus = "triage_status"
+	// FieldTriagePriority holds the string denoting the triage_priority field in the database.
+	FieldTriagePriority = "triage_priority"
+	// FieldTriageSummary holds the string denoting the triage_summary field in the database.
+	FieldTriageSummary = "triage_summary"
+	// FieldTriageConfidence holds the string denoting the triage_confidence field in the database.
+	FieldTriageConfidence = "triage_confidence"
+	// FieldRepairDifficulty holds the string denoting the repair_difficulty field in the database.
+	FieldRepairDifficulty = "repair_difficulty"
+	// FieldRepairRecommendation holds the string denoting the repair_recommendation field in the database.
+	FieldRepairRecommendation = "repair_recommendation"
+	// FieldOwnerDecision holds the string denoting the owner_decision field in the database.
+	FieldOwnerDecision = "owner_decision"
+	// FieldFixStatus holds the string denoting the fix_status field in the database.
+	FieldFixStatus = "fix_status"
+	// FieldDuplicateOfID holds the string denoting the duplicate_of_id field in the database.
+	FieldDuplicateOfID = "duplicate_of_id"
+	// FieldResolvedVersion holds the string denoting the resolved_version field in the database.
+	FieldResolvedVersion = "resolved_version"
 	// FieldReplyCount holds the string denoting the reply_count field in the database.
 	FieldReplyCount = "reply_count"
 	// FieldLastReplyAt holds the string denoting the last_reply_at field in the database.
 	FieldLastReplyAt = "last_reply_at"
 	// FieldLastReplyRole holds the string denoting the last_reply_role field in the database.
 	FieldLastReplyRole = "last_reply_role"
+	// FieldAcceptedAt holds the string denoting the accepted_at field in the database.
+	FieldAcceptedAt = "accepted_at"
+	// FieldResolvedAt holds the string denoting the resolved_at field in the database.
+	FieldResolvedAt = "resolved_at"
+	// FieldVerifiedAt holds the string denoting the verified_at field in the database.
+	FieldVerifiedAt = "verified_at"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -75,11 +103,25 @@ var Columns = []string{
 	FieldContent,
 	FieldImages,
 	FieldContact,
+	FieldRequestID,
 	FieldPriority,
 	FieldStatus,
+	FieldTriageStatus,
+	FieldTriagePriority,
+	FieldTriageSummary,
+	FieldTriageConfidence,
+	FieldRepairDifficulty,
+	FieldRepairRecommendation,
+	FieldOwnerDecision,
+	FieldFixStatus,
+	FieldDuplicateOfID,
+	FieldResolvedVersion,
 	FieldReplyCount,
 	FieldLastReplyAt,
 	FieldLastReplyRole,
+	FieldAcceptedAt,
+	FieldResolvedAt,
+	FieldVerifiedAt,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
@@ -114,6 +156,10 @@ var (
 	DefaultContact string
 	// ContactValidator is a validator for the "contact" field. It is called by the builders before save.
 	ContactValidator func(string) error
+	// DefaultRequestID holds the default value on creation for the "request_id" field.
+	DefaultRequestID string
+	// RequestIDValidator is a validator for the "request_id" field. It is called by the builders before save.
+	RequestIDValidator func(string) error
 	// DefaultPriority holds the default value on creation for the "priority" field.
 	DefaultPriority string
 	// PriorityValidator is a validator for the "priority" field. It is called by the builders before save.
@@ -122,6 +168,34 @@ var (
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	StatusValidator func(string) error
+	// DefaultTriageStatus holds the default value on creation for the "triage_status" field.
+	DefaultTriageStatus string
+	// TriageStatusValidator is a validator for the "triage_status" field. It is called by the builders before save.
+	TriageStatusValidator func(string) error
+	// DefaultTriagePriority holds the default value on creation for the "triage_priority" field.
+	DefaultTriagePriority string
+	// TriagePriorityValidator is a validator for the "triage_priority" field. It is called by the builders before save.
+	TriagePriorityValidator func(string) error
+	// DefaultTriageSummary holds the default value on creation for the "triage_summary" field.
+	DefaultTriageSummary string
+	// DefaultRepairDifficulty holds the default value on creation for the "repair_difficulty" field.
+	DefaultRepairDifficulty string
+	// RepairDifficultyValidator is a validator for the "repair_difficulty" field. It is called by the builders before save.
+	RepairDifficultyValidator func(string) error
+	// DefaultRepairRecommendation holds the default value on creation for the "repair_recommendation" field.
+	DefaultRepairRecommendation string
+	// DefaultOwnerDecision holds the default value on creation for the "owner_decision" field.
+	DefaultOwnerDecision string
+	// OwnerDecisionValidator is a validator for the "owner_decision" field. It is called by the builders before save.
+	OwnerDecisionValidator func(string) error
+	// DefaultFixStatus holds the default value on creation for the "fix_status" field.
+	DefaultFixStatus string
+	// FixStatusValidator is a validator for the "fix_status" field. It is called by the builders before save.
+	FixStatusValidator func(string) error
+	// DefaultResolvedVersion holds the default value on creation for the "resolved_version" field.
+	DefaultResolvedVersion string
+	// ResolvedVersionValidator is a validator for the "resolved_version" field. It is called by the builders before save.
+	ResolvedVersionValidator func(string) error
 	// DefaultReplyCount holds the default value on creation for the "reply_count" field.
 	DefaultReplyCount int
 	// LastReplyRoleValidator is a validator for the "last_reply_role" field. It is called by the builders before save.
@@ -172,6 +246,11 @@ func ByContact(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldContact, opts...).ToFunc()
 }
 
+// ByRequestID orders the results by the request_id field.
+func ByRequestID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRequestID, opts...).ToFunc()
+}
+
 // ByPriority orders the results by the priority field.
 func ByPriority(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPriority, opts...).ToFunc()
@@ -180,6 +259,56 @@ func ByPriority(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByTriageStatus orders the results by the triage_status field.
+func ByTriageStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTriageStatus, opts...).ToFunc()
+}
+
+// ByTriagePriority orders the results by the triage_priority field.
+func ByTriagePriority(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTriagePriority, opts...).ToFunc()
+}
+
+// ByTriageSummary orders the results by the triage_summary field.
+func ByTriageSummary(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTriageSummary, opts...).ToFunc()
+}
+
+// ByTriageConfidence orders the results by the triage_confidence field.
+func ByTriageConfidence(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTriageConfidence, opts...).ToFunc()
+}
+
+// ByRepairDifficulty orders the results by the repair_difficulty field.
+func ByRepairDifficulty(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRepairDifficulty, opts...).ToFunc()
+}
+
+// ByRepairRecommendation orders the results by the repair_recommendation field.
+func ByRepairRecommendation(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRepairRecommendation, opts...).ToFunc()
+}
+
+// ByOwnerDecision orders the results by the owner_decision field.
+func ByOwnerDecision(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOwnerDecision, opts...).ToFunc()
+}
+
+// ByFixStatus orders the results by the fix_status field.
+func ByFixStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFixStatus, opts...).ToFunc()
+}
+
+// ByDuplicateOfID orders the results by the duplicate_of_id field.
+func ByDuplicateOfID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDuplicateOfID, opts...).ToFunc()
+}
+
+// ByResolvedVersion orders the results by the resolved_version field.
+func ByResolvedVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldResolvedVersion, opts...).ToFunc()
 }
 
 // ByReplyCount orders the results by the reply_count field.
@@ -195,6 +324,21 @@ func ByLastReplyAt(opts ...sql.OrderTermOption) OrderOption {
 // ByLastReplyRole orders the results by the last_reply_role field.
 func ByLastReplyRole(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLastReplyRole, opts...).ToFunc()
+}
+
+// ByAcceptedAt orders the results by the accepted_at field.
+func ByAcceptedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAcceptedAt, opts...).ToFunc()
+}
+
+// ByResolvedAt orders the results by the resolved_at field.
+func ByResolvedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldResolvedAt, opts...).ToFunc()
+}
+
+// ByVerifiedAt orders the results by the verified_at field.
+func ByVerifiedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVerifiedAt, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

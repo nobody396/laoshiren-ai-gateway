@@ -50,6 +50,8 @@ func newFeedbackServiceSQLite(t *testing.T) (*service.FeedbackService, *dbent.Cl
 		nil,
 		nil,
 		client,
+		nil,
+		nil,
 	)
 	return svc, client
 }
@@ -146,6 +148,8 @@ func TestFeedbackServiceCreateReturnsRateLimitMetadata(t *testing.T) {
 		feedbackRateLimitCacheStub{allowed: false, retryAfter: 42 * time.Second},
 		nil,
 		nil,
+		nil,
+		nil,
 	)
 
 	_, err := svc.Create(context.Background(), 1, service.CreateFeedbackInput{
@@ -158,3 +162,66 @@ func TestFeedbackServiceCreateReturnsRateLimitMetadata(t *testing.T) {
 	appErr := errors.FromError(err)
 	require.Equal(t, "42", appErr.Metadata["retry_after"])
 }
+
+func TestFeedbackWorkflowRewardIsAtomicAndIdempotent(t *testing.T) {
+	svc, client := newFeedbackServiceSQLite(t)
+	ctx := context.Background()
+	userID := mustCreateFeedbackUser(t, ctx, client, "feedback-reward@test.com")
+	created, err := svc.Create(ctx, userID, service.CreateFeedbackInput{Category: service.FeedbackCategoryBug, Title: "Import fails", Content: "Reproducible failure", RequestID: "req-123"})
+	require.NoError(t, err)
+
+	triaged, err := svc.TriageByAgent(ctx, created.ID, service.AgentTriageFeedbackInput{TriageStatus: "confirmed", TriagePriority: "P1", TriageSummary: "Reproduced with the submitted request", TriageConfidence: floatPtr(0.98), RepairDifficulty: "medium", RepairRecommendation: "Validate imported state"})
+	require.NoError(t, err)
+	require.Equal(t, "confirmed", triaged.TriageStatus)
+
+	results := svc.AcceptBatch(ctx, service.AcceptFeedbackBatchInput{IDs: []int64{created.ID}, BatchID: "FB-20260809-01"})
+	require.Len(t, results, 1)
+	require.Empty(t, results[0].Error)
+	require.NotNil(t, results[0].Reward)
+	require.Equal(t, 5.0, results[0].Reward.Amount)
+
+	user, err := client.User.Get(ctx, userID)
+	require.NoError(t, err)
+	require.Equal(t, 5.0, user.Balance)
+	require.Equal(t, 1, client.FeedbackReward.Query().CountX(ctx))
+	require.Equal(t, 1, client.AccountChangeRecord.Query().CountX(ctx))
+	require.Equal(t, 1, client.UserNotification.Query().CountX(ctx))
+
+	repeated := svc.AcceptBatch(ctx, service.AcceptFeedbackBatchInput{IDs: []int64{created.ID}, BatchID: "FB-20260809-01"})
+	require.True(t, repeated[0].AlreadyAccepted)
+	user, err = client.User.Get(ctx, userID)
+	require.NoError(t, err)
+	require.Equal(t, 5.0, user.Balance)
+	require.Equal(t, 1, client.FeedbackReward.Query().CountX(ctx))
+	require.Equal(t, 1, client.AccountChangeRecord.Query().CountX(ctx))
+}
+
+func TestFeedbackWorkflowCompleteNotifyAndUserVerification(t *testing.T) {
+	svc, client := newFeedbackServiceSQLite(t)
+	ctx := context.Background()
+	userID := mustCreateFeedbackUser(t, ctx, client, "feedback-verify@test.com")
+	created, err := svc.Create(ctx, userID, service.CreateFeedbackInput{Category: service.FeedbackCategorySuggestion, Title: "Unclear screen", Content: "The next step is unclear"})
+	require.NoError(t, err)
+	_, err = svc.TriageByAgent(ctx, created.ID, service.AgentTriageFeedbackInput{TriageStatus: "confirmed", TriagePriority: "P2", TriageSummary: "Confirmed usability issue", RepairDifficulty: "low", RepairRecommendation: "Add guidance"})
+	require.NoError(t, err)
+	require.Empty(t, svc.AcceptBatch(ctx, service.AcceptFeedbackBatchInput{IDs: []int64{created.ID}, BatchID: "FB-20260809-02"})[0].Error)
+	require.NoError(t, svc.MarkFixing(ctx, created.ID, nil))
+	require.NoError(t, svc.Complete(ctx, created.ID, service.CompleteFeedbackInput{ResolvedVersion: "0.1.90", NotifyInApp: true}))
+
+	detail, err := svc.GetByUser(ctx, userID, created.ID)
+	require.NoError(t, err)
+	require.Equal(t, "awaiting_verification", detail.Feedback.FixStatus)
+	require.NotNil(t, detail.Reward)
+	require.GreaterOrEqual(t, len(detail.Events), 6)
+	require.Equal(t, 2, client.UserNotification.Query().CountX(ctx))
+	require.NoError(t, svc.RecordNotification(ctx, created.ID, service.RecordFeedbackNotificationInput{Channel: "email", DeliveryReference: "message-123"}))
+
+	require.NoError(t, svc.VerifyByUser(ctx, userID, created.ID, service.VerifyFeedbackInput{Resolved: true, Note: "Works now"}))
+	detail, err = svc.GetByUser(ctx, userID, created.ID)
+	require.NoError(t, err)
+	require.Equal(t, "verified", detail.Feedback.FixStatus)
+	require.Equal(t, service.FeedbackStatusClosed, detail.Feedback.Status)
+	require.NotNil(t, detail.Feedback.VerifiedAt)
+}
+
+func floatPtr(value float64) *float64 { return &value }

@@ -49,12 +49,45 @@ func (Feedback) Fields() []ent.Field {
 		field.String("contact").
 			MaxLen(255).
 			Default(""),
+		field.String("request_id").
+			MaxLen(128).
+			Default(""),
 		field.String("priority").
 			MaxLen(10).
 			Default(domain.FeedbackPriorityLow),
 		field.String("status").
 			MaxLen(20).
 			Default(domain.FeedbackStatusPending),
+		field.String("triage_status").
+			MaxLen(24).
+			Default(domain.FeedbackTriageUnreviewed),
+		field.String("triage_priority").
+			MaxLen(4).
+			Default(""),
+		field.String("triage_summary").
+			Default("").
+			SchemaType(map[string]string{dialect.Postgres: "text"}),
+		field.Float("triage_confidence").
+			Optional().
+			Nillable(),
+		field.String("repair_difficulty").
+			MaxLen(16).
+			Default(domain.FeedbackDifficultyUnknown),
+		field.String("repair_recommendation").
+			Default("").
+			SchemaType(map[string]string{dialect.Postgres: "text"}),
+		field.String("owner_decision").
+			MaxLen(16).
+			Default(domain.FeedbackDecisionPending),
+		field.String("fix_status").
+			MaxLen(24).
+			Default(domain.FeedbackFixNotStarted),
+		field.Int64("duplicate_of_id").
+			Optional().
+			Nillable(),
+		field.String("resolved_version").
+			MaxLen(64).
+			Default(""),
 		field.Int("reply_count").
 			Default(0),
 		field.Time("last_reply_at").
@@ -65,6 +98,18 @@ func (Feedback) Fields() []ent.Field {
 			MaxLen(20).
 			Optional().
 			Nillable(),
+		field.Time("accepted_at").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
+		field.Time("resolved_at").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
+		field.Time("verified_at").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
 		field.Time("created_at").
 			Immutable().
 			Default(time.Now).
@@ -93,6 +138,11 @@ func (Feedback) Indexes() []ent.Index {
 		index.Fields("status"),
 		index.Fields("category"),
 		index.Fields("priority"),
+		index.Fields("triage_status"),
+		index.Fields("triage_priority"),
+		index.Fields("owner_decision"),
+		index.Fields("fix_status"),
+		index.Fields("request_id"),
 		index.Fields("created_at"),
 		index.Fields("last_reply_at"),
 		index.Fields("deleted_at"),

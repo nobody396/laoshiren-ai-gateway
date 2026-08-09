@@ -90,6 +90,20 @@ func (_c *FeedbackCreate) SetNillableContact(v *string) *FeedbackCreate {
 	return _c
 }
 
+// SetRequestID sets the "request_id" field.
+func (_c *FeedbackCreate) SetRequestID(v string) *FeedbackCreate {
+	_c.mutation.SetRequestID(v)
+	return _c
+}
+
+// SetNillableRequestID sets the "request_id" field if the given value is not nil.
+func (_c *FeedbackCreate) SetNillableRequestID(v *string) *FeedbackCreate {
+	if v != nil {
+		_c.SetRequestID(*v)
+	}
+	return _c
+}
+
 // SetPriority sets the "priority" field.
 func (_c *FeedbackCreate) SetPriority(v string) *FeedbackCreate {
 	_c.mutation.SetPriority(v)
@@ -114,6 +128,146 @@ func (_c *FeedbackCreate) SetStatus(v string) *FeedbackCreate {
 func (_c *FeedbackCreate) SetNillableStatus(v *string) *FeedbackCreate {
 	if v != nil {
 		_c.SetStatus(*v)
+	}
+	return _c
+}
+
+// SetTriageStatus sets the "triage_status" field.
+func (_c *FeedbackCreate) SetTriageStatus(v string) *FeedbackCreate {
+	_c.mutation.SetTriageStatus(v)
+	return _c
+}
+
+// SetNillableTriageStatus sets the "triage_status" field if the given value is not nil.
+func (_c *FeedbackCreate) SetNillableTriageStatus(v *string) *FeedbackCreate {
+	if v != nil {
+		_c.SetTriageStatus(*v)
+	}
+	return _c
+}
+
+// SetTriagePriority sets the "triage_priority" field.
+func (_c *FeedbackCreate) SetTriagePriority(v string) *FeedbackCreate {
+	_c.mutation.SetTriagePriority(v)
+	return _c
+}
+
+// SetNillableTriagePriority sets the "triage_priority" field if the given value is not nil.
+func (_c *FeedbackCreate) SetNillableTriagePriority(v *string) *FeedbackCreate {
+	if v != nil {
+		_c.SetTriagePriority(*v)
+	}
+	return _c
+}
+
+// SetTriageSummary sets the "triage_summary" field.
+func (_c *FeedbackCreate) SetTriageSummary(v string) *FeedbackCreate {
+	_c.mutation.SetTriageSummary(v)
+	return _c
+}
+
+// SetNillableTriageSummary sets the "triage_summary" field if the given value is not nil.
+func (_c *FeedbackCreate) SetNillableTriageSummary(v *string) *FeedbackCreate {
+	if v != nil {
+		_c.SetTriageSummary(*v)
+	}
+	return _c
+}
+
+// SetTriageConfidence sets the "triage_confidence" field.
+func (_c *FeedbackCreate) SetTriageConfidence(v float64) *FeedbackCreate {
+	_c.mutation.SetTriageConfidence(v)
+	return _c
+}
+
+// SetNillableTriageConfidence sets the "triage_confidence" field if the given value is not nil.
+func (_c *FeedbackCreate) SetNillableTriageConfidence(v *float64) *FeedbackCreate {
+	if v != nil {
+		_c.SetTriageConfidence(*v)
+	}
+	return _c
+}
+
+// SetRepairDifficulty sets the "repair_difficulty" field.
+func (_c *FeedbackCreate) SetRepairDifficulty(v string) *FeedbackCreate {
+	_c.mutation.SetRepairDifficulty(v)
+	return _c
+}
+
+// SetNillableRepairDifficulty sets the "repair_difficulty" field if the given value is not nil.
+func (_c *FeedbackCreate) SetNillableRepairDifficulty(v *string) *FeedbackCreate {
+	if v != nil {
+		_c.SetRepairDifficulty(*v)
+	}
+	return _c
+}
+
+// SetRepairRecommendation sets the "repair_recommendation" field.
+func (_c *FeedbackCreate) SetRepairRecommendation(v string) *FeedbackCreate {
+	_c.mutation.SetRepairRecommendation(v)
+	return _c
+}
+
+// SetNillableRepairRecommendation sets the "repair_recommendation" field if the given value is not nil.
+func (_c *FeedbackCreate) SetNillableRepairRecommendation(v *string) *FeedbackCreate {
+	if v != nil {
+		_c.SetRepairRecommendation(*v)
+	}
+	return _c
+}
+
+// SetOwnerDecision sets the "owner_decision" field.
+func (_c *FeedbackCreate) SetOwnerDecision(v string) *FeedbackCreate {
+	_c.mutation.SetOwnerDecision(v)
+	return _c
+}
+
+// SetNillableOwnerDecision sets the "owner_decision" field if the given value is not nil.
+func (_c *FeedbackCreate) SetNillableOwnerDecision(v *string) *FeedbackCreate {
+	if v != nil {
+		_c.SetOwnerDecision(*v)
+	}
+	return _c
+}
+
+// SetFixStatus sets the "fix_status" field.
+func (_c *FeedbackCreate) SetFixStatus(v string) *FeedbackCreate {
+	_c.mutation.SetFixStatus(v)
+	return _c
+}
+
+// SetNillableFixStatus sets the "fix_status" field if the given value is not nil.
+func (_c *FeedbackCreate) SetNillableFixStatus(v *string) *FeedbackCreate {
+	if v != nil {
+		_c.SetFixStatus(*v)
+	}
+	return _c
+}
+
+// SetDuplicateOfID sets the "duplicate_of_id" field.
+func (_c *FeedbackCreate) SetDuplicateOfID(v int64) *FeedbackCreate {
+	_c.mutation.SetDuplicateOfID(v)
+	return _c
+}
+
+// SetNillableDuplicateOfID sets the "duplicate_of_id" field if the given value is not nil.
+func (_c *FeedbackCreate) SetNillableDuplicateOfID(v *int64) *FeedbackCreate {
+	if v != nil {
+		_c.SetDuplicateOfID(*v)
+	}
+	return _c
+}
+
+// SetResolvedVersion sets the "resolved_version" field.
+func (_c *FeedbackCreate) SetResolvedVersion(v string) *FeedbackCreate {
+	_c.mutation.SetResolvedVersion(v)
+	return _c
+}
+
+// SetNillableResolvedVersion sets the "resolved_version" field if the given value is not nil.
+func (_c *FeedbackCreate) SetNillableResolvedVersion(v *string) *FeedbackCreate {
+	if v != nil {
+		_c.SetResolvedVersion(*v)
 	}
 	return _c
 }
@@ -156,6 +310,48 @@ func (_c *FeedbackCreate) SetLastReplyRole(v string) *FeedbackCreate {
 func (_c *FeedbackCreate) SetNillableLastReplyRole(v *string) *FeedbackCreate {
 	if v != nil {
 		_c.SetLastReplyRole(*v)
+	}
+	return _c
+}
+
+// SetAcceptedAt sets the "accepted_at" field.
+func (_c *FeedbackCreate) SetAcceptedAt(v time.Time) *FeedbackCreate {
+	_c.mutation.SetAcceptedAt(v)
+	return _c
+}
+
+// SetNillableAcceptedAt sets the "accepted_at" field if the given value is not nil.
+func (_c *FeedbackCreate) SetNillableAcceptedAt(v *time.Time) *FeedbackCreate {
+	if v != nil {
+		_c.SetAcceptedAt(*v)
+	}
+	return _c
+}
+
+// SetResolvedAt sets the "resolved_at" field.
+func (_c *FeedbackCreate) SetResolvedAt(v time.Time) *FeedbackCreate {
+	_c.mutation.SetResolvedAt(v)
+	return _c
+}
+
+// SetNillableResolvedAt sets the "resolved_at" field if the given value is not nil.
+func (_c *FeedbackCreate) SetNillableResolvedAt(v *time.Time) *FeedbackCreate {
+	if v != nil {
+		_c.SetResolvedAt(*v)
+	}
+	return _c
+}
+
+// SetVerifiedAt sets the "verified_at" field.
+func (_c *FeedbackCreate) SetVerifiedAt(v time.Time) *FeedbackCreate {
+	_c.mutation.SetVerifiedAt(v)
+	return _c
+}
+
+// SetNillableVerifiedAt sets the "verified_at" field if the given value is not nil.
+func (_c *FeedbackCreate) SetNillableVerifiedAt(v *time.Time) *FeedbackCreate {
+	if v != nil {
+		_c.SetVerifiedAt(*v)
 	}
 	return _c
 }
@@ -253,6 +449,10 @@ func (_c *FeedbackCreate) defaults() error {
 		v := feedback.DefaultContact
 		_c.mutation.SetContact(v)
 	}
+	if _, ok := _c.mutation.RequestID(); !ok {
+		v := feedback.DefaultRequestID
+		_c.mutation.SetRequestID(v)
+	}
 	if _, ok := _c.mutation.Priority(); !ok {
 		v := feedback.DefaultPriority
 		_c.mutation.SetPriority(v)
@@ -260,6 +460,38 @@ func (_c *FeedbackCreate) defaults() error {
 	if _, ok := _c.mutation.Status(); !ok {
 		v := feedback.DefaultStatus
 		_c.mutation.SetStatus(v)
+	}
+	if _, ok := _c.mutation.TriageStatus(); !ok {
+		v := feedback.DefaultTriageStatus
+		_c.mutation.SetTriageStatus(v)
+	}
+	if _, ok := _c.mutation.TriagePriority(); !ok {
+		v := feedback.DefaultTriagePriority
+		_c.mutation.SetTriagePriority(v)
+	}
+	if _, ok := _c.mutation.TriageSummary(); !ok {
+		v := feedback.DefaultTriageSummary
+		_c.mutation.SetTriageSummary(v)
+	}
+	if _, ok := _c.mutation.RepairDifficulty(); !ok {
+		v := feedback.DefaultRepairDifficulty
+		_c.mutation.SetRepairDifficulty(v)
+	}
+	if _, ok := _c.mutation.RepairRecommendation(); !ok {
+		v := feedback.DefaultRepairRecommendation
+		_c.mutation.SetRepairRecommendation(v)
+	}
+	if _, ok := _c.mutation.OwnerDecision(); !ok {
+		v := feedback.DefaultOwnerDecision
+		_c.mutation.SetOwnerDecision(v)
+	}
+	if _, ok := _c.mutation.FixStatus(); !ok {
+		v := feedback.DefaultFixStatus
+		_c.mutation.SetFixStatus(v)
+	}
+	if _, ok := _c.mutation.ResolvedVersion(); !ok {
+		v := feedback.DefaultResolvedVersion
+		_c.mutation.SetResolvedVersion(v)
 	}
 	if _, ok := _c.mutation.ReplyCount(); !ok {
 		v := feedback.DefaultReplyCount
@@ -319,6 +551,14 @@ func (_c *FeedbackCreate) check() error {
 			return &ValidationError{Name: "contact", err: fmt.Errorf(`ent: validator failed for field "Feedback.contact": %w`, err)}
 		}
 	}
+	if _, ok := _c.mutation.RequestID(); !ok {
+		return &ValidationError{Name: "request_id", err: errors.New(`ent: missing required field "Feedback.request_id"`)}
+	}
+	if v, ok := _c.mutation.RequestID(); ok {
+		if err := feedback.RequestIDValidator(v); err != nil {
+			return &ValidationError{Name: "request_id", err: fmt.Errorf(`ent: validator failed for field "Feedback.request_id": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.Priority(); !ok {
 		return &ValidationError{Name: "priority", err: errors.New(`ent: missing required field "Feedback.priority"`)}
 	}
@@ -333,6 +573,60 @@ func (_c *FeedbackCreate) check() error {
 	if v, ok := _c.mutation.Status(); ok {
 		if err := feedback.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Feedback.status": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.TriageStatus(); !ok {
+		return &ValidationError{Name: "triage_status", err: errors.New(`ent: missing required field "Feedback.triage_status"`)}
+	}
+	if v, ok := _c.mutation.TriageStatus(); ok {
+		if err := feedback.TriageStatusValidator(v); err != nil {
+			return &ValidationError{Name: "triage_status", err: fmt.Errorf(`ent: validator failed for field "Feedback.triage_status": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.TriagePriority(); !ok {
+		return &ValidationError{Name: "triage_priority", err: errors.New(`ent: missing required field "Feedback.triage_priority"`)}
+	}
+	if v, ok := _c.mutation.TriagePriority(); ok {
+		if err := feedback.TriagePriorityValidator(v); err != nil {
+			return &ValidationError{Name: "triage_priority", err: fmt.Errorf(`ent: validator failed for field "Feedback.triage_priority": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.TriageSummary(); !ok {
+		return &ValidationError{Name: "triage_summary", err: errors.New(`ent: missing required field "Feedback.triage_summary"`)}
+	}
+	if _, ok := _c.mutation.RepairDifficulty(); !ok {
+		return &ValidationError{Name: "repair_difficulty", err: errors.New(`ent: missing required field "Feedback.repair_difficulty"`)}
+	}
+	if v, ok := _c.mutation.RepairDifficulty(); ok {
+		if err := feedback.RepairDifficultyValidator(v); err != nil {
+			return &ValidationError{Name: "repair_difficulty", err: fmt.Errorf(`ent: validator failed for field "Feedback.repair_difficulty": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.RepairRecommendation(); !ok {
+		return &ValidationError{Name: "repair_recommendation", err: errors.New(`ent: missing required field "Feedback.repair_recommendation"`)}
+	}
+	if _, ok := _c.mutation.OwnerDecision(); !ok {
+		return &ValidationError{Name: "owner_decision", err: errors.New(`ent: missing required field "Feedback.owner_decision"`)}
+	}
+	if v, ok := _c.mutation.OwnerDecision(); ok {
+		if err := feedback.OwnerDecisionValidator(v); err != nil {
+			return &ValidationError{Name: "owner_decision", err: fmt.Errorf(`ent: validator failed for field "Feedback.owner_decision": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.FixStatus(); !ok {
+		return &ValidationError{Name: "fix_status", err: errors.New(`ent: missing required field "Feedback.fix_status"`)}
+	}
+	if v, ok := _c.mutation.FixStatus(); ok {
+		if err := feedback.FixStatusValidator(v); err != nil {
+			return &ValidationError{Name: "fix_status", err: fmt.Errorf(`ent: validator failed for field "Feedback.fix_status": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.ResolvedVersion(); !ok {
+		return &ValidationError{Name: "resolved_version", err: errors.New(`ent: missing required field "Feedback.resolved_version"`)}
+	}
+	if v, ok := _c.mutation.ResolvedVersion(); ok {
+		if err := feedback.ResolvedVersionValidator(v); err != nil {
+			return &ValidationError{Name: "resolved_version", err: fmt.Errorf(`ent: validator failed for field "Feedback.resolved_version": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.ReplyCount(); !ok {
@@ -403,6 +697,10 @@ func (_c *FeedbackCreate) createSpec() (*Feedback, *sqlgraph.CreateSpec) {
 		_spec.SetField(feedback.FieldContact, field.TypeString, value)
 		_node.Contact = value
 	}
+	if value, ok := _c.mutation.RequestID(); ok {
+		_spec.SetField(feedback.FieldRequestID, field.TypeString, value)
+		_node.RequestID = value
+	}
 	if value, ok := _c.mutation.Priority(); ok {
 		_spec.SetField(feedback.FieldPriority, field.TypeString, value)
 		_node.Priority = value
@@ -410,6 +708,46 @@ func (_c *FeedbackCreate) createSpec() (*Feedback, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(feedback.FieldStatus, field.TypeString, value)
 		_node.Status = value
+	}
+	if value, ok := _c.mutation.TriageStatus(); ok {
+		_spec.SetField(feedback.FieldTriageStatus, field.TypeString, value)
+		_node.TriageStatus = value
+	}
+	if value, ok := _c.mutation.TriagePriority(); ok {
+		_spec.SetField(feedback.FieldTriagePriority, field.TypeString, value)
+		_node.TriagePriority = value
+	}
+	if value, ok := _c.mutation.TriageSummary(); ok {
+		_spec.SetField(feedback.FieldTriageSummary, field.TypeString, value)
+		_node.TriageSummary = value
+	}
+	if value, ok := _c.mutation.TriageConfidence(); ok {
+		_spec.SetField(feedback.FieldTriageConfidence, field.TypeFloat64, value)
+		_node.TriageConfidence = &value
+	}
+	if value, ok := _c.mutation.RepairDifficulty(); ok {
+		_spec.SetField(feedback.FieldRepairDifficulty, field.TypeString, value)
+		_node.RepairDifficulty = value
+	}
+	if value, ok := _c.mutation.RepairRecommendation(); ok {
+		_spec.SetField(feedback.FieldRepairRecommendation, field.TypeString, value)
+		_node.RepairRecommendation = value
+	}
+	if value, ok := _c.mutation.OwnerDecision(); ok {
+		_spec.SetField(feedback.FieldOwnerDecision, field.TypeString, value)
+		_node.OwnerDecision = value
+	}
+	if value, ok := _c.mutation.FixStatus(); ok {
+		_spec.SetField(feedback.FieldFixStatus, field.TypeString, value)
+		_node.FixStatus = value
+	}
+	if value, ok := _c.mutation.DuplicateOfID(); ok {
+		_spec.SetField(feedback.FieldDuplicateOfID, field.TypeInt64, value)
+		_node.DuplicateOfID = &value
+	}
+	if value, ok := _c.mutation.ResolvedVersion(); ok {
+		_spec.SetField(feedback.FieldResolvedVersion, field.TypeString, value)
+		_node.ResolvedVersion = value
 	}
 	if value, ok := _c.mutation.ReplyCount(); ok {
 		_spec.SetField(feedback.FieldReplyCount, field.TypeInt, value)
@@ -422,6 +760,18 @@ func (_c *FeedbackCreate) createSpec() (*Feedback, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.LastReplyRole(); ok {
 		_spec.SetField(feedback.FieldLastReplyRole, field.TypeString, value)
 		_node.LastReplyRole = &value
+	}
+	if value, ok := _c.mutation.AcceptedAt(); ok {
+		_spec.SetField(feedback.FieldAcceptedAt, field.TypeTime, value)
+		_node.AcceptedAt = &value
+	}
+	if value, ok := _c.mutation.ResolvedAt(); ok {
+		_spec.SetField(feedback.FieldResolvedAt, field.TypeTime, value)
+		_node.ResolvedAt = &value
+	}
+	if value, ok := _c.mutation.VerifiedAt(); ok {
+		_spec.SetField(feedback.FieldVerifiedAt, field.TypeTime, value)
+		_node.VerifiedAt = &value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(feedback.FieldCreatedAt, field.TypeTime, value)
@@ -612,6 +962,18 @@ func (u *FeedbackUpsert) UpdateContact() *FeedbackUpsert {
 	return u
 }
 
+// SetRequestID sets the "request_id" field.
+func (u *FeedbackUpsert) SetRequestID(v string) *FeedbackUpsert {
+	u.Set(feedback.FieldRequestID, v)
+	return u
+}
+
+// UpdateRequestID sets the "request_id" field to the value that was provided on create.
+func (u *FeedbackUpsert) UpdateRequestID() *FeedbackUpsert {
+	u.SetExcluded(feedback.FieldRequestID)
+	return u
+}
+
 // SetPriority sets the "priority" field.
 func (u *FeedbackUpsert) SetPriority(v string) *FeedbackUpsert {
 	u.Set(feedback.FieldPriority, v)
@@ -633,6 +995,150 @@ func (u *FeedbackUpsert) SetStatus(v string) *FeedbackUpsert {
 // UpdateStatus sets the "status" field to the value that was provided on create.
 func (u *FeedbackUpsert) UpdateStatus() *FeedbackUpsert {
 	u.SetExcluded(feedback.FieldStatus)
+	return u
+}
+
+// SetTriageStatus sets the "triage_status" field.
+func (u *FeedbackUpsert) SetTriageStatus(v string) *FeedbackUpsert {
+	u.Set(feedback.FieldTriageStatus, v)
+	return u
+}
+
+// UpdateTriageStatus sets the "triage_status" field to the value that was provided on create.
+func (u *FeedbackUpsert) UpdateTriageStatus() *FeedbackUpsert {
+	u.SetExcluded(feedback.FieldTriageStatus)
+	return u
+}
+
+// SetTriagePriority sets the "triage_priority" field.
+func (u *FeedbackUpsert) SetTriagePriority(v string) *FeedbackUpsert {
+	u.Set(feedback.FieldTriagePriority, v)
+	return u
+}
+
+// UpdateTriagePriority sets the "triage_priority" field to the value that was provided on create.
+func (u *FeedbackUpsert) UpdateTriagePriority() *FeedbackUpsert {
+	u.SetExcluded(feedback.FieldTriagePriority)
+	return u
+}
+
+// SetTriageSummary sets the "triage_summary" field.
+func (u *FeedbackUpsert) SetTriageSummary(v string) *FeedbackUpsert {
+	u.Set(feedback.FieldTriageSummary, v)
+	return u
+}
+
+// UpdateTriageSummary sets the "triage_summary" field to the value that was provided on create.
+func (u *FeedbackUpsert) UpdateTriageSummary() *FeedbackUpsert {
+	u.SetExcluded(feedback.FieldTriageSummary)
+	return u
+}
+
+// SetTriageConfidence sets the "triage_confidence" field.
+func (u *FeedbackUpsert) SetTriageConfidence(v float64) *FeedbackUpsert {
+	u.Set(feedback.FieldTriageConfidence, v)
+	return u
+}
+
+// UpdateTriageConfidence sets the "triage_confidence" field to the value that was provided on create.
+func (u *FeedbackUpsert) UpdateTriageConfidence() *FeedbackUpsert {
+	u.SetExcluded(feedback.FieldTriageConfidence)
+	return u
+}
+
+// AddTriageConfidence adds v to the "triage_confidence" field.
+func (u *FeedbackUpsert) AddTriageConfidence(v float64) *FeedbackUpsert {
+	u.Add(feedback.FieldTriageConfidence, v)
+	return u
+}
+
+// ClearTriageConfidence clears the value of the "triage_confidence" field.
+func (u *FeedbackUpsert) ClearTriageConfidence() *FeedbackUpsert {
+	u.SetNull(feedback.FieldTriageConfidence)
+	return u
+}
+
+// SetRepairDifficulty sets the "repair_difficulty" field.
+func (u *FeedbackUpsert) SetRepairDifficulty(v string) *FeedbackUpsert {
+	u.Set(feedback.FieldRepairDifficulty, v)
+	return u
+}
+
+// UpdateRepairDifficulty sets the "repair_difficulty" field to the value that was provided on create.
+func (u *FeedbackUpsert) UpdateRepairDifficulty() *FeedbackUpsert {
+	u.SetExcluded(feedback.FieldRepairDifficulty)
+	return u
+}
+
+// SetRepairRecommendation sets the "repair_recommendation" field.
+func (u *FeedbackUpsert) SetRepairRecommendation(v string) *FeedbackUpsert {
+	u.Set(feedback.FieldRepairRecommendation, v)
+	return u
+}
+
+// UpdateRepairRecommendation sets the "repair_recommendation" field to the value that was provided on create.
+func (u *FeedbackUpsert) UpdateRepairRecommendation() *FeedbackUpsert {
+	u.SetExcluded(feedback.FieldRepairRecommendation)
+	return u
+}
+
+// SetOwnerDecision sets the "owner_decision" field.
+func (u *FeedbackUpsert) SetOwnerDecision(v string) *FeedbackUpsert {
+	u.Set(feedback.FieldOwnerDecision, v)
+	return u
+}
+
+// UpdateOwnerDecision sets the "owner_decision" field to the value that was provided on create.
+func (u *FeedbackUpsert) UpdateOwnerDecision() *FeedbackUpsert {
+	u.SetExcluded(feedback.FieldOwnerDecision)
+	return u
+}
+
+// SetFixStatus sets the "fix_status" field.
+func (u *FeedbackUpsert) SetFixStatus(v string) *FeedbackUpsert {
+	u.Set(feedback.FieldFixStatus, v)
+	return u
+}
+
+// UpdateFixStatus sets the "fix_status" field to the value that was provided on create.
+func (u *FeedbackUpsert) UpdateFixStatus() *FeedbackUpsert {
+	u.SetExcluded(feedback.FieldFixStatus)
+	return u
+}
+
+// SetDuplicateOfID sets the "duplicate_of_id" field.
+func (u *FeedbackUpsert) SetDuplicateOfID(v int64) *FeedbackUpsert {
+	u.Set(feedback.FieldDuplicateOfID, v)
+	return u
+}
+
+// UpdateDuplicateOfID sets the "duplicate_of_id" field to the value that was provided on create.
+func (u *FeedbackUpsert) UpdateDuplicateOfID() *FeedbackUpsert {
+	u.SetExcluded(feedback.FieldDuplicateOfID)
+	return u
+}
+
+// AddDuplicateOfID adds v to the "duplicate_of_id" field.
+func (u *FeedbackUpsert) AddDuplicateOfID(v int64) *FeedbackUpsert {
+	u.Add(feedback.FieldDuplicateOfID, v)
+	return u
+}
+
+// ClearDuplicateOfID clears the value of the "duplicate_of_id" field.
+func (u *FeedbackUpsert) ClearDuplicateOfID() *FeedbackUpsert {
+	u.SetNull(feedback.FieldDuplicateOfID)
+	return u
+}
+
+// SetResolvedVersion sets the "resolved_version" field.
+func (u *FeedbackUpsert) SetResolvedVersion(v string) *FeedbackUpsert {
+	u.Set(feedback.FieldResolvedVersion, v)
+	return u
+}
+
+// UpdateResolvedVersion sets the "resolved_version" field to the value that was provided on create.
+func (u *FeedbackUpsert) UpdateResolvedVersion() *FeedbackUpsert {
+	u.SetExcluded(feedback.FieldResolvedVersion)
 	return u
 }
 
@@ -687,6 +1193,60 @@ func (u *FeedbackUpsert) UpdateLastReplyRole() *FeedbackUpsert {
 // ClearLastReplyRole clears the value of the "last_reply_role" field.
 func (u *FeedbackUpsert) ClearLastReplyRole() *FeedbackUpsert {
 	u.SetNull(feedback.FieldLastReplyRole)
+	return u
+}
+
+// SetAcceptedAt sets the "accepted_at" field.
+func (u *FeedbackUpsert) SetAcceptedAt(v time.Time) *FeedbackUpsert {
+	u.Set(feedback.FieldAcceptedAt, v)
+	return u
+}
+
+// UpdateAcceptedAt sets the "accepted_at" field to the value that was provided on create.
+func (u *FeedbackUpsert) UpdateAcceptedAt() *FeedbackUpsert {
+	u.SetExcluded(feedback.FieldAcceptedAt)
+	return u
+}
+
+// ClearAcceptedAt clears the value of the "accepted_at" field.
+func (u *FeedbackUpsert) ClearAcceptedAt() *FeedbackUpsert {
+	u.SetNull(feedback.FieldAcceptedAt)
+	return u
+}
+
+// SetResolvedAt sets the "resolved_at" field.
+func (u *FeedbackUpsert) SetResolvedAt(v time.Time) *FeedbackUpsert {
+	u.Set(feedback.FieldResolvedAt, v)
+	return u
+}
+
+// UpdateResolvedAt sets the "resolved_at" field to the value that was provided on create.
+func (u *FeedbackUpsert) UpdateResolvedAt() *FeedbackUpsert {
+	u.SetExcluded(feedback.FieldResolvedAt)
+	return u
+}
+
+// ClearResolvedAt clears the value of the "resolved_at" field.
+func (u *FeedbackUpsert) ClearResolvedAt() *FeedbackUpsert {
+	u.SetNull(feedback.FieldResolvedAt)
+	return u
+}
+
+// SetVerifiedAt sets the "verified_at" field.
+func (u *FeedbackUpsert) SetVerifiedAt(v time.Time) *FeedbackUpsert {
+	u.Set(feedback.FieldVerifiedAt, v)
+	return u
+}
+
+// UpdateVerifiedAt sets the "verified_at" field to the value that was provided on create.
+func (u *FeedbackUpsert) UpdateVerifiedAt() *FeedbackUpsert {
+	u.SetExcluded(feedback.FieldVerifiedAt)
+	return u
+}
+
+// ClearVerifiedAt clears the value of the "verified_at" field.
+func (u *FeedbackUpsert) ClearVerifiedAt() *FeedbackUpsert {
+	u.SetNull(feedback.FieldVerifiedAt)
 	return u
 }
 
@@ -859,6 +1419,20 @@ func (u *FeedbackUpsertOne) UpdateContact() *FeedbackUpsertOne {
 	})
 }
 
+// SetRequestID sets the "request_id" field.
+func (u *FeedbackUpsertOne) SetRequestID(v string) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetRequestID(v)
+	})
+}
+
+// UpdateRequestID sets the "request_id" field to the value that was provided on create.
+func (u *FeedbackUpsertOne) UpdateRequestID() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateRequestID()
+	})
+}
+
 // SetPriority sets the "priority" field.
 func (u *FeedbackUpsertOne) SetPriority(v string) *FeedbackUpsertOne {
 	return u.Update(func(s *FeedbackUpsert) {
@@ -884,6 +1458,174 @@ func (u *FeedbackUpsertOne) SetStatus(v string) *FeedbackUpsertOne {
 func (u *FeedbackUpsertOne) UpdateStatus() *FeedbackUpsertOne {
 	return u.Update(func(s *FeedbackUpsert) {
 		s.UpdateStatus()
+	})
+}
+
+// SetTriageStatus sets the "triage_status" field.
+func (u *FeedbackUpsertOne) SetTriageStatus(v string) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetTriageStatus(v)
+	})
+}
+
+// UpdateTriageStatus sets the "triage_status" field to the value that was provided on create.
+func (u *FeedbackUpsertOne) UpdateTriageStatus() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateTriageStatus()
+	})
+}
+
+// SetTriagePriority sets the "triage_priority" field.
+func (u *FeedbackUpsertOne) SetTriagePriority(v string) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetTriagePriority(v)
+	})
+}
+
+// UpdateTriagePriority sets the "triage_priority" field to the value that was provided on create.
+func (u *FeedbackUpsertOne) UpdateTriagePriority() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateTriagePriority()
+	})
+}
+
+// SetTriageSummary sets the "triage_summary" field.
+func (u *FeedbackUpsertOne) SetTriageSummary(v string) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetTriageSummary(v)
+	})
+}
+
+// UpdateTriageSummary sets the "triage_summary" field to the value that was provided on create.
+func (u *FeedbackUpsertOne) UpdateTriageSummary() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateTriageSummary()
+	})
+}
+
+// SetTriageConfidence sets the "triage_confidence" field.
+func (u *FeedbackUpsertOne) SetTriageConfidence(v float64) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetTriageConfidence(v)
+	})
+}
+
+// AddTriageConfidence adds v to the "triage_confidence" field.
+func (u *FeedbackUpsertOne) AddTriageConfidence(v float64) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.AddTriageConfidence(v)
+	})
+}
+
+// UpdateTriageConfidence sets the "triage_confidence" field to the value that was provided on create.
+func (u *FeedbackUpsertOne) UpdateTriageConfidence() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateTriageConfidence()
+	})
+}
+
+// ClearTriageConfidence clears the value of the "triage_confidence" field.
+func (u *FeedbackUpsertOne) ClearTriageConfidence() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.ClearTriageConfidence()
+	})
+}
+
+// SetRepairDifficulty sets the "repair_difficulty" field.
+func (u *FeedbackUpsertOne) SetRepairDifficulty(v string) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetRepairDifficulty(v)
+	})
+}
+
+// UpdateRepairDifficulty sets the "repair_difficulty" field to the value that was provided on create.
+func (u *FeedbackUpsertOne) UpdateRepairDifficulty() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateRepairDifficulty()
+	})
+}
+
+// SetRepairRecommendation sets the "repair_recommendation" field.
+func (u *FeedbackUpsertOne) SetRepairRecommendation(v string) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetRepairRecommendation(v)
+	})
+}
+
+// UpdateRepairRecommendation sets the "repair_recommendation" field to the value that was provided on create.
+func (u *FeedbackUpsertOne) UpdateRepairRecommendation() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateRepairRecommendation()
+	})
+}
+
+// SetOwnerDecision sets the "owner_decision" field.
+func (u *FeedbackUpsertOne) SetOwnerDecision(v string) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetOwnerDecision(v)
+	})
+}
+
+// UpdateOwnerDecision sets the "owner_decision" field to the value that was provided on create.
+func (u *FeedbackUpsertOne) UpdateOwnerDecision() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateOwnerDecision()
+	})
+}
+
+// SetFixStatus sets the "fix_status" field.
+func (u *FeedbackUpsertOne) SetFixStatus(v string) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetFixStatus(v)
+	})
+}
+
+// UpdateFixStatus sets the "fix_status" field to the value that was provided on create.
+func (u *FeedbackUpsertOne) UpdateFixStatus() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateFixStatus()
+	})
+}
+
+// SetDuplicateOfID sets the "duplicate_of_id" field.
+func (u *FeedbackUpsertOne) SetDuplicateOfID(v int64) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetDuplicateOfID(v)
+	})
+}
+
+// AddDuplicateOfID adds v to the "duplicate_of_id" field.
+func (u *FeedbackUpsertOne) AddDuplicateOfID(v int64) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.AddDuplicateOfID(v)
+	})
+}
+
+// UpdateDuplicateOfID sets the "duplicate_of_id" field to the value that was provided on create.
+func (u *FeedbackUpsertOne) UpdateDuplicateOfID() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateDuplicateOfID()
+	})
+}
+
+// ClearDuplicateOfID clears the value of the "duplicate_of_id" field.
+func (u *FeedbackUpsertOne) ClearDuplicateOfID() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.ClearDuplicateOfID()
+	})
+}
+
+// SetResolvedVersion sets the "resolved_version" field.
+func (u *FeedbackUpsertOne) SetResolvedVersion(v string) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetResolvedVersion(v)
+	})
+}
+
+// UpdateResolvedVersion sets the "resolved_version" field to the value that was provided on create.
+func (u *FeedbackUpsertOne) UpdateResolvedVersion() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateResolvedVersion()
 	})
 }
 
@@ -947,6 +1689,69 @@ func (u *FeedbackUpsertOne) UpdateLastReplyRole() *FeedbackUpsertOne {
 func (u *FeedbackUpsertOne) ClearLastReplyRole() *FeedbackUpsertOne {
 	return u.Update(func(s *FeedbackUpsert) {
 		s.ClearLastReplyRole()
+	})
+}
+
+// SetAcceptedAt sets the "accepted_at" field.
+func (u *FeedbackUpsertOne) SetAcceptedAt(v time.Time) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetAcceptedAt(v)
+	})
+}
+
+// UpdateAcceptedAt sets the "accepted_at" field to the value that was provided on create.
+func (u *FeedbackUpsertOne) UpdateAcceptedAt() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateAcceptedAt()
+	})
+}
+
+// ClearAcceptedAt clears the value of the "accepted_at" field.
+func (u *FeedbackUpsertOne) ClearAcceptedAt() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.ClearAcceptedAt()
+	})
+}
+
+// SetResolvedAt sets the "resolved_at" field.
+func (u *FeedbackUpsertOne) SetResolvedAt(v time.Time) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetResolvedAt(v)
+	})
+}
+
+// UpdateResolvedAt sets the "resolved_at" field to the value that was provided on create.
+func (u *FeedbackUpsertOne) UpdateResolvedAt() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateResolvedAt()
+	})
+}
+
+// ClearResolvedAt clears the value of the "resolved_at" field.
+func (u *FeedbackUpsertOne) ClearResolvedAt() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.ClearResolvedAt()
+	})
+}
+
+// SetVerifiedAt sets the "verified_at" field.
+func (u *FeedbackUpsertOne) SetVerifiedAt(v time.Time) *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetVerifiedAt(v)
+	})
+}
+
+// UpdateVerifiedAt sets the "verified_at" field to the value that was provided on create.
+func (u *FeedbackUpsertOne) UpdateVerifiedAt() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateVerifiedAt()
+	})
+}
+
+// ClearVerifiedAt clears the value of the "verified_at" field.
+func (u *FeedbackUpsertOne) ClearVerifiedAt() *FeedbackUpsertOne {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.ClearVerifiedAt()
 	})
 }
 
@@ -1287,6 +2092,20 @@ func (u *FeedbackUpsertBulk) UpdateContact() *FeedbackUpsertBulk {
 	})
 }
 
+// SetRequestID sets the "request_id" field.
+func (u *FeedbackUpsertBulk) SetRequestID(v string) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetRequestID(v)
+	})
+}
+
+// UpdateRequestID sets the "request_id" field to the value that was provided on create.
+func (u *FeedbackUpsertBulk) UpdateRequestID() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateRequestID()
+	})
+}
+
 // SetPriority sets the "priority" field.
 func (u *FeedbackUpsertBulk) SetPriority(v string) *FeedbackUpsertBulk {
 	return u.Update(func(s *FeedbackUpsert) {
@@ -1312,6 +2131,174 @@ func (u *FeedbackUpsertBulk) SetStatus(v string) *FeedbackUpsertBulk {
 func (u *FeedbackUpsertBulk) UpdateStatus() *FeedbackUpsertBulk {
 	return u.Update(func(s *FeedbackUpsert) {
 		s.UpdateStatus()
+	})
+}
+
+// SetTriageStatus sets the "triage_status" field.
+func (u *FeedbackUpsertBulk) SetTriageStatus(v string) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetTriageStatus(v)
+	})
+}
+
+// UpdateTriageStatus sets the "triage_status" field to the value that was provided on create.
+func (u *FeedbackUpsertBulk) UpdateTriageStatus() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateTriageStatus()
+	})
+}
+
+// SetTriagePriority sets the "triage_priority" field.
+func (u *FeedbackUpsertBulk) SetTriagePriority(v string) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetTriagePriority(v)
+	})
+}
+
+// UpdateTriagePriority sets the "triage_priority" field to the value that was provided on create.
+func (u *FeedbackUpsertBulk) UpdateTriagePriority() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateTriagePriority()
+	})
+}
+
+// SetTriageSummary sets the "triage_summary" field.
+func (u *FeedbackUpsertBulk) SetTriageSummary(v string) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetTriageSummary(v)
+	})
+}
+
+// UpdateTriageSummary sets the "triage_summary" field to the value that was provided on create.
+func (u *FeedbackUpsertBulk) UpdateTriageSummary() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateTriageSummary()
+	})
+}
+
+// SetTriageConfidence sets the "triage_confidence" field.
+func (u *FeedbackUpsertBulk) SetTriageConfidence(v float64) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetTriageConfidence(v)
+	})
+}
+
+// AddTriageConfidence adds v to the "triage_confidence" field.
+func (u *FeedbackUpsertBulk) AddTriageConfidence(v float64) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.AddTriageConfidence(v)
+	})
+}
+
+// UpdateTriageConfidence sets the "triage_confidence" field to the value that was provided on create.
+func (u *FeedbackUpsertBulk) UpdateTriageConfidence() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateTriageConfidence()
+	})
+}
+
+// ClearTriageConfidence clears the value of the "triage_confidence" field.
+func (u *FeedbackUpsertBulk) ClearTriageConfidence() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.ClearTriageConfidence()
+	})
+}
+
+// SetRepairDifficulty sets the "repair_difficulty" field.
+func (u *FeedbackUpsertBulk) SetRepairDifficulty(v string) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetRepairDifficulty(v)
+	})
+}
+
+// UpdateRepairDifficulty sets the "repair_difficulty" field to the value that was provided on create.
+func (u *FeedbackUpsertBulk) UpdateRepairDifficulty() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateRepairDifficulty()
+	})
+}
+
+// SetRepairRecommendation sets the "repair_recommendation" field.
+func (u *FeedbackUpsertBulk) SetRepairRecommendation(v string) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetRepairRecommendation(v)
+	})
+}
+
+// UpdateRepairRecommendation sets the "repair_recommendation" field to the value that was provided on create.
+func (u *FeedbackUpsertBulk) UpdateRepairRecommendation() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateRepairRecommendation()
+	})
+}
+
+// SetOwnerDecision sets the "owner_decision" field.
+func (u *FeedbackUpsertBulk) SetOwnerDecision(v string) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetOwnerDecision(v)
+	})
+}
+
+// UpdateOwnerDecision sets the "owner_decision" field to the value that was provided on create.
+func (u *FeedbackUpsertBulk) UpdateOwnerDecision() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateOwnerDecision()
+	})
+}
+
+// SetFixStatus sets the "fix_status" field.
+func (u *FeedbackUpsertBulk) SetFixStatus(v string) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetFixStatus(v)
+	})
+}
+
+// UpdateFixStatus sets the "fix_status" field to the value that was provided on create.
+func (u *FeedbackUpsertBulk) UpdateFixStatus() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateFixStatus()
+	})
+}
+
+// SetDuplicateOfID sets the "duplicate_of_id" field.
+func (u *FeedbackUpsertBulk) SetDuplicateOfID(v int64) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetDuplicateOfID(v)
+	})
+}
+
+// AddDuplicateOfID adds v to the "duplicate_of_id" field.
+func (u *FeedbackUpsertBulk) AddDuplicateOfID(v int64) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.AddDuplicateOfID(v)
+	})
+}
+
+// UpdateDuplicateOfID sets the "duplicate_of_id" field to the value that was provided on create.
+func (u *FeedbackUpsertBulk) UpdateDuplicateOfID() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateDuplicateOfID()
+	})
+}
+
+// ClearDuplicateOfID clears the value of the "duplicate_of_id" field.
+func (u *FeedbackUpsertBulk) ClearDuplicateOfID() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.ClearDuplicateOfID()
+	})
+}
+
+// SetResolvedVersion sets the "resolved_version" field.
+func (u *FeedbackUpsertBulk) SetResolvedVersion(v string) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetResolvedVersion(v)
+	})
+}
+
+// UpdateResolvedVersion sets the "resolved_version" field to the value that was provided on create.
+func (u *FeedbackUpsertBulk) UpdateResolvedVersion() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateResolvedVersion()
 	})
 }
 
@@ -1375,6 +2362,69 @@ func (u *FeedbackUpsertBulk) UpdateLastReplyRole() *FeedbackUpsertBulk {
 func (u *FeedbackUpsertBulk) ClearLastReplyRole() *FeedbackUpsertBulk {
 	return u.Update(func(s *FeedbackUpsert) {
 		s.ClearLastReplyRole()
+	})
+}
+
+// SetAcceptedAt sets the "accepted_at" field.
+func (u *FeedbackUpsertBulk) SetAcceptedAt(v time.Time) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetAcceptedAt(v)
+	})
+}
+
+// UpdateAcceptedAt sets the "accepted_at" field to the value that was provided on create.
+func (u *FeedbackUpsertBulk) UpdateAcceptedAt() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateAcceptedAt()
+	})
+}
+
+// ClearAcceptedAt clears the value of the "accepted_at" field.
+func (u *FeedbackUpsertBulk) ClearAcceptedAt() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.ClearAcceptedAt()
+	})
+}
+
+// SetResolvedAt sets the "resolved_at" field.
+func (u *FeedbackUpsertBulk) SetResolvedAt(v time.Time) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetResolvedAt(v)
+	})
+}
+
+// UpdateResolvedAt sets the "resolved_at" field to the value that was provided on create.
+func (u *FeedbackUpsertBulk) UpdateResolvedAt() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateResolvedAt()
+	})
+}
+
+// ClearResolvedAt clears the value of the "resolved_at" field.
+func (u *FeedbackUpsertBulk) ClearResolvedAt() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.ClearResolvedAt()
+	})
+}
+
+// SetVerifiedAt sets the "verified_at" field.
+func (u *FeedbackUpsertBulk) SetVerifiedAt(v time.Time) *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.SetVerifiedAt(v)
+	})
+}
+
+// UpdateVerifiedAt sets the "verified_at" field to the value that was provided on create.
+func (u *FeedbackUpsertBulk) UpdateVerifiedAt() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.UpdateVerifiedAt()
+	})
+}
+
+// ClearVerifiedAt clears the value of the "verified_at" field.
+func (u *FeedbackUpsertBulk) ClearVerifiedAt() *FeedbackUpsertBulk {
+	return u.Update(func(s *FeedbackUpsert) {
+		s.ClearVerifiedAt()
 	})
 }
 

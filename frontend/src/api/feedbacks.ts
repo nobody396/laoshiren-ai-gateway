@@ -6,6 +6,7 @@ import type {
   FeedbackDetail,
   FeedbackItem,
   UpdateFeedbackRequest,
+	UserNotification,
 } from '@/types'
 
 export interface FeedbackListParams {
@@ -44,6 +45,18 @@ export async function createFeedbackReply(id: number, payload: CreateFeedbackRep
   await apiClient.post(`/feedbacks/${id}/replies`, payload)
 }
 
+export async function verifyFeedback(id: number, resolved: boolean, note = ''): Promise<void> {
+  await apiClient.post(`/feedbacks/${id}/verification`, { resolved, note })
+}
+
+export async function listNotifications(limit = 30): Promise<{ items: UserNotification[]; unread_count: number }> {
+  const { data } = await apiClient.get<{ items: UserNotification[]; unread_count: number }>('/notifications', { params: { limit } })
+  return data
+}
+
+export async function markNotificationRead(id: number): Promise<void> { await apiClient.post(`/notifications/${id}/read`) }
+export async function markAllNotificationsRead(): Promise<void> { await apiClient.post('/notifications/read-all') }
+
 export async function uploadFeedbackImage(file: File): Promise<string> {
   const formData = new FormData()
   formData.append('file', file)
@@ -61,6 +74,7 @@ const feedbacksAPI = {
   create: createFeedback,
   update: updateFeedback,
   createReply: createFeedbackReply,
+	verify: verifyFeedback,
   uploadImage: uploadFeedbackImage,
 }
 

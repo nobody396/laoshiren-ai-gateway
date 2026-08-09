@@ -33,16 +33,44 @@ type Feedback struct {
 	Images []string `json:"images,omitempty"`
 	// Contact holds the value of the "contact" field.
 	Contact string `json:"contact,omitempty"`
+	// RequestID holds the value of the "request_id" field.
+	RequestID string `json:"request_id,omitempty"`
 	// Priority holds the value of the "priority" field.
 	Priority string `json:"priority,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
+	// TriageStatus holds the value of the "triage_status" field.
+	TriageStatus string `json:"triage_status,omitempty"`
+	// TriagePriority holds the value of the "triage_priority" field.
+	TriagePriority string `json:"triage_priority,omitempty"`
+	// TriageSummary holds the value of the "triage_summary" field.
+	TriageSummary string `json:"triage_summary,omitempty"`
+	// TriageConfidence holds the value of the "triage_confidence" field.
+	TriageConfidence *float64 `json:"triage_confidence,omitempty"`
+	// RepairDifficulty holds the value of the "repair_difficulty" field.
+	RepairDifficulty string `json:"repair_difficulty,omitempty"`
+	// RepairRecommendation holds the value of the "repair_recommendation" field.
+	RepairRecommendation string `json:"repair_recommendation,omitempty"`
+	// OwnerDecision holds the value of the "owner_decision" field.
+	OwnerDecision string `json:"owner_decision,omitempty"`
+	// FixStatus holds the value of the "fix_status" field.
+	FixStatus string `json:"fix_status,omitempty"`
+	// DuplicateOfID holds the value of the "duplicate_of_id" field.
+	DuplicateOfID *int64 `json:"duplicate_of_id,omitempty"`
+	// ResolvedVersion holds the value of the "resolved_version" field.
+	ResolvedVersion string `json:"resolved_version,omitempty"`
 	// ReplyCount holds the value of the "reply_count" field.
 	ReplyCount int `json:"reply_count,omitempty"`
 	// LastReplyAt holds the value of the "last_reply_at" field.
 	LastReplyAt *time.Time `json:"last_reply_at,omitempty"`
 	// LastReplyRole holds the value of the "last_reply_role" field.
 	LastReplyRole *string `json:"last_reply_role,omitempty"`
+	// AcceptedAt holds the value of the "accepted_at" field.
+	AcceptedAt *time.Time `json:"accepted_at,omitempty"`
+	// ResolvedAt holds the value of the "resolved_at" field.
+	ResolvedAt *time.Time `json:"resolved_at,omitempty"`
+	// VerifiedAt holds the value of the "verified_at" field.
+	VerifiedAt *time.Time `json:"verified_at,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -91,11 +119,13 @@ func (*Feedback) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case feedback.FieldImages:
 			values[i] = new([]byte)
-		case feedback.FieldID, feedback.FieldUserID, feedback.FieldReplyCount:
+		case feedback.FieldTriageConfidence:
+			values[i] = new(sql.NullFloat64)
+		case feedback.FieldID, feedback.FieldUserID, feedback.FieldDuplicateOfID, feedback.FieldReplyCount:
 			values[i] = new(sql.NullInt64)
-		case feedback.FieldCategory, feedback.FieldTitle, feedback.FieldContent, feedback.FieldContact, feedback.FieldPriority, feedback.FieldStatus, feedback.FieldLastReplyRole:
+		case feedback.FieldCategory, feedback.FieldTitle, feedback.FieldContent, feedback.FieldContact, feedback.FieldRequestID, feedback.FieldPriority, feedback.FieldStatus, feedback.FieldTriageStatus, feedback.FieldTriagePriority, feedback.FieldTriageSummary, feedback.FieldRepairDifficulty, feedback.FieldRepairRecommendation, feedback.FieldOwnerDecision, feedback.FieldFixStatus, feedback.FieldResolvedVersion, feedback.FieldLastReplyRole:
 			values[i] = new(sql.NullString)
-		case feedback.FieldDeletedAt, feedback.FieldLastReplyAt, feedback.FieldCreatedAt, feedback.FieldUpdatedAt:
+		case feedback.FieldDeletedAt, feedback.FieldLastReplyAt, feedback.FieldAcceptedAt, feedback.FieldResolvedAt, feedback.FieldVerifiedAt, feedback.FieldCreatedAt, feedback.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -163,6 +193,12 @@ func (_m *Feedback) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Contact = value.String
 			}
+		case feedback.FieldRequestID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field request_id", values[i])
+			} else if value.Valid {
+				_m.RequestID = value.String
+			}
 		case feedback.FieldPriority:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field priority", values[i])
@@ -174,6 +210,68 @@ func (_m *Feedback) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				_m.Status = value.String
+			}
+		case feedback.FieldTriageStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field triage_status", values[i])
+			} else if value.Valid {
+				_m.TriageStatus = value.String
+			}
+		case feedback.FieldTriagePriority:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field triage_priority", values[i])
+			} else if value.Valid {
+				_m.TriagePriority = value.String
+			}
+		case feedback.FieldTriageSummary:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field triage_summary", values[i])
+			} else if value.Valid {
+				_m.TriageSummary = value.String
+			}
+		case feedback.FieldTriageConfidence:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field triage_confidence", values[i])
+			} else if value.Valid {
+				_m.TriageConfidence = new(float64)
+				*_m.TriageConfidence = value.Float64
+			}
+		case feedback.FieldRepairDifficulty:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field repair_difficulty", values[i])
+			} else if value.Valid {
+				_m.RepairDifficulty = value.String
+			}
+		case feedback.FieldRepairRecommendation:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field repair_recommendation", values[i])
+			} else if value.Valid {
+				_m.RepairRecommendation = value.String
+			}
+		case feedback.FieldOwnerDecision:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field owner_decision", values[i])
+			} else if value.Valid {
+				_m.OwnerDecision = value.String
+			}
+		case feedback.FieldFixStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field fix_status", values[i])
+			} else if value.Valid {
+				_m.FixStatus = value.String
+			}
+		case feedback.FieldDuplicateOfID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field duplicate_of_id", values[i])
+			} else if value.Valid {
+				_m.DuplicateOfID = new(int64)
+				*_m.DuplicateOfID = value.Int64
+			}
+		case feedback.FieldResolvedVersion:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field resolved_version", values[i])
+			} else if value.Valid {
+				_m.ResolvedVersion = value.String
 			}
 		case feedback.FieldReplyCount:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -194,6 +292,27 @@ func (_m *Feedback) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.LastReplyRole = new(string)
 				*_m.LastReplyRole = value.String
+			}
+		case feedback.FieldAcceptedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field accepted_at", values[i])
+			} else if value.Valid {
+				_m.AcceptedAt = new(time.Time)
+				*_m.AcceptedAt = value.Time
+			}
+		case feedback.FieldResolvedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field resolved_at", values[i])
+			} else if value.Valid {
+				_m.ResolvedAt = new(time.Time)
+				*_m.ResolvedAt = value.Time
+			}
+		case feedback.FieldVerifiedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field verified_at", values[i])
+			} else if value.Valid {
+				_m.VerifiedAt = new(time.Time)
+				*_m.VerifiedAt = value.Time
 			}
 		case feedback.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -276,11 +395,48 @@ func (_m *Feedback) String() string {
 	builder.WriteString("contact=")
 	builder.WriteString(_m.Contact)
 	builder.WriteString(", ")
+	builder.WriteString("request_id=")
+	builder.WriteString(_m.RequestID)
+	builder.WriteString(", ")
 	builder.WriteString("priority=")
 	builder.WriteString(_m.Priority)
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)
+	builder.WriteString(", ")
+	builder.WriteString("triage_status=")
+	builder.WriteString(_m.TriageStatus)
+	builder.WriteString(", ")
+	builder.WriteString("triage_priority=")
+	builder.WriteString(_m.TriagePriority)
+	builder.WriteString(", ")
+	builder.WriteString("triage_summary=")
+	builder.WriteString(_m.TriageSummary)
+	builder.WriteString(", ")
+	if v := _m.TriageConfidence; v != nil {
+		builder.WriteString("triage_confidence=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("repair_difficulty=")
+	builder.WriteString(_m.RepairDifficulty)
+	builder.WriteString(", ")
+	builder.WriteString("repair_recommendation=")
+	builder.WriteString(_m.RepairRecommendation)
+	builder.WriteString(", ")
+	builder.WriteString("owner_decision=")
+	builder.WriteString(_m.OwnerDecision)
+	builder.WriteString(", ")
+	builder.WriteString("fix_status=")
+	builder.WriteString(_m.FixStatus)
+	builder.WriteString(", ")
+	if v := _m.DuplicateOfID; v != nil {
+		builder.WriteString("duplicate_of_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("resolved_version=")
+	builder.WriteString(_m.ResolvedVersion)
 	builder.WriteString(", ")
 	builder.WriteString("reply_count=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ReplyCount))
@@ -293,6 +449,21 @@ func (_m *Feedback) String() string {
 	if v := _m.LastReplyRole; v != nil {
 		builder.WriteString("last_reply_role=")
 		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.AcceptedAt; v != nil {
+		builder.WriteString("accepted_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.ResolvedAt; v != nil {
+		builder.WriteString("resolved_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.VerifiedAt; v != nil {
+		builder.WriteString("verified_at=")
+		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")

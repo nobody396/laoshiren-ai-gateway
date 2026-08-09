@@ -5978,6 +5978,12 @@ export default {
     }
   },
 
+	 notifications: {
+	   title: 'Notifications',
+	   markAllRead: 'Mark all read',
+	   empty: 'No notifications',
+	 },
+
   feedback: {
     title: 'Feedback',
     description: 'Submit bugs, suggestions, and complaints, then track progress.',
@@ -6021,6 +6027,9 @@ export default {
       contentPlaceholder: 'Describe the issue, context, and expected outcome...',
       contact: 'Contact',
       contactPlaceholder: 'WeChat, Telegram, email, etc. (optional)',
+	  requestId: 'Request ID (optional)',
+	  requestIdPlaceholder: 'Paste the Request ID from the error',
+	  requestIdHint: 'A Request ID helps us trace the request, but it is not required.',
       images: 'Images',
       imageHint: 'Up to 5 images, each under 5MB. Supports jpg/png/gif/webp.',
       addImage: 'Add image',
@@ -6034,6 +6043,7 @@ export default {
       timeline: 'Conversation',
       addReply: 'Add Reply',
       meta: 'Created at {createdAt}, {replies} replies so far',
+	  rewardGranted: 'This feedback received {amount} in co-creation credit',
     },
     edit: {
       title: 'Edit Feedback',
@@ -6061,10 +6071,28 @@ export default {
       userInfo: 'User Info',
       manage: 'Handling Settings',
       replyTitle: 'Admin Reply',
-      notifyEmail: 'Notification Email',
-      notifyEmailPlaceholder: 'Admin email for new feedback alerts',
-      notifyEmailHint: 'New feedback notifications go here. Admin replies to users still use the user email.',
+	  workflow: 'Workflow',
+	  rewardLedger: 'Reward Ledger',
+	  noRewards: 'No reward records',
+	  triageLabel: 'Triage',
+	  decisionLabel: 'Decision',
+	  fixLabel: 'Fix',
+	  rewardCredit: 'Credit +{amount} · ledger #{ledger}',
+	  rewardColumns: { feedback: 'Ticket', user: 'User', amount: 'Credit', batch: 'Batch', ledger: 'Ledger ID', time: 'Time' },
+	  notifyEmail: 'Fallback email (no auto-send)',
+	  notifyEmailPlaceholder: 'Used only by an explicitly authorized manual email workflow',
+	  notifyEmailHint: 'Feedback emails are never sent automatically. Every message requires separate explicit authorization.',
     },
+	verify: {
+	  title: 'Verify the fix',
+	  description: 'The fix is live. Please confirm whether the issue is resolved.',
+	  notePlaceholder: 'Optional verification notes',
+	  resolved: 'Resolved',
+	  unresolved: 'Still broken',
+	  resolvedSuccess: 'Thanks. The ticket is complete.',
+	  reopenedSuccess: 'The ticket was reopened and will be investigated again.',
+	  failed: 'Failed to submit verification',
+	},
     message: {
       created: 'Feedback submitted successfully',
       createFailed: 'Failed to submit feedback',

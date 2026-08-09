@@ -21,6 +21,7 @@
               </div>
 
               <MarkdownPreview :content="detail.content" :preview-id="`admin-feedback-${detail.id}`" />
+			  <div v-if="detail.request_id" class="rounded-2xl bg-gray-50 p-4 text-sm dark:bg-dark-800"><span class="text-gray-500">Request ID:</span> <code>{{ detail.request_id }}</code></div>
 
               <div v-if="detail.images?.length" class="grid grid-cols-2 gap-3 md:grid-cols-4">
                 <img
@@ -35,6 +36,11 @@
 
             <div class="card space-y-4 p-6">
               <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('feedback.detail.timeline') }}</h2>
+			  <div v-if="detail.events?.length" class="space-y-3">
+				<div v-for="event in detail.events" :key="`event-${event.id}`" class="rounded-2xl bg-gray-50 p-4 dark:bg-dark-800">
+				  <div class="flex items-center justify-between gap-3"><span class="text-sm font-medium text-gray-900 dark:text-white">{{ event.summary }}</span><span class="text-xs text-gray-500">{{ formatDateTime(event.created_at) }}</span></div>
+				</div>
+			  </div>
               <div class="space-y-4">
                 <div
                   v-for="reply in (detail.replies || [])"
@@ -100,6 +106,17 @@
                 <div v-if="detail.contact">{{ t('feedback.form.contact') }}: {{ detail.contact }}</div>
               </div>
             </div>
+
+			<div class="card space-y-3 p-6">
+			  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('feedback.admin.workflow') }}</h2>
+			  <div class="space-y-2 text-sm text-gray-600 dark:text-dark-300">
+				<div>{{ t('feedback.admin.triageLabel') }}：{{ detail.triage_status }} <span v-if="detail.triage_priority">· {{ detail.triage_priority }}</span></div>
+				<div>{{ t('feedback.admin.decisionLabel') }}：{{ detail.owner_decision }}</div>
+				<div>{{ t('feedback.admin.fixLabel') }}：{{ detail.fix_status }}</div>
+				<div v-if="detail.triage_summary" class="rounded-xl bg-gray-50 p-3 dark:bg-dark-800">{{ detail.triage_summary }}</div>
+				<div v-if="detail.reward" class="rounded-xl bg-emerald-50 p-3 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">{{ t('feedback.admin.rewardCredit', { amount: detail.reward.amount.toFixed(2), ledger: detail.reward.account_change_record_id || '-' }) }}</div>
+			  </div>
+			</div>
 
             <div class="card space-y-4 p-6">
               <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('feedback.admin.manage') }}</h2>

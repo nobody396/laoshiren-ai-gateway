@@ -11,11 +11,13 @@ const (
 	AccountChangeReasonTopup           = "topup"
 	AccountChangeReasonTopupPromotion  = "topup_promotion"
 	AccountChangeReasonAdminAdjustment = "admin_adjustment"
+	AccountChangeReasonFeedbackReward  = "feedback_reward"
 
 	AccountChangeSourceRedeemCode       = "redeem_code"
 	AccountChangeSourceTopupOrder       = "topup_order"
 	AccountChangeSourceAdminManual      = "admin_manual"
 	AccountChangeSourceLegacyRedeemCode = "legacy_redeem_code"
+	AccountChangeSourceFeedback         = "feedback"
 
 	AccountChangeDisplayTopup          = "topup"
 	AccountChangeDisplayTopupPromotion = "topup_promotion"

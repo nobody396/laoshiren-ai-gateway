@@ -197,6 +197,18 @@ gateway:
     prefix: "gpt-image/"
     force_path_style: false
     max_image_bytes: 20971520
+  # Feedback screenshots are private. When omitted/disabled, the backend reuses
+  # the GPT-Image S3 credentials and bucket with the prefix below.
+  feedback_s3:
+    enabled: false
+    endpoint: ""
+    region: "us-east-1"
+    bucket: ""
+    access_key_id: ""
+    secret_access_key: ""
+    prefix: "feedback-images/"
+    force_path_style: false
+    max_image_bytes: 5242880
   # GPT-Image asynchronous task settlement. When enabled, backend polls unfinished
   # tasks and bills after completion even if the client does not poll the task.
   # GPT-Image 异步任务后台结算。开启后即使客户端不轮询任务，后端也会自动查询完成状态并扣费。

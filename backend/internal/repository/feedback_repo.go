@@ -29,8 +29,17 @@ func (r *feedbackRepository) Create(ctx context.Context, feedback *service.Feedb
 		SetContent(feedback.Content).
 		SetImages(feedback.Images).
 		SetContact(feedback.Contact).
+		SetRequestID(feedback.RequestID).
 		SetPriority(feedback.Priority).
 		SetStatus(feedback.Status).
+		SetTriageStatus(feedback.TriageStatus).
+		SetTriagePriority(feedback.TriagePriority).
+		SetTriageSummary(feedback.TriageSummary).
+		SetRepairDifficulty(feedback.RepairDifficulty).
+		SetRepairRecommendation(feedback.RepairRecommendation).
+		SetOwnerDecision(feedback.OwnerDecision).
+		SetFixStatus(feedback.FixStatus).
+		SetResolvedVersion(feedback.ResolvedVersion).
 		SetReplyCount(feedback.ReplyCount).
 		Save(ctx)
 	if err != nil {
@@ -61,9 +70,43 @@ func (r *feedbackRepository) Update(ctx context.Context, feedback *service.Feedb
 		SetContent(feedback.Content).
 		SetImages(feedback.Images).
 		SetContact(feedback.Contact).
+		SetRequestID(feedback.RequestID).
 		SetPriority(feedback.Priority).
 		SetStatus(feedback.Status).
 		SetReplyCount(feedback.ReplyCount)
+	builder.SetTriageStatus(feedback.TriageStatus).
+		SetTriagePriority(feedback.TriagePriority).
+		SetTriageSummary(feedback.TriageSummary).
+		SetRepairDifficulty(feedback.RepairDifficulty).
+		SetRepairRecommendation(feedback.RepairRecommendation).
+		SetOwnerDecision(feedback.OwnerDecision).
+		SetFixStatus(feedback.FixStatus).
+		SetResolvedVersion(feedback.ResolvedVersion)
+	if feedback.TriageConfidence != nil {
+		builder.SetTriageConfidence(*feedback.TriageConfidence)
+	} else {
+		builder.ClearTriageConfidence()
+	}
+	if feedback.DuplicateOfID != nil {
+		builder.SetDuplicateOfID(*feedback.DuplicateOfID)
+	} else {
+		builder.ClearDuplicateOfID()
+	}
+	if feedback.AcceptedAt != nil {
+		builder.SetAcceptedAt(*feedback.AcceptedAt)
+	} else {
+		builder.ClearAcceptedAt()
+	}
+	if feedback.ResolvedAt != nil {
+		builder.SetResolvedAt(*feedback.ResolvedAt)
+	} else {
+		builder.ClearResolvedAt()
+	}
+	if feedback.VerifiedAt != nil {
+		builder.SetVerifiedAt(*feedback.VerifiedAt)
+	} else {
+		builder.ClearVerifiedAt()
+	}
 
 	if feedback.LastReplyAt != nil {
 		builder.SetLastReplyAt(*feedback.LastReplyAt)
@@ -133,6 +176,15 @@ func (r *feedbackRepository) ListForAdmin(
 	if filters.Priority != "" {
 		query = query.Where(dbfeedback.PriorityEQ(filters.Priority))
 	}
+	if filters.TriageStatus != "" {
+		query = query.Where(dbfeedback.TriageStatusEQ(filters.TriageStatus))
+	}
+	if filters.OwnerDecision != "" {
+		query = query.Where(dbfeedback.OwnerDecisionEQ(filters.OwnerDecision))
+	}
+	if filters.FixStatus != "" {
+		query = query.Where(dbfeedback.FixStatusEQ(filters.FixStatus))
+	}
 	if filters.StartTime != nil {
 		query = query.Where(dbfeedback.CreatedAtGTE(*filters.StartTime))
 	}
@@ -146,6 +198,7 @@ func (r *feedbackRepository) ListForAdmin(
 				dbfeedback.TitleContainsFold(search),
 				dbfeedback.ContentContainsFold(search),
 				dbfeedback.ContactContainsFold(search),
+				dbfeedback.RequestIDContainsFold(search),
 				dbfeedback.HasUserWith(
 					dbuser.Or(
 						dbuser.EmailContainsFold(search),
@@ -255,21 +308,35 @@ func feedbackEntityToService(item *dbent.Feedback) *service.Feedback {
 		return nil
 	}
 	feedback := &service.Feedback{
-		ID:            item.ID,
-		UserID:        item.UserID,
-		Category:      item.Category,
-		Title:         item.Title,
-		Content:       item.Content,
-		Images:        append([]string(nil), item.Images...),
-		Contact:       item.Contact,
-		Priority:      item.Priority,
-		Status:        item.Status,
-		ReplyCount:    item.ReplyCount,
-		LastReplyAt:   item.LastReplyAt,
-		LastReplyRole: item.LastReplyRole,
-		CreatedAt:     item.CreatedAt,
-		UpdatedAt:     item.UpdatedAt,
-		DeletedAt:     item.DeletedAt,
+		ID:                   item.ID,
+		UserID:               item.UserID,
+		Category:             item.Category,
+		Title:                item.Title,
+		Content:              item.Content,
+		Images:               append([]string(nil), item.Images...),
+		Contact:              item.Contact,
+		RequestID:            item.RequestID,
+		Priority:             item.Priority,
+		Status:               item.Status,
+		TriageStatus:         item.TriageStatus,
+		TriagePriority:       item.TriagePriority,
+		TriageSummary:        item.TriageSummary,
+		TriageConfidence:     item.TriageConfidence,
+		RepairDifficulty:     item.RepairDifficulty,
+		RepairRecommendation: item.RepairRecommendation,
+		OwnerDecision:        item.OwnerDecision,
+		FixStatus:            item.FixStatus,
+		DuplicateOfID:        item.DuplicateOfID,
+		ResolvedVersion:      item.ResolvedVersion,
+		AcceptedAt:           item.AcceptedAt,
+		ResolvedAt:           item.ResolvedAt,
+		VerifiedAt:           item.VerifiedAt,
+		ReplyCount:           item.ReplyCount,
+		LastReplyAt:          item.LastReplyAt,
+		LastReplyRole:        item.LastReplyRole,
+		CreatedAt:            item.CreatedAt,
+		UpdatedAt:            item.UpdatedAt,
+		DeletedAt:            item.DeletedAt,
 	}
 	if item.Edges.User != nil {
 		feedback.User = &service.FeedbackUser{

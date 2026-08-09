@@ -85,6 +85,11 @@ func Contact(v string) predicate.Feedback {
 	return predicate.Feedback(sql.FieldEQ(FieldContact, v))
 }
 
+// RequestID applies equality check predicate on the "request_id" field. It's identical to RequestIDEQ.
+func RequestID(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldRequestID, v))
+}
+
 // Priority applies equality check predicate on the "priority" field. It's identical to PriorityEQ.
 func Priority(v string) predicate.Feedback {
 	return predicate.Feedback(sql.FieldEQ(FieldPriority, v))
@@ -93,6 +98,56 @@ func Priority(v string) predicate.Feedback {
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v string) predicate.Feedback {
 	return predicate.Feedback(sql.FieldEQ(FieldStatus, v))
+}
+
+// TriageStatus applies equality check predicate on the "triage_status" field. It's identical to TriageStatusEQ.
+func TriageStatus(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldTriageStatus, v))
+}
+
+// TriagePriority applies equality check predicate on the "triage_priority" field. It's identical to TriagePriorityEQ.
+func TriagePriority(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldTriagePriority, v))
+}
+
+// TriageSummary applies equality check predicate on the "triage_summary" field. It's identical to TriageSummaryEQ.
+func TriageSummary(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldTriageSummary, v))
+}
+
+// TriageConfidence applies equality check predicate on the "triage_confidence" field. It's identical to TriageConfidenceEQ.
+func TriageConfidence(v float64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldTriageConfidence, v))
+}
+
+// RepairDifficulty applies equality check predicate on the "repair_difficulty" field. It's identical to RepairDifficultyEQ.
+func RepairDifficulty(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldRepairDifficulty, v))
+}
+
+// RepairRecommendation applies equality check predicate on the "repair_recommendation" field. It's identical to RepairRecommendationEQ.
+func RepairRecommendation(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldRepairRecommendation, v))
+}
+
+// OwnerDecision applies equality check predicate on the "owner_decision" field. It's identical to OwnerDecisionEQ.
+func OwnerDecision(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldOwnerDecision, v))
+}
+
+// FixStatus applies equality check predicate on the "fix_status" field. It's identical to FixStatusEQ.
+func FixStatus(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldFixStatus, v))
+}
+
+// DuplicateOfID applies equality check predicate on the "duplicate_of_id" field. It's identical to DuplicateOfIDEQ.
+func DuplicateOfID(v int64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldDuplicateOfID, v))
+}
+
+// ResolvedVersion applies equality check predicate on the "resolved_version" field. It's identical to ResolvedVersionEQ.
+func ResolvedVersion(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldResolvedVersion, v))
 }
 
 // ReplyCount applies equality check predicate on the "reply_count" field. It's identical to ReplyCountEQ.
@@ -108,6 +163,21 @@ func LastReplyAt(v time.Time) predicate.Feedback {
 // LastReplyRole applies equality check predicate on the "last_reply_role" field. It's identical to LastReplyRoleEQ.
 func LastReplyRole(v string) predicate.Feedback {
 	return predicate.Feedback(sql.FieldEQ(FieldLastReplyRole, v))
+}
+
+// AcceptedAt applies equality check predicate on the "accepted_at" field. It's identical to AcceptedAtEQ.
+func AcceptedAt(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldAcceptedAt, v))
+}
+
+// ResolvedAt applies equality check predicate on the "resolved_at" field. It's identical to ResolvedAtEQ.
+func ResolvedAt(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldResolvedAt, v))
+}
+
+// VerifiedAt applies equality check predicate on the "verified_at" field. It's identical to VerifiedAtEQ.
+func VerifiedAt(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldVerifiedAt, v))
 }
 
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
@@ -460,6 +530,71 @@ func ContactContainsFold(v string) predicate.Feedback {
 	return predicate.Feedback(sql.FieldContainsFold(FieldContact, v))
 }
 
+// RequestIDEQ applies the EQ predicate on the "request_id" field.
+func RequestIDEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldRequestID, v))
+}
+
+// RequestIDNEQ applies the NEQ predicate on the "request_id" field.
+func RequestIDNEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNEQ(FieldRequestID, v))
+}
+
+// RequestIDIn applies the In predicate on the "request_id" field.
+func RequestIDIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldIn(FieldRequestID, vs...))
+}
+
+// RequestIDNotIn applies the NotIn predicate on the "request_id" field.
+func RequestIDNotIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotIn(FieldRequestID, vs...))
+}
+
+// RequestIDGT applies the GT predicate on the "request_id" field.
+func RequestIDGT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGT(FieldRequestID, v))
+}
+
+// RequestIDGTE applies the GTE predicate on the "request_id" field.
+func RequestIDGTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGTE(FieldRequestID, v))
+}
+
+// RequestIDLT applies the LT predicate on the "request_id" field.
+func RequestIDLT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLT(FieldRequestID, v))
+}
+
+// RequestIDLTE applies the LTE predicate on the "request_id" field.
+func RequestIDLTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLTE(FieldRequestID, v))
+}
+
+// RequestIDContains applies the Contains predicate on the "request_id" field.
+func RequestIDContains(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContains(FieldRequestID, v))
+}
+
+// RequestIDHasPrefix applies the HasPrefix predicate on the "request_id" field.
+func RequestIDHasPrefix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasPrefix(FieldRequestID, v))
+}
+
+// RequestIDHasSuffix applies the HasSuffix predicate on the "request_id" field.
+func RequestIDHasSuffix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasSuffix(FieldRequestID, v))
+}
+
+// RequestIDEqualFold applies the EqualFold predicate on the "request_id" field.
+func RequestIDEqualFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEqualFold(FieldRequestID, v))
+}
+
+// RequestIDContainsFold applies the ContainsFold predicate on the "request_id" field.
+func RequestIDContainsFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContainsFold(FieldRequestID, v))
+}
+
 // PriorityEQ applies the EQ predicate on the "priority" field.
 func PriorityEQ(v string) predicate.Feedback {
 	return predicate.Feedback(sql.FieldEQ(FieldPriority, v))
@@ -588,6 +723,626 @@ func StatusEqualFold(v string) predicate.Feedback {
 // StatusContainsFold applies the ContainsFold predicate on the "status" field.
 func StatusContainsFold(v string) predicate.Feedback {
 	return predicate.Feedback(sql.FieldContainsFold(FieldStatus, v))
+}
+
+// TriageStatusEQ applies the EQ predicate on the "triage_status" field.
+func TriageStatusEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldTriageStatus, v))
+}
+
+// TriageStatusNEQ applies the NEQ predicate on the "triage_status" field.
+func TriageStatusNEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNEQ(FieldTriageStatus, v))
+}
+
+// TriageStatusIn applies the In predicate on the "triage_status" field.
+func TriageStatusIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldIn(FieldTriageStatus, vs...))
+}
+
+// TriageStatusNotIn applies the NotIn predicate on the "triage_status" field.
+func TriageStatusNotIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotIn(FieldTriageStatus, vs...))
+}
+
+// TriageStatusGT applies the GT predicate on the "triage_status" field.
+func TriageStatusGT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGT(FieldTriageStatus, v))
+}
+
+// TriageStatusGTE applies the GTE predicate on the "triage_status" field.
+func TriageStatusGTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGTE(FieldTriageStatus, v))
+}
+
+// TriageStatusLT applies the LT predicate on the "triage_status" field.
+func TriageStatusLT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLT(FieldTriageStatus, v))
+}
+
+// TriageStatusLTE applies the LTE predicate on the "triage_status" field.
+func TriageStatusLTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLTE(FieldTriageStatus, v))
+}
+
+// TriageStatusContains applies the Contains predicate on the "triage_status" field.
+func TriageStatusContains(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContains(FieldTriageStatus, v))
+}
+
+// TriageStatusHasPrefix applies the HasPrefix predicate on the "triage_status" field.
+func TriageStatusHasPrefix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasPrefix(FieldTriageStatus, v))
+}
+
+// TriageStatusHasSuffix applies the HasSuffix predicate on the "triage_status" field.
+func TriageStatusHasSuffix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasSuffix(FieldTriageStatus, v))
+}
+
+// TriageStatusEqualFold applies the EqualFold predicate on the "triage_status" field.
+func TriageStatusEqualFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEqualFold(FieldTriageStatus, v))
+}
+
+// TriageStatusContainsFold applies the ContainsFold predicate on the "triage_status" field.
+func TriageStatusContainsFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContainsFold(FieldTriageStatus, v))
+}
+
+// TriagePriorityEQ applies the EQ predicate on the "triage_priority" field.
+func TriagePriorityEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldTriagePriority, v))
+}
+
+// TriagePriorityNEQ applies the NEQ predicate on the "triage_priority" field.
+func TriagePriorityNEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNEQ(FieldTriagePriority, v))
+}
+
+// TriagePriorityIn applies the In predicate on the "triage_priority" field.
+func TriagePriorityIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldIn(FieldTriagePriority, vs...))
+}
+
+// TriagePriorityNotIn applies the NotIn predicate on the "triage_priority" field.
+func TriagePriorityNotIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotIn(FieldTriagePriority, vs...))
+}
+
+// TriagePriorityGT applies the GT predicate on the "triage_priority" field.
+func TriagePriorityGT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGT(FieldTriagePriority, v))
+}
+
+// TriagePriorityGTE applies the GTE predicate on the "triage_priority" field.
+func TriagePriorityGTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGTE(FieldTriagePriority, v))
+}
+
+// TriagePriorityLT applies the LT predicate on the "triage_priority" field.
+func TriagePriorityLT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLT(FieldTriagePriority, v))
+}
+
+// TriagePriorityLTE applies the LTE predicate on the "triage_priority" field.
+func TriagePriorityLTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLTE(FieldTriagePriority, v))
+}
+
+// TriagePriorityContains applies the Contains predicate on the "triage_priority" field.
+func TriagePriorityContains(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContains(FieldTriagePriority, v))
+}
+
+// TriagePriorityHasPrefix applies the HasPrefix predicate on the "triage_priority" field.
+func TriagePriorityHasPrefix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasPrefix(FieldTriagePriority, v))
+}
+
+// TriagePriorityHasSuffix applies the HasSuffix predicate on the "triage_priority" field.
+func TriagePriorityHasSuffix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasSuffix(FieldTriagePriority, v))
+}
+
+// TriagePriorityEqualFold applies the EqualFold predicate on the "triage_priority" field.
+func TriagePriorityEqualFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEqualFold(FieldTriagePriority, v))
+}
+
+// TriagePriorityContainsFold applies the ContainsFold predicate on the "triage_priority" field.
+func TriagePriorityContainsFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContainsFold(FieldTriagePriority, v))
+}
+
+// TriageSummaryEQ applies the EQ predicate on the "triage_summary" field.
+func TriageSummaryEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldTriageSummary, v))
+}
+
+// TriageSummaryNEQ applies the NEQ predicate on the "triage_summary" field.
+func TriageSummaryNEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNEQ(FieldTriageSummary, v))
+}
+
+// TriageSummaryIn applies the In predicate on the "triage_summary" field.
+func TriageSummaryIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldIn(FieldTriageSummary, vs...))
+}
+
+// TriageSummaryNotIn applies the NotIn predicate on the "triage_summary" field.
+func TriageSummaryNotIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotIn(FieldTriageSummary, vs...))
+}
+
+// TriageSummaryGT applies the GT predicate on the "triage_summary" field.
+func TriageSummaryGT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGT(FieldTriageSummary, v))
+}
+
+// TriageSummaryGTE applies the GTE predicate on the "triage_summary" field.
+func TriageSummaryGTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGTE(FieldTriageSummary, v))
+}
+
+// TriageSummaryLT applies the LT predicate on the "triage_summary" field.
+func TriageSummaryLT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLT(FieldTriageSummary, v))
+}
+
+// TriageSummaryLTE applies the LTE predicate on the "triage_summary" field.
+func TriageSummaryLTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLTE(FieldTriageSummary, v))
+}
+
+// TriageSummaryContains applies the Contains predicate on the "triage_summary" field.
+func TriageSummaryContains(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContains(FieldTriageSummary, v))
+}
+
+// TriageSummaryHasPrefix applies the HasPrefix predicate on the "triage_summary" field.
+func TriageSummaryHasPrefix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasPrefix(FieldTriageSummary, v))
+}
+
+// TriageSummaryHasSuffix applies the HasSuffix predicate on the "triage_summary" field.
+func TriageSummaryHasSuffix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasSuffix(FieldTriageSummary, v))
+}
+
+// TriageSummaryEqualFold applies the EqualFold predicate on the "triage_summary" field.
+func TriageSummaryEqualFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEqualFold(FieldTriageSummary, v))
+}
+
+// TriageSummaryContainsFold applies the ContainsFold predicate on the "triage_summary" field.
+func TriageSummaryContainsFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContainsFold(FieldTriageSummary, v))
+}
+
+// TriageConfidenceEQ applies the EQ predicate on the "triage_confidence" field.
+func TriageConfidenceEQ(v float64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldTriageConfidence, v))
+}
+
+// TriageConfidenceNEQ applies the NEQ predicate on the "triage_confidence" field.
+func TriageConfidenceNEQ(v float64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNEQ(FieldTriageConfidence, v))
+}
+
+// TriageConfidenceIn applies the In predicate on the "triage_confidence" field.
+func TriageConfidenceIn(vs ...float64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldIn(FieldTriageConfidence, vs...))
+}
+
+// TriageConfidenceNotIn applies the NotIn predicate on the "triage_confidence" field.
+func TriageConfidenceNotIn(vs ...float64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotIn(FieldTriageConfidence, vs...))
+}
+
+// TriageConfidenceGT applies the GT predicate on the "triage_confidence" field.
+func TriageConfidenceGT(v float64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGT(FieldTriageConfidence, v))
+}
+
+// TriageConfidenceGTE applies the GTE predicate on the "triage_confidence" field.
+func TriageConfidenceGTE(v float64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGTE(FieldTriageConfidence, v))
+}
+
+// TriageConfidenceLT applies the LT predicate on the "triage_confidence" field.
+func TriageConfidenceLT(v float64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLT(FieldTriageConfidence, v))
+}
+
+// TriageConfidenceLTE applies the LTE predicate on the "triage_confidence" field.
+func TriageConfidenceLTE(v float64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLTE(FieldTriageConfidence, v))
+}
+
+// TriageConfidenceIsNil applies the IsNil predicate on the "triage_confidence" field.
+func TriageConfidenceIsNil() predicate.Feedback {
+	return predicate.Feedback(sql.FieldIsNull(FieldTriageConfidence))
+}
+
+// TriageConfidenceNotNil applies the NotNil predicate on the "triage_confidence" field.
+func TriageConfidenceNotNil() predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotNull(FieldTriageConfidence))
+}
+
+// RepairDifficultyEQ applies the EQ predicate on the "repair_difficulty" field.
+func RepairDifficultyEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldRepairDifficulty, v))
+}
+
+// RepairDifficultyNEQ applies the NEQ predicate on the "repair_difficulty" field.
+func RepairDifficultyNEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNEQ(FieldRepairDifficulty, v))
+}
+
+// RepairDifficultyIn applies the In predicate on the "repair_difficulty" field.
+func RepairDifficultyIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldIn(FieldRepairDifficulty, vs...))
+}
+
+// RepairDifficultyNotIn applies the NotIn predicate on the "repair_difficulty" field.
+func RepairDifficultyNotIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotIn(FieldRepairDifficulty, vs...))
+}
+
+// RepairDifficultyGT applies the GT predicate on the "repair_difficulty" field.
+func RepairDifficultyGT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGT(FieldRepairDifficulty, v))
+}
+
+// RepairDifficultyGTE applies the GTE predicate on the "repair_difficulty" field.
+func RepairDifficultyGTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGTE(FieldRepairDifficulty, v))
+}
+
+// RepairDifficultyLT applies the LT predicate on the "repair_difficulty" field.
+func RepairDifficultyLT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLT(FieldRepairDifficulty, v))
+}
+
+// RepairDifficultyLTE applies the LTE predicate on the "repair_difficulty" field.
+func RepairDifficultyLTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLTE(FieldRepairDifficulty, v))
+}
+
+// RepairDifficultyContains applies the Contains predicate on the "repair_difficulty" field.
+func RepairDifficultyContains(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContains(FieldRepairDifficulty, v))
+}
+
+// RepairDifficultyHasPrefix applies the HasPrefix predicate on the "repair_difficulty" field.
+func RepairDifficultyHasPrefix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasPrefix(FieldRepairDifficulty, v))
+}
+
+// RepairDifficultyHasSuffix applies the HasSuffix predicate on the "repair_difficulty" field.
+func RepairDifficultyHasSuffix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasSuffix(FieldRepairDifficulty, v))
+}
+
+// RepairDifficultyEqualFold applies the EqualFold predicate on the "repair_difficulty" field.
+func RepairDifficultyEqualFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEqualFold(FieldRepairDifficulty, v))
+}
+
+// RepairDifficultyContainsFold applies the ContainsFold predicate on the "repair_difficulty" field.
+func RepairDifficultyContainsFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContainsFold(FieldRepairDifficulty, v))
+}
+
+// RepairRecommendationEQ applies the EQ predicate on the "repair_recommendation" field.
+func RepairRecommendationEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldRepairRecommendation, v))
+}
+
+// RepairRecommendationNEQ applies the NEQ predicate on the "repair_recommendation" field.
+func RepairRecommendationNEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNEQ(FieldRepairRecommendation, v))
+}
+
+// RepairRecommendationIn applies the In predicate on the "repair_recommendation" field.
+func RepairRecommendationIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldIn(FieldRepairRecommendation, vs...))
+}
+
+// RepairRecommendationNotIn applies the NotIn predicate on the "repair_recommendation" field.
+func RepairRecommendationNotIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotIn(FieldRepairRecommendation, vs...))
+}
+
+// RepairRecommendationGT applies the GT predicate on the "repair_recommendation" field.
+func RepairRecommendationGT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGT(FieldRepairRecommendation, v))
+}
+
+// RepairRecommendationGTE applies the GTE predicate on the "repair_recommendation" field.
+func RepairRecommendationGTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGTE(FieldRepairRecommendation, v))
+}
+
+// RepairRecommendationLT applies the LT predicate on the "repair_recommendation" field.
+func RepairRecommendationLT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLT(FieldRepairRecommendation, v))
+}
+
+// RepairRecommendationLTE applies the LTE predicate on the "repair_recommendation" field.
+func RepairRecommendationLTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLTE(FieldRepairRecommendation, v))
+}
+
+// RepairRecommendationContains applies the Contains predicate on the "repair_recommendation" field.
+func RepairRecommendationContains(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContains(FieldRepairRecommendation, v))
+}
+
+// RepairRecommendationHasPrefix applies the HasPrefix predicate on the "repair_recommendation" field.
+func RepairRecommendationHasPrefix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasPrefix(FieldRepairRecommendation, v))
+}
+
+// RepairRecommendationHasSuffix applies the HasSuffix predicate on the "repair_recommendation" field.
+func RepairRecommendationHasSuffix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasSuffix(FieldRepairRecommendation, v))
+}
+
+// RepairRecommendationEqualFold applies the EqualFold predicate on the "repair_recommendation" field.
+func RepairRecommendationEqualFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEqualFold(FieldRepairRecommendation, v))
+}
+
+// RepairRecommendationContainsFold applies the ContainsFold predicate on the "repair_recommendation" field.
+func RepairRecommendationContainsFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContainsFold(FieldRepairRecommendation, v))
+}
+
+// OwnerDecisionEQ applies the EQ predicate on the "owner_decision" field.
+func OwnerDecisionEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldOwnerDecision, v))
+}
+
+// OwnerDecisionNEQ applies the NEQ predicate on the "owner_decision" field.
+func OwnerDecisionNEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNEQ(FieldOwnerDecision, v))
+}
+
+// OwnerDecisionIn applies the In predicate on the "owner_decision" field.
+func OwnerDecisionIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldIn(FieldOwnerDecision, vs...))
+}
+
+// OwnerDecisionNotIn applies the NotIn predicate on the "owner_decision" field.
+func OwnerDecisionNotIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotIn(FieldOwnerDecision, vs...))
+}
+
+// OwnerDecisionGT applies the GT predicate on the "owner_decision" field.
+func OwnerDecisionGT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGT(FieldOwnerDecision, v))
+}
+
+// OwnerDecisionGTE applies the GTE predicate on the "owner_decision" field.
+func OwnerDecisionGTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGTE(FieldOwnerDecision, v))
+}
+
+// OwnerDecisionLT applies the LT predicate on the "owner_decision" field.
+func OwnerDecisionLT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLT(FieldOwnerDecision, v))
+}
+
+// OwnerDecisionLTE applies the LTE predicate on the "owner_decision" field.
+func OwnerDecisionLTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLTE(FieldOwnerDecision, v))
+}
+
+// OwnerDecisionContains applies the Contains predicate on the "owner_decision" field.
+func OwnerDecisionContains(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContains(FieldOwnerDecision, v))
+}
+
+// OwnerDecisionHasPrefix applies the HasPrefix predicate on the "owner_decision" field.
+func OwnerDecisionHasPrefix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasPrefix(FieldOwnerDecision, v))
+}
+
+// OwnerDecisionHasSuffix applies the HasSuffix predicate on the "owner_decision" field.
+func OwnerDecisionHasSuffix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasSuffix(FieldOwnerDecision, v))
+}
+
+// OwnerDecisionEqualFold applies the EqualFold predicate on the "owner_decision" field.
+func OwnerDecisionEqualFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEqualFold(FieldOwnerDecision, v))
+}
+
+// OwnerDecisionContainsFold applies the ContainsFold predicate on the "owner_decision" field.
+func OwnerDecisionContainsFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContainsFold(FieldOwnerDecision, v))
+}
+
+// FixStatusEQ applies the EQ predicate on the "fix_status" field.
+func FixStatusEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldFixStatus, v))
+}
+
+// FixStatusNEQ applies the NEQ predicate on the "fix_status" field.
+func FixStatusNEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNEQ(FieldFixStatus, v))
+}
+
+// FixStatusIn applies the In predicate on the "fix_status" field.
+func FixStatusIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldIn(FieldFixStatus, vs...))
+}
+
+// FixStatusNotIn applies the NotIn predicate on the "fix_status" field.
+func FixStatusNotIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotIn(FieldFixStatus, vs...))
+}
+
+// FixStatusGT applies the GT predicate on the "fix_status" field.
+func FixStatusGT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGT(FieldFixStatus, v))
+}
+
+// FixStatusGTE applies the GTE predicate on the "fix_status" field.
+func FixStatusGTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGTE(FieldFixStatus, v))
+}
+
+// FixStatusLT applies the LT predicate on the "fix_status" field.
+func FixStatusLT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLT(FieldFixStatus, v))
+}
+
+// FixStatusLTE applies the LTE predicate on the "fix_status" field.
+func FixStatusLTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLTE(FieldFixStatus, v))
+}
+
+// FixStatusContains applies the Contains predicate on the "fix_status" field.
+func FixStatusContains(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContains(FieldFixStatus, v))
+}
+
+// FixStatusHasPrefix applies the HasPrefix predicate on the "fix_status" field.
+func FixStatusHasPrefix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasPrefix(FieldFixStatus, v))
+}
+
+// FixStatusHasSuffix applies the HasSuffix predicate on the "fix_status" field.
+func FixStatusHasSuffix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasSuffix(FieldFixStatus, v))
+}
+
+// FixStatusEqualFold applies the EqualFold predicate on the "fix_status" field.
+func FixStatusEqualFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEqualFold(FieldFixStatus, v))
+}
+
+// FixStatusContainsFold applies the ContainsFold predicate on the "fix_status" field.
+func FixStatusContainsFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContainsFold(FieldFixStatus, v))
+}
+
+// DuplicateOfIDEQ applies the EQ predicate on the "duplicate_of_id" field.
+func DuplicateOfIDEQ(v int64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldDuplicateOfID, v))
+}
+
+// DuplicateOfIDNEQ applies the NEQ predicate on the "duplicate_of_id" field.
+func DuplicateOfIDNEQ(v int64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNEQ(FieldDuplicateOfID, v))
+}
+
+// DuplicateOfIDIn applies the In predicate on the "duplicate_of_id" field.
+func DuplicateOfIDIn(vs ...int64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldIn(FieldDuplicateOfID, vs...))
+}
+
+// DuplicateOfIDNotIn applies the NotIn predicate on the "duplicate_of_id" field.
+func DuplicateOfIDNotIn(vs ...int64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotIn(FieldDuplicateOfID, vs...))
+}
+
+// DuplicateOfIDGT applies the GT predicate on the "duplicate_of_id" field.
+func DuplicateOfIDGT(v int64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGT(FieldDuplicateOfID, v))
+}
+
+// DuplicateOfIDGTE applies the GTE predicate on the "duplicate_of_id" field.
+func DuplicateOfIDGTE(v int64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGTE(FieldDuplicateOfID, v))
+}
+
+// DuplicateOfIDLT applies the LT predicate on the "duplicate_of_id" field.
+func DuplicateOfIDLT(v int64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLT(FieldDuplicateOfID, v))
+}
+
+// DuplicateOfIDLTE applies the LTE predicate on the "duplicate_of_id" field.
+func DuplicateOfIDLTE(v int64) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLTE(FieldDuplicateOfID, v))
+}
+
+// DuplicateOfIDIsNil applies the IsNil predicate on the "duplicate_of_id" field.
+func DuplicateOfIDIsNil() predicate.Feedback {
+	return predicate.Feedback(sql.FieldIsNull(FieldDuplicateOfID))
+}
+
+// DuplicateOfIDNotNil applies the NotNil predicate on the "duplicate_of_id" field.
+func DuplicateOfIDNotNil() predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotNull(FieldDuplicateOfID))
+}
+
+// ResolvedVersionEQ applies the EQ predicate on the "resolved_version" field.
+func ResolvedVersionEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldResolvedVersion, v))
+}
+
+// ResolvedVersionNEQ applies the NEQ predicate on the "resolved_version" field.
+func ResolvedVersionNEQ(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNEQ(FieldResolvedVersion, v))
+}
+
+// ResolvedVersionIn applies the In predicate on the "resolved_version" field.
+func ResolvedVersionIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldIn(FieldResolvedVersion, vs...))
+}
+
+// ResolvedVersionNotIn applies the NotIn predicate on the "resolved_version" field.
+func ResolvedVersionNotIn(vs ...string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotIn(FieldResolvedVersion, vs...))
+}
+
+// ResolvedVersionGT applies the GT predicate on the "resolved_version" field.
+func ResolvedVersionGT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGT(FieldResolvedVersion, v))
+}
+
+// ResolvedVersionGTE applies the GTE predicate on the "resolved_version" field.
+func ResolvedVersionGTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGTE(FieldResolvedVersion, v))
+}
+
+// ResolvedVersionLT applies the LT predicate on the "resolved_version" field.
+func ResolvedVersionLT(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLT(FieldResolvedVersion, v))
+}
+
+// ResolvedVersionLTE applies the LTE predicate on the "resolved_version" field.
+func ResolvedVersionLTE(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLTE(FieldResolvedVersion, v))
+}
+
+// ResolvedVersionContains applies the Contains predicate on the "resolved_version" field.
+func ResolvedVersionContains(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContains(FieldResolvedVersion, v))
+}
+
+// ResolvedVersionHasPrefix applies the HasPrefix predicate on the "resolved_version" field.
+func ResolvedVersionHasPrefix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasPrefix(FieldResolvedVersion, v))
+}
+
+// ResolvedVersionHasSuffix applies the HasSuffix predicate on the "resolved_version" field.
+func ResolvedVersionHasSuffix(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldHasSuffix(FieldResolvedVersion, v))
+}
+
+// ResolvedVersionEqualFold applies the EqualFold predicate on the "resolved_version" field.
+func ResolvedVersionEqualFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEqualFold(FieldResolvedVersion, v))
+}
+
+// ResolvedVersionContainsFold applies the ContainsFold predicate on the "resolved_version" field.
+func ResolvedVersionContainsFold(v string) predicate.Feedback {
+	return predicate.Feedback(sql.FieldContainsFold(FieldResolvedVersion, v))
 }
 
 // ReplyCountEQ applies the EQ predicate on the "reply_count" field.
@@ -753,6 +1508,156 @@ func LastReplyRoleEqualFold(v string) predicate.Feedback {
 // LastReplyRoleContainsFold applies the ContainsFold predicate on the "last_reply_role" field.
 func LastReplyRoleContainsFold(v string) predicate.Feedback {
 	return predicate.Feedback(sql.FieldContainsFold(FieldLastReplyRole, v))
+}
+
+// AcceptedAtEQ applies the EQ predicate on the "accepted_at" field.
+func AcceptedAtEQ(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldAcceptedAt, v))
+}
+
+// AcceptedAtNEQ applies the NEQ predicate on the "accepted_at" field.
+func AcceptedAtNEQ(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNEQ(FieldAcceptedAt, v))
+}
+
+// AcceptedAtIn applies the In predicate on the "accepted_at" field.
+func AcceptedAtIn(vs ...time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldIn(FieldAcceptedAt, vs...))
+}
+
+// AcceptedAtNotIn applies the NotIn predicate on the "accepted_at" field.
+func AcceptedAtNotIn(vs ...time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotIn(FieldAcceptedAt, vs...))
+}
+
+// AcceptedAtGT applies the GT predicate on the "accepted_at" field.
+func AcceptedAtGT(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGT(FieldAcceptedAt, v))
+}
+
+// AcceptedAtGTE applies the GTE predicate on the "accepted_at" field.
+func AcceptedAtGTE(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGTE(FieldAcceptedAt, v))
+}
+
+// AcceptedAtLT applies the LT predicate on the "accepted_at" field.
+func AcceptedAtLT(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLT(FieldAcceptedAt, v))
+}
+
+// AcceptedAtLTE applies the LTE predicate on the "accepted_at" field.
+func AcceptedAtLTE(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLTE(FieldAcceptedAt, v))
+}
+
+// AcceptedAtIsNil applies the IsNil predicate on the "accepted_at" field.
+func AcceptedAtIsNil() predicate.Feedback {
+	return predicate.Feedback(sql.FieldIsNull(FieldAcceptedAt))
+}
+
+// AcceptedAtNotNil applies the NotNil predicate on the "accepted_at" field.
+func AcceptedAtNotNil() predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotNull(FieldAcceptedAt))
+}
+
+// ResolvedAtEQ applies the EQ predicate on the "resolved_at" field.
+func ResolvedAtEQ(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldResolvedAt, v))
+}
+
+// ResolvedAtNEQ applies the NEQ predicate on the "resolved_at" field.
+func ResolvedAtNEQ(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNEQ(FieldResolvedAt, v))
+}
+
+// ResolvedAtIn applies the In predicate on the "resolved_at" field.
+func ResolvedAtIn(vs ...time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldIn(FieldResolvedAt, vs...))
+}
+
+// ResolvedAtNotIn applies the NotIn predicate on the "resolved_at" field.
+func ResolvedAtNotIn(vs ...time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotIn(FieldResolvedAt, vs...))
+}
+
+// ResolvedAtGT applies the GT predicate on the "resolved_at" field.
+func ResolvedAtGT(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGT(FieldResolvedAt, v))
+}
+
+// ResolvedAtGTE applies the GTE predicate on the "resolved_at" field.
+func ResolvedAtGTE(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGTE(FieldResolvedAt, v))
+}
+
+// ResolvedAtLT applies the LT predicate on the "resolved_at" field.
+func ResolvedAtLT(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLT(FieldResolvedAt, v))
+}
+
+// ResolvedAtLTE applies the LTE predicate on the "resolved_at" field.
+func ResolvedAtLTE(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLTE(FieldResolvedAt, v))
+}
+
+// ResolvedAtIsNil applies the IsNil predicate on the "resolved_at" field.
+func ResolvedAtIsNil() predicate.Feedback {
+	return predicate.Feedback(sql.FieldIsNull(FieldResolvedAt))
+}
+
+// ResolvedAtNotNil applies the NotNil predicate on the "resolved_at" field.
+func ResolvedAtNotNil() predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotNull(FieldResolvedAt))
+}
+
+// VerifiedAtEQ applies the EQ predicate on the "verified_at" field.
+func VerifiedAtEQ(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldEQ(FieldVerifiedAt, v))
+}
+
+// VerifiedAtNEQ applies the NEQ predicate on the "verified_at" field.
+func VerifiedAtNEQ(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNEQ(FieldVerifiedAt, v))
+}
+
+// VerifiedAtIn applies the In predicate on the "verified_at" field.
+func VerifiedAtIn(vs ...time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldIn(FieldVerifiedAt, vs...))
+}
+
+// VerifiedAtNotIn applies the NotIn predicate on the "verified_at" field.
+func VerifiedAtNotIn(vs ...time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotIn(FieldVerifiedAt, vs...))
+}
+
+// VerifiedAtGT applies the GT predicate on the "verified_at" field.
+func VerifiedAtGT(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGT(FieldVerifiedAt, v))
+}
+
+// VerifiedAtGTE applies the GTE predicate on the "verified_at" field.
+func VerifiedAtGTE(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldGTE(FieldVerifiedAt, v))
+}
+
+// VerifiedAtLT applies the LT predicate on the "verified_at" field.
+func VerifiedAtLT(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLT(FieldVerifiedAt, v))
+}
+
+// VerifiedAtLTE applies the LTE predicate on the "verified_at" field.
+func VerifiedAtLTE(v time.Time) predicate.Feedback {
+	return predicate.Feedback(sql.FieldLTE(FieldVerifiedAt, v))
+}
+
+// VerifiedAtIsNil applies the IsNil predicate on the "verified_at" field.
+func VerifiedAtIsNil() predicate.Feedback {
+	return predicate.Feedback(sql.FieldIsNull(FieldVerifiedAt))
+}
+
+// VerifiedAtNotNil applies the NotNil predicate on the "verified_at" field.
+func VerifiedAtNotNil() predicate.Feedback {
+	return predicate.Feedback(sql.FieldNotNull(FieldVerifiedAt))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

@@ -598,7 +598,7 @@ var ProviderSet = wire.NewSet(
 	NewFinanceTransactionService,
 	NewFeedbackService,
 	NewFeedbackImageStorage,
-	wire.Bind(new(FeedbackImageStorage), new(*DisabledFeedbackImageStorage)),
+	wire.Bind(new(FeedbackImageStorage), new(*S3FeedbackImageStorage)),
 	NewGPTImageS3Storage,
 	NewFinanceReceiptS3Storage,
 	ProvideGPTImageTaskSettlementService,

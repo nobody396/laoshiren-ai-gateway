@@ -10,7 +10,7 @@
 
       <template v-else>
         <!-- Closed feedback: show hint instead of form -->
-        <div v-if="detail.status === 'closed'" class="card space-y-4 p-6">
+		<div v-if="detail.status === 'closed' || (detail.triage_status && detail.triage_status !== 'unreviewed')" class="card space-y-4 p-6">
           <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('feedback.edit.title') }}</h1>
           <p class="text-sm text-gray-500 dark:text-dark-400">{{ t('feedback.edit.closedHint') }}</p>
           <div class="flex justify-end">
@@ -41,6 +41,10 @@
               <label class="input-label">{{ t('feedback.form.titleLabel') }}</label>
               <input v-model="form.title" class="input" :maxlength="200" required />
             </div>
+			<div>
+			  <label class="input-label">{{ t('feedback.form.requestId') }}</label>
+			  <input v-model="form.requestId" class="input" :maxlength="128" :placeholder="t('feedback.form.requestIdPlaceholder')" />
+			</div>
 
             <div>
               <label class="input-label">{{ t('feedback.form.content') }}</label>
@@ -107,6 +111,7 @@ const form = reactive({
   content: '',
   images: [] as string[],
   contact: '',
+	requestId: '',
 })
 
 const categoryOptions = computed(() =>
@@ -138,6 +143,7 @@ async function loadDetail() {
     form.content = data.content
     form.images = data.images ?? []
     form.contact = data.contact ?? ''
+	form.requestId = data.request_id ?? ''
   } catch {
     appStore.showError(t('feedback.message.detailFailed'))
   } finally {
@@ -154,6 +160,7 @@ async function handleSubmit() {
       content: form.content,
       images: form.images,
       contact: form.contact || undefined,
+	  ...(form.requestId ? { request_id: form.requestId } : {}),
     })
     appStore.showSuccess(t('feedback.message.updated'))
     await router.push(`/feedbacks/${route.params.id}`)

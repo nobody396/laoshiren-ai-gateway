@@ -139,6 +139,20 @@ func (_u *FeedbackUpdate) SetNillableContact(v *string) *FeedbackUpdate {
 	return _u
 }
 
+// SetRequestID sets the "request_id" field.
+func (_u *FeedbackUpdate) SetRequestID(v string) *FeedbackUpdate {
+	_u.mutation.SetRequestID(v)
+	return _u
+}
+
+// SetNillableRequestID sets the "request_id" field if the given value is not nil.
+func (_u *FeedbackUpdate) SetNillableRequestID(v *string) *FeedbackUpdate {
+	if v != nil {
+		_u.SetRequestID(*v)
+	}
+	return _u
+}
+
 // SetPriority sets the "priority" field.
 func (_u *FeedbackUpdate) SetPriority(v string) *FeedbackUpdate {
 	_u.mutation.SetPriority(v)
@@ -163,6 +177,172 @@ func (_u *FeedbackUpdate) SetStatus(v string) *FeedbackUpdate {
 func (_u *FeedbackUpdate) SetNillableStatus(v *string) *FeedbackUpdate {
 	if v != nil {
 		_u.SetStatus(*v)
+	}
+	return _u
+}
+
+// SetTriageStatus sets the "triage_status" field.
+func (_u *FeedbackUpdate) SetTriageStatus(v string) *FeedbackUpdate {
+	_u.mutation.SetTriageStatus(v)
+	return _u
+}
+
+// SetNillableTriageStatus sets the "triage_status" field if the given value is not nil.
+func (_u *FeedbackUpdate) SetNillableTriageStatus(v *string) *FeedbackUpdate {
+	if v != nil {
+		_u.SetTriageStatus(*v)
+	}
+	return _u
+}
+
+// SetTriagePriority sets the "triage_priority" field.
+func (_u *FeedbackUpdate) SetTriagePriority(v string) *FeedbackUpdate {
+	_u.mutation.SetTriagePriority(v)
+	return _u
+}
+
+// SetNillableTriagePriority sets the "triage_priority" field if the given value is not nil.
+func (_u *FeedbackUpdate) SetNillableTriagePriority(v *string) *FeedbackUpdate {
+	if v != nil {
+		_u.SetTriagePriority(*v)
+	}
+	return _u
+}
+
+// SetTriageSummary sets the "triage_summary" field.
+func (_u *FeedbackUpdate) SetTriageSummary(v string) *FeedbackUpdate {
+	_u.mutation.SetTriageSummary(v)
+	return _u
+}
+
+// SetNillableTriageSummary sets the "triage_summary" field if the given value is not nil.
+func (_u *FeedbackUpdate) SetNillableTriageSummary(v *string) *FeedbackUpdate {
+	if v != nil {
+		_u.SetTriageSummary(*v)
+	}
+	return _u
+}
+
+// SetTriageConfidence sets the "triage_confidence" field.
+func (_u *FeedbackUpdate) SetTriageConfidence(v float64) *FeedbackUpdate {
+	_u.mutation.ResetTriageConfidence()
+	_u.mutation.SetTriageConfidence(v)
+	return _u
+}
+
+// SetNillableTriageConfidence sets the "triage_confidence" field if the given value is not nil.
+func (_u *FeedbackUpdate) SetNillableTriageConfidence(v *float64) *FeedbackUpdate {
+	if v != nil {
+		_u.SetTriageConfidence(*v)
+	}
+	return _u
+}
+
+// AddTriageConfidence adds value to the "triage_confidence" field.
+func (_u *FeedbackUpdate) AddTriageConfidence(v float64) *FeedbackUpdate {
+	_u.mutation.AddTriageConfidence(v)
+	return _u
+}
+
+// ClearTriageConfidence clears the value of the "triage_confidence" field.
+func (_u *FeedbackUpdate) ClearTriageConfidence() *FeedbackUpdate {
+	_u.mutation.ClearTriageConfidence()
+	return _u
+}
+
+// SetRepairDifficulty sets the "repair_difficulty" field.
+func (_u *FeedbackUpdate) SetRepairDifficulty(v string) *FeedbackUpdate {
+	_u.mutation.SetRepairDifficulty(v)
+	return _u
+}
+
+// SetNillableRepairDifficulty sets the "repair_difficulty" field if the given value is not nil.
+func (_u *FeedbackUpdate) SetNillableRepairDifficulty(v *string) *FeedbackUpdate {
+	if v != nil {
+		_u.SetRepairDifficulty(*v)
+	}
+	return _u
+}
+
+// SetRepairRecommendation sets the "repair_recommendation" field.
+func (_u *FeedbackUpdate) SetRepairRecommendation(v string) *FeedbackUpdate {
+	_u.mutation.SetRepairRecommendation(v)
+	return _u
+}
+
+// SetNillableRepairRecommendation sets the "repair_recommendation" field if the given value is not nil.
+func (_u *FeedbackUpdate) SetNillableRepairRecommendation(v *string) *FeedbackUpdate {
+	if v != nil {
+		_u.SetRepairRecommendation(*v)
+	}
+	return _u
+}
+
+// SetOwnerDecision sets the "owner_decision" field.
+func (_u *FeedbackUpdate) SetOwnerDecision(v string) *FeedbackUpdate {
+	_u.mutation.SetOwnerDecision(v)
+	return _u
+}
+
+// SetNillableOwnerDecision sets the "owner_decision" field if the given value is not nil.
+func (_u *FeedbackUpdate) SetNillableOwnerDecision(v *string) *FeedbackUpdate {
+	if v != nil {
+		_u.SetOwnerDecision(*v)
+	}
+	return _u
+}
+
+// SetFixStatus sets the "fix_status" field.
+func (_u *FeedbackUpdate) SetFixStatus(v string) *FeedbackUpdate {
+	_u.mutation.SetFixStatus(v)
+	return _u
+}
+
+// SetNillableFixStatus sets the "fix_status" field if the given value is not nil.
+func (_u *FeedbackUpdate) SetNillableFixStatus(v *string) *FeedbackUpdate {
+	if v != nil {
+		_u.SetFixStatus(*v)
+	}
+	return _u
+}
+
+// SetDuplicateOfID sets the "duplicate_of_id" field.
+func (_u *FeedbackUpdate) SetDuplicateOfID(v int64) *FeedbackUpdate {
+	_u.mutation.ResetDuplicateOfID()
+	_u.mutation.SetDuplicateOfID(v)
+	return _u
+}
+
+// SetNillableDuplicateOfID sets the "duplicate_of_id" field if the given value is not nil.
+func (_u *FeedbackUpdate) SetNillableDuplicateOfID(v *int64) *FeedbackUpdate {
+	if v != nil {
+		_u.SetDuplicateOfID(*v)
+	}
+	return _u
+}
+
+// AddDuplicateOfID adds value to the "duplicate_of_id" field.
+func (_u *FeedbackUpdate) AddDuplicateOfID(v int64) *FeedbackUpdate {
+	_u.mutation.AddDuplicateOfID(v)
+	return _u
+}
+
+// ClearDuplicateOfID clears the value of the "duplicate_of_id" field.
+func (_u *FeedbackUpdate) ClearDuplicateOfID() *FeedbackUpdate {
+	_u.mutation.ClearDuplicateOfID()
+	return _u
+}
+
+// SetResolvedVersion sets the "resolved_version" field.
+func (_u *FeedbackUpdate) SetResolvedVersion(v string) *FeedbackUpdate {
+	_u.mutation.SetResolvedVersion(v)
+	return _u
+}
+
+// SetNillableResolvedVersion sets the "resolved_version" field if the given value is not nil.
+func (_u *FeedbackUpdate) SetNillableResolvedVersion(v *string) *FeedbackUpdate {
+	if v != nil {
+		_u.SetResolvedVersion(*v)
 	}
 	return _u
 }
@@ -225,6 +405,66 @@ func (_u *FeedbackUpdate) SetNillableLastReplyRole(v *string) *FeedbackUpdate {
 // ClearLastReplyRole clears the value of the "last_reply_role" field.
 func (_u *FeedbackUpdate) ClearLastReplyRole() *FeedbackUpdate {
 	_u.mutation.ClearLastReplyRole()
+	return _u
+}
+
+// SetAcceptedAt sets the "accepted_at" field.
+func (_u *FeedbackUpdate) SetAcceptedAt(v time.Time) *FeedbackUpdate {
+	_u.mutation.SetAcceptedAt(v)
+	return _u
+}
+
+// SetNillableAcceptedAt sets the "accepted_at" field if the given value is not nil.
+func (_u *FeedbackUpdate) SetNillableAcceptedAt(v *time.Time) *FeedbackUpdate {
+	if v != nil {
+		_u.SetAcceptedAt(*v)
+	}
+	return _u
+}
+
+// ClearAcceptedAt clears the value of the "accepted_at" field.
+func (_u *FeedbackUpdate) ClearAcceptedAt() *FeedbackUpdate {
+	_u.mutation.ClearAcceptedAt()
+	return _u
+}
+
+// SetResolvedAt sets the "resolved_at" field.
+func (_u *FeedbackUpdate) SetResolvedAt(v time.Time) *FeedbackUpdate {
+	_u.mutation.SetResolvedAt(v)
+	return _u
+}
+
+// SetNillableResolvedAt sets the "resolved_at" field if the given value is not nil.
+func (_u *FeedbackUpdate) SetNillableResolvedAt(v *time.Time) *FeedbackUpdate {
+	if v != nil {
+		_u.SetResolvedAt(*v)
+	}
+	return _u
+}
+
+// ClearResolvedAt clears the value of the "resolved_at" field.
+func (_u *FeedbackUpdate) ClearResolvedAt() *FeedbackUpdate {
+	_u.mutation.ClearResolvedAt()
+	return _u
+}
+
+// SetVerifiedAt sets the "verified_at" field.
+func (_u *FeedbackUpdate) SetVerifiedAt(v time.Time) *FeedbackUpdate {
+	_u.mutation.SetVerifiedAt(v)
+	return _u
+}
+
+// SetNillableVerifiedAt sets the "verified_at" field if the given value is not nil.
+func (_u *FeedbackUpdate) SetNillableVerifiedAt(v *time.Time) *FeedbackUpdate {
+	if v != nil {
+		_u.SetVerifiedAt(*v)
+	}
+	return _u
+}
+
+// ClearVerifiedAt clears the value of the "verified_at" field.
+func (_u *FeedbackUpdate) ClearVerifiedAt() *FeedbackUpdate {
+	_u.mutation.ClearVerifiedAt()
 	return _u
 }
 
@@ -350,6 +590,11 @@ func (_u *FeedbackUpdate) check() error {
 			return &ValidationError{Name: "contact", err: fmt.Errorf(`ent: validator failed for field "Feedback.contact": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.RequestID(); ok {
+		if err := feedback.RequestIDValidator(v); err != nil {
+			return &ValidationError{Name: "request_id", err: fmt.Errorf(`ent: validator failed for field "Feedback.request_id": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Priority(); ok {
 		if err := feedback.PriorityValidator(v); err != nil {
 			return &ValidationError{Name: "priority", err: fmt.Errorf(`ent: validator failed for field "Feedback.priority": %w`, err)}
@@ -358,6 +603,36 @@ func (_u *FeedbackUpdate) check() error {
 	if v, ok := _u.mutation.Status(); ok {
 		if err := feedback.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Feedback.status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.TriageStatus(); ok {
+		if err := feedback.TriageStatusValidator(v); err != nil {
+			return &ValidationError{Name: "triage_status", err: fmt.Errorf(`ent: validator failed for field "Feedback.triage_status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.TriagePriority(); ok {
+		if err := feedback.TriagePriorityValidator(v); err != nil {
+			return &ValidationError{Name: "triage_priority", err: fmt.Errorf(`ent: validator failed for field "Feedback.triage_priority": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.RepairDifficulty(); ok {
+		if err := feedback.RepairDifficultyValidator(v); err != nil {
+			return &ValidationError{Name: "repair_difficulty", err: fmt.Errorf(`ent: validator failed for field "Feedback.repair_difficulty": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.OwnerDecision(); ok {
+		if err := feedback.OwnerDecisionValidator(v); err != nil {
+			return &ValidationError{Name: "owner_decision", err: fmt.Errorf(`ent: validator failed for field "Feedback.owner_decision": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.FixStatus(); ok {
+		if err := feedback.FixStatusValidator(v); err != nil {
+			return &ValidationError{Name: "fix_status", err: fmt.Errorf(`ent: validator failed for field "Feedback.fix_status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ResolvedVersion(); ok {
+		if err := feedback.ResolvedVersionValidator(v); err != nil {
+			return &ValidationError{Name: "resolved_version", err: fmt.Errorf(`ent: validator failed for field "Feedback.resolved_version": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.LastReplyRole(); ok {
@@ -412,11 +687,56 @@ func (_u *FeedbackUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Contact(); ok {
 		_spec.SetField(feedback.FieldContact, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.RequestID(); ok {
+		_spec.SetField(feedback.FieldRequestID, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Priority(); ok {
 		_spec.SetField(feedback.FieldPriority, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(feedback.FieldStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TriageStatus(); ok {
+		_spec.SetField(feedback.FieldTriageStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TriagePriority(); ok {
+		_spec.SetField(feedback.FieldTriagePriority, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TriageSummary(); ok {
+		_spec.SetField(feedback.FieldTriageSummary, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TriageConfidence(); ok {
+		_spec.SetField(feedback.FieldTriageConfidence, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedTriageConfidence(); ok {
+		_spec.AddField(feedback.FieldTriageConfidence, field.TypeFloat64, value)
+	}
+	if _u.mutation.TriageConfidenceCleared() {
+		_spec.ClearField(feedback.FieldTriageConfidence, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.RepairDifficulty(); ok {
+		_spec.SetField(feedback.FieldRepairDifficulty, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.RepairRecommendation(); ok {
+		_spec.SetField(feedback.FieldRepairRecommendation, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.OwnerDecision(); ok {
+		_spec.SetField(feedback.FieldOwnerDecision, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.FixStatus(); ok {
+		_spec.SetField(feedback.FieldFixStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.DuplicateOfID(); ok {
+		_spec.SetField(feedback.FieldDuplicateOfID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedDuplicateOfID(); ok {
+		_spec.AddField(feedback.FieldDuplicateOfID, field.TypeInt64, value)
+	}
+	if _u.mutation.DuplicateOfIDCleared() {
+		_spec.ClearField(feedback.FieldDuplicateOfID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.ResolvedVersion(); ok {
+		_spec.SetField(feedback.FieldResolvedVersion, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.ReplyCount(); ok {
 		_spec.SetField(feedback.FieldReplyCount, field.TypeInt, value)
@@ -435,6 +755,24 @@ func (_u *FeedbackUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.LastReplyRoleCleared() {
 		_spec.ClearField(feedback.FieldLastReplyRole, field.TypeString)
+	}
+	if value, ok := _u.mutation.AcceptedAt(); ok {
+		_spec.SetField(feedback.FieldAcceptedAt, field.TypeTime, value)
+	}
+	if _u.mutation.AcceptedAtCleared() {
+		_spec.ClearField(feedback.FieldAcceptedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.ResolvedAt(); ok {
+		_spec.SetField(feedback.FieldResolvedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ResolvedAtCleared() {
+		_spec.ClearField(feedback.FieldResolvedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.VerifiedAt(); ok {
+		_spec.SetField(feedback.FieldVerifiedAt, field.TypeTime, value)
+	}
+	if _u.mutation.VerifiedAtCleared() {
+		_spec.ClearField(feedback.FieldVerifiedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(feedback.FieldUpdatedAt, field.TypeTime, value)
@@ -641,6 +979,20 @@ func (_u *FeedbackUpdateOne) SetNillableContact(v *string) *FeedbackUpdateOne {
 	return _u
 }
 
+// SetRequestID sets the "request_id" field.
+func (_u *FeedbackUpdateOne) SetRequestID(v string) *FeedbackUpdateOne {
+	_u.mutation.SetRequestID(v)
+	return _u
+}
+
+// SetNillableRequestID sets the "request_id" field if the given value is not nil.
+func (_u *FeedbackUpdateOne) SetNillableRequestID(v *string) *FeedbackUpdateOne {
+	if v != nil {
+		_u.SetRequestID(*v)
+	}
+	return _u
+}
+
 // SetPriority sets the "priority" field.
 func (_u *FeedbackUpdateOne) SetPriority(v string) *FeedbackUpdateOne {
 	_u.mutation.SetPriority(v)
@@ -665,6 +1017,172 @@ func (_u *FeedbackUpdateOne) SetStatus(v string) *FeedbackUpdateOne {
 func (_u *FeedbackUpdateOne) SetNillableStatus(v *string) *FeedbackUpdateOne {
 	if v != nil {
 		_u.SetStatus(*v)
+	}
+	return _u
+}
+
+// SetTriageStatus sets the "triage_status" field.
+func (_u *FeedbackUpdateOne) SetTriageStatus(v string) *FeedbackUpdateOne {
+	_u.mutation.SetTriageStatus(v)
+	return _u
+}
+
+// SetNillableTriageStatus sets the "triage_status" field if the given value is not nil.
+func (_u *FeedbackUpdateOne) SetNillableTriageStatus(v *string) *FeedbackUpdateOne {
+	if v != nil {
+		_u.SetTriageStatus(*v)
+	}
+	return _u
+}
+
+// SetTriagePriority sets the "triage_priority" field.
+func (_u *FeedbackUpdateOne) SetTriagePriority(v string) *FeedbackUpdateOne {
+	_u.mutation.SetTriagePriority(v)
+	return _u
+}
+
+// SetNillableTriagePriority sets the "triage_priority" field if the given value is not nil.
+func (_u *FeedbackUpdateOne) SetNillableTriagePriority(v *string) *FeedbackUpdateOne {
+	if v != nil {
+		_u.SetTriagePriority(*v)
+	}
+	return _u
+}
+
+// SetTriageSummary sets the "triage_summary" field.
+func (_u *FeedbackUpdateOne) SetTriageSummary(v string) *FeedbackUpdateOne {
+	_u.mutation.SetTriageSummary(v)
+	return _u
+}
+
+// SetNillableTriageSummary sets the "triage_summary" field if the given value is not nil.
+func (_u *FeedbackUpdateOne) SetNillableTriageSummary(v *string) *FeedbackUpdateOne {
+	if v != nil {
+		_u.SetTriageSummary(*v)
+	}
+	return _u
+}
+
+// SetTriageConfidence sets the "triage_confidence" field.
+func (_u *FeedbackUpdateOne) SetTriageConfidence(v float64) *FeedbackUpdateOne {
+	_u.mutation.ResetTriageConfidence()
+	_u.mutation.SetTriageConfidence(v)
+	return _u
+}
+
+// SetNillableTriageConfidence sets the "triage_confidence" field if the given value is not nil.
+func (_u *FeedbackUpdateOne) SetNillableTriageConfidence(v *float64) *FeedbackUpdateOne {
+	if v != nil {
+		_u.SetTriageConfidence(*v)
+	}
+	return _u
+}
+
+// AddTriageConfidence adds value to the "triage_confidence" field.
+func (_u *FeedbackUpdateOne) AddTriageConfidence(v float64) *FeedbackUpdateOne {
+	_u.mutation.AddTriageConfidence(v)
+	return _u
+}
+
+// ClearTriageConfidence clears the value of the "triage_confidence" field.
+func (_u *FeedbackUpdateOne) ClearTriageConfidence() *FeedbackUpdateOne {
+	_u.mutation.ClearTriageConfidence()
+	return _u
+}
+
+// SetRepairDifficulty sets the "repair_difficulty" field.
+func (_u *FeedbackUpdateOne) SetRepairDifficulty(v string) *FeedbackUpdateOne {
+	_u.mutation.SetRepairDifficulty(v)
+	return _u
+}
+
+// SetNillableRepairDifficulty sets the "repair_difficulty" field if the given value is not nil.
+func (_u *FeedbackUpdateOne) SetNillableRepairDifficulty(v *string) *FeedbackUpdateOne {
+	if v != nil {
+		_u.SetRepairDifficulty(*v)
+	}
+	return _u
+}
+
+// SetRepairRecommendation sets the "repair_recommendation" field.
+func (_u *FeedbackUpdateOne) SetRepairRecommendation(v string) *FeedbackUpdateOne {
+	_u.mutation.SetRepairRecommendation(v)
+	return _u
+}
+
+// SetNillableRepairRecommendation sets the "repair_recommendation" field if the given value is not nil.
+func (_u *FeedbackUpdateOne) SetNillableRepairRecommendation(v *string) *FeedbackUpdateOne {
+	if v != nil {
+		_u.SetRepairRecommendation(*v)
+	}
+	return _u
+}
+
+// SetOwnerDecision sets the "owner_decision" field.
+func (_u *FeedbackUpdateOne) SetOwnerDecision(v string) *FeedbackUpdateOne {
+	_u.mutation.SetOwnerDecision(v)
+	return _u
+}
+
+// SetNillableOwnerDecision sets the "owner_decision" field if the given value is not nil.
+func (_u *FeedbackUpdateOne) SetNillableOwnerDecision(v *string) *FeedbackUpdateOne {
+	if v != nil {
+		_u.SetOwnerDecision(*v)
+	}
+	return _u
+}
+
+// SetFixStatus sets the "fix_status" field.
+func (_u *FeedbackUpdateOne) SetFixStatus(v string) *FeedbackUpdateOne {
+	_u.mutation.SetFixStatus(v)
+	return _u
+}
+
+// SetNillableFixStatus sets the "fix_status" field if the given value is not nil.
+func (_u *FeedbackUpdateOne) SetNillableFixStatus(v *string) *FeedbackUpdateOne {
+	if v != nil {
+		_u.SetFixStatus(*v)
+	}
+	return _u
+}
+
+// SetDuplicateOfID sets the "duplicate_of_id" field.
+func (_u *FeedbackUpdateOne) SetDuplicateOfID(v int64) *FeedbackUpdateOne {
+	_u.mutation.ResetDuplicateOfID()
+	_u.mutation.SetDuplicateOfID(v)
+	return _u
+}
+
+// SetNillableDuplicateOfID sets the "duplicate_of_id" field if the given value is not nil.
+func (_u *FeedbackUpdateOne) SetNillableDuplicateOfID(v *int64) *FeedbackUpdateOne {
+	if v != nil {
+		_u.SetDuplicateOfID(*v)
+	}
+	return _u
+}
+
+// AddDuplicateOfID adds value to the "duplicate_of_id" field.
+func (_u *FeedbackUpdateOne) AddDuplicateOfID(v int64) *FeedbackUpdateOne {
+	_u.mutation.AddDuplicateOfID(v)
+	return _u
+}
+
+// ClearDuplicateOfID clears the value of the "duplicate_of_id" field.
+func (_u *FeedbackUpdateOne) ClearDuplicateOfID() *FeedbackUpdateOne {
+	_u.mutation.ClearDuplicateOfID()
+	return _u
+}
+
+// SetResolvedVersion sets the "resolved_version" field.
+func (_u *FeedbackUpdateOne) SetResolvedVersion(v string) *FeedbackUpdateOne {
+	_u.mutation.SetResolvedVersion(v)
+	return _u
+}
+
+// SetNillableResolvedVersion sets the "resolved_version" field if the given value is not nil.
+func (_u *FeedbackUpdateOne) SetNillableResolvedVersion(v *string) *FeedbackUpdateOne {
+	if v != nil {
+		_u.SetResolvedVersion(*v)
 	}
 	return _u
 }
@@ -727,6 +1245,66 @@ func (_u *FeedbackUpdateOne) SetNillableLastReplyRole(v *string) *FeedbackUpdate
 // ClearLastReplyRole clears the value of the "last_reply_role" field.
 func (_u *FeedbackUpdateOne) ClearLastReplyRole() *FeedbackUpdateOne {
 	_u.mutation.ClearLastReplyRole()
+	return _u
+}
+
+// SetAcceptedAt sets the "accepted_at" field.
+func (_u *FeedbackUpdateOne) SetAcceptedAt(v time.Time) *FeedbackUpdateOne {
+	_u.mutation.SetAcceptedAt(v)
+	return _u
+}
+
+// SetNillableAcceptedAt sets the "accepted_at" field if the given value is not nil.
+func (_u *FeedbackUpdateOne) SetNillableAcceptedAt(v *time.Time) *FeedbackUpdateOne {
+	if v != nil {
+		_u.SetAcceptedAt(*v)
+	}
+	return _u
+}
+
+// ClearAcceptedAt clears the value of the "accepted_at" field.
+func (_u *FeedbackUpdateOne) ClearAcceptedAt() *FeedbackUpdateOne {
+	_u.mutation.ClearAcceptedAt()
+	return _u
+}
+
+// SetResolvedAt sets the "resolved_at" field.
+func (_u *FeedbackUpdateOne) SetResolvedAt(v time.Time) *FeedbackUpdateOne {
+	_u.mutation.SetResolvedAt(v)
+	return _u
+}
+
+// SetNillableResolvedAt sets the "resolved_at" field if the given value is not nil.
+func (_u *FeedbackUpdateOne) SetNillableResolvedAt(v *time.Time) *FeedbackUpdateOne {
+	if v != nil {
+		_u.SetResolvedAt(*v)
+	}
+	return _u
+}
+
+// ClearResolvedAt clears the value of the "resolved_at" field.
+func (_u *FeedbackUpdateOne) ClearResolvedAt() *FeedbackUpdateOne {
+	_u.mutation.ClearResolvedAt()
+	return _u
+}
+
+// SetVerifiedAt sets the "verified_at" field.
+func (_u *FeedbackUpdateOne) SetVerifiedAt(v time.Time) *FeedbackUpdateOne {
+	_u.mutation.SetVerifiedAt(v)
+	return _u
+}
+
+// SetNillableVerifiedAt sets the "verified_at" field if the given value is not nil.
+func (_u *FeedbackUpdateOne) SetNillableVerifiedAt(v *time.Time) *FeedbackUpdateOne {
+	if v != nil {
+		_u.SetVerifiedAt(*v)
+	}
+	return _u
+}
+
+// ClearVerifiedAt clears the value of the "verified_at" field.
+func (_u *FeedbackUpdateOne) ClearVerifiedAt() *FeedbackUpdateOne {
+	_u.mutation.ClearVerifiedAt()
 	return _u
 }
 
@@ -865,6 +1443,11 @@ func (_u *FeedbackUpdateOne) check() error {
 			return &ValidationError{Name: "contact", err: fmt.Errorf(`ent: validator failed for field "Feedback.contact": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.RequestID(); ok {
+		if err := feedback.RequestIDValidator(v); err != nil {
+			return &ValidationError{Name: "request_id", err: fmt.Errorf(`ent: validator failed for field "Feedback.request_id": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Priority(); ok {
 		if err := feedback.PriorityValidator(v); err != nil {
 			return &ValidationError{Name: "priority", err: fmt.Errorf(`ent: validator failed for field "Feedback.priority": %w`, err)}
@@ -873,6 +1456,36 @@ func (_u *FeedbackUpdateOne) check() error {
 	if v, ok := _u.mutation.Status(); ok {
 		if err := feedback.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Feedback.status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.TriageStatus(); ok {
+		if err := feedback.TriageStatusValidator(v); err != nil {
+			return &ValidationError{Name: "triage_status", err: fmt.Errorf(`ent: validator failed for field "Feedback.triage_status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.TriagePriority(); ok {
+		if err := feedback.TriagePriorityValidator(v); err != nil {
+			return &ValidationError{Name: "triage_priority", err: fmt.Errorf(`ent: validator failed for field "Feedback.triage_priority": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.RepairDifficulty(); ok {
+		if err := feedback.RepairDifficultyValidator(v); err != nil {
+			return &ValidationError{Name: "repair_difficulty", err: fmt.Errorf(`ent: validator failed for field "Feedback.repair_difficulty": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.OwnerDecision(); ok {
+		if err := feedback.OwnerDecisionValidator(v); err != nil {
+			return &ValidationError{Name: "owner_decision", err: fmt.Errorf(`ent: validator failed for field "Feedback.owner_decision": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.FixStatus(); ok {
+		if err := feedback.FixStatusValidator(v); err != nil {
+			return &ValidationError{Name: "fix_status", err: fmt.Errorf(`ent: validator failed for field "Feedback.fix_status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ResolvedVersion(); ok {
+		if err := feedback.ResolvedVersionValidator(v); err != nil {
+			return &ValidationError{Name: "resolved_version", err: fmt.Errorf(`ent: validator failed for field "Feedback.resolved_version": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.LastReplyRole(); ok {
@@ -944,11 +1557,56 @@ func (_u *FeedbackUpdateOne) sqlSave(ctx context.Context) (_node *Feedback, err 
 	if value, ok := _u.mutation.Contact(); ok {
 		_spec.SetField(feedback.FieldContact, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.RequestID(); ok {
+		_spec.SetField(feedback.FieldRequestID, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Priority(); ok {
 		_spec.SetField(feedback.FieldPriority, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(feedback.FieldStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TriageStatus(); ok {
+		_spec.SetField(feedback.FieldTriageStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TriagePriority(); ok {
+		_spec.SetField(feedback.FieldTriagePriority, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TriageSummary(); ok {
+		_spec.SetField(feedback.FieldTriageSummary, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TriageConfidence(); ok {
+		_spec.SetField(feedback.FieldTriageConfidence, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedTriageConfidence(); ok {
+		_spec.AddField(feedback.FieldTriageConfidence, field.TypeFloat64, value)
+	}
+	if _u.mutation.TriageConfidenceCleared() {
+		_spec.ClearField(feedback.FieldTriageConfidence, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.RepairDifficulty(); ok {
+		_spec.SetField(feedback.FieldRepairDifficulty, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.RepairRecommendation(); ok {
+		_spec.SetField(feedback.FieldRepairRecommendation, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.OwnerDecision(); ok {
+		_spec.SetField(feedback.FieldOwnerDecision, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.FixStatus(); ok {
+		_spec.SetField(feedback.FieldFixStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.DuplicateOfID(); ok {
+		_spec.SetField(feedback.FieldDuplicateOfID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedDuplicateOfID(); ok {
+		_spec.AddField(feedback.FieldDuplicateOfID, field.TypeInt64, value)
+	}
+	if _u.mutation.DuplicateOfIDCleared() {
+		_spec.ClearField(feedback.FieldDuplicateOfID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.ResolvedVersion(); ok {
+		_spec.SetField(feedback.FieldResolvedVersion, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.ReplyCount(); ok {
 		_spec.SetField(feedback.FieldReplyCount, field.TypeInt, value)
@@ -967,6 +1625,24 @@ func (_u *FeedbackUpdateOne) sqlSave(ctx context.Context) (_node *Feedback, err 
 	}
 	if _u.mutation.LastReplyRoleCleared() {
 		_spec.ClearField(feedback.FieldLastReplyRole, field.TypeString)
+	}
+	if value, ok := _u.mutation.AcceptedAt(); ok {
+		_spec.SetField(feedback.FieldAcceptedAt, field.TypeTime, value)
+	}
+	if _u.mutation.AcceptedAtCleared() {
+		_spec.ClearField(feedback.FieldAcceptedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.ResolvedAt(); ok {
+		_spec.SetField(feedback.FieldResolvedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ResolvedAtCleared() {
+		_spec.ClearField(feedback.FieldResolvedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.VerifiedAt(); ok {
+		_spec.SetField(feedback.FieldVerifiedAt, field.TypeTime, value)
+	}
+	if _u.mutation.VerifiedAtCleared() {
+		_spec.ClearField(feedback.FieldVerifiedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(feedback.FieldUpdatedAt, field.TypeTime, value)

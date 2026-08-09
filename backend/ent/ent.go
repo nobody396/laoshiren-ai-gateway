@@ -28,7 +28,9 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/commissionrecord"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/errorpassthroughrule"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedback"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackevent"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackreply"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/feedbackreward"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/financetransaction"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/group"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/idempotencyrecord"
@@ -51,6 +53,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/userallowedgroup"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/userattributedefinition"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/userattributevalue"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/usernotification"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/usersubscription"
 )
 
@@ -128,7 +131,9 @@ func checkColumn(t, c string) error {
 			commissionrecord.Table:        commissionrecord.ValidColumn,
 			errorpassthroughrule.Table:    errorpassthroughrule.ValidColumn,
 			feedback.Table:                feedback.ValidColumn,
+			feedbackevent.Table:           feedbackevent.ValidColumn,
 			feedbackreply.Table:           feedbackreply.ValidColumn,
+			feedbackreward.Table:          feedbackreward.ValidColumn,
 			financetransaction.Table:      financetransaction.ValidColumn,
 			group.Table:                   group.ValidColumn,
 			idempotencyrecord.Table:       idempotencyrecord.ValidColumn,
@@ -151,6 +156,7 @@ func checkColumn(t, c string) error {
 			userallowedgroup.Table:        userallowedgroup.ValidColumn,
 			userattributedefinition.Table: userattributedefinition.ValidColumn,
 			userattributevalue.Table:      userattributevalue.ValidColumn,
+			usernotification.Table:        usernotification.ValidColumn,
 			usersubscription.Table:        usersubscription.ValidColumn,
 		})
 	})

@@ -1119,6 +1119,7 @@ export default {
     stream: 'Stream',
     async: 'Async',
     sync: 'Sync',
+    live: 'Live',
     unknown: 'Unknown',
     in: 'In',
     out: 'Out',
@@ -2400,6 +2401,11 @@ export default {
         defaultModel: 'Default mapped model',
         defaultModelPlaceholder: 'e.g., gpt-4.1',
         defaultModelHint: 'When account has no model mapping configured, all request models will be mapped to this model'
+      },
+      openaiLive: {
+        title: 'OpenAI Live',
+        allow: 'Allow Live access',
+        hint: 'When enabled, API keys in this OpenAI group can create and control Live voice sessions. Disabled by default.'
       },
       invalidRequestFallback: {
         title: 'Invalid Request Fallback Group',

@@ -208,6 +208,7 @@ func TestAPIContracts(t *testing.T) {
 						"image_price_4k": null,
 							"claude_code_only": false,
 						"allow_messages_dispatch": false,
+						"allow_live": false,
 						"fallback_group_id": null,
 						"fallback_group_id_on_invalid_request": null,
 						"allow_messages_dispatch": false,

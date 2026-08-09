@@ -12,7 +12,7 @@ export interface UsageRequestTypeLike {
   upstream_endpoint?: string | null
 }
 
-const VALID_REQUEST_TYPES = new Set<UsageRequestType>(['unknown', 'sync', 'stream', 'ws_v2', 'async'])
+const VALID_REQUEST_TYPES = new Set<UsageRequestType>(['unknown', 'sync', 'stream', 'ws_v2', 'async', 'live'])
 
 export const isUsageRequestType = (value: unknown): value is UsageRequestType => {
   return typeof value === 'string' && VALID_REQUEST_TYPES.has(value as UsageRequestType)
@@ -49,7 +49,7 @@ export const requestTypeToLegacyStream = (requestType?: UsageRequestType | null)
   if (requestType === 'sync') {
     return false
   }
-  if (requestType === 'async') {
+  if (requestType === 'async' || requestType === 'live') {
     return null
   }
   return true

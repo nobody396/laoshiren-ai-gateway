@@ -113,6 +113,8 @@ type Group struct {
 
 	// OpenAI Messages 调度开关（用户侧需要此字段判断是否展示 Claude Code 教程）
 	AllowMessagesDispatch bool `json:"allow_messages_dispatch"`
+	// OpenAI Live 接口开关
+	AllowLive bool `json:"allow_live"`
 
 	// 分组默认模型：用户侧「导入到 CCS」按需将其写入客户端模型槽
 	// （anthropic 单模型上游分组如 GLM/Grok 用它覆盖 opus/sonnet/haiku 槽）。

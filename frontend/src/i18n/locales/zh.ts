@@ -1122,6 +1122,7 @@ export default {
     stream: '流式',
     async: '异步',
     sync: '同步',
+    live: 'Live',
     unknown: '未知',
     in: '输入',
     out: '输出',
@@ -2481,6 +2482,11 @@ export default {
         defaultModel: '默认映射模型',
         defaultModelPlaceholder: '例如: gpt-4.1',
         defaultModelHint: '当账号未配置模型映射时，所有请求模型将映射到此模型'
+      },
+      openaiLive: {
+        title: 'OpenAI Live',
+        allow: '允许访问 Live',
+        hint: '启用后，此 OpenAI 分组的 API Key 可以创建并控制 Live 语音会话。默认关闭。'
       },
       invalidRequestFallback: {
         title: '无效请求兜底分组',

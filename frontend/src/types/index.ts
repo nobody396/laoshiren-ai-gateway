@@ -712,6 +712,8 @@ export interface Group {
   fallback_group_id_on_invalid_request: number | null
   // OpenAI Messages 调度开关（用户侧需要此字段判断是否展示 Claude Code 教程）
   allow_messages_dispatch?: boolean
+  // OpenAI Live 接口开关
+  allow_live: boolean
   // 分组默认模型：用户侧「导入 CC Switch」按需将其写入客户端模型槽
   // （anthropic 单模型上游分组如 GLM/Grok 用它覆盖 opus/sonnet/haiku 槽）。
   default_mapped_model?: string
@@ -835,6 +837,7 @@ export interface CreateGroupRequest {
   simulate_claude_max_enabled?: boolean
   supported_model_scopes?: string[]
   allow_messages_dispatch?: boolean
+  allow_live?: boolean
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
 	max_reasoning_effort?: string
@@ -874,6 +877,7 @@ export interface UpdateGroupRequest {
   simulate_claude_max_enabled?: boolean
   supported_model_scopes?: string[]
   allow_messages_dispatch?: boolean
+  allow_live?: boolean
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
   copy_accounts_from_group_ids?: number[]
@@ -1374,7 +1378,7 @@ export type RedeemCodePurpose =
   | 'internal_test'
   | 'migration'
 export type RedeemCodeSalesStatus = 'inventory' | 'sold' | 'gifted' | 'void'
-export type UsageRequestType = 'unknown' | 'sync' | 'stream' | 'ws_v2' | 'async'
+export type UsageRequestType = 'unknown' | 'sync' | 'stream' | 'ws_v2' | 'async' | 'live'
 
 export interface UsageLog {
   id: number

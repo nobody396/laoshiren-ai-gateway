@@ -396,6 +396,8 @@ type GatewayConfig struct {
 	OpenAIPassthroughAllowTimeoutHeaders bool `mapstructure:"openai_passthrough_allow_timeout_headers"`
 	// OpenAIWS: OpenAI Responses WebSocket 配置（默认开启，可按需回滚到 HTTP）
 	OpenAIWS GatewayOpenAIWSConfig `mapstructure:"openai_ws"`
+	// Live: ChatGPT Frameless Live 会话配置。
+	Live GatewayLiveConfig `mapstructure:"live"`
 	// GPTImageS3: GPT-Image 生成结果私有 S3 转存配置。
 	GPTImageS3 GPTImageS3Config `mapstructure:"gpt_image_s3"`
 	// GPTImageTaskSettlement: GPT-Image 异步任务后台结算配置。
@@ -478,6 +480,11 @@ type GatewayConfig struct {
 
 type GatewayPipelineConfig struct {
 	OpenAIResponsesEnabled bool `mapstructure:"openai_responses_enabled"`
+}
+
+type GatewayLiveConfig struct {
+	// MaxSessionDurationSeconds 是 Live 会话的硬上限。
+	MaxSessionDurationSeconds int `mapstructure:"max_session_duration_seconds"`
 }
 
 type GPTImageS3Config struct {
@@ -1974,6 +1981,9 @@ func (c *Config) Validate() error {
 	}
 	if c.Gateway.ProxyProbeResponseReadMaxBytes <= 0 {
 		return fmt.Errorf("gateway.proxy_probe_response_read_max_bytes must be positive")
+	}
+	if c.Gateway.Live.MaxSessionDurationSeconds <= 0 {
+		c.Gateway.Live.MaxSessionDurationSeconds = 3600
 	}
 	if strings.TrimSpace(c.Gateway.ConnectionPoolIsolation) != "" {
 		switch c.Gateway.ConnectionPoolIsolation {

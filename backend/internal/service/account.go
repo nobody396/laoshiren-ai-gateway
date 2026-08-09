@@ -78,6 +78,27 @@ type Account struct {
 	headerOverrideCacheRawSig         uint64
 }
 
+type OpenAIEndpointCapability string
+
+const (
+	OpenAIEndpointCapabilityLive      OpenAIEndpointCapability = "live"
+	OpenAIAuthModePersonalAccessToken                          = "personalAccessToken"
+	OpenAIAuthModeAgentIdentity                                = "agentIdentity"
+	openAIAuthModePersonalAccessToken                          = OpenAIAuthModePersonalAccessToken
+	openAIAuthModeAgentIdentity                                = OpenAIAuthModeAgentIdentity
+	openAIAuthModeCredentialKey                                = "auth_mode"
+	openAIAuthModeLegacyCredentialKey                          = "openai_auth_mode"
+)
+
+func isOpenAIPersonalAccessTokenAuthMode(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "personalaccesstoken", "personal_access_token":
+		return true
+	default:
+		return false
+	}
+}
+
 const GrokMediaEligibleExtraKey = "grok_media_eligible"
 
 // ValidateGrokMediaEligibilityExtra validates the optional administrator
@@ -1117,6 +1138,42 @@ func (a *Account) IsOpenAIOAuth() bool {
 	return a.IsOpenAI() && a.Type == AccountTypeOAuth
 }
 
+func (a *Account) IsOpenAIPersonalAccessToken() bool {
+	if !a.IsOpenAIOAuth() {
+		return false
+	}
+	return isOpenAIPersonalAccessTokenAuthMode(a.GetCredential(openAIAuthModeCredentialKey)) ||
+		isOpenAIPersonalAccessTokenAuthMode(a.GetCredential(openAIAuthModeLegacyCredentialKey))
+}
+
+func (a *Account) IsOpenAIAgentIdentity() bool {
+	if a == nil || !a.IsOpenAIOAuth() {
+		return false
+	}
+	return strings.EqualFold(strings.TrimSpace(a.GetCredential(openAIAuthModeCredentialKey)), openAIAuthModeAgentIdentity)
+}
+
+func (a *Account) SupportsOpenAIEndpointCapability(capability OpenAIEndpointCapability) bool {
+	if a == nil {
+		return false
+	}
+	if capability == "" {
+		return true
+	}
+	if !a.IsOpenAICompatible() {
+		return false
+	}
+	switch capability {
+	case OpenAIEndpointCapabilityLive:
+		return a.Platform == PlatformOpenAI &&
+			a.Type == AccountTypeOAuth &&
+			!a.IsOpenAIPersonalAccessToken() &&
+			!a.IsOpenAIAgentIdentity()
+	default:
+		return false
+	}
+}
+
 func (a *Account) IsOpenAIApiKey() bool {
 	return a.IsOpenAI() && a.Type == AccountTypeAPIKey
 }
@@ -1255,6 +1312,34 @@ func (a *Account) GetChatGPTAccountID() string {
 		return ""
 	}
 	return a.GetCredential("chatgpt_account_id")
+}
+
+func (a *Account) IsChatGPTAccountFedRAMP() bool {
+	if !a.IsOpenAIOAuth() || a.Credentials == nil {
+		return false
+	}
+	v, ok := a.Credentials["chatgpt_account_is_fedramp"]
+	if !ok || v == nil {
+		return false
+	}
+	switch value := v.(type) {
+	case bool:
+		return value
+	case string:
+		parsed, err := strconv.ParseBool(strings.TrimSpace(value))
+		return err == nil && parsed
+	case json.Number:
+		parsed, err := strconv.ParseBool(value.String())
+		return err == nil && parsed
+	case float64:
+		return value != 0
+	case int:
+		return value != 0
+	case int64:
+		return value != 0
+	default:
+		return false
+	}
 }
 
 func (a *Account) GetChatGPTUserID() string {

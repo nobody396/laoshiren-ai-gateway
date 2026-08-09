@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const indexPath = resolve(process.cwd(), 'index.html')
 const indexHTML = readFileSync(indexPath, 'utf8')
 const bootstrapScript = indexHTML.match(
-  /<script nonce="__CSP_NONCE_VALUE__">([\s\S]*?)<\/script>/
+  /<script id="app-load-bootstrap" nonce="__CSP_NONCE_VALUE__">([\s\S]*?)<\/script>/
 )?.[1]
 
 describe('app loading fallback', () => {

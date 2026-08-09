@@ -6,6 +6,11 @@ declare global {
   interface Window {
     dataLayer?: unknown[]
     gtag?: (...args: unknown[]) => void
+    __GA4_BOOTSTRAP__?: {
+      measurementId: string
+      initialPagePath: string
+      initialPageViewConsumed: boolean
+    }
   }
 }
 
@@ -45,6 +50,11 @@ export function initAnalytics(): void {
   if (initialized || !shouldEnableAnalytics()) return
 
   const id = measurementId()
+  if (window.__GA4_BOOTSTRAP__?.measurementId === id && window.gtag) {
+    initialized = true
+    return
+  }
+
   window.dataLayer = window.dataLayer || []
   window.gtag =
     window.gtag ||
@@ -73,6 +83,12 @@ export function trackPageView(path: string, params: AnalyticsParams = {}): void 
   initAnalytics()
 
   const pagePath = cleanPath(path)
+  const bootstrap = window.__GA4_BOOTSTRAP__
+  if (bootstrap && !bootstrap.initialPageViewConsumed && bootstrap.measurementId === measurementId()) {
+    bootstrap.initialPageViewConsumed = true
+    if (bootstrap.initialPagePath === pagePath) return
+  }
+
   window.gtag?.('event', 'page_view', {
     page_path: pagePath,
     page_location: `${window.location.origin}${pagePath}`,

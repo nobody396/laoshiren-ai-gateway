@@ -233,7 +233,11 @@ func (h *FeedbackHandler) ListRewards(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	response.PaginatedWithResult(c, items, &response.PaginationResult{Total: result.Total, Page: result.Page, PageSize: result.PageSize, Pages: result.Pages})
+	out := make([]dto.FeedbackReward, 0, len(items))
+	for i := range items {
+		out = append(out, *dto.FeedbackRewardFromService(&items[i]))
+	}
+	response.PaginatedWithResult(c, out, &response.PaginationResult{Total: result.Total, Page: result.Page, PageSize: result.PageSize, Pages: result.Pages})
 }
 
 func (h *FeedbackHandler) CreateReply(c *gin.Context) {

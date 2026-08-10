@@ -49,6 +49,17 @@ func TestGrokOAuthServiceRefreshTokenPreservesOriginalRefreshTokenWhenNotRotated
 	require.Equal(t, "client-id", info.ClientID)
 }
 
+func TestGrokOAuthServiceExternalFlowsRejectMissingClient(t *testing.T) {
+	svc := NewGrokOAuthService(nil, nil)
+	defer svc.Stop()
+
+	_, err := svc.RefreshToken(context.Background(), "refresh-token", "", "")
+	require.ErrorContains(t, err, "GROK_OAUTH_CLIENT_NOT_CONFIGURED")
+
+	_, err = svc.ConvertFromSSO(context.Background(), "sso-token", nil)
+	require.ErrorContains(t, err, "GROK_OAUTH_CLIENT_NOT_CONFIGURED")
+}
+
 func TestGrokOAuthServiceExchangeCodeRequiresStateForCallbackURLAndConsumesSession(t *testing.T) {
 	client := &grokOAuthClientStub{}
 	svc := NewGrokOAuthService(nil, client)

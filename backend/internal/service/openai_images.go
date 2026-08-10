@@ -209,11 +209,17 @@ func (s *OpenAIGatewayService) ForwardImages(
 	}
 	setOpsUpstreamRequestBody(c, forwardBody)
 
-	token, _, err := s.GetAccessToken(ctx, account)
+	// Image generation can keep consuming upstream resources after the client
+	// disconnects. Keep the selected upstream round trip alive so a completed
+	// image is still observed and billed; transport timeouts remain the bound.
+	upstreamCtx, releaseUpstreamCtx := detachUpstreamContext(ctx)
+	defer releaseUpstreamCtx()
+
+	token, _, err := s.GetAccessToken(upstreamCtx, account)
 	if err != nil {
 		return nil, err
 	}
-	req, err := s.buildOpenAIImagesRequest(ctx, c, account, forwardBody, token)
+	req, err := s.buildOpenAIImagesRequest(upstreamCtx, c, account, forwardBody, token)
 	if err != nil {
 		return nil, err
 	}

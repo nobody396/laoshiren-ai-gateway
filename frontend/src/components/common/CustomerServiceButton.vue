@@ -65,6 +65,9 @@
                 <span class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   {{ t('common.wechatId') }}：{{ supportContact }}
                 </span>
+                <p class="mt-3 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+                  {{ t('common.supportAutoAcceptNote') }}
+                </p>
               </div>
             </div>
 

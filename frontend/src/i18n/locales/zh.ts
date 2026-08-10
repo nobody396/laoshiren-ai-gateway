@@ -318,6 +318,7 @@ export default {
     customerService: '客服',
     wechatId: '微信号',
     scanToAddSupport: '微信扫码添加客服',
+    supportAutoAcceptNote: '添加后将自动通过好友申请，请直接发送您的问题或需求。',
     afterSalesTitle: '售后客服',
     afterSalesDesc: '负责账户充值、推广等售后事宜',
     techSupportTitle: '技术客服',

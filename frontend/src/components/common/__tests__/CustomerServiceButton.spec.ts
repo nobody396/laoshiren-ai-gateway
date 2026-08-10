@@ -11,6 +11,7 @@ vi.mock('vue-i18n', async () => {
     'common.customerService': '客服',
     'common.wechatId': '微信号',
     'common.scanToAddSupport': '微信扫码添加客服',
+    'common.supportAutoAcceptNote': '添加后将自动通过好友申请，请直接发送您的问题或需求。',
     'common.close': '关闭',
     'common.afterSalesTitle': '售后客服',
     'common.afterSalesDesc': '处理账号和订单问题',
@@ -56,6 +57,7 @@ describe('CustomerServiceButton', () => {
     await wrapper.get('button').trigger('click')
 
     expect(wrapper.text()).toContain('微信扫码添加客服')
+    expect(wrapper.text()).toContain('添加后将自动通过好友申请，请直接发送您的问题或需求。')
     expect(wrapper.get('[data-testid="default-support-qr"]').attributes('src')).toContain(
       'wechat-jac-hh.png'
     )

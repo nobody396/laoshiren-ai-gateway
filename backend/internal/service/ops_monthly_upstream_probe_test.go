@@ -221,6 +221,66 @@ func TestMonthlyCardPublicStatusSnapshotVisibleWhenEnabled(t *testing.T) {
 	require.Equal(t, "ok", string(snapshot.Accounts[0].Status))
 }
 
+func TestMonthlyCardPublicStatusSnapshotFiltersSelectedChannels(t *testing.T) {
+	ctx := context.Background()
+	checkedAt := time.Now().Add(-time.Minute)
+	svc := &OpsService{
+		opsRepo: &opsRepoMock{
+			ListMonthlyUpstreamProbeResultsFn: func(ctx context.Context, since time.Time) ([]MonthlyUpstreamProbePoint, error) {
+				return []MonthlyUpstreamProbePoint{
+					{AccountID: 1, AccountName: "monthly-codex-gateway", Platform: PlatformOpenAI, Model: "gpt-5.4-mini", ProbePath: MonthlyUpstreamProbePathGateway, Status: "ok", CheckedAt: checkedAt},
+					{AccountID: 2, AccountName: "monthly-claude-gateway", Platform: PlatformAnthropic, Model: "claude-haiku-4-5", ProbePath: MonthlyUpstreamProbePathGateway, Status: "ok", CheckedAt: checkedAt},
+					{AccountID: 3, AccountName: "monthly-grok-gateway", Platform: PlatformGrok, Model: "grok-4.5", ProbePath: MonthlyUpstreamProbePathGateway, Status: "failed", CheckedAt: checkedAt},
+				}, nil
+			},
+		},
+		settingRepo: &monthlyStatusSettingRepoStub{
+			values: map[string]string{
+				SettingKeyMonthlyUpstreamProbeEnabled:     "true",
+				SettingKeyMonthlyCardPublicStatusEnabled:  "true",
+				SettingKeyMonthlyCardPublicStatusChannels: `["codex","claude"]`,
+			},
+		},
+	}
+
+	snapshot, err := svc.GetMonthlyCardPublicStatusSnapshot(ctx, 60)
+
+	require.NoError(t, err)
+	require.True(t, snapshot.VisibleToUsers)
+	require.Equal(t, []string{"Codex", "Claude"}, snapshot.VisibleChannels)
+	require.Len(t, snapshot.Accounts, 2)
+	require.Equal(t, "Codex", snapshot.Accounts[0].Channel)
+	require.Equal(t, "Claude", snapshot.Accounts[1].Channel)
+}
+
+func TestMonthlyCardPublicStatusSnapshotHiddenWhenNoChannelsSelected(t *testing.T) {
+	ctx := context.Background()
+	called := 0
+	svc := &OpsService{
+		opsRepo: &opsRepoMock{
+			ListMonthlyUpstreamProbeResultsFn: func(ctx context.Context, since time.Time) ([]MonthlyUpstreamProbePoint, error) {
+				called++
+				return nil, nil
+			},
+		},
+		settingRepo: &monthlyStatusSettingRepoStub{
+			values: map[string]string{
+				SettingKeyMonthlyUpstreamProbeEnabled:     "true",
+				SettingKeyMonthlyCardPublicStatusEnabled:  "true",
+				SettingKeyMonthlyCardPublicStatusChannels: `[]`,
+			},
+		},
+	}
+
+	snapshot, err := svc.GetMonthlyCardPublicStatusSnapshot(ctx, 60)
+
+	require.NoError(t, err)
+	require.False(t, snapshot.VisibleToUsers)
+	require.Empty(t, snapshot.VisibleChannels)
+	require.Empty(t, snapshot.Accounts)
+	require.Equal(t, 0, called)
+}
+
 func TestMonthlyUpstreamProbeSnapshotUsesGatewayPointsForStatus(t *testing.T) {
 	ctx := context.Background()
 	gatewayCheckedAt := time.Now().Add(-2 * time.Minute)
@@ -535,8 +595,9 @@ func TestUpdateMonthlyUpstreamProbeSettingsDoesNotOverwriteOmittedFields(t *test
 	ctx := context.Background()
 	settings := &monthlyStatusSettingRepoStub{
 		values: map[string]string{
-			SettingKeyMonthlyUpstreamProbeEnabled:    "true",
-			SettingKeyMonthlyCardPublicStatusEnabled: "true",
+			SettingKeyMonthlyUpstreamProbeEnabled:     "true",
+			SettingKeyMonthlyCardPublicStatusEnabled:  "true",
+			SettingKeyMonthlyCardPublicStatusChannels: `["codex","claude","grok"]`,
 		},
 	}
 	svc := &OpsService{settingRepo: settings}
@@ -551,6 +612,8 @@ func TestUpdateMonthlyUpstreamProbeSettingsDoesNotOverwriteOmittedFields(t *test
 	require.Equal(t, "false", settings.values[SettingKeyMonthlyUpstreamProbeEnabled])
 	require.Equal(t, "true", settings.values[SettingKeyMonthlyCardPublicStatusEnabled])
 	require.NotContains(t, settings.updates, SettingKeyMonthlyCardPublicStatusEnabled)
+	require.Equal(t, []string{"codex", "claude", "grok"}, updated.PublicStatusChannels)
+	require.NotContains(t, settings.updates, SettingKeyMonthlyCardPublicStatusChannels)
 
 	updated, err = svc.UpdateMonthlyUpstreamProbeSettings(ctx, &MonthlyUpstreamProbeSettingsUpdate{
 		PublicStatusEnabled: monthlyStatusBoolPtr(false),
@@ -561,6 +624,31 @@ func TestUpdateMonthlyUpstreamProbeSettingsDoesNotOverwriteOmittedFields(t *test
 	require.False(t, updated.PublicStatusEnabled)
 	require.Equal(t, "false", settings.values[SettingKeyMonthlyUpstreamProbeEnabled])
 	require.Equal(t, "false", settings.values[SettingKeyMonthlyCardPublicStatusEnabled])
+
+	channels := []string{"CLAUDE", "codex", "claude"}
+	updated, err = svc.UpdateMonthlyUpstreamProbeSettings(ctx, &MonthlyUpstreamProbeSettingsUpdate{
+		PublicStatusChannels: &channels,
+	})
+	require.NoError(t, err)
+	require.Equal(t, []string{"codex", "claude"}, updated.PublicStatusChannels)
+	require.Equal(t, `["codex","claude"]`, settings.values[SettingKeyMonthlyCardPublicStatusChannels])
+}
+
+func TestUpdateMonthlyUpstreamProbeSettingsRejectsUnknownPublicChannel(t *testing.T) {
+	ctx := context.Background()
+	settings := &monthlyStatusSettingRepoStub{values: map[string]string{}}
+	svc := &OpsService{settingRepo: settings}
+	channels := []string{"codex", "unknown"}
+	enabled := true
+
+	_, err := svc.UpdateMonthlyUpstreamProbeSettings(ctx, &MonthlyUpstreamProbeSettingsUpdate{
+		Enabled:              &enabled,
+		PublicStatusChannels: &channels,
+	})
+
+	require.ErrorContains(t, err, "unsupported monthly-card public status channel")
+	require.NotContains(t, settings.updates, SettingKeyMonthlyUpstreamProbeEnabled)
+	require.NotContains(t, settings.updates, SettingKeyMonthlyCardPublicStatusChannels)
 }
 
 func TestMonthlyOpenAIProbeCostEstimateMatchesObservedBilling(t *testing.T) {

@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -242,11 +243,12 @@ type MonthlyUpstreamProbeAccount struct {
 }
 
 type MonthlyUpstreamProbeSnapshot struct {
-	Enabled             bool                          `json:"enabled"`
-	PublicStatusEnabled bool                          `json:"public_status_enabled"`
-	WindowMinutes       int                           `json:"window_minutes"`
-	GeneratedAt         time.Time                     `json:"generated_at"`
-	Accounts            []MonthlyUpstreamProbeAccount `json:"accounts"`
+	Enabled              bool                          `json:"enabled"`
+	PublicStatusEnabled  bool                          `json:"public_status_enabled"`
+	PublicStatusChannels []string                      `json:"public_status_channels"`
+	WindowMinutes        int                           `json:"window_minutes"`
+	GeneratedAt          time.Time                     `json:"generated_at"`
+	Accounts             []MonthlyUpstreamProbeAccount `json:"accounts"`
 }
 
 type MonthlyCardPublicStatusPoint struct {
@@ -283,6 +285,7 @@ type MonthlyCardPublicPlan struct {
 type MonthlyCardPublicStatusSnapshot struct {
 	Enabled              bool                             `json:"enabled"`
 	VisibleToUsers       bool                             `json:"visible_to_users"`
+	VisibleChannels      []string                         `json:"visible_channels"`
 	WindowMinutes        int                              `json:"window_minutes"`
 	ProbeIntervalSeconds int                              `json:"probe_interval_seconds"`
 	GeneratedAt          time.Time                        `json:"generated_at"`
@@ -291,14 +294,18 @@ type MonthlyCardPublicStatusSnapshot struct {
 }
 
 type MonthlyUpstreamProbeSettings struct {
-	Enabled             bool `json:"enabled"`
-	PublicStatusEnabled bool `json:"public_status_enabled"`
+	Enabled              bool     `json:"enabled"`
+	PublicStatusEnabled  bool     `json:"public_status_enabled"`
+	PublicStatusChannels []string `json:"public_status_channels"`
 }
 
 type MonthlyUpstreamProbeSettingsUpdate struct {
-	Enabled             *bool `json:"enabled"`
-	PublicStatusEnabled *bool `json:"public_status_enabled"`
+	Enabled              *bool     `json:"enabled"`
+	PublicStatusEnabled  *bool     `json:"public_status_enabled"`
+	PublicStatusChannels *[]string `json:"public_status_channels"`
 }
+
+var monthlyCardPublicStatusChannelOrder = []string{"codex", "claude", "grok"}
 
 func (s *OpsService) startMonthlyUpstreamProbeRunner() {
 	if s == nil || s.opsRepo == nil || s.accountRepo == nil || s.settingRepo == nil {
@@ -341,6 +348,56 @@ func (s *OpsService) IsMonthlyCardPublicStatusEnabled(ctx context.Context) bool 
 	return isTruthyMonthlyCardSettingValue(value)
 }
 
+func defaultMonthlyCardPublicStatusChannels() []string {
+	return append([]string(nil), monthlyCardPublicStatusChannelOrder...)
+}
+
+func normalizeMonthlyCardPublicStatusChannels(channels []string) ([]string, error) {
+	requested := make(map[string]bool, len(channels))
+	for _, channel := range channels {
+		channel = strings.ToLower(strings.TrimSpace(channel))
+		switch channel {
+		case "codex", "claude", "grok":
+			requested[channel] = true
+		case "":
+			continue
+		default:
+			return nil, infraerrors.BadRequest(
+				"INVALID_MONTHLY_CARD_PUBLIC_STATUS_CHANNEL",
+				fmt.Sprintf("unsupported monthly-card public status channel: %s", channel),
+			)
+		}
+	}
+
+	normalized := make([]string, 0, len(requested))
+	for _, channel := range monthlyCardPublicStatusChannelOrder {
+		if requested[channel] {
+			normalized = append(normalized, channel)
+		}
+	}
+	return normalized, nil
+}
+
+func (s *OpsService) MonthlyCardPublicStatusChannels(ctx context.Context) []string {
+	if s == nil || s.settingRepo == nil {
+		return defaultMonthlyCardPublicStatusChannels()
+	}
+	value, err := s.settingRepo.GetValue(ctx, SettingKeyMonthlyCardPublicStatusChannels)
+	if err != nil || strings.TrimSpace(value) == "" {
+		return defaultMonthlyCardPublicStatusChannels()
+	}
+
+	var channels []string
+	if err := json.Unmarshal([]byte(value), &channels); err != nil {
+		return defaultMonthlyCardPublicStatusChannels()
+	}
+	normalized, err := normalizeMonthlyCardPublicStatusChannels(channels)
+	if err != nil {
+		return defaultMonthlyCardPublicStatusChannels()
+	}
+	return normalized
+}
+
 func isTruthyMonthlyCardSettingValue(value string) bool {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "true", "1", "on", "enabled":
@@ -362,8 +419,9 @@ func normalizeMonthlyUpstreamProbeWindow(windowMinutes int) int {
 
 func (s *OpsService) GetMonthlyUpstreamProbeSettings(ctx context.Context) *MonthlyUpstreamProbeSettings {
 	return &MonthlyUpstreamProbeSettings{
-		Enabled:             s.IsMonthlyUpstreamProbeEnabled(ctx),
-		PublicStatusEnabled: s.IsMonthlyCardPublicStatusEnabled(ctx),
+		Enabled:              s.IsMonthlyUpstreamProbeEnabled(ctx),
+		PublicStatusEnabled:  s.IsMonthlyCardPublicStatusEnabled(ctx),
+		PublicStatusChannels: s.MonthlyCardPublicStatusChannels(ctx),
 	}
 }
 
@@ -374,6 +432,19 @@ func (s *OpsService) UpdateMonthlyUpstreamProbeSettings(ctx context.Context, req
 	if req == nil {
 		return s.GetMonthlyUpstreamProbeSettings(ctx), nil
 	}
+	var encodedPublicStatusChannels *string
+	if req.PublicStatusChannels != nil {
+		channels, err := normalizeMonthlyCardPublicStatusChannels(*req.PublicStatusChannels)
+		if err != nil {
+			return nil, err
+		}
+		encoded, err := json.Marshal(channels)
+		if err != nil {
+			return nil, err
+		}
+		value := string(encoded)
+		encodedPublicStatusChannels = &value
+	}
 	if req.Enabled != nil {
 		if err := s.settingRepo.Set(ctx, SettingKeyMonthlyUpstreamProbeEnabled, strconv.FormatBool(*req.Enabled)); err != nil {
 			return nil, err
@@ -381,6 +452,11 @@ func (s *OpsService) UpdateMonthlyUpstreamProbeSettings(ctx context.Context, req
 	}
 	if req.PublicStatusEnabled != nil {
 		if err := s.settingRepo.Set(ctx, SettingKeyMonthlyCardPublicStatusEnabled, strconv.FormatBool(*req.PublicStatusEnabled)); err != nil {
+			return nil, err
+		}
+	}
+	if encodedPublicStatusChannels != nil {
+		if err := s.settingRepo.Set(ctx, SettingKeyMonthlyCardPublicStatusChannels, *encodedPublicStatusChannels); err != nil {
 			return nil, err
 		}
 	}
@@ -396,6 +472,7 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 	now := time.Now()
 	enabled := s.IsMonthlyUpstreamProbeEnabled(ctx)
 	publicStatusEnabled := s.IsMonthlyCardPublicStatusEnabled(ctx)
+	publicStatusChannels := s.MonthlyCardPublicStatusChannels(ctx)
 	reference := now.Truncate(time.Minute)
 	expectedSlots := monthlyUpstreamProbeExpectedSlotCount(windowMinutes)
 	points, err := s.opsRepo.ListMonthlyUpstreamProbeResults(ctx, now.Add(-time.Duration(windowMinutes)*time.Minute))
@@ -551,19 +628,27 @@ func (s *OpsService) GetMonthlyUpstreamProbeSnapshot(ctx context.Context, window
 	})
 
 	return &MonthlyUpstreamProbeSnapshot{
-		Enabled:             enabled,
-		PublicStatusEnabled: publicStatusEnabled,
-		WindowMinutes:       windowMinutes,
-		GeneratedAt:         now,
-		Accounts:            accounts,
+		Enabled:              enabled,
+		PublicStatusEnabled:  publicStatusEnabled,
+		PublicStatusChannels: publicStatusChannels,
+		WindowMinutes:        windowMinutes,
+		GeneratedAt:          now,
+		Accounts:             accounts,
 	}, nil
 }
 
 func (s *OpsService) GetMonthlyCardPublicStatusSnapshot(ctx context.Context, windowMinutes int) (*MonthlyCardPublicStatusSnapshot, error) {
 	windowMinutes = normalizeMonthlyUpstreamProbeWindow(windowMinutes)
 	plans := s.loadMonthlyCardPublicPlans(ctx)
-	if !s.IsMonthlyCardPublicStatusEnabled(ctx) {
+	visibleChannelKeys := s.MonthlyCardPublicStatusChannels(ctx)
+	if !s.IsMonthlyCardPublicStatusEnabled(ctx) || len(visibleChannelKeys) == 0 {
 		return monthlyCardHiddenPublicStatusSnapshot(windowMinutes, plans), nil
+	}
+	visibleChannelSet := make(map[string]bool, len(visibleChannelKeys))
+	visibleChannels := make([]string, 0, len(visibleChannelKeys))
+	for _, channel := range visibleChannelKeys {
+		visibleChannelSet[channel] = true
+		visibleChannels = append(visibleChannels, monthlyCardPublicChannelDisplayName(channel))
 	}
 
 	snapshot, err := s.GetMonthlyUpstreamProbeSnapshot(ctx, windowMinutes)
@@ -576,6 +661,10 @@ func (s *OpsService) GetMonthlyCardPublicStatusSnapshot(ctx context.Context, win
 
 	accounts := make([]MonthlyCardPublicStatusAccount, 0, len(snapshot.Accounts))
 	for _, account := range snapshot.Accounts {
+		channel := monthlyCardPublicChannelName(account.AccountName, account.Model, account.Platform)
+		if !visibleChannelSet[strings.ToLower(channel)] {
+			continue
+		}
 		points := make([]MonthlyCardPublicStatusPoint, 0, len(account.Points))
 		for _, point := range account.Points {
 			points = append(points, MonthlyCardPublicStatusPoint{
@@ -586,7 +675,7 @@ func (s *OpsService) GetMonthlyCardPublicStatusSnapshot(ctx context.Context, win
 
 		accounts = append(accounts, MonthlyCardPublicStatusAccount{
 			DisplayName:     monthlyCardPublicDisplayName(account.AccountName, account.Model, account.Platform),
-			Channel:         monthlyCardPublicChannelName(account.AccountName, account.Model, account.Platform),
+			Channel:         channel,
 			Status:          account.LatestStatus,
 			LatestCheckedAt: account.LatestCheckedAt,
 			Uptime:          account.Uptime,
@@ -605,6 +694,7 @@ func (s *OpsService) GetMonthlyCardPublicStatusSnapshot(ctx context.Context, win
 	return &MonthlyCardPublicStatusSnapshot{
 		Enabled:              snapshot.Enabled,
 		VisibleToUsers:       snapshot.PublicStatusEnabled,
+		VisibleChannels:      visibleChannels,
 		WindowMinutes:        snapshot.WindowMinutes,
 		ProbeIntervalSeconds: int(monthlyUpstreamProbeInterval / time.Second),
 		GeneratedAt:          snapshot.GeneratedAt,
@@ -617,11 +707,25 @@ func monthlyCardHiddenPublicStatusSnapshot(windowMinutes int, plans []MonthlyCar
 	return &MonthlyCardPublicStatusSnapshot{
 		Enabled:              false,
 		VisibleToUsers:       false,
+		VisibleChannels:      []string{},
 		WindowMinutes:        windowMinutes,
 		ProbeIntervalSeconds: int(monthlyUpstreamProbeInterval / time.Second),
 		GeneratedAt:          time.Now(),
 		Plans:                plans,
 		Accounts:             []MonthlyCardPublicStatusAccount{},
+	}
+}
+
+func monthlyCardPublicChannelDisplayName(channel string) string {
+	switch strings.ToLower(strings.TrimSpace(channel)) {
+	case "codex":
+		return "Codex"
+	case "claude":
+		return "Claude"
+	case "grok":
+		return "Grok"
+	default:
+		return channel
 	}
 }
 

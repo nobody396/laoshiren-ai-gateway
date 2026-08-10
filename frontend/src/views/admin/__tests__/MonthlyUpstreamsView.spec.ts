@@ -3,12 +3,13 @@ import { flushPromises, mount } from '@vue/test-utils'
 import type { MonthlyUpstreamProbeSnapshot } from '@/api/admin/monthlyUpstreams'
 
 const mockGetSnapshot = vi.fn()
+const mockUpdateSettings = vi.fn()
 
 vi.mock('@/api/admin', () => ({
   adminAPI: {
     monthlyUpstreams: {
       getSnapshot: (...args: unknown[]) => mockGetSnapshot(...args),
-      updateSettings: vi.fn()
+      updateSettings: (...args: unknown[]) => mockUpdateSettings(...args)
     }
   }
 }))
@@ -28,7 +29,9 @@ vi.mock('@/components/layout/AppLayout.vue', () => ({
 
 vi.mock('@/components/common/Toggle.vue', () => ({
   default: {
-    template: '<button type="button"><slot /></button>'
+    props: ['modelValue'],
+    emits: ['update:modelValue'],
+    template: '<button type="button" @click="$emit(\'update:modelValue\', !modelValue)"><slot /></button>'
   }
 }))
 
@@ -38,6 +41,7 @@ function snapshot(latestStatus: 'ok' | 'failed', gatewayCheckedAt: string): Mont
   return {
     enabled: true,
     public_status_enabled: false,
+    public_status_channels: ['codex', 'claude', 'grok'],
     window_minutes: 60,
     generated_at: '2026-07-30T10:29:00Z',
     accounts: [{
@@ -96,6 +100,31 @@ describe('MonthlyUpstreamsView direct diagnostics', () => {
     expect(wrapper.text()).toContain('直连上游诊断')
     expect(wrapper.text()).toContain('HTTP 503')
     expect(wrapper.text()).toContain('503 Service Unavailable')
+
+    wrapper.unmount()
+  })
+
+  it('can hide only the Grok status card from users', async () => {
+    const current = snapshot('ok', '2026-07-30T10:28:48Z')
+    current.public_status_enabled = true
+    mockGetSnapshot.mockResolvedValue(current)
+    mockUpdateSettings.mockResolvedValue({
+      enabled: true,
+      public_status_enabled: true,
+      public_status_channels: ['codex', 'claude']
+    })
+
+    const wrapper = mount(MonthlyUpstreamsView)
+    await flushPromises()
+
+    const grokLabel = wrapper.findAll('label').find((label) => label.text().includes('Grok 月卡'))
+    expect(grokLabel).toBeDefined()
+    await grokLabel!.find('button').trigger('click')
+    await flushPromises()
+
+    expect(mockUpdateSettings).toHaveBeenCalledWith({
+      public_status_channels: ['codex', 'claude']
+    })
 
     wrapper.unmount()
   })

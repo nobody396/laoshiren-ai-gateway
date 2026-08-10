@@ -41,6 +41,30 @@
           </div>
         </div>
 
+        <div
+          v-if="publicStatusEnabled"
+          class="flex flex-col gap-3 border-b border-gray-100 bg-gray-50/70 px-6 py-4 dark:border-dark-700 dark:bg-dark-900/40 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <div class="text-sm font-medium text-gray-800 dark:text-dark-100">用户展示通道</div>
+            <div class="mt-1 text-xs text-gray-500 dark:text-dark-300">探针继续监控全部通道，只控制用户端显示哪些状态卡片。</div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <label
+              v-for="option in publicChannelOptions"
+              :key="option.value"
+              class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-dark-600 dark:bg-dark-800"
+            >
+              <Toggle
+                :model-value="isPublicChannelVisible(option.value)"
+                :disabled="saving"
+                @update:model-value="handlePublicChannelToggle(option.value, $event)"
+              />
+              <span class="text-sm font-medium text-gray-700 dark:text-dark-200">{{ option.label }}</span>
+            </label>
+          </div>
+        </div>
+
         <div class="p-5">
           <div v-if="loading && !snapshot" class="space-y-4">
             <div v-for="idx in 2" :key="idx" class="h-40 animate-pulse rounded-lg bg-gray-100 dark:bg-dark-700" />
@@ -182,7 +206,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Toggle from '@/components/common/Toggle.vue'
 import { adminAPI } from '@/api/admin'
-import type { MonthlyUpstreamProbeAccount, MonthlyUpstreamProbePoint, MonthlyUpstreamProbeSnapshot, MonthlyUpstreamProbeStatus } from '@/api/admin/monthlyUpstreams'
+import type { MonthlyCardPublicStatusChannel, MonthlyUpstreamProbeAccount, MonthlyUpstreamProbePoint, MonthlyUpstreamProbeSnapshot, MonthlyUpstreamProbeStatus } from '@/api/admin/monthlyUpstreams'
 import { useAppStore } from '@/stores/app'
 import { isDirectUpstreamDiagnosticStale } from '@/utils/monthlyUpstreamProbe'
 
@@ -201,9 +225,16 @@ const loading = ref(false)
 const saving = ref(false)
 let refreshTimer: number | undefined
 
+const publicChannelOptions: Array<{ value: MonthlyCardPublicStatusChannel; label: string }> = [
+  { value: 'codex', label: 'Codex 月卡' },
+  { value: 'claude', label: 'Claude 月卡' },
+  { value: 'grok', label: 'Grok 月卡' }
+]
+
 const accounts = computed(() => snapshot.value?.accounts ?? [])
 const enabled = computed(() => Boolean(snapshot.value?.enabled))
 const publicStatusEnabled = computed(() => Boolean(snapshot.value?.public_status_enabled))
+const publicStatusChannels = computed(() => snapshot.value?.public_status_channels ?? ['codex', 'claude', 'grok'])
 const probeIntervalMinutes = computed(() => {
   const seconds = accounts.value.find((account) => account.cost_estimate)?.cost_estimate?.probe_interval_seconds
   if (!seconds || seconds <= 0) return fallbackProbeIntervalMinutes
@@ -303,6 +334,27 @@ async function handlePublicStatusToggle(value: boolean) {
     appStore.showSuccess(value ? '用户端运行状态已显示' : '用户端运行状态已隐藏')
   } catch (error) {
     appStore.showError('更新用户端运行状态开关失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+function isPublicChannelVisible(channel: MonthlyCardPublicStatusChannel): boolean {
+  return publicStatusChannels.value.includes(channel)
+}
+
+async function handlePublicChannelToggle(channel: MonthlyCardPublicStatusChannel, visible: boolean) {
+  const nextChannels = publicChannelOptions
+    .map((option) => option.value)
+    .filter((value) => value === channel ? visible : publicStatusChannels.value.includes(value))
+
+  saving.value = true
+  try {
+    await adminAPI.monthlyUpstreams.updateSettings({ public_status_channels: nextChannels })
+    await loadSnapshot()
+    appStore.showSuccess(`${publicChannelOptions.find((option) => option.value === channel)?.label}已${visible ? '显示' : '隐藏'}`)
+  } catch (error) {
+    appStore.showError('更新用户展示通道失败')
   } finally {
     saving.value = false
   }

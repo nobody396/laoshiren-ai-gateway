@@ -378,6 +378,55 @@ func TestGeminiErrorPolicy_NilRateLimitService(t *testing.T) {
 	})
 }
 
+func TestHandleGeminiUpstreamErrorPoolMode429DoesNotSetAccountCooldown(t *testing.T) {
+	body := []byte(`{"error":{"code":429,"message":"capacity exhausted"}}`)
+	tests := []struct {
+		name              string
+		account           *Account
+		expectRateLimited bool
+	}{
+		{
+			name: "pool mode API key stays schedulable",
+			account: &Account{ID: 600, Platform: PlatformGemini, Type: AccountTypeAPIKey,
+				Credentials: map[string]any{"pool_mode": true}},
+		},
+		{
+			name: "matching custom policy overrides pool mode",
+			account: &Account{ID: 601, Platform: PlatformGemini, Type: AccountTypeAPIKey,
+				Credentials: map[string]any{
+					"pool_mode":                  true,
+					"custom_error_codes_enabled": true,
+					"custom_error_codes":         []any{float64(429)},
+				}},
+			expectRateLimited: true,
+		},
+		{
+			name:              "non pool API key keeps existing cooldown",
+			account:           &Account{ID: 602, Platform: PlatformGemini, Type: AccountTypeAPIKey},
+			expectRateLimited: true,
+		},
+		{
+			name: "OAuth ignores irrelevant pool flag",
+			account: &Account{ID: 603, Platform: PlatformGemini, Type: AccountTypeOAuth,
+				Credentials: map[string]any{"pool_mode": true}},
+			expectRateLimited: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := &geminiErrorPolicyRepo{}
+			svc := &GeminiMessagesCompatService{accountRepo: repo}
+			svc.handleGeminiUpstreamError(context.Background(), tt.account, http.StatusTooManyRequests, http.Header{}, body)
+			if tt.expectRateLimited {
+				require.Equal(t, 1, repo.setRateLimitedCalls)
+				return
+			}
+			require.Zero(t, repo.setRateLimitedCalls)
+		})
+	}
+}
+
 // ---------------------------------------------------------------------------
 // geminiErrorPolicyRepo — minimal AccountRepository stub for Gemini error
 // policy tests. Embeds mockAccountRepoForGemini and adds tracking.

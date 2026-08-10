@@ -64,6 +64,7 @@ export interface MonthlyUpstreamProbeAccount {
 export interface MonthlyUpstreamProbeSnapshot {
   enabled: boolean
   public_status_enabled: boolean
+  public_status_channels: MonthlyCardPublicStatusChannel[]
   window_minutes: number
   generated_at: string
   accounts: MonthlyUpstreamProbeAccount[]
@@ -72,7 +73,10 @@ export interface MonthlyUpstreamProbeSnapshot {
 export interface MonthlyUpstreamProbeSettings {
   enabled: boolean
   public_status_enabled: boolean
+  public_status_channels: MonthlyCardPublicStatusChannel[]
 }
+
+export type MonthlyCardPublicStatusChannel = 'codex' | 'claude' | 'grok'
 
 export type MonthlyUpstreamProbeSettingsUpdate = Partial<MonthlyUpstreamProbeSettings>
 

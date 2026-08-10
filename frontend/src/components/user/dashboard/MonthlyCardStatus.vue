@@ -14,7 +14,7 @@
             </span>
           </div>
           <p class="mt-1 text-sm text-gray-500 dark:text-dark-300">
-            Codex / Claude / Grok 月卡通道最近 {{ windowMinutes }} 分钟运行概览
+            {{ statusChannelLabel }} 月卡通道最近 {{ windowMinutes }} 分钟运行概览
           </p>
         </div>
       </div>
@@ -113,6 +113,11 @@ let refreshTimer: number | undefined
 
 const shouldRender = computed(() => snapshot.value?.visible_to_users === true)
 const accounts = computed(() => snapshot.value?.accounts ?? [])
+const statusChannelLabel = computed(() => {
+  const channels = snapshot.value?.visible_channels?.filter(Boolean)
+    ?? Array.from(new Set(accounts.value.map((account) => account.channel).filter(Boolean)))
+  return channels.length > 0 ? channels.join(' / ') : '当前'
+})
 const windowMinutes = computed(() => snapshot.value?.window_minutes || fallbackWindowMinutes)
 const probeIntervalMinutes = computed(() => {
   const seconds = snapshot.value?.probe_interval_seconds

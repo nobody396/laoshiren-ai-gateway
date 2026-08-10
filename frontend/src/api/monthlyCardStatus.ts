@@ -35,6 +35,7 @@ export interface MonthlyCardPlanEntitlement {
 export interface MonthlyCardStatusSnapshot {
   enabled: boolean
   visible_to_users: boolean
+  visible_channels?: string[]
   window_minutes: number
   probe_interval_seconds: number
   generated_at: string

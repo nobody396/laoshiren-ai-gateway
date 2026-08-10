@@ -349,5 +349,8 @@ const (
 	SettingKeyWebSearchEmulationConfig = "web_search_emulation_config"
 )
 
+// SettingKeyMonthlyCardPublicStatusChannels stores the public monthly-card channels as a JSON array.
+const SettingKeyMonthlyCardPublicStatusChannels = "monthly_card_public_status_channels"
+
 // AdminAPIKeyPrefix is the prefix for admin API keys (distinct from user "sk-" keys).
 const AdminAPIKeyPrefix = "admin-"

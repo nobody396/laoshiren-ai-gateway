@@ -13,7 +13,7 @@ describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on macOS and Linux', () => {
     const script = readPublicScript('install.sh')
 
-    expect(script).toContain('SCRIPT_VERSION="0.7.1"')
+    expect(script).toContain('SCRIPT_VERSION="0.7.2"')
     expect(script).toContain('EXISTING_CLAUDE_COMMAND="$(get_usable_client_command claude || true)"')
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('exchange_setup_ticket')
@@ -30,7 +30,7 @@ describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on Windows', () => {
     const script = readPublicScript('install.ps1')
 
-    expect(script).toContain("$ScriptVersion = '0.7.1'")
+    expect(script).toContain("$ScriptVersion = '0.7.2'")
     expect(script).toContain("Get-UsableClientCommand -CommandName 'claude'")
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('Exchange-SetupTicket')
@@ -84,10 +84,15 @@ describe('client auto-config scripts', () => {
       expect(model.base_instructions).toBeTruthy()
       expect(model.supports_reasoning_summaries).toBe(true)
       expect(model.visibility).toBe('list')
+      expect(model.context_window).toBe(250000)
+      expect(model.max_context_window).toBe(250000)
+      expect(model.auto_compact_token_limit).toBe(225000)
     }
     for (const name of ['install.sh', 'install.ps1']) {
       const script = readPublicScript(name)
       expect(script).toContain('model_catalog_json = "laoshirenai-model-catalog.json"')
+      expect(script).toContain('model_context_window = 250000')
+      expect(script).toContain('model_auto_compact_token_limit = 225000')
       expect(script).toContain('gpt-5.3-codex-spark')
     }
   })

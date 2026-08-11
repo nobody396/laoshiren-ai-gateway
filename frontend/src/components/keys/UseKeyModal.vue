@@ -140,7 +140,11 @@ import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useClipboard } from '@/composables/useClipboard'
-import { buildCodexModelCatalog } from '@/utils/ccSwitchImport'
+import {
+  buildCodexModelCatalog,
+  CODEX_AUTO_COMPACT_TOKEN_LIMIT,
+  CODEX_CONTEXT_WINDOW_TOKENS
+} from '@/utils/ccSwitchImport'
 import type { GroupPlatform } from '@/types'
 
 interface Props {
@@ -786,8 +790,8 @@ disable_response_storage = true
 network_access = "enabled"
 preferred_auth_method = "apikey"
 windows_wsl_setup_acknowledged = true
-model_context_window = 400000
-model_auto_compact_token_limit = 360000
+model_context_window = ${CODEX_CONTEXT_WINDOW_TOKENS}
+model_auto_compact_token_limit = ${CODEX_AUTO_COMPACT_TOKEN_LIMIT}
 
 [model_providers.OpenAI]
 name = "OpenAI"
@@ -831,8 +835,8 @@ disable_response_storage = true
 network_access = "enabled"
 preferred_auth_method = "apikey"
 windows_wsl_setup_acknowledged = true
-model_context_window = 400000
-model_auto_compact_token_limit = 360000
+model_context_window = ${CODEX_CONTEXT_WINDOW_TOKENS}
+model_auto_compact_token_limit = ${CODEX_AUTO_COMPACT_TOKEN_LIMIT}
 
 [model_providers.OpenAI]
 name = "OpenAI"

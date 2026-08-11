@@ -34,14 +34,20 @@ export interface BuildCcsImportDeeplinkInput {
 
 export const DEFAULT_OPENAI_MODEL = 'gpt-5.6-sol'
 
+// Keep Codex below the effective upstream limit so automatic compaction can
+// finish before the provider rejects the request. The explicit 90% threshold
+// also avoids relying on client-version-specific defaults.
+export const CODEX_CONTEXT_WINDOW_TOKENS = 250000
+export const CODEX_AUTO_COMPACT_TOKEN_LIMIT = 225000
+
 export const OPENAI_CODEX_MODELS = [
-  { model: 'gpt-5.6-sol', displayName: 'GPT-5.6-Sol', contextWindow: 272000 },
-  { model: 'gpt-5.6-terra', displayName: 'GPT-5.6-Terra', contextWindow: 272000 },
-  { model: 'gpt-5.6-luna', displayName: 'GPT-5.6-Luna', contextWindow: 272000 },
-  { model: 'gpt-5.6', displayName: 'GPT-5.6', contextWindow: 272000 },
-  { model: 'gpt-5.5', displayName: 'GPT-5.5', contextWindow: 272000 },
-  { model: 'gpt-5.4', displayName: 'GPT-5.4', contextWindow: 272000 },
-  { model: 'gpt-5.4-mini', displayName: 'GPT-5.4-Mini', contextWindow: 272000 }
+  { model: 'gpt-5.6-sol', displayName: 'GPT-5.6-Sol', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
+  { model: 'gpt-5.6-terra', displayName: 'GPT-5.6-Terra', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
+  { model: 'gpt-5.6-luna', displayName: 'GPT-5.6-Luna', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
+  { model: 'gpt-5.6', displayName: 'GPT-5.6', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
+  { model: 'gpt-5.5', displayName: 'GPT-5.5', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
+  { model: 'gpt-5.4', displayName: 'GPT-5.4', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
+  { model: 'gpt-5.4-mini', displayName: 'GPT-5.4-Mini', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS }
 ] as const
 
 const CODEX_REASONING_LEVELS = [
@@ -72,7 +78,7 @@ export const buildCodexModelCatalog = (): string => JSON.stringify({
     context_window: model.contextWindow,
     max_context_window: model.contextWindow,
     effective_context_window_percent: 100,
-    auto_compact_token_limit: null,
+    auto_compact_token_limit: CODEX_AUTO_COMPACT_TOKEN_LIMIT,
     experimental_supported_tools: [],
     input_modalities: ['text', 'image'],
     supports_search_tool: true,
@@ -156,6 +162,8 @@ const buildCodexImportConfig = (endpoint: string, providerName: string): string 
   const config = `model_provider = "custom"
 model = "${safeModel}"
 model_reasoning_effort = "high"
+model_context_window = ${CODEX_CONTEXT_WINDOW_TOKENS}
+model_auto_compact_token_limit = ${CODEX_AUTO_COMPACT_TOKEN_LIMIT}
 disable_response_storage = true
 
 [model_providers.custom]

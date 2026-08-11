@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildCcsImportDeeplink,
+  buildCodexModelCatalog,
+  CODEX_AUTO_COMPACT_TOKEN_LIMIT,
+  CODEX_CONTEXT_WINDOW_TOKENS,
   getCompatibleCcsTargets,
   OPENAI_CODEX_MODELS,
   type CcsImportTarget
@@ -70,6 +73,18 @@ describe('CC Switch import compatibility', () => {
 })
 
 describe('CC Switch provider deeplinks', () => {
+  it('compacts Codex tasks before the upstream context ceiling', () => {
+    const catalog = JSON.parse(buildCodexModelCatalog())
+
+    expect(CODEX_CONTEXT_WINDOW_TOKENS).toBe(250000)
+    expect(CODEX_AUTO_COMPACT_TOKEN_LIMIT).toBe(225000)
+    for (const model of catalog.models) {
+      expect(model.context_window).toBe(CODEX_CONTEXT_WINDOW_TOKENS)
+      expect(model.max_context_window).toBe(CODEX_CONTEXT_WINDOW_TOKENS)
+      expect(model.auto_compact_token_limit).toBe(CODEX_AUTO_COMPACT_TOKEN_LIMIT)
+    }
+  })
+
   it.each(['codex', 'opencode', 'openclaw', 'hermes'] as CcsImportTarget[])(
     'builds an OpenAI-compatible %s provider with the /v1 endpoint',
     (target) => {
@@ -92,6 +107,8 @@ describe('CC Switch provider deeplinks', () => {
     expect(config.modelCatalog.models.map((model: { model: string }) => model.model))
       .not.toContain('gpt-5.3-codex-spark')
     expect(config.config).toContain('model = "gpt-5.6-sol"')
+    expect(config.config).toContain('model_context_window = 250000')
+    expect(config.config).toContain('model_auto_compact_token_limit = 225000')
     expect(config.config).toContain('base_url = "https://api.laoshirenai.com/v1"')
     expect(config.config).not.toContain('sk-test-not-a-secret')
   })

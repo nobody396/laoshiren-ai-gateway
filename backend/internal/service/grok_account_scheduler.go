@@ -18,12 +18,32 @@ func (s *OpenAIGatewayService) SelectOpenAICompatibleAccountWithScheduler(
 	requiredTransport OpenAIUpstreamTransport,
 	requireCompact bool,
 ) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
+	return s.SelectOpenAICompatibleAccountWithSchedulerForRouting(
+		ctx, platform, groupID, previousResponseID, sessionHash, requestedModel,
+		excludedIDs, requiredTransport, requireCompact, false,
+	)
+}
+
+// SelectOpenAICompatibleAccountWithSchedulerForRouting adds request-intent
+// routing without changing the legacy entry point used by text traffic.
+func (s *OpenAIGatewayService) SelectOpenAICompatibleAccountWithSchedulerForRouting(
+	ctx context.Context,
+	platform string,
+	groupID *int64,
+	previousResponseID string,
+	sessionHash string,
+	requestedModel string,
+	excludedIDs map[int64]struct{},
+	requiredTransport OpenAIUpstreamTransport,
+	requireCompact bool,
+	preferImageGeneration bool,
+) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
 	if platform == PlatformGrok {
 		return s.SelectGrokAccountWithScheduler(ctx, groupID, sessionHash, requestedModel, excludedIDs, false)
 	}
-	return s.SelectAccountWithSchedulerForRequest(
+	return s.selectAccountWithSchedulerForRouting(
 		ctx, groupID, previousResponseID, sessionHash, requestedModel,
-		excludedIDs, requiredTransport, requireCompact,
+		excludedIDs, requiredTransport, requireCompact, preferImageGeneration,
 	)
 }
 

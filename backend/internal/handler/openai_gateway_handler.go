@@ -230,7 +230,13 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		return
 	}
 	reqStream := streamResult.Bool()
-	reqLog = reqLog.With(zap.String("model", reqModel), zap.Bool("stream", reqStream))
+	requestPlatform := openAICompatibleRequestPlatform(apiKey)
+	imageGenerationIntent := requestPlatform == service.PlatformOpenAI && service.IsExplicitOpenAIImageGenerationIntent(body)
+	reqLog = reqLog.With(
+		zap.String("model", reqModel),
+		zap.Bool("stream", reqStream),
+		zap.Bool("image_generation_intent", imageGenerationIntent),
+	)
 	if apiKey.Group != nil && apiKey.Group.Platform == service.PlatformGrok &&
 		service.IsExplicitGrokImageGenerationIntent(reqModel, body) &&
 		!service.GroupAllowsImageGeneration(apiKey.Group) {
@@ -306,6 +312,10 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 
 	// Generate session hash (header first; fallback to prompt_cache_key)
 	sessionHash := h.gatewayService.GenerateSessionHash(c, sessionHashBody)
+	if imageGenerationIntent {
+		// Image routing must not consume or poison text-session affinity.
+		sessionHash = ""
+	}
 	requireCompact := isOpenAIRemoteCompactPath(c)
 
 	maxAccountSwitches := h.maxAccountSwitches
@@ -317,9 +327,9 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	for {
 		// Select account supporting the requested model
 		reqLog.Debug("openai.account_selecting", zap.Int("excluded_account_count", len(failedAccountIDs)))
-		selection, scheduleDecision, err := h.gatewayService.SelectOpenAICompatibleAccountWithScheduler(
+		selection, scheduleDecision, err := h.gatewayService.SelectOpenAICompatibleAccountWithSchedulerForRouting(
 			c.Request.Context(),
-			openAICompatibleRequestPlatform(apiKey),
+			requestPlatform,
 			apiKey.GroupID,
 			previousResponseID,
 			sessionHash,
@@ -327,6 +337,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 			failedAccountIDs,
 			service.OpenAIUpstreamTransportAny,
 			requireCompact,
+			imageGenerationIntent,
 		)
 		if err != nil {
 			reqLog.Warn("openai.account_select_failed",
@@ -379,6 +390,9 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 			zap.Int("adaptive_excluded_count", scheduleDecision.AdaptiveExcludedCount),
 			zap.Bool("adaptive_diverged", scheduleDecision.AdaptiveDiverged),
 			zap.Bool("adaptive_emergency", scheduleDecision.AdaptiveEmergency),
+			zap.Bool("image_generation_intent", scheduleDecision.ImageGenerationIntent),
+			zap.Bool("image_generation_route_configured", scheduleDecision.ImageGenerationRouteConfigured),
+			zap.Int("image_generation_route_priority", scheduleDecision.ImageGenerationRoutePriority),
 		)
 		account := selection.Account
 		sessionHash = ensureOpenAIPoolModeSessionHash(sessionHash, account)
@@ -1261,11 +1275,14 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, "previous_response_id must be a response.id (resp_*), not a message id")
 		return
 	}
+	requestPlatform := openAICompatibleRequestPlatform(apiKey)
+	imageGenerationIntent := requestPlatform == service.PlatformOpenAI && service.IsExplicitOpenAIImageGenerationIntent(firstMessage)
 	reqLog = reqLog.With(
 		zap.Bool("ws_ingress", true),
 		zap.String("model", reqModel),
 		zap.Bool("has_previous_response_id", previousResponseID != ""),
 		zap.String("previous_response_id_kind", previousResponseIDKind),
+		zap.Bool("image_generation_intent", imageGenerationIntent),
 	)
 	if apiKey.Group != nil && apiKey.Group.Platform == service.PlatformGrok &&
 		service.IsExplicitGrokImageGenerationIntent(reqModel, firstMessage) &&
@@ -1326,21 +1343,25 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		firstMessage,
 		openAIWSIngressFallbackSessionSeed(subject.UserID, apiKey.ID, apiKey.GroupID),
 	)
-	requestPlatform := openAICompatibleRequestPlatform(apiKey)
 	requiredTransport := service.OpenAIUpstreamTransportResponsesWebsocketV2Ingress
 	if requestPlatform == service.PlatformGrok {
 		requiredTransport = service.OpenAIUpstreamTransportHTTPSSE
 	}
-	selection, scheduleDecision, err := h.gatewayService.SelectOpenAICompatibleAccountWithScheduler(
+	routingSessionHash := sessionHash
+	if imageGenerationIntent {
+		routingSessionHash = ""
+	}
+	selection, scheduleDecision, err := h.gatewayService.SelectOpenAICompatibleAccountWithSchedulerForRouting(
 		ctx,
 		requestPlatform,
 		apiKey.GroupID,
 		previousResponseID,
-		sessionHash,
+		routingSessionHash,
 		reqModel,
 		nil,
 		requiredTransport,
 		false,
+		imageGenerationIntent,
 	)
 	if err != nil {
 		reqLog.Warn("openai.websocket_account_select_failed", zap.Error(err))
@@ -1385,8 +1406,10 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		accountReleaseFunc = fastReleaseFunc
 	}
 	currentAccountRelease = wrapReleaseOnDone(ctx, accountReleaseFunc)
-	if err := h.gatewayService.BindStickySession(ctx, apiKey.GroupID, sessionHash, account.ID); err != nil {
-		reqLog.Warn("openai.websocket_bind_sticky_session_failed", zap.Int64("account_id", account.ID), zap.Error(err))
+	if !imageGenerationIntent {
+		if err := h.gatewayService.BindStickySession(ctx, apiKey.GroupID, sessionHash, account.ID); err != nil {
+			reqLog.Warn("openai.websocket_bind_sticky_session_failed", zap.Int64("account_id", account.ID), zap.Error(err))
+		}
 	}
 
 	token, _, err := h.gatewayService.GetAccessToken(ctx, account)
@@ -1401,6 +1424,8 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		zap.String("account_name", account.Name),
 		zap.String("schedule_layer", scheduleDecision.Layer),
 		zap.Int("candidate_count", scheduleDecision.CandidateCount),
+		zap.Bool("image_generation_route_configured", scheduleDecision.ImageGenerationRouteConfigured),
+		zap.Int("image_generation_route_priority", scheduleDecision.ImageGenerationRoutePriority),
 	)
 
 	maxReasoningEffort := ""

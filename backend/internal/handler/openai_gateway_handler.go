@@ -15,6 +15,7 @@ import (
 	pkghttputil "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/httputil"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ip"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
+	pkgopenai "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/openai"
 	middleware2 "github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 
@@ -56,6 +57,13 @@ func openAICompatibleRequestPlatform(apiKey *service.APIKey) string {
 		return service.PlatformGrok
 	}
 	return service.PlatformOpenAI
+}
+
+func isOfficialCodexRequest(c *gin.Context) bool {
+	return c != nil && pkgopenai.IsCodexOfficialClientByHeaders(
+		c.GetHeader("User-Agent"),
+		c.GetHeader("originator"),
+	)
 }
 
 func newOpenAIWSUnsupportedModelSwitchError(model string) error {
@@ -231,11 +239,27 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	}
 	reqStream := streamResult.Bool()
 	requestPlatform := openAICompatibleRequestPlatform(apiKey)
+	codexSemanticImageIntent := requestPlatform == service.PlatformOpenAI &&
+		isOfficialCodexRequest(c) &&
+		service.IsOpenAICodexSemanticImageGenerationIntent(body)
+	if codexSemanticImageIntent {
+		preparedBody, activated, prepareErr := service.PrepareOpenAICodexImageGenerationRequest(body)
+		if prepareErr != nil {
+			h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", prepareErr.Error())
+			return
+		}
+		if activated {
+			body = preparedBody
+		} else {
+			codexSemanticImageIntent = false
+		}
+	}
 	imageGenerationIntent := requestPlatform == service.PlatformOpenAI && service.IsExplicitOpenAIImageGenerationIntent(body)
 	reqLog = reqLog.With(
 		zap.String("model", reqModel),
 		zap.Bool("stream", reqStream),
 		zap.Bool("image_generation_intent", imageGenerationIntent),
+		zap.Bool("codex_semantic_image_generation_intent", codexSemanticImageIntent),
 	)
 	if apiKey.Group != nil && apiKey.Group.Platform == service.PlatformGrok &&
 		service.IsExplicitGrokImageGenerationIntent(reqModel, body) &&
@@ -1276,6 +1300,21 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		return
 	}
 	requestPlatform := openAICompatibleRequestPlatform(apiKey)
+	codexSemanticImageIntent := requestPlatform == service.PlatformOpenAI &&
+		isOfficialCodexRequest(c) &&
+		service.IsOpenAICodexSemanticImageGenerationIntent(firstMessage)
+	if codexSemanticImageIntent {
+		preparedMessage, activated, prepareErr := service.PrepareOpenAICodexImageGenerationRequest(firstMessage)
+		if prepareErr != nil {
+			closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, prepareErr.Error())
+			return
+		}
+		if activated {
+			firstMessage = preparedMessage
+		} else {
+			codexSemanticImageIntent = false
+		}
+	}
 	imageGenerationIntent := requestPlatform == service.PlatformOpenAI && service.IsExplicitOpenAIImageGenerationIntent(firstMessage)
 	reqLog = reqLog.With(
 		zap.Bool("ws_ingress", true),
@@ -1283,6 +1322,7 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		zap.Bool("has_previous_response_id", previousResponseID != ""),
 		zap.String("previous_response_id_kind", previousResponseIDKind),
 		zap.Bool("image_generation_intent", imageGenerationIntent),
+		zap.Bool("codex_semantic_image_generation_intent", codexSemanticImageIntent),
 	)
 	if apiKey.Group != nil && apiKey.Group.Platform == service.PlatformGrok &&
 		service.IsExplicitGrokImageGenerationIntent(reqModel, firstMessage) &&

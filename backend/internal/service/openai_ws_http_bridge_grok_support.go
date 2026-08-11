@@ -320,18 +320,23 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 			}
 			statusCode := openAIWSErrorHTTPStatusFromRaw(errCodeRaw, errTypeRaw)
 			contentPolicyRejection = account.Platform == PlatformGrok && isGrokContentPolicyRejection(http.StatusForbidden, message)
-			errorResp := &http.Response{StatusCode: statusCode, Header: resp.Header}
-			failoverErr := s.failoverOpenAIUpstreamHTTPError(
-				ctx,
-				c,
-				account,
-				errorResp,
-				message,
-				errMessage,
-				upstreamModel,
-			)
-			if turn == 1 && !wroteDownstream && failoverErr != nil {
-				return nil, failoverErr
+			// SSE errors have no HTTP status, so an unknown xAI policy code maps to
+			// 502. Keep request-scoped policy refusals out of the account failover
+			// helper instead of cooling down or consuming another account.
+			if !contentPolicyRejection {
+				errorResp := &http.Response{StatusCode: statusCode, Header: resp.Header}
+				failoverErr := s.failoverOpenAIUpstreamHTTPError(
+					ctx,
+					c,
+					account,
+					errorResp,
+					message,
+					errMessage,
+					upstreamModel,
+				)
+				if turn == 1 && !wroteDownstream && failoverErr != nil {
+					return nil, failoverErr
+				}
 			}
 			upstreamEventErr = errors.New(errMessage)
 		}

@@ -108,6 +108,10 @@ func TestClassifyOpenAIWSErrorEvent(t *testing.T) {
 	reason, recoverable = classifyOpenAIWSErrorEvent([]byte(`{"type":"error","error":{"code":"previous_response_not_found","message":"not found"}}`))
 	require.Equal(t, "previous_response_not_found", reason)
 	require.True(t, recoverable)
+
+	reason, recoverable = classifyOpenAIWSErrorEvent([]byte(`{"type":"error","error":{"message":"Your input exceeds the context window of this model"}}`))
+	require.Equal(t, "context_window_exceeded", reason)
+	require.False(t, recoverable)
 }
 
 func TestClassifyOpenAIWSReconnectReason(t *testing.T) {

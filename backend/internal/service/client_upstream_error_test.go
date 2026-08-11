@@ -78,6 +78,29 @@ func TestSafeClientUpstreamError(t *testing.T) {
 	}
 }
 
+func TestSafeOpenAIClientUpstreamError_ContextWindowExceeded(t *testing.T) {
+	tests := []string{
+		"Your input exceeds the context window of this model.",
+		"context_length_exceeded",
+		"This model's maximum context length is 250000 tokens.",
+		"请求上下文过长，请减少消息数量",
+	}
+
+	for _, upstreamError := range tests {
+		t.Run(upstreamError, func(t *testing.T) {
+			got := SafeOpenAIClientUpstreamError(http.StatusBadGateway, upstreamError)
+			assert.Equal(t, http.StatusBadRequest, got.StatusCode)
+			assert.Equal(t, "invalid_request_error", got.Type)
+			assert.Equal(t, ClientCodeContextWindowExceeded, got.Code)
+			assert.Equal(t, ClientMessageContextWindowExceeded, got.Message)
+			assert.NotContains(t, got.Message, "try again later")
+		})
+	}
+
+	generic := SafeOpenAIClientUpstreamError(http.StatusBadGateway, "upstream connection reset")
+	assert.Equal(t, SafeClientUpstreamError(http.StatusBadGateway), generic)
+}
+
 func TestOpenAIClientUpstreamErrorEnvelopeIncludesCode(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	rec := httptest.NewRecorder()

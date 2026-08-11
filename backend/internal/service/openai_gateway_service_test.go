@@ -964,6 +964,60 @@ func TestOpenAIStreamingResponseFailedAfterOutputIsSanitizedWithRequestID(t *tes
 	require.NotContains(t, body, "quota")
 }
 
+func TestOpenAIStreamingContextWindowExceededIsTerminalAndActionable(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	svc := &OpenAIGatewayService{cfg: &config.Config{Gateway: config.GatewayConfig{MaxLineSize: defaultMaxLineSize}}}
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkey.RequestID, "req-context-window"))
+
+	pr, pw := io.Pipe()
+	resp := &http.Response{StatusCode: http.StatusOK, Body: pr, Header: http.Header{}}
+	go func() {
+		defer func() { _ = pw.Close() }()
+		_, _ = pw.Write([]byte(`data: {"type":"response.failed","response":{"id":"resp_context","model":"gpt-test","error":{"code":"context_length_exceeded","message":"Your input exceeds the context window of this model"}}}` + "\n\n"))
+	}()
+
+	_, err := svc.handleStreamingResponse(c.Request.Context(), resp, c, &Account{ID: 1}, time.Now(), "gpt-test", "gpt-test")
+	_ = pr.Close()
+	require.Error(t, err)
+	var failoverErr *UpstreamFailoverError
+	require.False(t, errors.As(err, &failoverErr), "context overflow must not rotate accounts or retry")
+	body := rec.Body.String()
+	require.Contains(t, body, `"code":"context_length_exceeded"`)
+	require.Contains(t, body, ClientMessageContextWindowExceeded)
+	require.Contains(t, body, `"request_id":"req-context-window"`)
+	require.NotContains(t, body, ClientMessageServiceUnavailable)
+	require.NotContains(t, body, "try again later")
+}
+
+func TestOpenAIStreamingPassthroughContextWindowExceededIsTerminalAndActionable(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	svc := &OpenAIGatewayService{cfg: &config.Config{Gateway: config.GatewayConfig{MaxLineSize: defaultMaxLineSize}}}
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
+
+	pr, pw := io.Pipe()
+	resp := &http.Response{StatusCode: http.StatusOK, Body: pr, Header: http.Header{}}
+	go func() {
+		defer func() { _ = pw.Close() }()
+		_, _ = pw.Write([]byte(`data: {"type":"response.failed","response":{"id":"resp_context","error":{"message":"Your input exceeds the context window of this model"}}}` + "\n\n"))
+	}()
+
+	_, err := svc.handleStreamingResponsePassthrough(c.Request.Context(), resp, c, &Account{ID: 1}, time.Now())
+	_ = pr.Close()
+	require.Error(t, err)
+	var failoverErr *UpstreamFailoverError
+	require.False(t, errors.As(err, &failoverErr), "context overflow must not fail over")
+	require.Contains(t, rec.Body.String(), `"code":"context_length_exceeded"`)
+	require.Contains(t, rec.Body.String(), ClientMessageContextWindowExceeded)
+	require.NotContains(t, rec.Body.String(), ClientMessageServiceUnavailable)
+}
+
 func TestOpenAIStreamingContextCanceledReturnsIncompleteErrorWithoutInjectingErrorEvent(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	cfg := &config.Config{
@@ -2041,4 +2095,59 @@ func TestHandleOAuthSSEToJSON_ResponseFailedReturnsProtocolError(t *testing.T) {
 	require.Equal(t, http.StatusBadGateway, rec.Code)
 	require.Contains(t, rec.Body.String(), ClientMessageServiceUnavailable)
 	require.Contains(t, rec.Header().Get("Content-Type"), "application/json")
+}
+
+func TestHandleOAuthSSEToJSON_ContextWindowExceededReturnsActionableInvalidRequest(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
+
+	svc := &OpenAIGatewayService{cfg: &config.Config{}}
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"text/event-stream"}},
+	}
+	body := []byte(strings.Join([]string{
+		`data: {"type":"response.failed","response":{"error":{"code":"context_length_exceeded","message":"Your input exceeds the context window of this model"}}}`,
+		`data: [DONE]`,
+	}, "\n"))
+
+	usage, err := svc.handleOAuthSSEToJSON(resp, c, body, "gpt-test", "gpt-test")
+	require.Nil(t, usage)
+	require.Error(t, err)
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	require.Contains(t, rec.Body.String(), `"code":"context_length_exceeded"`)
+	require.Contains(t, rec.Body.String(), ClientMessageContextWindowExceeded)
+	require.NotContains(t, rec.Body.String(), ClientMessageServiceUnavailable)
+}
+
+func TestHandleOpenAIHTTPContextWindowExceededReturnsActionableInvalidRequest(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
+
+	svc := &OpenAIGatewayService{cfg: &config.Config{}}
+	resp := &http.Response{
+		StatusCode: http.StatusBadRequest,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body: io.NopCloser(strings.NewReader(
+			`{"error":{"code":"context_length_exceeded","message":"Your input exceeds the context window of this model"}}`,
+		)),
+	}
+	account := &Account{ID: 1, Platform: PlatformOpenAI}
+
+	result, err := svc.handleErrorResponse(context.Background(), resp, c, account, nil)
+	require.Nil(t, result)
+	require.Error(t, err)
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	require.Contains(t, rec.Body.String(), `"code":"context_length_exceeded"`)
+	require.Contains(t, rec.Body.String(), ClientMessageContextWindowExceeded)
+	require.NotContains(t, rec.Body.String(), ClientMessageServiceUnavailable)
+	require.False(t, svc.shouldFailoverOpenAIUpstreamResponse(
+		http.StatusInternalServerError,
+		"Your input exceeds the context window of this model",
+		[]byte(`{"error":{"code":"context_length_exceeded"}}`),
+	))
 }

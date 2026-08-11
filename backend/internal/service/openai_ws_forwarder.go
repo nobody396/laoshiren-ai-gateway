@@ -2249,16 +2249,21 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 				return nil, wrapOpenAIWSFallback(fallbackReason, errors.New(errMsg))
 			}
 			statusCode := openAIWSErrorHTTPStatusFromRaw(errCodeRaw, errTypeRaw)
+			safeClientErr := SafeOpenAIClientUpstreamError(statusCode, errCodeRaw, errTypeRaw, errMsgRaw)
+			statusCode = safeClientErr.StatusCode
 			setOpsUpstreamError(c, statusCode, errMsg, "")
-			safeClientErr := SafeClientUpstreamError(statusCode)
 			if reqStream && !clientDisconnected {
 				flushBufferedStreamEvents("error_event")
 				safeResponseID := responseID
-				safePayload, _ := json.Marshal(OpenAIResponsesFailedEnvelope(c, safeResponseID, originalModel, "server_error", safeClientErr.Message))
+				clientCode := safeClientErr.Code
+				if clientCode == "" {
+					clientCode = "server_error"
+				}
+				safePayload, _ := json.Marshal(OpenAIResponsesFailedEnvelope(c, safeResponseID, originalModel, clientCode, safeClientErr.Message))
 				emitStreamMessage(safePayload, true)
 			}
 			if !reqStream {
-				c.JSON(safeClientErr.StatusCode, OpenAIClientErrorEnvelope(c, safeClientErr.Type, safeClientErr.Message))
+				c.JSON(safeClientErr.StatusCode, OpenAIClientUpstreamErrorEnvelope(c, safeClientErr))
 			}
 			return nil, fmt.Errorf("openai ws error event: %s", errMsg)
 		}
@@ -4050,6 +4055,9 @@ func classifyOpenAIWSErrorEventFromRaw(codeRaw, errTypeRaw, msgRaw string) (stri
 	}
 	if isOpenAIWSRateLimitError(codeRaw, errTypeRaw, msgRaw) {
 		return "upstream_rate_limited", false
+	}
+	if IsOpenAIContextWindowExceeded(codeRaw, errTypeRaw, msgRaw) {
+		return "context_window_exceeded", false
 	}
 	if strings.Contains(msg, "upgrade required") || strings.Contains(msg, "status 426") {
 		return "upgrade_required", true

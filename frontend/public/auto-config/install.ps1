@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.7.1'
+$ScriptVersion = '0.7.2'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
 $DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
@@ -1108,6 +1108,8 @@ model_catalog_json = "laoshirenai-model-catalog.json"
 disable_response_storage = true
 network_access = "enabled"
 preferred_auth_method = "apikey"
+model_context_window = 250000
+model_auto_compact_token_limit = 225000
 
 [model_providers.OpenAI]
 name = "OpenAI"

@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="0.7.1"
+SCRIPT_VERSION="0.7.2"
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
 DEFAULT_CODEX_MANIFEST_URL="https://laoshirenai.com/api/v1/public-downloads/codex/latest.json"
@@ -1018,6 +1018,8 @@ model_catalog_json = "laoshirenai-model-catalog.json"
 disable_response_storage = true
 network_access = "enabled"
 preferred_auth_method = "apikey"
+model_context_window = 250000
+model_auto_compact_token_limit = 225000
 
 [model_providers.OpenAI]
 name = "OpenAI"

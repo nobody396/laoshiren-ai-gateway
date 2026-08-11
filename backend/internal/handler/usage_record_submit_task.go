@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -43,6 +44,28 @@ func usageRecordRequestCorrelation(ctx context.Context) (requestID, clientReques
 	requestID, _ = ctx.Value(ctxkey.RequestID).(string)
 	clientRequestID, _ = ctx.Value(ctxkey.ClientRequestID).(string)
 	return strings.TrimSpace(requestID), strings.TrimSpace(clientRequestID)
+}
+
+// withUsageRecordWSTurnCorrelation gives every billable turn on one inbound
+// WebSocket connection its own stable idempotency key. Reusing the connection
+// request IDs for every turn would make later turns collide with turn 1 in
+// usage_billing_dedup.
+func withUsageRecordWSTurnCorrelation(requestCtx context.Context, turn int) context.Context {
+	if requestCtx == nil {
+		requestCtx = context.Background()
+	}
+	if turn < 1 {
+		turn = 1
+	}
+	suffix := fmt.Sprintf(":ws-turn:%d", turn)
+	requestID, clientRequestID := usageRecordRequestCorrelation(requestCtx)
+	if requestID != "" {
+		requestCtx = context.WithValue(requestCtx, ctxkey.RequestID, requestID+suffix)
+	}
+	if clientRequestID != "" {
+		requestCtx = context.WithValue(requestCtx, ctxkey.ClientRequestID, clientRequestID+suffix)
+	}
+	return requestCtx
 }
 
 func submitUsageRecordTaskFailClosed(

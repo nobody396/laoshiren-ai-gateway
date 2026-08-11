@@ -25,26 +25,30 @@ const (
 )
 
 type OpenAIAccountScheduleRequest struct {
-	GroupID            *int64
-	SessionHash        string
-	StickyAccountID    int64
-	PreviousResponseID string
-	RequestedModel     string
-	RequiredTransport  OpenAIUpstreamTransport
-	RequireCompact     bool
-	ExcludedIDs        map[int64]struct{}
+	GroupID               *int64
+	SessionHash           string
+	StickyAccountID       int64
+	PreviousResponseID    string
+	RequestedModel        string
+	RequiredTransport     OpenAIUpstreamTransport
+	RequireCompact        bool
+	PreferImageGeneration bool
+	ExcludedIDs           map[int64]struct{}
 }
 
 type OpenAIAccountScheduleDecision struct {
-	Layer               string
-	StickyPreviousHit   bool
-	StickySessionHit    bool
-	CandidateCount      int
-	TopK                int
-	LatencyMs           int64
-	LoadSkew            float64
-	SelectedAccountID   int64
-	SelectedAccountType string
+	Layer                          string
+	StickyPreviousHit              bool
+	StickySessionHit               bool
+	CandidateCount                 int
+	TopK                           int
+	LatencyMs                      int64
+	LoadSkew                       float64
+	SelectedAccountID              int64
+	SelectedAccountType            string
+	ImageGenerationIntent          bool
+	ImageGenerationRouteConfigured bool
+	ImageGenerationRoutePriority   int
 
 	RoutePolicyMode           OpenAIRoutePolicyMode
 	RoutePolicyVersion        int
@@ -249,7 +253,7 @@ func (s *defaultOpenAIAccountScheduler) Select(
 	ctx context.Context,
 	req OpenAIAccountScheduleRequest,
 ) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
-	decision := OpenAIAccountScheduleDecision{}
+	decision := OpenAIAccountScheduleDecision{ImageGenerationIntent: req.PreferImageGeneration}
 	start := time.Now()
 	defer func() {
 		decision.LatencyMs = time.Since(start).Milliseconds()
@@ -281,6 +285,7 @@ func (s *defaultOpenAIAccountScheduler) Select(
 			decision.StickyPreviousHit = true
 			decision.SelectedAccountID = selection.Account.ID
 			decision.SelectedAccountType = selection.Account.Type
+			applyOpenAIImageGenerationScheduleDecision(&decision, selection.Account, req)
 			if req.SessionHash != "" {
 				_ = s.service.BindStickySession(ctx, req.GroupID, req.SessionHash, selection.Account.ID)
 			}
@@ -297,6 +302,7 @@ func (s *defaultOpenAIAccountScheduler) Select(
 		decision.StickySessionHit = true
 		decision.SelectedAccountID = selection.Account.ID
 		decision.SelectedAccountType = selection.Account.Type
+		applyOpenAIImageGenerationScheduleDecision(&decision, selection.Account, req)
 		return selection, decision, nil
 	}
 
@@ -312,8 +318,21 @@ func (s *defaultOpenAIAccountScheduler) Select(
 		applyOpenAIRouteShadowScheduleDecision(&decision, selection.OpenAIRouteShadow)
 		decision.SelectedAccountID = selection.Account.ID
 		decision.SelectedAccountType = selection.Account.Type
+		applyOpenAIImageGenerationScheduleDecision(&decision, selection.Account, req)
 	}
 	return selection, decision, nil
+}
+
+func applyOpenAIImageGenerationScheduleDecision(
+	decision *OpenAIAccountScheduleDecision,
+	account *Account,
+	req OpenAIAccountScheduleRequest,
+) {
+	if decision == nil || account == nil || !req.PreferImageGeneration {
+		return
+	}
+	decision.ImageGenerationRoutePriority, decision.ImageGenerationRouteConfigured =
+		account.OpenAIImageGenerationRoutingPriority(req.RequestedModel)
 }
 
 func (s *defaultOpenAIAccountScheduler) selectBySessionHash(
@@ -391,6 +410,75 @@ type openAIAccountCandidateScore struct {
 	errorRate   float64
 	ttft        float64
 	hasTTFT     bool
+}
+
+type openAIAccountSchedulingPriorityKey struct {
+	accountID               int64
+	imageRouteConfigured    bool
+	imageGenerationPriority int
+	normalPriority          int
+}
+
+func resolveOpenAIAccountSchedulingPriorities(
+	accounts []*Account,
+	req OpenAIAccountScheduleRequest,
+) map[int64]int {
+	priorities := make(map[int64]int, len(accounts))
+	if !req.PreferImageGeneration {
+		for _, account := range accounts {
+			priorities[account.ID] = account.EffectivePriorityForGroup(req.GroupID)
+		}
+		return priorities
+	}
+
+	keys := make([]openAIAccountSchedulingPriorityKey, 0, len(accounts))
+	hasConfiguredRoute := false
+	for _, account := range accounts {
+		imagePriority, configured := account.OpenAIImageGenerationRoutingPriority(req.RequestedModel)
+		hasConfiguredRoute = hasConfiguredRoute || configured
+		keys = append(keys, openAIAccountSchedulingPriorityKey{
+			accountID:               account.ID,
+			imageRouteConfigured:    configured,
+			imageGenerationPriority: imagePriority,
+			normalPriority:          account.EffectivePriorityForGroup(req.GroupID),
+		})
+	}
+	if !hasConfiguredRoute {
+		for _, key := range keys {
+			priorities[key.accountID] = key.normalPriority
+		}
+		return priorities
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		left, right := keys[i], keys[j]
+		if left.imageRouteConfigured != right.imageRouteConfigured {
+			return left.imageRouteConfigured
+		}
+		if left.imageRouteConfigured && left.imageGenerationPriority != right.imageGenerationPriority {
+			return left.imageGenerationPriority < right.imageGenerationPriority
+		}
+		if left.normalPriority != right.normalPriority {
+			return left.normalPriority < right.normalPriority
+		}
+		return left.accountID < right.accountID
+	})
+
+	// Dense ranks keep configured image routes strictly ahead of ordinary
+	// fallback accounts without risking integer overflow from synthetic offsets.
+	rank := 0
+	for i, key := range keys {
+		if i > 0 {
+			previous := keys[i-1]
+			if key.imageRouteConfigured != previous.imageRouteConfigured ||
+				key.imageGenerationPriority != previous.imageGenerationPriority ||
+				key.normalPriority != previous.normalPriority {
+				rank++
+			}
+		}
+		priorities[key.accountID] = rank
+	}
+	return priorities
 }
 
 type openAIAccountCandidateHeap []openAIAccountCandidateScore
@@ -677,7 +765,8 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 		}
 	}
 
-	minPriority := filtered[0].EffectivePriorityForGroup(req.GroupID)
+	effectivePriorities := resolveOpenAIAccountSchedulingPriorities(filtered, req)
+	minPriority := effectivePriorities[filtered[0].ID]
 	maxPriority := minPriority
 	maxWaiting := 1
 	loadRateSum := 0.0
@@ -686,7 +775,7 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 	hasTTFTSample := false
 	candidates := make([]openAIAccountCandidateScore, 0, len(filtered))
 	for _, account := range filtered {
-		effectivePriority := account.EffectivePriorityForGroup(req.GroupID)
+		effectivePriority := effectivePriorities[account.ID]
 		loadInfo := loadMap[account.ID]
 		if loadInfo == nil {
 			loadInfo = &AccountLoadInfo{AccountID: account.ID}
@@ -1158,6 +1247,28 @@ func (s *OpenAIGatewayService) SelectAccountWithSchedulerForRequest(
 	requiredTransport OpenAIUpstreamTransport,
 	requireCompact bool,
 ) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
+	return s.selectAccountWithSchedulerForRouting(
+		ctx, groupID, previousResponseID, sessionHash, requestedModel,
+		excludedIDs, requiredTransport, requireCompact, false,
+	)
+}
+
+func (s *OpenAIGatewayService) selectAccountWithSchedulerForRouting(
+	ctx context.Context,
+	groupID *int64,
+	previousResponseID string,
+	sessionHash string,
+	requestedModel string,
+	excludedIDs map[int64]struct{},
+	requiredTransport OpenAIUpstreamTransport,
+	requireCompact bool,
+	preferImageGeneration bool,
+) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
+	if preferImageGeneration {
+		// Image requests must neither inherit nor create ordinary text-session
+		// affinity. previous_response_id remains authoritative when supplied.
+		sessionHash = ""
+	}
 	decision := OpenAIAccountScheduleDecision{}
 	scheduler := s.getOpenAIAccountScheduler()
 	if scheduler == nil {
@@ -1174,14 +1285,15 @@ func (s *OpenAIGatewayService) SelectAccountWithSchedulerForRequest(
 	}
 
 	return scheduler.Select(ctx, OpenAIAccountScheduleRequest{
-		GroupID:            groupID,
-		SessionHash:        sessionHash,
-		StickyAccountID:    stickyAccountID,
-		PreviousResponseID: previousResponseID,
-		RequestedModel:     requestedModel,
-		RequiredTransport:  requiredTransport,
-		RequireCompact:     requireCompact,
-		ExcludedIDs:        excludedIDs,
+		GroupID:               groupID,
+		SessionHash:           sessionHash,
+		StickyAccountID:       stickyAccountID,
+		PreviousResponseID:    previousResponseID,
+		RequestedModel:        requestedModel,
+		RequiredTransport:     requiredTransport,
+		RequireCompact:        requireCompact,
+		PreferImageGeneration: preferImageGeneration,
+		ExcludedIDs:           excludedIDs,
 	})
 }
 

@@ -134,6 +134,98 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_UsesGroupPriorityBefore
 	}
 }
 
+func TestOpenAIGatewayService_SelectAccountWithScheduler_ImageIntentUsesConfiguredRouteOnly(t *testing.T) {
+	ctx := context.Background()
+	groupID := int64(7)
+	pomo := Account{
+		ID:          23,
+		Name:        "pomo-primary",
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 20,
+		Priority:    1,
+		Extra: map[string]any{
+			OpenAIImageGenerationPriorityExtraKey: 2,
+			OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.4"},
+		},
+		AccountGroups: []AccountGroup{
+			{AccountID: 23, GroupID: groupID, Priority: 1},
+		},
+	}
+	moreCode := Account{
+		ID:          33,
+		Name:        "morecode-image-primary",
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 20,
+		Priority:    2,
+		Extra: map[string]any{
+			OpenAIImageGenerationPriorityExtraKey: 1,
+			OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.4"},
+		},
+		AccountGroups: []AccountGroup{
+			{AccountID: 33, GroupID: groupID, Priority: 2},
+		},
+	}
+
+	cache := &stubGatewayCache{sessionBindings: map[string]int64{"openai:text-session": 23}}
+	svc := &OpenAIGatewayService{
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{moreCode, pomo}},
+		cache:              cache,
+		cfg:                &config.Config{},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
+	}
+
+	textSelection, _, err := svc.SelectAccountWithScheduler(
+		ctx, &groupID, "", "", "gpt-5.4", nil, OpenAIUpstreamTransportAny,
+	)
+	require.NoError(t, err)
+	require.Equal(t, int64(23), textSelection.Account.ID, "ordinary text must preserve group priority")
+	if textSelection.ReleaseFunc != nil {
+		textSelection.ReleaseFunc()
+	}
+
+	imageSelection, decision, err := svc.selectAccountWithSchedulerForRouting(
+		ctx, &groupID, "", "text-session", "gpt-5.4", nil,
+		OpenAIUpstreamTransportAny, false, true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, int64(33), imageSelection.Account.ID, "image route must ignore text sticky affinity")
+	require.True(t, decision.ImageGenerationIntent)
+	require.True(t, decision.ImageGenerationRouteConfigured)
+	require.Equal(t, 1, decision.ImageGenerationRoutePriority)
+	if imageSelection.ReleaseFunc != nil {
+		imageSelection.ReleaseFunc()
+	}
+
+	fallbackSelection, decision, err := svc.selectAccountWithSchedulerForRouting(
+		ctx, &groupID, "", "", "gpt-5.4", map[int64]struct{}{33: {}},
+		OpenAIUpstreamTransportAny, false, true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, int64(23), fallbackSelection.Account.ID, "excluded image primary must fall back safely")
+	require.True(t, decision.ImageGenerationRouteConfigured)
+	require.Equal(t, 2, decision.ImageGenerationRoutePriority)
+	if fallbackSelection.ReleaseFunc != nil {
+		fallbackSelection.ReleaseFunc()
+	}
+
+	unsupportedSelection, decision, err := svc.selectAccountWithSchedulerForRouting(
+		ctx, &groupID, "", "", "gpt-5.4-mini", nil,
+		OpenAIUpstreamTransportAny, false, true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, int64(23), unsupportedSelection.Account.ID, "unproven model must retain ordinary routing")
+	require.False(t, decision.ImageGenerationRouteConfigured)
+	if unsupportedSelection.ReleaseFunc != nil {
+		unsupportedSelection.ReleaseFunc()
+	}
+}
+
 type openAIRouteShadowEvaluatorStub struct {
 	request  OpenAIRouteShadowRequest
 	decision OpenAIRouteShadowDecision

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -22,6 +23,33 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
+
+func TestIsOfficialCodexRequest(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	tests := []struct {
+		name       string
+		userAgent  string
+		originator string
+		want       bool
+	}{
+		{name: "codex cli user agent", userAgent: "codex_cli_rs/0.147.0", want: true},
+		{name: "codex desktop originator", userAgent: "Mozilla/5.0", originator: "codex_chatgpt_desktop", want: true},
+		{name: "ordinary api client", userAgent: "curl/8.0", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, _ := gin.CreateTestContext(httptest.NewRecorder())
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(nil))
+			c.Request.Header.Set("User-Agent", tt.userAgent)
+			if tt.originator != "" {
+				c.Request.Header.Set("originator", tt.originator)
+			}
+			require.Equal(t, tt.want, isOfficialCodexRequest(c))
+		})
+	}
+}
 
 func TestOpenAIHandleStreamingAwareError_JSONEscaping(t *testing.T) {
 	tests := []struct {

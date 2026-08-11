@@ -19,7 +19,7 @@ const powerShellSingleQuote = (value: string): string => {
 
 // Edge CDN keeps public installer paths for a long time. Version the copied
 // URL so a newly deployed setup contract cannot execute a stale installer.
-const CLIENT_AUTO_CONFIG_VERSION = '0.7.1'
+const CLIENT_AUTO_CONFIG_VERSION = '0.7.2'
 const SHELL_INSTALLER_URL = `https://laoshirenai.com/auto-config/install.sh?v=${CLIENT_AUTO_CONFIG_VERSION}`
 const POWERSHELL_INSTALLER_URL = `https://laoshirenai.com/auto-config/install.ps1?v=${CLIENT_AUTO_CONFIG_VERSION}`
 

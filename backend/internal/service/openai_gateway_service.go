@@ -1984,6 +1984,9 @@ func (s *OpenAIGatewayService) shouldFailoverUpstreamError(statusCode int) bool 
 }
 
 func (s *OpenAIGatewayService) shouldFailoverOpenAIUpstreamResponse(statusCode int, upstreamMsg string, upstreamBody []byte) bool {
+	if IsOpenAIContextWindowExceeded(upstreamMsg, string(upstreamBody)) {
+		return false
+	}
 	if s.shouldFailoverUpstreamError(statusCode) {
 		return true
 	}
@@ -3306,6 +3309,9 @@ func openAIStreamFailedEventShouldFailover(payload []byte, message string) bool 
 	if combined == "" {
 		return true
 	}
+	if IsOpenAIContextWindowExceeded(combined, string(payload)) {
+		return false
+	}
 	nonRetryableMarkers := []string{
 		"invalid_request",
 		"content_policy",
@@ -3361,12 +3367,12 @@ func (s *OpenAIGatewayService) newOpenAIStreamFailoverError(
 		}
 		appendOpsUpstreamError(c, event)
 	}
-	safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
-	body, _ := json.Marshal(OpenAIClientErrorEnvelope(c, safeClientErr.Type, safeClientErr.Message))
+	safeClientErr := SafeOpenAIClientUpstreamError(http.StatusBadGateway, message, string(payload))
+	body, _ := json.Marshal(OpenAIClientUpstreamErrorEnvelope(c, safeClientErr))
 	return &UpstreamFailoverError{
-		StatusCode:             http.StatusBadGateway,
+		StatusCode:             safeClientErr.StatusCode,
 		ResponseBody:           body,
-		RetryableOnSameAccount: isOpenAIUpstreamCapacityShedEvent(payload),
+		RetryableOnSameAccount: safeClientErr.Code == "" && isOpenAIUpstreamCapacityShedEvent(payload),
 	}
 }
 
@@ -3444,10 +3450,14 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 				}
 				forceFlushFailedEvent = true
 				sawFailedEvent = true
-				safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+				safeClientErr := SafeOpenAIClientUpstreamError(http.StatusBadGateway, failedMessage, string(dataBytes))
+				clientCode := safeClientErr.Code
+				if clientCode == "" {
+					clientCode = "server_error"
+				}
 				responseID := strings.TrimSpace(gjson.GetBytes(dataBytes, "response.id").String())
 				model := strings.TrimSpace(gjson.GetBytes(dataBytes, "response.model").String())
-				safePayload, _ := json.Marshal(OpenAIResponsesFailedEnvelope(c, responseID, model, "server_error", safeClientErr.Message))
+				safePayload, _ := json.Marshal(OpenAIResponsesFailedEnvelope(c, responseID, model, clientCode, safeClientErr.Message))
 				line = "data: " + string(safePayload)
 			case "error":
 				if safePayload, changed := sanitizeOpenAICapacityShedErrorCodeForClient(dataBytes); changed {
@@ -3810,6 +3820,23 @@ func (s *OpenAIGatewayService) handleErrorResponse(
 		}
 		upstreamDetail = truncateString(string(body), maxBytes)
 	}
+
+	if safeErr := SafeOpenAIClientUpstreamError(resp.StatusCode, upstreamMsg, string(body)); safeErr.Code == ClientCodeContextWindowExceeded {
+		setOpsUpstreamError(c, resp.StatusCode, upstreamMsg, upstreamDetail)
+		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+			Platform:           account.Platform,
+			AccountID:          account.ID,
+			AccountName:        account.Name,
+			UpstreamStatusCode: resp.StatusCode,
+			UpstreamRequestID:  resp.Header.Get("x-request-id"),
+			Kind:               "http_error",
+			Message:            upstreamMsg,
+			Detail:             upstreamDetail,
+		})
+		MarkResponseCommitted(c)
+		c.JSON(safeErr.StatusCode, OpenAIClientUpstreamErrorEnvelope(c, safeErr))
+		return nil, fmt.Errorf("upstream context window exceeded: %s", upstreamMsg)
+	}
 	setOpsUpstreamError(c, resp.StatusCode, upstreamMsg, upstreamDetail)
 	logOpenAIInstructionsRequiredDebug(ctx, c, account, resp.StatusCode, upstreamMsg, requestBody, body)
 
@@ -3946,6 +3973,21 @@ func (s *OpenAIGatewayService) handleCompatErrorResponse(
 		upstreamDetail = truncateString(string(body), maxBytes)
 	}
 	setOpsUpstreamError(c, resp.StatusCode, upstreamMsg, upstreamDetail)
+	if safeErr := SafeOpenAIClientUpstreamError(resp.StatusCode, upstreamMsg, string(body)); safeErr.Code == ClientCodeContextWindowExceeded {
+		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+			Platform:           account.Platform,
+			AccountID:          account.ID,
+			AccountName:        account.Name,
+			UpstreamStatusCode: resp.StatusCode,
+			UpstreamRequestID:  resp.Header.Get("x-request-id"),
+			Kind:               "http_error",
+			Message:            upstreamMsg,
+			Detail:             upstreamDetail,
+		})
+		MarkResponseCommitted(c)
+		writeError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message)
+		return nil, fmt.Errorf("upstream context window exceeded: %s", upstreamMsg)
+	}
 
 	// Apply error passthrough rules
 	if status, errType, errMsg, matched := applyErrorPassthroughRule(
@@ -4243,13 +4285,17 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 				}
 				forceFlushFailedEvent = true
 				sawFailedEvent = true
-				safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
+				safeClientErr := SafeOpenAIClientUpstreamError(http.StatusBadGateway, failedMessage, string(dataBytes))
+				clientCode := safeClientErr.Code
+				if clientCode == "" {
+					clientCode = "server_error"
+				}
 				responseID := strings.TrimSpace(gjson.GetBytes(dataBytes, "response.id").String())
 				model := originalModel
 				if model == "" {
 					model = strings.TrimSpace(gjson.GetBytes(dataBytes, "response.model").String())
 				}
-				safePayload, _ := json.Marshal(OpenAIResponsesFailedEnvelope(c, responseID, model, "server_error", safeClientErr.Message))
+				safePayload, _ := json.Marshal(OpenAIResponsesFailedEnvelope(c, responseID, model, clientCode, safeClientErr.Message))
 				dataBytes = safePayload
 				data = string(safePayload)
 				line = "data: " + data
@@ -4863,8 +4909,8 @@ func (s *OpenAIGatewayService) writeOpenAINonStreamingProtocolError(resp *http.R
 	setOpsUpstreamError(c, http.StatusBadGateway, message, "")
 	responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
 	c.Writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-	safeErr := SafeClientUpstreamError(http.StatusBadGateway)
-	c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
+	safeErr := SafeOpenAIClientUpstreamError(http.StatusBadGateway, message)
+	c.JSON(safeErr.StatusCode, OpenAIClientUpstreamErrorEnvelope(c, safeErr))
 	return fmt.Errorf("non-streaming openai protocol error: %s", message)
 }
 

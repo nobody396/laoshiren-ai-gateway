@@ -10,14 +10,16 @@ import (
 )
 
 const (
-	ClientMessageServiceUnavailable  = "The service is temporarily unavailable. Please try again later."
-	ClientMessageServiceBusy         = "The service is currently busy. Please try again later."
-	ClientMessageRequestFailed       = "The request could not be processed. Please verify the request and try again."
-	ClientMessageRequestBodyTooLarge = "Request body is too large. Start a new task or remove large attachments before retrying."
-	ClientMessageResourceNotFound    = "The requested resource could not be found."
-	ClientMessageRequestTimeout      = "The request timed out. Please try again later."
-	ClientCodeRequestBodyTooLarge    = "request_body_too_large"
-	ClientCodeModelNotSupported      = "model_not_supported"
+	ClientMessageServiceUnavailable    = "The service is temporarily unavailable. Please try again later."
+	ClientMessageServiceBusy           = "The service is currently busy. Please try again later."
+	ClientMessageRequestFailed         = "The request could not be processed. Please verify the request and try again."
+	ClientMessageRequestBodyTooLarge   = "Request body is too large. Start a new task or remove large attachments before retrying."
+	ClientMessageContextWindowExceeded = "Context window exceeded: this conversation is too long for the model. Retrying the same request will not help; start a new task or remove earlier messages or large attachments."
+	ClientMessageResourceNotFound      = "The requested resource could not be found."
+	ClientMessageRequestTimeout        = "The request timed out. Please try again later."
+	ClientCodeRequestBodyTooLarge      = "request_body_too_large"
+	ClientCodeContextWindowExceeded    = "context_length_exceeded"
+	ClientCodeModelNotSupported        = "model_not_supported"
 )
 
 // ModelPricingPageURL 用户可查看全部已上架支持模型的公开页面。
@@ -102,6 +104,53 @@ func SafeClientUpstreamError(upstreamStatus int) ClientUpstreamError {
 			Message:    ClientMessageServiceUnavailable,
 		}
 	}
+}
+
+// SafeOpenAIClientUpstreamError preserves one deterministic, actionable
+// OpenAI failure class: an input that cannot fit in the model's context
+// window. Retrying the same request or rotating accounts cannot fix it, so the
+// client must receive a terminal invalid-request error instead of a transient
+// service-unavailable wrapper.
+func SafeOpenAIClientUpstreamError(upstreamStatus int, errorFields ...string) ClientUpstreamError {
+	if IsOpenAIContextWindowExceeded(errorFields...) {
+		return ClientUpstreamError{
+			StatusCode: http.StatusBadRequest,
+			Type:       "invalid_request_error",
+			Message:    ClientMessageContextWindowExceeded,
+			Code:       ClientCodeContextWindowExceeded,
+		}
+	}
+	return SafeClientUpstreamError(upstreamStatus)
+}
+
+// IsOpenAIContextWindowExceeded recognizes the stable codes and wording used
+// by OpenAI-compatible upstreams without exposing their raw response body.
+func IsOpenAIContextWindowExceeded(errorFields ...string) bool {
+	combined := strings.ToLower(strings.Join(errorFields, " "))
+	if strings.TrimSpace(combined) == "" {
+		return false
+	}
+	markers := []string{
+		"context_length_exceeded",
+		"context_window_exceeded",
+		"maximum context length",
+		"max context length",
+		"exceeds the context window",
+		"exceeded the context window",
+		"context window limit",
+		"too many input tokens",
+		"reduce the length of the messages",
+		"input is too long for the model",
+		"上下文长度超出",
+		"上下文过长",
+		"超过模型上下文",
+	}
+	for _, marker := range markers {
+		if strings.Contains(combined, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 func ClientRequestID(c *gin.Context) string {

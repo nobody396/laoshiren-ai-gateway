@@ -218,6 +218,11 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		return
 	}
 	reqModel := modelResult.String()
+	if apiKey.Group != nil && apiKey.Group.Platform == service.PlatformOpenAI {
+		if cappedBody, changed := service.ApplyOpenAIReasoningEffortPolicy(body, apiKey.Group.MaxReasoningEffort, apiKey.Group.ReasoningEffortMappings); changed {
+			body = cappedBody
+		}
+	}
 
 	streamResult := gjson.GetBytes(body, "stream")
 	if streamResult.Exists() && streamResult.Type != gjson.True && streamResult.Type != gjson.False {
@@ -1218,7 +1223,7 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 	defer func() {
 		_ = wsConn.CloseNow()
 	}()
-	wsConn.SetReadLimit(16 * 1024 * 1024)
+	wsConn.SetReadLimit(service.ResolveOpenAIWSClientReadLimitBytes(h.cfg))
 
 	ctx := c.Request.Context()
 	readCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -1273,6 +1278,8 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 	channelMappingWS, _ := h.gatewayService.ResolveChannelMappingAndRestrict(ctx, apiKey.GroupID, reqModel)
 	var turnMappingMu sync.RWMutex
 	turnMappings := map[int]service.ChannelMappingResult{1: channelMappingWS}
+	var turnPayloadHashMu sync.RWMutex
+	turnPayloadHashes := map[int]string{1: service.HashUsageRequestPayload(firstMessage)}
 
 	var currentUserRelease func()
 	var currentAccountRelease func()
@@ -1320,7 +1327,7 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		openAIWSIngressFallbackSessionSeed(subject.UserID, apiKey.ID, apiKey.GroupID),
 	)
 	requestPlatform := openAICompatibleRequestPlatform(apiKey)
-	requiredTransport := service.OpenAIUpstreamTransportResponsesWebsocketV2
+	requiredTransport := service.OpenAIUpstreamTransportResponsesWebsocketV2Ingress
 	if requestPlatform == service.PlatformGrok {
 		requiredTransport = service.OpenAIUpstreamTransportHTTPSSE
 	}
@@ -1396,8 +1403,22 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		zap.Int("candidate_count", scheduleDecision.CandidateCount),
 	)
 
+	maxReasoningEffort := ""
+	var reasoningEffortMappings []service.ReasoningEffortMapping
+	if apiKey.Group != nil && apiKey.Group.Platform == service.PlatformOpenAI {
+		maxReasoningEffort = apiKey.Group.MaxReasoningEffort
+		reasoningEffortMappings = apiKey.Group.ReasoningEffortMappings
+	}
 	hooks := &service.OpenAIWSIngressHooks{
-		InitialRequestModel: reqModel,
+		InitialRequestModel:     reqModel,
+		MaxReasoningEffort:      maxReasoningEffort,
+		ReasoningEffortMappings: reasoningEffortMappings,
+		BeforeRequest: func(turn int, payload []byte, _ string) error {
+			turnPayloadHashMu.Lock()
+			turnPayloadHashes[turn] = service.HashUsageRequestPayload(payload)
+			turnPayloadHashMu.Unlock()
+			return nil
+		},
 		MapRequestModel: func(turn int, originalModel string) (string, error) {
 			model := strings.TrimSpace(originalModel)
 			if model == "" {
@@ -1474,7 +1495,11 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 				h.gatewayService.UpdateCodexUsageSnapshotFromHeaders(ctx, account.ID, result.ResponseHeaders)
 			}
 			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, result.FirstTokenMs)
-			h.submitUsageRecordTask(c.Request.Context(), func(taskCtx context.Context) {
+			turnPayloadHashMu.RLock()
+			turnPayloadHash := turnPayloadHashes[turn]
+			turnPayloadHashMu.RUnlock()
+			turnRequestCtx := withUsageRecordWSTurnCorrelation(c.Request.Context(), turn)
+			h.submitUsageRecordTask(turnRequestCtx, func(taskCtx context.Context) {
 				if err := h.gatewayService.RecordUsage(taskCtx, &service.OpenAIRecordUsageInput{
 					Result:             result,
 					APIKey:             apiKey,
@@ -1485,7 +1510,7 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 					UpstreamEndpoint:   GetUpstreamEndpoint(c, account.Platform),
 					UserAgent:          userAgent,
 					IPAddress:          clientIP,
-					RequestPayloadHash: service.HashUsageRequestPayload(firstMessage),
+					RequestPayloadHash: turnPayloadHash,
 					APIKeyService:      h.apiKeyService,
 					ChannelUsageFields: turnMapping.ToUsageFields(turnRequestedModel, turnUpstreamModel),
 				}); err != nil {

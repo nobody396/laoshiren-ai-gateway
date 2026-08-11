@@ -1122,6 +1122,7 @@ export default {
     stream: '流式',
     async: '异步',
     sync: '同步',
+    live: 'Live',
     unknown: '未知',
     in: '输入',
     out: '输出',
@@ -2345,7 +2346,23 @@ export default {
         accountsPlaceholder: '选择账号（留空则不限制）',
         priorityLabel: '优先级',
         priorityHint: '数值越小优先级越高，用于账号调度',
-        statusLabel: '状态'
+		statusLabel: '状态',
+		maxReasoningEffort: '推理强度上限',
+		maxReasoningEffortUnlimited: '不限制（跟随请求）',
+		maxReasoningEffortHint:
+			'仅限制客户端主动请求的 OpenAI reasoning effort；超过上限时自动降档，不会为缺省请求主动开启推理。上限优先级高于映射。',
+		reasoningEffortMappings: '推理强度映射',
+		addReasoningEffortMapping: '添加映射',
+		removeReasoningEffortMapping: '删除映射',
+		reasoningEffortFrom: '请求值',
+		reasoningEffortTo: '转发值',
+		reasoningEffortFromPlaceholder: '请选择 A',
+		reasoningEffortToPlaceholder: '请选择 B',
+		fromRequired: '请选择请求值 A',
+		toRequired: '请选择转发值 B',
+		unsupportedFrom: '请求值不受当前平台支持',
+		unsupportedTo: '转发值不受当前平台支持',
+		duplicateFrom: '请求值 A 不能重复'
       },
       exclusiveObj: {
         yes: '是',
@@ -2465,6 +2482,14 @@ export default {
         defaultModel: '默认映射模型',
         defaultModelPlaceholder: '例如: gpt-4.1',
         defaultModelHint: '当账号未配置模型映射时，所有请求模型将映射到此模型'
+      },
+      openaiLive: {
+        title: 'OpenAI Live',
+        allow: '允许访问 Live',
+        hint: '启用后，此 OpenAI 分组的 API Key 可以创建并控制 Live 语音会话。默认关闭。运行 Sub2API 的服务端必须是 Apple Silicon Mac，并安装官方 ChatGPT App；客户端平台不受限制。',
+        unsupportedTitle: '当前服务端不支持 Live',
+        unsupportedMessage: '当前 Sub2API 服务端无法生成 Live 所需的设备证明，即使开启也不能使用。是否仍然开启？',
+        enableAnyway: '仍然开启'
       },
       invalidRequestFallback: {
         title: '无效请求兜底分组',
@@ -3149,6 +3174,7 @@ export default {
         wsModeOff: '关闭（off）',
         wsModeCtxPool: '上下文池（ctx_pool）',
         wsModePassthrough: '透传（passthrough）',
+        wsModeHttpBridge: 'HTTP 桥接（http_bridge）',
         wsModeShared: '共享（shared）',
         wsModeDedicated: '独享（dedicated）',
         wsModeConcurrencyHint: '启用 WS mode 后，该账号并发数将作为该账号 WS 连接池上限。',

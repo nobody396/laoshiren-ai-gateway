@@ -673,12 +673,19 @@ export interface OpenAIMessagesDispatchModelConfig {
   exact_model_mappings?: Record<string, string>
 }
 
+export interface ReasoningEffortMapping {
+  from: string
+  to: string
+}
+
 export interface Group {
   id: number
   name: string
   description: string | null
   platform: GroupPlatform
   rate_multiplier: number
+	max_reasoning_effort?: string
+	reasoning_effort_mappings?: ReasoningEffortMapping[]
   is_exclusive: boolean
   chatbot_enabled: boolean
   status: 'active' | 'inactive'
@@ -705,6 +712,8 @@ export interface Group {
   fallback_group_id_on_invalid_request: number | null
   // OpenAI Messages 调度开关（用户侧需要此字段判断是否展示 Claude Code 教程）
   allow_messages_dispatch?: boolean
+  // OpenAI Live 接口开关
+  allow_live: boolean
   // 分组默认模型：用户侧「导入 CC Switch」按需将其写入客户端模型槽
   // （anthropic 单模型上游分组如 GLM/Grok 用它覆盖 opus/sonnet/haiku 槽）。
   default_mapped_model?: string
@@ -733,6 +742,8 @@ export interface AdminGroup extends Group {
   // OpenAI Messages 调度配置（仅 openai 平台使用）
   // 注：default_mapped_model 已上移到基础 Group（用户接口亦返回），此处由继承获得。
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
+	max_reasoning_effort?: string
+	reasoning_effort_mappings?: ReasoningEffortMapping[]
 
   // 分组排序
   sort_order: number
@@ -826,8 +837,11 @@ export interface CreateGroupRequest {
   simulate_claude_max_enabled?: boolean
   supported_model_scopes?: string[]
   allow_messages_dispatch?: boolean
+  allow_live?: boolean
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
+	max_reasoning_effort?: string
+	reasoning_effort_mappings?: ReasoningEffortMapping[]
   // 从指定分组复制账号
   copy_accounts_from_group_ids?: number[]
 }
@@ -863,6 +877,7 @@ export interface UpdateGroupRequest {
   simulate_claude_max_enabled?: boolean
   supported_model_scopes?: string[]
   allow_messages_dispatch?: boolean
+  allow_live?: boolean
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
   copy_accounts_from_group_ids?: number[]
@@ -1363,7 +1378,7 @@ export type RedeemCodePurpose =
   | 'internal_test'
   | 'migration'
 export type RedeemCodeSalesStatus = 'inventory' | 'sold' | 'gifted' | 'void'
-export type UsageRequestType = 'unknown' | 'sync' | 'stream' | 'ws_v2' | 'async'
+export type UsageRequestType = 'unknown' | 'sync' | 'stream' | 'ws_v2' | 'async' | 'live'
 
 export interface UsageLog {
   id: number

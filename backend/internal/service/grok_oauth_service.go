@@ -144,6 +144,9 @@ func (s *GrokOAuthService) ExchangeCode(ctx context.Context, input *GrokExchange
 	if strings.TrimSpace(input.RedirectURI) != "" {
 		redirectURI = input.RedirectURI
 	}
+	if err := s.requireOAuthClient(); err != nil {
+		return nil, err
+	}
 
 	tokenResp, err := s.oauthClient.ExchangeCode(ctx, code, session.CodeVerifier, redirectURI, proxyURL, session.ClientID)
 	if err != nil {
@@ -156,6 +159,9 @@ func (s *GrokOAuthService) RefreshToken(ctx context.Context, refreshToken, proxy
 	refreshToken = strings.TrimSpace(refreshToken)
 	if refreshToken == "" {
 		return nil, infraerrors.New(http.StatusBadRequest, "GROK_OAUTH_NO_REFRESH_TOKEN", "refresh_token is required")
+	}
+	if err := s.requireOAuthClient(); err != nil {
+		return nil, err
 	}
 	tokenResp, err := s.oauthClient.RefreshToken(ctx, refreshToken, proxyURL, clientID)
 	if err != nil {
@@ -177,6 +183,9 @@ func (s *GrokOAuthService) ValidateRefreshToken(ctx context.Context, refreshToke
 }
 
 func (s *GrokOAuthService) ConvertFromSSO(ctx context.Context, ssoToken string, proxyID *int64) (*GrokTokenInfo, error) {
+	if err := s.requireOAuthClient(); err != nil {
+		return nil, err
+	}
 	proxyURL, err := s.proxyURL(ctx, proxyID)
 	if err != nil {
 		return nil, err
@@ -186,6 +195,13 @@ func (s *GrokOAuthService) ConvertFromSSO(ctx context.Context, ssoToken string, 
 		return nil, err
 	}
 	return s.tokenInfoFromResponse(tokenResp, xai.DefaultClientID, nil), nil
+}
+
+func (s *GrokOAuthService) requireOAuthClient() error {
+	if s == nil || s.oauthClient == nil {
+		return infraerrors.New(http.StatusInternalServerError, "GROK_OAUTH_CLIENT_NOT_CONFIGURED", "oauth client is not configured")
+	}
+	return nil
 }
 
 func (s *GrokOAuthService) RefreshAccountToken(ctx context.Context, account *Account) (*GrokTokenInfo, error) {

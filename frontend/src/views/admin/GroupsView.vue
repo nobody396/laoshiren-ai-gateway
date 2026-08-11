@@ -751,6 +751,28 @@
           </div>
         </div>
 
+        <!-- OpenAI Live 开关（仅 openai 平台） -->
+        <div v-if="createForm.platform === 'openai'" class="border-t border-gray-200 dark:border-dark-400 pt-4 mt-4">
+          <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            {{ t('admin.groups.openaiLive.title') }}
+          </h4>
+          <div class="flex items-center justify-between">
+            <label class="text-sm text-gray-600 dark:text-gray-400">{{ t('admin.groups.openaiLive.allow') }}</label>
+            <button
+              type="button"
+              @click="toggleLive('create')"
+              class="relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+              :class="createForm.allow_live ? 'bg-primary-500' : 'bg-gray-300 dark:bg-dark-600'"
+            >
+              <span
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                :class="createForm.allow_live ? 'translate-x-6' : 'translate-x-1'"
+              />
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ t('admin.groups.openaiLive.hint') }}</p>
+        </div>
+
         <!-- OpenAI Messages 调度配置（仅 openai 平台） -->
         <div v-if="createForm.platform === 'openai'" class="border-t border-gray-200 dark:border-dark-400 pt-4 mt-4">
           <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{{ t('admin.groups.openaiMessages.title') }}</h4>
@@ -832,6 +854,16 @@
             </div>
           </div>
         </div>
+
+		<div v-if="createForm.platform === 'openai'" class="border-t border-gray-200 pt-4 dark:border-dark-400">
+			<ReasoningEffortPolicyFields
+				ref="createReasoningEffortPolicyRef"
+				id-prefix="create-group-reasoning"
+				:platform="createForm.platform"
+				v-model:max-effort="createForm.max_reasoning_effort"
+				v-model:mappings="createForm.reasoning_effort_mappings"
+			/>
+		</div>
 
         <!-- 无效请求兜底（仅 anthropic/antigravity 平台，且非订阅分组） -->
         <div
@@ -1506,6 +1538,28 @@
           </div>
         </div>
 
+        <!-- OpenAI Live 开关（仅 openai 平台） -->
+        <div v-if="editForm.platform === 'openai'" class="border-t border-gray-200 dark:border-dark-400 pt-4 mt-4">
+          <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            {{ t('admin.groups.openaiLive.title') }}
+          </h4>
+          <div class="flex items-center justify-between">
+            <label class="text-sm text-gray-600 dark:text-gray-400">{{ t('admin.groups.openaiLive.allow') }}</label>
+            <button
+              type="button"
+              @click="toggleLive('edit')"
+              class="relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+              :class="editForm.allow_live ? 'bg-primary-500' : 'bg-gray-300 dark:bg-dark-600'"
+            >
+              <span
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                :class="editForm.allow_live ? 'translate-x-6' : 'translate-x-1'"
+              />
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ t('admin.groups.openaiLive.hint') }}</p>
+        </div>
+
         <!-- OpenAI Messages 调度配置（仅 openai 平台） -->
         <div v-if="editForm.platform === 'openai'" class="border-t border-gray-200 dark:border-dark-400 pt-4 mt-4">
           <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{{ t('admin.groups.openaiMessages.title') }}</h4>
@@ -1587,6 +1641,16 @@
             </div>
           </div>
         </div>
+
+		<div v-if="editForm.platform === 'openai'" class="border-t border-gray-200 pt-4 dark:border-dark-400">
+			<ReasoningEffortPolicyFields
+				ref="editReasoningEffortPolicyRef"
+				id-prefix="edit-group-reasoning"
+				:platform="editForm.platform"
+				v-model:max-effort="editForm.max_reasoning_effort"
+				v-model:mappings="editForm.reasoning_effort_mappings"
+			/>
+		</div>
 
         <!-- 无效请求兜底（仅 anthropic/antigravity 平台，且非订阅分组） -->
         <div
@@ -1797,6 +1861,17 @@
       @cancel="showDeleteDialog = false"
     />
 
+    <ConfirmDialog
+      :show="showUnsupportedLiveConfirm"
+      :title="t('admin.groups.openaiLive.unsupportedTitle')"
+      :message="t('admin.groups.openaiLive.unsupportedMessage')"
+      :confirm-text="t('admin.groups.openaiLive.enableAnyway')"
+      :cancel-text="t('common.cancel')"
+      :danger="true"
+      @confirm="confirmUnsupportedLive"
+      @cancel="cancelUnsupportedLive"
+    />
+
     <!-- Sort Order Modal -->
     <BaseDialog
       :show="showSortModal"
@@ -1914,6 +1989,7 @@ import Select from '@/components/common/Select.vue'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
 import GroupRateMultipliersModal from '@/components/admin/group/GroupRateMultipliersModal.vue'
+import ReasoningEffortPolicyFields from '@/components/admin/group/ReasoningEffortPolicyFields.vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import { createStableObjectKeyResolver } from '@/utils/stableObjectKey'
 import { useKeyedDebouncedSearch } from '@/composables/useKeyedDebouncedSearch'
@@ -1924,6 +2000,12 @@ import {
   resetMessagesDispatchFormState,
   type MessagesDispatchMappingRow
 } from './groupsMessagesDispatch'
+import {
+	normalizeReasoningEffortForPlatform,
+	reasoningEffortMappingsToAPI,
+	reasoningEffortMappingsToRows,
+	type ReasoningEffortMappingRow
+} from './groupsReasoningEffort'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -2116,6 +2198,10 @@ let abortController: AbortController | null = null
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const showDeleteDialog = ref(false)
+const pendingLiveForm = ref<'create' | 'edit' | null>(null)
+const showUnsupportedLiveConfirm = computed(() => pendingLiveForm.value !== null)
+const liveCapability = ref<{ supported: boolean; reason?: string } | null>(null)
+let liveCapabilityRequest: Promise<{ supported: boolean; reason?: string }> | null = null
 const showSortModal = ref(false)
 const submitting = ref(false)
 const sortSubmitting = ref(false)
@@ -2126,6 +2212,12 @@ const rateMultipliersGroup = ref<AdminGroup | null>(null)
 const sortableGroups = ref<AdminGroup[]>([])
 const createMessagesDispatchDefaults = createDefaultMessagesDispatchFormState()
 const editMessagesDispatchDefaults = createDefaultMessagesDispatchFormState()
+type ReasoningEffortPolicyFieldsExpose = {
+	validate: () => boolean
+	resetValidation: () => void
+}
+const createReasoningEffortPolicyRef = ref<ReasoningEffortPolicyFieldsExpose | null>(null)
+const editReasoningEffortPolicyRef = ref<ReasoningEffortPolicyFieldsExpose | null>(null)
 
 const createForm = reactive({
   name: '',
@@ -2157,6 +2249,7 @@ const createForm = reactive({
   fallback_group_id_on_invalid_request: null as number | null,
   // OpenAI Messages 调度配置（仅 openai 平台使用）
   allow_messages_dispatch: false,
+  allow_live: false,
   default_mapped_model: 'gpt-5.5',
   opus_mapped_model: createMessagesDispatchDefaults.opus_mapped_model,
   sonnet_mapped_model: createMessagesDispatchDefaults.sonnet_mapped_model,
@@ -2169,7 +2262,9 @@ const createForm = reactive({
   // MCP XML 协议注入开关（仅 antigravity 平台）
   mcp_xml_inject: true,
   // 从分组复制账号
-  copy_accounts_from_group_ids: [] as number[]
+  copy_accounts_from_group_ids: [] as number[],
+	max_reasoning_effort: '',
+	reasoning_effort_mappings: [] as ReasoningEffortMappingRow[]
 })
 
 // 简单账号类型（用于模型路由选择）
@@ -2413,6 +2508,7 @@ const editForm = reactive({
   fallback_group_id_on_invalid_request: null as number | null,
   // OpenAI Messages 调度配置（仅 openai 平台使用）
   allow_messages_dispatch: false,
+  allow_live: false,
   default_mapped_model: '',
   opus_mapped_model: editMessagesDispatchDefaults.opus_mapped_model,
   sonnet_mapped_model: editMessagesDispatchDefaults.sonnet_mapped_model,
@@ -2425,7 +2521,9 @@ const editForm = reactive({
   // MCP XML 协议注入开关（仅 antigravity 平台）
   mcp_xml_inject: true,
   // 从分组复制账号
-  copy_accounts_from_group_ids: [] as number[]
+  copy_accounts_from_group_ids: [] as number[],
+	max_reasoning_effort: '',
+	reasoning_effort_mappings: [] as ReasoningEffortMappingRow[]
 })
 
 // 根据分组类型返回不同的删除确认消息
@@ -2478,6 +2576,44 @@ const loadCapacitySummary = async () => {
   } finally {
     capacityLoading.value = false
   }
+}
+
+const loadLiveCapability = async () => {
+  if (liveCapability.value) return liveCapability.value
+  if (!liveCapabilityRequest) {
+    liveCapabilityRequest = adminAPI.groups
+      .getLiveCapability()
+      .catch(() => ({ supported: false }))
+      .finally(() => {
+        liveCapabilityRequest = null
+      })
+  }
+  liveCapability.value = await liveCapabilityRequest
+  return liveCapability.value ?? { supported: false }
+}
+
+const toggleLive = async (target: 'create' | 'edit') => {
+  const form = target === 'create' ? createForm : editForm
+  if (form.allow_live) {
+    form.allow_live = false
+    return
+  }
+  const capability = await loadLiveCapability()
+  if (capability.supported) {
+    form.allow_live = true
+    return
+  }
+  pendingLiveForm.value = target
+}
+
+const confirmUnsupportedLive = () => {
+  if (pendingLiveForm.value === 'create') createForm.allow_live = true
+  if (pendingLiveForm.value === 'edit') editForm.allow_live = true
+  pendingLiveForm.value = null
+}
+
+const cancelUnsupportedLive = () => {
+  pendingLiveForm.value = null
 }
 
 const loadGroups = async () => {
@@ -2565,11 +2701,15 @@ const closeCreateModal = () => {
   createForm.fallback_group_id = null
   createForm.fallback_group_id_on_invalid_request = null
   createForm.allow_messages_dispatch = false
+  createForm.allow_live = false
   createForm.default_mapped_model = 'gpt-5.5'
   resetMessagesDispatchFormState(createForm)
   createForm.supported_model_scopes = ['claude', 'gemini_text', 'gemini_image']
   createForm.mcp_xml_inject = true
   createForm.copy_accounts_from_group_ids = []
+	createForm.max_reasoning_effort = ''
+	createForm.reasoning_effort_mappings = []
+	createReasoningEffortPolicyRef.value?.resetValidation()
   createModelRoutingRules.value = []
 }
 
@@ -2595,6 +2735,13 @@ const handleCreateGroup = async () => {
     appStore.showError(t('admin.groups.nameRequired'))
     return
   }
+	if (
+		createForm.platform === 'openai' &&
+		createReasoningEffortPolicyRef.value &&
+		!createReasoningEffortPolicyRef.value.validate()
+	) {
+		return
+	}
   submitting.value = true
   try {
     // 构建请求数据，包含模型路由配置
@@ -2614,7 +2761,8 @@ const handleCreateGroup = async () => {
               haiku_mapped_model: createForm.haiku_mapped_model,
               exact_model_mappings: createForm.exact_model_mappings
             })
-          : undefined
+          : undefined,
+		reasoning_effort_mappings: reasoningEffortMappingsToAPI(createForm.reasoning_effort_mappings)
     }
     // v-model.number 清空输入框时产生 ""，转为 null 让后端设为无限制
     const emptyToNull = (v: any) => v === '' ? null : v
@@ -2676,6 +2824,7 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.fallback_group_id_on_invalid_request = group.fallback_group_id_on_invalid_request
   const messagesDispatchFormState = messagesDispatchConfigToFormState(group.messages_dispatch_model_config)
   editForm.allow_messages_dispatch = group.allow_messages_dispatch || messagesDispatchFormState.allow_messages_dispatch
+  editForm.allow_live = group.allow_live ?? false
   editForm.default_mapped_model = group.default_mapped_model || ''
   editForm.opus_mapped_model = messagesDispatchFormState.opus_mapped_model
   editForm.sonnet_mapped_model = messagesDispatchFormState.sonnet_mapped_model
@@ -2685,6 +2834,14 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.supported_model_scopes = group.supported_model_scopes || ['claude', 'gemini_text', 'gemini_image']
   editForm.mcp_xml_inject = group.mcp_xml_inject ?? true
   editForm.copy_accounts_from_group_ids = [] // 复制账号字段每次编辑时重置为空
+	editForm.max_reasoning_effort = normalizeReasoningEffortForPlatform(
+		group.platform,
+		group.max_reasoning_effort
+	)
+	editForm.reasoning_effort_mappings = reasoningEffortMappingsToRows(
+		group.reasoning_effort_mappings,
+		group.platform
+	)
   // 加载模型路由规则（异步加载账号名称）
   editModelRoutingRules.value = await convertApiFormatToRoutingRules(group.model_routing)
   showEditModal.value = true
@@ -2697,9 +2854,13 @@ const closeEditModal = () => {
   clearAllAccountSearchState()
   showEditModal.value = false
   editingGroup.value = null
+	editForm.max_reasoning_effort = ''
+	editForm.reasoning_effort_mappings = []
+	editReasoningEffortPolicyRef.value?.resetValidation()
   editModelRoutingRules.value = []
   editForm.copy_accounts_from_group_ids = []
   resetMessagesDispatchFormState(editForm)
+  editForm.allow_live = false
 }
 
 const handleUpdateGroup = async () => {
@@ -2708,6 +2869,13 @@ const handleUpdateGroup = async () => {
     appStore.showError(t('admin.groups.nameRequired'))
     return
   }
+	if (
+		editForm.platform === 'openai' &&
+		editReasoningEffortPolicyRef.value &&
+		!editReasoningEffortPolicyRef.value.validate()
+	) {
+		return
+	}
 
   submitting.value = true
   try {
@@ -2733,7 +2901,8 @@ const handleUpdateGroup = async () => {
               haiku_mapped_model: editForm.haiku_mapped_model,
               exact_model_mappings: editForm.exact_model_mappings
             })
-          : undefined
+          : undefined,
+		reasoning_effort_mappings: reasoningEffortMappingsToAPI(editForm.reasoning_effort_mappings)
     }
     // v-model.number 清空输入框时产生 ""，转为 null 让后端设为无限制
     const emptyToNull = (v: any) => v === '' ? null : v
@@ -2828,6 +2997,25 @@ watch(
     if (newVal !== 'openai') {
       createForm.default_mapped_model = ''
       resetMessagesDispatchFormState(createForm)
+      createForm.allow_live = false
+    }
+		createForm.max_reasoning_effort = normalizeReasoningEffortForPlatform(
+			newVal,
+			createForm.max_reasoning_effort
+		)
+		createForm.reasoning_effort_mappings = reasoningEffortMappingsToRows(
+			reasoningEffortMappingsToAPI(createForm.reasoning_effort_mappings),
+			newVal
+		)
+		createReasoningEffortPolicyRef.value?.resetValidation()
+  }
+)
+
+watch(
+  () => editForm.platform,
+  (newVal) => {
+    if (newVal !== 'openai') {
+      editForm.allow_live = false
     }
   }
 )
@@ -2885,6 +3073,7 @@ const saveSortOrder = async () => {
 
 onMounted(() => {
   loadGroups()
+  void loadLiveCapability()
   document.addEventListener('click', handleClickOutside)
 })
 

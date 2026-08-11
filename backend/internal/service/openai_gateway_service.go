@@ -25,6 +25,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ip"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/openai"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/platform/liveattestation"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/util/responseheaders"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/util/urlvalidator"
 	"github.com/cespare/xxhash/v2"
@@ -41,7 +42,7 @@ const (
 	// OpenAI Platform API for API Key accounts (fallback)
 	openaiPlatformAPIURL   = "https://api.openai.com/v1/responses"
 	openaiStickySessionTTL = time.Hour // 粘性会话TTL
-	codexCLIUserAgent      = "codex_cli_rs/0.125.0"
+	codexCLIUserAgent      = "codex_cli_rs/0.144.1 (Ubuntu 22.4.0; x86_64) xterm-256color"
 	// codex_cli_only 拒绝时单个请求头日志长度上限（字符）
 	codexCLIOnlyHeaderValueMaxBytes = 256
 
@@ -55,7 +56,7 @@ const (
 	openAIWSRetryBackoffMaxDefault     = 2 * time.Second
 	openAIWSRetryJitterRatioDefault    = 0.2
 	openAICompactSessionSeedKey        = "openai_compact_session_seed"
-	codexCLIVersion                    = "0.125.0"
+	codexCLIVersion                    = "0.144.1"
 	// Codex 限额快照仅用于后台展示/诊断，不需要每个成功请求都立即落库。
 	openAICodexSnapshotPersistMinInterval = 30 * time.Second
 )
@@ -254,6 +255,9 @@ type OpenAIForwardResult struct {
 	ResponseBody         []byte
 	ResponseStatus       int
 	ResponseType         string
+
+	wsReplayInput       []json.RawMessage
+	wsReplayInputExists bool
 }
 
 type OpenAIWSRetryMetricsSnapshot struct {
@@ -355,6 +359,8 @@ type OpenAIGatewayService struct {
 	gptImageTaskRepo         GPTImageTaskRepository
 	gptImageS3Storage        *GPTImageS3Storage
 	settingService           *SettingService
+	liveAttestation          liveattestation.Provider
+	liveAttestationCipher    SecretEncryptor
 	openAIRouteEvaluator     OpenAIRouteShadowEvaluator
 	openAIRouteAuditService  *OpenAIRouteAuditService
 	pipeline                 *GatewayPipeline
@@ -467,6 +473,8 @@ func NewOpenAIGatewayService(
 		gptImageTaskRepo:         gptImageTaskRepo,
 		gptImageS3Storage:        gptImageS3Storage,
 		settingService:           settingService,
+		liveAttestation:          liveattestation.NewProvider(),
+		liveAttestationCipher:    newLiveAttestationCipher(cfg),
 		responseHeaderFilter:     compileResponseHeaderFilter(cfg),
 		codexSnapshotThrottle:    newAccountWriteThrottle(openAICodexSnapshotPersistMinInterval),
 	}

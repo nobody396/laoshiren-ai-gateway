@@ -1119,6 +1119,7 @@ export default {
     stream: 'Stream',
     async: 'Async',
     sync: 'Sync',
+    live: 'Live',
     unknown: 'Unknown',
     in: 'In',
     out: 'Out',
@@ -2286,7 +2287,23 @@ export default {
         platform: 'Platform',
         rateMultiplier: 'Rate Multiplier',
         status: 'Status',
-        exclusive: 'Exclusive Group'
+        exclusive: 'Exclusive Group',
+		maxReasoningEffort: 'Max reasoning effort',
+		maxReasoningEffortUnlimited: 'Unlimited (follow request)',
+		maxReasoningEffortHint:
+			'Limits explicit OpenAI reasoning effort requests only. Higher values are capped; omitted effort stays omitted. The ceiling takes precedence over mappings.',
+		reasoningEffortMappings: 'Reasoning effort mappings',
+		addReasoningEffortMapping: 'Add mapping',
+		removeReasoningEffortMapping: 'Remove mapping',
+		reasoningEffortFrom: 'Request value',
+		reasoningEffortTo: 'Forwarded value',
+		reasoningEffortFromPlaceholder: 'Select A',
+		reasoningEffortToPlaceholder: 'Select B',
+		fromRequired: 'Select request value A',
+		toRequired: 'Select forwarded value B',
+		unsupportedFrom: 'Request value is not supported by this platform',
+		unsupportedTo: 'Forwarded value is not supported by this platform',
+		duplicateFrom: 'Request value A must be unique'
       },
       enterGroupName: 'Enter group name',
       optionalDescription: 'Optional description',
@@ -2384,6 +2401,14 @@ export default {
         defaultModel: 'Default mapped model',
         defaultModelPlaceholder: 'e.g., gpt-4.1',
         defaultModelHint: 'When account has no model mapping configured, all request models will be mapped to this model'
+      },
+      openaiLive: {
+        title: 'OpenAI Live',
+        allow: 'Allow Live access',
+        hint: 'When enabled, API keys in this OpenAI group can create and control Live voice sessions. Disabled by default. The Sub2API server must run on Apple Silicon macOS with the official ChatGPT app installed; client platforms are unrestricted.',
+        unsupportedTitle: 'Current server does not support Live',
+        unsupportedMessage: 'This Sub2API server cannot generate the required Live attestation. Live will not work even if enabled. Continue anyway?',
+        enableAnyway: 'Enable anyway'
       },
       invalidRequestFallback: {
         title: 'Invalid Request Fallback Group',
@@ -2997,6 +3022,7 @@ export default {
         wsModeOff: 'Off (off)',
         wsModeCtxPool: 'Context Pool (ctx_pool)',
         wsModePassthrough: 'Passthrough (passthrough)',
+        wsModeHttpBridge: 'HTTP Bridge (http_bridge)',
         wsModeShared: 'Shared (shared)',
         wsModeDedicated: 'Dedicated (dedicated)',
         wsModeConcurrencyHint:

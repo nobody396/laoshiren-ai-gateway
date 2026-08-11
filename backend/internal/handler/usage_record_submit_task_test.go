@@ -272,3 +272,19 @@ func TestOpenAIGatewayHandlerSubmitUsageRecordTask_PreservesRequestCorrelation(t
 		t.Fatal("task not executed")
 	}
 }
+
+func TestWithUsageRecordWSTurnCorrelation_IsolatesTurns(t *testing.T) {
+	base := context.WithValue(context.Background(), ctxkey.RequestID, "request-stable")
+	base = context.WithValue(base, ctxkey.ClientRequestID, "client-stable")
+
+	turn1RequestID, turn1ClientRequestID := usageRecordRequestCorrelation(withUsageRecordWSTurnCorrelation(base, 1))
+	turn2RequestID, turn2ClientRequestID := usageRecordRequestCorrelation(withUsageRecordWSTurnCorrelation(base, 2))
+	baseRequestID, baseClientRequestID := usageRecordRequestCorrelation(base)
+
+	require.Equal(t, "request-stable:ws-turn:1", turn1RequestID)
+	require.Equal(t, "client-stable:ws-turn:1", turn1ClientRequestID)
+	require.Equal(t, "request-stable:ws-turn:2", turn2RequestID)
+	require.Equal(t, "client-stable:ws-turn:2", turn2ClientRequestID)
+	require.Equal(t, "request-stable", baseRequestID)
+	require.Equal(t, "client-stable", baseClientRequestID)
+}

@@ -74,8 +74,11 @@ type APIKeyAuthGroupSnapshot struct {
 
 	// OpenAI Messages 调度配置（仅 openai 平台使用）
 	AllowMessagesDispatch       bool                              `json:"allow_messages_dispatch"`
+	AllowLive                   bool                              `json:"allow_live"`
 	DefaultMappedModel          string                            `json:"default_mapped_model,omitempty"`
 	MessagesDispatchModelConfig OpenAIMessagesDispatchModelConfig `json:"messages_dispatch_model_config,omitempty"`
+	MaxReasoningEffort          string                            `json:"max_reasoning_effort,omitempty"`
+	ReasoningEffortMappings     []ReasoningEffortMapping          `json:"reasoning_effort_mappings"`
 }
 
 // APIKeyAuthCacheEntry 缓存条目，支持负缓存

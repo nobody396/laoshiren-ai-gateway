@@ -77,10 +77,13 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 			SetModelRoutingEnabled(groupIn.ModelRoutingEnabled).
 			SetMcpXMLInject(groupIn.MCPXMLInject).
 			SetAllowMessagesDispatch(groupIn.AllowMessagesDispatch).
+			SetAllowLive(groupIn.AllowLive).
 			SetRequireOauthOnly(groupIn.RequireOAuthOnly).
 			SetRequirePrivacySet(groupIn.RequirePrivacySet).
 			SetDefaultMappedModel(groupIn.DefaultMappedModel).
-			SetMessagesDispatchModelConfig(groupIn.MessagesDispatchModelConfig)
+			SetMessagesDispatchModelConfig(groupIn.MessagesDispatchModelConfig).
+			SetMaxReasoningEffort(groupIn.MaxReasoningEffort).
+			SetReasoningEffortMappings(groupIn.ReasoningEffortMappings)
 
 		// 设置模型路由配置
 		if groupIn.ModelRouting != nil {
@@ -171,10 +174,13 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 			SetModelRoutingEnabled(groupIn.ModelRoutingEnabled).
 			SetMcpXMLInject(groupIn.MCPXMLInject).
 			SetAllowMessagesDispatch(groupIn.AllowMessagesDispatch).
+			SetAllowLive(groupIn.AllowLive).
 			SetRequireOauthOnly(groupIn.RequireOAuthOnly).
 			SetRequirePrivacySet(groupIn.RequirePrivacySet).
 			SetDefaultMappedModel(groupIn.DefaultMappedModel).
-			SetMessagesDispatchModelConfig(groupIn.MessagesDispatchModelConfig)
+			SetMessagesDispatchModelConfig(groupIn.MessagesDispatchModelConfig).
+			SetMaxReasoningEffort(groupIn.MaxReasoningEffort).
+			SetReasoningEffortMappings(groupIn.ReasoningEffortMappings)
 
 		// 显式处理可空字段：nil 需要 clear，非 nil 需要 set。
 		if groupIn.DailyLimitUSD != nil {

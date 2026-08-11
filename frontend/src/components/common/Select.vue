@@ -7,7 +7,9 @@
       :disabled="disabled"
       :aria-expanded="isOpen"
       :aria-haspopup="true"
-      aria-label="Select option"
+			:id="id"
+			:aria-label="ariaLabel ?? 'Select option'"
+			:aria-describedby="ariaDescribedby"
       :class="[
         'select-trigger',
         isOpen && 'select-trigger-open',
@@ -22,6 +24,18 @@
           {{ selectedLabel }}
         </slot>
       </span>
+			<span
+				v-if="clearable && hasValue && !disabled"
+				class="select-clear"
+				role="button"
+				tabindex="-1"
+				aria-label="Clear selection"
+				@click.stop="clearSelection"
+				@mousedown.stop
+				@keydown.enter.stop.prevent="clearSelection"
+			>
+				<Icon name="x" size="sm" />
+			</span>
       <span class="select-icon">
         <Icon
           name="chevronDown"
@@ -53,6 +67,7 @@
               v-model="searchQuery"
               type="text"
               :placeholder="searchPlaceholderText"
+						:aria-label="searchPlaceholderText"
               class="select-search-input"
               @click.stop
             />
@@ -129,6 +144,10 @@ interface Props {
   emptyText?: string
   valueKey?: string
   labelKey?: string
+	clearable?: boolean
+	id?: string
+	ariaLabel?: string
+	ariaDescribedby?: string
 }
 
 interface Emits {
@@ -140,6 +159,7 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   error: false,
   searchable: false,
+	clearable: false,
   valueKey: 'value',
   labelKey: 'label'
 })
@@ -221,6 +241,8 @@ const getOptionGroupKey = (option: any): string | null => {
 const selectedOption = computed(() => {
   return props.options.find((opt) => getOptionValue(opt) === props.modelValue) || null
 })
+
+const hasValue = computed(() => props.modelValue !== null && props.modelValue !== undefined && props.modelValue !== '')
 
 const selectedLabel = computed(() => {
   if (selectedOption.value) {
@@ -351,6 +373,12 @@ const selectOption = (option: any) => {
   triggerRef.value?.focus()
 }
 
+const clearSelection = () => {
+	if (props.disabled) return
+	emit('update:modelValue', null)
+	emit('change', null, null)
+}
+
 // Keyboards
 const onTriggerKeyDown = () => {
   if (!isOpen.value) {
@@ -456,6 +484,12 @@ onUnmounted(() => {
 
 .select-icon {
   @apply flex-shrink-0 text-gray-400 dark:text-dark-400;
+}
+
+.select-clear {
+	@apply flex flex-shrink-0 cursor-pointer items-center justify-center;
+	@apply rounded text-gray-400 transition-colors;
+	@apply hover:text-gray-600 dark:hover:text-gray-200;
 }
 </style>
 

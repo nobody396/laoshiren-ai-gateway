@@ -1062,6 +1062,18 @@ func (s *defaultOpenAIAccountScheduler) isAccountTransportCompatible(account *Ac
 	if s == nil || s.service == nil || account == nil {
 		return false
 	}
+	if requiredTransport == OpenAIUpstreamTransportResponsesWebsocketV2Ingress {
+		if s.service.cfg == nil || !s.service.cfg.Gateway.OpenAIWS.ModeRouterV2Enabled {
+			return s.service.getOpenAIWSProtocolResolver().Resolve(account).Transport == OpenAIUpstreamTransportResponsesWebsocketV2
+		}
+		mode := account.ResolveOpenAIResponsesWebSocketV2Mode(s.service.cfg.Gateway.OpenAIWS.IngressModeDefault)
+		switch mode {
+		case OpenAIWSIngressModeCtxPool, OpenAIWSIngressModePassthrough, OpenAIWSIngressModeHTTPBridge, OpenAIWSIngressModeShared, OpenAIWSIngressModeDedicated:
+			return true
+		default:
+			return false
+		}
+	}
 	return s.service.getOpenAIWSProtocolResolver().Resolve(account).Transport == requiredTransport
 }
 
@@ -1171,6 +1183,65 @@ func (s *OpenAIGatewayService) SelectAccountWithSchedulerForRequest(
 		RequireCompact:     requireCompact,
 		ExcludedIDs:        excludedIDs,
 	})
+}
+
+// SelectAccountWithSchedulerForCapability 按能力要求调度账号。
+// 当前分支的调度器尚未把能力字段放入候选快照，因此沿用上游的排除重试语义：
+// 释放不匹配账号的槽位并将其加入排除集，直到选中满足能力的账号。
+func (s *OpenAIGatewayService) SelectAccountWithSchedulerForCapability(
+	ctx context.Context,
+	groupID *int64,
+	previousResponseID string,
+	sessionHash string,
+	requestedModel string,
+	excludedIDs map[int64]struct{},
+	requiredTransport OpenAIUpstreamTransport,
+	requiredCapability OpenAIEndpointCapability,
+	requireCompact bool,
+	_ bool,
+	_ bool,
+	_ ...string,
+) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
+	effectiveExcludedIDs := cloneExcludedAccountIDs(excludedIDs)
+	for {
+		selection, decision, err := s.SelectAccountWithSchedulerForRequest(
+			ctx,
+			groupID,
+			previousResponseID,
+			sessionHash,
+			requestedModel,
+			effectiveExcludedIDs,
+			requiredTransport,
+			requireCompact,
+		)
+		if err != nil || selection == nil || selection.Account == nil {
+			return selection, decision, err
+		}
+		if selection.Account.SupportsOpenAIEndpointCapability(requiredCapability) {
+			return selection, decision, nil
+		}
+		if selection.ReleaseFunc != nil {
+			selection.ReleaseFunc()
+		}
+		if effectiveExcludedIDs == nil {
+			effectiveExcludedIDs = make(map[int64]struct{})
+		}
+		if _, exists := effectiveExcludedIDs[selection.Account.ID]; exists {
+			return nil, decision, ErrNoAvailableAccounts
+		}
+		effectiveExcludedIDs[selection.Account.ID] = struct{}{}
+	}
+}
+
+func cloneExcludedAccountIDs(excludedIDs map[int64]struct{}) map[int64]struct{} {
+	if len(excludedIDs) == 0 {
+		return nil
+	}
+	cloned := make(map[int64]struct{}, len(excludedIDs))
+	for id := range excludedIDs {
+		cloned[id] = struct{}{}
+	}
+	return cloned
 }
 
 func (s *OpenAIGatewayService) ReportOpenAIAccountScheduleResult(accountID int64, success bool, firstTokenMs *int) {

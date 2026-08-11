@@ -25,15 +25,16 @@ const (
 )
 
 type FeedbackService struct {
-	repo            FeedbackRepository
-	userRepo        UserRepository
-	settingService  *SettingService
-	emailQueue      *EmailQueueService
-	rateLimitCache  FeedbackRateLimitCache
-	imageStorage    FeedbackImageStorage
-	entClient       *dbent.Client
-	billingCache    BillingCache
-	authInvalidator APIKeyAuthCacheInvalidator
+	repo                 FeedbackRepository
+	userRepo             UserRepository
+	settingService       *SettingService
+	emailQueue           *EmailQueueService
+	rateLimitCache       FeedbackRateLimitCache
+	imageStorage         FeedbackImageStorage
+	affiliateConsumption AffiliateConsumptionRepository
+	entClient            *dbent.Client
+	billingCache         BillingCache
+	authInvalidator      APIKeyAuthCacheInvalidator
 }
 
 func NewFeedbackService(
@@ -43,20 +44,22 @@ func NewFeedbackService(
 	emailQueue *EmailQueueService,
 	rateLimitCache FeedbackRateLimitCache,
 	imageStorage FeedbackImageStorage,
+	affiliateConsumption AffiliateConsumptionRepository,
 	entClient *dbent.Client,
 	billingCache BillingCache,
 	authInvalidator APIKeyAuthCacheInvalidator,
 ) *FeedbackService {
 	return &FeedbackService{
-		repo:            repo,
-		userRepo:        userRepo,
-		settingService:  settingService,
-		emailQueue:      emailQueue,
-		rateLimitCache:  rateLimitCache,
-		imageStorage:    imageStorage,
-		entClient:       entClient,
-		billingCache:    billingCache,
-		authInvalidator: authInvalidator,
+		repo:                 repo,
+		userRepo:             userRepo,
+		settingService:       settingService,
+		emailQueue:           emailQueue,
+		rateLimitCache:       rateLimitCache,
+		imageStorage:         imageStorage,
+		affiliateConsumption: affiliateConsumption,
+		entClient:            entClient,
+		billingCache:         billingCache,
+		authInvalidator:      authInvalidator,
 	}
 }
 

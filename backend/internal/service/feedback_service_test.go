@@ -3,6 +3,8 @@ package service_test
 import (
 	"context"
 	"database/sql"
+	stderrors "errors"
+	"strconv"
 	"testing"
 	"time"
 
@@ -24,11 +26,29 @@ type feedbackRateLimitCacheStub struct {
 	err        error
 }
 
+type feedbackBalanceLotRecorder struct {
+	inputs []service.AffiliateBalanceLotInput
+	err    error
+}
+
+func (r *feedbackBalanceLotRecorder) RecordBalanceLot(_ context.Context, input service.AffiliateBalanceLotInput) error {
+	r.inputs = append(r.inputs, input)
+	return r.err
+}
+
+func (r *feedbackBalanceLotRecorder) RecordMonthlyEntitlement(context.Context, service.AffiliateMonthlyEntitlementInput) error {
+	return nil
+}
+
 func (s feedbackRateLimitCacheStub) CheckCreateLimit(context.Context, int64, int, time.Duration) (bool, time.Duration, error) {
 	return s.allowed, s.retryAfter, s.err
 }
 
 func newFeedbackServiceSQLite(t *testing.T) (*service.FeedbackService, *dbent.Client) {
+	return newFeedbackServiceSQLiteWithConsumption(t, &feedbackBalanceLotRecorder{})
+}
+
+func newFeedbackServiceSQLiteWithConsumption(t *testing.T, consumption service.AffiliateConsumptionRepository) (*service.FeedbackService, *dbent.Client) {
 	t.Helper()
 
 	db, err := sql.Open("sqlite", "file:feedback_service?mode=memory&cache=shared&_fk=1")
@@ -49,11 +69,58 @@ func newFeedbackServiceSQLite(t *testing.T) (*service.FeedbackService, *dbent.Cl
 		nil,
 		nil,
 		nil,
+		consumption,
 		client,
 		nil,
 		nil,
 	)
 	return svc, client
+}
+
+func TestFeedbackWorkflowRecordsNonAffiliateGiftBalanceLot(t *testing.T) {
+	recorder := &feedbackBalanceLotRecorder{}
+	svc, client := newFeedbackServiceSQLiteWithConsumption(t, recorder)
+	ctx := context.Background()
+	userID := mustCreateFeedbackUser(t, ctx, client, "feedback-lot@test.com")
+	created, err := svc.Create(ctx, userID, service.CreateFeedbackInput{Content: "Reproducible billing issue"})
+	require.NoError(t, err)
+	_, err = svc.TriageByAgent(ctx, created.ID, service.AgentTriageFeedbackInput{
+		TriageStatus: "confirmed", TriagePriority: "P1", TriageSummary: "Confirmed",
+		RepairDifficulty: "low", RepairRecommendation: "Fix it",
+	})
+	require.NoError(t, err)
+
+	result := svc.AcceptBatch(ctx, service.AcceptFeedbackBatchInput{IDs: []int64{created.ID}, BatchID: "FB-lot"})
+
+	require.Empty(t, result[0].Error)
+	require.Len(t, recorder.inputs, 1)
+	require.Equal(t, userID, recorder.inputs[0].UserID)
+	require.Equal(t, service.AffiliateSourceGift, recorder.inputs[0].SourceType)
+	require.Equal(t, created.ID, recorder.inputs[0].SourceID)
+	require.Equal(t, "feedback_reward:"+strconv.FormatInt(created.ID, 10), recorder.inputs[0].SourceKey)
+	require.Equal(t, int64(5_000_000), recorder.inputs[0].AmountMicros)
+	require.Equal(t, service.AffiliateSourcePolicyNone, recorder.inputs[0].AffiliatePolicy)
+}
+
+func TestFeedbackWorkflowRollsBackWhenBalanceLotWriteFails(t *testing.T) {
+	recorder := &feedbackBalanceLotRecorder{err: stderrors.New("lot write failed")}
+	svc, client := newFeedbackServiceSQLiteWithConsumption(t, recorder)
+	ctx := context.Background()
+	userID := mustCreateFeedbackUser(t, ctx, client, "feedback-lot-failure@test.com")
+	created, err := svc.Create(ctx, userID, service.CreateFeedbackInput{Content: "Another billing issue"})
+	require.NoError(t, err)
+	_, err = svc.TriageByAgent(ctx, created.ID, service.AgentTriageFeedbackInput{
+		TriageStatus: "confirmed", TriagePriority: "P1", TriageSummary: "Confirmed",
+		RepairDifficulty: "low", RepairRecommendation: "Fix it",
+	})
+	require.NoError(t, err)
+
+	result := svc.AcceptBatch(ctx, service.AcceptFeedbackBatchInput{IDs: []int64{created.ID}, BatchID: "FB-lot-failure"})
+
+	require.Contains(t, result[0].Error, "record feedback reward balance lot")
+	require.Equal(t, 0.0, client.User.GetX(ctx, userID).Balance)
+	require.Zero(t, client.FeedbackReward.Query().CountX(ctx))
+	require.Zero(t, client.AccountChangeRecord.Query().CountX(ctx))
 }
 
 func mustCreateFeedbackUser(t *testing.T, ctx context.Context, client *dbent.Client, email string) int64 {
@@ -145,6 +212,7 @@ func TestFeedbackServiceCreateReturnsRateLimitMetadata(t *testing.T) {
 		nil,
 		nil,
 		feedbackRateLimitCacheStub{allowed: false, retryAfter: 42 * time.Second},
+		nil,
 		nil,
 		nil,
 		nil,

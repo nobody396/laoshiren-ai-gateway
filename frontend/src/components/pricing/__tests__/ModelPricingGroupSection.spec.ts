@@ -12,7 +12,7 @@ vi.mock('vue-i18n', async () => {
 })
 
 describe('ModelPricingGroupSection', () => {
-  it('renders the five GPT Image 2 modal prices without a generic model row', () => {
+  it('renders GPT Image 2 token prices in the same table layout as text models', () => {
     const wrapper = mount(ModelPricingGroupSection, {
       props: {
         group: {
@@ -38,16 +38,46 @@ describe('ModelPricingGroupSection', () => {
       }
     })
 
-    expect(wrapper.find('.pricing-group__image').exists()).toBe(true)
-    expect(wrapper.findAll('.pricing-group__image-price').map((item) => item.text())).toEqual([
-      'modelPricing.image.textInput¥20.00',
-      'modelPricing.image.textCachedInput¥5.00',
-      'modelPricing.image.imageInput¥32.00',
-      'modelPricing.image.imageCachedInput¥8.00',
-      'modelPricing.image.imageOutput¥120.00'
+    expect(wrapper.find('.pricing-group__image').exists()).toBe(false)
+    expect(wrapper.find('.pricing-group__table').exists()).toBe(true)
+    expect(wrapper.findAll('tbody tr').map((row) => row.text())).toEqual([
+      'GPT Image 2 · modelPricing.image.textModality¥20.00—¥5.00',
+      'GPT Image 2 · modelPricing.image.imageModality¥32.00¥120.00¥8.00'
     ])
-    expect(wrapper.text()).toContain('支持 quality、size、output_format 等参数。')
-    expect(wrapper.find('.pricing-group__table').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('支持 quality、size、output_format 等参数。')
+  })
+
+  it('renders fixed image pricing as the first row in the shared model table', () => {
+    const wrapper = mount(ModelPricingGroupSection, {
+      props: {
+        group: {
+          group_id: 6,
+          name: 'CodeX Pro 20X 分组',
+          description: '支持自然语言生图。',
+          platform: 'openai',
+          rate_multiplier: 0.5,
+          is_exclusive: false,
+          subscription_type: 'standard',
+          models: [
+            {
+              model: 'gpt-5.6-sol',
+              input_price: 2.5,
+              output_price: 15,
+              cache_read_price: 0.25
+            }
+          ],
+          image_generation: {
+            mode: 'fixed_per_image',
+            price_per_image: 0.3
+          }
+        }
+      }
+    })
+
+    expect(wrapper.findAll('tbody tr').map((row) => row.text())).toEqual([
+      'GPT Image 2—¥0.3000modelPricing.image.perImageUnit—',
+      'gpt-5.6-sol¥2.50¥15.00¥0.2500'
+    ])
   })
 
   it('strikes through and labels disabled GPT-5.6 Luna', () => {

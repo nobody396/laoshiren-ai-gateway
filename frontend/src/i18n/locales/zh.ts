@@ -6557,6 +6557,9 @@ export default {
       imageInput: '图片输入',
       imageCachedInput: '图片缓存输入',
       imageOutput: '图片输出',
+      textModality: '文本',
+      imageModality: '图片',
+      perImageUnit: '/ 张',
       parameters: '支持参数'
     },
     block: {

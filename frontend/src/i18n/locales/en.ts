@@ -6371,6 +6371,9 @@ export default {
       imageInput: 'Image input',
       imageCachedInput: 'Cached image input',
       imageOutput: 'Image output',
+      textModality: 'Text',
+      imageModality: 'Image',
+      perImageUnit: '/ image',
       parameters: 'Supported parameters'
     },
     block: {

@@ -53,6 +53,20 @@ var displayHiddenModelNames = map[string]struct{}{
 	"gpt-5.6": {},
 }
 
+const disabledGPT56LunaModel = "gpt-5.6-luna"
+
+// GPT Image 2 官方标准价（USD / 1M tokens）。图片模型同时存在文本与图片两套
+// 输入/缓存费率，不能压扁成普通文本模型的 input/output/cache 三列。
+// https://openai.com/api/pricing/
+var gptImage2OfficialPrice = PublicImageGenerationPricing{
+	Mode:                  "token",
+	TextInputPrice:        ptr(5),
+	TextCachedInputPrice:  ptr(1.25),
+	ImageInputPrice:       ptr(8),
+	ImageCachedInputPrice: ptr(2),
+	ImageOutputPrice:      ptr(30),
+}
+
 func (s *ModelPricingService) isDisplayHiddenModel(model string) bool {
 	_, ok := displayHiddenModelNames[strings.ToLower(strings.TrimSpace(model))]
 	return ok
@@ -117,13 +131,15 @@ type PublicModelPricingCatalog struct {
 
 // PublicModelPricingGroup 单个分组的模型价格。
 type PublicModelPricingGroup struct {
-	GroupID          int64              `json:"group_id"`
-	Name             string             `json:"name"`
-	Platform         string             `json:"platform"`
-	RateMultiplier   float64            `json:"rate_multiplier"`
-	IsExclusive      bool               `json:"is_exclusive"`
-	SubscriptionType string             `json:"subscription_type"`
-	Models           []PublicModelPrice `json:"models"`
+	GroupID          int64                         `json:"group_id"`
+	Name             string                        `json:"name"`
+	Description      string                        `json:"description,omitempty"`
+	Platform         string                        `json:"platform"`
+	RateMultiplier   float64                       `json:"rate_multiplier"`
+	IsExclusive      bool                          `json:"is_exclusive"`
+	SubscriptionType string                        `json:"subscription_type"`
+	Models           []PublicModelPrice            `json:"models"`
+	ImageGeneration  *PublicImageGenerationPricing `json:"image_generation,omitempty"`
 }
 
 // PublicModelPrice 单个模型的实付价（元/1M tokens），价格未知时为 nil。
@@ -132,6 +148,19 @@ type PublicModelPrice struct {
 	InputPrice     *float64 `json:"input_price"`
 	OutputPrice    *float64 `json:"output_price"`
 	CacheReadPrice *float64 `json:"cache_read_price"`
+	Disabled       bool     `json:"disabled,omitempty"`
+}
+
+// PublicImageGenerationPricing 描述分组真实执行的生图计费方式。
+// fixed_per_image 仅使用 PricePerImage；token 使用五个分模态 token 价格。
+type PublicImageGenerationPricing struct {
+	Mode                  string   `json:"mode"`
+	PricePerImage         *float64 `json:"price_per_image,omitempty"`
+	TextInputPrice        *float64 `json:"text_input_price,omitempty"`
+	TextCachedInputPrice  *float64 `json:"text_cached_input_price,omitempty"`
+	ImageInputPrice       *float64 `json:"image_input_price,omitempty"`
+	ImageCachedInputPrice *float64 `json:"image_cached_input_price,omitempty"`
+	ImageOutputPrice      *float64 `json:"image_output_price,omitempty"`
 }
 
 // GetPublicModelPricing 返回全部 active 分组（排除内部测试分组）的模型价格目录。
@@ -161,12 +190,18 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 		}
 		groupID := g.ID
 		models := s.modelsLister.GetAvailableModels(ctx, &groupID, "")
-		if len(models) == 0 {
+		imagePricing := publicImageGenerationPricing(g, models)
+		if len(models) == 0 && imagePricing == nil {
 			continue
 		}
 		prices := make([]PublicModelPrice, 0, len(models))
 		for _, model := range models {
 			if s.isDisplayHiddenModel(model) {
+				continue
+			}
+			// 生图费率由分组独立配置决定；不要再把 gpt-image-2 当普通文本
+			// 模型套用 LiteLLM 三列价格，否则缓存模态和实际倍率都会显示错误。
+			if imagePricing != nil && strings.EqualFold(strings.TrimSpace(model), "gpt-image-2") {
 				continue
 			}
 			price, ok := s.priceForModel(model, g.RateMultiplier)
@@ -175,9 +210,13 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 					"group", g.Name, "model", model)
 				continue
 			}
+			if strings.EqualFold(strings.TrimSpace(model), disabledGPT56LunaModel) {
+				price.Disabled = true
+			}
 			prices = append(prices, price)
 		}
-		if len(prices) == 0 {
+		prices = s.withDisabledGPT56Luna(prices, g.RateMultiplier)
+		if len(prices) == 0 && imagePricing == nil {
 			continue
 		}
 		sort.Slice(prices, func(i, j int) bool {
@@ -186,11 +225,13 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 		catalog.Groups = append(catalog.Groups, PublicModelPricingGroup{
 			GroupID:          g.ID,
 			Name:             publicGroupDisplayName(g.Name),
+			Description:      g.Description,
 			Platform:         g.Platform,
 			RateMultiplier:   g.RateMultiplier,
 			IsExclusive:      g.IsExclusive,
 			SubscriptionType: g.SubscriptionType,
 			Models:           prices,
+			ImageGeneration:  imagePricing,
 		})
 	}
 
@@ -204,6 +245,71 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 
 	s.catalogCache.Set(catalogCacheKey, catalog, s.catalogCacheTTL)
 	return cloneCatalog(catalog), nil
+}
+
+func (s *ModelPricingService) withDisabledGPT56Luna(prices []PublicModelPrice, rateMultiplier float64) []PublicModelPrice {
+	hasGPT56 := false
+	hasLuna := false
+	for i := range prices {
+		name := strings.ToLower(strings.TrimSpace(prices[i].Model))
+		switch name {
+		case "gpt-5.6-sol", "gpt-5.6-terra":
+			hasGPT56 = true
+		case disabledGPT56LunaModel:
+			hasLuna = true
+			prices[i].Disabled = true
+		}
+	}
+	if !hasGPT56 || hasLuna {
+		return prices
+	}
+	luna, ok := s.priceForModel(disabledGPT56LunaModel, rateMultiplier)
+	if !ok {
+		// Luna 已从实际路由映射删除，价表 provider 也可能随之不再返回它；
+		// 仍保留一个无价格的停用行，确保公开页面明确告知用户该模型已停用。
+		luna = PublicModelPrice{Model: disabledGPT56LunaModel}
+	}
+	luna.Disabled = true
+	return append(prices, luna)
+}
+
+func publicImageGenerationPricing(g Group, models []string) *PublicImageGenerationPricing {
+	if !g.AllowImageGeneration || !containsModelName(models, "gpt-image-2") {
+		return nil
+	}
+	multiplier := g.RateMultiplier
+	if g.ImageRateIndependent {
+		multiplier = g.ImageRateMultiplier
+	}
+	if g.GPTImageCallPrice != nil && *g.GPTImageCallPrice > 0 {
+		return &PublicImageGenerationPricing{
+			Mode:          "fixed_per_image",
+			PricePerImage: ptr(round4(*g.GPTImageCallPrice * multiplier)),
+		}
+	}
+	p := gptImage2OfficialPrice
+	p.TextInputPrice = multipliedPrice(p.TextInputPrice, multiplier)
+	p.TextCachedInputPrice = multipliedPrice(p.TextCachedInputPrice, multiplier)
+	p.ImageInputPrice = multipliedPrice(p.ImageInputPrice, multiplier)
+	p.ImageCachedInputPrice = multipliedPrice(p.ImageCachedInputPrice, multiplier)
+	p.ImageOutputPrice = multipliedPrice(p.ImageOutputPrice, multiplier)
+	return &p
+}
+
+func containsModelName(models []string, want string) bool {
+	for _, model := range models {
+		if strings.EqualFold(strings.TrimSpace(model), want) {
+			return true
+		}
+	}
+	return false
+}
+
+func multipliedPrice(price *float64, multiplier float64) *float64 {
+	if price == nil {
+		return nil
+	}
+	return ptr(round4(*price * multiplier))
 }
 
 // priceForModel 计算某个模型在给定分组倍率下的实付价。
@@ -264,6 +370,10 @@ func cloneCatalog(c *PublicModelPricingCatalog) *PublicModelPricingCatalog {
 	for i, g := range c.Groups {
 		out.Groups[i] = g
 		out.Groups[i].Models = append([]PublicModelPrice(nil), g.Models...)
+		if g.ImageGeneration != nil {
+			imagePricing := *g.ImageGeneration
+			out.Groups[i].ImageGeneration = &imagePricing
+		}
 	}
 	return &out
 }

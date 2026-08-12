@@ -221,6 +221,134 @@ func TestModelPricingHidesGPT56(t *testing.T) {
 			t.Fatalf("expected %v, got %v", want, got)
 		}
 	}
+	if !catalog.Groups[0].Models[2].Disabled {
+		t.Fatal("expected gpt-5.6-luna to be marked disabled")
+	}
+}
+
+func TestModelPricingAddsDisabledLunaWhenRoutingNoLongerExposesIt(t *testing.T) {
+	groups := []Group{{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5}}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-5.6-sol":   {InputCostPerToken: 5e-6, OutputCostPerToken: 30e-6, CacheReadInputTokenCost: 0.5e-6},
+		"gpt-5.6-terra": {InputCostPerToken: 2.5e-6, OutputCostPerToken: 15e-6, CacheReadInputTokenCost: 0.25e-6},
+		"gpt-5.6-luna":  {InputCostPerToken: 1e-6, OutputCostPerToken: 6e-6, CacheReadInputTokenCost: 0.1e-6},
+	}
+	models := map[int64][]string{6: {"gpt-5.6-sol", "gpt-5.6-terra"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 1 || len(catalog.Groups[0].Models) != 3 {
+		t.Fatalf("expected sol, terra and disabled luna, got %+v", catalog.Groups)
+	}
+	luna := catalog.Groups[0].Models[2]
+	if luna.Model != disabledGPT56LunaModel || !luna.Disabled {
+		t.Fatalf("expected disabled Luna row, got %+v", luna)
+	}
+	assertPrice(t, "luna input", luna.InputPrice, 0.5)
+	assertPrice(t, "luna output", luna.OutputPrice, 3)
+	assertPrice(t, "luna cache", luna.CacheReadPrice, 0.05)
+}
+
+func TestModelPricingAddsDisabledLunaWithoutProviderPrice(t *testing.T) {
+	groups := []Group{{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5}}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-5.6-sol": {InputCostPerToken: 5e-6, OutputCostPerToken: 30e-6},
+	}
+	models := map[int64][]string{6: {"gpt-5.6-sol"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 1 || len(catalog.Groups[0].Models) != 2 {
+		t.Fatalf("expected Sol and disabled Luna, got %+v", catalog.Groups)
+	}
+	luna := catalog.Groups[0].Models[1]
+	if luna.Model != disabledGPT56LunaModel || !luna.Disabled {
+		t.Fatalf("expected disabled Luna row, got %+v", luna)
+	}
+	if luna.InputPrice != nil || luna.OutputPrice != nil || luna.CacheReadPrice != nil {
+		t.Fatalf("expected unavailable Luna price to remain empty, got %+v", luna)
+	}
+}
+
+func TestModelPricingPublishesGPTImage2ModalPricesAtImageMultiplier(t *testing.T) {
+	groups := []Group{{
+		ID:                   51,
+		Name:                 "GPT Image 2 生图分组",
+		Description:          "支持 quality、size、output_format 等参数。",
+		Platform:             "openai",
+		RateMultiplier:       4,
+		AllowImageGeneration: true,
+		ImageRateIndependent: true,
+		ImageRateMultiplier:  4,
+	}}
+	prices := map[string]*LiteLLMModelPricing{
+		// 故意放入错误/过期的通用价，验证页面不会再走 LiteLLM 三列。
+		"gpt-image-2": {InputCostPerToken: 1.25e-6, OutputCostPerToken: 10e-6, CacheReadInputTokenCost: 0.125e-6},
+	}
+	models := map[int64][]string{51: {"gpt-image-2"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 1 {
+		t.Fatalf("expected image-only group to remain visible, got %+v", catalog.Groups)
+	}
+	group := catalog.Groups[0]
+	if len(group.Models) != 0 {
+		t.Fatalf("gpt-image-2 must not be rendered as a generic text model: %+v", group.Models)
+	}
+	if group.Description != groups[0].Description || group.ImageGeneration == nil {
+		t.Fatalf("missing image metadata: %+v", group)
+	}
+	image := group.ImageGeneration
+	if image.Mode != "token" {
+		t.Fatalf("expected token image billing, got %q", image.Mode)
+	}
+	assertPrice(t, "text input", image.TextInputPrice, 20)
+	assertPrice(t, "text cached input", image.TextCachedInputPrice, 5)
+	assertPrice(t, "image input", image.ImageInputPrice, 32)
+	assertPrice(t, "image cached input", image.ImageCachedInputPrice, 8)
+	assertPrice(t, "image output", image.ImageOutputPrice, 120)
+}
+
+func TestModelPricingPublishesFixedSuccessfulImagePrice(t *testing.T) {
+	price := 0.3
+	groups := []Group{{
+		ID:                   6,
+		Name:                 "CodeX Pro 20X 分组",
+		Platform:             "openai",
+		RateMultiplier:       0.5,
+		AllowImageGeneration: true,
+		ImageRateIndependent: true,
+		ImageRateMultiplier:  1,
+		GPTImageCallPrice:    &price,
+	}}
+	models := map[int64][]string{6: {"gpt-image-2"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, nil, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 1 || catalog.Groups[0].ImageGeneration == nil {
+		t.Fatalf("expected fixed image pricing group, got %+v", catalog.Groups)
+	}
+	image := catalog.Groups[0].ImageGeneration
+	if image.Mode != "fixed_per_image" {
+		t.Fatalf("expected fixed_per_image, got %q", image.Mode)
+	}
+	assertPrice(t, "fixed image", image.PricePerImage, 0.3)
+	if len(catalog.Groups[0].Models) != 0 {
+		t.Fatalf("expected no duplicate generic image row, got %+v", catalog.Groups[0].Models)
+	}
 }
 
 func TestModelPricingSortsGPTNewestFirst(t *testing.T) {

@@ -42,7 +42,7 @@ describe('client auto-config commands', () => {
     })).toBe(
       "$env:LAOSHIRENAI_SETUP_TOKEN='ticket-codex-test'; " +
       "$env:LAOSHIRENAI_TOOLS='codex'; " +
-      'irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.3 | iex'
+      'irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.4 | iex'
     )
   })
 
@@ -90,7 +90,7 @@ describe('client auto-config commands', () => {
       ticket: 'ticket-claude-test',
       isWindows: false
     })).toBe(
-      "curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.3 | " +
+      "curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.4 | " +
       "LAOSHIRENAI_SETUP_TOKEN='ticket-claude-test' LAOSHIRENAI_TOOLS='claude' bash"
     )
   })
@@ -101,7 +101,7 @@ describe('client auto-config commands', () => {
       ticket: 'ticket-grok-test',
       isWindows: false
     })).toBe(
-      "curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.3 | " +
+      "curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.4 | " +
       "LAOSHIRENAI_SETUP_TOKEN='ticket-grok-test' LAOSHIRENAI_TOOLS='grok' bash"
     )
   })

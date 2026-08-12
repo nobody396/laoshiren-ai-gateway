@@ -44,6 +44,36 @@ type codexNativeImageBridgeUpstream struct {
 	lastRequest *http.Request
 }
 
+type codexNativeImageBridgeFailoverUpstream struct {
+	service.HTTPUpstream
+	accountIDs []int64
+}
+
+func (u *codexNativeImageBridgeFailoverUpstream) Do(_ *http.Request, _ string, accountID int64, _ int) (*http.Response, error) {
+	u.accountIDs = append(u.accountIDs, accountID)
+	body := `{
+		"id":"resp_codex_native_image_bridge",
+		"status":"completed",
+		"model":"gpt-5.6-sol",
+		"output":[{"type":"image_generation_call","status":"completed","result":"` + codexNativeImageBridgeTestPNG + `"}],
+		"usage":{"input_tokens":12,"output_tokens":24}
+	}`
+	if accountID == 33 {
+		body = `{
+			"id":"resp_codex_native_image_no_tool",
+			"status":"completed",
+			"model":"gpt-5.6-sol",
+			"output":[{"type":"message","status":"completed","content":[{"type":"output_text","text":""}]}],
+			"usage":{"input_tokens":467,"output_tokens":8}
+		}`
+	}
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(body)),
+	}, nil
+}
+
 func (u *codexNativeImageBridgeUpstream) Do(req *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
 	u.lastRequest = req
 	return &http.Response{
@@ -221,6 +251,76 @@ func TestOpenAIImages_OfficialCodexGPTImage2BridgesForMonthlyAndPublicGroups(t *
 			require.Equal(t, "image_generation", gjson.GetBytes(upstreamBody, "tools.0.type").String())
 			require.Equal(t, "image_generation", gjson.GetBytes(upstreamBody, "tool_choice.type").String())
 			require.Equal(t, account.ID, c.GetInt64(opsAccountIDKey), "successful bridge must select a concrete account")
+		})
+	}
+}
+
+func TestOpenAIImages_EmptyImageCompletionFailsOverForMonthlyAndPublicGroups(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	groups := []*service.Group{
+		{ID: 7, Name: "GPT Lite monthly", Platform: service.PlatformOpenAI, SubscriptionType: service.SubscriptionTypeCredit},
+		{ID: 6, Name: "OpenAI public", Platform: service.PlatformOpenAI},
+	}
+
+	for _, group := range groups {
+		t.Run(group.Name, func(t *testing.T) {
+			newAccount := func(id int64, name string, imagePriority int) service.Account {
+				return service.Account{
+					ID: id, Name: name, Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
+					Status: service.StatusActive, Schedulable: true, Concurrency: 4,
+					Credentials: map[string]any{
+						"api_key": "test-only-key", "base_url": "https://upstream.example.test/v1",
+						"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
+					},
+					Extra: map[string]any{
+						service.OpenAIImageGenerationPriorityExtraKey: imagePriority,
+						service.OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
+					},
+					AccountGroups: []service.AccountGroup{{AccountID: id, GroupID: group.ID, Priority: imagePriority}},
+				}
+			}
+			accounts := []service.Account{
+				newAccount(33, "MoreCode primary image route", 1),
+				newAccount(23, "PomoAI fallback image route", 2),
+			}
+			upstream := &codexNativeImageBridgeFailoverUpstream{}
+			concurrencyCache := &concurrencyCacheMock{
+				acquireUserSlotFn:    func(context.Context, int64, int, string) (bool, error) { return true, nil },
+				acquireAccountSlotFn: func(context.Context, int64, int, string) (bool, error) { return true, nil },
+			}
+			gatewayCfg := &config.Config{RunMode: config.RunModeStandard}
+			billingCfg := &config.Config{RunMode: config.RunModeSimple}
+			billingCacheService := service.NewBillingCacheService(nil, nil, nil, nil, billingCfg)
+			concurrencyService := service.NewConcurrencyService(concurrencyCache)
+			gatewayService := service.NewOpenAIGatewayService(
+				codexNativeImageBridgeAccountRepo{accounts: accounts},
+				nil, nil, nil, nil, nil, nil, gatewayCfg, nil, concurrencyService, nil, nil,
+				billingCacheService, upstream,
+				nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+			)
+			handler := NewOpenAIGatewayHandler(
+				gatewayService, concurrencyService, billingCacheService, &service.APIKeyService{},
+				nil, nil, gatewayCfg,
+			)
+
+			recorder := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(recorder)
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/generations", strings.NewReader(
+				`{"model":"gpt-image-2","prompt":"生成一个女人做面膜的照片","n":1,"response_format":"b64_json"}`,
+			))
+			c.Request.Header.Set("Content-Type", "application/json")
+			c.Request.Header.Set("User-Agent", "Codex Desktop/0.147.0-alpha.1.2 (Mac OS 26.3.2; arm64) (Codex Desktop; 26.730.61639)")
+			apiKey := &service.APIKey{ID: 44 + group.ID, GroupID: &group.ID, Group: group, User: &service.User{ID: 2, Status: service.StatusActive}}
+			c.Set(string(middleware.ContextKeyAPIKey), apiKey)
+			c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 2, Concurrency: 4})
+
+			handler.Images(c)
+
+			require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
+			require.Equal(t, codexNativeImageBridgeTestPNG, gjson.GetBytes(recorder.Body.Bytes(), "data.0.b64_json").String())
+			require.Equal(t, []int64{33, 23}, upstream.accountIDs, "MoreCode must remain first and PomoAI must be the bounded fallback")
+			require.Equal(t, int64(23), c.GetInt64(opsAccountIDKey), "usage attribution must point at the account that returned the image")
 		})
 	}
 }

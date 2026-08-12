@@ -23,16 +23,6 @@ type codexNativeImageBridgeAccountRepo struct {
 	accounts []service.Account
 }
 
-func (r codexNativeImageBridgeAccountRepo) ListSchedulableByPlatform(_ context.Context, platform string) ([]service.Account, error) {
-	accounts := make([]service.Account, 0, len(r.accounts))
-	for _, account := range r.accounts {
-		if account.Platform == platform {
-			accounts = append(accounts, account)
-		}
-	}
-	return accounts, nil
-}
-
 func (r codexNativeImageBridgeAccountRepo) ListSchedulableByGroupIDAndPlatform(_ context.Context, groupID int64, platform string) ([]service.Account, error) {
 	accounts := make([]service.Account, 0, len(r.accounts))
 	for _, account := range r.accounts {
@@ -189,20 +179,22 @@ func TestOpenAIImages_OfficialCodexGPTImage2BridgesForMonthlyAndPublicGroups(t *
 				acquireUserSlotFn:    func(context.Context, int64, int, string) (bool, error) { return true, nil },
 				acquireAccountSlotFn: func(context.Context, int64, int, string) (bool, error) { return true, nil },
 			}
-			cfg := &config.Config{RunMode: config.RunModeStandard}
+			gatewayCfg := &config.Config{RunMode: config.RunModeStandard}
+			billingCfg := &config.Config{RunMode: config.RunModeSimple}
+			billingCacheService := service.NewBillingCacheService(nil, nil, nil, nil, billingCfg)
 			concurrencyService := service.NewConcurrencyService(concurrencyCache)
 			gatewayService := service.NewOpenAIGatewayService(
 				codexNativeImageBridgeAccountRepo{accounts: []service.Account{account}},
-				nil, nil, nil, nil, nil, nil, cfg, nil, concurrencyService, nil, nil,
-				service.NewBillingCacheService(nil, nil, nil, nil, cfg), upstream,
+				nil, nil, nil, nil, nil, nil, gatewayCfg, nil, concurrencyService, nil, nil,
+				billingCacheService, upstream,
 				nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 			)
 			handler := NewOpenAIGatewayHandler(
 				gatewayService,
 				concurrencyService,
-				service.NewBillingCacheService(nil, nil, nil, nil, cfg),
+				billingCacheService,
 				&service.APIKeyService{},
-				nil, nil, cfg,
+				nil, nil, gatewayCfg,
 			)
 
 			recorder := httptest.NewRecorder()

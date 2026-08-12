@@ -85,13 +85,13 @@ func ValidateCodexNativeImageBridgeRequest(parsed *OpenAIImagesRequest) error {
 		return fmt.Errorf("parsed image request is required")
 	}
 	if parsed.N != 1 {
-		return fmt.Errorf("Codex image generation currently supports n=1")
+		return fmt.Errorf("codex image generation currently supports n=1")
 	}
 	if parsed.Prompt == "" {
 		return fmt.Errorf("prompt is required")
 	}
 	if parsed.ResponseFormat != "" && parsed.ResponseFormat != "b64_json" {
-		return fmt.Errorf("Codex image generation only supports response_format=b64_json")
+		return fmt.Errorf("codex image generation only supports response_format=b64_json")
 	}
 	return nil
 }
@@ -350,10 +350,9 @@ func (s *OpenAIGatewayService) ForwardCodexNativeImageGenerationBridge(
 	}
 	originalWriter.Header().Set("Content-Type", "application/json")
 	originalWriter.WriteHeader(http.StatusOK)
-	if _, err := originalWriter.Write(responseBody); err != nil {
-		// The upstream completed successfully; retain the result so usage is
-		// recorded even though the Images client disconnected during delivery.
-	}
+	// The upstream completed successfully; retain the result so usage is
+	// recorded even when the Images client disconnects during delivery.
+	_, _ = originalWriter.Write(responseBody)
 
 	forwardResult.Model = parsed.Model
 	forwardResult.BillingModel = codexNativeImageBridgeModel

@@ -344,9 +344,9 @@ func TestDownloadResourceServiceSyncClaudeDesktopCachesStaticAssets(t *testing.T
 	dir := t.TempDir()
 	stub := &downloadResourceGitHubStub{
 		files: map[string][]byte{
-			"https://example.test/claude.dmg": []byte("macos"),
-			"https://example.test/win-x64":    []byte("windows-x64"),
-			"https://example.test/win-arm64":  []byte("windows-arm64"),
+			"https://example.test/claude.dmg":                                 []byte("macos"),
+			"https://downloads.claude.ai/releases/win32/x64/1.0.0/Claude.exe": []byte("windows-x64"),
+			"https://example.test/win-arm64":                                  []byte("windows-arm64"),
 		},
 	}
 	svc := NewDownloadResourceService(&config.Config{
@@ -355,7 +355,7 @@ func TestDownloadResourceServiceSyncClaudeDesktopCachesStaticAssets(t *testing.T
 			CacheDir:                     dir,
 			UpdateIntervalHours:          1,
 			ClaudeDesktopMacURL:          "https://example.test/claude.dmg",
-			ClaudeDesktopWindowsX64URL:   "https://example.test/win-x64",
+			ClaudeDesktopWindowsX64URL:   "https://downloads.claude.ai/releases/win32/x64/1.0.0/Claude.exe",
 			ClaudeDesktopWindowsARM64URL: "https://example.test/win-arm64",
 			MaxAssetBytes:                1024,
 		},

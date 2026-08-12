@@ -66,11 +66,36 @@ func TestBuildOpenAIRoutePromotionAssessmentReadyOnlyForManualReview(t *testing.
 	require.True(t, assessment.ManualApprovalRequired)
 	require.False(t, assessment.EnforceAvailable)
 	require.Equal(t, "process_since_start_global", assessment.HealthSamplingScope)
+	require.Equal(t, start, assessment.ReviewSchedule.EvidenceStartAt)
+	require.Equal(t, start.Add(24*time.Hour), assessment.ReviewSchedule.InitialCheckpointAt)
+	require.Equal(t, start.Add(72*time.Hour), assessment.ReviewSchedule.PrimaryAssessmentAt)
+	require.Equal(t, float64(24), assessment.ReviewSchedule.RetryIntervalHours)
+	require.Equal(t, "Asia/Shanghai", assessment.ReviewSchedule.Timezone)
+	require.False(t, assessment.ReviewSchedule.AutomaticPromotion)
+	require.Equal(t, "not_managed_by_assessment", assessment.ReviewSchedule.TimerActivationState)
 	require.Empty(t, assessment.Blockers)
 	require.NotEmpty(t, assessment.ManualChecks)
 	for _, gate := range assessment.Gates {
 		require.True(t, gate.Passed, gate.Name)
 	}
+}
+
+func TestBuildOpenAIRoutePromotionAssessmentTreats24HoursAsCheckpointOnly(t *testing.T) {
+	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
+	start := end.Add(-24 * time.Hour)
+	filter := testOpenAIRoutePromotionFilter(start, end)
+	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
+
+	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
+
+	require.False(t, assessment.AutomatedEvidenceReady)
+	require.Equal(t, "continue_shadow", assessment.Status)
+	require.Equal(t, "none", assessment.EligibleNextStage)
+	require.Contains(t, assessment.Blockers, "requested_window")
+	require.Contains(t, assessment.Blockers, "observed_span")
+	require.Contains(t, assessment.Warnings, "the 24-hour health checkpoint is available, but the primary review remains blocked until 72 hours")
+	require.True(t, assessment.ManualApprovalRequired)
+	require.False(t, assessment.EnforceAvailable)
 }
 
 func TestBuildOpenAIRoutePromotionAssessmentBlocksWeakEvidence(t *testing.T) {

@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	openAIRoutePromotionMinimumWindow       = 24 * time.Hour
-	openAIRoutePromotionRecommendedWindow   = 72 * time.Hour
+	openAIRoutePromotionInitialCheckpoint   = 24 * time.Hour
+	openAIRoutePromotionMinimumWindow       = 72 * time.Hour
+	openAIRoutePromotionRetryInterval       = 24 * time.Hour
 	openAIRoutePromotionMinimumDecisions    = int64(200)
 	openAIRoutePromotionMinimumCompleteness = 0.99
 )
@@ -26,6 +27,20 @@ type OpenAIRoutePromotionAssessmentGate struct {
 	Observed string  `json:"observed"`
 	Ratio    float64 `json:"ratio,omitempty"`
 	Detail   string  `json:"detail,omitempty"`
+}
+
+// OpenAIRoutePromotionReviewSchedule is a deterministic plan, not a running
+// timer. The operator creates one-shot task wakeups only after a separately
+// authorized Shadow policy has a real evidence start. No timestamp here can
+// enable traffic or mutate a production policy.
+type OpenAIRoutePromotionReviewSchedule struct {
+	EvidenceStartAt      time.Time `json:"evidence_start_at"`
+	InitialCheckpointAt  time.Time `json:"initial_checkpoint_at"`
+	PrimaryAssessmentAt  time.Time `json:"primary_assessment_at"`
+	RetryIntervalHours   float64   `json:"retry_interval_hours"`
+	Timezone             string    `json:"timezone"`
+	AutomaticPromotion   bool      `json:"automatic_promotion"`
+	TimerActivationState string    `json:"timer_activation_state"`
 }
 
 // OpenAIRoutePromotionAssessment is intentionally read-only. Passing every
@@ -51,6 +66,7 @@ type OpenAIRoutePromotionAssessment struct {
 	Stats                  OpenAIRouteShadowDecisionStats       `json:"stats"`
 	Health                 OpenAIRouteAuditHealth               `json:"health"`
 	HealthSamplingScope    string                               `json:"health_sampling_scope"`
+	ReviewSchedule         OpenAIRoutePromotionReviewSchedule   `json:"review_schedule"`
 	Gates                  []OpenAIRoutePromotionAssessmentGate `json:"gates"`
 	Blockers               []string                             `json:"blockers"`
 	ManualChecks           []string                             `json:"manual_checks"`
@@ -135,6 +151,10 @@ func buildOpenAIRoutePromotionAssessment(
 	if !stats.FirstDecisionAt.IsZero() && !stats.LastDecisionAt.IsZero() && stats.LastDecisionAt.After(stats.FirstDecisionAt) {
 		observedSpan = stats.LastDecisionAt.Sub(stats.FirstDecisionAt)
 	}
+	evidenceStart := start
+	if !stats.FirstDecisionAt.IsZero() && !stats.FirstDecisionAt.Before(start) && stats.FirstDecisionAt.Before(end) {
+		evidenceStart = stats.FirstDecisionAt.UTC()
+	}
 
 	evaluatedRatio := safeOpenAIRouteRatio(stats.Evaluated, stats.Total)
 	linkedEvaluated := stats.EvaluatedLinkedSuccessfulUsage + stats.EvaluatedLinkedLegacyFailure
@@ -161,21 +181,32 @@ func buildOpenAIRoutePromotionAssessment(
 		Stats:                  *stats,
 		Health:                 health,
 		HealthSamplingScope:    "process_since_start_global",
+		ReviewSchedule: OpenAIRoutePromotionReviewSchedule{
+			EvidenceStartAt:      evidenceStart,
+			InitialCheckpointAt:  evidenceStart.Add(openAIRoutePromotionInitialCheckpoint),
+			PrimaryAssessmentAt:  evidenceStart.Add(openAIRoutePromotionMinimumWindow),
+			RetryIntervalHours:   openAIRoutePromotionRetryInterval.Hours(),
+			Timezone:             "Asia/Shanghai",
+			AutomaticPromotion:   false,
+			TimerActivationState: "not_managed_by_assessment",
+		},
 		ManualChecks: []string{
 			"authoritative upstream billing reconciliation must show no inconsistency",
 			"user-visible error and recovery rates must not regress versus a comparable legacy baseline",
 			"P95 and P99 TTFT/completion latency must not regress versus a comparable legacy baseline",
+			"route coverage and legacy-selection bias must be reviewed before treating passive observations as counterfactual evidence",
+			"predicted route cost must be calibrated against later authoritative text settlements without using image token samples",
 			"text stickiness or image stateless behavior must be verified for this request class",
 			"an owner must explicitly authorize the next traffic stage",
 		},
 	}
 
 	assessment.addGate("requested_window", window >= openAIRoutePromotionMinimumWindow,
-		">=24h", fmt.Sprintf("%.2fh", window.Hours()), window.Hours()/openAIRoutePromotionMinimumWindow.Hours(),
-		"The requested evidence window must cover at least 24 hours.")
+		">=72h", fmt.Sprintf("%.2fh", window.Hours()), window.Hours()/openAIRoutePromotionMinimumWindow.Hours(),
+		"The primary promotion review requires a full three-day Shadow window; 24 hours is only an early health checkpoint.")
 	assessment.addGate("observed_span", observedSpan >= openAIRoutePromotionMinimumWindow,
-		">=24h between first and last decision", fmt.Sprintf("%.2fh", observedSpan.Hours()), observedSpan.Hours()/openAIRoutePromotionMinimumWindow.Hours(),
-		"A wide query containing only a short traffic burst is not a 24-hour observation.")
+		">=72h between first and last decision", fmt.Sprintf("%.2fh", observedSpan.Hours()), observedSpan.Hours()/openAIRoutePromotionMinimumWindow.Hours(),
+		"A wide query containing only a short traffic burst is not a three-day observation.")
 	assessment.addGate("evaluated_samples", stats.Evaluated >= openAIRoutePromotionMinimumDecisions,
 		">=200", fmt.Sprintf("%d", stats.Evaluated), float64(stats.Evaluated)/float64(openAIRoutePromotionMinimumDecisions),
 		"Only successfully evaluated Shadow decisions count as valid samples.")
@@ -207,8 +238,8 @@ func buildOpenAIRoutePromotionAssessment(
 		fmt.Sprintf("<= policy cap %s", formatOpenAIRoutePercent(stats.PolicyMaxProviderShare)), formatOpenAIRoutePercent(maxProviderShare/100), maxProviderShare/100,
 		"Observed adaptive selection concentration must stay inside the audited provider cap.")
 
-	if window >= openAIRoutePromotionMinimumWindow && window < openAIRoutePromotionRecommendedWindow {
-		assessment.Warnings = append(assessment.Warnings, "minimum 24-hour window reached; 72 hours is recommended before considering a canary")
+	if window >= openAIRoutePromotionInitialCheckpoint && window < openAIRoutePromotionMinimumWindow {
+		assessment.Warnings = append(assessment.Warnings, "the 24-hour health checkpoint is available, but the primary review remains blocked until 72 hours")
 	}
 	if stats.Total == 0 {
 		assessment.Warnings = append(assessment.Warnings, "no Shadow decisions matched this exact policy slice")

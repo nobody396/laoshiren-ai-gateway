@@ -8,17 +8,23 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/util/responseheaders"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+	"go.uber.org/zap"
+	_ "golang.org/x/image/webp"
 )
 
 const (
@@ -484,29 +490,250 @@ func (s *OpenAIGatewayService) ForwardCodexNativeImageGeneration(
 	return result, err
 }
 
+// ForwardFixedOpenAIImageGenerationResponses renders a generation-only Codex
+// Responses request through the dedicated gpt-image-2 pool, then converts the
+// validated image back into the native Responses protocol. The entire upstream
+// response is buffered before any client bytes are written, preserving safe
+// sequential failover and preventing duplicate paid generations.
+func (s *OpenAIGatewayService) ForwardFixedOpenAIImageGenerationResponses(
+	ctx context.Context,
+	c *gin.Context,
+	account *Account,
+	responsesBody []byte,
+	requestedModel string,
+	stream bool,
+) (*OpenAIForwardResult, error) {
+	if c == nil || c.Writer == nil {
+		return nil, fmt.Errorf("response context is required")
+	}
+	prompt, err := LatestOpenAIUserPromptForImageRenderer(responsesBody)
+	if err != nil {
+		return nil, err
+	}
+
+	imageBody, err := json.Marshal(map[string]any{
+		"model":           OpenAIFixedImageRendererModel,
+		"prompt":          prompt,
+		"n":               1,
+		"response_format": "b64_json",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("encode fixed image request: %w", err)
+	}
+	parsed := &OpenAIImagesRequest{
+		Model:          OpenAIFixedImageRendererModel,
+		Prompt:         prompt,
+		N:              1,
+		SizeTier:       ImageBillingSize2K,
+		ResponseFormat: "b64_json",
+		Body:           imageBody,
+	}
+
+	originalWriter := c.Writer
+	capture := newCodexImageBridgeCaptureWriter(originalWriter)
+	var result *OpenAIForwardResult
+	func() {
+		c.Writer = capture
+		defer func() { c.Writer = originalWriter }()
+		result, err = s.ForwardCodexNativeImageGeneration(ctx, c, account, parsed)
+	}()
+	if err != nil {
+		var failoverErr *UpstreamFailoverError
+		if errors.As(err, &failoverErr) {
+			return nil, failoverErr
+		}
+		if capture.Written() && capture.body.Len() > 0 {
+			copyCodexImageBridgeCapturedResponse(originalWriter, capture)
+		}
+		return nil, err
+	}
+	if result == nil {
+		return nil, &UpstreamFailoverError{StatusCode: http.StatusBadGateway}
+	}
+
+	imageBase64, err := extractCompletedCodexNativeImage(capture.body.Bytes())
+	if err != nil {
+		// ForwardCodexNativeImageGeneration already validated this payload. Treat
+		// any disagreement as non-replayable because the upstream may have billed
+		// it, and never expose malformed image data to Codex.
+		safeErr := SafeClientUpstreamError(http.StatusBadGateway)
+		c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
+		return nil, fmt.Errorf("extract validated fixed image response: %w", err)
+	}
+
+	responseID := "resp_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	itemID := "ig_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	createdAt := time.Now().Unix()
+	completedItem := map[string]any{
+		"id":     itemID,
+		"type":   "image_generation_call",
+		"status": "completed",
+		"result": imageBase64,
+	}
+	completedResponse := map[string]any{
+		"id":                   responseID,
+		"object":               "response",
+		"created_at":           createdAt,
+		"completed_at":         createdAt,
+		"status":               "completed",
+		"error":                nil,
+		"incomplete_details":   nil,
+		"instructions":         nil,
+		"model":                strings.TrimSpace(requestedModel),
+		"output":               []any{completedItem},
+		"parallel_tool_calls":  true,
+		"previous_response_id": nil,
+		"store":                false,
+		"temperature":          1,
+		"text": map[string]any{
+			"format": map[string]any{"type": "text"},
+		},
+		"tool_choice": "auto",
+		"tools":       []any{map[string]any{"type": "image_generation"}},
+		"top_p":       1,
+		"truncation":  "disabled",
+		// The renderer has no trustworthy token usage for the synthetic
+		// Responses envelope. Response.usage is nullable; omitting invented
+		// token details also keeps strict SDK decoders protocol-compatible.
+		"usage":    nil,
+		"metadata": map[string]any{},
+	}
+	if strings.TrimSpace(requestedModel) == "" {
+		completedResponse["model"] = OpenAIFixedImageRendererModel
+	}
+
+	if err := writeFixedOpenAIImageResponses(c, stream, completedResponse, completedItem); err != nil {
+		// The image is already complete and billable upstream. Preserve the
+		// successful result even if the downstream client disconnected while the
+		// buffered native response was being delivered.
+		logger.FromContext(ctx).Warn("openai.fixed_image_response_delivery_failed", zap.Error(err))
+	}
+
+	result.ResponseID = responseID
+	if strings.TrimSpace(result.RequestID) == "" {
+		result.RequestID = responseID
+	}
+	result.Model = strings.TrimSpace(requestedModel)
+	if result.Model == "" {
+		result.Model = OpenAIFixedImageRendererModel
+	}
+	result.BillingModel = OpenAIFixedImageRendererModel
+	result.ImageCount = 1
+	result.ImageSize = ImageBillingSize2K
+	result.Stream = stream
+	return result, nil
+}
+
+func writeFixedOpenAIImageResponses(
+	c *gin.Context,
+	stream bool,
+	completedResponse map[string]any,
+	completedItem map[string]any,
+) error {
+	if c == nil || c.Writer == nil {
+		return fmt.Errorf("response writer is required")
+	}
+	requestID := strings.TrimSpace(firstNonEmptyString(completedResponse["id"]))
+	if requestID != "" {
+		c.Header("x-request-id", requestID)
+	}
+	if !stream {
+		body, err := json.Marshal(completedResponse)
+		if err != nil {
+			return fmt.Errorf("encode fixed image response: %w", err)
+		}
+		c.Header("Content-Type", "application/json")
+		MarkResponseCommitted(c)
+		c.Status(http.StatusOK)
+		_, err = c.Writer.Write(body)
+		return err
+	}
+
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+
+	inProgressResponse := cloneOpenAIResponseMap(completedResponse)
+	inProgressResponse["status"] = "in_progress"
+	inProgressResponse["completed_at"] = nil
+	inProgressResponse["output"] = []any{}
+	inProgressItem := map[string]any{
+		"id":     completedItem["id"],
+		"type":   "image_generation_call",
+		"status": "in_progress",
+		// Codex models image_generation_call.result as a required string even
+		// on output_item.added; the empty value is replaced by the completed
+		// Base64 payload in output_item.done.
+		"result": "",
+	}
+	itemID := strings.TrimSpace(firstNonEmptyString(completedItem["id"]))
+	events := []map[string]any{
+		{"type": "response.created", "sequence_number": 0, "response": inProgressResponse},
+		{"type": "response.in_progress", "sequence_number": 1, "response": inProgressResponse},
+		{"type": "response.output_item.added", "sequence_number": 2, "output_index": 0, "item": inProgressItem},
+		{"type": "response.image_generation_call.in_progress", "sequence_number": 3, "output_index": 0, "item_id": itemID},
+		{"type": "response.image_generation_call.generating", "sequence_number": 4, "output_index": 0, "item_id": itemID},
+		{"type": "response.image_generation_call.completed", "sequence_number": 5, "output_index": 0, "item_id": itemID},
+		{"type": "response.output_item.done", "sequence_number": 6, "output_index": 0, "item": completedItem},
+		{"type": "response.completed", "sequence_number": 7, "response": completedResponse},
+	}
+
+	MarkResponseCommitted(c)
+	c.Status(http.StatusOK)
+	for _, event := range events {
+		payload, err := json.Marshal(event)
+		if err != nil {
+			return fmt.Errorf("encode fixed image stream event: %w", err)
+		}
+		eventType := strings.TrimSpace(firstNonEmptyString(event["type"]))
+		if _, err := fmt.Fprintf(c.Writer, "event: %s\ndata: %s\n\n", eventType, payload); err != nil {
+			return err
+		}
+	}
+	c.Writer.Flush()
+	return nil
+}
+
+func cloneOpenAIResponseMap(src map[string]any) map[string]any {
+	cloned := make(map[string]any, len(src))
+	for key, value := range src {
+		cloned[key] = value
+	}
+	return cloned
+}
+
 func validateCompletedCodexNativeImagesResponse(body []byte) error {
+	_, err := extractCompletedCodexNativeImage(body)
+	return err
+}
+
+func extractCompletedCodexNativeImage(body []byte) (string, error) {
 	if len(body) == 0 || !gjson.ValidBytes(body) {
-		return errCodexNativeImageNoOutput
+		return "", errCodexNativeImageNoOutput
 	}
 	data := gjson.GetBytes(body, "data")
 	if !data.IsArray() || len(data.Array()) == 0 {
 		// Any structured error or usage marker means the request may already be
 		// deterministic or billable; never replay it on another account.
 		if gjson.GetBytes(body, "error").Exists() || gjson.GetBytes(body, "usage").Exists() {
-			return fmt.Errorf("native image response contains error or usage without image data")
+			return "", fmt.Errorf("native image response contains error or usage without image data")
 		}
-		return errCodexNativeImageNoOutput
+		return "", errCodexNativeImageNoOutput
 	}
 	items := data.Array()
 	if len(items) != 1 {
-		return fmt.Errorf("native image response contains %d images, expected one", len(items))
+		return "", fmt.Errorf("native image response contains %d images, expected one", len(items))
 	}
 	item := items[0]
 	imageBase64 := strings.TrimSpace(item.Get("b64_json").String())
 	if imageBase64 == "" {
-		return fmt.Errorf("native image response is missing b64_json")
+		return "", fmt.Errorf("native image response is missing b64_json")
 	}
-	return validateCodexImageBase64(imageBase64)
+	if err := validateCodexImageBase64(imageBase64); err != nil {
+		return "", err
+	}
+	return imageBase64, nil
 }
 
 func copyCodexImageBridgeCapturedResponse(dst gin.ResponseWriter, src *codexImageBridgeCaptureWriter) {
@@ -732,18 +959,34 @@ func (s *OpenAIGatewayService) ForwardImages(
 	if err != nil {
 		return nil, err
 	}
+	usage, _ := extractOpenAIUsageFromJSONBytes(respBody)
+	imageCount := extractOpenAIImageCountFromJSONBytes(respBody)
+	if imageCount <= 0 {
+		// A response with no image and no billable/error marker is safe to replay
+		// on the next account. Once usage/error metadata exists, do not risk a
+		// duplicate upstream charge; return a sanitized non-billable failure.
+		if !openAIImageResponseMayAlreadyBeBillable(respBody, usage) {
+			return nil, &UpstreamFailoverError{
+				StatusCode:             http.StatusBadGateway,
+				RequestScopedTransient: true,
+				Stage:                  GatewayFailureStageInference,
+				Scope:                  GatewayFailureScopeRequest,
+				Reason:                 GatewayFailureReason("native_image_no_output"),
+				NextAccountAction:      NextAccountRetry,
+				ClientStatusCode:       http.StatusBadGateway,
+				ClientMessage:          "Upstream image generation did not produce an image",
+			}
+		}
+		safeErr := SafeClientUpstreamError(http.StatusBadGateway)
+		c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
+		return nil, fmt.Errorf("native image response contained no valid image output")
+	}
 	responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
 	contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
 	if contentType == "" {
 		contentType = "application/json"
 	}
 	c.Data(resp.StatusCode, contentType, respBody)
-
-	usage, _ := extractOpenAIUsageFromJSONBytes(respBody)
-	imageCount := parsed.N
-	if extracted := extractOpenAIImageCountFromJSONBytes(respBody); extracted > 0 {
-		imageCount = extracted
-	}
 
 	return &OpenAIForwardResult{
 		RequestID:       resp.Header.Get("x-request-id"),
@@ -798,9 +1041,96 @@ func extractOpenAIImageCountFromJSONBytes(body []byte) int {
 	if len(body) == 0 || !gjson.ValidBytes(body) {
 		return 0
 	}
-	data := gjson.GetBytes(body, "data")
-	if data.Exists() && data.IsArray() {
-		return len(data.Array())
+	for _, path := range []string{"data", "images", "result", "output"} {
+		items := gjson.GetBytes(body, path)
+		if !items.Exists() || !items.IsArray() {
+			continue
+		}
+		count := 0
+		for _, item := range items.Array() {
+			if validOpenAIImageOutputItem(item) {
+				count++
+			}
+		}
+		return count
 	}
 	return 0
+}
+
+func validOpenAIImageOutputItem(item gjson.Result) bool {
+	if item.Type == gjson.String {
+		return validOpenAIImageOutputURL(item.String())
+	}
+	if !item.IsObject() {
+		return false
+	}
+	if encoded := strings.TrimSpace(item.Get("b64_json").String()); encoded != "" {
+		return validateOpenAIImageBase64(encoded) == nil
+	}
+	for _, path := range []string{"url", "image_url"} {
+		if validOpenAIImageOutputURL(item.Get(path).String()) {
+			return true
+		}
+	}
+	return false
+}
+
+func validOpenAIImageOutputURL(value string) bool {
+	value = strings.TrimSpace(value)
+	if strings.HasPrefix(strings.ToLower(value), "data:image/") {
+		parts := strings.SplitN(value, ",", 2)
+		return len(parts) == 2 && strings.Contains(strings.ToLower(parts[0]), ";base64") &&
+			validateOpenAIImageBase64(parts[1]) == nil
+	}
+	parsed, err := url.Parse(value)
+	if err != nil || parsed.Host == "" {
+		return false
+	}
+	switch strings.ToLower(parsed.Scheme) {
+	case "http", "https":
+		return true
+	default:
+		return false
+	}
+}
+
+func validateOpenAIImageBase64(value string) error {
+	if len(value) > codexNativeImageMaxBase64Bytes {
+		return fmt.Errorf("image result exceeds maximum size")
+	}
+	decoded, err := base64.StdEncoding.Strict().DecodeString(value)
+	if err != nil {
+		return fmt.Errorf("image result is invalid base64")
+	}
+	contentType := http.DetectContentType(decoded)
+	switch contentType {
+	case "image/png", "image/jpeg", "image/gif", "image/webp":
+	default:
+		return fmt.Errorf("image result is not a supported image")
+	}
+	config, _, err := image.DecodeConfig(bytes.NewReader(decoded))
+	if err != nil || config.Width <= 0 || config.Height <= 0 ||
+		int64(config.Width)*int64(config.Height) > codexNativeImageMaxPixels {
+		return fmt.Errorf("image result is not decodable")
+	}
+	return nil
+}
+
+func openAIImageResponseMayAlreadyBeBillable(body []byte, usage OpenAIUsage) bool {
+	if usage.InputTokens > 0 || usage.OutputTokens > 0 ||
+		usage.ImageInputTokens > 0 || usage.ImageOutputTokens > 0 ||
+		gjson.GetBytes(body, "usage").Exists() ||
+		gjson.GetBytes(body, "error").Exists() {
+		return true
+	}
+	// A non-empty candidate output may represent a generated/billable image
+	// whose payload is malformed or unsupported. Never replay it on another
+	// account; only a genuinely empty output is safe for bounded failover.
+	for _, path := range []string{"data", "images", "result", "output"} {
+		items := gjson.GetBytes(body, path)
+		if items.IsArray() && len(items.Array()) > 0 {
+			return true
+		}
+	}
+	return false
 }

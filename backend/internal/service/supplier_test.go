@@ -174,6 +174,31 @@ func TestSupplierFromAccountSkipsUnschedulableAccounts(t *testing.T) {
 	}
 }
 
+func TestSupplierFromAccountDisablesAutomaticProbeByDefault(t *testing.T) {
+	supplier, reason := supplierFromAccount(Account{
+		ID:          39,
+		Name:        "image-only-route",
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Status:      StatusActive,
+		Schedulable: true,
+		Credentials: map[string]any{
+			"base_url": "https://images.example.invalid",
+			"api_key":  "sk-test",
+		},
+	})
+
+	if reason != "" {
+		t.Fatalf("unexpected skip reason: %q", reason)
+	}
+	if supplier == nil {
+		t.Fatal("expected supplier")
+	}
+	if supplier.ProbeEnabled {
+		t.Fatal("account-synced suppliers must not start paid or protocol-incompatible probes automatically")
+	}
+}
+
 func TestSupplierProbeSnapshotShowsDisabledProbeWithoutCountingIt(t *testing.T) {
 	now := time.Now()
 	sourceOne := int64(101)

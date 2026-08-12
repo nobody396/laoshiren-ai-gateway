@@ -838,21 +838,35 @@ func (s *OpenAIGatewayService) ForwardGPTImage(
 	if err != nil {
 		return nil, err
 	}
-	responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
-	contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
-	if contentType == "" {
-		contentType = "application/json"
-	}
-	c.Data(resp.StatusCode, contentType, respBody)
-
 	taskIDs := extractGPTImageSubmittedTaskIDs(respBody)
 	imageCount := 0
 	if len(taskIDs) == 0 {
 		imageCount = extractOpenAIImageCountFromJSONBytes(respBody)
 	}
 	if len(taskIDs) == 0 && imageCount <= 0 {
-		imageCount = 1
+		usage, _ := extractOpenAIUsageFromJSONBytes(respBody)
+		if !openAIImageResponseMayAlreadyBeBillable(respBody, usage) {
+			return nil, &UpstreamFailoverError{
+				StatusCode:             http.StatusBadGateway,
+				RequestScopedTransient: true,
+				Stage:                  GatewayFailureStageInference,
+				Scope:                  GatewayFailureScopeRequest,
+				Reason:                 GatewayFailureReason("gpt_image_no_output"),
+				NextAccountAction:      NextAccountRetry,
+				ClientStatusCode:       http.StatusBadGateway,
+				ClientMessage:          "Upstream image generation did not produce an image",
+			}
+		}
+		safeErr := SafeClientUpstreamError(http.StatusBadGateway)
+		c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
+		return nil, fmt.Errorf("gpt-image response contained no valid image output")
 	}
+	responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
+	contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
+	if contentType == "" {
+		contentType = "application/json"
+	}
+	c.Data(resp.StatusCode, contentType, respBody)
 
 	return &OpenAIForwardResult{
 		RequestID:       resp.Header.Get("x-request-id"),

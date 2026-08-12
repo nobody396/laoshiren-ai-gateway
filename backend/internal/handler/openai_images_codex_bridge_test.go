@@ -51,6 +51,51 @@ type codexNativeImageBridgeFailoverUpstream struct {
 	models     []string
 }
 
+type codexFixedImageThreeLegUpstream struct {
+	service.HTTPUpstream
+	accountIDs []int64
+	paths      []string
+	models     []string
+}
+
+func (u *codexFixedImageThreeLegUpstream) Do(req *http.Request, _ string, accountID int64, _ int) (*http.Response, error) {
+	u.accountIDs = append(u.accountIDs, accountID)
+	u.paths = append(u.paths, req.URL.Path)
+	requestBody, _ := io.ReadAll(req.Body)
+	u.models = append(u.models, gjson.GetBytes(requestBody, "model").String())
+
+	body := `{"created":1710000000,"data":[{"b64_json":"` + codexNativeImageBridgeTestPNG + `"}]}`
+	switch accountID {
+	case 33:
+		body = `{"id":"resp_no_image_tool","status":"completed","model":"gpt-5.6-sol","output":[{"type":"message","status":"completed","content":[{"type":"output_text","text":""}]}],"usage":{"input_tokens":20,"output_tokens":2}}`
+	case 38:
+		body = `{"created":1710000000,"data":[]}`
+	}
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(body)),
+	}, nil
+}
+
+type codexTextIsolationUpstream struct {
+	service.HTTPUpstream
+	accountIDs []int64
+	lastBody   []byte
+}
+
+func (u *codexTextIsolationUpstream) Do(req *http.Request, _ string, accountID int64, _ int) (*http.Response, error) {
+	u.accountIDs = append(u.accountIDs, accountID)
+	u.lastBody, _ = io.ReadAll(req.Body)
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body: io.NopCloser(strings.NewReader(
+			`{"id":"resp_text","object":"response","status":"completed","model":"gpt-5.6-sol","output":[{"type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":"ok"}]}],"usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}`,
+		)),
+	}, nil
+}
+
 func (u *codexNativeImageBridgeFailoverUpstream) Do(req *http.Request, _ string, accountID int64, _ int) (*http.Response, error) {
 	u.accountIDs = append(u.accountIDs, accountID)
 	u.paths = append(u.paths, req.URL.Path)
@@ -353,6 +398,215 @@ func TestOpenAIImages_EmptyImageCompletionFallsBackToNativeImagesForMonthlyAndPu
 			require.Equal(t, "gpt-image-2-count", c.GetString(opsUpstreamModelKey))
 		})
 	}
+}
+
+func TestOpenAIResponses_OfficialCodexNaturalLanguageUsesFixedImagePoolForAnyTextModel(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	for _, group := range []*service.Group{
+		{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI},
+		{ID: 7, Name: "GPT monthly", Platform: service.PlatformOpenAI, SubscriptionType: service.SubscriptionTypeCredit},
+	} {
+		for _, textModel := range []string{
+			"gpt-5.6-luna",
+			"gpt-5.6-terra",
+			"gpt-5.6-sol",
+			"gpt-5.5",
+			"gpt-5.4",
+		} {
+			t.Run(group.Name+"/"+textModel, func(t *testing.T) {
+				account := service.Account{
+					ID:          3300 + group.ID,
+					Name:        "morecode-fixed-image-primary",
+					Platform:    service.PlatformOpenAI,
+					Type:        service.AccountTypeAPIKey,
+					Status:      service.StatusActive,
+					Schedulable: true,
+					Concurrency: 4,
+					Credentials: map[string]any{
+						"api_key": "test-only-key", "base_url": "https://upstream.example.test/v1",
+						"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
+					},
+					Extra: map[string]any{
+						service.OpenAIImageGenerationPriorityExtraKey: 1,
+						service.OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
+					},
+					AccountGroups: []service.AccountGroup{{AccountID: 3300 + group.ID, GroupID: group.ID, Priority: 90}},
+				}
+				upstream := &codexNativeImageBridgeUpstream{}
+				concurrencyCache := &concurrencyCacheMock{
+					acquireUserSlotFn:    func(context.Context, int64, int, string) (bool, error) { return true, nil },
+					acquireAccountSlotFn: func(context.Context, int64, int, string) (bool, error) { return true, nil },
+				}
+				gatewayCfg := &config.Config{RunMode: config.RunModeStandard}
+				billingCfg := &config.Config{RunMode: config.RunModeSimple}
+				billingCacheService := service.NewBillingCacheService(nil, nil, nil, nil, billingCfg)
+				concurrencyService := service.NewConcurrencyService(concurrencyCache)
+				gatewayService := service.NewOpenAIGatewayService(
+					codexNativeImageBridgeAccountRepo{accounts: []service.Account{account}},
+					nil, nil, nil, nil, nil, nil, gatewayCfg, nil, concurrencyService, nil, nil,
+					billingCacheService, upstream,
+					nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+				)
+				handler := NewOpenAIGatewayHandler(
+					gatewayService, concurrencyService, billingCacheService, &service.APIKeyService{},
+					nil, nil, gatewayCfg,
+				)
+
+				recorder := httptest.NewRecorder()
+				c, _ := gin.CreateTestContext(recorder)
+				c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(
+					`{"model":"`+textModel+`","input":"帮我生成一张月球橘猫的图片","stream":false}`,
+				))
+				c.Request.Header.Set("Content-Type", "application/json")
+				c.Request.Header.Set("User-Agent", "Codex Desktop/0.147.0-alpha.1.2 (Mac OS 26.3.2; arm64) (Codex Desktop; 26.730.61639)")
+				apiKey := &service.APIKey{ID: 144 + group.ID, GroupID: &group.ID, Group: group, User: &service.User{ID: 2, Status: service.StatusActive}}
+				c.Set(string(middleware.ContextKeyAPIKey), apiKey)
+				c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 2, Concurrency: 4})
+
+				handler.Responses(c)
+
+				require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
+				require.Equal(t, textModel, gjson.GetBytes(recorder.Body.Bytes(), "model").String())
+				require.Equal(t, "image_generation_call", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
+				require.Equal(t, codexNativeImageBridgeTestPNG, gjson.GetBytes(recorder.Body.Bytes(), "output.0.result").String())
+				require.NotNil(t, upstream.lastRequest)
+				require.Equal(t, "/v1/responses", upstream.lastRequest.URL.Path)
+				upstreamBody, err := io.ReadAll(upstream.lastRequest.Body)
+				require.NoError(t, err)
+				require.Equal(t, "gpt-5.6-sol", gjson.GetBytes(upstreamBody, "model").String())
+				require.Equal(t, "image_generation", gjson.GetBytes(upstreamBody, "tool_choice.type").String())
+				require.Equal(t, account.ID, c.GetInt64(opsAccountIDKey))
+			})
+		}
+	}
+}
+
+func TestOpenAIResponses_FixedImagePoolFailsOverSequentiallyMoreCodeAdobePomo(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	group := &service.Group{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI}
+	newAccount := func(id int64, name string, imagePriority int, transport string) service.Account {
+		modelMapping := map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"}
+		models := []any{"gpt-5.6-sol"}
+		extra := map[string]any{
+			service.OpenAIImageGenerationPriorityExtraKey: imagePriority,
+			service.OpenAIImageGenerationModelsExtraKey:   models,
+		}
+		if transport == service.OpenAIImageGenerationTransportImages {
+			modelMapping = map[string]any{"gpt-image-2": "gpt-image-2-count"}
+			models = []any{"gpt-image-2"}
+			extra[service.OpenAIImageGenerationModelsExtraKey] = models
+			extra["supports_images"] = true
+			extra[service.OpenAIImageGenerationTransportExtraKey] = transport
+		}
+		return service.Account{
+			ID: id, Name: name, Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
+			Status: service.StatusActive, Schedulable: true, Concurrency: 4,
+			Credentials: map[string]any{
+				"api_key": "test-only-key", "base_url": "https://upstream.example.test/v1",
+				"model_mapping": modelMapping,
+			},
+			Extra:         extra,
+			AccountGroups: []service.AccountGroup{{AccountID: id, GroupID: group.ID, Priority: 90}},
+		}
+	}
+	accounts := []service.Account{
+		newAccount(33, "MoreCode primary", 1, service.OpenAIImageGenerationTransportResponses),
+		newAccount(38, "Adobe fallback", 2, service.OpenAIImageGenerationTransportImages),
+		newAccount(40, "Pomo fallback", 3, service.OpenAIImageGenerationTransportImages),
+	}
+	upstream := &codexFixedImageThreeLegUpstream{}
+	handler := newCodexResponsesTestHandler(accounts, upstream)
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(
+		`{"model":"gpt-5.6-terra","input":"帮我生成一张月球橘猫的图片","stream":false}`,
+	))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Request.Header.Set("User-Agent", "Codex Desktop/0.147.0-alpha.1.2 (Mac OS 26.3.2; arm64) (Codex Desktop; 26.730.61639)")
+	apiKey := &service.APIKey{ID: 150, GroupID: &group.ID, Group: group, User: &service.User{ID: 2, Status: service.StatusActive}}
+	c.Set(string(middleware.ContextKeyAPIKey), apiKey)
+	c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 2, Concurrency: 4})
+
+	handler.Responses(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
+	require.Equal(t, "gpt-5.6-terra", gjson.GetBytes(recorder.Body.Bytes(), "model").String())
+	require.Equal(t, codexNativeImageBridgeTestPNG, gjson.GetBytes(recorder.Body.Bytes(), "output.0.result").String())
+	require.Equal(t, []int64{33, 38, 40}, upstream.accountIDs)
+	require.Equal(t, []string{"/v1/responses", "/v1/images/generations", "/v1/images/generations"}, upstream.paths)
+	require.Equal(t, []string{"gpt-5.6-sol", "gpt-image-2-count", "gpt-image-2-count"}, upstream.models)
+	require.Equal(t, int64(40), c.GetInt64(opsAccountIDKey))
+	require.Equal(t, "gpt-image-2-count", c.GetString(opsUpstreamModelKey))
+}
+
+func TestOpenAIResponses_PassiveImageToolCatalogKeepsOrdinaryTextRoute(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	group := &service.Group{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI}
+	textAccount := service.Account{
+		ID: 23, Name: "ordinary-text-primary", Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
+		Status: service.StatusActive, Schedulable: true, Concurrency: 4,
+		Credentials: map[string]any{
+			"api_key": "test-only-key", "base_url": "https://text.example.test/v1",
+			"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
+		},
+		AccountGroups: []service.AccountGroup{{AccountID: 23, GroupID: group.ID, Priority: 1}},
+	}
+	imageAccount := service.Account{
+		ID: 33, Name: "MoreCode image route", Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
+		Status: service.StatusActive, Schedulable: true, Concurrency: 4,
+		Credentials: map[string]any{
+			"api_key": "test-only-key", "base_url": "https://image.example.test/v1",
+			"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
+		},
+		Extra: map[string]any{
+			service.OpenAIImageGenerationPriorityExtraKey: 1,
+			service.OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
+		},
+		AccountGroups: []service.AccountGroup{{AccountID: 33, GroupID: group.ID, Priority: 90}},
+	}
+	upstream := &codexTextIsolationUpstream{}
+	handler := newCodexResponsesTestHandler([]service.Account{textAccount, imageAccount}, upstream)
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(
+		`{"model":"gpt-5.6-sol","input":"explain this code","tools":[{"type":"image_generation"}],"tool_choice":"auto","stream":false}`,
+	))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Request.Header.Set("User-Agent", "Codex Desktop/0.147.0-alpha.1.2 (Mac OS 26.3.2; arm64) (Codex Desktop; 26.730.61639)")
+	apiKey := &service.APIKey{ID: 151, GroupID: &group.ID, Group: group, User: &service.User{ID: 2, Status: service.StatusActive}}
+	c.Set(string(middleware.ContextKeyAPIKey), apiKey)
+	c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 2, Concurrency: 4})
+
+	handler.Responses(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
+	require.Equal(t, []int64{23}, upstream.accountIDs, "passive image tool metadata must not move normal text to the image pool")
+	require.Equal(t, "explain this code", gjson.GetBytes(upstream.lastBody, "input").String())
+	require.Equal(t, "message", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
+}
+
+func newCodexResponsesTestHandler(accounts []service.Account, upstream service.HTTPUpstream) *OpenAIGatewayHandler {
+	concurrencyCache := &concurrencyCacheMock{
+		acquireUserSlotFn:    func(context.Context, int64, int, string) (bool, error) { return true, nil },
+		acquireAccountSlotFn: func(context.Context, int64, int, string) (bool, error) { return true, nil },
+	}
+	gatewayCfg := &config.Config{RunMode: config.RunModeStandard}
+	billingCfg := &config.Config{RunMode: config.RunModeSimple}
+	billingCacheService := service.NewBillingCacheService(nil, nil, nil, nil, billingCfg)
+	concurrencyService := service.NewConcurrencyService(concurrencyCache)
+	gatewayService := service.NewOpenAIGatewayService(
+		codexNativeImageBridgeAccountRepo{accounts: accounts},
+		nil, nil, nil, nil, nil, nil, gatewayCfg, nil, concurrencyService, nil, nil,
+		billingCacheService, upstream,
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+	)
+	return NewOpenAIGatewayHandler(
+		gatewayService, concurrencyService, billingCacheService, &service.APIKeyService{},
+		nil, nil, gatewayCfg,
+	)
 }
 
 func newCodexNativeImageBridgeTestContext(t *testing.T, officialCodex bool) *gin.Context {

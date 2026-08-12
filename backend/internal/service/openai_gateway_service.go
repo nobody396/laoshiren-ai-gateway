@@ -5373,6 +5373,17 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 			result.VideoDurationSeconds, videoConfig, videoMultiplier,
 		)
 		multiplier = videoMultiplier
+	} else if result.ImageCount > 0 && apiKey.Group != nil &&
+		apiKey.Group.GPTImageCallPrice != nil && *apiKey.Group.GPTImageCallPrice > 0 {
+		// An explicit per-image price is the product contract for both integrated
+		// OpenAI groups and the standalone image group. It deliberately takes
+		// precedence over token/resolution pricing, but only after the forwarder
+		// has validated one or more completed image payloads.
+		cost = s.billingService.CalculateGPTImageCallCost(
+			apiKey.Group.GPTImageCallPrice,
+			result.ImageCount,
+			imageMultiplier,
+		)
 	} else if result.ImageCount > 0 && apiKey.Group != nil && apiKey.Group.Platform == PlatformGPTImage {
 		groupConfig := &ImagePriceConfig{
 			Price1K: apiKey.Group.ImagePrice1K,
@@ -5382,7 +5393,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		if groupConfig.hasAnyPrice() {
 			cost = s.billingService.CalculateImageCost(billingModel, sizeTier, result.ImageCount, groupConfig, imageMultiplier)
 		} else {
-			cost = s.billingService.CalculateGPTImageCallCost(apiKey.Group.GPTImageCallPrice, imageMultiplier)
+			cost = s.billingService.CalculateGPTImageCallCost(apiKey.Group.GPTImageCallPrice, result.ImageCount, imageMultiplier)
 		}
 	} else if s.resolver != nil && apiKey.Group != nil {
 		gid := apiKey.Group.ID

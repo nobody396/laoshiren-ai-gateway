@@ -230,7 +230,23 @@ func applyAccountStatsCost(
 	if model == "" {
 		model = requestedModel
 	}
+	requestCount := accountStatsRequestCount(usageLog)
 	usageLog.AccountStatsCost = resolveAccountStatsCost(
-		ctx, cs, bs, accountID, groupID, model, tokens, 1, totalCost,
+		ctx, cs, bs, accountID, groupID, model, tokens, requestCount, totalCost,
 	)
+}
+
+func accountStatsRequestCount(usageLog *UsageLog) int {
+	if usageLog == nil {
+		return 1
+	}
+	// Video billing has precedence in RecordUsage. Some legacy paths mirror the
+	// video count into ImageCount, so inspect the dedicated video field first.
+	if usageLog.VideoCount > 0 {
+		return usageLog.VideoCount
+	}
+	if usageLog.ImageCount > 0 {
+		return usageLog.ImageCount
+	}
+	return 1
 }

@@ -34,6 +34,17 @@ func TestOpenAIRouteHistogramPercentile(t *testing.T) {
 	require.Zero(t, OpenAIRouteHistogramPercentile(histogram, 0, 0.95))
 }
 
+func TestOpenAIRouteObservationAggregatePartialStreamRateExcludesNeutralAttempts(t *testing.T) {
+	aggregate := NewOpenAIRouteObservationAggregate()
+	aggregate.AttemptCount = 100
+	aggregate.ReliabilityCount = 10
+	aggregate.PartialStreams = 2
+	require.InDelta(t, 0.20, aggregate.PartialStreamRate(), 1e-12)
+
+	aggregate.ReliabilityCount = 0
+	require.Zero(t, aggregate.PartialStreamRate())
+}
+
 func TestBlendOpenAIRouteObservationProfileRequiresSeasonalEvidence(t *testing.T) {
 	global := NewOpenAIRouteObservationAggregate()
 	global.ReliabilityCount = 100

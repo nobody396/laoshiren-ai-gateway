@@ -296,11 +296,11 @@ WITH filtered AS (
 )
 SELECT
   adaptive_selected_account_id,
-  COALESCE(adaptive_selected_rate, 0)::float8,
+  COALESCE(AVG(adaptive_selected_rate), 0)::float8,
   COUNT(*)::bigint
 FROM filtered
 WHERE evaluated AND adaptive_selected_account_id IS NOT NULL
-GROUP BY adaptive_selected_account_id, adaptive_selected_rate
+GROUP BY adaptive_selected_account_id
 ORDER BY COUNT(*) DESC, adaptive_selected_account_id ASC`
 	rows, err := r.db.QueryContext(ctx, selectedQuery, args...)
 	if err != nil {

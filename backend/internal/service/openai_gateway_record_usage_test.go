@@ -289,6 +289,57 @@ func TestOpenAIGatewayServiceRecordUsage_IncludesEndpointMetadata(t *testing.T) 
 	require.Equal(t, "/v1/responses", *usageRepo.lastLog.UpstreamEndpoint)
 }
 
+func TestOpenAIGatewayServiceRecordUsage_SettlesCostIntoScheduledRouteModel(t *testing.T) {
+	groupID := int64(12)
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	svc := newOpenAIRecordUsageServiceForTest(
+		usageRepo,
+		&openAIRecordUsageUserRepoStub{},
+		&openAIRecordUsageSubRepoStub{},
+		&openAIUserGroupRateRepoStub{},
+	)
+	store := &openAIRouteObservationStoreStub{}
+	collector := NewOpenAIRouteObservationCollectorWithOptions(store, 1, 4)
+	svc.SetOpenAIRouteObservationCollector(collector)
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID: "resp_route_model",
+			Usage: OpenAIUsage{
+				InputTokens:  8,
+				OutputTokens: 2,
+			},
+			Model:    "claude-opus-4-6",
+			Duration: time.Second,
+		},
+		APIKey: &APIKey{
+			ID:      1003,
+			GroupID: i64p(groupID),
+			Group:   &Group{ID: groupID, RateMultiplier: 1},
+		},
+		User: &User{ID: 2003},
+		Account: &Account{
+			ID:       3003,
+			Platform: PlatformOpenAI,
+			Type:     AccountTypeAPIKey,
+			Credentials: map[string]any{
+				"base_url": "https://mapped.example.invalid/v1",
+			},
+		},
+		UpstreamEndpoint:      "/v1/responses",
+		RouteObservationModel: "gpt-5.4",
+	})
+	require.NoError(t, err)
+	collector.Stop()
+
+	store.mu.Lock()
+	costs := append([]OpenAIRouteActualCostObservation(nil), store.costs...)
+	store.mu.Unlock()
+	require.Len(t, costs, 1)
+	require.Equal(t, "gpt-5.4", costs[0].Key.Model)
+	require.Equal(t, "claude-opus-4-6", usageRepo.lastLog.RequestedModel)
+}
+
 func TestOpenAIGatewayServiceRecordUsage_UsesGPTImageResolutionPrice(t *testing.T) {
 	groupID := int64(77)
 	price2K := 0.04

@@ -23,6 +23,7 @@ var errOpenAIRouteObservationQueueFull = errors.New("OpenAI route observation qu
 
 type OpenAIRouteObservationCollectorStats struct {
 	Ready                bool      `json:"ready"`
+	CounterStartedAt     time.Time `json:"counter_started_at,omitempty"`
 	Submitted            uint64    `json:"submitted"`
 	Written              uint64    `json:"written"`
 	Failed               uint64    `json:"failed"`
@@ -50,9 +51,10 @@ type OpenAIRouteObservationCollectorStats struct {
 // hot path. Overflow drops learner evidence rather than delaying a customer;
 // the drop counter makes that evidence loss explicit at the readiness gate.
 type OpenAIRouteObservationCollector struct {
-	store           OpenAIRouteObservationStore
-	outcomeRecorder OpenAIRouteOutcomeRecorder
-	pool            pond.Pool
+	store            OpenAIRouteObservationStore
+	outcomeRecorder  OpenAIRouteOutcomeRecorder
+	pool             pond.Pool
+	counterStartedAt time.Time
 
 	submitted atomic.Uint64
 	written   atomic.Uint64
@@ -86,8 +88,9 @@ func NewOpenAIRouteObservationCollectorWithOptions(store OpenAIRouteObservationS
 		queue = defaultOpenAIRouteObservationQueue
 	}
 	collector := &OpenAIRouteObservationCollector{
-		store: store,
-		pool:  pond.NewPool(workers, pond.WithQueueSize(queue)),
+		store:            store,
+		pool:             pond.NewPool(workers, pond.WithQueueSize(queue)),
+		counterStartedAt: time.Now().UTC(),
 	}
 	collector.lastError.Store("")
 	collector.outcomeLastError.Store("")
@@ -217,15 +220,16 @@ func (c *OpenAIRouteObservationCollector) Stats() OpenAIRouteObservationCollecto
 		return OpenAIRouteObservationCollectorStats{}
 	}
 	stats := OpenAIRouteObservationCollectorStats{
-		Submitted:      c.submitted.Load(),
-		Written:        c.written.Load(),
-		Failed:         c.failed.Load(),
-		Dropped:        c.dropped.Load(),
-		Rejected:       c.rejected.Load(),
-		StorageChecks:  c.checks.Load(),
-		StorageFailed:  c.checkFail.Load(),
-		OutcomeApplied: c.outcomeApplied.Load(),
-		OutcomeFailed:  c.outcomeFailed.Load(),
+		CounterStartedAt: c.counterStartedAt,
+		Submitted:        c.submitted.Load(),
+		Written:          c.written.Load(),
+		Failed:           c.failed.Load(),
+		Dropped:          c.dropped.Load(),
+		Rejected:         c.rejected.Load(),
+		StorageChecks:    c.checks.Load(),
+		StorageFailed:    c.checkFail.Load(),
+		OutcomeApplied:   c.outcomeApplied.Load(),
+		OutcomeFailed:    c.outcomeFailed.Load(),
 	}
 	terminal := stats.Written + stats.Failed + stats.Dropped
 	if stats.Submitted > terminal {

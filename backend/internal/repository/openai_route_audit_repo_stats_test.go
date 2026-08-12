@@ -49,7 +49,9 @@ func TestOpenAIRouteDecisionRepositoryStatsScansPromotionEvidence(t *testing.T) 
 			1, 0.8, 0.9, start, end,
 			120.0, 240.0, 500.0, 900.0,
 		))
-	mock.ExpectQuery(regexp.QuoteMeta("GROUP BY adaptive_selected_account_id, adaptive_selected_rate")).
+	// Concentration is grouped by account only. Splitting one account across
+	// rate changes would understate its total adaptive share.
+	mock.ExpectQuery(regexp.QuoteMeta("GROUP BY adaptive_selected_account_id")).
 		WithArgs(args...).
 		WillReturnRows(sqlmock.NewRows([]string{"account_id", "rate", "count"}).
 			AddRow(int64(23), 0.15, int64(120)).

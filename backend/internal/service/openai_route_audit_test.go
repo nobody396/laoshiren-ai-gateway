@@ -70,6 +70,7 @@ func TestOpenAIRouteAuditServiceRecordAndHealth(t *testing.T) {
 	require.Len(t, repo.record.RequestID, 128)
 	health := svc.Health()
 	require.True(t, health.Ready)
+	require.False(t, health.AuditCounterStartedAt.IsZero())
 	require.Equal(t, uint64(1), health.Attempted)
 	require.Equal(t, uint64(1), health.Written)
 	require.Zero(t, health.Failed)

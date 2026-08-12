@@ -178,6 +178,20 @@ func (a OpenAIRouteObservationAggregate) LatencyPercentile(percentile float64) f
 	return OpenAIRouteHistogramPercentile(a.LatencyHistogram, a.LatencySampleCount, percentile)
 }
 
+func (a OpenAIRouteObservationAggregate) PartialStreamRate() float64 {
+	// ReliabilityCount contains successful and route-penalizing outcomes only.
+	// AttemptCount additionally contains neutral user/client outcomes and would
+	// let cancellations make a route's stream-integrity score look better.
+	if a.ReliabilityCount == 0 || a.PartialStreams == 0 {
+		return 0
+	}
+	rate := float64(a.PartialStreams) / float64(a.ReliabilityCount)
+	if rate > 1 {
+		return 1
+	}
+	return rate
+}
+
 func OpenAIRouteHistogramPercentile(histogram []uint64, sampleCount uint64, percentile float64) float64 {
 	if sampleCount == 0 || len(histogram) == 0 {
 		return 0

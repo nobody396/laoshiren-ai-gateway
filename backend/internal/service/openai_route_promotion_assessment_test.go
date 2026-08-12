@@ -32,8 +32,10 @@ func healthyOpenAIRoutePromotionEvidence(start, end time.Time) (*OpenAIRouteShad
 		PolicySnapshotVariants:         1,
 		PolicyMaxAccountShare:          0.80,
 		PolicyMaxProviderShare:         0.90,
-		FirstDecisionAt:                start,
-		LastDecisionAt:                 end,
+		// Production stats come from an end-exclusive SQL window, so the first
+		// and last decisions cannot be assumed to land exactly on its edges.
+		FirstDecisionAt: start.Add(30 * time.Second),
+		LastDecisionAt:  end.Add(-30 * time.Second),
 		SelectedAccounts: []OpenAIRouteShadowSelectedAccountStats{
 			{AccountID: 23, SelectedCount: 120, SelectedPercent: 60},
 			{AccountID: 28, SelectedCount: 80, SelectedPercent: 40},
@@ -45,13 +47,83 @@ func healthyOpenAIRoutePromotionEvidence(start, end time.Time) (*OpenAIRouteShad
 	}
 	health := OpenAIRouteAuditHealth{
 		Ready:                          true,
+		AuditCounterStartedAt:          start.Add(-time.Hour),
 		Completeness:                   1,
 		ObservationCollectorAvailable:  true,
 		ObservationReady:               true,
+		ObservationCounterStartedAt:    start.Add(-time.Hour),
 		ObservationCompleteness:        1,
 		ObservationOutcomeCompleteness: 1,
 	}
 	return stats, health
+}
+
+func TestBuildOpenAIRoutePromotionAssessmentBlocksCounterResetInsideWindow(t *testing.T) {
+	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
+	start := end.Add(-72 * time.Hour)
+	filter := testOpenAIRoutePromotionFilter(start, end)
+	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
+	health.AuditCounterStartedAt = start.Add(time.Second)
+
+	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
+
+	require.Contains(t, assessment.Blockers, "health_counter_coverage")
+}
+
+func TestBuildOpenAIRoutePromotionAssessmentBlocksRecoveredStorageGap(t *testing.T) {
+	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
+	start := end.Add(-72 * time.Hour)
+	filter := testOpenAIRoutePromotionFilter(start, end)
+	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
+	health.StorageCheckFailed = 1
+	health.ObservationStorageFailed = 2
+
+	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
+
+	require.Contains(t, assessment.Blockers, "storage_check_history")
+}
+
+func TestBuildOpenAIRoutePromotionAssessmentBlocksMissingAdaptiveAssignment(t *testing.T) {
+	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
+	start := end.Add(-72 * time.Hour)
+	filter := testOpenAIRoutePromotionFilter(start, end)
+	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
+	stats.SelectedAccounts[0].SelectedCount--
+
+	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
+
+	require.Contains(t, assessment.Blockers, "adaptive_selection_completeness")
+}
+
+func TestBuildOpenAIRoutePromotionAssessmentAllowsOnlyBoundedEdgeGap(t *testing.T) {
+	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
+	start := end.Add(-72 * time.Hour)
+	filter := testOpenAIRoutePromotionFilter(start, end)
+	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
+
+	stats.FirstDecisionAt = start.Add(30 * time.Minute)
+	stats.LastDecisionAt = end.Add(-30 * time.Minute)
+	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
+	require.NotContains(t, assessment.Blockers, "observed_span")
+
+	stats.LastDecisionAt = end.Add(-30*time.Minute - time.Second)
+	assessment = buildOpenAIRoutePromotionAssessment(filter, stats, health)
+	require.Contains(t, assessment.Blockers, "observed_span")
+}
+
+func TestBuildOpenAIRoutePromotionAssessmentDoesNotDiluteWithWiderWindow(t *testing.T) {
+	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
+	start := end.Add(-96 * time.Hour)
+	filter := testOpenAIRoutePromotionFilter(start, end)
+	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
+
+	stats.LastDecisionAt = start.Add(72 * time.Hour)
+	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
+	require.Contains(t, assessment.Blockers, "observed_span")
+
+	stats.LastDecisionAt = end.Add(-30 * time.Minute)
+	assessment = buildOpenAIRoutePromotionAssessment(filter, stats, health)
+	require.NotContains(t, assessment.Blockers, "observed_span")
 }
 
 func TestBuildOpenAIRoutePromotionAssessmentReadyOnlyForManualReview(t *testing.T) {
@@ -59,6 +131,7 @@ func TestBuildOpenAIRoutePromotionAssessmentReadyOnlyForManualReview(t *testing.
 	start := end.Add(-72 * time.Hour)
 	filter := testOpenAIRoutePromotionFilter(start, end)
 	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
+	evidenceStart := stats.FirstDecisionAt
 
 	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
 
@@ -67,10 +140,10 @@ func TestBuildOpenAIRoutePromotionAssessmentReadyOnlyForManualReview(t *testing.
 	require.Equal(t, "consider_1_percent_canary", assessment.EligibleNextStage)
 	require.True(t, assessment.ManualApprovalRequired)
 	require.False(t, assessment.EnforceAvailable)
-	require.Equal(t, "process_since_start_global", assessment.HealthSamplingScope)
-	require.Equal(t, start, assessment.ReviewSchedule.EvidenceStartAt)
-	require.Equal(t, start.Add(24*time.Hour), assessment.ReviewSchedule.InitialCheckpointAt)
-	require.Equal(t, start.Add(72*time.Hour), assessment.ReviewSchedule.PrimaryAssessmentAt)
+	require.Equal(t, "process_instance_since_start_global", assessment.HealthSamplingScope)
+	require.Equal(t, evidenceStart, assessment.ReviewSchedule.EvidenceStartAt)
+	require.Equal(t, evidenceStart.Add(24*time.Hour), assessment.ReviewSchedule.InitialCheckpointAt)
+	require.Equal(t, evidenceStart.Add(72*time.Hour), assessment.ReviewSchedule.PrimaryAssessmentAt)
 	require.Equal(t, float64(24), assessment.ReviewSchedule.RetryIntervalHours)
 	require.Equal(t, "Asia/Shanghai", assessment.ReviewSchedule.Timezone)
 	require.False(t, assessment.ReviewSchedule.AutomaticPromotion)

@@ -125,10 +125,21 @@ is authorized.
 
 ### V2.4 — guarded enforcement
 
-- use 24 hours only as an early health checkpoint; require a full 72-hour span
-  and at least 200 valid, usage-linked Shadow decisions per policy slice;
+- use 24 hours only as an early health checkpoint; require a full 72-hour query
+  window, at least 71 hours between its first and last real decision (at most
+  one hour of total end-exclusive boundary gap; the same one-hour total applies
+  to any wider retry window), and at least 200 valid,
+  usage-linked Shadow decisions per policy slice;
 - require audit/linkage completeness >= 99%, no billing inconsistency, and no
   regression in user-visible errors or P95/P99 latency;
+- require process-local audit and observation completeness counters to have
+  started before T0; any in-window restart invalidates that evidence slice,
+  and multi-replica deployments need per-replica review until counters are
+  durably aggregated;
+- require zero audit and observation storage-check failures since those
+  counters started; a later successful probe must not erase an evidence gap;
+- require adaptive account and provider assignment totals to equal the full
+  evaluated-decision count before checking concentration caps;
 - enable deterministic canary assignment at `1% -> 5% -> 20% -> 50% -> 100%`;
 - preserve text stickiness and one-click Legacy rollback at every stage;
 - never enable `enforce` in the same deployment that introduces the code path.

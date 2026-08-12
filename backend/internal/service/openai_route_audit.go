@@ -216,6 +216,7 @@ type OpenAIRouteShadowDecisionStats struct {
 type OpenAIRouteAuditHealth struct {
 	Ready                           bool                                     `json:"ready"`
 	StorageReady                    bool                                     `json:"storage_ready"`
+	AuditCounterStartedAt           time.Time                                `json:"audit_counter_started_at,omitempty"`
 	Attempted                       uint64                                   `json:"attempted"`
 	Written                         uint64                                   `json:"written"`
 	Failed                          uint64                                   `json:"failed"`
@@ -231,6 +232,7 @@ type OpenAIRouteAuditHealth struct {
 	LastError                       string                                   `json:"last_error"`
 	ObservationCollectorAvailable   bool                                     `json:"observation_collector_available"`
 	ObservationReady                bool                                     `json:"observation_ready"`
+	ObservationCounterStartedAt     time.Time                                `json:"observation_counter_started_at,omitempty"`
 	ObservationSubmitted            uint64                                   `json:"observation_submitted"`
 	ObservationWritten              uint64                                   `json:"observation_written"`
 	ObservationFailed               uint64                                   `json:"observation_failed"`
@@ -268,6 +270,11 @@ type OpenAIRouteDecisionRepository interface {
 type OpenAIRouteAuditService struct {
 	repo OpenAIRouteDecisionRepository
 	pool pond.Pool
+	// counterStartedAt is part of the promotion evidence boundary. Counters are
+	// intentionally process-local today, so a service restart must invalidate a
+	// Shadow slice that began before this instance existed rather than silently
+	// presenting a fresh 100% completeness ratio.
+	counterStartedAt time.Time
 
 	attempted     atomic.Uint64
 	written       atomic.Uint64
@@ -293,8 +300,9 @@ func NewOpenAIRouteAuditServiceWithOptions(repo OpenAIRouteDecisionRepository, w
 		queue = defaultOpenAIRouteAuditQueue
 	}
 	s := &OpenAIRouteAuditService{
-		repo: repo,
-		pool: pond.NewPool(workers, pond.WithQueueSize(queue)),
+		repo:             repo,
+		pool:             pond.NewPool(workers, pond.WithQueueSize(queue)),
+		counterStartedAt: time.Now().UTC(),
 	}
 	s.lastError.Store("")
 	return s
@@ -463,11 +471,12 @@ func (s *OpenAIRouteAuditService) Health() OpenAIRouteAuditHealth {
 		return OpenAIRouteAuditHealth{}
 	}
 	health := OpenAIRouteAuditHealth{
-		Written:            s.written.Load(),
-		Failed:             s.failed.Load(),
-		Dropped:            s.dropped.Load(),
-		StorageChecks:      s.storageChecks.Load(),
-		StorageCheckFailed: s.storageFailed.Load(),
+		Written:               s.written.Load(),
+		Failed:                s.failed.Load(),
+		Dropped:               s.dropped.Load(),
+		StorageChecks:         s.storageChecks.Load(),
+		StorageCheckFailed:    s.storageFailed.Load(),
+		AuditCounterStartedAt: s.counterStartedAt,
 	}
 	// Record increments attempted before it starts validation or I/O and only
 	// then increments one terminal counter. Read attempted last so concurrent

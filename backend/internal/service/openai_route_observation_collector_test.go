@@ -13,6 +13,7 @@ import (
 type openAIRouteObservationStoreStub struct {
 	mu           sync.Mutex
 	observations []OpenAIRouteObservation
+	costs        []OpenAIRouteActualCostObservation
 	recordErr    error
 	started      chan struct{}
 	release      chan struct{}
@@ -51,6 +52,9 @@ func (s *openAIRouteObservationStoreStub) Record(_ context.Context, observation 
 }
 
 func (s *openAIRouteObservationStoreStub) RecordCost(_ context.Context, observation OpenAIRouteActualCostObservation) error {
+	s.mu.Lock()
+	s.costs = append(s.costs, observation)
+	s.mu.Unlock()
 	return s.recordErr
 }
 
@@ -81,6 +85,7 @@ func TestOpenAIRouteObservationCollectorWritesAsynchronously(t *testing.T) {
 	require.True(t, collector.TryRecord(testOpenAIRouteObservation()))
 	collector.Stop()
 	stats := collector.Stats()
+	require.False(t, stats.CounterStartedAt.IsZero())
 	require.Equal(t, uint64(1), stats.Submitted)
 	require.Equal(t, uint64(1), stats.Written)
 	require.Zero(t, stats.Failed)

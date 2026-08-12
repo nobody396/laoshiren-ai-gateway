@@ -11,8 +11,14 @@ import (
 )
 
 const (
-	openAIRoutePromotionInitialCheckpoint   = 24 * time.Hour
-	openAIRoutePromotionMinimumWindow       = 72 * time.Hour
+	openAIRoutePromotionInitialCheckpoint = 24 * time.Hour
+	openAIRoutePromotionMinimumWindow     = 72 * time.Hour
+	// Decision timestamps are selected from an end-exclusive query window and
+	// real traffic is not synchronized to the exact T0/T0+72h boundaries. A
+	// literal 72h MIN/MAX span is therefore impossible for a 72h query. Keep a
+	// small, explicit total boundary-gap allowance while a full >=72h query
+	// window and the 200-sample gate remain mandatory.
+	openAIRoutePromotionMaxBoundaryGap      = time.Hour
 	openAIRoutePromotionRetryInterval       = 24 * time.Hour
 	openAIRoutePromotionMinimumDecisions    = int64(200)
 	openAIRoutePromotionMinimumCompleteness = 0.99
@@ -162,6 +168,8 @@ func buildOpenAIRoutePromotionAssessment(
 	emergencyRatio := safeOpenAIRouteRatio(stats.Emergency, stats.Evaluated)
 	maxAccountShare := maxOpenAIRouteSelectedAccountShare(stats.SelectedAccounts)
 	maxProviderShare := maxOpenAIRouteSelectedProviderShare(stats.SelectedProviders)
+	selectedAccountTotal := sumOpenAIRouteSelectedAccountCount(stats.SelectedAccounts)
+	selectedProviderTotal := sumOpenAIRouteSelectedProviderCount(stats.SelectedProviders)
 
 	assessment := &OpenAIRoutePromotionAssessment{
 		AssessedAt:             time.Now().UTC(),
@@ -180,7 +188,7 @@ func buildOpenAIRoutePromotionAssessment(
 		EnforceAvailable:       false,
 		Stats:                  *stats,
 		Health:                 health,
-		HealthSamplingScope:    "process_since_start_global",
+		HealthSamplingScope:    "process_instance_since_start_global",
 		ReviewSchedule: OpenAIRoutePromotionReviewSchedule{
 			EvidenceStartAt:      evidenceStart,
 			InitialCheckpointAt:  evidenceStart.Add(openAIRoutePromotionInitialCheckpoint),
@@ -191,6 +199,7 @@ func buildOpenAIRoutePromotionAssessment(
 			TimerActivationState: "not_managed_by_assessment",
 		},
 		ManualChecks: []string{
+			"multi-replica deployments must verify per-instance audit and observation completeness until cluster-wide counters are durable",
 			"authoritative upstream billing reconciliation must show no inconsistency",
 			"user-visible error and recovery rates must not regress versus a comparable legacy baseline",
 			"P95 and P99 TTFT/completion latency must not regress versus a comparable legacy baseline",
@@ -204,9 +213,13 @@ func buildOpenAIRoutePromotionAssessment(
 	assessment.addGate("requested_window", window >= openAIRoutePromotionMinimumWindow,
 		">=72h", fmt.Sprintf("%.2fh", window.Hours()), window.Hours()/openAIRoutePromotionMinimumWindow.Hours(),
 		"The primary promotion review requires a full three-day Shadow window; 24 hours is only an early health checkpoint.")
-	assessment.addGate("observed_span", observedSpan >= openAIRoutePromotionMinimumWindow,
-		">=72h between first and last decision", fmt.Sprintf("%.2fh", observedSpan.Hours()), observedSpan.Hours()/openAIRoutePromotionMinimumWindow.Hours(),
-		"A wide query containing only a short traffic burst is not a three-day observation.")
+	minimumObservedSpan := window - openAIRoutePromotionMaxBoundaryGap
+	if floor := openAIRoutePromotionMinimumWindow - openAIRoutePromotionMaxBoundaryGap; minimumObservedSpan < floor {
+		minimumObservedSpan = floor
+	}
+	assessment.addGate("observed_span", observedSpan >= minimumObservedSpan,
+		fmt.Sprintf(">=%.2fh between first and last decision inside the %.2fh window", minimumObservedSpan.Hours(), window.Hours()), fmt.Sprintf("%.2fh", observedSpan.Hours()), observedSpan.Hours()/minimumObservedSpan.Hours(),
+		"The end-exclusive query permits at most one hour of total boundary gap, including for an extended retry window; a wide query containing only a short traffic burst is not continuous evidence.")
 	assessment.addGate("evaluated_samples", stats.Evaluated >= openAIRoutePromotionMinimumDecisions,
 		">=200", fmt.Sprintf("%d", stats.Evaluated), float64(stats.Evaluated)/float64(openAIRoutePromotionMinimumDecisions),
 		"Only successfully evaluated Shadow decisions count as valid samples.")
@@ -222,6 +235,21 @@ func buildOpenAIRoutePromotionAssessment(
 	assessment.addGate("audit_and_observation_health", health.Ready,
 		"ready=true", fmt.Sprintf("ready=%t", health.Ready), boolOpenAIRouteRatio(health.Ready),
 		"Decision storage and the passive observation collector must both be healthy.")
+	healthCountersCoverWindow := !health.AuditCounterStartedAt.IsZero() &&
+		!health.ObservationCounterStartedAt.IsZero() &&
+		!health.AuditCounterStartedAt.After(start) &&
+		!health.ObservationCounterStartedAt.After(start)
+	assessment.addGate("health_counter_coverage", healthCountersCoverWindow,
+		"audit and observation counters started at or before window_start",
+		fmt.Sprintf("audit=%s observation=%s", formatOpenAIRouteEvidenceTimestamp(health.AuditCounterStartedAt), formatOpenAIRouteEvidenceTimestamp(health.ObservationCounterStartedAt)),
+		boolOpenAIRouteRatio(healthCountersCoverWindow),
+		"Completeness counters are process-local; a restart after T0 invalidates the current Shadow evidence slice instead of resetting loss history to a misleading 100%.")
+	storageCheckHistoryClean := health.StorageCheckFailed == 0 && health.ObservationStorageFailed == 0
+	assessment.addGate("storage_check_history", storageCheckHistoryClean,
+		"0 audit and observation storage-check failures since counter start",
+		fmt.Sprintf("audit=%d observation=%d", health.StorageCheckFailed, health.ObservationStorageFailed),
+		boolOpenAIRouteRatio(storageCheckHistoryClean),
+		"A later successful probe cannot erase an earlier interval where enabled Shadow evaluations or passive observations may have been skipped.")
 	assessment.addGate("audit_completeness", health.Completeness >= openAIRoutePromotionMinimumCompleteness,
 		">=99% of attempted decisions durably written", formatOpenAIRoutePercent(health.Completeness), health.Completeness,
 		"The database slice cannot reveal Shadow decisions that were rejected, dropped, still queued, or failed before persistence.")
@@ -240,6 +268,11 @@ func buildOpenAIRoutePromotionAssessment(
 	assessment.addGate("no_emergency_budget", stats.Emergency == 0,
 		"0 emergency decisions", fmt.Sprintf("%d (%s)", stats.Emergency, formatOpenAIRoutePercent(emergencyRatio)), emergencyRatio,
 		"A normal canary must not depend on emergency cost debt.")
+	assessment.addGate("adaptive_selection_completeness", selectedAccountTotal == stats.Evaluated && selectedProviderTotal == stats.Evaluated,
+		"account and provider selection totals both equal evaluated decisions",
+		fmt.Sprintf("evaluated=%d accounts=%d providers=%d", stats.Evaluated, selectedAccountTotal, selectedProviderTotal),
+		minOpenAIRouteRatio(safeOpenAIRouteRatio(selectedAccountTotal, stats.Evaluated), safeOpenAIRouteRatio(selectedProviderTotal, stats.Evaluated)),
+		"Missing adaptive account or provider assignments can dilute concentration percentages and must not be treated as valid evaluated evidence.")
 	assessment.addGate("account_concentration", stats.PolicyMaxAccountShare > 0 && maxAccountShare <= stats.PolicyMaxAccountShare*100+1e-9,
 		fmt.Sprintf("<= policy cap %s", formatOpenAIRoutePercent(stats.PolicyMaxAccountShare)), formatOpenAIRoutePercent(maxAccountShare/100), maxAccountShare/100,
 		"Observed adaptive selection concentration must stay inside the audited policy cap.")
@@ -298,6 +331,13 @@ func formatOpenAIRoutePercent(ratio float64) string {
 	return fmt.Sprintf("%.2f%%", ratio*100)
 }
 
+func formatOpenAIRouteEvidenceTimestamp(value time.Time) string {
+	if value.IsZero() {
+		return "missing"
+	}
+	return value.UTC().Format(time.RFC3339Nano)
+}
+
 func maxOpenAIRouteSelectedAccountShare(values []OpenAIRouteShadowSelectedAccountStats) float64 {
 	var max float64
 	for _, value := range values {
@@ -316,4 +356,31 @@ func maxOpenAIRouteSelectedProviderShare(values []OpenAIRouteShadowSelectedProvi
 		}
 	}
 	return max
+}
+
+func sumOpenAIRouteSelectedAccountCount(values []OpenAIRouteShadowSelectedAccountStats) int64 {
+	var total int64
+	for _, value := range values {
+		if value.SelectedCount > 0 {
+			total += value.SelectedCount
+		}
+	}
+	return total
+}
+
+func sumOpenAIRouteSelectedProviderCount(values []OpenAIRouteShadowSelectedProviderStats) int64 {
+	var total int64
+	for _, value := range values {
+		if value.SelectedCount > 0 {
+			total += value.SelectedCount
+		}
+	}
+	return total
+}
+
+func minOpenAIRouteRatio(left, right float64) float64 {
+	if left < right {
+		return left
+	}
+	return right
 }

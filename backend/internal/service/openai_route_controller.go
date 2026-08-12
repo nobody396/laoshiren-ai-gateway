@@ -392,9 +392,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 			candidates[idx].P90TTFTMilliseconds = blended.TTFTPercentile(0.90)
 			candidates[idx].P95CompletionLatencyMilliseconds = blended.LatencyPercentile(0.95)
 			candidates[idx].ObservationSampleCount = blended.ReliabilityCount
-			if blended.AttemptCount > 0 {
-				candidates[idx].PartialStreamRate = float64(blended.PartialStreams) / float64(blended.AttemptCount)
-			}
+			candidates[idx].PartialStreamRate = blended.PartialStreamRate()
 		}
 		shareAttempts := profile.Recent.AttemptCount
 		if shareAttempts == 0 {

@@ -30,6 +30,7 @@ func (s *OpsService) GetOpenAIRouteAuditHealth(ctx context.Context) OpenAIRouteA
 	stats, available := s.openAIGatewayService.SnapshotOpenAIRouteObservationCollector()
 	health.ObservationCollectorAvailable = available
 	if available {
+		health.ObservationCounterStartedAt = stats.CounterStartedAt
 		health.ObservationSubmitted = stats.Submitted
 		health.ObservationWritten = stats.Written
 		health.ObservationFailed = stats.Failed

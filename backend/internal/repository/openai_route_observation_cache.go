@@ -128,8 +128,18 @@ func (c *openAIRouteObservationCache) Record(ctx context.Context, observation se
 		}
 	}
 	partial := 0
-	if observation.PartialStream {
+	// Neutral outcomes (for example client cancellation or a user-invalid 4xx)
+	// remain visible in attempt/failure counts but must not train latency or
+	// stream-integrity scoring.
+	scoreEligible := observation.Success || observation.PenalizeRoute
+	if scoreEligible && observation.PartialStream {
 		partial = 1
+	}
+	ttftField := ""
+	latencyField := ""
+	if scoreEligible {
+		ttftField = openAIRouteObservationHistogramField("ttft", observation.TTFTMilliseconds)
+		latencyField = openAIRouteObservationHistogramField("latency", observation.CompletionLatencyMS)
 	}
 	authoritativeCost := 0
 	if observation.ActualCostAuthoritative {
@@ -146,8 +156,8 @@ func (c *openAIRouteObservationCache) Record(ctx context.Context, observation se
 		failure,
 		partial,
 		failureField,
-		openAIRouteObservationHistogramField("ttft", observation.TTFTMilliseconds),
-		openAIRouteObservationHistogramField("latency", observation.CompletionLatencyMS),
+		ttftField,
+		latencyField,
 		authoritativeCost,
 		strconv.FormatFloat(observation.ActualBaseCostUSD, 'f', -1, 64),
 		strconv.FormatFloat(observation.ActualAccountCostUSD, 'f', -1, 64),

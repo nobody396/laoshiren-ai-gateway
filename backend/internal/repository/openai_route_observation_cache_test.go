@@ -123,9 +123,12 @@ func TestOpenAIRouteObservationCache_UserRequestFailureDoesNotPenalizeReliabilit
 	now := time.Now().UTC()
 	key := testOpenAIRouteObservationKey(service.OpenAIRouteRequestClassText)
 	require.NoError(t, store.Record(ctx, service.OpenAIRouteObservation{
-		Key:          key,
-		ObservedAt:   now,
-		FailureClass: service.OpenAIRouteFailureUserRequest,
+		Key:                 key,
+		ObservedAt:          now,
+		FailureClass:        service.OpenAIRouteFailureUserRequest,
+		PartialStream:       true,
+		TTFTMilliseconds:    100,
+		CompletionLatencyMS: 500,
 	}))
 	profiles, err := store.GetBatch(ctx, []service.OpenAIRouteKey{key}, now)
 	require.NoError(t, err)
@@ -133,6 +136,33 @@ func TestOpenAIRouteObservationCache_UserRequestFailureDoesNotPenalizeReliabilit
 	require.Equal(t, uint64(1), aggregate.AttemptCount)
 	require.Zero(t, aggregate.ReliabilityCount)
 	require.Equal(t, uint64(1), aggregate.FailureCount)
+	require.Zero(t, aggregate.PartialStreams)
+	require.Zero(t, aggregate.TTFTSampleCount)
+	require.Zero(t, aggregate.LatencySampleCount)
+}
+
+func TestOpenAIRouteObservationCache_ClientCancellationIsNeutralToScoring(t *testing.T) {
+	store, _ := newOpenAIRouteObservationCacheTest(t)
+	ctx := context.Background()
+	now := time.Now().UTC()
+	key := testOpenAIRouteObservationKey(service.OpenAIRouteRequestClassText)
+
+	require.NoError(t, store.Record(ctx, service.OpenAIRouteObservation{
+		Key:                 key,
+		ObservedAt:          now,
+		FailureClass:        service.OpenAIRouteFailureClientCancelled,
+		TTFTMilliseconds:    250,
+		CompletionLatencyMS: 2_000,
+	}))
+	profiles, err := store.GetBatch(ctx, []service.OpenAIRouteKey{key}, now)
+	require.NoError(t, err)
+	aggregate := profiles[service.OpenAIRouteObservationFingerprint(key)].Global
+	require.Equal(t, uint64(1), aggregate.AttemptCount)
+	require.Equal(t, uint64(1), aggregate.FailureCount)
+	require.Zero(t, aggregate.ReliabilityCount)
+	require.Zero(t, aggregate.PartialStreams)
+	require.Zero(t, aggregate.TTFTSampleCount)
+	require.Zero(t, aggregate.LatencySampleCount)
 }
 
 func TestOpenAIRouteObservationCache_CostSettlementDoesNotDoubleCountAttempt(t *testing.T) {

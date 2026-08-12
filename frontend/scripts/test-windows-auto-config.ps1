@@ -109,6 +109,7 @@ try {
   $script:InstallGrokClient = $true
   Assert-True (-not (Test-NeedsNpmClientInstall)) 'Grok Build must remain isolated from the npm installation path'
 
+  $global:LASTEXITCODE = 0
   Write-Host 'WINDOWS_AUTO_CONFIG_ACCEPTANCE_OK claude=cmd codex=cmd grok=native npm_policy=Restricted'
 } finally {
   $env:Path = $OriginalPath

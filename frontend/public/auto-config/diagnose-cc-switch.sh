@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_VERSION="1.2.0"
+SCRIPT_VERSION="1.2.1"
 MINIMUM_VERSION="3.16.5"
 RELEASE_URL="https://github.com/farion1231/cc-switch/releases/latest"
 RELEASE_API_URL="https://api.github.com/repos/farion1231/cc-switch/releases/latest"

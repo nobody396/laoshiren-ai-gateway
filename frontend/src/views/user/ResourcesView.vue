@@ -215,6 +215,7 @@ import {
 } from '@/api/resources'
 import { useAppStore } from '@/stores/app'
 import { buildClientAutoConfigCommand, getClientAutoConfigName } from '@/utils/clientAutoConfig'
+import { buildCcsDiagnosticCommand } from '@/utils/ccSwitchDiagnostics'
 
 type IconName = InstanceType<typeof Icon>['$props']['name']
 
@@ -540,9 +541,9 @@ function buildQuickSetupCommand(id: QuickSetupID, ticket?: string): string {
   }
   if (id === 'cc-switch') {
     if (detectedOS.value === 'windows') {
-      return 'irm https://laoshirenai.com/auto-config/diagnose-cc-switch.ps1 | iex'
+      return buildCcsDiagnosticCommand('windows', window.location.origin)
     }
-    return 'curl -fsSL https://laoshirenai.com/auto-config/diagnose-cc-switch.sh | bash'
+    return buildCcsDiagnosticCommand('macos', window.location.origin)
   }
   return buildClientAutoConfigCommand({
     target: id,

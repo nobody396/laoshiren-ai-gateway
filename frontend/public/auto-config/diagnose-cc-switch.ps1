@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '1.2.0'
+$ScriptVersion = '1.2.1'
 $MinimumVersion = [Version]'3.16.5'
 $ReleaseUrl = 'https://github.com/farion1231/cc-switch/releases/latest'
 $ReleaseApiUrl = 'https://api.github.com/repos/farion1231/cc-switch/releases/latest'
@@ -92,6 +92,24 @@ function Add-Candidate {
   if (-not $List.Contains($Expanded)) {
     $List.Add($Expanded)
   }
+}
+
+function Get-OptionalPropertyValue {
+  param(
+    [object]$InputObject,
+    [string]$Name
+  )
+
+  if ($null -eq $InputObject) {
+    return $null
+  }
+
+  $Property = $InputObject.PSObject.Properties[$Name]
+  if ($null -eq $Property) {
+    return $null
+  }
+
+  return $Property.Value
 }
 
 function Get-WindowsReleaseAssetName {
@@ -352,13 +370,17 @@ $UninstallRoots = @(
 
 foreach ($Root in $UninstallRoots) {
   Get-ItemProperty -Path $Root -ErrorAction SilentlyContinue |
-    Where-Object { $_.DisplayName -like 'CC Switch*' } |
+    Where-Object {
+      (Get-OptionalPropertyValue -InputObject $_ -Name 'DisplayName') -like 'CC Switch*'
+    } |
     ForEach-Object {
-      if ($_.InstallLocation) {
-        Add-Candidate -List $Candidates -Path (Join-Path $_.InstallLocation 'cc-switch.exe')
+      $InstallLocation = Get-OptionalPropertyValue -InputObject $_ -Name 'InstallLocation'
+      if ($InstallLocation) {
+        Add-Candidate -List $Candidates -Path (Join-Path $InstallLocation 'cc-switch.exe')
       }
-      if ($_.DisplayIcon) {
-        Add-Candidate -List $Candidates -Path ($_.DisplayIcon -replace ',\d+$', '')
+      $DisplayIcon = Get-OptionalPropertyValue -InputObject $_ -Name 'DisplayIcon'
+      if ($DisplayIcon) {
+        Add-Candidate -List $Candidates -Path ($DisplayIcon -replace ',\d+$', '')
       }
     }
 }

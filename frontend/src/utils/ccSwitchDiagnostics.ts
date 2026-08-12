@@ -1,7 +1,7 @@
 export type CcsDiagnosticPlatform = 'windows' | 'macos'
 
 const DEFAULT_SITE_ORIGIN = 'https://laoshirenai.com'
-const DIAGNOSTIC_SCRIPT_VERSION = '1.2.0'
+const DIAGNOSTIC_SCRIPT_VERSION = '1.2.1'
 
 export const detectCcsDiagnosticPlatform = (
   userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent,

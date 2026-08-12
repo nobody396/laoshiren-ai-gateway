@@ -299,7 +299,7 @@ Windows：
 3. 复制并粘贴下面整行命令，按回车
 
 ```powershell
-irm https://laoshirenai.com/auto-config/diagnose-cc-switch.ps1?v=1.2.0 | iex
+irm https://laoshirenai.com/auto-config/diagnose-cc-switch.ps1?v=1.2.1 | iex
 ```
 
 Mac：
@@ -309,7 +309,7 @@ Mac：
 3. 复制并粘贴下面整行命令，按回车
 
 ```bash
-curl -fsSL 'https://laoshirenai.com/auto-config/diagnose-cc-switch.sh?v=1.2.0' | bash
+curl -fsSL 'https://laoshirenai.com/auto-config/diagnose-cc-switch.sh?v=1.2.1' | bash
 ```
 
 脚本会自动查找 CC Switch、读取版本并修复 `ccswitch://` 协议。如果没有安装，或者版本低于本站缓存的最新版，它会优先从老实人 AI 本站缓存获取最新版，核对 SHA-256 后自动安装；本站缓存暂不可用时才会访问 CC Switch 官方 GitHub。Mac 还会验证开发者签名和 Apple 公证。只有本站与官方源都不可用、文件校验失败或系统权限不足时，才会打开官方下载页。脚本不会读取或上传 API Key。

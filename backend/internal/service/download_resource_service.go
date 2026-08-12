@@ -33,8 +33,8 @@ const (
 	defaultCodexPPRepo            = "BigPizzaV3/CodexPlusPlus"
 	defaultClaudeCodeRepo         = "anthropics/claude-code"
 	defaultClaudeMacURL           = "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest/Claude.dmg"
-	defaultClaudeWinURL           = "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest-win-x64/Claude-Setup-x64.exe"
-	defaultClaudeARMURL           = "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest-win-arm64/Claude-Setup-arm64.exe"
+	defaultClaudeWinURL           = "https://downloads.claude.ai/releases/win32/x64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe"
+	defaultClaudeARMURL           = "https://downloads.claude.ai/releases/win32/arm64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe"
 )
 
 var (

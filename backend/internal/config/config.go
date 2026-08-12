@@ -1395,8 +1395,8 @@ func setDefaults() {
 	viper.SetDefault("downloads.codex_mac_official_url", "https://persistent.oaistatic.com/codex-app-prod/ChatGPT.dmg")
 	viper.SetDefault("downloads.codex_plus_plus_repo", "BigPizzaV3/CodexPlusPlus")
 	viper.SetDefault("downloads.claude_desktop_mac_url", "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest/Claude.dmg")
-	viper.SetDefault("downloads.claude_desktop_windows_x64_url", "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest-win-x64/Claude-Setup-x64.exe")
-	viper.SetDefault("downloads.claude_desktop_windows_arm64_url", "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest-win-arm64/Claude-Setup-arm64.exe")
+	viper.SetDefault("downloads.claude_desktop_windows_x64_url", "https://downloads.claude.ai/releases/win32/x64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe")
+	viper.SetDefault("downloads.claude_desktop_windows_arm64_url", "https://downloads.claude.ai/releases/win32/arm64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe")
 	viper.SetDefault("downloads.max_asset_bytes", int64(1024*1024*1024))
 
 	// API Key auth cache

@@ -216,6 +216,10 @@ import {
 import { useAppStore } from '@/stores/app'
 import { buildClientAutoConfigCommand, getClientAutoConfigName } from '@/utils/clientAutoConfig'
 import { buildCcsDiagnosticCommand } from '@/utils/ccSwitchDiagnostics'
+import {
+  buildWindowsDesktopInstallCommand,
+  CLAUDE_DESKTOP_WINDOWS_X64
+} from '@/utils/resourceInstallCommands'
 
 type IconName = InstanceType<typeof Icon>['$props']['name']
 
@@ -427,13 +431,13 @@ const resources: DownloadResource[] = [
     icon: 'cube',
     commands: [],
     downloadToolId: 'claude-desktop',
-    downloadTitle: '常用安装包',
-    downloadHint: '选择与你的系统匹配的安装包。',
+    downloadTitle: '官方安装包',
+    downloadHint: 'Windows 优先从本站缓存下载并校验 SHA256；本站失败时，一键命令自动回退 Anthropic 官方 CDN。',
     verifyText: '安装后打开 Claude Desktop，登录账号，并进入 Code 标签页确认可用。',
     primaryLink: 'https://claude.com/download',
     docsLink: 'https://support.claude.com/en/articles/10065433-install-claude-desktop',
     primaryAction: '打开官方下载页',
-    note: 'Claude Desktop 安装包由本站定时缓存；桌面端不支持 Linux，Linux 用户使用 Claude Code CLI。'
+    note: 'Windows 优先使用本站缓存，Anthropic 官方不可变版本地址作为故障回退；两条路径都必须通过文件完整性校验。'
   },
   {
     name: 'CC Switch',
@@ -527,10 +531,6 @@ function installOptionFor(tool: DownloadToolID, asset: DownloadAsset): { key: st
   return null
 }
 
-function powerShellQuote(value: string): string {
-  return `'${value.replace(/'/g, "''")}'`
-}
-
 function shellQuote(value: string): string {
   return `'${value.replace(/'/g, "'\"'\"'")}'`
 }
@@ -604,11 +604,6 @@ function buildMacDesktopInstallCommand(urlByArch: { universal?: string; arm64?: 
   return `TMP="$(mktemp -d)"; MOUNT="$TMP/mount"; mkdir -p "$MOUNT"; ${urlSelection}; curl -fL "$URL" -o "$TMP/app.dmg" && hdiutil attach "$TMP/app.dmg" -nobrowse -readonly -mountpoint "$MOUNT" >/dev/null && APP="$(find "$MOUNT" -maxdepth 1 -name '*.app' -print -quit)" && test -n "$APP" && codesign --verify --deep --strict "$APP" && mkdir -p "$HOME/Applications" && DEST="$HOME/Applications/$(basename "$APP")" && rm -rf "$DEST" && ditto "$APP" "$DEST"; hdiutil detach "$MOUNT" >/dev/null 2>&1 || true; rm -rf "$TMP"; test -n "$DEST" && open "$DEST"`
 }
 
-function buildWindowsDesktopInstallCommand(url: string, tool: DownloadToolID): string {
-  const fileName = tool === 'claude-desktop' ? 'Claude-Setup.exe' : 'CodexPlusPlus-Setup.exe'
-  return `$u=${powerShellQuote(url)}; $f=Join-Path $env:TEMP '${fileName}'; Invoke-WebRequest -Uri $u -OutFile $f; Start-Process -FilePath $f -ArgumentList '/S' -Wait; Remove-Item $f -Force -ErrorAction SilentlyContinue`
-}
-
 function absoluteResourceDownloadURL(token: string): string {
   return new URL(resourcesAPI.buildResourceDownloadURL(token), window.location.origin).toString()
 }
@@ -632,7 +627,13 @@ async function prepareAdvancedInstallCommand(tool: DownloadToolID) {
     if (detectedOS.value === 'windows') {
       const asset = assets.find((item) => item.arch === 'x64') || assets[0]
       const { token } = await resourcesAPI.createDownloadURL(tool, asset)
-      command = buildWindowsDesktopInstallCommand(absoluteResourceDownloadURL(token), tool)
+      const cachedURL = absoluteResourceDownloadURL(token)
+      const officialClaudeAsset = tool === 'claude-desktop' ? CLAUDE_DESKTOP_WINDOWS_X64 : undefined
+      command = buildWindowsDesktopInstallCommand({
+        tool,
+        downloadURLs: [cachedURL, officialClaudeAsset?.url || ''],
+        sha256: officialClaudeAsset?.sha256 || asset.sha256
+      })
     } else {
       const universal = assets.find((item) => item.arch === 'universal')
       if (universal) {

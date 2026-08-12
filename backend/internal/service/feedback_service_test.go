@@ -205,6 +205,39 @@ func TestFeedbackServiceReplyByAdminTransitionsToReplied(t *testing.T) {
 	require.Len(t, detail.Replies, 1)
 }
 
+func TestFeedbackServiceReplyByAdminServicePrincipalFallsBackToAdminUser(t *testing.T) {
+	svc, client := newFeedbackServiceSQLite(t)
+	ctx := context.Background()
+	userID := mustCreateFeedbackUser(t, ctx, client, "feedback-reply-principal-user@test.com")
+	adminID, err := client.User.Create().
+		SetEmail("feedback-reply-principal-admin@test.com").
+		SetPasswordHash("hash").
+		SetRole(service.RoleAdmin).
+		SetStatus(service.StatusActive).
+		Save(ctx)
+	require.NoError(t, err)
+
+	created, err := svc.Create(ctx, userID, service.CreateFeedbackInput{
+		Content: "Please add this",
+	})
+	require.NoError(t, err)
+
+	// The global admin API key authenticates as a virtual service principal
+	// (user id -1) without a users row; the reply must still satisfy the
+	// feedback_replies.user_id foreign key.
+	reply, err := svc.ReplyByAdmin(ctx, -1, created.ID, service.CreateFeedbackReplyInput{
+		Content: "We are working on it",
+	})
+	require.NoError(t, err)
+	require.Equal(t, service.FeedbackReplyRoleAdmin, reply.Role)
+	require.Equal(t, adminID.ID, reply.UserID)
+
+	detail, err := svc.GetForAdmin(ctx, created.ID)
+	require.NoError(t, err)
+	require.Equal(t, service.FeedbackStatusReplied, detail.Feedback.Status)
+	require.Len(t, detail.Replies, 1)
+}
+
 func TestFeedbackServiceCreateReturnsRateLimitMetadata(t *testing.T) {
 	svc := service.NewFeedbackService(
 		nil,

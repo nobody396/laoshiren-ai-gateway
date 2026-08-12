@@ -2,7 +2,7 @@
 
 ## Baseline
 
-- Development base: `origin/main@2daa4daea17ddebe10003f54258e4aa2621523e7`.
+- Development base after the coordinated releases: `origin/main@beae9a8e1d3c704b472d6c5915cdd240fc84ceb5`.
 - Reuse the merged cost budgeter, route/provider health state machine, weighted
   allocator, Redis atomic budget store, versioned Shadow controller, and
   durable decision audit.
@@ -17,7 +17,8 @@ The merged router is a safe Shadow skeleton, not an enforce-ready learner:
 1. reliability and TTFT inputs are process-local and keyed only by account;
 2. route health is read but production outcomes do not yet drive transitions;
 3. account/provider traffic shares and exploration inputs are not populated;
-4. Shadow budget uses a configured estimate rather than settled request cost;
+4. the budget needs a conservative per-route prediction because actual cost is
+   known only after a request completes;
 5. `enforce` is intentionally hard-disabled;
 6. text and image observations previously shared policy/health/budget identity;
 7. no Beijing hour-of-week profile exists for Base URL variants.
@@ -48,8 +49,12 @@ group + account + model + request_class + endpoint_hash + transport + failure_do
   attempt. Image/video cost learning remains deliberately disabled.
 - V2.2 Shadow scoring inputs are implemented: the controller consumes shared
   Wilson reliability, P90 TTFT, P95 completion latency, partial-stream rate,
-  recent account/provider share, and bounded exploration. All factors are
-  persisted in the existing decision snapshot.
+  recent account/provider share, bounded exploration, and route-specific
+  expected text cost. The cost estimate uses the exact route's seven-day
+  authoritative settlements only after 20 samples, shrinks them toward the
+  configured prior, and caps drift to 0.25x--4x. Image cost never learns from
+  these observations. All factors and estimate provenance are persisted in the
+  existing decision snapshot.
 - V2.3 passive health foundations are implemented: real outcomes drive the
   narrow route, and only infrastructure-like failures seen on at least two
   distinct accounts inside the same explicit failure domain can open the
@@ -81,6 +86,13 @@ Beijing hour-of-week across eight ISO weeks. Keys contain only a route
 fingerprint. A collector queue overflow never delays a customer request and is
 instead exposed as evidence loss in the admin health endpoint.
 
+Settled-cost feedback is text-only. Until 20 cost samples exist for an exact
+route, the policy's configured estimate remains authoritative. Afterwards the
+learner uses a 20-sample prior and a bounded empirical mean; the candidate
+snapshot records configured prior, learned estimate, observed mean, samples and
+source. The allocator, atomic reservation and Shadow settlement all use the
+same selected-route estimate, avoiding a scoring/budget mismatch.
+
 ### V2.2 — Shadow V2 scoring
 
 - hard filter capability, model, endpoint, transport, circuit, balance/quota,
@@ -108,8 +120,8 @@ is authorized.
 
 ### V2.4 — guarded enforcement
 
-- require 24–72 hours and at least 200 valid, usage-linked Shadow decisions per
-  policy slice;
+- use 24 hours only as an early health checkpoint; require a full 72-hour span
+  and at least 200 valid, usage-linked Shadow decisions per policy slice;
 - require audit/linkage completeness >= 99%, no billing inconsistency, and no
   regression in user-visible errors or P95/P99 latency;
 - enable deterministic canary assignment at `1% -> 5% -> 20% -> 50% -> 100%`;

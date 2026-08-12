@@ -2,16 +2,22 @@
 
 ## 交接快照
 
-- 北京时间：2026-08-12 22:38 后完成本轮验证。
+- 北京时间：2026-08-13 00:17 后完成主线同步与本轮验证。
 - 独立 worktree：`worktrees/intelligent-routing-v2-foundation-20260812`
 - 分支：`feat/intelligent-routing-v2-foundation-20260812`
-- 起始基线：`origin/main@2daa4daea`
+- 当前基线：`origin/main@beae9a8e1`（PR #143 合并提交）。
 - 本轮代码提交：
-  - `6c576e61f` — 文本/图片策略、健康、预算与审计身份隔离；
-  - `62ebd30f9` — 共享滚动观测、真实尝试采集、文本成本回填和 Shadow V2 评分；
-  - `bff8f37c9` — 被动故障域关联、健康写入完整性与管理健康指标。
-- 当前 `origin/main` 已前进到 `c56ed6a5f`；按统一发布协调要求，本轮没有
-  rebase、merge 或 cherry-pick。
+  - `a7240e827` — 文本/图片策略、健康、预算与审计身份隔离；
+  - `a1cf38ab1` — 共享滚动观测、真实尝试采集、文本成本回填和 Shadow V2 评分；
+  - `cd1c15c00` — 被动故障域关联、健康写入完整性与管理健康指标；
+  - `fbe7af455` — 只读 Shadow 晋级证据门禁；
+  - `92a268bb8` — 共享观测 L1/singleflight；
+  - `4faaea059` — route/provider 健康批量读取；
+  - `a359c44df` — 候选级权威文本成本学习；
+  - `f6e1c8662` — 72 小时主评估与只读复评计划；
+  - `82e34c8db` — 真实 PostgreSQL 晋级策略快照断言。
+- 两次 rebase 均在统一发布明确授权后执行；`range-diff` 证明原七个提交内容未改变，
+  最新图片价格表 PR 仅改前端，与本分支无交叉。
 - 当前没有 PR，也没有该分支的 GitHub Actions 运行。
 
 ## 已实现范围
@@ -41,6 +47,13 @@
     pipeline；共享故障域自动去重，缺失状态按 warmup 处理，非法/损坏/缺项均
     fail-closed 回到 Legacy。健康 pipeline 与共享观测读取并发执行，任一失败即取消
     本次 Shadow 评估。
+11. 文本候选在同一完整路由身份积累至少 20 条七日权威结算后，使用 20 条等效先验
+    做收缩估算并限制在配置值 `0.25x--4x`。评分、预算预览、Redis 原子预留和 Shadow
+    结算使用同一个候选估算；图片/视频始终保留配置值。来源、样本、均值和估算全部
+    进入审计。
+12. 24 小时只作为健康检查点，自动证据主评估要求查询窗口和实际首末决策跨度均达到
+    72 小时。响应给出确定性的 24h/72h/失败后 24h 复评计划，但不创建定时器且固定
+    `automatic_promotion=false`；完整协议见 `OPENAI_INTELLIGENT_ROUTING_V2_ROLLOUT.md`。
 
 ## 不变量与当前安全边界
 
@@ -74,21 +87,28 @@ go test ./internal/service -run 'TestOpenAIRouteObservationProfileCache(Coalesce
 go test ./internal/service -run '^$' -bench '^BenchmarkOpenAIRouteObservationProfileCacheHit$' -benchmem -benchtime=200000x -count=3
 go test -race ./internal/service -run 'TestOpenAIRouteController' -count=1 -timeout=10m
 go test -race ./internal/repository -run 'TestOpenAIRouteHealthCache' -count=1 -timeout=10m
+go test -race ./internal/service -run 'Test(EstimateOpenAIRouteBaseCost|BuildOpenAIRouteAllocationPlan|AllocateAndReserveOpenAIRoute|OpenAIRouteController)' -count=1 -timeout=10m
+go test -race ./internal/service -run 'Test(BuildOpenAIRoutePromotionAssessment|ValidateOpenAIRoutePromotionFilter)' -count=1 -timeout=10m
+go test ./...
+golangci-lint run ./...  # v2.12.2, 0 issues
+make test-backend-integration
 ```
 
 本机 Apple M3 的缓存命中基准三次为约 `1.18–1.28us/op`；这是本地微基准，不替代
 生产 Shadow 的 `evaluation_duration_us` 和 Redis 延迟观测。
 
-真实 Redis 的 integration suite 已保留相同故障域用例，但本轮未启动 Docker；普通
-单元测试使用 miniredis 覆盖相同 Lua 行为。
+真实 PostgreSQL 18.1 与 Redis 8.4 的确定性 Testcontainers 集成门禁已执行；首次运行
+发现晋级快照 fixture 未写份额上限，修复后完整 integration suite 和 sentinel 通过。
+Testcontainers 退出后本机容器为空。
 
-## 统一发布后再做
+## PR 与后续独立授权阶段
 
-1. 重新读取最新 `origin/main`，审查图片计价和 Windows 修复与本分支的交叉点，再
-   选择 rebase；不要在统一发布进行中合并。
-2. 补充非敏感长期聚合检查点，以及只由明确授权启动的单主半开探针。
-3. 基于 rebase 后提交创建 PR，等待全量 CI；代码发布仍保持策略缺失或 Legacy。
-4. 获得单独生产授权后才部署 Shadow，并以自有测试身份验证审计、usage 关联和
+1. 推送独立分支并创建 PR，等待全量 CI；代码发布仍保持策略缺失或 Legacy。
+2. 后续 PR 补充非敏感长期聚合检查点，以及只由明确授权启动的单主半开探针。
+3. 获得单独生产授权后才部署 Shadow，并以自有测试身份验证审计、usage 关联和
    采集完整率。
-5. 满足 24–72 小时、每策略切片至少 200 条有效决策、关联完整率不低于 99%、
-   账单一致且错误率/P95/P99 不退化后，另一个版本才可实现和讨论 Enforce/Canary。
+4. 以真实 Shadow 起点创建 24 小时检查与 72 小时主评估的一次性任务；未通过则继续
+   Shadow 并按 24 小时间隔复评，不自动调参或切流。
+5. 满足 72 小时、每策略切片至少 200 条有效决策、关联完整率不低于 99%、账单一致
+   且错误率/P95/P99 不退化后，只能申请人工 1% 灰度授权；Enforce/Canary 仍属于另一
+   版本和另一发布窗口。

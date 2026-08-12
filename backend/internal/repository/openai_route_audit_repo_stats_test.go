@@ -30,23 +30,26 @@ func TestOpenAIRouteDecisionRepositoryStatsScansPromotionEvidence(t *testing.T) 
 		RequestClass:  service.OpenAIRouteRequestClassText,
 		PolicyMode:    service.OpenAIRoutePolicyShadow,
 		PolicyVersion: &version,
+		ActivationID:  "activation-4",
 	}
-	args := []driver.Value{start, end, groupID, "gpt-5.6-sol", "text", "shadow", version}
+	args := []driver.Value{start, end, groupID, "gpt-5.6-sol", "text", "shadow", version, "activation-4"}
 
 	aggregateColumns := []string{
 		"total", "evaluated", "not_evaluated", "diverged", "emergency",
 		"linked_success", "linked_failure", "ambiguous", "unlinked",
 		"evaluated_linked_success", "evaluated_linked_failure", "evaluated_ambiguous", "evaluated_unlinked",
-		"policy_variants", "max_account_share", "max_provider_share", "first_at", "last_at",
+		"policy_variants", "activation_variants", "shadow_start_variants", "shadow_started_at",
+		"max_account_share", "max_provider_share", "covered_hours", "first_at", "last_at",
 		"evaluation_p50", "evaluation_p95", "ttft_p50", "ttft_p95",
 	}
-	mock.ExpectQuery(`(?s)COUNT\(DISTINCT snapshot->'policy'\).*MIN\(created_at\).*FROM linked`).
-		WithArgs(args...).
+	mock.ExpectQuery(`(?s)COUNT\(DISTINCT snapshot->'policy'\).*FILTER \(WHERE evaluated\).*MIN\(created_at\) FILTER \(WHERE evaluated\).*FROM linked`).
+		WithArgs(append(args, start)...).
 		WillReturnRows(sqlmock.NewRows(aggregateColumns).AddRow(
 			200, 200, 0, 40, 0,
 			196, 4, 0, 0,
 			196, 4, 0, 0,
-			1, 0.8, 0.9, start, end,
+			1, 1, 1, start,
+			0.8, 0.9, 72, start, end,
 			120.0, 240.0, 500.0, 900.0,
 		))
 	// Concentration is grouped by account only. Splitting one account across
@@ -68,6 +71,10 @@ func TestOpenAIRouteDecisionRepositoryStatsScansPromotionEvidence(t *testing.T) 
 	require.Equal(t, int64(196), stats.EvaluatedLinkedSuccessfulUsage)
 	require.Equal(t, int64(4), stats.EvaluatedLinkedLegacyFailure)
 	require.Equal(t, int64(1), stats.PolicySnapshotVariants)
+	require.Equal(t, int64(1), stats.ActivationIDVariants)
+	require.Equal(t, int64(1), stats.ShadowStartedAtVariants)
+	require.Equal(t, start, stats.ShadowStartedAt)
+	require.Equal(t, int64(72), stats.CoveredHourBuckets)
 	require.Equal(t, start, stats.FirstDecisionAt)
 	require.Equal(t, end, stats.LastDecisionAt)
 	require.Len(t, stats.SelectedAccounts, 2)

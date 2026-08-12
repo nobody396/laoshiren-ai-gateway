@@ -22,6 +22,7 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 	requestID := "req-" + uuid.NewString()
 	clientRequestID := uuid.NewString()
 	createdAt := time.Now().UTC().Truncate(time.Microsecond)
+	shadowStartedAt := createdAt.Add(-72 * time.Hour)
 	record := &service.OpenAIRouteShadowDecisionRecord{
 		DecisionID:                decisionID,
 		RequestID:                 requestID,
@@ -32,6 +33,8 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 		RequestClass:              service.OpenAIRouteRequestClassText,
 		PolicyMode:                service.OpenAIRoutePolicyShadow,
 		PolicyVersion:             4,
+		ActivationID:              "activation-integration-4",
+		ShadowStartedAt:           shadowStartedAt,
 		Reason:                    "shadow_selected",
 		Evaluated:                 true,
 		EvaluationDurationMicros:  321,
@@ -42,6 +45,8 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 		ExcludedCount:             1,
 		Diverged:                  true,
 		Snapshot: &service.OpenAIRouteShadowAuditSnapshot{
+			ActivationID:         "activation-integration-4",
+			ShadowStartedAt:      shadowStartedAt,
 			RequestClass:         service.OpenAIRouteRequestClassText,
 			EstimatedBaseCostUSD: 0.01,
 			Policy: service.OpenAIRouteShadowAuditPolicy{
@@ -68,18 +73,22 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 		EndTime:      &end,
 		RequestID:    requestID,
 		RequestClass: service.OpenAIRouteRequestClassText,
+		ActivationID: "activation-integration-4",
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, list.Total)
 	require.Len(t, list.Decisions, 1)
 	require.Equal(t, int64(28), list.Decisions[0].AdaptiveSelectedAccountID)
 	require.Equal(t, service.OpenAIRouteRequestClassText, list.Decisions[0].RequestClass)
+	require.Equal(t, "activation-integration-4", list.Decisions[0].ActivationID)
+	require.Equal(t, shadowStartedAt, list.Decisions[0].ShadowStartedAt)
 	require.Len(t, list.Decisions[0].Snapshot.Candidates, 1)
 
 	stats, err := repo.GetOpenAIRouteShadowDecisionStats(context.Background(), &service.OpenAIRouteShadowDecisionFilter{
-		StartTime: &start,
-		EndTime:   &end,
-		RequestID: requestID,
+		StartTime:    &start,
+		EndTime:      &end,
+		RequestID:    requestID,
+		ActivationID: "activation-integration-4",
 	})
 	require.NoError(t, err)
 	require.Equal(t, int64(1), stats.Total)
@@ -88,6 +97,10 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 	require.Equal(t, int64(1), stats.UnlinkedOutcome)
 	require.Equal(t, int64(1), stats.EvaluatedUnlinkedOutcome)
 	require.Equal(t, int64(1), stats.PolicySnapshotVariants)
+	require.Equal(t, int64(1), stats.ActivationIDVariants)
+	require.Equal(t, int64(1), stats.ShadowStartedAtVariants)
+	require.Equal(t, shadowStartedAt, stats.ShadowStartedAt)
+	require.Equal(t, int64(1), stats.CoveredHourBuckets)
 	require.Equal(t, 0.80, stats.PolicyMaxAccountShare)
 	require.Equal(t, 0.90, stats.PolicyMaxProviderShare)
 	require.Equal(t, createdAt, stats.FirstDecisionAt)

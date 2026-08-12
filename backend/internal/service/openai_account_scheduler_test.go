@@ -393,6 +393,8 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_PersistsCompleteShadowD
 	}
 	evaluator := &openAIRouteShadowEvaluatorStub{decision: OpenAIRouteShadowDecision{
 		DecisionID:               "shadow:persisted",
+		ActivationID:             "activation-persisted-4",
+		ShadowStartedAt:          time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC),
 		Evaluated:                true,
 		Mode:                     OpenAIRoutePolicyShadow,
 		Version:                  4,
@@ -423,6 +425,8 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_PersistsCompleteShadowD
 	require.Equal(t, "shadow:persisted", auditRepo.record.DecisionID)
 	require.Equal(t, "request-1", auditRepo.record.RequestID)
 	require.Equal(t, "client-1", auditRepo.record.ClientRequestID)
+	require.Equal(t, "activation-persisted-4", auditRepo.record.ActivationID)
+	require.Equal(t, time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC), auditRepo.record.ShadowStartedAt)
 	require.Equal(t, 2, auditRepo.record.Attempt)
 	require.Equal(t, legacy.ID, auditRepo.record.LegacySelectedAccountID)
 	require.Equal(t, adaptive.ID, auditRepo.record.AdaptiveSelectedAccountID)

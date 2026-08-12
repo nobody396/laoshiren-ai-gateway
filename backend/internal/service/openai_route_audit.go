@@ -107,6 +107,8 @@ type OpenAIRouteShadowAuditCandidate struct {
 }
 
 type OpenAIRouteShadowAuditSnapshot struct {
+	ActivationID         string                               `json:"activation_id"`
+	ShadowStartedAt      time.Time                            `json:"shadow_started_at"`
 	RequestClass         OpenAIRouteRequestClass              `json:"request_class"`
 	Policy               OpenAIRouteShadowAuditPolicy         `json:"policy"`
 	AdaptiveSeedHex      string                               `json:"adaptive_seed_hex"`
@@ -134,6 +136,8 @@ type OpenAIRouteShadowDecisionRecord struct {
 	RequestClass              OpenAIRouteRequestClass         `json:"request_class"`
 	PolicyMode                OpenAIRoutePolicyMode           `json:"policy_mode"`
 	PolicyVersion             int                             `json:"policy_version"`
+	ActivationID              string                          `json:"activation_id"`
+	ShadowStartedAt           time.Time                       `json:"shadow_started_at,omitempty"`
 	Reason                    string                          `json:"reason"`
 	Evaluated                 bool                            `json:"evaluated"`
 	EvaluationDurationMicros  int64                           `json:"evaluation_duration_us"`
@@ -156,6 +160,7 @@ type OpenAIRouteShadowDecisionFilter struct {
 	RequestClass    OpenAIRouteRequestClass
 	PolicyMode      OpenAIRoutePolicyMode
 	PolicyVersion   *int
+	ActivationID    string
 	Reason          string
 	RequestID       string
 	ClientRequestID string
@@ -201,8 +206,12 @@ type OpenAIRouteShadowDecisionStats struct {
 	EvaluatedAmbiguousOutcome      int64                                    `json:"evaluated_ambiguous_outcome"`
 	EvaluatedUnlinkedOutcome       int64                                    `json:"evaluated_unlinked_outcome"`
 	PolicySnapshotVariants         int64                                    `json:"policy_snapshot_variants"`
+	ActivationIDVariants           int64                                    `json:"activation_id_variants"`
+	ShadowStartedAtVariants        int64                                    `json:"shadow_started_at_variants"`
+	ShadowStartedAt                time.Time                                `json:"shadow_started_at,omitempty"`
 	PolicyMaxAccountShare          float64                                  `json:"policy_max_account_share"`
 	PolicyMaxProviderShare         float64                                  `json:"policy_max_provider_share"`
+	CoveredHourBuckets             int64                                    `json:"covered_hour_buckets"`
 	FirstDecisionAt                time.Time                                `json:"first_decision_at,omitempty"`
 	LastDecisionAt                 time.Time                                `json:"last_decision_at,omitempty"`
 	EvaluationDurationP50US        float64                                  `json:"evaluation_duration_p50_us"`
@@ -394,6 +403,10 @@ func prepareOpenAIRouteAuditRecord(record *OpenAIRouteShadowDecisionRecord) erro
 	record.RequestID = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.RequestID), 128)
 	record.ClientRequestID = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.ClientRequestID), 128)
 	record.Model = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.Model), 128)
+	record.ActivationID = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.ActivationID), 128)
+	if !record.ShadowStartedAt.IsZero() {
+		record.ShadowStartedAt = record.ShadowStartedAt.UTC()
+	}
 	record.Reason = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.Reason), 64)
 	if record.CreatedAt.IsZero() {
 		record.CreatedAt = time.Now().UTC()

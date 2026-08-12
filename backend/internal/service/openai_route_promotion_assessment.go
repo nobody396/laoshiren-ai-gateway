@@ -64,6 +64,8 @@ type OpenAIRoutePromotionAssessment struct {
 	RequestClass           OpenAIRouteRequestClass              `json:"request_class"`
 	PolicyVersion          int                                  `json:"policy_version"`
 	PolicyMode             OpenAIRoutePolicyMode                `json:"policy_mode"`
+	ActivationID           string                               `json:"activation_id"`
+	ShadowStartedAt        time.Time                            `json:"shadow_started_at,omitempty"`
 	Status                 string                               `json:"status"`
 	AutomatedEvidenceReady bool                                 `json:"automated_evidence_ready"`
 	EligibleNextStage      string                               `json:"eligible_next_stage"`
@@ -132,6 +134,9 @@ func ValidateOpenAIRoutePromotionFilter(filter *OpenAIRouteShadowDecisionFilter)
 	if filter.PolicyVersion == nil || *filter.PolicyVersion <= 0 {
 		return fmt.Errorf("%w: positive policy_version is required", ErrOpenAIRouteInvalidPromotionScope)
 	}
+	if activationID := strings.TrimSpace(filter.ActivationID); activationID == "" || len(activationID) > 128 {
+		return fmt.Errorf("%w: activation_id is required and must not exceed 128 bytes", ErrOpenAIRouteInvalidPromotionScope)
+	}
 	if filter.PolicyMode != OpenAIRoutePolicyShadow {
 		return fmt.Errorf("%w: policy_mode must be shadow", ErrOpenAIRouteInvalidPromotionScope)
 	}
@@ -157,9 +162,17 @@ func buildOpenAIRoutePromotionAssessment(
 	if !stats.FirstDecisionAt.IsZero() && !stats.LastDecisionAt.IsZero() && stats.LastDecisionAt.After(stats.FirstDecisionAt) {
 		observedSpan = stats.LastDecisionAt.Sub(stats.FirstDecisionAt)
 	}
-	evidenceStart := start
-	if !stats.FirstDecisionAt.IsZero() && !stats.FirstDecisionAt.Before(start) && stats.FirstDecisionAt.Before(end) {
-		evidenceStart = stats.FirstDecisionAt.UTC()
+	evidenceStart := stats.ShadowStartedAt.UTC()
+	reviewSchedule := OpenAIRoutePromotionReviewSchedule{
+		EvidenceStartAt:      evidenceStart,
+		RetryIntervalHours:   openAIRoutePromotionRetryInterval.Hours(),
+		Timezone:             "Asia/Shanghai",
+		AutomaticPromotion:   false,
+		TimerActivationState: "not_managed_by_assessment",
+	}
+	if !evidenceStart.IsZero() {
+		reviewSchedule.InitialCheckpointAt = evidenceStart.Add(openAIRoutePromotionInitialCheckpoint)
+		reviewSchedule.PrimaryAssessmentAt = evidenceStart.Add(openAIRoutePromotionMinimumWindow)
 	}
 
 	evaluatedRatio := safeOpenAIRouteRatio(stats.Evaluated, stats.Total)
@@ -182,6 +195,8 @@ func buildOpenAIRoutePromotionAssessment(
 		RequestClass:           filter.RequestClass,
 		PolicyVersion:          *filter.PolicyVersion,
 		PolicyMode:             filter.PolicyMode,
+		ActivationID:           strings.TrimSpace(filter.ActivationID),
+		ShadowStartedAt:        evidenceStart,
 		Status:                 "continue_shadow",
 		EligibleNextStage:      "none",
 		ManualApprovalRequired: true,
@@ -189,15 +204,7 @@ func buildOpenAIRoutePromotionAssessment(
 		Stats:                  *stats,
 		Health:                 health,
 		HealthSamplingScope:    "process_instance_since_start_global",
-		ReviewSchedule: OpenAIRoutePromotionReviewSchedule{
-			EvidenceStartAt:      evidenceStart,
-			InitialCheckpointAt:  evidenceStart.Add(openAIRoutePromotionInitialCheckpoint),
-			PrimaryAssessmentAt:  evidenceStart.Add(openAIRoutePromotionMinimumWindow),
-			RetryIntervalHours:   openAIRoutePromotionRetryInterval.Hours(),
-			Timezone:             "Asia/Shanghai",
-			AutomaticPromotion:   false,
-			TimerActivationState: "not_managed_by_assessment",
-		},
+		ReviewSchedule:         reviewSchedule,
 		ManualChecks: []string{
 			"multi-replica deployments must verify per-instance audit and observation completeness until cluster-wide counters are durable",
 			"authoritative upstream billing reconciliation must show no inconsistency",
@@ -210,6 +217,15 @@ func buildOpenAIRoutePromotionAssessment(
 		},
 	}
 
+	assessment.addGate("single_activation_identity", stats.ActivationIDVariants == 1,
+		"exactly 1 non-empty activation_id", fmt.Sprintf("%d", stats.ActivationIDVariants), 0,
+		"Every separately authorized Shadow enablement cycle has a new immutable identity; historical and restarted evidence cannot be mixed.")
+	assessment.addGate("single_shadow_start", stats.ShadowStartedAtVariants == 1 && !evidenceStart.IsZero(),
+		"exactly 1 non-null shadow_started_at", fmt.Sprintf("variants=%d value=%s", stats.ShadowStartedAtVariants, formatOpenAIRouteEvidenceTimestamp(evidenceStart)), 0,
+		"All rows in one activation must carry the same durable T0.")
+	assessment.addGate("window_starts_at_activation", !evidenceStart.IsZero() && start.Equal(evidenceStart),
+		"window_start exactly equals persisted shadow_started_at", fmt.Sprintf("window=%s activation=%s", formatOpenAIRouteEvidenceTimestamp(start), formatOpenAIRouteEvidenceTimestamp(evidenceStart)), boolOpenAIRouteRatio(!evidenceStart.IsZero() && start.Equal(evidenceStart)),
+		"Assessment windows begin at the authorized T0; later windows cannot hide early evidence gaps and earlier policy cycles cannot be included.")
 	assessment.addGate("requested_window", window >= openAIRoutePromotionMinimumWindow,
 		">=72h", fmt.Sprintf("%.2fh", window.Hours()), window.Hours()/openAIRoutePromotionMinimumWindow.Hours(),
 		"The primary promotion review requires a full three-day Shadow window; 24 hours is only an early health checkpoint.")
@@ -220,6 +236,14 @@ func buildOpenAIRoutePromotionAssessment(
 	assessment.addGate("observed_span", observedSpan >= minimumObservedSpan,
 		fmt.Sprintf(">=%.2fh between first and last decision inside the %.2fh window", minimumObservedSpan.Hours(), window.Hours()), fmt.Sprintf("%.2fh", observedSpan.Hours()), observedSpan.Hours()/minimumObservedSpan.Hours(),
 		"The end-exclusive query permits at most one hour of total boundary gap, including for an extended retry window; a wide query containing only a short traffic burst is not continuous evidence.")
+	expectedHourBuckets := int64(math.Ceil(window.Hours()))
+	minimumCoveredHourBuckets := expectedHourBuckets - 1
+	if minimumCoveredHourBuckets < 1 {
+		minimumCoveredHourBuckets = 1
+	}
+	assessment.addGate("hourly_coverage", stats.CoveredHourBuckets >= minimumCoveredHourBuckets,
+		fmt.Sprintf(">=%d distinct one-hour buckets relative to window_start", minimumCoveredHourBuckets), fmt.Sprintf("%d", stats.CoveredHourBuckets), safeOpenAIRouteRatio(stats.CoveredHourBuckets, minimumCoveredHourBuckets),
+		"Only evaluated decisions count toward hourly coverage. Two bursts near the window edges cannot stand in for continuous evidence across the intervening Beijing-time operating periods.")
 	assessment.addGate("evaluated_samples", stats.Evaluated >= openAIRoutePromotionMinimumDecisions,
 		">=200", fmt.Sprintf("%d", stats.Evaluated), float64(stats.Evaluated)/float64(openAIRoutePromotionMinimumDecisions),
 		"Only successfully evaluated Shadow decisions count as valid samples.")

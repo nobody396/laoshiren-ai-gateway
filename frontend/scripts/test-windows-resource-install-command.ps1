@@ -110,6 +110,7 @@ process.on('SIGTERM', () => server.close(() => process.exit(0)));
   Assert-True $downloadFailureObserved 'download failure did not stop before installation'
   Assert-True (-not (Test-Path -LiteralPath $destination)) 'download failure did not clean up the installer'
 
+  $global:LASTEXITCODE = 0
   Write-Host 'WINDOWS_RESOURCE_INSTALL_ACCEPTANCE_OK fallback=passed checksum=fail-closed download=fail-closed path=unicode-spaces policy=Restricted'
 } finally {
   if ($null -ne $server -and -not $server.HasExited) {

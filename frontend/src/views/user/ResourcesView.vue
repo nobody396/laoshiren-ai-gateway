@@ -631,8 +631,10 @@ async function prepareAdvancedInstallCommand(tool: DownloadToolID) {
       const officialClaudeAsset = tool === 'claude-desktop' ? CLAUDE_DESKTOP_WINDOWS_X64 : undefined
       command = buildWindowsDesktopInstallCommand({
         tool,
-        downloadURLs: [cachedURL, officialClaudeAsset?.url || ''],
-        sha256: officialClaudeAsset?.sha256 || asset.sha256
+        sources: [
+          { url: cachedURL, sha256: asset.sha256 },
+          ...(officialClaudeAsset ? [officialClaudeAsset] : [])
+        ]
       })
     } else {
       const universal = assets.find((item) => item.arch === 'universal')

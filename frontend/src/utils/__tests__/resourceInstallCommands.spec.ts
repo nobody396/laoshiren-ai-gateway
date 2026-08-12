@@ -10,13 +10,17 @@ describe('Windows desktop resource install commands', () => {
     const domesticCache = 'https://laoshirenai.com/api/v1/resource-downloads/test-token'
     const command = buildWindowsDesktopInstallCommand({
       tool: 'claude-desktop',
-      downloadURLs: [domesticCache, CLAUDE_DESKTOP_WINDOWS_X64.url],
-      sha256: CLAUDE_DESKTOP_WINDOWS_X64.sha256
+      sources: [
+        { url: domesticCache, sha256: '4A7FE5BCC95F29DEDBFEEB45BC2C6B916343253BA0E0E392038968F5857C6AA9' },
+        CLAUDE_DESKTOP_WINDOWS_X64
+      ]
     })
 
     expect(command.indexOf(domesticCache)).toBeLessThan(command.indexOf(CLAUDE_DESKTOP_WINDOWS_X64.url))
     expect(command).toContain('& curl.exe -fL --retry 5')
-    expect(command).toContain(`if($h -eq '${CLAUDE_DESKTOP_WINDOWS_X64.sha256}')`)
+    expect(command).toContain(`h='${CLAUDE_DESKTOP_WINDOWS_X64.sha256}'`)
+    expect(command).toContain("h='4A7FE5BCC95F29DEDBFEEB45BC2C6B916343253BA0E0E392038968F5857C6AA9'")
+    expect(command).toContain('if($h -eq $s.h)')
     expect(command).toContain("if(-not $ok){ throw '安装包下载失败或文件校验不通过，已停止安装' }")
     expect(command).toContain('Start-Process -FilePath $f -Wait -PassThru')
     expect(command).not.toContain("-ArgumentList '/S'")
@@ -28,19 +32,17 @@ describe('Windows desktop resource install commands', () => {
   it('keeps the silent installer switch for Codex++ after verification', () => {
     const command = buildWindowsDesktopInstallCommand({
       tool: 'codex-plus-plus',
-      downloadURLs: ['https://laoshirenai.com/download.exe'],
-      sha256: 'a'.repeat(64)
+      sources: [{ url: 'https://laoshirenai.com/download.exe', sha256: 'a'.repeat(64) }]
     })
 
     expect(command).toContain("Start-Process -FilePath $f -ArgumentList '/S' -Wait -PassThru")
-    expect(command).toContain(`if($h -eq '${'A'.repeat(64)}')`)
+    expect(command).toContain(`h='${'A'.repeat(64)}'`)
   })
 
   it('refuses to generate an unverifiable Windows installer command', () => {
     expect(() => buildWindowsDesktopInstallCommand({
       tool: 'claude-desktop',
-      downloadURLs: ['https://downloads.claude.ai/Claude.exe'],
-      sha256: ''
+      sources: [{ url: 'https://downloads.claude.ai/Claude.exe', sha256: '' }]
     })).toThrow('SHA256')
   })
 })

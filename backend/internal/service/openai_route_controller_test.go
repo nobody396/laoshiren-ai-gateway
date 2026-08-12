@@ -236,6 +236,49 @@ func TestOpenAIRouteController_SharedObservationsOverrideProcessLocalInputs(t *t
 	require.InDelta(t, 0.5, byID[1].CurrentAccountShare, 1e-12)
 }
 
+func TestOpenAIRouteControllerCachesSharedObservationReads(t *testing.T) {
+	reader := &openAIRoutePolicyReaderStub{value: `[{
+		"group_id":7,"model":"gpt-5.6-sol","request_class":"text","enabled":true,"mode":"shadow",
+		"policy_version":12,"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01
+	}]`}
+	account := testOpenAIRouteControllerAccount(1, 0.15)
+	key, err := NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://example.invalid/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
+	require.NoError(t, err)
+	store := &openAIRouteProfileCacheStoreStub{profiles: testOpenAIRouteProfileCacheProfiles(key)}
+	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{}, store)
+	req := OpenAIRouteShadowRequest{
+		GroupID: 7, Model: "gpt-5.6-sol", RequestClass: OpenAIRouteRequestClassText,
+		Now: time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC),
+		Candidates: []OpenAIRouteShadowCandidate{{
+			Account: account, Endpoint: "https://example.invalid/v1/responses", Transport: string(OpenAIUpstreamTransportHTTPSSE),
+		}},
+	}
+
+	first, err := controller.EvaluateShadow(context.Background(), req)
+	require.NoError(t, err)
+	require.True(t, first.Evaluated)
+	second, err := controller.EvaluateShadow(context.Background(), req)
+	require.NoError(t, err)
+	require.True(t, second.Evaluated)
+	require.Equal(t, uint64(1), store.calls.Load())
+	stats, available := controller.SnapshotObservationProfileCache()
+	require.True(t, available)
+	require.Equal(t, uint64(1), stats.Hits)
+	require.Equal(t, uint64(1), stats.Loads)
+
+	gateway := &OpenAIGatewayService{openAIRouteEvaluator: controller}
+	gatewayStats, available := gateway.SnapshotOpenAIRouteObservationProfileCache()
+	require.True(t, available)
+	require.Equal(t, stats, gatewayStats)
+	ops := &OpsService{
+		openAIGatewayService:    gateway,
+		openAIRouteAuditService: NewOpenAIRouteAuditService(&openAIRouteDecisionRepositoryStub{}),
+	}
+	health := ops.GetOpenAIRouteAuditHealth(context.Background())
+	require.NotNil(t, health.ObservationProfileCache)
+	require.Equal(t, uint64(1), health.ObservationProfileCache.Hits)
+}
+
 func TestOpenAIRouteController_RealOutcomeUpdatesOnlyNarrowRouteHealth(t *testing.T) {
 	health := &openAIRouteHealthStoreStub{}
 	controller := NewOpenAIRouteController(&openAIRoutePolicyReaderStub{err: ErrSettingNotFound}, health, &openAIRouteBudgetSnapshotStoreStub{}, &openAIRouteObservationStoreStub{})

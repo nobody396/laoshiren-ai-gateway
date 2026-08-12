@@ -126,6 +126,7 @@ type OpenAIRouteController struct {
 	healthStore      OpenAIRouteHealthStore
 	budgetStore      OpenAIRouteBudgetStore
 	observationStore OpenAIRouteObservationStore
+	observationCache *openAIRouteObservationProfileCache
 
 	cacheMu sync.Mutex
 	cache   cachedOpenAIRoutePolicies
@@ -137,12 +138,21 @@ func NewOpenAIRouteController(
 	budgetStore OpenAIRouteBudgetStore,
 	observationStore OpenAIRouteObservationStore,
 ) *OpenAIRouteController {
-	return &OpenAIRouteController{
+	controller := &OpenAIRouteController{
 		reader:           reader,
 		healthStore:      healthStore,
 		budgetStore:      budgetStore,
 		observationStore: observationStore,
 	}
+	if observationStore != nil {
+		controller.observationCache = newOpenAIRouteObservationProfileCache(
+			observationStore,
+			defaultOpenAIRouteObservationProfileCacheTTL,
+			defaultOpenAIRouteObservationProfileLoadTimeout,
+			defaultOpenAIRouteObservationProfileCacheMaxEntries,
+		)
+	}
+	return controller
 }
 
 func (c *OpenAIRouteController) InvalidatePolicyCache() {
@@ -331,7 +341,11 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	profiles := make(map[string]OpenAIRouteObservationProfile)
 	if c.observationStore != nil {
 		var getErr error
-		profiles, getErr = c.observationStore.GetBatch(ctx, routeKeys, now)
+		if c.observationCache != nil {
+			profiles, getErr = c.observationCache.GetBatch(ctx, routeKeys, now)
+		} else {
+			profiles, getErr = c.observationStore.GetBatch(ctx, routeKeys, now)
+		}
 		if getErr != nil {
 			return decision, getErr
 		}
@@ -433,6 +447,13 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	decision.SelectedRate = plan.Selected.Candidate.RateMultiplier
 	decision.Emergency = plan.Emergency
 	return decision, nil
+}
+
+func (c *OpenAIRouteController) SnapshotObservationProfileCache() (OpenAIRouteObservationProfileCacheStats, bool) {
+	if c == nil || c.observationCache == nil {
+		return OpenAIRouteObservationProfileCacheStats{}, false
+	}
+	return c.observationCache.Stats(), true
 }
 
 func newOpenAIRouteShadowAuditPolicy(policy OpenAIRoutePolicy, hardShareCaps bool) OpenAIRouteShadowAuditPolicy {

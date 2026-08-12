@@ -34,6 +34,9 @@
 8. 增加精确策略切片的只读 Shadow 晋级评估：固定窗口、样本、关联、审计/采集健康、
    策略版本纯度、应急预算及账号/故障域集中度均为显式门禁；通过也只允许进入人工
    复核，不会自动开启 1% 流量。
+9. 共享观测热路径增加 5 秒有界 L1 与 singleflight：相同候选集合并发只回源一次，
+   20ms 超时、错误不缓存、深拷贝返回，Redis 仍是权威源，健康熔断仍逐次读取；缓存
+   命中/回源/失败/淘汰指标进入管理健康响应。
 
 ## 不变量与当前安全边界
 
@@ -62,7 +65,13 @@ go vet ./internal/service ./internal/repository ./internal/handler/admin ./inter
 go test -race ./internal/service -run 'Test(BuildOpenAIRoutePromotionAssessment|ValidateOpenAIRoutePromotionFilter)' -count=1 -timeout=10m
 go test -race ./internal/repository -run 'Test(OpenAIRouteDecisionRepositoryStatsScansPromotionEvidence|BuildOpenAIRouteShadowWhere)' -count=1 -timeout=10m
 go test -race ./internal/handler/admin -run 'Test(OpenAIRoutePromotionAssessmentHandler|ParseOpenAIRoutePromotionAssessmentFilter)' -count=1 -timeout=10m
+go test -race ./internal/service -run 'Test(OpenAIRouteController|OpenAIRouteObservationProfileCache)' -count=1 -timeout=10m
+go test ./internal/service -run 'TestOpenAIRouteObservationProfileCache(CoalescesConcurrentMisses|CallerCancellationDoesNotPoisonWarmup|ExpiresAndStaysBounded)' -count=50 -timeout=10m
+go test ./internal/service -run '^$' -bench '^BenchmarkOpenAIRouteObservationProfileCacheHit$' -benchmem -benchtime=200000x -count=3
 ```
+
+本机 Apple M3 的缓存命中基准三次为约 `1.18–1.28us/op`；这是本地微基准，不替代
+生产 Shadow 的 `evaluation_duration_us` 和 Redis 延迟观测。
 
 真实 Redis 的 integration suite 已保留相同故障域用例，但本轮未启动 Docker；普通
 单元测试使用 miniredis 覆盖相同 Lua 行为。

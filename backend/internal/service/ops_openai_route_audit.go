@@ -51,6 +51,9 @@ func (s *OpsService) GetOpenAIRouteAuditHealth(ctx context.Context) OpenAIRouteA
 		health.ObservationOutcomeLastError = stats.OutcomeLastError
 		health.ObservationReady = stats.Ready
 	}
+	if stats, available := s.openAIGatewayService.SnapshotOpenAIRouteObservationProfileCache(); available {
+		health.ObservationProfileCache = &stats
+	}
 	health.Ready = health.Ready && health.ObservationReady
 	return health
 }

@@ -1531,6 +1531,17 @@ func (s *OpenAIGatewayService) SnapshotOpenAIRouteObservationCollector() (OpenAI
 	return s.openAIRouteObservations.Stats(), true
 }
 
+func (s *OpenAIGatewayService) SnapshotOpenAIRouteObservationProfileCache() (OpenAIRouteObservationProfileCacheStats, bool) {
+	if s == nil {
+		return OpenAIRouteObservationProfileCacheStats{}, false
+	}
+	controller, ok := s.openAIRouteEvaluator.(*OpenAIRouteController)
+	if !ok {
+		return OpenAIRouteObservationProfileCacheStats{}, false
+	}
+	return controller.SnapshotObservationProfileCache()
+}
+
 func (s *OpenAIGatewayService) openAIWSSessionStickyTTL() time.Duration {
 	if s != nil && s.cfg != nil && s.cfg.Gateway.OpenAIWS.StickySessionTTLSeconds > 0 {
 		return time.Duration(s.cfg.Gateway.OpenAIWS.StickySessionTTLSeconds) * time.Second

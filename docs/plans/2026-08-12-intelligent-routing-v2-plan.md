@@ -125,6 +125,13 @@ is authorized.
 
 ### V2.4 — guarded enforcement
 
+Dependent guarded-rollout branch status (2026-08-13 Beijing time): the pure
+stage-transition contract, deterministic text/image cohort assignment, hourly
+coverage gate, activation/T0 persistence, and read-only heartbeat state machine
+are implemented with unit tests. `OpenAIRouteEnforceCodeAvailable` remains compile-time false, none of
+these primitives is wired to the real scheduler, and no production timer or
+policy is created.
+
 - use 24 hours only as an early health checkpoint; require a full 72-hour query
   window, at least 71 hours between its first and last real decision (at most
   one hour of total end-exclusive boundary gap; the same one-hour total applies
@@ -140,6 +147,12 @@ is authorized.
   counters started; a later successful probe must not erase an evidence gap;
 - require adaptive account and provider assignment totals to equal the full
   evaluated-decision count before checking concentration caps;
+- require evaluated decisions to cover all but at most one relative one-hour
+  bucket across the requested evidence window; first/last timestamps alone do
+  not prove the interior of the window was observed;
+- require one immutable `activation_id`, one UTC `shadow_started_at`, and an
+  assessment window whose start exactly equals that T0; stopped/restarted
+  evidence cannot be joined merely by reusing `policy_version`;
 - enable deterministic canary assignment at `1% -> 5% -> 20% -> 50% -> 100%`;
 - preserve text stickiness and one-click Legacy rollback at every stage;
 - never enable `enforce` in the same deployment that introduces the code path.

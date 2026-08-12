@@ -1,6 +1,7 @@
 package service
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ func testOpenAIRoutePromotionFilter(start, end time.Time) *OpenAIRouteShadowDeci
 		RequestClass:  OpenAIRouteRequestClassText,
 		PolicyMode:    OpenAIRoutePolicyShadow,
 		PolicyVersion: &version,
+		ActivationID:  "activation-20260809-001",
 	}
 }
 
@@ -30,8 +32,12 @@ func healthyOpenAIRoutePromotionEvidence(start, end time.Time) (*OpenAIRouteShad
 		EvaluatedLinkedSuccessfulUsage: 196,
 		EvaluatedLinkedLegacyFailure:   4,
 		PolicySnapshotVariants:         1,
+		ActivationIDVariants:           1,
+		ShadowStartedAtVariants:        1,
+		ShadowStartedAt:                start,
 		PolicyMaxAccountShare:          0.80,
 		PolicyMaxProviderShare:         0.90,
+		CoveredHourBuckets:             int64(math.Ceil(end.Sub(start).Hours())),
 		// Production stats come from an end-exclusive SQL window, so the first
 		// and last decisions cannot be assumed to land exactly on its edges.
 		FirstDecisionAt: start.Add(30 * time.Second),
@@ -126,12 +132,54 @@ func TestBuildOpenAIRoutePromotionAssessmentDoesNotDiluteWithWiderWindow(t *test
 	require.NotContains(t, assessment.Blockers, "observed_span")
 }
 
+func TestBuildOpenAIRoutePromotionAssessmentRequiresContinuousHourlyCoverage(t *testing.T) {
+	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
+	start := end.Add(-72 * time.Hour)
+	filter := testOpenAIRoutePromotionFilter(start, end)
+	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
+
+	// First/last timestamps alone can be faked by two bursts at the edges.
+	// Promotion therefore requires evaluated evidence in almost every relative
+	// hour bucket across the complete slice.
+	stats.CoveredHourBuckets = 2
+	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
+	require.NotContains(t, assessment.Blockers, "observed_span")
+	require.Contains(t, assessment.Blockers, "hourly_coverage")
+
+	stats.CoveredHourBuckets = 71
+	assessment = buildOpenAIRoutePromotionAssessment(filter, stats, health)
+	require.NotContains(t, assessment.Blockers, "hourly_coverage")
+}
+
+func TestBuildOpenAIRoutePromotionAssessmentRequiresOneActivationAndExactT0(t *testing.T) {
+	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
+	start := end.Add(-72 * time.Hour)
+	filter := testOpenAIRoutePromotionFilter(start, end)
+	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
+
+	stats.ActivationIDVariants = 2
+	stats.ShadowStartedAtVariants = 2
+	stats.ShadowStartedAt = start.Add(time.Hour)
+	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
+	require.Contains(t, assessment.Blockers, "single_activation_identity")
+	require.Contains(t, assessment.Blockers, "single_shadow_start")
+	require.Contains(t, assessment.Blockers, "window_starts_at_activation")
+
+	stats.ActivationIDVariants = 1
+	stats.ShadowStartedAtVariants = 1
+	stats.ShadowStartedAt = start
+	assessment = buildOpenAIRoutePromotionAssessment(filter, stats, health)
+	require.NotContains(t, assessment.Blockers, "single_activation_identity")
+	require.NotContains(t, assessment.Blockers, "single_shadow_start")
+	require.NotContains(t, assessment.Blockers, "window_starts_at_activation")
+}
+
 func TestBuildOpenAIRoutePromotionAssessmentReadyOnlyForManualReview(t *testing.T) {
 	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
 	start := end.Add(-72 * time.Hour)
 	filter := testOpenAIRoutePromotionFilter(start, end)
 	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
-	evidenceStart := stats.FirstDecisionAt
+	evidenceStart := stats.ShadowStartedAt
 
 	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
 
@@ -220,6 +268,7 @@ func TestValidateOpenAIRoutePromotionFilterRequiresExactUnbiasedSlice(t *testing
 		"model":          func(f *OpenAIRouteShadowDecisionFilter) { f.Model = "" },
 		"class":          func(f *OpenAIRouteShadowDecisionFilter) { f.RequestClass = OpenAIRouteRequestClassUnknown },
 		"version":        func(f *OpenAIRouteShadowDecisionFilter) { f.PolicyVersion = nil },
+		"activation":     func(f *OpenAIRouteShadowDecisionFilter) { f.ActivationID = "" },
 		"mode":           func(f *OpenAIRouteShadowDecisionFilter) { f.PolicyMode = OpenAIRoutePolicyLegacy },
 		"outcome_filter": func(f *OpenAIRouteShadowDecisionFilter) { value := true; f.Evaluated = &value },
 	}

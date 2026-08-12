@@ -136,6 +136,7 @@ func parseOpenAIRouteShadowDecisionFilter(c *gin.Context, withPagination bool) (
 		Model:           strings.TrimSpace(c.Query("model")),
 		RequestClass:    service.OpenAIRouteRequestClass(strings.TrimSpace(c.Query("request_class"))),
 		PolicyMode:      service.OpenAIRoutePolicyMode(strings.TrimSpace(c.Query("policy_mode"))),
+		ActivationID:    strings.TrimSpace(c.Query("activation_id")),
 		Reason:          strings.TrimSpace(c.Query("reason")),
 		RequestID:       strings.TrimSpace(c.Query("request_id")),
 		ClientRequestID: strings.TrimSpace(c.Query("client_request_id")),
@@ -144,6 +145,9 @@ func parseOpenAIRouteShadowDecisionFilter(c *gin.Context, withPagination bool) (
 		return nil, strconv.ErrSyntax
 	}
 	if filter.PolicyMode != "" && filter.PolicyMode != service.OpenAIRoutePolicyLegacy && filter.PolicyMode != service.OpenAIRoutePolicyShadow && filter.PolicyMode != service.OpenAIRoutePolicyEnforce {
+		return nil, strconv.ErrSyntax
+	}
+	if len(filter.ActivationID) > 128 {
 		return nil, strconv.ErrSyntax
 	}
 	if withPagination {

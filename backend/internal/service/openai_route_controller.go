@@ -60,6 +60,8 @@ type OpenAIRouteShadowRequest struct {
 // scheduler remains authoritative even when a shadow decision is available.
 type OpenAIRouteShadowDecision struct {
 	DecisionID               string
+	ActivationID             string
+	ShadowStartedAt          time.Time
 	Evaluated                bool
 	Mode                     OpenAIRoutePolicyMode
 	Version                  int
@@ -84,12 +86,14 @@ type OpenAIRouteShadowEvaluator interface {
 // missing setting or unmatched policy means legacy routing. No production
 // policy values are compiled into the binary.
 type openAIRoutePolicyConfig struct {
-	GroupID      int64  `json:"group_id"`
-	Model        string `json:"model"`
-	RequestClass string `json:"request_class"`
-	Enabled      bool   `json:"enabled"`
-	Mode         string `json:"mode"`
-	Version      int    `json:"policy_version"`
+	GroupID         int64  `json:"group_id"`
+	Model           string `json:"model"`
+	RequestClass    string `json:"request_class"`
+	Enabled         bool   `json:"enabled"`
+	Mode            string `json:"mode"`
+	Version         int    `json:"policy_version"`
+	ActivationID    string `json:"activation_id"`
+	ShadowStartedAt string `json:"shadow_started_at"`
 
 	TargetAverageMultiplier *float64 `json:"target_avg_multiplier"`
 	HardAverageMultiplier   float64  `json:"hard_avg_multiplier"`
@@ -233,8 +237,14 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		decision.Reason = "request_ineligible"
 		return decision, nil
 	}
+	now := req.Now
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
 
-	policies, err := c.loadPolicies(ctx, req.Now)
+	policies, err := c.loadPolicies(ctx, now)
 	if err != nil {
 		return decision, err
 	}
@@ -261,10 +271,20 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		return decision, err
 	}
 	decision.DecisionID = decisionID
+	decision.ActivationID = strings.TrimSpace(config.ActivationID)
 	decision.Audit = &OpenAIRouteShadowAuditSnapshot{
 		EstimatedBaseCostUSD: config.EstimatedBaseCostUSD,
 		RequestClass:         req.RequestClass,
+		ActivationID:         decision.ActivationID,
 	}
+	activationID, shadowStartedAt, err := config.normalizedShadowActivation(now)
+	if err != nil {
+		return decision, err
+	}
+	decision.ActivationID = activationID
+	decision.ShadowStartedAt = shadowStartedAt
+	decision.Audit.ActivationID = activationID
+	decision.Audit.ShadowStartedAt = shadowStartedAt
 	policy, err := config.normalizedPolicy()
 	if err != nil {
 		return decision, err
@@ -276,10 +296,6 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	}
 	decision.Audit.Policy = newOpenAIRouteShadowAuditPolicy(policy, config.HardShareCaps)
 
-	now := req.Now
-	if now.IsZero() {
-		now = time.Now()
-	}
 	windows := buildOpenAIRouteBudgetWindows(req.GroupID, req.Model, req.RequestClass, config.Version, now, policy)
 	candidates := make([]OpenAIRouteCandidate, 0, len(req.Candidates))
 	routeKeys := make([]OpenAIRouteKey, 0, len(req.Candidates))
@@ -721,6 +737,46 @@ func resolveOpenAIRoutePolicyConfig(
 		}
 	}
 	return best, bestScore >= 0
+}
+
+func (c openAIRoutePolicyConfig) normalizedShadowActivation(now time.Time) (string, time.Time, error) {
+	activationID := strings.TrimSpace(c.ActivationID)
+	if activationID == "" {
+		return "", time.Time{}, fmt.Errorf("%w: activation_id is required for enabled shadow policies", ErrOpenAIRouteInvalidPolicy)
+	}
+	if len(activationID) > 128 {
+		return "", time.Time{}, fmt.Errorf("%w: activation_id exceeds 128 bytes", ErrOpenAIRouteInvalidPolicy)
+	}
+	for _, char := range activationID {
+		if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') ||
+			(char >= '0' && char <= '9') || strings.ContainsRune("-._:", char) {
+			continue
+		}
+		return "", time.Time{}, fmt.Errorf("%w: activation_id must use only ASCII letters, digits, dash, dot, underscore or colon", ErrOpenAIRouteInvalidPolicy)
+	}
+
+	startedRaw := strings.TrimSpace(c.ShadowStartedAt)
+	if startedRaw == "" {
+		return "", time.Time{}, fmt.Errorf("%w: shadow_started_at is required for enabled shadow policies", ErrOpenAIRouteInvalidPolicy)
+	}
+	startedAt, err := time.Parse(time.RFC3339Nano, startedRaw)
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("%w: shadow_started_at must be RFC3339: %v", ErrOpenAIRouteInvalidPolicy, err)
+	}
+	_, offset := startedAt.Zone()
+	if offset != 0 {
+		return "", time.Time{}, fmt.Errorf("%w: shadow_started_at must use UTC", ErrOpenAIRouteInvalidPolicy)
+	}
+	startedAt = startedAt.UTC()
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	if startedAt.After(now) {
+		return "", time.Time{}, fmt.Errorf("%w: shadow_started_at cannot be in the future", ErrOpenAIRouteInvalidPolicy)
+	}
+	return activationID, startedAt, nil
 }
 
 func (c openAIRoutePolicyConfig) normalizedPolicy() (OpenAIRoutePolicy, error) {

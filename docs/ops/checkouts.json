@@ -195,6 +195,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-31T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/intelligent-routing-v2-guarded-rollout-20260813",
+      "owner": "intelligent-routing-v2-guarded-rollout-20260813",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-31T23:59:59+08:00"
     }
   ]
 }

@@ -277,7 +277,7 @@ func (s *defaultOpenAIAccountScheduler) Select(
 				selection = nil
 			}
 		}
-		if selection != nil && selection.Account != nil && !isOpenAIAccountEligibleForRequest(selection.Account, req.RequestedModel, req.RequireCompact) {
+		if selection != nil && selection.Account != nil && !isOpenAIAccountEligibleForScheduleRequest(selection.Account, req) {
 			selection = nil
 		}
 		if selection != nil && selection.Account != nil {
@@ -335,6 +335,44 @@ func applyOpenAIImageGenerationScheduleDecision(
 		account.OpenAIImageGenerationRoutingPriority(req.RequestedModel)
 }
 
+func isOpenAIAccountEligibleForScheduleRequest(account *Account, req OpenAIAccountScheduleRequest) bool {
+	if account == nil || !account.IsSchedulable() || !account.IsOpenAI() {
+		return false
+	}
+	if req.RequestedModel != "" && !account.IsModelSupported(req.RequestedModel) {
+		_, imageRouteConfigured := account.OpenAIImageGenerationRoutingPriority(req.RequestedModel)
+		if !req.PreferImageGeneration || !imageRouteConfigured {
+			return false
+		}
+	}
+	if req.RequireCompact && openAICompactSupportTier(account) == 0 {
+		return false
+	}
+	return true
+}
+
+func (s *defaultOpenAIAccountScheduler) resolveFreshEligibleAccount(
+	ctx context.Context,
+	account *Account,
+	req OpenAIAccountScheduleRequest,
+) *Account {
+	if s == nil || s.service == nil || account == nil {
+		return nil
+	}
+	fresh := account
+	if s.service.schedulerSnapshot != nil {
+		current, err := s.service.getSchedulableAccount(ctx, account.ID)
+		if err != nil || current == nil {
+			return nil
+		}
+		fresh = current
+	}
+	if !isOpenAIAccountEligibleForScheduleRequest(fresh, req) {
+		return nil
+	}
+	return fresh
+}
+
 func (s *defaultOpenAIAccountScheduler) selectBySessionHash(
 	ctx context.Context,
 	req OpenAIAccountScheduleRequest,
@@ -366,7 +404,7 @@ func (s *defaultOpenAIAccountScheduler) selectBySessionHash(
 		_ = s.service.deleteStickySessionAccountID(ctx, req.GroupID, sessionHash)
 		return nil, nil
 	}
-	if shouldClearStickySession(account, req.RequestedModel) || !isOpenAIAccountEligibleForRequest(account, req.RequestedModel, req.RequireCompact) {
+	if shouldClearStickySession(account, req.RequestedModel) || !isOpenAIAccountEligibleForScheduleRequest(account, req) {
 		_ = s.service.deleteStickySessionAccountID(ctx, req.GroupID, sessionHash)
 		return nil, nil
 	}
@@ -734,7 +772,7 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 		if !account.IsSchedulable() || !account.IsOpenAI() {
 			continue
 		}
-		if req.RequestedModel != "" && !account.IsModelSupported(req.RequestedModel) {
+		if !isOpenAIAccountEligibleForScheduleRequest(account, req) {
 			continue
 		}
 		compactTier := 0
@@ -859,7 +897,7 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 
 	for i := 0; i < len(selectionOrder); i++ {
 		candidate := selectionOrder[i]
-		fresh := s.service.resolveFreshSchedulableOpenAIAccount(ctx, candidate.account, req.RequestedModel, req.RequireCompact)
+		fresh := s.resolveFreshEligibleAccount(ctx, candidate.account, req)
 		if fresh == nil || !s.isAccountTransportCompatible(fresh, req.RequiredTransport) {
 			continue
 		}
@@ -888,7 +926,7 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 	cfg := s.service.schedulingConfig()
 	// WaitPlan.MaxConcurrency 使用 Concurrency（非 EffectiveLoadFactor），因为 WaitPlan 控制的是 Redis 实际并发槽位等待。
 	for _, candidate := range selectionOrder {
-		fresh := s.service.resolveFreshSchedulableOpenAIAccount(ctx, candidate.account, req.RequestedModel, req.RequireCompact)
+		fresh := s.resolveFreshEligibleAccount(ctx, candidate.account, req)
 		if fresh == nil || !s.isAccountTransportCompatible(fresh, req.RequiredTransport) {
 			continue
 		}

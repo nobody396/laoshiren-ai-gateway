@@ -17,6 +17,12 @@ const (
 	// to public request models. Entries support the same trailing-* wildcard as
 	// account model mappings. A present but empty/invalid list fails closed.
 	OpenAIImageGenerationModelsExtraKey = "openai_image_generation_models"
+	// OpenAIImageGenerationTransportExtraKey selects the upstream protocol for
+	// an image route. The missing value preserves the existing Responses API
+	// behavior; "images" opts an API-key account into the native Images API.
+	OpenAIImageGenerationTransportExtraKey  = "openai_image_generation_transport"
+	OpenAIImageGenerationTransportResponses = "responses"
+	OpenAIImageGenerationTransportImages    = "images"
 )
 
 var (
@@ -308,11 +314,61 @@ func (a *Account) OpenAIImageGenerationRoutingPriority(requestedModel string) (i
 		return 0, false
 	}
 
-	rawModels, restricted := a.Extra[OpenAIImageGenerationModelsExtraKey]
-	if restricted && !openAIImageGenerationModelAllowed(rawModels, requestedModel) {
+	transport, ok := a.OpenAIImageGenerationTransport(requestedModel)
+	if !ok {
 		return 0, false
 	}
+	rawModels, restricted := a.Extra[OpenAIImageGenerationModelsExtraKey]
+	if restricted && !openAIImageGenerationModelAllowed(rawModels, requestedModel) {
+		// Existing Responses image routes are restricted to their Responses
+		// model (currently gpt-5.6-sol), while Codex's built-in ImageGen client
+		// enters through /v1/images/generations as gpt-image-2. Treat that exact
+		// model as an alias only for the Responses bridge. Native Images routes
+		// still have to opt in to gpt-image-2 explicitly.
+		if transport != OpenAIImageGenerationTransportResponses ||
+			!strings.EqualFold(strings.TrimSpace(requestedModel), gptImageOnlyModel) ||
+			!openAIImageGenerationModelAllowed(rawModels, CodexNativeImageBridgeModel()) {
+			return 0, false
+		}
+	}
 	return priority, true
+}
+
+// OpenAIImageGenerationTransport resolves the protocol used by a configured
+// image route. Native Images routes fail closed unless the account is an
+// image-capable API-key account and its model mapping resolves the public
+// request model to a valid gpt-image model.
+func (a *Account) OpenAIImageGenerationTransport(requestedModel string) (string, bool) {
+	if a == nil || !a.IsOpenAI() || a.Extra == nil {
+		return "", false
+	}
+	raw, exists := a.Extra[OpenAIImageGenerationTransportExtraKey]
+	transport := OpenAIImageGenerationTransportResponses
+	if exists {
+		value, ok := raw.(string)
+		if !ok {
+			return "", false
+		}
+		transport = strings.ToLower(strings.TrimSpace(value))
+	}
+	switch transport {
+	case OpenAIImageGenerationTransportResponses:
+		return transport, true
+	case OpenAIImageGenerationTransportImages:
+		if !supportsOpenAIImages(a) {
+			return "", false
+		}
+		mappedModel, matched := a.ResolveMappedModel(strings.TrimSpace(requestedModel))
+		if !matched {
+			return "", false
+		}
+		if err := validateOpenAIImagesModel(mappedModel); err != nil {
+			return "", false
+		}
+		return transport, true
+	default:
+		return "", false
+	}
 }
 
 func openAIImageGenerationModelAllowed(raw any, requestedModel string) bool {

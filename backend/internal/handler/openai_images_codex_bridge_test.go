@@ -47,10 +47,15 @@ type codexNativeImageBridgeUpstream struct {
 type codexNativeImageBridgeFailoverUpstream struct {
 	service.HTTPUpstream
 	accountIDs []int64
+	paths      []string
+	models     []string
 }
 
-func (u *codexNativeImageBridgeFailoverUpstream) Do(_ *http.Request, _ string, accountID int64, _ int) (*http.Response, error) {
+func (u *codexNativeImageBridgeFailoverUpstream) Do(req *http.Request, _ string, accountID int64, _ int) (*http.Response, error) {
 	u.accountIDs = append(u.accountIDs, accountID)
+	u.paths = append(u.paths, req.URL.Path)
+	requestBody, _ := io.ReadAll(req.Body)
+	u.models = append(u.models, gjson.GetBytes(requestBody, "model").String())
 	body := `{
 		"id":"resp_codex_native_image_bridge",
 		"status":"completed",
@@ -58,13 +63,20 @@ func (u *codexNativeImageBridgeFailoverUpstream) Do(_ *http.Request, _ string, a
 		"output":[{"type":"image_generation_call","status":"completed","result":"` + codexNativeImageBridgeTestPNG + `"}],
 		"usage":{"input_tokens":12,"output_tokens":24}
 	}`
-	if accountID == 33 {
+	switch accountID {
+	case 33:
 		body = `{
 			"id":"resp_codex_native_image_no_tool",
 			"status":"completed",
 			"model":"gpt-5.6-sol",
 			"output":[{"type":"message","status":"completed","content":[{"type":"output_text","text":""}]}],
 			"usage":{"input_tokens":467,"output_tokens":8}
+		}`
+	case 34:
+		body = `{
+			"created":1710000000,
+			"data":[{"b64_json":"` + codexNativeImageBridgeTestPNG + `"}],
+			"usage":{"input_tokens":10,"output_tokens":20,"total_tokens":30}
 		}`
 	}
 	return &http.Response{
@@ -255,7 +267,7 @@ func TestOpenAIImages_OfficialCodexGPTImage2BridgesForMonthlyAndPublicGroups(t *
 	}
 }
 
-func TestOpenAIImages_EmptyImageCompletionFailsOverForMonthlyAndPublicGroups(t *testing.T) {
+func TestOpenAIImages_EmptyImageCompletionFallsBackToNativeImagesForMonthlyAndPublicGroups(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	groups := []*service.Group{
@@ -265,7 +277,7 @@ func TestOpenAIImages_EmptyImageCompletionFailsOverForMonthlyAndPublicGroups(t *
 
 	for _, group := range groups {
 		t.Run(group.Name, func(t *testing.T) {
-			newAccount := func(id int64, name string, imagePriority int) service.Account {
+			newResponsesAccount := func(id int64, name string, imagePriority int) service.Account {
 				return service.Account{
 					ID: id, Name: name, Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
 					Status: service.StatusActive, Schedulable: true, Concurrency: 4,
@@ -280,9 +292,24 @@ func TestOpenAIImages_EmptyImageCompletionFailsOverForMonthlyAndPublicGroups(t *
 					AccountGroups: []service.AccountGroup{{AccountID: id, GroupID: group.ID, Priority: imagePriority}},
 				}
 			}
+			nativeAccount := service.Account{
+				ID: 34, Name: "PomoAI native Images fallback", Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
+				Status: service.StatusActive, Schedulable: true, Concurrency: 4,
+				Credentials: map[string]any{
+					"api_key": "test-only-key", "base_url": "https://upstream.example.test/v1",
+					"model_mapping": map[string]any{"gpt-image-2": "gpt-image-2-count"},
+				},
+				Extra: map[string]any{
+					"supports_images": true,
+					service.OpenAIImageGenerationPriorityExtraKey:  2,
+					service.OpenAIImageGenerationModelsExtraKey:    []any{"gpt-image-2"},
+					service.OpenAIImageGenerationTransportExtraKey: service.OpenAIImageGenerationTransportImages,
+				},
+				AccountGroups: []service.AccountGroup{{AccountID: 34, GroupID: group.ID, Priority: 90}},
+			}
 			accounts := []service.Account{
-				newAccount(33, "MoreCode primary image route", 1),
-				newAccount(23, "PomoAI fallback image route", 2),
+				newResponsesAccount(33, "MoreCode primary image route", 1),
+				nativeAccount,
 			}
 			upstream := &codexNativeImageBridgeFailoverUpstream{}
 			concurrencyCache := &concurrencyCacheMock{
@@ -319,8 +346,11 @@ func TestOpenAIImages_EmptyImageCompletionFailsOverForMonthlyAndPublicGroups(t *
 
 			require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
 			require.Equal(t, codexNativeImageBridgeTestPNG, gjson.GetBytes(recorder.Body.Bytes(), "data.0.b64_json").String())
-			require.Equal(t, []int64{33, 23}, upstream.accountIDs, "MoreCode must remain first and PomoAI must be the bounded fallback")
-			require.Equal(t, int64(23), c.GetInt64(opsAccountIDKey), "usage attribution must point at the account that returned the image")
+			require.Equal(t, []int64{33, 34}, upstream.accountIDs, "MoreCode must remain first and native PomoAI must be the bounded fallback")
+			require.Equal(t, []string{"/v1/responses", "/v1/images/generations"}, upstream.paths)
+			require.Equal(t, []string{"gpt-5.6-sol", "gpt-image-2-count"}, upstream.models)
+			require.Equal(t, int64(34), c.GetInt64(opsAccountIDKey), "usage attribution must point at the account that returned the image")
+			require.Equal(t, "gpt-image-2-count", c.GetString(opsUpstreamModelKey))
 		})
 	}
 }

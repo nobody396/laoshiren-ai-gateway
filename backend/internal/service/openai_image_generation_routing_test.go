@@ -234,3 +234,61 @@ func TestAccountOpenAIImageGenerationRoutingPriority(t *testing.T) {
 	_, configured = account.OpenAIImageGenerationRoutingPriority("gpt-5.4")
 	require.False(t, configured)
 }
+
+func TestAccountOpenAIImageGenerationTransportRouting(t *testing.T) {
+	t.Run("Responses bridge accepts exact Codex image alias", func(t *testing.T) {
+		account := &Account{
+			Platform: PlatformOpenAI,
+			Extra: map[string]any{
+				OpenAIImageGenerationPriorityExtraKey: 1,
+				OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
+			},
+		}
+
+		priority, configured := account.OpenAIImageGenerationRoutingPriority("gpt-image-2")
+		require.True(t, configured)
+		require.Equal(t, 1, priority)
+		transport, configured := account.OpenAIImageGenerationTransport("gpt-image-2")
+		require.True(t, configured)
+		require.Equal(t, OpenAIImageGenerationTransportResponses, transport)
+	})
+
+	t.Run("native Images route requires explicit model mapping", func(t *testing.T) {
+		account := &Account{
+			Platform: PlatformOpenAI,
+			Type:     AccountTypeAPIKey,
+			Credentials: map[string]any{
+				"model_mapping": map[string]any{"gpt-image-2": "gpt-image-2-count"},
+			},
+			Extra: map[string]any{
+				"supports_images":                      true,
+				OpenAIImageGenerationPriorityExtraKey:  2,
+				OpenAIImageGenerationModelsExtraKey:    []any{"gpt-image-2"},
+				OpenAIImageGenerationTransportExtraKey: OpenAIImageGenerationTransportImages,
+			},
+		}
+
+		priority, configured := account.OpenAIImageGenerationRoutingPriority("gpt-image-2")
+		require.True(t, configured)
+		require.Equal(t, 2, priority)
+		transport, configured := account.OpenAIImageGenerationTransport("gpt-image-2")
+		require.True(t, configured)
+		require.Equal(t, OpenAIImageGenerationTransportImages, transport)
+
+		delete(account.Credentials, "model_mapping")
+		_, configured = account.OpenAIImageGenerationRoutingPriority("gpt-image-2")
+		require.False(t, configured, "native image route must fail closed without its explicit public-to-upstream mapping")
+	})
+
+	t.Run("invalid transport fails closed", func(t *testing.T) {
+		account := &Account{
+			Platform: PlatformOpenAI,
+			Extra: map[string]any{
+				OpenAIImageGenerationPriorityExtraKey:  1,
+				OpenAIImageGenerationTransportExtraKey: "unknown",
+			},
+		}
+		_, configured := account.OpenAIImageGenerationRoutingPriority("gpt-image-2")
+		require.False(t, configured)
+	})
+}

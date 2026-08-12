@@ -11,6 +11,7 @@ import (
 	"time"
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
+	dbuser "github.com/bozhouDev/DragonCode-sub2api/ent/user"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/domain"
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
@@ -239,9 +240,14 @@ func (s *FeedbackService) ReplyByAdmin(ctx context.Context, adminUserID, feedbac
 		return nil, err
 	}
 
+	replyUserID, err := s.resolveAdminReplyUserID(ctx, adminUserID)
+	if err != nil {
+		return nil, err
+	}
+
 	reply := &FeedbackReply{
 		FeedbackID: feedbackID,
-		UserID:     adminUserID,
+		UserID:     replyUserID,
 		Role:       FeedbackReplyRoleAdmin,
 		Content:    content,
 		Images:     images,
@@ -251,6 +257,29 @@ func (s *FeedbackService) ReplyByAdmin(ctx context.Context, adminUserID, feedbac
 	}
 
 	return reply, nil
+}
+
+// resolveAdminReplyUserID maps the reply author to a real users row. The
+// global admin API key authenticates as a virtual service principal (user id
+// -1) that has no users row; persisting it directly violates the
+// feedback_replies.user_id foreign key, so those replies are attributed to the
+// earliest active admin account. The reply role stays "admin", which is what
+// the UI renders.
+func (s *FeedbackService) resolveAdminReplyUserID(ctx context.Context, adminUserID int64) (int64, error) {
+	if adminUserID > 0 {
+		return adminUserID, nil
+	}
+	if s.entClient == nil {
+		return 0, fmt.Errorf("feedback service ent client is not configured")
+	}
+	id, err := s.entClient.User.Query().
+		Where(dbuser.RoleEQ(domain.RoleAdmin), dbuser.StatusEQ(domain.StatusActive)).
+		Order(dbent.Asc(dbuser.FieldID)).
+		FirstID(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("resolve admin reply author: %w", err)
+	}
+	return id, nil
 }
 
 func (s *FeedbackService) UpdateStatus(ctx context.Context, feedbackID int64, input UpdateFeedbackStatusInput) error {

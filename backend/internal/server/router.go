@@ -140,6 +140,10 @@ func registerRoutes(
 	cfg *config.Config,
 	redisClient *redis.Client,
 ) {
+	// Content-addressed public downloads live outside /api so the site CDN can
+	// cache large immutable installers at edge locations.
+	routes.RegisterPublicResourceRoutes(r, h)
+
 	// API v1
 	v1 := r.Group("/api/v1")
 

@@ -315,6 +315,12 @@ EdgeOne 规则：
 | `网站加速-laoshirenai.com` | `laoshirenai.com` | 裸域名网站静态资源加速，节点缓存 TTL 30 天 |
 | `API动态不缓存-api.laoshirenai.com` | `api.laoshirenai.com` | API 动态请求不缓存，避免流式输出和鉴权出问题 |
 
+Claude Desktop Windows 安装包使用内容寻址静态路径
+`/downloads/claude-desktop/windows-x64/<sha256>/Claude-Setup.exe`。该路径不属于
+`/api`，响应为 `public, max-age=31536000, immutable` 并支持 Range 请求，供
+EdgeOne 静态资源规则在边缘节点长期缓存；短效 `/api/v1/resource-downloads/*`
+只用于其他需要临时授权的下载。
+
 DNS/HTTP 验证命令：
 
 ```bash

@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  buildClaudeDesktopWindowsCachePath,
   buildWindowsDesktopInstallCommand,
   CLAUDE_DESKTOP_WINDOWS_X64
 } from '../resourceInstallCommands'
 
 describe('Windows desktop resource install commands', () => {
   it('downloads Claude Desktop from the domestic cache before the immutable official fallback', () => {
-    const domesticCache = 'https://laoshirenai.com/api/v1/resource-downloads/test-token'
+    const domesticCache = `https://laoshirenai.com${buildClaudeDesktopWindowsCachePath('4A7FE5BCC95F29DEDBFEEB45BC2C6B916343253BA0E0E392038968F5857C6AA9')}`
     const command = buildWindowsDesktopInstallCommand({
       tool: 'claude-desktop',
       sources: [
@@ -17,7 +18,10 @@ describe('Windows desktop resource install commands', () => {
     })
 
     expect(command.indexOf(domesticCache)).toBeLessThan(command.indexOf(CLAUDE_DESKTOP_WINDOWS_X64.url))
+    expect(domesticCache).toBe('https://laoshirenai.com/downloads/claude-desktop/windows-x64/4a7fe5bcc95f29dedbfeeb45bc2c6b916343253ba0e0e392038968f5857c6aa9/Claude-Setup.exe')
     expect(command).toContain('& curl.exe -fL --retry 5')
+    expect(command).toContain('--connect-timeout 60 --max-time 1800')
+    expect(command).not.toContain('/api/v1/resource-downloads/')
     expect(command).toContain(`h='${CLAUDE_DESKTOP_WINDOWS_X64.sha256}'`)
     expect(command).toContain("h='4A7FE5BCC95F29DEDBFEEB45BC2C6B916343253BA0E0E392038968F5857C6AA9'")
     expect(command).toContain('if($h -eq $s.h)')
@@ -27,6 +31,10 @@ describe('Windows desktop resource install commands', () => {
     expect(command).not.toContain('Invoke-WebRequest')
     expect(command.indexOf('if(-not $ok)')).toBeLessThan(command.indexOf('Start-Process'))
     expect(command).toContain('finally { Remove-Item $f -Force -ErrorAction SilentlyContinue }')
+  })
+
+  it('rejects an invalid checksum in the immutable cache path', () => {
+    expect(() => buildClaudeDesktopWindowsCachePath('not-a-sha')).toThrow('SHA256')
   })
 
   it('keeps the silent installer switch for Codex++ after verification', () => {

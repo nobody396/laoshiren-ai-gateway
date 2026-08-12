@@ -1,11 +1,14 @@
 package handler
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
@@ -13,6 +16,58 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
+
+func TestClaudeDesktopWindowsDownloadIsContentAddressedImmutableAndRangeCapable(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cacheDir := t.TempDir()
+	versionDir := filepath.Join(cacheDir, "claude-desktop", "latest")
+	require.NoError(t, os.MkdirAll(versionDir, 0755))
+	payload := []byte("verified-claude-desktop-installer")
+	digest := fmt.Sprintf("%x", sha256.Sum256(payload))
+	assetName := "Claude-Setup-x64.exe"
+	assetID := "claude-setup-x64.exe"
+	require.NoError(t, os.WriteFile(filepath.Join(versionDir, assetName), payload, 0644))
+	rawManifest, err := json.Marshal(service.CachedDownloadManifest{
+		Tool:    "claude-desktop",
+		Version: "latest",
+		Assets: []service.CachedDownloadAsset{{
+			ID:       assetID,
+			Name:     assetName,
+			Size:     int64(len(payload)),
+			SHA256:   digest,
+			Platform: "windows",
+			Arch:     "x64",
+		}},
+	})
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "claude-desktop", "manifest.json"), rawManifest, 0644))
+
+	downloads := service.NewDownloadResourceService(&config.Config{
+		Downloads: config.DownloadsConfig{Enabled: true, CacheDir: cacheDir},
+	}, nil)
+	handler := NewResourceHandler(downloads, nil)
+	router := gin.New()
+	router.GET("/downloads/claude-desktop/windows-x64/:sha256/Claude-Setup.exe", handler.DownloadClaudeDesktopWindowsX64)
+
+	request := httptest.NewRequest(http.MethodGet, "/downloads/claude-desktop/windows-x64/"+digest+"/Claude-Setup.exe", nil)
+	request.Header.Set("Range", "bytes=0-7")
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+	require.Equal(t, http.StatusPartialContent, recorder.Code)
+	require.Equal(t, "bytes 0-7/33", recorder.Header().Get("Content-Range"))
+	require.Equal(t, "bytes", recorder.Header().Get("Accept-Ranges"))
+	require.Equal(t, "public, max-age=31536000, immutable", recorder.Header().Get("Cache-Control"))
+	require.Equal(t, "verified", recorder.Body.String())
+	require.Contains(t, recorder.Header().Get("Content-Disposition"), `filename="Claude-Setup.exe"`)
+
+	wrongDigest := httptest.NewRecorder()
+	router.ServeHTTP(wrongDigest, httptest.NewRequest(
+		http.MethodGet,
+		"/downloads/claude-desktop/windows-x64/"+strings.Repeat("0", 64)+"/Claude-Setup.exe",
+		nil,
+	))
+	require.Equal(t, http.StatusNotFound, wrongDigest.Code)
+}
 
 func TestBuildCodexWindowsAppInstallerEnablesNonBlockingUpdates(t *testing.T) {
 	xml, err := buildCodexWindowsAppInstaller(service.CachedDownloadAsset{

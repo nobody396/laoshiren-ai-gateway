@@ -174,6 +174,35 @@ func (h *ResourceHandler) DownloadWithToken(c *gin.Context) {
 	c.FileAttachment(file.Path, file.Asset.Name)
 }
 
+// DownloadClaudeDesktopWindowsX64 serves the locally verified installer from a
+// content-addressed, non-API URL. Keeping the checksum in the URL makes the
+// response immutable and allows the site CDN to cache the large executable at
+// edge locations instead of proxying every download to the application host.
+func (h *ResourceHandler) DownloadClaudeDesktopWindowsX64(c *gin.Context) {
+	file, err := h.downloads.GetClaudeDesktopWindowsX64Asset(c.Request.Context())
+	if err != nil {
+		if errors.Is(err, service.ErrDownloadManifestNotReady) {
+			response.Error(c, http.StatusServiceUnavailable, "Claude Desktop 安装包正在同步，请稍后再试")
+			return
+		}
+		if errors.Is(err, service.ErrDownloadAssetNotFound) {
+			response.NotFound(c, "Claude Desktop 安装包不存在")
+			return
+		}
+		response.InternalError(c, "读取 Claude Desktop 安装包失败")
+		return
+	}
+	if !strings.EqualFold(strings.TrimSpace(c.Param("sha256")), strings.TrimSpace(file.Asset.SHA256)) {
+		response.NotFound(c, "Claude Desktop 安装包不存在")
+		return
+	}
+
+	c.Header("Content-Type", "application/octet-stream")
+	c.Header("Cache-Control", "public, max-age=31536000, immutable")
+	c.Header("Accept-Ranges", "bytes")
+	c.FileAttachment(file.Path, "Claude-Setup.exe")
+}
+
 func (h *ResourceHandler) CreateSetupTicket(c *gin.Context) {
 	subject, ok := middleware2.GetAuthSubjectFromContext(c)
 	if !ok || subject.UserID <= 0 {

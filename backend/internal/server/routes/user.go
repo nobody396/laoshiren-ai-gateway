@@ -8,6 +8,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// RegisterPublicResourceRoutes registers immutable download paths outside
+// /api. EdgeOne treats /api as dynamic and bypasses its static-object cache.
+func RegisterPublicResourceRoutes(r *gin.Engine, h *handler.Handlers) {
+	r.GET(
+		"/downloads/claude-desktop/windows-x64/:sha256/Claude-Setup.exe",
+		h.Resource.DownloadClaudeDesktopWindowsX64,
+	)
+}
+
 // RegisterUserRoutes 注册用户相关路由（需要认证）
 func RegisterUserRoutes(
 	v1 *gin.RouterGroup,

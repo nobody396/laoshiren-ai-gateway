@@ -79,7 +79,7 @@ try {
 
   $NpmLog = Join-Path $FixtureDir 'npm-arguments.log'
   $FakeNpm = Join-Path $FixtureDir 'npm.cmd'
-  Set-Content -LiteralPath $FakeNpm -Encoding Ascii -Value "@echo off`r`necho %*>>\"$NpmLog\"`r`nexit /b 0`r`n"
+  Set-Content -LiteralPath $FakeNpm -Encoding Ascii -Value "@echo off`r`necho %*>>$NpmLog`r`nexit /b 0`r`n"
   $script:NpmCmd = $FakeNpm
   Invoke-NpmCommand -Arguments @('install', '-g', '@anthropic-ai/claude-code@latest')
   Invoke-NpmCommand -Arguments @('install', '-g', '@openai/codex@latest')

@@ -60,6 +60,11 @@ group + account + model + request_class + endpoint_hash + transport + failure_do
   distinct accounts inside the same explicit failure domain can open the
   provider circuit. Key/model/rate-limit/payment failures never fan out.
   Single-owner active probes and durable aggregate checkpoints remain deferred.
+- Shadow audit writes use a bounded asynchronous queue instead of blocking
+  account selection. Audit, observation, and health-application completeness
+  count in-flight, dropped, rejected, and failed evidence conservatively, and
+  each must remain at least 99% before manual review. Client cancellations are
+  neutral evidence and never train an upstream circuit.
 - Real selection remains Legacy-only. No production policy or account setting
   is changed by this development branch.
 

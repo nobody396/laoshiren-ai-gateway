@@ -2,7 +2,7 @@
 
 ## 交接快照
 
-- 北京时间：2026-08-13 00:17 后完成主线同步与本轮验证。
+- 北京时间：2026-08-13 00:52 后完成主线同步、第一轮 CI 与热路径复盘。
 - 独立 worktree：`worktrees/intelligent-routing-v2-foundation-20260812`
 - 分支：`feat/intelligent-routing-v2-foundation-20260812`
 - 当前基线：`origin/main@beae9a8e1`（PR #143 合并提交）。
@@ -16,9 +16,11 @@
   - `a359c44df` — 候选级权威文本成本学习；
   - `f6e1c8662` — 72 小时主评估与只读复评计划；
   - `82e34c8db` — 真实 PostgreSQL 晋级策略快照断言。
+  - `4dc2fe443` — Shadow 审计异步有界队列、端到端完整率门禁与客户端取消隔离。
 - 两次 rebase 均在统一发布明确授权后执行；`range-diff` 证明原七个提交内容未改变，
   最新图片价格表 PR 仅改前端，与本分支无交叉。
-- 当前没有 PR，也没有该分支的 GitHub Actions 运行。
+- PR：[#144](https://github.com/nobody396/laoshiren-ai-gateway/pull/144)。第一轮完整 CI
+  已通过；后续每个新增提交都必须以 PR 当前精确 HEAD 的新一轮绿色 CI 为准。
 
 ## 已实现范围
 
@@ -54,13 +56,19 @@
 12. 24 小时只作为健康检查点，自动证据主评估要求查询窗口和实际首末决策跨度均达到
     72 小时。响应给出确定性的 24h/72h/失败后 24h 复评计划，但不创建定时器且固定
     `automatic_promotion=false`；完整协议见 `OPENAI_INTELLIGENT_ROUTING_V2_ROLLOUT.md`。
+13. Shadow 决策写库从账号选择热路径移入 8 worker / 4096 queue 的有界队列。提交
+    成功即返回 Legacy 选择；排队、失败与丢弃可观测，服务退出时排空已接受任务。
+    审计完整率以全部尝试（含在途）为分母，被动观测完整率也把在途与拒绝纳入分母；
+    健康状态应用另有独立完整率，三者任一低于 99% 都阻止 72 小时晋级。
+14. 客户端主动 `context.Canceled` 被标为 `client_cancelled`：保留非敏感计数，但不进入
+    上游可靠性分母、不触发线路熔断，也不升级共同供应商故障域。
 
 ## 不变量与当前安全边界
 
 - 用户实际选择仍由 Legacy 调度器决定；`enforce` 继续硬禁止。
 - 没有修改生产账号状态、Base URL、分组、倍率或 `openai_route_policies`。
 - 没有运行生产探针、生产定时任务、迁移或部署。
-- 没有推送分支、创建 PR、合并 main 或触发 CI。
+- 已推送独立分支并创建 PR #144；没有合并 main，也没有触发生产发布。
 - 此前为自主开发创建的本地 2 小时心跳已按协调要求删除；当前没有本任务定时器。
 - 晋级评估固定返回 `manual_approval_required=true`、`enforce_available=false`，不会
   写策略或执行账号调度。
@@ -79,7 +87,7 @@ go test -race ./internal/service -run 'Test(OpenAIRouteController|OpenAIRouteObs
 go test -race ./internal/repository -run 'Test(OpenAIRouteHealthCache_ProviderEvidenceRequiresDistinctAccounts|TestOpenAIRouteObservationCache)' -count=1 -timeout=10m
 go test ./internal/service ./internal/repository ./internal/handler/admin ./internal/server ./cmd/server -count=1 -timeout=10m
 go vet ./internal/service ./internal/repository ./internal/handler/admin ./internal/server ./cmd/server
-go test -race ./internal/service -run 'Test(BuildOpenAIRoutePromotionAssessment|ValidateOpenAIRoutePromotionFilter)' -count=1 -timeout=10m
+go test -race ./internal/service -run 'Test(BuildOpenAIRoutePromotionAssessment|ValidateOpenAIRoutePromotionFilter|OpenAIRouteAuditService|OpenAIRouteObservationCollector)' -count=1 -timeout=10m
 go test -race ./internal/repository -run 'Test(OpenAIRouteDecisionRepositoryStatsScansPromotionEvidence|BuildOpenAIRouteShadowWhere)' -count=1 -timeout=10m
 go test -race ./internal/handler/admin -run 'Test(OpenAIRoutePromotionAssessmentHandler|ParseOpenAIRoutePromotionAssessmentFilter)' -count=1 -timeout=10m
 go test -race ./internal/service -run 'Test(OpenAIRouteController|OpenAIRouteObservationProfileCache)' -count=1 -timeout=10m
@@ -103,7 +111,7 @@ Testcontainers 退出后本机容器为空。
 
 ## PR 与后续独立授权阶段
 
-1. 推送独立分支并创建 PR，等待全量 CI；代码发布仍保持策略缺失或 Legacy。
+1. PR #144 更新后等待全量 CI；代码发布仍保持策略缺失或 Legacy。
 2. 后续 PR 补充非敏感长期聚合检查点，以及只由明确授权启动的单主半开探针。
 3. 获得单独生产授权后才部署 Shadow，并以自有测试身份验证审计、usage 关联和
    采集完整率。

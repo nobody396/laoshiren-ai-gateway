@@ -87,7 +87,7 @@ const BLOCK_ORDER = ['gpt', 'claude', 'grok', 'glm', 'deepseek', 'qwen', 'minima
 
 function classifyBlock(group: PublicPricingGroup): string {
   if (group.image_generation) return 'gpt'
-  const joined = group.models.map((model) => model.model).join(' ').toLowerCase()
+  const joined = (group.models ?? []).map((model) => model.model).join(' ').toLowerCase()
   if (/\bgpt[-\s]/.test(joined)) return 'gpt'
   if (/\bclaude[-\s]/.test(joined)) return 'claude'
   if (/\bgrok[-\s]/.test(joined)) return 'grok'

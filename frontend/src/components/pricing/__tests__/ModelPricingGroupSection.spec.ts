@@ -23,7 +23,9 @@ describe('ModelPricingGroupSection', () => {
           rate_multiplier: 4,
           is_exclusive: false,
           subscription_type: 'standard',
-          models: [],
+          // Reproduce the stale production response that exposed the boundary:
+          // image-only groups used to serialize an empty Go slice as null.
+          models: null,
           image_generation: {
             mode: 'token',
             text_input_price: 20,

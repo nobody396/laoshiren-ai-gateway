@@ -369,7 +369,12 @@ func cloneCatalog(c *PublicModelPricingCatalog) *PublicModelPricingCatalog {
 	out.Groups = make([]PublicModelPricingGroup, len(c.Groups))
 	for i, g := range c.Groups {
 		out.Groups[i] = g
-		out.Groups[i].Models = append([]PublicModelPrice(nil), g.Models...)
+		// Preserve the public API contract that models is always a JSON array.
+		// append(nil, empty...) collapses an intentionally empty image-only
+		// group to nil, which json.Marshal emits as null and older clients cannot
+		// iterate safely.
+		out.Groups[i].Models = make([]PublicModelPrice, len(g.Models))
+		copy(out.Groups[i].Models, g.Models)
 		if g.ImageGeneration != nil {
 			imagePricing := *g.ImageGeneration
 			out.Groups[i].ImageGeneration = &imagePricing

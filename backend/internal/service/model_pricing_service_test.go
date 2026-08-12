@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
@@ -302,8 +304,18 @@ func TestModelPricingPublishesGPTImage2ModalPricesAtImageMultiplier(t *testing.T
 		t.Fatalf("expected image-only group to remain visible, got %+v", catalog.Groups)
 	}
 	group := catalog.Groups[0]
+	if group.Models == nil {
+		t.Fatal("image-only group models must be an empty array, not nil")
+	}
 	if len(group.Models) != 0 {
 		t.Fatalf("gpt-image-2 must not be rendered as a generic text model: %+v", group.Models)
+	}
+	encoded, err := json.Marshal(group)
+	if err != nil {
+		t.Fatalf("marshal image-only group: %v", err)
+	}
+	if !strings.Contains(string(encoded), `"models":[]`) {
+		t.Fatalf("image-only group must serialize models as []: %s", encoded)
 	}
 	if group.Description != groups[0].Description || group.ImageGeneration == nil {
 		t.Fatalf("missing image metadata: %+v", group)

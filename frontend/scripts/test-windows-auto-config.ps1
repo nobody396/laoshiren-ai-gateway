@@ -29,6 +29,7 @@ $RequiredFunctions = @(
   'Test-UsableSystemNode',
   'Ensure-NodeRuntime',
   'Invoke-NpmCommand',
+  'Remove-ManagedPowerShellShims',
   'Test-NeedsNpmClientInstall'
 )
 foreach ($Name in $RequiredFunctions) {
@@ -64,18 +65,51 @@ try {
   Assert-True ($script:NpmCmd.EndsWith('npm.cmd', [StringComparison]::OrdinalIgnoreCase)) "Ensure-NodeRuntime selected an unsafe npm shim: $script:NpmCmd"
   Invoke-NpmCommand -Arguments @('--version')
 
-  foreach ($Client in @('claude', 'codex', 'grok')) {
+  foreach ($Client in @('claude', 'codex')) {
     $CmdPath = Join-Path $FixtureDir "$Client.cmd"
     $Ps1Path = Join-Path $FixtureDir "$Client.ps1"
     Set-Content -LiteralPath $CmdPath -Encoding Ascii -Value "@echo off`r`necho $Client-test 1.0.0`r`nexit /b 0`r`n"
     Set-Content -LiteralPath $Ps1Path -Encoding Ascii -Value "throw '$Client.ps1 must not run'`r`n"
   }
-  $env:Path = "$FixtureDir;$OriginalPath"
+  $GrokBinDir = Join-Path $FixtureDir 'grok-bin'
+  New-Item -ItemType Directory -Path $GrokBinDir -Force | Out-Null
+  Set-Content -LiteralPath (Join-Path $GrokBinDir 'grok.cmd') -Encoding Ascii -Value "@echo off`r`necho grok-test 1.0.0`r`nexit /b 0`r`n"
+  Set-Content -LiteralPath (Join-Path $GrokBinDir 'grok.ps1') -Encoding Ascii -Value "throw 'grok.ps1 must not run'`r`n"
+  Set-Content -LiteralPath (Join-Path $FixtureDir 'keep.ps1') -Encoding Ascii -Value "Write-Output 'no matching cmd'`r`n"
+  $env:Path = "$FixtureDir;$GrokBinDir;$OriginalPath"
 
   foreach ($Client in @('claude', 'codex', 'grok')) {
     $ResolvedClient = Get-UsableClientCommand -CommandName $Client
     Assert-True ($ResolvedClient.EndsWith("$Client.cmd", [StringComparison]::OrdinalIgnoreCase)) "Unsafe $Client shim selected: $ResolvedClient"
   }
+
+  # Reproduce the customer path: typing a bare command under Restricted resolves
+  # the npm-generated .ps1 shim first. The installer must remove only managed
+  # shims that have a same-name .cmd launcher, then the bare command must run.
+  foreach ($Client in @('claude', 'codex')) {
+    $UnsafeCommand = Get-Command $Client -ErrorAction Stop
+    Assert-True ($UnsafeCommand.Path.EndsWith("$Client.ps1", [StringComparison]::OrdinalIgnoreCase)) "Fixture did not reproduce unsafe bare $Client resolution: $($UnsafeCommand.Path)"
+    $PolicyBlocked = $false
+    try {
+      & $Client --version | Out-Null
+    } catch {
+      $PolicyBlocked = $_.Exception.GetType().Name -eq 'PSSecurityException'
+    }
+    Assert-True $PolicyBlocked "Bare $Client was not blocked by Restricted execution policy before repair"
+  }
+
+  $NpmPrefix = $FixtureDir
+  $NodeCurrentDir = Join-Path $FixtureDir 'node-current'
+  Remove-ManagedPowerShellShims
+  foreach ($Client in @('claude', 'codex')) {
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $FixtureDir "$Client.ps1"))) "$Client.ps1 was not removed"
+    $BareCommand = Get-Command $Client -ErrorAction Stop
+    Assert-True ($BareCommand.Path.EndsWith("$Client.cmd", [StringComparison]::OrdinalIgnoreCase)) "Bare $Client still resolves to an unsafe launcher: $($BareCommand.Path)"
+    & $Client --version | Out-Null
+    Assert-True ($LASTEXITCODE -eq 0) "Bare $Client failed under Restricted execution policy"
+  }
+  Assert-True (Test-Path -LiteralPath (Join-Path $FixtureDir 'keep.ps1')) 'A managed PowerShell script without a matching .cmd must remain untouched'
+  Assert-True (Test-Path -LiteralPath (Join-Path $GrokBinDir 'grok.ps1')) 'Unmanaged Grok fixture should remain untouched'
 
   $NpmLog = Join-Path $FixtureDir 'npm-arguments.log'
   $FakeNpm = Join-Path $FixtureDir 'npm.cmd'
@@ -110,7 +144,7 @@ try {
   Assert-True (-not (Test-NeedsNpmClientInstall)) 'Grok Build must remain isolated from the npm installation path'
 
   $global:LASTEXITCODE = 0
-  Write-Host 'WINDOWS_AUTO_CONFIG_ACCEPTANCE_OK claude=cmd codex=cmd grok=native npm_policy=Restricted'
+  Write-Host 'WINDOWS_AUTO_CONFIG_ACCEPTANCE_OK claude=bare-cmd codex=bare-cmd grok=native npm_policy=Restricted'
 } finally {
   $env:Path = $OriginalPath
   Set-ExecutionPolicy -Scope Process -ExecutionPolicy $OriginalExecutionPolicy -Force

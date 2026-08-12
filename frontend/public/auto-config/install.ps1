@@ -1,11 +1,11 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.7.3'
+$ScriptVersion = '0.7.4'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
 $DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
-$DefaultCodexModelCatalogUrl = 'https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.3'
+$DefaultCodexModelCatalogUrl = 'https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.4'
 $DefaultCodexAppInstallerUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/windows-x64/latest.appinstaller'
 $DefaultTopupUrl = 'https://laoshirenai.com/get-subscription'
 $DefaultTools = 'all'
@@ -836,6 +836,31 @@ function Install-NpmPackageWithFallback {
   }
 }
 
+# npm 在 Windows 会同时生成同名 .cmd 与 .ps1 启动器。PowerShell 会优先解析
+# .ps1，而 Restricted 执行策略会在 CLI 启动前将它拦截。仅清理本站用户目录中
+# 有同名 .cmd 兜底的 .ps1 shim，绝不修改系统 Node.js 安装目录或用户其他文件。
+function Remove-ManagedPowerShellShims {
+  $ManagedDirs = @(
+    $NodeCurrentDir,
+    $NpmPrefix,
+    (Join-Path $NpmPrefix 'bin')
+  ) | Select-Object -Unique
+
+  foreach ($Dir in $ManagedDirs) {
+    if (-not (Test-Path -LiteralPath $Dir -PathType Container)) {
+      continue
+    }
+    Get-ChildItem -LiteralPath $Dir -Filter '*.ps1' -File -ErrorAction SilentlyContinue |
+      ForEach-Object {
+        $CmdPath = [IO.Path]::ChangeExtension($_.FullName, '.cmd')
+        if (Test-Path -LiteralPath $CmdPath -PathType Leaf) {
+          Remove-Item -LiteralPath $_.FullName -Force
+          Write-Info "已启用兼容 Windows 执行策略的命令入口: $([IO.Path]::GetFileName($CmdPath))"
+        }
+      }
+  }
+}
+
 function Install-GrokBuild {
   $NativeArch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
   $Arch = if ($NativeArch -eq 'Arm64') { 'aarch64' } elseif ($NativeArch -eq 'X64') { 'x86_64' } else { '' }
@@ -1473,6 +1498,7 @@ function Main {
     Write-Info '检测到所选客户端已存在或已要求跳过安装；不下载 Node.js、不修改 PATH'
   }
   Install-RequestedClients
+  Remove-ManagedPowerShellShims
   Install-CodexAppIfRequested
   Configure-Claude
   Configure-Codex

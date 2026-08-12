@@ -221,6 +221,9 @@ jobs:
       - name: Verify Windows installer under Restricted execution policy
         shell: pwsh
         run: ./frontend/scripts/test-windows-auto-config.ps1
+      - name: Verify Windows installer in Windows PowerShell 5.1
+        shell: powershell
+        run: ./frontend/scripts/test-windows-auto-config.ps1
 
   docker-pr:
     name: PR Docker prebuild

@@ -255,6 +255,21 @@ func (s *FeedbackService) acceptOne(ctx context.Context, feedbackID int64, batch
 		return result, err
 	}
 	dedupe := "feedback_reward:" + strconv.FormatInt(feedbackID, 10)
+	if s.affiliateConsumption == nil {
+		return result, errors.New("feedback reward balance lot ledger is not configured")
+	}
+	txCtx := dbent.NewTxContext(ctx, tx)
+	if err := s.affiliateConsumption.RecordBalanceLot(txCtx, AffiliateBalanceLotInput{
+		UserID:          item.UserID,
+		SourceType:      AffiliateSourceGift,
+		SourceID:        feedbackID,
+		SourceKey:       dedupe,
+		AmountMicros:    AffiliateMicrosFromFloat(domain.FeedbackRewardAmount),
+		AffiliatePolicy: AffiliateSourcePolicyNone,
+		OccurredAt:      now,
+	}); err != nil {
+		return result, fmt.Errorf("record feedback reward balance lot: %w", err)
+	}
 	ledger, err := tx.AccountChangeRecord.Create().SetUserID(item.UserID).
 		SetAssetType(AccountChangeAssetBalance).SetReason(AccountChangeReasonFeedbackReward).
 		SetDelta(domain.FeedbackRewardAmount).SetSourceType(AccountChangeSourceFeedback).SetSourceID(feedbackID).

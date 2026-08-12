@@ -123,7 +123,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	feedbackRepository := repository.NewFeedbackRepository(client)
 	feedbackRateLimitCache := repository.NewFeedbackRateLimitCache(redisClient)
 	s3FeedbackImageStorage := service.NewFeedbackImageStorage(configConfig)
-	feedbackService := service.NewFeedbackService(feedbackRepository, userRepository, settingService, emailQueueService, feedbackRateLimitCache, s3FeedbackImageStorage, client, billingCache, apiKeyAuthCacheInvalidator)
+	feedbackService := service.NewFeedbackService(feedbackRepository, userRepository, settingService, emailQueueService, feedbackRateLimitCache, s3FeedbackImageStorage, affiliateConsumptionRepository, client, billingCache, apiKeyAuthCacheInvalidator)
 	feedbackHandler := handler.NewFeedbackHandler(feedbackService)
 	dashboardAggregationRepository := repository.NewDashboardAggregationRepository(db)
 	dashboardStatsCache := repository.NewDashboardCache(redisClient, configConfig)

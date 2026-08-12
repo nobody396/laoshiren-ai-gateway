@@ -17,7 +17,7 @@ function Invoke-ResourceInstallContract {
   try {
     foreach ($url in $URLs) {
       Remove-Item $Destination -Force -ErrorAction SilentlyContinue
-      & curl.exe -fL --retry 2 --retry-delay 1 --connect-timeout 5 --max-time 30 -o $Destination $url
+      & curl.exe -fL --retry 2 --retry-delay 1 --connect-timeout 60 --max-time 30 -o $Destination $url
       if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $Destination -PathType Leaf)) {
         $hash = (Get-FileHash -LiteralPath $Destination -Algorithm SHA256).Hash
         if ($hash -eq $ExpectedSHA256) {

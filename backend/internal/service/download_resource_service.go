@@ -685,6 +685,22 @@ func (s *DownloadResourceService) GetCodexWindowsDesktopAsset(ctx context.Contex
 	return nil, ErrDownloadAssetNotFound
 }
 
+// GetClaudeDesktopWindowsX64Asset returns the verified Windows x64 installer
+// from the local download cache. The public HTTP layer exposes this file using
+// its SHA256 in the URL so edge caches can safely retain it for a year.
+func (s *DownloadResourceService) GetClaudeDesktopWindowsX64Asset(ctx context.Context) (*DownloadAssetFile, error) {
+	manifest, err := s.ListTool(ctx, claudeDesktopToolID)
+	if err != nil {
+		return nil, err
+	}
+	for _, asset := range manifest.Assets {
+		if asset.Platform == "windows" && asset.Arch == "x64" && strings.EqualFold(filepath.Ext(asset.Name), ".exe") {
+			return s.GetToolAsset(ctx, claudeDesktopToolID, asset.ID)
+		}
+	}
+	return nil, ErrDownloadAssetNotFound
+}
+
 func (s *DownloadResourceService) CreateToolAssetDownloadToken(ctx context.Context, toolID, assetID string, ttl time.Duration) (string, time.Time, error) {
 	if s == nil {
 		return "", time.Time{}, errors.New("nil download resource service")

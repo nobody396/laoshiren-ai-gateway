@@ -371,6 +371,12 @@ func TestDownloadResourceServiceSyncClaudeDesktopCachesStaticAssets(t *testing.T
 	require.Equal(t, "macos", manifest.Assets[0].Platform)
 	require.Equal(t, "windows", manifest.Assets[1].Platform)
 	require.Equal(t, "x64", manifest.Assets[1].Arch)
+
+	windowsAsset, err := svc.GetClaudeDesktopWindowsX64Asset(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, "Claude-Setup-x64.exe", windowsAsset.Asset.Name)
+	require.Equal(t, "windows", windowsAsset.Asset.Platform)
+	require.Equal(t, "x64", windowsAsset.Asset.Arch)
 }
 
 func TestDownloadResourceServiceListVersionStatusDistinguishesCacheModes(t *testing.T) {

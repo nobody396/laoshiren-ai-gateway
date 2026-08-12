@@ -217,6 +217,7 @@ import { useAppStore } from '@/stores/app'
 import { buildClientAutoConfigCommand, getClientAutoConfigName } from '@/utils/clientAutoConfig'
 import { buildCcsDiagnosticCommand } from '@/utils/ccSwitchDiagnostics'
 import {
+  buildClaudeDesktopWindowsCachePath,
   buildWindowsDesktopInstallCommand,
   CLAUDE_DESKTOP_WINDOWS_X64
 } from '@/utils/resourceInstallCommands'
@@ -427,17 +428,17 @@ const resources: DownloadResource[] = [
   {
     name: 'Claude Desktop',
     badge: 'Claude 官方桌面 App',
-    description: 'Claude 官方桌面客户端。安装后需登录并单独配置，无法使用上方一键配置。',
+    description: 'Claude 官方桌面客户端。中国大陆网络安装后请不要直接进入官方登录页，需先在 CC Switch 的 Claude Desktop 页面单独配置。',
     icon: 'cube',
     commands: [],
     downloadToolId: 'claude-desktop',
     downloadTitle: '官方安装包',
-    downloadHint: 'Windows 优先从本站缓存下载并校验 SHA256；本站失败时，一键命令自动回退 Anthropic 官方 CDN。',
-    verifyText: '安装后打开 Claude Desktop，登录账号，并进入 Code 标签页确认可用。',
+    downloadHint: 'Windows 优先使用本站内容寻址的国内加速缓存并校验 SHA256；本站失败时，一键命令才会回退 Anthropic 官方 CDN。',
+    verifyText: '安装后先完全退出 Claude Desktop，再到 CC Switch 的 Claude Desktop 页面导入并启用 Provider；随后保持 CC Switch 运行并重新打开 Claude Desktop。',
     primaryLink: 'https://claude.com/download',
     docsLink: 'https://support.claude.com/en/articles/10065433-install-claude-desktop',
     primaryAction: '打开官方下载页',
-    note: 'Windows 优先使用本站缓存，Anthropic 官方不可变版本地址作为故障回退；两条路径都必须通过文件完整性校验。'
+    note: 'Claude Desktop 与 Claude Code 是两个独立配置页。Windows 安装包优先使用本站不可变静态缓存，官方地址仅作故障回退；两条路径都必须通过文件完整性校验。'
   },
   {
     name: 'CC Switch',
@@ -626,8 +627,9 @@ async function prepareAdvancedInstallCommand(tool: DownloadToolID) {
     let command = ''
     if (detectedOS.value === 'windows') {
       const asset = assets.find((item) => item.arch === 'x64') || assets[0]
-      const { token } = await resourcesAPI.createDownloadURL(tool, asset)
-      const cachedURL = absoluteResourceDownloadURL(token)
+      const cachedURL = tool === 'claude-desktop'
+        ? new URL(buildClaudeDesktopWindowsCachePath(asset.sha256), window.location.origin).toString()
+        : absoluteResourceDownloadURL((await resourcesAPI.createDownloadURL(tool, asset)).token)
       const officialClaudeAsset = tool === 'claude-desktop' ? CLAUDE_DESKTOP_WINDOWS_X64 : undefined
       command = buildWindowsDesktopInstallCommand({
         tool,
@@ -692,7 +694,11 @@ async function downloadCachedAsset(tool: DownloadToolID, asset: DownloadAsset) {
 
   downloadStates.value = { ...downloadStates.value, [key]: 'preparing' }
   try {
-    await resourcesAPI.downloadAsset(tool, asset)
+    if (tool === 'claude-desktop' && asset.platform === 'windows' && asset.arch === 'x64') {
+      window.location.assign(new URL(buildClaudeDesktopWindowsCachePath(asset.sha256), window.location.origin).toString())
+    } else {
+      await resourcesAPI.downloadAsset(tool, asset)
+    }
     downloadStates.value = { ...downloadStates.value, [key]: 'started' }
     appStore.showInfo('下载已开始，请查看浏览器下载栏。')
     window.setTimeout(() => {

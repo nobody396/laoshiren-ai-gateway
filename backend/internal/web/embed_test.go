@@ -910,6 +910,10 @@ func TestServeEmbeddedFrontend(t *testing.T) {
 	})
 }
 
+func TestEmbeddedFrontendBypassesImmutableDownloadRoutes(t *testing.T) {
+	require.True(t, shouldBypassEmbeddedFrontend("/downloads/claude-desktop/windows-x64/sha/Claude-Setup.exe"))
+}
+
 // Tests for HTMLCache
 func TestHTMLCache(t *testing.T) {
 	t.Run("new_cache_returns_nil", func(t *testing.T) {

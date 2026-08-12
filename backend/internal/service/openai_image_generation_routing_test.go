@@ -292,3 +292,14 @@ func TestAccountOpenAIImageGenerationTransportRouting(t *testing.T) {
 		require.False(t, configured)
 	})
 }
+
+func TestAccountOmitOpenAIImageGenerationResponseFormat(t *testing.T) {
+	account := &Account{Extra: map[string]any{
+		OpenAIImageGenerationOmitResponseFormatExtraKey: true,
+	}}
+	require.True(t, account.OmitOpenAIImageGenerationResponseFormat())
+
+	account.Extra[OpenAIImageGenerationOmitResponseFormatExtraKey] = "true"
+	require.False(t, account.OmitOpenAIImageGenerationResponseFormat(), "invalid config must fail closed")
+	require.False(t, (*Account)(nil).OmitOpenAIImageGenerationResponseFormat())
+}

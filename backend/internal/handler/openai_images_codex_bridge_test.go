@@ -1,14 +1,77 @@
 package handler
 
 import (
+	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
 )
+
+const codexNativeImageBridgeTestPNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+
+type codexNativeImageBridgeAccountRepo struct {
+	service.AccountRepository
+	accounts []service.Account
+}
+
+func (r codexNativeImageBridgeAccountRepo) ListSchedulableByPlatform(_ context.Context, platform string) ([]service.Account, error) {
+	accounts := make([]service.Account, 0, len(r.accounts))
+	for _, account := range r.accounts {
+		if account.Platform == platform {
+			accounts = append(accounts, account)
+		}
+	}
+	return accounts, nil
+}
+
+func (r codexNativeImageBridgeAccountRepo) ListSchedulableByGroupIDAndPlatform(_ context.Context, groupID int64, platform string) ([]service.Account, error) {
+	accounts := make([]service.Account, 0, len(r.accounts))
+	for _, account := range r.accounts {
+		if account.Platform != platform {
+			continue
+		}
+		for _, membership := range account.AccountGroups {
+			if membership.GroupID == groupID {
+				accounts = append(accounts, account)
+				break
+			}
+		}
+	}
+	return accounts, nil
+}
+
+type codexNativeImageBridgeUpstream struct {
+	service.HTTPUpstream
+	lastRequest *http.Request
+}
+
+func (u *codexNativeImageBridgeUpstream) Do(req *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
+	u.lastRequest = req
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header: http.Header{
+			"Content-Type": []string{"application/json"},
+			"x-request-id": []string{"req_codex_native_image_bridge"},
+		},
+		Body: io.NopCloser(strings.NewReader(`{
+			"id":"resp_codex_native_image_bridge",
+			"object":"response",
+			"status":"completed",
+			"model":"gpt-5.6-sol",
+			"output":[{"id":"ig_bridge","type":"image_generation_call","status":"completed","result":"` + codexNativeImageBridgeTestPNG + `"}],
+			"usage":{"input_tokens":12,"output_tokens":24,"total_tokens":36}
+		}`)),
+	}, nil
+}
 
 func TestShouldBridgeCodexNativeImageRequest_OpenAIMonthlyAndPublicGroups(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -88,6 +151,86 @@ func TestShouldBridgeCodexNativeImageRequest_DoesNotHijackNativeImageModels(t *t
 		require.False(t, shouldBridgeCodexNativeImageRequest(c, &service.APIKey{Group: openAIGroup}, nil))
 		require.False(t, shouldBridgeCodexNativeImageRequest(nil, &service.APIKey{Group: openAIGroup}, &service.OpenAIImagesRequest{Model: "gpt-image-2"}))
 	})
+}
+
+func TestOpenAIImages_OfficialCodexGPTImage2BridgesForMonthlyAndPublicGroups(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	groups := []*service.Group{
+		{ID: 7, Name: "GPT Lite monthly", Platform: service.PlatformOpenAI, SubscriptionType: service.SubscriptionTypeCredit},
+		{ID: 6, Name: "OpenAI public", Platform: service.PlatformOpenAI},
+	}
+
+	for _, group := range groups {
+		t.Run(group.Name, func(t *testing.T) {
+			account := service.Account{
+				ID:          3300 + group.ID,
+				Name:        "image-route-for-" + group.Name,
+				Platform:    service.PlatformOpenAI,
+				Type:        service.AccountTypeAPIKey,
+				Status:      service.StatusActive,
+				Schedulable: true,
+				Concurrency: 4,
+				Credentials: map[string]any{
+					"api_key":  "test-only-key",
+					"base_url": "https://upstream.example.test/v1",
+					"model_mapping": map[string]any{
+						"gpt-5.6-sol": "gpt-5.6-sol",
+					},
+				},
+				Extra: map[string]any{
+					service.OpenAIImageGenerationPriorityExtraKey: 1,
+					service.OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
+				},
+				AccountGroups: []service.AccountGroup{{AccountID: 3300 + group.ID, GroupID: group.ID, Priority: 1}},
+			}
+			upstream := &codexNativeImageBridgeUpstream{}
+			concurrencyCache := &concurrencyCacheMock{
+				acquireUserSlotFn:    func(context.Context, int64, int, string) (bool, error) { return true, nil },
+				acquireAccountSlotFn: func(context.Context, int64, int, string) (bool, error) { return true, nil },
+			}
+			cfg := &config.Config{RunMode: config.RunModeStandard}
+			concurrencyService := service.NewConcurrencyService(concurrencyCache)
+			gatewayService := service.NewOpenAIGatewayService(
+				codexNativeImageBridgeAccountRepo{accounts: []service.Account{account}},
+				nil, nil, nil, nil, nil, nil, cfg, nil, concurrencyService, nil, nil,
+				service.NewBillingCacheService(nil, nil, nil, nil, cfg), upstream,
+				nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
+			)
+			handler := NewOpenAIGatewayHandler(
+				gatewayService,
+				concurrencyService,
+				service.NewBillingCacheService(nil, nil, nil, nil, cfg),
+				&service.APIKeyService{},
+				nil, nil, cfg,
+			)
+
+			recorder := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(recorder)
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/generations", strings.NewReader(
+				`{"model":"gpt-image-2","prompt":"帮我生成一张一个男人吃早饭的图片","n":1,"response_format":"b64_json"}`,
+			))
+			c.Request.Header.Set("Content-Type", "application/json")
+			c.Request.Header.Set("User-Agent", "Codex Desktop/0.147.0-alpha.1.2 (Mac OS 26.3.2; arm64) (Codex Desktop; 26.730.61639)")
+			apiKey := &service.APIKey{ID: 44 + group.ID, GroupID: &group.ID, Group: group, User: &service.User{ID: 2, Status: service.StatusActive}}
+			c.Set(string(middleware.ContextKeyAPIKey), apiKey)
+			c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 2, Concurrency: 4})
+
+			handler.Images(c)
+
+			require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
+			require.NotContains(t, recorder.Body.String(), "No available compatible accounts")
+			require.Equal(t, codexNativeImageBridgeTestPNG, gjson.GetBytes(recorder.Body.Bytes(), "data.0.b64_json").String())
+			require.NotNil(t, upstream.lastRequest)
+			require.Equal(t, "/v1/responses", upstream.lastRequest.URL.Path)
+			upstreamBody, err := io.ReadAll(upstream.lastRequest.Body)
+			require.NoError(t, err)
+			require.Equal(t, "gpt-5.6-sol", gjson.GetBytes(upstreamBody, "model").String())
+			require.Equal(t, "image_generation", gjson.GetBytes(upstreamBody, "tools.0.type").String())
+			require.Equal(t, "image_generation", gjson.GetBytes(upstreamBody, "tool_choice.type").String())
+			require.Equal(t, account.ID, c.GetInt64(opsAccountIDKey), "successful bridge must select a concrete account")
+		})
+	}
 }
 
 func newCodexNativeImageBridgeTestContext(t *testing.T, officialCodex bool) *gin.Context {

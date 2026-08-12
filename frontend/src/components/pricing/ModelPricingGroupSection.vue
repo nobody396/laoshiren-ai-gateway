@@ -58,11 +58,11 @@
       </p>
     </div>
 
-    <div v-if="group.models.length === 0 && !group.image_generation" class="pricing-group__empty">
+    <div v-if="models.length === 0 && !group.image_generation" class="pricing-group__empty">
       {{ t('modelPricing.noModels') }}
     </div>
 
-    <table v-if="group.models.length > 0" class="pricing-group__table">
+    <table v-if="models.length > 0" class="pricing-group__table">
       <thead>
         <tr>
           <th>{{ t('modelPricing.table.model') }}</th>
@@ -72,7 +72,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="m in group.models" :key="m.model" :class="{ 'pricing-group__row--disabled': m.disabled }">
+        <tr v-for="m in models" :key="m.model" :class="{ 'pricing-group__row--disabled': m.disabled }">
           <td class="pricing-group__model">
             <span class="pricing-group__value">{{ m.model }}</span>
             <span v-if="m.disabled" class="pricing-group__disabled-badge">
@@ -99,6 +99,8 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+
+const models = computed(() => props.group.models ?? [])
 
 const imageTokenPrices = computed(() => {
   const image = props.group.image_generation

@@ -32,7 +32,9 @@ export interface PublicPricingGroup {
   rate_multiplier: number
   is_exclusive: boolean
   subscription_type: string
-  models: PublicModelPrice[]
+  // New responses always return an array. Keep null in the runtime contract so
+  // the public page remains compatible with an older cached response.
+  models: PublicModelPrice[] | null
   image_generation?: PublicImageGenerationPricing
 }
 

@@ -54,8 +54,8 @@ func ProvideOpenAIRouteHealthStore(rdb *redis.Client) service.OpenAIRouteHealthS
 	return NewOpenAIRouteHealthCache(rdb, 24*time.Hour, 30*time.Second)
 }
 
-func ProvideOpenAIRouteObservationStore(rdb *redis.Client) service.OpenAIRouteObservationStore {
-	return NewOpenAIRouteObservationCache(rdb)
+func ProvideOpenAIRouteObservationStore(rdb *redis.Client, db *sql.DB) service.OpenAIRouteObservationStore {
+	return NewOpenAIRouteObservationStore(NewOpenAIRouteObservationCache(rdb), db)
 }
 
 // ProviderSet is the Wire provider set for all repositories

@@ -59,7 +59,9 @@ group + account + model + request_class + endpoint_hash + transport + failure_do
   narrow route, and only infrastructure-like failures seen on at least two
   distinct accounts inside the same explicit failure domain can open the
   provider circuit. Key/model/rate-limit/payment failures never fan out.
-  Single-owner active probes and durable aggregate checkpoints remain deferred.
+  The dependent guarded-rollout branch now prepares both single-owner active
+  probes (hard-disabled) and durable non-sensitive hourly aggregate checkpoints;
+  neither changes production routing or creates a timer.
 - Shadow audit writes use a bounded asynchronous queue instead of blocking
   account selection. Audit, observation, and health-application completeness
   count in-flight, dropped, rejected, and failed evidence conservatively, and
@@ -83,13 +85,16 @@ group + account + model + request_class + endpoint_hash + transport + failure_do
 - track success/failure class, TTFT histogram, completion latency, partial
   stream, sample count, last observation, and actual settled cost;
 - maintain global, recent-window, and Beijing hour-of-week views;
-- persist non-sensitive aggregate checkpoints for restart/audit recovery.
+- persist non-sensitive hourly aggregate checkpoints for restart/audit recovery;
+  this is implemented in the dependent guarded-rollout branch with Redis recent
+  data kept separate from PostgreSQL long-window authority.
 
-The rolling store currently uses 5-minute buckets for a one-hour recent view,
-Beijing calendar-day buckets for a seven-day global view, and the matching
-Beijing hour-of-week across eight ISO weeks. Keys contain only a route
-fingerprint. A collector queue overflow never delays a customer request and is
-instead exposed as evidence loss in the admin health endpoint.
+The rolling store uses Redis 5-minute buckets for the one-hour recent view and
+PostgreSQL UTC-hour rows (equivalent to Beijing whole-hour boundaries) for the
+last seven Beijing calendar days and matching Beijing hour-of-week across eight
+weeks. Keys contain only a route fingerprint and non-sensitive route dimensions.
+A collector queue overflow never delays a customer request and is instead
+exposed as evidence loss in the admin health endpoint.
 
 Settled-cost feedback is text-only. Until 20 cost samples exist for an exact
 route, the policy's configured estimate remains authoritative. Afterwards the

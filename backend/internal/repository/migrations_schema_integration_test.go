@@ -71,6 +71,15 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	requireIndex(t, tx, "openai_route_shadow_decisions", "idx_openai_route_shadow_decisions_group_model_class_created")
 	requireIndex(t, tx, "openai_route_shadow_decisions", "idx_openai_route_shadow_decisions_activation_scope")
 
+	// openai_route_observation_hourly: durable, non-sensitive aggregate checkpoints
+	requireColumn(t, tx, "openai_route_observation_hourly", "route_fingerprint", "character varying", 32, false)
+	requireColumn(t, tx, "openai_route_observation_hourly", "hour_start", "timestamp with time zone", 0, false)
+	requireColumn(t, tx, "openai_route_observation_hourly", "request_class", "character varying", 16, false)
+	requireColumn(t, tx, "openai_route_observation_hourly", "metrics", "jsonb", 0, false)
+	requireColumn(t, tx, "openai_route_observation_hourly", "last_observed_at", "timestamp with time zone", 0, false)
+	requireIndex(t, tx, "openai_route_observation_hourly", "openai_route_observation_hourly_pkey")
+	requireIndex(t, tx, "openai_route_observation_hourly", "idx_openai_route_observation_hourly_hour_start")
+
 	// groups: Grok video billing controls (migration 173)
 	requireColumn(t, tx, "groups", "video_rate_independent", "boolean", 0, false)
 	requireColumn(t, tx, "groups", "video_rate_multiplier", "numeric", 0, false)

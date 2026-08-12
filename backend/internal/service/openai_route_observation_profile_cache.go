@@ -39,9 +39,10 @@ type cachedOpenAIRouteObservationProfiles struct {
 }
 
 // openAIRouteObservationProfileCache is a bounded L1 read-through cache over
-// the shared Redis learner. Redis remains authoritative. The five-second TTL
-// only removes repeated 27-hash-per-route reads from the 25ms Shadow hot path;
-// route/provider circuit state is still read separately on every evaluation.
+// the shared Redis/PostgreSQL learner. Redis is authoritative for the recent
+// view and PostgreSQL for long windows. The five-second TTL removes repeated
+// aggregate reads from the 25ms Shadow hot path; route/provider circuit state
+// is still read separately on every evaluation.
 type openAIRouteObservationProfileCache struct {
 	store       OpenAIRouteObservationStore
 	ttl         time.Duration

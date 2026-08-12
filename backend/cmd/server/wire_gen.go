@@ -240,7 +240,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	openAIRoutePolicyReader := service.ProvideOpenAIRoutePolicyReader(settingRepository)
 	openAIRouteHealthStore := repository.ProvideOpenAIRouteHealthStore(redisClient)
 	openAIRouteBudgetStore := repository.NewOpenAIRouteBudgetCache(redisClient)
-	openAIRouteObservationStore := repository.ProvideOpenAIRouteObservationStore(redisClient)
+	openAIRouteObservationStore := repository.ProvideOpenAIRouteObservationStore(redisClient, db)
 	openAIRouteController := service.NewOpenAIRouteController(openAIRoutePolicyReader, openAIRouteHealthStore, openAIRouteBudgetStore, openAIRouteObservationStore)
 	openAIRouteDecisionRepository := repository.NewOpenAIRouteDecisionRepository(db)
 	openAIRouteAuditService := service.NewOpenAIRouteAuditService(openAIRouteDecisionRepository)

@@ -28,7 +28,7 @@
 |---|---|---|
 | 完整路由身份 | `OpenAIRouteKey` 包含 group/account/model/request_class/endpoint_hash/transport/failure_domain；迁移 181 和单测覆盖 | 已实现 |
 | 文本/图片隔离 | request class 进入健康、预算、观测、策略和审计；文本沿用 session sticky，图片使用单请求分类 | 已实现 |
-| 持续被动采集 | 每次真实上游 attempt 进入有界 collector；Redis 保存 1h、7 个北京时间自然日、8 周同周内小时 | 已实现，但 PostgreSQL 长期聚合检查点仍缺失 |
+| 持续被动采集 | 每次真实上游 attempt 进入有界 collector；Redis 保存 1h 快窗，PostgreSQL 小时聚合恢复 7 个北京时间自然日与 8 周同周内小时 | 本分支代码就绪；双写任一失败都会使证据完整率失败关闭 |
 | 动态评分 | Wilson 下界、P90 TTFT、P95 完成延迟、半截流、负载、排队、倍率、优先级、份额和有界探索均进入快照 | 已实现 |
 | 成本约束 | 文本至少 20 条权威结算后用 20 条先验收缩并限制 0.25x--4x；图片不从 token 样本推成本 | 已实现 |
 | 路由健康 | 真实结果驱动 route circuit，失败分类保持最窄作用域 | 被动部分已实现 |
@@ -133,8 +133,9 @@ legacy -> shadow -> canary_1 -> canary_5 -> canary_20 -> canary_50 -> canary_100
 
 ## 剩余代码顺序
 
-1. 增加非敏感 PostgreSQL 小时/日聚合检查点，Redis 丢失不能抹掉长期证据；定时器
-   代码保持默认关闭。
+1. PostgreSQL 小时聚合检查点已经在本分支实现：只保存 route 指纹/维度、稀疏计数、
+   直方图、权威成本合计与最后观测时间；Redis 只负责 1 小时快窗，长期窗口由数据库
+   权威读取，避免双计。没有回填 timer 或 cron。
 2. 在后续独立发布中实现自有测试身份 probe client 和扫描编排；接线后仍默认关闭，
    经授权才可启用。
 3. 在另一发布版本中把 rollout contract 接入 scheduler；该版本先保持 Legacy/Shadow

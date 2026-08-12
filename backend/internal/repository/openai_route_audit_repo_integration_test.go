@@ -44,6 +44,10 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 		Snapshot: &service.OpenAIRouteShadowAuditSnapshot{
 			RequestClass:         service.OpenAIRouteRequestClassText,
 			EstimatedBaseCostUSD: 0.01,
+			Policy: service.OpenAIRouteShadowAuditPolicy{
+				MaxAccountShare:  0.80,
+				MaxProviderShare: 0.90,
+			},
 			Candidates: []service.OpenAIRouteShadowAuditCandidate{{
 				AccountID:      28,
 				RateMultiplier: 0.15,

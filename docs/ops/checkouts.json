@@ -181,6 +181,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-19T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/fix-cc-switch-diagnostic-registry-20260812",
+      "owner": "fix-cc-switch-diagnostic-registry-20260812",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-19T23:59:59+08:00"
     }
   ]
 }

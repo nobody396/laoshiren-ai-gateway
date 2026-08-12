@@ -10,7 +10,7 @@ describe('CC Switch public diagnostic scripts', () => {
   it('repairs the Windows protocol for the current user without admin access', () => {
     const script = readPublicScript('diagnose-cc-switch.ps1')
 
-    expect(script).toContain("$ScriptVersion = '1.2.0'")
+    expect(script).toContain("$ScriptVersion = '1.2.1'")
     expect(script).toContain("HKCU:\\Software\\Classes\\ccswitch")
     expect(script).toContain('Programs\\CC Switch\\cc-switch.exe')
     expect(script).toContain("(Join-Path $env:USERPROFILE 'Downloads')")
@@ -21,10 +21,20 @@ describe('CC Switch public diagnostic scripts', () => {
   it('re-registers the official macOS bundle and supports apps opened from Downloads', () => {
     const script = readPublicScript('diagnose-cc-switch.sh')
 
-    expect(script).toContain('SCRIPT_VERSION="1.2.0"')
+    expect(script).toContain('SCRIPT_VERSION="1.2.1"')
     expect(script).toContain('BUNDLE_ID="com.ccswitch.desktop"')
     expect(script).toContain('/usr/bin/open "$APP_PATH" --args --register-protocol')
     expect(script).toContain('$HOME/Applications/CC Switch.app')
+  })
+
+  it('skips incomplete Windows uninstall entries under strict mode', () => {
+    const script = readPublicScript('diagnose-cc-switch.ps1')
+
+    expect(script).toContain('function Get-OptionalPropertyValue')
+    expect(script).toContain("Get-OptionalPropertyValue -InputObject $_ -Name 'DisplayName'")
+    expect(script).toContain("Get-OptionalPropertyValue -InputObject $_ -Name 'InstallLocation'")
+    expect(script).toContain("Get-OptionalPropertyValue -InputObject $_ -Name 'DisplayIcon'")
+    expect(script).not.toContain("$_.DisplayName -like 'CC Switch*'")
   })
 
   it('automatically installs the verified same-site Windows cache with official fallback', () => {

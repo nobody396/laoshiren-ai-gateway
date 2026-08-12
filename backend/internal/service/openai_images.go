@@ -31,6 +31,8 @@ const (
 	openAIRawUpstreamHTTPStatusKey   = "openai_raw_upstream_http_status"
 )
 
+var errCodexImageToolNotInvoked = errors.New("image bridge response did not invoke image generation")
+
 // OpenAIImagesUpload is shared by native OpenAI image edits and Grok media
 // normalization. The byte slice is bounded by the request-body limits before
 // it reaches either upstream.
@@ -333,6 +335,23 @@ func (s *OpenAIGatewayService) ForwardCodexNativeImageGenerationBridge(
 
 	imageBase64, err := extractCompletedCodexImageResult(capture.body.Bytes())
 	if err != nil {
+		// A completed response with zero image_generation_call items proves that
+		// this account did not generate an image. It is therefore safe to try the
+		// next image-capable account without risking duplicate image generation.
+		// Any response that contains an image call remains non-failover below,
+		// because an incomplete/malformed result may already be billable upstream.
+		if errors.Is(err, errCodexImageToolNotInvoked) {
+			return nil, &UpstreamFailoverError{
+				StatusCode:             http.StatusBadGateway,
+				RequestScopedTransient: true,
+				Stage:                  GatewayFailureStageInference,
+				Scope:                  GatewayFailureScopeRequest,
+				Reason:                 GatewayFailureReason("image_tool_not_invoked"),
+				NextAccountAction:      NextAccountRetry,
+				ClientStatusCode:       http.StatusBadGateway,
+				ClientMessage:          "Upstream image generation did not produce an image",
+			}
+		}
 		safeErr := SafeClientUpstreamError(http.StatusBadGateway)
 		c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
 		return nil, fmt.Errorf("invalid completed image response: %w", err)
@@ -407,6 +426,9 @@ func extractCompletedCodexImageResult(body []byte) (string, error) {
 		result = value
 		return true
 	})
+	if imageCalls == 0 && !codexImageBridgeHasImageUsage(body) {
+		return "", errCodexImageToolNotInvoked
+	}
 	if invalid || imageCalls != 1 || result == "" {
 		return "", fmt.Errorf("image bridge response has no single completed image result")
 	}
@@ -427,6 +449,31 @@ func extractCompletedCodexImageResult(body []byte) (string, error) {
 		return "", fmt.Errorf("image bridge result is not decodable")
 	}
 	return result, nil
+}
+
+func codexImageBridgeHasImageUsage(body []byte) bool {
+	// Providers currently report image usage through one of these shapes. Any
+	// positive token/count signal, or a provider-specific image tool usage
+	// object, means an image may already have been generated and billed; never
+	// replay that response on another account.
+	for _, path := range []string{
+		"tool_usage.image_gen",
+		"tool_usage.image_generation",
+	} {
+		if gjson.GetBytes(body, path).Exists() {
+			return true
+		}
+	}
+	for _, path := range []string{
+		"usage.output_tokens_details.image_tokens",
+		"usage.image_tokens",
+		"image_count",
+	} {
+		if gjson.GetBytes(body, path).Int() > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *OpenAIGatewayService) ForwardImages(

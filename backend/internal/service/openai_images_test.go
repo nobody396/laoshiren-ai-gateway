@@ -97,6 +97,13 @@ func TestExtractCompletedCodexImageResult(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, codexBridgeTestPNG, got)
 
+	_, err = extractCompletedCodexImageResult([]byte(`{"status":"completed","output":[{"type":"message","status":"completed","content":[{"type":"output_text","text":""}]}]}`))
+	require.ErrorIs(t, err, errCodexImageToolNotInvoked)
+
+	_, err = extractCompletedCodexImageResult([]byte(`{"status":"completed","output":[{"type":"message","status":"completed","content":[]}],"tool_usage":{"image_gen":{"output_tokens_details":{"image_tokens":158}}}}`))
+	require.Error(t, err)
+	require.NotErrorIs(t, err, errCodexImageToolNotInvoked, "recorded image usage must never be regenerated on another account")
+
 	for _, invalid := range []string{
 		`{"status":"failed","output":[{"type":"image_generation_call","status":"completed","result":"` + codexBridgeTestPNG + `"}]}`,
 		`{"status":"completed","output":[{"type":"image_generation_call","status":"in_progress","result":"` + codexBridgeTestPNG + `"}]}`,
@@ -106,6 +113,29 @@ func TestExtractCompletedCodexImageResult(t *testing.T) {
 		_, err := extractCompletedCodexImageResult([]byte(invalid))
 		require.Error(t, err)
 	}
+}
+
+func TestForwardCodexNativeImageGenerationBridgeNoImageCallSafelyFailsOver(t *testing.T) {
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body: io.NopCloser(strings.NewReader(
+			`{"id":"resp_no_tool","status":"completed","output":[{"type":"message","status":"completed","content":[{"type":"output_text","text":""}]}],"usage":{"input_tokens":467,"output_tokens":8}}`,
+		)),
+	}}
+	svc, account, recorder, c := newCodexNativeImageBridgeFailureTest(upstream)
+
+	result, err := svc.ForwardCodexNativeImageGenerationBridge(context.Background(), c, account, &OpenAIImagesRequest{Model: "gpt-image-2", Prompt: "draw", N: 1})
+
+	require.Nil(t, result)
+	var failoverErr *UpstreamFailoverError
+	require.ErrorAs(t, err, &failoverErr)
+	require.Equal(t, http.StatusBadGateway, failoverErr.StatusCode)
+	require.True(t, failoverErr.RequestScopedTransient)
+	require.Equal(t, GatewayFailureScopeRequest, failoverErr.Scope)
+	require.Equal(t, GatewayFailureReason("image_tool_not_invoked"), failoverErr.Reason)
+	require.Equal(t, NextAccountRetry, failoverErr.NextAccountAction)
+	require.Empty(t, recorder.Body.String(), "safe failover must not commit the empty upstream response")
 }
 
 func TestForwardCodexNativeImageGenerationBridge(t *testing.T) {

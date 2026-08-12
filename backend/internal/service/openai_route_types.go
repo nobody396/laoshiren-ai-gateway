@@ -29,6 +29,7 @@ type OpenAIRouteFailureClass string
 const (
 	OpenAIRouteFailureNone             OpenAIRouteFailureClass = "none"
 	OpenAIRouteFailureUserRequest      OpenAIRouteFailureClass = "user_request"
+	OpenAIRouteFailureClientCancelled  OpenAIRouteFailureClass = "client_cancelled"
 	OpenAIRouteFailureModelUnsupported OpenAIRouteFailureClass = "model_unsupported"
 	OpenAIRouteFailureCapacity         OpenAIRouteFailureClass = "capacity"
 	OpenAIRouteFailureRateLimit        OpenAIRouteFailureClass = "rate_limit"

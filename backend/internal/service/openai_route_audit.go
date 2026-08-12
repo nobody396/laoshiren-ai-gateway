@@ -5,16 +5,24 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/alitto/pond/v2"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
 	"go.uber.org/zap"
 )
 
-const openAIRouteAuditWriteTimeout = 200 * time.Millisecond
+const (
+	openAIRouteAuditWriteTimeout   = 200 * time.Millisecond
+	defaultOpenAIRouteAuditWorkers = 8
+	defaultOpenAIRouteAuditQueue   = 4096
+)
 
 var ErrOpenAIRouteAuditUnavailable = errors.New("OpenAI route decision audit is unavailable")
+
+var errOpenAIRouteAuditQueueFull = errors.New("OpenAI route decision audit queue full")
 
 // OpenAIRouteShadowAuditPolicy is the exact normalized policy used by one
 // evaluation. Durations are stored as seconds so the JSON remains readable.
@@ -207,10 +215,15 @@ type OpenAIRouteShadowDecisionStats struct {
 
 type OpenAIRouteAuditHealth struct {
 	Ready                           bool                                     `json:"ready"`
+	StorageReady                    bool                                     `json:"storage_ready"`
 	Attempted                       uint64                                   `json:"attempted"`
 	Written                         uint64                                   `json:"written"`
 	Failed                          uint64                                   `json:"failed"`
+	Dropped                         uint64                                   `json:"dropped"`
 	InFlight                        uint64                                   `json:"in_flight"`
+	Waiting                         uint64                                   `json:"waiting"`
+	Running                         int64                                    `json:"running"`
+	Completeness                    float64                                  `json:"completeness"`
 	StorageChecks                   uint64                                   `json:"storage_checks"`
 	StorageCheckFailed              uint64                                   `json:"storage_check_failed"`
 	LastSuccessAt                   time.Time                                `json:"last_success_at,omitempty"`
@@ -234,6 +247,8 @@ type OpenAIRouteAuditHealth struct {
 	ObservationLastError            string                                   `json:"observation_last_error"`
 	ObservationOutcomeApplied       uint64                                   `json:"observation_outcome_applied"`
 	ObservationOutcomeFailed        uint64                                   `json:"observation_outcome_failed"`
+	ObservationOutcomeInFlight      uint64                                   `json:"observation_outcome_in_flight"`
+	ObservationOutcomeCompleteness  float64                                  `json:"observation_outcome_completeness"`
 	ObservationOutcomeLastSuccessAt time.Time                                `json:"observation_outcome_last_success_at,omitempty"`
 	ObservationOutcomeLastFailureAt time.Time                                `json:"observation_outcome_last_failure_at,omitempty"`
 	ObservationOutcomeLastError     string                                   `json:"observation_outcome_last_error"`
@@ -252,21 +267,54 @@ type OpenAIRouteDecisionRepository interface {
 // but it invalidates that shadow sample and is exposed by Health.
 type OpenAIRouteAuditService struct {
 	repo OpenAIRouteDecisionRepository
+	pool pond.Pool
 
 	attempted     atomic.Uint64
 	written       atomic.Uint64
 	failed        atomic.Uint64
+	dropped       atomic.Uint64
 	lastSuccessNS atomic.Int64
 	lastFailureNS atomic.Int64
 	lastError     atomic.Value
 	storageChecks atomic.Uint64
 	storageFailed atomic.Uint64
+	stopOnce      sync.Once
 }
 
 func NewOpenAIRouteAuditService(repo OpenAIRouteDecisionRepository) *OpenAIRouteAuditService {
-	s := &OpenAIRouteAuditService{repo: repo}
+	return NewOpenAIRouteAuditServiceWithOptions(repo, defaultOpenAIRouteAuditWorkers, defaultOpenAIRouteAuditQueue)
+}
+
+func NewOpenAIRouteAuditServiceWithOptions(repo OpenAIRouteDecisionRepository, workers, queue int) *OpenAIRouteAuditService {
+	if workers <= 0 {
+		workers = defaultOpenAIRouteAuditWorkers
+	}
+	if queue <= 0 {
+		queue = defaultOpenAIRouteAuditQueue
+	}
+	s := &OpenAIRouteAuditService{
+		repo: repo,
+		pool: pond.NewPool(workers, pond.WithQueueSize(queue)),
+	}
 	s.lastError.Store("")
 	return s
+}
+
+// Start verifies durable storage before any request is eligible for Shadow.
+// The queue itself is ready immediately after construction.
+func (s *OpenAIRouteAuditService) Start() {
+	if s == nil || s.repo == nil {
+		return
+	}
+	_ = s.VerifyStorage(context.Background())
+}
+
+// Stop drains accepted decision writes. It never deletes persisted evidence.
+func (s *OpenAIRouteAuditService) Stop() {
+	if s == nil || s.pool == nil {
+		return
+	}
+	s.stopOnce.Do(func() { s.pool.StopAndWait() })
 }
 
 func (s *OpenAIRouteAuditService) VerifyStorage(ctx context.Context) OpenAIRouteAuditHealth {
@@ -294,11 +342,42 @@ func (s *OpenAIRouteAuditService) Record(ctx context.Context, record *OpenAIRout
 		return ErrOpenAIRouteAuditUnavailable
 	}
 	s.attempted.Add(1)
-	if record == nil || strings.TrimSpace(record.DecisionID) == "" || record.GroupID <= 0 || strings.TrimSpace(record.Model) == "" || !record.RequestClass.Valid() || record.Snapshot == nil {
-		err := fmt.Errorf("%w: incomplete decision record", ErrOpenAIRouteAuditUnavailable)
+	if err := prepareOpenAIRouteAuditRecord(record); err != nil {
 		s.failed.Add(1)
 		s.recordFailure(err)
 		return err
+	}
+	return s.writePreparedRecord(ctx, record)
+}
+
+// TryRecord transfers an immutable decision record to a bounded background
+// queue. Shadow audit persistence must not sit on the account-selection hot
+// path; queue overflow is surfaced as explicit evidence loss and callers keep
+// Legacy routing authoritative.
+func (s *OpenAIRouteAuditService) TryRecord(record *OpenAIRouteShadowDecisionRecord) bool {
+	if s == nil || s.repo == nil || s.pool == nil || s.pool.Stopped() {
+		return false
+	}
+	s.attempted.Add(1)
+	if err := prepareOpenAIRouteAuditRecord(record); err != nil {
+		s.failed.Add(1)
+		s.recordFailure(err)
+		return false
+	}
+	_, ok := s.pool.TrySubmit(func() {
+		_ = s.writePreparedRecord(context.Background(), record)
+	})
+	if !ok {
+		s.failed.Add(1)
+		s.dropped.Add(1)
+		s.recordFailure(errOpenAIRouteAuditQueueFull)
+	}
+	return ok
+}
+
+func prepareOpenAIRouteAuditRecord(record *OpenAIRouteShadowDecisionRecord) error {
+	if record == nil || strings.TrimSpace(record.DecisionID) == "" || record.GroupID <= 0 || strings.TrimSpace(record.Model) == "" || !record.RequestClass.Valid() || record.Snapshot == nil {
+		return fmt.Errorf("%w: incomplete decision record", ErrOpenAIRouteAuditUnavailable)
 	}
 	if record.Attempt <= 0 {
 		record.Attempt = 1
@@ -311,7 +390,10 @@ func (s *OpenAIRouteAuditService) Record(ctx context.Context, record *OpenAIRout
 	if record.CreatedAt.IsZero() {
 		record.CreatedAt = time.Now().UTC()
 	}
+	return nil
+}
 
+func (s *OpenAIRouteAuditService) writePreparedRecord(ctx context.Context, record *OpenAIRouteShadowDecisionRecord) error {
 	baseCtx := ctx
 	if baseCtx == nil || baseCtx.Err() != nil {
 		baseCtx = context.Background()
@@ -383,6 +465,7 @@ func (s *OpenAIRouteAuditService) Health() OpenAIRouteAuditHealth {
 	health := OpenAIRouteAuditHealth{
 		Written:            s.written.Load(),
 		Failed:             s.failed.Load(),
+		Dropped:            s.dropped.Load(),
 		StorageChecks:      s.storageChecks.Load(),
 		StorageCheckFailed: s.storageFailed.Load(),
 	}
@@ -395,6 +478,14 @@ func (s *OpenAIRouteAuditService) Health() OpenAIRouteAuditHealth {
 	if health.Attempted > completed {
 		health.InFlight = health.Attempted - completed
 	}
+	health.Completeness = 1
+	if health.Attempted > 0 {
+		health.Completeness = float64(health.Written) / float64(health.Attempted)
+	}
+	if s.pool != nil {
+		health.Waiting = s.pool.WaitingTasks()
+		health.Running = s.pool.RunningWorkers()
+	}
 	if value, ok := s.lastError.Load().(string); ok {
 		health.LastError = strings.TrimSpace(value)
 	}
@@ -404,6 +495,7 @@ func (s *OpenAIRouteAuditService) Health() OpenAIRouteAuditHealth {
 	if ns := s.lastFailureNS.Load(); ns > 0 {
 		health.LastFailureAt = time.Unix(0, ns).UTC()
 	}
-	health.Ready = s.repo != nil && !health.LastSuccessAt.IsZero() && (health.LastFailureAt.IsZero() || health.LastSuccessAt.After(health.LastFailureAt))
+	health.StorageReady = s.repo != nil && !health.LastSuccessAt.IsZero() && (health.LastFailureAt.IsZero() || health.LastSuccessAt.After(health.LastFailureAt))
+	health.Ready = health.StorageReady && health.Completeness >= 0.99
 	return health
 }

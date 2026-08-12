@@ -44,10 +44,12 @@ func healthyOpenAIRoutePromotionEvidence(start, end time.Time) (*OpenAIRouteShad
 		},
 	}
 	health := OpenAIRouteAuditHealth{
-		Ready:                         true,
-		ObservationCollectorAvailable: true,
-		ObservationReady:              true,
-		ObservationCompleteness:       1,
+		Ready:                          true,
+		Completeness:                   1,
+		ObservationCollectorAvailable:  true,
+		ObservationReady:               true,
+		ObservationCompleteness:        1,
+		ObservationOutcomeCompleteness: 1,
 	}
 	return stats, health
 }
@@ -115,7 +117,10 @@ func TestBuildOpenAIRoutePromotionAssessmentBlocksWeakEvidence(t *testing.T) {
 	stats.SelectedAccounts[0].SelectedPercent = 81
 	stats.SelectedProviders[0].SelectedPercent = 91
 	health.Ready = false
+	health.Completeness = 0.98
+	health.InFlight = 1
 	health.ObservationCompleteness = 0.98
+	health.ObservationOutcomeCompleteness = 0.97
 
 	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
 
@@ -123,7 +128,8 @@ func TestBuildOpenAIRoutePromotionAssessmentBlocksWeakEvidence(t *testing.T) {
 	require.Equal(t, "continue_shadow", assessment.Status)
 	require.Equal(t, "none", assessment.EligibleNextStage)
 	for _, blocker := range []string{
-		"account_concentration", "audit_and_observation_health", "evaluation_completeness",
+		"account_concentration", "audit_and_observation_health", "audit_completeness", "audit_queue_drained", "evaluation_completeness",
+		"health_outcome_completeness",
 		"no_emergency_budget", "observation_completeness", "observed_span", "outcome_linkage",
 		"provider_concentration", "single_policy_snapshot", "unambiguous_outcomes",
 	} {

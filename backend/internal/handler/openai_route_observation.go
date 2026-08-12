@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -27,15 +28,19 @@ func reportOpenAIRouteAttempt(
 	if err != nil {
 		signal.HasError = true
 		signal.StreamStarted = streamStarted
-		var failoverErr *service.UpstreamFailoverError
-		if errors.As(err, &failoverErr) && failoverErr != nil {
-			signal.StatusCode = failoverErr.StatusCode
-			signal.ErrorCode = string(failoverErr.Reason)
-			signal.Message = safeOpenAIRouteFailureMessage(failoverErr)
+		if errors.Is(err, context.Canceled) {
+			signal.ClientCancelled = true
 		} else {
-			signal.StatusCode = 0
-			signal.LocalOrigin = true
-			signal.Message = err.Error()
+			var failoverErr *service.UpstreamFailoverError
+			if errors.As(err, &failoverErr) && failoverErr != nil {
+				signal.StatusCode = failoverErr.StatusCode
+				signal.ErrorCode = string(failoverErr.Reason)
+				signal.Message = safeOpenAIRouteFailureMessage(failoverErr)
+			} else {
+				signal.StatusCode = 0
+				signal.LocalOrigin = true
+				signal.Message = err.Error()
+			}
 		}
 	}
 	gateway.ReportOpenAIRouteAttempt(account, groupID, model, requestClass, routeEndpoint, duration, firstTokenMs, signal)

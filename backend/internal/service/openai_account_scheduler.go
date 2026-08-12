@@ -1003,8 +1003,8 @@ func (s *defaultOpenAIAccountScheduler) evaluateOpenAIRouteShadow(
 			Reason: "audit_unavailable",
 		}
 	}
-	if audit != nil && !audit.Health().Ready {
-		if health := audit.VerifyStorage(ctx); !health.Ready {
+	if audit != nil && !audit.Health().StorageReady {
+		if health := audit.VerifyStorage(ctx); !health.StorageReady {
 			return &OpenAIRouteShadowDecision{
 				Mode:   OpenAIRoutePolicyLegacy,
 				Reason: "audit_unavailable",
@@ -1113,7 +1113,7 @@ func (s *defaultOpenAIAccountScheduler) persistOpenAIRouteShadowDecision(
 		Snapshot:                  decision.Audit,
 		CreatedAt:                 time.Now().UTC(),
 	}
-	if err := s.service.openAIRouteAuditService.Record(ctx, record); err != nil {
+	if !s.service.openAIRouteAuditService.TryRecord(record) {
 		invalidateUnrecordedOpenAIRouteShadowDecision(decision, "audit_persist_failed")
 	}
 }

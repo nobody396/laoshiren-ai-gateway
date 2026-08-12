@@ -39,6 +39,8 @@ type OpenAIRouteObservationCollectorStats struct {
 	LastError            string    `json:"last_error"`
 	OutcomeApplied       uint64    `json:"outcome_applied"`
 	OutcomeFailed        uint64    `json:"outcome_failed"`
+	OutcomeInFlight      uint64    `json:"outcome_in_flight"`
+	OutcomeCompleteness  float64   `json:"outcome_completeness"`
 	OutcomeLastSuccessAt time.Time `json:"outcome_last_success_at,omitempty"`
 	OutcomeLastFailureAt time.Time `json:"outcome_last_failure_at,omitempty"`
 	OutcomeLastError     string    `json:"outcome_last_error"`
@@ -65,6 +67,7 @@ type OpenAIRouteObservationCollector struct {
 	lastError            atomic.Value
 	outcomeApplied       atomic.Uint64
 	outcomeFailed        atomic.Uint64
+	outcomeExpected      atomic.Uint64
 	outcomeLastSuccessNS atomic.Int64
 	outcomeLastFailureNS atomic.Int64
 	outcomeLastError     atomic.Value
@@ -127,6 +130,7 @@ func (c *OpenAIRouteObservationCollector) TryRecord(observation OpenAIRouteObser
 	}
 	var applyOutcome func(context.Context) error
 	if c.outcomeRecorder != nil {
+		c.outcomeExpected.Add(1)
 		applyOutcome = func(ctx context.Context) error {
 			return c.outcomeRecorder.RecordOpenAIRouteOutcome(ctx, observation)
 		}
@@ -164,6 +168,10 @@ func (c *OpenAIRouteObservationCollector) submit(write func(context.Context) err
 		if err := write(ctx); err != nil {
 			c.failed.Add(1)
 			c.recordFailure(err)
+			if applyOutcome != nil {
+				c.outcomeFailed.Add(1)
+				c.recordOutcomeFailure(err)
+			}
 			logger.L().Warn("openai.route_observation_write_failed",
 				zap.String("component", "routing.observation"),
 				zap.Int64("account_id", key.AccountID),
@@ -196,6 +204,10 @@ func (c *OpenAIRouteObservationCollector) submit(write func(context.Context) err
 	if !ok {
 		c.dropped.Add(1)
 		c.recordFailure(errOpenAIRouteObservationQueueFull)
+		if applyOutcome != nil {
+			c.outcomeFailed.Add(1)
+			c.recordOutcomeFailure(errOpenAIRouteObservationQueueFull)
+		}
 	}
 	return ok
 }
@@ -219,10 +231,19 @@ func (c *OpenAIRouteObservationCollector) Stats() OpenAIRouteObservationCollecto
 	if stats.Submitted > terminal {
 		stats.InFlight = stats.Submitted - terminal
 	}
-	totalEvidence := terminal + stats.Rejected
+	totalEvidence := stats.Submitted + stats.Rejected
 	stats.Completeness = 1
 	if totalEvidence > 0 {
 		stats.Completeness = float64(stats.Written) / float64(totalEvidence)
+	}
+	outcomeExpected := c.outcomeExpected.Load()
+	outcomeTerminal := stats.OutcomeApplied + stats.OutcomeFailed
+	if outcomeExpected > outcomeTerminal {
+		stats.OutcomeInFlight = outcomeExpected - outcomeTerminal
+	}
+	stats.OutcomeCompleteness = 1
+	if outcomeExpected > 0 {
+		stats.OutcomeCompleteness = float64(stats.OutcomeApplied) / float64(outcomeExpected)
 	}
 	if ns := c.lastSuccessNS.Load(); ns > 0 {
 		stats.LastSuccessAt = time.Unix(0, ns).UTC()
@@ -244,7 +265,7 @@ func (c *OpenAIRouteObservationCollector) Stats() OpenAIRouteObservationCollecto
 	}
 	storageHealthy := !stats.LastSuccessAt.IsZero() && (stats.LastFailureAt.IsZero() || stats.LastSuccessAt.After(stats.LastFailureAt))
 	outcomeHealthy := stats.OutcomeLastFailureAt.IsZero() || stats.OutcomeLastSuccessAt.After(stats.OutcomeLastFailureAt)
-	stats.Ready = c.store != nil && storageHealthy && outcomeHealthy && stats.Completeness >= 0.99
+	stats.Ready = c.store != nil && storageHealthy && outcomeHealthy && stats.Completeness >= 0.99 && stats.OutcomeCompleteness >= 0.99
 	if c.pool != nil {
 		stats.Waiting = c.pool.WaitingTasks()
 		stats.Running = c.pool.RunningWorkers()

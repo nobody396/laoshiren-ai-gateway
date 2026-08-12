@@ -91,6 +91,26 @@ func TestOpenAIRouteObservationCollectorWritesAsynchronously(t *testing.T) {
 	store.mu.Unlock()
 }
 
+func TestOpenAIRouteObservationCollectorCountsQueuedEvidenceAsIncomplete(t *testing.T) {
+	started := make(chan struct{}, 1)
+	release := make(chan struct{})
+	store := &openAIRouteObservationStoreStub{started: started, release: release}
+	collector := NewOpenAIRouteObservationCollectorWithOptions(store, 1, 4)
+	collector.Start()
+	require.True(t, collector.TryRecord(testOpenAIRouteObservation()))
+	<-started
+
+	stats := collector.Stats()
+	require.Equal(t, uint64(1), stats.Submitted)
+	require.Equal(t, uint64(1), stats.InFlight)
+	require.Zero(t, stats.Completeness)
+	require.False(t, stats.Ready)
+
+	close(release)
+	collector.Stop()
+	require.InDelta(t, 1, collector.Stats().Completeness, 1e-12)
+}
+
 func TestOpenAIRouteObservationCollectorExposesFailureAndOverflow(t *testing.T) {
 	started := make(chan struct{}, 2)
 	release := make(chan struct{})
@@ -123,6 +143,8 @@ func TestOpenAIRouteObservationCollectorSeparatesEvidenceWriteFromHealthApply(t 
 	require.Equal(t, uint64(1), stats.Written)
 	require.Zero(t, stats.Failed, "the rolling observation was durably written")
 	require.Equal(t, uint64(1), stats.OutcomeFailed)
+	require.Zero(t, stats.OutcomeInFlight)
+	require.Zero(t, stats.OutcomeCompleteness)
 	require.Equal(t, 1.0, stats.Completeness)
 	require.False(t, stats.Ready, "health transition loss must still block readiness")
 }

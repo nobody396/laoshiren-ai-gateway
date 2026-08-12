@@ -222,9 +222,18 @@ func buildOpenAIRoutePromotionAssessment(
 	assessment.addGate("audit_and_observation_health", health.Ready,
 		"ready=true", fmt.Sprintf("ready=%t", health.Ready), boolOpenAIRouteRatio(health.Ready),
 		"Decision storage and the passive observation collector must both be healthy.")
+	assessment.addGate("audit_completeness", health.Completeness >= openAIRoutePromotionMinimumCompleteness,
+		">=99% of attempted decisions durably written", formatOpenAIRoutePercent(health.Completeness), health.Completeness,
+		"The database slice cannot reveal Shadow decisions that were rejected, dropped, still queued, or failed before persistence.")
+	assessment.addGate("audit_queue_drained", health.InFlight == 0,
+		"0 in-flight audit writes", fmt.Sprintf("%d", health.InFlight), 0,
+		"Run the read-only assessment after the bounded audit queue has drained so its evidence boundary is complete.")
 	assessment.addGate("observation_completeness", health.ObservationCollectorAvailable && health.ObservationCompleteness >= openAIRoutePromotionMinimumCompleteness,
 		">=99% and collector available", fmt.Sprintf("available=%t completeness=%s", health.ObservationCollectorAvailable, formatOpenAIRoutePercent(health.ObservationCompleteness)), health.ObservationCompleteness,
 		"Dropped, rejected or failed passive evidence invalidates promotion readiness.")
+	assessment.addGate("health_outcome_completeness", health.ObservationCollectorAvailable && health.ObservationOutcomeCompleteness >= openAIRoutePromotionMinimumCompleteness,
+		">=99% of expected route health outcomes", fmt.Sprintf("available=%t completeness=%s", health.ObservationCollectorAvailable, formatOpenAIRoutePercent(health.ObservationOutcomeCompleteness)), health.ObservationOutcomeCompleteness,
+		"A stored observation whose health transition was dropped can leave circuit state inconsistent with the learner evidence.")
 	assessment.addGate("single_policy_snapshot", stats.PolicySnapshotVariants == 1,
 		"exactly 1 normalized policy snapshot", fmt.Sprintf("%d", stats.PolicySnapshotVariants), 0,
 		"Reusing a policy_version for multiple policy bodies contaminates the evidence slice.")

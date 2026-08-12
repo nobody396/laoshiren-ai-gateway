@@ -404,19 +404,21 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_PersistsCompleteShadowD
 		Audit:                    &OpenAIRouteShadowAuditSnapshot{},
 	}}
 	auditRepo := &openAIRouteDecisionRepositoryStub{}
+	auditService := NewOpenAIRouteAuditService(auditRepo)
 	svc := &OpenAIGatewayService{
 		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{adaptive, legacy}},
 		cfg:                &config.Config{},
 		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
 	}
 	svc.SetOpenAIRouteEvaluator(evaluator)
-	svc.SetOpenAIRouteAuditService(NewOpenAIRouteAuditService(auditRepo))
+	svc.SetOpenAIRouteAuditService(auditService)
 	ctx := context.WithValue(context.Background(), ctxkey.RequestID, "request-1")
 	ctx = context.WithValue(ctx, ctxkey.ClientRequestID, "client-1")
 
 	selection, decision, err := svc.SelectAccountWithScheduler(ctx, &groupID, "", "", "gpt-5.6-sol", map[int64]struct{}{999: {}}, OpenAIUpstreamTransportAny)
 	require.NoError(t, err)
 	require.NotNil(t, selection)
+	auditService.Stop()
 	require.NotNil(t, auditRepo.record)
 	require.Equal(t, "shadow:persisted", auditRepo.record.DecisionID)
 	require.Equal(t, "request-1", auditRepo.record.RequestID)
@@ -439,6 +441,72 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_PersistsCompleteShadowD
 	}
 }
 
+func TestOpenAIGatewayService_SelectAccountWithScheduler_AuditWriteNeverBlocksHotPath(t *testing.T) {
+	groupID := int64(7005)
+	rate := 0.15
+	account := Account{
+		ID:             7501,
+		Platform:       PlatformOpenAI,
+		Type:           AccountTypeAPIKey,
+		Status:         StatusActive,
+		Schedulable:    true,
+		Concurrency:    2,
+		RateMultiplier: &rate,
+		AccountGroups:  []AccountGroup{{AccountID: 7501, GroupID: groupID, Priority: 1}},
+	}
+	evaluator := &openAIRouteShadowEvaluatorStub{decision: OpenAIRouteShadowDecision{
+		DecisionID:        "shadow:non-blocking",
+		Evaluated:         true,
+		Mode:              OpenAIRoutePolicyShadow,
+		Version:           6,
+		Reason:            "shadow_selected",
+		SelectedAccountID: account.ID,
+		SelectedRate:      rate,
+		CandidateCount:    1,
+		Audit:             &OpenAIRouteShadowAuditSnapshot{},
+	}}
+	auditRepo := &openAIRouteDecisionRepositoryStub{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+	}
+	auditService := NewOpenAIRouteAuditService(auditRepo)
+	auditService.Start()
+	svc := &OpenAIGatewayService{
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{account}},
+		cfg:                &config.Config{},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
+	}
+	svc.SetOpenAIRouteEvaluator(evaluator)
+	svc.SetOpenAIRouteAuditService(auditService)
+
+	type selectionResult struct {
+		selection *AccountSelectionResult
+		decision  OpenAIAccountScheduleDecision
+		err       error
+	}
+	done := make(chan selectionResult, 1)
+	go func() {
+		selection, decision, err := svc.SelectAccountWithScheduler(context.Background(), &groupID, "", "", "gpt-5.6-sol", nil, OpenAIUpstreamTransportAny)
+		done <- selectionResult{selection: selection, decision: decision, err: err}
+	}()
+
+	<-auditRepo.started
+	select {
+	case result := <-done:
+		require.NoError(t, result.err)
+		require.NotNil(t, result.selection)
+		require.Equal(t, OpenAIRoutePolicyShadow, result.decision.RoutePolicyMode)
+		if result.selection.ReleaseFunc != nil {
+			result.selection.ReleaseFunc()
+		}
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("account selection waited for the blocked audit repository")
+	}
+	close(auditRepo.release)
+	auditService.Stop()
+	require.Equal(t, uint64(1), auditService.Health().Written)
+}
+
 func TestOpenAIRouteRequestClassForScheduleRequestSeparatesTextAndImage(t *testing.T) {
 	require.Equal(t, OpenAIRouteRequestClassText, openAIRouteRequestClassForScheduleRequest(OpenAIAccountScheduleRequest{}))
 	require.Equal(t, OpenAIRouteRequestClassImage, openAIRouteRequestClassForScheduleRequest(OpenAIAccountScheduleRequest{
@@ -446,7 +514,7 @@ func TestOpenAIRouteRequestClassForScheduleRequestSeparatesTextAndImage(t *testi
 	}))
 }
 
-func TestOpenAIGatewayService_SelectAccountWithScheduler_InvalidatesUnrecordedShadowSample(t *testing.T) {
+func TestOpenAIGatewayService_SelectAccountWithScheduler_AsyncAuditFailureBlocksPromotionWithoutBlockingLegacy(t *testing.T) {
 	groupID := int64(7003)
 	rate := 0.15
 	account := Account{
@@ -471,20 +539,24 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_InvalidatesUnrecordedSh
 		Audit:             &OpenAIRouteShadowAuditSnapshot{},
 	}}
 	auditRepo := &openAIRouteDecisionRepositoryStub{err: errors.New("write failed")}
+	auditService := NewOpenAIRouteAuditService(auditRepo)
 	svc := &OpenAIGatewayService{
 		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{account}},
 		cfg:                &config.Config{},
 		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
 	}
 	svc.SetOpenAIRouteEvaluator(evaluator)
-	svc.SetOpenAIRouteAuditService(NewOpenAIRouteAuditService(auditRepo))
+	svc.SetOpenAIRouteAuditService(auditService)
 
 	selection, decision, err := svc.SelectAccountWithScheduler(context.Background(), &groupID, "", "", "gpt-5.6-sol", nil, OpenAIUpstreamTransportAny)
 	require.NoError(t, err)
 	require.NotNil(t, selection, "legacy routing must remain available when audit persistence fails")
-	require.Equal(t, OpenAIRoutePolicyLegacy, decision.RoutePolicyMode)
-	require.Equal(t, "audit_persist_failed", decision.RoutePolicyReason)
-	require.False(t, decision.AdaptiveDiverged)
+	require.Equal(t, OpenAIRoutePolicyShadow, decision.RoutePolicyMode, "accepted async evidence does not block the customer path")
+	auditService.Stop()
+	health := auditService.Health()
+	require.Equal(t, uint64(1), health.Failed)
+	require.Zero(t, health.Completeness)
+	require.False(t, health.Ready, "an asynchronous write failure must block promotion readiness")
 	if selection.ReleaseFunc != nil {
 		selection.ReleaseFunc()
 	}

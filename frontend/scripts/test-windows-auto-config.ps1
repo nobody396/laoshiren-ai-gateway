@@ -13,6 +13,8 @@ function Assert-True {
 }
 
 $InstallerPath = Join-Path $PSScriptRoot '..\public\auto-config\install.ps1'
+$InstallerBytes = [IO.File]::ReadAllBytes($InstallerPath)
+Assert-True ($InstallerBytes.Length -ge 3 -and $InstallerBytes[0] -eq 0xEF -and $InstallerBytes[1] -eq 0xBB -and $InstallerBytes[2] -eq 0xBF) 'install.ps1 must use UTF-8 BOM so Windows PowerShell 5.1 decodes Chinese text correctly'
 $Tokens = $null
 $ParseErrors = $null
 $Ast = [System.Management.Automation.Language.Parser]::ParseFile(

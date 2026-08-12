@@ -30,6 +30,7 @@ describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on Windows', () => {
     const script = readPublicScript('install.ps1')
 
+    expect(script.startsWith('\uFEFF')).toBe(true)
     expect(script).toContain("$ScriptVersion = '0.7.4'")
     expect(script).toContain("Get-UsableClientCommand -CommandName 'claude'")
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')

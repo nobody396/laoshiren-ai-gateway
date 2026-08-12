@@ -14,6 +14,8 @@ var ErrUpstreamResponseBodyTooLarge = errors.New("upstream response body too lar
 
 const defaultUpstreamResponseReadMaxBytes int64 = 8 * 1024 * 1024
 
+const upstreamResponseReadLimitContextKey = "openai_upstream_response_read_limit"
+
 func resolveUpstreamResponseReadLimit(cfg *config.Config) int64 {
 	if cfg != nil && cfg.Gateway.UpstreamResponseReadMaxBytes > 0 {
 		return cfg.Gateway.UpstreamResponseReadMaxBytes
@@ -46,6 +48,13 @@ type TooLargeWriter func(c *gin.Context)
 // 超限时自动记录 ops error 并调用 onTooLarge 向客户端写错误。
 func ReadUpstreamResponseBody(reader io.Reader, cfg *config.Config, c *gin.Context, onTooLarge TooLargeWriter) ([]byte, error) {
 	maxBytes := resolveUpstreamResponseReadLimit(cfg)
+	if c != nil {
+		if value, ok := c.Get(upstreamResponseReadLimitContextKey); ok {
+			if override, ok := value.(int64); ok && override > maxBytes {
+				maxBytes = override
+			}
+		}
+	}
 	body, err := readUpstreamResponseBodyLimited(reader, maxBytes)
 	if err != nil {
 		if errors.Is(err, ErrUpstreamResponseBodyTooLarge) {

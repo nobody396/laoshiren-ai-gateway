@@ -15,6 +15,13 @@ import (
 	"go.uber.org/zap"
 )
 
+const codexNativeImagesRequestBodyLimit = 1 << 20
+
+func shouldBridgeCodexNativeImageRequest(c *gin.Context, apiKey *service.APIKey, parsed *service.OpenAIImagesRequest) bool {
+	return apiKey != nil && apiKey.Group != nil && apiKey.Group.Platform == service.PlatformOpenAI &&
+		service.ShouldBridgeCodexNativeImageGeneration(isOfficialCodexRequest(c), parsed)
+}
+
 // Images handles OpenAI Images API requests.
 // POST /v1/images/generations
 func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
@@ -45,7 +52,7 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		return
 	}
 
-	body, err := pkghttputil.ReadRequestBodyWithPrealloc(c.Request)
+	body, err := pkghttputil.ReadRequestBodyWithPreallocLimit(c.Request, codexNativeImagesRequestBodyLimit)
 	if err != nil {
 		if maxErr, ok := extractMaxBytesError(err); ok {
 			h.errorResponse(c, http.StatusRequestEntityTooLarge, "invalid_request_error", buildBodyTooLargeMessage(maxErr.Limit))
@@ -59,6 +66,13 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", err.Error())
 		return
 	}
+	bridgeCodexImage := shouldBridgeCodexNativeImageRequest(c, apiKey, parsed)
+	if bridgeCodexImage {
+		if err := service.ValidateCodexNativeImageBridgeRequest(parsed); err != nil {
+			h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", err.Error())
+			return
+		}
+	}
 
 	reqLog = reqLog.With(
 		zap.String("model", parsed.Model),
@@ -67,7 +81,11 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 	)
 
 	setOpsRequestContext(c, parsed.Model, false, body)
-	setOpsEndpointContext(c, "", int16(service.RequestTypeFromLegacy(false, false)))
+	upstreamModel := ""
+	if bridgeCodexImage {
+		upstreamModel = service.CodexNativeImageBridgeModel()
+	}
+	setOpsEndpointContext(c, upstreamModel, int16(service.RequestTypeFromLegacy(false, false)))
 	channelMapping, _ := h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, parsed.Model)
 
 	if h.errorPassthroughService != nil {
@@ -107,13 +125,21 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 	var lastFailoverErr *service.UpstreamFailoverError
 
 	for {
-		selection, _, err := h.gatewayService.SelectAccountWithSchedulerForImages(
-			c.Request.Context(),
-			apiKey.GroupID,
-			sessionHash,
-			parsed.Model,
-			failedAccountIDs,
+		var (
+			selection        *service.AccountSelectionResult
+			scheduleDecision service.OpenAIAccountScheduleDecision
 		)
+		if bridgeCodexImage {
+			selection, scheduleDecision, err = h.gatewayService.SelectOpenAICompatibleAccountWithSchedulerForRouting(
+				c.Request.Context(), service.PlatformOpenAI, apiKey.GroupID, "", "",
+				service.CodexNativeImageBridgeModel(), failedAccountIDs,
+				service.OpenAIUpstreamTransportAny, false, true,
+			)
+		} else {
+			selection, scheduleDecision, err = h.gatewayService.SelectAccountWithSchedulerForImages(
+				c.Request.Context(), apiKey.GroupID, sessionHash, parsed.Model, failedAccountIDs,
+			)
+		}
 		if err != nil {
 			if lastFailoverErr != nil {
 				h.handleFailoverExhausted(c, lastFailoverErr, streamStarted)
@@ -123,6 +149,13 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 			return
 		}
 		if selection == nil || selection.Account == nil {
+			h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available compatible accounts", streamStarted)
+			return
+		}
+		if bridgeCodexImage && !scheduleDecision.ImageGenerationRouteConfigured {
+			if selection.Acquired && selection.ReleaseFunc != nil {
+				selection.ReleaseFunc()
+			}
 			h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available compatible accounts", streamStarted)
 			return
 		}
@@ -139,7 +172,12 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		service.SetOpsLatencyMs(c, service.OpsRoutingLatencyMsKey, time.Since(routingStart).Milliseconds())
 		forwardStart := time.Now()
 		writerSizeBeforeForward := c.Writer.Size()
-		result, err := h.gatewayService.ForwardImages(c.Request.Context(), c, account, body, parsed, channelMapping.MappedModel)
+		var result *service.OpenAIForwardResult
+		if bridgeCodexImage {
+			result, err = h.gatewayService.ForwardCodexNativeImageGenerationBridge(c.Request.Context(), c, account, parsed)
+		} else {
+			result, err = h.gatewayService.ForwardImages(c.Request.Context(), c, account, body, parsed, channelMapping.MappedModel)
+		}
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
 		if accountReleaseFunc != nil {
 			accountReleaseFunc()
@@ -189,6 +227,10 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		clientIP := ip.GetClientIP(c)
 		requestPayloadHash := service.HashUsageRequestPayload(body)
 
+		usageUpstreamEndpoint := result.UpstreamEndpoint
+		if usageUpstreamEndpoint == "" {
+			usageUpstreamEndpoint = GetUpstreamEndpoint(c, account.Platform)
+		}
 		h.submitUsageRecordTask(c.Request.Context(), func(ctx context.Context) {
 			if err := h.gatewayService.RecordUsage(ctx, &service.OpenAIRecordUsageInput{
 				Result:             result,
@@ -197,7 +239,7 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 				Account:            account,
 				Subscription:       subscription,
 				InboundEndpoint:    GetInboundEndpoint(c),
-				UpstreamEndpoint:   GetUpstreamEndpoint(c, account.Platform),
+				UpstreamEndpoint:   usageUpstreamEndpoint,
 				UserAgent:          userAgent,
 				IPAddress:          clientIP,
 				RequestPayloadHash: requestPayloadHash,

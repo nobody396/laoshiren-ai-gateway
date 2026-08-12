@@ -2848,6 +2848,9 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 	upstreamStart := time.Now()
 	resp, err := s.httpUpstream.Do(upstreamReq, proxyURL, account.ID, account.Concurrency)
 	SetOpsLatencyMs(c, OpsUpstreamLatencyMsKey, time.Since(upstreamStart).Milliseconds())
+	if err == nil && resp != nil && c != nil {
+		c.Set(openAIRawUpstreamHTTPStatusKey, resp.StatusCode)
+	}
 	if err != nil {
 		safeErr := sanitizeUpstreamErrorMessage(err.Error())
 		shouldFailover := shouldFailoverOpenAITransportError(ctx, err)

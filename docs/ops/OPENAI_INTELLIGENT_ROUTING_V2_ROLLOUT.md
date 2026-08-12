@@ -3,6 +3,10 @@
 本文定义代码合并以后仍然必须遵守的运行状态机。当前分支只准备能力，**没有创建
 生产定时任务、没有写 Shadow 策略，也没有改变真实账号选择**。
 
+主动半开探针同样保持硬关闭：`OpenAIRouteActiveProbesCodeAvailable=false`，runner
+没有接入 Wire、扫描器、cron 或网络 client。它只准备 route 到期判断、进程内去重、
+Redis 单主租约/续租、失租取消和独立统计；不得把主动结果写入真实用户的被动观测。
+
 ## 不可越过的状态机
 
 ```text

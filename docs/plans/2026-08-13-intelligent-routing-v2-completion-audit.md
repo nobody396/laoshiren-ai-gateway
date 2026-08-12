@@ -33,7 +33,7 @@
 | 成本约束 | 文本至少 20 条权威结算后用 20 条先验收缩并限制 0.25x--4x；图片不从 token 样本推成本 | 已实现 |
 | 路由健康 | 真实结果驱动 route circuit，失败分类保持最窄作用域 | 被动部分已实现 |
 | 故障域 | 只有同一显式故障域内至少两个不同账号的基础设施类失败才能升级 provider circuit | 已实现 |
-| 单主半开探针 | Redis permit 与状态机已有；探针执行器、所有权续租和默认关闭的运行编排尚未交付 | 未完成 |
+| 单主半开探针 | Redis permit/续租、只对到期 open route 执行的 runner、独立统计与状态机已有；编译期开关为 false，未接真实 client/cron | 本分支代码就绪，生产保持关闭 |
 | Shadow 审计 | 有界异步写库、usage/error 关联、完整率、策略快照和选择因子审计 | 已实现 |
 | 72h 连续证据 | 原门禁只看首末时间，两个边缘突发可能伪装成连续观测 | 本分支新增相对 T0 的有效小时桶覆盖门禁 |
 | 激活周期身份 | migration 182、策略校验、审计字段和评估精确切片共同绑定 activation_id/T0 | 本分支已实现；历史行不能晋级 |
@@ -103,6 +103,19 @@ legacy -> shadow -> canary_1 -> canary_5 -> canary_20 -> canary_50 -> canary_100
 它不创建 timer、不写策略、不访问凭证。真正的一次性 Codex 唤醒只能在生产 Shadow
 得到单独授权并记录真实 T0 后创建。
 
+### 4. 默认关闭的单主半开探针
+
+- `OpenAIRouteActiveProbesCodeAvailable=false` 是独立编译期门；公共 runner 在当前版本
+  不会获取租约、更不会发出网络请求；
+- 只有精确 route circuit 为 `open` 且 `OpenUntil` 已到期才有资格执行；进程内去重后
+  还必须获取 Redis 单主 permit；运行期间只允许当前 owner 续租，失去所有权立即取消
+  probe，且不写健康状态；
+- Probe client 接口只接收不含 URL/凭证的 `OpenAIRouteKey`，未来实现必须固定为自有
+  测试身份；主动结果只进入独立 probe 统计和 `Probe=true` 的健康转换，不进入真实
+  用户的被动可靠性、TTFT、成本聚合；
+- 当前没有 Wire 注入、扫描循环、cron 或生产 client，因此即使部署代码也不会主动
+  探测。网络接线与生产启用仍需后续独立发布和老板明确授权。
+
 ## 算法依据
 
 - Conservative Bandits 要求探索过程相对基线策略持续满足保守约束；本方案把 Legacy
@@ -122,8 +135,8 @@ legacy -> shadow -> canary_1 -> canary_5 -> canary_20 -> canary_50 -> canary_100
 
 1. 增加非敏感 PostgreSQL 小时/日聚合检查点，Redis 丢失不能抹掉长期证据；定时器
    代码保持默认关闭。
-2. 实现默认关闭的单主半开探针执行器，使用 Redis permit，且只允许自有测试身份；
-   主动探针结果和真实用户结果必须分开统计。
+2. 在后续独立发布中实现自有测试身份 probe client 和扫描编排；接线后仍默认关闭，
+   经授权才可启用。
 3. 在另一发布版本中把 rollout contract 接入 scheduler；该版本先保持 Legacy/Shadow
    再观察，不能在引入接线的同一次部署启用 1%。
 4. 获单独授权后才部署 Shadow、记录 T0、创建 T0+24h/T0+72h 一次性只读唤醒。

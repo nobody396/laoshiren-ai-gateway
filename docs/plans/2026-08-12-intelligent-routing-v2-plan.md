@@ -123,6 +123,11 @@ production observation job. It implements only the passive evidence and health
 primitives until the unified release finishes and a separate production change
 is authorized.
 
+The dependent guarded-rollout branch now also contains a dormant active-probe
+runner and Redis owner-only lease renewal. Its compile-time guard remains false,
+it has no Wire/network/scan/cron integration, and it keeps probe statistics out
+of passive user observations. This is code preparation, not probe activation.
+
 ### V2.4 — guarded enforcement
 
 Dependent guarded-rollout branch status (2026-08-13 Beijing time): the pure

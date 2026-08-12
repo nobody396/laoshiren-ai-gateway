@@ -86,6 +86,10 @@ func (s *openAIRouteHealthStoreStub) AcquireHalfOpenPermit(context.Context, Open
 	return true, nil
 }
 
+func (s *openAIRouteHealthStoreStub) RefreshHalfOpenPermit(context.Context, OpenAIRouteHealthStoreKey, string) (bool, error) {
+	return true, nil
+}
+
 func (s *openAIRouteHealthStoreStub) ReleaseHalfOpenPermit(context.Context, OpenAIRouteHealthStoreKey, string) error {
 	return nil
 }

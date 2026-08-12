@@ -31,9 +31,9 @@ func (r *openAIRouteDecisionRepository) CheckOpenAIRouteShadowDecisionStorage(ct
 	probeID := fmt.Sprintf("probe:%d", time.Now().UnixNano())
 	if _, err := tx.ExecContext(ctx, `
 INSERT INTO openai_route_shadow_decisions (
-  decision_id, request_id, client_request_id, attempt, group_id, model,
+  decision_id, request_id, client_request_id, attempt, group_id, model, request_class,
   policy_mode, policy_version, reason, evaluated, snapshot
-) VALUES ($1, '', '', 1, 1, '__storage_probe__', 'shadow', 0, 'storage_probe', FALSE, '{}'::jsonb)
+) VALUES ($1, '', '', 1, 1, '__storage_probe__', 'text', 'shadow', 0, 'storage_probe', FALSE, '{}'::jsonb)
 `, probeID); err != nil {
 		return err
 	}
@@ -60,12 +60,12 @@ func (r *openAIRouteDecisionRepository) CreateOpenAIRouteShadowDecision(
 	}
 	_, err = r.db.ExecContext(ctx, `
 INSERT INTO openai_route_shadow_decisions (
-  decision_id, request_id, client_request_id, attempt, group_id, model,
+  decision_id, request_id, client_request_id, attempt, group_id, model, request_class,
   policy_mode, policy_version, reason, evaluated, evaluation_duration_us,
   legacy_selected_account_id, adaptive_selected_account_id, adaptive_selected_rate,
   candidate_count, excluded_count, diverged, emergency, snapshot, created_at
 ) VALUES (
-  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19::jsonb,$20
+  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20::jsonb,$21
 )`,
 		record.DecisionID,
 		record.RequestID,
@@ -73,6 +73,7 @@ INSERT INTO openai_route_shadow_decisions (
 		record.Attempt,
 		record.GroupID,
 		record.Model,
+		string(record.RequestClass),
 		string(record.PolicyMode),
 		record.PolicyVersion,
 		record.Reason,
@@ -124,7 +125,7 @@ func (r *openAIRouteDecisionRepository) ListOpenAIRouteShadowDecisions(
 	query := `
 SELECT
   d.id, d.decision_id, d.request_id, d.client_request_id, d.attempt,
-  d.group_id, d.model, d.policy_mode, d.policy_version, d.reason,
+  d.group_id, d.model, d.request_class, d.policy_mode, d.policy_version, d.reason,
   d.evaluated, d.evaluation_duration_us,
   d.legacy_selected_account_id, d.adaptive_selected_account_id,
   d.adaptive_selected_rate, d.candidate_count, d.excluded_count,
@@ -149,7 +150,7 @@ LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
 		var snapshotRaw string
 		if err := rows.Scan(
 			&item.ID, &item.DecisionID, &item.RequestID, &item.ClientRequestID, &item.Attempt,
-			&item.GroupID, &item.Model, &item.PolicyMode, &item.PolicyVersion, &item.Reason,
+			&item.GroupID, &item.Model, &item.RequestClass, &item.PolicyMode, &item.PolicyVersion, &item.Reason,
 			&item.Evaluated, &item.EvaluationDurationMicros,
 			&legacyID, &adaptiveID, &adaptiveRate, &item.CandidateCount, &item.ExcludedCount,
 			&item.Diverged, &item.Emergency, &snapshotRaw, &item.CreatedAt,
@@ -332,6 +333,9 @@ func buildOpenAIRouteShadowWhere(filter *service.OpenAIRouteShadowDecisionFilter
 	}
 	if value := strings.TrimSpace(filter.Model); value != "" {
 		add(prefix+"model = $%d", value)
+	}
+	if filter.RequestClass.Valid() {
+		add(prefix+"request_class = $%d", string(filter.RequestClass))
 	}
 	if filter.PolicyVersion != nil {
 		add(prefix+"policy_version = $%d", *filter.PolicyVersion)

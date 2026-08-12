@@ -110,10 +110,11 @@ func TestAllocateAndReserveOpenAIRoute_RejectsPolicyWindowMismatch(t *testing.T)
 func testOpenAIRouteBudgetWindowConfig(policy OpenAIRoutePolicy) OpenAIRouteBudgetWindowConfig {
 	return OpenAIRouteBudgetWindowConfig{
 		Scope: OpenAIRouteBudgetScope{
-			GroupID: 7,
-			Model:   "gpt-5.6-sol",
-			Window:  "5m",
-			Epoch:   "2026-08-08T12:00Z",
+			GroupID:      7,
+			Model:        "gpt-5.6-sol",
+			RequestClass: OpenAIRouteRequestClassText,
+			Window:       "5m",
+			Epoch:        "2026-08-08T12:00Z",
 		},
 		TargetAverageMultiplier: policy.TargetAverageMultiplier,
 		HardAverageMultiplier:   policy.HardAverageMultiplier,

@@ -84,9 +84,13 @@ func parseOpenAIRouteShadowDecisionFilter(c *gin.Context, withPagination bool) (
 		StartTime:       &start,
 		EndTime:         &end,
 		Model:           strings.TrimSpace(c.Query("model")),
+		RequestClass:    service.OpenAIRouteRequestClass(strings.TrimSpace(c.Query("request_class"))),
 		Reason:          strings.TrimSpace(c.Query("reason")),
 		RequestID:       strings.TrimSpace(c.Query("request_id")),
 		ClientRequestID: strings.TrimSpace(c.Query("client_request_id")),
+	}
+	if filter.RequestClass != "" && !filter.RequestClass.Valid() {
+		return nil, strconv.ErrSyntax
 	}
 	if withPagination {
 		filter.Page, filter.PageSize = response.ParsePagination(c)

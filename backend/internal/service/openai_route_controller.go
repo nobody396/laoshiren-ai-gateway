@@ -44,10 +44,11 @@ type OpenAIRouteShadowCandidate struct {
 }
 
 type OpenAIRouteShadowRequest struct {
-	GroupID int64
-	Model   string
-	Seed    uint64
-	Now     time.Time
+	GroupID      int64
+	Model        string
+	RequestClass OpenAIRouteRequestClass
+	Seed         uint64
+	Now          time.Time
 
 	Candidates []OpenAIRouteShadowCandidate
 }
@@ -80,11 +81,12 @@ type OpenAIRouteShadowEvaluator interface {
 // missing setting or unmatched policy means legacy routing. No production
 // policy values are compiled into the binary.
 type openAIRoutePolicyConfig struct {
-	GroupID int64  `json:"group_id"`
-	Model   string `json:"model"`
-	Enabled bool   `json:"enabled"`
-	Mode    string `json:"mode"`
-	Version int    `json:"policy_version"`
+	GroupID      int64  `json:"group_id"`
+	Model        string `json:"model"`
+	RequestClass string `json:"request_class"`
+	Enabled      bool   `json:"enabled"`
+	Mode         string `json:"mode"`
+	Version      int    `json:"policy_version"`
 
 	TargetAverageMultiplier *float64 `json:"target_avg_multiplier"`
 	HardAverageMultiplier   float64  `json:"hard_avg_multiplier"`
@@ -161,7 +163,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		decision.Reason = "runtime_unavailable"
 		return decision, nil
 	}
-	if req.GroupID <= 0 || strings.TrimSpace(req.Model) == "" || len(req.Candidates) == 0 {
+	if req.GroupID <= 0 || strings.TrimSpace(req.Model) == "" || !req.RequestClass.Valid() || len(req.Candidates) == 0 {
 		decision.Reason = "request_ineligible"
 		return decision, nil
 	}
@@ -170,7 +172,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	if err != nil {
 		return decision, err
 	}
-	config, ok := resolveOpenAIRoutePolicyConfig(policies, req.GroupID, req.Model)
+	config, ok := resolveOpenAIRoutePolicyConfig(policies, req.GroupID, req.Model, req.RequestClass)
 	if !ok || !config.Enabled {
 		decision.Reason = "policy_not_enabled"
 		return decision, nil
@@ -195,6 +197,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	decision.DecisionID = decisionID
 	decision.Audit = &OpenAIRouteShadowAuditSnapshot{
 		EstimatedBaseCostUSD: config.EstimatedBaseCostUSD,
+		RequestClass:         req.RequestClass,
 	}
 	policy, err := config.normalizedPolicy()
 	if err != nil {
@@ -211,13 +214,13 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	if now.IsZero() {
 		now = time.Now()
 	}
-	windows := buildOpenAIRouteBudgetWindows(req.GroupID, req.Model, config.Version, now, policy)
+	windows := buildOpenAIRouteBudgetWindows(req.GroupID, req.Model, req.RequestClass, config.Version, now, policy)
 	candidates := make([]OpenAIRouteCandidate, 0, len(req.Candidates))
 	for _, source := range req.Candidates {
 		if source.Account == nil {
 			continue
 		}
-		key, keyErr := NewOpenAIRouteKey(source.Account, req.GroupID, req.Model, source.Endpoint, source.Transport)
+		key, keyErr := NewOpenAIRouteKey(source.Account, req.GroupID, req.Model, req.RequestClass, source.Endpoint, source.Transport)
 		if keyErr != nil {
 			decision.Audit.Candidates = append(decision.Audit.Candidates, OpenAIRouteShadowAuditCandidate{
 				AccountID:      source.Account.ID,
@@ -510,12 +513,28 @@ func resolveOpenAIRoutePolicyConfig(
 	policies []openAIRoutePolicyConfig,
 	groupID int64,
 	model string,
+	requestClass OpenAIRouteRequestClass,
 ) (openAIRoutePolicyConfig, bool) {
 	model = strings.TrimSpace(model)
 	bestScore := -1
 	var best openAIRoutePolicyConfig
 	for _, policy := range policies {
 		if policy.GroupID != groupID {
+			continue
+		}
+		classPattern := strings.TrimSpace(policy.RequestClass)
+		if classPattern == "" {
+			// Policies created before request classes existed governed text
+			// routing. Do not silently apply them to image requests.
+			classPattern = string(OpenAIRouteRequestClassText)
+		}
+		classScore := -1
+		switch classPattern {
+		case string(requestClass):
+			classScore = 10_000_000
+		case "*":
+			classScore = 0
+		default:
 			continue
 		}
 		pattern := strings.TrimSpace(policy.Model)
@@ -528,6 +547,10 @@ func resolveOpenAIRoutePolicyConfig(
 		case strings.HasSuffix(pattern, "*") && strings.HasPrefix(model, strings.TrimSuffix(pattern, "*")):
 			score = len(strings.TrimSuffix(pattern, "*"))
 		}
+		if score < 0 {
+			continue
+		}
+		score += classScore
 		if score > bestScore {
 			bestScore = score
 			best = policy
@@ -603,6 +626,7 @@ func (c openAIRoutePolicyConfig) normalizedPolicy() (OpenAIRoutePolicy, error) {
 func buildOpenAIRouteBudgetWindows(
 	groupID int64,
 	model string,
+	requestClass OpenAIRouteRequestClass,
 	version int,
 	now time.Time,
 	policy OpenAIRoutePolicy,
@@ -622,10 +646,11 @@ func buildOpenAIRouteBudgetWindows(
 		epoch := fmt.Sprintf("v%d:%s", version, now.Truncate(definition.duration).Format(time.RFC3339))
 		windows = append(windows, OpenAIRouteBudgetWindowConfig{
 			Scope: OpenAIRouteBudgetScope{
-				GroupID: groupID,
-				Model:   strings.TrimSpace(model),
-				Window:  definition.name,
-				Epoch:   epoch,
+				GroupID:      groupID,
+				Model:        strings.TrimSpace(model),
+				RequestClass: requestClass,
+				Window:       definition.name,
+				Epoch:        epoch,
 			},
 			TargetAverageMultiplier: policy.TargetAverageMultiplier,
 			HardAverageMultiplier:   policy.HardAverageMultiplier,

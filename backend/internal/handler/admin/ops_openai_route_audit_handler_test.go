@@ -24,7 +24,7 @@ func (adminOpenAIRouteAuditRepoStub) CreateOpenAIRouteShadowDecision(context.Con
 
 func (adminOpenAIRouteAuditRepoStub) ListOpenAIRouteShadowDecisions(context.Context, *service.OpenAIRouteShadowDecisionFilter) (*service.OpenAIRouteShadowDecisionList, error) {
 	return &service.OpenAIRouteShadowDecisionList{
-		Decisions: []*service.OpenAIRouteShadowDecisionRecord{{DecisionID: "shadow:test", GroupID: 7, Model: "gpt-5.6-sol"}},
+		Decisions: []*service.OpenAIRouteShadowDecisionRecord{{DecisionID: "shadow:test", GroupID: 7, Model: "gpt-5.6-sol", RequestClass: service.OpenAIRouteRequestClassText}},
 		Total:     1,
 		Page:      1,
 		PageSize:  20,
@@ -38,7 +38,7 @@ func (adminOpenAIRouteAuditRepoStub) GetOpenAIRouteShadowDecisionStats(context.C
 func TestParseOpenAIRouteShadowDecisionFilter(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
-	c.Request = httptest.NewRequest("GET", "/?time_range=1h&group_id=7&model=gpt-5.6-sol&policy_version=3&evaluated=true&diverged=false&emergency=true&page=2&page_size=500", nil)
+	c.Request = httptest.NewRequest("GET", "/?time_range=1h&group_id=7&model=gpt-5.6-sol&request_class=image&policy_version=3&evaluated=true&diverged=false&emergency=true&page=2&page_size=500", nil)
 
 	filter, err := parseOpenAIRouteShadowDecisionFilter(c, true)
 	require.NoError(t, err)
@@ -47,6 +47,7 @@ func TestParseOpenAIRouteShadowDecisionFilter(t *testing.T) {
 	require.NotNil(t, filter.PolicyVersion)
 	require.Equal(t, 3, *filter.PolicyVersion)
 	require.Equal(t, "gpt-5.6-sol", filter.Model)
+	require.Equal(t, service.OpenAIRouteRequestClassImage, filter.RequestClass)
 	require.Equal(t, 2, filter.Page)
 	require.Equal(t, 200, filter.PageSize)
 	require.Equal(t, true, *filter.Evaluated)
@@ -60,6 +61,7 @@ func TestParseOpenAIRouteShadowDecisionFilterRejectsInvalidValues(t *testing.T) 
 		"/?group_id=bad",
 		"/?policy_version=-1",
 		"/?evaluated=maybe",
+		"/?request_class=audio",
 	} {
 		c, _ := gin.CreateTestContext(httptest.NewRecorder())
 		c.Request = httptest.NewRequest("GET", query, nil)

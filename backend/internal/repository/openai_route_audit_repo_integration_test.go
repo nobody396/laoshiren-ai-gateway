@@ -29,6 +29,7 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 		Attempt:                   2,
 		GroupID:                   7,
 		Model:                     "gpt-5.6-sol",
+		RequestClass:              service.OpenAIRouteRequestClassText,
 		PolicyMode:                service.OpenAIRoutePolicyShadow,
 		PolicyVersion:             4,
 		Reason:                    "shadow_selected",
@@ -41,6 +42,7 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 		ExcludedCount:             1,
 		Diverged:                  true,
 		Snapshot: &service.OpenAIRouteShadowAuditSnapshot{
+			RequestClass:         service.OpenAIRouteRequestClassText,
 			EstimatedBaseCostUSD: 0.01,
 			Candidates: []service.OpenAIRouteShadowAuditCandidate{{
 				AccountID:      28,
@@ -58,14 +60,16 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 	start := createdAt.Add(-time.Minute)
 	end := createdAt.Add(time.Minute)
 	list, err := repo.ListOpenAIRouteShadowDecisions(context.Background(), &service.OpenAIRouteShadowDecisionFilter{
-		StartTime: &start,
-		EndTime:   &end,
-		RequestID: requestID,
+		StartTime:    &start,
+		EndTime:      &end,
+		RequestID:    requestID,
+		RequestClass: service.OpenAIRouteRequestClassText,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, list.Total)
 	require.Len(t, list.Decisions, 1)
 	require.Equal(t, int64(28), list.Decisions[0].AdaptiveSelectedAccountID)
+	require.Equal(t, service.OpenAIRouteRequestClassText, list.Decisions[0].RequestClass)
 	require.Len(t, list.Decisions[0].Snapshot.Candidates, 1)
 
 	stats, err := repo.GetOpenAIRouteShadowDecisionStats(context.Background(), &service.OpenAIRouteShadowDecisionFilter{

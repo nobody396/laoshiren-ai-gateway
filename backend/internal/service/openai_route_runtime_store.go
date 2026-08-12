@@ -22,6 +22,7 @@ type OpenAIRouteHealthStoreKey struct {
 	AccountID     int64
 	FailureDomain string
 	Model         string
+	RequestClass  OpenAIRouteRequestClass
 	EndpointHash  string
 	Transport     string
 }
@@ -33,6 +34,7 @@ func OpenAIRouteHealthStoreKeyForRoute(key OpenAIRouteKey) OpenAIRouteHealthStor
 		AccountID:     key.AccountID,
 		FailureDomain: key.FailureDomain,
 		Model:         key.Model,
+		RequestClass:  key.RequestClass,
 		EndpointHash:  key.EndpointHash,
 		Transport:     key.Transport,
 	}
@@ -44,11 +46,12 @@ func OpenAIRouteHealthStoreKeyForProvider(key OpenAIRouteKey) OpenAIRouteHealthS
 		GroupID:       key.GroupID,
 		FailureDomain: key.FailureDomain,
 		Model:         key.Model,
+		RequestClass:  key.RequestClass,
 	}
 }
 
 func (k OpenAIRouteHealthStoreKey) Valid() bool {
-	if k.GroupID <= 0 || strings.TrimSpace(k.Model) == "" {
+	if k.GroupID <= 0 || strings.TrimSpace(k.Model) == "" || !k.RequestClass.Valid() {
 		return false
 	}
 	switch k.Scope {
@@ -62,12 +65,13 @@ func (k OpenAIRouteHealthStoreKey) Valid() bool {
 }
 
 func (k OpenAIRouteHealthStoreKey) Fingerprint() string {
-	canonical := fmt.Sprintf("%s|%d|%d|%s|%s|%s|%s",
+	canonical := fmt.Sprintf("%s|%d|%d|%s|%s|%s|%s|%s",
 		k.Scope,
 		k.GroupID,
 		k.AccountID,
 		strings.TrimSpace(k.FailureDomain),
 		strings.TrimSpace(k.Model),
+		k.RequestClass,
 		strings.TrimSpace(k.EndpointHash),
 		strings.TrimSpace(k.Transport),
 	)

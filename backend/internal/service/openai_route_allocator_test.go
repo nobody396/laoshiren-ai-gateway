@@ -13,6 +13,7 @@ func testOpenAIRouteCandidate(id int64, provider string, rate float64) OpenAIRou
 			GroupID:       7,
 			AccountID:     id,
 			Model:         "gpt-5.6-sol",
+			RequestClass:  OpenAIRouteRequestClassText,
 			EndpointHash:  "endpoint",
 			Transport:     "sse",
 			FailureDomain: provider,

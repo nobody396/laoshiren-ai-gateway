@@ -360,6 +360,7 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_ShadowDecisionNeverOver
 	require.Equal(t, OpenAIRoutePolicyShadow, decision.RoutePolicyMode)
 	require.Equal(t, 3, decision.RoutePolicyVersion)
 	require.True(t, decision.AdaptiveDiverged)
+	require.Equal(t, OpenAIRouteRequestClassText, evaluator.request.RequestClass)
 	require.Len(t, evaluator.request.Candidates, 2)
 	if selection.ReleaseFunc != nil {
 		selection.ReleaseFunc()
@@ -431,10 +432,18 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_PersistsCompleteShadowD
 	require.Equal(t, []int64{999}, auditRepo.record.Snapshot.ExcludedAccountIDs)
 	require.False(t, auditRepo.record.Snapshot.RequireCompact)
 	require.Equal(t, string(OpenAIUpstreamTransportAny), auditRepo.record.Snapshot.RequiredTransport)
+	require.Equal(t, OpenAIRouteRequestClassText, auditRepo.record.RequestClass)
 	require.Equal(t, OpenAIRoutePolicyShadow, decision.RoutePolicyMode)
 	if selection.ReleaseFunc != nil {
 		selection.ReleaseFunc()
 	}
+}
+
+func TestOpenAIRouteRequestClassForScheduleRequestSeparatesTextAndImage(t *testing.T) {
+	require.Equal(t, OpenAIRouteRequestClassText, openAIRouteRequestClassForScheduleRequest(OpenAIAccountScheduleRequest{}))
+	require.Equal(t, OpenAIRouteRequestClassImage, openAIRouteRequestClassForScheduleRequest(OpenAIAccountScheduleRequest{
+		PreferImageGeneration: true,
+	}))
 }
 
 func TestOpenAIGatewayService_SelectAccountWithScheduler_InvalidatesUnrecordedShadowSample(t *testing.T) {

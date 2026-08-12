@@ -31,6 +31,7 @@ func (s *OpenAIRouteHealthCacheSuite) SetupTest() {
 		AccountID:     28,
 		FailureDomain: "anyroute",
 		Model:         "gpt-5.6-sol",
+		RequestClass:  service.OpenAIRouteRequestClassText,
 		EndpointHash:  "endpoint",
 		Transport:     "sse",
 	}

@@ -86,6 +86,7 @@ type OpenAIRouteShadowAuditCandidate struct {
 }
 
 type OpenAIRouteShadowAuditSnapshot struct {
+	RequestClass         OpenAIRouteRequestClass              `json:"request_class"`
 	Policy               OpenAIRouteShadowAuditPolicy         `json:"policy"`
 	AdaptiveSeedHex      string                               `json:"adaptive_seed_hex"`
 	RequiredTransport    string                               `json:"required_transport"`
@@ -109,6 +110,7 @@ type OpenAIRouteShadowDecisionRecord struct {
 	Attempt                   int                             `json:"attempt"`
 	GroupID                   int64                           `json:"group_id"`
 	Model                     string                          `json:"model"`
+	RequestClass              OpenAIRouteRequestClass         `json:"request_class"`
 	PolicyMode                OpenAIRoutePolicyMode           `json:"policy_mode"`
 	PolicyVersion             int                             `json:"policy_version"`
 	Reason                    string                          `json:"reason"`
@@ -130,6 +132,7 @@ type OpenAIRouteShadowDecisionFilter struct {
 	EndTime         *time.Time
 	GroupID         *int64
 	Model           string
+	RequestClass    OpenAIRouteRequestClass
 	PolicyVersion   *int
 	Reason          string
 	RequestID       string
@@ -238,7 +241,7 @@ func (s *OpenAIRouteAuditService) Record(ctx context.Context, record *OpenAIRout
 		return ErrOpenAIRouteAuditUnavailable
 	}
 	s.attempted.Add(1)
-	if record == nil || strings.TrimSpace(record.DecisionID) == "" || record.GroupID <= 0 || strings.TrimSpace(record.Model) == "" || record.Snapshot == nil {
+	if record == nil || strings.TrimSpace(record.DecisionID) == "" || record.GroupID <= 0 || strings.TrimSpace(record.Model) == "" || !record.RequestClass.Valid() || record.Snapshot == nil {
 		err := fmt.Errorf("%w: incomplete decision record", ErrOpenAIRouteAuditUnavailable)
 		s.failed.Add(1)
 		s.recordFailure(err)

@@ -84,9 +84,10 @@ func TestOpenAIRouteController_MissingPolicyIsLegacyAndCached(t *testing.T) {
 	reader := &openAIRoutePolicyReaderStub{err: ErrSettingNotFound}
 	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{})
 	req := OpenAIRouteShadowRequest{
-		GroupID: 7,
-		Model:   "gpt-5.6-sol",
-		Now:     time.Date(2026, 8, 8, 12, 0, 0, 0, time.UTC),
+		GroupID:      7,
+		Model:        "gpt-5.6-sol",
+		RequestClass: OpenAIRouteRequestClassText,
+		Now:          time.Date(2026, 8, 8, 12, 0, 0, 0, time.UTC),
 		Candidates: []OpenAIRouteShadowCandidate{{
 			Account:   testOpenAIRouteControllerAccount(1, 0.15),
 			Endpoint:  "https://example.invalid/v1/responses",
@@ -125,10 +126,11 @@ func TestOpenAIRouteController_ExactPolicyBeatsWildcardAndSelectsWithinBudget(t 
 	now := time.Date(2026, 8, 8, 12, 3, 0, 0, time.UTC)
 
 	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
-		GroupID: 7,
-		Model:   "gpt-5.6-sol",
-		Seed:    42,
-		Now:     now,
+		GroupID:      7,
+		Model:        "gpt-5.6-sol",
+		RequestClass: OpenAIRouteRequestClassText,
+		Seed:         42,
+		Now:          now,
 		Candidates: []OpenAIRouteShadowCandidate{
 			{
 				Account:              testOpenAIRouteControllerAccount(1, 0.15),
@@ -159,6 +161,7 @@ func TestOpenAIRouteController_ExactPolicyBeatsWildcardAndSelectsWithinBudget(t 
 	require.NotEmpty(t, decision.DecisionID)
 	require.GreaterOrEqual(t, decision.EvaluationDurationMicros, int64(0))
 	require.NotNil(t, decision.Audit)
+	require.Equal(t, OpenAIRouteRequestClassText, decision.Audit.RequestClass)
 	require.InDelta(t, 0.155, decision.Audit.Policy.TargetAverageMultiplier, 1e-12)
 	require.Len(t, decision.Audit.Candidates, 2)
 	require.Len(t, decision.Audit.BudgetWindows, 3)
@@ -174,13 +177,34 @@ func TestOpenAIRouteController_ExactPolicyBeatsWildcardAndSelectsWithinBudget(t 
 	require.Contains(t, budget.windows[0].Scope.Epoch, "v9:")
 }
 
+func TestResolveOpenAIRoutePolicyConfigSeparatesRequestClasses(t *testing.T) {
+	policies := []openAIRoutePolicyConfig{
+		{GroupID: 7, Model: "gpt-*", Version: 1},
+		{GroupID: 7, Model: "gpt-*", RequestClass: "*", Version: 2},
+		{GroupID: 7, Model: "gpt-5.6-sol", RequestClass: "image", Version: 3},
+	}
+
+	text, ok := resolveOpenAIRoutePolicyConfig(policies, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText)
+	require.True(t, ok)
+	require.Equal(t, 1, text.Version, "an exact text-class policy must beat an all-class wildcard")
+
+	image, ok := resolveOpenAIRoutePolicyConfig(policies, 7, "gpt-5.6-sol", OpenAIRouteRequestClassImage)
+	require.True(t, ok)
+	require.Equal(t, 3, image.Version)
+
+	legacyOnly, ok := resolveOpenAIRoutePolicyConfig(policies[:1], 7, "gpt-5.6-sol", OpenAIRouteRequestClassImage)
+	require.False(t, ok, "a pre-request-class text policy must not govern images")
+	require.Zero(t, legacyOnly.Version)
+}
+
 func TestOpenAIRouteController_EnforceModeIsHardDisabled(t *testing.T) {
 	reader := &openAIRoutePolicyReaderStub{value: `[{"group_id":7,"model":"*","enabled":true,"mode":"enforce","policy_version":1}]`}
 	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{})
 
 	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
-		GroupID: 7,
-		Model:   "gpt-5.6-sol",
+		GroupID:      7,
+		Model:        "gpt-5.6-sol",
+		RequestClass: OpenAIRouteRequestClassText,
 		Candidates: []OpenAIRouteShadowCandidate{{
 			Account:   testOpenAIRouteControllerAccount(1, 0.15),
 			Endpoint:  "https://example.invalid/v1/responses",
@@ -206,9 +230,10 @@ func TestOpenAIRouteController_BudgetFailureDoesNotClaimASelectedCandidate(t *te
 	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{})
 
 	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
-		GroupID: 7,
-		Model:   "gpt-5.6-sol",
-		Seed:    42,
+		GroupID:      7,
+		Model:        "gpt-5.6-sol",
+		RequestClass: OpenAIRouteRequestClassText,
+		Seed:         42,
 		Candidates: []OpenAIRouteShadowCandidate{{
 			Account:   testOpenAIRouteControllerAccount(1, 0.15),
 			Endpoint:  "https://example.invalid/v1/responses",

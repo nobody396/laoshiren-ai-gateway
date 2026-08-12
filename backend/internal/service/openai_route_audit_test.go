@@ -47,6 +47,7 @@ func testOpenAIRouteShadowDecisionRecord() *OpenAIRouteShadowDecisionRecord {
 		DecisionID:    "shadow:test",
 		GroupID:       7,
 		Model:         "gpt-5.6-sol",
+		RequestClass:  OpenAIRouteRequestClassText,
 		PolicyMode:    OpenAIRoutePolicyShadow,
 		PolicyVersion: 1,
 		Reason:        "shadow_selected",

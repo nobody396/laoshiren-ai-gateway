@@ -4,6 +4,10 @@
 只计算候选账号，不改变用户实际使用的 Legacy 账号；当前版本仍硬禁止
 `enforce`。
 
+新策略必须显式写 `request_class`。允许值为 `text`、`image` 或显式通配 `*`；
+历史策略缺少该字段时只匹配 `text`，避免文本策略意外接管生图请求。不同请求类型
+使用独立的路由健康与成本预算。
+
 ## 数据完整性边界
 
 每次**命中已启用 Shadow 策略**的负载均衡评估，都同步写入
@@ -11,7 +15,7 @@
 
 - 服务端 `request_id`、客户端 `client_request_id`、失败切换 `attempt`
 - Shadow 随机种子、请求传输协议、Compact 要求和本次已排除账号 ID
-- 分组、模型、策略模式和策略版本
+- 分组、模型、请求类型（`text`/`image`）、策略模式和策略版本
 - Legacy 实际选择、Shadow 建议选择、倍率、是否分流差异、是否使用应急预算
 - 完整归一化策略和估算基础成本
 - 5 分钟、1 小时、24 小时预算窗口的评估前账本与预计评估后账本
@@ -48,7 +52,7 @@ Shadow 的可审计性是运行前置条件：
 - `GET /api/v1/admin/ops/openai-route-shadow/decisions`
 - `GET /api/v1/admin/ops/openai-route-shadow/stats`
 
-列表和统计支持 `time_range`、`group_id`、`model`、`policy_version`、`reason`、
+列表和统计支持 `time_range`、`group_id`、`model`、`request_class`、`policy_version`、`reason`、
 `request_id`、`client_request_id`、`evaluated`、`diverged`、`emergency` 过滤。
 统计同时提供建议账号占比、评估 P50/P95、可关联的真实 Legacy 成功用量、Legacy
 失败和 TTFT；客户端请求 ID 缺失时使用服务端请求 ID 的 `local:` 记账键回退

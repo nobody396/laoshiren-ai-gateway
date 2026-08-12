@@ -48,6 +48,26 @@ const (
 	OpenAIRoutePolicyEnforce OpenAIRoutePolicyMode = "enforce"
 )
 
+// OpenAIRouteRequestClass separates semantically different workloads that may
+// share the same public model and account. Text observations must never train
+// image routing (or vice versa).
+type OpenAIRouteRequestClass string
+
+const (
+	OpenAIRouteRequestClassUnknown OpenAIRouteRequestClass = "unknown"
+	OpenAIRouteRequestClassText    OpenAIRouteRequestClass = "text"
+	OpenAIRouteRequestClassImage   OpenAIRouteRequestClass = "image"
+)
+
+func (c OpenAIRouteRequestClass) Valid() bool {
+	switch c {
+	case OpenAIRouteRequestClassText, OpenAIRouteRequestClassImage:
+		return true
+	default:
+		return false
+	}
+}
+
 var (
 	ErrOpenAIRouteNoCandidate         = errors.New("no eligible OpenAI route candidate")
 	ErrOpenAIRouteBudgetExhausted     = errors.New("OpenAI route cost budget exhausted")
@@ -203,6 +223,7 @@ type OpenAIRouteKey struct {
 	GroupID       int64
 	AccountID     int64
 	Model         string
+	RequestClass  OpenAIRouteRequestClass
 	EndpointHash  string
 	Transport     string
 	FailureDomain string
@@ -212,6 +233,7 @@ func (k OpenAIRouteKey) Valid() bool {
 	return k.GroupID > 0 &&
 		k.AccountID > 0 &&
 		strings.TrimSpace(k.Model) != "" &&
+		k.RequestClass.Valid() &&
 		strings.TrimSpace(k.EndpointHash) != "" &&
 		strings.TrimSpace(k.Transport) != ""
 }

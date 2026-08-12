@@ -41,14 +41,22 @@ func OpenAIRouteEndpointHash(endpoint string) string {
 	return hex.EncodeToString(sum[:8])
 }
 
-func NewOpenAIRouteKey(account *Account, groupID int64, model, endpoint, transport string) (OpenAIRouteKey, error) {
-	if account == nil || account.ID <= 0 || groupID <= 0 || strings.TrimSpace(model) == "" {
+func NewOpenAIRouteKey(
+	account *Account,
+	groupID int64,
+	model string,
+	requestClass OpenAIRouteRequestClass,
+	endpoint string,
+	transport string,
+) (OpenAIRouteKey, error) {
+	if account == nil || account.ID <= 0 || groupID <= 0 || strings.TrimSpace(model) == "" || !requestClass.Valid() {
 		return OpenAIRouteKey{}, ErrOpenAIRouteNoCandidate
 	}
 	key := OpenAIRouteKey{
 		GroupID:       groupID,
 		AccountID:     account.ID,
 		Model:         strings.TrimSpace(model),
+		RequestClass:  requestClass,
 		EndpointHash:  OpenAIRouteEndpointHash(endpoint),
 		Transport:     strings.TrimSpace(transport),
 		FailureDomain: OpenAIRouteFailureDomainID(account),

@@ -13,6 +13,7 @@ func TestOpenAIRouteHealthStoreKey_FingerprintsEveryHealthDimension(t *testing.T
 		AccountID:     28,
 		FailureDomain: "anyroute",
 		Model:         "gpt-5.6-sol",
+		RequestClass:  OpenAIRouteRequestClassText,
 		EndpointHash:  "endpoint-a",
 		Transport:     "sse",
 	}
@@ -23,6 +24,11 @@ func TestOpenAIRouteHealthStoreKey_FingerprintsEveryHealthDimension(t *testing.T
 		func() OpenAIRouteHealthStoreKey { value := base; value.GroupID++; return value }(),
 		func() OpenAIRouteHealthStoreKey { value := base; value.AccountID++; return value }(),
 		func() OpenAIRouteHealthStoreKey { value := base; value.Model = "gpt-5.4-mini"; return value }(),
+		func() OpenAIRouteHealthStoreKey {
+			value := base
+			value.RequestClass = OpenAIRouteRequestClassImage
+			return value
+		}(),
 		func() OpenAIRouteHealthStoreKey { value := base; value.EndpointHash = "endpoint-b"; return value }(),
 		func() OpenAIRouteHealthStoreKey { value := base; value.Transport = "websocket"; return value }(),
 	}
@@ -35,6 +41,7 @@ func TestOpenAIRouteHealthStoreKey_FingerprintsEveryHealthDimension(t *testing.T
 		AccountID:     28,
 		FailureDomain: "anyroute",
 		Model:         "gpt-5.6-sol",
+		RequestClass:  OpenAIRouteRequestClassText,
 	})
 	require.True(t, provider.Valid())
 	require.Equal(t, OpenAIRouteHealthScopeProvider, provider.Scope)

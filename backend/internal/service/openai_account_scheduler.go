@@ -1034,10 +1034,11 @@ func (s *defaultOpenAIAccountScheduler) evaluateOpenAIRouteShadow(
 	defer cancel()
 	seed := deriveOpenAISelectionSeed(req)
 	decision, err := s.service.openAIRouteEvaluator.EvaluateShadow(evaluationCtx, OpenAIRouteShadowRequest{
-		GroupID:    *req.GroupID,
-		Model:      req.RequestedModel,
-		Seed:       seed,
-		Candidates: projected,
+		GroupID:      *req.GroupID,
+		Model:        req.RequestedModel,
+		RequestClass: openAIRouteRequestClassForScheduleRequest(req),
+		Seed:         seed,
+		Candidates:   projected,
 	})
 	if decision.Audit != nil {
 		decision.Audit.AdaptiveSeedHex = fmt.Sprintf("%016x", seed)
@@ -1095,6 +1096,7 @@ func (s *defaultOpenAIAccountScheduler) persistOpenAIRouteShadowDecision(
 		Attempt:                   attempt,
 		GroupID:                   *req.GroupID,
 		Model:                     req.RequestedModel,
+		RequestClass:              openAIRouteRequestClassForScheduleRequest(req),
 		PolicyMode:                decision.Mode,
 		PolicyVersion:             decision.Version,
 		Reason:                    decision.Reason,
@@ -1113,6 +1115,13 @@ func (s *defaultOpenAIAccountScheduler) persistOpenAIRouteShadowDecision(
 	if err := s.service.openAIRouteAuditService.Record(ctx, record); err != nil {
 		invalidateUnrecordedOpenAIRouteShadowDecision(decision, "audit_persist_failed")
 	}
+}
+
+func openAIRouteRequestClassForScheduleRequest(req OpenAIAccountScheduleRequest) OpenAIRouteRequestClass {
+	if req.PreferImageGeneration {
+		return OpenAIRouteRequestClassImage
+	}
+	return OpenAIRouteRequestClassText
 }
 
 func invalidateUnrecordedOpenAIRouteShadowDecision(decision *OpenAIRouteShadowDecision, reason string) {

@@ -23,6 +23,7 @@ func TestBuildOpenAIRouteShadowWhereIncludesEveryAuditFilter(t *testing.T) {
 		EndTime:         &end,
 		GroupID:         &groupID,
 		Model:           "gpt-5.6-sol",
+		RequestClass:    service.OpenAIRouteRequestClassImage,
 		PolicyVersion:   &version,
 		Reason:          "shadow_selected",
 		RequestID:       "request-1",
@@ -32,9 +33,9 @@ func TestBuildOpenAIRouteShadowWhereIncludesEveryAuditFilter(t *testing.T) {
 		Emergency:       &emergency,
 	}, "d")
 
-	require.Len(t, args, 11)
+	require.Len(t, args, 12)
 	for _, column := range []string{
-		"d.created_at >=", "d.created_at <", "d.group_id =", "d.model =",
+		"d.created_at >=", "d.created_at <", "d.group_id =", "d.model =", "d.request_class =",
 		"d.policy_version =", "d.reason =", "d.request_id =", "d.client_request_id =",
 		"d.evaluated =", "d.diverged =", "d.emergency =",
 	} {

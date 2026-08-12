@@ -63,7 +63,7 @@ func TestPrepareOpenAIRouteBudgetWindows_RejectsCrossDomainAndDuplicates(t *test
 }
 
 func TestOpenAIRouteBudgetKeysDoNotExposeModelOrReservationID(t *testing.T) {
-	domain := openAIRouteBudgetDomainFingerprint(7, "gpt-5.6-sol")
+	domain := openAIRouteBudgetDomainFingerprint(7, "gpt-5.6-sol", service.OpenAIRouteRequestClassText)
 	budgetKey := openAIRouteBudgetRedisKey(domain, strings.Repeat("a", 32))
 	reservationKey := openAIRouteBudgetReservationRedisKey(domain, "customer-visible-request-id")
 	require.NotContains(t, budgetKey, "gpt-5.6-sol")
@@ -73,10 +73,11 @@ func TestOpenAIRouteBudgetKeysDoNotExposeModelOrReservationID(t *testing.T) {
 func openAIRouteBudgetUnitWindow(window, epoch string) service.OpenAIRouteBudgetWindowConfig {
 	return service.OpenAIRouteBudgetWindowConfig{
 		Scope: service.OpenAIRouteBudgetScope{
-			GroupID: 7,
-			Model:   "gpt-5.6-sol",
-			Window:  window,
-			Epoch:   epoch,
+			GroupID:      7,
+			Model:        "gpt-5.6-sol",
+			RequestClass: service.OpenAIRouteRequestClassText,
+			Window:       window,
+			Epoch:        epoch,
 		},
 		TargetAverageMultiplier: 0.155,
 		HardAverageMultiplier:   0.18,
@@ -91,6 +92,7 @@ func openAIRouteBudgetUnitRoute(accountID int64) service.OpenAIRouteKey {
 		GroupID:       7,
 		AccountID:     accountID,
 		Model:         "gpt-5.6-sol",
+		RequestClass:  service.OpenAIRouteRequestClassText,
 		EndpointHash:  "endpoint",
 		Transport:     "sse",
 		FailureDomain: "test-provider",

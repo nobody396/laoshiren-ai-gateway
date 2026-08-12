@@ -244,6 +244,54 @@ func TestForwardCodexNativeImageGenerationUsesNativeImagesFallback(t *testing.T)
 	require.Equal(t, "gpt-image-2-count", c.GetString("ops_upstream_model"))
 }
 
+func TestForwardCodexNativeImageGenerationOmitsUnsupportedResponseFormat(t *testing.T) {
+	body := []byte(`{
+		"model":"gpt-image-2","prompt":"draw breakfast","n":1,
+		"size":"1024x1024","response_format":"b64_json"
+	}`)
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body: io.NopCloser(strings.NewReader(
+			`{"created":1710000000,"data":[{"b64_json":"` + codexBridgeTestPNG + `"}],"usage":{"total_tokens":30}}`,
+		)),
+	}}
+	svc := &OpenAIGatewayService{
+		httpUpstream: upstream,
+		cfg: &config.Config{Security: config.SecurityConfig{
+			URLAllowlist: config.URLAllowlistConfig{Enabled: false},
+		}},
+	}
+	account := &Account{
+		ID: 39, Name: "pomo-azure-image", Platform: PlatformOpenAI, Type: AccountTypeAPIKey,
+		Credentials: map[string]any{
+			"api_key": "test", "base_url": "https://pomo.example/v1",
+			"model_mapping": map[string]any{"gpt-image-2": "gpt-image-2"},
+		},
+		Extra: map[string]any{
+			"supports_images":                               true,
+			OpenAIImageGenerationPriorityExtraKey:           4,
+			OpenAIImageGenerationModelsExtraKey:             []any{"gpt-image-2"},
+			OpenAIImageGenerationTransportExtraKey:          OpenAIImageGenerationTransportImages,
+			OpenAIImageGenerationOmitResponseFormatExtraKey: true,
+		},
+	}
+	parsed, err := svc.ParseOpenAIImagesRequest(body)
+	require.NoError(t, err)
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/generations", bytes.NewReader(body))
+
+	result, err := svc.ForwardCodexNativeImageGeneration(context.Background(), c, account, parsed)
+
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, codexBridgeTestPNG, gjson.GetBytes(recorder.Body.Bytes(), "data.0.b64_json").String())
+	require.Equal(t, "gpt-image-2", gjson.GetBytes(upstream.lastBody, "model").String())
+	require.False(t, gjson.GetBytes(upstream.lastBody, "response_format").Exists())
+	require.Equal(t, "gpt-image-2", result.UpstreamModel)
+}
+
 func TestForwardCodexNativeImageGenerationNativeNoOutputSafelyFailsOver(t *testing.T) {
 	for _, tt := range []struct {
 		name         string

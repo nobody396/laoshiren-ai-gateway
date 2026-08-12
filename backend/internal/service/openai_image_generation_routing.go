@@ -23,6 +23,10 @@ const (
 	OpenAIImageGenerationTransportExtraKey  = "openai_image_generation_transport"
 	OpenAIImageGenerationTransportResponses = "responses"
 	OpenAIImageGenerationTransportImages    = "images"
+	// OpenAIImageGenerationOmitResponseFormatExtraKey enables compatibility
+	// with native Images providers (notably Azure-backed routes) that always
+	// return base64 image data and reject the OpenAI response_format field.
+	OpenAIImageGenerationOmitResponseFormatExtraKey = "openai_image_generation_omit_response_format"
 )
 
 var (
@@ -369,6 +373,16 @@ func (a *Account) OpenAIImageGenerationTransport(requestedModel string) (string,
 	default:
 		return "", false
 	}
+}
+
+// OmitOpenAIImageGenerationResponseFormat reports whether an account's native
+// Images provider rejects response_format. Invalid values fail closed.
+func (a *Account) OmitOpenAIImageGenerationResponseFormat() bool {
+	if a == nil || a.Extra == nil {
+		return false
+	}
+	value, ok := a.Extra[OpenAIImageGenerationOmitResponseFormatExtraKey].(bool)
+	return ok && value
 }
 
 func openAIImageGenerationModelAllowed(raw any, requestedModel string) bool {

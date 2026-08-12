@@ -650,6 +650,17 @@ func (s *OpenAIGatewayService) ForwardImages(
 	if err != nil {
 		return nil, fmt.Errorf("rewrite image request model: %w", err)
 	}
+	// Azure-backed image routes always return base64 payloads but reject the
+	// otherwise standard response_format=b64_json field. Strip it only when the
+	// selected account explicitly opts in and doing so preserves client
+	// semantics; non-base64 formats continue upstream unchanged.
+	if account.OmitOpenAIImageGenerationResponseFormat() &&
+		(parsed.ResponseFormat == "" || parsed.ResponseFormat == "b64_json") {
+		forwardBody, err = sjson.DeleteBytes(forwardBody, "response_format")
+		if err != nil {
+			return nil, fmt.Errorf("normalize image response format: %w", err)
+		}
+	}
 	setOpsUpstreamRequestBody(c, forwardBody)
 
 	// Image generation can keep consuming upstream resources after the client

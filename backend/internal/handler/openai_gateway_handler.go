@@ -255,11 +255,20 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		}
 	}
 	imageGenerationIntent := requestPlatform == service.PlatformOpenAI && service.IsExplicitOpenAIImageGenerationIntent(body)
+	fixedImageRenderer := requestPlatform == service.PlatformOpenAI &&
+		isOfficialCodexRequest(c) &&
+		service.ShouldUseFixedOpenAIImageRenderer(body)
+	routingModel := reqModel
+	if fixedImageRenderer {
+		routingModel = service.OpenAIFixedImageRendererModel
+	}
 	reqLog = reqLog.With(
 		zap.String("model", reqModel),
+		zap.String("routing_model", routingModel),
 		zap.Bool("stream", reqStream),
 		zap.Bool("image_generation_intent", imageGenerationIntent),
 		zap.Bool("codex_semantic_image_generation_intent", codexSemanticImageIntent),
+		zap.Bool("fixed_image_renderer", fixedImageRenderer),
 	)
 	if apiKey.Group != nil && apiKey.Group.Platform == service.PlatformGrok &&
 		service.IsExplicitGrokImageGenerationIntent(reqModel, body) &&
@@ -357,7 +366,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 			apiKey.GroupID,
 			previousResponseID,
 			sessionHash,
-			reqModel,
+			routingModel,
 			failedAccountIDs,
 			service.OpenAIUpstreamTransportAny,
 			requireCompact,
@@ -432,7 +441,19 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		service.SetOpsLatencyMs(c, service.OpsRoutingLatencyMsKey, time.Since(routingStart).Milliseconds())
 		forwardStart := time.Now()
 		writerSizeBeforeForward := c.Writer.Size()
-		result, err := h.gatewayService.Forward(c.Request.Context(), c, account, forwardBody)
+		var result *service.OpenAIForwardResult
+		if fixedImageRenderer {
+			result, err = h.gatewayService.ForwardFixedOpenAIImageGenerationResponses(
+				c.Request.Context(),
+				c,
+				account,
+				body,
+				reqModel,
+				reqStream,
+			)
+		} else {
+			result, err = h.gatewayService.Forward(c.Request.Context(), c, account, forwardBody)
+		}
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
 		if accountReleaseFunc != nil {
 			accountReleaseFunc()
@@ -521,6 +542,10 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		userAgent := c.GetHeader("User-Agent")
 		clientIP := ip.GetClientIP(c)
 		requestPayloadHash := service.HashUsageRequestPayload(body)
+		usageUpstreamEndpoint := result.UpstreamEndpoint
+		if usageUpstreamEndpoint == "" {
+			usageUpstreamEndpoint = GetUpstreamEndpoint(c, account.Platform)
+		}
 
 		// 使用量记录通过有界 worker 池提交，避免请求热路径创建无界 goroutine。
 		h.submitUsageRecordTask(c.Request.Context(), func(ctx context.Context) {
@@ -531,7 +556,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 				Account:            account,
 				Subscription:       subscription,
 				InboundEndpoint:    GetInboundEndpoint(c),
-				UpstreamEndpoint:   GetUpstreamEndpoint(c, account.Platform),
+				UpstreamEndpoint:   usageUpstreamEndpoint,
 				UserAgent:          userAgent,
 				IPAddress:          clientIP,
 				RequestPayloadHash: requestPayloadHash,

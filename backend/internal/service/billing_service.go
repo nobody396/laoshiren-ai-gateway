@@ -1025,10 +1025,15 @@ func (s *BillingService) CalculateVideoCost(model, resolution string, videoCount
 	return &CostBreakdown{TotalCost: total, ActualCost: total * rateMultiplier, BillingMode: string(BillingModeVideo)}
 }
 
-// CalculateGPTImageCallCost 计算 gpt-image 固定调用费用。
-// 仅按单次成功调用收费，不受 n/size/quality 影响。
-func (s *BillingService) CalculateGPTImageCallCost(price *float64, rateMultiplier float64) *CostBreakdown {
+// CalculateGPTImageCallCost 计算 gpt-image 固定图片费用。
+// 仅对已验证成功返回的图片计费，不受 size/quality 影响。
+func (s *BillingService) CalculateGPTImageCallCost(price *float64, imageCount int, rateMultiplier float64) *CostBreakdown {
 	if price == nil || *price <= 0 {
+		return &CostBreakdown{
+			BillingMode: string(BillingModeImage),
+		}
+	}
+	if imageCount <= 0 {
 		return &CostBreakdown{
 			BillingMode: string(BillingModeImage),
 		}
@@ -1036,7 +1041,7 @@ func (s *BillingService) CalculateGPTImageCallCost(price *float64, rateMultiplie
 	if rateMultiplier <= 0 {
 		rateMultiplier = 1.0
 	}
-	totalCost := *price
+	totalCost := *price * float64(imageCount)
 	return &CostBreakdown{
 		TotalCost:   totalCost,
 		ActualCost:  totalCost * rateMultiplier,

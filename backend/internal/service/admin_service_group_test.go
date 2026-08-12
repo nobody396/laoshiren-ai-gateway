@@ -347,6 +347,27 @@ func TestAdminService_UpdateGroup_WithImagePricing(t *testing.T) {
 	require.InDelta(t, 0.36, *repo.updated.ImagePrice4K, 0.0001)
 }
 
+func TestAdminService_UpdateOpenAIGroup_AllowsFixedGPTImageCallPrice(t *testing.T) {
+	existingGroup := &Group{
+		ID:       6,
+		Name:     "CodeX Pro20X",
+		Platform: PlatformOpenAI,
+		Status:   StatusActive,
+	}
+	repo := &groupRepoStubForAdmin{getByID: existingGroup}
+	svc := &adminServiceImpl{groupRepo: repo}
+	price := 0.30
+
+	group, err := svc.UpdateGroup(context.Background(), existingGroup.ID, &UpdateGroupInput{
+		GPTImageCallPrice: &price,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.updated.GPTImageCallPrice)
+	require.InDelta(t, 0.30, *repo.updated.GPTImageCallPrice, 0.0001)
+}
+
 func TestAdminService_UpdateGroup_WithGrokVideoPricing(t *testing.T) {
 	existingGroup := &Group{
 		ID:                  1,

@@ -1283,7 +1283,10 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	if input.GPTImageCallPrice != nil {
 		group.GPTImageCallPrice = normalizePrice(input.GPTImageCallPrice)
 	}
-	if group.Platform != PlatformGPTImage {
+	// OpenAI text groups may expose the same fixed-price image renderer as the
+	// standalone GPT Image group. Other platforms keep their native media
+	// pricing contracts and must not retain this OpenAI-specific field.
+	if group.Platform != PlatformGPTImage && group.Platform != PlatformOpenAI {
 		group.GPTImageCallPrice = nil
 	}
 	if input.VideoRateIndependent != nil {

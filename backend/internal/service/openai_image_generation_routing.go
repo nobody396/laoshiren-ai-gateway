@@ -10,6 +10,9 @@ import (
 )
 
 const (
+	// OpenAIFixedImageRendererModel is the stable public model routed to the
+	// dedicated image pool when Codex asks for a new image in natural language.
+	OpenAIFixedImageRendererModel = "gpt-image-2"
 	// OpenAIImageGenerationPriorityExtraKey opts an OpenAI account into
 	// Responses API image-generation routing. Lower positive values win.
 	OpenAIImageGenerationPriorityExtraKey = "openai_image_generation_priority"
@@ -32,6 +35,8 @@ const (
 var (
 	openAIEnglishImageActionPattern = regexp.MustCompile(`(?i)\b(generate|create|draw|paint|illustrate|design|render|make|edit|modify|transform|restyle|redraw)\b`)
 	openAIEnglishImageNounPattern   = regexp.MustCompile(`(?i)\b(image|images|picture|pictures|photo|photos|illustration|illustrations|poster|posters|logo|logos|icon|icons|wallpaper|wallpapers|avatar|avatars|artwork|cover art)\b`)
+	openAIEnglishImageHowToPattern  = regexp.MustCompile(`(?i)\bhow\s+(?:to|do\s+i|can\s+i|should\s+i)\s+(?:generate|create|draw|paint|illustrate|design|render|make|edit|modify|transform|restyle|redraw)\b`)
+	openAIChineseImageHowToPattern  = regexp.MustCompile(`(?:如何|怎么|怎样|怎么才能|怎样才能).{0,16}(?:生成|绘制|画|创作|制作|创建|设计|渲染|重绘|编辑|修改).{0,16}(?:图片|图像|图|插图|海报|封面|头像|壁纸|图标|照片|logo)`)
 )
 
 // IsExplicitOpenAIImageGenerationIntent detects only native Responses API
@@ -41,6 +46,13 @@ func IsExplicitOpenAIImageGenerationIntent(body []byte) bool {
 	if len(body) == 0 || !gjson.ValidBytes(body) {
 		return false
 	}
+	var reqBody map[string]any
+	if err := json.Unmarshal(body, &reqBody); err != nil || !openAIToolChoiceAllowsImageBridge(reqBody["tool_choice"]) {
+		return false
+	}
+	if openAIToolChoiceSelectsImageGeneration(gjson.GetBytes(body, "tool_choice")) {
+		return true
+	}
 	if tools := gjson.GetBytes(body, "tools"); tools.IsArray() {
 		found := false
 		tools.ForEach(func(_, item gjson.Result) bool {
@@ -48,10 +60,11 @@ func IsExplicitOpenAIImageGenerationIntent(body []byte) bool {
 			return !found
 		})
 		if found {
-			return true
+			prompt, hasInputImage, ok := latestOpenAIUserPrompt(body)
+			return ok && openAIUserPromptRequestsImage(prompt, hasInputImage)
 		}
 	}
-	return openAIToolChoiceSelectsImageGeneration(gjson.GetBytes(body, "tool_choice"))
+	return false
 }
 
 // IsOpenAICodexSemanticImageGenerationIntent recognizes an explicit natural-
@@ -64,6 +77,48 @@ func IsOpenAICodexSemanticImageGenerationIntent(body []byte) bool {
 	}
 	prompt, hasInputImage, ok := latestOpenAIUserPrompt(body)
 	return ok && openAIUserPromptRequestsImage(prompt, hasInputImage)
+}
+
+// ShouldUseFixedOpenAIImageRenderer reports whether an official Codex
+// Responses request can be rendered by the dedicated GPT Image pool. Image
+// edits keep the original Responses tool path because native generation-only
+// providers cannot faithfully reproduce an attached-image edit.
+//
+// A passive image_generation tool catalog is not enough by itself. The latest
+// user turn must explicitly request a generated image, or tool_choice must
+// force the hosted image tool. This keeps normal text traffic isolated.
+func ShouldUseFixedOpenAIImageRenderer(body []byte) bool {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return false
+	}
+	var reqBody map[string]any
+	if err := json.Unmarshal(body, &reqBody); err != nil || !openAIToolChoiceAllowsImageBridge(reqBody["tool_choice"]) {
+		return false
+	}
+	prompt, hasInputImage, ok := latestOpenAIUserPrompt(body)
+	if !ok || hasInputImage {
+		return false
+	}
+	if openAIToolChoiceSelectsImageGeneration(gjson.GetBytes(body, "tool_choice")) {
+		return true
+	}
+	return openAIUserPromptRequestsImage(prompt, false)
+}
+
+// LatestOpenAIUserPromptForImageRenderer extracts the single latest user turn
+// accepted by the fixed renderer. It intentionally rejects input-image edits.
+func LatestOpenAIUserPromptForImageRenderer(body []byte) (string, error) {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return "", fmt.Errorf("invalid OpenAI Responses request body")
+	}
+	prompt, hasInputImage, ok := latestOpenAIUserPrompt(body)
+	if !ok || strings.TrimSpace(prompt) == "" {
+		return "", fmt.Errorf("image generation prompt is required")
+	}
+	if hasInputImage {
+		return "", fmt.Errorf("fixed image renderer does not support input-image edits")
+	}
+	return strings.TrimSpace(prompt), nil
 }
 
 // PrepareOpenAICodexImageGenerationRequest makes the native Responses
@@ -242,6 +297,9 @@ func openAIUserPromptRequestsImage(prompt string, hasInputImage bool) bool {
 		if strings.HasPrefix(prompt, informationalPrefix) {
 			return false
 		}
+	}
+	if openAIEnglishImageHowToPattern.MatchString(prompt) || openAIChineseImageHowToPattern.MatchString(prompt) {
+		return false
 	}
 	if strings.Contains(prompt, "生成图片的提示词") || strings.Contains(prompt, "生图提示词") ||
 		strings.Contains(prompt, "image generation api") {

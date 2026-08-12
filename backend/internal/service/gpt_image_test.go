@@ -217,3 +217,30 @@ func TestForwardGPTImageSubmittedTaskDoesNotSetImageCount(t *testing.T) {
 	require.Equal(t, "2K", result.ImageSize)
 	require.Equal(t, []string{"task_123"}, result.GPTImageTaskIDs)
 }
+
+func TestForwardGPTImageEmptySuccessDoesNotBillAndSafelyFailsOver(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(`{"code":200,"data":[]}`)),
+	}
+	upstream := &gptImageForwardHTTPUpstreamStub{resp: resp}
+	svc := &OpenAIGatewayService{httpUpstream: upstream, cfg: &config.Config{}}
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+
+	result, err := svc.ForwardGPTImage(context.Background(), c, &Account{
+		ID: 1, Platform: PlatformGPTImage, Type: AccountTypeUpstream,
+		Credentials: map[string]any{"base_url": "https://api.apimart.ai", "api_key": "test-key"},
+	}, &GPTImageRequest{
+		Model: "gpt-image-2", Resolution: "2K",
+		Body: []byte(`{"model":"gpt-image-2","prompt":"x","resolution":"2k"}`),
+	})
+
+	require.Nil(t, result)
+	var failoverErr *UpstreamFailoverError
+	require.ErrorAs(t, err, &failoverErr)
+	require.Equal(t, GatewayFailureReason("gpt_image_no_output"), failoverErr.Reason)
+	require.Empty(t, recorder.Body.String())
+}

@@ -424,7 +424,7 @@ func (r *supplierRepository) UpsertFromAccount(ctx context.Context, supplier *se
 				contact_platform, contact_value, status, cost_rmb_per_usd, notes,
 				source_account_id, source_platform,
 				probe_enabled, probe_model, probe_interval_minutes, last_probe_status
-			) VALUES ($1, '', $2, $3, $4, '', '', $5, NULL, $6, $7, $8, TRUE, $9, $10, $11)
+			) VALUES ($1, '', $2, $3, $4, '', '', $5, NULL, $6, $7, $8, $9, $10, $11, $12)
 			RETURNING id, created_at, updated_at`,
 			supplier.Name,
 			supplier.BaseURL,
@@ -434,6 +434,7 @@ func (r *supplierRepository) UpsertFromAccount(ctx context.Context, supplier *se
 			supplier.Notes,
 			*supplier.SourceAccountID,
 			supplier.SourcePlatform,
+			supplier.ProbeEnabled,
 			supplier.ProbeModel,
 			supplier.ProbeIntervalMinutes,
 			supplier.LastProbeStatus,

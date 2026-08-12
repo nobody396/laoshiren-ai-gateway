@@ -17,8 +17,18 @@ func TestIsExplicitOpenAIImageGenerationIntent(t *testing.T) {
 	}{
 		{
 			name: "native image tool",
-			body: `{"model":"gpt-5.4","tools":[{"type":"image_generation"}],"input":"draw"}`,
+			body: `{"model":"gpt-5.4","tools":[{"type":"image_generation"}],"input":"draw an image"}`,
 			want: true,
+		},
+		{
+			name: "passive native image tool catalog",
+			body: `{"model":"gpt-5.4","tools":[{"type":"image_generation"}],"tool_choice":"auto","input":"explain this code"}`,
+			want: false,
+		},
+		{
+			name: "forced non image tool fails closed",
+			body: `{"model":"gpt-5.4","tools":[{"type":"image_generation"},{"type":"function","name":"save_file"}],"tool_choice":{"type":"function","name":"save_file"},"input":"generate an image"}`,
+			want: false,
 		},
 		{
 			name: "string tool choice",
@@ -111,6 +121,21 @@ func TestIsOpenAICodexSemanticImageGenerationIntent(t *testing.T) {
 			want: false,
 		},
 		{
+			name: "embedded chinese how to question",
+			body: `{"model":"gpt-5.6","input":"请告诉我如何生成图片"}`,
+			want: false,
+		},
+		{
+			name: "english how to draw question",
+			body: `{"model":"gpt-5.6","input":"How to draw an image?"}`,
+			want: false,
+		},
+		{
+			name: "embedded english how to question",
+			body: `{"model":"gpt-5.6","input":"Can you explain how to generate an image?"}`,
+			want: false,
+		},
+		{
 			name: "prompt writing request",
 			body: `{"model":"gpt-5.6","input":"帮我写一个生成图片的提示词"}`,
 			want: false,
@@ -199,6 +224,51 @@ func TestPrepareOpenAICodexImageGenerationRequest(t *testing.T) {
 		require.ErrorContains(t, err, "tools must be an array")
 		require.False(t, activated)
 	})
+}
+
+func TestShouldUseFixedOpenAIImageRenderer(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want bool
+	}{
+		{
+			name: "natural language generation",
+			body: `{"model":"gpt-5.6-luna","input":"帮我生成一张月球橘猫的图片"}`,
+			want: true,
+		},
+		{
+			name: "forced hosted image tool",
+			body: `{"model":"gpt-5.6-sol","input":"a watercolor city","tools":[{"type":"image_generation"}],"tool_choice":{"type":"image_generation"}}`,
+			want: true,
+		},
+		{
+			name: "passive hosted tool catalog",
+			body: `{"model":"gpt-5.6-sol","input":"explain this code","tools":[{"type":"image_generation"}],"tool_choice":"auto"}`,
+		},
+		{
+			name: "forced non image tool",
+			body: `{"model":"gpt-5.6-sol","input":"generate an image","tools":[{"type":"image_generation"},{"type":"function","name":"save_file"}],"tool_choice":{"type":"function","name":"save_file"}}`,
+		},
+		{
+			name: "attached image edit stays on responses path",
+			body: `{"model":"gpt-5.6-sol","input":[{"role":"user","content":[{"type":"input_image","image_url":"data:image/png;base64,AA=="},{"type":"input_text","text":"把这张图改成水彩风格"}]}]}`,
+		},
+		{
+			name: "negative request",
+			body: `{"model":"gpt-5.6-sol","input":"先不要生成图片，只解释原理"}`,
+		},
+		{
+			name: "how to request",
+			body: `{"model":"gpt-5.6-sol","input":"如何生成一张图片？"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, ShouldUseFixedOpenAIImageRenderer([]byte(tt.body)))
+		})
+	}
 }
 
 func TestAccountOpenAIImageGenerationRoutingPriority(t *testing.T) {

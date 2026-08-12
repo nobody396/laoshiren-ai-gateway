@@ -13,7 +13,7 @@ describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on macOS and Linux', () => {
     const script = readPublicScript('install.sh')
 
-    expect(script).toContain('SCRIPT_VERSION="0.7.2"')
+    expect(script).toContain('SCRIPT_VERSION="0.7.3"')
     expect(script).toContain('EXISTING_CLAUDE_COMMAND="$(get_usable_client_command claude || true)"')
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('exchange_setup_ticket')
@@ -30,7 +30,7 @@ describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on Windows', () => {
     const script = readPublicScript('install.ps1')
 
-    expect(script).toContain("$ScriptVersion = '0.7.2'")
+    expect(script).toContain("$ScriptVersion = '0.7.3'")
     expect(script).toContain("Get-UsableClientCommand -CommandName 'claude'")
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('Exchange-SetupTicket')
@@ -40,6 +40,11 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('Add-AppxPackage -AppInstallerFile $AppInstallerPath')
     expect(script).toContain('$ApiBaseUrl/usage')
     expect(script).toContain('余额/套餐额度不足')
+    expect(script).toContain('Resolve-SystemNpmCmd')
+    expect(script).toContain("Get-Command npm.cmd -CommandType Application")
+    expect(script).toContain('$script:NpmCmd = Resolve-SystemNpmCmd -NodeCommand $NodeCommand')
+    expect(script).toContain('throw "npm.cmd 执行失败，退出码: $LASTEXITCODE"')
+    expect(script).not.toContain('$script:NpmCmd = (Get-Command npm).Source')
     expect(script.indexOf('Exchange-SetupTicket\n')).toBeLessThan(script.indexOf('Resolve-ClientInstallPlan\n'))
   })
 

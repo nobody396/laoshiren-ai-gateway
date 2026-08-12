@@ -1,11 +1,11 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.7.2'
+$ScriptVersion = '0.7.3'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
 $DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
-$DefaultCodexModelCatalogUrl = 'https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.2'
+$DefaultCodexModelCatalogUrl = 'https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.3'
 $DefaultCodexAppInstallerUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/windows-x64/latest.appinstaller'
 $DefaultTopupUrl = 'https://laoshirenai.com/get-subscription'
 $DefaultTools = 'all'
@@ -279,13 +279,16 @@ function Exchange-SetupTicket {
   Write-Info '专用配置领取成功'
 }
 
-# 查找一个真正可执行的现有 CLI。仅 PATH 中存在但无法运行的残留命令不算已安装。
+# 查找一个真正可执行的现有 CLI。Windows npm 同时生成 .cmd 和 .ps1 shim；
+# 必须优先执行 .cmd，否则 Restricted 执行策略会拦截同名 .ps1。
 function Get-UsableClientCommand {
   param([string]$CommandName)
 
-  $Command = Get-Command $CommandName -ErrorAction SilentlyContinue |
-    Where-Object { $_.CommandType -in @('Application', 'ExternalScript') } |
-    Select-Object -First 1
+  $Command = @(
+    Get-Command "$CommandName.cmd" -CommandType Application -ErrorAction SilentlyContinue
+    Get-Command "$CommandName.exe" -CommandType Application -ErrorAction SilentlyContinue
+    Get-Command $CommandName -CommandType Application -ErrorAction SilentlyContinue
+  ) | Select-Object -First 1
   if ($null -eq $Command) {
     return ''
   }
@@ -462,12 +465,32 @@ function Test-NeedsNpmClientInstall {
   return ($script:InstallClaudeClient -or $script:InstallCodexClient)
 }
 
+# 只解析 npm.cmd，避免 PowerShell 在 Restricted 执行策略下优先命中 npm.ps1。
+function Resolve-SystemNpmCmd {
+  param([System.Management.Automation.CommandInfo]$NodeCommand)
+
+  if ($null -ne $NodeCommand -and -not [string]::IsNullOrWhiteSpace([string]$NodeCommand.Source)) {
+    $SiblingNpmCmd = Join-Path (Split-Path -Parent $NodeCommand.Source) 'npm.cmd'
+    if (Test-Path -LiteralPath $SiblingNpmCmd) {
+      return $SiblingNpmCmd
+    }
+  }
+
+  $NpmCommand = Get-Command npm.cmd -CommandType Application -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+  if ($null -eq $NpmCommand) {
+    return ''
+  }
+  return [string]$NpmCommand.Source
+}
+
 # 判断系统自带 Node.js 是否可复用，避免重复下载安装。
 function Test-UsableSystemNode {
-  $NodeCommand = Get-Command node -ErrorAction SilentlyContinue
-  $NpmCommand = Get-Command npm -ErrorAction SilentlyContinue
+  $NodeCommand = Get-Command node -CommandType Application -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+  $NpmCmd = Resolve-SystemNpmCmd -NodeCommand $NodeCommand
 
-  if ($null -eq $NodeCommand -or $null -eq $NpmCommand) {
+  if ($null -eq $NodeCommand -or [string]::IsNullOrWhiteSpace($NpmCmd)) {
     return $false
   }
 
@@ -567,8 +590,10 @@ function Install-LocalNode {
 # 统一确定本次执行使用的 Node/npm 路径。
 function Ensure-NodeRuntime {
   if (Test-UsableSystemNode) {
-    $script:NodeExe = (Get-Command node).Source
-    $script:NpmCmd = (Get-Command npm).Source
+    $NodeCommand = Get-Command node -CommandType Application -ErrorAction Stop |
+      Select-Object -First 1
+    $script:NodeExe = [string]$NodeCommand.Source
+    $script:NpmCmd = Resolve-SystemNpmCmd -NodeCommand $NodeCommand
     Write-Info "检测到可用系统 Node.js: $(& $script:NodeExe --version)"
     return
   }
@@ -736,6 +761,9 @@ function Invoke-NpmCommand {
     }
 
     & $script:NpmCmd @Arguments
+    if ($LASTEXITCODE -ne 0) {
+      throw "npm.cmd 执行失败，退出码: $LASTEXITCODE"
+    }
   } finally {
     $env:HTTP_PROXY  = $PreviousProxy.k1
     $env:HTTPS_PROXY = $PreviousProxy.k2

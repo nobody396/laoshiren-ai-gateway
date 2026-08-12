@@ -131,6 +131,21 @@ func containsAnyOpenAIRouteKeyword(value string, keywords ...string) bool {
 	return false
 }
 
+// OpenAIRouteFailureCanEscalateProvider contains only failures that plausibly
+// share supplier infrastructure. Key/model/rate-limit/payment failures stay on
+// the narrow route even when multiple accounts use the same supplier.
+func OpenAIRouteFailureCanEscalateProvider(class OpenAIRouteFailureClass) bool {
+	switch class {
+	case OpenAIRouteFailureCapacity,
+		OpenAIRouteFailureUpstream5xx,
+		OpenAIRouteFailureMalformedStream,
+		OpenAIRouteFailurePartialStream:
+		return true
+	default:
+		return false
+	}
+}
+
 func ApplyOpenAIRouteHealthEvent(state OpenAIRouteHealthState, event OpenAIRouteHealthEvent, policy OpenAIRoutePolicy) (OpenAIRouteHealthState, error) {
 	normalized, err := NormalizeOpenAIRoutePolicy(policy)
 	if err != nil {

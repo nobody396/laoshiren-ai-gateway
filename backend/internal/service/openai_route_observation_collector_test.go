@@ -19,6 +19,19 @@ type openAIRouteObservationStoreStub struct {
 	profiles     map[string]OpenAIRouteObservationProfile
 }
 
+type openAIRouteOutcomeRecorderStub struct {
+	mu    sync.Mutex
+	err   error
+	calls int
+}
+
+func (s *openAIRouteOutcomeRecorderStub) RecordOpenAIRouteOutcome(context.Context, OpenAIRouteObservation) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.calls++
+	return s.err
+}
+
 func (s *openAIRouteObservationStoreStub) Check(context.Context) error { return s.recordErr }
 
 func (s *openAIRouteObservationStoreStub) Record(_ context.Context, observation OpenAIRouteObservation) error {
@@ -96,4 +109,20 @@ func TestOpenAIRouteObservationCollectorExposesFailureAndOverflow(t *testing.T) 
 	require.Equal(t, uint64(2), stats.Failed)
 	require.False(t, stats.Ready)
 	require.InDelta(t, 0, stats.Completeness, 1e-12)
+}
+
+func TestOpenAIRouteObservationCollectorSeparatesEvidenceWriteFromHealthApply(t *testing.T) {
+	store := &openAIRouteObservationStoreStub{}
+	recorder := &openAIRouteOutcomeRecorderStub{err: errors.New("health unavailable")}
+	collector := NewOpenAIRouteObservationCollectorWithOptions(store, 1, 4, recorder)
+	collector.Start()
+	require.True(t, collector.TryRecord(testOpenAIRouteObservation()))
+	collector.Stop()
+
+	stats := collector.Stats()
+	require.Equal(t, uint64(1), stats.Written)
+	require.Zero(t, stats.Failed, "the rolling observation was durably written")
+	require.Equal(t, uint64(1), stats.OutcomeFailed)
+	require.Equal(t, 1.0, stats.Completeness)
+	require.False(t, stats.Ready, "health transition loss must still block readiness")
 }

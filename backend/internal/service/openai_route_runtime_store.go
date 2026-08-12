@@ -88,6 +88,18 @@ func (k OpenAIRouteHealthStoreKey) Fingerprint() string {
 type OpenAIRouteHealthStore interface {
 	Get(ctx context.Context, key OpenAIRouteHealthStoreKey) (OpenAIRouteHealthState, error)
 	ApplyEvent(ctx context.Context, key OpenAIRouteHealthStoreKey, event OpenAIRouteHealthEvent, policy OpenAIRoutePolicy) (OpenAIRouteHealthState, error)
+	RecordProviderEvidence(ctx context.Context, routeKey OpenAIRouteKey, event OpenAIRouteHealthEvent, policy OpenAIRoutePolicy, minDistinctAccounts int) (OpenAIRouteProviderEvidenceResult, error)
 	AcquireHalfOpenPermit(ctx context.Context, key OpenAIRouteHealthStoreKey, owner string) (bool, error)
 	ReleaseHalfOpenPermit(ctx context.Context, key OpenAIRouteHealthStoreKey, owner string) error
+}
+
+type OpenAIRouteProviderEvidenceResult struct {
+	DistinctFailingAccounts int
+	ProviderEventApplied    bool
+	State                   OpenAIRouteHealthState
+}
+
+func OpenAIRouteHasSharedFailureDomain(key OpenAIRouteKey) bool {
+	domain := strings.TrimSpace(key.FailureDomain)
+	return domain != "" && domain != fmt.Sprintf("account:%d", key.AccountID)
 }

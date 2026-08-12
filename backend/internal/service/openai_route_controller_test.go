@@ -21,9 +21,17 @@ func (s *openAIRoutePolicyReaderStub) GetValue(context.Context, string) (string,
 }
 
 type openAIRouteHealthStoreStub struct {
-	states        map[OpenAIRouteHealthStoreKey]OpenAIRouteHealthState
-	appliedKeys   []OpenAIRouteHealthStoreKey
-	appliedEvents []OpenAIRouteHealthEvent
+	states         map[OpenAIRouteHealthStoreKey]OpenAIRouteHealthState
+	appliedKeys    []OpenAIRouteHealthStoreKey
+	appliedEvents  []OpenAIRouteHealthEvent
+	providerKeys   []OpenAIRouteKey
+	providerEvents []OpenAIRouteHealthEvent
+}
+
+func (s *openAIRouteHealthStoreStub) RecordProviderEvidence(_ context.Context, key OpenAIRouteKey, event OpenAIRouteHealthEvent, _ OpenAIRoutePolicy, _ int) (OpenAIRouteProviderEvidenceResult, error) {
+	s.providerKeys = append(s.providerKeys, key)
+	s.providerEvents = append(s.providerEvents, event)
+	return OpenAIRouteProviderEvidenceResult{}, nil
 }
 
 func (s *openAIRouteHealthStoreStub) Get(_ context.Context, key OpenAIRouteHealthStoreKey) (OpenAIRouteHealthState, error) {
@@ -239,6 +247,28 @@ func TestOpenAIRouteController_RealOutcomeUpdatesOnlyNarrowRouteHealth(t *testin
 	require.Len(t, health.appliedKeys, 1)
 	require.Equal(t, OpenAIRouteHealthScopeRoute, health.appliedKeys[0].Scope)
 	require.Equal(t, OpenAIRouteFailureRateLimit, health.appliedEvents[0].FailureClass)
+	require.Empty(t, health.providerEvents, "an account-isolated route must never create provider evidence")
+}
+
+func TestOpenAIRouteController_EscalatesOnlyCorrelatableSharedDomainFailures(t *testing.T) {
+	health := &openAIRouteHealthStoreStub{}
+	controller := NewOpenAIRouteController(&openAIRoutePolicyReaderStub{err: ErrSettingNotFound}, health, &openAIRouteBudgetSnapshotStoreStub{}, &openAIRouteObservationStoreStub{})
+	account := testOpenAIRouteControllerAccount(1, 0.15)
+	account.Extra[openAIRouteFailureDomainExtraKey] = "pomoai"
+	key, err := NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://example.invalid/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
+	require.NoError(t, err)
+	now := time.Now().UTC()
+
+	require.NoError(t, controller.RecordOpenAIRouteOutcome(context.Background(), OpenAIRouteObservation{
+		Key: key, ObservedAt: now, FailureClass: OpenAIRouteFailureRateLimit, PenalizeRoute: true,
+	}))
+	require.Empty(t, health.providerEvents, "rate limits stay on the narrow route")
+
+	require.NoError(t, controller.RecordOpenAIRouteOutcome(context.Background(), OpenAIRouteObservation{
+		Key: key, ObservedAt: now.Add(time.Millisecond), FailureClass: OpenAIRouteFailureUpstream5xx, PenalizeRoute: true,
+	}))
+	require.Len(t, health.providerEvents, 1)
+	require.Equal(t, OpenAIRouteFailureUpstream5xx, health.providerEvents[0].FailureClass)
 }
 
 func TestResolveOpenAIRoutePolicyConfigSeparatesRequestClasses(t *testing.T) {

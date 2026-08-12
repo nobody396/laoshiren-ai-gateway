@@ -110,3 +110,47 @@ func (s *OpenAIRouteHealthCacheSuite) TestHalfOpenPermitIsSingleOwnerAndIdempote
 	require.NoError(s.T(), err)
 	require.True(s.T(), ok)
 }
+
+func (s *OpenAIRouteHealthCacheSuite) TestProviderOpensOnlyAfterDistinctRoutesAndRecoversAfterTheirSuccesses() {
+	policy := service.DefaultOpenAIRoutePolicy()
+	start := time.Now().UTC()
+	first := service.OpenAIRouteKey{
+		GroupID: 7, AccountID: 23, FailureDomain: "pomoai", Model: "gpt-5.6-sol",
+		RequestClass: service.OpenAIRouteRequestClassText, EndpointHash: "hk", Transport: "http_sse",
+	}
+	second := first
+	second.AccountID = 24
+	second.EndpointHash = "jp"
+	failure := service.OpenAIRouteHealthEvent{At: start, FailureClass: service.OpenAIRouteFailureUpstream5xx}
+
+	result, err := s.cache.RecordProviderEvidence(s.ctx, first, failure, policy, 2)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 1, result.DistinctFailingAccounts)
+	require.False(s.T(), result.ProviderEventApplied)
+
+	failure.At = start.Add(time.Millisecond)
+	result, err = s.cache.RecordProviderEvidence(s.ctx, first, failure, policy, 2)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 1, result.DistinctFailingAccounts, "repeated failures on one account are not correlation")
+	require.False(s.T(), result.ProviderEventApplied)
+
+	failure.At = start.Add(2 * time.Millisecond)
+	result, err = s.cache.RecordProviderEvidence(s.ctx, second, failure, policy, 2)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 2, result.DistinctFailingAccounts)
+	require.True(s.T(), result.ProviderEventApplied)
+	require.Equal(s.T(), service.OpenAIRouteCircuitOpen, result.State.State)
+
+	success := service.OpenAIRouteHealthEvent{At: start.Add(3 * time.Millisecond), Success: true, FailureClass: service.OpenAIRouteFailureNone}
+	result, err = s.cache.RecordProviderEvidence(s.ctx, first, success, policy, 2)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 1, result.DistinctFailingAccounts)
+	require.False(s.T(), result.ProviderEventApplied)
+
+	success.At = start.Add(4 * time.Millisecond)
+	result, err = s.cache.RecordProviderEvidence(s.ctx, second, success, policy, 2)
+	require.NoError(s.T(), err)
+	require.Zero(s.T(), result.DistinctFailingAccounts)
+	require.True(s.T(), result.ProviderEventApplied)
+	require.Equal(s.T(), service.OpenAIRouteCircuitRecovering, result.State.State)
+}

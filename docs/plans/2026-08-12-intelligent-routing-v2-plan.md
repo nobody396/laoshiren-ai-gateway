@@ -50,9 +50,11 @@ group + account + model + request_class + endpoint_hash + transport + failure_do
   Wilson reliability, P90 TTFT, P95 completion latency, partial-stream rate,
   recent account/provider share, and bounded exploration. All factors are
   persisted in the existing decision snapshot.
-- V2.3 route-scoped real outcome transitions are implemented. Correlated
-  provider escalation, single-owner active probes, and durable aggregate
-  checkpoints remain before an enforce-capable release.
+- V2.3 passive health foundations are implemented: real outcomes drive the
+  narrow route, and only infrastructure-like failures seen on at least two
+  distinct accounts inside the same explicit failure domain can open the
+  provider circuit. Key/model/rate-limit/payment failures never fan out.
+  Single-owner active probes and durable aggregate checkpoints remain deferred.
 - Real selection remains Legacy-only. No production policy or account setting
   is changed by this development branch.
 
@@ -98,6 +100,11 @@ instead exposed as evidence loss in the admin health endpoint.
 - isolate model/rate-limit/key failures to the narrowest route;
 - escalate correlated failures to the shared failure domain;
 - use single-owner half-open probes and staged recovery shares.
+
+Coordination boundary: this worktree does not start an active probe, timer, or
+production observation job. It implements only the passive evidence and health
+primitives until the unified release finishes and a separate production change
+is authorized.
 
 ### V2.4 — guarded enforcement
 

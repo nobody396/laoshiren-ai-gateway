@@ -44,6 +44,11 @@ func (s *OpsService) GetOpenAIRouteAuditHealth(ctx context.Context) OpenAIRouteA
 		health.ObservationLastSuccessAt = stats.LastSuccessAt
 		health.ObservationLastFailureAt = stats.LastFailureAt
 		health.ObservationLastError = stats.LastError
+		health.ObservationOutcomeApplied = stats.OutcomeApplied
+		health.ObservationOutcomeFailed = stats.OutcomeFailed
+		health.ObservationOutcomeLastSuccessAt = stats.OutcomeLastSuccessAt
+		health.ObservationOutcomeLastFailureAt = stats.OutcomeLastFailureAt
+		health.ObservationOutcomeLastError = stats.OutcomeLastError
 		health.ObservationReady = stats.Ready
 	}
 	health.Ready = health.Ready && health.ObservationReady

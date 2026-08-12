@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,11 +14,13 @@ import (
 )
 
 const (
-	openAIRouteHealthKeyPrefix   = "route:v1:health:"
-	openAIRouteHalfOpenKeyPrefix = "route:v1:halfopen:"
-	defaultOpenAIRouteHealthTTL  = 24 * time.Hour
-	defaultOpenAIRoutePermitTTL  = 30 * time.Second
-	openAIRouteHealthCASRetries  = 32
+	openAIRouteHealthKeyPrefix           = "route:v1:health:"
+	openAIRouteHalfOpenKeyPrefix         = "route:v1:halfopen:"
+	openAIRouteProviderEvidenceKeyPrefix = "route:v2:provider-evidence:"
+	openAIRouteProviderEpisodeKeyPrefix  = "route:v2:provider-episode:"
+	defaultOpenAIRouteHealthTTL          = 24 * time.Hour
+	defaultOpenAIRoutePermitTTL          = 30 * time.Second
+	openAIRouteHealthCASRetries          = 32
 )
 
 var (
@@ -39,6 +42,44 @@ if current ~= false and current == ARGV[1] then
   return redis.call('DEL', KEYS[1])
 end
 return 0
+`)
+	recordOpenAIRouteProviderEvidenceScript = redis.NewScript(`
+local member = ARGV[1]
+local observed_ms = tonumber(ARGV[2])
+local cutoff_ms = tonumber(ARGV[3])
+local ttl_ms = tonumber(ARGV[4])
+local min_distinct = tonumber(ARGV[5])
+local success = tonumber(ARGV[6])
+local episode = ARGV[7]
+
+redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', cutoff_ms)
+if success == 1 then
+  redis.call('ZREM', KEYS[1], member)
+else
+  redis.call('ZADD', KEYS[1], observed_ms, member)
+end
+local count = redis.call('ZCARD', KEYS[1])
+if count > 0 then
+  redis.call('PEXPIRE', KEYS[1], ttl_ms)
+else
+  redis.call('DEL', KEYS[1])
+end
+
+if success == 1 then
+  if count == 0 then
+    redis.call('DEL', KEYS[2])
+    return {count, 1}
+  end
+  return {count, 0}
+end
+
+if count >= min_distinct then
+  local acquired = redis.call('SET', KEYS[2], episode, 'NX', 'PX', ttl_ms)
+  if acquired then
+    return {count, 1}
+  end
+end
+return {count, 0}
 `)
 )
 
@@ -122,6 +163,93 @@ func (c *openAIRouteHealthCache) ApplyEvent(ctx context.Context, key service.Ope
 		}
 	}
 	return service.OpenAIRouteHealthState{}, fmt.Errorf("openai route health CAS retries exhausted")
+}
+
+func (c *openAIRouteHealthCache) RecordProviderEvidence(
+	ctx context.Context,
+	routeKey service.OpenAIRouteKey,
+	event service.OpenAIRouteHealthEvent,
+	policy service.OpenAIRoutePolicy,
+	minDistinctAccounts int,
+) (service.OpenAIRouteProviderEvidenceResult, error) {
+	result := service.OpenAIRouteProviderEvidenceResult{}
+	if c == nil || c.rdb == nil || !routeKey.Valid() || !service.OpenAIRouteHasSharedFailureDomain(routeKey) {
+		return result, service.ErrOpenAIRouteNoCandidate
+	}
+	normalized, err := service.NormalizeOpenAIRoutePolicy(policy)
+	if err != nil {
+		return result, err
+	}
+	if minDistinctAccounts < 2 {
+		minDistinctAccounts = 2
+	}
+	if event.At.IsZero() {
+		event.At = time.Now().UTC()
+	}
+	providerKey := service.OpenAIRouteHealthStoreKeyForProvider(routeKey)
+	fingerprint := providerKey.Fingerprint()
+	// The shared hash tag keeps both Lua keys in one Redis Cluster slot.
+	evidenceKey := openAIRouteProviderEvidenceKeyPrefix + "{" + fingerprint + "}"
+	episodeKey := openAIRouteProviderEpisodeKeyPrefix + "{" + fingerprint + "}"
+	evidenceTTL := 2 * normalized.FailureWindow
+	if evidenceTTL < time.Minute {
+		evidenceTTL = time.Minute
+	}
+	success := 0
+	if event.Success || event.FailureClass == service.OpenAIRouteFailureNone {
+		success = 1
+	}
+	episode := fmt.Sprintf("%d:%s", event.At.UnixNano(), service.OpenAIRouteHealthStoreKeyForRoute(routeKey).Fingerprint())
+	raw, err := recordOpenAIRouteProviderEvidenceScript.Run(ctx, c.rdb, []string{evidenceKey, episodeKey},
+		strconv.FormatInt(routeKey.AccountID, 10),
+		event.At.UnixMilli(),
+		event.At.Add(-normalized.FailureWindow).UnixMilli(),
+		evidenceTTL.Milliseconds(),
+		minDistinctAccounts,
+		success,
+		episode,
+	).Slice()
+	if err != nil {
+		return result, err
+	}
+	if len(raw) != 2 {
+		return result, fmt.Errorf("invalid OpenAI provider evidence result")
+	}
+	count, ok := raw[0].(int64)
+	if !ok {
+		return result, fmt.Errorf("invalid OpenAI provider evidence count")
+	}
+	action, ok := raw[1].(int64)
+	if !ok {
+		return result, fmt.Errorf("invalid OpenAI provider evidence action")
+	}
+	result.DistinctFailingAccounts = int(count)
+	if action != 1 {
+		return result, nil
+	}
+
+	if success == 1 {
+		current, getErr := c.Get(ctx, providerKey)
+		if getErr != nil {
+			return result, getErr
+		}
+		if current.State == service.OpenAIRouteCircuitHealthy || current.State == service.OpenAIRouteCircuitWarmup {
+			result.State = current
+			return result, nil
+		}
+	}
+	state, applyErr := c.ApplyEvent(ctx, providerKey, event, normalized)
+	if applyErr != nil {
+		if success == 0 {
+			cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+			_ = c.rdb.Del(cleanupCtx, episodeKey).Err()
+			cleanupCancel()
+		}
+		return result, applyErr
+	}
+	result.ProviderEventApplied = true
+	result.State = state
+	return result, nil
 }
 
 func (c *openAIRouteHealthCache) AcquireHalfOpenPermit(ctx context.Context, key service.OpenAIRouteHealthStoreKey, owner string) (bool, error) {

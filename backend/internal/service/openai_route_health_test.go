@@ -47,6 +47,27 @@ func TestClassifyOpenAIRouteFailure_RecognizesBalanceBeforeGeneric403Auth(t *tes
 	require.True(t, classification.PenalizeRoute)
 }
 
+func TestOpenAIRouteFailureCanEscalateProvider_IsConservative(t *testing.T) {
+	for _, class := range []OpenAIRouteFailureClass{
+		OpenAIRouteFailureCapacity,
+		OpenAIRouteFailureUpstream5xx,
+		OpenAIRouteFailureMalformedStream,
+		OpenAIRouteFailurePartialStream,
+	} {
+		require.True(t, OpenAIRouteFailureCanEscalateProvider(class), class)
+	}
+	for _, class := range []OpenAIRouteFailureClass{
+		OpenAIRouteFailureRateLimit,
+		OpenAIRouteFailureAuthentication,
+		OpenAIRouteFailurePayment,
+		OpenAIRouteFailureModelUnsupported,
+		OpenAIRouteFailureLocalTransport,
+		OpenAIRouteFailureUserRequest,
+	} {
+		require.False(t, OpenAIRouteFailureCanEscalateProvider(class), class)
+	}
+}
+
 func TestApplyOpenAIRouteHealthEvent_GenericFailureDegradesThenOpens(t *testing.T) {
 	policy := DefaultOpenAIRoutePolicy()
 	start := time.Date(2026, 8, 8, 12, 0, 0, 0, time.UTC)

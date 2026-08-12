@@ -15,8 +15,9 @@ import (
 const (
 	OpenAIRoutePoliciesSettingKey = "openai_route_policies"
 
-	defaultOpenAIRoutePolicyCacheTTL      = 60 * time.Second
-	defaultOpenAIRoutePolicyErrorCacheTTL = 5 * time.Second
+	defaultOpenAIRoutePolicyCacheTTL              = 60 * time.Second
+	defaultOpenAIRoutePolicyErrorCacheTTL         = 5 * time.Second
+	defaultOpenAIRouteProviderCorrelationAccounts = 2
 )
 
 var ErrOpenAIRouteEnforceDisabled = errors.New("OpenAI route enforce mode is disabled in this release")
@@ -179,17 +180,27 @@ func (c *OpenAIRouteController) RecordOpenAIRouteOutcome(ctx context.Context, ob
 	if err != nil {
 		return err
 	}
-	if observation.Success && state.State == OpenAIRouteCircuitHealthy {
-		return nil
-	}
-	if !observation.Success && !observation.PenalizeRoute {
-		return nil
-	}
-	_, err = c.healthStore.ApplyEvent(ctx, key, OpenAIRouteHealthEvent{
+	event := OpenAIRouteHealthEvent{
 		At:           observation.ObservedAt,
 		Success:      observation.Success,
 		FailureClass: observation.FailureClass,
-	}, policy)
+	}
+	applyRoute := observation.Success && state.State != OpenAIRouteCircuitHealthy
+	applyRoute = applyRoute || (!observation.Success && observation.PenalizeRoute)
+	if applyRoute {
+		if _, err = c.healthStore.ApplyEvent(ctx, key, event, policy); err != nil {
+			return err
+		}
+	}
+
+	if !OpenAIRouteHasSharedFailureDomain(observation.Key) {
+		return nil
+	}
+	providerEvidence := observation.Success || (observation.PenalizeRoute && OpenAIRouteFailureCanEscalateProvider(observation.FailureClass))
+	if !providerEvidence {
+		return nil
+	}
+	_, err = c.healthStore.RecordProviderEvidence(ctx, observation.Key, event, policy, defaultOpenAIRouteProviderCorrelationAccounts)
 	return err
 }
 

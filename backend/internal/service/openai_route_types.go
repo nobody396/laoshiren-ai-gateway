@@ -264,6 +264,14 @@ type OpenAIRouteCandidate struct {
 	CurrentAccountShare  float64
 	CurrentProviderShare float64
 	ExplorationBoost     float64
+
+	// EstimatedBaseCostUSD is route-specific when enough authoritative text
+	// settlements exist. Zero keeps the request-level policy estimate for
+	// compatibility and for image routes whose supplier cost is not verified.
+	EstimatedBaseCostUSD   float64
+	ObservedMeanCostUSD    float64
+	CostObservationSamples uint64
+	CostEstimateSource     string
 }
 
 type OpenAIRouteExclusionReason string

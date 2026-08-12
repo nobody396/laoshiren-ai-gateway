@@ -91,9 +91,11 @@ func (s *openAIRouteHealthStoreStub) ReleaseHalfOpenPermit(context.Context, Open
 }
 
 type openAIRouteBudgetSnapshotStoreStub struct {
-	windows      []OpenAIRouteBudgetWindowConfig
-	reserveCalls int
-	settleCalls  int
+	windows        []OpenAIRouteBudgetWindowConfig
+	reserveCalls   int
+	settleCalls    int
+	lastReserve    OpenAIRouteBudgetStoreReserveRequest
+	lastSettlement OpenAIRouteBudgetStoreSettlement
 }
 
 func (s *openAIRouteBudgetSnapshotStoreStub) GetLedgers(_ context.Context, windows []OpenAIRouteBudgetWindowConfig) ([]OpenAIRouteBudgetLedger, error) {
@@ -107,6 +109,7 @@ func (s *openAIRouteBudgetSnapshotStoreStub) GetLedgers(_ context.Context, windo
 
 func (s *openAIRouteBudgetSnapshotStoreStub) Reserve(_ context.Context, req OpenAIRouteBudgetStoreReserveRequest) (OpenAIRouteBudgetStoreReservation, error) {
 	s.reserveCalls++
+	s.lastReserve = req
 	return OpenAIRouteBudgetStoreReservation{
 		ReservationID:  req.ReservationID,
 		RouteKey:       req.RouteKey,
@@ -117,6 +120,7 @@ func (s *openAIRouteBudgetSnapshotStoreStub) Reserve(_ context.Context, req Open
 
 func (s *openAIRouteBudgetSnapshotStoreStub) Settle(_ context.Context, settlement OpenAIRouteBudgetStoreSettlement) error {
 	s.settleCalls++
+	s.lastSettlement = settlement
 	if settlement.ReservationID == "" || !settlement.RouteKey.Valid() {
 		return errors.New("invalid shadow settlement")
 	}
@@ -272,6 +276,82 @@ func TestOpenAIRouteController_SharedObservationsOverrideProcessLocalInputs(t *t
 	require.Less(t, byID[1].SuccessLowerBound, byID[2].SuccessLowerBound)
 	require.Greater(t, byID[1].TTFTMilliseconds, byID[2].TTFTMilliseconds)
 	require.InDelta(t, 0.5, byID[1].CurrentAccountShare, 1e-12)
+}
+
+func TestOpenAIRouteControllerUsesRouteSpecificSettledTextCostInBudgetAndAudit(t *testing.T) {
+	reader := &openAIRoutePolicyReaderStub{value: `[{
+		"group_id":7,"model":"gpt-5.6-sol","request_class":"text","enabled":true,"mode":"shadow",
+		"policy_version":15,"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.10
+	}]`}
+	account := testOpenAIRouteControllerAccount(1, 0.15)
+	key, err := NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://example.invalid/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
+	require.NoError(t, err)
+	aggregate := NewOpenAIRouteObservationAggregate()
+	aggregate.AttemptCount = 80
+	aggregate.ReliabilityCount = 80
+	aggregate.SuccessCount = 80
+	aggregate.ActualCostSamples = 80
+	aggregate.ActualBaseCostUSD = 16
+	store := &openAIRouteObservationStoreStub{profiles: map[string]OpenAIRouteObservationProfile{
+		OpenAIRouteObservationFingerprint(key): {Global: aggregate},
+	}}
+	budget := &openAIRouteBudgetSnapshotStoreStub{}
+	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, budget, store)
+
+	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
+		GroupID: 7, Model: "gpt-5.6-sol", RequestClass: OpenAIRouteRequestClassText, Seed: 42,
+		Candidates: []OpenAIRouteShadowCandidate{{
+			Account: account, Endpoint: "https://example.invalid/v1/responses", Transport: string(OpenAIUpstreamTransportHTTPSSE),
+		}},
+	})
+
+	require.NoError(t, err)
+	require.True(t, decision.Evaluated)
+	require.Len(t, decision.Audit.Candidates, 1)
+	candidate := decision.Audit.Candidates[0]
+	require.Equal(t, OpenAIRouteCostEstimateSourceSettledText, candidate.CostEstimateSource)
+	require.Equal(t, uint64(80), candidate.CostObservationSamples)
+	require.InDelta(t, 0.20, candidate.ObservedMeanCostUSD, 1e-12)
+	require.InDelta(t, 0.18, candidate.EstimatedBaseCostUSD, 1e-12)
+	require.InDelta(t, 0.027, candidate.EstimatedAccountCostUSD, 1e-12)
+	require.InDelta(t, 0.18, budget.lastReserve.EstimatedBaseCostUSD, 1e-12)
+	require.InDelta(t, 0.18, budget.lastSettlement.ActualBaseCostUSD, 1e-12)
+	require.InDelta(t, 0.027, budget.lastSettlement.ActualAccountCostUSD, 1e-12)
+	require.InDelta(t, 0.10, decision.Audit.EstimatedBaseCostUSD, 1e-12, "the configured prior remains separately auditable")
+}
+
+func TestOpenAIRouteControllerNeverLearnsImageCostFromObservations(t *testing.T) {
+	reader := &openAIRoutePolicyReaderStub{value: `[{
+		"group_id":7,"model":"gpt-image-2","request_class":"image","enabled":true,"mode":"shadow",
+		"policy_version":16,"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.30
+	}]`}
+	account := testOpenAIRouteControllerAccount(1, 0.15)
+	key, err := NewOpenAIRouteKey(account, 7, "gpt-image-2", OpenAIRouteRequestClassImage, "https://example.invalid/v1/images/generations", string(OpenAIUpstreamTransportHTTPSSE))
+	require.NoError(t, err)
+	aggregate := NewOpenAIRouteObservationAggregate()
+	aggregate.ActualCostSamples = 1_000
+	aggregate.ActualBaseCostUSD = 1
+	store := &openAIRouteObservationStoreStub{profiles: map[string]OpenAIRouteObservationProfile{
+		OpenAIRouteObservationFingerprint(key): {Global: aggregate},
+	}}
+	budget := &openAIRouteBudgetSnapshotStoreStub{}
+	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, budget, store)
+
+	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
+		GroupID: 7, Model: "gpt-image-2", RequestClass: OpenAIRouteRequestClassImage, Seed: 42,
+		Candidates: []OpenAIRouteShadowCandidate{{
+			Account: account, Endpoint: "https://example.invalid/v1/images/generations", Transport: string(OpenAIUpstreamTransportHTTPSSE),
+		}},
+	})
+
+	require.NoError(t, err)
+	require.True(t, decision.Evaluated)
+	require.Len(t, decision.Audit.Candidates, 1)
+	candidate := decision.Audit.Candidates[0]
+	require.Equal(t, OpenAIRouteCostEstimateSourcePolicy, candidate.CostEstimateSource)
+	require.Zero(t, candidate.CostObservationSamples)
+	require.InDelta(t, 0.30, candidate.EstimatedBaseCostUSD, 1e-12)
+	require.InDelta(t, 0.30, budget.lastReserve.EstimatedBaseCostUSD, 1e-12)
 }
 
 func TestOpenAIRouteControllerCachesSharedObservationReads(t *testing.T) {

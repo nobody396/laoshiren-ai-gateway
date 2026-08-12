@@ -107,6 +107,27 @@ func TestAllocateAndReserveOpenAIRoute_RejectsPolicyWindowMismatch(t *testing.T)
 	require.Empty(t, store.reserveCalls)
 }
 
+func TestAllocateAndReserveOpenAIRouteReservesSelectedRouteSpecificCost(t *testing.T) {
+	candidate := testOpenAIRouteCandidate(1, "provider", 0.15)
+	candidate.EstimatedBaseCostUSD = 0.037
+	allocation := testOpenAIRouteAllocationRequest(candidate)
+	store := &fakeOpenAIRouteBudgetStore{ledgers: []OpenAIRouteBudgetLedger{allocation.Budget}}
+
+	_, reservation, err := AllocateAndReserveOpenAIRoute(
+		context.Background(),
+		store,
+		allocation,
+		[]OpenAIRouteBudgetWindowConfig{testOpenAIRouteBudgetWindowConfig(allocation.Policy)},
+		"request-route-cost",
+		time.Minute,
+	)
+
+	require.NoError(t, err)
+	require.True(t, reservation.Allowed)
+	require.Len(t, store.reserveCalls, 1)
+	require.InDelta(t, 0.037, store.reserveCalls[0].EstimatedBaseCostUSD, 1e-12)
+}
+
 func testOpenAIRouteBudgetWindowConfig(policy OpenAIRoutePolicy) OpenAIRouteBudgetWindowConfig {
 	return OpenAIRouteBudgetWindowConfig{
 		Scope: OpenAIRouteBudgetScope{

@@ -75,6 +75,11 @@ type OpenAIRouteShadowAuditCandidate struct {
 	CurrentAccountShare              float64                      `json:"current_account_share"`
 	CurrentProviderShare             float64                      `json:"current_provider_share"`
 	ExplorationBoost                 float64                      `json:"exploration_boost"`
+	EstimatedBaseCostUSD             float64                      `json:"estimated_base_cost_usd"`
+	EstimatedAccountCostUSD          float64                      `json:"estimated_account_cost_usd"`
+	ObservedMeanCostUSD              float64                      `json:"observed_mean_base_cost_usd,omitempty"`
+	CostObservationSamples           uint64                       `json:"cost_observation_samples"`
+	CostEstimateSource               string                       `json:"cost_estimate_source"`
 	Rank                             int                          `json:"rank,omitempty"`
 	Selected                         bool                         `json:"selected"`
 	Weight                           float64                      `json:"weight,omitempty"`

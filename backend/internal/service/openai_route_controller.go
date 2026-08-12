@@ -405,6 +405,11 @@ func (c *OpenAIRouteController) EvaluateShadow(
 			candidates[idx].CurrentProviderShare = float64(providerShareAttempts[openAIRouteProviderKey(candidates[idx])]) / float64(totalShareAttempts)
 		}
 		candidates[idx].ExplorationBoost = openAIRouteExplorationBoost(blended.ReliabilityCount, totalReliabilitySamples)
+		costEstimate := EstimateOpenAIRouteBaseCost(req.RequestClass, config.EstimatedBaseCostUSD, profile.Global)
+		candidates[idx].EstimatedBaseCostUSD = costEstimate.EstimatedBaseCostUSD
+		candidates[idx].ObservedMeanCostUSD = costEstimate.ObservedMeanCostUSD
+		candidates[idx].CostObservationSamples = costEstimate.Samples
+		candidates[idx].CostEstimateSource = costEstimate.Source
 		auditIndex := auditIndices[idx]
 		decision.Audit.Candidates[auditIndex] = newOpenAIRouteShadowAuditCandidate(candidates[idx])
 		decision.Audit.Candidates[auditIndex].ObservationSource = observationSource
@@ -422,9 +427,11 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	}, windows, decisionID, time.Minute)
 	selectedAccountID := int64(0)
 	selectedRate := 0.0
+	selectedBaseCostUSD := config.EstimatedBaseCostUSD
 	if err == nil {
 		selectedAccountID = plan.Selected.Candidate.Key.AccountID
 		selectedRate = plan.Selected.Candidate.RateMultiplier
+		selectedBaseCostUSD = openAIRouteCandidateEstimatedBaseCost(plan.Selected.Candidate, config.EstimatedBaseCostUSD)
 	}
 	decision.Audit.MinHealthyMultiplier = plan.MinHealthyMultiplier
 	decision.Audit.Exclusions = append(decision.Audit.Exclusions, plan.Excluded...)
@@ -433,7 +440,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		ledgers,
 		selectedAccountID,
 		selectedRate,
-		config.EstimatedBaseCostUSD,
+		selectedBaseCostUSD,
 	)
 	applyOpenAIRouteShadowAuditPlan(decision.Audit, plan, selectedAccountID)
 	decision.ExcludedCount = len(decision.Audit.Exclusions)
@@ -443,8 +450,8 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	settlement := OpenAIRouteBudgetStoreSettlement{
 		ReservationID:        reservation.ReservationID,
 		RouteKey:             reservation.RouteKey,
-		ActualBaseCostUSD:    config.EstimatedBaseCostUSD,
-		ActualAccountCostUSD: config.EstimatedBaseCostUSD * plan.Selected.Candidate.RateMultiplier,
+		ActualBaseCostUSD:    selectedBaseCostUSD,
+		ActualAccountCostUSD: selectedBaseCostUSD * plan.Selected.Candidate.RateMultiplier,
 		Windows:              windows,
 		AuditTTL:             48 * time.Hour,
 	}
@@ -520,6 +527,11 @@ func newOpenAIRouteShadowAuditCandidate(candidate OpenAIRouteCandidate) OpenAIRo
 		CurrentAccountShare:              candidate.CurrentAccountShare,
 		CurrentProviderShare:             candidate.CurrentProviderShare,
 		ExplorationBoost:                 candidate.ExplorationBoost,
+		EstimatedBaseCostUSD:             candidate.EstimatedBaseCostUSD,
+		EstimatedAccountCostUSD:          candidate.EstimatedBaseCostUSD * candidate.RateMultiplier,
+		ObservedMeanCostUSD:              candidate.ObservedMeanCostUSD,
+		CostObservationSamples:           candidate.CostObservationSamples,
+		CostEstimateSource:               candidate.CostEstimateSource,
 	}
 }
 
@@ -682,7 +694,7 @@ func resolveOpenAIRoutePolicyConfig(
 			// routing. Do not silently apply them to image requests.
 			classPattern = string(OpenAIRouteRequestClassText)
 		}
-		classScore := -1
+		var classScore int
 		switch classPattern {
 		case string(requestClass):
 			classScore = 10_000_000

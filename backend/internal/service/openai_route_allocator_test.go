@@ -69,6 +69,44 @@ func TestBuildOpenAIRouteAllocationPlan_UsesDynamicMultipliersWithoutHardcodedAc
 	require.InDelta(t, 0.36, weights[44].PriceFactor, 1e-12)
 }
 
+func TestBuildOpenAIRouteAllocationPlanUsesRouteSpecificSettledCost(t *testing.T) {
+	cheap := testOpenAIRouteCandidate(1, "provider-a", 0.20)
+	cheap.EstimatedBaseCostUSD = 0.01
+	expensive := testOpenAIRouteCandidate(2, "provider-b", 0.20)
+	expensive.EstimatedBaseCostUSD = 0.10
+	request := testOpenAIRouteAllocationRequest(cheap, expensive)
+	request.Budget.CreditUSD = 0.004
+	request.Policy.EmergencyDebtLimitUSD = 0
+
+	plan, err := BuildOpenAIRouteAllocationPlan(request)
+
+	require.NoError(t, err)
+	require.Len(t, plan.Ranked, 1)
+	require.Equal(t, int64(1), plan.Selected.Candidate.Key.AccountID)
+	require.Contains(t, plan.Excluded, OpenAIRouteExclusion{AccountID: 2, Reason: OpenAIRouteExcludedCost})
+	require.InDelta(t, 1, plan.Selected.PriceFactor, 1e-12)
+}
+
+func TestBuildOpenAIRouteAllocationPlanPricesEqualMultipliersByPredictedAccountCost(t *testing.T) {
+	cheap := testOpenAIRouteCandidate(1, "provider-a", 0.20)
+	cheap.EstimatedBaseCostUSD = 0.05
+	expensive := testOpenAIRouteCandidate(2, "provider-b", 0.20)
+	expensive.EstimatedBaseCostUSD = 0.20
+	request := testOpenAIRouteAllocationRequest(cheap, expensive)
+	request.Budget.CreditUSD = 1
+
+	plan, err := BuildOpenAIRouteAllocationPlan(request)
+
+	require.NoError(t, err)
+	byID := make(map[int64]OpenAIRouteWeightedCandidate)
+	for _, candidate := range plan.Ranked {
+		byID[candidate.Candidate.Key.AccountID] = candidate
+	}
+	require.InDelta(t, 1, byID[1].PriceFactor, 1e-12)
+	require.InDelta(t, 0.0625, byID[2].PriceFactor, 1e-12)
+	require.Greater(t, byID[1].Weight, byID[2].Weight)
+}
+
 func TestBuildOpenAIRouteAllocationPlan_ExcludesUnaffordableExpensiveRoutes(t *testing.T) {
 	cheap := testOpenAIRouteCandidate(1, "cheap", 0.15)
 	expensive := testOpenAIRouteCandidate(2, "expensive", 0.25)

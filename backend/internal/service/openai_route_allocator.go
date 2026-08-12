@@ -28,8 +28,10 @@ func (r *openAIRouteRNG) nextFloat64() float64 {
 }
 
 type openAIRouteFeasibleCandidate struct {
-	candidate OpenAIRouteCandidate
-	preview   OpenAIRouteBudgetPreview
+	candidate               OpenAIRouteCandidate
+	preview                 OpenAIRouteBudgetPreview
+	estimatedBaseCostUSD    float64
+	estimatedAccountCostUSD float64
 }
 
 func BuildOpenAIRouteAllocationPlan(req OpenAIRouteAllocationRequest) (OpenAIRouteAllocationPlan, error) {
@@ -88,9 +90,10 @@ func BuildOpenAIRouteAllocationPlan(req OpenAIRouteAllocationRequest) (OpenAIRou
 			continue
 		}
 
+		estimatedBaseCostUSD := openAIRouteCandidateEstimatedBaseCost(candidate, req.EstimatedBaseCostUSD)
 		preview := OpenAIRouteBudgetPreview{Allowed: true}
 		for _, budget := range budgets {
-			windowPreview, previewErr := budget.Preview(candidate.RateMultiplier, req.EstimatedBaseCostUSD)
+			windowPreview, previewErr := budget.Preview(candidate.RateMultiplier, estimatedBaseCostUSD)
 			if previewErr != nil {
 				return plan, previewErr
 			}
@@ -109,7 +112,12 @@ func BuildOpenAIRouteAllocationPlan(req OpenAIRouteAllocationRequest) (OpenAIRou
 			plan.Excluded = append(plan.Excluded, OpenAIRouteExclusion{AccountID: candidate.Key.AccountID, Reason: OpenAIRouteExcludedCost})
 			continue
 		}
-		feasible = append(feasible, openAIRouteFeasibleCandidate{candidate: candidate, preview: preview})
+		feasible = append(feasible, openAIRouteFeasibleCandidate{
+			candidate:               candidate,
+			preview:                 preview,
+			estimatedBaseCostUSD:    estimatedBaseCostUSD,
+			estimatedAccountCostUSD: estimatedBaseCostUSD * candidate.RateMultiplier,
+		})
 	}
 
 	if len(feasible) == 0 {
@@ -126,6 +134,7 @@ func BuildOpenAIRouteAllocationPlan(req OpenAIRouteAllocationRequest) (OpenAIRou
 	}
 
 	minRate := feasible[0].candidate.RateMultiplier
+	minAccountCost := feasible[0].estimatedAccountCostUSD
 	minPriority := feasible[0].candidate.Priority
 	minTTFT := 0.0
 	minCompletionLatency := 0.0
@@ -133,6 +142,9 @@ func BuildOpenAIRouteAllocationPlan(req OpenAIRouteAllocationRequest) (OpenAIRou
 		candidate := item.candidate
 		if candidate.RateMultiplier < minRate {
 			minRate = candidate.RateMultiplier
+		}
+		if item.estimatedAccountCostUSD < minAccountCost {
+			minAccountCost = item.estimatedAccountCostUSD
 		}
 		if candidate.Priority < minPriority {
 			minPriority = candidate.Priority
@@ -154,7 +166,7 @@ func BuildOpenAIRouteAllocationPlan(req OpenAIRouteAllocationRequest) (OpenAIRou
 		tailLatencyFactor := openAIRouteLatencyFactor(candidate.P95CompletionLatencyMilliseconds, minCompletionLatency, policy.LatencyBeta*0.35)
 		streamIntegrityFactor := openAIRouteStreamIntegrityFactor(candidate.PartialStreamRate)
 		headroomFactor := openAIRouteHeadroomFactor(candidate.LoadRatio, candidate.WaitingCount)
-		priceFactor := openAIRoutePriceFactor(candidate.RateMultiplier, minRate, policy.PriceExponent)
+		priceFactor := openAIRoutePriceFactor(item.estimatedAccountCostUSD, minAccountCost, policy.PriceExponent)
 		priorityFactor := 1 / (1 + policy.PriorityPenalty*float64(maxOpenAIRouteInt(candidate.Priority-minPriority, 0)))
 		explorationBoost := candidate.ExplorationBoost
 		if explorationBoost <= 0 || math.IsNaN(explorationBoost) || math.IsInf(explorationBoost, 0) {
@@ -208,7 +220,17 @@ func validOpenAIRouteCandidate(candidate OpenAIRouteCandidate) bool {
 	if math.IsNaN(candidate.PartialStreamRate) || math.IsInf(candidate.PartialStreamRate, 0) || candidate.PartialStreamRate < 0 || candidate.PartialStreamRate > 1 {
 		return false
 	}
+	if !isFiniteNonNegative(candidate.EstimatedBaseCostUSD) || !isFiniteNonNegative(candidate.ObservedMeanCostUSD) {
+		return false
+	}
 	return true
+}
+
+func openAIRouteCandidateEstimatedBaseCost(candidate OpenAIRouteCandidate, fallback float64) float64 {
+	if candidate.EstimatedBaseCostUSD > 0 {
+		return candidate.EstimatedBaseCostUSD
+	}
+	return fallback
 }
 
 func normalizeOpenAIRouteCircuitState(state OpenAIRouteCircuitState) OpenAIRouteCircuitState {
@@ -313,7 +335,8 @@ func openAIRouteLatencyFactor(ttft, minTTFT, beta float64) float64 {
 
 func openAIRouteStreamIntegrityFactor(partialStreamRate float64) float64 {
 	partialStreamRate = math.Max(0, math.Min(1, partialStreamRate))
-	return math.Max(0.05, math.Pow(1-partialStreamRate, 2))
+	integrity := 1 - partialStreamRate
+	return math.Max(0.05, integrity*integrity)
 }
 
 func openAIRouteHeadroomFactor(loadRatio float64, waiting int) float64 {
@@ -326,17 +349,17 @@ func openAIRouteHeadroomFactor(loadRatio float64, waiting int) float64 {
 	return math.Max(0.01, headroom*queue)
 }
 
-func openAIRoutePriceFactor(rate, minRate, exponent float64) float64 {
-	if minRate == 0 {
-		if rate == 0 {
+func openAIRoutePriceFactor(accountCost, minAccountCost, exponent float64) float64 {
+	if minAccountCost == 0 {
+		if accountCost == 0 {
 			return 1
 		}
 		return 0.01
 	}
-	if rate <= 0 {
+	if accountCost <= 0 {
 		return 1
 	}
-	factor := math.Pow(minRate/rate, exponent)
+	factor := math.Pow(minAccountCost/accountCost, exponent)
 	return math.Max(0.01, math.Min(1, factor))
 }
 

@@ -207,6 +207,21 @@ jobs:
       - name: Enforce frontend bundle budget
         run: pnpm --dir frontend run bundle:check:test && pnpm --dir frontend run bundle:check
 
+  windows-auto-config:
+    name: Windows auto-config execution policy regression
+    needs: [changes, release-proof]
+    if: ${{ needs.release-proof.outputs.fast_path != 'true' && needs.changes.outputs.frontend == 'true' }}
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify Windows installer under Restricted execution policy
+        shell: pwsh
+        run: ./frontend/scripts/test-windows-auto-config.ps1
+
   docker-pr:
     name: PR Docker prebuild
     needs: changes
@@ -228,13 +243,15 @@ jobs:
       - backend-integration
       - frontend-tests
       - frontend-build
+      - windows-auto-config
       - docker-pr
     if: >-
       ${{ always() && github.event_name == 'pull_request' &&
           (needs.changes.outputs.backend != 'true' || needs.backend.result == 'success') &&
           (needs.changes.outputs.integration != 'true' || needs.backend-integration.result == 'success') &&
           (needs.changes.outputs.frontend != 'true' ||
-            (needs.frontend-tests.result == 'success' && needs.frontend-build.result == 'success')) &&
+            (needs.frontend-tests.result == 'success' && needs.frontend-build.result == 'success' &&
+             needs.windows-auto-config.result == 'success')) &&
           (needs.changes.outputs.docker != 'true' || needs.docker-pr.result == 'success') }}
     runs-on: [self-hosted, macOS, ARM64, laoshirenai-ci]
     timeout-minutes: 5
@@ -277,6 +294,7 @@ jobs:
       - backend-integration
       - frontend-tests
       - frontend-build
+      - windows-auto-config
     if: >-
       ${{ always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
           needs.changes.outputs.docker == 'true' &&
@@ -284,7 +302,8 @@ jobs:
             ((needs.changes.outputs.backend != 'true' || needs.backend.result == 'success') &&
              (needs.changes.outputs.integration != 'true' || needs.backend-integration.result == 'success') &&
              (needs.changes.outputs.frontend != 'true' ||
-               (needs.frontend-tests.result == 'success' && needs.frontend-build.result == 'success')))) }}
+               (needs.frontend-tests.result == 'success' && needs.frontend-build.result == 'success' &&
+                needs.windows-auto-config.result == 'success')))) }}
     permissions:
       contents: read
       packages: write
@@ -302,6 +321,7 @@ jobs:
       - backend-integration
       - frontend-tests
       - frontend-build
+      - windows-auto-config
       - docker-pr
       - attest-pr
       - docker-main

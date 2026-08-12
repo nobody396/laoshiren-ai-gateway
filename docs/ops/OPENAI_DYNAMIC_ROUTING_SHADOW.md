@@ -73,12 +73,33 @@ Shadow 的可审计性是运行前置条件：
 - `GET /api/v1/admin/ops/openai-route-shadow/health`
 - `GET /api/v1/admin/ops/openai-route-shadow/decisions`
 - `GET /api/v1/admin/ops/openai-route-shadow/stats`
+- `GET /api/v1/admin/ops/openai-route-shadow/assessment`
 
 列表和统计支持 `time_range`、`group_id`、`model`、`request_class`、`policy_version`、`reason`、
 `request_id`、`client_request_id`、`evaluated`、`diverged`、`emergency` 过滤。
 统计同时提供建议账号占比、评估 P50/P95、可关联的真实 Legacy 成功用量、Legacy
 失败和 TTFT；客户端请求 ID 缺失时使用服务端请求 ID 的 `local:` 记账键回退
 关联。无法关联成功或错误日志的样本单列为 `unlinked_outcome`，不能当作成功。
+
+`assessment` 是纯只读晋级评估，必须用固定的 `start_time`、`end_time` 和完整策略
+切片 `group_id + model + request_class + policy_version` 查询；服务端强制只统计
+`policy_mode=shadow`，不允许附带 `evaluated/diverged/emergency/reason/request_id`
+等会美化样本的结果过滤器。它自动检查：
+
+- 查询窗口和真实首末决策跨度均不少于 24 小时（72 小时仍为推荐观察期）；
+- 至少 200 条成功评估决策，评估完整率和真实结果关联率均不低于 99%；
+- 成功与失败不能同时关联，审计和被动采集健康且采集完整率不低于 99%；
+- 同一策略版本只有一个归一化策略快照，没有应急预算决策；
+- Shadow 建议账号与故障域集中度不超过该快照中的账号/供应商份额上限。
+
+即使所有自动门禁通过，返回值也只会是
+`automated_evidence_ready_for_manual_review` / `consider_1_percent_canary`，并且固定
+`manual_approval_required=true`、`enforce_available=false`。权威上游账单一致性、
+相对 Legacy 的最终用户错误率、恢复率、P95/P99 延迟、文本粘性/图片无粘性以及
+老板授权仍是人工门禁；该接口不会写设置、调度账号或改变任何真实流量。
+其中决策、结果关联和集中度严格按策略切片统计；当前审计/被动采集健康是本进程自
+启动以来的全局安全信号，响应以 `health_sampling_scope=process_since_start_global`
+明确标识。全局信号只能更保守地阻止晋级，不能让某个坏切片通过。
 
 ## 生产开启门禁
 

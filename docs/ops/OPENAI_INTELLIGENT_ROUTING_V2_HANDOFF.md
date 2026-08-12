@@ -31,6 +31,9 @@
    用户错误和本地传输错误不会扩散。
 7. 采集存储失败、队列丢弃、输入拒绝与健康状态写入失败分别计数；证据完整率低于
    99% 时管理健康状态不允许为 Ready。
+8. 增加精确策略切片的只读 Shadow 晋级评估：固定窗口、样本、关联、审计/采集健康、
+   策略版本纯度、应急预算及账号/故障域集中度均为显式门禁；通过也只允许进入人工
+   复核，不会自动开启 1% 流量。
 
 ## 不变量与当前安全边界
 
@@ -39,6 +42,8 @@
 - 没有运行生产探针、生产定时任务、迁移或部署。
 - 没有推送分支、创建 PR、合并 main 或触发 CI。
 - 此前为自主开发创建的本地 2 小时心跳已按协调要求删除；当前没有本任务定时器。
+- 晋级评估固定返回 `manual_approval_required=true`、`enforce_available=false`，不会
+  写策略或执行账号调度。
 - 决策和滚动聚合不保存 Prompt、响应正文、凭证、账号名称或原始 URL。
 
 ## 已通过验证
@@ -52,6 +57,11 @@ go test ./internal/handler/... -count=1 -timeout=10m
 go test ./cmd/server -count=1 -timeout=10m
 go test -race ./internal/service -run 'Test(OpenAIRouteController|OpenAIRouteObservationCollector|BuildOpenAIRouteAllocationPlan)' -count=1 -timeout=10m
 go test -race ./internal/repository -run 'Test(OpenAIRouteHealthCache_ProviderEvidenceRequiresDistinctAccounts|TestOpenAIRouteObservationCache)' -count=1 -timeout=10m
+go test ./internal/service ./internal/repository ./internal/handler/admin ./internal/server ./cmd/server -count=1 -timeout=10m
+go vet ./internal/service ./internal/repository ./internal/handler/admin ./internal/server ./cmd/server
+go test -race ./internal/service -run 'Test(BuildOpenAIRoutePromotionAssessment|ValidateOpenAIRoutePromotionFilter)' -count=1 -timeout=10m
+go test -race ./internal/repository -run 'Test(OpenAIRouteDecisionRepositoryStatsScansPromotionEvidence|BuildOpenAIRouteShadowWhere)' -count=1 -timeout=10m
+go test -race ./internal/handler/admin -run 'Test(OpenAIRoutePromotionAssessmentHandler|ParseOpenAIRoutePromotionAssessmentFilter)' -count=1 -timeout=10m
 ```
 
 真实 Redis 的 integration suite 已保留相同故障域用例，但本轮未启动 Docker；普通
@@ -67,4 +77,3 @@ go test -race ./internal/repository -run 'Test(OpenAIRouteHealthCache_ProviderEv
    采集完整率。
 5. 满足 24–72 小时、每策略切片至少 200 条有效决策、关联完整率不低于 99%、
    账单一致且错误率/P95/P99 不退化后，另一个版本才可实现和讨论 Enforce/Canary。
-

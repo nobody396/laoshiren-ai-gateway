@@ -24,6 +24,7 @@ func TestBuildOpenAIRouteShadowWhereIncludesEveryAuditFilter(t *testing.T) {
 		GroupID:         &groupID,
 		Model:           "gpt-5.6-sol",
 		RequestClass:    service.OpenAIRouteRequestClassImage,
+		PolicyMode:      service.OpenAIRoutePolicyShadow,
 		PolicyVersion:   &version,
 		Reason:          "shadow_selected",
 		RequestID:       "request-1",
@@ -33,10 +34,10 @@ func TestBuildOpenAIRouteShadowWhereIncludesEveryAuditFilter(t *testing.T) {
 		Emergency:       &emergency,
 	}, "d")
 
-	require.Len(t, args, 12)
+	require.Len(t, args, 13)
 	for _, column := range []string{
 		"d.created_at >=", "d.created_at <", "d.group_id =", "d.model =", "d.request_class =",
-		"d.policy_version =", "d.reason =", "d.request_id =", "d.client_request_id =",
+		"d.policy_mode =", "d.policy_version =", "d.reason =", "d.request_id =", "d.client_request_id =",
 		"d.evaluated =", "d.diverged =", "d.emergency =",
 	} {
 		require.True(t, strings.Contains(where, column), "missing %s in %s", column, where)

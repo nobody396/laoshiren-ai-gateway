@@ -141,6 +141,7 @@ type OpenAIRouteShadowDecisionFilter struct {
 	GroupID         *int64
 	Model           string
 	RequestClass    OpenAIRouteRequestClass
+	PolicyMode      OpenAIRoutePolicyMode
 	PolicyVersion   *int
 	Reason          string
 	RequestID       string
@@ -166,20 +167,37 @@ type OpenAIRouteShadowSelectedAccountStats struct {
 	SelectedPercent float64 `json:"selected_percent"`
 }
 
+type OpenAIRouteShadowSelectedProviderStats struct {
+	ProviderKey     string  `json:"provider_key"`
+	SelectedCount   int64   `json:"selected_count"`
+	SelectedPercent float64 `json:"selected_percent"`
+}
+
 type OpenAIRouteShadowDecisionStats struct {
-	Total                   int64                                   `json:"total"`
-	Evaluated               int64                                   `json:"evaluated"`
-	NotEvaluated            int64                                   `json:"not_evaluated"`
-	Diverged                int64                                   `json:"diverged"`
-	Emergency               int64                                   `json:"emergency"`
-	LinkedSuccessfulUsage   int64                                   `json:"linked_successful_usage"`
-	LinkedLegacyFailure     int64                                   `json:"linked_legacy_failure"`
-	UnlinkedOutcome         int64                                   `json:"unlinked_outcome"`
-	EvaluationDurationP50US float64                                 `json:"evaluation_duration_p50_us"`
-	EvaluationDurationP95US float64                                 `json:"evaluation_duration_p95_us"`
-	LegacyTTFTP50Ms         float64                                 `json:"legacy_ttft_p50_ms"`
-	LegacyTTFTP95Ms         float64                                 `json:"legacy_ttft_p95_ms"`
-	SelectedAccounts        []OpenAIRouteShadowSelectedAccountStats `json:"selected_accounts"`
+	Total                          int64                                    `json:"total"`
+	Evaluated                      int64                                    `json:"evaluated"`
+	NotEvaluated                   int64                                    `json:"not_evaluated"`
+	Diverged                       int64                                    `json:"diverged"`
+	Emergency                      int64                                    `json:"emergency"`
+	LinkedSuccessfulUsage          int64                                    `json:"linked_successful_usage"`
+	LinkedLegacyFailure            int64                                    `json:"linked_legacy_failure"`
+	AmbiguousOutcome               int64                                    `json:"ambiguous_outcome"`
+	UnlinkedOutcome                int64                                    `json:"unlinked_outcome"`
+	EvaluatedLinkedSuccessfulUsage int64                                    `json:"evaluated_linked_successful_usage"`
+	EvaluatedLinkedLegacyFailure   int64                                    `json:"evaluated_linked_legacy_failure"`
+	EvaluatedAmbiguousOutcome      int64                                    `json:"evaluated_ambiguous_outcome"`
+	EvaluatedUnlinkedOutcome       int64                                    `json:"evaluated_unlinked_outcome"`
+	PolicySnapshotVariants         int64                                    `json:"policy_snapshot_variants"`
+	PolicyMaxAccountShare          float64                                  `json:"policy_max_account_share"`
+	PolicyMaxProviderShare         float64                                  `json:"policy_max_provider_share"`
+	FirstDecisionAt                time.Time                                `json:"first_decision_at,omitempty"`
+	LastDecisionAt                 time.Time                                `json:"last_decision_at,omitempty"`
+	EvaluationDurationP50US        float64                                  `json:"evaluation_duration_p50_us"`
+	EvaluationDurationP95US        float64                                  `json:"evaluation_duration_p95_us"`
+	LegacyTTFTP50Ms                float64                                  `json:"legacy_ttft_p50_ms"`
+	LegacyTTFTP95Ms                float64                                  `json:"legacy_ttft_p95_ms"`
+	SelectedAccounts               []OpenAIRouteShadowSelectedAccountStats  `json:"selected_accounts"`
+	SelectedProviders              []OpenAIRouteShadowSelectedProviderStats `json:"selected_providers"`
 }
 
 type OpenAIRouteAuditHealth struct {

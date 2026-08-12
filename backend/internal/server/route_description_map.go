@@ -326,6 +326,7 @@ var scannerDescMap = map[string]string{
 	"GET /admin/ops/openai-route-shadow/decisions":                  "OpenAI Shadow 路由决策列表",
 	"GET /admin/ops/openai-route-shadow/stats":                      "OpenAI Shadow 路由决策统计",
 	"GET /admin/ops/openai-route-shadow/health":                     "OpenAI Shadow 路由审计健康状态",
+	"GET /admin/ops/openai-route-shadow/assessment":                 "OpenAI Shadow 路由只读晋级评估",
 	"GET /admin/ops/dashboard/snapshot-v2":                          "运维仪表盘快照 (v2)",
 	"GET /admin/ops/dashboard/overview":                             "运维仪表盘概览",
 	"GET /admin/ops/dashboard/throughput-trend":                     "吞吐量趋势",

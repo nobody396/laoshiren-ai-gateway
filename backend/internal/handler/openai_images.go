@@ -132,7 +132,7 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		if bridgeCodexImage {
 			selection, scheduleDecision, err = h.gatewayService.SelectOpenAICompatibleAccountWithSchedulerForRouting(
 				c.Request.Context(), service.PlatformOpenAI, apiKey.GroupID, "", "",
-				service.CodexNativeImageBridgeModel(), failedAccountIDs,
+				parsed.Model, failedAccountIDs,
 				service.OpenAIUpstreamTransportAny, false, true,
 			)
 		} else {
@@ -174,7 +174,7 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		writerSizeBeforeForward := c.Writer.Size()
 		var result *service.OpenAIForwardResult
 		if bridgeCodexImage {
-			result, err = h.gatewayService.ForwardCodexNativeImageGenerationBridge(c.Request.Context(), c, account, parsed)
+			result, err = h.gatewayService.ForwardCodexNativeImageGeneration(c.Request.Context(), c, account, parsed)
 		} else {
 			result, err = h.gatewayService.ForwardImages(c.Request.Context(), c, account, body, parsed, channelMapping.MappedModel)
 		}

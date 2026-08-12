@@ -226,6 +226,80 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_ImageIntentUsesConfigur
 	}
 }
 
+func TestOpenAIGatewayService_SelectAccountWithScheduler_CodexImageFallsBackAcrossProtocols(t *testing.T) {
+	ctx := context.Background()
+	groupID := int64(6)
+	responsesPrimary := Account{
+		ID: 33, Name: "morecode-responses", Platform: PlatformOpenAI, Type: AccountTypeAPIKey,
+		Status: StatusActive, Schedulable: true, Concurrency: 10,
+		Credentials: map[string]any{
+			"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
+		},
+		Extra: map[string]any{
+			OpenAIImageGenerationPriorityExtraKey: 1,
+			OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
+		},
+		AccountGroups: []AccountGroup{{AccountID: 33, GroupID: groupID, Priority: 1}},
+	}
+	nativeFallback := Account{
+		ID: 34, Name: "pomo-native-images", Platform: PlatformOpenAI, Type: AccountTypeAPIKey,
+		Status: StatusActive, Schedulable: true, Concurrency: 10,
+		Credentials: map[string]any{
+			"model_mapping": map[string]any{"gpt-image-2": "gpt-image-2-count"},
+		},
+		Extra: map[string]any{
+			"supports_images":                      true,
+			OpenAIImageGenerationPriorityExtraKey:  2,
+			OpenAIImageGenerationModelsExtraKey:    []any{"gpt-image-2"},
+			OpenAIImageGenerationTransportExtraKey: OpenAIImageGenerationTransportImages,
+		},
+		AccountGroups: []AccountGroup{{AccountID: 34, GroupID: groupID, Priority: 90}},
+	}
+	snapshotCache := &openAISnapshotCacheStub{
+		snapshotAccounts: []*Account{&responsesPrimary, &nativeFallback},
+		accountsByID:     map[int64]*Account{33: &responsesPrimary, 34: &nativeFallback},
+	}
+	svc := &OpenAIGatewayService{
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{responsesPrimary, nativeFallback}},
+		cfg:                &config.Config{},
+		schedulerSnapshot:  &SchedulerSnapshotService{cache: snapshotCache},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
+	}
+
+	primary, decision, err := svc.selectAccountWithSchedulerForRouting(
+		ctx, &groupID, "", "", "gpt-image-2", nil,
+		OpenAIUpstreamTransportAny, false, true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, int64(33), primary.Account.ID)
+	require.True(t, decision.ImageGenerationRouteConfigured)
+	if primary.ReleaseFunc != nil {
+		primary.ReleaseFunc()
+	}
+
+	fallback, decision, err := svc.selectAccountWithSchedulerForRouting(
+		ctx, &groupID, "", "", "gpt-image-2", map[int64]struct{}{33: {}},
+		OpenAIUpstreamTransportAny, false, true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, int64(34), fallback.Account.ID,
+		"fresh snapshot recheck must retain a native Images-only fallback")
+	require.Equal(t, 2, decision.ImageGenerationRoutePriority)
+	if fallback.ReleaseFunc != nil {
+		fallback.ReleaseFunc()
+	}
+
+	text, _, err := svc.SelectAccountWithScheduler(
+		ctx, &groupID, "", "", "gpt-5.6-sol", nil, OpenAIUpstreamTransportAny,
+	)
+	require.NoError(t, err)
+	require.Equal(t, int64(33), text.Account.ID,
+		"native image-only accounts must never enter ordinary text routing")
+	if text.ReleaseFunc != nil {
+		text.ReleaseFunc()
+	}
+}
+
 type openAIRouteShadowEvaluatorStub struct {
 	request  OpenAIRouteShadowRequest
 	decision OpenAIRouteShadowDecision

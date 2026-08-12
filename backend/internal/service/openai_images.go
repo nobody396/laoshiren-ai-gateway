@@ -31,7 +31,10 @@ const (
 	openAIRawUpstreamHTTPStatusKey   = "openai_raw_upstream_http_status"
 )
 
-var errCodexImageToolNotInvoked = errors.New("image bridge response did not invoke image generation")
+var (
+	errCodexImageToolNotInvoked = errors.New("image bridge response did not invoke image generation")
+	errCodexNativeImageNoOutput = errors.New("native image response did not contain an image")
+)
 
 // OpenAIImagesUpload is shared by native OpenAI image edits and Grok media
 // normalization. The byte slice is bounded by the request-body limits before
@@ -381,6 +384,131 @@ func (s *OpenAIGatewayService) ForwardCodexNativeImageGenerationBridge(
 	return forwardResult, nil
 }
 
+// ForwardCodexNativeImageGeneration dispatches the Codex ImageGen request by
+// the selected account's image-route protocol. Customer-facing and billing
+// models remain stable while the actual upstream model/endpoint are retained
+// for diagnostics and account-cost attribution.
+func (s *OpenAIGatewayService) ForwardCodexNativeImageGeneration(
+	ctx context.Context,
+	c *gin.Context,
+	account *Account,
+	parsed *OpenAIImagesRequest,
+) (*OpenAIForwardResult, error) {
+	if err := ValidateCodexNativeImageBridgeRequest(parsed); err != nil {
+		return nil, err
+	}
+	transport, configured := account.OpenAIImageGenerationTransport(parsed.Model)
+	if !configured {
+		return nil, fmt.Errorf("selected account has no valid Codex image route")
+	}
+	if transport == OpenAIImageGenerationTransportResponses {
+		return s.ForwardCodexNativeImageGenerationBridge(ctx, c, account, parsed)
+	}
+
+	body := append([]byte(nil), parsed.Body...)
+	if len(body) == 0 {
+		var err error
+		body, err = json.Marshal(map[string]any{
+			"model":           parsed.Model,
+			"prompt":          parsed.Prompt,
+			"n":               1,
+			"size":            parsed.Size,
+			"response_format": "b64_json",
+		})
+		if err != nil {
+			return nil, fmt.Errorf("encode native Codex image request: %w", err)
+		}
+	} else {
+		var err error
+		body, err = sjson.SetBytes(body, "n", 1)
+		if err == nil {
+			body, err = sjson.SetBytes(body, "response_format", "b64_json")
+		}
+		if err != nil {
+			return nil, fmt.Errorf("normalize native Codex image request: %w", err)
+		}
+	}
+
+	// Native Images providers are allowed to fail over only before any image is
+	// known to have been generated. Capture and validate the complete response
+	// before committing it to the Codex client, mirroring the Responses bridge.
+	originalWriter := c.Writer
+	capture := newCodexImageBridgeCaptureWriter(originalWriter)
+	c.Set(upstreamResponseReadLimitContextKey, int64(codexNativeImageMaxResponseBytes))
+	var result *OpenAIForwardResult
+	var err error
+	func() {
+		c.Writer = capture
+		defer func() { c.Writer = originalWriter }()
+		result, err = s.ForwardImages(ctx, c, account, body, parsed, "")
+	}()
+	if err != nil {
+		var failoverErr *UpstreamFailoverError
+		if errors.As(err, &failoverErr) {
+			return nil, failoverErr
+		}
+		if capture.Written() && capture.body.Len() > 0 {
+			copyCodexImageBridgeCapturedResponse(originalWriter, capture)
+		}
+		return nil, err
+	}
+	if result == nil {
+		return nil, &UpstreamFailoverError{StatusCode: http.StatusBadGateway}
+	}
+	if err := validateCompletedCodexNativeImagesResponse(capture.body.Bytes()); err != nil {
+		if errors.Is(err, errCodexNativeImageNoOutput) {
+			return nil, &UpstreamFailoverError{
+				StatusCode:             http.StatusBadGateway,
+				RequestScopedTransient: true,
+				Stage:                  GatewayFailureStageInference,
+				Scope:                  GatewayFailureScopeRequest,
+				Reason:                 GatewayFailureReason("native_image_no_output"),
+				NextAccountAction:      NextAccountRetry,
+				ClientStatusCode:       http.StatusBadGateway,
+				ClientMessage:          "Upstream image generation did not produce an image",
+			}
+		}
+		safeErr := SafeClientUpstreamError(http.StatusBadGateway)
+		c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
+		return nil, fmt.Errorf("invalid completed native image response: %w", err)
+	}
+	copyCodexImageBridgeCapturedResponse(originalWriter, capture)
+	if result != nil {
+		// A fallback transport must not change the price or model presented to
+		// the customer. UpstreamModel still records gpt-image-2-count (or its
+		// configured successor), and the account multiplier captures cost.
+		result.Model = parsed.Model
+		result.BillingModel = codexNativeImageBridgeModel
+		result.UpstreamEndpoint = openAIImagesGenerationsEndpoint
+	}
+	return result, err
+}
+
+func validateCompletedCodexNativeImagesResponse(body []byte) error {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return errCodexNativeImageNoOutput
+	}
+	data := gjson.GetBytes(body, "data")
+	if !data.IsArray() || len(data.Array()) == 0 {
+		// Any structured error or usage marker means the request may already be
+		// deterministic or billable; never replay it on another account.
+		if gjson.GetBytes(body, "error").Exists() || gjson.GetBytes(body, "usage").Exists() {
+			return fmt.Errorf("native image response contains error or usage without image data")
+		}
+		return errCodexNativeImageNoOutput
+	}
+	items := data.Array()
+	if len(items) != 1 {
+		return fmt.Errorf("native image response contains %d images, expected one", len(items))
+	}
+	item := items[0]
+	imageBase64 := strings.TrimSpace(item.Get("b64_json").String())
+	if imageBase64 == "" {
+		return fmt.Errorf("native image response is missing b64_json")
+	}
+	return validateCodexImageBase64(imageBase64)
+}
+
 func copyCodexImageBridgeCapturedResponse(dst gin.ResponseWriter, src *codexImageBridgeCaptureWriter) {
 	if dst == nil || src == nil {
 		return
@@ -435,20 +563,30 @@ func extractCompletedCodexImageResult(body []byte) (string, error) {
 	if len(result) > codexNativeImageMaxBase64Bytes {
 		return "", fmt.Errorf("image bridge result exceeds maximum size")
 	}
-	decoded, err := base64.StdEncoding.Strict().DecodeString(result)
+	if err := validateCodexImageBase64(result); err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
+func validateCodexImageBase64(value string) error {
+	if len(value) > codexNativeImageMaxBase64Bytes {
+		return fmt.Errorf("image result exceeds maximum size")
+	}
+	decoded, err := base64.StdEncoding.Strict().DecodeString(value)
 	if err != nil {
-		return "", fmt.Errorf("image bridge result is invalid base64")
+		return fmt.Errorf("image result is invalid base64")
 	}
 	contentType := http.DetectContentType(decoded)
 	if contentType != "image/png" && contentType != "image/jpeg" {
-		return "", fmt.Errorf("image bridge result is not a supported image")
+		return fmt.Errorf("image result is not a supported image")
 	}
 	config, _, err := image.DecodeConfig(bytes.NewReader(decoded))
 	if err != nil || config.Width <= 0 || config.Height <= 0 ||
 		int64(config.Width)*int64(config.Height) > codexNativeImageMaxPixels {
-		return "", fmt.Errorf("image bridge result is not decodable")
+		return fmt.Errorf("image result is not decodable")
 	}
-	return result, nil
+	return nil
 }
 
 func codexImageBridgeHasImageUsage(body []byte) bool {
@@ -503,6 +641,9 @@ func (s *OpenAIGatewayService) ForwardImages(
 	upstreamModel := account.GetMappedModel(requestModel)
 	if err := validateOpenAIImagesModel(upstreamModel); err != nil {
 		return nil, err
+	}
+	if c != nil {
+		c.Set("ops_upstream_model", strings.TrimSpace(upstreamModel))
 	}
 
 	forwardBody, err := sjson.SetBytes(body, "model", upstreamModel)

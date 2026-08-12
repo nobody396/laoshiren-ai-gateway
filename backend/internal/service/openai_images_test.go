@@ -187,6 +187,122 @@ func TestForwardCodexNativeImageGenerationBridge(t *testing.T) {
 	require.False(t, gjson.GetBytes(upstream.lastBody, "stream").Bool())
 }
 
+func TestForwardCodexNativeImageGenerationUsesNativeImagesFallback(t *testing.T) {
+	body := []byte(`{
+		"model":"gpt-image-2","prompt":"draw breakfast","n":1,
+		"size":"auto","quality":"auto","background":"auto"
+	}`)
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body: io.NopCloser(strings.NewReader(
+			`{"created":1710000000,"data":[{"b64_json":"` + codexBridgeTestPNG + `"}],"usage":{"input_tokens":10,"output_tokens":20,"total_tokens":30}}`,
+		)),
+	}}
+	svc := &OpenAIGatewayService{
+		httpUpstream: upstream,
+		cfg: &config.Config{Security: config.SecurityConfig{
+			URLAllowlist: config.URLAllowlistConfig{Enabled: false},
+		}},
+	}
+	account := &Account{
+		ID: 34, Name: "pomo-native-image", Platform: PlatformOpenAI, Type: AccountTypeAPIKey,
+		Credentials: map[string]any{
+			"api_key": "test", "base_url": "https://pomo.example/v1",
+			"model_mapping": map[string]any{"gpt-image-2": "gpt-image-2-count"},
+		},
+		Extra: map[string]any{
+			"supports_images":                      true,
+			OpenAIImageGenerationPriorityExtraKey:  2,
+			OpenAIImageGenerationModelsExtraKey:    []any{"gpt-image-2"},
+			OpenAIImageGenerationTransportExtraKey: OpenAIImageGenerationTransportImages,
+		},
+	}
+	parsed, err := svc.ParseOpenAIImagesRequest(body)
+	require.NoError(t, err)
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/generations", bytes.NewReader(body))
+
+	result, err := svc.ForwardCodexNativeImageGeneration(context.Background(), c, account, parsed)
+
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, codexBridgeTestPNG, gjson.GetBytes(recorder.Body.Bytes(), "data.0.b64_json").String())
+	require.Equal(t, "/v1/images/generations", upstream.lastReq.URL.Path)
+	require.Equal(t, "gpt-image-2-count", gjson.GetBytes(upstream.lastBody, "model").String())
+	require.Equal(t, "b64_json", gjson.GetBytes(upstream.lastBody, "response_format").String())
+	require.Equal(t, "auto", gjson.GetBytes(upstream.lastBody, "size").String())
+	require.Equal(t, "auto", gjson.GetBytes(upstream.lastBody, "quality").String())
+	require.Equal(t, "auto", gjson.GetBytes(upstream.lastBody, "background").String())
+	require.Equal(t, "gpt-image-2", result.Model)
+	require.Equal(t, "gpt-5.6-sol", result.BillingModel)
+	require.Equal(t, "gpt-image-2-count", result.UpstreamModel)
+	require.Equal(t, "/v1/images/generations", result.UpstreamEndpoint)
+	require.Equal(t, 1, result.ImageCount)
+	require.Equal(t, "2K", result.ImageSize)
+	require.Equal(t, "gpt-image-2-count", c.GetString("ops_upstream_model"))
+}
+
+func TestForwardCodexNativeImageGenerationNativeNoOutputSafelyFailsOver(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		responseBody string
+		wantFailover bool
+	}{
+		{name: "empty data without usage", responseBody: `{"created":1710000000,"data":[]}`, wantFailover: true},
+		{name: "usage proves possible billing", responseBody: `{"created":1710000000,"data":[],"usage":{"total_tokens":1}}`},
+		{name: "malformed generated item", responseBody: `{"created":1710000000,"data":[{"b64_json":"not-base64"}]}`},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			body := []byte(`{"model":"gpt-image-2","prompt":"draw","n":1}`)
+			upstream := &httpUpstreamRecorder{resp: &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(tt.responseBody)),
+			}}
+			svc := &OpenAIGatewayService{
+				httpUpstream: upstream,
+				cfg: &config.Config{Security: config.SecurityConfig{
+					URLAllowlist: config.URLAllowlistConfig{Enabled: false},
+				}},
+			}
+			account := &Account{
+				ID: 34, Platform: PlatformOpenAI, Type: AccountTypeAPIKey,
+				Credentials: map[string]any{
+					"api_key": "test", "base_url": "https://pomo.example/v1",
+					"model_mapping": map[string]any{"gpt-image-2": "gpt-image-2-count"},
+				},
+				Extra: map[string]any{
+					"supports_images":                      true,
+					OpenAIImageGenerationPriorityExtraKey:  2,
+					OpenAIImageGenerationModelsExtraKey:    []any{"gpt-image-2"},
+					OpenAIImageGenerationTransportExtraKey: OpenAIImageGenerationTransportImages,
+				},
+			}
+			parsed, err := svc.ParseOpenAIImagesRequest(body)
+			require.NoError(t, err)
+			recorder := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(recorder)
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/generations", bytes.NewReader(body))
+
+			result, err := svc.ForwardCodexNativeImageGeneration(context.Background(), c, account, parsed)
+
+			require.Nil(t, result)
+			require.Error(t, err)
+			var failoverErr *UpstreamFailoverError
+			if tt.wantFailover {
+				require.ErrorAs(t, err, &failoverErr)
+				require.Equal(t, GatewayFailureReason("native_image_no_output"), failoverErr.Reason)
+				require.Empty(t, recorder.Body.String())
+			} else {
+				require.False(t, errors.As(err, &failoverErr), "possibly billable results must never be regenerated")
+				require.Equal(t, http.StatusBadGateway, recorder.Code)
+			}
+		})
+	}
+}
+
 func TestForwardCodexNativeImageGenerationBridgeProtocolFailureTriggersFailover(t *testing.T) {
 	upstream := &httpUpstreamRecorder{resp: &http.Response{
 		StatusCode: http.StatusOK,

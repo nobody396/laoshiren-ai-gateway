@@ -24,67 +24,43 @@
       </div>
     </header>
 
-    <div v-if="group.image_generation" class="pricing-group__image">
-      <div class="pricing-group__image-heading">
-        <div>
-          <span class="pricing-group__image-title">{{ t('modelPricing.image.title') }}</span>
-          <span class="pricing-group__image-unit">
-            {{
-              group.image_generation.mode === 'fixed_per_image'
-                ? t('modelPricing.image.successfulImage')
-                : t('modelPricing.image.perMillionTokens')
-            }}
-          </span>
-        </div>
-        <span class="pricing-group__image-badge">GPT Image 2</span>
-      </div>
-
-      <div
-        v-if="group.image_generation.mode === 'fixed_per_image'"
-        class="pricing-group__fixed-price"
-      >
-        <strong>{{ formatPrice(group.image_generation.price_per_image) }}</strong>
-        <span>{{ t('modelPricing.image.perSuccessfulImage') }}</span>
-      </div>
-      <div v-else class="pricing-group__image-prices">
-        <div v-for="item in imageTokenPrices" :key="item.label" class="pricing-group__image-price">
-          <span>{{ item.label }}</span>
-          <strong>{{ formatPrice(item.value) }}</strong>
-        </div>
-      </div>
-
-      <p v-if="group.description" class="pricing-group__description">
-        <strong>{{ t('modelPricing.image.parameters') }}：</strong>{{ group.description }}
-      </p>
-    </div>
-
-    <div v-if="models.length === 0 && !group.image_generation" class="pricing-group__empty">
+    <div v-if="pricingRows.length === 0" class="pricing-group__empty">
       {{ t('modelPricing.noModels') }}
     </div>
 
-    <table v-if="models.length > 0" class="pricing-group__table">
-      <thead>
-        <tr>
-          <th>{{ t('modelPricing.table.model') }}</th>
-          <th>{{ t('modelPricing.table.input') }}</th>
-          <th>{{ t('modelPricing.table.output') }}</th>
-          <th>{{ t('modelPricing.table.cacheRead') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="m in models" :key="m.model" :class="{ 'pricing-group__row--disabled': m.disabled }">
-          <td class="pricing-group__model">
-            <span class="pricing-group__value">{{ m.model }}</span>
-            <span v-if="m.disabled" class="pricing-group__disabled-badge">
-              {{ t('modelPricing.disabled') }}
-            </span>
-          </td>
-          <td><span class="pricing-group__value">{{ formatPrice(m.input_price) }}</span></td>
-          <td><span class="pricing-group__value">{{ formatPrice(m.output_price) }}</span></td>
-          <td><span class="pricing-group__value">{{ formatPrice(m.cache_read_price) }}</span></td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-if="pricingRows.length > 0" class="pricing-group__table-wrap">
+      <table class="pricing-group__table">
+        <thead>
+          <tr>
+            <th>{{ t('modelPricing.table.model') }}</th>
+            <th>{{ t('modelPricing.table.input') }}</th>
+            <th>{{ t('modelPricing.table.output') }}</th>
+            <th>{{ t('modelPricing.table.cacheRead') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="row in pricingRows"
+            :key="row.key"
+            :class="{ 'pricing-group__row--disabled': row.disabled }"
+          >
+            <td class="pricing-group__model">
+              <span class="pricing-group__value">{{ row.label }}</span>
+              <span v-if="row.disabled" class="pricing-group__disabled-badge">
+                {{ t('modelPricing.disabled') }}
+              </span>
+            </td>
+            <td><span class="pricing-group__value">{{ formatPrice(row.input) }}</span></td>
+            <td>
+              <span class="pricing-group__value">{{ formatPrice(row.output) }}</span>
+              <span v-if="row.outputUnit" class="pricing-group__unit">{{ row.outputUnit }}</span>
+            </td>
+            <td><span class="pricing-group__value">{{ formatPrice(row.cacheRead) }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
   </section>
 </template>
 
@@ -102,17 +78,62 @@ const { t } = useI18n()
 
 const models = computed(() => props.group.models ?? [])
 
-const imageTokenPrices = computed(() => {
+interface PricingRow {
+  key: string
+  label: string
+  input: number | null | undefined
+  output: number | null | undefined
+  cacheRead: number | null | undefined
+  outputUnit?: string
+  disabled?: boolean
+}
+
+const imagePricingRows = computed<PricingRow[]>(() => {
   const image = props.group.image_generation
-  if (!image || image.mode !== 'token') return []
+  if (!image) return []
+
+  if (image.mode === 'fixed_per_image') {
+    return [
+      {
+        key: 'image-fixed',
+        label: 'GPT Image 2',
+        input: null,
+        output: image.price_per_image,
+        outputUnit: t('modelPricing.image.perImageUnit'),
+        cacheRead: null
+      }
+    ]
+  }
+
   return [
-    { label: t('modelPricing.image.textInput'), value: image.text_input_price },
-    { label: t('modelPricing.image.textCachedInput'), value: image.text_cached_input_price },
-    { label: t('modelPricing.image.imageInput'), value: image.image_input_price },
-    { label: t('modelPricing.image.imageCachedInput'), value: image.image_cached_input_price },
-    { label: t('modelPricing.image.imageOutput'), value: image.image_output_price }
+    {
+      key: 'image-token-text',
+      label: `GPT Image 2 · ${t('modelPricing.image.textModality')}`,
+      input: image.text_input_price,
+      output: null,
+      cacheRead: image.text_cached_input_price
+    },
+    {
+      key: 'image-token-image',
+      label: `GPT Image 2 · ${t('modelPricing.image.imageModality')}`,
+      input: image.image_input_price,
+      output: image.image_output_price,
+      cacheRead: image.image_cached_input_price
+    }
   ]
 })
+
+const pricingRows = computed<PricingRow[]>(() => [
+  ...imagePricingRows.value,
+  ...models.value.map((model) => ({
+    key: `model-${model.model}`,
+    label: model.model,
+    input: model.input_price,
+    output: model.output_price,
+    cacheRead: model.cache_read_price,
+    disabled: model.disabled
+  }))
+])
 
 function formatPrice(v: number | null | undefined): string {
   if (v === null || v === undefined) return '—'
@@ -195,95 +216,13 @@ function formatPrice(v: number | null | undefined): string {
   text-align: center;
 }
 
-.pricing-group__image {
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #faf5ff 0%, #eff6ff 100%);
-}
-
-.pricing-group__image-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.pricing-group__image-title {
-  color: #111827;
-  font-size: 0.875rem;
-  font-weight: 700;
-}
-
-.pricing-group__image-unit {
-  margin-left: 0.5rem;
-  color: #6b7280;
-  font-size: 0.75rem;
-}
-
-.pricing-group__image-badge {
-  padding: 0.2rem 0.55rem;
-  border: 1px solid #c4b5fd;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.8);
-  color: #6d28d9;
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.pricing-group__fixed-price {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-}
-
-.pricing-group__fixed-price strong {
-  color: #5b21b6;
-  font-size: 1.35rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.pricing-group__fixed-price span {
-  color: #6b7280;
-  font-size: 0.75rem;
-}
-
-.pricing-group__image-prices {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.5rem;
-}
-
-.pricing-group__image-price {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding: 0.625rem;
-  border: 1px solid rgba(196, 181, 253, 0.65);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.75);
-}
-
-.pricing-group__image-price span {
-  color: #6b7280;
-  font-size: 0.7rem;
-}
-
-.pricing-group__image-price strong {
-  color: #111827;
-  font-size: 0.875rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.pricing-group__description {
-  margin: 0.75rem 0 0;
-  color: #4b5563;
-  font-size: 0.75rem;
-  line-height: 1.6;
+.pricing-group__table-wrap {
+  overflow-x: auto;
 }
 
 .pricing-group__table {
   width: 100%;
+  min-width: 560px;
   border-collapse: collapse;
   font-size: 0.875rem;
 }
@@ -340,9 +279,9 @@ function formatPrice(v: number | null | undefined): string {
   text-decoration: none;
 }
 
-@media (max-width: 760px) {
-  .pricing-group__image-prices {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.pricing-group__unit {
+  margin-left: 0.25rem;
+  color: #6b7280;
+  font-size: 0.75rem;
 }
 </style>

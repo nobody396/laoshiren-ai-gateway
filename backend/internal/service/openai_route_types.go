@@ -252,11 +252,14 @@ type OpenAIRouteCandidate struct {
 	HalfOpenPermit       bool
 	RecoveryStep         int
 
-	HasReliabilitySample bool
-	SuccessLowerBound    float64
-	P90TTFTMilliseconds  float64
-	LoadRatio            float64
-	WaitingCount         int
+	HasReliabilitySample             bool
+	SuccessLowerBound                float64
+	P90TTFTMilliseconds              float64
+	P95CompletionLatencyMilliseconds float64
+	PartialStreamRate                float64
+	ObservationSampleCount           uint64
+	LoadRatio                        float64
+	WaitingCount                     int
 
 	CurrentAccountShare  float64
 	CurrentProviderShare float64
@@ -282,15 +285,17 @@ type OpenAIRouteExclusion struct {
 }
 
 type OpenAIRouteWeightedCandidate struct {
-	Candidate           OpenAIRouteCandidate
-	Weight              float64
-	HealthFactor        float64
-	LatencyFactor       float64
-	HeadroomFactor      float64
-	PriceFactor         float64
-	PriorityFactor      float64
-	PredictedExtraCost  float64
-	EmergencyBudgetUsed bool
+	Candidate             OpenAIRouteCandidate
+	Weight                float64
+	HealthFactor          float64
+	LatencyFactor         float64
+	TailLatencyFactor     float64
+	StreamIntegrityFactor float64
+	HeadroomFactor        float64
+	PriceFactor           float64
+	PriorityFactor        float64
+	PredictedExtraCost    float64
+	EmergencyBudgetUsed   bool
 }
 
 type OpenAIRouteAllocationRequest struct {

@@ -185,6 +185,27 @@ func TestBuildOpenAIRouteAllocationPlan_ReliabilityCanBeatSmallPriceDifference(t
 	require.Greater(t, weights[2], weights[1])
 }
 
+func TestBuildOpenAIRouteAllocationPlan_PenalizesTailLatencyAndPartialStreams(t *testing.T) {
+	unstable := testOpenAIRouteCandidate(1, "p1", 0.15)
+	unstable.P90TTFTMilliseconds = 500
+	unstable.P95CompletionLatencyMilliseconds = 30_000
+	unstable.PartialStreamRate = 0.20
+	stable := testOpenAIRouteCandidate(2, "p2", 0.15)
+	stable.P90TTFTMilliseconds = 500
+	stable.P95CompletionLatencyMilliseconds = 5_000
+	stable.PartialStreamRate = 0
+
+	plan, err := BuildOpenAIRouteAllocationPlan(testOpenAIRouteAllocationRequest(unstable, stable))
+	require.NoError(t, err)
+	byID := make(map[int64]OpenAIRouteWeightedCandidate)
+	for _, candidate := range plan.Ranked {
+		byID[candidate.Candidate.Key.AccountID] = candidate
+	}
+	require.Less(t, byID[1].TailLatencyFactor, byID[2].TailLatencyFactor)
+	require.Less(t, byID[1].StreamIntegrityFactor, byID[2].StreamIntegrityFactor)
+	require.Less(t, byID[1].Weight, byID[2].Weight)
+}
+
 func TestBuildOpenAIRouteAllocationPlan_PriorityIsPriorNotAbsoluteBucket(t *testing.T) {
 	priorityOneSlow := testOpenAIRouteCandidate(1, "p1", 0.15)
 	priorityOneSlow.Priority = 1

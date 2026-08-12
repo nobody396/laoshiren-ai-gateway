@@ -26,5 +26,26 @@ func (s *OpsService) GetOpenAIRouteAuditHealth(ctx context.Context) OpenAIRouteA
 	if s == nil || s.openAIRouteAuditService == nil {
 		return OpenAIRouteAuditHealth{}
 	}
-	return s.openAIRouteAuditService.VerifyStorage(ctx)
+	health := s.openAIRouteAuditService.VerifyStorage(ctx)
+	stats, available := s.openAIGatewayService.SnapshotOpenAIRouteObservationCollector()
+	health.ObservationCollectorAvailable = available
+	if available {
+		health.ObservationSubmitted = stats.Submitted
+		health.ObservationWritten = stats.Written
+		health.ObservationFailed = stats.Failed
+		health.ObservationDropped = stats.Dropped
+		health.ObservationRejected = stats.Rejected
+		health.ObservationInFlight = stats.InFlight
+		health.ObservationWaiting = stats.Waiting
+		health.ObservationRunning = stats.Running
+		health.ObservationCompleteness = stats.Completeness
+		health.ObservationStorageChecks = stats.StorageChecks
+		health.ObservationStorageFailed = stats.StorageFailed
+		health.ObservationLastSuccessAt = stats.LastSuccessAt
+		health.ObservationLastFailureAt = stats.LastFailureAt
+		health.ObservationLastError = stats.LastError
+		health.ObservationReady = stats.Ready
+	}
+	health.Ready = health.Ready && health.ObservationReady
+	return health
 }

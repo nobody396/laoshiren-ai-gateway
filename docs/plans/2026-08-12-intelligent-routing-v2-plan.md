@@ -38,6 +38,24 @@ group + account + model + request_class + endpoint_hash + transport + failure_do
 
 ## Delivery sequence
 
+### Implementation status (2026-08-12 Beijing time)
+
+- V2.0 is implemented on this branch: request-class isolation and full route
+  identity are covered by migrations and unit tests.
+- V2.1 passive collection is implemented: every real upstream attempt is sent
+  through a bounded asynchronous collector into shared Redis rolling windows;
+  settled text usage cost is recorded separately without double-counting the
+  attempt. Image/video cost learning remains deliberately disabled.
+- V2.2 Shadow scoring inputs are implemented: the controller consumes shared
+  Wilson reliability, P90 TTFT, P95 completion latency, partial-stream rate,
+  recent account/provider share, and bounded exploration. All factors are
+  persisted in the existing decision snapshot.
+- V2.3 route-scoped real outcome transitions are implemented. Correlated
+  provider escalation, single-owner active probes, and durable aggregate
+  checkpoints remain before an enforce-capable release.
+- Real selection remains Legacy-only. No production policy or account setting
+  is changed by this development branch.
+
 ### V2.0 — identity and audit correctness
 
 - add `request_class=text|image` to route, health, policy, budget, and audit
@@ -54,6 +72,12 @@ group + account + model + request_class + endpoint_hash + transport + failure_do
   stream, sample count, last observation, and actual settled cost;
 - maintain global, recent-window, and Beijing hour-of-week views;
 - persist non-sensitive aggregate checkpoints for restart/audit recovery.
+
+The rolling store currently uses 5-minute buckets for a one-hour recent view,
+Beijing calendar-day buckets for a seven-day global view, and the matching
+Beijing hour-of-week across eight ISO weeks. Keys contain only a route
+fingerprint. A collector queue overflow never delays a customer request and is
+instead exposed as evidence loss in the admin health endpoint.
 
 ### V2.2 — Shadow V2 scoring
 

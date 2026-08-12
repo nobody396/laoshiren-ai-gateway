@@ -33,6 +33,7 @@ type OpenAIAccountScheduleRequest struct {
 	RequiredTransport     OpenAIUpstreamTransport
 	RequireCompact        bool
 	PreferImageGeneration bool
+	RouteEndpoint         string
 	ExcludedIDs           map[int64]struct{}
 }
 
@@ -1019,7 +1020,7 @@ func (s *defaultOpenAIAccountScheduler) evaluateOpenAIRouteShadow(
 		transport := s.service.getOpenAIWSProtocolResolver().Resolve(candidate.account).Transport
 		projected = append(projected, OpenAIRouteShadowCandidate{
 			Account:              candidate.account,
-			Endpoint:             openAIRouteEndpointForAccount(candidate.account),
+			Endpoint:             openAIRouteEndpointForAccount(candidate.account, req.RouteEndpoint),
 			Transport:            string(transport),
 			Priority:             candidate.priority,
 			HasReliabilitySample: s.stats.hasSample(candidate.account.ID),
@@ -1135,7 +1136,7 @@ func invalidateUnrecordedOpenAIRouteShadowDecision(decision *OpenAIRouteShadowDe
 	decision.Emergency = false
 }
 
-func openAIRouteEndpointForAccount(account *Account) string {
+func openAIRouteEndpointForAccount(account *Account, endpoint ...string) string {
 	if account == nil {
 		return ""
 	}
@@ -1146,7 +1147,14 @@ func openAIRouteEndpointForAccount(account *Account) string {
 	if baseURL == "" {
 		return ""
 	}
-	return buildOpenAIResponsesURL(baseURL)
+	requestedEndpoint := "/v1/responses"
+	if len(endpoint) > 0 && strings.TrimSpace(endpoint[0]) != "" {
+		requestedEndpoint = strings.TrimSpace(endpoint[0])
+	}
+	if parsedEndpoint := normalizeOpenAIRouteEndpoint(requestedEndpoint); strings.Contains(parsedEndpoint, "://") {
+		return parsedEndpoint
+	}
+	return buildOpenAIEndpointURL(baseURL, requestedEndpoint)
 }
 
 func openAIRouteShadowEvaluationErrorReason(err error) string {
@@ -1310,6 +1318,7 @@ func (s *OpenAIGatewayService) selectAccountWithSchedulerForRouting(
 	requiredTransport OpenAIUpstreamTransport,
 	requireCompact bool,
 	preferImageGeneration bool,
+	routeEndpoints ...string,
 ) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
 	if preferImageGeneration {
 		// Image requests must neither inherit nor create ordinary text-session
@@ -1331,6 +1340,10 @@ func (s *OpenAIGatewayService) selectAccountWithSchedulerForRouting(
 		}
 	}
 
+	routeEndpoint := "/v1/responses"
+	if len(routeEndpoints) > 0 && strings.TrimSpace(routeEndpoints[0]) != "" {
+		routeEndpoint = strings.TrimSpace(routeEndpoints[0])
+	}
 	return scheduler.Select(ctx, OpenAIAccountScheduleRequest{
 		GroupID:               groupID,
 		SessionHash:           sessionHash,
@@ -1340,6 +1353,7 @@ func (s *OpenAIGatewayService) selectAccountWithSchedulerForRouting(
 		RequiredTransport:     requiredTransport,
 		RequireCompact:        requireCompact,
 		PreferImageGeneration: preferImageGeneration,
+		RouteEndpoint:         routeEndpoint,
 		ExcludedIDs:           excludedIDs,
 	})
 }
@@ -1411,6 +1425,89 @@ func (s *OpenAIGatewayService) ReportOpenAIAccountScheduleResult(accountID int64
 	scheduler.ReportResult(accountID, success, firstTokenMs)
 }
 
+// ReportOpenAIRouteAttempt records a complete route-scoped attempt. Callers
+// continue updating the legacy account EWMA separately during migration.
+func (s *OpenAIGatewayService) ReportOpenAIRouteAttempt(
+	account *Account,
+	groupID *int64,
+	model string,
+	requestClass OpenAIRouteRequestClass,
+	routeEndpoint string,
+	completionLatency time.Duration,
+	firstTokenMs *int,
+	signal OpenAIRouteFailureSignal,
+) {
+	if s == nil || account == nil {
+		return
+	}
+	success := !signal.HasError && signal.StatusCode >= 200 && signal.StatusCode < 400 && !signal.LocalOrigin && !signal.MalformedSSE
+	if !signal.HasError && signal.StatusCode == 0 && !signal.LocalOrigin && !signal.MalformedSSE {
+		success = true
+		signal.StatusCode = 200
+	}
+	if s.openAIRouteObservations == nil || groupID == nil || *groupID <= 0 || !requestClass.Valid() {
+		return
+	}
+	classification := ClassifyOpenAIRouteFailure(signal)
+	endpoint := openAIRouteEndpointForAccount(account, routeEndpoint)
+	transport := string(s.getOpenAIWSProtocolResolver().Resolve(account).Transport)
+	key, err := NewOpenAIRouteKey(account, *groupID, model, requestClass, endpoint, transport)
+	if err != nil {
+		return
+	}
+	ttft := int64(0)
+	if firstTokenMs != nil && *firstTokenMs > 0 {
+		ttft = int64(*firstTokenMs)
+	}
+	_ = s.openAIRouteObservations.TryRecord(OpenAIRouteObservation{
+		Key:                 key,
+		ObservedAt:          time.Now().UTC(),
+		Success:             success,
+		FailureClass:        classification.Class,
+		PenalizeRoute:       classification.PenalizeRoute,
+		PartialStream:       classification.PartialStream,
+		TTFTMilliseconds:    ttft,
+		CompletionLatencyMS: maxOpenAIRouteDurationMilliseconds(completionLatency),
+	})
+}
+
+func maxOpenAIRouteDurationMilliseconds(value time.Duration) int64 {
+	if value <= 0 {
+		return 0
+	}
+	milliseconds := value.Milliseconds()
+	if milliseconds <= 0 {
+		return 1
+	}
+	return milliseconds
+}
+
+func (s *OpenAIGatewayService) ReportOpenAIRouteActualCost(
+	account *Account,
+	groupID *int64,
+	model string,
+	requestClass OpenAIRouteRequestClass,
+	routeEndpoint string,
+	actualBaseCostUSD float64,
+	actualAccountCostUSD float64,
+) {
+	if s == nil || s.openAIRouteObservations == nil || account == nil || groupID == nil || *groupID <= 0 || !requestClass.Valid() {
+		return
+	}
+	endpoint := openAIRouteEndpointForAccount(account, routeEndpoint)
+	transport := string(s.getOpenAIWSProtocolResolver().Resolve(account).Transport)
+	key, err := NewOpenAIRouteKey(account, *groupID, model, requestClass, endpoint, transport)
+	if err != nil {
+		return
+	}
+	_ = s.openAIRouteObservations.TryRecordCost(OpenAIRouteActualCostObservation{
+		Key:                  key,
+		ObservedAt:           time.Now().UTC(),
+		ActualBaseCostUSD:    actualBaseCostUSD,
+		ActualAccountCostUSD: actualAccountCostUSD,
+	})
+}
+
 func (s *OpenAIGatewayService) RecordOpenAIAccountSwitch() {
 	scheduler := s.getOpenAIAccountScheduler()
 	if scheduler == nil {
@@ -1425,6 +1522,13 @@ func (s *OpenAIGatewayService) SnapshotOpenAIAccountSchedulerMetrics() OpenAIAcc
 		return OpenAIAccountSchedulerMetricsSnapshot{}
 	}
 	return scheduler.SnapshotMetrics()
+}
+
+func (s *OpenAIGatewayService) SnapshotOpenAIRouteObservationCollector() (OpenAIRouteObservationCollectorStats, bool) {
+	if s == nil || s.openAIRouteObservations == nil {
+		return OpenAIRouteObservationCollectorStats{}, false
+	}
+	return s.openAIRouteObservations.Stats(), true
 }
 
 func (s *OpenAIGatewayService) openAIWSSessionStickyTTL() time.Duration {

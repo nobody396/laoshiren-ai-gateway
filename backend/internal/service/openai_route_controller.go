@@ -121,9 +121,10 @@ type cachedOpenAIRoutePolicies struct {
 }
 
 type OpenAIRouteController struct {
-	reader      OpenAIRoutePolicyReader
-	healthStore OpenAIRouteHealthStore
-	budgetStore OpenAIRouteBudgetStore
+	reader           OpenAIRoutePolicyReader
+	healthStore      OpenAIRouteHealthStore
+	budgetStore      OpenAIRouteBudgetStore
+	observationStore OpenAIRouteObservationStore
 
 	cacheMu sync.Mutex
 	cache   cachedOpenAIRoutePolicies
@@ -133,11 +134,13 @@ func NewOpenAIRouteController(
 	reader OpenAIRoutePolicyReader,
 	healthStore OpenAIRouteHealthStore,
 	budgetStore OpenAIRouteBudgetStore,
+	observationStore OpenAIRouteObservationStore,
 ) *OpenAIRouteController {
 	return &OpenAIRouteController{
-		reader:      reader,
-		healthStore: healthStore,
-		budgetStore: budgetStore,
+		reader:           reader,
+		healthStore:      healthStore,
+		budgetStore:      budgetStore,
+		observationStore: observationStore,
 	}
 }
 
@@ -148,6 +151,46 @@ func (c *OpenAIRouteController) InvalidatePolicyCache() {
 	c.cacheMu.Lock()
 	c.cache = cachedOpenAIRoutePolicies{}
 	c.cacheMu.Unlock()
+}
+
+// RecordOpenAIRouteOutcome drives the route-scoped circuit from real upstream
+// attempts. It deliberately does not fan one account failure out to the shared
+// failure domain; correlated provider ejection requires independent evidence.
+func (c *OpenAIRouteController) RecordOpenAIRouteOutcome(ctx context.Context, observation OpenAIRouteObservation) error {
+	if c == nil || c.healthStore == nil {
+		return ErrOpenAIRouteNoCandidate
+	}
+	if err := observation.Validate(); err != nil {
+		return err
+	}
+	policy := DefaultOpenAIRoutePolicy()
+	policies, err := c.loadPolicies(ctx, observation.ObservedAt)
+	if err != nil {
+		return err
+	}
+	if config, ok := resolveOpenAIRoutePolicyConfig(policies, observation.Key.GroupID, observation.Key.Model, observation.Key.RequestClass); ok && config.Enabled {
+		policy, err = config.normalizedPolicy()
+		if err != nil {
+			return err
+		}
+	}
+	key := OpenAIRouteHealthStoreKeyForRoute(observation.Key)
+	state, err := c.healthStore.Get(ctx, key)
+	if err != nil {
+		return err
+	}
+	if observation.Success && state.State == OpenAIRouteCircuitHealthy {
+		return nil
+	}
+	if !observation.Success && !observation.PenalizeRoute {
+		return nil
+	}
+	_, err = c.healthStore.ApplyEvent(ctx, key, OpenAIRouteHealthEvent{
+		At:           observation.ObservedAt,
+		Success:      observation.Success,
+		FailureClass: observation.FailureClass,
+	}, policy)
+	return err
 }
 
 func (c *OpenAIRouteController) EvaluateShadow(
@@ -216,6 +259,8 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	}
 	windows := buildOpenAIRouteBudgetWindows(req.GroupID, req.Model, req.RequestClass, config.Version, now, policy)
 	candidates := make([]OpenAIRouteCandidate, 0, len(req.Candidates))
+	routeKeys := make([]OpenAIRouteKey, 0, len(req.Candidates))
+	auditIndices := make([]int, 0, len(req.Candidates))
 	for _, source := range req.Candidates {
 		if source.Account == nil {
 			continue
@@ -264,11 +309,67 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		candidate.RecoveryStep = routeHealth.RecoveryStep
 		decision.Audit.Candidates[auditIndex] = newOpenAIRouteShadowAuditCandidate(candidate)
 		candidates = append(candidates, candidate)
+		routeKeys = append(routeKeys, key)
+		auditIndices = append(auditIndices, auditIndex)
 	}
 	decision.CandidateCount = len(decision.Audit.Candidates)
 	if len(candidates) == 0 {
 		decision.ExcludedCount = len(decision.Audit.Exclusions)
 		return decision, ErrOpenAIRouteNoCandidate
+	}
+	profiles := make(map[string]OpenAIRouteObservationProfile)
+	if c.observationStore != nil {
+		var getErr error
+		profiles, getErr = c.observationStore.GetBatch(ctx, routeKeys, now)
+		if getErr != nil {
+			return decision, getErr
+		}
+	}
+	profileByCandidate := make([]OpenAIRouteObservationProfile, len(candidates))
+	var totalShareAttempts uint64
+	var totalReliabilitySamples uint64
+	providerShareAttempts := make(map[string]uint64)
+	for idx := range candidates {
+		profile := profiles[OpenAIRouteObservationFingerprint(candidates[idx].Key)]
+		profileByCandidate[idx] = profile
+		shareAttempts := profile.Recent.AttemptCount
+		if shareAttempts == 0 {
+			shareAttempts = profile.Global.AttemptCount
+		}
+		totalShareAttempts += shareAttempts
+		providerShareAttempts[openAIRouteProviderKey(candidates[idx])] += shareAttempts
+		totalReliabilitySamples += profile.Global.ReliabilityCount
+	}
+	for idx := range candidates {
+		profile := profileByCandidate[idx]
+		blended := BlendOpenAIRouteObservationProfile(profile)
+		observationSource := "process_local"
+		if blended.ReliabilityCount > 0 {
+			observationSource = "shared"
+			candidates[idx].HasReliabilitySample = true
+			candidates[idx].SuccessLowerBound = blended.SuccessLowerBound()
+			candidates[idx].P90TTFTMilliseconds = blended.TTFTPercentile(0.90)
+			candidates[idx].P95CompletionLatencyMilliseconds = blended.LatencyPercentile(0.95)
+			candidates[idx].ObservationSampleCount = blended.ReliabilityCount
+			if blended.AttemptCount > 0 {
+				candidates[idx].PartialStreamRate = float64(blended.PartialStreams) / float64(blended.AttemptCount)
+			}
+		}
+		shareAttempts := profile.Recent.AttemptCount
+		if shareAttempts == 0 {
+			shareAttempts = profile.Global.AttemptCount
+		}
+		if totalShareAttempts > 0 {
+			candidates[idx].CurrentAccountShare = float64(shareAttempts) / float64(totalShareAttempts)
+			candidates[idx].CurrentProviderShare = float64(providerShareAttempts[openAIRouteProviderKey(candidates[idx])]) / float64(totalShareAttempts)
+		}
+		candidates[idx].ExplorationBoost = openAIRouteExplorationBoost(blended.ReliabilityCount, totalReliabilitySamples)
+		auditIndex := auditIndices[idx]
+		decision.Audit.Candidates[auditIndex] = newOpenAIRouteShadowAuditCandidate(candidates[idx])
+		decision.Audit.Candidates[auditIndex].ObservationSource = observationSource
+		decision.Audit.Candidates[auditIndex].ObservationSamples = profile.Global.ReliabilityCount
+		decision.Audit.Candidates[auditIndex].RecentSamples = profile.Recent.ReliabilityCount
+		decision.Audit.Candidates[auditIndex].HourOfWeekSamples = profile.HourOfWeek.ReliabilityCount
 	}
 
 	plan, reservation, ledgers, err := allocateAndReserveOpenAIRouteWithLedgers(ctx, c.budgetStore, OpenAIRouteAllocationRequest{
@@ -351,23 +452,26 @@ func newOpenAIRouteShadowAuditPolicy(policy OpenAIRoutePolicy, hardShareCaps boo
 
 func newOpenAIRouteShadowAuditCandidate(candidate OpenAIRouteCandidate) OpenAIRouteShadowAuditCandidate {
 	return OpenAIRouteShadowAuditCandidate{
-		AccountID:            candidate.Key.AccountID,
-		EndpointHash:         candidate.Key.EndpointHash,
-		FailureDomain:        candidate.Key.FailureDomain,
-		Transport:            candidate.Key.Transport,
-		RateMultiplier:       candidate.RateMultiplier,
-		Priority:             candidate.Priority,
-		CircuitState:         normalizeOpenAIRouteCircuitState(candidate.CircuitState),
-		ProviderCircuitState: normalizeOpenAIRouteProviderCircuitState(candidate.ProviderCircuitState),
-		RecoveryStep:         candidate.RecoveryStep,
-		HasReliabilitySample: candidate.HasReliabilitySample,
-		SuccessLowerBound:    candidate.SuccessLowerBound,
-		TTFTMilliseconds:     candidate.P90TTFTMilliseconds,
-		LoadRatio:            candidate.LoadRatio,
-		WaitingCount:         candidate.WaitingCount,
-		CurrentAccountShare:  candidate.CurrentAccountShare,
-		CurrentProviderShare: candidate.CurrentProviderShare,
-		ExplorationBoost:     candidate.ExplorationBoost,
+		AccountID:                        candidate.Key.AccountID,
+		EndpointHash:                     candidate.Key.EndpointHash,
+		FailureDomain:                    candidate.Key.FailureDomain,
+		Transport:                        candidate.Key.Transport,
+		RateMultiplier:                   candidate.RateMultiplier,
+		Priority:                         candidate.Priority,
+		CircuitState:                     normalizeOpenAIRouteCircuitState(candidate.CircuitState),
+		ProviderCircuitState:             normalizeOpenAIRouteProviderCircuitState(candidate.ProviderCircuitState),
+		RecoveryStep:                     candidate.RecoveryStep,
+		HasReliabilitySample:             candidate.HasReliabilitySample,
+		SuccessLowerBound:                candidate.SuccessLowerBound,
+		TTFTMilliseconds:                 candidate.P90TTFTMilliseconds,
+		P95CompletionLatencyMilliseconds: candidate.P95CompletionLatencyMilliseconds,
+		PartialStreamRate:                candidate.PartialStreamRate,
+		ObservationSamples:               candidate.ObservationSampleCount,
+		LoadRatio:                        candidate.LoadRatio,
+		WaitingCount:                     candidate.WaitingCount,
+		CurrentAccountShare:              candidate.CurrentAccountShare,
+		CurrentProviderShare:             candidate.CurrentProviderShare,
+		ExplorationBoost:                 candidate.ExplorationBoost,
 	}
 }
 
@@ -393,6 +497,8 @@ func applyOpenAIRouteShadowAuditPlan(
 		candidate.Weight = item.Weight
 		candidate.HealthFactor = item.HealthFactor
 		candidate.LatencyFactor = item.LatencyFactor
+		candidate.TailLatencyFactor = item.TailLatencyFactor
+		candidate.StreamIntegrityFactor = item.StreamIntegrityFactor
 		candidate.HeadroomFactor = item.HeadroomFactor
 		candidate.PriceFactor = item.PriceFactor
 		candidate.PriorityFactor = item.PriorityFactor

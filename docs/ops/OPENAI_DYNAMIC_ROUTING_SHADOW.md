@@ -10,6 +10,17 @@
 
 ## 数据完整性边界
 
+除决策审计外，V2 还会被动采集每一次真实上游尝试（包括被后续切换掩盖的失败）。
+采集维度为 `group + account + model + request_class + endpoint_hash + transport +
+failure_domain`，Redis 中只保存不可逆指纹和聚合计数：成功/分类失败、TTFT 直方图、
+完成延迟直方图、半截流、样本数、最后观测时间和已结算成本。窗口包括最近一小时、
+最近七个北京时间自然日，以及过去八周相同的北京时间“周内小时”。原始 URL、
+请求/响应正文和凭证不会进入该存储。
+
+文本成本来自与账号统计相同的已结算 usage 计算，并通过独立结算事件补入聚合，
+不会把一次请求重复计为两次尝试。图片和视频在原始上游扣费尚未完成权威对账前不
+参与成本学习，避免用少量 token 或用户售价反推供应商单图成本。
+
 每次**命中已启用 Shadow 策略**的负载均衡评估，都同步写入
 `openai_route_shadow_decisions`。记录包含：
 
@@ -43,6 +54,11 @@ Shadow 的可审计性是运行前置条件：
 5. `attempted = written + failed + in_flight` 是决策写入完整性的基本不变量；
    请求排空后 `in_flight` 必须回到 0。存储探针次数和失败次数单独暴露，不能用
    普通 Debug 日志代替。
+
+被动观测采集器另行暴露 `submitted/written/failed/dropped/rejected/in_flight`、
+`completeness`、存储检查和最后成功/失败时间。队列满时丢弃的是学习证据而不是
+阻塞用户请求；但完整率低于 99% 时健康状态必须为 `ready=false`，不得据此推进
+灰度接管。
 
 ## 管理查询
 

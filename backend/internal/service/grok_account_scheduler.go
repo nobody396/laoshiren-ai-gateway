@@ -37,13 +37,14 @@ func (s *OpenAIGatewayService) SelectOpenAICompatibleAccountWithSchedulerForRout
 	requiredTransport OpenAIUpstreamTransport,
 	requireCompact bool,
 	preferImageGeneration bool,
+	routeEndpoints ...string,
 ) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
 	if platform == PlatformGrok {
 		return s.SelectGrokAccountWithScheduler(ctx, groupID, sessionHash, requestedModel, excludedIDs, false)
 	}
 	return s.selectAccountWithSchedulerForRouting(
 		ctx, groupID, previousResponseID, sessionHash, requestedModel,
-		excludedIDs, requiredTransport, requireCompact, preferImageGeneration,
+		excludedIDs, requiredTransport, requireCompact, preferImageGeneration, routeEndpoints...,
 	)
 }
 

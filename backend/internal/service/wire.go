@@ -507,6 +507,7 @@ func ProvideOpenAIGatewayService(
 	accountingService *AccountingService,
 	openAIRouteController *OpenAIRouteController,
 	openAIRouteAuditService *OpenAIRouteAuditService,
+	openAIRouteObservationCollector *OpenAIRouteObservationCollector,
 ) *OpenAIGatewayService {
 	svc := NewOpenAIGatewayService(
 		accountRepo, usageLogRepo, usageBillingRepo, userRepo, userSubRepo,
@@ -524,6 +525,7 @@ func ProvideOpenAIGatewayService(
 	svc.SetGrokTokenProvider(grokTokenProvider)
 	svc.SetOpenAIRouteEvaluator(openAIRouteController)
 	svc.SetOpenAIRouteAuditService(openAIRouteAuditService)
+	svc.SetOpenAIRouteObservationCollector(openAIRouteObservationCollector)
 	if settingService != nil && openAIRouteController != nil {
 		settingService.AddOnUpdateCallback(openAIRouteController.InvalidatePolicyCache)
 	}
@@ -607,7 +609,9 @@ var ProviderSet = wire.NewSet(
 	ProvideOpenAIGatewayService,
 	ProvideOpenAIRoutePolicyReader,
 	NewOpenAIRouteController,
+	wire.Bind(new(OpenAIRouteOutcomeRecorder), new(*OpenAIRouteController)),
 	NewOpenAIRouteAuditService,
+	NewOpenAIRouteObservationCollector,
 	NewOAuthService,
 	NewOpenAIOAuthService,
 	NewGrokOAuthService,
@@ -774,6 +778,7 @@ func ProvideRootLifecycle(
 	subscriptionService *SubscriptionService,
 	accountingWorker *AccountingWorker,
 	usageRecordPool *UsageRecordWorkerPool,
+	openAIRouteObservationCollector *OpenAIRouteObservationCollector,
 	timingWheel *TimingWheelService,
 	dashboardAggregation *DashboardAggregationService,
 	deferred *DeferredService,
@@ -825,6 +830,7 @@ func ProvideRootLifecycle(
 		component("subscription-maintenance", subscriptionService.Start, subscriptionService.Stop),
 		component("accounting-worker", accountingWorker.Start, accountingWorker.Stop),
 		component("usage-record-pool", usageRecordPool.Start, usageRecordPool.Stop),
+		component("openai-route-observations", openAIRouteObservationCollector.Start, openAIRouteObservationCollector.Stop),
 		component("timing-wheel", timingWheel.Start, timingWheel.Stop),
 		component("dashboard-aggregation", dashboardAggregation.Start, nil),
 		component("deferred-writes", deferred.Start, deferred.Stop),

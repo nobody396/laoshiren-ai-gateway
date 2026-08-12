@@ -128,6 +128,7 @@ func BuildOpenAIRouteAllocationPlan(req OpenAIRouteAllocationRequest) (OpenAIRou
 	minRate := feasible[0].candidate.RateMultiplier
 	minPriority := feasible[0].candidate.Priority
 	minTTFT := 0.0
+	minCompletionLatency := 0.0
 	for _, item := range feasible {
 		candidate := item.candidate
 		if candidate.RateMultiplier < minRate {
@@ -139,6 +140,9 @@ func BuildOpenAIRouteAllocationPlan(req OpenAIRouteAllocationRequest) (OpenAIRou
 		if candidate.P90TTFTMilliseconds > 0 && (minTTFT == 0 || candidate.P90TTFTMilliseconds < minTTFT) {
 			minTTFT = candidate.P90TTFTMilliseconds
 		}
+		if candidate.P95CompletionLatencyMilliseconds > 0 && (minCompletionLatency == 0 || candidate.P95CompletionLatencyMilliseconds < minCompletionLatency) {
+			minCompletionLatency = candidate.P95CompletionLatencyMilliseconds
+		}
 	}
 	plan.MinHealthyMultiplier = minRate
 
@@ -147,6 +151,8 @@ func BuildOpenAIRouteAllocationPlan(req OpenAIRouteAllocationRequest) (OpenAIRou
 		candidate := item.candidate
 		healthFactor := openAIRouteHealthFactor(candidate, policy)
 		latencyFactor := openAIRouteLatencyFactor(candidate.P90TTFTMilliseconds, minTTFT, policy.LatencyBeta)
+		tailLatencyFactor := openAIRouteLatencyFactor(candidate.P95CompletionLatencyMilliseconds, minCompletionLatency, policy.LatencyBeta*0.35)
+		streamIntegrityFactor := openAIRouteStreamIntegrityFactor(candidate.PartialStreamRate)
 		headroomFactor := openAIRouteHeadroomFactor(candidate.LoadRatio, candidate.WaitingCount)
 		priceFactor := openAIRoutePriceFactor(candidate.RateMultiplier, minRate, policy.PriceExponent)
 		priorityFactor := 1 / (1 + policy.PriorityPenalty*float64(maxOpenAIRouteInt(candidate.Priority-minPriority, 0)))
@@ -155,20 +161,22 @@ func BuildOpenAIRouteAllocationPlan(req OpenAIRouteAllocationRequest) (OpenAIRou
 			explorationBoost = 1
 		}
 		explorationBoost = math.Max(0.1, math.Min(5, explorationBoost))
-		weight := healthFactor * latencyFactor * headroomFactor * priceFactor * priorityFactor * explorationBoost
+		weight := healthFactor * latencyFactor * tailLatencyFactor * streamIntegrityFactor * headroomFactor * priceFactor * priorityFactor * explorationBoost
 		if weight <= 0 || math.IsNaN(weight) || math.IsInf(weight, 0) {
 			weight = 1e-9
 		}
 		weighted = append(weighted, OpenAIRouteWeightedCandidate{
-			Candidate:           candidate,
-			Weight:              weight,
-			HealthFactor:        healthFactor,
-			LatencyFactor:       latencyFactor,
-			HeadroomFactor:      headroomFactor,
-			PriceFactor:         priceFactor,
-			PriorityFactor:      priorityFactor,
-			PredictedExtraCost:  item.preview.PredictedExtraCostUSD,
-			EmergencyBudgetUsed: item.preview.Emergency,
+			Candidate:             candidate,
+			Weight:                weight,
+			HealthFactor:          healthFactor,
+			LatencyFactor:         latencyFactor,
+			TailLatencyFactor:     tailLatencyFactor,
+			StreamIntegrityFactor: streamIntegrityFactor,
+			HeadroomFactor:        headroomFactor,
+			PriceFactor:           priceFactor,
+			PriorityFactor:        priorityFactor,
+			PredictedExtraCost:    item.preview.PredictedExtraCostUSD,
+			EmergencyBudgetUsed:   item.preview.Emergency,
 		})
 	}
 
@@ -192,6 +200,12 @@ func validOpenAIRouteCandidate(candidate OpenAIRouteCandidate) bool {
 		return false
 	}
 	if math.IsNaN(candidate.P90TTFTMilliseconds) || math.IsInf(candidate.P90TTFTMilliseconds, 0) || candidate.P90TTFTMilliseconds < 0 {
+		return false
+	}
+	if math.IsNaN(candidate.P95CompletionLatencyMilliseconds) || math.IsInf(candidate.P95CompletionLatencyMilliseconds, 0) || candidate.P95CompletionLatencyMilliseconds < 0 {
+		return false
+	}
+	if math.IsNaN(candidate.PartialStreamRate) || math.IsInf(candidate.PartialStreamRate, 0) || candidate.PartialStreamRate < 0 || candidate.PartialStreamRate > 1 {
 		return false
 	}
 	return true
@@ -295,6 +309,11 @@ func openAIRouteLatencyFactor(ttft, minTTFT, beta float64) float64 {
 	ratioDelta := ttft/minTTFT - 1
 	factor := math.Exp(-beta * math.Max(0, ratioDelta))
 	return math.Max(0.05, math.Min(1, factor))
+}
+
+func openAIRouteStreamIntegrityFactor(partialStreamRate float64) float64 {
+	partialStreamRate = math.Max(0, math.Min(1, partialStreamRate))
+	return math.Max(0.05, math.Pow(1-partialStreamRate, 2))
 }
 
 func openAIRouteHeadroomFactor(loadRatio float64, waiting int) float64 {

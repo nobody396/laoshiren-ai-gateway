@@ -363,6 +363,7 @@ type OpenAIGatewayService struct {
 	liveAttestationCipher    SecretEncryptor
 	openAIRouteEvaluator     OpenAIRouteShadowEvaluator
 	openAIRouteAuditService  *OpenAIRouteAuditService
+	openAIRouteObservations  *OpenAIRouteObservationCollector
 	pipeline                 *GatewayPipeline
 
 	openaiWSPoolOnce                    sync.Once
@@ -405,6 +406,12 @@ func (s *OpenAIGatewayService) SetOpenAIRouteEvaluator(evaluator OpenAIRouteShad
 func (s *OpenAIGatewayService) SetOpenAIRouteAuditService(audit *OpenAIRouteAuditService) {
 	if s != nil {
 		s.openAIRouteAuditService = audit
+	}
+}
+
+func (s *OpenAIGatewayService) SetOpenAIRouteObservationCollector(collector *OpenAIRouteObservationCollector) {
+	if s != nil {
+		s.openAIRouteObservations = collector
 	}
 }
 
@@ -5538,6 +5545,24 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		applyAccountStatsCost(ctx, usageLog, s.channelService, s.billingService,
 			account.ID, *apiKey.GroupID, result.UpstreamModel, result.Model,
 			tokens, cost.TotalCost,
+		)
+	}
+	// Text supplier cost is derived from the same settled usage calculation as
+	// account statistics. Image supplier cost remains excluded until its raw
+	// upstream deduction reconciliation is authoritative.
+	if result.ImageCount == 0 && result.VideoCount == 0 && apiKey.GroupID != nil {
+		actualBaseCost := usageLog.TotalCost
+		if usageLog.AccountStatsCost != nil {
+			actualBaseCost = *usageLog.AccountStatsCost
+		}
+		s.ReportOpenAIRouteActualCost(
+			account,
+			apiKey.GroupID,
+			requestedModel,
+			OpenAIRouteRequestClassText,
+			input.UpstreamEndpoint,
+			actualBaseCost,
+			actualBaseCost*accountRateMultiplier,
 		)
 	}
 

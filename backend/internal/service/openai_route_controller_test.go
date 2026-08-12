@@ -21,7 +21,9 @@ func (s *openAIRoutePolicyReaderStub) GetValue(context.Context, string) (string,
 }
 
 type openAIRouteHealthStoreStub struct {
-	states map[OpenAIRouteHealthStoreKey]OpenAIRouteHealthState
+	states        map[OpenAIRouteHealthStoreKey]OpenAIRouteHealthState
+	appliedKeys   []OpenAIRouteHealthStoreKey
+	appliedEvents []OpenAIRouteHealthEvent
 }
 
 func (s *openAIRouteHealthStoreStub) Get(_ context.Context, key OpenAIRouteHealthStoreKey) (OpenAIRouteHealthState, error) {
@@ -31,7 +33,9 @@ func (s *openAIRouteHealthStoreStub) Get(_ context.Context, key OpenAIRouteHealt
 	return OpenAIRouteHealthState{State: OpenAIRouteCircuitHealthy}, nil
 }
 
-func (s *openAIRouteHealthStoreStub) ApplyEvent(_ context.Context, _ OpenAIRouteHealthStoreKey, _ OpenAIRouteHealthEvent, _ OpenAIRoutePolicy) (OpenAIRouteHealthState, error) {
+func (s *openAIRouteHealthStoreStub) ApplyEvent(_ context.Context, key OpenAIRouteHealthStoreKey, event OpenAIRouteHealthEvent, _ OpenAIRoutePolicy) (OpenAIRouteHealthState, error) {
+	s.appliedKeys = append(s.appliedKeys, key)
+	s.appliedEvents = append(s.appliedEvents, event)
 	return OpenAIRouteHealthState{}, nil
 }
 
@@ -82,7 +86,7 @@ func (s *openAIRouteBudgetSnapshotStoreStub) Cancel(context.Context, OpenAIRoute
 
 func TestOpenAIRouteController_MissingPolicyIsLegacyAndCached(t *testing.T) {
 	reader := &openAIRoutePolicyReaderStub{err: ErrSettingNotFound}
-	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{})
+	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{}, &openAIRouteObservationStoreStub{})
 	req := OpenAIRouteShadowRequest{
 		GroupID:      7,
 		Model:        "gpt-5.6-sol",
@@ -122,7 +126,7 @@ func TestOpenAIRouteController_ExactPolicyBeatsWildcardAndSelectsWithinBudget(t 
   ]
 }`}
 	budget := &openAIRouteBudgetSnapshotStoreStub{}
-	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, budget)
+	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, budget, &openAIRouteObservationStoreStub{})
 	now := time.Date(2026, 8, 8, 12, 3, 0, 0, time.UTC)
 
 	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
@@ -177,6 +181,66 @@ func TestOpenAIRouteController_ExactPolicyBeatsWildcardAndSelectsWithinBudget(t 
 	require.Contains(t, budget.windows[0].Scope.Epoch, "v9:")
 }
 
+func TestOpenAIRouteController_SharedObservationsOverrideProcessLocalInputs(t *testing.T) {
+	reader := &openAIRoutePolicyReaderStub{value: `[{"group_id":7,"model":"gpt-5.6-sol","enabled":true,"mode":"shadow","policy_version":11,"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01}]`}
+	firstAccount := testOpenAIRouteControllerAccount(1, 0.15)
+	secondAccount := testOpenAIRouteControllerAccount(2, 0.15)
+	firstKey, err := NewOpenAIRouteKey(firstAccount, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://slow.example.invalid/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
+	require.NoError(t, err)
+	secondKey, err := NewOpenAIRouteKey(secondAccount, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://fast.example.invalid/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
+	require.NoError(t, err)
+
+	profile := func(successes uint64, ttft int64) OpenAIRouteObservationProfile {
+		aggregate := NewOpenAIRouteObservationAggregate()
+		aggregate.AttemptCount = 100
+		aggregate.ReliabilityCount = 100
+		aggregate.SuccessCount = successes
+		aggregate.FailureCount = 100 - successes
+		aggregate.TTFTSampleCount = successes
+		aggregate.TTFTHistogram[OpenAIRouteLatencyHistogramBucket(ttft)] = successes
+		aggregate.LatencySampleCount = successes
+		aggregate.LatencyHistogram[OpenAIRouteLatencyHistogramBucket(ttft*4)] = successes
+		return OpenAIRouteObservationProfile{Global: aggregate, Recent: aggregate}
+	}
+	observations := &openAIRouteObservationStoreStub{profiles: map[string]OpenAIRouteObservationProfile{
+		OpenAIRouteObservationFingerprint(firstKey):  profile(50, 5_000),
+		OpenAIRouteObservationFingerprint(secondKey): profile(99, 500),
+	}}
+	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{}, observations)
+	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
+		GroupID: 7, Model: "gpt-5.6-sol", RequestClass: OpenAIRouteRequestClassText, Seed: 42,
+		Candidates: []OpenAIRouteShadowCandidate{
+			{Account: firstAccount, Endpoint: "https://slow.example.invalid/v1/responses", Transport: string(OpenAIUpstreamTransportHTTPSSE), HasReliabilitySample: true, SuccessLowerBound: 0.99, TTFTMilliseconds: 100},
+			{Account: secondAccount, Endpoint: "https://fast.example.invalid/v1/responses", Transport: string(OpenAIUpstreamTransportHTTPSSE), HasReliabilitySample: true, SuccessLowerBound: 0.50, TTFTMilliseconds: 10_000},
+		},
+	})
+	require.NoError(t, err)
+	require.True(t, decision.Evaluated)
+	require.Len(t, decision.Audit.Candidates, 2)
+	byID := map[int64]OpenAIRouteShadowAuditCandidate{}
+	for _, candidate := range decision.Audit.Candidates {
+		byID[candidate.AccountID] = candidate
+	}
+	require.Equal(t, "shared", byID[1].ObservationSource)
+	require.Equal(t, uint64(100), byID[1].ObservationSamples)
+	require.Less(t, byID[1].SuccessLowerBound, byID[2].SuccessLowerBound)
+	require.Greater(t, byID[1].TTFTMilliseconds, byID[2].TTFTMilliseconds)
+	require.InDelta(t, 0.5, byID[1].CurrentAccountShare, 1e-12)
+}
+
+func TestOpenAIRouteController_RealOutcomeUpdatesOnlyNarrowRouteHealth(t *testing.T) {
+	health := &openAIRouteHealthStoreStub{}
+	controller := NewOpenAIRouteController(&openAIRoutePolicyReaderStub{err: ErrSettingNotFound}, health, &openAIRouteBudgetSnapshotStoreStub{}, &openAIRouteObservationStoreStub{})
+	key, err := NewOpenAIRouteKey(testOpenAIRouteControllerAccount(1, 0.15), 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://example.invalid/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
+	require.NoError(t, err)
+	require.NoError(t, controller.RecordOpenAIRouteOutcome(context.Background(), OpenAIRouteObservation{
+		Key: key, ObservedAt: time.Now().UTC(), FailureClass: OpenAIRouteFailureRateLimit, PenalizeRoute: true,
+	}))
+	require.Len(t, health.appliedKeys, 1)
+	require.Equal(t, OpenAIRouteHealthScopeRoute, health.appliedKeys[0].Scope)
+	require.Equal(t, OpenAIRouteFailureRateLimit, health.appliedEvents[0].FailureClass)
+}
+
 func TestResolveOpenAIRoutePolicyConfigSeparatesRequestClasses(t *testing.T) {
 	policies := []openAIRoutePolicyConfig{
 		{GroupID: 7, Model: "gpt-*", Version: 1},
@@ -199,7 +263,7 @@ func TestResolveOpenAIRoutePolicyConfigSeparatesRequestClasses(t *testing.T) {
 
 func TestOpenAIRouteController_EnforceModeIsHardDisabled(t *testing.T) {
 	reader := &openAIRoutePolicyReaderStub{value: `[{"group_id":7,"model":"*","enabled":true,"mode":"enforce","policy_version":1}]`}
-	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{})
+	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{}, &openAIRouteObservationStoreStub{})
 
 	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
 		GroupID:      7,
@@ -227,7 +291,7 @@ func TestOpenAIRouteController_BudgetFailureDoesNotClaimASelectedCandidate(t *te
   "hard_avg_multiplier":0.10,
   "estimated_base_cost_usd":0.01
 }`}
-	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{})
+	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{}, &openAIRouteObservationStoreStub{})
 
 	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
 		GroupID:      7,

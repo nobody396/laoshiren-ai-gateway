@@ -454,7 +454,8 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		} else {
 			result, err = h.gatewayService.Forward(c.Request.Context(), c, account, forwardBody)
 		}
-		forwardDurationMs := time.Since(forwardStart).Milliseconds()
+		forwardDuration := time.Since(forwardStart)
+		forwardDurationMs := forwardDuration.Milliseconds()
 		if accountReleaseFunc != nil {
 			accountReleaseFunc()
 		}
@@ -467,6 +468,12 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		if err == nil && result != nil && result.FirstTokenMs != nil {
 			service.SetOpsLatencyMs(c, service.OpsTimeToFirstTokenMsKey, int64(*result.FirstTokenMs))
 		}
+		reportOpenAIRouteAttempt(h.gatewayService, account, apiKey.GroupID, routingModel, openAIRouteRequestClass(imageGenerationIntent), openAIRouteObservationEndpoint(result, "/v1/responses"), forwardDuration, func() *int {
+			if result != nil {
+				return result.FirstTokenMs
+			}
+			return nil
+		}(), err, c.Writer.Size() != writerSizeBeforeForward)
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
 			if errors.As(err, &failoverErr) {
@@ -869,7 +876,8 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 		writerSizeBeforeForward := c.Writer.Size()
 		result, err := h.gatewayService.ForwardAsAnthropic(c.Request.Context(), c, account, forwardBody, promptCacheKey, defaultMappedModel)
 
-		forwardDurationMs := time.Since(forwardStart).Milliseconds()
+		forwardDuration := time.Since(forwardStart)
+		forwardDurationMs := forwardDuration.Milliseconds()
 		if accountReleaseFunc != nil {
 			accountReleaseFunc()
 		}
@@ -882,6 +890,12 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 		if err == nil && result != nil && result.FirstTokenMs != nil {
 			service.SetOpsLatencyMs(c, service.OpsTimeToFirstTokenMsKey, int64(*result.FirstTokenMs))
 		}
+		reportOpenAIRouteAttempt(h.gatewayService, account, apiKey.GroupID, reqModel, service.OpenAIRouteRequestClassText, openAIRouteObservationEndpoint(result, "/v1/responses"), forwardDuration, func() *int {
+			if result != nil {
+				return result.FirstTokenMs
+			}
+			return nil
+		}(), err, c.Writer.Size() != writerSizeBeforeForward)
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
 			if errors.As(err, &failoverErr) {
@@ -1362,6 +1376,8 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 	turnMappings := map[int]service.ChannelMappingResult{1: channelMappingWS}
 	var turnPayloadHashMu sync.RWMutex
 	turnPayloadHashes := map[int]string{1: service.HashUsageRequestPayload(firstMessage)}
+	var turnStartMu sync.RWMutex
+	turnStartedAt := map[int]time.Time{1: time.Now()}
 
 	var currentUserRelease func()
 	var currentAccountRelease func()
@@ -1507,6 +1523,9 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 			turnPayloadHashMu.Lock()
 			turnPayloadHashes[turn] = service.HashUsageRequestPayload(payload)
 			turnPayloadHashMu.Unlock()
+			turnStartMu.Lock()
+			turnStartedAt[turn] = time.Now()
+			turnStartMu.Unlock()
 			return nil
 		},
 		MapRequestModel: func(turn int, originalModel string) (string, error) {
@@ -1564,7 +1583,35 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		},
 		AfterTurn: func(turn int, result *service.OpenAIForwardResult, turnErr error) {
 			releaseTurnSlots()
+			turnStartMu.Lock()
+			startedAt := turnStartedAt[turn]
+			delete(turnStartedAt, turn)
+			turnStartMu.Unlock()
+			turnDuration := time.Duration(0)
+			if !startedAt.IsZero() {
+				turnDuration = time.Since(startedAt)
+			}
+			turnModel := reqModel
+			if result != nil && strings.TrimSpace(result.Model) != "" {
+				turnModel = strings.TrimSpace(result.Model)
+			}
+			observationErr := turnErr
+			if observationErr == nil && result == nil {
+				observationErr = errors.New("websocket turn completed without a result")
+			}
+			reportOpenAIRouteAttempt(
+				h.gatewayService, account, apiKey.GroupID, turnModel,
+				openAIRouteRequestClass(imageGenerationIntent), "/v1/responses",
+				turnDuration, func() *int {
+					if result != nil {
+						return result.FirstTokenMs
+					}
+					return nil
+				}(),
+				observationErr, result != nil && result.FirstTokenMs != nil,
+			)
 			if turnErr != nil || result == nil {
+				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
 				return
 			}
 			turnRequestedModel := strings.TrimSpace(result.Model)

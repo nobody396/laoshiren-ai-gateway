@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"net/url"
 	"strings"
 )
 
@@ -33,12 +34,37 @@ func OpenAIRouteFailureDomainID(account *Account) string {
 }
 
 func OpenAIRouteEndpointHash(endpoint string) string {
-	normalized := strings.TrimRight(strings.TrimSpace(endpoint), "/")
+	normalized := normalizeOpenAIRouteEndpoint(endpoint)
 	if normalized == "" {
 		return ""
 	}
 	sum := sha256.Sum256([]byte(normalized))
 	return hex.EncodeToString(sum[:8])
+}
+
+// normalizeOpenAIRouteEndpoint keeps route identity stable while ensuring
+// credentials and volatile query parameters can never affect or leak through
+// the fingerprint. Host and scheme are case-insensitive; path case is not.
+func normalizeOpenAIRouteEndpoint(endpoint string) string {
+	normalized := strings.TrimSpace(endpoint)
+	if normalized == "" {
+		return ""
+	}
+	if parsed, err := url.Parse(normalized); err == nil && parsed.Scheme != "" && parsed.Host != "" {
+		parsed.Scheme = strings.ToLower(parsed.Scheme)
+		parsed.Host = strings.ToLower(parsed.Host)
+		parsed.User = nil
+		parsed.RawQuery = ""
+		parsed.ForceQuery = false
+		parsed.Fragment = ""
+		parsed.Path = strings.TrimRight(parsed.Path, "/")
+		parsed.RawPath = ""
+		return strings.TrimRight(parsed.String(), "/")
+	}
+	if idx := strings.IndexAny(normalized, "?#"); idx >= 0 {
+		normalized = normalized[:idx]
+	}
+	return strings.TrimRight(strings.TrimSpace(normalized), "/")
 }
 
 func NewOpenAIRouteKey(

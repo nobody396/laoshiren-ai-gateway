@@ -85,8 +85,9 @@ const error = ref('')
 // 厂商分块展示顺序：GPT 在前，然后 Claude，之后 Grok / GLM / DeepSeek 等。
 const BLOCK_ORDER = ['gpt', 'claude', 'grok', 'glm', 'deepseek', 'qwen', 'minimax', 'other']
 
-function classifyBlock(models: string[]): string {
-  const joined = models.join(' ').toLowerCase()
+function classifyBlock(group: PublicPricingGroup): string {
+  if (group.image_generation) return 'gpt'
+  const joined = group.models.map((model) => model.model).join(' ').toLowerCase()
   if (/\bgpt[-\s]/.test(joined)) return 'gpt'
   if (/\bclaude[-\s]/.test(joined)) return 'claude'
   if (/\bgrok[-\s]/.test(joined)) return 'grok'
@@ -103,7 +104,7 @@ const blocks = computed<PricingBlock[]>(() => {
   if (!catalog.value) return []
   const map = new Map<string, PublicPricingGroup[]>()
   for (const g of catalog.value.groups) {
-    const key = classifyBlock(g.models.map((m) => m.model))
+    const key = classifyBlock(g)
     if (!map.has(key)) map.set(key, [])
     map.get(key)!.push(g)
   }

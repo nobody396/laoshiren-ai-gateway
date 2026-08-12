@@ -11,16 +11,29 @@ export interface PublicModelPrice {
   input_price: number | null
   output_price: number | null
   cache_read_price: number | null
+  disabled?: boolean
+}
+
+export interface PublicImageGenerationPricing {
+  mode: 'fixed_per_image' | 'token'
+  price_per_image?: number
+  text_input_price?: number
+  text_cached_input_price?: number
+  image_input_price?: number
+  image_cached_input_price?: number
+  image_output_price?: number
 }
 
 export interface PublicPricingGroup {
   group_id: number
   name: string
+  description?: string
   platform: string
   rate_multiplier: number
   is_exclusive: boolean
   subscription_type: string
   models: PublicModelPrice[]
+  image_generation?: PublicImageGenerationPricing
 }
 
 export interface PublicModelPricingCatalog {

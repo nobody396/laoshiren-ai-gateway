@@ -6344,11 +6344,12 @@ export default {
 
   modelPricing: {
     title: 'Model Pricing',
-    lede: 'Per-group real prices for every model, per 1M tokens (input / output / cache read). Computed live as official price × the group multiplier.',
+    lede: 'Actual text and image-generation prices by group. Token prices are per 1M tokens; fixed image prices are charged only for successfully returned images.',
     updatedAt: 'Updated',
     rateMultiplier: 'Group multiplier',
     exclusive: 'Exclusive',
     subscription: 'Subscription',
+    disabled: 'Disabled',
     noModels: 'No models available in this group yet',
     loading: 'Loading model prices…',
     error: 'Failed to load',
@@ -6359,6 +6360,18 @@ export default {
       input: 'Input',
       output: 'Output',
       cacheRead: 'Cache read'
+    },
+    image: {
+      title: 'Image generation pricing',
+      successfulImage: 'Per successful image',
+      perMillionTokens: 'CNY per 1M tokens',
+      perSuccessfulImage: 'for each successfully returned image',
+      textInput: 'Text input',
+      textCachedInput: 'Cached text input',
+      imageInput: 'Image input',
+      imageCachedInput: 'Cached image input',
+      imageOutput: 'Image output',
+      parameters: 'Supported parameters'
     },
     block: {
       gpt: 'GPT / OpenAI',

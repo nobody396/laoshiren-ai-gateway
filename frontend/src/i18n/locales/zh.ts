@@ -6530,11 +6530,12 @@ export default {
 
   modelPricing: {
     title: '模型价格',
-    lede: '按分组展示每个模型的实付价格，统一按每 1M tokens 计算（输入 / 输出 / 缓存读取）。价格为官方价乘以对应分组倍率实时计算。',
+    lede: '按分组展示文本模型与生图模型的实际计费价格。Token 价格按每 1M tokens 计算；固定生图价格按成功返回的图片张数计算。',
     updatedAt: '更新于',
     rateMultiplier: '分组倍率',
     exclusive: '专属',
     subscription: '订阅',
+    disabled: '已停用',
     noModels: '该分组暂无可展示的模型',
     loading: '正在加载模型价格…',
     error: '加载失败',
@@ -6545,6 +6546,18 @@ export default {
       input: '输入',
       output: '输出',
       cacheRead: '缓存读取'
+    },
+    image: {
+      title: '生图计费',
+      successfulImage: '按成功图片计费',
+      perMillionTokens: '价格单位：元 / 1M tokens',
+      perSuccessfulImage: '每张成功返回的图片',
+      textInput: '文本输入',
+      textCachedInput: '文本缓存输入',
+      imageInput: '图片输入',
+      imageCachedInput: '图片缓存输入',
+      imageOutput: '图片输出',
+      parameters: '支持参数'
     },
     block: {
       gpt: 'GPT / OpenAI',

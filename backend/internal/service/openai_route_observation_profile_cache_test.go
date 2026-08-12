@@ -15,6 +15,7 @@ type openAIRouteProfileCacheStoreStub struct {
 	calls    atomic.Uint64
 	delay    time.Duration
 	started  chan struct{}
+	release  chan struct{}
 	mu       sync.RWMutex
 	err      error
 	profiles map[string]OpenAIRouteObservationProfile
@@ -34,6 +35,13 @@ func (s *openAIRouteProfileCacheStoreStub) GetBatch(ctx context.Context, _ []Ope
 		select {
 		case s.started <- struct{}{}:
 		default:
+		}
+	}
+	if s.release != nil {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-s.release:
 		}
 	}
 	if s.delay > 0 {

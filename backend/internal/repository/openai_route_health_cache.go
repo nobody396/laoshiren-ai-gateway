@@ -116,6 +116,49 @@ func (c *openAIRouteHealthCache) Get(ctx context.Context, key service.OpenAIRout
 	return decodeOpenAIRouteHealthState(raw)
 }
 
+func (c *openAIRouteHealthCache) GetBatch(ctx context.Context, keys []service.OpenAIRouteHealthStoreKey) (map[string]service.OpenAIRouteHealthState, error) {
+	result := make(map[string]service.OpenAIRouteHealthState, len(keys))
+	if len(keys) == 0 {
+		return result, nil
+	}
+	if c == nil || c.rdb == nil {
+		return nil, service.ErrOpenAIRouteNoCandidate
+	}
+	commands := make(map[string]*redis.StringCmd, len(keys))
+	_, err := c.rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+		for _, key := range keys {
+			if !key.Valid() {
+				return service.ErrOpenAIRouteNoCandidate
+			}
+			fingerprint := key.Fingerprint()
+			if _, exists := commands[fingerprint]; exists {
+				continue
+			}
+			commands[fingerprint] = pipe.Get(ctx, openAIRouteHealthRedisKey(key))
+		}
+		return nil
+	})
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, err
+	}
+	for fingerprint, command := range commands {
+		raw, commandErr := command.Bytes()
+		switch {
+		case errors.Is(commandErr, redis.Nil):
+			result[fingerprint] = service.NewOpenAIRouteHealthState()
+		case commandErr != nil:
+			return nil, commandErr
+		default:
+			state, decodeErr := decodeOpenAIRouteHealthState(raw)
+			if decodeErr != nil {
+				return nil, decodeErr
+			}
+			result[fingerprint] = state
+		}
+	}
+	return result, nil
+}
+
 func (c *openAIRouteHealthCache) ApplyEvent(ctx context.Context, key service.OpenAIRouteHealthStoreKey, event service.OpenAIRouteHealthEvent, policy service.OpenAIRoutePolicy) (service.OpenAIRouteHealthState, error) {
 	if c == nil || c.rdb == nil || !key.Valid() {
 		return service.OpenAIRouteHealthState{}, service.ErrOpenAIRouteNoCandidate

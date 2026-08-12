@@ -56,6 +56,24 @@ func (s *OpenAIRouteHealthCacheSuite) TestMissingStateStartsWarmupAndTransitions
 	require.Equal(s.T(), start.Add(5*time.Second), state.OpenUntil)
 }
 
+func (s *OpenAIRouteHealthCacheSuite) TestBatchReadReturnsRouteAndProviderThroughOneCall() {
+	provider := service.OpenAIRouteHealthStoreKey{
+		Scope: service.OpenAIRouteHealthScopeProvider, GroupID: s.key.GroupID,
+		FailureDomain: s.key.FailureDomain, Model: s.key.Model, RequestClass: s.key.RequestClass,
+	}
+	start := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
+	_, err := s.cache.ApplyEvent(s.ctx, s.key, service.OpenAIRouteHealthEvent{
+		At: start, FailureClass: service.OpenAIRouteFailureUpstream5xx,
+	}, service.DefaultOpenAIRoutePolicy())
+	require.NoError(s.T(), err)
+
+	states, err := s.cache.GetBatch(s.ctx, []service.OpenAIRouteHealthStoreKey{s.key, provider, s.key})
+	require.NoError(s.T(), err)
+	require.Len(s.T(), states, 2)
+	require.Equal(s.T(), service.OpenAIRouteCircuitOpen, states[s.key.Fingerprint()].State)
+	require.Equal(s.T(), service.OpenAIRouteCircuitWarmup, states[provider.Fingerprint()].State)
+}
+
 func (s *OpenAIRouteHealthCacheSuite) TestConcurrentFailuresDoNotLoseUpdates() {
 	policy := service.DefaultOpenAIRoutePolicy()
 	start := time.Now().UTC()

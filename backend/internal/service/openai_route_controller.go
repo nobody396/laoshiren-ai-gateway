@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -281,6 +283,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	windows := buildOpenAIRouteBudgetWindows(req.GroupID, req.Model, req.RequestClass, config.Version, now, policy)
 	candidates := make([]OpenAIRouteCandidate, 0, len(req.Candidates))
 	routeKeys := make([]OpenAIRouteKey, 0, len(req.Candidates))
+	healthKeys := make([]OpenAIRouteHealthStoreKey, 0, 2*len(req.Candidates))
 	auditIndices := make([]int, 0, len(req.Candidates))
 	for _, source := range req.Candidates {
 		if source.Account == nil {
@@ -315,22 +318,9 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		}
 		decision.Audit.Candidates = append(decision.Audit.Candidates, newOpenAIRouteShadowAuditCandidate(candidate))
 		auditIndex := len(decision.Audit.Candidates) - 1
-		routeHealth, getErr := c.healthStore.Get(ctx, OpenAIRouteHealthStoreKeyForRoute(key))
-		if getErr != nil {
-			decision.CandidateCount = len(decision.Audit.Candidates)
-			return decision, getErr
-		}
-		providerHealth, getErr := c.healthStore.Get(ctx, OpenAIRouteHealthStoreKeyForProvider(key))
-		if getErr != nil {
-			decision.CandidateCount = len(decision.Audit.Candidates)
-			return decision, getErr
-		}
-		candidate.CircuitState = routeHealth.State
-		candidate.ProviderCircuitState = providerHealth.State
-		candidate.RecoveryStep = routeHealth.RecoveryStep
-		decision.Audit.Candidates[auditIndex] = newOpenAIRouteShadowAuditCandidate(candidate)
 		candidates = append(candidates, candidate)
 		routeKeys = append(routeKeys, key)
+		healthKeys = append(healthKeys, OpenAIRouteHealthStoreKeyForRoute(key), OpenAIRouteHealthStoreKeyForProvider(key))
 		auditIndices = append(auditIndices, auditIndex)
 	}
 	decision.CandidateCount = len(decision.Audit.Candidates)
@@ -339,16 +329,42 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		return decision, ErrOpenAIRouteNoCandidate
 	}
 	profiles := make(map[string]OpenAIRouteObservationProfile)
+	var healthStates map[string]OpenAIRouteHealthState
+	readGroup, readCtx := errgroup.WithContext(ctx)
+	readGroup.Go(func() error {
+		var readErr error
+		healthStates, readErr = c.healthStore.GetBatch(readCtx, healthKeys)
+		return readErr
+	})
 	if c.observationStore != nil {
-		var getErr error
-		if c.observationCache != nil {
-			profiles, getErr = c.observationCache.GetBatch(ctx, routeKeys, now)
-		} else {
-			profiles, getErr = c.observationStore.GetBatch(ctx, routeKeys, now)
+		readGroup.Go(func() error {
+			var readErr error
+			if c.observationCache != nil {
+				profiles, readErr = c.observationCache.GetBatch(readCtx, routeKeys, now)
+			} else {
+				profiles, readErr = c.observationStore.GetBatch(readCtx, routeKeys, now)
+			}
+			return readErr
+		})
+	}
+	if getErr := readGroup.Wait(); getErr != nil {
+		return decision, getErr
+	}
+	for idx, key := range routeKeys {
+		routeStoreKey := OpenAIRouteHealthStoreKeyForRoute(key)
+		providerStoreKey := OpenAIRouteHealthStoreKeyForProvider(key)
+		routeHealth, ok := healthStates[routeStoreKey.Fingerprint()]
+		if !ok {
+			return decision, fmt.Errorf("missing OpenAI route health state %s", routeStoreKey.Fingerprint())
 		}
-		if getErr != nil {
-			return decision, getErr
+		providerHealth, ok := healthStates[providerStoreKey.Fingerprint()]
+		if !ok {
+			return decision, fmt.Errorf("missing OpenAI provider health state %s", providerStoreKey.Fingerprint())
 		}
+		candidates[idx].CircuitState = routeHealth.State
+		candidates[idx].ProviderCircuitState = providerHealth.State
+		candidates[idx].RecoveryStep = routeHealth.RecoveryStep
+		decision.Audit.Candidates[auditIndices[idx]] = newOpenAIRouteShadowAuditCandidate(candidates[idx])
 	}
 	profileByCandidate := make([]OpenAIRouteObservationProfile, len(candidates))
 	var totalShareAttempts uint64

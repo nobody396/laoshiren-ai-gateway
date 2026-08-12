@@ -80,13 +80,14 @@ func (k OpenAIRouteHealthStoreKey) Fingerprint() string {
 }
 
 // OpenAIRouteHealthStore is the parallel-safe shared-state boundary. Redis
-// implementations must make ApplyEvent and half-open permit acquisition atomic
-// across application instances. ApplyEvent is for failures, probes, and
+// implementations must batch hot-path reads and make ApplyEvent and half-open
+// permit acquisition atomic across application instances. ApplyEvent is for failures, probes, and
 // recovery-state successes; ordinary healthy successes belong in the separate
 // rolling metrics path and must not turn this CAS store into a per-token hot
 // write.
 type OpenAIRouteHealthStore interface {
 	Get(ctx context.Context, key OpenAIRouteHealthStoreKey) (OpenAIRouteHealthState, error)
+	GetBatch(ctx context.Context, keys []OpenAIRouteHealthStoreKey) (map[string]OpenAIRouteHealthState, error)
 	ApplyEvent(ctx context.Context, key OpenAIRouteHealthStoreKey, event OpenAIRouteHealthEvent, policy OpenAIRoutePolicy) (OpenAIRouteHealthState, error)
 	RecordProviderEvidence(ctx context.Context, routeKey OpenAIRouteKey, event OpenAIRouteHealthEvent, policy OpenAIRoutePolicy, minDistinctAccounts int) (OpenAIRouteProviderEvidenceResult, error)
 	AcquireHalfOpenPermit(ctx context.Context, key OpenAIRouteHealthStoreKey, owner string) (bool, error)

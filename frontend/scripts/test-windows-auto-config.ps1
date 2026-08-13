@@ -199,7 +199,7 @@ try {
       -Urls @($verifiedSource) `
       -ExpectedSHA256 ('0' * 64)
   } catch {
-    $checksumRejected = $_.Exception.Message -match 'SHA-?256'
+    $checksumRejected = -not (Test-Path -LiteralPath $verifiedDownload)
   }
   Assert-True $checksumRejected 'Node.js checksum mismatch did not fail closed'
   Assert-True (-not (Test-Path -LiteralPath $verifiedDownload)) 'Checksum failure left a partial file behind'

@@ -363,6 +363,7 @@ type OpenAIGatewayService struct {
 	liveAttestationCipher    SecretEncryptor
 	openAIRouteEvaluator     OpenAIRouteShadowEvaluator
 	openAIRouteAuditService  *OpenAIRouteAuditService
+	openAIRouteObservations  *OpenAIRouteObservationCollector
 	pipeline                 *GatewayPipeline
 
 	openaiWSPoolOnce                    sync.Once
@@ -405,6 +406,12 @@ func (s *OpenAIGatewayService) SetOpenAIRouteEvaluator(evaluator OpenAIRouteShad
 func (s *OpenAIGatewayService) SetOpenAIRouteAuditService(audit *OpenAIRouteAuditService) {
 	if s != nil {
 		s.openAIRouteAuditService = audit
+	}
+}
+
+func (s *OpenAIGatewayService) SetOpenAIRouteObservationCollector(collector *OpenAIRouteObservationCollector) {
+	if s != nil {
+		s.openAIRouteObservations = collector
 	}
 }
 
@@ -5264,17 +5271,22 @@ func (s *OpenAIGatewayService) replaceModelInResponseBody(body []byte, fromModel
 
 // OpenAIRecordUsageInput input for recording usage
 type OpenAIRecordUsageInput struct {
-	Result             *OpenAIForwardResult
-	APIKey             *APIKey
-	User               *User
-	Account            *Account
-	Subscription       *UserSubscription
-	InboundEndpoint    string
-	UpstreamEndpoint   string
-	UserAgent          string // 请求的 User-Agent
-	IPAddress          string // 请求的客户端 IP 地址
-	RequestPayloadHash string
-	APIKeyService      APIKeyQuotaUpdater
+	Result           *OpenAIForwardResult
+	APIKey           *APIKey
+	User             *User
+	Account          *Account
+	Subscription     *UserSubscription
+	InboundEndpoint  string
+	UpstreamEndpoint string
+	// RouteObservationModel is the exact model identity used during account
+	// scheduling. It can differ from OriginalModel for compatibility dispatch
+	// (for example Claude Messages mapped to an OpenAI model) and keeps settled
+	// cost samples in the same route bucket as attempts and Shadow candidates.
+	RouteObservationModel string
+	UserAgent             string // 请求的 User-Agent
+	IPAddress             string // 请求的客户端 IP 地址
+	RequestPayloadHash    string
+	APIKeyService         APIKeyQuotaUpdater
 	ChannelUsageFields
 }
 
@@ -5538,6 +5550,28 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		applyAccountStatsCost(ctx, usageLog, s.channelService, s.billingService,
 			account.ID, *apiKey.GroupID, result.UpstreamModel, result.Model,
 			tokens, cost.TotalCost,
+		)
+	}
+	// Text supplier cost is derived from the same settled usage calculation as
+	// account statistics. Image supplier cost remains excluded until its raw
+	// upstream deduction reconciliation is authoritative.
+	if result.ImageCount == 0 && result.VideoCount == 0 && apiKey.GroupID != nil {
+		actualBaseCost := usageLog.TotalCost
+		if usageLog.AccountStatsCost != nil {
+			actualBaseCost = *usageLog.AccountStatsCost
+		}
+		routeObservationModel := strings.TrimSpace(input.RouteObservationModel)
+		if routeObservationModel == "" {
+			routeObservationModel = requestedModel
+		}
+		s.ReportOpenAIRouteActualCost(
+			account,
+			apiKey.GroupID,
+			routeObservationModel,
+			OpenAIRouteRequestClassText,
+			input.UpstreamEndpoint,
+			actualBaseCost,
+			actualBaseCost*accountRateMultiplier,
 		)
 	}
 

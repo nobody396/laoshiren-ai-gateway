@@ -357,10 +357,11 @@ func (s *OpenAIRouteBudgetCacheSuite) TestSettlementPolicyConflictDoesNotPartial
 func openAIRouteBudgetTestWindow(name, epoch string, ttl time.Duration, emergencyDebtUSD float64) service.OpenAIRouteBudgetWindowConfig {
 	return service.OpenAIRouteBudgetWindowConfig{
 		Scope: service.OpenAIRouteBudgetScope{
-			GroupID: 7,
-			Model:   "gpt-5.6-sol",
-			Window:  name,
-			Epoch:   epoch,
+			GroupID:      7,
+			Model:        "gpt-5.6-sol",
+			RequestClass: service.OpenAIRouteRequestClassText,
+			Window:       name,
+			Epoch:        epoch,
 		},
 		TargetAverageMultiplier: 0.155,
 		HardAverageMultiplier:   0.18,
@@ -375,6 +376,7 @@ func openAIRouteBudgetTestRoute(accountID int64) service.OpenAIRouteKey {
 		GroupID:       7,
 		AccountID:     accountID,
 		Model:         "gpt-5.6-sol",
+		RequestClass:  service.OpenAIRouteRequestClassText,
 		EndpointHash:  "endpoint",
 		Transport:     "sse",
 		FailureDomain: "test-provider",

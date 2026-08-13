@@ -107,13 +107,35 @@ func TestAllocateAndReserveOpenAIRoute_RejectsPolicyWindowMismatch(t *testing.T)
 	require.Empty(t, store.reserveCalls)
 }
 
+func TestAllocateAndReserveOpenAIRouteReservesSelectedRouteSpecificCost(t *testing.T) {
+	candidate := testOpenAIRouteCandidate(1, "provider", 0.15)
+	candidate.EstimatedBaseCostUSD = 0.037
+	allocation := testOpenAIRouteAllocationRequest(candidate)
+	store := &fakeOpenAIRouteBudgetStore{ledgers: []OpenAIRouteBudgetLedger{allocation.Budget}}
+
+	_, reservation, err := AllocateAndReserveOpenAIRoute(
+		context.Background(),
+		store,
+		allocation,
+		[]OpenAIRouteBudgetWindowConfig{testOpenAIRouteBudgetWindowConfig(allocation.Policy)},
+		"request-route-cost",
+		time.Minute,
+	)
+
+	require.NoError(t, err)
+	require.True(t, reservation.Allowed)
+	require.Len(t, store.reserveCalls, 1)
+	require.InDelta(t, 0.037, store.reserveCalls[0].EstimatedBaseCostUSD, 1e-12)
+}
+
 func testOpenAIRouteBudgetWindowConfig(policy OpenAIRoutePolicy) OpenAIRouteBudgetWindowConfig {
 	return OpenAIRouteBudgetWindowConfig{
 		Scope: OpenAIRouteBudgetScope{
-			GroupID: 7,
-			Model:   "gpt-5.6-sol",
-			Window:  "5m",
-			Epoch:   "2026-08-08T12:00Z",
+			GroupID:      7,
+			Model:        "gpt-5.6-sol",
+			RequestClass: OpenAIRouteRequestClassText,
+			Window:       "5m",
+			Epoch:        "2026-08-08T12:00Z",
 		},
 		TargetAverageMultiplier: policy.TargetAverageMultiplier,
 		HardAverageMultiplier:   policy.HardAverageMultiplier,

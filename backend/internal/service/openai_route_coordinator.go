@@ -77,11 +77,12 @@ func allocateAndReserveOpenAIRouteWithLedgers(
 
 	lastReservation := emptyReservation
 	for _, ranked := range plan.Ranked {
+		estimatedBaseCostUSD := openAIRouteCandidateEstimatedBaseCost(ranked.Candidate, allocation.EstimatedBaseCostUSD)
 		reservation, reserveErr := store.Reserve(ctx, OpenAIRouteBudgetStoreReserveRequest{
 			ReservationID:        emptyReservation.ReservationID,
 			RouteKey:             ranked.Candidate.Key,
 			RateMultiplier:       ranked.Candidate.RateMultiplier,
-			EstimatedBaseCostUSD: allocation.EstimatedBaseCostUSD,
+			EstimatedBaseCostUSD: estimatedBaseCostUSD,
 			Windows:              windows,
 			ReservationTTL:       reservationTTL,
 		})

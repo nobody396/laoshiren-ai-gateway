@@ -188,6 +188,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-19T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/intelligent-routing-v2-foundation-20260812",
+      "owner": "intelligent-routing-v2-foundation-20260812",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-31T23:59:59+08:00"
     }
   ]
 }

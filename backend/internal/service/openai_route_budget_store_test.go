@@ -10,9 +10,10 @@ import (
 
 func TestOpenAIRouteBudgetScope_RequiresExplicitEpoch(t *testing.T) {
 	scope := OpenAIRouteBudgetScope{
-		GroupID: 7,
-		Model:   "gpt-5.6-sol",
-		Window:  "5m",
+		GroupID:      7,
+		Model:        "gpt-5.6-sol",
+		RequestClass: OpenAIRouteRequestClassText,
+		Window:       "5m",
 	}
 	require.False(t, scope.Valid())
 
@@ -23,15 +24,20 @@ func TestOpenAIRouteBudgetScope_RequiresExplicitEpoch(t *testing.T) {
 	changed := scope
 	changed.Epoch = "2026-08-08T12:05Z"
 	require.NotEqual(t, scope.Fingerprint(), changed.Fingerprint())
+
+	changed = scope
+	changed.RequestClass = OpenAIRouteRequestClassImage
+	require.NotEqual(t, scope.Fingerprint(), changed.Fingerprint())
 }
 
 func TestOpenAIRouteBudgetWindowConfig_ValidatesPolicyAndTTL(t *testing.T) {
 	config := OpenAIRouteBudgetWindowConfig{
 		Scope: OpenAIRouteBudgetScope{
-			GroupID: 7,
-			Model:   "gpt-5.6-sol",
-			Window:  "5m",
-			Epoch:   "2026-08-08T12:00Z",
+			GroupID:      7,
+			Model:        "gpt-5.6-sol",
+			RequestClass: OpenAIRouteRequestClassText,
+			Window:       "5m",
+			Epoch:        "2026-08-08T12:00Z",
 		},
 		TargetAverageMultiplier: 0.155,
 		HardAverageMultiplier:   0.18,

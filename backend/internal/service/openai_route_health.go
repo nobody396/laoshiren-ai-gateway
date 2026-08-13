@@ -30,13 +30,14 @@ type OpenAIRouteHealthEvent struct {
 }
 
 type OpenAIRouteFailureSignal struct {
-	StatusCode    int
-	ErrorCode     string
-	Message       string
-	LocalOrigin   bool
-	StreamStarted bool
-	MalformedSSE  bool
-	HasError      bool
+	StatusCode      int
+	ErrorCode       string
+	Message         string
+	LocalOrigin     bool
+	StreamStarted   bool
+	MalformedSSE    bool
+	HasError        bool
+	ClientCancelled bool
 }
 
 type OpenAIRouteFailureClassification struct {
@@ -54,6 +55,11 @@ func NewOpenAIRouteHealthState() OpenAIRouteHealthState {
 func ClassifyOpenAIRouteFailure(signal OpenAIRouteFailureSignal) OpenAIRouteFailureClassification {
 	partial := signal.StreamStarted && (signal.HasError || signal.StatusCode >= 400 || signal.LocalOrigin || signal.MalformedSSE)
 	result := OpenAIRouteFailureClassification{PartialStream: partial}
+	if signal.ClientCancelled {
+		result.Class = OpenAIRouteFailureClientCancelled
+		result.PartialStream = false
+		return result
+	}
 	if !signal.HasError && signal.StatusCode >= 200 && signal.StatusCode < 400 && !signal.LocalOrigin && !signal.MalformedSSE {
 		result.Class = OpenAIRouteFailureNone
 		return result
@@ -131,6 +137,21 @@ func containsAnyOpenAIRouteKeyword(value string, keywords ...string) bool {
 	return false
 }
 
+// OpenAIRouteFailureCanEscalateProvider contains only failures that plausibly
+// share supplier infrastructure. Key/model/rate-limit/payment failures stay on
+// the narrow route even when multiple accounts use the same supplier.
+func OpenAIRouteFailureCanEscalateProvider(class OpenAIRouteFailureClass) bool {
+	switch class {
+	case OpenAIRouteFailureCapacity,
+		OpenAIRouteFailureUpstream5xx,
+		OpenAIRouteFailureMalformedStream,
+		OpenAIRouteFailurePartialStream:
+		return true
+	default:
+		return false
+	}
+}
+
 func ApplyOpenAIRouteHealthEvent(state OpenAIRouteHealthState, event OpenAIRouteHealthEvent, policy OpenAIRoutePolicy) (OpenAIRouteHealthState, error) {
 	normalized, err := NormalizeOpenAIRoutePolicy(policy)
 	if err != nil {
@@ -151,7 +172,7 @@ func ApplyOpenAIRouteHealthEvent(state OpenAIRouteHealthState, event OpenAIRoute
 	if event.Success || event.FailureClass == OpenAIRouteFailureNone {
 		return applyOpenAIRouteSuccess(state, event, normalized), nil
 	}
-	if event.FailureClass == OpenAIRouteFailureUserRequest {
+	if event.FailureClass == OpenAIRouteFailureUserRequest || event.FailureClass == OpenAIRouteFailureClientCancelled {
 		return state, nil
 	}
 	return applyOpenAIRouteFailure(state, event, normalized), nil

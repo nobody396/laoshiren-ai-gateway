@@ -22,6 +22,7 @@ type OpenAIRouteHealthStoreKey struct {
 	AccountID     int64
 	FailureDomain string
 	Model         string
+	RequestClass  OpenAIRouteRequestClass
 	EndpointHash  string
 	Transport     string
 }
@@ -33,6 +34,7 @@ func OpenAIRouteHealthStoreKeyForRoute(key OpenAIRouteKey) OpenAIRouteHealthStor
 		AccountID:     key.AccountID,
 		FailureDomain: key.FailureDomain,
 		Model:         key.Model,
+		RequestClass:  key.RequestClass,
 		EndpointHash:  key.EndpointHash,
 		Transport:     key.Transport,
 	}
@@ -44,11 +46,12 @@ func OpenAIRouteHealthStoreKeyForProvider(key OpenAIRouteKey) OpenAIRouteHealthS
 		GroupID:       key.GroupID,
 		FailureDomain: key.FailureDomain,
 		Model:         key.Model,
+		RequestClass:  key.RequestClass,
 	}
 }
 
 func (k OpenAIRouteHealthStoreKey) Valid() bool {
-	if k.GroupID <= 0 || strings.TrimSpace(k.Model) == "" {
+	if k.GroupID <= 0 || strings.TrimSpace(k.Model) == "" || !k.RequestClass.Valid() {
 		return false
 	}
 	switch k.Scope {
@@ -62,12 +65,13 @@ func (k OpenAIRouteHealthStoreKey) Valid() bool {
 }
 
 func (k OpenAIRouteHealthStoreKey) Fingerprint() string {
-	canonical := fmt.Sprintf("%s|%d|%d|%s|%s|%s|%s",
+	canonical := fmt.Sprintf("%s|%d|%d|%s|%s|%s|%s|%s",
 		k.Scope,
 		k.GroupID,
 		k.AccountID,
 		strings.TrimSpace(k.FailureDomain),
 		strings.TrimSpace(k.Model),
+		k.RequestClass,
 		strings.TrimSpace(k.EndpointHash),
 		strings.TrimSpace(k.Transport),
 	)
@@ -76,14 +80,27 @@ func (k OpenAIRouteHealthStoreKey) Fingerprint() string {
 }
 
 // OpenAIRouteHealthStore is the parallel-safe shared-state boundary. Redis
-// implementations must make ApplyEvent and half-open permit acquisition atomic
-// across application instances. ApplyEvent is for failures, probes, and
+// implementations must batch hot-path reads and make ApplyEvent and half-open
+// permit acquisition atomic across application instances. ApplyEvent is for failures, probes, and
 // recovery-state successes; ordinary healthy successes belong in the separate
 // rolling metrics path and must not turn this CAS store into a per-token hot
 // write.
 type OpenAIRouteHealthStore interface {
 	Get(ctx context.Context, key OpenAIRouteHealthStoreKey) (OpenAIRouteHealthState, error)
+	GetBatch(ctx context.Context, keys []OpenAIRouteHealthStoreKey) (map[string]OpenAIRouteHealthState, error)
 	ApplyEvent(ctx context.Context, key OpenAIRouteHealthStoreKey, event OpenAIRouteHealthEvent, policy OpenAIRoutePolicy) (OpenAIRouteHealthState, error)
+	RecordProviderEvidence(ctx context.Context, routeKey OpenAIRouteKey, event OpenAIRouteHealthEvent, policy OpenAIRoutePolicy, minDistinctAccounts int) (OpenAIRouteProviderEvidenceResult, error)
 	AcquireHalfOpenPermit(ctx context.Context, key OpenAIRouteHealthStoreKey, owner string) (bool, error)
 	ReleaseHalfOpenPermit(ctx context.Context, key OpenAIRouteHealthStoreKey, owner string) error
+}
+
+type OpenAIRouteProviderEvidenceResult struct {
+	DistinctFailingAccounts int
+	ProviderEventApplied    bool
+	State                   OpenAIRouteHealthState
+}
+
+func OpenAIRouteHasSharedFailureDomain(key OpenAIRouteKey) bool {
+	domain := strings.TrimSpace(key.FailureDomain)
+	return domain != "" && domain != fmt.Sprintf("account:%d", key.AccountID)
 }

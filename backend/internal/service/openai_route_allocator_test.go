@@ -13,6 +13,7 @@ func testOpenAIRouteCandidate(id int64, provider string, rate float64) OpenAIRou
 			GroupID:       7,
 			AccountID:     id,
 			Model:         "gpt-5.6-sol",
+			RequestClass:  OpenAIRouteRequestClassText,
 			EndpointHash:  "endpoint",
 			Transport:     "sse",
 			FailureDomain: provider,
@@ -66,6 +67,44 @@ func TestBuildOpenAIRouteAllocationPlan_UsesDynamicMultipliersWithoutHardcodedAc
 	require.InDelta(t, 1, weights[24].PriceFactor, 1e-12)
 	require.InDelta(t, 0.5625, weights[31].PriceFactor, 1e-12)
 	require.InDelta(t, 0.36, weights[44].PriceFactor, 1e-12)
+}
+
+func TestBuildOpenAIRouteAllocationPlanUsesRouteSpecificSettledCost(t *testing.T) {
+	cheap := testOpenAIRouteCandidate(1, "provider-a", 0.20)
+	cheap.EstimatedBaseCostUSD = 0.01
+	expensive := testOpenAIRouteCandidate(2, "provider-b", 0.20)
+	expensive.EstimatedBaseCostUSD = 0.10
+	request := testOpenAIRouteAllocationRequest(cheap, expensive)
+	request.Budget.CreditUSD = 0.004
+	request.Policy.EmergencyDebtLimitUSD = 0
+
+	plan, err := BuildOpenAIRouteAllocationPlan(request)
+
+	require.NoError(t, err)
+	require.Len(t, plan.Ranked, 1)
+	require.Equal(t, int64(1), plan.Selected.Candidate.Key.AccountID)
+	require.Contains(t, plan.Excluded, OpenAIRouteExclusion{AccountID: 2, Reason: OpenAIRouteExcludedCost})
+	require.InDelta(t, 1, plan.Selected.PriceFactor, 1e-12)
+}
+
+func TestBuildOpenAIRouteAllocationPlanPricesEqualMultipliersByPredictedAccountCost(t *testing.T) {
+	cheap := testOpenAIRouteCandidate(1, "provider-a", 0.20)
+	cheap.EstimatedBaseCostUSD = 0.05
+	expensive := testOpenAIRouteCandidate(2, "provider-b", 0.20)
+	expensive.EstimatedBaseCostUSD = 0.20
+	request := testOpenAIRouteAllocationRequest(cheap, expensive)
+	request.Budget.CreditUSD = 1
+
+	plan, err := BuildOpenAIRouteAllocationPlan(request)
+
+	require.NoError(t, err)
+	byID := make(map[int64]OpenAIRouteWeightedCandidate)
+	for _, candidate := range plan.Ranked {
+		byID[candidate.Candidate.Key.AccountID] = candidate
+	}
+	require.InDelta(t, 1, byID[1].PriceFactor, 1e-12)
+	require.InDelta(t, 0.0625, byID[2].PriceFactor, 1e-12)
+	require.Greater(t, byID[1].Weight, byID[2].Weight)
 }
 
 func TestBuildOpenAIRouteAllocationPlan_ExcludesUnaffordableExpensiveRoutes(t *testing.T) {
@@ -182,6 +221,27 @@ func TestBuildOpenAIRouteAllocationPlan_ReliabilityCanBeatSmallPriceDifference(t
 		weights[item.Candidate.Key.AccountID] = item.Weight
 	}
 	require.Greater(t, weights[2], weights[1])
+}
+
+func TestBuildOpenAIRouteAllocationPlan_PenalizesTailLatencyAndPartialStreams(t *testing.T) {
+	unstable := testOpenAIRouteCandidate(1, "p1", 0.15)
+	unstable.P90TTFTMilliseconds = 500
+	unstable.P95CompletionLatencyMilliseconds = 30_000
+	unstable.PartialStreamRate = 0.20
+	stable := testOpenAIRouteCandidate(2, "p2", 0.15)
+	stable.P90TTFTMilliseconds = 500
+	stable.P95CompletionLatencyMilliseconds = 5_000
+	stable.PartialStreamRate = 0
+
+	plan, err := BuildOpenAIRouteAllocationPlan(testOpenAIRouteAllocationRequest(unstable, stable))
+	require.NoError(t, err)
+	byID := make(map[int64]OpenAIRouteWeightedCandidate)
+	for _, candidate := range plan.Ranked {
+		byID[candidate.Candidate.Key.AccountID] = candidate
+	}
+	require.Less(t, byID[1].TailLatencyFactor, byID[2].TailLatencyFactor)
+	require.Less(t, byID[1].StreamIntegrityFactor, byID[2].StreamIntegrityFactor)
+	require.Less(t, byID[1].Weight, byID[2].Weight)
 }
 
 func TestBuildOpenAIRouteAllocationPlan_PriorityIsPriorNotAbsoluteBucket(t *testing.T) {

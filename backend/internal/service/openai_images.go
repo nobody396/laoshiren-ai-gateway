@@ -195,7 +195,10 @@ func (s *OpenAIGatewayService) SelectAccountWithSchedulerForImages(
 	}
 
 	for {
-		selection, decision, err := s.SelectAccountWithScheduler(ctx, groupID, "", sessionHash, requestedModel, workingExcluded, OpenAIUpstreamTransportAny)
+		selection, decision, err := s.selectAccountWithSchedulerForRouting(
+			ctx, groupID, "", "", requestedModel, workingExcluded,
+			OpenAIUpstreamTransportAny, false, true, openAIImagesGenerationsEndpoint,
+		)
 		if err != nil || selection == nil || selection.Account == nil {
 			return selection, decision, err
 		}

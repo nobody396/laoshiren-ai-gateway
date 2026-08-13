@@ -10,13 +10,16 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const (
 	OpenAIRoutePoliciesSettingKey = "openai_route_policies"
 
-	defaultOpenAIRoutePolicyCacheTTL      = 60 * time.Second
-	defaultOpenAIRoutePolicyErrorCacheTTL = 5 * time.Second
+	defaultOpenAIRoutePolicyCacheTTL              = 60 * time.Second
+	defaultOpenAIRoutePolicyErrorCacheTTL         = 5 * time.Second
+	defaultOpenAIRouteProviderCorrelationAccounts = 2
 )
 
 var ErrOpenAIRouteEnforceDisabled = errors.New("OpenAI route enforce mode is disabled in this release")
@@ -44,10 +47,11 @@ type OpenAIRouteShadowCandidate struct {
 }
 
 type OpenAIRouteShadowRequest struct {
-	GroupID int64
-	Model   string
-	Seed    uint64
-	Now     time.Time
+	GroupID      int64
+	Model        string
+	RequestClass OpenAIRouteRequestClass
+	Seed         uint64
+	Now          time.Time
 
 	Candidates []OpenAIRouteShadowCandidate
 }
@@ -80,11 +84,12 @@ type OpenAIRouteShadowEvaluator interface {
 // missing setting or unmatched policy means legacy routing. No production
 // policy values are compiled into the binary.
 type openAIRoutePolicyConfig struct {
-	GroupID int64  `json:"group_id"`
-	Model   string `json:"model"`
-	Enabled bool   `json:"enabled"`
-	Mode    string `json:"mode"`
-	Version int    `json:"policy_version"`
+	GroupID      int64  `json:"group_id"`
+	Model        string `json:"model"`
+	RequestClass string `json:"request_class"`
+	Enabled      bool   `json:"enabled"`
+	Mode         string `json:"mode"`
+	Version      int    `json:"policy_version"`
 
 	TargetAverageMultiplier *float64 `json:"target_avg_multiplier"`
 	HardAverageMultiplier   float64  `json:"hard_avg_multiplier"`
@@ -119,9 +124,11 @@ type cachedOpenAIRoutePolicies struct {
 }
 
 type OpenAIRouteController struct {
-	reader      OpenAIRoutePolicyReader
-	healthStore OpenAIRouteHealthStore
-	budgetStore OpenAIRouteBudgetStore
+	reader           OpenAIRoutePolicyReader
+	healthStore      OpenAIRouteHealthStore
+	budgetStore      OpenAIRouteBudgetStore
+	observationStore OpenAIRouteObservationStore
+	observationCache *openAIRouteObservationProfileCache
 
 	cacheMu sync.Mutex
 	cache   cachedOpenAIRoutePolicies
@@ -131,12 +138,23 @@ func NewOpenAIRouteController(
 	reader OpenAIRoutePolicyReader,
 	healthStore OpenAIRouteHealthStore,
 	budgetStore OpenAIRouteBudgetStore,
+	observationStore OpenAIRouteObservationStore,
 ) *OpenAIRouteController {
-	return &OpenAIRouteController{
-		reader:      reader,
-		healthStore: healthStore,
-		budgetStore: budgetStore,
+	controller := &OpenAIRouteController{
+		reader:           reader,
+		healthStore:      healthStore,
+		budgetStore:      budgetStore,
+		observationStore: observationStore,
 	}
+	if observationStore != nil {
+		controller.observationCache = newOpenAIRouteObservationProfileCache(
+			observationStore,
+			defaultOpenAIRouteObservationProfileCacheTTL,
+			defaultOpenAIRouteObservationProfileLoadTimeout,
+			defaultOpenAIRouteObservationProfileCacheMaxEntries,
+		)
+	}
+	return controller
 }
 
 func (c *OpenAIRouteController) InvalidatePolicyCache() {
@@ -146,6 +164,56 @@ func (c *OpenAIRouteController) InvalidatePolicyCache() {
 	c.cacheMu.Lock()
 	c.cache = cachedOpenAIRoutePolicies{}
 	c.cacheMu.Unlock()
+}
+
+// RecordOpenAIRouteOutcome drives the route-scoped circuit from real upstream
+// attempts. It deliberately does not fan one account failure out to the shared
+// failure domain; correlated provider ejection requires independent evidence.
+func (c *OpenAIRouteController) RecordOpenAIRouteOutcome(ctx context.Context, observation OpenAIRouteObservation) error {
+	if c == nil || c.healthStore == nil {
+		return ErrOpenAIRouteNoCandidate
+	}
+	if err := observation.Validate(); err != nil {
+		return err
+	}
+	policy := DefaultOpenAIRoutePolicy()
+	policies, err := c.loadPolicies(ctx, observation.ObservedAt)
+	if err != nil {
+		return err
+	}
+	if config, ok := resolveOpenAIRoutePolicyConfig(policies, observation.Key.GroupID, observation.Key.Model, observation.Key.RequestClass); ok && config.Enabled {
+		policy, err = config.normalizedPolicy()
+		if err != nil {
+			return err
+		}
+	}
+	key := OpenAIRouteHealthStoreKeyForRoute(observation.Key)
+	state, err := c.healthStore.Get(ctx, key)
+	if err != nil {
+		return err
+	}
+	event := OpenAIRouteHealthEvent{
+		At:           observation.ObservedAt,
+		Success:      observation.Success,
+		FailureClass: observation.FailureClass,
+	}
+	applyRoute := observation.Success && state.State != OpenAIRouteCircuitHealthy
+	applyRoute = applyRoute || (!observation.Success && observation.PenalizeRoute)
+	if applyRoute {
+		if _, err = c.healthStore.ApplyEvent(ctx, key, event, policy); err != nil {
+			return err
+		}
+	}
+
+	if !OpenAIRouteHasSharedFailureDomain(observation.Key) {
+		return nil
+	}
+	providerEvidence := observation.Success || (observation.PenalizeRoute && OpenAIRouteFailureCanEscalateProvider(observation.FailureClass))
+	if !providerEvidence {
+		return nil
+	}
+	_, err = c.healthStore.RecordProviderEvidence(ctx, observation.Key, event, policy, defaultOpenAIRouteProviderCorrelationAccounts)
+	return err
 }
 
 func (c *OpenAIRouteController) EvaluateShadow(
@@ -161,7 +229,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		decision.Reason = "runtime_unavailable"
 		return decision, nil
 	}
-	if req.GroupID <= 0 || strings.TrimSpace(req.Model) == "" || len(req.Candidates) == 0 {
+	if req.GroupID <= 0 || strings.TrimSpace(req.Model) == "" || !req.RequestClass.Valid() || len(req.Candidates) == 0 {
 		decision.Reason = "request_ineligible"
 		return decision, nil
 	}
@@ -170,7 +238,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	if err != nil {
 		return decision, err
 	}
-	config, ok := resolveOpenAIRoutePolicyConfig(policies, req.GroupID, req.Model)
+	config, ok := resolveOpenAIRoutePolicyConfig(policies, req.GroupID, req.Model, req.RequestClass)
 	if !ok || !config.Enabled {
 		decision.Reason = "policy_not_enabled"
 		return decision, nil
@@ -195,6 +263,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	decision.DecisionID = decisionID
 	decision.Audit = &OpenAIRouteShadowAuditSnapshot{
 		EstimatedBaseCostUSD: config.EstimatedBaseCostUSD,
+		RequestClass:         req.RequestClass,
 	}
 	policy, err := config.normalizedPolicy()
 	if err != nil {
@@ -211,13 +280,16 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	if now.IsZero() {
 		now = time.Now()
 	}
-	windows := buildOpenAIRouteBudgetWindows(req.GroupID, req.Model, config.Version, now, policy)
+	windows := buildOpenAIRouteBudgetWindows(req.GroupID, req.Model, req.RequestClass, config.Version, now, policy)
 	candidates := make([]OpenAIRouteCandidate, 0, len(req.Candidates))
+	routeKeys := make([]OpenAIRouteKey, 0, len(req.Candidates))
+	healthKeys := make([]OpenAIRouteHealthStoreKey, 0, 2*len(req.Candidates))
+	auditIndices := make([]int, 0, len(req.Candidates))
 	for _, source := range req.Candidates {
 		if source.Account == nil {
 			continue
 		}
-		key, keyErr := NewOpenAIRouteKey(source.Account, req.GroupID, req.Model, source.Endpoint, source.Transport)
+		key, keyErr := NewOpenAIRouteKey(source.Account, req.GroupID, req.Model, req.RequestClass, source.Endpoint, source.Transport)
 		if keyErr != nil {
 			decision.Audit.Candidates = append(decision.Audit.Candidates, OpenAIRouteShadowAuditCandidate{
 				AccountID:      source.Account.ID,
@@ -246,26 +318,102 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		}
 		decision.Audit.Candidates = append(decision.Audit.Candidates, newOpenAIRouteShadowAuditCandidate(candidate))
 		auditIndex := len(decision.Audit.Candidates) - 1
-		routeHealth, getErr := c.healthStore.Get(ctx, OpenAIRouteHealthStoreKeyForRoute(key))
-		if getErr != nil {
-			decision.CandidateCount = len(decision.Audit.Candidates)
-			return decision, getErr
-		}
-		providerHealth, getErr := c.healthStore.Get(ctx, OpenAIRouteHealthStoreKeyForProvider(key))
-		if getErr != nil {
-			decision.CandidateCount = len(decision.Audit.Candidates)
-			return decision, getErr
-		}
-		candidate.CircuitState = routeHealth.State
-		candidate.ProviderCircuitState = providerHealth.State
-		candidate.RecoveryStep = routeHealth.RecoveryStep
-		decision.Audit.Candidates[auditIndex] = newOpenAIRouteShadowAuditCandidate(candidate)
 		candidates = append(candidates, candidate)
+		routeKeys = append(routeKeys, key)
+		healthKeys = append(healthKeys, OpenAIRouteHealthStoreKeyForRoute(key), OpenAIRouteHealthStoreKeyForProvider(key))
+		auditIndices = append(auditIndices, auditIndex)
 	}
 	decision.CandidateCount = len(decision.Audit.Candidates)
 	if len(candidates) == 0 {
 		decision.ExcludedCount = len(decision.Audit.Exclusions)
 		return decision, ErrOpenAIRouteNoCandidate
+	}
+	profiles := make(map[string]OpenAIRouteObservationProfile)
+	var healthStates map[string]OpenAIRouteHealthState
+	readGroup, readCtx := errgroup.WithContext(ctx)
+	readGroup.Go(func() error {
+		var readErr error
+		healthStates, readErr = c.healthStore.GetBatch(readCtx, healthKeys)
+		return readErr
+	})
+	if c.observationStore != nil {
+		readGroup.Go(func() error {
+			var readErr error
+			if c.observationCache != nil {
+				profiles, readErr = c.observationCache.GetBatch(readCtx, routeKeys, now)
+			} else {
+				profiles, readErr = c.observationStore.GetBatch(readCtx, routeKeys, now)
+			}
+			return readErr
+		})
+	}
+	if getErr := readGroup.Wait(); getErr != nil {
+		return decision, getErr
+	}
+	for idx, key := range routeKeys {
+		routeStoreKey := OpenAIRouteHealthStoreKeyForRoute(key)
+		providerStoreKey := OpenAIRouteHealthStoreKeyForProvider(key)
+		routeHealth, ok := healthStates[routeStoreKey.Fingerprint()]
+		if !ok {
+			return decision, fmt.Errorf("missing OpenAI route health state %s", routeStoreKey.Fingerprint())
+		}
+		providerHealth, ok := healthStates[providerStoreKey.Fingerprint()]
+		if !ok {
+			return decision, fmt.Errorf("missing OpenAI provider health state %s", providerStoreKey.Fingerprint())
+		}
+		candidates[idx].CircuitState = routeHealth.State
+		candidates[idx].ProviderCircuitState = providerHealth.State
+		candidates[idx].RecoveryStep = routeHealth.RecoveryStep
+		decision.Audit.Candidates[auditIndices[idx]] = newOpenAIRouteShadowAuditCandidate(candidates[idx])
+	}
+	profileByCandidate := make([]OpenAIRouteObservationProfile, len(candidates))
+	var totalShareAttempts uint64
+	var totalReliabilitySamples uint64
+	providerShareAttempts := make(map[string]uint64)
+	for idx := range candidates {
+		profile := profiles[OpenAIRouteObservationFingerprint(candidates[idx].Key)]
+		profileByCandidate[idx] = profile
+		shareAttempts := profile.Recent.AttemptCount
+		if shareAttempts == 0 {
+			shareAttempts = profile.Global.AttemptCount
+		}
+		totalShareAttempts += shareAttempts
+		providerShareAttempts[openAIRouteProviderKey(candidates[idx])] += shareAttempts
+		totalReliabilitySamples += profile.Global.ReliabilityCount
+	}
+	for idx := range candidates {
+		profile := profileByCandidate[idx]
+		blended := BlendOpenAIRouteObservationProfile(profile)
+		observationSource := "process_local"
+		if blended.ReliabilityCount > 0 {
+			observationSource = "shared"
+			candidates[idx].HasReliabilitySample = true
+			candidates[idx].SuccessLowerBound = blended.SuccessLowerBound()
+			candidates[idx].P90TTFTMilliseconds = blended.TTFTPercentile(0.90)
+			candidates[idx].P95CompletionLatencyMilliseconds = blended.LatencyPercentile(0.95)
+			candidates[idx].ObservationSampleCount = blended.ReliabilityCount
+			candidates[idx].PartialStreamRate = blended.PartialStreamRate()
+		}
+		shareAttempts := profile.Recent.AttemptCount
+		if shareAttempts == 0 {
+			shareAttempts = profile.Global.AttemptCount
+		}
+		if totalShareAttempts > 0 {
+			candidates[idx].CurrentAccountShare = float64(shareAttempts) / float64(totalShareAttempts)
+			candidates[idx].CurrentProviderShare = float64(providerShareAttempts[openAIRouteProviderKey(candidates[idx])]) / float64(totalShareAttempts)
+		}
+		candidates[idx].ExplorationBoost = openAIRouteExplorationBoost(blended.ReliabilityCount, totalReliabilitySamples)
+		costEstimate := EstimateOpenAIRouteBaseCost(req.RequestClass, config.EstimatedBaseCostUSD, profile.Global)
+		candidates[idx].EstimatedBaseCostUSD = costEstimate.EstimatedBaseCostUSD
+		candidates[idx].ObservedMeanCostUSD = costEstimate.ObservedMeanCostUSD
+		candidates[idx].CostObservationSamples = costEstimate.Samples
+		candidates[idx].CostEstimateSource = costEstimate.Source
+		auditIndex := auditIndices[idx]
+		decision.Audit.Candidates[auditIndex] = newOpenAIRouteShadowAuditCandidate(candidates[idx])
+		decision.Audit.Candidates[auditIndex].ObservationSource = observationSource
+		decision.Audit.Candidates[auditIndex].ObservationSamples = profile.Global.ReliabilityCount
+		decision.Audit.Candidates[auditIndex].RecentSamples = profile.Recent.ReliabilityCount
+		decision.Audit.Candidates[auditIndex].HourOfWeekSamples = profile.HourOfWeek.ReliabilityCount
 	}
 
 	plan, reservation, ledgers, err := allocateAndReserveOpenAIRouteWithLedgers(ctx, c.budgetStore, OpenAIRouteAllocationRequest{
@@ -277,9 +425,11 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	}, windows, decisionID, time.Minute)
 	selectedAccountID := int64(0)
 	selectedRate := 0.0
+	selectedBaseCostUSD := config.EstimatedBaseCostUSD
 	if err == nil {
 		selectedAccountID = plan.Selected.Candidate.Key.AccountID
 		selectedRate = plan.Selected.Candidate.RateMultiplier
+		selectedBaseCostUSD = openAIRouteCandidateEstimatedBaseCost(plan.Selected.Candidate, config.EstimatedBaseCostUSD)
 	}
 	decision.Audit.MinHealthyMultiplier = plan.MinHealthyMultiplier
 	decision.Audit.Exclusions = append(decision.Audit.Exclusions, plan.Excluded...)
@@ -288,7 +438,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		ledgers,
 		selectedAccountID,
 		selectedRate,
-		config.EstimatedBaseCostUSD,
+		selectedBaseCostUSD,
 	)
 	applyOpenAIRouteShadowAuditPlan(decision.Audit, plan, selectedAccountID)
 	decision.ExcludedCount = len(decision.Audit.Exclusions)
@@ -298,8 +448,8 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	settlement := OpenAIRouteBudgetStoreSettlement{
 		ReservationID:        reservation.ReservationID,
 		RouteKey:             reservation.RouteKey,
-		ActualBaseCostUSD:    config.EstimatedBaseCostUSD,
-		ActualAccountCostUSD: config.EstimatedBaseCostUSD * plan.Selected.Candidate.RateMultiplier,
+		ActualBaseCostUSD:    selectedBaseCostUSD,
+		ActualAccountCostUSD: selectedBaseCostUSD * plan.Selected.Candidate.RateMultiplier,
 		Windows:              windows,
 		AuditTTL:             48 * time.Hour,
 	}
@@ -318,6 +468,13 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	decision.SelectedRate = plan.Selected.Candidate.RateMultiplier
 	decision.Emergency = plan.Emergency
 	return decision, nil
+}
+
+func (c *OpenAIRouteController) SnapshotObservationProfileCache() (OpenAIRouteObservationProfileCacheStats, bool) {
+	if c == nil || c.observationCache == nil {
+		return OpenAIRouteObservationProfileCacheStats{}, false
+	}
+	return c.observationCache.Stats(), true
 }
 
 func newOpenAIRouteShadowAuditPolicy(policy OpenAIRoutePolicy, hardShareCaps bool) OpenAIRouteShadowAuditPolicy {
@@ -348,23 +505,31 @@ func newOpenAIRouteShadowAuditPolicy(policy OpenAIRoutePolicy, hardShareCaps boo
 
 func newOpenAIRouteShadowAuditCandidate(candidate OpenAIRouteCandidate) OpenAIRouteShadowAuditCandidate {
 	return OpenAIRouteShadowAuditCandidate{
-		AccountID:            candidate.Key.AccountID,
-		EndpointHash:         candidate.Key.EndpointHash,
-		FailureDomain:        candidate.Key.FailureDomain,
-		Transport:            candidate.Key.Transport,
-		RateMultiplier:       candidate.RateMultiplier,
-		Priority:             candidate.Priority,
-		CircuitState:         normalizeOpenAIRouteCircuitState(candidate.CircuitState),
-		ProviderCircuitState: normalizeOpenAIRouteProviderCircuitState(candidate.ProviderCircuitState),
-		RecoveryStep:         candidate.RecoveryStep,
-		HasReliabilitySample: candidate.HasReliabilitySample,
-		SuccessLowerBound:    candidate.SuccessLowerBound,
-		TTFTMilliseconds:     candidate.P90TTFTMilliseconds,
-		LoadRatio:            candidate.LoadRatio,
-		WaitingCount:         candidate.WaitingCount,
-		CurrentAccountShare:  candidate.CurrentAccountShare,
-		CurrentProviderShare: candidate.CurrentProviderShare,
-		ExplorationBoost:     candidate.ExplorationBoost,
+		AccountID:                        candidate.Key.AccountID,
+		EndpointHash:                     candidate.Key.EndpointHash,
+		FailureDomain:                    candidate.Key.FailureDomain,
+		Transport:                        candidate.Key.Transport,
+		RateMultiplier:                   candidate.RateMultiplier,
+		Priority:                         candidate.Priority,
+		CircuitState:                     normalizeOpenAIRouteCircuitState(candidate.CircuitState),
+		ProviderCircuitState:             normalizeOpenAIRouteProviderCircuitState(candidate.ProviderCircuitState),
+		RecoveryStep:                     candidate.RecoveryStep,
+		HasReliabilitySample:             candidate.HasReliabilitySample,
+		SuccessLowerBound:                candidate.SuccessLowerBound,
+		TTFTMilliseconds:                 candidate.P90TTFTMilliseconds,
+		P95CompletionLatencyMilliseconds: candidate.P95CompletionLatencyMilliseconds,
+		PartialStreamRate:                candidate.PartialStreamRate,
+		ObservationSamples:               candidate.ObservationSampleCount,
+		LoadRatio:                        candidate.LoadRatio,
+		WaitingCount:                     candidate.WaitingCount,
+		CurrentAccountShare:              candidate.CurrentAccountShare,
+		CurrentProviderShare:             candidate.CurrentProviderShare,
+		ExplorationBoost:                 candidate.ExplorationBoost,
+		EstimatedBaseCostUSD:             candidate.EstimatedBaseCostUSD,
+		EstimatedAccountCostUSD:          candidate.EstimatedBaseCostUSD * candidate.RateMultiplier,
+		ObservedMeanCostUSD:              candidate.ObservedMeanCostUSD,
+		CostObservationSamples:           candidate.CostObservationSamples,
+		CostEstimateSource:               candidate.CostEstimateSource,
 	}
 }
 
@@ -390,6 +555,8 @@ func applyOpenAIRouteShadowAuditPlan(
 		candidate.Weight = item.Weight
 		candidate.HealthFactor = item.HealthFactor
 		candidate.LatencyFactor = item.LatencyFactor
+		candidate.TailLatencyFactor = item.TailLatencyFactor
+		candidate.StreamIntegrityFactor = item.StreamIntegrityFactor
 		candidate.HeadroomFactor = item.HeadroomFactor
 		candidate.PriceFactor = item.PriceFactor
 		candidate.PriorityFactor = item.PriorityFactor
@@ -510,12 +677,28 @@ func resolveOpenAIRoutePolicyConfig(
 	policies []openAIRoutePolicyConfig,
 	groupID int64,
 	model string,
+	requestClass OpenAIRouteRequestClass,
 ) (openAIRoutePolicyConfig, bool) {
 	model = strings.TrimSpace(model)
 	bestScore := -1
 	var best openAIRoutePolicyConfig
 	for _, policy := range policies {
 		if policy.GroupID != groupID {
+			continue
+		}
+		classPattern := strings.TrimSpace(policy.RequestClass)
+		if classPattern == "" {
+			// Policies created before request classes existed governed text
+			// routing. Do not silently apply them to image requests.
+			classPattern = string(OpenAIRouteRequestClassText)
+		}
+		var classScore int
+		switch classPattern {
+		case string(requestClass):
+			classScore = 10_000_000
+		case "*":
+			classScore = 0
+		default:
 			continue
 		}
 		pattern := strings.TrimSpace(policy.Model)
@@ -528,6 +711,10 @@ func resolveOpenAIRoutePolicyConfig(
 		case strings.HasSuffix(pattern, "*") && strings.HasPrefix(model, strings.TrimSuffix(pattern, "*")):
 			score = len(strings.TrimSuffix(pattern, "*"))
 		}
+		if score < 0 {
+			continue
+		}
+		score += classScore
 		if score > bestScore {
 			bestScore = score
 			best = policy
@@ -603,6 +790,7 @@ func (c openAIRoutePolicyConfig) normalizedPolicy() (OpenAIRoutePolicy, error) {
 func buildOpenAIRouteBudgetWindows(
 	groupID int64,
 	model string,
+	requestClass OpenAIRouteRequestClass,
 	version int,
 	now time.Time,
 	policy OpenAIRoutePolicy,
@@ -622,10 +810,11 @@ func buildOpenAIRouteBudgetWindows(
 		epoch := fmt.Sprintf("v%d:%s", version, now.Truncate(definition.duration).Format(time.RFC3339))
 		windows = append(windows, OpenAIRouteBudgetWindowConfig{
 			Scope: OpenAIRouteBudgetScope{
-				GroupID: groupID,
-				Model:   strings.TrimSpace(model),
-				Window:  definition.name,
-				Epoch:   epoch,
+				GroupID:      groupID,
+				Model:        strings.TrimSpace(model),
+				RequestClass: requestClass,
+				Window:       definition.name,
+				Epoch:        epoch,
 			},
 			TargetAverageMultiplier: policy.TargetAverageMultiplier,
 			HardAverageMultiplier:   policy.HardAverageMultiplier,

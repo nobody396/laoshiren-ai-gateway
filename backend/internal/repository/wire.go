@@ -54,6 +54,10 @@ func ProvideOpenAIRouteHealthStore(rdb *redis.Client) service.OpenAIRouteHealthS
 	return NewOpenAIRouteHealthCache(rdb, 24*time.Hour, 30*time.Second)
 }
 
+func ProvideOpenAIRouteObservationStore(rdb *redis.Client) service.OpenAIRouteObservationStore {
+	return NewOpenAIRouteObservationCache(rdb)
+}
+
 // ProviderSet is the Wire provider set for all repositories
 var ProviderSet = wire.NewSet(
 	NewUnitOfWork,
@@ -139,6 +143,7 @@ var ProviderSet = wire.NewSet(
 	NewRBACCache,
 	NewOpenAIRouteBudgetCache,
 	ProvideOpenAIRouteHealthStore,
+	ProvideOpenAIRouteObservationStore,
 
 	// Encryptors
 	NewAESEncryptor,

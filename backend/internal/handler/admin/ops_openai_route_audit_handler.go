@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -75,6 +76,55 @@ func (h *OpsHandler) GetOpenAIRouteAuditHealth(c *gin.Context) {
 	response.Success(c, h.opsService.GetOpenAIRouteAuditHealth(c.Request.Context()))
 }
 
+// AssessOpenAIRouteShadowPromotion evaluates one exact Shadow policy slice
+// against automated evidence gates. It is read-only and never enables traffic.
+// GET /api/v1/admin/ops/openai-route-shadow/assessment
+func (h *OpsHandler) AssessOpenAIRouteShadowPromotion(c *gin.Context) {
+	filter, err := parseOpenAIRoutePromotionAssessmentFilter(c)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	if h.opsService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
+		return
+	}
+	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	result, err := h.opsService.AssessOpenAIRouteShadowPromotion(c.Request.Context(), filter)
+	if err != nil {
+		if errors.Is(err, service.ErrOpenAIRouteInvalidPromotionScope) {
+			response.BadRequest(c, err.Error())
+			return
+		}
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+func parseOpenAIRoutePromotionAssessmentFilter(c *gin.Context) (*service.OpenAIRouteShadowDecisionFilter, error) {
+	// Assessment requires a literal window. A moving time_range can otherwise
+	// change the evidence slice between an operator's review and approval.
+	if strings.TrimSpace(c.Query("start_time")) == "" || strings.TrimSpace(c.Query("end_time")) == "" {
+		return nil, service.ErrOpenAIRouteInvalidPromotionScope
+	}
+	filter, err := parseOpenAIRouteShadowDecisionFilter(c, false)
+	if err != nil {
+		return nil, err
+	}
+	if raw := strings.TrimSpace(c.Query("policy_mode")); raw != "" && raw != string(service.OpenAIRoutePolicyShadow) {
+		return nil, service.ErrOpenAIRouteInvalidPromotionScope
+	}
+	filter.PolicyMode = service.OpenAIRoutePolicyShadow
+	if err := service.ValidateOpenAIRoutePromotionFilter(filter); err != nil {
+		return nil, err
+	}
+	return filter, nil
+}
+
 func parseOpenAIRouteShadowDecisionFilter(c *gin.Context, withPagination bool) (*service.OpenAIRouteShadowDecisionFilter, error) {
 	start, end, err := parseOpsTimeRange(c, "24h")
 	if err != nil {
@@ -84,9 +134,17 @@ func parseOpenAIRouteShadowDecisionFilter(c *gin.Context, withPagination bool) (
 		StartTime:       &start,
 		EndTime:         &end,
 		Model:           strings.TrimSpace(c.Query("model")),
+		RequestClass:    service.OpenAIRouteRequestClass(strings.TrimSpace(c.Query("request_class"))),
+		PolicyMode:      service.OpenAIRoutePolicyMode(strings.TrimSpace(c.Query("policy_mode"))),
 		Reason:          strings.TrimSpace(c.Query("reason")),
 		RequestID:       strings.TrimSpace(c.Query("request_id")),
 		ClientRequestID: strings.TrimSpace(c.Query("client_request_id")),
+	}
+	if filter.RequestClass != "" && !filter.RequestClass.Valid() {
+		return nil, strconv.ErrSyntax
+	}
+	if filter.PolicyMode != "" && filter.PolicyMode != service.OpenAIRoutePolicyLegacy && filter.PolicyMode != service.OpenAIRoutePolicyShadow && filter.PolicyMode != service.OpenAIRoutePolicyEnforce {
+		return nil, strconv.ErrSyntax
 	}
 	if withPagination {
 		filter.Page, filter.PageSize = response.ParsePagination(c)

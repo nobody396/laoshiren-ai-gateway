@@ -564,15 +564,16 @@ func prepareOpenAIRouteBudgetWindows(windows []service.OpenAIRouteBudgetWindowCo
 	}
 	groupID := windows[0].Scope.GroupID
 	model := strings.TrimSpace(windows[0].Scope.Model)
-	domainFingerprint := openAIRouteBudgetDomainFingerprint(groupID, model)
+	requestClass := windows[0].Scope.RequestClass
+	domainFingerprint := openAIRouteBudgetDomainFingerprint(groupID, model, requestClass)
 	prepared := make([]openAIRouteBudgetPreparedWindow, 0, len(windows))
 	seen := make(map[string]struct{}, len(windows))
 	for i, config := range windows {
 		if err := config.Validate(); err != nil {
 			return nil, err
 		}
-		if config.Scope.GroupID != groupID || strings.TrimSpace(config.Scope.Model) != model {
-			return nil, fmt.Errorf("%w: all budget windows must share group and model", service.ErrOpenAIRouteInvalidPolicy)
+		if config.Scope.GroupID != groupID || strings.TrimSpace(config.Scope.Model) != model || config.Scope.RequestClass != requestClass {
+			return nil, fmt.Errorf("%w: all budget windows must share group, model, and request class", service.ErrOpenAIRouteInvalidPolicy)
 		}
 		scopeFingerprint := config.Scope.Fingerprint()
 		if _, ok := seen[scopeFingerprint]; ok {
@@ -617,8 +618,8 @@ func prepareOpenAIRouteBudgetWindows(windows []service.OpenAIRouteBudgetWindowCo
 	return prepared, nil
 }
 
-func openAIRouteBudgetDomainFingerprint(groupID int64, model string) string {
-	sum := sha256.Sum256([]byte(fmt.Sprintf("%d|%s", groupID, strings.TrimSpace(model))))
+func openAIRouteBudgetDomainFingerprint(groupID int64, model string, requestClass service.OpenAIRouteRequestClass) string {
+	sum := sha256.Sum256([]byte(fmt.Sprintf("%d|%s|%s", groupID, strings.TrimSpace(model), requestClass)))
 	return hex.EncodeToString(sum[:8])
 }
 
@@ -644,7 +645,9 @@ func validateOpenAIRouteBudgetRoute(route service.OpenAIRouteKey, windows []open
 	if !route.Valid() || len(windows) == 0 {
 		return "", service.ErrOpenAIRouteNoCandidate
 	}
-	if route.GroupID != windows[0].config.Scope.GroupID || strings.TrimSpace(route.Model) != strings.TrimSpace(windows[0].config.Scope.Model) {
+	if route.GroupID != windows[0].config.Scope.GroupID ||
+		strings.TrimSpace(route.Model) != strings.TrimSpace(windows[0].config.Scope.Model) ||
+		route.RequestClass != windows[0].config.Scope.RequestClass {
 		return "", fmt.Errorf("%w: route and budget scope differ", service.ErrOpenAIRouteInvalidPolicy)
 	}
 	return service.OpenAIRouteHealthStoreKeyForRoute(route).Fingerprint(), nil

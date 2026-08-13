@@ -29,6 +29,7 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 		Attempt:                   2,
 		GroupID:                   7,
 		Model:                     "gpt-5.6-sol",
+		RequestClass:              service.OpenAIRouteRequestClassText,
 		PolicyMode:                service.OpenAIRoutePolicyShadow,
 		PolicyVersion:             4,
 		Reason:                    "shadow_selected",
@@ -41,7 +42,12 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 		ExcludedCount:             1,
 		Diverged:                  true,
 		Snapshot: &service.OpenAIRouteShadowAuditSnapshot{
+			RequestClass:         service.OpenAIRouteRequestClassText,
 			EstimatedBaseCostUSD: 0.01,
+			Policy: service.OpenAIRouteShadowAuditPolicy{
+				MaxAccountShare:  0.80,
+				MaxProviderShare: 0.90,
+			},
 			Candidates: []service.OpenAIRouteShadowAuditCandidate{{
 				AccountID:      28,
 				RateMultiplier: 0.15,
@@ -58,14 +64,16 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 	start := createdAt.Add(-time.Minute)
 	end := createdAt.Add(time.Minute)
 	list, err := repo.ListOpenAIRouteShadowDecisions(context.Background(), &service.OpenAIRouteShadowDecisionFilter{
-		StartTime: &start,
-		EndTime:   &end,
-		RequestID: requestID,
+		StartTime:    &start,
+		EndTime:      &end,
+		RequestID:    requestID,
+		RequestClass: service.OpenAIRouteRequestClassText,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, list.Total)
 	require.Len(t, list.Decisions, 1)
 	require.Equal(t, int64(28), list.Decisions[0].AdaptiveSelectedAccountID)
+	require.Equal(t, service.OpenAIRouteRequestClassText, list.Decisions[0].RequestClass)
 	require.Len(t, list.Decisions[0].Snapshot.Candidates, 1)
 
 	stats, err := repo.GetOpenAIRouteShadowDecisionStats(context.Background(), &service.OpenAIRouteShadowDecisionFilter{
@@ -78,6 +86,14 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 	require.Equal(t, int64(1), stats.Evaluated)
 	require.Equal(t, int64(1), stats.Diverged)
 	require.Equal(t, int64(1), stats.UnlinkedOutcome)
+	require.Equal(t, int64(1), stats.EvaluatedUnlinkedOutcome)
+	require.Equal(t, int64(1), stats.PolicySnapshotVariants)
+	require.Equal(t, 0.80, stats.PolicyMaxAccountShare)
+	require.Equal(t, 0.90, stats.PolicyMaxProviderShare)
+	require.Equal(t, createdAt, stats.FirstDecisionAt)
+	require.Equal(t, createdAt, stats.LastDecisionAt)
 	require.Len(t, stats.SelectedAccounts, 1)
 	require.Equal(t, int64(28), stats.SelectedAccounts[0].AccountID)
+	require.Len(t, stats.SelectedProviders, 1)
+	require.Equal(t, "account:28", stats.SelectedProviders[0].ProviderKey)
 }

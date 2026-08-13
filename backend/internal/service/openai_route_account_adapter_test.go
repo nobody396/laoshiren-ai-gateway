@@ -21,25 +21,47 @@ func TestOpenAIRouteFailureDomainID_UsesExplicitMetadataAndSafeFallback(t *testi
 	}))
 }
 
-func TestNewOpenAIRouteKey_DimensionsAccountModelEndpointTransport(t *testing.T) {
+func TestNewOpenAIRouteKey_DimensionsAccountModelRequestClassEndpointTransport(t *testing.T) {
 	account := &Account{ID: 28, Extra: map[string]any{openAIRouteFailureDomainExtraKey: "anyroute"}}
-	key, err := NewOpenAIRouteKey(account, 7, " gpt-5.6-sol ", "https://us.example.invalid/v1/responses/", "sse")
+	key, err := NewOpenAIRouteKey(account, 7, " gpt-5.6-sol ", OpenAIRouteRequestClassText, "https://us.example.invalid/v1/responses/", "sse")
 	require.NoError(t, err)
 	require.Equal(t, int64(7), key.GroupID)
 	require.Equal(t, int64(28), key.AccountID)
 	require.Equal(t, "gpt-5.6-sol", key.Model)
+	require.Equal(t, OpenAIRouteRequestClassText, key.RequestClass)
 	require.Equal(t, "sse", key.Transport)
 	require.Equal(t, "anyroute", key.FailureDomain)
 	require.Len(t, key.EndpointHash, 16)
 
-	same, err := NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", "https://us.example.invalid/v1/responses", "sse")
+	same, err := NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://us.example.invalid/v1/responses", "sse")
 	require.NoError(t, err)
 	require.Equal(t, key.EndpointHash, same.EndpointHash)
+	credentialBearing, err := NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "HTTPS://user:secret@US.EXAMPLE.INVALID/v1/responses/?token=secret#fragment", "sse")
+	require.NoError(t, err)
+	require.Equal(t, key.EndpointHash, credentialBearing.EndpointHash)
 
-	_, err = NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", "", "sse")
+	_, err = NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "", "sse")
 	require.ErrorIs(t, err, ErrOpenAIRouteNoCandidate)
-	_, err = NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", "https://us.example.invalid/v1/responses", "")
+	_, err = NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://us.example.invalid/v1/responses", "")
 	require.ErrorIs(t, err, ErrOpenAIRouteNoCandidate)
+
+	_, err = NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", OpenAIRouteRequestClassUnknown, "https://us.example.invalid/v1/responses", "sse")
+	require.ErrorIs(t, err, ErrOpenAIRouteNoCandidate)
+}
+
+func TestOpenAIRouteEndpointForAccountAcceptsAbsoluteObservedEndpoint(t *testing.T) {
+	account := &Account{
+		ID:       28,
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeAPIKey,
+		Credentials: map[string]any{
+			"base_url": "https://configured.example.invalid/v1",
+		},
+	}
+	require.Equal(t,
+		"https://observed.example.invalid/v1/chat/completions",
+		openAIRouteEndpointForAccount(account, "https://observed.example.invalid/v1/chat/completions?token=secret"),
+	)
 }
 
 func TestOpenAIRouteWilsonLowerBound_IsConservativeForSmallSamples(t *testing.T) {

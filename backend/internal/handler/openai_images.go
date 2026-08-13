@@ -178,7 +178,8 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		} else {
 			result, err = h.gatewayService.ForwardImages(c.Request.Context(), c, account, body, parsed, channelMapping.MappedModel)
 		}
-		forwardDurationMs := time.Since(forwardStart).Milliseconds()
+		forwardDuration := time.Since(forwardStart)
+		forwardDurationMs := forwardDuration.Milliseconds()
 		if accountReleaseFunc != nil {
 			accountReleaseFunc()
 		}
@@ -189,6 +190,7 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		}
 		service.SetOpsLatencyMs(c, service.OpsResponseLatencyMsKey, responseLatencyMs)
 
+		reportOpenAIRouteAttempt(h.gatewayService, account, apiKey.GroupID, parsed.Model, service.OpenAIRouteRequestClassImage, openAIRouteObservationEndpoint(result, "/v1/images/generations"), forwardDuration, nil, err, c.Writer.Size() != writerSizeBeforeForward)
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
 			if errors.As(err, &failoverErr) {

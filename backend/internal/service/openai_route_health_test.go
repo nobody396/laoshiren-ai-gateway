@@ -37,6 +37,26 @@ func TestClassifyOpenAIRouteFailure_DoesNotPenalizeUserRequest(t *testing.T) {
 	require.False(t, classification.PenalizeRoute)
 }
 
+func TestClassifyOpenAIRouteFailure_DoesNotTrainClientCancellationAsUpstreamFailure(t *testing.T) {
+	classification := ClassifyOpenAIRouteFailure(OpenAIRouteFailureSignal{
+		HasError:        true,
+		StreamStarted:   true,
+		ClientCancelled: true,
+	})
+	require.Equal(t, OpenAIRouteFailureClientCancelled, classification.Class)
+	require.False(t, classification.PenalizeRoute)
+	require.False(t, classification.PartialStream)
+	require.False(t, OpenAIRouteFailureCanEscalateProvider(classification.Class))
+
+	state := OpenAIRouteHealthState{State: OpenAIRouteCircuitHealthy}
+	got, err := ApplyOpenAIRouteHealthEvent(state, OpenAIRouteHealthEvent{
+		At:           time.Now().UTC(),
+		FailureClass: classification.Class,
+	}, DefaultOpenAIRoutePolicy())
+	require.NoError(t, err)
+	require.Equal(t, state, got)
+}
+
 func TestClassifyOpenAIRouteFailure_RecognizesBalanceBeforeGeneric403Auth(t *testing.T) {
 	classification := ClassifyOpenAIRouteFailure(OpenAIRouteFailureSignal{
 		StatusCode: 403,
@@ -45,6 +65,28 @@ func TestClassifyOpenAIRouteFailure_RecognizesBalanceBeforeGeneric403Auth(t *tes
 	})
 	require.Equal(t, OpenAIRouteFailurePayment, classification.Class)
 	require.True(t, classification.PenalizeRoute)
+}
+
+func TestOpenAIRouteFailureCanEscalateProvider_IsConservative(t *testing.T) {
+	for _, class := range []OpenAIRouteFailureClass{
+		OpenAIRouteFailureCapacity,
+		OpenAIRouteFailureUpstream5xx,
+		OpenAIRouteFailureMalformedStream,
+		OpenAIRouteFailurePartialStream,
+	} {
+		require.True(t, OpenAIRouteFailureCanEscalateProvider(class), class)
+	}
+	for _, class := range []OpenAIRouteFailureClass{
+		OpenAIRouteFailureRateLimit,
+		OpenAIRouteFailureAuthentication,
+		OpenAIRouteFailurePayment,
+		OpenAIRouteFailureModelUnsupported,
+		OpenAIRouteFailureLocalTransport,
+		OpenAIRouteFailureUserRequest,
+		OpenAIRouteFailureClientCancelled,
+	} {
+		require.False(t, OpenAIRouteFailureCanEscalateProvider(class), class)
+	}
 }
 
 func TestApplyOpenAIRouteHealthEvent_GenericFailureDegradesThenOpens(t *testing.T) {

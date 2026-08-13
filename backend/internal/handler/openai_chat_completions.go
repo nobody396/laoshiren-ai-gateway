@@ -134,7 +134,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 
 	for {
 		reqLog.Debug("openai_chat_completions.account_selecting", zap.Int("excluded_account_count", len(failedAccountIDs)))
-		selection, scheduleDecision, err := h.gatewayService.SelectOpenAICompatibleAccountWithScheduler(
+		selection, scheduleDecision, err := h.gatewayService.SelectOpenAICompatibleAccountWithSchedulerForRouting(
 			c.Request.Context(),
 			openAICompatibleRequestPlatform(apiKey),
 			apiKey.GroupID,
@@ -144,6 +144,8 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 			failedAccountIDs,
 			service.OpenAIUpstreamTransportAny,
 			false,
+			false,
+			"/v1/chat/completions",
 		)
 		if err != nil {
 			reqLog.Warn("openai_chat_completions.account_select_failed",
@@ -205,7 +207,8 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		writerSizeBeforeForward := c.Writer.Size()
 		result, err := h.gatewayService.ForwardAsChatCompletions(c.Request.Context(), c, account, forwardBody, promptCacheKey, "")
 
-		forwardDurationMs := time.Since(forwardStart).Milliseconds()
+		forwardDuration := time.Since(forwardStart)
+		forwardDurationMs := forwardDuration.Milliseconds()
 		if accountReleaseFunc != nil {
 			accountReleaseFunc()
 		}
@@ -218,6 +221,12 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		if err == nil && result != nil && result.FirstTokenMs != nil {
 			service.SetOpsLatencyMs(c, service.OpsTimeToFirstTokenMsKey, int64(*result.FirstTokenMs))
 		}
+		reportOpenAIRouteAttempt(h.gatewayService, account, apiKey.GroupID, reqModel, service.OpenAIRouteRequestClassText, openAIRouteObservationEndpoint(result, "/v1/chat/completions"), forwardDuration, func() *int {
+			if result != nil {
+				return result.FirstTokenMs
+			}
+			return nil
+		}(), err, c.Writer.Size() != writerSizeBeforeForward)
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
 			if errors.As(err, &failoverErr) {

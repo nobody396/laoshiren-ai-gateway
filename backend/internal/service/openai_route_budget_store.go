@@ -19,18 +19,19 @@ const (
 )
 
 type OpenAIRouteBudgetScope struct {
-	GroupID int64
-	Model   string
-	Window  string
-	Epoch   string
+	GroupID      int64
+	Model        string
+	RequestClass OpenAIRouteRequestClass
+	Window       string
+	Epoch        string
 }
 
 func (s OpenAIRouteBudgetScope) Valid() bool {
-	return s.GroupID > 0 && strings.TrimSpace(s.Model) != "" && strings.TrimSpace(s.Window) != "" && strings.TrimSpace(s.Epoch) != ""
+	return s.GroupID > 0 && strings.TrimSpace(s.Model) != "" && s.RequestClass.Valid() && strings.TrimSpace(s.Window) != "" && strings.TrimSpace(s.Epoch) != ""
 }
 
 func (s OpenAIRouteBudgetScope) Fingerprint() string {
-	canonical := fmt.Sprintf("%d|%s|%s|%s", s.GroupID, strings.TrimSpace(s.Model), strings.TrimSpace(s.Window), strings.TrimSpace(s.Epoch))
+	canonical := fmt.Sprintf("%d|%s|%s|%s|%s", s.GroupID, strings.TrimSpace(s.Model), s.RequestClass, strings.TrimSpace(s.Window), strings.TrimSpace(s.Epoch))
 	sum := sha256.Sum256([]byte(canonical))
 	return hex.EncodeToString(sum[:16])
 }

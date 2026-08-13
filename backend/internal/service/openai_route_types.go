@@ -29,6 +29,7 @@ type OpenAIRouteFailureClass string
 const (
 	OpenAIRouteFailureNone             OpenAIRouteFailureClass = "none"
 	OpenAIRouteFailureUserRequest      OpenAIRouteFailureClass = "user_request"
+	OpenAIRouteFailureClientCancelled  OpenAIRouteFailureClass = "client_cancelled"
 	OpenAIRouteFailureModelUnsupported OpenAIRouteFailureClass = "model_unsupported"
 	OpenAIRouteFailureCapacity         OpenAIRouteFailureClass = "capacity"
 	OpenAIRouteFailureRateLimit        OpenAIRouteFailureClass = "rate_limit"
@@ -47,6 +48,26 @@ const (
 	OpenAIRoutePolicyShadow  OpenAIRoutePolicyMode = "shadow"
 	OpenAIRoutePolicyEnforce OpenAIRoutePolicyMode = "enforce"
 )
+
+// OpenAIRouteRequestClass separates semantically different workloads that may
+// share the same public model and account. Text observations must never train
+// image routing (or vice versa).
+type OpenAIRouteRequestClass string
+
+const (
+	OpenAIRouteRequestClassUnknown OpenAIRouteRequestClass = "unknown"
+	OpenAIRouteRequestClassText    OpenAIRouteRequestClass = "text"
+	OpenAIRouteRequestClassImage   OpenAIRouteRequestClass = "image"
+)
+
+func (c OpenAIRouteRequestClass) Valid() bool {
+	switch c {
+	case OpenAIRouteRequestClassText, OpenAIRouteRequestClassImage:
+		return true
+	default:
+		return false
+	}
+}
 
 var (
 	ErrOpenAIRouteNoCandidate         = errors.New("no eligible OpenAI route candidate")
@@ -203,6 +224,7 @@ type OpenAIRouteKey struct {
 	GroupID       int64
 	AccountID     int64
 	Model         string
+	RequestClass  OpenAIRouteRequestClass
 	EndpointHash  string
 	Transport     string
 	FailureDomain string
@@ -212,6 +234,7 @@ func (k OpenAIRouteKey) Valid() bool {
 	return k.GroupID > 0 &&
 		k.AccountID > 0 &&
 		strings.TrimSpace(k.Model) != "" &&
+		k.RequestClass.Valid() &&
 		strings.TrimSpace(k.EndpointHash) != "" &&
 		strings.TrimSpace(k.Transport) != ""
 }
@@ -230,15 +253,26 @@ type OpenAIRouteCandidate struct {
 	HalfOpenPermit       bool
 	RecoveryStep         int
 
-	HasReliabilitySample bool
-	SuccessLowerBound    float64
-	P90TTFTMilliseconds  float64
-	LoadRatio            float64
-	WaitingCount         int
+	HasReliabilitySample             bool
+	SuccessLowerBound                float64
+	P90TTFTMilliseconds              float64
+	P95CompletionLatencyMilliseconds float64
+	PartialStreamRate                float64
+	ObservationSampleCount           uint64
+	LoadRatio                        float64
+	WaitingCount                     int
 
 	CurrentAccountShare  float64
 	CurrentProviderShare float64
 	ExplorationBoost     float64
+
+	// EstimatedBaseCostUSD is route-specific when enough authoritative text
+	// settlements exist. Zero keeps the request-level policy estimate for
+	// compatibility and for image routes whose supplier cost is not verified.
+	EstimatedBaseCostUSD   float64
+	ObservedMeanCostUSD    float64
+	CostObservationSamples uint64
+	CostEstimateSource     string
 }
 
 type OpenAIRouteExclusionReason string
@@ -260,15 +294,17 @@ type OpenAIRouteExclusion struct {
 }
 
 type OpenAIRouteWeightedCandidate struct {
-	Candidate           OpenAIRouteCandidate
-	Weight              float64
-	HealthFactor        float64
-	LatencyFactor       float64
-	HeadroomFactor      float64
-	PriceFactor         float64
-	PriorityFactor      float64
-	PredictedExtraCost  float64
-	EmergencyBudgetUsed bool
+	Candidate             OpenAIRouteCandidate
+	Weight                float64
+	HealthFactor          float64
+	LatencyFactor         float64
+	TailLatencyFactor     float64
+	StreamIntegrityFactor float64
+	HeadroomFactor        float64
+	PriceFactor           float64
+	PriorityFactor        float64
+	PredictedExtraCost    float64
+	EmergencyBudgetUsed   bool
 }
 
 type OpenAIRouteAllocationRequest struct {

@@ -31,9 +31,9 @@ func (r *openAIRouteDecisionRepository) CheckOpenAIRouteShadowDecisionStorage(ct
 	probeID := fmt.Sprintf("probe:%d", time.Now().UnixNano())
 	if _, err := tx.ExecContext(ctx, `
 INSERT INTO openai_route_shadow_decisions (
-  decision_id, request_id, client_request_id, attempt, group_id, model,
+  decision_id, request_id, client_request_id, attempt, group_id, model, request_class,
   policy_mode, policy_version, reason, evaluated, snapshot
-) VALUES ($1, '', '', 1, 1, '__storage_probe__', 'shadow', 0, 'storage_probe', FALSE, '{}'::jsonb)
+) VALUES ($1, '', '', 1, 1, '__storage_probe__', 'text', 'shadow', 0, 'storage_probe', FALSE, '{}'::jsonb)
 `, probeID); err != nil {
 		return err
 	}
@@ -60,12 +60,12 @@ func (r *openAIRouteDecisionRepository) CreateOpenAIRouteShadowDecision(
 	}
 	_, err = r.db.ExecContext(ctx, `
 INSERT INTO openai_route_shadow_decisions (
-  decision_id, request_id, client_request_id, attempt, group_id, model,
+  decision_id, request_id, client_request_id, attempt, group_id, model, request_class,
   policy_mode, policy_version, reason, evaluated, evaluation_duration_us,
   legacy_selected_account_id, adaptive_selected_account_id, adaptive_selected_rate,
   candidate_count, excluded_count, diverged, emergency, snapshot, created_at
 ) VALUES (
-  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19::jsonb,$20
+  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20::jsonb,$21
 )`,
 		record.DecisionID,
 		record.RequestID,
@@ -73,6 +73,7 @@ INSERT INTO openai_route_shadow_decisions (
 		record.Attempt,
 		record.GroupID,
 		record.Model,
+		string(record.RequestClass),
 		string(record.PolicyMode),
 		record.PolicyVersion,
 		record.Reason,
@@ -124,7 +125,7 @@ func (r *openAIRouteDecisionRepository) ListOpenAIRouteShadowDecisions(
 	query := `
 SELECT
   d.id, d.decision_id, d.request_id, d.client_request_id, d.attempt,
-  d.group_id, d.model, d.policy_mode, d.policy_version, d.reason,
+  d.group_id, d.model, d.request_class, d.policy_mode, d.policy_version, d.reason,
   d.evaluated, d.evaluation_duration_us,
   d.legacy_selected_account_id, d.adaptive_selected_account_id,
   d.adaptive_selected_rate, d.candidate_count, d.excluded_count,
@@ -149,7 +150,7 @@ LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
 		var snapshotRaw string
 		if err := rows.Scan(
 			&item.ID, &item.DecisionID, &item.RequestID, &item.ClientRequestID, &item.Attempt,
-			&item.GroupID, &item.Model, &item.PolicyMode, &item.PolicyVersion, &item.Reason,
+			&item.GroupID, &item.Model, &item.RequestClass, &item.PolicyMode, &item.PolicyVersion, &item.Reason,
 			&item.Evaluated, &item.EvaluationDurationMicros,
 			&legacyID, &adaptiveID, &adaptiveRate, &item.CandidateCount, &item.ExcludedCount,
 			&item.Diverged, &item.Emergency, &snapshotRaw, &item.CreatedAt,
@@ -232,14 +233,30 @@ SELECT
   COUNT(*) FILTER (WHERE NOT evaluated)::bigint,
   COUNT(*) FILTER (WHERE diverged)::bigint,
   COUNT(*) FILTER (WHERE emergency)::bigint,
-  COUNT(*) FILTER (WHERE usage_id IS NOT NULL)::bigint,
-  COUNT(*) FILTER (WHERE error_id IS NOT NULL)::bigint,
+  COUNT(*) FILTER (WHERE usage_id IS NOT NULL AND error_id IS NULL)::bigint,
+  COUNT(*) FILTER (WHERE usage_id IS NULL AND error_id IS NOT NULL)::bigint,
+  COUNT(*) FILTER (WHERE usage_id IS NOT NULL AND error_id IS NOT NULL)::bigint,
   COUNT(*) FILTER (WHERE usage_id IS NULL AND error_id IS NULL)::bigint,
+  COUNT(*) FILTER (WHERE evaluated AND usage_id IS NOT NULL AND error_id IS NULL)::bigint,
+  COUNT(*) FILTER (WHERE evaluated AND usage_id IS NULL AND error_id IS NOT NULL)::bigint,
+  COUNT(*) FILTER (WHERE evaluated AND usage_id IS NOT NULL AND error_id IS NOT NULL)::bigint,
+  COUNT(*) FILTER (WHERE evaluated AND usage_id IS NULL AND error_id IS NULL)::bigint,
+  COUNT(DISTINCT snapshot->'policy')::bigint,
+  CASE WHEN COUNT(DISTINCT snapshot->'policy') = 1
+       THEN COALESCE(MIN((snapshot->'policy'->>'max_account_share')::float8), 0)
+       ELSE 0 END::float8,
+  CASE WHEN COUNT(DISTINCT snapshot->'policy') = 1
+       THEN COALESCE(MIN((snapshot->'policy'->>'max_provider_share')::float8), 0)
+       ELSE 0 END::float8,
+  MIN(created_at),
+  MAX(created_at),
   COALESCE(percentile_cont(0.50) WITHIN GROUP (ORDER BY evaluation_duration_us), 0)::float8,
   COALESCE(percentile_cont(0.95) WITHIN GROUP (ORDER BY evaluation_duration_us), 0)::float8,
   COALESCE(percentile_cont(0.50) WITHIN GROUP (ORDER BY legacy_first_token_ms) FILTER (WHERE legacy_first_token_ms IS NOT NULL), 0)::float8,
   COALESCE(percentile_cont(0.95) WITHIN GROUP (ORDER BY legacy_first_token_ms) FILTER (WHERE legacy_first_token_ms IS NOT NULL), 0)::float8
 FROM linked`
+	var firstDecisionAt sql.NullTime
+	var lastDecisionAt sql.NullTime
 	if err := r.db.QueryRowContext(ctx, aggregate, args...).Scan(
 		&stats.Total,
 		&stats.Evaluated,
@@ -248,13 +265,29 @@ FROM linked`
 		&stats.Emergency,
 		&stats.LinkedSuccessfulUsage,
 		&stats.LinkedLegacyFailure,
+		&stats.AmbiguousOutcome,
 		&stats.UnlinkedOutcome,
+		&stats.EvaluatedLinkedSuccessfulUsage,
+		&stats.EvaluatedLinkedLegacyFailure,
+		&stats.EvaluatedAmbiguousOutcome,
+		&stats.EvaluatedUnlinkedOutcome,
+		&stats.PolicySnapshotVariants,
+		&stats.PolicyMaxAccountShare,
+		&stats.PolicyMaxProviderShare,
+		&firstDecisionAt,
+		&lastDecisionAt,
 		&stats.EvaluationDurationP50US,
 		&stats.EvaluationDurationP95US,
 		&stats.LegacyTTFTP50Ms,
 		&stats.LegacyTTFTP95Ms,
 	); err != nil {
 		return nil, err
+	}
+	if firstDecisionAt.Valid {
+		stats.FirstDecisionAt = firstDecisionAt.Time.UTC()
+	}
+	if lastDecisionAt.Valid {
+		stats.LastDecisionAt = lastDecisionAt.Time.UTC()
 	}
 
 	selectedQuery := `
@@ -263,11 +296,11 @@ WITH filtered AS (
 )
 SELECT
   adaptive_selected_account_id,
-  COALESCE(adaptive_selected_rate, 0)::float8,
+  COALESCE(AVG(adaptive_selected_rate), 0)::float8,
   COUNT(*)::bigint
 FROM filtered
 WHERE evaluated AND adaptive_selected_account_id IS NOT NULL
-GROUP BY adaptive_selected_account_id, adaptive_selected_rate
+GROUP BY adaptive_selected_account_id
 ORDER BY COUNT(*) DESC, adaptive_selected_account_id ASC`
 	rows, err := r.db.QueryContext(ctx, selectedQuery, args...)
 	if err != nil {
@@ -285,6 +318,46 @@ ORDER BY COUNT(*) DESC, adaptive_selected_account_id ASC`
 		stats.SelectedAccounts = append(stats.SelectedAccounts, item)
 	}
 	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	providerQuery := `
+WITH filtered AS (
+  SELECT d.* FROM openai_route_shadow_decisions d ` + where + `
+), selected AS (
+  SELECT
+    COALESCE(
+      (
+        SELECT NULLIF(candidate->>'failure_domain', '')
+        FROM jsonb_array_elements(d.snapshot->'candidates') candidate
+        WHERE candidate->>'account_id' = d.adaptive_selected_account_id::text
+        LIMIT 1
+      ),
+      'account:' || d.adaptive_selected_account_id::text
+    ) AS provider_key
+  FROM filtered d
+  WHERE d.evaluated AND d.adaptive_selected_account_id IS NOT NULL
+)
+SELECT provider_key, COUNT(*)::bigint
+FROM selected
+GROUP BY provider_key
+ORDER BY COUNT(*) DESC, provider_key ASC`
+	providerRows, err := r.db.QueryContext(ctx, providerQuery, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = providerRows.Close() }()
+	for providerRows.Next() {
+		item := service.OpenAIRouteShadowSelectedProviderStats{}
+		if err := providerRows.Scan(&item.ProviderKey, &item.SelectedCount); err != nil {
+			return nil, err
+		}
+		if stats.Evaluated > 0 {
+			item.SelectedPercent = float64(item.SelectedCount) * 100 / float64(stats.Evaluated)
+		}
+		stats.SelectedProviders = append(stats.SelectedProviders, item)
+	}
+	if err := providerRows.Err(); err != nil {
 		return nil, err
 	}
 	return stats, nil
@@ -315,8 +388,8 @@ func buildOpenAIRouteShadowWhere(filter *service.OpenAIRouteShadowDecisionFilter
 	if prefix != "" {
 		prefix += "."
 	}
-	conditions := make([]string, 0, 12)
-	args := make([]any, 0, 12)
+	conditions := make([]string, 0, 13)
+	args := make([]any, 0, 13)
 	add := func(condition string, value any) {
 		args = append(args, value)
 		conditions = append(conditions, fmt.Sprintf(condition, len(args)))
@@ -332,6 +405,12 @@ func buildOpenAIRouteShadowWhere(filter *service.OpenAIRouteShadowDecisionFilter
 	}
 	if value := strings.TrimSpace(filter.Model); value != "" {
 		add(prefix+"model = $%d", value)
+	}
+	if filter.RequestClass.Valid() {
+		add(prefix+"request_class = $%d", string(filter.RequestClass))
+	}
+	if value := strings.TrimSpace(string(filter.PolicyMode)); value != "" {
+		add(prefix+"policy_mode = $%d", value)
 	}
 	if filter.PolicyVersion != nil {
 		add(prefix+"policy_version = $%d", *filter.PolicyVersion)

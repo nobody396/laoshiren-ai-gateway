@@ -40,8 +40,12 @@ func (adminOpenAIRouteAuditRepoStub) GetOpenAIRouteShadowDecisionStats(context.C
 		Evaluated:                      200,
 		EvaluatedLinkedSuccessfulUsage: 200,
 		PolicySnapshotVariants:         1,
+		ActivationIDVariants:           1,
+		ShadowStartedAtVariants:        1,
+		ShadowStartedAt:                adminOpenAIRouteAuditNow.Add(-72 * time.Hour),
 		PolicyMaxAccountShare:          0.8,
 		PolicyMaxProviderShare:         0.9,
+		CoveredHourBuckets:             72,
 		FirstDecisionAt:                adminOpenAIRouteAuditNow.Add(-72 * time.Hour),
 		LastDecisionAt:                 adminOpenAIRouteAuditNow,
 		SelectedAccounts:               []service.OpenAIRouteShadowSelectedAccountStats{{AccountID: 23, SelectedPercent: 60}},
@@ -52,7 +56,7 @@ func (adminOpenAIRouteAuditRepoStub) GetOpenAIRouteShadowDecisionStats(context.C
 func TestParseOpenAIRouteShadowDecisionFilter(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
-	c.Request = httptest.NewRequest("GET", "/?time_range=1h&group_id=7&model=gpt-5.6-sol&request_class=image&policy_mode=shadow&policy_version=3&evaluated=true&diverged=false&emergency=true&page=2&page_size=500", nil)
+	c.Request = httptest.NewRequest("GET", "/?time_range=1h&group_id=7&model=gpt-5.6-sol&request_class=image&policy_mode=shadow&policy_version=3&activation_id=activation-3&evaluated=true&diverged=false&emergency=true&page=2&page_size=500", nil)
 
 	filter, err := parseOpenAIRouteShadowDecisionFilter(c, true)
 	require.NoError(t, err)
@@ -63,6 +67,7 @@ func TestParseOpenAIRouteShadowDecisionFilter(t *testing.T) {
 	require.Equal(t, "gpt-5.6-sol", filter.Model)
 	require.Equal(t, service.OpenAIRouteRequestClassImage, filter.RequestClass)
 	require.Equal(t, service.OpenAIRoutePolicyShadow, filter.PolicyMode)
+	require.Equal(t, "activation-3", filter.ActivationID)
 	require.Equal(t, 2, filter.Page)
 	require.Equal(t, 200, filter.PageSize)
 	require.Equal(t, true, *filter.Evaluated)
@@ -101,7 +106,7 @@ func TestOpenAIRouteShadowAuditHandlersReturnPersistedEvidence(t *testing.T) {
 		"/decisions?time_range=1h",
 		"/stats?time_range=1h",
 		"/health",
-		"/assessment?start_time=2026-08-09T12:00:00Z&end_time=2026-08-12T12:00:00Z&group_id=7&model=gpt-5.6-sol&request_class=text&policy_version=4",
+		"/assessment?start_time=2026-08-09T12:00:00Z&end_time=2026-08-12T12:00:00Z&group_id=7&model=gpt-5.6-sol&request_class=text&policy_version=4&activation_id=activation-4",
 	} {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -115,7 +120,7 @@ func TestOpenAIRouteShadowAuditHandlersReturnPersistedEvidence(t *testing.T) {
 
 func TestParseOpenAIRoutePromotionAssessmentFilterRequiresExactScope(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	valid := "/?start_time=2026-08-09T12:00:00Z&end_time=2026-08-12T12:00:00Z&group_id=7&model=gpt-5.6-sol&request_class=text&policy_version=4"
+	valid := "/?start_time=2026-08-09T12:00:00Z&end_time=2026-08-12T12:00:00Z&group_id=7&model=gpt-5.6-sol&request_class=text&policy_version=4&activation_id=activation-4"
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request = httptest.NewRequest(http.MethodGet, valid, nil)
 	filter, err := parseOpenAIRoutePromotionAssessmentFilter(c)
@@ -124,7 +129,7 @@ func TestParseOpenAIRoutePromotionAssessmentFilterRequiresExactScope(t *testing.
 
 	for _, query := range []string{
 		"/?time_range=72h&group_id=7&model=gpt-5.6-sol&request_class=text&policy_version=4",
-		"/?start_time=2026-08-09T12:00:00Z&end_time=2026-08-12T12:00:00Z&model=gpt-5.6-sol&request_class=text&policy_version=4",
+		"/?start_time=2026-08-09T12:00:00Z&end_time=2026-08-12T12:00:00Z&model=gpt-5.6-sol&request_class=text&policy_version=4&activation_id=activation-4",
 		valid + "&evaluated=true",
 		valid + "&policy_mode=legacy",
 	} {
@@ -144,7 +149,7 @@ func TestOpenAIRoutePromotionAssessmentHandlerNeverAuthorizesTraffic(t *testing.
 	router.GET("/assessment", handler.AssessOpenAIRouteShadowPromotion)
 
 	w := httptest.NewRecorder()
-	path := "/assessment?start_time=2026-08-09T12:00:00Z&end_time=2026-08-12T12:00:00Z&group_id=7&model=gpt-5.6-sol&request_class=text&policy_version=4"
+	path := "/assessment?start_time=2026-08-09T12:00:00Z&end_time=2026-08-12T12:00:00Z&group_id=7&model=gpt-5.6-sol&request_class=text&policy_version=4&activation_id=activation-4"
 	router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
 	require.Equal(t, http.StatusOK, w.Code)
 	var envelope struct {

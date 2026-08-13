@@ -43,6 +43,14 @@ if current ~= false and current == ARGV[1] then
 end
 return 0
 `)
+	refreshOpenAIRouteHalfOpenScript = redis.NewScript(`
+local current = redis.call('GET', KEYS[1])
+if current ~= false and current == ARGV[1] then
+  redis.call('EXPIRE', KEYS[1], ARGV[2])
+  return 1
+end
+return 0
+`)
 	recordOpenAIRouteProviderEvidenceScript = redis.NewScript(`
 local member = ARGV[1]
 local observed_ms = tonumber(ARGV[2])
@@ -322,6 +330,23 @@ func (c *openAIRouteHealthCache) ReleaseHalfOpenPermit(ctx context.Context, key 
 		[]string{openAIRouteHalfOpenRedisKey(key)},
 		strings.TrimSpace(owner),
 	).Err()
+}
+
+func (c *openAIRouteHealthCache) RefreshHalfOpenPermit(ctx context.Context, key service.OpenAIRouteHealthStoreKey, owner string) (bool, error) {
+	if c == nil || c.rdb == nil || !key.Valid() || strings.TrimSpace(owner) == "" {
+		return false, service.ErrOpenAIRouteNoCandidate
+	}
+	result, err := refreshOpenAIRouteHalfOpenScript.Run(
+		ctx,
+		c.rdb,
+		[]string{openAIRouteHalfOpenRedisKey(key)},
+		strings.TrimSpace(owner),
+		int64(c.permitTTL.Seconds()),
+	).Int()
+	if err != nil {
+		return false, err
+	}
+	return result == 1, nil
 }
 
 func openAIRouteHealthRedisKey(key service.OpenAIRouteHealthStoreKey) string {

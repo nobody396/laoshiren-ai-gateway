@@ -59,7 +59,9 @@ group + account + model + request_class + endpoint_hash + transport + failure_do
   narrow route, and only infrastructure-like failures seen on at least two
   distinct accounts inside the same explicit failure domain can open the
   provider circuit. Key/model/rate-limit/payment failures never fan out.
-  Single-owner active probes and durable aggregate checkpoints remain deferred.
+  The dependent guarded-rollout branch now prepares both single-owner active
+  probes (hard-disabled) and durable non-sensitive hourly aggregate checkpoints;
+  neither changes production routing or creates a timer.
 - Shadow audit writes use a bounded asynchronous queue instead of blocking
   account selection. Audit, observation, and health-application completeness
   count in-flight, dropped, rejected, and failed evidence conservatively, and
@@ -83,13 +85,16 @@ group + account + model + request_class + endpoint_hash + transport + failure_do
 - track success/failure class, TTFT histogram, completion latency, partial
   stream, sample count, last observation, and actual settled cost;
 - maintain global, recent-window, and Beijing hour-of-week views;
-- persist non-sensitive aggregate checkpoints for restart/audit recovery.
+- persist non-sensitive hourly aggregate checkpoints for restart/audit recovery;
+  this is implemented in the dependent guarded-rollout branch with Redis recent
+  data kept separate from PostgreSQL long-window authority.
 
-The rolling store currently uses 5-minute buckets for a one-hour recent view,
-Beijing calendar-day buckets for a seven-day global view, and the matching
-Beijing hour-of-week across eight ISO weeks. Keys contain only a route
-fingerprint. A collector queue overflow never delays a customer request and is
-instead exposed as evidence loss in the admin health endpoint.
+The rolling store uses Redis 5-minute buckets for the one-hour recent view and
+PostgreSQL UTC-hour rows (equivalent to Beijing whole-hour boundaries) for the
+last seven Beijing calendar days and matching Beijing hour-of-week across eight
+weeks. Keys contain only a route fingerprint and non-sensitive route dimensions.
+A collector queue overflow never delays a customer request and is instead
+exposed as evidence loss in the admin health endpoint.
 
 Settled-cost feedback is text-only. Until 20 cost samples exist for an exact
 route, the policy's configured estimate remains authoritative. Afterwards the
@@ -123,7 +128,19 @@ production observation job. It implements only the passive evidence and health
 primitives until the unified release finishes and a separate production change
 is authorized.
 
+The dependent guarded-rollout branch now also contains a dormant active-probe
+runner and Redis owner-only lease renewal. Its compile-time guard remains false,
+it has no Wire/network/scan/cron integration, and it keeps probe statistics out
+of passive user observations. This is code preparation, not probe activation.
+
 ### V2.4 — guarded enforcement
+
+Dependent guarded-rollout branch status (2026-08-13 Beijing time): the pure
+stage-transition contract, deterministic text/image cohort assignment, hourly
+coverage gate, activation/T0 persistence, and read-only heartbeat state machine
+are implemented with unit tests. `OpenAIRouteEnforceCodeAvailable` remains compile-time false, none of
+these primitives is wired to the real scheduler, and no production timer or
+policy is created.
 
 - use 24 hours only as an early health checkpoint; require a full 72-hour query
   window, at least 71 hours between its first and last real decision (at most
@@ -140,6 +157,12 @@ is authorized.
   counters started; a later successful probe must not erase an evidence gap;
 - require adaptive account and provider assignment totals to equal the full
   evaluated-decision count before checking concentration caps;
+- require evaluated decisions to cover all but at most one relative one-hour
+  bucket across the requested evidence window; first/last timestamps alone do
+  not prove the interior of the window was observed;
+- require one immutable `activation_id`, one UTC `shadow_started_at`, and an
+  assessment window whose start exactly equals that T0; stopped/restarted
+  evidence cannot be joined merely by reusing `policy_version`;
 - enable deterministic canary assignment at `1% -> 5% -> 20% -> 50% -> 100%`;
 - preserve text stickiness and one-click Legacy rollback at every stage;
 - never enable `enforce` in the same deployment that introduces the code path.

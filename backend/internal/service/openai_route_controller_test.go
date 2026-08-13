@@ -86,6 +86,10 @@ func (s *openAIRouteHealthStoreStub) AcquireHalfOpenPermit(context.Context, Open
 	return true, nil
 }
 
+func (s *openAIRouteHealthStoreStub) RefreshHalfOpenPermit(context.Context, OpenAIRouteHealthStoreKey, string) (bool, error) {
+	return true, nil
+}
+
 func (s *openAIRouteHealthStoreStub) ReleaseHalfOpenPermit(context.Context, OpenAIRouteHealthStoreKey, string) error {
 	return nil
 }
@@ -168,8 +172,8 @@ func TestOpenAIRouteController_MissingPolicyIsLegacyAndCached(t *testing.T) {
 func TestOpenAIRouteController_ExactPolicyBeatsWildcardAndSelectsWithinBudget(t *testing.T) {
 	reader := &openAIRoutePolicyReaderStub{value: `{
   "policies": [
-    {"group_id":7,"model":"gpt-*","enabled":true,"mode":"shadow","policy_version":1,"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01},
-    {"group_id":7,"model":"gpt-5.6-sol","enabled":true,"mode":"shadow","policy_version":9,"target_avg_multiplier":0.155,"hard_avg_multiplier":0.18,"estimated_base_cost_usd":0.01}
+    {"group_id":7,"model":"gpt-*","enabled":true,"mode":"shadow","policy_version":1,"activation_id":"test-activation-1","shadow_started_at":"2026-08-01T00:00:00Z","target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01},
+    {"group_id":7,"model":"gpt-5.6-sol","enabled":true,"mode":"shadow","policy_version":9,"activation_id":"test-activation-9","shadow_started_at":"2026-08-01T00:00:00Z","target_avg_multiplier":0.155,"hard_avg_multiplier":0.18,"estimated_base_cost_usd":0.01}
   ]
 }`}
 	budget := &openAIRouteBudgetSnapshotStoreStub{}
@@ -208,12 +212,16 @@ func TestOpenAIRouteController_ExactPolicyBeatsWildcardAndSelectsWithinBudget(t 
 	require.True(t, decision.Evaluated)
 	require.Equal(t, OpenAIRoutePolicyShadow, decision.Mode)
 	require.Equal(t, 9, decision.Version)
+	require.Equal(t, "test-activation-9", decision.ActivationID)
+	require.Equal(t, time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC), decision.ShadowStartedAt)
 	require.Equal(t, int64(1), decision.SelectedAccountID, "the 0.20 route has no earned credit and must be budget-filtered")
 	require.InDelta(t, 0.15, decision.SelectedRate, 1e-12)
 	require.NotEmpty(t, decision.DecisionID)
 	require.GreaterOrEqual(t, decision.EvaluationDurationMicros, int64(0))
 	require.NotNil(t, decision.Audit)
 	require.Equal(t, OpenAIRouteRequestClassText, decision.Audit.RequestClass)
+	require.Equal(t, decision.ActivationID, decision.Audit.ActivationID)
+	require.Equal(t, decision.ShadowStartedAt, decision.Audit.ShadowStartedAt)
 	require.InDelta(t, 0.155, decision.Audit.Policy.TargetAverageMultiplier, 1e-12)
 	require.Len(t, decision.Audit.Candidates, 2)
 	require.Len(t, decision.Audit.BudgetWindows, 3)
@@ -232,7 +240,7 @@ func TestOpenAIRouteController_ExactPolicyBeatsWildcardAndSelectsWithinBudget(t 
 }
 
 func TestOpenAIRouteController_SharedObservationsOverrideProcessLocalInputs(t *testing.T) {
-	reader := &openAIRoutePolicyReaderStub{value: `[{"group_id":7,"model":"gpt-5.6-sol","enabled":true,"mode":"shadow","policy_version":11,"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01}]`}
+	reader := &openAIRoutePolicyReaderStub{value: `[{"group_id":7,"model":"gpt-5.6-sol","enabled":true,"mode":"shadow","policy_version":11,"activation_id":"test-activation-11","shadow_started_at":"2026-08-01T00:00:00Z","target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01}]`}
 	firstAccount := testOpenAIRouteControllerAccount(1, 0.15)
 	secondAccount := testOpenAIRouteControllerAccount(2, 0.15)
 	firstKey, err := NewOpenAIRouteKey(firstAccount, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://slow.example.invalid/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
@@ -281,7 +289,7 @@ func TestOpenAIRouteController_SharedObservationsOverrideProcessLocalInputs(t *t
 func TestOpenAIRouteControllerUsesRouteSpecificSettledTextCostInBudgetAndAudit(t *testing.T) {
 	reader := &openAIRoutePolicyReaderStub{value: `[{
 		"group_id":7,"model":"gpt-5.6-sol","request_class":"text","enabled":true,"mode":"shadow",
-		"policy_version":15,"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.10
+		"policy_version":15,"activation_id":"test-activation-15","shadow_started_at":"2026-08-01T00:00:00Z","target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.10
 	}]`}
 	account := testOpenAIRouteControllerAccount(1, 0.15)
 	key, err := NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://example.invalid/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
@@ -323,7 +331,7 @@ func TestOpenAIRouteControllerUsesRouteSpecificSettledTextCostInBudgetAndAudit(t
 func TestOpenAIRouteControllerNeverLearnsImageCostFromObservations(t *testing.T) {
 	reader := &openAIRoutePolicyReaderStub{value: `[{
 		"group_id":7,"model":"gpt-image-2","request_class":"image","enabled":true,"mode":"shadow",
-		"policy_version":16,"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.30
+		"policy_version":16,"activation_id":"test-activation-16","shadow_started_at":"2026-08-01T00:00:00Z","target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.30
 	}]`}
 	account := testOpenAIRouteControllerAccount(1, 0.15)
 	key, err := NewOpenAIRouteKey(account, 7, "gpt-image-2", OpenAIRouteRequestClassImage, "https://example.invalid/v1/images/generations", string(OpenAIUpstreamTransportHTTPSSE))
@@ -357,7 +365,7 @@ func TestOpenAIRouteControllerNeverLearnsImageCostFromObservations(t *testing.T)
 func TestOpenAIRouteControllerCachesSharedObservationReads(t *testing.T) {
 	reader := &openAIRoutePolicyReaderStub{value: `[{
 		"group_id":7,"model":"gpt-5.6-sol","request_class":"text","enabled":true,"mode":"shadow",
-		"policy_version":12,"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01
+		"policy_version":12,"activation_id":"test-activation-12","shadow_started_at":"2026-08-01T00:00:00Z","target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01
 	}]`}
 	account := testOpenAIRouteControllerAccount(1, 0.15)
 	key, err := NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://example.invalid/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
@@ -400,7 +408,7 @@ func TestOpenAIRouteControllerCachesSharedObservationReads(t *testing.T) {
 func TestOpenAIRouteControllerReadsHealthAndObservationsConcurrently(t *testing.T) {
 	reader := &openAIRoutePolicyReaderStub{value: `[{
 		"group_id":7,"model":"gpt-5.6-sol","request_class":"text","enabled":true,"mode":"shadow",
-		"policy_version":14,"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01
+		"policy_version":14,"activation_id":"test-activation-14","shadow_started_at":"2026-08-01T00:00:00Z","target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01
 	}]`}
 	account := testOpenAIRouteControllerAccount(1, 0.15)
 	key, err := NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://example.invalid/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
@@ -502,7 +510,7 @@ func TestResolveOpenAIRoutePolicyConfigSeparatesRequestClasses(t *testing.T) {
 }
 
 func TestOpenAIRouteController_EnforceModeIsHardDisabled(t *testing.T) {
-	reader := &openAIRoutePolicyReaderStub{value: `[{"group_id":7,"model":"*","enabled":true,"mode":"enforce","policy_version":1}]`}
+	reader := &openAIRoutePolicyReaderStub{value: `[{"group_id":7,"model":"*","enabled":true,"mode":"enforce","policy_version":1,"activation_id":"test-activation-1","shadow_started_at":"2026-08-01T00:00:00Z"}]`}
 	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{}, &openAIRouteObservationStoreStub{})
 
 	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
@@ -520,13 +528,43 @@ func TestOpenAIRouteController_EnforceModeIsHardDisabled(t *testing.T) {
 	require.Equal(t, OpenAIRoutePolicyEnforce, decision.Mode)
 }
 
+func TestOpenAIRouteController_EnabledShadowRequiresImmutableActivationIdentityAndUTCStart(t *testing.T) {
+	now := time.Date(2026, 8, 8, 12, 0, 0, 0, time.UTC)
+	tests := map[string]string{
+		"missing activation": `{"group_id":7,"model":"*","enabled":true,"mode":"shadow","policy_version":1,"shadow_started_at":"2026-08-01T00:00:00Z"}`,
+		"invalid activation": `{"group_id":7,"model":"*","enabled":true,"mode":"shadow","policy_version":1,"activation_id":"bad activation","shadow_started_at":"2026-08-01T00:00:00Z"}`,
+		"missing start":      `{"group_id":7,"model":"*","enabled":true,"mode":"shadow","policy_version":1,"activation_id":"activation-1"}`,
+		"non utc start":      `{"group_id":7,"model":"*","enabled":true,"mode":"shadow","policy_version":1,"activation_id":"activation-1","shadow_started_at":"2026-08-01T08:00:00+08:00"}`,
+		"future start":       `{"group_id":7,"model":"*","enabled":true,"mode":"shadow","policy_version":1,"activation_id":"activation-1","shadow_started_at":"2026-08-09T00:00:00Z"}`,
+	}
+	for name, raw := range tests {
+		t.Run(name, func(t *testing.T) {
+			health := &openAIRouteHealthStoreStub{}
+			budget := &openAIRouteBudgetSnapshotStoreStub{}
+			controller := NewOpenAIRouteController(&openAIRoutePolicyReaderStub{value: raw}, health, budget, &openAIRouteObservationStoreStub{})
+			decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
+				GroupID: 7, Model: "gpt-5.6-sol", RequestClass: OpenAIRouteRequestClassText, Now: now,
+				Candidates: []OpenAIRouteShadowCandidate{{
+					Account: testOpenAIRouteControllerAccount(1, 0.15), Endpoint: "https://example.invalid/v1/responses", Transport: string(OpenAIUpstreamTransportHTTPSSE),
+				}},
+			})
+
+			require.ErrorIs(t, err, ErrOpenAIRouteInvalidPolicy)
+			require.False(t, decision.Evaluated)
+			require.NotNil(t, decision.Audit, "matched invalid policy remains diagnosable without affecting Legacy routing")
+			require.Zero(t, health.batchCalls)
+			require.Zero(t, budget.reserveCalls)
+		})
+	}
+}
+
 func TestOpenAIRouteController_BudgetFailureDoesNotClaimASelectedCandidate(t *testing.T) {
 	reader := &openAIRoutePolicyReaderStub{value: `{
   "group_id":7,
   "model":"gpt-5.6-sol",
   "enabled":true,
   "mode":"shadow",
-  "policy_version":10,
+  "policy_version":10,"activation_id":"test-activation-10","shadow_started_at":"2026-08-01T00:00:00Z",
   "target_avg_multiplier":0.10,
   "hard_avg_multiplier":0.10,
   "estimated_base_cost_usd":0.01
@@ -559,7 +597,7 @@ func TestOpenAIRouteController_BudgetFailureDoesNotClaimASelectedCandidate(t *te
 func TestOpenAIRouteControllerRejectsIncompleteHealthBatch(t *testing.T) {
 	reader := &openAIRoutePolicyReaderStub{value: `[{
 		"group_id":7,"model":"gpt-5.6-sol","request_class":"text","enabled":true,"mode":"shadow",
-		"policy_version":13,"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01
+		"policy_version":13,"activation_id":"test-activation-13","shadow_started_at":"2026-08-01T00:00:00Z","target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01
 	}]`}
 	account := testOpenAIRouteControllerAccount(1, 0.15)
 	key, err := NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://example.invalid/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
@@ -580,7 +618,7 @@ func TestOpenAIRouteControllerRejectsIncompleteHealthBatch(t *testing.T) {
 }
 
 func TestDecodeOpenAIRoutePolicies_AcceptsSinglePolicyDocument(t *testing.T) {
-	policies, err := decodeOpenAIRoutePolicies(`{"group_id":8,"model":"gpt-5.6-sol","enabled":true,"mode":"shadow","policy_version":2}`)
+	policies, err := decodeOpenAIRoutePolicies(`{"group_id":8,"model":"gpt-5.6-sol","enabled":true,"mode":"shadow","policy_version":2,"activation_id":"test-activation-2","shadow_started_at":"2026-08-01T00:00:00Z"}`)
 	require.NoError(t, err)
 	require.Len(t, policies, 1)
 	require.Equal(t, int64(8), policies[0].GroupID)

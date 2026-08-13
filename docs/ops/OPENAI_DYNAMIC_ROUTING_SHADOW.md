@@ -8,11 +8,17 @@
 历史策略缺少该字段时只匹配 `text`，避免文本策略意外接管生图请求。不同请求类型
 使用独立的路由健康与成本预算。
 
+每一次单独获授权的 Shadow 启用周期还必须生成一个**不可复用**、仅含 ASCII
+字母/数字/`-._:` 的 `activation_id`，并写入真实 UTC RFC3339
+`shadow_started_at`。缺失、非 UTC 或未来 T0 的已启用 Shadow 策略会 fail closed，
+继续使用 Legacy。停用再开启时即使策略正文和 `policy_version` 没变，也必须使用新的
+activation，防止两轮证据被混为一个连续观察窗。
+
 ## 数据完整性边界
 
 除决策审计外，V2 还会被动采集每一次真实上游尝试（包括被后续切换掩盖的失败）。
 采集维度为 `group + account + model + request_class + endpoint_hash + transport +
-failure_domain`，Redis 中只保存不可逆指纹和聚合计数：成功/分类失败、TTFT 直方图、
+failure_domain`，Redis 与 PostgreSQL 中只保存不可逆指纹和聚合计数：成功/分类失败、TTFT 直方图、
 完成延迟直方图、半截流、样本数、最后观测时间和已结算成本。窗口包括最近一小时、
 最近七个北京时间自然日，以及过去八周相同的北京时间“周内小时”。原始 URL、
 请求/响应正文和凭证不会进入该存储。
@@ -34,6 +40,7 @@ Shadow 的候选级成本预测以策略 `estimated_base_cost_usd` 为先验。�
 - 服务端 `request_id`、客户端 `client_request_id`、失败切换 `attempt`
 - Shadow 随机种子、请求传输协议、Compact 要求和本次已排除账号 ID
 - 分组、模型、请求类型（`text`/`image`）、策略模式和策略版本
+- 本次授权周期的 `activation_id` 和精确 `shadow_started_at`（T0）
 - Legacy 实际选择、Shadow 建议选择、倍率、是否分流差异、是否使用应急预算
 - 完整归一化策略和估算基础成本
 - 5 分钟、1 小时、24 小时预算窗口的评估前账本与预计评估后账本
@@ -74,11 +81,15 @@ Shadow 的可审计性是运行前置条件：
 低于 99% 时健康状态必须为 `ready=false`，不得据此推进灰度接管。
 
 Shadow 读取这些共享聚合时使用 5 秒、最多 512 个候选集合的进程内只读 L1，并用
-singleflight 合并相同集合的并发 Redis 回源；回源独立限时 20ms，错误不缓存，调用方
+singleflight 合并相同集合的并发共享存储回源；回源独立限时 20ms，错误不缓存，调用方
 超时也不会取消正在给其他请求预热的有界回源。缓存深拷贝可变直方图/错误分类，候选
-顺序和重复项不会制造不同缓存键。Redis 始终是唯一权威源，路由/供应商熔断状态仍在
+顺序和重复项不会制造不同缓存键。Redis 是 1 小时近期信号的权威源；PostgreSQL 小时
+聚合是 7 日和 8 周同时段窗口的权威源，二者不相加以免双计。路由/供应商熔断状态仍在
 每次评估时单独读取，不会被这层缓存延迟。命中、未命中、真实回源、合并返回、失败、
 淘汰和当前条目数通过 Shadow 健康响应的 `observation_profile_cache` 暴露。
+Redis 读失败时允许使用 PostgreSQL 长窗并把近期窗口置空；Redis 的采集检查/双写失败
+仍会使完整率和 readiness 失败关闭，不能据此晋级。PostgreSQL 长窗失败则本次 Shadow
+直接失败并继续走 Legacy。
 
 路由和供应商熔断状态不做 L1 缓存，但也不再按候选顺序产生 `2N` 次 Redis 往返：
 控制器把全部 `route + provider` 键交给一次 Redis pipeline，供应商共享键自动去重，
@@ -103,14 +114,15 @@ singleflight 合并相同集合的并发 Redis 回源；回源独立限时 20ms�
 - `GET /api/v1/admin/ops/openai-route-shadow/stats`
 - `GET /api/v1/admin/ops/openai-route-shadow/assessment`
 
-列表和统计支持 `time_range`、`group_id`、`model`、`request_class`、`policy_version`、`reason`、
+列表和统计支持 `time_range`、`group_id`、`model`、`request_class`、`policy_version`、
+`activation_id`、`reason`、
 `request_id`、`client_request_id`、`evaluated`、`diverged`、`emergency` 过滤。
 统计同时提供建议账号占比、评估 P50/P95、可关联的真实 Legacy 成功用量、Legacy
 失败和 TTFT；客户端请求 ID 缺失时使用服务端请求 ID 的 `local:` 记账键回退
 关联。无法关联成功或错误日志的样本单列为 `unlinked_outcome`，不能当作成功。
 
 `assessment` 是纯只读晋级评估，必须用固定的 `start_time`、`end_time` 和完整策略
-切片 `group_id + model + request_class + policy_version` 查询；服务端强制只统计
+切片 `group_id + model + request_class + policy_version + activation_id` 查询；服务端强制只统计
 `policy_mode=shadow`，不允许附带 `evaluated/diverged/emergency/reason/request_id`
 等会美化样本的结果过滤器。它自动检查：
 
@@ -118,6 +130,10 @@ singleflight 合并相同集合的并发 Redis 回源；回源独立限时 20ms�
   首末决策跨度不少于 71 小时（两端合计空档最多 1 小时）。延期复评使用更长窗口时
   仍只允许合计 1 小时空档，不能靠扩大查询窗口稀释短时流量突发；24 小时只作为
   早期健康检查点；
+- 查询 `window_start` 必须精确等于该 activation 持久化的 `shadow_started_at`，并且
+  整个切片只能有一个非空 activation 和一个非空 T0；
+- 仅以有效评估计算相对 T0 的小时桶；72 小时窗口至少覆盖 71 个桶，防止两端突发
+  请求伪装成中间也持续采集；
 - 至少 200 条成功评估决策，评估完整率和真实结果关联率均不低于 99%；
 - 成功与失败不能同时关联，审计写入、被动采集和健康状态应用完整率均不低于 99%，
   且审计队列已经排空；
@@ -151,7 +167,8 @@ singleflight 合并相同集合的并发 Redis 回源；回源独立限时 20ms�
 1. 代码和迁移上线时，`openai_route_policies` 保持缺失或全部 `legacy`。
 2. 验证应用 `/health`、审计健康 `ready=true`，并确认存储探针没有残留行。
 3. 再单独写入版本化 Shadow 策略；策略必须显式包含分组、模型、成本目标、成本
-   硬上限、估算基础成本和 `policy_version`。
+   硬上限、估算基础成本、`policy_version`、本轮唯一 `activation_id` 和写入当时的真实
+   UTC `shadow_started_at`。不得预填预计上线时间，也不得复用已停止周期的 activation。
 4. 使用自有测试身份对每个目标分组发起真实请求，确认：
    - 用户实际账号仍等于 Legacy 选择；
    - 每次命中评估均有决策行；

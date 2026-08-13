@@ -3,6 +3,14 @@
 本文定义代码合并以后仍然必须遵守的运行状态机。当前分支只准备能力，**没有创建
 生产定时任务、没有写 Shadow 策略，也没有改变真实账号选择**。
 
+主动半开探针同样保持硬关闭：`OpenAIRouteActiveProbesCodeAvailable=false`，runner
+没有接入 Wire、扫描器、cron 或网络 client。它只准备 route 到期判断、进程内去重、
+Redis 单主租约/续租、失租取消和独立统计；不得把主动结果写入真实用户的被动观测。
+
+被动观测在代码中采用双存储契约：Redis 保存 1 小时快窗，PostgreSQL 按 route/hour
+保存非敏感聚合并权威恢复 7 日与 8 周同时段窗口。任一写入失败都会降低完整率并阻止
+晋级；读取不得把 Redis 长窗与 PostgreSQL 长窗相加。没有创建回填 cron 或 timer。
+
 ## 不可越过的状态机
 
 ```text
@@ -28,6 +36,7 @@ code_ready_legacy
 只有获得一次明确的生产 Shadow 授权后，才可以写入版本化策略。启用时必须记录：
 
 - UTC 的真实 `shadow_started_at`，向老板汇报时换算为北京时间；
+- 本轮不可复用的 `activation_id`；停用再开必须换新 ID；
 - `group_id + model + request_class + policy_version` 完整切片；
 - 归一化策略快照和操作者；
 - 24 小时检查点与 72 小时主评估的绝对时间。
@@ -65,11 +74,15 @@ code_ready_legacy
 ## 72 小时主评估
 
 调用精确切片的 `GET /api/v1/admin/ops/openai-route-shadow/assessment`，固定
-`start_time=T0`、`end_time=T0+72h`。自动门禁至少包括：
+`start_time=T0`、`end_time=T0+72h`，并显式携带本轮 `activation_id`。自动门禁至少包括：
 
+- 数据库切片只有一个非空 activation 和一个非空 T0，且 `window_start` 精确等于
+  持久化 T0；历史行、前一轮启用或停开后的同版本证据都不能混入；
 - 查询窗口达到 72 小时；实际首末决策跨度至少 71 小时，即右边界不包含在查询结果
   且真实流量不与边界同步时，两端合计只允许最多 1 小时空档；延期复评若使用更长
   窗口，同样只允许合计 1 小时空档；
+- 仅以有效评估计算相对 T0 的小时桶，72 小时窗口至少覆盖 71 个桶；延期窗口也只能
+  缺一个桶。首末时间合格但中间长时间无数据时必须阻止晋级；
 - 至少 200 条有效评估，评估和真实结果关联完整率均不低于 99%；
 - 无歧义结果、无应急预算、策略快照唯一；
 - 建议账号和建议故障域的计数都完整覆盖全部有效评估；
@@ -110,5 +123,7 @@ P95/P99 TTFT/完成延迟、文本粘性/图片无粘性，以及老板授权。
 
 - Shadow 阶段：`enabled=false` 或 `mode=legacy`，清设置缓存；真实路由本来就未接管。
 - 未来 Canary：需要独立实现确定性桶和一键 Legacy 回滚，且不得与首次 Enforce 代码
-  在同一次发布启用。
+  在同一次发布启用。依赖分支已经准备 `1% -> 5% -> 20% -> 50% -> 100%` 的纯合同，
+  但编译期 `OpenAIRouteEnforceCodeAvailable=false`，也没有接入真实 scheduler；因此它
+  只能测试 cohort 和转移不变量，仍不能切流。
 - 回滚只停止新决策，不删除 Shadow 决策、聚合检查点或复评记录。

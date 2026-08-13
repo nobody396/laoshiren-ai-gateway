@@ -126,3 +126,33 @@ func TestOpenAIRouteHealthCache_GetBatchDeduplicatesAndDefaultsMissingState(t *t
 	_, err = store.GetBatch(ctx, []service.OpenAIRouteHealthStoreKey{{}})
 	require.ErrorIs(t, err, service.ErrOpenAIRouteNoCandidate)
 }
+
+func TestOpenAIRouteHealthCache_RefreshPermitNeverReacquires(t *testing.T) {
+	server := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: server.Addr()})
+	t.Cleanup(func() { require.NoError(t, client.Close()) })
+	store := NewOpenAIRouteHealthCache(client, time.Hour, 10*time.Second)
+	ctx := context.Background()
+	key := service.OpenAIRouteHealthStoreKey{
+		Scope: service.OpenAIRouteHealthScopeRoute, GroupID: 7, AccountID: 23,
+		FailureDomain: "pomoai", Model: "gpt-5.6-sol", RequestClass: service.OpenAIRouteRequestClassText,
+		EndpointHash: "hk", Transport: "http_sse",
+	}
+
+	ok, err := store.RefreshHalfOpenPermit(ctx, key, "worker-a")
+	require.NoError(t, err)
+	require.False(t, ok)
+	ok, err = store.AcquireHalfOpenPermit(ctx, key, "worker-a")
+	require.NoError(t, err)
+	require.True(t, ok)
+	ok, err = store.RefreshHalfOpenPermit(ctx, key, "worker-b")
+	require.NoError(t, err)
+	require.False(t, ok)
+	ok, err = store.RefreshHalfOpenPermit(ctx, key, "worker-a")
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.NoError(t, store.ReleaseHalfOpenPermit(ctx, key, "worker-a"))
+	ok, err = store.RefreshHalfOpenPermit(ctx, key, "worker-a")
+	require.NoError(t, err)
+	require.False(t, ok)
+}

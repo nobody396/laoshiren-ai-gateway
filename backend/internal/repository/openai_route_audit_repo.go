@@ -61,11 +61,11 @@ func (r *openAIRouteDecisionRepository) CreateOpenAIRouteShadowDecision(
 	_, err = r.db.ExecContext(ctx, `
 INSERT INTO openai_route_shadow_decisions (
   decision_id, request_id, client_request_id, attempt, group_id, model, request_class,
-  policy_mode, policy_version, reason, evaluated, evaluation_duration_us,
+  policy_mode, policy_version, activation_id, shadow_started_at, reason, evaluated, evaluation_duration_us,
   legacy_selected_account_id, adaptive_selected_account_id, adaptive_selected_rate,
   candidate_count, excluded_count, diverged, emergency, snapshot, created_at
 ) VALUES (
-  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20::jsonb,$21
+  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22::jsonb,$23
 )`,
 		record.DecisionID,
 		record.RequestID,
@@ -76,6 +76,8 @@ INSERT INTO openai_route_shadow_decisions (
 		string(record.RequestClass),
 		string(record.PolicyMode),
 		record.PolicyVersion,
+		record.ActivationID,
+		nullableOpenAIRouteTimestamp(record.ShadowStartedAt),
 		record.Reason,
 		record.Evaluated,
 		record.EvaluationDurationMicros,
@@ -90,6 +92,13 @@ INSERT INTO openai_route_shadow_decisions (
 		createdAt.UTC(),
 	)
 	return err
+}
+
+func nullableOpenAIRouteTimestamp(value time.Time) any {
+	if value.IsZero() {
+		return nil
+	}
+	return value.UTC()
 }
 
 func nullablePositiveInt64(value int64) any {
@@ -125,7 +134,8 @@ func (r *openAIRouteDecisionRepository) ListOpenAIRouteShadowDecisions(
 	query := `
 SELECT
   d.id, d.decision_id, d.request_id, d.client_request_id, d.attempt,
-  d.group_id, d.model, d.request_class, d.policy_mode, d.policy_version, d.reason,
+  d.group_id, d.model, d.request_class, d.policy_mode, d.policy_version,
+  d.activation_id, d.shadow_started_at, d.reason,
   d.evaluated, d.evaluation_duration_us,
   d.legacy_selected_account_id, d.adaptive_selected_account_id,
   d.adaptive_selected_rate, d.candidate_count, d.excluded_count,
@@ -147,10 +157,12 @@ LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
 		var legacyID sql.NullInt64
 		var adaptiveID sql.NullInt64
 		var adaptiveRate sql.NullFloat64
+		var shadowStartedAt sql.NullTime
 		var snapshotRaw string
 		if err := rows.Scan(
 			&item.ID, &item.DecisionID, &item.RequestID, &item.ClientRequestID, &item.Attempt,
-			&item.GroupID, &item.Model, &item.RequestClass, &item.PolicyMode, &item.PolicyVersion, &item.Reason,
+			&item.GroupID, &item.Model, &item.RequestClass, &item.PolicyMode, &item.PolicyVersion,
+			&item.ActivationID, &shadowStartedAt, &item.Reason,
 			&item.Evaluated, &item.EvaluationDurationMicros,
 			&legacyID, &adaptiveID, &adaptiveRate, &item.CandidateCount, &item.ExcludedCount,
 			&item.Diverged, &item.Emergency, &snapshotRaw, &item.CreatedAt,
@@ -165,6 +177,9 @@ LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
 		}
 		if adaptiveRate.Valid {
 			item.AdaptiveSelectedRate = adaptiveRate.Float64
+		}
+		if shadowStartedAt.Valid {
+			item.ShadowStartedAt = shadowStartedAt.Time.UTC()
 		}
 		item.Snapshot = &service.OpenAIRouteShadowAuditSnapshot{}
 		if err := json.Unmarshal([]byte(snapshotRaw), item.Snapshot); err != nil {
@@ -193,6 +208,13 @@ func (r *openAIRouteDecisionRepository) GetOpenAIRouteShadowDecisionStats(
 	filter = normalizeOpenAIRouteShadowFilter(filter)
 	where, args := buildOpenAIRouteShadowWhere(filter, "d")
 	stats := &service.OpenAIRouteShadowDecisionStats{}
+	coverageExpression := "0::bigint"
+	aggregateArgs := append([]any(nil), args...)
+	if filter.StartTime != nil && !filter.StartTime.IsZero() {
+		aggregateArgs = append(aggregateArgs, filter.StartTime.UTC())
+		coverageExpression = fmt.Sprintf(`COUNT(DISTINCT FLOOR(EXTRACT(EPOCH FROM (created_at - $%d::timestamptz)) / 3600))
+    FILTER (WHERE evaluated)::bigint`, len(aggregateArgs))
+	}
 	aggregate := `
 WITH filtered AS (
   SELECT d.* FROM openai_route_shadow_decisions d ` + where + `
@@ -242,14 +264,20 @@ SELECT
   COUNT(*) FILTER (WHERE evaluated AND usage_id IS NOT NULL AND error_id IS NOT NULL)::bigint,
   COUNT(*) FILTER (WHERE evaluated AND usage_id IS NULL AND error_id IS NULL)::bigint,
   COUNT(DISTINCT snapshot->'policy')::bigint,
+  COUNT(DISTINCT NULLIF(activation_id, ''))::bigint,
+  COUNT(DISTINCT shadow_started_at)::bigint,
+  CASE WHEN COUNT(DISTINCT shadow_started_at) = 1
+       THEN MIN(shadow_started_at)
+       ELSE NULL END,
   CASE WHEN COUNT(DISTINCT snapshot->'policy') = 1
        THEN COALESCE(MIN((snapshot->'policy'->>'max_account_share')::float8), 0)
        ELSE 0 END::float8,
   CASE WHEN COUNT(DISTINCT snapshot->'policy') = 1
        THEN COALESCE(MIN((snapshot->'policy'->>'max_provider_share')::float8), 0)
        ELSE 0 END::float8,
-  MIN(created_at),
-  MAX(created_at),
+  ` + coverageExpression + `,
+  MIN(created_at) FILTER (WHERE evaluated),
+  MAX(created_at) FILTER (WHERE evaluated),
   COALESCE(percentile_cont(0.50) WITHIN GROUP (ORDER BY evaluation_duration_us), 0)::float8,
   COALESCE(percentile_cont(0.95) WITHIN GROUP (ORDER BY evaluation_duration_us), 0)::float8,
   COALESCE(percentile_cont(0.50) WITHIN GROUP (ORDER BY legacy_first_token_ms) FILTER (WHERE legacy_first_token_ms IS NOT NULL), 0)::float8,
@@ -257,7 +285,8 @@ SELECT
 FROM linked`
 	var firstDecisionAt sql.NullTime
 	var lastDecisionAt sql.NullTime
-	if err := r.db.QueryRowContext(ctx, aggregate, args...).Scan(
+	var shadowStartedAt sql.NullTime
+	if err := r.db.QueryRowContext(ctx, aggregate, aggregateArgs...).Scan(
 		&stats.Total,
 		&stats.Evaluated,
 		&stats.NotEvaluated,
@@ -272,8 +301,12 @@ FROM linked`
 		&stats.EvaluatedAmbiguousOutcome,
 		&stats.EvaluatedUnlinkedOutcome,
 		&stats.PolicySnapshotVariants,
+		&stats.ActivationIDVariants,
+		&stats.ShadowStartedAtVariants,
+		&shadowStartedAt,
 		&stats.PolicyMaxAccountShare,
 		&stats.PolicyMaxProviderShare,
+		&stats.CoveredHourBuckets,
 		&firstDecisionAt,
 		&lastDecisionAt,
 		&stats.EvaluationDurationP50US,
@@ -288,6 +321,9 @@ FROM linked`
 	}
 	if lastDecisionAt.Valid {
 		stats.LastDecisionAt = lastDecisionAt.Time.UTC()
+	}
+	if shadowStartedAt.Valid {
+		stats.ShadowStartedAt = shadowStartedAt.Time.UTC()
 	}
 
 	selectedQuery := `
@@ -388,8 +424,8 @@ func buildOpenAIRouteShadowWhere(filter *service.OpenAIRouteShadowDecisionFilter
 	if prefix != "" {
 		prefix += "."
 	}
-	conditions := make([]string, 0, 13)
-	args := make([]any, 0, 13)
+	conditions := make([]string, 0, 14)
+	args := make([]any, 0, 14)
 	add := func(condition string, value any) {
 		args = append(args, value)
 		conditions = append(conditions, fmt.Sprintf(condition, len(args)))
@@ -414,6 +450,9 @@ func buildOpenAIRouteShadowWhere(filter *service.OpenAIRouteShadowDecisionFilter
 	}
 	if filter.PolicyVersion != nil {
 		add(prefix+"policy_version = $%d", *filter.PolicyVersion)
+	}
+	if value := strings.TrimSpace(filter.ActivationID); value != "" {
+		add(prefix+"activation_id = $%d", value)
 	}
 	if value := strings.TrimSpace(filter.Reason); value != "" {
 		add(prefix+"reason = $%d", value)

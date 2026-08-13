@@ -91,6 +91,7 @@ type OpenAIRouteHealthStore interface {
 	ApplyEvent(ctx context.Context, key OpenAIRouteHealthStoreKey, event OpenAIRouteHealthEvent, policy OpenAIRoutePolicy) (OpenAIRouteHealthState, error)
 	RecordProviderEvidence(ctx context.Context, routeKey OpenAIRouteKey, event OpenAIRouteHealthEvent, policy OpenAIRoutePolicy, minDistinctAccounts int) (OpenAIRouteProviderEvidenceResult, error)
 	AcquireHalfOpenPermit(ctx context.Context, key OpenAIRouteHealthStoreKey, owner string) (bool, error)
+	RefreshHalfOpenPermit(ctx context.Context, key OpenAIRouteHealthStoreKey, owner string) (bool, error)
 	ReleaseHalfOpenPermit(ctx context.Context, key OpenAIRouteHealthStoreKey, owner string) error
 }
 

@@ -1100,6 +1100,8 @@ func (s *defaultOpenAIAccountScheduler) persistOpenAIRouteShadowDecision(
 		RequestClass:              openAIRouteRequestClassForScheduleRequest(req),
 		PolicyMode:                decision.Mode,
 		PolicyVersion:             decision.Version,
+		ActivationID:              decision.ActivationID,
+		ShadowStartedAt:           decision.ShadowStartedAt,
 		Reason:                    decision.Reason,
 		Evaluated:                 decision.Evaluated,
 		EvaluationDurationMicros:  decision.EvaluationDurationMicros,

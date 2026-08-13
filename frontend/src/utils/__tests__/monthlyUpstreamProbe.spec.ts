@@ -9,7 +9,7 @@ function account(
     account_id: 24,
     account_name: 'monthly-codex-gateway',
     platform: 'openai',
-    model: 'gpt-5.4-mini',
+    model: 'gpt-5.4',
     latest_status: 'ok',
     latest_http_status: 200,
     latest_latency_ms: 2635,

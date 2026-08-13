@@ -27,7 +27,7 @@ const (
 	SupplierProbeStatusFailed   = "failed"
 
 	DefaultSupplierProbeModel           = "claude-haiku-4-5-20251001"
-	DefaultSupplierOpenAIProbeModel     = "gpt-5.4-mini"
+	DefaultSupplierOpenAIProbeModel     = "gpt-5.4"
 	DefaultSupplierProbeIntervalMinutes = 2
 
 	SupplierProbeSubStatusNone            = ""

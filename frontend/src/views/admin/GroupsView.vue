@@ -820,7 +820,7 @@
               </div>
               <div>
                 <label class="input-label">Haiku Target</label>
-                <input v-model="createForm.haiku_mapped_model" type="text" class="input" placeholder="gpt-5.4-mini" />
+                <input v-model="createForm.haiku_mapped_model" type="text" class="input" placeholder="gpt-5.4" />
               </div>
             </div>
 
@@ -1607,7 +1607,7 @@
               </div>
               <div>
                 <label class="input-label">Haiku Target</label>
-                <input v-model="editForm.haiku_mapped_model" type="text" class="input" placeholder="gpt-5.4-mini" />
+                <input v-model="editForm.haiku_mapped_model" type="text" class="input" placeholder="gpt-5.4" />
               </div>
             </div>
 

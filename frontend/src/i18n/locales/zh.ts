@@ -1166,6 +1166,8 @@ export default {
     privacyTitle: '决定分享什么',
     privacyHint: '默认隐藏身份，只分享汇总数据',
     showName: '显示昵称',
+    showSignature: '显示署名',
+    signatureLabel: '自定义署名',
     showNameHint: '不显示邮箱，也不会显示用户 ID',
     showSavings: '显示节省金额',
     showSavingsHint: '按照站点当前展示汇率折算官方刊例价',

@@ -40,9 +40,19 @@
 
             <label class="receipt-option">
               <span>
-                <strong>{{ t('usageReceipt.showName') }}</strong>
+                <strong>{{ t('usageReceipt.showSignature') }}</strong>
               </span>
               <input v-model="preferences.showDisplayName" type="checkbox" />
+            </label>
+            <label v-if="preferences.showDisplayName" class="receipt-signature-input">
+              <span>{{ t('usageReceipt.signatureLabel') }}</span>
+              <input
+                v-model="customDisplayName"
+                type="text"
+                maxlength="20"
+                :placeholder="randomDisplayName"
+                @input="handleDisplayNameChange"
+              />
             </label>
             <label class="receipt-option">
               <span>
@@ -205,7 +215,6 @@ import {
   type AffiliateLink
 } from '@/api/agent'
 import { useAppStore } from '@/stores/app'
-import { useAuthStore } from '@/stores/auth'
 import { useClipboard } from '@/composables/useClipboard'
 import { resolvePartnerAccessState } from '@/features/affiliate/partnerAccess'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -237,7 +246,6 @@ type PrintPhase = 'ready' | 'printing' | 'detaching' | 'complete'
 
 const { t } = useI18n()
 const appStore = useAppStore()
-const authStore = useAuthStore()
 const { copied, copyToClipboard } = useClipboard()
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -255,6 +263,22 @@ const receiptPaper = ref<ReceiptPaperExpose | null>(null)
 const inviteCode = ref('')
 const partnerInviteOptions = ref<ReceiptInviteOption[]>([])
 const inviteMode = ref<'ordinary' | 'partner' | 'unavailable'>('ordinary')
+const DISPLAY_NAME_POOL = [
+  '奥林匹斯打字员',
+  '提示词炼金术士',
+  '神谕编译官',
+  '月桂叶调参师',
+  '雅典娜的键盘手',
+  '帕特农修 Bug 人',
+  '阿波罗接口祭司',
+  '赫尔墨斯搬砖官',
+  '迷宫里的架构师',
+  '特洛伊日志守夜人',
+  '赛博斯巴达文书',
+  '德尔斐模型观测员'
+] as const
+const randomDisplayName = ref(DISPLAY_NAME_POOL[Math.floor(Math.random() * DISPLAY_NAME_POOL.length)])
+const customDisplayName = ref('')
 const qrDataUrl = ref('')
 const loading = ref(true)
 const loadError = ref(false)
@@ -278,6 +302,7 @@ const inviteStatusText = computed(() => {
   if (inviteMode.value === 'unavailable') return t('usageReceipt.inviteFallback')
   return inviteCode.value ? t('usageReceipt.ordinaryInviteReady') : t('usageReceipt.inviteFallback')
 })
+const receiptDisplayName = computed(() => customDisplayName.value.trim() || randomDisplayName.value)
 
 const preferences = reactive<UsageReceiptPreferences>({
   showDisplayName: false,
@@ -376,6 +401,14 @@ async function handleInviteLinkChange(): Promise<void> {
   }
 }
 
+function handleDisplayNameChange(): void {
+  if (!receiptData.value) return
+  receiptData.value = {
+    ...receiptData.value,
+    displayName: receiptDisplayName.value
+  }
+}
+
 async function loadReceiptData(): Promise<void> {
   loading.value = true
   loadError.value = false
@@ -396,7 +429,7 @@ async function loadReceiptData(): Promise<void> {
       generatedAt: new Date(),
       startDate: startDate.value,
       endDate: endDate.value,
-      displayName: authStore.user?.username?.trim() || '',
+      displayName: receiptDisplayName.value,
       inviteCode: inviteCode.value,
       inviteUrl: inviteUrl.value,
       qrDataUrl: qrDataUrl.value,
@@ -558,6 +591,10 @@ onBeforeUnmount(() => {
   gap: 24px;
 }
 
+.usage-receipt-page::before {
+  content: none !important;
+}
+
 .usage-receipt-page__header {
   display: flex;
   align-items: flex-start;
@@ -665,6 +702,30 @@ onBeforeUnmount(() => {
   height: 18px;
   flex: 0 0 auto;
   accent-color: rgb(var(--color-terracotta));
+}
+
+.receipt-signature-input {
+  display: grid;
+  gap: 7px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid rgb(var(--color-stone));
+}
+
+.receipt-signature-input span {
+  color: rgb(var(--color-muted));
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.receipt-signature-input input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid rgb(var(--color-stone));
+  border-radius: 3px;
+  color: rgb(var(--color-ink));
+  background: rgb(var(--color-vellum));
+  font-size: 12px;
 }
 
 .receipt-invite-picker {

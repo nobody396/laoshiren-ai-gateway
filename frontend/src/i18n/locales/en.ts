@@ -1163,6 +1163,8 @@ export default {
     privacyTitle: 'Choose what to share',
     privacyHint: 'Your identity is hidden by default',
     showName: 'Show nickname',
+    showSignature: 'Show signature',
+    signatureLabel: 'Custom signature',
     showNameHint: 'Email and user ID are never included',
     showSavings: 'Show savings',
     showSavingsHint: 'Official list prices use the site display exchange rate',

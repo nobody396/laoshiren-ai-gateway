@@ -3,7 +3,6 @@ type AudioContextWithWebkit = typeof window & {
 }
 
 const PRINT_DURATION_MS = 6000
-const CUTTER_DURATION_MS = 900
 const CUTTER_START_DELAY_MS = 0
 const SOUND_CLEANUP_GRACE_MS = 200
 
@@ -18,8 +17,9 @@ export function playThermalPrinterSound(): (() => void) | null {
   const startAt = context.currentTime + 0.02
   const feedDuration = PRINT_DURATION_MS / 1000
   const cutterStartDelay = CUTTER_START_DELAY_MS / 1000
-  const cutterDuration = CUTTER_DURATION_MS / 1000
-  const stopAt = startAt + feedDuration + cutterStartDelay + cutterDuration
+  const completionBellAt = startAt + feedDuration + cutterStartDelay + 0.32
+  const completionBellDuration = 1.25
+  const stopAt = completionBellAt + completionBellDuration
   const sources: AudioScheduledSourceNode[] = []
 
   const master = context.createGain()
@@ -120,12 +120,38 @@ export function playThermalPrinterSound(): (() => void) | null {
     sources.push(cutter)
   }
 
+  // A short mechanical completion chime, like a vintage oven timer. Two
+  // inharmonic partials make it feel metallic without sounding like a phone.
+  for (const [frequency, gainValue, duration] of [
+    [1180, 0.12, completionBellDuration],
+    [1770, 0.055, 0.82],
+    [2360, 0.024, 0.48]
+  ] as const) {
+    const bell = context.createOscillator()
+    const bellGain = context.createGain()
+    const bellFilter = context.createBiquadFilter()
+    bell.type = 'sine'
+    bell.frequency.setValueAtTime(frequency, completionBellAt)
+    bell.frequency.exponentialRampToValueAtTime(frequency * 0.985, completionBellAt + duration)
+    bellGain.gain.setValueAtTime(0.0001, completionBellAt)
+    bellGain.gain.linearRampToValueAtTime(gainValue, completionBellAt + 0.008)
+    bellGain.gain.exponentialRampToValueAtTime(0.0001, completionBellAt + duration)
+    bellFilter.type = 'highpass'
+    bellFilter.frequency.value = 760
+    bell.connect(bellFilter)
+    bellFilter.connect(bellGain)
+    bellGain.connect(master)
+    bell.start(completionBellAt)
+    bell.stop(completionBellAt + duration + 0.02)
+    sources.push(bell)
+  }
+
   void context.resume().catch(() => undefined)
 
   let stopped = false
   const timeoutId = window.setTimeout(
     () => stop(),
-    PRINT_DURATION_MS + CUTTER_START_DELAY_MS + CUTTER_DURATION_MS + SOUND_CLEANUP_GRACE_MS
+    PRINT_DURATION_MS + CUTTER_START_DELAY_MS + (completionBellDuration * 1000) + 500 + SOUND_CLEANUP_GRACE_MS
   )
 
   function stop(): void {

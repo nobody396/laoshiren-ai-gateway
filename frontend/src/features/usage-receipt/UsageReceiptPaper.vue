@@ -435,7 +435,7 @@ defineExpose({ getElement })
   justify-content: center;
   gap: 22px;
   margin: 12px 0 0;
-  padding: 8px 10px;
+  padding: 10px 14px;
   border: 1px solid rgb(var(--receipt-ink));
   text-align: left;
 }
@@ -443,6 +443,7 @@ defineExpose({ getElement })
 .receipt-qr img {
   width: 76px;
   height: 76px;
+  display: block;
   flex: 0 0 auto;
   background: white;
 }

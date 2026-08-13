@@ -42,6 +42,14 @@
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+          <RouterLink
+            to="/admin/cost-accounting"
+            data-test="cost-accounting-link"
+            class="btn btn-secondary !px-3 !py-1"
+          >
+            <Icon name="calculator" size="sm" />
+            {{ t('nav.costAccounting', '成本核算') }}
+          </RouterLink>
           <div v-if="summaryMode === 'month'" class="flex items-center gap-1">
             <button
               data-test="summary-month-prev"

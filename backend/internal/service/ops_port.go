@@ -36,11 +36,11 @@ type OpsRepository interface {
 	InsertMonthlyUpstreamProbeResult(ctx context.Context, input *MonthlyUpstreamProbePoint) error
 	ListMonthlyUpstreamProbeResults(ctx context.Context, since time.Time) ([]MonthlyUpstreamProbePoint, error)
 
-	// GetCostAccountingRealUsage sums real credit-group consumption and its
-	// true CNY-equivalent cost per group over [start, end), using each row's
-	// own historical rate_multiplier/account_rate_multiplier snapshot rather
-	// than current live rates.
-	GetCostAccountingRealUsage(ctx context.Context, groupIDs []int64, start, end time.Time) (map[int64]CostAccountingUsageRow, error)
+	// GetCostAccountingRealUsage sums real consumption and true upstream cost
+	// per group over [start, end). Credit groups are matched to subscription
+	// billing rows, while pay-as-you-go groups are matched to standard billing
+	// rows so the two ledgers cannot be mixed accidentally.
+	GetCostAccountingRealUsage(ctx context.Context, creditGroupIDs, payAsYouGoGroupIDs []int64, start, end time.Time) (map[int64]CostAccountingUsageRow, error)
 
 	InsertSystemMetrics(ctx context.Context, input *OpsInsertSystemMetricsInput) error
 	GetLatestSystemMetrics(ctx context.Context, windowMinutes int) (*OpsSystemMetricsSnapshot, error)

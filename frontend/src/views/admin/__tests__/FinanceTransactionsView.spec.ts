@@ -87,6 +87,10 @@ const StatCardStub = {
   props: ['title', 'value'],
   template: '<div class="stat-card">{{ title }}:{{ value }}</div>'
 }
+const RouterLinkStub = {
+  props: ['to'],
+  template: '<a :href="to"><slot /></a>'
+}
 
 const mountView = () =>
   mount(FinanceTransactionsView, {
@@ -100,7 +104,8 @@ const mountView = () =>
         Select: SelectStub,
         EmptyState: true,
         StatCard: StatCardStub,
-        Icon: true
+        Icon: true,
+        RouterLink: RouterLinkStub
       }
     }
   })
@@ -146,6 +151,15 @@ beforeEach(() => {
 })
 
 describe('admin FinanceTransactionsView', () => {
+  it('links the cash ledger to cost accounting', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(wrapper.get('[data-test="cost-accounting-link"]').attributes('href')).toBe(
+      '/admin/cost-accounting'
+    )
+  })
+
   it('loads the ledger list and the cumulative summary on mount', async () => {
     mountView()
     await flushPromises()

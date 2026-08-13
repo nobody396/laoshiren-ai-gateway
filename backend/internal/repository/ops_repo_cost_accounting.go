@@ -10,16 +10,15 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 )
 
-// GetCostAccountingRealUsage sums, per group, the raw credits consumed
-// (usage_logs.actual_cost, already the amount debited from a credit group's
-// pool) and the true CNY-equivalent cost this business incurred
-// (actual_cost * account_rate_multiplier / rate_multiplier), using each
-// row's own historical multiplier snapshot rather than current live rates.
-// billing_type = 1 matches the subscription/credit billing path used
-// elsewhere in this codebase (see monthly_compensation.py's usage query).
-func (r *opsRepository) GetCostAccountingRealUsage(ctx context.Context, groupIDs []int64, start, end time.Time) (map[int64]service.CostAccountingUsageRow, error) {
+// GetCostAccountingRealUsage sums, per group, the amount charged to the user
+// and the true upstream cost incurred by the business. Credit groups must use
+// subscription billing rows (billing_type=1); public pay-as-you-go groups must
+// use standard billing rows (billing_type=0). The upstream cost expression is
+// shared with usage statistics and daily billing reconciliation, including
+// fixed-price image cost captured in account_stats_cost.
+func (r *opsRepository) GetCostAccountingRealUsage(ctx context.Context, creditGroupIDs, payAsYouGoGroupIDs []int64, start, end time.Time) (map[int64]service.CostAccountingUsageRow, error) {
 	result := make(map[int64]service.CostAccountingUsageRow)
-	if r == nil || r.db == nil || len(groupIDs) == 0 {
+	if r == nil || r.db == nil || (len(creditGroupIDs) == 0 && len(payAsYouGoGroupIDs) == 0) {
 		return result, nil
 	}
 
@@ -27,16 +26,19 @@ func (r *opsRepository) GetCostAccountingRealUsage(ctx context.Context, groupIDs
 SELECT group_id,
        COUNT(*) AS request_count,
        COALESCE(SUM(actual_cost), 0) AS raw_credits,
-       COALESCE(SUM(actual_cost * COALESCE(account_rate_multiplier, 1) / NULLIF(rate_multiplier, 0)), 0) AS real_cost
+       COALESCE(SUM(COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1)), 0) AS real_cost
 FROM usage_logs
-WHERE group_id = ANY($1)
-  AND created_at >= $2
-  AND created_at < $3
-  AND billing_type = 1
-  AND actual_cost > 0
+WHERE created_at >= $3
+  AND created_at < $4
+  AND (
+    (billing_type = 1 AND group_id = ANY($1))
+    OR
+    (billing_type = 0 AND group_id = ANY($2))
+  )
+  AND (actual_cost > 0 OR COALESCE(account_stats_cost, total_cost) > 0)
 GROUP BY group_id`
 
-	rows, err := r.db.QueryContext(ctx, q, pq.Array(groupIDs), start, end)
+	rows, err := r.db.QueryContext(ctx, q, pq.Array(creditGroupIDs), pq.Array(payAsYouGoGroupIDs), start, end)
 	if err != nil {
 		return nil, err
 	}

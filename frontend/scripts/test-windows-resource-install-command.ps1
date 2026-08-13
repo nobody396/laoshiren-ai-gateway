@@ -169,7 +169,9 @@ process.on('SIGTERM', () => server.close(() => process.exit(0)));
 
   $installerPath = Join-Path $PSScriptRoot '..\public\auto-config\install.ps1'
   $installerFunctions = Get-FunctionsFromPowerShellFile -Path $installerPath -Names @(
+    'Write-Info',
     'Stop-Script',
+    'Ensure-Directory',
     'Get-VerifiedSameSiteAsset',
     'Download-VerifiedAsset',
     'Install-Git',

@@ -583,7 +583,9 @@ func (s *DownloadResourceService) SyncClaudeDesktop(ctx context.Context) error {
 			continue
 		}
 		dest := filepath.Join(versionDir, filepath.Base(source.Name))
-		if err := s.downloadStaticAsset(ctx, source.URL, dest); err != nil {
+		// The version directory is immutable. Reuse a completed package instead
+		// of re-downloading hundreds of megabytes on every sync interval.
+		if err := s.ensureStaticAsset(ctx, source.URL, dest); err != nil {
 			return fmt.Errorf("cache asset %s: %w", source.Name, err)
 		}
 		info, err := os.Stat(dest)

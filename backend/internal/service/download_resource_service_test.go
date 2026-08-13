@@ -14,9 +14,10 @@ import (
 )
 
 type downloadResourceGitHubStub struct {
-	release  *GitHubRelease
-	releases map[string]*GitHubRelease
-	files    map[string][]byte
+	release   *GitHubRelease
+	releases  map[string]*GitHubRelease
+	files     map[string][]byte
+	downloads []string
 }
 
 func (s *downloadResourceGitHubStub) FetchLatestRelease(_ context.Context, repo string) (*GitHubRelease, error) {
@@ -27,6 +28,7 @@ func (s *downloadResourceGitHubStub) FetchLatestRelease(_ context.Context, repo 
 }
 
 func (s *downloadResourceGitHubStub) DownloadFile(_ context.Context, url, dest string, _ int64) error {
+	s.downloads = append(s.downloads, url)
 	data, ok := s.files[url]
 	if !ok {
 		return fmt.Errorf("fixture download not found: %s", url)
@@ -366,6 +368,8 @@ func TestDownloadResourceServiceSyncClaudeDesktopCachesStaticAssets(t *testing.T
 
 	err := svc.SyncClaudeDesktop(context.Background())
 	require.NoError(t, err)
+	require.NoError(t, svc.SyncClaudeDesktop(context.Background()))
+	require.Len(t, stub.downloads, 3, "immutable Claude packages must not be downloaded again")
 
 	manifest, err := svc.ListTool(context.Background(), claudeDesktopToolID)
 	require.NoError(t, err)

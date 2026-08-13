@@ -26,6 +26,8 @@ Assert-True ($ParseErrors.Count -eq 0) "install.ps1 contains PowerShell parse er
 
 $RequiredFunctions = @(
   'Write-Info',
+  'Write-WarnMessage',
+  'Stop-Script',
   'Get-UsableClientCommand',
   'Resolve-SystemNpmCmd',
   'Test-UsableSystemNode',

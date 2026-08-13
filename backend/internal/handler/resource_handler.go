@@ -244,28 +244,6 @@ func (h *ResourceHandler) DownloadClaudeDesktopWindowsX64(c *gin.Context) {
 	c.FileAttachment(file.Path, "Claude-Setup.exe")
 }
 
-// DownloadCodexWindowsLegacyImmutablePackage keeps URLs emitted by v0.7.4
-// working after the version segment was added. New manifests never generate
-// this shape, but existing CDN/user copies remain safe because SHA256 and asset
-// ID must both match a retained version manifest.
-func (h *ResourceHandler) DownloadCodexWindowsLegacyImmutablePackage(c *gin.Context) {
-	file, err := h.downloads.GetImmutableToolAssetBySHA(
-		c.Request.Context(),
-		"codex",
-		c.Param("sha256"),
-		c.Param("filename"),
-	)
-	if err != nil {
-		handlePublicDownloadError(c, err)
-		return
-	}
-	if file.Asset.Platform != "windows" || file.Asset.Arch != "x64" || !strings.EqualFold(filepath.Ext(file.Asset.Name), ".msix") {
-		response.NotFound(c, "安装包不存在")
-		return
-	}
-	serveImmutableDownload(c, file, c.Param("sha256"), c.Param("filename"))
-}
-
 func (h *ResourceHandler) DownloadCCSwitchImmutablePackage(c *gin.Context) {
 	h.downloadImmutableToolPackage(c, "cc-switch")
 }

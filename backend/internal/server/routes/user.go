@@ -28,10 +28,6 @@ func RegisterPublicResourceRoutes(r *gin.Engine, h *handler.Handlers) {
 		h.Resource.DownloadCodexWindowsImmutablePackage,
 	)
 	r.GET(
-		"/downloads/codex/windows-x64/:sha256/:filename",
-		h.Resource.DownloadCodexWindowsLegacyImmutablePackage,
-	)
-	r.GET(
 		"/downloads/codex/:version/:sha256/:filename",
 		h.Resource.DownloadCodexImmutablePackage,
 	)

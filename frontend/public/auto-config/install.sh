@@ -2,11 +2,11 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="0.7.5"
+SCRIPT_VERSION="0.7.6"
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
 DEFAULT_CODEX_MANIFEST_URL="https://laoshirenai.com/api/v1/public-downloads/codex/latest.json"
-DEFAULT_CODEX_MODEL_CATALOG_URL="https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.5"
+DEFAULT_CODEX_MODEL_CATALOG_URL="https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.6"
 DEFAULT_TOPUP_URL="https://laoshirenai.com/get-subscription"
 DEFAULT_TOOLS="all"
 DEFAULT_NODE_INDEX_PRIMARY="https://npmmirror.com/mirrors/node/index.tab"
@@ -849,7 +849,7 @@ EOF
   asset_url="$(printf '%s' "$asset_url" | base64 -d)"
   expected_sha="$(printf '%s' "$expected_sha" | base64 -d)"
   case "$asset_url" in
-    https://laoshirenai.com/api/v1/public-downloads/codex/packages/*) ;;
+    https://laoshirenai.com/downloads/codex/*) ;;
     *) rm -rf "$tmp_dir"; log_error "Codex App 下载地址未通过同站校验" ;;
   esac
 

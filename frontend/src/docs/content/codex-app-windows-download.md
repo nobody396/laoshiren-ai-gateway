@@ -26,6 +26,10 @@ Add-AppxPackage -Path .\OpenAI.Codex_*.Msix
 
 [Codex App Windows 动态 latest.json](/api/v1/public-downloads/codex/windows-x64/latest.json)
 
+`latest.msix` 只是一个不缓存的更新入口，会把下载重定向到带 SHA256 的
+`/downloads/codex/windows-x64/...` 固定文件。真正的大安装包由本站静态缓存和
+EdgeOne 分发；新版本使用新的 SHA256 URL，不会被旧版本缓存覆盖。
+
 缓存包来自 Codex App 的 Microsoft Store 包元数据镜像。它不是第三方 Codex 客户端，也不是 Codex CLI。
 
 ## 安装后启动

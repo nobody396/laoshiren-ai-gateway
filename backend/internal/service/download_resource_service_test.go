@@ -27,7 +27,10 @@ func (s *downloadResourceGitHubStub) FetchLatestRelease(_ context.Context, repo 
 }
 
 func (s *downloadResourceGitHubStub) DownloadFile(_ context.Context, url, dest string, _ int64) error {
-	data := s.files[url]
+	data, ok := s.files[url]
+	if !ok {
+		return fmt.Errorf("fixture download not found: %s", url)
+	}
 	return os.WriteFile(dest, data, 0644)
 }
 
@@ -366,7 +369,7 @@ func TestDownloadResourceServiceSyncClaudeDesktopCachesStaticAssets(t *testing.T
 
 	manifest, err := svc.ListTool(context.Background(), claudeDesktopToolID)
 	require.NoError(t, err)
-	require.Equal(t, "latest", manifest.Version)
+	require.Equal(t, "1.0.0", manifest.Version)
 	require.Len(t, manifest.Assets, 3)
 	require.Equal(t, "macos", manifest.Assets[0].Platform)
 	require.Equal(t, "windows", manifest.Assets[1].Platform)
@@ -379,12 +382,175 @@ func TestDownloadResourceServiceSyncClaudeDesktopCachesStaticAssets(t *testing.T
 	require.Equal(t, "x64", windowsAsset.Asset.Arch)
 }
 
+func TestDownloadResourceServiceImmutableAssetSurvivesCurrentManifestAdvance(t *testing.T) {
+	dir := t.TempDir()
+	svc := NewDownloadResourceService(&config.Config{Downloads: config.DownloadsConfig{
+		Enabled: true, CacheDir: dir,
+	}}, &downloadResourceGitHubStub{})
+
+	writeVersion := func(version, name, content string) CachedDownloadAsset {
+		versionDir := filepath.Join(dir, ccSwitchToolID, sanitizePathSegment(version))
+		require.NoError(t, os.MkdirAll(versionDir, 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(versionDir, name), []byte(content), 0644))
+		asset := CachedDownloadAsset{
+			ID: makeAssetID(name), Name: name, Size: int64(len(content)),
+			SHA256:   fmt.Sprintf("%x", sha256.Sum256([]byte(content))),
+			Platform: "windows", Arch: "x64",
+		}
+		require.NoError(t, svc.writeManifest(CachedDownloadManifest{
+			Tool: ccSwitchToolID, Version: version, Assets: []CachedDownloadAsset{asset},
+		}))
+		return asset
+	}
+
+	oldAsset := writeVersion("v3.18.0", "CC-Switch-v3.18.0-Windows.msi", "old-version")
+	_ = writeVersion("v3.19.0", "CC-Switch-v3.19.0-Windows.msi", "new-version")
+
+	current, err := svc.ListTool(context.Background(), ccSwitchToolID)
+	require.NoError(t, err)
+	require.Equal(t, "v3.19.0", current.Version)
+
+	oldFile, err := svc.GetImmutableToolAsset(
+		context.Background(), ccSwitchToolID, "v3.18.0", oldAsset.ID,
+	)
+	require.NoError(t, err)
+	content, err := os.ReadFile(oldFile.Path)
+	require.NoError(t, err)
+	require.Equal(t, "old-version", string(content))
+	require.FileExists(t, filepath.Join(dir, ccSwitchToolID, "v3.18.0", versionManifestName))
+}
+
+func TestDownloadResourceServiceImmutableAssetRejectsTraversalAndUnknownVersion(t *testing.T) {
+	dir := t.TempDir()
+	svc := NewDownloadResourceService(&config.Config{Downloads: config.DownloadsConfig{
+		Enabled: true, CacheDir: dir,
+	}}, &downloadResourceGitHubStub{})
+
+	for _, tc := range []struct {
+		version string
+		asset   string
+	}{
+		{version: "../v1", asset: "installer.exe"},
+		{version: "v1", asset: "../installer.exe"},
+		{version: "missing", asset: "installer.exe"},
+	} {
+		_, err := svc.GetImmutableToolAsset(context.Background(), ccSwitchToolID, tc.version, tc.asset)
+		require.Error(t, err)
+	}
+}
+
+func TestDownloadResourceServiceSyncFailsClosedWithoutDownloadClient(t *testing.T) {
+	dir := t.TempDir()
+	svc := NewDownloadResourceService(&config.Config{Downloads: config.DownloadsConfig{
+		Enabled: true, CacheDir: dir,
+	}}, nil)
+
+	for _, syncFn := range []func(context.Context) error{
+		svc.SyncCCSwitch,
+		svc.SyncCodex,
+		svc.SyncCodexPlusPlus,
+		svc.SyncClaudeDesktop,
+		svc.SyncGitForWindows,
+		svc.SyncGrokBuild,
+	} {
+		require.ErrorContains(t, syncFn(context.Background()), "download client is not configured")
+	}
+}
+
+func TestClaudeDesktopVersionFromSourcesUsesConcreteWindowsVersion(t *testing.T) {
+	require.Equal(t, "1.25927.0", claudeDesktopVersionFromSources([]staticDownloadSource{{
+		Platform: "windows",
+		URL:      "https://downloads.claude.ai/releases/win32/x64/1.25927.0/Claude.exe",
+	}}))
+}
+
+func TestDownloadResourceServiceSyncGrokBuildUsesVerifiedOfficialVersion(t *testing.T) {
+	dir := t.TempDir()
+	primary := "https://primary.example.test/cli"
+	fallback := "https://fallback.example.test/cli"
+	version := "1.0.3"
+	files := map[string][]byte{
+		primary + "/stable":  []byte(version + "\n"),
+		fallback + "/stable": []byte(version + "\n"),
+	}
+	for _, arch := range []string{"x86_64", "aarch64"} {
+		urlPath := fmt.Sprintf("/grok-%s-windows-%s.exe", version, arch)
+		payload := []byte("verified-" + arch)
+		files[primary+urlPath] = payload
+		files[fallback+urlPath] = payload
+	}
+	stub := &downloadResourceGitHubStub{files: files}
+	svc := NewDownloadResourceService(&config.Config{Downloads: config.DownloadsConfig{
+		Enabled: true, CacheDir: dir, MaxAssetBytes: 1024,
+		GrokBuildPrimaryBaseURL: primary, GrokBuildFallbackBaseURL: fallback,
+	}}, stub)
+
+	require.NoError(t, svc.SyncGrokBuild(context.Background()))
+	manifest, err := svc.ListTool(context.Background(), grokBuildToolID)
+	require.NoError(t, err)
+	require.Equal(t, version, manifest.Version)
+	require.Len(t, manifest.Assets, 2)
+	require.Equal(t, "x64", manifest.Assets[0].Arch)
+	require.Equal(t, "arm64", manifest.Assets[1].Arch)
+	for _, asset := range manifest.Assets {
+		require.FileExists(t, asset.Path)
+		require.NotEmpty(t, asset.SHA256)
+	}
+}
+
+func TestDownloadResourceServiceSyncGrokBuildRejectsVersionMismatch(t *testing.T) {
+	dir := t.TempDir()
+	primary := "https://primary.example.test/cli"
+	fallback := "https://fallback.example.test/cli"
+	version := "1.0.3"
+	stub := &downloadResourceGitHubStub{files: map[string][]byte{
+		primary + "/stable":  []byte(version),
+		fallback + "/stable": []byte("1.0.4"),
+	}}
+	svc := NewDownloadResourceService(&config.Config{Downloads: config.DownloadsConfig{
+		Enabled: true, CacheDir: dir, MaxAssetBytes: 1024,
+		GrokBuildPrimaryBaseURL: primary, GrokBuildFallbackBaseURL: fallback,
+	}}, stub)
+
+	err := svc.SyncGrokBuild(context.Background())
+	require.ErrorContains(t, err, "disagree on stable version")
+	_, manifestErr := svc.ListTool(context.Background(), grokBuildToolID)
+	require.ErrorIs(t, manifestErr, ErrDownloadManifestNotReady)
+}
+
+func TestDownloadResourceServiceSyncGitForWindowsSelectsInstallers(t *testing.T) {
+	dir := t.TempDir()
+	stub := &downloadResourceGitHubStub{
+		release: &GitHubRelease{TagName: "v2.51.0.windows.1", Assets: []GitHubAsset{
+			{Name: "Git-2.51.0-64-bit.exe", BrowserDownloadURL: "https://example.test/x64", Size: 3},
+			{Name: "Git-2.51.0-arm64.exe", BrowserDownloadURL: "https://example.test/arm64", Size: 4},
+			{Name: "PortableGit-2.51.0-64-bit.7z.exe", BrowserDownloadURL: "https://example.test/portable", Size: 8},
+		}},
+		files: map[string][]byte{
+			"https://example.test/x64":   []byte("x64"),
+			"https://example.test/arm64": []byte("arm5"),
+		},
+	}
+	svc := NewDownloadResourceService(&config.Config{Downloads: config.DownloadsConfig{
+		Enabled: true, CacheDir: dir, GitForWindowsRepo: defaultGitForWindowsRepo, MaxAssetBytes: 1024,
+	}}, stub)
+
+	require.NoError(t, svc.SyncGitForWindows(context.Background()))
+	manifest, err := svc.ListTool(context.Background(), gitForWindowsToolID)
+	require.NoError(t, err)
+	require.Len(t, manifest.Assets, 2)
+	require.Equal(t, "x64", manifest.Assets[0].Arch)
+	require.Equal(t, "arm64", manifest.Assets[1].Arch)
+}
+
 func TestDownloadResourceServiceListVersionStatusDistinguishesCacheModes(t *testing.T) {
 	dir := t.TempDir()
 	stub := &downloadResourceGitHubStub{releases: map[string]*GitHubRelease{
-		defaultCodexRepo:      {TagName: "rust-v0.62.0", PublishedAt: "2026-08-01T00:00:00Z"},
-		defaultClaudeCodeRepo: {TagName: "v1.0.80", PublishedAt: "2026-08-01T00:00:00Z"},
-		defaultCCSwitchRepo:   {TagName: "v3.18.0", PublishedAt: "2026-08-01T00:00:00Z"},
+		defaultCodexRepo:         {TagName: "rust-v0.62.0", PublishedAt: "2026-08-01T00:00:00Z"},
+		defaultCodexPPRepo:       {TagName: "v1.2.4", PublishedAt: "2026-08-01T00:00:00Z"},
+		defaultClaudeCodeRepo:    {TagName: "v1.0.80", PublishedAt: "2026-08-01T00:00:00Z"},
+		defaultGitForWindowsRepo: {TagName: "v2.53.0.windows.2", PublishedAt: "2026-08-01T00:00:00Z"},
+		defaultCCSwitchRepo:      {TagName: "v3.18.0", PublishedAt: "2026-08-01T00:00:00Z"},
 	}}
 	svc := NewDownloadResourceService(&config.Config{Downloads: config.DownloadsConfig{CacheDir: dir}}, stub)
 	require.NoError(t, svc.writeManifest(CachedDownloadManifest{
@@ -393,11 +559,27 @@ func TestDownloadResourceServiceListVersionStatusDistinguishesCacheModes(t *test
 	require.NoError(t, svc.writeManifest(CachedDownloadManifest{
 		Tool: codexToolID, Version: "v0.12.0", UpdatedAt: "2026-08-02T00:00:00Z",
 	}))
+	require.NoError(t, svc.writeManifest(CachedDownloadManifest{
+		Tool: codexPlusPlusToolID, Version: "v1.2.4", UpdatedAt: "2026-08-02T00:00:00Z",
+	}))
+	require.NoError(t, svc.writeManifest(CachedDownloadManifest{
+		Tool: claudeDesktopToolID, Version: "1.25927.0", UpdatedAt: "2026-08-02T00:00:00Z",
+	}))
+	require.NoError(t, svc.writeManifest(CachedDownloadManifest{
+		Tool: grokBuildToolID, Version: "1.0.3", UpdatedAt: "2026-08-02T00:00:00Z",
+	}))
+	require.NoError(t, svc.writeManifest(CachedDownloadManifest{
+		Tool: gitForWindowsToolID, Version: "v2.53.0.windows.2", UpdatedAt: "2026-08-02T00:00:00Z",
+	}))
 
 	items := svc.ListVersionStatus(context.Background())
-	require.Len(t, items, 3)
+	require.Len(t, items, 7)
 	require.Equal(t, "cached", items[0].State)
-	require.Equal(t, "npm-mirror", items[1].State)
-	require.Empty(t, items[1].CachedVersion)
-	require.Equal(t, "current", items[2].State)
+	require.Equal(t, "current", items[1].State)
+	require.Equal(t, "cached", items[2].State)
+	require.Equal(t, "npm-mirror", items[3].State)
+	require.Empty(t, items[3].CachedVersion)
+	require.Equal(t, "cached", items[4].State)
+	require.Equal(t, "current", items[5].State)
+	require.Equal(t, "current", items[6].State)
 }

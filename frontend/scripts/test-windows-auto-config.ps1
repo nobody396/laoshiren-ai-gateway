@@ -1,4 +1,4 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 function Assert-True {
@@ -30,6 +30,11 @@ $RequiredFunctions = @(
   'Resolve-SystemNpmCmd',
   'Test-UsableSystemNode',
   'Ensure-NodeRuntime',
+  'Get-NodeReleaseChecksum',
+  'Download-VerifiedFileWithFallback',
+  'Get-VerifiedSameSiteAsset',
+  'Download-VerifiedAsset',
+  'Detect-BrokenLocalProxy',
   'Invoke-NpmCommand',
   'Remove-ManagedPowerShellShims',
   'Test-NeedsNpmClientInstall'
@@ -46,6 +51,9 @@ foreach ($Name in $RequiredFunctions) {
 
 $OriginalExecutionPolicy = Get-ExecutionPolicy -Scope Process
 $OriginalPath = $env:Path
+$OriginalHttpProxy = $env:HTTP_PROXY
+$OriginalHttpsProxy = $env:HTTPS_PROXY
+$OriginalAllProxy = $env:ALL_PROXY
 $FixtureDir = Join-Path ([IO.Path]::GetTempPath()) ("laoshirenai-auto-config-test-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $FixtureDir -Force | Out-Null
 
@@ -115,13 +123,31 @@ try {
 
   $NpmLog = Join-Path $FixtureDir 'npm-arguments.log'
   $FakeNpm = Join-Path $FixtureDir 'npm.cmd'
-  Set-Content -LiteralPath $FakeNpm -Encoding Ascii -Value "@echo off`r`necho %*>>$NpmLog`r`nexit /b 0`r`n"
+  Set-Content -LiteralPath $FakeNpm -Encoding Ascii -Value "@echo off`r`necho ARGS=%* HTTP_PROXY=%HTTP_PROXY% HTTPS_PROXY=%HTTPS_PROXY% ALL_PROXY=%ALL_PROXY%>>$NpmLog`r`nexit /b 0`r`n"
   $script:NpmCmd = $FakeNpm
+
+  $env:HTTP_PROXY = 'http://127.0.0.1:9'
+  $env:HTTPS_PROXY = 'http://localhost:9'
+  $env:ALL_PROXY = 'socks5://[::1]:9'
+  Detect-BrokenLocalProxy
+  Assert-True $script:UseProxylessNpm 'Dead local proxy variables were not detected'
   Invoke-NpmCommand -Arguments @('install', '-g', '@anthropic-ai/claude-code@latest')
   Invoke-NpmCommand -Arguments @('install', '-g', '@openai/codex@latest')
   $NpmCalls = Get-Content -LiteralPath $NpmLog -Raw
   Assert-True ($NpmCalls.Contains('@anthropic-ai/claude-code@latest')) 'Claude Code npm installation command was not executed through npm.cmd'
   Assert-True ($NpmCalls.Contains('@openai/codex@latest')) 'Codex npm installation command was not executed through npm.cmd'
+  Assert-True (-not $NpmCalls.Contains('127.0.0.1:9')) 'Dead HTTP proxy leaked into npm.cmd'
+  Assert-True (-not $NpmCalls.Contains('localhost:9')) 'Dead HTTPS proxy leaked into npm.cmd'
+  Assert-True (-not $NpmCalls.Contains('[::1]:9')) 'Dead ALL_PROXY leaked into npm.cmd'
+  Assert-True ($env:HTTP_PROXY -eq 'http://127.0.0.1:9') 'HTTP proxy was not restored after npm.cmd'
+  Assert-True ($env:HTTPS_PROXY -eq 'http://localhost:9') 'HTTPS proxy was not restored after npm.cmd'
+  Assert-True ($env:ALL_PROXY -eq 'socks5://[::1]:9') 'ALL_PROXY was not restored after npm.cmd'
+
+  $env:HTTP_PROXY = ''
+  $env:HTTPS_PROXY = ''
+  $env:ALL_PROXY = ''
+  Detect-BrokenLocalProxy
+  Assert-True (-not $script:UseProxylessNpm) 'Proxyless environment was incorrectly classified as a broken proxy'
 
   $FailingNpm = Join-Path $FixtureDir 'npm-fail.cmd'
   Set-Content -LiteralPath $FailingNpm -Encoding Ascii -Value "@echo off`r`nexit /b 7`r`n"
@@ -145,10 +171,45 @@ try {
   $script:InstallGrokClient = $true
   Assert-True (-not (Test-NeedsNpmClientInstall)) 'Grok Build must remain isolated from the npm installation path'
 
+  $fixtureSHA256 = (Get-FileHash -LiteralPath (Join-Path $env:SystemRoot 'System32\whoami.exe') -Algorithm SHA256).Hash.ToLowerInvariant()
+  $nodeZipName = 'node-v24.0.0-win-x64.zip'
+  $nodeFixtureRoot = Join-Path $FixtureDir 'node-fixture'
+  $nodeVersionDir = Join-Path $nodeFixtureRoot 'v24.0.0'
+  New-Item -ItemType Directory -Path $nodeVersionDir -Force | Out-Null
+  $DefaultNodeDistPrimary = $nodeFixtureRoot
+  Set-Content -LiteralPath (Join-Path $nodeVersionDir 'SHASUMS256.txt') -Encoding Ascii -Value "$fixtureSHA256  $nodeZipName`n"
+  $resolvedSHA256 = Get-NodeReleaseChecksum -Version 'v24.0.0' -ZipName $nodeZipName
+  Assert-True ($resolvedSHA256 -eq $fixtureSHA256) 'Node.js checksum metadata was not resolved correctly'
+
+  $verifiedDownload = Join-Path $FixtureDir 'verified-download.exe'
+  $verifiedSource = Join-Path $FixtureDir 'verified-source.exe'
+  Copy-Item -LiteralPath (Join-Path $env:SystemRoot 'System32\whoami.exe') -Destination $verifiedSource -Force
+  Download-VerifiedFileWithFallback `
+    -OutputPath $verifiedDownload `
+    -Urls @($verifiedSource) `
+    -ExpectedSHA256 $fixtureSHA256
+  Assert-True (Test-Path -LiteralPath $verifiedDownload -PathType Leaf) 'Verified local fixture download was not retained'
+  Remove-Item -LiteralPath $verifiedDownload -Force
+
+  $checksumRejected = $false
+  try {
+    Download-VerifiedFileWithFallback `
+      -OutputPath $verifiedDownload `
+      -Urls @($verifiedSource) `
+      -ExpectedSHA256 ('0' * 64)
+  } catch {
+    $checksumRejected = $_.Exception.Message.Contains('SHA256')
+  }
+  Assert-True $checksumRejected 'Node.js checksum mismatch did not fail closed'
+  Assert-True (-not (Test-Path -LiteralPath $verifiedDownload)) 'Checksum failure left a partial file behind'
+
   $global:LASTEXITCODE = 0
-  Write-Host 'WINDOWS_AUTO_CONFIG_ACCEPTANCE_OK claude=bare-cmd codex=bare-cmd grok=native npm_policy=Restricted'
+  Write-Host "WINDOWS_AUTO_CONFIG_ACCEPTANCE_OK runtime=$($PSVersionTable.PSVersion) edition=$($PSVersionTable.PSEdition) claude=bare-cmd codex=bare-cmd grok=same-site git=same-site node=sha256 npm_policy=Restricted"
 } finally {
   $env:Path = $OriginalPath
+  $env:HTTP_PROXY = $OriginalHttpProxy
+  $env:HTTPS_PROXY = $OriginalHttpsProxy
+  $env:ALL_PROXY = $OriginalAllProxy
   Set-ExecutionPolicy -Scope Process -ExecutionPolicy $OriginalExecutionPolicy -Force
   Remove-Item -LiteralPath $FixtureDir -Recurse -Force -ErrorAction SilentlyContinue
 }

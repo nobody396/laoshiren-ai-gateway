@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -26,15 +27,21 @@ const (
 	codexToolID                   = "codex"
 	codexPlusPlusToolID           = "codex-plus-plus"
 	claudeDesktopToolID           = "claude-desktop"
+	gitForWindowsToolID           = "git-for-windows"
+	grokBuildToolID               = "grok-build"
 	defaultCCSwitchRepo           = "farion1231/cc-switch"
 	defaultCodexRepo              = "openai/codex"
 	defaultCodexWindowsMirrorRepo = "Wangnov/codex-app-mirror"
 	defaultCodexMacOfficialURL    = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT.dmg"
 	defaultCodexPPRepo            = "BigPizzaV3/CodexPlusPlus"
+	defaultGitForWindowsRepo      = "git-for-windows/git"
+	defaultGrokBuildPrimaryBase   = "https://x.ai/cli"
+	defaultGrokBuildFallbackBase  = "https://storage.googleapis.com/grok-build-public-artifacts/cli"
 	defaultClaudeCodeRepo         = "anthropics/claude-code"
 	defaultClaudeMacURL           = "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest/Claude.dmg"
 	defaultClaudeWinURL           = "https://downloads.claude.ai/releases/win32/x64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe"
 	defaultClaudeARMURL           = "https://downloads.claude.ai/releases/win32/arm64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe"
+	versionManifestName           = ".manifest.json"
 )
 
 var (
@@ -43,6 +50,9 @@ var (
 	ErrDownloadToolNotFound     = errors.New("download tool not found")
 	ErrDownloadTokenInvalid     = errors.New("download token is invalid or expired")
 	assetIDUnsafeChars          = regexp.MustCompile(`[^a-z0-9._-]+`)
+	sha256Pattern               = regexp.MustCompile(`^[a-fA-F0-9]{64}$`)
+	grokBuildVersionPattern     = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9._-]+)?$`)
+	gitForWindowsAssetPattern   = regexp.MustCompile(`^git-[0-9].*-(64-bit|arm64)\.exe$`)
 )
 
 type staticDownloadSource struct {
@@ -63,8 +73,8 @@ type CachedDownloadManifest struct {
 }
 
 // DownloadVersionStatus keeps the download page honest about where a package
-// comes from. Some tools are cached by us, while Claude Code currently uses
-// Anthropic's official installer directly.
+// comes from. Desktop/native packages are cached by us, while npm clients use
+// the configured registry mirror.
 type DownloadVersionStatus struct {
 	Tool                string `json:"tool"`
 	Name                string `json:"name"`
@@ -127,6 +137,9 @@ func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseCl
 		CodexWindowsMirrorRepo:       defaultCodexWindowsMirrorRepo,
 		CodexMacOfficialURL:          defaultCodexMacOfficialURL,
 		CodexPlusPlusRepo:            defaultCodexPPRepo,
+		GitForWindowsRepo:            defaultGitForWindowsRepo,
+		GrokBuildPrimaryBaseURL:      defaultGrokBuildPrimaryBase,
+		GrokBuildFallbackBaseURL:     defaultGrokBuildFallbackBase,
 		ClaudeDesktopMacURL:          defaultClaudeMacURL,
 		ClaudeDesktopWindowsX64URL:   defaultClaudeWinURL,
 		ClaudeDesktopWindowsARM64URL: defaultClaudeARMURL,
@@ -152,6 +165,15 @@ func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseCl
 	}
 	if strings.TrimSpace(downloadCfg.CodexPlusPlusRepo) == "" {
 		downloadCfg.CodexPlusPlusRepo = defaultCodexPPRepo
+	}
+	if strings.TrimSpace(downloadCfg.GitForWindowsRepo) == "" {
+		downloadCfg.GitForWindowsRepo = defaultGitForWindowsRepo
+	}
+	if strings.TrimSpace(downloadCfg.GrokBuildPrimaryBaseURL) == "" {
+		downloadCfg.GrokBuildPrimaryBaseURL = defaultGrokBuildPrimaryBase
+	}
+	if strings.TrimSpace(downloadCfg.GrokBuildFallbackBaseURL) == "" {
+		downloadCfg.GrokBuildFallbackBaseURL = defaultGrokBuildFallbackBase
 	}
 	if strings.TrimSpace(downloadCfg.ClaudeDesktopMacURL) == "" {
 		downloadCfg.ClaudeDesktopMacURL = defaultClaudeMacURL
@@ -226,6 +248,8 @@ func (s *DownloadResourceService) syncWithTimeout(reason string) {
 		{tool: codexToolID, fn: s.SyncCodex},
 		{tool: codexPlusPlusToolID, fn: s.SyncCodexPlusPlus},
 		{tool: claudeDesktopToolID, fn: s.SyncClaudeDesktop},
+		{tool: gitForWindowsToolID, fn: s.SyncGitForWindows},
+		{tool: grokBuildToolID, fn: s.SyncGrokBuild},
 	} {
 		// Large desktop packages can approach 1 GB. Give every tool its own
 		// deadline so one slow source cannot consume the whole update window and
@@ -245,6 +269,9 @@ func (s *DownloadResourceService) SyncCCSwitch(ctx context.Context) error {
 func (s *DownloadResourceService) SyncCodex(ctx context.Context) error {
 	if s == nil {
 		return errors.New("nil download resource service")
+	}
+	if s.githubClient == nil {
+		return errors.New("download client is not configured")
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -326,7 +353,6 @@ func (s *DownloadResourceService) SyncCodex(ctx context.Context) error {
 	if err := s.writeManifest(manifest); err != nil {
 		return err
 	}
-	s.cleanupOldVersions(codexToolID, version)
 	s.cleanupUnreferencedAssets(versionDir, assets)
 	slog.Info("download resource synced", "tool", codexToolID, "version", version, "assets", len(assets))
 	return nil
@@ -336,9 +362,108 @@ func (s *DownloadResourceService) SyncCodexPlusPlus(ctx context.Context) error {
 	return s.syncGitHubRelease(ctx, codexPlusPlusToolID, s.cfg.CodexPlusPlusRepo, isCodexPlusPlusInstallAsset)
 }
 
+func (s *DownloadResourceService) SyncGitForWindows(ctx context.Context) error {
+	return s.syncGitHubRelease(ctx, gitForWindowsToolID, s.cfg.GitForWindowsRepo, isGitForWindowsInstallAsset)
+}
+
+// SyncGrokBuild stores the native Windows binaries after verifying both xAI
+// artifact hosts publish the same stable version. Each cached file is then
+// exposed through a content-addressed same-site URL and reverified by clients.
+func (s *DownloadResourceService) SyncGrokBuild(ctx context.Context) error {
+	if s == nil {
+		return errors.New("nil download resource service")
+	}
+	if s.githubClient == nil {
+		return errors.New("download client is not configured")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := os.MkdirAll(s.cacheDir, 0755); err != nil {
+		return fmt.Errorf("create download cache root: %w", err)
+	}
+
+	bases := []string{
+		strings.TrimRight(strings.TrimSpace(s.cfg.GrokBuildPrimaryBaseURL), "/"),
+		strings.TrimRight(strings.TrimSpace(s.cfg.GrokBuildFallbackBaseURL), "/"),
+	}
+	if bases[0] == "" || bases[1] == "" || bases[0] == bases[1] {
+		return errors.New("grok build requires two distinct official artifact bases")
+	}
+
+	versions := make([]string, 0, len(bases))
+	for _, base := range bases {
+		version, err := s.downloadSmallText(ctx, base+"/stable", 1024)
+		if err != nil {
+			return fmt.Errorf("fetch grok build stable version from %s: %w", base, err)
+		}
+		version = strings.TrimSpace(version)
+		if !grokBuildVersionPattern.MatchString(version) {
+			return fmt.Errorf("invalid grok build stable version from %s", base)
+		}
+		versions = append(versions, version)
+	}
+	if versions[0] != versions[1] {
+		return fmt.Errorf("grok build official sources disagree on stable version: %s != %s", versions[0], versions[1])
+	}
+
+	version := versions[0]
+	versionDir := filepath.Join(s.cacheDir, grokBuildToolID, sanitizePathSegment(version))
+	if err := os.MkdirAll(versionDir, 0755); err != nil {
+		return fmt.Errorf("create cache dir: %w", err)
+	}
+
+	assets := make([]CachedDownloadAsset, 0, 2)
+	for _, arch := range []struct {
+		upstream string
+		public   string
+	}{
+		{upstream: "x86_64", public: "x64"},
+		{upstream: "aarch64", public: "arm64"},
+	} {
+		name := fmt.Sprintf("grok-%s-windows-%s.exe", version, arch.upstream)
+		dest := filepath.Join(versionDir, name)
+		if err := s.downloadStaticAssetWithFallback(ctx, []string{
+			bases[0] + "/" + name,
+			bases[1] + "/" + name,
+		}, dest); err != nil {
+			return fmt.Errorf("cache grok build %s: %w", arch.public, err)
+		}
+		info, err := os.Stat(dest)
+		if err != nil {
+			return fmt.Errorf("stat grok build %s: %w", arch.public, err)
+		}
+		sum, err := fileSHA256(dest)
+		if err != nil {
+			return fmt.Errorf("checksum grok build %s: %w", arch.public, err)
+		}
+		assets = append(assets, CachedDownloadAsset{
+			ID: makeAssetID(name), Name: name, Size: info.Size(), SHA256: sum,
+			Platform: "windows", Arch: arch.public, Path: dest,
+		})
+	}
+
+	manifest := CachedDownloadManifest{
+		Tool:        grokBuildToolID,
+		Repo:        strings.Join(bases, ", "),
+		Version:     version,
+		ReleaseName: "Grok Build " + version,
+		UpdatedAt:   time.Now().UTC().Format(time.RFC3339),
+		Assets:      assets,
+	}
+	if err := s.writeManifest(manifest); err != nil {
+		return err
+	}
+	s.cleanupUnreferencedAssets(versionDir, assets)
+	slog.Info("download resource synced", "tool", grokBuildToolID, "version", version, "assets", len(assets))
+	return nil
+}
+
 func (s *DownloadResourceService) syncGitHubRelease(ctx context.Context, toolID, repo string, include func(string) bool) error {
 	if s == nil {
 		return errors.New("nil download resource service")
+	}
+	if s.githubClient == nil {
+		return errors.New("download client is not configured")
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -390,7 +515,7 @@ func (s *DownloadResourceService) syncGitHubRelease(ctx context.Context, toolID,
 	if err := s.writeManifest(manifest); err != nil {
 		return err
 	}
-	s.cleanupOldVersions(toolID, release.TagName)
+	s.cleanupUnreferencedAssets(versionDir, assets)
 	slog.Info("download resource synced", "tool", toolID, "version", release.TagName, "assets", len(assets))
 	return nil
 }
@@ -434,6 +559,9 @@ func (s *DownloadResourceService) SyncClaudeDesktop(ctx context.Context) error {
 	if s == nil {
 		return errors.New("nil download resource service")
 	}
+	if s.githubClient == nil {
+		return errors.New("download client is not configured")
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -443,7 +571,7 @@ func (s *DownloadResourceService) SyncClaudeDesktop(ctx context.Context) error {
 		{Name: "Claude-Setup-arm64.exe", URL: s.cfg.ClaudeDesktopWindowsARM64URL, Platform: "windows", Arch: "arm64"},
 	}
 
-	version := "latest"
+	version := claudeDesktopVersionFromSources(sources)
 	versionDir := filepath.Join(s.cacheDir, claudeDesktopToolID, version)
 	if err := os.MkdirAll(versionDir, 0755); err != nil {
 		return fmt.Errorf("create cache dir: %w", err)
@@ -492,9 +620,33 @@ func (s *DownloadResourceService) SyncClaudeDesktop(ctx context.Context) error {
 	if err := s.writeManifest(manifest); err != nil {
 		return err
 	}
-	s.cleanupOldVersions(claudeDesktopToolID, version)
+	s.cleanupUnreferencedAssets(versionDir, assets)
 	slog.Info("download resource synced", "tool", claudeDesktopToolID, "version", version, "assets", len(assets))
 	return nil
+}
+
+// claudeDesktopVersionFromSources keeps immutable URLs immutable. Anthropic's
+// Windows release URL contains the concrete desktop version; using "latest"
+// as a cache directory would otherwise overwrite an old one-year URL when the
+// configured upstream package changes.
+func claudeDesktopVersionFromSources(sources []staticDownloadSource) string {
+	for _, source := range sources {
+		if source.Platform != "windows" || strings.TrimSpace(source.URL) == "" {
+			continue
+		}
+		parsed, err := url.Parse(source.URL)
+		if err != nil {
+			continue
+		}
+		parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
+		for i := len(parts) - 2; i >= 0; i-- {
+			candidate := strings.TrimSpace(parts[i])
+			if grokBuildVersionPattern.MatchString(candidate) {
+				return candidate
+			}
+		}
+	}
+	return "snapshot-" + time.Now().UTC().Format("20060102t150405z")
 }
 
 func (s *DownloadResourceService) ensureAsset(ctx context.Context, asset GitHubAsset, dest string) error {
@@ -532,6 +684,53 @@ func (s *DownloadResourceService) ensureStaticAsset(ctx context.Context, url, de
 		return nil
 	}
 	return s.downloadStaticAsset(ctx, url, dest)
+}
+
+func (s *DownloadResourceService) downloadSmallText(ctx context.Context, url string, maxBytes int64) (string, error) {
+	if maxBytes <= 0 {
+		return "", errors.New("invalid small text limit")
+	}
+	tmp, err := os.CreateTemp(s.cacheDir, ".download-text-*")
+	if err != nil {
+		return "", err
+	}
+	path := tmp.Name()
+	if err := tmp.Close(); err != nil {
+		_ = os.Remove(path)
+		return "", err
+	}
+	defer func() { _ = os.Remove(path) }()
+	if err := s.githubClient.DownloadFile(ctx, url, path, maxBytes); err != nil {
+		return "", err
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
+}
+
+func (s *DownloadResourceService) downloadStaticAssetWithFallback(ctx context.Context, urls []string, dest string) error {
+	if len(urls) == 0 {
+		return errors.New("at least one artifact source is required")
+	}
+	if info, err := os.Stat(dest); err == nil && info.Size() > 0 {
+		return nil
+	}
+
+	tmp := dest + ".tmp"
+	_ = os.Remove(tmp)
+	defer func() { _ = os.Remove(tmp) }()
+	var lastErr error
+	for _, url := range urls {
+		_ = os.Remove(tmp)
+		if err := s.githubClient.DownloadFile(ctx, url, tmp, s.cfg.MaxAssetBytes); err != nil {
+			lastErr = err
+			continue
+		}
+		return os.Rename(tmp, dest)
+	}
+	return fmt.Errorf("all artifact sources failed: %w", lastErr)
 }
 
 func (s *DownloadResourceService) ListCCSwitch(ctx context.Context) (*CachedDownloadManifest, error) {
@@ -575,6 +774,25 @@ func (s *DownloadResourceService) ListVersionStatus(ctx context.Context) []Downl
 			comparable:  false,
 		},
 		{
+			tool:        "codex-plus-plus",
+			name:        "Codex++",
+			manifest:    codexPlusPlusToolID,
+			repo:        s.cfg.CodexPlusPlusRepo,
+			officialURL: "https://github.com/BigPizzaV3/CodexPlusPlus/releases/latest",
+			cacheMode:   "cached",
+			note:        "本站缓存 Codex++ 官方 Release 中的 Windows 和 macOS 安装包。",
+			comparable:  true,
+		},
+		{
+			tool:        "claude-desktop",
+			name:        "Claude Desktop",
+			manifest:    claudeDesktopToolID,
+			officialURL: "https://claude.com/download",
+			cacheMode:   "cached",
+			note:        "本站缓存 Claude Desktop 官方安装包，并通过内容寻址静态路径分发。",
+			comparable:  false,
+		},
+		{
 			tool:        "claude-code",
 			name:        "Claude Code",
 			repo:        defaultClaudeCodeRepo,
@@ -582,6 +800,25 @@ func (s *DownloadResourceService) ListVersionStatus(ctx context.Context) []Downl
 			cacheMode:   "npm-mirror",
 			note:        "一键安装优先使用国内 npm 镜像，失败后才回退官方 npm；不走 Anthropic 安装器直连。",
 			comparable:  false,
+		},
+		{
+			tool:        "grok-build",
+			name:        "Grok Build",
+			manifest:    grokBuildToolID,
+			officialURL: "https://docs.x.ai/build/overview",
+			cacheMode:   "cached",
+			note:        "本站对比 xAI 两个官方制品源的 stable 版本，并缓存 Windows x64/ARM64 二进制。",
+			comparable:  false,
+		},
+		{
+			tool:        "git-for-windows",
+			name:        "Git for Windows",
+			manifest:    gitForWindowsToolID,
+			repo:        s.cfg.GitForWindowsRepo,
+			officialURL: "https://github.com/git-for-windows/git/releases/latest",
+			cacheMode:   "cached",
+			note:        "本站缓存官方 Windows x64/ARM64 安装版，供 Claude Code 自动准备 Git Bash。",
+			comparable:  true,
 		},
 		{
 			tool:        "cc-switch",
@@ -612,10 +849,12 @@ func (s *DownloadResourceService) ListVersionStatus(ctx context.Context) []Downl
 			}
 		}
 
-		release, err := s.githubClient.FetchLatestRelease(ctx, item.repo)
-		if err == nil && release != nil {
-			status.OfficialVersion = release.TagName
-			status.OfficialPublishedAt = release.PublishedAt
+		if strings.TrimSpace(item.repo) != "" && s.githubClient != nil {
+			release, err := s.githubClient.FetchLatestRelease(ctx, item.repo)
+			if err == nil && release != nil {
+				status.OfficialVersion = release.TagName
+				status.OfficialPublishedAt = release.PublishedAt
+			}
 		}
 
 		switch {
@@ -623,10 +862,10 @@ func (s *DownloadResourceService) ListVersionStatus(ctx context.Context) []Downl
 			status.State = "npm-mirror"
 		case status.CachedVersion == "":
 			status.State = "cache-missing"
-		case status.OfficialVersion == "":
-			status.State = "official-unavailable"
 		case !item.comparable:
 			status.State = "cached"
+		case status.OfficialVersion == "":
+			status.State = "official-unavailable"
 		case versionsEqual(status.CachedVersion, status.OfficialVersion):
 			status.State = "current"
 		default:
@@ -666,6 +905,142 @@ func (s *DownloadResourceService) GetToolAsset(ctx context.Context, toolID, asse
 		}
 		if _, err := os.Stat(asset.Path); err != nil {
 			return nil, fmt.Errorf("cached asset missing: %w", err)
+		}
+		return &DownloadAssetFile{Asset: asset, Path: asset.Path}, nil
+	}
+	return nil, ErrDownloadAssetNotFound
+}
+
+// GetImmutableToolAsset resolves an asset from the manifest stored beside a
+// concrete cached version. It deliberately does not consult manifest.json,
+// because that pointer advances to the next release while previously emitted
+// content-addressed URLs must remain valid for their advertised cache lifetime.
+func (s *DownloadResourceService) GetImmutableToolAsset(
+	ctx context.Context,
+	toolID, version, assetID string,
+) (*DownloadAssetFile, error) {
+	_ = ctx
+	toolID, ok := normalizeDownloadToolID(toolID)
+	if !ok {
+		return nil, ErrDownloadToolNotFound
+	}
+	version = strings.TrimSpace(version)
+	assetID = strings.TrimSpace(assetID)
+	if version == "" || assetID == "" || version != sanitizePathSegment(version) || assetID != makeAssetID(assetID) {
+		return nil, ErrDownloadAssetNotFound
+	}
+
+	manifest, err := s.readVersionManifest(toolID, version)
+	if err != nil {
+		return nil, err
+	}
+	if sanitizePathSegment(manifest.Version) != version {
+		return nil, ErrDownloadAssetNotFound
+	}
+	for _, asset := range manifest.Assets {
+		if asset.ID != assetID || !sha256Pattern.MatchString(strings.TrimSpace(asset.SHA256)) {
+			continue
+		}
+		asset.Path = filepath.Join(s.cacheDir, toolID, version, filepath.Base(asset.Name))
+		if !isPathWithin(filepath.Join(s.cacheDir, toolID, version), asset.Path) {
+			return nil, errors.New("cached immutable asset path escapes version dir")
+		}
+		info, statErr := os.Stat(asset.Path)
+		if statErr != nil || !info.Mode().IsRegular() {
+			if statErr == nil {
+				statErr = errors.New("cached immutable asset is not a regular file")
+			}
+			return nil, fmt.Errorf("cached immutable asset missing: %w", statErr)
+		}
+		return &DownloadAssetFile{Asset: asset, Path: asset.Path}, nil
+	}
+	return nil, ErrDownloadAssetNotFound
+}
+
+// GetImmutableToolAssetBySHA preserves compatibility with the first generation
+// of content-addressed URLs, which included the digest but not a version. New
+// URLs use GetImmutableToolAsset and include both. The bounded directory scan
+// is only used for those legacy URLs and still requires a manifest match before
+// any file can be served.
+func (s *DownloadResourceService) GetImmutableToolAssetBySHA(
+	ctx context.Context,
+	toolID, requestedSHA256, assetID string,
+) (*DownloadAssetFile, error) {
+	_ = ctx
+	toolID, ok := normalizeDownloadToolID(toolID)
+	if !ok {
+		return nil, ErrDownloadToolNotFound
+	}
+	requestedSHA256 = strings.ToLower(strings.TrimSpace(requestedSHA256))
+	assetID = strings.TrimSpace(assetID)
+	if !sha256Pattern.MatchString(requestedSHA256) || (assetID != "" && assetID != makeAssetID(assetID)) {
+		return nil, ErrDownloadAssetNotFound
+	}
+
+	toolDir := filepath.Join(s.cacheDir, toolID)
+	entries, err := os.ReadDir(toolDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, ErrDownloadManifestNotReady
+		}
+		return nil, err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() || entry.Name() != sanitizePathSegment(entry.Name()) {
+			continue
+		}
+		file, lookupErr := s.findAssetInVersionManifest(toolID, entry.Name(), requestedSHA256, assetID)
+		if lookupErr == nil {
+			return file, nil
+		}
+		if !errors.Is(lookupErr, ErrDownloadAssetNotFound) && !errors.Is(lookupErr, ErrDownloadManifestNotReady) {
+			return nil, lookupErr
+		}
+	}
+
+	// Upgrade compatibility for the one current release whose per-version
+	// manifest may not exist until the first post-deploy sync finishes.
+	current, err := s.readManifest(toolID)
+	if err != nil {
+		return nil, err
+	}
+	version := sanitizePathSegment(current.Version)
+	return s.findAssetInManifest(toolID, version, current, requestedSHA256, assetID)
+}
+
+func (s *DownloadResourceService) findAssetInVersionManifest(
+	toolID, version, requestedSHA256, assetID string,
+) (*DownloadAssetFile, error) {
+	manifest, err := s.readVersionManifest(toolID, version)
+	if err != nil {
+		return nil, err
+	}
+	return s.findAssetInManifest(toolID, version, manifest, requestedSHA256, assetID)
+}
+
+func (s *DownloadResourceService) findAssetInManifest(
+	toolID, version string,
+	manifest *CachedDownloadManifest,
+	requestedSHA256, assetID string,
+) (*DownloadAssetFile, error) {
+	if manifest == nil || sanitizePathSegment(manifest.Version) != version {
+		return nil, ErrDownloadAssetNotFound
+	}
+	for _, asset := range manifest.Assets {
+		if !strings.EqualFold(strings.TrimSpace(asset.SHA256), requestedSHA256) ||
+			(assetID != "" && asset.ID != assetID) {
+			continue
+		}
+		asset.Path = filepath.Join(s.cacheDir, toolID, version, filepath.Base(asset.Name))
+		if !isPathWithin(filepath.Join(s.cacheDir, toolID, version), asset.Path) {
+			return nil, errors.New("cached immutable asset path escapes version dir")
+		}
+		info, err := os.Stat(asset.Path)
+		if err != nil || !info.Mode().IsRegular() {
+			if err == nil {
+				err = errors.New("cached immutable asset is not a regular file")
+			}
+			return nil, fmt.Errorf("cached immutable asset missing: %w", err)
 		}
 		return &DownloadAssetFile{Asset: asset, Path: asset.Path}, nil
 	}
@@ -775,6 +1150,10 @@ func (s *DownloadResourceService) manifestPath(toolID string) string {
 	return filepath.Join(s.cacheDir, toolID, "manifest.json")
 }
 
+func (s *DownloadResourceService) versionManifestPath(toolID, version string) string {
+	return filepath.Join(s.cacheDir, toolID, version, versionManifestName)
+}
+
 func (s *DownloadResourceService) readManifest(toolID string) (*CachedDownloadManifest, error) {
 	raw, err := os.ReadFile(s.manifestPath(toolID))
 	if err != nil {
@@ -795,43 +1174,69 @@ func (s *DownloadResourceService) readManifest(toolID string) (*CachedDownloadMa
 	return &manifest, nil
 }
 
+func (s *DownloadResourceService) readVersionManifest(toolID, version string) (*CachedDownloadManifest, error) {
+	raw, err := os.ReadFile(s.versionManifestPath(toolID, version))
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, err
+		}
+		// Upgrade compatibility: the release active at deployment may only have
+		// the old root manifest. Use it only when it names the requested version;
+		// the next successful sync writes the durable per-version copy.
+		current, currentErr := s.readManifest(toolID)
+		if currentErr != nil {
+			return nil, currentErr
+		}
+		if sanitizePathSegment(current.Version) != version {
+			return nil, ErrDownloadAssetNotFound
+		}
+		return current, nil
+	}
+	var manifest CachedDownloadManifest
+	if err := json.Unmarshal(raw, &manifest); err != nil {
+		return nil, err
+	}
+	return &manifest, nil
+}
+
 func (s *DownloadResourceService) writeManifest(manifest CachedDownloadManifest) error {
 	toolID, ok := normalizeDownloadToolID(manifest.Tool)
 	if !ok {
 		return ErrDownloadToolNotFound
 	}
-	dir := filepath.Join(s.cacheDir, toolID)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	rootDir := filepath.Join(s.cacheDir, toolID)
+	version := sanitizePathSegment(manifest.Version)
+	versionDir := filepath.Join(rootDir, version)
+	if err := os.MkdirAll(versionDir, 0755); err != nil {
 		return err
 	}
 	raw, err := json.MarshalIndent(manifest, "", "  ")
 	if err != nil {
 		return err
 	}
-	tmp := s.manifestPath(toolID) + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0644); err != nil {
+	// Persist history before advancing the mutable pointer. If either write
+	// fails, manifest.json never advertises an immutable URL we cannot resolve.
+	if err := writeFileAtomically(s.versionManifestPath(toolID, version), raw, 0644); err != nil {
 		return err
 	}
-	return os.Rename(tmp, s.manifestPath(toolID))
+	return writeFileAtomically(s.manifestPath(toolID), raw, 0644)
 }
 
-func (s *DownloadResourceService) cleanupOldVersions(toolID, currentTag string) {
-	root := filepath.Join(s.cacheDir, toolID)
-	entries, err := os.ReadDir(root)
-	if err != nil {
-		return
+func writeFileAtomically(path string, raw []byte, mode os.FileMode) error {
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, raw, mode); err != nil {
+		return err
 	}
-	current := sanitizePathSegment(currentTag)
-	for _, entry := range entries {
-		if !entry.IsDir() || entry.Name() == current {
-			continue
-		}
-		_ = os.RemoveAll(filepath.Join(root, entry.Name()))
+	if err := os.Rename(tmp, path); err != nil {
+		_ = os.Remove(tmp)
+		return err
 	}
+	return nil
 }
 
 func (s *DownloadResourceService) cleanupUnreferencedAssets(versionDir string, assets []CachedDownloadAsset) {
-	keep := make(map[string]struct{}, len(assets))
+	keep := make(map[string]struct{}, len(assets)+1)
+	keep[versionManifestName] = struct{}{}
 	for _, asset := range assets {
 		keep[filepath.Base(asset.Name)] = struct{}{}
 	}
@@ -900,10 +1305,18 @@ func isCodexPlusPlusInstallAsset(name string) bool {
 		strings.HasSuffix(lower, "-macos-arm64.dmg")
 }
 
+func isGitForWindowsInstallAsset(name string) bool {
+	lower := strings.ToLower(name)
+	if !strings.HasSuffix(lower, ".exe") || strings.Contains(lower, "portablegit") || strings.Contains(lower, "mingit") {
+		return false
+	}
+	return gitForWindowsAssetPattern.MatchString(lower)
+}
+
 func classifyPlatform(name string) string {
 	lower := strings.ToLower(name)
 	switch {
-	case strings.Contains(lower, "windows") || strings.Contains(lower, "win32") || strings.Contains(lower, "pc-windows") || strings.HasSuffix(lower, ".msix"):
+	case strings.Contains(lower, "windows") || strings.Contains(lower, "win32") || strings.Contains(lower, "pc-windows") || strings.HasSuffix(lower, ".msix") || strings.HasSuffix(lower, ".exe"):
 		return "windows"
 	case strings.Contains(lower, "macos") || strings.Contains(lower, "darwin") || strings.HasSuffix(lower, ".dmg"):
 		return "macos"
@@ -919,7 +1332,7 @@ func classifyArch(name string) string {
 	switch {
 	case strings.Contains(lower, "arm64") || strings.Contains(lower, "aarch64"):
 		return "arm64"
-	case strings.Contains(lower, "x86_64") || strings.Contains(lower, "amd64") || strings.Contains(lower, "x64"):
+	case strings.Contains(lower, "x86_64") || strings.Contains(lower, "amd64") || strings.Contains(lower, "x64") || strings.Contains(lower, "64-bit"):
 		return "x64"
 	default:
 		return "universal"
@@ -936,6 +1349,10 @@ func normalizeDownloadToolID(toolID string) (string, bool) {
 		return codexPlusPlusToolID, true
 	case claudeDesktopToolID:
 		return claudeDesktopToolID, true
+	case gitForWindowsToolID:
+		return gitForWindowsToolID, true
+	case grokBuildToolID:
+		return grokBuildToolID, true
 	default:
 		return "", false
 	}

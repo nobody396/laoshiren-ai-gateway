@@ -315,11 +315,27 @@ EdgeOne 规则：
 | `网站加速-laoshirenai.com` | `laoshirenai.com` | 裸域名网站静态资源加速，节点缓存 TTL 30 天 |
 | `API动态不缓存-api.laoshirenai.com` | `api.laoshirenai.com` | API 动态请求不缓存，避免流式输出和鉴权出问题 |
 
-Claude Desktop Windows 安装包使用内容寻址静态路径
-`/downloads/claude-desktop/windows-x64/<sha256>/Claude-Setup.exe`。该路径不属于
+面向客户的大安装包统一使用内容寻址静态路径：
+`/downloads/<tool>/<version>/<sha256>/<filename>`；Claude Desktop Windows x64
+另保留便于客服使用的
+`/downloads/claude-desktop/windows-x64/<sha256>/Claude-Setup.exe`。这些路径不属于
 `/api`，响应为 `public, max-age=31536000, immutable` 并支持 Range 请求，供
-EdgeOne 静态资源规则在边缘节点长期缓存；短效 `/api/v1/resource-downloads/*`
-只用于其他需要临时授权的下载。
+EdgeOne 静态资源规则缓存。当前覆盖 Claude Desktop、Codex/Codex++、CC Switch、
+Git for Windows 和 Grok Build。
+
+这里的一年 `immutable` 只作用于**带文件 SHA256 的那一个具体 URL**，不是缓存
+整个 API，也不会阻止软件更新。后台同步到新版本后会计算新的 SHA256，并生成
+一个全新的 `/downloads/...` URL；动态的 `latest.json`、AppInstaller 和
+`latest.msix` 入口仍短缓存或不缓存，其中 `latest.msix` 只重定向到当前不可变
+文件。EdgeOne 控制台的实际边缘 TTL 仍按上表规则为 30 天；浏览器可以安全地把
+同一哈希文件保存更久。后台切换清单后不得立刻删除旧 SHA 文件；旧对象的清理
+必须由独立保留策略处理，以免尚未命中的旧不可变 URL 回源时变成 404。
+应用缓存会在每个版本目录保留 `.manifest.json`，不可变路由按 URL 中的版本读取
+该清单，而不是只读取会随升级推进的根 `manifest.json`；因此新版本发布后旧 URL
+仍能从源站回源。旧版本的实际保留期不得短于对外声明的一年缓存期。
+
+`/api/v1/resource-downloads/*` 仅保留给仍需要临时授权的兼容入口，不得用于面向
+中国大陆用户的大文件主下载链路。
 
 DNS/HTTP 验证命令：
 

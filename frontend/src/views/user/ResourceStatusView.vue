@@ -92,9 +92,29 @@ const previewItems: DownloadVersionStatus[] = [
     cache_mode: 'cached', state: 'cached', note: 'macOS 缓存 OpenAI 官方安装包；Windows 缓存第三方镜像的 MSIX，并通过本站 AppInstaller 提供更新。'
   },
   {
+    tool: 'codex-plus-plus', name: 'Codex++', cached_version: 'v1.2.4', cached_updated_at: '2026-08-02T10:48:04Z',
+    official_version: 'v1.2.4', official_published_at: '2026-07-29T01:44:34Z', official_url: 'https://github.com/BigPizzaV3/CodexPlusPlus/releases/latest',
+    cache_mode: 'cached', state: 'current', note: '本站缓存 Codex++ 官方 Release 中的 Windows 和 macOS 安装包。'
+  },
+  {
+    tool: 'claude-desktop', name: 'Claude Desktop', cached_version: '1.25927.0', cached_updated_at: '2026-08-02T10:48:04Z',
+    official_version: '', official_published_at: '', official_url: 'https://claude.com/download',
+    cache_mode: 'cached', state: 'cached', note: '本站缓存 Claude Desktop 官方安装包，并通过内容寻址静态路径分发。'
+  },
+  {
     tool: 'claude-code', name: 'Claude Code', cached_version: '', cached_updated_at: '',
     official_version: 'v2.1.220', official_published_at: '2026-07-25T01:35:55Z', official_url: 'https://github.com/anthropics/claude-code/releases/latest',
     cache_mode: 'npm-mirror', state: 'npm-mirror', note: '一键安装优先使用国内 npm 镜像，失败后才回退官方 npm；不走 Anthropic 安装器直连。'
+  },
+  {
+    tool: 'grok-build', name: 'Grok Build', cached_version: '1.0.3', cached_updated_at: '2026-08-02T10:47:59Z',
+    official_version: '', official_published_at: '', official_url: 'https://docs.x.ai/build/overview',
+    cache_mode: 'cached', state: 'cached', note: '本站对比 xAI 两个官方制品源的 stable 版本，并缓存 Windows x64/ARM64 二进制。'
+  },
+  {
+    tool: 'git-for-windows', name: 'Git for Windows', cached_version: 'v2.53.0.windows.2', cached_updated_at: '2026-08-02T10:47:59Z',
+    official_version: 'v2.53.0.windows.2', official_published_at: '2026-07-31T02:25:44Z', official_url: 'https://github.com/git-for-windows/git/releases/latest',
+    cache_mode: 'cached', state: 'current', note: '本站缓存官方 Windows x64/ARM64 安装版，供 Claude Code 自动准备 Git Bash。'
   },
   {
     tool: 'cc-switch', name: 'CC Switch', cached_version: 'v3.19.1', cached_updated_at: '2026-08-02T10:47:59Z',

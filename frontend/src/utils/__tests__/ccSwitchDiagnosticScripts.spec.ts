@@ -10,7 +10,7 @@ describe('CC Switch public diagnostic scripts', () => {
   it('repairs the Windows protocol for the current user without admin access', () => {
     const script = readPublicScript('diagnose-cc-switch.ps1')
 
-    expect(script).toContain("$ScriptVersion = '1.2.1'")
+    expect(script).toContain("$ScriptVersion = '1.2.2'")
     expect(script).toContain("HKCU:\\Software\\Classes\\ccswitch")
     expect(script).toContain('Programs\\CC Switch\\cc-switch.exe')
     expect(script).toContain("(Join-Path $env:USERPROFILE 'Downloads')")
@@ -21,7 +21,7 @@ describe('CC Switch public diagnostic scripts', () => {
   it('re-registers the official macOS bundle and supports apps opened from Downloads', () => {
     const script = readPublicScript('diagnose-cc-switch.sh')
 
-    expect(script).toContain('SCRIPT_VERSION="1.2.1"')
+    expect(script).toContain('SCRIPT_VERSION="1.2.2"')
     expect(script).toContain('BUNDLE_ID="com.ccswitch.desktop"')
     expect(script).toContain('/usr/bin/open "$APP_PATH" --args --register-protocol')
     expect(script).toContain('$HOME/Applications/CC Switch.app')
@@ -37,16 +37,15 @@ describe('CC Switch public diagnostic scripts', () => {
     expect(script).not.toContain("$_.DisplayName -like 'CC Switch*'")
   })
 
-  it('automatically installs the verified same-site Windows cache with official fallback', () => {
+  it('automatically installs only the verified same-site Windows cache', () => {
     const script = readPublicScript('diagnose-cc-switch.ps1')
 
     expect(script).toContain(
       'https://laoshirenai.com/api/v1/public-downloads/cc-switch/latest.json'
     )
+    expect(script).toContain('https://laoshirenai.com/downloads/cc-switch/')
     expect(script).toContain('return Get-MirrorCcSwitchAsset')
-    expect(script).toContain(
-      'https://api.github.com/repos/farion1231/cc-switch/releases/latest'
-    )
+    expect(script).not.toContain('api.github.com/repos/farion1231/cc-switch')
     expect(script).toContain("return 'Windows-arm64.msi'")
     expect(script).toContain("return 'Windows.msi'")
     expect(script).toContain('Get-FileHash -LiteralPath $TemporaryMsi -Algorithm SHA256')
@@ -63,6 +62,7 @@ describe('CC Switch public diagnostic scripts', () => {
     expect(script).toContain(
       'https://laoshirenai.com/api/v1/public-downloads/cc-switch/latest.json'
     )
+    expect(script).toContain('https://laoshirenai.com/downloads/cc-switch/')
     expect(script).toContain('fetch_latest_macos_mirror')
     expect(script).toContain(
       'https://api.github.com/repos/farion1231/cc-switch/releases/latest'
@@ -77,7 +77,7 @@ describe('CC Switch public diagnostic scripts', () => {
     expect(script).not.toContain('/usr/bin/killall')
   })
 
-  it('opens only the official release page when verified automatic installation fails', () => {
+  it('opens only the official release page for manual recovery when verified automatic installation fails', () => {
     for (const name of ['diagnose-cc-switch.ps1', 'diagnose-cc-switch.sh']) {
       const script = readPublicScript(name)
 

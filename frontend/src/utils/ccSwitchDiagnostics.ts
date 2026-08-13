@@ -1,7 +1,8 @@
 export type CcsDiagnosticPlatform = 'windows' | 'macos'
 
 const DEFAULT_SITE_ORIGIN = 'https://laoshirenai.com'
-const DIAGNOSTIC_SCRIPT_VERSION = '1.2.1'
+const WINDOWS_DIAGNOSTIC_SCRIPT_VERSION = '1.2.2'
+const MACOS_DIAGNOSTIC_SCRIPT_VERSION = '1.2.2'
 
 export const detectCcsDiagnosticPlatform = (
   userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent,
@@ -32,8 +33,8 @@ export const buildCcsDiagnosticCommand = (
   const siteOrigin = normalizeOrigin(origin)
 
   if (platform === 'windows') {
-    return `irm ${siteOrigin}/auto-config/diagnose-cc-switch.ps1?v=${DIAGNOSTIC_SCRIPT_VERSION} | iex`
+    return `irm ${siteOrigin}/auto-config/diagnose-cc-switch.ps1?v=${WINDOWS_DIAGNOSTIC_SCRIPT_VERSION} | iex`
   }
 
-  return `curl -fsSL '${siteOrigin}/auto-config/diagnose-cc-switch.sh?v=${DIAGNOSTIC_SCRIPT_VERSION}' | bash`
+  return `curl -fsSL '${siteOrigin}/auto-config/diagnose-cc-switch.sh?v=${MACOS_DIAGNOSTIC_SCRIPT_VERSION}' | bash`
 }

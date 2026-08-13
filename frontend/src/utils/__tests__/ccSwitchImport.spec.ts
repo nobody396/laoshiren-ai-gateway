@@ -104,8 +104,17 @@ describe('CC Switch provider deeplinks', () => {
 
     const config = JSON.parse(decodeBase64Utf8(encodedConfig!))
     expect(config.modelCatalog.models).toEqual(OPENAI_CODEX_MODELS)
-    expect(config.modelCatalog.models.map((model: { model: string }) => model.model))
-      .not.toContain('gpt-5.3-codex-spark')
+    const importedModels = config.modelCatalog.models.map((model: { model: string }) => model.model)
+    expect(importedModels).toEqual([
+      'gpt-5.6-sol',
+      'gpt-5.6-terra',
+      'gpt-5.6',
+      'gpt-5.5',
+      'gpt-5.4'
+    ])
+    expect(importedModels).not.toContain('gpt-5.6-luna')
+    expect(importedModels).not.toContain('gpt-5.4-mini')
+    expect(importedModels).not.toContain('gpt-5.3-codex-spark')
     expect(config.config).toContain('model = "gpt-5.6-sol"')
     expect(config.config).toContain('model_context_window = 250000')
     expect(config.config).toContain('model_auto_compact_token_limit = 225000')

@@ -94,6 +94,7 @@ const overview = {
       worst_account_rate_multiplier: 0.6,
       schedulable_account_count: 2,
       topup_100_cny_scenario: { cost_cny: 37.5, profit_cny: 59.5, margin_percent: 61.34 },
+      topup_100_cny_scenario_basis: 'observed_real_usage',
       real_usage: { ...usage, observed_real_cost_cny: 5 }
     },
     {
@@ -106,7 +107,43 @@ const overview = {
       worst_account_rate_multiplier: 1,
       schedulable_account_count: 1,
       topup_100_cny_scenario: { cost_cny: 33.33, profit_cny: 63.67, margin_percent: 65.64 },
+      topup_100_cny_scenario_basis: 'observed_real_usage',
       real_usage: { ...usage, observed_real_cost_cny: 3 }
+    },
+    {
+      group_id: 6,
+      group_name: 'Codex Pro 20X 分组',
+      product: 'gpt',
+      platform: 'openai',
+      group_rate_multiplier: 0.5,
+      primary_account_rate_multiplier: 1.2,
+      worst_account_rate_multiplier: 1.2,
+      schedulable_account_count: 4,
+      topup_100_cny_scenario: { cost_cny: 39.82, profit_cny: 57.18, margin_percent: 58.95 },
+      topup_100_cny_scenario_basis: 'observed_real_usage',
+      real_usage: {
+        available: true,
+        observed_request_count: 50150,
+        observed_raw_credits_consumed: 2644.6014,
+        observed_real_cost_cny: 1053.1318,
+        blended_cost_per_credit: 0.398219
+      }
+    },
+    {
+      group_id: 33,
+      group_name: 'GLM 5.2 分组',
+      product: 'glm',
+      platform: 'anthropic',
+      group_rate_multiplier: 2.8,
+      primary_account_rate_multiplier: 1.3,
+      worst_account_rate_multiplier: 1.3,
+      schedulable_account_count: 1,
+      real_usage: {
+        available: true,
+        observed_request_count: 0,
+        observed_raw_credits_consumed: 0,
+        observed_real_cost_cny: 0
+      }
     }
   ]
 }
@@ -164,7 +201,7 @@ describe('admin CostAccountingView', () => {
     expect(wrapper.find('[data-test="plan-plus"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="plan-pro"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="plan-max"]').exists()).toBe(true)
-    expect(wrapper.findAll('[data-test^="paygo-"]')).toHaveLength(2)
+    expect(wrapper.findAll('[data-test^="paygo-"]').filter((node) => node.attributes('data-test')?.startsWith('paygo-margin-') !== true)).toHaveLength(overview.pay_as_you_go.length)
     expect(wrapper.text()).toContain('Claude AWS Bedrock 分组')
   })
 
@@ -175,6 +212,26 @@ describe('admin CostAccountingView', () => {
     expect(wrapper.text()).toContain('其中上游充值')
     expect(wrapper.text()).toContain('¥200.00')
     expect(wrapper.text()).toContain('本月实际上游成本')
-    expect(wrapper.text()).toContain('¥47.50')
+    expect(wrapper.text()).toContain('¥1,100.63')
+  })
+
+  it('uses observed blended cost for pay-as-you-go margin instead of mixing incompatible account multipliers', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    const codexMargin = wrapper.find('[data-test="paygo-margin-6"]')
+    expect(codexMargin.text()).toContain('真实用量毛利率')
+    expect(codexMargin.text()).toContain('59.0%')
+    expect(codexMargin.text()).toContain('¥39.82')
+    expect(codexMargin.text()).toContain('¥57.18')
+    expect(codexMargin.text()).toContain('¥0.3982')
+    expect(codexMargin.text()).not.toContain('-147.4%')
+  })
+
+  it('does not show a precise margin when a group has no real usage', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="paygo-margin-33"]').text()).toContain('暂无真实用量，不展示利润率')
   })
 })

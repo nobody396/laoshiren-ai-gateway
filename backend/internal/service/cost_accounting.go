@@ -54,6 +54,8 @@ func costAccountingResolveMonthlyGroupIDs(groups []Group) map[string]map[string]
 
 const costAccountingPayAsYouGoTopupCNY = 100.0
 
+const CostAccountingScenarioBasisObservedUsage = "observed_real_usage"
+
 type CostAccountingRate struct {
 	GroupID                      int64   `json:"group_id"`
 	GroupName                    string  `json:"group_name"`
@@ -122,6 +124,7 @@ type CostAccountingPayAsYouGoGroup struct {
 	WorstAccountRateMultiplier   float64                 `json:"worst_account_rate_multiplier"`
 	SchedulableAccountCount      int                     `json:"schedulable_account_count"`
 	Topup100CNYScenario          *CostAccountingMoney    `json:"topup_100_cny_scenario,omitempty"`
+	Topup100CNYScenarioBasis     string                  `json:"topup_100_cny_scenario_basis,omitempty"`
 	RealUsage                    CostAccountingRealUsage `json:"real_usage"`
 	Warning                      string                  `json:"warning,omitempty"`
 }
@@ -164,6 +167,25 @@ func sign(v float64) float64 {
 		return -1
 	}
 	return 1
+}
+
+// payAsYouGoTopupScenario projects the unit economics of a future ¥100 shop
+// top-up from this group's observed customer charges and true upstream cost.
+//
+// Account multipliers are intentionally not used here. A public group can
+// contain accounts for different model capabilities (for example, text and a
+// fixed-price image renderer), so taking the largest bound multiplier can mix
+// incompatible products and manufacture a false loss. The usage ledger has
+// already preserved the account/model-specific billing semantics per request.
+func payAsYouGoTopupScenario(rawCredits, realCostCNY float64) (*CostAccountingMoney, string) {
+	if rawCredits <= 0 || realCostCNY < 0 {
+		return nil, ""
+	}
+
+	netRevenue := costAccountingPayAsYouGoTopupCNY * (1 - ShopChannelFeePercent/100)
+	blendedCostPerCredit := realCostCNY / rawCredits
+	scenario := money(netRevenue, costAccountingPayAsYouGoTopupCNY*blendedCostPerCredit)
+	return &scenario, CostAccountingScenarioBasisObservedUsage
 }
 
 // accountRateSummary computes primary (highest-priority, i.e. lowest priority
@@ -506,13 +528,16 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 			}
 		}
 		if schedulable == 0 {
-			row.Warning = "no schedulable account bound to this group; it cannot currently serve requests"
-		} else if group.RateMultiplier > 0 {
-			netRevenue := costAccountingPayAsYouGoTopupCNY * (1 - ShopChannelFeePercent/100)
-			costPerCredit := worst / group.RateMultiplier
-			cost := costAccountingPayAsYouGoTopupCNY * costPerCredit
-			scenario := money(netRevenue, cost)
-			row.Topup100CNYScenario = &scenario
+			row.Warning = "当前无可调度账号，分组无法服务请求"
+		}
+		if row.RealUsage.Available {
+			row.Topup100CNYScenario, row.Topup100CNYScenarioBasis = payAsYouGoTopupScenario(
+				row.RealUsage.ObservedRawCredits,
+				row.RealUsage.ObservedRealCostCNY,
+			)
+			if row.RealUsage.ObservedRawCredits <= 0 && row.RealUsage.ObservedRealCostCNY > 0 {
+				row.Warning = "存在实际上游成本但没有用户计费额，需要对账"
+			}
 		}
 		overview.PayAsYouGo = append(overview.PayAsYouGo, row)
 	}

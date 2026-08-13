@@ -114,26 +114,50 @@
               'receipt-printer-stage--complete': printPhase === 'complete'
             }"
           >
-            <div class="receipt-printer">
-              <img
-                src="/assets/usage-receipt/thermal-printer-athens-v1.png"
-                alt=""
-                draggable="false"
-                aria-hidden="true"
-              />
-              <div class="receipt-printer__mouth" aria-hidden="true">
-                <span class="receipt-printer__roller"></span>
-                <span class="receipt-printer__cutter"></span>
+            <div class="receipt-printer-rig">
+              <div class="receipt-printer">
+                <img
+                  src="/assets/usage-receipt/thermal-printer-athens-v1.png"
+                  alt=""
+                  draggable="false"
+                  aria-hidden="true"
+                />
+                <div class="receipt-printer__mouth" aria-hidden="true">
+                  <span class="receipt-printer__roller"></span>
+                  <span class="receipt-printer__cutter"></span>
+                </div>
+                <span class="receipt-printer__active-lamp" aria-hidden="true"></span>
+                <button
+                  type="button"
+                  class="receipt-printer__print-button"
+                  :disabled="!receiptData || loading || printing"
+                  :aria-label="t('usageReceipt.pressPrinterButton')"
+                  :data-label="t('usageReceipt.pressPrinterButton')"
+                  @click="restartPrint(true)"
+                ></button>
               </div>
-              <span class="receipt-printer__active-lamp" aria-hidden="true"></span>
-              <button
-                type="button"
-                class="receipt-printer__print-button"
-                :disabled="!receiptData || loading || printing"
-                :aria-label="t('usageReceipt.pressPrinterButton')"
-                :data-label="t('usageReceipt.pressPrinterButton')"
-                @click="restartPrint(true)"
-              ></button>
+
+              <div v-if="receiptData && !loading && !loadError" class="receipt-viewport">
+                <div
+                  :key="printRunKey"
+                  class="receipt-feed"
+                  :class="{
+                    'receipt-feed--ready': printPhase === 'ready',
+                    'receipt-feed--printing': isPrinting,
+                    'receipt-feed--detaching': isDetaching,
+                    'receipt-feed--complete': printPhase === 'complete'
+                  }"
+                  @animationend.self="handlePrintAnimationEnd"
+                >
+                  <UsageReceiptPaper
+                    ref="receiptPaper"
+                    :data="receiptData"
+                    :preferences="preferences"
+                    :site-name="appStore.siteName"
+                    :site-logo="appStore.siteLogo || '/laoshirenai-icon.jpg'"
+                  />
+                </div>
+              </div>
             </div>
 
             <div v-if="loading" class="receipt-loading" role="status">
@@ -146,28 +170,6 @@
               <h2>{{ t('usageReceipt.loadFailed') }}</h2>
               <p>{{ t('usageReceipt.loadFailedHint') }}</p>
               <button class="btn btn-secondary" @click="loadReceiptData">{{ t('common.retry') }}</button>
-            </div>
-
-            <div v-else-if="receiptData" class="receipt-viewport">
-              <div
-                :key="printRunKey"
-                class="receipt-feed"
-                :class="{
-                  'receipt-feed--ready': printPhase === 'ready',
-                  'receipt-feed--printing': isPrinting,
-                  'receipt-feed--detaching': isDetaching,
-                  'receipt-feed--complete': printPhase === 'complete'
-                }"
-                @animationend.self="handlePrintAnimationEnd"
-              >
-                <UsageReceiptPaper
-                  ref="receiptPaper"
-                  :data="receiptData"
-                  :preferences="preferences"
-                  :site-name="appStore.siteName"
-                  :site-logo="appStore.siteLogo || '/laoshirenai-icon.jpg'"
-                />
-              </div>
             </div>
           </div>
 
@@ -637,7 +639,7 @@ onBeforeUnmount(() => {
 
 .receipt-printer-stage {
   position: relative;
-  min-height: 700px;
+  min-height: 1530px;
   overflow: hidden;
   padding: 190px 24px 300px;
   border: 1px solid rgb(var(--color-muted) / 0.28);
@@ -682,15 +684,21 @@ onBeforeUnmount(() => {
   transform: translateX(-50%);
 }
 
-.receipt-printer {
+.receipt-printer-rig {
   position: absolute;
   top: 18px;
   left: 50%;
   z-index: 3;
   width: min(690px, calc(100% - 30px));
+  transform: translateX(-50%);
+}
+
+.receipt-printer {
+  position: relative;
+  z-index: 7;
+  width: 100%;
   aspect-ratio: 1570 / 528;
   filter: drop-shadow(0 20px 18px rgb(var(--printer-counter-shadow) / 0.34));
-  transform: translateX(-50%);
   transform-origin: center bottom;
 }
 
@@ -803,8 +811,8 @@ onBeforeUnmount(() => {
   content: '';
 }
 
-.receipt-printer__print-button:hover::before,
-.receipt-printer__print-button:focus-visible::before {
+.receipt-printer__print-button:not(:disabled):hover::before,
+.receipt-printer__print-button:not(:disabled):focus-visible::before {
   opacity: 1;
   transform: translateY(0);
 }
@@ -828,17 +836,17 @@ onBeforeUnmount(() => {
 }
 
 .receipt-viewport {
-  position: relative;
+  position: absolute;
+  top: 69.2%;
+  left: 12.3%;
   z-index: 5;
-  display: flex;
-  justify-content: center;
+  width: 59.2%;
   overflow: hidden;
-  padding: 0 15.6% 24px 0;
 }
 
 .receipt-feed {
   display: flex;
-  width: min(100%, 398px);
+  width: 100%;
   justify-content: center;
   transform-origin: top center;
   will-change: transform;
@@ -938,8 +946,8 @@ onBeforeUnmount(() => {
 }
 
 @keyframes receipt-printer-vibration {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(0.7px); }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(0.7px); }
 }
 
 @keyframes receipt-roller-feed {
@@ -972,8 +980,8 @@ onBeforeUnmount(() => {
 }
 
 @keyframes receipt-cutter-kick {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  45% { transform: translateX(-50%) translateY(1.5px); }
+  0%, 100% { transform: translateY(0); }
+  45% { transform: translateY(1.5px); }
 }
 
 @keyframes receipt-status-pulse {
@@ -1011,7 +1019,7 @@ onBeforeUnmount(() => {
   }
 
   .receipt-printer-stage {
-    min-height: 620px;
+    min-height: 1260px;
     padding-top: 176px;
     padding-right: 12px;
     padding-left: 12px;
@@ -1019,6 +1027,10 @@ onBeforeUnmount(() => {
   }
 
   .receipt-printer {
+    width: 100%;
+  }
+
+  .receipt-printer-rig {
     top: 14px;
     width: max(510px, calc(100% - 8px));
   }
@@ -1027,13 +1039,6 @@ onBeforeUnmount(() => {
     top: 184px;
   }
 
-  .receipt-viewport {
-    padding-right: 12%;
-  }
-
-  .receipt-feed {
-    width: min(100%, 300px);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -4,6 +4,8 @@ type AudioContextWithWebkit = typeof window & {
 
 const PRINT_DURATION_MS = 6000
 const CUTTER_DURATION_MS = 900
+const CUTTER_START_DELAY_MS = 0
+const SOUND_CLEANUP_GRACE_MS = 200
 
 export function playThermalPrinterSound(): (() => void) | null {
   if (typeof window === 'undefined') return null
@@ -15,11 +17,14 @@ export function playThermalPrinterSound(): (() => void) | null {
   const context = new AudioContextConstructor()
   const startAt = context.currentTime + 0.02
   const feedDuration = PRINT_DURATION_MS / 1000
-  const stopAt = startAt + feedDuration + (CUTTER_DURATION_MS / 1000)
+  const cutterStartDelay = CUTTER_START_DELAY_MS / 1000
+  const cutterDuration = CUTTER_DURATION_MS / 1000
+  const stopAt = startAt + feedDuration + cutterStartDelay + cutterDuration
   const sources: AudioScheduledSourceNode[] = []
 
   const master = context.createGain()
   master.gain.setValueAtTime(0.68, startAt)
+  master.gain.setValueAtTime(0.68, startAt + feedDuration)
   master.gain.exponentialRampToValueAtTime(0.0001, stopAt)
   master.connect(context.destination)
 
@@ -98,7 +103,7 @@ export function playThermalPrinterSound(): (() => void) | null {
   buttonClick.stop(startAt + 0.065)
   sources.push(buttonClick)
 
-  const cutterAt = startAt + feedDuration + 0.06
+  const cutterAt = startAt + feedDuration + cutterStartDelay
   for (const [offset, startFrequency] of [[0, 138], [0.16, 104]] as const) {
     const cutter = context.createOscillator()
     const cutterGain = context.createGain()
@@ -118,7 +123,10 @@ export function playThermalPrinterSound(): (() => void) | null {
   void context.resume().catch(() => undefined)
 
   let stopped = false
-  const timeoutId = window.setTimeout(() => stop(), (feedDuration * 1000) + CUTTER_DURATION_MS + 200)
+  const timeoutId = window.setTimeout(
+    () => stop(),
+    PRINT_DURATION_MS + CUTTER_START_DELAY_MS + CUTTER_DURATION_MS + SOUND_CLEANUP_GRACE_MS
+  )
 
   function stop(): void {
     if (stopped) return

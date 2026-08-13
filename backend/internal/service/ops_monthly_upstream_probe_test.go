@@ -478,7 +478,7 @@ func TestMonthlyUpstreamProbeTargetsFollowMonthlyGroupBindings(t *testing.T) {
 	require.Len(t, targets, 3)
 	require.Equal(t, "monthly-codex-gateway", targets[0].AccountName)
 	require.Equal(t, PlatformOpenAI, targets[0].Platform)
-	require.Equal(t, "gpt-5.4-mini", targets[0].Model)
+	require.Equal(t, "gpt-5.6-sol", targets[0].Model)
 	require.Equal(t, int64(7), targets[0].GroupID)
 	require.NotNil(t, targets[0].Account)
 	require.InDelta(t, 0.2, targets[0].Account.BillingRateMultiplier(), 0.0001)
@@ -651,20 +651,20 @@ func TestUpdateMonthlyUpstreamProbeSettingsRejectsUnknownPublicChannel(t *testin
 	require.NotContains(t, settings.updates, SettingKeyMonthlyCardPublicStatusChannels)
 }
 
-func TestMonthlyOpenAIProbeCostEstimateMatchesObservedBilling(t *testing.T) {
+func TestMonthlyOpenAIProbeCostEstimateUsesGPT56SolPricing(t *testing.T) {
 	estimate := buildMonthlyUpstreamProbeCostEstimate(
 		"pomoai-monthly-codex-0.12",
 		PlatformOpenAI,
-		"gpt-5.4-mini",
+		"gpt-5.6-sol",
 		nil,
 	)
 
 	require.NotNil(t, estimate)
-	require.InDelta(t, 8e-7, estimate.InputCostPerToken, 1e-12)
-	require.InDelta(t, 3.2e-6, estimate.OutputCostPerToken, 1e-12)
+	require.InDelta(t, 5e-6, estimate.InputCostPerToken, 1e-12)
+	require.InDelta(t, 30e-6, estimate.OutputCostPerToken, 1e-12)
 
 	observedCost := (21*estimate.InputCostPerToken + 5*estimate.OutputCostPerToken) * estimate.RateMultiplier
-	require.InDelta(t, 0.00000400, observedCost, 0.0000001)
+	require.InDelta(t, 0.00003060, observedCost, 0.0000001)
 }
 
 func TestMonthlyGatewayProbePointDoesNotStoreSuccessBodyAsError(t *testing.T) {
@@ -703,7 +703,7 @@ func TestMonthlyUpstreamProbeTimeoutForModelWidensOnlyGrok(t *testing.T) {
 	require.Equal(t, 45*time.Second, monthlyUpstreamProbeTimeoutForModel("grok-4.5"))
 	require.Equal(t, 45*time.Second, monthlyUpstreamProbeTimeoutForModel(" GROK-4.5 "))
 	require.Equal(t, 25*time.Second, monthlyUpstreamProbeTimeoutForModel("claude-haiku-4-5"))
-	require.Equal(t, 25*time.Second, monthlyUpstreamProbeTimeoutForModel("gpt-5.4-mini"))
+	require.Equal(t, 25*time.Second, monthlyUpstreamProbeTimeoutForModel("gpt-5.6-sol"))
 }
 
 func monthlyStatusBoolPtr(value bool) *bool {

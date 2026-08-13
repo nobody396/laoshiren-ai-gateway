@@ -126,6 +126,17 @@ func TestSelectClientSetupGroupUsesPublicGrokBalanceGroup(t *testing.T) {
 	require.Equal(t, int64(34), selected.ID)
 }
 
+func TestSelectClientSetupGroupPrefersGrok46OverLegacy45(t *testing.T) {
+	groups := []Group{
+		{ID: 34, Name: "Grok 4.5 分组", Platform: PlatformGrok, Status: StatusActive, SubscriptionType: SubscriptionTypeStandard},
+		{ID: 51, Name: "Grok 4.6 分组", Platform: PlatformGrok, Status: StatusActive, SubscriptionType: SubscriptionTypeStandard},
+	}
+
+	selected := selectClientSetupGroup(ClientSetupTargetGrok, groups)
+	require.NotNil(t, selected)
+	require.Equal(t, int64(51), selected.ID)
+}
+
 func TestSelectClientSetupGroupDoesNotUseGrokMonthlyGroup(t *testing.T) {
 	groups := []Group{
 		{ID: 35, Name: "Grok Lite 月卡组", Platform: PlatformGrok, Status: StatusActive, SubscriptionType: SubscriptionTypeCredit},
@@ -144,14 +155,14 @@ func TestSelectClientSetupGroupDoesNotUseInactiveGrokTier(t *testing.T) {
 
 func TestIssueTicketCreatesGrokKeyForPublicBalanceGroup(t *testing.T) {
 	apiKeys := &clientSetupEnsureAPIKeysStub{
-		groups: []Group{{ID: 34, Name: "Grok 4.5 分组", Platform: PlatformGrok, Status: StatusActive, SubscriptionType: SubscriptionTypeStandard}},
+		groups: []Group{{ID: 34, Name: "Grok 4.6 分组", Platform: PlatformGrok, Status: StatusActive, SubscriptionType: SubscriptionTypeStandard}},
 	}
 	svc := &ClientSetupService{apiKeys: apiKeys, tickets: newClientSetupTicketCacheStub()}
 
 	ticket, err := svc.IssueTicket(context.Background(), 2, ClientSetupTargetGrok)
 	require.NoError(t, err)
 	require.Equal(t, ClientSetupTargetGrok, ticket.Target)
-	require.Equal(t, "Grok 4.5 分组", ticket.GroupName)
+	require.Equal(t, "Grok 4.6 分组", ticket.GroupName)
 	require.Equal(t, int64(2), apiKeys.createdUser)
 	require.NotNil(t, apiKeys.createdReq.GroupID)
 	require.Equal(t, int64(34), *apiKeys.createdReq.GroupID)
@@ -174,7 +185,7 @@ func TestIssueTicketDoesNotReuseMonthlyGrokSetupKey(t *testing.T) {
 		}},
 		groups: []Group{{
 			ID:               34,
-			Name:             "Grok 4.5 分组",
+			Name:             "Grok 4.6 分组",
 			Platform:         PlatformGrok,
 			Status:           StatusActive,
 			SubscriptionType: SubscriptionTypeStandard,
@@ -184,7 +195,7 @@ func TestIssueTicketDoesNotReuseMonthlyGrokSetupKey(t *testing.T) {
 
 	ticket, err := svc.IssueTicket(context.Background(), 2, ClientSetupTargetGrok)
 	require.NoError(t, err)
-	require.Equal(t, "Grok 4.5 分组", ticket.GroupName)
+	require.Equal(t, "Grok 4.6 分组", ticket.GroupName)
 	require.NotNil(t, apiKeys.createdReq.GroupID)
 	require.Equal(t, int64(34), *apiKeys.createdReq.GroupID)
 }

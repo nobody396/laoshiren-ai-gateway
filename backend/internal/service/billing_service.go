@@ -63,6 +63,8 @@ const (
 	openAIGPT54LongContextInputThreshold   = 272000
 	openAIGPT54LongContextInputMultiplier  = 2.0
 	openAIGPT54LongContextOutputMultiplier = 1.5
+	grok46LongContextInputThreshold        = 200000
+	grok46LongContextPriceMultiplier       = 2.0
 )
 
 func normalizeBillingServiceTier(serviceTier string) string {
@@ -333,6 +335,16 @@ func (s *BillingService) initFallbackPricing() {
 		SupportsCacheBreakdown:         false,
 	}
 	s.fallbackPrices["gpt-5.3-codex"] = s.fallbackPrices["gpt-5.1-codex"]
+	// PomoAI grok-normal public rate card (verified 2026-08-13): below 200k
+	// input/cache/output is $2/$0.50/$6 per MTok; long-context requests are 2x.
+	s.fallbackPrices["grok-4.6"] = &ModelPricing{
+		InputPricePerToken:          2e-6,
+		OutputPricePerToken:         6e-6,
+		CacheReadPricePerToken:      0.5e-6,
+		LongContextInputThreshold:   grok46LongContextInputThreshold,
+		LongContextInputMultiplier:  grok46LongContextPriceMultiplier,
+		LongContextOutputMultiplier: grok46LongContextPriceMultiplier,
+	}
 	s.fallbackPrices["grok-4.5"] = &ModelPricing{InputPricePerToken: 2e-6, OutputPricePerToken: 6e-6, CacheReadPricePerToken: 0.5e-6}
 	s.fallbackPrices["grok-4.3"] = &ModelPricing{InputPricePerToken: 1.25e-6, OutputPricePerToken: 2.5e-6, CacheReadPricePerToken: 0.2e-6}
 	s.fallbackPrices["grok-build-0.1"] = &ModelPricing{InputPricePerToken: 1e-6, OutputPricePerToken: 2e-6, CacheReadPricePerToken: 0.2e-6}
@@ -417,6 +429,8 @@ func (s *BillingService) getFallbackPricing(model string) *ModelPricing {
 		}
 	}
 	switch modelLower {
+	case "grok-4.6":
+		return s.fallbackPrices["grok-4.6"]
 	case "grok", "grok-latest", "grok-4.5", "grok-4.5-latest", "grok-build-latest":
 		return s.fallbackPrices["grok-4.5"]
 	case "grok-4.3", "grok-4.20-0309-reasoning", "grok-4.20-0309-non-reasoning", "grok-4.20-multi-agent-0309", "grok-4.20-reasoning", "grok-4.20-non-reasoning":
@@ -442,6 +456,15 @@ func (s *BillingService) gpt56FallbackPricing(model string) *ModelPricing {
 	}
 }
 
+func (s *BillingService) grok46FallbackPricing(model string) *ModelPricing {
+	switch strings.ToLower(strings.TrimSpace(model)) {
+	case "grok-4.6":
+		return s.fallbackPrices["grok-4.6"]
+	default:
+		return nil
+	}
+}
+
 // GetModelPricing 获取模型价格配置
 func (s *BillingService) GetModelPricing(model string) (*ModelPricing, error) {
 	// 标准化模型名称（转小写）
@@ -449,6 +472,11 @@ func (s *BillingService) GetModelPricing(model string) (*ModelPricing, error) {
 
 	if fallback := s.gpt56FallbackPricing(model); fallback != nil {
 		return s.applyModelSpecificPricingPolicy(model, fallback), nil
+	}
+	// PomoAI exposed 4.6 before it appeared in the xAI/LiteLLM public catalog.
+	// Pin the verified upstream rate card so a stale dynamic entry cannot underbill.
+	if fallback := s.grok46FallbackPricing(model); fallback != nil {
+		return fallback, nil
 	}
 
 	// GPT-5.5 业务定价固定为 GPT-5.4 的 2 倍，不能被动态价格覆盖。

@@ -182,7 +182,7 @@ describe('CC Switch provider deeplinks', () => {
     expect(url.searchParams.get('resource')).toBe('provider')
     expect(url.searchParams.get('app')).toBe('grokbuild')
     expect(url.searchParams.get('endpoint')).toBe('https://api.laoshirenai.com/v1')
-    expect(url.searchParams.get('model')).toBe('grok-4.5')
+    expect(url.searchParams.get('model')).toBe('grok-4.6')
     expect(url.searchParams.get('name')).toContain('Grok Build')
     expect(url.searchParams.get('usageEnabled')).toBe('true')
     const usageScript = atob(url.searchParams.get('usageScript') || '')

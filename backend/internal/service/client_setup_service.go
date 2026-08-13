@@ -23,9 +23,10 @@ const (
 	clientSetupTicketTTL     = 10 * time.Minute
 	clientSetupAPIBaseURL    = "https://api.laoshirenai.com"
 
-	clientSetupClaudeGroupName = "MAX 20X"
-	clientSetupCodexGroupName  = "Pro 20X"
-	clientSetupGrokGroupName   = "Grok 4.5"
+	clientSetupClaudeGroupName     = "MAX 20X"
+	clientSetupCodexGroupName      = "Pro 20X"
+	clientSetupGrokGroupName       = "Grok 4.6"
+	clientSetupLegacyGrokGroupName = "Grok 4.5"
 )
 
 var (
@@ -304,8 +305,16 @@ func clientSetupGroupMatchesTarget(target string, group *Group) bool {
 	if !clientSetupGroupCompatible(target, group) || group.IsSubscriptionType() {
 		return false
 	}
-	groupName := strings.ToLower(strings.Join(strings.Fields(group.Name), " "))
-	requiredName := strings.ToLower(clientSetupRequiredGroupName(target))
+	if target == ClientSetupTargetGrok {
+		return clientSetupGroupNameMatches(group.Name, clientSetupGrokGroupName) ||
+			clientSetupGroupNameMatches(group.Name, clientSetupLegacyGrokGroupName)
+	}
+	return clientSetupGroupNameMatches(group.Name, clientSetupRequiredGroupName(target))
+}
+
+func clientSetupGroupNameMatches(name, required string) bool {
+	groupName := strings.ToLower(strings.Join(strings.Fields(name), " "))
+	requiredName := strings.ToLower(required)
 	return groupName == requiredName ||
 		groupName == requiredName+" 分组" ||
 		strings.Contains(groupName, requiredName)
@@ -313,8 +322,19 @@ func clientSetupGroupMatchesTarget(target string, group *Group) bool {
 
 func selectClientSetupGroup(target string, groups []Group) *Group {
 	// One-click onboarding is a fixed product rule: Claude Code keys use MAX
-	// 20X, Codex keys use Pro 20X, and Grok Build keys use the public Grok 4.5
-	// balance group. Subscription groups are deliberately not selected here.
+	// 20X, Codex keys use Pro 20X, and Grok Build keys prefer the additive 4.6
+	// balance group. The 4.5 group remains a rollout-safe fallback for existing
+	// installations; subscription groups are deliberately not selected here.
+	if target == ClientSetupTargetGrok {
+		for i := range groups {
+			if clientSetupGroupCompatible(target, &groups[i]) &&
+				!groups[i].IsSubscriptionType() &&
+				clientSetupGroupNameMatches(groups[i].Name, clientSetupGrokGroupName) {
+				group := groups[i]
+				return &group
+			}
+		}
+	}
 	for i := range groups {
 		if clientSetupGroupMatchesTarget(target, &groups[i]) {
 			group := groups[i]

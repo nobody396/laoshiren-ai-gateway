@@ -312,7 +312,7 @@ export const buildCcsImportDeeplink = ({
   })
 
   if (target === 'grokbuild') {
-    params.set('model', 'grok-4.5')
+    params.set('model', 'grok-4.6')
   } else if (
     target === 'codex' ||
     target === 'opencode' ||

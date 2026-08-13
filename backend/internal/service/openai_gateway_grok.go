@@ -32,6 +32,15 @@ const (
 	grokRateLimitBackoffQuietPeriod        = time.Hour
 )
 
+func isGrokResponsesBridgeModel(model string) bool {
+	switch strings.ToLower(strings.TrimSpace(model)) {
+	case "grok-4.5", "grok-4.6":
+		return true
+	default:
+		return false
+	}
+}
+
 func (s *OpenAIGatewayService) forwardGrokResponses(
 	ctx context.Context,
 	c *gin.Context,

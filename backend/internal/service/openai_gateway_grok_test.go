@@ -55,6 +55,7 @@ func TestPatchGrokResponsesBodySanitizesComposerReasoningParameters(t *testing.T
 		{name: "composer shorthand", upstreamModel: "grok-composer"},
 		{name: "composer legacy alias", upstreamModel: "composer-2.5"},
 		{name: "provider-prefixed composer", upstreamModel: "xai/grok-composer-2.5-fast"},
+		{name: "grok 4.6", upstreamModel: "grok-4.6", wantReasoning: true},
 		{name: "grok 4.5", upstreamModel: "grok-4.5", wantReasoning: true},
 	}
 
@@ -140,6 +141,19 @@ func TestPatchGrokResponsesBodyKeepsPenaltyAndStopFieldsForNon45Models(t *testin
 	require.Equal(t, 0.1, gjson.GetBytes(patched, "presence_penalty").Float())
 	require.Equal(t, 0.2, gjson.GetBytes(patched, "frequency_penalty").Float())
 	require.Len(t, gjson.GetBytes(patched, "stop").Array(), 1)
+}
+
+func TestPatchGrokResponsesBodyKeepsSupportedFieldsForGrok46(t *testing.T) {
+	t.Parallel()
+
+	body := []byte(`{"model":"client-alias","presence_penalty":0.2,"frequency_penalty":0.3,"stop":["done"]}`)
+	patched, err := patchGrokResponsesBody(body, "grok-4.6")
+	require.NoError(t, err)
+	require.True(t, json.Valid(patched))
+	require.Equal(t, "grok-4.6", gjson.GetBytes(patched, "model").String())
+	require.InDelta(t, 0.2, gjson.GetBytes(patched, "presence_penalty").Float(), 1e-12)
+	require.InDelta(t, 0.3, gjson.GetBytes(patched, "frequency_penalty").Float(), 1e-12)
+	require.Equal(t, "done", gjson.GetBytes(patched, "stop.0").String())
 }
 
 func TestPatchGrokResponsesBodyDropsNestedUnsupportedFields(t *testing.T) {

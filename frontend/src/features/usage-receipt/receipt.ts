@@ -36,7 +36,7 @@ export function formatModelName(model: string): string {
     .join(' ')
 }
 
-export function buildReceiptModelLines(models: ModelStat[], limit = 5): ReceiptModelLine[] {
+export function buildReceiptModelLines(models: ModelStat[], limit = 3): ReceiptModelLine[] {
   const sorted = [...models]
     .filter((model) => model.requests > 0 || model.total_tokens > 0 || model.actual_cost > 0)
     .sort((left, right) => right.actual_cost - left.actual_cost || right.total_tokens - left.total_tokens)

@@ -176,8 +176,8 @@ defineExpose({ getElement })
 <style scoped>
 .usage-receipt-paper {
   position: relative;
-  width: min(100%, 420px);
-  padding: 36px 30px 34px;
+  width: min(100%, 500px);
+  padding: 28px 34px 28px;
   color: rgb(var(--receipt-ink));
   background:
     linear-gradient(rgb(var(--receipt-rule) / 0.035) 1px, transparent 1px),
@@ -213,9 +213,9 @@ defineExpose({ getElement })
 }
 
 .receipt-brand__mark {
-  width: 58px;
-  height: 58px;
-  margin: 0 auto 10px;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 7px;
   overflow: hidden;
   border: 2px solid rgb(var(--receipt-ink));
   border-radius: 15px;
@@ -240,14 +240,14 @@ defineExpose({ getElement })
 
 .receipt-brand__name {
   font-family: Cinzel, "Noto Serif SC", "Songti SC", serif;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.08em;
 }
 
 .receipt-rule {
   height: 0;
-  margin: 18px 0;
+  margin: 13px 0;
   border-top: 1px dashed rgb(var(--receipt-rule));
 }
 
@@ -257,7 +257,7 @@ defineExpose({ getElement })
 
 .receipt-meta {
   display: grid;
-  gap: 7px;
+  gap: 5px;
   margin: 0;
   font-size: 11px;
 }
@@ -286,8 +286,8 @@ defineExpose({ getElement })
 }
 
 .receipt-hero {
-  margin-top: 22px;
-  padding: 18px 16px 14px;
+  margin-top: 16px;
+  padding: 13px 16px 10px;
   border: 1px solid rgb(var(--receipt-ink));
   text-align: center;
 }
@@ -302,7 +302,7 @@ defineExpose({ getElement })
 .receipt-hero__amount {
   margin-top: 3px;
   font-family: "EB Garamond", "Songti SC", serif;
-  font-size: 45px;
+  font-size: 40px;
   font-weight: 800;
   line-height: 1;
 }
@@ -310,14 +310,14 @@ defineExpose({ getElement })
 .receipt-hero__metrics {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  margin-top: 16px;
+  margin-top: 11px;
   border-top: 1px dashed rgb(var(--receipt-rule));
 }
 
 .receipt-hero__metrics > div {
   display: grid;
   gap: 2px;
-  padding-top: 11px;
+  padding-top: 8px;
 }
 
 .receipt-hero__metrics > div + div {
@@ -343,14 +343,14 @@ defineExpose({ getElement })
 }
 
 .receipt-section-heading {
-  margin-bottom: 10px;
+  margin-bottom: 7px;
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.12em;
 }
 
 .receipt-line-item {
-  padding: 4px 0;
+  padding: 3px 0;
   color: rgb(var(--receipt-muted));
   font-size: 11px;
 }
@@ -360,11 +360,11 @@ defineExpose({ getElement })
 }
 
 .receipt-model + .receipt-model {
-  margin-top: 11px;
+  margin-top: 7px;
 }
 
 .receipt-model__heading {
-  padding-bottom: 4px;
+  padding-bottom: 3px;
   border-bottom: 1px dotted rgb(var(--receipt-rule));
   font-size: 11px;
 }
@@ -376,7 +376,7 @@ defineExpose({ getElement })
 
 .receipt-model p,
 .receipt-empty-line {
-  margin-top: 4px;
+  margin-top: 2px;
   color: rgb(var(--receipt-muted));
   font-size: 9px;
 }
@@ -396,8 +396,8 @@ defineExpose({ getElement })
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 10px;
-  padding: 10px 12px;
+  margin-top: 7px;
+  padding: 7px 12px;
   border: 1px solid rgb(var(--receipt-stamp));
   color: rgb(var(--receipt-stamp));
   font-size: 12px;
@@ -405,14 +405,14 @@ defineExpose({ getElement })
 }
 
 .receipt-footer {
-  margin-top: 22px;
-  padding-top: 18px;
+  margin-top: 15px;
+  padding-top: 13px;
   border-top: 2px dashed rgb(var(--receipt-rule));
   text-align: center;
 }
 
 .receipt-footer__thanks p {
-  margin-top: 7px;
+  margin-top: 5px;
   font-family: "EB Garamond", "Songti SC", serif;
   font-size: 16px;
   font-weight: 700;
@@ -434,15 +434,15 @@ defineExpose({ getElement })
   align-items: center;
   justify-content: center;
   gap: 22px;
-  margin: 18px 0 0;
-  padding: 10px;
+  margin: 12px 0 0;
+  padding: 8px 10px;
   border: 1px solid rgb(var(--receipt-ink));
   text-align: left;
 }
 
 .receipt-qr img {
-  width: 86px;
-  height: 86px;
+  width: 76px;
+  height: 76px;
   flex: 0 0 auto;
   background: white;
 }

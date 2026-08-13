@@ -54,6 +54,18 @@ describe('usage receipt helpers', () => {
     ])
   })
 
+  it('shows three models by default and aggregates the remainder', () => {
+    const lines = buildReceiptModelLines([
+      model({ model: 'model-a', actual_cost: 5 }),
+      model({ model: 'model-b', actual_cost: 4 }),
+      model({ model: 'model-c', actual_cost: 3 }),
+      model({ model: 'model-d', actual_cost: 2 }),
+      model({ model: 'model-e', actual_cost: 1 })
+    ])
+
+    expect(lines.map(line => line.model)).toEqual(['Model A', 'Model B', 'Model C', '其他 2 个模型'])
+  })
+
   it('builds safe invite URLs and stable receipt labels', () => {
     expect(buildInviteUrl('https://laoshirenai.com/', 'A B+C')).toBe(
       'https://laoshirenai.com/register?ref=A%20B%2BC'

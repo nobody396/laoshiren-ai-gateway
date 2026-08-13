@@ -415,7 +415,7 @@
   --duration-reveal: 620ms;    /* 落地页区块入场 */
   --duration-ambient: 2s;      /* 骨架屏微光循环 */
   --duration-receipt-print: 6000ms; /* 长小票匀速送出，留足时间看清打印过程 */
-  --duration-receipt-settle: 600ms; /* 打印完成后的轻微回弹 */
+  --duration-receipt-settle: 900ms; /* 切纸、脱落并落到台面的完整动作 */
 
   /* 首屏书写：单独一档，因为它不是"入场"而是"写字"。
    * 观感慢不慢由时长和缓动共同决定，只调时长没用 ——

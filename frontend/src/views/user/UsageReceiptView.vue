@@ -101,23 +101,39 @@
           <div class="usage-receipt-preview__toolbar">
             <div>
               <span class="usage-receipt-preview__status" :class="{ 'usage-receipt-preview__status--active': printing }"></span>
-              <strong id="receipt-preview-title">{{ printing ? t('usageReceipt.printing') : t('usageReceipt.previewReady') }}</strong>
+              <strong id="receipt-preview-title">{{ receiptStatusText }}</strong>
             </div>
             <span>{{ t('usageReceipt.beijingTime') }}</span>
           </div>
 
-          <div class="receipt-printer-stage" :class="{ 'receipt-printer-stage--printing': printing }">
-            <div class="receipt-printer" aria-hidden="true">
+          <div
+            class="receipt-printer-stage"
+            :class="{
+              'receipt-printer-stage--printing': isPrinting,
+              'receipt-printer-stage--detaching': isDetaching,
+              'receipt-printer-stage--complete': printPhase === 'complete'
+            }"
+          >
+            <div class="receipt-printer">
               <img
                 src="/assets/usage-receipt/thermal-printer-athens-v1.png"
                 alt=""
                 draggable="false"
+                aria-hidden="true"
               />
-              <div class="receipt-printer__mouth">
+              <div class="receipt-printer__mouth" aria-hidden="true">
                 <span class="receipt-printer__roller"></span>
                 <span class="receipt-printer__cutter"></span>
               </div>
-              <span class="receipt-printer__active-lamp"></span>
+              <span class="receipt-printer__active-lamp" aria-hidden="true"></span>
+              <button
+                type="button"
+                class="receipt-printer__print-button"
+                :disabled="!receiptData || loading || printing"
+                :aria-label="t('usageReceipt.pressPrinterButton')"
+                :data-label="t('usageReceipt.pressPrinterButton')"
+                @click="restartPrint(true)"
+              ></button>
             </div>
 
             <div v-if="loading" class="receipt-loading" role="status">
@@ -136,8 +152,13 @@
               <div
                 :key="printRunKey"
                 class="receipt-feed"
-                :class="{ 'receipt-feed--printing': printing }"
-                @animationend.self="finishPrint"
+                :class="{
+                  'receipt-feed--ready': printPhase === 'ready',
+                  'receipt-feed--printing': isPrinting,
+                  'receipt-feed--detaching': isDetaching,
+                  'receipt-feed--complete': printPhase === 'complete'
+                }"
+                @animationend.self="handlePrintAnimationEnd"
               >
                 <UsageReceiptPaper
                   ref="receiptPaper"
@@ -186,6 +207,8 @@ interface ReceiptPaperExpose {
   getElement: () => HTMLElement | null
 }
 
+type PrintPhase = 'ready' | 'printing' | 'detaching' | 'complete'
+
 const { t } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
@@ -207,11 +230,21 @@ const inviteCode = ref('')
 const qrDataUrl = ref('')
 const loading = ref(true)
 const loadError = ref(false)
-const printing = ref(false)
+const printPhase = ref<PrintPhase>('ready')
 const exporting = ref(false)
 const sharing = ref(false)
 const printRunKey = ref(0)
 let stopPrinterSound: (() => void) | null = null
+
+const isPrinting = computed(() => printPhase.value === 'printing')
+const isDetaching = computed(() => printPhase.value === 'detaching')
+const printing = computed(() => isPrinting.value || isDetaching.value)
+const receiptStatusText = computed(() => {
+  if (isPrinting.value) return t('usageReceipt.printing')
+  if (isDetaching.value) return t('usageReceipt.detaching')
+  if (printPhase.value === 'complete') return t('usageReceipt.previewReady')
+  return t('usageReceipt.pressPrinterButton')
+})
 
 const preferences = reactive<UsageReceiptPreferences>({
   showDisplayName: false,
@@ -280,7 +313,7 @@ async function loadReceiptData(): Promise<void> {
     }
 
     await nextTick()
-    restartPrint(false)
+    resetPrinter()
   } catch (error) {
     console.error('Failed to load usage receipt:', error)
     receiptData.value = null
@@ -297,17 +330,31 @@ async function handleDateRangeChange(range: { startDate: string; endDate: string
 }
 
 function restartPrint(withSound = true): void {
-  if (!receiptData.value) return
+  if (!receiptData.value || printing.value) return
   stopPrinterSound?.()
   stopPrinterSound = withSound ? playThermalPrinterSound() : null
-  printing.value = true
+  printPhase.value = 'printing'
   printRunKey.value += 1
 }
 
-function finishPrint(): void {
-  printing.value = false
+function resetPrinter(): void {
   stopPrinterSound?.()
   stopPrinterSound = null
+  printPhase.value = 'ready'
+  printRunKey.value += 1
+}
+
+function handlePrintAnimationEnd(): void {
+  if (isPrinting.value) {
+    printPhase.value = 'detaching'
+    return
+  }
+
+  if (isDetaching.value) {
+    printPhase.value = 'complete'
+    stopPrinterSound?.()
+    stopPrinterSound = null
+  }
 }
 
 async function renderReceiptBlob(): Promise<Blob> {
@@ -592,18 +639,33 @@ onBeforeUnmount(() => {
   position: relative;
   min-height: 700px;
   overflow: hidden;
-  padding: 190px 24px 58px;
+  padding: 190px 24px 300px;
   border: 1px solid rgb(var(--color-muted) / 0.28);
   border-radius: 14px;
   background:
     radial-gradient(ellipse at 50% 56px, rgb(var(--color-ink) / 0.12), transparent 37%),
-    linear-gradient(115deg, rgb(var(--color-marble) / 0.76), transparent 34%),
+    linear-gradient(115deg, rgb(var(--color-marble) / 0.82), transparent 34%),
+    linear-gradient(102deg, transparent 0 28%, rgb(var(--color-muted) / 0.08) 28.2%, transparent 28.55% 71%, rgb(var(--color-muted) / 0.06) 71.25%, transparent 71.6%),
     repeating-linear-gradient(90deg, transparent 0 31px, rgb(var(--color-muted) / 0.04) 31px 32px),
     rgb(var(--color-parchment));
   box-shadow:
     inset 0 1px 0 rgb(var(--color-vellum) / 0.78),
     inset 0 -30px 80px rgb(var(--color-ink) / 0.06),
     0 22px 60px rgb(var(--shadow-ink) / 0.14);
+  perspective: 1100px;
+}
+
+.receipt-printer-stage::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 14% 23%, rgb(var(--color-muted) / 0.08) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 78% 67%, rgb(var(--color-muted) / 0.065) 0 1px, transparent 1.5px);
+  background-size: 48px 52px, 62px 58px;
+  content: '';
+  pointer-events: none;
 }
 
 .receipt-printer-stage::after {
@@ -688,6 +750,83 @@ onBeforeUnmount(() => {
   background: rgb(var(--printer-paper-led));
 }
 
+.receipt-printer__print-button {
+  position: absolute;
+  top: 64.2%;
+  right: 7.45%;
+  z-index: 10;
+  width: 6.2%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    transform var(--duration-instant) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.receipt-printer__print-button::before {
+  position: absolute;
+  right: -18px;
+  bottom: calc(100% + 12px);
+  width: max-content;
+  padding: 6px 9px;
+  border: 1px solid rgb(var(--color-muted) / 0.44);
+  border-radius: 3px;
+  opacity: 0;
+  color: rgb(var(--color-vellum));
+  background: rgb(var(--color-ink));
+  box-shadow: 0 7px 16px rgb(var(--shadow-ink) / 0.2);
+  content: attr(data-label);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition:
+    opacity var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+  white-space: nowrap;
+}
+
+.receipt-printer__print-button::after {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(var(--color-terracotta-dark) / 0.7);
+  border-radius: inherit;
+  background: rgb(var(--color-terracotta) / 0.08);
+  box-shadow:
+    inset 0 2px 3px rgb(var(--color-vellum) / 0.18),
+    0 0 0 0 rgb(var(--color-terracotta) / 0.28);
+  content: '';
+}
+
+.receipt-printer__print-button:hover::before,
+.receipt-printer__print-button:focus-visible::before {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.receipt-printer__print-button:focus-visible {
+  outline: 2px solid rgb(var(--color-terracotta));
+  outline-offset: 4px;
+}
+
+.receipt-printer__print-button:active:not(:disabled) {
+  transform: translateY(2px) scale(0.94);
+}
+
+.receipt-printer__print-button:disabled {
+  cursor: not-allowed;
+}
+
+.receipt-printer-stage:not(.receipt-printer-stage--printing, .receipt-printer-stage--detaching)
+  .receipt-printer__print-button:not(:disabled)::after {
+  animation: receipt-button-invite var(--duration-ambient) var(--ease-standard) infinite;
+}
+
 .receipt-viewport {
   position: relative;
   z-index: 5;
@@ -705,14 +844,30 @@ onBeforeUnmount(() => {
   will-change: transform;
 }
 
-.receipt-feed--printing {
-  animation: receipt-feed-out calc(var(--duration-receipt-print) + var(--duration-receipt-settle))
-    steps(78, end) both;
+.receipt-feed--ready {
+  transform: translateY(calc(-100% + 14px));
 }
 
-.receipt-feed--printing > :deep(.usage-receipt-paper) {
-  animation: receipt-paper-settle var(--duration-receipt-settle) var(--ease-out)
-    var(--duration-receipt-print) both;
+.receipt-feed--printing {
+  animation: receipt-feed-out var(--duration-receipt-print) steps(72, end) both;
+}
+
+.receipt-feed--detaching {
+  animation: receipt-release var(--duration-receipt-settle) var(--ease-out) both;
+}
+
+.receipt-feed--complete {
+  transform: translate3d(0, 82px, 0) rotateZ(0) scale(1);
+}
+
+.receipt-feed--detaching > :deep(.usage-receipt-paper),
+.receipt-feed--complete > :deep(.usage-receipt-paper) {
+  box-shadow: 0 16px 30px rgb(var(--shadow-ink) / 0.2);
+}
+
+.receipt-printer-stage--detaching .receipt-viewport,
+.receipt-printer-stage--complete .receipt-viewport {
+  overflow: visible;
 }
 
 .receipt-printer-stage--printing .receipt-printer {
@@ -725,6 +880,10 @@ onBeforeUnmount(() => {
 
 .receipt-printer-stage--printing .receipt-printer__active-lamp {
   animation: receipt-paper-lamp 780ms steps(2, end) infinite;
+}
+
+.receipt-printer-stage--detaching .receipt-printer {
+  animation: receipt-cutter-kick 160ms var(--ease-out) both;
 }
 
 .receipt-loading,
@@ -757,16 +916,25 @@ onBeforeUnmount(() => {
   4% {
     transform: translateY(calc(-100% + 24px));
   }
-  91% {
-    transform: translateY(0);
-  }
   100% { transform: translateY(0); }
 }
 
-@keyframes receipt-paper-settle {
-  0% { transform: translateY(0); }
-  52% { transform: translateY(8px); }
-  100% { transform: translateY(0); }
+@keyframes receipt-release {
+  0% {
+    transform: perspective(1100px) translate3d(0, 0, 0) rotateX(0) rotateZ(0) scale(1);
+  }
+  16% {
+    transform: perspective(1100px) translate3d(0, -8px, 0) rotateX(0) rotateZ(0.25deg) scale(1);
+  }
+  42% {
+    transform: perspective(1100px) translate3d(3px, 30px, 0) rotateX(4deg) rotateZ(-0.45deg) scale(0.98);
+  }
+  72% {
+    transform: perspective(1100px) translate3d(-2px, 68px, 0) rotateX(2deg) rotateZ(0.3deg) scale(0.992);
+  }
+  100% {
+    transform: translate3d(0, 82px, 0) rotateZ(0) scale(1);
+  }
 }
 
 @keyframes receipt-printer-vibration {
@@ -788,6 +956,24 @@ onBeforeUnmount(() => {
     opacity: 1;
     box-shadow: 0 0 7px rgb(var(--printer-paper-led) / 0.7);
   }
+}
+
+@keyframes receipt-button-invite {
+  0%, 100% {
+    box-shadow:
+      inset 0 2px 3px rgb(var(--color-vellum) / 0.18),
+      0 0 0 0 rgb(var(--color-terracotta) / 0.24);
+  }
+  50% {
+    box-shadow:
+      inset 0 2px 3px rgb(var(--color-vellum) / 0.18),
+      0 0 0 7px rgb(var(--color-terracotta) / 0);
+  }
+}
+
+@keyframes receipt-cutter-kick {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  45% { transform: translateX(-50%) translateY(1.5px); }
 }
 
 @keyframes receipt-status-pulse {
@@ -852,10 +1038,12 @@ onBeforeUnmount(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .receipt-feed--printing,
-  .receipt-feed--printing > :deep(.usage-receipt-paper),
+  .receipt-feed--detaching,
   .receipt-printer-stage--printing .receipt-printer,
   .receipt-printer-stage--printing .receipt-printer__roller,
   .receipt-printer-stage--printing .receipt-printer__active-lamp,
+  .receipt-printer-stage--detaching .receipt-printer,
+  .receipt-printer__print-button::after,
   .usage-receipt-preview__status--active {
     animation-duration: 1ms;
     animation-delay: 0ms;

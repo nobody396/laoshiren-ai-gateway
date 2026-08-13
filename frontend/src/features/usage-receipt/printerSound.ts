@@ -3,7 +3,7 @@ type AudioContextWithWebkit = typeof window & {
 }
 
 const PRINT_DURATION_MS = 6000
-const CUTTER_DURATION_MS = 600
+const CUTTER_DURATION_MS = 900
 
 export function playThermalPrinterSound(): (() => void) | null {
   if (typeof window === 'undefined') return null
@@ -19,7 +19,7 @@ export function playThermalPrinterSound(): (() => void) | null {
   const sources: AudioScheduledSourceNode[] = []
 
   const master = context.createGain()
-  master.gain.setValueAtTime(0.34, startAt)
+  master.gain.setValueAtTime(0.68, startAt)
   master.gain.exponentialRampToValueAtTime(0.0001, stopAt)
   master.connect(context.destination)
 
@@ -42,13 +42,13 @@ export function playThermalPrinterSound(): (() => void) | null {
   noiseHighPass.frequency.value = 430
   noiseLowPass.type = 'lowpass'
   noiseLowPass.frequency.value = 3200
-  noiseGain.gain.setValueAtTime(0.018, startAt)
+  noiseGain.gain.setValueAtTime(0.024, startAt)
 
   for (let offset = 0; offset < feedDuration - 0.08; offset += 0.082) {
     const pulseAt = startAt + offset
-    noiseGain.gain.setValueAtTime(0.012, pulseAt)
-    noiseGain.gain.linearRampToValueAtTime(0.052, pulseAt + 0.006)
-    noiseGain.gain.exponentialRampToValueAtTime(0.014, pulseAt + 0.032)
+    noiseGain.gain.setValueAtTime(0.018, pulseAt)
+    noiseGain.gain.linearRampToValueAtTime(0.068, pulseAt + 0.006)
+    noiseGain.gain.exponentialRampToValueAtTime(0.02, pulseAt + 0.032)
   }
 
   noise.connect(noiseHighPass)
@@ -85,6 +85,19 @@ export function playThermalPrinterSound(): (() => void) | null {
   headWhine.stop(startAt + feedDuration)
   sources.push(headWhine)
 
+  const buttonClick = context.createOscillator()
+  const buttonClickGain = context.createGain()
+  buttonClick.type = 'triangle'
+  buttonClick.frequency.setValueAtTime(176, startAt)
+  buttonClick.frequency.exponentialRampToValueAtTime(72, startAt + 0.045)
+  buttonClickGain.gain.setValueAtTime(0.095, startAt)
+  buttonClickGain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.06)
+  buttonClick.connect(buttonClickGain)
+  buttonClickGain.connect(master)
+  buttonClick.start(startAt)
+  buttonClick.stop(startAt + 0.065)
+  sources.push(buttonClick)
+
   const cutterAt = startAt + feedDuration + 0.06
   for (const [offset, startFrequency] of [[0, 138], [0.16, 104]] as const) {
     const cutter = context.createOscillator()
@@ -93,7 +106,7 @@ export function playThermalPrinterSound(): (() => void) | null {
     cutter.type = 'triangle'
     cutter.frequency.setValueAtTime(startFrequency, hitAt)
     cutter.frequency.exponentialRampToValueAtTime(42, hitAt + 0.055)
-    cutterGain.gain.setValueAtTime(0.085, hitAt)
+    cutterGain.gain.setValueAtTime(0.12, hitAt)
     cutterGain.gain.exponentialRampToValueAtTime(0.0001, hitAt + 0.075)
     cutter.connect(cutterGain)
     cutterGain.connect(master)

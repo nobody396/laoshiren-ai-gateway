@@ -618,12 +618,12 @@ function generateGrokClaudeFiles(baseUrl: string, apiKey: string): FileConfig[] 
   const environment = {
     ANTHROPIC_BASE_URL: baseUrl,
     ANTHROPIC_AUTH_TOKEN: apiKey,
-    ANTHROPIC_MODEL: 'grok-4.5',
-    ANTHROPIC_DEFAULT_OPUS_MODEL: 'grok-4.5',
-    ANTHROPIC_DEFAULT_SONNET_MODEL: 'grok-4.5',
-    ANTHROPIC_DEFAULT_HAIKU_MODEL: 'grok-4.5',
-    ANTHROPIC_DEFAULT_FABLE_MODEL: 'grok-4.5',
-    CLAUDE_CODE_SUBAGENT_MODEL: 'grok-4.5',
+    ANTHROPIC_MODEL: 'grok-4.6',
+    ANTHROPIC_DEFAULT_OPUS_MODEL: 'grok-4.6',
+    ANTHROPIC_DEFAULT_SONNET_MODEL: 'grok-4.6',
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: 'grok-4.6',
+    ANTHROPIC_DEFAULT_FABLE_MODEL: 'grok-4.6',
+    CLAUDE_CODE_SUBAGENT_MODEL: 'grok-4.6',
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
     CLAUDE_CODE_ATTRIBUTION_HEADER: '0'
   }
@@ -679,12 +679,12 @@ default = "grok"
 web_search = "grok"
 
 [model."grok"]
-model = "grok-4.5"
+model = "grok-4.6"
 base_url = "${baseUrl}"
-name = "Grok 4.5"
+name = "Grok 4.6"
 api_key = "${apiKey}"
 api_backend = "responses"
-context_window = 1000000
+context_window = 500000
 supports_backend_search = true`
 
   return [{
@@ -700,10 +700,10 @@ function generateGrokCodexFiles(baseUrl: string, apiKey: string): FileConfig[] {
     ? '%USERPROFILE%\\.codex\\config.toml'
     : '~/.codex/config.toml'
   const configContent = `model_provider = "laoshirenai_grok"
-model = "grok-4.5"
-review_model = "grok-4.5"
+model = "grok-4.6"
+review_model = "grok-4.6"
 model_reasoning_effort = "xhigh"
-model_context_window = 1000000
+model_context_window = 500000
 
 [model_providers.laoshirenai_grok]
 name = "老实人AI Grok"
@@ -1283,6 +1283,10 @@ function generateOpenCodeConfig(platform: string, baseUrl: string, apiKey: strin
     }
   }
   const grokModels = {
+    'grok-4.6': {
+      name: 'Grok 4.6',
+      limit: { context: 500000, output: 128000 }
+    },
     'grok-4.5': {
       name: 'Grok 4.5',
       limit: { context: 1000000, output: 128000 }

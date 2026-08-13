@@ -445,6 +445,27 @@ func TestModelPricingManualFallback(t *testing.T) {
 	assertPrice(t, "cache_read", m.CacheReadPrice, 0.12) // 0.3 × 0.4
 }
 
+func TestModelPricingGrok46UsesVerifiedPomoRateCard(t *testing.T) {
+	groups := []Group{{ID: 34, Name: "Grok 4.6 分组", Platform: "grok", RateMultiplier: 0.4}}
+	models := map[int64][]string{34: {"grok-4.6"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, nil, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 1 || len(catalog.Groups[0].Models) != 1 {
+		t.Fatalf("expected 1 group with 1 model, got %+v", catalog.Groups)
+	}
+	m := catalog.Groups[0].Models[0]
+	if m.Model != "grok-4.6" {
+		t.Fatalf("expected grok-4.6, got %+v", m)
+	}
+	assertPrice(t, "input", m.InputPrice, 0.8)          // 2.0 x 0.4
+	assertPrice(t, "output", m.OutputPrice, 2.4)        // 6.0 x 0.4
+	assertPrice(t, "cache_read", m.CacheReadPrice, 0.2) // 0.5 x 0.4
+}
+
 func TestModelPricingSkipsUnknownModel(t *testing.T) {
 	groups := []Group{{ID: 34, Name: "Grok 4.5 分组", Platform: "anthropic", RateMultiplier: 0.4}}
 	models := map[int64][]string{34: {"grok-4.5", "totally-unknown-model"}}

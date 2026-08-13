@@ -2,11 +2,11 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="0.7.4"
+SCRIPT_VERSION="0.7.5"
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
 DEFAULT_CODEX_MANIFEST_URL="https://laoshirenai.com/api/v1/public-downloads/codex/latest.json"
-DEFAULT_CODEX_MODEL_CATALOG_URL="https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.4"
+DEFAULT_CODEX_MODEL_CATALOG_URL="https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.5"
 DEFAULT_TOPUP_URL="https://laoshirenai.com/get-subscription"
 DEFAULT_TOOLS="all"
 DEFAULT_NODE_INDEX_PRIMARY="https://npmmirror.com/mirrors/node/index.tab"
@@ -1047,7 +1047,7 @@ const kept = []
 let droppingModel = false
 for (const line of lines) {
   const header = line.trim().match(/^\[([^\]]+)\]$/)
-  if (header) droppingModel = ['model.grok-4.5', 'model."grok-4.5"'].includes(header[1])
+  if (header) droppingModel = ['model.grok-4.5', 'model."grok-4.5"', 'model.grok-4.6', 'model."grok-4.6"'].includes(header[1])
   if (!droppingModel) kept.push(line)
 }
 lines = kept
@@ -1056,7 +1056,7 @@ lines = kept
 let modelsHeader = lines.findIndex((line) => line.trim() === '[models]')
 if (modelsHeader < 0) {
   while (lines.length && !lines[lines.length - 1].trim()) lines.pop()
-  lines.push('', '[models]', 'default = "grok-4.5"')
+  lines.push('', '[models]', 'default = "grok-4.6"')
 } else {
   let end = lines.length
   for (let i = modelsHeader + 1; i < lines.length; i++) {
@@ -1065,23 +1065,23 @@ if (modelsHeader < 0) {
   let replaced = false
   for (let i = modelsHeader + 1; i < end; i++) {
     if (/^\s*default\s*=/.test(lines[i])) {
-      lines[i] = 'default = "grok-4.5"'
+      lines[i] = 'default = "grok-4.6"'
       replaced = true
       break
     }
   }
-  if (!replaced) lines.splice(modelsHeader + 1, 0, 'default = "grok-4.5"')
+  if (!replaced) lines.splice(modelsHeader + 1, 0, 'default = "grok-4.6"')
 }
 
 while (lines.length && !lines[lines.length - 1].trim()) lines.pop()
 lines.push(
   '',
   '# Managed by laoshirenai one-click setup',
-  '[model."grok-4.5"]',
-  'model = "grok-4.5"',
+  '[model."grok-4.6"]',
+  'model = "grok-4.6"',
   `base_url = ${JSON.stringify(baseUrl)}`,
-  'name = "Grok 4.5 · 老实人AI"',
-  'description = "Grok 4.5"',
+  'name = "Grok 4.6 · 老实人AI"',
+  'description = "Grok 4.6"',
   `api_key = ${JSON.stringify(apiKey)}`,
   'api_backend = "responses"',
   'context_window = 500000',
@@ -1296,7 +1296,7 @@ print_summary() {
   fi
   if uses_grok; then
     printf '  grok --version\n'
-    printf '  grok -m grok-4.5 -p "只回复 OK"\n'
+    printf '  grok -m grok-4.6 -p "只回复 OK"\n'
   fi
 }
 

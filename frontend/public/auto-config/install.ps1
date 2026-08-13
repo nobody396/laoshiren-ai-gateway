@@ -1,11 +1,11 @@
 ﻿Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.7.4'
+$ScriptVersion = '0.7.5'
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
 $DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
-$DefaultCodexModelCatalogUrl = 'https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.4'
+$DefaultCodexModelCatalogUrl = 'https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.5'
 $DefaultCodexAppInstallerUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/windows-x64/latest.appinstaller'
 $DefaultTopupUrl = 'https://laoshirenai.com/get-subscription'
 $DefaultTools = 'all'
@@ -1191,7 +1191,7 @@ function Write-GrokTomlConfig {
   $DroppingModel = $false
   foreach ($Line in $Lines) {
     if ($Line.Trim() -match '^\[([^\]]+)\]$') {
-      $DroppingModel = $Matches[1] -in @('model.grok-4.5', 'model."grok-4.5"')
+      $DroppingModel = $Matches[1] -in @('model.grok-4.5', 'model."grok-4.5"', 'model.grok-4.6', 'model."grok-4.6"')
     }
     if (-not $DroppingModel) { $Kept.Add($Line) }
   }
@@ -1204,7 +1204,7 @@ function Write-GrokTomlConfig {
   if ($ModelsHeader -lt 0) {
     $Lines.Add('')
     $Lines.Add('[models]')
-    $Lines.Add('default = "grok-4.5"')
+    $Lines.Add('default = "grok-4.6"')
   } else {
     $End = $Lines.Count
     for ($i = $ModelsHeader + 1; $i -lt $Lines.Count; $i++) {
@@ -1213,22 +1213,22 @@ function Write-GrokTomlConfig {
     $Replaced = $false
     for ($i = $ModelsHeader + 1; $i -lt $End; $i++) {
       if ($Lines[$i] -match '^\s*default\s*=') {
-        $Lines[$i] = 'default = "grok-4.5"'
+        $Lines[$i] = 'default = "grok-4.6"'
         $Replaced = $true
         break
       }
     }
-    if (-not $Replaced) { $Lines.Insert($ModelsHeader + 1, 'default = "grok-4.5"') }
+    if (-not $Replaced) { $Lines.Insert($ModelsHeader + 1, 'default = "grok-4.6"') }
   }
 
   $BaseV1 = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
   $Lines.Add('')
   $Lines.Add('# Managed by laoshirenai one-click setup')
-  $Lines.Add('[model."grok-4.5"]')
-  $Lines.Add('model = "grok-4.5"')
+  $Lines.Add('[model."grok-4.6"]')
+  $Lines.Add('model = "grok-4.6"')
   $Lines.Add("base_url = $(ConvertTo-TomlString $BaseV1)")
-  $Lines.Add('name = "Grok 4.5 · 老实人AI"')
-  $Lines.Add('description = "Grok 4.5"')
+  $Lines.Add('name = "Grok 4.6 · 老实人AI"')
+  $Lines.Add('description = "Grok 4.6"')
   $Lines.Add("api_key = $(ConvertTo-TomlString $script:GrokApiKey)")
   $Lines.Add('api_backend = "responses"')
   $Lines.Add('context_window = 500000')
@@ -1470,7 +1470,7 @@ function Print-Summary {
   }
   if (Test-UsesGrok) {
     Write-Host '  - 重新打开 PowerShell 后执行 grok --version'
-    Write-Host '  - 再执行 grok -m grok-4.5 -p "只回复 OK"'
+    Write-Host '  - 再执行 grok -m grok-4.6 -p "只回复 OK"'
   }
 }
 

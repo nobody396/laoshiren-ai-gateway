@@ -75,7 +75,7 @@ type ldxpEnvelope struct {
 }
 
 func (c *ldxpCheckoutClient) CreateOrder(ctx context.Context, goodsKey, contact string, expectedAmountCNYFen int64) (*service.NativeCheckoutProviderOrder, error) {
-	channelID, err := c.checkoutChannelID(ctx, goodsKey, expectedAmountCNYFen)
+	channel, err := c.checkoutChannel(ctx, goodsKey, expectedAmountCNYFen)
 	if err != nil {
 		return nil, &service.NativeCheckoutProviderError{Cause: err}
 	}
@@ -85,7 +85,7 @@ func (c *ldxpCheckoutClient) CreateOrder(ctx context.Context, goodsKey, contact 
 		"goods_key":   goodsKey,
 		"quantity":    1,
 		"coupon_code": "",
-		"channel_id":  channelID,
+		"channel_id":  channel.ID,
 		"contact":     contact,
 		"extend":      map[string]any{},
 	}, &created, true)
@@ -101,15 +101,24 @@ func (c *ldxpCheckoutClient) CreateOrder(ctx context.Context, goodsKey, contact 
 		strings.TrimSpace(tradeNo) == "" || len(tradeNo) > 128 || c.validatePublicURL(parsedPaymentURL) != nil {
 		return nil, &service.NativeCheckoutProviderError{Ambiguous: true, Cause: errors.New("invalid LDXP order response")}
 	}
-	return &service.NativeCheckoutProviderOrder{TradeNo: tradeNo, PaymentURL: parsedPaymentURL.String()}, nil
+	return &service.NativeCheckoutProviderOrder{
+		TradeNo:       tradeNo,
+		PaymentURL:    parsedPaymentURL.String(),
+		PaymentMethod: channel.PaymentMethod,
+	}, nil
 }
 
 func (c *ldxpCheckoutClient) ValidateOffer(ctx context.Context, goodsKey string, expectedAmountCNYFen int64) error {
-	_, err := c.checkoutChannelID(ctx, goodsKey, expectedAmountCNYFen)
+	_, err := c.checkoutChannel(ctx, goodsKey, expectedAmountCNYFen)
 	return err
 }
 
-func (c *ldxpCheckoutClient) checkoutChannelID(ctx context.Context, goodsKey string, expectedAmountCNYFen int64) (int, error) {
+type ldxpCheckoutChannel struct {
+	ID            int
+	PaymentMethod string
+}
+
+func (c *ldxpCheckoutClient) checkoutChannel(ctx context.Context, goodsKey string, expectedAmountCNYFen int64) (ldxpCheckoutChannel, error) {
 	var goods struct {
 		GoodsType     string      `json:"goods_type"`
 		GoodsKey      string      `json:"goods_key"`
@@ -122,12 +131,12 @@ func (c *ldxpCheckoutClient) checkoutChannelID(ctx context.Context, goodsKey str
 		} `json:"user"`
 	}
 	if err := c.postSuccess(ctx, "/shopApi/Shop/goodsInfo", map[string]any{"goods_key": goodsKey}, &goods, false); err != nil {
-		return 0, err
+		return ldxpCheckoutChannel{}, err
 	}
 	priceFen, err := yuanNumberToFen(firstNonEmptyNumber(goods.RealPrice, goods.Price))
 	if err != nil || goods.GoodsKey != goodsKey || goods.GoodsType != "card" || goods.Status != 1 ||
 		goods.ContactFormat != "email" || strings.TrimSpace(goods.User.Token) == "" || priceFen != expectedAmountCNYFen {
-		return 0, errors.New("LDXP goods validation failed")
+		return ldxpCheckoutChannel{}, errors.New("LDXP goods validation failed")
 	}
 
 	var channels []struct {
@@ -137,21 +146,31 @@ func (c *ldxpCheckoutClient) checkoutChannelID(ctx context.Context, goodsKey str
 		CustomStatus int    `json:"custom_status"`
 	}
 	if err := c.postSuccess(ctx, "/shopApi/Shop/getUserChannel", map[string]any{"token": goods.User.Token}, &channels, false); err != nil {
-		return 0, err
+		return ldxpCheckoutChannel{}, err
 	}
-	channelID := 0
 	for _, channel := range channels {
-		if channel.Status == 1 && channel.CustomStatus == 1 && strings.EqualFold(channel.Code, "WeixinNative") {
-			channelID = channel.ID
-			break
+		if channel.ID <= 0 || channel.Status != 1 || channel.CustomStatus != 1 {
+			continue
+		}
+		if paymentMethod, ok := ldxpPaymentMethod(channel.Code); ok {
+			// Respect the provider's active-channel order. The exact selected method
+			// is persisted with the order so the customer prompt cannot drift if the
+			// merchant later switches between WeChat Pay and Alipay.
+			return ldxpCheckoutChannel{ID: channel.ID, PaymentMethod: paymentMethod}, nil
 		}
 	}
-	if channelID <= 0 {
-		// The current customer UI explicitly presents a WeChat scan-to-pay flow.
-		// Never silently substitute Alipay or another channel under that label.
-		return 0, errors.New("LDXP WeixinNative payment channel is unavailable")
+	return ldxpCheckoutChannel{}, errors.New("LDXP supported QR payment channel is unavailable")
+}
+
+func ldxpPaymentMethod(channelCode string) (string, bool) {
+	switch strings.ToLower(strings.TrimSpace(channelCode)) {
+	case "weixinnative":
+		return service.NativeCheckoutPaymentMethodWeChat, true
+	case "alipay":
+		return service.NativeCheckoutPaymentMethodAlipay, true
+	default:
+		return "", false
 	}
-	return channelID, nil
 }
 
 func (c *ldxpCheckoutClient) IsPaid(ctx context.Context, tradeNo string) (bool, error) {

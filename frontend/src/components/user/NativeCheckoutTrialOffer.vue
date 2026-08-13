@@ -50,7 +50,7 @@
       <section class="checkout-modal__card" role="dialog" aria-modal="true" aria-labelledby="native-checkout-modal-title">
         <header class="checkout-modal__header">
           <div>
-            <p>{{ t('nativeCheckout.wechatPay') }}</p>
+            <p>{{ paymentMethodTitle }}</p>
             <h2 id="native-checkout-modal-title">
               {{ t('nativeCheckout.scanToPay', { amount: formatCNY(activeOrder?.pay_amount_cny_fen || 0) }) }}
             </h2>
@@ -63,13 +63,13 @@
             ✓
           </div>
           <div v-else class="checkout-modal__qr">
-            <img v-if="qrImageURL" :src="qrImageURL" :alt="t('nativeCheckout.qrAlt')" />
+            <img v-if="qrImageURL" :src="qrImageURL" :alt="paymentQRAlt" />
             <div v-else class="checkout-modal__loading">{{ t('nativeCheckout.loadingQR') }}</div>
           </div>
-          <p v-if="qrKind === 'direct'" class="checkout-modal__kind">
-            {{ t('nativeCheckout.directQRHint') }}
+          <p v-if="qrImageURL" class="checkout-modal__kind">
+            {{ paymentScanInstruction }}
           </p>
-          <p v-else-if="qrKind === 'payment_link'" class="checkout-modal__kind checkout-modal__kind--notice">
+          <p v-if="qrKind === 'payment_link'" class="checkout-modal__kind checkout-modal__kind--notice">
             {{ t('nativeCheckout.linkQRHint') }}
           </p>
           <p class="checkout-modal__status">
@@ -121,6 +121,30 @@ const statusText = computed(() => {
     case 'completed': return t('nativeCheckout.paymentCompleted')
     case 'manual_review': return t('nativeCheckout.manualReviewHint')
     default: return t('nativeCheckout.waitingPayment')
+  }
+})
+
+const paymentMethodTitle = computed(() => {
+  switch (activeOrder.value?.payment_method) {
+    case 'wechat': return t('nativeCheckout.wechatPay')
+    case 'alipay': return t('nativeCheckout.alipayPay')
+    default: return t('nativeCheckout.qrPayment')
+  }
+})
+
+const paymentQRAlt = computed(() => {
+  switch (activeOrder.value?.payment_method) {
+    case 'wechat': return t('nativeCheckout.wechatQRAlt')
+    case 'alipay': return t('nativeCheckout.alipayQRAlt')
+    default: return t('nativeCheckout.paymentQRAlt')
+  }
+})
+
+const paymentScanInstruction = computed(() => {
+  switch (activeOrder.value?.payment_method) {
+    case 'wechat': return t('nativeCheckout.wechatScanInstruction')
+    case 'alipay': return t('nativeCheckout.alipayScanInstruction')
+    default: return t('nativeCheckout.scanInstruction')
   }
 })
 

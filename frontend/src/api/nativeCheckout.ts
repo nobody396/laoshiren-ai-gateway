@@ -8,12 +8,15 @@ export type NativeCheckoutStatus =
   | 'failed'
   | 'manual_review'
 
+export type NativeCheckoutPaymentMethod = 'wechat' | 'alipay'
+
 export interface NativeCheckoutOrder {
   order_no: string
   status: NativeCheckoutStatus
   pay_amount_cny_fen: number
   benefit_amount_cny_fen: number
   payment_url?: string
+  payment_method?: NativeCheckoutPaymentMethod
   direct_qr_url?: string
 }
 

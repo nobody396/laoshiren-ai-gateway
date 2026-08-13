@@ -82,6 +82,7 @@ describe('NativeCheckoutTrialOffer', () => {
       pay_amount_cny_fen: 100,
       benefit_amount_cny_fen: 500,
       payment_url: 'https://pay.ldxp.cn/pay/NC-1',
+      payment_method: 'wechat',
       direct_qr_url: '/native-checkout/orders/NC-1/qr',
     })
     mocks.getDirectQR.mockRejectedValue(new Error('provider challenge'))
@@ -92,6 +93,7 @@ describe('NativeCheckoutTrialOffer', () => {
       pay_amount_cny_fen: 100,
       benefit_amount_cny_fen: 500,
       payment_url: 'https://pay.ldxp.cn/pay/NC-1',
+      payment_method: 'wechat',
     })
     const wrapper = mount(NativeCheckoutTrialOffer, {
       global: { stubs: { Teleport: true } },
@@ -108,7 +110,44 @@ describe('NativeCheckoutTrialOffer', () => {
       expect.objectContaining({ width: 320 }),
     )
     expect(wrapper.find('.checkout-modal__qr img').attributes('src')).toBe('data:image/png;base64,LINKQR')
+    expect(wrapper.text()).toContain('nativeCheckout.wechatPay')
+    expect(wrapper.text()).toContain('nativeCheckout.wechatScanInstruction')
     expect(wrapper.text()).toContain('nativeCheckout.linkQRHint')
+    wrapper.unmount()
+  })
+
+  it('tells an Alipay order to scan with Alipay instead of WeChat', async () => {
+    mocks.createOrder.mockResolvedValue({
+      order_no: 'NC-ALIPAY',
+      status: 'pending',
+      pay_amount_cny_fen: 100,
+      benefit_amount_cny_fen: 500,
+      payment_url: 'https://pay.ldxp.cn/pay/NC-ALIPAY',
+      payment_method: 'alipay',
+      direct_qr_url: '/native-checkout/orders/NC-ALIPAY/qr',
+    })
+    mocks.getDirectQR.mockRejectedValue(new Error('provider challenge'))
+    mocks.toDataURL.mockResolvedValue('data:image/png;base64,ALIPAYLINK')
+    mocks.getOrder.mockResolvedValue({
+      order_no: 'NC-ALIPAY',
+      status: 'pending',
+      pay_amount_cny_fen: 100,
+      benefit_amount_cny_fen: 500,
+      payment_url: 'https://pay.ldxp.cn/pay/NC-ALIPAY',
+      payment_method: 'alipay',
+    })
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+
+    await wrapper.find('.trial-offer__action').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('nativeCheckout.alipayPay')
+    expect(wrapper.text()).toContain('nativeCheckout.alipayScanInstruction')
+    expect(wrapper.text()).not.toContain('nativeCheckout.wechatScanInstruction')
+    expect(wrapper.find('.checkout-modal__qr img').attributes('alt')).toBe('nativeCheckout.alipayQRAlt')
     wrapper.unmount()
   })
 

@@ -13,6 +13,7 @@ import (
 
 func TestLDXPCheckoutClientBuyerFlowAndDirectQR(t *testing.T) {
 	const redeemCode = "0123456789abcdef0123456789abcdef"
+	createdChannelID := 0
 	var server *httptest.Server
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -27,6 +28,11 @@ func TestLDXPCheckoutClientBuyerFlowAndDirectQR(t *testing.T) {
 				{"id": 4, "code": "WeixinNative", "status": 1, "custom_status": 1},
 			}})
 		case "/shopApi/Pay/order":
+			var request struct {
+				ChannelID int `json:"channel_id"`
+			}
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
+			createdChannelID = request.ChannelID
 			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
 				"trade_no": "LD-TEST-1", "total_amount": 1, "payurl": server.URL + "/pay/LD-TEST-1",
 			}})
@@ -60,6 +66,8 @@ func TestLDXPCheckoutClientBuyerFlowAndDirectQR(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "LD-TEST-1", order.TradeNo)
 	require.Equal(t, server.URL+"/pay/LD-TEST-1", order.PaymentURL)
+	require.Equal(t, service.NativeCheckoutPaymentMethodWeChat, order.PaymentMethod)
+	require.Equal(t, 4, createdChannelID)
 
 	paid, err := client.IsPaid(ctx, order.TradeNo)
 	require.NoError(t, err)
@@ -106,7 +114,45 @@ func TestLDXPCheckoutClientRejectsWrongGoodsAmountBeforeOrder(t *testing.T) {
 	require.False(t, providerErr.Ambiguous)
 }
 
-func TestLDXPCheckoutClientDoesNotSubstituteAnotherPaymentChannel(t *testing.T) {
+func TestLDXPCheckoutClientSupportsAlipayAndLabelsSelectedMethod(t *testing.T) {
+	createdChannelID := 0
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/shopApi/Shop/goodsInfo":
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
+				"goods_type": "card", "goods_key": "trial-key", "status": 1,
+				"price": 1, "real_price": 1, "contact_format": "email",
+				"user": map[string]any{"token": "public-shop-token"},
+			}})
+		case "/shopApi/Shop/getUserChannel":
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": []map[string]any{
+				{"id": 2, "code": "Alipay", "status": 1, "custom_status": 1},
+			}})
+		case "/shopApi/Pay/order":
+			var request struct {
+				ChannelID int `json:"channel_id"`
+			}
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
+			createdChannelID = request.ChannelID
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
+				"trade_no": "LD-ALIPAY-1", "total_amount": 1, "payurl": server.URL + "/pay/LD-ALIPAY-1",
+			}})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	client, err := newLDXPCheckoutClient(server.URL, true)
+	require.NoError(t, err)
+
+	order, err := client.CreateOrder(context.Background(), "trial-key", "buyer@example.com", 100)
+	require.NoError(t, err)
+	require.Equal(t, 2, createdChannelID)
+	require.Equal(t, service.NativeCheckoutPaymentMethodAlipay, order.PaymentMethod)
+}
+
+func TestLDXPCheckoutClientRejectsUnsupportedPaymentChannel(t *testing.T) {
 	orderCalled := false
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -118,7 +164,7 @@ func TestLDXPCheckoutClientDoesNotSubstituteAnotherPaymentChannel(t *testing.T) 
 			}})
 		case "/shopApi/Shop/getUserChannel":
 			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": []map[string]any{
-				{"id": 2, "code": "Alipay", "status": 1, "custom_status": 1},
+				{"id": 9, "code": "UnionPay", "status": 1, "custom_status": 1},
 			}})
 		case "/shopApi/Pay/order":
 			orderCalled = true

@@ -16,7 +16,9 @@ const nativeCheckoutTestContactKey = "test-native-checkout-contact-key"
 func TestNativeCheckoutCreateUsesRegisteredEmailAndReusesOnceOnlyOrder(t *testing.T) {
 	repo := newNativeCheckoutRepoFake(testNativeCheckoutOffer())
 	provider := &nativeCheckoutProviderFake{
-		created: &NativeCheckoutProviderOrder{TradeNo: "LD-1", PaymentURL: "https://pay.ldxp.cn/pay/LD-1"},
+		created: &NativeCheckoutProviderOrder{
+			TradeNo: "LD-1", PaymentURL: "https://pay.ldxp.cn/pay/LD-1", PaymentMethod: NativeCheckoutPaymentMethodWeChat,
+		},
 	}
 	service := NewNativeCheckoutService(
 		repo,
@@ -29,6 +31,7 @@ func TestNativeCheckoutCreateUsesRegisteredEmailAndReusesOnceOnlyOrder(t *testin
 	first, err := service.CreateOrder(context.Background(), 42, "trial-1-to-5")
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusPending, first.Status)
+	require.Equal(t, NativeCheckoutPaymentMethodWeChat, first.PaymentMethod)
 	require.Equal(t, "buyer@example.com", provider.contact)
 	require.Equal(t, 1, provider.createCalls)
 	require.NotEqual(t, "", first.ContactHash)
@@ -52,7 +55,9 @@ func TestNativeCheckoutListHidesOfferWhileMerchantProductIsOffline(t *testing.T)
 func TestNativeCheckoutCreateFinishesAfterRequestCancellation(t *testing.T) {
 	repo := newNativeCheckoutRepoFake(testNativeCheckoutOffer())
 	provider := &nativeCheckoutProviderFake{
-		created: &NativeCheckoutProviderOrder{TradeNo: "LD-1", PaymentURL: "https://pay.ldxp.cn/pay/LD-1"},
+		created: &NativeCheckoutProviderOrder{
+			TradeNo: "LD-1", PaymentURL: "https://pay.ldxp.cn/pay/LD-1", PaymentMethod: NativeCheckoutPaymentMethodWeChat,
+		},
 	}
 	svc := NewNativeCheckoutService(
 		repo,
@@ -68,6 +73,27 @@ func TestNativeCheckoutCreateFinishesAfterRequestCancellation(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusPending, order.Status)
 	require.NoError(t, provider.createContextErr, "the durable provider operation must be detached from the browser request")
+}
+
+func TestNativeCheckoutCreateRejectsUnlabeledProviderPaymentMethod(t *testing.T) {
+	repo := newNativeCheckoutRepoFake(testNativeCheckoutOffer())
+	provider := &nativeCheckoutProviderFake{
+		created: &NativeCheckoutProviderOrder{
+			TradeNo: "LD-UNKNOWN", PaymentURL: "https://pay.ldxp.cn/pay/LD-UNKNOWN", PaymentMethod: "",
+		},
+	}
+	svc := NewNativeCheckoutService(
+		repo,
+		provider,
+		&nativeCheckoutUserRepoFake{user: &User{ID: 42, Email: "buyer@example.com"}},
+		&nativeCheckoutRedeemerFake{},
+		nativeCheckoutTestContactKey,
+	)
+
+	_, err := svc.CreateOrder(context.Background(), 42, "trial-1-to-5")
+	require.Error(t, err)
+	require.Equal(t, NativeCheckoutStatusManualReview, repo.order.Status)
+	require.Equal(t, "provider_payment_method_invalid", repo.order.FailureCode)
 }
 
 func TestNativeCheckoutStaleCreatingOrderIsHeldForReviewWithoutRetry(t *testing.T) {
@@ -264,11 +290,12 @@ func (r *nativeCheckoutRepoFake) ResetFailedOrder(context.Context, int64, string
 	return nil, false, errors.New("unexpected reset")
 }
 
-func (r *nativeCheckoutRepoFake) SetProviderOrder(_ context.Context, _ int64, tradeNo, paymentURL string) (*NativeCheckoutOrder, error) {
+func (r *nativeCheckoutRepoFake) SetProviderOrder(_ context.Context, _ int64, tradeNo, paymentURL, paymentMethod string) (*NativeCheckoutOrder, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.order.ProviderTradeNo = tradeNo
 	r.order.PaymentURL = paymentURL
+	r.order.PaymentMethod = paymentMethod
 	r.order.Status = NativeCheckoutStatusPending
 	copy := *r.order
 	return &copy, nil

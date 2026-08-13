@@ -1,0 +1,24 @@
+package handler
+
+import (
+	"testing"
+
+	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
+	"github.com/stretchr/testify/require"
+)
+
+func TestNativeCheckoutOrderDTOIncludesSelectedPaymentMethod(t *testing.T) {
+	order := &service.NativeCheckoutOrder{
+		OrderNo:             "NC-ALIPAY",
+		Status:              service.NativeCheckoutStatusPending,
+		PayAmountCNYFen:     100,
+		BenefitAmountCNYFen: 500,
+		PaymentURL:          "https://pay.ldxp.cn/pay/NC-ALIPAY",
+		PaymentMethod:       service.NativeCheckoutPaymentMethodAlipay,
+	}
+
+	result := nativeCheckoutOrderDTO(order)
+	require.Equal(t, service.NativeCheckoutPaymentMethodAlipay, result.PaymentMethod)
+	require.Equal(t, order.PaymentURL, result.PaymentURL)
+	require.Equal(t, "/native-checkout/orders/NC-ALIPAY/qr", result.DirectQRURL)
+}

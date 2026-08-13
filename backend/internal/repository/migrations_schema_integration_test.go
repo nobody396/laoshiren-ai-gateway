@@ -459,10 +459,11 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 	// from promotional balance credited.
 	requireColumn(t, tx, "redeem_codes", "paid_value", "numeric", 0, false)
 
-	// migration 185: native card-shop checkout owns a durable once-per-user
-	// order and restricts its inventory from the public manual-redeem path.
+	// migrations 185-186: native card-shop checkout owns a durable once-per-user
+	// order, restricts its inventory, and snapshots the selected payment method.
 	requireColumn(t, tx, "native_checkout_offers", "provider_goods_key", "character varying", 64, false)
 	requireColumn(t, tx, "native_checkout_orders", "contact_hash", "character", 64, false)
+	requireColumn(t, tx, "native_checkout_orders", "payment_method", "character varying", 16, true)
 	requireColumn(t, tx, "native_checkout_orders", "redeem_code_id", "bigint", 0, true)
 	requireColumn(t, tx, "native_checkout_redeem_inventory", "assigned_order_id", "bigint", 0, true)
 	requireIndex(t, tx, "native_checkout_orders", "uq_native_checkout_orders_once_per_user")

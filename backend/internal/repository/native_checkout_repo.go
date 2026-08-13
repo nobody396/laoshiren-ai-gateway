@@ -92,7 +92,7 @@ func marshalNativeCheckoutGroupIDs(groupIDs []int64) ([]byte, error) {
 
 const nativeCheckoutOrderColumns = `
 id, order_no, user_id, offer_code, provider, provider_goods_key,
-COALESCE(provider_trade_no, ''), COALESCE(payment_url, ''), contact_hash,
+COALESCE(provider_trade_no, ''), COALESCE(payment_url, ''), COALESCE(payment_method, ''), contact_hash,
 product_kind, pay_amount_cny_fen, benefit_amount_cny_fen, redeem_type,
 redeem_value::double precision, redeem_paid_value::double precision,
 redeem_purpose, redeem_sales_status, redeem_group_ids, redeem_validity_days,
@@ -143,7 +143,7 @@ func (r *nativeCheckoutRepository) ReserveOrder(ctx context.Context, order *serv
 
 func (r *nativeCheckoutRepository) ResetFailedOrder(ctx context.Context, id int64, contactHash string) (*service.NativeCheckoutOrder, bool, error) {
 	row := r.db.QueryRowContext(ctx, `UPDATE native_checkout_orders SET
-		status = 'creating', provider_trade_no = NULL, payment_url = NULL,
+		status = 'creating', provider_trade_no = NULL, payment_url = NULL, payment_method = NULL,
 		contact_hash = $2, redeem_code_id = NULL, failure_code = '', check_count = 0,
 		next_check_at = NOW(), fulfillment_started_at = NULL, completed_at = NULL,
 		updated_at = NOW()
@@ -160,12 +160,12 @@ func (r *nativeCheckoutRepository) ResetFailedOrder(ctx context.Context, id int6
 	return current, false, err
 }
 
-func (r *nativeCheckoutRepository) SetProviderOrder(ctx context.Context, id int64, providerTradeNo, paymentURL string) (*service.NativeCheckoutOrder, error) {
+func (r *nativeCheckoutRepository) SetProviderOrder(ctx context.Context, id int64, providerTradeNo, paymentURL, paymentMethod string) (*service.NativeCheckoutOrder, error) {
 	row := r.db.QueryRowContext(ctx, `UPDATE native_checkout_orders SET
-		provider_trade_no = $2, payment_url = $3, status = 'pending', failure_code = '',
+		provider_trade_no = $2, payment_url = $3, payment_method = $4, status = 'pending', failure_code = '',
 		next_check_at = NOW(), updated_at = NOW()
 		WHERE id = $1 AND status = 'creating' AND provider_trade_no IS NULL
-		RETURNING `+nativeCheckoutOrderColumns, id, providerTradeNo, paymentURL)
+		RETURNING `+nativeCheckoutOrderColumns, id, providerTradeNo, paymentURL, paymentMethod)
 	return r.scanOrderRow(row)
 }
 
@@ -320,7 +320,7 @@ func (r *nativeCheckoutRepository) scanOrderRow(row sqlScanner) (*service.Native
 	var fulfillmentStartedAt, completedAt sql.NullTime
 	if err := row.Scan(
 		&order.ID, &order.OrderNo, &order.UserID, &order.OfferCode, &order.Provider, &order.ProviderGoodsKey,
-		&order.ProviderTradeNo, &order.PaymentURL, &order.ContactHash, &order.ProductKind,
+		&order.ProviderTradeNo, &order.PaymentURL, &order.PaymentMethod, &order.ContactHash, &order.ProductKind,
 		&order.PayAmountCNYFen, &order.BenefitAmountCNYFen, &order.RedeemType,
 		&order.RedeemValue, &order.RedeemPaidValue, &order.RedeemPurpose, &order.RedeemSalesStatus,
 		&groupIDs, &order.RedeemValidityDays, &order.EnforceOnce, &order.Status, &redeemCodeID,

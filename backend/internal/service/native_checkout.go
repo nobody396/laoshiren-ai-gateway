@@ -26,6 +26,9 @@ const (
 	NativeCheckoutStatusCompleted    = "completed"
 	NativeCheckoutStatusFailed       = "failed"
 	NativeCheckoutStatusManualReview = "manual_review"
+
+	NativeCheckoutPaymentMethodWeChat = "wechat"
+	NativeCheckoutPaymentMethodAlipay = "alipay"
 )
 
 var (
@@ -64,6 +67,7 @@ type NativeCheckoutOrder struct {
 	ProviderGoodsKey     string
 	ProviderTradeNo      string
 	PaymentURL           string
+	PaymentMethod        string
 	ContactHash          string
 	ProductKind          string
 	PayAmountCNYFen      int64
@@ -104,7 +108,7 @@ type NativeCheckoutRepository interface {
 	GetLatestOrderForOffer(ctx context.Context, userID int64, offerCode string) (*NativeCheckoutOrder, error)
 	ReserveOrder(ctx context.Context, order *NativeCheckoutOrder) (*NativeCheckoutOrder, bool, error)
 	ResetFailedOrder(ctx context.Context, id int64, contactHash string) (*NativeCheckoutOrder, bool, error)
-	SetProviderOrder(ctx context.Context, id int64, providerTradeNo, paymentURL string) (*NativeCheckoutOrder, error)
+	SetProviderOrder(ctx context.Context, id int64, providerTradeNo, paymentURL, paymentMethod string) (*NativeCheckoutOrder, error)
 	SetOrderState(ctx context.Context, id int64, status, failureCode string, nextCheckAt time.Time) (*NativeCheckoutOrder, error)
 	GetOrderForUser(ctx context.Context, orderNo string, userID int64) (*NativeCheckoutOrder, error)
 	GetOrder(ctx context.Context, orderNo string) (*NativeCheckoutOrder, error)
@@ -116,8 +120,9 @@ type NativeCheckoutRepository interface {
 }
 
 type NativeCheckoutProviderOrder struct {
-	TradeNo    string
-	PaymentURL string
+	TradeNo       string
+	PaymentURL    string
+	PaymentMethod string
 }
 
 type NativeCheckoutProviderOrderInfo struct {
@@ -213,9 +218,10 @@ func (s *NativeCheckoutService) ListOffers(ctx context.Context, userID int64) ([
 	views := make([]NativeCheckoutOfferView, 0, len(offers))
 	for i := range offers {
 		offer := offers[i]
-		// Merchant-side status, price, contact format, and WeChat channel are a
-		// second release gate. Keeping the DB offer enabled is harmless while the
-		// hidden LDXP product is offline; it simply does not appear to customers.
+		// Merchant-side status, price, contact format, and a supported QR channel
+		// (WeChat Pay or Alipay) form a second release gate. Keeping the DB offer
+		// enabled is harmless while the hidden LDXP product is offline; it simply
+		// does not appear to customers.
 		if err := s.provider.ValidateOffer(ctx, offer.ProviderGoodsKey, offer.PayAmountCNYFen); err != nil {
 			continue
 		}
@@ -337,7 +343,19 @@ func (s *NativeCheckoutService) createProviderOrder(ctx context.Context, order *
 		}
 		return nil, ErrNativeCheckoutUnavailable.WithCause(err)
 	}
-	updated, err := s.repo.SetProviderOrder(opCtx, order.ID, providerOrder.TradeNo, providerOrder.PaymentURL)
+	if providerOrder == nil || !isSupportedNativeCheckoutPaymentMethod(providerOrder.PaymentMethod) {
+		// The external order may already exist. Do not retry under another channel;
+		// hold it for review rather than ever showing a mislabeled QR code.
+		_, _ = s.repo.SetOrderState(opCtx, order.ID, NativeCheckoutStatusManualReview, "provider_payment_method_invalid", time.Now())
+		return nil, ErrNativeCheckoutUnavailable.WithCause(errors.New("provider returned an unsupported payment method"))
+	}
+	updated, err := s.repo.SetProviderOrder(
+		opCtx,
+		order.ID,
+		providerOrder.TradeNo,
+		providerOrder.PaymentURL,
+		providerOrder.PaymentMethod,
+	)
 	if err != nil {
 		// The provider order exists but could not be persisted.  Never create a
 		// replacement; hold the durable reservation for operator reconciliation.
@@ -345,6 +363,10 @@ func (s *NativeCheckoutService) createProviderOrder(ctx context.Context, order *
 		return nil, ErrNativeCheckoutUnavailable.WithCause(err)
 	}
 	return updated, nil
+}
+
+func isSupportedNativeCheckoutPaymentMethod(method string) bool {
+	return method == NativeCheckoutPaymentMethodWeChat || method == NativeCheckoutPaymentMethodAlipay
 }
 
 func (s *NativeCheckoutService) GetOrder(ctx context.Context, userID int64, orderNo string, sync bool) (*NativeCheckoutOrder, error) {

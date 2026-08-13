@@ -51,8 +51,15 @@ func TestNativeCheckoutRepositoryEnforcesOnceAndClaimsRestrictedInventory(t *tes
 	require.False(t, created)
 	require.Equal(t, reserved.ID, reused.ID, "the once-only index must own one durable row per account")
 
-	providerOrder, err := repo.SetProviderOrder(ctx, reserved.ID, "LD-"+fmt.Sprint(time.Now().UnixNano()), "https://pay.ldxp.cn/pay/test")
+	providerOrder, err := repo.SetProviderOrder(
+		ctx,
+		reserved.ID,
+		"LD-"+fmt.Sprint(time.Now().UnixNano()),
+		"https://pay.ldxp.cn/pay/test",
+		service.NativeCheckoutPaymentMethodWeChat,
+	)
 	require.NoError(t, err)
+	require.Equal(t, service.NativeCheckoutPaymentMethodWeChat, providerOrder.PaymentMethod)
 	claimed, didClaim, err := repo.ClaimFulfillment(ctx, providerOrder.ID, code.ID, time.Now().Add(-time.Minute))
 	require.NoError(t, err)
 	require.True(t, didClaim)

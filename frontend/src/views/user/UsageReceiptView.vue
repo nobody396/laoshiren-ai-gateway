@@ -135,7 +135,7 @@
             <div class="receipt-printer-rig">
               <div class="receipt-printer">
                 <img
-                  src="/assets/usage-receipt/thermal-printer-athens-v1.png"
+                  src="/assets/usage-receipt/typewriter-printer-olympus-v2.png"
                   alt=""
                   draggable="false"
                   aria-hidden="true"
@@ -893,7 +893,7 @@ onBeforeUnmount(() => {
   position: relative;
   min-height: 1530px;
   overflow: hidden;
-  padding: 190px 24px 300px;
+  padding: 300px 24px 300px;
   border: 1px solid rgb(var(--color-muted) / 0.28);
   border-radius: 14px;
   background:
@@ -924,7 +924,7 @@ onBeforeUnmount(() => {
 
 .receipt-printer-stage::after {
   position: absolute;
-  top: 202px;
+  top: 304px;
   left: 50%;
   z-index: 1;
   width: min(640px, calc(100% - 36px));
@@ -941,7 +941,7 @@ onBeforeUnmount(() => {
   top: 18px;
   left: 50%;
   z-index: 3;
-  width: min(760px, calc(100% - 30px));
+  width: min(780px, calc(100% - 30px));
   transform: translateX(-50%);
 }
 
@@ -949,7 +949,7 @@ onBeforeUnmount(() => {
   position: relative;
   z-index: 7;
   width: 100%;
-  aspect-ratio: 1570 / 528;
+  aspect-ratio: 1774 / 887;
   filter: drop-shadow(0 20px 18px rgb(var(--printer-counter-shadow) / 0.34));
   transform-origin: center bottom;
 }
@@ -965,11 +965,11 @@ onBeforeUnmount(() => {
 
 .receipt-printer__mouth {
   position: absolute;
-  top: 68.75%;
-  left: 12.42%;
+  top: 63.05%;
+  left: 14.24%;
   z-index: 10;
-  width: 58.85%;
-  height: 7.58%;
+  width: 61.3%;
+  height: 6.35%;
   overflow: hidden;
   border-radius: 3px;
   background: rgb(var(--printer-seam) / 0.94);
@@ -1002,8 +1002,8 @@ onBeforeUnmount(() => {
 
 .receipt-printer__active-lamp {
   position: absolute;
-  top: 73.35%;
-  left: 80.8%;
+  top: 55.92%;
+  left: 74.02%;
   z-index: 9;
   width: 6px;
   height: 6px;
@@ -1015,10 +1015,10 @@ onBeforeUnmount(() => {
 
 .receipt-printer__print-button {
   position: absolute;
-  top: 62.48%;
-  right: 8.47%;
+  top: 50.5%;
+  right: 10.42%;
   z-index: 10;
-  width: 6.5%;
+  width: 9.15%;
   aspect-ratio: 1;
   padding: 0;
   border: 0;
@@ -1090,10 +1090,10 @@ onBeforeUnmount(() => {
 
 .receipt-viewport {
   position: absolute;
-  top: 68.75%;
-  left: 12.42%;
+  top: 63.05%;
+  left: 14.24%;
   z-index: 9;
-  width: 58.85%;
+  width: 61.3%;
   overflow: hidden;
 }
 
@@ -1266,7 +1266,7 @@ onBeforeUnmount(() => {
 
   .receipt-printer-stage {
     min-height: 1260px;
-    padding-top: 176px;
+    padding-top: 276px;
     padding-right: 12px;
     padding-left: 12px;
     border-radius: 10px;
@@ -1278,11 +1278,11 @@ onBeforeUnmount(() => {
 
   .receipt-printer-rig {
     top: 14px;
-    width: max(510px, calc(100% - 8px));
+    width: max(500px, calc(100% - 8px));
   }
 
   .receipt-printer-stage::after {
-    top: 184px;
+    top: 282px;
   }
 
 }

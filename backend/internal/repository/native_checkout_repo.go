@@ -40,7 +40,7 @@ func (r *nativeCheckoutRepository) ListEnabledOffers(ctx context.Context) ([]ser
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	offers := make([]service.NativeCheckoutOffer, 0)
 	for rows.Next() {
 		offer, err := scanNativeCheckoutOffer(rows)
@@ -209,7 +209,7 @@ func (r *nativeCheckoutRepository) ListReconcileOrders(ctx context.Context, limi
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	orders := make([]service.NativeCheckoutOrder, 0)
 	for rows.Next() {
 		order, err := r.scanOrderRow(rows)

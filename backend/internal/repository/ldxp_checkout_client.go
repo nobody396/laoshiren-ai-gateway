@@ -291,7 +291,7 @@ func (c *ldxpCheckoutClient) post(ctx context.Context, path string, payload any,
 	if err != nil {
 		return nil, &ldxpRequestError{Ambiguous: createRequest, Cause: err}
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := readLimited(resp.Body, ldxpMaxJSONResponseBytes)
 	if err != nil {
 		return nil, &ldxpRequestError{Ambiguous: createRequest, Cause: err}
@@ -323,7 +323,7 @@ func (c *ldxpCheckoutClient) getLimited(ctx context.Context, target *url.URL, re
 	if err != nil {
 		return nil, "", nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, "", nil, fmt.Errorf("LDXP HTTP status %d", resp.StatusCode)
 	}
@@ -342,7 +342,8 @@ func (c *ldxpCheckoutClient) validatePublicURL(target *url.URL) error {
 		return errors.New("LDXP URL host is not allowed")
 	}
 	scheme := strings.ToLower(target.Scheme)
-	if scheme != "https" && !(c.allowHTTP && scheme == "http") {
+	validScheme := scheme == "https" || (c.allowHTTP && scheme == "http")
+	if !validScheme {
 		return errors.New("LDXP URL scheme is not allowed")
 	}
 	return nil

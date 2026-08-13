@@ -829,7 +829,7 @@ const navPermissionMap: Record<string, string> = {
   '/admin/dashboard': 'admin:dashboard',
   '/admin/ops': 'admin:ops',
   '/admin/monthly-upstreams': 'admin:ops',
-  '/admin/cost-accounting': 'admin:ops',
+  '/admin/business-finance': 'admin:finance-transactions|admin:ops',
   '/admin/users': 'admin:users',
   '/admin/affiliate': 'admin:agents',
   '/admin/groups': 'admin:groups',
@@ -871,10 +871,6 @@ const adminNavItems = computed((): NavItem[] => {
           path: '/admin/monthly-upstreams',
           label: resolveAdminMenuLabel('/admin/monthly-upstreams', t('nav.monthlyUpstreams', '月卡监控')),
           icon: ServerIcon
-        }, {
-          path: '/admin/cost-accounting',
-          label: resolveAdminMenuLabel('/admin/cost-accounting', t('nav.costAccounting', '成本核算')),
-          icon: CreditCardIcon
         }]
       : []),
     {
@@ -936,8 +932,8 @@ const adminNavItems = computed((): NavItem[] => {
       badge: adminFeedbackInboxStore.pendingCount
     },
     {
-      path: '/admin/finance-transactions',
-      label: resolveAdminMenuLabel('/admin/finance-transactions', t('nav.financeTransactions', '财务记账')),
+      path: '/admin/business-finance',
+      label: resolveAdminMenuLabel('/admin/finance-transactions', '经营财务中心'),
       icon: WalletIcon
     },
     {
@@ -1041,6 +1037,9 @@ function applyRBACFilter(items: NavItem[]): NavItem[] {
     const permKey = navPermissionMap[item.path]
     if (!permKey) {
       return true
+    }
+    if (permKey.includes('|')) {
+      return permStore.hasAnyPermission(permKey.split('|'))
     }
     return permStore.hasPermission(permKey)
   })

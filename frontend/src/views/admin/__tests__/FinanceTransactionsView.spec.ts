@@ -89,7 +89,7 @@ const StatCardStub = {
 }
 const RouterLinkStub = {
   props: ['to'],
-  template: '<a :href="to"><slot /></a>'
+  template: '<a :href="typeof to === \'string\' ? to : `${to.path}?tab=${to.query.tab}`"><slot /></a>'
 }
 
 const mountView = () =>
@@ -155,8 +155,8 @@ describe('admin FinanceTransactionsView', () => {
     const wrapper = mountView()
     await flushPromises()
 
-    expect(wrapper.get('[data-test="cost-accounting-link"]').attributes('href')).toBe(
-      '/admin/cost-accounting'
+    expect(wrapper.get('[data-test="cost-accounting-link"]').attributes('href')).toContain(
+      '/admin/business-finance'
     )
   })
 

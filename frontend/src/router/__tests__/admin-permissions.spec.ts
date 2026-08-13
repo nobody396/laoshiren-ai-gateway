@@ -53,6 +53,15 @@ describe('后台路由权限声明', () => {
       expect(router.getRoutes().find((route) => route.path === path)?.meta.permission).toBe(permission)
     }
     expect(router.getRoutes().find((route) => route.path === '/admin/dashboard')?.meta.permission).toBeUndefined()
+    expect(router.getRoutes().find((route) => route.path === '/admin/business-finance')?.meta.anyPermission)
+      .toEqual(['admin:finance-transactions', 'admin:ops'])
+  })
+
+  it('keeps the old finance URLs as redirects into the unified center', () => {
+    expect(router.getRoutes().find((route) => route.path === '/admin/finance-transactions')?.redirect)
+      .toEqual({ path: '/admin/business-finance', query: { tab: 'ledger' } })
+    expect(router.getRoutes().find((route) => route.path === '/admin/cost-accounting')?.redirect)
+      .toEqual({ path: '/admin/business-finance', query: { tab: 'cost' } })
   })
 })
 

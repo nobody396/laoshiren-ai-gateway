@@ -35,28 +35,24 @@
               <span>02</span>
               <div>
                 <h2>{{ t('usageReceipt.privacyTitle') }}</h2>
-                <p>{{ t('usageReceipt.privacyHint') }}</p>
               </div>
             </div>
 
             <label class="receipt-option">
               <span>
                 <strong>{{ t('usageReceipt.showName') }}</strong>
-                <small>{{ t('usageReceipt.showNameHint') }}</small>
               </span>
               <input v-model="preferences.showDisplayName" type="checkbox" />
             </label>
             <label class="receipt-option">
               <span>
                 <strong>{{ t('usageReceipt.showSavings') }}</strong>
-                <small>{{ t('usageReceipt.showSavingsHint') }}</small>
               </span>
               <input v-model="preferences.showSavings" type="checkbox" />
             </label>
             <label class="receipt-option">
               <span>
                 <strong>{{ t('usageReceipt.showModels') }}</strong>
-                <small>{{ t('usageReceipt.showModelsHint') }}</small>
               </span>
               <input v-model="preferences.showModelBreakdown" type="checkbox" />
             </label>

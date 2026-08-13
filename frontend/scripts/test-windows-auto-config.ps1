@@ -202,7 +202,7 @@ try {
     $checksumRejected = $true
   }
   Assert-True $checksumRejected 'Node.js checksum mismatch did not fail closed'
-  Assert-True (-not (Microsoft.PowerShell.Management\Test-Path -LiteralPath $verifiedDownload)) 'Checksum failure left a partial file behind'
+  Assert-True (-not [System.IO.File]::Exists($verifiedDownload)) 'Checksum failure left a partial file behind'
 
   $global:LASTEXITCODE = 0
   Write-Host "WINDOWS_AUTO_CONFIG_ACCEPTANCE_OK runtime=$($PSVersionTable.PSVersion) edition=$($PSVersionTable.PSEdition) claude=bare-cmd codex=bare-cmd grok=same-site git=same-site node=sha256 npm_policy=Restricted"

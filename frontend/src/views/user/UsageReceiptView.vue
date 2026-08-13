@@ -1118,7 +1118,7 @@ onBeforeUnmount(() => {
 }
 
 .receipt-feed--complete {
-  transform: translate3d(0, 82px, 0) rotateZ(0) scale(1);
+  transform: translate3d(0, 132px, 0) rotateZ(0) scale(1);
 }
 
 .receipt-feed--detaching > :deep(.usage-receipt-paper),
@@ -1185,13 +1185,13 @@ onBeforeUnmount(() => {
     transform: perspective(1100px) translate3d(0, -8px, 0) rotateX(0) rotateZ(0.25deg) scale(1);
   }
   42% {
-    transform: perspective(1100px) translate3d(3px, 30px, 0) rotateX(4deg) rotateZ(-0.45deg) scale(0.98);
+    transform: perspective(1100px) translate3d(3px, 54px, 0) rotateX(4deg) rotateZ(-0.45deg) scale(0.98);
   }
   72% {
-    transform: perspective(1100px) translate3d(-2px, 68px, 0) rotateX(2deg) rotateZ(0.3deg) scale(0.992);
+    transform: perspective(1100px) translate3d(-2px, 108px, 0) rotateX(2deg) rotateZ(0.3deg) scale(0.992);
   }
   100% {
-    transform: translate3d(0, 82px, 0) rotateZ(0) scale(1);
+    transform: translate3d(0, 132px, 0) rotateZ(0) scale(1);
   }
 }
 

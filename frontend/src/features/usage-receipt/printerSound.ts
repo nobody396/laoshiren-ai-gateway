@@ -17,16 +17,23 @@ export function playThermalPrinterSound(): (() => void) | null {
   const startAt = context.currentTime + 0.02
   const feedDuration = PRINT_DURATION_MS / 1000
   const cutterStartDelay = CUTTER_START_DELAY_MS / 1000
-  const completionBellAt = startAt + feedDuration + cutterStartDelay + 0.22
-  const completionBellDuration = 0.88
-  const stopAt = completionBellAt + completionBellDuration
+  const mechanicalCloseAt = startAt + feedDuration + cutterStartDelay + 0.14
+  const mechanicalCloseDuration = 0.68
+  const stopAt = mechanicalCloseAt + mechanicalCloseDuration
   const sources: AudioScheduledSourceNode[] = []
 
+  const printCompressor = context.createDynamicsCompressor()
   const master = context.createGain()
-  master.gain.setValueAtTime(0.68, startAt)
-  master.gain.setValueAtTime(0.68, startAt + feedDuration)
+  printCompressor.threshold.value = -15
+  printCompressor.knee.value = 9
+  printCompressor.ratio.value = 4
+  printCompressor.attack.value = 0.002
+  printCompressor.release.value = 0.12
+  master.gain.setValueAtTime(0.96, startAt)
+  master.gain.setValueAtTime(0.96, startAt + feedDuration)
   master.gain.exponentialRampToValueAtTime(0.0001, stopAt)
-  master.connect(context.destination)
+  master.connect(printCompressor)
+  printCompressor.connect(context.destination)
 
   const completionCompressor = context.createDynamicsCompressor()
   const completionGain = context.createGain()
@@ -35,7 +42,7 @@ export function playThermalPrinterSound(): (() => void) | null {
   completionCompressor.ratio.value = 4
   completionCompressor.attack.value = 0.002
   completionCompressor.release.value = 0.18
-  completionGain.gain.setValueAtTime(0.92, completionBellAt)
+  completionGain.gain.setValueAtTime(1.18, mechanicalCloseAt)
   completionGain.gain.exponentialRampToValueAtTime(0.0001, stopAt)
   completionCompressor.connect(completionGain)
   completionGain.connect(context.destination)
@@ -61,13 +68,13 @@ export function playThermalPrinterSound(): (() => void) | null {
   noiseLowPass.frequency.value = 4200
   noiseGain.gain.setValueAtTime(0.018, startAt)
 
-  // Tight paper slaps imitate a banknote counter's rubber wheels rather than
-  // a domestic thermal printer's slower dotted chatter.
-  for (let offset = 0; offset < feedDuration - 0.05; offset += 0.046) {
+  // A dense brush of short strokes gives the feed the dry, mechanical rhythm
+  // of a vintage typewriter carriage rather than an electronic buzz.
+  for (let offset = 0; offset < feedDuration - 0.05; offset += 0.052) {
     const pulseAt = startAt + offset
-    noiseGain.gain.setValueAtTime(0.014, pulseAt)
-    noiseGain.gain.linearRampToValueAtTime(0.078, pulseAt + 0.003)
-    noiseGain.gain.exponentialRampToValueAtTime(0.014, pulseAt + 0.021)
+    noiseGain.gain.setValueAtTime(0.02, pulseAt)
+    noiseGain.gain.linearRampToValueAtTime(0.13, pulseAt + 0.002)
+    noiseGain.gain.exponentialRampToValueAtTime(0.02, pulseAt + 0.026)
   }
 
   noise.connect(noiseHighPass)
@@ -85,7 +92,7 @@ export function playThermalPrinterSound(): (() => void) | null {
   motor.frequency.linearRampToValueAtTime(116, startAt + 0.28)
   motor.frequency.setValueAtTime(116, startAt + feedDuration - 0.2)
   motor.frequency.exponentialRampToValueAtTime(62, startAt + feedDuration)
-  motorGain.gain.setValueAtTime(0.022, startAt)
+  motorGain.gain.setValueAtTime(0.04, startAt)
   motorGain.gain.exponentialRampToValueAtTime(0.0001, startAt + feedDuration)
   motor.connect(motorGain)
   motorGain.connect(master)
@@ -96,16 +103,48 @@ export function playThermalPrinterSound(): (() => void) | null {
   const headWhine = context.createOscillator()
   const headGain = context.createGain()
   headWhine.type = 'square'
-  headWhine.frequency.setValueAtTime(410, startAt)
-  headWhine.frequency.linearRampToValueAtTime(470, startAt + 0.28)
-  headWhine.frequency.setValueAtTime(470, startAt + feedDuration)
-  headGain.gain.setValueAtTime(0.0028, startAt)
+  headWhine.frequency.setValueAtTime(360, startAt)
+  headWhine.frequency.linearRampToValueAtTime(430, startAt + 0.28)
+  headWhine.frequency.setValueAtTime(430, startAt + feedDuration)
+  headGain.gain.setValueAtTime(0.0055, startAt)
   headGain.gain.exponentialRampToValueAtTime(0.0001, startAt + feedDuration)
   headWhine.connect(headGain)
   headGain.connect(master)
   headWhine.start(startAt)
   headWhine.stop(startAt + feedDuration)
   sources.push(headWhine)
+
+  // Alternating type bars: low body hit plus a bright metal key strike. The
+  // tiny timing variation keeps the five-second feed from sounding looped.
+  let keyIndex = 0
+  for (let offset = 0.035; offset < feedDuration - 0.06; offset += keyIndex % 4 === 3 ? 0.078 : 0.061) {
+    const keyAt = startAt + offset
+    const body = context.createOscillator()
+    const bodyGain = context.createGain()
+    body.type = 'triangle'
+    body.frequency.setValueAtTime(keyIndex % 2 === 0 ? 235 : 270, keyAt)
+    body.frequency.exponentialRampToValueAtTime(96, keyAt + 0.026)
+    bodyGain.gain.setValueAtTime(0.115, keyAt)
+    bodyGain.gain.exponentialRampToValueAtTime(0.0001, keyAt + 0.034)
+    body.connect(bodyGain)
+    bodyGain.connect(master)
+    body.start(keyAt)
+    body.stop(keyAt + 0.04)
+    sources.push(body)
+
+    const metal = context.createOscillator()
+    const metalGain = context.createGain()
+    metal.type = 'square'
+    metal.frequency.setValueAtTime(keyIndex % 3 === 0 ? 1840 : 1560, keyAt)
+    metalGain.gain.setValueAtTime(0.018, keyAt)
+    metalGain.gain.exponentialRampToValueAtTime(0.0001, keyAt + 0.018)
+    metal.connect(metalGain)
+    metalGain.connect(master)
+    metal.start(keyAt)
+    metal.stop(keyAt + 0.022)
+    sources.push(metal)
+    keyIndex += 1
+  }
 
   const buttonClick = context.createOscillator()
   const buttonClickGain = context.createGain()
@@ -128,7 +167,7 @@ export function playThermalPrinterSound(): (() => void) | null {
     cutter.type = 'triangle'
     cutter.frequency.setValueAtTime(startFrequency, hitAt)
     cutter.frequency.exponentialRampToValueAtTime(42, hitAt + 0.055)
-    cutterGain.gain.setValueAtTime(0.12, hitAt)
+    cutterGain.gain.setValueAtTime(0.19, hitAt)
     cutterGain.gain.exponentialRampToValueAtTime(0.0001, hitAt + 0.075)
     cutter.connect(cutterGain)
     cutterGain.connect(master)
@@ -137,64 +176,73 @@ export function playThermalPrinterSound(): (() => void) | null {
     sources.push(cutter)
   }
 
-  // Classic video “payment received” finish: cash-drawer clack, a quick coin
-  // cascade, then a bright two-note register chime — the familiar cha-ching.
-  const trayClack = context.createOscillator()
-  const trayClackGain = context.createGain()
-  trayClack.type = 'triangle'
-  trayClack.frequency.setValueAtTime(190, completionBellAt)
-  trayClack.frequency.exponentialRampToValueAtTime(48, completionBellAt + 0.085)
-  trayClackGain.gain.setValueAtTime(0.34, completionBellAt)
-  trayClackGain.gain.exponentialRampToValueAtTime(0.0001, completionBellAt + 0.1)
-  trayClack.connect(trayClackGain)
-  trayClackGain.connect(completionCompressor)
-  trayClack.start(completionBellAt)
-  trayClack.stop(completionBellAt + 0.11)
-  sources.push(trayClack)
-
-  for (const [offset, frequency, gainValue] of [
-    [0.045, 1760, 0.17],
-    [0.115, 2240, 0.14],
-    [0.185, 2860, 0.11]
+  // End with a physical machine action instead of a digital notification:
+  // latch release, heavy carriage/lid close, then a short steel spring ring.
+  for (const [offset, frequency, gainValue, duration] of [
+    [0, 520, 0.32, 0.045],
+    [0.075, 148, 0.62, 0.13],
+    [0.115, 72, 0.52, 0.2]
   ] as const) {
-    const coin = context.createOscillator()
-    const coinGain = context.createGain()
-    const coinAt = completionBellAt + offset
-    coin.type = 'sine'
-    coin.frequency.setValueAtTime(frequency, coinAt)
-    coin.frequency.exponentialRampToValueAtTime(frequency * 0.97, coinAt + 0.18)
-    coinGain.gain.setValueAtTime(gainValue, coinAt)
-    coinGain.gain.exponentialRampToValueAtTime(0.0001, coinAt + 0.2)
-    coin.connect(coinGain)
-    coinGain.connect(completionCompressor)
-    coin.start(coinAt)
-    coin.stop(coinAt + 0.21)
-    sources.push(coin)
+    const closeHit = context.createOscillator()
+    const closeGain = context.createGain()
+    const hitAt = mechanicalCloseAt + offset
+    closeHit.type = offset === 0 ? 'square' : 'triangle'
+    closeHit.frequency.setValueAtTime(frequency, hitAt)
+    closeHit.frequency.exponentialRampToValueAtTime(Math.max(36, frequency * 0.42), hitAt + duration)
+    closeGain.gain.setValueAtTime(gainValue, hitAt)
+    closeGain.gain.exponentialRampToValueAtTime(0.0001, hitAt + duration)
+    closeHit.connect(closeGain)
+    closeGain.connect(completionCompressor)
+    closeHit.start(hitAt)
+    closeHit.stop(hitAt + duration + 0.02)
+    sources.push(closeHit)
   }
 
-  const metalStrikeAt = completionBellAt + 0.22
+  const closeNoiseDuration = 0.2
+  const closeNoiseBuffer = context.createBuffer(
+    1,
+    Math.ceil(context.sampleRate * closeNoiseDuration),
+    context.sampleRate
+  )
+  const closeNoiseData = closeNoiseBuffer.getChannelData(0)
+  for (let index = 0; index < closeNoiseData.length; index += 1) {
+    const progress = index / closeNoiseData.length
+    closeNoiseData[index] = ((Math.random() * 2) - 1) * ((1 - progress) ** 3)
+  }
+  const closeNoise = context.createBufferSource()
+  const closeNoiseFilter = context.createBiquadFilter()
+  const closeNoiseGain = context.createGain()
+  closeNoise.buffer = closeNoiseBuffer
+  closeNoiseFilter.type = 'bandpass'
+  closeNoiseFilter.frequency.value = 980
+  closeNoiseFilter.Q.value = 0.7
+  closeNoiseGain.gain.setValueAtTime(0.48, mechanicalCloseAt + 0.07)
+  closeNoiseGain.gain.exponentialRampToValueAtTime(0.0001, mechanicalCloseAt + 0.27)
+  closeNoise.connect(closeNoiseFilter)
+  closeNoiseFilter.connect(closeNoiseGain)
+  closeNoiseGain.connect(completionCompressor)
+  closeNoise.start(mechanicalCloseAt + 0.07)
+  closeNoise.stop(mechanicalCloseAt + 0.29)
+  sources.push(closeNoise)
+
   for (const [frequency, gainValue, duration] of [
-    [1568, 0.32, completionBellDuration],
-    [2093, 0.18, 0.62],
-    [3136, 0.07, 0.36]
+    [610, 0.28, 0.52],
+    [1220, 0.13, 0.36],
+    [2440, 0.045, 0.23]
   ] as const) {
-    const bell = context.createOscillator()
-    const bellGain = context.createGain()
-    const bellFilter = context.createBiquadFilter()
-    bell.type = 'sine'
-    bell.frequency.setValueAtTime(frequency, metalStrikeAt)
-    bell.frequency.exponentialRampToValueAtTime(frequency * 0.982, metalStrikeAt + duration)
-    bellGain.gain.setValueAtTime(0.0001, metalStrikeAt)
-    bellGain.gain.linearRampToValueAtTime(gainValue, metalStrikeAt + 0.004)
-    bellGain.gain.exponentialRampToValueAtTime(0.0001, metalStrikeAt + duration)
-    bellFilter.type = 'highpass'
-    bellFilter.frequency.value = 760
-    bell.connect(bellFilter)
-    bellFilter.connect(bellGain)
-    bellGain.connect(completionCompressor)
-    bell.start(metalStrikeAt)
-    bell.stop(metalStrikeAt + duration + 0.02)
-    sources.push(bell)
+    const spring = context.createOscillator()
+    const springGain = context.createGain()
+    const springAt = mechanicalCloseAt + 0.12
+    spring.type = 'sine'
+    spring.frequency.setValueAtTime(frequency, springAt)
+    spring.frequency.exponentialRampToValueAtTime(frequency * 0.965, springAt + duration)
+    springGain.gain.setValueAtTime(gainValue, springAt)
+    springGain.gain.exponentialRampToValueAtTime(0.0001, springAt + duration)
+    spring.connect(springGain)
+    springGain.connect(completionCompressor)
+    spring.start(springAt)
+    spring.stop(springAt + duration + 0.02)
+    sources.push(spring)
   }
 
   void context.resume().catch(() => undefined)
@@ -202,7 +250,7 @@ export function playThermalPrinterSound(): (() => void) | null {
   let stopped = false
   const timeoutId = window.setTimeout(
     () => stop(),
-    PRINT_DURATION_MS + CUTTER_START_DELAY_MS + (completionBellDuration * 1000) + 500 + SOUND_CLEANUP_GRACE_MS
+    PRINT_DURATION_MS + CUTTER_START_DELAY_MS + (mechanicalCloseDuration * 1000) + 500 + SOUND_CLEANUP_GRACE_MS
   )
 
   function stop(): void {

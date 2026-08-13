@@ -2,7 +2,7 @@ type AudioContextWithWebkit = typeof window & {
   webkitAudioContext?: typeof AudioContext
 }
 
-const PRINT_DURATION_MS = 6000
+const PRINT_DURATION_MS = 7200
 const CUTTER_START_DELAY_MS = 0
 const SOUND_CLEANUP_GRACE_MS = 200
 
@@ -27,6 +27,18 @@ export function playThermalPrinterSound(): (() => void) | null {
   master.gain.setValueAtTime(0.68, startAt + feedDuration)
   master.gain.exponentialRampToValueAtTime(0.0001, stopAt)
   master.connect(context.destination)
+
+  const completionCompressor = context.createDynamicsCompressor()
+  const completionGain = context.createGain()
+  completionCompressor.threshold.value = -12
+  completionCompressor.knee.value = 8
+  completionCompressor.ratio.value = 4
+  completionCompressor.attack.value = 0.002
+  completionCompressor.release.value = 0.18
+  completionGain.gain.setValueAtTime(0.92, completionBellAt)
+  completionGain.gain.exponentialRampToValueAtTime(0.0001, stopAt)
+  completionCompressor.connect(completionGain)
+  completionGain.connect(context.destination)
 
   const sampleCount = Math.ceil(context.sampleRate * feedDuration)
   const noiseBuffer = context.createBuffer(1, sampleCount, context.sampleRate)
@@ -120,12 +132,13 @@ export function playThermalPrinterSound(): (() => void) | null {
     sources.push(cutter)
   }
 
-  // A short mechanical completion chime, like a vintage oven timer. Two
-  // inharmonic partials make it feel metallic without sounding like a phone.
+  // A clear mechanical completion chime, like a vintage oven timer. It uses
+  // its own compressed output so the final “done” strike stays louder than
+  // the fading printer motor without clipping.
   for (const [frequency, gainValue, duration] of [
-    [1180, 0.12, completionBellDuration],
-    [1770, 0.055, 0.82],
-    [2360, 0.024, 0.48]
+    [1040, 0.26, completionBellDuration],
+    [1560, 0.13, 0.92],
+    [2210, 0.06, 0.56]
   ] as const) {
     const bell = context.createOscillator()
     const bellGain = context.createGain()
@@ -140,7 +153,7 @@ export function playThermalPrinterSound(): (() => void) | null {
     bellFilter.frequency.value = 760
     bell.connect(bellFilter)
     bellFilter.connect(bellGain)
-    bellGain.connect(master)
+    bellGain.connect(completionCompressor)
     bell.start(completionBellAt)
     bell.stop(completionBellAt + duration + 0.02)
     sources.push(bell)

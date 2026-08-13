@@ -1045,7 +1045,7 @@ onBeforeUnmount(() => {
 }
 
 .receipt-feed--printing {
-  animation: receipt-feed-out var(--duration-receipt-print) steps(72, end) both;
+  animation: receipt-feed-out var(--duration-receipt-print) linear both;
 }
 
 .receipt-feed--detaching {
@@ -1067,7 +1067,7 @@ onBeforeUnmount(() => {
 }
 
 .receipt-printer-stage--printing .receipt-printer {
-  animation: receipt-printer-vibration 82ms linear infinite;
+  animation: receipt-printer-vibration 120ms linear infinite;
 }
 
 .receipt-printer-stage--printing .receipt-printer__roller {
@@ -1109,9 +1109,6 @@ onBeforeUnmount(() => {
   0% {
     transform: translateY(calc(-100% + 16px));
   }
-  4% {
-    transform: translateY(calc(-100% + 24px));
-  }
   100% { transform: translateY(0); }
 }
 
@@ -1135,7 +1132,7 @@ onBeforeUnmount(() => {
 
 @keyframes receipt-printer-vibration {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(0.7px); }
+  50% { transform: translateY(0.25px); }
 }
 
 @keyframes receipt-roller-feed {

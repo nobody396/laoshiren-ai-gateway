@@ -59,7 +59,10 @@ describe('UsageReceiptPaper', () => {
 
     const text = wrapper.text()
     expect(wrapper.get('img.receipt-brand__logo').attributes('src')).toBe('/laoshirenai-icon.jpg')
-    expect(text).toContain('AI 使用小票')
+    expect(text).toContain('老实人AI')
+    expect(text).not.toContain('AI 使用小票')
+    expect(text).not.toContain('AI USAGE RECEIPT')
+    expect(text).not.toContain('仅展示汇总数据')
     expect(text).toContain('¥12.50')
     expect(text).toContain('140K')
     expect(text).toContain('Claude Sonnet 4')

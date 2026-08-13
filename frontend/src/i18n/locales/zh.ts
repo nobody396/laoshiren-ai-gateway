@@ -1187,7 +1187,6 @@ export default {
     loading: '正在核对你的真实使用数据…',
     loadFailed: '小票没有打印出来',
     loadFailedHint: '使用数据暂时无法读取。没有生成不完整或估算的小票，请稍后重试。',
-    previewCaption: '预览动画只在页面中播放；保存和分享的图片会保持完整、清晰、可扫码。',
     downloaded: '小票图片已保存',
     exportFailed: '小票图片生成失败，请重试',
     sharePayloadTitle: '我的老实人AI使用小票',

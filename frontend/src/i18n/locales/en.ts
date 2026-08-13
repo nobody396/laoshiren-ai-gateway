@@ -1184,7 +1184,6 @@ export default {
     loading: 'Verifying your real usage data…',
     loadFailed: 'The receipt did not print',
     loadFailedHint: 'Usage data is temporarily unavailable. We did not generate a partial or estimated receipt. Please retry.',
-    previewCaption: 'The print animation only plays in the preview. Saved and shared images remain complete, sharp, and scannable.',
     downloaded: 'Receipt image saved',
     exportFailed: 'Could not generate the receipt image',
     sharePayloadTitle: 'My LaoshirenAI usage receipt',

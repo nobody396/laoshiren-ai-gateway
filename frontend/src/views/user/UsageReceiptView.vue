@@ -85,7 +85,7 @@
                 <Icon name="download" size="sm" />
                 {{ exporting && !sharing ? t('usageReceipt.exporting') : t('usageReceipt.downloadImage') }}
               </button>
-              <button class="btn btn-secondary" :disabled="!receiptData || loading || printing" @click="restartPrint">
+              <button class="btn btn-secondary" :disabled="!receiptData || loading || printing" @click="restartPrint(true)">
                 <Icon name="refresh" size="sm" />
                 {{ t('usageReceipt.printAgain') }}
               </button>
@@ -106,13 +106,18 @@
             <span>{{ t('usageReceipt.beijingTime') }}</span>
           </div>
 
-          <div class="receipt-printer-stage">
+          <div class="receipt-printer-stage" :class="{ 'receipt-printer-stage--printing': printing }">
             <div class="receipt-printer" aria-hidden="true">
-              <div class="receipt-printer__topline">
-                <span>{{ appStore.siteName }}</span>
-                <span class="receipt-printer__lamp"></span>
+              <img
+                src="/assets/usage-receipt/thermal-printer-athens-v1.png"
+                alt=""
+                draggable="false"
+              />
+              <div class="receipt-printer__mouth">
+                <span class="receipt-printer__roller"></span>
+                <span class="receipt-printer__cutter"></span>
               </div>
-              <div class="receipt-printer__slot"></div>
+              <span class="receipt-printer__active-lamp"></span>
             </div>
 
             <div v-if="loading" class="receipt-loading" role="status">
@@ -132,7 +137,7 @@
                 :key="printRunKey"
                 class="receipt-feed"
                 :class="{ 'receipt-feed--printing': printing }"
-                @animationend="finishPrint"
+                @animationend.self="finishPrint"
               >
                 <UsageReceiptPaper
                   ref="receiptPaper"
@@ -145,7 +150,6 @@
             </div>
           </div>
 
-          <p class="usage-receipt-preview__caption">{{ t('usageReceipt.previewCaption') }}</p>
         </section>
       </div>
     </main>
@@ -153,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toBlob } from 'html-to-image'
 import QRCode from 'qrcode'
@@ -172,6 +176,7 @@ import {
   createReceiptNumber,
   receiptImageFilename
 } from '@/features/usage-receipt/receipt'
+import { playThermalPrinterSound } from '@/features/usage-receipt/printerSound'
 import type {
   UsageReceiptData,
   UsageReceiptPreferences
@@ -206,6 +211,7 @@ const printing = ref(false)
 const exporting = ref(false)
 const sharing = ref(false)
 const printRunKey = ref(0)
+let stopPrinterSound: (() => void) | null = null
 
 const preferences = reactive<UsageReceiptPreferences>({
   showDisplayName: false,
@@ -274,7 +280,7 @@ async function loadReceiptData(): Promise<void> {
     }
 
     await nextTick()
-    restartPrint()
+    restartPrint(false)
   } catch (error) {
     console.error('Failed to load usage receipt:', error)
     receiptData.value = null
@@ -290,14 +296,18 @@ async function handleDateRangeChange(range: { startDate: string; endDate: string
   await loadReceiptData()
 }
 
-function restartPrint(): void {
+function restartPrint(withSound = true): void {
   if (!receiptData.value) return
+  stopPrinterSound?.()
+  stopPrinterSound = withSound ? playThermalPrinterSound() : null
   printing.value = true
   printRunKey.value += 1
 }
 
 function finishPrint(): void {
   printing.value = false
+  stopPrinterSound?.()
+  stopPrinterSound = null
 }
 
 async function renderReceiptBlob(): Promise<Blob> {
@@ -396,6 +406,10 @@ async function copyInviteLink(): Promise<void> {
 }
 
 onMounted(loadReceiptData)
+onBeforeUnmount(() => {
+  stopPrinterSound?.()
+  stopPrinterSound = null
+})
 </script>
 
 <style scoped>
@@ -578,75 +592,139 @@ onMounted(loadReceiptData)
   position: relative;
   min-height: 700px;
   overflow: hidden;
-  padding: 102px 24px 48px;
-  border: 1px solid rgb(var(--color-dark-600));
-  border-radius: 24px;
-  background: linear-gradient(145deg, rgb(var(--lacquer-rest-top)), rgb(var(--lacquer-rest-mid)) 48%, rgb(var(--lacquer-base)));
-  box-shadow: inset 0 1px 0 rgb(var(--color-dark-300) / 0.14), 0 22px 60px rgb(var(--shadow-ink) / 0.2);
+  padding: 190px 24px 58px;
+  border: 1px solid rgb(var(--color-muted) / 0.28);
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse at 50% 56px, rgb(var(--color-ink) / 0.12), transparent 37%),
+    linear-gradient(115deg, rgb(var(--color-marble) / 0.76), transparent 34%),
+    repeating-linear-gradient(90deg, transparent 0 31px, rgb(var(--color-muted) / 0.04) 31px 32px),
+    rgb(var(--color-parchment));
+  box-shadow:
+    inset 0 1px 0 rgb(var(--color-vellum) / 0.78),
+    inset 0 -30px 80px rgb(var(--color-ink) / 0.06),
+    0 22px 60px rgb(var(--shadow-ink) / 0.14);
+}
+
+.receipt-printer-stage::after {
+  position: absolute;
+  top: 202px;
+  left: 50%;
+  z-index: 1;
+  width: min(640px, calc(100% - 36px));
+  height: 72px;
+  border-radius: 50%;
+  background: rgb(var(--printer-counter-shadow) / 0.26);
+  content: '';
+  filter: blur(20px);
+  transform: translateX(-50%);
 }
 
 .receipt-printer {
   position: absolute;
-  top: 24px;
+  top: 18px;
   left: 50%;
-  z-index: 5;
-  width: min(520px, calc(100% - 48px));
-  height: 92px;
-  padding: 18px 24px;
-  border: 1px solid rgb(var(--color-dark-500));
-  border-radius: 18px 18px 8px 8px;
-  background: linear-gradient(180deg, rgb(var(--lacquer-hover-mid)), rgb(var(--lacquer-base)));
-  box-shadow: 0 18px 36px rgb(var(--lacquer-base) / 0.52);
+  z-index: 3;
+  width: min(690px, calc(100% - 30px));
+  aspect-ratio: 1570 / 528;
+  filter: drop-shadow(0 20px 18px rgb(var(--printer-counter-shadow) / 0.34));
   transform: translateX(-50%);
+  transform-origin: center bottom;
 }
 
-.receipt-printer__topline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: rgb(var(--color-dark-300));
-  font-family: Cinzel, serif;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.receipt-printer > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
 }
 
-.receipt-printer__lamp {
-  width: 7px;
-  height: 7px;
+.receipt-printer__mouth {
+  position: absolute;
+  top: 69.2%;
+  left: 12.3%;
+  z-index: 8;
+  width: 59.2%;
+  height: 8.7%;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgb(var(--printer-seam) / 0.94);
+  box-shadow:
+    inset 0 4px 7px rgb(var(--printer-seam)),
+    0 -1px 0 rgb(var(--printer-metal) / 0.42),
+    0 2px 3px rgb(var(--printer-seam) / 0.42);
+}
+
+.receipt-printer__roller {
+  position: absolute;
+  inset: 26% 2% auto;
+  height: 28%;
   border-radius: 999px;
-  background: rgb(var(--color-success));
-  box-shadow: 0 0 12px rgb(var(--color-success) / 0.78);
+  background: repeating-linear-gradient(90deg, rgb(var(--color-warm-700)) 0 4px, rgb(var(--printer-seam)) 4px 7px);
+  box-shadow: inset 0 2px 3px rgb(var(--printer-seam));
 }
 
-.receipt-printer__slot {
-  height: 12px;
-  margin-top: 17px;
-  border: 1px solid rgb(var(--color-dark-600));
+.receipt-printer__cutter {
+  position: absolute;
+  right: 2%;
+  bottom: 2%;
+  left: 2%;
+  height: 22%;
+  background: repeating-linear-gradient(135deg, rgb(var(--printer-metal)) 0 2px, rgb(var(--printer-seam)) 2px 4px);
+  clip-path: polygon(0 0, 100% 0, 99% 100%, 98% 35%, 97% 100%, 96% 35%, 95% 100%, 4% 35%, 3% 100%, 2% 35%, 1% 100%);
+}
+
+.receipt-printer__active-lamp {
+  position: absolute;
+  top: 72.1%;
+  right: 18.25%;
+  z-index: 9;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
-  background: rgb(var(--lacquer-base));
-  box-shadow: inset 0 4px 7px rgb(var(--lacquer-base) / 0.9), 0 1px 0 rgb(var(--color-dark-400) / 0.18);
+  opacity: 0;
+  background: rgb(var(--printer-paper-led));
 }
 
 .receipt-viewport {
+  position: relative;
+  z-index: 5;
   display: flex;
   justify-content: center;
   overflow: hidden;
-  padding: 12px 0 24px;
+  padding: 0 15.6% 24px 0;
 }
 
 .receipt-feed {
   display: flex;
-  width: min(100%, 420px);
+  width: min(100%, 398px);
   justify-content: center;
   transform-origin: top center;
-  will-change: clip-path, transform;
+  will-change: transform;
 }
 
 .receipt-feed--printing {
   animation: receipt-feed-out calc(var(--duration-receipt-print) + var(--duration-receipt-settle))
-    var(--ease-receipt-feed) both;
+    steps(78, end) both;
+}
+
+.receipt-feed--printing > :deep(.usage-receipt-paper) {
+  animation: receipt-paper-settle var(--duration-receipt-settle) var(--ease-out)
+    var(--duration-receipt-print) both;
+}
+
+.receipt-printer-stage--printing .receipt-printer {
+  animation: receipt-printer-vibration 82ms linear infinite;
+}
+
+.receipt-printer-stage--printing .receipt-printer__roller {
+  animation: receipt-roller-feed 240ms linear infinite;
+}
+
+.receipt-printer-stage--printing .receipt-printer__active-lamp {
+  animation: receipt-paper-lamp 780ms steps(2, end) infinite;
 }
 
 .receipt-loading,
@@ -672,29 +750,44 @@ onMounted(loadReceiptData)
   font-size: 24px;
 }
 
-.usage-receipt-preview__caption {
-  margin-top: 12px;
-  color: rgb(var(--color-muted));
-  font-size: 10px;
-  line-height: 1.6;
-  text-align: center;
-}
-
 @keyframes receipt-feed-out {
   0% {
-    clip-path: inset(0 0 100% 0);
-    transform: translateY(-10px);
+    transform: translateY(calc(-100% + 16px));
   }
-  8% {
-    clip-path: inset(0 0 92% 0);
+  4% {
+    transform: translateY(calc(-100% + 24px));
   }
-  88% {
-    clip-path: inset(0 0 0 0);
+  91% {
     transform: translateY(0);
   }
-  94% { transform: translateY(0); }
-  97% { transform: translateY(7px); }
-  100% { clip-path: inset(0 0 0 0); transform: translateY(0); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes receipt-paper-settle {
+  0% { transform: translateY(0); }
+  52% { transform: translateY(8px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes receipt-printer-vibration {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(0.7px); }
+}
+
+@keyframes receipt-roller-feed {
+  from { background-position-x: 0; }
+  to { background-position-x: 24px; }
+}
+
+@keyframes receipt-paper-lamp {
+  0%, 100% {
+    opacity: 0;
+    box-shadow: none;
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 7px rgb(var(--printer-paper-led) / 0.7);
+  }
 }
 
 @keyframes receipt-status-pulse {
@@ -733,18 +826,36 @@ onMounted(loadReceiptData)
 
   .receipt-printer-stage {
     min-height: 620px;
+    padding-top: 176px;
     padding-right: 12px;
     padding-left: 12px;
-    border-radius: 18px;
+    border-radius: 10px;
   }
 
   .receipt-printer {
-    width: calc(100% - 24px);
+    top: 14px;
+    width: max(510px, calc(100% - 8px));
+  }
+
+  .receipt-printer-stage::after {
+    top: 184px;
+  }
+
+  .receipt-viewport {
+    padding-right: 12%;
+  }
+
+  .receipt-feed {
+    width: min(100%, 300px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .receipt-feed--printing,
+  .receipt-feed--printing > :deep(.usage-receipt-paper),
+  .receipt-printer-stage--printing .receipt-printer,
+  .receipt-printer-stage--printing .receipt-printer__roller,
+  .receipt-printer-stage--printing .receipt-printer__active-lamp,
   .usage-receipt-preview__status--active {
     animation-duration: 1ms;
     animation-delay: 0ms;

@@ -66,6 +66,12 @@
   --receipt-accent: 154 59 31; /* #9a3b1f */
   --receipt-stamp: 63 90 58; /* #3f5a3a */
 
+  /* Retro-Athenian printer overlays — fixed to the physical product asset. */
+  --printer-counter-shadow: 74 64 50; /* #4a4032 */
+  --printer-seam: 19 16 11; /* #13100b */
+  --printer-metal: 137 135 127; /* #89877f */
+  --printer-paper-led: 154 59 31; /* #9a3b1f */
+
   /* ---------------------------------------------------------------------
    * gray-50…950 — replaces Tailwind's default cool gray (undefined before
    * this change, 6,516 usages across the app). Warm paper (light) fading

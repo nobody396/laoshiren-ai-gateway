@@ -12,8 +12,6 @@
         <span v-else class="receipt-brand__fallback" aria-hidden="true">老</span>
       </div>
       <p class="receipt-brand__name">{{ siteName }}</p>
-      <h1 class="receipt-brand__title">AI 使用小票</h1>
-      <p class="receipt-brand__english">AI USAGE RECEIPT</p>
     </header>
 
     <div class="receipt-rule receipt-rule--heavy"></div>
@@ -132,7 +130,6 @@
         </div>
       </div>
 
-      <p class="receipt-footer__privacy">仅展示汇总数据 · 不含邮箱、API Key 与请求内容</p>
     </footer>
   </article>
 </template>
@@ -246,22 +243,6 @@ defineExpose({ getElement })
   font-size: 20px;
   font-weight: 800;
   letter-spacing: 0.08em;
-}
-
-.receipt-brand__title {
-  margin-top: 2px;
-  font-size: 24px;
-  font-weight: 900;
-  letter-spacing: 0.16em;
-}
-
-.receipt-brand__english {
-  margin-top: 4px;
-  color: rgb(var(--receipt-muted));
-  font-family: Cinzel, serif;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.24em;
 }
 
 .receipt-rule {
@@ -477,12 +458,6 @@ defineExpose({ getElement })
 .receipt-qr span {
   color: rgb(var(--receipt-muted));
   font-size: 9px;
-}
-
-.receipt-footer__privacy {
-  margin-top: 16px;
-  color: rgb(var(--receipt-muted));
-  font-size: 8px;
 }
 
 @media (max-width: 460px) {

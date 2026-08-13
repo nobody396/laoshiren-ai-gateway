@@ -1,12 +1,11 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '1.2.1'
+$ScriptVersion = '1.2.2'
 $MinimumVersion = [Version]'3.16.5'
 $ReleaseUrl = 'https://github.com/farion1231/cc-switch/releases/latest'
-$ReleaseApiUrl = 'https://api.github.com/repos/farion1231/cc-switch/releases/latest'
 $MirrorManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/cc-switch/latest.json'
-$MirrorPackagePrefix = 'https://laoshirenai.com/api/v1/public-downloads/cc-switch/packages/'
+$MirrorPackagePrefix = 'https://laoshirenai.com/downloads/cc-switch/'
 $InstalledExecutable = Join-Path $env:LOCALAPPDATA 'Programs\CC Switch\cc-switch.exe'
 
 function Write-Step {
@@ -203,48 +202,8 @@ function Get-MirrorCcSwitchAsset {
   }
 }
 
-function Get-OfficialCcSwitchAsset {
-  Write-Step '本站缓存暂不可用，正在查询 CC Switch 官方 GitHub 作为兜底...'
-  $Headers = @{
-    'Accept' = 'application/vnd.github+json'
-    'User-Agent' = "laoshirenai-cc-switch-diagnostic/$ScriptVersion"
-    'X-GitHub-Api-Version' = '2022-11-28'
-  }
-  $Release = Invoke-RestMethod -Uri $ReleaseApiUrl -Headers $Headers -Method Get
-  $LatestVersion = Convert-ToVersion -Value ([string]$Release.tag_name)
-  if (-not $LatestVersion) {
-    throw '官方版本信息格式不正确。'
-  }
-
-  $AssetSuffix = Get-WindowsReleaseAssetName
-  $ExpectedName = "CC-Switch-v$LatestVersion-$AssetSuffix"
-  $Assets = @($Release.assets | Where-Object { $_.name -eq $ExpectedName })
-  if ($Assets.Count -ne 1) {
-    throw "官方发布中没有找到唯一安装包: $ExpectedName"
-  }
-
-  $Asset = $Assets[0]
-  $DigestMatch = [Regex]::Match([string]$Asset.digest, '^sha256:([0-9a-fA-F]{64})$')
-  if (-not $DigestMatch.Success) {
-    throw '官方安装包没有可验证的 SHA-256 摘要。'
-  }
-
-  return [PSCustomObject]@{
-    Version = $LatestVersion
-    Name = $ExpectedName
-    DownloadUrl = [string]$Asset.browser_download_url
-    SHA256 = $DigestMatch.Groups[1].Value.ToLowerInvariant()
-    Source = 'CC Switch 官方 GitHub'
-  }
-}
-
 function Get-LatestCcSwitchAsset {
-  try {
-    return Get-MirrorCcSwitchAsset
-  } catch {
-    Write-Problem "本站缓存暂时不可用：$($_.Exception.Message)"
-    return Get-OfficialCcSwitchAsset
-  }
+  return Get-MirrorCcSwitchAsset
 }
 
 function Install-LatestCcSwitch {
@@ -310,7 +269,7 @@ if ($env:CCS_DIAGNOSTIC_LIBRARY_ONLY -eq '1') {
 Write-Host ''
 Write-Host "CC Switch 自动诊断修复 v$ScriptVersion" -ForegroundColor White
 Write-Host '它只检查本机 CC Switch 版本和 ccswitch:// 协议，不会读取或上传 API Key。'
-Write-Host '缺失或版本过旧时，会优先从老实人 AI 本站缓存下载、校验并自动安装；本站不可用才访问官方 GitHub。'
+Write-Host '缺失或版本过旧时，只从老实人 AI 本站缓存下载，经 SHA-256 校验后自动安装。'
 Write-Host ''
 
 $RunningOnWindows = $env:OS -eq 'Windows_NT'

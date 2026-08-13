@@ -164,6 +164,9 @@ type DownloadsConfig struct {
 	CodexWindowsMirrorRepo       string `mapstructure:"codex_windows_mirror_repo"`
 	CodexMacOfficialURL          string `mapstructure:"codex_mac_official_url"`
 	CodexPlusPlusRepo            string `mapstructure:"codex_plus_plus_repo"`
+	GitForWindowsRepo            string `mapstructure:"git_for_windows_repo"`
+	GrokBuildPrimaryBaseURL      string `mapstructure:"grok_build_primary_base_url"`
+	GrokBuildFallbackBaseURL     string `mapstructure:"grok_build_fallback_base_url"`
 	ClaudeDesktopMacURL          string `mapstructure:"claude_desktop_mac_url"`
 	ClaudeDesktopWindowsX64URL   string `mapstructure:"claude_desktop_windows_x64_url"`
 	ClaudeDesktopWindowsARM64URL string `mapstructure:"claude_desktop_windows_arm64_url"`
@@ -1394,6 +1397,9 @@ func setDefaults() {
 	viper.SetDefault("downloads.codex_windows_mirror_repo", "Wangnov/codex-app-mirror")
 	viper.SetDefault("downloads.codex_mac_official_url", "https://persistent.oaistatic.com/codex-app-prod/ChatGPT.dmg")
 	viper.SetDefault("downloads.codex_plus_plus_repo", "BigPizzaV3/CodexPlusPlus")
+	viper.SetDefault("downloads.git_for_windows_repo", "git-for-windows/git")
+	viper.SetDefault("downloads.grok_build_primary_base_url", "https://x.ai/cli")
+	viper.SetDefault("downloads.grok_build_fallback_base_url", "https://storage.googleapis.com/grok-build-public-artifacts/cli")
 	viper.SetDefault("downloads.claude_desktop_mac_url", "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest/Claude.dmg")
 	viper.SetDefault("downloads.claude_desktop_windows_x64_url", "https://downloads.claude.ai/releases/win32/x64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe")
 	viper.SetDefault("downloads.claude_desktop_windows_arm64_url", "https://downloads.claude.ai/releases/win32/arm64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe")

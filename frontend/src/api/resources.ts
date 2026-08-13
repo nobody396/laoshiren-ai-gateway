@@ -36,7 +36,7 @@ export type DownloadVersionState =
   | 'unknown'
 
 export interface DownloadVersionStatus {
-  tool: 'codex' | 'claude-code' | 'cc-switch'
+  tool: 'codex' | 'codex-plus-plus' | 'claude-desktop' | 'claude-code' | 'grok-build' | 'git-for-windows' | 'cc-switch'
   name: string
   cached_version: string
   cached_updated_at: string

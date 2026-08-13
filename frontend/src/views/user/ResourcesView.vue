@@ -217,7 +217,7 @@ import { useAppStore } from '@/stores/app'
 import { buildClientAutoConfigCommand, getClientAutoConfigName } from '@/utils/clientAutoConfig'
 import { buildCcsDiagnosticCommand } from '@/utils/ccSwitchDiagnostics'
 import {
-  buildClaudeDesktopWindowsCachePath,
+  buildImmutableResourceDownloadPath,
   buildWindowsDesktopInstallCommand,
   CLAUDE_DESKTOP_WINDOWS_X64
 } from '@/utils/resourceInstallCommands'
@@ -361,7 +361,7 @@ const resources: DownloadResource[] = [
   {
     name: 'Claude Code',
     badge: 'Anthropic 官方编码 CLI',
-    description: '适合在终端里直接让 Claude 阅读、修改和运行项目代码。推荐优先使用官方原生安装器，网络慢时使用 npm 方式兜底。',
+    description: '适合在终端里直接让 Claude 阅读、修改和运行项目代码。Windows 一键命令使用国内 npm 镜像，并从本站缓存准备 Git Bash。',
     icon: 'terminal',
     commands: [
       {
@@ -370,7 +370,7 @@ const resources: DownloadResource[] = [
       },
       {
         label: 'Windows PowerShell',
-        command: 'irm https://claude.ai/install.ps1 | iex'
+        command: 'irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.6 | iex'
       },
       {
         label: 'npm 兜底方式',
@@ -382,7 +382,7 @@ const resources: DownloadResource[] = [
     primaryLink: 'https://code.claude.com/docs/en/installation',
     docsLink: 'https://code.claude.com/docs/en/installation',
     primaryAction: '打开安装页',
-    note: 'npm 方式安装的是同一个 Claude Code 原生二进制包；后续升级可运行 npm install -g @anthropic-ai/claude-code@latest。'
+    note: '页面顶部的一键配置会自动生成一次性凭证并安装客户端；这里的交互命令只用于手动排障。'
   },
   {
     name: 'Codex',
@@ -605,8 +605,13 @@ function buildMacDesktopInstallCommand(urlByArch: { universal?: string; arm64?: 
   return `TMP="$(mktemp -d)"; MOUNT="$TMP/mount"; mkdir -p "$MOUNT"; ${urlSelection}; curl -fL "$URL" -o "$TMP/app.dmg" && hdiutil attach "$TMP/app.dmg" -nobrowse -readonly -mountpoint "$MOUNT" >/dev/null && APP="$(find "$MOUNT" -maxdepth 1 -name '*.app' -print -quit)" && test -n "$APP" && codesign --verify --deep --strict "$APP" && mkdir -p "$HOME/Applications" && DEST="$HOME/Applications/$(basename "$APP")" && rm -rf "$DEST" && ditto "$APP" "$DEST"; hdiutil detach "$MOUNT" >/dev/null 2>&1 || true; rm -rf "$TMP"; test -n "$DEST" && open "$DEST"`
 }
 
-function absoluteResourceDownloadURL(token: string): string {
-  return new URL(resourcesAPI.buildResourceDownloadURL(token), window.location.origin).toString()
+function immutableResourceDownloadURL(tool: DownloadToolID, asset: DownloadAsset): string {
+  const manifest = manifests.value[tool]
+  if (!manifest) throw new Error('安装包清单尚未加载')
+  return new URL(
+    buildImmutableResourceDownloadPath(tool, manifest.version, asset),
+    window.location.origin
+  ).toString()
 }
 
 async function prepareAdvancedInstallCommand(tool: DownloadToolID) {
@@ -627,9 +632,7 @@ async function prepareAdvancedInstallCommand(tool: DownloadToolID) {
     let command = ''
     if (detectedOS.value === 'windows') {
       const asset = assets.find((item) => item.arch === 'x64') || assets[0]
-      const cachedURL = tool === 'claude-desktop'
-        ? new URL(buildClaudeDesktopWindowsCachePath(asset.sha256), window.location.origin).toString()
-        : absoluteResourceDownloadURL((await resourcesAPI.createDownloadURL(tool, asset)).token)
+      const cachedURL = immutableResourceDownloadURL(tool, asset)
       const officialClaudeAsset = tool === 'claude-desktop' ? CLAUDE_DESKTOP_WINDOWS_X64 : undefined
       command = buildWindowsDesktopInstallCommand({
         tool,
@@ -641,19 +644,14 @@ async function prepareAdvancedInstallCommand(tool: DownloadToolID) {
     } else {
       const universal = assets.find((item) => item.arch === 'universal')
       if (universal) {
-        const { token } = await resourcesAPI.createDownloadURL(tool, universal)
-        command = buildMacDesktopInstallCommand({ universal: absoluteResourceDownloadURL(token) })
+        command = buildMacDesktopInstallCommand({ universal: immutableResourceDownloadURL(tool, universal) })
       } else {
         const arm64 = assets.find((item) => item.arch === 'arm64')
         const x64 = assets.find((item) => item.arch === 'x64')
         if (!arm64 || !x64) throw new Error('安装包缺少对应的 Mac 芯片版本')
-        const [armResult, x64Result] = await Promise.all([
-          resourcesAPI.createDownloadURL(tool, arm64),
-          resourcesAPI.createDownloadURL(tool, x64)
-        ])
         command = buildMacDesktopInstallCommand({
-          arm64: absoluteResourceDownloadURL(armResult.token),
-          x64: absoluteResourceDownloadURL(x64Result.token)
+          arm64: immutableResourceDownloadURL(tool, arm64),
+          x64: immutableResourceDownloadURL(tool, x64)
         })
       }
     }
@@ -694,11 +692,7 @@ async function downloadCachedAsset(tool: DownloadToolID, asset: DownloadAsset) {
 
   downloadStates.value = { ...downloadStates.value, [key]: 'preparing' }
   try {
-    if (tool === 'claude-desktop' && asset.platform === 'windows' && asset.arch === 'x64') {
-      window.location.assign(new URL(buildClaudeDesktopWindowsCachePath(asset.sha256), window.location.origin).toString())
-    } else {
-      await resourcesAPI.downloadAsset(tool, asset)
-    }
+    window.location.assign(immutableResourceDownloadURL(tool, asset))
     downloadStates.value = { ...downloadStates.value, [key]: 'started' }
     appStore.showInfo('下载已开始，请查看浏览器下载栏。')
     window.setTimeout(() => {

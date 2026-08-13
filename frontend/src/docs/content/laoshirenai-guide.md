@@ -560,13 +560,13 @@ npm -v
 **Mac / Linux：**
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash
+curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0 | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash
 ```
 
 **Windows PowerShell：**
 
 ```powershell
-$env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1 | iex
+$env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1?v=1.0.0 | iex
 ```
 
 执行完成后，重启或打开 CC Switch，在 `Codex` 页面选择 `OpenAI Official Pro` 就能切回官方订阅。

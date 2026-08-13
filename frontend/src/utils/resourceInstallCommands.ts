@@ -1,4 +1,4 @@
-import type { DownloadToolID } from '@/api/resources'
+import type { DownloadAsset, DownloadToolID } from '@/api/resources'
 
 export const CLAUDE_DESKTOP_WINDOWS_X64 = {
   url: 'https://downloads.claude.ai/releases/win32/x64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe',
@@ -16,6 +16,19 @@ export function buildClaudeDesktopWindowsCachePath(sha256: string): string {
     throw new Error('Claude Desktop 安装包缺少有效的 SHA256')
   }
   return `/downloads/claude-desktop/windows-x64/${normalized}/Claude-Setup.exe`
+}
+
+export function buildImmutableResourceDownloadPath(
+  tool: DownloadToolID,
+  version: string,
+  asset: Pick<DownloadAsset, 'id' | 'sha256'>
+): string {
+  const normalizedVersion = version.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '')
+  const normalizedSHA256 = asset.sha256.trim().toLowerCase()
+  if (!normalizedVersion) throw new Error('安装包缺少有效版本号')
+  if (!/^[a-f0-9]{64}$/.test(normalizedSHA256)) throw new Error('安装包缺少有效的 SHA256')
+  if (!/^[a-z0-9._-]+$/.test(asset.id)) throw new Error('安装包缺少有效文件名')
+  return `/downloads/${tool}/${normalizedVersion}/${normalizedSHA256}/${asset.id}`
 }
 
 function powerShellQuote(value: string): string {

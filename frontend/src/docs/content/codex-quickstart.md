@@ -70,13 +70,13 @@ codex --version
 macOS / Linux 命令格式：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
+curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.6 | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
 ```
 
 Windows PowerShell 命令格式：
 
 ```powershell
-$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; $env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
+$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; $env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.6 | iex
 ```
 
 脚本会写入 `~/.codex/auth.json` 和 `~/.codex/config.toml`，并请求 `/v1/models` 测试这把 API Key 是否能正常使用。如果 Key、分组或 API 地址不正确，脚本会直接报错，不会假装配置成功。
@@ -85,7 +85,7 @@ $env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex';
 
 ### 方式二：CC Switch（可选，多 Provider 切换）
 
-前往 [CC Switch Release](https://github.com/farion1231/cc-switch/releases/latest) 下载安装后，点击 **导入到 CCS** 完成一键导入：
+先到本站 [安装与下载](/resources) 页面，选择 **安装 CC Switch**，复制页面生成的命令并在 PowerShell 执行。Windows 安装包会从本站缓存下载并校验 SHA-256，不需要访问 GitHub。安装完成后，回到 API 密钥页点击 **导入 CC Switch**：
 
 
 导入后点击 **启用** 即可。这个方式更适合需要在多个 Provider、多个分组或官方订阅之间频繁切换的用户。
@@ -114,13 +114,13 @@ $env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex';
 macOS / Linux：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash
+curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0 | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash
 ```
 
 Windows PowerShell：
 
 ```powershell
-$env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1 | iex
+$env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1?v=1.0.0 | iex
 ```
 
 执行完成后，重启或打开 CC Switch，在 `Codex` 页面会看到 `OpenAI Official Pro`，之后就可以在官方订阅和 老实人 AI API 服务之间切换。
@@ -188,7 +188,7 @@ Codex 会自动分析当前目录的代码并提供智能编程辅助。更多�
 ## 常见问题（FAQ）
 
 **Q：运行 `npm install -g` 提示权限不足？**
-A：macOS / Linux 在命令前加 `sudo`；Windows 使用管理员权限运行 PowerShell。
+A：建议直接使用本站 [安装与下载](/resources) 页面生成的一键命令。Windows 默认安装到当前用户目录，不需要管理员 PowerShell；macOS / Linux 手动使用 npm 时再按系统提示处理权限。
 
 **Q：`codex --version` 提示命令不存在？**
 A：确认 npm 全局目录已加入系统 `PATH`，可运行 `npm bin -g` 查看路径并手动添加。

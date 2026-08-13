@@ -13,7 +13,7 @@ describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on macOS and Linux', () => {
     const script = readPublicScript('install.sh')
 
-    expect(script).toContain('SCRIPT_VERSION="0.7.5"')
+    expect(script).toContain('SCRIPT_VERSION="0.7.6"')
     expect(script).toContain('EXISTING_CLAUDE_COMMAND="$(get_usable_client_command claude || true)"')
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('exchange_setup_ticket')
@@ -31,7 +31,7 @@ describe('client auto-config scripts', () => {
     const script = readPublicScript('install.ps1')
 
     expect(script.startsWith('\uFEFF')).toBe(true)
-    expect(script).toContain("$ScriptVersion = '0.7.5'")
+    expect(script).toContain("$ScriptVersion = '0.7.6'")
     expect(script).toContain("Get-UsableClientCommand -CommandName 'claude'")
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('Exchange-SetupTicket')
@@ -45,12 +45,30 @@ describe('client auto-config scripts', () => {
     expect(script).toContain("Get-Command npm.cmd -CommandType Application")
     expect(script).toContain('$script:NpmCmd = Resolve-SystemNpmCmd -NodeCommand $NodeCommand')
     expect(script).toContain('throw "npm.cmd 执行失败，退出码: $LASTEXITCODE"')
+    expect(script).toContain('https://laoshirenai.com/api/v1/public-downloads/git-for-windows/latest.json')
+    expect(script).toContain('https://laoshirenai.com/downloads/git-for-windows/')
+    expect(script).toContain('https://laoshirenai.com/api/v1/public-downloads/grok-build/latest.json')
+    expect(script).toContain('https://laoshirenai.com/downloads/grok-build/')
+    expect(script).toContain('Download-VerifiedAsset -Asset $Asset')
+    expect(script).not.toContain("$Bases = @('https://x.ai/cli'")
+    expect(script).toContain('SHASUMS256.txt')
+    expect(script).toContain('Download-VerifiedFileWithFallback -OutputPath $ZipPath')
     expect(script).not.toContain('$script:NpmCmd = (Get-Command npm).Source')
     expect(script).toContain('function Remove-ManagedPowerShellShims')
     expect(script).toContain("Get-ChildItem -LiteralPath $Dir -Filter '*.ps1'")
     expect(script).toContain("[IO.Path]::ChangeExtension($_.FullName, '.cmd')")
     expect(script).toContain('Install-RequestedClients\n  Remove-ManagedPowerShellShims\n  Install-CodexAppIfRequested')
     expect(script.indexOf('Exchange-SetupTicket\n')).toBeLessThan(script.indexOf('Resolve-ClientInstallPlan\n'))
+  })
+
+  it('keeps every customer-facing Windows helper parseable by PowerShell 5.1', () => {
+    for (const name of [
+      'install.ps1',
+      'diagnose-cc-switch.ps1',
+      'save-openai-official-provider.ps1'
+    ]) {
+      expect(readPublicScript(name).startsWith('\uFEFF')).toBe(true)
+    }
   })
 
   it('writes Claude settings without replacing unrelated JSON fields', () => {
@@ -135,8 +153,11 @@ describe('client auto-config scripts', () => {
   it('installs and configures Grok Build with the native Responses model on Windows', () => {
     const script = readPublicScript('install.ps1')
     expect(script).toContain("@('all', 'claude', 'codex', 'grok')")
-    expect(script).toContain("'https://x.ai/cli'")
-    expect(script).toContain('grok-$Version-windows-$Arch.exe')
+    expect(script).toContain("$DefaultGrokBuildManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/grok-build/latest.json'")
+    expect(script).toContain("$DefaultGrokBuildPackagePrefix = 'https://laoshirenai.com/downloads/grok-build/'")
+    expect(script).toContain('-DownloadPrefix $script:GrokBuildPackagePrefix')
+    expect(script).toContain('Download-VerifiedAsset -Asset $Asset -OutputPath $TemporaryPath')
+    expect(script).not.toContain("$Bases = @('https://x.ai/cli'")
     expect(script).toContain("$Lines.Add('[model.\"grok-4.6\"]')")
     expect(script).toContain("$Lines.Add('description = \"Grok 4.6\"')")
     expect(script).toContain("$Lines.Add('api_backend = \"responses\"')")

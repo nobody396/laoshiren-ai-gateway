@@ -177,6 +177,7 @@ try {
   $nodeVersionDir = Join-Path $nodeFixtureRoot 'v24.0.0'
   New-Item -ItemType Directory -Path $nodeVersionDir -Force | Out-Null
   $DefaultNodeDistPrimary = $nodeFixtureRoot
+  $DefaultNodeDistFallback = $nodeFixtureRoot
   Set-Content -LiteralPath (Join-Path $nodeVersionDir 'SHASUMS256.txt') -Encoding Ascii -Value "$fixtureSHA256  $nodeZipName`n"
   $resolvedSHA256 = Get-NodeReleaseChecksum -Version 'v24.0.0' -ZipName $nodeZipName
   Assert-True ($resolvedSHA256 -eq $fixtureSHA256) 'Node.js checksum metadata was not resolved correctly'

@@ -458,6 +458,50 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 	// migration 171: sellable redeem codes preserve actual cash separately
 	// from promotional balance credited.
 	requireColumn(t, tx, "redeem_codes", "paid_value", "numeric", 0, false)
+
+	// migration 185: native card-shop checkout owns a durable once-per-user
+	// order and restricts its inventory from the public manual-redeem path.
+	requireColumn(t, tx, "native_checkout_offers", "provider_goods_key", "character varying", 64, false)
+	requireColumn(t, tx, "native_checkout_orders", "contact_hash", "character", 64, false)
+	requireColumn(t, tx, "native_checkout_orders", "redeem_code_id", "bigint", 0, true)
+	requireColumn(t, tx, "native_checkout_redeem_inventory", "assigned_order_id", "bigint", 0, true)
+	requireIndex(t, tx, "native_checkout_orders", "uq_native_checkout_orders_once_per_user")
+	requireIndex(t, tx, "native_checkout_orders", "uq_native_checkout_orders_active_per_user")
+	requireIndex(t, tx, "native_checkout_redeem_inventory", "idx_native_checkout_redeem_inventory_offer_unassigned")
+
+	var (
+		providerGoodsKey string
+		payFen           int64
+		benefitFen       int64
+		redeemValue      float64
+		paidValue        float64
+		purpose          string
+		salesStatus      string
+		validityDays     int
+		oncePerUser      bool
+		enabled          bool
+	)
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT provider_goods_key, pay_amount_cny_fen, benefit_amount_cny_fen,
+       redeem_value::double precision, redeem_paid_value::double precision,
+       redeem_purpose, redeem_sales_status, redeem_validity_days,
+       once_per_user, enabled
+FROM native_checkout_offers
+WHERE code = 'trial-balance-1-to-5'
+`).Scan(
+		&providerGoodsKey, &payFen, &benefitFen, &redeemValue, &paidValue,
+		&purpose, &salesStatus, &validityDays, &oncePerUser, &enabled,
+	))
+	require.Equal(t, "oc3w4r", providerGoodsKey)
+	require.Equal(t, int64(100), payFen)
+	require.Equal(t, int64(500), benefitFen)
+	require.Equal(t, float64(5), redeemValue)
+	require.Zero(t, paidValue, "all ¥5 must remain pure gift balance")
+	require.Equal(t, "gift", purpose)
+	require.Equal(t, "gifted", salesStatus)
+	require.Zero(t, validityDays)
+	require.True(t, oncePerUser)
+	require.True(t, enabled)
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

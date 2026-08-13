@@ -60,6 +60,8 @@ func ProvideOpenAIRouteObservationStore(rdb *redis.Client, db *sql.DB) service.O
 
 // ProviderSet is the Wire provider set for all repositories
 var ProviderSet = wire.NewSet(
+	wire.Bind(new(service.NativeCheckoutRepository), new(*nativeCheckoutRepository)),
+	wire.Bind(new(service.NativeCheckoutRedeemGuard), new(*nativeCheckoutRepository)),
 	NewUnitOfWork,
 	NewAccountingCommandRepository,
 	NewUserRepository,
@@ -108,6 +110,7 @@ var ProviderSet = wire.NewSet(
 	NewSupplierRepository,
 	NewPaymentOrderRepository,
 	NewTopupOrderRepository,
+	NewNativeCheckoutRepository,
 	NewInvoiceRepository,
 	NewGPTImageTaskRepository,
 	NewRBACRepository,
@@ -165,6 +168,7 @@ var ProviderSet = wire.NewSet(
 	NewGeminiOAuthClient,
 	NewGeminiCliCodeAssistClient,
 	NewGeminiDriveClient,
+	NewLDXPCheckoutClient,
 
 	ProvideEnt,
 	ProvideSQLDB,

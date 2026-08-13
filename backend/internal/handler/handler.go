@@ -43,27 +43,28 @@ type AdminHandlers struct {
 
 // Handlers contains all HTTP handlers
 type Handlers struct {
-	Auth          *AuthHandler
-	User          *UserHandler
-	Agent         *AgentHandler
-	APIKey        *APIKeyHandler
-	Usage         *UsageHandler
-	Redeem        *RedeemHandler
-	Subscription  *SubscriptionHandler
-	Announcement  *AnnouncementHandler
-	Changelog     *ChangelogHandler
-	Invoice       *InvoiceHandler
-	Feedback      *FeedbackHandler
-	Admin         *AdminHandlers
-	Gateway       *GatewayHandler
-	OpenAIGateway *OpenAIGatewayHandler
-	Setting       *SettingHandler
-	ModelPricing  *ModelPricingHandler
-	Totp          *TotpHandler
-	Payment       *PaymentHandler
-	Topup         *TopupHandler
-	BalanceAlert  *BalanceAlertHandler
-	Resource      *ResourceHandler
+	Auth           *AuthHandler
+	User           *UserHandler
+	Agent          *AgentHandler
+	APIKey         *APIKeyHandler
+	Usage          *UsageHandler
+	Redeem         *RedeemHandler
+	Subscription   *SubscriptionHandler
+	Announcement   *AnnouncementHandler
+	Changelog      *ChangelogHandler
+	Invoice        *InvoiceHandler
+	Feedback       *FeedbackHandler
+	Admin          *AdminHandlers
+	Gateway        *GatewayHandler
+	OpenAIGateway  *OpenAIGatewayHandler
+	Setting        *SettingHandler
+	ModelPricing   *ModelPricingHandler
+	Totp           *TotpHandler
+	Payment        *PaymentHandler
+	Topup          *TopupHandler
+	NativeCheckout *NativeCheckoutHandler
+	BalanceAlert   *BalanceAlertHandler
+	Resource       *ResourceHandler
 }
 
 // BuildInfo contains build-time information

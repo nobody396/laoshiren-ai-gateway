@@ -16,6 +16,8 @@
                 {{ t('subscriptionAccess.summary') }}
               </p>
 
+              <NativeCheckoutTrialOffer />
+
               <div v-if="step === 1" class="topup-section topup-section--stack">
                 <section>
                   <p class="topup-label">
@@ -412,6 +414,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
+import NativeCheckoutTrialOffer from '@/components/user/NativeCheckoutTrialOffer.vue'
 import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/api/topup'
 import { useAppStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'

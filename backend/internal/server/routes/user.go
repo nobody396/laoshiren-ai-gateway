@@ -235,6 +235,16 @@ func RegisterUserRoutes(
 			topup.GET("/orders", h.Invoice.ListUserTopupOrders)
 		}
 
+		// 链动小铺原生结账：服务端使用当前账号邮箱创建买家订单，
+		// 站内展示支付二维码并在支付后自动兑换卡密。
+		nativeCheckout := authenticated.Group("/native-checkout")
+		{
+			nativeCheckout.GET("/offers", h.NativeCheckout.ListOffers)
+			nativeCheckout.POST("/orders", h.NativeCheckout.CreateOrder)
+			nativeCheckout.GET("/orders/:orderNo", h.NativeCheckout.GetOrder)
+			nativeCheckout.GET("/orders/:orderNo/qr", h.NativeCheckout.GetDirectPaymentQR)
+		}
+
 		invoice := authenticated.Group("/invoice")
 		{
 			invoice.GET("/profiles", h.Invoice.ListProfiles)

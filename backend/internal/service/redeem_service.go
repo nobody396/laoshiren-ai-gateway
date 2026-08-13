@@ -37,6 +37,13 @@ type RedeemCache interface {
 	ReleaseRedeemLock(ctx context.Context, code string) error
 }
 
+// NativeCheckoutRedeemGuard identifies card-shop inventory that may only be
+// redeemed by the native checkout fulfillment path. It prevents a leaked or
+// directly purchased inventory code from bypassing the per-account offer gate.
+type NativeCheckoutRedeemGuard interface {
+	IsNativeCheckoutRestricted(ctx context.Context, redeemCodeID int64) (bool, error)
+}
+
 type RedeemCodeRepository interface {
 	Create(ctx context.Context, code *RedeemCode) error
 	CreateBatch(ctx context.Context, codes []RedeemCode) error
@@ -85,6 +92,11 @@ type RedeemService struct {
 	balanceAlertService  *BalanceAlertService
 	affiliateConsumption AffiliateConsumptionRepository
 	affiliateRewards     *AffiliateRewardService
+	nativeCheckoutGuard  NativeCheckoutRedeemGuard
+}
+
+func (s *RedeemService) SetNativeCheckoutRedeemGuard(guard NativeCheckoutRedeemGuard) {
+	s.nativeCheckoutGuard = guard
 }
 
 // NewRedeemService 创建兑换码服务实例
@@ -300,6 +312,16 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 			return nil, ErrRedeemCodeNotFound
 		}
 		return nil, fmt.Errorf("get redeem code: %w", err)
+	}
+	if s.nativeCheckoutGuard != nil {
+		restricted, guardErr := s.nativeCheckoutGuard.IsNativeCheckoutRestricted(ctx, redeemCode.ID)
+		if guardErr != nil {
+			return nil, fmt.Errorf("check native checkout redeem restriction: %w", guardErr)
+		}
+		if restricted && !nativeCheckoutRedeemAuthorized(ctx) {
+			s.incrementRedeemErrorCount(ctx, userID)
+			return nil, infraerrors.BadRequest("REDEEM_CODE_CHECKOUT_RESTRICTED", "this code is fulfilled automatically by its checkout order")
+		}
 	}
 
 	// 检查兑换码状态

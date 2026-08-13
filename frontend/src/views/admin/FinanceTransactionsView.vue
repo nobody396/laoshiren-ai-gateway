@@ -1,5 +1,5 @@
 <template>
-  <AppLayout>
+  <component :is="embedded ? 'div' : AppLayout">
     <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       <StatCard
         :title="t('admin.financeTransactions.summary.income')"
@@ -42,6 +42,14 @@
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+          <RouterLink
+            :to="{ path: '/admin/business-finance', query: { tab: 'cost' } }"
+            data-test="cost-accounting-link"
+            class="btn btn-secondary !px-3 !py-1"
+          >
+            <Icon name="calculator" size="sm" />
+            {{ t('nav.costAccounting', '成本核算') }}
+          </RouterLink>
           <div v-if="summaryMode === 'month'" class="flex items-center gap-1">
             <button
               data-test="summary-month-prev"
@@ -543,7 +551,7 @@
       @close="closeReceiptLightbox"
       @error="handleReceiptLightboxError"
     />
-  </AppLayout>
+  </component>
 </template>
 
 <script setup lang="ts">
@@ -585,6 +593,10 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import StatCard from '@/components/common/StatCard.vue'
 import ImageLightbox from '@/components/common/ImageLightbox.vue'
 import Icon from '@/components/icons/Icon.vue'
+
+withDefaults(defineProps<{ embedded?: boolean }>(), {
+  embedded: false
+})
 
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 

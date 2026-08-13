@@ -272,12 +272,13 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 	payAsYouGoTargets := costAccountingPayAsYouGoTargets(activeGroups)
 	monthlyGroupIDs := costAccountingResolveMonthlyGroupIDs(activeGroups)
 
-	allGroupIDs := make([]int64, 0, 32)
+	creditGroupIDs := make([]int64, 0, 24)
+	payAsYouGoGroupIDs := make([]int64, 0, len(payAsYouGoTargets))
 	currentMonthlyGroupIDs := make(map[int64]struct{}, 8)
 	for _, plan := range costAccountingMonthlyCardPlanOrder {
 		for _, gid := range monthlyGroupIDs[plan] {
 			currentMonthlyGroupIDs[gid] = struct{}{}
-			allGroupIDs = append(allGroupIDs, gid)
+			creditGroupIDs = append(creditGroupIDs, gid)
 		}
 	}
 	legacyMonthlyCardGroupIDs := make([]int64, 0, 16)
@@ -289,16 +290,16 @@ func (s *OpsService) GetCostAccountingOverview(ctx context.Context) (*CostAccoun
 			continue
 		}
 		legacyMonthlyCardGroupIDs = append(legacyMonthlyCardGroupIDs, group.ID)
-		allGroupIDs = append(allGroupIDs, group.ID)
+		creditGroupIDs = append(creditGroupIDs, group.ID)
 	}
 	for _, group := range payAsYouGoTargets {
-		allGroupIDs = append(allGroupIDs, group.ID)
+		payAsYouGoGroupIDs = append(payAsYouGoGroupIDs, group.ID)
 	}
 
 	var usageByGroup map[int64]CostAccountingUsageRow
 	var usageErr error
 	if s.opsRepo != nil {
-		usageByGroup, usageErr = s.opsRepo.GetCostAccountingRealUsage(ctx, allGroupIDs, windowStart, now)
+		usageByGroup, usageErr = s.opsRepo.GetCostAccountingRealUsage(ctx, creditGroupIDs, payAsYouGoGroupIDs, windowStart, now)
 	}
 
 	overview := &CostAccountingOverview{

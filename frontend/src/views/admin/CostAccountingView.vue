@@ -1,7 +1,7 @@
 <template>
-  <AppLayout>
-    <div class="cost-page space-y-6 pb-12">
-      <header class="cost-hero overflow-hidden border border-stone-200 bg-stone-950 text-white shadow-sm dark:border-dark-700">
+  <component :is="embedded ? 'div' : AppLayout">
+    <div class="cost-page space-y-6" :class="embedded ? 'pb-4' : 'pb-12'">
+      <header v-if="!embedded" class="cost-hero overflow-hidden border border-stone-200 bg-stone-950 text-white shadow-sm dark:border-dark-700">
         <div class="cost-hero-grid px-6 py-7 lg:px-8">
           <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div class="max-w-3xl">
@@ -20,7 +20,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
               <RouterLink
-                to="/admin/finance-transactions"
+                :to="{ path: '/admin/business-finance', query: { tab: 'ledger' } }"
                 class="inline-flex h-10 items-center gap-2 border border-white/20 bg-white/10 px-4 text-sm font-medium text-white transition hover:bg-white/15"
               >
                 财务记账
@@ -93,7 +93,7 @@
                   <p class="section-eyebrow">现金账与用量账联动</p>
                   <h2 class="mt-1 text-lg font-semibold text-stone-950 dark:text-white">本月经营对照</h2>
                 </div>
-                <RouterLink to="/admin/finance-transactions" class="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400">
+                <RouterLink :to="{ path: '/admin/business-finance', query: { tab: 'ledger' } }" class="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400">
                   查看流水 →
                 </RouterLink>
               </div>
@@ -365,7 +365,7 @@
         <button class="mt-5 bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700" @click="loadOverview">重新加载</button>
       </div>
     </div>
-  </AppLayout>
+  </component>
 </template>
 
 <script setup lang="ts">
@@ -380,6 +380,10 @@ import type {
 } from '@/api/admin/costAccounting'
 import type { FinanceTransactionSummary } from '@/types'
 import { useAppStore } from '@/stores/app'
+
+withDefaults(defineProps<{ embedded?: boolean }>(), {
+  embedded: false
+})
 
 const appStore = useAppStore()
 const overview = ref<CostAccountingOverview | null>(null)

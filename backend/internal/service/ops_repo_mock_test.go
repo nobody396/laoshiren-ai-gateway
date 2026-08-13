@@ -14,6 +14,7 @@ type opsRepoMock struct {
 	DeleteSystemLogsFn                func(ctx context.Context, filter *OpsSystemLogCleanupFilter) (int64, error)
 	InsertSystemLogCleanupAuditFn     func(ctx context.Context, input *OpsSystemLogCleanupAudit) error
 	ListMonthlyUpstreamProbeResultsFn func(ctx context.Context, since time.Time) ([]MonthlyUpstreamProbePoint, error)
+	GetCostAccountingRealUsageFn      func(ctx context.Context, creditGroupIDs, payAsYouGoGroupIDs []int64, start, end time.Time) (map[int64]CostAccountingUsageRow, error)
 }
 
 func (m *opsRepoMock) InsertErrorLog(ctx context.Context, input *OpsInsertErrorLogInput) (int64, error) {
@@ -133,7 +134,10 @@ func (m *opsRepoMock) ListMonthlyUpstreamProbeResults(ctx context.Context, since
 	return []MonthlyUpstreamProbePoint{}, nil
 }
 
-func (m *opsRepoMock) GetCostAccountingRealUsage(ctx context.Context, groupIDs []int64, start, end time.Time) (map[int64]CostAccountingUsageRow, error) {
+func (m *opsRepoMock) GetCostAccountingRealUsage(ctx context.Context, creditGroupIDs, payAsYouGoGroupIDs []int64, start, end time.Time) (map[int64]CostAccountingUsageRow, error) {
+	if m.GetCostAccountingRealUsageFn != nil {
+		return m.GetCostAccountingRealUsageFn(ctx, creditGroupIDs, payAsYouGoGroupIDs, start, end)
+	}
 	return map[int64]CostAccountingUsageRow{}, nil
 }
 

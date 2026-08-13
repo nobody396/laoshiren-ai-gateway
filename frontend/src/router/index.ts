@@ -615,15 +615,19 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/admin/cost-accounting',
-    name: 'AdminCostAccounting',
-    component: () => import('@/views/admin/CostAccountingView.vue'),
+    path: '/admin/business-finance',
+    name: 'AdminBusinessFinance',
+    component: () => import('@/views/admin/BusinessFinanceView.vue'),
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
-      permission: 'admin:ops',
-      title: '成本核算'
+      anyPermission: ['admin:finance-transactions', 'admin:ops'],
+      title: '经营财务中心'
     }
+  },
+  {
+    path: '/admin/cost-accounting',
+    redirect: { path: '/admin/business-finance', query: { tab: 'cost' } }
   },
   {
     path: '/admin/users',
@@ -746,16 +750,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin/finance-transactions',
-    name: 'AdminFinanceTransactions',
-    component: () => import('@/views/admin/FinanceTransactionsView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      permission: 'admin:finance-transactions',
-      title: 'Finance Ledger',
-      titleKey: 'admin.financeTransactions.title',
-      descriptionKey: 'admin.financeTransactions.description'
-    }
+    redirect: { path: '/admin/business-finance', query: { tab: 'ledger' } }
   },
   {
     path: '/admin/feedbacks',
@@ -1070,11 +1065,14 @@ router.beforeEach(async (to, _from, next) => {
 
   const requiresAdmin = to.meta.requiresAdmin === true
   const requiredPermission = typeof to.meta.permission === 'string' ? to.meta.permission : undefined
+  const anyPermission = Array.isArray(to.meta.anyPermission) ? to.meta.anyPermission : []
   let permissionAllowed = true
-  if (requiresAdmin && authStore.isAdmin && requiredPermission) {
+  if (requiresAdmin && authStore.isAdmin && (requiredPermission || anyPermission.length)) {
     const permissionStore = usePermissionStore()
     if (!permissionStore.loaded) await permissionStore.fetchPermissions()
-    permissionAllowed = permissionStore.hasPermission(requiredPermission)
+    permissionAllowed = requiredPermission
+      ? permissionStore.hasPermission(requiredPermission)
+      : permissionStore.hasAnyPermission(anyPermission)
   }
 
   const requiresInvoiceManagement = to.meta.requiresInvoiceManagement === true

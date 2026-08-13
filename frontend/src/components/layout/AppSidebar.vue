@@ -332,6 +332,21 @@ const ChartIcon = {
     )
 }
 
+const ReceiptIcon = {
+  render: () =>
+    h(
+      'svg',
+      { fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '1.5' },
+      [
+        h('path', {
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          d: 'M6 3.75h12a1.5 1.5 0 011.5 1.5V21l-2.5-1.5-2.5 1.5-2.5-1.5L9.5 21 7 19.5 4.5 21V5.25A1.5 1.5 0 016 3.75zm2.25 4.5h7.5m-7.5 3h7.5m-7.5 3h4.5'
+        })
+      ]
+    )
+}
+
 const GiftIcon = {
   render: () =>
     h(
@@ -717,6 +732,7 @@ const userNavItems = computed((): NavItem[] => {
     { path: '/dashboard', label: t('nav.dashboard'), icon: DashboardIcon },
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
+    { path: '/usage-receipt', label: t('nav.usageReceipt'), icon: ReceiptIcon },
     { path: '/get-subscription', label: t('nav.getSubscription'), icon: RechargeSubscriptionIcon },
     createModelPricingNavItem(),
     { path: '/topup/orders', label: t('nav.topupOrders'), icon: CreditCardIcon },
@@ -750,6 +766,7 @@ const personalNavItems = computed((): NavItem[] => {
   const items: NavItem[] = [
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
+    { path: '/usage-receipt', label: t('nav.usageReceipt'), icon: ReceiptIcon },
     { path: '/get-subscription', label: t('nav.getSubscription'), icon: RechargeSubscriptionIcon },
     createModelPricingNavItem(),
     { path: '/topup/orders', label: t('nav.topupOrders'), icon: CreditCardIcon },

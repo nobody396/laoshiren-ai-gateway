@@ -113,6 +113,10 @@
 
             <!-- Actions -->
             <div class="ml-auto flex items-center gap-3">
+              <router-link to="/usage-receipt" class="btn btn-secondary">
+                <Icon name="receipt" size="sm" />
+                {{ t('usageReceipt.title') }}
+              </router-link>
               <button @click="applyFilters" :disabled="loading" class="btn btn-secondary">
                 {{ t('common.refresh') }}
               </button>

@@ -27,6 +27,7 @@
     "chart.js": "^4.4.1",
     "dompurify": "^3.4.13",
     "driver.js": "^1.4.0",
+    "html-to-image": "1.11.13",
     "marked": "^17.0.1",
     "md-editor-v3": "^6.4.2",
     "pinia": "^2.1.7",

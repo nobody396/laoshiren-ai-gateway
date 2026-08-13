@@ -52,6 +52,21 @@
   --color-vellum: 255 252 245; /* #fffcf5 — form control fill, lightest paper */
 
   /* ---------------------------------------------------------------------
+   * Usage receipt — a fixed, light thermal-paper surface.
+   *
+   * These deliberately do not flip in dark mode: the receipt is an exportable
+   * document, so its ink contrast and QR scanability must remain identical in
+   * every app theme. The surrounding printer uses the stable lacquer tokens.
+   * --------------------------------------------------------------------- */
+  --receipt-paper: 255 252 245; /* #fffcf5 */
+  --receipt-paper-deep: 242 233 210; /* #f2e9d2 */
+  --receipt-ink: 31 26 18; /* #1f1a12 */
+  --receipt-muted: 107 95 73; /* #6b5f49 */
+  --receipt-rule: 138 125 99; /* #8a7d63 */
+  --receipt-accent: 154 59 31; /* #9a3b1f */
+  --receipt-stamp: 63 90 58; /* #3f5a3a */
+
+  /* ---------------------------------------------------------------------
    * gray-50…950 — replaces Tailwind's default cool gray (undefined before
    * this change, 6,516 usages across the app). Warm paper (light) fading
    * through muted tan into ink (dark). This is the single biggest lever:
@@ -393,6 +408,8 @@
   --duration-slow: 300ms;      /* 抽屉、弹窗、侧栏折叠 */
   --duration-reveal: 620ms;    /* 落地页区块入场 */
   --duration-ambient: 2s;      /* 骨架屏微光循环 */
+  --duration-receipt-print: 2800ms; /* 小票从打印口完整送出 */
+  --duration-receipt-settle: 420ms; /* 打印完成后的轻微回弹 */
 
   /* 首屏书写：单独一档，因为它不是"入场"而是"写字"。
    * 观感慢不慢由时长和缓动共同决定，只调时长没用 ——
@@ -409,6 +426,7 @@
    * 走到一半时长时已经写完八成，剩下一半时间在做几乎看不见的收尾。
    * y1≈x1 让中段匀速，y2 略高于 x2 只在收笔处轻轻提起。 */
   --ease-ink: cubic-bezier(0.3, 0.28, 0.5, 0.95);
+  --ease-receipt-feed: cubic-bezier(0.22, 0.74, 0.24, 1);
 
   /* 入场编排 */
   --reveal-lift: 22px;         /* 上移距离 */
@@ -424,6 +442,8 @@
     --duration-reveal: 1ms;
     --duration-ink-write: 1ms;
     --duration-ink-settle: 1ms;
+    --duration-receipt-print: 1ms;
+    --duration-receipt-settle: 1ms;
     --reveal-lift: 0px;
     --reveal-stagger: 0ms;
   }

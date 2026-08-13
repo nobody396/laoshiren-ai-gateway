@@ -23,18 +23,29 @@ const (
 	clientSetupTicketTTL     = 10 * time.Minute
 	clientSetupAPIBaseURL    = "https://api.laoshirenai.com"
 
-	clientSetupClaudeGroupName     = "MAX 20X"
-	clientSetupCodexGroupName      = "Pro 20X"
-	clientSetupGrokGroupName       = "Grok 4.6"
-	clientSetupLegacyGrokGroupName = "Grok 4.5"
+	clientSetupDefaultClaudeGroupName = "MAX 20X"
+	clientSetupDefaultCodexGroupName  = "Pro 20X"
 )
 
 var (
+	clientSetupGrokGroupPolicy  = generatedCatalogGroupPolicyFor(PlatformGrok)
+	clientSetupGrokGroupName    = clientSetupGrokGroupPolicy.Preferred
+	clientSetupLegacyGrokGroups = clientSetupGrokGroupPolicy.Legacy
+	clientSetupClaudeGroupName  = preferredCatalogGroupOrDefault(PlatformAnthropic, clientSetupDefaultClaudeGroupName)
+	clientSetupCodexGroupName   = preferredCatalogGroupOrDefault(PlatformOpenAI, clientSetupDefaultCodexGroupName)
+
 	ErrInvalidClientSetupTarget  = infraerrors.BadRequest("INVALID_CLIENT_SETUP_TARGET", "不支持的一键安装目标")
 	ErrClientSetupGroupMissing   = infraerrors.Forbidden("CLIENT_SETUP_GROUP_MISSING", "当前账户没有可用于该客户端的分组")
 	ErrClientSetupKeyUnavailable = infraerrors.Forbidden("CLIENT_SETUP_KEY_UNAVAILABLE", "当前 API 密钥无法用于一键配置")
 	ErrInvalidClientSetupTicket  = infraerrors.Unauthorized("INVALID_CLIENT_SETUP_TICKET", "一键安装凭证无效、已过期或已使用")
 )
+
+func preferredCatalogGroupOrDefault(platform, fallback string) string {
+	if preferred := generatedCatalogGroupPolicyFor(platform).Preferred; preferred != "" {
+		return preferred
+	}
+	return fallback
+}
 
 type ClientSetupTicket struct {
 	Ticket    string
@@ -306,8 +317,15 @@ func clientSetupGroupMatchesTarget(target string, group *Group) bool {
 		return false
 	}
 	if target == ClientSetupTargetGrok {
-		return clientSetupGroupNameMatches(group.Name, clientSetupGrokGroupName) ||
-			clientSetupGroupNameMatches(group.Name, clientSetupLegacyGrokGroupName)
+		if clientSetupGroupNameMatches(group.Name, clientSetupGrokGroupName) {
+			return true
+		}
+		for _, legacyName := range clientSetupLegacyGrokGroups {
+			if clientSetupGroupNameMatches(group.Name, legacyName) {
+				return true
+			}
+		}
+		return false
 	}
 	return clientSetupGroupNameMatches(group.Name, clientSetupRequiredGroupName(target))
 }

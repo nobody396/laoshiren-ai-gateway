@@ -35,6 +35,11 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Verify generated model catalog
+        run: |
+          python3 scripts/model_catalog.py check
+          python3 scripts/test_model_catalog.py
+
       - name: Resolve changed paths
         shell: bash
         env:

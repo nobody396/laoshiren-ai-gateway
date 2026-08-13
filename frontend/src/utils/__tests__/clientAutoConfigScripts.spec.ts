@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
+import { clientAutoConfigVersion } from '@/generated/modelCatalog'
 
 const readPublicScript = (name: string) =>
   readFileSync(resolve(process.cwd(), 'public', 'auto-config', name), 'utf8')
@@ -13,7 +14,7 @@ describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on macOS and Linux', () => {
     const script = readPublicScript('install.sh')
 
-    expect(script).toContain('SCRIPT_VERSION="0.7.6"')
+    expect(script).toContain(`SCRIPT_VERSION='${clientAutoConfigVersion}'`)
     expect(script).toContain('EXISTING_CLAUDE_COMMAND="$(get_usable_client_command claude || true)"')
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('exchange_setup_ticket')
@@ -31,7 +32,7 @@ describe('client auto-config scripts', () => {
     const script = readPublicScript('install.ps1')
 
     expect(script.startsWith('\uFEFF')).toBe(true)
-    expect(script).toContain("$ScriptVersion = '0.7.6'")
+    expect(script).toContain(`$ScriptVersion = '${clientAutoConfigVersion}'`)
     expect(script).toContain("Get-UsableClientCommand -CommandName 'claude'")
     expect(script).toContain('检测到现有 Claude Code CLI，跳过重复安装')
     expect(script).toContain('Exchange-SetupTicket')
@@ -80,8 +81,7 @@ describe('client auto-config scripts', () => {
       expect(script).toContain('claude-opus-5')
       expect(script).toContain('effortLevel')
       expect(script).toContain('xhigh')
-      expect(script).toContain('model = "gpt-5.6-sol"')
-      expect(script).not.toContain('model = "gpt-5.6"')
+      expect(script).toMatch(/CatalogOpenAIDefaultModel|CATALOG_OPENAI_DEFAULT_MODEL/)
     }
   })
 
@@ -119,15 +119,15 @@ describe('client auto-config scripts', () => {
     for (const name of ['install.sh', 'install.ps1']) {
       const script = readPublicScript(name)
       expect(script).toContain('model_catalog_json = "laoshirenai-model-catalog.json"')
-      expect(script).toContain('model_context_window = 250000')
-      expect(script).toContain('model_auto_compact_token_limit = 225000')
+      expect(script).toMatch(/model_context_window = (?:\$CatalogOpenAIContextWindow|\$\{CATALOG_OPENAI_CONTEXT_WINDOW\})/)
+      expect(script).toMatch(/model_auto_compact_token_limit = (?:\$CatalogOpenAIAutoCompactTokenLimit|\$\{CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT\})/)
       expect(script).toContain('gpt-5.3-codex-spark')
     }
   })
 
   it('uses xhigh as the Claude Code default in the manual settings template', () => {
     const modal = readUseKeyModal()
-    expect(modal).toContain('"model": "claude-opus-5"')
+    expect(modal).toContain("claudeClientDefault?.id ?? 'claude-opus-5'")
     expect(modal).toContain('"effortLevel": "xhigh"')
   })
 
@@ -142,10 +142,10 @@ describe('client auto-config scripts', () => {
     const script = readPublicScript('install.sh')
     expect(script).toContain('all|claude|codex|grok')
     expect(script).toContain("curl -fsSL https://x.ai/cli/install.sh | bash")
-    expect(script).toContain("'[model.\"grok-4.6\"]'")
-    expect(script).toContain("'description = \"Grok 4.6\"'")
+    expect(script).toContain('`[model.${JSON.stringify(model)}]`')
+    expect(script).toContain('`description = ${JSON.stringify(displayName)}`')
     expect(script).toContain("'api_backend = \"responses\"'")
-    expect(script).toContain("'context_window = 500000'")
+    expect(script).toContain('`context_window = ${contextWindow}`')
     expect(script).toContain('verify_api_key_readiness "Grok Build" "$GROK_API_KEY"')
     expect(script).toContain("['claude', 'codex', 'grok'].includes(data.target)")
   })
@@ -158,10 +158,10 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('-DownloadPrefix $script:GrokBuildPackagePrefix')
     expect(script).toContain('Download-VerifiedAsset -Asset $Asset -OutputPath $TemporaryPath')
     expect(script).not.toContain("$Bases = @('https://x.ai/cli'")
-    expect(script).toContain("$Lines.Add('[model.\"grok-4.6\"]')")
-    expect(script).toContain("$Lines.Add('description = \"Grok 4.6\"')")
+    expect(script).toContain('$Lines.Add("[model.$(ConvertTo-TomlString $CatalogGrokDefaultModel)]")')
+    expect(script).toContain('$Lines.Add("description = $(ConvertTo-TomlString $CatalogGrokDefaultDisplayName)")')
     expect(script).toContain("$Lines.Add('api_backend = \"responses\"')")
-    expect(script).toContain("$Lines.Add('context_window = 500000')")
+    expect(script).toContain('$Lines.Add("context_window = $CatalogGrokDefaultContextWindow")')
     expect(script).toContain("Test-ApiKeyReadiness -Label 'Grok Build' -ApiKey $script:GrokApiKey")
   })
 })

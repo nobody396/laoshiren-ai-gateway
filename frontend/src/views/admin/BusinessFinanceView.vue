@@ -258,8 +258,9 @@ async function loadSummary() {
   summaryLoading.value = true
   financeError.value = false
   costError.value = false
+  const financeRange = currentShanghaiMonthRange()
   const [financeResult, costResult] = await Promise.allSettled([
-    adminAPI.financeTransactions.summary(undefined, undefined, 'month'),
+    adminAPI.financeTransactions.summary(financeRange.from, financeRange.to, 'month'),
     adminAPI.costAccounting.getOverview()
   ])
   if (financeResult.status === 'fulfilled') financeSummary.value = financeResult.value
@@ -267,6 +268,21 @@ async function loadSummary() {
   if (costResult.status === 'fulfilled') costOverview.value = costResult.value
   else costError.value = true
   summaryLoading.value = false
+}
+
+function currentShanghaiMonthRange(): { from: number; to: number } {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: 'numeric'
+  }).formatToParts(new Date())
+  const year = Number(parts.find((part) => part.type === 'year')?.value)
+  const month = Number(parts.find((part) => part.type === 'month')?.value)
+  const shanghaiOffsetMs = 8 * 60 * 60 * 1000
+  return {
+    from: Math.floor((Date.UTC(year, month - 1, 1) - shanghaiOffsetMs) / 1000),
+    to: Math.floor((Date.UTC(year, month, 1) - shanghaiOffsetMs) / 1000)
+  }
 }
 
 function money(value: number): string {

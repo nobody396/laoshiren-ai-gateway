@@ -75,7 +75,11 @@ describe('admin BusinessFinanceView', () => {
     const wrapper = mountView()
     await flushPromises()
 
-    expect(summary).toHaveBeenCalledWith(undefined, undefined, 'month')
+    const [from, to, scope] = summary.mock.calls[0]
+    expect(scope).toBe('month')
+    expect(typeof from).toBe('number')
+    expect(typeof to).toBe('number')
+    expect(to).toBeGreaterThan(from)
     expect(getOverview).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('经营财务中心')
     expect(wrapper.text()).toContain('¥3,376.13')

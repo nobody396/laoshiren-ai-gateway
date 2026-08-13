@@ -107,10 +107,6 @@
                 <Icon name="download" size="sm" />
                 {{ exporting && !sharing ? t('usageReceipt.exporting') : t('usageReceipt.downloadImage') }}
               </button>
-              <button class="btn btn-secondary" :disabled="!receiptData || loading || printing" @click="restartPrint(true)">
-                <Icon name="refresh" size="sm" />
-                {{ t('usageReceipt.printAgain') }}
-              </button>
               <button class="btn btn-ghost" :disabled="!inviteUrl" @click="copyInviteLink">
                 <Icon name="copy" size="sm" />
                 {{ copied ? t('common.copied') : t('usageReceipt.copyInvite') }}
@@ -788,6 +784,10 @@ onBeforeUnmount(() => {
   width: 100%;
   padding-right: 10px;
   padding-left: 10px;
+}
+
+.usage-receipt-actions .btn:last-child:nth-child(3) {
+  grid-column: 1 / -1;
 }
 
 .usage-receipt-preview {

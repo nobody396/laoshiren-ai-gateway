@@ -2,7 +2,7 @@ type AudioContextWithWebkit = typeof window & {
   webkitAudioContext?: typeof AudioContext
 }
 
-const PRINT_DURATION_MS = 7200
+const PRINT_DURATION_MS = 5200
 const CUTTER_START_DELAY_MS = 0
 const SOUND_CLEANUP_GRACE_MS = 200
 
@@ -18,7 +18,7 @@ export function playThermalPrinterSound(): (() => void) | null {
   const feedDuration = PRINT_DURATION_MS / 1000
   const cutterStartDelay = CUTTER_START_DELAY_MS / 1000
   const completionBellAt = startAt + feedDuration + cutterStartDelay + 0.22
-  const completionBellDuration = 0.92
+  const completionBellDuration = 0.88
   const stopAt = completionBellAt + completionBellDuration
   const sources: AudioScheduledSourceNode[] = []
 
@@ -137,8 +137,8 @@ export function playThermalPrinterSound(): (() => void) | null {
     sources.push(cutter)
   }
 
-  // Cash-counter finish: an abrupt tray clack, followed by a short bright
-  // metal strike. This reads as “counting complete” instead of an oven timer.
+  // Classic video “payment received” finish: cash-drawer clack, a quick coin
+  // cascade, then a bright two-note register chime — the familiar cha-ching.
   const trayClack = context.createOscillator()
   const trayClackGain = context.createGain()
   trayClack.type = 'triangle'
@@ -152,11 +152,31 @@ export function playThermalPrinterSound(): (() => void) | null {
   trayClack.stop(completionBellAt + 0.11)
   sources.push(trayClack)
 
-  const metalStrikeAt = completionBellAt + 0.055
+  for (const [offset, frequency, gainValue] of [
+    [0.045, 1760, 0.17],
+    [0.115, 2240, 0.14],
+    [0.185, 2860, 0.11]
+  ] as const) {
+    const coin = context.createOscillator()
+    const coinGain = context.createGain()
+    const coinAt = completionBellAt + offset
+    coin.type = 'sine'
+    coin.frequency.setValueAtTime(frequency, coinAt)
+    coin.frequency.exponentialRampToValueAtTime(frequency * 0.97, coinAt + 0.18)
+    coinGain.gain.setValueAtTime(gainValue, coinAt)
+    coinGain.gain.exponentialRampToValueAtTime(0.0001, coinAt + 0.2)
+    coin.connect(coinGain)
+    coinGain.connect(completionCompressor)
+    coin.start(coinAt)
+    coin.stop(coinAt + 0.21)
+    sources.push(coin)
+  }
+
+  const metalStrikeAt = completionBellAt + 0.22
   for (const [frequency, gainValue, duration] of [
-    [1320, 0.3, completionBellDuration],
-    [1980, 0.14, 0.62],
-    [2640, 0.065, 0.38]
+    [1568, 0.32, completionBellDuration],
+    [2093, 0.18, 0.62],
+    [3136, 0.07, 0.36]
   ] as const) {
     const bell = context.createOscillator()
     const bellGain = context.createGain()

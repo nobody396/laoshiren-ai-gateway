@@ -122,10 +122,6 @@
                   draggable="false"
                   aria-hidden="true"
                 />
-                <div class="receipt-printer__mouth" aria-hidden="true">
-                  <span class="receipt-printer__roller"></span>
-                  <span class="receipt-printer__cutter"></span>
-                </div>
                 <span class="receipt-printer__active-lamp" aria-hidden="true"></span>
                 <button
                   type="button"
@@ -157,6 +153,11 @@
                     :site-logo="appStore.siteLogo || '/laoshirenai-icon.jpg'"
                   />
                 </div>
+              </div>
+
+              <div class="receipt-printer__mouth" aria-hidden="true">
+                <span class="receipt-printer__roller"></span>
+                <span class="receipt-printer__cutter"></span>
               </div>
             </div>
 
@@ -713,11 +714,11 @@ onBeforeUnmount(() => {
 
 .receipt-printer__mouth {
   position: absolute;
-  top: 69.2%;
-  left: 12.3%;
-  z-index: 8;
-  width: 59.2%;
-  height: 8.7%;
+  top: 68.75%;
+  left: 12.42%;
+  z-index: 10;
+  width: 58.85%;
+  height: 7.58%;
   overflow: hidden;
   border-radius: 3px;
   background: rgb(var(--printer-seam) / 0.94);
@@ -729,8 +730,9 @@ onBeforeUnmount(() => {
 
 .receipt-printer__roller {
   position: absolute;
-  inset: 26% 2% auto;
-  height: 28%;
+  inset: 18% 2% auto;
+  z-index: 2;
+  height: 25%;
   border-radius: 999px;
   background: repeating-linear-gradient(90deg, rgb(var(--color-warm-700)) 0 4px, rgb(var(--printer-seam)) 4px 7px);
   box-shadow: inset 0 2px 3px rgb(var(--printer-seam));
@@ -741,6 +743,7 @@ onBeforeUnmount(() => {
   right: 2%;
   bottom: 2%;
   left: 2%;
+  z-index: 3;
   height: 22%;
   background: repeating-linear-gradient(135deg, rgb(var(--printer-metal)) 0 2px, rgb(var(--printer-seam)) 2px 4px);
   clip-path: polygon(0 0, 100% 0, 99% 100%, 98% 35%, 97% 100%, 96% 35%, 95% 100%, 4% 35%, 3% 100%, 2% 35%, 1% 100%);
@@ -760,10 +763,10 @@ onBeforeUnmount(() => {
 
 .receipt-printer__print-button {
   position: absolute;
-  top: 64.2%;
-  right: 7.45%;
+  top: 62.48%;
+  right: 8.47%;
   z-index: 10;
-  width: 6.2%;
+  width: 6.5%;
   aspect-ratio: 1;
   padding: 0;
   border: 0;
@@ -802,12 +805,10 @@ onBeforeUnmount(() => {
 .receipt-printer__print-button::after {
   position: absolute;
   inset: 0;
-  border: 1px solid rgb(var(--color-terracotta-dark) / 0.7);
+  border: 0;
   border-radius: inherit;
-  background: rgb(var(--color-terracotta) / 0.08);
-  box-shadow:
-    inset 0 2px 3px rgb(var(--color-vellum) / 0.18),
-    0 0 0 0 rgb(var(--color-terracotta) / 0.28);
+  background: transparent;
+  box-shadow: 0 0 0 0 rgb(var(--color-terracotta) / 0.28);
   content: '';
 }
 
@@ -837,10 +838,10 @@ onBeforeUnmount(() => {
 
 .receipt-viewport {
   position: absolute;
-  top: 69.2%;
-  left: 12.3%;
-  z-index: 5;
-  width: 59.2%;
+  top: 68.75%;
+  left: 12.42%;
+  z-index: 9;
+  width: 58.85%;
   overflow: hidden;
 }
 
@@ -968,14 +969,10 @@ onBeforeUnmount(() => {
 
 @keyframes receipt-button-invite {
   0%, 100% {
-    box-shadow:
-      inset 0 2px 3px rgb(var(--color-vellum) / 0.18),
-      0 0 0 0 rgb(var(--color-terracotta) / 0.24);
+    box-shadow: 0 0 0 0 rgb(var(--color-terracotta) / 0.24);
   }
   50% {
-    box-shadow:
-      inset 0 2px 3px rgb(var(--color-vellum) / 0.18),
-      0 0 0 7px rgb(var(--color-terracotta) / 0);
+    box-shadow: 0 0 0 7px rgb(var(--color-terracotta) / 0);
   }
 }
 

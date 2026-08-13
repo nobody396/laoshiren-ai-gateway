@@ -114,7 +114,6 @@
           <span>本期已节省</span>
           <strong>¥{{ formatCurrency(savedCostCny) }}</strong>
         </div>
-        <p class="receipt-totals__note">官方价按 {{ data.exchangeRate.toFixed(2) }} 汇率折算，仅作对比</p>
       </section>
     </template>
 
@@ -134,7 +133,6 @@
       </div>
 
       <p class="receipt-footer__privacy">仅展示汇总数据 · 不含邮箱、API Key 与请求内容</p>
-      <p class="receipt-footer__signature">LAOSHIREN AI · A QUIET PLACE FOR CODE</p>
     </footer>
   </article>
 </template>
@@ -425,13 +423,6 @@ defineExpose({ getElement })
   font-weight: 900;
 }
 
-.receipt-totals__note {
-  margin-top: 7px;
-  color: rgb(var(--receipt-muted));
-  font-size: 8px;
-  text-align: right;
-}
-
 .receipt-footer {
   margin-top: 22px;
   padding-top: 18px;
@@ -492,14 +483,6 @@ defineExpose({ getElement })
   margin-top: 16px;
   color: rgb(var(--receipt-muted));
   font-size: 8px;
-}
-
-.receipt-footer__signature {
-  margin-top: 8px;
-  font-family: Cinzel, serif;
-  font-size: 7px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
 }
 
 @media (max-width: 460px) {

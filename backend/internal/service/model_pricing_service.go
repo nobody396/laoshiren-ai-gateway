@@ -75,9 +75,8 @@ func (s *ModelPricingService) isDisplayHiddenModel(model string) bool {
 // manualOfficialPrices 手动维护的官方价表（USD per 1M tokens）。
 // 这些模型不在 LiteLLM 官方价表（model_prices_and_context_window.json）里，
 // 但分组 model_mapping 会暴露它们。价格乘以分组倍率得到客户实付价（元/1M）。
-// 所有价格取自对应厂商官方定价页（2026-08 核对），唯独 Grok 4.6
-// 在 xAI 公共目录发布前先按已完成真实调用的 PomoAI 公开价卡接入：
-//   - grok-4.6:        PomoAI /api/pricing/public（<200k 档；2026-08-13）
+// 所有价格取自对应厂商官方定价页（2026-08 核对）；新模型的已审价卡
+// 由 model-catalog/catalog.json 生成并在 init 中合并，避免重复手改：
 //   - grok-4.5:        xAI 官方 https://docs.x.ai/docs/models（<200k 档）
 //   - glm-5.2:         Z.ai 官方 https://docs.z.ai/guides/overview/pricing.md
 //   - claude-opus-5:   Anthropic 官方 https://platform.claude.com/docs/en/about-claude/models/overview
@@ -92,11 +91,16 @@ type manualOfficialPrice struct {
 }
 
 var manualOfficialPrices = map[string]manualOfficialPrice{
-	"grok-4.6":        {input: 2.0, output: 6.0, cacheRead: 0.5},
 	"grok-4.5":        {input: 2.0, output: 6.0, cacheRead: 0.3},
 	"glm-5.2":         {input: 1.4, output: 4.4, cacheRead: 0.26},
 	"claude-opus-5":   {input: 5.0, output: 25.0, cacheRead: 0.5},
 	"claude-sonnet-5": {input: 2.0, output: 10.0, cacheRead: 0.2}, // 官方促销价，2026-08-31 后改回 $3/$15
+}
+
+func init() {
+	for model, price := range generatedCatalogDisplayPrices {
+		manualOfficialPrices[model] = price
+	}
 }
 
 // ModelPricingService 聚合"全部 active 分组 × 分组内可用模型 × 官方价"生成公开价格目录。

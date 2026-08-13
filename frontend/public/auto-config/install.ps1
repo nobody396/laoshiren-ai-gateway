@@ -1,7 +1,17 @@
 ﻿Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# BEGIN GENERATED MODEL CATALOG
 $ScriptVersion = '0.7.6'
+$CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
+$CatalogOpenAIContextWindow = 250000
+$CatalogOpenAIAutoCompactTokenLimit = 225000
+$CatalogAnthropicDefaultModel = 'claude-opus-5'
+$CatalogGrokDefaultModel = 'grok-4.6'
+$CatalogGrokDefaultDisplayName = 'Grok 4.6'
+$CatalogGrokDefaultContextWindow = 500000
+$CatalogGrokManagedModelSections = @('model.grok-4.5', 'model."grok-4.5"', 'model.grok-4.6', 'model."grok-4.6"')
+# END GENERATED MODEL CATALOG
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
 $DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
@@ -10,7 +20,7 @@ $DefaultGrokBuildManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/
 $DefaultCodexPackagePrefix = 'https://laoshirenai.com/downloads/codex/'
 $DefaultGitForWindowsPackagePrefix = 'https://laoshirenai.com/downloads/git-for-windows/'
 $DefaultGrokBuildPackagePrefix = 'https://laoshirenai.com/downloads/grok-build/'
-$DefaultCodexModelCatalogUrl = 'https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.6'
+$DefaultCodexModelCatalogUrl = "https://laoshirenai.com/auto-config/codex-model-catalog.json?v=$ScriptVersion"
 $DefaultCodexAppInstallerUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/windows-x64/latest.appinstaller'
 $DefaultTopupUrl = 'https://laoshirenai.com/get-subscription'
 $DefaultTools = 'all'
@@ -1184,7 +1194,7 @@ function Write-ClaudeConfig {
     $Config | Add-Member -NotePropertyName env -NotePropertyValue ([pscustomobject]@{}) -Force
   }
 
-  $Config | Add-Member -NotePropertyName model -NotePropertyValue 'claude-opus-5' -Force
+  $Config | Add-Member -NotePropertyName model -NotePropertyValue $CatalogAnthropicDefaultModel -Force
   $Config | Add-Member -NotePropertyName effortLevel -NotePropertyValue 'xhigh' -Force
   $Config.env | Add-Member -NotePropertyName ANTHROPIC_BASE_URL -NotePropertyValue $BaseUrl -Force
   $Config.env | Add-Member -NotePropertyName ANTHROPIC_AUTH_TOKEN -NotePropertyValue $ClaudeApiKey -Force
@@ -1249,15 +1259,15 @@ function Write-CodexTomlConfig {
   # 用无 BOM 的 UTF-8 写入，同上
   $toml = @"
 model_provider = "OpenAI"
-model = "gpt-5.6-sol"
-review_model = "gpt-5.6-sol"
+model = "$CatalogOpenAIDefaultModel"
+review_model = "$CatalogOpenAIDefaultModel"
 model_reasoning_effort = "xhigh"
 model_catalog_json = "laoshirenai-model-catalog.json"
 disable_response_storage = true
 network_access = "enabled"
 preferred_auth_method = "apikey"
-model_context_window = 250000
-model_auto_compact_token_limit = 225000
+model_context_window = $CatalogOpenAIContextWindow
+model_auto_compact_token_limit = $CatalogOpenAIAutoCompactTokenLimit
 
 [model_providers.OpenAI]
 name = "OpenAI"
@@ -1286,7 +1296,7 @@ function Write-GrokTomlConfig {
   $DroppingModel = $false
   foreach ($Line in $Lines) {
     if ($Line.Trim() -match '^\[([^\]]+)\]$') {
-      $DroppingModel = $Matches[1] -in @('model.grok-4.5', 'model."grok-4.5"', 'model.grok-4.6', 'model."grok-4.6"')
+      $DroppingModel = $Matches[1] -in $CatalogGrokManagedModelSections
     }
     if (-not $DroppingModel) { $Kept.Add($Line) }
   }
@@ -1299,7 +1309,7 @@ function Write-GrokTomlConfig {
   if ($ModelsHeader -lt 0) {
     $Lines.Add('')
     $Lines.Add('[models]')
-    $Lines.Add('default = "grok-4.6"')
+    $Lines.Add("default = $(ConvertTo-TomlString $CatalogGrokDefaultModel)")
   } else {
     $End = $Lines.Count
     for ($i = $ModelsHeader + 1; $i -lt $Lines.Count; $i++) {
@@ -1308,25 +1318,26 @@ function Write-GrokTomlConfig {
     $Replaced = $false
     for ($i = $ModelsHeader + 1; $i -lt $End; $i++) {
       if ($Lines[$i] -match '^\s*default\s*=') {
-        $Lines[$i] = 'default = "grok-4.6"'
+        $Lines[$i] = "default = $(ConvertTo-TomlString $CatalogGrokDefaultModel)"
         $Replaced = $true
         break
       }
     }
-    if (-not $Replaced) { $Lines.Insert($ModelsHeader + 1, 'default = "grok-4.6"') }
+    if (-not $Replaced) { $Lines.Insert($ModelsHeader + 1, "default = $(ConvertTo-TomlString $CatalogGrokDefaultModel)") }
   }
 
   $BaseV1 = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  $GrokDisplayName = "$CatalogGrokDefaultDisplayName · 老实人AI"
   $Lines.Add('')
   $Lines.Add('# Managed by laoshirenai one-click setup')
-  $Lines.Add('[model."grok-4.6"]')
-  $Lines.Add('model = "grok-4.6"')
+  $Lines.Add("[model.$(ConvertTo-TomlString $CatalogGrokDefaultModel)]")
+  $Lines.Add("model = $(ConvertTo-TomlString $CatalogGrokDefaultModel)")
   $Lines.Add("base_url = $(ConvertTo-TomlString $BaseV1)")
-  $Lines.Add('name = "Grok 4.6 · 老实人AI"')
-  $Lines.Add('description = "Grok 4.6"')
+  $Lines.Add("name = $(ConvertTo-TomlString $GrokDisplayName)")
+  $Lines.Add("description = $(ConvertTo-TomlString $CatalogGrokDefaultDisplayName)")
   $Lines.Add("api_key = $(ConvertTo-TomlString $script:GrokApiKey)")
   $Lines.Add('api_backend = "responses"')
-  $Lines.Add('context_window = 500000')
+  $Lines.Add("context_window = $CatalogGrokDefaultContextWindow")
   $Lines.Add('')
   [System.IO.File]::WriteAllLines($GrokConfigPath, $Lines, [System.Text.UTF8Encoding]::new($false))
 }
@@ -1565,7 +1576,7 @@ function Print-Summary {
   }
   if (Test-UsesGrok) {
     Write-Host '  - 重新打开 PowerShell 后执行 grok --version'
-    Write-Host '  - 再执行 grok -m grok-4.6 -p "只回复 OK"'
+    Write-Host "  - 再执行 grok -m $CatalogGrokDefaultModel -p `"只回复 OK`""
   }
 }
 

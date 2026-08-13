@@ -1,4 +1,9 @@
 import type { GroupPlatform } from '@/types'
+import {
+  catalogClientDefaultForPlatform,
+  modelCatalog,
+  optionalCatalogClientDefaultForPlatform
+} from '@/generated/modelCatalog'
 
 export type CcsImportTarget =
   | 'claude'
@@ -32,15 +37,23 @@ export interface BuildCcsImportDeeplinkInput {
   siteName?: string | null
 }
 
-export const DEFAULT_OPENAI_MODEL = 'gpt-5.6-sol'
+export const DEFAULT_OPENAI_MODEL = optionalCatalogClientDefaultForPlatform('openai')?.id ?? 'gpt-5.6-sol'
 
 // Keep Codex below the effective upstream limit so automatic compaction can
 // finish before the provider rejects the request. The explicit 90% threshold
 // also avoids relying on client-version-specific defaults.
 export const CODEX_CONTEXT_WINDOW_TOKENS = 250000
 export const CODEX_AUTO_COMPACT_TOKEN_LIMIT = 225000
+const GROK_CLIENT_DEFAULT = catalogClientDefaultForPlatform('grok')
 
 export const OPENAI_CODEX_MODELS = [
+  ...modelCatalog
+    .filter((model) => model.platform === 'openai')
+    .map((model) => ({
+      model: model.id,
+      displayName: model.displayName,
+      contextWindow: model.contextWindow
+    })),
   { model: 'gpt-5.6-sol', displayName: 'GPT-5.6-Sol', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
   { model: 'gpt-5.6-terra', displayName: 'GPT-5.6-Terra', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
   { model: 'gpt-5.6-luna', displayName: 'GPT-5.6-Luna', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
@@ -312,7 +325,7 @@ export const buildCcsImportDeeplink = ({
   })
 
   if (target === 'grokbuild') {
-    params.set('model', 'grok-4.6')
+    params.set('model', GROK_CLIENT_DEFAULT.id)
   } else if (
     target === 'codex' ||
     target === 'opencode' ||

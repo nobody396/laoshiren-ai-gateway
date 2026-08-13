@@ -432,7 +432,8 @@ defineExpose({ getElement })
 .receipt-qr {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  gap: 22px;
   margin: 18px 0 0;
   padding: 10px;
   border: 1px solid rgb(var(--receipt-ink));
@@ -449,6 +450,7 @@ defineExpose({ getElement })
 .receipt-qr div {
   display: grid;
   gap: 5px;
+  min-width: 138px;
 }
 
 .receipt-qr strong {

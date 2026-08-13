@@ -350,7 +350,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
-      title: 'AI 使用小票',
+      title: '我的 AI 小票',
       titleKey: 'usageReceipt.title',
       descriptionKey: 'usageReceipt.description'
     }

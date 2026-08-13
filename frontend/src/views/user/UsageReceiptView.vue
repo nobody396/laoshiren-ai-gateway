@@ -72,9 +72,25 @@
               <span>03</span>
               <div>
                 <h2>{{ t('usageReceipt.shareTitle') }}</h2>
-                <p>{{ inviteCode ? t('usageReceipt.inviteReady') : t('usageReceipt.inviteFallback') }}</p>
+                <p>{{ inviteStatusText }}</p>
               </div>
             </div>
+
+            <label v-if="partnerInviteOptions.length > 0" class="receipt-invite-picker">
+              <span>
+                <strong>{{ t('usageReceipt.inviteLinkTitle') }}</strong>
+                <small>{{ t('usageReceipt.partnerInviteHint') }}</small>
+              </span>
+              <select
+                v-model="inviteCode"
+                :disabled="loading || printing"
+                @change="handleInviteLinkChange"
+              >
+                <option v-for="option in partnerInviteOptions" :key="option.code" :value="option.code">
+                  {{ option.label }}
+                </option>
+              </select>
+            </label>
 
             <div class="usage-receipt-actions">
               <button class="btn btn-primary" :disabled="!receiptData || loading || exporting || printing" @click="shareReceipt">
@@ -186,10 +202,16 @@ import { useI18n } from 'vue-i18n'
 import { toBlob } from 'html-to-image'
 import QRCode from 'qrcode'
 import { usageAPI } from '@/api/usage'
-import { getMyInviteCode } from '@/api/agent'
+import {
+  getAffiliateQualification,
+  getMyInviteCode,
+  listAffiliateLinks,
+  type AffiliateLink
+} from '@/api/agent'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { useClipboard } from '@/composables/useClipboard'
+import { resolvePartnerAccessState } from '@/features/affiliate/partnerAccess'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -208,6 +230,11 @@ import type {
 
 interface ReceiptPaperExpose {
   getElement: () => HTMLElement | null
+}
+
+interface ReceiptInviteOption {
+  code: string
+  label: string
 }
 
 type PrintPhase = 'ready' | 'printing' | 'detaching' | 'complete'
@@ -230,6 +257,8 @@ const endDate = ref(formatBeijingDate())
 const receiptData = ref<UsageReceiptData | null>(null)
 const receiptPaper = ref<ReceiptPaperExpose | null>(null)
 const inviteCode = ref('')
+const partnerInviteOptions = ref<ReceiptInviteOption[]>([])
+const inviteMode = ref<'ordinary' | 'partner' | 'unavailable'>('ordinary')
 const qrDataUrl = ref('')
 const loading = ref(true)
 const loadError = ref(false)
@@ -247,6 +276,11 @@ const receiptStatusText = computed(() => {
   if (isDetaching.value) return t('usageReceipt.detaching')
   if (printPhase.value === 'complete') return t('usageReceipt.previewReady')
   return t('usageReceipt.pressPrinterButton')
+})
+const inviteStatusText = computed(() => {
+  if (inviteMode.value === 'partner') return t('usageReceipt.partnerInviteReady')
+  if (inviteMode.value === 'unavailable') return t('usageReceipt.inviteFallback')
+  return inviteCode.value ? t('usageReceipt.ordinaryInviteReady') : t('usageReceipt.inviteFallback')
 })
 
 const preferences = reactive<UsageReceiptPreferences>({
@@ -282,6 +316,70 @@ async function createInviteQRCode(): Promise<string> {
   }
 }
 
+function affiliateLinkLabel(link: AffiliateLink): string {
+  if (link.is_default) return t('usageReceipt.defaultPartnerLink')
+  return link.channel?.trim() || link.name?.trim() || link.code
+}
+
+async function loadInviteDestination(): Promise<void> {
+  const ordinaryInvite = await getMyInviteCode().catch((error) => {
+    console.error('Failed to load ordinary invite code for receipt:', error)
+    return { invite_code: '' }
+  })
+
+  inviteCode.value = ordinaryInvite.invite_code
+  inviteMode.value = 'ordinary'
+  partnerInviteOptions.value = []
+
+  try {
+    const qualification = await getAffiliateQualification()
+    if (qualification.program_mode !== 'live') return
+
+    const accessState = resolvePartnerAccessState(qualification.agent_status, qualification.risk_status)
+    if (qualification.agent_status === 'active' && accessState !== 'available') {
+      inviteCode.value = ''
+      inviteMode.value = 'unavailable'
+      return
+    }
+    if (accessState !== 'available') return
+
+    const links = (await listAffiliateLinks())
+      .filter(link => link.status === 'active')
+      .sort((left, right) => Number(right.is_default) - Number(left.is_default) || left.id - right.id)
+
+    if (links.length === 0) {
+      inviteCode.value = ''
+      inviteMode.value = 'unavailable'
+      return
+    }
+
+    partnerInviteOptions.value = links.map(link => ({
+      code: link.code,
+      label: affiliateLinkLabel(link)
+    }))
+    inviteCode.value = links[0].code
+    inviteMode.value = 'partner'
+  } catch (error) {
+    // The receipt remains usable with the ordinary invite URL if affiliate
+    // eligibility is unavailable or this user is not enrolled.
+    console.error('Failed to resolve affiliate link for receipt:', error)
+  }
+}
+
+async function handleInviteLinkChange(): Promise<void> {
+  qrDataUrl.value = await createInviteQRCode()
+  if (receiptData.value) {
+    receiptData.value = {
+      ...receiptData.value,
+      inviteCode: inviteCode.value,
+      inviteUrl: inviteUrl.value,
+      qrDataUrl: qrDataUrl.value
+    }
+    await nextTick()
+    resetPrinter()
+  }
+}
+
 async function loadReceiptData(): Promise<void> {
   loading.value = true
   loadError.value = false
@@ -289,16 +387,12 @@ async function loadReceiptData(): Promise<void> {
   try {
     await appStore.fetchPublicSettings()
 
-    const [stats, modelResponse, inviteResult] = await Promise.all([
+    const [stats, modelResponse] = await Promise.all([
       usageAPI.getStatsByDateRange(startDate.value, endDate.value),
       usageAPI.getDashboardModels({ start_date: startDate.value, end_date: endDate.value }),
-      getMyInviteCode().catch((error) => {
-        console.error('Failed to load invite code for receipt:', error)
-        return { invite_code: '' }
-      })
+      loadInviteDestination()
     ])
 
-    inviteCode.value = inviteResult.invite_code
     qrDataUrl.value = await createInviteQRCode()
 
     receiptData.value = {
@@ -577,6 +671,41 @@ onBeforeUnmount(() => {
   accent-color: rgb(var(--color-terracotta));
 }
 
+.receipt-invite-picker {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid rgb(var(--color-stone));
+  background: rgb(var(--color-vellum) / 0.5);
+}
+
+.receipt-invite-picker > span {
+  display: grid;
+  gap: 3px;
+}
+
+.receipt-invite-picker strong {
+  color: rgb(var(--color-ink));
+  font-size: 13px;
+}
+
+.receipt-invite-picker small {
+  color: rgb(var(--color-muted));
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.receipt-invite-picker select {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 34px 0 10px;
+  border: 1px solid rgb(var(--color-stone));
+  border-radius: 3px;
+  color: rgb(var(--color-ink));
+  background: rgb(var(--color-vellum));
+  font-size: 12px;
+}
+
 .receipt-privacy-note {
   display: flex;
   gap: 10px;
@@ -751,14 +880,15 @@ onBeforeUnmount(() => {
 
 .receipt-printer__active-lamp {
   position: absolute;
-  top: 72.1%;
-  right: 18.25%;
+  top: 73.35%;
+  left: 80.8%;
   z-index: 9;
   width: 6px;
   height: 6px;
   border-radius: 999px;
   opacity: 0;
   background: rgb(var(--printer-paper-led));
+  transform: translate(-50%, -50%);
 }
 
 .receipt-printer__print-button {

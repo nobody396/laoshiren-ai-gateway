@@ -31,11 +31,11 @@ const (
 	monthlyAnthropicProbeEstimatedInputTokens  = 236
 	monthlyAnthropicProbeEstimatedOutputTokens = 32
 
-	monthlyOpenAIGPT56SolInputCostPerToken   = 5e-6
-	monthlyOpenAIGPT56SolOutputCostPerToken  = 30e-6
-	monthlyClaudeHaiku45InputCostPerToken    = 1e-6
-	monthlyClaudeHaiku45OutputCostPerToken   = 5e-6
-	monthlyUpstreamProbeCostCurrency         = "USD"
+	monthlyOpenAIGPT56SolInputCostPerToken  = 5e-6
+	monthlyOpenAIGPT56SolOutputCostPerToken = 30e-6
+	monthlyClaudeHaiku45InputCostPerToken   = 1e-6
+	monthlyClaudeHaiku45OutputCostPerToken  = 5e-6
+	monthlyUpstreamProbeCostCurrency        = "USD"
 
 	MonthlyUpstreamProbePathGateway        = "gateway"
 	MonthlyUpstreamProbePathDirectUpstream = "direct_upstream"

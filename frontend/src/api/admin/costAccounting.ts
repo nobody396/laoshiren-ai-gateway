@@ -68,6 +68,7 @@ export interface CostAccountingPayAsYouGoGroup {
   worst_account_rate_multiplier: number
   schedulable_account_count: number
   topup_100_cny_scenario?: CostAccountingMoney
+  topup_100_cny_scenario_basis?: 'observed_real_usage'
   real_usage: CostAccountingRealUsage
   warning?: string
 }

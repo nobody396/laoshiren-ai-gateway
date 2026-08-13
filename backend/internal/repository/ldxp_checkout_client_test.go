@@ -5,7 +5,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/stretchr/testify/require"
@@ -150,6 +154,82 @@ func TestLDXPCheckoutClientSupportsAlipayAndLabelsSelectedMethod(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 2, createdChannelID)
 	require.Equal(t, service.NativeCheckoutPaymentMethodAlipay, order.PaymentMethod)
+}
+
+func TestLDXPCheckoutClientCollapsesConcurrentOfferMetadataLookups(t *testing.T) {
+	var goodsCalls atomic.Int32
+	var channelCalls atomic.Int32
+	var orderCalls atomic.Int32
+	var activeOrders atomic.Int32
+	var maxActiveOrders atomic.Int32
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/shopApi/Shop/goodsInfo":
+			goodsCalls.Add(1)
+			// Keep the first lookup in flight so all concurrent buyers join it.
+			time.Sleep(50 * time.Millisecond)
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
+				"goods_type": "card", "goods_key": "trial-key", "status": 1,
+				"price": 1, "real_price": 1, "contact_format": "email",
+				"user": map[string]any{"token": "public-shop-token"},
+			}})
+		case "/shopApi/Shop/getUserChannel":
+			channelCalls.Add(1)
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": []map[string]any{
+				{"id": 4, "code": "WeixinNative", "status": 1, "custom_status": 1},
+			}})
+		case "/shopApi/Pay/order":
+			active := activeOrders.Add(1)
+			defer activeOrders.Add(-1)
+			for {
+				previous := maxActiveOrders.Load()
+				if active <= previous || maxActiveOrders.CompareAndSwap(previous, active) {
+					break
+				}
+			}
+			time.Sleep(30 * time.Millisecond)
+			orderID := orderCalls.Add(1)
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
+				"trade_no":     "LD-CONCURRENT-" + strconv.FormatInt(int64(orderID), 10),
+				"total_amount": 1,
+				"payurl":       server.URL + "/pay/concurrent-" + strconv.FormatInt(int64(orderID), 10),
+			}})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client, err := newLDXPCheckoutClient(server.URL, true)
+	require.NoError(t, err)
+
+	const buyers = 16
+	var wg sync.WaitGroup
+	errs := make(chan error, buyers)
+	for i := range buyers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, createErr := client.CreateOrder(
+				context.Background(),
+				"trial-key",
+				"buyer-"+strconv.Itoa(i)+"@example.com",
+				100,
+			)
+			errs <- createErr
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for createErr := range errs {
+		require.NoError(t, createErr)
+	}
+	require.Equal(t, int32(1), goodsCalls.Load())
+	require.Equal(t, int32(1), channelCalls.Load())
+	require.Equal(t, int32(buyers), orderCalls.Load(), "each customer still needs an independent payable order")
+	require.LessOrEqual(t, maxActiveOrders.Load(), int32(ldxpCreateConcurrency), "provider order creation must have bounded concurrency")
+	require.Greater(t, maxActiveOrders.Load(), int32(1), "independent customers should still make progress concurrently")
 }
 
 func TestLDXPCheckoutClientRejectsUnsupportedPaymentChannel(t *testing.T) {

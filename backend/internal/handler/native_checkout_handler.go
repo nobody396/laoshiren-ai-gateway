@@ -105,7 +105,10 @@ func (h *NativeCheckoutHandler) GetOrder(c *gin.Context) {
 		response.BadRequest(c, "Missing order number")
 		return
 	}
-	order, err := h.service.GetOrder(c.Request.Context(), userID, orderNo, true)
+	// Status reads must stay local and cheap. Only the server-side reconciler is
+	// allowed to query LDXP, so many tabs or customers cannot multiply upstream
+	// polling or race the same fulfillment.
+	order, err := h.service.GetOrder(c.Request.Context(), userID, orderNo)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

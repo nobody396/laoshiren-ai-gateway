@@ -212,13 +212,24 @@ func (r *nativeCheckoutRepository) getOrderByID(ctx context.Context, id int64) (
 		FROM native_checkout_orders WHERE id = $1`, id))
 }
 
-func (r *nativeCheckoutRepository) ListReconcileOrders(ctx context.Context, limit int, fulfillingStaleBefore time.Time) ([]service.NativeCheckoutOrder, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT `+nativeCheckoutOrderColumns+`
+func (r *nativeCheckoutRepository) ClaimReconcileOrders(ctx context.Context, limit int, fulfillingStaleBefore, leaseUntil time.Time) ([]service.NativeCheckoutOrder, error) {
+	rows, err := r.db.QueryContext(ctx, `WITH due AS (
+		SELECT id
 		FROM native_checkout_orders
-		WHERE (status = 'creating' AND updated_at < $1)
-		   OR (status IN ('pending', 'checking') AND next_check_at <= NOW())
-		   OR (status = 'fulfilling' AND updated_at < $1)
-		ORDER BY next_check_at, id LIMIT $2`, fulfillingStaleBefore, limit)
+		WHERE next_check_at <= NOW()
+		  AND (
+			(status = 'creating' AND updated_at < $1)
+			OR status IN ('pending', 'checking')
+			OR (status = 'fulfilling' AND updated_at < $1)
+		  )
+		ORDER BY next_check_at, id
+		FOR UPDATE SKIP LOCKED
+		LIMIT $2
+	)
+	UPDATE native_checkout_orders
+	SET next_check_at = $3
+	WHERE id IN (SELECT id FROM due)
+	RETURNING `+nativeCheckoutOrderColumns, fulfillingStaleBefore, limit, leaseUntil)
 	if err != nil {
 		return nil, err
 	}

@@ -20,6 +20,7 @@ import (
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"golang.org/x/net/html"
+	"golang.org/x/sync/singleflight"
 )
 
 const (
@@ -28,6 +29,7 @@ const (
 	ldxpMaxHTMLBytes         = 1 << 20
 	ldxpMaxImageBytes        = 2 << 20
 	ldxpMerchantLoginBackoff = 10 * time.Minute
+	ldxpCreateConcurrency    = 8
 )
 
 var ldxpRedeemCodePattern = regexp.MustCompile(`(?i)(?:^|[^0-9a-f])([0-9a-f]{32})(?:$|[^0-9a-f])`)
@@ -45,6 +47,8 @@ type ldxpCheckoutClient struct {
 	merchantRetryAt  time.Time
 	buyerMu          sync.Mutex
 	buyerRetryAt     time.Time
+	channelFlight    singleflight.Group
+	createSlots      chan struct{}
 }
 
 func NewLDXPCheckoutClient() service.NativeCheckoutProvider {
@@ -67,6 +71,7 @@ func newLDXPCheckoutClient(baseURL string, allowHTTP bool) (*ldxpCheckoutClient,
 		userAgent:        "laoshirenai-native-checkout/1.0",
 		merchantUsername: strings.TrimSpace(os.Getenv("LDXP_MERCHANT_USERNAME")),
 		merchantPassword: os.Getenv("LDXP_MERCHANT_PASSWORD"),
+		createSlots:      make(chan struct{}, ldxpCreateConcurrency),
 	}
 	if (client.merchantUsername == "") != (client.merchantPassword == "") {
 		return nil, errors.New("incomplete LDXP merchant credentials")
@@ -93,6 +98,12 @@ func (c *ldxpCheckoutClient) CreateOrder(ctx context.Context, goodsKey, contact 
 	channel, err := c.checkoutChannel(ctx, goodsKey, expectedAmountCNYFen)
 	if err != nil {
 		return nil, &service.NativeCheckoutProviderError{Cause: err}
+	}
+	select {
+	case c.createSlots <- struct{}{}:
+		defer func() { <-c.createSlots }()
+	case <-ctx.Done():
+		return nil, &service.NativeCheckoutProviderError{Cause: ctx.Err()}
 	}
 
 	var created map[string]json.RawMessage
@@ -134,6 +145,25 @@ type ldxpCheckoutChannel struct {
 }
 
 func (c *ldxpCheckoutClient) checkoutChannel(ctx context.Context, goodsKey string, expectedAmountCNYFen int64) (ldxpCheckoutChannel, error) {
+	// A burst of different customers buying the same offer needs only one
+	// goods/channel lookup. Each customer still receives an independent provider
+	// order below, but concurrent metadata probes are collapsed without caching a
+	// potentially stale WeChat/Alipay selection.
+	key := goodsKey + ":" + strconv.FormatInt(expectedAmountCNYFen, 10)
+	value, err, _ := c.channelFlight.Do(key, func() (any, error) {
+		return c.loadCheckoutChannel(ctx, goodsKey, expectedAmountCNYFen)
+	})
+	if err != nil {
+		return ldxpCheckoutChannel{}, err
+	}
+	channel, ok := value.(ldxpCheckoutChannel)
+	if !ok {
+		return ldxpCheckoutChannel{}, errors.New("invalid LDXP checkout channel result")
+	}
+	return channel, nil
+}
+
+func (c *ldxpCheckoutClient) loadCheckoutChannel(ctx context.Context, goodsKey string, expectedAmountCNYFen int64) (ldxpCheckoutChannel, error) {
 	var goods struct {
 		GoodsType     string      `json:"goods_type"`
 		GoodsKey      string      `json:"goods_key"`

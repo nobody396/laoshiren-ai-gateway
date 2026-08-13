@@ -138,7 +138,7 @@ func TestNativeCheckoutStaleCreatingOrderIsHeldForReviewWithoutRetry(t *testing.
 	provider := &nativeCheckoutProviderFake{}
 	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
 
-	order, err := svc.GetOrder(context.Background(), 42, repo.order.OrderNo, true)
+	order, err := svc.syncOrder(context.Background(), repo.order)
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusManualReview, order.Status)
 	require.Equal(t, "provider_create_interrupted", order.FailureCode)
@@ -164,7 +164,7 @@ func TestNativeCheckoutPaidGiftCardIsValidatedLinkedAndRedeemed(t *testing.T) {
 	}}
 	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, redeem, nativeCheckoutTestContactKey)
 
-	order, err := svc.GetOrder(context.Background(), 42, repo.order.OrderNo, true)
+	order, err := svc.syncOrder(context.Background(), repo.order)
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusCompleted, order.Status)
 	require.Equal(t, 1, redeem.redeemCalls)
@@ -182,7 +182,7 @@ func TestNativeCheckoutPaidOrderStaysCheckingWhileDeliveryIsPending(t *testing.T
 	}}
 	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
 
-	order, err := svc.GetOrder(context.Background(), 42, repo.order.OrderNo, true)
+	order, err := svc.syncOrder(context.Background(), repo.order)
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusChecking, order.Status)
 	require.Empty(t, order.FailureCode)
@@ -207,7 +207,7 @@ func TestNativeCheckoutRejectsPaidCardThatIsNotPureGift(t *testing.T) {
 	}}
 	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, redeem, nativeCheckoutTestContactKey)
 
-	order, err := svc.GetOrder(context.Background(), 42, repo.order.OrderNo, true)
+	order, err := svc.syncOrder(context.Background(), repo.order)
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusManualReview, order.Status)
 	require.Equal(t, 0, redeem.redeemCalls)
@@ -237,10 +237,44 @@ func TestNativeCheckoutCrashRecoveryAcceptsCodeAlreadyUsedBySameUser(t *testing.
 	}}
 	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, redeem, nativeCheckoutTestContactKey)
 
-	order, err := svc.GetOrder(context.Background(), 42, repo.order.OrderNo, true)
+	order, err := svc.syncOrder(context.Background(), repo.order)
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusCompleted, order.Status)
 	require.Equal(t, 0, redeem.redeemCalls)
+}
+
+func TestNativeCheckoutCustomerStatusReadNeverPollsProvider(t *testing.T) {
+	offer := testNativeCheckoutOffer()
+	repo := newNativeCheckoutRepoFake(offer)
+	repo.order = testNativeCheckoutOrder(offer)
+	provider := &nativeCheckoutProviderFake{info: &NativeCheckoutProviderOrderInfo{
+		TradeNo: "LD-1", GoodsKey: offer.ProviderGoodsKey, Contact: "buyer@example.com",
+		Quantity: 1, TotalCNYFen: 100, Paid: true, Delivered: false,
+	}}
+	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
+
+	order, err := svc.GetOrder(context.Background(), 42, repo.order.OrderNo)
+	require.NoError(t, err)
+	require.Equal(t, NativeCheckoutStatusPending, order.Status)
+	require.Zero(t, provider.orderInfoCalls, "a browser status read must not query LDXP")
+}
+
+func TestNativeCheckoutPendingPollingCoolsDownWithOrderAge(t *testing.T) {
+	svc := NewNativeCheckoutService(nil, nil, nil, nil, nativeCheckoutTestContactKey)
+	order := &NativeCheckoutOrder{Status: NativeCheckoutStatusPending, CreatedAt: time.Now().Add(-time.Minute)}
+	require.Equal(t, 3*time.Second, svc.nextCheckDelay(order))
+
+	order.CreatedAt = time.Now().Add(-5 * time.Minute)
+	require.Equal(t, 10*time.Second, svc.nextCheckDelay(order))
+	order.CreatedAt = time.Now().Add(-30 * time.Minute)
+	require.Equal(t, 30*time.Second, svc.nextCheckDelay(order))
+	order.CreatedAt = time.Now().Add(-2 * time.Hour)
+	require.Equal(t, 5*time.Minute, svc.nextCheckDelay(order))
+	order.CreatedAt = time.Now().Add(-48 * time.Hour)
+	require.Equal(t, time.Hour, svc.nextCheckDelay(order))
+
+	order.Status = NativeCheckoutStatusChecking
+	require.Equal(t, 3*time.Second, svc.nextCheckDelay(order), "paid orders wait for delivery on the fast path")
 }
 
 func TestRedeemServiceBlocksRestrictedCheckoutInventoryFromManualRedemption(t *testing.T) {
@@ -409,6 +443,7 @@ type nativeCheckoutProviderFake struct {
 	createCalls      int
 	createContextErr error
 	validateErr      error
+	orderInfoCalls   int
 }
 
 func (p *nativeCheckoutProviderFake) ValidateOffer(context.Context, string, int64) error {
@@ -426,6 +461,7 @@ func (p *nativeCheckoutProviderFake) IsPaid(context.Context, string) (bool, erro
 	return p.paid, nil
 }
 func (p *nativeCheckoutProviderFake) GetOrderInfo(context.Context, string) (*NativeCheckoutProviderOrderInfo, error) {
+	p.orderInfoCalls++
 	return p.info, nil
 }
 

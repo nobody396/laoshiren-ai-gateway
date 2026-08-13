@@ -30,6 +30,11 @@ const (
 
 	NativeCheckoutPaymentMethodWeChat = "wechat"
 	NativeCheckoutPaymentMethodAlipay = "alipay"
+
+	nativeCheckoutWorkerInterval    = time.Second
+	nativeCheckoutWorkerLease       = 30 * time.Second
+	nativeCheckoutWorkerConcurrency = 4
+	nativeCheckoutOrderSyncTimeout  = 20 * time.Second
 )
 
 var (
@@ -116,7 +121,7 @@ type NativeCheckoutRepository interface {
 	SetOrderState(ctx context.Context, id int64, status, failureCode string, nextCheckAt time.Time) (*NativeCheckoutOrder, error)
 	GetOrderForUser(ctx context.Context, orderNo string, userID int64) (*NativeCheckoutOrder, error)
 	GetOrder(ctx context.Context, orderNo string) (*NativeCheckoutOrder, error)
-	ListReconcileOrders(ctx context.Context, limit int, fulfillingStaleBefore time.Time) ([]NativeCheckoutOrder, error)
+	ClaimReconcileOrders(ctx context.Context, limit int, fulfillingStaleBefore, leaseUntil time.Time) ([]NativeCheckoutOrder, error)
 	RecordPendingCheck(ctx context.Context, id int64, nextCheckAt time.Time) error
 	ClaimFulfillment(ctx context.Context, id, redeemCodeID int64, staleBefore time.Time) (*NativeCheckoutOrder, bool, error)
 	LinkRedeemCode(ctx context.Context, redeemCodeID int64, providerTradeNo string) error
@@ -390,15 +395,11 @@ func isSupportedNativeCheckoutPaymentMethod(method string) bool {
 	return method == NativeCheckoutPaymentMethodWeChat || method == NativeCheckoutPaymentMethodAlipay
 }
 
-func (s *NativeCheckoutService) GetOrder(ctx context.Context, userID int64, orderNo string, sync bool) (*NativeCheckoutOrder, error) {
-	order, err := s.repo.GetOrderForUser(ctx, strings.TrimSpace(orderNo), userID)
-	if err != nil {
-		return nil, err
-	}
-	if sync && (order.Status == NativeCheckoutStatusCreating || order.Status == NativeCheckoutStatusPending || order.Status == NativeCheckoutStatusChecking || order.Status == NativeCheckoutStatusFulfilling) {
-		return s.syncOrder(ctx, order)
-	}
-	return order, nil
+func (s *NativeCheckoutService) GetOrder(ctx context.Context, userID int64, orderNo string) (*NativeCheckoutOrder, error) {
+	// Customer-facing reads never call the payment provider. This makes status
+	// polling a cheap database read and leaves upstream reconciliation under the
+	// server worker's database lease.
+	return s.repo.GetOrderForUser(ctx, strings.TrimSpace(orderNo), userID)
 }
 
 func (s *NativeCheckoutService) FetchDirectPaymentQR(ctx context.Context, userID int64, orderNo string) ([]byte, string, error) {
@@ -428,7 +429,7 @@ func (s *NativeCheckoutService) syncOrder(ctx context.Context, order *NativeChec
 	}
 	info, err := s.provider.GetOrderInfo(ctx, order.ProviderTradeNo)
 	if err != nil {
-		_ = s.repo.RecordPendingCheck(ctx, order.ID, time.Now().Add(s.pollInterval))
+		_ = s.repo.RecordPendingCheck(ctx, order.ID, time.Now().Add(s.nextCheckDelay(order)))
 		return order, nil
 	}
 	if err := s.validateProviderOrderIdentity(order, info); err != nil {
@@ -451,7 +452,7 @@ func (s *NativeCheckoutService) syncOrder(ctx context.Context, order *NativeChec
 	}
 	if err := s.validateProviderOrder(order, info); err != nil {
 		if errors.Is(err, errNativeCheckoutDeliveryPending) {
-			_ = s.repo.RecordPendingCheck(ctx, order.ID, time.Now().Add(s.pollInterval))
+			_ = s.repo.RecordPendingCheck(ctx, order.ID, time.Now().Add(s.nextCheckDelay(order)))
 			return order, nil
 		}
 		return s.holdForReview(ctx, order, "provider_order_mismatch")
@@ -493,6 +494,31 @@ func (s *NativeCheckoutService) syncOrder(ctx context.Context, order *NativeChec
 		return nil, fmt.Errorf("complete native checkout order: %w", err)
 	}
 	return completed, nil
+}
+
+// nextCheckDelay keeps newly created orders responsive without polling an
+// unpaid, abandoned QR every three seconds forever. Paid orders stay on the
+// fast path until LDXP delivers their code; unpaid orders cool down with age.
+func (s *NativeCheckoutService) nextCheckDelay(order *NativeCheckoutOrder) time.Duration {
+	if order == nil || order.Status == NativeCheckoutStatusChecking {
+		return s.pollInterval
+	}
+	if order.CreatedAt.IsZero() {
+		return s.pollInterval
+	}
+	age := time.Since(order.CreatedAt)
+	switch {
+	case age < 2*time.Minute:
+		return s.pollInterval
+	case age < 10*time.Minute:
+		return 10 * time.Second
+	case age < time.Hour:
+		return 30 * time.Second
+	case age < 24*time.Hour:
+		return 5 * time.Minute
+	default:
+		return time.Hour
+	}
 }
 
 func (s *NativeCheckoutService) holdForReview(ctx context.Context, order *NativeCheckoutOrder, code string) (*NativeCheckoutOrder, error) {
@@ -624,7 +650,7 @@ func (s *NativeCheckoutService) Stop() {
 
 func (s *NativeCheckoutService) runWorker(stop <-chan struct{}, done chan<- struct{}) {
 	defer close(done)
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(nativeCheckoutWorkerInterval)
 	defer ticker.Stop()
 	for {
 		select {
@@ -637,21 +663,37 @@ func (s *NativeCheckoutService) runWorker(stop <-chan struct{}, done chan<- stru
 }
 
 func (s *NativeCheckoutService) reconcileBatch() {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
-	orders, err := s.repo.ListReconcileOrders(ctx, 50, time.Now().Add(-s.staleAfter))
+	claimCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	orders, err := s.repo.ClaimReconcileOrders(
+		claimCtx,
+		nativeCheckoutWorkerConcurrency,
+		time.Now().Add(-s.staleAfter),
+		time.Now().Add(nativeCheckoutWorkerLease),
+	)
+	cancel()
 	if err != nil {
 		logger.LegacyPrintf("service.native-checkout", "reconcile list failed: %v", err)
 		return
 	}
+
+	// The database lease above ensures that browser tabs, other goroutines, and
+	// additional application replicas cannot process the same order at once.
+	// A small fixed concurrency keeps unrelated customers independent without
+	// turning simultaneous checkouts into an unbounded burst against LDXP.
+	var wg sync.WaitGroup
 	for i := range orders {
-		if ctx.Err() != nil {
-			return
-		}
-		if _, err := s.syncOrder(ctx, &orders[i]); err != nil {
-			// Order number is an internal random identifier. Never log provider
-			// trade numbers, payment URLs, contacts, or redeem codes.
-			logger.LegacyPrintf("service.native-checkout", "reconcile failed order=%s: %v", orders[i].OrderNo, err)
-		}
+		order := orders[i]
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ctx, syncCancel := context.WithTimeout(context.Background(), nativeCheckoutOrderSyncTimeout)
+			defer syncCancel()
+			if _, syncErr := s.syncOrder(ctx, &order); syncErr != nil {
+				// Order number is an internal random identifier. Never log provider
+				// trade numbers, payment URLs, contacts, or redeem codes.
+				logger.LegacyPrintf("service.native-checkout", "reconcile failed order=%s: %v", order.OrderNo, syncErr)
+			}
+		}()
 	}
+	wg.Wait()
 }

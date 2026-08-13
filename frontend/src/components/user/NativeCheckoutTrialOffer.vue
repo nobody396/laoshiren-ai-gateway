@@ -285,6 +285,8 @@ async function loadPaymentQR(current: NativeCheckoutOrder) {
 
 function startPolling(delay = 0) {
   if (disposed || pollTimer || pollInFlight) return
+  // This polls only our server's durable order row. The browser never polls
+  // LDXP directly; a leased server worker owns payment and delivery checks.
   pollTimer = setTimeout(() => {
     pollTimer = null
     void pollStatus()

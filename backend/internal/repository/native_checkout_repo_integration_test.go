@@ -60,6 +60,16 @@ func TestNativeCheckoutRepositoryEnforcesOnceAndClaimsRestrictedInventory(t *tes
 	)
 	require.NoError(t, err)
 	require.Equal(t, service.NativeCheckoutPaymentMethodWeChat, providerOrder.PaymentMethod)
+
+	leaseUntil := time.Now().Add(time.Minute)
+	leased, err := repo.ClaimReconcileOrders(ctx, 4, time.Now().Add(-time.Minute), leaseUntil)
+	require.NoError(t, err)
+	require.Len(t, leased, 1)
+	require.Equal(t, providerOrder.ID, leased[0].ID)
+	leasedAgain, err := repo.ClaimReconcileOrders(ctx, 4, time.Now().Add(-time.Minute), leaseUntil)
+	require.NoError(t, err)
+	require.Empty(t, leasedAgain, "a leased order must not be selected by another server worker")
+
 	providerOrder, err = repo.SetOrderState(
 		ctx,
 		providerOrder.ID,

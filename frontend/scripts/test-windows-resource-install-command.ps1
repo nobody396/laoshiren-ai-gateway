@@ -183,6 +183,7 @@ process.on('SIGTERM', () => server.close(() => process.exit(0)));
   $diagnosticPath = Join-Path $PSScriptRoot '..\public\auto-config\diagnose-cc-switch.ps1'
   $diagnosticFunctions = Get-FunctionsFromPowerShellFile -Path $diagnosticPath -Names @(
     'Write-Step',
+    'Write-Ok',
     'Convert-ToVersion',
     'Get-OptionalPropertyValue',
     'Get-WindowsReleaseAssetName',

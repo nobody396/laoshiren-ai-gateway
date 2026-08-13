@@ -279,7 +279,7 @@ func (r *openAIRouteObservationCheckpointRepository) GetBatch(
 	ctx context.Context,
 	keys []service.OpenAIRouteKey,
 	now time.Time,
-) (map[string]service.OpenAIRouteObservationProfile, error) {
+) (result map[string]service.OpenAIRouteObservationProfile, err error) {
 	result, fingerprints, err := initializeOpenAIRouteCheckpointProfiles(keys)
 	if err != nil || len(fingerprints) == 0 {
 		return result, err
@@ -322,7 +322,9 @@ ORDER BY route_fingerprint, hour_start
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		err = errors.Join(err, rows.Close())
+	}()
 	seasonalSet := make(map[int64]struct{}, len(seasonalStarts))
 	for _, value := range seasonalStarts {
 		seasonalSet[value.Unix()] = struct{}{}

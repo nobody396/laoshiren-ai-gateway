@@ -134,6 +134,33 @@ func TestOpenAIRouteObservationStore_RecoversLongWindowsWhenRedisReadFails(t *te
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestOpenAIRouteObservationCheckpoint_GetBatchReturnsRowsCloseError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+	repository := NewOpenAIRouteObservationCheckpointRepository(db)
+	key := testOpenAIRouteObservationKey(service.OpenAIRouteRequestClassText)
+	now := time.Date(2026, 8, 12, 13, 30, 0, 0, time.UTC)
+	closeErr := errors.New("rows close failed")
+	rows := sqlmock.NewRows([]string{
+		"route_fingerprint", "hour_start", "metrics", "actual_base_cost_usd", "actual_account_cost_usd", "last_observed_at",
+	}).AddRow(
+		"unexpected-fingerprint",
+		now.Truncate(time.Hour),
+		[]byte(`{"attempt_count":1,"reliability_count":1,"success_count":1}`),
+		"0",
+		"0",
+		now,
+	).CloseError(closeErr)
+	mock.ExpectQuery("(?s)" + regexp.QuoteMeta("FROM openai_route_observation_hourly")).WillReturnRows(rows)
+
+	_, err = repository.GetBatch(context.Background(), []service.OpenAIRouteKey{key}, now)
+
+	require.ErrorContains(t, err, "unexpected OpenAI route checkpoint fingerprint")
+	require.ErrorIs(t, err, closeErr)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestDecodeOpenAIRouteCheckpointAggregateRejectsFractionalCounter(t *testing.T) {
 	_, err := decodeOpenAIRouteCheckpointAggregate([]byte(`{"attempt_count":1.5}`), "0", "0", time.Now())
 	require.Error(t, err)

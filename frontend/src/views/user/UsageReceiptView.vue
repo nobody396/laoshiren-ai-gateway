@@ -201,7 +201,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { toBlob } from 'html-to-image'
+import { toCanvas } from 'html-to-image'
 import QRCode from 'qrcode'
 import { usageAPI } from '@/api/usage'
 import {
@@ -479,7 +479,7 @@ function handlePrintAnimationEnd(): void {
   }
 }
 
-async function renderReceiptBlob(): Promise<Blob> {
+async function renderReceiptSharePosterBlob(): Promise<Blob> {
   const element = receiptPaper.value?.getElement()
   if (!element) throw new Error('Receipt is not ready')
 
@@ -491,16 +491,81 @@ async function renderReceiptBlob(): Promise<Blob> {
 
   const previousWidth = element.style.width
   const previousMaxWidth = element.style.maxWidth
-  element.style.width = '420px'
+  // The on-screen receipt stays narrow like real till paper. For sharing we
+  // give the same layout a little more width so the complete receipt remains
+  // legible after it is fitted into a phone-friendly 4:5 canvas.
+  element.style.width = '640px'
   element.style.maxWidth = 'none'
 
   try {
-    const blob = await toBlob(element, {
+    const receiptCanvas = await toCanvas(element, {
       cacheBust: true,
-      pixelRatio: 2.5
+      pixelRatio: 2
     })
-    if (!blob) throw new Error('Receipt image could not be created')
-    return blob
+    const poster = document.createElement('canvas')
+    poster.width = 1080
+    poster.height = 1350
+    const context = poster.getContext('2d')
+    if (!context) throw new Error('Poster canvas could not be created')
+
+    context.fillStyle = '#f2ead7'
+    context.fillRect(0, 0, poster.width, poster.height)
+    context.strokeStyle = 'rgba(63, 90, 58, 0.13)'
+    context.lineWidth = 1
+    for (let x = 0; x <= poster.width; x += 48) {
+      context.beginPath()
+      context.moveTo(x, 0)
+      context.lineTo(x, poster.height)
+      context.stroke()
+    }
+    for (let y = 0; y <= poster.height; y += 48) {
+      context.beginPath()
+      context.moveTo(0, y)
+      context.lineTo(poster.width, y)
+      context.stroke()
+    }
+
+    const maxWidth = 900
+    const maxHeight = 1210
+    const scale = Math.min(maxWidth / receiptCanvas.width, maxHeight / receiptCanvas.height, 1)
+    const drawWidth = receiptCanvas.width * scale
+    const drawHeight = receiptCanvas.height * scale
+    const drawX = (poster.width - drawWidth) / 2
+    const drawY = (poster.height - drawHeight) / 2
+
+    context.save()
+    context.shadowColor = 'rgba(36, 26, 18, 0.24)'
+    context.shadowBlur = 34
+    context.shadowOffsetY = 18
+    context.drawImage(receiptCanvas, drawX, drawY, drawWidth, drawHeight)
+    context.restore()
+
+    // html-to-image clips pseudo-elements that sit outside the receipt box.
+    // Rebuild the torn thermal-paper edges on the final poster so saving an
+    // image keeps the same physical-paper detail as the live printer view.
+    const toothWidth = 12
+    const toothHeight = 10
+    context.fillStyle = '#fbfaf5'
+    context.beginPath()
+    context.moveTo(drawX, drawY)
+    for (let x = drawX; x < drawX + drawWidth; x += toothWidth) {
+      context.lineTo(Math.min(x + (toothWidth / 2), drawX + drawWidth), drawY - toothHeight)
+      context.lineTo(Math.min(x + toothWidth, drawX + drawWidth), drawY)
+    }
+    context.closePath()
+    context.fill()
+    context.beginPath()
+    context.moveTo(drawX, drawY + drawHeight)
+    for (let x = drawX; x < drawX + drawWidth; x += toothWidth) {
+      context.lineTo(Math.min(x + (toothWidth / 2), drawX + drawWidth), drawY + drawHeight + toothHeight)
+      context.lineTo(Math.min(x + toothWidth, drawX + drawWidth), drawY + drawHeight)
+    }
+    context.closePath()
+    context.fill()
+
+    return await new Promise<Blob>((resolve, reject) => {
+      poster.toBlob(blob => blob ? resolve(blob) : reject(new Error('Share poster could not be created')), 'image/png')
+    })
   } finally {
     element.style.width = previousWidth
     element.style.maxWidth = previousMaxWidth
@@ -522,7 +587,7 @@ async function downloadReceipt(): Promise<void> {
   if (!receiptData.value || exporting.value) return
   exporting.value = true
   try {
-    const blob = await renderReceiptBlob()
+    const blob = await renderReceiptSharePosterBlob()
     triggerDownload(blob)
     appStore.showSuccess(t('usageReceipt.downloaded'))
   } catch (error) {
@@ -539,7 +604,7 @@ async function shareReceipt(): Promise<void> {
   sharing.value = true
 
   try {
-    const blob = await renderReceiptBlob()
+    const blob = await renderReceiptSharePosterBlob()
     const file = new File([blob], receiptImageFilename(startDate.value, endDate.value), {
       type: 'image/png'
     })

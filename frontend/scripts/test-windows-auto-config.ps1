@@ -193,16 +193,18 @@ try {
   Remove-Item -LiteralPath $verifiedDownload -Force
 
   $checksumRejected = $false
+  $checksumFailureLeftPartialFile = $false
   try {
     Download-VerifiedFileWithFallback `
       -OutputPath $verifiedDownload `
       -Urls @($verifiedSource) `
       -ExpectedSHA256 ('0' * 64)
   } catch {
-    $checksumRejected = -not (Test-Path -LiteralPath $verifiedDownload)
+    $checksumRejected = $true
+    $checksumFailureLeftPartialFile = Test-Path -LiteralPath $verifiedDownload
   }
   Assert-True $checksumRejected 'Node.js checksum mismatch did not fail closed'
-  Assert-True (-not (Test-Path -LiteralPath $verifiedDownload)) 'Checksum failure left a partial file behind'
+  Assert-True (-not $checksumFailureLeftPartialFile) 'Checksum failure left a partial file behind'
 
   $global:LASTEXITCODE = 0
   Write-Host "WINDOWS_AUTO_CONFIG_ACCEPTANCE_OK runtime=$($PSVersionTable.PSVersion) edition=$($PSVersionTable.PSEdition) claude=bare-cmd codex=bare-cmd grok=same-site git=same-site node=sha256 npm_policy=Restricted"

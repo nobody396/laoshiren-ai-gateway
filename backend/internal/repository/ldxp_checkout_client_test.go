@@ -194,6 +194,124 @@ func TestLDXPCheckoutClientDoesNotFollowQRToAnotherHost(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestLDXPCheckoutClientFallsBackToCachedMerchantSession(t *testing.T) {
+	const redeemCode = "fedcba9876543210fedcba9876543210"
+	loginCalls := 0
+	merchantInfoCalls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/shopApi/Order/info":
+			writeLDXPJSON(t, w, map[string]any{"code": 0, "msg": "contact lookup required", "data": nil})
+		case "/merchantApi/user/login":
+			loginCalls++
+			var request struct {
+				Username string `json:"username"`
+				Password string `json:"password"`
+			}
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
+			require.Equal(t, "merchant-user", request.Username)
+			require.Equal(t, "merchant-password", request.Password)
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{"merchant_token": "session-token"}})
+		case "/merchantApi/Order/orderInfo":
+			merchantInfoCalls++
+			require.Equal(t, "session-token", r.Header.Get("Merchant-Token"))
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
+				"trade_no": "LD-FALLBACK-1", "goods": map[string]any{"goods_key": "trial-key"},
+				"contact": "buyer@example.com", "quantity": 1, "total_amount": "1.00",
+				"status": 1, "sendout": 1,
+				"response": map[string]any{"cards": []string{"兑换码：" + redeemCode}},
+			}})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client, err := newLDXPCheckoutClient(server.URL, true)
+	require.NoError(t, err)
+	client.merchantUsername = "merchant-user"
+	client.merchantPassword = "merchant-password"
+
+	for range 2 {
+		info, lookupErr := client.GetOrderInfo(context.Background(), "LD-FALLBACK-1")
+		require.NoError(t, lookupErr)
+		require.True(t, info.Paid)
+		require.True(t, info.Delivered)
+		require.Equal(t, []string{redeemCode}, info.RedeemCodes)
+	}
+	require.Equal(t, 1, loginCalls, "the merchant token must remain process-local and be reused")
+	require.Equal(t, 2, merchantInfoCalls)
+}
+
+func TestLDXPCheckoutClientBacksOffBlockedBuyerDetailButKeepsMerchantRecovery(t *testing.T) {
+	const redeemCode = "fedcba9876543210fedcba9876543210"
+	buyerCalls := 0
+	loginCalls := 0
+	merchantInfoCalls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/shopApi/Order/info":
+			buyerCalls++
+			http.Error(w, "blocked", http.StatusForbidden)
+		case "/merchantApi/user/login":
+			loginCalls++
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{"merchant_token": "session-token"}})
+		case "/merchantApi/Order/orderInfo":
+			merchantInfoCalls++
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
+				"trade_no": "LD-FALLBACK-1", "goods": map[string]any{"goods_key": "trial-key"},
+				"contact": "buyer@example.com", "quantity": 1, "total_amount": "1.00",
+				"status": 1, "sendout": 1,
+				"response": map[string]any{"cards": []string{"兑换码：" + redeemCode}},
+			}})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client, err := newLDXPCheckoutClient(server.URL, true)
+	require.NoError(t, err)
+	client.merchantUsername = "merchant-user"
+	client.merchantPassword = "merchant-password"
+
+	for range 2 {
+		info, lookupErr := client.GetOrderInfo(context.Background(), "LD-FALLBACK-1")
+		require.NoError(t, lookupErr)
+		require.Equal(t, []string{redeemCode}, info.RedeemCodes)
+	}
+	require.Equal(t, 1, buyerCalls, "a provider 403 must open the buyer-detail circuit")
+	require.Equal(t, 1, loginCalls)
+	require.Equal(t, 2, merchantInfoCalls)
+}
+
+func TestLDXPCheckoutClientBacksOffAfterMerchantLoginFailure(t *testing.T) {
+	loginCalls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/shopApi/Order/info":
+			writeLDXPJSON(t, w, map[string]any{"code": 0, "msg": "contact lookup required", "data": nil})
+		case "/merchantApi/user/login":
+			loginCalls++
+			writeLDXPJSON(t, w, map[string]any{"code": 0, "msg": "try later", "data": nil})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client, err := newLDXPCheckoutClient(server.URL, true)
+	require.NoError(t, err)
+	client.merchantUsername = "merchant-user"
+	client.merchantPassword = "merchant-password"
+
+	for range 2 {
+		_, lookupErr := client.GetOrderInfo(context.Background(), "LD-FALLBACK-1")
+		require.Error(t, lookupErr)
+	}
+	require.Equal(t, 1, loginCalls, "provider rate limits must not trigger a login storm")
+}
+
 func writeLDXPJSON(t *testing.T, w http.ResponseWriter, value any) {
 	t.Helper()
 	w.Header().Set("Content-Type", "application/json")

@@ -26,20 +26,20 @@
       <button
         type="button"
         class="trial-offer__action"
-        :disabled="submitting || order?.status === 'completed' || order?.status === 'manual_review'"
+        :disabled="submitting || offer.claimed || order?.status === 'completed'"
         @click="startCheckout"
       >
         <span v-if="submitting">{{ t('nativeCheckout.preparing') }}</span>
-        <span v-else-if="order?.status === 'completed'">{{ t('nativeCheckout.claimed') }}</span>
-        <span v-else-if="order?.status === 'manual_review'">{{ t('nativeCheckout.reviewing') }}</span>
+        <span v-else-if="offer.claimed || order?.status === 'completed'">{{ t('nativeCheckout.claimed') }}</span>
+        <span v-else-if="order?.status === 'checking' || order?.status === 'manual_review'">{{ t('nativeCheckout.reviewing') }}</span>
         <span v-else-if="order?.status === 'pending'">{{ t('nativeCheckout.continuePayment') }}</span>
         <span v-else-if="order?.status === 'fulfilling'">{{ t('nativeCheckout.crediting') }}</span>
         <span v-else>{{ t('nativeCheckout.buyNow') }}</span>
       </button>
-      <p v-if="order?.status === 'manual_review'" class="trial-offer__warning">
-        {{ t('nativeCheckout.manualReviewHint') }}
+      <p v-if="order?.status === 'checking' || order?.status === 'manual_review'" class="trial-offer__checking">
+        {{ t('nativeCheckout.checkingHint') }}
       </p>
-      <p v-else-if="order?.status === 'completed'" class="trial-offer__success">
+      <p v-else-if="offer.claimed || order?.status === 'completed'" class="trial-offer__success">
         {{ t('nativeCheckout.completedHint', { amount: formatCNY(offer.benefit_amount_cny_fen) }) }}
       </p>
     </div>
@@ -50,17 +50,15 @@
       <section class="checkout-modal__card" role="dialog" aria-modal="true" aria-labelledby="native-checkout-modal-title">
         <header class="checkout-modal__header">
           <div>
-            <p>{{ paymentMethodTitle }}</p>
-            <h2 id="native-checkout-modal-title">
-              {{ t('nativeCheckout.scanToPay', { amount: formatCNY(activeOrder?.pay_amount_cny_fen || 0) }) }}
-            </h2>
+            <p>{{ isChecking ? t('nativeCheckout.orderProgress') : paymentMethodTitle }}</p>
+            <h2 id="native-checkout-modal-title">{{ modalTitle }}</h2>
           </div>
           <button type="button" class="checkout-modal__close" :aria-label="t('common.close')" @click="closeModal">×</button>
         </header>
 
         <div class="checkout-modal__body">
-          <div v-if="activeOrder?.status === 'fulfilling'" class="checkout-modal__qr checkout-modal__crediting" aria-hidden="true">
-            ✓
+          <div v-if="isChecking" class="checkout-modal__qr checkout-modal__checking" aria-hidden="true">
+            <span>•••</span>
           </div>
           <div v-else class="checkout-modal__qr">
             <img v-if="qrImageURL" :src="qrImageURL" :alt="paymentQRAlt" />
@@ -72,10 +70,18 @@
           <p v-if="qrKind === 'payment_link'" class="checkout-modal__kind checkout-modal__kind--notice">
             {{ t('nativeCheckout.linkQRHint') }}
           </p>
+          <div v-if="activeOrder?.status === 'pending' && activeOrder.created_at" class="checkout-modal__timing">
+            <p>{{ t('nativeCheckout.orderCreatedAt', { time: orderCreatedAtText }) }}</p>
+            <p :class="{ 'checkout-modal__timing-expired': paymentWindowExpired }">
+              {{ paymentWindowText }}
+            </p>
+            <p>{{ t('nativeCheckout.providerExpiryHint') }}</p>
+          </div>
           <p class="checkout-modal__status">
             <span class="checkout-modal__pulse" aria-hidden="true"></span>
             {{ statusText }}
           </p>
+          <p class="checkout-modal__eta">{{ t('nativeCheckout.automaticEta') }}</p>
           <p class="checkout-modal__safety">{{ t('nativeCheckout.doNotRepeat') }}</p>
         </div>
       </section>
@@ -109,17 +115,72 @@ const submitting = ref(false)
 const showModal = ref(false)
 const qrImageURL = ref('')
 const qrKind = ref<'direct' | 'payment_link' | ''>('')
-let pollTimer: ReturnType<typeof setInterval> | null = null
+const clockNow = ref(Date.now())
+let pollTimer: ReturnType<typeof setTimeout> | null = null
+let clockTimer: ReturnType<typeof setInterval> | null = null
 let pollInFlight = false
 let objectURL = ''
 let completionNotified = false
+let checkingNotified = false
+let disposed = false
+
+const PENDING_POLL_MS = 3000
+const CHECKING_POLL_MS = 15000
+const RECOMMENDED_PAYMENT_WINDOW_MS = 10 * 60 * 1000
+
+const isChecking = computed(() => (
+  activeOrder.value?.status === 'checking'
+  || activeOrder.value?.status === 'fulfilling'
+  || activeOrder.value?.status === 'manual_review'
+))
+
+const modalTitle = computed(() => {
+  if (isChecking.value) return t('nativeCheckout.orderCheckingTitle')
+  if (activeOrder.value?.status === 'completed') return t('nativeCheckout.paymentCompleted')
+  return t('nativeCheckout.scanToPay', { amount: formatCNY(activeOrder.value?.pay_amount_cny_fen || 0) })
+})
+
+const orderCreatedAtText = computed(() => {
+  const value = activeOrder.value?.created_at
+  if (!value) return ''
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return ''
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(parsed)
+})
+
+const paymentWindowRemainingSeconds = computed(() => {
+  const value = activeOrder.value?.created_at
+  if (!value) return null
+  const createdAt = Date.parse(value)
+  if (!Number.isFinite(createdAt)) return null
+  return Math.max(0, Math.ceil((createdAt + RECOMMENDED_PAYMENT_WINDOW_MS - clockNow.value) / 1000))
+})
+
+const paymentWindowExpired = computed(() => paymentWindowRemainingSeconds.value === 0)
+
+const paymentWindowText = computed(() => {
+  const remaining = paymentWindowRemainingSeconds.value
+  if (remaining === null || remaining === 0) return t('nativeCheckout.recommendedWindowExpired')
+  const minutes = Math.floor(remaining / 60).toString().padStart(2, '0')
+  const seconds = (remaining % 60).toString().padStart(2, '0')
+  return t('nativeCheckout.recommendedWindow', { time: `${minutes}:${seconds}` })
+})
 
 const statusText = computed(() => {
   switch (activeOrder.value?.status) {
     case 'creating': return t('nativeCheckout.creatingOrder')
+    case 'checking': return t('nativeCheckout.checkingHint')
     case 'fulfilling': return t('nativeCheckout.creditingHint')
     case 'completed': return t('nativeCheckout.paymentCompleted')
-    case 'manual_review': return t('nativeCheckout.manualReviewHint')
+    case 'manual_review': return t('nativeCheckout.checkingHint')
     default: return t('nativeCheckout.waitingPayment')
   }
 })
@@ -158,7 +219,7 @@ async function loadOffer() {
     const offers = await listNativeCheckoutOffers()
     offer.value = offers.find((item) => item.code === 'trial-balance-1-to-5') ?? null
     order.value = offer.value?.order ?? null
-    if (order.value && ['creating', 'pending', 'fulfilling'].includes(order.value.status)) {
+    if (shouldPollStatus()) {
       startPolling()
     }
   } catch (error) {
@@ -170,19 +231,25 @@ async function loadOffer() {
 
 async function startCheckout() {
   if (!offer.value || submitting.value) return
-  if (order.value?.status === 'completed' || order.value?.status === 'manual_review') return
+  if (offer.value.claimed || order.value?.status === 'completed') return
+  if (order.value?.status === 'checking' || order.value?.status === 'manual_review') {
+    clearQRImage()
+    showModal.value = true
+    startPolling()
+    return
+  }
   submitting.value = true
   try {
     if (!order.value || order.value.status === 'failed') {
       order.value = await createNativeCheckoutOrder(offer.value.code)
     }
-    if (['creating', 'pending', 'fulfilling'].includes(order.value.status)) {
+    if (['creating', 'pending', 'checking', 'fulfilling'].includes(order.value.status)) {
       showModal.value = true
     }
     if (order.value.status === 'pending') {
       await loadPaymentQR(order.value)
     }
-    if (['creating', 'pending', 'fulfilling'].includes(order.value.status)) {
+    if (['creating', 'pending', 'checking', 'fulfilling'].includes(order.value.status)) {
       startPolling()
     }
   } catch (error) {
@@ -216,10 +283,25 @@ async function loadPaymentQR(current: NativeCheckoutOrder) {
   qrKind.value = 'payment_link'
 }
 
-function startPolling() {
-  if (pollTimer) return
-  void pollStatus()
-  pollTimer = setInterval(() => void pollStatus(), 3000)
+function startPolling(delay = 0) {
+  if (disposed || pollTimer || pollInFlight) return
+  pollTimer = setTimeout(() => {
+    pollTimer = null
+    void pollStatus()
+  }, delay)
+}
+
+function shouldPollStatus(): boolean {
+  const status = order.value?.status
+  if (!status || !['creating', 'pending', 'checking', 'fulfilling', 'manual_review'].includes(status)) return false
+  if ((status === 'creating' || status === 'pending') && !showModal.value) return false
+  return true
+}
+
+function nextPollDelay(): number {
+  if (order.value?.status === 'manual_review') return CHECKING_POLL_MS
+  if (order.value?.status === 'pending' && paymentWindowExpired.value) return CHECKING_POLL_MS
+  return PENDING_POLL_MS
 }
 
 async function pollStatus() {
@@ -246,22 +328,30 @@ async function pollStatus() {
           amount: formatCNY(order.value.benefit_amount_cny_fen),
         }))
       }
-    } else if (order.value.status === 'manual_review' || order.value.status === 'failed') {
+    } else if (order.value.status === 'checking' || order.value.status === 'manual_review') {
+      clearQRImage()
+      if (!checkingNotified) {
+        checkingNotified = true
+        appStore.showInfo(t('nativeCheckout.checkingHint'))
+      }
+    } else if (order.value.status === 'failed') {
       stopPolling()
       showModal.value = false
       clearQRImage()
-      if (order.value.status === 'manual_review') appStore.showError(t('nativeCheckout.manualReviewHint'))
     }
   } catch (error) {
     console.error('Failed to query native checkout status:', error)
   } finally {
     pollInFlight = false
+    if (shouldPollStatus()) {
+      startPolling(nextPollDelay())
+    }
   }
 }
 
 function stopPolling() {
   if (pollTimer) {
-    clearInterval(pollTimer)
+    clearTimeout(pollTimer)
     pollTimer = null
   }
 }
@@ -278,11 +368,17 @@ function clearQRImage() {
 function closeModal() {
   showModal.value = false
   clearQRImage()
+  if (order.value?.status === 'creating' || order.value?.status === 'pending') stopPolling()
 }
 
-onMounted(() => void loadOffer())
+onMounted(() => {
+  clockTimer = setInterval(() => { clockNow.value = Date.now() }, 1000)
+  void loadOffer()
+})
 onUnmounted(() => {
+  disposed = true
   stopPolling()
+  if (clockTimer) clearInterval(clockTimer)
   clearQRImage()
 })
 </script>
@@ -329,9 +425,9 @@ onUnmounted(() => {
 }
 .trial-offer__action:hover:not(:disabled) { transform: translateY(-1px); }
 .trial-offer__action:disabled { cursor: not-allowed; opacity: 0.62; }
-.trial-offer__warning,
+.trial-offer__checking,
 .trial-offer__success { margin-top: 0.65rem; font-size: 0.78rem; line-height: 1.5; }
-.trial-offer__warning { color: rgb(180 83 9); }
+.trial-offer__checking { color: var(--admin-muted, rgb(var(--color-muted))); }
 .trial-offer__success { color: var(--admin-laurel-dark, rgb(var(--color-laurel-dark))); }
 
 .checkout-modal {
@@ -350,14 +446,25 @@ onUnmounted(() => {
 .checkout-modal__body { display: grid; justify-items: center; padding: 1.4rem; text-align: center; }
 .checkout-modal__qr { display: grid; place-items: center; width: 18rem; max-width: 100%; aspect-ratio: 1; border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14)); border-radius: 10px; padding: 0.75rem; background: white; }
 .checkout-modal__qr img { width: 100%; height: 100%; object-fit: contain; image-rendering: crisp-edges; }
-.checkout-modal__crediting { color: rgb(var(--color-laurel-dark)); font-size: 4rem; font-weight: 800; }
+.checkout-modal__checking {
+  width: 7rem; border: 0; border-radius: 999px; padding: 0;
+  background: rgb(var(--color-laurel) / 0.09); color: rgb(var(--color-laurel-dark));
+  font-size: 1.65rem; font-weight: 800; letter-spacing: 0.18em;
+}
+.checkout-modal__checking span { animation: checkout-checking 1.4s ease-in-out infinite; }
 .checkout-modal__loading { color: #64748b; font-size: 0.85rem; }
 .checkout-modal__kind { margin-top: 0.85rem; color: var(--admin-muted, rgb(var(--color-muted))); font-size: 0.78rem; line-height: 1.5; }
 .checkout-modal__kind--notice { color: rgb(180 83 9); }
+.checkout-modal__timing { width: 100%; margin-top: 0.9rem; border-radius: 8px; padding: 0.75rem 0.85rem; background: rgb(var(--color-ink) / 0.045); color: var(--admin-muted, rgb(var(--color-muted))); font-size: 0.74rem; line-height: 1.55; }
+.checkout-modal__timing p + p { margin-top: 0.18rem; }
+.checkout-modal__timing p:nth-child(2) { color: var(--admin-ink-deep, rgb(var(--color-ink-deep))); font-size: 0.82rem; font-weight: 720; }
+.checkout-modal__timing .checkout-modal__timing-expired { color: rgb(180 83 9); }
 .checkout-modal__status { display: flex; align-items: center; gap: 0.45rem; margin-top: 1rem; font-size: 0.88rem; font-weight: 650; }
 .checkout-modal__pulse { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: rgb(var(--color-laurel)); box-shadow: 0 0 0 0 rgb(var(--color-laurel) / 0.35); animation: checkout-pulse 1.6s infinite; }
+.checkout-modal__eta { margin-top: 0.55rem; color: var(--admin-muted, rgb(var(--color-muted))); font-size: 0.76rem; line-height: 1.5; }
 .checkout-modal__safety { margin-top: 0.55rem; color: var(--admin-muted, rgb(var(--color-muted))); font-size: 0.75rem; }
 @keyframes checkout-pulse { 70% { box-shadow: 0 0 0 7px rgb(var(--color-laurel) / 0); } 100% { box-shadow: 0 0 0 0 rgb(var(--color-laurel) / 0); } }
+@keyframes checkout-checking { 50% { opacity: 0.35; transform: translateY(-2px); } }
 
 @media (min-width: 720px) {
   .trial-offer { grid-template-columns: minmax(0, 1fr) minmax(14rem, 0.72fr); align-items: center; }
@@ -365,6 +472,7 @@ onUnmounted(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .checkout-modal__pulse { animation: none; }
+  .checkout-modal__checking span { animation: none; }
   .trial-offer__action { transition: none; }
 }
 </style>

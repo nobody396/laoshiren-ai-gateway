@@ -22,6 +22,7 @@ import (
 const (
 	NativeCheckoutStatusCreating     = "creating"
 	NativeCheckoutStatusPending      = "pending"
+	NativeCheckoutStatusChecking     = "checking"
 	NativeCheckoutStatusFulfilling   = "fulfilling"
 	NativeCheckoutStatusCompleted    = "completed"
 	NativeCheckoutStatusFailed       = "failed"
@@ -32,9 +33,10 @@ const (
 )
 
 var (
-	ErrNativeCheckoutOfferNotFound = infraerrors.NotFound("NATIVE_CHECKOUT_OFFER_NOT_FOUND", "checkout offer not found")
-	ErrNativeCheckoutOrderNotFound = infraerrors.NotFound("NATIVE_CHECKOUT_ORDER_NOT_FOUND", "checkout order not found")
-	ErrNativeCheckoutUnavailable   = infraerrors.ServiceUnavailable("NATIVE_CHECKOUT_UNAVAILABLE", "checkout is temporarily unavailable")
+	ErrNativeCheckoutOfferNotFound  = infraerrors.NotFound("NATIVE_CHECKOUT_OFFER_NOT_FOUND", "checkout offer not found")
+	ErrNativeCheckoutOrderNotFound  = infraerrors.NotFound("NATIVE_CHECKOUT_ORDER_NOT_FOUND", "checkout order not found")
+	ErrNativeCheckoutAlreadyClaimed = infraerrors.Conflict("NATIVE_CHECKOUT_ALREADY_CLAIMED", "checkout offer was already claimed")
+	ErrNativeCheckoutUnavailable    = infraerrors.ServiceUnavailable("NATIVE_CHECKOUT_UNAVAILABLE", "checkout is temporarily unavailable")
 )
 
 type NativeCheckoutOffer struct {
@@ -99,6 +101,7 @@ type NativeCheckoutOfferView struct {
 	PayAmountCNYFen     int64
 	BenefitAmountCNYFen int64
 	OncePerUser         bool
+	Claimed             bool
 	Order               *NativeCheckoutOrder
 }
 
@@ -106,6 +109,7 @@ type NativeCheckoutRepository interface {
 	ListEnabledOffers(ctx context.Context) ([]NativeCheckoutOffer, error)
 	GetEnabledOffer(ctx context.Context, code string) (*NativeCheckoutOffer, error)
 	GetLatestOrderForOffer(ctx context.Context, userID int64, offerCode string) (*NativeCheckoutOrder, error)
+	HasRedeemedOffer(ctx context.Context, userID int64, offerCode string) (bool, error)
 	ReserveOrder(ctx context.Context, order *NativeCheckoutOrder) (*NativeCheckoutOrder, bool, error)
 	ResetFailedOrder(ctx context.Context, id int64, contactHash string) (*NativeCheckoutOrder, bool, error)
 	SetProviderOrder(ctx context.Context, id int64, providerTradeNo, paymentURL, paymentMethod string) (*NativeCheckoutOrder, error)
@@ -218,16 +222,21 @@ func (s *NativeCheckoutService) ListOffers(ctx context.Context, userID int64) ([
 	views := make([]NativeCheckoutOfferView, 0, len(offers))
 	for i := range offers {
 		offer := offers[i]
-		// Merchant-side status, price, contact format, and a supported QR channel
-		// (WeChat Pay or Alipay) form a second release gate. Keeping the DB offer
-		// enabled is harmless while the hidden LDXP product is offline; it simply
-		// does not appear to customers.
-		if err := s.provider.ValidateOffer(ctx, offer.ProviderGoodsKey, offer.PayAmountCNYFen); err != nil {
-			continue
-		}
+		// Do not query LDXP while merely rendering the recharge page. Provider
+		// availability, exact price, contact format, and payment channel are all
+		// validated again inside CreateOrder before any payable order is returned.
+		// Keeping catalog reads local prevents idle pages from rate-limiting the
+		// payment provider for every customer.
 		order, orderErr := s.repo.GetLatestOrderForOffer(ctx, userID, offer.Code)
 		if orderErr != nil && !errors.Is(orderErr, ErrNativeCheckoutOrderNotFound) {
 			return nil, fmt.Errorf("get native checkout order: %w", orderErr)
+		}
+		claimed := order != nil && order.Status == NativeCheckoutStatusCompleted
+		if !claimed && offer.OncePerUser {
+			claimed, orderErr = s.repo.HasRedeemedOffer(ctx, userID, offer.Code)
+			if orderErr != nil {
+				return nil, fmt.Errorf("check native checkout entitlement: %w", orderErr)
+			}
 		}
 		views = append(views, NativeCheckoutOfferView{
 			Code:                offer.Code,
@@ -237,6 +246,7 @@ func (s *NativeCheckoutService) ListOffers(ctx context.Context, userID int64) ([
 			PayAmountCNYFen:     offer.PayAmountCNYFen,
 			BenefitAmountCNYFen: offer.BenefitAmountCNYFen,
 			OncePerUser:         offer.OncePerUser,
+			Claimed:             claimed,
 			Order:               order,
 		})
 	}
@@ -269,12 +279,23 @@ func (s *NativeCheckoutService) CreateOrder(ctx context.Context, userID int64, o
 	if err != nil && !errors.Is(err, ErrNativeCheckoutOrderNotFound) {
 		return nil, fmt.Errorf("get existing native checkout order: %w", err)
 	}
-	if existing != nil {
-		if existing.Status == NativeCheckoutStatusCompleted && !offer.OncePerUser {
-			existing = nil
-		} else if existing.Status != NativeCheckoutStatusFailed {
+	if existing != nil && existing.Status == NativeCheckoutStatusCompleted {
+		if offer.OncePerUser {
 			return existing, nil
 		}
+		existing = nil
+	}
+	if offer.OncePerUser {
+		claimed, claimedErr := s.repo.HasRedeemedOffer(ctx, userID, offer.Code)
+		if claimedErr != nil {
+			return nil, fmt.Errorf("check native checkout entitlement: %w", claimedErr)
+		}
+		if claimed {
+			return nil, ErrNativeCheckoutAlreadyClaimed
+		}
+	}
+	if existing != nil && existing.Status != NativeCheckoutStatusFailed {
+		return existing, nil
 	}
 	if existing != nil {
 		var reset bool
@@ -374,7 +395,7 @@ func (s *NativeCheckoutService) GetOrder(ctx context.Context, userID int64, orde
 	if err != nil {
 		return nil, err
 	}
-	if sync && (order.Status == NativeCheckoutStatusCreating || order.Status == NativeCheckoutStatusPending || order.Status == NativeCheckoutStatusFulfilling) {
+	if sync && (order.Status == NativeCheckoutStatusCreating || order.Status == NativeCheckoutStatusPending || order.Status == NativeCheckoutStatusChecking || order.Status == NativeCheckoutStatusFulfilling) {
 		return s.syncOrder(ctx, order)
 	}
 	return order, nil
@@ -405,22 +426,28 @@ func (s *NativeCheckoutService) syncOrder(ctx context.Context, order *NativeChec
 		// never retry this ambiguous create automatically.
 		return s.holdForReview(ctx, order, "provider_create_interrupted")
 	}
-	if order.Status == NativeCheckoutStatusPending {
-		paid, err := s.provider.IsPaid(ctx, order.ProviderTradeNo)
-		if err != nil {
-			_ = s.repo.RecordPendingCheck(ctx, order.ID, time.Now().Add(s.pollInterval))
-			return order, nil
-		}
-		if !paid {
-			_ = s.repo.RecordPendingCheck(ctx, order.ID, time.Now().Add(s.pollInterval))
-			return order, nil
-		}
-	}
-
 	info, err := s.provider.GetOrderInfo(ctx, order.ProviderTradeNo)
 	if err != nil {
 		_ = s.repo.RecordPendingCheck(ctx, order.ID, time.Now().Add(s.pollInterval))
 		return order, nil
+	}
+	if err := s.validateProviderOrderIdentity(order, info); err != nil {
+		return s.holdForReview(ctx, order, "provider_order_mismatch")
+	}
+	if order.Status == NativeCheckoutStatusPending && info.Paid {
+		// Persist the provider's paid signal before delivery/redeem processing.
+		// The UI can then remove the payable QR immediately and a restart resumes
+		// from a durable "checking" state instead of asking the user to pay again.
+		order, err = s.repo.SetOrderState(
+			ctx,
+			order.ID,
+			NativeCheckoutStatusChecking,
+			"",
+			time.Now().Add(s.pollInterval),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("record native checkout payment: %w", err)
+		}
 	}
 	if err := s.validateProviderOrder(order, info); err != nil {
 		if errors.Is(err, errNativeCheckoutDeliveryPending) {
@@ -479,6 +506,19 @@ func (s *NativeCheckoutService) holdForReview(ctx context.Context, order *Native
 var errNativeCheckoutDeliveryPending = errors.New("native checkout delivery pending")
 
 func (s *NativeCheckoutService) validateProviderOrder(order *NativeCheckoutOrder, info *NativeCheckoutProviderOrderInfo) error {
+	if err := s.validateProviderOrderIdentity(order, info); err != nil {
+		return err
+	}
+	if !info.Paid || !info.Delivered || len(info.RedeemCodes) == 0 {
+		return errNativeCheckoutDeliveryPending
+	}
+	if len(info.RedeemCodes) != 1 {
+		return errors.New("unexpected redeem code count")
+	}
+	return nil
+}
+
+func (s *NativeCheckoutService) validateProviderOrderIdentity(order *NativeCheckoutOrder, info *NativeCheckoutProviderOrderInfo) error {
 	if order == nil || info == nil {
 		return errors.New("missing provider order")
 	}
@@ -488,12 +528,6 @@ func (s *NativeCheckoutService) validateProviderOrder(order *NativeCheckoutOrder
 	contact, err := normalizedCheckoutEmail(info.Contact)
 	if err != nil || !secureStringEqual(s.hashContact(contact), order.ContactHash) {
 		return errors.New("provider contact mismatch")
-	}
-	if !info.Paid || !info.Delivered || len(info.RedeemCodes) == 0 {
-		return errNativeCheckoutDeliveryPending
-	}
-	if len(info.RedeemCodes) != 1 {
-		return errors.New("unexpected redeem code count")
 	}
 	return nil
 }

@@ -42,14 +42,45 @@ func TestNativeCheckoutCreateUsesRegisteredEmailAndReusesOnceOnlyOrder(t *testin
 	require.Equal(t, 1, provider.createCalls, "a repeated click must not create another LDXP order")
 }
 
-func TestNativeCheckoutListHidesOfferWhileMerchantProductIsOffline(t *testing.T) {
+func TestNativeCheckoutListDoesNotCallProviderWhileRenderingCatalog(t *testing.T) {
 	repo := newNativeCheckoutRepoFake(testNativeCheckoutOffer())
 	provider := &nativeCheckoutProviderFake{validateErr: errors.New("product offline")}
 	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
 
 	offers, err := svc.ListOffers(context.Background(), 42)
 	require.NoError(t, err)
-	require.Empty(t, offers)
+	require.Len(t, offers, 1)
+}
+
+func TestNativeCheckoutRecoveredRedeemCountsAsOnceOnlyPurchase(t *testing.T) {
+	repo := newNativeCheckoutRepoFake(testNativeCheckoutOffer())
+	repo.redeemed = true
+	provider := &nativeCheckoutProviderFake{}
+	svc := NewNativeCheckoutService(
+		repo,
+		provider,
+		&nativeCheckoutUserRepoFake{user: &User{ID: 42, Email: "buyer@example.com"}},
+		&nativeCheckoutRedeemerFake{},
+		nativeCheckoutTestContactKey,
+	)
+
+	offers, err := svc.ListOffers(context.Background(), 42)
+	require.NoError(t, err)
+	require.Len(t, offers, 1)
+	require.True(t, offers[0].Claimed)
+	require.Nil(t, offers[0].Order)
+
+	_, err = svc.CreateOrder(context.Background(), 42, repo.offer.Code)
+	require.ErrorIs(t, err, ErrNativeCheckoutAlreadyClaimed)
+	require.Zero(t, provider.createCalls)
+
+	// A stale local order must not reopen its QR after an out-of-band recovery.
+	repo.order = testNativeCheckoutOrder(repo.offer)
+	offers, err = svc.ListOffers(context.Background(), 42)
+	require.NoError(t, err)
+	require.True(t, offers[0].Claimed)
+	_, err = svc.CreateOrder(context.Background(), 42, repo.offer.Code)
+	require.ErrorIs(t, err, ErrNativeCheckoutAlreadyClaimed)
 }
 
 func TestNativeCheckoutCreateFinishesAfterRequestCancellation(t *testing.T) {
@@ -139,6 +170,22 @@ func TestNativeCheckoutPaidGiftCardIsValidatedLinkedAndRedeemed(t *testing.T) {
 	require.Equal(t, 1, redeem.redeemCalls)
 	require.Equal(t, "LD-1", repo.linkedTradeNo)
 	require.Equal(t, int64(7), *order.RedeemCodeID)
+}
+
+func TestNativeCheckoutPaidOrderStaysCheckingWhileDeliveryIsPending(t *testing.T) {
+	offer := testNativeCheckoutOffer()
+	repo := newNativeCheckoutRepoFake(offer)
+	repo.order = testNativeCheckoutOrder(offer)
+	provider := &nativeCheckoutProviderFake{info: &NativeCheckoutProviderOrderInfo{
+		TradeNo: "LD-1", GoodsKey: offer.ProviderGoodsKey, Contact: "buyer@example.com",
+		Quantity: 1, TotalCNYFen: 100, Paid: true, Delivered: false,
+	}}
+	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
+
+	order, err := svc.GetOrder(context.Background(), 42, repo.order.OrderNo, true)
+	require.NoError(t, err)
+	require.Equal(t, NativeCheckoutStatusChecking, order.Status)
+	require.Empty(t, order.FailureCode)
 }
 
 func TestNativeCheckoutRejectsPaidCardThatIsNotPureGift(t *testing.T) {
@@ -244,6 +291,7 @@ type nativeCheckoutRepoFake struct {
 	mu            sync.Mutex
 	offer         NativeCheckoutOffer
 	order         *NativeCheckoutOrder
+	redeemed      bool
 	linkedTradeNo string
 }
 
@@ -271,6 +319,12 @@ func (r *nativeCheckoutRepoFake) GetLatestOrderForOffer(context.Context, int64, 
 	}
 	copy := *r.order
 	return &copy, nil
+}
+
+func (r *nativeCheckoutRepoFake) HasRedeemedOffer(context.Context, int64, string) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.redeemed, nil
 }
 
 func (r *nativeCheckoutRepoFake) ReserveOrder(_ context.Context, order *NativeCheckoutOrder) (*NativeCheckoutOrder, bool, error) {

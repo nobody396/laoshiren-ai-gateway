@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/response"
 	middleware2 "github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
@@ -23,13 +24,14 @@ type createNativeCheckoutOrderRequest struct {
 }
 
 type nativeCheckoutOrderResponse struct {
-	OrderNo             string `json:"order_no"`
-	Status              string `json:"status"`
-	PayAmountCNYFen     int64  `json:"pay_amount_cny_fen"`
-	BenefitAmountCNYFen int64  `json:"benefit_amount_cny_fen"`
-	PaymentURL          string `json:"payment_url,omitempty"`
-	PaymentMethod       string `json:"payment_method,omitempty"`
-	DirectQRURL         string `json:"direct_qr_url,omitempty"`
+	OrderNo             string    `json:"order_no"`
+	Status              string    `json:"status"`
+	PayAmountCNYFen     int64     `json:"pay_amount_cny_fen"`
+	BenefitAmountCNYFen int64     `json:"benefit_amount_cny_fen"`
+	PaymentURL          string    `json:"payment_url,omitempty"`
+	PaymentMethod       string    `json:"payment_method,omitempty"`
+	DirectQRURL         string    `json:"direct_qr_url,omitempty"`
+	CreatedAt           time.Time `json:"created_at"`
 }
 
 type nativeCheckoutOfferResponse struct {
@@ -40,6 +42,7 @@ type nativeCheckoutOfferResponse struct {
 	PayAmountCNYFen     int64                        `json:"pay_amount_cny_fen"`
 	BenefitAmountCNYFen int64                        `json:"benefit_amount_cny_fen"`
 	OncePerUser         bool                         `json:"once_per_user"`
+	Claimed             bool                         `json:"claimed"`
 	Order               *nativeCheckoutOrderResponse `json:"order,omitempty"`
 }
 
@@ -64,6 +67,7 @@ func (h *NativeCheckoutHandler) ListOffers(c *gin.Context) {
 			PayAmountCNYFen:     view.PayAmountCNYFen,
 			BenefitAmountCNYFen: view.BenefitAmountCNYFen,
 			OncePerUser:         view.OncePerUser,
+			Claimed:             view.Claimed,
 		}
 		if view.Order != nil {
 			item.Order = nativeCheckoutOrderDTO(view.Order)
@@ -144,6 +148,7 @@ func nativeCheckoutOrderDTO(order *service.NativeCheckoutOrder) *nativeCheckoutO
 		PayAmountCNYFen:     order.PayAmountCNYFen,
 		BenefitAmountCNYFen: order.BenefitAmountCNYFen,
 		PaymentMethod:       order.PaymentMethod,
+		CreatedAt:           order.CreatedAt,
 	}
 	if order.Status == service.NativeCheckoutStatusPending && strings.TrimSpace(order.PaymentURL) != "" {
 		result.PaymentURL = order.PaymentURL

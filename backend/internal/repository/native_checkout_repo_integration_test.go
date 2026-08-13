@@ -60,6 +60,14 @@ func TestNativeCheckoutRepositoryEnforcesOnceAndClaimsRestrictedInventory(t *tes
 	)
 	require.NoError(t, err)
 	require.Equal(t, service.NativeCheckoutPaymentMethodWeChat, providerOrder.PaymentMethod)
+	providerOrder, err = repo.SetOrderState(
+		ctx,
+		providerOrder.ID,
+		service.NativeCheckoutStatusChecking,
+		"",
+		time.Now(),
+	)
+	require.NoError(t, err)
 	claimed, didClaim, err := repo.ClaimFulfillment(ctx, providerOrder.ID, code.ID, time.Now().Add(-time.Minute))
 	require.NoError(t, err)
 	require.True(t, didClaim)
@@ -73,6 +81,16 @@ SELECT assigned_order_id FROM native_checkout_redeem_inventory WHERE redeem_code
 	restricted, err := repo.IsNativeCheckoutRestricted(ctx, code.ID)
 	require.NoError(t, err)
 	require.True(t, restricted)
+
+	_, err = integrationDB.ExecContext(ctx, `
+UPDATE redeem_codes
+SET status = 'used', used_by = $2, used_at = NOW()
+WHERE id = $1
+`, code.ID, user.ID)
+	require.NoError(t, err)
+	claimedEntitlement, err := repo.HasRedeemedOffer(ctx, user.ID, first.OfferCode)
+	require.NoError(t, err)
+	require.True(t, claimedEntitlement, "a recovered native inventory card must still consume the once-only offer")
 
 	// A retry sees the current order and does not claim or redeem twice. Keep a
 	// one-connection pool here to guard against querying before tx rollback.

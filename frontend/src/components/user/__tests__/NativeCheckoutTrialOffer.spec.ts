@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   getDirectQR: vi.fn(),
   toDataURL: vi.fn(),
   showError: vi.fn(),
+  showInfo: vi.fn(),
   showSuccess: vi.fn(),
   refreshUser: vi.fn(),
 }))
@@ -24,7 +25,7 @@ vi.mock('@/api/nativeCheckout', () => ({
 vi.mock('qrcode', () => ({ default: { toDataURL: mocks.toDataURL } }))
 
 vi.mock('@/stores', () => ({
-  useAppStore: () => ({ showError: mocks.showError, showSuccess: mocks.showSuccess }),
+  useAppStore: () => ({ showError: mocks.showError, showInfo: mocks.showInfo, showSuccess: mocks.showSuccess }),
   useAuthStore: () => ({ refreshUser: mocks.refreshUser }),
 }))
 
@@ -46,6 +47,7 @@ const offer = {
   pay_amount_cny_fen: 100,
   benefit_amount_cny_fen: 500,
   once_per_user: true,
+  claimed: false,
 }
 
 describe('NativeCheckoutTrialOffer', () => {
@@ -167,6 +169,78 @@ describe('NativeCheckoutTrialOffer', () => {
     expect(button.attributes('disabled')).toBeDefined()
     await button.trigger('click')
     expect(mocks.createOrder).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('treats an already redeemed inventory card as the one allowed purchase even without an order row', async () => {
+    mocks.listOffers.mockResolvedValue([{ ...offer, claimed: true }])
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+
+    const button = wrapper.find('.trial-offer__action')
+    expect(button.attributes('disabled')).toBeDefined()
+    expect(button.text()).toContain('nativeCheckout.claimed')
+    expect(wrapper.text()).toContain('nativeCheckout.completedHint:5')
+    await button.trigger('click')
+    expect(mocks.createOrder).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('keeps a delayed paid order in a neutral checking state without saying manual review', async () => {
+    vi.useFakeTimers()
+    const checkingOrder = {
+      order_no: 'NC-CHECKING', status: 'checking' as const,
+      pay_amount_cny_fen: 100, benefit_amount_cny_fen: 500,
+      payment_method: 'wechat' as const,
+      created_at: '2026-08-13T12:00:00Z',
+    }
+    mocks.listOffers.mockResolvedValue([{ ...offer, order: checkingOrder }])
+    mocks.getOrder.mockResolvedValue(checkingOrder)
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(0)
+    await flushPromises()
+
+    expect(mocks.showError).not.toHaveBeenCalled()
+    expect(mocks.showInfo).toHaveBeenCalledWith('nativeCheckout.checkingHint')
+    const button = wrapper.find('.trial-offer__action')
+    expect(button.attributes('disabled')).toBeUndefined()
+    await button.trigger('click')
+    expect(wrapper.find('.checkout-modal__card').exists()).toBe(true)
+    expect(wrapper.find('.checkout-modal__checking').exists()).toBe(true)
+    expect(wrapper.text()).toContain('nativeCheckout.orderCheckingTitle')
+    wrapper.unmount()
+  })
+
+  it('shows a clearly recommended payment countdown rather than claiming a provider expiry', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-13T12:00:00Z'))
+    const pendingOrder = {
+      order_no: 'NC-TIMED', status: 'pending' as const,
+      pay_amount_cny_fen: 100, benefit_amount_cny_fen: 500,
+      payment_url: 'https://pay.ldxp.cn/pay/NC-TIMED',
+      payment_method: 'wechat' as const,
+      created_at: '2026-08-13T12:00:00Z',
+    }
+    mocks.listOffers.mockResolvedValue([{ ...offer, order: pendingOrder }])
+    mocks.getOrder.mockResolvedValue(pendingOrder)
+    mocks.getDirectQR.mockRejectedValue(new Error('provider challenge'))
+    mocks.toDataURL.mockResolvedValue('data:image/png;base64,TIMED')
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+    await wrapper.find('.trial-offer__action').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('nativeCheckout.orderCreatedAt')
+    expect(wrapper.text()).toContain('nativeCheckout.recommendedWindow')
+    expect(wrapper.text()).toContain('nativeCheckout.providerExpiryHint')
+    expect(wrapper.text()).toContain('nativeCheckout.automaticEta')
     wrapper.unmount()
   })
 })

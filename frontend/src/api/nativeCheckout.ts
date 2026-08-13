@@ -3,6 +3,7 @@ import { apiClient } from './client'
 export type NativeCheckoutStatus =
   | 'creating'
   | 'pending'
+  | 'checking'
   | 'fulfilling'
   | 'completed'
   | 'failed'
@@ -18,6 +19,7 @@ export interface NativeCheckoutOrder {
   payment_url?: string
   payment_method?: NativeCheckoutPaymentMethod
   direct_qr_url?: string
+  created_at: string
 }
 
 export interface NativeCheckoutOffer {
@@ -28,6 +30,7 @@ export interface NativeCheckoutOffer {
   pay_amount_cny_fen: number
   benefit_amount_cny_fen: number
   once_per_user: boolean
+  claimed: boolean
   order?: NativeCheckoutOrder
 }
 

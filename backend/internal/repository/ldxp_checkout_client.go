@@ -11,9 +11,11 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
@@ -25,16 +27,24 @@ const (
 	ldxpMaxJSONResponseBytes = 1 << 20
 	ldxpMaxHTMLBytes         = 1 << 20
 	ldxpMaxImageBytes        = 2 << 20
+	ldxpMerchantLoginBackoff = 10 * time.Minute
 )
 
 var ldxpRedeemCodePattern = regexp.MustCompile(`(?i)(?:^|[^0-9a-f])([0-9a-f]{32})(?:$|[^0-9a-f])`)
 
 type ldxpCheckoutClient struct {
-	baseURL     *url.URL
-	httpClient  *http.Client
-	allowedHost string
-	allowHTTP   bool
-	userAgent   string
+	baseURL          *url.URL
+	httpClient       *http.Client
+	allowedHost      string
+	allowHTTP        bool
+	userAgent        string
+	merchantUsername string
+	merchantPassword string
+	merchantMu       sync.Mutex
+	merchantToken    string
+	merchantRetryAt  time.Time
+	buyerMu          sync.Mutex
+	buyerRetryAt     time.Time
 }
 
 func NewLDXPCheckoutClient() service.NativeCheckoutProvider {
@@ -51,10 +61,15 @@ func newLDXPCheckoutClient(baseURL string, allowHTTP bool) (*ldxpCheckoutClient,
 		return nil, errors.New("invalid LDXP base URL")
 	}
 	client := &ldxpCheckoutClient{
-		baseURL:     parsed,
-		allowedHost: strings.ToLower(parsed.Hostname()),
-		allowHTTP:   allowHTTP,
-		userAgent:   "laoshirenai-native-checkout/1.0",
+		baseURL:          parsed,
+		allowedHost:      strings.ToLower(parsed.Hostname()),
+		allowHTTP:        allowHTTP,
+		userAgent:        "laoshirenai-native-checkout/1.0",
+		merchantUsername: strings.TrimSpace(os.Getenv("LDXP_MERCHANT_USERNAME")),
+		merchantPassword: os.Getenv("LDXP_MERCHANT_PASSWORD"),
+	}
+	if (client.merchantUsername == "") != (client.merchantPassword == "") {
+		return nil, errors.New("incomplete LDXP merchant credentials")
 	}
 	client.httpClient = &http.Client{
 		Timeout: 15 * time.Second,
@@ -183,9 +198,41 @@ func (c *ldxpCheckoutClient) IsPaid(ctx context.Context, tradeNo string) (bool, 
 
 func (c *ldxpCheckoutClient) GetOrderInfo(ctx context.Context, tradeNo string) (*service.NativeCheckoutProviderOrderInfo, error) {
 	var data map[string]json.RawMessage
-	if err := c.postSuccess(ctx, "/shopApi/Order/info", map[string]any{"trade_no": tradeNo, "dump": 1}, &data, false); err != nil {
-		return nil, err
+	buyerErr := errors.New("LDXP buyer order detail is cooling down")
+	if c.buyerDetailAvailable() {
+		buyerErr = c.postSuccess(ctx, "/shopApi/Order/info", map[string]any{"trade_no": tradeNo, "dump": 1}, &data, false)
+		if isLDXPRateLimited(buyerErr) {
+			c.backoffBuyerDetail()
+		}
 	}
+	if buyerErr == nil {
+		info, decodeErr := decodeLDXPOrderInfo(data)
+		if decodeErr == nil && (!info.Paid || (info.Delivered && len(info.RedeemCodes) > 0)) {
+			return info, nil
+		}
+		if !c.merchantConfigured() {
+			return info, decodeErr
+		}
+	} else if !c.merchantConfigured() {
+		return nil, buyerErr
+	}
+
+	// LDXP's anonymous buyer detail endpoint eventually requires the buyer to
+	// repeat a contact/CAPTCHA lookup. That is unsuitable for crash recovery.
+	// Use the authenticated merchant detail endpoint as a server-side fallback;
+	// the token is cached only in process memory and no credential or card value
+	// is ever logged.
+	merchantData, merchantErr := c.getMerchantOrderInfo(ctx, tradeNo)
+	if merchantErr != nil {
+		if buyerErr != nil {
+			return nil, errors.New("LDXP order detail is unavailable")
+		}
+		return decodeLDXPOrderInfo(data)
+	}
+	return decodeLDXPOrderInfo(merchantData)
+}
+
+func decodeLDXPOrderInfo(data map[string]json.RawMessage) (*service.NativeCheckoutProviderOrderInfo, error) {
 	goodsKey := ""
 	if raw := data["goods"]; len(raw) > 0 {
 		var goods map[string]json.RawMessage
@@ -218,6 +265,109 @@ func (c *ldxpCheckoutClient) GetOrderInfo(ctx context.Context, tradeNo string) (
 		Delivered:   sendout == 1,
 		RedeemCodes: extractLDXPRedeemCodes(data),
 	}, nil
+}
+
+func (c *ldxpCheckoutClient) merchantConfigured() bool {
+	return c.merchantUsername != "" && c.merchantPassword != ""
+}
+
+func (c *ldxpCheckoutClient) getMerchantOrderInfo(ctx context.Context, tradeNo string) (map[string]json.RawMessage, error) {
+	token, err := c.getMerchantToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	envelope, err := c.postWithMerchantToken(ctx, "/merchantApi/Order/orderInfo", map[string]any{"trade_no": tradeNo}, token)
+	if err != nil {
+		if isLDXPRateLimited(err) {
+			c.backoffMerchant()
+		}
+		return nil, err
+	}
+	if envelope.Code == http.StatusUnauthorized {
+		c.invalidateMerchantToken(token)
+		token, err = c.getMerchantToken(ctx)
+		if err != nil {
+			return nil, err
+		}
+		envelope, err = c.postWithMerchantToken(ctx, "/merchantApi/Order/orderInfo", map[string]any{"trade_no": tradeNo}, token)
+		if err != nil {
+			if isLDXPRateLimited(err) {
+				c.backoffMerchant()
+			}
+			return nil, err
+		}
+	}
+	if envelope.Code == http.StatusForbidden || envelope.Code == http.StatusTooManyRequests {
+		c.backoffMerchant()
+		return nil, errors.New("LDXP merchant order lookup is cooling down")
+	}
+	if envelope.Code != 1 {
+		return nil, errors.New("LDXP merchant order lookup failed")
+	}
+	var data map[string]json.RawMessage
+	if len(envelope.Data) == 0 || string(envelope.Data) == "null" || json.Unmarshal(envelope.Data, &data) != nil {
+		return nil, errors.New("invalid LDXP merchant order response")
+	}
+	return data, nil
+}
+
+func (c *ldxpCheckoutClient) getMerchantToken(ctx context.Context) (string, error) {
+	c.merchantMu.Lock()
+	defer c.merchantMu.Unlock()
+	if time.Now().Before(c.merchantRetryAt) {
+		return "", errors.New("LDXP merchant login is cooling down")
+	}
+	if c.merchantToken != "" {
+		return c.merchantToken, nil
+	}
+	if !c.merchantConfigured() {
+		return "", errors.New("LDXP merchant credentials are unavailable")
+	}
+	envelope, err := c.post(ctx, "/merchantApi/user/login", map[string]any{
+		"username": c.merchantUsername,
+		"password": c.merchantPassword,
+	}, false)
+	if err != nil || envelope.Code != 1 {
+		c.merchantRetryAt = time.Now().Add(ldxpMerchantLoginBackoff)
+		return "", errors.New("LDXP merchant login failed")
+	}
+	var data map[string]json.RawMessage
+	if json.Unmarshal(envelope.Data, &data) != nil {
+		return "", errors.New("invalid LDXP merchant login response")
+	}
+	token := rawString(data, "merchant_token")
+	if token == "" {
+		return "", errors.New("LDXP merchant login returned no token")
+	}
+	c.merchantToken = token
+	c.merchantRetryAt = time.Time{}
+	return token, nil
+}
+
+func (c *ldxpCheckoutClient) buyerDetailAvailable() bool {
+	c.buyerMu.Lock()
+	defer c.buyerMu.Unlock()
+	return !time.Now().Before(c.buyerRetryAt)
+}
+
+func (c *ldxpCheckoutClient) backoffBuyerDetail() {
+	c.buyerMu.Lock()
+	defer c.buyerMu.Unlock()
+	c.buyerRetryAt = time.Now().Add(ldxpMerchantLoginBackoff)
+}
+
+func (c *ldxpCheckoutClient) backoffMerchant() {
+	c.merchantMu.Lock()
+	defer c.merchantMu.Unlock()
+	c.merchantRetryAt = time.Now().Add(ldxpMerchantLoginBackoff)
+}
+
+func (c *ldxpCheckoutClient) invalidateMerchantToken(token string) {
+	c.merchantMu.Lock()
+	defer c.merchantMu.Unlock()
+	if c.merchantToken == token {
+		c.merchantToken = ""
+	}
 }
 
 func (c *ldxpCheckoutClient) FetchDirectPaymentQR(ctx context.Context, paymentURL string) ([]byte, string, error) {
@@ -266,8 +416,9 @@ func (c *ldxpCheckoutClient) FetchDirectPaymentQR(ctx context.Context, paymentUR
 }
 
 type ldxpRequestError struct {
-	Ambiguous bool
-	Cause     error
+	Ambiguous  bool
+	StatusCode int
+	Cause      error
 }
 
 func (e *ldxpRequestError) Error() string { return e.Cause.Error() }
@@ -294,6 +445,14 @@ func (c *ldxpCheckoutClient) postSuccess(ctx context.Context, path string, paylo
 }
 
 func (c *ldxpCheckoutClient) post(ctx context.Context, path string, payload any, createRequest bool) (*ldxpEnvelope, error) {
+	return c.postJSON(ctx, path, payload, createRequest, "")
+}
+
+func (c *ldxpCheckoutClient) postWithMerchantToken(ctx context.Context, path string, payload any, token string) (*ldxpEnvelope, error) {
+	return c.postJSON(ctx, path, payload, false, token)
+}
+
+func (c *ldxpCheckoutClient) postJSON(ctx context.Context, path string, payload any, createRequest bool, merchantToken string) (*ldxpEnvelope, error) {
 	encoded, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -306,6 +465,9 @@ func (c *ldxpCheckoutClient) post(ctx context.Context, path string, payload any,
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.userAgent)
+	if merchantToken != "" {
+		req.Header.Set("Merchant-Token", merchantToken)
+	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, &ldxpRequestError{Ambiguous: createRequest, Cause: err}
@@ -316,13 +478,23 @@ func (c *ldxpCheckoutClient) post(ctx context.Context, path string, payload any,
 		return nil, &ldxpRequestError{Ambiguous: createRequest, Cause: err}
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, &ldxpRequestError{Ambiguous: createRequest && resp.StatusCode >= 500, Cause: fmt.Errorf("LDXP HTTP status %d", resp.StatusCode)}
+		return nil, &ldxpRequestError{
+			Ambiguous:  createRequest && resp.StatusCode >= 500,
+			StatusCode: resp.StatusCode,
+			Cause:      fmt.Errorf("LDXP HTTP status %d", resp.StatusCode),
+		}
 	}
 	var envelope ldxpEnvelope
 	if err := json.Unmarshal(body, &envelope); err != nil {
 		return nil, &ldxpRequestError{Ambiguous: createRequest, Cause: errors.New("invalid LDXP JSON response")}
 	}
 	return &envelope, nil
+}
+
+func isLDXPRateLimited(err error) bool {
+	var requestErr *ldxpRequestError
+	return errors.As(err, &requestErr) &&
+		(requestErr.StatusCode == http.StatusForbidden || requestErr.StatusCode == http.StatusTooManyRequests)
 }
 
 func (c *ldxpCheckoutClient) getLimited(ctx context.Context, target *url.URL, referer string, maxBytes int64) ([]byte, string, *url.URL, error) {

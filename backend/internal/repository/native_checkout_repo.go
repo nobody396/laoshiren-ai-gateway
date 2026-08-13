@@ -106,6 +106,19 @@ func (r *nativeCheckoutRepository) GetLatestOrderForOffer(ctx context.Context, u
 		ORDER BY created_at DESC, id DESC LIMIT 1`, userID, offerCode))
 }
 
+func (r *nativeCheckoutRepository) HasRedeemedOffer(ctx context.Context, userID int64, offerCode string) (bool, error) {
+	var claimed bool
+	err := r.db.QueryRowContext(ctx, `SELECT EXISTS (
+		SELECT 1
+		FROM native_checkout_redeem_inventory inventory
+		JOIN redeem_codes code ON code.id = inventory.redeem_code_id
+		WHERE inventory.offer_code = $2
+		  AND code.status = 'used'
+		  AND code.used_by = $1
+	)`, userID, offerCode).Scan(&claimed)
+	return claimed, err
+}
+
 func (r *nativeCheckoutRepository) ReserveOrder(ctx context.Context, order *service.NativeCheckoutOrder) (*service.NativeCheckoutOrder, bool, error) {
 	groupIDs, err := marshalNativeCheckoutGroupIDs(order.RedeemGroupIDs)
 	if err != nil {
@@ -203,7 +216,7 @@ func (r *nativeCheckoutRepository) ListReconcileOrders(ctx context.Context, limi
 	rows, err := r.db.QueryContext(ctx, `SELECT `+nativeCheckoutOrderColumns+`
 		FROM native_checkout_orders
 		WHERE (status = 'creating' AND updated_at < $1)
-		   OR (status = 'pending' AND next_check_at <= NOW())
+		   OR (status IN ('pending', 'checking') AND next_check_at <= NOW())
 		   OR (status = 'fulfilling' AND updated_at < $1)
 		ORDER BY next_check_at, id LIMIT $2`, fulfillingStaleBefore, limit)
 	if err != nil {
@@ -224,7 +237,7 @@ func (r *nativeCheckoutRepository) ListReconcileOrders(ctx context.Context, limi
 func (r *nativeCheckoutRepository) RecordPendingCheck(ctx context.Context, id int64, nextCheckAt time.Time) error {
 	_, err := r.db.ExecContext(ctx, `UPDATE native_checkout_orders SET
 		check_count = check_count + 1, next_check_at = $2, updated_at = NOW()
-		WHERE id = $1 AND status = 'pending'`, id, nextCheckAt)
+		WHERE id = $1 AND status IN ('pending', 'checking')`, id, nextCheckAt)
 	return err
 }
 
@@ -240,7 +253,7 @@ func (r *nativeCheckoutRepository) ClaimFulfillment(ctx context.Context, id, red
 		failure_code = '', updated_at = NOW()
 		WHERE id = $1
 		  AND (redeem_code_id IS NULL OR redeem_code_id = $2)
-		  AND (status = 'pending' OR (status = 'fulfilling' AND updated_at < $3))
+		  AND (status IN ('pending', 'checking') OR (status = 'fulfilling' AND updated_at < $3))
 		RETURNING `+nativeCheckoutOrderColumns, id, redeemCodeID, staleBefore)
 	order, err := r.scanOrderRow(row)
 	if err == nil {

@@ -13,7 +13,13 @@ export interface CatalogModel {
   preset: { from: string; to: string; color: string }
 }
 
-export const clientAutoConfigVersion = "0.7.6"
+export interface CodexClientModel {
+  model: string
+  displayName: string
+  contextWindow: number
+}
+
+export const clientAutoConfigVersion = "0.7.7"
 
 export const modelCatalog: readonly CatalogModel[] = [
   {
@@ -34,6 +40,34 @@ export const modelCatalog: readonly CatalogModel[] = [
       "to": "grok-4.6",
       "color": "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800/50 dark:text-slate-300"
     }
+  }
+]
+
+export const codexClientModels: readonly CodexClientModel[] = [
+  {
+    "model": "gpt-5.6-sol",
+    "displayName": "GPT-5.6-Sol",
+    "contextWindow": 250000
+  },
+  {
+    "model": "gpt-5.6-terra",
+    "displayName": "GPT-5.6-Terra",
+    "contextWindow": 250000
+  },
+  {
+    "model": "gpt-5.6",
+    "displayName": "GPT-5.6",
+    "contextWindow": 250000
+  },
+  {
+    "model": "gpt-5.5",
+    "displayName": "GPT-5.5",
+    "contextWindow": 250000
+  },
+  {
+    "model": "gpt-5.4",
+    "displayName": "GPT-5.4",
+    "contextWindow": 250000
   }
 ]
 

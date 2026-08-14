@@ -17,7 +17,6 @@ type Model struct {
 var DefaultModels = []Model{
 	{ID: "gpt-5.6-sol", Object: "model", Created: 1783641600, OwnedBy: "openai", Type: "model", DisplayName: "GPT-5.6 Sol"},
 	{ID: "gpt-5.6-terra", Object: "model", Created: 1783641600, OwnedBy: "openai", Type: "model", DisplayName: "GPT-5.6 Terra"},
-	{ID: "gpt-5.6-luna", Object: "model", Created: 1783641600, OwnedBy: "openai", Type: "model", DisplayName: "GPT-5.6 Luna"},
 	{ID: "gpt-5.5", Object: "model", Created: 1776873600, OwnedBy: "openai", Type: "model", DisplayName: "GPT-5.5"},
 	{ID: "gpt-5.4", Object: "model", Created: 1738368000, OwnedBy: "openai", Type: "model", DisplayName: "GPT-5.4"},
 	{ID: "gpt-5.3-codex", Object: "model", Created: 1735689600, OwnedBy: "openai", Type: "model", DisplayName: "GPT-5.3 Codex"},

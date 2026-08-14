@@ -100,12 +100,12 @@ describe('client auto-config scripts', () => {
     expect(models).toEqual([
       'gpt-5.6-sol',
       'gpt-5.6-terra',
-      'gpt-5.6-luna',
       'gpt-5.6',
       'gpt-5.5',
-      'gpt-5.4',
-      'gpt-5.4-mini'
+      'gpt-5.4'
     ])
+    expect(models).not.toContain('gpt-5.6-luna')
+    expect(models).not.toContain('gpt-5.4-mini')
     expect(models).not.toContain('gpt-5.3-codex-spark')
     expect(catalog.template).toBeUndefined()
     for (const model of catalog.models) {

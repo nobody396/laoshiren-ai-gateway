@@ -84,14 +84,13 @@ Claude 擅长理解需求、架构规划、复杂推理，但价格也摆在那�
 /codex:rescue --background 重构数据库连接池
 
 # 指定更便宜的模型，进一步省钱
-/codex:rescue --model gpt-5.4-mini 写一组单元测试覆盖 utils.ts
-/codex:rescue --model spark 快速修复这个 lint 错误
+/codex:rescue --model gpt-5.4 写一组单元测试覆盖 utils.ts
 
 # 继续上次的任务
 /codex:rescue --resume 把上次的修复方案应用上去
 ```
 
-> 💡 **省钱技巧**：`--model gpt-5.4-mini` 或 `--model spark` 可以用更便宜更快的模型执行简单任务。
+> 💡 **模型选择**：简单任务可使用 `--model gpt-5.4`；复杂任务建议使用 GPT-5.5 或 GPT-5.6 系列。
 
 ### 任务管理类
 
@@ -177,7 +176,7 @@ Claude 规划 → /codex:rescue 执行 → /codex:review → 修复 → /codex:a
 项目级配置：项目根目录下 `.codex/config.toml`
 
 ```toml
-model = "gpt-5.4-mini"
+model = "gpt-5.4"
 model_reasoning_effort = "high"
 ```
 

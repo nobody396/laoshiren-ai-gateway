@@ -1,4 +1,5 @@
 import type { GroupPlatform } from '@/types'
+import { clientAutoConfigVersion } from '@/generated/modelCatalog'
 
 export type ClientAutoConfigTarget = 'claude' | 'codex' | 'grok'
 
@@ -19,9 +20,8 @@ const powerShellSingleQuote = (value: string): string => {
 
 // Edge CDN keeps public installer paths for a long time. Version the copied
 // URL so a newly deployed setup contract cannot execute a stale installer.
-const CLIENT_AUTO_CONFIG_VERSION = '0.7.4'
-const SHELL_INSTALLER_URL = `https://laoshirenai.com/auto-config/install.sh?v=${CLIENT_AUTO_CONFIG_VERSION}`
-const POWERSHELL_INSTALLER_URL = `https://laoshirenai.com/auto-config/install.ps1?v=${CLIENT_AUTO_CONFIG_VERSION}`
+const SHELL_INSTALLER_URL = `https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion}`
+const POWERSHELL_INSTALLER_URL = `https://laoshirenai.com/auto-config/install.ps1?v=${clientAutoConfigVersion}`
 
 export const getClientAutoConfigTarget = (
   platform?: GroupPlatform | null

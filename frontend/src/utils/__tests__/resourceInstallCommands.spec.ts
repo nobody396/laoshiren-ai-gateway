@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildClaudeDesktopWindowsCachePath,
+  buildImmutableResourceDownloadPath,
   buildWindowsDesktopInstallCommand,
   CLAUDE_DESKTOP_WINDOWS_X64
 } from '../resourceInstallCommands'
@@ -35,6 +36,13 @@ describe('Windows desktop resource install commands', () => {
 
   it('rejects an invalid checksum in the immutable cache path', () => {
     expect(() => buildClaudeDesktopWindowsCachePath('not-a-sha')).toThrow('SHA256')
+  })
+
+  it('builds a content-addressed same-site path for every cached installer', () => {
+    expect(buildImmutableResourceDownloadPath('codex-plus-plus', 'v1.2.4', {
+      id: 'codexplusplus-1.2.4-windows-x64-setup.exe',
+      sha256: 'b'.repeat(64)
+    })).toBe(`/downloads/codex-plus-plus/v1.2.4/${'b'.repeat(64)}/codexplusplus-1.2.4-windows-x64-setup.exe`)
   })
 
   it('keeps the silent installer switch for Codex++ after verification', () => {

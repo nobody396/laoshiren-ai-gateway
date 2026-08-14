@@ -202,6 +202,20 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-31T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/audit-windows-resource-paths-20260813",
+      "owner": "windows-resource-audit-20260813",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-20T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/codex-monthly-probe-sol-20260813",
+      "owner": "codex-monthly-probe-sol-20260813",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-20T23:59:59+08:00"
     }
   ]
 }

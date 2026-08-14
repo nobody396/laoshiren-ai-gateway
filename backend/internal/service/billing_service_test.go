@@ -134,6 +134,30 @@ func TestGetModelPricing_CaseInsensitive(t *testing.T) {
 	require.Equal(t, p1.InputPricePerToken, p2.InputPricePerToken)
 }
 
+func TestCalculateCost_Grok46UsesPomoRateCardAndLongContextTier(t *testing.T) {
+	svc := newTestBillingService()
+
+	pricing, err := svc.GetModelPricing("GROK-4.6")
+	require.NoError(t, err)
+	require.InDelta(t, 2e-6, pricing.InputPricePerToken, 1e-12)
+	require.InDelta(t, 0.5e-6, pricing.CacheReadPricePerToken, 1e-12)
+	require.InDelta(t, 6e-6, pricing.OutputPricePerToken, 1e-12)
+	require.Equal(t, 200000, pricing.LongContextInputThreshold)
+	require.InDelta(t, 2.0, pricing.LongContextInputMultiplier, 1e-12)
+	require.InDelta(t, 2.0, pricing.LongContextOutputMultiplier, 1e-12)
+
+	tokens := UsageTokens{InputTokens: 200001, CacheReadTokens: 10, OutputTokens: 100}
+	cost, err := svc.CalculateCost("grok-4.6", tokens, 0.4)
+	require.NoError(t, err)
+	expectedInput := float64(tokens.InputTokens) * 2e-6 * 2
+	expectedCacheRead := float64(tokens.CacheReadTokens) * 0.5e-6 * 2
+	expectedOutput := float64(tokens.OutputTokens) * 6e-6 * 2
+	require.InDelta(t, expectedInput, cost.InputCost, 1e-10)
+	require.InDelta(t, expectedCacheRead, cost.CacheReadCost, 1e-10)
+	require.InDelta(t, expectedOutput, cost.OutputCost, 1e-10)
+	require.InDelta(t, (expectedInput+expectedCacheRead+expectedOutput)*0.4, cost.ActualCost, 1e-10)
+}
+
 func TestGetModelPricing_UnknownClaudeModelFallsBackToSonnet(t *testing.T) {
 	svc := newTestBillingService()
 

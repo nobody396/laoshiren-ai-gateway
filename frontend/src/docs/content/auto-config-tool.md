@@ -32,7 +32,7 @@ IP 限制、额度限制、速率限制和有效期可按需配置，新手建�
 直接执行：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash
+curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.6 | bash
 ```
 
 脚本会自动完成以下动作：
@@ -51,7 +51,7 @@ curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash
 直接执行：
 
 ```powershell
-irm https://laoshirenai.com/auto-config/install.ps1 | iex
+irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.6 | iex
 ```
 
 Windows 脚本还会检测现有 Claude Code CLI 和官方 `OpenAI.Codex` App。已有客户端时不会再下载 Node.js 或重复安装，只会备份原配置、写入中转配置并测试 API Key。
@@ -71,13 +71,13 @@ Windows 脚本还会检测现有 Claude Code CLI 和官方 `OpenAI.Codex` App。
 macOS / Linux：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --api-key YOUR_CLAUDE_KEY --tools claude
+curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.6 | bash -s -- --api-key YOUR_CLAUDE_KEY --tools claude
 ```
 
 Windows PowerShell（管道模式通过环境变量传参）：
 
 ```powershell
-$env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:LAOSHIRENAI_TOOLS='claude'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
+$env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:LAOSHIRENAI_TOOLS='claude'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.6 | iex
 ```
 
 Windows PowerShell（下载后直接执行）：
@@ -91,13 +91,13 @@ Windows PowerShell（下载后直接执行）：
 macOS / Linux：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
+curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.6 | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
 ```
 
 Windows PowerShell（管道模式）：
 
 ```powershell
-$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; $env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
+$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; $env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.6 | iex
 ```
 
 Windows PowerShell（下载后直接执行）：
@@ -113,13 +113,13 @@ Windows PowerShell（下载后直接执行）：
 macOS / Linux：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --api-key YOUR_CLAUDE_KEY --codex-api-key YOUR_CODEX_KEY
+curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.6 | bash -s -- --api-key YOUR_CLAUDE_KEY --codex-api-key YOUR_CODEX_KEY
 ```
 
 Windows PowerShell（管道模式）：
 
 ```powershell
-$env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
+$env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_CLAUDE_KEY'; $env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.6 | iex
 ```
 
 Windows PowerShell（下载后直接执行）：
@@ -133,7 +133,7 @@ Windows PowerShell（下载后直接执行）：
 如果你部署了自定义域名，可以覆盖默认地址：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/install.sh | bash -s -- --api-key YOUR_CLAUDE_KEY --base-url https://api.laoshirenai.com
+curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.6 | bash -s -- --api-key YOUR_CLAUDE_KEY --base-url https://api.laoshirenai.com
 ```
 
 ---
@@ -273,13 +273,13 @@ codex --version
 macOS / Linux：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash
+curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0 | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash
 ```
 
 Windows PowerShell：
 
 ```powershell
-$env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1 | iex
+$env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1?v=1.0.0 | iex
 ```
 
 执行完成后，重启或打开 CC Switch，在 `Codex` 页面启用 `OpenAI Official Pro` 即可切回官方订阅；要测试老实人 AI 接口服务时，再启用老实人 AI 导入的 Provider。
@@ -299,7 +299,7 @@ Windows：
 3. 复制并粘贴下面整行命令，按回车
 
 ```powershell
-irm https://laoshirenai.com/auto-config/diagnose-cc-switch.ps1?v=1.2.1 | iex
+irm https://laoshirenai.com/auto-config/diagnose-cc-switch.ps1?v=1.2.2 | iex
 ```
 
 Mac：
@@ -309,23 +309,23 @@ Mac：
 3. 复制并粘贴下面整行命令，按回车
 
 ```bash
-curl -fsSL 'https://laoshirenai.com/auto-config/diagnose-cc-switch.sh?v=1.2.1' | bash
+curl -fsSL 'https://laoshirenai.com/auto-config/diagnose-cc-switch.sh?v=1.2.2' | bash
 ```
 
-脚本会自动查找 CC Switch、读取版本并修复 `ccswitch://` 协议。如果没有安装，或者版本低于本站缓存的最新版，它会优先从老实人 AI 本站缓存获取最新版，核对 SHA-256 后自动安装；本站缓存暂不可用时才会访问 CC Switch 官方 GitHub。Mac 还会验证开发者签名和 Apple 公证。只有本站与官方源都不可用、文件校验失败或系统权限不足时，才会打开官方下载页。脚本不会读取或上传 API Key。
+脚本会自动查找 CC Switch、读取版本并修复 `ccswitch://` 协议。如果没有安装，或者版本低于本站缓存的最新版，Windows 会只从老实人 AI 本站缓存获取安装包，核对 SHA-256 后自动安装，不再让中国大陆用户回退到 GitHub。Mac 还会验证开发者签名和 Apple 公证。只有本站缓存不可用、文件校验失败或系统权限不足时，才会打开官方下载页供人工处理。脚本不会读取或上传 API Key。
 
 Windows 绿色便携版会自动升级为当前用户的 MSI 安装版，原有 CC Switch 配置仍保存在用户配置目录中，后续即可使用 CC Switch 自带的自动更新。若 CC Switch 正在系统托盘运行，脚本会先尝试安全关闭；仍未退出时只需要按提示右键退出一次，脚本会继续完成下载、安装和 Deep Link 修复，不需要自己寻找安装包。
 
 ### Windows 上提示需要 git-bash
 
-Claude Code 在 Windows 上依赖 git-bash 运行。脚本会自动检测并安装 Git for Windows（优先从国内 npmmirror 镜像下载），无需手动操作。
+Claude Code 在 Windows 上依赖 git-bash 运行。脚本会自动检测并从老实人 AI 本站缓存下载 Git for Windows，校验 SHA-256 后安装，无需手动操作。
 
 ### Windows 管道模式（`irm | iex`）怎么传参数
 
 `irm ... | iex` 后面**不能直接跟参数**，需要通过环境变量传入：
 
 ```powershell
-$env:LAOSHIRENAI_TOOLS='claude'; $env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_KEY'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
+$env:LAOSHIRENAI_TOOLS='claude'; $env:LAOSHIRENAI_CLAUDE_API_KEY='YOUR_KEY'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.6 | iex
 ```
 
 如果不传环境变量，脚本会交互式提示输入 API Key。

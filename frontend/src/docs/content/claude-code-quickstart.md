@@ -48,7 +48,7 @@ claude --version
 
 #### 方式一：CC Switch（推荐）
 
-前往 [CC Switch Release](https://github.com/farion1231/cc-switch/blob/main/docs/release-notes/v3.12.2-zh.md) 下载安装后，点击 **导入到 CCS** 完成一键导入：
+先到本站 [安装与下载](/resources) 页面，选择 **安装 CC Switch**，复制页面生成的命令并在 PowerShell 执行。Windows 安装包会从本站缓存下载并校验 SHA-256，不需要访问 GitHub。安装完成后，回到 API 密钥页点击 **导入 CC Switch**：
 
 
 导入后点击 **启用** 即可。
@@ -126,7 +126,7 @@ Claude Code 会自动分析当前目录的代码并提供智能编程辅助。
 ## 常见问题（FAQ）
 
 **Q：运行 `npm install -g` 提示权限不足？**
-A：macOS / Linux 在命令前加 `sudo`；Windows 使用管理员权限运行 PowerShell。
+A：建议直接使用本站 [安装与下载](/resources) 页面生成的一键命令。Windows 默认安装到当前用户目录，不需要管理员 PowerShell；macOS / Linux 手动使用 npm 时再按系统提示处理权限。
 
 **Q：`claude --version` 提示命令不存在？**
 A：确认 npm 全局目录已加入系统 `PATH`，可运行 `npm bin -g` 查看路径并手动添加。

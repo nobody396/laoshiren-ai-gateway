@@ -333,6 +333,9 @@ func (s *BillingService) initFallbackPricing() {
 		SupportsCacheBreakdown:         false,
 	}
 	s.fallbackPrices["gpt-5.3-codex"] = s.fallbackPrices["gpt-5.1-codex"]
+	for model, price := range generatedCatalogBillingPrices {
+		s.fallbackPrices[model] = price
+	}
 	s.fallbackPrices["grok-4.5"] = &ModelPricing{InputPricePerToken: 2e-6, OutputPricePerToken: 6e-6, CacheReadPricePerToken: 0.5e-6}
 	s.fallbackPrices["grok-4.3"] = &ModelPricing{InputPricePerToken: 1.25e-6, OutputPricePerToken: 2.5e-6, CacheReadPricePerToken: 0.2e-6}
 	s.fallbackPrices["grok-build-0.1"] = &ModelPricing{InputPricePerToken: 1e-6, OutputPricePerToken: 2e-6, CacheReadPricePerToken: 0.2e-6}
@@ -417,6 +420,8 @@ func (s *BillingService) getFallbackPricing(model string) *ModelPricing {
 		}
 	}
 	switch modelLower {
+	case "grok-4.6":
+		return s.fallbackPrices["grok-4.6"]
 	case "grok", "grok-latest", "grok-4.5", "grok-4.5-latest", "grok-build-latest":
 		return s.fallbackPrices["grok-4.5"]
 	case "grok-4.3", "grok-4.20-0309-reasoning", "grok-4.20-0309-non-reasoning", "grok-4.20-multi-agent-0309", "grok-4.20-reasoning", "grok-4.20-non-reasoning":
@@ -449,6 +454,11 @@ func (s *BillingService) GetModelPricing(model string) (*ModelPricing, error) {
 
 	if fallback := s.gpt56FallbackPricing(model); fallback != nil {
 		return s.applyModelSpecificPricingPolicy(model, fallback), nil
+	}
+	// Catalog-managed releases pin their reviewed rate card ahead of dynamic
+	// pricing so a stale external catalog cannot underbill a newly added model.
+	if fallback := generatedCatalogBillingPrice(model); fallback != nil {
+		return fallback, nil
 	}
 
 	// GPT-5.5 业务定价固定为 GPT-5.4 的 2 倍，不能被动态价格覆盖。

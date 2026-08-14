@@ -2,11 +2,21 @@
 
 set -euo pipefail
 
-SCRIPT_VERSION="0.7.4"
+# BEGIN GENERATED MODEL CATALOG
+SCRIPT_VERSION='0.7.6'
+CATALOG_OPENAI_DEFAULT_MODEL='gpt-5.6-sol'
+CATALOG_OPENAI_CONTEXT_WINDOW=250000
+CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT=225000
+CATALOG_ANTHROPIC_DEFAULT_MODEL='claude-opus-5'
+CATALOG_GROK_DEFAULT_MODEL='grok-4.6'
+CATALOG_GROK_DEFAULT_DISPLAY_NAME='Grok 4.6'
+CATALOG_GROK_DEFAULT_CONTEXT_WINDOW=500000
+CATALOG_GROK_MANAGED_MODEL_IDS_JSON='["grok-4.5","grok-4.6"]'
+# END GENERATED MODEL CATALOG
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
 DEFAULT_CODEX_MANIFEST_URL="https://laoshirenai.com/api/v1/public-downloads/codex/latest.json"
-DEFAULT_CODEX_MODEL_CATALOG_URL="https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.4"
+DEFAULT_CODEX_MODEL_CATALOG_URL="https://laoshirenai.com/auto-config/codex-model-catalog.json?v=${SCRIPT_VERSION}"
 DEFAULT_TOPUP_URL="https://laoshirenai.com/get-subscription"
 DEFAULT_TOOLS="all"
 DEFAULT_NODE_INDEX_PRIMARY="https://npmmirror.com/mirrors/node/index.tab"
@@ -849,7 +859,7 @@ EOF
   asset_url="$(printf '%s' "$asset_url" | base64 -d)"
   expected_sha="$(printf '%s' "$expected_sha" | base64 -d)"
   case "$asset_url" in
-    https://laoshirenai.com/api/v1/public-downloads/codex/packages/*) ;;
+    https://laoshirenai.com/downloads/codex/*) ;;
     *) rm -rf "$tmp_dir"; log_error "Codex App 下载地址未通过同站校验" ;;
   esac
 
@@ -913,11 +923,12 @@ write_claude_config() {
   create_backup_if_needed "$CLAUDE_SETTINGS_PATH"
   ensure_dir "$(dirname "$CLAUDE_SETTINGS_PATH")"
 
-  CONFIG_PATH="$CLAUDE_SETTINGS_PATH" CONFIG_BASE_URL="$BASE_URL" CONFIG_API_KEY="$CLAUDE_API_KEY" "$NODE_BIN" <<'EOF'
+  CONFIG_PATH="$CLAUDE_SETTINGS_PATH" CONFIG_BASE_URL="$BASE_URL" CONFIG_API_KEY="$CLAUDE_API_KEY" CONFIG_MODEL="$CATALOG_ANTHROPIC_DEFAULT_MODEL" "$NODE_BIN" <<'EOF'
 const fs = require('node:fs')
 const path = process.env.CONFIG_PATH
 const baseUrl = process.env.CONFIG_BASE_URL
 const apiKey = process.env.CONFIG_API_KEY
+const model = process.env.CONFIG_MODEL
 
 let config = {}
 if (fs.existsSync(path)) {
@@ -936,7 +947,7 @@ if (!config.env || typeof config.env !== 'object' || Array.isArray(config.env)) 
   config.env = {}
 }
 
-config.model = 'claude-opus-5'
+config.model = model
 config.effortLevel = 'xhigh'
 config.env.ANTHROPIC_BASE_URL = baseUrl
 config.env.ANTHROPIC_AUTH_TOKEN = apiKey
@@ -1011,15 +1022,15 @@ write_codex_config() {
 
   cat >"$CODEX_CONFIG_PATH" <<EOF
 model_provider = "OpenAI"
-model = "gpt-5.6-sol"
-review_model = "gpt-5.6-sol"
+model = "${CATALOG_OPENAI_DEFAULT_MODEL}"
+review_model = "${CATALOG_OPENAI_DEFAULT_MODEL}"
 model_reasoning_effort = "xhigh"
 model_catalog_json = "laoshirenai-model-catalog.json"
 disable_response_storage = true
 network_access = "enabled"
 preferred_auth_method = "apikey"
-model_context_window = 250000
-model_auto_compact_token_limit = 225000
+model_context_window = ${CATALOG_OPENAI_CONTEXT_WINDOW}
+model_auto_compact_token_limit = ${CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT}
 
 [model_providers.OpenAI]
 name = "OpenAI"
@@ -1034,11 +1045,16 @@ write_grok_config() {
   create_backup_if_needed "$GROK_CONFIG_PATH"
   ensure_dir "$GROK_DIR"
 
-  CONFIG_PATH="$GROK_CONFIG_PATH" CONFIG_BASE_URL="$(normalize_openai_v1_base_url "$BASE_URL")" CONFIG_API_KEY="$GROK_API_KEY" "$NODE_BIN" <<'EOF'
+  CONFIG_PATH="$GROK_CONFIG_PATH" CONFIG_BASE_URL="$(normalize_openai_v1_base_url "$BASE_URL")" CONFIG_API_KEY="$GROK_API_KEY" CONFIG_MODEL="$CATALOG_GROK_DEFAULT_MODEL" CONFIG_DISPLAY_NAME="$CATALOG_GROK_DEFAULT_DISPLAY_NAME" CONFIG_CONTEXT_WINDOW="$CATALOG_GROK_DEFAULT_CONTEXT_WINDOW" CONFIG_MANAGED_MODEL_IDS="$CATALOG_GROK_MANAGED_MODEL_IDS_JSON" "$NODE_BIN" <<'EOF'
 const fs = require('node:fs')
 const path = process.env.CONFIG_PATH
 const baseUrl = process.env.CONFIG_BASE_URL
 const apiKey = process.env.CONFIG_API_KEY
+const model = process.env.CONFIG_MODEL
+const displayName = process.env.CONFIG_DISPLAY_NAME
+const contextWindow = Number(process.env.CONFIG_CONTEXT_WINDOW)
+const managedModelIds = JSON.parse(process.env.CONFIG_MANAGED_MODEL_IDS || '[]')
+const managedSections = new Set(managedModelIds.flatMap((id) => [`model.${id}`, `model."${id}"`]))
 let text = fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : ''
 let lines = text.split(/\r?\n/)
 
@@ -1047,7 +1063,7 @@ const kept = []
 let droppingModel = false
 for (const line of lines) {
   const header = line.trim().match(/^\[([^\]]+)\]$/)
-  if (header) droppingModel = ['model.grok-4.5', 'model."grok-4.5"'].includes(header[1])
+  if (header) droppingModel = managedSections.has(header[1])
   if (!droppingModel) kept.push(line)
 }
 lines = kept
@@ -1056,7 +1072,7 @@ lines = kept
 let modelsHeader = lines.findIndex((line) => line.trim() === '[models]')
 if (modelsHeader < 0) {
   while (lines.length && !lines[lines.length - 1].trim()) lines.pop()
-  lines.push('', '[models]', 'default = "grok-4.5"')
+  lines.push('', '[models]', `default = ${JSON.stringify(model)}`)
 } else {
   let end = lines.length
   for (let i = modelsHeader + 1; i < lines.length; i++) {
@@ -1065,26 +1081,26 @@ if (modelsHeader < 0) {
   let replaced = false
   for (let i = modelsHeader + 1; i < end; i++) {
     if (/^\s*default\s*=/.test(lines[i])) {
-      lines[i] = 'default = "grok-4.5"'
+      lines[i] = `default = ${JSON.stringify(model)}`
       replaced = true
       break
     }
   }
-  if (!replaced) lines.splice(modelsHeader + 1, 0, 'default = "grok-4.5"')
+  if (!replaced) lines.splice(modelsHeader + 1, 0, `default = ${JSON.stringify(model)}`)
 }
 
 while (lines.length && !lines[lines.length - 1].trim()) lines.pop()
 lines.push(
   '',
   '# Managed by laoshirenai one-click setup',
-  '[model."grok-4.5"]',
-  'model = "grok-4.5"',
+  `[model.${JSON.stringify(model)}]`,
+  `model = ${JSON.stringify(model)}`,
   `base_url = ${JSON.stringify(baseUrl)}`,
-  'name = "Grok 4.5 · 老实人AI"',
-  'description = "Grok 4.5"',
+  `name = ${JSON.stringify(`${displayName} · 老实人AI`)}`,
+  `description = ${JSON.stringify(displayName)}`,
   `api_key = ${JSON.stringify(apiKey)}`,
   'api_backend = "responses"',
-  'context_window = 500000',
+  `context_window = ${contextWindow}`,
   ''
 )
 fs.writeFileSync(path, lines.join('\n'), { encoding: 'utf8', mode: 0o600 })
@@ -1296,7 +1312,7 @@ print_summary() {
   fi
   if uses_grok; then
     printf '  grok --version\n'
-    printf '  grok -m grok-4.5 -p "只回复 OK"\n'
+    printf '  grok -m %s -p "只回复 OK"\n' "$CATALOG_GROK_DEFAULT_MODEL"
   fi
 }
 

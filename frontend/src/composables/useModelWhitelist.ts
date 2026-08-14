@@ -2,9 +2,15 @@
 // 模型列表
 // =====================
 
+import {
+  catalogModelsForPlatform,
+  catalogPresetMappingsForPlatform
+} from '@/generated/modelCatalog'
+
 // OpenAI 官方默认白名单：用于新建/编辑账号时一键填充模型白名单。
 // 保持为当前主力文本/编码模型，避免默认暴露 GPT-3.5、旧 GPT-4、旧 o-series 等历史模型。
 const openaiModels = [
+  ...catalogModelsForPlatform('openai'),
   'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna',
   'gpt-5.5',
   'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.4-nano',
@@ -16,6 +22,7 @@ const openaiModels = [
 
 // Anthropic Claude 官方默认白名单：当前 Claude 4.5+ / 4.6+ / 4.7 / 4.8 主力模型。
 export const claudeModels = [
+  ...catalogModelsForPlatform('anthropic'),
   'claude-opus-4-8',
   'claude-opus-4-7',
   'claude-sonnet-4-6',
@@ -119,6 +126,7 @@ const metaModels = [
 
 // xAI Grok
 const xaiModels = [
+  ...catalogModelsForPlatform('grok'),
   'grok-4.5',
   'grok-4.3',
   'grok-build-0.1',
@@ -234,6 +242,7 @@ export const allModels = allModelsList.map(m => ({ value: m, label: m }))
 // =====================
 
 const anthropicPresetMappings = [
+  ...catalogPresetMappingsForPlatform('anthropic'),
   { label: 'Opus 4.8', from: 'claude-opus-4-8', to: 'claude-opus-4-8', color: 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400' },
   { label: 'Opus 4.7', from: 'claude-opus-4-7', to: 'claude-opus-4-7', color: 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400' },
   { label: 'Sonnet 4.6', from: 'claude-sonnet-4-6', to: 'claude-sonnet-4-6', color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400' },
@@ -244,6 +253,7 @@ const anthropicPresetMappings = [
 ]
 
 const openaiPresetMappings = [
+  ...catalogPresetMappingsForPlatform('openai'),
   { label: 'GPT-5.6 Sol', from: 'gpt-5.6-sol', to: 'gpt-5.6-sol', color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400' },
   { label: 'GPT-5.6 Terra', from: 'gpt-5.6-terra', to: 'gpt-5.6-terra', color: 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400' },
   { label: 'GPT-5.6 Luna', from: 'gpt-5.6-luna', to: 'gpt-5.6-luna', color: 'bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-400' },
@@ -267,6 +277,7 @@ const geminiPresetMappings = [
 ]
 
 const grokPresetMappings = [
+  ...catalogPresetMappingsForPlatform('grok'),
   { label: 'Grok 4.5', from: 'grok-4.5', to: 'grok-4.5', color: 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800/50 dark:text-slate-300' },
   { label: 'Grok 4.3', from: 'grok-4.3', to: 'grok-4.3', color: 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800/50 dark:text-slate-300' },
   { label: 'Build 0.1', from: 'grok-build', to: 'grok-build-0.1', color: 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-400' },

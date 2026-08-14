@@ -1,7 +1,7 @@
 <template>
-  <AppLayout>
-    <div class="cost-page space-y-6 pb-12">
-      <header class="cost-hero overflow-hidden border border-stone-200 bg-stone-950 text-white shadow-sm dark:border-dark-700">
+  <component :is="embedded ? 'div' : AppLayout">
+    <div class="cost-page space-y-6" :class="embedded ? 'pb-4' : 'pb-12'">
+      <header v-if="!embedded" class="cost-hero overflow-hidden border border-stone-200 bg-stone-950 text-white shadow-sm dark:border-dark-700">
         <div class="cost-hero-grid px-6 py-7 lg:px-8">
           <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div class="max-w-3xl">
@@ -20,7 +20,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
               <RouterLink
-                to="/admin/finance-transactions"
+                :to="{ path: '/admin/business-finance', query: { tab: 'ledger' } }"
                 class="inline-flex h-10 items-center gap-2 border border-white/20 bg-white/10 px-4 text-sm font-medium text-white transition hover:bg-white/15"
               >
                 财务记账
@@ -93,7 +93,7 @@
                   <p class="section-eyebrow">现金账与用量账联动</p>
                   <h2 class="mt-1 text-lg font-semibold text-stone-950 dark:text-white">本月经营对照</h2>
                 </div>
-                <RouterLink to="/admin/finance-transactions" class="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400">
+                <RouterLink :to="{ path: '/admin/business-finance', query: { tab: 'ledger' } }" class="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400">
                   查看流水 →
                 </RouterLink>
               </div>
@@ -279,7 +279,7 @@
             <div>
               <p class="section-eyebrow">Pay as you go</p>
               <h2>按量付费公开分组</h2>
-              <p>不再维护固定 ID 清单；新增或停用公开标准分组后，这里会自动同步。</p>
+              <p>利润率只按本月真实计费额和实际上游成本计算；不同模型的账号倍率不再混算。</p>
             </div>
             <RouterLink to="/admin/groups" class="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400">
               管理分组 <Icon name="externalLink" size="sm" />
@@ -300,7 +300,7 @@
                     <span>·</span>
                     <span>#{{ group.group_id }}</span>
                   </div>
-                  <h3 class="truncate text-base font-semibold text-stone-950 dark:text-white" :title="group.group_name">{{ group.group_name }}</h3>
+                  <h3 class="line-clamp-2 text-base font-semibold leading-6 text-stone-950 dark:text-white" :title="group.group_name">{{ group.group_name }}</h3>
                 </div>
                 <span
                   class="shrink-0 border px-2 py-1 text-xs font-medium"
@@ -314,8 +314,8 @@
 
               <div class="mt-5 grid grid-cols-3 gap-3">
                 <div class="group-stat">
-                  <span>分组倍率</span>
-                  <strong>{{ group.group_rate_multiplier.toFixed(4) }}</strong>
+                  <span>本月计费额</span>
+                  <strong>{{ formatNumber(group.real_usage.observed_raw_credits_consumed || 0) }} <small>credits</small></strong>
                 </div>
                 <div class="group-stat">
                   <span>本月请求</span>
@@ -327,26 +327,54 @@
                 </div>
               </div>
 
-              <div class="mt-5 border-t border-stone-100 pt-4 dark:border-dark-700">
-                <div class="flex items-baseline justify-between gap-3">
-                  <span class="text-xs text-stone-500 dark:text-dark-400">¥100 小铺充值全部用完</span>
-                  <strong
-                    v-if="group.topup_100_cny_scenario"
-                    class="text-lg tabular-nums"
-                    :class="marginClass(group.topup_100_cny_scenario.margin_percent)"
-                  >
-                    {{ formatPercent(group.topup_100_cny_scenario.margin_percent) }}
-                  </strong>
-                  <span v-else class="text-sm text-stone-400">无法计算</span>
+              <div class="group-economics mt-5" :data-test="`paygo-margin-${group.group_id}`">
+                <template v-if="group.topup_100_cny_scenario && group.topup_100_cny_scenario_basis === 'observed_real_usage'">
+                  <div class="flex items-start justify-between gap-4">
+                    <div>
+                      <span class="economics-label">真实用量毛利率</span>
+                      <p class="mt-1 text-xs text-stone-500 dark:text-dark-400">¥100 小铺充值用完，按净收 ¥97.00 计算</p>
+                    </div>
+                    <strong
+                      class="economics-margin tabular-nums"
+                      :class="marginClass(group.topup_100_cny_scenario.margin_percent)"
+                    >
+                      {{ formatPercent(group.topup_100_cny_scenario.margin_percent) }}
+                    </strong>
+                  </div>
+                  <div class="mt-4 grid grid-cols-2 gap-3 border-t border-stone-200/80 pt-3 dark:border-dark-600">
+                    <div class="economics-detail">
+                      <span>预计上游成本</span>
+                      <strong>{{ formatMoney(group.topup_100_cny_scenario.cost_cny) }}</strong>
+                    </div>
+                    <div class="economics-detail">
+                      <span>预计毛利</span>
+                      <strong :class="marginClass(group.topup_100_cny_scenario.margin_percent)">{{ formatMoney(group.topup_100_cny_scenario.profit_cny) }}</strong>
+                    </div>
+                  </div>
+                  <p class="mt-3 text-xs leading-5 text-stone-500 dark:text-dark-400">
+                    每 1 credit 对应 {{ formatUnitCost(group.real_usage.blended_cost_per_credit || 0) }} 上游成本；
+                    已覆盖 {{ formatNumber(group.real_usage.observed_request_count || 0) }} 次真实请求。
+                  </p>
+                </template>
+                <div v-else class="py-1">
+                  <div class="flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-dark-200">
+                    <Icon name="activity" size="sm" class="text-stone-400" />
+                    暂无真实用量，不展示利润率
+                  </div>
+                  <p class="mt-2 text-xs leading-5 text-stone-500 dark:text-dark-400">
+                    为避免把文本、图片等不同能力账号的倍率混在一起，产生真实计费数据后再计算。
+                  </p>
                 </div>
-                <p v-if="group.topup_100_cny_scenario" class="mt-1 text-xs text-stone-500 dark:text-dark-400">
-                  保守利润 {{ formatMoney(group.topup_100_cny_scenario.profit_cny) }} ·
-                  账号倍率 {{ group.primary_account_rate_multiplier.toFixed(4) }} / {{ group.worst_account_rate_multiplier.toFixed(4) }}
-                </p>
-                <p v-if="group.warning" class="mt-3 border-l-2 border-red-500 bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/20 dark:text-red-300">
-                  {{ group.warning }}
-                </p>
               </div>
+
+              <div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-stone-100 pt-3 text-[11px] text-stone-400 dark:border-dark-700 dark:text-dark-500">
+                <span class="font-semibold text-stone-500 dark:text-dark-400">配置参考</span>
+                <span>分组倍率 {{ group.group_rate_multiplier.toFixed(4) }}</span>
+                <span>账号倍率 主 / 最高 {{ group.primary_account_rate_multiplier.toFixed(4) }} / {{ group.worst_account_rate_multiplier.toFixed(4) }}</span>
+              </div>
+              <p v-if="group.warning" class="mt-3 border-l-2 border-red-500 bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/20 dark:text-red-300">
+                {{ group.warning }}
+              </p>
             </article>
           </div>
         </section>
@@ -365,7 +393,7 @@
         <button class="mt-5 bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700" @click="loadOverview">重新加载</button>
       </div>
     </div>
-  </AppLayout>
+  </component>
 </template>
 
 <script setup lang="ts">
@@ -380,6 +408,10 @@ import type {
 } from '@/api/admin/costAccounting'
 import type { FinanceTransactionSummary } from '@/types'
 import { useAppStore } from '@/stores/app'
+
+withDefaults(defineProps<{ embedded?: boolean }>(), {
+  embedded: false
+})
 
 const appStore = useAppStore()
 const overview = ref<CostAccountingOverview | null>(null)
@@ -442,6 +474,10 @@ function formatMoney(value: number): string {
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value || 0)
+}
+
+function formatUnitCost(value: number): string {
+  return `¥${(Number.isFinite(value) ? value : 0).toFixed(4)}`
 }
 
 function formatPercent(value: number): string {
@@ -691,8 +727,57 @@ onMounted(() => {
   font-variant-numeric: tabular-nums;
 }
 
+.group-stat small {
+  color: rgb(168 162 158);
+  font-size: 0.58rem;
+  font-weight: 500;
+}
+
 :global(.dark) .group-stat strong {
   color: rgb(243 244 246);
+}
+
+.group-economics {
+  min-height: 10.2rem;
+  border: 1px solid rgb(231 229 228);
+  border-radius: 0.65rem;
+  background: rgb(250 250 249);
+  padding: 1rem;
+}
+
+:global(.dark) .group-economics {
+  border-color: rgb(75 85 99);
+  background: rgb(17 24 39 / 0.55);
+}
+
+.economics-label {
+  color: rgb(68 64 60);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+:global(.dark) .economics-label {
+  color: rgb(229 231 235);
+}
+
+.economics-margin {
+  flex: 0 0 auto;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.economics-detail span {
+  display: block;
+  color: rgb(120 113 108);
+  font-size: 0.65rem;
+}
+
+.economics-detail strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 640px) {

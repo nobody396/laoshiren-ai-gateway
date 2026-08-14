@@ -15,6 +15,34 @@ func RegisterPublicResourceRoutes(r *gin.Engine, h *handler.Handlers) {
 		"/downloads/claude-desktop/windows-x64/:sha256/Claude-Setup.exe",
 		h.Resource.DownloadClaudeDesktopWindowsX64,
 	)
+	r.GET(
+		"/downloads/claude-desktop/:version/:sha256/:filename",
+		h.Resource.DownloadClaudeDesktopImmutablePackage,
+	)
+	r.GET(
+		"/downloads/cc-switch/:version/:sha256/:filename",
+		h.Resource.DownloadCCSwitchImmutablePackage,
+	)
+	r.GET(
+		"/downloads/codex/windows-x64/:version/:sha256/:filename",
+		h.Resource.DownloadCodexWindowsImmutablePackage,
+	)
+	r.GET(
+		"/downloads/codex/:version/:sha256/:filename",
+		h.Resource.DownloadCodexImmutablePackage,
+	)
+	r.GET(
+		"/downloads/git-for-windows/:version/:sha256/:filename",
+		h.Resource.DownloadGitForWindowsImmutablePackage,
+	)
+	r.GET(
+		"/downloads/grok-build/:version/:sha256/:filename",
+		h.Resource.DownloadGrokBuildImmutablePackage,
+	)
+	r.GET(
+		"/downloads/codex-plus-plus/:version/:sha256/:filename",
+		h.Resource.DownloadCodexPlusPlusImmutablePackage,
+	)
 }
 
 // RegisterUserRoutes 注册用户相关路由（需要认证）
@@ -33,6 +61,8 @@ func RegisterUserRoutes(
 	v1.GET("/public-downloads/codex/windows-x64/packages/:assetID", h.Resource.DownloadCodexWindowsPackage)
 	v1.GET("/public-downloads/codex/latest.json", h.Resource.CodexLatestManifest)
 	v1.GET("/public-downloads/codex/packages/:assetID", h.Resource.DownloadCodexPackage)
+	v1.GET("/public-downloads/git-for-windows/latest.json", h.Resource.GitForWindowsLatestManifest)
+	v1.GET("/public-downloads/grok-build/latest.json", h.Resource.GrokBuildLatestManifest)
 	v1.POST("/public-setup/exchange", h.Resource.ExchangeSetupTicket)
 	// HMAC-signed token lets normal <img> elements load screenshots without a
 	// bearer header; the S3 object itself remains private and short-lived.

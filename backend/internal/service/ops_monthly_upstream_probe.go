@@ -31,11 +31,11 @@ const (
 	monthlyAnthropicProbeEstimatedInputTokens  = 236
 	monthlyAnthropicProbeEstimatedOutputTokens = 32
 
-	monthlyOpenAIGPT54MiniInputCostPerToken  = 8e-7
-	monthlyOpenAIGPT54MiniOutputCostPerToken = 3.2e-6
-	monthlyClaudeHaiku45InputCostPerToken    = 1e-6
-	monthlyClaudeHaiku45OutputCostPerToken   = 5e-6
-	monthlyUpstreamProbeCostCurrency         = "USD"
+	monthlyOpenAIGPT56SolInputCostPerToken  = 5e-6
+	monthlyOpenAIGPT56SolOutputCostPerToken = 30e-6
+	monthlyClaudeHaiku45InputCostPerToken   = 1e-6
+	monthlyClaudeHaiku45OutputCostPerToken  = 5e-6
+	monthlyUpstreamProbeCostCurrency        = "USD"
 
 	MonthlyUpstreamProbePathGateway        = "gateway"
 	MonthlyUpstreamProbePathDirectUpstream = "direct_upstream"
@@ -59,7 +59,7 @@ type monthlyUpstreamProbeResolvedTarget struct {
 }
 
 var monthlyUpstreamProbeTargetSpecs = []monthlyUpstreamProbeTargetSpec{
-	{Role: "gpt", Platform: PlatformOpenAI, Model: "gpt-5.4-mini"},
+	{Role: "gpt", Platform: PlatformOpenAI, Model: "gpt-5.6-sol"},
 	{Role: "claude", Platform: PlatformAnthropic, Model: "claude-haiku-4-5"},
 	{Role: "grok", Platform: PlatformGrok, Model: "grok-4.5"},
 }
@@ -1616,11 +1616,11 @@ func buildMonthlyUpstreamProbeCostEstimate(accountName, platform, model string, 
 	var inputPrice, outputPrice float64
 
 	switch {
-	case platform == PlatformOpenAI && model == "gpt-5.4-mini":
+	case platform == PlatformOpenAI && model == "gpt-5.6-sol":
 		inputTokens = monthlyOpenAIProbeEstimatedInputTokens
 		outputTokens = monthlyOpenAIProbeEstimatedOutputTokens
-		inputPrice = monthlyOpenAIGPT54MiniInputCostPerToken
-		outputPrice = monthlyOpenAIGPT54MiniOutputCostPerToken
+		inputPrice = monthlyOpenAIGPT56SolInputCostPerToken
+		outputPrice = monthlyOpenAIGPT56SolOutputCostPerToken
 	case platform == PlatformAnthropic && model == "claude-haiku-4-5":
 		inputTokens = monthlyAnthropicProbeEstimatedInputTokens
 		outputTokens = monthlyAnthropicProbeEstimatedOutputTokens

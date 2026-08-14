@@ -31,13 +31,13 @@ describe('CC Switch diagnostic platform detection', () => {
 describe('CC Switch diagnostic commands', () => {
   it('builds a one-line PowerShell repair command', () => {
     expect(buildCcsDiagnosticCommand('windows', 'https://laoshirenai.com/')).toBe(
-      'irm https://laoshirenai.com/auto-config/diagnose-cc-switch.ps1?v=1.2.1 | iex'
+      'irm https://laoshirenai.com/auto-config/diagnose-cc-switch.ps1?v=1.2.2 | iex'
     )
   })
 
   it('builds a one-line macOS Terminal repair command', () => {
     expect(buildCcsDiagnosticCommand('macos', 'https://example.com')).toBe(
-      "curl -fsSL 'https://example.com/auto-config/diagnose-cc-switch.sh?v=1.2.1' | bash"
+      "curl -fsSL 'https://example.com/auto-config/diagnose-cc-switch.sh?v=1.2.2' | bash"
     )
   })
 

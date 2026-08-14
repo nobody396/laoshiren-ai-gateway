@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_VERSION="1.2.1"
+SCRIPT_VERSION="1.2.2"
 MINIMUM_VERSION="3.16.5"
 RELEASE_URL="https://github.com/farion1231/cc-switch/releases/latest"
 RELEASE_API_URL="https://api.github.com/repos/farion1231/cc-switch/releases/latest"
 MIRROR_MANIFEST_URL="https://laoshirenai.com/api/v1/public-downloads/cc-switch/latest.json"
-MIRROR_PACKAGE_PREFIX="https://laoshirenai.com/api/v1/public-downloads/cc-switch/packages/"
+MIRROR_PACKAGE_PREFIX="https://laoshirenai.com/downloads/cc-switch/"
 BUNDLE_ID="com.ccswitch.desktop"
 OFFICIAL_TEAM_ID="R8UR22V2F9"
 LATEST_VERSION=""

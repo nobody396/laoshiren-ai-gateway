@@ -1,11 +1,26 @@
 ﻿Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '0.7.4'
+# BEGIN GENERATED MODEL CATALOG
+$ScriptVersion = '0.7.6'
+$CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
+$CatalogOpenAIContextWindow = 250000
+$CatalogOpenAIAutoCompactTokenLimit = 225000
+$CatalogAnthropicDefaultModel = 'claude-opus-5'
+$CatalogGrokDefaultModel = 'grok-4.6'
+$CatalogGrokDefaultDisplayName = 'Grok 4.6'
+$CatalogGrokDefaultContextWindow = 500000
+$CatalogGrokManagedModelSections = @('model.grok-4.5', 'model."grok-4.5"', 'model.grok-4.6', 'model."grok-4.6"')
+# END GENERATED MODEL CATALOG
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
 $DefaultCodexManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/latest.json'
-$DefaultCodexModelCatalogUrl = 'https://laoshirenai.com/auto-config/codex-model-catalog.json?v=0.7.4'
+$DefaultGitForWindowsManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/git-for-windows/latest.json'
+$DefaultGrokBuildManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/grok-build/latest.json'
+$DefaultCodexPackagePrefix = 'https://laoshirenai.com/downloads/codex/'
+$DefaultGitForWindowsPackagePrefix = 'https://laoshirenai.com/downloads/git-for-windows/'
+$DefaultGrokBuildPackagePrefix = 'https://laoshirenai.com/downloads/grok-build/'
+$DefaultCodexModelCatalogUrl = "https://laoshirenai.com/auto-config/codex-model-catalog.json?v=$ScriptVersion"
 $DefaultCodexAppInstallerUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/windows-x64/latest.appinstaller'
 $DefaultTopupUrl = 'https://laoshirenai.com/get-subscription'
 $DefaultTools = 'all'
@@ -54,6 +69,11 @@ $InstallCodexApp = $env:LAOSHIRENAI_INSTALL_CODEX_APP -eq '1'
 $SetupToken = if ($env:LAOSHIRENAI_SETUP_TOKEN) { $env:LAOSHIRENAI_SETUP_TOKEN } else { '' }
 $SetupExchangeUrl = if ($env:LAOSHIRENAI_SETUP_EXCHANGE_URL) { $env:LAOSHIRENAI_SETUP_EXCHANGE_URL } else { $DefaultSetupExchangeUrl }
 $CodexManifestUrl = if ($env:LAOSHIRENAI_CODEX_MANIFEST_URL) { $env:LAOSHIRENAI_CODEX_MANIFEST_URL } else { $DefaultCodexManifestUrl }
+$GitForWindowsManifestUrl = if ($env:LAOSHIRENAI_GIT_FOR_WINDOWS_MANIFEST_URL) { $env:LAOSHIRENAI_GIT_FOR_WINDOWS_MANIFEST_URL } else { $DefaultGitForWindowsManifestUrl }
+$GrokBuildManifestUrl = if ($env:LAOSHIRENAI_GROK_BUILD_MANIFEST_URL) { $env:LAOSHIRENAI_GROK_BUILD_MANIFEST_URL } else { $DefaultGrokBuildManifestUrl }
+$CodexPackagePrefix = if ($env:LAOSHIRENAI_CODEX_PACKAGE_PREFIX) { $env:LAOSHIRENAI_CODEX_PACKAGE_PREFIX } else { $DefaultCodexPackagePrefix }
+$GitForWindowsPackagePrefix = if ($env:LAOSHIRENAI_GIT_FOR_WINDOWS_PACKAGE_PREFIX) { $env:LAOSHIRENAI_GIT_FOR_WINDOWS_PACKAGE_PREFIX } else { $DefaultGitForWindowsPackagePrefix }
+$GrokBuildPackagePrefix = if ($env:LAOSHIRENAI_GROK_BUILD_PACKAGE_PREFIX) { $env:LAOSHIRENAI_GROK_BUILD_PACKAGE_PREFIX } else { $DefaultGrokBuildPackagePrefix }
 $CodexAppInstallerUrl = if ($env:LAOSHIRENAI_CODEX_APPINSTALLER_URL) { $env:LAOSHIRENAI_CODEX_APPINSTALLER_URL } else { $DefaultCodexAppInstallerUrl }
 $script:BalanceReady = $true
 
@@ -170,10 +190,10 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.6 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.6 | iex
 
 参数:
   --api-key              Claude Code API Key
@@ -532,7 +552,7 @@ function Download-FileWithFallback {
 
   foreach ($Url in $Urls) {
     try {
-      Invoke-WebRequest -Uri $Url -OutFile $OutputPath
+      Invoke-WebRequest -UseBasicParsing -Uri $Url -OutFile $OutputPath
       return
     } catch {
       Write-WarnMessage "下载失败，尝试下一个地址: $Url"
@@ -540,6 +560,123 @@ function Download-FileWithFallback {
   }
 
   Stop-Script '下载失败，请检查网络后重试'
+}
+
+function Get-NodeReleaseChecksum {
+  param(
+    [string]$Version,
+    [string]$ZipName
+  )
+
+  foreach ($Base in @($DefaultNodeDistPrimary, $DefaultNodeDistFallback)) {
+    try {
+      $ChecksumUrl = "$($Base.TrimEnd('/', '\'))/$Version/SHASUMS256.txt"
+      if (Test-Path -LiteralPath $ChecksumUrl -PathType Leaf) {
+        $Checksums = Get-Content -LiteralPath $ChecksumUrl -Raw
+      } else {
+        $Checksums = (Invoke-WebRequest -Uri $ChecksumUrl -UseBasicParsing).Content
+      }
+      $Line = @($Checksums -split "`n" | Where-Object {
+        $_ -match "^([a-fA-F0-9]{64})\s+$([regex]::Escape($ZipName))$"
+      }) | Select-Object -First 1
+      if ($null -ne $Line -and $Line -match '^([a-fA-F0-9]{64})') {
+        return $Matches[1].ToLowerInvariant()
+      }
+    } catch {
+      Write-WarnMessage "读取 Node.js 校验文件失败，尝试下一个地址: $Base"
+    }
+  }
+
+  Stop-Script "无法获取 Node.js 安装包校验值: $ZipName"
+}
+
+function Download-VerifiedFileWithFallback {
+  param(
+    [string]$OutputPath,
+    [string[]]$Urls,
+    [string]$ExpectedSHA256
+  )
+
+  foreach ($Url in $Urls) {
+    try {
+      Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+      if (Test-Path -LiteralPath $Url -PathType Leaf) {
+        Copy-Item -LiteralPath $Url -Destination $OutputPath -Force
+      } else {
+        Invoke-WebRequest -UseBasicParsing -Uri $Url -OutFile $OutputPath
+      }
+      $ActualSHA256 = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA256).Hash.ToLowerInvariant()
+      if ($ActualSHA256 -eq $ExpectedSHA256.ToLowerInvariant()) {
+        return
+      }
+      Write-WarnMessage "下载文件 SHA256 不匹配，尝试下一个地址: $Url"
+    } catch {
+      Write-WarnMessage "下载失败，尝试下一个地址: $Url"
+    }
+  }
+
+  Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+  Stop-Script '下载失败或 SHA256 校验不通过，已停止安装'
+}
+
+function Get-VerifiedSameSiteAsset {
+  param(
+    [string]$ManifestUrl,
+    [string]$DownloadPrefix,
+    [string]$Platform,
+    [string]$Arch,
+    [string]$NamePattern
+  )
+
+  try {
+    $Manifest = Invoke-RestMethod -Uri $ManifestUrl -Method GET
+  } catch {
+    Stop-Script "无法读取本站安装包清单: $_"
+  }
+  $Assets = @($Manifest.assets | Where-Object {
+    $_.platform -eq $Platform -and
+    $_.arch -eq $Arch -and
+    ([string]$_.name) -match $NamePattern
+  })
+  if ($Assets.Count -ne 1) {
+    Stop-Script "本站安装包清单没有唯一匹配项: $Platform/$Arch"
+  }
+
+  $Asset = $Assets[0]
+  $DownloadUrl = ([string]$Asset.download_url).Trim()
+  $ExpectedSha = ([string]$Asset.sha256).Trim().ToLowerInvariant()
+  if (-not $DownloadUrl.StartsWith($DownloadPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+    Stop-Script '安装包下载地址未通过本站同源校验'
+  }
+  if ($ExpectedSha -notmatch '^[a-f0-9]{64}$') {
+    Stop-Script '安装包清单缺少有效的 SHA256'
+  }
+
+  return [pscustomobject]@{
+    Version = [string]$Manifest.version
+    Name = [string]$Asset.name
+    DownloadUrl = $DownloadUrl
+    SHA256 = $ExpectedSha
+  }
+}
+
+function Download-VerifiedAsset {
+  param(
+    [object]$Asset,
+    [string]$OutputPath
+  )
+
+  Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+  try {
+    Invoke-WebRequest -UseBasicParsing -Uri $Asset.DownloadUrl -OutFile $OutputPath
+    $ActualSha = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($ActualSha -ne $Asset.SHA256) {
+      throw '安装包 SHA256 校验失败，已停止安装'
+    }
+  } catch {
+    Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+    throw
+  }
 }
 
 # 下载并安装用户目录下的 Node.js 运行时，避免依赖管理员权限。
@@ -557,24 +694,27 @@ function Install-LocalNode {
   if (-not (Test-Path -LiteralPath (Join-Path $InstallDir 'node.exe'))) {
     $TempDir = Join-Path ([IO.Path]::GetTempPath()) ("laoshirenai-auto-config-" + [guid]::NewGuid().ToString('N'))
     Ensure-Directory $TempDir
+    try {
+      $ZipPath = Join-Path $TempDir $ZipName
+      Write-Info "正在下载 Node.js $Version (win-$ArchName)"
+      $ExpectedSHA256 = Get-NodeReleaseChecksum -Version $Version -ZipName $ZipName
 
-    $ZipPath = Join-Path $TempDir $ZipName
-    Write-Info "正在下载 Node.js $Version (win-$ArchName)"
+      Download-VerifiedFileWithFallback -OutputPath $ZipPath -ExpectedSHA256 $ExpectedSHA256 -Urls @(
+        "$DefaultNodeDistPrimary/$Version/$ZipName",
+        "$DefaultNodeDistFallback/$Version/$ZipName"
+      )
 
-    Download-FileWithFallback -OutputPath $ZipPath -Urls @(
-      "$DefaultNodeDistPrimary/$Version/$ZipName",
-      "$DefaultNodeDistFallback/$Version/$ZipName"
-    )
+      Expand-Archive -Path $ZipPath -DestinationPath $TempDir -Force
+      $ExtractedDir = Join-Path $TempDir "node-$Version-win-$ArchName"
 
-    Expand-Archive -Path $ZipPath -DestinationPath $TempDir -Force
-    $ExtractedDir = Join-Path $TempDir "node-$Version-win-$ArchName"
-
-    Ensure-Directory (Split-Path -Parent $InstallDir)
-    if (Test-Path -LiteralPath $InstallDir) {
-      Remove-Item -LiteralPath $InstallDir -Recurse -Force
+      Ensure-Directory (Split-Path -Parent $InstallDir)
+      if (Test-Path -LiteralPath $InstallDir) {
+        Remove-Item -LiteralPath $InstallDir -Recurse -Force
+      }
+      Move-Item -LiteralPath $ExtractedDir -Destination $InstallDir
+    } finally {
+      Remove-Item -LiteralPath $TempDir -Recurse -Force -ErrorAction SilentlyContinue
     }
-    Move-Item -LiteralPath $ExtractedDir -Destination $InstallDir
-    Remove-Item -LiteralPath $TempDir -Recurse -Force
   }
 
   Ensure-Directory $NodeInstallRoot
@@ -640,41 +780,36 @@ function Find-GitBash {
   return $null
 }
 
-# 下载并静默安装 Git for Windows，优先从 npmmirror 镜像下载，失败后降级到 GitHub。
+# 下载并静默安装本站已同步且通过 SHA-256 校验的 Git for Windows。
 function Install-Git {
   Write-Info '正在安装 Git for Windows'
 
-  # 从 GitHub API 获取最新版本元数据（仅元数据，不走 GitHub 下载）
-  $ArchSuffix = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'arm64' } else { '64-bit' }
-  $MirrorBase = 'https://registry.npmmirror.com/-/binary/git-for-windows'
 
-  try {
-    $Release = Invoke-RestMethod -Uri 'https://api.github.com/repos/git-for-windows/git/releases/latest'
-    $Asset = $Release.assets | Where-Object { $_.name -match "Git-.*-$ArchSuffix\.exe$" } | Select-Object -First 1
-    if ($null -eq $Asset) { Stop-Script '无法找到 Git 安装包下载地址' }
-
-    # npmmirror 镜像优先，GitHub 作为降级备选
-    $MirrorUrl = "$MirrorBase/$($Release.tag_name)/$($Asset.name)"
-    $GitHubUrl = $Asset.browser_download_url
-  } catch {
-    Stop-Script "无法获取 Git 最新版本信息: $_"
-  }
+  $TargetArch = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'arm64' } else { 'x64' }
+  $NamePattern = if ($TargetArch -eq 'arm64') { '(?i)^Git-.*-arm64\.exe$' } else { '(?i)^Git-.*-64-bit\.exe$' }
+  $Asset = Get-VerifiedSameSiteAsset `
+    -ManifestUrl $script:GitForWindowsManifestUrl `
+    -DownloadPrefix $script:GitForWindowsPackagePrefix `
+    -Platform 'windows' `
+    -Arch $TargetArch `
+    -NamePattern $NamePattern
 
   $TempDir = Join-Path ([IO.Path]::GetTempPath()) ("laoshirenai-git-" + [guid]::NewGuid().ToString('N'))
   Ensure-Directory $TempDir
   $InstallerPath = Join-Path $TempDir 'git-installer.exe'
+  try {
+    Write-Info "正在从本站缓存下载 Git 安装包 ($($Asset.Name))"
+    Download-VerifiedAsset -Asset $Asset -OutputPath $InstallerPath
 
-  Write-Info "正在下载 Git 安装包 ($($Asset.name))"
-  Download-FileWithFallback -OutputPath $InstallerPath -Urls @($MirrorUrl, $GitHubUrl)
-
-  Write-Info '正在静默安装 Git'
-  $Process = Start-Process -FilePath $InstallerPath `
-    -ArgumentList '/VERYSILENT /NORESTART /NOCANCEL /SP- /CLOSEAPPLICATIONS /COMPONENTS="icons,ext\reg\shellhere,assoc,assoc_sh"' `
-    -Wait -PassThru
-  Remove-Item -LiteralPath $TempDir -Recurse -Force
-
-  if ($Process.ExitCode -ne 0) {
-    Stop-Script "Git 安装失败，退出码: $($Process.ExitCode)"
+    Write-Info '正在按当前用户静默安装 Git'
+    $Process = Start-Process -FilePath $InstallerPath `
+      -ArgumentList '/CURRENTUSER /VERYSILENT /NORESTART /NOCANCEL /SP- /CLOSEAPPLICATIONS /COMPONENTS="icons,ext\reg\shellhere,assoc,assoc_sh"' `
+      -Wait -PassThru
+    if ($Process.ExitCode -ne 0) {
+      Stop-Script "Git 安装失败，退出码: $($Process.ExitCode)"
+    }
+  } finally {
+    Remove-Item -LiteralPath $TempDir -Recurse -Force -ErrorAction SilentlyContinue
   }
 }
 
@@ -868,37 +1003,28 @@ function Install-GrokBuild {
     Stop-Script "Grok Build 暂不支持当前 Windows 架构: $NativeArch"
   }
 
-  $Bases = @('https://x.ai/cli', 'https://storage.googleapis.com/grok-build-public-artifacts/cli')
-  $Version = ''
-  $SelectedBase = ''
-  foreach ($Candidate in $Bases) {
-    try {
-      $Version = ([string](Invoke-RestMethod -Uri "$Candidate/stable" -Method GET)).Trim()
-      if ($Version -match '^\d+\.\d+\.\d+(?:-[A-Za-z0-9._]+)?$') {
-        $SelectedBase = $Candidate
-        break
-      }
-    } catch {
-      Write-WarnMessage "读取 Grok Build 版本失败，尝试下一个官方地址: $Candidate"
-    }
-  }
-  if ([string]::IsNullOrWhiteSpace($SelectedBase)) {
-    Stop-Script '无法读取 xAI 官方 Grok Build 稳定版本'
-  }
+  $TargetArch = if ($Arch -eq 'aarch64') { 'arm64' } else { 'x64' }
+  $NamePattern = "(?i)^grok-.*-windows-$([regex]::Escape($Arch))\.exe$"
+  $Asset = Get-VerifiedSameSiteAsset `
+    -ManifestUrl $script:GrokBuildManifestUrl `
+    -DownloadPrefix $script:GrokBuildPackagePrefix `
+    -Platform 'windows' `
+    -Arch $TargetArch `
+    -NamePattern $NamePattern
 
   $DownloadsDir = Join-Path $GrokDir 'downloads'
   Ensure-Directory $DownloadsDir
   Ensure-Directory $GrokBinDir
   $DownloadPath = Join-Path $DownloadsDir "grok-windows-$Arch.exe"
-  $Artifact = "$SelectedBase/grok-$Version-windows-$Arch.exe"
-  Write-Info "正在从 xAI 官方地址下载 Grok Build $Version (windows-$Arch)"
+  $TemporaryPath = "$DownloadPath.tmp"
+  Write-Info "正在从本站缓存下载 Grok Build $($Asset.Version) (windows-$Arch)"
   try {
-    Invoke-WebRequest -Uri $Artifact -OutFile "$DownloadPath.tmp"
-    Move-Item -LiteralPath "$DownloadPath.tmp" -Destination $DownloadPath -Force
+    Download-VerifiedAsset -Asset $Asset -OutputPath $TemporaryPath
+    Move-Item -LiteralPath $TemporaryPath -Destination $DownloadPath -Force
     Copy-Item -LiteralPath $DownloadPath -Destination $GrokCommandPath -Force
     Copy-Item -LiteralPath $DownloadPath -Destination (Join-Path $GrokBinDir 'agent.exe') -Force
   } catch {
-    Remove-Item -LiteralPath "$DownloadPath.tmp" -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue
     Stop-Script "Grok Build 下载或安装失败: $_"
   }
 }
@@ -950,29 +1076,12 @@ function Install-CodexAppIfRequested {
   $TargetArch = if ($NativeArch -eq 'ARM64') { 'arm64' } else { 'x64' }
 
   Write-Info "正在读取本站 Codex App 最新版本清单 ($TargetArch)"
-  try {
-    $Manifest = Invoke-RestMethod -Uri $script:CodexManifestUrl -Method GET
-  } catch {
-    Stop-Script "无法读取本站 Codex App 最新版本清单: $_"
-  }
-  $Asset = $Manifest.assets |
-    Where-Object {
-      $_.platform -eq 'windows' -and
-      $_.arch -eq $TargetArch -and
-      ([string]$_.name).EndsWith('.msix', [StringComparison]::OrdinalIgnoreCase)
-    } |
-    Select-Object -First 1
-  if ($null -eq $Asset) {
-    Stop-Script "本站缓存中暂时没有适合 Windows $TargetArch 的 Codex App"
-  }
-  $DownloadUrl = [string]$Asset.download_url
-  if (-not $DownloadUrl.StartsWith('https://laoshirenai.com/api/v1/public-downloads/codex/packages/', [StringComparison]::OrdinalIgnoreCase)) {
-    Stop-Script 'Codex App 下载地址未通过同站校验'
-  }
-  $ExpectedSha = ([string]$Asset.sha256).ToLowerInvariant()
-  if ($ExpectedSha -notmatch '^[a-f0-9]{64}$') {
-    Stop-Script 'Codex App 下载清单缺少有效的 SHA256'
-  }
+  $Asset = Get-VerifiedSameSiteAsset `
+    -ManifestUrl $script:CodexManifestUrl `
+    -DownloadPrefix $script:CodexPackagePrefix `
+    -Platform 'windows' `
+    -Arch $TargetArch `
+    -NamePattern '(?i)^OpenAI\.Codex_.*\.msix$'
 
   $LatestVersion = ''
   if ([string]$Asset.name -match '^OpenAI\.Codex_([0-9]+(?:\.[0-9]+){3})_') {
@@ -997,7 +1106,7 @@ function Install-CodexAppIfRequested {
       $AppInstallerPath = Join-Path $TempDir 'Codex-Windows-x64.appinstaller'
       try {
         Write-Info '正在通过本站 AppInstaller 安装 Codex App 并登记自动更新'
-        Invoke-WebRequest -Uri $CodexAppInstallerUrl -OutFile $AppInstallerPath
+        Invoke-WebRequest -UseBasicParsing -Uri $CodexAppInstallerUrl -OutFile $AppInstallerPath
         Add-AppxPackage -AppInstallerFile $AppInstallerPath
         $Installed = Get-AppxPackage -Name 'OpenAI.Codex' -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($null -ne $Installed) {
@@ -1013,11 +1122,7 @@ function Install-CodexAppIfRequested {
     }
 
     Write-Info "正在从本站缓存下载最新 Codex App ($TargetArch)"
-    Invoke-WebRequest -Uri $DownloadUrl -OutFile $PackagePath
-    $ActualSha = (Get-FileHash -LiteralPath $PackagePath -Algorithm SHA256).Hash.ToLowerInvariant()
-    if ($ActualSha -ne $ExpectedSha) {
-      Stop-Script 'Codex App SHA256 校验失败，已停止安装'
-    }
+    Download-VerifiedAsset -Asset $Asset -OutputPath $PackagePath
 
     if ($null -ne $Installed) {
       Write-WarnMessage '检测到旧版 Codex App；更新时会安全关闭正在运行的 Codex，请先保存工作'
@@ -1089,7 +1194,7 @@ function Write-ClaudeConfig {
     $Config | Add-Member -NotePropertyName env -NotePropertyValue ([pscustomobject]@{}) -Force
   }
 
-  $Config | Add-Member -NotePropertyName model -NotePropertyValue 'claude-opus-5' -Force
+  $Config | Add-Member -NotePropertyName model -NotePropertyValue $CatalogAnthropicDefaultModel -Force
   $Config | Add-Member -NotePropertyName effortLevel -NotePropertyValue 'xhigh' -Force
   $Config.env | Add-Member -NotePropertyName ANTHROPIC_BASE_URL -NotePropertyValue $BaseUrl -Force
   $Config.env | Add-Member -NotePropertyName ANTHROPIC_AUTH_TOKEN -NotePropertyValue $ClaudeApiKey -Force
@@ -1154,15 +1259,15 @@ function Write-CodexTomlConfig {
   # 用无 BOM 的 UTF-8 写入，同上
   $toml = @"
 model_provider = "OpenAI"
-model = "gpt-5.6-sol"
-review_model = "gpt-5.6-sol"
+model = "$CatalogOpenAIDefaultModel"
+review_model = "$CatalogOpenAIDefaultModel"
 model_reasoning_effort = "xhigh"
 model_catalog_json = "laoshirenai-model-catalog.json"
 disable_response_storage = true
 network_access = "enabled"
 preferred_auth_method = "apikey"
-model_context_window = 250000
-model_auto_compact_token_limit = 225000
+model_context_window = $CatalogOpenAIContextWindow
+model_auto_compact_token_limit = $CatalogOpenAIAutoCompactTokenLimit
 
 [model_providers.OpenAI]
 name = "OpenAI"
@@ -1191,7 +1296,7 @@ function Write-GrokTomlConfig {
   $DroppingModel = $false
   foreach ($Line in $Lines) {
     if ($Line.Trim() -match '^\[([^\]]+)\]$') {
-      $DroppingModel = $Matches[1] -in @('model.grok-4.5', 'model."grok-4.5"')
+      $DroppingModel = $Matches[1] -in $CatalogGrokManagedModelSections
     }
     if (-not $DroppingModel) { $Kept.Add($Line) }
   }
@@ -1204,7 +1309,7 @@ function Write-GrokTomlConfig {
   if ($ModelsHeader -lt 0) {
     $Lines.Add('')
     $Lines.Add('[models]')
-    $Lines.Add('default = "grok-4.5"')
+    $Lines.Add("default = $(ConvertTo-TomlString $CatalogGrokDefaultModel)")
   } else {
     $End = $Lines.Count
     for ($i = $ModelsHeader + 1; $i -lt $Lines.Count; $i++) {
@@ -1213,25 +1318,26 @@ function Write-GrokTomlConfig {
     $Replaced = $false
     for ($i = $ModelsHeader + 1; $i -lt $End; $i++) {
       if ($Lines[$i] -match '^\s*default\s*=') {
-        $Lines[$i] = 'default = "grok-4.5"'
+        $Lines[$i] = "default = $(ConvertTo-TomlString $CatalogGrokDefaultModel)"
         $Replaced = $true
         break
       }
     }
-    if (-not $Replaced) { $Lines.Insert($ModelsHeader + 1, 'default = "grok-4.5"') }
+    if (-not $Replaced) { $Lines.Insert($ModelsHeader + 1, "default = $(ConvertTo-TomlString $CatalogGrokDefaultModel)") }
   }
 
   $BaseV1 = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  $GrokDisplayName = "$CatalogGrokDefaultDisplayName · 老实人AI"
   $Lines.Add('')
   $Lines.Add('# Managed by laoshirenai one-click setup')
-  $Lines.Add('[model."grok-4.5"]')
-  $Lines.Add('model = "grok-4.5"')
+  $Lines.Add("[model.$(ConvertTo-TomlString $CatalogGrokDefaultModel)]")
+  $Lines.Add("model = $(ConvertTo-TomlString $CatalogGrokDefaultModel)")
   $Lines.Add("base_url = $(ConvertTo-TomlString $BaseV1)")
-  $Lines.Add('name = "Grok 4.5 · 老实人AI"')
-  $Lines.Add('description = "Grok 4.5"')
+  $Lines.Add("name = $(ConvertTo-TomlString $GrokDisplayName)")
+  $Lines.Add("description = $(ConvertTo-TomlString $CatalogGrokDefaultDisplayName)")
   $Lines.Add("api_key = $(ConvertTo-TomlString $script:GrokApiKey)")
   $Lines.Add('api_backend = "responses"')
-  $Lines.Add('context_window = 500000')
+  $Lines.Add("context_window = $CatalogGrokDefaultContextWindow")
   $Lines.Add('')
   [System.IO.File]::WriteAllLines($GrokConfigPath, $Lines, [System.Text.UTF8Encoding]::new($false))
 }
@@ -1294,7 +1400,7 @@ function Test-ApiKeyReadiness {
   }
 
   try {
-    $Response = Invoke-WebRequest -Uri "$ApiBaseUrl/models" -Headers @{
+    $Response = Invoke-WebRequest -UseBasicParsing -Uri "$ApiBaseUrl/models" -Headers @{
       Authorization = "Bearer $ApiKey"
     } -Method GET
     if ([int]$Response.StatusCode -ne 200) {
@@ -1470,7 +1576,7 @@ function Print-Summary {
   }
   if (Test-UsesGrok) {
     Write-Host '  - 重新打开 PowerShell 后执行 grok --version'
-    Write-Host '  - 再执行 grok -m grok-4.5 -p "只回复 OK"'
+    Write-Host "  - 再执行 grok -m $CatalogGrokDefaultModel -p `"只回复 OK`""
   }
 }
 

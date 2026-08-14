@@ -23,17 +23,29 @@ const (
 	clientSetupTicketTTL     = 10 * time.Minute
 	clientSetupAPIBaseURL    = "https://api.laoshirenai.com"
 
-	clientSetupClaudeGroupName = "MAX 20X"
-	clientSetupCodexGroupName  = "Pro 20X"
-	clientSetupGrokGroupName   = "Grok 4.5"
+	clientSetupDefaultClaudeGroupName = "MAX 20X"
+	clientSetupDefaultCodexGroupName  = "Pro 20X"
 )
 
 var (
+	clientSetupGrokGroupPolicy  = generatedCatalogGroupPolicyFor(PlatformGrok)
+	clientSetupGrokGroupName    = clientSetupGrokGroupPolicy.Preferred
+	clientSetupLegacyGrokGroups = clientSetupGrokGroupPolicy.Legacy
+	clientSetupClaudeGroupName  = preferredCatalogGroupOrDefault(PlatformAnthropic, clientSetupDefaultClaudeGroupName)
+	clientSetupCodexGroupName   = preferredCatalogGroupOrDefault(PlatformOpenAI, clientSetupDefaultCodexGroupName)
+
 	ErrInvalidClientSetupTarget  = infraerrors.BadRequest("INVALID_CLIENT_SETUP_TARGET", "不支持的一键安装目标")
 	ErrClientSetupGroupMissing   = infraerrors.Forbidden("CLIENT_SETUP_GROUP_MISSING", "当前账户没有可用于该客户端的分组")
 	ErrClientSetupKeyUnavailable = infraerrors.Forbidden("CLIENT_SETUP_KEY_UNAVAILABLE", "当前 API 密钥无法用于一键配置")
 	ErrInvalidClientSetupTicket  = infraerrors.Unauthorized("INVALID_CLIENT_SETUP_TICKET", "一键安装凭证无效、已过期或已使用")
 )
+
+func preferredCatalogGroupOrDefault(platform, fallback string) string {
+	if preferred := generatedCatalogGroupPolicyFor(platform).Preferred; preferred != "" {
+		return preferred
+	}
+	return fallback
+}
 
 type ClientSetupTicket struct {
 	Ticket    string
@@ -304,17 +316,60 @@ func clientSetupGroupMatchesTarget(target string, group *Group) bool {
 	if !clientSetupGroupCompatible(target, group) || group.IsSubscriptionType() {
 		return false
 	}
-	groupName := strings.ToLower(strings.Join(strings.Fields(group.Name), " "))
-	requiredName := strings.ToLower(clientSetupRequiredGroupName(target))
+	if target == ClientSetupTargetGrok {
+		if clientSetupGrokGroupNameMatches(group.Name, clientSetupGrokGroupName) {
+			return true
+		}
+		for _, legacyName := range clientSetupLegacyGrokGroups {
+			if clientSetupGrokGroupNameMatches(group.Name, legacyName) {
+				return true
+			}
+		}
+		return false
+	}
+	return clientSetupGroupNameMatches(group.Name, clientSetupRequiredGroupName(target))
+}
+
+func clientSetupGroupNameMatches(name, required string) bool {
+	groupName := strings.ToLower(strings.Join(strings.Fields(name), " "))
+	requiredName := strings.ToLower(required)
 	return groupName == requiredName ||
 		groupName == requiredName+" 分组" ||
 		strings.Contains(groupName, requiredName)
 }
 
+func clientSetupGrokGroupNameMatches(name, required string) bool {
+	groupName := strings.ToLower(strings.Join(strings.Fields(name), " "))
+	requiredName := strings.ToLower(strings.Join(strings.Fields(required), " "))
+	return groupName == requiredName || groupName == requiredName+" 分组"
+}
+
 func selectClientSetupGroup(target string, groups []Group) *Group {
 	// One-click onboarding is a fixed product rule: Claude Code keys use MAX
-	// 20X, Codex keys use Pro 20X, and Grok Build keys use the public Grok 4.5
-	// balance group. Subscription groups are deliberately not selected here.
+	// 20X, Codex keys use Pro 20X, and Grok Build keys prefer the version-neutral
+	// additive balance group. Version-named groups remain rollout-safe fallbacks
+	// for existing installations; subscription groups are deliberately excluded.
+	if target == ClientSetupTargetGrok {
+		for i := range groups {
+			if clientSetupGroupCompatible(target, &groups[i]) &&
+				!groups[i].IsSubscriptionType() &&
+				clientSetupGrokGroupNameMatches(groups[i].Name, clientSetupGrokGroupName) {
+				group := groups[i]
+				return &group
+			}
+		}
+		for _, legacyName := range clientSetupLegacyGrokGroups {
+			for i := range groups {
+				if clientSetupGroupCompatible(target, &groups[i]) &&
+					!groups[i].IsSubscriptionType() &&
+					clientSetupGrokGroupNameMatches(groups[i].Name, legacyName) {
+					group := groups[i]
+					return &group
+				}
+			}
+		}
+		return nil
+	}
 	for i := range groups {
 		if clientSetupGroupMatchesTarget(target, &groups[i]) {
 			group := groups[i]

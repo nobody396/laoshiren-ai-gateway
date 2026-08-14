@@ -25,6 +25,11 @@ declare module 'vue-router' {
     permission?: string
 
     /**
+     * Any one of these RBAC permission keys grants access to the route.
+     */
+    anyPermission?: string[]
+
+    /**
      * Page title for this route
      */
     title?: string

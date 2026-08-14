@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -14,6 +15,22 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/stretchr/testify/require"
 )
+
+func TestLDXPCheckoutClientLoadsMerchantCredentialsFromSecretFiles(t *testing.T) {
+	t.Setenv("LDXP_MERCHANT_USERNAME", "")
+	t.Setenv("LDXP_MERCHANT_PASSWORD", "")
+	usernamePath := t.TempDir() + "/username"
+	passwordPath := t.TempDir() + "/password"
+	require.NoError(t, os.WriteFile(usernamePath, []byte("merchant-user\n"), 0o600))
+	require.NoError(t, os.WriteFile(passwordPath, []byte("merchant-password\n"), 0o600))
+	t.Setenv("LDXP_MERCHANT_USERNAME_FILE", usernamePath)
+	t.Setenv("LDXP_MERCHANT_PASSWORD_FILE", passwordPath)
+
+	client, err := newLDXPCheckoutClient("https://pay.ldxp.cn", false)
+	require.NoError(t, err)
+	require.Equal(t, "merchant-user", client.merchantUsername)
+	require.Equal(t, "merchant-password", client.merchantPassword)
+}
 
 func TestLDXPCheckoutClientBuyerFlowAndDirectQR(t *testing.T) {
 	const redeemCode = "0123456789abcdef0123456789abcdef"

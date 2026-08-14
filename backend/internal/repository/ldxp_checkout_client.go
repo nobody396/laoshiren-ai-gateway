@@ -64,13 +64,21 @@ func newLDXPCheckoutClient(baseURL string, allowHTTP bool) (*ldxpCheckoutClient,
 	if err != nil || parsed.Hostname() == "" {
 		return nil, errors.New("invalid LDXP base URL")
 	}
+	merchantUsername, err := nativeCheckoutSecret("LDXP_MERCHANT_USERNAME")
+	if err != nil {
+		return nil, fmt.Errorf("read LDXP merchant username: %w", err)
+	}
+	merchantPassword, err := nativeCheckoutSecret("LDXP_MERCHANT_PASSWORD")
+	if err != nil {
+		return nil, fmt.Errorf("read LDXP merchant password: %w", err)
+	}
 	client := &ldxpCheckoutClient{
 		baseURL:          parsed,
 		allowedHost:      strings.ToLower(parsed.Hostname()),
 		allowHTTP:        allowHTTP,
 		userAgent:        "laoshirenai-native-checkout/1.0",
-		merchantUsername: strings.TrimSpace(os.Getenv("LDXP_MERCHANT_USERNAME")),
-		merchantPassword: os.Getenv("LDXP_MERCHANT_PASSWORD"),
+		merchantUsername: strings.TrimSpace(merchantUsername),
+		merchantPassword: merchantPassword,
 		createSlots:      make(chan struct{}, ldxpCreateConcurrency),
 	}
 	if (client.merchantUsername == "") != (client.merchantPassword == "") {
@@ -86,6 +94,29 @@ func newLDXPCheckoutClient(baseURL string, allowHTTP bool) (*ldxpCheckoutClient,
 		},
 	}
 	return client, nil
+}
+
+func nativeCheckoutSecret(name string) (string, error) {
+	if value := os.Getenv(name); value != "" {
+		return value, nil
+	}
+	path := strings.TrimSpace(os.Getenv(name + "_FILE"))
+	if path == "" {
+		return "", nil
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = file.Close() }()
+	value, err := io.ReadAll(io.LimitReader(file, 64*1024+1))
+	if err != nil {
+		return "", err
+	}
+	if len(value) > 64*1024 {
+		return "", errors.New("secret file is too large")
+	}
+	return strings.TrimRight(string(value), "\r\n"), nil
 }
 
 type ldxpEnvelope struct {

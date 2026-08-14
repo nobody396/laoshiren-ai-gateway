@@ -8,7 +8,11 @@ import (
 	"strings"
 )
 
-const openAIRouteFailureDomainExtraKey = "routing_failure_domain_id"
+// OpenAIRouteFailureDomainExtraKey is deliberately exported because scheduler
+// snapshots keep an allowlisted subset of Account.Extra. Both the writer and
+// the route adapter must use the same key or an explicitly configured provider
+// failure domain silently degrades to per-account isolation after cache load.
+const OpenAIRouteFailureDomainExtraKey = "routing_failure_domain_id"
 
 // OpenAIRouteFailureDomainID returns an explicit failure-domain identifier.
 // Missing metadata deliberately falls back to account isolation instead of
@@ -17,7 +21,7 @@ func OpenAIRouteFailureDomainID(account *Account) string {
 	if account == nil {
 		return ""
 	}
-	if direct := strings.TrimSpace(account.getExtraString(openAIRouteFailureDomainExtraKey)); direct != "" {
+	if direct := strings.TrimSpace(account.getExtraString(OpenAIRouteFailureDomainExtraKey)); direct != "" {
 		return direct
 	}
 	if account.Extra != nil {

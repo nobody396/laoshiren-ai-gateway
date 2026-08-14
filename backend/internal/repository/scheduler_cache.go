@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
@@ -558,6 +559,7 @@ func filterSchedulerExtra(extra map[string]any) map[string]any {
 	keys := []string{
 		"max_sessions",
 		"mixed_scheduling",
+		service.OpenAIRouteFailureDomainExtraKey,
 		service.OpenAIImageGenerationModelsExtraKey,
 		service.OpenAIImageGenerationPriorityExtraKey,
 		"openai_apikey_responses_websockets_v2_enabled",
@@ -575,6 +577,14 @@ func filterSchedulerExtra(extra map[string]any) map[string]any {
 	for _, key := range keys {
 		if value, ok := extra[key]; ok && value != nil {
 			filtered[key] = value
+		}
+	}
+	// Older account payloads may use the nested routing.failure_domain_id
+	// shape. Preserve only that scheduler-relevant field, never the whole
+	// admin-only routing object.
+	if routing, ok := extra["routing"].(map[string]any); ok {
+		if failureDomainID, ok := routing["failure_domain_id"].(string); ok && strings.TrimSpace(failureDomainID) != "" {
+			filtered["routing"] = map[string]any{"failure_domain_id": failureDomainID}
 		}
 	}
 	if len(filtered) == 0 {

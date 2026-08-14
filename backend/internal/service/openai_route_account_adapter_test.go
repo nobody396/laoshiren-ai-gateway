@@ -11,7 +11,7 @@ func TestOpenAIRouteFailureDomainID_UsesExplicitMetadataAndSafeFallback(t *testi
 	require.Equal(t, "account:28", OpenAIRouteFailureDomainID(&Account{ID: 28}))
 	require.Equal(t, "anyroute", OpenAIRouteFailureDomainID(&Account{
 		ID:    28,
-		Extra: map[string]any{openAIRouteFailureDomainExtraKey: " anyroute "},
+		Extra: map[string]any{OpenAIRouteFailureDomainExtraKey: " anyroute "},
 	}))
 	require.Equal(t, "pomo", OpenAIRouteFailureDomainID(&Account{
 		ID: 24,
@@ -22,7 +22,7 @@ func TestOpenAIRouteFailureDomainID_UsesExplicitMetadataAndSafeFallback(t *testi
 }
 
 func TestNewOpenAIRouteKey_DimensionsAccountModelRequestClassEndpointTransport(t *testing.T) {
-	account := &Account{ID: 28, Extra: map[string]any{openAIRouteFailureDomainExtraKey: "anyroute"}}
+	account := &Account{ID: 28, Extra: map[string]any{OpenAIRouteFailureDomainExtraKey: "anyroute"}}
 	key, err := NewOpenAIRouteKey(account, 7, " gpt-5.6-sol ", OpenAIRouteRequestClassText, "https://us.example.invalid/v1/responses/", "sse")
 	require.NoError(t, err)
 	require.Equal(t, int64(7), key.GroupID)

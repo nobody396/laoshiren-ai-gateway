@@ -472,7 +472,7 @@ func TestOpenAIRouteController_EscalatesOnlyCorrelatableSharedDomainFailures(t *
 	health := &openAIRouteHealthStoreStub{}
 	controller := NewOpenAIRouteController(&openAIRoutePolicyReaderStub{err: ErrSettingNotFound}, health, &openAIRouteBudgetSnapshotStoreStub{}, &openAIRouteObservationStoreStub{})
 	account := testOpenAIRouteControllerAccount(1, 0.15)
-	account.Extra[openAIRouteFailureDomainExtraKey] = "pomoai"
+	account.Extra[OpenAIRouteFailureDomainExtraKey] = "pomoai"
 	key, err := NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://example.invalid/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
 	require.NoError(t, err)
 	now := time.Now().UTC()
@@ -632,7 +632,7 @@ func testOpenAIRouteControllerAccount(id int64, rate float64) *Account {
 		Type:           AccountTypeAPIKey,
 		RateMultiplier: &rate,
 		Extra: map[string]any{
-			openAIRouteFailureDomainExtraKey: "provider-test",
+			OpenAIRouteFailureDomainExtraKey: "provider-test",
 		},
 	}
 }

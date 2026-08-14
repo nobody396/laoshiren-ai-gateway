@@ -37,7 +37,12 @@
         <span v-else-if="order?.status === 'checking' || order?.status === 'manual_review'">{{ t('nativeCheckout.reviewing') }}</span>
         <span v-else-if="order?.status === 'pending'">{{ t('nativeCheckout.continuePayment') }}</span>
         <span v-else-if="order?.status === 'fulfilling'">{{ t('nativeCheckout.crediting') }}</span>
-        <span v-else>{{ t('nativeCheckout.buyNow') }}</span>
+        <span v-else>
+          {{ t('nativeCheckout.buyNow', {
+            payAmount: formatCNY(offer.pay_amount_cny_fen),
+            benefitAmount: formatCNY(offer.benefit_amount_cny_fen),
+          }) }}
+        </span>
       </button>
       <p v-if="order?.status === 'checking' || order?.status === 'manual_review'" class="trial-offer__checking">
         {{ t('nativeCheckout.checkingHint') }}

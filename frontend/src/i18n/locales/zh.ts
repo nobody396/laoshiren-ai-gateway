@@ -1207,9 +1207,9 @@ export default {
 
   // Redeem
   nativeCheckout: {
-    trialBadge: '限时体验',
+    trialBadge: '新人特惠',
     onceOnly: '每个账号仅可购买 1 次',
-    offerTitle: '{payAmount} 元买 {benefitAmount} 元',
+    offerTitle: '新人专享 · {benefitAmount} 元余额包',
     pay: '实付',
     receive: '到账',
     preparing: '正在准备支付…',
@@ -1217,7 +1217,7 @@ export default {
     reviewing: '订单核对中',
     continuePayment: '继续支付',
     crediting: '正在到账…',
-    buyNow: '1 元购买 5 元',
+    buyNow: '{payAmount} 元解锁 {benefitAmount} 元余额',
     checkingHint: '订单正在核对中，请勿重复付款；核对完成后会自动到账。',
     completedHint: '¥{amount} 已到账。',
     wechatPay: '微信支付',

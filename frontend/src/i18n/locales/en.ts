@@ -1204,9 +1204,9 @@ export default {
 
   // Redeem
   nativeCheckout: {
-    trialBadge: 'Trial offer',
+    trialBadge: 'New user deal',
     onceOnly: 'One purchase per account',
-    offerTitle: 'Pay ¥{payAmount}, get ¥{benefitAmount}',
+    offerTitle: 'New user exclusive · ¥{benefitAmount} balance pack',
     pay: 'Pay',
     receive: 'Get',
     preparing: 'Preparing payment…',
@@ -1214,7 +1214,7 @@ export default {
     reviewing: 'Order being checked',
     continuePayment: 'Continue payment',
     crediting: 'Crediting…',
-    buyNow: 'Pay ¥1, get ¥5',
+    buyNow: 'Unlock ¥{benefitAmount} balance for ¥{payAmount}',
     checkingHint: 'This order is being checked. Do not pay again; credit will be applied automatically after confirmation.',
     completedHint: '¥{amount} has been applied.',
     wechatPay: 'WeChat Pay',

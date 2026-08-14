@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -704,6 +705,53 @@ func TestMonthlyUpstreamProbeTimeoutForModelWidensOnlyGrok(t *testing.T) {
 	require.Equal(t, 45*time.Second, monthlyUpstreamProbeTimeoutForModel(" GROK-4.5 "))
 	require.Equal(t, 25*time.Second, monthlyUpstreamProbeTimeoutForModel("claude-haiku-4-5"))
 	require.Equal(t, 25*time.Second, monthlyUpstreamProbeTimeoutForModel("gpt-5.6-sol"))
+}
+
+func TestMonthlyUpstreamProbeSlowThresholdWidensOnlyGPT56Sol(t *testing.T) {
+	require.Equal(t, 10*time.Second, monthlyUpstreamProbeSlowThresholdForModel("gpt-5.6-sol"))
+	require.Equal(t, 10*time.Second, monthlyUpstreamProbeSlowThresholdForModel(" GPT-5.6-SOL "))
+	require.Equal(t, 5*time.Second, monthlyUpstreamProbeSlowThresholdForModel("claude-haiku-4-5"))
+	require.Equal(t, 5*time.Second, monthlyUpstreamProbeSlowThresholdForModel("grok-4.5"))
+}
+
+func TestMonthlyGatewayProbePointUsesModelSpecificSlowThreshold(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	recorder.WriteHeader(http.StatusOK)
+	account := &Account{
+		ID:       1,
+		Name:     "monthly-probe",
+		Platform: PlatformOpenAI,
+	}
+
+	withinSolThreshold := monthlyGatewayProbePoint(
+		account,
+		"gpt-5.6-sol",
+		recorder,
+		time.Now(),
+		nil,
+		func() time.Duration { return 10 * time.Second },
+	)
+	require.Equal(t, "ok", withinSolThreshold.Status)
+
+	aboveSolThreshold := monthlyGatewayProbePoint(
+		account,
+		"gpt-5.6-sol",
+		recorder,
+		time.Now(),
+		nil,
+		func() time.Duration { return 11 * time.Second },
+	)
+	require.Equal(t, "slow", aboveSolThreshold.Status)
+
+	aboveDefaultThreshold := monthlyGatewayProbePoint(
+		account,
+		"claude-haiku-4-5",
+		recorder,
+		time.Now(),
+		nil,
+		func() time.Duration { return 6 * time.Second },
+	)
+	require.Equal(t, "slow", aboveDefaultThreshold.Status)
 }
 
 func monthlyStatusBoolPtr(value bool) *bool {

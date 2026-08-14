@@ -25,6 +25,8 @@ const (
 	monthlyUpstreamProbeTimeout       = 25 * time.Second
 	monthlyUpstreamProbeGrokTimeout   = 45 * time.Second
 	monthlyUpstreamProbeRunnerTimeout = 2 * time.Minute
+	monthlyUpstreamProbeSlowThreshold = 5 * time.Second
+	monthlyGPT56SolProbeSlowThreshold = 10 * time.Second
 
 	monthlyOpenAIProbeEstimatedInputTokens     = 18
 	monthlyOpenAIProbeEstimatedOutputTokens    = 1
@@ -69,6 +71,13 @@ func monthlyUpstreamProbeTimeoutForModel(model string) time.Duration {
 		return monthlyUpstreamProbeGrokTimeout
 	}
 	return monthlyUpstreamProbeTimeout
+}
+
+func monthlyUpstreamProbeSlowThresholdForModel(model string) time.Duration {
+	if strings.EqualFold(strings.TrimSpace(model), "gpt-5.6-sol") {
+		return monthlyGPT56SolProbeSlowThreshold
+	}
+	return monthlyUpstreamProbeSlowThreshold
 }
 
 func monthlyUpstreamProbeSpecForRole(role string) (monthlyUpstreamProbeTargetSpec, bool) {
@@ -1497,7 +1506,7 @@ func monthlyGatewayProbePoint(account *Account, model string, recorder *httptest
 	}
 	switch {
 	case forwardErr == nil && statusCode >= 200 && statusCode < 300:
-		if point.LatencyMs > 5000 {
+		if point.LatencyMs > monthlyUpstreamProbeSlowThresholdForModel(model).Milliseconds() {
 			point.Status = "slow"
 		} else {
 			point.Status = "ok"
@@ -1731,7 +1740,7 @@ func executeMonthlyProbeHTTP(ctx context.Context, account *Account, model string
 	}
 	switch {
 	case httpStatus >= 200 && httpStatus < 300:
-		if point.LatencyMs > 5000 {
+		if point.LatencyMs > monthlyUpstreamProbeSlowThresholdForModel(model).Milliseconds() {
 			point.Status = "slow"
 		} else {
 			point.Status = "ok"

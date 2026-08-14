@@ -459,8 +459,9 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 	// from promotional balance credited.
 	requireColumn(t, tx, "redeem_codes", "paid_value", "numeric", 0, false)
 
-	// migrations 185-186: native card-shop checkout owns a durable once-per-user
-	// order, restricts its inventory, and snapshots the selected payment method.
+	// migrations 185-188: native card-shop checkout owns a durable once-per-user
+	// order, restricts its inventory, snapshots the selected payment method, and
+	// reprices the stable newcomer offer without resetting its lifetime limit.
 	requireColumn(t, tx, "native_checkout_offers", "provider_goods_key", "character varying", 64, false)
 	requireColumn(t, tx, "native_checkout_orders", "contact_hash", "character", 64, false)
 	requireColumn(t, tx, "native_checkout_orders", "payment_method", "character varying", 16, true)
@@ -494,10 +495,10 @@ WHERE code = 'trial-balance-1-to-5'
 		&purpose, &salesStatus, &validityDays, &oncePerUser, &enabled,
 	))
 	require.Equal(t, "oc3w4r", providerGoodsKey)
-	require.Equal(t, int64(100), payFen)
-	require.Equal(t, int64(500), benefitFen)
-	require.Equal(t, float64(5), redeemValue)
-	require.Zero(t, paidValue, "all ¥5 must remain pure gift balance")
+	require.Equal(t, int64(500), payFen)
+	require.Equal(t, int64(1000), benefitFen)
+	require.Equal(t, float64(10), redeemValue)
+	require.Zero(t, paidValue, "all ¥10 must remain pure gift balance")
 	require.Equal(t, "gift", purpose)
 	require.Equal(t, "gifted", salesStatus)
 	require.Zero(t, validityDays)

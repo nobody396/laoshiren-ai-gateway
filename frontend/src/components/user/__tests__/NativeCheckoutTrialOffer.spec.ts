@@ -42,11 +42,11 @@ vi.mock('vue-i18n', async () => {
 
 const offer = {
   code: 'trial-balance-1-to-5',
-  name: '1 元体验，到账 5 元赠送额度',
-  description: '5 元全部作为体验赠送额度发放，每个账号仅可购买一次。',
+  name: '新人专享 · 10 元余额包',
+  description: 'internal pure-gift semantics',
   product_kind: 'balance' as const,
-  pay_amount_cny_fen: 100,
-  benefit_amount_cny_fen: 500,
+  pay_amount_cny_fen: 500,
+  benefit_amount_cny_fen: 1000,
   once_per_user: true,
   claimed: false,
 }
@@ -62,7 +62,7 @@ describe('NativeCheckoutTrialOffer', () => {
     vi.useRealTimers()
   })
 
-  it('renders the one-to-five offer without exposing its internal entitlement type or asking for contact details', async () => {
+  it('renders the five-to-ten offer without exposing its internal entitlement type or asking for contact details', async () => {
     const wrapper = mount(NativeCheckoutTrialOffer, {
       global: { stubs: { Teleport: true } },
     })
@@ -74,8 +74,8 @@ describe('NativeCheckoutTrialOffer', () => {
     expect(wrapper.text()).not.toContain(offer.description)
     expect(wrapper.text()).not.toContain('nativeCheckout.registeredEmail')
     expect(wrapper.find('input').exists()).toBe(false)
-    expect(wrapper.text()).toContain('¥1')
     expect(wrapper.text()).toContain('¥5')
+    expect(wrapper.text()).toContain('¥10')
     wrapper.unmount()
   })
 
@@ -83,8 +83,8 @@ describe('NativeCheckoutTrialOffer', () => {
     mocks.createOrder.mockResolvedValue({
       order_no: 'NC-1',
       status: 'pending',
-      pay_amount_cny_fen: 100,
-      benefit_amount_cny_fen: 500,
+      pay_amount_cny_fen: 500,
+      benefit_amount_cny_fen: 1000,
       payment_url: 'https://pay.ldxp.cn/pay/NC-1',
       payment_method: 'wechat',
       direct_qr_url: '/native-checkout/orders/NC-1/qr',
@@ -94,8 +94,8 @@ describe('NativeCheckoutTrialOffer', () => {
     mocks.getOrder.mockResolvedValue({
       order_no: 'NC-1',
       status: 'pending',
-      pay_amount_cny_fen: 100,
-      benefit_amount_cny_fen: 500,
+      pay_amount_cny_fen: 500,
+      benefit_amount_cny_fen: 1000,
       payment_url: 'https://pay.ldxp.cn/pay/NC-1',
       payment_method: 'wechat',
     })
@@ -124,8 +124,8 @@ describe('NativeCheckoutTrialOffer', () => {
     mocks.createOrder.mockResolvedValue({
       order_no: 'NC-ALIPAY',
       status: 'pending',
-      pay_amount_cny_fen: 100,
-      benefit_amount_cny_fen: 500,
+      pay_amount_cny_fen: 500,
+      benefit_amount_cny_fen: 1000,
       payment_url: 'https://pay.ldxp.cn/pay/NC-ALIPAY',
       payment_method: 'alipay',
       direct_qr_url: '/native-checkout/orders/NC-ALIPAY/qr',
@@ -135,8 +135,8 @@ describe('NativeCheckoutTrialOffer', () => {
     mocks.getOrder.mockResolvedValue({
       order_no: 'NC-ALIPAY',
       status: 'pending',
-      pay_amount_cny_fen: 100,
-      benefit_amount_cny_fen: 500,
+      pay_amount_cny_fen: 500,
+      benefit_amount_cny_fen: 1000,
       payment_url: 'https://pay.ldxp.cn/pay/NC-ALIPAY',
       payment_method: 'alipay',
     })
@@ -159,7 +159,7 @@ describe('NativeCheckoutTrialOffer', () => {
     mocks.listOffers.mockResolvedValue([{
       ...offer,
       order: {
-        order_no: 'NC-DONE', status: 'completed', pay_amount_cny_fen: 100, benefit_amount_cny_fen: 500,
+        order_no: 'NC-DONE', status: 'completed', pay_amount_cny_fen: 500, benefit_amount_cny_fen: 1000,
       },
     }])
     const wrapper = mount(NativeCheckoutTrialOffer, {
@@ -184,7 +184,7 @@ describe('NativeCheckoutTrialOffer', () => {
     const button = wrapper.find('.trial-offer__action')
     expect(button.attributes('disabled')).toBeDefined()
     expect(button.text()).toContain('nativeCheckout.claimed')
-    expect(wrapper.text()).toContain('nativeCheckout.completedHint:5')
+    expect(wrapper.text()).toContain('nativeCheckout.completedHint')
     await button.trigger('click')
     expect(mocks.createOrder).not.toHaveBeenCalled()
     wrapper.unmount()
@@ -194,7 +194,7 @@ describe('NativeCheckoutTrialOffer', () => {
     vi.useFakeTimers()
     const checkingOrder = {
       order_no: 'NC-CHECKING', status: 'checking' as const,
-      pay_amount_cny_fen: 100, benefit_amount_cny_fen: 500,
+      pay_amount_cny_fen: 500, benefit_amount_cny_fen: 1000,
       payment_method: 'wechat' as const,
       created_at: '2026-08-13T12:00:00Z',
     }
@@ -223,7 +223,7 @@ describe('NativeCheckoutTrialOffer', () => {
     vi.setSystemTime(new Date('2026-08-13T12:00:00Z'))
     const pendingOrder = {
       order_no: 'NC-TIMED', status: 'pending' as const,
-      pay_amount_cny_fen: 100, benefit_amount_cny_fen: 500,
+      pay_amount_cny_fen: 500, benefit_amount_cny_fen: 1000,
       payment_url: 'https://pay.ldxp.cn/pay/NC-TIMED',
       payment_method: 'wechat' as const,
       created_at: '2026-08-13T12:00:00Z',

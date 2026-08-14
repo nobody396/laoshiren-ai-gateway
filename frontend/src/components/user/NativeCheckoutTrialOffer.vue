@@ -48,7 +48,7 @@
         {{ t('nativeCheckout.checkingHint') }}
       </p>
       <p v-else-if="offer.claimed || order?.status === 'completed'" class="trial-offer__success">
-        {{ t('nativeCheckout.completedHint', { amount: formatCNY(offer.benefit_amount_cny_fen) }) }}
+        {{ t('nativeCheckout.completedHint') }}
       </p>
     </div>
   </section>

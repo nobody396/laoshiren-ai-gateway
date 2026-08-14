@@ -1219,7 +1219,7 @@ export default {
     crediting: '正在到账…',
     buyNow: '{payAmount} 元解锁 {benefitAmount} 元余额',
     checkingHint: '订单正在核对中，请勿重复付款；核对完成后会自动到账。',
-    completedHint: '¥{amount} 已到账。',
+    completedHint: '新人特惠已使用。',
     wechatPay: '微信支付',
     alipayPay: '支付宝支付',
     qrPayment: '扫码支付',

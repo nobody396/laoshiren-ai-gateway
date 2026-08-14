@@ -333,11 +333,11 @@ func newNativeCheckoutRepoFake(offer NativeCheckoutOffer) *nativeCheckoutRepoFak
 	return &nativeCheckoutRepoFake{offer: offer}
 }
 
-func (r *nativeCheckoutRepoFake) ListEnabledOffers(context.Context) ([]NativeCheckoutOffer, error) {
+func (r *nativeCheckoutRepoFake) ListVisibleOffers(context.Context, int64) ([]NativeCheckoutOffer, error) {
 	return []NativeCheckoutOffer{r.offer}, nil
 }
 
-func (r *nativeCheckoutRepoFake) GetEnabledOffer(_ context.Context, code string) (*NativeCheckoutOffer, error) {
+func (r *nativeCheckoutRepoFake) GetVisibleOffer(_ context.Context, _ int64, code string) (*NativeCheckoutOffer, error) {
 	if code != r.offer.Code {
 		return nil, ErrNativeCheckoutOfferNotFound
 	}

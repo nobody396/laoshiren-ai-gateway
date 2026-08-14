@@ -54,6 +54,20 @@ CREATE TABLE IF NOT EXISTS native_checkout_offers (
 CREATE INDEX IF NOT EXISTS idx_native_checkout_offers_enabled_sort
     ON native_checkout_offers (enabled, sort_order, code);
 
+-- Disabled offers may be exposed to explicitly selected, owned test accounts
+-- without making them visible or purchasable by the rest of the user base.
+-- Production launch still uses native_checkout_offers.enabled; this table is
+-- only a narrow pre-launch acceptance gate.
+CREATE TABLE IF NOT EXISTS native_checkout_offer_testers (
+    offer_code VARCHAR(64) NOT NULL REFERENCES native_checkout_offers(code) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (offer_code, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_native_checkout_offer_testers_user
+    ON native_checkout_offer_testers (user_id, offer_code);
+
 CREATE TABLE IF NOT EXISTS native_checkout_orders (
     id BIGSERIAL PRIMARY KEY,
     order_no VARCHAR(64) NOT NULL UNIQUE,

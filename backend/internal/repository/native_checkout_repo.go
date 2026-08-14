@@ -34,9 +34,15 @@ redeem_value::double precision, redeem_paid_value::double precision,
 redeem_purpose, redeem_sales_status, redeem_group_ids, redeem_validity_days,
 once_per_user, enabled, sort_order`
 
-func (r *nativeCheckoutRepository) ListEnabledOffers(ctx context.Context) ([]service.NativeCheckoutOffer, error) {
+func (r *nativeCheckoutRepository) ListVisibleOffers(ctx context.Context, userID int64) ([]service.NativeCheckoutOffer, error) {
 	rows, err := r.db.QueryContext(ctx, `SELECT `+nativeCheckoutOfferColumns+`
-		FROM native_checkout_offers WHERE enabled = TRUE ORDER BY sort_order, code`)
+		FROM native_checkout_offers offer
+		WHERE offer.enabled = TRUE
+		   OR EXISTS (
+		       SELECT 1 FROM native_checkout_offer_testers tester
+		       WHERE tester.offer_code = offer.code AND tester.user_id = $1
+		   )
+		ORDER BY sort_order, code`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -52,9 +58,17 @@ func (r *nativeCheckoutRepository) ListEnabledOffers(ctx context.Context) ([]ser
 	return offers, rows.Err()
 }
 
-func (r *nativeCheckoutRepository) GetEnabledOffer(ctx context.Context, code string) (*service.NativeCheckoutOffer, error) {
+func (r *nativeCheckoutRepository) GetVisibleOffer(ctx context.Context, userID int64, code string) (*service.NativeCheckoutOffer, error) {
 	row := r.db.QueryRowContext(ctx, `SELECT `+nativeCheckoutOfferColumns+`
-		FROM native_checkout_offers WHERE code = $1 AND enabled = TRUE`, code)
+		FROM native_checkout_offers offer
+		WHERE offer.code = $1
+		  AND (
+		      offer.enabled = TRUE
+		      OR EXISTS (
+		          SELECT 1 FROM native_checkout_offer_testers tester
+		          WHERE tester.offer_code = offer.code AND tester.user_id = $2
+		      )
+	  )`, code, userID)
 	offer, err := scanNativeCheckoutOffer(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, service.ErrNativeCheckoutOfferNotFound

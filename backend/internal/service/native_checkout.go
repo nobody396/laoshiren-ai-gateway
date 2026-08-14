@@ -111,8 +111,8 @@ type NativeCheckoutOfferView struct {
 }
 
 type NativeCheckoutRepository interface {
-	ListEnabledOffers(ctx context.Context) ([]NativeCheckoutOffer, error)
-	GetEnabledOffer(ctx context.Context, code string) (*NativeCheckoutOffer, error)
+	ListVisibleOffers(ctx context.Context, userID int64) ([]NativeCheckoutOffer, error)
+	GetVisibleOffer(ctx context.Context, userID int64, code string) (*NativeCheckoutOffer, error)
 	GetLatestOrderForOffer(ctx context.Context, userID int64, offerCode string) (*NativeCheckoutOrder, error)
 	HasRedeemedOffer(ctx context.Context, userID int64, offerCode string) (bool, error)
 	ReserveOrder(ctx context.Context, order *NativeCheckoutOrder) (*NativeCheckoutOrder, bool, error)
@@ -220,7 +220,7 @@ func NewNativeCheckoutService(
 }
 
 func (s *NativeCheckoutService) ListOffers(ctx context.Context, userID int64) ([]NativeCheckoutOfferView, error) {
-	offers, err := s.repo.ListEnabledOffers(ctx)
+	offers, err := s.repo.ListVisibleOffers(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("list native checkout offers: %w", err)
 	}
@@ -263,7 +263,7 @@ func (s *NativeCheckoutService) CreateOrder(ctx context.Context, userID int64, o
 	if offerCode == "" {
 		return nil, infraerrors.BadRequest("NATIVE_CHECKOUT_OFFER_REQUIRED", "checkout offer is required")
 	}
-	offer, err := s.repo.GetEnabledOffer(ctx, offerCode)
+	offer, err := s.repo.GetVisibleOffer(ctx, userID, offerCode)
 	if err != nil {
 		if errors.Is(err, ErrNativeCheckoutOfferNotFound) {
 			return nil, err

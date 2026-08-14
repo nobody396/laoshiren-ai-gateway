@@ -11,5 +11,8 @@ SET enabled = FALSE,
     updated_at = NOW()
 WHERE code = 'newcomer-balance-5-to-10';
 
+DELETE FROM native_checkout_offer_testers
+WHERE offer_code = 'newcomer-balance-5-to-10';
+
 RESET statement_timeout;
 RESET lock_timeout;

@@ -45,6 +45,7 @@ func TestNativeCheckoutRepositoryEnforcesOnceAndClaimsRestrictedInventory(t *tes
 	t.Cleanup(func() {
 		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_redeem_inventory WHERE redeem_code_id = $1`, code.ID)
 		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_orders WHERE user_id = $1`, user.ID)
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_offer_testers WHERE user_id = $1`, user.ID)
 		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM redeem_codes WHERE id = $1`, code.ID)
 		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM redeem_codes WHERE id = $1`, mismatchedCode.ID)
 		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM users WHERE id = $1`, user.ID)
@@ -63,6 +64,21 @@ WHERE code = 'newcomer-balance-5-to-10'
 	require.Error(t, err, "stocked offer semantics must be immutable")
 
 	repo := NewNativeCheckoutRepository(integrationDB)
+	hidden, err := repo.ListVisibleOffers(ctx, user.ID)
+	require.NoError(t, err)
+	require.Empty(t, hidden, "a disabled offer must stay invisible before the owned tester is allowlisted")
+	_, err = repo.GetVisibleOffer(ctx, user.ID, "newcomer-balance-5-to-10")
+	require.ErrorIs(t, err, service.ErrNativeCheckoutOfferNotFound)
+	require.NoError(t, allowNativeCheckoutTester(ctx, user.ID))
+	visible, err := repo.ListVisibleOffers(ctx, user.ID)
+	require.NoError(t, err)
+	require.Len(t, visible, 1)
+	require.Equal(t, "newcomer-balance-5-to-10", visible[0].Code)
+	require.False(t, visible[0].Enabled, "tester visibility must not globally enable the offer")
+	visibleOffer, err := repo.GetVisibleOffer(ctx, user.ID, "newcomer-balance-5-to-10")
+	require.NoError(t, err)
+	require.False(t, visibleOffer.Enabled)
+
 	first := integrationNativeCheckoutOrder(user.ID, "NC-"+fmt.Sprint(time.Now().UnixNano()))
 	reserved, created, err := repo.ReserveOrder(ctx, first)
 	require.NoError(t, err)
@@ -136,6 +152,15 @@ WHERE id = $1
 	require.NoError(t, err)
 	require.False(t, didClaim)
 	require.Equal(t, claimed.ID, retried.ID)
+}
+
+func allowNativeCheckoutTester(ctx context.Context, userID int64) error {
+	_, err := integrationDB.ExecContext(ctx, `
+INSERT INTO native_checkout_offer_testers (offer_code, user_id)
+VALUES ('newcomer-balance-5-to-10', $1)
+ON CONFLICT DO NOTHING
+`, userID)
+	return err
 }
 
 func insertNativeCheckoutInventory(ctx context.Context, redeemCodeID int64) error {

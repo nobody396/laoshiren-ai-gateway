@@ -467,9 +467,11 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 	requireColumn(t, tx, "native_checkout_orders", "contact_hash", "character", 64, false)
 	requireColumn(t, tx, "native_checkout_orders", "payment_method", "character varying", 16, true)
 	requireColumn(t, tx, "native_checkout_orders", "redeem_code_id", "bigint", 0, true)
+	requireColumn(t, tx, "native_checkout_offer_testers", "user_id", "bigint", 0, false)
 	requireColumn(t, tx, "native_checkout_redeem_inventory", "assigned_order_id", "bigint", 0, true)
 	requireIndex(t, tx, "native_checkout_orders", "uq_native_checkout_orders_once_per_user")
 	requireIndex(t, tx, "native_checkout_orders", "uq_native_checkout_orders_active_per_user")
+	requireIndex(t, tx, "native_checkout_offer_testers", "idx_native_checkout_offer_testers_user")
 	requireIndex(t, tx, "native_checkout_redeem_inventory", "idx_native_checkout_redeem_inventory_offer_unassigned")
 
 	var (
@@ -505,6 +507,12 @@ WHERE code = 'newcomer-balance-5-to-10'
 	require.Zero(t, validityDays)
 	require.True(t, oncePerUser)
 	require.False(t, enabled)
+	var testerCount int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT COUNT(*) FROM native_checkout_offer_testers
+WHERE offer_code = 'newcomer-balance-5-to-10'
+`).Scan(&testerCount))
+	require.Zero(t, testerCount, "the final gate migration must not pre-authorize any test account")
 
 	var inventoryMatchTrigger, stockedOfferGuardTrigger bool
 	require.NoError(t, tx.QueryRowContext(context.Background(), `

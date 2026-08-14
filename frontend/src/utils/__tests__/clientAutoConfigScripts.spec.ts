@@ -1,5 +1,7 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
+import { execFileSync } from 'node:child_process'
 
 import { describe, expect, it } from 'vitest'
 import { clientAutoConfigVersion } from '@/generated/modelCatalog'
@@ -142,10 +144,13 @@ describe('client auto-config scripts', () => {
     const script = readPublicScript('install.sh')
     expect(script).toContain('all|claude|codex|grok')
     expect(script).toContain("curl -fsSL https://x.ai/cli/install.sh | bash")
-    expect(script).toContain('`[model.${JSON.stringify(model)}]`')
-    expect(script).toContain('`description = ${JSON.stringify(displayName)}`')
+    expect(script).toContain('for (const profile of managedModels)')
+    expect(script).toContain('`[model.${JSON.stringify(profile.id)}]`')
+    expect(script).toContain('`description = ${JSON.stringify(profile.display_name)}`')
     expect(script).toContain("'api_backend = \"responses\"'")
-    expect(script).toContain('`context_window = ${contextWindow}`')
+    expect(script).toContain('`context_window = ${Number(profile.context_window)}`')
+    expect(script).toContain('fs.renameSync(temporaryPath, path)')
+    expect(script).toContain('open_cc_switch_if_requested')
     expect(script).toContain('verify_api_key_readiness "Grok Build" "$GROK_API_KEY"')
     expect(script).toContain("['claude', 'codex', 'grok'].includes(data.target)")
   })
@@ -158,10 +163,57 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('-DownloadPrefix $script:GrokBuildPackagePrefix')
     expect(script).toContain('Download-VerifiedAsset -Asset $Asset -OutputPath $TemporaryPath')
     expect(script).not.toContain("$Bases = @('https://x.ai/cli'")
-    expect(script).toContain('$Lines.Add("[model.$(ConvertTo-TomlString $CatalogGrokDefaultModel)]")')
-    expect(script).toContain('$Lines.Add("description = $(ConvertTo-TomlString $CatalogGrokDefaultDisplayName)")')
+    expect(script).toContain('foreach ($ModelProfile in $CatalogGrokManagedModels)')
+    expect(script).toContain('$Lines.Add("[model.$(ConvertTo-TomlString $ModelProfile.Id)]")')
+    expect(script).toContain('$Lines.Add("description = $(ConvertTo-TomlString $ModelProfile.DisplayName)")')
     expect(script).toContain("$Lines.Add('api_backend = \"responses\"')")
-    expect(script).toContain('$Lines.Add("context_window = $CatalogGrokDefaultContextWindow")')
+    expect(script).toContain('$Lines.Add("context_window = $($ModelProfile.ContextWindow)")')
+    expect(script).toContain('[System.IO.File]::Replace($TemporaryPath, $GrokConfigPath, $ReplacementBackupPath)')
+    expect(script).toContain('Open-CcSwitchIfRequested')
     expect(script).toContain("Test-ApiKeyReadiness -Label 'Grok Build' -ApiKey $script:GrokApiKey")
+  })
+
+  it('atomically writes both Grok models while preserving unrelated config on macOS and Linux', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-grok-config-'))
+    const grokDir = join(fixture, '.grok')
+    const configPath = join(grokDir, 'config.toml')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    const original = `[models]\ndefault = "unrelated"\n\n[preferences]\ntheme = "dark"\n\n[model."unrelated"]\nmodel = "unrelated"\nbase_url = "https://unrelated.example/v1"\napi_key = "keep-me"\n\n[model."grok-4.5"]\nname = "stale"\n`
+    try {
+      mkdirSync(grokDir, { recursive: true })
+      writeFileSync(configPath, original)
+      const runWriter = () => execFileSync('bash', [
+        '-c',
+        'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; GROK_API_KEY="test-owned-key"; write_grok_config',
+        '_',
+        installerPath
+      ], {
+        env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' },
+        stdio: 'pipe'
+      })
+
+      runWriter()
+      const first = readFileSync(configPath, 'utf8')
+      expect(first).toContain('default = "grok-4.6"')
+      expect(first).toContain('[preferences]\ntheme = "dark"')
+      expect(first).toContain('[model."unrelated"]')
+      expect(first).toContain('api_key = "keep-me"')
+      expect(first.match(/\[model\."grok-4\.5"\]/g)).toHaveLength(1)
+      expect(first.match(/\[model\."grok-4\.6"\]/g)).toHaveLength(1)
+      expect(first).toContain('name = "Grok 4.5"')
+      expect(first).toContain('description = "Grok 4.5"')
+      expect(first).toContain('name = "Grok 4.6"')
+      expect(first).toContain('description = "Grok 4.6"')
+      expect(first).not.toContain('老实人AI')
+      expect(statSync(configPath).mode & 0o777).toBe(0o600)
+      expect(readFileSync(`${configPath}.bak`, 'utf8')).toBe(original)
+      expect(readdirSync(grokDir).some(name => name.includes('.tmp.'))).toBe(false)
+
+      runWriter()
+      expect(readFileSync(configPath, 'utf8')).toBe(first)
+      expect(readFileSync(`${configPath}.bak`, 'utf8')).toBe(original)
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
   })
 })

@@ -107,6 +107,33 @@ describe('client auto-config commands', () => {
     )
   })
 
+  it.each([false, true])(
+    'builds the official CC Switch 3.19.2 Grok compatibility command on Windows=%s',
+    (isWindows) => {
+      const command = buildClientAutoConfigCommand({
+        target: 'grok',
+        ticket: 'ticket-grok-cc-switch',
+        isWindows,
+        grokCcSwitchCompat: true
+      })
+
+      expect(command).toContain("LAOSHIRENAI_TOOLS='grok'")
+      expect(command).toContain("LAOSHIRENAI_GROK_CC_SWITCH_COMPAT='1'")
+      expect(command).not.toContain('sk-')
+      expect(command).not.toContain('api.laoshirenai.com')
+    }
+  )
+
+  it('never adds Grok compatibility mode to another client', () => {
+    const command = buildClientAutoConfigCommand({
+      target: 'claude',
+      ticket: 'ticket-claude-no-grok',
+      isWindows: false,
+      grokCcSwitchCompat: true
+    })
+    expect(command).not.toContain('LAOSHIRENAI_GROK_CC_SWITCH_COMPAT')
+  })
+
   it('never places a raw API key or base URL in the copied command', () => {
     const command = buildClientAutoConfigCommand({
       target: 'claude',

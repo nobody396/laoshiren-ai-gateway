@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # BEGIN GENERATED MODEL CATALOG
-SCRIPT_VERSION='0.7.8'
+SCRIPT_VERSION='0.7.9'
 CATALOG_OPENAI_DEFAULT_MODEL='gpt-5.6-sol'
 CATALOG_OPENAI_CONTEXT_WINDOW=250000
 CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT=225000
@@ -11,7 +11,7 @@ CATALOG_ANTHROPIC_DEFAULT_MODEL='claude-opus-5'
 CATALOG_GROK_DEFAULT_MODEL='grok-4.6'
 CATALOG_GROK_DEFAULT_DISPLAY_NAME='Grok 4.6'
 CATALOG_GROK_DEFAULT_CONTEXT_WINDOW=500000
-CATALOG_GROK_MANAGED_MODEL_IDS_JSON='["grok-4.5","grok-4.6"]'
+CATALOG_GROK_MANAGED_MODELS_JSON='[{"id":"grok-4.5","display_name":"Grok 4.5","context_window":500000},{"id":"grok-4.6","display_name":"Grok 4.6","context_window":500000}]'
 # END GENERATED MODEL CATALOG
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
@@ -46,6 +46,7 @@ TOOLS="${DEFAULT_TOOLS}"
 CLAUDE_API_KEY="${LAOSHIRENAI_CLAUDE_API_KEY:-}"
 CODEX_API_KEY="${LAOSHIRENAI_CODEX_API_KEY:-}"
 GROK_API_KEY="${LAOSHIRENAI_GROK_API_KEY:-}"
+GROK_CC_SWITCH_COMPAT=0
 NODE_VERSION_OVERRIDE="${LAOSHIRENAI_NODE_VERSION:-}"
 SKIP_CLIENT_INSTALL=0
 FORCE_CLIENT_INSTALL=0
@@ -72,6 +73,7 @@ ENV_TOOLS="${LAOSHIRENAI_TOOLS:-}"
 [ "${LAOSHIRENAI_SKIP_CLIENT_INSTALL:-0}" = "1" ] && SKIP_CLIENT_INSTALL=1
 [ "${LAOSHIRENAI_FORCE_CLIENT_INSTALL:-0}" = "1" ] && FORCE_CLIENT_INSTALL=1
 [ "${LAOSHIRENAI_INSTALL_CODEX_APP:-0}" = "1" ] && INSTALL_CODEX_APP=1
+[ "${LAOSHIRENAI_GROK_CC_SWITCH_COMPAT:-0}" = "1" ] && GROK_CC_SWITCH_COMPAT=1
 
 NODE_BIN=""
 NPM_BIN=""
@@ -1045,15 +1047,14 @@ write_grok_config() {
   create_backup_if_needed "$GROK_CONFIG_PATH"
   ensure_dir "$GROK_DIR"
 
-  CONFIG_PATH="$GROK_CONFIG_PATH" CONFIG_BASE_URL="$(normalize_openai_v1_base_url "$BASE_URL")" CONFIG_API_KEY="$GROK_API_KEY" CONFIG_MODEL="$CATALOG_GROK_DEFAULT_MODEL" CONFIG_DISPLAY_NAME="$CATALOG_GROK_DEFAULT_DISPLAY_NAME" CONFIG_CONTEXT_WINDOW="$CATALOG_GROK_DEFAULT_CONTEXT_WINDOW" CONFIG_MANAGED_MODEL_IDS="$CATALOG_GROK_MANAGED_MODEL_IDS_JSON" "$NODE_BIN" <<'EOF'
+  CONFIG_PATH="$GROK_CONFIG_PATH" CONFIG_BASE_URL="$(normalize_openai_v1_base_url "$BASE_URL")" CONFIG_API_KEY="$GROK_API_KEY" CONFIG_MODEL="$CATALOG_GROK_DEFAULT_MODEL" CONFIG_MANAGED_MODELS="$CATALOG_GROK_MANAGED_MODELS_JSON" "$NODE_BIN" <<'EOF'
 const fs = require('node:fs')
 const path = process.env.CONFIG_PATH
 const baseUrl = process.env.CONFIG_BASE_URL
 const apiKey = process.env.CONFIG_API_KEY
 const model = process.env.CONFIG_MODEL
-const displayName = process.env.CONFIG_DISPLAY_NAME
-const contextWindow = Number(process.env.CONFIG_CONTEXT_WINDOW)
-const managedModelIds = JSON.parse(process.env.CONFIG_MANAGED_MODEL_IDS || '[]')
+const managedModels = JSON.parse(process.env.CONFIG_MANAGED_MODELS || '[]')
+const managedModelIds = managedModels.map((profile) => profile.id)
 const managedSections = new Set(managedModelIds.flatMap((id) => [`model.${id}`, `model."${id}"`]))
 let text = fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : ''
 let lines = text.split(/\r?\n/)
@@ -1064,7 +1065,7 @@ let droppingModel = false
 for (const line of lines) {
   const header = line.trim().match(/^\[([^\]]+)\]$/)
   if (header) droppingModel = managedSections.has(header[1])
-  if (!droppingModel) kept.push(line)
+  if (!droppingModel && line.trim() !== '# Managed by laoshirenai one-click setup') kept.push(line)
 }
 lines = kept
 
@@ -1090,22 +1091,47 @@ if (modelsHeader < 0) {
 }
 
 while (lines.length && !lines[lines.length - 1].trim()) lines.pop()
-lines.push(
-  '',
-  '# Managed by laoshirenai one-click setup',
-  `[model.${JSON.stringify(model)}]`,
-  `model = ${JSON.stringify(model)}`,
-  `base_url = ${JSON.stringify(baseUrl)}`,
-  `name = ${JSON.stringify(`${displayName} · 老实人AI`)}`,
-  `description = ${JSON.stringify(displayName)}`,
-  `api_key = ${JSON.stringify(apiKey)}`,
-  'api_backend = "responses"',
-  `context_window = ${contextWindow}`,
-  ''
-)
-fs.writeFileSync(path, lines.join('\n'), { encoding: 'utf8', mode: 0o600 })
-try { fs.chmodSync(path, 0o600) } catch {}
+lines.push('', '# Managed by laoshirenai one-click setup')
+for (const profile of managedModels) {
+  lines.push(
+    `[model.${JSON.stringify(profile.id)}]`,
+    `model = ${JSON.stringify(profile.id)}`,
+    `base_url = ${JSON.stringify(baseUrl)}`,
+    `name = ${JSON.stringify(profile.display_name)}`,
+    `description = ${JSON.stringify(profile.display_name)}`,
+    `api_key = ${JSON.stringify(apiKey)}`,
+    'api_backend = "responses"',
+    `context_window = ${Number(profile.context_window)}`,
+    ''
+  )
+}
+
+const temporaryPath = `${path}.tmp.${process.pid}.${Date.now()}`
+try {
+  fs.writeFileSync(temporaryPath, lines.join('\n'), { encoding: 'utf8', mode: 0o600 })
+  try { fs.chmodSync(temporaryPath, 0o600) } catch {}
+  fs.renameSync(temporaryPath, path)
+  try { fs.chmodSync(path, 0o600) } catch {}
+} finally {
+  try { fs.unlinkSync(temporaryPath) } catch {}
+}
 EOF
+}
+
+open_cc_switch_if_requested() {
+  [ "$GROK_CC_SWITCH_COMPAT" -eq 1 ] && uses_grok || return 0
+
+  if [ "$(uname -s)" = "Darwin" ] && command -v open >/dev/null 2>&1; then
+    if open -Ra "CC Switch" >/dev/null 2>&1; then
+      if open -a "CC Switch" >/dev/null 2>&1; then
+        log_info "已打开官方 CC Switch，并保留其他 Provider"
+        return 0
+      fi
+      log_warn "Grok Build 已配置，但无法自动打开 CC Switch"
+      return 0
+    fi
+  fi
+  log_warn "Grok Build 已配置好；未找到官方 CC Switch，可稍后手动打开"
 }
 
 uses_codex() {
@@ -1344,7 +1370,10 @@ main() {
   verify_codex_api_key
   verify_grok_api_key
   verify_client_commands
+  open_cc_switch_if_requested
   print_summary
 }
 
-main "$@"
+if [ "${LAOSHIRENAI_INSTALLER_SOURCE_ONLY:-0}" != "1" ]; then
+  main "$@"
+fi

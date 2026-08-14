@@ -1,6 +1,5 @@
 import type { GroupPlatform } from '@/types'
 import {
-  catalogClientDefaultForPlatform,
   codexClientModels,
   optionalCatalogClientDefaultForPlatform
 } from '@/generated/modelCatalog'
@@ -44,7 +43,6 @@ export const DEFAULT_OPENAI_MODEL = optionalCatalogClientDefaultForPlatform('ope
 // also avoids relying on client-version-specific defaults.
 export const CODEX_CONTEXT_WINDOW_TOKENS = 250000
 export const CODEX_AUTO_COMPACT_TOKEN_LIMIT = 225000
-const GROK_CLIENT_DEFAULT = catalogClientDefaultForPlatform('grok')
 
 // One generated source drives both the downloaded Codex catalog and CC Switch
 // imports so disabled models cannot remain in only one client path.
@@ -274,6 +272,11 @@ export const buildCcsImportDeeplink = ({
   if (!isCompatibleCcsTarget(platform, target, allowMessagesDispatch)) {
     throw new Error(`CC Switch target "${target}" is not compatible with platform "${platform}"`)
   }
+  if (target === 'grokbuild') {
+    throw new Error(
+      'CC Switch 3.19.2 cannot preserve Grok Build multi-model deeplinks; use the one-click compatibility setup'
+    )
+  }
 
   const gatewayBaseUrl = normalizeGatewayBaseUrl(apiBaseUrl)
   const app: CcsApp = target
@@ -311,9 +314,7 @@ export const buildCcsImportDeeplink = ({
     usageAutoInterval: '30'
   })
 
-  if (target === 'grokbuild') {
-    params.set('model', GROK_CLIENT_DEFAULT.id)
-  } else if (
+  if (
     target === 'codex' ||
     target === 'opencode' ||
     target === 'openclaw' ||

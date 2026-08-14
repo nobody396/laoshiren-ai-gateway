@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "client_auto_config_version": "0.7.8",
+  "client_auto_config_version": "0.7.9",
   "models": [
     {
       "id": "grok-4.6",
@@ -20,6 +20,13 @@
       "client_config": {
         "managed_predecessor_ids": [
           "grok-4.5"
+        ],
+        "managed_predecessor_models": [
+          {
+            "id": "grok-4.5",
+            "display_name": "Grok 4.5",
+            "context_window": 500000
+          }
         ]
       },
       "pricing": {

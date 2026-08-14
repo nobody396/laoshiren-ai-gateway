@@ -114,6 +114,12 @@ def catalog_row_from_manifest(manifest: dict[str, Any], previous: dict[str, Any]
     )
     if not isinstance(managed_predecessors, list):
         fail("manifest production.managed_predecessor_ids must be a string array")
+    managed_predecessor_models = production.get(
+        "managed_predecessor_models",
+        previous_client_config.get("managed_predecessor_models", []),
+    )
+    if not isinstance(managed_predecessor_models, list):
+        fail("manifest production.managed_predecessor_models must be an array")
     codex_catalog_entry = model.get(
         "codex_catalog_entry",
         previous_client_config.get("codex_catalog_entry"),
@@ -132,6 +138,7 @@ def catalog_row_from_manifest(manifest: dict[str, Any], previous: dict[str, Any]
         },
         "client_config": {
             "managed_predecessor_ids": managed_predecessors,
+            "managed_predecessor_models": managed_predecessor_models,
             "codex_catalog_entry": codex_catalog_entry,
         },
         "pricing": {
@@ -225,6 +232,22 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
             isinstance(item, str) and MODEL_ID.fullmatch(item) for item in predecessors
         ):
             fail(f"{path}.client_config.managed_predecessor_ids must be model identifiers")
+        predecessor_models = client_config.get("managed_predecessor_models", [])
+        if not isinstance(predecessor_models, list):
+            fail(f"{path}.client_config.managed_predecessor_models must be an array")
+        predecessor_model_ids: set[str] = set()
+        for predecessor_index, predecessor in enumerate(predecessor_models):
+            predecessor_path = f"{path}.client_config.managed_predecessor_models[{predecessor_index}]"
+            if not isinstance(predecessor, dict):
+                fail(f"{predecessor_path} must be an object")
+            if not isinstance(predecessor.get("id"), str) or not MODEL_ID.fullmatch(predecessor["id"]):
+                fail(f"{predecessor_path}.id must be a model identifier")
+            if not isinstance(predecessor.get("display_name"), str) or not predecessor["display_name"].strip():
+                fail(f"{predecessor_path}.display_name is required")
+            number(predecessor.get("context_window"), f"{predecessor_path}.context_window")
+            predecessor_model_ids.add(predecessor["id"])
+        if platform == "grok" and predecessor_model_ids != set(predecessors):
+            fail(f"{path}.client_config.managed_predecessor_models must describe every Grok predecessor")
         codex_entry = client_config.get("codex_catalog_entry")
         if codex_entry is not None:
             if platform != "openai" or not isinstance(codex_entry, dict):
@@ -276,6 +299,7 @@ def installer_contract(model: dict[str, Any] | None) -> dict[str, Any] | None:
         "display_name": model.get("display_name"),
         "context_window": model.get("context_window"),
         "managed_predecessor_ids": model.get("client_config", {}).get("managed_predecessor_ids", []),
+        "managed_predecessor_models": model.get("client_config", {}).get("managed_predecessor_models", []),
     }
 
 
@@ -314,6 +338,29 @@ def installer_model_values(catalog: dict[str, Any]) -> dict[str, dict[str, Any]]
             "context_window": int(chosen["context_window"]),
             "managed_ids": sorted(managed_ids),
         }
+        if platform == "grok":
+            managed_models = {
+                chosen["id"]: {
+                    "id": chosen["id"],
+                    "display_name": chosen["display_name"],
+                    "context_window": int(chosen["context_window"]),
+                }
+            }
+            for model in catalog["models"]:
+                if model["platform"] != platform:
+                    continue
+                managed_models[model["id"]] = {
+                    "id": model["id"],
+                    "display_name": model["display_name"],
+                    "context_window": int(model["context_window"]),
+                }
+                for predecessor in model.get("client_config", {}).get("managed_predecessor_models", []):
+                    managed_models[predecessor["id"]] = {
+                        "id": predecessor["id"],
+                        "display_name": predecessor["display_name"],
+                        "context_window": int(predecessor["context_window"]),
+                    }
+            values[platform]["managed_models"] = [managed_models[model_id] for model_id in sorted(managed_ids)]
         if platform == "openai":
             values[platform]["auto_compact_token_limit"] = int(
                 chosen.get("client_config", {})
@@ -337,6 +384,14 @@ def render_powershell_block(catalog: dict[str, Any]) -> str:
     for model_id in values["grok"]["managed_ids"]:
         grok_sections.extend((f"model.{model_id}", f'model."{model_id}"'))
     section_literal = ", ".join(powershell_quote(section) for section in grok_sections)
+    model_profiles = ", ".join(
+        "@{ Id = %s; DisplayName = %s; ContextWindow = %d }" % (
+            powershell_quote(model["id"]),
+            powershell_quote(model["display_name"]),
+            model["context_window"],
+        )
+        for model in values["grok"]["managed_models"]
+    )
     return "\n".join((
         POWERSHELL_BLOCK_BEGIN,
         f"$ScriptVersion = {powershell_quote(catalog['client_auto_config_version'])}",
@@ -347,6 +402,7 @@ def render_powershell_block(catalog: dict[str, Any]) -> str:
         f"$CatalogGrokDefaultModel = {powershell_quote(values['grok']['id'])}",
         f"$CatalogGrokDefaultDisplayName = {powershell_quote(values['grok']['display_name'])}",
         f"$CatalogGrokDefaultContextWindow = {values['grok']['context_window']}",
+        f"$CatalogGrokManagedModels = @({model_profiles})",
         f"$CatalogGrokManagedModelSections = @({section_literal})",
         POWERSHELL_BLOCK_END,
     ))
@@ -354,7 +410,7 @@ def render_powershell_block(catalog: dict[str, Any]) -> str:
 
 def render_shell_block(catalog: dict[str, Any]) -> str:
     values = installer_model_values(catalog)
-    managed_json = json.dumps(values["grok"]["managed_ids"], ensure_ascii=False, separators=(",", ":"))
+    managed_json = json.dumps(values["grok"]["managed_models"], ensure_ascii=False, separators=(",", ":"))
     return "\n".join((
         SHELL_BLOCK_BEGIN,
         f"SCRIPT_VERSION={shell_quote(catalog['client_auto_config_version'])}",
@@ -365,7 +421,7 @@ def render_shell_block(catalog: dict[str, Any]) -> str:
         f"CATALOG_GROK_DEFAULT_MODEL={shell_quote(values['grok']['id'])}",
         f"CATALOG_GROK_DEFAULT_DISPLAY_NAME={shell_quote(values['grok']['display_name'])}",
         f"CATALOG_GROK_DEFAULT_CONTEXT_WINDOW={values['grok']['context_window']}",
-        f"CATALOG_GROK_MANAGED_MODEL_IDS_JSON={shell_quote(managed_json)}",
+        f"CATALOG_GROK_MANAGED_MODELS_JSON={shell_quote(managed_json)}",
         SHELL_BLOCK_END,
     ))
 

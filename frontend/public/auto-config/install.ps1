@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.8'
+$ScriptVersion = '0.7.9'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 250000
 $CatalogOpenAIAutoCompactTokenLimit = 225000
@@ -10,6 +10,7 @@ $CatalogAnthropicDefaultModel = 'claude-opus-5'
 $CatalogGrokDefaultModel = 'grok-4.6'
 $CatalogGrokDefaultDisplayName = 'Grok 4.6'
 $CatalogGrokDefaultContextWindow = 500000
+$CatalogGrokManagedModels = @(@{ Id = 'grok-4.5'; DisplayName = 'Grok 4.5'; ContextWindow = 500000 }, @{ Id = 'grok-4.6'; DisplayName = 'Grok 4.6'; ContextWindow = 500000 })
 $CatalogGrokManagedModelSections = @('model.grok-4.5', 'model."grok-4.5"', 'model.grok-4.6', 'model."grok-4.6"')
 # END GENERATED MODEL CATALOG
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
@@ -66,6 +67,7 @@ $NodeVersionOverride = if ($env:LAOSHIRENAI_NODE_VERSION) { $env:LAOSHIRENAI_NOD
 $SkipClientInstall = $env:LAOSHIRENAI_SKIP_CLIENT_INSTALL -eq '1'
 $ForceClientInstall = $env:LAOSHIRENAI_FORCE_CLIENT_INSTALL -eq '1'
 $InstallCodexApp = $env:LAOSHIRENAI_INSTALL_CODEX_APP -eq '1'
+$GrokCcSwitchCompat = $env:LAOSHIRENAI_GROK_CC_SWITCH_COMPAT -eq '1'
 $SetupToken = if ($env:LAOSHIRENAI_SETUP_TOKEN) { $env:LAOSHIRENAI_SETUP_TOKEN } else { '' }
 $SetupExchangeUrl = if ($env:LAOSHIRENAI_SETUP_EXCHANGE_URL) { $env:LAOSHIRENAI_SETUP_EXCHANGE_URL } else { $DefaultSetupExchangeUrl }
 $CodexManifestUrl = if ($env:LAOSHIRENAI_CODEX_MANIFEST_URL) { $env:LAOSHIRENAI_CODEX_MANIFEST_URL } else { $DefaultCodexManifestUrl }
@@ -190,10 +192,10 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.8 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.9 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.8 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.9 | iex
 
 参数:
   --api-key              Claude Code API Key
@@ -1313,7 +1315,9 @@ function Write-GrokTomlConfig {
     if ($Line.Trim() -match '^\[([^\]]+)\]$') {
       $DroppingModel = $Matches[1] -in $CatalogGrokManagedModelSections
     }
-    if (-not $DroppingModel) { $Kept.Add($Line) }
+    if (-not $DroppingModel -and $Line.Trim() -ne '# Managed by laoshirenai one-click setup') {
+      $Kept.Add($Line)
+    }
   }
   $Lines = $Kept
 
@@ -1342,19 +1346,67 @@ function Write-GrokTomlConfig {
   }
 
   $BaseV1 = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
-  $GrokDisplayName = "$CatalogGrokDefaultDisplayName · 老实人AI"
+  while ($Lines.Count -gt 0 -and [string]::IsNullOrWhiteSpace($Lines[$Lines.Count - 1])) {
+    $Lines.RemoveAt($Lines.Count - 1)
+  }
   $Lines.Add('')
   $Lines.Add('# Managed by laoshirenai one-click setup')
-  $Lines.Add("[model.$(ConvertTo-TomlString $CatalogGrokDefaultModel)]")
-  $Lines.Add("model = $(ConvertTo-TomlString $CatalogGrokDefaultModel)")
-  $Lines.Add("base_url = $(ConvertTo-TomlString $BaseV1)")
-  $Lines.Add("name = $(ConvertTo-TomlString $GrokDisplayName)")
-  $Lines.Add("description = $(ConvertTo-TomlString $CatalogGrokDefaultDisplayName)")
-  $Lines.Add("api_key = $(ConvertTo-TomlString $script:GrokApiKey)")
-  $Lines.Add('api_backend = "responses"')
-  $Lines.Add("context_window = $CatalogGrokDefaultContextWindow")
-  $Lines.Add('')
-  [System.IO.File]::WriteAllLines($GrokConfigPath, $Lines, [System.Text.UTF8Encoding]::new($false))
+  foreach ($ModelProfile in $CatalogGrokManagedModels) {
+    $Lines.Add("[model.$(ConvertTo-TomlString $ModelProfile.Id)]")
+    $Lines.Add("model = $(ConvertTo-TomlString $ModelProfile.Id)")
+    $Lines.Add("base_url = $(ConvertTo-TomlString $BaseV1)")
+    $Lines.Add("name = $(ConvertTo-TomlString $ModelProfile.DisplayName)")
+    $Lines.Add("description = $(ConvertTo-TomlString $ModelProfile.DisplayName)")
+    $Lines.Add("api_key = $(ConvertTo-TomlString $script:GrokApiKey)")
+    $Lines.Add('api_backend = "responses"')
+    $Lines.Add("context_window = $($ModelProfile.ContextWindow)")
+    $Lines.Add('')
+  }
+
+  $TemporaryPath = "$GrokConfigPath.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+  $ReplacementBackupPath = "$TemporaryPath.previous"
+  try {
+    [System.IO.File]::WriteAllLines($TemporaryPath, $Lines, [System.Text.UTF8Encoding]::new($false))
+    if (Test-Path -LiteralPath $GrokConfigPath) {
+      [System.IO.File]::Replace($TemporaryPath, $GrokConfigPath, $ReplacementBackupPath)
+    } else {
+      [System.IO.File]::Move($TemporaryPath, $GrokConfigPath)
+    }
+  } finally {
+    Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $ReplacementBackupPath -Force -ErrorAction SilentlyContinue
+  }
+}
+
+function Open-CcSwitchIfRequested {
+  if (-not $script:GrokCcSwitchCompat -or -not (Test-UsesGrok)) { return }
+
+  try {
+    $StartApp = Get-StartApps -ErrorAction SilentlyContinue |
+      Where-Object { $_.Name -eq 'CC Switch' } |
+      Select-Object -First 1
+    if ($null -ne $StartApp) {
+      Start-Process "shell:AppsFolder\$($StartApp.AppID)"
+      Write-Info '已打开官方 CC Switch，并保留其他 Provider'
+      return
+    }
+
+    $Candidates = @(
+      (Join-Path $env:LOCALAPPDATA 'Programs\CC Switch\cc-switch.exe'),
+      (Join-Path $env:ProgramFiles 'CC Switch\cc-switch.exe')
+    )
+    foreach ($Candidate in $Candidates) {
+      if (Test-Path -LiteralPath $Candidate -PathType Leaf) {
+        Start-Process -FilePath $Candidate
+        Write-Info '已打开官方 CC Switch，并保留其他 Provider'
+        return
+      }
+    }
+  } catch {
+    Write-WarnMessage "Grok Build 已配置，但无法自动打开 CC Switch: $_"
+    return
+  }
+  Write-WarnMessage 'Grok Build 已配置好；未找到官方 CC Switch，可稍后手动打开'
 }
 
 function Test-UsesCodex {
@@ -1628,6 +1680,7 @@ function Main {
   Test-CodexApiKey
   Test-GrokApiKey
   Verify-ClientCommands
+  Open-CcSwitchIfRequested
   Print-Summary
 }
 

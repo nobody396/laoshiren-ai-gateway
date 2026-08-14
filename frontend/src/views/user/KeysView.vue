@@ -1774,7 +1774,11 @@ const getAutoConfigClientName = (row: ApiKey): string => {
   return target ? getClientAutoConfigName(target) : ''
 }
 
-const generateAndCopyClientAutoConfigCommand = async (row: ApiKey, installCodexApp = false) => {
+const generateAndCopyClientAutoConfigCommand = async (
+  row: ApiKey,
+  installCodexApp = false,
+  grokCcSwitchCompat = false
+) => {
   if (row.status !== 'active') {
     appStore.showError(t('keys.keyMustBeActiveForAutoConfig'))
     return
@@ -1792,7 +1796,8 @@ const generateAndCopyClientAutoConfigCommand = async (row: ApiKey, installCodexA
     const command = buildClientAutoConfigCommand({
       target: setup.target,
       ticket: setup.ticket,
-      installCodexApp
+      installCodexApp,
+      grokCcSwitchCompat
     })
     await clipboardCopy(command, t('keys.autoConfigCommandCopied', { client: clientName }))
   } catch (error: any) {
@@ -2374,12 +2379,20 @@ const executeCcsImport = (row: ApiKey, clientType: CcsImportTarget) => {
   }
 }
 
-const handleCcsClientSelect = (clientType: CcsImportTarget) => {
-  if (pendingCcsRow.value) {
-    executeCcsImport(pendingCcsRow.value, clientType)
-  }
+const handleCcsClientSelect = async (clientType: CcsImportTarget) => {
+  const row = pendingCcsRow.value
   showCcsClientSelect.value = false
   pendingCcsRow.value = null
+  if (!row) return
+
+  // CC Switch 3.19.2 collapses Grok Build deeplinks to one model. Use the
+  // signed official app's live-config import path instead: a one-time ticket
+  // writes the complete model catalog atomically, then opens CC Switch.
+  if (clientType === 'grokbuild') {
+    await generateAndCopyClientAutoConfigCommand(row, false, true)
+    return
+  }
+  executeCcsImport(row, clientType)
 }
 
 const closeCcsClientSelect = () => {

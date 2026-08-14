@@ -19,12 +19,31 @@ func NewNativeCheckoutRepository(db *sql.DB) *nativeCheckoutRepository {
 	return &nativeCheckoutRepository{db: db}
 }
 
-func (r *nativeCheckoutRepository) IsNativeCheckoutRestricted(ctx context.Context, redeemCodeID int64) (bool, error) {
-	var restricted bool
-	err := r.db.QueryRowContext(ctx, `SELECT EXISTS (
-		SELECT 1 FROM native_checkout_redeem_inventory WHERE redeem_code_id = $1
-	)`, redeemCodeID).Scan(&restricted)
-	return restricted, err
+func (r *nativeCheckoutRepository) GetNativeCheckoutRedeemPolicy(ctx context.Context, redeemCodeID, userID int64) (service.NativeCheckoutRedeemPolicy, error) {
+	var policy service.NativeCheckoutRedeemPolicy
+	err := r.db.QueryRowContext(ctx, `
+		SELECT
+			EXISTS (
+				SELECT 1
+				FROM native_checkout_redeem_inventory
+				WHERE redeem_code_id = $1
+			),
+			EXISTS (
+				SELECT 1
+				FROM native_checkout_redeem_inventory inventory
+				JOIN native_checkout_offers offer ON offer.code = inventory.offer_code
+				WHERE inventory.redeem_code_id = $1
+				  AND offer.manual_redeem_enabled = TRUE
+			),
+			EXISTS (
+				SELECT 1
+				FROM native_checkout_redeem_inventory inventory
+				JOIN native_checkout_manual_claims claim ON claim.offer_code = inventory.offer_code
+				WHERE inventory.redeem_code_id = $1
+				  AND claim.user_id = $2
+			)
+	`, redeemCodeID, userID).Scan(&policy.Restricted, &policy.ManualRedeemEnabled, &policy.AlreadyClaimed)
+	return policy, err
 }
 
 const nativeCheckoutOfferColumns = `

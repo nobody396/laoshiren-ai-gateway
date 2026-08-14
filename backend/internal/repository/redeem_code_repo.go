@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/user"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
+	"github.com/lib/pq"
 )
 
 type redeemCodeRepository struct {
@@ -233,6 +235,10 @@ func (r *redeemCodeRepository) Use(ctx context.Context, id, userID int64) error 
 		SetUsedAt(now).
 		Save(ctx)
 	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == "23505" && pqErr.Constraint == "native_checkout_manual_claims_pkey" {
+			return service.ErrRedeemOfferClaimed
+		}
 		return err
 	}
 	if affected == 0 {

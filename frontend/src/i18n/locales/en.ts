@@ -1282,6 +1282,10 @@ export default {
     promotionalCardCredit: 'Receive ⚡{credited}',
     promotionalCardBonus: 'Extra bonus ⚡{bonus}',
     promotionalCardBadge: 'Ongoing offer',
+    newcomerCardTitle: 'Newcomer deal · ¥{credited} balance',
+    newcomerCardSummary: 'Pay ¥{paid} · Receive ¥{credited}',
+    newcomerCardBadge: 'Newcomer deal',
+    newcomerCardLimit: 'One redemption per account. Please do not buy this item more than once.',
     creditedAmount: 'Balance credited',
     paySuccessWithCredit: 'Top-up successful. ⚡{amount} was credited.',
     developerPlansTitle: 'Developer plans',
@@ -1333,6 +1337,10 @@ export default {
     redeemButton: 'Redeem Code',
     redeemSuccess: 'Code Redeemed Successfully!',
     redeemFailed: 'Redemption Failed',
+    errors: {
+      REDEEM_OFFER_ALREADY_CLAIMED: 'This newcomer offer can only be redeemed once per account. Please do not buy it more than once.',
+      REDEEM_CODE_CHECKOUT_RESTRICTED: 'This card cannot be redeemed manually yet. Please contact support.'
+    },
     added: 'Added',
     balanceAddedTopup: 'Balance Top-up',
     balanceAddedTopupPromotion: 'Promotional Top-up Bonus',

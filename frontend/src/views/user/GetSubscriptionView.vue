@@ -16,8 +16,6 @@
                 {{ t('subscriptionAccess.summary') }}
               </p>
 
-              <NativeCheckoutTrialOffer />
-
               <div v-if="step === 1" class="topup-section topup-section--stack">
                 <section>
                   <p class="topup-label">
@@ -37,10 +35,14 @@
                     >
                       <span class="topup-product-title topup-product-title--row">
                         <span>{{ product.label }}</span>
-                        <span v-if="product.promotional" class="topup-promotion-badge">{{ t('topup.promotionalCardBadge') }}</span>
+                        <span v-if="product.newcomerOnly" class="topup-promotion-badge">{{ t('topup.newcomerCardBadge') }}</span>
+                        <span v-else-if="product.promotional" class="topup-promotion-badge">{{ t('topup.promotionalCardBadge') }}</span>
                       </span>
                       <span class="topup-product-desc">
-                        <template v-if="product.promotional">
+                        <template v-if="product.newcomerOnly">
+                          {{ t('topup.newcomerCardSummary', { paid: product.amountCny, credited: product.creditedAmountCny }) }}
+                        </template>
+                        <template v-else-if="product.promotional">
                           {{ t('topup.promotionalCardCredit', { credited: product.creditedAmountCny }) }} ·
                           {{ t('topup.promotionalCardBonus', { bonus: product.bonusAmountCny }) }}
                         </template>
@@ -299,6 +301,9 @@
                   >
                     {{ t('topup.cardShopGoRedeem') }}
                   </button>
+                  <p v-if="selectedBalanceProduct?.newcomerOnly" class="topup-warning">
+                    {{ t('topup.newcomerCardLimit') }}
+                  </p>
                 </template>
 
                 <section v-else-if="step === 1" class="topup-inline-pay">
@@ -414,7 +419,6 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
-import NativeCheckoutTrialOffer from '@/components/user/NativeCheckoutTrialOffer.vue'
 import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/api/topup'
 import { useAppStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'
@@ -444,6 +448,7 @@ type BalanceProduct = {
   creditedAmountCny?: number
   bonusAmountCny?: number
   promotional?: boolean
+  newcomerOnly?: boolean
 }
 
 const step = ref<1 | 2>(1)
@@ -488,32 +493,43 @@ const cardShopMode = computed(
   () => (appStore.cachedPublicSettings?.card_shop_enabled ?? false) && activeCardShopProducts.value.length > 0
 )
 const balanceProducts = computed<BalanceProduct[]>(() => {
-	const promotionalAmounts = new Set(PROMOTIONAL_BALANCE_TOPUPS.map((product) => product.paidAmountCny))
+  const promotionalAmounts = new Set(PROMOTIONAL_BALANCE_TOPUPS.map((product) => product.paidAmountCny))
   const standardProducts: BalanceProduct[] = activeCardShopProducts.value.length > 0
-	? activeCardShopProducts.value.filter((product) => !promotionalAmounts.has(product.amount_cny)).map((product) => ({
-      id: product.id,
-      label: product.label || `¥${product.amount_cny} 余额卡`,
-      amountCny: product.amount_cny,
-      cardShopProduct: product
-    }))
+    ? activeCardShopProducts.value
+        .filter((product) => !promotionalAmounts.has(product.amount_cny))
+        .map((product) => ({
+          id: product.id,
+          label: product.label || `¥${product.amount_cny} 余额卡`,
+          amountCny: product.amount_cny,
+          cardShopProduct: product
+        }))
     : presets.map((amount) => ({
-      id: `qr-${amount}`,
-      label: `¥${amount} 余额卡`,
-      amountCny: amount
-    }))
-	const promotionalProducts: BalanceProduct[] = PROMOTIONAL_BALANCE_TOPUPS.map((product) => {
-	  const cardShopProduct = activeCardShopProducts.value.find((candidate) => candidate.amount_cny === product.paidAmountCny)
-	  return {
-	    id: `promotion-${product.paidAmountCny}`,
-    label: t('topup.promotionalCardTitle', { paid: product.paidAmountCny }),
-    amountCny: product.paidAmountCny,
-    creditedAmountCny: product.creditedAmountCny,
-    bonusAmountCny: product.bonusAmountCny,
-	    promotional: true,
-	    cardShopProduct
-	  }
-	})
-  return [...standardProducts, ...promotionalProducts]
+        id: `qr-${amount}`,
+        label: `¥${amount} 余额卡`,
+        amountCny: amount
+      }))
+  const promotionalProducts: BalanceProduct[] = PROMOTIONAL_BALANCE_TOPUPS.map((product) => {
+    const cardShopProduct = activeCardShopProducts.value.find(
+      (candidate) => candidate.amount_cny === product.paidAmountCny
+    )
+    return {
+      id: `promotion-${product.paidAmountCny}`,
+      label: product.newcomerOnly
+        ? t('topup.newcomerCardTitle', { credited: product.creditedAmountCny })
+        : t('topup.promotionalCardTitle', { paid: product.paidAmountCny }),
+      amountCny: product.paidAmountCny,
+      creditedAmountCny: product.creditedAmountCny,
+      bonusAmountCny: product.bonusAmountCny,
+      promotional: true,
+      newcomerOnly: product.newcomerOnly,
+      cardShopProduct
+    }
+  })
+  return [
+    ...promotionalProducts.filter((product) => product.newcomerOnly),
+    ...standardProducts,
+    ...promotionalProducts.filter((product) => !product.newcomerOnly)
+  ]
 })
 const selectedBalanceProduct = computed<BalanceProduct | undefined>(
   () => balanceProducts.value.find((product) => product.id === selectedBalanceProductId.value) ?? balanceProducts.value[0]

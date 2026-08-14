@@ -4,13 +4,151 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
+	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/stretchr/testify/require"
 )
+
+func TestManualNewcomerRedeemCreditsBalanceAndRejectsSecondCode(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("manual-newcomer-service-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	redeemRepo := NewRedeemCodeRepository(client)
+	codes := make([]*service.RedeemCode, 2)
+	for i := range codes {
+		codes[i] = &service.RedeemCode{
+			Code:         fmt.Sprintf("%032x", time.Now().UnixNano()+int64(i)),
+			Type:         service.RedeemTypeBalance,
+			Value:        10,
+			PaidValue:    0,
+			Status:       service.StatusUnused,
+			Purpose:      service.RedeemCodePurposeGift,
+			SalesStatus:  service.RedeemCodeSalesStatusGifted,
+			ValidityDays: 0,
+		}
+		require.NoError(t, redeemRepo.Create(ctx, codes[i]))
+		require.NoError(t, insertNativeCheckoutInventory(ctx, codes[i].ID))
+	}
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_manual_claims WHERE user_id = $1`, user.ID)
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_redeem_inventory WHERE redeem_code_id IN ($1, $2)`, codes[0].ID, codes[1].ID)
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM redeem_codes WHERE id IN ($1, $2)`, codes[0].ID, codes[1].ID)
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM users WHERE id = $1`, user.ID)
+	})
+
+	guard := NewNativeCheckoutRepository(integrationDB)
+	userRepo := newUserRepositoryWithSQL(client, integrationDB)
+	redeemService := service.NewRedeemService(
+		redeemRepo, nil, userRepo, nil, nil, nil, client, nil, nil, nil, nil, nil,
+	)
+	redeemService.SetNativeCheckoutRedeemGuard(guard)
+
+	result, err := redeemService.Redeem(ctx, user.ID, codes[0].Code)
+	require.NoError(t, err)
+	require.Equal(t, float64(10), result.Value)
+	refreshed, err := userRepo.GetByID(ctx, user.ID)
+	require.NoError(t, err)
+	require.Equal(t, float64(10), refreshed.Balance)
+
+	_, err = redeemService.Redeem(ctx, user.ID, codes[1].Code)
+	require.ErrorIs(t, err, service.ErrRedeemOfferClaimed)
+	require.Equal(t, "REDEEM_OFFER_ALREADY_CLAIMED", infraerrors.Reason(err))
+	second, err := redeemRepo.GetByID(ctx, codes[1].ID)
+	require.NoError(t, err)
+	require.Equal(t, service.StatusUnused, second.Status)
+	refreshed, err = userRepo.GetByID(ctx, user.ID)
+	require.NoError(t, err)
+	require.Equal(t, float64(10), refreshed.Balance)
+}
+
+func TestManualNewcomerRedemptionAllowsOneConcurrentClaimPerAccount(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("manual-newcomer-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	otherUser := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("manual-newcomer-other-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	redeemRepo := NewRedeemCodeRepository(client)
+	codes := make([]*service.RedeemCode, 3)
+	for i := range codes {
+		codes[i] = &service.RedeemCode{
+			Code:         fmt.Sprintf("%032x", time.Now().UnixNano()+int64(i)),
+			Type:         service.RedeemTypeBalance,
+			Value:        10,
+			PaidValue:    0,
+			Status:       service.StatusUnused,
+			Purpose:      service.RedeemCodePurposeGift,
+			SalesStatus:  service.RedeemCodeSalesStatusGifted,
+			ValidityDays: 0,
+		}
+		require.NoError(t, redeemRepo.Create(ctx, codes[i]))
+		require.NoError(t, insertNativeCheckoutInventory(ctx, codes[i].ID))
+	}
+	t.Cleanup(func() {
+		ids := []any{codes[0].ID, codes[1].ID, codes[2].ID}
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_manual_claims WHERE redeem_code_id IN ($1, $2, $3) OR user_id IN ($4, $5)`, append(ids, user.ID, otherUser.ID)...)
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_redeem_inventory WHERE redeem_code_id IN ($1, $2, $3)`, ids...)
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM redeem_codes WHERE id IN ($1, $2, $3)`, ids...)
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM users WHERE id IN ($1, $2)`, user.ID, otherUser.ID)
+	})
+
+	repo := NewNativeCheckoutRepository(integrationDB)
+	policy, err := repo.GetNativeCheckoutRedeemPolicy(ctx, codes[0].ID, user.ID)
+	require.NoError(t, err)
+	require.Equal(t, service.NativeCheckoutRedeemPolicy{
+		Restricted: true, ManualRedeemEnabled: true, AlreadyClaimed: false,
+	}, policy)
+
+	start := make(chan struct{})
+	errs := make(chan error, 2)
+	var wg sync.WaitGroup
+	for _, code := range codes[:2] {
+		wg.Add(1)
+		go func(codeID int64) {
+			defer wg.Done()
+			<-start
+			errs <- redeemRepo.Use(ctx, codeID, user.ID)
+		}(code.ID)
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	var succeeded, rejected int
+	for useErr := range errs {
+		switch {
+		case useErr == nil:
+			succeeded++
+		case errors.Is(useErr, service.ErrRedeemOfferClaimed):
+			rejected++
+		default:
+			require.NoError(t, useErr)
+		}
+	}
+	require.Equal(t, 1, succeeded)
+	require.Equal(t, 1, rejected)
+
+	var claimCount, usedCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `SELECT COUNT(*) FROM native_checkout_manual_claims WHERE offer_code = 'newcomer-balance-5-to-10' AND user_id = $1`, user.ID).Scan(&claimCount))
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `SELECT COUNT(*) FROM redeem_codes WHERE id IN ($1, $2) AND status = 'used'`, codes[0].ID, codes[1].ID).Scan(&usedCount))
+	require.Equal(t, 1, claimCount)
+	require.Equal(t, 1, usedCount)
+
+	require.NoError(t, redeemRepo.Use(ctx, codes[2].ID, otherUser.ID), "another account must retain its own one-time claim")
+}
 
 func TestNativeCheckoutRepositoryEnforcesOnceAndClaimsRestrictedInventory(t *testing.T) {
 	ctx := context.Background()
@@ -43,6 +181,7 @@ func TestNativeCheckoutRepositoryEnforcesOnceAndClaimsRestrictedInventory(t *tes
 	}
 	require.NoError(t, redeemRepo.Create(ctx, mismatchedCode))
 	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_manual_claims WHERE redeem_code_id IN ($1, $2) OR user_id = $3`, code.ID, mismatchedCode.ID, user.ID)
 		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_redeem_inventory WHERE redeem_code_id = $1`, code.ID)
 		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_orders WHERE user_id = $1`, user.ID)
 		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_offer_testers WHERE user_id = $1`, user.ID)
@@ -127,9 +266,11 @@ WHERE code = 'newcomer-balance-5-to-10'
 SELECT assigned_order_id FROM native_checkout_redeem_inventory WHERE redeem_code_id = $1
 `, code.ID).Scan(&assignedOrderID))
 	require.Equal(t, claimed.ID, assignedOrderID)
-	restricted, err := repo.IsNativeCheckoutRestricted(ctx, code.ID)
+	policy, err := repo.GetNativeCheckoutRedeemPolicy(ctx, code.ID, user.ID)
 	require.NoError(t, err)
-	require.True(t, restricted)
+	require.True(t, policy.Restricted)
+	require.True(t, policy.ManualRedeemEnabled)
+	require.False(t, policy.AlreadyClaimed)
 
 	_, err = integrationDB.ExecContext(ctx, `
 UPDATE redeem_codes
@@ -137,6 +278,9 @@ SET status = 'used', used_by = $2, used_at = NOW()
 WHERE id = $1
 `, code.ID, user.ID)
 	require.NoError(t, err)
+	policy, err = repo.GetNativeCheckoutRedeemPolicy(ctx, code.ID, user.ID)
+	require.NoError(t, err)
+	require.True(t, policy.AlreadyClaimed)
 	claimedEntitlement, err := repo.HasRedeemedOffer(ctx, user.ID, first.OfferCode)
 	require.NoError(t, err)
 	require.True(t, claimedEntitlement, "a recovered native inventory card must still consume the once-only offer")

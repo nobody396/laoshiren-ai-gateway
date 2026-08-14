@@ -459,20 +459,24 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 	// from promotional balance credited.
 	requireColumn(t, tx, "redeem_codes", "paid_value", "numeric", 0, false)
 
-	// migrations 185-189: native card-shop checkout owns a durable once-per-user
+	// migrations 185-190: native card-shop checkout owns a durable once-per-user
 	// order, restricts its inventory, snapshots the selected payment method, and
-	// configures the single approved ¥5 -> ¥10 pure-gift newcomer offer. The
-	// final migration keeps it disabled until all release gates pass.
+	// configures the single approved ¥5 -> ¥10 pure-gift newcomer offer. Native
+	// checkout remains disabled while manual card redemption is enabled with an
+	// atomic lifetime claim.
 	requireColumn(t, tx, "native_checkout_offers", "provider_goods_key", "character varying", 64, false)
+	requireColumn(t, tx, "native_checkout_offers", "manual_redeem_enabled", "boolean", 0, false)
 	requireColumn(t, tx, "native_checkout_orders", "contact_hash", "character", 64, false)
 	requireColumn(t, tx, "native_checkout_orders", "payment_method", "character varying", 16, true)
 	requireColumn(t, tx, "native_checkout_orders", "redeem_code_id", "bigint", 0, true)
 	requireColumn(t, tx, "native_checkout_offer_testers", "user_id", "bigint", 0, false)
 	requireColumn(t, tx, "native_checkout_redeem_inventory", "assigned_order_id", "bigint", 0, true)
+	requireColumn(t, tx, "native_checkout_manual_claims", "redeem_code_id", "bigint", 0, false)
 	requireIndex(t, tx, "native_checkout_orders", "uq_native_checkout_orders_once_per_user")
 	requireIndex(t, tx, "native_checkout_orders", "uq_native_checkout_orders_active_per_user")
 	requireIndex(t, tx, "native_checkout_offer_testers", "idx_native_checkout_offer_testers_user")
 	requireIndex(t, tx, "native_checkout_redeem_inventory", "idx_native_checkout_redeem_inventory_offer_unassigned")
+	requireIndex(t, tx, "native_checkout_manual_claims", "idx_native_checkout_manual_claims_user")
 
 	var (
 		providerGoodsKey string
@@ -485,17 +489,18 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 		validityDays     int
 		oncePerUser      bool
 		enabled          bool
+		manualRedeem     bool
 	)
 	require.NoError(t, tx.QueryRowContext(context.Background(), `
 SELECT provider_goods_key, pay_amount_cny_fen, benefit_amount_cny_fen,
        redeem_value::double precision, redeem_paid_value::double precision,
        redeem_purpose, redeem_sales_status, redeem_validity_days,
-       once_per_user, enabled
+       once_per_user, enabled, manual_redeem_enabled
 FROM native_checkout_offers
 WHERE code = 'newcomer-balance-5-to-10'
 `).Scan(
 		&providerGoodsKey, &payFen, &benefitFen, &redeemValue, &paidValue,
-		&purpose, &salesStatus, &validityDays, &oncePerUser, &enabled,
+		&purpose, &salesStatus, &validityDays, &oncePerUser, &enabled, &manualRedeem,
 	))
 	require.Equal(t, "oc3w4r", providerGoodsKey)
 	require.Equal(t, int64(500), payFen)
@@ -507,6 +512,7 @@ WHERE code = 'newcomer-balance-5-to-10'
 	require.Zero(t, validityDays)
 	require.True(t, oncePerUser)
 	require.False(t, enabled)
+	require.True(t, manualRedeem)
 	var testerCount int
 	require.NoError(t, tx.QueryRowContext(context.Background(), `
 SELECT COUNT(*) FROM native_checkout_offer_testers
@@ -514,7 +520,7 @@ WHERE offer_code = 'newcomer-balance-5-to-10'
 `).Scan(&testerCount))
 	require.Zero(t, testerCount, "the final gate migration must not pre-authorize any test account")
 
-	var inventoryMatchTrigger, stockedOfferGuardTrigger bool
+	var inventoryMatchTrigger, stockedOfferGuardTrigger, manualClaimTrigger bool
 	require.NoError(t, tx.QueryRowContext(context.Background(), `
 SELECT EXISTS (
     SELECT 1 FROM pg_trigger
@@ -533,6 +539,15 @@ SELECT EXISTS (
 )
 `).Scan(&stockedOfferGuardTrigger))
 	require.True(t, stockedOfferGuardTrigger)
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgrelid = 'redeem_codes'::regclass
+      AND tgname = 'trg_claim_manual_checkout_offer_once'
+      AND NOT tgisinternal
+)
+`).Scan(&manualClaimTrigger))
+	require.True(t, manualClaimTrigger)
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

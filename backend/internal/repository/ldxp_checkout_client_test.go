@@ -40,8 +40,8 @@ func TestLDXPCheckoutClientBuyerFlowAndDirectQR(t *testing.T) {
 		switch r.URL.Path {
 		case "/shopApi/Shop/goodsInfo":
 			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
-				"goods_type": "card", "goods_key": "trial-key", "status": 1,
-				"price": 1, "real_price": 1, "contact_format": "email",
+				"goods_type": "card", "goods_key": "newcomer-key", "status": 1,
+				"price": 5, "real_price": 5, "contact_format": "email",
 				"user": map[string]any{"token": "public-shop-token"},
 			}})
 		case "/shopApi/Shop/getUserChannel":
@@ -55,14 +55,14 @@ func TestLDXPCheckoutClientBuyerFlowAndDirectQR(t *testing.T) {
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
 			createdChannelID = request.ChannelID
 			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
-				"trade_no": "LD-TEST-1", "total_amount": 1, "payurl": server.URL + "/pay/LD-TEST-1",
+				"trade_no": "LD-TEST-1", "total_amount": 5, "payurl": server.URL + "/pay/LD-TEST-1",
 			}})
 		case "/shopApi/Pay/query":
 			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": nil})
 		case "/shopApi/Order/info":
 			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
-				"trade_no": "LD-TEST-1", "goods": map[string]any{"goods_key": "trial-key"},
-				"contact": "buyer@example.com", "quantity": 1, "total_amount": "1.00",
+				"trade_no": "LD-TEST-1", "goods": map[string]any{"goods_key": "newcomer-key"},
+				"contact": "buyer@example.com", "quantity": 1, "total_amount": "5.00",
 				"status": 1, "sendout": 1,
 				"response": map[string]any{"cards": []string{"兑换码：" + redeemCode}},
 			}})
@@ -83,7 +83,7 @@ func TestLDXPCheckoutClientBuyerFlowAndDirectQR(t *testing.T) {
 	client, err := newLDXPCheckoutClient(server.URL, true)
 	require.NoError(t, err)
 	ctx := context.Background()
-	order, err := client.CreateOrder(ctx, "trial-key", "buyer@example.com", 100)
+	order, err := client.CreateOrder(ctx, "newcomer-key", "buyer@example.com", 500)
 	require.NoError(t, err)
 	require.Equal(t, "LD-TEST-1", order.TradeNo)
 	require.Equal(t, server.URL+"/pay/LD-TEST-1", order.PaymentURL)
@@ -96,7 +96,7 @@ func TestLDXPCheckoutClientBuyerFlowAndDirectQR(t *testing.T) {
 
 	info, err := client.GetOrderInfo(ctx, order.TradeNo)
 	require.NoError(t, err)
-	require.Equal(t, int64(100), info.TotalCNYFen)
+	require.Equal(t, int64(500), info.TotalCNYFen)
 	require.Equal(t, []string{redeemCode}, info.RedeemCodes)
 	require.True(t, info.Paid)
 	require.True(t, info.Delivered)
@@ -112,7 +112,7 @@ func TestLDXPCheckoutClientRejectsWrongGoodsAmountBeforeOrder(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/shopApi/Shop/goodsInfo" {
 			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
-				"goods_type": "card", "goods_key": "trial-key", "status": 1,
+				"goods_type": "card", "goods_key": "newcomer-key", "status": 1,
 				"price": 20, "real_price": 20, "contact_format": "email",
 				"user": map[string]any{"token": "public-shop-token"},
 			}})
@@ -127,7 +127,7 @@ func TestLDXPCheckoutClientRejectsWrongGoodsAmountBeforeOrder(t *testing.T) {
 	client, err := newLDXPCheckoutClient(server.URL, true)
 	require.NoError(t, err)
 
-	_, err = client.CreateOrder(context.Background(), "trial-key", "buyer@example.com", 100)
+	_, err = client.CreateOrder(context.Background(), "newcomer-key", "buyer@example.com", 500)
 	require.Error(t, err)
 	require.False(t, orderCalled)
 	var providerErr *service.NativeCheckoutProviderError
@@ -142,8 +142,8 @@ func TestLDXPCheckoutClientSupportsAlipayAndLabelsSelectedMethod(t *testing.T) {
 		switch r.URL.Path {
 		case "/shopApi/Shop/goodsInfo":
 			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
-				"goods_type": "card", "goods_key": "trial-key", "status": 1,
-				"price": 1, "real_price": 1, "contact_format": "email",
+				"goods_type": "card", "goods_key": "newcomer-key", "status": 1,
+				"price": 5, "real_price": 5, "contact_format": "email",
 				"user": map[string]any{"token": "public-shop-token"},
 			}})
 		case "/shopApi/Shop/getUserChannel":
@@ -157,7 +157,7 @@ func TestLDXPCheckoutClientSupportsAlipayAndLabelsSelectedMethod(t *testing.T) {
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
 			createdChannelID = request.ChannelID
 			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
-				"trade_no": "LD-ALIPAY-1", "total_amount": 1, "payurl": server.URL + "/pay/LD-ALIPAY-1",
+				"trade_no": "LD-ALIPAY-1", "total_amount": 5, "payurl": server.URL + "/pay/LD-ALIPAY-1",
 			}})
 		default:
 			http.NotFound(w, r)
@@ -167,7 +167,7 @@ func TestLDXPCheckoutClientSupportsAlipayAndLabelsSelectedMethod(t *testing.T) {
 	client, err := newLDXPCheckoutClient(server.URL, true)
 	require.NoError(t, err)
 
-	order, err := client.CreateOrder(context.Background(), "trial-key", "buyer@example.com", 100)
+	order, err := client.CreateOrder(context.Background(), "newcomer-key", "buyer@example.com", 500)
 	require.NoError(t, err)
 	require.Equal(t, 2, createdChannelID)
 	require.Equal(t, service.NativeCheckoutPaymentMethodAlipay, order.PaymentMethod)
@@ -187,8 +187,8 @@ func TestLDXPCheckoutClientCollapsesConcurrentOfferMetadataLookups(t *testing.T)
 			// Keep the first lookup in flight so all concurrent buyers join it.
 			time.Sleep(50 * time.Millisecond)
 			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
-				"goods_type": "card", "goods_key": "trial-key", "status": 1,
-				"price": 1, "real_price": 1, "contact_format": "email",
+				"goods_type": "card", "goods_key": "newcomer-key", "status": 1,
+				"price": 5, "real_price": 5, "contact_format": "email",
 				"user": map[string]any{"token": "public-shop-token"},
 			}})
 		case "/shopApi/Shop/getUserChannel":
@@ -209,7 +209,7 @@ func TestLDXPCheckoutClientCollapsesConcurrentOfferMetadataLookups(t *testing.T)
 			orderID := orderCalls.Add(1)
 			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
 				"trade_no":     "LD-CONCURRENT-" + strconv.FormatInt(int64(orderID), 10),
-				"total_amount": 1,
+				"total_amount": 5,
 				"payurl":       server.URL + "/pay/concurrent-" + strconv.FormatInt(int64(orderID), 10),
 			}})
 		default:
@@ -230,9 +230,9 @@ func TestLDXPCheckoutClientCollapsesConcurrentOfferMetadataLookups(t *testing.T)
 			defer wg.Done()
 			_, createErr := client.CreateOrder(
 				context.Background(),
-				"trial-key",
+				"newcomer-key",
 				"buyer-"+strconv.Itoa(i)+"@example.com",
-				100,
+				500,
 			)
 			errs <- createErr
 		}()
@@ -255,8 +255,8 @@ func TestLDXPCheckoutClientRejectsUnsupportedPaymentChannel(t *testing.T) {
 		switch r.URL.Path {
 		case "/shopApi/Shop/goodsInfo":
 			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
-				"goods_type": "card", "goods_key": "trial-key", "status": 1,
-				"price": 1, "real_price": 1, "contact_format": "email",
+				"goods_type": "card", "goods_key": "newcomer-key", "status": 1,
+				"price": 5, "real_price": 5, "contact_format": "email",
 				"user": map[string]any{"token": "public-shop-token"},
 			}})
 		case "/shopApi/Shop/getUserChannel":
@@ -273,7 +273,7 @@ func TestLDXPCheckoutClientRejectsUnsupportedPaymentChannel(t *testing.T) {
 	client, err := newLDXPCheckoutClient(server.URL, true)
 	require.NoError(t, err)
 
-	_, err = client.CreateOrder(context.Background(), "trial-key", "buyer@example.com", 100)
+	_, err = client.CreateOrder(context.Background(), "newcomer-key", "buyer@example.com", 500)
 	require.Error(t, err)
 	require.False(t, orderCalled)
 }
@@ -313,8 +313,8 @@ func TestLDXPCheckoutClientFallsBackToCachedMerchantSession(t *testing.T) {
 			merchantInfoCalls++
 			require.Equal(t, "session-token", r.Header.Get("Merchant-Token"))
 			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
-				"trade_no": "LD-FALLBACK-1", "goods": map[string]any{"goods_key": "trial-key"},
-				"contact": "buyer@example.com", "quantity": 1, "total_amount": "1.00",
+				"trade_no": "LD-FALLBACK-1", "goods": map[string]any{"goods_key": "newcomer-key"},
+				"contact": "buyer@example.com", "quantity": 1, "total_amount": "5.00",
 				"status": 1, "sendout": 1,
 				"response": map[string]any{"cards": []string{"兑换码：" + redeemCode}},
 			}})
@@ -356,8 +356,8 @@ func TestLDXPCheckoutClientBacksOffBlockedBuyerDetailButKeepsMerchantRecovery(t 
 		case "/merchantApi/Order/orderInfo":
 			merchantInfoCalls++
 			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
-				"trade_no": "LD-FALLBACK-1", "goods": map[string]any{"goods_key": "trial-key"},
-				"contact": "buyer@example.com", "quantity": 1, "total_amount": "1.00",
+				"trade_no": "LD-FALLBACK-1", "goods": map[string]any{"goods_key": "newcomer-key"},
+				"contact": "buyer@example.com", "quantity": 1, "total_amount": "5.00",
 				"status": 1, "sendout": 1,
 				"response": map[string]any{"cards": []string{"兑换码：" + redeemCode}},
 			}})

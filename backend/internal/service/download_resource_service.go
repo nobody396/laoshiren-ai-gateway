@@ -173,9 +173,6 @@ func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseCl
 	if strings.TrimSpace(downloadCfg.ClaudeDesktopLatestBaseURL) == "" {
 		downloadCfg.ClaudeDesktopLatestBaseURL = defaultClaudeLatestBaseURL
 	}
-	if downloadCfg.UpdateIntervalHours <= 0 {
-		downloadCfg.UpdateIntervalHours = 24
-	}
 	if downloadCfg.VersionCheckIntervalMinutes <= 0 {
 		downloadCfg.VersionCheckIntervalMinutes = 30
 	}

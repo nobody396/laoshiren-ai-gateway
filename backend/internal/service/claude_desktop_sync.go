@@ -263,7 +263,7 @@ func inspectClaudeDesktopMSIX(path string) (claudeDesktopBuildInfo, claudeCodePi
 	if err != nil {
 		return claudeDesktopBuildInfo{}, claudeCodePin{}, err
 	}
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	var asarFile *zip.File
 	hasSignature := false
@@ -282,7 +282,7 @@ func inspectClaudeDesktopMSIX(path string) (claudeDesktopBuildInfo, claudeCodePi
 	if err != nil {
 		return claudeDesktopBuildInfo{}, claudeCodePin{}, err
 	}
-	defer stream.Close()
+	defer func() { _ = stream.Close() }()
 	raw, err := io.ReadAll(io.LimitReader(stream, claudeDesktopMaxASAR+1))
 	if err != nil || int64(len(raw)) > claudeDesktopMaxASAR {
 		return claudeDesktopBuildInfo{}, claudeCodePin{}, errors.New("read bounded Claude app.asar")
@@ -306,10 +306,10 @@ func inspectClaudeDesktopMSIX(path string) (claudeDesktopBuildInfo, claudeCodePi
 		}
 	}
 	if build.AppVersion == "" || !claudeDesktopCommitPattern.MatchString(strings.ToLower(build.CommitHash)) {
-		return claudeDesktopBuildInfo{}, claudeCodePin{}, errors.New("Claude app.asar is missing build identity")
+		return claudeDesktopBuildInfo{}, claudeCodePin{}, errors.New("claude app.asar is missing build identity")
 	}
 	if pin.Version == "" || pin.BaseURL != claudeCodeOfficialBase || len(pin.Manifest.Platforms) == 0 {
-		return claudeDesktopBuildInfo{}, claudeCodePin{}, errors.New("Claude app.asar is missing the Desktop Code pin")
+		return claudeDesktopBuildInfo{}, claudeCodePin{}, errors.New("claude app.asar is missing the Desktop Code pin")
 	}
 	return build, pin, nil
 }
@@ -415,11 +415,11 @@ func (s *DownloadResourceService) cacheClaudeDesktopCode(
 	}
 	info, err := os.Stat(compressed)
 	if err != nil || info.Size() != upstream.Size {
-		return CachedDownloadAsset{}, fmt.Errorf("Claude Desktop Code %s compressed size mismatch", platform)
+		return CachedDownloadAsset{}, fmt.Errorf("claude Desktop Code %s compressed size mismatch", platform)
 	}
 	compressedSHA, err := fileSHA256(compressed)
 	if err != nil || !strings.EqualFold(compressedSHA, upstream.Checksum) {
-		return CachedDownloadAsset{}, fmt.Errorf("Claude Desktop Code %s compressed checksum mismatch", platform)
+		return CachedDownloadAsset{}, fmt.Errorf("claude Desktop Code %s compressed checksum mismatch", platform)
 	}
 
 	rawSHA, rawSize, err := decompressClaudeCode(compressed, decompressed, s.cfg.MaxAssetBytes)
@@ -445,7 +445,7 @@ func decompressClaudeCode(source, dest string, maxBytes int64) (string, int64, e
 	if err != nil {
 		return "", 0, err
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 	decoder, err := zstd.NewReader(in)
 	if err != nil {
 		return "", 0, err
@@ -475,7 +475,7 @@ func validateWindowsExecutable(path string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	header := make([]byte, 2)
 	if _, err := io.ReadFull(file, header); err != nil {
 		return err
@@ -526,7 +526,7 @@ func copyFileAtomically(source, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 	tmp := dest + ".tmp"
 	_ = os.Remove(tmp)
 	out, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)

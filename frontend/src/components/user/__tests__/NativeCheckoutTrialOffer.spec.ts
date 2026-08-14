@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   showInfo: vi.fn(),
   showSuccess: vi.fn(),
   refreshUser: vi.fn(),
+  user: { email: 'buyer@example.com' },
 }))
 
 vi.mock('@/api/nativeCheckout', () => ({
@@ -26,7 +27,7 @@ vi.mock('qrcode', () => ({ default: { toDataURL: mocks.toDataURL } }))
 
 vi.mock('@/stores', () => ({
   useAppStore: () => ({ showError: mocks.showError, showInfo: mocks.showInfo, showSuccess: mocks.showSuccess }),
-  useAuthStore: () => ({ refreshUser: mocks.refreshUser }),
+  useAuthStore: () => ({ refreshUser: mocks.refreshUser, user: mocks.user }),
 }))
 
 vi.mock('vue-i18n', async () => {
@@ -61,16 +62,17 @@ describe('NativeCheckoutTrialOffer', () => {
     vi.useRealTimers()
   })
 
-  it('renders the pure-gift once-only offer without asking for contact details', async () => {
+  it('renders the one-to-five offer without exposing its internal entitlement type or asking for contact details', async () => {
     const wrapper = mount(NativeCheckoutTrialOffer, {
       global: { stubs: { Teleport: true } },
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain(offer.name)
-    expect(wrapper.text()).toContain(offer.description)
+    expect(wrapper.text()).toContain('nativeCheckout.offerTitle')
     expect(wrapper.text()).toContain('nativeCheckout.onceOnly')
-    expect(wrapper.text()).toContain('nativeCheckout.registeredEmail')
+    expect(wrapper.text()).not.toContain(offer.name)
+    expect(wrapper.text()).not.toContain(offer.description)
+    expect(wrapper.text()).not.toContain('nativeCheckout.registeredEmail')
     expect(wrapper.find('input').exists()).toBe(false)
     expect(wrapper.text()).toContain('¥1')
     expect(wrapper.text()).toContain('¥5')
@@ -216,7 +218,7 @@ describe('NativeCheckoutTrialOffer', () => {
     wrapper.unmount()
   })
 
-  it('shows a clearly recommended payment countdown rather than claiming a provider expiry', async () => {
+  it('shows the payment countdown and email fallback without provider-expiry or manual-redemption copy', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-13T12:00:00Z'))
     const pendingOrder = {
@@ -239,8 +241,11 @@ describe('NativeCheckoutTrialOffer', () => {
 
     expect(wrapper.text()).toContain('nativeCheckout.orderCreatedAt')
     expect(wrapper.text()).toContain('nativeCheckout.recommendedWindow')
-    expect(wrapper.text()).toContain('nativeCheckout.providerExpiryHint')
     expect(wrapper.text()).toContain('nativeCheckout.automaticEta')
+    expect(wrapper.text()).toContain('nativeCheckout.emailCheck')
+    expect(wrapper.text()).toContain('buyer@example.com')
+    expect(wrapper.text()).not.toContain('nativeCheckout.providerExpiryHint')
+    expect(wrapper.text()).not.toContain('nativeCheckout.doNotRepeat')
     wrapper.unmount()
   })
 })

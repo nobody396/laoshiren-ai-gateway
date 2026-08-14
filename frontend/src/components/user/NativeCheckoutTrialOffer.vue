@@ -5,9 +5,12 @@
         <span class="trial-offer__badge">{{ t('nativeCheckout.trialBadge') }}</span>
         <span v-if="offer.once_per_user" class="trial-offer__limit">{{ t('nativeCheckout.onceOnly') }}</span>
       </div>
-      <h2 id="native-checkout-trial-title">{{ offer.name }}</h2>
-      <p>{{ offer.description || t('nativeCheckout.trialDescription') }}</p>
-      <p class="trial-offer__email">{{ t('nativeCheckout.registeredEmail') }}</p>
+      <h2 id="native-checkout-trial-title">
+        {{ t('nativeCheckout.offerTitle', {
+          payAmount: formatCNY(offer.pay_amount_cny_fen),
+          benefitAmount: formatCNY(offer.benefit_amount_cny_fen),
+        }) }}
+      </h2>
     </div>
 
     <div class="trial-offer__deal">
@@ -75,14 +78,16 @@
             <p :class="{ 'checkout-modal__timing-expired': paymentWindowExpired }">
               {{ paymentWindowText }}
             </p>
-            <p>{{ t('nativeCheckout.providerExpiryHint') }}</p>
           </div>
           <p class="checkout-modal__status">
             <span class="checkout-modal__pulse" aria-hidden="true"></span>
             {{ statusText }}
           </p>
           <p class="checkout-modal__eta">{{ t('nativeCheckout.automaticEta') }}</p>
-          <p class="checkout-modal__safety">{{ t('nativeCheckout.doNotRepeat') }}</p>
+          <div class="checkout-modal__email-check">
+            <p>{{ t('nativeCheckout.emailCheck') }}</p>
+            <strong v-if="registeredEmail">{{ registeredEmail }}</strong>
+          </div>
         </div>
       </section>
     </div>
@@ -111,6 +116,7 @@ const authStore = useAuthStore()
 const offer = ref<NativeCheckoutOffer | null>(null)
 const order = ref<NativeCheckoutOrder | null>(null)
 const activeOrder = computed(() => order.value)
+const registeredEmail = computed(() => authStore.user?.email?.trim() || '')
 const submitting = ref(false)
 const showModal = ref(false)
 const qrImageURL = ref('')
@@ -411,8 +417,6 @@ onUnmounted(() => {
 .trial-offer__badge { color: white; background: rgb(var(--color-terracotta)); }
 .trial-offer__limit { color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark))); background: rgb(var(--color-terracotta) / 0.1); }
 .trial-offer h2 { margin-top: 0.75rem; color: var(--admin-ink-deep, rgb(var(--color-ink-deep))); font-size: 1.25rem; font-weight: 750; }
-.trial-offer__copy > p { margin-top: 0.45rem; color: var(--admin-muted, rgb(var(--color-muted))); font-size: 0.87rem; line-height: 1.65; }
-.trial-offer__email { opacity: 0.86; }
 .trial-offer__deal { min-width: 0; }
 .trial-offer__amounts { display: flex; align-items: center; justify-content: space-between; gap: 0.65rem; }
 .trial-offer__amounts span:not(.trial-offer__arrow) { display: grid; gap: 0.15rem; }
@@ -464,7 +468,15 @@ onUnmounted(() => {
 .checkout-modal__status { display: flex; align-items: center; gap: 0.45rem; margin-top: 1rem; font-size: 0.88rem; font-weight: 650; }
 .checkout-modal__pulse { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: rgb(var(--color-laurel)); box-shadow: 0 0 0 0 rgb(var(--color-laurel) / 0.35); animation: checkout-pulse 1.6s infinite; }
 .checkout-modal__eta { margin-top: 0.55rem; color: var(--admin-muted, rgb(var(--color-muted))); font-size: 0.76rem; line-height: 1.5; }
-.checkout-modal__safety { margin-top: 0.55rem; color: var(--admin-muted, rgb(var(--color-muted))); font-size: 0.75rem; }
+.checkout-modal__email-check {
+  width: 100%; margin-top: 0.75rem; border-radius: 8px; padding: 0.7rem 0.8rem;
+  background: rgb(var(--color-terracotta) / 0.07); color: var(--admin-muted, rgb(var(--color-muted)));
+  font-size: 0.75rem; line-height: 1.5;
+}
+.checkout-modal__email-check strong {
+  display: block; margin-top: 0.28rem; color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
+  font-size: 0.8rem; overflow-wrap: anywhere;
+}
 @keyframes checkout-pulse { 70% { box-shadow: 0 0 0 7px rgb(var(--color-laurel) / 0); } 100% { box-shadow: 0 0 0 0 rgb(var(--color-laurel) / 0); } }
 @keyframes checkout-checking { 50% { opacity: 0.35; transform: translateY(-2px); } }
 

@@ -17,6 +17,7 @@ import (
 var (
 	ErrRedeemCodeNotFound  = infraerrors.NotFound("REDEEM_CODE_NOT_FOUND", "redeem code not found")
 	ErrRedeemCodeUsed      = infraerrors.Conflict("REDEEM_CODE_USED", "redeem code already used")
+	ErrRedeemOfferClaimed  = infraerrors.Conflict("REDEEM_OFFER_ALREADY_CLAIMED", "this offer can only be redeemed once per account")
 	ErrInsufficientBalance = infraerrors.BadRequest("INSUFFICIENT_BALANCE", "insufficient balance")
 	ErrRedeemRateLimited   = infraerrors.TooManyRequests("REDEEM_RATE_LIMITED", "too many failed attempts, please try again later")
 	ErrRedeemCodeLocked    = infraerrors.Conflict("REDEEM_CODE_LOCKED", "redeem code is being processed, please try again")
@@ -37,11 +38,21 @@ type RedeemCache interface {
 	ReleaseRedeemLock(ctx context.Context, code string) error
 }
 
-// NativeCheckoutRedeemGuard identifies card-shop inventory that may only be
-// redeemed by the native checkout fulfillment path. It prevents a leaked or
-// directly purchased inventory code from bypassing the per-account offer gate.
+// NativeCheckoutRedeemPolicy describes whether a stocked card is reserved for
+// checkout, whether the offer explicitly permits public manual redemption, and
+// whether the current account has already consumed its lifetime claim.
+type NativeCheckoutRedeemPolicy struct {
+	Restricted          bool
+	ManualRedeemEnabled bool
+	AlreadyClaimed      bool
+}
+
+// NativeCheckoutRedeemGuard protects stocked card-shop inventory. Manual
+// redemption is opt-in per offer; the database remains the final concurrent
+// once-per-account authority when two different card codes are submitted at
+// the same time.
 type NativeCheckoutRedeemGuard interface {
-	IsNativeCheckoutRestricted(ctx context.Context, redeemCodeID int64) (bool, error)
+	GetNativeCheckoutRedeemPolicy(ctx context.Context, redeemCodeID, userID int64) (NativeCheckoutRedeemPolicy, error)
 }
 
 type RedeemCodeRepository interface {
@@ -314,13 +325,17 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 		return nil, fmt.Errorf("get redeem code: %w", err)
 	}
 	if s.nativeCheckoutGuard != nil {
-		restricted, guardErr := s.nativeCheckoutGuard.IsNativeCheckoutRestricted(ctx, redeemCode.ID)
+		policy, guardErr := s.nativeCheckoutGuard.GetNativeCheckoutRedeemPolicy(ctx, redeemCode.ID, userID)
 		if guardErr != nil {
 			return nil, fmt.Errorf("check native checkout redeem restriction: %w", guardErr)
 		}
-		if restricted && !nativeCheckoutRedeemAuthorized(ctx) {
+		if policy.Restricted && !nativeCheckoutRedeemAuthorized(ctx) && !policy.ManualRedeemEnabled {
 			s.incrementRedeemErrorCount(ctx, userID)
 			return nil, infraerrors.BadRequest("REDEEM_CODE_CHECKOUT_RESTRICTED", "this code is fulfilled automatically by its checkout order")
+		}
+		if policy.Restricted && !nativeCheckoutRedeemAuthorized(ctx) && policy.AlreadyClaimed {
+			s.incrementRedeemErrorCount(ctx, userID)
+			return nil, ErrRedeemOfferClaimed
 		}
 	}
 
@@ -357,6 +372,9 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 	if err := s.redeemRepo.Use(txCtx, redeemCode.ID, userID); err != nil {
 		if errors.Is(err, ErrRedeemCodeNotFound) || errors.Is(err, ErrRedeemCodeUsed) {
 			return nil, ErrRedeemCodeUsed
+		}
+		if errors.Is(err, ErrRedeemOfferClaimed) {
+			return nil, ErrRedeemOfferClaimed
 		}
 		return nil, fmt.Errorf("mark code as used: %w", err)
 	}

@@ -74,7 +74,13 @@
                     {{ product.label || `¥${product.amount_cny}` }}
                   </span>
                   <span class="mt-1 block text-xs text-gray-500 dark:text-dark-400">
-                    {{ t('topup.cardShopAmount', { amount: product.amount_cny }) }}
+                    <template v-if="isNewcomerBalanceTopup(product.amount_cny)">
+                      {{ t('topup.newcomerCardSummary', { paid: product.amount_cny, credited: getCreditedBalanceTopupAmount(product.amount_cny) }) }}
+                    </template>
+                    <template v-else>{{ t('topup.cardShopAmount', { amount: product.amount_cny }) }}</template>
+                  </span>
+                  <span v-if="isNewcomerBalanceTopup(product.amount_cny)" class="mt-1 block text-xs font-medium text-primary-700 dark:text-primary-300">
+                    {{ t('topup.newcomerCardLimit') }}
                   </span>
                 </button>
               </div>
@@ -118,7 +124,7 @@
             <p class="text-sm font-medium text-gray-700 dark:text-dark-300 mb-3">{{ t('topup.promotionalCardsTitle') }}</p>
             <div class="grid grid-cols-2 gap-2">
               <button
-                v-for="product in promotionalTopups"
+                v-for="product in qrPromotionalTopups"
                 :key="product.paidAmountCny"
                 type="button"
                 @click="selectPreset(product.paidAmountCny)"
@@ -295,6 +301,7 @@ import {
   BALANCE_TOPUP_PRESETS,
   PROMOTIONAL_BALANCE_TOPUPS,
   getCreditedBalanceTopupAmount,
+  isNewcomerBalanceTopup,
   isSupportedBalanceTopupAmount
 } from '@/constants/balanceTopups'
 
@@ -309,7 +316,7 @@ const emit = defineEmits<{
 }>()
 
 const presets = BALANCE_TOPUP_PRESETS
-const promotionalTopups = PROMOTIONAL_BALANCE_TOPUPS
+const qrPromotionalTopups = PROMOTIONAL_BALANCE_TOPUPS.filter((product) => product.paidAmountCny >= 20)
 const QR_TTL_SECONDS = 300 // 5 分钟
 type TopupChannel = 'card_shop' | 'qr'
 

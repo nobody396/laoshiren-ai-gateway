@@ -1285,6 +1285,10 @@ export default {
     promotionalCardCredit: '到账 ⚡{credited}',
     promotionalCardBonus: '额外赠送 ⚡{bonus}',
     promotionalCardBadge: '长期优惠',
+    newcomerCardTitle: '新人特惠 · {credited} 元余额包',
+    newcomerCardSummary: '实付 ¥{paid} · 到账 ¥{credited}',
+    newcomerCardBadge: '新人特惠',
+    newcomerCardLimit: '每个账号仅可兑换 1 次，请勿重复购买。',
     creditedAmount: '到账额度',
     paySuccessWithCredit: '充值成功，⚡{amount} 已到账',
     developerPlansTitle: '开发者计划',
@@ -1336,6 +1340,10 @@ export default {
     redeemButton: '兑换',
     redeemSuccess: '兑换成功！',
     redeemFailed: '兑换失败',
+    errors: {
+      REDEEM_OFFER_ALREADY_CLAIMED: '这个新人特惠每个账号只能兑换 1 次，请勿重复购买。',
+      REDEEM_CODE_CHECKOUT_RESTRICTED: '该卡密暂不支持手动兑换，请联系客服。'
+    },
     added: '已添加',
     balanceAddedTopup: '余额充值',
     balanceAddedTopupPromotion: '优惠充值赠送',

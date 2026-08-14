@@ -283,7 +283,7 @@ func TestRedeemServiceBlocksRestrictedCheckoutInventoryFromManualRedemption(t *t
 		Value: 10, Status: StatusUnused,
 	}}
 	svc := NewRedeemService(repo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	svc.SetNativeCheckoutRedeemGuard(nativeCheckoutGuardFake(true))
+	svc.SetNativeCheckoutRedeemGuard(nativeCheckoutGuardFake{Restricted: true})
 
 	_, err := svc.Redeem(context.Background(), 42, repo.code.Code)
 	require.Error(t, err)
@@ -294,6 +294,21 @@ func TestRedeemServiceBlocksRestrictedCheckoutInventoryFromManualRedemption(t *t
 	repo.code.Status = StatusUsed
 	_, err = svc.Redeem(withNativeCheckoutRedeemAuthorization(context.Background()), 42, repo.code.Code)
 	require.ErrorIs(t, err, ErrRedeemCodeUsed)
+}
+
+func TestRedeemServiceRejectsSecondManualNewcomerClaim(t *testing.T) {
+	repo := &nativeCheckoutRedeemCodeRepoFake{code: &RedeemCode{
+		ID: 100, Code: "1123456789abcdef0123456789abcdef", Type: RedeemTypeBalance,
+		Value: 10, Status: StatusUnused,
+	}}
+	svc := NewRedeemService(repo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	svc.SetNativeCheckoutRedeemGuard(nativeCheckoutGuardFake{
+		Restricted: true, ManualRedeemEnabled: true, AlreadyClaimed: true,
+	})
+
+	_, err := svc.Redeem(context.Background(), 42, repo.code.Code)
+	require.ErrorIs(t, err, ErrRedeemOfferClaimed)
+	require.Equal(t, "REDEEM_OFFER_ALREADY_CLAIMED", infraerrors.Reason(err))
 }
 
 func testNativeCheckoutOffer() NativeCheckoutOffer {
@@ -492,10 +507,10 @@ func (r *nativeCheckoutRedeemCodeRepoFake) GetByCode(context.Context, string) (*
 	return &copy, nil
 }
 
-type nativeCheckoutGuardFake bool
+type nativeCheckoutGuardFake NativeCheckoutRedeemPolicy
 
-func (g nativeCheckoutGuardFake) IsNativeCheckoutRestricted(context.Context, int64) (bool, error) {
-	return bool(g), nil
+func (g nativeCheckoutGuardFake) GetNativeCheckoutRedeemPolicy(context.Context, int64, int64) (NativeCheckoutRedeemPolicy, error) {
+	return NativeCheckoutRedeemPolicy(g), nil
 }
 
 func (r *nativeCheckoutRedeemerFake) GetByCode(context.Context, string) (*RedeemCode, error) {

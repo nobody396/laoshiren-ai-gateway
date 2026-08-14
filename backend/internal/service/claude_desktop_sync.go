@@ -329,8 +329,10 @@ func jsonParseLiterals(raw []byte) [][]byte {
 			break
 		}
 		contentEnd := contentStart + contentEndRel
-		quoted := `"` + string(raw[contentStart:contentEnd]) + `"`
-		if decoded, err := strconv.Unquote(quoted); err == nil {
+		literal := raw[contentStart:contentEnd]
+		if json.Valid(literal) {
+			result = append(result, bytes.Clone(literal))
+		} else if decoded, err := strconv.Unquote(`"` + string(literal) + `"`); err == nil && json.Valid([]byte(decoded)) {
 			result = append(result, []byte(decoded))
 		}
 		start = contentEnd + 2

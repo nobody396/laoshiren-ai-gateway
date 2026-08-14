@@ -525,10 +525,13 @@ const balanceProducts = computed<BalanceProduct[]>(() => {
       cardShopProduct
     }
   })
+  const visiblePromotionalProducts = promotionalProducts.filter(
+    (product) => !product.newcomerOnly || !!product.cardShopProduct
+  )
   return [
-    ...promotionalProducts.filter((product) => product.newcomerOnly),
+    ...visiblePromotionalProducts.filter((product) => product.newcomerOnly),
     ...standardProducts,
-    ...promotionalProducts.filter((product) => !product.newcomerOnly)
+    ...visiblePromotionalProducts.filter((product) => !product.newcomerOnly)
   ]
 })
 const selectedBalanceProduct = computed<BalanceProduct | undefined>(

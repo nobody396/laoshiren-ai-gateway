@@ -6,7 +6,6 @@ import {
   CODEX_AUTO_COMPACT_TOKEN_LIMIT,
   CODEX_CONTEXT_WINDOW_TOKENS,
   getCompatibleCcsTargets,
-  GROK_BUILD_MODELS,
   OPENAI_CODEX_MODELS,
   type CcsImportTarget
 } from '@/utils/ccSwitchImport'
@@ -178,8 +177,8 @@ describe('CC Switch provider deeplinks', () => {
     expect(url.searchParams.get('usageBaseUrl')).toBe('https://api.laoshirenai.com')
   })
 
-  it('builds the native Grok Build provider contract supported by CC Switch', () => {
-    const url = new URL(buildCcsImportDeeplink({
+  it('rejects the lossy Grok Build deeplink contract in CC Switch 3.19.2', () => {
+    expect(() => buildCcsImportDeeplink({
       apiBaseUrl: 'https://api.laoshirenai.com/v1',
       siteName: '老实人 AI',
       target: 'grokbuild',
@@ -187,39 +186,7 @@ describe('CC Switch provider deeplinks', () => {
         key: 'test-grok-key-placeholder',
         group: { platform: 'grok', name: 'Grok 月卡' }
       }
-    }))
-
-    expect(url.searchParams.get('resource')).toBe('provider')
-    expect(url.searchParams.get('app')).toBe('grokbuild')
-    expect(url.searchParams.get('endpoint')).toBe('https://api.laoshirenai.com/v1')
-    expect(url.searchParams.get('model')).toBe('grok-4.6')
-    expect(url.searchParams.get('name')).toContain('Grok Build')
-    expect(url.searchParams.get('name')).not.toContain('Grok 4.6 分组')
-    expect(url.searchParams.get('configFormat')).toBe('json')
-    const encodedConfig = url.searchParams.get('config')
-    expect(encodedConfig).not.toBeNull()
-    const importConfig = JSON.parse(decodeBase64Utf8(encodedConfig!))
-    expect(importConfig.config).toContain('[models]\ndefault = "grok-4.6"')
-    for (const model of GROK_BUILD_MODELS) {
-      expect(importConfig.config).toContain(`[model."${model.model}"]`)
-      expect(importConfig.config).toContain(`model = "${model.model}"`)
-      expect(importConfig.config).toContain(`name = "${model.displayName}"`)
-      expect(importConfig.config).toContain(`description = "${model.displayName}"`)
-      expect(importConfig.config).toContain(`context_window = ${model.contextWindow}`)
-    }
-    expect(importConfig.config).toContain('base_url = "https://api.laoshirenai.com/v1"')
-    expect(importConfig.config).not.toContain('test-grok-key-placeholder')
-    expect(importConfig.config).not.toContain('老实人 AI')
-    expect(url.searchParams.get('usageEnabled')).toBe('true')
-    const usageScript = atob(url.searchParams.get('usageScript') || '')
-    expect(usageScript).toContain('url: "{{baseUrl}}/v1/usage"')
-    expect(usageScript).toContain('method: "GET"')
-    expect(usageScript).toContain('"Authorization": "Bearer {{apiKey}}"')
-    expect(usageScript).not.toContain('eval(')
-    expect(usageScript).not.toContain('fetch(')
-    expect(url.searchParams.get('haikuModel')).toBeNull()
-    expect(url.searchParams.get('sonnetModel')).toBeNull()
-    expect(url.searchParams.get('opusModel')).toBeNull()
+    })).toThrow(/one-click compatibility setup/)
   })
 
   it('rejects Anthropic and generic OpenAI bridge targets for a Grok group', () => {
@@ -235,17 +202,14 @@ describe('CC Switch provider deeplinks', () => {
     }
   })
 
-  it('avoids duplicating /v1 for a native Grok Build provider', () => {
-    const url = new URL(buildCcsImportDeeplink({
+  it('never falls back to a single-model Grok Build deeplink', () => {
+    expect(() => buildCcsImportDeeplink({
       apiBaseUrl: 'https://api.laoshirenai.com/v1/',
       target: 'grokbuild',
       key: {
         key: 'test-grok-key-placeholder',
         group: { platform: 'grok' }
       }
-    }))
-
-    expect(url.searchParams.get('endpoint')).toBe('https://api.laoshirenai.com/v1')
-    expect(url.searchParams.get('usageBaseUrl')).toBe('https://api.laoshirenai.com')
+    })).toThrow(/one-click compatibility setup/)
   })
 })

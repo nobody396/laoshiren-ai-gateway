@@ -28,6 +28,11 @@ $RequiredFunctions = @(
   'Write-Info',
   'Write-WarnMessage',
   'Stop-Script',
+  'Ensure-Directory',
+  'Backup-IfNeeded',
+  'ConvertTo-TomlString',
+  'Get-OpenAIV1BaseUrl',
+  'Write-GrokTomlConfig',
   'Get-UsableClientCommand',
   'Resolve-SystemNpmCmd',
   'Test-UsableSystemNode',
@@ -122,6 +127,52 @@ try {
   }
   Assert-True (Test-Path -LiteralPath (Join-Path $FixtureDir 'keep.ps1')) 'A managed PowerShell script without a matching .cmd must remain untouched'
   Assert-True (Test-Path -LiteralPath (Join-Path $GrokBinDir 'grok.ps1')) 'Unmanaged Grok fixture should remain untouched'
+
+  $GrokDir = Join-Path $FixtureDir 'grok-home'
+  $GrokConfigPath = Join-Path $GrokDir 'config.toml'
+  New-Item -ItemType Directory -Path $GrokDir -Force | Out-Null
+  $OriginalGrokConfig = @'
+[models]
+default = "unrelated"
+
+[preferences]
+theme = "dark"
+
+[model."unrelated"]
+model = "unrelated"
+base_url = "https://unrelated.example/v1"
+api_key = "keep-me"
+
+[model."grok-4.5"]
+name = "stale"
+'@
+  [IO.File]::WriteAllText($GrokConfigPath, $OriginalGrokConfig, [Text.UTF8Encoding]::new($false))
+  $CatalogGrokDefaultModel = 'grok-4.6'
+  $CatalogGrokManagedModels = @(
+    @{ Id = 'grok-4.5'; DisplayName = 'Grok 4.5'; ContextWindow = 500000 },
+    @{ Id = 'grok-4.6'; DisplayName = 'Grok 4.6'; ContextWindow = 500000 }
+  )
+  $CatalogGrokManagedModelSections = @('model.grok-4.5', 'model."grok-4.5"', 'model.grok-4.6', 'model."grok-4.6"')
+  $script:BaseUrl = 'https://api.example.com'
+  $script:GrokApiKey = 'test-owned-key'
+
+  Write-GrokTomlConfig
+  $FirstGrokConfig = [IO.File]::ReadAllText($GrokConfigPath)
+  Assert-True ($FirstGrokConfig.Contains('default = "grok-4.6"')) 'Grok 4.6 was not selected as the default'
+  Assert-True ($FirstGrokConfig.Contains("[preferences]`ntheme = `"dark`"")) 'Unrelated Grok preferences were overwritten'
+  Assert-True ($FirstGrokConfig.Contains('[model."unrelated"]')) 'Unrelated Grok provider was overwritten'
+  Assert-True ($FirstGrokConfig.Contains('api_key = "keep-me"')) 'Unrelated Grok credential was overwritten'
+  Assert-True (([regex]::Matches($FirstGrokConfig, [regex]::Escape('[model."grok-4.5"]'))).Count -eq 1) 'Grok 4.5 was not written exactly once'
+  Assert-True (([regex]::Matches($FirstGrokConfig, [regex]::Escape('[model."grok-4.6"]'))).Count -eq 1) 'Grok 4.6 was not written exactly once'
+  Assert-True ($FirstGrokConfig.Contains('name = "Grok 4.5"')) 'Grok 4.5 display name is missing'
+  Assert-True ($FirstGrokConfig.Contains('name = "Grok 4.6"')) 'Grok 4.6 display name is missing'
+  Assert-True (-not $FirstGrokConfig.Contains('老实人AI')) 'Provider/group branding leaked into model names'
+  Assert-True ([IO.File]::ReadAllText("$GrokConfigPath.bak") -eq $OriginalGrokConfig) 'The original Grok backup was not preserved'
+  Assert-True (-not (Get-ChildItem -LiteralPath $GrokDir -Filter 'config.toml.tmp.*')) 'Atomic Grok write left temporary files behind'
+
+  Write-GrokTomlConfig
+  Assert-True ([IO.File]::ReadAllText($GrokConfigPath) -eq $FirstGrokConfig) 'Grok config repair is not idempotent'
+  Assert-True ([IO.File]::ReadAllText("$GrokConfigPath.bak") -eq $OriginalGrokConfig) 'A retry replaced the original Grok backup'
 
   $NpmLog = Join-Path $FixtureDir 'npm-arguments.log'
   $FakeNpm = Join-Path $FixtureDir 'npm.cmd'

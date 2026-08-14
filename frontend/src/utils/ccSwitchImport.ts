@@ -1,6 +1,5 @@
 import type { GroupPlatform } from '@/types'
 import {
-  catalogClientDefaultForPlatform,
   codexClientModels,
   optionalCatalogClientDefaultForPlatform
 } from '@/generated/modelCatalog'
@@ -44,19 +43,6 @@ export const DEFAULT_OPENAI_MODEL = optionalCatalogClientDefaultForPlatform('ope
 // also avoids relying on client-version-specific defaults.
 export const CODEX_CONTEXT_WINDOW_TOKENS = 250000
 export const CODEX_AUTO_COMPACT_TOKEN_LIMIT = 225000
-const GROK_CLIENT_DEFAULT = catalogClientDefaultForPlatform('grok')
-
-// Grok Build does not discover gateway aliases remotely. Keep the current
-// catalog default plus the still-supported predecessor explicit so /model can
-// show stable model names instead of the provider/group label.
-export const GROK_BUILD_MODELS = [
-  {
-    model: GROK_CLIENT_DEFAULT.id,
-    displayName: GROK_CLIENT_DEFAULT.displayName,
-    contextWindow: GROK_CLIENT_DEFAULT.contextWindow
-  },
-  { model: 'grok-4.5', displayName: 'Grok 4.5', contextWindow: 500000 }
-] as const
 
 // One generated source drives both the downloaded Codex catalog and CC Switch
 // imports so disabled models cannot remain in only one client path.
@@ -193,30 +179,6 @@ requires_openai_auth = true
   })
 }
 
-const buildGrokBuildImportConfig = (endpoint: string): string => {
-  const safeEndpoint = escapeTomlString(endpoint)
-  const safeDefault = escapeTomlString(GROK_CLIENT_DEFAULT.id)
-  const profiles = GROK_BUILD_MODELS.map((model) => {
-    const safeModel = escapeTomlString(model.model)
-    const safeDisplayName = escapeTomlString(model.displayName)
-    return `[model."${safeModel}"]
-model = "${safeModel}"
-base_url = "${safeEndpoint}"
-name = "${safeDisplayName}"
-description = "${safeDisplayName}"
-api_backend = "responses"
-context_window = ${model.contextWindow}`
-  }).join('\n\n')
-
-  return JSON.stringify({
-    config: `[models]
-default = "${safeDefault}"
-
-${profiles}
-`
-  })
-}
-
 const FABLE_ENABLED_CLAUDE_GROUP_IDS = new Set([5, 15])
 
 const buildClaudeImportConfig = (enableFable: boolean): string => {
@@ -310,6 +272,11 @@ export const buildCcsImportDeeplink = ({
   if (!isCompatibleCcsTarget(platform, target, allowMessagesDispatch)) {
     throw new Error(`CC Switch target "${target}" is not compatible with platform "${platform}"`)
   }
+  if (target === 'grokbuild') {
+    throw new Error(
+      'CC Switch 3.19.2 cannot preserve Grok Build multi-model deeplinks; use the one-click compatibility setup'
+    )
+  }
 
   const gatewayBaseUrl = normalizeGatewayBaseUrl(apiBaseUrl)
   const app: CcsApp = target
@@ -347,11 +314,7 @@ export const buildCcsImportDeeplink = ({
     usageAutoInterval: '30'
   })
 
-  if (target === 'grokbuild') {
-    params.set('model', GROK_CLIENT_DEFAULT.id)
-    params.set('configFormat', 'json')
-    params.set('config', encodeBase64Utf8(buildGrokBuildImportConfig(endpoint)))
-  } else if (
+  if (
     target === 'codex' ||
     target === 'opencode' ||
     target === 'openclaw' ||

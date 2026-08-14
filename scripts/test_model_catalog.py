@@ -31,6 +31,13 @@ class ModelCatalogTest(unittest.TestCase):
         self.assertIn("$CatalogGrokDefaultModel = 'grok-4.6'", MODULE.render_powershell_block(catalog))
         self.assertIn("CATALOG_GROK_DEFAULT_MODEL='grok-4.6'", MODULE.render_shell_block(catalog))
         self.assertEqual(
+            MODULE.installer_model_values(catalog)["grok"]["managed_models"],
+            [
+                {"id": "grok-4.5", "display_name": "Grok 4.5", "context_window": 500000},
+                {"id": "grok-4.6", "display_name": "Grok 4.6", "context_window": 500000},
+            ],
+        )
+        self.assertEqual(
             MODULE.render_codex_client_catalog(catalog),
             MODULE.CODEX_CLIENT_OUTPUT.read_text(encoding="utf-8"),
         )
@@ -50,6 +57,12 @@ class ModelCatalogTest(unittest.TestCase):
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
         catalog["api_key"] = "not-allowed"
         with self.assertRaisesRegex(ValueError, "credential-shaped"):
+            MODULE.validate_catalog(catalog)
+
+    def test_rejects_grok_predecessor_without_explicit_model_metadata(self) -> None:
+        catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
+        catalog["models"][0]["client_config"]["managed_predecessor_models"] = []
+        with self.assertRaisesRegex(ValueError, "must describe every Grok predecessor"):
             MODULE.validate_catalog(catalog)
 
     def test_manifest_updates_catalog_without_losing_legacy_group(self) -> None:

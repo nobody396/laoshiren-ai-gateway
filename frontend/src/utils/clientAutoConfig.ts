@@ -8,6 +8,7 @@ export interface BuildClientAutoConfigCommandInput {
   ticket: string
   isWindows?: boolean
   installCodexApp?: boolean
+  grokCcSwitchCompat?: boolean
 }
 
 const shellSingleQuote = (value: string): string => {
@@ -52,6 +53,7 @@ export const buildClientAutoConfigCommand = ({
   target,
   ticket,
   installCodexApp = false,
+  grokCcSwitchCompat = false,
   isWindows = typeof navigator !== 'undefined' &&
     navigator.userAgent.toLowerCase().includes('windows')
 }: BuildClientAutoConfigCommandInput): string => {
@@ -63,6 +65,9 @@ export const buildClientAutoConfigCommand = ({
     if (target === 'codex' && installCodexApp) {
       parts.push("$env:LAOSHIRENAI_INSTALL_CODEX_APP='1'")
     }
+    if (target === 'grok' && grokCcSwitchCompat) {
+      parts.push("$env:LAOSHIRENAI_GROK_CC_SWITCH_COMPAT='1'")
+    }
     parts.push(`irm ${POWERSHELL_INSTALLER_URL} | iex`)
     return parts.join('; ')
   }
@@ -73,6 +78,9 @@ export const buildClientAutoConfigCommand = ({
   ]
   if (target === 'codex' && installCodexApp) {
     environment.push("LAOSHIRENAI_INSTALL_CODEX_APP='1'")
+  }
+  if (target === 'grok' && grokCcSwitchCompat) {
+    environment.push("LAOSHIRENAI_GROK_CC_SWITCH_COMPAT='1'")
   }
   return `curl -fsSL ${SHELL_INSTALLER_URL} | ${environment.join(' ')} bash`
 }

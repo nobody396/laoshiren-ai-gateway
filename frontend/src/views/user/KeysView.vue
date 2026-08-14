@@ -1761,7 +1761,7 @@ const copySaveOfficialProviderCommand = async () => {
   const isWindows = navigator.userAgent.toLowerCase().includes('windows')
   const command = isWindows
     ? "$env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1?v=1.0.0 | iex"
-    : 'curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0 | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash'
+    : `curl -fsSL 'https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0' | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash`
   await clipboardCopy(command, t('keys.saveOfficialProviderCommandCopied'))
 }
 

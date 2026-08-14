@@ -560,7 +560,7 @@ npm -v
 **Mac / Linux：**
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0 | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash
+curl -fsSL 'https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0' | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash
 ```
 
 **Windows PowerShell：**

@@ -91,7 +91,7 @@ describe('client auto-config commands', () => {
       ticket: 'ticket-claude-test',
       isWindows: false
     })).toBe(
-      `curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion} | ` +
+      `curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion}' | ` +
       "LAOSHIRENAI_SETUP_TOKEN='ticket-claude-test' LAOSHIRENAI_TOOLS='claude' bash"
     )
   })
@@ -102,7 +102,7 @@ describe('client auto-config commands', () => {
       ticket: 'ticket-grok-test',
       isWindows: false
     })).toBe(
-      `curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion} | ` +
+      `curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion}' | ` +
       "LAOSHIRENAI_SETUP_TOKEN='ticket-grok-test' LAOSHIRENAI_TOOLS='grok' bash"
     )
   })
@@ -119,6 +119,14 @@ describe('client auto-config commands', () => {
 
       expect(command).toContain("LAOSHIRENAI_TOOLS='grok'")
       expect(command).toContain("LAOSHIRENAI_GROK_CC_SWITCH_COMPAT='1'")
+      if (!isWindows) {
+        expect(command).toContain(
+          `curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion}' |`
+        )
+        expect(command).not.toContain(
+          `curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion}`
+        )
+      }
       expect(command).not.toContain('sk-')
       expect(command).not.toContain('api.laoshirenai.com')
     }

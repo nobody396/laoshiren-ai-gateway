@@ -70,7 +70,7 @@ codex --version
 macOS / Linux 命令格式：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.9 | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.9' | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
 ```
 
 Windows PowerShell 命令格式：
@@ -114,7 +114,7 @@ $env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex';
 macOS / Linux：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0 | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash
+curl -fsSL 'https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0' | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash
 ```
 
 Windows PowerShell：

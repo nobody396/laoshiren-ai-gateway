@@ -82,5 +82,5 @@ export const buildClientAutoConfigCommand = ({
   if (target === 'grok' && grokCcSwitchCompat) {
     environment.push("LAOSHIRENAI_GROK_CC_SWITCH_COMPAT='1'")
   }
-  return `curl -fsSL ${SHELL_INSTALLER_URL} | ${environment.join(' ')} bash`
+  return `curl -fsSL ${shellSingleQuote(SHELL_INSTALLER_URL)} | ${environment.join(' ')} bash`
 }

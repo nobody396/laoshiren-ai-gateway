@@ -32,7 +32,7 @@ IP 限制、额度限制、速率限制和有效期可按需配置，新手建�
 直接执行：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.9 | bash
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.9' | bash
 ```
 
 脚本会自动完成以下动作：
@@ -71,7 +71,7 @@ Windows 脚本还会检测现有 Claude Code CLI 和官方 `OpenAI.Codex` App。
 macOS / Linux：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.9 | bash -s -- --api-key YOUR_CLAUDE_KEY --tools claude
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.9' | bash -s -- --api-key YOUR_CLAUDE_KEY --tools claude
 ```
 
 Windows PowerShell（管道模式通过环境变量传参）：
@@ -91,7 +91,7 @@ Windows PowerShell（下载后直接执行）：
 macOS / Linux：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.9 | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.9' | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
 ```
 
 Windows PowerShell（管道模式）：
@@ -113,7 +113,7 @@ Windows PowerShell（下载后直接执行）：
 macOS / Linux：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.9 | bash -s -- --api-key YOUR_CLAUDE_KEY --codex-api-key YOUR_CODEX_KEY
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.9' | bash -s -- --api-key YOUR_CLAUDE_KEY --codex-api-key YOUR_CODEX_KEY
 ```
 
 Windows PowerShell（管道模式）：
@@ -133,7 +133,7 @@ Windows PowerShell（下载后直接执行）：
 如果你部署了自定义域名，可以覆盖默认地址：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.9 | bash -s -- --api-key YOUR_CLAUDE_KEY --base-url https://api.laoshirenai.com
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.9' | bash -s -- --api-key YOUR_CLAUDE_KEY --base-url https://api.laoshirenai.com
 ```
 
 ---
@@ -273,7 +273,7 @@ codex --version
 macOS / Linux：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0 | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash
+curl -fsSL 'https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0' | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash
 ```
 
 Windows PowerShell：

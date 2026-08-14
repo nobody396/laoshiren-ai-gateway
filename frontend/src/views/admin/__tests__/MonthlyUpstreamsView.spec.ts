@@ -48,7 +48,7 @@ function snapshot(latestStatus: 'ok' | 'failed', gatewayCheckedAt: string): Mont
       account_id: 24,
       account_name: 'monthly-codex-gateway',
       platform: 'openai',
-      model: 'gpt-5.4',
+      model: 'gpt-5.6-sol',
       latest_status: latestStatus,
       latest_http_status: latestStatus === 'ok' ? 200 : 503,
       latest_latency_ms: latestStatus === 'ok' ? 2635 : 8216,

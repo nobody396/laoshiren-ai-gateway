@@ -50,13 +50,17 @@ type publicDownloadManifest struct {
 }
 
 type publicDownloadAsset struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Size        int64  `json:"size"`
-	SHA256      string `json:"sha256"`
-	Platform    string `json:"platform"`
-	Arch        string `json:"arch"`
-	DownloadURL string `json:"download_url"`
+	ID                     string `json:"id"`
+	Name                   string `json:"name"`
+	Size                   int64  `json:"size"`
+	SHA256                 string `json:"sha256"`
+	Platform               string `json:"platform"`
+	Arch                   string `json:"arch"`
+	Role                   string `json:"role,omitempty"`
+	ComponentVersion       string `json:"component_version,omitempty"`
+	UpstreamSHA256         string `json:"upstream_sha256,omitempty"`
+	UpstreamCompressedSize int64  `json:"upstream_compressed_size,omitempty"`
+	DownloadURL            string `json:"download_url"`
 }
 
 func NewResourceHandler(downloads *service.DownloadResourceService, setup *service.ClientSetupService) *ResourceHandler {
@@ -74,13 +78,17 @@ func buildPublicDownloadManifest(manifest *service.CachedDownloadManifest, tool 
 	}
 	for _, asset := range manifest.Assets {
 		result.Assets = append(result.Assets, publicDownloadAsset{
-			ID:          asset.ID,
-			Name:        asset.Name,
-			Size:        asset.Size,
-			SHA256:      asset.SHA256,
-			Platform:    asset.Platform,
-			Arch:        asset.Arch,
-			DownloadURL: buildImmutableDownloadURL(tool, manifest, asset),
+			ID:                     asset.ID,
+			Name:                   asset.Name,
+			Size:                   asset.Size,
+			SHA256:                 asset.SHA256,
+			Platform:               asset.Platform,
+			Arch:                   asset.Arch,
+			Role:                   asset.Role,
+			ComponentVersion:       asset.ComponentVersion,
+			UpstreamSHA256:         asset.UpstreamSHA256,
+			UpstreamCompressedSize: asset.UpstreamCompressed,
+			DownloadURL:            buildImmutableDownloadURL(tool, manifest, asset),
 		})
 	}
 	return result
@@ -432,6 +440,10 @@ func (h *ResourceHandler) GitForWindowsLatestManifest(c *gin.Context) {
 
 func (h *ResourceHandler) GrokBuildLatestManifest(c *gin.Context) {
 	h.latestImmutableToolManifest(c, "grok-build")
+}
+
+func (h *ResourceHandler) ClaudeDesktopLatestManifest(c *gin.Context) {
+	h.latestImmutableToolManifest(c, "claude-desktop")
 }
 
 func (h *ResourceHandler) latestImmutableToolManifest(c *gin.Context, tool string) {

@@ -911,18 +911,27 @@ update:
 downloads:
   enabled: true
   cache_dir: "./data/downloads"
+  # Check GitHub/xAI release metadata every 30 minutes. Existing immutable
+  # packages are reused; large files download only when a version changes.
+  version_check_interval_minutes: 30
+  # Deprecated compatibility setting; no longer controls release checks.
   update_interval_hours: 24
+  # Claude Desktop only downloads large packages after this tiny metadata poll
+  # reports a new version.
+  claude_desktop_check_minutes: 5
+  # Keep the current complete Windows pair plus two rollback versions.
+  claude_desktop_retain_versions: 3
   startup_sync: true
   cc_switch_repo: "farion1231/cc-switch"
   codex_repo: "openai/codex"
   codex_windows_mirror_repo: "Wangnov/codex-app-mirror"
-  codex_mac_official_url: "https://persistent.oaistatic.com/codex-app-prod/ChatGPT.dmg"
+  # Deprecated: macOS Codex DMGs are taken from versioned openai/codex releases.
+  codex_mac_official_url: ""
   codex_plus_plus_repo: "BigPizzaV3/CodexPlusPlus"
   git_for_windows_repo: "git-for-windows/git"
   grok_build_primary_base_url: "https://x.ai/cli"
   grok_build_fallback_base_url: "https://storage.googleapis.com/grok-build-public-artifacts/cli"
   claude_desktop_mac_url: "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest/Claude.dmg"
-  claude_desktop_windows_x64_url: "https://downloads.claude.ai/releases/win32/x64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe"
-  claude_desktop_windows_arm64_url: "https://downloads.claude.ai/releases/win32/arm64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe"
+  claude_desktop_latest_base_url: "https://downloads.claude.ai/releases/win32"
   # Per-file safety ceiling. 1 GiB covers current desktop packages.
   max_asset_bytes: 1073741824

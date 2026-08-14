@@ -217,9 +217,9 @@ import { useAppStore } from '@/stores/app'
 import { buildClientAutoConfigCommand, getClientAutoConfigName } from '@/utils/clientAutoConfig'
 import { buildCcsDiagnosticCommand } from '@/utils/ccSwitchDiagnostics'
 import {
+  buildClaudeDesktopWindowsInstallCommand,
   buildImmutableResourceDownloadPath,
-  buildWindowsDesktopInstallCommand,
-  CLAUDE_DESKTOP_WINDOWS_X64
+  buildWindowsDesktopInstallCommand
 } from '@/utils/resourceInstallCommands'
 
 type IconName = InstanceType<typeof Icon>['$props']['name']
@@ -387,7 +387,7 @@ const resources: DownloadResource[] = [
   {
     name: 'Codex',
     badge: 'OpenAI 官方编码工具',
-    description: '适合在本地终端中运行 Codex，也可以使用 Codex App 体验。下载区会每天检查新版本：官方仓库已有的包直接取官方源，Windows 桌面版取发布镜像。',
+    description: '适合在本地终端中运行 Codex，也可以使用 Codex App 体验。下载区每 30 分钟检查新版本：官方仓库已有的包直接取官方源，Windows 桌面版取发布镜像。',
     icon: 'cpu',
     commands: [
       {
@@ -403,7 +403,7 @@ const resources: DownloadResource[] = [
     ],
     downloadToolId: 'codex',
     downloadTitle: '自动更新安装包',
-    downloadHint: 'Windows 64 位提供 Codex App 的 MSIX 安装包；macOS 提供 OpenAI 官方 Codex 包。本站每天自动检查并缓存最新版。',
+    downloadHint: 'Windows 64 位提供 Codex App 的 MSIX 安装包；macOS 提供 OpenAI 官方版本化 Codex 包。本站每 30 分钟检查并缓存最新版。',
     verifyCommand: 'codex\ncodex app',
     primaryLink: 'https://github.com/openai/codex/releases/latest',
     docsLink: 'https://developers.openai.com/codex/cli',
@@ -428,17 +428,17 @@ const resources: DownloadResource[] = [
   {
     name: 'Claude Desktop',
     badge: 'Claude 官方桌面 App',
-    description: 'Claude 官方桌面客户端。中国大陆网络安装后请不要直接进入官方登录页，需先在 CC Switch 的 Claude Desktop 页面单独配置。',
+    description: '中国大陆无魔法、无代理环境下，一键安装会同时准备最新版 Claude Desktop 和匹配的 Code 本地组件；随后通过 CC Switch 配置即可使用普通聊天和 Code Local。',
     icon: 'cube',
     commands: [],
     downloadToolId: 'claude-desktop',
     downloadTitle: '官方安装包',
-    downloadHint: 'Windows 优先使用本站内容寻址的国内加速缓存并校验 SHA256；本站失败时，一键命令才会回退 Anthropic 官方 CDN。',
-    verifyText: '安装后先完全退出 Claude Desktop，再到 CC Switch 的 Claude Desktop 页面导入并启用 Provider；随后保持 CC Switch 运行并重新打开 Claude Desktop。',
+    downloadHint: 'Windows 一键命令只从本站内容寻址缓存下载并校验 SHA256，不再让中国大陆用户回退到容易超时的 Anthropic 官方 CDN。',
+    verifyText: '安装后到 CC Switch 的 Claude Desktop 页面导入并启用 Provider，保持 CC Switch 运行，再打开 Claude Desktop 测试普通聊天和 Code → Local。',
     primaryLink: 'https://claude.com/download',
     docsLink: 'https://support.claude.com/en/articles/10065433-install-claude-desktop',
     primaryAction: '打开官方下载页',
-    note: 'Claude Desktop 与 Claude Code 是两个独立配置页。Windows 安装包优先使用本站不可变静态缓存，官方地址仅作故障回退；两条路径都必须通过文件完整性校验。'
+    note: '中国大陆无魔法、无代理环境下不能使用 Cowork。Cowork 依赖 Anthropic 官方云端工作区，CC Switch 只能配置模型中转，不能替代 Cowork 的官方网络连接。'
   },
   {
     name: 'CC Switch',
@@ -451,7 +451,7 @@ const resources: DownloadResource[] = [
     downloadHint: '只展示最适合普通用户的 Windows 安装版和 macOS 安装包，Linux、绿色版和校验文件不放在主列表里。',
     verifyText: '安装完成后打开 CC Switch 应用，确认能看到 Claude Code 和 Codex 入口。',
     docsLink: 'https://ccswitch.ai/',
-    note: 'CC Switch 安装包由本站定时缓存，用户下载时不需要访问 GitHub。'
+    note: 'CC Switch 安装包由本站每 30 分钟检查并按版本缓存，用户下载时不需要访问 GitHub。'
   }
 ]
 
@@ -499,11 +499,12 @@ function preferredAssets(tool: DownloadToolID): DownloadAsset[] {
 
 function installOptionFor(tool: DownloadToolID, asset: DownloadAsset): { key: string; score: number } | null {
   const name = asset.name.toLowerCase()
+  if (asset.role === 'claude-desktop-code') return null
   if (asset.platform === 'windows') {
     if (asset.arch === 'arm64') return null
     if (tool === 'cc-switch' && !name.endsWith('.msi')) return null
     if (tool === 'codex-plus-plus' && !name.endsWith('.exe')) return null
-    if (tool === 'claude-desktop' && !name.endsWith('.exe')) return null
+    if (tool === 'claude-desktop' && (asset.role !== 'installer' || !name.endsWith('.msix'))) return null
     if (tool === 'codex') {
       if (name.startsWith('codex-app-server-package')) return null
       if (!name.endsWith('.msix') && !name.endsWith('pc-windows-msvc.exe.zip')) return null
@@ -632,15 +633,19 @@ async function prepareAdvancedInstallCommand(tool: DownloadToolID) {
     let command = ''
     if (detectedOS.value === 'windows') {
       const asset = assets.find((item) => item.arch === 'x64') || assets[0]
-      const cachedURL = immutableResourceDownloadURL(tool, asset)
-      const officialClaudeAsset = tool === 'claude-desktop' ? CLAUDE_DESKTOP_WINDOWS_X64 : undefined
-      command = buildWindowsDesktopInstallCommand({
-        tool,
-        sources: [
-          { url: cachedURL, sha256: asset.sha256 },
-          ...(officialClaudeAsset ? [officialClaudeAsset] : [])
-        ]
-      })
+      if (tool === 'claude-desktop') {
+        const component = manifests.value[tool]?.assets.find((item) =>
+          item.platform === 'windows' && item.arch === asset.arch &&
+          item.role === 'claude-desktop-code' && !!item.component_version && !!item.upstream_sha256
+        )
+        if (!component) throw new Error('最新版 Claude Desktop 尚未准备好匹配的 Code 本地组件')
+        command = buildClaudeDesktopWindowsInstallCommand(window.location.origin)
+      } else {
+        command = buildWindowsDesktopInstallCommand({
+          tool,
+          sources: [{ url: immutableResourceDownloadURL(tool, asset), sha256: asset.sha256 }]
+        })
+      }
     } else {
       const universal = assets.find((item) => item.arch === 'universal')
       if (universal) {

@@ -155,19 +155,29 @@ type UpdateConfig struct {
 }
 
 type DownloadsConfig struct {
-	Enabled                      bool   `mapstructure:"enabled"`
-	CacheDir                     string `mapstructure:"cache_dir"`
-	UpdateIntervalHours          int    `mapstructure:"update_interval_hours"`
-	StartupSync                  bool   `mapstructure:"startup_sync"`
-	CCSwitchRepo                 string `mapstructure:"cc_switch_repo"`
-	CodexRepo                    string `mapstructure:"codex_repo"`
-	CodexWindowsMirrorRepo       string `mapstructure:"codex_windows_mirror_repo"`
-	CodexMacOfficialURL          string `mapstructure:"codex_mac_official_url"`
-	CodexPlusPlusRepo            string `mapstructure:"codex_plus_plus_repo"`
-	GitForWindowsRepo            string `mapstructure:"git_for_windows_repo"`
-	GrokBuildPrimaryBaseURL      string `mapstructure:"grok_build_primary_base_url"`
-	GrokBuildFallbackBaseURL     string `mapstructure:"grok_build_fallback_base_url"`
-	ClaudeDesktopMacURL          string `mapstructure:"claude_desktop_mac_url"`
+	Enabled                     bool   `mapstructure:"enabled"`
+	CacheDir                    string `mapstructure:"cache_dir"`
+	VersionCheckIntervalMinutes int    `mapstructure:"version_check_interval_minutes"`
+	// Deprecated: retained so older config files continue to decode. Resource
+	// release checks now use VersionCheckIntervalMinutes.
+	UpdateIntervalHours         int    `mapstructure:"update_interval_hours"`
+	ClaudeDesktopCheckMinutes   int    `mapstructure:"claude_desktop_check_minutes"`
+	ClaudeDesktopRetainVersions int    `mapstructure:"claude_desktop_retain_versions"`
+	StartupSync                 bool   `mapstructure:"startup_sync"`
+	CCSwitchRepo                string `mapstructure:"cc_switch_repo"`
+	CodexRepo                   string `mapstructure:"codex_repo"`
+	CodexWindowsMirrorRepo      string `mapstructure:"codex_windows_mirror_repo"`
+	// Deprecated: Codex macOS DMGs now come from the versioned openai/codex
+	// release instead of an unversioned mutable URL.
+	CodexMacOfficialURL        string `mapstructure:"codex_mac_official_url"`
+	CodexPlusPlusRepo          string `mapstructure:"codex_plus_plus_repo"`
+	GitForWindowsRepo          string `mapstructure:"git_for_windows_repo"`
+	GrokBuildPrimaryBaseURL    string `mapstructure:"grok_build_primary_base_url"`
+	GrokBuildFallbackBaseURL   string `mapstructure:"grok_build_fallback_base_url"`
+	ClaudeDesktopMacURL        string `mapstructure:"claude_desktop_mac_url"`
+	ClaudeDesktopLatestBaseURL string `mapstructure:"claude_desktop_latest_base_url"`
+	// Deprecated: kept so existing config files still decode. Dynamic Windows
+	// releases are discovered through ClaudeDesktopLatestBaseURL instead.
 	ClaudeDesktopWindowsX64URL   string `mapstructure:"claude_desktop_windows_x64_url"`
 	ClaudeDesktopWindowsARM64URL string `mapstructure:"claude_desktop_windows_arm64_url"`
 	MaxAssetBytes                int64  `mapstructure:"max_asset_bytes"`
@@ -1390,19 +1400,23 @@ func setDefaults() {
 
 	viper.SetDefault("downloads.enabled", true)
 	viper.SetDefault("downloads.cache_dir", "./data/downloads")
+	viper.SetDefault("downloads.version_check_interval_minutes", 30)
 	viper.SetDefault("downloads.update_interval_hours", 24)
+	viper.SetDefault("downloads.claude_desktop_check_minutes", 5)
+	viper.SetDefault("downloads.claude_desktop_retain_versions", 3)
 	viper.SetDefault("downloads.startup_sync", true)
 	viper.SetDefault("downloads.cc_switch_repo", "farion1231/cc-switch")
 	viper.SetDefault("downloads.codex_repo", "openai/codex")
 	viper.SetDefault("downloads.codex_windows_mirror_repo", "Wangnov/codex-app-mirror")
-	viper.SetDefault("downloads.codex_mac_official_url", "https://persistent.oaistatic.com/codex-app-prod/ChatGPT.dmg")
+	viper.SetDefault("downloads.codex_mac_official_url", "")
 	viper.SetDefault("downloads.codex_plus_plus_repo", "BigPizzaV3/CodexPlusPlus")
 	viper.SetDefault("downloads.git_for_windows_repo", "git-for-windows/git")
 	viper.SetDefault("downloads.grok_build_primary_base_url", "https://x.ai/cli")
 	viper.SetDefault("downloads.grok_build_fallback_base_url", "https://storage.googleapis.com/grok-build-public-artifacts/cli")
 	viper.SetDefault("downloads.claude_desktop_mac_url", "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest/Claude.dmg")
-	viper.SetDefault("downloads.claude_desktop_windows_x64_url", "https://downloads.claude.ai/releases/win32/x64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe")
-	viper.SetDefault("downloads.claude_desktop_windows_arm64_url", "https://downloads.claude.ai/releases/win32/arm64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe")
+	viper.SetDefault("downloads.claude_desktop_latest_base_url", "https://downloads.claude.ai/releases/win32")
+	viper.SetDefault("downloads.claude_desktop_windows_x64_url", "")
+	viper.SetDefault("downloads.claude_desktop_windows_arm64_url", "")
 	viper.SetDefault("downloads.max_asset_bytes", int64(1024*1024*1024))
 
 	// API Key auth cache

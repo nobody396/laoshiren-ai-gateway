@@ -1,21 +1,19 @@
 import type { DownloadAsset, DownloadToolID } from '@/api/resources'
 
-export const CLAUDE_DESKTOP_WINDOWS_X64 = {
-  url: 'https://downloads.claude.ai/releases/win32/x64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe',
-  sha256: 'BD45B1307385EEF00E88AA8A3CC597ECFD33BF04DA93682ACA9C334D05236C6D'
-} as const
+export const CLAUDE_DESKTOP_INSTALL_SCRIPT_VERSION = '1.0.0'
 
 export interface WindowsInstallerSource {
   url: string
   sha256: string
 }
 
-export function buildClaudeDesktopWindowsCachePath(sha256: string): string {
-  const normalized = sha256.trim().toLowerCase()
-  if (!/^[a-f0-9]{64}$/.test(normalized)) {
-    throw new Error('Claude Desktop 安装包缺少有效的 SHA256')
+export function buildClaudeDesktopWindowsInstallCommand(origin: string): string {
+  const url = new URL('/auto-config/install-claude-desktop.ps1', origin)
+  if (url.protocol !== 'https:' && url.hostname !== '127.0.0.1' && url.hostname !== 'localhost') {
+    throw new Error('Claude Desktop 安装脚本必须使用 HTTPS')
   }
-  return `/downloads/claude-desktop/windows-x64/${normalized}/Claude-Setup.exe`
+  url.searchParams.set('v', CLAUDE_DESKTOP_INSTALL_SCRIPT_VERSION)
+  return `irm ${powerShellQuote(url.toString())} | iex`
 }
 
 export function buildImmutableResourceDownloadPath(

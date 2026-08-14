@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -32,15 +31,13 @@ const (
 	defaultCCSwitchRepo           = "farion1231/cc-switch"
 	defaultCodexRepo              = "openai/codex"
 	defaultCodexWindowsMirrorRepo = "Wangnov/codex-app-mirror"
-	defaultCodexMacOfficialURL    = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT.dmg"
 	defaultCodexPPRepo            = "BigPizzaV3/CodexPlusPlus"
 	defaultGitForWindowsRepo      = "git-for-windows/git"
 	defaultGrokBuildPrimaryBase   = "https://x.ai/cli"
 	defaultGrokBuildFallbackBase  = "https://storage.googleapis.com/grok-build-public-artifacts/cli"
 	defaultClaudeCodeRepo         = "anthropics/claude-code"
 	defaultClaudeMacURL           = "https://storage.googleapis.com/osprey-downloads-c02f6a0d-347c-492b-a752-3e0651722e97/nest/Claude.dmg"
-	defaultClaudeWinURL           = "https://downloads.claude.ai/releases/win32/x64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe"
-	defaultClaudeARMURL           = "https://downloads.claude.ai/releases/win32/arm64/1.25927.0/Claude-003700efafbc2ccb4b1177a5e637b14da381799e.exe"
+	defaultClaudeLatestBaseURL    = "https://downloads.claude.ai/releases/win32"
 	versionManifestName           = ".manifest.json"
 )
 
@@ -54,13 +51,6 @@ var (
 	grokBuildVersionPattern     = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9._-]+)?$`)
 	gitForWindowsAssetPattern   = regexp.MustCompile(`^git-[0-9].*-(64-bit|arm64)\.exe$`)
 )
-
-type staticDownloadSource struct {
-	Name     string
-	URL      string
-	Platform string
-	Arch     string
-}
 
 type CachedDownloadManifest struct {
 	Tool        string                `json:"tool"`
@@ -89,13 +79,17 @@ type DownloadVersionStatus struct {
 }
 
 type CachedDownloadAsset struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Size     int64  `json:"size"`
-	SHA256   string `json:"sha256"`
-	Platform string `json:"platform"`
-	Arch     string `json:"arch"`
-	Path     string `json:"-"`
+	ID                 string `json:"id"`
+	Name               string `json:"name"`
+	Size               int64  `json:"size"`
+	SHA256             string `json:"sha256"`
+	Platform           string `json:"platform"`
+	Arch               string `json:"arch"`
+	Role               string `json:"role,omitempty"`
+	ComponentVersion   string `json:"component_version,omitempty"`
+	UpstreamSHA256     string `json:"upstream_sha256,omitempty"`
+	UpstreamCompressed int64  `json:"upstream_compressed_size,omitempty"`
+	Path               string `json:"-"`
 }
 
 type DownloadAssetFile struct {
@@ -128,22 +122,23 @@ type DownloadResourceService struct {
 
 func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseClient) *DownloadResourceService {
 	downloadCfg := config.DownloadsConfig{
-		Enabled:                      true,
-		CacheDir:                     "./data/downloads",
-		UpdateIntervalHours:          24,
-		StartupSync:                  true,
-		CCSwitchRepo:                 defaultCCSwitchRepo,
-		CodexRepo:                    defaultCodexRepo,
-		CodexWindowsMirrorRepo:       defaultCodexWindowsMirrorRepo,
-		CodexMacOfficialURL:          defaultCodexMacOfficialURL,
-		CodexPlusPlusRepo:            defaultCodexPPRepo,
-		GitForWindowsRepo:            defaultGitForWindowsRepo,
-		GrokBuildPrimaryBaseURL:      defaultGrokBuildPrimaryBase,
-		GrokBuildFallbackBaseURL:     defaultGrokBuildFallbackBase,
-		ClaudeDesktopMacURL:          defaultClaudeMacURL,
-		ClaudeDesktopWindowsX64URL:   defaultClaudeWinURL,
-		ClaudeDesktopWindowsARM64URL: defaultClaudeARMURL,
-		MaxAssetBytes:                1024 * 1024 * 1024,
+		Enabled:                     true,
+		CacheDir:                    "./data/downloads",
+		VersionCheckIntervalMinutes: 30,
+		UpdateIntervalHours:         24,
+		ClaudeDesktopCheckMinutes:   5,
+		ClaudeDesktopRetainVersions: 3,
+		StartupSync:                 true,
+		CCSwitchRepo:                defaultCCSwitchRepo,
+		CodexRepo:                   defaultCodexRepo,
+		CodexWindowsMirrorRepo:      defaultCodexWindowsMirrorRepo,
+		CodexPlusPlusRepo:           defaultCodexPPRepo,
+		GitForWindowsRepo:           defaultGitForWindowsRepo,
+		GrokBuildPrimaryBaseURL:     defaultGrokBuildPrimaryBase,
+		GrokBuildFallbackBaseURL:    defaultGrokBuildFallbackBase,
+		ClaudeDesktopMacURL:         defaultClaudeMacURL,
+		ClaudeDesktopLatestBaseURL:  defaultClaudeLatestBaseURL,
+		MaxAssetBytes:               1024 * 1024 * 1024,
 	}
 	if cfg != nil {
 		downloadCfg = cfg.Downloads
@@ -160,9 +155,6 @@ func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseCl
 	if strings.TrimSpace(downloadCfg.CodexWindowsMirrorRepo) == "" {
 		downloadCfg.CodexWindowsMirrorRepo = defaultCodexWindowsMirrorRepo
 	}
-	if strings.TrimSpace(downloadCfg.CodexMacOfficialURL) == "" {
-		downloadCfg.CodexMacOfficialURL = defaultCodexMacOfficialURL
-	}
 	if strings.TrimSpace(downloadCfg.CodexPlusPlusRepo) == "" {
 		downloadCfg.CodexPlusPlusRepo = defaultCodexPPRepo
 	}
@@ -178,14 +170,20 @@ func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseCl
 	if strings.TrimSpace(downloadCfg.ClaudeDesktopMacURL) == "" {
 		downloadCfg.ClaudeDesktopMacURL = defaultClaudeMacURL
 	}
-	if strings.TrimSpace(downloadCfg.ClaudeDesktopWindowsX64URL) == "" {
-		downloadCfg.ClaudeDesktopWindowsX64URL = defaultClaudeWinURL
-	}
-	if strings.TrimSpace(downloadCfg.ClaudeDesktopWindowsARM64URL) == "" {
-		downloadCfg.ClaudeDesktopWindowsARM64URL = defaultClaudeARMURL
+	if strings.TrimSpace(downloadCfg.ClaudeDesktopLatestBaseURL) == "" {
+		downloadCfg.ClaudeDesktopLatestBaseURL = defaultClaudeLatestBaseURL
 	}
 	if downloadCfg.UpdateIntervalHours <= 0 {
 		downloadCfg.UpdateIntervalHours = 24
+	}
+	if downloadCfg.VersionCheckIntervalMinutes <= 0 {
+		downloadCfg.VersionCheckIntervalMinutes = 30
+	}
+	if downloadCfg.ClaudeDesktopCheckMinutes <= 0 {
+		downloadCfg.ClaudeDesktopCheckMinutes = 5
+	}
+	if downloadCfg.ClaudeDesktopRetainVersions <= 0 {
+		downloadCfg.ClaudeDesktopRetainVersions = 3
 	}
 	if downloadCfg.MaxAssetBytes <= 0 {
 		downloadCfg.MaxAssetBytes = 1024 * 1024 * 1024
@@ -224,18 +222,31 @@ func (s *DownloadResourceService) loop() {
 
 	if s.cfg.StartupSync {
 		s.syncWithTimeout("startup")
+		s.syncClaudeWithTimeout("startup")
 	}
 
-	ticker := time.NewTicker(time.Duration(s.cfg.UpdateIntervalHours) * time.Hour)
+	ticker := time.NewTicker(time.Duration(s.cfg.VersionCheckIntervalMinutes) * time.Minute)
 	defer ticker.Stop()
+	claudeTicker := time.NewTicker(time.Duration(s.cfg.ClaudeDesktopCheckMinutes) * time.Minute)
+	defer claudeTicker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
 			s.syncWithTimeout("scheduled")
+		case <-claudeTicker.C:
+			s.syncClaudeWithTimeout("version-check")
 		case <-s.stopCh:
 			return
 		}
+	}
+}
+
+func (s *DownloadResourceService) syncClaudeWithTimeout(reason string) {
+	ctx, cancel := context.WithTimeout(s.ctx, 45*time.Minute)
+	defer cancel()
+	if err := s.SyncClaudeDesktop(ctx); err != nil {
+		slog.Warn("download resource sync failed", "tool", claudeDesktopToolID, "reason", reason, "error", err)
 	}
 }
 
@@ -247,7 +258,6 @@ func (s *DownloadResourceService) syncWithTimeout(reason string) {
 		{tool: ccSwitchToolID, fn: s.SyncCCSwitch},
 		{tool: codexToolID, fn: s.SyncCodex},
 		{tool: codexPlusPlusToolID, fn: s.SyncCodexPlusPlus},
-		{tool: claudeDesktopToolID, fn: s.SyncClaudeDesktop},
 		{tool: gitForWindowsToolID, fn: s.SyncGitForWindows},
 		{tool: grokBuildToolID, fn: s.SyncGrokBuild},
 	} {
@@ -288,16 +298,16 @@ func (s *DownloadResourceService) SyncCodex(ctx context.Context) error {
 		return errors.New("latest codex release has empty tag")
 	}
 
-	// OpenAI is authoritative for the CLI and macOS desktop installer. The
+	// OpenAI is authoritative for the CLI and versioned macOS desktop installers. The
 	// configured mirror is used only for Windows MSIX packages that OpenAI does
 	// not publish through the public Codex release repository.
-	version := desktopRelease.TagName
+	version := desktopRelease.TagName + "__" + officialRelease.TagName
 	versionDir := filepath.Join(s.cacheDir, codexToolID, sanitizePathSegment(version))
 	if err := os.MkdirAll(versionDir, 0755); err != nil {
 		return fmt.Errorf("create cache dir: %w", err)
 	}
 
-	assets := make([]CachedDownloadAsset, 0, len(officialRelease.Assets)+len(desktopRelease.Assets)+1)
+	assets := make([]CachedDownloadAsset, 0, len(officialRelease.Assets)+len(desktopRelease.Assets))
 	for _, source := range []struct {
 		release *GitHubRelease
 		include func(string) bool
@@ -318,32 +328,13 @@ func (s *DownloadResourceService) SyncCodex(ctx context.Context) error {
 			}
 		}
 	}
-	if macURL := strings.TrimSpace(s.cfg.CodexMacOfficialURL); macURL != "" {
-		name := "ChatGPT.dmg"
-		dest := filepath.Join(versionDir, name)
-		if err := s.ensureStaticAsset(ctx, macURL, dest); err != nil {
-			return fmt.Errorf("cache official macOS Codex app: %w", err)
-		}
-		info, err := os.Stat(dest)
-		if err != nil {
-			return fmt.Errorf("stat official macOS Codex app: %w", err)
-		}
-		sum, err := fileSHA256(dest)
-		if err != nil {
-			return fmt.Errorf("checksum official macOS Codex app: %w", err)
-		}
-		assets = append(assets, CachedDownloadAsset{
-			ID: makeAssetID(name), Name: name, Size: info.Size(), SHA256: sum,
-			Platform: "macos", Arch: "universal", Path: dest,
-		})
-	}
 	if len(assets) == 0 {
 		return errors.New("latest codex releases have no downloadable installer assets")
 	}
 
 	manifest := CachedDownloadManifest{
 		Tool:        codexToolID,
-		Repo:        s.cfg.CodexRepo + ", " + s.cfg.CodexWindowsMirrorRepo + ", persistent.oaistatic.com",
+		Repo:        s.cfg.CodexRepo + ", " + s.cfg.CodexWindowsMirrorRepo,
 		Version:     version,
 		ReleaseName: desktopRelease.Name,
 		PublishedAt: desktopRelease.PublishedAt,
@@ -553,102 +544,6 @@ func (s *DownloadResourceService) cacheGitHubAsset(ctx context.Context, toolID, 
 		Arch:     classifyArch(asset.Name),
 		Path:     dest,
 	}, nil
-}
-
-func (s *DownloadResourceService) SyncClaudeDesktop(ctx context.Context) error {
-	if s == nil {
-		return errors.New("nil download resource service")
-	}
-	if s.githubClient == nil {
-		return errors.New("download client is not configured")
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	sources := []staticDownloadSource{
-		{Name: "Claude.dmg", URL: s.cfg.ClaudeDesktopMacURL, Platform: "macos", Arch: "universal"},
-		{Name: "Claude-Setup-x64.exe", URL: s.cfg.ClaudeDesktopWindowsX64URL, Platform: "windows", Arch: "x64"},
-		{Name: "Claude-Setup-arm64.exe", URL: s.cfg.ClaudeDesktopWindowsARM64URL, Platform: "windows", Arch: "arm64"},
-	}
-
-	version := claudeDesktopVersionFromSources(sources)
-	versionDir := filepath.Join(s.cacheDir, claudeDesktopToolID, version)
-	if err := os.MkdirAll(versionDir, 0755); err != nil {
-		return fmt.Errorf("create cache dir: %w", err)
-	}
-
-	assets := make([]CachedDownloadAsset, 0, len(sources))
-	for _, source := range sources {
-		if strings.TrimSpace(source.URL) == "" {
-			continue
-		}
-		dest := filepath.Join(versionDir, filepath.Base(source.Name))
-		// The version directory is immutable. Reuse a completed package instead
-		// of re-downloading hundreds of megabytes on every sync interval.
-		if err := s.ensureStaticAsset(ctx, source.URL, dest); err != nil {
-			return fmt.Errorf("cache asset %s: %w", source.Name, err)
-		}
-		info, err := os.Stat(dest)
-		if err != nil {
-			return fmt.Errorf("stat asset %s: %w", source.Name, err)
-		}
-		sum, err := fileSHA256(dest)
-		if err != nil {
-			return fmt.Errorf("checksum asset %s: %w", source.Name, err)
-		}
-		assets = append(assets, CachedDownloadAsset{
-			ID:       makeAssetID(source.Name),
-			Name:     source.Name,
-			Size:     info.Size(),
-			SHA256:   sum,
-			Platform: source.Platform,
-			Arch:     source.Arch,
-			Path:     dest,
-		})
-	}
-	if len(assets) == 0 {
-		return errors.New("claude desktop has no configured downloadable assets")
-	}
-
-	manifest := CachedDownloadManifest{
-		Tool:        claudeDesktopToolID,
-		Repo:        "claude.com/download",
-		Version:     version,
-		ReleaseName: "Claude Desktop",
-		PublishedAt: "",
-		UpdatedAt:   time.Now().UTC().Format(time.RFC3339),
-		Assets:      assets,
-	}
-	if err := s.writeManifest(manifest); err != nil {
-		return err
-	}
-	s.cleanupUnreferencedAssets(versionDir, assets)
-	slog.Info("download resource synced", "tool", claudeDesktopToolID, "version", version, "assets", len(assets))
-	return nil
-}
-
-// claudeDesktopVersionFromSources keeps immutable URLs immutable. Anthropic's
-// Windows release URL contains the concrete desktop version; using "latest"
-// as a cache directory would otherwise overwrite an old one-year URL when the
-// configured upstream package changes.
-func claudeDesktopVersionFromSources(sources []staticDownloadSource) string {
-	for _, source := range sources {
-		if source.Platform != "windows" || strings.TrimSpace(source.URL) == "" {
-			continue
-		}
-		parsed, err := url.Parse(source.URL)
-		if err != nil {
-			continue
-		}
-		parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
-		for i := len(parts) - 2; i >= 0; i-- {
-			candidate := strings.TrimSpace(parts[i])
-			if grokBuildVersionPattern.MatchString(candidate) {
-				return candidate
-			}
-		}
-	}
-	return "snapshot-" + time.Now().UTC().Format("20060102t150405z")
 }
 
 func (s *DownloadResourceService) ensureAsset(ctx context.Context, asset GitHubAsset, dest string) error {
@@ -1071,7 +966,8 @@ func (s *DownloadResourceService) GetClaudeDesktopWindowsX64Asset(ctx context.Co
 		return nil, err
 	}
 	for _, asset := range manifest.Assets {
-		if asset.Platform == "windows" && asset.Arch == "x64" && strings.EqualFold(filepath.Ext(asset.Name), ".exe") {
+		if asset.Platform == "windows" && asset.Arch == "x64" && asset.Role == claudeInstallerRole &&
+			strings.EqualFold(filepath.Ext(asset.Name), ".msix") {
 			return s.GetToolAsset(ctx, claudeDesktopToolID, asset.ID)
 		}
 	}
@@ -1283,9 +1179,10 @@ func isCodexInstallAsset(name string) bool {
 		strings.HasPrefix(lower, "codex-windows-") {
 		return false
 	}
-	return (strings.HasSuffix(lower, "apple-darwin.tar.gz") &&
+	return ((strings.HasSuffix(lower, "apple-darwin.tar.gz") || strings.HasSuffix(lower, "apple-darwin.dmg")) &&
 		(strings.Contains(lower, "aarch64") || strings.Contains(lower, "x86_64"))) ||
-		(strings.HasSuffix(lower, "pc-windows-msvc.exe.zip") && strings.Contains(lower, "x86_64"))
+		(strings.HasSuffix(lower, "pc-windows-msvc.exe.zip") &&
+			(strings.Contains(lower, "aarch64") || strings.Contains(lower, "x86_64")))
 }
 
 func isCodexWindowsDesktopAsset(name string) bool {

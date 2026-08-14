@@ -9,6 +9,11 @@ export interface DownloadAsset {
   sha256: string
   platform: 'windows' | 'macos' | 'linux' | 'other'
   arch: string
+  role?: 'installer' | 'claude-desktop-code'
+  component_version?: string
+  upstream_sha256?: string
+  upstream_compressed_size?: number
+  download_url?: string
 }
 
 export interface DownloadManifest {

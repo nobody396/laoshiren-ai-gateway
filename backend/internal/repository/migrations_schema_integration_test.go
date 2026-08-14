@@ -459,9 +459,11 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 	// from promotional balance credited.
 	requireColumn(t, tx, "redeem_codes", "paid_value", "numeric", 0, false)
 
-	// migrations 185-188: native card-shop checkout owns a durable once-per-user
+	// migrations 185-189: native card-shop checkout owns a durable once-per-user
 	// order, restricts its inventory, snapshots the selected payment method, and
 	// reprices the stable newcomer offer without resetting its lifetime limit.
+	// The offer remains dark until production inventory and provider state pass
+	// the explicit activation gate.
 	requireColumn(t, tx, "native_checkout_offers", "provider_goods_key", "character varying", 64, false)
 	requireColumn(t, tx, "native_checkout_orders", "contact_hash", "character", 64, false)
 	requireColumn(t, tx, "native_checkout_orders", "payment_method", "character varying", 16, true)
@@ -503,7 +505,7 @@ WHERE code = 'trial-balance-1-to-5'
 	require.Equal(t, "gifted", salesStatus)
 	require.Zero(t, validityDays)
 	require.True(t, oncePerUser)
-	require.True(t, enabled)
+	require.False(t, enabled)
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

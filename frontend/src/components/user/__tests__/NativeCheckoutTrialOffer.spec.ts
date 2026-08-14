@@ -41,7 +41,7 @@ vi.mock('vue-i18n', async () => {
 })
 
 const offer = {
-  code: 'trial-balance-1-to-5',
+  code: 'newcomer-balance-5-to-10',
   name: '新人专享 · 10 元余额包',
   description: 'internal pure-gift semantics',
   product_kind: 'balance' as const,
@@ -68,9 +68,8 @@ describe('NativeCheckoutTrialOffer', () => {
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain('nativeCheckout.offerTitle')
+    expect(wrapper.text()).toContain(offer.name)
     expect(wrapper.text()).toContain('nativeCheckout.onceOnly')
-    expect(wrapper.text()).not.toContain(offer.name)
     expect(wrapper.text()).not.toContain(offer.description)
     expect(wrapper.text()).not.toContain('nativeCheckout.registeredEmail')
     expect(wrapper.find('input').exists()).toBe(false)

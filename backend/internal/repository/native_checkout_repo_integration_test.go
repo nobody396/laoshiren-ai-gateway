@@ -23,7 +23,7 @@ func TestNativeCheckoutRepositoryEnforcesOnceAndClaimsRestrictedInventory(t *tes
 	code := &service.RedeemCode{
 		Code:         fmt.Sprintf("%032x", time.Now().UnixNano()),
 		Type:         service.RedeemTypeBalance,
-		Value:        5,
+		Value:        10,
 		PaidValue:    0,
 		Status:       service.StatusUnused,
 		Purpose:      service.RedeemCodePurposeGift,
@@ -31,13 +31,36 @@ func TestNativeCheckoutRepositoryEnforcesOnceAndClaimsRestrictedInventory(t *tes
 		ValidityDays: 0,
 	}
 	require.NoError(t, redeemRepo.Create(ctx, code))
+	mismatchedCode := &service.RedeemCode{
+		Code:         fmt.Sprintf("%032x", time.Now().UnixNano()+1),
+		Type:         service.RedeemTypeBalance,
+		Value:        11,
+		PaidValue:    0,
+		Status:       service.StatusUnused,
+		Purpose:      service.RedeemCodePurposeGift,
+		SalesStatus:  service.RedeemCodeSalesStatusGifted,
+		ValidityDays: 0,
+	}
+	require.NoError(t, redeemRepo.Create(ctx, mismatchedCode))
 	t.Cleanup(func() {
 		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_redeem_inventory WHERE redeem_code_id = $1`, code.ID)
 		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_orders WHERE user_id = $1`, user.ID)
 		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM redeem_codes WHERE id = $1`, code.ID)
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM redeem_codes WHERE id = $1`, mismatchedCode.ID)
 		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM users WHERE id = $1`, user.ID)
 	})
+	_, err := integrationDB.ExecContext(ctx, `
+INSERT INTO native_checkout_redeem_inventory (redeem_code_id, offer_code)
+VALUES ($1, 'newcomer-balance-5-to-10')
+`, mismatchedCode.ID)
+	require.Error(t, err, "inventory whose entitlement differs from the canonical offer must be rejected")
 	require.NoError(t, insertNativeCheckoutInventory(ctx, code.ID))
+	_, err = integrationDB.ExecContext(ctx, `
+UPDATE native_checkout_offers
+SET redeem_paid_value = 1
+WHERE code = 'newcomer-balance-5-to-10'
+`)
+	require.Error(t, err, "stocked offer semantics must be immutable")
 
 	repo := NewNativeCheckoutRepository(integrationDB)
 	first := integrationNativeCheckoutOrder(user.ID, "NC-"+fmt.Sprint(time.Now().UnixNano()))
@@ -118,7 +141,7 @@ WHERE id = $1
 func insertNativeCheckoutInventory(ctx context.Context, redeemCodeID int64) error {
 	_, err := integrationDB.ExecContext(ctx, `
 INSERT INTO native_checkout_redeem_inventory (redeem_code_id, offer_code)
-VALUES ($1, 'trial-balance-1-to-5')
+VALUES ($1, 'newcomer-balance-5-to-10')
 `, redeemCodeID)
 	return err
 }
@@ -127,15 +150,15 @@ func integrationNativeCheckoutOrder(userID int64, orderNo string) *service.Nativ
 	return &service.NativeCheckoutOrder{
 		OrderNo:             orderNo,
 		UserID:              userID,
-		OfferCode:           "trial-balance-1-to-5",
+		OfferCode:           "newcomer-balance-5-to-10",
 		Provider:            "ldxp",
 		ProviderGoodsKey:    "oc3w4r",
 		ContactHash:         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		ProductKind:         "balance",
-		PayAmountCNYFen:     100,
-		BenefitAmountCNYFen: 500,
+		PayAmountCNYFen:     500,
+		BenefitAmountCNYFen: 1000,
 		RedeemType:          service.RedeemTypeBalance,
-		RedeemValue:         5,
+		RedeemValue:         10,
 		RedeemPaidValue:     0,
 		RedeemPurpose:       service.RedeemCodePurposeGift,
 		RedeemSalesStatus:   service.RedeemCodeSalesStatusGifted,

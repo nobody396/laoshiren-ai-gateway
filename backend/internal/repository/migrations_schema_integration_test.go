@@ -461,9 +461,8 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 
 	// migrations 185-189: native card-shop checkout owns a durable once-per-user
 	// order, restricts its inventory, snapshots the selected payment method, and
-	// reprices the stable newcomer offer without resetting its lifetime limit.
-	// The offer remains dark until production inventory and provider state pass
-	// the explicit activation gate.
+	// configures the single approved ¥5 -> ¥10 pure-gift newcomer offer. The
+	// final migration keeps it disabled until all release gates pass.
 	requireColumn(t, tx, "native_checkout_offers", "provider_goods_key", "character varying", 64, false)
 	requireColumn(t, tx, "native_checkout_orders", "contact_hash", "character", 64, false)
 	requireColumn(t, tx, "native_checkout_orders", "payment_method", "character varying", 16, true)
@@ -491,7 +490,7 @@ SELECT provider_goods_key, pay_amount_cny_fen, benefit_amount_cny_fen,
        redeem_purpose, redeem_sales_status, redeem_validity_days,
        once_per_user, enabled
 FROM native_checkout_offers
-WHERE code = 'trial-balance-1-to-5'
+WHERE code = 'newcomer-balance-5-to-10'
 `).Scan(
 		&providerGoodsKey, &payFen, &benefitFen, &redeemValue, &paidValue,
 		&purpose, &salesStatus, &validityDays, &oncePerUser, &enabled,
@@ -500,12 +499,32 @@ WHERE code = 'trial-balance-1-to-5'
 	require.Equal(t, int64(500), payFen)
 	require.Equal(t, int64(1000), benefitFen)
 	require.Equal(t, float64(10), redeemValue)
-	require.Zero(t, paidValue, "all ¥10 must remain pure gift balance")
+	require.Zero(t, paidValue, "the full ¥10 entitlement must be pure gift balance")
 	require.Equal(t, "gift", purpose)
 	require.Equal(t, "gifted", salesStatus)
 	require.Zero(t, validityDays)
 	require.True(t, oncePerUser)
 	require.False(t, enabled)
+
+	var inventoryMatchTrigger, stockedOfferGuardTrigger bool
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgrelid = 'native_checkout_redeem_inventory'::regclass
+      AND tgname = 'trg_native_checkout_inventory_offer_match'
+      AND NOT tgisinternal
+)
+`).Scan(&inventoryMatchTrigger))
+	require.True(t, inventoryMatchTrigger)
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgrelid = 'native_checkout_offers'::regclass
+      AND tgname = 'trg_native_checkout_stocked_offer_semantics'
+      AND NOT tgisinternal
+)
+`).Scan(&stockedOfferGuardTrigger))
+	require.True(t, stockedOfferGuardTrigger)
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

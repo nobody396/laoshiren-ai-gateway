@@ -31,8 +31,12 @@ CREATE TABLE IF NOT EXISTS native_checkout_offers (
         CHECK (provider IN ('ldxp')),
     CONSTRAINT native_checkout_offers_product_kind_check
         CHECK (product_kind IN ('balance', 'subscription')),
+    CONSTRAINT native_checkout_offers_product_redeem_type_check
+        CHECK (product_kind = redeem_type),
     CONSTRAINT native_checkout_offers_amount_check
         CHECK (pay_amount_cny_fen > 0 AND benefit_amount_cny_fen > 0),
+    CONSTRAINT native_checkout_offers_balance_value_check
+        CHECK (product_kind <> 'balance' OR benefit_amount_cny_fen = redeem_value * 100),
     CONSTRAINT native_checkout_offers_redeem_value_check
         CHECK (redeem_value > 0 AND redeem_paid_value >= 0 AND redeem_paid_value <= redeem_value),
     CONSTRAINT native_checkout_offers_redeem_type_check
@@ -143,57 +147,87 @@ CREATE INDEX IF NOT EXISTS idx_native_checkout_redeem_inventory_offer_unassigned
     ON native_checkout_redeem_inventory (offer_code, redeem_code_id)
     WHERE assigned_order_id IS NULL;
 
--- First pilot: the full ¥5 entitlement is a gift card (paid_value=0,
--- purpose=gift, sales_status=gifted).  LDXP product oc3w4r is hidden from the
--- public card-shop catalog and requires email contact.  The application
--- database unique index is the authoritative per-account limit; provider-side
--- IP limits are unsuitable because all buyer API calls originate server-side.
-INSERT INTO native_checkout_offers (
-    code, provider, provider_goods_key, name, description, product_kind,
-    pay_amount_cny_fen, benefit_amount_cny_fen, redeem_type, redeem_value,
-    redeem_paid_value, redeem_purpose, redeem_sales_status, redeem_group_ids,
-    redeem_validity_days, once_per_user, enabled, sort_order
-) VALUES (
-    'trial-balance-1-to-5', 'ldxp', 'oc3w4r',
-    '1 元体验，到账 5 元赠送额度',
-    '5 元全部作为体验赠送额度发放，每个账号仅可购买一次。',
-    'balance', 100, 500, 'balance', 5, 0, 'gift', 'gifted', '[]'::jsonb,
-    0, TRUE, TRUE, 10
-)
-ON CONFLICT (code) DO UPDATE SET
-    provider = EXCLUDED.provider,
-    provider_goods_key = EXCLUDED.provider_goods_key,
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    product_kind = EXCLUDED.product_kind,
-    pay_amount_cny_fen = EXCLUDED.pay_amount_cny_fen,
-    benefit_amount_cny_fen = EXCLUDED.benefit_amount_cny_fen,
-    redeem_type = EXCLUDED.redeem_type,
-    redeem_value = EXCLUDED.redeem_value,
-    redeem_paid_value = EXCLUDED.redeem_paid_value,
-    redeem_purpose = EXCLUDED.redeem_purpose,
-    redeem_sales_status = EXCLUDED.redeem_sales_status,
-    redeem_group_ids = EXCLUDED.redeem_group_ids,
-    redeem_validity_days = EXCLUDED.redeem_validity_days,
-    once_per_user = EXCLUDED.once_per_user,
-    enabled = EXCLUDED.enabled,
-    sort_order = EXCLUDED.sort_order,
-    updated_at = NOW();
+-- The offer row is the single source of truth for both customer-facing terms
+-- and the exact redeem-code semantics.  Reject stock that does not match it;
+-- this prevents the runbook, frontend, and inventory upload from silently
+-- becoming separate commercial configurations.
+CREATE OR REPLACE FUNCTION enforce_native_checkout_inventory_offer_match()
+RETURNS TRIGGER AS $$
+DECLARE
+    checkout_offer native_checkout_offers%ROWTYPE;
+    checkout_code redeem_codes%ROWTYPE;
+BEGIN
+    SELECT * INTO STRICT checkout_offer
+    FROM native_checkout_offers
+    WHERE code = NEW.offer_code;
 
--- Production bootstrap batch. Other environments legitimately insert zero
--- rows. Replenishment must create the same pure-gift semantics and register
--- each new code in this inventory table before uploading it to LDXP.
-INSERT INTO native_checkout_redeem_inventory (redeem_code_id, offer_code)
-SELECT rc.id, 'trial-balance-1-to-5'
-FROM redeem_codes rc
-JOIN redeem_code_batches batch ON batch.id = rc.batch_id
-WHERE batch.name = 'native-checkout-trial-1-to-5-20260813'
-  AND rc.type = 'balance'
-  AND rc.value = 5
-  AND COALESCE(rc.paid_value, 0) = 0
-  AND rc.purpose = 'gift'
-  AND rc.sales_status = 'gifted'
-ON CONFLICT (redeem_code_id) DO NOTHING;
+    SELECT * INTO STRICT checkout_code
+    FROM redeem_codes
+    WHERE id = NEW.redeem_code_id;
+
+    IF checkout_code.status <> 'unused'
+       OR checkout_code.type <> checkout_offer.redeem_type
+       OR checkout_code.value <> checkout_offer.redeem_value
+       OR COALESCE(checkout_code.paid_value, 0) <> checkout_offer.redeem_paid_value
+       OR checkout_code.purpose <> checkout_offer.redeem_purpose
+       OR checkout_code.sales_status <> checkout_offer.redeem_sales_status
+       OR checkout_code.group_ids <> checkout_offer.redeem_group_ids
+       OR checkout_code.validity_days <> checkout_offer.redeem_validity_days THEN
+        RAISE EXCEPTION 'native checkout inventory does not match offer %', NEW.offer_code
+            USING ERRCODE = '23514';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_native_checkout_inventory_offer_match
+    ON native_checkout_redeem_inventory;
+CREATE TRIGGER trg_native_checkout_inventory_offer_match
+    BEFORE INSERT OR UPDATE OF redeem_code_id, offer_code
+    ON native_checkout_redeem_inventory
+    FOR EACH ROW
+    EXECUTE FUNCTION enforce_native_checkout_inventory_offer_match();
+
+-- Once inventory is registered, changing its entitlement semantics would make
+-- the canonical offer disagree with cards already uploaded to the provider.
+-- Require a new offer instead of rewriting an in-flight inventory contract.
+CREATE OR REPLACE FUNCTION guard_native_checkout_stocked_offer_semantics()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM native_checkout_redeem_inventory
+        WHERE offer_code = OLD.code
+    ) AND (
+        NEW.redeem_type IS DISTINCT FROM OLD.redeem_type
+        OR NEW.redeem_value IS DISTINCT FROM OLD.redeem_value
+        OR NEW.redeem_paid_value IS DISTINCT FROM OLD.redeem_paid_value
+        OR NEW.redeem_purpose IS DISTINCT FROM OLD.redeem_purpose
+        OR NEW.redeem_sales_status IS DISTINCT FROM OLD.redeem_sales_status
+        OR NEW.redeem_group_ids IS DISTINCT FROM OLD.redeem_group_ids
+        OR NEW.redeem_validity_days IS DISTINCT FROM OLD.redeem_validity_days
+    ) THEN
+        RAISE EXCEPTION 'cannot change stocked native checkout offer semantics: %', OLD.code
+            USING ERRCODE = '23514';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_native_checkout_stocked_offer_semantics
+    ON native_checkout_offers;
+CREATE TRIGGER trg_native_checkout_stocked_offer_semantics
+    BEFORE UPDATE OF redeem_type, redeem_value, redeem_paid_value,
+        redeem_purpose, redeem_sales_status, redeem_group_ids, redeem_validity_days
+    ON native_checkout_offers
+    FOR EACH ROW
+    EXECUTE FUNCTION guard_native_checkout_stocked_offer_semantics();
+
+-- Intentionally seed no offer and no inventory. Commercial terms, provider
+-- goods key, stock semantics, and activation are created together in a later
+-- explicitly reviewed operation. With zero rows, deployment cannot open sales.
 
 RESET statement_timeout;
 RESET lock_timeout;

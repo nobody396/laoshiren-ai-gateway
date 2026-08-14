@@ -1,8 +1,7 @@
--- Keep the newcomer checkout dark after deployment.  Production activation
--- is a separate, explicit operation performed only after the LDXP product is
--- priced at ¥5, its stock contains the matching registered ¥10 cards, and the
--- merchant recovery credentials are present.  This prevents a code deploy
--- from exposing a checkout that cannot safely fulfill.
+-- Keep the approved newcomer offer dark after deployment. Production
+-- activation is a separate, explicit operation performed only after the LDXP
+-- product costs ¥5, stock contains matching registered ¥10 pure-gift cards,
+-- recovery credentials are present, and the real payment gate passes.
 
 SET LOCAL lock_timeout = '5s';
 SET LOCAL statement_timeout = '120s';
@@ -10,7 +9,7 @@ SET LOCAL statement_timeout = '120s';
 UPDATE native_checkout_offers
 SET enabled = FALSE,
     updated_at = NOW()
-WHERE code = 'trial-balance-1-to-5';
+WHERE code = 'newcomer-balance-5-to-10';
 
 RESET statement_timeout;
 RESET lock_timeout;

@@ -6,10 +6,7 @@
         <span v-if="offer.once_per_user" class="trial-offer__limit">{{ t('nativeCheckout.onceOnly') }}</span>
       </div>
       <h2 id="native-checkout-trial-title">
-        {{ t('nativeCheckout.offerTitle', {
-          payAmount: formatCNY(offer.pay_amount_cny_fen),
-          benefitAmount: formatCNY(offer.benefit_amount_cny_fen),
-        }) }}
+        {{ offer.name }}
       </h2>
     </div>
 
@@ -228,7 +225,7 @@ function formatCNY(fen: number): string {
 async function loadOffer() {
   try {
     const offers = await listNativeCheckoutOffers()
-    offer.value = offers.find((item) => item.code === 'trial-balance-1-to-5') ?? null
+    offer.value = offers.find((item) => item.product_kind === 'balance' && item.once_per_user) ?? null
     order.value = offer.value?.order ?? null
     if (shouldPollStatus()) {
       startPolling()

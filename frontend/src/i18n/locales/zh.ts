@@ -1209,7 +1209,6 @@ export default {
   nativeCheckout: {
     trialBadge: '新人特惠',
     onceOnly: '每个账号仅可购买 1 次',
-    offerTitle: '新人专享 · {benefitAmount} 元余额包',
     pay: '实付',
     receive: '到账',
     preparing: '正在准备支付…',

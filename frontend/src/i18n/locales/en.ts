@@ -1206,7 +1206,6 @@ export default {
   nativeCheckout: {
     trialBadge: 'New user deal',
     onceOnly: 'One purchase per account',
-    offerTitle: 'New user exclusive · ¥{benefitAmount} balance pack',
     pay: 'Pay',
     receive: 'Get',
     preparing: 'Preparing payment…',

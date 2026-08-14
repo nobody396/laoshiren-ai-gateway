@@ -28,7 +28,7 @@ func TestNativeCheckoutCreateUsesRegisteredEmailAndReusesOnceOnlyOrder(t *testin
 		nativeCheckoutTestContactKey,
 	)
 
-	first, err := service.CreateOrder(context.Background(), 42, "trial-1-to-5")
+	first, err := service.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10")
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusPending, first.Status)
 	require.Equal(t, NativeCheckoutPaymentMethodWeChat, first.PaymentMethod)
@@ -36,7 +36,7 @@ func TestNativeCheckoutCreateUsesRegisteredEmailAndReusesOnceOnlyOrder(t *testin
 	require.Equal(t, 1, provider.createCalls)
 	require.NotEqual(t, "", first.ContactHash)
 
-	second, err := service.CreateOrder(context.Background(), 42, "trial-1-to-5")
+	second, err := service.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10")
 	require.NoError(t, err)
 	require.Equal(t, first.OrderNo, second.OrderNo)
 	require.Equal(t, 1, provider.createCalls, "a repeated click must not create another LDXP order")
@@ -100,7 +100,7 @@ func TestNativeCheckoutCreateFinishesAfterRequestCancellation(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	order, err := svc.CreateOrder(ctx, 42, "trial-1-to-5")
+	order, err := svc.CreateOrder(ctx, 42, "newcomer-balance-5-to-10")
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusPending, order.Status)
 	require.NoError(t, provider.createContextErr, "the durable provider operation must be detached from the browser request")
@@ -121,7 +121,7 @@ func TestNativeCheckoutCreateRejectsUnlabeledProviderPaymentMethod(t *testing.T)
 		nativeCheckoutTestContactKey,
 	)
 
-	_, err := svc.CreateOrder(context.Background(), 42, "trial-1-to-5")
+	_, err := svc.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10")
 	require.Error(t, err)
 	require.Equal(t, NativeCheckoutStatusManualReview, repo.order.Status)
 	require.Equal(t, "provider_payment_method_invalid", repo.order.FailureCode)
@@ -153,12 +153,12 @@ func TestNativeCheckoutPaidGiftCardIsValidatedLinkedAndRedeemed(t *testing.T) {
 		paid: true,
 		info: &NativeCheckoutProviderOrderInfo{
 			TradeNo: "LD-1", GoodsKey: offer.ProviderGoodsKey, Contact: "buyer@example.com",
-			Quantity: 1, TotalCNYFen: 100, Paid: true, Delivered: true,
+			Quantity: 1, TotalCNYFen: 500, Paid: true, Delivered: true,
 			RedeemCodes: []string{"0123456789abcdef0123456789abcdef"},
 		},
 	}
 	redeem := &nativeCheckoutRedeemerFake{code: &RedeemCode{
-		ID: 7, Code: provider.info.RedeemCodes[0], Type: RedeemTypeBalance, Value: 5,
+		ID: 7, Code: provider.info.RedeemCodes[0], Type: RedeemTypeBalance, Value: 10,
 		PaidValue: 0, Status: StatusUnused, Purpose: RedeemCodePurposeGift,
 		SalesStatus: RedeemCodeSalesStatusGifted, ValidityDays: 0,
 	}}
@@ -178,7 +178,7 @@ func TestNativeCheckoutPaidOrderStaysCheckingWhileDeliveryIsPending(t *testing.T
 	repo.order = testNativeCheckoutOrder(offer)
 	provider := &nativeCheckoutProviderFake{info: &NativeCheckoutProviderOrderInfo{
 		TradeNo: "LD-1", GoodsKey: offer.ProviderGoodsKey, Contact: "buyer@example.com",
-		Quantity: 1, TotalCNYFen: 100, Paid: true, Delivered: false,
+		Quantity: 1, TotalCNYFen: 500, Paid: true, Delivered: false,
 	}}
 	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
 
@@ -196,12 +196,12 @@ func TestNativeCheckoutRejectsPaidCardThatIsNotPureGift(t *testing.T) {
 		paid: true,
 		info: &NativeCheckoutProviderOrderInfo{
 			TradeNo: "LD-1", GoodsKey: offer.ProviderGoodsKey, Contact: "buyer@example.com",
-			Quantity: 1, TotalCNYFen: 100, Paid: true, Delivered: true,
+			Quantity: 1, TotalCNYFen: 500, Paid: true, Delivered: true,
 			RedeemCodes: []string{"0123456789abcdef0123456789abcdef"},
 		},
 	}
 	redeem := &nativeCheckoutRedeemerFake{code: &RedeemCode{
-		ID: 7, Code: provider.info.RedeemCodes[0], Type: RedeemTypeBalance, Value: 5,
+		ID: 7, Code: provider.info.RedeemCodes[0], Type: RedeemTypeBalance, Value: 10,
 		PaidValue: 1, Status: StatusUnused, Purpose: RedeemCodePurposeSaleRecharge,
 		SalesStatus: RedeemCodeSalesStatusSold, ValidityDays: 0,
 	}}
@@ -225,13 +225,13 @@ func TestNativeCheckoutCrashRecoveryAcceptsCodeAlreadyUsedBySameUser(t *testing.
 	provider := &nativeCheckoutProviderFake{
 		info: &NativeCheckoutProviderOrderInfo{
 			TradeNo: "LD-1", GoodsKey: offer.ProviderGoodsKey, Contact: "buyer@example.com",
-			Quantity: 1, TotalCNYFen: 100, Paid: true, Delivered: true,
+			Quantity: 1, TotalCNYFen: 500, Paid: true, Delivered: true,
 			RedeemCodes: []string{"0123456789abcdef0123456789abcdef"},
 		},
 	}
 	usedBy := int64(42)
 	redeem := &nativeCheckoutRedeemerFake{code: &RedeemCode{
-		ID: 7, Code: provider.info.RedeemCodes[0], Type: RedeemTypeBalance, Value: 5,
+		ID: 7, Code: provider.info.RedeemCodes[0], Type: RedeemTypeBalance, Value: 10,
 		Status: StatusUsed, UsedBy: &usedBy, Purpose: RedeemCodePurposeGift,
 		SalesStatus: RedeemCodeSalesStatusGifted, ValidityDays: 0,
 	}}
@@ -249,7 +249,7 @@ func TestNativeCheckoutCustomerStatusReadNeverPollsProvider(t *testing.T) {
 	repo.order = testNativeCheckoutOrder(offer)
 	provider := &nativeCheckoutProviderFake{info: &NativeCheckoutProviderOrderInfo{
 		TradeNo: "LD-1", GoodsKey: offer.ProviderGoodsKey, Contact: "buyer@example.com",
-		Quantity: 1, TotalCNYFen: 100, Paid: true, Delivered: false,
+		Quantity: 1, TotalCNYFen: 500, Paid: true, Delivered: false,
 	}}
 	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
 
@@ -280,7 +280,7 @@ func TestNativeCheckoutPendingPollingCoolsDownWithOrderAge(t *testing.T) {
 func TestRedeemServiceBlocksRestrictedCheckoutInventoryFromManualRedemption(t *testing.T) {
 	repo := &nativeCheckoutRedeemCodeRepoFake{code: &RedeemCode{
 		ID: 99, Code: "0123456789abcdef0123456789abcdef", Type: RedeemTypeBalance,
-		Value: 5, Status: StatusUnused,
+		Value: 10, Status: StatusUnused,
 	}}
 	svc := NewRedeemService(repo, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	svc.SetNativeCheckoutRedeemGuard(nativeCheckoutGuardFake(true))
@@ -298,9 +298,9 @@ func TestRedeemServiceBlocksRestrictedCheckoutInventoryFromManualRedemption(t *t
 
 func testNativeCheckoutOffer() NativeCheckoutOffer {
 	return NativeCheckoutOffer{
-		Code: "trial-1-to-5", Provider: "ldxp", ProviderGoodsKey: "trial-key",
-		Name: "1元体验", ProductKind: "balance", PayAmountCNYFen: 100,
-		BenefitAmountCNYFen: 500, RedeemType: RedeemTypeBalance, RedeemValue: 5,
+		Code: "newcomer-balance-5-to-10", Provider: "ldxp", ProviderGoodsKey: "trial-key",
+		Name: "新人专享 · 10 元余额包", ProductKind: "balance", PayAmountCNYFen: 500,
+		BenefitAmountCNYFen: 1000, RedeemType: RedeemTypeBalance, RedeemValue: 10,
 		RedeemPurpose: RedeemCodePurposeGift, RedeemSalesStatus: RedeemCodeSalesStatusGifted,
 		RedeemValidityDays: 0, OncePerUser: true, Enabled: true,
 	}

@@ -13,8 +13,8 @@ func TestNativeCheckoutOrderDTOIncludesSelectedPaymentMethod(t *testing.T) {
 	order := &service.NativeCheckoutOrder{
 		OrderNo:             "NC-ALIPAY",
 		Status:              service.NativeCheckoutStatusPending,
-		PayAmountCNYFen:     100,
-		BenefitAmountCNYFen: 500,
+		PayAmountCNYFen:     500,
+		BenefitAmountCNYFen: 1000,
 		PaymentURL:          "https://pay.ldxp.cn/pay/NC-ALIPAY",
 		PaymentMethod:       service.NativeCheckoutPaymentMethodAlipay,
 		CreatedAt:           createdAt,

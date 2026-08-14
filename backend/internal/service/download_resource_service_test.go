@@ -71,9 +71,10 @@ func claudeDesktopTestFixture(
 	require.NoError(t, err)
 	pinRaw, err := json.Marshal(pin)
 	require.NoError(t, err)
-	escape := func(raw []byte) string { return strings.ReplaceAll(string(raw), `"`, `\"`) }
-	asar := []byte("function build(){return JSON.parse(`" + escape(buildRaw) + "`)};" +
-		"function pin(){return JSON.parse(`" + escape(pinRaw) + "`)}")
+	// Production app.asar embeds raw JSON inside a JavaScript template literal;
+	// its JSON quotes are not backslash-escaped.
+	asar := []byte("function build(){return JSON.parse(`" + string(buildRaw) + "`)};" +
+		"function pin(){return JSON.parse(`" + string(pinRaw) + "`)}")
 
 	var buffer bytes.Buffer
 	writer := zip.NewWriter(&buffer)

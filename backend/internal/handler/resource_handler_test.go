@@ -136,12 +136,16 @@ func TestBuildPublicDownloadManifestUsesSameSiteImmutablePackageURLs(t *testing.
 		PublishedAt: "2026-07-21T15:34:53Z",
 		UpdatedAt:   "2026-07-25T19:24:37Z",
 		Assets: []service.CachedDownloadAsset{{
-			ID:       "cc-switch-v3.18.0-windows.msi",
-			Name:     "CC-Switch-v3.18.0-Windows.msi",
-			Size:     12849152,
-			SHA256:   "c4a6eaf763269396f90a81377381e91c8341538b51376912c81bab73e844612d",
-			Platform: "windows",
-			Arch:     "universal",
+			ID:                 "cc-switch-v3.18.0-windows.msi",
+			Name:               "CC-Switch-v3.18.0-Windows.msi",
+			Size:               12849152,
+			SHA256:             "c4a6eaf763269396f90a81377381e91c8341538b51376912c81bab73e844612d",
+			Platform:           "windows",
+			Arch:               "universal",
+			Role:               "claude-desktop-code",
+			ComponentVersion:   "2.1.229",
+			UpstreamSHA256:     strings.Repeat("b", 64),
+			UpstreamCompressed: 71120125,
 		}},
 	}, "cc-switch")
 
@@ -152,6 +156,10 @@ func TestBuildPublicDownloadManifestUsesSameSiteImmutablePackageURLs(t *testing.
 		manifest.Assets[0].DownloadURL,
 	)
 	require.Equal(t, "c4a6eaf763269396f90a81377381e91c8341538b51376912c81bab73e844612d", manifest.Assets[0].SHA256)
+	require.Equal(t, "claude-desktop-code", manifest.Assets[0].Role)
+	require.Equal(t, "2.1.229", manifest.Assets[0].ComponentVersion)
+	require.Equal(t, strings.Repeat("b", 64), manifest.Assets[0].UpstreamSHA256)
+	require.Equal(t, int64(71120125), manifest.Assets[0].UpstreamCompressedSize)
 }
 
 func TestBuildPublicDownloadManifestRejectsUnsafeVersionSegments(t *testing.T) {

@@ -1,15 +1,20 @@
 package service
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,6 +43,61 @@ func (s *downloadResourceGitHubStub) DownloadFile(_ context.Context, url, dest s
 
 func (s *downloadResourceGitHubStub) FetchChecksumFile(context.Context, string) ([]byte, error) {
 	return nil, nil
+}
+
+func claudeDesktopTestFixture(
+	t *testing.T,
+	version, commit, codeVersion string,
+	x64Compressed, arm64Compressed []byte,
+) []byte {
+	t.Helper()
+	checksum := func(raw []byte) string { return fmt.Sprintf("%x", sha256.Sum256(raw)) }
+	pin := claudeCodePin{
+		Version: codeVersion,
+		Manifest: claudeCodeManifest{
+			Version: codeVersion,
+			Platforms: map[string]claudeCodePlatform{
+				"win32-x64": {
+					Binary: "claude.exe.zst", Checksum: checksum(x64Compressed), Size: int64(len(x64Compressed)),
+				},
+				"win32-arm64": {
+					Binary: "claude.exe.zst", Checksum: checksum(arm64Compressed), Size: int64(len(arm64Compressed)),
+				},
+			},
+		},
+		BaseURL: claudeCodeOfficialBase,
+	}
+	buildRaw, err := json.Marshal(claudeDesktopBuildInfo{CommitHash: commit, AppVersion: version})
+	require.NoError(t, err)
+	pinRaw, err := json.Marshal(pin)
+	require.NoError(t, err)
+	escape := func(raw []byte) string { return strings.ReplaceAll(string(raw), `"`, `\"`) }
+	asar := []byte("function build(){return JSON.parse(`" + escape(buildRaw) + "`)};" +
+		"function pin(){return JSON.parse(`" + escape(pinRaw) + "`)}")
+
+	var buffer bytes.Buffer
+	writer := zip.NewWriter(&buffer)
+	entry, err := writer.Create(claudeDesktopASARPath)
+	require.NoError(t, err)
+	_, err = entry.Write(asar)
+	require.NoError(t, err)
+	signature, err := writer.Create("AppxSignature.p7x")
+	require.NoError(t, err)
+	_, err = signature.Write([]byte("signed-fixture"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	return buffer.Bytes()
+}
+
+func zstdTestPayload(t *testing.T, raw []byte) []byte {
+	t.Helper()
+	var buffer bytes.Buffer
+	writer, err := zstd.NewWriter(&buffer)
+	require.NoError(t, err)
+	_, err = writer.Write(raw)
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	return buffer.Bytes()
 }
 
 func TestDownloadResourceServiceSyncCCSwitchCachesInstallAssets(t *testing.T) {
@@ -250,6 +310,9 @@ func TestDownloadResourceServiceSyncCodexCachesSelectedAssets(t *testing.T) {
 				PublishedAt: "2026-05-31T00:00:00Z",
 				Assets: []GitHubAsset{
 					{Name: "codex-aarch64-apple-darwin.tar.gz", BrowserDownloadURL: "https://example.test/codex-mac", Size: int64(len("codex-mac"))},
+					{Name: "codex-aarch64-apple-darwin.dmg", BrowserDownloadURL: "https://example.test/codex-dmg-arm64", Size: int64(len("codex-dmg-arm64"))},
+					{Name: "codex-x86_64-apple-darwin.dmg", BrowserDownloadURL: "https://example.test/codex-dmg-x64", Size: int64(len("codex-dmg-x64"))},
+					{Name: "codex-aarch64-pc-windows-msvc.exe.zip", BrowserDownloadURL: "https://example.test/codex-cli-arm64", Size: int64(len("codex-cli-arm64"))},
 					{Name: "codex-app-server-package-x86_64-pc-windows-msvc.tar.gz", BrowserDownloadURL: "https://example.test/codex-app", Size: int64(len("codex-app"))},
 					{Name: "codex-app-server-x86_64-pc-windows-msvc.exe.zip", BrowserDownloadURL: "https://example.test/skip-server", Size: int64(len("skip"))},
 					{Name: "codex-npm-0.135.0.tgz", BrowserDownloadURL: "https://example.test/skip-npm", Size: int64(len("skip"))},
@@ -268,10 +331,12 @@ func TestDownloadResourceServiceSyncCodexCachesSelectedAssets(t *testing.T) {
 		},
 		files: map[string][]byte{
 			"https://example.test/codex-mac":        []byte("codex-mac"),
+			"https://example.test/codex-dmg-arm64":  []byte("codex-dmg-arm64"),
+			"https://example.test/codex-dmg-x64":    []byte("codex-dmg-x64"),
+			"https://example.test/codex-cli-arm64":  []byte("codex-cli-arm64"),
 			"https://example.test/codex-app":        []byte("codex-app"),
 			"https://example.test/codex-msix":       []byte("codex-msix"),
 			"https://example.test/codex-msix-arm64": []byte("codex-msix-arm64"),
-			"https://example.test/chatgpt.dmg":      []byte("official-chatgpt-mac"),
 		},
 	}
 	svc := NewDownloadResourceService(&config.Config{
@@ -281,7 +346,6 @@ func TestDownloadResourceServiceSyncCodexCachesSelectedAssets(t *testing.T) {
 			UpdateIntervalHours:    1,
 			CodexRepo:              "openai/codex",
 			CodexWindowsMirrorRepo: "Wangnov/codex-app-mirror",
-			CodexMacOfficialURL:    "https://example.test/chatgpt.dmg",
 			MaxAssetBytes:          1024,
 		},
 	}, stub)
@@ -291,15 +355,16 @@ func TestDownloadResourceServiceSyncCodexCachesSelectedAssets(t *testing.T) {
 
 	manifest, err := svc.ListTool(context.Background(), codexToolID)
 	require.NoError(t, err)
-	require.Equal(t, "codex-app-26.707.31428", manifest.Version)
-	require.Len(t, manifest.Assets, 4)
+	require.Equal(t, "codex-app-26.707.31428__rust-v0.135.0", manifest.Version)
+	require.Equal(t, "openai/codex, Wangnov/codex-app-mirror", manifest.Repo)
+	require.Len(t, manifest.Assets, 6)
 	require.Equal(t, "macos", manifest.Assets[0].Platform)
-	require.Equal(t, "windows", manifest.Assets[1].Platform)
-	require.Equal(t, "x64", manifest.Assets[1].Arch)
-	require.Equal(t, "arm64", manifest.Assets[2].Arch)
-	require.Equal(t, "macos", manifest.Assets[3].Platform)
-	require.Equal(t, "universal", manifest.Assets[3].Arch)
-	require.Equal(t, "ChatGPT.dmg", manifest.Assets[3].Name)
+	require.Equal(t, "arm64", manifest.Assets[1].Arch)
+	require.Equal(t, "x64", manifest.Assets[2].Arch)
+	require.Equal(t, "windows", manifest.Assets[3].Platform)
+	require.Equal(t, "arm64", manifest.Assets[3].Arch)
+	require.Equal(t, "x64", manifest.Assets[4].Arch)
+	require.Equal(t, "arm64", manifest.Assets[5].Arch)
 	require.NotEmpty(t, manifest.Assets[0].SHA256)
 }
 
@@ -345,45 +410,93 @@ func TestDownloadResourceServiceSyncCodexPlusPlusCachesInstallAssets(t *testing.
 	require.NotEmpty(t, manifest.Assets[0].SHA256)
 }
 
-func TestDownloadResourceServiceSyncClaudeDesktopCachesStaticAssets(t *testing.T) {
+func TestDownloadResourceServiceSyncClaudeDesktopPublishesVerifiedPairs(t *testing.T) {
 	dir := t.TempDir()
-	stub := &downloadResourceGitHubStub{
-		files: map[string][]byte{
-			"https://example.test/claude.dmg":                                 []byte("macos"),
-			"https://downloads.claude.ai/releases/win32/x64/1.0.0/Claude.exe": []byte("windows-x64"),
-			"https://example.test/win-arm64":                                  []byte("windows-arm64"),
-		},
-	}
-	svc := NewDownloadResourceService(&config.Config{
-		Downloads: config.DownloadsConfig{
-			Enabled:                      true,
-			CacheDir:                     dir,
-			UpdateIntervalHours:          1,
-			ClaudeDesktopMacURL:          "https://example.test/claude.dmg",
-			ClaudeDesktopWindowsX64URL:   "https://downloads.claude.ai/releases/win32/x64/1.0.0/Claude.exe",
-			ClaudeDesktopWindowsARM64URL: "https://example.test/win-arm64",
-			MaxAssetBytes:                1024,
-		},
-	}, stub)
-
-	err := svc.SyncClaudeDesktop(context.Background())
+	base := "https://downloads.example.test/releases/win32"
+	version := "1.30096.1"
+	commit := strings.Repeat("1", 40)
+	codeVersion := "2.1.229"
+	x64Compressed := zstdTestPayload(t, []byte("MZ-x64-code-component"))
+	arm64Compressed := zstdTestPayload(t, []byte("MZ-arm64-code-component"))
+	msix := claudeDesktopTestFixture(t, version, commit, codeVersion, x64Compressed, arm64Compressed)
+	latest, err := json.Marshal(claudeDesktopLatest{Version: version, Hash: commit})
 	require.NoError(t, err)
+	stub := &downloadResourceGitHubStub{files: map[string][]byte{
+		base + "/x64/.latest":   latest,
+		base + "/arm64/.latest": latest,
+		base + "/x64/" + version + "/Claude-" + commit + ".msix":                   msix,
+		base + "/arm64/" + version + "/Claude-" + commit + ".msix":                 msix,
+		claudeCodeOfficialBase + "/" + codeVersion + "/win32-x64/claude.exe.zst":   x64Compressed,
+		claudeCodeOfficialBase + "/" + codeVersion + "/win32-arm64/claude.exe.zst": arm64Compressed,
+		"https://example.test/claude.dmg":                                          []byte("macos"),
+	}}
+	svc := NewDownloadResourceService(&config.Config{Downloads: config.DownloadsConfig{
+		Enabled: true, CacheDir: dir, MaxAssetBytes: 1024 * 1024,
+		ClaudeDesktopLatestBaseURL: base,
+		ClaudeDesktopMacURL:        "https://example.test/claude.dmg",
+	}}, stub)
+
 	require.NoError(t, svc.SyncClaudeDesktop(context.Background()))
-	require.Len(t, stub.downloads, 3, "immutable Claude packages must not be downloaded again")
+	largeDownloadCount := len(stub.downloads)
+	require.NoError(t, svc.SyncClaudeDesktop(context.Background()))
+	require.Equal(t, largeDownloadCount+2, len(stub.downloads), "current release should only re-read two tiny .latest files")
 
 	manifest, err := svc.ListTool(context.Background(), claudeDesktopToolID)
 	require.NoError(t, err)
-	require.Equal(t, "1.0.0", manifest.Version)
-	require.Len(t, manifest.Assets, 3)
-	require.Equal(t, "macos", manifest.Assets[0].Platform)
-	require.Equal(t, "windows", manifest.Assets[1].Platform)
-	require.Equal(t, "x64", manifest.Assets[1].Arch)
+	require.Equal(t, version+"-"+commit[:12], manifest.Version)
+	require.Len(t, manifest.Assets, 5)
+
+	roles := map[string]CachedDownloadAsset{}
+	for _, asset := range manifest.Assets {
+		roles[asset.Arch+":"+asset.Role] = asset
+	}
+	require.Equal(t, codeVersion, roles["x64:"+claudeCodeAssetRole].ComponentVersion)
+	require.Equal(t, fmt.Sprintf("%x", sha256.Sum256(x64Compressed)), roles["x64:"+claudeCodeAssetRole].UpstreamSHA256)
+	require.Equal(t, int64(len(x64Compressed)), roles["x64:"+claudeCodeAssetRole].UpstreamCompressed)
+	require.Equal(t, claudeInstallerRole, roles["x64:"+claudeInstallerRole].Role)
+	require.FileExists(t, filepath.Join(dir, claudeDesktopToolID, manifest.Version, roles["x64:"+claudeCodeAssetRole].Name))
 
 	windowsAsset, err := svc.GetClaudeDesktopWindowsX64Asset(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, "Claude-Setup-x64.exe", windowsAsset.Asset.Name)
-	require.Equal(t, "windows", windowsAsset.Asset.Platform)
-	require.Equal(t, "x64", windowsAsset.Asset.Arch)
+	require.Equal(t, claudeInstallerRole, windowsAsset.Asset.Role)
+	require.Equal(t, ".msix", strings.ToLower(filepath.Ext(windowsAsset.Asset.Name)))
+}
+
+func TestDownloadResourceServiceSyncClaudeDesktopKeepsPreviousManifestOnPairFailure(t *testing.T) {
+	dir := t.TempDir()
+	base := "https://downloads.example.test/releases/win32"
+	codePayload := zstdTestPayload(t, []byte("MZ-component"))
+	files := map[string][]byte{"https://example.test/claude.dmg": []byte("macos")}
+	addRelease := func(version string, commitByte byte, codeVersion string, includeComponents bool) claudeDesktopLatest {
+		commit := strings.Repeat(string(commitByte), 40)
+		latest := claudeDesktopLatest{Version: version, Hash: commit}
+		raw, marshalErr := json.Marshal(latest)
+		require.NoError(t, marshalErr)
+		files[base+"/x64/.latest"] = raw
+		files[base+"/arm64/.latest"] = raw
+		msix := claudeDesktopTestFixture(t, version, commit, codeVersion, codePayload, codePayload)
+		files[base+"/x64/"+version+"/Claude-"+commit+".msix"] = msix
+		files[base+"/arm64/"+version+"/Claude-"+commit+".msix"] = msix
+		if includeComponents {
+			files[claudeCodeOfficialBase+"/"+codeVersion+"/win32-x64/claude.exe.zst"] = codePayload
+			files[claudeCodeOfficialBase+"/"+codeVersion+"/win32-arm64/claude.exe.zst"] = codePayload
+		}
+		return latest
+	}
+	first := addRelease("1.0.0", 'a', "2.0.0", true)
+	stub := &downloadResourceGitHubStub{files: files}
+	svc := NewDownloadResourceService(&config.Config{Downloads: config.DownloadsConfig{
+		Enabled: true, CacheDir: dir, MaxAssetBytes: 1024 * 1024,
+		ClaudeDesktopLatestBaseURL: base,
+		ClaudeDesktopMacURL:        "https://example.test/claude.dmg",
+	}}, stub)
+	require.NoError(t, svc.SyncClaudeDesktop(context.Background()))
+
+	_ = addRelease("1.0.1", 'b', "2.0.1", false)
+	require.ErrorContains(t, svc.SyncClaudeDesktop(context.Background()), "download Claude Desktop Code")
+	manifest, err := svc.ListTool(context.Background(), claudeDesktopToolID)
+	require.NoError(t, err)
+	require.Equal(t, claudeDesktopReleaseID(first), manifest.Version)
 }
 
 func TestDownloadResourceServiceImmutableAssetSurvivesCurrentManifestAdvance(t *testing.T) {
@@ -461,11 +574,31 @@ func TestDownloadResourceServiceSyncFailsClosedWithoutDownloadClient(t *testing.
 	}
 }
 
-func TestClaudeDesktopVersionFromSourcesUsesConcreteWindowsVersion(t *testing.T) {
-	require.Equal(t, "1.25927.0", claudeDesktopVersionFromSources([]staticDownloadSource{{
-		Platform: "windows",
-		URL:      "https://downloads.claude.ai/releases/win32/x64/1.25927.0/Claude.exe",
-	}}))
+func TestClaudeDesktopReleaseIDIncludesCommitIdentity(t *testing.T) {
+	require.Equal(t, "1.30096.1-1234567890ab", claudeDesktopReleaseID(claudeDesktopLatest{
+		Version: "1.30096.1",
+		Hash:    "1234567890abcdef1234567890abcdef12345678",
+	}))
+}
+
+func TestClaudeDesktopRetentionKeepsCurrentAndTwoRollbackPairs(t *testing.T) {
+	dir := t.TempDir()
+	svc := NewDownloadResourceService(&config.Config{Downloads: config.DownloadsConfig{
+		Enabled: true, CacheDir: dir, ClaudeDesktopRetainVersions: 3,
+	}}, &downloadResourceGitHubStub{})
+
+	versions := []string{"1.0.0-aaaaaaaaaaaa", "1.0.1-bbbbbbbbbbbb", "1.0.2-cccccccccccc", "1.0.3-dddddddddddd"}
+	for i, version := range versions {
+		require.NoError(t, svc.writeManifest(CachedDownloadManifest{Tool: claudeDesktopToolID, Version: version}))
+		stamp := time.Now().Add(time.Duration(i) * time.Minute)
+		require.NoError(t, os.Chtimes(filepath.Join(dir, claudeDesktopToolID, version), stamp, stamp))
+	}
+
+	require.NoError(t, svc.cleanupOldClaudeDesktopVersions(versions[3], 3))
+	require.NoDirExists(t, filepath.Join(dir, claudeDesktopToolID, versions[0]))
+	require.DirExists(t, filepath.Join(dir, claudeDesktopToolID, versions[1]))
+	require.DirExists(t, filepath.Join(dir, claudeDesktopToolID, versions[2]))
+	require.DirExists(t, filepath.Join(dir, claudeDesktopToolID, versions[3]))
 }
 
 func TestDownloadResourceServiceSyncGrokBuildUsesVerifiedOfficialVersion(t *testing.T) {

@@ -128,7 +128,7 @@ const hasStatusWarning = computed(() => items.value.some((item) => ['update-avai
 const healthLabel = computed(() => previewMode.value ? '版本状态排版预览' : (hasStatusWarning.value ? '部分版本正在检查' : '下载服务正常'))
 const healthDescription = computed(() => previewMode.value
   ? '以下为示例数据；正式页面会读取本站缓存和官方版本。'
-  : '本站缓存每日自动检查更新；页面数据最多缓存 5 分钟。')
+  : 'Claude Desktop 每 5 分钟检查版本；其他下载资源每 30 分钟检查。页面数据最多缓存 5 分钟。')
 const healthBannerClass = computed(() => hasStatusWarning.value && !previewMode.value
   ? 'border-amber-200 bg-amber-50/70 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/25 dark:text-amber-200'
   : 'border-emerald-200 bg-emerald-50/70 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/25 dark:text-emerald-200')

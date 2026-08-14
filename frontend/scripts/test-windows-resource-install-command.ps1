@@ -76,6 +76,7 @@ New-Item -ItemType Directory -Path $fixtureDir -Force | Out-Null
 try {
   foreach ($scriptPath in @(
     (Join-Path $PSScriptRoot '..\public\auto-config\install.ps1'),
+    (Join-Path $PSScriptRoot '..\public\auto-config\install-claude-desktop.ps1'),
     (Join-Path $PSScriptRoot '..\public\auto-config\diagnose-cc-switch.ps1'),
     (Join-Path $PSScriptRoot '..\public\auto-config\save-openai-official-provider.ps1')
   )) {
@@ -134,6 +135,18 @@ const server = createServer((request, response) => {
         name: 'CC-Switch-v3.19.2-Windows.msi', platform: 'windows', arch: 'universal', sha256: expectedSHA256,
         download_url: `${base}/downloads/cc-switch/v3.19.2/${expectedSHA256}/cc-switch-v3.19.2-windows.msi`
       }]
+    },
+    '/claude-manifest': {
+      tool: 'claude-desktop', version: '1.30096.1-194d93c2558c', assets: [{
+        name: 'Claude-1.30096.1-x64.msix', platform: 'windows', arch: 'x64', role: 'installer',
+        size: payload.length, sha256: expectedSHA256,
+        download_url: `${base}/downloads/claude-desktop/1.30096.1-194d93c2558c/${expectedSHA256}/claude-1.30096.1-x64.msix`
+      }, {
+        name: 'Claude-Desktop-Code-2.1.229-x64.exe', platform: 'windows', arch: 'x64', role: 'claude-desktop-code',
+        component_version: '2.1.229', upstream_sha256: 'f'.repeat(64), upstream_compressed_size: 71,
+        size: payload.length, sha256: expectedSHA256,
+        download_url: `${base}/downloads/claude-desktop/1.30096.1-194d93c2558c/${expectedSHA256}/claude-desktop-code-2.1.229-x64.exe`
+      }]
     }
   };
   if (Object.hasOwn(manifests, request.url)) {
@@ -180,6 +193,19 @@ process.on('SIGTERM', () => server.close(() => process.exit(0)));
   )
   Invoke-Expression ($installerFunctions -join "`n")
 
+  $claudeDesktopPath = Join-Path $PSScriptRoot '..\public\auto-config\install-claude-desktop.ps1'
+  $claudeDesktopFunctions = Get-FunctionsFromPowerShellFile -Path $claudeDesktopPath -Names @(
+    'Write-Step',
+    'Get-NativeArchitecture',
+    'Assert-SameSiteClaudeAsset',
+    'Get-ClaudeDesktopAssetPair',
+    'Download-VerifiedClaudeAsset',
+    'Write-Utf8NoBom',
+    'Install-ClaudeDesktopCodeComponent',
+    'Install-ClaudeDesktop'
+  )
+  Invoke-Expression ($claudeDesktopFunctions -join "`n")
+
   $diagnosticPath = Join-Path $PSScriptRoot '..\public\auto-config\diagnose-cc-switch.ps1'
   $diagnosticFunctions = Get-FunctionsFromPowerShellFile -Path $diagnosticPath -Names @(
     'Write-Step',
@@ -196,6 +222,38 @@ process.on('SIGTERM', () => server.close(() => process.exit(0)));
   Assert-True ((Convert-ToVersion -Value 'CC Switch v3.19.2') -eq [Version]'3.19.2') 'CC Switch diagnostic version parser failed'
 
   $baseUrl = "http://127.0.0.1:$port"
+
+  # Run the real Claude Desktop pair installer contract. Only Add-AppxPackage
+  # is replaced so the hosted runner is not modified; manifest selection,
+  # same-site transfer, SHA-256 checks and the Claude-3p component layout are real.
+  $script:ClaudeDesktopManifestUrl = "$baseUrl/claude-manifest"
+  $script:ClaudeDesktopPackagePrefix = "$baseUrl/downloads/claude-desktop/"
+  $originalLocalAppData = $env:LOCALAPPDATA
+  $env:LOCALAPPDATA = Join-Path $fixtureDir '本地 App Data'
+  $script:ClaudeMSIXLog = Join-Path $fixtureDir 'claude-msix.log'
+  function global:Add-AppxPackage {
+    param([string]$Path, [switch]$ForceApplicationShutdown)
+    Assert-True $ForceApplicationShutdown 'Claude Desktop MSIX install did not request safe application shutdown'
+    Set-Content -LiteralPath $script:ClaudeMSIXLog -Encoding UTF8 -Value $Path
+  }
+  try {
+    $env:PROCESSOR_ARCHITECTURE = 'AMD64'
+    $env:PROCESSOR_ARCHITEW6432 = ''
+    Install-ClaudeDesktop
+    Assert-True (Test-Path -LiteralPath $script:ClaudeMSIXLog -PathType Leaf) 'Claude Desktop MSIX install step was not reached'
+    $claudeCodeDir = Join-Path $env:LOCALAPPDATA 'Claude-3p\claude-code\2.1.229'
+    $claudeCodeExe = Join-Path $claudeCodeDir 'claude.exe'
+    Assert-True (Test-Path -LiteralPath $claudeCodeExe -PathType Leaf) 'Claude Desktop Code component was not installed'
+    Assert-True ((Get-FileHash -LiteralPath $claudeCodeExe -Algorithm SHA256).Hash -eq $expectedSHA256) 'Claude Desktop Code installed payload hash mismatch'
+    Assert-True ((Get-Content -LiteralPath (Join-Path $claudeCodeDir '.verified') -Raw).Trim() -eq ('f' * 64)) 'Claude Desktop Code compressed checksum marker mismatch'
+    $payloadMetadata = Get-Content -LiteralPath (Join-Path $claudeCodeDir '.payload') -Raw | ConvertFrom-Json
+    Assert-True ($payloadMetadata.sha256 -eq $expectedSHA256.ToLowerInvariant()) 'Claude Desktop Code payload metadata hash mismatch'
+    Assert-True ([int64]$payloadMetadata.size -eq (Get-Item -LiteralPath $claudeCodeExe).Length) 'Claude Desktop Code payload metadata size mismatch'
+  } finally {
+    Remove-Item Function:\global:Add-AppxPackage -ErrorAction SilentlyContinue
+    $env:LOCALAPPDATA = $originalLocalAppData
+  }
+
   $gitAsset = Get-VerifiedSameSiteAsset `
     -ManifestUrl "$baseUrl/git-manifest" `
     -DownloadPrefix "$baseUrl/downloads/git-for-windows/" `
@@ -369,7 +427,7 @@ process.on('SIGTERM', () => server.close(() => process.exit(0)));
   Assert-True (-not (Test-Path -LiteralPath $destination)) 'download failure did not clean up the installer'
 
   $global:LASTEXITCODE = 0
-  Write-Host "WINDOWS_RESOURCE_INSTALL_ACCEPTANCE_OK runtime=$($PSVersionTable.PSVersion) edition=$($PSVersionTable.PSEdition) claude-desktop=verified codex-plus-plus=verified codex-app=same-site-sha256 git=same-site-sha256 grok=same-site-sha256 cc-switch=same-site-manifest official-provider=parsed fallback=passed checksum=fail-closed download=fail-closed path=unicode-spaces policy=Restricted"
+  Write-Host "WINDOWS_RESOURCE_INSTALL_ACCEPTANCE_OK runtime=$($PSVersionTable.PSVersion) edition=$($PSVersionTable.PSEdition) claude-desktop=paired-msix-code-local codex-plus-plus=verified codex-app=same-site-sha256 git=same-site-sha256 grok=same-site-sha256 cc-switch=same-site-manifest official-provider=parsed fallback=passed checksum=fail-closed download=fail-closed path=unicode-spaces policy=Restricted"
 } finally {
   if ($null -ne $server -and -not $server.HasExited) {
     Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue

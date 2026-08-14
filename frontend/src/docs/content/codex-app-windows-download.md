@@ -22,7 +22,7 @@ Start-Process "ms-appinstaller:?source=https://laoshirenai.com/api/v1/public-dow
 Add-AppxPackage -Path .\OpenAI.Codex_*.Msix
 ```
 
-本站的下载缓存会在服务启动时同步，并每 24 小时检查一次新版本。机器可读版本、文件名、大小和 SHA256 始终从动态接口读取，不再在文档里写死：
+本站的下载缓存会在服务启动时同步，并每 30 分钟检查一次新版本。机器可读版本、文件名、大小和 SHA256 始终从动态接口读取，不再在文档里写死：
 
 [Codex App Windows 动态 latest.json](/api/v1/public-downloads/codex/windows-x64/latest.json)
 

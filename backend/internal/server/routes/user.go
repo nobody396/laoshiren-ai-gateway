@@ -63,6 +63,7 @@ func RegisterUserRoutes(
 	v1.GET("/public-downloads/codex/packages/:assetID", h.Resource.DownloadCodexPackage)
 	v1.GET("/public-downloads/git-for-windows/latest.json", h.Resource.GitForWindowsLatestManifest)
 	v1.GET("/public-downloads/grok-build/latest.json", h.Resource.GrokBuildLatestManifest)
+	v1.GET("/public-downloads/claude-desktop/latest.json", h.Resource.ClaudeDesktopLatestManifest)
 	v1.POST("/public-setup/exchange", h.Resource.ExchangeSetupTicket)
 	// HMAC-signed token lets normal <img> elements load screenshots without a
 	// bearer header; the S3 object itself remains private and short-lived.

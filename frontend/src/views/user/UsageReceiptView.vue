@@ -1016,7 +1016,7 @@ onBeforeUnmount(() => {
 .receipt-printer__print-button {
   position: absolute;
   top: 50.5%;
-  right: 10.42%;
+  right: 12.35%;
   z-index: 10;
   width: 9.15%;
   aspect-ratio: 1;

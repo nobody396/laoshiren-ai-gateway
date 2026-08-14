@@ -1346,6 +1346,9 @@ function Write-GrokTomlConfig {
   }
 
   $BaseV1 = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+  while ($Lines.Count -gt 0 -and [string]::IsNullOrWhiteSpace($Lines[$Lines.Count - 1])) {
+    $Lines.RemoveAt($Lines.Count - 1)
+  }
   $Lines.Add('')
   $Lines.Add('# Managed by laoshirenai one-click setup')
   foreach ($ModelProfile in $CatalogGrokManagedModels) {

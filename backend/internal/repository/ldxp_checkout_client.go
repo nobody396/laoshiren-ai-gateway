@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -104,7 +105,16 @@ func nativeCheckoutSecret(name string) (string, error) {
 	if path == "" {
 		return "", nil
 	}
-	file, err := os.Open(path)
+	path = filepath.Clean(path)
+	if !filepath.IsAbs(path) {
+		return "", errors.New("secret file path must be absolute")
+	}
+	root, err := os.OpenRoot(filepath.Dir(path))
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = root.Close() }()
+	file, err := root.Open(filepath.Base(path))
 	if err != nil {
 		return "", err
 	}

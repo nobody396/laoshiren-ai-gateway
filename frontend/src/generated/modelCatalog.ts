@@ -24,8 +24,9 @@ export const modelCatalog: readonly CatalogModel[] = [
     "contextWindow": 500000,
     "maxOutputTokens": 128000,
     "clientDefault": true,
-    "preferredGroupName": "Grok 4.6",
+    "preferredGroupName": "Grok",
     "legacyGroupNames": [
+      "Grok 4.6",
       "Grok 4.5"
     ],
     "preset": {

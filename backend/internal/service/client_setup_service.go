@@ -340,9 +340,9 @@ func clientSetupGroupNameMatches(name, required string) bool {
 
 func selectClientSetupGroup(target string, groups []Group) *Group {
 	// One-click onboarding is a fixed product rule: Claude Code keys use MAX
-	// 20X, Codex keys use Pro 20X, and Grok Build keys prefer the additive 4.6
-	// balance group. The 4.5 group remains a rollout-safe fallback for existing
-	// installations; subscription groups are deliberately not selected here.
+	// 20X, Codex keys use Pro 20X, and Grok Build keys prefer the version-neutral
+	// additive balance group. Version-named groups remain rollout-safe fallbacks
+	// for existing installations; subscription groups are deliberately excluded.
 	if target == ClientSetupTargetGrok {
 		for i := range groups {
 			if clientSetupGroupCompatible(target, &groups[i]) &&

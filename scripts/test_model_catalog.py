@@ -68,7 +68,7 @@ class ModelCatalogTest(unittest.TestCase):
                 },
             },
             "production": {
-                "group_name": "Grok 4.6 分组",
+                "group_name": "Grok 分组",
                 "client_default": True,
             },
         }
@@ -77,8 +77,8 @@ class ModelCatalogTest(unittest.TestCase):
             path.write_text(json.dumps(manifest), encoding="utf-8")
             merged = MODULE.merge_manifest(catalog, path)
         row = merged["models"][0]
-        self.assertEqual(row["public_group"]["preferred_name"], "Grok 4.6")
-        self.assertEqual(row["public_group"]["legacy_names"], ["Grok 4.5"])
+        self.assertEqual(row["public_group"]["preferred_name"], "Grok")
+        self.assertEqual(row["public_group"]["legacy_names"], ["Grok 4.6", "Grok 4.5"])
 
     def test_new_default_replaces_prior_platform_default(self) -> None:
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)

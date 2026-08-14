@@ -22,7 +22,7 @@ var generatedCatalogClientDefaults = map[string]string{
 }
 
 var generatedCatalogGroupPolicies = map[string]generatedCatalogGroupPolicy{
-	"grok": {Preferred: "Grok 4.6", Legacy: []string{"Grok 4.5"}},
+	"grok": {Preferred: "Grok", Legacy: []string{"Grok 4.6", "Grok 4.5"}},
 }
 
 func generatedCatalogBillingPrice(model string) *ModelPricing {

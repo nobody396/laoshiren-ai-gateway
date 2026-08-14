@@ -11,9 +11,9 @@ import {
 // 保持为当前主力文本/编码模型，避免默认暴露 GPT-3.5、旧 GPT-4、旧 o-series 等历史模型。
 const openaiModels = [
   ...catalogModelsForPlatform('openai'),
-  'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna',
+  'gpt-5.6-sol', 'gpt-5.6-terra',
   'gpt-5.5',
-  'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.4-nano',
+  'gpt-5.4', 'gpt-5.4-nano',
   'gpt-5.3-codex',
   'gpt-5.2', 'gpt-5.2-codex', 'gpt-5.2-pro',
   'gpt-5.1', 'gpt-5.1-codex', 'gpt-5.1-codex-max', 'gpt-5.1-codex-mini',
@@ -256,7 +256,6 @@ const openaiPresetMappings = [
   ...catalogPresetMappingsForPlatform('openai'),
   { label: 'GPT-5.6 Sol', from: 'gpt-5.6-sol', to: 'gpt-5.6-sol', color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400' },
   { label: 'GPT-5.6 Terra', from: 'gpt-5.6-terra', to: 'gpt-5.6-terra', color: 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400' },
-  { label: 'GPT-5.6 Luna', from: 'gpt-5.6-luna', to: 'gpt-5.6-luna', color: 'bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-400' },
   { label: 'GPT-5.5', from: 'gpt-5.5', to: 'gpt-5.5', color: 'bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400' },
   { label: 'GPT-5.4', from: 'gpt-5.4', to: 'gpt-5.4', color: 'bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-400' },
   { label: 'GPT-5.3 Codex', from: 'gpt-5.3-codex', to: 'gpt-5.3-codex', color: 'bg-teal-100 text-teal-700 hover:bg-teal-200 dark:bg-teal-900/30 dark:text-teal-400' },

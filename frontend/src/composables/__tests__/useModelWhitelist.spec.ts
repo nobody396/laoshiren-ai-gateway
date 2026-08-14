@@ -12,11 +12,12 @@ describe('useModelWhitelist', () => {
 
     expect(models).toContain('gpt-5.6-sol')
     expect(models).toContain('gpt-5.6-terra')
-    expect(models).toContain('gpt-5.6-luna')
+    expect(models).not.toContain('gpt-5.6-luna')
     expect(models).not.toContain('gpt-5.3-codex-spark')
     expect(models).toContain('gpt-5.5')
     expect(models).not.toContain('gpt-5.5-pro')
     expect(models).toContain('gpt-5.4')
+    expect(models).not.toContain('gpt-5.4-mini')
     expect(models).toContain('gpt-5.1-codex')
     expect(models).not.toContain('gpt-3.5-turbo')
     expect(models).not.toContain('gpt-4')

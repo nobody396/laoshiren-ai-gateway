@@ -94,7 +94,7 @@ func TestMonthlyCardPublicStatusSnapshotHiddenByDefault(t *testing.T) {
 				return []MonthlyUpstreamProbePoint{{
 					AccountName: "pomoai-monthly-codex-0.12",
 					Platform:    PlatformOpenAI,
-					Model:       "gpt-5.4-mini",
+					Model:       "gpt-5.6-sol",
 					ProbePath:   MonthlyUpstreamProbePathGateway,
 					Status:      "ok",
 					CheckedAt:   time.Now(),
@@ -196,7 +196,7 @@ func TestMonthlyCardPublicStatusSnapshotVisibleWhenEnabled(t *testing.T) {
 					AccountID:   1,
 					AccountName: "pomoai-monthly-codex-0.12",
 					Platform:    PlatformOpenAI,
-					Model:       "gpt-5.4-mini",
+					Model:       "gpt-5.6-sol",
 					ProbePath:   MonthlyUpstreamProbePathGateway,
 					Status:      "ok",
 					CheckedAt:   checkedAt,
@@ -228,7 +228,7 @@ func TestMonthlyCardPublicStatusSnapshotFiltersSelectedChannels(t *testing.T) {
 		opsRepo: &opsRepoMock{
 			ListMonthlyUpstreamProbeResultsFn: func(ctx context.Context, since time.Time) ([]MonthlyUpstreamProbePoint, error) {
 				return []MonthlyUpstreamProbePoint{
-					{AccountID: 1, AccountName: "monthly-codex-gateway", Platform: PlatformOpenAI, Model: "gpt-5.4-mini", ProbePath: MonthlyUpstreamProbePathGateway, Status: "ok", CheckedAt: checkedAt},
+					{AccountID: 1, AccountName: "monthly-codex-gateway", Platform: PlatformOpenAI, Model: "gpt-5.6-sol", ProbePath: MonthlyUpstreamProbePathGateway, Status: "ok", CheckedAt: checkedAt},
 					{AccountID: 2, AccountName: "monthly-claude-gateway", Platform: PlatformAnthropic, Model: "claude-haiku-4-5", ProbePath: MonthlyUpstreamProbePathGateway, Status: "ok", CheckedAt: checkedAt},
 					{AccountID: 3, AccountName: "monthly-grok-gateway", Platform: PlatformGrok, Model: "grok-4.5", ProbePath: MonthlyUpstreamProbePathGateway, Status: "failed", CheckedAt: checkedAt},
 				}, nil
@@ -293,7 +293,7 @@ func TestMonthlyUpstreamProbeSnapshotUsesGatewayPointsForStatus(t *testing.T) {
 						AccountID:   1,
 						AccountName: "pomoai-monthly-codex-0.12",
 						Platform:    PlatformOpenAI,
-						Model:       "gpt-5.4-mini",
+						Model:       "gpt-5.6-sol",
 						ProbePath:   MonthlyUpstreamProbePathGateway,
 						Status:      "ok",
 						HTTPStatus:  monthlyStatusIntPtr(200),
@@ -304,7 +304,7 @@ func TestMonthlyUpstreamProbeSnapshotUsesGatewayPointsForStatus(t *testing.T) {
 						AccountID:    1,
 						AccountName:  "pomoai-monthly-codex-0.12",
 						Platform:     PlatformOpenAI,
-						Model:        "gpt-5.4-mini",
+						Model:        "gpt-5.6-sol",
 						ProbePath:    MonthlyUpstreamProbePathDirectUpstream,
 						Status:       "failed",
 						HTTPStatus:   monthlyStatusIntPtr(502),
@@ -355,7 +355,7 @@ func TestMonthlyUpstreamProbeSnapshotScoresExpectedSlots(t *testing.T) {
 						AccountID:   1,
 						AccountName: "pomoai-monthly-codex-0.12",
 						Platform:    PlatformOpenAI,
-						Model:       "gpt-5.4-mini",
+						Model:       "gpt-5.6-sol",
 						ProbePath:   MonthlyUpstreamProbePathGateway,
 						Status:      "ok",
 						CheckedAt:   reference.Add(-2 * time.Minute),
@@ -364,7 +364,7 @@ func TestMonthlyUpstreamProbeSnapshotScoresExpectedSlots(t *testing.T) {
 						AccountID:   1,
 						AccountName: "pomoai-monthly-codex-0.12",
 						Platform:    PlatformOpenAI,
-						Model:       "gpt-5.4-mini",
+						Model:       "gpt-5.6-sol",
 						ProbePath:   MonthlyUpstreamProbePathGateway,
 						Status:      "slow",
 						CheckedAt:   reference.Add(-4 * time.Minute),
@@ -373,7 +373,7 @@ func TestMonthlyUpstreamProbeSnapshotScoresExpectedSlots(t *testing.T) {
 						AccountID:   1,
 						AccountName: "pomoai-monthly-codex-0.12",
 						Platform:    PlatformOpenAI,
-						Model:       "gpt-5.4-mini",
+						Model:       "gpt-5.6-sol",
 						ProbePath:   MonthlyUpstreamProbePathGateway,
 						Status:      "failed",
 						CheckedAt:   reference.Add(-6 * time.Minute),
@@ -530,7 +530,7 @@ func TestMonthlyUpstreamProbeSnapshotFiltersObsoleteRenamedAccountPoints(t *test
 					{
 						AccountName:  "pomoai-monthly-codex-0.12",
 						Platform:     PlatformOpenAI,
-						Model:        "gpt-5.4-mini",
+						Model:        "gpt-5.6-sol",
 						ProbePath:    MonthlyUpstreamProbePathGateway,
 						Status:       "failed",
 						ErrorCode:    "missing_account",
@@ -541,7 +541,7 @@ func TestMonthlyUpstreamProbeSnapshotFiltersObsoleteRenamedAccountPoints(t *test
 						AccountID:   12,
 						AccountName: "monthly-codex-gateway",
 						Platform:    PlatformOpenAI,
-						Model:       "gpt-5.4-mini",
+						Model:       "gpt-5.6-sol",
 						ProbePath:   MonthlyUpstreamProbePathGateway,
 						Status:      "ok",
 						CheckedAt:   reference.Add(-time.Minute),
@@ -676,7 +676,7 @@ func TestMonthlyGatewayProbePointDoesNotStoreSuccessBodyAsError(t *testing.T) {
 		ID:       1,
 		Name:     "pomoai-monthly-codex-0.12",
 		Platform: PlatformOpenAI,
-	}, "gpt-5.4-mini", recorder, time.Now(), nil, nil)
+	}, "gpt-5.6-sol", recorder, time.Now(), nil, nil)
 
 	require.Equal(t, "ok", point.Status)
 	require.Empty(t, point.ErrorCode)
@@ -692,7 +692,7 @@ func TestMonthlyGatewayProbePointClassifiesGenericGatewayFailure(t *testing.T) {
 		ID:       1,
 		Name:     "pomoai-monthly-codex-0.12",
 		Platform: PlatformOpenAI,
-	}, "gpt-5.4-mini", recorder, time.Now(), context.DeadlineExceeded, nil)
+	}, "gpt-5.6-sol", recorder, time.Now(), context.DeadlineExceeded, nil)
 
 	require.Equal(t, "failed", point.Status)
 	require.Equal(t, "gateway_forward_failed", point.ErrorCode)

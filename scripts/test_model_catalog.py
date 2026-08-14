@@ -19,8 +19,15 @@ SPEC.loader.exec_module(MODULE)
 class ModelCatalogTest(unittest.TestCase):
     def test_repository_catalog_is_valid_and_deterministic(self) -> None:
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
+        codex_models = [
+            model["slug"]
+            for model in json.loads(MODULE.render_codex_client_catalog(catalog))["models"]
+        ]
         self.assertIn("grok-4.6", MODULE.render_go(catalog))
         self.assertIn('"id": "grok-4.6"', MODULE.render_ts(catalog))
+        self.assertIn("export const codexClientModels", MODULE.render_ts(catalog))
+        self.assertNotIn("gpt-5.6-luna", codex_models)
+        self.assertNotIn("gpt-5.4-mini", codex_models)
         self.assertIn("$CatalogGrokDefaultModel = 'grok-4.6'", MODULE.render_powershell_block(catalog))
         self.assertIn("CATALOG_GROK_DEFAULT_MODEL='grok-4.6'", MODULE.render_shell_block(catalog))
         self.assertEqual(
@@ -110,7 +117,10 @@ class ModelCatalogTest(unittest.TestCase):
             merged = MODULE.merge_manifest(catalog, path)
         defaults = [row["id"] for row in merged["models"] if row["client_default"]]
         self.assertEqual(defaults, ["grok-4.7"])
-        self.assertEqual(merged["client_auto_config_version"], "0.7.7")
+        self.assertEqual(
+            merged["client_auto_config_version"],
+            MODULE.bump_patch(catalog["client_auto_config_version"]),
+        )
         self.assertEqual(
             MODULE.installer_model_values(merged)["grok"]["managed_ids"],
             ["grok-4.5", "grok-4.6", "grok-4.7"],
@@ -148,7 +158,7 @@ class ModelCatalogTest(unittest.TestCase):
             path = Path(directory) / "manifest.json"
             path.write_text(json.dumps(manifest), encoding="utf-8")
             merged = MODULE.merge_manifest(catalog, path)
-        self.assertEqual(merged["client_auto_config_version"], "0.7.6")
+        self.assertEqual(merged["client_auto_config_version"], catalog["client_auto_config_version"])
 
     def test_generated_block_replacement_is_bounded(self) -> None:
         source = "before\n# BEGIN\nold\n# END\nafter\n"

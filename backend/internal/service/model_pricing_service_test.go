@@ -116,8 +116,8 @@ func TestModelPricingPriceFormula(t *testing.T) {
 	if g.GroupID != 1 || g.RateMultiplier != 0.5 {
 		t.Fatalf("unexpected group: %+v", g)
 	}
-	if len(g.Models) != 1 {
-		t.Fatalf("expected 1 model, got %d", len(g.Models))
+	if len(g.Models) != 2 {
+		t.Fatalf("expected active GPT-5.4 plus disabled Mini, got %d", len(g.Models))
 	}
 	m := g.Models[0]
 	if m.Model != "gpt-5.4" {
@@ -246,7 +246,7 @@ func TestModelPricingAddsDisabledLunaWhenRoutingNoLongerExposesIt(t *testing.T) 
 		t.Fatalf("expected sol, terra and disabled luna, got %+v", catalog.Groups)
 	}
 	luna := catalog.Groups[0].Models[2]
-	if luna.Model != disabledGPT56LunaModel || !luna.Disabled {
+	if luna.Model != "gpt-5.6-luna" || !luna.Disabled {
 		t.Fatalf("expected disabled Luna row, got %+v", luna)
 	}
 	assertPrice(t, "luna input", luna.InputPrice, 0.5)
@@ -270,12 +270,37 @@ func TestModelPricingAddsDisabledLunaWithoutProviderPrice(t *testing.T) {
 		t.Fatalf("expected Sol and disabled Luna, got %+v", catalog.Groups)
 	}
 	luna := catalog.Groups[0].Models[1]
-	if luna.Model != disabledGPT56LunaModel || !luna.Disabled {
+	if luna.Model != "gpt-5.6-luna" || !luna.Disabled {
 		t.Fatalf("expected disabled Luna row, got %+v", luna)
 	}
 	if luna.InputPrice != nil || luna.OutputPrice != nil || luna.CacheReadPrice != nil {
 		t.Fatalf("expected unavailable Luna price to remain empty, got %+v", luna)
 	}
+}
+
+func TestModelPricingAddsDisabledGPT54MiniWhenRoutingNoLongerExposesIt(t *testing.T) {
+	groups := []Group{{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5}}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-5.4":      {InputCostPerToken: 2.5e-6, OutputCostPerToken: 15e-6, CacheReadInputTokenCost: 0.25e-6},
+		"gpt-5.4-mini": {InputCostPerToken: 0.8e-6, OutputCostPerToken: 3.2e-6, CacheReadInputTokenCost: 0.08e-6},
+	}
+	models := map[int64][]string{6: {"gpt-5.4"}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 1 || len(catalog.Groups[0].Models) != 2 {
+		t.Fatalf("expected GPT-5.4 and disabled Mini, got %+v", catalog.Groups)
+	}
+	mini := catalog.Groups[0].Models[1]
+	if mini.Model != "gpt-5.4-mini" || !mini.Disabled {
+		t.Fatalf("expected disabled GPT-5.4 Mini row, got %+v", mini)
+	}
+	assertPrice(t, "mini input", mini.InputPrice, 0.4)
+	assertPrice(t, "mini output", mini.OutputPrice, 1.6)
+	assertPrice(t, "mini cache", mini.CacheReadPrice, 0.04)
 }
 
 func TestModelPricingPublishesGPTImage2ModalPricesAtImageMultiplier(t *testing.T) {

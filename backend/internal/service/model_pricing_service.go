@@ -53,7 +53,18 @@ var displayHiddenModelNames = map[string]struct{}{
 	"gpt-5.6": {},
 }
 
-const disabledGPT56LunaModel = "gpt-5.6-luna"
+type disabledPublicModelRule struct {
+	model   string
+	anchors []string
+}
+
+// Disabled models remain visible as struck-through rows when a related active
+// model is present. This tells users they were intentionally retired instead
+// of making them look accidentally omitted from the price catalog.
+var disabledPublicModelRules = []disabledPublicModelRule{
+	{model: "gpt-5.6-luna", anchors: []string{"gpt-5.6-sol", "gpt-5.6-terra"}},
+	{model: "gpt-5.4-mini", anchors: []string{"gpt-5.4"}},
+}
 
 // GPT Image 2 官方标准价（USD / 1M tokens）。图片模型同时存在文本与图片两套
 // 输入/缓存费率，不能压扁成普通文本模型的 input/output/cache 三列。
@@ -217,12 +228,12 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 					"group", g.Name, "model", model)
 				continue
 			}
-			if strings.EqualFold(strings.TrimSpace(model), disabledGPT56LunaModel) {
+			if isDisabledPublicModel(model) {
 				price.Disabled = true
 			}
 			prices = append(prices, price)
 		}
-		prices = s.withDisabledGPT56Luna(prices, g.RateMultiplier)
+		prices = s.withDisabledModels(prices, g.RateMultiplier)
 		if len(prices) == 0 && imagePricing == nil {
 			continue
 		}
@@ -254,30 +265,49 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 	return cloneCatalog(catalog), nil
 }
 
-func (s *ModelPricingService) withDisabledGPT56Luna(prices []PublicModelPrice, rateMultiplier float64) []PublicModelPrice {
-	hasGPT56 := false
-	hasLuna := false
+func isDisabledPublicModel(model string) bool {
+	name := strings.ToLower(strings.TrimSpace(model))
+	for _, rule := range disabledPublicModelRules {
+		if name == rule.model {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *ModelPricingService) withDisabledModels(prices []PublicModelPrice, rateMultiplier float64) []PublicModelPrice {
+	present := make(map[string]bool, len(prices))
 	for i := range prices {
 		name := strings.ToLower(strings.TrimSpace(prices[i].Model))
-		switch name {
-		case "gpt-5.6-sol", "gpt-5.6-terra":
-			hasGPT56 = true
-		case disabledGPT56LunaModel:
-			hasLuna = true
+		present[name] = true
+		if isDisabledPublicModel(name) {
 			prices[i].Disabled = true
 		}
 	}
-	if !hasGPT56 || hasLuna {
-		return prices
+	for _, rule := range disabledPublicModelRules {
+		if present[rule.model] || !containsAnyModelName(present, rule.anchors) {
+			continue
+		}
+		disabled, ok := s.priceForModel(rule.model, rateMultiplier)
+		if !ok {
+			// A retired model can disappear from the provider price source before
+			// the public notice is removed. Keep an empty disabled row in that case.
+			disabled = PublicModelPrice{Model: rule.model}
+		}
+		disabled.Disabled = true
+		prices = append(prices, disabled)
+		present[rule.model] = true
 	}
-	luna, ok := s.priceForModel(disabledGPT56LunaModel, rateMultiplier)
-	if !ok {
-		// Luna 已从实际路由映射删除，价表 provider 也可能随之不再返回它；
-		// 仍保留一个无价格的停用行，确保公开页面明确告知用户该模型已停用。
-		luna = PublicModelPrice{Model: disabledGPT56LunaModel}
+	return prices
+}
+
+func containsAnyModelName(present map[string]bool, models []string) bool {
+	for _, model := range models {
+		if present[model] {
+			return true
+		}
 	}
-	luna.Disabled = true
-	return append(prices, luna)
+	return false
 }
 
 func publicImageGenerationPricing(g Group, models []string) *PublicImageGenerationPricing {

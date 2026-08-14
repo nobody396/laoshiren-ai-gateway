@@ -28,3 +28,7 @@ or mismatched public installer URLs. Protocol adapters, production account
 mappings, group IDs, scheduler priorities, credentials, and aliases remain
 explicit gated changes executed from the same release manifest; they are not safe
 static catalog metadata.
+
+`codex-client-base.json` owns the baseline Codex model list. The generator uses
+that same list for both the downloadable Codex catalog and CC Switch imports, so
+removing a model there removes it from both client configuration paths.

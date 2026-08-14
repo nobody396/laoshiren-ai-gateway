@@ -1,7 +1,7 @@
 import type { GroupPlatform } from '@/types'
 import {
   catalogClientDefaultForPlatform,
-  modelCatalog,
+  codexClientModels,
   optionalCatalogClientDefaultForPlatform
 } from '@/generated/modelCatalog'
 
@@ -46,22 +46,9 @@ export const CODEX_CONTEXT_WINDOW_TOKENS = 250000
 export const CODEX_AUTO_COMPACT_TOKEN_LIMIT = 225000
 const GROK_CLIENT_DEFAULT = catalogClientDefaultForPlatform('grok')
 
-export const OPENAI_CODEX_MODELS = [
-  ...modelCatalog
-    .filter((model) => model.platform === 'openai')
-    .map((model) => ({
-      model: model.id,
-      displayName: model.displayName,
-      contextWindow: model.contextWindow
-    })),
-  { model: 'gpt-5.6-sol', displayName: 'GPT-5.6-Sol', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
-  { model: 'gpt-5.6-terra', displayName: 'GPT-5.6-Terra', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
-  { model: 'gpt-5.6-luna', displayName: 'GPT-5.6-Luna', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
-  { model: 'gpt-5.6', displayName: 'GPT-5.6', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
-  { model: 'gpt-5.5', displayName: 'GPT-5.5', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
-  { model: 'gpt-5.4', displayName: 'GPT-5.4', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS },
-  { model: 'gpt-5.4-mini', displayName: 'GPT-5.4-Mini', contextWindow: CODEX_CONTEXT_WINDOW_TOKENS }
-] as const
+// One generated source drives both the downloaded Codex catalog and CC Switch
+// imports so disabled models cannot remain in only one client path.
+export const OPENAI_CODEX_MODELS = codexClientModels
 
 const CODEX_REASONING_LEVELS = [
   { effort: 'low', description: 'Fast responses with lighter reasoning' },

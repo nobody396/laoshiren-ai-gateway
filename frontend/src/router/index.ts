@@ -344,6 +344,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/usage-receipt',
+    name: 'UsageReceipt',
+    component: () => import('@/views/user/UsageReceiptView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: '我的 AI 小票',
+      titleKey: 'usageReceipt.title',
+      descriptionKey: 'usageReceipt.description'
+    }
+  },
+  {
     path: '/redeem',
     name: 'Redeem',
     component: () => import('@/views/user/RedeemView.vue'),

@@ -458,6 +458,81 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 	// migration 171: sellable redeem codes preserve actual cash separately
 	// from promotional balance credited.
 	requireColumn(t, tx, "redeem_codes", "paid_value", "numeric", 0, false)
+
+	// migrations 185-189: native card-shop checkout owns a durable once-per-user
+	// order, restricts its inventory, snapshots the selected payment method, and
+	// configures the single approved ¥5 -> ¥10 pure-gift newcomer offer. The
+	// final migration keeps it disabled until all release gates pass.
+	requireColumn(t, tx, "native_checkout_offers", "provider_goods_key", "character varying", 64, false)
+	requireColumn(t, tx, "native_checkout_orders", "contact_hash", "character", 64, false)
+	requireColumn(t, tx, "native_checkout_orders", "payment_method", "character varying", 16, true)
+	requireColumn(t, tx, "native_checkout_orders", "redeem_code_id", "bigint", 0, true)
+	requireColumn(t, tx, "native_checkout_offer_testers", "user_id", "bigint", 0, false)
+	requireColumn(t, tx, "native_checkout_redeem_inventory", "assigned_order_id", "bigint", 0, true)
+	requireIndex(t, tx, "native_checkout_orders", "uq_native_checkout_orders_once_per_user")
+	requireIndex(t, tx, "native_checkout_orders", "uq_native_checkout_orders_active_per_user")
+	requireIndex(t, tx, "native_checkout_offer_testers", "idx_native_checkout_offer_testers_user")
+	requireIndex(t, tx, "native_checkout_redeem_inventory", "idx_native_checkout_redeem_inventory_offer_unassigned")
+
+	var (
+		providerGoodsKey string
+		payFen           int64
+		benefitFen       int64
+		redeemValue      float64
+		paidValue        float64
+		purpose          string
+		salesStatus      string
+		validityDays     int
+		oncePerUser      bool
+		enabled          bool
+	)
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT provider_goods_key, pay_amount_cny_fen, benefit_amount_cny_fen,
+       redeem_value::double precision, redeem_paid_value::double precision,
+       redeem_purpose, redeem_sales_status, redeem_validity_days,
+       once_per_user, enabled
+FROM native_checkout_offers
+WHERE code = 'newcomer-balance-5-to-10'
+`).Scan(
+		&providerGoodsKey, &payFen, &benefitFen, &redeemValue, &paidValue,
+		&purpose, &salesStatus, &validityDays, &oncePerUser, &enabled,
+	))
+	require.Equal(t, "oc3w4r", providerGoodsKey)
+	require.Equal(t, int64(500), payFen)
+	require.Equal(t, int64(1000), benefitFen)
+	require.Equal(t, float64(10), redeemValue)
+	require.Zero(t, paidValue, "the full ¥10 entitlement must be pure gift balance")
+	require.Equal(t, "gift", purpose)
+	require.Equal(t, "gifted", salesStatus)
+	require.Zero(t, validityDays)
+	require.True(t, oncePerUser)
+	require.False(t, enabled)
+	var testerCount int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT COUNT(*) FROM native_checkout_offer_testers
+WHERE offer_code = 'newcomer-balance-5-to-10'
+`).Scan(&testerCount))
+	require.Zero(t, testerCount, "the final gate migration must not pre-authorize any test account")
+
+	var inventoryMatchTrigger, stockedOfferGuardTrigger bool
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgrelid = 'native_checkout_redeem_inventory'::regclass
+      AND tgname = 'trg_native_checkout_inventory_offer_match'
+      AND NOT tgisinternal
+)
+`).Scan(&inventoryMatchTrigger))
+	require.True(t, inventoryMatchTrigger)
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgrelid = 'native_checkout_offers'::regclass
+      AND tgname = 'trg_native_checkout_stocked_offer_semantics'
+      AND NOT tgisinternal
+)
+`).Scan(&stockedOfferGuardTrigger))
+	require.True(t, stockedOfferGuardTrigger)
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

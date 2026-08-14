@@ -86,7 +86,8 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	affiliateConsumptionRepository := repository.NewAffiliateConsumptionRepository(client)
 	affiliateRewardRepository := repository.NewAffiliateRewardRepository(client, db)
 	affiliateRewardService := service.NewAffiliateRewardService(affiliateRewardRepository)
-	redeemService := service.NewRedeemService(redeemCodeRepository, accountChangeRecordRepository, userRepository, subscriptionService, redeemCache, billingCacheService, client, apiKeyAuthCacheInvalidator, commissionService, balanceAlertService, affiliateConsumptionRepository, affiliateRewardService)
+	nativeCheckoutRepository := repository.NewNativeCheckoutRepository(db)
+	redeemService := service.ProvideRedeemService(redeemCodeRepository, accountChangeRecordRepository, userRepository, subscriptionService, redeemCache, billingCacheService, client, apiKeyAuthCacheInvalidator, commissionService, balanceAlertService, affiliateConsumptionRepository, affiliateRewardService, nativeCheckoutRepository)
 	secretEncryptor, err := repository.NewAESEncryptor(configConfig)
 	if err != nil {
 		return nil, err
@@ -300,6 +301,12 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	topupOrderRepository := repository.NewTopupOrderRepository(client)
 	topupService := service.NewTopupService(topupOrderRepository, settingService, userRepository, accountChangeRecordRepository, client, billingCacheService, apiKeyAuthCacheInvalidator, commissionService, balanceAlertService, affiliateConsumptionRepository, affiliateRewardService)
 	topupHandler := handler.NewTopupHandler(topupService)
+	nativeCheckoutProvider := repository.NewLDXPCheckoutClient()
+	nativeCheckoutService, err := service.ProvideNativeCheckoutService(nativeCheckoutRepository, nativeCheckoutProvider, userRepository, redeemService, configConfig)
+	if err != nil {
+		return nil, err
+	}
+	nativeCheckoutHandler := handler.NewNativeCheckoutHandler(nativeCheckoutService)
 	balanceAlertHandler := handler.NewBalanceAlertHandler(balanceAlertService)
 	downloadResourceService := service.ProvideDownloadResourceService(configConfig, gitHubReleaseClient)
 	clientSetupService := service.NewClientSetupService(apiKeyService, ssoTicketCache)
@@ -307,7 +314,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	idempotencyCoordinator := service.ProvideIdempotencyCoordinator(idempotencyRepository, configConfig)
 	idempotencyCleanupService := service.ProvideIdempotencyCleanupService(idempotencyRepository, configConfig)
 	pendingAuthSessionCleanupService := service.ProvidePendingAuthSessionCleanupService(identityService)
-	handlers := handler.ProvideHandlers(authHandler, userHandler, agentHandler, apiKeyHandler, usageHandler, redeemHandler, subscriptionHandler, announcementHandler, changelogHandler, invoiceHandler, feedbackHandler, adminHandlers, gatewayHandler, openAIGatewayHandler, handlerSettingHandler, modelPricingHandler, totpHandler, paymentHandler, topupHandler, balanceAlertHandler, resourceHandler, idempotencyCoordinator, idempotencyCleanupService, pendingAuthSessionCleanupService)
+	handlers := handler.ProvideHandlers(authHandler, userHandler, agentHandler, apiKeyHandler, usageHandler, redeemHandler, subscriptionHandler, announcementHandler, changelogHandler, invoiceHandler, feedbackHandler, adminHandlers, gatewayHandler, openAIGatewayHandler, handlerSettingHandler, modelPricingHandler, totpHandler, paymentHandler, topupHandler, nativeCheckoutHandler, balanceAlertHandler, resourceHandler, idempotencyCoordinator, idempotencyCleanupService, pendingAuthSessionCleanupService)
 	jwtAuthMiddleware := middleware.NewJWTAuthMiddleware(authService, userService)
 	adminAuthMiddleware := middleware.NewAdminAuthMiddleware(authService, userService, settingService, rbacService)
 	apiKeyAuthMiddleware := middleware.NewAPIKeyAuthMiddleware(apiKeyService, subscriptionService, userService, configConfig)
@@ -324,7 +331,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	opsScheduledReportService := service.ProvideOpsScheduledReportService(opsService, userService, emailService, redisClient, configConfig)
 	scheduledTestRunnerService := service.ProvideScheduledTestRunnerService(scheduledTestPlanRepository, scheduledTestService, accountTestService, rateLimitService, configConfig)
 	affiliateAgentActivationScheduler := service.NewAffiliateAgentActivationScheduler(affiliateAgentService)
-	lifecycle := service.ProvideRootLifecycle(configConfig, accountRepository, pricingService, apiKeyService, billingCacheService, emailQueueService, subscriptionService, accountingWorker, usageRecordWorkerPool, openAIRouteAuditService, openAIRouteObservationCollector, timingWheelService, dashboardAggregationService, deferredService, schedulerSnapshotService, concurrencyService, userMessageQueueService, tokenRefreshService, accountExpiryService, subscriptionExpiryService, usageCleanupService, agentLevelEvaluatorService, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, idempotencyCleanupService, scheduledTestRunnerService, downloadResourceService, backupService, pendingAuthSessionCleanupService, affiliateRewardService, affiliateAgentActivationScheduler)
+	lifecycle := service.ProvideRootLifecycle(configConfig, accountRepository, pricingService, apiKeyService, billingCacheService, emailQueueService, subscriptionService, accountingWorker, usageRecordWorkerPool, openAIRouteAuditService, openAIRouteObservationCollector, timingWheelService, dashboardAggregationService, deferredService, schedulerSnapshotService, concurrencyService, userMessageQueueService, tokenRefreshService, accountExpiryService, subscriptionExpiryService, usageCleanupService, agentLevelEvaluatorService, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, idempotencyCleanupService, scheduledTestRunnerService, downloadResourceService, backupService, pendingAuthSessionCleanupService, affiliateRewardService, affiliateAgentActivationScheduler, nativeCheckoutService)
 	v := provideCleanup(client, redisClient, lifecycle)
 	application := &Application{
 		Server:    httpServer,

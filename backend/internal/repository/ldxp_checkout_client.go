@@ -1,0 +1,803 @@
+package repository
+
+import (
+	"bytes"
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"math"
+	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
+	"golang.org/x/net/html"
+	"golang.org/x/sync/singleflight"
+)
+
+const (
+	ldxpAPIBase              = "https://pay.ldxp.cn"
+	ldxpMaxJSONResponseBytes = 1 << 20
+	ldxpMaxHTMLBytes         = 1 << 20
+	ldxpMaxImageBytes        = 2 << 20
+	ldxpMerchantLoginBackoff = 10 * time.Minute
+	ldxpCreateConcurrency    = 8
+)
+
+var ldxpRedeemCodePattern = regexp.MustCompile(`(?i)(?:^|[^0-9a-f])([0-9a-f]{32})(?:$|[^0-9a-f])`)
+
+type ldxpCheckoutClient struct {
+	baseURL          *url.URL
+	httpClient       *http.Client
+	allowedHost      string
+	allowHTTP        bool
+	userAgent        string
+	merchantUsername string
+	merchantPassword string
+	merchantMu       sync.Mutex
+	merchantToken    string
+	merchantRetryAt  time.Time
+	buyerMu          sync.Mutex
+	buyerRetryAt     time.Time
+	channelFlight    singleflight.Group
+	createSlots      chan struct{}
+}
+
+func NewLDXPCheckoutClient() service.NativeCheckoutProvider {
+	client, err := newLDXPCheckoutClient(ldxpAPIBase, false)
+	if err != nil {
+		panic(err)
+	}
+	return client
+}
+
+func newLDXPCheckoutClient(baseURL string, allowHTTP bool) (*ldxpCheckoutClient, error) {
+	parsed, err := url.Parse(baseURL)
+	if err != nil || parsed.Hostname() == "" {
+		return nil, errors.New("invalid LDXP base URL")
+	}
+	merchantUsername, err := nativeCheckoutSecret("LDXP_MERCHANT_USERNAME")
+	if err != nil {
+		return nil, fmt.Errorf("read LDXP merchant username: %w", err)
+	}
+	merchantPassword, err := nativeCheckoutSecret("LDXP_MERCHANT_PASSWORD")
+	if err != nil {
+		return nil, fmt.Errorf("read LDXP merchant password: %w", err)
+	}
+	client := &ldxpCheckoutClient{
+		baseURL:          parsed,
+		allowedHost:      strings.ToLower(parsed.Hostname()),
+		allowHTTP:        allowHTTP,
+		userAgent:        "laoshirenai-native-checkout/1.0",
+		merchantUsername: strings.TrimSpace(merchantUsername),
+		merchantPassword: merchantPassword,
+		createSlots:      make(chan struct{}, ldxpCreateConcurrency),
+	}
+	if (client.merchantUsername == "") != (client.merchantPassword == "") {
+		return nil, errors.New("incomplete LDXP merchant credentials")
+	}
+	client.httpClient = &http.Client{
+		Timeout: 15 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 5 {
+				return errors.New("too many redirects")
+			}
+			return client.validatePublicURL(req.URL)
+		},
+	}
+	return client, nil
+}
+
+func nativeCheckoutSecret(name string) (string, error) {
+	if value := os.Getenv(name); value != "" {
+		return value, nil
+	}
+	path := strings.TrimSpace(os.Getenv(name + "_FILE"))
+	if path == "" {
+		return "", nil
+	}
+	path = filepath.Clean(path)
+	if !filepath.IsAbs(path) {
+		return "", errors.New("secret file path must be absolute")
+	}
+	root, err := os.OpenRoot(filepath.Dir(path))
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = root.Close() }()
+	file, err := root.Open(filepath.Base(path))
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = file.Close() }()
+	value, err := io.ReadAll(io.LimitReader(file, 64*1024+1))
+	if err != nil {
+		return "", err
+	}
+	if len(value) > 64*1024 {
+		return "", errors.New("secret file is too large")
+	}
+	return strings.TrimRight(string(value), "\r\n"), nil
+}
+
+type ldxpEnvelope struct {
+	Code int             `json:"code"`
+	Msg  string          `json:"msg"`
+	Data json.RawMessage `json:"data"`
+}
+
+func (c *ldxpCheckoutClient) CreateOrder(ctx context.Context, goodsKey, contact string, expectedAmountCNYFen int64) (*service.NativeCheckoutProviderOrder, error) {
+	channel, err := c.checkoutChannel(ctx, goodsKey, expectedAmountCNYFen)
+	if err != nil {
+		return nil, &service.NativeCheckoutProviderError{Cause: err}
+	}
+	select {
+	case c.createSlots <- struct{}{}:
+		defer func() { <-c.createSlots }()
+	case <-ctx.Done():
+		return nil, &service.NativeCheckoutProviderError{Cause: ctx.Err()}
+	}
+
+	var created map[string]json.RawMessage
+	err = c.postSuccess(ctx, "/shopApi/Pay/order", map[string]any{
+		"goods_key":   goodsKey,
+		"quantity":    1,
+		"coupon_code": "",
+		"channel_id":  channel.ID,
+		"contact":     contact,
+		"extend":      map[string]any{},
+	}, &created, true)
+	if err != nil {
+		var requestErr *ldxpRequestError
+		return nil, &service.NativeCheckoutProviderError{Ambiguous: errors.As(err, &requestErr) && requestErr.Ambiguous, Cause: err}
+	}
+	tradeNo := rawString(created, "trade_no", "order_no")
+	paymentURL := rawString(created, "payurl", "pay_url", "url")
+	createdAmountFen, amountErr := rawYuanToFen(created["total_amount"])
+	parsedPaymentURL, err := url.Parse(paymentURL)
+	if err != nil || amountErr != nil || createdAmountFen != expectedAmountCNYFen ||
+		strings.TrimSpace(tradeNo) == "" || len(tradeNo) > 128 || c.validatePublicURL(parsedPaymentURL) != nil {
+		return nil, &service.NativeCheckoutProviderError{Ambiguous: true, Cause: errors.New("invalid LDXP order response")}
+	}
+	return &service.NativeCheckoutProviderOrder{
+		TradeNo:       tradeNo,
+		PaymentURL:    parsedPaymentURL.String(),
+		PaymentMethod: channel.PaymentMethod,
+	}, nil
+}
+
+func (c *ldxpCheckoutClient) ValidateOffer(ctx context.Context, goodsKey string, expectedAmountCNYFen int64) error {
+	_, err := c.checkoutChannel(ctx, goodsKey, expectedAmountCNYFen)
+	return err
+}
+
+type ldxpCheckoutChannel struct {
+	ID            int
+	PaymentMethod string
+}
+
+func (c *ldxpCheckoutClient) checkoutChannel(ctx context.Context, goodsKey string, expectedAmountCNYFen int64) (ldxpCheckoutChannel, error) {
+	// A burst of different customers buying the same offer needs only one
+	// goods/channel lookup. Each customer still receives an independent provider
+	// order below, but concurrent metadata probes are collapsed without caching a
+	// potentially stale WeChat/Alipay selection.
+	key := goodsKey + ":" + strconv.FormatInt(expectedAmountCNYFen, 10)
+	value, err, _ := c.channelFlight.Do(key, func() (any, error) {
+		return c.loadCheckoutChannel(ctx, goodsKey, expectedAmountCNYFen)
+	})
+	if err != nil {
+		return ldxpCheckoutChannel{}, err
+	}
+	channel, ok := value.(ldxpCheckoutChannel)
+	if !ok {
+		return ldxpCheckoutChannel{}, errors.New("invalid LDXP checkout channel result")
+	}
+	return channel, nil
+}
+
+func (c *ldxpCheckoutClient) loadCheckoutChannel(ctx context.Context, goodsKey string, expectedAmountCNYFen int64) (ldxpCheckoutChannel, error) {
+	var goods struct {
+		GoodsType     string      `json:"goods_type"`
+		GoodsKey      string      `json:"goods_key"`
+		Status        int         `json:"status"`
+		Price         json.Number `json:"price"`
+		RealPrice     json.Number `json:"real_price"`
+		ContactFormat string      `json:"contact_format"`
+		User          struct {
+			Token string `json:"token"`
+		} `json:"user"`
+	}
+	if err := c.postSuccess(ctx, "/shopApi/Shop/goodsInfo", map[string]any{"goods_key": goodsKey}, &goods, false); err != nil {
+		return ldxpCheckoutChannel{}, err
+	}
+	priceFen, err := yuanNumberToFen(firstNonEmptyNumber(goods.RealPrice, goods.Price))
+	if err != nil || goods.GoodsKey != goodsKey || goods.GoodsType != "card" || goods.Status != 1 ||
+		goods.ContactFormat != "email" || strings.TrimSpace(goods.User.Token) == "" || priceFen != expectedAmountCNYFen {
+		return ldxpCheckoutChannel{}, errors.New("LDXP goods validation failed")
+	}
+
+	var channels []struct {
+		ID           int    `json:"id"`
+		Code         string `json:"code"`
+		Status       int    `json:"status"`
+		CustomStatus int    `json:"custom_status"`
+	}
+	if err := c.postSuccess(ctx, "/shopApi/Shop/getUserChannel", map[string]any{"token": goods.User.Token}, &channels, false); err != nil {
+		return ldxpCheckoutChannel{}, err
+	}
+	for _, channel := range channels {
+		if channel.ID <= 0 || channel.Status != 1 || channel.CustomStatus != 1 {
+			continue
+		}
+		if paymentMethod, ok := ldxpPaymentMethod(channel.Code); ok {
+			// Respect the provider's active-channel order. The exact selected method
+			// is persisted with the order so the customer prompt cannot drift if the
+			// merchant later switches between WeChat Pay and Alipay.
+			return ldxpCheckoutChannel{ID: channel.ID, PaymentMethod: paymentMethod}, nil
+		}
+	}
+	return ldxpCheckoutChannel{}, errors.New("LDXP supported QR payment channel is unavailable")
+}
+
+func ldxpPaymentMethod(channelCode string) (string, bool) {
+	switch strings.ToLower(strings.TrimSpace(channelCode)) {
+	case "weixinnative":
+		return service.NativeCheckoutPaymentMethodWeChat, true
+	case "alipay":
+		return service.NativeCheckoutPaymentMethodAlipay, true
+	default:
+		return "", false
+	}
+}
+
+func (c *ldxpCheckoutClient) IsPaid(ctx context.Context, tradeNo string) (bool, error) {
+	envelope, err := c.post(ctx, "/shopApi/Pay/query", map[string]any{"trade_no": tradeNo}, false)
+	if err != nil {
+		return false, err
+	}
+	return envelope.Code == 1, nil
+}
+
+func (c *ldxpCheckoutClient) GetOrderInfo(ctx context.Context, tradeNo string) (*service.NativeCheckoutProviderOrderInfo, error) {
+	var data map[string]json.RawMessage
+	buyerErr := errors.New("LDXP buyer order detail is cooling down")
+	if c.buyerDetailAvailable() {
+		buyerErr = c.postSuccess(ctx, "/shopApi/Order/info", map[string]any{"trade_no": tradeNo, "dump": 1}, &data, false)
+		if isLDXPRateLimited(buyerErr) {
+			c.backoffBuyerDetail()
+		}
+	}
+	if buyerErr == nil {
+		info, decodeErr := decodeLDXPOrderInfo(data)
+		if decodeErr == nil && (!info.Paid || (info.Delivered && len(info.RedeemCodes) > 0)) {
+			return info, nil
+		}
+		if !c.merchantConfigured() {
+			return info, decodeErr
+		}
+	} else if !c.merchantConfigured() {
+		return nil, buyerErr
+	}
+
+	// LDXP's anonymous buyer detail endpoint eventually requires the buyer to
+	// repeat a contact/CAPTCHA lookup. That is unsuitable for crash recovery.
+	// Use the authenticated merchant detail endpoint as a server-side fallback;
+	// the token is cached only in process memory and no credential or card value
+	// is ever logged.
+	merchantData, merchantErr := c.getMerchantOrderInfo(ctx, tradeNo)
+	if merchantErr != nil {
+		if buyerErr != nil {
+			return nil, errors.New("LDXP order detail is unavailable")
+		}
+		return decodeLDXPOrderInfo(data)
+	}
+	return decodeLDXPOrderInfo(merchantData)
+}
+
+func decodeLDXPOrderInfo(data map[string]json.RawMessage) (*service.NativeCheckoutProviderOrderInfo, error) {
+	goodsKey := ""
+	if raw := data["goods"]; len(raw) > 0 {
+		var goods map[string]json.RawMessage
+		if json.Unmarshal(raw, &goods) == nil {
+			goodsKey = rawString(goods, "goods_key")
+		} else {
+			_ = json.Unmarshal(raw, &goodsKey)
+		}
+	}
+	if goodsKey == "" {
+		goodsKey = rawString(data, "goods_key")
+	}
+	amountFen, err := rawYuanToFen(data["total_amount"])
+	if err != nil {
+		return nil, errors.New("invalid LDXP order amount")
+	}
+	quantity, err := rawInt(data["quantity"])
+	if err != nil {
+		return nil, errors.New("invalid LDXP order quantity")
+	}
+	status, _ := rawInt(data["status"])
+	sendout, _ := rawInt(data["sendout"])
+	return &service.NativeCheckoutProviderOrderInfo{
+		TradeNo:     rawString(data, "trade_no"),
+		GoodsKey:    goodsKey,
+		Contact:     rawString(data, "contact"),
+		Quantity:    quantity,
+		TotalCNYFen: amountFen,
+		Paid:        status == 1,
+		Delivered:   sendout == 1,
+		RedeemCodes: extractLDXPRedeemCodes(data),
+	}, nil
+}
+
+func (c *ldxpCheckoutClient) merchantConfigured() bool {
+	return c.merchantUsername != "" && c.merchantPassword != ""
+}
+
+func (c *ldxpCheckoutClient) getMerchantOrderInfo(ctx context.Context, tradeNo string) (map[string]json.RawMessage, error) {
+	token, err := c.getMerchantToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	envelope, err := c.postWithMerchantToken(ctx, "/merchantApi/Order/orderInfo", map[string]any{"trade_no": tradeNo}, token)
+	if err != nil {
+		if isLDXPRateLimited(err) {
+			c.backoffMerchant()
+		}
+		return nil, err
+	}
+	if envelope.Code == http.StatusUnauthorized {
+		c.invalidateMerchantToken(token)
+		token, err = c.getMerchantToken(ctx)
+		if err != nil {
+			return nil, err
+		}
+		envelope, err = c.postWithMerchantToken(ctx, "/merchantApi/Order/orderInfo", map[string]any{"trade_no": tradeNo}, token)
+		if err != nil {
+			if isLDXPRateLimited(err) {
+				c.backoffMerchant()
+			}
+			return nil, err
+		}
+	}
+	if envelope.Code == http.StatusForbidden || envelope.Code == http.StatusTooManyRequests {
+		c.backoffMerchant()
+		return nil, errors.New("LDXP merchant order lookup is cooling down")
+	}
+	if envelope.Code != 1 {
+		return nil, errors.New("LDXP merchant order lookup failed")
+	}
+	var data map[string]json.RawMessage
+	if len(envelope.Data) == 0 || string(envelope.Data) == "null" || json.Unmarshal(envelope.Data, &data) != nil {
+		return nil, errors.New("invalid LDXP merchant order response")
+	}
+	return data, nil
+}
+
+func (c *ldxpCheckoutClient) getMerchantToken(ctx context.Context) (string, error) {
+	c.merchantMu.Lock()
+	defer c.merchantMu.Unlock()
+	if time.Now().Before(c.merchantRetryAt) {
+		return "", errors.New("LDXP merchant login is cooling down")
+	}
+	if c.merchantToken != "" {
+		return c.merchantToken, nil
+	}
+	if !c.merchantConfigured() {
+		return "", errors.New("LDXP merchant credentials are unavailable")
+	}
+	envelope, err := c.post(ctx, "/merchantApi/user/login", map[string]any{
+		"username": c.merchantUsername,
+		"password": c.merchantPassword,
+	}, false)
+	if err != nil || envelope.Code != 1 {
+		c.merchantRetryAt = time.Now().Add(ldxpMerchantLoginBackoff)
+		return "", errors.New("LDXP merchant login failed")
+	}
+	var data map[string]json.RawMessage
+	if json.Unmarshal(envelope.Data, &data) != nil {
+		return "", errors.New("invalid LDXP merchant login response")
+	}
+	token := rawString(data, "merchant_token")
+	if token == "" {
+		return "", errors.New("LDXP merchant login returned no token")
+	}
+	c.merchantToken = token
+	c.merchantRetryAt = time.Time{}
+	return token, nil
+}
+
+func (c *ldxpCheckoutClient) buyerDetailAvailable() bool {
+	c.buyerMu.Lock()
+	defer c.buyerMu.Unlock()
+	return !time.Now().Before(c.buyerRetryAt)
+}
+
+func (c *ldxpCheckoutClient) backoffBuyerDetail() {
+	c.buyerMu.Lock()
+	defer c.buyerMu.Unlock()
+	c.buyerRetryAt = time.Now().Add(ldxpMerchantLoginBackoff)
+}
+
+func (c *ldxpCheckoutClient) backoffMerchant() {
+	c.merchantMu.Lock()
+	defer c.merchantMu.Unlock()
+	c.merchantRetryAt = time.Now().Add(ldxpMerchantLoginBackoff)
+}
+
+func (c *ldxpCheckoutClient) invalidateMerchantToken(token string) {
+	c.merchantMu.Lock()
+	defer c.merchantMu.Unlock()
+	if c.merchantToken == token {
+		c.merchantToken = ""
+	}
+}
+
+func (c *ldxpCheckoutClient) FetchDirectPaymentQR(ctx context.Context, paymentURL string) ([]byte, string, error) {
+	pageURL, err := url.Parse(paymentURL)
+	if err != nil || c.validatePublicURL(pageURL) != nil {
+		return nil, "", errors.New("invalid LDXP payment URL")
+	}
+	body, contentType, finalURL, err := c.getLimited(ctx, pageURL, paymentURL, ldxpMaxHTMLBytes)
+	if err != nil {
+		return nil, "", err
+	}
+	if imageType := detectedImageType(body); imageType != "" {
+		return body, imageType, nil
+	}
+	if !strings.Contains(strings.ToLower(contentType), "html") {
+		return nil, "", errors.New("LDXP payment page did not return HTML")
+	}
+	src := findLDXPQRImageSource(body)
+	if src == "" {
+		return nil, "", errors.New("LDXP direct payment QR is unavailable")
+	}
+	if strings.HasPrefix(strings.ToLower(src), "data:image/") {
+		imageBody, err := decodeImageDataURL(src)
+		if err != nil {
+			return nil, "", err
+		}
+		imageType := detectedImageType(imageBody)
+		if imageType == "" {
+			return nil, "", errors.New("invalid embedded LDXP QR image")
+		}
+		return imageBody, imageType, nil
+	}
+	qrURL, err := finalURL.Parse(src)
+	if err != nil || c.validatePublicURL(qrURL) != nil {
+		return nil, "", errors.New("invalid LDXP QR image URL")
+	}
+	imageBody, _, _, err := c.getLimited(ctx, qrURL, finalURL.String(), ldxpMaxImageBytes)
+	if err != nil {
+		return nil, "", err
+	}
+	imageType := detectedImageType(imageBody)
+	if imageType == "" {
+		return nil, "", errors.New("LDXP QR response is not an image")
+	}
+	return imageBody, imageType, nil
+}
+
+type ldxpRequestError struct {
+	Ambiguous  bool
+	StatusCode int
+	Cause      error
+}
+
+func (e *ldxpRequestError) Error() string { return e.Cause.Error() }
+func (e *ldxpRequestError) Unwrap() error { return e.Cause }
+
+func (c *ldxpCheckoutClient) postSuccess(ctx context.Context, path string, payload, target any, createRequest bool) error {
+	envelope, err := c.post(ctx, path, payload, createRequest)
+	if err != nil {
+		return err
+	}
+	if envelope.Code != 1 {
+		return errors.New("LDXP rejected request")
+	}
+	if target != nil && len(envelope.Data) > 0 && string(envelope.Data) != "null" {
+		if err := json.Unmarshal(envelope.Data, target); err != nil {
+			responseErr := errors.New("invalid LDXP response data")
+			if createRequest {
+				return &ldxpRequestError{Ambiguous: true, Cause: responseErr}
+			}
+			return responseErr
+		}
+	}
+	return nil
+}
+
+func (c *ldxpCheckoutClient) post(ctx context.Context, path string, payload any, createRequest bool) (*ldxpEnvelope, error) {
+	return c.postJSON(ctx, path, payload, createRequest, "")
+}
+
+func (c *ldxpCheckoutClient) postWithMerchantToken(ctx context.Context, path string, payload any, token string) (*ldxpEnvelope, error) {
+	return c.postJSON(ctx, path, payload, false, token)
+}
+
+func (c *ldxpCheckoutClient) postJSON(ctx context.Context, path string, payload any, createRequest bool, merchantToken string) (*ldxpEnvelope, error) {
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	endpoint := c.baseURL.ResolveReference(&url.URL{Path: path})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.String(), bytes.NewReader(encoded))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", c.userAgent)
+	if merchantToken != "" {
+		req.Header.Set("Merchant-Token", merchantToken)
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, &ldxpRequestError{Ambiguous: createRequest, Cause: err}
+	}
+	defer func() { _ = resp.Body.Close() }()
+	body, err := readLimited(resp.Body, ldxpMaxJSONResponseBytes)
+	if err != nil {
+		return nil, &ldxpRequestError{Ambiguous: createRequest, Cause: err}
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, &ldxpRequestError{
+			Ambiguous:  createRequest && resp.StatusCode >= 500,
+			StatusCode: resp.StatusCode,
+			Cause:      fmt.Errorf("LDXP HTTP status %d", resp.StatusCode),
+		}
+	}
+	var envelope ldxpEnvelope
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		return nil, &ldxpRequestError{Ambiguous: createRequest, Cause: errors.New("invalid LDXP JSON response")}
+	}
+	return &envelope, nil
+}
+
+func isLDXPRateLimited(err error) bool {
+	var requestErr *ldxpRequestError
+	return errors.As(err, &requestErr) &&
+		(requestErr.StatusCode == http.StatusForbidden || requestErr.StatusCode == http.StatusTooManyRequests)
+}
+
+func (c *ldxpCheckoutClient) getLimited(ctx context.Context, target *url.URL, referer string, maxBytes int64) ([]byte, string, *url.URL, error) {
+	if err := c.validatePublicURL(target); err != nil {
+		return nil, "", nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target.String(), nil)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	req.Header.Set("User-Agent", c.userAgent)
+	req.Header.Set("Accept", "text/html,image/png,image/jpeg,image/gif,image/webp;q=0.9,*/*;q=0.5")
+	if referer != "" {
+		req.Header.Set("Referer", referer)
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, "", nil, fmt.Errorf("LDXP HTTP status %d", resp.StatusCode)
+	}
+	if err := c.validatePublicURL(resp.Request.URL); err != nil {
+		return nil, "", nil, err
+	}
+	body, err := readLimited(resp.Body, maxBytes)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	return body, resp.Header.Get("Content-Type"), resp.Request.URL, nil
+}
+
+func (c *ldxpCheckoutClient) validatePublicURL(target *url.URL) error {
+	if target == nil || target.User != nil || (target.Port() != "" && !c.allowHTTP) || strings.ToLower(target.Hostname()) != c.allowedHost {
+		return errors.New("LDXP URL host is not allowed")
+	}
+	scheme := strings.ToLower(target.Scheme)
+	validScheme := scheme == "https" || (c.allowHTTP && scheme == "http")
+	if !validScheme {
+		return errors.New("LDXP URL scheme is not allowed")
+	}
+	return nil
+}
+
+func readLimited(reader io.Reader, maxBytes int64) ([]byte, error) {
+	body, err := io.ReadAll(io.LimitReader(reader, maxBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(body)) > maxBytes {
+		return nil, errors.New("LDXP response exceeds size limit")
+	}
+	return body, nil
+}
+
+func findLDXPQRImageSource(body []byte) string {
+	doc, err := html.Parse(bytes.NewReader(body))
+	if err != nil {
+		return ""
+	}
+	var visit func(*html.Node) string
+	visit = func(node *html.Node) string {
+		if node.Type == html.ElementNode && strings.EqualFold(node.Data, "img") {
+			var className, src string
+			for _, attr := range node.Attr {
+				switch strings.ToLower(attr.Key) {
+				case "class":
+					className = attr.Val
+				case "src":
+					src = strings.TrimSpace(attr.Val)
+				}
+			}
+			if src != "" && (containsClass(className, "code") || strings.Contains(strings.ToLower(src), "generateqrcode")) {
+				return src
+			}
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			if result := visit(child); result != "" {
+				return result
+			}
+		}
+		return ""
+	}
+	return visit(doc)
+}
+
+func containsClass(value, expected string) bool {
+	for _, item := range strings.Fields(value) {
+		if strings.EqualFold(item, expected) {
+			return true
+		}
+	}
+	return false
+}
+
+func detectedImageType(body []byte) string {
+	switch {
+	case len(body) >= 8 && bytes.Equal(body[:8], []byte("\x89PNG\r\n\x1a\n")):
+		return "image/png"
+	case len(body) >= 3 && bytes.Equal(body[:3], []byte("\xff\xd8\xff")):
+		return "image/jpeg"
+	case len(body) >= 6 && (bytes.Equal(body[:6], []byte("GIF87a")) || bytes.Equal(body[:6], []byte("GIF89a"))):
+		return "image/gif"
+	case len(body) >= 12 && bytes.Equal(body[:4], []byte("RIFF")) && bytes.Equal(body[8:12], []byte("WEBP")):
+		return "image/webp"
+	default:
+		return ""
+	}
+}
+
+func decodeImageDataURL(value string) ([]byte, error) {
+	comma := strings.IndexByte(value, ',')
+	if comma <= 0 || !strings.Contains(strings.ToLower(value[:comma]), ";base64") {
+		return nil, errors.New("unsupported embedded LDXP QR image")
+	}
+	body, err := base64.StdEncoding.DecodeString(value[comma+1:])
+	if err != nil || len(body) > ldxpMaxImageBytes {
+		return nil, errors.New("invalid embedded LDXP QR image")
+	}
+	return body, nil
+}
+
+func extractLDXPRedeemCodes(data map[string]json.RawMessage) []string {
+	seen := make(map[string]struct{})
+	codes := make([]string, 0, 1)
+	for _, key := range []string{"cards", "response", "buyer_value"} {
+		collectLDXPCodes(data[key], seen, &codes)
+	}
+	return codes
+}
+
+func collectLDXPCodes(raw json.RawMessage, seen map[string]struct{}, result *[]string) {
+	if len(raw) == 0 || string(raw) == "null" {
+		return
+	}
+	var value any
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if decoder.Decode(&value) != nil {
+		return
+	}
+	var walk func(any)
+	walk = func(current any) {
+		switch typed := current.(type) {
+		case string:
+			for _, match := range ldxpRedeemCodePattern.FindAllStringSubmatch(typed, -1) {
+				code := strings.ToLower(match[1])
+				if _, ok := seen[code]; !ok {
+					seen[code] = struct{}{}
+					*result = append(*result, code)
+				}
+			}
+		case []any:
+			for _, item := range typed {
+				walk(item)
+			}
+		case map[string]any:
+			for _, item := range typed {
+				walk(item)
+			}
+		}
+	}
+	walk(value)
+}
+
+func rawString(values map[string]json.RawMessage, keys ...string) string {
+	for _, key := range keys {
+		var value string
+		if raw := values[key]; len(raw) > 0 && json.Unmarshal(raw, &value) == nil && strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
+}
+
+func rawInt(raw json.RawMessage) (int, error) {
+	if len(raw) == 0 {
+		return 0, errors.New("missing integer")
+	}
+	var number json.Number
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if err := decoder.Decode(&number); err == nil {
+		value, err := strconv.Atoi(number.String())
+		if err == nil {
+			return value, nil
+		}
+	}
+	var text string
+	if json.Unmarshal(raw, &text) == nil {
+		return strconv.Atoi(text)
+	}
+	return 0, errors.New("invalid integer")
+}
+
+func rawYuanToFen(raw json.RawMessage) (int64, error) {
+	if len(raw) == 0 {
+		return 0, errors.New("missing amount")
+	}
+	var number json.Number
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if err := decoder.Decode(&number); err == nil {
+		return yuanNumberToFen(number)
+	}
+	var text string
+	if json.Unmarshal(raw, &text) == nil {
+		return yuanStringToFen(text)
+	}
+	return 0, errors.New("invalid amount")
+}
+
+func yuanNumberToFen(number json.Number) (int64, error) { return yuanStringToFen(number.String()) }
+
+func yuanStringToFen(value string) (int64, error) {
+	parsed, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+	if err != nil || parsed < 0 {
+		return 0, errors.New("invalid amount")
+	}
+	fen := math.Round(parsed * 100)
+	if math.Abs(parsed*100-fen) > 0.000001 || fen > math.MaxInt64 {
+		return 0, errors.New("amount has invalid precision")
+	}
+	return int64(fen), nil
+}
+
+func firstNonEmptyNumber(values ...json.Number) json.Number {
+	for _, value := range values {
+		if strings.TrimSpace(value.String()) != "" {
+			return value
+		}
+	}
+	return ""
+}

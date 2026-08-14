@@ -104,6 +104,9 @@ services:
       # Generate a secure key: openssl rand -hex 32
       - TOTP_ENCRYPTION_KEY=${TOTP_ENCRYPTION_KEY:-}
 
+      - LDXP_MERCHANT_USERNAME_FILE=${LDXP_MERCHANT_USERNAME_FILE:-}
+      - LDXP_MERCHANT_PASSWORD_FILE=${LDXP_MERCHANT_PASSWORD_FILE:-}
+
       # =======================================================================
       # Timezone Configuration
       # This affects ALL time operations in the application:

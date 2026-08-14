@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"strings"
 	"time"
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
@@ -478,6 +480,52 @@ func ProvideUserService(userRepo UserRepository, settingRepo SettingRepository, 
 	return svc
 }
 
+func ProvideRedeemService(
+	redeemRepo RedeemCodeRepository,
+	accountChangeRepo AccountChangeRecordRepository,
+	userRepo UserRepository,
+	subscriptionService *SubscriptionService,
+	cache RedeemCache,
+	billingCacheService *BillingCacheService,
+	entClient *dbent.Client,
+	authCacheInvalidator APIKeyAuthCacheInvalidator,
+	commissionService *CommissionService,
+	balanceAlertService *BalanceAlertService,
+	affiliateConsumption AffiliateConsumptionRepository,
+	affiliateRewards *AffiliateRewardService,
+	nativeCheckoutGuard NativeCheckoutRedeemGuard,
+) *RedeemService {
+	svc := NewRedeemService(
+		redeemRepo,
+		accountChangeRepo,
+		userRepo,
+		subscriptionService,
+		cache,
+		billingCacheService,
+		entClient,
+		authCacheInvalidator,
+		commissionService,
+		balanceAlertService,
+		affiliateConsumption,
+		affiliateRewards,
+	)
+	svc.SetNativeCheckoutRedeemGuard(nativeCheckoutGuard)
+	return svc
+}
+
+func ProvideNativeCheckoutService(
+	repo NativeCheckoutRepository,
+	provider NativeCheckoutProvider,
+	userRepo UserRepository,
+	redeem NativeCheckoutRedeemer,
+	cfg *config.Config,
+) (*NativeCheckoutService, error) {
+	if cfg == nil || strings.TrimSpace(cfg.JWT.Secret) == "" {
+		return nil, errors.New("native checkout contact hash key is not configured")
+	}
+	return NewNativeCheckoutService(repo, provider, userRepo, redeem, cfg.JWT.Secret), nil
+}
+
 func ProvideOpenAIGatewayService(
 	accountRepo AccountRepository,
 	usageLogRepo UsageLogRepository,
@@ -584,7 +632,7 @@ var ProviderSet = wire.NewSet(
 	NewGroupService,
 	NewAccountService,
 	NewProxyService,
-	NewRedeemService,
+	ProvideRedeemService,
 	NewPromoService,
 	NewInvoiceService,
 	ProvideUsageService,
@@ -697,6 +745,8 @@ var ProviderSet = wire.NewSet(
 	NewAffiliateSelfCommissionPolicyService,
 	NewPaymentService,
 	NewTopupService,
+	ProvideNativeCheckoutService,
+	wire.Bind(new(NativeCheckoutRedeemer), new(*RedeemService)),
 	NewRBACService,
 	ProvideAccountQuotaAlertService,
 	ProvideBalanceAlertService,
@@ -804,6 +854,7 @@ func ProvideRootLifecycle(
 	pendingAuthCleanup *PendingAuthSessionCleanupService,
 	affiliateRewards *AffiliateRewardService,
 	affiliateActivation *AffiliateAgentActivationScheduler,
+	nativeCheckout *NativeCheckoutService,
 ) *Lifecycle {
 	component := func(name string, start func(), stop func()) LifecycleComponent {
 		return LifecycleFunc{
@@ -877,6 +928,7 @@ func ProvideRootLifecycle(
 		component("pending-auth-cleanup", pendingAuthCleanup.Start, pendingAuthCleanup.Stop),
 		component("affiliate-reward-maturity", affiliateRewards.Start, affiliateRewards.Stop),
 		component("affiliate-activation-sweep", affiliateActivation.Start, affiliateActivation.Stop),
+		component("native-checkout-reconcile", nativeCheckout.Start, nativeCheckout.Stop),
 	}
 	return NewLifecycle(components...)
 }

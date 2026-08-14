@@ -10,7 +10,7 @@ describe('Windows desktop resource install commands', () => {
   it('uses the versioned same-site Claude Desktop pair installer', () => {
     const command = buildClaudeDesktopWindowsInstallCommand('https://laoshirenai.com/resources')
 
-    expect(command).toBe("irm 'https://laoshirenai.com/auto-config/install-claude-desktop.ps1?v=1.0.0' | iex")
+    expect(command).toBe("irm 'https://laoshirenai.com/auto-config/install-claude-desktop.ps1?v=1.0.1' | iex")
     expect(command).not.toContain('downloads.claude.ai')
     expect(command).not.toContain('Claude-Setup.exe')
   })
@@ -30,6 +30,8 @@ describe('Windows desktop resource install commands', () => {
 
     expect(command).toContain("Start-Process -FilePath $f -ArgumentList '/S' -Wait -PassThru")
     expect(command).toContain(`h='${'A'.repeat(64)}'`)
+    expect(command).toContain("$ca+=@('-C','-')")
+    expect(command).toContain('$a -le 5')
   })
 
   it('refuses to generate an unverifiable Windows installer command', () => {

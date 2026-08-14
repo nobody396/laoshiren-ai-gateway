@@ -86,6 +86,24 @@ try {
   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Restricted -Force
   Assert-True ((Get-ExecutionPolicy -Scope Process) -eq 'Restricted') 'failed to enable Restricted execution policy'
 
+  # Generate the exact inline command copied by the resource page and make the
+  # native Windows PowerShell parser accept it. Unit tests cover its contents;
+  # this catches tokenization differences that a JavaScript assertion cannot.
+  $resourceCommandModulePath = (Resolve-Path (Join-Path $PSScriptRoot '..\src\utils\resourceInstallCommands.ts')).Path
+  $fixtureCommandSHA256 = ('a' * 64) -join ''
+  $nodeEval = "import {pathToFileURL} from 'node:url'; const m=await import(pathToFileURL(process.argv[1]).href); console.log(m.buildWindowsDesktopInstallCommand({tool:'codex-plus-plus',sources:[{url:'https://laoshirenai.com/fixture.exe',sha256:'$fixtureCommandSHA256'}]}));"
+  $generatedResourceCommand = (& node.exe --experimental-strip-types --input-type=module -e $nodeEval $resourceCommandModulePath | Out-String).Trim()
+  Assert-True ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($generatedResourceCommand)) 'failed to generate the resource-page PowerShell command'
+  $generatedTokens = $null
+  $generatedErrors = $null
+  [System.Management.Automation.Language.Parser]::ParseInput(
+    $generatedResourceCommand,
+    [ref]$generatedTokens,
+    [ref]$generatedErrors
+  ) | Out-Null
+  Assert-True ($generatedErrors.Count -eq 0) "resource-page PowerShell command has parse errors: $generatedErrors"
+  Assert-True ($generatedResourceCommand.Contains("@('-C','-')")) 'resource-page PowerShell command does not resume partial files'
+
   $fixtureExe = Join-Path $fixtureDir 'fixture-installer.exe'
   Copy-Item -LiteralPath (Join-Path $env:SystemRoot 'System32\whoami.exe') -Destination $fixtureExe -Force
   $expectedSHA256 = (Get-FileHash -LiteralPath $fixtureExe -Algorithm SHA256).Hash
@@ -108,8 +126,9 @@ const portFile = process.env.RESOURCE_PORT_FILE;
 const requestLog = process.env.RESOURCE_REQUEST_LOG;
 const expectedSHA256 = process.env.RESOURCE_FIXTURE_SHA256;
 const payload = readFileSync(fixture);
+let interruptedClaudeCode = false;
 const server = createServer((request, response) => {
-  appendFileSync(requestLog, `${request.url}\n`);
+  appendFileSync(requestLog, `${request.url} range=${request.headers.range ?? ''}\n`);
   const base = `http://127.0.0.1:${server.address().port}`;
   const manifests = {
     '/git-manifest': {
@@ -156,7 +175,34 @@ const server = createServer((request, response) => {
     return;
   }
   if (request.url === '/ok' || request.url.startsWith('/downloads/')) {
-    response.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': payload.length });
+    const rangeMatch = /^bytes=(\d+)-$/.exec(request.headers.range ?? '');
+    if (rangeMatch) {
+      const start = Number(rangeMatch[1]);
+      if (start >= payload.length) {
+        response.writeHead(416, { 'Content-Range': `bytes */${payload.length}` });
+        response.end();
+        return;
+      }
+      const remainder = payload.subarray(start);
+      response.writeHead(206, {
+        'Accept-Ranges': 'bytes',
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': remainder.length,
+        'Content-Range': `bytes ${start}-${payload.length - 1}/${payload.length}`
+      });
+      response.end(remainder);
+      return;
+    }
+    response.writeHead(200, {
+      'Accept-Ranges': 'bytes',
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': payload.length
+    });
+    if (request.url.includes('claude-desktop-code') && !interruptedClaudeCode) {
+      interruptedClaudeCode = true;
+      response.write(payload.subarray(0, Math.max(1, Math.floor(payload.length / 2))), () => response.destroy());
+      return;
+    }
     response.end(payload);
     return;
   }
@@ -249,6 +295,8 @@ process.on('SIGTERM', () => server.close(() => process.exit(0)));
     $payloadMetadata = Get-Content -LiteralPath (Join-Path $claudeCodeDir '.payload') -Raw | ConvertFrom-Json
     Assert-True ($payloadMetadata.sha256 -eq $expectedSHA256.ToLowerInvariant()) 'Claude Desktop Code payload metadata hash mismatch'
     Assert-True ([int64]$payloadMetadata.size -eq (Get-Item -LiteralPath $claudeCodeExe).Length) 'Claude Desktop Code payload metadata size mismatch'
+    $claudeRequests = Get-Content -LiteralPath $requestLog -Raw
+    Assert-True ($claudeRequests.Contains('claude-desktop-code-2.1.229-x64.exe range=bytes=')) 'Claude Desktop Code interrupted transfer did not resume with a Range request'
   } finally {
     Remove-Item Function:\global:Add-AppxPackage -ErrorAction SilentlyContinue
     $env:LOCALAPPDATA = $originalLocalAppData

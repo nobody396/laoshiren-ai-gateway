@@ -1,7 +1,7 @@
 ﻿Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ScriptVersion = '1.2.2'
+$ScriptVersion = '1.2.3'
 $MinimumVersion = [Version]'3.16.5'
 $ReleaseUrl = 'https://github.com/farion1231/cc-switch/releases/latest'
 $MirrorManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/cc-switch/latest.json'
@@ -219,10 +219,35 @@ function Install-LatestCcSwitch {
   try {
     Write-Step "正在从$($ReleaseAsset.Source)下载 CC Switch $LatestVersion..."
     $ProgressPreference = 'SilentlyContinue'
-    Invoke-WebRequest -Uri $ReleaseAsset.DownloadUrl -OutFile $TemporaryMsi -UseBasicParsing
-    $ActualHash = (Get-FileHash -LiteralPath $TemporaryMsi -Algorithm SHA256).Hash.ToLowerInvariant()
-    if ($ActualHash -ne $ReleaseAsset.SHA256) {
-      throw '安装包校验失败，已停止安装。'
+    $Verified = $false
+    for ($Attempt = 1; $Attempt -le 5; $Attempt++) {
+      $CurlArgs = @('-fL', '--connect-timeout', '60', '--max-time', '3600', '-o', $TemporaryMsi)
+      if ((Test-Path -LiteralPath $TemporaryMsi -PathType Leaf) -and
+          (Get-Item -LiteralPath $TemporaryMsi).Length -gt 0) {
+        $CurlArgs += @('-C', '-')
+      }
+      $CurlArgs += [string]$ReleaseAsset.DownloadUrl
+      & curl.exe @CurlArgs
+      $CurlExitCode = $LASTEXITCODE
+
+      if ($CurlExitCode -eq 0 -and (Test-Path -LiteralPath $TemporaryMsi -PathType Leaf)) {
+        $ActualHash = (Get-FileHash -LiteralPath $TemporaryMsi -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($ActualHash -eq $ReleaseAsset.SHA256) {
+          $Verified = $true
+          break
+        }
+        Remove-Item -LiteralPath $TemporaryMsi -Force -ErrorAction SilentlyContinue
+      } elseif ($CurlExitCode -eq 33) {
+        Remove-Item -LiteralPath $TemporaryMsi -Force -ErrorAction SilentlyContinue
+      }
+
+      if ($Attempt -lt 5) {
+        Write-Step "下载中断，2 秒后从断点重试（$Attempt/5）..."
+        Start-Sleep -Seconds 2
+      }
+    }
+    if (-not $Verified) {
+      throw '安装包下载失败或校验不通过，已停止安装。'
     }
     Write-Ok "$($ReleaseAsset.Source)安装包 SHA-256 校验通过。"
 

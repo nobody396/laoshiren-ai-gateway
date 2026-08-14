@@ -70,13 +70,13 @@ codex --version
 macOS / Linux 命令格式：
 
 ```bash
-curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.7 | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
+curl -fsSL https://laoshirenai.com/auto-config/install.sh?v=0.7.8 | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
 ```
 
 Windows PowerShell 命令格式：
 
 ```powershell
-$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; $env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.7 | iex
+$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; $env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.8 | iex
 ```
 
 脚本会写入 `~/.codex/auth.json` 和 `~/.codex/config.toml`，并请求 `/v1/models` 测试这把 API Key 是否能正常使用。如果 Key、分组或 API 地址不正确，脚本会直接报错，不会假装配置成功。

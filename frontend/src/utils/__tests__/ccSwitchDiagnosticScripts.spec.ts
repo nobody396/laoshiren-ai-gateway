@@ -10,7 +10,7 @@ describe('CC Switch public diagnostic scripts', () => {
   it('repairs the Windows protocol for the current user without admin access', () => {
     const script = readPublicScript('diagnose-cc-switch.ps1')
 
-    expect(script).toContain("$ScriptVersion = '1.2.2'")
+    expect(script).toContain("$ScriptVersion = '1.2.3'")
     expect(script).toContain("HKCU:\\Software\\Classes\\ccswitch")
     expect(script).toContain('Programs\\CC Switch\\cc-switch.exe')
     expect(script).toContain("(Join-Path $env:USERPROFILE 'Downloads')")

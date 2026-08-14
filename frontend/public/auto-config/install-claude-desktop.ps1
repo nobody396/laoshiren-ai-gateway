@@ -71,18 +71,48 @@ function Download-VerifiedClaudeAsset {
   Assert-SameSiteClaudeAsset -Asset $Asset
   Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
   Write-Step "正在通过本站缓存下载 $($Asset.name)..."
-  & curl.exe -fL --retry 5 --retry-delay 2 --connect-timeout 60 --max-time 3600 -o $OutputPath ([string]$Asset.download_url)
-  if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $OutputPath -PathType Leaf)) {
-    throw "下载失败：$($Asset.name)"
+  $ExpectedSize = [int64]$Asset.size
+  $ExpectedHash = ([string]$Asset.sha256).ToUpperInvariant()
+  for ($Attempt = 1; $Attempt -le 5; $Attempt++) {
+    $Resume = $false
+    if (Test-Path -LiteralPath $OutputPath -PathType Leaf) {
+      $CurrentSize = (Get-Item -LiteralPath $OutputPath).Length
+      if ($CurrentSize -eq $ExpectedSize) {
+        $Actual = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA256).Hash
+        if ($Actual -eq $ExpectedHash) { return }
+        Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+      } elseif ($CurrentSize -gt 0 -and $CurrentSize -lt $ExpectedSize) {
+        $Resume = $true
+      } else {
+        Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+      }
+    }
+
+    $CurlArgs = @('-fL', '--connect-timeout', '60', '--max-time', '3600', '-o', $OutputPath)
+    if ($Resume) { $CurlArgs += @('-C', '-') }
+    $CurlArgs += [string]$Asset.download_url
+    & curl.exe @CurlArgs
+    $CurlExitCode = $LASTEXITCODE
+
+    if ($CurlExitCode -eq 0 -and (Test-Path -LiteralPath $OutputPath -PathType Leaf)) {
+      $File = Get-Item -LiteralPath $OutputPath
+      if ($File.Length -eq $ExpectedSize) {
+        $Actual = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA256).Hash
+        if ($Actual -eq $ExpectedHash) { return }
+        Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+      }
+    } elseif ($CurlExitCode -eq 33) {
+      # The endpoint rejected a resume request. Restart cleanly on the next attempt.
+      Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+    }
+
+    if ($Attempt -lt 5) {
+      Write-Step "下载中断，2 秒后从断点重试（$Attempt/5）..."
+      Start-Sleep -Seconds 2
+    }
   }
-  $File = Get-Item -LiteralPath $OutputPath
-  if ($File.Length -ne [int64]$Asset.size) {
-    throw "文件大小校验失败：$($Asset.name)"
-  }
-  $Actual = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA256).Hash
-  if ($Actual -ne ([string]$Asset.sha256).ToUpperInvariant()) {
-    throw "SHA256 校验失败：$($Asset.name)"
-  }
+  Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+  throw "下载失败或文件校验不通过：$($Asset.name)"
 }
 
 function Write-Utf8NoBom {

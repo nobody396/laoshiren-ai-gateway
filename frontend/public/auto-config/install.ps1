@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.7'
+$ScriptVersion = '0.7.8'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 250000
 $CatalogOpenAIAutoCompactTokenLimit = 225000
@@ -190,10 +190,10 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.7 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.8 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.7 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.8 | iex
 
 参数:
   --api-key              Claude Code API Key
@@ -667,16 +667,31 @@ function Download-VerifiedAsset {
   )
 
   Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
-  try {
-    Invoke-WebRequest -UseBasicParsing -Uri $Asset.DownloadUrl -OutFile $OutputPath
-    $ActualSha = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA256).Hash.ToLowerInvariant()
-    if ($ActualSha -ne $Asset.SHA256) {
-      throw '安装包 SHA256 校验失败，已停止安装'
+  for ($Attempt = 1; $Attempt -le 5; $Attempt++) {
+    $CurlArgs = @('-fL', '--connect-timeout', '60', '--max-time', '3600', '-o', $OutputPath)
+    if ((Test-Path -LiteralPath $OutputPath -PathType Leaf) -and
+        (Get-Item -LiteralPath $OutputPath).Length -gt 0) {
+      $CurlArgs += @('-C', '-')
     }
-  } catch {
-    Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
-    throw
+    $CurlArgs += [string]$Asset.DownloadUrl
+    & curl.exe @CurlArgs
+    $CurlExitCode = $LASTEXITCODE
+
+    if ($CurlExitCode -eq 0 -and (Test-Path -LiteralPath $OutputPath -PathType Leaf)) {
+      $ActualSha = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA256).Hash.ToLowerInvariant()
+      if ($ActualSha -eq $Asset.SHA256) { return }
+      Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+    } elseif ($CurlExitCode -eq 33) {
+      Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+    }
+
+    if ($Attempt -lt 5) {
+      Write-WarnMessage "安装包下载中断，2 秒后从断点重试（$Attempt/5）"
+      Start-Sleep -Seconds 2
+    }
   }
+  Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+  throw '安装包下载失败或 SHA256 校验不通过，已停止安装'
 }
 
 # 下载并安装用户目录下的 Node.js 运行时，避免依赖管理员权限。

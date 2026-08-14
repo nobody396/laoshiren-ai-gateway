@@ -31,6 +31,8 @@ const (
 	ldxpMaxImageBytes        = 2 << 20
 	ldxpMerchantLoginBackoff = 10 * time.Minute
 	ldxpCreateConcurrency    = 8
+	ldxpReadAttempts         = 2
+	ldxpReadRetryDelay       = 200 * time.Millisecond
 )
 
 var ldxpRedeemCodePattern = regexp.MustCompile(`(?i)(?:^|[^0-9a-f])([0-9a-f]{32})(?:$|[^0-9a-f])`)
@@ -528,6 +530,42 @@ func (c *ldxpCheckoutClient) postJSON(ctx context.Context, path string, payload 
 	if err != nil {
 		return nil, err
 	}
+	attempts := 1
+	if !createRequest {
+		// Metadata, payment-status, and order-detail reads are idempotent. LDXP's
+		// edge occasionally drops a TLS handshake, so retry one transient network
+		// or 5xx failure. Never retry Pay/order: a lost create response is
+		// ambiguous and a second request could charge the customer twice.
+		attempts = ldxpReadAttempts
+	}
+	var lastErr error
+	for attempt := 0; attempt < attempts; attempt++ {
+		envelope, requestErr := c.postJSONOnce(ctx, path, encoded, createRequest, merchantToken)
+		if requestErr == nil {
+			return envelope, nil
+		}
+		lastErr = requestErr
+		if attempt+1 >= attempts || !shouldRetryLDXPRead(ctx, requestErr) {
+			break
+		}
+		timer := time.NewTimer(ldxpReadRetryDelay)
+		select {
+		case <-timer.C:
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, ctx.Err()
+		}
+	}
+	return nil, lastErr
+}
+
+func (c *ldxpCheckoutClient) postJSONOnce(
+	ctx context.Context,
+	path string,
+	encoded []byte,
+	createRequest bool,
+	merchantToken string,
+) (*ldxpEnvelope, error) {
 	endpoint := c.baseURL.ResolveReference(&url.URL{Path: path})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.String(), bytes.NewReader(encoded))
 	if err != nil {
@@ -560,6 +598,17 @@ func (c *ldxpCheckoutClient) postJSON(ctx context.Context, path string, payload 
 		return nil, &ldxpRequestError{Ambiguous: createRequest, Cause: errors.New("invalid LDXP JSON response")}
 	}
 	return &envelope, nil
+}
+
+func shouldRetryLDXPRead(ctx context.Context, err error) bool {
+	if err == nil || ctx.Err() != nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
+	var requestErr *ldxpRequestError
+	if !errors.As(err, &requestErr) {
+		return false
+	}
+	return requestErr.StatusCode == 0 || requestErr.StatusCode >= http.StatusInternalServerError
 }
 
 func isLDXPRateLimited(err error) bool {

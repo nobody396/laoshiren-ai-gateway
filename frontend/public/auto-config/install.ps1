@@ -1361,15 +1361,17 @@ function Write-GrokTomlConfig {
   }
 
   $TemporaryPath = "$GrokConfigPath.tmp.$PID.$([guid]::NewGuid().ToString('N'))"
+  $ReplacementBackupPath = "$TemporaryPath.previous"
   try {
     [System.IO.File]::WriteAllLines($TemporaryPath, $Lines, [System.Text.UTF8Encoding]::new($false))
     if (Test-Path -LiteralPath $GrokConfigPath) {
-      [System.IO.File]::Replace($TemporaryPath, $GrokConfigPath, $null)
+      [System.IO.File]::Replace($TemporaryPath, $GrokConfigPath, $ReplacementBackupPath)
     } else {
       [System.IO.File]::Move($TemporaryPath, $GrokConfigPath)
     }
   } finally {
     Remove-Item -LiteralPath $TemporaryPath -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $ReplacementBackupPath -Force -ErrorAction SilentlyContinue
   }
 }
 

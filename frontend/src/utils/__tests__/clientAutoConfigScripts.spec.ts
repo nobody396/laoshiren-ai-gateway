@@ -168,7 +168,7 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('$Lines.Add("description = $(ConvertTo-TomlString $ModelProfile.DisplayName)")')
     expect(script).toContain("$Lines.Add('api_backend = \"responses\"')")
     expect(script).toContain('$Lines.Add("context_window = $($ModelProfile.ContextWindow)")')
-    expect(script).toContain('[System.IO.File]::Replace($TemporaryPath, $GrokConfigPath, $null)')
+    expect(script).toContain('[System.IO.File]::Replace($TemporaryPath, $GrokConfigPath, $ReplacementBackupPath)')
     expect(script).toContain('Open-CcSwitchIfRequested')
     expect(script).toContain("Test-ApiKeyReadiness -Label 'Grok Build' -ApiKey $script:GrokApiKey")
   })

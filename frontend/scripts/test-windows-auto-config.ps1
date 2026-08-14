@@ -158,15 +158,16 @@ name = "stale"
 
   Write-GrokTomlConfig
   $FirstGrokConfig = [IO.File]::ReadAllText($GrokConfigPath)
-  Assert-True ($FirstGrokConfig.Contains('default = "grok-4.6"')) 'Grok 4.6 was not selected as the default'
-  Assert-True ($FirstGrokConfig.Contains("[preferences]`ntheme = `"dark`"")) 'Unrelated Grok preferences were overwritten'
-  Assert-True ($FirstGrokConfig.Contains('[model."unrelated"]')) 'Unrelated Grok provider was overwritten'
-  Assert-True ($FirstGrokConfig.Contains('api_key = "keep-me"')) 'Unrelated Grok credential was overwritten'
-  Assert-True (([regex]::Matches($FirstGrokConfig, [regex]::Escape('[model."grok-4.5"]'))).Count -eq 1) 'Grok 4.5 was not written exactly once'
-  Assert-True (([regex]::Matches($FirstGrokConfig, [regex]::Escape('[model."grok-4.6"]'))).Count -eq 1) 'Grok 4.6 was not written exactly once'
-  Assert-True ($FirstGrokConfig.Contains('name = "Grok 4.5"')) 'Grok 4.5 display name is missing'
-  Assert-True ($FirstGrokConfig.Contains('name = "Grok 4.6"')) 'Grok 4.6 display name is missing'
-  Assert-True (-not $FirstGrokConfig.Contains('老实人AI')) 'Provider/group branding leaked into model names'
+  $NormalizedGrokConfig = $FirstGrokConfig.Replace("`r`n", "`n")
+  Assert-True ($NormalizedGrokConfig.Contains('default = "grok-4.6"')) 'Grok 4.6 was not selected as the default'
+  Assert-True ($NormalizedGrokConfig.Contains("[preferences]`ntheme = `"dark`"")) 'Unrelated Grok preferences were overwritten'
+  Assert-True ($NormalizedGrokConfig.Contains('[model."unrelated"]')) 'Unrelated Grok provider was overwritten'
+  Assert-True ($NormalizedGrokConfig.Contains('api_key = "keep-me"')) 'Unrelated Grok credential was overwritten'
+  Assert-True (([regex]::Matches($NormalizedGrokConfig, [regex]::Escape('[model."grok-4.5"]'))).Count -eq 1) 'Grok 4.5 was not written exactly once'
+  Assert-True (([regex]::Matches($NormalizedGrokConfig, [regex]::Escape('[model."grok-4.6"]'))).Count -eq 1) 'Grok 4.6 was not written exactly once'
+  Assert-True ($NormalizedGrokConfig.Contains('name = "Grok 4.5"')) 'Grok 4.5 display name is missing'
+  Assert-True ($NormalizedGrokConfig.Contains('name = "Grok 4.6"')) 'Grok 4.6 display name is missing'
+  Assert-True (-not $NormalizedGrokConfig.Contains('老实人AI')) 'Provider/group branding leaked into model names'
   Assert-True ([IO.File]::ReadAllText("$GrokConfigPath.bak") -eq $OriginalGrokConfig) 'The original Grok backup was not preserved'
   Assert-True (-not (Get-ChildItem -LiteralPath $GrokDir -Filter 'config.toml.tmp.*')) 'Atomic Grok write left temporary files behind'
 

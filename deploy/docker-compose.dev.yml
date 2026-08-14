@@ -40,8 +40,8 @@ services:
       - JWT_SECRET=${JWT_SECRET:-}
       - TOTP_ENCRYPTION_KEY=${TOTP_ENCRYPTION_KEY:-}
       - TZ=${TZ:-Asia/Shanghai}
-      - LDXP_MERCHANT_USERNAME=${LDXP_MERCHANT_USERNAME:-}
-      - LDXP_MERCHANT_PASSWORD=${LDXP_MERCHANT_PASSWORD:-}
+      - LDXP_MERCHANT_USERNAME_FILE=${LDXP_MERCHANT_USERNAME_FILE:-}
+      - LDXP_MERCHANT_PASSWORD_FILE=${LDXP_MERCHANT_PASSWORD_FILE:-}
     depends_on:
       postgres:
         condition: service_healthy

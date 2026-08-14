@@ -142,8 +142,8 @@ services:
       # Optional LDXP merchant credentials. Native checkout uses these only as
       # an automatic recovery fallback after the anonymous buyer order-detail
       # endpoint starts requiring a contact/CAPTCHA lookup.
-      - LDXP_MERCHANT_USERNAME=${LDXP_MERCHANT_USERNAME:-}
-      - LDXP_MERCHANT_PASSWORD=${LDXP_MERCHANT_PASSWORD:-}
+      - LDXP_MERCHANT_USERNAME_FILE=${LDXP_MERCHANT_USERNAME_FILE:-}
+      - LDXP_MERCHANT_PASSWORD_FILE=${LDXP_MERCHANT_PASSWORD_FILE:-}
     depends_on:
       postgres:
         condition: service_healthy

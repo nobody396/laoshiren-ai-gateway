@@ -2385,9 +2385,9 @@ const handleCcsClientSelect = async (clientType: CcsImportTarget) => {
   pendingCcsRow.value = null
   if (!row) return
 
-  // CC Switch 3.19.2 collapses Grok Build deeplinks to one model. Use the
-  // signed official app's live-config import path instead: a one-time ticket
-  // writes the complete model catalog atomically, then opens CC Switch.
+  // CC Switch 3.19.2 collapses Grok Build deeplinks to one model. The one-time
+  // compatibility flow writes the dual-model config, atomically upserts one
+  // neutral Grok Provider in CC Switch's native store, then reopens the app.
   if (clientType === 'grokbuild') {
     await generateAndCopyClientAutoConfigCommand(row, false, true)
     return

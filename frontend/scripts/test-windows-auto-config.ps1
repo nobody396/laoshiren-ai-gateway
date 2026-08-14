@@ -33,6 +33,7 @@ $RequiredFunctions = @(
   'ConvertTo-TomlString',
   'Get-OpenAIV1BaseUrl',
   'Write-GrokTomlConfig',
+  'Invoke-GrokCcSwitchImporter',
   'Get-UsableClientCommand',
   'Resolve-SystemNpmCmd',
   'Test-UsableSystemNode',
@@ -75,6 +76,8 @@ try {
   Assert-True (-not $ResolvedNpm.EndsWith('npm.ps1', [StringComparison]::OrdinalIgnoreCase)) "npm.ps1 must never be selected: $ResolvedNpm"
 
   $MinNodeMajor = 20
+  $script:GrokCcSwitchCompat = $false
+  $script:Tools = 'all'
   $script:NodeExe = ''
   $script:NpmCmd = ''
   $script:UseProxylessNpm = $false
@@ -174,6 +177,82 @@ name = "stale"
   Write-GrokTomlConfig
   Assert-True ([IO.File]::ReadAllText($GrokConfigPath) -eq $FirstGrokConfig) 'Grok config repair is not idempotent'
   Assert-True ([IO.File]::ReadAllText("$GrokConfigPath.bak") -eq $OriginalGrokConfig) 'A retry replaced the original Grok backup'
+
+  $CcSwitchDir = Join-Path $FixtureDir 'cc-switch-home'
+  $CcSwitchDb = Join-Path $CcSwitchDir 'cc-switch.db'
+  $CcSwitchSettings = Join-Path $CcSwitchDir 'settings.json'
+  New-Item -ItemType Directory -Path $CcSwitchDir -Force | Out-Null
+  [IO.File]::WriteAllText($CcSwitchSettings, '{"currentProviderGrokbuild":"existing-grok","keep":true}', [Text.UTF8Encoding]::new($false))
+  $SeedDbScript = Join-Path $FixtureDir 'seed-cc-switch.cjs'
+  [IO.File]::WriteAllText($SeedDbScript, @'
+const { DatabaseSync } = require('node:sqlite')
+const db = new DatabaseSync(process.env.CC_SWITCH_DB)
+db.exec(`
+  CREATE TABLE providers (
+    id TEXT NOT NULL, app_type TEXT NOT NULL, name TEXT NOT NULL,
+    settings_config TEXT NOT NULL, website_url TEXT, category TEXT,
+    created_at INTEGER, sort_index INTEGER, notes TEXT, icon TEXT, icon_color TEXT,
+    meta TEXT NOT NULL DEFAULT '{}', is_current BOOLEAN NOT NULL DEFAULT 0,
+    in_failover_queue BOOLEAN NOT NULL DEFAULT 0,
+    cost_multiplier TEXT NOT NULL DEFAULT '1.0', limit_daily_usd TEXT,
+    limit_monthly_usd TEXT, provider_type TEXT, PRIMARY KEY (id, app_type)
+  );
+`)
+const insert = db.prepare(`
+  INSERT INTO providers (id, app_type, name, settings_config, created_at, sort_index, meta, is_current)
+  VALUES (?, ?, ?, ?, ?, ?, '{}', ?)
+`)
+const sentinel = JSON.stringify({ config: 'unrelated-secret-sentinel' })
+insert.run('existing-grok', 'grokbuild', 'Existing Grok', sentinel, 1, 0, 1)
+insert.run('existing-claude', 'claude', 'Existing Claude', sentinel, 2, 0, 1)
+db.close()
+'@, [Text.UTF8Encoding]::new($false))
+  $PreviousCcSwitchDb = $env:CC_SWITCH_DB
+  $PreviousCcSwitchSettings = $env:CC_SWITCH_SETTINGS_PATH
+  try {
+    $env:CC_SWITCH_DB = $CcSwitchDb
+    $env:CC_SWITCH_SETTINGS_PATH = $CcSwitchSettings
+    & $script:NodeExe --no-warnings $SeedDbScript
+    Assert-True ($LASTEXITCODE -eq 0) 'Failed to create the Windows CC Switch database fixture'
+
+    $script:BaseUrl = 'https://api.example.com'
+    $script:GrokApiKey = 'test-owned-key'
+    $ImporterPath = Join-Path $PSScriptRoot '..\public\auto-config\import-grok-cc-switch-provider.cjs'
+    Invoke-GrokCcSwitchImporter -ImporterPath $ImporterPath
+    Invoke-GrokCcSwitchImporter -ImporterPath $ImporterPath
+
+    $VerifyDbScript = Join-Path $FixtureDir 'verify-cc-switch.cjs'
+    [IO.File]::WriteAllText($VerifyDbScript, @'
+const fs = require('node:fs')
+const path = require('node:path')
+const { DatabaseSync } = require('node:sqlite')
+const db = new DatabaseSync(process.env.CC_SWITCH_DB)
+const rows = db.prepare('SELECT id, app_type, name, settings_config, is_current FROM providers ORDER BY app_type, id').all()
+db.close()
+if (rows.length !== 3) throw new Error(`unexpected provider count: ${rows.length}`)
+const existingGrok = rows.find((row) => row.id === 'existing-grok')
+const existingClaude = rows.find((row) => row.id === 'existing-claude')
+const imported = rows.find((row) => row.id === 'laoshirenai-grok-group')
+if (JSON.parse(existingGrok.settings_config).config !== 'unrelated-secret-sentinel') throw new Error('existing Grok provider changed')
+if (JSON.parse(existingClaude.settings_config).config !== 'unrelated-secret-sentinel') throw new Error('existing Claude provider changed')
+if (Number(existingGrok.is_current) !== 0 || Number(existingClaude.is_current) !== 1) throw new Error('unrelated current state changed')
+if (!imported || imported.name !== 'Grok 分组' || Number(imported.is_current) !== 1) throw new Error('neutral Grok provider missing')
+const config = JSON.parse(imported.settings_config).config
+for (const expected of ['default = "grok-4.6"', '[model."grok-4.5"]', '[model."grok-4.6"]', 'name = "Grok 4.5"', 'description = "Grok 4.6"']) {
+  if (!config.includes(expected)) throw new Error(`missing config: ${expected}`)
+}
+if (config.includes('unrelated-secret-sentinel')) throw new Error('unrelated config leaked into imported provider')
+const settings = JSON.parse(fs.readFileSync(process.env.CC_SWITCH_SETTINGS_PATH, 'utf8'))
+if (settings.currentProviderGrokbuild !== 'laoshirenai-grok-group' || settings.keep !== true) throw new Error('settings were not preserved')
+const backupRoot = path.join(path.dirname(process.env.CC_SWITCH_DB), 'backups', 'laoshirenai-grok')
+if (fs.readdirSync(backupRoot).length !== 1) throw new Error('idempotent retry created another backup')
+'@, [Text.UTF8Encoding]::new($false))
+    & $script:NodeExe --no-warnings $VerifyDbScript
+    Assert-True ($LASTEXITCODE -eq 0) 'Windows CC Switch Provider import regression failed'
+  } finally {
+    $env:CC_SWITCH_DB = $PreviousCcSwitchDb
+    $env:CC_SWITCH_SETTINGS_PATH = $PreviousCcSwitchSettings
+  }
 
   $NpmLog = Join-Path $FixtureDir 'npm-arguments.log'
   $FakeNpm = Join-Path $FixtureDir 'npm.cmd'

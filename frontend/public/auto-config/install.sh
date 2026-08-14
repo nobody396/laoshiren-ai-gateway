@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # BEGIN GENERATED MODEL CATALOG
-SCRIPT_VERSION='0.7.9'
+SCRIPT_VERSION='0.7.10'
 CATALOG_OPENAI_DEFAULT_MODEL='gpt-5.6-sol'
 CATALOG_OPENAI_CONTEXT_WINDOW=250000
 CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT=225000
@@ -17,6 +17,7 @@ DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
 DEFAULT_CODEX_MANIFEST_URL="https://laoshirenai.com/api/v1/public-downloads/codex/latest.json"
 DEFAULT_CODEX_MODEL_CATALOG_URL="https://laoshirenai.com/auto-config/codex-model-catalog.json?v=${SCRIPT_VERSION}"
+DEFAULT_GROK_CC_SWITCH_IMPORTER_URL="https://laoshirenai.com/auto-config/import-grok-cc-switch-provider.cjs?v=${SCRIPT_VERSION}"
 DEFAULT_TOPUP_URL="https://laoshirenai.com/get-subscription"
 DEFAULT_TOOLS="all"
 DEFAULT_NODE_INDEX_PRIMARY="https://npmmirror.com/mirrors/node/index.tab"
@@ -55,6 +56,7 @@ SETUP_TOKEN="${LAOSHIRENAI_SETUP_TOKEN:-}"
 SETUP_EXCHANGE_URL="${LAOSHIRENAI_SETUP_EXCHANGE_URL:-$DEFAULT_SETUP_EXCHANGE_URL}"
 CODEX_MANIFEST_URL="${LAOSHIRENAI_CODEX_MANIFEST_URL:-$DEFAULT_CODEX_MANIFEST_URL}"
 CODEX_MODEL_CATALOG_URL="${LAOSHIRENAI_CODEX_MODEL_CATALOG_URL:-$DEFAULT_CODEX_MODEL_CATALOG_URL}"
+GROK_CC_SWITCH_IMPORTER_URL="${LAOSHIRENAI_GROK_CC_SWITCH_IMPORTER_URL:-$DEFAULT_GROK_CC_SWITCH_IMPORTER_URL}"
 BALANCE_READY=1
 
 # 兼容统一 API Key 环境变量；若未提供专用 Key，则回退复用统一值。
@@ -541,7 +543,12 @@ has_usable_system_node() {
   node_major="$(printf '%s' "$node_version" | sed 's/^v//' | cut -d. -f1)"
 
   [ -n "$node_major" ] || return 1
-  [ "$node_major" -ge "$MIN_NODE_MAJOR" ]
+  [ "$node_major" -ge "$MIN_NODE_MAJOR" ] || return 1
+
+  if [ "$GROK_CC_SWITCH_COMPAT" -eq 1 ] && uses_grok; then
+    node --no-warnings -e 'require("node:sqlite").DatabaseSync' >/dev/null 2>&1 || return 1
+  fi
+  return 0
 }
 
 # 识别操作系统与架构，并映射到 Node 发布包命名规则。
@@ -665,6 +672,10 @@ ensure_node_runtime() {
 
   log_warn "未检测到可用的 Node.js，开始安装本地运行时"
   install_local_node
+  if [ "$GROK_CC_SWITCH_COMPAT" -eq 1 ] && uses_grok; then
+    "$NODE_BIN" --no-warnings -e 'require("node:sqlite").DatabaseSync' >/dev/null 2>&1 || \
+      log_error "当前 Node.js 不支持 CC Switch 安全导入，请移除 LAOSHIRENAI_NODE_VERSION 覆盖后重试"
+  fi
   log_info "本地 Node.js 已就绪: $("$NODE_BIN" --version)"
 }
 
@@ -1118,20 +1129,79 @@ try {
 EOF
 }
 
+stop_cc_switch_for_import() {
+  command -v pgrep >/dev/null 2>&1 || return 0
+  pgrep -x "cc-switch" >/dev/null 2>&1 || return 0
+
+  if command -v osascript >/dev/null 2>&1; then
+    osascript -e 'tell application id "com.ccswitch.desktop" to quit' >/dev/null 2>&1 || true
+  fi
+  local attempt
+  for attempt in $(seq 1 20); do
+    pgrep -x "cc-switch" >/dev/null 2>&1 || return 0
+    sleep 0.25
+  done
+
+  # Tauri may remain in the tray after its last window closes. TERM lets SQLite
+  # finish normally; the importer still checkpoints and backs up before writing.
+  pkill -TERM -x "cc-switch" >/dev/null 2>&1 || true
+  for attempt in $(seq 1 20); do
+    pgrep -x "cc-switch" >/dev/null 2>&1 || return 0
+    sleep 0.25
+  done
+  return 1
+}
+
 open_cc_switch_if_requested() {
   [ "$GROK_CC_SWITCH_COMPAT" -eq 1 ] && uses_grok || return 0
 
-  if [ "$(uname -s)" = "Darwin" ] && command -v open >/dev/null 2>&1; then
-    if open -Ra "CC Switch" >/dev/null 2>&1; then
-      if open -a "CC Switch" >/dev/null 2>&1; then
-        log_info "已打开官方 CC Switch，并保留其他 Provider"
-        return 0
-      fi
-      log_warn "Grok Build 已配置，但无法自动打开 CC Switch"
-      return 0
-    fi
+  if [ "$(uname -s)" != "Darwin" ] || ! command -v open >/dev/null 2>&1 || ! open -Ra "CC Switch" >/dev/null 2>&1; then
+    log_warn "Grok Build 已配置好；未找到官方 CC Switch，可稍后安装后重试"
+    return 0
   fi
-  log_warn "Grok Build 已配置好；未找到官方 CC Switch，可稍后手动打开"
+
+  local tmp_dir importer_path db_path attempt
+  tmp_dir="$(mktemp -d)"
+  importer_path="${tmp_dir}/import-grok-cc-switch-provider.cjs"
+  if [ -n "${LAOSHIRENAI_GROK_CC_SWITCH_IMPORTER_PATH:-}" ]; then
+    cp "$LAOSHIRENAI_GROK_CC_SWITCH_IMPORTER_PATH" "$importer_path"
+  else
+    download_to_file "$importer_path" "$GROK_CC_SWITCH_IMPORTER_URL" || {
+      rm -rf "$tmp_dir"
+      log_error "CC Switch Provider 导入组件下载失败，请稍后重试"
+    }
+  fi
+
+  db_path="$("$NODE_BIN" --no-warnings "$importer_path" --print-db-path)"
+  if [ ! -f "$db_path" ]; then
+    open -gja "CC Switch" >/dev/null 2>&1 || true
+    for attempt in $(seq 1 40); do
+      [ -f "$db_path" ] && break
+      sleep 0.25
+    done
+  fi
+
+  if ! stop_cc_switch_for_import; then
+    rm -rf "$tmp_dir"
+    log_error "CC Switch 正在运行且无法安全刷新，请退出后重试这一行命令"
+  fi
+
+  db_path="$("$NODE_BIN" --no-warnings "$importer_path" --print-db-path)"
+  if ! GROK_PROVIDER_DEFAULT_MODEL="$CATALOG_GROK_DEFAULT_MODEL" \
+    GROK_PROVIDER_BASE_URL="$(normalize_openai_v1_base_url "$BASE_URL")" \
+    GROK_PROVIDER_API_KEY="$GROK_API_KEY" \
+    GROK_PROVIDER_MODELS_JSON="$CATALOG_GROK_MANAGED_MODELS_JSON" \
+    "$NODE_BIN" --no-warnings "$importer_path" >/dev/null; then
+    rm -rf "$tmp_dir"
+    log_error "CC Switch Provider 导入失败，本机 Grok Build 配置和原有 Provider 均已保留"
+  fi
+  rm -rf "$tmp_dir"
+
+  if open -a "CC Switch" >/dev/null 2>&1; then
+    log_info "已将 Grok 分组导入官方 CC Switch，并保留其他 Provider"
+    return 0
+  fi
+  log_warn "Grok 分组已导入 CC Switch，但无法自动打开应用"
 }
 
 uses_codex() {

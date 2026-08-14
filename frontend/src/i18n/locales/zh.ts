@@ -986,7 +986,7 @@ export default {
       codex: 'Codex',
       codexDesc: '使用 OpenAI Responses 协议',
       grokBuild: 'Grok CLI（Grok Build）',
-      grokBuildDesc: '复制一行兼容命令，运行后自动写入 Grok 4.6 / 4.5 并打开官方 CC Switch',
+      grokBuildDesc: '复制一行兼容命令，运行后将 Grok 分组导入 CC Switch，内含 Grok 4.6 / 4.5',
       opencode: 'OpenCode',
       opencodeDesc: '使用 OpenAI Chat Completions 协议',
       openclaw: 'OpenClaw',

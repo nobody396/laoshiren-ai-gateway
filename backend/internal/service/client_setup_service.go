@@ -317,11 +317,11 @@ func clientSetupGroupMatchesTarget(target string, group *Group) bool {
 		return false
 	}
 	if target == ClientSetupTargetGrok {
-		if clientSetupGroupNameMatches(group.Name, clientSetupGrokGroupName) {
+		if clientSetupGrokGroupNameMatches(group.Name, clientSetupGrokGroupName) {
 			return true
 		}
 		for _, legacyName := range clientSetupLegacyGrokGroups {
-			if clientSetupGroupNameMatches(group.Name, legacyName) {
+			if clientSetupGrokGroupNameMatches(group.Name, legacyName) {
 				return true
 			}
 		}
@@ -338,6 +338,12 @@ func clientSetupGroupNameMatches(name, required string) bool {
 		strings.Contains(groupName, requiredName)
 }
 
+func clientSetupGrokGroupNameMatches(name, required string) bool {
+	groupName := strings.ToLower(strings.Join(strings.Fields(name), " "))
+	requiredName := strings.ToLower(strings.Join(strings.Fields(required), " "))
+	return groupName == requiredName || groupName == requiredName+" 分组"
+}
+
 func selectClientSetupGroup(target string, groups []Group) *Group {
 	// One-click onboarding is a fixed product rule: Claude Code keys use MAX
 	// 20X, Codex keys use Pro 20X, and Grok Build keys prefer the version-neutral
@@ -347,11 +353,22 @@ func selectClientSetupGroup(target string, groups []Group) *Group {
 		for i := range groups {
 			if clientSetupGroupCompatible(target, &groups[i]) &&
 				!groups[i].IsSubscriptionType() &&
-				clientSetupGroupNameMatches(groups[i].Name, clientSetupGrokGroupName) {
+				clientSetupGrokGroupNameMatches(groups[i].Name, clientSetupGrokGroupName) {
 				group := groups[i]
 				return &group
 			}
 		}
+		for _, legacyName := range clientSetupLegacyGrokGroups {
+			for i := range groups {
+				if clientSetupGroupCompatible(target, &groups[i]) &&
+					!groups[i].IsSubscriptionType() &&
+					clientSetupGrokGroupNameMatches(groups[i].Name, legacyName) {
+					group := groups[i]
+					return &group
+				}
+			}
+		}
+		return nil
 	}
 	for i := range groups {
 		if clientSetupGroupMatchesTarget(target, &groups[i]) {

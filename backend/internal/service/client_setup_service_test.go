@@ -138,6 +138,17 @@ func TestSelectClientSetupGroupPrefersNeutralNameOverVersionedLegacyNames(t *tes
 	require.Equal(t, int64(52), selected.ID)
 }
 
+func TestSelectClientSetupGroupPrefersNewestVersionedLegacyName(t *testing.T) {
+	groups := []Group{
+		{ID: 34, Name: "Grok 4.5 分组", Platform: PlatformGrok, Status: StatusActive, SubscriptionType: SubscriptionTypeStandard},
+		{ID: 51, Name: "Grok 4.6 分组", Platform: PlatformGrok, Status: StatusActive, SubscriptionType: SubscriptionTypeStandard},
+	}
+
+	selected := selectClientSetupGroup(ClientSetupTargetGrok, groups)
+	require.NotNil(t, selected)
+	require.Equal(t, int64(51), selected.ID)
+}
+
 func TestSelectClientSetupGroupDoesNotUseGrokMonthlyGroup(t *testing.T) {
 	groups := []Group{
 		{ID: 35, Name: "Grok Lite 月卡组", Platform: PlatformGrok, Status: StatusActive, SubscriptionType: SubscriptionTypeCredit},

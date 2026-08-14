@@ -6,6 +6,7 @@ import {
   CODEX_AUTO_COMPACT_TOKEN_LIMIT,
   CODEX_CONTEXT_WINDOW_TOKENS,
   getCompatibleCcsTargets,
+  GROK_BUILD_MODELS,
   OPENAI_CODEX_MODELS,
   type CcsImportTarget
 } from '@/utils/ccSwitchImport'
@@ -193,6 +194,22 @@ describe('CC Switch provider deeplinks', () => {
     expect(url.searchParams.get('endpoint')).toBe('https://api.laoshirenai.com/v1')
     expect(url.searchParams.get('model')).toBe('grok-4.6')
     expect(url.searchParams.get('name')).toContain('Grok Build')
+    expect(url.searchParams.get('name')).not.toContain('Grok 4.6 分组')
+    expect(url.searchParams.get('configFormat')).toBe('json')
+    const encodedConfig = url.searchParams.get('config')
+    expect(encodedConfig).not.toBeNull()
+    const importConfig = JSON.parse(decodeBase64Utf8(encodedConfig!))
+    expect(importConfig.config).toContain('[models]\ndefault = "grok-4.6"')
+    for (const model of GROK_BUILD_MODELS) {
+      expect(importConfig.config).toContain(`[model."${model.model}"]`)
+      expect(importConfig.config).toContain(`model = "${model.model}"`)
+      expect(importConfig.config).toContain(`name = "${model.displayName}"`)
+      expect(importConfig.config).toContain(`description = "${model.displayName}"`)
+      expect(importConfig.config).toContain(`context_window = ${model.contextWindow}`)
+    }
+    expect(importConfig.config).toContain('base_url = "https://api.laoshirenai.com/v1"')
+    expect(importConfig.config).not.toContain('test-grok-key-placeholder')
+    expect(importConfig.config).not.toContain('老实人 AI')
     expect(url.searchParams.get('usageEnabled')).toBe('true')
     const usageScript = atob(url.searchParams.get('usageScript') || '')
     expect(usageScript).toContain('url: "{{baseUrl}}/v1/usage"')

@@ -19,7 +19,7 @@ export interface CodexClientModel {
   contextWindow: number
 }
 
-export const clientAutoConfigVersion = "0.7.7"
+export const clientAutoConfigVersion = "0.7.8"
 
 export const modelCatalog: readonly CatalogModel[] = [
   {

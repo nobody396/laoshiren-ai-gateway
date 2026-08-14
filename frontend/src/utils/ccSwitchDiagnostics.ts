@@ -1,7 +1,7 @@
 export type CcsDiagnosticPlatform = 'windows' | 'macos'
 
 const DEFAULT_SITE_ORIGIN = 'https://laoshirenai.com'
-const WINDOWS_DIAGNOSTIC_SCRIPT_VERSION = '1.2.2'
+const WINDOWS_DIAGNOSTIC_SCRIPT_VERSION = '1.2.3'
 const MACOS_DIAGNOSTIC_SCRIPT_VERSION = '1.2.2'
 
 export const detectCcsDiagnosticPlatform = (

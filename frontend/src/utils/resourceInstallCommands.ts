@@ -1,6 +1,6 @@
 import type { DownloadAsset, DownloadToolID } from '@/api/resources'
 
-export const CLAUDE_DESKTOP_INSTALL_SCRIPT_VERSION = '1.0.0'
+export const CLAUDE_DESKTOP_INSTALL_SCRIPT_VERSION = '1.0.1'
 
 export interface WindowsInstallerSource {
   url: string
@@ -49,5 +49,5 @@ export function buildWindowsDesktopInstallCommand(options: {
   const installerArguments = options.tool === 'codex-plus-plus' ? " -ArgumentList '/S'" : ''
   const sourceArray = `@(${sources.map((source) => `@{u=${powerShellQuote(source.url)};h='${source.sha256}'}`).join(',')})`
 
-  return `$src=${sourceArray}; $f=Join-Path $env:TEMP '${fileName}'; $ok=$false; try { foreach($s in $src){ Remove-Item $f -Force -ErrorAction SilentlyContinue; & curl.exe -fL --retry 5 --retry-delay 2 --connect-timeout 60 --max-time 1800 -o $f $s.u; if($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $f -PathType Leaf)){ $h=(Get-FileHash -LiteralPath $f -Algorithm SHA256).Hash; if($h -eq $s.h){ $ok=$true; break } } }; if(-not $ok){ throw '安装包下载失败或文件校验不通过，已停止安装' }; $p=Start-Process -FilePath $f${installerArguments} -Wait -PassThru; if($p.ExitCode -ne 0){ throw "安装程序退出码: $($p.ExitCode)" } } finally { Remove-Item $f -Force -ErrorAction SilentlyContinue }`
+  return `$src=${sourceArray}; $f=Join-Path $env:TEMP '${fileName}'; $ok=$false; try { foreach($s in $src){ Remove-Item $f -Force -ErrorAction SilentlyContinue; for($a=1; $a -le 5 -and -not $ok; $a++){ $ca=@('-fL','--connect-timeout','60','--max-time','1800','-o',$f); if((Test-Path -LiteralPath $f -PathType Leaf) -and (Get-Item -LiteralPath $f).Length -gt 0){$ca+=@('-C','-')}; $ca+=$s.u; & curl.exe @ca; $ce=$LASTEXITCODE; if($ce -eq 0 -and (Test-Path -LiteralPath $f -PathType Leaf)){ $h=(Get-FileHash -LiteralPath $f -Algorithm SHA256).Hash; if($h -eq $s.h){$ok=$true}else{Remove-Item $f -Force -ErrorAction SilentlyContinue} }elseif($ce -eq 33){Remove-Item $f -Force -ErrorAction SilentlyContinue}; if(-not $ok -and $a -lt 5){Start-Sleep -Seconds 2} } if($ok){break} }; if(-not $ok){ throw '安装包下载失败或文件校验不通过，已停止安装' }; $p=Start-Process -FilePath $f${installerArguments} -Wait -PassThru; if($p.ExitCode -ne 0){ throw "安装程序退出码: $($p.ExitCode)" } } finally { Remove-Item $f -Force -ErrorAction SilentlyContinue }`
 }

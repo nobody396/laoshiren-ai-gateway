@@ -31,7 +31,7 @@ describe('CC Switch diagnostic platform detection', () => {
 describe('CC Switch diagnostic commands', () => {
   it('builds a one-line PowerShell repair command', () => {
     expect(buildCcsDiagnosticCommand('windows', 'https://laoshirenai.com/')).toBe(
-      'irm https://laoshirenai.com/auto-config/diagnose-cc-switch.ps1?v=1.2.2 | iex'
+      'irm https://laoshirenai.com/auto-config/diagnose-cc-switch.ps1?v=1.2.3 | iex'
     )
   })
 

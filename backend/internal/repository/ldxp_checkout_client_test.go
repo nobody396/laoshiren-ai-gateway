@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -15,6 +16,12 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/stretchr/testify/require"
 )
+
+type ldxpRoundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f ldxpRoundTripperFunc) RoundTrip(request *http.Request) (*http.Response, error) {
+	return f(request)
+}
 
 func TestLDXPCheckoutClientLoadsMerchantCredentialsFromSecretFiles(t *testing.T) {
 	t.Setenv("LDXP_MERCHANT_USERNAME", "")
@@ -171,6 +178,95 @@ func TestLDXPCheckoutClientSupportsAlipayAndLabelsSelectedMethod(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 2, createdChannelID)
 	require.Equal(t, service.NativeCheckoutPaymentMethodAlipay, order.PaymentMethod)
+}
+
+func TestLDXPCheckoutClientRetriesTransientMetadataButCreatesOrderOnce(t *testing.T) {
+	var goodsCalls atomic.Int32
+	var orderCalls atomic.Int32
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/shopApi/Shop/goodsInfo":
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
+				"goods_type": "card", "goods_key": "newcomer-key", "status": 1,
+				"price": 5, "real_price": 5, "contact_format": "email",
+				"user": map[string]any{"token": "public-shop-token"},
+			}})
+		case "/shopApi/Shop/getUserChannel":
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": []map[string]any{
+				{"id": 4, "code": "WeixinNative", "status": 1, "custom_status": 1},
+			}})
+		case "/shopApi/Pay/order":
+			orderCalls.Add(1)
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
+				"trade_no": "LD-RETRY-1", "total_amount": 5, "payurl": server.URL + "/pay/LD-RETRY-1",
+			}})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client, err := newLDXPCheckoutClient(server.URL, true)
+	require.NoError(t, err)
+	baseTransport := client.httpClient.Transport
+	if baseTransport == nil {
+		baseTransport = http.DefaultTransport
+	}
+	client.httpClient.Transport = ldxpRoundTripperFunc(func(request *http.Request) (*http.Response, error) {
+		if request.URL.Path == "/shopApi/Shop/goodsInfo" && goodsCalls.Add(1) == 1 {
+			return nil, errors.New("transient TLS handshake failure")
+		}
+		return baseTransport.RoundTrip(request)
+	})
+
+	order, err := client.CreateOrder(context.Background(), "newcomer-key", "buyer@example.com", 500)
+	require.NoError(t, err)
+	require.Equal(t, "LD-RETRY-1", order.TradeNo)
+	require.Equal(t, int32(2), goodsCalls.Load())
+	require.Equal(t, int32(1), orderCalls.Load(), "a metadata retry must not duplicate provider order creation")
+}
+
+func TestLDXPCheckoutClientNeverRetriesAmbiguousOrderCreation(t *testing.T) {
+	var orderCalls atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/shopApi/Shop/goodsInfo":
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": map[string]any{
+				"goods_type": "card", "goods_key": "newcomer-key", "status": 1,
+				"price": 5, "real_price": 5, "contact_format": "email",
+				"user": map[string]any{"token": "public-shop-token"},
+			}})
+		case "/shopApi/Shop/getUserChannel":
+			writeLDXPJSON(t, w, map[string]any{"code": 1, "data": []map[string]any{
+				{"id": 4, "code": "WeixinNative", "status": 1, "custom_status": 1},
+			}})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client, err := newLDXPCheckoutClient(server.URL, true)
+	require.NoError(t, err)
+	baseTransport := client.httpClient.Transport
+	if baseTransport == nil {
+		baseTransport = http.DefaultTransport
+	}
+	client.httpClient.Transport = ldxpRoundTripperFunc(func(request *http.Request) (*http.Response, error) {
+		if request.URL.Path == "/shopApi/Pay/order" {
+			orderCalls.Add(1)
+			return nil, errors.New("connection lost after provider may have received order")
+		}
+		return baseTransport.RoundTrip(request)
+	})
+
+	_, err = client.CreateOrder(context.Background(), "newcomer-key", "buyer@example.com", 500)
+	require.Error(t, err)
+	var providerErr *service.NativeCheckoutProviderError
+	require.ErrorAs(t, err, &providerErr)
+	require.True(t, providerErr.Ambiguous)
+	require.Equal(t, int32(1), orderCalls.Load(), "ambiguous order creation must never be retried")
 }
 
 func TestLDXPCheckoutClientCollapsesConcurrentOfferMetadataLookups(t *testing.T) {

@@ -983,7 +983,7 @@ export default {
       codex: 'Codex',
       codexDesc: 'Uses the OpenAI Responses protocol',
       grokBuild: 'Grok CLI (Grok Build)',
-      grokBuildDesc: 'Copies one compatibility command that adds Grok 4.6 / 4.5 and opens official CC Switch',
+      grokBuildDesc: 'Copies one command that imports a Grok group with Grok 4.6 / 4.5 into CC Switch',
       opencode: 'OpenCode',
       opencodeDesc: 'Uses the OpenAI Chat Completions protocol',
       openclaw: 'OpenClaw',

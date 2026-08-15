@@ -2,6 +2,7 @@ import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, wr
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { execFileSync } from 'node:child_process'
+import { createRequire } from 'node:module'
 
 import { describe, expect, it } from 'vitest'
 import { clientAutoConfigVersion } from '@/generated/modelCatalog'
@@ -11,6 +12,19 @@ const readPublicScript = (name: string) =>
 
 const readUseKeyModal = () =>
   readFileSync(resolve(process.cwd(), 'src', 'components', 'keys', 'UseKeyModal.vue'), 'utf8')
+
+const nodeRequire = createRequire(import.meta.url)
+const { DatabaseSync } = nodeRequire('node:sqlite') as {
+  DatabaseSync: new (path: string) => {
+    close: () => void
+    exec: (sql: string) => void
+    prepare: (sql: string) => {
+      all: (...params: unknown[]) => Array<Record<string, unknown>>
+      get: (...params: unknown[]) => Record<string, unknown> | undefined
+      run: (...params: unknown[]) => unknown
+    }
+  }
+}
 
 describe('client auto-config scripts', () => {
   it('reuses an existing Claude Code CLI on macOS and Linux', () => {
@@ -151,6 +165,8 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('`context_window = ${Number(profile.context_window)}`')
     expect(script).toContain('fs.renameSync(temporaryPath, path)')
     expect(script).toContain('open_cc_switch_if_requested')
+    expect(script).toContain('import-grok-cc-switch-provider.cjs')
+    expect(script).toContain('已将 Grok 分组导入官方 CC Switch')
     expect(script).toContain('verify_api_key_readiness "Grok Build" "$GROK_API_KEY"')
     expect(script).toContain("['claude', 'codex', 'grok'].includes(data.target)")
   })
@@ -170,7 +186,128 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('$Lines.Add("context_window = $($ModelProfile.ContextWindow)")')
     expect(script).toContain('[System.IO.File]::Replace($TemporaryPath, $GrokConfigPath, $ReplacementBackupPath)')
     expect(script).toContain('Open-CcSwitchIfRequested')
+    expect(script).toContain('Invoke-GrokCcSwitchImporter')
+    expect(script).toContain('已将 Grok 分组导入官方 CC Switch')
     expect(script).toContain("Test-ApiKeyReadiness -Label 'Grok Build' -ApiKey $script:GrokApiKey")
+  })
+
+  it('imports one neutral dual-model Grok Provider without changing other CC Switch providers', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-cc-switch-grok-'))
+    const ccSwitchDir = join(fixture, '.cc-switch')
+    const dbPath = join(ccSwitchDir, 'cc-switch.db')
+    const settingsPath = join(ccSwitchDir, 'settings.json')
+    const importerPath = resolve(process.cwd(), 'public', 'auto-config', 'import-grok-cc-switch-provider.cjs')
+    const unrelatedConfig = JSON.stringify({ config: 'unrelated-secret-sentinel' })
+    try {
+      mkdirSync(ccSwitchDir, { recursive: true })
+      writeFileSync(settingsPath, JSON.stringify({ currentProviderGrokbuild: 'existing-grok', keep: true }))
+      const db = new DatabaseSync(dbPath)
+      db.exec(`
+        CREATE TABLE providers (
+          id TEXT NOT NULL,
+          app_type TEXT NOT NULL,
+          name TEXT NOT NULL,
+          settings_config TEXT NOT NULL,
+          website_url TEXT,
+          category TEXT,
+          created_at INTEGER,
+          sort_index INTEGER,
+          notes TEXT,
+          icon TEXT,
+          icon_color TEXT,
+          meta TEXT NOT NULL DEFAULT '{}',
+          is_current BOOLEAN NOT NULL DEFAULT 0,
+          in_failover_queue BOOLEAN NOT NULL DEFAULT 0,
+          cost_multiplier TEXT NOT NULL DEFAULT '1.0',
+          limit_daily_usd TEXT,
+          limit_monthly_usd TEXT,
+          provider_type TEXT,
+          PRIMARY KEY (id, app_type)
+        );
+      `)
+      db.prepare(`
+        INSERT INTO providers (id, app_type, name, settings_config, created_at, sort_index, meta, is_current)
+        VALUES (?, ?, ?, ?, ?, ?, '{}', ?)
+      `).run('existing-grok', 'grokbuild', 'Existing Grok', unrelatedConfig, 1, 0, 1)
+      db.prepare(`
+        INSERT INTO providers (id, app_type, name, settings_config, created_at, sort_index, meta, is_current)
+        VALUES (?, ?, ?, ?, ?, ?, '{}', ?)
+      `).run('existing-claude', 'claude', 'Existing Claude', unrelatedConfig, 2, 0, 1)
+      db.close()
+
+      const env = {
+        ...process.env,
+        CC_SWITCH_DB: dbPath,
+        CC_SWITCH_SETTINGS_PATH: settingsPath,
+        GROK_PROVIDER_DEFAULT_MODEL: 'grok-4.6',
+        GROK_PROVIDER_BASE_URL: 'https://api.example.com/v1',
+        GROK_PROVIDER_API_KEY: 'test-owned-key',
+        GROK_PROVIDER_MODELS_JSON: JSON.stringify([
+          { id: 'grok-4.5', display_name: 'Grok 4.5', context_window: 500000 },
+          { id: 'grok-4.6', display_name: 'Grok 4.6', context_window: 500000 }
+        ])
+      }
+      const runImporter = () => JSON.parse(execFileSync(process.execPath, [
+        '--no-warnings', importerPath
+      ], { env, encoding: 'utf8' })) as { status: string }
+
+      expect(runImporter().status).toBe('imported')
+      const verify = new DatabaseSync(dbPath)
+      const rows = verify.prepare(`
+        SELECT id, app_type, name, settings_config, is_current
+        FROM providers ORDER BY app_type, id
+      `).all()
+      verify.close()
+
+      expect(rows).toHaveLength(3)
+      expect(rows.find(row => row.id === 'existing-grok')?.settings_config).toBe(unrelatedConfig)
+      expect(rows.find(row => row.id === 'existing-claude')?.settings_config).toBe(unrelatedConfig)
+      expect(Number(rows.find(row => row.id === 'existing-grok')?.is_current)).toBe(0)
+      expect(Number(rows.find(row => row.id === 'existing-claude')?.is_current)).toBe(1)
+      const imported = rows.find(row => row.id === 'laoshirenai-grok-group')
+      expect(imported?.name).toBe('Grok 分组')
+      expect(imported?.name).not.toContain('4.6')
+      expect(Number(imported?.is_current)).toBe(1)
+      const config = JSON.parse(String(imported?.settings_config)).config as string
+      expect(config).toContain('default = "grok-4.6"')
+      expect(config.match(/\[model\."grok-4\.5"\]/g)).toHaveLength(1)
+      expect(config.match(/\[model\."grok-4\.6"\]/g)).toHaveLength(1)
+      expect(config).toContain('name = "Grok 4.5"')
+      expect(config).toContain('description = "Grok 4.6"')
+      expect(config).not.toContain('unrelated-secret-sentinel')
+
+      const settings = JSON.parse(readFileSync(settingsPath, 'utf8'))
+      expect(settings).toEqual({ currentProviderGrokbuild: 'laoshirenai-grok-group', keep: true })
+      expect(runImporter().status).toBe('unchanged')
+      expect(readdirSync(join(ccSwitchDir, 'backups', 'laoshirenai-grok'))).toHaveLength(1)
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('resolves the CC Switch app-config directory override used by 3.19.2', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-cc-switch-path-'))
+    const overrideDir = join(fixture, 'custom-cc-switch')
+    const storePath = join(fixture, 'app_paths.json')
+    const importerPath = resolve(process.cwd(), 'public', 'auto-config', 'import-grok-cc-switch-provider.cjs')
+    try {
+      mkdirSync(overrideDir, { recursive: true })
+      writeFileSync(storePath, JSON.stringify({ app_config_dir_override: overrideDir }))
+      const resolvedPath = execFileSync(process.execPath, [
+        '--no-warnings', importerPath, '--print-db-path'
+      ], {
+        env: {
+          ...process.env,
+          CC_SWITCH_DB: '',
+          CC_SWITCH_TEST_HOME: fixture,
+          CC_SWITCH_APP_PATHS_STORE: storePath
+        },
+        encoding: 'utf8'
+      }).trim()
+      expect(resolvedPath).toBe(join(overrideDir, 'cc-switch.db'))
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
   })
 
   it('atomically writes both Grok models while preserving unrelated config on macOS and Linux', () => {

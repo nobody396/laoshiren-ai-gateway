@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.9'
+$ScriptVersion = '0.7.10'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 250000
 $CatalogOpenAIAutoCompactTokenLimit = 225000
@@ -22,6 +22,7 @@ $DefaultCodexPackagePrefix = 'https://laoshirenai.com/downloads/codex/'
 $DefaultGitForWindowsPackagePrefix = 'https://laoshirenai.com/downloads/git-for-windows/'
 $DefaultGrokBuildPackagePrefix = 'https://laoshirenai.com/downloads/grok-build/'
 $DefaultCodexModelCatalogUrl = "https://laoshirenai.com/auto-config/codex-model-catalog.json?v=$ScriptVersion"
+$DefaultGrokCcSwitchImporterUrl = "https://laoshirenai.com/auto-config/import-grok-cc-switch-provider.cjs?v=$ScriptVersion"
 $DefaultCodexAppInstallerUrl = 'https://laoshirenai.com/api/v1/public-downloads/codex/windows-x64/latest.appinstaller'
 $DefaultTopupUrl = 'https://laoshirenai.com/get-subscription'
 $DefaultTools = 'all'
@@ -76,6 +77,7 @@ $GrokBuildManifestUrl = if ($env:LAOSHIRENAI_GROK_BUILD_MANIFEST_URL) { $env:LAO
 $CodexPackagePrefix = if ($env:LAOSHIRENAI_CODEX_PACKAGE_PREFIX) { $env:LAOSHIRENAI_CODEX_PACKAGE_PREFIX } else { $DefaultCodexPackagePrefix }
 $GitForWindowsPackagePrefix = if ($env:LAOSHIRENAI_GIT_FOR_WINDOWS_PACKAGE_PREFIX) { $env:LAOSHIRENAI_GIT_FOR_WINDOWS_PACKAGE_PREFIX } else { $DefaultGitForWindowsPackagePrefix }
 $GrokBuildPackagePrefix = if ($env:LAOSHIRENAI_GROK_BUILD_PACKAGE_PREFIX) { $env:LAOSHIRENAI_GROK_BUILD_PACKAGE_PREFIX } else { $DefaultGrokBuildPackagePrefix }
+$GrokCcSwitchImporterUrl = if ($env:LAOSHIRENAI_GROK_CC_SWITCH_IMPORTER_URL) { $env:LAOSHIRENAI_GROK_CC_SWITCH_IMPORTER_URL } else { $DefaultGrokCcSwitchImporterUrl }
 $CodexAppInstallerUrl = if ($env:LAOSHIRENAI_CODEX_APPINSTALLER_URL) { $env:LAOSHIRENAI_CODEX_APPINSTALLER_URL } else { $DefaultCodexAppInstallerUrl }
 $script:BalanceReady = $true
 
@@ -192,10 +194,10 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.9 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.10 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.9 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.10 | iex
 
 参数:
   --api-key              Claude Code API Key
@@ -518,7 +520,12 @@ function Test-UsableSystemNode {
 
   $VersionText = & $NodeCommand.Source --version
   $Major = [int](($VersionText -replace '^v', '').Split('.')[0])
-  return $Major -ge $MinNodeMajor
+  if ($Major -lt $MinNodeMajor) { return $false }
+  if ($script:GrokCcSwitchCompat -and (Test-UsesGrok)) {
+    & $NodeCommand.Source --no-warnings -e 'require("node:sqlite").DatabaseSync' 2>$null
+    if ($LASTEXITCODE -ne 0) { return $false }
+  }
+  return $true
 }
 
 # 从远端索引解析最新 LTS 版本，避免脚本内部硬编码 Node 版本。
@@ -757,6 +764,12 @@ function Ensure-NodeRuntime {
 
   Write-WarnMessage '未检测到可用的 Node.js，开始安装本地运行时'
   Install-LocalNode
+  if ($script:GrokCcSwitchCompat -and (Test-UsesGrok)) {
+    & $script:NodeExe --no-warnings -e 'require("node:sqlite").DatabaseSync' 2>$null
+    if ($LASTEXITCODE -ne 0) {
+      Stop-Script '当前 Node.js 不支持 CC Switch 安全导入，请移除 LAOSHIRENAI_NODE_VERSION 覆盖后重试'
+    }
+  }
   Write-Info "本地 Node.js 已就绪: $(& $script:NodeExe --version)"
 }
 
@@ -1378,35 +1391,136 @@ function Write-GrokTomlConfig {
   }
 }
 
+function Get-CcSwitchLaunchTarget {
+  $StartApp = Get-StartApps -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -eq 'CC Switch' } |
+    Select-Object -First 1
+  if ($null -ne $StartApp) {
+    return [pscustomobject]@{ Kind = 'AppId'; Value = "shell:AppsFolder\$($StartApp.AppID)" }
+  }
+
+  $Candidates = @()
+  if (-not [string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
+    $Candidates += Join-Path $env:LOCALAPPDATA 'Programs\CC Switch\cc-switch.exe'
+  }
+  if (-not [string]::IsNullOrWhiteSpace($env:ProgramFiles)) {
+    $Candidates += Join-Path $env:ProgramFiles 'CC Switch\cc-switch.exe'
+  }
+  foreach ($Candidate in $Candidates) {
+    if (Test-Path -LiteralPath $Candidate -PathType Leaf) {
+      return [pscustomobject]@{ Kind = 'Executable'; Value = $Candidate }
+    }
+  }
+  return $null
+}
+
+function Start-CcSwitchTarget {
+  param([object]$Target)
+  if ($Target.Kind -eq 'AppId') {
+    Start-Process ([string]$Target.Value)
+  } else {
+    Start-Process -FilePath ([string]$Target.Value)
+  }
+}
+
+function Stop-CcSwitchForImport {
+  $Processes = @(Get-Process -Name 'cc-switch' -ErrorAction SilentlyContinue)
+  if ($Processes.Count -eq 0) { return $true }
+
+  foreach ($Process in $Processes) {
+    try { $null = $Process.CloseMainWindow() } catch {}
+  }
+  for ($Attempt = 0; $Attempt -lt 20; $Attempt++) {
+    if (@(Get-Process -Name 'cc-switch' -ErrorAction SilentlyContinue).Count -eq 0) { return $true }
+    Start-Sleep -Milliseconds 250
+  }
+
+  # A tray-only Tauri process has no window to close. Stop it, then let SQLite
+  # recover/checkpoint before the importer creates its transactional backup.
+  Get-Process -Name 'cc-switch' -ErrorAction SilentlyContinue |
+    Stop-Process -Force -ErrorAction SilentlyContinue
+  for ($Attempt = 0; $Attempt -lt 20; $Attempt++) {
+    if (@(Get-Process -Name 'cc-switch' -ErrorAction SilentlyContinue).Count -eq 0) { return $true }
+    Start-Sleep -Milliseconds 250
+  }
+  return $false
+}
+
+function Invoke-GrokCcSwitchImporter {
+  param([string]$ImporterPath)
+
+  $ManagedModels = @($CatalogGrokManagedModels | ForEach-Object {
+    @{
+      id = [string]$_.Id
+      display_name = [string]$_.DisplayName
+      context_window = [int64]$_.ContextWindow
+    }
+  }) | ConvertTo-Json -Compress
+
+  $Names = @(
+    'GROK_PROVIDER_DEFAULT_MODEL',
+    'GROK_PROVIDER_BASE_URL',
+    'GROK_PROVIDER_API_KEY',
+    'GROK_PROVIDER_MODELS_JSON'
+  )
+  $Previous = @{}
+  foreach ($Name in $Names) {
+    $Previous[$Name] = [Environment]::GetEnvironmentVariable($Name, 'Process')
+  }
+  try {
+    [Environment]::SetEnvironmentVariable('GROK_PROVIDER_DEFAULT_MODEL', $CatalogGrokDefaultModel, 'Process')
+    [Environment]::SetEnvironmentVariable('GROK_PROVIDER_BASE_URL', (Get-OpenAIV1BaseUrl -Value $script:BaseUrl), 'Process')
+    [Environment]::SetEnvironmentVariable('GROK_PROVIDER_API_KEY', $script:GrokApiKey, 'Process')
+    [Environment]::SetEnvironmentVariable('GROK_PROVIDER_MODELS_JSON', $ManagedModels, 'Process')
+    & $script:NodeExe --no-warnings $ImporterPath | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Provider importer exited with code $LASTEXITCODE" }
+  } finally {
+    foreach ($Name in $Names) {
+      [Environment]::SetEnvironmentVariable($Name, $Previous[$Name], 'Process')
+    }
+  }
+}
+
 function Open-CcSwitchIfRequested {
   if (-not $script:GrokCcSwitchCompat -or -not (Test-UsesGrok)) { return }
 
-  try {
-    $StartApp = Get-StartApps -ErrorAction SilentlyContinue |
-      Where-Object { $_.Name -eq 'CC Switch' } |
-      Select-Object -First 1
-    if ($null -ne $StartApp) {
-      Start-Process "shell:AppsFolder\$($StartApp.AppID)"
-      Write-Info '已打开官方 CC Switch，并保留其他 Provider'
-      return
-    }
-
-    $Candidates = @(
-      (Join-Path $env:LOCALAPPDATA 'Programs\CC Switch\cc-switch.exe'),
-      (Join-Path $env:ProgramFiles 'CC Switch\cc-switch.exe')
-    )
-    foreach ($Candidate in $Candidates) {
-      if (Test-Path -LiteralPath $Candidate -PathType Leaf) {
-        Start-Process -FilePath $Candidate
-        Write-Info '已打开官方 CC Switch，并保留其他 Provider'
-        return
-      }
-    }
-  } catch {
-    Write-WarnMessage "Grok Build 已配置，但无法自动打开 CC Switch: $_"
+  $Target = Get-CcSwitchLaunchTarget
+  if ($null -eq $Target) {
+    Write-WarnMessage 'Grok Build 已配置好；未找到官方 CC Switch，可稍后安装后重试'
     return
   }
-  Write-WarnMessage 'Grok Build 已配置好；未找到官方 CC Switch，可稍后手动打开'
+
+  $TempDir = Join-Path ([IO.Path]::GetTempPath()) ("laoshirenai-grok-cc-switch-" + [guid]::NewGuid().ToString('N'))
+  Ensure-Directory $TempDir
+  try {
+    $ImporterPath = Join-Path $TempDir 'import-grok-cc-switch-provider.cjs'
+    if (-not [string]::IsNullOrWhiteSpace($env:LAOSHIRENAI_GROK_CC_SWITCH_IMPORTER_PATH)) {
+      Copy-Item -LiteralPath $env:LAOSHIRENAI_GROK_CC_SWITCH_IMPORTER_PATH -Destination $ImporterPath -Force
+    } else {
+      Invoke-WebRequest -UseBasicParsing -Uri $script:GrokCcSwitchImporterUrl -OutFile $ImporterPath
+    }
+
+    $DbPath = ((& $script:NodeExe --no-warnings $ImporterPath --print-db-path | Select-Object -Last 1) -as [string]).Trim()
+    if (-not (Test-Path -LiteralPath $DbPath -PathType Leaf)) {
+      Start-CcSwitchTarget -Target $Target
+      for ($Attempt = 0; $Attempt -lt 40; $Attempt++) {
+        if (Test-Path -LiteralPath $DbPath -PathType Leaf) { break }
+        Start-Sleep -Milliseconds 250
+      }
+    }
+
+    if (-not (Stop-CcSwitchForImport)) {
+      Stop-Script 'CC Switch 正在运行且无法安全刷新，请退出后重试这一行命令'
+    }
+
+    Invoke-GrokCcSwitchImporter -ImporterPath $ImporterPath
+    Start-CcSwitchTarget -Target $Target
+    Write-Info '已将 Grok 分组导入官方 CC Switch，并保留其他 Provider'
+  } catch {
+    Stop-Script "CC Switch Provider 导入失败，本机 Grok Build 配置和原有 Provider 均已保留: $_"
+  } finally {
+    Remove-Item -LiteralPath $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+  }
 }
 
 function Test-UsesCodex {
@@ -1661,8 +1775,10 @@ function Main {
   Exchange-SetupTicket
   Resolve-ClientInstallPlan
   Resolve-ClientUpdatePlan
-  if (Test-NeedsNpmClientInstall) {
+  if ((Test-NeedsNpmClientInstall) -or ($script:GrokCcSwitchCompat -and (Test-UsesGrok))) {
     Ensure-NodeRuntime
+  }
+  if (Test-NeedsNpmClientInstall) {
     Ensure-GitBash
   }
   if (Test-NeedsClientInstall) {

@@ -1761,7 +1761,7 @@ const copySaveOfficialProviderCommand = async () => {
   const isWindows = navigator.userAgent.toLowerCase().includes('windows')
   const command = isWindows
     ? "$env:CCS_OPENAI_PROVIDER_NAME='OpenAI Official Pro'; irm https://laoshirenai.com/auto-config/save-openai-official-provider.ps1?v=1.0.0 | iex"
-    : 'curl -fsSL https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0 | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash'
+    : `curl -fsSL 'https://laoshirenai.com/auto-config/save-openai-official-provider.sh?v=1.0.0' | CCS_OPENAI_PROVIDER_NAME="OpenAI Official Pro" bash`
   await clipboardCopy(command, t('keys.saveOfficialProviderCommandCopied'))
 }
 
@@ -2385,9 +2385,9 @@ const handleCcsClientSelect = async (clientType: CcsImportTarget) => {
   pendingCcsRow.value = null
   if (!row) return
 
-  // CC Switch 3.19.2 collapses Grok Build deeplinks to one model. Use the
-  // signed official app's live-config import path instead: a one-time ticket
-  // writes the complete model catalog atomically, then opens CC Switch.
+  // CC Switch 3.19.2 collapses Grok Build deeplinks to one model. The one-time
+  // compatibility flow writes the dual-model config, atomically upserts one
+  // neutral Grok Provider in CC Switch's native store, then reopens the app.
   if (clientType === 'grokbuild') {
     await generateAndCopyClientAutoConfigCommand(row, false, true)
     return

@@ -290,7 +290,7 @@
                 <template v-else-if="showingCardShop">
                   <button
                     @click="openSelectedCardShopProduct"
-                    :disabled="!selectedCardShopProduct"
+                    :disabled="!selectedCardShopProduct || openingCardShop"
                     class="topup-primary-action"
                   >
                     {{ t('topup.cardShopAction') }}
@@ -427,10 +427,12 @@ import {
   BALANCE_TOPUP_PRESETS,
   PROMOTIONAL_BALANCE_TOPUPS,
   getCreditedBalanceTopupAmount,
+  isNewcomerBalanceTopup,
   isSupportedBalanceTopupAmount
 } from '@/constants/balanceTopups'
 import { type MonthlyCreditCardPlan } from '@/constants/monthlyCreditCards'
 import { useMonthlyCreditCardPlans } from '@/composables/useMonthlyCreditCardPlans'
+import { shouldShowManualNewcomerProduct, useManualNewcomerOffer } from '@/composables/useManualNewcomerOffer'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -458,6 +460,7 @@ const selectedBalanceProductId = ref('')
 const selectedMonthlyPlanId = ref<MonthlyCreditCardPlan['id']>('plus')
 const payType = ref<TopupPayType>('alipay')
 const submitting = ref(false)
+const openingCardShop = ref(false)
 const qrCodeURL = ref('')
 const orderNo = ref('')
 const qrExpired = ref(false)
@@ -466,6 +469,11 @@ const activeOrderAmountYuan = ref(0)
 const activeOrderCreditedAmountYuan = ref(0)
 const showMonthlyDirectPurchase = ref(false)
 const { plans: monthlyCreditCardPlans, loadMonthlyCreditCardPlans } = useMonthlyCreditCardPlans()
+const {
+  state: newcomerOfferState,
+  refresh: refreshNewcomerOffer,
+  requestPurchaseURL: requestNewcomerPurchaseURL,
+} = useManualNewcomerOffer()
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
@@ -485,7 +493,8 @@ const activeCardShopProducts = computed<CardShopProduct[]>(() =>
       (product) =>
         product.enabled &&
         product.url &&
-        isSupportedBalanceTopupAmount(product.amount_cny)
+        isSupportedBalanceTopupAmount(product.amount_cny) &&
+        shouldShowManualNewcomerProduct(product.amount_cny, newcomerOfferState.value)
     )
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.amount_cny - b.amount_cny)
 )
@@ -644,9 +653,31 @@ function selectTopupChannel(channel: TopupChannel) {
   }
 }
 
-function openSelectedCardShopProduct() {
-  if (!selectedCardShopProduct.value?.url) return
-  window.location.assign(selectedCardShopProduct.value.url)
+async function openSelectedCardShopProduct() {
+  const product = selectedCardShopProduct.value
+  if (!product?.url || openingCardShop.value) return
+  if (!isNewcomerBalanceTopup(product.amount_cny)) {
+    window.location.assign(product.url)
+    return
+  }
+  openingCardShop.value = true
+  try {
+    const purchaseURL = await requestNewcomerPurchaseURL()
+    if (!purchaseURL) {
+      syncTopupChannelWithSettings()
+      if (newcomerOfferState.value === 'claimed') {
+        appStore.showInfo(t('topup.newcomerCardClaimed'))
+      } else {
+        appStore.showError(t('topup.newcomerCardStatusUnavailable'))
+      }
+      return
+    }
+    window.location.assign(purchaseURL)
+  } catch (error) {
+    appStore.showError(extractApiErrorMessage(error, t('topup.newcomerCardStatusUnavailable')))
+  } finally {
+    openingCardShop.value = false
+  }
 }
 
 function openSelectedMonthlyCardShop() {
@@ -819,7 +850,8 @@ onUnmounted(() => {
 
 void Promise.all([
   appStore.fetchPublicSettings(),
-  loadMonthlyCreditCardPlans()
+  loadMonthlyCreditCardPlans(),
+  refreshNewcomerOffer()
 ]).then(() => {
   syncTopupChannelWithSettings()
 })

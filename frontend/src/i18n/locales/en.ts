@@ -1286,6 +1286,8 @@ export default {
     newcomerCardSummary: 'Pay ¥{paid} · Receive ¥{credited}',
     newcomerCardBadge: 'Newcomer deal',
     newcomerCardLimit: 'One redemption per account. Please do not buy this item more than once.',
+    newcomerCardClaimed: 'This account has already claimed the newcomer offer and cannot buy it again.',
+    newcomerCardStatusUnavailable: 'We cannot confirm your newcomer offer status right now. Refresh and try again.',
     creditedAmount: 'Balance credited',
     paySuccessWithCredit: 'Top-up successful. ⚡{amount} was credited.',
     developerPlansTitle: 'Developer plans',

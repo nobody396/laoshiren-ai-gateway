@@ -240,6 +240,8 @@ func RegisterUserRoutes(
 		nativeCheckout := authenticated.Group("/native-checkout")
 		{
 			nativeCheckout.GET("/offers", h.NativeCheckout.ListOffers)
+			nativeCheckout.GET("/manual-offers/:offerCode", h.NativeCheckout.GetManualOfferStatus)
+			nativeCheckout.POST("/manual-offers/:offerCode/purchase", h.NativeCheckout.GetManualOfferPurchase)
 			nativeCheckout.POST("/orders", h.NativeCheckout.CreateOrder)
 			nativeCheckout.GET("/orders/:orderNo", h.NativeCheckout.GetOrder)
 			nativeCheckout.GET("/orders/:orderNo/qr", h.NativeCheckout.GetDirectPaymentQR)

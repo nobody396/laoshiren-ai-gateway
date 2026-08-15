@@ -95,6 +95,18 @@ func (r *nativeCheckoutRepository) GetVisibleOffer(ctx context.Context, userID i
 	return offer, err
 }
 
+func (r *nativeCheckoutRepository) GetManualRedeemOffer(ctx context.Context, code string) (*service.NativeCheckoutOffer, error) {
+	row := r.db.QueryRowContext(ctx, `SELECT `+nativeCheckoutOfferColumns+`
+		FROM native_checkout_offers offer
+		WHERE offer.code = $1
+		  AND offer.manual_redeem_enabled = TRUE`, code)
+	offer, err := scanNativeCheckoutOffer(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, service.ErrNativeCheckoutOfferNotFound
+	}
+	return offer, err
+}
+
 type sqlScanner interface {
 	Scan(dest ...any) error
 }

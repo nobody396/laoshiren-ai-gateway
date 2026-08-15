@@ -203,6 +203,13 @@ WHERE code = 'newcomer-balance-5-to-10'
 	require.Error(t, err, "stocked offer semantics must be immutable")
 
 	repo := NewNativeCheckoutRepository(integrationDB)
+	manualOffer, err := repo.GetManualRedeemOffer(ctx, "newcomer-balance-5-to-10")
+	require.NoError(t, err)
+	require.Equal(t, "newcomer-balance-5-to-10", manualOffer.Code)
+	require.False(t, manualOffer.Enabled, "manual status reads must not enable the retired native checkout path")
+	_, err = repo.GetManualRedeemOffer(ctx, "missing-offer")
+	require.ErrorIs(t, err, service.ErrNativeCheckoutOfferNotFound)
+
 	hidden, err := repo.ListVisibleOffers(ctx, user.ID)
 	require.NoError(t, err)
 	require.Empty(t, hidden, "a disabled offer must stay invisible before the owned tester is allowlisted")

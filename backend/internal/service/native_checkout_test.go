@@ -52,6 +52,36 @@ func TestNativeCheckoutListDoesNotCallProviderWhileRenderingCatalog(t *testing.T
 	require.Len(t, offers, 1)
 }
 
+func TestNativeCheckoutManualOfferStatusHidesPurchaseLinkAfterClaim(t *testing.T) {
+	repo := newNativeCheckoutRepoFake(testNativeCheckoutOffer())
+	svc := NewNativeCheckoutService(repo, &nativeCheckoutProviderFake{}, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
+
+	status, err := svc.GetManualOfferStatus(context.Background(), 42, repo.offer.Code, false)
+	require.NoError(t, err)
+	require.False(t, status.Claimed)
+	require.Empty(t, status.PurchaseURL, "catalog status must not expose a stale purchase URL")
+
+	status, err = svc.GetManualOfferStatus(context.Background(), 42, repo.offer.Code, true)
+	require.NoError(t, err)
+	require.False(t, status.Claimed)
+	require.Equal(t, "https://pay.ldxp.cn/item/trial-key", status.PurchaseURL)
+
+	repo.redeemed = true
+	status, err = svc.GetManualOfferStatus(context.Background(), 42, repo.offer.Code, true)
+	require.NoError(t, err)
+	require.True(t, status.Claimed)
+	require.Empty(t, status.PurchaseURL, "a claimed account must never receive the shop link")
+}
+
+func TestNativeCheckoutManualOfferStatusRejectsNonManualOffer(t *testing.T) {
+	repo := newNativeCheckoutRepoFake(testNativeCheckoutOffer())
+	repo.manualOfferVisible = false
+	svc := NewNativeCheckoutService(repo, &nativeCheckoutProviderFake{}, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
+
+	_, err := svc.GetManualOfferStatus(context.Background(), 42, repo.offer.Code, true)
+	require.ErrorIs(t, err, ErrNativeCheckoutOfferNotFound)
+}
+
 func TestNativeCheckoutRecoveredRedeemCountsAsOnceOnlyPurchase(t *testing.T) {
 	repo := newNativeCheckoutRepoFake(testNativeCheckoutOffer())
 	repo.redeemed = true
@@ -337,15 +367,16 @@ func testNativeCheckoutOrder(offer NativeCheckoutOffer) *NativeCheckoutOrder {
 
 type nativeCheckoutRepoFake struct {
 	NativeCheckoutRepository
-	mu            sync.Mutex
-	offer         NativeCheckoutOffer
-	order         *NativeCheckoutOrder
-	redeemed      bool
-	linkedTradeNo string
+	mu                 sync.Mutex
+	offer              NativeCheckoutOffer
+	order              *NativeCheckoutOrder
+	redeemed           bool
+	manualOfferVisible bool
+	linkedTradeNo      string
 }
 
 func newNativeCheckoutRepoFake(offer NativeCheckoutOffer) *nativeCheckoutRepoFake {
-	return &nativeCheckoutRepoFake{offer: offer}
+	return &nativeCheckoutRepoFake{offer: offer, manualOfferVisible: true}
 }
 
 func (r *nativeCheckoutRepoFake) ListVisibleOffers(context.Context, int64) ([]NativeCheckoutOffer, error) {
@@ -354,6 +385,14 @@ func (r *nativeCheckoutRepoFake) ListVisibleOffers(context.Context, int64) ([]Na
 
 func (r *nativeCheckoutRepoFake) GetVisibleOffer(_ context.Context, _ int64, code string) (*NativeCheckoutOffer, error) {
 	if code != r.offer.Code {
+		return nil, ErrNativeCheckoutOfferNotFound
+	}
+	copy := r.offer
+	return &copy, nil
+}
+
+func (r *nativeCheckoutRepoFake) GetManualRedeemOffer(_ context.Context, code string) (*NativeCheckoutOffer, error) {
+	if !r.manualOfferVisible || code != r.offer.Code {
 		return nil, ErrNativeCheckoutOfferNotFound
 	}
 	copy := r.offer

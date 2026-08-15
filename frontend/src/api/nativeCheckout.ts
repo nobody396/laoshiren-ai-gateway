@@ -34,8 +34,28 @@ export interface NativeCheckoutOffer {
   order?: NativeCheckoutOrder
 }
 
+export interface NativeCheckoutManualOfferStatus {
+  code: string
+  claimed: boolean
+  purchase_url?: string
+}
+
 export async function listNativeCheckoutOffers(): Promise<NativeCheckoutOffer[]> {
   const { data } = await apiClient.get<NativeCheckoutOffer[]>('/native-checkout/offers')
+  return data
+}
+
+export async function getNativeCheckoutManualOfferStatus(offerCode: string): Promise<NativeCheckoutManualOfferStatus> {
+  const { data } = await apiClient.get<NativeCheckoutManualOfferStatus>(
+    `/native-checkout/manual-offers/${encodeURIComponent(offerCode)}`,
+  )
+  return data
+}
+
+export async function requestNativeCheckoutManualOfferPurchase(offerCode: string): Promise<NativeCheckoutManualOfferStatus> {
+  const { data } = await apiClient.post<NativeCheckoutManualOfferStatus>(
+    `/native-checkout/manual-offers/${encodeURIComponent(offerCode)}/purchase`,
+  )
   return data
 }
 

@@ -5,9 +5,11 @@
 原生结账已放弃并保持关闭。用户流程固定为：
 
 1. 已登录用户在 `/get-subscription` 选择“新人特惠 · 10 元余额包”。
-2. 点击“去卡密商城购买”，打开 `https://pay.ldxp.cn/item/oc3w4r`。
-3. 用户在链动小铺自行完成 ¥5 支付并取得卡密。
-4. 用户回到老实人AI `/redeem` 输入卡密，到账 ¥10 余额。
+2. 页面先按当前登录账号查询领取状态；已领取时整张新人商品卡隐藏。
+3. 未领取账号点击“去卡密商城购买”时，服务端再次核对领取状态，再返回
+   `https://pay.ldxp.cn/item/oc3w4r`。
+4. 用户在链动小铺自行完成 ¥5 支付并取得卡密。
+5. 用户回到老实人AI `/redeem` 输入卡密，到账 ¥10 余额。
 
 链动商品 ID 为 `746430`，goods key 为 `oc3w4r`。站内原生 offer
 `newcomer-balance-5-to-10` 必须始终保持 `enabled=false`，且
@@ -17,6 +19,8 @@
 
 - 实付 ¥5，到账 ¥10；用户侧不展示内部“纯赠送余额”分类。
 - 每个老实人AI账号终身仅可兑换一次该新人商品。链动匿名购买无法在付款前可靠识别老实人AI账号，因此页面必须明确提示“每个账号仅可兑换 1 次，请勿重复购买”。
+- 充值页和充值弹窗必须在领取状态未确认、查询失败或已领取时隐藏新人商品；点击购买前必须再次查询，禁止直接信任公开设置中的外链。
+- 用户绕过站内页面直接重复购买仍无法由匿名链动订单拦截；其第二张卡在本站兑换时必须返回 `REDEEM_OFFER_ALREADY_CLAIMED`，且卡保持未使用。
 - 终身限购的最终权威是 `native_checkout_manual_claims` 的 `(offer_code, user_id)` 主键。服务层会提前返回友好冲突；数据库触发器负责阻止两个不同卡密的并发绕过。
 - 新人库存仍登记在 `native_checkout_redeem_inventory`，并继续由 offer 行校验卡密语义：`type=balance`、`value=10`、`paid_value=0`、`purpose=gift`、`sales_status=gifted`、`validity_days=0`。
 - 只有 `manual_redeem_enabled=true` 的库存允许公开手动兑换；其他已登记库存仍被公共兑换接口拒绝。

@@ -1289,6 +1289,8 @@ export default {
     newcomerCardSummary: '实付 ¥{paid} · 到账 ¥{credited}',
     newcomerCardBadge: '新人特惠',
     newcomerCardLimit: '每个账号仅可兑换 1 次，请勿重复购买。',
+    newcomerCardClaimed: '这个账号已经领取过新人特惠，不能再次购买。',
+    newcomerCardStatusUnavailable: '暂时无法确认新人特惠领取状态，请刷新后重试。',
     creditedAmount: '到账额度',
     paySuccessWithCredit: '充值成功，⚡{amount} 已到账',
     developerPlansTitle: '开发者计划',

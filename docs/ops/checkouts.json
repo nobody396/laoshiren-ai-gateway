@@ -230,6 +230,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-31T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/newcomer-repurchase-guard-20260815",
+      "owner": "newcomer-repurchase-guard-20260815",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-31T23:59:59+08:00"
     }
   ]
 }

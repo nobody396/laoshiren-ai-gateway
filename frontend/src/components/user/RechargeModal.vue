@@ -68,7 +68,8 @@
                   v-for="product in activeCardShopProducts"
                   :key="product.id"
                   @click="openCardShopProduct(product)"
-                  class="rounded-lg border-2 border-gray-200 px-4 py-3 text-left transition-all hover:border-primary-300 hover:bg-primary-50 dark:border-dark-600 dark:hover:border-primary-500/40"
+                  :disabled="openingCardShop"
+                  class="rounded-lg border-2 border-gray-200 px-4 py-3 text-left transition-all hover:border-primary-300 hover:bg-primary-50 disabled:cursor-wait disabled:opacity-60 dark:border-dark-600 dark:hover:border-primary-500/40"
                 >
                   <span class="block text-sm font-semibold text-gray-900 dark:text-white">
                     {{ product.label || `¥${product.amount_cny}` }}
@@ -304,6 +305,7 @@ import {
   isNewcomerBalanceTopup,
   isSupportedBalanceTopupAmount
 } from '@/constants/balanceTopups'
+import { shouldShowManualNewcomerProduct, useManualNewcomerOffer } from '@/composables/useManualNewcomerOffer'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -328,6 +330,7 @@ const selectedPreset = ref<number | null>(20)
 const useCustom = ref(false)
 const customAmountInput = ref('')
 const submitting = ref(false)
+const openingCardShop = ref(false)
 const qrCodeURL = ref('')
 const orderNo = ref('')
 const qrExpired = ref(false)
@@ -338,6 +341,11 @@ const activeOrderCreditedAmountYuan = ref(0)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let pollInFlight = false
+const {
+  state: newcomerOfferState,
+  refresh: refreshNewcomerOffer,
+  requestPurchaseURL: requestNewcomerPurchaseURL,
+} = useManualNewcomerOffer()
 
 // 根据公开设置决定用户侧可见支付渠道；关闭的渠道直接不展示。
 const xunhuAlipayEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_alipay_enabled ?? false)
@@ -352,7 +360,8 @@ const activeCardShopProducts = computed<CardShopProduct[]>(() =>
       (product) =>
         product.enabled &&
         product.url &&
-        isSupportedBalanceTopupAmount(product.amount_cny)
+        isSupportedBalanceTopupAmount(product.amount_cny) &&
+        shouldShowManualNewcomerProduct(product.amount_cny, newcomerOfferState.value)
     )
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.amount_cny - b.amount_cny)
 )
@@ -430,9 +439,30 @@ function selectTopupChannel(channel: TopupChannel) {
   }
 }
 
-function openCardShopProduct(product: CardShopProduct) {
-  if (!product.url) return
-  window.location.assign(product.url)
+async function openCardShopProduct(product: CardShopProduct) {
+  if (!product.url || openingCardShop.value) return
+  if (!isNewcomerBalanceTopup(product.amount_cny)) {
+    window.location.assign(product.url)
+    return
+  }
+  openingCardShop.value = true
+  try {
+    const purchaseURL = await requestNewcomerPurchaseURL()
+    if (!purchaseURL) {
+      syncTopupChannelWithSettings()
+      if (newcomerOfferState.value === 'claimed') {
+        appStore.showInfo(t('topup.newcomerCardClaimed'))
+      } else {
+        appStore.showError(t('topup.newcomerCardStatusUnavailable'))
+      }
+      return
+    }
+    window.location.assign(purchaseURL)
+  } catch (error) {
+    appStore.showError(extractApiErrorMessage(error, t('topup.newcomerCardStatusUnavailable')))
+  } finally {
+    openingCardShop.value = false
+  }
 }
 
 async function goRedeem() {
@@ -588,7 +618,10 @@ watch(() => props.modelValue, async (val) => {
     reset()
     return
   }
-  await appStore.fetchPublicSettings()
+  await Promise.all([
+    appStore.fetchPublicSettings(),
+    refreshNewcomerOffer(),
+  ])
   syncTopupChannelWithSettings()
 })
 

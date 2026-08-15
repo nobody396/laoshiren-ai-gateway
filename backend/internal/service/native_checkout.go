@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math"
 	"net/mail"
+	"net/url"
 	"sort"
 	"strings"
 	"sync"
@@ -110,9 +111,16 @@ type NativeCheckoutOfferView struct {
 	Order               *NativeCheckoutOrder
 }
 
+type NativeCheckoutManualOfferStatus struct {
+	Code        string
+	Claimed     bool
+	PurchaseURL string
+}
+
 type NativeCheckoutRepository interface {
 	ListVisibleOffers(ctx context.Context, userID int64) ([]NativeCheckoutOffer, error)
 	GetVisibleOffer(ctx context.Context, userID int64, code string) (*NativeCheckoutOffer, error)
+	GetManualRedeemOffer(ctx context.Context, code string) (*NativeCheckoutOffer, error)
 	GetLatestOrderForOffer(ctx context.Context, userID int64, offerCode string) (*NativeCheckoutOrder, error)
 	HasRedeemedOffer(ctx context.Context, userID int64, offerCode string) (bool, error)
 	ReserveOrder(ctx context.Context, order *NativeCheckoutOrder) (*NativeCheckoutOrder, bool, error)
@@ -256,6 +264,49 @@ func (s *NativeCheckoutService) ListOffers(ctx context.Context, userID int64) ([
 		})
 	}
 	return views, nil
+}
+
+func (s *NativeCheckoutService) GetManualOfferStatus(ctx context.Context, userID int64, offerCode string, includePurchaseURL bool) (*NativeCheckoutManualOfferStatus, error) {
+	offerCode = strings.TrimSpace(offerCode)
+	if offerCode == "" {
+		return nil, infraerrors.BadRequest("NATIVE_CHECKOUT_OFFER_REQUIRED", "checkout offer is required")
+	}
+	offer, err := s.repo.GetManualRedeemOffer(ctx, offerCode)
+	if err != nil {
+		if errors.Is(err, ErrNativeCheckoutOfferNotFound) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("get manual checkout offer: %w", err)
+	}
+	claimed := false
+	if offer.OncePerUser {
+		claimed, err = s.repo.HasRedeemedOffer(ctx, userID, offer.Code)
+		if err != nil {
+			return nil, fmt.Errorf("check manual checkout entitlement: %w", err)
+		}
+	}
+	status := &NativeCheckoutManualOfferStatus{Code: offer.Code, Claimed: claimed}
+	if includePurchaseURL && !claimed {
+		status.PurchaseURL, err = manualCheckoutPurchaseURL(offer)
+		if err != nil {
+			return nil, ErrNativeCheckoutUnavailable.WithCause(err)
+		}
+	}
+	return status, nil
+}
+
+func manualCheckoutPurchaseURL(offer *NativeCheckoutOffer) (string, error) {
+	if offer == nil {
+		return "", errors.New("missing manual checkout offer")
+	}
+	if !strings.EqualFold(strings.TrimSpace(offer.Provider), "ldxp") {
+		return "", errors.New("unsupported manual checkout provider")
+	}
+	goodsKey := strings.TrimSpace(offer.ProviderGoodsKey)
+	if goodsKey == "" {
+		return "", errors.New("missing manual checkout goods key")
+	}
+	return "https://pay.ldxp.cn/item/" + url.PathEscape(goodsKey), nil
 }
 
 func (s *NativeCheckoutService) CreateOrder(ctx context.Context, userID int64, offerCode string) (*NativeCheckoutOrder, error) {

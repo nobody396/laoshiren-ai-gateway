@@ -46,6 +46,12 @@ type nativeCheckoutOfferResponse struct {
 	Order               *nativeCheckoutOrderResponse `json:"order,omitempty"`
 }
 
+type nativeCheckoutManualOfferStatusResponse struct {
+	Code        string `json:"code"`
+	Claimed     bool   `json:"claimed"`
+	PurchaseURL string `json:"purchase_url,omitempty"`
+}
+
 func (h *NativeCheckoutHandler) ListOffers(c *gin.Context) {
 	userID, ok := nativeCheckoutUserID(c)
 	if !ok {
@@ -75,6 +81,31 @@ func (h *NativeCheckoutHandler) ListOffers(c *gin.Context) {
 		result = append(result, item)
 	}
 	response.Success(c, result)
+}
+
+func (h *NativeCheckoutHandler) GetManualOfferStatus(c *gin.Context) {
+	h.getManualOfferStatus(c, false)
+}
+
+func (h *NativeCheckoutHandler) GetManualOfferPurchase(c *gin.Context) {
+	h.getManualOfferStatus(c, true)
+}
+
+func (h *NativeCheckoutHandler) getManualOfferStatus(c *gin.Context, includePurchaseURL bool) {
+	userID, ok := nativeCheckoutUserID(c)
+	if !ok {
+		return
+	}
+	status, err := h.service.GetManualOfferStatus(c.Request.Context(), userID, c.Param("offerCode"), includePurchaseURL)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, nativeCheckoutManualOfferStatusResponse{
+		Code:        status.Code,
+		Claimed:     status.Claimed,
+		PurchaseURL: status.PurchaseURL,
+	})
 }
 
 func (h *NativeCheckoutHandler) CreateOrder(c *gin.Context) {

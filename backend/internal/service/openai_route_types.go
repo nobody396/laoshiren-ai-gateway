@@ -247,6 +247,7 @@ type OpenAIRouteCandidate struct {
 
 	RateMultiplier float64
 	Priority       int
+	RouteVariant   bool
 
 	CircuitState         OpenAIRouteCircuitState
 	ProviderCircuitState OpenAIRouteCircuitState
@@ -286,11 +287,13 @@ const (
 	OpenAIRouteExcludedAccountCap   OpenAIRouteExclusionReason = "account_share_cap"
 	OpenAIRouteExcludedProviderCap  OpenAIRouteExclusionReason = "provider_share_cap"
 	OpenAIRouteExcludedCost         OpenAIRouteExclusionReason = "cost_budget"
+	OpenAIRouteExcludedBenchmark    OpenAIRouteExclusionReason = "insufficient_benchmark_evidence"
 )
 
 type OpenAIRouteExclusion struct {
-	AccountID int64
-	Reason    OpenAIRouteExclusionReason
+	AccountID        int64
+	RouteFingerprint string `json:"route_fingerprint,omitempty"`
+	Reason           OpenAIRouteExclusionReason
 }
 
 type OpenAIRouteWeightedCandidate struct {

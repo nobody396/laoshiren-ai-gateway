@@ -25,13 +25,26 @@ const openAIRouteObservationCheckpointQueryTimeout = 15 * time.Millisecond
 type openAIRouteObservationStore struct {
 	cache      service.OpenAIRouteObservationStore
 	checkpoint *openAIRouteObservationCheckpointRepository
+	benchmark  *openAIRouteBenchmarkObservationRepository
 }
 
 func NewOpenAIRouteObservationStore(rdbStore service.OpenAIRouteObservationStore, db *sql.DB) service.OpenAIRouteObservationStore {
 	return &openAIRouteObservationStore{
 		cache:      rdbStore,
 		checkpoint: NewOpenAIRouteObservationCheckpointRepository(db),
+		benchmark:  NewOpenAIRouteBenchmarkObservationRepository(db),
 	}
+}
+
+func (s *openAIRouteObservationStore) GetBenchmarkBatch(
+	ctx context.Context,
+	keys []service.OpenAIRouteKey,
+	now time.Time,
+) (map[string]service.OpenAIRouteBenchmarkObservationProfile, error) {
+	if s == nil || s.benchmark == nil {
+		return nil, service.ErrOpenAIRouteNoCandidate
+	}
+	return s.benchmark.GetBenchmarkBatch(ctx, keys, now)
 }
 
 func (s *openAIRouteObservationStore) Check(ctx context.Context) error {

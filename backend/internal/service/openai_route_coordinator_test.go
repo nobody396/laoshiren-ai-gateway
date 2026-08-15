@@ -61,10 +61,7 @@ func TestAllocateAndReserveOpenAIRoute_TriesNextRankedCandidateAfterAtomicRace(t
 	require.True(t, reservation.Allowed)
 	require.Len(t, store.reserveCalls, 2)
 	require.Equal(t, store.reserveCalls[1].RateMultiplier, plan.Selected.Candidate.RateMultiplier)
-	require.Contains(t, plan.Excluded, OpenAIRouteExclusion{
-		AccountID: plan.Ranked[0].Candidate.Key.AccountID,
-		Reason:    OpenAIRouteExcludedCost,
-	})
+	require.Contains(t, plan.Excluded, newOpenAIRouteExclusion(plan.Ranked[0].Candidate, OpenAIRouteExcludedCost))
 }
 
 func TestAllocateAndReserveOpenAIRoute_UsesEverySharedBudgetWindowBeforeReserve(t *testing.T) {

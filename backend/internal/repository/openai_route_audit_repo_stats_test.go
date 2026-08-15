@@ -59,6 +59,12 @@ func TestOpenAIRouteDecisionRepositoryStatsScansPromotionEvidence(t *testing.T) 
 		WillReturnRows(sqlmock.NewRows([]string{"account_id", "rate", "count"}).
 			AddRow(int64(23), 0.15, int64(120)).
 			AddRow(int64(28), 0.30, int64(80)))
+	mock.ExpectQuery(`(?s)jsonb_array_elements\(d\.snapshot->'candidates'\).*GROUP BY account_id, endpoint_hash, failure_domain, route_variant`).
+		WithArgs(args...).
+		WillReturnRows(sqlmock.NewRows([]string{"account_id", "endpoint_hash", "failure_domain", "route_variant", "count"}).
+			AddRow(int64(23), "hk-hash", "pomelo-hk", false, int64(100)).
+			AddRow(int64(23), "jp-hash", "pomelo-hk", true, int64(20)).
+			AddRow(int64(28), "more-hash", "morecode", false, int64(80)))
 	mock.ExpectQuery(`(?s)jsonb_array_elements\(d\.snapshot->'candidates'\).*GROUP BY provider_key`).
 		WithArgs(args...).
 		WillReturnRows(sqlmock.NewRows([]string{"provider_key", "count"}).
@@ -82,5 +88,9 @@ func TestOpenAIRouteDecisionRepositoryStatsScansPromotionEvidence(t *testing.T) 
 	require.Len(t, stats.SelectedProviders, 2)
 	require.Equal(t, "pomelo-hk", stats.SelectedProviders[0].ProviderKey)
 	require.InDelta(t, 60, stats.SelectedProviders[0].SelectedPercent, 1e-12)
+	require.Len(t, stats.SelectedRoutes, 3)
+	require.Equal(t, "hk-hash", stats.SelectedRoutes[0].EndpointHash)
+	require.False(t, stats.SelectedRoutes[0].RouteVariant)
+	require.InDelta(t, 50, stats.SelectedRoutes[0].SelectedPercent, 1e-12)
 	require.NoError(t, mock.ExpectationsWereMet())
 }

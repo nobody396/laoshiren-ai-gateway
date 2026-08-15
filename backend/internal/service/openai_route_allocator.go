@@ -66,27 +66,27 @@ func BuildOpenAIRouteAllocationPlan(req OpenAIRouteAllocationRequest) (OpenAIRou
 	healthEligibleCostRejected := 0
 	for _, candidate := range req.Candidates {
 		if !validOpenAIRouteCandidate(candidate) {
-			plan.Excluded = append(plan.Excluded, OpenAIRouteExclusion{AccountID: candidate.Key.AccountID, Reason: OpenAIRouteExcludedInvalid})
+			plan.Excluded = append(plan.Excluded, newOpenAIRouteExclusion(candidate, OpenAIRouteExcludedInvalid))
 			continue
 		}
 		candidate.CircuitState = normalizeOpenAIRouteCircuitState(candidate.CircuitState)
 		candidate.ProviderCircuitState = normalizeOpenAIRouteProviderCircuitState(candidate.ProviderCircuitState)
 		if candidate.CircuitState == OpenAIRouteCircuitOpen || candidate.CircuitState == OpenAIRouteCircuitDisabled {
-			plan.Excluded = append(plan.Excluded, OpenAIRouteExclusion{AccountID: candidate.Key.AccountID, Reason: OpenAIRouteExcludedCircuitOpen})
+			plan.Excluded = append(plan.Excluded, newOpenAIRouteExclusion(candidate, OpenAIRouteExcludedCircuitOpen))
 			continue
 		}
 		if candidate.ProviderCircuitState == OpenAIRouteCircuitOpen || candidate.ProviderCircuitState == OpenAIRouteCircuitDisabled {
-			plan.Excluded = append(plan.Excluded, OpenAIRouteExclusion{AccountID: candidate.Key.AccountID, Reason: OpenAIRouteExcludedProviderOpen})
+			plan.Excluded = append(plan.Excluded, newOpenAIRouteExclusion(candidate, OpenAIRouteExcludedProviderOpen))
 			continue
 		}
 		if (candidate.CircuitState == OpenAIRouteCircuitHalfOpen || candidate.ProviderCircuitState == OpenAIRouteCircuitHalfOpen) && !candidate.HalfOpenPermit {
-			plan.Excluded = append(plan.Excluded, OpenAIRouteExclusion{AccountID: candidate.Key.AccountID, Reason: OpenAIRouteExcludedHalfOpen})
+			plan.Excluded = append(plan.Excluded, newOpenAIRouteExclusion(candidate, OpenAIRouteExcludedHalfOpen))
 			continue
 		}
 		state := OpenAIRouteHealthState{State: candidate.CircuitState, RecoveryStep: candidate.RecoveryStep}
 		shareCap := state.TrafficShareCap(policy)
 		if shareCap < 1 && candidate.CurrentAccountShare+1e-12 >= shareCap {
-			plan.Excluded = append(plan.Excluded, OpenAIRouteExclusion{AccountID: candidate.Key.AccountID, Reason: OpenAIRouteExcludedRecoveryCap})
+			plan.Excluded = append(plan.Excluded, newOpenAIRouteExclusion(candidate, OpenAIRouteExcludedRecoveryCap))
 			continue
 		}
 
@@ -109,7 +109,7 @@ func BuildOpenAIRouteAllocationPlan(req OpenAIRouteAllocationRequest) (OpenAIRou
 		}
 		if !preview.Allowed {
 			healthEligibleCostRejected++
-			plan.Excluded = append(plan.Excluded, OpenAIRouteExclusion{AccountID: candidate.Key.AccountID, Reason: OpenAIRouteExcludedCost})
+			plan.Excluded = append(plan.Excluded, newOpenAIRouteExclusion(candidate, OpenAIRouteExcludedCost))
 			continue
 		}
 		feasible = append(feasible, openAIRouteFeasibleCandidate{
@@ -260,7 +260,7 @@ func applyOpenAIRouteAccountShareCap(candidates []openAIRouteFeasibleCandidate, 
 	out := make([]openAIRouteFeasibleCandidate, 0, len(candidates))
 	for _, item := range candidates {
 		if item.candidate.CurrentAccountShare >= maxShare {
-			plan.Excluded = append(plan.Excluded, OpenAIRouteExclusion{AccountID: item.candidate.Key.AccountID, Reason: OpenAIRouteExcludedAccountCap})
+			plan.Excluded = append(plan.Excluded, newOpenAIRouteExclusion(item.candidate, OpenAIRouteExcludedAccountCap))
 			continue
 		}
 		out = append(out, item)
@@ -290,7 +290,7 @@ func applyOpenAIRouteProviderShareCap(candidates []openAIRouteFeasibleCandidate,
 	for _, item := range candidates {
 		provider := openAIRouteProviderKey(item.candidate)
 		if _, ok := underCapProviders[provider]; !ok {
-			plan.Excluded = append(plan.Excluded, OpenAIRouteExclusion{AccountID: item.candidate.Key.AccountID, Reason: OpenAIRouteExcludedProviderCap})
+			plan.Excluded = append(plan.Excluded, newOpenAIRouteExclusion(item.candidate, OpenAIRouteExcludedProviderCap))
 			continue
 		}
 		out = append(out, item)
@@ -303,6 +303,14 @@ func openAIRouteProviderKey(candidate OpenAIRouteCandidate) string {
 		return candidate.Key.FailureDomain
 	}
 	return fmt.Sprintf("account:%d", candidate.Key.AccountID)
+}
+
+func newOpenAIRouteExclusion(candidate OpenAIRouteCandidate, reason OpenAIRouteExclusionReason) OpenAIRouteExclusion {
+	return OpenAIRouteExclusion{
+		AccountID:        candidate.Key.AccountID,
+		RouteFingerprint: OpenAIRouteObservationFingerprint(candidate.Key),
+		Reason:           reason,
+	}
 }
 
 func openAIRouteHealthFactor(candidate OpenAIRouteCandidate, policy OpenAIRoutePolicy) float64 {
@@ -377,7 +385,10 @@ func openAIRouteWeightedOrder(candidates []OpenAIRouteWeightedCandidate, seed ui
 	// Stable input order prevents account snapshot order from becoming hidden
 	// entropy when all request dimensions are otherwise equal.
 	sort.SliceStable(pool, func(i, j int) bool {
-		return pool[i].Candidate.Key.AccountID < pool[j].Candidate.Key.AccountID
+		if pool[i].Candidate.Key.AccountID != pool[j].Candidate.Key.AccountID {
+			return pool[i].Candidate.Key.AccountID < pool[j].Candidate.Key.AccountID
+		}
+		return pool[i].Candidate.Key.EndpointHash < pool[j].Candidate.Key.EndpointHash
 	})
 	ordered := make([]OpenAIRouteWeightedCandidate, 0, len(pool))
 	for len(pool) > 0 {

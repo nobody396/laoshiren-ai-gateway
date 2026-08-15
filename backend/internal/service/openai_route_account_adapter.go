@@ -46,6 +46,25 @@ func OpenAIRouteEndpointHash(endpoint string) string {
 	return hex.EncodeToString(sum[:8])
 }
 
+// OpenAIRouteEndpointForBaseURL builds the same concrete route identity used
+// by the gateway without mutating an Account. Benchmark evidence stores only a
+// Base URL, so both the repository bridge and Shadow route variants must use
+// this helper or their endpoint hashes would silently diverge.
+func OpenAIRouteEndpointForBaseURL(baseURL, requestedEndpoint string) string {
+	baseURL = strings.TrimSpace(baseURL)
+	if baseURL == "" {
+		return ""
+	}
+	requestedEndpoint = strings.TrimSpace(requestedEndpoint)
+	if requestedEndpoint == "" {
+		requestedEndpoint = "/v1/responses"
+	}
+	if normalized := normalizeOpenAIRouteEndpoint(requestedEndpoint); strings.Contains(normalized, "://") {
+		return normalized
+	}
+	return buildOpenAIEndpointURL(baseURL, requestedEndpoint)
+}
+
 // normalizeOpenAIRouteEndpoint keeps route identity stable while ensuring
 // credentials and volatile query parameters can never affect or leak through
 // the fingerprint. Host and scheme are case-insensitive; path case is not.

@@ -323,7 +323,7 @@ const quickSteps = computed(() => {
   if (detectedOS.value === 'windows') {
     return [
       { title: '生成并复制命令', description: '点击上方按钮', keys: [] as string[] },
-      { title: '打开 PowerShell', description: '输入“PowerShell”并回车', keys: ['Win', 'S'] },
+      { title: '打开 PowerShell', description: '输入“PowerShell”并回车', keys: ['Win', 'R'] },
       { title: '粘贴并运行', description: '然后按 Enter', keys: ['Ctrl', 'V'] }
     ]
   }

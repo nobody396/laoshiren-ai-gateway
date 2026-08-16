@@ -193,12 +193,13 @@ URL 没有真实用户反事实成功率；任何 Canary 动态切换必须在�
 `manual_approval_required=true`、`enforce_available=false`。权威上游账单一致性、
 相对 Legacy 的最终用户错误率、恢复率、P95/P99 延迟、文本粘性/图片无粘性以及
 老板授权仍是人工门禁；该接口不会写设置、调度账号或改变任何真实流量。
-其中决策、结果关联和集中度严格按策略切片统计；当前审计/被动采集健康是当前实例
-自启动以来的全局安全信号，响应以
-`health_sampling_scope=process_instance_since_start_global` 明确标识。服务端要求两类
-完整率计数器都在 `window_start` 之前启动；观察期内任何实例重启都会阻止当前切片
-晋级，不能用重启后重新归零的 100% 完整率让坏切片通过。多实例部署仍需逐实例核验，
-在持久化集群级计数器落地前不得把单实例健康响应当成集群完整率。
+其中决策、结果关联和集中度严格按策略切片统计。审计/被动采集健康由 PostgreSQL
+持久进程 epoch 证明，并以
+`health_sampling_scope=durable_process_epochs_overlap_conservative` 标识。正常发布通过
+清洁封存与新 epoch 衔接保留连续性；未清洁 epoch、超过 90 秒的空档或历史失败都
+阻止晋级。实验 T0 起的 `stats` 永久保留用于分析；若持久 epoch 在实验中途首次
+上线，自动门只使用 `promotion_evidence_start` 之后的 `promotion_evidence_stats`，
+既不删除旧数据，也不把无法追溯的迁移前完整率冒充为 100%。
 两类存储探针从计数器启动后还必须保持零失败；后续探针恢复成功不能抹掉此前可能
 跳过 Shadow 评估或被动观测的证据空档。
 

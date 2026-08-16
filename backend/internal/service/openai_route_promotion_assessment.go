@@ -54,24 +54,36 @@ type OpenAIRoutePromotionReviewSchedule struct {
 // canary after the remaining business and user-regression checks plus explicit
 // owner approval. It never changes a policy, account or traffic allocation.
 type OpenAIRoutePromotionAssessment struct {
-	AssessedAt             time.Time                            `json:"assessed_at"`
-	WindowStart            time.Time                            `json:"window_start"`
-	WindowEnd              time.Time                            `json:"window_end"`
-	WindowHours            float64                              `json:"window_hours"`
-	ObservedSpanHours      float64                              `json:"observed_span_hours"`
-	GroupID                int64                                `json:"group_id"`
-	Model                  string                               `json:"model"`
-	RequestClass           OpenAIRouteRequestClass              `json:"request_class"`
-	PolicyVersion          int                                  `json:"policy_version"`
-	PolicyMode             OpenAIRoutePolicyMode                `json:"policy_mode"`
-	ActivationID           string                               `json:"activation_id"`
-	ShadowStartedAt        time.Time                            `json:"shadow_started_at,omitempty"`
-	Status                 string                               `json:"status"`
-	AutomatedEvidenceReady bool                                 `json:"automated_evidence_ready"`
-	EligibleNextStage      string                               `json:"eligible_next_stage"`
-	ManualApprovalRequired bool                                 `json:"manual_approval_required"`
-	EnforceAvailable       bool                                 `json:"enforce_available"`
+	AssessedAt time.Time `json:"assessed_at"`
+	// WindowStart/WindowEnd preserve the immutable activation lineage requested
+	// by the operator. Historical observations in this window remain useful for
+	// analysis even when loss-proof process epochs were introduced later.
+	WindowStart time.Time `json:"window_start"`
+	WindowEnd   time.Time `json:"window_end"`
+	WindowHours float64   `json:"window_hours"`
+	// PromotionEvidenceStart is the first instant covered by both durable audit
+	// and observation epochs, bounded below by the activation T0. Promotion
+	// gates use this qualified window instead of discarding older observations or
+	// pretending that pre-epoch counters were durable.
+	PromotionEvidenceStart time.Time               `json:"promotion_evidence_start"`
+	PromotionEvidenceHours float64                 `json:"promotion_evidence_hours"`
+	ObservedSpanHours      float64                 `json:"observed_span_hours"`
+	GroupID                int64                   `json:"group_id"`
+	Model                  string                  `json:"model"`
+	RequestClass           OpenAIRouteRequestClass `json:"request_class"`
+	PolicyVersion          int                     `json:"policy_version"`
+	PolicyMode             OpenAIRoutePolicyMode   `json:"policy_mode"`
+	ActivationID           string                  `json:"activation_id"`
+	ShadowStartedAt        time.Time               `json:"shadow_started_at,omitempty"`
+	Status                 string                  `json:"status"`
+	AutomatedEvidenceReady bool                    `json:"automated_evidence_ready"`
+	EligibleNextStage      string                  `json:"eligible_next_stage"`
+	ManualApprovalRequired bool                    `json:"manual_approval_required"`
+	EnforceAvailable       bool                    `json:"enforce_available"`
+	// Stats is the complete activation-lineage view. PromotionEvidenceStats is
+	// the strict loss-proof subset used by every automated promotion gate.
 	Stats                  OpenAIRouteShadowDecisionStats       `json:"stats"`
+	PromotionEvidenceStats OpenAIRouteShadowDecisionStats       `json:"promotion_evidence_stats"`
 	Health                 OpenAIRouteAuditHealth               `json:"health"`
 	HealthSamplingScope    string                               `json:"health_sampling_scope"`
 	ReviewSchedule         OpenAIRoutePromotionReviewSchedule   `json:"review_schedule"`
@@ -99,12 +111,33 @@ func (s *OpsService) AssessOpenAIRouteShadowPromotion(
 	if err := ValidateOpenAIRoutePromotionFilter(filter); err != nil {
 		return nil, err
 	}
-	stats, err := s.openAIRouteAuditService.Stats(ctx, filter)
+	lineageHealth := s.getOpenAIRouteAuditHealthForWindow(ctx, filter.StartTime.UTC(), filter.EndTime.UTC())
+	evidenceStart := deriveOpenAIRoutePromotionEvidenceStart(filter.StartTime.UTC(), lineageHealth)
+	evidenceFilter := cloneOpenAIRoutePromotionFilterWithStart(filter, evidenceStart)
+	health := lineageHealth
+	if evidenceStart.After(filter.StartTime.UTC()) {
+		health = s.getOpenAIRouteAuditHealthForWindow(ctx, evidenceStart, filter.EndTime.UTC())
+	}
+	evidenceStats, err := s.openAIRouteAuditService.Stats(ctx, evidenceFilter)
 	if err != nil {
 		return nil, err
 	}
-	health := s.getOpenAIRouteAuditHealthForWindow(ctx, filter.StartTime.UTC(), filter.EndTime.UTC())
-	return NewOpenAIRoutePromotionAssessmentEngine().Assess(filter, stats, health), nil
+	lineageStats := evidenceStats
+	if evidenceStart.After(filter.StartTime.UTC()) {
+		// Query the wider lineage window last so its totals cannot lag behind the
+		// qualified subset merely because a decision landed between two reads.
+		lineageStats, err = s.openAIRouteAuditService.Stats(ctx, filter)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return NewOpenAIRoutePromotionAssessmentEngine().AssessWithLineage(
+		filter,
+		lineageStats,
+		evidenceFilter,
+		evidenceStats,
+		health,
+	), nil
 }
 
 func (*OpenAIRoutePromotionAssessmentEngine) Assess(
@@ -112,7 +145,53 @@ func (*OpenAIRoutePromotionAssessmentEngine) Assess(
 	stats *OpenAIRouteShadowDecisionStats,
 	health OpenAIRouteAuditHealth,
 ) *OpenAIRoutePromotionAssessment {
-	return buildOpenAIRoutePromotionAssessment(filter, stats, health)
+	return buildOpenAIRoutePromotionAssessmentWithLineage(filter, stats, filter, stats, health)
+}
+
+func (*OpenAIRoutePromotionAssessmentEngine) AssessWithLineage(
+	lineageFilter *OpenAIRouteShadowDecisionFilter,
+	lineageStats *OpenAIRouteShadowDecisionStats,
+	evidenceFilter *OpenAIRouteShadowDecisionFilter,
+	evidenceStats *OpenAIRouteShadowDecisionStats,
+	health OpenAIRouteAuditHealth,
+) *OpenAIRoutePromotionAssessment {
+	return buildOpenAIRoutePromotionAssessmentWithLineage(
+		lineageFilter,
+		lineageStats,
+		evidenceFilter,
+		evidenceStats,
+		health,
+	)
+}
+
+func deriveOpenAIRoutePromotionEvidenceStart(
+	activationStart time.Time,
+	health OpenAIRouteAuditHealth,
+) time.Time {
+	start := activationStart.UTC()
+	if health.DurableEvidence == nil || !health.DurableEvidence.Available {
+		return start
+	}
+	for _, candidate := range []time.Time{
+		health.DurableEvidence.Audit.CounterStartedAt,
+		health.DurableEvidence.Observation.CounterStartedAt,
+	} {
+		candidate = candidate.UTC()
+		if !candidate.IsZero() && candidate.After(start) {
+			start = candidate
+		}
+	}
+	return start
+}
+
+func cloneOpenAIRoutePromotionFilterWithStart(
+	filter *OpenAIRouteShadowDecisionFilter,
+	start time.Time,
+) *OpenAIRouteShadowDecisionFilter {
+	cloned := *filter
+	start = start.UTC()
+	cloned.StartTime = &start
+	return &cloned
 }
 
 func ValidateOpenAIRoutePromotionFilter(filter *OpenAIRouteShadowDecisionFilter) error {
@@ -152,17 +231,32 @@ func buildOpenAIRoutePromotionAssessment(
 	stats *OpenAIRouteShadowDecisionStats,
 	health OpenAIRouteAuditHealth,
 ) *OpenAIRoutePromotionAssessment {
-	if stats == nil {
-		stats = &OpenAIRouteShadowDecisionStats{}
+	return buildOpenAIRoutePromotionAssessmentWithLineage(filter, stats, filter, stats, health)
+}
+
+func buildOpenAIRoutePromotionAssessmentWithLineage(
+	lineageFilter *OpenAIRouteShadowDecisionFilter,
+	lineageStats *OpenAIRouteShadowDecisionStats,
+	evidenceFilter *OpenAIRouteShadowDecisionFilter,
+	evidenceStats *OpenAIRouteShadowDecisionStats,
+	health OpenAIRouteAuditHealth,
+) *OpenAIRoutePromotionAssessment {
+	if lineageStats == nil {
+		lineageStats = &OpenAIRouteShadowDecisionStats{}
 	}
-	start := filter.StartTime.UTC()
-	end := filter.EndTime.UTC()
-	window := end.Sub(start)
+	if evidenceStats == nil {
+		evidenceStats = &OpenAIRouteShadowDecisionStats{}
+	}
+	lineageStart := lineageFilter.StartTime.UTC()
+	end := lineageFilter.EndTime.UTC()
+	lineageWindow := end.Sub(lineageStart)
+	evidenceStart := evidenceFilter.StartTime.UTC()
+	evidenceWindow := end.Sub(evidenceStart)
 	observedSpan := time.Duration(0)
-	if !stats.FirstDecisionAt.IsZero() && !stats.LastDecisionAt.IsZero() && stats.LastDecisionAt.After(stats.FirstDecisionAt) {
-		observedSpan = stats.LastDecisionAt.Sub(stats.FirstDecisionAt)
+	if !evidenceStats.FirstDecisionAt.IsZero() && !evidenceStats.LastDecisionAt.IsZero() && evidenceStats.LastDecisionAt.After(evidenceStats.FirstDecisionAt) {
+		observedSpan = evidenceStats.LastDecisionAt.Sub(evidenceStats.FirstDecisionAt)
 	}
-	evidenceStart := stats.ShadowStartedAt.UTC()
+	activationStart := lineageStats.ShadowStartedAt.UTC()
 	reviewSchedule := OpenAIRoutePromotionReviewSchedule{
 		EvidenceStartAt:      evidenceStart,
 		RetryIntervalHours:   openAIRoutePromotionRetryInterval.Hours(),
@@ -175,34 +269,37 @@ func buildOpenAIRoutePromotionAssessment(
 		reviewSchedule.PrimaryAssessmentAt = evidenceStart.Add(openAIRoutePromotionMinimumWindow)
 	}
 
-	evaluatedRatio := safeOpenAIRouteRatio(stats.Evaluated, stats.Total)
-	linkedEvaluated := stats.EvaluatedLinkedSuccessfulUsage + stats.EvaluatedLinkedLegacyFailure
-	linkageRatio := safeOpenAIRouteRatio(linkedEvaluated, stats.Evaluated)
-	emergencyRatio := safeOpenAIRouteRatio(stats.Emergency, stats.Evaluated)
-	maxAccountShare := maxOpenAIRouteSelectedAccountShare(stats.SelectedAccounts)
-	maxProviderShare := maxOpenAIRouteSelectedProviderShare(stats.SelectedProviders)
-	selectedAccountTotal := sumOpenAIRouteSelectedAccountCount(stats.SelectedAccounts)
-	selectedProviderTotal := sumOpenAIRouteSelectedProviderCount(stats.SelectedProviders)
-	selectedRouteTotal := sumOpenAIRouteSelectedRouteCount(stats.SelectedRoutes)
+	evaluatedRatio := safeOpenAIRouteRatio(evidenceStats.Evaluated, evidenceStats.Total)
+	linkedEvaluated := evidenceStats.EvaluatedLinkedSuccessfulUsage + evidenceStats.EvaluatedLinkedLegacyFailure
+	linkageRatio := safeOpenAIRouteRatio(linkedEvaluated, evidenceStats.Evaluated)
+	emergencyRatio := safeOpenAIRouteRatio(evidenceStats.Emergency, evidenceStats.Evaluated)
+	maxAccountShare := maxOpenAIRouteSelectedAccountShare(evidenceStats.SelectedAccounts)
+	maxProviderShare := maxOpenAIRouteSelectedProviderShare(evidenceStats.SelectedProviders)
+	selectedAccountTotal := sumOpenAIRouteSelectedAccountCount(evidenceStats.SelectedAccounts)
+	selectedProviderTotal := sumOpenAIRouteSelectedProviderCount(evidenceStats.SelectedProviders)
+	selectedRouteTotal := sumOpenAIRouteSelectedRouteCount(evidenceStats.SelectedRoutes)
 
 	assessment := &OpenAIRoutePromotionAssessment{
 		AssessedAt:             time.Now().UTC(),
-		WindowStart:            start,
+		WindowStart:            lineageStart,
 		WindowEnd:              end,
-		WindowHours:            window.Hours(),
+		WindowHours:            lineageWindow.Hours(),
+		PromotionEvidenceStart: evidenceStart,
+		PromotionEvidenceHours: evidenceWindow.Hours(),
 		ObservedSpanHours:      observedSpan.Hours(),
-		GroupID:                *filter.GroupID,
-		Model:                  strings.TrimSpace(filter.Model),
-		RequestClass:           filter.RequestClass,
-		PolicyVersion:          *filter.PolicyVersion,
-		PolicyMode:             filter.PolicyMode,
-		ActivationID:           strings.TrimSpace(filter.ActivationID),
-		ShadowStartedAt:        evidenceStart,
+		GroupID:                *lineageFilter.GroupID,
+		Model:                  strings.TrimSpace(lineageFilter.Model),
+		RequestClass:           lineageFilter.RequestClass,
+		PolicyVersion:          *lineageFilter.PolicyVersion,
+		PolicyMode:             lineageFilter.PolicyMode,
+		ActivationID:           strings.TrimSpace(lineageFilter.ActivationID),
+		ShadowStartedAt:        activationStart,
 		Status:                 "continue_shadow",
 		EligibleNextStage:      "none",
 		ManualApprovalRequired: true,
 		EnforceAvailable:       false,
-		Stats:                  *stats,
+		Stats:                  *lineageStats,
+		PromotionEvidenceStats: *evidenceStats,
 		Health:                 health,
 		HealthSamplingScope:    "process_instance_since_start_global",
 		ReviewSchedule:         reviewSchedule,
@@ -221,44 +318,44 @@ func buildOpenAIRoutePromotionAssessment(
 		assessment.HealthSamplingScope = health.DurableEvidence.Scope
 	}
 
-	assessment.addGate("single_activation_identity", stats.ActivationIDVariants == 1,
-		"exactly 1 non-empty activation_id", fmt.Sprintf("%d", stats.ActivationIDVariants), 0,
+	assessment.addGate("single_activation_identity", lineageStats.ActivationIDVariants == 1,
+		"exactly 1 non-empty activation_id", fmt.Sprintf("%d", lineageStats.ActivationIDVariants), 0,
 		"Every separately authorized Shadow enablement cycle has a new immutable identity; historical and restarted evidence cannot be mixed.")
-	assessment.addGate("single_experiment_identity", stats.ExperimentIDVariants == 1,
-		"exactly 1 non-empty experiment_id", fmt.Sprintf("%d", stats.ExperimentIDVariants), 0,
+	assessment.addGate("single_experiment_identity", lineageStats.ExperimentIDVariants == 1,
+		"exactly 1 non-empty experiment_id", fmt.Sprintf("%d", lineageStats.ExperimentIDVariants), 0,
 		"Parallel experiments must be assessed independently rather than pooled into one apparent sample.")
-	assessment.addGate("single_variant_identity", stats.VariantIDVariants == 1,
-		"exactly 1 non-empty variant_id", fmt.Sprintf("%d", stats.VariantIDVariants), 0,
+	assessment.addGate("single_variant_identity", lineageStats.VariantIDVariants == 1,
+		"exactly 1 non-empty variant_id", fmt.Sprintf("%d", lineageStats.VariantIDVariants), 0,
 		"Each Shadow treatment has its own statistics and promotion decision.")
-	assessment.addGate("single_treatment_fingerprint", stats.TreatmentFingerprintVariants == 1,
-		"exactly 1 normalized treatment fingerprint", fmt.Sprintf("%d", stats.TreatmentFingerprintVariants), 0,
+	assessment.addGate("single_treatment_fingerprint", lineageStats.TreatmentFingerprintVariants == 1,
+		"exactly 1 normalized treatment fingerprint", fmt.Sprintf("%d", lineageStats.TreatmentFingerprintVariants), 0,
 		"Changing a policy body creates a new treatment instead of silently rewriting mature evidence.")
-	assessment.addGate("single_shadow_start", stats.ShadowStartedAtVariants == 1 && !evidenceStart.IsZero(),
-		"exactly 1 non-null shadow_started_at", fmt.Sprintf("variants=%d value=%s", stats.ShadowStartedAtVariants, formatOpenAIRouteEvidenceTimestamp(evidenceStart)), 0,
+	assessment.addGate("single_shadow_start", lineageStats.ShadowStartedAtVariants == 1 && !activationStart.IsZero(),
+		"exactly 1 non-null shadow_started_at", fmt.Sprintf("variants=%d value=%s", lineageStats.ShadowStartedAtVariants, formatOpenAIRouteEvidenceTimestamp(activationStart)), 0,
 		"All rows in one activation must carry the same durable T0.")
-	assessment.addGate("window_starts_at_activation", !evidenceStart.IsZero() && start.Equal(evidenceStart),
-		"window_start exactly equals persisted shadow_started_at", fmt.Sprintf("window=%s activation=%s", formatOpenAIRouteEvidenceTimestamp(start), formatOpenAIRouteEvidenceTimestamp(evidenceStart)), boolOpenAIRouteRatio(!evidenceStart.IsZero() && start.Equal(evidenceStart)),
+	assessment.addGate("window_starts_at_activation", !activationStart.IsZero() && lineageStart.Equal(activationStart),
+		"lineage window_start exactly equals persisted shadow_started_at", fmt.Sprintf("window=%s activation=%s", formatOpenAIRouteEvidenceTimestamp(lineageStart), formatOpenAIRouteEvidenceTimestamp(activationStart)), boolOpenAIRouteRatio(!activationStart.IsZero() && lineageStart.Equal(activationStart)),
 		"Assessment windows begin at the authorized T0; later windows cannot hide early evidence gaps and earlier policy cycles cannot be included.")
-	assessment.addGate("requested_window", window >= openAIRoutePromotionMinimumWindow,
-		">=72h", fmt.Sprintf("%.2fh", window.Hours()), window.Hours()/openAIRoutePromotionMinimumWindow.Hours(),
-		"The primary promotion review requires a full three-day Shadow window; 24 hours is only an early health checkpoint.")
-	minimumObservedSpan := window - openAIRoutePromotionMaxBoundaryGap
+	assessment.addGate("requested_window", evidenceWindow >= openAIRoutePromotionMinimumWindow,
+		">=72h of loss-proof promotion evidence", fmt.Sprintf("%.2fh", evidenceWindow.Hours()), evidenceWindow.Hours()/openAIRoutePromotionMinimumWindow.Hours(),
+		"Historical observations remain available for analysis, but the primary promotion review requires three full days covered by durable audit and observation epochs.")
+	minimumObservedSpan := evidenceWindow - openAIRoutePromotionMaxBoundaryGap
 	if floor := openAIRoutePromotionMinimumWindow - openAIRoutePromotionMaxBoundaryGap; minimumObservedSpan < floor {
 		minimumObservedSpan = floor
 	}
 	assessment.addGate("observed_span", observedSpan >= minimumObservedSpan,
-		fmt.Sprintf(">=%.2fh between first and last decision inside the %.2fh window", minimumObservedSpan.Hours(), window.Hours()), fmt.Sprintf("%.2fh", observedSpan.Hours()), observedSpan.Hours()/minimumObservedSpan.Hours(),
+		fmt.Sprintf(">=%.2fh between first and last decision inside the %.2fh promotion window", minimumObservedSpan.Hours(), evidenceWindow.Hours()), fmt.Sprintf("%.2fh", observedSpan.Hours()), observedSpan.Hours()/minimumObservedSpan.Hours(),
 		"The end-exclusive query permits at most one hour of total boundary gap, including for an extended retry window; a wide query containing only a short traffic burst is not continuous evidence.")
-	expectedHourBuckets := int64(math.Ceil(window.Hours()))
+	expectedHourBuckets := int64(math.Ceil(evidenceWindow.Hours()))
 	minimumCoveredHourBuckets := expectedHourBuckets - 1
 	if minimumCoveredHourBuckets < 1 {
 		minimumCoveredHourBuckets = 1
 	}
-	assessment.addGate("hourly_coverage", stats.CoveredHourBuckets >= minimumCoveredHourBuckets,
-		fmt.Sprintf(">=%d distinct one-hour buckets relative to window_start", minimumCoveredHourBuckets), fmt.Sprintf("%d", stats.CoveredHourBuckets), safeOpenAIRouteRatio(stats.CoveredHourBuckets, minimumCoveredHourBuckets),
+	assessment.addGate("hourly_coverage", evidenceStats.CoveredHourBuckets >= minimumCoveredHourBuckets,
+		fmt.Sprintf(">=%d distinct one-hour buckets relative to promotion_evidence_start", minimumCoveredHourBuckets), fmt.Sprintf("%d", evidenceStats.CoveredHourBuckets), safeOpenAIRouteRatio(evidenceStats.CoveredHourBuckets, minimumCoveredHourBuckets),
 		"Only evaluated decisions count toward hourly coverage. Two bursts near the window edges cannot stand in for continuous evidence across the intervening Beijing-time operating periods.")
-	assessment.addGate("evaluated_samples", stats.Evaluated >= openAIRoutePromotionMinimumDecisions,
-		">=200", fmt.Sprintf("%d", stats.Evaluated), float64(stats.Evaluated)/float64(openAIRoutePromotionMinimumDecisions),
+	assessment.addGate("evaluated_samples", evidenceStats.Evaluated >= openAIRoutePromotionMinimumDecisions,
+		">=200", fmt.Sprintf("%d", evidenceStats.Evaluated), float64(evidenceStats.Evaluated)/float64(openAIRoutePromotionMinimumDecisions),
 		"Only successfully evaluated Shadow decisions count as valid samples.")
 	assessment.addGate("evaluation_completeness", evaluatedRatio >= openAIRoutePromotionMinimumCompleteness,
 		">=99%", formatOpenAIRoutePercent(evaluatedRatio), evaluatedRatio,
@@ -266,8 +363,8 @@ func buildOpenAIRoutePromotionAssessment(
 	assessment.addGate("outcome_linkage", linkageRatio >= openAIRoutePromotionMinimumCompleteness,
 		">=99% of evaluated decisions", formatOpenAIRoutePercent(linkageRatio), linkageRatio,
 		"Ambiguous and unlinked outcomes are not counted as successful linkage.")
-	assessment.addGate("unambiguous_outcomes", stats.EvaluatedAmbiguousOutcome == 0,
-		"0", fmt.Sprintf("%d", stats.EvaluatedAmbiguousOutcome), 0,
+	assessment.addGate("unambiguous_outcomes", evidenceStats.EvaluatedAmbiguousOutcome == 0,
+		"0", fmt.Sprintf("%d", evidenceStats.EvaluatedAmbiguousOutcome), 0,
 		"A decision linked to both success and failure cannot prove its real outcome.")
 	assessment.addGate("audit_and_observation_health", health.Ready,
 		"ready=true", fmt.Sprintf("ready=%t", health.Ready), boolOpenAIRouteRatio(health.Ready),
@@ -293,13 +390,13 @@ func buildOpenAIRoutePromotionAssessment(
 		"Graceful deployments may create a new process epoch without restarting T0; stale unclean epochs, excessive gaps or lost counters remain blocking evidence.")
 	healthCountersCoverWindow := !health.AuditCounterStartedAt.IsZero() &&
 		!health.ObservationCounterStartedAt.IsZero() &&
-		!health.AuditCounterStartedAt.After(start) &&
-		!health.ObservationCounterStartedAt.After(start)
+		!health.AuditCounterStartedAt.After(evidenceStart) &&
+		!health.ObservationCounterStartedAt.After(evidenceStart)
 	assessment.addGate("health_counter_coverage", healthCountersCoverWindow,
-		"audit and observation counters started at or before window_start",
+		"audit and observation counters started at or before promotion_evidence_start",
 		fmt.Sprintf("audit=%s observation=%s", formatOpenAIRouteEvidenceTimestamp(health.AuditCounterStartedAt), formatOpenAIRouteEvidenceTimestamp(health.ObservationCounterStartedAt)),
 		boolOpenAIRouteRatio(healthCountersCoverWindow),
-		"Durable epoch counters must cover T0; a fresh process cannot reset prior loss history to a misleading 100%.")
+		"Durable epoch counters must cover the qualified promotion window; historical pre-epoch observations stay reusable but cannot certify collector completeness.")
 	storageCheckHistoryClean := health.StorageCheckFailed == 0 && health.ObservationStorageFailed == 0
 	assessment.addGate("storage_check_history", storageCheckHistoryClean,
 		"0 audit and observation storage-check failures since counter start",
@@ -318,35 +415,39 @@ func buildOpenAIRoutePromotionAssessment(
 	assessment.addGate("health_outcome_completeness", health.ObservationCollectorAvailable && health.ObservationOutcomeCompleteness >= openAIRoutePromotionMinimumCompleteness,
 		">=99% of expected route health outcomes", fmt.Sprintf("available=%t completeness=%s", health.ObservationCollectorAvailable, formatOpenAIRoutePercent(health.ObservationOutcomeCompleteness)), health.ObservationOutcomeCompleteness,
 		"A stored observation whose health transition was dropped can leave circuit state inconsistent with the learner evidence.")
-	assessment.addGate("single_policy_snapshot", stats.PolicySnapshotVariants == 1,
-		"exactly 1 normalized policy snapshot", fmt.Sprintf("%d", stats.PolicySnapshotVariants), 0,
+	assessment.addGate("single_policy_snapshot", lineageStats.PolicySnapshotVariants == 1 && evidenceStats.PolicySnapshotVariants == 1,
+		"exactly 1 normalized policy snapshot in both lineage and promotion windows", fmt.Sprintf("lineage=%d promotion=%d", lineageStats.PolicySnapshotVariants, evidenceStats.PolicySnapshotVariants), 0,
 		"Reusing a policy_version for multiple policy bodies contaminates the evidence slice.")
-	assessment.addGate("no_emergency_budget", stats.Emergency == 0,
-		"0 emergency decisions", fmt.Sprintf("%d (%s)", stats.Emergency, formatOpenAIRoutePercent(emergencyRatio)), emergencyRatio,
+	assessment.addGate("no_emergency_budget", evidenceStats.Emergency == 0,
+		"0 emergency decisions", fmt.Sprintf("%d (%s)", evidenceStats.Emergency, formatOpenAIRoutePercent(emergencyRatio)), emergencyRatio,
 		"A normal canary must not depend on emergency cost debt.")
 	selectionCompleteness := minOpenAIRouteRatio(
-		safeOpenAIRouteRatio(selectedAccountTotal, stats.Evaluated),
+		safeOpenAIRouteRatio(selectedAccountTotal, evidenceStats.Evaluated),
 		minOpenAIRouteRatio(
-			safeOpenAIRouteRatio(selectedProviderTotal, stats.Evaluated),
-			safeOpenAIRouteRatio(selectedRouteTotal, stats.Evaluated),
+			safeOpenAIRouteRatio(selectedProviderTotal, evidenceStats.Evaluated),
+			safeOpenAIRouteRatio(selectedRouteTotal, evidenceStats.Evaluated),
 		),
 	)
-	assessment.addGate("adaptive_selection_completeness", selectedAccountTotal == stats.Evaluated && selectedProviderTotal == stats.Evaluated && selectedRouteTotal == stats.Evaluated,
+	assessment.addGate("adaptive_selection_completeness", selectedAccountTotal == evidenceStats.Evaluated && selectedProviderTotal == evidenceStats.Evaluated && selectedRouteTotal == evidenceStats.Evaluated,
 		"account, provider and route selection totals all equal evaluated decisions",
-		fmt.Sprintf("evaluated=%d accounts=%d providers=%d routes=%d", stats.Evaluated, selectedAccountTotal, selectedProviderTotal, selectedRouteTotal),
+		fmt.Sprintf("evaluated=%d accounts=%d providers=%d routes=%d", evidenceStats.Evaluated, selectedAccountTotal, selectedProviderTotal, selectedRouteTotal),
 		selectionCompleteness,
 		"Missing adaptive account, provider or endpoint assignments can dilute concentration and route-variant evidence and must not be treated as valid evaluated evidence.")
-	assessment.addGate("account_concentration", stats.PolicyMaxAccountShare > 0 && maxAccountShare <= stats.PolicyMaxAccountShare*100+1e-9,
-		fmt.Sprintf("<= policy cap %s", formatOpenAIRoutePercent(stats.PolicyMaxAccountShare)), formatOpenAIRoutePercent(maxAccountShare/100), maxAccountShare/100,
+	assessment.addGate("account_concentration", evidenceStats.PolicyMaxAccountShare > 0 && maxAccountShare <= evidenceStats.PolicyMaxAccountShare*100+1e-9,
+		fmt.Sprintf("<= policy cap %s", formatOpenAIRoutePercent(evidenceStats.PolicyMaxAccountShare)), formatOpenAIRoutePercent(maxAccountShare/100), maxAccountShare/100,
 		"Observed adaptive selection concentration must stay inside the audited policy cap.")
-	assessment.addGate("provider_concentration", stats.PolicyMaxProviderShare > 0 && maxProviderShare <= stats.PolicyMaxProviderShare*100+1e-9,
-		fmt.Sprintf("<= policy cap %s", formatOpenAIRoutePercent(stats.PolicyMaxProviderShare)), formatOpenAIRoutePercent(maxProviderShare/100), maxProviderShare/100,
+	assessment.addGate("provider_concentration", evidenceStats.PolicyMaxProviderShare > 0 && maxProviderShare <= evidenceStats.PolicyMaxProviderShare*100+1e-9,
+		fmt.Sprintf("<= policy cap %s", formatOpenAIRoutePercent(evidenceStats.PolicyMaxProviderShare)), formatOpenAIRoutePercent(maxProviderShare/100), maxProviderShare/100,
 		"Observed adaptive selection concentration must stay inside the audited provider cap.")
 
-	if window >= openAIRoutePromotionInitialCheckpoint && window < openAIRoutePromotionMinimumWindow {
+	if evidenceWindow >= openAIRoutePromotionInitialCheckpoint && evidenceWindow < openAIRoutePromotionMinimumWindow {
 		assessment.Warnings = append(assessment.Warnings, "the 24-hour health checkpoint is available, but the primary review remains blocked until 72 hours")
 	}
-	if stats.Total == 0 {
+	if evidenceStart.After(lineageStart) {
+		assessment.Warnings = append(assessment.Warnings,
+			"historical activation observations are retained in stats; automated promotion gates use only the later loss-proof promotion_evidence_stats window")
+	}
+	if evidenceStats.Total == 0 {
 		assessment.Warnings = append(assessment.Warnings, "no Shadow decisions matched this exact policy slice")
 	}
 	assessment.AutomatedEvidenceReady = len(assessment.Blockers) == 0

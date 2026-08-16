@@ -226,6 +226,89 @@ func TestBuildOpenAIRoutePromotionAssessmentReadyOnlyForManualReview(t *testing.
 	}
 }
 
+func TestBuildOpenAIRoutePromotionAssessmentPreservesLineageButQualifiesPromotionWindow(t *testing.T) {
+	activationStart := time.Date(2026, 8, 16, 1, 45, 44, 0, time.UTC)
+	evidenceStart := activationStart.Add(6 * time.Hour)
+	end := evidenceStart.Add(72 * time.Hour)
+	lineageFilter := testOpenAIRoutePromotionFilter(activationStart, end)
+	evidenceFilter := testOpenAIRoutePromotionFilter(evidenceStart, end)
+	lineageStats, _ := healthyOpenAIRoutePromotionEvidence(activationStart, end)
+	lineageStats.Total = 260
+	lineageStats.Evaluated = 260
+	evidenceStats, health := healthyOpenAIRoutePromotionEvidence(evidenceStart, end)
+	// Every decision keeps the immutable activation T0 even though the strict
+	// collector-continuity subset begins at the first durable process epoch.
+	evidenceStats.ShadowStartedAt = activationStart
+
+	assessment := buildOpenAIRoutePromotionAssessmentWithLineage(
+		lineageFilter,
+		lineageStats,
+		evidenceFilter,
+		evidenceStats,
+		health,
+	)
+
+	require.True(t, assessment.AutomatedEvidenceReady)
+	require.Equal(t, activationStart, assessment.WindowStart)
+	require.Equal(t, float64(78), assessment.WindowHours)
+	require.Equal(t, evidenceStart, assessment.PromotionEvidenceStart)
+	require.Equal(t, float64(72), assessment.PromotionEvidenceHours)
+	require.Equal(t, int64(260), assessment.Stats.Total)
+	require.Equal(t, int64(200), assessment.PromotionEvidenceStats.Total)
+	require.Equal(t, activationStart, assessment.ShadowStartedAt)
+	require.Equal(t, evidenceStart, assessment.ReviewSchedule.EvidenceStartAt)
+	require.NotContains(t, assessment.Blockers, "window_starts_at_activation")
+	require.NotContains(t, assessment.Blockers, "requested_window")
+	require.Contains(t, assessment.Warnings,
+		"historical activation observations are retained in stats; automated promotion gates use only the later loss-proof promotion_evidence_stats window")
+}
+
+func TestBuildOpenAIRoutePromotionAssessmentDoesNotUseHistoricalHoursToSatisfyPromotionWindow(t *testing.T) {
+	activationStart := time.Date(2026, 8, 16, 1, 45, 44, 0, time.UTC)
+	evidenceStart := activationStart.Add(12 * time.Hour)
+	end := activationStart.Add(78 * time.Hour)
+	lineageFilter := testOpenAIRoutePromotionFilter(activationStart, end)
+	evidenceFilter := testOpenAIRoutePromotionFilter(evidenceStart, end)
+	lineageStats, _ := healthyOpenAIRoutePromotionEvidence(activationStart, end)
+	evidenceStats, health := healthyOpenAIRoutePromotionEvidence(evidenceStart, end)
+	evidenceStats.ShadowStartedAt = activationStart
+
+	assessment := buildOpenAIRoutePromotionAssessmentWithLineage(
+		lineageFilter,
+		lineageStats,
+		evidenceFilter,
+		evidenceStats,
+		health,
+	)
+
+	require.Equal(t, float64(78), assessment.WindowHours)
+	require.Equal(t, float64(66), assessment.PromotionEvidenceHours)
+	require.Contains(t, assessment.Blockers, "requested_window")
+	require.False(t, assessment.AutomatedEvidenceReady)
+}
+
+func TestDeriveOpenAIRoutePromotionEvidenceStartIsOneTimeAndMonotonic(t *testing.T) {
+	activationStart := time.Date(2026, 8, 16, 1, 45, 44, 0, time.UTC)
+	auditStart := activationStart.Add(6 * time.Hour)
+	observationStart := auditStart.Add(time.Microsecond)
+	health := OpenAIRouteAuditHealth{DurableEvidence: &OpenAIRouteEvidenceWindowHealth{
+		Available: true,
+		Audit: OpenAIRouteEvidenceComponentHealth{
+			CounterStartedAt: auditStart,
+		},
+		Observation: OpenAIRouteEvidenceComponentHealth{
+			CounterStartedAt: observationStart,
+		},
+	}}
+
+	require.Equal(t, observationStart, deriveOpenAIRoutePromotionEvidenceStart(activationStart, health))
+	// A later activation is not pulled backwards into old process evidence.
+	newActivation := observationStart.Add(24 * time.Hour)
+	require.Equal(t, newActivation, deriveOpenAIRoutePromotionEvidenceStart(newActivation, health))
+	// Missing durable epochs never invent a qualified start.
+	require.Equal(t, activationStart, deriveOpenAIRoutePromotionEvidenceStart(activationStart, OpenAIRouteAuditHealth{}))
+}
+
 func TestBuildOpenAIRoutePromotionAssessmentTreats24HoursAsCheckpointOnly(t *testing.T) {
 	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
 	start := end.Add(-24 * time.Hour)

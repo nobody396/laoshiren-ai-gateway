@@ -98,6 +98,53 @@ Redis 读失败时允许使用 PostgreSQL 长窗并把近期窗口置空；Redis
 健康 pipeline 与共享观测读取彼此独立，会在同一次评估内并发执行并共同受调用方
 截止时间约束；任一失败都会取消本次评估，不能用另一份成功数据掩盖依赖故障。
 
+## 多 Base URL 主动证据桥（默认关闭）
+
+`benchmark_prior_enabled` 和 `route_variants` 都是策略级、仅限 `text + Shadow` 的显式
+开关；默认缺失时不会查询 `base_url_benchmarks`，不会增加候选，也不会改变现有策略的
+评分或审计策略快照。`enforce` 仍由编译期硬关闭。
+
+```json
+{
+  "benchmark_prior_enabled": true,
+  "route_variants": [
+    {"account_id": 23, "base_url": "https://hk.pomoai.xyz"},
+    {"account_id": 23, "base_url": "https://hk2.pomoai.xyz"},
+    {"account_id": 23, "base_url": "https://jp.pomoai.xyz"},
+    {"account_id": 23, "base_url": "https://us.pomoai.xyz"}
+  ]
+}
+```
+
+安全不变量：
+
+- Base URL 只能是无凭证、无 query/fragment 的公网 HTTPS 地址，单策略最多 8 条；原始
+  URL 只用于进程内构造候选，持久化策略审计仅记录 `account_id + endpoint_hash`。
+- 变体只复用已经经过 Legacy 硬过滤的同一个 `Account`，因此不能绕过分组、模型、
+  schedulable、传输或账号状态；它不克隆密钥、不修改账号 Base URL，也不会执行建议线路。
+- 同一账号的所有 URL 共享账号份额和 `failure_domain`，防止把同一密钥/供应商伪装成
+  独立冗余；端点哈希保持独立，以便分别学习延迟和线路故障。
+- 只有 Responses HTTP/SSE 文本路由会展开变体。OAuth、图片、Chat Completions 和其他
+  传输保持原候选，不会被隐式改写。
+- 主动探测是弱先验：读取最近 72 小时全局窗、最近 6 小时窗和过去 4 周同一北京时间
+  周内小时，按 24 小时半衰期衰减；少于 12 条样本严格为零影响，最大置信度 25%。
+  生成的变体在主动先验没有产生有效伪样本且被动真实结果不足 12 条时，以
+  `insufficient_benchmark_evidence` 排除，不能因一条测速结果成为“时段赢家”。
+- 主动样本不进入真实流量份额、成本结算或供应商相关故障的独立账号计数。真实用户
+  被动结果保持完整权重；主动证据只添加有界伪样本。
+- `base_url_benchmarks` 是可选运维表；默认策略不依赖它。启用先验后缺表、查询超时或
+  返回过多数据均 fail closed 为本次 Shadow 失败，用户仍由 Legacy 服务。读取使用
+  1 分钟有界 L1、singleflight 和 20ms 回源超时，不把数据库查询放到每请求热路径。
+
+候选审计新增 `route_fingerprint`、`route_variant`、主动证据来源、原始/有效/近期/
+同周内小时样本、置信度、衰减权重和最近观测时间；选择与排除都按完整 route
+fingerprint 关联，不能因同一账号有多个端点而同时标记多个候选。统计同时按账号、
+故障域和端点汇总建议分布；晋级门要求三类选择计数都完整覆盖有效决策。
+
+这些数据仍然只是“如果采用该线路，算法会建议什么”的 Shadow 证据。未实际执行的
+URL 没有真实用户反事实成功率；任何 Canary 动态切换必须在独立审批包中明确比例、
+确定性分桶、熔断、1--5 分钟 watchdog 和原子回滚，不能由该先验自动开启。
+
 健康状态的写入与滚动证据写入分别计数，防止“统计已经落 Redis、健康转换失败”
 被误报成整条统计丢失。供应商故障域只接受显式 `routing_failure_domain_id`，且必须
 在故障窗口内由至少两个不同账号同时出现 capacity、5xx、畸形流或半截流证据才
@@ -138,7 +185,7 @@ Redis 读失败时允许使用 PostgreSQL 长窗并把近期窗口置空；Redis
 - 成功与失败不能同时关联，审计写入、被动采集和健康状态应用完整率均不低于 99%，
   且审计队列已经排空；
 - 同一策略版本只有一个归一化策略快照，没有应急预算决策；
-- 建议账号和建议故障域的计数都必须与有效评估总数完全相等，缺失建议不能稀释集中度；
+- 建议账号、建议故障域和建议端点的计数都必须与有效评估总数完全相等，缺失建议不能稀释集中度；
 - Shadow 建议账号与故障域集中度不超过该快照中的账号/供应商份额上限。
 
 即使所有自动门禁通过，返回值也只会是

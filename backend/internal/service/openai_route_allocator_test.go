@@ -83,7 +83,7 @@ func TestBuildOpenAIRouteAllocationPlanUsesRouteSpecificSettledCost(t *testing.T
 	require.NoError(t, err)
 	require.Len(t, plan.Ranked, 1)
 	require.Equal(t, int64(1), plan.Selected.Candidate.Key.AccountID)
-	require.Contains(t, plan.Excluded, OpenAIRouteExclusion{AccountID: 2, Reason: OpenAIRouteExcludedCost})
+	require.Contains(t, plan.Excluded, newOpenAIRouteExclusion(expensive, OpenAIRouteExcludedCost))
 	require.InDelta(t, 1, plan.Selected.PriceFactor, 1e-12)
 }
 
@@ -118,7 +118,7 @@ func TestBuildOpenAIRouteAllocationPlan_ExcludesUnaffordableExpensiveRoutes(t *t
 	require.NoError(t, err)
 	require.Len(t, plan.Ranked, 1)
 	require.Equal(t, int64(1), plan.Selected.Candidate.Key.AccountID)
-	require.Contains(t, plan.Excluded, OpenAIRouteExclusion{AccountID: 2, Reason: OpenAIRouteExcludedCost})
+	require.Contains(t, plan.Excluded, newOpenAIRouteExclusion(expensive, OpenAIRouteExcludedCost))
 
 	request.Candidates = []OpenAIRouteCandidate{expensive}
 	plan, err = BuildOpenAIRouteAllocationPlan(request)
@@ -141,7 +141,7 @@ func TestBuildOpenAIRouteAllocationPlan_EveryBudgetWindowMustAdmitRoute(t *testi
 	require.NoError(t, err)
 	require.Len(t, plan.Ranked, 1)
 	require.Equal(t, int64(1), plan.Selected.Candidate.Key.AccountID)
-	require.Contains(t, plan.Excluded, OpenAIRouteExclusion{AccountID: 2, Reason: OpenAIRouteExcludedCost})
+	require.Contains(t, plan.Excluded, newOpenAIRouteExclusion(expensive, OpenAIRouteExcludedCost))
 
 	request.Candidates = []OpenAIRouteCandidate{expensive}
 	_, err = BuildOpenAIRouteAllocationPlan(request)
@@ -195,7 +195,7 @@ func TestBuildOpenAIRouteAllocationPlan_EnforcesHalfOpenAndRecoveryCaps(t *testi
 	plan, err := BuildOpenAIRouteAllocationPlan(testOpenAIRouteAllocationRequest(halfOpen, healthy))
 	require.NoError(t, err)
 	require.Equal(t, int64(2), plan.Selected.Candidate.Key.AccountID)
-	require.Contains(t, plan.Excluded, OpenAIRouteExclusion{AccountID: 1, Reason: OpenAIRouteExcludedHalfOpen})
+	require.Contains(t, plan.Excluded, newOpenAIRouteExclusion(halfOpen, OpenAIRouteExcludedHalfOpen))
 
 	recovering := testOpenAIRouteCandidate(3, "p3", 0.15)
 	recovering.CircuitState = OpenAIRouteCircuitRecovering
@@ -204,7 +204,7 @@ func TestBuildOpenAIRouteAllocationPlan_EnforcesHalfOpenAndRecoveryCaps(t *testi
 	plan, err = BuildOpenAIRouteAllocationPlan(testOpenAIRouteAllocationRequest(recovering, healthy))
 	require.NoError(t, err)
 	require.Equal(t, int64(2), plan.Selected.Candidate.Key.AccountID)
-	require.Contains(t, plan.Excluded, OpenAIRouteExclusion{AccountID: 3, Reason: OpenAIRouteExcludedRecoveryCap})
+	require.Contains(t, plan.Excluded, newOpenAIRouteExclusion(recovering, OpenAIRouteExcludedRecoveryCap))
 }
 
 func TestBuildOpenAIRouteAllocationPlan_ReliabilityCanBeatSmallPriceDifference(t *testing.T) {

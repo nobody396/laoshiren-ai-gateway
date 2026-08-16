@@ -38,6 +38,9 @@ type OpenAIRouteShadowCandidate struct {
 	Endpoint  string
 	Transport string
 	Priority  int
+	// RouteVariant is true only for a diagnostic endpoint synthesized from a
+	// policy. It never changes the underlying Account or Legacy endpoint.
+	RouteVariant bool
 
 	HasReliabilitySample bool
 	SuccessLowerBound    float64
@@ -68,14 +71,16 @@ type OpenAIRouteShadowDecision struct {
 	Reason                   string
 	EvaluationDurationMicros int64
 
-	CandidateCount          int
-	ExcludedCount           int
-	LegacySelectedAccountID int64
-	SelectedAccountID       int64
-	SelectedRate            float64
-	Diverged                bool
-	Emergency               bool
-	Audit                   *OpenAIRouteShadowAuditSnapshot
+	CandidateCount           int
+	ExcludedCount            int
+	LegacySelectedAccountID  int64
+	SelectedAccountID        int64
+	SelectedEndpointHash     string
+	SelectedRouteFingerprint string
+	SelectedRate             float64
+	Diverged                 bool
+	Emergency                bool
+	Audit                    *OpenAIRouteShadowAuditSnapshot
 }
 
 type OpenAIRouteShadowEvaluator interface {
@@ -106,15 +111,17 @@ type openAIRoutePolicyConfig struct {
 	PriorityPenalty float64 `json:"priority_penalty"`
 	MinHealthFactor float64 `json:"min_health_factor"`
 
-	MaxAccountShare      float64   `json:"max_account_share"`
-	MaxProviderShare     float64   `json:"max_provider_share"`
-	NewAccountShare      float64   `json:"new_account_canary_share"`
-	DegradedShare        float64   `json:"degraded_share"`
-	RecoveryShares       []float64 `json:"recovery_steps"`
-	GenericFailThreshold int       `json:"generic_fail_threshold"`
-	FailureWindowSeconds int       `json:"failure_window_seconds"`
-	ProbeBackoffSeconds  []int     `json:"probe_backoff_seconds"`
-	HardShareCaps        bool      `json:"hard_share_caps"`
+	MaxAccountShare       float64                         `json:"max_account_share"`
+	MaxProviderShare      float64                         `json:"max_provider_share"`
+	NewAccountShare       float64                         `json:"new_account_canary_share"`
+	DegradedShare         float64                         `json:"degraded_share"`
+	RecoveryShares        []float64                       `json:"recovery_steps"`
+	GenericFailThreshold  int                             `json:"generic_fail_threshold"`
+	FailureWindowSeconds  int                             `json:"failure_window_seconds"`
+	ProbeBackoffSeconds   []int                           `json:"probe_backoff_seconds"`
+	HardShareCaps         bool                            `json:"hard_share_caps"`
+	BenchmarkPriorEnabled bool                            `json:"benchmark_prior_enabled,omitempty"`
+	RouteVariants         []openAIRouteRouteVariantConfig `json:"route_variants,omitempty"`
 }
 
 type openAIRoutePolicyDocument struct {
@@ -132,7 +139,9 @@ type OpenAIRouteController struct {
 	healthStore      OpenAIRouteHealthStore
 	budgetStore      OpenAIRouteBudgetStore
 	observationStore OpenAIRouteObservationStore
+	benchmarkStore   OpenAIRouteBenchmarkObservationStore
 	observationCache *openAIRouteObservationProfileCache
+	benchmarkCache   *openAIRouteBenchmarkObservationProfileCache
 
 	cacheMu sync.Mutex
 	cache   cachedOpenAIRoutePolicies
@@ -149,6 +158,15 @@ func NewOpenAIRouteController(
 		healthStore:      healthStore,
 		budgetStore:      budgetStore,
 		observationStore: observationStore,
+	}
+	if benchmarkStore, ok := observationStore.(OpenAIRouteBenchmarkObservationStore); ok {
+		controller.benchmarkStore = benchmarkStore
+		controller.benchmarkCache = newOpenAIRouteBenchmarkObservationProfileCache(
+			benchmarkStore,
+			defaultOpenAIRouteBenchmarkProfileCacheTTL,
+			defaultOpenAIRouteBenchmarkProfileLoadTimeout,
+			defaultOpenAIRouteBenchmarkProfileCacheMaxEntries,
+		)
 	}
 	if observationStore != nil {
 		controller.observationCache = newOpenAIRouteObservationProfileCache(
@@ -294,14 +312,34 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	if config.EstimatedBaseCostUSD <= 0 {
 		return decision, fmt.Errorf("%w: estimated_base_cost_usd must be positive", ErrOpenAIRouteInvalidPolicy)
 	}
-	decision.Audit.Policy = newOpenAIRouteShadowAuditPolicy(policy, config.HardShareCaps)
+	if len(config.RouteVariants) > 0 && !config.BenchmarkPriorEnabled {
+		return decision, fmt.Errorf("%w: route variants require benchmark_prior_enabled", ErrOpenAIRouteInvalidPolicy)
+	}
+	if config.BenchmarkPriorEnabled {
+		if req.RequestClass != OpenAIRouteRequestClassText {
+			return decision, fmt.Errorf("%w: benchmark prior supports text routes only", ErrOpenAIRouteInvalidPolicy)
+		}
+		if c.benchmarkStore == nil || c.benchmarkCache == nil {
+			return decision, fmt.Errorf("%w: benchmark observation store unavailable", ErrOpenAIRouteInvalidPolicy)
+		}
+	}
+	shadowSources, auditRouteVariants, err := expandOpenAIRouteShadowVariants(req.Candidates, config.RouteVariants)
+	if err != nil {
+		return decision, err
+	}
+	decision.Audit.Policy = newOpenAIRouteShadowAuditPolicy(
+		policy,
+		config.HardShareCaps,
+		config.BenchmarkPriorEnabled,
+		auditRouteVariants,
+	)
 
 	windows := buildOpenAIRouteBudgetWindows(req.GroupID, req.Model, req.RequestClass, config.Version, now, policy)
-	candidates := make([]OpenAIRouteCandidate, 0, len(req.Candidates))
-	routeKeys := make([]OpenAIRouteKey, 0, len(req.Candidates))
-	healthKeys := make([]OpenAIRouteHealthStoreKey, 0, 2*len(req.Candidates))
-	auditIndices := make([]int, 0, len(req.Candidates))
-	for _, source := range req.Candidates {
+	candidates := make([]OpenAIRouteCandidate, 0, len(shadowSources))
+	routeKeys := make([]OpenAIRouteKey, 0, len(shadowSources))
+	healthKeys := make([]OpenAIRouteHealthStoreKey, 0, 2*len(shadowSources))
+	auditIndices := make([]int, 0, len(shadowSources))
+	for _, source := range shadowSources {
 		if source.Account == nil {
 			continue
 		}
@@ -312,6 +350,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 				RateMultiplier: source.Account.BillingRateMultiplier(),
 				Priority:       source.Priority,
 				Transport:      source.Transport,
+				RouteVariant:   source.RouteVariant,
 				ExclusionReasons: []OpenAIRouteExclusionReason{
 					OpenAIRouteExcludedInvalid,
 				},
@@ -326,6 +365,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 			Key:                  key,
 			RateMultiplier:       source.Account.BillingRateMultiplier(),
 			Priority:             source.Priority,
+			RouteVariant:         source.RouteVariant,
 			HasReliabilitySample: source.HasReliabilitySample,
 			SuccessLowerBound:    source.SuccessLowerBound,
 			P90TTFTMilliseconds:  source.TTFTMilliseconds,
@@ -345,6 +385,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		return decision, ErrOpenAIRouteNoCandidate
 	}
 	profiles := make(map[string]OpenAIRouteObservationProfile)
+	benchmarkProfiles := make(map[string]OpenAIRouteBenchmarkObservationProfile)
 	var healthStates map[string]OpenAIRouteHealthState
 	readGroup, readCtx := errgroup.WithContext(ctx)
 	readGroup.Go(func() error {
@@ -360,6 +401,13 @@ func (c *OpenAIRouteController) EvaluateShadow(
 			} else {
 				profiles, readErr = c.observationStore.GetBatch(readCtx, routeKeys, now)
 			}
+			return readErr
+		})
+	}
+	if config.BenchmarkPriorEnabled {
+		readGroup.Go(func() error {
+			var readErr error
+			benchmarkProfiles, readErr = c.benchmarkCache.GetBatch(readCtx, routeKeys, now)
 			return readErr
 		})
 	}
@@ -383,26 +431,46 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		decision.Audit.Candidates[auditIndices[idx]] = newOpenAIRouteShadowAuditCandidate(candidates[idx])
 	}
 	profileByCandidate := make([]OpenAIRouteObservationProfile, len(candidates))
+	benchmarkByCandidate := make([]OpenAIRouteBenchmarkObservationProfile, len(candidates))
+	blendedByCandidate := make([]OpenAIRouteObservationAggregate, len(candidates))
+	benchmarkAppliedByCandidate := make([]bool, len(candidates))
 	var totalShareAttempts uint64
 	var totalReliabilitySamples uint64
+	accountShareAttempts := make(map[int64]uint64)
 	providerShareAttempts := make(map[string]uint64)
 	for idx := range candidates {
 		profile := profiles[OpenAIRouteObservationFingerprint(candidates[idx].Key)]
 		profileByCandidate[idx] = profile
+		benchmarkProfile := benchmarkProfiles[OpenAIRouteObservationFingerprint(candidates[idx].Key)]
+		benchmarkByCandidate[idx] = benchmarkProfile
+		blended := BlendOpenAIRouteObservationProfile(profile)
+		if config.BenchmarkPriorEnabled {
+			blended, benchmarkAppliedByCandidate[idx] = ApplyOpenAIRouteBenchmarkPrior(blended, benchmarkProfile)
+		}
+		blendedByCandidate[idx] = blended
 		shareAttempts := profile.Recent.AttemptCount
 		if shareAttempts == 0 {
 			shareAttempts = profile.Global.AttemptCount
 		}
 		totalShareAttempts += shareAttempts
+		accountShareAttempts[candidates[idx].Key.AccountID] += shareAttempts
 		providerShareAttempts[openAIRouteProviderKey(candidates[idx])] += shareAttempts
-		totalReliabilitySamples += profile.Global.ReliabilityCount
+		totalReliabilitySamples += blended.ReliabilityCount
 	}
 	for idx := range candidates {
 		profile := profileByCandidate[idx]
-		blended := BlendOpenAIRouteObservationProfile(profile)
+		benchmarkProfile := benchmarkByCandidate[idx]
+		blended := blendedByCandidate[idx]
 		observationSource := "process_local"
 		if blended.ReliabilityCount > 0 {
 			observationSource = "shared"
+			if benchmarkAppliedByCandidate[idx] {
+				if profile.Global.ReliabilityCount > 0 {
+					observationSource = "shared+active_benchmark_prior"
+				} else {
+					observationSource = "active_benchmark_prior"
+				}
+			}
 			candidates[idx].HasReliabilitySample = true
 			candidates[idx].SuccessLowerBound = blended.SuccessLowerBound()
 			candidates[idx].P90TTFTMilliseconds = blended.TTFTPercentile(0.90)
@@ -410,12 +478,8 @@ func (c *OpenAIRouteController) EvaluateShadow(
 			candidates[idx].ObservationSampleCount = blended.ReliabilityCount
 			candidates[idx].PartialStreamRate = blended.PartialStreamRate()
 		}
-		shareAttempts := profile.Recent.AttemptCount
-		if shareAttempts == 0 {
-			shareAttempts = profile.Global.AttemptCount
-		}
 		if totalShareAttempts > 0 {
-			candidates[idx].CurrentAccountShare = float64(shareAttempts) / float64(totalShareAttempts)
+			candidates[idx].CurrentAccountShare = float64(accountShareAttempts[candidates[idx].Key.AccountID]) / float64(totalShareAttempts)
 			candidates[idx].CurrentProviderShare = float64(providerShareAttempts[openAIRouteProviderKey(candidates[idx])]) / float64(totalShareAttempts)
 		}
 		candidates[idx].ExplorationBoost = openAIRouteExplorationBoost(blended.ReliabilityCount, totalReliabilitySamples)
@@ -430,20 +494,51 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		decision.Audit.Candidates[auditIndex].ObservationSamples = profile.Global.ReliabilityCount
 		decision.Audit.Candidates[auditIndex].RecentSamples = profile.Recent.ReliabilityCount
 		decision.Audit.Candidates[auditIndex].HourOfWeekSamples = profile.HourOfWeek.ReliabilityCount
+		decision.Audit.Candidates[auditIndex].BenchmarkSamples = benchmarkProfile.Evidence.RawSamples
+		decision.Audit.Candidates[auditIndex].BenchmarkEffectiveSamples = benchmarkProfile.Evidence.EffectiveSamples
+		decision.Audit.Candidates[auditIndex].BenchmarkRecentSamples = benchmarkProfile.Evidence.RecentSamples
+		decision.Audit.Candidates[auditIndex].BenchmarkHourOfWeekSamples = benchmarkProfile.Evidence.HourOfWeekSamples
+		decision.Audit.Candidates[auditIndex].BenchmarkConfidence = benchmarkProfile.Evidence.Confidence
+		decision.Audit.Candidates[auditIndex].BenchmarkRecencyWeight = benchmarkProfile.Evidence.RecencyWeight
+		if !benchmarkProfile.Evidence.LastObservedAt.IsZero() {
+			lastObservedAt := benchmarkProfile.Evidence.LastObservedAt
+			decision.Audit.Candidates[auditIndex].BenchmarkLastObservedAt = &lastObservedAt
+		}
+	}
+	allocatorCandidates := make([]OpenAIRouteCandidate, 0, len(candidates))
+	for idx, candidate := range candidates {
+		passiveRouteEvidence := profileByCandidate[idx].Global.ReliabilityCount >= OpenAIRouteBenchmarkMinimumSamples
+		if candidate.RouteVariant && !passiveRouteEvidence && !benchmarkAppliedByCandidate[idx] {
+			fingerprint := OpenAIRouteObservationFingerprint(candidate.Key)
+			auditIndex := auditIndices[idx]
+			decision.Audit.Candidates[auditIndex].ExclusionReasons = append(
+				decision.Audit.Candidates[auditIndex].ExclusionReasons,
+				OpenAIRouteExcludedBenchmark,
+			)
+			decision.Audit.Exclusions = append(decision.Audit.Exclusions, OpenAIRouteExclusion{
+				AccountID: candidate.Key.AccountID, RouteFingerprint: fingerprint, Reason: OpenAIRouteExcludedBenchmark,
+			})
+			continue
+		}
+		allocatorCandidates = append(allocatorCandidates, candidate)
 	}
 
 	plan, reservation, ledgers, err := allocateAndReserveOpenAIRouteWithLedgers(ctx, c.budgetStore, OpenAIRouteAllocationRequest{
 		Policy:               policy,
-		Candidates:           candidates,
+		Candidates:           allocatorCandidates,
 		EstimatedBaseCostUSD: config.EstimatedBaseCostUSD,
 		Seed:                 req.Seed,
 		HardShareCaps:        config.HardShareCaps,
 	}, windows, decisionID, time.Minute)
 	selectedAccountID := int64(0)
+	selectedEndpointHash := ""
+	selectedRouteFingerprint := ""
 	selectedRate := 0.0
 	selectedBaseCostUSD := config.EstimatedBaseCostUSD
 	if err == nil {
 		selectedAccountID = plan.Selected.Candidate.Key.AccountID
+		selectedEndpointHash = plan.Selected.Candidate.Key.EndpointHash
+		selectedRouteFingerprint = OpenAIRouteObservationFingerprint(plan.Selected.Candidate.Key)
 		selectedRate = plan.Selected.Candidate.RateMultiplier
 		selectedBaseCostUSD = openAIRouteCandidateEstimatedBaseCost(plan.Selected.Candidate, config.EstimatedBaseCostUSD)
 	}
@@ -456,7 +551,9 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		selectedRate,
 		selectedBaseCostUSD,
 	)
-	applyOpenAIRouteShadowAuditPlan(decision.Audit, plan, selectedAccountID)
+	decision.Audit.AdaptiveSelectedEndpointHash = selectedEndpointHash
+	decision.Audit.AdaptiveSelectedRouteFingerprint = selectedRouteFingerprint
+	applyOpenAIRouteShadowAuditPlan(decision.Audit, plan, selectedRouteFingerprint)
 	decision.ExcludedCount = len(decision.Audit.Exclusions)
 	if err != nil {
 		return decision, err
@@ -481,6 +578,8 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	decision.Reason = "shadow_selected"
 	decision.ExcludedCount = len(decision.Audit.Exclusions)
 	decision.SelectedAccountID = plan.Selected.Candidate.Key.AccountID
+	decision.SelectedEndpointHash = plan.Selected.Candidate.Key.EndpointHash
+	decision.SelectedRouteFingerprint = OpenAIRouteObservationFingerprint(plan.Selected.Candidate.Key)
 	decision.SelectedRate = plan.Selected.Candidate.RateMultiplier
 	decision.Emergency = plan.Emergency
 	return decision, nil
@@ -493,7 +592,12 @@ func (c *OpenAIRouteController) SnapshotObservationProfileCache() (OpenAIRouteOb
 	return c.observationCache.Stats(), true
 }
 
-func newOpenAIRouteShadowAuditPolicy(policy OpenAIRoutePolicy, hardShareCaps bool) OpenAIRouteShadowAuditPolicy {
+func newOpenAIRouteShadowAuditPolicy(
+	policy OpenAIRoutePolicy,
+	hardShareCaps bool,
+	benchmarkPriorEnabled bool,
+	routeVariants []OpenAIRouteShadowAuditRouteVariant,
+) OpenAIRouteShadowAuditPolicy {
 	backoff := make([]int64, 0, len(policy.ProbeBackoff))
 	for _, value := range policy.ProbeBackoff {
 		backoff = append(backoff, int64(value/time.Second))
@@ -516,13 +620,17 @@ func newOpenAIRouteShadowAuditPolicy(policy OpenAIRoutePolicy, hardShareCaps boo
 		FailureWindowSeconds:    int64(policy.FailureWindow / time.Second),
 		ProbeBackoffSeconds:     backoff,
 		HardShareCaps:           hardShareCaps,
+		BenchmarkPriorEnabled:   benchmarkPriorEnabled,
+		RouteVariants:           append([]OpenAIRouteShadowAuditRouteVariant(nil), routeVariants...),
 	}
 }
 
 func newOpenAIRouteShadowAuditCandidate(candidate OpenAIRouteCandidate) OpenAIRouteShadowAuditCandidate {
 	return OpenAIRouteShadowAuditCandidate{
 		AccountID:                        candidate.Key.AccountID,
+		RouteFingerprint:                 OpenAIRouteObservationFingerprint(candidate.Key),
 		EndpointHash:                     candidate.Key.EndpointHash,
+		RouteVariant:                     candidate.RouteVariant,
 		FailureDomain:                    candidate.Key.FailureDomain,
 		Transport:                        candidate.Key.Transport,
 		RateMultiplier:                   candidate.RateMultiplier,
@@ -552,22 +660,23 @@ func newOpenAIRouteShadowAuditCandidate(candidate OpenAIRouteCandidate) OpenAIRo
 func applyOpenAIRouteShadowAuditPlan(
 	snapshot *OpenAIRouteShadowAuditSnapshot,
 	plan OpenAIRouteAllocationPlan,
-	selectedAccountID int64,
+	selectedRouteFingerprint string,
 ) {
 	if snapshot == nil {
 		return
 	}
-	byID := make(map[int64]*OpenAIRouteShadowAuditCandidate, len(snapshot.Candidates))
+	byFingerprint := make(map[string]*OpenAIRouteShadowAuditCandidate, len(snapshot.Candidates))
 	for idx := range snapshot.Candidates {
-		byID[snapshot.Candidates[idx].AccountID] = &snapshot.Candidates[idx]
+		byFingerprint[snapshot.Candidates[idx].RouteFingerprint] = &snapshot.Candidates[idx]
 	}
 	for rank, item := range plan.Ranked {
-		candidate := byID[item.Candidate.Key.AccountID]
+		fingerprint := OpenAIRouteObservationFingerprint(item.Candidate.Key)
+		candidate := byFingerprint[fingerprint]
 		if candidate == nil {
 			continue
 		}
 		candidate.Rank = rank + 1
-		candidate.Selected = selectedAccountID > 0 && item.Candidate.Key.AccountID == selectedAccountID
+		candidate.Selected = selectedRouteFingerprint != "" && fingerprint == selectedRouteFingerprint
 		candidate.Weight = item.Weight
 		candidate.HealthFactor = item.HealthFactor
 		candidate.LatencyFactor = item.LatencyFactor
@@ -580,7 +689,7 @@ func applyOpenAIRouteShadowAuditPlan(
 		candidate.EmergencyBudgetUsed = item.EmergencyBudgetUsed
 	}
 	for _, exclusion := range plan.Excluded {
-		candidate := byID[exclusion.AccountID]
+		candidate := byFingerprint[exclusion.RouteFingerprint]
 		if candidate != nil {
 			candidate.ExclusionReasons = append(candidate.ExclusionReasons, exclusion.Reason)
 		}

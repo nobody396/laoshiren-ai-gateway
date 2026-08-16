@@ -183,6 +183,7 @@ func buildOpenAIRoutePromotionAssessment(
 	maxProviderShare := maxOpenAIRouteSelectedProviderShare(stats.SelectedProviders)
 	selectedAccountTotal := sumOpenAIRouteSelectedAccountCount(stats.SelectedAccounts)
 	selectedProviderTotal := sumOpenAIRouteSelectedProviderCount(stats.SelectedProviders)
+	selectedRouteTotal := sumOpenAIRouteSelectedRouteCount(stats.SelectedRoutes)
 
 	assessment := &OpenAIRoutePromotionAssessment{
 		AssessedAt:             time.Now().UTC(),
@@ -292,11 +293,18 @@ func buildOpenAIRoutePromotionAssessment(
 	assessment.addGate("no_emergency_budget", stats.Emergency == 0,
 		"0 emergency decisions", fmt.Sprintf("%d (%s)", stats.Emergency, formatOpenAIRoutePercent(emergencyRatio)), emergencyRatio,
 		"A normal canary must not depend on emergency cost debt.")
-	assessment.addGate("adaptive_selection_completeness", selectedAccountTotal == stats.Evaluated && selectedProviderTotal == stats.Evaluated,
-		"account and provider selection totals both equal evaluated decisions",
-		fmt.Sprintf("evaluated=%d accounts=%d providers=%d", stats.Evaluated, selectedAccountTotal, selectedProviderTotal),
-		minOpenAIRouteRatio(safeOpenAIRouteRatio(selectedAccountTotal, stats.Evaluated), safeOpenAIRouteRatio(selectedProviderTotal, stats.Evaluated)),
-		"Missing adaptive account or provider assignments can dilute concentration percentages and must not be treated as valid evaluated evidence.")
+	selectionCompleteness := minOpenAIRouteRatio(
+		safeOpenAIRouteRatio(selectedAccountTotal, stats.Evaluated),
+		minOpenAIRouteRatio(
+			safeOpenAIRouteRatio(selectedProviderTotal, stats.Evaluated),
+			safeOpenAIRouteRatio(selectedRouteTotal, stats.Evaluated),
+		),
+	)
+	assessment.addGate("adaptive_selection_completeness", selectedAccountTotal == stats.Evaluated && selectedProviderTotal == stats.Evaluated && selectedRouteTotal == stats.Evaluated,
+		"account, provider and route selection totals all equal evaluated decisions",
+		fmt.Sprintf("evaluated=%d accounts=%d providers=%d routes=%d", stats.Evaluated, selectedAccountTotal, selectedProviderTotal, selectedRouteTotal),
+		selectionCompleteness,
+		"Missing adaptive account, provider or endpoint assignments can dilute concentration and route-variant evidence and must not be treated as valid evaluated evidence.")
 	assessment.addGate("account_concentration", stats.PolicyMaxAccountShare > 0 && maxAccountShare <= stats.PolicyMaxAccountShare*100+1e-9,
 		fmt.Sprintf("<= policy cap %s", formatOpenAIRoutePercent(stats.PolicyMaxAccountShare)), formatOpenAIRoutePercent(maxAccountShare/100), maxAccountShare/100,
 		"Observed adaptive selection concentration must stay inside the audited policy cap.")
@@ -393,6 +401,16 @@ func sumOpenAIRouteSelectedAccountCount(values []OpenAIRouteShadowSelectedAccoun
 }
 
 func sumOpenAIRouteSelectedProviderCount(values []OpenAIRouteShadowSelectedProviderStats) int64 {
+	var total int64
+	for _, value := range values {
+		if value.SelectedCount > 0 {
+			total += value.SelectedCount
+		}
+	}
+	return total
+}
+
+func sumOpenAIRouteSelectedRouteCount(values []OpenAIRouteShadowSelectedRouteStats) int64 {
 	var total int64
 	for _, value := range values {
 		if value.SelectedCount > 0 {

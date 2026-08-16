@@ -51,16 +51,17 @@ type OpenAIAccountScheduleDecision struct {
 	ImageGenerationRouteConfigured bool
 	ImageGenerationRoutePriority   int
 
-	RoutePolicyMode           OpenAIRoutePolicyMode
-	RoutePolicyVersion        int
-	RoutePolicyReason         string
-	LegacySelectedAccountID   int64
-	AdaptiveSelectedAccountID int64
-	AdaptiveSelectedRate      float64
-	AdaptiveCandidateCount    int
-	AdaptiveExcludedCount     int
-	AdaptiveDiverged          bool
-	AdaptiveEmergency         bool
+	RoutePolicyMode              OpenAIRoutePolicyMode
+	RoutePolicyVersion           int
+	RoutePolicyReason            string
+	LegacySelectedAccountID      int64
+	AdaptiveSelectedAccountID    int64
+	AdaptiveSelectedEndpointHash string
+	AdaptiveSelectedRate         float64
+	AdaptiveCandidateCount       int
+	AdaptiveExcludedCount        int
+	AdaptiveDiverged             bool
+	AdaptiveEmergency            bool
 }
 
 type OpenAIAccountSchedulerMetricsSnapshot struct {
@@ -914,7 +915,11 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 			if req.SessionHash != "" {
 				_ = s.service.BindStickySession(ctx, req.GroupID, req.SessionHash, fresh.ID)
 			}
-			finalizeOpenAIRouteShadowDecision(shadow, fresh.ID)
+			finalizeOpenAIRouteShadowDecision(
+				shadow,
+				fresh.ID,
+				OpenAIRouteEndpointHash(openAIRouteEndpointForAccount(fresh, req.RouteEndpoint)),
+			)
 			return &AccountSelectionResult{
 				Account:           fresh,
 				Acquired:          true,
@@ -935,7 +940,11 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 			compactBlocked = true
 			continue
 		}
-		finalizeOpenAIRouteShadowDecision(shadow, fresh.ID)
+		finalizeOpenAIRouteShadowDecision(
+			shadow,
+			fresh.ID,
+			OpenAIRouteEndpointHash(openAIRouteEndpointForAccount(fresh, req.RouteEndpoint)),
+		)
 		return &AccountSelectionResult{
 			Account: fresh,
 			WaitPlan: &AccountWaitPlan{
@@ -965,7 +974,9 @@ func applyOpenAIRouteShadowLegacyAudit(
 	decision.Audit.LegacyLoadSkew = loadSkew
 	byID := make(map[int64]*OpenAIRouteShadowAuditCandidate, len(decision.Audit.Candidates))
 	for idx := range decision.Audit.Candidates {
-		byID[decision.Audit.Candidates[idx].AccountID] = &decision.Audit.Candidates[idx]
+		if !decision.Audit.Candidates[idx].RouteVariant {
+			byID[decision.Audit.Candidates[idx].AccountID] = &decision.Audit.Candidates[idx]
+		}
 	}
 	for _, source := range candidates {
 		if source.account == nil {
@@ -1091,29 +1102,31 @@ func (s *defaultOpenAIAccountScheduler) persistOpenAIRouteShadowDecision(
 	}
 	attempt := len(req.ExcludedIDs) + 1
 	record := &OpenAIRouteShadowDecisionRecord{
-		DecisionID:                decision.DecisionID,
-		RequestID:                 requestID,
-		ClientRequestID:           clientRequestID,
-		Attempt:                   attempt,
-		GroupID:                   *req.GroupID,
-		Model:                     req.RequestedModel,
-		RequestClass:              openAIRouteRequestClassForScheduleRequest(req),
-		PolicyMode:                decision.Mode,
-		PolicyVersion:             decision.Version,
-		ActivationID:              decision.ActivationID,
-		ShadowStartedAt:           decision.ShadowStartedAt,
-		Reason:                    decision.Reason,
-		Evaluated:                 decision.Evaluated,
-		EvaluationDurationMicros:  decision.EvaluationDurationMicros,
-		LegacySelectedAccountID:   decision.LegacySelectedAccountID,
-		AdaptiveSelectedAccountID: decision.SelectedAccountID,
-		AdaptiveSelectedRate:      decision.SelectedRate,
-		CandidateCount:            decision.CandidateCount,
-		ExcludedCount:             decision.ExcludedCount,
-		Diverged:                  decision.Diverged,
-		Emergency:                 decision.Emergency,
-		Snapshot:                  decision.Audit,
-		CreatedAt:                 time.Now().UTC(),
+		DecisionID:                       decision.DecisionID,
+		RequestID:                        requestID,
+		ClientRequestID:                  clientRequestID,
+		Attempt:                          attempt,
+		GroupID:                          *req.GroupID,
+		Model:                            req.RequestedModel,
+		RequestClass:                     openAIRouteRequestClassForScheduleRequest(req),
+		PolicyMode:                       decision.Mode,
+		PolicyVersion:                    decision.Version,
+		ActivationID:                     decision.ActivationID,
+		ShadowStartedAt:                  decision.ShadowStartedAt,
+		Reason:                           decision.Reason,
+		Evaluated:                        decision.Evaluated,
+		EvaluationDurationMicros:         decision.EvaluationDurationMicros,
+		LegacySelectedAccountID:          decision.LegacySelectedAccountID,
+		AdaptiveSelectedAccountID:        decision.SelectedAccountID,
+		AdaptiveSelectedEndpointHash:     decision.SelectedEndpointHash,
+		AdaptiveSelectedRouteFingerprint: decision.SelectedRouteFingerprint,
+		AdaptiveSelectedRate:             decision.SelectedRate,
+		CandidateCount:                   decision.CandidateCount,
+		ExcludedCount:                    decision.ExcludedCount,
+		Diverged:                         decision.Diverged,
+		Emergency:                        decision.Emergency,
+		Snapshot:                         decision.Audit,
+		CreatedAt:                        time.Now().UTC(),
 	}
 	if !s.service.openAIRouteAuditService.TryRecord(record) {
 		invalidateUnrecordedOpenAIRouteShadowDecision(decision, "audit_persist_failed")
@@ -1146,17 +1159,11 @@ func openAIRouteEndpointForAccount(account *Account, endpoint ...string) string 
 		return chatgptCodexURL
 	}
 	baseURL := strings.TrimSpace(account.GetOpenAIBaseURL())
-	if baseURL == "" {
-		return ""
-	}
 	requestedEndpoint := "/v1/responses"
 	if len(endpoint) > 0 && strings.TrimSpace(endpoint[0]) != "" {
 		requestedEndpoint = strings.TrimSpace(endpoint[0])
 	}
-	if parsedEndpoint := normalizeOpenAIRouteEndpoint(requestedEndpoint); strings.Contains(parsedEndpoint, "://") {
-		return parsedEndpoint
-	}
-	return buildOpenAIEndpointURL(baseURL, requestedEndpoint)
+	return OpenAIRouteEndpointForBaseURL(baseURL, requestedEndpoint)
 }
 
 func openAIRouteShadowEvaluationErrorReason(err error) string {
@@ -1176,12 +1183,21 @@ func openAIRouteShadowEvaluationErrorReason(err error) string {
 	}
 }
 
-func finalizeOpenAIRouteShadowDecision(decision *OpenAIRouteShadowDecision, legacyAccountID int64) {
+func finalizeOpenAIRouteShadowDecision(
+	decision *OpenAIRouteShadowDecision,
+	legacyAccountID int64,
+	legacyEndpointHash string,
+) {
 	if decision == nil {
 		return
 	}
 	decision.LegacySelectedAccountID = legacyAccountID
-	decision.Diverged = decision.Evaluated && decision.SelectedAccountID > 0 && decision.SelectedAccountID != legacyAccountID
+	if decision.Audit != nil {
+		decision.Audit.LegacySelectedEndpointHash = legacyEndpointHash
+	}
+	accountDiverged := decision.SelectedAccountID > 0 && decision.SelectedAccountID != legacyAccountID
+	routeDiverged := decision.SelectedEndpointHash != "" && legacyEndpointHash != "" && decision.SelectedEndpointHash != legacyEndpointHash
+	decision.Diverged = decision.Evaluated && (accountDiverged || routeDiverged)
 }
 
 func applyOpenAIRouteShadowScheduleDecision(target *OpenAIAccountScheduleDecision, shadow *OpenAIRouteShadowDecision) {
@@ -1193,6 +1209,7 @@ func applyOpenAIRouteShadowScheduleDecision(target *OpenAIAccountScheduleDecisio
 	target.RoutePolicyReason = shadow.Reason
 	target.LegacySelectedAccountID = shadow.LegacySelectedAccountID
 	target.AdaptiveSelectedAccountID = shadow.SelectedAccountID
+	target.AdaptiveSelectedEndpointHash = shadow.SelectedEndpointHash
 	target.AdaptiveSelectedRate = shadow.SelectedRate
 	target.AdaptiveCandidateCount = shadow.CandidateCount
 	target.AdaptiveExcludedCount = shadow.ExcludedCount

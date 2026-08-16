@@ -185,6 +185,8 @@ LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
 		if err := json.Unmarshal([]byte(snapshotRaw), item.Snapshot); err != nil {
 			return nil, fmt.Errorf("decode OpenAI route shadow snapshot %d: %w", item.ID, err)
 		}
+		item.AdaptiveSelectedEndpointHash = item.Snapshot.AdaptiveSelectedEndpointHash
+		item.AdaptiveSelectedRouteFingerprint = item.Snapshot.AdaptiveSelectedRouteFingerprint
 		decisions = append(decisions, item)
 	}
 	if err := rows.Err(); err != nil {
@@ -357,22 +359,57 @@ ORDER BY COUNT(*) DESC, adaptive_selected_account_id ASC`
 		return nil, err
 	}
 
+	routeQuery := `
+WITH filtered AS (
+  SELECT d.* FROM openai_route_shadow_decisions d ` + where + `
+), selected AS (
+  SELECT
+    (candidate->>'account_id')::bigint AS account_id,
+    candidate->>'endpoint_hash' AS endpoint_hash,
+    COALESCE(NULLIF(candidate->>'failure_domain', ''), 'account:' || (candidate->>'account_id')) AS failure_domain,
+    COALESCE((candidate->>'route_variant')::boolean, FALSE) AS route_variant
+  FROM filtered d
+  CROSS JOIN LATERAL jsonb_array_elements(d.snapshot->'candidates') candidate
+  WHERE d.evaluated AND COALESCE((candidate->>'selected')::boolean, FALSE)
+)
+SELECT account_id, endpoint_hash, failure_domain, route_variant, COUNT(*)::bigint
+FROM selected
+GROUP BY account_id, endpoint_hash, failure_domain, route_variant
+ORDER BY COUNT(*) DESC, account_id ASC, endpoint_hash ASC`
+	routeRows, err := r.db.QueryContext(ctx, routeQuery, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = routeRows.Close() }()
+	for routeRows.Next() {
+		item := service.OpenAIRouteShadowSelectedRouteStats{}
+		if err := routeRows.Scan(
+			&item.AccountID,
+			&item.EndpointHash,
+			&item.FailureDomain,
+			&item.RouteVariant,
+			&item.SelectedCount,
+		); err != nil {
+			return nil, err
+		}
+		if stats.Evaluated > 0 {
+			item.SelectedPercent = float64(item.SelectedCount) * 100 / float64(stats.Evaluated)
+		}
+		stats.SelectedRoutes = append(stats.SelectedRoutes, item)
+	}
+	if err := routeRows.Err(); err != nil {
+		return nil, err
+	}
+
 	providerQuery := `
 WITH filtered AS (
   SELECT d.* FROM openai_route_shadow_decisions d ` + where + `
 ), selected AS (
   SELECT
-    COALESCE(
-      (
-        SELECT NULLIF(candidate->>'failure_domain', '')
-        FROM jsonb_array_elements(d.snapshot->'candidates') candidate
-        WHERE candidate->>'account_id' = d.adaptive_selected_account_id::text
-        LIMIT 1
-      ),
-      'account:' || d.adaptive_selected_account_id::text
-    ) AS provider_key
+    COALESCE(NULLIF(candidate->>'failure_domain', ''), 'account:' || (candidate->>'account_id')) AS provider_key
   FROM filtered d
-  WHERE d.evaluated AND d.adaptive_selected_account_id IS NOT NULL
+  CROSS JOIN LATERAL jsonb_array_elements(d.snapshot->'candidates') candidate
+  WHERE d.evaluated AND COALESCE((candidate->>'selected')::boolean, FALSE)
 )
 SELECT provider_key, COUNT(*)::bigint
 FROM selected

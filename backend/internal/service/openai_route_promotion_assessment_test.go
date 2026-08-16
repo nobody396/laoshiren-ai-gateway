@@ -50,6 +50,10 @@ func healthyOpenAIRoutePromotionEvidence(start, end time.Time) (*OpenAIRouteShad
 			{ProviderKey: "pomelo-hk", SelectedCount: 120, SelectedPercent: 60},
 			{ProviderKey: "morecode", SelectedCount: 80, SelectedPercent: 40},
 		},
+		SelectedRoutes: []OpenAIRouteShadowSelectedRouteStats{
+			{AccountID: 23, EndpointHash: "pomo-hk", FailureDomain: "pomelo-hk", SelectedCount: 120, SelectedPercent: 60},
+			{AccountID: 28, EndpointHash: "morecode", FailureDomain: "morecode", SelectedCount: 80, SelectedPercent: 40},
+		},
 	}
 	health := OpenAIRouteAuditHealth{
 		Ready:                          true,
@@ -98,6 +102,11 @@ func TestBuildOpenAIRoutePromotionAssessmentBlocksMissingAdaptiveAssignment(t *t
 
 	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
 
+	require.Contains(t, assessment.Blockers, "adaptive_selection_completeness")
+
+	stats, health = healthyOpenAIRoutePromotionEvidence(start, end)
+	stats.SelectedRoutes[0].SelectedCount--
+	assessment = buildOpenAIRoutePromotionAssessment(filter, stats, health)
 	require.Contains(t, assessment.Blockers, "adaptive_selection_completeness")
 }
 

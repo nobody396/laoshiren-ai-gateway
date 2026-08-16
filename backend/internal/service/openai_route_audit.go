@@ -24,26 +24,33 @@ var ErrOpenAIRouteAuditUnavailable = errors.New("OpenAI route decision audit is 
 
 var errOpenAIRouteAuditQueueFull = errors.New("OpenAI route decision audit queue full")
 
+type OpenAIRouteShadowAuditRouteVariant struct {
+	AccountID    int64  `json:"account_id"`
+	EndpointHash string `json:"endpoint_hash"`
+}
+
 // OpenAIRouteShadowAuditPolicy is the exact normalized policy used by one
 // evaluation. Durations are stored as seconds so the JSON remains readable.
 type OpenAIRouteShadowAuditPolicy struct {
-	TargetAverageMultiplier float64   `json:"target_average_multiplier"`
-	HardAverageMultiplier   float64   `json:"hard_average_multiplier"`
-	EmergencyDebtLimitUSD   float64   `json:"emergency_debt_limit_usd"`
-	MaxCreditUSD            float64   `json:"max_credit_usd"`
-	PriceExponent           float64   `json:"price_exponent"`
-	LatencyBeta             float64   `json:"latency_beta"`
-	PriorityPenalty         float64   `json:"priority_penalty"`
-	MinHealthFactor         float64   `json:"min_health_factor"`
-	MaxAccountShare         float64   `json:"max_account_share"`
-	MaxProviderShare        float64   `json:"max_provider_share"`
-	NewAccountShare         float64   `json:"new_account_share"`
-	DegradedShare           float64   `json:"degraded_share"`
-	RecoveryShares          []float64 `json:"recovery_shares"`
-	GenericFailThreshold    int       `json:"generic_fail_threshold"`
-	FailureWindowSeconds    int64     `json:"failure_window_seconds"`
-	ProbeBackoffSeconds     []int64   `json:"probe_backoff_seconds"`
-	HardShareCaps           bool      `json:"hard_share_caps"`
+	TargetAverageMultiplier float64                              `json:"target_average_multiplier"`
+	HardAverageMultiplier   float64                              `json:"hard_average_multiplier"`
+	EmergencyDebtLimitUSD   float64                              `json:"emergency_debt_limit_usd"`
+	MaxCreditUSD            float64                              `json:"max_credit_usd"`
+	PriceExponent           float64                              `json:"price_exponent"`
+	LatencyBeta             float64                              `json:"latency_beta"`
+	PriorityPenalty         float64                              `json:"priority_penalty"`
+	MinHealthFactor         float64                              `json:"min_health_factor"`
+	MaxAccountShare         float64                              `json:"max_account_share"`
+	MaxProviderShare        float64                              `json:"max_provider_share"`
+	NewAccountShare         float64                              `json:"new_account_share"`
+	DegradedShare           float64                              `json:"degraded_share"`
+	RecoveryShares          []float64                            `json:"recovery_shares"`
+	GenericFailThreshold    int                                  `json:"generic_fail_threshold"`
+	FailureWindowSeconds    int64                                `json:"failure_window_seconds"`
+	ProbeBackoffSeconds     []int64                              `json:"probe_backoff_seconds"`
+	HardShareCaps           bool                                 `json:"hard_share_caps"`
+	BenchmarkPriorEnabled   bool                                 `json:"benchmark_prior_enabled,omitempty"`
+	RouteVariants           []OpenAIRouteShadowAuditRouteVariant `json:"route_variants,omitempty"`
 }
 
 type OpenAIRouteShadowAuditBudgetWindow struct {
@@ -61,7 +68,9 @@ type OpenAIRouteShadowAuditBudgetWindow struct {
 // enter the audit table.
 type OpenAIRouteShadowAuditCandidate struct {
 	AccountID                        int64                        `json:"account_id"`
+	RouteFingerprint                 string                       `json:"route_fingerprint"`
 	EndpointHash                     string                       `json:"endpoint_hash"`
+	RouteVariant                     bool                         `json:"route_variant,omitempty"`
 	FailureDomain                    string                       `json:"failure_domain"`
 	Transport                        string                       `json:"transport"`
 	RateMultiplier                   float64                      `json:"rate_multiplier"`
@@ -78,6 +87,13 @@ type OpenAIRouteShadowAuditCandidate struct {
 	ObservationSamples               uint64                       `json:"observation_samples"`
 	RecentSamples                    uint64                       `json:"recent_samples"`
 	HourOfWeekSamples                uint64                       `json:"hour_of_week_samples"`
+	BenchmarkSamples                 uint64                       `json:"benchmark_samples,omitempty"`
+	BenchmarkEffectiveSamples        uint64                       `json:"benchmark_effective_samples,omitempty"`
+	BenchmarkRecentSamples           uint64                       `json:"benchmark_recent_samples,omitempty"`
+	BenchmarkHourOfWeekSamples       uint64                       `json:"benchmark_hour_of_week_samples,omitempty"`
+	BenchmarkConfidence              float64                      `json:"benchmark_confidence,omitempty"`
+	BenchmarkRecencyWeight           float64                      `json:"benchmark_recency_weight,omitempty"`
+	BenchmarkLastObservedAt          *time.Time                   `json:"benchmark_last_observed_at,omitempty"`
 	LoadRatio                        float64                      `json:"load_ratio"`
 	WaitingCount                     int                          `json:"waiting_count"`
 	CurrentAccountShare              float64                      `json:"current_account_share"`
@@ -107,49 +123,54 @@ type OpenAIRouteShadowAuditCandidate struct {
 }
 
 type OpenAIRouteShadowAuditSnapshot struct {
-	ActivationID         string                               `json:"activation_id"`
-	ShadowStartedAt      time.Time                            `json:"shadow_started_at"`
-	RequestClass         OpenAIRouteRequestClass              `json:"request_class"`
-	Policy               OpenAIRouteShadowAuditPolicy         `json:"policy"`
-	AdaptiveSeedHex      string                               `json:"adaptive_seed_hex"`
-	RequiredTransport    string                               `json:"required_transport"`
-	RequireCompact       bool                                 `json:"require_compact"`
-	ExcludedAccountIDs   []int64                              `json:"excluded_account_ids"`
-	EstimatedBaseCostUSD float64                              `json:"estimated_base_cost_usd"`
-	MinHealthyMultiplier float64                              `json:"min_healthy_multiplier"`
-	BudgetWindows        []OpenAIRouteShadowAuditBudgetWindow `json:"budget_windows"`
-	Candidates           []OpenAIRouteShadowAuditCandidate    `json:"candidates"`
-	Exclusions           []OpenAIRouteExclusion               `json:"exclusions"`
-	LegacyTopK           int                                  `json:"legacy_top_k"`
-	LegacyLoadSkew       float64                              `json:"legacy_load_skew"`
-	LegacySelectionOrder []int64                              `json:"legacy_selection_order"`
+	ActivationID                     string                               `json:"activation_id"`
+	ShadowStartedAt                  time.Time                            `json:"shadow_started_at"`
+	RequestClass                     OpenAIRouteRequestClass              `json:"request_class"`
+	Policy                           OpenAIRouteShadowAuditPolicy         `json:"policy"`
+	AdaptiveSeedHex                  string                               `json:"adaptive_seed_hex"`
+	RequiredTransport                string                               `json:"required_transport"`
+	RequireCompact                   bool                                 `json:"require_compact"`
+	ExcludedAccountIDs               []int64                              `json:"excluded_account_ids"`
+	EstimatedBaseCostUSD             float64                              `json:"estimated_base_cost_usd"`
+	MinHealthyMultiplier             float64                              `json:"min_healthy_multiplier"`
+	LegacySelectedEndpointHash       string                               `json:"legacy_selected_endpoint_hash,omitempty"`
+	AdaptiveSelectedEndpointHash     string                               `json:"adaptive_selected_endpoint_hash,omitempty"`
+	AdaptiveSelectedRouteFingerprint string                               `json:"adaptive_selected_route_fingerprint,omitempty"`
+	BudgetWindows                    []OpenAIRouteShadowAuditBudgetWindow `json:"budget_windows"`
+	Candidates                       []OpenAIRouteShadowAuditCandidate    `json:"candidates"`
+	Exclusions                       []OpenAIRouteExclusion               `json:"exclusions"`
+	LegacyTopK                       int                                  `json:"legacy_top_k"`
+	LegacyLoadSkew                   float64                              `json:"legacy_load_skew"`
+	LegacySelectionOrder             []int64                              `json:"legacy_selection_order"`
 }
 
 type OpenAIRouteShadowDecisionRecord struct {
-	ID                        int64                           `json:"id"`
-	DecisionID                string                          `json:"decision_id"`
-	RequestID                 string                          `json:"request_id"`
-	ClientRequestID           string                          `json:"client_request_id"`
-	Attempt                   int                             `json:"attempt"`
-	GroupID                   int64                           `json:"group_id"`
-	Model                     string                          `json:"model"`
-	RequestClass              OpenAIRouteRequestClass         `json:"request_class"`
-	PolicyMode                OpenAIRoutePolicyMode           `json:"policy_mode"`
-	PolicyVersion             int                             `json:"policy_version"`
-	ActivationID              string                          `json:"activation_id"`
-	ShadowStartedAt           time.Time                       `json:"shadow_started_at,omitempty"`
-	Reason                    string                          `json:"reason"`
-	Evaluated                 bool                            `json:"evaluated"`
-	EvaluationDurationMicros  int64                           `json:"evaluation_duration_us"`
-	LegacySelectedAccountID   int64                           `json:"legacy_selected_account_id,omitempty"`
-	AdaptiveSelectedAccountID int64                           `json:"adaptive_selected_account_id,omitempty"`
-	AdaptiveSelectedRate      float64                         `json:"adaptive_selected_rate,omitempty"`
-	CandidateCount            int                             `json:"candidate_count"`
-	ExcludedCount             int                             `json:"excluded_count"`
-	Diverged                  bool                            `json:"diverged"`
-	Emergency                 bool                            `json:"emergency"`
-	Snapshot                  *OpenAIRouteShadowAuditSnapshot `json:"snapshot"`
-	CreatedAt                 time.Time                       `json:"created_at"`
+	ID                               int64                           `json:"id"`
+	DecisionID                       string                          `json:"decision_id"`
+	RequestID                        string                          `json:"request_id"`
+	ClientRequestID                  string                          `json:"client_request_id"`
+	Attempt                          int                             `json:"attempt"`
+	GroupID                          int64                           `json:"group_id"`
+	Model                            string                          `json:"model"`
+	RequestClass                     OpenAIRouteRequestClass         `json:"request_class"`
+	PolicyMode                       OpenAIRoutePolicyMode           `json:"policy_mode"`
+	PolicyVersion                    int                             `json:"policy_version"`
+	ActivationID                     string                          `json:"activation_id"`
+	ShadowStartedAt                  time.Time                       `json:"shadow_started_at,omitempty"`
+	Reason                           string                          `json:"reason"`
+	Evaluated                        bool                            `json:"evaluated"`
+	EvaluationDurationMicros         int64                           `json:"evaluation_duration_us"`
+	LegacySelectedAccountID          int64                           `json:"legacy_selected_account_id,omitempty"`
+	AdaptiveSelectedAccountID        int64                           `json:"adaptive_selected_account_id,omitempty"`
+	AdaptiveSelectedEndpointHash     string                          `json:"adaptive_selected_endpoint_hash,omitempty"`
+	AdaptiveSelectedRouteFingerprint string                          `json:"adaptive_selected_route_fingerprint,omitempty"`
+	AdaptiveSelectedRate             float64                         `json:"adaptive_selected_rate,omitempty"`
+	CandidateCount                   int                             `json:"candidate_count"`
+	ExcludedCount                    int                             `json:"excluded_count"`
+	Diverged                         bool                            `json:"diverged"`
+	Emergency                        bool                            `json:"emergency"`
+	Snapshot                         *OpenAIRouteShadowAuditSnapshot `json:"snapshot"`
+	CreatedAt                        time.Time                       `json:"created_at"`
 }
 
 type OpenAIRouteShadowDecisionFilter struct {
@@ -191,6 +212,15 @@ type OpenAIRouteShadowSelectedProviderStats struct {
 	SelectedPercent float64 `json:"selected_percent"`
 }
 
+type OpenAIRouteShadowSelectedRouteStats struct {
+	AccountID       int64   `json:"account_id"`
+	EndpointHash    string  `json:"endpoint_hash"`
+	FailureDomain   string  `json:"failure_domain"`
+	RouteVariant    bool    `json:"route_variant"`
+	SelectedCount   int64   `json:"selected_count"`
+	SelectedPercent float64 `json:"selected_percent"`
+}
+
 type OpenAIRouteShadowDecisionStats struct {
 	Total                          int64                                    `json:"total"`
 	Evaluated                      int64                                    `json:"evaluated"`
@@ -220,6 +250,7 @@ type OpenAIRouteShadowDecisionStats struct {
 	LegacyTTFTP95Ms                float64                                  `json:"legacy_ttft_p95_ms"`
 	SelectedAccounts               []OpenAIRouteShadowSelectedAccountStats  `json:"selected_accounts"`
 	SelectedProviders              []OpenAIRouteShadowSelectedProviderStats `json:"selected_providers"`
+	SelectedRoutes                 []OpenAIRouteShadowSelectedRouteStats    `json:"selected_routes"`
 }
 
 type OpenAIRouteAuditHealth struct {

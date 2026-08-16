@@ -2,12 +2,29 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+type openAIRouteBenchmarkObservationStoreStub struct {
+	*openAIRouteObservationStoreStub
+	profiles map[string]OpenAIRouteBenchmarkObservationProfile
+	err      error
+	calls    int
+}
+
+func (s *openAIRouteBenchmarkObservationStoreStub) GetBenchmarkBatch(
+	_ context.Context,
+	_ []OpenAIRouteKey,
+	_ time.Time,
+) (map[string]OpenAIRouteBenchmarkObservationProfile, error) {
+	s.calls++
+	return s.profiles, s.err
+}
 
 type openAIRoutePolicyReaderStub struct {
 	value string
@@ -284,6 +301,271 @@ func TestOpenAIRouteController_SharedObservationsOverrideProcessLocalInputs(t *t
 	require.Less(t, byID[1].SuccessLowerBound, byID[2].SuccessLowerBound)
 	require.Greater(t, byID[1].TTFTMilliseconds, byID[2].TTFTMilliseconds)
 	require.InDelta(t, 0.5, byID[1].CurrentAccountShare, 1e-12)
+}
+
+func TestOpenAIRouteControllerBenchmarkPriorIsOptInAndDefaultAuditIsCompatible(t *testing.T) {
+	reader := &openAIRoutePolicyReaderStub{value: `[{
+		"group_id":7,"model":"gpt-5.6-sol","request_class":"text","enabled":true,"mode":"shadow",
+		"policy_version":17,"activation_id":"test-activation-17","shadow_started_at":"2026-08-01T00:00:00Z",
+		"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01
+	}]`}
+	store := &openAIRouteBenchmarkObservationStoreStub{openAIRouteObservationStoreStub: &openAIRouteObservationStoreStub{}}
+	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{}, store)
+
+	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
+		GroupID: 7, Model: "gpt-5.6-sol", RequestClass: OpenAIRouteRequestClassText,
+		Candidates: []OpenAIRouteShadowCandidate{{
+			Account: testOpenAIRouteControllerAccount(1, 0.15), Endpoint: "https://hk.pomoai.xyz/v1/responses", Transport: string(OpenAIUpstreamTransportHTTPSSE),
+		}},
+	})
+
+	require.NoError(t, err)
+	require.True(t, decision.Evaluated)
+	require.Zero(t, store.calls, "existing Shadow policies must not query the operational benchmark table")
+	encoded, err := json.Marshal(decision.Audit)
+	require.NoError(t, err)
+	require.NotContains(t, string(encoded), "benchmark_", "default-disabled code must not perturb existing audit snapshots")
+}
+
+func TestOpenAIRouteControllerAppliesAuditableBoundedBenchmarkPrior(t *testing.T) {
+	reader := &openAIRoutePolicyReaderStub{value: `[{
+		"group_id":7,"model":"gpt-5.6-sol","request_class":"text","enabled":true,"mode":"shadow",
+		"policy_version":18,"activation_id":"test-activation-18","shadow_started_at":"2026-08-01T00:00:00Z",
+		"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01,
+		"benchmark_prior_enabled":true
+	}]`}
+	account := testOpenAIRouteControllerAccount(23, 0.15)
+	key, err := NewOpenAIRouteKey(account, 7, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://hk.pomoai.xyz/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
+	require.NoError(t, err)
+	now := time.Date(2026, 8, 15, 8, 30, 0, 0, time.UTC)
+	benchmark := FinalizeOpenAIRouteBenchmarkObservationProfile(testOpenAIRouteBenchmarkProfile(80, 80, now), now)
+	store := &openAIRouteBenchmarkObservationStoreStub{
+		openAIRouteObservationStoreStub: &openAIRouteObservationStoreStub{},
+		profiles: map[string]OpenAIRouteBenchmarkObservationProfile{
+			OpenAIRouteObservationFingerprint(key): benchmark,
+		},
+	}
+	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{}, store)
+
+	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
+		GroupID: 7, Model: "gpt-5.6-sol", RequestClass: OpenAIRouteRequestClassText, Now: now,
+		Candidates: []OpenAIRouteShadowCandidate{{
+			Account: account, Endpoint: "https://hk.pomoai.xyz/v1/responses", Transport: string(OpenAIUpstreamTransportHTTPSSE),
+		}},
+	})
+
+	require.NoError(t, err)
+	require.True(t, decision.Evaluated)
+	require.Equal(t, 1, store.calls)
+	require.True(t, decision.Audit.Policy.BenchmarkPriorEnabled)
+	require.Len(t, decision.Audit.Candidates, 1)
+	candidate := decision.Audit.Candidates[0]
+	require.Equal(t, "active_benchmark_prior", candidate.ObservationSource)
+	require.Zero(t, candidate.ObservationSamples, "active evidence must not masquerade as passive traffic")
+	require.Equal(t, uint64(80), candidate.BenchmarkSamples)
+	require.Equal(t, uint64(20), candidate.BenchmarkEffectiveSamples)
+	require.InDelta(t, 0.25, candidate.BenchmarkConfidence, 1e-12)
+	require.NotNil(t, candidate.BenchmarkLastObservedAt)
+	require.Equal(t, now, *candidate.BenchmarkLastObservedAt)
+	_, err = controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
+		GroupID: 7, Model: "gpt-5.6-sol", RequestClass: OpenAIRouteRequestClassText, Now: now,
+		Candidates: []OpenAIRouteShadowCandidate{{
+			Account: account, Endpoint: "https://hk.pomoai.xyz/v1/responses", Transport: string(OpenAIUpstreamTransportHTTPSSE),
+		}},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, store.calls, "benchmark reads must be removed from the per-request Shadow hot path")
+}
+
+func TestOpenAIRouteControllerRouteVariantsAreShadowOnlyRouteScopedAndEvidenceGated(t *testing.T) {
+	reader := &openAIRoutePolicyReaderStub{value: `[{
+		"group_id":6,"model":"gpt-5.6-sol","request_class":"text","enabled":true,"mode":"shadow",
+		"policy_version":20,"activation_id":"test-activation-20","shadow_started_at":"2026-08-01T00:00:00Z",
+		"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01,
+		"benchmark_prior_enabled":true,
+		"route_variants":[
+			{"account_id":23,"base_url":"https://hk.pomoai.xyz"},
+			{"account_id":23,"base_url":"https://jp.pomoai.xyz"}
+		]
+	}]`}
+	account := testOpenAIRouteControllerAccount(23, 0.15)
+	hkEndpoint := "https://hk.pomoai.xyz/v1/responses"
+	jpEndpoint := "https://jp.pomoai.xyz/v1/responses"
+	hkKey, err := NewOpenAIRouteKey(account, 6, "gpt-5.6-sol", OpenAIRouteRequestClassText, hkEndpoint, string(OpenAIUpstreamTransportHTTPSSE))
+	require.NoError(t, err)
+	jpKey, err := NewOpenAIRouteKey(account, 6, "gpt-5.6-sol", OpenAIRouteRequestClassText, jpEndpoint, string(OpenAIUpstreamTransportHTTPSSE))
+	require.NoError(t, err)
+	now := time.Date(2026, 8, 15, 8, 30, 0, 0, time.UTC)
+	passive := NewOpenAIRouteObservationAggregate()
+	passive.AttemptCount = 100
+	passive.ReliabilityCount = 100
+	passive.SuccessCount = 100
+	passive.TTFTSampleCount = 100
+	passive.TTFTHistogram[OpenAIRouteLatencyHistogramBucket(1_000)] = 100
+	passive.LatencySampleCount = 100
+	passive.LatencyHistogram[OpenAIRouteLatencyHistogramBucket(3_000)] = 100
+	store := &openAIRouteBenchmarkObservationStoreStub{
+		openAIRouteObservationStoreStub: &openAIRouteObservationStoreStub{profiles: map[string]OpenAIRouteObservationProfile{
+			OpenAIRouteObservationFingerprint(hkKey): {Global: passive, Recent: passive},
+		}},
+		profiles: map[string]OpenAIRouteBenchmarkObservationProfile{
+			OpenAIRouteObservationFingerprint(jpKey): FinalizeOpenAIRouteBenchmarkObservationProfile(
+				testOpenAIRouteBenchmarkProfile(1, 1, now), now,
+			),
+		},
+	}
+	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{}, store)
+
+	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
+		GroupID: 6, Model: "gpt-5.6-sol", RequestClass: OpenAIRouteRequestClassText, Now: now, Seed: 42,
+		Candidates: []OpenAIRouteShadowCandidate{{
+			Account: account, Endpoint: hkEndpoint, Transport: string(OpenAIUpstreamTransportHTTPSSE), Priority: 1,
+		}},
+	})
+
+	require.NoError(t, err)
+	require.True(t, decision.Evaluated)
+	require.Equal(t, int64(23), decision.SelectedAccountID)
+	require.Equal(t, hkKey.EndpointHash, decision.SelectedEndpointHash)
+	require.Equal(t, OpenAIRouteObservationFingerprint(hkKey), decision.SelectedRouteFingerprint)
+	require.Equal(t, 2, decision.CandidateCount)
+	require.Equal(t, 1, decision.ExcludedCount)
+	require.Len(t, decision.Audit.Policy.RouteVariants, 2)
+	require.Len(t, decision.Audit.Candidates, 2)
+	byEndpoint := make(map[string]OpenAIRouteShadowAuditCandidate)
+	for _, candidate := range decision.Audit.Candidates {
+		byEndpoint[candidate.EndpointHash] = candidate
+		require.InDelta(t, 1, candidate.CurrentAccountShare, 1e-12, "same-account endpoints must share one account concentration")
+		require.InDelta(t, 1, candidate.CurrentProviderShare, 1e-12, "same credential failure domain must share provider concentration")
+	}
+	require.False(t, byEndpoint[hkKey.EndpointHash].RouteVariant)
+	require.True(t, byEndpoint[hkKey.EndpointHash].Selected)
+	jpAudit := byEndpoint[jpKey.EndpointHash]
+	require.True(t, jpAudit.RouteVariant)
+	require.Equal(t, uint64(1), jpAudit.BenchmarkSamples)
+	require.Zero(t, jpAudit.BenchmarkEffectiveSamples)
+	require.Contains(t, jpAudit.ExclusionReasons, OpenAIRouteExcludedBenchmark)
+	require.False(t, jpAudit.Selected)
+	require.Len(t, decision.Audit.Exclusions, 1)
+	require.Equal(t, OpenAIRouteObservationFingerprint(jpKey), decision.Audit.Exclusions[0].RouteFingerprint)
+	encoded, err := json.Marshal(decision.Audit)
+	require.NoError(t, err)
+	require.NotContains(t, string(encoded), "pomoai.xyz", "raw Base URLs must never enter durable Shadow audit")
+}
+
+func TestOpenAIRouteControllerRouteVariantPlanMapsSelectionByFingerprint(t *testing.T) {
+	reader := &openAIRoutePolicyReaderStub{value: `[{
+		"group_id":6,"model":"gpt-5.6-sol","request_class":"text","enabled":true,"mode":"shadow",
+		"policy_version":21,"activation_id":"test-activation-21","shadow_started_at":"2026-08-01T00:00:00Z",
+		"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01,
+		"benchmark_prior_enabled":true,
+		"route_variants":[{"account_id":23,"base_url":"https://jp.pomoai.xyz"}]
+	}]`}
+	account := testOpenAIRouteControllerAccount(23, 0.15)
+	now := time.Date(2026, 8, 15, 8, 30, 0, 0, time.UTC)
+	hkKey, err := NewOpenAIRouteKey(account, 6, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://hk.pomoai.xyz/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
+	require.NoError(t, err)
+	jpKey, err := NewOpenAIRouteKey(account, 6, "gpt-5.6-sol", OpenAIRouteRequestClassText, "https://jp.pomoai.xyz/v1/responses", string(OpenAIUpstreamTransportHTTPSSE))
+	require.NoError(t, err)
+	poorPassive := NewOpenAIRouteObservationAggregate()
+	poorPassive.AttemptCount = 100
+	poorPassive.ReliabilityCount = 100
+	poorPassive.SuccessCount = 50
+	poorPassive.FailureCount = 50
+	poorPassive.TTFTSampleCount = 50
+	poorPassive.TTFTHistogram[OpenAIRouteLatencyHistogramBucket(8_000)] = 50
+	store := &openAIRouteBenchmarkObservationStoreStub{
+		openAIRouteObservationStoreStub: &openAIRouteObservationStoreStub{profiles: map[string]OpenAIRouteObservationProfile{
+			OpenAIRouteObservationFingerprint(hkKey): {Global: poorPassive},
+		}},
+		profiles: map[string]OpenAIRouteBenchmarkObservationProfile{
+			OpenAIRouteObservationFingerprint(jpKey): FinalizeOpenAIRouteBenchmarkObservationProfile(
+				testOpenAIRouteBenchmarkProfile(80, 80, now), now,
+			),
+		},
+	}
+	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{}, store)
+
+	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
+		GroupID: 6, Model: "gpt-5.6-sol", RequestClass: OpenAIRouteRequestClassText, Now: now, Seed: 42,
+		Candidates: []OpenAIRouteShadowCandidate{{
+			Account: account, Endpoint: "https://hk.pomoai.xyz/v1/responses", Transport: string(OpenAIUpstreamTransportHTTPSSE), Priority: 1,
+		}},
+	})
+
+	require.NoError(t, err)
+	require.True(t, decision.Evaluated)
+	require.Zero(t, decision.ExcludedCount)
+	selectedCount := 0
+	for _, candidate := range decision.Audit.Candidates {
+		if candidate.Selected {
+			selectedCount++
+			require.Equal(t, decision.SelectedEndpointHash, candidate.EndpointHash)
+			require.Equal(t, decision.SelectedRouteFingerprint, candidate.RouteFingerprint)
+		}
+	}
+	require.Equal(t, 1, selectedCount, "duplicate account IDs must not mark both endpoint variants selected")
+}
+
+func TestOpenAIRouteControllerRejectsUnsupportedBenchmarkPriorPolicies(t *testing.T) {
+	benchmarkStore := &openAIRouteBenchmarkObservationStoreStub{openAIRouteObservationStoreStub: &openAIRouteObservationStoreStub{}}
+	tests := []struct {
+		name         string
+		requestClass OpenAIRouteRequestClass
+		store        OpenAIRouteObservationStore
+	}{
+		{name: "image", requestClass: OpenAIRouteRequestClassImage, store: benchmarkStore},
+		{name: "missing benchmark store", requestClass: OpenAIRouteRequestClassText, store: &openAIRouteObservationStoreStub{}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			reader := &openAIRoutePolicyReaderStub{value: `[{
+				"group_id":7,"model":"*","request_class":"*","enabled":true,"mode":"shadow",
+				"policy_version":19,"activation_id":"test-activation-19","shadow_started_at":"2026-08-01T00:00:00Z",
+				"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01,
+				"benchmark_prior_enabled":true
+			}]`}
+			controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, &openAIRouteBudgetSnapshotStoreStub{}, test.store)
+			model := "gpt-5.6-sol"
+			endpoint := "https://hk.pomoai.xyz/v1/responses"
+			if test.requestClass == OpenAIRouteRequestClassImage {
+				model = "gpt-image-2"
+				endpoint = "https://hk.pomoai.xyz/v1/images/generations"
+			}
+
+			decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
+				GroupID: 7, Model: model, RequestClass: test.requestClass,
+				Candidates: []OpenAIRouteShadowCandidate{{
+					Account: testOpenAIRouteControllerAccount(23, 0.15), Endpoint: endpoint, Transport: string(OpenAIUpstreamTransportHTTPSSE),
+				}},
+			})
+
+			require.ErrorIs(t, err, ErrOpenAIRouteInvalidPolicy)
+			require.False(t, decision.Evaluated)
+		})
+	}
+}
+
+func TestOpenAIRouteControllerRejectsRouteVariantsWithoutBenchmarkPrior(t *testing.T) {
+	reader := &openAIRoutePolicyReaderStub{value: `[{
+		"group_id":6,"model":"gpt-5.6-sol","request_class":"text","enabled":true,"mode":"shadow",
+		"policy_version":22,"activation_id":"test-activation-22","shadow_started_at":"2026-08-01T00:00:00Z",
+		"target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01,
+		"route_variants":[{"account_id":23,"base_url":"https://jp.pomoai.xyz"}]
+	}]`}
+	health := &openAIRouteHealthStoreStub{}
+	controller := NewOpenAIRouteController(reader, health, &openAIRouteBudgetSnapshotStoreStub{}, &openAIRouteObservationStoreStub{})
+
+	decision, err := controller.EvaluateShadow(context.Background(), OpenAIRouteShadowRequest{
+		GroupID: 6, Model: "gpt-5.6-sol", RequestClass: OpenAIRouteRequestClassText,
+		Candidates: []OpenAIRouteShadowCandidate{{
+			Account: testOpenAIRouteControllerAccount(23, 0.15), Endpoint: "https://hk.pomoai.xyz/v1/responses", Transport: string(OpenAIUpstreamTransportHTTPSSE),
+		}},
+	})
+
+	require.ErrorIs(t, err, ErrOpenAIRouteInvalidPolicy)
+	require.False(t, decision.Evaluated)
+	require.Zero(t, health.batchCalls)
 }
 
 func TestOpenAIRouteControllerUsesRouteSpecificSettledTextCostInBudgetAndAudit(t *testing.T) {

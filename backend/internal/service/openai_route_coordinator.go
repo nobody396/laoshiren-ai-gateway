@@ -91,10 +91,7 @@ func allocateAndReserveOpenAIRouteWithLedgers(
 		}
 		lastReservation = reservation
 		if !reservation.Allowed {
-			plan.Excluded = append(plan.Excluded, OpenAIRouteExclusion{
-				AccountID: ranked.Candidate.Key.AccountID,
-				Reason:    OpenAIRouteExcludedCost,
-			})
+			plan.Excluded = append(plan.Excluded, newOpenAIRouteExclusion(ranked.Candidate, OpenAIRouteExcludedCost))
 			continue
 		}
 		plan.Selected = ranked

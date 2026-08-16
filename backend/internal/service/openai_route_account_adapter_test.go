@@ -64,6 +64,23 @@ func TestOpenAIRouteEndpointForAccountAcceptsAbsoluteObservedEndpoint(t *testing
 	)
 }
 
+func TestOpenAIRouteEndpointForBaseURLMatchesAccountRouteIdentity(t *testing.T) {
+	account := &Account{
+		ID:       23,
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeAPIKey,
+		Credentials: map[string]any{
+			"base_url": "https://hk.pomoai.xyz/v1/",
+		},
+	}
+	fromBenchmark := OpenAIRouteEndpointForBaseURL("https://hk.pomoai.xyz/v1/", "/v1/responses")
+	fromAccount := openAIRouteEndpointForAccount(account, "/v1/responses")
+
+	require.Equal(t, fromAccount, fromBenchmark)
+	require.Equal(t, OpenAIRouteEndpointHash(fromAccount), OpenAIRouteEndpointHash(fromBenchmark))
+	require.Equal(t, "https://hk.pomoai.xyz/v1/responses", fromBenchmark)
+}
+
 func TestOpenAIRouteWilsonLowerBound_IsConservativeForSmallSamples(t *testing.T) {
 	require.Equal(t, 0.0, OpenAIRouteWilsonLowerBound(0, 0, 1.96))
 	require.Less(t, OpenAIRouteWilsonLowerBound(1, 1, 1.96), 0.30)

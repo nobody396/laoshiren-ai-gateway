@@ -63,6 +63,61 @@ func TestApplyOpenAIRouteBenchmarkPriorIsBoundedAndLeavesPassiveAccountingUntouc
 	require.InDelta(t, 4, blended.ActualAccountCostUSD, 1e-12)
 }
 
+func TestApplyOpenAIRouteBenchmarkPriorPreservesSparseLatencyOrdering(t *testing.T) {
+	now := time.Date(2026, 8, 16, 8, 30, 0, 0, time.UTC)
+	build := func(firstBucket, lastBucket int) OpenAIRouteBenchmarkObservationProfile {
+		profile := NewOpenAIRouteBenchmarkObservationProfile()
+		profile.Global.AttemptCount = 16
+		profile.Global.ReliabilityCount = 16
+		profile.Global.SuccessCount = 16
+		profile.Global.LastObservedAt = now
+		for sample := 0; sample < 16; sample++ {
+			bucket := firstBucket + sample%(lastBucket-firstBucket+1)
+			profile.Global.TTFTHistogram[bucket]++
+			profile.Global.LatencyHistogram[bucket]++
+			profile.Global.TTFTSampleCount++
+			profile.Global.LatencySampleCount++
+		}
+		return FinalizeOpenAIRouteBenchmarkObservationProfile(profile, now)
+	}
+
+	fast := build(0, 3)
+	slow := build(7, 10)
+	require.Equal(t, uint64(1), fast.Evidence.EffectiveSamples)
+	require.Equal(t, uint64(1), slow.Evidence.EffectiveSamples)
+
+	fastPrior, fastApplied := ApplyOpenAIRouteBenchmarkPrior(NewOpenAIRouteObservationAggregate(), fast)
+	slowPrior, slowApplied := ApplyOpenAIRouteBenchmarkPrior(NewOpenAIRouteObservationAggregate(), slow)
+
+	require.True(t, fastApplied)
+	require.True(t, slowApplied)
+	require.Equal(t, uint64(1), fastPrior.ReliabilityCount)
+	require.Equal(t, uint64(1), fastPrior.TTFTSampleCount,
+		"one effective sample must retain a representative TTFT bucket")
+	require.Equal(t, uint64(1), fastPrior.LatencySampleCount,
+		"one effective sample must retain a representative completion bucket")
+	require.Equal(t, fastPrior.TTFTSampleCount, sumOpenAIRouteHistogram(fastPrior.TTFTHistogram))
+	require.Equal(t, slowPrior.TTFTSampleCount, sumOpenAIRouteHistogram(slowPrior.TTFTHistogram))
+	require.Less(t, fastPrior.TTFTPercentile(0.90), slowPrior.TTFTPercentile(0.90),
+		"weak route priors must preserve latency ordering instead of collapsing to zero")
+	require.Less(t, fastPrior.LatencyPercentile(0.95), slowPrior.LatencyPercentile(0.95))
+	require.Zero(t, fastPrior.ActualCostSamples)
+	require.Zero(t, fastPrior.ActualBaseCostUSD)
+	require.Zero(t, fastPrior.ActualAccountCostUSD)
+}
+
+func TestDownsampleOpenAIRouteBenchmarkHistogramUsesMedianForOneSample(t *testing.T) {
+	histogram := make([]uint64, len(OpenAIRouteLatencyHistogramUpperBoundsMS))
+	histogram[1] = 3
+	histogram[5] = 10
+	histogram[9] = 3
+
+	downsized := downsampleOpenAIRouteBenchmarkHistogram(histogram, 1)
+
+	require.Equal(t, uint64(1), sumOpenAIRouteHistogram(downsized))
+	require.Equal(t, uint64(1), downsized[5])
+}
+
 func TestFinalizeOpenAIRouteBenchmarkObservationProfileDecaysWithRecency(t *testing.T) {
 	now := time.Date(2026, 8, 15, 8, 30, 0, 0, time.UTC)
 	fresh := FinalizeOpenAIRouteBenchmarkObservationProfile(

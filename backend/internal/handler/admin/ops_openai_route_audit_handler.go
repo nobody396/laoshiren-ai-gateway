@@ -131,15 +131,18 @@ func parseOpenAIRouteShadowDecisionFilter(c *gin.Context, withPagination bool) (
 		return nil, err
 	}
 	filter := &service.OpenAIRouteShadowDecisionFilter{
-		StartTime:       &start,
-		EndTime:         &end,
-		Model:           strings.TrimSpace(c.Query("model")),
-		RequestClass:    service.OpenAIRouteRequestClass(strings.TrimSpace(c.Query("request_class"))),
-		PolicyMode:      service.OpenAIRoutePolicyMode(strings.TrimSpace(c.Query("policy_mode"))),
-		ActivationID:    strings.TrimSpace(c.Query("activation_id")),
-		Reason:          strings.TrimSpace(c.Query("reason")),
-		RequestID:       strings.TrimSpace(c.Query("request_id")),
-		ClientRequestID: strings.TrimSpace(c.Query("client_request_id")),
+		StartTime:            &start,
+		EndTime:              &end,
+		Model:                strings.TrimSpace(c.Query("model")),
+		RequestClass:         service.OpenAIRouteRequestClass(strings.TrimSpace(c.Query("request_class"))),
+		PolicyMode:           service.OpenAIRoutePolicyMode(strings.TrimSpace(c.Query("policy_mode"))),
+		ActivationID:         strings.TrimSpace(c.Query("activation_id")),
+		ExperimentID:         strings.TrimSpace(c.Query("experiment_id")),
+		VariantID:            strings.TrimSpace(c.Query("variant_id")),
+		TreatmentFingerprint: strings.TrimSpace(c.Query("treatment_fingerprint")),
+		Reason:               strings.TrimSpace(c.Query("reason")),
+		RequestID:            strings.TrimSpace(c.Query("request_id")),
+		ClientRequestID:      strings.TrimSpace(c.Query("client_request_id")),
 	}
 	if filter.RequestClass != "" && !filter.RequestClass.Valid() {
 		return nil, strconv.ErrSyntax
@@ -148,6 +151,9 @@ func parseOpenAIRouteShadowDecisionFilter(c *gin.Context, withPagination bool) (
 		return nil, strconv.ErrSyntax
 	}
 	if len(filter.ActivationID) > 128 {
+		return nil, strconv.ErrSyntax
+	}
+	if len(filter.ExperimentID) > 128 || len(filter.VariantID) > 64 || len(filter.TreatmentFingerprint) > 32 {
 		return nil, strconv.ErrSyntax
 	}
 	if withPagination {

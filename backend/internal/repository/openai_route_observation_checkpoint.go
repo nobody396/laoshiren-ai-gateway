@@ -26,6 +26,7 @@ type openAIRouteObservationStore struct {
 	cache      service.OpenAIRouteObservationStore
 	checkpoint *openAIRouteObservationCheckpointRepository
 	benchmark  *openAIRouteBenchmarkObservationRepository
+	evidence   *openAIRouteEvidenceEpochRepository
 }
 
 func NewOpenAIRouteObservationStore(rdbStore service.OpenAIRouteObservationStore, db *sql.DB) service.OpenAIRouteObservationStore {
@@ -33,7 +34,20 @@ func NewOpenAIRouteObservationStore(rdbStore service.OpenAIRouteObservationStore
 		cache:      rdbStore,
 		checkpoint: NewOpenAIRouteObservationCheckpointRepository(db),
 		benchmark:  NewOpenAIRouteBenchmarkObservationRepository(db),
+		evidence:   newOpenAIRouteEvidenceEpochRepository(db),
 	}
+}
+
+func (s *openAIRouteObservationStore) BeginOpenAIRouteEvidenceEpoch(ctx context.Context, epoch service.OpenAIRouteEvidenceEpoch) error {
+	return s.evidence.BeginOpenAIRouteEvidenceEpoch(ctx, epoch)
+}
+
+func (s *openAIRouteObservationStore) CheckpointOpenAIRouteEvidenceEpoch(ctx context.Context, epoch service.OpenAIRouteEvidenceEpoch) error {
+	return s.evidence.CheckpointOpenAIRouteEvidenceEpoch(ctx, epoch)
+}
+
+func (s *openAIRouteObservationStore) ListOpenAIRouteEvidenceEpochs(ctx context.Context, start, end time.Time) ([]service.OpenAIRouteEvidenceEpoch, error) {
+	return s.evidence.ListOpenAIRouteEvidenceEpochs(ctx, start, end)
 }
 
 func (s *openAIRouteObservationStore) GetBenchmarkBatch(

@@ -34,6 +34,9 @@ func healthyOpenAIRoutePromotionEvidence(start, end time.Time) (*OpenAIRouteShad
 		PolicySnapshotVariants:         1,
 		ActivationIDVariants:           1,
 		ShadowStartedAtVariants:        1,
+		ExperimentIDVariants:           1,
+		VariantIDVariants:              1,
+		TreatmentFingerprintVariants:   1,
 		ShadowStartedAt:                start,
 		PolicyMaxAccountShare:          0.80,
 		PolicyMaxProviderShare:         0.90,
@@ -64,6 +67,17 @@ func healthyOpenAIRoutePromotionEvidence(start, end time.Time) (*OpenAIRouteShad
 		ObservationCounterStartedAt:    start.Add(-time.Hour),
 		ObservationCompleteness:        1,
 		ObservationOutcomeCompleteness: 1,
+		DurableEvidence: &OpenAIRouteEvidenceWindowHealth{
+			Available: true,
+			Ready:     true,
+			Scope:     "durable_process_epochs_overlap_conservative",
+			Audit: OpenAIRouteEvidenceComponentHealth{
+				Ready: true,
+			},
+			Observation: OpenAIRouteEvidenceComponentHealth{
+				Ready: true,
+			},
+		},
 	}
 	return stats, health
 }
@@ -197,7 +211,7 @@ func TestBuildOpenAIRoutePromotionAssessmentReadyOnlyForManualReview(t *testing.
 	require.Equal(t, "consider_1_percent_canary", assessment.EligibleNextStage)
 	require.True(t, assessment.ManualApprovalRequired)
 	require.False(t, assessment.EnforceAvailable)
-	require.Equal(t, "process_instance_since_start_global", assessment.HealthSamplingScope)
+	require.Equal(t, "durable_process_epochs_overlap_conservative", assessment.HealthSamplingScope)
 	require.Equal(t, evidenceStart, assessment.ReviewSchedule.EvidenceStartAt)
 	require.Equal(t, evidenceStart.Add(24*time.Hour), assessment.ReviewSchedule.InitialCheckpointAt)
 	require.Equal(t, evidenceStart.Add(72*time.Hour), assessment.ReviewSchedule.PrimaryAssessmentAt)

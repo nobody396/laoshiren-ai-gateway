@@ -19,26 +19,30 @@ func TestBuildOpenAIRouteShadowWhereIncludesEveryAuditFilter(t *testing.T) {
 	emergency := true
 
 	where, args := buildOpenAIRouteShadowWhere(&service.OpenAIRouteShadowDecisionFilter{
-		StartTime:       &start,
-		EndTime:         &end,
-		GroupID:         &groupID,
-		Model:           "gpt-5.6-sol",
-		RequestClass:    service.OpenAIRouteRequestClassImage,
-		PolicyMode:      service.OpenAIRoutePolicyShadow,
-		PolicyVersion:   &version,
-		ActivationID:    "activation-3",
-		Reason:          "shadow_selected",
-		RequestID:       "request-1",
-		ClientRequestID: "client-1",
-		Evaluated:       &evaluated,
-		Diverged:        &diverged,
-		Emergency:       &emergency,
+		StartTime:            &start,
+		EndTime:              &end,
+		GroupID:              &groupID,
+		Model:                "gpt-5.6-sol",
+		RequestClass:         service.OpenAIRouteRequestClassImage,
+		PolicyMode:           service.OpenAIRoutePolicyShadow,
+		PolicyVersion:        &version,
+		ActivationID:         "activation-3",
+		ExperimentID:         "experiment-3",
+		VariantID:            "latency-v2",
+		TreatmentFingerprint: "0123456789abcdef0123456789abcdef",
+		Reason:               "shadow_selected",
+		RequestID:            "request-1",
+		ClientRequestID:      "client-1",
+		Evaluated:            &evaluated,
+		Diverged:             &diverged,
+		Emergency:            &emergency,
 	}, "d")
 
-	require.Len(t, args, 14)
+	require.Len(t, args, 17)
 	for _, column := range []string{
 		"d.created_at >=", "d.created_at <", "d.group_id =", "d.model =", "d.request_class =",
-		"d.policy_mode =", "d.policy_version =", "d.activation_id =", "d.reason =", "d.request_id =", "d.client_request_id =",
+		"d.policy_mode =", "d.policy_version =", "d.activation_id =", "d.experiment_id =", "d.variant_id =",
+		"d.treatment_fingerprint =", "d.reason =", "d.request_id =", "d.client_request_id =",
 		"d.evaluated =", "d.diverged =", "d.emergency =",
 	} {
 		require.True(t, strings.Contains(where, column), "missing %s in %s", column, where)

@@ -12,11 +12,24 @@ import (
 )
 
 type openAIRouteDecisionRepository struct {
-	db *sql.DB
+	db       *sql.DB
+	evidence *openAIRouteEvidenceEpochRepository
 }
 
 func NewOpenAIRouteDecisionRepository(db *sql.DB) service.OpenAIRouteDecisionRepository {
-	return &openAIRouteDecisionRepository{db: db}
+	return &openAIRouteDecisionRepository{db: db, evidence: newOpenAIRouteEvidenceEpochRepository(db)}
+}
+
+func (r *openAIRouteDecisionRepository) BeginOpenAIRouteEvidenceEpoch(ctx context.Context, epoch service.OpenAIRouteEvidenceEpoch) error {
+	return r.evidence.BeginOpenAIRouteEvidenceEpoch(ctx, epoch)
+}
+
+func (r *openAIRouteDecisionRepository) CheckpointOpenAIRouteEvidenceEpoch(ctx context.Context, epoch service.OpenAIRouteEvidenceEpoch) error {
+	return r.evidence.CheckpointOpenAIRouteEvidenceEpoch(ctx, epoch)
+}
+
+func (r *openAIRouteDecisionRepository) ListOpenAIRouteEvidenceEpochs(ctx context.Context, start, end time.Time) ([]service.OpenAIRouteEvidenceEpoch, error) {
+	return r.evidence.ListOpenAIRouteEvidenceEpochs(ctx, start, end)
 }
 
 func (r *openAIRouteDecisionRepository) CheckOpenAIRouteShadowDecisionStorage(ctx context.Context) error {
@@ -58,14 +71,24 @@ func (r *openAIRouteDecisionRepository) CreateOpenAIRouteShadowDecision(
 	if createdAt.IsZero() {
 		createdAt = time.Now().UTC()
 	}
+	experimentID := strings.TrimSpace(record.ExperimentID)
+	if experimentID == "" {
+		experimentID = strings.TrimSpace(record.ActivationID)
+	}
+	variantID := strings.TrimSpace(record.VariantID)
+	if variantID == "" {
+		variantID = "default"
+	}
 	_, err = r.db.ExecContext(ctx, `
 INSERT INTO openai_route_shadow_decisions (
   decision_id, request_id, client_request_id, attempt, group_id, model, request_class,
-  policy_mode, policy_version, activation_id, shadow_started_at, reason, evaluated, evaluation_duration_us,
+  policy_mode, policy_version, activation_id, experiment_id, variant_id, treatment_fingerprint,
+  shadow_started_at, reason, evaluated, evaluation_duration_us,
   legacy_selected_account_id, adaptive_selected_account_id, adaptive_selected_rate,
   candidate_count, excluded_count, diverged, emergency, snapshot, created_at
 ) VALUES (
-  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22::jsonb,$23
+  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,md5(COALESCE(($24::jsonb->'policy')::text, '{}')),
+  $13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24::jsonb,$25
 )`,
 		record.DecisionID,
 		record.RequestID,
@@ -77,6 +100,8 @@ INSERT INTO openai_route_shadow_decisions (
 		string(record.PolicyMode),
 		record.PolicyVersion,
 		record.ActivationID,
+		experimentID,
+		variantID,
 		nullableOpenAIRouteTimestamp(record.ShadowStartedAt),
 		record.Reason,
 		record.Evaluated,
@@ -135,7 +160,8 @@ func (r *openAIRouteDecisionRepository) ListOpenAIRouteShadowDecisions(
 SELECT
   d.id, d.decision_id, d.request_id, d.client_request_id, d.attempt,
   d.group_id, d.model, d.request_class, d.policy_mode, d.policy_version,
-  d.activation_id, d.shadow_started_at, d.reason,
+  d.activation_id, d.experiment_id, d.variant_id, d.treatment_fingerprint,
+  d.shadow_started_at, d.reason,
   d.evaluated, d.evaluation_duration_us,
   d.legacy_selected_account_id, d.adaptive_selected_account_id,
   d.adaptive_selected_rate, d.candidate_count, d.excluded_count,
@@ -162,7 +188,8 @@ LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
 		if err := rows.Scan(
 			&item.ID, &item.DecisionID, &item.RequestID, &item.ClientRequestID, &item.Attempt,
 			&item.GroupID, &item.Model, &item.RequestClass, &item.PolicyMode, &item.PolicyVersion,
-			&item.ActivationID, &shadowStartedAt, &item.Reason,
+			&item.ActivationID, &item.ExperimentID, &item.VariantID, &item.TreatmentFingerprint,
+			&shadowStartedAt, &item.Reason,
 			&item.Evaluated, &item.EvaluationDurationMicros,
 			&legacyID, &adaptiveID, &adaptiveRate, &item.CandidateCount, &item.ExcludedCount,
 			&item.Diverged, &item.Emergency, &snapshotRaw, &item.CreatedAt,
@@ -268,6 +295,9 @@ SELECT
   COUNT(DISTINCT snapshot->'policy')::bigint,
   COUNT(DISTINCT NULLIF(activation_id, ''))::bigint,
   COUNT(DISTINCT shadow_started_at)::bigint,
+  COUNT(DISTINCT NULLIF(experiment_id, ''))::bigint,
+  COUNT(DISTINCT NULLIF(variant_id, ''))::bigint,
+  COUNT(DISTINCT NULLIF(treatment_fingerprint, ''))::bigint,
   CASE WHEN COUNT(DISTINCT shadow_started_at) = 1
        THEN MIN(shadow_started_at)
        ELSE NULL END,
@@ -305,6 +335,9 @@ FROM linked`
 		&stats.PolicySnapshotVariants,
 		&stats.ActivationIDVariants,
 		&stats.ShadowStartedAtVariants,
+		&stats.ExperimentIDVariants,
+		&stats.VariantIDVariants,
+		&stats.TreatmentFingerprintVariants,
 		&shadowStartedAt,
 		&stats.PolicyMaxAccountShare,
 		&stats.PolicyMaxProviderShare,
@@ -461,8 +494,8 @@ func buildOpenAIRouteShadowWhere(filter *service.OpenAIRouteShadowDecisionFilter
 	if prefix != "" {
 		prefix += "."
 	}
-	conditions := make([]string, 0, 14)
-	args := make([]any, 0, 14)
+	conditions := make([]string, 0, 17)
+	args := make([]any, 0, 17)
 	add := func(condition string, value any) {
 		args = append(args, value)
 		conditions = append(conditions, fmt.Sprintf(condition, len(args)))
@@ -490,6 +523,15 @@ func buildOpenAIRouteShadowWhere(filter *service.OpenAIRouteShadowDecisionFilter
 	}
 	if value := strings.TrimSpace(filter.ActivationID); value != "" {
 		add(prefix+"activation_id = $%d", value)
+	}
+	if value := strings.TrimSpace(filter.ExperimentID); value != "" {
+		add(prefix+"experiment_id = $%d", value)
+	}
+	if value := strings.TrimSpace(filter.VariantID); value != "" {
+		add(prefix+"variant_id = $%d", value)
+	}
+	if value := strings.TrimSpace(filter.TreatmentFingerprint); value != "" {
+		add(prefix+"treatment_fingerprint = $%d", value)
 	}
 	if value := strings.TrimSpace(filter.Reason); value != "" {
 		add(prefix+"reason = $%d", value)

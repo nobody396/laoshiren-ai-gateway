@@ -54,6 +54,7 @@ type OpenAIRouteObservationCollector struct {
 	store            OpenAIRouteObservationStore
 	outcomeRecorder  OpenAIRouteOutcomeRecorder
 	pool             pond.Pool
+	evidence         *openAIRouteEvidenceTracker
 	counterStartedAt time.Time
 
 	submitted atomic.Uint64
@@ -94,6 +95,13 @@ func NewOpenAIRouteObservationCollectorWithOptions(store OpenAIRouteObservationS
 	}
 	collector.lastError.Store("")
 	collector.outcomeLastError.Store("")
+	if evidenceStore, ok := store.(OpenAIRouteEvidenceEpochStore); ok {
+		collector.evidence = newOpenAIRouteEvidenceTracker(
+			evidenceStore,
+			OpenAIRouteEvidenceComponentObservation,
+			collector.evidenceCounters,
+		)
+	}
 	if len(recorders) > 0 {
 		collector.outcomeRecorder = recorders[0]
 	}
@@ -103,6 +111,9 @@ func NewOpenAIRouteObservationCollectorWithOptions(store OpenAIRouteObservationS
 func (c *OpenAIRouteObservationCollector) Start() {
 	if c == nil || c.store == nil {
 		return
+	}
+	if c.evidence != nil {
+		c.evidence.Start()
 	}
 	c.checks.Add(1)
 	ctx, cancel := context.WithTimeout(context.Background(), openAIRouteObservationWriteTimeout)
@@ -317,5 +328,37 @@ func (c *OpenAIRouteObservationCollector) Stop() {
 	if c == nil || c.pool == nil {
 		return
 	}
-	c.stopOnce.Do(func() { c.pool.StopAndWait() })
+	c.stopOnce.Do(func() {
+		c.pool.StopAndWait()
+		if c.evidence != nil {
+			c.evidence.Stop()
+		}
+	})
+}
+
+func (c *OpenAIRouteObservationCollector) FlushDurableEvidence(ctx context.Context) error {
+	if c == nil || c.evidence == nil {
+		return ErrOpenAIRouteAuditUnavailable
+	}
+	return c.evidence.Flush(ctx)
+}
+
+func (c *OpenAIRouteObservationCollector) evidenceCounters() OpenAIRouteEvidenceCounters {
+	if c == nil {
+		return OpenAIRouteEvidenceCounters{}
+	}
+	stats := c.Stats()
+	return OpenAIRouteEvidenceCounters{
+		Attempted:       stats.Submitted,
+		Written:         stats.Written,
+		Failed:          stats.Failed,
+		Dropped:         stats.Dropped,
+		Rejected:        stats.Rejected,
+		OutcomeExpected: c.outcomeExpected.Load(),
+		OutcomeApplied:  stats.OutcomeApplied,
+		OutcomeFailed:   stats.OutcomeFailed,
+		StorageChecks:   stats.StorageChecks,
+		StorageFailed:   stats.StorageFailed,
+		LastError:       stats.LastError,
+	}
 }

@@ -113,6 +113,7 @@ func (s *openAIRouteHealthStoreStub) ReleaseHalfOpenPermit(context.Context, Open
 
 type openAIRouteBudgetSnapshotStoreStub struct {
 	windows        []OpenAIRouteBudgetWindowConfig
+	windowBatches  [][]OpenAIRouteBudgetWindowConfig
 	reserveCalls   int
 	settleCalls    int
 	lastReserve    OpenAIRouteBudgetStoreReserveRequest
@@ -121,11 +122,39 @@ type openAIRouteBudgetSnapshotStoreStub struct {
 
 func (s *openAIRouteBudgetSnapshotStoreStub) GetLedgers(_ context.Context, windows []OpenAIRouteBudgetWindowConfig) ([]OpenAIRouteBudgetLedger, error) {
 	s.windows = append([]OpenAIRouteBudgetWindowConfig(nil), windows...)
+	s.windowBatches = append(s.windowBatches, append([]OpenAIRouteBudgetWindowConfig(nil), windows...))
 	ledgers := make([]OpenAIRouteBudgetLedger, len(windows))
 	for i, window := range windows {
 		ledgers[i] = window.EmptyLedger()
 	}
 	return ledgers, nil
+}
+
+func TestOpenAIRouteControllerEvaluateShadowsIsolatesParallelVariants(t *testing.T) {
+	reader := &openAIRoutePolicyReaderStub{value: `{"policies":[
+		{"group_id":7,"model":"gpt-5.6-sol","request_class":"text","enabled":true,"mode":"shadow","policy_version":21,"activation_id":"activation-21","shadow_started_at":"2026-08-01T00:00:00Z","experiment_id":"scheduler-v2","variant_id":"reliability","target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01,"latency_beta":1.0},
+		{"group_id":7,"model":"gpt-5.6-sol","request_class":"text","enabled":true,"mode":"shadow","policy_version":21,"activation_id":"activation-21","shadow_started_at":"2026-08-01T00:00:00Z","experiment_id":"scheduler-v2","variant_id":"latency","target_avg_multiplier":0.30,"hard_avg_multiplier":0.30,"estimated_base_cost_usd":0.01,"latency_beta":2.0}
+	]}`}
+	budget := &openAIRouteBudgetSnapshotStoreStub{}
+	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, budget, &openAIRouteObservationStoreStub{})
+	now := time.Date(2026, 8, 16, 3, 0, 0, 0, time.UTC)
+	decisions, err := controller.EvaluateShadows(context.Background(), OpenAIRouteShadowRequest{
+		GroupID: 7, Model: "gpt-5.6-sol", RequestClass: OpenAIRouteRequestClassText, Now: now,
+		Candidates: []OpenAIRouteShadowCandidate{{
+			Account: testOpenAIRouteControllerAccount(1, 0.15), Endpoint: "https://example.invalid/v1/responses", Transport: string(OpenAIUpstreamTransportHTTPSSE),
+		}},
+	})
+	require.NoError(t, err)
+	require.Len(t, decisions, 2)
+	require.Equal(t, "scheduler-v2", decisions[0].ExperimentID)
+	require.Equal(t, "reliability", decisions[0].VariantID)
+	require.Equal(t, "latency", decisions[1].VariantID)
+	require.NotEqual(t, decisions[0].DecisionID, decisions[1].DecisionID)
+	require.True(t, decisions[0].Evaluated)
+	require.True(t, decisions[1].Evaluated)
+	require.Len(t, budget.windowBatches, 2)
+	require.Contains(t, budget.windowBatches[0][0].Scope.Epoch, ":scheduler-v2:reliability:")
+	require.Contains(t, budget.windowBatches[1][0].Scope.Epoch, ":scheduler-v2:latency:")
 }
 
 func (s *openAIRouteBudgetSnapshotStoreStub) Reserve(_ context.Context, req OpenAIRouteBudgetStoreReserveRequest) (OpenAIRouteBudgetStoreReservation, error) {

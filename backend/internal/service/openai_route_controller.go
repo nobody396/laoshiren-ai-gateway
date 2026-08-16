@@ -64,6 +64,8 @@ type OpenAIRouteShadowRequest struct {
 type OpenAIRouteShadowDecision struct {
 	DecisionID               string
 	ActivationID             string
+	ExperimentID             string
+	VariantID                string
 	ShadowStartedAt          time.Time
 	Evaluated                bool
 	Mode                     OpenAIRoutePolicyMode
@@ -87,6 +89,13 @@ type OpenAIRouteShadowEvaluator interface {
 	EvaluateShadow(ctx context.Context, req OpenAIRouteShadowRequest) (OpenAIRouteShadowDecision, error)
 }
 
+// OpenAIRouteShadowBatchEvaluator evaluates independent treatments against the
+// same immutable scheduling opportunity. It is Shadow-only: Legacy remains the
+// sole source of the account actually returned to the caller.
+type OpenAIRouteShadowBatchEvaluator interface {
+	EvaluateShadows(ctx context.Context, req OpenAIRouteShadowRequest) ([]OpenAIRouteShadowDecision, error)
+}
+
 // openAIRoutePolicyConfig is the versioned control-plane representation. A
 // missing setting or unmatched policy means legacy routing. No production
 // policy values are compiled into the binary.
@@ -99,6 +108,8 @@ type openAIRoutePolicyConfig struct {
 	Version         int    `json:"policy_version"`
 	ActivationID    string `json:"activation_id"`
 	ShadowStartedAt string `json:"shadow_started_at"`
+	ExperimentID    string `json:"experiment_id,omitempty"`
+	VariantID       string `json:"variant_id,omitempty"`
 
 	TargetAverageMultiplier *float64 `json:"target_avg_multiplier"`
 	HardAverageMultiplier   float64  `json:"hard_avg_multiplier"`
@@ -303,6 +314,14 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	decision.ShadowStartedAt = shadowStartedAt
 	decision.Audit.ActivationID = activationID
 	decision.Audit.ShadowStartedAt = shadowStartedAt
+	experimentID, variantID, err := config.normalizedExperimentIdentity(activationID)
+	if err != nil {
+		return decision, err
+	}
+	decision.ExperimentID = experimentID
+	decision.VariantID = variantID
+	decision.Audit.ExperimentID = experimentID
+	decision.Audit.VariantID = variantID
 	policy, err := config.normalizedPolicy()
 	if err != nil {
 		return decision, err
@@ -334,7 +353,16 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		auditRouteVariants,
 	)
 
-	windows := buildOpenAIRouteBudgetWindows(req.GroupID, req.Model, req.RequestClass, config.Version, now, policy)
+	windows := buildOpenAIRouteBudgetWindows(
+		req.GroupID,
+		req.Model,
+		req.RequestClass,
+		config.Version,
+		experimentID,
+		variantID,
+		now,
+		policy,
+	)
 	candidates := make([]OpenAIRouteCandidate, 0, len(shadowSources))
 	routeKeys := make([]OpenAIRouteKey, 0, len(shadowSources))
 	healthKeys := make([]OpenAIRouteHealthStoreKey, 0, 2*len(shadowSources))
@@ -585,6 +613,101 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	return decision, nil
 }
 
+// EvaluateShadows resolves every treatment at the most-specific policy scope.
+// Each treatment receives an isolated cost-budget namespace and a distinct
+// decision row. An invalid treatment is retained as unevaluated evidence while
+// healthy siblings continue; only a shared policy-read failure aborts the batch.
+func (c *OpenAIRouteController) EvaluateShadows(
+	ctx context.Context,
+	req OpenAIRouteShadowRequest,
+) ([]OpenAIRouteShadowDecision, error) {
+	if c == nil || c.reader == nil {
+		return []OpenAIRouteShadowDecision{{Mode: OpenAIRoutePolicyLegacy, Reason: "runtime_unavailable"}}, nil
+	}
+	now := req.Now
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	policies, err := c.loadPolicies(ctx, now)
+	if err != nil {
+		return nil, err
+	}
+	configs := resolveOpenAIRoutePolicyConfigs(policies, req.GroupID, req.Model, req.RequestClass)
+	if len(configs) == 0 {
+		decision, evaluateErr := c.EvaluateShadow(ctx, req)
+		return []OpenAIRouteShadowDecision{decision}, evaluateErr
+	}
+
+	results := make([]OpenAIRouteShadowDecision, 0, len(configs))
+	seen := make(map[string]struct{}, len(configs))
+	for _, config := range configs {
+		if !config.Enabled {
+			continue
+		}
+		mode := OpenAIRoutePolicyMode(strings.TrimSpace(config.Mode))
+		if mode == "" {
+			mode = OpenAIRoutePolicyShadow
+		}
+		if mode == OpenAIRoutePolicyLegacy {
+			continue
+		}
+		experimentID, variantID, identityErr := config.normalizedExperimentIdentity(strings.TrimSpace(config.ActivationID))
+		identityKey := experimentID + "\x00" + variantID
+		if identityErr == nil {
+			if _, duplicate := seen[identityKey]; duplicate {
+				identityErr = fmt.Errorf("%w: duplicate experiment_id/variant_id %q/%q", ErrOpenAIRouteInvalidPolicy, experimentID, variantID)
+			} else {
+				seen[identityKey] = struct{}{}
+			}
+		}
+		if identityErr != nil {
+			results = append(results, OpenAIRouteShadowDecision{
+				Mode:         mode,
+				Version:      config.Version,
+				ActivationID: strings.TrimSpace(config.ActivationID),
+				ExperimentID: experimentID,
+				VariantID:    variantID,
+				Reason:       "policy_invalid",
+			})
+			continue
+		}
+
+		isolated := &OpenAIRouteController{
+			reader:           openAIRouteFixedPolicyReader{config: config},
+			healthStore:      c.healthStore,
+			budgetStore:      c.budgetStore,
+			observationStore: c.observationStore,
+			benchmarkStore:   c.benchmarkStore,
+			observationCache: c.observationCache,
+			benchmarkCache:   c.benchmarkCache,
+		}
+		decision, evaluateErr := isolated.EvaluateShadow(ctx, req)
+		if evaluateErr != nil {
+			decision.Evaluated = false
+			decision.Reason = openAIRouteShadowEvaluationErrorReason(evaluateErr)
+		}
+		results = append(results, decision)
+	}
+	if len(results) == 0 {
+		return []OpenAIRouteShadowDecision{{Mode: OpenAIRoutePolicyLegacy, Reason: "policy_not_enabled"}}, nil
+	}
+	return results, nil
+}
+
+type openAIRouteFixedPolicyReader struct {
+	config openAIRoutePolicyConfig
+}
+
+func (r openAIRouteFixedPolicyReader) GetValue(context.Context, string) (string, error) {
+	raw, err := json.Marshal([]openAIRoutePolicyConfig{r.config})
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
+}
+
 func (c *OpenAIRouteController) SnapshotObservationProfileCache() (OpenAIRouteObservationProfileCacheStats, bool) {
 	if c == nil || c.observationCache == nil {
 		return OpenAIRouteObservationProfileCacheStats{}, false
@@ -804,48 +927,71 @@ func resolveOpenAIRoutePolicyConfig(
 	model string,
 	requestClass OpenAIRouteRequestClass,
 ) (openAIRoutePolicyConfig, bool) {
-	model = strings.TrimSpace(model)
+	matches := resolveOpenAIRoutePolicyConfigs(policies, groupID, model, requestClass)
+	if len(matches) == 0 {
+		return openAIRoutePolicyConfig{}, false
+	}
+	return matches[0], true
+}
+
+func resolveOpenAIRoutePolicyConfigs(
+	policies []openAIRoutePolicyConfig,
+	groupID int64,
+	model string,
+	requestClass OpenAIRouteRequestClass,
+) []openAIRoutePolicyConfig {
 	bestScore := -1
-	var best openAIRoutePolicyConfig
+	best := make([]openAIRoutePolicyConfig, 0, 1)
 	for _, policy := range policies {
-		if policy.GroupID != groupID {
+		score, matched := openAIRoutePolicyMatchScore(policy, groupID, model, requestClass)
+		if !matched || score < bestScore {
 			continue
 		}
-		classPattern := strings.TrimSpace(policy.RequestClass)
-		if classPattern == "" {
-			// Policies created before request classes existed governed text
-			// routing. Do not silently apply them to image requests.
-			classPattern = string(OpenAIRouteRequestClassText)
-		}
-		var classScore int
-		switch classPattern {
-		case string(requestClass):
-			classScore = 10_000_000
-		case "*":
-			classScore = 0
-		default:
-			continue
-		}
-		pattern := strings.TrimSpace(policy.Model)
-		score := -1
-		switch {
-		case pattern == model:
-			score = 1_000_000 + len(pattern)
-		case pattern == "*":
-			score = 0
-		case strings.HasSuffix(pattern, "*") && strings.HasPrefix(model, strings.TrimSuffix(pattern, "*")):
-			score = len(strings.TrimSuffix(pattern, "*"))
-		}
-		if score < 0 {
-			continue
-		}
-		score += classScore
 		if score > bestScore {
 			bestScore = score
-			best = policy
+			best = best[:0]
 		}
+		best = append(best, policy)
 	}
-	return best, bestScore >= 0
+	return best
+}
+
+func openAIRoutePolicyMatchScore(
+	policy openAIRoutePolicyConfig,
+	groupID int64,
+	model string,
+	requestClass OpenAIRouteRequestClass,
+) (int, bool) {
+	if policy.GroupID != groupID {
+		return 0, false
+	}
+	classPattern := strings.TrimSpace(policy.RequestClass)
+	if classPattern == "" {
+		classPattern = string(OpenAIRouteRequestClassText)
+	}
+	classScore := 0
+	switch classPattern {
+	case string(requestClass):
+		classScore = 10_000_000
+	case "*":
+	default:
+		return 0, false
+	}
+	model = strings.TrimSpace(model)
+	pattern := strings.TrimSpace(policy.Model)
+	score := -1
+	switch {
+	case pattern == model:
+		score = 1_000_000 + len(pattern)
+	case pattern == "*":
+		score = 0
+	case strings.HasSuffix(pattern, "*") && strings.HasPrefix(model, strings.TrimSuffix(pattern, "*")):
+		score = len(strings.TrimSuffix(pattern, "*"))
+	}
+	if score < 0 {
+		return 0, false
+	}
+	return score + classScore, true
 }
 
 func (c openAIRoutePolicyConfig) normalizedShadowActivation(now time.Time) (string, time.Time, error) {
@@ -886,6 +1032,38 @@ func (c openAIRoutePolicyConfig) normalizedShadowActivation(now time.Time) (stri
 		return "", time.Time{}, fmt.Errorf("%w: shadow_started_at cannot be in the future", ErrOpenAIRouteInvalidPolicy)
 	}
 	return activationID, startedAt, nil
+}
+
+func (c openAIRoutePolicyConfig) normalizedExperimentIdentity(activationID string) (string, string, error) {
+	experimentID := strings.TrimSpace(c.ExperimentID)
+	if experimentID == "" {
+		experimentID = strings.TrimSpace(activationID)
+	}
+	variantID := strings.TrimSpace(c.VariantID)
+	if variantID == "" {
+		variantID = "default"
+	}
+	if err := validateOpenAIRouteExperimentToken("experiment_id", experimentID, 128); err != nil {
+		return experimentID, variantID, err
+	}
+	if err := validateOpenAIRouteExperimentToken("variant_id", variantID, 64); err != nil {
+		return experimentID, variantID, err
+	}
+	return experimentID, variantID, nil
+}
+
+func validateOpenAIRouteExperimentToken(name, value string, max int) error {
+	if value == "" || len(value) > max {
+		return fmt.Errorf("%w: %s is required and must not exceed %d bytes", ErrOpenAIRouteInvalidPolicy, name, max)
+	}
+	for _, char := range value {
+		if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') ||
+			(char >= '0' && char <= '9') || strings.ContainsRune("-._:", char) {
+			continue
+		}
+		return fmt.Errorf("%w: %s contains unsupported characters", ErrOpenAIRouteInvalidPolicy, name)
+	}
+	return nil
 }
 
 func (c openAIRoutePolicyConfig) normalizedPolicy() (OpenAIRoutePolicy, error) {
@@ -957,6 +1135,8 @@ func buildOpenAIRouteBudgetWindows(
 	model string,
 	requestClass OpenAIRouteRequestClass,
 	version int,
+	experimentID string,
+	variantID string,
 	now time.Time,
 	policy OpenAIRoutePolicy,
 ) []OpenAIRouteBudgetWindowConfig {
@@ -972,7 +1152,13 @@ func buildOpenAIRouteBudgetWindows(
 	now = now.UTC()
 	windows := make([]OpenAIRouteBudgetWindowConfig, 0, len(definitions))
 	for _, definition := range definitions {
-		epoch := fmt.Sprintf("v%d:%s", version, now.Truncate(definition.duration).Format(time.RFC3339))
+		epoch := fmt.Sprintf(
+			"v%d:%s:%s:%s",
+			version,
+			strings.TrimSpace(experimentID),
+			strings.TrimSpace(variantID),
+			now.Truncate(definition.duration).Format(time.RFC3339),
+		)
 		windows = append(windows, OpenAIRouteBudgetWindowConfig{
 			Scope: OpenAIRouteBudgetScope{
 				GroupID:      groupID,

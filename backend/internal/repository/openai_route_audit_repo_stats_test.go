@@ -38,7 +38,8 @@ func TestOpenAIRouteDecisionRepositoryStatsScansPromotionEvidence(t *testing.T) 
 		"total", "evaluated", "not_evaluated", "diverged", "emergency",
 		"linked_success", "linked_failure", "ambiguous", "unlinked",
 		"evaluated_linked_success", "evaluated_linked_failure", "evaluated_ambiguous", "evaluated_unlinked",
-		"policy_variants", "activation_variants", "shadow_start_variants", "shadow_started_at",
+		"policy_variants", "activation_variants", "shadow_start_variants",
+		"experiment_variants", "variant_variants", "treatment_variants", "shadow_started_at",
 		"max_account_share", "max_provider_share", "covered_hours", "first_at", "last_at",
 		"evaluation_p50", "evaluation_p95", "ttft_p50", "ttft_p95",
 	}
@@ -48,7 +49,7 @@ func TestOpenAIRouteDecisionRepositoryStatsScansPromotionEvidence(t *testing.T) 
 			200, 200, 0, 40, 0,
 			196, 4, 0, 0,
 			196, 4, 0, 0,
-			1, 1, 1, start,
+			1, 1, 1, 1, 1, 1, start,
 			0.8, 0.9, 72, start, end,
 			120.0, 240.0, 500.0, 900.0,
 		))
@@ -79,6 +80,9 @@ func TestOpenAIRouteDecisionRepositoryStatsScansPromotionEvidence(t *testing.T) 
 	require.Equal(t, int64(1), stats.PolicySnapshotVariants)
 	require.Equal(t, int64(1), stats.ActivationIDVariants)
 	require.Equal(t, int64(1), stats.ShadowStartedAtVariants)
+	require.Equal(t, int64(1), stats.ExperimentIDVariants)
+	require.Equal(t, int64(1), stats.VariantIDVariants)
+	require.Equal(t, int64(1), stats.TreatmentFingerprintVariants)
 	require.Equal(t, start, stats.ShadowStartedAt)
 	require.Equal(t, int64(72), stats.CoveredHourBuckets)
 	require.Equal(t, start, stats.FirstDecisionAt)

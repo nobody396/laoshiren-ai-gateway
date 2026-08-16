@@ -124,6 +124,8 @@ type OpenAIRouteShadowAuditCandidate struct {
 
 type OpenAIRouteShadowAuditSnapshot struct {
 	ActivationID                     string                               `json:"activation_id"`
+	ExperimentID                     string                               `json:"experiment_id"`
+	VariantID                        string                               `json:"variant_id"`
 	ShadowStartedAt                  time.Time                            `json:"shadow_started_at"`
 	RequestClass                     OpenAIRouteRequestClass              `json:"request_class"`
 	Policy                           OpenAIRouteShadowAuditPolicy         `json:"policy"`
@@ -156,6 +158,9 @@ type OpenAIRouteShadowDecisionRecord struct {
 	PolicyMode                       OpenAIRoutePolicyMode           `json:"policy_mode"`
 	PolicyVersion                    int                             `json:"policy_version"`
 	ActivationID                     string                          `json:"activation_id"`
+	ExperimentID                     string                          `json:"experiment_id"`
+	VariantID                        string                          `json:"variant_id"`
+	TreatmentFingerprint             string                          `json:"treatment_fingerprint"`
 	ShadowStartedAt                  time.Time                       `json:"shadow_started_at,omitempty"`
 	Reason                           string                          `json:"reason"`
 	Evaluated                        bool                            `json:"evaluated"`
@@ -174,22 +179,25 @@ type OpenAIRouteShadowDecisionRecord struct {
 }
 
 type OpenAIRouteShadowDecisionFilter struct {
-	StartTime       *time.Time
-	EndTime         *time.Time
-	GroupID         *int64
-	Model           string
-	RequestClass    OpenAIRouteRequestClass
-	PolicyMode      OpenAIRoutePolicyMode
-	PolicyVersion   *int
-	ActivationID    string
-	Reason          string
-	RequestID       string
-	ClientRequestID string
-	Evaluated       *bool
-	Diverged        *bool
-	Emergency       *bool
-	Page            int
-	PageSize        int
+	StartTime            *time.Time
+	EndTime              *time.Time
+	GroupID              *int64
+	Model                string
+	RequestClass         OpenAIRouteRequestClass
+	PolicyMode           OpenAIRoutePolicyMode
+	PolicyVersion        *int
+	ActivationID         string
+	ExperimentID         string
+	VariantID            string
+	TreatmentFingerprint string
+	Reason               string
+	RequestID            string
+	ClientRequestID      string
+	Evaluated            *bool
+	Diverged             *bool
+	Emergency            *bool
+	Page                 int
+	PageSize             int
 }
 
 type OpenAIRouteShadowDecisionList struct {
@@ -238,6 +246,9 @@ type OpenAIRouteShadowDecisionStats struct {
 	PolicySnapshotVariants         int64                                    `json:"policy_snapshot_variants"`
 	ActivationIDVariants           int64                                    `json:"activation_id_variants"`
 	ShadowStartedAtVariants        int64                                    `json:"shadow_started_at_variants"`
+	ExperimentIDVariants           int64                                    `json:"experiment_id_variants"`
+	VariantIDVariants              int64                                    `json:"variant_id_variants"`
+	TreatmentFingerprintVariants   int64                                    `json:"treatment_fingerprint_variants"`
 	ShadowStartedAt                time.Time                                `json:"shadow_started_at,omitempty"`
 	PolicyMaxAccountShare          float64                                  `json:"policy_max_account_share"`
 	PolicyMaxProviderShare         float64                                  `json:"policy_max_provider_share"`
@@ -295,6 +306,7 @@ type OpenAIRouteAuditHealth struct {
 	ObservationOutcomeLastFailureAt time.Time                                `json:"observation_outcome_last_failure_at,omitempty"`
 	ObservationOutcomeLastError     string                                   `json:"observation_outcome_last_error"`
 	ObservationProfileCache         *OpenAIRouteObservationProfileCacheStats `json:"observation_profile_cache,omitempty"`
+	DurableEvidence                 *OpenAIRouteEvidenceWindowHealth         `json:"durable_evidence,omitempty"`
 }
 
 type OpenAIRouteDecisionRepository interface {
@@ -308,12 +320,12 @@ type OpenAIRouteDecisionRepository interface {
 // dependency. A failed write never changes the user-visible legacy selection,
 // but it invalidates that shadow sample and is exposed by Health.
 type OpenAIRouteAuditService struct {
-	repo OpenAIRouteDecisionRepository
-	pool pond.Pool
-	// counterStartedAt is part of the promotion evidence boundary. Counters are
-	// intentionally process-local today, so a service restart must invalidate a
-	// Shadow slice that began before this instance existed rather than silently
-	// presenting a fresh 100% completeness ratio.
+	repo     OpenAIRouteDecisionRepository
+	pool     pond.Pool
+	evidence *openAIRouteEvidenceTracker
+	// counterStartedAt remains useful for live instance diagnosis. Promotion
+	// assessments use durable epochs when the production repository supports
+	// them, so a graceful release no longer resets the experiment window.
 	counterStartedAt time.Time
 
 	attempted     atomic.Uint64
@@ -345,6 +357,9 @@ func NewOpenAIRouteAuditServiceWithOptions(repo OpenAIRouteDecisionRepository, w
 		counterStartedAt: time.Now().UTC(),
 	}
 	s.lastError.Store("")
+	if store, ok := repo.(OpenAIRouteEvidenceEpochStore); ok {
+		s.evidence = newOpenAIRouteEvidenceTracker(store, OpenAIRouteEvidenceComponentAudit, s.evidenceCounters)
+	}
 	return s
 }
 
@@ -354,6 +369,9 @@ func (s *OpenAIRouteAuditService) Start() {
 	if s == nil || s.repo == nil {
 		return
 	}
+	if s.evidence != nil {
+		s.evidence.Start()
+	}
 	_ = s.VerifyStorage(context.Background())
 }
 
@@ -362,7 +380,12 @@ func (s *OpenAIRouteAuditService) Stop() {
 	if s == nil || s.pool == nil {
 		return
 	}
-	s.stopOnce.Do(func() { s.pool.StopAndWait() })
+	s.stopOnce.Do(func() {
+		s.pool.StopAndWait()
+		if s.evidence != nil {
+			s.evidence.Stop()
+		}
+	})
 }
 
 func (s *OpenAIRouteAuditService) VerifyStorage(ctx context.Context) OpenAIRouteAuditHealth {
@@ -435,6 +458,21 @@ func prepareOpenAIRouteAuditRecord(record *OpenAIRouteShadowDecisionRecord) erro
 	record.ClientRequestID = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.ClientRequestID), 128)
 	record.Model = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.Model), 128)
 	record.ActivationID = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.ActivationID), 128)
+	record.ExperimentID = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.ExperimentID), 128)
+	record.VariantID = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.VariantID), 64)
+	record.TreatmentFingerprint = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.TreatmentFingerprint), 32)
+	if record.ExperimentID == "" && record.ActivationID != "" {
+		record.ExperimentID = record.ActivationID
+	}
+	if record.VariantID == "" {
+		record.VariantID = "default"
+	}
+	if record.Snapshot.ExperimentID == "" {
+		record.Snapshot.ExperimentID = record.ExperimentID
+	}
+	if record.Snapshot.VariantID == "" {
+		record.Snapshot.VariantID = record.VariantID
+	}
 	if !record.ShadowStartedAt.IsZero() {
 		record.ShadowStartedAt = record.ShadowStartedAt.UTC()
 	}
@@ -508,6 +546,51 @@ func (s *OpenAIRouteAuditService) Stats(ctx context.Context, filter *OpenAIRoute
 		return nil, ErrOpenAIRouteAuditUnavailable
 	}
 	return s.repo.GetOpenAIRouteShadowDecisionStats(ctx, filter)
+}
+
+func (s *OpenAIRouteAuditService) FlushDurableEvidence(ctx context.Context) error {
+	if s == nil || s.evidence == nil {
+		return ErrOpenAIRouteAuditUnavailable
+	}
+	return s.evidence.Flush(ctx)
+}
+
+func (s *OpenAIRouteAuditService) DurableEvidenceWindow(
+	ctx context.Context,
+	start time.Time,
+	end time.Time,
+) (OpenAIRouteEvidenceWindowHealth, error) {
+	if s == nil || s.repo == nil {
+		return OpenAIRouteEvidenceWindowHealth{}, ErrOpenAIRouteAuditUnavailable
+	}
+	store, ok := s.repo.(OpenAIRouteEvidenceEpochStore)
+	if !ok {
+		return OpenAIRouteEvidenceWindowHealth{}, ErrOpenAIRouteAuditUnavailable
+	}
+	if err := s.FlushDurableEvidence(ctx); err != nil {
+		return OpenAIRouteEvidenceWindowHealth{}, err
+	}
+	epochs, err := store.ListOpenAIRouteEvidenceEpochs(ctx, start, end)
+	if err != nil {
+		return OpenAIRouteEvidenceWindowHealth{}, err
+	}
+	return BuildOpenAIRouteEvidenceWindowHealth(start, end, epochs), nil
+}
+
+func (s *OpenAIRouteAuditService) evidenceCounters() OpenAIRouteEvidenceCounters {
+	if s == nil {
+		return OpenAIRouteEvidenceCounters{}
+	}
+	health := s.Health()
+	return OpenAIRouteEvidenceCounters{
+		Attempted:     health.Attempted,
+		Written:       health.Written,
+		Failed:        health.Failed,
+		Dropped:       health.Dropped,
+		StorageChecks: health.StorageChecks,
+		StorageFailed: health.StorageCheckFailed,
+		LastError:     health.LastError,
+	}
 }
 
 func (s *OpenAIRouteAuditService) Health() OpenAIRouteAuditHealth {

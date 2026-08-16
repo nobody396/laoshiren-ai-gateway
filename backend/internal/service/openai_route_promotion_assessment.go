@@ -103,7 +103,7 @@ func (s *OpsService) AssessOpenAIRouteShadowPromotion(
 	if err != nil {
 		return nil, err
 	}
-	health := s.GetOpenAIRouteAuditHealth(ctx)
+	health := s.getOpenAIRouteAuditHealthForWindow(ctx, filter.StartTime.UTC(), filter.EndTime.UTC())
 	return NewOpenAIRoutePromotionAssessmentEngine().Assess(filter, stats, health), nil
 }
 
@@ -217,10 +217,22 @@ func buildOpenAIRoutePromotionAssessment(
 			"an owner must explicitly authorize the next traffic stage",
 		},
 	}
+	if health.DurableEvidence != nil {
+		assessment.HealthSamplingScope = health.DurableEvidence.Scope
+	}
 
 	assessment.addGate("single_activation_identity", stats.ActivationIDVariants == 1,
 		"exactly 1 non-empty activation_id", fmt.Sprintf("%d", stats.ActivationIDVariants), 0,
 		"Every separately authorized Shadow enablement cycle has a new immutable identity; historical and restarted evidence cannot be mixed.")
+	assessment.addGate("single_experiment_identity", stats.ExperimentIDVariants == 1,
+		"exactly 1 non-empty experiment_id", fmt.Sprintf("%d", stats.ExperimentIDVariants), 0,
+		"Parallel experiments must be assessed independently rather than pooled into one apparent sample.")
+	assessment.addGate("single_variant_identity", stats.VariantIDVariants == 1,
+		"exactly 1 non-empty variant_id", fmt.Sprintf("%d", stats.VariantIDVariants), 0,
+		"Each Shadow treatment has its own statistics and promotion decision.")
+	assessment.addGate("single_treatment_fingerprint", stats.TreatmentFingerprintVariants == 1,
+		"exactly 1 normalized treatment fingerprint", fmt.Sprintf("%d", stats.TreatmentFingerprintVariants), 0,
+		"Changing a policy body creates a new treatment instead of silently rewriting mature evidence.")
 	assessment.addGate("single_shadow_start", stats.ShadowStartedAtVariants == 1 && !evidenceStart.IsZero(),
 		"exactly 1 non-null shadow_started_at", fmt.Sprintf("variants=%d value=%s", stats.ShadowStartedAtVariants, formatOpenAIRouteEvidenceTimestamp(evidenceStart)), 0,
 		"All rows in one activation must carry the same durable T0.")
@@ -260,6 +272,25 @@ func buildOpenAIRoutePromotionAssessment(
 	assessment.addGate("audit_and_observation_health", health.Ready,
 		"ready=true", fmt.Sprintf("ready=%t", health.Ready), boolOpenAIRouteRatio(health.Ready),
 		"Decision storage and the passive observation collector must both be healthy.")
+	durableReady := health.DurableEvidence != nil && health.DurableEvidence.Available && health.DurableEvidence.Ready
+	durableObserved := "missing"
+	if health.DurableEvidence != nil {
+		durableObserved = fmt.Sprintf(
+			"available=%t ready=%t audit_epochs=%d observation_epochs=%d audit_gap=%.1fs observation_gap=%.1fs audit_unclean=%d observation_unclean=%d",
+			health.DurableEvidence.Available,
+			health.DurableEvidence.Ready,
+			health.DurableEvidence.Audit.Epochs,
+			health.DurableEvidence.Observation.Epochs,
+			health.DurableEvidence.Audit.MaximumGapSeconds,
+			health.DurableEvidence.Observation.MaximumGapSeconds,
+			health.DurableEvidence.Audit.UncleanEpochs,
+			health.DurableEvidence.Observation.UncleanEpochs,
+		)
+	}
+	assessment.addGate("durable_evidence_continuity", durableReady,
+		"durable audit and observation epochs continuously cover the window with clean handoffs",
+		durableObserved, boolOpenAIRouteRatio(durableReady),
+		"Graceful deployments may create a new process epoch without restarting T0; stale unclean epochs, excessive gaps or lost counters remain blocking evidence.")
 	healthCountersCoverWindow := !health.AuditCounterStartedAt.IsZero() &&
 		!health.ObservationCounterStartedAt.IsZero() &&
 		!health.AuditCounterStartedAt.After(start) &&
@@ -268,7 +299,7 @@ func buildOpenAIRoutePromotionAssessment(
 		"audit and observation counters started at or before window_start",
 		fmt.Sprintf("audit=%s observation=%s", formatOpenAIRouteEvidenceTimestamp(health.AuditCounterStartedAt), formatOpenAIRouteEvidenceTimestamp(health.ObservationCounterStartedAt)),
 		boolOpenAIRouteRatio(healthCountersCoverWindow),
-		"Completeness counters are process-local; a restart after T0 invalidates the current Shadow evidence slice instead of resetting loss history to a misleading 100%.")
+		"Durable epoch counters must cover T0; a fresh process cannot reset prior loss history to a misleading 100%.")
 	storageCheckHistoryClean := health.StorageCheckFailed == 0 && health.ObservationStorageFailed == 0
 	assessment.addGate("storage_check_history", storageCheckHistoryClean,
 		"0 audit and observation storage-check failures since counter start",

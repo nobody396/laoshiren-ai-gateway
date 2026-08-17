@@ -284,6 +284,10 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		h.errorResponse(c, http.StatusForbidden, "permission_error", service.ImageGenerationPermissionMessage())
 		return
 	}
+	if imageGenerationIntent && !service.GroupAllowsImageGeneration(apiKey.Group) {
+		h.errorResponse(c, http.StatusForbidden, "permission_error", service.ImageGenerationPermissionMessage())
+		return
+	}
 	previousResponseID := strings.TrimSpace(gjson.GetBytes(body, "previous_response_id").String())
 	if previousResponseID != "" {
 		previousResponseIDKind := service.ClassifyOpenAIPreviousResponseIDKind(previousResponseID)
@@ -434,6 +438,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 			zap.Bool("image_generation_intent", scheduleDecision.ImageGenerationIntent),
 			zap.Bool("image_generation_route_configured", scheduleDecision.ImageGenerationRouteConfigured),
 			zap.Int("image_generation_route_priority", scheduleDecision.ImageGenerationRoutePriority),
+			zap.Bool("global_image_pool", scheduleDecision.GlobalImagePool),
 		)
 		account := selection.Account
 		sessionHash = ensureOpenAIPoolModeSessionHash(sessionHash, account)
@@ -1379,6 +1384,10 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, service.ImageGenerationPermissionMessage())
 		return
 	}
+	if imageGenerationIntent && !service.GroupAllowsImageGeneration(apiKey.Group) {
+		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, service.ImageGenerationPermissionMessage())
+		return
+	}
 	setOpsRequestContext(c, reqModel, true, firstMessage)
 	setOpsEndpointContext(c, "", int16(service.RequestTypeWSV2))
 	channelMappingWS, _ := h.gatewayService.ResolveChannelMappingAndRestrict(ctx, apiKey.GroupID, reqModel)
@@ -1517,6 +1526,7 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		zap.Int("candidate_count", scheduleDecision.CandidateCount),
 		zap.Bool("image_generation_route_configured", scheduleDecision.ImageGenerationRouteConfigured),
 		zap.Int("image_generation_route_priority", scheduleDecision.ImageGenerationRoutePriority),
+		zap.Bool("global_image_pool", scheduleDecision.GlobalImagePool),
 	)
 
 	maxReasoningEffort := ""

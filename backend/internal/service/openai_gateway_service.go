@@ -1834,6 +1834,18 @@ func (s *OpenAIGatewayService) listSchedulableAccounts(ctx context.Context, grou
 	return accounts, nil
 }
 
+func (s *OpenAIGatewayService) listGlobalImageAccounts(ctx context.Context) ([]Account, error) {
+	if s.schedulerSnapshot != nil {
+		accounts, err := s.schedulerSnapshot.ListGlobalImageAccounts(ctx, PlatformOpenAI)
+		return accounts, err
+	}
+	accounts, err := s.accountRepo.ListSchedulableByPlatform(ctx, PlatformOpenAI)
+	if err != nil {
+		return nil, fmt.Errorf("query global image accounts failed: %w", err)
+	}
+	return accounts, nil
+}
+
 func (s *OpenAIGatewayService) tryAcquireAccountSlot(ctx context.Context, accountID int64, maxConcurrency int) (*AcquireResult, error) {
 	if s.concurrencyService == nil {
 		return &AcquireResult{Acquired: true, ReleaseFunc: func() {}}, nil

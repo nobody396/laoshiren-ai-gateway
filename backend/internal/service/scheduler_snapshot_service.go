@@ -139,6 +139,41 @@ func (s *SchedulerSnapshotService) ListSchedulableAccounts(ctx context.Context, 
 	return accounts, useMixed, nil
 }
 
+// ListGlobalImageAccounts returns the platform-wide account snapshot used by
+// the internal image execution pool. Customer group membership is deliberately
+// not part of this candidate lookup: the originating group continues to own
+// entitlement, limits, pricing, and usage attribution, while account image-route
+// metadata opts an execution account into this global pool.
+func (s *SchedulerSnapshotService) ListGlobalImageAccounts(ctx context.Context, platform string) ([]Account, error) {
+	bucket := SchedulerBucket{GroupID: 0, Platform: platform, Mode: SchedulerModeGlobalImage}
+
+	if s.cache != nil {
+		cached, hit, err := s.cache.GetSnapshot(ctx, bucket)
+		if err != nil {
+			logger.LegacyPrintf("service.scheduler_snapshot", "[Scheduler] global image cache read failed: bucket=%s err=%v", bucket.String(), err)
+		} else if hit {
+			return derefAccounts(cached), nil
+		}
+	}
+
+	if err := s.guardFallback(ctx); err != nil {
+		return nil, err
+	}
+	fallbackCtx, cancel := s.withFallbackTimeout(ctx)
+	defer cancel()
+
+	accounts, err := s.loadAccountsFromDB(fallbackCtx, bucket, false)
+	if err != nil {
+		return nil, err
+	}
+	if s.cache != nil {
+		if err := s.cache.SetSnapshot(fallbackCtx, bucket, accounts); err != nil {
+			logger.LegacyPrintf("service.scheduler_snapshot", "[Scheduler] global image cache write failed: bucket=%s err=%v", bucket.String(), err)
+		}
+	}
+	return accounts, nil
+}
+
 func (s *SchedulerSnapshotService) GetAccount(ctx context.Context, accountID int64) (*Account, error) {
 	if accountID <= 0 {
 		return nil, nil
@@ -417,7 +452,12 @@ func (s *SchedulerSnapshotService) handleBulkAccountEvent(ctx context.Context, p
 	for gid := range rebuildGroupSet {
 		rebuildGroupIDs = append(rebuildGroupIDs, gid)
 	}
-	return s.rebuildByGroupIDs(ctx, rebuildGroupIDs, "account_bulk_change", seen)
+	groupErr := s.rebuildByGroupIDs(ctx, rebuildGroupIDs, "account_bulk_change", seen)
+	globalErr := s.rebuildGlobalImageBucket(ctx, "account_bulk_change", seen)
+	if groupErr != nil {
+		return groupErr
+	}
+	return globalErr
 }
 
 func (s *SchedulerSnapshotService) handleAccountEvent(ctx context.Context, accountID *int64, payload map[string]any, seen map[batchSeenKey]struct{}) error {
@@ -441,7 +481,12 @@ func (s *SchedulerSnapshotService) handleAccountEvent(ctx context.Context, accou
 					return err
 				}
 			}
-			return s.rebuildByGroupIDs(ctx, groupIDs, "account_miss", seen)
+			groupErr := s.rebuildByGroupIDs(ctx, groupIDs, "account_miss", seen)
+			globalErr := s.rebuildGlobalImageBucket(ctx, "account_miss", seen)
+			if groupErr != nil {
+				return groupErr
+			}
+			return globalErr
 		}
 		return err
 	}
@@ -468,12 +513,17 @@ func (s *SchedulerSnapshotService) rebuildByAccount(ctx context.Context, account
 	if account == nil {
 		return nil
 	}
+	var firstErr error
+	if account.Platform == PlatformOpenAI {
+		if err := s.rebuildGlobalImageBucket(ctx, reason, seen); err != nil {
+			firstErr = err
+		}
+	}
 	groupIDs = s.normalizeGroupIDs(groupIDs)
 	if len(groupIDs) == 0 {
-		return nil
+		return firstErr
 	}
 
-	var firstErr error
 	if err := s.rebuildBucketsForPlatform(ctx, account.Platform, groupIDs, reason, seen); err != nil && firstErr == nil {
 		firstErr = err
 	}
@@ -486,6 +536,24 @@ func (s *SchedulerSnapshotService) rebuildByAccount(ctx context.Context, account
 		}
 	}
 	return firstErr
+}
+
+func (s *SchedulerSnapshotService) rebuildGlobalImageBucket(ctx context.Context, reason string, seen map[batchSeenKey]struct{}) error {
+	if s == nil || s.cache == nil {
+		return nil
+	}
+	if seen != nil {
+		key := batchSeenKey{groupID: 0, platform: PlatformOpenAI + ":" + SchedulerModeGlobalImage}
+		if _, exists := seen[key]; exists {
+			return nil
+		}
+		seen[key] = struct{}{}
+	}
+	return s.rebuildBucket(ctx, SchedulerBucket{
+		GroupID:  0,
+		Platform: PlatformOpenAI,
+		Mode:     SchedulerModeGlobalImage,
+	}, reason)
 }
 
 func (s *SchedulerSnapshotService) rebuildByGroupIDs(ctx context.Context, groupIDs []int64, reason string, seen map[batchSeenKey]struct{}) error {
@@ -652,6 +720,9 @@ func (s *SchedulerSnapshotService) loadAccountsFromDB(ctx context.Context, bucke
 		return nil, ErrSchedulerCacheNotReady
 	}
 	groupID := bucket.GroupID
+	if bucket.Mode == SchedulerModeGlobalImage {
+		return s.accountRepo.ListSchedulableByPlatform(ctx, bucket.Platform)
+	}
 	if s.isRunModeSimple() {
 		groupID = 0
 	}
@@ -805,6 +876,7 @@ func (s *SchedulerSnapshotService) defaultBuckets(ctx context.Context) ([]Schedu
 			buckets = append(buckets, SchedulerBucket{GroupID: 0, Platform: platform, Mode: SchedulerModeMixed})
 		}
 	}
+	buckets = append(buckets, SchedulerBucket{GroupID: 0, Platform: PlatformOpenAI, Mode: SchedulerModeGlobalImage})
 
 	if s.isRunModeSimple() || s.groupRepo == nil {
 		return dedupeBuckets(buckets), nil

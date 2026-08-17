@@ -146,10 +146,6 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_ImageIntentUsesConfigur
 		Schedulable: true,
 		Concurrency: 20,
 		Priority:    1,
-		Extra: map[string]any{
-			OpenAIImageGenerationPriorityExtraKey: 2,
-			OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.4"},
-		},
 		AccountGroups: []AccountGroup{
 			{AccountID: 23, GroupID: groupID, Priority: 1},
 		},
@@ -168,13 +164,30 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_ImageIntentUsesConfigur
 			OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.4"},
 		},
 		AccountGroups: []AccountGroup{
-			{AccountID: 33, GroupID: groupID, Priority: 2},
+			{AccountID: 33, GroupID: 999, Priority: 2},
+		},
+	}
+	imageFallback := Account{
+		ID:          38,
+		Name:        "global-image-fallback",
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 20,
+		Priority:    3,
+		Extra: map[string]any{
+			OpenAIImageGenerationPriorityExtraKey: 2,
+			OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.4"},
+		},
+		AccountGroups: []AccountGroup{
+			{AccountID: 38, GroupID: 999, Priority: 3},
 		},
 	}
 
 	cache := &stubGatewayCache{sessionBindings: map[string]int64{"openai:text-session": 23}}
 	svc := &OpenAIGatewayService{
-		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{moreCode, pomo}},
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{moreCode, imageFallback, pomo}},
 		cache:              cache,
 		cfg:                &config.Config{},
 		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
@@ -207,7 +220,7 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_ImageIntentUsesConfigur
 		OpenAIUpstreamTransportAny, false, true,
 	)
 	require.NoError(t, err)
-	require.Equal(t, int64(23), fallbackSelection.Account.ID, "excluded image primary must fall back safely")
+	require.Equal(t, int64(38), fallbackSelection.Account.ID, "excluded image primary must fall back within the global image pool")
 	require.True(t, decision.ImageGenerationRouteConfigured)
 	require.Equal(t, 2, decision.ImageGenerationRoutePriority)
 	if fallbackSelection.ReleaseFunc != nil {
@@ -218,12 +231,9 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_ImageIntentUsesConfigur
 		ctx, &groupID, "", "", "gpt-5.4-mini", nil,
 		OpenAIUpstreamTransportAny, false, true,
 	)
-	require.NoError(t, err)
-	require.Equal(t, int64(23), unsupportedSelection.Account.ID, "unproven model must retain ordinary routing")
+	require.Error(t, err)
+	require.Nil(t, unsupportedSelection, "an image request must never fall through to the ordinary text account")
 	require.False(t, decision.ImageGenerationRouteConfigured)
-	if unsupportedSelection.ReleaseFunc != nil {
-		unsupportedSelection.ReleaseFunc()
-	}
 }
 
 func TestOpenAIGatewayService_SelectAccountWithScheduler_CodexImageFallsBackAcrossProtocols(t *testing.T) {

@@ -265,6 +265,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-31T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/global-gpt-image-pool-20260817",
+      "owner": "global-gpt-image-pool-20260817",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-24T23:59:59+08:00"
     }
   ]
 }

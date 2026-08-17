@@ -71,8 +71,13 @@ func TestOpenAIGatewayService_Forward_WSv2_SuccessAndBindSticky(t *testing.T) {
 		if err := conn.WriteJSON(map[string]any{
 			"type": "response.completed",
 			"response": map[string]any{
-				"id":    "resp_new_1",
-				"model": "gpt-5.1",
+				"id":     "resp_new_1",
+				"model":  "gpt-5.1",
+				"status": "completed",
+				"output": []any{map[string]any{
+					"id": "ig_ws_1", "type": "image_generation_call",
+					"status": "generating", "result": codexBridgeTestPNG,
+				}},
 				"usage": map[string]any{
 					"input_tokens":  12,
 					"output_tokens": 7,
@@ -150,6 +155,9 @@ func TestOpenAIGatewayService_Forward_WSv2_SuccessAndBindSticky(t *testing.T) {
 	require.Equal(t, 12, result.Usage.InputTokens)
 	require.Equal(t, 7, result.Usage.OutputTokens)
 	require.Equal(t, 3, result.Usage.CacheReadInputTokens)
+	require.Equal(t, 1, result.ImageCount)
+	require.Equal(t, OpenAIFixedImageRendererModel, result.BillingModel)
+	require.Equal(t, ImageBillingSize2K, result.ImageSize)
 	require.Equal(t, "resp_new_1", result.RequestID)
 	require.True(t, result.OpenAIWSMode)
 	require.False(t, gjson.GetBytes(upstream.lastBody, "model").Exists(), "WSv2 成功时不应回落 HTTP 上游")
@@ -170,6 +178,7 @@ func TestOpenAIGatewayService_Forward_WSv2_SuccessAndBindSticky(t *testing.T) {
 
 	responseBody := rec.Body.Bytes()
 	require.Equal(t, "resp_new_1", gjson.GetBytes(responseBody, "id").String())
+	require.Equal(t, "completed", gjson.GetBytes(responseBody, "output.0.status").String())
 }
 
 func requestToJSONString(payload map[string]any) string {

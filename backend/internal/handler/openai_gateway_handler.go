@@ -284,6 +284,10 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		h.errorResponse(c, http.StatusForbidden, "permission_error", service.ImageGenerationPermissionMessage())
 		return
 	}
+	if imageGenerationIntent && !service.GroupAllowsImageGeneration(apiKey.Group) {
+		h.errorResponse(c, http.StatusForbidden, "permission_error", service.ImageGenerationPermissionMessage())
+		return
+	}
 	previousResponseID := strings.TrimSpace(gjson.GetBytes(body, "previous_response_id").String())
 	if previousResponseID != "" {
 		previousResponseIDKind := service.ClassifyOpenAIPreviousResponseIDKind(previousResponseID)
@@ -310,6 +314,15 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	setOpsEndpointContext(c, "", int16(service.RequestTypeFromLegacy(reqStream, false)))
 	channelMapping, _ := h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
 	forwardBody := openAIModelMappedBody(body, channelMapping.Mapped, channelMapping.MappedModel, h.gatewayService.ReplaceModelInBody)
+	nativeImageResponsesBody := body
+	if fixedImageRenderer {
+		forcedBody, forceErr := service.ForceOpenAICodexImageGenerationToolChoice(body)
+		if forceErr != nil {
+			h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", forceErr.Error())
+			return
+		}
+		nativeImageResponsesBody = forcedBody
+	}
 
 	// 提前校验 function_call_output 是否具备可关联上下文，避免上游 400。
 	if !h.validateFunctionCallOutputRequest(c, body, reqLog) {
@@ -434,6 +447,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 			zap.Bool("image_generation_intent", scheduleDecision.ImageGenerationIntent),
 			zap.Bool("image_generation_route_configured", scheduleDecision.ImageGenerationRouteConfigured),
 			zap.Int("image_generation_route_priority", scheduleDecision.ImageGenerationRoutePriority),
+			zap.Bool("global_image_pool", scheduleDecision.GlobalImagePool),
 		)
 		account := selection.Account
 		sessionHash = ensureOpenAIPoolModeSessionHash(sessionHash, account)
@@ -451,14 +465,21 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		writerSizeBeforeForward := c.Writer.Size()
 		var result *service.OpenAIForwardResult
 		if fixedImageRenderer {
-			result, err = h.gatewayService.ForwardFixedOpenAIImageGenerationResponses(
-				c.Request.Context(),
-				c,
-				account,
-				body,
-				reqModel,
-				reqStream,
-			)
+			imageTransport, _ := account.OpenAIImageGenerationTransport(routingModel)
+			if imageTransport == service.OpenAIImageGenerationTransportResponses {
+				result, err = h.gatewayService.ForwardNativeOpenAIImageGenerationResponses(
+					c.Request.Context(), c, account, nativeImageResponsesBody, reqStream,
+				)
+			} else {
+				result, err = h.gatewayService.ForwardFixedOpenAIImageGenerationResponses(
+					c.Request.Context(),
+					c,
+					account,
+					body,
+					reqModel,
+					reqStream,
+				)
+			}
 		} else {
 			result, err = h.gatewayService.Forward(c.Request.Context(), c, account, forwardBody)
 		}
@@ -1379,6 +1400,10 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, service.ImageGenerationPermissionMessage())
 		return
 	}
+	if imageGenerationIntent && !service.GroupAllowsImageGeneration(apiKey.Group) {
+		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, service.ImageGenerationPermissionMessage())
+		return
+	}
 	setOpsRequestContext(c, reqModel, true, firstMessage)
 	setOpsEndpointContext(c, "", int16(service.RequestTypeWSV2))
 	channelMappingWS, _ := h.gatewayService.ResolveChannelMappingAndRestrict(ctx, apiKey.GroupID, reqModel)
@@ -1517,6 +1542,7 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		zap.Int("candidate_count", scheduleDecision.CandidateCount),
 		zap.Bool("image_generation_route_configured", scheduleDecision.ImageGenerationRouteConfigured),
 		zap.Int("image_generation_route_priority", scheduleDecision.ImageGenerationRoutePriority),
+		zap.Bool("global_image_pool", scheduleDecision.GlobalImagePool),
 	)
 
 	maxReasoningEffort := ""

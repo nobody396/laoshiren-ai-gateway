@@ -39,6 +39,16 @@ func (r codexNativeImageBridgeAccountRepo) ListSchedulableByGroupIDAndPlatform(_
 	return accounts, nil
 }
 
+func (r codexNativeImageBridgeAccountRepo) ListSchedulableByPlatform(_ context.Context, platform string) ([]service.Account, error) {
+	accounts := make([]service.Account, 0, len(r.accounts))
+	for _, account := range r.accounts {
+		if account.Platform == platform {
+			accounts = append(accounts, account)
+		}
+	}
+	return accounts, nil
+}
+
 type codexNativeImageBridgeUpstream struct {
 	service.HTTPUpstream
 	lastRequest *http.Request
@@ -133,6 +143,12 @@ func (u *codexNativeImageBridgeFailoverUpstream) Do(req *http.Request, _ string,
 
 func (u *codexNativeImageBridgeUpstream) Do(req *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
 	u.lastRequest = req
+	requestBody, _ := io.ReadAll(req.Body)
+	req.Body = io.NopCloser(strings.NewReader(string(requestBody)))
+	model := gjson.GetBytes(requestBody, "model").String()
+	if strings.TrimSpace(model) == "" {
+		model = "gpt-5.6-sol"
+	}
 	return &http.Response{
 		StatusCode: http.StatusOK,
 		Header: http.Header{
@@ -140,10 +156,10 @@ func (u *codexNativeImageBridgeUpstream) Do(req *http.Request, _ string, _ int64
 			"x-request-id": []string{"req_codex_native_image_bridge"},
 		},
 		Body: io.NopCloser(strings.NewReader(`{
-			"id":"resp_codex_native_image_bridge",
-			"object":"response",
-			"status":"completed",
-			"model":"gpt-5.6-sol",
+				"id":"resp_codex_native_image_bridge",
+				"object":"response",
+				"status":"completed",
+				"model":"` + model + `",
 			"output":[{"id":"ig_bridge","type":"image_generation_call","status":"completed","result":"` + codexNativeImageBridgeTestPNG + `"}],
 			"usage":{"input_tokens":12,"output_tokens":24,"total_tokens":36}
 		}`)),
@@ -234,8 +250,8 @@ func TestOpenAIImages_OfficialCodexGPTImage2BridgesForMonthlyAndPublicGroups(t *
 	gin.SetMode(gin.TestMode)
 
 	groups := []*service.Group{
-		{ID: 7, Name: "GPT Lite monthly", Platform: service.PlatformOpenAI, SubscriptionType: service.SubscriptionTypeCredit},
-		{ID: 6, Name: "OpenAI public", Platform: service.PlatformOpenAI},
+		{ID: 7, Name: "GPT Lite monthly", Platform: service.PlatformOpenAI, SubscriptionType: service.SubscriptionTypeCredit, AllowImageGeneration: true},
+		{ID: 6, Name: "OpenAI public", Platform: service.PlatformOpenAI, AllowImageGeneration: true},
 	}
 
 	for _, group := range groups {
@@ -259,7 +275,9 @@ func TestOpenAIImages_OfficialCodexGPTImage2BridgesForMonthlyAndPublicGroups(t *
 					service.OpenAIImageGenerationPriorityExtraKey: 1,
 					service.OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
 				},
-				AccountGroups: []service.AccountGroup{{AccountID: 3300 + group.ID, GroupID: group.ID, Priority: 1}},
+				// The image execution account is intentionally not bound to the
+				// customer's billing group. Global image routing must still select it.
+				AccountGroups: []service.AccountGroup{{AccountID: 3300 + group.ID, GroupID: 999, Priority: 1}},
 			}
 			upstream := &codexNativeImageBridgeUpstream{}
 			concurrencyCache := &concurrencyCacheMock{
@@ -316,8 +334,8 @@ func TestOpenAIImages_EmptyImageCompletionFallsBackToNativeImagesForMonthlyAndPu
 	gin.SetMode(gin.TestMode)
 
 	groups := []*service.Group{
-		{ID: 7, Name: "GPT Lite monthly", Platform: service.PlatformOpenAI, SubscriptionType: service.SubscriptionTypeCredit},
-		{ID: 6, Name: "OpenAI public", Platform: service.PlatformOpenAI},
+		{ID: 7, Name: "GPT Lite monthly", Platform: service.PlatformOpenAI, SubscriptionType: service.SubscriptionTypeCredit, AllowImageGeneration: true},
+		{ID: 6, Name: "OpenAI public", Platform: service.PlatformOpenAI, AllowImageGeneration: true},
 	}
 
 	for _, group := range groups {
@@ -334,7 +352,7 @@ func TestOpenAIImages_EmptyImageCompletionFallsBackToNativeImagesForMonthlyAndPu
 						service.OpenAIImageGenerationPriorityExtraKey: imagePriority,
 						service.OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
 					},
-					AccountGroups: []service.AccountGroup{{AccountID: id, GroupID: group.ID, Priority: imagePriority}},
+					AccountGroups: []service.AccountGroup{{AccountID: id, GroupID: 999, Priority: imagePriority}},
 				}
 			}
 			nativeAccount := service.Account{
@@ -350,7 +368,7 @@ func TestOpenAIImages_EmptyImageCompletionFallsBackToNativeImagesForMonthlyAndPu
 					service.OpenAIImageGenerationModelsExtraKey:    []any{"gpt-image-2"},
 					service.OpenAIImageGenerationTransportExtraKey: service.OpenAIImageGenerationTransportImages,
 				},
-				AccountGroups: []service.AccountGroup{{AccountID: 34, GroupID: group.ID, Priority: 90}},
+				AccountGroups: []service.AccountGroup{{AccountID: 34, GroupID: 999, Priority: 90}},
 			}
 			accounts := []service.Account{
 				newResponsesAccount(33, "MoreCode primary image route", 1),
@@ -404,8 +422,8 @@ func TestOpenAIResponses_OfficialCodexImageRoutingRejectsRetiredModels(t *testin
 	gin.SetMode(gin.TestMode)
 
 	for _, group := range []*service.Group{
-		{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI},
-		{ID: 7, Name: "GPT monthly", Platform: service.PlatformOpenAI, SubscriptionType: service.SubscriptionTypeCredit},
+		{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI, AllowImageGeneration: true},
+		{ID: 7, Name: "GPT monthly", Platform: service.PlatformOpenAI, SubscriptionType: service.SubscriptionTypeCredit, AllowImageGeneration: true},
 	} {
 		for _, tc := range []struct {
 			model   string
@@ -437,7 +455,7 @@ func TestOpenAIResponses_OfficialCodexImageRoutingRejectsRetiredModels(t *testin
 						service.OpenAIImageGenerationPriorityExtraKey: 1,
 						service.OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
 					},
-					AccountGroups: []service.AccountGroup{{AccountID: 3300 + group.ID, GroupID: group.ID, Priority: 90}},
+					AccountGroups: []service.AccountGroup{{AccountID: 3300 + group.ID, GroupID: 999, Priority: 90}},
 				}
 				upstream := &codexNativeImageBridgeUpstream{}
 				concurrencyCache := &concurrencyCacheMock{
@@ -486,7 +504,7 @@ func TestOpenAIResponses_OfficialCodexImageRoutingRejectsRetiredModels(t *testin
 				require.Equal(t, "/v1/responses", upstream.lastRequest.URL.Path)
 				upstreamBody, err := io.ReadAll(upstream.lastRequest.Body)
 				require.NoError(t, err)
-				require.Equal(t, "gpt-5.6-sol", gjson.GetBytes(upstreamBody, "model").String())
+				require.Equal(t, textModel, gjson.GetBytes(upstreamBody, "model").String())
 				require.Equal(t, "image_generation", gjson.GetBytes(upstreamBody, "tool_choice.type").String())
 				require.Equal(t, account.ID, c.GetInt64(opsAccountIDKey))
 			})
@@ -496,7 +514,7 @@ func TestOpenAIResponses_OfficialCodexImageRoutingRejectsRetiredModels(t *testin
 
 func TestOpenAIResponses_FixedImagePoolFailsOverSequentiallyMoreCodeAdobePomo(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	group := &service.Group{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI}
+	group := &service.Group{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI, AllowImageGeneration: true}
 	newAccount := func(id int64, name string, imagePriority int, transport string) service.Account {
 		modelMapping := map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"}
 		models := []any{"gpt-5.6-sol"}
@@ -519,7 +537,7 @@ func TestOpenAIResponses_FixedImagePoolFailsOverSequentiallyMoreCodeAdobePomo(t 
 				"model_mapping": modelMapping,
 			},
 			Extra:         extra,
-			AccountGroups: []service.AccountGroup{{AccountID: id, GroupID: group.ID, Priority: 90}},
+			AccountGroups: []service.AccountGroup{{AccountID: id, GroupID: 999, Priority: 90}},
 		}
 	}
 	accounts := []service.Account{
@@ -548,7 +566,7 @@ func TestOpenAIResponses_FixedImagePoolFailsOverSequentiallyMoreCodeAdobePomo(t 
 	require.Equal(t, codexNativeImageBridgeTestPNG, gjson.GetBytes(recorder.Body.Bytes(), "output.0.result").String())
 	require.Equal(t, []int64{33, 38, 40}, upstream.accountIDs)
 	require.Equal(t, []string{"/v1/responses", "/v1/images/generations", "/v1/images/generations"}, upstream.paths)
-	require.Equal(t, []string{"gpt-5.6-sol", "gpt-image-2-count", "gpt-image-2-count"}, upstream.models)
+	require.Equal(t, []string{"gpt-5.6-terra", "gpt-image-2-count", "gpt-image-2-count"}, upstream.models)
 	require.Equal(t, int64(40), c.GetInt64(opsAccountIDKey))
 	require.Equal(t, "gpt-image-2-count", c.GetString(opsUpstreamModelKey))
 }

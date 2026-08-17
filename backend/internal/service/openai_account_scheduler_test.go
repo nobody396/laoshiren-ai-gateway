@@ -146,10 +146,6 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_ImageIntentUsesConfigur
 		Schedulable: true,
 		Concurrency: 20,
 		Priority:    1,
-		Extra: map[string]any{
-			OpenAIImageGenerationPriorityExtraKey: 2,
-			OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.4"},
-		},
 		AccountGroups: []AccountGroup{
 			{AccountID: 23, GroupID: groupID, Priority: 1},
 		},
@@ -168,13 +164,30 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_ImageIntentUsesConfigur
 			OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.4"},
 		},
 		AccountGroups: []AccountGroup{
-			{AccountID: 33, GroupID: groupID, Priority: 2},
+			{AccountID: 33, GroupID: 999, Priority: 2},
+		},
+	}
+	imageFallback := Account{
+		ID:          38,
+		Name:        "global-image-fallback",
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Status:      StatusActive,
+		Schedulable: true,
+		Concurrency: 20,
+		Priority:    3,
+		Extra: map[string]any{
+			OpenAIImageGenerationPriorityExtraKey: 2,
+			OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.4"},
+		},
+		AccountGroups: []AccountGroup{
+			{AccountID: 38, GroupID: 999, Priority: 3},
 		},
 	}
 
 	cache := &stubGatewayCache{sessionBindings: map[string]int64{"openai:text-session": 23}}
 	svc := &OpenAIGatewayService{
-		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{moreCode, pomo}},
+		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{moreCode, imageFallback, pomo}},
 		cache:              cache,
 		cfg:                &config.Config{},
 		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
@@ -207,7 +220,7 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_ImageIntentUsesConfigur
 		OpenAIUpstreamTransportAny, false, true,
 	)
 	require.NoError(t, err)
-	require.Equal(t, int64(23), fallbackSelection.Account.ID, "excluded image primary must fall back safely")
+	require.Equal(t, int64(38), fallbackSelection.Account.ID, "excluded image primary must fall back within the global image pool")
 	require.True(t, decision.ImageGenerationRouteConfigured)
 	require.Equal(t, 2, decision.ImageGenerationRoutePriority)
 	if fallbackSelection.ReleaseFunc != nil {
@@ -218,12 +231,9 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_ImageIntentUsesConfigur
 		ctx, &groupID, "", "", "gpt-5.4-mini", nil,
 		OpenAIUpstreamTransportAny, false, true,
 	)
-	require.NoError(t, err)
-	require.Equal(t, int64(23), unsupportedSelection.Account.ID, "unproven model must retain ordinary routing")
+	require.Error(t, err)
+	require.Nil(t, unsupportedSelection, "an image request must never fall through to the ordinary text account")
 	require.False(t, decision.ImageGenerationRouteConfigured)
-	if unsupportedSelection.ReleaseFunc != nil {
-		unsupportedSelection.ReleaseFunc()
-	}
 }
 
 func TestOpenAIGatewayService_SelectAccountWithScheduler_CodexImageFallsBackAcrossProtocols(t *testing.T) {
@@ -236,8 +246,9 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_CodexImageFallsBackAcro
 			"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
 		},
 		Extra: map[string]any{
-			OpenAIImageGenerationPriorityExtraKey: 1,
-			OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
+			OpenAIImageGenerationPriorityExtraKey:        1,
+			OpenAIImageGenerationModelsExtraKey:          []any{"gpt-5.6-sol"},
+			"openai_apikey_responses_websockets_v2_mode": OpenAIWSIngressModeHTTPBridge,
 		},
 		AccountGroups: []AccountGroup{{AccountID: 33, GroupID: groupID, Priority: 1}},
 	}
@@ -248,10 +259,11 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_CodexImageFallsBackAcro
 			"model_mapping": map[string]any{"gpt-image-2": "gpt-image-2-count"},
 		},
 		Extra: map[string]any{
-			"supports_images":                      true,
-			OpenAIImageGenerationPriorityExtraKey:  2,
-			OpenAIImageGenerationModelsExtraKey:    []any{"gpt-image-2"},
-			OpenAIImageGenerationTransportExtraKey: OpenAIImageGenerationTransportImages,
+			"supports_images":                            true,
+			OpenAIImageGenerationPriorityExtraKey:        2,
+			OpenAIImageGenerationModelsExtraKey:          []any{"gpt-image-2"},
+			OpenAIImageGenerationTransportExtraKey:       OpenAIImageGenerationTransportImages,
+			"openai_apikey_responses_websockets_v2_mode": OpenAIWSIngressModeHTTPBridge,
 		},
 		AccountGroups: []AccountGroup{{AccountID: 34, GroupID: groupID, Priority: 90}},
 	}
@@ -259,9 +271,11 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_CodexImageFallsBackAcro
 		snapshotAccounts: []*Account{&responsesPrimary, &nativeFallback},
 		accountsByID:     map[int64]*Account{33: &responsesPrimary, 34: &nativeFallback},
 	}
+	cfg := newOpenAIWSV2TestConfig()
+	cfg.Gateway.OpenAIWS.ModeRouterV2Enabled = true
 	svc := &OpenAIGatewayService{
 		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{responsesPrimary, nativeFallback}},
-		cfg:                &config.Config{},
+		cfg:                cfg,
 		schedulerSnapshot:  &SchedulerSnapshotService{cache: snapshotCache},
 		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
 	}
@@ -288,6 +302,24 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_CodexImageFallsBackAcro
 	if fallback.ReleaseFunc != nil {
 		fallback.ReleaseFunc()
 	}
+
+	wsPrimary, decision, err := svc.selectAccountWithSchedulerForRouting(
+		ctx, &groupID, "", "", "gpt-image-2", nil,
+		OpenAIUpstreamTransportResponsesWebsocketV2Ingress, false, true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, int64(33), wsPrimary.Account.ID)
+	require.True(t, decision.ImageGenerationRouteConfigured)
+	if wsPrimary.ReleaseFunc != nil {
+		wsPrimary.ReleaseFunc()
+	}
+
+	wsFallback, _, err := svc.selectAccountWithSchedulerForRouting(
+		ctx, &groupID, "", "", "gpt-image-2", map[int64]struct{}{33: {}},
+		OpenAIUpstreamTransportResponsesWebsocketV2Ingress, false, true,
+	)
+	require.Error(t, err)
+	require.Nil(t, wsFallback, "native Images-only fallbacks must never be selected on a Responses WebSocket")
 
 	text, _, err := svc.SelectAccountWithScheduler(
 		ctx, &groupID, "", "", "gpt-5.6-sol", nil, OpenAIUpstreamTransportAny,

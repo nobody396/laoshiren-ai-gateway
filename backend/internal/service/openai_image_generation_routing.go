@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 const (
@@ -171,6 +172,26 @@ func PrepareOpenAICodexImageGenerationRequest(body []byte) (prepared []byte, act
 	return prepared, true, nil
 }
 
+// ForceOpenAICodexImageGenerationToolChoice is used only after the stronger
+// generation-only intent gate has selected the fixed image renderer path. That
+// path already guaranteed an image before Responses-native routing existed, so
+// forcing the hosted tool preserves its contract while allowing native stream
+// events and multiple completed image calls from a Responses-capable provider.
+func ForceOpenAICodexImageGenerationToolChoice(body []byte) ([]byte, error) {
+	prepared, activated, err := PrepareOpenAICodexImageGenerationRequest(body)
+	if err != nil {
+		return nil, err
+	}
+	if !activated {
+		return nil, fmt.Errorf("image generation tool choice is not allowed")
+	}
+	forced, err := sjson.SetBytes(prepared, "tool_choice", map[string]any{"type": "image_generation"})
+	if err != nil {
+		return nil, fmt.Errorf("force image generation tool choice: %w", err)
+	}
+	return forced, nil
+}
+
 func openAIToolChoiceAllowsImageBridge(choice any) bool {
 	if choice == nil {
 		return true
@@ -304,6 +325,24 @@ func openAIUserPromptRequestsImage(prompt string, hasInputImage bool) bool {
 	if strings.Contains(prompt, "生成图片的提示词") || strings.Contains(prompt, "生图提示词") ||
 		strings.Contains(prompt, "image generation api") {
 		return false
+	}
+	// Do not turn implementation/documentation work about image generation into
+	// an actual paid generation. Native Codex can discuss or edit image tooling,
+	// prompts, APIs and routing code with the passive image tool still present.
+	// These narrow phrases cover that ambiguity while leaving direct imperatives
+	// such as "生成一个 logo" and "create an image" untouched.
+	for _, meta := range []string{
+		"生成图片的代码", "生成图像的代码", "生成图片的函数", "生成图像的函数",
+		"图片生成代码", "图像生成代码", "图片生成逻辑", "图像生成逻辑",
+		"生图代码", "生图函数", "生图接口", "生图 api", "生图api", "生图 sdk", "生图sdk",
+		"image generation code", "image generation function", "image generation logic",
+		"image generation endpoint", "image generation sdk", "image generation docs",
+		"code to generate an image", "code that generates an image",
+		"code to create an image", "code that creates an image", "image generation prompt",
+	} {
+		if strings.Contains(prompt, meta) {
+			return false
+		}
 	}
 
 	for _, strong := range []string{

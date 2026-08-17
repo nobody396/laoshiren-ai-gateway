@@ -50,6 +50,7 @@ type OpenAIAccountScheduleDecision struct {
 	ImageGenerationIntent          bool
 	ImageGenerationRouteConfigured bool
 	ImageGenerationRoutePriority   int
+	GlobalImagePool                bool
 
 	RoutePolicyMode              OpenAIRoutePolicyMode
 	RoutePolicyVersion           int
@@ -255,7 +256,10 @@ func (s *defaultOpenAIAccountScheduler) Select(
 	ctx context.Context,
 	req OpenAIAccountScheduleRequest,
 ) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
-	decision := OpenAIAccountScheduleDecision{ImageGenerationIntent: req.PreferImageGeneration}
+	decision := OpenAIAccountScheduleDecision{
+		ImageGenerationIntent: req.PreferImageGeneration,
+		GlobalImagePool:       req.PreferImageGeneration,
+	}
 	start := time.Now()
 	defer func() {
 		decision.LatencyMs = time.Since(start).Milliseconds()
@@ -341,11 +345,22 @@ func isOpenAIAccountEligibleForScheduleRequest(account *Account, req OpenAIAccou
 	if account == nil || !account.IsSchedulable() || !account.IsOpenAI() {
 		return false
 	}
-	if req.RequestedModel != "" && !account.IsModelSupported(req.RequestedModel) {
-		_, imageRouteConfigured := account.OpenAIImageGenerationRoutingPriority(req.RequestedModel)
-		if !req.PreferImageGeneration || !imageRouteConfigured {
+	if req.PreferImageGeneration {
+		if _, configured := account.OpenAIImageGenerationRoutingPriority(req.RequestedModel); !configured {
 			return false
 		}
+		// A native Images-only fallback cannot speak on an already-upgraded
+		// Responses WebSocket connection. HTTP/Codex ImageGen requests may use the
+		// full Responses -> Images fallback chain, while WS ingress fails closed to
+		// Responses-capable image routes instead of selecting an incompatible key.
+		if req.RequiredTransport == OpenAIUpstreamTransportResponsesWebsocketV2Ingress {
+			transport, ok := account.OpenAIImageGenerationTransport(req.RequestedModel)
+			if !ok || transport != OpenAIImageGenerationTransportResponses {
+				return false
+			}
+		}
+	} else if req.RequestedModel != "" && !account.IsModelSupported(req.RequestedModel) {
+		return false
 	}
 	if req.RequireCompact && openAICompactSupportTier(account) == 0 {
 		return false
@@ -480,7 +495,10 @@ func resolveOpenAIAccountSchedulingPriorities(
 			accountID:               account.ID,
 			imageRouteConfigured:    configured,
 			imageGenerationPriority: imagePriority,
-			normalPriority:          account.EffectivePriorityForGroup(req.GroupID),
+			// Global image execution is independent from the customer's group.
+			// Account priority is only a deterministic tie-breaker after the
+			// image-specific route priority.
+			normalPriority: account.Priority,
 		})
 	}
 	if !hasConfiguredRoute {
@@ -753,7 +771,13 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 	ctx context.Context,
 	req OpenAIAccountScheduleRequest,
 ) (*AccountSelectionResult, int, int, float64, error) {
-	accounts, err := s.service.listSchedulableAccounts(ctx, req.GroupID)
+	var accounts []Account
+	var err error
+	if req.PreferImageGeneration {
+		accounts, err = s.service.listGlobalImageAccounts(ctx)
+	} else {
+		accounts, err = s.service.listSchedulableAccounts(ctx, req.GroupID)
+	}
 	if err != nil {
 		return nil, 0, 0, 0, err
 	}

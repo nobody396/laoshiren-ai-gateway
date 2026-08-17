@@ -66,6 +66,10 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", err.Error())
 		return
 	}
+	if !service.GroupAllowsImageGeneration(apiKey.Group) {
+		h.errorResponse(c, http.StatusForbidden, "permission_error", service.ImageGenerationPermissionMessage())
+		return
+	}
 	bridgeCodexImage := shouldBridgeCodexNativeImageRequest(c, apiKey, parsed)
 	if bridgeCodexImage {
 		if err := service.ValidateCodexNativeImageBridgeRequest(parsed); err != nil {

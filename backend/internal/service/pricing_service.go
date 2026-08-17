@@ -23,13 +23,16 @@ import (
 
 var (
 	openAIGPT56SolFallbackPricing = &LiteLLMModelPricing{
-		InputCostPerToken:           5e-06, // $5 per MTok
-		OutputCostPerToken:          3e-05, // $30 per MTok
-		CacheCreationInputTokenCost: 5e-06,
-		CacheReadInputTokenCost:     5e-07,
-		LiteLLMProvider:             "openai",
-		Mode:                        "chat",
-		SupportsPromptCaching:       true,
+		InputCostPerToken:               5e-06,    // $5 per MTok
+		OutputCostPerToken:              3e-05,    // $30 per MTok
+		CacheCreationInputTokenCost:     6.25e-06, // cache writes: 1.25x input
+		CacheReadInputTokenCost:         5e-07,
+		LongContextInputTokenThreshold:  272000,
+		LongContextInputCostMultiplier:  2.0,
+		LongContextOutputCostMultiplier: 1.5,
+		LiteLLMProvider:                 "openai",
+		Mode:                            "chat",
+		SupportsPromptCaching:           true,
 	}
 	openAIGPT56TerraFallbackPricing = &LiteLLMModelPricing{
 		InputCostPerToken:               2e-06,   // $2 per MTok

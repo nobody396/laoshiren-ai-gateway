@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "client_auto_config_version": "0.7.10",
+  "client_auto_config_version": "0.7.11",
   "models": [
     {
       "id": "grok-4.6",

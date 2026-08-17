@@ -71,6 +71,9 @@ func newGatewayModelInfo(modelID, displayName string, created int64, createdAt s
 func gatewayModelInfoFromIDs(modelIDs []string) []gatewayModelInfo {
 	models := make([]gatewayModelInfo, 0, len(modelIDs))
 	for _, modelID := range modelIDs {
+		if service.IsDisabledPublicModel(modelID) {
+			continue
+		}
 		models = append(models, newGatewayModelInfo(modelID, modelID, 0, ""))
 	}
 	return models
@@ -79,6 +82,9 @@ func gatewayModelInfoFromIDs(modelIDs []string) []gatewayModelInfo {
 func gatewayModelInfoFromOpenAI(defaults []openai.Model) []gatewayModelInfo {
 	models := make([]gatewayModelInfo, 0, len(defaults))
 	for _, model := range defaults {
+		if service.IsDisabledPublicModel(model.ID) {
+			continue
+		}
 		models = append(models, newGatewayModelInfo(model.ID, model.DisplayName, model.Created, ""))
 	}
 	return models

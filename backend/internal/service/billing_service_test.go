@@ -227,7 +227,7 @@ func TestGetModelPricing_OpenAIGPT56OfficialPricing(t *testing.T) {
 		cacheRead   float64
 		longContext bool
 	}{
-		"sol":   {model: "gpt-5.6-sol", input: 5e-6, output: 30e-6, cacheWrite: 5e-6, cacheRead: 0.5e-6},
+		"sol":   {model: "gpt-5.6-sol", input: 5e-6, output: 30e-6, cacheWrite: 6.25e-6, cacheRead: 0.5e-6, longContext: true},
 		"terra": {model: "gpt-5.6-terra-high", input: 2e-6, output: 12e-6, cacheWrite: 2.5e-6, cacheRead: 0.2e-6, longContext: true},
 		"luna":  {model: "gpt-5.6-luna", input: 0.2e-6, output: 1.2e-6, cacheWrite: 0.25e-6, cacheRead: 0.02e-6, longContext: true},
 	}
@@ -286,6 +286,32 @@ func TestCalculateCost_OpenAIGPT54LongContextAppliesWholeSessionMultipliers(t *t
 	require.InDelta(t, expectedOutput, cost.OutputCost, 1e-10)
 	require.InDelta(t, expectedInput+expectedOutput, cost.TotalCost, 1e-10)
 	require.InDelta(t, expectedInput+expectedOutput, cost.ActualCost, 1e-10)
+}
+
+func TestCalculateCost_OpenAIGPT56SolLongContextAppliesOfficialMultipliers(t *testing.T) {
+	svc := newTestBillingService()
+
+	tokens := UsageTokens{
+		InputTokens:         280000,
+		OutputTokens:        4000,
+		CacheReadTokens:     20000,
+		CacheCreationTokens: 10000,
+	}
+
+	cost, err := svc.CalculateCost("gpt-5.6-sol", tokens, 1.0)
+	require.NoError(t, err)
+
+	expectedInput := float64(tokens.InputTokens) * 5e-6 * 2.0
+	expectedOutput := float64(tokens.OutputTokens) * 30e-6 * 1.5
+	expectedCacheRead := float64(tokens.CacheReadTokens) * 0.5e-6 * 2.0
+	expectedCacheCreation := float64(tokens.CacheCreationTokens) * 6.25e-6 * 2.0
+	require.InDelta(t, expectedInput, cost.InputCost, 1e-10)
+	require.InDelta(t, expectedOutput, cost.OutputCost, 1e-10)
+	require.InDelta(t, expectedCacheRead, cost.CacheReadCost, 1e-10)
+	require.InDelta(t, expectedCacheCreation, cost.CacheCreationCost, 1e-10)
+	expectedTotal := expectedInput + expectedOutput + expectedCacheRead + expectedCacheCreation
+	require.InDelta(t, expectedTotal, cost.TotalCost, 1e-10)
+	require.InDelta(t, expectedTotal, cost.ActualCost, 1e-10)
 }
 
 func TestCalculateCost_OpenAIGPT55UsesDoubleGPT54AndLongContext(t *testing.T) {

@@ -128,9 +128,10 @@ describe('client auto-config scripts', () => {
       expect(model.base_instructions).toBeTruthy()
       expect(model.supports_reasoning_summaries).toBe(true)
       expect(model.visibility).toBe('list')
-      expect(model.context_window).toBe(250000)
-      expect(model.max_context_window).toBe(250000)
-      expect(model.auto_compact_token_limit).toBe(225000)
+      expect(model.context_window).toBe(272000)
+      expect(model.max_context_window).toBe(272000)
+      expect(model.effective_context_window_percent).toBe(95)
+      expect(model.auto_compact_token_limit).toBe(258000)
     }
     for (const name of ['install.sh', 'install.ps1']) {
       const script = readPublicScript(name)

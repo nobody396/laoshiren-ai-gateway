@@ -1068,8 +1068,8 @@
         <div :class="['grid gap-3', ccsClientOptions.length >= 3 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2']">
           <button
             v-for="option in ccsClientOptions"
-            :key="option.value"
-            @click="handleCcsClientSelect(option.value)"
+            :key="`${option.value}-${option.codexContextProfile || 'default'}`"
+            @click="handleCcsClientSelect(option.value, option.codexContextProfile)"
             class="group flex flex-col items-center gap-2.5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:border-dark-600 dark:bg-dark-800 dark:hover:border-primary-700 dark:focus-visible:ring-offset-dark-900"
           >
             <CcsClientIcon
@@ -1330,6 +1330,7 @@ import { publicGroupDisplayName } from '@/utils/groupDisplayName'
 
 const { t } = useI18n()
 import { keysAPI, authAPI, usageAPI, userGroupsAPI, resourcesAPI } from '@/api'
+import { getGatewayModels } from '@/api/gatewayModels'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import DataTable from '@/components/common/DataTable.vue'
@@ -1353,7 +1354,8 @@ import { formatDateTime } from '@/utils/format'
 import {
   buildCcsImportDeeplink,
   getCompatibleCcsTargets,
-  type CcsImportTarget
+  type CcsImportTarget,
+  type CodexContextProfile
 } from '@/utils/ccSwitchImport'
 import {
   buildCcsDiagnosticCommand,
@@ -1409,6 +1411,7 @@ type CcsClientOption = {
   value: CcsImportTarget
   label: string
   description: string
+  codexContextProfile?: CodexContextProfile
 }
 
 const appStore = useAppStore()
@@ -1495,7 +1498,7 @@ const displayApiBaseUrl = computed(() => {
 const ccsClientOptions = computed<CcsClientOption[]>(() => {
   const platform = pendingCcsRow.value?.group?.platform || 'anthropic'
   const allowMessagesDispatch = pendingCcsRow.value?.group?.allow_messages_dispatch === true
-  return getCompatibleCcsTargets(platform, allowMessagesDispatch).map((target) => {
+  const options: CcsClientOption[] = getCompatibleCcsTargets(platform, allowMessagesDispatch).map((target) => {
     switch (target) {
       case 'claude':
         return {
@@ -1538,9 +1541,28 @@ const ccsClientOptions = computed<CcsClientOption[]>(() => {
           value: target,
           label: t('keys.ccsClientSelect.geminiCli'),
           description: t('keys.ccsClientSelect.geminiCliDesc')
-        }
+      }
     }
   })
+  if (platform !== 'openai') return options
+
+  return options.flatMap<CcsClientOption>((option) => option.value === 'codex'
+    ? [
+        {
+          ...option,
+          label: t('keys.ccsClientSelect.codexStandard'),
+          description: t('keys.ccsClientSelect.codexStandardDesc'),
+          codexContextProfile: 'standard' as const
+        },
+        {
+          ...option,
+          label: t('keys.ccsClientSelect.codexLong'),
+          description: t('keys.ccsClientSelect.codexLongDesc'),
+          codexContextProfile: 'long' as const
+        }
+      ]
+    : [option]
+  )
 })
 const ccsHasClaudeCodeTarget = computed(() =>
   ccsClientOptions.value.some((option) => option.value === 'claude')
@@ -2360,15 +2382,35 @@ const openChatbotWithKey = async (row: ApiKey) => {
   }
 }
 
-const executeCcsImport = (row: ApiKey, clientType: CcsImportTarget) => {
+const executeCcsImport = async (
+  row: ApiKey,
+  clientType: CcsImportTarget,
+  codexContextProfile: CodexContextProfile = 'standard'
+) => {
   const baseUrl = publicSettings.value?.api_base_url || window.location.origin
 
   try {
+    const needsOpenAIModels = row.group?.platform === 'openai' && (
+      clientType === 'codex' ||
+      clientType === 'opencode' ||
+      clientType === 'openclaw' ||
+      clientType === 'hermes'
+    )
+    let availableModels: readonly string[] | undefined
+    if (needsOpenAIModels) {
+      availableModels = await getGatewayModels(baseUrl, row.key)
+      if (!availableModels?.length) {
+        throw new Error('CC Switch import could not load any active models for this OpenAI group')
+      }
+    }
+
     const deeplink = buildCcsImportDeeplink({
       key: row,
       target: clientType,
       apiBaseUrl: baseUrl,
-      siteName: publicSettings.value?.site_name
+      siteName: publicSettings.value?.site_name,
+      availableModels,
+      codexContextProfile
     })
     watchCcsLaunch()
     window.open(deeplink, '_self')
@@ -2379,7 +2421,10 @@ const executeCcsImport = (row: ApiKey, clientType: CcsImportTarget) => {
   }
 }
 
-const handleCcsClientSelect = async (clientType: CcsImportTarget) => {
+const handleCcsClientSelect = async (
+  clientType: CcsImportTarget,
+  codexContextProfile: CodexContextProfile = 'standard'
+) => {
   const row = pendingCcsRow.value
   showCcsClientSelect.value = false
   pendingCcsRow.value = null
@@ -2392,7 +2437,7 @@ const handleCcsClientSelect = async (clientType: CcsImportTarget) => {
     await generateAndCopyClientAutoConfigCommand(row, false, true)
     return
   }
-  executeCcsImport(row, clientType)
+  await executeCcsImport(row, clientType, codexContextProfile)
 }
 
 const closeCcsClientSelect = () => {

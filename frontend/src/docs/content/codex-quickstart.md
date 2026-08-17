@@ -70,13 +70,13 @@ codex --version
 macOS / Linux 命令格式：
 
 ```bash
-curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.10' | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.11' | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
 ```
 
 Windows PowerShell 命令格式：
 
 ```powershell
-$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; $env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.10 | iex
+$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; $env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.11 | iex
 ```
 
 脚本会写入 `~/.codex/auth.json` 和 `~/.codex/config.toml`，并请求 `/v1/models` 测试这把 API Key 是否能正常使用。如果 Key、分组或 API 地址不正确，脚本会直接报错，不会假装配置成功。
@@ -87,6 +87,7 @@ $env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex';
 
 先到本站 [安装与下载](/resources) 页面，选择 **安装 CC Switch**，复制页面生成的命令并在 PowerShell 执行。Windows 安装包会从本站缓存下载并校验 SHA-256，不需要访问 GitHub。安装完成后，回到 API 密钥页点击 **导入 CC Switch**：
 
+OpenAI / GPT 分组会显示两个 Codex 入口：**标准 272K**（258K 自动压缩）适合日常任务；**高上下文 1M**（900K 自动压缩）适合超长代码库与文档。高上下文请求超过 272K 输入后会按模型的长上下文规则阶梯计费，请按实际需要选择。
 
 导入后点击 **启用** 即可。这个方式更适合需要在多个 Provider、多个分组或官方订阅之间频繁切换的用户。
 

@@ -231,11 +231,14 @@ func (s *BillingService) initFallbackPricing() {
 	}
 	// OpenAI GPT-5.6 Sol / Terra / Luna（官方标准价）
 	s.fallbackPrices["gpt-5.6-sol"] = &ModelPricing{
-		InputPricePerToken:         5e-6,
-		OutputPricePerToken:        30e-6,
-		CacheCreationPricePerToken: 5e-6,
-		CacheReadPricePerToken:     0.5e-6,
-		SupportsCacheBreakdown:     false,
+		InputPricePerToken:          5e-6,
+		OutputPricePerToken:         30e-6,
+		CacheCreationPricePerToken:  6.25e-6, // cache writes: 1.25x input
+		CacheReadPricePerToken:      0.5e-6,
+		SupportsCacheBreakdown:      false,
+		LongContextInputThreshold:   openAIGPT54LongContextInputThreshold,
+		LongContextInputMultiplier:  openAIGPT54LongContextInputMultiplier,
+		LongContextOutputMultiplier: openAIGPT54LongContextOutputMultiplier,
 	}
 	s.fallbackPrices["gpt-5.6-terra"] = &ModelPricing{
 		InputPricePerToken:          2e-6,

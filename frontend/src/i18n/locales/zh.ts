@@ -675,7 +675,7 @@ export default {
     levelSuper: '超级合伙人',
     levelManual: '手动基准',
     invitedUsers: '邀请用户',
-    invitedUsersDesc: '查看直属邀请用户及消费统计',
+    invitedUsersDesc: '查看直属邀请用户的实付、消费与佣金；新人体验计入实付和消费，但不产生佣金',
     userLabel: '用户',
     myInviteCode: '我的邀请码及邀请链接',
     inviteCodeHint: '分享此邀请码给好友；好友注册并完成首笔真实付费后，您和好友各获得实付金额 5% 的 ⚡。',

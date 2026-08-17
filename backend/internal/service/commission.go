@@ -30,9 +30,9 @@ type InvitedUserStat struct {
 	Email        string    `json:"email"`
 	Username     string    `json:"username"`
 	RegisteredAt time.Time `json:"joined_at"`
-	// 指定日期范围内的真实付费/充值总额。
+	// 指定日期范围内的真实付费/充值总额；新人体验按实付金额计入。
 	RechargedAmount float64 `json:"total_recharge"`
-	// 指定日期范围内的消费总额（usage_logs.actual_cost 汇总）
+	// 指定日期范围内的消费总额；包含新人体验额度的实际消耗。
 	ConsumedAmount float64 `json:"total_consumption"`
 	// 产生的分佣总额（commission_records.amount 汇总，兼容 consumption / consumption_commission）
 	CommissionAmount float64 `json:"total_commission"`

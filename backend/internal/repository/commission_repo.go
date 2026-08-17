@@ -712,6 +712,17 @@ func (r *commissionRepository) listInvitedUsersWithAffiliateStats(
 			) paid
 			GROUP BY user_id
 		),
+		newcomer_recharge_totals AS (
+			SELECT claim.user_id,
+				SUM(offer.pay_amount_cny_fen::numeric / 100)::double precision AS total
+			FROM native_checkout_manual_claims claim
+			JOIN native_checkout_offers offer ON offer.code = claim.offer_code
+			WHERE claim.offer_code = 'newcomer-balance-5-to-10'
+			  AND claim.user_id IN (SELECT id FROM direct_users)
+			  AND ($2::timestamptz IS NULL OR claim.created_at >= $2::timestamptz)
+			  AND ($3::timestamptz IS NULL OR claim.created_at <= $3::timestamptz)
+			GROUP BY claim.user_id
+		),
 		usage_totals AS (
 			SELECT user_id, SUM(actual_cost)::double precision AS total
 			FROM usage_logs
@@ -719,6 +730,22 @@ func (r *commissionRepository) listInvitedUsersWithAffiliateStats(
 			  AND ($2::timestamptz IS NULL OR created_at >= $2::timestamptz)
 			  AND ($3::timestamptz IS NULL OR created_at <= $3::timestamptz)
 			GROUP BY user_id
+		),
+		newcomer_consumption_totals AS (
+			SELECT claim.user_id,
+				SUM(consumed.amount_micros::numeric / 1000000)::double precision AS total
+			FROM native_checkout_manual_claims claim
+			JOIN balance_lots lot ON lot.user_id = claim.user_id
+				AND lot.source_id = claim.redeem_code_id
+				AND lot.source_key = 'redeem:balance:' || claim.redeem_code_id::text
+				AND lot.source_type = 'gift'
+				AND lot.affiliate_policy = 'NONE'
+			JOIN balance_lot_consumptions consumed ON consumed.balance_lot_id = lot.id
+			WHERE claim.offer_code = 'newcomer-balance-5-to-10'
+			  AND claim.user_id IN (SELECT id FROM direct_users)
+			  AND ($2::timestamptz IS NULL OR consumed.created_at >= $2::timestamptz)
+			  AND ($3::timestamptz IS NULL OR consumed.created_at <= $3::timestamptz)
+			GROUP BY claim.user_id
 		),
 		performance_totals AS (
 			SELECT user_id, SUM(amount_micros)::bigint AS total_micros
@@ -756,12 +783,16 @@ func (r *commissionRepository) listInvitedUsersWithAffiliateStats(
 			d.email,
 			d.username,
 			d.created_at,
-			COALESCE(NULLIF(d.user_total_recharged, 0), recharge_totals.total, 0)::double precision AS recharged_amount,
-			COALESCE(
-				(performance_totals.total_micros::numeric / 1000000)::double precision,
-				usage_totals.total,
-				0
-			)::double precision AS consumed_amount,
+			(
+				COALESCE(NULLIF(d.user_total_recharged, 0), recharge_totals.total, 0)
+				+ COALESCE(newcomer_recharge_totals.total, 0)
+			)::double precision AS recharged_amount,
+			(CASE
+				WHEN performance_totals.user_id IS NOT NULL THEN
+					(performance_totals.total_micros::numeric / 1000000)::double precision
+					+ COALESCE(newcomer_consumption_totals.total, 0)
+				ELSE COALESCE(usage_totals.total, newcomer_consumption_totals.total, 0)
+			END)::double precision AS consumed_amount,
 			COALESCE(
 				(cash_totals.total_micros::numeric / 1000000)::double precision,
 				legacy_commission_totals.total,
@@ -769,7 +800,9 @@ func (r *commissionRepository) listInvitedUsersWithAffiliateStats(
 			)::double precision AS commission_amount
 		FROM direct_users d
 		LEFT JOIN recharge_totals ON recharge_totals.user_id = d.id
+		LEFT JOIN newcomer_recharge_totals ON newcomer_recharge_totals.user_id = d.id
 		LEFT JOIN usage_totals ON usage_totals.user_id = d.id
+		LEFT JOIN newcomer_consumption_totals ON newcomer_consumption_totals.user_id = d.id
 		LEFT JOIN performance_totals ON performance_totals.user_id = d.id
 		LEFT JOIN cash_totals ON cash_totals.user_id = d.id
 		LEFT JOIN legacy_commission_totals ON legacy_commission_totals.user_id = d.id

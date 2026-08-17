@@ -77,7 +77,7 @@ func TestListInvitedUsersWithAffiliateStatsReturnsDirectInviteeFullEmail(t *test
 	mock.ExpectQuery("(?s)WITH direct_users AS .*SELECT COUNT\\(\\*\\) FROM direct_users").
 		WithArgs(int64(47)).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(1)))
-	mock.ExpectQuery("(?s)WITH direct_users AS .*recharge_totals AS .*ORDER BY d.created_at DESC").
+	mock.ExpectQuery("(?s)WITH direct_users AS .*recharge_totals AS .*newcomer_recharge_totals AS .*newcomer_consumption_totals AS .*ORDER BY d.created_at DESC").
 		WithArgs(int64(47), nil, nil, 20, 0).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"id", "email", "username", "created_at", "recharged_amount", "consumed_amount", "commission_amount",

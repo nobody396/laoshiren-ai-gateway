@@ -676,7 +676,7 @@ export default {
     levelSuper: 'Super Partner',
     levelManual: 'Manual Base',
     invitedUsers: 'Invited Users',
-    invitedUsersDesc: 'View your directly invited users and their consumption statistics',
+    invitedUsersDesc: 'View direct users’ payments, usage, and commission; newcomer offers show payment and usage but earn no commission',
     userLabel: 'User',
     myInviteCode: 'My Invite Code & Invite Link',
     inviteCodeHint: 'Share this invite code with friends. They enter it on registration, and their account receives the configured first top-up bonus.',

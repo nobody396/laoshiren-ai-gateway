@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -247,6 +248,118 @@ func TestAffiliateAgentRepository_OperationsSummaryAndPartnerPerformance(t *test
 	summary, err := repo.GetOperationsSummary(ctx)
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, summary.ActionableTotal, int64(0))
+}
+
+func TestAffiliateAgentRepository_NewcomerOfferIsVisibleWithoutCommission(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	agent := createActiveAffiliatePaymentAgent(t, ctx, client, "affiliate-newcomer-agent")
+	direct := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("affiliate-newcomer-direct-%d@example.com", time.Now().UnixNano()),
+	})
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO affiliate_bindings (
+			customer_user_id, inviter_user_id, binding_kind,
+			customer_rebate_rate_snapshot_bps, agent_commission_rate_snapshot_bps
+		) VALUES ($1, $2, 'ordinary', 0, 0)
+	`, direct.ID, agent.ID)
+	require.NoError(t, err)
+
+	usedAt := time.Now()
+	code := &service.RedeemCode{
+		Code:        fmt.Sprintf("%032x", time.Now().UnixNano()),
+		Type:        service.RedeemTypeBalance,
+		Value:       10,
+		PaidValue:   0,
+		Status:      service.StatusUsed,
+		UsedBy:      &direct.ID,
+		UsedAt:      &usedAt,
+		Purpose:     service.RedeemCodePurposeGift,
+		SalesStatus: service.RedeemCodeSalesStatusGifted,
+	}
+	require.NoError(t, NewRedeemCodeRepository(client).Create(ctx, code))
+	t.Cleanup(func() {
+		cleanupCtx := context.Background()
+		cleanupQueries := []struct {
+			query string
+			args  []any
+		}{
+			{`DELETE FROM balance_lot_consumptions WHERE balance_lot_id IN (
+				SELECT id FROM balance_lots
+				WHERE user_id = $1 AND source_type = 'gift' AND source_id = $2
+			)`, []any{direct.ID, code.ID}},
+			{`DELETE FROM balance_lots
+				WHERE user_id = $1 AND source_type = 'gift' AND source_id = $2`, []any{direct.ID, code.ID}},
+			{`DELETE FROM native_checkout_manual_claims
+				WHERE user_id = $1 AND redeem_code_id = $2`, []any{direct.ID, code.ID}},
+			{`DELETE FROM redeem_codes WHERE id = $1`, []any{code.ID}},
+		}
+		for _, cleanup := range cleanupQueries {
+			_, cleanupErr := integrationDB.ExecContext(cleanupCtx, cleanup.query, cleanup.args...)
+			require.NoError(t, cleanupErr)
+		}
+	})
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO native_checkout_manual_claims (
+			offer_code, user_id, redeem_code_id, created_at
+		) VALUES ('newcomer-balance-5-to-10', $1, $2, $3)
+	`, direct.ID, code.ID, usedAt)
+	require.NoError(t, err)
+
+	var lotID int64
+	err = integrationDB.QueryRowContext(ctx, `
+		INSERT INTO balance_lots (
+			user_id, source_type, source_id, source_key,
+			original_amount_micros, remaining_amount_micros,
+			affiliate_eligible, affiliate_policy, occurred_at
+		) VALUES ($1, 'gift', $2, $3, 10000000, 6000000, FALSE, 'NONE', $4)
+		RETURNING id
+	`, direct.ID, code.ID, fmt.Sprintf("redeem:balance:%d", code.ID), usedAt).Scan(&lotID)
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+		INSERT INTO balance_lot_consumptions (
+			balance_lot_id, user_id, usage_event_key,
+			amount_micros, affiliate_eligible_amount_micros, created_at
+		) VALUES ($1, $2, $3, 4000000, 0, $4)
+	`, lotID, direct.ID, fmt.Sprintf("integration:newcomer:%d", code.ID), usedAt)
+	require.NoError(t, err)
+
+	repo := NewAffiliateAgentRepository(integrationDB)
+	items, err := repo.ListPartnerPerformance(ctx, 500)
+	require.NoError(t, err)
+	var listed *service.AffiliatePartnerPerformance
+	for index := range items {
+		if items[index].AgentID == agent.ID {
+			listed = &items[index]
+			break
+		}
+	}
+	require.NotNil(t, listed)
+	require.Equal(t, int64(1), listed.PaidDirectUserCount)
+	require.Equal(t, int64(5_000_000), listed.DirectTeamRechargeMicros)
+	require.Equal(t, int64(4_000_000), listed.DirectTeamConsumptionMicros)
+	require.Zero(t, listed.LifetimeEarnedMicros)
+
+	detail, err := repo.GetPartnerPerformance(ctx, agent.ID, time.Time{}, time.Now().Add(time.Hour))
+	require.NoError(t, err)
+	require.Len(t, detail.DirectUsers, 1)
+	require.Equal(t, int64(5_000_000), detail.DirectUsers[0].RechargeMicros)
+	require.Equal(t, int64(4_000_000), detail.DirectUsers[0].ConsumptionMicros)
+	require.Zero(t, detail.DirectUsers[0].GeneratedCommissionMicros)
+
+	commissionRepo := NewCommissionRepository(nil, integrationDB)
+	users, _, err := commissionRepo.ListInvitedUsersWithStats(
+		ctx,
+		agent.ID,
+		pagination.PaginationParams{Page: 1, PageSize: 20},
+		nil,
+		nil,
+	)
+	require.NoError(t, err)
+	require.Len(t, users, 1)
+	require.InDelta(t, 5.0, users[0].RechargedAmount, 0.000001)
+	require.InDelta(t, 4.0, users[0].ConsumedAmount, 0.000001)
+	require.Zero(t, users[0].CommissionAmount)
 }
 
 func TestAffiliateAgentRepository_RejectsUnqualifiedApplication(t *testing.T) {

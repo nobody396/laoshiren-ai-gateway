@@ -257,6 +257,7 @@ describe('AffiliateOperationsView actionable queues and performance', () => {
     expect(detail).not.toBeNull()
     expect(detail?.classList.contains('z-[60]')).toBe(true)
     expect(detail?.textContent).toContain('直属用户业绩')
+    expect(detail?.textContent).toContain('新人体验按实付金额与已消耗额度展示，但不产生佣金。')
     expect(detail?.textContent).toContain('用户乙')
     expect(detail?.textContent).toContain('¥200')
     expect(detail?.textContent).toContain('¥0.000901')

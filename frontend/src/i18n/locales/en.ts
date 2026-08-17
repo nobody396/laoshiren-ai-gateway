@@ -6460,6 +6460,7 @@ export default {
       model: 'Model',
       input: 'Input',
       output: 'Output',
+      cacheWrite: 'Cache write',
       cacheRead: 'Cache read'
     },
     image: {

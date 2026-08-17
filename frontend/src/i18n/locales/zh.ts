@@ -6646,6 +6646,7 @@ export default {
       model: '模型',
       input: '输入',
       output: '输出',
+      cacheWrite: '缓存创建',
       cacheRead: '缓存读取'
     },
     image: {

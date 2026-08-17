@@ -75,6 +75,14 @@ type modelsListerStub struct {
 	calls  int
 }
 
+type channelModelPricingProviderStub struct {
+	prices map[int64]map[string]*ChannelModelPricing
+}
+
+func (s *channelModelPricingProviderStub) GetChannelModelPricing(_ context.Context, groupID int64, model string) *ChannelModelPricing {
+	return s.prices[groupID][model]
+}
+
 func (s *modelsListerStub) GetAvailableModels(_ context.Context, groupID *int64, _ string) []string {
 	s.calls++
 	id := int64(0)
@@ -89,7 +97,7 @@ func (s *modelsListerStub) GetAvailableModels(_ context.Context, groupID *int64,
 func newModelPricingServiceForTest(groups []Group, prices map[string]*LiteLLMModelPricing, models map[int64][]string) (*ModelPricingService, *modelPricingGroupRepoStub, *modelsListerStub) {
 	repo := &modelPricingGroupRepoStub{groups: groups}
 	lister := &modelsListerStub{models: models}
-	svc := NewModelPricingService(repo, &modelPricingProviderStub{prices: prices}, lister)
+	svc := NewModelPricingService(repo, &modelPricingProviderStub{prices: prices}, lister, nil)
 	return svc, repo, lister
 }
 
@@ -126,6 +134,44 @@ func TestModelPricingPriceFormula(t *testing.T) {
 	assertPrice(t, "input", m.InputPrice, 1.25)
 	assertPrice(t, "output", m.OutputPrice, 7.5)
 	assertPrice(t, "cache_read", m.CacheReadPrice, 0.125)
+}
+
+func TestModelPricingUsesGroupChannelOverrideIncludingCacheWrite(t *testing.T) {
+	groups := []Group{{ID: 52, Name: "GPT CYBER 分组（特价！）", Platform: "openai", RateMultiplier: 2}}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-daybreak-blue-latest": {
+			InputCostPerToken:           1.25e-6,
+			OutputCostPerToken:          10e-6,
+			CacheReadInputTokenCost:     0.125e-6,
+			CacheCreationInputTokenCost: 0,
+		},
+	}
+	models := map[int64][]string{52: {"gpt-daybreak-blue-latest"}}
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	svc.channelPricing = &channelModelPricingProviderStub{prices: map[int64]map[string]*ChannelModelPricing{
+		52: {
+			"gpt-daybreak-blue-latest": {
+				BillingMode:     BillingModeToken,
+				InputPrice:      ptr(5e-6),
+				OutputPrice:     ptr(30e-6),
+				CacheWritePrice: ptr(6.25e-6),
+				CacheReadPrice:  ptr(0.25e-6),
+			},
+		},
+	}}
+
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 1 || len(catalog.Groups[0].Models) != 1 {
+		t.Fatalf("unexpected catalog: %+v", catalog.Groups)
+	}
+	m := catalog.Groups[0].Models[0]
+	assertPrice(t, "input", m.InputPrice, 10)
+	assertPrice(t, "output", m.OutputPrice, 60)
+	assertPrice(t, "cache_write", m.CacheWritePrice, 12.5)
+	assertPrice(t, "cache_read", m.CacheReadPrice, 0.5)
 }
 
 func TestModelPricingFiltersInternalGroups(t *testing.T) {

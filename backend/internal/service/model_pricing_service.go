@@ -23,6 +23,13 @@ type ModelPricingProvider interface {
 	GetModelPricing(model string) *LiteLLMModelPricing
 }
 
+// ChannelModelPricingProvider returns the same group-bound override used by
+// billing. The public price page must not advertise a stale catalog price when
+// a channel rate card is authoritative for the group.
+type ChannelModelPricingProvider interface {
+	GetChannelModelPricing(ctx context.Context, groupID int64, model string) *ChannelModelPricing
+}
+
 // catalogCacheKey 公开模型价格目录的缓存 key。
 const catalogCacheKey = "public-model-pricing-catalog"
 
@@ -119,6 +126,7 @@ type ModelPricingService struct {
 	groupRepo       GroupRepository
 	pricing         ModelPricingProvider
 	modelsLister    AvailableModelsLister
+	channelPricing  ChannelModelPricingProvider
 	catalogCache    *gocache.Cache
 	catalogCacheTTL time.Duration
 }
@@ -129,14 +137,19 @@ func NewModelPricingService(
 	groupRepo GroupRepository,
 	pricing ModelPricingProvider,
 	modelsLister AvailableModelsLister,
+	channelService *ChannelService,
 ) *ModelPricingService {
-	return &ModelPricingService{
+	service := &ModelPricingService{
 		groupRepo:       groupRepo,
 		pricing:         pricing,
 		modelsLister:    modelsLister,
 		catalogCache:    gocache.New(defaultCatalogCacheTTL, time.Minute),
 		catalogCacheTTL: defaultCatalogCacheTTL,
 	}
+	if channelService != nil {
+		service.channelPricing = channelService
+	}
+	return service
 }
 
 // PublicModelPricingCatalog 公开价格目录的响应体。
@@ -162,11 +175,12 @@ type PublicModelPricingGroup struct {
 
 // PublicModelPrice 单个模型的实付价（元/1M tokens），价格未知时为 nil。
 type PublicModelPrice struct {
-	Model          string   `json:"model"`
-	InputPrice     *float64 `json:"input_price"`
-	OutputPrice    *float64 `json:"output_price"`
-	CacheReadPrice *float64 `json:"cache_read_price"`
-	Disabled       bool     `json:"disabled,omitempty"`
+	Model           string   `json:"model"`
+	InputPrice      *float64 `json:"input_price"`
+	OutputPrice     *float64 `json:"output_price"`
+	CacheWritePrice *float64 `json:"cache_write_price"`
+	CacheReadPrice  *float64 `json:"cache_read_price"`
+	Disabled        bool     `json:"disabled,omitempty"`
 }
 
 // PublicImageGenerationPricing 描述分组真实执行的生图计费方式。
@@ -222,7 +236,7 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 			if imagePricing != nil && strings.EqualFold(strings.TrimSpace(model), "gpt-image-2") {
 				continue
 			}
-			price, ok := s.priceForModel(model, g.RateMultiplier)
+			price, ok := s.priceForModel(ctx, g.ID, model, g.RateMultiplier)
 			if !ok {
 				slog.Debug("model_pricing: skip model without official price",
 					"group", g.Name, "model", model)
@@ -233,7 +247,7 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 			}
 			prices = append(prices, price)
 		}
-		prices = s.withDisabledModels(prices, g.RateMultiplier)
+		prices = s.withDisabledModels(ctx, g.ID, prices, g.RateMultiplier)
 		if len(prices) == 0 && imagePricing == nil {
 			continue
 		}
@@ -281,7 +295,7 @@ func IsDisabledPublicModel(model string) bool {
 	return false
 }
 
-func (s *ModelPricingService) withDisabledModels(prices []PublicModelPrice, rateMultiplier float64) []PublicModelPrice {
+func (s *ModelPricingService) withDisabledModels(ctx context.Context, groupID int64, prices []PublicModelPrice, rateMultiplier float64) []PublicModelPrice {
 	present := make(map[string]bool, len(prices))
 	for i := range prices {
 		name := strings.ToLower(strings.TrimSpace(prices[i].Model))
@@ -294,7 +308,7 @@ func (s *ModelPricingService) withDisabledModels(prices []PublicModelPrice, rate
 		if present[rule.model] || !containsAnyModelName(present, rule.anchors) {
 			continue
 		}
-		disabled, ok := s.priceForModel(rule.model, rateMultiplier)
+		disabled, ok := s.priceForModel(ctx, groupID, rule.model, rateMultiplier)
 		if !ok {
 			// A retired model can disappear from the provider price source before
 			// the public notice is removed. Keep an empty disabled row in that case.
@@ -355,28 +369,68 @@ func multipliedPrice(price *float64, multiplier float64) *float64 {
 	return ptr(round4(*price * multiplier))
 }
 
-// priceForModel 计算某个模型在给定分组倍率下的实付价。
-// 查询顺序：LiteLLM 官方价 → 手动维护价表；都没有则返回 false。
-func (s *ModelPricingService) priceForModel(model string, rateMultiplier float64) (PublicModelPrice, bool) {
+// priceForModel calculates the customer price for one model. A flat token
+// override bound to the group wins over the external catalog, matching the
+// billing resolver. Nil override fields keep their catalog/manual defaults.
+func (s *ModelPricingService) priceForModel(ctx context.Context, groupID int64, model string, rateMultiplier float64) (PublicModelPrice, bool) {
+	var input, output, cacheWrite, cacheRead *float64
 	if p := s.pricing.GetModelPricing(model); p != nil {
-		return PublicModelPrice{
-			Model:          model,
-			InputPrice:     ptr(round4(p.InputCostPerToken * 1e6 * rateMultiplier)),
-			OutputPrice:    ptr(round4(p.OutputCostPerToken * 1e6 * rateMultiplier)),
-			CacheReadPrice: ptr(round4(p.CacheReadInputTokenCost * 1e6 * rateMultiplier)),
-		}, true
+		input = nonZeroPricePerMTok(p.InputCostPerToken)
+		output = nonZeroPricePerMTok(p.OutputCostPerToken)
+		cacheWrite = nonZeroPricePerMTok(p.CacheCreationInputTokenCost)
+		cacheRead = nonZeroPricePerMTok(p.CacheReadInputTokenCost)
 	}
 
-	if mp, ok := manualOfficialPrices[strings.ToLower(model)]; ok {
-		return PublicModelPrice{
-			Model:          model,
-			InputPrice:     ptr(round4(mp.input * rateMultiplier)),
-			OutputPrice:    ptr(round4(mp.output * rateMultiplier)),
-			CacheReadPrice: ptr(round4(mp.cacheRead * rateMultiplier)),
-		}, true
+	if input == nil && output == nil && cacheRead == nil {
+		if mp, ok := manualOfficialPrices[strings.ToLower(model)]; ok {
+			input = ptr(mp.input)
+			output = ptr(mp.output)
+			cacheRead = ptr(mp.cacheRead)
+		}
 	}
 
-	return PublicModelPrice{}, false
+	if s.channelPricing != nil {
+		if override := s.channelPricing.GetChannelModelPricing(ctx, groupID, model); override != nil &&
+			(override.BillingMode == "" || override.BillingMode == BillingModeToken) && len(override.Intervals) == 0 {
+			if override.InputPrice != nil {
+				input = pricePerMTok(*override.InputPrice)
+			}
+			if override.OutputPrice != nil {
+				output = pricePerMTok(*override.OutputPrice)
+			}
+			if override.CacheWritePrice != nil {
+				cacheWrite = pricePerMTok(*override.CacheWritePrice)
+			}
+			if override.CacheReadPrice != nil {
+				cacheRead = pricePerMTok(*override.CacheReadPrice)
+			}
+		}
+	}
+
+	if input == nil && output == nil && cacheWrite == nil && cacheRead == nil {
+		return PublicModelPrice{}, false
+	}
+	return PublicModelPrice{
+		Model:           model,
+		InputPrice:      multipliedPrice(input, rateMultiplier),
+		OutputPrice:     multipliedPrice(output, rateMultiplier),
+		CacheWritePrice: multipliedPrice(cacheWrite, rateMultiplier),
+		CacheReadPrice:  multipliedPrice(cacheRead, rateMultiplier),
+	}, true
+}
+
+func pricePerMTok(perToken float64) *float64 {
+	if perToken < 0 {
+		return nil
+	}
+	return ptr(perToken * 1e6)
+}
+
+func nonZeroPricePerMTok(perToken float64) *float64 {
+	if perToken <= 0 {
+		return nil
+	}
+	return pricePerMTok(perToken)
 }
 
 // publicGroupDisplayName 对外展示的分组名：去掉内部版本后缀 V3

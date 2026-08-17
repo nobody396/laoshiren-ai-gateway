@@ -35,6 +35,7 @@
             <th>{{ t('modelPricing.table.model') }}</th>
             <th>{{ t('modelPricing.table.input') }}</th>
             <th>{{ t('modelPricing.table.output') }}</th>
+            <th>{{ t('modelPricing.table.cacheWrite') }}</th>
             <th>{{ t('modelPricing.table.cacheRead') }}</th>
           </tr>
         </thead>
@@ -55,6 +56,7 @@
               <span class="pricing-group__value">{{ formatPrice(row.output) }}</span>
               <span v-if="row.outputUnit" class="pricing-group__unit">{{ row.outputUnit }}</span>
             </td>
+            <td><span class="pricing-group__value">{{ formatPrice(row.cacheWrite) }}</span></td>
             <td><span class="pricing-group__value">{{ formatPrice(row.cacheRead) }}</span></td>
           </tr>
         </tbody>
@@ -83,6 +85,7 @@ interface PricingRow {
   label: string
   input: number | null | undefined
   output: number | null | undefined
+  cacheWrite: number | null | undefined
   cacheRead: number | null | undefined
   outputUnit?: string
   disabled?: boolean
@@ -100,6 +103,7 @@ const imagePricingRows = computed<PricingRow[]>(() => {
         input: null,
         output: image.price_per_image,
         outputUnit: t('modelPricing.image.perImageUnit'),
+        cacheWrite: null,
         cacheRead: null
       }
     ]
@@ -111,6 +115,7 @@ const imagePricingRows = computed<PricingRow[]>(() => {
       label: `GPT Image 2 · ${t('modelPricing.image.textModality')}`,
       input: image.text_input_price,
       output: null,
+      cacheWrite: null,
       cacheRead: image.text_cached_input_price
     },
     {
@@ -118,6 +123,7 @@ const imagePricingRows = computed<PricingRow[]>(() => {
       label: `GPT Image 2 · ${t('modelPricing.image.imageModality')}`,
       input: image.image_input_price,
       output: image.image_output_price,
+      cacheWrite: null,
       cacheRead: image.image_cached_input_price
     }
   ]
@@ -130,6 +136,7 @@ const pricingRows = computed<PricingRow[]>(() => [
     label: model.model,
     input: model.input_price,
     output: model.output_price,
+    cacheWrite: model.cache_write_price,
     cacheRead: model.cache_read_price,
     disabled: model.disabled
   }))

@@ -41,8 +41,8 @@ describe('ModelPricingGroupSection', () => {
     expect(wrapper.find('.pricing-group__image').exists()).toBe(false)
     expect(wrapper.find('.pricing-group__table').exists()).toBe(true)
     expect(wrapper.findAll('tbody tr').map((row) => row.text())).toEqual([
-      'GPT Image 2 · modelPricing.image.textModality¥20.00—¥5.00',
-      'GPT Image 2 · modelPricing.image.imageModality¥32.00¥120.00¥8.00'
+      'GPT Image 2 · modelPricing.image.textModality¥20.00——¥5.00',
+      'GPT Image 2 · modelPricing.image.imageModality¥32.00¥120.00—¥8.00'
     ])
     expect(wrapper.text()).not.toContain('支持 quality、size、output_format 等参数。')
   })
@@ -63,6 +63,7 @@ describe('ModelPricingGroupSection', () => {
               model: 'gpt-5.6-sol',
               input_price: 2.5,
               output_price: 15,
+              cache_write_price: 3.125,
               cache_read_price: 0.25
             }
           ],
@@ -75,8 +76,8 @@ describe('ModelPricingGroupSection', () => {
     })
 
     expect(wrapper.findAll('tbody tr').map((row) => row.text())).toEqual([
-      'GPT Image 2—¥0.3000modelPricing.image.perImageUnit—',
-      'gpt-5.6-sol¥2.50¥15.00¥0.2500'
+      'GPT Image 2—¥0.3000modelPricing.image.perImageUnit——',
+      'gpt-5.6-sol¥2.50¥15.00¥3.13¥0.2500'
     ])
   })
 
@@ -95,6 +96,7 @@ describe('ModelPricingGroupSection', () => {
               model: 'gpt-5.6-luna',
               input_price: 0.5,
               output_price: 3,
+              cache_write_price: 0.625,
               cache_read_price: 0.05,
               disabled: true
             }
@@ -105,7 +107,7 @@ describe('ModelPricingGroupSection', () => {
 
     const row = wrapper.get('tbody tr')
     expect(row.classes()).toContain('pricing-group__row--disabled')
-    expect(row.findAll('.pricing-group__value')).toHaveLength(4)
+    expect(row.findAll('.pricing-group__value')).toHaveLength(5)
     expect(row.get('.pricing-group__disabled-badge').text()).toBe('modelPricing.disabled')
   })
 })

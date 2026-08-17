@@ -10,6 +10,7 @@ export interface PublicModelPrice {
   /** 元/1M tokens，价格未知时为 null */
   input_price: number | null
   output_price: number | null
+  cache_write_price: number | null
   cache_read_price: number | null
   disabled?: boolean
 }

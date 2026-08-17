@@ -292,7 +292,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	gatewayHandler := handler.NewGatewayHandler(gatewayService, geminiMessagesCompatService, antigravityGatewayService, userService, concurrencyService, billingCacheService, usageService, apiKeyService, usageRecordWorkerPool, errorPassthroughService, userMessageQueueService, configConfig, settingService)
 	openAIGatewayHandler := handler.ProvideOpenAIGatewayHandler(openAIGatewayService, concurrencyService, billingCacheService, apiKeyService, usageRecordWorkerPool, errorPassthroughService, grokQuotaService, configConfig)
 	handlerSettingHandler := handler.ProvideSettingHandler(settingService, commissionService, buildInfo)
-	modelPricingService := service.NewModelPricingService(groupRepository, pricingService, gatewayService)
+	modelPricingService := service.NewModelPricingService(groupRepository, pricingService, gatewayService, channelService)
 	modelPricingHandler := handler.NewModelPricingHandler(modelPricingService)
 	totpHandler := handler.NewTotpHandler(totpService)
 	paymentOrderRepository := repository.NewPaymentOrderRepository(client)

@@ -10,6 +10,9 @@ const (
 
 func normalizeOpenAIMessagesDispatchMappedModel(model string) string {
 	model = NormalizeOpenAICompatRequestedModel(strings.TrimSpace(model))
+	if IsDisabledPublicModel(model) {
+		return ""
+	}
 	return strings.TrimSpace(model)
 }
 

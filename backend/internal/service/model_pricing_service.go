@@ -228,7 +228,7 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 					"group", g.Name, "model", model)
 				continue
 			}
-			if isDisabledPublicModel(model) {
+			if IsDisabledPublicModel(model) {
 				price.Disabled = true
 			}
 			prices = append(prices, price)
@@ -265,8 +265,14 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 	return cloneCatalog(catalog), nil
 }
 
-func isDisabledPublicModel(model string) bool {
+// IsDisabledPublicModel reports whether a requested OpenAI model has been
+// retired from public routing. Known Codex aliases are normalized first so a
+// reasoning suffix cannot bypass retirement at the request boundary.
+func IsDisabledPublicModel(model string) bool {
 	name := strings.ToLower(strings.TrimSpace(model))
+	if normalized, ok := normalizeKnownCodexModel(name); ok {
+		name = normalized
+	}
 	for _, rule := range disabledPublicModelRules {
 		if name == rule.model {
 			return true
@@ -280,7 +286,7 @@ func (s *ModelPricingService) withDisabledModels(prices []PublicModelPrice, rate
 	for i := range prices {
 		name := strings.ToLower(strings.TrimSpace(prices[i].Model))
 		present[name] = true
-		if isDisabledPublicModel(name) {
+		if IsDisabledPublicModel(name) {
 			prices[i].Disabled = true
 		}
 	}

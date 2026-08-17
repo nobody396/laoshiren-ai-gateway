@@ -400,20 +400,26 @@ func TestOpenAIImages_EmptyImageCompletionFallsBackToNativeImagesForMonthlyAndPu
 	}
 }
 
-func TestOpenAIResponses_OfficialCodexNaturalLanguageUsesFixedImagePoolForAnyTextModel(t *testing.T) {
+func TestOpenAIResponses_OfficialCodexImageRoutingRejectsRetiredModels(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	for _, group := range []*service.Group{
 		{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI},
 		{ID: 7, Name: "GPT monthly", Platform: service.PlatformOpenAI, SubscriptionType: service.SubscriptionTypeCredit},
 	} {
-		for _, textModel := range []string{
-			"gpt-5.6-luna",
-			"gpt-5.6-terra",
-			"gpt-5.6-sol",
-			"gpt-5.5",
-			"gpt-5.4",
+		for _, tc := range []struct {
+			model   string
+			retired bool
+		}{
+			{model: "gpt-5.6-luna", retired: true},
+			{model: "gpt-5.6-luna-xhigh", retired: true},
+			{model: "gpt-5.4-mini", retired: true},
+			{model: "gpt-5.6-terra"},
+			{model: "gpt-5.6-sol"},
+			{model: "gpt-5.5"},
+			{model: "gpt-5.4"},
 		} {
+			textModel := tc.model
 			t.Run(group.Name+"/"+textModel, func(t *testing.T) {
 				account := service.Account{
 					ID:          3300 + group.ID,
@@ -466,6 +472,12 @@ func TestOpenAIResponses_OfficialCodexNaturalLanguageUsesFixedImagePoolForAnyTex
 
 				handler.Responses(c)
 
+				if tc.retired {
+					require.Equal(t, http.StatusBadRequest, recorder.Code, recorder.Body.String())
+					require.Equal(t, service.ClientCodeModelNotSupported, gjson.GetBytes(recorder.Body.Bytes(), "error.code").String())
+					require.Nil(t, upstream.lastRequest, "retired model must be rejected before any image upstream call")
+					return
+				}
 				require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
 				require.Equal(t, textModel, gjson.GetBytes(recorder.Body.Bytes(), "model").String())
 				require.Equal(t, "image_generation_call", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())

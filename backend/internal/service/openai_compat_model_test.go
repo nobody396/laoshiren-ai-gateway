@@ -39,6 +39,24 @@ func TestNormalizeOpenAICompatRequestedModel(t *testing.T) {
 	}
 }
 
+func TestIsDisabledPublicModelNormalizesCodexAliases(t *testing.T) {
+	t.Parallel()
+
+	for _, model := range []string{
+		"gpt-5.6-luna",
+		"gpt-5.6-luna-xhigh",
+		"openai/gpt-5.6-luna-high",
+		"gpt-5.4-mini",
+		"gpt-5.4-mini-low",
+	} {
+		require.True(t, IsDisabledPublicModel(model), model)
+	}
+
+	for _, model := range []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.5", "gpt-image-2"} {
+		require.False(t, IsDisabledPublicModel(model), model)
+	}
+}
+
 func TestApplyOpenAICompatModelNormalization(t *testing.T) {
 	t.Parallel()
 

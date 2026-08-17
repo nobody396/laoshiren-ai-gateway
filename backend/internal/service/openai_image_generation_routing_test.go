@@ -233,9 +233,13 @@ func TestShouldUseFixedOpenAIImageRenderer(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "natural language generation",
+			name: "luna image intent is detectable but must be rejected by the handler retirement gate",
 			body: `{"model":"gpt-5.6-luna","input":"帮我生成一张月球橘猫的图片"}`,
 			want: true,
+		},
+		{
+			name: "retired luna ordinary text does not enter the image renderer",
+			body: `{"model":"gpt-5.6-luna","input":"explain this code"}`,
 		},
 		{
 			name: "forced hosted image tool",

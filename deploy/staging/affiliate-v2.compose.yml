@@ -6,7 +6,8 @@ services:
     build:
       context: ../..
       dockerfile: Dockerfile
-    restart: unless-stopped
+    # Local staging is opt-in. Never resurrect it when Docker Desktop restarts.
+    restart: "no"
     ports:
       - "127.0.0.1:${AFFILIATE_STAGING_PORT:-18080}:8080"
     volumes:
@@ -60,7 +61,7 @@ services:
 
   postgres:
     image: postgres:18-alpine
-    restart: unless-stopped
+    restart: "no"
     volumes:
       - affiliate_v2_postgres_data:/var/lib/postgresql/data
     environment:
@@ -82,7 +83,7 @@ services:
 
   redis:
     image: redis:8-alpine
-    restart: unless-stopped
+    restart: "no"
     volumes:
       - affiliate_v2_redis_data:/data
     command:

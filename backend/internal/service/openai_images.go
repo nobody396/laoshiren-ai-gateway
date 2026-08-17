@@ -14,6 +14,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -127,12 +128,21 @@ func (s *OpenAIGatewayService) ParseOpenAIImagesRequest(body []byte) (*OpenAIIma
 		return nil, fmt.Errorf("failed to parse request body")
 	}
 
-	model := strings.TrimSpace(gjson.GetBytes(body, "model").String())
+	modelResult := gjson.GetBytes(body, "model")
+	if !modelResult.Exists() || modelResult.Type != gjson.String {
+		return nil, fmt.Errorf("invalid model field type")
+	}
+	model := strings.TrimSpace(modelResult.String())
 	if err := validateOpenAIImagesModel(model); err != nil {
 		return nil, err
 	}
-	if streamResult := gjson.GetBytes(body, "stream"); streamResult.Exists() && streamResult.Bool() {
-		return nil, fmt.Errorf("image streaming is not supported")
+	if streamResult := gjson.GetBytes(body, "stream"); streamResult.Exists() {
+		if streamResult.Type != gjson.True && streamResult.Type != gjson.False {
+			return nil, fmt.Errorf("invalid stream field type")
+		}
+		if streamResult.Bool() {
+			return nil, fmt.Errorf("image streaming is not supported")
+		}
 	}
 
 	n := 1
@@ -140,20 +150,37 @@ func (s *OpenAIGatewayService) ParseOpenAIImagesRequest(body []byte) (*OpenAIIma
 		if nResult.Type != gjson.Number {
 			return nil, fmt.Errorf("invalid n field type")
 		}
-		n = int(nResult.Int())
-		if n <= 0 {
+		parsedN, parseErr := strconv.ParseInt(strings.TrimSpace(nResult.Raw), 10, 32)
+		if parseErr != nil {
+			return nil, fmt.Errorf("n must be an integer")
+		}
+		if parsedN <= 0 {
 			return nil, fmt.Errorf("n must be greater than 0")
 		}
+		n = int(parsedN)
 	}
 
-	size := strings.TrimSpace(gjson.GetBytes(body, "size").String())
+	promptResult := gjson.GetBytes(body, "prompt")
+	if promptResult.Exists() && promptResult.Type != gjson.String {
+		return nil, fmt.Errorf("invalid prompt field type")
+	}
+	sizeResult := gjson.GetBytes(body, "size")
+	if sizeResult.Exists() && sizeResult.Type != gjson.String {
+		return nil, fmt.Errorf("invalid size field type")
+	}
+	responseFormatResult := gjson.GetBytes(body, "response_format")
+	if responseFormatResult.Exists() && responseFormatResult.Type != gjson.String {
+		return nil, fmt.Errorf("invalid response_format field type")
+	}
+
+	size := strings.TrimSpace(sizeResult.String())
 	return &OpenAIImagesRequest{
 		Model:          model,
-		Prompt:         strings.TrimSpace(gjson.GetBytes(body, "prompt").String()),
+		Prompt:         strings.TrimSpace(promptResult.String()),
 		N:              n,
 		Size:           size,
 		SizeTier:       normalizeOpenAIImageSizeTier(size),
-		ResponseFormat: strings.ToLower(strings.TrimSpace(gjson.GetBytes(body, "response_format").String())),
+		ResponseFormat: strings.ToLower(strings.TrimSpace(responseFormatResult.String())),
 		Body:           body,
 	}, nil
 }
@@ -367,6 +394,14 @@ func (s *OpenAIGatewayService) ForwardCodexNativeImageGenerationBridge(
 		safeErr := SafeClientUpstreamError(http.StatusBadGateway)
 		c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
 		return nil, fmt.Errorf("invalid completed image response: %w", err)
+	}
+	if codexImageBridgeUsesCompletedOuterGeneratingInner(capture.body.Bytes()) {
+		logger.FromContext(ctx).Warn(
+			"openai.codex_image_bridge_normalized_stale_inner_status",
+			zap.Int64("account_id", account.ID),
+			zap.String("upstream_request_id", strings.TrimSpace(forwardResult.RequestID)),
+			zap.String("inner_status", "generating"),
+		)
 	}
 	clientResponse := codexNativeImagesResponse{Created: time.Now().Unix()}
 	clientResponse.Data = append(clientResponse.Data, struct {
@@ -627,6 +662,130 @@ func (s *OpenAIGatewayService) ForwardFixedOpenAIImageGenerationResponses(
 	return result, nil
 }
 
+// ForwardNativeOpenAIImageGenerationResponses preserves a Responses-capable
+// image provider's native protocol instead of converting it through the Images
+// adapter. Streaming requests keep the provider's real partial/tool events. A
+// non-streaming response is buffered long enough to allow a safe fallback only
+// when the forced image tool was not invoked at all.
+func (s *OpenAIGatewayService) ForwardNativeOpenAIImageGenerationResponses(
+	ctx context.Context,
+	c *gin.Context,
+	account *Account,
+	body []byte,
+	stream bool,
+) (*OpenAIForwardResult, error) {
+	if c == nil || c.Writer == nil {
+		return nil, fmt.Errorf("response context is required")
+	}
+	if account == nil {
+		return nil, fmt.Errorf("image account is required")
+	}
+
+	finalize := func(result *OpenAIForwardResult) *OpenAIForwardResult {
+		if result == nil {
+			return nil
+		}
+		if result.ImageCount > 0 {
+			result.BillingModel = OpenAIFixedImageRendererModel
+			if strings.TrimSpace(result.ImageSize) == "" {
+				result.ImageSize = ImageBillingSize2K
+			}
+		}
+		result.UpstreamEndpoint = "/v1/responses"
+		return result
+	}
+
+	if stream {
+		result, err := s.Forward(ctx, c, account, body)
+		return finalize(result), err
+	}
+
+	originalWriter := c.Writer
+	capture := newCodexImageBridgeCaptureWriter(originalWriter)
+	var result *OpenAIForwardResult
+	var err error
+	func() {
+		c.Writer = capture
+		defer func() { c.Writer = originalWriter }()
+		result, err = s.Forward(ctx, c, account, body)
+	}()
+	if err != nil {
+		var failoverErr *UpstreamFailoverError
+		if errors.As(err, &failoverErr) {
+			return nil, failoverErr
+		}
+		if capture.Written() && capture.body.Len() > 0 {
+			copyCodexImageBridgeCapturedResponse(originalWriter, capture)
+		}
+		return nil, err
+	}
+	if result == nil {
+		return nil, &UpstreamFailoverError{StatusCode: http.StatusBadGateway}
+	}
+	imageCalls, validImages := completedOpenAIResponseImageCallStats(capture.body.Bytes())
+	if result.ImageCount <= 0 || imageCalls != validImages || validImages != result.ImageCount {
+		if imageCalls == 0 &&
+			!codexImageBridgeHasImageUsage(capture.body.Bytes()) {
+			return nil, &UpstreamFailoverError{
+				StatusCode:             http.StatusBadGateway,
+				RequestScopedTransient: true,
+				Stage:                  GatewayFailureStageInference,
+				Scope:                  GatewayFailureScopeRequest,
+				Reason:                 GatewayFailureReason("image_tool_not_invoked"),
+				NextAccountAction:      NextAccountRetry,
+				ClientStatusCode:       http.StatusBadGateway,
+				ClientMessage:          "Upstream image generation did not produce an image",
+			}
+		}
+		safeErr := SafeClientUpstreamError(http.StatusBadGateway)
+		c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
+		return nil, fmt.Errorf(
+			"native Responses image output was incomplete or malformed: calls=%d valid_images=%d accounted_images=%d",
+			imageCalls, validImages, result.ImageCount,
+		)
+	}
+
+	copyCodexImageBridgeCapturedResponse(originalWriter, capture)
+	return finalize(result), nil
+}
+
+func completedOpenAIResponseImageCallStats(body []byte) (calls int, valid int) {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return 0, 0
+	}
+	response := gjson.ParseBytes(body)
+	if nested := response.Get("response"); nested.Exists() && nested.IsObject() {
+		response = nested
+	}
+	for _, item := range response.Get("output").Array() {
+		if strings.TrimSpace(item.Get("type").String()) != "image_generation_call" {
+			continue
+		}
+		calls++
+		itemStatus := strings.ToLower(strings.TrimSpace(item.Get("status").String()))
+		if itemStatus != "completed" && itemStatus != "generating" {
+			continue
+		}
+		if result := strings.TrimSpace(item.Get("result").String()); result != "" && validateOpenAIImageBase64(result) == nil {
+			valid++
+		}
+	}
+	return calls, valid
+}
+
+func finalizeOpenAIResponseImageBilling(result *OpenAIForwardResult) *OpenAIForwardResult {
+	if result == nil || result.ImageCount <= 0 {
+		return result
+	}
+	if strings.TrimSpace(result.BillingModel) == "" {
+		result.BillingModel = OpenAIFixedImageRendererModel
+	}
+	if strings.TrimSpace(result.ImageSize) == "" {
+		result.ImageSize = ImageBillingSize2K
+	}
+	return result
+}
+
 func writeFixedOpenAIImageResponses(
 	c *gin.Context,
 	stream bool,
@@ -772,7 +931,13 @@ func extractCompletedCodexImageResult(body []byte) (string, error) {
 			return true
 		}
 		imageCalls++
-		if strings.ToLower(strings.TrimSpace(item.Get("status").String())) != "completed" {
+		itemStatus := strings.ToLower(strings.TrimSpace(item.Get("status").String()))
+		// MoreCode has been observed returning an outer completed response with a
+		// complete, decodable image while leaving the inner image call at the stale
+		// status "generating". Accept only that exact compatibility shape. A real
+		// in_progress/unknown status, a non-terminal outer response, or invalid image
+		// bytes still fails closed and is never retried on another paid provider.
+		if itemStatus != "completed" && itemStatus != "generating" {
 			invalid = true
 			return false
 		}
@@ -797,6 +962,113 @@ func extractCompletedCodexImageResult(body []byte) (string, error) {
 		return "", err
 	}
 	return result, nil
+}
+
+func codexImageBridgeUsesCompletedOuterGeneratingInner(body []byte) bool {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return false
+	}
+	status := strings.ToLower(strings.TrimSpace(gjson.GetBytes(body, "status").String()))
+	if status != "completed" && status != "done" {
+		return false
+	}
+	imageCalls := 0
+	staleGenerating := false
+	for _, item := range gjson.GetBytes(body, "output").Array() {
+		if strings.TrimSpace(item.Get("type").String()) != "image_generation_call" {
+			continue
+		}
+		imageCalls++
+		staleGenerating = strings.EqualFold(strings.TrimSpace(item.Get("status").String()), "generating")
+	}
+	return imageCalls == 1 && staleGenerating
+}
+
+// normalizeCompletedOpenAIResponseImageStatuses repairs a narrowly observed
+// provider compatibility defect without weakening terminal validation. It only
+// changes image_generation_call.status from "generating" to "completed" when
+// the enclosing response is terminal and the result is a real decodable image.
+// It returns the patched payload and the number of normalized calls.
+func normalizeCompletedOpenAIResponseImageStatuses(body []byte) ([]byte, int) {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return body, 0
+	}
+
+	responsePath := ""
+	response := gjson.ParseBytes(body)
+	eventType := strings.ToLower(strings.TrimSpace(response.Get("type").String()))
+	if eventType == "response.completed" || eventType == "response.done" {
+		responsePath = "response"
+		response = response.Get("response")
+	}
+	if !response.Exists() || !response.IsObject() {
+		return body, 0
+	}
+	status := strings.ToLower(strings.TrimSpace(response.Get("status").String()))
+	if status != "completed" && status != "done" {
+		return body, 0
+	}
+
+	updated := body
+	normalized := 0
+	for index, item := range response.Get("output").Array() {
+		if strings.TrimSpace(item.Get("type").String()) != "image_generation_call" ||
+			!strings.EqualFold(strings.TrimSpace(item.Get("status").String()), "generating") {
+			continue
+		}
+		result := strings.TrimSpace(item.Get("result").String())
+		if result == "" || validateOpenAIImageBase64(result) != nil {
+			continue
+		}
+		path := fmt.Sprintf("output.%d.status", index)
+		if responsePath != "" {
+			path = responsePath + "." + path
+		}
+		patched, err := sjson.SetBytes(updated, path, "completed")
+		if err != nil {
+			return body, 0
+		}
+		updated = patched
+		normalized++
+	}
+	return updated, normalized
+}
+
+// countCompletedOpenAIResponseImages counts only validated image outputs in a
+// terminal Responses payload. Token usage or a merely-started image call never
+// becomes per-image billing evidence.
+func countCompletedOpenAIResponseImages(body []byte) int {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return 0
+	}
+	response := gjson.ParseBytes(body)
+	eventType := strings.ToLower(strings.TrimSpace(response.Get("type").String()))
+	if eventType == "response.completed" || eventType == "response.done" {
+		response = response.Get("response")
+	}
+	if !response.Exists() || !response.IsObject() {
+		return 0
+	}
+	status := strings.ToLower(strings.TrimSpace(response.Get("status").String()))
+	if status != "completed" && status != "done" {
+		return 0
+	}
+
+	count := 0
+	for _, item := range response.Get("output").Array() {
+		if strings.TrimSpace(item.Get("type").String()) != "image_generation_call" {
+			continue
+		}
+		itemStatus := strings.ToLower(strings.TrimSpace(item.Get("status").String()))
+		if itemStatus != "completed" && itemStatus != "generating" {
+			continue
+		}
+		result := strings.TrimSpace(item.Get("result").String())
+		if result != "" && validateOpenAIImageBase64(result) == nil {
+			count++
+		}
+	}
+	return count
 }
 
 func validateCodexImageBase64(value string) error {

@@ -2021,6 +2021,7 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 
 	usage := &OpenAIUsage{}
 	var firstTokenMs *int
+	imageCount := 0
 	responseID := ""
 	var finalResponse []byte
 	wroteDownstream := false
@@ -2169,6 +2170,18 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 		isTerminalEvent := isOpenAIWSTerminalEvent(eventType)
 		if isTerminalEvent {
 			terminalEventCount++
+			if normalizedMessage, normalized := normalizeCompletedOpenAIResponseImageStatuses(message); normalized > 0 {
+				message = normalizedMessage
+				_, _, responseField = parseOpenAIWSEventEnvelope(message)
+				logger.FromContext(ctx).Warn(
+					"openai.responses_normalized_stale_image_status",
+					zap.Int64("account_id", account.ID),
+					zap.Int("image_call_count", normalized),
+				)
+			}
+			if completedImages := countCompletedOpenAIResponseImages(message); completedImages > imageCount {
+				imageCount = completedImages
+			}
 		}
 		if firstTokenMs == nil && isTokenEvent {
 			ms := int(time.Since(startTime).Milliseconds())
@@ -2382,6 +2395,7 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 		ResponseHeaders: lease.HandshakeHeaders(),
 		Duration:        time.Since(startTime),
 		FirstTokenMs:    firstTokenMs,
+		ImageCount:      imageCount,
 	}, nil
 }
 
@@ -2978,6 +2992,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 		responseID := ""
 		usage := OpenAIUsage{}
 		var firstTokenMs *int
+		imageCount := 0
 		reqStream := openAIWSPayloadBoolFromRaw(payload, "stream", true)
 		turnPreviousResponseID := openAIWSPayloadStringFromRaw(payload, "previous_response_id")
 		turnPreviousResponseIDKind := ClassifyOpenAIPreviousResponseIDKind(turnPreviousResponseID)
@@ -3096,6 +3111,17 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 			isTerminalEvent := isOpenAIWSTerminalEvent(eventType)
 			if isTerminalEvent {
 				terminalEventCount++
+				if normalizedMessage, normalized := normalizeCompletedOpenAIResponseImageStatuses(upstreamMessage); normalized > 0 {
+					upstreamMessage = normalizedMessage
+					logger.FromContext(ctx).Warn(
+						"openai.responses_normalized_stale_image_status",
+						zap.Int64("account_id", account.ID),
+						zap.Int("image_call_count", normalized),
+					)
+				}
+				if completedImages := countCompletedOpenAIResponseImages(upstreamMessage); completedImages > imageCount {
+					imageCount = completedImages
+				}
 			}
 			if firstTokenMs == nil && isTokenEvent {
 				ms := int(time.Since(turnStart).Milliseconds())
@@ -3163,7 +3189,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 						clientDisconnected,
 					)
 				}
-				return &OpenAIForwardResult{
+				return finalizeOpenAIResponseImageBilling(&OpenAIForwardResult{
 					RequestID:       responseID,
 					Usage:           usage,
 					Model:           originalModel,
@@ -3175,7 +3201,8 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 					ResponseHeaders: lease.HandshakeHeaders(),
 					Duration:        time.Since(turnStart),
 					FirstTokenMs:    firstTokenMs,
-				}, nil
+					ImageCount:      imageCount,
+				}), nil
 			}
 		}
 	}

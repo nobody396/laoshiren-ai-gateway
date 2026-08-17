@@ -349,6 +349,16 @@ func isOpenAIAccountEligibleForScheduleRequest(account *Account, req OpenAIAccou
 		if _, configured := account.OpenAIImageGenerationRoutingPriority(req.RequestedModel); !configured {
 			return false
 		}
+		// A native Images-only fallback cannot speak on an already-upgraded
+		// Responses WebSocket connection. HTTP/Codex ImageGen requests may use the
+		// full Responses -> Images fallback chain, while WS ingress fails closed to
+		// Responses-capable image routes instead of selecting an incompatible key.
+		if req.RequiredTransport == OpenAIUpstreamTransportResponsesWebsocketV2Ingress {
+			transport, ok := account.OpenAIImageGenerationTransport(req.RequestedModel)
+			if !ok || transport != OpenAIImageGenerationTransportResponses {
+				return false
+			}
+		}
 	} else if req.RequestedModel != "" && !account.IsModelSupported(req.RequestedModel) {
 		return false
 	}

@@ -39,7 +39,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_KeepLeaseAcrossT
 
 	captureConn := &openAIWSCaptureConn{
 		events: [][]byte{
-			[]byte(`{"type":"response.completed","response":{"id":"resp_ingress_turn_1","model":"upstream-turn-1","usage":{"input_tokens":1,"output_tokens":1}}}`),
+			[]byte(`{"type":"response.completed","response":{"id":"resp_ingress_turn_1","model":"upstream-turn-1","status":"completed","output":[{"id":"ig_ingress_1","type":"image_generation_call","status":"generating","result":"` + codexBridgeTestPNG + `"}],"usage":{"input_tokens":1,"output_tokens":1}}}`),
 			[]byte(`{"type":"response.completed","response":{"id":"resp_ingress_turn_2","model":"upstream-turn-2","usage":{"input_tokens":1,"output_tokens":1}}}`),
 		},
 	}
@@ -149,6 +149,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_KeepLeaseAcrossT
 	require.Equal(t, "response.completed", gjson.GetBytes(firstTurnEvent, "type").String())
 	require.Equal(t, "resp_ingress_turn_1", gjson.GetBytes(firstTurnEvent, "response.id").String())
 	require.Equal(t, "client-turn-1", gjson.GetBytes(firstTurnEvent, "response.model").String())
+	require.Equal(t, "completed", gjson.GetBytes(firstTurnEvent, "response.output.0.status").String())
 
 	writeMessage(`{"type":"response.create","model":"client-turn-2","stream":false,"previous_response_id":"resp_ingress_turn_1"}`)
 	secondTurnEvent := readMessage()
@@ -161,8 +162,12 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_KeepLeaseAcrossT
 	require.True(t, secondResult.OpenAIWSMode, "第二轮 turn 应标记为 WS 模式")
 	require.Equal(t, "client-turn-1", firstResult.Model)
 	require.Equal(t, "upstream-turn-1", firstResult.UpstreamModel)
+	require.Equal(t, 1, firstResult.ImageCount)
+	require.Equal(t, OpenAIFixedImageRendererModel, firstResult.BillingModel)
+	require.Equal(t, ImageBillingSize2K, firstResult.ImageSize)
 	require.Equal(t, "client-turn-2", secondResult.Model)
 	require.Equal(t, "upstream-turn-2", secondResult.UpstreamModel)
+	require.Zero(t, secondResult.ImageCount)
 
 	_ = clientConn.Close(coderws.StatusNormalClosure, "done")
 

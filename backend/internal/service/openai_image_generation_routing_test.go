@@ -226,6 +226,18 @@ func TestPrepareOpenAICodexImageGenerationRequest(t *testing.T) {
 	})
 }
 
+func TestForceOpenAICodexImageGenerationToolChoice(t *testing.T) {
+	body := []byte(`{"model":"gpt-5.6-terra","input":"帮我生成一张图片","tools":[{"type":"custom","name":"exec"}],"tool_choice":"auto","stream":true}`)
+
+	forced, err := ForceOpenAICodexImageGenerationToolChoice(body)
+
+	require.NoError(t, err)
+	require.Equal(t, "image_generation", gjson.GetBytes(forced, "tool_choice.type").String())
+	require.True(t, gjson.GetBytes(forced, `tools.#(type=="image_generation")`).Exists())
+	require.True(t, gjson.GetBytes(forced, `tools.#(type=="custom")`).Exists())
+	require.True(t, gjson.GetBytes(forced, "stream").Bool())
+}
+
 func TestShouldUseFixedOpenAIImageRenderer(t *testing.T) {
 	tests := []struct {
 		name string
@@ -265,6 +277,24 @@ func TestShouldUseFixedOpenAIImageRenderer(t *testing.T) {
 		{
 			name: "how to request",
 			body: `{"model":"gpt-5.6-sol","input":"如何生成一张图片？"}`,
+		},
+		{
+			name: "edit image generation implementation instead of generating",
+			body: `{"model":"gpt-5.6-sol","input":"帮我修改这个生成图片的函数，让错误更清楚"}`,
+		},
+		{
+			name: "english image generation code request",
+			body: `{"model":"gpt-5.6-sol","input":"Please edit the image generation code to handle retries"}`,
+		},
+		{
+			name: "direct chinese logo request remains generation",
+			body: `{"model":"gpt-5.6-sol","input":"生成一个极简风格的 logo"}`,
+			want: true,
+		},
+		{
+			name: "direct english image request remains generation",
+			body: `{"model":"gpt-5.6-sol","input":"Create an image of a moonlit orange cat"}`,
+			want: true,
 		},
 	}
 

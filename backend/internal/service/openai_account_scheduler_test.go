@@ -246,8 +246,9 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_CodexImageFallsBackAcro
 			"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
 		},
 		Extra: map[string]any{
-			OpenAIImageGenerationPriorityExtraKey: 1,
-			OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
+			OpenAIImageGenerationPriorityExtraKey:        1,
+			OpenAIImageGenerationModelsExtraKey:          []any{"gpt-5.6-sol"},
+			"openai_apikey_responses_websockets_v2_mode": OpenAIWSIngressModeHTTPBridge,
 		},
 		AccountGroups: []AccountGroup{{AccountID: 33, GroupID: groupID, Priority: 1}},
 	}
@@ -258,10 +259,11 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_CodexImageFallsBackAcro
 			"model_mapping": map[string]any{"gpt-image-2": "gpt-image-2-count"},
 		},
 		Extra: map[string]any{
-			"supports_images":                      true,
-			OpenAIImageGenerationPriorityExtraKey:  2,
-			OpenAIImageGenerationModelsExtraKey:    []any{"gpt-image-2"},
-			OpenAIImageGenerationTransportExtraKey: OpenAIImageGenerationTransportImages,
+			"supports_images":                            true,
+			OpenAIImageGenerationPriorityExtraKey:        2,
+			OpenAIImageGenerationModelsExtraKey:          []any{"gpt-image-2"},
+			OpenAIImageGenerationTransportExtraKey:       OpenAIImageGenerationTransportImages,
+			"openai_apikey_responses_websockets_v2_mode": OpenAIWSIngressModeHTTPBridge,
 		},
 		AccountGroups: []AccountGroup{{AccountID: 34, GroupID: groupID, Priority: 90}},
 	}
@@ -269,9 +271,11 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_CodexImageFallsBackAcro
 		snapshotAccounts: []*Account{&responsesPrimary, &nativeFallback},
 		accountsByID:     map[int64]*Account{33: &responsesPrimary, 34: &nativeFallback},
 	}
+	cfg := newOpenAIWSV2TestConfig()
+	cfg.Gateway.OpenAIWS.ModeRouterV2Enabled = true
 	svc := &OpenAIGatewayService{
 		accountRepo:        stubOpenAIAccountRepo{accounts: []Account{responsesPrimary, nativeFallback}},
-		cfg:                &config.Config{},
+		cfg:                cfg,
 		schedulerSnapshot:  &SchedulerSnapshotService{cache: snapshotCache},
 		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
 	}
@@ -298,6 +302,24 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_CodexImageFallsBackAcro
 	if fallback.ReleaseFunc != nil {
 		fallback.ReleaseFunc()
 	}
+
+	wsPrimary, decision, err := svc.selectAccountWithSchedulerForRouting(
+		ctx, &groupID, "", "", "gpt-image-2", nil,
+		OpenAIUpstreamTransportResponsesWebsocketV2Ingress, false, true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, int64(33), wsPrimary.Account.ID)
+	require.True(t, decision.ImageGenerationRouteConfigured)
+	if wsPrimary.ReleaseFunc != nil {
+		wsPrimary.ReleaseFunc()
+	}
+
+	wsFallback, _, err := svc.selectAccountWithSchedulerForRouting(
+		ctx, &groupID, "", "", "gpt-image-2", map[int64]struct{}{33: {}},
+		OpenAIUpstreamTransportResponsesWebsocketV2Ingress, false, true,
+	)
+	require.Error(t, err)
+	require.Nil(t, wsFallback, "native Images-only fallbacks must never be selected on a Responses WebSocket")
 
 	text, _, err := svc.SelectAccountWithScheduler(
 		ctx, &groupID, "", "", "gpt-5.6-sol", nil, OpenAIUpstreamTransportAny,

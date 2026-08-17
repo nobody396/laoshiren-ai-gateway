@@ -143,6 +143,12 @@ func (u *codexNativeImageBridgeFailoverUpstream) Do(req *http.Request, _ string,
 
 func (u *codexNativeImageBridgeUpstream) Do(req *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
 	u.lastRequest = req
+	requestBody, _ := io.ReadAll(req.Body)
+	req.Body = io.NopCloser(strings.NewReader(string(requestBody)))
+	model := gjson.GetBytes(requestBody, "model").String()
+	if strings.TrimSpace(model) == "" {
+		model = "gpt-5.6-sol"
+	}
 	return &http.Response{
 		StatusCode: http.StatusOK,
 		Header: http.Header{
@@ -150,10 +156,10 @@ func (u *codexNativeImageBridgeUpstream) Do(req *http.Request, _ string, _ int64
 			"x-request-id": []string{"req_codex_native_image_bridge"},
 		},
 		Body: io.NopCloser(strings.NewReader(`{
-			"id":"resp_codex_native_image_bridge",
-			"object":"response",
-			"status":"completed",
-			"model":"gpt-5.6-sol",
+				"id":"resp_codex_native_image_bridge",
+				"object":"response",
+				"status":"completed",
+				"model":"` + model + `",
 			"output":[{"id":"ig_bridge","type":"image_generation_call","status":"completed","result":"` + codexNativeImageBridgeTestPNG + `"}],
 			"usage":{"input_tokens":12,"output_tokens":24,"total_tokens":36}
 		}`)),
@@ -498,7 +504,7 @@ func TestOpenAIResponses_OfficialCodexImageRoutingRejectsRetiredModels(t *testin
 				require.Equal(t, "/v1/responses", upstream.lastRequest.URL.Path)
 				upstreamBody, err := io.ReadAll(upstream.lastRequest.Body)
 				require.NoError(t, err)
-				require.Equal(t, "gpt-5.6-sol", gjson.GetBytes(upstreamBody, "model").String())
+				require.Equal(t, textModel, gjson.GetBytes(upstreamBody, "model").String())
 				require.Equal(t, "image_generation", gjson.GetBytes(upstreamBody, "tool_choice.type").String())
 				require.Equal(t, account.ID, c.GetInt64(opsAccountIDKey))
 			})
@@ -560,7 +566,7 @@ func TestOpenAIResponses_FixedImagePoolFailsOverSequentiallyMoreCodeAdobePomo(t 
 	require.Equal(t, codexNativeImageBridgeTestPNG, gjson.GetBytes(recorder.Body.Bytes(), "output.0.result").String())
 	require.Equal(t, []int64{33, 38, 40}, upstream.accountIDs)
 	require.Equal(t, []string{"/v1/responses", "/v1/images/generations", "/v1/images/generations"}, upstream.paths)
-	require.Equal(t, []string{"gpt-5.6-sol", "gpt-image-2-count", "gpt-image-2-count"}, upstream.models)
+	require.Equal(t, []string{"gpt-5.6-terra", "gpt-image-2-count", "gpt-image-2-count"}, upstream.models)
 	require.Equal(t, int64(40), c.GetInt64(opsAccountIDKey))
 	require.Equal(t, "gpt-image-2-count", c.GetString(opsUpstreamModelKey))
 }

@@ -289,6 +289,12 @@ func (r *affiliateAgentRepository) ListPartnerPerformance(
 				UNION ALL
 				SELECT user_id, sale_price_micros AS amount_micros, starts_at AS occurred_at
 				FROM monthly_entitlement_cycles WHERE source_type IN ('paid_redeem', 'paid_topup')
+				UNION ALL
+				SELECT claim.user_id, (offer.pay_amount_cny_fen::bigint * 10000) AS amount_micros,
+					claim.created_at AS occurred_at
+				FROM native_checkout_manual_claims claim
+				JOIN native_checkout_offers offer ON offer.code = claim.offer_code
+				WHERE claim.offer_code = 'newcomer-balance-5-to-10'
 			) x
 		), self_paid AS (
 			SELECT p.agent_id, COALESCE(SUM(r.amount_micros), 0)::bigint AS amount_micros
@@ -301,14 +307,30 @@ func (r *affiliateAgentRepository) ListPartnerPerformance(
 			FROM partners p LEFT JOIN direct_users d ON d.agent_id = p.agent_id
 			LEFT JOIN raw_paid r ON r.user_id = d.customer_user_id AND r.occurred_at >= p.activated_at
 			GROUP BY p.agent_id
+		), raw_consumption AS (
+			SELECT e.direct_agent_id AS agent_id, e.user_id,
+				CASE e.event_type WHEN 'confirmed_consumption' THEN e.amount_micros ELSE -e.amount_micros END AS amount_micros,
+				e.occurred_at
+			FROM affiliate_performance_events e
+			WHERE e.event_type IN ('confirmed_consumption', 'consumption_reversal')
+			UNION ALL
+			SELECT d.agent_id, claim.user_id, consumed.amount_micros, consumed.created_at
+			FROM direct_users d
+			JOIN native_checkout_manual_claims claim ON claim.user_id = d.customer_user_id
+			JOIN balance_lots lot ON lot.user_id = claim.user_id
+				AND lot.source_id = claim.redeem_code_id
+				AND lot.source_key = 'redeem:balance:' || claim.redeem_code_id::text
+				AND lot.source_type = 'gift'
+				AND lot.affiliate_policy = 'NONE'
+			JOIN balance_lot_consumptions consumed ON consumed.balance_lot_id = lot.id
+			WHERE claim.offer_code = 'newcomer-balance-5-to-10'
 		), consumption AS (
-			SELECT p.agent_id, e.user_id,
-				SUM(CASE e.event_type WHEN 'confirmed_consumption' THEN e.amount_micros ELSE -e.amount_micros END)::bigint AS amount_micros,
-				SUM(CASE WHEN e.occurred_at >= NOW() - INTERVAL '30 days'
-					THEN CASE e.event_type WHEN 'confirmed_consumption' THEN e.amount_micros ELSE -e.amount_micros END ELSE 0 END)::bigint AS recent_micros
-			FROM partners p JOIN affiliate_performance_events e ON e.direct_agent_id = p.agent_id
-			WHERE e.event_type IN ('confirmed_consumption', 'consumption_reversal') AND e.occurred_at >= p.activated_at
-			GROUP BY p.agent_id, e.user_id
+			SELECT p.agent_id, c.user_id,
+				SUM(c.amount_micros)::bigint AS amount_micros,
+				SUM(CASE WHEN c.occurred_at >= NOW() - INTERVAL '30 days' THEN c.amount_micros ELSE 0 END)::bigint AS recent_micros
+			FROM partners p JOIN raw_consumption c ON c.agent_id = p.agent_id
+			WHERE c.occurred_at >= p.activated_at
+			GROUP BY p.agent_id, c.user_id
 		), consumption_stats AS (
 			SELECT agent_id,
 				COALESCE(SUM(amount_micros) FILTER (WHERE user_id = agent_id), 0)::bigint AS self_micros,
@@ -406,23 +428,45 @@ func (r *affiliateAgentRepository) GetPartnerPerformance(
 			UNION ALL
 			SELECT user_id, sale_price_micros AS amount_micros, starts_at AS occurred_at
 			FROM monthly_entitlement_cycles WHERE source_type IN ('paid_redeem', 'paid_topup')
+			UNION ALL
+			SELECT claim.user_id, (offer.pay_amount_cny_fen::bigint * 10000) AS amount_micros,
+				claim.created_at AS occurred_at
+			FROM native_checkout_manual_claims claim
+			JOIN native_checkout_offers offer ON offer.code = claim.offer_code
+			WHERE claim.offer_code = 'newcomer-balance-5-to-10'
 		), paid AS (
 			SELECT
 				COALESCE(SUM(amount_micros) FILTER (WHERE user_id = $1), 0)::bigint AS self_paid,
 				COALESCE(SUM(amount_micros) FILTER (WHERE user_id IN (SELECT customer_user_id FROM direct_users)), 0)::bigint AS team_paid,
 				COUNT(DISTINCT user_id) FILTER (WHERE user_id IN (SELECT customer_user_id FROM direct_users)) AS paid_users
 			FROM raw_paid WHERE occurred_at >= $2 AND occurred_at < $3
-		), consumption AS (
-			SELECT
-				COALESCE(SUM(CASE event_type WHEN 'confirmed_consumption' THEN amount_micros ELSE -amount_micros END)
-					FILTER (WHERE user_id = $1), 0)::bigint AS self_consumption,
-				COALESCE(SUM(CASE event_type WHEN 'confirmed_consumption' THEN amount_micros ELSE -amount_micros END)
-					FILTER (WHERE user_id <> $1), 0)::bigint AS team_consumption,
-				COALESCE(SUM(CASE event_type WHEN 'confirmed_consumption' THEN amount_micros ELSE -amount_micros END)
-					FILTER (WHERE occurred_at >= GREATEST($2::timestamptz, NOW() - INTERVAL '30 days')), 0)::bigint AS recent_consumption
+		), raw_consumption AS (
+			SELECT user_id,
+				CASE event_type WHEN 'confirmed_consumption' THEN amount_micros ELSE -amount_micros END AS amount_micros,
+				occurred_at
 			FROM affiliate_performance_events
 			WHERE direct_agent_id = $1 AND event_type IN ('confirmed_consumption', 'consumption_reversal')
-				AND occurred_at >= $2 AND occurred_at < $3
+			UNION ALL
+			SELECT claim.user_id, consumed.amount_micros, consumed.created_at
+			FROM direct_users d
+			JOIN native_checkout_manual_claims claim ON claim.user_id = d.customer_user_id
+			JOIN balance_lots lot ON lot.user_id = claim.user_id
+				AND lot.source_id = claim.redeem_code_id
+				AND lot.source_key = 'redeem:balance:' || claim.redeem_code_id::text
+				AND lot.source_type = 'gift'
+				AND lot.affiliate_policy = 'NONE'
+			JOIN balance_lot_consumptions consumed ON consumed.balance_lot_id = lot.id
+			WHERE claim.offer_code = 'newcomer-balance-5-to-10'
+		), consumption AS (
+			SELECT
+				COALESCE(SUM(amount_micros)
+					FILTER (WHERE user_id = $1), 0)::bigint AS self_consumption,
+				COALESCE(SUM(amount_micros)
+					FILTER (WHERE user_id <> $1), 0)::bigint AS team_consumption,
+				COALESCE(SUM(amount_micros)
+					FILTER (WHERE occurred_at >= GREATEST($2::timestamptz, NOW() - INTERVAL '30 days')), 0)::bigint AS recent_consumption
+			FROM raw_consumption
+			WHERE occurred_at >= $2 AND occurred_at < $3
 		), cash AS (
 			SELECT
 				COALESCE(SUM(amount_micros) FILTER (WHERE posting_status = 'posted'
@@ -482,11 +526,28 @@ func (r *affiliateAgentRepository) listPartnerUserPerformance(
 					UNION ALL
 					SELECT sale_price_micros, starts_at FROM monthly_entitlement_cycles
 					WHERE user_id = u.id AND source_type IN ('paid_redeem', 'paid_topup')
+					UNION ALL
+					SELECT (offer.pay_amount_cny_fen::bigint * 10000), claim.created_at
+					FROM native_checkout_manual_claims claim
+					JOIN native_checkout_offers offer ON offer.code = claim.offer_code
+					WHERE claim.user_id = u.id AND claim.offer_code = 'newcomer-balance-5-to-10'
 				) x WHERE x.occurred_at >= $2 AND x.occurred_at < $3
 			), 0)::bigint,
-			COALESCE((SELECT SUM(CASE event_type WHEN 'confirmed_consumption' THEN amount_micros ELSE -amount_micros END)
+			(COALESCE((SELECT SUM(CASE event_type WHEN 'confirmed_consumption' THEN amount_micros ELSE -amount_micros END)
 				FROM affiliate_performance_events WHERE direct_agent_id = $1 AND user_id = u.id
-					AND event_type IN ('confirmed_consumption', 'consumption_reversal') AND occurred_at >= $2 AND occurred_at < $3), 0)::bigint,
+					AND event_type IN ('confirmed_consumption', 'consumption_reversal') AND occurred_at >= $2 AND occurred_at < $3), 0)
+			+ COALESCE((
+				SELECT SUM(consumed.amount_micros)
+				FROM native_checkout_manual_claims claim
+				JOIN balance_lots lot ON lot.user_id = claim.user_id
+					AND lot.source_id = claim.redeem_code_id
+					AND lot.source_key = 'redeem:balance:' || claim.redeem_code_id::text
+					AND lot.source_type = 'gift'
+					AND lot.affiliate_policy = 'NONE'
+				JOIN balance_lot_consumptions consumed ON consumed.balance_lot_id = lot.id
+				WHERE claim.user_id = u.id AND claim.offer_code = 'newcomer-balance-5-to-10'
+					AND consumed.created_at >= $2 AND consumed.created_at < $3
+			), 0))::bigint,
 			COALESCE((SELECT SUM(amount_micros) FROM agent_cash_commission_entries
 				WHERE agent_id = $1 AND consumer_user_id = u.id AND posting_status <> 'reversed'
 					AND entry_type IN ('earned','risk_release','reversal') AND occurred_at >= $2 AND occurred_at < $3), 0)::bigint

@@ -267,6 +267,7 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 	responseID := ""
 	requestID := firstNonEmpty(resp.Header.Get("x-request-id"), resp.Header.Get("xai-request-id"))
 	var firstTokenMs *int
+	imageCount := 0
 	sawTerminal := false
 	sawDone := false
 	wroteDownstream := false
@@ -282,12 +283,13 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 			BillingModel: imageBillingModel, ImageSize: imageSizeTier, ImageInputSize: imageInputSize,
 			ServiceTier: extractOpenAIServiceTierFromBody(body), ReasoningEffort: extractOpenAIReasoningEffortFromBody(body, originalModel),
 			Stream: true, OpenAIWSMode: true, ResponseHeaders: resp.Header.Clone(), Duration: time.Since(startedAt), FirstTokenMs: firstTokenMs,
+			ImageCount: imageCount,
 		}
 		if replayInput := replayCollector.Items(); len(replayInput) > 0 {
 			result.wsReplayInput = replayInput
 			result.wsReplayInputExists = true
 		}
-		return result
+		return finalizeOpenAIResponseImageBilling(result)
 	}
 	for scanner.Scan() {
 		data, ok := extractOpenAISSEDataLine(scanner.Text())
@@ -343,6 +345,14 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 		if firstTokenMs == nil && isOpenAIWSTokenEvent(eventType) {
 			ms := int(time.Since(startedAt).Milliseconds())
 			firstTokenMs = &ms
+		}
+		if isOpenAIWSTerminalEvent(eventType) {
+			if normalizedMessage, normalized := normalizeCompletedOpenAIResponseImageStatuses(message); normalized > 0 {
+				message = normalizedMessage
+			}
+			if completedImages := countCompletedOpenAIResponseImages(message); completedImages > imageCount {
+				imageCount = completedImages
+			}
 		}
 		if openAIWSEventShouldParseUsage(eventType) {
 			parseOpenAIWSResponseUsageFromCompletedEvent(message, &usage)

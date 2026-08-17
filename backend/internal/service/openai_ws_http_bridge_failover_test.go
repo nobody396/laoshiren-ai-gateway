@@ -228,3 +228,59 @@ func TestProxyOpenAIWSHTTPBridgeTurnRequiresTerminalEvent(t *testing.T) {
 		})
 	}
 }
+
+func TestProxyOpenAIWSHTTPBridgeTurnCountsAndNormalizesCompletedImages(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	completedResponse := `{
+		"id":"resp_ws_http_images","status":"completed","model":"gpt-5.6-sol",
+		"output":[
+			{"id":"ig_1","type":"image_generation_call","status":"generating","result":"` + codexBridgeTestPNG + `"},
+			{"id":"ig_2","type":"image_generation_call","status":"completed","result":"` + openAIImagesTestWebP + `"}
+		],
+		"usage":{"input_tokens":4,"output_tokens":2}
+	}`
+	completedResponse = strings.Join(strings.Fields(completedResponse), "")
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     make(http.Header),
+		Body: io.NopCloser(strings.NewReader(
+			"data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_ws_http_images\"}}\n\n" +
+				"data: {\"type\":\"response.completed\",\"response\":" + completedResponse + "}\n\n" +
+				"data: [DONE]\n\n",
+		)),
+	}}
+	svc := &OpenAIGatewayService{cfg: &config.Config{}, httpUpstream: upstream}
+	account := &Account{
+		ID: 33, Platform: PlatformOpenAI, Type: AccountTypeAPIKey, Concurrency: 1,
+		Credentials: map[string]any{
+			"base_url":      "https://upstream.example.test/v1",
+			"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
+		},
+	}
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/v1/responses", nil)
+	payload := []byte(`{"type":"response.create","model":"gpt-5.6-sol","input":"generate two images","stream":true,"tools":[{"type":"image_generation"}]}`)
+	var writes [][]byte
+
+	result, err := svc.proxyOpenAIWSHTTPBridgeTurn(
+		context.Background(), c, account, "sk-test", payload, len(payload),
+		"gpt-5.6-sol", "", "", "", "", 1,
+		func(message []byte) error {
+			writes = append(writes, append([]byte(nil), message...))
+			return nil
+		},
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Equal(t, 2, result.ImageCount)
+	require.Equal(t, ImageBillingSize2K, result.ImageSize)
+	require.Equal(t, OpenAIFixedImageRendererModel, result.BillingModel)
+	require.Len(t, writes, 2)
+	require.Equal(t, "response.completed", gjson.GetBytes(writes[1], "type").String())
+	require.Equal(t, "completed", gjson.GetBytes(writes[1], "response.output.0.status").String())
+	require.Equal(t, "completed", gjson.GetBytes(writes[1], "response.output.1.status").String())
+	require.Equal(t, 2, countCompletedOpenAIResponseImages(writes[1]))
+}

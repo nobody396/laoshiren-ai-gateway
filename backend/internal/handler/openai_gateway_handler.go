@@ -226,6 +226,14 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		return
 	}
 	reqModel := modelResult.String()
+	// Retired models must be rejected before image-intent rewriting. Otherwise
+	// the fixed image renderer can replace the routing model with gpt-image-2
+	// and accidentally turn an unsupported text model into a working image-only
+	// compatibility alias.
+	if service.IsDisabledPublicModel(reqModel) {
+		h.handleOpenAIModelNotSupportedError(c, reqModel, false)
+		return
+	}
 	if apiKey.Group != nil && apiKey.Group.Platform == service.PlatformOpenAI {
 		if cappedBody, changed := service.ApplyOpenAIReasoningEffortPolicy(body, apiKey.Group.MaxReasoningEffort, apiKey.Group.ReasoningEffortMappings); changed {
 			body = cappedBody

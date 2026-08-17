@@ -52,6 +52,17 @@ func TestAllOpenAICandidatesModelUnsupported(t *testing.T) {
 			wantSupported: true,
 		},
 		{
+			name: "retired luna remains unsupported for ordinary text routing",
+			accounts: []Account{
+				testOpenAIAccount(13, map[string]any{
+					"gpt-5.6-sol":   "gpt-5.6-sol",
+					"gpt-5.6-terra": "gpt-5.6-terra",
+				}),
+			},
+			model:         "gpt-5.6-luna",
+			wantSupported: true,
+		},
+		{
 			name: "one account has no mapping (allow all) -> supported",
 			accounts: []Account{
 				testOpenAIAccount(21, gpt5Mapping),

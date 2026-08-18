@@ -504,12 +504,71 @@ func TestOpenAIResponses_OfficialCodexImageRoutingRejectsRetiredModels(t *testin
 				require.Equal(t, "/v1/responses", upstream.lastRequest.URL.Path)
 				upstreamBody, err := io.ReadAll(upstream.lastRequest.Body)
 				require.NoError(t, err)
-				require.Equal(t, textModel, gjson.GetBytes(upstreamBody, "model").String())
+				require.Equal(t, service.CodexNativeImageBridgeModel(), gjson.GetBytes(upstreamBody, "model").String(),
+					"the fixed adapter must restore the pre-global-pool Codex rendering path")
+				require.False(t, gjson.GetBytes(upstreamBody, "stream").Bool(),
+					"the fixed adapter buffers and validates the complete image before rendering")
 				require.Equal(t, "image_generation", gjson.GetBytes(upstreamBody, "tool_choice.type").String())
 				require.Equal(t, account.ID, c.GetInt64(opsAccountIDKey))
 			})
 		}
 	}
+}
+
+func TestOpenAIResponses_OfficialCodexStreamingImageUsesFixedAdapterCompletionLifecycle(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	group := &service.Group{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI, AllowImageGeneration: true}
+	account := service.Account{
+		ID: 33, Name: "morecode-fixed-image-primary", Platform: service.PlatformOpenAI,
+		Type: service.AccountTypeAPIKey, Status: service.StatusActive, Schedulable: true, Concurrency: 4,
+		Credentials: map[string]any{
+			"api_key": "test-only-key", "base_url": "https://upstream.example.test/v1",
+			"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
+		},
+		Extra: map[string]any{
+			service.OpenAIImageGenerationPriorityExtraKey: 1,
+			service.OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
+		},
+		AccountGroups: []service.AccountGroup{{AccountID: 33, GroupID: group.ID, Priority: 90}},
+	}
+	upstream := &codexNativeImageBridgeUpstream{}
+	handler := newCodexResponsesTestHandler([]service.Account{account}, upstream)
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(
+		`{"model":"gpt-5.6-sol","input":"帮我生成一张雪山风景照片","stream":true}`,
+	))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Request.Header.Set("User-Agent", "Codex Desktop/0.148.0-alpha.9 (Mac OS 26.5.2; arm64) unknown (Codex Desktop; 26.810.50856)")
+	apiKey := &service.APIKey{ID: 97, GroupID: &group.ID, Group: group, User: &service.User{ID: 1, Status: service.StatusActive}}
+	c.Set(string(middleware.ContextKeyAPIKey), apiKey)
+	c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 1, Concurrency: 4})
+
+	handler.Responses(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
+	require.NotNil(t, upstream.lastRequest)
+	upstreamBody, err := io.ReadAll(upstream.lastRequest.Body)
+	require.NoError(t, err)
+	require.False(t, gjson.GetBytes(upstreamBody, "stream").Bool())
+	eventTypes := make([]string, 0, 8)
+	var completedPayload []byte
+	for _, line := range strings.Split(recorder.Body.String(), "\n") {
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+		payload := []byte(strings.TrimPrefix(line, "data: "))
+		eventType := gjson.GetBytes(payload, "type").String()
+		eventTypes = append(eventTypes, eventType)
+		if eventType == "response.completed" {
+			completedPayload = payload
+		}
+	}
+	require.Contains(t, eventTypes, "response.image_generation_call.completed",
+		"Codex rendering depends on the fixed adapter completion lifecycle")
+	require.Equal(t, "image_generation_call", gjson.GetBytes(completedPayload, "response.output.0.type").String())
+	require.Equal(t, "completed", gjson.GetBytes(completedPayload, "response.output.0.status").String())
+	require.Equal(t, codexNativeImageBridgeTestPNG, gjson.GetBytes(completedPayload, "response.output.0.result").String())
 }
 
 func TestOpenAIResponses_FixedImagePoolFailsOverSequentiallyMoreCodeAdobePomo(t *testing.T) {
@@ -566,7 +625,7 @@ func TestOpenAIResponses_FixedImagePoolFailsOverSequentiallyMoreCodeAdobePomo(t 
 	require.Equal(t, codexNativeImageBridgeTestPNG, gjson.GetBytes(recorder.Body.Bytes(), "output.0.result").String())
 	require.Equal(t, []int64{33, 38, 40}, upstream.accountIDs)
 	require.Equal(t, []string{"/v1/responses", "/v1/images/generations", "/v1/images/generations"}, upstream.paths)
-	require.Equal(t, []string{"gpt-5.6-terra", "gpt-image-2-count", "gpt-image-2-count"}, upstream.models)
+	require.Equal(t, []string{service.CodexNativeImageBridgeModel(), "gpt-image-2-count", "gpt-image-2-count"}, upstream.models)
 	require.Equal(t, int64(40), c.GetInt64(opsAccountIDKey))
 	require.Equal(t, "gpt-image-2-count", c.GetString(opsUpstreamModelKey))
 }

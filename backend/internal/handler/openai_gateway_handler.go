@@ -314,15 +314,6 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	setOpsEndpointContext(c, "", int16(service.RequestTypeFromLegacy(reqStream, false)))
 	channelMapping, _ := h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
 	forwardBody := openAIModelMappedBody(body, channelMapping.Mapped, channelMapping.MappedModel, h.gatewayService.ReplaceModelInBody)
-	nativeImageResponsesBody := body
-	if fixedImageRenderer {
-		forcedBody, forceErr := service.ForceOpenAICodexImageGenerationToolChoice(body)
-		if forceErr != nil {
-			h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", forceErr.Error())
-			return
-		}
-		nativeImageResponsesBody = forcedBody
-	}
 
 	// 提前校验 function_call_output 是否具备可关联上下文，避免上游 400。
 	if !h.validateFunctionCallOutputRequest(c, body, reqLog) {
@@ -465,21 +456,19 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		writerSizeBeforeForward := c.Writer.Size()
 		var result *service.OpenAIForwardResult
 		if fixedImageRenderer {
-			imageTransport, _ := account.OpenAIImageGenerationTransport(routingModel)
-			if imageTransport == service.OpenAIImageGenerationTransportResponses {
-				result, err = h.gatewayService.ForwardNativeOpenAIImageGenerationResponses(
-					c.Request.Context(), c, account, nativeImageResponsesBody, reqStream,
-				)
-			} else {
-				result, err = h.gatewayService.ForwardFixedOpenAIImageGenerationResponses(
-					c.Request.Context(),
-					c,
-					account,
-					body,
-					reqModel,
-					reqStream,
-				)
-			}
+			// Codex Desktop does not surface raw Responses image_generation_call
+			// items from custom providers. Always pass generated images through the
+			// fixed adapter that buffered, validated and rendered them correctly
+			// before the global image pool was introduced. Account selection still
+			// comes from the global pool; only the downstream protocol is restored.
+			result, err = h.gatewayService.ForwardFixedOpenAIImageGenerationResponses(
+				c.Request.Context(),
+				c,
+				account,
+				body,
+				reqModel,
+				reqStream,
+			)
 		} else {
 			result, err = h.gatewayService.Forward(c.Request.Context(), c, account, forwardBody)
 		}

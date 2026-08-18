@@ -77,7 +77,33 @@ func IsOpenAICodexSemanticImageGenerationIntent(body []byte) bool {
 		return false
 	}
 	prompt, hasInputImage, ok := latestOpenAIUserPrompt(body)
-	return ok && openAIUserPromptRequestsImage(prompt, hasInputImage)
+	return ok &&
+		!openAICodexImageRequestNeedsAgentWorkflow(prompt, hasInputImage) &&
+		openAIUserPromptRequestsImage(prompt, hasInputImage)
+}
+
+// openAICodexImageRequestNeedsAgentWorkflow keeps file-producing, editing and
+// multi-asset requests in Codex's local ImageGen workflow. Simple preview-only
+// generations can use the shorter fixed-renderer path, while requests that
+// need local files, references or post-processing retain Codex's native
+// generated_images/save-path behavior.
+func openAICodexImageRequestNeedsAgentWorkflow(prompt string, hasInputImage bool) bool {
+	if hasInputImage {
+		return true
+	}
+	prompt = strings.ToLower(strings.TrimSpace(prompt))
+	if prompt == "" {
+		return false
+	}
+	return containsAnyString(prompt, []string{
+		"保存到", "保存至", "存到", "存入", "写入", "复制到", "拷贝到", "放到", "放进",
+		"下载", "导出", "文件夹", "目录", "路径", "项目素材", "仓库素材",
+		"批量", "多张", "几张", "一组图片", "多个版本", "多版", "变体",
+		"参考图", "基于这张", "编辑这张", "修改这张", "重绘这张", "去背景", "抠图", "透明背景",
+		"save to", "write to", "copy to", "export", "download", "folder", "directory", "file path",
+		"batch", "multiple images", "several images", "variants", "reference image",
+		"edit this", "modify this", "redraw this", "remove the background", "transparent background",
+	})
 }
 
 // HasOpenAICodexExecImageRenderTool reports whether the request exposes the
@@ -384,6 +410,7 @@ func openAIUserPromptRequestsImage(prompt string, hasInputImage bool) bool {
 	chineseNoun := containsAnyString(prompt, []string{
 		"图片", "图像", "一张图", "这张图", "那张图", "插图", "海报", "封面", "头像",
 		"壁纸", "图标", "视觉稿", "艺术图", "照片", "logo",
+		"风景图", "场景图", "效果图", "概念图", "示意图", "配图", "产品图", "人物图", "宣传图",
 	})
 	if chineseAction && (chineseNoun || hasInputImage) {
 		return true

@@ -661,7 +661,7 @@ func (s *OpenAIGatewayService) ForwardFixedOpenAIImageGenerationResponses(
 		renderErr = writeCodexExecRenderedImageResponses(c, stream, completedResponse, []codexExecRenderedImage{{
 			MediaType: mediaType,
 			B64JSON:   imageBase64,
-		}})
+		}}, s.codexGeneratedImageAckSigningSecret())
 	}
 	if renderErr != nil {
 		// The image is already complete and billable upstream. Preserve the
@@ -790,7 +790,7 @@ func (s *OpenAIGatewayService) ForwardNativeOpenAIImageGenerationResponses(
 			c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
 			return nil, decodeErr
 		}
-		if deliveryErr := writeCodexExecRenderedImageResponses(c, stream, completedResponse, images); deliveryErr != nil {
+		if deliveryErr := writeCodexExecRenderedImageResponses(c, stream, completedResponse, images, s.codexGeneratedImageAckSigningSecret()); deliveryErr != nil {
 			logger.FromContext(ctx).Warn("openai.codex_exec_image_delivery_failed", zap.Error(deliveryErr))
 		}
 		result.Stream = stream
@@ -923,6 +923,45 @@ func completedOpenAIAssistantTextItem(itemID string, text string) map[string]any
 	}
 }
 
+// WriteOpenAICodexGeneratedImageAcknowledgement completes the second
+// Responses Lite turn after Codex Desktop has already executed generatedImage
+// and returned a validated input_image tool output. It deliberately performs
+// no upstream request and reports no invented token usage, so the original
+// image request remains the only billed generation.
+func WriteOpenAICodexGeneratedImageAcknowledgement(c *gin.Context, stream bool, requestedModel string) error {
+	responseID := "resp_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	itemID := "msg_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	createdAt := time.Now().Unix()
+	text := "图片已生成并显示。"
+	completedItem := completedOpenAIAssistantTextItem(itemID, text)
+	completedResponse := map[string]any{
+		"id":                   responseID,
+		"object":               "response",
+		"created_at":           createdAt,
+		"completed_at":         createdAt,
+		"status":               "completed",
+		"error":                nil,
+		"incomplete_details":   nil,
+		"instructions":         nil,
+		"model":                strings.TrimSpace(requestedModel),
+		"output":               []any{completedItem},
+		"parallel_tool_calls":  true,
+		"previous_response_id": nil,
+		"store":                false,
+		"temperature":          1,
+		"text": map[string]any{
+			"format": map[string]any{"type": "text"},
+		},
+		"tool_choice": "auto",
+		"tools":       []any{},
+		"top_p":       1,
+		"truncation":  "disabled",
+		"usage":       nil,
+		"metadata":    map[string]any{},
+	}
+	return writeFixedOpenAIAssistantTextResponses(c, stream, completedResponse, completedItem, text)
+}
+
 func writeFixedOpenAIAssistantTextResponses(
 	c *gin.Context,
 	stream bool,
@@ -1011,6 +1050,7 @@ func writeCodexExecRenderedImageResponses(
 	stream bool,
 	upstreamResponse map[string]any,
 	images []codexExecRenderedImage,
+	ackSigningSecret string,
 ) error {
 	if c == nil || c.Writer == nil {
 		return fmt.Errorf("response writer is required")
@@ -1032,7 +1072,14 @@ func writeCodexExecRenderedImageResponses(
 	response["status"] = "completed"
 	response["error"] = nil
 	response["incomplete_details"] = nil
-	callID := "call_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	dataURLs, ok := parseCodexExecGeneratedImageInput(execInput)
+	if !ok {
+		return fmt.Errorf("validate Codex rendered image exec input")
+	}
+	callID, err := newCodexGeneratedImageAckCallID(ackSigningSecret, dataURLs)
+	if err != nil {
+		return err
+	}
 	itemID := "ctc_" + strings.ReplaceAll(uuid.NewString(), "-", "")
 	completedItem := map[string]any{
 		"id":      itemID,
@@ -1095,6 +1142,13 @@ func writeCodexExecRenderedImageResponses(
 	}
 	c.Writer.Flush()
 	return nil
+}
+
+func (s *OpenAIGatewayService) codexGeneratedImageAckSigningSecret() string {
+	if s == nil || s.cfg == nil {
+		return ""
+	}
+	return strings.TrimSpace(s.cfg.JWT.Secret)
 }
 
 func codexExecGeneratedImageInput(images []codexExecRenderedImage) (string, error) {

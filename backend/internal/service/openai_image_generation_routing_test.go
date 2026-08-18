@@ -3,10 +3,13 @@
 package service
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 func TestIsExplicitOpenAIImageGenerationIntent(t *testing.T) {
@@ -228,6 +231,119 @@ func TestHasOpenAICodexAdditionalToolsEnvelope(t *testing.T) {
 	require.False(t, HasOpenAICodexAdditionalToolsEnvelope([]byte(`{"input":"draw a cat"}`)))
 	require.False(t, HasOpenAICodexAdditionalToolsEnvelope([]byte(`{"input":[{"type":"additional_tools","tools":{}}]}`)))
 	require.False(t, HasOpenAICodexAdditionalToolsEnvelope([]byte(`{`)))
+}
+
+const codexGeneratedImageAckTestSecret = "unit-test-only-codex-image-ack-signing-secret"
+
+func signedCodexGeneratedImageContinuationBody(t *testing.T, images []codexExecRenderedImage) []byte {
+	t.Helper()
+	execInput, err := codexExecGeneratedImageInput(images)
+	require.NoError(t, err)
+	dataURLs, ok := parseCodexExecGeneratedImageInput(execInput)
+	require.True(t, ok)
+	callID, err := newCodexGeneratedImageAckCallID(codexGeneratedImageAckTestSecret, dataURLs)
+	require.NoError(t, err)
+	output := []any{map[string]any{"type": "input_text", "text": "Script completed"}}
+	for index, dataURL := range dataURLs {
+		output = append(output,
+			map[string]any{"type": "input_image", "image_url": dataURL, "detail": "high"},
+			map[string]any{"type": "input_text", "text": "已生成第 " + fmt.Sprint(index+1) + " 张图片。"},
+		)
+	}
+	body, err := json.Marshal(map[string]any{
+		"model": "gpt-5.6-sol",
+		"input": []any{
+			map[string]any{"type": "additional_tools", "tools": []any{map[string]any{"type": "namespace", "name": "functions"}}},
+			map[string]any{"type": "message", "role": "user", "content": "生成图片"},
+			map[string]any{"type": "custom_tool_call", "id": "ctc_image", "call_id": callID, "name": "exec", "status": "completed", "input": execInput},
+			map[string]any{"type": "custom_tool_call_output", "call_id": callID, "output": output},
+		},
+		"stream": true,
+	})
+	require.NoError(t, err)
+	return body
+}
+
+func TestIsOpenAICodexGeneratedImageToolContinuation(t *testing.T) {
+	single := signedCodexGeneratedImageContinuationBody(t, []codexExecRenderedImage{{
+		MediaType: "image/png",
+		B64JSON:   codexBridgeTestPNG,
+	}})
+	require.True(t, IsOpenAICodexGeneratedImageToolContinuation(single, codexGeneratedImageAckTestSecret))
+	require.True(t, IsOpenAICodexGeneratedImageToolContinuation(single, codexGeneratedImageAckTestSecret), "replay is a zero-side-effect local acknowledgement")
+
+	multiple := signedCodexGeneratedImageContinuationBody(t, []codexExecRenderedImage{
+		{MediaType: "image/png", B64JSON: codexBridgeTestPNG},
+		{MediaType: "image/webp", B64JSON: openAIImagesTestWebP},
+	})
+	require.True(t, IsOpenAICodexGeneratedImageToolContinuation(multiple, codexGeneratedImageAckTestSecret))
+	require.False(t, IsOpenAICodexGeneratedImageToolContinuation(single, "wrong-secret"))
+
+	t.Run("unrelated completed tool history may precede the signed terminal pair", func(t *testing.T) {
+		var decoded map[string]any
+		require.NoError(t, json.Unmarshal(single, &decoded))
+		inputs := decoded["input"].([]any)
+		inputs = append(inputs[:2], append([]any{
+			map[string]any{"type": "custom_tool_call", "call_id": "call_history", "name": "exec", "status": "completed", "input": "text(true);"},
+			map[string]any{"type": "custom_tool_call_output", "call_id": "call_history", "output": []any{map[string]any{"type": "input_text", "text": "ok"}}},
+		}, inputs[2:]...)...)
+		decoded["input"] = inputs
+		body, err := json.Marshal(decoded)
+		require.NoError(t, err)
+		require.True(t, IsOpenAICodexGeneratedImageToolContinuation(body, codexGeneratedImageAckTestSecret))
+	})
+
+	t.Run("tampered call id", func(t *testing.T) {
+		body, err := sjson.SetBytes(single, "input.2.call_id", "call_img_0000000000000000_00000000000000000000000000000000")
+		require.NoError(t, err)
+		body, err = sjson.SetBytes(body, "input.3.call_id", "call_img_0000000000000000_00000000000000000000000000000000")
+		require.NoError(t, err)
+		require.False(t, IsOpenAICodexGeneratedImageToolContinuation(body, codexGeneratedImageAckTestSecret))
+	})
+
+	t.Run("mismatched output call id", func(t *testing.T) {
+		body, err := sjson.SetBytes(single, "input.3.call_id", "call_other")
+		require.NoError(t, err)
+		require.False(t, IsOpenAICodexGeneratedImageToolContinuation(body, codexGeneratedImageAckTestSecret))
+	})
+
+	t.Run("mismatched output image", func(t *testing.T) {
+		body, err := sjson.SetBytes(single, "input.3.output.1.image_url", "data:image/webp;base64,"+openAIImagesTestWebP)
+		require.NoError(t, err)
+		require.False(t, IsOpenAICodexGeneratedImageToolContinuation(body, codexGeneratedImageAckTestSecret))
+	})
+
+	t.Run("missing image output", func(t *testing.T) {
+		body, err := sjson.SetBytes(single, "input.3.output", []any{map[string]any{"type": "input_text", "text": "done"}})
+		require.NoError(t, err)
+		require.False(t, IsOpenAICodexGeneratedImageToolContinuation(body, codexGeneratedImageAckTestSecret))
+	})
+
+	t.Run("call and output must be adjacent and terminal", func(t *testing.T) {
+		body, err := sjson.SetBytes(single, "input.3", map[string]any{"type": "message", "role": "user", "content": "new turn"})
+		require.NoError(t, err)
+		require.False(t, IsOpenAICodexGeneratedImageToolContinuation(body, codexGeneratedImageAckTestSecret))
+	})
+
+	t.Run("arbitrary exec is not acknowledged", func(t *testing.T) {
+		body, err := sjson.SetBytes(single, "input.2.input", `generatedImage({image_url:"https://example.test/image.png",output_hint:"done"});`)
+		require.NoError(t, err)
+		require.False(t, IsOpenAICodexGeneratedImageToolContinuation(body, codexGeneratedImageAckTestSecret))
+	})
+
+	t.Run("unrelated custom tool after generated image is not swallowed", func(t *testing.T) {
+		var decoded map[string]any
+		require.NoError(t, json.Unmarshal(single, &decoded))
+		inputs := decoded["input"].([]any)
+		inputs = append(inputs,
+			map[string]any{"type": "custom_tool_call", "call_id": "call_other", "name": "exec", "status": "completed", "input": "text(true);"},
+			map[string]any{"type": "custom_tool_call_output", "call_id": "call_other", "output": []any{map[string]any{"type": "input_text", "text": "ok"}}},
+		)
+		decoded["input"] = inputs
+		body, err := json.Marshal(decoded)
+		require.NoError(t, err)
+		require.False(t, IsOpenAICodexGeneratedImageToolContinuation(body, codexGeneratedImageAckTestSecret))
+	})
 }
 
 func TestPrepareOpenAICodexImageGenerationRequest(t *testing.T) {

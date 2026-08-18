@@ -21,6 +21,7 @@ import (
 
 const codexBridgeTestPNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
 const openAIImagesTestWebP = "UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA"
+const codexGeneratedImageAckImagesTestSecret = "unit-test-only-codex-image-ack-images-secret"
 
 func TestParseOpenAIImagesRequest(t *testing.T) {
 	svc := &OpenAIGatewayService{}
@@ -239,6 +240,7 @@ func TestForwardResponsesCountsCompletedImagesAcrossHTTPShapes(t *testing.T) {
 				svc := &OpenAIGatewayService{
 					httpUpstream: upstream,
 					cfg: &config.Config{
+						JWT:      config.JWTConfig{Secret: codexGeneratedImageAckImagesTestSecret},
 						Gateway:  config.GatewayConfig{Pipeline: config.GatewayPipelineConfig{OpenAIResponsesEnabled: false}},
 						Security: config.SecurityConfig{URLAllowlist: config.URLAllowlistConfig{Enabled: false}},
 					},
@@ -369,6 +371,7 @@ func TestForwardNativeOpenAIImageGenerationResponsesRendersThroughCodexExec(t *t
 	svc := &OpenAIGatewayService{
 		httpUpstream: upstream,
 		cfg: &config.Config{
+			JWT:      config.JWTConfig{Secret: codexGeneratedImageAckImagesTestSecret},
 			Gateway:  config.GatewayConfig{Pipeline: config.GatewayPipelineConfig{OpenAIResponsesEnabled: false}},
 			Security: config.SecurityConfig{URLAllowlist: config.URLAllowlistConfig{Enabled: false}},
 		},
@@ -418,12 +421,13 @@ func TestWriteCodexExecRenderedImageResponsesNonStreaming(t *testing.T) {
 	err := writeCodexExecRenderedImageResponses(c, false, response, []codexExecRenderedImage{{
 		MediaType: "image/png",
 		B64JSON:   codexBridgeTestPNG,
-	}})
+	}}, codexGeneratedImageAckImagesTestSecret)
 
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, recorder.Code)
 	require.Equal(t, "custom_tool_call", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
 	require.Equal(t, "exec", gjson.GetBytes(recorder.Body.Bytes(), "output.0.name").String())
+	require.Regexp(t, `^call_img_[0-9a-f]{16}_[0-9a-f]{32}$`, gjson.GetBytes(recorder.Body.Bytes(), "output.0.call_id").String())
 	require.Contains(t, gjson.GetBytes(recorder.Body.Bytes(), "output.0.input").String(), "generatedImage({image_url:")
 	require.Equal(t, int64(3), gjson.GetBytes(recorder.Body.Bytes(), "usage.total_tokens").Int())
 }
@@ -745,6 +749,7 @@ func TestForwardFixedOpenAIImageGenerationResponsesPreservesNativeProtocolAcross
 			svc := &OpenAIGatewayService{
 				httpUpstream: upstream,
 				cfg: &config.Config{
+					JWT: config.JWTConfig{Secret: codexGeneratedImageAckImagesTestSecret},
 					Gateway: config.GatewayConfig{
 						Pipeline: config.GatewayPipelineConfig{OpenAIResponsesEnabled: false},
 						CodexImagePreview: config.CodexImagePreviewConfig{
@@ -835,6 +840,7 @@ func TestForwardFixedOpenAIImageGenerationResponsesUsesNativeGeneratedImageExec(
 	svc := &OpenAIGatewayService{
 		httpUpstream: upstream,
 		cfg: &config.Config{
+			JWT: config.JWTConfig{Secret: codexGeneratedImageAckImagesTestSecret},
 			Gateway: config.GatewayConfig{CodexImagePreview: config.CodexImagePreviewConfig{
 				Enabled: true, DataDir: t.TempDir(), TTLSeconds: 3600, MaxImageBytes: 1024 * 1024,
 			}},
@@ -886,6 +892,7 @@ func TestForwardFixedOpenAIImageGenerationResponsesDoesNotWritePreviewStorage(t 
 	svc := &OpenAIGatewayService{
 		httpUpstream: upstream,
 		cfg: &config.Config{
+			JWT: config.JWTConfig{Secret: codexGeneratedImageAckImagesTestSecret},
 			Gateway: config.GatewayConfig{CodexImagePreview: config.CodexImagePreviewConfig{
 				Enabled: true, DataDir: previewDir, TTLSeconds: 3600, MaxImageBytes: 1024 * 1024,
 			}},

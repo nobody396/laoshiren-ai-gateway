@@ -7,7 +7,7 @@
       :class="{ 'text-blue-600 dark:text-blue-400': unreadCount > 0 }"
       :aria-label="unreadCount > 0 ? t('announcements.newCount', { count: unreadCount }) : t('announcements.title')"
     >
-      <Icon name="bell" size="sm" />
+      <Icon name="megaphone" size="sm" />
       <span class="hidden sm:inline">{{ t('announcements.title') }}</span>
       <!-- 未读数量 -->
       <span
@@ -37,7 +37,7 @@
                 <div>
                   <div class="flex items-center gap-2">
                     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
-                      <Icon name="bell" size="sm" />
+                      <Icon name="megaphone" size="sm" />
                     </div>
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
                       {{ t('announcements.title') }}

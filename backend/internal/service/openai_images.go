@@ -966,7 +966,10 @@ func codexImagePreviewURL(c *gin.Context, token string) (string, error) {
 	return (&url.URL{
 		Scheme: scheme,
 		Host:   host,
-		Path:   "/v1/codex-image/previews/" + token,
+		Path:   "/v1/codex-image/preview",
+		RawQuery: url.Values{
+			"token": []string{token},
+		}.Encode(),
 	}).String(), nil
 }
 

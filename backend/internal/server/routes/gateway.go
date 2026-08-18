@@ -214,8 +214,10 @@ func RegisterGatewayRoutes(
 	// Codex preview URLs are intentionally unauthenticated: Desktop image
 	// renderers do not attach the caller's API key to Markdown fetches. Access is
 	// bounded by a 256-bit random token and a server-enforced short TTL.
-	r.GET("/v1/codex-image/previews/:token", h.OpenAIGateway.CodexImagePreview)
-	r.HEAD("/v1/codex-image/previews/:token", h.OpenAIGateway.CodexImagePreview)
+	// Keep the capability token out of URL.Path because the global HTTP access
+	// logger records paths. Query strings are deliberately excluded there.
+	r.GET("/v1/codex-image/preview", h.OpenAIGateway.CodexImagePreview)
+	r.HEAD("/v1/codex-image/preview", h.OpenAIGateway.CodexImagePreview)
 
 	// Antigravity 专用路由（仅使用 antigravity 账户，不混合调度）
 	antigravityV1 := r.Group("/antigravity/v1")

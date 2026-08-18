@@ -500,7 +500,7 @@ func TestOpenAIResponses_OfficialCodexImageRoutingRejectsRetiredModels(t *testin
 				require.Equal(t, textModel, gjson.GetBytes(recorder.Body.Bytes(), "model").String())
 				require.Equal(t, "message", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
 				previewText := gjson.GetBytes(recorder.Body.Bytes(), "output.0.content.0.text").String()
-				require.Contains(t, previewText, "![生成的图片](https://example.com/v1/codex-image/previews/")
+				require.Contains(t, previewText, "![生成的图片](https://example.com/v1/codex-image/preview?token=")
 				require.Contains(t, previewText, "点击这里打开原图")
 				require.NotContains(t, recorder.Body.String(), codexNativeImageBridgeTestPNG)
 				require.NotNil(t, upstream.lastRequest)
@@ -572,7 +572,7 @@ func TestOpenAIResponses_OfficialCodexStreamingImageUsesFixedAdapterCompletionLi
 	require.Equal(t, "message", gjson.GetBytes(completedPayload, "response.output.0.type").String())
 	require.Equal(t, "completed", gjson.GetBytes(completedPayload, "response.output.0.status").String())
 	previewText := gjson.GetBytes(completedPayload, "response.output.0.content.0.text").String()
-	require.Contains(t, previewText, "![生成的图片](https://example.com/v1/codex-image/previews/")
+	require.Contains(t, previewText, "![生成的图片](https://example.com/v1/codex-image/preview?token=")
 	require.Contains(t, previewText, "点击这里打开原图")
 	require.NotContains(t, string(completedPayload), codexNativeImageBridgeTestPNG)
 }
@@ -630,7 +630,7 @@ func TestOpenAIResponses_FixedImagePoolFailsOverSequentiallyMoreCodeAdobePomo(t 
 	require.Equal(t, "gpt-5.6-terra", gjson.GetBytes(recorder.Body.Bytes(), "model").String())
 	require.Equal(t, "message", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
 	previewText := gjson.GetBytes(recorder.Body.Bytes(), "output.0.content.0.text").String()
-	require.Contains(t, previewText, "![生成的图片](https://example.com/v1/codex-image/previews/")
+	require.Contains(t, previewText, "![生成的图片](https://example.com/v1/codex-image/preview?token=")
 	require.Contains(t, previewText, "点击这里打开原图")
 	require.NotContains(t, recorder.Body.String(), codexNativeImageBridgeTestPNG)
 	require.Equal(t, []int64{33, 38, 40}, upstream.accountIDs)
@@ -731,7 +731,7 @@ func TestOpenAIResponses_NonCodexClientKeepsOriginalResponsesCompatibility(t *te
 	require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
 	require.Equal(t, []int64{23}, upstream.accountIDs)
 	require.Equal(t, "message", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
-	require.NotContains(t, recorder.Body.String(), "/v1/codex-image/previews/")
+	require.NotContains(t, recorder.Body.String(), "/v1/codex-image/preview?token=")
 }
 
 func newCodexResponsesTestHandler(t *testing.T, accounts []service.Account, upstream service.HTTPUpstream) *OpenAIGatewayHandler {

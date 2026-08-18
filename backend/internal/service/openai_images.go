@@ -1085,11 +1085,14 @@ func codexExecGeneratedImageInput(images []codexExecRenderedImage) (string, erro
 		if err != nil {
 			return "", fmt.Errorf("encode rendered image output hint: %w", err)
 		}
-		input.WriteString("generatedImage({image_url:")
-		input.Write(dataURL)
-		input.WriteString(",output_hint:")
-		input.Write(outputHint)
-		input.WriteString("});\n")
+		if _, err := fmt.Fprintf(
+			&input,
+			"generatedImage({image_url:%s,output_hint:%s});\n",
+			dataURL,
+			outputHint,
+		); err != nil {
+			return "", fmt.Errorf("build rendered image tool input: %w", err)
+		}
 	}
 	return input.String(), nil
 }

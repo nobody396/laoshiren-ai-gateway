@@ -81,4 +81,53 @@ describe('UserNotificationBell', () => {
 
     wrapper.unmount()
   })
+
+  async function mountAndOpen() {
+    const wrapper = mount(UserNotificationBell, {
+      attachTo: document.body,
+      global: {
+        stubs: {
+          Icon: defineComponent({ template: '<span />' }),
+        },
+      },
+    })
+    await flushPromises()
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  it('closes when clicking outside the panel', async () => {
+    const wrapper = await mountAndOpen()
+    expect(document.body.querySelector('[data-testid="user-notification-panel"]')).not.toBeNull()
+
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    await flushPromises()
+
+    expect(document.body.querySelector('[data-testid="user-notification-panel"]')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('stays open when clicking inside the panel', async () => {
+    const wrapper = await mountAndOpen()
+    const panel = document.body.querySelector<HTMLElement>('[data-testid="user-notification-panel"]')
+    expect(panel).not.toBeNull()
+
+    panel!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    await flushPromises()
+
+    expect(document.body.querySelector('[data-testid="user-notification-panel"]')).not.toBeNull()
+    wrapper.unmount()
+  })
+
+  it('closes on Escape', async () => {
+    const wrapper = await mountAndOpen()
+    expect(document.body.querySelector('[data-testid="user-notification-panel"]')).not.toBeNull()
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+
+    expect(document.body.querySelector('[data-testid="user-notification-panel"]')).toBeNull()
+    wrapper.unmount()
+  })
 })

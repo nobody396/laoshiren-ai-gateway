@@ -12,6 +12,11 @@ export interface PublicModelPrice {
   output_price: number | null
   cache_write_price: number | null
   cache_read_price: number | null
+  long_context?: {
+    input_threshold: number
+    input_multiplier: number
+    output_multiplier: number
+  }
   disabled?: boolean
 }
 

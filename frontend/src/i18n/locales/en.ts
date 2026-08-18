@@ -6455,6 +6455,7 @@ export default {
     exclusive: 'Exclusive',
     subscription: 'Subscription',
     disabled: 'Disabled',
+    longContextRule: 'Above {threshold} input: full-request input and cache ×{inputMultiplier}, output ×{outputMultiplier}',
     noModels: 'No models available in this group yet',
     loading: 'Loading model prices…',
     error: 'Failed to load',

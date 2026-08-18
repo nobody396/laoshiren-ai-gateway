@@ -1527,6 +1527,54 @@ func TestOpenAIGatewayServiceRecordUsage_SubscriptionBillingSetsSubscriptionFiel
 	require.Equal(t, 0, userRepo.deductCalls)
 }
 
+func TestOpenAIGatewayServiceRecordUsage_SubscriptionLongContextUsesOfficialTier(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	subRepo := &openAIRecordUsageSubRepoStub{}
+	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, subRepo, nil)
+	subscription := &UserSubscription{ID: 100}
+	groupRate := 0.37
+	usage := OpenAIUsage{InputTokens: 300000, OutputTokens: 2000}
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID: "resp_subscription_long_context",
+			Usage:     usage,
+			Model:     "gpt-5.6-sol",
+			Duration:  time.Second,
+		},
+		APIKey: &APIKey{
+			ID:      101,
+			GroupID: i64p(89),
+			Group: &Group{
+				ID:               89,
+				RateMultiplier:   groupRate,
+				SubscriptionType: SubscriptionTypeSubscription,
+			},
+		},
+		User:         &User{ID: 201},
+		Account:      &Account{ID: 301},
+		Subscription: subscription,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.Equal(t, BillingTypeSubscription, usageRepo.lastLog.BillingType)
+	require.Equal(t, 1, subRepo.incrementCalls)
+	require.Equal(t, 0, userRepo.deductCalls)
+
+	expectedInput := float64(usage.InputTokens) * 5e-6 * 2.0
+	expectedOutput := float64(usage.OutputTokens) * 30e-6 * 1.5
+	expectedTotal := expectedInput + expectedOutput
+	require.InDelta(t, expectedInput, usageRepo.lastLog.InputCost, 1e-10)
+	require.InDelta(t, expectedOutput, usageRepo.lastLog.OutputCost, 1e-10)
+	require.InDelta(t, expectedTotal*groupRate, usageRepo.lastLog.ActualCost, 1e-10)
+	// Legacy subscription plans consume official-cost credits and intentionally
+	// ignore the display/group multiplier; the long-context tier is already
+	// included in TotalCost before the subscription deduction is selected.
+	require.InDelta(t, expectedTotal, subRepo.lastAmount, 1e-10)
+}
+
 func TestOpenAIGatewayServiceRecordUsage_SimpleModeSkipsBillingAfterPersist(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	userRepo := &openAIRecordUsageUserRepoStub{}

@@ -110,4 +110,35 @@ describe('ModelPricingGroupSection', () => {
     expect(row.findAll('.pricing-group__value')).toHaveLength(5)
     expect(row.get('.pricing-group__disabled-badge').text()).toBe('modelPricing.disabled')
   })
+
+  it('discloses the full-request long-context surcharge on eligible models', () => {
+    const wrapper = mount(ModelPricingGroupSection, {
+      props: {
+        group: {
+          group_id: 52,
+          name: 'GPT CYBER 分组（特价！）',
+          platform: 'openai',
+          rate_multiplier: 2,
+          is_exclusive: false,
+          subscription_type: 'standard',
+          models: [
+            {
+              model: 'gpt-daybreak-blue-latest',
+              input_price: 10,
+              output_price: 60,
+              cache_write_price: 12.5,
+              cache_read_price: 0.5,
+              long_context: {
+                input_threshold: 272000,
+                input_multiplier: 2,
+                output_multiplier: 1.5
+              }
+            }
+          ]
+        }
+      }
+    })
+
+    expect(wrapper.get('.pricing-group__long-context').text()).toBe('modelPricing.longContextRule')
+  })
 })

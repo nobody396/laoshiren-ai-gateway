@@ -6641,6 +6641,7 @@ export default {
     exclusive: '专属',
     subscription: '订阅',
     disabled: '已停用',
+    longContextRule: '输入超过 {threshold}：整次请求输入及缓存 ×{inputMultiplier}，输出 ×{outputMultiplier}',
     noModels: '该分组暂无可展示的模型',
     loading: '正在加载模型价格…',
     error: '加载失败',

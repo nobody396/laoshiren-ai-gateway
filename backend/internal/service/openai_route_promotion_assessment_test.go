@@ -41,6 +41,8 @@ func healthyOpenAIRoutePromotionEvidence(start, end time.Time) (*OpenAIRouteShad
 		PolicyMaxAccountShare:          0.80,
 		PolicyMaxProviderShare:         0.90,
 		CoveredHourBuckets:             int64(math.Ceil(end.Sub(start).Hours())),
+		CoveredBeijingDates:            3,
+		CoveredBeijingDayparts:         4,
 		// Production stats come from an end-exclusive SQL window, so the first
 		// and last decisions cannot be assumed to land exactly on its edges.
 		FirstDecisionAt: start.Add(30 * time.Second),
@@ -155,22 +157,39 @@ func TestBuildOpenAIRoutePromotionAssessmentDoesNotDiluteWithWiderWindow(t *test
 	require.NotContains(t, assessment.Blockers, "observed_span")
 }
 
-func TestBuildOpenAIRoutePromotionAssessmentRequiresContinuousHourlyCoverage(t *testing.T) {
+func TestBuildOpenAIRoutePromotionAssessmentRequiresFiniteStratifiedTimeCoverage(t *testing.T) {
 	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
 	start := end.Add(-72 * time.Hour)
 	filter := testOpenAIRoutePromotionFilter(start, end)
 	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
 
-	// First/last timestamps alone can be faked by two bursts at the edges.
-	// Promotion therefore requires evaluated evidence in almost every relative
-	// hour bucket across the complete slice.
+	// First/last timestamps alone can be faked by two bursts at the edges. The
+	// treatment still needs broad independent-decision coverage, but the target
+	// is finite because sticky follow-ups are not new routing opportunities.
 	stats.CoveredHourBuckets = 2
+	stats.CoveredBeijingDates = 1
+	stats.CoveredBeijingDayparts = 1
 	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
 	require.NotContains(t, assessment.Blockers, "observed_span")
 	require.Contains(t, assessment.Blockers, "hourly_coverage")
+	require.Contains(t, assessment.Blockers, "beijing_date_coverage")
+	require.Contains(t, assessment.Blockers, "beijing_daypart_coverage")
 
-	stats.CoveredHourBuckets = 71
+	stats.CoveredHourBuckets = 36
+	stats.CoveredBeijingDates = 3
+	stats.CoveredBeijingDayparts = 4
 	assessment = buildOpenAIRoutePromotionAssessment(filter, stats, health)
+	require.NotContains(t, assessment.Blockers, "hourly_coverage")
+	require.NotContains(t, assessment.Blockers, "beijing_date_coverage")
+	require.NotContains(t, assessment.Blockers, "beijing_daypart_coverage")
+
+	// Extending a low-volume Shadow window to collect 200 independent decisions
+	// must not move the hour target forever. Span, date and daypart gates still
+	// cover the wider interval.
+	wideEnd := end.Add(7 * 24 * time.Hour)
+	wideFilter := testOpenAIRoutePromotionFilter(start, wideEnd)
+	stats.LastDecisionAt = wideEnd.Add(-30 * time.Second)
+	assessment = buildOpenAIRoutePromotionAssessment(wideFilter, stats, health)
 	require.NotContains(t, assessment.Blockers, "hourly_coverage")
 }
 

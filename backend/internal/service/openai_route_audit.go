@@ -253,6 +253,8 @@ type OpenAIRouteShadowDecisionStats struct {
 	PolicyMaxAccountShare          float64                                  `json:"policy_max_account_share"`
 	PolicyMaxProviderShare         float64                                  `json:"policy_max_provider_share"`
 	CoveredHourBuckets             int64                                    `json:"covered_hour_buckets"`
+	CoveredBeijingDates            int64                                    `json:"covered_beijing_dates"`
+	CoveredBeijingDayparts         int64                                    `json:"covered_beijing_dayparts"`
 	FirstDecisionAt                time.Time                                `json:"first_decision_at,omitempty"`
 	LastDecisionAt                 time.Time                                `json:"last_decision_at,omitempty"`
 	EvaluationDurationP50US        float64                                  `json:"evaluation_duration_p50_us"`

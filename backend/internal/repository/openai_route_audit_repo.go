@@ -308,6 +308,10 @@ SELECT
        THEN COALESCE(MIN((snapshot->'policy'->>'max_provider_share')::float8), 0)
        ELSE 0 END::float8,
   ` + coverageExpression + `,
+  COUNT(DISTINCT (created_at AT TIME ZONE 'Asia/Shanghai')::date)
+    FILTER (WHERE evaluated)::bigint,
+  COUNT(DISTINCT FLOOR(EXTRACT(HOUR FROM created_at AT TIME ZONE 'Asia/Shanghai') / 6))
+    FILTER (WHERE evaluated)::bigint,
   MIN(created_at) FILTER (WHERE evaluated),
   MAX(created_at) FILTER (WHERE evaluated),
   COALESCE(percentile_cont(0.50) WITHIN GROUP (ORDER BY evaluation_duration_us), 0)::float8,
@@ -342,6 +346,8 @@ FROM linked`
 		&stats.PolicyMaxAccountShare,
 		&stats.PolicyMaxProviderShare,
 		&stats.CoveredHourBuckets,
+		&stats.CoveredBeijingDates,
+		&stats.CoveredBeijingDayparts,
 		&firstDecisionAt,
 		&lastDecisionAt,
 		&stats.EvaluationDurationP50US,

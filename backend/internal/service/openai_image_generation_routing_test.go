@@ -86,6 +86,21 @@ func TestIsOpenAICodexSemanticImageGenerationIntent(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "natural chinese landscape image request",
+			body: `{"model":"gpt-5.6-sol","input":"给我生成一张雪山的风景图。"}`,
+			want: true,
+		},
+		{
+			name: "project file generation stays in native agent workflow",
+			body: `{"model":"gpt-5.6-sol","input":"生成一张雪山风景图并保存到项目素材目录"}`,
+			want: false,
+		},
+		{
+			name: "batch generation stays in native agent workflow",
+			body: `{"model":"gpt-5.6-sol","input":"批量生成多张产品图"}`,
+			want: false,
+		},
+		{
 			name: "english direct generation",
 			body: `{"model":"gpt-5.6-sol","input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"Create a cinematic poster of Shanghai at night"}]}]}`,
 			want: true,
@@ -96,9 +111,9 @@ func TestIsOpenAICodexSemanticImageGenerationIntent(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "edit attached image",
+			name: "edit attached image stays in native agent workflow",
 			body: `{"model":"gpt-5.6","input":[{"type":"message","role":"user","content":[{"type":"input_image","image_url":"data:image/png;base64,AA=="},{"type":"input_text","text":"把它改成水彩风格"}]}]}`,
-			want: true,
+			want: false,
 		},
 		{
 			name: "ordinary coding request",

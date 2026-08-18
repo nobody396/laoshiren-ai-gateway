@@ -536,7 +536,7 @@ func TestOpenAIResponses_OfficialCodexStreamingImageUsesFixedAdapterCompletionLi
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(
-		`{"model":"gpt-5.6-sol","input":"帮我生成一张雪山风景照片","stream":true}`,
+		`{"model":"gpt-5.6-sol","input":"给我生成一张雪山的风景图。","stream":true}`,
 	))
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Request.Header.Set("User-Agent", "Codex Desktop/0.148.0-alpha.9 (Mac OS 26.5.2; arm64) unknown (Codex Desktop; 26.810.50856)")

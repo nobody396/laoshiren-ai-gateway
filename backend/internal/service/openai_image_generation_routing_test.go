@@ -196,6 +196,11 @@ func TestHasOpenAICodexExecImageRenderTool(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "responses lite nested exec",
+			body: `{"input":[{"type":"additional_tools","tools":[{"type":"custom","name":"exec"}]},{"type":"message","role":"user","content":"draw"}]}`,
+			want: true,
+		},
+		{
 			name: "function named exec is not the code mode host",
 			body: `{"tools":[{"type":"function","name":"exec"}]}`,
 		},
@@ -211,6 +216,18 @@ func TestHasOpenAICodexExecImageRenderTool(t *testing.T) {
 			require.Equal(t, tt.want, HasOpenAICodexExecImageRenderTool([]byte(tt.body)))
 		})
 	}
+}
+
+func TestHasOpenAICodexAdditionalToolsEnvelope(t *testing.T) {
+	require.True(t, HasOpenAICodexAdditionalToolsEnvelope([]byte(`{
+		"input":[
+			{"type":"additional_tools","tools":[{"type":"namespace","name":"functions"}]},
+			{"type":"message","role":"user","content":"draw a cat"}
+		]
+	}`)))
+	require.False(t, HasOpenAICodexAdditionalToolsEnvelope([]byte(`{"input":"draw a cat"}`)))
+	require.False(t, HasOpenAICodexAdditionalToolsEnvelope([]byte(`{"input":[{"type":"additional_tools","tools":{}}]}`)))
+	require.False(t, HasOpenAICodexAdditionalToolsEnvelope([]byte(`{`)))
 }
 
 func TestPrepareOpenAICodexImageGenerationRequest(t *testing.T) {

@@ -3,8 +3,6 @@ package service
 import (
 	"encoding/base64"
 	"io"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,7 +10,6 @@ import (
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
 
@@ -74,35 +71,6 @@ func TestCodexImagePreviewBatchDoesNotLeavePartialMultiImageResult(t *testing.T)
 	require.NoError(t, err)
 	require.Len(t, previews, 2)
 	require.NotEqual(t, previews[0].Token, previews[1].Token)
-}
-
-func TestCodexMarkdownImageTextSupportsMultipleImagesAndFallbackLinks(t *testing.T) {
-	first := "https://api.example/v1/codex-image/preview?token=" + strings.Repeat("a", 64)
-	second := "https://api.example/v1/codex-image/preview?token=" + strings.Repeat("b", 64)
-	text := codexMarkdownImageText([]string{first, second})
-	require.Equal(t, 2, strings.Count(text, "![生成的图片"))
-	require.Equal(t, 2, strings.Count(text, "点击这里打开原图"))
-	require.Equal(t, 2, strings.Count(text, first), "image and fallback link must use the same first URL")
-	require.Equal(t, 2, strings.Count(text, second), "image and fallback link must use the same second URL")
-	require.Contains(t, text, "生成的图片 1")
-	require.Contains(t, text, "生成的图片 2")
-}
-
-func TestCodexImagePreviewURLUsesSafeAbsoluteRequestOrigin(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	c, _ := gin.CreateTestContext(httptest.NewRecorder())
-	c.Request = httptest.NewRequest(http.MethodPost, "http://api.example/v1/responses", nil)
-	c.Request.Host = "api.example"
-	c.Request.Header.Set("X-Forwarded-Proto", "https")
-	token := strings.Repeat("a", 64)
-
-	previewURL, err := codexImagePreviewURL(c, token)
-	require.NoError(t, err)
-	require.Equal(t, "https://api.example/v1/codex-image/preview?token="+token, previewURL)
-
-	c.Request.Host = "api.example@evil.example"
-	_, err = codexImagePreviewURL(c, token)
-	require.ErrorContains(t, err, "invalid Codex image preview host")
 }
 
 func TestCodexImagePreviewFileErrorDoesNotLeakCapabilityToken(t *testing.T) {

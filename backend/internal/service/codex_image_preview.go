@@ -134,6 +134,9 @@ func (s *OpenAIGatewayService) OpenCodexImagePreview(token string) (io.ReadClose
 	if err != nil {
 		return nil, "", 0, 0, err
 	}
+	// The route is retained read-only for links emitted by the short-lived
+	// preview release. New Codex responses no longer create these files.
+	s.cleanupExpiredCodexImagePreviews(dir, ttl)
 	token = strings.TrimSpace(token)
 	if !codexImagePreviewTokenPattern.MatchString(token) {
 		return nil, "", 0, 0, ErrCodexImagePreviewNotFound

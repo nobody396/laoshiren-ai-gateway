@@ -62,8 +62,8 @@ func TestGatewayRoutesGrokTextAndMediaAliasesAreRegistered(t *testing.T) {
 		"POST /v1/responses",
 		"POST /v1/responses/*subpath",
 		"GET /v1/responses",
-		"GET /v1/codex-image/previews/:token",
-		"HEAD /v1/codex-image/previews/:token",
+		"GET /v1/codex-image/preview",
+		"HEAD /v1/codex-image/preview",
 		"POST /v1/chat/completions",
 		"POST /v1/images/generations",
 		"POST /v1/images/edits",
@@ -110,5 +110,16 @@ func TestGatewayRoutesResponsesSubpathRejectsNonConformingSubpaths(t *testing.T)
 		router.ServeHTTP(w, req)
 		require.Equal(t, http.StatusNotFound, w.Code, "path=%s must be rejected at the edge", path)
 		require.Contains(t, w.Body.String(), "Unsupported responses subpath", "path=%s", path)
+	}
+}
+
+func TestGatewayRoutesOldCodexImagePreviewTokenPathIsNotRegistered(t *testing.T) {
+	router := newGatewayRoutesTestRouter()
+	token := strings.Repeat("a", 64)
+
+	for _, method := range []string{http.MethodGet, http.MethodHead} {
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, httptest.NewRequest(method, "/v1/codex-image/previews/"+token, nil))
+		require.Equal(t, http.StatusNotFound, w.Code, "method=%s", method)
 	}
 }

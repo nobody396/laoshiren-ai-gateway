@@ -77,12 +77,13 @@ func TestCodexImagePreviewBatchDoesNotLeavePartialMultiImageResult(t *testing.T)
 }
 
 func TestCodexMarkdownImageTextSupportsMultipleImagesAndFallbackLinks(t *testing.T) {
-	text := codexMarkdownImageText([]string{
-		"https://api.example/v1/codex-image/previews/" + strings.Repeat("a", 64),
-		"https://api.example/v1/codex-image/previews/" + strings.Repeat("b", 64),
-	})
+	first := "https://api.example/v1/codex-image/preview?token=" + strings.Repeat("a", 64)
+	second := "https://api.example/v1/codex-image/preview?token=" + strings.Repeat("b", 64)
+	text := codexMarkdownImageText([]string{first, second})
 	require.Equal(t, 2, strings.Count(text, "![生成的图片"))
 	require.Equal(t, 2, strings.Count(text, "点击这里打开原图"))
+	require.Equal(t, 2, strings.Count(text, first), "image and fallback link must use the same first URL")
+	require.Equal(t, 2, strings.Count(text, second), "image and fallback link must use the same second URL")
 	require.Contains(t, text, "生成的图片 1")
 	require.Contains(t, text, "生成的图片 2")
 }
@@ -97,7 +98,7 @@ func TestCodexImagePreviewURLUsesSafeAbsoluteRequestOrigin(t *testing.T) {
 
 	previewURL, err := codexImagePreviewURL(c, token)
 	require.NoError(t, err)
-	require.Equal(t, "https://api.example/v1/codex-image/previews/"+token, previewURL)
+	require.Equal(t, "https://api.example/v1/codex-image/preview?token="+token, previewURL)
 
 	c.Request.Host = "api.example@evil.example"
 	_, err = codexImagePreviewURL(c, token)

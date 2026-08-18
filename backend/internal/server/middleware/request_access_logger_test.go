@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -173,6 +174,43 @@ func TestLogger_AccessLogIncludesCoreFields(t *testing.T) {
 		}
 		if event.Fields["platform"] != "openai" || event.Fields["model"] != "gpt-5" {
 			t.Fatalf("platform/model mismatch: %+v", event.Fields)
+		}
+	}
+	if !found {
+		t.Fatalf("access log event not found")
+	}
+}
+
+func TestLogger_CodexImageCapabilityQueryIsNotRecorded(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	sink := initMiddlewareTestLogger(t)
+	token := strings.Repeat("a", 64)
+
+	r := gin.New()
+	r.Use(RequestLogger())
+	r.Use(Logger())
+	r.GET("/v1/codex-image/preview", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/v1/codex-image/preview?token="+token, nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("status=%d", w.Code)
+	}
+
+	found := false
+	for _, event := range sink.list() {
+		if event == nil || event.Message != "http request completed" {
+			continue
+		}
+		found = true
+		if got := event.Fields["path"]; got != "/v1/codex-image/preview" {
+			t.Fatalf("path=%v", got)
+		}
+		serialized := event.Message + fmt.Sprint(event.Fields)
+		if strings.Contains(serialized, token) || strings.Contains(serialized, "RawQuery") || strings.Contains(serialized, "?token=") {
+			t.Fatalf("access log leaked capability query: %s", serialized)
 		}
 	}
 	if !found {

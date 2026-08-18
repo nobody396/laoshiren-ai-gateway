@@ -272,6 +272,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-24T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/codex-native-imagegen-rendering-20260818",
+      "owner": "codex-native-imagegen-rendering-20260818",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-25T23:59:59+08:00"
     }
   ]
 }

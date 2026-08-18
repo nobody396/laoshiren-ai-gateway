@@ -164,6 +164,40 @@ func TestIsOpenAICodexSemanticImageGenerationIntent(t *testing.T) {
 	}
 }
 
+func TestHasOpenAICodexExecImageRenderTool(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want bool
+	}{
+		{
+			name: "codex freeform exec",
+			body: `{"tools":[{"type":"custom","name":"exec","description":"Run JavaScript"}]}`,
+			want: true,
+		},
+		{
+			name: "case insensitive",
+			body: `{"tools":[{"type":"CUSTOM","name":"EXEC"}]}`,
+			want: true,
+		},
+		{
+			name: "function named exec is not the code mode host",
+			body: `{"tools":[{"type":"function","name":"exec"}]}`,
+		},
+		{
+			name: "native image tool only",
+			body: `{"tools":[{"type":"image_generation"}]}`,
+		},
+		{name: "invalid json", body: `{`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, HasOpenAICodexExecImageRenderTool([]byte(tt.body)))
+		})
+	}
+}
+
 func TestPrepareOpenAICodexImageGenerationRequest(t *testing.T) {
 	t.Run("preserves tools and automatic model choice", func(t *testing.T) {
 		body := []byte(`{
@@ -181,6 +215,7 @@ func TestPrepareOpenAICodexImageGenerationRequest(t *testing.T) {
 		require.True(t, gjson.GetBytes(prepared, `tools.#(type=="image_generation")`).Exists())
 		require.True(t, gjson.GetBytes(prepared, `tools.#(type=="custom")`).Exists())
 		require.True(t, gjson.GetBytes(prepared, `tools.#(type=="namespace")`).Exists())
+		require.True(t, HasOpenAICodexExecImageRenderTool(prepared))
 		require.Equal(t, "auto", gjson.GetBytes(prepared, "tool_choice").String())
 		require.Equal(t, "gpt-5.6", gjson.GetBytes(prepared, "model").String())
 		require.True(t, gjson.GetBytes(prepared, "stream").Bool())

@@ -305,6 +305,11 @@ type codexNativeImagesResponse struct {
 	} `json:"data"`
 }
 
+type codexExecRenderedImage struct {
+	MediaType string
+	B64JSON   string
+}
+
 // ForwardCodexNativeImageGenerationBridge converts the built-in Codex Images
 // request into a forced Responses image_generation call. Forward is reused so
 // OAuth/API-key transports, model mapping, JSON/SSE normalization, usage
@@ -640,7 +645,20 @@ func (s *OpenAIGatewayService) ForwardFixedOpenAIImageGenerationResponses(
 		completedResponse["model"] = OpenAIFixedImageRendererModel
 	}
 
-	if err := writeFixedOpenAIImageResponses(c, stream, completedResponse, completedItem); err != nil {
+	writeResponse := func() error {
+		if HasOpenAICodexExecImageRenderTool(responsesBody) {
+			mediaType, mediaErr := openAIImageBase64MediaType(imageBase64)
+			if mediaErr != nil {
+				return mediaErr
+			}
+			return writeCodexExecRenderedImageResponses(c, stream, completedResponse, []codexExecRenderedImage{{
+				MediaType: mediaType,
+				B64JSON:   imageBase64,
+			}})
+		}
+		return writeFixedOpenAIImageResponses(c, stream, completedResponse, completedItem)
+	}
+	if err := writeResponse(); err != nil {
 		// The image is already complete and billable upstream. Preserve the
 		// successful result even if the downstream client disconnected while the
 		// buffered native response was being delivered.
@@ -695,9 +713,18 @@ func (s *OpenAIGatewayService) ForwardNativeOpenAIImageGenerationResponses(
 		return result
 	}
 
-	if stream {
+	renderViaExec := HasOpenAICodexExecImageRenderTool(body)
+	if stream && !renderViaExec {
 		result, err := s.Forward(ctx, c, account, body)
 		return finalize(result), err
+	}
+	upstreamBody := body
+	if renderViaExec && stream {
+		var err error
+		upstreamBody, err = sjson.SetBytes(body, "stream", false)
+		if err != nil {
+			return nil, fmt.Errorf("buffer Codex image response for rendering: %w", err)
+		}
 	}
 
 	originalWriter := c.Writer
@@ -707,7 +734,7 @@ func (s *OpenAIGatewayService) ForwardNativeOpenAIImageGenerationResponses(
 	func() {
 		c.Writer = capture
 		defer func() { c.Writer = originalWriter }()
-		result, err = s.Forward(ctx, c, account, body)
+		result, err = s.Forward(ctx, c, account, upstreamBody)
 	}()
 	if err != nil {
 		var failoverErr *UpstreamFailoverError
@@ -745,6 +772,26 @@ func (s *OpenAIGatewayService) ForwardNativeOpenAIImageGenerationResponses(
 		)
 	}
 
+	if renderViaExec {
+		images, extractErr := extractCompletedOpenAIResponseImages(capture.body.Bytes())
+		if extractErr != nil {
+			safeErr := SafeClientUpstreamError(http.StatusBadGateway)
+			c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
+			return nil, fmt.Errorf("render completed Codex image response: %w", extractErr)
+		}
+		completedResponse, decodeErr := decodeCompletedOpenAIResponse(capture.body.Bytes())
+		if decodeErr != nil {
+			safeErr := SafeClientUpstreamError(http.StatusBadGateway)
+			c.JSON(safeErr.StatusCode, OpenAIClientErrorEnvelope(c, safeErr.Type, safeErr.Message))
+			return nil, decodeErr
+		}
+		if deliveryErr := writeCodexExecRenderedImageResponses(c, stream, completedResponse, images); deliveryErr != nil {
+			logger.FromContext(ctx).Warn("openai.codex_exec_image_delivery_failed", zap.Error(deliveryErr))
+		}
+		result.Stream = stream
+		return finalize(result), nil
+	}
+
 	copyCodexImageBridgeCapturedResponse(originalWriter, capture)
 	return finalize(result), nil
 }
@@ -771,6 +818,76 @@ func completedOpenAIResponseImageCallStats(body []byte) (calls int, valid int) {
 		}
 	}
 	return calls, valid
+}
+
+func extractCompletedOpenAIResponseImages(body []byte) ([]codexExecRenderedImage, error) {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return nil, fmt.Errorf("completed image response is invalid JSON")
+	}
+	response := gjson.ParseBytes(body)
+	if nested := response.Get("response"); nested.Exists() && nested.IsObject() {
+		response = nested
+	}
+	status := strings.ToLower(strings.TrimSpace(response.Get("status").String()))
+	if status != "completed" && status != "done" {
+		return nil, fmt.Errorf("image response did not complete")
+	}
+	images := make([]codexExecRenderedImage, 0, 1)
+	imageCalls := 0
+	for _, item := range response.Get("output").Array() {
+		if strings.TrimSpace(item.Get("type").String()) != "image_generation_call" {
+			continue
+		}
+		imageCalls++
+		itemStatus := strings.ToLower(strings.TrimSpace(item.Get("status").String()))
+		if itemStatus != "completed" && itemStatus != "generating" {
+			return nil, fmt.Errorf("image call is not complete")
+		}
+		result := strings.TrimSpace(item.Get("result").String())
+		mediaType, err := openAIImageBase64MediaType(result)
+		if err != nil {
+			return nil, err
+		}
+		images = append(images, codexExecRenderedImage{MediaType: mediaType, B64JSON: result})
+	}
+	if imageCalls == 0 {
+		return nil, errCodexImageToolNotInvoked
+	}
+	if len(images) != imageCalls {
+		return nil, fmt.Errorf("image response contains incomplete results")
+	}
+	return images, nil
+}
+
+func openAIImageBase64MediaType(value string) (string, error) {
+	if err := validateOpenAIImageBase64(value); err != nil {
+		return "", err
+	}
+	decoded, err := base64.StdEncoding.Strict().DecodeString(value)
+	if err != nil {
+		return "", fmt.Errorf("image result is invalid base64")
+	}
+	switch contentType := http.DetectContentType(decoded); contentType {
+	case "image/png", "image/jpeg", "image/gif", "image/webp":
+		return contentType, nil
+	default:
+		return "", fmt.Errorf("image result is not a supported image")
+	}
+}
+
+func decodeCompletedOpenAIResponse(body []byte) (map[string]any, error) {
+	var response map[string]any
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("decode completed image response: %w", err)
+	}
+	if nested, ok := response["response"].(map[string]any); ok {
+		response = nested
+	}
+	status := strings.ToLower(strings.TrimSpace(firstNonEmptyString(response["status"])))
+	if status != "completed" && status != "done" {
+		return nil, fmt.Errorf("completed image response has non-terminal status")
+	}
+	return response, nil
 }
 
 func finalizeOpenAIResponseImageBilling(result *OpenAIForwardResult) *OpenAIForwardResult {
@@ -855,6 +972,126 @@ func writeFixedOpenAIImageResponses(
 	}
 	c.Writer.Flush()
 	return nil
+}
+
+func writeCodexExecRenderedImageResponses(
+	c *gin.Context,
+	stream bool,
+	upstreamResponse map[string]any,
+	images []codexExecRenderedImage,
+) error {
+	if c == nil || c.Writer == nil {
+		return fmt.Errorf("response writer is required")
+	}
+	if len(images) == 0 {
+		return fmt.Errorf("at least one rendered image is required")
+	}
+
+	execInput, err := codexExecGeneratedImageInput(images)
+	if err != nil {
+		return err
+	}
+	response := cloneOpenAIResponseMap(upstreamResponse)
+	responseID := strings.TrimSpace(firstNonEmptyString(response["id"]))
+	if responseID == "" {
+		responseID = "resp_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+		response["id"] = responseID
+	}
+	response["status"] = "completed"
+	response["error"] = nil
+	response["incomplete_details"] = nil
+	callID := "call_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	itemID := "ctc_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	completedItem := map[string]any{
+		"id":      itemID,
+		"type":    "custom_tool_call",
+		"status":  "completed",
+		"call_id": callID,
+		"name":    "exec",
+		"input":   execInput,
+	}
+	response["output"] = []any{completedItem}
+	c.Header("x-request-id", responseID)
+
+	if !stream {
+		body, err := json.Marshal(response)
+		if err != nil {
+			return fmt.Errorf("encode Codex rendered image response: %w", err)
+		}
+		c.Header("Content-Type", "application/json")
+		MarkResponseCommitted(c)
+		c.Status(http.StatusOK)
+		_, err = c.Writer.Write(body)
+		return err
+	}
+
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+	inProgressResponse := cloneOpenAIResponseMap(response)
+	inProgressResponse["status"] = "in_progress"
+	inProgressResponse["completed_at"] = nil
+	inProgressResponse["output"] = []any{}
+	inProgressItem := map[string]any{
+		"id":      itemID,
+		"type":    "custom_tool_call",
+		"status":  "in_progress",
+		"call_id": callID,
+		"name":    "exec",
+		"input":   "",
+	}
+	events := []map[string]any{
+		{"type": "response.created", "sequence_number": 0, "response": inProgressResponse},
+		{"type": "response.in_progress", "sequence_number": 1, "response": inProgressResponse},
+		{"type": "response.output_item.added", "sequence_number": 2, "output_index": 0, "item": inProgressItem},
+		{"type": "response.output_item.done", "sequence_number": 3, "output_index": 0, "item": completedItem},
+		{"type": "response.completed", "sequence_number": 4, "response": response},
+	}
+
+	MarkResponseCommitted(c)
+	c.Status(http.StatusOK)
+	for _, event := range events {
+		payload, err := json.Marshal(event)
+		if err != nil {
+			return fmt.Errorf("encode Codex rendered image stream event: %w", err)
+		}
+		eventType := strings.TrimSpace(firstNonEmptyString(event["type"]))
+		if _, err := fmt.Fprintf(c.Writer, "event: %s\ndata: %s\n\n", eventType, payload); err != nil {
+			return err
+		}
+	}
+	c.Writer.Flush()
+	return nil
+}
+
+func codexExecGeneratedImageInput(images []codexExecRenderedImage) (string, error) {
+	var input strings.Builder
+	for index, image := range images {
+		mediaType := strings.ToLower(strings.TrimSpace(image.MediaType))
+		switch mediaType {
+		case "image/png", "image/jpeg", "image/gif", "image/webp":
+		default:
+			return "", fmt.Errorf("unsupported rendered image media type %q", image.MediaType)
+		}
+		if err := validateOpenAIImageBase64(image.B64JSON); err != nil {
+			return "", err
+		}
+		dataURL, err := json.Marshal("data:" + mediaType + ";base64," + image.B64JSON)
+		if err != nil {
+			return "", fmt.Errorf("encode rendered image data URL: %w", err)
+		}
+		outputHint, err := json.Marshal(fmt.Sprintf("已生成第 %d 张图片。", index+1))
+		if err != nil {
+			return "", fmt.Errorf("encode rendered image output hint: %w", err)
+		}
+		input.WriteString("generatedImage({image_url:")
+		input.Write(dataURL)
+		input.WriteString(",output_hint:")
+		input.Write(outputHint)
+		input.WriteString("});\n")
+	}
+	return input.String(), nil
 }
 
 func cloneOpenAIResponseMap(src map[string]any) map[string]any {

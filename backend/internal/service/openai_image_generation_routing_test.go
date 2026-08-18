@@ -346,6 +346,82 @@ func TestIsOpenAICodexGeneratedImageToolContinuation(t *testing.T) {
 	})
 }
 
+func TestSanitizeOpenAICodexGeneratedImageHistory(t *testing.T) {
+	continuation := signedCodexGeneratedImageContinuationBody(t, []codexExecRenderedImage{{
+		MediaType: "image/png",
+		B64JSON:   codexBridgeTestPNG,
+	}})
+
+	historyBody := func(t *testing.T) []byte {
+		t.Helper()
+		var decoded map[string]any
+		require.NoError(t, json.Unmarshal(continuation, &decoded))
+		decoded["input"] = append(decoded["input"].([]any),
+			map[string]any{"type": "message", "role": "user", "content": "今天天气怎么样"})
+		body, err := json.Marshal(decoded)
+		require.NoError(t, err)
+		return body
+	}
+
+	t.Run("signed image history is compacted for the text upstream", func(t *testing.T) {
+		sanitized, changed := SanitizeOpenAICodexGeneratedImageHistory(historyBody(t))
+		require.True(t, changed)
+		require.True(t, gjson.ValidBytes(sanitized))
+		require.NotContains(t, string(sanitized), "data:image/png;base64,")
+		require.NotContains(t, string(sanitized), codexBridgeTestPNG)
+
+		execInput := gjson.GetBytes(sanitized, "input.2.input").String()
+		require.Contains(t, execInput, "generatedImage({image_url:")
+		require.Contains(t, execInput, codexGeneratedImageHistoryPlaceholder)
+		require.Contains(t, execInput, "已生成第 1 张图片。", "per-image output hints survive compaction")
+
+		blocks := gjson.GetBytes(sanitized, "input.3.output").Array()
+		require.Len(t, blocks, 3)
+		require.Equal(t, "input_text", blocks[0].Get("type").String())
+		require.Equal(t, "Script completed", blocks[0].Get("text").String())
+		require.Equal(t, "input_text", blocks[1].Get("type").String(), "input_image blocks become compact text")
+		require.Equal(t, codexGeneratedImageHistoryPlaceholder, blocks[1].Get("text").String())
+		require.Equal(t, "input_text", blocks[2].Get("type").String())
+		require.Equal(t, "已生成第 1 张图片。", blocks[2].Get("text").String())
+
+		require.Equal(t, "生成图片", gjson.GetBytes(sanitized, "input.1.content").String())
+		require.Equal(t, "今天天气怎么样", gjson.GetBytes(sanitized, "input.4.content").String())
+	})
+
+	t.Run("bodies without signed image history pass through untouched", func(t *testing.T) {
+		bodies := []string{
+			`{"model":"gpt-5.6-sol","input":"hello"}`,
+			`{"input":[{"type":"message","role":"user","content":"生成图片"}]}`,
+			// A client-authored exec pair without the gateway signature keeps
+			// its data URLs; only gateway-issued history is compacted.
+			`{"input":[{"type":"custom_tool_call","call_id":"call_other","name":"exec","status":"completed","input":"generatedImage({image_url:\"data:image/png;base64,AAAA\"});"},{"type":"custom_tool_call_output","call_id":"call_other","output":[{"type":"input_image","image_url":"data:image/png;base64,AAAA"}]}]}`,
+		}
+		for _, body := range bodies {
+			sanitized, changed := SanitizeOpenAICodexGeneratedImageHistory([]byte(body))
+			require.False(t, changed, body)
+			require.Equal(t, body, string(sanitized))
+		}
+	})
+
+	t.Run("raw image generation call results are blanked", func(t *testing.T) {
+		body := []byte(`{"input":[{"type":"image_generation_call","id":"ig_1","status":"completed","result":"` + codexBridgeTestPNG + `"},{"type":"message","role":"user","content":"next"}]}`)
+		sanitized, changed := SanitizeOpenAICodexGeneratedImageHistory(body)
+		require.True(t, changed)
+		require.Equal(t, "", gjson.GetBytes(sanitized, "input.0.result").String())
+		require.Equal(t, "completed", gjson.GetBytes(sanitized, "input.0.status").String())
+		require.Equal(t, "ig_1", gjson.GetBytes(sanitized, "input.0.id").String())
+		require.Equal(t, "next", gjson.GetBytes(sanitized, "input.1.content").String())
+	})
+
+	t.Run("invalid or non-array input fails closed", func(t *testing.T) {
+		for _, body := range []string{``, `{`, `{"input":{}}`} {
+			sanitized, changed := SanitizeOpenAICodexGeneratedImageHistory([]byte(body))
+			require.False(t, changed)
+			require.Equal(t, body, string(sanitized))
+		}
+	})
+}
+
 func TestPrepareOpenAICodexImageGenerationRequest(t *testing.T) {
 	t.Run("preserves tools and automatic model choice", func(t *testing.T) {
 		body := []byte(`{

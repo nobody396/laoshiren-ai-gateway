@@ -860,6 +860,93 @@ func TestOpenAIResponses_SignedGeneratedImageContinuationCompletesLocallyAndIsId
 	}
 }
 
+func TestOpenAIResponses_GeneratedImageHistoryIsCompactedBeforeTextForwarding(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	group := &service.Group{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI, AllowImageGeneration: true}
+	textAccount := service.Account{
+		ID: 23, Name: "ordinary-text-primary", Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
+		Status: service.StatusActive, Schedulable: true, Concurrency: 4,
+		Credentials: map[string]any{
+			"api_key": "test-only-key", "base_url": "https://text.example.test/v1",
+			"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
+		},
+		AccountGroups: []service.AccountGroup{{AccountID: 23, GroupID: group.ID, Priority: 1}},
+	}
+	imageAccount := service.Account{
+		ID: 33, Name: "global-image-only", Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
+		Status: service.StatusActive, Schedulable: true, Concurrency: 4,
+		Credentials: map[string]any{
+			"api_key": "test-only-key", "base_url": "https://image.example.test/v1",
+			"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
+		},
+		Extra: map[string]any{
+			service.OpenAIImageGenerationPriorityExtraKey: 1,
+			service.OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
+		},
+		AccountGroups: []service.AccountGroup{{AccountID: 33, GroupID: 999, Priority: 1}},
+	}
+	upstream := &codexNativeImageBridgeUpstream{}
+	handler := newCodexResponsesTestHandler(t, []service.Account{textAccount, imageAccount}, upstream)
+	apiKey := &service.APIKey{ID: 97, GroupID: &group.ID, Group: group, User: &service.User{ID: 1, Status: service.StatusActive}}
+
+	firstRecorder := httptest.NewRecorder()
+	firstContext, _ := gin.CreateTestContext(firstRecorder)
+	firstContext.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(
+		codexDesktopLiteImageBody("gpt-5.6-sol", "生成一张雪山风景图", false),
+	))
+	setCodexDesktopLiteHeaders(firstContext)
+	firstContext.Set(string(middleware.ContextKeyAPIKey), apiKey)
+	firstContext.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 1, Concurrency: 4})
+	handler.Responses(firstContext)
+
+	require.Equal(t, http.StatusOK, firstRecorder.Code, firstRecorder.Body.String())
+	call := gjson.GetBytes(firstRecorder.Body.Bytes(), "output.0")
+	require.Equal(t, "custom_tool_call", call.Get("type").String())
+	require.Equal(t, "exec", call.Get("name").String())
+	require.Regexp(t, `^call_img_[0-9a-f]{16}_[0-9a-f]{32}$`, call.Get("call_id").String())
+
+	// The next user turn replays the signed delivery pair verbatim as history.
+	// Forwarding those multi-megabyte data URLs to a text provider is what
+	// production rejected with HTTP 400 "string too long".
+	dataURL := "data:image/png;base64," + codexNativeImageBridgeTestPNG
+	followUp, err := json.Marshal(map[string]any{
+		"model": "gpt-5.6-sol",
+		"input": []any{
+			map[string]any{"type": "additional_tools", "tools": []any{map[string]any{"type": "namespace", "name": "functions"}}},
+			map[string]any{"type": "message", "role": "user", "content": "生成一张雪山风景图"},
+			map[string]any{"type": "custom_tool_call", "id": call.Get("id").String(), "call_id": call.Get("call_id").String(), "name": "exec", "status": "completed", "input": call.Get("input").String()},
+			map[string]any{"type": "custom_tool_call_output", "call_id": call.Get("call_id").String(), "output": []any{
+				map[string]any{"type": "input_text", "text": "Script completed"},
+				map[string]any{"type": "input_image", "image_url": dataURL, "detail": "high"},
+				map[string]any{"type": "input_text", "text": "已生成第 1 张图片。"},
+			}},
+			map[string]any{"type": "message", "role": "user", "content": "今天天气怎么样"},
+		},
+		"stream": false,
+	})
+	require.NoError(t, err)
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(string(followUp)))
+	setCodexDesktopLiteHeaders(c)
+	c.Set(string(middleware.ContextKeyAPIKey), apiKey)
+	c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 1, Concurrency: 4})
+	handler.Responses(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
+	require.NotNil(t, upstream.lastRequest)
+	forwarded, err := io.ReadAll(upstream.lastRequest.Body)
+	require.NoError(t, err)
+	require.True(t, gjson.ValidBytes(forwarded))
+	require.NotContains(t, string(forwarded), "base64,", "text upstream must never receive replayed image data")
+	require.NotContains(t, string(forwarded), codexNativeImageBridgeTestPNG)
+	require.Contains(t, string(forwarded), "历史图片数据已省略")
+	require.Contains(t, string(forwarded), "已生成第 1 张图片。", "the model still learns an image was generated")
+	require.Contains(t, string(forwarded), "今天天气怎么样")
+	require.Equal(t, "input_text", gjson.GetBytes(forwarded, `input.#(type=="custom_tool_call_output").output.1.type`).String())
+}
+
 func TestOpenAIResponses_PassiveImageToolCatalogKeepsOrdinaryTextRoute(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	group := &service.Group{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI}

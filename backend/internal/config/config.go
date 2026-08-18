@@ -413,6 +413,10 @@ type GatewayConfig struct {
 	Live GatewayLiveConfig `mapstructure:"live"`
 	// GPTImageS3: GPT-Image 生成结果私有 S3 转存配置。
 	GPTImageS3 GPTImageS3Config `mapstructure:"gpt_image_s3"`
+	// CodexImagePreview: Codex 可见图片的短期本地缓存。生成结果通过
+	// 不可猜测的随机 URL 交给客户端，避免依赖 Desktop 对
+	// image_generation_call 的版本相关渲染行为。
+	CodexImagePreview CodexImagePreviewConfig `mapstructure:"codex_image_preview"`
 	// GPTImageTaskSettlement: GPT-Image 异步任务后台结算配置。
 	GPTImageTaskSettlement GPTImageTaskSettlementConfig `mapstructure:"gpt_image_task_settlement"`
 	// FinanceReceiptS3: 财务记账凭证图片私有 S3 转存配置（复用同一套配置结构）。
@@ -510,6 +514,13 @@ type GPTImageS3Config struct {
 	Prefix          string `mapstructure:"prefix"`
 	ForcePathStyle  bool   `mapstructure:"force_path_style"`
 	MaxImageBytes   int64  `mapstructure:"max_image_bytes"`
+}
+
+type CodexImagePreviewConfig struct {
+	Enabled       bool   `mapstructure:"enabled"`
+	DataDir       string `mapstructure:"data_dir"`
+	TTLSeconds    int    `mapstructure:"ttl_seconds"`
+	MaxImageBytes int64  `mapstructure:"max_image_bytes"`
 }
 
 func (c GPTImageS3Config) IsConfigured() bool {
@@ -1489,6 +1500,10 @@ func setDefaults() {
 	viper.SetDefault("gateway.gpt_image_s3.prefix", "gpt-image/")
 	viper.SetDefault("gateway.gpt_image_s3.force_path_style", false)
 	viper.SetDefault("gateway.gpt_image_s3.max_image_bytes", int64(20*1024*1024))
+	viper.SetDefault("gateway.codex_image_preview.enabled", true)
+	viper.SetDefault("gateway.codex_image_preview.data_dir", "./data/codex-image-previews")
+	viper.SetDefault("gateway.codex_image_preview.ttl_seconds", 24*60*60)
+	viper.SetDefault("gateway.codex_image_preview.max_image_bytes", int64(20*1024*1024))
 
 	viper.SetDefault("gateway.finance_receipt_s3.enabled", false)
 	viper.SetDefault("gateway.finance_receipt_s3.endpoint", "")

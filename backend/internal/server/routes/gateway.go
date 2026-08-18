@@ -211,6 +211,11 @@ func RegisterGatewayRoutes(
 		gptImage.GET("/models", h.OpenAIGateway.GPTImageModels)
 	}
 	r.GET("/gpt-image/media/:task_id/:index", h.OpenAIGateway.GPTImageMedia)
+	// Codex preview URLs are intentionally unauthenticated: Desktop image
+	// renderers do not attach the caller's API key to Markdown fetches. Access is
+	// bounded by a 256-bit random token and a server-enforced short TTL.
+	r.GET("/v1/codex-image/previews/:token", h.OpenAIGateway.CodexImagePreview)
+	r.HEAD("/v1/codex-image/previews/:token", h.OpenAIGateway.CodexImagePreview)
 
 	// Antigravity 专用路由（仅使用 antigravity 账户，不混合调度）
 	antigravityV1 := r.Group("/antigravity/v1")

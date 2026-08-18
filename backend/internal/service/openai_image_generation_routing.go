@@ -193,6 +193,19 @@ func IsOpenAICodexGeneratedImageToolContinuation(body []byte, signingSecret stri
 	if len(inputs) < 2 {
 		return false
 	}
+	customCalls := 0
+	customOutputs := 0
+	for _, input := range inputs {
+		switch strings.ToLower(strings.TrimSpace(input.Get("type").String())) {
+		case "custom_tool_call":
+			customCalls++
+		case "custom_tool_call_output":
+			customOutputs++
+		}
+	}
+	if customCalls != 1 || customOutputs != 1 {
+		return false
+	}
 	output := inputs[len(inputs)-1]
 	if !strings.EqualFold(strings.TrimSpace(output.Get("type").String()), "custom_tool_call_output") {
 		return false

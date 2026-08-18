@@ -279,7 +279,7 @@ func TestIsOpenAICodexGeneratedImageToolContinuation(t *testing.T) {
 	require.True(t, IsOpenAICodexGeneratedImageToolContinuation(multiple, codexGeneratedImageAckTestSecret))
 	require.False(t, IsOpenAICodexGeneratedImageToolContinuation(single, "wrong-secret"))
 
-	t.Run("unrelated completed tool history may precede the signed terminal pair", func(t *testing.T) {
+	t.Run("multiple tool pairs are not acknowledged locally", func(t *testing.T) {
 		var decoded map[string]any
 		require.NoError(t, json.Unmarshal(single, &decoded))
 		inputs := decoded["input"].([]any)
@@ -290,7 +290,7 @@ func TestIsOpenAICodexGeneratedImageToolContinuation(t *testing.T) {
 		decoded["input"] = inputs
 		body, err := json.Marshal(decoded)
 		require.NoError(t, err)
-		require.True(t, IsOpenAICodexGeneratedImageToolContinuation(body, codexGeneratedImageAckTestSecret))
+		require.False(t, IsOpenAICodexGeneratedImageToolContinuation(body, codexGeneratedImageAckTestSecret))
 	})
 
 	t.Run("tampered call id", func(t *testing.T) {

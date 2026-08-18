@@ -826,6 +826,38 @@ func TestOpenAIResponses_SignedGeneratedImageContinuationCompletesLocallyAndIsId
 		require.NotContains(t, recorder.Body.String(), "custom_tool_call")
 		require.Same(t, firstUpstreamRequest, upstream.lastRequest, "local acknowledgement must not invoke any upstream")
 	}
+
+	for _, tt := range []struct {
+		name string
+		ua   string
+		lite string
+	}{
+		{name: "third party", ua: "curl/8.0", lite: "true"},
+		{name: "desktop without responses lite capability", ua: "Codex Desktop/0.148.0-alpha.9 (Mac OS; arm64)"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			fallbackUpstream := &codexTextIsolationUpstream{}
+			fallbackHandler := newCodexResponsesTestHandler(t, []service.Account{textAccount, imageAccount}, fallbackUpstream)
+			recorder := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(recorder)
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(string(continuation)))
+			c.Request.Header.Set("Content-Type", "application/json")
+			c.Request.Header.Set("User-Agent", tt.ua)
+			if tt.lite != "" {
+				c.Request.Header.Set(openAIInternalCodexResponsesLiteHeader, tt.lite)
+			}
+			c.Set(string(middleware.ContextKeyAPIKey), apiKey)
+			c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 1, Concurrency: 4})
+
+			fallbackHandler.Responses(c)
+
+			require.Contains(t, []int{http.StatusOK, http.StatusBadRequest, http.StatusBadGateway}, recorder.Code, recorder.Body.String())
+			for _, accountID := range fallbackUpstream.accountIDs {
+				require.NotEqual(t, int64(33), accountID, "non-capability continuation must never enter the paid image pool")
+			}
+			require.NotContains(t, recorder.Body.String(), "图片已生成并显示。")
+		})
+	}
 }
 
 func TestOpenAIResponses_PassiveImageToolCatalogKeepsOrdinaryTextRoute(t *testing.T) {

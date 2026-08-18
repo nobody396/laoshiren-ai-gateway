@@ -747,9 +747,7 @@ const userNavItems = computed((): NavItem[] => {
       : []),
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
     { path: '/resources', label: t('nav.resources'), icon: DownloadIcon },
-    { path: '/resources/status', label: t('nav.versionStatus'), icon: ServerIcon },
     createChangelogNavItem(),
-    createDocsNavItem(),
     { path: '/profile', label: t('nav.profile'), icon: UserIcon },
     ...customMenuItemsForUser.value.map((item): NavItem => ({
       path: `/custom/${item.id}`,
@@ -778,8 +776,6 @@ const personalNavItems = computed((): NavItem[] => {
       : []),
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
     { path: '/resources', label: t('nav.resources'), icon: DownloadIcon },
-    { path: '/resources/status', label: t('nav.versionStatus'), icon: ServerIcon },
-    createDocsNavItem(),
     { path: '/profile', label: t('nav.profile'), icon: UserIcon },
     ...customMenuItemsForUser.value.map((item): NavItem => ({
       path: `/custom/${item.id}`,

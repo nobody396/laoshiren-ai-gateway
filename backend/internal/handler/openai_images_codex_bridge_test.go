@@ -107,33 +107,6 @@ type codexNativeImageBridgeFailoverUpstream struct {
 	models     []string
 }
 
-type codexFixedImageThreeLegUpstream struct {
-	service.HTTPUpstream
-	accountIDs []int64
-	paths      []string
-	models     []string
-}
-
-func (u *codexFixedImageThreeLegUpstream) Do(req *http.Request, _ string, accountID int64, _ int) (*http.Response, error) {
-	u.accountIDs = append(u.accountIDs, accountID)
-	u.paths = append(u.paths, req.URL.Path)
-	requestBody, _ := io.ReadAll(req.Body)
-	u.models = append(u.models, gjson.GetBytes(requestBody, "model").String())
-
-	body := `{"created":1710000000,"data":[{"b64_json":"` + codexNativeImageBridgeTestPNG + `"}]}`
-	switch accountID {
-	case 33:
-		body = `{"id":"resp_no_image_tool","status":"completed","model":"gpt-5.6-sol","output":[{"type":"message","status":"completed","content":[{"type":"output_text","text":""}]}],"usage":{"input_tokens":20,"output_tokens":2}}`
-	case 38:
-		body = `{"created":1710000000,"data":[]}`
-	}
-	return &http.Response{
-		StatusCode: http.StatusOK,
-		Header:     http.Header{"Content-Type": []string{"application/json"}},
-		Body:       io.NopCloser(strings.NewReader(body)),
-	}, nil
-}
-
 type codexTextIsolationUpstream struct {
 	service.HTTPUpstream
 	accountIDs []int64

@@ -263,6 +263,24 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	codexGeneratedImageDelivery := requestPlatform == service.PlatformOpenAI &&
 		isOfficialCodexRequest(c) &&
 		isCodexDesktopGeneratedImageDeliveryRequest(c, body)
+	ackSigningSecret := ""
+	if h.cfg != nil {
+		ackSigningSecret = h.cfg.JWT.Secret
+	}
+	codexGeneratedImageContinuation := codexGeneratedImageDelivery &&
+		service.IsOpenAICodexGeneratedImageToolContinuation(body, ackSigningSecret)
+	if codexGeneratedImageContinuation {
+		reqLog = reqLog.With(
+			zap.String("model", reqModel),
+			zap.Bool("stream", reqStream),
+			zap.Bool("codex_generated_image_delivery", true),
+			zap.Bool("codex_generated_image_local_ack", true),
+		)
+		if err := service.WriteOpenAICodexGeneratedImageAcknowledgement(c, reqStream, reqModel); err != nil {
+			reqLog.Warn("openai.codex_generated_image_local_ack_failed", zap.Error(err))
+		}
+		return
+	}
 	codexSemanticImageIntent := requestPlatform == service.PlatformOpenAI &&
 		codexGeneratedImageDelivery &&
 		service.IsOpenAICodexSemanticImageGenerationIntent(body)

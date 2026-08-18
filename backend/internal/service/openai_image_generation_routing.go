@@ -1,6 +1,10 @@
 package service
 
 import (
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -166,6 +170,206 @@ func openAICodexToolArrayHasExec(tools gjson.Result) bool {
 		return !found
 	})
 	return found
+}
+
+// IsOpenAICodexGeneratedImageToolContinuation recognizes only the immediate
+// continuation emitted after Codex Desktop has executed the gateway's fixed
+// exec/generatedImage delivery call. That private tool output contains an
+// input_image data URL which ordinary text providers may reject. Once the
+// client has already rendered the verified bytes, the gateway can finish the
+// turn locally instead of sending the private tool envelope to another paid
+// upstream.
+//
+// The final input item must be the matching custom_tool_call_output. The exec
+// source is accepted only when every statement has the exact generatedImage
+// shape produced by codexExecGeneratedImageInput, and every returned
+// input_image matches those data URLs in order. Historical tool calls followed
+// by a new user turn therefore do not activate this path.
+func IsOpenAICodexGeneratedImageToolContinuation(body []byte, signingSecret string) bool {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return false
+	}
+	inputs := gjson.GetBytes(body, "input").Array()
+	if len(inputs) < 2 {
+		return false
+	}
+	customCalls := 0
+	customOutputs := 0
+	for _, input := range inputs {
+		switch strings.ToLower(strings.TrimSpace(input.Get("type").String())) {
+		case "custom_tool_call":
+			customCalls++
+		case "custom_tool_call_output":
+			customOutputs++
+		}
+	}
+	if customCalls != 1 || customOutputs != 1 {
+		return false
+	}
+	output := inputs[len(inputs)-1]
+	if !strings.EqualFold(strings.TrimSpace(output.Get("type").String()), "custom_tool_call_output") {
+		return false
+	}
+	callID := strings.TrimSpace(output.Get("call_id").String())
+	if callID == "" {
+		return false
+	}
+
+	call := inputs[len(inputs)-2]
+	if !call.Exists() ||
+		!strings.EqualFold(strings.TrimSpace(call.Get("type").String()), "custom_tool_call") ||
+		strings.TrimSpace(call.Get("call_id").String()) != callID ||
+		!strings.EqualFold(strings.TrimSpace(call.Get("name").String()), "exec") ||
+		!strings.EqualFold(strings.TrimSpace(call.Get("status").String()), "completed") {
+		return false
+	}
+
+	expectedImages, ok := parseCodexExecGeneratedImageInput(call.Get("input").String())
+	if !ok || !validCodexGeneratedImageAckCallID(callID, signingSecret, expectedImages) {
+		return false
+	}
+	blocks := output.Get("output")
+	if !blocks.IsArray() {
+		return false
+	}
+	actualImages := make([]string, 0, len(expectedImages))
+	validBlocks := true
+	blocks.ForEach(func(_, block gjson.Result) bool {
+		switch strings.ToLower(strings.TrimSpace(block.Get("type").String())) {
+		case "input_text":
+			return true
+		case "input_image":
+			dataURL := strings.TrimSpace(block.Get("image_url").String())
+			if !validCodexGeneratedImageDataURL(dataURL) {
+				validBlocks = false
+				return false
+			}
+			actualImages = append(actualImages, dataURL)
+			return true
+		default:
+			validBlocks = false
+			return false
+		}
+	})
+	if !validBlocks || len(actualImages) != len(expectedImages) {
+		return false
+	}
+	for index := range expectedImages {
+		if actualImages[index] != expectedImages[index] {
+			return false
+		}
+	}
+	return true
+}
+
+const codexGeneratedImageAckCallIDPrefix = "call_img_"
+
+func newCodexGeneratedImageAckCallID(signingSecret string, images []string) (string, error) {
+	signingSecret = strings.TrimSpace(signingSecret)
+	if signingSecret == "" {
+		return "", fmt.Errorf("codex generated-image acknowledgement signing secret is required")
+	}
+	nonceBytes := make([]byte, 8)
+	if _, err := rand.Read(nonceBytes); err != nil {
+		return "", fmt.Errorf("generate Codex image acknowledgement nonce: %w", err)
+	}
+	nonce := hex.EncodeToString(nonceBytes)
+	signature := codexGeneratedImageAckSignature(signingSecret, nonce, images)
+	if signature == nil {
+		return "", fmt.Errorf("invalid Codex generated-image acknowledgement payload")
+	}
+	return codexGeneratedImageAckCallIDPrefix + nonce + "_" + hex.EncodeToString(signature[:16]), nil
+}
+
+func validCodexGeneratedImageAckCallID(callID string, signingSecret string, images []string) bool {
+	signingSecret = strings.TrimSpace(signingSecret)
+	if signingSecret == "" || !strings.HasPrefix(callID, codexGeneratedImageAckCallIDPrefix) {
+		return false
+	}
+	parts := strings.Split(strings.TrimPrefix(callID, codexGeneratedImageAckCallIDPrefix), "_")
+	if len(parts) != 2 || len(parts[0]) != 16 || len(parts[1]) != 32 ||
+		strings.ToLower(parts[0]) != parts[0] || strings.ToLower(parts[1]) != parts[1] {
+		return false
+	}
+	if _, err := hex.DecodeString(parts[0]); err != nil {
+		return false
+	}
+	provided, err := hex.DecodeString(parts[1])
+	if err != nil || len(provided) != 16 {
+		return false
+	}
+	expected := codexGeneratedImageAckSignature(signingSecret, parts[0], images)
+	return expected != nil && hmac.Equal(provided, expected[:16])
+}
+
+func codexGeneratedImageAckSignature(signingSecret string, nonce string, images []string) []byte {
+	if len(images) == 0 || len(images) > 8 {
+		return nil
+	}
+	mac := hmac.New(sha256.New, []byte(signingSecret))
+	_, _ = mac.Write([]byte("codex-generated-image-ack-v1\x00"))
+	_, _ = mac.Write([]byte(nonce))
+	for _, imageURL := range images {
+		_, _ = mac.Write([]byte{0})
+		_, _ = mac.Write([]byte(imageURL))
+	}
+	return mac.Sum(nil)
+}
+
+func parseCodexExecGeneratedImageInput(input string) ([]string, bool) {
+	if input == "" || len(input) > codexNativeImageMaxResponseBytes || strings.Contains(input, "\r") {
+		return nil, false
+	}
+	input = strings.TrimSuffix(input, "\n")
+	lines := strings.Split(input, "\n")
+	if len(lines) == 0 || len(lines) > 8 {
+		return nil, false
+	}
+	const prefix = "generatedImage({image_url:"
+	const separator = ",output_hint:"
+	const suffix = "});"
+	images := make([]string, 0, len(lines))
+	for index, line := range lines {
+		if !strings.HasPrefix(line, prefix) || !strings.HasSuffix(line, suffix) {
+			return nil, false
+		}
+		inner := strings.TrimSuffix(strings.TrimPrefix(line, prefix), suffix)
+		separatorIndex := strings.LastIndex(inner, separator)
+		if separatorIndex <= 0 {
+			return nil, false
+		}
+		var dataURL string
+		if err := json.Unmarshal([]byte(inner[:separatorIndex]), &dataURL); err != nil ||
+			!validCodexGeneratedImageDataURL(dataURL) {
+			return nil, false
+		}
+		var outputHint string
+		if err := json.Unmarshal([]byte(inner[separatorIndex+len(separator):]), &outputHint); err != nil ||
+			outputHint != fmt.Sprintf("已生成第 %d 张图片。", index+1) {
+			return nil, false
+		}
+		images = append(images, dataURL)
+	}
+	return images, true
+}
+
+func validCodexGeneratedImageDataURL(value string) bool {
+	const marker = ";base64,"
+	if !strings.HasPrefix(value, "data:image/") {
+		return false
+	}
+	markerIndex := strings.Index(value, marker)
+	if markerIndex <= len("data:") || markerIndex+len(marker) >= len(value) {
+		return false
+	}
+	mediaType := strings.ToLower(strings.TrimSpace(value[len("data:"):markerIndex]))
+	switch mediaType {
+	case "image/png", "image/jpeg", "image/gif", "image/webp":
+	default:
+		return false
+	}
+	detected, err := openAIImageBase64MediaType(value[markerIndex+len(marker):])
+	return err == nil && detected == mediaType
 }
 
 // ShouldUseFixedOpenAIImageRenderer reports whether an official Codex

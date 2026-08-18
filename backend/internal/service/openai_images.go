@@ -12,7 +12,6 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -535,10 +534,10 @@ func (s *OpenAIGatewayService) ForwardCodexNativeImageGeneration(
 }
 
 // ForwardFixedOpenAIImageGenerationResponses renders a generation-only Codex
-// Responses request through the dedicated gpt-image-2 pool, then converts the
-// validated image back into the native Responses protocol. The entire upstream
-// response is buffered before any client bytes are written, preserving safe
-// sequential failover and preventing duplicate paid generations.
+// Responses request through the dedicated gpt-image-2 pool, then delivers the
+// validated bytes through Codex Desktop's code-mode generatedImage helper. The
+// entire upstream response is buffered before any client bytes are written,
+// preserving safe sequential failover and preventing duplicate paid images.
 func (s *OpenAIGatewayService) ForwardFixedOpenAIImageGenerationResponses(
 	ctx context.Context,
 	c *gin.Context,
@@ -606,26 +605,7 @@ func (s *OpenAIGatewayService) ForwardFixedOpenAIImageGenerationResponses(
 	}
 
 	responseID := "resp_" + strings.ReplaceAll(uuid.NewString(), "-", "")
-	itemID := "msg_" + strings.ReplaceAll(uuid.NewString(), "-", "")
 	createdAt := time.Now().Unix()
-	previewText := "图片已经生成，但临时预览存储失败。为避免重复生成和重复扣费，本次不会自动重试。请稍后重试。"
-	previews, previewErr := s.StoreCodexImagePreviewsBase64([]string{imageBase64})
-	if previewErr == nil {
-		previewURL, urlErr := codexImagePreviewURL(c, previews[0].Token)
-		if urlErr != nil {
-			s.DeleteCodexImagePreviews([]string{previews[0].Token})
-			previewErr = urlErr
-		} else {
-			previewText = codexMarkdownImageText([]string{previewURL})
-		}
-	}
-	if previewErr != nil {
-		// The upstream image is already complete and billable. Never replay it
-		// just because local delivery storage failed; doing so would risk a
-		// duplicate paid generation. Return an honest assistant message instead.
-		logger.FromContext(ctx).Error("openai.codex_image_preview_store_failed", zap.Error(previewErr))
-	}
-	completedItem := completedOpenAIAssistantTextItem(itemID, previewText)
 	completedResponse := map[string]any{
 		"id":                   responseID,
 		"object":               "response",
@@ -636,7 +616,7 @@ func (s *OpenAIGatewayService) ForwardFixedOpenAIImageGenerationResponses(
 		"incomplete_details":   nil,
 		"instructions":         nil,
 		"model":                strings.TrimSpace(requestedModel),
-		"output":               []any{completedItem},
+		"output":               []any{},
 		"parallel_tool_calls":  true,
 		"previous_response_id": nil,
 		"store":                false,
@@ -658,11 +638,36 @@ func (s *OpenAIGatewayService) ForwardFixedOpenAIImageGenerationResponses(
 		completedResponse["model"] = OpenAIFixedImageRendererModel
 	}
 
-	if err := writeFixedOpenAIAssistantTextResponses(c, stream, completedResponse, completedItem, previewText); err != nil {
+	mediaType, renderErr := openAIImageBase64MediaType(imageBase64)
+	if renderErr == nil {
+		// Validate and serialize the fixed data only. No user prompt, remote URL
+		// or user-controlled JavaScript is included in the exec payload.
+		_, renderErr = codexExecGeneratedImageInput([]codexExecRenderedImage{{
+			MediaType: mediaType,
+			B64JSON:   imageBase64,
+		}})
+	}
+	if renderErr != nil {
+		// The upstream image is already complete and may be billable. Do not
+		// replay it on another provider. Return a terminal text result so the
+		// client receives an honest failure without duplicate generation.
+		logger.FromContext(ctx).Error("openai.codex_generated_image_conversion_failed", zap.Error(renderErr))
+		failedItemID := "msg_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+		failedText := "图片已经生成，但客户端图片转换失败。为避免重复生成和重复扣费，本次不会自动重试。"
+		failedItem := completedOpenAIAssistantTextItem(failedItemID, failedText)
+		completedResponse["output"] = []any{failedItem}
+		renderErr = writeFixedOpenAIAssistantTextResponses(c, stream, completedResponse, failedItem, failedText)
+	} else {
+		renderErr = writeCodexExecRenderedImageResponses(c, stream, completedResponse, []codexExecRenderedImage{{
+			MediaType: mediaType,
+			B64JSON:   imageBase64,
+		}})
+	}
+	if renderErr != nil {
 		// The image is already complete and billable upstream. Preserve the
 		// successful result even if the downstream client disconnected while the
 		// buffered native response was being delivered.
-		logger.FromContext(ctx).Warn("openai.fixed_image_response_delivery_failed", zap.Error(err))
+		logger.FromContext(ctx).Warn("openai.fixed_image_response_delivery_failed", zap.Error(renderErr))
 	}
 
 	result.ResponseID = responseID
@@ -916,61 +921,6 @@ func completedOpenAIAssistantTextItem(itemID string, text string) map[string]any
 			"logprobs":    []any{},
 		}},
 	}
-}
-
-func codexMarkdownImageText(imageURLs []string) string {
-	var text strings.Builder
-	for i, imageURL := range imageURLs {
-		imageURL = strings.TrimSpace(imageURL)
-		if imageURL == "" {
-			continue
-		}
-		if text.Len() > 0 {
-			_, _ = text.WriteString("\n\n")
-		}
-		label := "生成的图片"
-		if len(imageURLs) > 1 {
-			label = fmt.Sprintf("生成的图片 %d", i+1)
-		}
-		_, _ = fmt.Fprintf(&text, "![%s](%s)\n\n[%s未显示时，点击这里打开原图](%s)", label, imageURL, label, imageURL)
-	}
-	return text.String()
-}
-
-func codexImagePreviewURL(c *gin.Context, token string) (string, error) {
-	if c == nil || c.Request == nil || !codexImagePreviewTokenPattern.MatchString(token) {
-		return "", fmt.Errorf("invalid Codex image preview URL input")
-	}
-	host := strings.TrimSpace(c.Request.Host)
-	if host == "" || strings.ContainsAny(host, "\\/@?# \t\r\n") {
-		return "", fmt.Errorf("invalid Codex image preview host")
-	}
-	parsedHost := &url.URL{Scheme: "http", Host: host}
-	if strings.TrimSpace(parsedHost.Hostname()) == "" || parsedHost.User != nil {
-		return "", fmt.Errorf("invalid Codex image preview host")
-	}
-	hostname := strings.TrimSpace(parsedHost.Hostname())
-	isLoopback := strings.EqualFold(hostname, "localhost")
-	if ip := net.ParseIP(hostname); ip != nil && ip.IsLoopback() {
-		isLoopback = true
-	}
-	scheme := "https"
-	if c.Request.TLS == nil && isLoopback {
-		scheme = "http"
-	}
-	if forwarded := strings.ToLower(strings.TrimSpace(strings.Split(c.GetHeader("X-Forwarded-Proto"), ",")[0])); forwarded == "https" {
-		scheme = "https"
-	} else if forwarded == "http" && isLoopback {
-		scheme = "http"
-	}
-	return (&url.URL{
-		Scheme: scheme,
-		Host:   host,
-		Path:   "/v1/codex-image/preview",
-		RawQuery: url.Values{
-			"token": []string{token},
-		}.Encode(),
-	}).String(), nil
 }
 
 func writeFixedOpenAIAssistantTextResponses(

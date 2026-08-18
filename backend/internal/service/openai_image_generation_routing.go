@@ -116,7 +116,46 @@ func HasOpenAICodexExecImageRenderTool(body []byte) bool {
 	if len(body) == 0 || !gjson.ValidBytes(body) {
 		return false
 	}
-	tools := gjson.GetBytes(body, "tools")
+	if openAICodexToolArrayHasExec(gjson.GetBytes(body, "tools")) {
+		return true
+	}
+	inputs := gjson.GetBytes(body, "input")
+	if !inputs.IsArray() {
+		return false
+	}
+	found := false
+	inputs.ForEach(func(_, input gjson.Result) bool {
+		if !strings.EqualFold(strings.TrimSpace(input.Get("type").String()), "additional_tools") {
+			return true
+		}
+		found = openAICodexToolArrayHasExec(input.Get("tools"))
+		return !found
+	})
+	return found
+}
+
+// HasOpenAICodexAdditionalToolsEnvelope recognizes the Responses Lite
+// capability envelope emitted by Codex Desktop/app-server. In that exact
+// client mode, the bundled code-mode host understands the reserved exec tool
+// and its generatedImage helper even when exec is not duplicated in top-level
+// hosted tools.
+func HasOpenAICodexAdditionalToolsEnvelope(body []byte) bool {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return false
+	}
+	inputs := gjson.GetBytes(body, "input")
+	if !inputs.IsArray() {
+		return false
+	}
+	found := false
+	inputs.ForEach(func(_, input gjson.Result) bool {
+		found = strings.EqualFold(strings.TrimSpace(input.Get("type").String()), "additional_tools") && input.Get("tools").IsArray()
+		return !found
+	})
+	return found
+}
+
+func openAICodexToolArrayHasExec(tools gjson.Result) bool {
 	if !tools.IsArray() {
 		return false
 	}

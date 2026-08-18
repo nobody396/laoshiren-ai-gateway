@@ -211,7 +211,10 @@ func RegisterGatewayRoutes(
 		gptImage.GET("/models", h.OpenAIGateway.GPTImageModels)
 	}
 	r.GET("/gpt-image/media/:task_id/:index", h.OpenAIGateway.GPTImageMedia)
-	// Codex preview URLs are intentionally unauthenticated: Desktop image
+	// Legacy Codex preview URLs remain temporarily readable until their strict
+	// 24-hour TTL expires; new responses use local generatedImage delivery and
+	// never write this store. Preview URLs are intentionally unauthenticated:
+	// Desktop image
 	// renderers do not attach the caller's API key to Markdown fetches. Access is
 	// bounded by a 256-bit random token and a server-enforced short TTL.
 	// Keep the capability token out of URL.Path because the global HTTP access

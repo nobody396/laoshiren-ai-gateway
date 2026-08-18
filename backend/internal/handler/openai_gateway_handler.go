@@ -66,6 +66,19 @@ func isOfficialCodexRequest(c *gin.Context) bool {
 	)
 }
 
+const openAIInternalCodexResponsesLiteHeader = "x-openai-internal-codex-responses-lite"
+
+func isCodexDesktopGeneratedImageDeliveryRequest(c *gin.Context, body []byte) bool {
+	if c == nil || !strings.Contains(strings.ToLower(c.GetHeader("User-Agent")), "codex desktop/") {
+		return false
+	}
+	if service.HasOpenAICodexExecImageRenderTool(body) {
+		return true
+	}
+	lite := strings.ToLower(strings.TrimSpace(c.GetHeader(openAIInternalCodexResponsesLiteHeader)))
+	return (lite == "true" || lite == "1") && service.HasOpenAICodexAdditionalToolsEnvelope(body)
+}
+
 func newOpenAIWSUnsupportedModelSwitchError(model string) error {
 	cause := fmt.Errorf("%w: model %q", errOpenAIWSUnsupportedModelSwitch, strings.TrimSpace(model))
 	return service.NewOpenAIWSClientCloseError(coderws.StatusPolicyViolation, "model switch requires reconnect", cause)
@@ -247,8 +260,11 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	}
 	reqStream := streamResult.Bool()
 	requestPlatform := openAICompatibleRequestPlatform(apiKey)
-	codexSemanticImageIntent := requestPlatform == service.PlatformOpenAI &&
+	codexGeneratedImageDelivery := requestPlatform == service.PlatformOpenAI &&
 		isOfficialCodexRequest(c) &&
+		isCodexDesktopGeneratedImageDeliveryRequest(c, body)
+	codexSemanticImageIntent := requestPlatform == service.PlatformOpenAI &&
+		codexGeneratedImageDelivery &&
 		service.IsOpenAICodexSemanticImageGenerationIntent(body)
 	if codexSemanticImageIntent {
 		preparedBody, activated, prepareErr := service.PrepareOpenAICodexImageGenerationRequest(body)
@@ -264,7 +280,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	}
 	imageGenerationIntent := requestPlatform == service.PlatformOpenAI && service.IsExplicitOpenAIImageGenerationIntent(body)
 	fixedImageRenderer := requestPlatform == service.PlatformOpenAI &&
-		isOfficialCodexRequest(c) &&
+		codexGeneratedImageDelivery &&
 		service.ShouldUseFixedOpenAIImageRenderer(body)
 	routingModel := reqModel
 	if fixedImageRenderer {
@@ -276,6 +292,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		zap.Bool("stream", reqStream),
 		zap.Bool("image_generation_intent", imageGenerationIntent),
 		zap.Bool("codex_semantic_image_generation_intent", codexSemanticImageIntent),
+		zap.Bool("codex_generated_image_delivery", codexGeneratedImageDelivery),
 		zap.Bool("fixed_image_renderer", fixedImageRenderer),
 	)
 	if apiKey.Group != nil && apiKey.Group.Platform == service.PlatformGrok &&
@@ -456,11 +473,10 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		writerSizeBeforeForward := c.Writer.Size()
 		var result *service.OpenAIForwardResult
 		if fixedImageRenderer {
-			// Codex Desktop does not surface raw Responses image_generation_call
-			// items from custom providers. Always pass generated images through the
-			// fixed adapter that buffered, validated and rendered them correctly
-			// before the global image pool was introduced. Account selection still
-			// comes from the global pool; only the downstream protocol is restored.
+			// Custom providers do not create Codex app-server imageGeneration
+			// items from raw hosted image calls. The fixed adapter buffers and
+			// validates the paid image, then hands it to the exact Desktop
+			// code-mode client through exec/generatedImage.
 			result, err = h.gatewayService.ForwardFixedOpenAIImageGenerationResponses(
 				c.Request.Context(),
 				c,
@@ -1359,21 +1375,13 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		return
 	}
 	requestPlatform := openAICompatibleRequestPlatform(apiKey)
-	codexSemanticImageIntent := requestPlatform == service.PlatformOpenAI &&
+	// WS passthrough cannot buffer the paid image and convert it into a local
+	// generatedImage tool result without risking replay after partial output.
+	// Keep semantic requests on Codex's local ImageGen workflow instead of
+	// injecting a hosted image tool whose raw result Desktop will not display.
+	codexLocalImageGenFallback := requestPlatform == service.PlatformOpenAI &&
 		isOfficialCodexRequest(c) &&
 		service.IsOpenAICodexSemanticImageGenerationIntent(firstMessage)
-	if codexSemanticImageIntent {
-		preparedMessage, activated, prepareErr := service.PrepareOpenAICodexImageGenerationRequest(firstMessage)
-		if prepareErr != nil {
-			closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, prepareErr.Error())
-			return
-		}
-		if activated {
-			firstMessage = preparedMessage
-		} else {
-			codexSemanticImageIntent = false
-		}
-	}
 	imageGenerationIntent := requestPlatform == service.PlatformOpenAI && service.IsExplicitOpenAIImageGenerationIntent(firstMessage)
 	reqLog = reqLog.With(
 		zap.Bool("ws_ingress", true),
@@ -1381,7 +1389,7 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		zap.Bool("has_previous_response_id", previousResponseID != ""),
 		zap.String("previous_response_id_kind", previousResponseIDKind),
 		zap.Bool("image_generation_intent", imageGenerationIntent),
-		zap.Bool("codex_semantic_image_generation_intent", codexSemanticImageIntent),
+		zap.Bool("codex_local_imagegen_fallback", codexLocalImageGenFallback),
 	)
 	if apiKey.Group != nil && apiKey.Group.Platform == service.PlatformGrok &&
 		service.IsExplicitGrokImageGenerationIntent(reqModel, firstMessage) &&

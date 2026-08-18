@@ -480,10 +480,9 @@ func TestOpenAIResponses_OfficialCodexImageRoutingRejectsRetiredModels(t *testin
 				recorder := httptest.NewRecorder()
 				c, _ := gin.CreateTestContext(recorder)
 				c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(
-					`{"model":"`+textModel+`","input":"帮我生成一张月球橘猫的图片","stream":false}`,
+					codexDesktopLiteImageBody(textModel, "帮我生成一张月球橘猫的图片", false),
 				))
-				c.Request.Header.Set("Content-Type", "application/json")
-				c.Request.Header.Set("User-Agent", "Codex Desktop/0.147.0-alpha.1.2 (Mac OS 26.3.2; arm64) (Codex Desktop; 26.730.61639)")
+				setCodexDesktopLiteHeaders(c)
 				apiKey := &service.APIKey{ID: 144 + group.ID, GroupID: &group.ID, Group: group, User: &service.User{ID: 2, Status: service.StatusActive}}
 				c.Set(string(middleware.ContextKeyAPIKey), apiKey)
 				c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 2, Concurrency: 4})
@@ -498,11 +497,13 @@ func TestOpenAIResponses_OfficialCodexImageRoutingRejectsRetiredModels(t *testin
 				}
 				require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
 				require.Equal(t, textModel, gjson.GetBytes(recorder.Body.Bytes(), "model").String())
-				require.Equal(t, "message", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
-				previewText := gjson.GetBytes(recorder.Body.Bytes(), "output.0.content.0.text").String()
-				require.Contains(t, previewText, "![生成的图片](https://example.com/v1/codex-image/preview?token=")
-				require.Contains(t, previewText, "点击这里打开原图")
-				require.NotContains(t, recorder.Body.String(), codexNativeImageBridgeTestPNG)
+				require.Equal(t, "custom_tool_call", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
+				require.Equal(t, "exec", gjson.GetBytes(recorder.Body.Bytes(), "output.0.name").String())
+				renderInput := gjson.GetBytes(recorder.Body.Bytes(), "output.0.input").String()
+				require.Contains(t, renderInput, "generatedImage({image_url:")
+				require.Contains(t, renderInput, codexNativeImageBridgeTestPNG)
+				require.NotContains(t, renderInput, "月球橘猫")
+				require.NotContains(t, renderInput, "http")
 				require.NotNil(t, upstream.lastRequest)
 				require.Equal(t, "/v1/responses", upstream.lastRequest.URL.Path)
 				upstreamBody, err := io.ReadAll(upstream.lastRequest.Body)
@@ -539,10 +540,9 @@ func TestOpenAIResponses_OfficialCodexStreamingImageUsesFixedAdapterCompletionLi
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(
-		`{"model":"gpt-5.6-sol","input":"给我生成一张雪山的风景图。","stream":true}`,
+		codexDesktopLiteImageBody("gpt-5.6-sol", "给我生成一张雪山的风景图。", true),
 	))
-	c.Request.Header.Set("Content-Type", "application/json")
-	c.Request.Header.Set("User-Agent", "Codex Desktop/0.148.0-alpha.9 (Mac OS 26.5.2; arm64) unknown (Codex Desktop; 26.810.50856)")
+	setCodexDesktopLiteHeaders(c)
 	apiKey := &service.APIKey{ID: 97, GroupID: &group.ID, Group: group, User: &service.User{ID: 1, Status: service.StatusActive}}
 	c.Set(string(middleware.ContextKeyAPIKey), apiKey)
 	c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 1, Concurrency: 4})
@@ -567,14 +567,15 @@ func TestOpenAIResponses_OfficialCodexStreamingImageUsesFixedAdapterCompletionLi
 			completedPayload = payload
 		}
 	}
-	require.Contains(t, eventTypes, "response.output_text.done",
-		"Codex rendering depends on the ordinary assistant text lifecycle")
-	require.Equal(t, "message", gjson.GetBytes(completedPayload, "response.output.0.type").String())
+	require.Contains(t, eventTypes, "response.output_item.done")
+	require.NotContains(t, eventTypes, "response.output_text.done")
+	require.Equal(t, "custom_tool_call", gjson.GetBytes(completedPayload, "response.output.0.type").String())
 	require.Equal(t, "completed", gjson.GetBytes(completedPayload, "response.output.0.status").String())
-	previewText := gjson.GetBytes(completedPayload, "response.output.0.content.0.text").String()
-	require.Contains(t, previewText, "![生成的图片](https://example.com/v1/codex-image/preview?token=")
-	require.Contains(t, previewText, "点击这里打开原图")
-	require.NotContains(t, string(completedPayload), codexNativeImageBridgeTestPNG)
+	require.Equal(t, "exec", gjson.GetBytes(completedPayload, "response.output.0.name").String())
+	renderInput := gjson.GetBytes(completedPayload, "response.output.0.input").String()
+	require.Contains(t, renderInput, "generatedImage({image_url:")
+	require.Contains(t, renderInput, codexNativeImageBridgeTestPNG)
+	require.NotContains(t, string(completedPayload), "/v1/codex-image/preview")
 }
 
 func TestOpenAIResponses_FixedImagePoolFailsOverSequentiallyMoreCodeAdobePomo(t *testing.T) {
@@ -616,10 +617,9 @@ func TestOpenAIResponses_FixedImagePoolFailsOverSequentiallyMoreCodeAdobePomo(t 
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(
-		`{"model":"gpt-5.6-terra","input":"帮我生成一张月球橘猫的图片","stream":false}`,
+		codexDesktopLiteImageBody("gpt-5.6-terra", "帮我生成一张月球橘猫的图片", false),
 	))
-	c.Request.Header.Set("Content-Type", "application/json")
-	c.Request.Header.Set("User-Agent", "Codex Desktop/0.147.0-alpha.1.2 (Mac OS 26.3.2; arm64) (Codex Desktop; 26.730.61639)")
+	setCodexDesktopLiteHeaders(c)
 	apiKey := &service.APIKey{ID: 150, GroupID: &group.ID, Group: group, User: &service.User{ID: 2, Status: service.StatusActive}}
 	c.Set(string(middleware.ContextKeyAPIKey), apiKey)
 	c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 2, Concurrency: 4})
@@ -628,16 +628,118 @@ func TestOpenAIResponses_FixedImagePoolFailsOverSequentiallyMoreCodeAdobePomo(t 
 
 	require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
 	require.Equal(t, "gpt-5.6-terra", gjson.GetBytes(recorder.Body.Bytes(), "model").String())
-	require.Equal(t, "message", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
-	previewText := gjson.GetBytes(recorder.Body.Bytes(), "output.0.content.0.text").String()
-	require.Contains(t, previewText, "![生成的图片](https://example.com/v1/codex-image/preview?token=")
-	require.Contains(t, previewText, "点击这里打开原图")
-	require.NotContains(t, recorder.Body.String(), codexNativeImageBridgeTestPNG)
+	require.Equal(t, "custom_tool_call", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
+	require.Equal(t, "exec", gjson.GetBytes(recorder.Body.Bytes(), "output.0.name").String())
+	require.Contains(t, gjson.GetBytes(recorder.Body.Bytes(), "output.0.input").String(), codexNativeImageBridgeTestPNG)
+	require.NotContains(t, recorder.Body.String(), "/v1/codex-image/preview")
 	require.Equal(t, []int64{33, 38, 40}, upstream.accountIDs)
 	require.Equal(t, []string{"/v1/responses", "/v1/images/generations", "/v1/images/generations"}, upstream.paths)
 	require.Equal(t, []string{service.CodexNativeImageBridgeModel(), "gpt-image-2-count", "gpt-image-2-count"}, upstream.models)
 	require.Equal(t, int64(40), c.GetInt64(opsAccountIDKey))
 	require.Equal(t, "gpt-image-2-count", c.GetString(opsUpstreamModelKey))
+}
+
+func TestOpenAIResponses_CodexDesktopWithoutGeneratedImageCapabilityFallsBackToLocalAgentPath(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	group := &service.Group{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI, AllowImageGeneration: true}
+	textAccount := service.Account{
+		ID: 23, Name: "ordinary-text-primary", Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
+		Status: service.StatusActive, Schedulable: true, Concurrency: 4,
+		Credentials: map[string]any{
+			"api_key": "test-only-key", "base_url": "https://text.example.test/v1",
+			"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
+		},
+		AccountGroups: []service.AccountGroup{{AccountID: 23, GroupID: group.ID, Priority: 1}},
+	}
+	imageAccount := service.Account{
+		ID: 33, Name: "global-image-only", Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
+		Status: service.StatusActive, Schedulable: true, Concurrency: 4,
+		Credentials: map[string]any{
+			"api_key": "test-only-key", "base_url": "https://image.example.test/v1",
+			"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
+		},
+		Extra: map[string]any{
+			service.OpenAIImageGenerationPriorityExtraKey: 1,
+			service.OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
+		},
+		AccountGroups: []service.AccountGroup{{AccountID: 33, GroupID: 999, Priority: 1}},
+	}
+	upstream := &codexTextIsolationUpstream{}
+	handler := newCodexResponsesTestHandler(t, []service.Account{textAccount, imageAccount}, upstream)
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(
+		`{"model":"gpt-5.6-sol","input":"给我生成一张雪山风景图","stream":false}`,
+	))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Request.Header.Set("User-Agent", "Codex Desktop/0.148.0-alpha.9 (Mac OS 26.5.2; arm64) unknown (Codex Desktop; 26.810.50856)")
+	c.Request.Header.Set(openAIInternalCodexResponsesLiteHeader, "true")
+	apiKey := &service.APIKey{ID: 97, GroupID: &group.ID, Group: group, User: &service.User{ID: 1, Status: service.StatusActive}}
+	c.Set(string(middleware.ContextKeyAPIKey), apiKey)
+	c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 1, Concurrency: 4})
+
+	handler.Responses(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
+	require.Equal(t, []int64{23}, upstream.accountIDs, "unsupported delivery must stay on the local-agent text route")
+	require.False(t, gjson.GetBytes(upstream.lastBody, `tools.#(type=="image_generation")`).Exists())
+	require.Equal(t, "message", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
+	require.NotContains(t, recorder.Body.String(), "image_generation_call")
+	require.NotContains(t, recorder.Body.String(), "/v1/codex-image/preview")
+}
+
+func TestOpenAIResponses_GeneratedImageToolContinuationDoesNotGenerateAgain(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	group := &service.Group{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI, AllowImageGeneration: true}
+	textAccount := service.Account{
+		ID: 23, Name: "ordinary-text-primary", Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
+		Status: service.StatusActive, Schedulable: true, Concurrency: 4,
+		Credentials: map[string]any{
+			"api_key": "test-only-key", "base_url": "https://text.example.test/v1",
+			"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
+		},
+		AccountGroups: []service.AccountGroup{{AccountID: 23, GroupID: group.ID, Priority: 1}},
+	}
+	imageAccount := service.Account{
+		ID: 33, Name: "global-image-only", Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
+		Status: service.StatusActive, Schedulable: true, Concurrency: 4,
+		Credentials: map[string]any{
+			"api_key": "test-only-key", "base_url": "https://image.example.test/v1",
+			"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
+		},
+		Extra: map[string]any{
+			service.OpenAIImageGenerationPriorityExtraKey: 1,
+			service.OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
+		},
+		AccountGroups: []service.AccountGroup{{AccountID: 33, GroupID: 999, Priority: 1}},
+	}
+	upstream := &codexTextIsolationUpstream{}
+	handler := newCodexResponsesTestHandler(t, []service.Account{textAccount, imageAccount}, upstream)
+	body := `{
+		"model":"gpt-5.6-sol","stream":false,
+		"input":[
+			{"type":"additional_tools","tools":[{"type":"namespace","name":"functions"}]},
+			{"type":"message","role":"user","content":[{"type":"input_text","text":"生成一张雪山风景图"}]},
+			{"type":"custom_tool_call","id":"ctc_image","call_id":"call_image","name":"exec","status":"completed","input":"generatedImage({...});"},
+			{"type":"custom_tool_call_output","call_id":"call_image","output":"image rendered"}
+		]
+	}`
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(body))
+	setCodexDesktopLiteHeaders(c)
+	apiKey := &service.APIKey{ID: 97, GroupID: &group.ID, Group: group, User: &service.User{ID: 1, Status: service.StatusActive}}
+	c.Set(string(middleware.ContextKeyAPIKey), apiKey)
+	c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 1, Concurrency: 4})
+
+	handler.Responses(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
+	require.Equal(t, []int64{23}, upstream.accountIDs, "tool continuation must return to text instead of paying for a second image")
+	require.False(t, gjson.GetBytes(upstream.lastBody, `tools.#(type=="image_generation")`).Exists())
+	require.Equal(t, "message", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
 }
 
 func TestOpenAIResponses_PassiveImageToolCatalogKeepsOrdinaryTextRoute(t *testing.T) {
@@ -754,6 +856,77 @@ func newCodexResponsesTestHandler(t *testing.T, accounts []service.Account, upst
 		gatewayService, concurrencyService, billingCacheService, &service.APIKeyService{},
 		nil, nil, gatewayCfg,
 	)
+}
+
+func codexDesktopLiteImageBody(model string, prompt string, stream bool) string {
+	streamValue := "false"
+	if stream {
+		streamValue = "true"
+	}
+	return `{"model":"` + model + `","input":[` +
+		`{"type":"additional_tools","tools":[{"type":"namespace","name":"functions"}]},` +
+		`{"type":"message","role":"user","content":[{"type":"input_text","text":"` + prompt + `"}]}` +
+		`],"stream":` + streamValue + `}`
+}
+
+func setCodexDesktopLiteHeaders(c *gin.Context) {
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Request.Header.Set("User-Agent", "Codex Desktop/0.148.0-alpha.9 (Mac OS 26.5.2; arm64) unknown (Codex Desktop; 26.810.50856)")
+	c.Request.Header.Set(openAIInternalCodexResponsesLiteHeader, "true")
+}
+
+func TestIsCodexDesktopGeneratedImageDeliveryRequest(t *testing.T) {
+	tests := []struct {
+		name string
+		ua   string
+		lite string
+		body string
+		want bool
+	}{
+		{
+			name: "desktop responses lite additional tools",
+			ua:   "Codex Desktop/0.148.0-alpha.9 (Mac OS; arm64)",
+			lite: "true",
+			body: codexDesktopLiteImageBody("gpt-5.6-sol", "draw", false),
+			want: true,
+		},
+		{
+			name: "desktop explicit exec",
+			ua:   "Codex Desktop/0.148.0-alpha.9 (Mac OS; arm64)",
+			body: `{"tools":[{"type":"custom","name":"exec"}],"input":"draw"}`,
+			want: true,
+		},
+		{
+			name: "desktop lite without envelope",
+			ua:   "Codex Desktop/0.148.0-alpha.9 (Mac OS; arm64)",
+			lite: "true",
+			body: `{"input":"draw"}`,
+		},
+		{
+			name: "cli is not desktop",
+			ua:   "codex_cli_rs/0.148.0",
+			lite: "true",
+			body: codexDesktopLiteImageBody("gpt-5.6-sol", "draw", false),
+		},
+		{
+			name: "third party cannot opt in with headers",
+			ua:   "curl/8.0",
+			lite: "true",
+			body: codexDesktopLiteImageBody("gpt-5.6-sol", "draw", false),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(recorder)
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(tt.body))
+			c.Request.Header.Set("User-Agent", tt.ua)
+			if tt.lite != "" {
+				c.Request.Header.Set(openAIInternalCodexResponsesLiteHeader, tt.lite)
+			}
+			require.Equal(t, tt.want, isCodexDesktopGeneratedImageDeliveryRequest(c, []byte(tt.body)))
+		})
+	}
 }
 
 func newCodexImagePreviewTestConfig(t *testing.T) *config.Config {

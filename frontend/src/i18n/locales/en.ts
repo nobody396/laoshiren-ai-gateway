@@ -6478,6 +6478,7 @@ export default {
       parameters: 'Supported parameters'
     },
     block: {
+      all: 'All',
       gpt: 'GPT / OpenAI',
       claude: 'Claude / Anthropic',
       grok: 'Grok',
@@ -6485,6 +6486,7 @@ export default {
       deepseek: 'DeepSeek',
       qwen: 'Qwen',
       minimax: 'MiniMax',
+      builderPass: 'Builder Pass',
       other: 'Others'
     },
     billing: {

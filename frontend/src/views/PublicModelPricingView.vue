@@ -27,13 +27,16 @@
 
       <nav v-if="!loading && !error && blocks.length > 0" class="model-pricing-tabs" aria-label="模型厂商">
         <button
-          v-for="b in blocks"
-          :key="b.key"
+          v-for="tab in tabs"
+          :key="tab.key"
           class="model-pricing-tabs__item"
+          :class="{ 'model-pricing-tabs__item--active': activeTab === tab.key }"
           type="button"
-          @click="scrollToBlock(b.key)"
+          @click="activeTab = tab.key"
         >
-          {{ t(`modelPricing.block.${b.key}`) }}
+          <ModelIcon v-if="tab.iconModel" :model="tab.iconModel" size="14px" />
+          <Icon v-else-if="tab.icon" :name="tab.icon" size="xs" />
+          {{ t(`modelPricing.block.${tab.key}`) }}
         </button>
       </nav>
 
@@ -50,12 +53,16 @@
 
       <div v-else-if="catalog" class="model-pricing-blocks">
         <section
-          v-for="b in blocks"
+          v-for="b in visibleBlocks"
           :id="`block-${b.key}`"
           :key="b.key"
           class="model-pricing-block"
         >
-          <h2 class="model-pricing-block__title">{{ t(`modelPricing.block.${b.key}`) }}</h2>
+          <h2 class="model-pricing-block__title">
+            <ModelIcon v-if="blockIconModel(b.key)" :model="blockIconModel(b.key)" size="20px" />
+            <Icon v-else-if="b.key === 'builderPass'" name="creditCard" size="md" />
+            {{ t(`modelPricing.block.${b.key}`) }}
+          </h2>
           <div class="model-pricing-block__groups">
             <ModelPricingGroupSection
               v-for="g in b.groups"
@@ -74,6 +81,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ModelPricingGroupSection from '@/components/pricing/ModelPricingGroupSection.vue'
 import PricingBillingExample from '@/components/pricing/PricingBillingExample.vue'
+import ModelIcon from '@/components/common/ModelIcon.vue'
+import Icon from '@/components/icons/Icon.vue'
 import { getPublicModelPricing } from '@/api/publicPricing'
 import type { PublicModelPricingCatalog, PublicPricingGroup } from '@/api/publicPricing'
 
@@ -82,10 +91,28 @@ const catalog = ref<PublicModelPricingCatalog | null>(null)
 const loading = ref(true)
 const error = ref('')
 
-// 厂商分块展示顺序：GPT 在前，然后 Claude，之后 Grok / GLM / DeepSeek 等。
-const BLOCK_ORDER = ['gpt', 'claude', 'grok', 'glm', 'deepseek', 'qwen', 'minimax', 'other']
+// 厂商分块展示顺序：GPT 在前，然后 Claude，之后 Grok / GLM / DeepSeek 等；
+// 月卡（Builder Pass）统一归到一个分块，排在厂商分块之后、「其他」之前。
+const BLOCK_ORDER = ['gpt', 'claude', 'grok', 'glm', 'deepseek', 'qwen', 'minimax', 'builderPass', 'other']
+
+// 每个厂商分块 tab / 标题用的品牌图标（ModelIcon 按模型名匹配品牌）
+const BLOCK_ICON_MODEL: Record<string, string> = {
+  gpt: 'gpt',
+  claude: 'claude',
+  grok: 'grok',
+  glm: 'glm',
+  deepseek: 'deepseek',
+  qwen: 'qwen',
+  minimax: 'minimax',
+}
+
+function blockIconModel(key: string): string {
+  return BLOCK_ICON_MODEL[key] ?? ''
+}
 
 function classifyBlock(group: PublicPricingGroup): string {
+  // 月卡（credit 订阅）分组不按厂商拆分，统一进 Builder Pass 分块。
+  if (group.subscription_type === 'credit') return 'builderPass'
   if (group.image_generation) return 'gpt'
   const joined = (group.models ?? []).map((model) => model.model).join(' ').toLowerCase()
   if (/\bgpt[-\s]/.test(joined)) return 'gpt'
@@ -99,6 +126,7 @@ function classifyBlock(group: PublicPricingGroup): string {
 }
 
 type PricingBlock = { key: string; groups: PublicPricingGroup[] }
+type PricingTab = { key: string; iconModel?: string; icon?: 'grid' | 'creditCard' }
 
 const blocks = computed<PricingBlock[]>(() => {
   if (!catalog.value) return []
@@ -111,9 +139,25 @@ const blocks = computed<PricingBlock[]>(() => {
   return BLOCK_ORDER.filter((k) => map.has(k)).map((k) => ({ key: k, groups: map.get(k)! }))
 })
 
-function scrollToBlock(key: string): void {
-  document.getElementById(`block-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
+// 顶部 tab：默认「全部」展示所有分块；选中某个厂商/Builder Pass 时只显示对应分块。
+// 支持 ?tab=<key> 直达某个分块（便于分享链接，如 ?tab=builderPass）。
+const VALID_TABS = new Set(['all', ...BLOCK_ORDER])
+const initialTab = new URLSearchParams(window.location.search).get('tab') ?? 'all'
+const activeTab = ref(VALID_TABS.has(initialTab) ? initialTab : 'all')
+
+const tabs = computed<PricingTab[]>(() => [
+  { key: 'all', icon: 'grid' },
+  ...blocks.value.map((b): PricingTab => {
+    if (b.key === 'builderPass') return { key: b.key, icon: 'creditCard' }
+    const iconModel = blockIconModel(b.key)
+    return iconModel ? { key: b.key, iconModel } : { key: b.key }
+  }),
+])
+
+const visibleBlocks = computed<PricingBlock[]>(() => {
+  if (activeTab.value === 'all') return blocks.value
+  return blocks.value.filter((b) => b.key === activeTab.value)
+})
 
 async function load(): Promise<void> {
   loading.value = true
@@ -230,6 +274,9 @@ onMounted(load)
 }
 
 .model-pricing-tabs__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   padding: 0.4rem 0.9rem;
   border: 1px solid #d1d5db;
   border-radius: 999px;
@@ -246,12 +293,22 @@ onMounted(load)
   color: #111827;
 }
 
+.model-pricing-tabs__item--active,
+.model-pricing-tabs__item--active:hover {
+  border-color: #111827;
+  color: #111827;
+  box-shadow: inset 0 0 0 1px #111827;
+}
+
 .model-pricing-block {
   scroll-margin-top: 96px;
   margin-bottom: 2.5rem;
 }
 
 .model-pricing-block__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin: 0 0 1rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #e5e7eb;

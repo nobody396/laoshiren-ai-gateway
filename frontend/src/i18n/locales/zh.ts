@@ -6664,6 +6664,7 @@ export default {
       parameters: '支持参数'
     },
     block: {
+      all: '全部',
       gpt: 'GPT / OpenAI',
       claude: 'Claude / Anthropic',
       grok: 'Grok',
@@ -6671,6 +6672,7 @@ export default {
       deepseek: 'DeepSeek',
       qwen: 'Qwen',
       minimax: 'MiniMax',
+      builderPass: 'Builder Pass 月卡',
       other: '其他'
     },
     billing: {

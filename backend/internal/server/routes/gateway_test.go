@@ -62,6 +62,8 @@ func TestGatewayRoutesGrokTextAndMediaAliasesAreRegistered(t *testing.T) {
 		"POST /v1/responses",
 		"POST /v1/responses/*subpath",
 		"GET /v1/responses",
+		"GET /v1/codex-image/previews/:token",
+		"HEAD /v1/codex-image/previews/:token",
 		"POST /v1/chat/completions",
 		"POST /v1/images/generations",
 		"POST /v1/images/edits",

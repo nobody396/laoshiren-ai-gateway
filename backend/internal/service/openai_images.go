@@ -12,6 +12,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -605,14 +606,26 @@ func (s *OpenAIGatewayService) ForwardFixedOpenAIImageGenerationResponses(
 	}
 
 	responseID := "resp_" + strings.ReplaceAll(uuid.NewString(), "-", "")
-	itemID := "ig_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	itemID := "msg_" + strings.ReplaceAll(uuid.NewString(), "-", "")
 	createdAt := time.Now().Unix()
-	completedItem := map[string]any{
-		"id":     itemID,
-		"type":   "image_generation_call",
-		"status": "completed",
-		"result": imageBase64,
+	previewText := "图片已经生成，但临时预览存储失败。为避免重复生成和重复扣费，本次不会自动重试。请稍后重试。"
+	previews, previewErr := s.StoreCodexImagePreviewsBase64([]string{imageBase64})
+	if previewErr == nil {
+		previewURL, urlErr := codexImagePreviewURL(c, previews[0].Token)
+		if urlErr != nil {
+			s.DeleteCodexImagePreviews([]string{previews[0].Token})
+			previewErr = urlErr
+		} else {
+			previewText = codexMarkdownImageText([]string{previewURL})
+		}
 	}
+	if previewErr != nil {
+		// The upstream image is already complete and billable. Never replay it
+		// just because local delivery storage failed; doing so would risk a
+		// duplicate paid generation. Return an honest assistant message instead.
+		logger.FromContext(ctx).Error("openai.codex_image_preview_store_failed", zap.Error(previewErr))
+	}
+	completedItem := completedOpenAIAssistantTextItem(itemID, previewText)
 	completedResponse := map[string]any{
 		"id":                   responseID,
 		"object":               "response",
@@ -632,7 +645,7 @@ func (s *OpenAIGatewayService) ForwardFixedOpenAIImageGenerationResponses(
 			"format": map[string]any{"type": "text"},
 		},
 		"tool_choice": "auto",
-		"tools":       []any{map[string]any{"type": "image_generation"}},
+		"tools":       []any{},
 		"top_p":       1,
 		"truncation":  "disabled",
 		// The renderer has no trustworthy token usage for the synthetic
@@ -645,20 +658,7 @@ func (s *OpenAIGatewayService) ForwardFixedOpenAIImageGenerationResponses(
 		completedResponse["model"] = OpenAIFixedImageRendererModel
 	}
 
-	writeResponse := func() error {
-		if HasOpenAICodexExecImageRenderTool(responsesBody) {
-			mediaType, mediaErr := openAIImageBase64MediaType(imageBase64)
-			if mediaErr != nil {
-				return mediaErr
-			}
-			return writeCodexExecRenderedImageResponses(c, stream, completedResponse, []codexExecRenderedImage{{
-				MediaType: mediaType,
-				B64JSON:   imageBase64,
-			}})
-		}
-		return writeFixedOpenAIImageResponses(c, stream, completedResponse, completedItem)
-	}
-	if err := writeResponse(); err != nil {
+	if err := writeFixedOpenAIAssistantTextResponses(c, stream, completedResponse, completedItem, previewText); err != nil {
 		// The image is already complete and billable upstream. Preserve the
 		// successful result even if the downstream client disconnected while the
 		// buffered native response was being delivered.
@@ -903,11 +903,79 @@ func finalizeOpenAIResponseImageBilling(result *OpenAIForwardResult) *OpenAIForw
 	return result
 }
 
-func writeFixedOpenAIImageResponses(
+func completedOpenAIAssistantTextItem(itemID string, text string) map[string]any {
+	return map[string]any{
+		"id":     itemID,
+		"type":   "message",
+		"status": "completed",
+		"role":   "assistant",
+		"content": []any{map[string]any{
+			"type":        "output_text",
+			"text":        text,
+			"annotations": []any{},
+			"logprobs":    []any{},
+		}},
+	}
+}
+
+func codexMarkdownImageText(imageURLs []string) string {
+	var text strings.Builder
+	for i, imageURL := range imageURLs {
+		imageURL = strings.TrimSpace(imageURL)
+		if imageURL == "" {
+			continue
+		}
+		if text.Len() > 0 {
+			_, _ = text.WriteString("\n\n")
+		}
+		label := "生成的图片"
+		if len(imageURLs) > 1 {
+			label = fmt.Sprintf("生成的图片 %d", i+1)
+		}
+		_, _ = fmt.Fprintf(&text, "![%s](%s)\n\n[%s未显示时，点击这里打开原图](%s)", label, imageURL, label, imageURL)
+	}
+	return text.String()
+}
+
+func codexImagePreviewURL(c *gin.Context, token string) (string, error) {
+	if c == nil || c.Request == nil || !codexImagePreviewTokenPattern.MatchString(token) {
+		return "", fmt.Errorf("invalid Codex image preview URL input")
+	}
+	host := strings.TrimSpace(c.Request.Host)
+	if host == "" || strings.ContainsAny(host, "\\/@?# \t\r\n") {
+		return "", fmt.Errorf("invalid Codex image preview host")
+	}
+	parsedHost := &url.URL{Scheme: "http", Host: host}
+	if strings.TrimSpace(parsedHost.Hostname()) == "" || parsedHost.User != nil {
+		return "", fmt.Errorf("invalid Codex image preview host")
+	}
+	hostname := strings.TrimSpace(parsedHost.Hostname())
+	isLoopback := strings.EqualFold(hostname, "localhost")
+	if ip := net.ParseIP(hostname); ip != nil && ip.IsLoopback() {
+		isLoopback = true
+	}
+	scheme := "https"
+	if c.Request.TLS == nil && isLoopback {
+		scheme = "http"
+	}
+	if forwarded := strings.ToLower(strings.TrimSpace(strings.Split(c.GetHeader("X-Forwarded-Proto"), ",")[0])); forwarded == "https" {
+		scheme = "https"
+	} else if forwarded == "http" && isLoopback {
+		scheme = "http"
+	}
+	return (&url.URL{
+		Scheme: scheme,
+		Host:   host,
+		Path:   "/v1/codex-image/previews/" + token,
+	}).String(), nil
+}
+
+func writeFixedOpenAIAssistantTextResponses(
 	c *gin.Context,
 	stream bool,
 	completedResponse map[string]any,
 	completedItem map[string]any,
+	text string,
 ) error {
 	if c == nil || c.Writer == nil {
 		return fmt.Errorf("response writer is required")
@@ -919,7 +987,7 @@ func writeFixedOpenAIImageResponses(
 	if !stream {
 		body, err := json.Marshal(completedResponse)
 		if err != nil {
-			return fmt.Errorf("encode fixed image response: %w", err)
+			return fmt.Errorf("encode fixed assistant image response: %w", err)
 		}
 		c.Header("Content-Type", "application/json")
 		MarkResponseCommitted(c)
@@ -938,24 +1006,35 @@ func writeFixedOpenAIImageResponses(
 	inProgressResponse["completed_at"] = nil
 	inProgressResponse["output"] = []any{}
 	inProgressItem := map[string]any{
-		"id":     completedItem["id"],
-		"type":   "image_generation_call",
-		"status": "in_progress",
-		// Codex models image_generation_call.result as a required string even
-		// on output_item.added; the empty value is replaced by the completed
-		// Base64 payload in output_item.done.
-		"result": "",
+		"id":      completedItem["id"],
+		"type":    "message",
+		"status":  "in_progress",
+		"role":    "assistant",
+		"content": []any{},
 	}
 	itemID := strings.TrimSpace(firstNonEmptyString(completedItem["id"]))
+	inProgressPart := map[string]any{
+		"type":        "output_text",
+		"text":        "",
+		"annotations": []any{},
+		"logprobs":    []any{},
+	}
+	completedPart := map[string]any{
+		"type":        "output_text",
+		"text":        text,
+		"annotations": []any{},
+		"logprobs":    []any{},
+	}
 	events := []map[string]any{
 		{"type": "response.created", "sequence_number": 0, "response": inProgressResponse},
 		{"type": "response.in_progress", "sequence_number": 1, "response": inProgressResponse},
 		{"type": "response.output_item.added", "sequence_number": 2, "output_index": 0, "item": inProgressItem},
-		{"type": "response.image_generation_call.in_progress", "sequence_number": 3, "output_index": 0, "item_id": itemID},
-		{"type": "response.image_generation_call.generating", "sequence_number": 4, "output_index": 0, "item_id": itemID},
-		{"type": "response.image_generation_call.completed", "sequence_number": 5, "output_index": 0, "item_id": itemID},
-		{"type": "response.output_item.done", "sequence_number": 6, "output_index": 0, "item": completedItem},
-		{"type": "response.completed", "sequence_number": 7, "response": completedResponse},
+		{"type": "response.content_part.added", "sequence_number": 3, "output_index": 0, "item_id": itemID, "content_index": 0, "part": inProgressPart},
+		{"type": "response.output_text.delta", "sequence_number": 4, "output_index": 0, "item_id": itemID, "content_index": 0, "delta": text, "logprobs": []any{}},
+		{"type": "response.output_text.done", "sequence_number": 5, "output_index": 0, "item_id": itemID, "content_index": 0, "text": text, "logprobs": []any{}},
+		{"type": "response.content_part.done", "sequence_number": 6, "output_index": 0, "item_id": itemID, "content_index": 0, "part": completedPart},
+		{"type": "response.output_item.done", "sequence_number": 7, "output_index": 0, "item": completedItem},
+		{"type": "response.completed", "sequence_number": 8, "response": completedResponse},
 	}
 
 	MarkResponseCommitted(c)
@@ -963,7 +1042,7 @@ func writeFixedOpenAIImageResponses(
 	for _, event := range events {
 		payload, err := json.Marshal(event)
 		if err != nil {
-			return fmt.Errorf("encode fixed image stream event: %w", err)
+			return fmt.Errorf("encode fixed assistant image stream event: %w", err)
 		}
 		eventType := strings.TrimSpace(firstNonEmptyString(event["type"]))
 		if _, err := fmt.Fprintf(c.Writer, "event: %s\ndata: %s\n\n", eventType, payload); err != nil {

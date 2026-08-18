@@ -80,6 +80,29 @@ func IsOpenAICodexSemanticImageGenerationIntent(body []byte) bool {
 	return ok && openAIUserPromptRequestsImage(prompt, hasInputImage)
 }
 
+// HasOpenAICodexExecImageRenderTool reports whether the request exposes the
+// Codex Desktop code-mode host's freeform exec tool. Raw Responses
+// image_generation_call items are persisted by Codex, but current Desktop
+// builds do not turn them into a visible generated-image card. When this exact
+// client capability is present, the gateway can safely hand the validated
+// image bytes back through exec's generatedImage helper instead.
+func HasOpenAICodexExecImageRenderTool(body []byte) bool {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return false
+	}
+	tools := gjson.GetBytes(body, "tools")
+	if !tools.IsArray() {
+		return false
+	}
+	found := false
+	tools.ForEach(func(_, item gjson.Result) bool {
+		found = strings.EqualFold(strings.TrimSpace(item.Get("type").String()), "custom") &&
+			strings.EqualFold(strings.TrimSpace(item.Get("name").String()), "exec")
+		return !found
+	})
+	return found
+}
+
 // ShouldUseFixedOpenAIImageRenderer reports whether an official Codex
 // Responses request can be rendered by the dedicated GPT Image pool. Image
 // edits keep the original Responses tool path because native generation-only

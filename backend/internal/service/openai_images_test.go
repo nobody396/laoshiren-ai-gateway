@@ -352,6 +352,82 @@ func TestForwardNativeOpenAIImageGenerationResponsesPreservesStreamingMultipleIm
 	require.Contains(t, recorder.Body.String(), `"status":"completed"`)
 }
 
+func TestForwardNativeOpenAIImageGenerationResponsesRendersThroughCodexExec(t *testing.T) {
+	upstreamBody := `{
+		"id":"resp_codex_exec_images","status":"completed","model":"gpt-5.6-sol",
+		"output":[
+			{"id":"ig_1","type":"image_generation_call","status":"generating","result":"` + codexBridgeTestPNG + `"},
+			{"id":"ig_2","type":"image_generation_call","status":"completed","result":"` + openAIImagesTestWebP + `"}
+		],
+		"usage":{"input_tokens":5,"output_tokens":3,"total_tokens":8}
+	}`
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(upstreamBody)),
+	}}
+	svc := &OpenAIGatewayService{
+		httpUpstream: upstream,
+		cfg: &config.Config{
+			Gateway:  config.GatewayConfig{Pipeline: config.GatewayPipelineConfig{OpenAIResponsesEnabled: false}},
+			Security: config.SecurityConfig{URLAllowlist: config.URLAllowlistConfig{Enabled: false}},
+		},
+	}
+	account := &Account{
+		ID: 33, Name: "morecode", Platform: PlatformOpenAI, Type: AccountTypeAPIKey,
+		Credentials: map[string]any{"api_key": "sk-test", "base_url": "https://morecode.example/v1"},
+	}
+	requestBody := []byte(`{
+		"model":"gpt-5.6-sol","input":"draw two images","stream":true,
+		"tools":[{"type":"custom","name":"exec"},{"type":"image_generation"}],
+		"tool_choice":{"type":"image_generation"}
+	}`)
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(requestBody))
+
+	result, err := svc.ForwardNativeOpenAIImageGenerationResponses(context.Background(), c, account, requestBody, true)
+
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, 2, result.ImageCount)
+	require.True(t, result.Stream)
+	require.False(t, gjson.GetBytes(upstream.lastBody, "stream").Bool(), "upstream must be buffered before client-side rendering")
+	rendered := recorder.Body.String()
+	require.Contains(t, rendered, `"type":"custom_tool_call"`)
+	require.Contains(t, rendered, `generatedImage({image_url:`)
+	require.Contains(t, rendered, `data:image/png;base64,`)
+	require.Contains(t, rendered, `data:image/webp;base64,`)
+	// The completed tool item appears once in output_item.done and once in the
+	// terminal response envelope. Each copy must carry both generated images.
+	require.Equal(t, 4, strings.Count(rendered, "generatedImage({image_url:"))
+	require.NotContains(t, rendered, `"type":"image_generation_call"`)
+	require.Contains(t, rendered, `"type":"response.completed"`)
+}
+
+func TestWriteCodexExecRenderedImageResponsesNonStreaming(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	response := map[string]any{
+		"id":     "resp_exec_render",
+		"status": "completed",
+		"model":  "gpt-5.6-sol",
+		"usage":  map[string]any{"input_tokens": 1, "output_tokens": 2, "total_tokens": 3},
+	}
+
+	err := writeCodexExecRenderedImageResponses(c, false, response, []codexExecRenderedImage{{
+		MediaType: "image/png",
+		B64JSON:   codexBridgeTestPNG,
+	}})
+
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, "custom_tool_call", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
+	require.Equal(t, "exec", gjson.GetBytes(recorder.Body.Bytes(), "output.0.name").String())
+	require.Contains(t, gjson.GetBytes(recorder.Body.Bytes(), "output.0.input").String(), "generatedImage({image_url:")
+	require.Equal(t, int64(3), gjson.GetBytes(recorder.Body.Bytes(), "usage.total_tokens").Int())
+}
+
 func TestForwardNativeOpenAIImageGenerationResponsesEmptyOutputSafelyFailsOver(t *testing.T) {
 	upstream := &httpUpstreamRecorder{resp: &http.Response{
 		StatusCode: http.StatusOK,
@@ -714,6 +790,49 @@ func TestForwardFixedOpenAIImageGenerationResponsesPreservesNativeProtocolAcross
 			require.Equal(t, "null", gjson.GetBytes(completedPayload, "response.usage").Raw)
 		})
 	}
+}
+
+func TestForwardFixedOpenAIImageGenerationResponsesRendersNativeFallbackThroughCodexExec(t *testing.T) {
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body: io.NopCloser(strings.NewReader(
+			`{"created":1710000000,"data":[{"b64_json":"` + codexBridgeTestPNG + `"}],"usage":{"total_tokens":30}}`,
+		)),
+	}}
+	svc := &OpenAIGatewayService{
+		httpUpstream: upstream,
+		cfg:          &config.Config{Security: config.SecurityConfig{URLAllowlist: config.URLAllowlistConfig{Enabled: false}}},
+	}
+	account := &Account{
+		ID: 38, Platform: PlatformOpenAI, Type: AccountTypeAPIKey,
+		Credentials: map[string]any{
+			"api_key": "test", "base_url": "https://images.example/v1",
+			"model_mapping": map[string]any{"gpt-image-2": "gpt-image-2-count"},
+		},
+		Extra: map[string]any{
+			"supports_images":                      true,
+			OpenAIImageGenerationPriorityExtraKey:  2,
+			OpenAIImageGenerationModelsExtraKey:    []any{"gpt-image-2"},
+			OpenAIImageGenerationTransportExtraKey: OpenAIImageGenerationTransportImages,
+		},
+	}
+	body := []byte(`{
+		"model":"gpt-5.6-sol","input":"生成一张图片","stream":true,
+		"tools":[{"type":"custom","name":"exec"},{"type":"image_generation"}]
+	}`)
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+
+	result, err := svc.ForwardFixedOpenAIImageGenerationResponses(context.Background(), c, account, body, "gpt-5.6-sol", true)
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Equal(t, 1, result.ImageCount)
+	require.Contains(t, recorder.Body.String(), `"type":"custom_tool_call"`)
+	require.Contains(t, recorder.Body.String(), `generatedImage({image_url:`)
+	require.NotContains(t, recorder.Body.String(), `"type":"image_generation_call"`)
 }
 
 func TestForwardFixedOpenAIImageGenerationResponsesDoesNotCommitBeforeSafeFailover(t *testing.T) {

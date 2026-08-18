@@ -22,6 +22,16 @@ const (
 	openAIRoutePromotionRetryInterval       = 24 * time.Hour
 	openAIRoutePromotionMinimumDecisions    = int64(200)
 	openAIRoutePromotionMinimumCompleteness = 0.99
+	// New text sessions are the independent routing samples. Sticky follow-up
+	// requests deliberately bypass a new allocation, so requiring one decision
+	// in almost every wall-clock hour makes a safe experiment impossible to
+	// finish even while durable passive evidence remains continuous. Require a
+	// finite but broad temporal sample instead: 36 distinct hours, three Beijing
+	// dates, and all four six-hour Beijing dayparts, in addition to the existing
+	// 72h/200-decision/completeness/continuity gates.
+	openAIRoutePromotionMinimumHourBuckets     = int64(36)
+	openAIRoutePromotionMinimumBeijingDates    = int64(3)
+	openAIRoutePromotionMinimumBeijingDayparts = int64(4)
 )
 
 var ErrOpenAIRouteInvalidPromotionScope = errors.New("invalid OpenAI route promotion assessment scope")
@@ -347,13 +357,27 @@ func buildOpenAIRoutePromotionAssessmentWithLineage(
 		fmt.Sprintf(">=%.2fh between first and last decision inside the %.2fh promotion window", minimumObservedSpan.Hours(), evidenceWindow.Hours()), fmt.Sprintf("%.2fh", observedSpan.Hours()), observedSpan.Hours()/minimumObservedSpan.Hours(),
 		"The end-exclusive query permits at most one hour of total boundary gap, including for an extended retry window; a wide query containing only a short traffic burst is not continuous evidence.")
 	expectedHourBuckets := int64(math.Ceil(evidenceWindow.Hours()))
-	minimumCoveredHourBuckets := expectedHourBuckets - 1
+	minimumCoveredHourBuckets := min(expectedHourBuckets-1, openAIRoutePromotionMinimumHourBuckets)
 	if minimumCoveredHourBuckets < 1 {
 		minimumCoveredHourBuckets = 1
 	}
 	assessment.addGate("hourly_coverage", evidenceStats.CoveredHourBuckets >= minimumCoveredHourBuckets,
 		fmt.Sprintf(">=%d distinct one-hour buckets relative to promotion_evidence_start", minimumCoveredHourBuckets), fmt.Sprintf("%d", evidenceStats.CoveredHourBuckets), safeOpenAIRouteRatio(evidenceStats.CoveredHourBuckets, minimumCoveredHourBuckets),
-		"Only evaluated decisions count toward hourly coverage. Two bursts near the window edges cannot stand in for continuous evidence across the intervening Beijing-time operating periods.")
+		"Only evaluated independent routing decisions count. The finite hour target prevents sticky follow-ups or an ever-growing observation window from making the gate impossible, while the 72h span, Beijing-date/daypart, 200-sample and durable-epoch gates preserve temporal safety.")
+	minimumBeijingDates := min(int64(math.Ceil(evidenceWindow.Hours()/24)), openAIRoutePromotionMinimumBeijingDates)
+	if minimumBeijingDates < 1 {
+		minimumBeijingDates = 1
+	}
+	assessment.addGate("beijing_date_coverage", evidenceStats.CoveredBeijingDates >= minimumBeijingDates,
+		fmt.Sprintf(">=%d distinct Beijing dates with evaluated decisions", minimumBeijingDates), fmt.Sprintf("%d", evidenceStats.CoveredBeijingDates), safeOpenAIRouteRatio(evidenceStats.CoveredBeijingDates, minimumBeijingDates),
+		"Independent routing evidence must span multiple Beijing business dates instead of being concentrated in one traffic burst.")
+	minimumBeijingDayparts := min(int64(math.Ceil(evidenceWindow.Hours()/6)), openAIRoutePromotionMinimumBeijingDayparts)
+	if minimumBeijingDayparts < 1 {
+		minimumBeijingDayparts = 1
+	}
+	assessment.addGate("beijing_daypart_coverage", evidenceStats.CoveredBeijingDayparts >= minimumBeijingDayparts,
+		fmt.Sprintf(">=%d distinct Beijing six-hour dayparts with evaluated decisions", minimumBeijingDayparts), fmt.Sprintf("%d", evidenceStats.CoveredBeijingDayparts), safeOpenAIRouteRatio(evidenceStats.CoveredBeijingDayparts, minimumBeijingDayparts),
+		"The treatment must be observed across overnight, morning, afternoon and evening conditions rather than relying on one favorable period.")
 	assessment.addGate("evaluated_samples", evidenceStats.Evaluated >= openAIRoutePromotionMinimumDecisions,
 		">=200", fmt.Sprintf("%d", evidenceStats.Evaluated), float64(evidenceStats.Evaluated)/float64(openAIRoutePromotionMinimumDecisions),
 		"Only successfully evaluated Shadow decisions count as valid samples.")

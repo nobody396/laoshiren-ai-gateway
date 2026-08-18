@@ -40,7 +40,7 @@ func TestOpenAIRouteDecisionRepositoryStatsScansPromotionEvidence(t *testing.T) 
 		"evaluated_linked_success", "evaluated_linked_failure", "evaluated_ambiguous", "evaluated_unlinked",
 		"policy_variants", "activation_variants", "shadow_start_variants",
 		"experiment_variants", "variant_variants", "treatment_variants", "shadow_started_at",
-		"max_account_share", "max_provider_share", "covered_hours", "first_at", "last_at",
+		"max_account_share", "max_provider_share", "covered_hours", "covered_beijing_dates", "covered_beijing_dayparts", "first_at", "last_at",
 		"evaluation_p50", "evaluation_p95", "ttft_p50", "ttft_p95",
 	}
 	mock.ExpectQuery(`(?s)COUNT\(DISTINCT snapshot->'policy'\).*FILTER \(WHERE evaluated\).*MIN\(created_at\) FILTER \(WHERE evaluated\).*FROM linked`).
@@ -50,7 +50,7 @@ func TestOpenAIRouteDecisionRepositoryStatsScansPromotionEvidence(t *testing.T) 
 			196, 4, 0, 0,
 			196, 4, 0, 0,
 			1, 1, 1, 1, 1, 1, start,
-			0.8, 0.9, 72, start, end,
+			0.8, 0.9, 72, 3, 4, start, end,
 			120.0, 240.0, 500.0, 900.0,
 		))
 	// Concentration is grouped by account only. Splitting one account across
@@ -85,6 +85,8 @@ func TestOpenAIRouteDecisionRepositoryStatsScansPromotionEvidence(t *testing.T) 
 	require.Equal(t, int64(1), stats.TreatmentFingerprintVariants)
 	require.Equal(t, start, stats.ShadowStartedAt)
 	require.Equal(t, int64(72), stats.CoveredHourBuckets)
+	require.Equal(t, int64(3), stats.CoveredBeijingDates)
+	require.Equal(t, int64(4), stats.CoveredBeijingDayparts)
 	require.Equal(t, start, stats.FirstDecisionAt)
 	require.Equal(t, end, stats.LastDecisionAt)
 	require.Len(t, stats.SelectedAccounts, 2)

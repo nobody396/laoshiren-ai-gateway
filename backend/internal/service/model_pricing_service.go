@@ -175,12 +175,21 @@ type PublicModelPricingGroup struct {
 
 // PublicModelPrice 单个模型的实付价（元/1M tokens），价格未知时为 nil。
 type PublicModelPrice struct {
-	Model           string   `json:"model"`
-	InputPrice      *float64 `json:"input_price"`
-	OutputPrice     *float64 `json:"output_price"`
-	CacheWritePrice *float64 `json:"cache_write_price"`
-	CacheReadPrice  *float64 `json:"cache_read_price"`
-	Disabled        bool     `json:"disabled,omitempty"`
+	Model           string                    `json:"model"`
+	InputPrice      *float64                  `json:"input_price"`
+	OutputPrice     *float64                  `json:"output_price"`
+	CacheWritePrice *float64                  `json:"cache_write_price"`
+	CacheReadPrice  *float64                  `json:"cache_read_price"`
+	LongContext     *PublicLongContextPricing `json:"long_context,omitempty"`
+	Disabled        bool                      `json:"disabled,omitempty"`
+}
+
+// PublicLongContextPricing discloses the full-request surcharge applied when
+// the input side (uncached + cached input) exceeds the threshold.
+type PublicLongContextPricing struct {
+	InputThreshold   int     `json:"input_threshold"`
+	InputMultiplier  float64 `json:"input_multiplier"`
+	OutputMultiplier float64 `json:"output_multiplier"`
 }
 
 // PublicImageGenerationPricing 描述分组真实执行的生图计费方式。
@@ -416,7 +425,19 @@ func (s *ModelPricingService) priceForModel(ctx context.Context, groupID int64, 
 		OutputPrice:     multipliedPrice(output, rateMultiplier),
 		CacheWritePrice: multipliedPrice(cacheWrite, rateMultiplier),
 		CacheReadPrice:  multipliedPrice(cacheRead, rateMultiplier),
+		LongContext:     publicLongContextPricing(model),
 	}, true
+}
+
+func publicLongContextPricing(model string) *PublicLongContextPricing {
+	if !isOpenAILongContextTierModel(model) {
+		return nil
+	}
+	return &PublicLongContextPricing{
+		InputThreshold:   openAILongContextInputThreshold,
+		InputMultiplier:  openAILongContextInputMultiplier,
+		OutputMultiplier: openAILongContextOutputMultiplier,
+	}
 }
 
 func pricePerMTok(perToken float64) *float64 {
@@ -472,6 +493,12 @@ func cloneCatalog(c *PublicModelPricingCatalog) *PublicModelPricingCatalog {
 		// iterate safely.
 		out.Groups[i].Models = make([]PublicModelPrice, len(g.Models))
 		copy(out.Groups[i].Models, g.Models)
+		for j := range out.Groups[i].Models {
+			if g.Models[j].LongContext != nil {
+				longContext := *g.Models[j].LongContext
+				out.Groups[i].Models[j].LongContext = &longContext
+			}
+		}
 		if g.ImageGeneration != nil {
 			imagePricing := *g.ImageGeneration
 			out.Groups[i].ImageGeneration = &imagePricing

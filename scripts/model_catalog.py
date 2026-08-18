@@ -315,8 +315,8 @@ def installer_model_values(catalog: dict[str, Any]) -> dict[str, dict[str, Any]]
         "openai": {
             "id": "gpt-5.6-sol",
             "display_name": "GPT-5.6 Sol",
-            "context_window": 250000,
-            "client_config": {"codex_catalog_entry": {"auto_compact_token_limit": 225000}},
+            "context_window": 272000,
+            "client_config": {"codex_catalog_entry": {"auto_compact_token_limit": 258000}},
         },
         "anthropic": {"id": "claude-opus-5", "display_name": "Claude Opus 5", "context_window": 200000},
         "grok": {"id": "grok-4.6", "display_name": "Grok 4.6", "context_window": 500000},
@@ -365,7 +365,7 @@ def installer_model_values(catalog: dict[str, Any]) -> dict[str, dict[str, Any]]
             values[platform]["auto_compact_token_limit"] = int(
                 chosen.get("client_config", {})
                 .get("codex_catalog_entry", {})
-                .get("auto_compact_token_limit", 225000)
+                .get("auto_compact_token_limit", 258000)
             )
     return values
 

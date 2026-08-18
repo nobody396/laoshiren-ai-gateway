@@ -227,7 +227,7 @@ func TestGetModelPricing_OpenAIGPT56OfficialPricing(t *testing.T) {
 		cacheRead   float64
 		longContext bool
 	}{
-		"sol":   {model: "gpt-5.6-sol", input: 5e-6, output: 30e-6, cacheWrite: 5e-6, cacheRead: 0.5e-6},
+		"sol":   {model: "gpt-5.6-sol", input: 5e-6, output: 30e-6, cacheWrite: 6.25e-6, cacheRead: 0.5e-6, longContext: true},
 		"terra": {model: "gpt-5.6-terra-high", input: 2e-6, output: 12e-6, cacheWrite: 2.5e-6, cacheRead: 0.2e-6, longContext: true},
 		"luna":  {model: "gpt-5.6-luna", input: 0.2e-6, output: 1.2e-6, cacheWrite: 0.25e-6, cacheRead: 0.02e-6, longContext: true},
 	}
@@ -286,6 +286,106 @@ func TestCalculateCost_OpenAIGPT54LongContextAppliesWholeSessionMultipliers(t *t
 	require.InDelta(t, expectedOutput, cost.OutputCost, 1e-10)
 	require.InDelta(t, expectedInput+expectedOutput, cost.TotalCost, 1e-10)
 	require.InDelta(t, expectedInput+expectedOutput, cost.ActualCost, 1e-10)
+}
+
+func TestCalculateCost_OpenAIGPT56SolLongContextAppliesOfficialMultipliers(t *testing.T) {
+	svc := newTestBillingService()
+
+	tokens := UsageTokens{
+		InputTokens:         280000,
+		OutputTokens:        4000,
+		CacheReadTokens:     20000,
+		CacheCreationTokens: 10000,
+	}
+
+	cost, err := svc.CalculateCost("gpt-5.6-sol", tokens, 1.0)
+	require.NoError(t, err)
+
+	expectedInput := float64(tokens.InputTokens) * 5e-6 * 2.0
+	expectedOutput := float64(tokens.OutputTokens) * 30e-6 * 1.5
+	expectedCacheRead := float64(tokens.CacheReadTokens) * 0.5e-6 * 2.0
+	expectedCacheCreation := float64(tokens.CacheCreationTokens) * 6.25e-6 * 2.0
+	require.InDelta(t, expectedInput, cost.InputCost, 1e-10)
+	require.InDelta(t, expectedOutput, cost.OutputCost, 1e-10)
+	require.InDelta(t, expectedCacheRead, cost.CacheReadCost, 1e-10)
+	require.InDelta(t, expectedCacheCreation, cost.CacheCreationCost, 1e-10)
+	expectedTotal := expectedInput + expectedOutput + expectedCacheRead + expectedCacheCreation
+	require.InDelta(t, expectedTotal, cost.TotalCost, 1e-10)
+	require.InDelta(t, expectedTotal, cost.ActualCost, 1e-10)
+}
+
+func TestCalculateCost_DaybreakLongContextAppliesAcrossGroupTypes(t *testing.T) {
+	svc := newTestBillingService()
+	resolver := &ModelPricingResolver{}
+	basePricing := &ModelPricing{
+		InputPricePerToken:         5e-6,
+		OutputPricePerToken:        30e-6,
+		CacheCreationPricePerToken: 6.25e-6,
+		CacheReadPricePerToken:     0.25e-6,
+	}
+	tokens := UsageTokens{
+		InputTokens:         280000,
+		OutputTokens:        4000,
+		CacheReadTokens:     20000,
+		CacheCreationTokens: 10000,
+	}
+
+	expectedInput := float64(tokens.InputTokens) * 5e-6 * 2.0
+	expectedOutput := float64(tokens.OutputTokens) * 30e-6 * 1.5
+	expectedCacheRead := float64(tokens.CacheReadTokens) * 0.25e-6 * 2.0
+	expectedCacheCreation := float64(tokens.CacheCreationTokens) * 6.25e-6 * 2.0
+	expectedTotal := expectedInput + expectedOutput + expectedCacheRead + expectedCacheCreation
+
+	groupRates := map[string]float64{
+		"monthly-card": 0.37,
+		"public":       0.5,
+		"cyber":        2.0,
+	}
+	for groupType, groupRate := range groupRates {
+		t.Run(groupType, func(t *testing.T) {
+			cost, err := svc.CalculateCostUnified(CostInput{
+				Model:          "gpt-daybreak-blue-latest",
+				Tokens:         tokens,
+				RateMultiplier: groupRate,
+				Resolver:       resolver,
+				Resolved: &ResolvedPricing{
+					Mode:        BillingModeToken,
+					BasePricing: basePricing,
+				},
+			})
+			require.NoError(t, err)
+			require.InDelta(t, expectedInput, cost.InputCost, 1e-10)
+			require.InDelta(t, expectedOutput, cost.OutputCost, 1e-10)
+			require.InDelta(t, expectedCacheRead, cost.CacheReadCost, 1e-10)
+			require.InDelta(t, expectedCacheCreation, cost.CacheCreationCost, 1e-10)
+			require.InDelta(t, expectedTotal, cost.TotalCost, 1e-10)
+			require.InDelta(t, expectedTotal*groupRate, cost.ActualCost, 1e-10)
+		})
+	}
+}
+
+func TestOpenAILongContextTierEligibility(t *testing.T) {
+	for _, model := range []string{
+		"gpt-5.4",
+		"gpt-5.4-openai-compact",
+		"gpt-5.5",
+		"codex-auto-review",
+		"gpt-5.6-sol",
+		"gpt-5.6-terra-xhigh",
+		"gpt-5.6-luna-openai-compact",
+		"gpt-daybreak-blue-latest",
+	} {
+		require.True(t, isOpenAILongContextTierModel(model), model)
+	}
+	for _, model := range []string{
+		"gpt-5.4-mini",
+		"gpt-5.4-nano",
+		"gpt-5.3-codex",
+		"claude-opus-5",
+		"grok-4.6",
+	} {
+		require.False(t, isOpenAILongContextTierModel(model), model)
+	}
 }
 
 func TestCalculateCost_OpenAIGPT55UsesDoubleGPT54AndLongContext(t *testing.T) {

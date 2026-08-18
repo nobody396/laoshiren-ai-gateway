@@ -172,6 +172,12 @@ func TestModelPricingUsesGroupChannelOverrideIncludingCacheWrite(t *testing.T) {
 	assertPrice(t, "output", m.OutputPrice, 60)
 	assertPrice(t, "cache_write", m.CacheWritePrice, 12.5)
 	assertPrice(t, "cache_read", m.CacheReadPrice, 0.5)
+	if m.LongContext == nil {
+		t.Fatal("expected Daybreak long-context pricing disclosure")
+	}
+	if m.LongContext.InputThreshold != 272000 || m.LongContext.InputMultiplier != 2 || m.LongContext.OutputMultiplier != 1.5 {
+		t.Fatalf("unexpected long-context pricing disclosure: %+v", m.LongContext)
+	}
 }
 
 func TestModelPricingFiltersInternalGroups(t *testing.T) {

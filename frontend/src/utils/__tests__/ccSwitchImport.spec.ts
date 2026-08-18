@@ -5,9 +5,13 @@ import {
   buildCodexModelCatalog,
   CODEX_AUTO_COMPACT_TOKEN_LIMIT,
   CODEX_CONTEXT_WINDOW_TOKENS,
+  CODEX_EFFECTIVE_CONTEXT_WINDOW_PERCENT,
+  CODEX_LONG_AUTO_COMPACT_TOKEN_LIMIT,
+  CODEX_LONG_CONTEXT_WINDOW_TOKENS,
   getCompatibleCcsTargets,
   OPENAI_CODEX_MODELS,
-  type CcsImportTarget
+  type CcsImportTarget,
+  type CodexContextProfile
 } from '@/utils/ccSwitchImport'
 
 const decodeBase64Utf8 = (value: string): string => {
@@ -16,11 +20,18 @@ const decodeBase64Utf8 = (value: string): string => {
   return new TextDecoder().decode(bytes)
 }
 
-const parseDeepLink = (target: CcsImportTarget, allowMessagesDispatch = false) => {
+const parseDeepLink = (
+  target: CcsImportTarget,
+  allowMessagesDispatch = false,
+  availableModels?: readonly string[],
+  codexContextProfile: CodexContextProfile = 'standard'
+) => {
   const deepLink = buildCcsImportDeeplink({
     apiBaseUrl: 'https://api.laoshirenai.com/',
     siteName: '老实人 AI',
     target,
+    availableModels,
+    codexContextProfile,
     key: {
       key: 'sk-test-not-a-secret',
       name: '测试密钥',
@@ -76,11 +87,13 @@ describe('CC Switch provider deeplinks', () => {
   it('compacts Codex tasks before the upstream context ceiling', () => {
     const catalog = JSON.parse(buildCodexModelCatalog())
 
-    expect(CODEX_CONTEXT_WINDOW_TOKENS).toBe(250000)
-    expect(CODEX_AUTO_COMPACT_TOKEN_LIMIT).toBe(225000)
+    expect(CODEX_CONTEXT_WINDOW_TOKENS).toBe(272000)
+    expect(CODEX_EFFECTIVE_CONTEXT_WINDOW_PERCENT).toBe(95)
+    expect(CODEX_AUTO_COMPACT_TOKEN_LIMIT).toBe(258000)
     for (const model of catalog.models) {
       expect(model.context_window).toBe(CODEX_CONTEXT_WINDOW_TOKENS)
       expect(model.max_context_window).toBe(CODEX_CONTEXT_WINDOW_TOKENS)
+      expect(model.effective_context_window_percent).toBe(CODEX_EFFECTIVE_CONTEXT_WINDOW_PERCENT)
       expect(model.auto_compact_token_limit).toBe(CODEX_AUTO_COMPACT_TOKEN_LIMIT)
     }
   })
@@ -93,6 +106,7 @@ describe('CC Switch provider deeplinks', () => {
       expect(url.searchParams.get('endpoint')).toBe('https://api.laoshirenai.com/v1')
       expect(url.searchParams.get('model')).toBe('gpt-5.6-sol')
       expect(url.searchParams.get('usageBaseUrl')).toBe('https://api.laoshirenai.com')
+      if (target === 'codex') expect(url.searchParams.get('name')).toContain('272K')
     }
   )
 
@@ -116,10 +130,64 @@ describe('CC Switch provider deeplinks', () => {
     expect(importedModels).not.toContain('gpt-5.4-mini')
     expect(importedModels).not.toContain('gpt-5.3-codex-spark')
     expect(config.config).toContain('model = "gpt-5.6-sol"')
-    expect(config.config).toContain('model_context_window = 250000')
-    expect(config.config).toContain('model_auto_compact_token_limit = 225000')
+    expect(config.config).toContain('model_context_window = 272000')
+    expect(config.config).toContain('model_auto_compact_token_limit = 258000')
     expect(config.config).toContain('base_url = "https://api.laoshirenai.com/v1"')
     expect(config.config).not.toContain('sk-test-not-a-secret')
+  })
+
+  it('imports only the active models exposed by the GPT CYBER group', () => {
+    const cyberModels = [
+      'codex-auto-review',
+      'gpt-5.4',
+      'gpt-5.4-openai-compact',
+      'gpt-5.5',
+      'gpt-5.5-openai-compact',
+      'gpt-5.6-sol',
+      'gpt-5.6-sol-openai-compact',
+      'gpt-5.6-terra',
+      'gpt-5.6-terra-openai-compact',
+      'gpt-daybreak-blue-latest'
+    ]
+    const url = parseDeepLink('codex', false, cyberModels)
+    const config = JSON.parse(decodeBase64Utf8(url.searchParams.get('config')!))
+    const importedModels = config.modelCatalog.models.map((model: { model: string }) => model.model)
+
+    expect(importedModels).toEqual(cyberModels)
+    expect(importedModels).not.toContain('gpt-5.6')
+    expect(importedModels).not.toContain('gpt-5.6-luna')
+    expect(importedModels).not.toContain('gpt-5.4-mini')
+    expect(importedModels).not.toContain('gpt-5.3-codex-spark')
+    expect(url.searchParams.get('model')).toBe('gpt-5.6-sol')
+    expect(config.config).toContain('model = "gpt-5.6-sol"')
+  })
+
+  it('builds an explicit 1M / 900K high-context Codex profile', () => {
+    const url = parseDeepLink('codex', false, ['gpt-5.6-sol'], 'long')
+    const config = JSON.parse(decodeBase64Utf8(url.searchParams.get('config')!))
+
+    expect(CODEX_LONG_CONTEXT_WINDOW_TOKENS).toBe(1000000)
+    expect(CODEX_LONG_AUTO_COMPACT_TOKEN_LIMIT).toBe(900000)
+    expect(config.config).toContain('model_context_window = 1000000')
+    expect(config.config).toContain('model_auto_compact_token_limit = 900000')
+    expect(url.searchParams.get('name')).toContain('1M')
+    expect(config.modelCatalog.models).toEqual([{
+      model: 'gpt-5.6-sol',
+      displayName: 'GPT-5.6-Sol',
+      contextWindow: 1000000
+    }])
+
+    const catalog = JSON.parse(buildCodexModelCatalog(OPENAI_CODEX_MODELS, 'long'))
+    for (const model of catalog.models) {
+      expect(model.context_window).toBe(1000000)
+      expect(model.max_context_window).toBe(1000000)
+      expect(model.effective_context_window_percent).toBe(100)
+      expect(model.auto_compact_token_limit).toBe(900000)
+    }
+  })
+
+  it('fails closed when an OpenAI group has no active models', () => {
+    expect(() => parseDeepLink('codex', false, [])).toThrow(/at least one active model/)
   })
 
   it('keeps additive clients on their native standard-field contract', () => {

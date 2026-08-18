@@ -50,6 +50,16 @@
               <span v-if="row.disabled" class="pricing-group__disabled-badge">
                 {{ t('modelPricing.disabled') }}
               </span>
+              <span
+                v-if="row.longContext && !row.disabled"
+                class="pricing-group__long-context"
+              >
+                {{ t('modelPricing.longContextRule', {
+                  threshold: formatTokenThreshold(row.longContext.input_threshold),
+                  inputMultiplier: row.longContext.input_multiplier,
+                  outputMultiplier: row.longContext.output_multiplier
+                }) }}
+              </span>
             </td>
             <td><span class="pricing-group__value">{{ formatPrice(row.input) }}</span></td>
             <td>
@@ -70,7 +80,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { platformBadgeClass, platformLabel } from '@/utils/platformColors'
-import type { PublicPricingGroup } from '@/api/publicPricing'
+import type { PublicModelPrice, PublicPricingGroup } from '@/api/publicPricing'
 
 const props = defineProps<{
   group: PublicPricingGroup
@@ -88,6 +98,7 @@ interface PricingRow {
   cacheWrite: number | null | undefined
   cacheRead: number | null | undefined
   outputUnit?: string
+  longContext?: PublicModelPrice['long_context']
   disabled?: boolean
 }
 
@@ -138,6 +149,7 @@ const pricingRows = computed<PricingRow[]>(() => [
     output: model.output_price,
     cacheWrite: model.cache_write_price,
     cacheRead: model.cache_read_price,
+    longContext: model.long_context,
     disabled: model.disabled
   }))
 ])
@@ -146,6 +158,11 @@ function formatPrice(v: number | null | undefined): string {
   if (v === null || v === undefined) return '—'
   const digits = v >= 1 ? 2 : 4
   return `¥${v.toFixed(digits)}`
+}
+
+function formatTokenThreshold(tokens: number): string {
+  if (tokens >= 1000 && tokens % 1000 === 0) return `${tokens / 1000}K`
+  return String(tokens)
 }
 </script>
 
@@ -284,6 +301,16 @@ function formatPrice(v: number | null | undefined): string {
   font-size: 0.65rem;
   font-weight: 700;
   text-decoration: none;
+}
+
+.pricing-group__long-context {
+  display: block;
+  margin-top: 0.25rem;
+  color: #b45309;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 .pricing-group__unit {

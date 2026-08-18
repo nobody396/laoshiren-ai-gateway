@@ -19,7 +19,7 @@ export interface CodexClientModel {
   contextWindow: number
 }
 
-export const clientAutoConfigVersion = "0.7.10"
+export const clientAutoConfigVersion = "0.7.11"
 
 export const modelCatalog: readonly CatalogModel[] = [
   {
@@ -47,27 +47,27 @@ export const codexClientModels: readonly CodexClientModel[] = [
   {
     "model": "gpt-5.6-sol",
     "displayName": "GPT-5.6-Sol",
-    "contextWindow": 250000
+    "contextWindow": 272000
   },
   {
     "model": "gpt-5.6-terra",
     "displayName": "GPT-5.6-Terra",
-    "contextWindow": 250000
+    "contextWindow": 272000
   },
   {
     "model": "gpt-5.6",
     "displayName": "GPT-5.6",
-    "contextWindow": 250000
+    "contextWindow": 272000
   },
   {
     "model": "gpt-5.5",
     "displayName": "GPT-5.5",
-    "contextWindow": 250000
+    "contextWindow": 272000
   },
   {
     "model": "gpt-5.4",
     "displayName": "GPT-5.4",
-    "contextWindow": 250000
+    "contextWindow": 272000
   }
 ]
 

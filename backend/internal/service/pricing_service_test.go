@@ -183,7 +183,7 @@ func TestGetModelPricing_Gpt56UsesOfficialStaticFallback(t *testing.T) {
 		cacheRead   float64
 		longContext bool
 	}{
-		"sol":   {model: "gpt-5.6-sol", input: 5e-6, output: 30e-6, cacheWrite: 5e-6, cacheRead: 0.5e-6},
+		"sol":   {model: "gpt-5.6-sol", input: 5e-6, output: 30e-6, cacheWrite: 6.25e-6, cacheRead: 0.5e-6, longContext: true},
 		"terra": {model: "gpt-5.6-terra-high", input: 2e-6, output: 12e-6, cacheWrite: 2.5e-6, cacheRead: 0.2e-6, longContext: true},
 		"luna":  {model: "gpt-5.6-luna", input: 0.2e-6, output: 1.2e-6, cacheWrite: 0.25e-6, cacheRead: 0.02e-6, longContext: true},
 	}

@@ -21,6 +21,18 @@ func TestGatewayModelInfoFromIDsUsesUnifiedOwner(t *testing.T) {
 	require.Equal(t, gatewayDefaultModelCreatedAt, models[0].CreatedAt)
 }
 
+func TestGatewayModelInfoFromIDsHidesRetiredOpenAIModels(t *testing.T) {
+	models := gatewayModelInfoFromIDs([]string{
+		"gpt-5.4",
+		"gpt-5.4-mini",
+		"gpt-5.6-sol",
+		"gpt-5.6-luna",
+	})
+
+	require.Len(t, models, 2)
+	require.Equal(t, []string{"gpt-5.4", "gpt-5.6-sol"}, []string{models[0].ID, models[1].ID})
+}
+
 func TestGatewayModelInfoFromOpenAINormalizesOwner(t *testing.T) {
 	models := gatewayModelInfoFromOpenAI([]openai.Model{
 		{

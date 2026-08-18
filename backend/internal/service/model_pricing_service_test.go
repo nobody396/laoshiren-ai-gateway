@@ -205,8 +205,9 @@ func TestModelPricingFiltersInternalGroups(t *testing.T) {
 	}
 }
 
-func TestModelPricingHidesGPTLite(t *testing.T) {
-	groups := []Group{{ID: 7, Name: "GPT Lite 月卡组", Platform: "openai", RateMultiplier: 0.3774}}
+func TestModelPricingShowsMonthlyCardGroups(t *testing.T) {
+	// 月卡组（Lite/Pro/Apex）重新公开，由前端归入「Builder Pass 月卡」分块展示。
+	groups := []Group{{ID: 7, Name: "GPT Lite 月卡组", Platform: "openai", RateMultiplier: 0.3774, SubscriptionType: SubscriptionTypeCredit}}
 	prices := map[string]*LiteLLMModelPricing{
 		"gpt-5.4": {InputCostPerToken: 2.5e-6, OutputCostPerToken: 1.5e-5, CacheReadInputTokenCost: 2.5e-7},
 	}
@@ -217,8 +218,11 @@ func TestModelPricingHidesGPTLite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(catalog.Groups) != 0 {
-		t.Fatalf("expected GPT Lite 月卡组 (id=7) to be hidden, got %d groups", len(catalog.Groups))
+	if len(catalog.Groups) != 1 {
+		t.Fatalf("expected GPT Lite 月卡组 (id=7) to be listed, got %d groups", len(catalog.Groups))
+	}
+	if catalog.Groups[0].SubscriptionType != SubscriptionTypeCredit {
+		t.Fatalf("expected subscription_type=credit, got %q", catalog.Groups[0].SubscriptionType)
 	}
 }
 
@@ -561,8 +565,8 @@ func TestModelPricingSkipsUnknownModel(t *testing.T) {
 }
 
 func TestModelPricingGroupWithoutPricedModelsDropped(t *testing.T) {
-	groups := []Group{{ID: 7, Name: "GPT Lite 月卡组", Platform: "openai", RateMultiplier: 0.5}}
-	models := map[int64][]string{7: {"unknown-model-1"}}
+	groups := []Group{{ID: 123, Name: "按量分组", Platform: "openai", RateMultiplier: 0.5}}
+	models := map[int64][]string{123: {"unknown-model-1"}}
 
 	svc, _, _ := newModelPricingServiceForTest(groups, nil, models)
 	catalog, err := svc.GetPublicModelPricing(context.Background())

@@ -38,20 +38,12 @@ const catalogCacheKey = "public-model-pricing-catalog"
 const defaultCatalogCacheTTL = 5 * time.Minute
 
 // defaultHiddenPublicModelPricingGroupIDs 默认不在公开价格页展示的分组。
-// 运营要求：内部测试分组 + 一部分月卡基础档位（Lite/Pro/Apex）不上价格页。
+// 运营要求：内部测试分组不上价格页；月卡组（Lite/Pro/Apex）自 2026-08 起
+// 重新公开，由前端归入「Builder Pass 月卡」分块统一展示。
 // 如需调整，直接增删这里的 ID；后续可改为 DB 设置 model_pricing_hidden_group_ids 免发版维护。
 var defaultHiddenPublicModelPricingGroupIDs = map[int64]struct{}{
 	46: {}, // 测试专用月卡 · GPT
 	47: {}, // 测试专用月卡 · Claude
-	7:  {}, // GPT Lite 月卡组
-	8:  {}, // GPT Pro 月卡组
-	18: {}, // GPT Apex 月卡组
-	11: {}, // Claude Lite 月卡组
-	12: {}, // Claude Pro 月卡组
-	19: {}, // Claude Apex 月卡组
-	35: {}, // Grok Lite 月卡组
-	36: {}, // Grok Pro 月卡组
-	39: {}, // Grok Apex 月卡组
 }
 
 // displayHiddenModelNames 不在价格页展示但仍可正常请求的模型别名。

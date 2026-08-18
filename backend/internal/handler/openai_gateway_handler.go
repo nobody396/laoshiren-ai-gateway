@@ -281,6 +281,16 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		}
 		return
 	}
+	// Codex clients replay the gateway's signed image delivery items verbatim
+	// on every later turn, and their multi-megabyte data URLs make text
+	// providers reject the whole request. The client already rendered and
+	// stored the original bytes, so compact that history before any upstream
+	// sees it. This must run after the local acknowledgement above, which
+	// still needs the original signed payload of the immediate continuation.
+	if sanitizedBody, sanitized := service.SanitizeOpenAICodexGeneratedImageHistory(body); sanitized {
+		reqLog = reqLog.With(zap.Bool("codex_generated_image_history_sanitized", true))
+		body = sanitizedBody
+	}
 	codexSemanticImageIntent := requestPlatform == service.PlatformOpenAI &&
 		codexGeneratedImageDelivery &&
 		service.IsOpenAICodexSemanticImageGenerationIntent(body)

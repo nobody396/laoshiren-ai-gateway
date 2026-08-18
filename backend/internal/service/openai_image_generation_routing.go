@@ -372,6 +372,100 @@ func validCodexGeneratedImageDataURL(value string) bool {
 	return err == nil && detected == mediaType
 }
 
+var (
+	codexGeneratedImageHistoryCallIDPattern  = regexp.MustCompile(`^call_img_[0-9a-f]{16}_[0-9a-f]{32}$`)
+	codexGeneratedImageHistoryDataURLPattern = regexp.MustCompile(`data:image/(?:png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+`)
+)
+
+const codexGeneratedImageHistoryPlaceholder = "[历史图片数据已省略]"
+
+// SanitizeOpenAICodexGeneratedImageHistory rewrites historical Codex image
+// delivery payloads before a request is forwarded to an upstream provider.
+//
+// Codex clients persist the gateway's signed exec/generatedImage delivery
+// call and its private tool output, then replay both verbatim on every later
+// turn. Both carry multi-megabyte base64 data URLs that ordinary text
+// providers reject (for example a 1 MB single-string limit), so every turn
+// after a successful image delivery used to fail upstream with HTTP 400. The
+// client has already rendered and stored the original bytes locally; the
+// upstream model only needs a compact placeholder to know an image was
+// generated. Raw image_generation_call history results are blanked for the
+// same reason.
+//
+// Only items carrying the gateway's own call_img_ signature shape are
+// rewritten; user-authored content is left untouched. The immediate signed
+// tool continuation is acknowledged locally before this runs (see
+// IsOpenAICodexGeneratedImageToolContinuation), so this function only ever
+// rewrites true history, never the delivery the client is currently
+// executing.
+func SanitizeOpenAICodexGeneratedImageHistory(body []byte) (sanitized []byte, changed bool) {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return body, false
+	}
+	input := gjson.GetBytes(body, "input")
+	if !input.IsArray() {
+		return body, false
+	}
+	sanitized = body
+	setField := func(path string, value any) bool {
+		next, err := sjson.SetBytes(sanitized, path, value)
+		if err != nil {
+			return false
+		}
+		sanitized = next
+		changed = true
+		return true
+	}
+	for index, item := range input.Array() {
+		itemType := strings.ToLower(strings.TrimSpace(item.Get("type").String()))
+		callID := strings.TrimSpace(item.Get("call_id").String())
+		itemPath := fmt.Sprintf("input.%d", index)
+		switch itemType {
+		case "custom_tool_call":
+			if !strings.EqualFold(strings.TrimSpace(item.Get("name").String()), "exec") ||
+				!codexGeneratedImageHistoryCallIDPattern.MatchString(callID) {
+				continue
+			}
+			execInput := item.Get("input").String()
+			if !strings.Contains(execInput, "generatedImage({image_url:") ||
+				!codexGeneratedImageHistoryDataURLPattern.MatchString(execInput) {
+				continue
+			}
+			setField(itemPath+".input",
+				codexGeneratedImageHistoryDataURLPattern.ReplaceAllString(execInput, codexGeneratedImageHistoryPlaceholder))
+		case "custom_tool_call_output":
+			if !codexGeneratedImageHistoryCallIDPattern.MatchString(callID) {
+				continue
+			}
+			blocks := item.Get("output")
+			if !blocks.IsArray() {
+				continue
+			}
+			rewritten := make([]any, 0, len(blocks.Array()))
+			replaced := false
+			for _, block := range blocks.Array() {
+				if strings.EqualFold(strings.TrimSpace(block.Get("type").String()), "input_image") {
+					rewritten = append(rewritten, map[string]any{"type": "input_text", "text": codexGeneratedImageHistoryPlaceholder})
+					replaced = true
+					continue
+				}
+				rewritten = append(rewritten, block.Value())
+			}
+			if replaced {
+				setField(itemPath+".output", rewritten)
+			}
+		case "image_generation_call":
+			if strings.TrimSpace(item.Get("result").String()) != "" {
+				setField(itemPath+".result", "")
+			}
+		}
+	}
+	if !changed {
+		return body, false
+	}
+	return sanitized, true
+}
+
 // ShouldUseFixedOpenAIImageRenderer reports whether an official Codex
 // Responses request can be rendered by the dedicated GPT Image pool. Image
 // edits keep the original Responses tool path because native generation-only

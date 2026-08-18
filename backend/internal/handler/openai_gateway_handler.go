@@ -68,6 +68,17 @@ func isOfficialCodexRequest(c *gin.Context) bool {
 
 const openAIInternalCodexResponsesLiteHeader = "x-openai-internal-codex-responses-lite"
 
+// codexDesktopDirectImageDelivery stays disabled. The gateway's injected
+// exec/generatedImage delivery is protocol-correct, but Codex Desktop
+// (verified in production on 0.148.0-alpha.9, 2026-08-18) persists it without
+// rendering any image card: users only saw the assistant claim "图片已生成并显示。"
+// with no visible image. Image requests from Codex clients therefore fall
+// back to the client's own ImageGen workflow, which renders cards through the
+// local image tool and bills the group image price via /v1/images/generations.
+// The signed-history local acknowledgement and history compaction below stay
+// active for deliveries made while direct delivery was enabled.
+const codexDesktopDirectImageDelivery = false
+
 func isCodexDesktopGeneratedImageDeliveryRequest(c *gin.Context, body []byte) bool {
 	if c == nil || !strings.Contains(strings.ToLower(c.GetHeader("User-Agent")), "codex desktop/") {
 		return false
@@ -291,7 +302,8 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		reqLog = reqLog.With(zap.Bool("codex_generated_image_history_sanitized", true))
 		body = sanitizedBody
 	}
-	codexSemanticImageIntent := requestPlatform == service.PlatformOpenAI &&
+	codexSemanticImageIntent := codexDesktopDirectImageDelivery &&
+		requestPlatform == service.PlatformOpenAI &&
 		codexGeneratedImageDelivery &&
 		service.IsOpenAICodexSemanticImageGenerationIntent(body)
 	if codexSemanticImageIntent {
@@ -307,7 +319,8 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		}
 	}
 	imageGenerationIntent := requestPlatform == service.PlatformOpenAI && service.IsExplicitOpenAIImageGenerationIntent(body)
-	fixedImageRenderer := requestPlatform == service.PlatformOpenAI &&
+	fixedImageRenderer := codexDesktopDirectImageDelivery &&
+		requestPlatform == service.PlatformOpenAI &&
 		codexGeneratedImageDelivery &&
 		service.ShouldUseFixedOpenAIImageRenderer(body)
 	routingModel := reqModel

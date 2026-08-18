@@ -2,10 +2,14 @@ package handler
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -21,6 +25,44 @@ const (
 	codexNativeImageBridgeTestPNG           = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
 	codexGeneratedImageAckHandlerTestSecret = "unit-test-only-codex-image-ack-handler-secret"
 )
+
+// signedCodexImageAckCallIDForHandlerTest reproduces the gateway's signed
+// call_img_ id (HMAC-SHA256 over the fixed domain, nonce and image URLs,
+// truncated to 16 bytes) so tests can build continuation bodies without a
+// prior delivery round trip. Direct delivery is disabled, so handler tests
+// mint the signed pair locally.
+func signedCodexImageAckCallIDForHandlerTest(secret string, nonce string, images []string) string {
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write([]byte("codex-generated-image-ack-v1\x00"))
+	_, _ = mac.Write([]byte(nonce))
+	for _, imageURL := range images {
+		_, _ = mac.Write([]byte{0})
+		_, _ = mac.Write([]byte(imageURL))
+	}
+	return "call_img_" + nonce + "_" + hex.EncodeToString(mac.Sum(nil)[:16])
+}
+
+// codexSignedImageDeliveryItemsForHandlerTest builds the signed
+// exec/generatedImage delivery pair exactly as Codex clients replay it in
+// later turns: the custom_tool_call plus its custom_tool_call_output.
+func codexSignedImageDeliveryItemsForHandlerTest(secret string) (call map[string]any, output map[string]any, dataURL string) {
+	dataURL = "data:image/png;base64," + codexNativeImageBridgeTestPNG
+	callID := signedCodexImageAckCallIDForHandlerTest(secret, "0123456789abcdef", []string{dataURL})
+	execInput := "generatedImage({image_url:" + strconv.Quote(dataURL) + ",output_hint:" + strconv.Quote("已生成第 1 张图片。") + "});\n"
+	call = map[string]any{
+		"type": "custom_tool_call", "id": "ctc_image_1", "call_id": callID,
+		"name": "exec", "status": "completed", "input": execInput,
+	}
+	output = map[string]any{
+		"type": "custom_tool_call_output", "call_id": callID,
+		"output": []any{
+			map[string]any{"type": "input_text", "text": "Script completed"},
+			map[string]any{"type": "input_image", "image_url": dataURL, "detail": "high"},
+			map[string]any{"type": "input_text", "text": "已生成第 1 张图片。"},
+		},
+	}
+	return call, output, dataURL
+}
 
 type codexNativeImageBridgeAccountRepo struct {
 	service.AccountRepository
@@ -63,33 +105,6 @@ type codexNativeImageBridgeFailoverUpstream struct {
 	accountIDs []int64
 	paths      []string
 	models     []string
-}
-
-type codexFixedImageThreeLegUpstream struct {
-	service.HTTPUpstream
-	accountIDs []int64
-	paths      []string
-	models     []string
-}
-
-func (u *codexFixedImageThreeLegUpstream) Do(req *http.Request, _ string, accountID int64, _ int) (*http.Response, error) {
-	u.accountIDs = append(u.accountIDs, accountID)
-	u.paths = append(u.paths, req.URL.Path)
-	requestBody, _ := io.ReadAll(req.Body)
-	u.models = append(u.models, gjson.GetBytes(requestBody, "model").String())
-
-	body := `{"created":1710000000,"data":[{"b64_json":"` + codexNativeImageBridgeTestPNG + `"}]}`
-	switch accountID {
-	case 33:
-		body = `{"id":"resp_no_image_tool","status":"completed","model":"gpt-5.6-sol","output":[{"type":"message","status":"completed","content":[{"type":"output_text","text":""}]}],"usage":{"input_tokens":20,"output_tokens":2}}`
-	case 38:
-		body = `{"created":1710000000,"data":[]}`
-	}
-	return &http.Response{
-		StatusCode: http.StatusOK,
-		Header:     http.Header{"Content-Type": []string{"application/json"}},
-		Body:       io.NopCloser(strings.NewReader(body)),
-	}, nil
 }
 
 type codexTextIsolationUpstream struct {
@@ -443,16 +458,16 @@ func TestOpenAIResponses_OfficialCodexImageRoutingRejectsRetiredModels(t *testin
 		} {
 			textModel := tc.model
 			t.Run(group.Name+"/"+textModel, func(t *testing.T) {
-				account := service.Account{
+				imageAccount := service.Account{
 					ID:          3300 + group.ID,
-					Name:        "morecode-fixed-image-primary",
+					Name:        "image-pool-only",
 					Platform:    service.PlatformOpenAI,
 					Type:        service.AccountTypeAPIKey,
 					Status:      service.StatusActive,
 					Schedulable: true,
 					Concurrency: 4,
 					Credentials: map[string]any{
-						"api_key": "test-only-key", "base_url": "https://upstream.example.test/v1",
+						"api_key": "test-only-key", "base_url": "https://image.example.test/v1",
 						"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
 					},
 					Extra: map[string]any{
@@ -461,7 +476,26 @@ func TestOpenAIResponses_OfficialCodexImageRoutingRejectsRetiredModels(t *testin
 					},
 					AccountGroups: []service.AccountGroup{{AccountID: 3300 + group.ID, GroupID: 999, Priority: 90}},
 				}
-				upstream := &codexNativeImageBridgeUpstream{}
+				textAccount := service.Account{
+					ID:          2300 + group.ID,
+					Name:        "ordinary-text-primary",
+					Platform:    service.PlatformOpenAI,
+					Type:        service.AccountTypeAPIKey,
+					Status:      service.StatusActive,
+					Schedulable: true,
+					Concurrency: 4,
+					Credentials: map[string]any{
+						"api_key": "test-only-key", "base_url": "https://text.example.test/v1",
+						"model_mapping": map[string]any{
+							"gpt-5.6-terra": "gpt-5.6-terra",
+							"gpt-5.6-sol":   "gpt-5.6-sol",
+							"gpt-5.5":       "gpt-5.5",
+							"gpt-5.4":       "gpt-5.4",
+						},
+					},
+					AccountGroups: []service.AccountGroup{{AccountID: 2300 + group.ID, GroupID: group.ID, Priority: 1}},
+				}
+				upstream := &codexTextIsolationUpstream{}
 				concurrencyCache := &concurrencyCacheMock{
 					acquireUserSlotFn:    func(context.Context, int64, int, string) (bool, error) { return true, nil },
 					acquireAccountSlotFn: func(context.Context, int64, int, string) (bool, error) { return true, nil },
@@ -471,7 +505,7 @@ func TestOpenAIResponses_OfficialCodexImageRoutingRejectsRetiredModels(t *testin
 				billingCacheService := service.NewBillingCacheService(nil, nil, nil, nil, billingCfg)
 				concurrencyService := service.NewConcurrencyService(concurrencyCache)
 				gatewayService := service.NewOpenAIGatewayService(
-					codexNativeImageBridgeAccountRepo{accounts: []service.Account{account}},
+					codexNativeImageBridgeAccountRepo{accounts: []service.Account{imageAccount, textAccount}},
 					nil, nil, nil, nil, nil, nil, gatewayCfg, nil, concurrencyService, nil, nil,
 					billingCacheService, upstream,
 					nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
@@ -496,55 +530,41 @@ func TestOpenAIResponses_OfficialCodexImageRoutingRejectsRetiredModels(t *testin
 				if tc.retired {
 					require.Equal(t, http.StatusBadRequest, recorder.Code, recorder.Body.String())
 					require.Equal(t, service.ClientCodeModelNotSupported, gjson.GetBytes(recorder.Body.Bytes(), "error.code").String())
-					require.Nil(t, upstream.lastRequest, "retired model must be rejected before any image upstream call")
+					require.Empty(t, upstream.accountIDs, "retired model must be rejected before any upstream call")
 					return
 				}
+				// Direct delivery is disabled: supported models stay on the
+				// local-agent text route and never touch the image pool, even
+				// for explicit image prompts.
 				require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
-				require.Equal(t, textModel, gjson.GetBytes(recorder.Body.Bytes(), "model").String())
-				require.Equal(t, "custom_tool_call", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
-				require.Equal(t, "exec", gjson.GetBytes(recorder.Body.Bytes(), "output.0.name").String())
-				renderInput := gjson.GetBytes(recorder.Body.Bytes(), "output.0.input").String()
-				require.Contains(t, renderInput, "generatedImage({image_url:")
-				require.Contains(t, renderInput, codexNativeImageBridgeTestPNG)
-				require.NotContains(t, renderInput, "月球橘猫")
-				require.NotContains(t, renderInput, "http")
-				require.NotNil(t, upstream.lastRequest)
-				require.Equal(t, "/v1/responses", upstream.lastRequest.URL.Path)
-				upstreamBody, err := io.ReadAll(upstream.lastRequest.Body)
-				require.NoError(t, err)
-				require.Equal(t, service.CodexNativeImageBridgeModel(), gjson.GetBytes(upstreamBody, "model").String(),
-					"the fixed adapter must restore the pre-global-pool Codex rendering path")
-				require.False(t, gjson.GetBytes(upstreamBody, "stream").Bool(),
-					"the fixed adapter buffers and validates the complete image before rendering")
-				require.Equal(t, "image_generation", gjson.GetBytes(upstreamBody, "tool_choice.type").String())
-				require.Equal(t, account.ID, c.GetInt64(opsAccountIDKey))
+				require.Equal(t, "message", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
+				require.NotContains(t, recorder.Body.String(), "generatedImage")
+				require.Equal(t, []int64{textAccount.ID}, upstream.accountIDs)
+				require.Equal(t, textModel, gjson.GetBytes(upstream.lastBody, "model").String())
+				require.False(t, gjson.GetBytes(upstream.lastBody, `tools.#(type=="image_generation")`).Exists())
 			})
 		}
 	}
 }
 
-func TestOpenAIResponses_OfficialCodexStreamingImageUsesFixedAdapterCompletionLifecycle(t *testing.T) {
+func TestOpenAIResponses_OfficialCodexImageRequestUsesLocalAgentTextRoute(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	group := &service.Group{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI, AllowImageGeneration: true}
 	account := service.Account{
-		ID: 33, Name: "morecode-fixed-image-primary", Platform: service.PlatformOpenAI,
+		ID: 23, Name: "ordinary-text-primary", Platform: service.PlatformOpenAI,
 		Type: service.AccountTypeAPIKey, Status: service.StatusActive, Schedulable: true, Concurrency: 4,
 		Credentials: map[string]any{
 			"api_key": "test-only-key", "base_url": "https://upstream.example.test/v1",
 			"model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"},
 		},
-		Extra: map[string]any{
-			service.OpenAIImageGenerationPriorityExtraKey: 1,
-			service.OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-sol"},
-		},
-		AccountGroups: []service.AccountGroup{{AccountID: 33, GroupID: group.ID, Priority: 90}},
+		AccountGroups: []service.AccountGroup{{AccountID: 23, GroupID: group.ID, Priority: 1}},
 	}
-	upstream := &codexNativeImageBridgeUpstream{}
+	upstream := &codexTextIsolationUpstream{}
 	handler := newCodexResponsesTestHandler(t, []service.Account{account}, upstream)
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(
-		codexDesktopLiteImageBody("gpt-5.6-sol", "给我生成一张雪山的风景图。", true),
+		codexDesktopLiteImageBody("gpt-5.6-sol", "给我生成一张雪山的风景图。", false),
 	))
 	setCodexDesktopLiteHeaders(c)
 	apiKey := &service.APIKey{ID: 97, GroupID: &group.ID, Group: group, User: &service.User{ID: 1, Status: service.StatusActive}}
@@ -553,69 +573,50 @@ func TestOpenAIResponses_OfficialCodexStreamingImageUsesFixedAdapterCompletionLi
 
 	handler.Responses(c)
 
+	// Direct delivery is disabled: Codex Desktop does not render the injected
+	// exec/generatedImage call, so image requests stay on the local-agent text
+	// route without any hosted image tool injection or signed delivery.
 	require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
-	require.NotNil(t, upstream.lastRequest)
-	upstreamBody, err := io.ReadAll(upstream.lastRequest.Body)
-	require.NoError(t, err)
-	require.False(t, gjson.GetBytes(upstreamBody, "stream").Bool())
-	eventTypes := make([]string, 0, 8)
-	var completedPayload []byte
-	for _, line := range strings.Split(recorder.Body.String(), "\n") {
-		if !strings.HasPrefix(line, "data: ") {
-			continue
-		}
-		payload := []byte(strings.TrimPrefix(line, "data: "))
-		eventType := gjson.GetBytes(payload, "type").String()
-		eventTypes = append(eventTypes, eventType)
-		if eventType == "response.completed" {
-			completedPayload = payload
-		}
-	}
-	require.Contains(t, eventTypes, "response.output_item.done")
-	require.NotContains(t, eventTypes, "response.output_text.done")
-	require.Equal(t, "custom_tool_call", gjson.GetBytes(completedPayload, "response.output.0.type").String())
-	require.Equal(t, "completed", gjson.GetBytes(completedPayload, "response.output.0.status").String())
-	require.Equal(t, "exec", gjson.GetBytes(completedPayload, "response.output.0.name").String())
-	renderInput := gjson.GetBytes(completedPayload, "response.output.0.input").String()
-	require.Contains(t, renderInput, "generatedImage({image_url:")
-	require.Contains(t, renderInput, codexNativeImageBridgeTestPNG)
-	require.NotContains(t, string(completedPayload), "/v1/codex-image/preview")
+	require.Equal(t, []int64{23}, upstream.accountIDs)
+	require.False(t, gjson.GetBytes(upstream.lastBody, `tools.#(type=="image_generation")`).Exists())
+	require.Equal(t, "gpt-5.6-sol", gjson.GetBytes(upstream.lastBody, "model").String())
+	require.NotContains(t, recorder.Body.String(), "generatedImage")
+	require.NotContains(t, recorder.Body.String(), "/v1/codex-image/preview")
 }
 
-func TestOpenAIResponses_FixedImagePoolFailsOverSequentiallyMoreCodeAdobePomo(t *testing.T) {
+func TestOpenAIResponses_CodexSemanticImageRequestStaysOffImagePool(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	group := &service.Group{ID: 6, Name: "CodeX Pro20X", Platform: service.PlatformOpenAI, AllowImageGeneration: true}
-	newAccount := func(id int64, name string, imagePriority int, transport string) service.Account {
-		modelMapping := map[string]any{"gpt-5.6-sol": "gpt-5.6-sol"}
-		models := []any{"gpt-5.6-sol"}
-		extra := map[string]any{
-			service.OpenAIImageGenerationPriorityExtraKey: imagePriority,
-			service.OpenAIImageGenerationModelsExtraKey:   models,
-		}
-		if transport == service.OpenAIImageGenerationTransportImages {
-			modelMapping = map[string]any{"gpt-image-2": "gpt-image-2-count"}
-			models = []any{"gpt-image-2"}
-			extra[service.OpenAIImageGenerationModelsExtraKey] = models
-			extra["supports_images"] = true
-			extra[service.OpenAIImageGenerationTransportExtraKey] = transport
-		}
+	textAccount := service.Account{
+		ID: 23, Name: "ordinary-text-primary", Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
+		Status: service.StatusActive, Schedulable: true, Concurrency: 4,
+		Credentials: map[string]any{
+			"api_key": "test-only-key", "base_url": "https://text.example.test/v1",
+			"model_mapping": map[string]any{"gpt-5.6-terra": "gpt-5.6-terra"},
+		},
+		AccountGroups: []service.AccountGroup{{AccountID: 23, GroupID: group.ID, Priority: 1}},
+	}
+	newImageAccount := func(id int64, name string, imagePriority int) service.Account {
 		return service.Account{
 			ID: id, Name: name, Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
 			Status: service.StatusActive, Schedulable: true, Concurrency: 4,
 			Credentials: map[string]any{
-				"api_key": "test-only-key", "base_url": "https://upstream.example.test/v1",
-				"model_mapping": modelMapping,
+				"api_key": "test-only-key", "base_url": "https://image.example.test/v1",
+				"model_mapping": map[string]any{"gpt-5.6-terra": "gpt-5.6-terra"},
 			},
-			Extra:         extra,
+			Extra: map[string]any{
+				service.OpenAIImageGenerationPriorityExtraKey: imagePriority,
+				service.OpenAIImageGenerationModelsExtraKey:   []any{"gpt-5.6-terra"},
+			},
 			AccountGroups: []service.AccountGroup{{AccountID: id, GroupID: 999, Priority: 90}},
 		}
 	}
 	accounts := []service.Account{
-		newAccount(33, "MoreCode primary", 1, service.OpenAIImageGenerationTransportResponses),
-		newAccount(38, "Adobe fallback", 2, service.OpenAIImageGenerationTransportImages),
-		newAccount(40, "Pomo fallback", 3, service.OpenAIImageGenerationTransportImages),
+		textAccount,
+		newImageAccount(38, "Adobe image route", 1),
+		newImageAccount(40, "Pomo image route", 2),
 	}
-	upstream := &codexFixedImageThreeLegUpstream{}
+	upstream := &codexTextIsolationUpstream{}
 	handler := newCodexResponsesTestHandler(t, accounts, upstream)
 
 	recorder := httptest.NewRecorder()
@@ -630,17 +631,16 @@ func TestOpenAIResponses_FixedImagePoolFailsOverSequentiallyMoreCodeAdobePomo(t 
 
 	handler.Responses(c)
 
+	// Even with image-pool accounts configured, a semantic Codex Desktop image
+	// request must not enter the paid image pool: the local ImageGen workflow
+	// owns generation, so the request stays a plain text call on the text
+	// account with the original routing model.
 	require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
-	require.Equal(t, "gpt-5.6-terra", gjson.GetBytes(recorder.Body.Bytes(), "model").String())
-	require.Equal(t, "custom_tool_call", gjson.GetBytes(recorder.Body.Bytes(), "output.0.type").String())
-	require.Equal(t, "exec", gjson.GetBytes(recorder.Body.Bytes(), "output.0.name").String())
-	require.Contains(t, gjson.GetBytes(recorder.Body.Bytes(), "output.0.input").String(), codexNativeImageBridgeTestPNG)
+	require.Equal(t, []int64{23}, upstream.accountIDs, "semantic image request must stay on the text account")
+	require.Equal(t, "gpt-5.6-terra", gjson.GetBytes(upstream.lastBody, "model").String())
+	require.False(t, gjson.GetBytes(upstream.lastBody, `tools.#(type=="image_generation")`).Exists())
+	require.NotContains(t, recorder.Body.String(), "generatedImage")
 	require.NotContains(t, recorder.Body.String(), "/v1/codex-image/preview")
-	require.Equal(t, []int64{33, 38, 40}, upstream.accountIDs)
-	require.Equal(t, []string{"/v1/responses", "/v1/images/generations", "/v1/images/generations"}, upstream.paths)
-	require.Equal(t, []string{service.CodexNativeImageBridgeModel(), "gpt-image-2-count", "gpt-image-2-count"}, upstream.models)
-	require.Equal(t, int64(40), c.GetInt64(opsAccountIDKey))
-	require.Equal(t, "gpt-image-2-count", c.GetString(opsUpstreamModelKey))
 }
 
 func TestOpenAIResponses_CodexDesktopWithoutGeneratedImageCapabilityFallsBackToLocalAgentPath(t *testing.T) {
@@ -775,37 +775,20 @@ func TestOpenAIResponses_SignedGeneratedImageContinuationCompletesLocallyAndIsId
 	handler := newCodexResponsesTestHandler(t, []service.Account{textAccount, imageAccount}, upstream)
 	apiKey := &service.APIKey{ID: 97, GroupID: &group.ID, Group: group, User: &service.User{ID: 1, Status: service.StatusActive}}
 
-	firstRecorder := httptest.NewRecorder()
-	firstContext, _ := gin.CreateTestContext(firstRecorder)
-	firstContext.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(
-		codexDesktopLiteImageBody("gpt-5.6-sol", "生成一张雪山风景图", false),
-	))
-	setCodexDesktopLiteHeaders(firstContext)
-	firstContext.Set(string(middleware.ContextKeyAPIKey), apiKey)
-	firstContext.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 1, Concurrency: 4})
-	handler.Responses(firstContext)
-
-	require.Equal(t, http.StatusOK, firstRecorder.Code, firstRecorder.Body.String())
-	call := gjson.GetBytes(firstRecorder.Body.Bytes(), "output.0")
-	require.Equal(t, "custom_tool_call", call.Get("type").String())
-	require.Equal(t, "exec", call.Get("name").String())
-	require.Regexp(t, `^call_img_[0-9a-f]{16}_[0-9a-f]{32}$`, call.Get("call_id").String())
-	firstUpstreamRequest := upstream.lastRequest
-	require.NotNil(t, firstUpstreamRequest)
-
-	dataURL := "data:image/png;base64," + codexNativeImageBridgeTestPNG
+	// Direct delivery is disabled, so the signed pair is minted locally with
+	// the same HMAC shape the gateway used while delivery was enabled. The
+	// local acknowledgement must still complete those signed continuations
+	// without touching any upstream.
+	call, output, _ := codexSignedImageDeliveryItemsForHandlerTest(codexGeneratedImageAckHandlerTestSecret)
+	require.Regexp(t, `^call_img_[0-9a-f]{16}_[0-9a-f]{32}$`, call["call_id"])
 	continuation, err := json.Marshal(map[string]any{
 		"model":  "gpt-5.6-sol",
 		"stream": true,
 		"input": []any{
 			map[string]any{"type": "additional_tools", "tools": []any{map[string]any{"type": "namespace", "name": "functions"}}},
 			map[string]any{"type": "message", "role": "user", "content": "生成一张雪山风景图"},
-			map[string]any{"type": "custom_tool_call", "id": call.Get("id").String(), "call_id": call.Get("call_id").String(), "name": "exec", "status": "completed", "input": call.Get("input").String()},
-			map[string]any{"type": "custom_tool_call_output", "call_id": call.Get("call_id").String(), "output": []any{
-				map[string]any{"type": "input_text", "text": "Script completed"},
-				map[string]any{"type": "input_image", "image_url": dataURL, "detail": "high"},
-				map[string]any{"type": "input_text", "text": "已生成第 1 张图片。"},
-			}},
+			call,
+			output,
 		},
 	})
 	require.NoError(t, err)
@@ -824,7 +807,7 @@ func TestOpenAIResponses_SignedGeneratedImageContinuationCompletesLocallyAndIsId
 		require.Contains(t, recorder.Body.String(), `"type":"response.completed"`)
 		require.Contains(t, recorder.Body.String(), "图片已生成并显示。")
 		require.NotContains(t, recorder.Body.String(), "custom_tool_call")
-		require.Same(t, firstUpstreamRequest, upstream.lastRequest, "local acknowledgement must not invoke any upstream")
+		require.Nil(t, upstream.lastRequest, "local acknowledgement must not invoke any upstream")
 	}
 
 	for _, tt := range []struct {
@@ -889,37 +872,20 @@ func TestOpenAIResponses_GeneratedImageHistoryIsCompactedBeforeTextForwarding(t 
 	handler := newCodexResponsesTestHandler(t, []service.Account{textAccount, imageAccount}, upstream)
 	apiKey := &service.APIKey{ID: 97, GroupID: &group.ID, Group: group, User: &service.User{ID: 1, Status: service.StatusActive}}
 
-	firstRecorder := httptest.NewRecorder()
-	firstContext, _ := gin.CreateTestContext(firstRecorder)
-	firstContext.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(
-		codexDesktopLiteImageBody("gpt-5.6-sol", "生成一张雪山风景图", false),
-	))
-	setCodexDesktopLiteHeaders(firstContext)
-	firstContext.Set(string(middleware.ContextKeyAPIKey), apiKey)
-	firstContext.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 1, Concurrency: 4})
-	handler.Responses(firstContext)
-
-	require.Equal(t, http.StatusOK, firstRecorder.Code, firstRecorder.Body.String())
-	call := gjson.GetBytes(firstRecorder.Body.Bytes(), "output.0")
-	require.Equal(t, "custom_tool_call", call.Get("type").String())
-	require.Equal(t, "exec", call.Get("name").String())
-	require.Regexp(t, `^call_img_[0-9a-f]{16}_[0-9a-f]{32}$`, call.Get("call_id").String())
-
-	// The next user turn replays the signed delivery pair verbatim as history.
-	// Forwarding those multi-megabyte data URLs to a text provider is what
-	// production rejected with HTTP 400 "string too long".
-	dataURL := "data:image/png;base64," + codexNativeImageBridgeTestPNG
+	// The next user turn after a (previously enabled) direct delivery replays
+	// the signed pair verbatim as history. Forwarding those multi-megabyte
+	// data URLs to a text provider is what production rejected with HTTP 400
+	// "string too long". Direct delivery is disabled now, so the signed pair
+	// is minted locally with the same HMAC shape.
+	call, output, _ := codexSignedImageDeliveryItemsForHandlerTest(codexGeneratedImageAckHandlerTestSecret)
+	require.Regexp(t, `^call_img_[0-9a-f]{16}_[0-9a-f]{32}$`, call["call_id"])
 	followUp, err := json.Marshal(map[string]any{
 		"model": "gpt-5.6-sol",
 		"input": []any{
 			map[string]any{"type": "additional_tools", "tools": []any{map[string]any{"type": "namespace", "name": "functions"}}},
 			map[string]any{"type": "message", "role": "user", "content": "生成一张雪山风景图"},
-			map[string]any{"type": "custom_tool_call", "id": call.Get("id").String(), "call_id": call.Get("call_id").String(), "name": "exec", "status": "completed", "input": call.Get("input").String()},
-			map[string]any{"type": "custom_tool_call_output", "call_id": call.Get("call_id").String(), "output": []any{
-				map[string]any{"type": "input_text", "text": "Script completed"},
-				map[string]any{"type": "input_image", "image_url": dataURL, "detail": "high"},
-				map[string]any{"type": "input_text", "text": "已生成第 1 张图片。"},
-			}},
+			call,
+			output,
 			map[string]any{"type": "message", "role": "user", "content": "今天天气怎么样"},
 		},
 		"stream": false,

@@ -552,6 +552,11 @@ func modelDisplayLess(a, b PublicModelPrice) bool {
 func modelDisplayRank(model string) modelDisplayRankValue {
 	m := strings.ToLower(strings.TrimSpace(model))
 	r := modelDisplayRankValue{family: 4}
+	// 生图模型（如 gpt-image-2）在分组内固定排最后，不打断文本模型的家族/版本排序。
+	if strings.Contains(m, "image") {
+		r.family = 9
+		return r
+	}
 	switch {
 	case strings.Contains(m, "fable"):
 		r.family = 0

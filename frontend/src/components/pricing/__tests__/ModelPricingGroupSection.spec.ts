@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import ModelPricingGroupSection from '../ModelPricingGroupSection.vue'
@@ -47,7 +48,7 @@ describe('ModelPricingGroupSection', () => {
     expect(wrapper.text()).not.toContain('支持 quality、size、output_format 等参数。')
   })
 
-  it('renders fixed image pricing as the first row in the shared model table', () => {
+  it('renders fixed image pricing as the last row after text models', () => {
     const wrapper = mount(ModelPricingGroupSection, {
       props: {
         group: {
@@ -76,8 +77,8 @@ describe('ModelPricingGroupSection', () => {
     })
 
     expect(wrapper.findAll('tbody tr').map((row) => row.text())).toEqual([
-      'GPT Image 2—¥0.3000modelPricing.image.perImageUnit——',
-      'gpt-5.6-sol¥2.50¥15.00¥3.13¥0.2500'
+      'gpt-5.6-sol¥2.50¥15.00¥3.13¥0.2500',
+      'GPT Image 2—¥0.3000modelPricing.image.perImageUnit——'
     ])
   })
 
@@ -111,7 +112,9 @@ describe('ModelPricingGroupSection', () => {
     expect(row.get('.pricing-group__disabled-badge').text()).toBe('modelPricing.disabled')
   })
 
-  it('discloses the full-request long-context surcharge on eligible models', () => {
+  it('does not repeat the long-context surcharge under each model row', () => {
+    // 长上下文规则已上移到分块标题下统一展示一次（PublicModelPricingView），
+    // 行内不再重复渲染。
     const wrapper = mount(ModelPricingGroupSection, {
       props: {
         group: {
@@ -139,6 +142,57 @@ describe('ModelPricingGroupSection', () => {
       }
     })
 
-    expect(wrapper.get('.pricing-group__long-context').text()).toBe('modelPricing.longContextRule')
+    expect(wrapper.find('.pricing-group__long-context').exists()).toBe(false)
+  })
+
+  it('shows brand icon and official protocol name in the group header', () => {
+    const wrapper = mount(ModelPricingGroupSection, {
+      props: {
+        group: {
+          group_id: 52,
+          name: 'GLM 分组',
+          platform: 'openai',
+          rate_multiplier: 0.7,
+          is_exclusive: false,
+          subscription_type: 'standard',
+          models: [
+            { model: 'glm-5.2', input_price: 1, output_price: 2, cache_read_price: 0.1 }
+          ]
+        }
+      },
+      global: {
+        stubs: {
+          ModelIcon: defineComponent({ props: ['model'], template: '<span class="model-icon-stub" :data-model="model" />' })
+        }
+      }
+    })
+
+    expect(wrapper.get('.model-icon-stub').attributes('data-model')).toBe('glm-5.2')
+    expect(wrapper.get('.pricing-group__title .pricing-group__badge').text()).toBe('Responses / Chat Completions')
+  })
+
+  it('labels image-only groups with the Images API protocol', () => {
+    const wrapper = mount(ModelPricingGroupSection, {
+      props: {
+        group: {
+          group_id: 51,
+          name: 'GPT Image 2 生图分组',
+          platform: 'openai',
+          rate_multiplier: 4,
+          is_exclusive: false,
+          subscription_type: 'standard',
+          models: [],
+          image_generation: { mode: 'fixed_per_image', price_per_image: 0.3 }
+        }
+      },
+      global: {
+        stubs: {
+          ModelIcon: defineComponent({ props: ['model'], template: '<span class="model-icon-stub" :data-model="model" />' })
+        }
+      }
+    })
+
+    expect(wrapper.get('.model-icon-stub').attributes('data-model')).toBe('gpt-image-2')
+    expect(wrapper.get('.pricing-group__title .pricing-group__badge').text()).toBe('Images API')
   })
 })

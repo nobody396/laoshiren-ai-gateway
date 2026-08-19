@@ -11,10 +11,10 @@ var (
 	ErrTopupProviderMismatch = infraerrors.BadRequest("TOPUP_PROVIDER_MISMATCH", "notify provider does not match order provider")
 	ErrTopupAmountMismatch   = infraerrors.BadRequest("TOPUP_AMOUNT_MISMATCH", "notify amount does not match order amount")
 	ErrTopupPayTypeMismatch  = infraerrors.BadRequest("TOPUP_PAY_TYPE_MISMATCH", "notify pay type does not match order pay type")
-	ErrTopupNotFound      = infraerrors.NotFound("TOPUP_NOT_FOUND", "topup order not found")
-	ErrTopupMinAmount     = infraerrors.BadRequest("TOPUP_MIN_AMOUNT", "minimum topup amount is ¥20")
-	ErrTopupMaxAmount     = infraerrors.BadRequest("TOPUP_MAX_AMOUNT", "单次充值最高为 ¥3000")
-	ErrTopupInvalidType   = infraerrors.BadRequest("TOPUP_INVALID_TYPE", "pay_type must be alipay or wechat")
+	ErrTopupNotFound         = infraerrors.NotFound("TOPUP_NOT_FOUND", "topup order not found")
+	ErrTopupMinAmount        = infraerrors.BadRequest("TOPUP_MIN_AMOUNT", "minimum topup amount is ¥20")
+	ErrTopupMaxAmount        = infraerrors.BadRequest("TOPUP_MAX_AMOUNT", "单次充值最高为 ¥3000")
+	ErrTopupInvalidType      = infraerrors.BadRequest("TOPUP_INVALID_TYPE", "pay_type must be alipay or wechat")
 )
 
 const (

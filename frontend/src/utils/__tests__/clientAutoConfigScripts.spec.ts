@@ -151,7 +151,14 @@ describe('client auto-config scripts', () => {
   it('shows the supported Codex catalog in the manual settings template', () => {
     const modal = readUseKeyModal()
     expect(modal).toContain('model_catalog_json = "laoshirenai-model-catalog.json"')
-    expect(modal).toContain('buildCodexModelCatalog()')
+    // The modal resolves the key's group models before building the catalog,
+    // so enterprise groups see every routed model instead of the static list.
+    // codex-auto-review (the auto-review feature target) is filtered out, and
+    // the config default keeps legacy groups on gpt-5.5.
+    expect(modal).toContain('resolveCodexModels(')
+    expect(modal).toContain('ONE_CLICK_CODEX_EXCLUDED_MODELS')
+    expect(modal).toContain("ONE_CLICK_CODEX_PREFERRED_DEFAULT = 'gpt-5.6-sol'")
+    expect(modal).toContain('buildCodexModelCatalog(codexCatalogModels.value)')
     expect(modal).not.toContain("'gpt-5.3-codex-spark'")
   })
 

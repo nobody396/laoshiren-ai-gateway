@@ -117,7 +117,10 @@ describe('CC Switch provider deeplinks', () => {
     expect(url.searchParams.get('configFormat')).toBe('json')
 
     const config = JSON.parse(decodeBase64Utf8(encodedConfig!))
-    expect(config.modelCatalog.models).toEqual(OPENAI_CODEX_MODELS)
+    expect(config.modelCatalog.models).toHaveLength(OPENAI_CODEX_MODELS.length)
+    OPENAI_CODEX_MODELS.forEach((generated, index) => {
+      expect(config.modelCatalog.models[index]).toEqual({ ...generated, visibility: 'list' })
+    })
     const importedModels = config.modelCatalog.models.map((model: { model: string }) => model.model)
     expect(importedModels).toEqual([
       'gpt-5.6-sol',
@@ -162,6 +165,72 @@ describe('CC Switch provider deeplinks', () => {
     expect(config.config).toContain('model = "gpt-5.6-sol"')
   })
 
+  it('imports the full 8-model catalog for the CodeX enterprise group', () => {
+    const enterpriseModels = [
+      'gpt-5.4',
+      'gpt-5.4-mini',
+      'gpt-5.5',
+      'gpt-5.6-luna',
+      'gpt-5.6-sol',
+      'gpt-5.6-terra',
+      'gpt-5.3-codex-spark',
+      'codex-auto-review'
+    ]
+    const url = parseDeepLink('codex', false, enterpriseModels)
+    const config = JSON.parse(decodeBase64Utf8(url.searchParams.get('config')!))
+    const importedModels = config.modelCatalog.models.map((model: { model: string }) => model.model)
+
+    expect(importedModels).toEqual(enterpriseModels)
+    // Every entry must be visible in the client selector, including
+    // fallback-generated ones unknown to the generated catalog.
+    for (const model of config.modelCatalog.models) {
+      expect(model.visibility).toBe('list')
+    }
+    // Generated catalog entries keep their provider-owned display names.
+    const sol = config.modelCatalog.models.find((model: { model: string }) => model.model === 'gpt-5.6-sol')
+    expect(sol.displayName).toBe('GPT-5.6-Sol')
+    // Fallback entries derive a readable display name.
+    const autoReview = config.modelCatalog.models.find((model: { model: string }) => model.model === 'codex-auto-review')
+    expect(autoReview.displayName).toBe('Codex Auto Review')
+    expect(url.searchParams.get('model')).toBe('gpt-5.6-sol')
+    expect(config.config).toContain('model = "gpt-5.6-sol"')
+  })
+
+  it('keeps the legacy Pro 20X group catalog at exactly its five models', () => {
+    const proModels = ['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6', 'gpt-5.5', 'gpt-5.4']
+    const url = parseDeepLink('codex', false, proModels)
+    const config = JSON.parse(decodeBase64Utf8(url.searchParams.get('config')!))
+    const importedModels = config.modelCatalog.models.map((model: { model: string }) => model.model)
+
+    expect(importedModels).toEqual(proModels)
+    expect(importedModels).not.toContain('gpt-5.6-luna')
+    expect(importedModels).not.toContain('gpt-5.4-mini')
+    expect(importedModels).not.toContain('gpt-5.3-codex-spark')
+    expect(importedModels).not.toContain('codex-auto-review')
+  })
+
+  it('prefers the group default model when the catalog default is unavailable', () => {
+    const deepLink = buildCcsImportDeeplink({
+      apiBaseUrl: 'https://api.laoshirenai.com/',
+      target: 'codex',
+      availableModels: ['gpt-5.4', 'gpt-5.4-mini'],
+      key: {
+        key: 'sk-test-not-a-secret',
+        name: '测试密钥',
+        group: {
+          platform: 'openai',
+          name: 'CodeX 企业级分组',
+          default_mapped_model: 'gpt-5.4-mini'
+        }
+      }
+    })
+    const url = new URL(deepLink)
+    const config = JSON.parse(decodeBase64Utf8(url.searchParams.get('config')!))
+
+    expect(url.searchParams.get('model')).toBe('gpt-5.4-mini')
+    expect(config.config).toContain('model = "gpt-5.4-mini"')
+  })
+
   it('builds an explicit 1M / 900K high-context Codex profile', () => {
     const url = parseDeepLink('codex', false, ['gpt-5.6-sol'], 'long')
     const config = JSON.parse(decodeBase64Utf8(url.searchParams.get('config')!))
@@ -174,7 +243,8 @@ describe('CC Switch provider deeplinks', () => {
     expect(config.modelCatalog.models).toEqual([{
       model: 'gpt-5.6-sol',
       displayName: 'GPT-5.6-Sol',
-      contextWindow: 1000000
+      contextWindow: 1000000,
+      visibility: 'list'
     }])
 
     const catalog = JSON.parse(buildCodexModelCatalog(OPENAI_CODEX_MODELS, 'long'))

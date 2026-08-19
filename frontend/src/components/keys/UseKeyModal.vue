@@ -142,9 +142,11 @@ import Icon from '@/components/icons/Icon.vue'
 import { useClipboard } from '@/composables/useClipboard'
 import {
   buildCodexModelCatalog,
+  resolveCodexModels,
   CODEX_AUTO_COMPACT_TOKEN_LIMIT,
   CODEX_CONTEXT_WINDOW_TOKENS
 } from '@/utils/ccSwitchImport'
+import { getGatewayModels } from '@/api/gatewayModels'
 import type { GroupPlatform } from '@/types'
 import {
   catalogClientDefaultForPlatform,
@@ -160,6 +162,7 @@ interface Props {
   baseUrl: string
   platform: GroupPlatform | null
   allowMessagesDispatch?: boolean
+  defaultMappedModel?: string
 }
 
 interface Emits {
@@ -215,6 +218,55 @@ watch(() => props.platform, () => {
 // Reset shell tab when client changes
 watch(activeClientTab, () => {
   activeTab.value = 'unix'
+})
+
+// Group-aware Codex model catalog: the key's /v1/models contract lists exactly
+// what its group may route. While loading (or on failure) the generated files
+// fall back to the static catalog defaults.
+const openAIAvailableModels = ref<readonly string[] | undefined>(undefined)
+let openAIModelsFetchSeq = 0
+
+watch(
+  () => [props.show, props.apiKey, props.platform, props.baseUrl] as const,
+  async ([show, apiKey, platform, baseUrl]) => {
+    const seq = ++openAIModelsFetchSeq
+    if (!show || platform !== 'openai' || !apiKey) {
+      openAIAvailableModels.value = undefined
+      return
+    }
+    try {
+      const models = await getGatewayModels(baseUrl || window.location.origin, apiKey)
+      if (seq !== openAIModelsFetchSeq) return
+      openAIAvailableModels.value = models.length > 0 ? models : undefined
+    } catch (error) {
+      if (seq !== openAIModelsFetchSeq) return
+      console.warn('Failed to load group models for the Codex catalog', error)
+      openAIAvailableModels.value = undefined
+    }
+  },
+  { immediate: true }
+)
+
+// codex-auto-review is the Codex auto-review feature target, not a model users
+// pick by hand; keep it out of the one-click catalog. CC Switch imports are
+// intentionally unaffected (the GPT CYBER group relies on it there).
+const ONE_CLICK_CODEX_EXCLUDED_MODELS = new Set(['codex-auto-review'])
+// All OpenAI groups default to gpt-5.6-sol in the one-click config (owner
+// decision); the group default_mapped_model applies when sol is not routed,
+// then the first listed model.
+const ONE_CLICK_CODEX_PREFERRED_DEFAULT = 'gpt-5.6-sol'
+
+const codexCatalogModels = computed(() =>
+  resolveCodexModels(openAIAvailableModels.value)
+    .filter((model) => !ONE_CLICK_CODEX_EXCLUDED_MODELS.has(model.model))
+)
+const codexDefaultModel = computed(() => {
+  const models = codexCatalogModels.value
+  const modelIDs = new Set(models.map((model) => model.model))
+  if (modelIDs.has(ONE_CLICK_CODEX_PREFERRED_DEFAULT)) return ONE_CLICK_CODEX_PREFERRED_DEFAULT
+  const groupDefault = props.defaultMappedModel?.trim()
+  if (groupDefault && modelIDs.has(groupDefault)) return groupDefault
+  return models[0]?.model ?? ONE_CLICK_CODEX_PREFERRED_DEFAULT
 })
 
 // Icon components
@@ -786,11 +838,12 @@ ${keyword('$env:')}${variable('GEMINI_MODEL')}${operator('=')}${string(`"${model
 function generateOpenAIFiles(baseUrl: string, apiKey: string): FileConfig[] {
   const isWindows = activeTab.value === 'windows'
   const configDir = isWindows ? '%userprofile%\\.codex' : '~/.codex'
+  const defaultModel = codexDefaultModel.value
 
   // config.toml content
   const configContent = `model_provider = "OpenAI"
-model = "gpt-5.5"
-review_model = "gpt-5.5"
+model = "${defaultModel}"
+review_model = "${defaultModel}"
 model_reasoning_effort = "xhigh"
 model_catalog_json = "laoshirenai-model-catalog.json"
 disable_response_storage = true
@@ -823,7 +876,7 @@ requires_openai_auth = true`
     },
     {
       path: `${configDir}/laoshirenai-model-catalog.json`,
-      content: buildCodexModelCatalog()
+      content: buildCodexModelCatalog(codexCatalogModels.value)
     }
   ]
 }
@@ -831,11 +884,12 @@ requires_openai_auth = true`
 function generateOpenAIWsFiles(baseUrl: string, apiKey: string): FileConfig[] {
   const isWindows = activeTab.value === 'windows'
   const configDir = isWindows ? '%userprofile%\\.codex' : '~/.codex'
+  const defaultModel = codexDefaultModel.value
 
   // config.toml content with WebSocket v2
   const configContent = `model_provider = "OpenAI"
-model = "gpt-5.5"
-review_model = "gpt-5.5"
+model = "${defaultModel}"
+review_model = "${defaultModel}"
 model_reasoning_effort = "xhigh"
 model_catalog_json = "laoshirenai-model-catalog.json"
 disable_response_storage = true
@@ -872,7 +926,7 @@ responses_websockets_v2 = true`
     },
     {
       path: `${configDir}/laoshirenai-model-catalog.json`,
-      content: buildCodexModelCatalog()
+      content: buildCodexModelCatalog(codexCatalogModels.value)
     }
   ]
 }

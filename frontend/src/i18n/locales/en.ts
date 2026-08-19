@@ -6500,8 +6500,10 @@ export default {
       claude: 'Claude / Anthropic',
       grok: 'Grok',
       glm: 'GLM',
+      kimi: 'Kimi',
       deepseek: 'DeepSeek',
       qwen: 'Qwen',
+      gemini: 'Gemini',
       minimax: 'MiniMax',
       builderPass: 'Builder Pass',
       other: 'Others'

@@ -146,6 +146,66 @@ describe('PublicModelPricingView', () => {
     expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Image 2 生图分组', 'GPT Pro 月卡组'])
   })
 
+  it('classifies kimi, qwen3.x and gemini groups into their own blocks', async () => {
+    getPublicModelPricingMock.mockResolvedValue({
+      updated_at: '2026-08-19T00:00:00Z',
+      currency: 'CNY',
+      unit: 'per_1m_tokens',
+      groups: [
+        { group_id: 54, name: 'Kimi 分组', platform: 'openai', rate_multiplier: 0.6, is_exclusive: false, subscription_type: 'standard', models: [price('kimi-k3'), price('kimi-k2.7-code')] },
+        { group_id: 56, name: '千问 Qwen 分组', platform: 'openai', rate_multiplier: 0.85, is_exclusive: false, subscription_type: 'standard', models: [price('qwen3.8-max'), price('qwen3.6-flash')] },
+        { group_id: 57, name: 'Gemini 分组', platform: 'gemini', rate_multiplier: 0.6, is_exclusive: false, subscription_type: 'standard', models: [price('gemini-3.1-pro'), price('gemini-3.7-flash')] },
+        { group_id: 33, name: 'GLM 5.2 分组', platform: 'anthropic', rate_multiplier: 0.6, is_exclusive: false, subscription_type: 'standard', models: [price('glm-5.2')] },
+        { group_id: 99, name: '杂项组', platform: 'openai', rate_multiplier: 1, is_exclusive: false, subscription_type: 'standard', models: [price('some-unknown-model')] },
+      ],
+    })
+    const wrapper = mountView()
+    await flushPromises()
+
+    // 各厂商 tab 存在且顺序符合 BLOCK_ORDER（glm → kimi → qwen → gemini → other）
+    const tabs = tabTexts(wrapper)
+    for (const key of ['glm', 'kimi', 'qwen', 'gemini', 'other']) {
+      expect(tabs).toContain(`modelPricing.block.${key}`)
+    }
+    expect(tabs.indexOf('modelPricing.block.kimi')).toBeLessThan(tabs.indexOf('modelPricing.block.qwen'))
+    expect(tabs.indexOf('modelPricing.block.qwen')).toBeLessThan(tabs.indexOf('modelPricing.block.gemini'))
+
+    await clickTab(wrapper, 'modelPricing.block.kimi')
+    expect(visibleGroupNames(wrapper)).toEqual(['Kimi 分组'])
+
+    await clickTab(wrapper, 'modelPricing.block.qwen')
+    expect(visibleGroupNames(wrapper)).toEqual(['千问 Qwen 分组'])
+
+    await clickTab(wrapper, 'modelPricing.block.gemini')
+    expect(visibleGroupNames(wrapper)).toEqual(['Gemini 分组'])
+
+    await clickTab(wrapper, 'modelPricing.block.glm')
+    expect(visibleGroupNames(wrapper)).toEqual(['GLM 5.2 分组'])
+
+    await clickTab(wrapper, 'modelPricing.block.other')
+    expect(visibleGroupNames(wrapper)).toEqual(['杂项组'])
+  })
+
+  it('kimi and gemini tabs carry brand icons', async () => {
+    getPublicModelPricingMock.mockResolvedValue({
+      updated_at: '2026-08-19T00:00:00Z',
+      currency: 'CNY',
+      unit: 'per_1m_tokens',
+      groups: [
+        { group_id: 54, name: 'Kimi 分组', platform: 'openai', rate_multiplier: 0.6, is_exclusive: false, subscription_type: 'standard', models: [price('kimi-k3')] },
+        { group_id: 57, name: 'Gemini 分组', platform: 'gemini', rate_multiplier: 0.6, is_exclusive: false, subscription_type: 'standard', models: [price('gemini-3.1-pro')] },
+      ],
+    })
+    const wrapper = mountView()
+    await flushPromises()
+
+    const tabs = wrapper.findAll('.model-pricing-tabs__item')
+    const kimiTab = tabs.find((b) => b.text() === 'modelPricing.block.kimi')
+    const geminiTab = tabs.find((b) => b.text() === 'modelPricing.block.gemini')
+    expect(kimiTab?.find('.model-icon-stub').attributes('data-model')).toBe('kimi')
+    expect(geminiTab?.find('.model-icon-stub').attributes('data-model')).toBe('gemini')
+  })
+
   it('shows the long-context rule once under the block title with an official link', async () => {
     getPublicModelPricingMock.mockResolvedValue({
       updated_at: '2026-08-18T00:00:00Z',

@@ -29,10 +29,23 @@
       </tbody>
     </table>
 
-    <ol class="billing-example__steps">
-      <li>{{ t('modelPricing.billing.stepRate') }}</li>
-      <li>{{ t('modelPricing.billing.stepTopup') }}</li>
-    </ol>
+    <div class="billing-example__formula">
+      <div class="billing-example__formula-item">
+        <span class="billing-example__formula-value">$26.00</span>
+        <span class="billing-example__formula-label">{{ t('modelPricing.billing.total') }}</span>
+      </div>
+      <span class="billing-example__formula-op">×</span>
+      <div class="billing-example__formula-item">
+        <span class="billing-example__formula-value">0.5</span>
+        <span class="billing-example__formula-label">{{ t('modelPricing.rateMultiplier') }}</span>
+      </div>
+      <span class="billing-example__formula-op">=</span>
+      <div class="billing-example__formula-item">
+        <span class="billing-example__formula-value billing-example__formula-value--result">¥13</span>
+        <span class="billing-example__formula-label">{{ t('modelPricing.billing.thisRequest') }}</span>
+      </div>
+    </div>
+
     <p class="billing-example__bottom">{{ t('modelPricing.billing.bottomLine') }}</p>
   </section>
 </template>
@@ -52,52 +65,54 @@ const officialTotal = '$26.00'
 
 <style scoped>
 .billing-example {
-  margin-bottom: 2rem;
-  padding: 1.5rem 1.5rem 1.25rem;
+  margin-bottom: 2.5rem;
+  padding: 1.75rem 1.5rem;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  background: #f9fafb;
+  background: #ffffff;
 }
 
 .billing-example__title {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.625rem;
   color: #111827;
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .billing-example__note {
   margin: 0;
-  color: #374151;
-  font-size: 0.9rem;
-  line-height: 1.6;
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.7;
 }
 
 .billing-example__subtitle {
-  margin: 1.25rem 0 0.25rem;
+  margin: 1.75rem 0 0.375rem;
   color: #111827;
   font-size: 0.95rem;
   font-weight: 600;
 }
 
 .billing-example__sub {
-  margin: 0 0 0.75rem;
-  color: #6b7280;
+  margin: 0 0 1rem;
+  color: #9ca3af;
   font-size: 0.8125rem;
+  line-height: 1.7;
 }
 
 .billing-example__table {
   width: 100%;
-  max-width: 640px;
   border-collapse: collapse;
   font-size: 0.8125rem;
 }
 
 .billing-example__table th {
-  padding: 0.5rem 0.75rem;
+  padding: 0.625rem 0.75rem;
   text-align: right;
-  color: #6b7280;
-  font-weight: 600;
+  color: #9ca3af;
+  font-size: 0.75rem;
+  font-weight: 500;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -107,7 +122,7 @@ const officialTotal = '$26.00'
 }
 
 .billing-example__table td {
-  padding: 0.5rem 0.75rem;
+  padding: 0.625rem 0.75rem;
   text-align: right;
   color: #111827;
   border-bottom: 1px solid #f3f4f6;
@@ -115,25 +130,57 @@ const officialTotal = '$26.00'
 }
 
 .billing-example__total-row td {
+  padding-top: 0.875rem;
   font-weight: 700;
   color: #111827;
   border-bottom: none;
 }
 
-.billing-example__steps {
-  margin: 1rem 0 0.5rem;
-  padding-left: 1.25rem;
-  color: #374151;
-  font-size: 0.875rem;
-  line-height: 1.8;
+.billing-example__formula {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-top: 1.75rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 10px;
+  background: #f9fafb;
+}
+
+.billing-example__formula-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.billing-example__formula-value {
+  color: #111827;
+  font-size: 1.375rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.billing-example__formula-value--result {
+  color: #9a3b1f;
+}
+
+.billing-example__formula-label {
+  color: #9ca3af;
+  font-size: 0.75rem;
+}
+
+.billing-example__formula-op {
+  color: #d1d5db;
+  font-size: 1.125rem;
+  font-weight: 400;
 }
 
 .billing-example__bottom {
-  margin: 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid #e5e7eb;
-  color: #111827;
-  font-size: 0.875rem;
-  font-weight: 600;
+  margin: 1.25rem 0 0;
+  color: #6b7280;
+  font-size: 0.8125rem;
+  line-height: 1.7;
 }
 </style>

@@ -2,14 +2,9 @@
   <section class="pricing-group">
     <header class="pricing-group__header">
       <div class="pricing-group__title">
+        <ModelIcon :model="iconModel" size="18px" />
         <h3>{{ group.name }}</h3>
-        <span
-          v-if="group.platform"
-          class="pricing-group__platform"
-          :class="platformBadgeClass(group.platform)"
-        >
-          {{ platformLabel(group.platform) }}
-        </span>
+        <span v-if="protocolLabelText" class="pricing-group__badge">{{ protocolLabelText }}</span>
       </div>
       <div class="pricing-group__meta">
         <span class="pricing-group__rate" :title="t('modelPricing.rateMultiplier')">
@@ -50,16 +45,6 @@
               <span v-if="row.disabled" class="pricing-group__disabled-badge">
                 {{ t('modelPricing.disabled') }}
               </span>
-              <span
-                v-if="row.longContext && !row.disabled"
-                class="pricing-group__long-context"
-              >
-                {{ t('modelPricing.longContextRule', {
-                  threshold: formatTokenThreshold(row.longContext.input_threshold),
-                  inputMultiplier: row.longContext.input_multiplier,
-                  outputMultiplier: row.longContext.output_multiplier
-                }) }}
-              </span>
             </td>
             <td><span class="pricing-group__value">{{ formatPrice(row.input) }}</span></td>
             <td>
@@ -79,8 +64,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { platformBadgeClass, platformLabel } from '@/utils/platformColors'
-import type { PublicModelPrice, PublicPricingGroup } from '@/api/publicPricing'
+import ModelIcon from '@/components/common/ModelIcon.vue'
+import type { PublicPricingGroup } from '@/api/publicPricing'
 
 const props = defineProps<{
   group: PublicPricingGroup
@@ -90,6 +75,35 @@ const { t } = useI18n()
 
 const models = computed(() => props.group.models ?? [])
 
+// 分组品牌图标：取第一个模型的品牌；纯生图分组回退到 gpt-image-2。
+const iconModel = computed(() => {
+  const first = models.value[0]?.model
+  if (first) return first
+  if (props.group.image_generation) return 'gpt-image-2'
+  return props.group.platform || 'gpt'
+})
+
+const isImageOnlyGroup = computed(
+  () => Boolean(props.group.image_generation) && models.value.length === 0
+)
+
+// 分组头部的协议徽标：写厂商官方 API 全名（Anthropic Messages API、
+// OpenAI Responses/Chat Completions API、Gemini v1beta、OpenAI Images API），
+// 品牌专有名不做 i18n。
+const GROUP_PROTOCOL: Record<string, string> = {
+  anthropic: 'Messages API',
+  openai: 'Responses / Chat Completions',
+  gemini: 'Gemini v1beta',
+  antigravity: 'v1beta / Messages API',
+  'gpt-image': 'Images API',
+  grok: 'Responses / Chat Completions'
+}
+
+const protocolLabelText = computed(() => {
+  if (isImageOnlyGroup.value) return GROUP_PROTOCOL['gpt-image']
+  return GROUP_PROTOCOL[props.group.platform] ?? ''
+})
+
 interface PricingRow {
   key: string
   label: string
@@ -98,7 +112,6 @@ interface PricingRow {
   cacheWrite: number | null | undefined
   cacheRead: number | null | undefined
   outputUnit?: string
-  longContext?: PublicModelPrice['long_context']
   disabled?: boolean
 }
 
@@ -141,7 +154,6 @@ const imagePricingRows = computed<PricingRow[]>(() => {
 })
 
 const pricingRows = computed<PricingRow[]>(() => [
-  ...imagePricingRows.value,
   ...models.value.map((model) => ({
     key: `model-${model.model}`,
     label: model.model,
@@ -149,20 +161,16 @@ const pricingRows = computed<PricingRow[]>(() => [
     output: model.output_price,
     cacheWrite: model.cache_write_price,
     cacheRead: model.cache_read_price,
-    longContext: model.long_context,
     disabled: model.disabled
-  }))
+  })),
+  // 生图行固定排在文本模型之后
+  ...imagePricingRows.value
 ])
 
 function formatPrice(v: number | null | undefined): string {
   if (v === null || v === undefined) return '—'
   const digits = v >= 1 ? 2 : 4
   return `¥${v.toFixed(digits)}`
-}
-
-function formatTokenThreshold(tokens: number): string {
-  if (tokens >= 1000 && tokens % 1000 === 0) return `${tokens / 1000}K`
-  return String(tokens)
 }
 </script>
 
@@ -301,16 +309,6 @@ function formatTokenThreshold(tokens: number): string {
   font-size: 0.65rem;
   font-weight: 700;
   text-decoration: none;
-}
-
-.pricing-group__long-context {
-  display: block;
-  margin-top: 0.25rem;
-  color: #b45309;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 0.68rem;
-  font-weight: 600;
-  line-height: 1.35;
 }
 
 .pricing-group__unit {

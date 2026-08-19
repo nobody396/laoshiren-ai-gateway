@@ -6646,11 +6646,13 @@ export default {
     title: '模型价格',
     lede: '按分组展示文本模型与生图模型的实际计费价格。Token 价格按每 1M tokens 计算；固定生图价格按成功返回的图片张数计算。',
     updatedAt: '更新于',
+    totalModels: '共 {count} 个模型',
     rateMultiplier: '分组倍率',
     exclusive: '专属',
     subscription: '订阅',
     disabled: '已停用',
-    longContextRule: '输入超过 {threshold}：整次请求输入及缓存 ×{inputMultiplier}，输出 ×{outputMultiplier}',
+    longContextRule: 'OpenAI 系列模型输入超过 {threshold}：整次请求输入及缓存 ×{inputMultiplier}，输出 ×{outputMultiplier}',
+    officialPricing: 'OpenAI 官方定价说明',
     noModels: '该分组暂无可展示的模型',
     loading: '正在加载模型价格…',
     error: '加载失败',
@@ -6703,9 +6705,8 @@ export default {
       rowOutput: '输出',
       rowCache: '缓存读取',
       total: '官方合计',
-      stepRate: '官方合计 $26 × 分组倍率 0.5 = 13 ⚡',
-      stepTopup: '充值比例 1 元人民币 = 1 ⚡ → 本次请求扣费 ¥13',
-      bottomLine: '所以 0.5 倍率 = 0.5 元人民币当 1 美金使用。'
+      thisRequest: '本次扣费',
+      bottomLine: '充值比例 1 元人民币 = 1 ⚡，所以 0.5 倍率 = 0.5 元人民币当 1 美金使用。'
     },
     nav: {
       enterprise: '企业',

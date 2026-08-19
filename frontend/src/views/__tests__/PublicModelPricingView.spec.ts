@@ -79,12 +79,14 @@ describe('PublicModelPricingView', () => {
       'modelPricing.block.claude',
       'modelPricing.block.builderPass',
     ])
-    // 默认「全部」：按量组和月卡组全部展示
-    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'Claude 按量组', 'GPT Lite 月卡组'])
+    // 默认「全部」：按量组和月卡组全部展示；月卡组同时出现在厂商分块和 Builder Pass 分块
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Lite 月卡组', 'Claude 按量组', 'GPT Lite 月卡组'])
     expect(wrapper.find('.model-pricing-tabs__item--active')?.text()).toBe('modelPricing.block.all')
+    // tab 栏末尾展示模型总数
+    expect(wrapper.find('.model-pricing-tabs__count').exists()).toBe(true)
   })
 
-  it('each provider tab carries its brand icon', async () => {
+  it('each provider tab carries its brand icon and Builder Pass carries the laoshirenai brand', async () => {
     const wrapper = mountView()
     await flushPromises()
 
@@ -92,7 +94,7 @@ describe('PublicModelPricingView', () => {
     expect(tabs[0].find('.icon-stub').attributes('data-name')).toBe('grid')
     expect(tabs[1].find('.model-icon-stub').attributes('data-model')).toBe('gpt')
     expect(tabs[2].find('.model-icon-stub').attributes('data-model')).toBe('claude')
-    expect(tabs[3].find('.icon-stub').attributes('data-name')).toBe('creditCard')
+    expect(tabs[3].find('.model-pricing-tabs__brand').exists()).toBe(true)
   })
 
   it('filters to a single provider block when its tab is selected', async () => {
@@ -102,8 +104,9 @@ describe('PublicModelPricingView', () => {
     await clickTab(wrapper, 'modelPricing.block.claude')
     expect(visibleGroupNames(wrapper)).toEqual(['Claude 按量组'])
 
+    // 厂商 tab 同时包含该厂商的月卡组
     await clickTab(wrapper, 'modelPricing.block.gpt')
-    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组'])
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Lite 月卡组'])
   })
 
   it('Builder Pass tab shows only monthly-card (credit) groups', async () => {
@@ -119,9 +122,47 @@ describe('PublicModelPricingView', () => {
     await flushPromises()
 
     await clickTab(wrapper, 'modelPricing.block.gpt')
-    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组'])
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Lite 月卡组'])
 
     await clickTab(wrapper, 'modelPricing.block.all')
-    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'Claude 按量组', 'GPT Lite 月卡组'])
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Lite 月卡组', 'Claude 按量组', 'GPT Lite 月卡组'])
+  })
+
+  it('orders public groups before exclusive ones and text groups before image-only ones', async () => {
+    getPublicModelPricingMock.mockResolvedValue({
+      updated_at: '2026-08-18T00:00:00Z',
+      currency: 'CNY',
+      unit: 'per_1m_tokens',
+      groups: [
+        { group_id: 7, name: 'GPT Pro 月卡组', platform: 'openai', rate_multiplier: 0.5, is_exclusive: true, subscription_type: 'credit', models: [price('gpt-5.4')] },
+        { group_id: 51, name: 'GPT Image 2 生图分组', platform: 'openai', rate_multiplier: 4, is_exclusive: false, subscription_type: 'standard', models: [], image_generation: { mode: 'fixed_per_image' as const, price_per_image: 0.3 } },
+        { group_id: 1, name: 'GPT 按量组', platform: 'openai', rate_multiplier: 0.5, is_exclusive: false, subscription_type: 'standard', models: [price('gpt-5.4')] },
+      ],
+    })
+    const wrapper = mountView()
+    await flushPromises()
+
+    await clickTab(wrapper, 'modelPricing.block.gpt')
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Image 2 生图分组', 'GPT Pro 月卡组'])
+  })
+
+  it('shows the long-context rule once under the block title with an official link', async () => {
+    getPublicModelPricingMock.mockResolvedValue({
+      updated_at: '2026-08-18T00:00:00Z',
+      currency: 'CNY',
+      unit: 'per_1m_tokens',
+      groups: [
+        {
+          group_id: 52, name: 'GPT CYBER 分组（特价！）', platform: 'openai', rate_multiplier: 2, is_exclusive: false, subscription_type: 'standard',
+          models: [{ ...price('gpt-daybreak-blue-latest'), long_context: { input_threshold: 272000, input_multiplier: 2, output_multiplier: 1.5 } }],
+        },
+      ],
+    })
+    const wrapper = mountView()
+    await flushPromises()
+
+    const note = wrapper.get('.model-pricing-block__note')
+    expect(note.text()).toContain('modelPricing.longContextRule')
+    expect(note.get('a').attributes('href')).toBe('https://openai.com/api/pricing/')
   })
 })

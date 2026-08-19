@@ -6460,11 +6460,13 @@ export default {
     title: 'Model Pricing',
     lede: 'Actual text and image-generation prices by group. Token prices are per 1M tokens; fixed image prices are charged only for successfully returned images.',
     updatedAt: 'Updated',
+    totalModels: '{count} models',
     rateMultiplier: 'Group multiplier',
     exclusive: 'Exclusive',
     subscription: 'Subscription',
     disabled: 'Disabled',
-    longContextRule: 'Above {threshold} input: full-request input and cache ×{inputMultiplier}, output ×{outputMultiplier}',
+    longContextRule: 'For OpenAI models, above {threshold} input: full-request input and cache ×{inputMultiplier}, output ×{outputMultiplier}',
+    officialPricing: 'OpenAI official pricing',
     noModels: 'No models available in this group yet',
     loading: 'Loading model prices…',
     error: 'Failed to load',
@@ -6517,9 +6519,8 @@ export default {
       rowOutput: 'Output',
       rowCache: 'Cache read',
       total: 'Official total',
-      stepRate: 'Official total $26 × group multiplier 0.5 = 13 ⚡',
-      stepTopup: 'Top-up rate: ¥1 CNY = 1 ⚡ → this request costs ¥13',
-      bottomLine: 'So 0.5× means ¥0.5 CNY is treated as official $1 of usage.'
+      thisRequest: 'This request',
+      bottomLine: 'Top-up rate: ¥1 CNY = 1 ⚡, so 0.5× means ¥0.5 CNY is treated as official $1 of usage.'
     },
     nav: {
       enterprise: 'Enterprise',

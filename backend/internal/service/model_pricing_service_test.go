@@ -206,12 +206,17 @@ func TestModelPricingFiltersInternalGroups(t *testing.T) {
 }
 
 func TestModelPricingShowsMonthlyCardGroups(t *testing.T) {
-	// 月卡组（Lite/Pro/Apex）重新公开，由前端归入「Builder Pass 月卡」分块展示。
-	groups := []Group{{ID: 7, Name: "GPT Lite 月卡组", Platform: "openai", RateMultiplier: 0.3774, SubscriptionType: SubscriptionTypeCredit}}
+	// 旧倍率月卡组（Lite/Pro/Apex）从价格页下线；统一倍率月卡组
+	// （GPT ×0.5 / Grok ×0.4 / Claude ×2.4，Plus/Pro/Max 系列）继续公开，
+	// 由前端归入厂商分块和「Builder Pass 月卡」分块同时展示。
+	groups := []Group{
+		{ID: 7, Name: "GPT Lite 月卡组", Platform: "openai", RateMultiplier: 0.3774, SubscriptionType: SubscriptionTypeCredit},
+		{ID: 40, Name: "GPT Plus 月卡组", Platform: "openai", RateMultiplier: 0.5, SubscriptionType: SubscriptionTypeCredit},
+	}
 	prices := map[string]*LiteLLMModelPricing{
 		"gpt-5.4": {InputCostPerToken: 2.5e-6, OutputCostPerToken: 1.5e-5, CacheReadInputTokenCost: 2.5e-7},
 	}
-	models := map[int64][]string{7: {"gpt-5.4"}}
+	models := map[int64][]string{7: {"gpt-5.4"}, 40: {"gpt-5.4"}}
 
 	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
 	catalog, err := svc.GetPublicModelPricing(context.Background())
@@ -219,7 +224,10 @@ func TestModelPricingShowsMonthlyCardGroups(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(catalog.Groups) != 1 {
-		t.Fatalf("expected GPT Lite 月卡组 (id=7) to be listed, got %d groups", len(catalog.Groups))
+		t.Fatalf("expected only the unified-rate monthly card group, got %d groups", len(catalog.Groups))
+	}
+	if catalog.Groups[0].GroupID != 40 {
+		t.Fatalf("expected GPT Plus 月卡组 (id=40) to survive, got %d", catalog.Groups[0].GroupID)
 	}
 	if catalog.Groups[0].SubscriptionType != SubscriptionTypeCredit {
 		t.Fatalf("expected subscription_type=credit, got %q", catalog.Groups[0].SubscriptionType)

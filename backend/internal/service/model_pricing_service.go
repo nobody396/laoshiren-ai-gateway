@@ -38,10 +38,20 @@ const catalogCacheKey = "public-model-pricing-catalog"
 const defaultCatalogCacheTTL = 5 * time.Minute
 
 // defaultHiddenPublicModelPricingGroupIDs 默认不在公开价格页展示的分组。
-// 运营要求：内部测试分组不上价格页；月卡组（Lite/Pro/Apex）自 2026-08 起
-// 重新公开，由前端归入「Builder Pass 月卡」分块统一展示。
+// 运营要求：内部测试分组不上价格页；旧倍率月卡组（Lite/Pro/Apex，GPT ×0.3774-0.5051、
+// Claude ×0.7548-1.0102、Grok ×0.3208-0.4294）自 2026-08-19 起从价格页下线，
+// 只保留统一倍率月卡组（GPT ×0.5、Grok ×0.4、Claude ×2.4，即 Plus/Pro/Max 系列）。
 // 如需调整，直接增删这里的 ID；后续可改为 DB 设置 model_pricing_hidden_group_ids 免发版维护。
 var defaultHiddenPublicModelPricingGroupIDs = map[int64]struct{}{
+	7:  {}, // 旧 GPT Lite 月卡组（×0.3774）
+	8:  {}, // 旧 GPT Pro 月卡组（×0.393）
+	18: {}, // 旧 GPT Apex 月卡组（×0.5051）
+	11: {}, // 旧 Claude Lite 月卡组（×0.7548）
+	12: {}, // 旧 Claude Pro 月卡组（×0.7859）
+	19: {}, // 旧 Claude Apex 月卡组（×1.0102）
+	35: {}, // 旧 Grok Lite 月卡组（×0.3208）
+	36: {}, // 旧 Grok Pro 月卡组（×0.334）
+	39: {}, // 旧 Grok Apex 月卡组（×0.4294）
 	46: {}, // 测试专用月卡 · GPT
 	47: {}, // 测试专用月卡 · Claude
 }

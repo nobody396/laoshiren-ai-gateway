@@ -79,8 +79,8 @@ describe('PublicModelPricingView', () => {
       'modelPricing.block.claude',
       'modelPricing.block.builderPass',
     ])
-    // 默认「全部」：按量组和月卡组全部展示
-    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'Claude 按量组', 'GPT Lite 月卡组'])
+    // 默认「全部」：按量组和月卡组全部展示；月卡组同时出现在厂商分块和 Builder Pass 分块
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Lite 月卡组', 'Claude 按量组', 'GPT Lite 月卡组'])
     expect(wrapper.find('.model-pricing-tabs__item--active')?.text()).toBe('modelPricing.block.all')
   })
 
@@ -102,8 +102,9 @@ describe('PublicModelPricingView', () => {
     await clickTab(wrapper, 'modelPricing.block.claude')
     expect(visibleGroupNames(wrapper)).toEqual(['Claude 按量组'])
 
+    // 厂商 tab 同时包含该厂商的月卡组
     await clickTab(wrapper, 'modelPricing.block.gpt')
-    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组'])
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Lite 月卡组'])
   })
 
   it('Builder Pass tab shows only monthly-card (credit) groups', async () => {
@@ -119,9 +120,9 @@ describe('PublicModelPricingView', () => {
     await flushPromises()
 
     await clickTab(wrapper, 'modelPricing.block.gpt')
-    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组'])
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Lite 月卡组'])
 
     await clickTab(wrapper, 'modelPricing.block.all')
-    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'Claude 按量组', 'GPT Lite 月卡组'])
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Lite 月卡组', 'Claude 按量组', 'GPT Lite 月卡组'])
   })
 })

@@ -92,7 +92,8 @@ const loading = ref(true)
 const error = ref('')
 
 // 厂商分块展示顺序：GPT 在前，然后 Claude，之后 Grok / GLM / DeepSeek 等；
-// 月卡（Builder Pass）统一归到一个分块，排在厂商分块之后、「其他」之前。
+// 月卡（Builder Pass）分块排在厂商分块之后、「其他」之前。
+// 月卡组会同时出现在所属厂商分块和 Builder Pass 分块（运营要求 2026-08-19）。
 const BLOCK_ORDER = ['gpt', 'claude', 'grok', 'glm', 'deepseek', 'qwen', 'minimax', 'builderPass', 'other']
 
 // 每个厂商分块 tab / 标题用的品牌图标（ModelIcon 按模型名匹配品牌）
@@ -111,8 +112,6 @@ function blockIconModel(key: string): string {
 }
 
 function classifyBlock(group: PublicPricingGroup): string {
-  // 月卡（credit 订阅）分组不按厂商拆分，统一进 Builder Pass 分块。
-  if (group.subscription_type === 'credit') return 'builderPass'
   if (group.image_generation) return 'gpt'
   const joined = (group.models ?? []).map((model) => model.model).join(' ').toLowerCase()
   if (/\bgpt[-\s]/.test(joined)) return 'gpt'
@@ -131,10 +130,14 @@ type PricingTab = { key: string; iconModel?: string; icon?: 'grid' | 'creditCard
 const blocks = computed<PricingBlock[]>(() => {
   if (!catalog.value) return []
   const map = new Map<string, PublicPricingGroup[]>()
-  for (const g of catalog.value.groups) {
-    const key = classifyBlock(g)
+  const push = (key: string, g: PublicPricingGroup) => {
     if (!map.has(key)) map.set(key, [])
     map.get(key)!.push(g)
+  }
+  for (const g of catalog.value.groups) {
+    push(classifyBlock(g), g)
+    // 月卡（credit 订阅）分组额外归入 Builder Pass 分块，与厂商分块同时展示。
+    if (g.subscription_type === 'credit') push('builderPass', g)
   }
   return BLOCK_ORDER.filter((k) => map.has(k)).map((k) => ({ key: k, groups: map.get(k)! }))
 })

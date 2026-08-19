@@ -63,6 +63,23 @@ func TestRateLimitService_HandleUpstreamError_OpenAI403RequiresConsecutiveFailur
 	}
 }
 
+func TestRateLimitServiceHandleUpstreamErrorOpenAIHTML403SkipsAccountPenalty(t *testing.T) {
+	repo := &rateLimitAccountRepoStub{}
+	counter := &openAI403CounterStub{}
+	svc := NewRateLimitService(repo, nil, nil, nil, nil)
+	svc.SetOpenAI403CounterCache(counter)
+	account := &Account{ID: 43, Platform: PlatformOpenAI, Type: AccountTypeOAuth}
+
+	shouldDisable := svc.HandleUpstreamError(context.Background(), account, http.StatusForbidden, http.Header{}, []byte(" \n<!DOCTYPE html><html><body>blocked</body></html>"))
+
+	if shouldDisable {
+		t.Fatal("HTML 403 should remain request-scoped")
+	}
+	if counter.count != 0 || repo.tempCalls != 0 || repo.setErrorCalls != 0 {
+		t.Fatalf("HTML 403 must not mutate account state: counter=%d temp=%d error=%d", counter.count, repo.tempCalls, repo.setErrorCalls)
+	}
+}
+
 func TestCalculateOpenAI429ResetTime_7dExhausted(t *testing.T) {
 	svc := &RateLimitService{}
 

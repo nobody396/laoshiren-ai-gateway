@@ -396,6 +396,41 @@ func TestChatCompletionsToResponses_AssistantReasoningContentPreserved(t *testin
 	assert.Contains(t, parts[0].Text, "final answer")
 }
 
+func TestChatCompletionsToResponsesAssistantReasoningAlias(t *testing.T) {
+	for name, message := range map[string]ChatMessage{
+		"reasoning alias": {
+			Role:      "assistant",
+			Reasoning: "alias plan",
+			Content:   json.RawMessage(`"final answer"`),
+		},
+		"reasoning_content precedence": {
+			Role:             "assistant",
+			ReasoningContent: "canonical plan",
+			Reasoning:        "alias plan",
+			Content:          json.RawMessage(`"final answer"`),
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			req := &ChatCompletionsRequest{Model: "gpt-4o", Messages: []ChatMessage{{Role: "user", Content: json.RawMessage(`"Hi"`)}, message}}
+			resp, err := ChatCompletionsToResponses(req)
+			require.NoError(t, err)
+
+			var items []ResponsesInputItem
+			require.NoError(t, json.Unmarshal(resp.Input, &items))
+			require.Len(t, items, 2)
+			var parts []ResponsesContentPart
+			require.NoError(t, json.Unmarshal(items[1].Content, &parts))
+			require.Len(t, parts, 1)
+			if message.ReasoningContent != "" {
+				assert.Contains(t, parts[0].Text, "<thinking>canonical plan</thinking>")
+				assert.NotContains(t, parts[0].Text, "alias plan")
+			} else {
+				assert.Contains(t, parts[0].Text, "<thinking>alias plan</thinking>")
+			}
+		})
+	}
+}
+
 // ---------------------------------------------------------------------------
 // ResponsesToChatCompletions tests
 // ---------------------------------------------------------------------------

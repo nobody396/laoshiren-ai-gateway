@@ -115,6 +115,11 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 			return nil, fmt.Errorf("convert chat completions to responses: %w", err)
 		}
 		responsesReq.Model = upstreamModel
+		// Qwen upstream channels (bridged to Chat Completions at the provider)
+		// reject the reasoning.encrypted_content include with a 400. Only Codex
+		// multi-turn reasoning needs that field, so strip it for qwen models
+		// and leave every other family (codex/kimi/deepseek/...) unchanged.
+		stripChatBridgeUnsupportedInclude(responsesReq)
 		normalizeResponsesRequestServiceTier(responsesReq)
 		responsesBody, err = json.Marshal(responsesReq)
 		if err != nil {
@@ -827,4 +832,20 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 func writeChatCompletionsError(c *gin.Context, statusCode int, errType, message string) {
 	MarkResponseCommitted(c)
 	c.JSON(statusCode, OpenAIClientErrorEnvelope(c, errType, message))
+}
+
+// isQwenUpstreamModel reports whether the final upstream model id belongs to
+// the Qwen family. Qwen channels reject the Responses API include field, so
+// the chat→responses bridge strips it for these models only.
+func isQwenUpstreamModel(model string) bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(model)), "qwen")
+}
+
+// stripChatBridgeUnsupportedInclude drops the reasoning.encrypted_content
+// include for model families whose upstream channels reject it (currently
+// qwen). Callers must set req.Model to the final upstream model first.
+func stripChatBridgeUnsupportedInclude(req *apicompat.ResponsesRequest) {
+	if req != nil && isQwenUpstreamModel(req.Model) {
+		req.Include = nil
+	}
 }

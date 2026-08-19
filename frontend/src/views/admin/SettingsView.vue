@@ -2191,6 +2191,70 @@
           </div>
         </div>
 
+        <!-- 易支付（皮卡丘）聚合支付（余额充值） -->
+        <div class="card">
+          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">易支付（皮卡丘）充值</h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              配置易支付聚合支付，可作为支付宝/微信余额充值的收款通道（人民币 1:1 换算为美元余额）
+            </p>
+          </div>
+          <div class="space-y-6 p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="font-medium text-gray-900 dark:text-white">启用易支付</label>
+                <p class="text-sm text-gray-500 dark:text-gray-400">开启后可将下方支付宝/微信充值通道切换为易支付</p>
+              </div>
+              <Toggle v-model="form.easypay_enabled" />
+            </div>
+
+            <!-- Notify URL (read-only) -->
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">回调地址（复制到易支付商户后台）</label>
+              <div class="flex items-center gap-2">
+                <input readonly :value="easypayNotifyURLDisplay" class="input font-mono text-sm flex-1 bg-gray-50 dark:bg-dark-800 cursor-text select-all" />
+                <button type="button" @click="copyEasypayNotifyURL" class="btn btn-secondary btn-sm whitespace-nowrap">{{ easypayNotifyURLCopied ? '已复制' : '复制' }}</button>
+              </div>
+              <p class="mt-1 text-xs text-gray-400">商户后台的回调方式保持 GET 或 POST 均可，本站两种都接受。</p>
+            </div>
+
+            <div v-if="form.easypay_enabled" class="grid grid-cols-1 gap-4 border-t border-gray-100 dark:border-dark-700 pt-4">
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">商户 PID</label>
+                <input v-model="form.easypay_pid" type="text" class="input font-mono text-sm" placeholder="1000" />
+              </div>
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">密钥（KEY）</label>
+                <input v-model="form.easypay_key" type="password" class="input font-mono text-sm" placeholder="留空则保持不变" />
+                <p class="mt-1 text-xs text-gray-400">{{ form.easypay_key_configured ? '密钥已配置，留空则保持原密钥' : '尚未配置密钥' }}</p>
+              </div>
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">API 地址</label>
+                <input v-model="form.easypay_api_base" type="text" class="input font-mono text-sm" placeholder="https://pay.hueling.cc" />
+                <p class="mt-1 text-xs text-gray-400">留空则使用默认 https://pay.hueling.cc</p>
+              </div>
+            </div>
+
+            <!-- 充值通道路由 -->
+            <div class="grid grid-cols-1 gap-4 border-t border-gray-100 dark:border-dark-700 pt-4 sm:grid-cols-2">
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">支付宝充值通道</label>
+                <select v-model="form.topup_alipay_provider" class="input">
+                  <option value="xunhu">虎皮椒（Xunhu）</option>
+                  <option value="easypay">易支付（皮卡丘）</option>
+                </select>
+              </div>
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">微信充值通道</label>
+                <select v-model="form.topup_wechat_provider" class="input">
+                  <option value="xunhu">虎皮椒（Xunhu）</option>
+                  <option value="easypay">易支付（皮卡丘）</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Custom Menu Items -->
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
@@ -2692,6 +2756,21 @@ async function copyNotifyURL() {
   }
 }
 
+// 易支付回调地址（后端固定路由，仅做展示与复制）
+function buildEasypayNotifyURL(frontendURL: string): string {
+  const baseURL = trimTrailingSlash(frontendURL || getBrowserOrigin())
+  return baseURL ? `${baseURL}/api/v1/pay/notify/easypay` : ''
+}
+const easypayNotifyURLDisplay = computed(() => buildEasypayNotifyURL(form.frontend_url))
+const easypayNotifyURLCopied = ref(false)
+async function copyEasypayNotifyURL() {
+  const success = await copyToClipboard(easypayNotifyURLDisplay.value)
+  if (success) {
+    easypayNotifyURLCopied.value = true
+    setTimeout(() => { easypayNotifyURLCopied.value = false }, 2000)
+  }
+}
+
 // Stream Timeout 状态
 const streamTimeoutLoading = ref(true)
 const streamTimeoutSaving = ref(false)
@@ -2766,6 +2845,7 @@ type SettingsForm = SystemSettings & {
   stripe_webhook_secret: string
   xunhu_alipay_key: string
   xunhu_wechat_key: string
+  easypay_key: string
 }
 
 const form = reactive<SettingsForm>({
@@ -2899,7 +2979,15 @@ const form = reactive<SettingsForm>({
   xunhu_wechat_appid: '',
   xunhu_wechat_key: '',
   xunhu_wechat_key_configured: false,
-  xunhu_notify_url: ''
+  xunhu_notify_url: '',
+  // 易支付（皮卡丘）充值
+  easypay_enabled: false,
+  easypay_pid: '',
+  easypay_api_base: '',
+  easypay_key: '',
+  easypay_key_configured: false,
+  topup_alipay_provider: 'xunhu',
+  topup_wechat_provider: 'xunhu'
 })
 
 const landingPricingPreview = computed(() => {
@@ -3133,6 +3221,9 @@ async function loadSettings() {
       settings.xunhu_notify_url || '',
       settings.frontend_url || ''
     )
+    form.easypay_key = ''
+    form.topup_alipay_provider = settings.topup_alipay_provider === 'easypay' ? 'easypay' : 'xunhu'
+    form.topup_wechat_provider = settings.topup_wechat_provider === 'easypay' ? 'easypay' : 'xunhu'
   } catch (error: any) {
     appStore.showError(
       t('admin.settings.failedToLoad') + ': ' + (error.message || t('common.unknownError'))
@@ -3331,7 +3422,13 @@ async function saveSettings() {
       xunhu_wechat_enabled: form.xunhu_wechat_enabled,
       xunhu_wechat_appid: form.xunhu_wechat_appid,
       xunhu_wechat_key: form.xunhu_wechat_key || undefined,
-      xunhu_notify_url: normalizeXunhuNotifyURL(form.xunhu_notify_url, form.frontend_url)
+      xunhu_notify_url: normalizeXunhuNotifyURL(form.xunhu_notify_url, form.frontend_url),
+      easypay_enabled: form.easypay_enabled,
+      easypay_pid: form.easypay_pid,
+      easypay_api_base: form.easypay_api_base,
+      easypay_key: form.easypay_key || undefined,
+      topup_alipay_provider: form.topup_alipay_provider,
+      topup_wechat_provider: form.topup_wechat_provider
     }
     const updated = await adminAPI.settings.updateSettings(payload)
     Object.assign(form, updated)
@@ -3358,6 +3455,9 @@ async function saveSettings() {
       updated.xunhu_notify_url || '',
       updated.frontend_url || ''
     )
+    form.easypay_key = ''
+    form.topup_alipay_provider = updated.topup_alipay_provider === 'easypay' ? 'easypay' : 'xunhu'
+    form.topup_wechat_provider = updated.topup_wechat_provider === 'easypay' ? 'easypay' : 'xunhu'
     // Refresh cached settings so sidebar/header update immediately
     await appStore.fetchPublicSettings(true)
     await adminSettingsStore.fetch(true)

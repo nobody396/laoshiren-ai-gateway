@@ -1533,7 +1533,7 @@ func (s *OpenAIGatewayService) selectBestAccount(ctx context.Context, groupID *i
 			}
 			continue
 		}
-		if s.isBetterAccount(fresh, selected) {
+		if s.isBetterAccount(fresh, selected, groupID) {
 			selected = fresh
 			selectedCompactTier = compactTier
 		}
@@ -1543,17 +1543,18 @@ func (s *OpenAIGatewayService) selectBestAccount(ctx context.Context, groupID *i
 }
 
 // isBetterAccount 判断 candidate 是否比 current 更优。
-// 规则：优先级更高（数值更小）优先；同优先级时，未使用过的优先，其次是最久未使用的。
+// 规则：分组绑定优先级更高（数值更小）优先；同优先级时，未使用过的优先，其次是最久未使用的。
 //
 // isBetterAccount checks if candidate is better than current.
 // Rules: higher priority (lower value) wins; same priority: never used > least recently used.
-func (s *OpenAIGatewayService) isBetterAccount(candidate, current *Account) bool {
-	// 优先级更高（数值更小）
-	// Higher priority (lower value)
-	if candidate.Priority < current.Priority {
+func (s *OpenAIGatewayService) isBetterAccount(candidate, current *Account, groupID *int64) bool {
+	// 分组绑定优先级更高（数值更小）
+	// Higher group binding priority (lower value)
+	cp, cp2 := candidate.EffectivePriorityForGroup(groupID), current.EffectivePriorityForGroup(groupID)
+	if cp < cp2 {
 		return true
 	}
-	if candidate.Priority > current.Priority {
+	if cp > cp2 {
 		return false
 	}
 
@@ -1720,7 +1721,7 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 	loadMap, err := s.concurrencyService.GetAccountsLoadBatch(ctx, accountLoads)
 	if err != nil {
 		ordered := append([]*Account(nil), candidates...)
-		sortAccountsByPriorityAndLastUsed(ordered, false)
+		sortAccountsByPriorityAndLastUsed(ordered, false, groupID)
 		for _, acc := range ordered {
 			fresh := s.resolveFreshSchedulableOpenAIAccount(ctx, acc, requestedModel, requireCompact)
 			if fresh == nil {
@@ -1755,8 +1756,9 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 		if len(available) > 0 {
 			sort.SliceStable(available, func(i, j int) bool {
 				a, b := available[i], available[j]
-				if a.account.Priority != b.account.Priority {
-					return a.account.Priority < b.account.Priority
+				pa, pb := a.account.EffectivePriorityForGroup(groupID), b.account.EffectivePriorityForGroup(groupID)
+				if pa != pb {
+					return pa < pb
 				}
 				if a.loadInfo.LoadRate != b.loadInfo.LoadRate {
 					return a.loadInfo.LoadRate < b.loadInfo.LoadRate
@@ -1772,7 +1774,7 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 					return a.account.LastUsedAt.Before(*b.account.LastUsedAt)
 				}
 			})
-			shuffleWithinSortGroups(available)
+			shuffleWithinSortGroups(available, groupID)
 
 			for _, item := range available {
 				fresh := s.resolveFreshSchedulableOpenAIAccount(ctx, item.account, requestedModel, requireCompact)
@@ -1794,7 +1796,7 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 	}
 
 	// ============ Layer 3: Fallback wait ============
-	sortAccountsByPriorityAndLastUsed(candidates, false)
+	sortAccountsByPriorityAndLastUsed(candidates, false, groupID)
 	for _, acc := range candidates {
 		fresh := s.resolveFreshSchedulableOpenAIAccount(ctx, acc, requestedModel, requireCompact)
 		if fresh == nil {
@@ -4761,13 +4763,23 @@ func extractOpenAIUsageFromJSONBytes(body []byte) (OpenAIUsage, bool) {
 	if len(body) == 0 || !gjson.ValidBytes(body) {
 		return OpenAIUsage{}, false
 	}
-	if usage, ok := openAIUsageFromGJSON(gjson.GetBytes(body, "usage")); ok {
-		mergeHostedImageGenToolUsage(gjson.GetBytes(body, "tool_usage.image_gen"), &usage)
-		return usage, true
+	// Preserve native Responses precedence, then accept compatible gateways that
+	// wrap the response in data. This avoids recording a successful request as
+	// zero usage while ensuring a wrapper cannot shadow a native usage object.
+	candidates := []struct {
+		usagePath      string
+		imageUsagePath string
+	}{
+		{usagePath: "usage", imageUsagePath: "tool_usage.image_gen"},
+		{usagePath: "response.usage", imageUsagePath: "response.tool_usage.image_gen"},
+		{usagePath: "data.usage", imageUsagePath: "data.tool_usage.image_gen"},
+		{usagePath: "data.response.usage", imageUsagePath: "data.response.tool_usage.image_gen"},
 	}
-	if usage, ok := openAIUsageFromGJSON(gjson.GetBytes(body, "response.usage")); ok {
-		mergeHostedImageGenToolUsage(gjson.GetBytes(body, "response.tool_usage.image_gen"), &usage)
-		return usage, true
+	for _, candidate := range candidates {
+		if usage, ok := openAIUsageFromGJSON(gjson.GetBytes(body, candidate.usagePath)); ok {
+			mergeHostedImageGenToolUsage(gjson.GetBytes(body, candidate.imageUsagePath), &usage)
+			return usage, true
+		}
 	}
 	return OpenAIUsage{}, false
 }

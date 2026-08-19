@@ -8,16 +8,19 @@ import {
 const mocks = vi.hoisted(() => ({
   getStatus: vi.fn(),
   requestPurchase: vi.fn(),
+  listOffers: vi.fn(),
 }))
 
 vi.mock('@/api/nativeCheckout', () => ({
   getNativeCheckoutManualOfferStatus: mocks.getStatus,
   requestNativeCheckoutManualOfferPurchase: mocks.requestPurchase,
+  listNativeCheckoutOffers: mocks.listOffers,
 }))
 
 describe('useManualNewcomerOffer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.listOffers.mockResolvedValue([])
   })
 
   it('fails closed until the current account is confirmed eligible', async () => {
@@ -77,5 +80,60 @@ describe('useManualNewcomerOffer', () => {
 
     await expect(offer.requestPurchaseURL()).resolves.toBe('')
     expect(offer.state.value).toBe('unavailable')
+  })
+
+  it('switches to native mode when the newcomer balance offer is served by easypay', async () => {
+    const offer = useManualNewcomerOffer()
+    mocks.getStatus.mockResolvedValue({ code: 'newcomer-balance-5-to-10', claimed: false })
+    mocks.listOffers.mockResolvedValue([{
+      code: 'newcomer-balance-5-to-10',
+      name: '新人专享 · 10 元余额包',
+      description: '',
+      product_kind: 'balance',
+      pay_amount_cny_fen: 500,
+      benefit_amount_cny_fen: 1000,
+      once_per_user: true,
+      claimed: false,
+      provider: 'easypay',
+    }])
+
+    await offer.refresh()
+
+    expect(offer.mode.value).toBe('native')
+    expect(shouldShowManualNewcomerProduct(5, offer.state.value, offer.mode.value)).toBe(false)
+    expect(shouldShowManualNewcomerProduct(20, offer.state.value, offer.mode.value)).toBe(true)
+  })
+
+  it('stays in manual mode for ldxp or provider-less offers', async () => {
+    const offer = useManualNewcomerOffer()
+    mocks.getStatus.mockResolvedValue({ code: 'newcomer-balance-5-to-10', claimed: false })
+    mocks.listOffers.mockResolvedValue([{
+      code: 'newcomer-balance-5-to-10',
+      name: '新人专享 · 10 元余额包',
+      description: '',
+      product_kind: 'balance',
+      pay_amount_cny_fen: 500,
+      benefit_amount_cny_fen: 1000,
+      once_per_user: true,
+      claimed: false,
+      provider: 'ldxp',
+    }])
+
+    await offer.refresh()
+
+    expect(offer.mode.value).toBe('manual')
+    expect(shouldShowManualNewcomerProduct(5, offer.state.value, offer.mode.value)).toBe(true)
+  })
+
+  it('fails closed to manual mode when the offers list cannot be loaded', async () => {
+    const offer = useManualNewcomerOffer()
+    mocks.getStatus.mockResolvedValue({ code: 'newcomer-balance-5-to-10', claimed: false })
+    mocks.listOffers.mockRejectedValue(new Error('network unavailable'))
+
+    await offer.refresh()
+
+    expect(offer.mode.value).toBe('manual')
+    expect(offer.state.value).toBe('available')
+    expect(shouldShowManualNewcomerProduct(5, offer.state.value, offer.mode.value)).toBe(true)
   })
 })

@@ -20,18 +20,22 @@ func NewTopupOrderRepository(client *dbent.Client) service.TopupOrderRepository 
 
 func (r *topupOrderRepository) Create(ctx context.Context, order *service.TopupOrder) error {
 	client := clientFromContext(ctx, r.client)
-	created, err := client.TopupOrder.Create().
+	create := client.TopupOrder.Create().
 		SetOrderNo(order.OrderNo).
 		SetUserID(order.UserID).
 		SetAmountCnyFen(order.AmountCNYFen).
 		SetBonusAmountCnyFen(order.BonusAmountCNYFen).
 		SetPayType(order.PayType).
-		SetStatus(order.Status).
-		Save(ctx)
+		SetStatus(order.Status)
+	if order.Provider != "" {
+		create.SetProvider(order.Provider)
+	}
+	created, err := create.Save(ctx)
 	if err != nil {
 		return err
 	}
 	order.ID = created.ID
+	order.Provider = created.Provider
 	order.CreatedAt = created.CreatedAt
 	order.UpdatedAt = created.UpdatedAt
 	return nil
@@ -103,6 +107,7 @@ func topupOrderEntityToService(m *dbent.TopupOrder) *service.TopupOrder {
 		AmountCNYFen:      m.AmountCnyFen,
 		BonusAmountCNYFen: m.BonusAmountCnyFen,
 		PayType:           m.PayType,
+		Provider:          m.Provider,
 		Status:            m.Status,
 		InvoiceStatus:     m.InvoiceStatus,
 		XunhuTradeNo:      m.XunhuTradeNo,

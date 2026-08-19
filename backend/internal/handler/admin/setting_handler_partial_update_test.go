@@ -100,6 +100,11 @@ func TestMergeOmittedSettings_CardShopProductsOnlyPreservesOtherSettings(t *test
 		XunhuWechatEnabled:          true,
 		XunhuWechatAppID:            "xunhu-wechat-app",
 		XunhuNotifyURL:              "https://api.example.com/xunhu/notify",
+		EasyPayEnabled:              true,
+		EasyPayPID:                  "easypay-pid",
+		EasyPayAPIBase:              "https://pay.example.com",
+		TopupAlipayProvider:         "easypay",
+		TopupWechatProvider:         "xunhu",
 	}
 
 	var req UpdateSettingsRequest
@@ -133,6 +138,11 @@ func TestMergeOmittedSettings_CardShopProductsOnlyPreservesOtherSettings(t *test
 	require.True(t, req.StripeEnabled)
 	require.Equal(t, "alipay-app", req.AlipayAppID)
 	require.Equal(t, "xunhu-wechat-app", req.XunhuWechatAppID)
+	require.True(t, req.EasyPayEnabled)
+	require.Equal(t, "easypay-pid", req.EasyPayPID)
+	require.Equal(t, "https://pay.example.com", req.EasyPayAPIBase)
+	require.Equal(t, "easypay", req.TopupAlipayProvider)
+	require.Equal(t, "xunhu", req.TopupWechatProvider)
 
 	// Sensitive values are never copied into the request. Empty keeps the
 	// persisted secret in SettingService.UpdateSettings.
@@ -144,6 +154,7 @@ func TestMergeOmittedSettings_CardShopProductsOnlyPreservesOtherSettings(t *test
 	require.Empty(t, req.StripeSecretKey)
 	require.Empty(t, req.AlipayPrivateKey)
 	require.Empty(t, req.XunhuWechatKey)
+	require.Empty(t, req.EasyPayKey)
 }
 
 func TestMergeOmittedSettings_ExplicitZeroValuesAreNotReplaced(t *testing.T) {
@@ -248,6 +259,7 @@ func TestSettingHandler_UpdateSettings_CardShopProductsOnlyPreservesExistingSett
 		service.SettingKeyAlipayPublicKey:                  "alipay-public",
 		service.SettingKeyXunhuAlipayKey:                   "xunhu-alipay-secret",
 		service.SettingKeyXunhuWechatKey:                   "xunhu-wechat-secret",
+		service.SettingKeyEasyPayKey:                       "easypay-secret",
 	}
 	cfg := &config.Config{
 		Default: config.DefaultConfig{
@@ -319,6 +331,7 @@ func TestSettingHandler_UpdateSettings_CardShopProductsOnlyPreservesExistingSett
 		service.SettingKeyAlipayPublicKey,
 		service.SettingKeyXunhuAlipayKey,
 		service.SettingKeyXunhuWechatKey,
+		service.SettingKeyEasyPayKey,
 	}
 	before := make(map[string]string, len(keysThatMustNotChange))
 	for _, key := range keysThatMustNotChange {

@@ -200,6 +200,12 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		XunhuWechatAppID:                     settings.XunhuWechatAppID,
 		XunhuWechatKeyConfigured:             settings.XunhuWechatKeyConfigured,
 		XunhuNotifyURL:                       settings.XunhuNotifyURL,
+		EasyPayEnabled:                       settings.EasyPayEnabled,
+		EasyPayPID:                           settings.EasyPayPID,
+		EasyPayKeyConfigured:                 settings.EasyPayKeyConfigured,
+		EasyPayAPIBase:                       settings.EasyPayAPIBase,
+		TopupAlipayProvider:                  settings.TopupAlipayProvider,
+		TopupWechatProvider:                  settings.TopupWechatProvider,
 		BalanceAlertEnabled:                  settings.BalanceAlertEnabled,
 		BalanceAlertDefaultThreshold:         settings.BalanceAlertDefaultThreshold,
 		AccountQuotaNotifyEnabled:            settings.AccountQuotaNotifyEnabled,
@@ -364,6 +370,14 @@ type UpdateSettingsRequest struct {
 	XunhuWechatKey     string `json:"xunhu_wechat_key"`
 	XunhuNotifyURL     string `json:"xunhu_notify_url"`
 
+	// EasyPay 聚合支付设置
+	EasyPayEnabled      bool   `json:"easypay_enabled"`
+	EasyPayPID          string `json:"easypay_pid"`
+	EasyPayKey          string `json:"easypay_key"`
+	EasyPayAPIBase      string `json:"easypay_api_base"`
+	TopupAlipayProvider string `json:"topup_alipay_provider"`
+	TopupWechatProvider string `json:"topup_wechat_provider"`
+
 	// Payment configuration (integrated into settings, full replace)
 	PaymentEnabled                   *bool    `json:"payment_enabled"`
 	PaymentMinAmount                 *float64 `json:"payment_min_amount"`
@@ -441,7 +455,8 @@ func (r *UpdateSettingsRequest) providedSettingKeys() map[string]struct{} {
 			"alipay_private_key",
 			"alipay_public_key",
 			"xunhu_alipay_key",
-			"xunhu_wechat_key":
+			"xunhu_wechat_key",
+			"easypay_key":
 			var value string
 			if err := json.Unmarshal(raw, &value); err != nil || strings.TrimSpace(value) == "" {
 				continue
@@ -741,6 +756,21 @@ func mergeOmittedSettings(req *UpdateSettingsRequest, current *service.SystemSet
 	}
 	if !req.fieldProvided("xunhu_notify_url") {
 		req.XunhuNotifyURL = current.XunhuNotifyURL
+	}
+	if !req.fieldProvided("easypay_enabled") {
+		req.EasyPayEnabled = current.EasyPayEnabled
+	}
+	if !req.fieldProvided("easypay_pid") {
+		req.EasyPayPID = current.EasyPayPID
+	}
+	if !req.fieldProvided("easypay_api_base") {
+		req.EasyPayAPIBase = current.EasyPayAPIBase
+	}
+	if !req.fieldProvided("topup_alipay_provider") {
+		req.TopupAlipayProvider = current.TopupAlipayProvider
+	}
+	if !req.fieldProvided("topup_wechat_provider") {
+		req.TopupWechatProvider = current.TopupWechatProvider
 	}
 }
 
@@ -1528,6 +1558,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		XunhuWechatAppID:    req.XunhuWechatAppID,
 		XunhuWechatKey:      req.XunhuWechatKey,
 		XunhuNotifyURL:      req.XunhuNotifyURL,
+		EasyPayEnabled:      req.EasyPayEnabled,
+		EasyPayPID:          req.EasyPayPID,
+		EasyPayKey:          req.EasyPayKey,
+		EasyPayAPIBase:      req.EasyPayAPIBase,
+		TopupAlipayProvider: req.TopupAlipayProvider,
+		TopupWechatProvider: req.TopupWechatProvider,
 	}
 
 	if err := h.settingService.UpdateSettingsPartial(c.Request.Context(), settings, providedSettingKeys); err != nil {
@@ -1667,6 +1703,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		XunhuWechatAppID:                     updatedSettings.XunhuWechatAppID,
 		XunhuWechatKeyConfigured:             updatedSettings.XunhuWechatKeyConfigured,
 		XunhuNotifyURL:                       updatedSettings.XunhuNotifyURL,
+		EasyPayEnabled:                       updatedSettings.EasyPayEnabled,
+		EasyPayPID:                           updatedSettings.EasyPayPID,
+		EasyPayKeyConfigured:                 updatedSettings.EasyPayKeyConfigured,
+		EasyPayAPIBase:                       updatedSettings.EasyPayAPIBase,
+		TopupAlipayProvider:                  updatedSettings.TopupAlipayProvider,
+		TopupWechatProvider:                  updatedSettings.TopupWechatProvider,
 		BalanceAlertEnabled:                  updatedSettings.BalanceAlertEnabled,
 		BalanceAlertDefaultThreshold:         updatedSettings.BalanceAlertDefaultThreshold,
 		AccountQuotaNotifyEnabled:            updatedSettings.AccountQuotaNotifyEnabled,

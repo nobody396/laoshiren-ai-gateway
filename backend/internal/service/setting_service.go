@@ -201,6 +201,15 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingPaymentEnabled,
 		SettingKeyXunhuAlipayEnabled,
 		SettingKeyXunhuWechatEnabled,
+		SettingKeyXunhuAlipayAppID,
+		SettingKeyXunhuAlipayKey,
+		SettingKeyXunhuWechatAppID,
+		SettingKeyXunhuWechatKey,
+		SettingKeyEasyPayEnabled,
+		SettingKeyEasyPayPID,
+		SettingKeyEasyPayKey,
+		SettingKeyTopupAlipayProvider,
+		SettingKeyTopupWechatProvider,
 		SettingKeyOIDCConnectEnabled,
 		SettingKeyOIDCConnectProviderName,
 		SettingKeyGitHubOAuthEnabled,
@@ -241,6 +250,17 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 	// Password reset requires email verification to be enabled
 	emailVerifyEnabled := settings[SettingKeyEmailVerifyEnabled] == "true"
 	passwordResetEnabled := emailVerifyEnabled && settings[SettingKeyPasswordResetEnabled] == "true"
+
+	// 充值渠道是否可用取决于当前选用的网关：虎皮椒要求渠道启用且 appid/key 齐全；
+	// EasyPay 要求网关启用且 pid/key 齐全。只暴露布尔值，不暴露任何密钥。
+	xunhuAlipayUsable := settings[SettingKeyXunhuAlipayEnabled] == "true" &&
+		settings[SettingKeyXunhuAlipayAppID] != "" && settings[SettingKeyXunhuAlipayKey] != ""
+	xunhuWechatUsable := settings[SettingKeyXunhuWechatEnabled] == "true" &&
+		settings[SettingKeyXunhuWechatAppID] != "" && settings[SettingKeyXunhuWechatKey] != ""
+	easyPayUsable := settings[SettingKeyEasyPayEnabled] == "true" &&
+		settings[SettingKeyEasyPayPID] != "" && settings[SettingKeyEasyPayKey] != ""
+	topupAlipayEnabled := topupChannelUsable(settings[SettingKeyTopupAlipayProvider], xunhuAlipayUsable, easyPayUsable)
+	topupWechatEnabled := topupChannelUsable(settings[SettingKeyTopupWechatProvider], xunhuWechatUsable, easyPayUsable)
 	registrationEmailSuffixWhitelist := ParseRegistrationEmailSuffixWhitelist(
 		settings[SettingKeyRegistrationEmailSuffixWhitelist],
 	)
@@ -293,6 +313,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		AlipayEnabled:                    settings[SettingKeyAlipayEnabled] == "true",
 		XunhuAlipayEnabled:               settings[SettingKeyXunhuAlipayEnabled] == "true",
 		XunhuWechatEnabled:               settings[SettingKeyXunhuWechatEnabled] == "true",
+		TopupAlipayEnabled:               topupAlipayEnabled,
+		TopupWechatEnabled:               topupWechatEnabled,
 		OIDCOAuthEnabled:                 oidcEnabled,
 		OIDCOAuthProviderName:            oidcProviderName,
 		GitHubOAuthEnabled:               gitHubEnabled,
@@ -409,6 +431,8 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		AlipayEnabled                    bool              `json:"alipay_enabled"`
 		XunhuAlipayEnabled               bool              `json:"xunhu_alipay_enabled"`
 		XunhuWechatEnabled               bool              `json:"xunhu_wechat_enabled"`
+		TopupAlipayEnabled               bool              `json:"topup_alipay_enabled"`
+		TopupWechatEnabled               bool              `json:"topup_wechat_enabled"`
 		OIDCOAuthEnabled                 bool              `json:"oidc_oauth_enabled"`
 		OIDCOAuthProviderName            string            `json:"oidc_oauth_provider_name"`
 		GitHubOAuthEnabled               bool              `json:"github_oauth_enabled"`
@@ -458,6 +482,8 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		AlipayEnabled:                    settings.AlipayEnabled,
 		XunhuAlipayEnabled:               settings.XunhuAlipayEnabled,
 		XunhuWechatEnabled:               settings.XunhuWechatEnabled,
+		TopupAlipayEnabled:               settings.TopupAlipayEnabled,
+		TopupWechatEnabled:               settings.TopupWechatEnabled,
 		OIDCOAuthEnabled:                 settings.OIDCOAuthEnabled,
 		OIDCOAuthProviderName:            settings.OIDCOAuthProviderName,
 		GitHubOAuthEnabled:               settings.GitHubOAuthEnabled,
@@ -964,6 +990,26 @@ func (s *SettingService) updateSettings(ctx context.Context, settings *SystemSet
 		updates[SettingKeyXunhuWechatKey] = settings.XunhuWechatKey
 	}
 	updates[SettingKeyXunhuNotifyURL] = settings.XunhuNotifyURL
+
+	// EasyPay 聚合支付设置（密钥为空时保留已存值）
+	updates[SettingKeyEasyPayEnabled] = strconv.FormatBool(settings.EasyPayEnabled)
+	updates[SettingKeyEasyPayPID] = strings.TrimSpace(settings.EasyPayPID)
+	if settings.EasyPayKey != "" {
+		updates[SettingKeyEasyPayKey] = settings.EasyPayKey
+	}
+	updates[SettingKeyEasyPayAPIBase] = strings.TrimSpace(settings.EasyPayAPIBase)
+
+	// 充值网关选择
+	topupAlipayProvider, err := normalizeTopupProvider(settings.TopupAlipayProvider)
+	if err != nil {
+		return err
+	}
+	updates[SettingKeyTopupAlipayProvider] = topupAlipayProvider
+	topupWechatProvider, err := normalizeTopupProvider(settings.TopupWechatProvider)
+	if err != nil {
+		return err
+	}
+	updates[SettingKeyTopupWechatProvider] = topupWechatProvider
 
 	// Gateway forwarding behavior
 	updates[SettingKeyEnableFingerprintUnification] = strconv.FormatBool(settings.EnableFingerprintUnification)
@@ -1773,6 +1819,15 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	result.XunhuWechatKeyConfigured = settings[SettingKeyXunhuWechatKey] != ""
 	result.XunhuNotifyURL = settings[SettingKeyXunhuNotifyURL]
 
+	// EasyPay 聚合支付设置（密钥永不回传，仅暴露是否已配置）
+	result.EasyPayEnabled = settings[SettingKeyEasyPayEnabled] == "true"
+	result.EasyPayPID = settings[SettingKeyEasyPayPID]
+	result.EasyPayKey = ""
+	result.EasyPayKeyConfigured = settings[SettingKeyEasyPayKey] != ""
+	result.EasyPayAPIBase = settings[SettingKeyEasyPayAPIBase]
+	result.TopupAlipayProvider = topupProviderOrDefault(settings[SettingKeyTopupAlipayProvider])
+	result.TopupWechatProvider = topupProviderOrDefault(settings[SettingKeyTopupWechatProvider])
+
 	// Balance alert
 	result.BalanceAlertEnabled = settings[SettingKeyBalanceAlertEnabled] == "true"
 	result.BalanceAlertDefaultThreshold = 5
@@ -2026,6 +2081,63 @@ func (s *SettingService) GetXunhuConfig(ctx context.Context, payType string) (ap
 		return "", "", "", false, fmt.Errorf("read xunhu settings: %w", err)
 	}
 	return settings[appIDKey], settings[keyKey], settings[SettingKeyXunhuNotifyURL], settings[enabledKey] == "true", nil
+}
+
+// GetEasyPayConfig 返回 EasyPay（彩虹易支付兼容）网关配置。
+func (s *SettingService) GetEasyPayConfig(ctx context.Context) (pid, key, apiBase string, enabled bool, err error) {
+	keys := []string{SettingKeyEasyPayEnabled, SettingKeyEasyPayPID, SettingKeyEasyPayKey, SettingKeyEasyPayAPIBase}
+	settings, err := s.settingRepo.GetMultiple(ctx, keys)
+	if err != nil {
+		return "", "", "", false, fmt.Errorf("read easypay settings: %w", err)
+	}
+	return settings[SettingKeyEasyPayPID], settings[SettingKeyEasyPayKey], settings[SettingKeyEasyPayAPIBase], settings[SettingKeyEasyPayEnabled] == "true", nil
+}
+
+// GetTopupProvider 返回指定充值渠道（payType: "alipay" 或 "wechat"）当前选用的支付网关。
+// 默认 "xunhu"；仅当设置显式为 "easypay" 时返回 "easypay"。
+func (s *SettingService) GetTopupProvider(ctx context.Context, payType string) (string, error) {
+	var settingKey string
+	switch payType {
+	case "alipay":
+		settingKey = SettingKeyTopupAlipayProvider
+	case "wechat":
+		settingKey = SettingKeyTopupWechatProvider
+	default:
+		return "", infraerrors.BadRequest("INVALID_TOPUP_PAY_TYPE", "payType must be alipay or wechat")
+	}
+	settings, err := s.settingRepo.GetMultiple(ctx, []string{settingKey})
+	if err != nil {
+		return "", fmt.Errorf("read topup provider setting: %w", err)
+	}
+	return topupProviderOrDefault(settings[settingKey]), nil
+}
+
+// topupProviderOrDefault 返回充值网关的有效值：空或未知值一律回落到 "xunhu"。
+func topupProviderOrDefault(value string) string {
+	if strings.TrimSpace(value) == "easypay" {
+		return "easypay"
+	}
+	return "xunhu"
+}
+
+// normalizeTopupProvider 校验并归一化管理员提交的充值网关取值。
+func normalizeTopupProvider(value string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "xunhu":
+		return "xunhu", nil
+	case "easypay":
+		return "easypay", nil
+	default:
+		return "", infraerrors.BadRequest("INVALID_TOPUP_PROVIDER", "topup provider must be one of: xunhu, easypay")
+	}
+}
+
+// topupChannelUsable 判断当前选用网关下该充值渠道是否真实可用。
+func topupChannelUsable(provider string, xunhuUsable, easyPayUsable bool) bool {
+	if topupProviderOrDefault(provider) == "easypay" {
+		return easyPayUsable
+	}
+	return xunhuUsable
 }
 
 // IsModelFallbackEnabled 检查是否启用模型兜底机制

@@ -40,6 +40,11 @@ func (TopupOrder) Fields() []ent.Field {
 		// 支付渠道：alipay 或 wechat
 		field.String("pay_type").
 			MaxLen(16),
+		// 支付网关：xunhu 或 easypay
+		field.String("provider").
+			MaxLen(16).
+			NotEmpty().
+			Default("xunhu"),
 		// 订单状态：pending / completed / expired
 		field.String("status").
 			MaxLen(20).

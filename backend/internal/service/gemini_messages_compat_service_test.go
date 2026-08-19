@@ -15,6 +15,55 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCleanToolSchemaConvertsNestedIntegerExclusiveMinimum(t *testing.T) {
+	schema := map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"counts": map[string]any{
+				"type":  "array",
+				"items": map[string]any{"type": "integer", "exclusiveMinimum": float64(0)},
+			},
+			"strict": map[string]any{"type": "integer", "exclusiveMinimum": 0, "minimum": 5},
+			"weak":   map[string]any{"type": "integer", "exclusiveMinimum": 2, "minimum": 1},
+		},
+	}
+
+	cleaned, ok := cleanToolSchema(schema).(map[string]any)
+	require.True(t, ok)
+	properties, ok := cleaned["properties"].(map[string]any)
+	require.True(t, ok)
+	counts, ok := properties["counts"].(map[string]any)
+	require.True(t, ok)
+	items, ok := counts["items"].(map[string]any)
+	require.True(t, ok)
+	require.NotContains(t, items, "exclusiveMinimum")
+	require.Equal(t, float64(1), items["minimum"])
+
+	strict, ok := properties["strict"].(map[string]any)
+	require.True(t, ok)
+	require.NotContains(t, strict, "exclusiveMinimum")
+	require.Equal(t, 5, strict["minimum"])
+
+	weak, ok := properties["weak"].(map[string]any)
+	require.True(t, ok)
+	require.NotContains(t, weak, "exclusiveMinimum")
+	require.Equal(t, 3, weak["minimum"])
+}
+
+func TestCleanToolSchemaDropsAmbiguousExclusiveMinimum(t *testing.T) {
+	for name, schema := range map[string]map[string]any{
+		"number":     {"type": "number", "exclusiveMinimum": 0},
+		"fractional": {"type": "integer", "exclusiveMinimum": 0.5},
+	} {
+		t.Run(name, func(t *testing.T) {
+			cleaned, ok := cleanToolSchema(schema).(map[string]any)
+			require.True(t, ok)
+			require.NotContains(t, cleaned, "exclusiveMinimum")
+			require.NotContains(t, cleaned, "minimum")
+		})
+	}
+}
+
 // TestConvertClaudeToolsToGeminiTools_CustomType 测试custom类型工具转换
 func TestConvertClaudeToolsToGeminiTools_CustomType(t *testing.T) {
 	tests := []struct {

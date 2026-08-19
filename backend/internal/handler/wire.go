@@ -113,6 +113,20 @@ func ProvideOpenAIGatewayHandler(
 	return h
 }
 
+// ProvideTopupEasyPayNotifier adapts *service.TopupService to the handler-local
+// TopupEasyPayNotifier interface (a cross-package wire.Bind cannot see the
+// service.ProviderSet provider, so the adaptation is explicit).
+func ProvideTopupEasyPayNotifier(topupService *service.TopupService) TopupEasyPayNotifier {
+	return topupService
+}
+
+// ProvideNativeCheckoutEasyPayNotifier adapts *service.NativeCheckoutService to the
+// handler-local NativeCheckoutEasyPayNotifier interface (same cross-package
+// wire.Bind limitation as the topup adapter above).
+func ProvideNativeCheckoutEasyPayNotifier(nativeCheckoutService *service.NativeCheckoutService) NativeCheckoutEasyPayNotifier {
+	return nativeCheckoutService
+}
+
 // ProvideHandlers creates the Handlers struct
 func ProvideHandlers(
 	authHandler *AuthHandler,
@@ -134,6 +148,7 @@ func ProvideHandlers(
 	totpHandler *TotpHandler,
 	paymentHandler *PaymentHandler,
 	topupHandler *TopupHandler,
+	paymentGatewayHandler *PaymentGatewayHandler,
 	nativeCheckoutHandler *NativeCheckoutHandler,
 	balanceAlertHandler *BalanceAlertHandler,
 	resourceHandler *ResourceHandler,
@@ -161,6 +176,7 @@ func ProvideHandlers(
 		Totp:           totpHandler,
 		Payment:        paymentHandler,
 		Topup:          topupHandler,
+		PaymentGateway: paymentGatewayHandler,
 		NativeCheckout: nativeCheckoutHandler,
 		BalanceAlert:   balanceAlertHandler,
 		Resource:       resourceHandler,
@@ -186,6 +202,9 @@ var ProviderSet = wire.NewSet(
 	NewTotpHandler,
 	NewPaymentHandler,
 	NewTopupHandler,
+	NewPaymentGatewayHandler,
+	ProvideTopupEasyPayNotifier,
+	ProvideNativeCheckoutEasyPayNotifier,
 	NewNativeCheckoutHandler,
 	NewBalanceAlertHandler,
 	NewResourceHandler,

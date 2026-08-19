@@ -7,11 +7,14 @@ import (
 )
 
 var (
-	ErrXunhuNotConfigured = infraerrors.BadRequest("XUNHU_NOT_CONFIGURED", "xunhu payment is not configured")
-	ErrTopupNotFound      = infraerrors.NotFound("TOPUP_NOT_FOUND", "topup order not found")
-	ErrTopupMinAmount     = infraerrors.BadRequest("TOPUP_MIN_AMOUNT", "minimum topup amount is ¥20")
-	ErrTopupMaxAmount     = infraerrors.BadRequest("TOPUP_MAX_AMOUNT", "单次充值最高为 ¥3000")
-	ErrTopupInvalidType   = infraerrors.BadRequest("TOPUP_INVALID_TYPE", "pay_type must be alipay or wechat")
+	ErrXunhuNotConfigured    = infraerrors.BadRequest("XUNHU_NOT_CONFIGURED", "xunhu payment is not configured")
+	ErrTopupProviderMismatch = infraerrors.BadRequest("TOPUP_PROVIDER_MISMATCH", "notify provider does not match order provider")
+	ErrTopupAmountMismatch   = infraerrors.BadRequest("TOPUP_AMOUNT_MISMATCH", "notify amount does not match order amount")
+	ErrTopupPayTypeMismatch  = infraerrors.BadRequest("TOPUP_PAY_TYPE_MISMATCH", "notify pay type does not match order pay type")
+	ErrTopupNotFound         = infraerrors.NotFound("TOPUP_NOT_FOUND", "topup order not found")
+	ErrTopupMinAmount        = infraerrors.BadRequest("TOPUP_MIN_AMOUNT", "minimum topup amount is ¥20")
+	ErrTopupMaxAmount        = infraerrors.BadRequest("TOPUP_MAX_AMOUNT", "单次充值最高为 ¥3000")
+	ErrTopupInvalidType      = infraerrors.BadRequest("TOPUP_INVALID_TYPE", "pay_type must be alipay or wechat")
 )
 
 const (
@@ -34,6 +37,7 @@ type TopupOrder struct {
 	AmountCNYFen      int        `json:"amount_cny_fen"`       // 充值金额，单位：分（CNY）
 	BonusAmountCNYFen int        `json:"bonus_amount_cny_fen"` // 下单时锁定的活动赠送额度，单位：分
 	PayType           string     `json:"pay_type"`             // alipay / wechat
+	Provider          string     `json:"provider"`             // 支付网关：xunhu / easypay
 	Status            string     `json:"status"`
 	InvoiceStatus     string     `json:"invoice_status"`
 	XunhuTradeNo      *string    `json:"xunhu_trade_no,omitempty"`

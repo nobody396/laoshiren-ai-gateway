@@ -114,6 +114,20 @@ func (_u *TopupOrderUpdate) SetNillablePayType(v *string) *TopupOrderUpdate {
 	return _u
 }
 
+// SetProvider sets the "provider" field.
+func (_u *TopupOrderUpdate) SetProvider(v string) *TopupOrderUpdate {
+	_u.mutation.SetProvider(v)
+	return _u
+}
+
+// SetNillableProvider sets the "provider" field if the given value is not nil.
+func (_u *TopupOrderUpdate) SetNillableProvider(v *string) *TopupOrderUpdate {
+	if v != nil {
+		_u.SetProvider(*v)
+	}
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *TopupOrderUpdate) SetStatus(v string) *TopupOrderUpdate {
 	_u.mutation.SetStatus(v)
@@ -318,6 +332,11 @@ func (_u *TopupOrderUpdate) check() error {
 			return &ValidationError{Name: "pay_type", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.pay_type": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Provider(); ok {
+		if err := topuporder.ProviderValidator(v); err != nil {
+			return &ValidationError{Name: "provider", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.provider": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Status(); ok {
 		if err := topuporder.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.status": %w`, err)}
@@ -368,6 +387,9 @@ func (_u *TopupOrderUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	}
 	if value, ok := _u.mutation.PayType(); ok {
 		_spec.SetField(topuporder.FieldPayType, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Provider(); ok {
+		_spec.SetField(topuporder.FieldProvider, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(topuporder.FieldStatus, field.TypeString, value)
@@ -570,6 +592,20 @@ func (_u *TopupOrderUpdateOne) SetPayType(v string) *TopupOrderUpdateOne {
 func (_u *TopupOrderUpdateOne) SetNillablePayType(v *string) *TopupOrderUpdateOne {
 	if v != nil {
 		_u.SetPayType(*v)
+	}
+	return _u
+}
+
+// SetProvider sets the "provider" field.
+func (_u *TopupOrderUpdateOne) SetProvider(v string) *TopupOrderUpdateOne {
+	_u.mutation.SetProvider(v)
+	return _u
+}
+
+// SetNillableProvider sets the "provider" field if the given value is not nil.
+func (_u *TopupOrderUpdateOne) SetNillableProvider(v *string) *TopupOrderUpdateOne {
+	if v != nil {
+		_u.SetProvider(*v)
 	}
 	return _u
 }
@@ -791,6 +827,11 @@ func (_u *TopupOrderUpdateOne) check() error {
 			return &ValidationError{Name: "pay_type", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.pay_type": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Provider(); ok {
+		if err := topuporder.ProviderValidator(v); err != nil {
+			return &ValidationError{Name: "provider", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.provider": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Status(); ok {
 		if err := topuporder.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.status": %w`, err)}
@@ -858,6 +899,9 @@ func (_u *TopupOrderUpdateOne) sqlSave(ctx context.Context) (_node *TopupOrder, 
 	}
 	if value, ok := _u.mutation.PayType(); ok {
 		_spec.SetField(topuporder.FieldPayType, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Provider(); ok {
+		_spec.SetField(topuporder.FieldProvider, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(topuporder.FieldStatus, field.TypeString, value)

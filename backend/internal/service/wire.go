@@ -9,6 +9,7 @@ import (
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/payment"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
@@ -515,7 +516,7 @@ func ProvideRedeemService(
 
 func ProvideNativeCheckoutService(
 	repo NativeCheckoutRepository,
-	provider NativeCheckoutProvider,
+	providers NativeCheckoutProviderResolver,
 	userRepo UserRepository,
 	redeem NativeCheckoutRedeemer,
 	cfg *config.Config,
@@ -523,7 +524,7 @@ func ProvideNativeCheckoutService(
 	if cfg == nil || strings.TrimSpace(cfg.JWT.Secret) == "" {
 		return nil, errors.New("native checkout contact hash key is not configured")
 	}
-	return NewNativeCheckoutService(repo, provider, userRepo, redeem, cfg.JWT.Secret), nil
+	return NewNativeCheckoutService(repo, providers, userRepo, redeem, cfg.JWT.Secret), nil
 }
 
 func ProvideOpenAIGatewayService(
@@ -619,6 +620,17 @@ func ProvideAuthService(
 	)
 	svc.SetUnitOfWork(unitOfWork)
 	return svc
+}
+
+// ProvideEasyPayClient creates the EasyPay payment provider backed by DB settings.
+// *SettingService satisfies payment.EasyPaySettingSource implicitly.
+func ProvideEasyPayClient(settingService *SettingService) *payment.EasyPayClient {
+	return payment.NewEasyPayClient(settingService)
+}
+
+// ProvidePaymentRegistry builds the payment gateway registry from all providers.
+func ProvidePaymentRegistry(easyPayClient *payment.EasyPayClient) *payment.Registry {
+	return payment.NewRegistry(easyPayClient)
 }
 
 // ProviderSet is the Wire provider set for all services
@@ -744,6 +756,8 @@ var ProviderSet = wire.NewSet(
 	ProvideAffiliateRiskService,
 	NewAffiliateSelfCommissionPolicyService,
 	NewPaymentService,
+	ProvideEasyPayClient,
+	ProvidePaymentRegistry,
 	NewTopupService,
 	ProvideNativeCheckoutService,
 	wire.Bind(new(NativeCheckoutRedeemer), new(*RedeemService)),

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { apiClient } from '../client'
 import {
+  createNativeCheckoutOrder,
   getNativeCheckoutManualOfferStatus,
   requestNativeCheckoutManualOfferPurchase,
 } from '../nativeCheckout'
@@ -52,5 +53,44 @@ describe('native checkout manual offer API', () => {
       '/native-checkout/manual-offers/newcomer-balance-5-to-10/purchase',
     )
     expect(status.purchase_url).toBe('https://pay.ldxp.cn/item/oc3w4r')
+  })
+})
+
+describe('native checkout order creation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('creates an order without pay_type when no method is specified (ldxp path)', async () => {
+    mockClient.post.mockResolvedValue({
+      data: { order_no: 'NC-1', status: 'pending', pay_amount_cny_fen: 500, benefit_amount_cny_fen: 1000 },
+    })
+
+    await createNativeCheckoutOrder('newcomer-balance-5-to-10')
+
+    expect(mockClient.post).toHaveBeenCalledWith('/native-checkout/orders', {
+      offer_code: 'newcomer-balance-5-to-10',
+    })
+  })
+
+  it('passes pay_type through for easypay orders', async () => {
+    mockClient.post.mockResolvedValue({
+      data: {
+        order_no: 'NC-2',
+        status: 'pending',
+        pay_amount_cny_fen: 500,
+        benefit_amount_cny_fen: 1000,
+        payment_url: 'weixin://wxpay/bizpayurl?pr=abc',
+        payment_method: 'wechat',
+      },
+    })
+
+    const order = await createNativeCheckoutOrder('newcomer-balance-5-to-10', 'wechat')
+
+    expect(mockClient.post).toHaveBeenCalledWith('/native-checkout/orders', {
+      offer_code: 'newcomer-balance-5-to-10',
+      pay_type: 'wechat',
+    })
+    expect(order.payment_method).toBe('wechat')
   })
 })

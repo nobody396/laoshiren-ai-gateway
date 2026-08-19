@@ -58,6 +58,20 @@ func ProvideOpenAIRouteObservationStore(rdb *redis.Client, db *sql.DB) service.O
 	return NewOpenAIRouteObservationStore(NewOpenAIRouteObservationCache(rdb), db)
 }
 
+// ProvideNativeCheckoutProviderResolver maps each native checkout provider
+// name (the offer/order provider column) to its implementation. LDXP stays
+// the card-shop provider; EasyPay collects payment while the service mints
+// the redeem code locally.
+func ProvideNativeCheckoutProviderResolver(
+	ldxp service.NativeCheckoutProvider,
+	easypay *EasyPayCheckoutClient,
+) service.NativeCheckoutProviderResolver {
+	return service.NewNativeCheckoutProviderResolver(map[string]service.NativeCheckoutProvider{
+		service.NativeCheckoutProviderLDXP:    ldxp,
+		service.NativeCheckoutProviderEasyPay: easypay,
+	})
+}
+
 // ProviderSet is the Wire provider set for all repositories
 var ProviderSet = wire.NewSet(
 	wire.Bind(new(service.NativeCheckoutRepository), new(*nativeCheckoutRepository)),
@@ -169,6 +183,8 @@ var ProviderSet = wire.NewSet(
 	NewGeminiCliCodeAssistClient,
 	NewGeminiDriveClient,
 	NewLDXPCheckoutClient,
+	NewEasyPayCheckoutClient,
+	ProvideNativeCheckoutProviderResolver,
 
 	ProvideEnt,
 	ProvideSQLDB,

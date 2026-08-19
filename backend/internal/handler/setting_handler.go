@@ -85,6 +85,8 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		AlipayEnabled:                    settings.AlipayEnabled,
 		XunhuAlipayEnabled:               settings.XunhuAlipayEnabled,
 		XunhuWechatEnabled:               settings.XunhuWechatEnabled,
+		TopupAlipayEnabled:               settings.TopupAlipayEnabled,
+		TopupWechatEnabled:               settings.TopupWechatEnabled,
 		Version:                          h.version,
 		AccountQuotaNotifyEnabled:        settings.AccountQuotaNotifyEnabled,
 	})

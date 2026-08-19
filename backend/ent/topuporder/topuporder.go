@@ -24,6 +24,8 @@ const (
 	FieldBonusAmountCnyFen = "bonus_amount_cny_fen"
 	// FieldPayType holds the string denoting the pay_type field in the database.
 	FieldPayType = "pay_type"
+	// FieldProvider holds the string denoting the provider field in the database.
+	FieldProvider = "provider"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldInvoiceStatus holds the string denoting the invoice_status field in the database.
@@ -68,6 +70,7 @@ var Columns = []string{
 	FieldAmountCnyFen,
 	FieldBonusAmountCnyFen,
 	FieldPayType,
+	FieldProvider,
 	FieldStatus,
 	FieldInvoiceStatus,
 	FieldXunhuTradeNo,
@@ -98,6 +101,10 @@ var (
 	BonusAmountCnyFenValidator func(int) error
 	// PayTypeValidator is a validator for the "pay_type" field. It is called by the builders before save.
 	PayTypeValidator func(string) error
+	// DefaultProvider holds the default value on creation for the "provider" field.
+	DefaultProvider string
+	// ProviderValidator is a validator for the "provider" field. It is called by the builders before save.
+	ProviderValidator func(string) error
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
@@ -147,6 +154,11 @@ func ByBonusAmountCnyFen(opts ...sql.OrderTermOption) OrderOption {
 // ByPayType orders the results by the pay_type field.
 func ByPayType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPayType, opts...).ToFunc()
+}
+
+// ByProvider orders the results by the provider field.
+func ByProvider(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProvider, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.

@@ -15,6 +15,8 @@ func TestFilterInternalOnlyModelsHidesCompactVariants(t *testing.T) {
 		"gpt-5.5",
 		"gpt-5.5-OpenAI-Compact",
 		"gpt-5.4-openai-compact",
+		"codex-auto-review",
+		" Codex-Auto-Review ",
 	})
 
 	require.Equal(t, []string{"gpt-5.6-sol", "gpt-5.5"}, models)

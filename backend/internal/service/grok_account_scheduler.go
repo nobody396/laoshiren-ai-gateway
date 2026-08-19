@@ -105,7 +105,7 @@ func (s *OpenAIGatewayService) SelectGrokAccountWithScheduler(
 		return nil, decision, fmt.Errorf("%w: no available Grok accounts supporting model %q", ErrNoAvailableAccounts, requestedModel)
 	}
 
-	sortAccountsByPriorityAndLastUsed(candidates, false)
+	sortAccountsByPriorityAndLastUsed(candidates, false, groupID)
 	var waitCandidate *Account
 	for _, candidate := range candidates {
 		latest, latestErr := s.accountRepo.GetByID(ctx, candidate.ID)

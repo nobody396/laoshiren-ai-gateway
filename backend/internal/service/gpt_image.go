@@ -665,7 +665,7 @@ func (s *OpenAIGatewayService) SelectAccountWithSchedulerForGPTImage(
 	loadMap, err := s.concurrencyService.GetAccountsLoadBatch(ctx, accountLoads)
 	if err != nil {
 		ordered := append([]*Account(nil), candidates...)
-		sortAccountsByPriorityAndLastUsed(ordered, false)
+		sortAccountsByPriorityAndLastUsed(ordered, false, groupID)
 		for _, acc := range ordered {
 			fresh := s.resolveFreshSchedulableGPTImageAccount(ctx, acc, requestedModel)
 			if fresh == nil {
@@ -697,8 +697,9 @@ func (s *OpenAIGatewayService) SelectAccountWithSchedulerForGPTImage(
 		if len(available) > 0 {
 			sort.SliceStable(available, func(i, j int) bool {
 				a, b := available[i], available[j]
-				if a.account.Priority != b.account.Priority {
-					return a.account.Priority < b.account.Priority
+				pa, pb := a.account.EffectivePriorityForGroup(groupID), b.account.EffectivePriorityForGroup(groupID)
+				if pa != pb {
+					return pa < pb
 				}
 				if a.loadInfo.LoadRate != b.loadInfo.LoadRate {
 					return a.loadInfo.LoadRate < b.loadInfo.LoadRate
@@ -714,7 +715,7 @@ func (s *OpenAIGatewayService) SelectAccountWithSchedulerForGPTImage(
 					return a.account.LastUsedAt.Before(*b.account.LastUsedAt)
 				}
 			})
-			shuffleWithinSortGroups(available)
+			shuffleWithinSortGroups(available, groupID)
 
 			for _, item := range available {
 				fresh := s.resolveFreshSchedulableGPTImageAccount(ctx, item.account, requestedModel)
@@ -732,7 +733,7 @@ func (s *OpenAIGatewayService) SelectAccountWithSchedulerForGPTImage(
 		}
 	}
 
-	sortAccountsByPriorityAndLastUsed(candidates, false)
+	sortAccountsByPriorityAndLastUsed(candidates, false, groupID)
 	for _, acc := range candidates {
 		fresh := s.resolveFreshSchedulableGPTImageAccount(ctx, acc, requestedModel)
 		if fresh == nil {

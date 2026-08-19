@@ -115,10 +115,10 @@ const catalog = ref<PublicModelPricingCatalog | null>(null)
 const loading = ref(true)
 const error = ref('')
 
-// 厂商分块展示顺序：GPT 在前，然后 Claude，之后 Grok / GLM / DeepSeek 等；
+// 厂商分块展示顺序：GPT 在前，然后 Claude，之后 Grok / GLM / Kimi / DeepSeek 等；
 // 月卡（Builder Pass）分块排在厂商分块之后、「其他」之前。
 // 月卡组会同时出现在所属厂商分块和 Builder Pass 分块（运营要求 2026-08-19）。
-const BLOCK_ORDER = ['gpt', 'claude', 'grok', 'glm', 'deepseek', 'qwen', 'minimax', 'builderPass', 'other']
+const BLOCK_ORDER = ['gpt', 'claude', 'grok', 'glm', 'kimi', 'deepseek', 'qwen', 'gemini', 'minimax', 'builderPass', 'other']
 
 // 每个厂商分块 tab / 标题用的品牌图标（ModelIcon 按模型名匹配品牌）
 const BLOCK_ICON_MODEL: Record<string, string> = {
@@ -126,8 +126,10 @@ const BLOCK_ICON_MODEL: Record<string, string> = {
   claude: 'claude',
   grok: 'grok',
   glm: 'glm',
+  kimi: 'kimi',
   deepseek: 'deepseek',
   qwen: 'qwen',
+  gemini: 'gemini',
   minimax: 'minimax',
 }
 
@@ -142,8 +144,11 @@ function classifyBlock(group: PublicPricingGroup): string {
   if (/\bclaude[-\s]/.test(joined)) return 'claude'
   if (/\bgrok[-\s]/.test(joined)) return 'grok'
   if (/\bglm[-\s]/.test(joined)) return 'glm'
+  if (/\bkimi[-\s]/.test(joined)) return 'kimi'
   if (/\bdeepseek[-\s]/.test(joined)) return 'deepseek'
-  if (/\bqwen[-\s]/.test(joined)) return 'qwen'
+  // qwen3.8-max 这类命名在 qwen 后直接跟数字，不能要求横杠/空格。
+  if (/\bqwen[\d-\s]/.test(joined)) return 'qwen'
+  if (/\bgemini[-\s]/.test(joined)) return 'gemini'
   if (/\bminimax[-\s]/.test(joined)) return 'minimax'
   return 'other'
 }

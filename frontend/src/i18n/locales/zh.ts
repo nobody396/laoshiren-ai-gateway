@@ -6686,8 +6686,10 @@ export default {
       claude: 'Claude / Anthropic',
       grok: 'Grok',
       glm: 'GLM',
+      kimi: 'Kimi',
       deepseek: 'DeepSeek',
       qwen: 'Qwen',
+      gemini: 'Gemini',
       minimax: 'MiniMax',
       builderPass: 'Builder Pass 月卡',
       other: '其他'

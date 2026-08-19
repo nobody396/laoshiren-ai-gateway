@@ -143,7 +143,6 @@ import { useClipboard } from '@/composables/useClipboard'
 import {
   buildCodexModelCatalog,
   resolveCodexModels,
-  selectDefaultOpenAIModel,
   CODEX_AUTO_COMPACT_TOKEN_LIMIT,
   CODEX_CONTEXT_WINDOW_TOKENS
 } from '@/utils/ccSwitchImport'
@@ -248,8 +247,26 @@ watch(
   { immediate: true }
 )
 
-const codexCatalogModels = computed(() => resolveCodexModels(openAIAvailableModels.value))
-const codexDefaultModel = computed(() => selectDefaultOpenAIModel(codexCatalogModels.value, props.defaultMappedModel))
+// codex-auto-review is the Codex auto-review feature target, not a model users
+// pick by hand; keep it out of the one-click catalog. CC Switch imports are
+// intentionally unaffected (the GPT CYBER group relies on it there).
+const ONE_CLICK_CODEX_EXCLUDED_MODELS = new Set(['codex-auto-review'])
+// Keep existing groups on their established default: group default first, then
+// gpt-5.5, then the first listed model.
+const ONE_CLICK_CODEX_FALLBACK_DEFAULT = 'gpt-5.5'
+
+const codexCatalogModels = computed(() =>
+  resolveCodexModels(openAIAvailableModels.value)
+    .filter((model) => !ONE_CLICK_CODEX_EXCLUDED_MODELS.has(model.model))
+)
+const codexDefaultModel = computed(() => {
+  const models = codexCatalogModels.value
+  const modelIDs = new Set(models.map((model) => model.model))
+  const groupDefault = props.defaultMappedModel?.trim()
+  if (groupDefault && modelIDs.has(groupDefault)) return groupDefault
+  if (modelIDs.has(ONE_CLICK_CODEX_FALLBACK_DEFAULT)) return ONE_CLICK_CODEX_FALLBACK_DEFAULT
+  return models[0]?.model ?? ONE_CLICK_CODEX_FALLBACK_DEFAULT
+})
 
 // Icon components
 const AppleIcon = {

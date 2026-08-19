@@ -1075,6 +1075,66 @@ func TestUsageBillingRepositoryApply_BalanceFinalLimitClampsInsufficientFundsToZ
 	require.Equal(t, 1, dedupCount)
 }
 
+func TestUsageBillingRepositoryApply_BalanceDeductionAlignsWithLotLedger(t *testing.T) {
+	// users.balance 与 balance_lots 账本必须逐笔扣同一个值：带亚微美元零头的成本
+	// （如 0.0173125）floor 到微美元后，balance 与批次账本扣减的必须是同一个
+	// 金额，否则 balance 会相对账本持续单向漂移（balance_consistency 告警）。
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-micro-align-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+		Balance:      1.00,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID: user.ID,
+		Key:    "sk-usage-billing-micro-align-" + uuid.NewString(),
+		Name:   "billing-micro-align",
+	})
+	_, err := integrationDB.ExecContext(ctx, `
+		INSERT INTO balance_lots (
+			user_id, source_type, source_key,
+			original_amount_micros, remaining_amount_micros,
+			affiliate_eligible, occurred_at
+		)
+		VALUES ($1, 'legacy_unattributed', $2, 1000000, 1000000, FALSE, NOW())
+	`, user.ID, "micro-align:"+uuid.NewString())
+	require.NoError(t, err)
+
+	const cost = 0.0173125 // 含亚微美元零头的真实计费形态
+	const costMicros = int64(17_312)
+	for i := 0; i < 2; i++ {
+		result, err := repo.Apply(ctx, &service.UsageBillingCommand{
+			RequestID:   uuid.NewString(),
+			APIKeyID:    apiKey.ID,
+			UsageLogID:  time.Now().UnixNano() + int64(i),
+			UserID:      user.ID,
+			BalanceCost: cost,
+		})
+		require.NoError(t, err)
+		require.True(t, result.Applied)
+		require.Equal(t, costMicros, result.BalanceDeductedMicros)
+	}
+
+	// balance 与批次账本剩余必须精确相等（微美元口径），不能留下漂移。
+	var driftMicros int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT round((u.balance * 1000000)::numeric)::bigint - COALESCE((
+			SELECT sum(l.remaining_amount_micros) FROM balance_lots l WHERE l.user_id = u.id
+		), 0)
+		FROM users u WHERE u.id = $1
+	`, user.ID).Scan(&driftMicros))
+	require.Equal(t, int64(0), driftMicros)
+
+	var consumedMicros int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT COALESCE(sum(amount_micros), 0)::bigint FROM balance_lot_consumptions WHERE user_id = $1
+	`, user.ID).Scan(&consumedMicros))
+	require.Equal(t, 2*costMicros, consumedMicros)
+}
+
 func TestUsageBillingRepositoryApply_SubscriptionFinalLimitCapsOverage(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)

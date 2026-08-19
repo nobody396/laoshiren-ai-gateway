@@ -1325,9 +1325,14 @@ func usageBillingLimitExceeded(current float64, limit sql.NullFloat64, cost floa
 // 计费发生在上游请求完成之后，回滚并不会挽回已产生的成本，反而会让余额
 // 永远停留在正的零头（如 $0.004）。此时前置闸门（balance <= 0 才拦截）
 // 永远放行、最终扣费永远失败，用户即可无限免费使用。扣到 0 后，
-// 下一个请求就会被余额闸门正常拦截。扣减通过 GREATEST(balance - $1, 0)
+// 下一个请求就会被余额闸门正常拦截。扣减通过 GREATEST(balance - 微美元金额, 0)
 // 在单条 UPDATE 内完成，依赖行锁串行化，余额不会变负。
 func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, amount float64) (float64, float64, error) {
+	// 扣款金额先对齐到账本（balance_lots）的微美元精度：users.balance 与批次账本
+	// 必须逐笔扣减同一个值。如果 balance 扣 float 全精度而账本只记 floor 后的
+	// 微美元，每笔扣款都会留下亚微美元零头，balance 相对账本持续单向漂移
+	// （balance_consistency 告警）。floor 口径与 AffiliateMicrosFromFloat 一致。
+	amountMicros := service.AffiliateMicrosFromFloat(amount)
 	var newBalance, deductedAmount float64
 	err := tx.QueryRowContext(ctx, `
 		WITH current_balance AS (
@@ -1337,16 +1342,16 @@ func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, am
 			FOR UPDATE
 		), updated AS (
 			UPDATE users AS u
-			SET balance = GREATEST(current_balance.balance - $1::numeric, 0),
+			SET balance = GREATEST(current_balance.balance - ($1::numeric / 1000000), 0),
 				updated_at = NOW()
 			FROM current_balance
 			WHERE u.id = current_balance.id
 			RETURNING
 				u.balance AS new_balance,
-				LEAST(GREATEST(current_balance.balance, 0), $1::numeric) AS deducted_amount
+				LEAST(GREATEST(current_balance.balance, 0), ($1::numeric / 1000000)) AS deducted_amount
 		)
 		SELECT new_balance, deducted_amount FROM updated
-	`, amount, userID).Scan(&newBalance, &deductedAmount)
+	`, amountMicros, userID).Scan(&newBalance, &deductedAmount)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, 0, service.ErrUserNotFound
 	}

@@ -25,7 +25,7 @@ func TestUsageBillingRepositoryApply_BalanceFinalLimitClampsToZeroOnInsufficient
 		WithArgs("req-low-balance", int64(22)).
 		WillReturnError(sql.ErrNoRows)
 	mock.ExpectQuery(`UPDATE users`).
-		WithArgs(1.00, int64(11)).
+		WithArgs(int64(1_000_000), int64(11)).
 		WillReturnRows(sqlmock.NewRows([]string{"new_balance", "deducted_amount"}).AddRow(0.00, 0.01))
 	mock.ExpectCommit()
 

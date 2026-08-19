@@ -10,11 +10,33 @@ type generatedCatalogGroupPolicy struct {
 }
 
 var generatedCatalogBillingPrices = map[string]*ModelPricing{
+	"deepseek-v4-flash": {InputPricePerToken: 0.44e-6, OutputPricePerToken: 1.32e-6, CacheReadPricePerToken: 0.044e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"gemini-3.1-pro": {InputPricePerToken: 2e-6, OutputPricePerToken: 12e-6, CacheReadPricePerToken: 0e-6, LongContextInputThreshold: 200000, LongContextInputMultiplier: 2, LongContextOutputMultiplier: 1.5},
+	"gemini-3.7-flash": {InputPricePerToken: 0.75e-6, OutputPricePerToken: 3.75e-6, CacheReadPricePerToken: 0e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"gemini-3.7-flash-high": {InputPricePerToken: 0.75e-6, OutputPricePerToken: 3.75e-6, CacheReadPricePerToken: 0e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 	"grok-4.6": {InputPricePerToken: 2e-6, OutputPricePerToken: 6e-6, CacheReadPricePerToken: 0.5e-6, LongContextInputThreshold: 200000, LongContextInputMultiplier: 2, LongContextOutputMultiplier: 2},
+	"kimi-k2.7-code": {InputPricePerToken: 6.5e-6, OutputPricePerToken: 27e-6, CacheReadPricePerToken: 0e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"kimi-k3": {InputPricePerToken: 20e-6, OutputPricePerToken: 100e-6, CacheReadPricePerToken: 2e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"qwen3.6-flash": {InputPricePerToken: 1.2e-6, OutputPricePerToken: 7.2e-6, CacheReadPricePerToken: 0e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"qwen3.6-plus": {InputPricePerToken: 2e-6, OutputPricePerToken: 12e-6, CacheReadPricePerToken: 0e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"qwen3.7-max": {InputPricePerToken: 12e-6, OutputPricePerToken: 36e-6, CacheReadPricePerToken: 0e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"qwen3.7-plus": {InputPricePerToken: 2e-6, OutputPricePerToken: 8e-6, CacheReadPricePerToken: 0e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
+	"qwen3.8-max": {InputPricePerToken: 12e-6, OutputPricePerToken: 36e-6, CacheReadPricePerToken: 0e-6, LongContextInputThreshold: 0, LongContextInputMultiplier: 0, LongContextOutputMultiplier: 0},
 }
 
 var generatedCatalogDisplayPrices = map[string]manualOfficialPrice{
+	"deepseek-v4-flash": {input: 0.44, output: 1.32, cacheRead: 0.044},
+	"gemini-3.1-pro": {input: 2, output: 12, cacheRead: 0},
+	"gemini-3.7-flash": {input: 0.75, output: 3.75, cacheRead: 0},
+	"gemini-3.7-flash-high": {input: 0.75, output: 3.75, cacheRead: 0},
 	"grok-4.6": {input: 2, output: 6, cacheRead: 0.5},
+	"kimi-k2.7-code": {input: 6.5, output: 27, cacheRead: 0},
+	"kimi-k3": {input: 20, output: 100, cacheRead: 2},
+	"qwen3.6-flash": {input: 1.2, output: 7.2, cacheRead: 0},
+	"qwen3.6-plus": {input: 2, output: 12, cacheRead: 0},
+	"qwen3.7-max": {input: 12, output: 36, cacheRead: 0},
+	"qwen3.7-plus": {input: 2, output: 8, cacheRead: 0},
+	"qwen3.8-max": {input: 12, output: 36, cacheRead: 0},
 }
 
 var generatedCatalogClientDefaults = map[string]string{

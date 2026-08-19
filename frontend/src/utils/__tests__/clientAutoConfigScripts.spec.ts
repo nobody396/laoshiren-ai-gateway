@@ -151,7 +151,11 @@ describe('client auto-config scripts', () => {
   it('shows the supported Codex catalog in the manual settings template', () => {
     const modal = readUseKeyModal()
     expect(modal).toContain('model_catalog_json = "laoshirenai-model-catalog.json"')
-    expect(modal).toContain('buildCodexModelCatalog()')
+    // The modal resolves the key's group models before building the catalog,
+    // so enterprise groups see every routed model instead of the static list.
+    expect(modal).toContain('resolveCodexModels(')
+    expect(modal).toContain('selectDefaultOpenAIModel(')
+    expect(modal).toContain('buildCodexModelCatalog(codexCatalogModels.value)')
     expect(modal).not.toContain("'gpt-5.3-codex-spark'")
   })
 

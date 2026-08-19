@@ -93,7 +93,7 @@ const formatModelDisplayName = (modelID: string): string => {
   return modelID.split('-').map(displayToken).join(' ')
 }
 
-const resolveCodexModels = (availableModels?: readonly string[]): readonly CodexClientModel[] => {
+export const resolveCodexModels = (availableModels?: readonly string[]): readonly CodexClientModel[] => {
   if (availableModels === undefined) return OPENAI_CODEX_MODELS
 
   const seen = new Set<string>()
@@ -112,7 +112,7 @@ const resolveCodexModels = (availableModels?: readonly string[]): readonly Codex
   })
 }
 
-const selectDefaultOpenAIModel = (
+export const selectDefaultOpenAIModel = (
   models: readonly CodexClientModel[],
   groupDefault?: string
 ): string => {
@@ -265,7 +265,11 @@ requires_openai_auth = true
     modelCatalog: {
       models: models.map((model) => ({
         ...model,
-        contextWindow: context.contextWindow
+        contextWindow: context.contextWindow,
+        // CC Switch's Codex model catalog follows the same visibility contract
+        // as the downloaded catalog file; without it imported models can be
+        // hidden from the client model selector.
+        visibility: 'list'
       }))
     }
   })

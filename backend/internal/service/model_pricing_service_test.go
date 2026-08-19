@@ -349,12 +349,14 @@ func TestModelPricingHidesOpenAICompactVariants(t *testing.T) {
 		"gpt-5.6-sol-openai-compact": {InputCostPerToken: 5e-6, OutputCostPerToken: 30e-6, CacheReadInputTokenCost: 0.5e-6},
 		"gpt-5.5":                    {InputCostPerToken: 2.5e-6, OutputCostPerToken: 15e-6, CacheReadInputTokenCost: 0.25e-6},
 		"gpt-5.5-openai-compact":     {InputCostPerToken: 2.5e-6, OutputCostPerToken: 15e-6, CacheReadInputTokenCost: 0.25e-6},
+		"codex-auto-review":          {InputCostPerToken: 2.5e-6, OutputCostPerToken: 15e-6, CacheReadInputTokenCost: 0.25e-6},
 	}
 	models := map[int64][]string{52: {
 		"gpt-5.6-sol",
 		"gpt-5.6-sol-openai-compact",
 		"gpt-5.5",
 		"gpt-5.5-openai-compact",
+		"codex-auto-review",
 	}}
 
 	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
@@ -368,8 +370,8 @@ func TestModelPricingHidesOpenAICompactVariants(t *testing.T) {
 	got := make([]string, 0, len(catalog.Groups[0].Models))
 	for _, m := range catalog.Groups[0].Models {
 		got = append(got, m.Model)
-		if IsOpenAICompactVariant(m.Model) {
-			t.Fatalf("compact variant %s must not appear in public pricing", m.Model)
+		if IsInternalOnlyModel(m.Model) {
+			t.Fatalf("internal-only model %s must not appear in public pricing", m.Model)
 		}
 	}
 	for _, base := range []string{"gpt-5.6-sol", "gpt-5.5"} {

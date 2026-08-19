@@ -76,6 +76,19 @@ func TestIsDisabledPublicModelAllowsCompactVariants(t *testing.T) {
 	require.False(t, IsOpenAICompactVariant("gpt-5.6-sol"))
 }
 
+func TestIsDisabledPublicModelAllowsAutoReviewModel(t *testing.T) {
+	t.Parallel()
+
+	// codex-auto-review is called directly by Codex's auto-review feature; the
+	// retired model gate must never block it (it normalizes to gpt-5.5).
+	require.True(t, IsAutoReviewModel("codex-auto-review"))
+	require.True(t, IsAutoReviewModel(" Codex-Auto-Review "))
+	require.False(t, IsAutoReviewModel("gpt-5.5"))
+	for _, groupID := range []int64{0, 6, 52} {
+		require.False(t, IsDisabledPublicModelForGroup("codex-auto-review", groupID), groupID)
+	}
+}
+
 func TestIsDisabledPublicModelForGroupExemption(t *testing.T) {
 	t.Parallel()
 

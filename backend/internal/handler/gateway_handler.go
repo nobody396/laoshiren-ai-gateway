@@ -69,11 +69,12 @@ func newGatewayModelInfo(modelID, displayName string, created int64, createdAt s
 }
 
 // filterInternalOnlyModels drops internal-only model variants (Codex
-// auto-compaction) from user-facing model discovery. They stay routable.
+// auto-compaction variants and the auto-review target) from user-facing model
+// discovery. They stay routable.
 func filterInternalOnlyModels(modelIDs []string) []string {
 	filtered := make([]string, 0, len(modelIDs))
 	for _, modelID := range modelIDs {
-		if service.IsOpenAICompactVariant(modelID) {
+		if service.IsInternalOnlyModel(modelID) {
 			continue
 		}
 		filtered = append(filtered, modelID)

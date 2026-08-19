@@ -11,6 +11,8 @@ import (
 	"time"
 
 	gocache "github.com/patrickmn/go-cache"
+
+	"github.com/bozhouDev/DragonCode-sub2api/internal/domain"
 )
 
 // AvailableModelsLister 列出某个分组当前可用的模型名（绑定账号 model_mapping 的并集）。
@@ -71,6 +73,20 @@ const openAICompactVariantSuffix = "-openai-compact"
 // auto-compaction variant. Hide-only; never use this to block requests.
 func IsOpenAICompactVariant(model string) bool {
 	return strings.HasSuffix(strings.ToLower(strings.TrimSpace(model)), openAICompactVariantSuffix)
+}
+
+// IsAutoReviewModel reports whether a model id is the internal Codex
+// auto-review target. Hide-only; direct requests must keep working.
+func IsAutoReviewModel(model string) bool {
+	return strings.EqualFold(strings.TrimSpace(model), domain.CodexAutoReviewModelID)
+}
+
+// IsInternalOnlyModel reports whether a model id is internal-only (Codex
+// auto-compaction variant or auto-review target). Such models stay routable
+// for the client features that call them, but are hidden from user-facing
+// model lists and the public pricing page.
+func IsInternalOnlyModel(model string) bool {
+	return IsOpenAICompactVariant(model) || IsAutoReviewModel(model)
 }
 
 type disabledPublicModelRule struct {
@@ -266,9 +282,9 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 			if s.isDisplayHiddenModel(model) {
 				continue
 			}
-			// openai-compact 变体是 Codex 自动压缩的内部模型：保持可路由，
-			// 但不在公开定价页展示。
-			if IsOpenAICompactVariant(model) {
+			// 内部模型（openai-compact 自动压缩变体、codex-auto-review 自动评审
+			// 目标）保持可路由，但不在公开定价页展示。
+			if IsInternalOnlyModel(model) {
 				continue
 			}
 			// 生图费率由分组独立配置决定；不要再把 gpt-image-2 当普通文本

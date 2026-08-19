@@ -62,6 +62,20 @@ func (_c *TopupOrderCreate) SetPayType(v string) *TopupOrderCreate {
 	return _c
 }
 
+// SetProvider sets the "provider" field.
+func (_c *TopupOrderCreate) SetProvider(v string) *TopupOrderCreate {
+	_c.mutation.SetProvider(v)
+	return _c
+}
+
+// SetNillableProvider sets the "provider" field if the given value is not nil.
+func (_c *TopupOrderCreate) SetNillableProvider(v *string) *TopupOrderCreate {
+	if v != nil {
+		_c.SetProvider(*v)
+	}
+	return _c
+}
+
 // SetStatus sets the "status" field.
 func (_c *TopupOrderCreate) SetStatus(v string) *TopupOrderCreate {
 	_c.mutation.SetStatus(v)
@@ -219,6 +233,10 @@ func (_c *TopupOrderCreate) defaults() {
 		v := topuporder.DefaultBonusAmountCnyFen
 		_c.mutation.SetBonusAmountCnyFen(v)
 	}
+	if _, ok := _c.mutation.Provider(); !ok {
+		v := topuporder.DefaultProvider
+		_c.mutation.SetProvider(v)
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		v := topuporder.DefaultStatus
 		_c.mutation.SetStatus(v)
@@ -272,6 +290,14 @@ func (_c *TopupOrderCreate) check() error {
 	if v, ok := _c.mutation.PayType(); ok {
 		if err := topuporder.PayTypeValidator(v); err != nil {
 			return &ValidationError{Name: "pay_type", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.pay_type": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Provider(); !ok {
+		return &ValidationError{Name: "provider", err: errors.New(`ent: missing required field "TopupOrder.provider"`)}
+	}
+	if v, ok := _c.mutation.Provider(); ok {
+		if err := topuporder.ProviderValidator(v); err != nil {
+			return &ValidationError{Name: "provider", err: fmt.Errorf(`ent: validator failed for field "TopupOrder.provider": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Status(); !ok {
@@ -346,6 +372,10 @@ func (_c *TopupOrderCreate) createSpec() (*TopupOrder, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.PayType(); ok {
 		_spec.SetField(topuporder.FieldPayType, field.TypeString, value)
 		_node.PayType = value
+	}
+	if value, ok := _c.mutation.Provider(); ok {
+		_spec.SetField(topuporder.FieldProvider, field.TypeString, value)
+		_node.Provider = value
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(topuporder.FieldStatus, field.TypeString, value)
@@ -529,6 +559,18 @@ func (u *TopupOrderUpsert) SetPayType(v string) *TopupOrderUpsert {
 // UpdatePayType sets the "pay_type" field to the value that was provided on create.
 func (u *TopupOrderUpsert) UpdatePayType() *TopupOrderUpsert {
 	u.SetExcluded(topuporder.FieldPayType)
+	return u
+}
+
+// SetProvider sets the "provider" field.
+func (u *TopupOrderUpsert) SetProvider(v string) *TopupOrderUpsert {
+	u.Set(topuporder.FieldProvider, v)
+	return u
+}
+
+// UpdateProvider sets the "provider" field to the value that was provided on create.
+func (u *TopupOrderUpsert) UpdateProvider() *TopupOrderUpsert {
+	u.SetExcluded(topuporder.FieldProvider)
 	return u
 }
 
@@ -748,6 +790,20 @@ func (u *TopupOrderUpsertOne) SetPayType(v string) *TopupOrderUpsertOne {
 func (u *TopupOrderUpsertOne) UpdatePayType() *TopupOrderUpsertOne {
 	return u.Update(func(s *TopupOrderUpsert) {
 		s.UpdatePayType()
+	})
+}
+
+// SetProvider sets the "provider" field.
+func (u *TopupOrderUpsertOne) SetProvider(v string) *TopupOrderUpsertOne {
+	return u.Update(func(s *TopupOrderUpsert) {
+		s.SetProvider(v)
+	})
+}
+
+// UpdateProvider sets the "provider" field to the value that was provided on create.
+func (u *TopupOrderUpsertOne) UpdateProvider() *TopupOrderUpsertOne {
+	return u.Update(func(s *TopupOrderUpsert) {
+		s.UpdateProvider()
 	})
 }
 
@@ -1148,6 +1204,20 @@ func (u *TopupOrderUpsertBulk) SetPayType(v string) *TopupOrderUpsertBulk {
 func (u *TopupOrderUpsertBulk) UpdatePayType() *TopupOrderUpsertBulk {
 	return u.Update(func(s *TopupOrderUpsert) {
 		s.UpdatePayType()
+	})
+}
+
+// SetProvider sets the "provider" field.
+func (u *TopupOrderUpsertBulk) SetProvider(v string) *TopupOrderUpsertBulk {
+	return u.Update(func(s *TopupOrderUpsert) {
+		s.SetProvider(v)
+	})
+}
+
+// UpdateProvider sets the "provider" field to the value that was provided on create.
+func (u *TopupOrderUpsertBulk) UpdateProvider() *TopupOrderUpsertBulk {
+	return u.Update(func(s *TopupOrderUpsert) {
+		s.UpdateProvider()
 	})
 }
 

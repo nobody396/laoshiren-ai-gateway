@@ -15,6 +15,7 @@ import (
 	"time"
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/payment"
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 )
 
@@ -26,6 +27,13 @@ const (
 
 	// 充值成功后写入余额的汇率：1 CNY = 1 USD（1:1 固定）
 	topupCNYFenToUSD = 1.0 / 100.0
+
+	// 充值订单标题，xunhu 与 easypay 保持一致
+	topupOrderSubject = "Dragon Code 余额充值"
+
+	// easyPayNotifyPath 是 EasyPay 异步回调的公开路由（见 server/router.go），
+	// 与 native checkout 共用同一 endpoint，由 payment 包统一定义。
+	easyPayNotifyPath = payment.EasyPayNotifyPath
 )
 
 // TopupService 处理虎皮椒充值业务
@@ -41,6 +49,7 @@ type TopupService struct {
 	balanceAlertService  *BalanceAlertService
 	affiliateConsumption AffiliateConsumptionRepository
 	affiliateRewards     *AffiliateRewardService
+	paymentRegistry      *payment.Registry
 }
 
 // NewTopupService creates a new TopupService
@@ -56,6 +65,7 @@ func NewTopupService(
 	balanceAlertService *BalanceAlertService,
 	affiliateConsumption AffiliateConsumptionRepository,
 	affiliateRewards *AffiliateRewardService,
+	paymentRegistry *payment.Registry,
 ) *TopupService {
 	return &TopupService{
 		topupRepo:            topupRepo,
@@ -69,6 +79,7 @@ func NewTopupService(
 		balanceAlertService:  balanceAlertService,
 		affiliateConsumption: affiliateConsumption,
 		affiliateRewards:     affiliateRewards,
+		paymentRegistry:      paymentRegistry,
 	}
 }
 
@@ -169,6 +180,19 @@ func (s *TopupService) CreateTopupOrder(ctx context.Context, userID int64, amoun
 		return "", "", ErrTopupInvalidType
 	}
 
+	// 按渠道设置选择支付网关，默认虎皮椒
+	provider, err := s.settingService.GetTopupProvider(ctx, payType)
+	if err != nil {
+		return "", "", fmt.Errorf("get topup provider: %w", err)
+	}
+	if provider == payment.ProviderEasyPay {
+		return s.createEasyPayTopupOrder(ctx, userID, amountCNYFen, payType)
+	}
+	return s.createXunhuTopupOrder(ctx, userID, amountCNYFen, payType)
+}
+
+// createXunhuTopupOrder 虎皮椒下单路径（原 CreateTopupOrder 实现，保持不变）
+func (s *TopupService) createXunhuTopupOrder(ctx context.Context, userID int64, amountCNYFen int, payType string) (orderNo, qrCodeURL string, err error) {
 	// 读取虎皮椒配置
 	appID, key, notifyURL, enabled, err := s.settingService.GetXunhuConfig(ctx, payType)
 	if err != nil {
@@ -192,6 +216,7 @@ func (s *TopupService) CreateTopupOrder(ctx context.Context, userID int64, amoun
 		AmountCNYFen:      amountCNYFen,
 		BonusAmountCNYFen: QuoteTopupCredit(amountCNYFen).BonusAmountCNYFen,
 		PayType:           payType,
+		Provider:          "xunhu",
 		Status:            TopupStatusPending,
 	}
 	if err := s.topupRepo.Create(ctx, order); err != nil {
@@ -212,7 +237,7 @@ func (s *TopupService) CreateTopupOrder(ctx context.Context, userID int64, amoun
 		"appid":          appID,
 		"trade_order_id": orderNo,
 		"total_fee":      totalFee,
-		"title":          "Dragon Code 余额充值",
+		"title":          topupOrderSubject,
 		"time":           ts,
 		"notify_url":     notifyURL,
 		"return_url":     returnURL,
@@ -243,6 +268,74 @@ func (s *TopupService) CreateTopupOrder(ctx context.Context, userID int64, amoun
 	_ = s.topupRepo.UpdateQRCodeURL(ctx, order.ID, resp.URLQRCode)
 
 	return orderNo, resp.URLQRCode, nil
+}
+
+// resolveEasyPayNotifyURL 组装 EasyPay 异步回调地址：<frontend_url>/api/v1/pay/notify/easypay
+func (s *TopupService) resolveEasyPayNotifyURL(ctx context.Context) string {
+	baseURL := strings.TrimRight(strings.TrimSpace(s.settingService.GetFrontendURL(ctx)), "/")
+	if baseURL == "" {
+		return ""
+	}
+	return baseURL + easyPayNotifyPath
+}
+
+// createEasyPayTopupOrder EasyPay（彩虹易支付兼容）下单路径
+func (s *TopupService) createEasyPayTopupOrder(ctx context.Context, userID int64, amountCNYFen int, payType string) (orderNo, qrCodeURL string, err error) {
+	gateway, err := s.paymentRegistry.Get(payment.ProviderEasyPay)
+	if err != nil {
+		return "", "", err
+	}
+
+	notifyURL := s.resolveEasyPayNotifyURL(ctx)
+	if notifyURL == "" {
+		return "", "", infraerrors.BadRequest("EASYPAY_NOTIFY_URL_MISSING", "easypay notify url is not configured (frontend url missing)")
+	}
+	var returnURL string
+	if baseURL := s.resolveTopupBaseURL(ctx, notifyURL); baseURL != "" {
+		returnURL = baseURL + "/dashboard"
+	}
+
+	method := payment.MethodAlipay
+	if payType == "wechat" {
+		method = payment.MethodWechat
+	}
+
+	// 订单号规则与虎皮椒一致
+	orderNo = fmt.Sprintf("TP%05d%013d", userID%100000, time.Now().UnixMilli())
+
+	order := &TopupOrder{
+		OrderNo:           orderNo,
+		UserID:            userID,
+		AmountCNYFen:      amountCNYFen,
+		BonusAmountCNYFen: QuoteTopupCredit(amountCNYFen).BonusAmountCNYFen,
+		PayType:           payType,
+		Provider:          payment.ProviderEasyPay,
+		Status:            TopupStatusPending,
+	}
+	if err := s.topupRepo.Create(ctx, order); err != nil {
+		return "", "", fmt.Errorf("create topup order: %w", err)
+	}
+
+	result, err := gateway.CreateOrder(ctx, &payment.CreateOrderRequest{
+		OutTradeNo:   orderNo,
+		Method:       method,
+		AmountCNYFen: amountCNYFen,
+		Subject:      topupOrderSubject,
+		NotifyURL:    notifyURL,
+		ReturnURL:    returnURL,
+	})
+	if err != nil {
+		return "", "", err
+	}
+
+	// 优先二维码内容，退回收银台 URL
+	qrCodeURL = result.QRContent
+	if qrCodeURL == "" {
+		qrCodeURL = result.PayURL
+	}
+	_ = s.topupRepo.UpdateQRCodeURL(ctx, order.ID, qrCodeURL)
+
+	return orderNo, qrCodeURL, nil
 }
 
 // HandleNotify 处理虎皮椒异步回调
@@ -299,7 +392,48 @@ func (s *TopupService) HandleNotify(ctx context.Context, form url.Values) error 
 	return s.completeOrder(ctx, orderNo, order, &xunhuTradeNo)
 }
 
-// QueryOrderStatus 查询订单状态（先查本地，pending 时再查虎皮椒）
+// HandleEasyPayNotify 处理 EasyPay 异步回调（已由 handler 验签解析为 NotifyResult）。
+// 返回 nil 表示应答 success；返回 error 让平台重试。
+func (s *TopupService) HandleEasyPayNotify(ctx context.Context, n *payment.NotifyResult) error {
+	orderNo := strings.TrimSpace(n.OutTradeNo)
+	if orderNo == "" {
+		return infraerrors.BadRequest("EASYPAY_INVALID_NOTIFY", "out_trade_no is required")
+	}
+
+	order, err := s.topupRepo.GetByOrderNo(ctx, orderNo)
+	if err != nil {
+		return fmt.Errorf("get topup order: %w", err)
+	}
+
+	// 回调必须打到 easypay 渠道的订单上
+	if order.Provider != payment.ProviderEasyPay {
+		return ErrTopupProviderMismatch
+	}
+
+	// 非支付成功状态只确认 receipt，不入账
+	if !n.Paid {
+		return nil
+	}
+
+	// 金额必须与订单一致
+	if n.AmountCNYFen != order.AmountCNYFen {
+		return ErrTopupAmountMismatch
+	}
+
+	// 网关声明的支付方式（若有）必须与订单渠道一致
+	if n.Method != "" && n.Method != order.PayType {
+		return ErrTopupPayTypeMismatch
+	}
+
+	var tradeNoPtr *string
+	if tradeNo := strings.TrimSpace(n.TradeNo); tradeNo != "" {
+		tradeNoPtr = &tradeNo
+	}
+
+	return s.completeOrder(ctx, orderNo, order, tradeNoPtr)
+}
+
+// QueryOrderStatus 查询订单状态（先查本地，pending 时再查支付网关）
 func (s *TopupService) QueryOrderStatus(ctx context.Context, orderNo string, userID int64) (*TopupOrder, error) {
 	order, err := s.topupRepo.GetByOrderNo(ctx, orderNo)
 	if err != nil {
@@ -310,19 +444,23 @@ func (s *TopupService) QueryOrderStatus(ctx context.Context, orderNo string, use
 	}
 
 	if order.Status == TopupStatusPending {
-		// 查虎皮椒接口
-		appID, key, _, _, err := s.settingService.GetXunhuConfig(ctx, order.PayType)
-		if err == nil && appID != "" && key != "" {
-			queryStatus, xunhuTradeNo, qErr := s.queryXunhu(ctx, appID, key, orderNo)
-			if qErr == nil {
-				switch queryStatus {
-				case "OD":
-					if cErr := s.completeOrder(ctx, orderNo, order, &xunhuTradeNo); cErr == nil {
-						order, _ = s.topupRepo.GetByOrderNo(ctx, orderNo)
+		if order.Provider == payment.ProviderEasyPay {
+			s.selfHealEasyPayOrder(ctx, orderNo, order)
+		} else {
+			// 查虎皮椒接口
+			appID, key, _, _, err := s.settingService.GetXunhuConfig(ctx, order.PayType)
+			if err == nil && appID != "" && key != "" {
+				queryStatus, xunhuTradeNo, qErr := s.queryXunhu(ctx, appID, key, orderNo)
+				if qErr == nil {
+					switch queryStatus {
+					case "OD":
+						if cErr := s.completeOrder(ctx, orderNo, order, &xunhuTradeNo); cErr == nil {
+							order, _ = s.topupRepo.GetByOrderNo(ctx, orderNo)
+						}
+					case "CD":
+						_ = s.topupRepo.UpdateStatus(ctx, order.ID, TopupStatusExpired, nil)
+						order.Status = TopupStatusExpired
 					}
-				case "CD":
-					_ = s.topupRepo.UpdateStatus(ctx, order.ID, TopupStatusExpired, nil)
-					order.Status = TopupStatusExpired
 				}
 			}
 		}
@@ -331,7 +469,46 @@ func (s *TopupService) QueryOrderStatus(ctx context.Context, orderNo string, use
 	return order, nil
 }
 
+// selfHealEasyPayOrder 在 EasyPay 回调丢失时通过主动查询补齐订单状态。
+// 查询失败不影响用户态查询响应，仅记录日志并返回当前状态（与虎皮椒路径一致）。
+func (s *TopupService) selfHealEasyPayOrder(ctx context.Context, orderNo string, order *TopupOrder) {
+	gateway, err := s.paymentRegistry.Get(payment.ProviderEasyPay)
+	if err != nil {
+		slog.Warn("easypay self-heal skipped: provider unavailable", "order_no", orderNo, "error", err)
+		return
+	}
+	result, err := gateway.QueryOrder(ctx, orderNo)
+	if err != nil {
+		slog.Warn("easypay self-heal query failed", "order_no", orderNo, "error", err)
+		return
+	}
+	if !result.Paid {
+		return
+	}
+	// 网关返回金额（非零时）必须与订单一致，否则不入账
+	if result.AmountCNYFen != 0 && result.AmountCNYFen != order.AmountCNYFen {
+		slog.Warn("easypay self-heal amount mismatch",
+			"order_no", orderNo,
+			"order_amount_fen", order.AmountCNYFen,
+			"gateway_amount_fen", result.AmountCNYFen,
+		)
+		return
+	}
+	var tradeNoPtr *string
+	if tradeNo := strings.TrimSpace(result.TradeNo); tradeNo != "" {
+		tradeNoPtr = &tradeNo
+	}
+	if cErr := s.completeOrder(ctx, orderNo, order, tradeNoPtr); cErr == nil {
+		fresh, gErr := s.topupRepo.GetByOrderNo(ctx, orderNo)
+		if gErr == nil {
+			*order = *fresh
+		}
+	}
+}
+
 // completeOrder 幂等完成订单：写余额、写流水、触发首充奖励
+// xunhuTradeNo 存的是支付网关的交易号：虎皮椒订单存 open_order_id，EasyPay 订单
+// 存 easypay trade_no。历史原因列名叫 xunhu_trade_no，所有网关共用，勿改列名。
 func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order *TopupOrder, xunhuTradeNo *string) error {
 	// 付费金额用于订单、开票和联盟结算；活动赠送只增加余额。
 	quote := StoredTopupCreditQuote(order.AmountCNYFen, order.BonusAmountCNYFen)

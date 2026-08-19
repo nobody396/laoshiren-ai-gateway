@@ -21,13 +21,19 @@ func NewNativeCheckoutHandler(nativeCheckoutService *service.NativeCheckoutServi
 
 type createNativeCheckoutOrderRequest struct {
 	OfferCode string `json:"offer_code" binding:"required,max=64"`
+	// PayType is only meaningful for easypay offers (alipay/wechat, default
+	// alipay); providers that choose their own channel ignore it.
+	PayType string `json:"pay_type" binding:"omitempty,oneof=alipay wechat"`
 }
 
 type nativeCheckoutOrderResponse struct {
 	OrderNo             string    `json:"order_no"`
 	Status              string    `json:"status"`
+	Provider            string    `json:"provider"`
+	ProductKind         string    `json:"product_kind"`
 	PayAmountCNYFen     int64     `json:"pay_amount_cny_fen"`
 	BenefitAmountCNYFen int64     `json:"benefit_amount_cny_fen"`
+	RedeemValidityDays  int       `json:"redeem_validity_days"`
 	PaymentURL          string    `json:"payment_url,omitempty"`
 	PaymentMethod       string    `json:"payment_method,omitempty"`
 	DirectQRURL         string    `json:"direct_qr_url,omitempty"`
@@ -36,11 +42,13 @@ type nativeCheckoutOrderResponse struct {
 
 type nativeCheckoutOfferResponse struct {
 	Code                string                       `json:"code"`
+	Provider            string                       `json:"provider"`
 	Name                string                       `json:"name"`
 	Description         string                       `json:"description"`
 	ProductKind         string                       `json:"product_kind"`
 	PayAmountCNYFen     int64                        `json:"pay_amount_cny_fen"`
 	BenefitAmountCNYFen int64                        `json:"benefit_amount_cny_fen"`
+	RedeemValidityDays  int                          `json:"redeem_validity_days"`
 	OncePerUser         bool                         `json:"once_per_user"`
 	Claimed             bool                         `json:"claimed"`
 	Order               *nativeCheckoutOrderResponse `json:"order,omitempty"`
@@ -67,11 +75,13 @@ func (h *NativeCheckoutHandler) ListOffers(c *gin.Context) {
 		view := offers[i]
 		item := nativeCheckoutOfferResponse{
 			Code:                view.Code,
+			Provider:            view.Provider,
 			Name:                view.Name,
 			Description:         view.Description,
 			ProductKind:         view.ProductKind,
 			PayAmountCNYFen:     view.PayAmountCNYFen,
 			BenefitAmountCNYFen: view.BenefitAmountCNYFen,
+			RedeemValidityDays:  view.RedeemValidityDays,
 			OncePerUser:         view.OncePerUser,
 			Claimed:             view.Claimed,
 		}
@@ -118,7 +128,7 @@ func (h *NativeCheckoutHandler) CreateOrder(c *gin.Context) {
 		response.BadRequest(c, "Invalid checkout request")
 		return
 	}
-	order, err := h.service.CreateOrder(c.Request.Context(), userID, request.OfferCode)
+	order, err := h.service.CreateOrder(c.Request.Context(), userID, request.OfferCode, request.PayType)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -179,8 +189,11 @@ func nativeCheckoutOrderDTO(order *service.NativeCheckoutOrder) *nativeCheckoutO
 	result := &nativeCheckoutOrderResponse{
 		OrderNo:             order.OrderNo,
 		Status:              order.Status,
+		Provider:            order.Provider,
+		ProductKind:         order.ProductKind,
 		PayAmountCNYFen:     order.PayAmountCNYFen,
 		BenefitAmountCNYFen: order.BenefitAmountCNYFen,
+		RedeemValidityDays:  order.RedeemValidityDays,
 		PaymentMethod:       order.PaymentMethod,
 		CreatedAt:           order.CreatedAt,
 	}

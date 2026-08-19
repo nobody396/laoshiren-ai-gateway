@@ -178,6 +178,14 @@ type SystemSettings struct {
 	XunhuWechatKeyConfigured bool   `json:"xunhu_wechat_key_configured"`
 	XunhuNotifyURL           string `json:"xunhu_notify_url"`
 
+	// EasyPay 聚合支付设置
+	EasyPayEnabled       bool   `json:"easypay_enabled"`
+	EasyPayPID           string `json:"easypay_pid"`
+	EasyPayKeyConfigured bool   `json:"easypay_key_configured"`
+	EasyPayAPIBase       string `json:"easypay_api_base"`
+	TopupAlipayProvider  string `json:"topup_alipay_provider"`
+	TopupWechatProvider  string `json:"topup_wechat_provider"`
+
 	// Payment configuration
 	PaymentEnabled                   bool     `json:"payment_enabled"`
 	PaymentMinAmount                 float64  `json:"payment_min_amount"`
@@ -261,6 +269,8 @@ type PublicSettings struct {
 	AlipayEnabled                    bool              `json:"alipay_enabled"`
 	XunhuAlipayEnabled               bool              `json:"xunhu_alipay_enabled"`
 	XunhuWechatEnabled               bool              `json:"xunhu_wechat_enabled"`
+	TopupAlipayEnabled               bool              `json:"topup_alipay_enabled"`
+	TopupWechatEnabled               bool              `json:"topup_wechat_enabled"`
 	Version                          string            `json:"version"`
 	AccountQuotaNotifyEnabled        bool              `json:"account_quota_notify_enabled"`
 }

@@ -234,6 +234,16 @@ const (
 	SettingKeyXunhuWechatKey     = "xunhu_wechat_key"     // 虎皮椒微信密钥
 	SettingKeyXunhuNotifyURL     = "xunhu_notify_url"     // 虎皮椒回调地址
 
+	// EasyPay 聚合支付（彩虹易支付兼容协议，余额充值 + 原生收银台）
+	SettingKeyEasyPayEnabled = "easypay_enabled"  // 是否启用 EasyPay 网关
+	SettingKeyEasyPayPID     = "easypay_pid"      // EasyPay 商户号
+	SettingKeyEasyPayKey     = "easypay_key"      // EasyPay 商户密钥（MD5 签名）
+	SettingKeyEasyPayAPIBase = "easypay_api_base" // EasyPay 网关地址（默认 https://pay.hueling.cc）
+
+	// 充值网关选择（xunhu / easypay）
+	SettingKeyTopupAlipayProvider = "topup_alipay_provider" // 支付宝充值使用的网关
+	SettingKeyTopupWechatProvider = "topup_wechat_provider" // 微信充值使用的网关
+
 	// Gemini 配额策略（JSON）
 	SettingKeyGeminiQuotaPolicy = "gemini_quota_policy"
 

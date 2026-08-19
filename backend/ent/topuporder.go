@@ -28,6 +28,8 @@ type TopupOrder struct {
 	BonusAmountCnyFen int `json:"bonus_amount_cny_fen,omitempty"`
 	// PayType holds the value of the "pay_type" field.
 	PayType string `json:"pay_type,omitempty"`
+	// Provider holds the value of the "provider" field.
+	Provider string `json:"provider,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
 	// InvoiceStatus holds the value of the "invoice_status" field.
@@ -86,7 +88,7 @@ func (*TopupOrder) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case topuporder.FieldID, topuporder.FieldUserID, topuporder.FieldAmountCnyFen, topuporder.FieldBonusAmountCnyFen:
 			values[i] = new(sql.NullInt64)
-		case topuporder.FieldOrderNo, topuporder.FieldPayType, topuporder.FieldStatus, topuporder.FieldInvoiceStatus, topuporder.FieldXunhuTradeNo, topuporder.FieldQrCodeURL:
+		case topuporder.FieldOrderNo, topuporder.FieldPayType, topuporder.FieldProvider, topuporder.FieldStatus, topuporder.FieldInvoiceStatus, topuporder.FieldXunhuTradeNo, topuporder.FieldQrCodeURL:
 			values[i] = new(sql.NullString)
 		case topuporder.FieldCompletedAt, topuporder.FieldCreatedAt, topuporder.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -140,6 +142,12 @@ func (_m *TopupOrder) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field pay_type", values[i])
 			} else if value.Valid {
 				_m.PayType = value.String
+			}
+		case topuporder.FieldProvider:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field provider", values[i])
+			} else if value.Valid {
+				_m.Provider = value.String
 			}
 		case topuporder.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -246,6 +254,9 @@ func (_m *TopupOrder) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("pay_type=")
 	builder.WriteString(_m.PayType)
+	builder.WriteString(", ")
+	builder.WriteString("provider=")
+	builder.WriteString(_m.Provider)
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)

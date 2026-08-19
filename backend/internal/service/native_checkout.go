@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/payment"
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
 	"github.com/google/uuid"
@@ -32,6 +33,14 @@ const (
 	NativeCheckoutPaymentMethodWeChat = "wechat"
 	NativeCheckoutPaymentMethodAlipay = "alipay"
 
+	// NativeCheckoutProviderLDXP is the LDXP card shop: it collects payment and
+	// delivers a redeem code from pre-stocked inventory.
+	NativeCheckoutProviderLDXP = "ldxp"
+	// NativeCheckoutProviderEasyPay is the EasyPay gateway (彩虹易支付 MD5
+	// protocol): it collects payment only; the redeem code is minted locally
+	// from the order snapshot after the payment is confirmed.
+	NativeCheckoutProviderEasyPay = payment.ProviderEasyPay
+
 	nativeCheckoutWorkerInterval    = time.Second
 	nativeCheckoutWorkerLease       = 30 * time.Second
 	nativeCheckoutWorkerConcurrency = 4
@@ -43,6 +52,12 @@ var (
 	ErrNativeCheckoutOrderNotFound  = infraerrors.NotFound("NATIVE_CHECKOUT_ORDER_NOT_FOUND", "checkout order not found")
 	ErrNativeCheckoutAlreadyClaimed = infraerrors.Conflict("NATIVE_CHECKOUT_ALREADY_CLAIMED", "checkout offer was already claimed")
 	ErrNativeCheckoutUnavailable    = infraerrors.ServiceUnavailable("NATIVE_CHECKOUT_UNAVAILABLE", "checkout is temporarily unavailable")
+
+	// ErrNativeCheckoutProviderMismatch / ErrNativeCheckoutAmountMismatch are
+	// returned by HandleEasyPayNotify. Any error makes the gateway handler
+	// answer "fail" so the platform retries while ops investigates.
+	ErrNativeCheckoutProviderMismatch = infraerrors.BadRequest("NATIVE_CHECKOUT_PROVIDER_MISMATCH", "notify provider does not match checkout order provider")
+	ErrNativeCheckoutAmountMismatch   = infraerrors.BadRequest("NATIVE_CHECKOUT_AMOUNT_MISMATCH", "notify amount does not match checkout order amount")
 )
 
 type NativeCheckoutOffer struct {
@@ -101,11 +116,13 @@ type NativeCheckoutOrder struct {
 
 type NativeCheckoutOfferView struct {
 	Code                string
+	Provider            string
 	Name                string
 	Description         string
 	ProductKind         string
 	PayAmountCNYFen     int64
 	BenefitAmountCNYFen int64
+	RedeemValidityDays  int
 	OncePerUser         bool
 	Claimed             bool
 	Order               *NativeCheckoutOrder
@@ -134,6 +151,35 @@ type NativeCheckoutRepository interface {
 	ClaimFulfillment(ctx context.Context, id, redeemCodeID int64, staleBefore time.Time) (*NativeCheckoutOrder, bool, error)
 	LinkRedeemCode(ctx context.Context, redeemCodeID int64, providerTradeNo string) error
 	CompleteOrder(ctx context.Context, id int64) (*NativeCheckoutOrder, error)
+	// FindMintedRedeemCode returns the code string previously minted for a
+	// provider trade no (redeem_codes.external_order_no), or
+	// ErrRedeemCodeNotFound when no code has been minted yet.
+	FindMintedRedeemCode(ctx context.Context, providerTradeNo string) (string, error)
+	// MintRedeemCode atomically creates the redeem code and its
+	// native_checkout_redeem_inventory row for a paid provider-collected
+	// order. Semantics are copied from the order snapshot. A unique conflict
+	// on external_order_no (concurrent mint) re-reads and returns the
+	// already-minted code.
+	MintRedeemCode(ctx context.Context, order *NativeCheckoutOrder, code string) (string, error)
+	// NudgeReconcileNow moves a pending/checking order's next_check_at to now
+	// so the reconcile worker re-queries the provider immediately. It does not
+	// touch updated_at (lease staleness) or check_count.
+	NudgeReconcileNow(ctx context.Context, orderID int64) error
+}
+
+// NativeCheckoutCreateRequest carries everything a provider needs to open a
+// payable order for a native checkout reservation. OrderNo is our durable
+// NC- order number: providers that accept a merchant order reference (EasyPay
+// out_trade_no) must use it so asynchronous notifies can be matched back to
+// the reservation. Providers without such a reference (LDXP) ignore it.
+// PayType is the customer-selected channel (alipay/wechat); an empty PayType
+// lets the provider pick its channel.
+type NativeCheckoutCreateRequest struct {
+	OrderNo              string
+	GoodsKey             string
+	Contact              string
+	ExpectedAmountCNYFen int64
+	PayType              string
 }
 
 type NativeCheckoutProviderOrder struct {
@@ -172,10 +218,42 @@ func (e *NativeCheckoutProviderError) Unwrap() error { return e.Cause }
 
 type NativeCheckoutProvider interface {
 	ValidateOffer(ctx context.Context, goodsKey string, expectedAmountCNYFen int64) error
-	CreateOrder(ctx context.Context, goodsKey, contact string, expectedAmountCNYFen int64) (*NativeCheckoutProviderOrder, error)
+	CreateOrder(ctx context.Context, req *NativeCheckoutCreateRequest) (*NativeCheckoutProviderOrder, error)
 	IsPaid(ctx context.Context, tradeNo string) (bool, error)
 	GetOrderInfo(ctx context.Context, tradeNo string) (*NativeCheckoutProviderOrderInfo, error)
 	FetchDirectPaymentQR(ctx context.Context, paymentURL string) ([]byte, string, error)
+}
+
+// NativeCheckoutProviderResolver resolves the provider implementation recorded
+// on an offer or order row. Native checkout offers of different providers run
+// through the same order lifecycle, so every provider call resolves by the
+// durable provider column instead of a single injected implementation.
+type NativeCheckoutProviderResolver interface {
+	ProviderFor(provider string) (NativeCheckoutProvider, error)
+}
+
+type nativeCheckoutProviderMap map[string]NativeCheckoutProvider
+
+// NewNativeCheckoutProviderResolver builds a resolver from a static provider
+// table. Nil entries are dropped so a missing provider resolves to a coded
+// error instead of a nil-interface panic.
+func NewNativeCheckoutProviderResolver(providers map[string]NativeCheckoutProvider) NativeCheckoutProviderResolver {
+	table := make(nativeCheckoutProviderMap, len(providers))
+	for name, provider := range providers {
+		name = strings.TrimSpace(name)
+		if name == "" || provider == nil {
+			continue
+		}
+		table[name] = provider
+	}
+	return table
+}
+
+func (m nativeCheckoutProviderMap) ProviderFor(provider string) (NativeCheckoutProvider, error) {
+	if p, ok := m[strings.TrimSpace(provider)]; ok && p != nil {
+		return p, nil
+	}
+	return nil, ErrNativeCheckoutUnavailable.WithCause(fmt.Errorf("unsupported native checkout provider %q", provider))
 }
 
 type NativeCheckoutRedeemer interface {
@@ -186,7 +264,7 @@ type NativeCheckoutRedeemer interface {
 
 type NativeCheckoutService struct {
 	repo         NativeCheckoutRepository
-	provider     NativeCheckoutProvider
+	providers    NativeCheckoutProviderResolver
 	userRepo     UserRepository
 	redeem       NativeCheckoutRedeemer
 	contactKey   []byte
@@ -211,14 +289,14 @@ func nativeCheckoutRedeemAuthorized(ctx context.Context) bool {
 
 func NewNativeCheckoutService(
 	repo NativeCheckoutRepository,
-	provider NativeCheckoutProvider,
+	providers NativeCheckoutProviderResolver,
 	userRepo UserRepository,
 	redeem NativeCheckoutRedeemer,
 	contactHashKey string,
 ) *NativeCheckoutService {
 	return &NativeCheckoutService{
 		repo:         repo,
-		provider:     provider,
+		providers:    providers,
 		userRepo:     userRepo,
 		redeem:       redeem,
 		contactKey:   deriveNativeCheckoutContactKey(contactHashKey),
@@ -244,7 +322,10 @@ func (s *NativeCheckoutService) ListOffers(ctx context.Context, userID int64) ([
 		if orderErr != nil && !errors.Is(orderErr, ErrNativeCheckoutOrderNotFound) {
 			return nil, fmt.Errorf("get native checkout order: %w", orderErr)
 		}
-		claimed := order != nil && order.Status == NativeCheckoutStatusCompleted
+		// "Claimed" is the lifetime once-only entitlement. Repeatable offers
+		// (e.g. monthly cards) are never claimed: a completed order must not
+		// block or label the next purchase.
+		claimed := offer.OncePerUser && order != nil && order.Status == NativeCheckoutStatusCompleted
 		if !claimed && offer.OncePerUser {
 			claimed, orderErr = s.repo.HasRedeemedOffer(ctx, userID, offer.Code)
 			if orderErr != nil {
@@ -253,11 +334,13 @@ func (s *NativeCheckoutService) ListOffers(ctx context.Context, userID int64) ([
 		}
 		views = append(views, NativeCheckoutOfferView{
 			Code:                offer.Code,
+			Provider:            offer.Provider,
 			Name:                offer.Name,
 			Description:         offer.Description,
 			ProductKind:         offer.ProductKind,
 			PayAmountCNYFen:     offer.PayAmountCNYFen,
 			BenefitAmountCNYFen: offer.BenefitAmountCNYFen,
+			RedeemValidityDays:  offer.RedeemValidityDays,
 			OncePerUser:         offer.OncePerUser,
 			Claimed:             claimed,
 			Order:               order,
@@ -299,7 +382,7 @@ func manualCheckoutPurchaseURL(offer *NativeCheckoutOffer) (string, error) {
 	if offer == nil {
 		return "", errors.New("missing manual checkout offer")
 	}
-	if !strings.EqualFold(strings.TrimSpace(offer.Provider), "ldxp") {
+	if !strings.EqualFold(strings.TrimSpace(offer.Provider), NativeCheckoutProviderLDXP) {
 		return "", errors.New("unsupported manual checkout provider")
 	}
 	goodsKey := strings.TrimSpace(offer.ProviderGoodsKey)
@@ -309,7 +392,7 @@ func manualCheckoutPurchaseURL(offer *NativeCheckoutOffer) (string, error) {
 	return "https://pay.ldxp.cn/item/" + url.PathEscape(goodsKey), nil
 }
 
-func (s *NativeCheckoutService) CreateOrder(ctx context.Context, userID int64, offerCode string) (*NativeCheckoutOrder, error) {
+func (s *NativeCheckoutService) CreateOrder(ctx context.Context, userID int64, offerCode, payType string) (*NativeCheckoutOrder, error) {
 	offerCode = strings.TrimSpace(offerCode)
 	if offerCode == "" {
 		return nil, infraerrors.BadRequest("NATIVE_CHECKOUT_OFFER_REQUIRED", "checkout offer is required")
@@ -320,6 +403,20 @@ func (s *NativeCheckoutService) CreateOrder(ctx context.Context, userID int64, o
 			return nil, err
 		}
 		return nil, fmt.Errorf("get native checkout offer: %w", err)
+	}
+	// The customer-selected payment channel is only meaningful for providers
+	// that expose both channels (EasyPay). Providers that pick their own
+	// channel (LDXP) receive an empty PayType and ignore the hint entirely.
+	payType = strings.TrimSpace(payType)
+	if offer.Provider == NativeCheckoutProviderEasyPay {
+		if payType == "" {
+			payType = NativeCheckoutPaymentMethodAlipay
+		}
+		if !isSupportedNativeCheckoutPaymentMethod(payType) {
+			return nil, infraerrors.BadRequest("NATIVE_CHECKOUT_PAY_TYPE_INVALID", "pay_type must be alipay or wechat")
+		}
+	} else {
+		payType = ""
 	}
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
@@ -362,7 +459,7 @@ func (s *NativeCheckoutService) CreateOrder(ctx context.Context, userID int64, o
 		if !reset {
 			return existing, nil
 		}
-		return s.createProviderOrder(ctx, existing, contact)
+		return s.createProviderOrder(ctx, existing, contact, payType)
 	}
 
 	order := &NativeCheckoutOrder{
@@ -393,16 +490,26 @@ func (s *NativeCheckoutService) CreateOrder(ctx context.Context, userID int64, o
 	if !created {
 		return reserved, nil
 	}
-	return s.createProviderOrder(ctx, reserved, contact)
+	return s.createProviderOrder(ctx, reserved, contact, payType)
 }
 
-func (s *NativeCheckoutService) createProviderOrder(ctx context.Context, order *NativeCheckoutOrder, contact string) (*NativeCheckoutOrder, error) {
+func (s *NativeCheckoutService) createProviderOrder(ctx context.Context, order *NativeCheckoutOrder, contact, payType string) (*NativeCheckoutOrder, error) {
 	// Once the durable reservation exists, finish the provider call and record
 	// its outcome even if the browser disconnects. Otherwise a cancelled HTTP
 	// request can strand a once-only order forever in "creating".
 	opCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 20*time.Second)
 	defer cancel()
-	providerOrder, err := s.provider.CreateOrder(opCtx, order.ProviderGoodsKey, contact, order.PayAmountCNYFen)
+	provider, err := s.providers.ProviderFor(order.Provider)
+	var providerOrder *NativeCheckoutProviderOrder
+	if err == nil {
+		providerOrder, err = provider.CreateOrder(opCtx, &NativeCheckoutCreateRequest{
+			OrderNo:              order.OrderNo,
+			GoodsKey:             order.ProviderGoodsKey,
+			Contact:              contact,
+			ExpectedAmountCNYFen: order.PayAmountCNYFen,
+			PayType:              payType,
+		})
+	}
 	if err != nil {
 		status := NativeCheckoutStatusFailed
 		failureCode := "provider_unavailable"
@@ -461,7 +568,11 @@ func (s *NativeCheckoutService) FetchDirectPaymentQR(ctx context.Context, userID
 	if order.Status != NativeCheckoutStatusPending || strings.TrimSpace(order.PaymentURL) == "" {
 		return nil, "", infraerrors.NotFound("NATIVE_CHECKOUT_QR_NOT_AVAILABLE", "direct payment QR is not available")
 	}
-	body, contentType, err := s.provider.FetchDirectPaymentQR(ctx, order.PaymentURL)
+	provider, err := s.providers.ProviderFor(order.Provider)
+	if err != nil {
+		return nil, "", infraerrors.NotFound("NATIVE_CHECKOUT_QR_NOT_AVAILABLE", "direct payment QR is not available")
+	}
+	body, contentType, err := provider.FetchDirectPaymentQR(ctx, order.PaymentURL)
 	if err != nil {
 		return nil, "", infraerrors.NotFound("NATIVE_CHECKOUT_QR_NOT_AVAILABLE", "direct payment QR is not available")
 	}
@@ -478,7 +589,11 @@ func (s *NativeCheckoutService) syncOrder(ctx context.Context, order *NativeChec
 		// never retry this ambiguous create automatically.
 		return s.holdForReview(ctx, order, "provider_create_interrupted")
 	}
-	info, err := s.provider.GetOrderInfo(ctx, order.ProviderTradeNo)
+	provider, err := s.providers.ProviderFor(order.Provider)
+	if err != nil {
+		return nil, fmt.Errorf("resolve native checkout provider: %w", err)
+	}
+	info, err := provider.GetOrderInfo(ctx, order.ProviderTradeNo)
 	if err != nil {
 		_ = s.repo.RecordPendingCheck(ctx, order.ID, time.Now().Add(s.nextCheckDelay(order)))
 		return order, nil
@@ -500,6 +615,17 @@ func (s *NativeCheckoutService) syncOrder(ctx context.Context, order *NativeChec
 		if err != nil {
 			return nil, fmt.Errorf("record native checkout payment: %w", err)
 		}
+	}
+	if order.Provider == NativeCheckoutProviderEasyPay && info.Paid {
+		// EasyPay collects money but delivers no card: mint the internal redeem
+		// code from the order snapshot, then let the standard fulfillment chain
+		// (validation, claim, link, redeem, complete) run unchanged below.
+		mintedCode, mintErr := s.ensureMintedNativeRedeemCode(ctx, order)
+		if mintErr != nil {
+			return s.holdForReview(ctx, order, "redeem_mint_failed")
+		}
+		info.Delivered = true
+		info.RedeemCodes = []string{mintedCode}
 	}
 	if err := s.validateProviderOrder(order, info); err != nil {
 		if errors.Is(err, errNativeCheckoutDeliveryPending) {
@@ -549,7 +675,8 @@ func (s *NativeCheckoutService) syncOrder(ctx context.Context, order *NativeChec
 
 // nextCheckDelay keeps newly created orders responsive without polling an
 // unpaid, abandoned QR every three seconds forever. Paid orders stay on the
-// fast path until LDXP delivers their code; unpaid orders cool down with age.
+// fast path until their code is delivered or minted; unpaid orders cool down
+// with age.
 func (s *NativeCheckoutService) nextCheckDelay(order *NativeCheckoutOrder) time.Duration {
 	if order == nil || order.Status == NativeCheckoutStatusChecking {
 		return s.pollInterval
@@ -599,6 +726,19 @@ func (s *NativeCheckoutService) validateProviderOrderIdentity(order *NativeCheck
 	if order == nil || info == nil {
 		return errors.New("missing provider order")
 	}
+	if order.Provider == NativeCheckoutProviderEasyPay {
+		// EasyPay queries key on our NC- order number, so the echoed trade
+		// reference plus the paid amount are the only identity signals the
+		// gateway returns. A missing amount is tolerated here; the paid notify
+		// and the order snapshot still bound the minted entitlement.
+		if info.TradeNo != order.ProviderTradeNo {
+			return errors.New("provider order identity mismatch")
+		}
+		if info.TotalCNYFen != 0 && info.TotalCNYFen != order.PayAmountCNYFen {
+			return errors.New("provider order amount mismatch")
+		}
+		return nil
+	}
 	if info.TradeNo != order.ProviderTradeNo || info.GoodsKey != order.ProviderGoodsKey || info.Quantity != 1 || info.TotalCNYFen != order.PayAmountCNYFen {
 		return errors.New("provider order identity mismatch")
 	}
@@ -607,6 +747,61 @@ func (s *NativeCheckoutService) validateProviderOrderIdentity(order *NativeCheck
 		return errors.New("provider contact mismatch")
 	}
 	return nil
+}
+
+// ensureMintedNativeRedeemCode returns the redeem code belonging to a paid
+// provider-collected order, minting it on first use. The mint is idempotent:
+// the lookup by external_order_no finds a code committed by an earlier
+// attempt, and a concurrent-mint unique violation re-reads the winner. The
+// worker's SKIP LOCKED lease already serializes processors per order, and the
+// partial unique index on redeem_codes.external_order_no (migration 195) is
+// the database-level backstop for the lookup-then-insert window.
+func (s *NativeCheckoutService) ensureMintedNativeRedeemCode(ctx context.Context, order *NativeCheckoutOrder) (string, error) {
+	if existing, err := s.repo.FindMintedRedeemCode(ctx, order.ProviderTradeNo); err == nil {
+		return existing, nil
+	} else if !errors.Is(err, ErrRedeemCodeNotFound) {
+		return "", fmt.Errorf("look up minted native checkout code: %w", err)
+	}
+	// 32-char lowercase hex, the same format as card-shop stock, so the
+	// existing redeem chain and card-format parsing treat it identically.
+	code, err := GenerateRedeemCode()
+	if err != nil {
+		return "", fmt.Errorf("generate native checkout redeem code: %w", err)
+	}
+	minted, err := s.repo.MintRedeemCode(ctx, order, code)
+	if err != nil {
+		return "", fmt.Errorf("mint native checkout redeem code: %w", err)
+	}
+	return minted, nil
+}
+
+// HandleEasyPayNotify processes a verified EasyPay asynchronous notify for an
+// NC- order (signature and params were already verified by the gateway
+// handler). Returning nil answers "success"; any error answers "fail" so the
+// platform retries. The notify never fulfills directly: it validates and
+// nudges, and the reconcile worker performs the authoritative provider query
+// plus fulfillment (defense in depth against forged or partial signals).
+func (s *NativeCheckoutService) HandleEasyPayNotify(ctx context.Context, n *payment.NotifyResult) error {
+	orderNo := strings.TrimSpace(n.OutTradeNo)
+	if orderNo == "" {
+		return infraerrors.BadRequest("EASYPAY_INVALID_NOTIFY", "out_trade_no is required")
+	}
+	order, err := s.repo.GetOrder(ctx, orderNo)
+	if err != nil {
+		return fmt.Errorf("get native checkout order for easypay notify: %w", err)
+	}
+	if order.Provider != NativeCheckoutProviderEasyPay {
+		return ErrNativeCheckoutProviderMismatch
+	}
+	if !n.Paid {
+		// A non-success status only confirms receipt; the worker's polling
+		// remains the source of truth.
+		return nil
+	}
+	if int64(n.AmountCNYFen) != order.PayAmountCNYFen {
+		return ErrNativeCheckoutAmountMismatch
+	}
+	return s.repo.NudgeReconcileNow(ctx, order.ID)
 }
 
 func validateNativeRedeemCode(order *NativeCheckoutOrder, code *RedeemCode) error {

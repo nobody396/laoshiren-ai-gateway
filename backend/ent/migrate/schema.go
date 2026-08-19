@@ -1588,6 +1588,7 @@ var (
 		{Name: "amount_cny_fen", Type: field.TypeInt},
 		{Name: "bonus_amount_cny_fen", Type: field.TypeInt, Default: 0},
 		{Name: "pay_type", Type: field.TypeString, Size: 16},
+		{Name: "provider", Type: field.TypeString, Size: 16, Default: "xunhu"},
 		{Name: "status", Type: field.TypeString, Size: 20, Default: "pending"},
 		{Name: "invoice_status", Type: field.TypeString, Size: 20, Default: "none"},
 		{Name: "xunhu_trade_no", Type: field.TypeString, Nullable: true, Size: 64},
@@ -1605,7 +1606,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "topup_orders_users_topup_orders",
-				Columns:    []*schema.Column{TopupOrdersColumns[12]},
+				Columns:    []*schema.Column{TopupOrdersColumns[13]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1614,17 +1615,17 @@ var (
 			{
 				Name:    "topuporder_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{TopupOrdersColumns[12]},
+				Columns: []*schema.Column{TopupOrdersColumns[13]},
 			},
 			{
 				Name:    "topuporder_status",
 				Unique:  false,
-				Columns: []*schema.Column{TopupOrdersColumns[5]},
+				Columns: []*schema.Column{TopupOrdersColumns[6]},
 			},
 			{
 				Name:    "topuporder_invoice_status",
 				Unique:  false,
-				Columns: []*schema.Column{TopupOrdersColumns[6]},
+				Columns: []*schema.Column{TopupOrdersColumns[7]},
 			},
 			{
 				Name:    "topuporder_order_no",
@@ -1634,12 +1635,12 @@ var (
 			{
 				Name:    "topuporder_user_id_invoice_status_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{TopupOrdersColumns[12], TopupOrdersColumns[6], TopupOrdersColumns[10]},
+				Columns: []*schema.Column{TopupOrdersColumns[13], TopupOrdersColumns[7], TopupOrdersColumns[11]},
 			},
 			{
 				Name:    "topuporder_invoice_status_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{TopupOrdersColumns[6], TopupOrdersColumns[10]},
+				Columns: []*schema.Column{TopupOrdersColumns[7], TopupOrdersColumns[11]},
 			},
 		},
 	}

@@ -16,6 +16,10 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
+def grok_default_row(catalog: dict) -> dict:
+    return next(row for row in catalog["models"] if row["id"] == "grok-4.6")
+
+
 class ModelCatalogTest(unittest.TestCase):
     def test_repository_catalog_is_valid_and_deterministic(self) -> None:
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
@@ -46,7 +50,7 @@ class ModelCatalogTest(unittest.TestCase):
     def test_rejects_duplicate_defaults(self) -> None:
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
         duplicate = json.loads(json.dumps(catalog))
-        row = json.loads(json.dumps(duplicate["models"][0]))
+        row = json.loads(json.dumps(grok_default_row(duplicate)))
         row["id"] = "grok-next"
         row["upstream_id"] = "grok-next"
         duplicate["models"].append(row)
@@ -61,7 +65,7 @@ class ModelCatalogTest(unittest.TestCase):
 
     def test_rejects_grok_predecessor_without_explicit_model_metadata(self) -> None:
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
-        catalog["models"][0]["client_config"]["managed_predecessor_models"] = []
+        grok_default_row(catalog)["client_config"]["managed_predecessor_models"] = []
         with self.assertRaisesRegex(ValueError, "must describe every Grok predecessor"):
             MODULE.validate_catalog(catalog)
 
@@ -96,7 +100,7 @@ class ModelCatalogTest(unittest.TestCase):
             path = Path(directory) / "manifest.json"
             path.write_text(json.dumps(manifest), encoding="utf-8")
             merged = MODULE.merge_manifest(catalog, path)
-        row = merged["models"][0]
+        row = grok_default_row(merged)
         self.assertEqual(row["public_group"]["preferred_name"], "Grok")
         self.assertEqual(row["public_group"]["legacy_names"], ["Grok 4.6", "Grok 4.5"])
 
@@ -141,7 +145,7 @@ class ModelCatalogTest(unittest.TestCase):
 
     def test_reapplying_same_default_does_not_bump_installer_version(self) -> None:
         catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
-        current = catalog["models"][0]
+        current = grok_default_row(catalog)
         manifest = {
             "model": {
                 "id": current["id"],

@@ -4,7 +4,7 @@ export interface CatalogModel {
   id: string
   upstreamId: string
   displayName: string
-  platform: 'openai' | 'anthropic' | 'grok'
+  platform: 'openai' | 'anthropic' | 'grok' | 'gemini'
   contextWindow: number
   maxOutputTokens: number
   clientDefault: boolean
@@ -23,6 +23,70 @@ export const clientAutoConfigVersion = "0.7.11"
 
 export const modelCatalog: readonly CatalogModel[] = [
   {
+    "id": "glm-5.2",
+    "upstreamId": "glm-5.2",
+    "displayName": "GLM 5.2",
+    "platform": "anthropic",
+    "contextWindow": 128000,
+    "maxOutputTokens": 8192,
+    "clientDefault": false,
+    "preferredGroupName": "GLM 5.2",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "glm-5.2",
+      "to": "glm-5.2",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
+  {
+    "id": "gemini-3.1-pro",
+    "upstreamId": "gemini-3.1-pro",
+    "displayName": "Gemini 3.1 Pro",
+    "platform": "gemini",
+    "contextWindow": 256000,
+    "maxOutputTokens": 8192,
+    "clientDefault": false,
+    "preferredGroupName": "Gemini",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gemini-3.1-pro",
+      "to": "gemini-3.1-pro",
+      "color": "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
+    }
+  },
+  {
+    "id": "gemini-3.7-flash",
+    "upstreamId": "gemini-3.7-flash",
+    "displayName": "Gemini 3.7 Flash",
+    "platform": "gemini",
+    "contextWindow": 128000,
+    "maxOutputTokens": 8192,
+    "clientDefault": false,
+    "preferredGroupName": "Gemini",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gemini-3.7-flash",
+      "to": "gemini-3.7-flash",
+      "color": "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
+    }
+  },
+  {
+    "id": "gemini-3.7-flash-high",
+    "upstreamId": "gemini-3.7-flash-high",
+    "displayName": "Gemini 3.7 Flash High",
+    "platform": "gemini",
+    "contextWindow": 128000,
+    "maxOutputTokens": 8192,
+    "clientDefault": false,
+    "preferredGroupName": "Gemini",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "gemini-3.7-flash-high",
+      "to": "gemini-3.7-flash-high",
+      "color": "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
+    }
+  },
+  {
     "id": "grok-4.6",
     "upstreamId": "grok-4.6",
     "displayName": "Grok 4.6",
@@ -39,6 +103,134 @@ export const modelCatalog: readonly CatalogModel[] = [
       "from": "grok-4.6",
       "to": "grok-4.6",
       "color": "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800/50 dark:text-slate-300"
+    }
+  },
+  {
+    "id": "deepseek-v4-flash",
+    "upstreamId": "deepseek-v4-flash",
+    "displayName": "DeepSeek V4 Flash",
+    "platform": "openai",
+    "contextWindow": 128000,
+    "maxOutputTokens": 8192,
+    "clientDefault": false,
+    "preferredGroupName": "DeepSeek",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "deepseek-v4-flash",
+      "to": "deepseek-v4-flash",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "kimi-k2.7-code",
+    "upstreamId": "kimi-k2.7-code",
+    "displayName": "Kimi K2.7 Code",
+    "platform": "openai",
+    "contextWindow": 128000,
+    "maxOutputTokens": 8192,
+    "clientDefault": false,
+    "preferredGroupName": "Kimi",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "kimi-k2.7-code",
+      "to": "kimi-k2.7-code",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "kimi-k3",
+    "upstreamId": "kimi-k3",
+    "displayName": "Kimi K3",
+    "platform": "openai",
+    "contextWindow": 128000,
+    "maxOutputTokens": 8192,
+    "clientDefault": false,
+    "preferredGroupName": "Kimi",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "kimi-k3",
+      "to": "kimi-k3",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "qwen3.6-flash",
+    "upstreamId": "qwen3.6-flash",
+    "displayName": "Qwen 3.6 Flash",
+    "platform": "openai",
+    "contextWindow": 128000,
+    "maxOutputTokens": 8192,
+    "clientDefault": false,
+    "preferredGroupName": "千问 Qwen",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "qwen3.6-flash",
+      "to": "qwen3.6-flash",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "qwen3.6-plus",
+    "upstreamId": "qwen3.6-plus",
+    "displayName": "Qwen 3.6 Plus",
+    "platform": "openai",
+    "contextWindow": 128000,
+    "maxOutputTokens": 8192,
+    "clientDefault": false,
+    "preferredGroupName": "千问 Qwen",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "qwen3.6-plus",
+      "to": "qwen3.6-plus",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "qwen3.7-max",
+    "upstreamId": "qwen3.7-max",
+    "displayName": "Qwen 3.7 Max",
+    "platform": "openai",
+    "contextWindow": 128000,
+    "maxOutputTokens": 8192,
+    "clientDefault": false,
+    "preferredGroupName": "千问 Qwen",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "qwen3.7-max",
+      "to": "qwen3.7-max",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "qwen3.7-plus",
+    "upstreamId": "qwen3.7-plus",
+    "displayName": "Qwen 3.7 Plus",
+    "platform": "openai",
+    "contextWindow": 128000,
+    "maxOutputTokens": 8192,
+    "clientDefault": false,
+    "preferredGroupName": "千问 Qwen",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "qwen3.7-plus",
+      "to": "qwen3.7-plus",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+    }
+  },
+  {
+    "id": "qwen3.8-max",
+    "upstreamId": "qwen3.8-max",
+    "displayName": "Qwen 3.8 Max",
+    "platform": "openai",
+    "contextWindow": 128000,
+    "maxOutputTokens": 8192,
+    "clientDefault": false,
+    "preferredGroupName": "千问 Qwen",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "qwen3.8-max",
+      "to": "qwen3.8-max",
+      "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
     }
   }
 ]

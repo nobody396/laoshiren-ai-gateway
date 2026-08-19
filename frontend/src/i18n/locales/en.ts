@@ -1248,6 +1248,12 @@ export default {
     completedToast: 'Payment complete. ¥{amount} was applied.',
     payMethodLabel: 'Payment method',
     payMethodLockedHint: 'An order is already in progress; this payment keeps the original payment method.',
+    subscriptionBadge: 'Monthly card',
+    receiveSubscription: 'Activate',
+    validityDaysText: '{days} days',
+    buySubscriptionNow: 'Activate for ¥{payAmount} · valid {days} days',
+    subscriptionPaymentCompleted: 'Payment complete, subscription activated',
+    subscriptionCompletedToast: 'Payment complete. {name} activated (valid {days} days).',
   },
   topup: {
     title: 'Top Up',

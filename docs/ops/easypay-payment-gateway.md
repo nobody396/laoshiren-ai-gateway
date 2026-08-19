@@ -2,9 +2,9 @@
 
 迁移 194 引入统一支付网关（`backend/internal/payment`）与皮卡丘易支付
 Provider（经典易支付 MD5 协议，默认 API Base `https://pay.hueling.cc`）。
-本期覆盖两条业务线：**余额充值**（与虎皮椒并存、可按支付方式灰度）和
-**新人 ¥5→¥10**（见 `native-checkout.md` 的 EasyPay 章节）。订阅购买仍走
-支付宝当面付，不在本期范围。
+覆盖三条业务线：**余额充值**（与虎皮椒并存、可按支付方式灰度）、
+**新人 ¥5→¥10** 与**月卡（Plus/Pro/Max）站内扫码直付**（后两者均见
+`native-checkout.md` 的 EasyPay 章节，按 offer 灰度，链动小铺外链保留回退）。
 
 ## 配置
 

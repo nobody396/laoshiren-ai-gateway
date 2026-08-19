@@ -404,3 +404,117 @@ func TestNativeCheckoutHandleEasyPayNotifyUnknownOrder(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, "EASYPAY_INVALID_NOTIFY", infraerrors.Reason(err))
 }
+
+// testNativeCheckoutEasyPaySubscriptionOffer models a monthly card sold through
+// EasyPay native checkout: a paid sale (not a gift) granting subscription
+// groups for 31 days, repurchasable.
+func testNativeCheckoutEasyPaySubscriptionOffer() NativeCheckoutOffer {
+	return NativeCheckoutOffer{
+		Code: "plus", Provider: NativeCheckoutProviderEasyPay, ProviderGoodsKey: "plus",
+		Name: "Plus 月卡", ProductKind: RedeemTypeSubscription,
+		PayAmountCNYFen: 25900, BenefitAmountCNYFen: 25900,
+		RedeemType: RedeemTypeSubscription, RedeemValue: 259, RedeemPaidValue: 0,
+		RedeemPurpose: RedeemCodePurposeSaleRecharge, RedeemSalesStatus: RedeemCodeSalesStatusSold,
+		RedeemGroupIDs: []int64{11, 22}, RedeemValidityDays: 31,
+		OncePerUser: false, Enabled: true,
+	}
+}
+
+func TestNativeCheckoutEasyPaySubscriptionOrderMintsAndCompletes(t *testing.T) {
+	offer := testNativeCheckoutEasyPaySubscriptionOffer()
+	repo := newNativeCheckoutRepoFake(offer)
+	repo.order = testNativeCheckoutEasyPayOrder(offer)
+	provider := &nativeCheckoutProviderFake{info: &NativeCheckoutProviderOrderInfo{
+		TradeNo: repo.order.ProviderTradeNo, TotalCNYFen: 25900, Paid: true,
+	}}
+	redeemer := newEasyPayMintRedeemer(repo)
+	svc := NewNativeCheckoutService(repo, nativeCheckoutTestResolver(provider), &nativeCheckoutUserRepoFake{}, redeemer, nativeCheckoutTestContactKey)
+
+	completed, err := svc.syncOrder(context.Background(), repo.order)
+	require.NoError(t, err)
+	require.Equal(t, NativeCheckoutStatusCompleted, completed.Status)
+	require.Equal(t, 1, repo.mintCalls)
+
+	minted := repo.mintedCodes[repo.order.ProviderTradeNo]
+	require.Regexp(t, nativeCheckoutMintedCodePattern, minted)
+	redeemed := redeemer.byCode[minted]
+	require.NotNil(t, redeemed)
+	// The minted subscription code must carry the order snapshot's groups,
+	// validity and sale semantics — this is what RedeemService turns into the
+	// actual subscription assignment.
+	require.Equal(t, RedeemTypeSubscription, redeemed.Type)
+	require.Equal(t, []int64{11, 22}, redeemed.GroupIDs)
+	require.Equal(t, 31, redeemed.ValidityDays)
+	require.Equal(t, float64(259), redeemed.Value)
+	require.Zero(t, redeemed.PaidValue)
+	require.Equal(t, RedeemCodePurposeSaleRecharge, redeemed.Purpose)
+	require.Equal(t, RedeemCodeSalesStatusSold, redeemed.SalesStatus)
+	require.Equal(t, StatusUsed, redeemed.Status)
+	require.NotNil(t, redeemed.UsedBy)
+	require.Equal(t, repo.order.UserID, *redeemed.UsedBy)
+	require.Equal(t, repo.order.ProviderTradeNo, redeemed.ExternalOrderNo)
+}
+
+func TestNativeCheckoutRepeatableOfferAllowsRepurchaseAfterCompletion(t *testing.T) {
+	offer := testNativeCheckoutEasyPaySubscriptionOffer()
+	repo := newNativeCheckoutRepoFake(offer)
+	provider := &nativeCheckoutProviderFake{
+		created: &NativeCheckoutProviderOrder{
+			TradeNo: "NC-echo", PaymentURL: "https://pay.example.com/cashier/x", PaymentMethod: NativeCheckoutPaymentMethodAlipay,
+		},
+	}
+	svc := NewNativeCheckoutService(
+		repo,
+		nativeCheckoutTestResolver(provider),
+		&nativeCheckoutUserRepoFake{user: &User{ID: 42, Email: "buyer@example.com"}},
+		&nativeCheckoutRedeemerFake{},
+		nativeCheckoutTestContactKey,
+	)
+
+	first, err := svc.CreateOrder(context.Background(), 42, offer.Code, "")
+	require.NoError(t, err)
+	require.Equal(t, NativeCheckoutStatusPending, first.Status)
+
+	// The first purchase completes; the same account buys the same monthly card
+	// again (renewal). A new durable order must be reserved.
+	repo.mu.Lock()
+	repo.order.Status = NativeCheckoutStatusCompleted
+	repo.mu.Unlock()
+
+	second, err := svc.CreateOrder(context.Background(), 42, offer.Code, NativeCheckoutPaymentMethodWeChat)
+	require.NoError(t, err)
+	require.NotEqual(t, first.OrderNo, second.OrderNo, "a completed order must not block repurchase of a repeatable offer")
+	require.NotEqual(t, first.ID, second.ID)
+	require.Equal(t, 2, provider.createCalls)
+	require.Equal(t, NativeCheckoutPaymentMethodWeChat, provider.payType)
+
+	// A repeatable offer is never "claimed": the catalog must keep it buyable.
+	views, err := svc.ListOffers(context.Background(), 42)
+	require.NoError(t, err)
+	require.Len(t, views, 1)
+	require.False(t, views[0].Claimed, "repurchasable offers are never marked claimed")
+}
+
+func TestNativeCheckoutRepeatableOfferBlocksConcurrentActiveOrder(t *testing.T) {
+	offer := testNativeCheckoutEasyPaySubscriptionOffer()
+	repo := newNativeCheckoutRepoFake(offer)
+	provider := &nativeCheckoutProviderFake{
+		created: &NativeCheckoutProviderOrder{
+			TradeNo: "NC-echo", PaymentURL: "https://pay.example.com/cashier/x", PaymentMethod: NativeCheckoutPaymentMethodAlipay,
+		},
+	}
+	svc := NewNativeCheckoutService(
+		repo,
+		nativeCheckoutTestResolver(provider),
+		&nativeCheckoutUserRepoFake{user: &User{ID: 42, Email: "buyer@example.com"}},
+		&nativeCheckoutRedeemerFake{},
+		nativeCheckoutTestContactKey,
+	)
+
+	first, err := svc.CreateOrder(context.Background(), 42, offer.Code, "")
+	require.NoError(t, err)
+	second, err := svc.CreateOrder(context.Background(), 42, offer.Code, "")
+	require.NoError(t, err)
+	require.Equal(t, first.OrderNo, second.OrderNo, "an in-flight order is reused instead of duplicated")
+	require.Equal(t, 1, provider.createCalls)
+}

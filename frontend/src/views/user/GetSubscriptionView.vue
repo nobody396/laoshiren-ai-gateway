@@ -94,6 +94,13 @@
                     {{ t('topup.monthlyPlanModelsPrefix') }}
                     <RouterLink to="/models">{{ t('topup.monthlyPlanModelsLink') }}</RouterLink>。
                   </p>
+                  <!-- 选中的月卡套餐有可见的 easypay 原生 offer 时，站内扫码购买
+                       承接（offer code == 套餐 id）；否则保持链动小铺外链。 -->
+                  <NativeCheckoutTrialOffer
+                    v-if="selectedMonthlyNativeOffer"
+                    :key="selectedMonthlyPlan.id"
+                    :offer-code="selectedMonthlyPlan.id"
+                  />
                 </section>
 
                 <section v-if="selectedProductKind === 'balance'">
@@ -279,6 +286,7 @@
 
                 <div v-if="selectedProductKind === 'monthly'" class="topup-monthly-actions">
                   <button
+                    v-if="!selectedMonthlyNativeOffer"
                     @click="openSelectedMonthlyCardShop"
                     :disabled="!canOpenSelectedMonthlyCardShop"
                     class="topup-primary-action topup-monthly-action"
@@ -439,6 +447,7 @@ import {
 import { type MonthlyCreditCardPlan } from '@/constants/monthlyCreditCards'
 import { useMonthlyCreditCardPlans } from '@/composables/useMonthlyCreditCardPlans'
 import { shouldShowManualNewcomerProduct, useManualNewcomerOffer } from '@/composables/useManualNewcomerOffer'
+import { useNativeCheckoutOffers } from '@/composables/useNativeCheckoutOffers'
 import NativeCheckoutTrialOffer from '@/components/user/NativeCheckoutTrialOffer.vue'
 import { isDirectQrImageUrl, renderQrCodeDataUrl } from '@/utils/qrImage'
 
@@ -479,6 +488,7 @@ const activeOrderAmountYuan = ref(0)
 const activeOrderCreditedAmountYuan = ref(0)
 const showMonthlyDirectPurchase = ref(false)
 const { plans: monthlyCreditCardPlans, loadMonthlyCreditCardPlans } = useMonthlyCreditCardPlans()
+const { loadOffers: loadNativeCheckoutOffers, findNativeOfferByCode } = useNativeCheckoutOffers()
 const {
   state: newcomerOfferState,
   mode: newcomerOfferMode,
@@ -569,6 +579,15 @@ const selectedCardShopProduct = computed(() => selectedBalanceProduct.value?.car
 const selectedMonthlyPlan = computed(
   () => monthlyCreditCardPlans.value.find((plan) => plan.id === selectedMonthlyPlanId.value) ?? monthlyCreditCardPlans.value[0]
 )
+// 约定：月卡套餐的原生结账 offer code 与前端套餐 id 相同（plus/pro/max）。
+// 只有可见且 provider=easypay 的订阅 offer 命中；命中后购买入口切换为站内
+// 扫码（NativeCheckoutTrialOffer），未命中保持链动小铺外链回退。
+const selectedMonthlyNativeOffer = computed(() => {
+  if (selectedProductKind.value !== 'monthly') return undefined
+  const plan = selectedMonthlyPlan.value
+  if (!plan) return undefined
+  return findNativeOfferByCode(plan.id, 'subscription')
+})
 const selectedMonthlyCardShopUrl = computed(() => selectedMonthlyPlan.value?.cardShopUrl || '')
 const canOpenSelectedMonthlyCardShop = computed(() => selectedMonthlyCardShopUrl.value.trim() !== '')
 const monthlyDirectPurchaseQRCode = computed(
@@ -892,7 +911,9 @@ onUnmounted(() => {
 void Promise.all([
   appStore.fetchPublicSettings(),
   loadMonthlyCreditCardPlans(),
-  refreshNewcomerOffer()
+  refreshNewcomerOffer(),
+  // 月卡原生扫码门控只读这份目录；失败时保持链动小铺外链回退，不影响页面。
+  loadNativeCheckoutOffers().catch(() => {})
 ]).then(() => {
   syncTopupChannelWithSettings()
 })

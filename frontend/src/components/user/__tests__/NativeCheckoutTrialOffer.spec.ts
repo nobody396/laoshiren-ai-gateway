@@ -51,6 +51,19 @@ const offer = {
   claimed: false,
 }
 
+const monthlyOffer = {
+  code: 'plus',
+  name: 'Plus 月卡',
+  description: '',
+  product_kind: 'subscription' as const,
+  provider: 'easypay' as const,
+  pay_amount_cny_fen: 25900,
+  benefit_amount_cny_fen: 25900,
+  redeem_validity_days: 31,
+  once_per_user: false,
+  claimed: false,
+}
+
 describe('NativeCheckoutTrialOffer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -375,6 +388,103 @@ describe('NativeCheckoutTrialOffer', () => {
     expect(mocks.createOrder).not.toHaveBeenCalled()
     expect(mocks.getDirectQR).not.toHaveBeenCalled()
     expect(wrapper.find('.checkout-modal__qr img').attributes('src')).toBe('data:image/png;base64,PENDINGQR')
+    wrapper.unmount()
+  })
+
+  it('loads the offer selected by the offerCode prop with monthly-card copy', async () => {
+    mocks.listOffers.mockResolvedValue([offer, monthlyOffer])
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      props: { offerCode: 'plus' },
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Plus 月卡')
+    expect(wrapper.text()).toContain('nativeCheckout.subscriptionBadge')
+    expect(wrapper.text()).toContain('nativeCheckout.receiveSubscription')
+    expect(wrapper.text()).toContain('nativeCheckout.validityDaysText')
+    expect(wrapper.text()).toContain('nativeCheckout.buySubscriptionNow')
+    expect(wrapper.text()).not.toContain('nativeCheckout.onceOnly')
+    expect(wrapper.text()).not.toContain(offer.name)
+    wrapper.unmount()
+  })
+
+  it('renders nothing when the offerCode prop matches no visible offer', async () => {
+    mocks.listOffers.mockResolvedValue([offer])
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      props: { offerCode: 'pro' },
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+
+    expect(wrapper.find('.trial-offer').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('lets a completed repeatable monthly offer be bought again instead of staying claimed', async () => {
+    mocks.listOffers.mockResolvedValue([{
+      ...monthlyOffer,
+      order: {
+        order_no: 'NC-DONE', status: 'completed', product_kind: 'subscription',
+        pay_amount_cny_fen: 25900, benefit_amount_cny_fen: 25900, redeem_validity_days: 31,
+      },
+    }])
+    mocks.createOrder.mockResolvedValue({
+      order_no: 'NC-NEW',
+      status: 'pending',
+      provider: 'easypay',
+      product_kind: 'subscription',
+      pay_amount_cny_fen: 25900,
+      benefit_amount_cny_fen: 25900,
+      redeem_validity_days: 31,
+      payment_url: 'https://pay.hueling.cc/submit.php?trade_no=NC-NEW',
+      payment_method: 'alipay',
+      created_at: '2026-08-19T12:00:00Z',
+    })
+    mocks.toDataURL.mockResolvedValue('data:image/png;base64,RENEWQR')
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      props: { offerCode: 'plus' },
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+
+    const button = wrapper.find('.trial-offer__action')
+    expect(button.attributes('disabled')).toBeUndefined()
+    expect(button.text()).toContain('nativeCheckout.buySubscriptionNow')
+    await button.trigger('click')
+    await flushPromises()
+
+    expect(mocks.createOrder).toHaveBeenCalledWith('plus', 'alipay')
+    expect(wrapper.find('.checkout-modal__qr img').attributes('src')).toBe('data:image/png;base64,RENEWQR')
+    wrapper.unmount()
+  })
+
+  it('announces a completed monthly order as an activated subscription', async () => {
+    vi.useFakeTimers()
+    const pendingOrder = {
+      order_no: 'NC-SUB', status: 'pending' as const,
+      provider: 'easypay' as const, product_kind: 'subscription' as const,
+      pay_amount_cny_fen: 25900, benefit_amount_cny_fen: 25900, redeem_validity_days: 31,
+      payment_url: 'https://pay.hueling.cc/submit.php?trade_no=NC-SUB',
+      payment_method: 'alipay' as const,
+      created_at: '2026-08-19T12:00:00Z',
+    }
+    mocks.listOffers.mockResolvedValue([{ ...monthlyOffer, order: pendingOrder }])
+    mocks.toDataURL.mockResolvedValue('data:image/png;base64,SUBQR')
+    mocks.getOrder.mockResolvedValue({ ...pendingOrder, status: 'completed' })
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      props: { offerCode: 'plus' },
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+
+    await wrapper.find('.trial-offer__action').trigger('click')
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(0)
+    await flushPromises()
+
+    expect(mocks.showSuccess).toHaveBeenCalledWith('nativeCheckout.subscriptionCompletedToast')
+    expect(mocks.refreshUser).toHaveBeenCalled()
     wrapper.unmount()
   })
 })

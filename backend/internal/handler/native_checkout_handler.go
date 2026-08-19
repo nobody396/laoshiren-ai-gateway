@@ -30,8 +30,10 @@ type nativeCheckoutOrderResponse struct {
 	OrderNo             string    `json:"order_no"`
 	Status              string    `json:"status"`
 	Provider            string    `json:"provider"`
+	ProductKind         string    `json:"product_kind"`
 	PayAmountCNYFen     int64     `json:"pay_amount_cny_fen"`
 	BenefitAmountCNYFen int64     `json:"benefit_amount_cny_fen"`
+	RedeemValidityDays  int       `json:"redeem_validity_days"`
 	PaymentURL          string    `json:"payment_url,omitempty"`
 	PaymentMethod       string    `json:"payment_method,omitempty"`
 	DirectQRURL         string    `json:"direct_qr_url,omitempty"`
@@ -46,6 +48,7 @@ type nativeCheckoutOfferResponse struct {
 	ProductKind         string                       `json:"product_kind"`
 	PayAmountCNYFen     int64                        `json:"pay_amount_cny_fen"`
 	BenefitAmountCNYFen int64                        `json:"benefit_amount_cny_fen"`
+	RedeemValidityDays  int                          `json:"redeem_validity_days"`
 	OncePerUser         bool                         `json:"once_per_user"`
 	Claimed             bool                         `json:"claimed"`
 	Order               *nativeCheckoutOrderResponse `json:"order,omitempty"`
@@ -78,6 +81,7 @@ func (h *NativeCheckoutHandler) ListOffers(c *gin.Context) {
 			ProductKind:         view.ProductKind,
 			PayAmountCNYFen:     view.PayAmountCNYFen,
 			BenefitAmountCNYFen: view.BenefitAmountCNYFen,
+			RedeemValidityDays:  view.RedeemValidityDays,
 			OncePerUser:         view.OncePerUser,
 			Claimed:             view.Claimed,
 		}
@@ -186,8 +190,10 @@ func nativeCheckoutOrderDTO(order *service.NativeCheckoutOrder) *nativeCheckoutO
 		OrderNo:             order.OrderNo,
 		Status:              order.Status,
 		Provider:            order.Provider,
+		ProductKind:         order.ProductKind,
 		PayAmountCNYFen:     order.PayAmountCNYFen,
 		BenefitAmountCNYFen: order.BenefitAmountCNYFen,
+		RedeemValidityDays:  order.RedeemValidityDays,
 		PaymentMethod:       order.PaymentMethod,
 		CreatedAt:           order.CreatedAt,
 	}

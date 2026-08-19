@@ -2,7 +2,7 @@
   <section v-if="offer" class="trial-offer" aria-labelledby="native-checkout-trial-title">
     <div class="trial-offer__copy">
       <div class="trial-offer__badges">
-        <span class="trial-offer__badge">{{ t('nativeCheckout.trialBadge') }}</span>
+        <span class="trial-offer__badge">{{ isSubscription ? t('nativeCheckout.subscriptionBadge') : t('nativeCheckout.trialBadge') }}</span>
         <span v-if="offer.once_per_user" class="trial-offer__limit">{{ t('nativeCheckout.onceOnly') }}</span>
       </div>
       <h2 id="native-checkout-trial-title">
@@ -18,8 +18,9 @@
         </span>
         <span class="trial-offer__arrow" aria-hidden="true">→</span>
         <span class="trial-offer__benefit">
-          <small>{{ t('nativeCheckout.receive') }}</small>
-          <strong>¥{{ formatCNY(offer.benefit_amount_cny_fen) }}</strong>
+          <small>{{ isSubscription ? t('nativeCheckout.receiveSubscription') : t('nativeCheckout.receive') }}</small>
+          <strong v-if="isSubscription">{{ t('nativeCheckout.validityDaysText', { days: offer.redeem_validity_days ?? 0 }) }}</strong>
+          <strong v-else>¥{{ formatCNY(offer.benefit_amount_cny_fen) }}</strong>
         </span>
       </div>
 
@@ -55,14 +56,20 @@
       <button
         type="button"
         class="trial-offer__action"
-        :disabled="submitting || offer.claimed || order?.status === 'completed'"
+        :disabled="submitting || isTerminal"
         @click="startCheckout"
       >
         <span v-if="submitting">{{ t('nativeCheckout.preparing') }}</span>
-        <span v-else-if="offer.claimed || order?.status === 'completed'">{{ t('nativeCheckout.claimed') }}</span>
+        <span v-else-if="isTerminal">{{ t('nativeCheckout.claimed') }}</span>
         <span v-else-if="order?.status === 'checking' || order?.status === 'manual_review'">{{ t('nativeCheckout.reviewing') }}</span>
         <span v-else-if="order?.status === 'pending'">{{ t('nativeCheckout.continuePayment') }}</span>
         <span v-else-if="order?.status === 'fulfilling'">{{ t('nativeCheckout.crediting') }}</span>
+        <span v-else-if="isSubscription">
+          {{ t('nativeCheckout.buySubscriptionNow', {
+            payAmount: formatCNY(offer.pay_amount_cny_fen),
+            days: offer.redeem_validity_days ?? 0,
+          }) }}
+        </span>
         <span v-else>
           {{ t('nativeCheckout.buyNow', {
             payAmount: formatCNY(offer.pay_amount_cny_fen),
@@ -73,7 +80,7 @@
       <p v-if="order?.status === 'checking' || order?.status === 'manual_review'" class="trial-offer__checking">
         {{ t('nativeCheckout.checkingHint') }}
       </p>
-      <p v-else-if="offer.claimed || order?.status === 'completed'" class="trial-offer__success">
+      <p v-else-if="isTerminal" class="trial-offer__success">
         {{ t('nativeCheckout.completedHint') }}
       </p>
     </div>
@@ -145,6 +152,10 @@ const { t } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 
+// offerCode 缺省时保持新人余额卡行为（自动定位 balance + once_per_user 的
+// offer）；月卡等场景由调用方按约定传入 offer code（code == 商品/套餐 id）。
+const props = defineProps<{ offerCode?: string }>()
+
 const offer = ref<NativeCheckoutOffer | null>(null)
 const order = ref<NativeCheckoutOrder | null>(null)
 const activeOrder = computed(() => order.value)
@@ -174,6 +185,14 @@ const isChecking = computed(() => (
   || activeOrder.value?.status === 'manual_review'
 ))
 
+const isSubscription = computed(() => offer.value?.product_kind === 'subscription')
+
+// 终态只针对终身限购 offer：可复购的月卡完成后回到可购买状态，允许续期。
+const isTerminal = computed(() => {
+  if (!offer.value?.once_per_user) return false
+  return offer.value.claimed || order.value?.status === 'completed'
+})
+
 // 已有进行中的订单时锁定支付方式：继续支付沿用下单时的方式，不再新建订单。
 const payMethodLocked = computed(() => {
   const status = activeOrder.value?.status
@@ -182,7 +201,9 @@ const payMethodLocked = computed(() => {
 
 const modalTitle = computed(() => {
   if (isChecking.value) return t('nativeCheckout.orderCheckingTitle')
-  if (activeOrder.value?.status === 'completed') return t('nativeCheckout.paymentCompleted')
+  if (activeOrder.value?.status === 'completed') {
+    return isSubscription.value ? t('nativeCheckout.subscriptionPaymentCompleted') : t('nativeCheckout.paymentCompleted')
+  }
   return t('nativeCheckout.scanToPay', { amount: formatCNY(activeOrder.value?.pay_amount_cny_fen || 0) })
 })
 
@@ -225,7 +246,8 @@ const statusText = computed(() => {
     case 'creating': return t('nativeCheckout.creatingOrder')
     case 'checking': return t('nativeCheckout.checkingHint')
     case 'fulfilling': return t('nativeCheckout.creditingHint')
-    case 'completed': return t('nativeCheckout.paymentCompleted')
+    case 'completed':
+      return isSubscription.value ? t('nativeCheckout.subscriptionPaymentCompleted') : t('nativeCheckout.paymentCompleted')
     case 'manual_review': return t('nativeCheckout.checkingHint')
     default: return t('nativeCheckout.waitingPayment')
   }
@@ -263,7 +285,9 @@ function formatCNY(fen: number): string {
 async function loadOffer() {
   try {
     const offers = await listNativeCheckoutOffers()
-    offer.value = offers.find((item) => item.product_kind === 'balance' && item.once_per_user) ?? null
+    offer.value = props.offerCode
+      ? offers.find((item) => item.code === props.offerCode) ?? null
+      : offers.find((item) => item.product_kind === 'balance' && item.once_per_user) ?? null
     order.value = offer.value?.order ?? null
     if (shouldPollStatus()) {
       startPolling()
@@ -277,7 +301,7 @@ async function loadOffer() {
 
 async function startCheckout() {
   if (!offer.value || submitting.value) return
-  if (offer.value.claimed || order.value?.status === 'completed') return
+  if (isTerminal.value) return
   if (order.value?.status === 'checking' || order.value?.status === 'manual_review') {
     clearQRImage()
     showModal.value = true
@@ -286,11 +310,16 @@ async function startCheckout() {
   }
   submitting.value = true
   try {
-    if (!order.value || order.value.status === 'failed') {
+    // 可复购 offer（月卡）上一单完成后再次点击会新建订单；终身限购 offer 的
+    // 已完成订单在上方 isTerminal 拦截，不会走到这里。
+    if (!order.value || order.value.status === 'failed'
+      || (order.value.status === 'completed' && !offer.value.once_per_user)) {
       order.value = await createNativeCheckoutOrder(
         offer.value.code,
         offer.value.provider === 'easypay' ? payMethod.value : undefined
       )
+      completionNotified = false
+      checkingNotified = false
     }
     if (['creating', 'pending', 'checking', 'fulfilling'].includes(order.value.status)) {
       showModal.value = true
@@ -382,9 +411,16 @@ async function pollStatus() {
         } catch (error) {
           console.error('Failed to refresh user after native checkout:', error)
         }
-        appStore.showSuccess(t('nativeCheckout.completedToast', {
-          amount: formatCNY(order.value.benefit_amount_cny_fen),
-        }))
+        if (order.value.product_kind === 'subscription') {
+          appStore.showSuccess(t('nativeCheckout.subscriptionCompletedToast', {
+            name: offer.value?.name ?? '',
+            days: order.value.redeem_validity_days ?? 0,
+          }))
+        } else {
+          appStore.showSuccess(t('nativeCheckout.completedToast', {
+            amount: formatCNY(order.value.benefit_amount_cny_fen),
+          }))
+        }
       }
     } else if (order.value.status === 'checking' || order.value.status === 'manual_review') {
       clearQRImage()

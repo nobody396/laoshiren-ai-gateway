@@ -369,6 +369,7 @@ func testNativeCheckoutOrder(offer NativeCheckoutOffer) *NativeCheckoutOrder {
 		BenefitAmountCNYFen: offer.BenefitAmountCNYFen, RedeemType: offer.RedeemType,
 		RedeemValue: offer.RedeemValue, RedeemPaidValue: offer.RedeemPaidValue,
 		RedeemPurpose: offer.RedeemPurpose, RedeemSalesStatus: offer.RedeemSalesStatus,
+		RedeemGroupIDs:     append([]int64(nil), offer.RedeemGroupIDs...),
 		RedeemValidityDays: offer.RedeemValidityDays, EnforceOnce: true,
 		Status: NativeCheckoutStatusPending, UpdatedAt: time.Now(),
 	}
@@ -386,6 +387,7 @@ type nativeCheckoutRepoFake struct {
 	mintCalls          int
 	mintErr            error
 	nudgedOrderIDs     []int64
+	nextOrderID        int64
 }
 
 func newNativeCheckoutRepoFake(offer NativeCheckoutOffer) *nativeCheckoutRepoFake {
@@ -431,12 +433,16 @@ func (r *nativeCheckoutRepoFake) HasRedeemedOffer(context.Context, int64, string
 func (r *nativeCheckoutRepoFake) ReserveOrder(_ context.Context, order *NativeCheckoutOrder) (*NativeCheckoutOrder, bool, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if r.order != nil {
+	// Mirror the DB: the active-per-user partial unique index only conflicts
+	// with orders still in flight; a completed or failed order never blocks a
+	// new reservation for a repeatable offer.
+	if r.order != nil && r.order.Status != NativeCheckoutStatusCompleted && r.order.Status != NativeCheckoutStatusFailed {
 		copy := *r.order
 		return &copy, false, nil
 	}
 	copy := *order
-	copy.ID = 1
+	copy.ID = r.nextOrderID + 1
+	r.nextOrderID = copy.ID
 	r.order = &copy
 	return &copy, true, nil
 }

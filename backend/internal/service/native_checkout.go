@@ -122,6 +122,7 @@ type NativeCheckoutOfferView struct {
 	ProductKind         string
 	PayAmountCNYFen     int64
 	BenefitAmountCNYFen int64
+	RedeemValidityDays  int
 	OncePerUser         bool
 	Claimed             bool
 	Order               *NativeCheckoutOrder
@@ -321,7 +322,10 @@ func (s *NativeCheckoutService) ListOffers(ctx context.Context, userID int64) ([
 		if orderErr != nil && !errors.Is(orderErr, ErrNativeCheckoutOrderNotFound) {
 			return nil, fmt.Errorf("get native checkout order: %w", orderErr)
 		}
-		claimed := order != nil && order.Status == NativeCheckoutStatusCompleted
+		// "Claimed" is the lifetime once-only entitlement. Repeatable offers
+		// (e.g. monthly cards) are never claimed: a completed order must not
+		// block or label the next purchase.
+		claimed := offer.OncePerUser && order != nil && order.Status == NativeCheckoutStatusCompleted
 		if !claimed && offer.OncePerUser {
 			claimed, orderErr = s.repo.HasRedeemedOffer(ctx, userID, offer.Code)
 			if orderErr != nil {
@@ -336,6 +340,7 @@ func (s *NativeCheckoutService) ListOffers(ctx context.Context, userID int64) ([
 			ProductKind:         offer.ProductKind,
 			PayAmountCNYFen:     offer.PayAmountCNYFen,
 			BenefitAmountCNYFen: offer.BenefitAmountCNYFen,
+			RedeemValidityDays:  offer.RedeemValidityDays,
 			OncePerUser:         offer.OncePerUser,
 			Claimed:             claimed,
 			Order:               order,

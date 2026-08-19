@@ -110,6 +110,33 @@ func TestNativeCheckoutListOffersExposesProvider(t *testing.T) {
 	require.Equal(t, "easypay", payload.Data[0].Provider)
 }
 
+func TestNativeCheckoutListOffersExposesSubscriptionTerms(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repo := &nativeCheckoutOfferListRepoStub{offer: service.NativeCheckoutOffer{
+		Code: "plus", Provider: "easypay", ProviderGoodsKey: "plus",
+		Name: "Plus 月卡", ProductKind: "subscription", PayAmountCNYFen: 25900, BenefitAmountCNYFen: 25900,
+		RedeemValidityDays: 31, OncePerUser: false,
+	}}
+	svc := service.NewNativeCheckoutService(repo, nil, nil, nil, "test-contact-key")
+	handler := NewNativeCheckoutHandler(svc)
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest("GET", "/native-checkout/offers", nil)
+	c.Set(string(middleware2.ContextKeyUser), middleware2.AuthSubject{UserID: 42})
+
+	handler.ListOffers(c)
+
+	require.Equal(t, 200, recorder.Code)
+	var payload struct {
+		Data []nativeCheckoutOfferResponse `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &payload))
+	require.Len(t, payload.Data, 1)
+	require.Equal(t, "subscription", payload.Data[0].ProductKind)
+	require.Equal(t, 31, payload.Data[0].RedeemValidityDays)
+	require.False(t, payload.Data[0].OncePerUser)
+}
+
 func TestNativeCheckoutCreateOrderRejectsInvalidPayType(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler := NewNativeCheckoutHandler(nil)
@@ -127,11 +154,14 @@ func TestNativeCheckoutCreateOrderRejectsInvalidPayType(t *testing.T) {
 func TestNativeCheckoutOrderDTOIncludesProvider(t *testing.T) {
 	order := &service.NativeCheckoutOrder{
 		OrderNo: "NC-1", Status: service.NativeCheckoutStatusPending, Provider: "easypay",
-		PayAmountCNYFen: 500, BenefitAmountCNYFen: 1000,
+		ProductKind: "subscription", RedeemValidityDays: 31,
+		PayAmountCNYFen: 25900, BenefitAmountCNYFen: 25900,
 		PaymentURL: "https://pay.example.com/cashier/NC-1", PaymentMethod: service.NativeCheckoutPaymentMethodAlipay,
 	}
 	result := nativeCheckoutOrderDTO(order)
 	require.Equal(t, "easypay", result.Provider)
+	require.Equal(t, "subscription", result.ProductKind)
+	require.Equal(t, 31, result.RedeemValidityDays)
 	require.Equal(t, order.PaymentURL, result.PaymentURL)
 }
 

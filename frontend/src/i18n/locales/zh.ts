@@ -1251,6 +1251,12 @@ export default {
     completedToast: '支付成功，¥{amount} 已到账',
     payMethodLabel: '选择支付方式',
     payMethodLockedHint: '已有进行中的订单，本次支付沿用下单时的支付方式。',
+    subscriptionBadge: '月卡直付',
+    receiveSubscription: '开通',
+    validityDaysText: '{days} 天',
+    buySubscriptionNow: '{payAmount} 元开通 · 有效期 {days} 天',
+    subscriptionPaymentCompleted: '支付成功，订阅已开通',
+    subscriptionCompletedToast: '支付成功，{name} 已开通（有效期 {days} 天）',
   },
   topup: {
     title: '充值',

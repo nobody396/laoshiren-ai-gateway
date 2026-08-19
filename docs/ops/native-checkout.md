@@ -94,3 +94,75 @@ WHERE code = 'newcomer-balance-5-to-10';
 
 进行中的 easypay 订单会继续由 worker 按 easypay 协议收尾（订单自身记录了
 provider）；新的购买回到手动卡密流程。
+
+## 月卡 EasyPay 直付
+
+月卡（Plus/Pro/Max 订阅卡）复用同一套原生结账引擎：站内选择套餐 → 支付宝/
+微信扫码 → 回调顶起 worker → 查单确认 → 按订单快照铸造**订阅兑换码**
+（`type=subscription`，带分组与有效期）→ 同一兑换链自动开通订阅。用户全程
+不跳转、不见卡密；链动小铺外链保持为回退通道（offer 不可见时前端自动回到
+外链）。
+
+### 约定
+
+- **offer code 必须等于前端套餐 id**（`plus` / `pro` / `max`，见
+  `frontend/src/constants/monthlyCreditCards.ts`）。前端按此约定把选中套餐
+  映射到站内扫码卡片；不一致则静默回退外链。
+- `provider_goods_key` 填与 code 相同即可（easypay 不做上游商品校验，仅作
+  对账标识）。
+- `once_per_user=false`：月卡可复购续期。进行中的订单仍被
+  `uq_native_checkout_orders_active_per_user` 部分唯一索引拦截，不会并发重复
+  下单；已完成的订单不拦截复购。
+- 铸码语义由订单快照决定并被库存触发器按 offer 行复核：
+  `type=subscription`、`value=售价（元）`、`paid_value=0`、
+  `purpose=sale_recharge`、`sales_status=sold`（实付销售，参与联盟归因）、
+  `group_ids=套餐订阅分组`、`validity_days=31`。
+- `benefit_amount_cny_fen` 约定填名义面值分（= `redeem_value * 100`）；订阅
+  类前端不把它当“到账余额”展示。
+
+### 上架（每个套餐一条，默认关闭）
+
+分组 id 以生产 `groups` 表 / 月卡 host catalog 为准（Plus 示例）：
+
+```sql
+INSERT INTO native_checkout_offers (
+    code, provider, provider_goods_key, name, description, product_kind,
+    pay_amount_cny_fen, benefit_amount_cny_fen, redeem_type,
+    redeem_value, redeem_paid_value, redeem_purpose, redeem_sales_status,
+    redeem_group_ids, redeem_validity_days, once_per_user, enabled, sort_order
+) VALUES (
+    'plus',                 -- == 前端套餐 id；pro / max 同理各插一条
+    'easypay',
+    'plus',                 -- provider_goods_key：对账标识，与 code 保持一致
+    'Plus 月卡',
+    '31 天开发额度，站内扫码自动开通',
+    'subscription',
+    25900,                  -- pay_amount_cny_fen：实付 ¥259
+    25900,                  -- benefit_amount_cny_fen：名义面值 = redeem_value*100
+    'subscription',
+    259,                    -- redeem_value：售价（元），用于联盟归因
+    0,                      -- redeem_paid_value：订阅码固定为 0
+    'sale_recharge',
+    'sold',
+    '[<gpt_group_id>, <claude_group_id>]'::jsonb,  -- 替换为该套餐的订阅分组 id
+    31,
+    FALSE,                  -- once_per_user：月卡可复购
+    FALSE,                  -- enabled：先黑暗入库，验收后再开
+    10
+);
+```
+
+验收顺序：先保持 `enabled=false`，用 `native_checkout_offer_testers` 放行测试
+账号实付一单（站内扫码 → 自动开通 → 订阅页可见 31 天有效期 → 订单
+completed），再对该套餐 `UPDATE native_checkout_offers SET enabled = TRUE,
+updated_at = NOW() WHERE code = 'plus';` 正式可见。
+
+### 回滚
+
+```sql
+UPDATE native_checkout_offers SET enabled = FALSE, updated_at = NOW()
+WHERE code IN ('plus', 'pro', 'max');
+```
+
+offer 不可见后前端立即回到链动小铺外链；进行中的 easypay 月卡订单仍由 worker
+按协议收尾并完成开通。不删除订单与已铸造/已兑换的卡密记录。

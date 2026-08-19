@@ -16,8 +16,11 @@ export type NativeCheckoutProvider = 'ldxp' | 'easypay'
 export interface NativeCheckoutOrder {
   order_no: string
   status: NativeCheckoutStatus
+  provider?: NativeCheckoutProvider
+  product_kind?: 'balance' | 'subscription'
   pay_amount_cny_fen: number
   benefit_amount_cny_fen: number
+  redeem_validity_days?: number
   payment_url?: string
   payment_method?: NativeCheckoutPaymentMethod
   direct_qr_url?: string
@@ -31,6 +34,7 @@ export interface NativeCheckoutOffer {
   product_kind: 'balance' | 'subscription'
   pay_amount_cny_fen: number
   benefit_amount_cny_fen: number
+  redeem_validity_days?: number
   once_per_user: boolean
   claimed: boolean
   provider?: NativeCheckoutProvider

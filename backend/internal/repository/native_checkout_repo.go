@@ -384,6 +384,12 @@ func (r *nativeCheckoutRepository) MintRedeemCode(ctx context.Context, order *se
 	if err != nil {
 		return "", err
 	}
+	// Mirror admin-generated subscription codes: the legacy single-group column
+	// carries the first group so group_id-based reads keep working.
+	var primaryGroupID any
+	if len(order.RedeemGroupIDs) > 0 {
+		primaryGroupID = order.RedeemGroupIDs[0]
+	}
 	// Provenance label for admin review; the redeemable value, purpose and
 	// sales status all come from the order snapshot, and the inventory
 	// trigger re-validates them against the canonical offer row.
@@ -398,12 +404,12 @@ func (r *nativeCheckoutRepository) MintRedeemCode(ctx context.Context, order *se
 	var codeID int64
 	err = tx.QueryRowContext(ctx, `INSERT INTO redeem_codes (
 		code, type, value, paid_value, status, purpose, sales_status,
-		group_ids, validity_days, external_order_no, internal_notes,
+		group_id, group_ids, validity_days, external_order_no, internal_notes,
 		created_at, updated_at
-	) VALUES ($1, $2, $3, $4, 'unused', $5, $6, $7, $8, $9, $10, NOW(), NOW())
+	) VALUES ($1, $2, $3, $4, 'unused', $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
 	RETURNING id`,
 		code, order.RedeemType, order.RedeemValue, order.RedeemPaidValue,
-		order.RedeemPurpose, order.RedeemSalesStatus, groupIDs, order.RedeemValidityDays,
+		order.RedeemPurpose, order.RedeemSalesStatus, primaryGroupID, groupIDs, order.RedeemValidityDays,
 		order.ProviderTradeNo, internalNotes,
 	).Scan(&codeID)
 	if err != nil {

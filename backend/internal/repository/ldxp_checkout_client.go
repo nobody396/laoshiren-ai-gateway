@@ -137,7 +137,13 @@ type ldxpEnvelope struct {
 	Data json.RawMessage `json:"data"`
 }
 
-func (c *ldxpCheckoutClient) CreateOrder(ctx context.Context, goodsKey, contact string, expectedAmountCNYFen int64) (*service.NativeCheckoutProviderOrder, error) {
+func (c *ldxpCheckoutClient) CreateOrder(ctx context.Context, req *service.NativeCheckoutCreateRequest) (*service.NativeCheckoutProviderOrder, error) {
+	// LDXP assigns its own trade number and picks the payment channel from the
+	// merchant's active channels, so req.OrderNo and req.PayType are
+	// intentionally unused here.
+	goodsKey := req.GoodsKey
+	contact := req.Contact
+	expectedAmountCNYFen := req.ExpectedAmountCNYFen
 	channel, err := c.checkoutChannel(ctx, goodsKey, expectedAmountCNYFen)
 	if err != nil {
 		return nil, &service.NativeCheckoutProviderError{Cause: err}

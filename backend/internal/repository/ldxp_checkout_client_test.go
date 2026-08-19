@@ -23,6 +23,14 @@ func (f ldxpRoundTripperFunc) RoundTrip(request *http.Request) (*http.Response, 
 	return f(request)
 }
 
+func ldxpCreateRequest(contact string) *service.NativeCheckoutCreateRequest {
+	return &service.NativeCheckoutCreateRequest{
+		GoodsKey:             "newcomer-key",
+		Contact:              contact,
+		ExpectedAmountCNYFen: 500,
+	}
+}
+
 func TestLDXPCheckoutClientLoadsMerchantCredentialsFromSecretFiles(t *testing.T) {
 	t.Setenv("LDXP_MERCHANT_USERNAME", "")
 	t.Setenv("LDXP_MERCHANT_PASSWORD", "")
@@ -90,7 +98,7 @@ func TestLDXPCheckoutClientBuyerFlowAndDirectQR(t *testing.T) {
 	client, err := newLDXPCheckoutClient(server.URL, true)
 	require.NoError(t, err)
 	ctx := context.Background()
-	order, err := client.CreateOrder(ctx, "newcomer-key", "buyer@example.com", 500)
+	order, err := client.CreateOrder(ctx, ldxpCreateRequest("buyer@example.com"))
 	require.NoError(t, err)
 	require.Equal(t, "LD-TEST-1", order.TradeNo)
 	require.Equal(t, server.URL+"/pay/LD-TEST-1", order.PaymentURL)
@@ -134,7 +142,7 @@ func TestLDXPCheckoutClientRejectsWrongGoodsAmountBeforeOrder(t *testing.T) {
 	client, err := newLDXPCheckoutClient(server.URL, true)
 	require.NoError(t, err)
 
-	_, err = client.CreateOrder(context.Background(), "newcomer-key", "buyer@example.com", 500)
+	_, err = client.CreateOrder(context.Background(), ldxpCreateRequest("buyer@example.com"))
 	require.Error(t, err)
 	require.False(t, orderCalled)
 	var providerErr *service.NativeCheckoutProviderError
@@ -174,7 +182,7 @@ func TestLDXPCheckoutClientSupportsAlipayAndLabelsSelectedMethod(t *testing.T) {
 	client, err := newLDXPCheckoutClient(server.URL, true)
 	require.NoError(t, err)
 
-	order, err := client.CreateOrder(context.Background(), "newcomer-key", "buyer@example.com", 500)
+	order, err := client.CreateOrder(context.Background(), ldxpCreateRequest("buyer@example.com"))
 	require.NoError(t, err)
 	require.Equal(t, 2, createdChannelID)
 	require.Equal(t, service.NativeCheckoutPaymentMethodAlipay, order.PaymentMethod)
@@ -220,7 +228,7 @@ func TestLDXPCheckoutClientRetriesTransientMetadataButCreatesOrderOnce(t *testin
 		return baseTransport.RoundTrip(request)
 	})
 
-	order, err := client.CreateOrder(context.Background(), "newcomer-key", "buyer@example.com", 500)
+	order, err := client.CreateOrder(context.Background(), ldxpCreateRequest("buyer@example.com"))
 	require.NoError(t, err)
 	require.Equal(t, "LD-RETRY-1", order.TradeNo)
 	require.Equal(t, int32(2), goodsCalls.Load())
@@ -261,7 +269,7 @@ func TestLDXPCheckoutClientNeverRetriesAmbiguousOrderCreation(t *testing.T) {
 		return baseTransport.RoundTrip(request)
 	})
 
-	_, err = client.CreateOrder(context.Background(), "newcomer-key", "buyer@example.com", 500)
+	_, err = client.CreateOrder(context.Background(), ldxpCreateRequest("buyer@example.com"))
 	require.Error(t, err)
 	var providerErr *service.NativeCheckoutProviderError
 	require.ErrorAs(t, err, &providerErr)
@@ -326,9 +334,7 @@ func TestLDXPCheckoutClientCollapsesConcurrentOfferMetadataLookups(t *testing.T)
 			defer wg.Done()
 			_, createErr := client.CreateOrder(
 				context.Background(),
-				"newcomer-key",
-				"buyer-"+strconv.Itoa(i)+"@example.com",
-				500,
+				ldxpCreateRequest("buyer-"+strconv.Itoa(i)+"@example.com"),
 			)
 			errs <- createErr
 		}()
@@ -369,7 +375,7 @@ func TestLDXPCheckoutClientRejectsUnsupportedPaymentChannel(t *testing.T) {
 	client, err := newLDXPCheckoutClient(server.URL, true)
 	require.NoError(t, err)
 
-	_, err = client.CreateOrder(context.Background(), "newcomer-key", "buyer@example.com", 500)
+	_, err = client.CreateOrder(context.Background(), ldxpCreateRequest("buyer@example.com"))
 	require.Error(t, err)
 	require.False(t, orderCalled)
 }

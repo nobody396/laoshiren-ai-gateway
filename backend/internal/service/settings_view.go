@@ -167,6 +167,17 @@ type SystemSettings struct {
 	XunhuWechatKey           string
 	XunhuWechatKeyConfigured bool
 	XunhuNotifyURL           string
+
+	// EasyPay 聚合支付（余额充值 + 原生收银台）
+	EasyPayEnabled       bool
+	EasyPayPID           string
+	EasyPayKey           string
+	EasyPayKeyConfigured bool
+	EasyPayAPIBase       string
+
+	// 充值网关选择（xunhu / easypay）
+	TopupAlipayProvider string
+	TopupWechatProvider string
 }
 
 type DefaultSubscriptionSetting struct {
@@ -229,6 +240,8 @@ type PublicSettings struct {
 	AlipayEnabled         bool
 	XunhuAlipayEnabled    bool
 	XunhuWechatEnabled    bool
+	TopupAlipayEnabled    bool
+	TopupWechatEnabled    bool
 	OIDCOAuthEnabled      bool
 	OIDCOAuthProviderName string
 	GitHubOAuthEnabled    bool

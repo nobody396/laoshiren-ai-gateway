@@ -300,6 +300,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-25T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/easypay-payment-gateway-20260819",
+      "owner": "kimi-easypay-payment-gateway-20260819",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-09-02T23:59:59+08:00"
     }
   ]
 }

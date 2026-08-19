@@ -106,7 +106,7 @@ describe('NativeCheckoutTrialOffer', () => {
     await wrapper.find('.trial-offer__action').trigger('click')
     await flushPromises()
 
-    expect(mocks.createOrder).toHaveBeenCalledWith(offer.code)
+    expect(mocks.createOrder).toHaveBeenCalledWith(offer.code, undefined)
     expect(mocks.getDirectQR).toHaveBeenCalledWith('NC-1')
     expect(mocks.toDataURL).toHaveBeenCalledWith(
       'https://pay.ldxp.cn/pay/NC-1',
@@ -245,6 +245,136 @@ describe('NativeCheckoutTrialOffer', () => {
     expect(wrapper.text()).toContain('buyer@example.com')
     expect(wrapper.text()).not.toContain('nativeCheckout.providerExpiryHint')
     expect(wrapper.text()).not.toContain('nativeCheckout.doNotRepeat')
+    wrapper.unmount()
+  })
+
+  it('does not show the pay-method picker for ldxp offers', async () => {
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+
+    expect(wrapper.find('.trial-offer__paymethod').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('creates easypay orders with the selected pay method and renders the QR client-side without the link fallback notice', async () => {
+    const easypayOffer = { ...offer, provider: 'easypay' as const }
+    mocks.listOffers.mockResolvedValue([easypayOffer])
+    mocks.createOrder.mockResolvedValue({
+      order_no: 'EP-1',
+      status: 'pending',
+      pay_amount_cny_fen: 500,
+      benefit_amount_cny_fen: 1000,
+      payment_url: 'https://pay.hueling.cc/submit.php?trade_no=EP-1',
+      payment_method: 'alipay',
+      created_at: '2026-08-19T12:00:00Z',
+    })
+    mocks.toDataURL.mockResolvedValue('data:image/png;base64,EASYPAYQR')
+    mocks.getOrder.mockResolvedValue({
+      order_no: 'EP-1',
+      status: 'pending',
+      pay_amount_cny_fen: 500,
+      benefit_amount_cny_fen: 1000,
+      payment_url: 'https://pay.hueling.cc/submit.php?trade_no=EP-1',
+      payment_method: 'alipay',
+      created_at: '2026-08-19T12:00:00Z',
+    })
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+
+    const picker = wrapper.find('.trial-offer__paymethod')
+    expect(picker.exists()).toBe(true)
+    const options = wrapper.findAll('.trial-offer__paymethod-option')
+    expect(options).toHaveLength(2)
+    expect(options[0].classes()).toContain('trial-offer__paymethod-option--active')
+
+    await wrapper.find('.trial-offer__action').trigger('click')
+    await flushPromises()
+
+    expect(mocks.createOrder).toHaveBeenCalledWith(offer.code, 'alipay')
+    expect(mocks.getDirectQR).not.toHaveBeenCalled()
+    expect(mocks.toDataURL).toHaveBeenCalledWith(
+      'https://pay.hueling.cc/submit.php?trade_no=EP-1',
+      expect.objectContaining({ width: 320 }),
+    )
+    expect(wrapper.find('.checkout-modal__qr img').attributes('src')).toBe('data:image/png;base64,EASYPAYQR')
+    expect(wrapper.text()).not.toContain('nativeCheckout.linkQRHint')
+    wrapper.unmount()
+  })
+
+  it('passes pay_type=wechat when the user picks WeChat before creating an easypay order', async () => {
+    mocks.listOffers.mockResolvedValue([{ ...offer, provider: 'easypay' as const }])
+    mocks.createOrder.mockResolvedValue({
+      order_no: 'EP-2',
+      status: 'pending',
+      pay_amount_cny_fen: 500,
+      benefit_amount_cny_fen: 1000,
+      payment_url: 'weixin://wxpay/bizpayurl?pr=xyz',
+      payment_method: 'wechat',
+      created_at: '2026-08-19T12:00:00Z',
+    })
+    mocks.toDataURL.mockResolvedValue('data:image/png;base64,WECHATQR')
+    mocks.getOrder.mockResolvedValue({
+      order_no: 'EP-2',
+      status: 'pending',
+      pay_amount_cny_fen: 500,
+      benefit_amount_cny_fen: 1000,
+      payment_url: 'weixin://wxpay/bizpayurl?pr=xyz',
+      payment_method: 'wechat',
+      created_at: '2026-08-19T12:00:00Z',
+    })
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+
+    const options = wrapper.findAll('.trial-offer__paymethod-option')
+    await options[1].trigger('click')
+    await wrapper.find('.trial-offer__action').trigger('click')
+    await flushPromises()
+
+    expect(mocks.createOrder).toHaveBeenCalledWith(offer.code, 'wechat')
+    expect(mocks.getDirectQR).not.toHaveBeenCalled()
+    expect(mocks.toDataURL).toHaveBeenCalledWith(
+      'weixin://wxpay/bizpayurl?pr=xyz',
+      expect.objectContaining({ width: 320 }),
+    )
+    wrapper.unmount()
+  })
+
+  it('locks the pay-method picker while an easypay order is pending and keeps paying that order', async () => {
+    const pendingOrder = {
+      order_no: 'EP-3',
+      status: 'pending' as const,
+      pay_amount_cny_fen: 500,
+      benefit_amount_cny_fen: 1000,
+      payment_url: 'https://pay.hueling.cc/submit.php?trade_no=EP-3',
+      payment_method: 'alipay' as const,
+      created_at: '2026-08-19T12:00:00Z',
+    }
+    mocks.listOffers.mockResolvedValue([{ ...offer, provider: 'easypay' as const, order: pendingOrder }])
+    mocks.getOrder.mockResolvedValue(pendingOrder)
+    mocks.toDataURL.mockResolvedValue('data:image/png;base64,PENDINGQR')
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+
+    const options = wrapper.findAll('.trial-offer__paymethod-option')
+    expect(options).toHaveLength(2)
+    expect(options[0].attributes('disabled')).toBeDefined()
+    expect(options[1].attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('nativeCheckout.payMethodLockedHint')
+
+    await wrapper.find('.trial-offer__action').trigger('click')
+    await flushPromises()
+
+    expect(mocks.createOrder).not.toHaveBeenCalled()
+    expect(mocks.getDirectQR).not.toHaveBeenCalled()
+    expect(wrapper.find('.checkout-modal__qr img').attributes('src')).toBe('data:image/png;base64,PENDINGQR')
     wrapper.unmount()
   })
 })

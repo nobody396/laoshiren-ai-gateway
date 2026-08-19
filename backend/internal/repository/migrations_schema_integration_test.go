@@ -455,6 +455,10 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 	// ¥500/¥1000 orders are never retroactively treated as promotional.
 	requireColumn(t, tx, "topup_orders", "bonus_amount_cny_fen", "integer", 0, false)
 
+	// migration 194: topup orders record which gateway (xunhu / easypay)
+	// collected the payment.
+	requireColumn(t, tx, "topup_orders", "provider", "character varying", 16, false)
+
 	// migration 171: sellable redeem codes preserve actual cash separately
 	// from promotional balance credited.
 	requireColumn(t, tx, "redeem_codes", "paid_value", "numeric", 0, false)
@@ -463,7 +467,8 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 	// order, restricts its inventory, snapshots the selected payment method, and
 	// configures the single approved ¥5 -> ¥10 pure-gift newcomer offer. Native
 	// checkout remains disabled while manual card redemption is enabled with an
-	// atomic lifetime claim.
+	// atomic lifetime claim. Migration 194 repoints the offer at the EasyPay
+	// goods page while keeping the manual redeem fallback enabled.
 	requireColumn(t, tx, "native_checkout_offers", "provider_goods_key", "character varying", 64, false)
 	requireColumn(t, tx, "native_checkout_offers", "manual_redeem_enabled", "boolean", 0, false)
 	requireColumn(t, tx, "native_checkout_orders", "contact_hash", "character", 64, false)
@@ -478,7 +483,12 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 	requireIndex(t, tx, "native_checkout_redeem_inventory", "idx_native_checkout_redeem_inventory_offer_unassigned")
 	requireIndex(t, tx, "native_checkout_manual_claims", "idx_native_checkout_manual_claims_user")
 
+	// migration 195: EasyPay native checkout mints one redeem code per NC-
+	// order; the partial unique index backstops the lookup-then-insert mint.
+	requireIndex(t, tx, "redeem_codes", "uq_redeem_codes_external_order_no_native_checkout")
+
 	var (
+		provider         string
 		providerGoodsKey string
 		payFen           int64
 		benefitFen       int64
@@ -492,16 +502,17 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 		manualRedeem     bool
 	)
 	require.NoError(t, tx.QueryRowContext(context.Background(), `
-SELECT provider_goods_key, pay_amount_cny_fen, benefit_amount_cny_fen,
+SELECT provider, provider_goods_key, pay_amount_cny_fen, benefit_amount_cny_fen,
        redeem_value::double precision, redeem_paid_value::double precision,
        redeem_purpose, redeem_sales_status, redeem_validity_days,
        once_per_user, enabled, manual_redeem_enabled
 FROM native_checkout_offers
 WHERE code = 'newcomer-balance-5-to-10'
 `).Scan(
-		&providerGoodsKey, &payFen, &benefitFen, &redeemValue, &paidValue,
+		&provider, &providerGoodsKey, &payFen, &benefitFen, &redeemValue, &paidValue,
 		&purpose, &salesStatus, &validityDays, &oncePerUser, &enabled, &manualRedeem,
 	))
+	require.Equal(t, "ldxp", provider, "migration 194 must leave the newcomer offer on LDXP; the easypay flip is a launch-time ops step")
 	require.Equal(t, "oc3w4r", providerGoodsKey)
 	require.Equal(t, int64(500), payFen)
 	require.Equal(t, int64(1000), benefitFen)

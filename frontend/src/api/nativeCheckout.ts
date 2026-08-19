@@ -11,6 +11,8 @@ export type NativeCheckoutStatus =
 
 export type NativeCheckoutPaymentMethod = 'wechat' | 'alipay'
 
+export type NativeCheckoutProvider = 'ldxp' | 'easypay'
+
 export interface NativeCheckoutOrder {
   order_no: string
   status: NativeCheckoutStatus
@@ -31,6 +33,7 @@ export interface NativeCheckoutOffer {
   benefit_amount_cny_fen: number
   once_per_user: boolean
   claimed: boolean
+  provider?: NativeCheckoutProvider
   order?: NativeCheckoutOrder
 }
 
@@ -59,9 +62,14 @@ export async function requestNativeCheckoutManualOfferPurchase(offerCode: string
   return data
 }
 
-export async function createNativeCheckoutOrder(offerCode: string): Promise<NativeCheckoutOrder> {
+export async function createNativeCheckoutOrder(
+  offerCode: string,
+  payType?: NativeCheckoutPaymentMethod
+): Promise<NativeCheckoutOrder> {
   const { data } = await apiClient.post<NativeCheckoutOrder>('/native-checkout/orders', {
     offer_code: offerCode,
+    // 仅 easypay 通道需要指定支付方式；缺省时后端按支付宝处理。
+    ...(payType ? { pay_type: payType } : {}),
   })
   return data
 }

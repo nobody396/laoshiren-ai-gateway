@@ -49,3 +49,48 @@
 2. 从 `card_shop_products` 删除或禁用 `newcomer-5-to-10`，保留其他商品。
 3. 将 offer 的 `manual_redeem_enabled=false`，同时确认 `enabled=false`、tester 数量为 0。
 4. 不删除订单、库存、claim 或已使用卡密记录。
+
+## EasyPay 站内扫码模式（迁移 194/195 之后）
+
+代码已支持 offer `provider='easypay'` 的原生扫码流程：站内下单（支付宝/微信可选）
+→ 皮卡丘易支付回调 `POST|GET /api/v1/pay/notify/easypay` 顶起 reconcile worker
+→ worker 主动查单确认支付 → 按订单快照内部铸造等额兑换码
+（`external_order_no=<平台单号>`，幂等；迁移 195 的部分唯一索引兜底）
+→ 走与库存卡完全相同的 ClaimFulfillment → 兑换 → 完成链路，余额、账变、
+终身 claim 在同一事务语义下提交。终身限购权威仍是
+`native_checkout_manual_claims`，手工卡与原生扫码共用。
+
+### 上线（从手动模式切到 EasyPay 原生模式）
+
+前置：皮卡丘商户后台至少一条通道在线（推荐支付宝商家账单），管理后台
+「易支付（皮卡丘）」已填 PID/密钥并启用。
+
+```sql
+UPDATE native_checkout_offers
+SET provider = 'easypay',
+    provider_goods_key = 'newcomer-balance-5-to-10',
+    enabled = TRUE,
+    manual_redeem_enabled = TRUE,  -- 保留存量手工卡可兑换
+    updated_at = NOW()
+WHERE code = 'newcomer-balance-5-to-10';
+```
+
+上线后前端自动切到原生扫码（offer 可见且 provider=easypay）；手动购买入口
+自动隐藏。验证：测试账号实付 ¥5 → 站内二维码 → 到账 ¥10 → 第二单被
+`NATIVE_CHECKOUT_ALREADY_CLAIMED` 拒绝；再用一张存量手工卡确认仍返回
+`REDEEM_OFFER_ALREADY_CLAIMED`。
+
+### 回滚（退回手动 LDXP 模式）
+
+```sql
+UPDATE native_checkout_offers
+SET provider = 'ldxp',
+    provider_goods_key = 'oc3w4r',
+    enabled = FALSE,
+    manual_redeem_enabled = TRUE,
+    updated_at = NOW()
+WHERE code = 'newcomer-balance-5-to-10';
+```
+
+进行中的 easypay 订单会继续由 worker 按 easypay 协议收尾（订单自身记录了
+provider）；新的购买回到手动卡密流程。

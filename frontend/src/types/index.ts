@@ -147,6 +147,9 @@ export interface PublicSettings {
   alipay_enabled: boolean
   xunhu_alipay_enabled: boolean
   xunhu_wechat_enabled: boolean
+  // Provider-agnostic topup channel flags (absent on older backends; fall back to the xunhu flags)
+  topup_alipay_enabled?: boolean
+  topup_wechat_enabled?: boolean
   version: string
 }
 

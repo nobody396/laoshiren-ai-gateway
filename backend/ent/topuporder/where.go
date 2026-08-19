@@ -80,6 +80,11 @@ func PayType(v string) predicate.TopupOrder {
 	return predicate.TopupOrder(sql.FieldEQ(FieldPayType, v))
 }
 
+// Provider applies equality check predicate on the "provider" field. It's identical to ProviderEQ.
+func Provider(v string) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldEQ(FieldProvider, v))
+}
+
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v string) predicate.TopupOrder {
 	return predicate.TopupOrder(sql.FieldEQ(FieldStatus, v))
@@ -343,6 +348,71 @@ func PayTypeEqualFold(v string) predicate.TopupOrder {
 // PayTypeContainsFold applies the ContainsFold predicate on the "pay_type" field.
 func PayTypeContainsFold(v string) predicate.TopupOrder {
 	return predicate.TopupOrder(sql.FieldContainsFold(FieldPayType, v))
+}
+
+// ProviderEQ applies the EQ predicate on the "provider" field.
+func ProviderEQ(v string) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldEQ(FieldProvider, v))
+}
+
+// ProviderNEQ applies the NEQ predicate on the "provider" field.
+func ProviderNEQ(v string) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldNEQ(FieldProvider, v))
+}
+
+// ProviderIn applies the In predicate on the "provider" field.
+func ProviderIn(vs ...string) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldIn(FieldProvider, vs...))
+}
+
+// ProviderNotIn applies the NotIn predicate on the "provider" field.
+func ProviderNotIn(vs ...string) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldNotIn(FieldProvider, vs...))
+}
+
+// ProviderGT applies the GT predicate on the "provider" field.
+func ProviderGT(v string) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldGT(FieldProvider, v))
+}
+
+// ProviderGTE applies the GTE predicate on the "provider" field.
+func ProviderGTE(v string) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldGTE(FieldProvider, v))
+}
+
+// ProviderLT applies the LT predicate on the "provider" field.
+func ProviderLT(v string) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldLT(FieldProvider, v))
+}
+
+// ProviderLTE applies the LTE predicate on the "provider" field.
+func ProviderLTE(v string) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldLTE(FieldProvider, v))
+}
+
+// ProviderContains applies the Contains predicate on the "provider" field.
+func ProviderContains(v string) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldContains(FieldProvider, v))
+}
+
+// ProviderHasPrefix applies the HasPrefix predicate on the "provider" field.
+func ProviderHasPrefix(v string) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldHasPrefix(FieldProvider, v))
+}
+
+// ProviderHasSuffix applies the HasSuffix predicate on the "provider" field.
+func ProviderHasSuffix(v string) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldHasSuffix(FieldProvider, v))
+}
+
+// ProviderEqualFold applies the EqualFold predicate on the "provider" field.
+func ProviderEqualFold(v string) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldEqualFold(FieldProvider, v))
+}
+
+// ProviderContainsFold applies the ContainsFold predicate on the "provider" field.
+func ProviderContainsFold(v string) predicate.TopupOrder {
+	return predicate.TopupOrder(sql.FieldContainsFold(FieldProvider, v))
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.

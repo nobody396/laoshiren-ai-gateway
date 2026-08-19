@@ -60,6 +60,9 @@
             </div>
           </div>
 
+          <!-- 新人 ¥5→¥10 优惠由易支付通道提供时，在站内直接扫码购买 -->
+          <NativeCheckoutTrialOffer v-if="newcomerOfferMode === 'native'" />
+
           <template v-if="showingCardShop">
             <div>
               <p class="text-sm font-medium text-gray-700 dark:text-dark-300 mb-3">{{ t('topup.cardShopSelectAmount') }}</p>
@@ -265,6 +268,11 @@
               </div>
             </div>
 
+            <!-- 客户端渲染二维码时的如实标注 -->
+            <p v-if="qrCodeClientRendered && !qrExpired" class="text-xs text-gray-400 dark:text-dark-400">
+              {{ t('topup.qrContentHint') }}
+            </p>
+
             <!-- Countdown -->
             <div v-if="!qrExpired" class="flex items-center justify-center gap-1.5 text-sm text-gray-500 dark:text-dark-400">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -295,6 +303,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/api/topup'
 import Icon from '@/components/icons/Icon.vue'
+import NativeCheckoutTrialOffer from '@/components/user/NativeCheckoutTrialOffer.vue'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { useAppStore } from '@/stores'
 import type { CardShopProduct } from '@/types'
@@ -306,6 +315,7 @@ import {
   isSupportedBalanceTopupAmount
 } from '@/constants/balanceTopups'
 import { shouldShowManualNewcomerProduct, useManualNewcomerOffer } from '@/composables/useManualNewcomerOffer'
+import { isDirectQrImageUrl, renderQrCodeDataUrl } from '@/utils/qrImage'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -332,6 +342,8 @@ const customAmountInput = ref('')
 const submitting = ref(false)
 const openingCardShop = ref(false)
 const qrCodeURL = ref('')
+const qrCodeRawPayload = ref('')
+const qrCodeClientRendered = ref(false)
 const orderNo = ref('')
 const qrExpired = ref(false)
 const countdown = ref(QR_TTL_SECONDS)
@@ -343,15 +355,21 @@ let countdownTimer: ReturnType<typeof setInterval> | null = null
 let pollInFlight = false
 const {
   state: newcomerOfferState,
+  mode: newcomerOfferMode,
   refresh: refreshNewcomerOffer,
   requestPurchaseURL: requestNewcomerPurchaseURL,
 } = useManualNewcomerOffer()
 
 // 根据公开设置决定用户侧可见支付渠道；关闭的渠道直接不展示。
-const xunhuAlipayEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_alipay_enabled ?? false)
-const xunhuWechatEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_wechat_enabled ?? false)
-const canUseAlipay = computed(() => xunhuAlipayEnabled.value)
-const canUseWechat = computed(() => xunhuWechatEnabled.value)
+// 优先使用 provider 无关的新开关，老后端未返回时回退到虎皮椒开关。
+const topupAlipayEnabled = computed(
+  () => appStore.cachedPublicSettings?.topup_alipay_enabled ?? appStore.cachedPublicSettings?.xunhu_alipay_enabled ?? false
+)
+const topupWechatEnabled = computed(
+  () => appStore.cachedPublicSettings?.topup_wechat_enabled ?? appStore.cachedPublicSettings?.xunhu_wechat_enabled ?? false
+)
+const canUseAlipay = computed(() => topupAlipayEnabled.value)
+const canUseWechat = computed(() => topupWechatEnabled.value)
 const hasAvailablePayType = computed(() => canUseAlipay.value || canUseWechat.value)
 const qrTopupAvailable = computed(() => hasAvailablePayType.value)
 const activeCardShopProducts = computed<CardShopProduct[]>(() =>
@@ -361,7 +379,7 @@ const activeCardShopProducts = computed<CardShopProduct[]>(() =>
         product.enabled &&
         product.url &&
         isSupportedBalanceTopupAmount(product.amount_cny) &&
-        shouldShowManualNewcomerProduct(product.amount_cny, newcomerOfferState.value)
+        shouldShowManualNewcomerProduct(product.amount_cny, newcomerOfferState.value, newcomerOfferMode.value)
     )
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.amount_cny - b.amount_cny)
 )
@@ -472,9 +490,9 @@ async function goRedeem() {
 
 // 配置只保留一个渠道时，自动选中仍可用的支付方式。
 function syncPayTypeWithSettings() {
-  if (xunhuAlipayEnabled.value && !xunhuWechatEnabled.value) {
+  if (topupAlipayEnabled.value && !topupWechatEnabled.value) {
     payType.value = 'alipay'
-  } else if (!xunhuAlipayEnabled.value && xunhuWechatEnabled.value) {
+  } else if (!topupAlipayEnabled.value && topupWechatEnabled.value) {
     payType.value = 'wechat'
   }
 }
@@ -502,6 +520,8 @@ function close() {
 function reset() {
   step.value = 1
   qrCodeURL.value = ''
+  qrCodeRawPayload.value = ''
+  qrCodeClientRendered.value = false
   orderNo.value = ''
   qrExpired.value = false
   countdown.value = QR_TTL_SECONDS
@@ -527,7 +547,28 @@ function updateActiveOrderMeta(meta: {
     payType.value = meta.pay_type
   }
   if (typeof meta.qr_code_url === 'string' && meta.qr_code_url.trim() !== '') {
-    qrCodeURL.value = meta.qr_code_url
+    void applyQrCodePayload(meta.qr_code_url)
+  }
+}
+
+// 后端返回的 qr_code_url 可能是二维码图片地址，也可能是支付内容
+//（如 easypay 的收银台链接或 weixin:// 协议串）；后者在客户端渲染为二维码。
+async function applyQrCodePayload(payload: string) {
+  const trimmed = payload.trim()
+  if (!trimmed || trimmed === qrCodeRawPayload.value) return
+  if (isDirectQrImageUrl(trimmed)) {
+    qrCodeRawPayload.value = trimmed
+    qrCodeURL.value = trimmed
+    qrCodeClientRendered.value = false
+    return
+  }
+  try {
+    const dataUrl = await renderQrCodeDataUrl(trimmed)
+    qrCodeRawPayload.value = trimmed
+    qrCodeURL.value = dataUrl
+    qrCodeClientRendered.value = true
+  } catch (error) {
+    console.error('Failed to render topup QR code:', error)
   }
 }
 
@@ -539,7 +580,6 @@ async function submitOrder() {
     const orderAmountYuan = effectiveAmountYuan.value
     const res = await createTopupOrder(Math.round(orderAmountYuan * 100), payType.value)
     orderNo.value = res.order_no
-    qrCodeURL.value = res.qr_code_url
     activeOrderAmountYuan.value = orderAmountYuan
     activeOrderCreditedAmountYuan.value = getCreditedBalanceTopupAmount(orderAmountYuan)
     updateActiveOrderMeta(res)

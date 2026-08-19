@@ -13,6 +13,15 @@ import (
 
 const nativeCheckoutTestContactKey = "test-native-checkout-contact-key"
 
+// nativeCheckoutTestResolver registers the same fake under both provider names so
+// existing LDXP tests and new EasyPay tests resolve identically.
+func nativeCheckoutTestResolver(provider NativeCheckoutProvider) NativeCheckoutProviderResolver {
+	return NewNativeCheckoutProviderResolver(map[string]NativeCheckoutProvider{
+		NativeCheckoutProviderLDXP:    provider,
+		NativeCheckoutProviderEasyPay: provider,
+	})
+}
+
 func TestNativeCheckoutCreateUsesRegisteredEmailAndReusesOnceOnlyOrder(t *testing.T) {
 	repo := newNativeCheckoutRepoFake(testNativeCheckoutOffer())
 	provider := &nativeCheckoutProviderFake{
@@ -22,13 +31,13 @@ func TestNativeCheckoutCreateUsesRegisteredEmailAndReusesOnceOnlyOrder(t *testin
 	}
 	service := NewNativeCheckoutService(
 		repo,
-		provider,
+		nativeCheckoutTestResolver(provider),
 		&nativeCheckoutUserRepoFake{user: &User{ID: 42, Email: "Buyer@Example.com"}},
 		&nativeCheckoutRedeemerFake{},
 		nativeCheckoutTestContactKey,
 	)
 
-	first, err := service.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10")
+	first, err := service.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10", "")
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusPending, first.Status)
 	require.Equal(t, NativeCheckoutPaymentMethodWeChat, first.PaymentMethod)
@@ -36,7 +45,7 @@ func TestNativeCheckoutCreateUsesRegisteredEmailAndReusesOnceOnlyOrder(t *testin
 	require.Equal(t, 1, provider.createCalls)
 	require.NotEqual(t, "", first.ContactHash)
 
-	second, err := service.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10")
+	second, err := service.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10", "")
 	require.NoError(t, err)
 	require.Equal(t, first.OrderNo, second.OrderNo)
 	require.Equal(t, 1, provider.createCalls, "a repeated click must not create another LDXP order")
@@ -45,7 +54,7 @@ func TestNativeCheckoutCreateUsesRegisteredEmailAndReusesOnceOnlyOrder(t *testin
 func TestNativeCheckoutListDoesNotCallProviderWhileRenderingCatalog(t *testing.T) {
 	repo := newNativeCheckoutRepoFake(testNativeCheckoutOffer())
 	provider := &nativeCheckoutProviderFake{validateErr: errors.New("product offline")}
-	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
+	svc := NewNativeCheckoutService(repo, nativeCheckoutTestResolver(provider), &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
 
 	offers, err := svc.ListOffers(context.Background(), 42)
 	require.NoError(t, err)
@@ -54,7 +63,7 @@ func TestNativeCheckoutListDoesNotCallProviderWhileRenderingCatalog(t *testing.T
 
 func TestNativeCheckoutManualOfferStatusHidesPurchaseLinkAfterClaim(t *testing.T) {
 	repo := newNativeCheckoutRepoFake(testNativeCheckoutOffer())
-	svc := NewNativeCheckoutService(repo, &nativeCheckoutProviderFake{}, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
+	svc := NewNativeCheckoutService(repo, nativeCheckoutTestResolver(&nativeCheckoutProviderFake{}), &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
 
 	status, err := svc.GetManualOfferStatus(context.Background(), 42, repo.offer.Code, false)
 	require.NoError(t, err)
@@ -76,7 +85,7 @@ func TestNativeCheckoutManualOfferStatusHidesPurchaseLinkAfterClaim(t *testing.T
 func TestNativeCheckoutManualOfferStatusRejectsNonManualOffer(t *testing.T) {
 	repo := newNativeCheckoutRepoFake(testNativeCheckoutOffer())
 	repo.manualOfferVisible = false
-	svc := NewNativeCheckoutService(repo, &nativeCheckoutProviderFake{}, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
+	svc := NewNativeCheckoutService(repo, nativeCheckoutTestResolver(&nativeCheckoutProviderFake{}), &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
 
 	_, err := svc.GetManualOfferStatus(context.Background(), 42, repo.offer.Code, true)
 	require.ErrorIs(t, err, ErrNativeCheckoutOfferNotFound)
@@ -88,7 +97,7 @@ func TestNativeCheckoutRecoveredRedeemCountsAsOnceOnlyPurchase(t *testing.T) {
 	provider := &nativeCheckoutProviderFake{}
 	svc := NewNativeCheckoutService(
 		repo,
-		provider,
+		nativeCheckoutTestResolver(provider),
 		&nativeCheckoutUserRepoFake{user: &User{ID: 42, Email: "buyer@example.com"}},
 		&nativeCheckoutRedeemerFake{},
 		nativeCheckoutTestContactKey,
@@ -100,7 +109,7 @@ func TestNativeCheckoutRecoveredRedeemCountsAsOnceOnlyPurchase(t *testing.T) {
 	require.True(t, offers[0].Claimed)
 	require.Nil(t, offers[0].Order)
 
-	_, err = svc.CreateOrder(context.Background(), 42, repo.offer.Code)
+	_, err = svc.CreateOrder(context.Background(), 42, repo.offer.Code, "")
 	require.ErrorIs(t, err, ErrNativeCheckoutAlreadyClaimed)
 	require.Zero(t, provider.createCalls)
 
@@ -109,7 +118,7 @@ func TestNativeCheckoutRecoveredRedeemCountsAsOnceOnlyPurchase(t *testing.T) {
 	offers, err = svc.ListOffers(context.Background(), 42)
 	require.NoError(t, err)
 	require.True(t, offers[0].Claimed)
-	_, err = svc.CreateOrder(context.Background(), 42, repo.offer.Code)
+	_, err = svc.CreateOrder(context.Background(), 42, repo.offer.Code, "")
 	require.ErrorIs(t, err, ErrNativeCheckoutAlreadyClaimed)
 }
 
@@ -122,7 +131,7 @@ func TestNativeCheckoutCreateFinishesAfterRequestCancellation(t *testing.T) {
 	}
 	svc := NewNativeCheckoutService(
 		repo,
-		provider,
+		nativeCheckoutTestResolver(provider),
 		&nativeCheckoutUserRepoFake{user: &User{ID: 42, Email: "buyer@example.com"}},
 		&nativeCheckoutRedeemerFake{},
 		nativeCheckoutTestContactKey,
@@ -130,7 +139,7 @@ func TestNativeCheckoutCreateFinishesAfterRequestCancellation(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	order, err := svc.CreateOrder(ctx, 42, "newcomer-balance-5-to-10")
+	order, err := svc.CreateOrder(ctx, 42, "newcomer-balance-5-to-10", "")
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusPending, order.Status)
 	require.NoError(t, provider.createContextErr, "the durable provider operation must be detached from the browser request")
@@ -145,13 +154,13 @@ func TestNativeCheckoutCreateRejectsUnlabeledProviderPaymentMethod(t *testing.T)
 	}
 	svc := NewNativeCheckoutService(
 		repo,
-		provider,
+		nativeCheckoutTestResolver(provider),
 		&nativeCheckoutUserRepoFake{user: &User{ID: 42, Email: "buyer@example.com"}},
 		&nativeCheckoutRedeemerFake{},
 		nativeCheckoutTestContactKey,
 	)
 
-	_, err := svc.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10")
+	_, err := svc.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10", "")
 	require.Error(t, err)
 	require.Equal(t, NativeCheckoutStatusManualReview, repo.order.Status)
 	require.Equal(t, "provider_payment_method_invalid", repo.order.FailureCode)
@@ -166,7 +175,7 @@ func TestNativeCheckoutStaleCreatingOrderIsHeldForReviewWithoutRetry(t *testing.
 	repo.order.PaymentURL = ""
 	repo.order.UpdatedAt = time.Now().Add(-2 * time.Minute)
 	provider := &nativeCheckoutProviderFake{}
-	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
+	svc := NewNativeCheckoutService(repo, nativeCheckoutTestResolver(provider), &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
 
 	order, err := svc.syncOrder(context.Background(), repo.order)
 	require.NoError(t, err)
@@ -192,7 +201,7 @@ func TestNativeCheckoutPaidGiftCardIsValidatedLinkedAndRedeemed(t *testing.T) {
 		PaidValue: 0, Status: StatusUnused, Purpose: RedeemCodePurposeGift,
 		SalesStatus: RedeemCodeSalesStatusGifted, ValidityDays: 0,
 	}}
-	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, redeem, nativeCheckoutTestContactKey)
+	svc := NewNativeCheckoutService(repo, nativeCheckoutTestResolver(provider), &nativeCheckoutUserRepoFake{}, redeem, nativeCheckoutTestContactKey)
 
 	order, err := svc.syncOrder(context.Background(), repo.order)
 	require.NoError(t, err)
@@ -210,7 +219,7 @@ func TestNativeCheckoutPaidOrderStaysCheckingWhileDeliveryIsPending(t *testing.T
 		TradeNo: "LD-1", GoodsKey: offer.ProviderGoodsKey, Contact: "buyer@example.com",
 		Quantity: 1, TotalCNYFen: 500, Paid: true, Delivered: false,
 	}}
-	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
+	svc := NewNativeCheckoutService(repo, nativeCheckoutTestResolver(provider), &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
 
 	order, err := svc.syncOrder(context.Background(), repo.order)
 	require.NoError(t, err)
@@ -235,7 +244,7 @@ func TestNativeCheckoutRejectsPaidCardThatIsNotPureGift(t *testing.T) {
 		PaidValue: 1, Status: StatusUnused, Purpose: RedeemCodePurposeSaleRecharge,
 		SalesStatus: RedeemCodeSalesStatusSold, ValidityDays: 0,
 	}}
-	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, redeem, nativeCheckoutTestContactKey)
+	svc := NewNativeCheckoutService(repo, nativeCheckoutTestResolver(provider), &nativeCheckoutUserRepoFake{}, redeem, nativeCheckoutTestContactKey)
 
 	order, err := svc.syncOrder(context.Background(), repo.order)
 	require.NoError(t, err)
@@ -265,7 +274,7 @@ func TestNativeCheckoutCrashRecoveryAcceptsCodeAlreadyUsedBySameUser(t *testing.
 		Status: StatusUsed, UsedBy: &usedBy, Purpose: RedeemCodePurposeGift,
 		SalesStatus: RedeemCodeSalesStatusGifted, ValidityDays: 0,
 	}}
-	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, redeem, nativeCheckoutTestContactKey)
+	svc := NewNativeCheckoutService(repo, nativeCheckoutTestResolver(provider), &nativeCheckoutUserRepoFake{}, redeem, nativeCheckoutTestContactKey)
 
 	order, err := svc.syncOrder(context.Background(), repo.order)
 	require.NoError(t, err)
@@ -281,7 +290,7 @@ func TestNativeCheckoutCustomerStatusReadNeverPollsProvider(t *testing.T) {
 		TradeNo: "LD-1", GoodsKey: offer.ProviderGoodsKey, Contact: "buyer@example.com",
 		Quantity: 1, TotalCNYFen: 500, Paid: true, Delivered: false,
 	}}
-	svc := NewNativeCheckoutService(repo, provider, &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
+	svc := NewNativeCheckoutService(repo, nativeCheckoutTestResolver(provider), &nativeCheckoutUserRepoFake{}, &nativeCheckoutRedeemerFake{}, nativeCheckoutTestContactKey)
 
 	order, err := svc.GetOrder(context.Background(), 42, repo.order.OrderNo)
 	require.NoError(t, err)
@@ -373,6 +382,10 @@ type nativeCheckoutRepoFake struct {
 	redeemed           bool
 	manualOfferVisible bool
 	linkedTradeNo      string
+	mintedCodes        map[string]string
+	mintCalls          int
+	mintErr            error
+	nudgedOrderIDs     []int64
 }
 
 func newNativeCheckoutRepoFake(offer NativeCheckoutOffer) *nativeCheckoutRepoFake {
@@ -488,12 +501,58 @@ func (r *nativeCheckoutRepoFake) CompleteOrder(context.Context, int64) (*NativeC
 	return &copy, nil
 }
 
+func (r *nativeCheckoutRepoFake) GetOrder(context.Context, string) (*NativeCheckoutOrder, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.order == nil {
+		return nil, ErrNativeCheckoutOrderNotFound
+	}
+	copy := *r.order
+	return &copy, nil
+}
+
+func (r *nativeCheckoutRepoFake) FindMintedRedeemCode(_ context.Context, providerTradeNo string) (string, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if code, ok := r.mintedCodes[providerTradeNo]; ok {
+		return code, nil
+	}
+	return "", ErrRedeemCodeNotFound
+}
+
+func (r *nativeCheckoutRepoFake) MintRedeemCode(_ context.Context, order *NativeCheckoutOrder, code string) (string, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.mintCalls++
+	if r.mintErr != nil {
+		return "", r.mintErr
+	}
+	if r.mintedCodes == nil {
+		r.mintedCodes = make(map[string]string)
+	}
+	if existing, ok := r.mintedCodes[order.ProviderTradeNo]; ok {
+		return existing, nil
+	}
+	r.mintedCodes[order.ProviderTradeNo] = code
+	return code, nil
+}
+
+func (r *nativeCheckoutRepoFake) NudgeReconcileNow(_ context.Context, orderID int64) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.nudgedOrderIDs = append(r.nudgedOrderIDs, orderID)
+	return nil
+}
+
 type nativeCheckoutProviderFake struct {
 	NativeCheckoutProvider
 	created          *NativeCheckoutProviderOrder
 	paid             bool
 	info             *NativeCheckoutProviderOrderInfo
 	contact          string
+	payType          string
+	orderNo          string
+	amountFen        int64
 	createCalls      int
 	createContextErr error
 	validateErr      error
@@ -504,8 +563,11 @@ func (p *nativeCheckoutProviderFake) ValidateOffer(context.Context, string, int6
 	return p.validateErr
 }
 
-func (p *nativeCheckoutProviderFake) CreateOrder(ctx context.Context, _, contact string, _ int64) (*NativeCheckoutProviderOrder, error) {
-	p.contact = contact
+func (p *nativeCheckoutProviderFake) CreateOrder(ctx context.Context, req *NativeCheckoutCreateRequest) (*NativeCheckoutProviderOrder, error) {
+	p.contact = req.Contact
+	p.payType = req.PayType
+	p.orderNo = req.OrderNo
+	p.amountFen = req.ExpectedAmountCNYFen
 	p.createCalls++
 	p.createContextErr = ctx.Err()
 	return p.created, nil

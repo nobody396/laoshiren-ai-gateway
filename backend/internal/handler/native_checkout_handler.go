@@ -21,11 +21,15 @@ func NewNativeCheckoutHandler(nativeCheckoutService *service.NativeCheckoutServi
 
 type createNativeCheckoutOrderRequest struct {
 	OfferCode string `json:"offer_code" binding:"required,max=64"`
+	// PayType is only meaningful for easypay offers (alipay/wechat, default
+	// alipay); providers that choose their own channel ignore it.
+	PayType string `json:"pay_type" binding:"omitempty,oneof=alipay wechat"`
 }
 
 type nativeCheckoutOrderResponse struct {
 	OrderNo             string    `json:"order_no"`
 	Status              string    `json:"status"`
+	Provider            string    `json:"provider"`
 	PayAmountCNYFen     int64     `json:"pay_amount_cny_fen"`
 	BenefitAmountCNYFen int64     `json:"benefit_amount_cny_fen"`
 	PaymentURL          string    `json:"payment_url,omitempty"`
@@ -36,6 +40,7 @@ type nativeCheckoutOrderResponse struct {
 
 type nativeCheckoutOfferResponse struct {
 	Code                string                       `json:"code"`
+	Provider            string                       `json:"provider"`
 	Name                string                       `json:"name"`
 	Description         string                       `json:"description"`
 	ProductKind         string                       `json:"product_kind"`
@@ -67,6 +72,7 @@ func (h *NativeCheckoutHandler) ListOffers(c *gin.Context) {
 		view := offers[i]
 		item := nativeCheckoutOfferResponse{
 			Code:                view.Code,
+			Provider:            view.Provider,
 			Name:                view.Name,
 			Description:         view.Description,
 			ProductKind:         view.ProductKind,
@@ -118,7 +124,7 @@ func (h *NativeCheckoutHandler) CreateOrder(c *gin.Context) {
 		response.BadRequest(c, "Invalid checkout request")
 		return
 	}
-	order, err := h.service.CreateOrder(c.Request.Context(), userID, request.OfferCode)
+	order, err := h.service.CreateOrder(c.Request.Context(), userID, request.OfferCode, request.PayType)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -179,6 +185,7 @@ func nativeCheckoutOrderDTO(order *service.NativeCheckoutOrder) *nativeCheckoutO
 	result := &nativeCheckoutOrderResponse{
 		OrderNo:             order.OrderNo,
 		Status:              order.Status,
+		Provider:            order.Provider,
 		PayAmountCNYFen:     order.PayAmountCNYFen,
 		BenefitAmountCNYFen: order.BenefitAmountCNYFen,
 		PaymentMethod:       order.PaymentMethod,

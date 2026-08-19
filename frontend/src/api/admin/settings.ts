@@ -11,6 +11,9 @@ export interface DefaultSubscriptionSetting {
   validity_days: number
 }
 
+/** 余额充值支付通道 */
+export type TopupProvider = 'xunhu' | 'easypay'
+
 /**
  * System settings interface
  */
@@ -153,6 +156,14 @@ export interface SystemSettings {
   xunhu_wechat_appid: string
   xunhu_wechat_key_configured: boolean
   xunhu_notify_url: string
+
+  // 易支付（皮卡丘）聚合支付设置
+  easypay_enabled: boolean
+  easypay_pid: string
+  easypay_api_base: string
+  easypay_key_configured: boolean
+  topup_alipay_provider: TopupProvider
+  topup_wechat_provider: TopupProvider
 }
 
 export interface UpdateSettingsRequest {
@@ -270,6 +281,14 @@ export interface UpdateSettingsRequest {
   xunhu_wechat_appid?: string
   xunhu_wechat_key?: string
   xunhu_notify_url?: string
+
+  // 易支付（皮卡丘）聚合支付设置
+  easypay_enabled?: boolean
+  easypay_pid?: string
+  easypay_api_base?: string
+  easypay_key?: string
+  topup_alipay_provider?: TopupProvider
+  topup_wechat_provider?: TopupProvider
 }
 
 export interface OpenAIFastPolicyRule {

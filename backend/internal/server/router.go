@@ -153,6 +153,10 @@ func registerRoutes(
 	// 虎皮椒充值回调（无 JWT 认证，使用虎皮椒签名验证）
 	v1.POST("/topup/notify", h.Topup.HandleTopupNotify)
 
+	// EasyPay 支付网关统一回调（无 JWT 认证，使用网关签名验证；兼容 POST 表单与 GET 查询）
+	v1.POST("/pay/notify/easypay", h.PaymentGateway.HandleEasyPayNotify)
+	v1.GET("/pay/notify/easypay", h.PaymentGateway.HandleEasyPayNotify)
+
 	// 注册各模块路由
 	routes.RegisterAuthRoutes(v1, h, jwtAuth, redisClient, settingService)
 	routes.RegisterUserRoutes(v1, h, jwtAuth, settingService)

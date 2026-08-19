@@ -1246,6 +1246,8 @@ export default {
     createFailed: 'The trial order cannot be created right now. Please try again later.',
     qrUnavailable: 'The payment QR is temporarily unavailable. Please try again.',
     completedToast: 'Payment complete. ¥{amount} was applied.',
+    payMethodLabel: 'Payment method',
+    payMethodLockedHint: 'An order is already in progress; this payment keeps the original payment method.',
   },
   topup: {
     title: 'Top Up',
@@ -1262,6 +1264,7 @@ export default {
     scanHint: 'Scan the QR code with {payType} to complete payment',
     qrExpiry: 'QR code expires in',
     qrExpired: 'QR code expired',
+    qrContentHint: 'This QR code was generated locally from the payment content. Scan it with the payment app to finish paying.',
     refresh: 'Refresh',
     waitingPayment: 'Waiting for payment...',
     paySuccess: 'Top-up successful! Balance updated.',

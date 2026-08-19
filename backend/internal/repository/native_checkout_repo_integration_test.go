@@ -344,3 +344,93 @@ func integrationNativeCheckoutOrder(userID int64, orderNo string) *service.Nativ
 		NextCheckAt:         time.Now(),
 	}
 }
+
+func TestNativeCheckoutRepositoryMintRedeemCodeIsAtomicAndIdempotent(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("native-checkout-mint-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	repo := NewNativeCheckoutRepository(integrationDB)
+
+	order := integrationNativeCheckoutOrder(user.ID, "NC-"+fmt.Sprint(time.Now().UnixNano()))
+	order.Provider = "easypay"
+	order.ProviderGoodsKey = "newcomer-balance-5-to-10"
+	reserved, created, err := repo.ReserveOrder(ctx, order)
+	require.NoError(t, err)
+	require.True(t, created)
+	pending, err := repo.SetProviderOrder(ctx, reserved.ID, reserved.OrderNo, "https://pay.example.com/cashier/"+reserved.OrderNo, service.NativeCheckoutPaymentMethodAlipay)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_manual_claims WHERE user_id = $1`, user.ID)
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_redeem_inventory WHERE redeem_code_id IN (SELECT id FROM redeem_codes WHERE external_order_no = $1)`, pending.ProviderTradeNo)
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM native_checkout_orders WHERE id = $1`, pending.ID)
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM redeem_codes WHERE external_order_no = $1`, pending.ProviderTradeNo)
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM users WHERE id = $1`, user.ID)
+	})
+
+	mintedCode := fmt.Sprintf("%032x", time.Now().UnixNano())
+	minted, err := repo.MintRedeemCode(ctx, pending, mintedCode)
+	require.NoError(t, err)
+	require.Equal(t, mintedCode, minted)
+
+	// The code row carries the order snapshot semantics and the trade link, and
+	// the inventory trigger accepted it (semantics match the canonical offer).
+	var codeType, purpose, salesStatus, externalOrderNo, internalNotes string
+	var value, paidValue float64
+	var validityDays int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+SELECT type, value::double precision, paid_value::double precision, purpose, sales_status,
+       validity_days, external_order_no, COALESCE(internal_notes, '')
+FROM redeem_codes WHERE code = $1
+`, mintedCode).Scan(&codeType, &value, &paidValue, &purpose, &salesStatus, &validityDays, &externalOrderNo, &internalNotes))
+	require.Equal(t, service.RedeemTypeBalance, codeType)
+	require.Equal(t, float64(10), value)
+	require.Zero(t, paidValue)
+	require.Equal(t, service.RedeemCodePurposeGift, purpose)
+	require.Equal(t, service.RedeemCodeSalesStatusGifted, salesStatus)
+	require.Zero(t, validityDays)
+	require.Equal(t, pending.ProviderTradeNo, externalOrderNo)
+	require.Contains(t, internalNotes, "native-checkout-easypay")
+
+	var inventoryCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+SELECT COUNT(*) FROM native_checkout_redeem_inventory WHERE offer_code = $1 AND redeem_code_id = (SELECT id FROM redeem_codes WHERE code = $2)
+`, pending.OfferCode, mintedCode).Scan(&inventoryCount))
+	require.Equal(t, 1, inventoryCount)
+
+	found, err := repo.FindMintedRedeemCode(ctx, pending.ProviderTradeNo)
+	require.NoError(t, err)
+	require.Equal(t, mintedCode, found)
+
+	// A concurrent mint with a different code value must lose the unique race
+	// and return the already-committed code.
+	duplicate, err := repo.MintRedeemCode(ctx, pending, fmt.Sprintf("%032x", time.Now().UnixNano()+1))
+	require.NoError(t, err)
+	require.Equal(t, mintedCode, duplicate, "the unique index on external_order_no resolves the mint race to the first code")
+
+	// Minting against the offer with wrong snapshot semantics must fail the
+	// inventory trigger and roll the code row back atomically.
+	badOrder := *pending
+	badOrder.ProviderTradeNo = "NC-bad-" + fmt.Sprint(time.Now().UnixNano())
+	badOrder.RedeemValue = 11
+	badCode := fmt.Sprintf("%032x", time.Now().UnixNano()+2)
+	_, err = repo.MintRedeemCode(ctx, &badOrder, badCode)
+	require.Error(t, err, "inventory trigger must reject semantics that diverge from the canonical offer")
+	_, err = repo.FindMintedRedeemCode(ctx, badOrder.ProviderTradeNo)
+	require.ErrorIs(t, err, service.ErrRedeemCodeNotFound, "a rejected mint must roll back the redeem code row too")
+	var orphanCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `SELECT COUNT(*) FROM redeem_codes WHERE code = $1`, badCode).Scan(&orphanCount))
+	require.Zero(t, orphanCount)
+
+	// Nudge moves a pending order's reconciliation to now.
+	future, err := repo.SetOrderState(ctx, pending.ID, service.NativeCheckoutStatusPending, "", time.Now().Add(time.Hour))
+	require.NoError(t, err)
+	require.True(t, future.NextCheckAt.After(time.Now().Add(30*time.Minute)))
+	require.NoError(t, repo.NudgeReconcileNow(ctx, pending.ID))
+	nudged, err := repo.GetOrder(ctx, pending.OrderNo)
+	require.NoError(t, err)
+	require.False(t, nudged.NextCheckAt.After(time.Now()), "a paid notify must make the order immediately reconcileable")
+}

@@ -52,6 +52,9 @@
                   </div>
                 </section>
 
+                <!-- 新人 ¥5→¥10 优惠由易支付通道提供时，在站内直接扫码购买 -->
+                <NativeCheckoutTrialOffer v-if="newcomerOfferMode === 'native'" />
+
                 <section>
                   <p class="topup-label">
                     {{ t('topup.developerPlansTitle') }}
@@ -166,6 +169,9 @@
                     </div>
                   </div>
                 </div>
+                <p v-if="qrCodeClientRendered && !qrExpired" class="topup-copy topup-copy--compact">
+                  {{ t('topup.qrContentHint') }}
+                </p>
                 <div class="topup-amount-row">
                   <div>
                     <p class="topup-meta-label">{{ t('topup.selectAmount') }}</p>
@@ -433,6 +439,8 @@ import {
 import { type MonthlyCreditCardPlan } from '@/constants/monthlyCreditCards'
 import { useMonthlyCreditCardPlans } from '@/composables/useMonthlyCreditCardPlans'
 import { shouldShowManualNewcomerProduct, useManualNewcomerOffer } from '@/composables/useManualNewcomerOffer'
+import NativeCheckoutTrialOffer from '@/components/user/NativeCheckoutTrialOffer.vue'
+import { isDirectQrImageUrl, renderQrCodeDataUrl } from '@/utils/qrImage'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -462,6 +470,8 @@ const payType = ref<TopupPayType>('alipay')
 const submitting = ref(false)
 const openingCardShop = ref(false)
 const qrCodeURL = ref('')
+const qrCodeRawPayload = ref('')
+const qrCodeClientRendered = ref(false)
 const orderNo = ref('')
 const qrExpired = ref(false)
 const countdown = ref(QR_TTL_SECONDS)
@@ -471,6 +481,7 @@ const showMonthlyDirectPurchase = ref(false)
 const { plans: monthlyCreditCardPlans, loadMonthlyCreditCardPlans } = useMonthlyCreditCardPlans()
 const {
   state: newcomerOfferState,
+  mode: newcomerOfferMode,
   refresh: refreshNewcomerOffer,
   requestPurchaseURL: requestNewcomerPurchaseURL,
 } = useManualNewcomerOffer()
@@ -480,10 +491,15 @@ let countdownTimer: ReturnType<typeof setInterval> | null = null
 let pollInFlight = false
 
 // 根据公开设置决定用户侧可见支付渠道；关闭的渠道直接不展示。
-const xunhuAlipayEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_alipay_enabled ?? false)
-const xunhuWechatEnabled = computed(() => appStore.cachedPublicSettings?.xunhu_wechat_enabled ?? false)
-const canUseAlipay = computed(() => xunhuAlipayEnabled.value)
-const canUseWechat = computed(() => xunhuWechatEnabled.value)
+// 优先使用 provider 无关的新开关，老后端未返回时回退到虎皮椒开关。
+const topupAlipayEnabled = computed(
+  () => appStore.cachedPublicSettings?.topup_alipay_enabled ?? appStore.cachedPublicSettings?.xunhu_alipay_enabled ?? false
+)
+const topupWechatEnabled = computed(
+  () => appStore.cachedPublicSettings?.topup_wechat_enabled ?? appStore.cachedPublicSettings?.xunhu_wechat_enabled ?? false
+)
+const canUseAlipay = computed(() => topupAlipayEnabled.value)
+const canUseWechat = computed(() => topupWechatEnabled.value)
 const hasAvailablePayType = computed(() => canUseAlipay.value || canUseWechat.value)
 const qrTopupAvailable = computed(() => hasAvailablePayType.value)
 const hasMultiplePayTypes = computed(() => canUseAlipay.value && canUseWechat.value)
@@ -494,7 +510,7 @@ const activeCardShopProducts = computed<CardShopProduct[]>(() =>
         product.enabled &&
         product.url &&
         isSupportedBalanceTopupAmount(product.amount_cny) &&
-        shouldShowManualNewcomerProduct(product.amount_cny, newcomerOfferState.value)
+        shouldShowManualNewcomerProduct(product.amount_cny, newcomerOfferState.value, newcomerOfferMode.value)
     )
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.amount_cny - b.amount_cny)
 )
@@ -535,7 +551,10 @@ const balanceProducts = computed<BalanceProduct[]>(() => {
     }
   })
   const visiblePromotionalProducts = promotionalProducts.filter(
-    (product) => !product.newcomerOnly || !!product.cardShopProduct
+    (product) =>
+      !product.newcomerOnly ||
+      // native（易支付）模式下新人优惠由站内扫码卡片承接，隐藏外链卡密商品。
+      (newcomerOfferMode.value !== 'native' && !!product.cardShopProduct)
   )
   return [
     ...visiblePromotionalProducts.filter((product) => product.newcomerOnly),
@@ -700,9 +719,9 @@ function goRedeem() {
 
 // 配置只保留一个渠道时，自动选中仍可用的支付方式。
 function syncPayTypeWithSettings() {
-  if (xunhuAlipayEnabled.value && !xunhuWechatEnabled.value) {
+  if (topupAlipayEnabled.value && !topupWechatEnabled.value) {
     payType.value = 'alipay'
-  } else if (!xunhuAlipayEnabled.value && xunhuWechatEnabled.value) {
+  } else if (!topupAlipayEnabled.value && topupWechatEnabled.value) {
     payType.value = 'wechat'
   }
 }
@@ -738,6 +757,8 @@ function resetToForm() {
   stopTimers()
   step.value = 1
   qrCodeURL.value = ''
+  qrCodeRawPayload.value = ''
+  qrCodeClientRendered.value = false
   orderNo.value = ''
   qrExpired.value = false
   countdown.value = QR_TTL_SECONDS
@@ -762,7 +783,28 @@ function updateActiveOrderMeta(meta: {
     payType.value = meta.pay_type
   }
   if (typeof meta.qr_code_url === 'string' && meta.qr_code_url.trim() !== '') {
-    qrCodeURL.value = meta.qr_code_url
+    void applyQrCodePayload(meta.qr_code_url)
+  }
+}
+
+// 后端返回的 qr_code_url 可能是二维码图片地址，也可能是支付内容
+//（如 easypay 的收银台链接或 weixin:// 协议串）；后者在客户端渲染为二维码。
+async function applyQrCodePayload(payload: string) {
+  const trimmed = payload.trim()
+  if (!trimmed || trimmed === qrCodeRawPayload.value) return
+  if (isDirectQrImageUrl(trimmed)) {
+    qrCodeRawPayload.value = trimmed
+    qrCodeURL.value = trimmed
+    qrCodeClientRendered.value = false
+    return
+  }
+  try {
+    const dataUrl = await renderQrCodeDataUrl(trimmed)
+    qrCodeRawPayload.value = trimmed
+    qrCodeURL.value = dataUrl
+    qrCodeClientRendered.value = true
+  } catch (error) {
+    console.error('Failed to render topup QR code:', error)
   }
 }
 
@@ -775,7 +817,6 @@ async function submitOrder() {
     const orderAmountYuan = effectiveAmountYuan.value
     const response = await createTopupOrder(Math.round(orderAmountYuan * 100), payType.value)
     orderNo.value = response.order_no
-    qrCodeURL.value = response.qr_code_url
     activeOrderAmountYuan.value = orderAmountYuan
     activeOrderCreditedAmountYuan.value = getCreditedBalanceTopupAmount(orderAmountYuan)
     updateActiveOrderMeta(response)

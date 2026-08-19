@@ -366,6 +366,77 @@ func (r *nativeCheckoutRepository) LinkRedeemCode(ctx context.Context, redeemCod
 	return nil
 }
 
+func (r *nativeCheckoutRepository) FindMintedRedeemCode(ctx context.Context, providerTradeNo string) (string, error) {
+	var code string
+	err := r.db.QueryRowContext(ctx, `SELECT code FROM redeem_codes
+		WHERE external_order_no = $1`, providerTradeNo).Scan(&code)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", service.ErrRedeemCodeNotFound
+		}
+		return "", err
+	}
+	return code, nil
+}
+
+func (r *nativeCheckoutRepository) MintRedeemCode(ctx context.Context, order *service.NativeCheckoutOrder, code string) (string, error) {
+	groupIDs, err := marshalNativeCheckoutGroupIDs(order.RedeemGroupIDs)
+	if err != nil {
+		return "", err
+	}
+	// Provenance label for admin review; the redeemable value, purpose and
+	// sales status all come from the order snapshot, and the inventory
+	// trigger re-validates them against the canonical offer row.
+	internalNotes := "native-checkout-" + order.Provider + "-" + order.ProviderTradeNo
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var codeID int64
+	err = tx.QueryRowContext(ctx, `INSERT INTO redeem_codes (
+		code, type, value, paid_value, status, purpose, sales_status,
+		group_ids, validity_days, external_order_no, internal_notes,
+		created_at, updated_at
+	) VALUES ($1, $2, $3, $4, 'unused', $5, $6, $7, $8, $9, $10, NOW(), NOW())
+	RETURNING id`,
+		code, order.RedeemType, order.RedeemValue, order.RedeemPaidValue,
+		order.RedeemPurpose, order.RedeemSalesStatus, groupIDs, order.RedeemValidityDays,
+		order.ProviderTradeNo, internalNotes,
+	).Scan(&codeID)
+	if err != nil {
+		if isUniqueConstraintViolation(err) {
+			// A concurrent mint committed first (the SKIP LOCKED lease should
+			// prevent this; the partial unique index on external_order_no is
+			// the backstop). Release the transaction before reading through
+			// the shared pool so a single-connection pool cannot deadlock,
+			// then return the winner's code.
+			if rbErr := tx.Rollback(); rbErr != nil && !errors.Is(rbErr, sql.ErrTxDone) {
+				return "", rbErr
+			}
+			return r.FindMintedRedeemCode(ctx, order.ProviderTradeNo)
+		}
+		return "", err
+	}
+	if _, err = tx.ExecContext(ctx, `INSERT INTO native_checkout_redeem_inventory (redeem_code_id, offer_code)
+		VALUES ($1, $2)`, codeID, order.OfferCode); err != nil {
+		return "", err
+	}
+	if err := tx.Commit(); err != nil {
+		return "", err
+	}
+	return code, nil
+}
+
+func (r *nativeCheckoutRepository) NudgeReconcileNow(ctx context.Context, orderID int64) error {
+	_, err := r.db.ExecContext(ctx, `UPDATE native_checkout_orders SET
+		next_check_at = NOW()
+		WHERE id = $1 AND status IN ('pending', 'checking')`, orderID)
+	return err
+}
+
 func (r *nativeCheckoutRepository) CompleteOrder(ctx context.Context, id int64) (*service.NativeCheckoutOrder, error) {
 	row := r.db.QueryRowContext(ctx, `UPDATE native_checkout_orders SET
 		status = 'completed', failure_code = '', completed_at = COALESCE(completed_at, NOW()),

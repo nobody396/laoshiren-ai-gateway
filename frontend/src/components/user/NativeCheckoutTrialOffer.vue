@@ -23,6 +23,35 @@
         </span>
       </div>
 
+      <div
+        v-if="offer.provider === 'easypay'"
+        class="trial-offer__paymethod"
+        role="group"
+        :aria-label="t('nativeCheckout.payMethodLabel')"
+      >
+        <button
+          type="button"
+          class="trial-offer__paymethod-option"
+          :class="{ 'trial-offer__paymethod-option--active': payMethod === 'alipay' }"
+          :disabled="payMethodLocked"
+          @click="payMethod = 'alipay'"
+        >
+          {{ t('nativeCheckout.alipayPay') }}
+        </button>
+        <button
+          type="button"
+          class="trial-offer__paymethod-option"
+          :class="{ 'trial-offer__paymethod-option--active': payMethod === 'wechat' }"
+          :disabled="payMethodLocked"
+          @click="payMethod = 'wechat'"
+        >
+          {{ t('nativeCheckout.wechatPay') }}
+        </button>
+      </div>
+      <p v-if="offer.provider === 'easypay' && payMethodLocked" class="trial-offer__paymethod-hint">
+        {{ t('nativeCheckout.payMethodLockedHint') }}
+      </p>
+
       <button
         type="button"
         class="trial-offer__action"
@@ -99,7 +128,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import QRCode from 'qrcode'
 import {
   createNativeCheckoutOrder,
   getNativeCheckoutDirectQR,
@@ -107,9 +135,11 @@ import {
   listNativeCheckoutOffers,
   type NativeCheckoutOffer,
   type NativeCheckoutOrder,
+  type NativeCheckoutPaymentMethod,
 } from '@/api/nativeCheckout'
 import { useAppStore, useAuthStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'
+import { renderQrCodeDataUrl } from '@/utils/qrImage'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -123,6 +153,8 @@ const submitting = ref(false)
 const showModal = ref(false)
 const qrImageURL = ref('')
 const qrKind = ref<'direct' | 'payment_link' | ''>('')
+// easypay 通道下单前由用户选择支付方式，默认支付宝。
+const payMethod = ref<NativeCheckoutPaymentMethod>('alipay')
 const clockNow = ref(Date.now())
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 let clockTimer: ReturnType<typeof setInterval> | null = null
@@ -141,6 +173,12 @@ const isChecking = computed(() => (
   || activeOrder.value?.status === 'fulfilling'
   || activeOrder.value?.status === 'manual_review'
 ))
+
+// 已有进行中的订单时锁定支付方式：继续支付沿用下单时的方式，不再新建订单。
+const payMethodLocked = computed(() => {
+  const status = activeOrder.value?.status
+  return !!status && ['creating', 'pending', 'checking', 'fulfilling', 'manual_review'].includes(status)
+})
 
 const modalTitle = computed(() => {
   if (isChecking.value) return t('nativeCheckout.orderCheckingTitle')
@@ -249,7 +287,10 @@ async function startCheckout() {
   submitting.value = true
   try {
     if (!order.value || order.value.status === 'failed') {
-      order.value = await createNativeCheckoutOrder(offer.value.code)
+      order.value = await createNativeCheckoutOrder(
+        offer.value.code,
+        offer.value.provider === 'easypay' ? payMethod.value : undefined
+      )
     }
     if (['creating', 'pending', 'checking', 'fulfilling'].includes(order.value.status)) {
       showModal.value = true
@@ -269,6 +310,17 @@ async function startCheckout() {
 
 async function loadPaymentQR(current: NativeCheckoutOrder) {
   clearQRImage()
+  // easypay 没有服务端二维码图片（/qr 会报错），由客户端把 payment_url
+  // 渲染为二维码。这是 easypay 的预期路径，不按支付链接降级处理。
+  if (offer.value?.provider === 'easypay') {
+    if (!current.payment_url) {
+      appStore.showError(t('nativeCheckout.qrUnavailable'))
+      return
+    }
+    qrImageURL.value = await renderQrCodeDataUrl(current.payment_url)
+    qrKind.value = 'direct'
+    return
+  }
   try {
     const blob = await getNativeCheckoutDirectQR(current.order_no)
     objectURL = URL.createObjectURL(blob)
@@ -283,11 +335,7 @@ async function loadPaymentQR(current: NativeCheckoutOrder) {
     appStore.showError(t('nativeCheckout.qrUnavailable'))
     return
   }
-  qrImageURL.value = await QRCode.toDataURL(current.payment_url, {
-    errorCorrectionLevel: 'M',
-    margin: 2,
-    width: 320,
-  })
+  qrImageURL.value = await renderQrCodeDataUrl(current.payment_url)
   qrKind.value = 'payment_link'
 }
 
@@ -426,6 +474,21 @@ onUnmounted(() => {
 .trial-offer__amounts strong { color: var(--admin-ink-deep, rgb(var(--color-ink-deep))); font-size: 1.5rem; }
 .trial-offer__benefit strong { color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark))); }
 .trial-offer__arrow { color: var(--admin-muted, rgb(var(--color-muted))); }
+.trial-offer__paymethod { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-top: 0.85rem; }
+.trial-offer__paymethod-option {
+  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
+  border-radius: 7px; padding: 0.5rem 0.6rem;
+  background: transparent; color: var(--admin-ink, rgb(var(--color-ink)));
+  font-size: 0.82rem; font-weight: 650;
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+.trial-offer__paymethod-option--active {
+  border-color: rgb(var(--color-terracotta));
+  background: rgb(var(--color-terracotta) / 0.12);
+  color: var(--admin-terracotta-dark, rgb(var(--color-terracotta-dark)));
+}
+.trial-offer__paymethod-option:disabled { cursor: not-allowed; opacity: 0.62; }
+.trial-offer__paymethod-hint { margin-top: 0.45rem; color: var(--admin-muted, rgb(var(--color-muted))); font-size: 0.74rem; line-height: 1.5; }
 .trial-offer__action {
   width: 100%; margin-top: 0.85rem; border-radius: 7px; padding: 0.8rem 1rem;
   background: rgb(var(--color-terracotta)); color: #fff; font-weight: 750;
@@ -490,5 +553,6 @@ onUnmounted(() => {
   .checkout-modal__pulse { animation: none; }
   .checkout-modal__checking span { animation: none; }
   .trial-offer__action { transition: none; }
+  .trial-offer__paymethod-option { transition: none; }
 }
 </style>

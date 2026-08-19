@@ -62,6 +62,7 @@ type Handlers struct {
 	Totp           *TotpHandler
 	Payment        *PaymentHandler
 	Topup          *TopupHandler
+	PaymentGateway *PaymentGatewayHandler
 	NativeCheckout *NativeCheckoutHandler
 	BalanceAlert   *BalanceAlertHandler
 	Resource       *ResourceHandler

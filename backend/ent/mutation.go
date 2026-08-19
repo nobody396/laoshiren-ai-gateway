@@ -38430,6 +38430,7 @@ type TopupOrderMutation struct {
 	bonus_amount_cny_fen          *int
 	addbonus_amount_cny_fen       *int
 	pay_type                      *string
+	provider                      *string
 	status                        *string
 	invoice_status                *string
 	xunhu_trade_no                *string
@@ -38764,6 +38765,42 @@ func (m *TopupOrderMutation) OldPayType(ctx context.Context) (v string, err erro
 // ResetPayType resets all changes to the "pay_type" field.
 func (m *TopupOrderMutation) ResetPayType() {
 	m.pay_type = nil
+}
+
+// SetProvider sets the "provider" field.
+func (m *TopupOrderMutation) SetProvider(s string) {
+	m.provider = &s
+}
+
+// Provider returns the value of the "provider" field in the mutation.
+func (m *TopupOrderMutation) Provider() (r string, exists bool) {
+	v := m.provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProvider returns the old "provider" field's value of the TopupOrder entity.
+// If the TopupOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TopupOrderMutation) OldProvider(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
+	}
+	return oldValue.Provider, nil
+}
+
+// ResetProvider resets all changes to the "provider" field.
+func (m *TopupOrderMutation) ResetProvider() {
+	m.provider = nil
 }
 
 // SetStatus sets the "status" field.
@@ -39172,7 +39209,7 @@ func (m *TopupOrderMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TopupOrderMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.order_no != nil {
 		fields = append(fields, topuporder.FieldOrderNo)
 	}
@@ -39187,6 +39224,9 @@ func (m *TopupOrderMutation) Fields() []string {
 	}
 	if m.pay_type != nil {
 		fields = append(fields, topuporder.FieldPayType)
+	}
+	if m.provider != nil {
+		fields = append(fields, topuporder.FieldProvider)
 	}
 	if m.status != nil {
 		fields = append(fields, topuporder.FieldStatus)
@@ -39227,6 +39267,8 @@ func (m *TopupOrderMutation) Field(name string) (ent.Value, bool) {
 		return m.BonusAmountCnyFen()
 	case topuporder.FieldPayType:
 		return m.PayType()
+	case topuporder.FieldProvider:
+		return m.Provider()
 	case topuporder.FieldStatus:
 		return m.Status()
 	case topuporder.FieldInvoiceStatus:
@@ -39260,6 +39302,8 @@ func (m *TopupOrderMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldBonusAmountCnyFen(ctx)
 	case topuporder.FieldPayType:
 		return m.OldPayType(ctx)
+	case topuporder.FieldProvider:
+		return m.OldProvider(ctx)
 	case topuporder.FieldStatus:
 		return m.OldStatus(ctx)
 	case topuporder.FieldInvoiceStatus:
@@ -39317,6 +39361,13 @@ func (m *TopupOrderMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPayType(v)
+		return nil
+	case topuporder.FieldProvider:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProvider(v)
 		return nil
 	case topuporder.FieldStatus:
 		v, ok := value.(string)
@@ -39478,6 +39529,9 @@ func (m *TopupOrderMutation) ResetField(name string) error {
 		return nil
 	case topuporder.FieldPayType:
 		m.ResetPayType()
+		return nil
+	case topuporder.FieldProvider:
+		m.ResetProvider()
 		return nil
 	case topuporder.FieldStatus:
 		m.ResetStatus()

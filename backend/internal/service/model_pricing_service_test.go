@@ -367,6 +367,97 @@ func TestModelPricingAddsDisabledGPT54MiniWhenRoutingNoLongerExposesIt(t *testin
 	assertPrice(t, "mini cache", mini.CacheReadPrice, 0.04)
 }
 
+func TestModelPricingExemptedGroupShowsRetiredModelsAsAvailable(t *testing.T) {
+	groups := []Group{
+		{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5},
+		{ID: 59, Name: "CodeX 企业级分组", Platform: "openai", RateMultiplier: 0.5},
+	}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-5.6-sol":   {InputCostPerToken: 5e-6, OutputCostPerToken: 30e-6, CacheReadInputTokenCost: 0.5e-6},
+		"gpt-5.6-terra": {InputCostPerToken: 2.5e-6, OutputCostPerToken: 15e-6, CacheReadInputTokenCost: 0.25e-6},
+		"gpt-5.6-luna":  {InputCostPerToken: 1e-6, OutputCostPerToken: 6e-6, CacheReadInputTokenCost: 0.1e-6},
+		"gpt-5.4":       {InputCostPerToken: 2.5e-6, OutputCostPerToken: 15e-6, CacheReadInputTokenCost: 0.25e-6},
+		"gpt-5.4-mini":  {InputCostPerToken: 0.8e-6, OutputCostPerToken: 3.2e-6, CacheReadInputTokenCost: 0.08e-6},
+	}
+	models := map[int64][]string{
+		6:  {"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.4", "gpt-5.4-mini"},
+		59: {"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.4", "gpt-5.4-mini"},
+	}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 2 {
+		t.Fatalf("expected 2 groups, got %+v", catalog.Groups)
+	}
+	byID := make(map[int64]PublicModelPricingGroup, 2)
+	for _, g := range catalog.Groups {
+		byID[g.GroupID] = g
+	}
+	for groupID, wantDisabled := range map[int64]bool{6: true, 59: false} {
+		g := byID[groupID]
+		for _, name := range []string{"gpt-5.6-luna", "gpt-5.4-mini"} {
+			var row *PublicModelPrice
+			for i := range g.Models {
+				if g.Models[i].Model == name {
+					row = &g.Models[i]
+					break
+				}
+			}
+			if row == nil {
+				t.Fatalf("group %d missing %s row: %+v", groupID, name, g.Models)
+			}
+			if row.Disabled != wantDisabled {
+				t.Fatalf("group %d %s Disabled=%v, want %v", groupID, name, row.Disabled, wantDisabled)
+			}
+		}
+	}
+}
+
+func TestModelPricingExemptedGroupSkipsSynthesizedDisabledRow(t *testing.T) {
+	// Group 59 does not expose luna through routing; the exemption must not
+	// synthesize a struck-through luna row for it, while group 6 still gets one.
+	groups := []Group{
+		{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5},
+		{ID: 59, Name: "CodeX 企业级分组", Platform: "openai", RateMultiplier: 0.5},
+	}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-5.6-sol":   {InputCostPerToken: 5e-6, OutputCostPerToken: 30e-6, CacheReadInputTokenCost: 0.5e-6},
+		"gpt-5.6-terra": {InputCostPerToken: 2.5e-6, OutputCostPerToken: 15e-6, CacheReadInputTokenCost: 0.25e-6},
+		"gpt-5.6-luna":  {InputCostPerToken: 1e-6, OutputCostPerToken: 6e-6, CacheReadInputTokenCost: 0.1e-6},
+	}
+	models := map[int64][]string{
+		6:  {"gpt-5.6-sol", "gpt-5.6-terra"},
+		59: {"gpt-5.6-sol", "gpt-5.6-terra"},
+	}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	byID := make(map[int64]PublicModelPricingGroup, 2)
+	for _, g := range catalog.Groups {
+		byID[g.GroupID] = g
+	}
+	var luna6 *PublicModelPrice
+	for i := range byID[6].Models {
+		if byID[6].Models[i].Model == "gpt-5.6-luna" {
+			luna6 = &byID[6].Models[i]
+		}
+	}
+	if luna6 == nil || !luna6.Disabled {
+		t.Fatalf("group 6 should still get a disabled luna row, got %+v", byID[6].Models)
+	}
+	for _, m := range byID[59].Models {
+		if m.Model == "gpt-5.6-luna" {
+			t.Fatalf("group 59 must not get a synthesized luna row, got %+v", byID[59].Models)
+		}
+	}
+}
+
 func TestModelPricingPublishesGPTImage2ModalPricesAtImageMultiplier(t *testing.T) {
 	groups := []Group{{
 		ID:                   51,

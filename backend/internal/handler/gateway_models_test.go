@@ -9,7 +9,7 @@ import (
 )
 
 func TestGatewayModelInfoFromIDsUsesUnifiedOwner(t *testing.T) {
-	models := gatewayModelInfoFromIDs([]string{"gpt-5.5"})
+	models := gatewayModelInfoFromIDs([]string{"gpt-5.5"}, 0)
 
 	require.Len(t, models, 1)
 	require.Equal(t, "gpt-5.5", models[0].ID)
@@ -27,10 +27,23 @@ func TestGatewayModelInfoFromIDsHidesRetiredOpenAIModels(t *testing.T) {
 		"gpt-5.4-mini",
 		"gpt-5.6-sol",
 		"gpt-5.6-luna",
-	})
+	}, 6)
 
 	require.Len(t, models, 2)
 	require.Equal(t, []string{"gpt-5.4", "gpt-5.6-sol"}, []string{models[0].ID, models[1].ID})
+}
+
+func TestGatewayModelInfoFromIDsKeepsExemptedGroupModels(t *testing.T) {
+	models := gatewayModelInfoFromIDs([]string{
+		"gpt-5.4",
+		"gpt-5.4-mini",
+		"gpt-5.6-sol",
+		"gpt-5.6-luna",
+	}, 59)
+
+	require.Len(t, models, 4)
+	require.Equal(t, "gpt-5.4-mini", models[1].ID)
+	require.Equal(t, "gpt-5.6-luna", models[3].ID)
 }
 
 func TestGatewayModelInfoFromOpenAINormalizesOwner(t *testing.T) {
@@ -43,7 +56,7 @@ func TestGatewayModelInfoFromOpenAINormalizesOwner(t *testing.T) {
 			Type:        "model",
 			DisplayName: "GPT-5.5",
 		},
-	})
+	}, 0)
 
 	require.Len(t, models, 1)
 	require.Equal(t, "gpt-5.5", models[0].ID)

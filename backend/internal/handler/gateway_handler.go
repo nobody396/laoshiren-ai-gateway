@@ -68,10 +68,10 @@ func newGatewayModelInfo(modelID, displayName string, created int64, createdAt s
 	}
 }
 
-func gatewayModelInfoFromIDs(modelIDs []string) []gatewayModelInfo {
+func gatewayModelInfoFromIDs(modelIDs []string, groupID int64) []gatewayModelInfo {
 	models := make([]gatewayModelInfo, 0, len(modelIDs))
 	for _, modelID := range modelIDs {
-		if service.IsDisabledPublicModel(modelID) {
+		if service.IsDisabledPublicModelForGroup(modelID, groupID) {
 			continue
 		}
 		models = append(models, newGatewayModelInfo(modelID, modelID, 0, ""))
@@ -79,10 +79,10 @@ func gatewayModelInfoFromIDs(modelIDs []string) []gatewayModelInfo {
 	return models
 }
 
-func gatewayModelInfoFromOpenAI(defaults []openai.Model) []gatewayModelInfo {
+func gatewayModelInfoFromOpenAI(defaults []openai.Model, groupID int64) []gatewayModelInfo {
 	models := make([]gatewayModelInfo, 0, len(defaults))
 	for _, model := range defaults {
-		if service.IsDisabledPublicModel(model.ID) {
+		if service.IsDisabledPublicModelForGroup(model.ID, groupID) {
 			continue
 		}
 		models = append(models, newGatewayModelInfo(model.ID, model.DisplayName, model.Created, ""))
@@ -975,18 +975,26 @@ func (h *GatewayHandler) Models(c *gin.Context) {
 	availableModels := h.gatewayService.GetAvailableModels(c.Request.Context(), groupID, "")
 
 	if len(availableModels) > 0 {
+		var listedGroupID int64
+		if groupID != nil {
+			listedGroupID = *groupID
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"object": "list",
-			"data":   gatewayModelInfoFromIDs(availableModels),
+			"data":   gatewayModelInfoFromIDs(availableModels, listedGroupID),
 		})
 		return
 	}
 
 	// Fallback to default models
 	if platform == "openai" {
+		var listedGroupID int64
+		if groupID != nil {
+			listedGroupID = *groupID
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"object": "list",
-			"data":   gatewayModelInfoFromOpenAI(openai.DefaultModels),
+			"data":   gatewayModelInfoFromOpenAI(openai.DefaultModels, listedGroupID),
 		})
 		return
 	}

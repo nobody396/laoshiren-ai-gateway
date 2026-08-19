@@ -57,6 +57,24 @@ func TestIsDisabledPublicModelNormalizesCodexAliases(t *testing.T) {
 	}
 }
 
+func TestIsDisabledPublicModelForGroupExemption(t *testing.T) {
+	t.Parallel()
+
+	// Group 59 (CodeX 企业级分组) re-opens both retired models; every other
+	// group and the no-group path keep the retirement gate.
+	for _, model := range []string{"gpt-5.4-mini", "gpt-5.6-luna"} {
+		require.False(t, IsDisabledPublicModelForGroup(model, 59), model)
+		require.True(t, IsDisabledPublicModelForGroup(model, 6), model)
+		require.True(t, IsDisabledPublicModelForGroup(model, 0), model)
+	}
+
+	// Codex alias normalization still applies inside the exempted-group check,
+	// so a reasoning suffix cannot smuggle a different model through.
+	require.False(t, IsDisabledPublicModelForGroup("gpt-5.6-luna-xhigh", 59))
+	require.True(t, IsDisabledPublicModelForGroup("gpt-5.6-luna-xhigh", 6))
+	require.False(t, IsDisabledPublicModelForGroup("gpt-5.6-sol", 6))
+}
+
 func TestApplyOpenAICompatModelNormalization(t *testing.T) {
 	t.Parallel()
 

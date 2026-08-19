@@ -65,14 +65,27 @@ var displayHiddenModelNames = map[string]struct{}{
 type disabledPublicModelRule struct {
 	model   string
 	anchors []string
+	// allowedGroupIDs lists groups that intentionally re-open the retired
+	// model (e.g. the enterprise line). Requests and price rows scoped to one
+	// of these groups bypass the retirement gate.
+	allowedGroupIDs []int64
+}
+
+func (rule disabledPublicModelRule) allowsGroup(groupID int64) bool {
+	for _, id := range rule.allowedGroupIDs {
+		if id == groupID {
+			return true
+		}
+	}
+	return false
 }
 
 // Disabled models remain visible as struck-through rows when a related active
 // model is present. This tells users they were intentionally retired instead
 // of making them look accidentally omitted from the price catalog.
 var disabledPublicModelRules = []disabledPublicModelRule{
-	{model: "gpt-5.6-luna", anchors: []string{"gpt-5.6-sol", "gpt-5.6-terra"}},
-	{model: "gpt-5.4-mini", anchors: []string{"gpt-5.4"}},
+	{model: "gpt-5.6-luna", anchors: []string{"gpt-5.6-sol", "gpt-5.6-terra"}, allowedGroupIDs: []int64{59}},
+	{model: "gpt-5.4-mini", anchors: []string{"gpt-5.4"}, allowedGroupIDs: []int64{59}},
 }
 
 // GPT Image 2 官方标准价（USD / 1M tokens）。图片模型同时存在文本与图片两套
@@ -253,7 +266,7 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 					"group", g.Name, "model", model)
 				continue
 			}
-			if IsDisabledPublicModel(model) {
+			if IsDisabledPublicModelForGroup(model, g.ID) {
 				price.Disabled = true
 			}
 			prices = append(prices, price)
@@ -294,12 +307,19 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 // retired from public routing. Known Codex aliases are normalized first so a
 // reasoning suffix cannot bypass retirement at the request boundary.
 func IsDisabledPublicModel(model string) bool {
+	return IsDisabledPublicModelForGroup(model, 0)
+}
+
+// IsDisabledPublicModelForGroup is the group-aware variant: a rule does not
+// apply when the request or price row belongs to one of the rule's
+// allowedGroupIDs. groupID 0 (unknown/no group) keeps the global semantics.
+func IsDisabledPublicModelForGroup(model string, groupID int64) bool {
 	name := strings.ToLower(strings.TrimSpace(model))
 	if normalized, ok := normalizeKnownCodexModel(name); ok {
 		name = normalized
 	}
 	for _, rule := range disabledPublicModelRules {
-		if name == rule.model {
+		if name == rule.model && !rule.allowsGroup(groupID) {
 			return true
 		}
 	}
@@ -311,12 +331,14 @@ func (s *ModelPricingService) withDisabledModels(ctx context.Context, groupID in
 	for i := range prices {
 		name := strings.ToLower(strings.TrimSpace(prices[i].Model))
 		present[name] = true
-		if IsDisabledPublicModel(name) {
+		if IsDisabledPublicModelForGroup(name, groupID) {
 			prices[i].Disabled = true
 		}
 	}
 	for _, rule := range disabledPublicModelRules {
-		if present[rule.model] || !containsAnyModelName(present, rule.anchors) {
+		// Exempted groups treat the model as available: never synthesize a
+		// struck-through row for them.
+		if rule.allowsGroup(groupID) || present[rule.model] || !containsAnyModelName(present, rule.anchors) {
 			continue
 		}
 		disabled, ok := s.priceForModel(ctx, groupID, rule.model, rateMultiplier)

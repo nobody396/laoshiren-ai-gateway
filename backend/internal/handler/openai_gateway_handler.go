@@ -253,8 +253,13 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	// Retired models must be rejected before image-intent rewriting. Otherwise
 	// the fixed image renderer can replace the routing model with gpt-image-2
 	// and accidentally turn an unsupported text model into a working image-only
-	// compatibility alias.
-	if service.IsDisabledPublicModel(reqModel) {
+	// compatibility alias. Groups on the rule's exemption list (e.g. the
+	// enterprise line) bypass the gate.
+	retiredGateGroupID := int64(0)
+	if apiKey.Group != nil {
+		retiredGateGroupID = apiKey.Group.ID
+	}
+	if service.IsDisabledPublicModelForGroup(reqModel, retiredGateGroupID) {
 		h.handleOpenAIModelNotSupportedError(c, reqModel, false)
 		return
 	}

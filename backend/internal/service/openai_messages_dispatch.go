@@ -8,26 +8,26 @@ const (
 	defaultOpenAIMessagesDispatchHaikuMappedModel  = "gpt-5.4"
 )
 
-func normalizeOpenAIMessagesDispatchMappedModel(model string) string {
+func normalizeOpenAIMessagesDispatchMappedModel(model string, groupID int64) string {
 	model = NormalizeOpenAICompatRequestedModel(strings.TrimSpace(model))
-	if IsDisabledPublicModel(model) {
+	if IsDisabledPublicModelForGroup(model, groupID) {
 		return ""
 	}
 	return strings.TrimSpace(model)
 }
 
-func normalizeOpenAIMessagesDispatchModelConfig(cfg OpenAIMessagesDispatchModelConfig) OpenAIMessagesDispatchModelConfig {
+func normalizeOpenAIMessagesDispatchModelConfig(cfg OpenAIMessagesDispatchModelConfig, groupID int64) OpenAIMessagesDispatchModelConfig {
 	out := OpenAIMessagesDispatchModelConfig{
-		OpusMappedModel:   normalizeOpenAIMessagesDispatchMappedModel(cfg.OpusMappedModel),
-		SonnetMappedModel: normalizeOpenAIMessagesDispatchMappedModel(cfg.SonnetMappedModel),
-		HaikuMappedModel:  normalizeOpenAIMessagesDispatchMappedModel(cfg.HaikuMappedModel),
+		OpusMappedModel:   normalizeOpenAIMessagesDispatchMappedModel(cfg.OpusMappedModel, groupID),
+		SonnetMappedModel: normalizeOpenAIMessagesDispatchMappedModel(cfg.SonnetMappedModel, groupID),
+		HaikuMappedModel:  normalizeOpenAIMessagesDispatchMappedModel(cfg.HaikuMappedModel, groupID),
 	}
 
 	if len(cfg.ExactModelMappings) > 0 {
 		out.ExactModelMappings = make(map[string]string, len(cfg.ExactModelMappings))
 		for requestedModel, mappedModel := range cfg.ExactModelMappings {
 			requestedModel = strings.TrimSpace(requestedModel)
-			mappedModel = normalizeOpenAIMessagesDispatchMappedModel(mappedModel)
+			mappedModel = normalizeOpenAIMessagesDispatchMappedModel(mappedModel, groupID)
 			if requestedModel == "" || mappedModel == "" {
 				continue
 			}
@@ -67,7 +67,7 @@ func (g *Group) ResolveMessagesDispatchModel(requestedModel string) string {
 		return ""
 	}
 
-	cfg := normalizeOpenAIMessagesDispatchModelConfig(g.MessagesDispatchModelConfig)
+	cfg := normalizeOpenAIMessagesDispatchModelConfig(g.MessagesDispatchModelConfig, g.ID)
 	if mappedModel := strings.TrimSpace(cfg.ExactModelMappings[requestedModel]); mappedModel != "" {
 		return mappedModel
 	}

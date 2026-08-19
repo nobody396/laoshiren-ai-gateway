@@ -143,9 +143,11 @@ describe('CC Switch provider deeplinks', () => {
     const cyberModels = [
       'codex-auto-review',
       'gpt-5.4',
+      'gpt-5.4-mini',
       'gpt-5.4-openai-compact',
       'gpt-5.5',
       'gpt-5.5-openai-compact',
+      'gpt-5.6-luna',
       'gpt-5.6-sol',
       'gpt-5.6-sol-openai-compact',
       'gpt-5.6-terra',
@@ -158,8 +160,6 @@ describe('CC Switch provider deeplinks', () => {
 
     expect(importedModels).toEqual(cyberModels)
     expect(importedModels).not.toContain('gpt-5.6')
-    expect(importedModels).not.toContain('gpt-5.6-luna')
-    expect(importedModels).not.toContain('gpt-5.4-mini')
     expect(importedModels).not.toContain('gpt-5.3-codex-spark')
     expect(url.searchParams.get('model')).toBe('gpt-5.6-sol')
     expect(config.config).toContain('model = "gpt-5.6-sol"')

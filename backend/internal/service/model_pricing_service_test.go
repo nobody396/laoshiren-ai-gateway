@@ -415,6 +415,7 @@ func TestModelPricingAddsDisabledGPT54MiniWhenRoutingNoLongerExposesIt(t *testin
 func TestModelPricingExemptedGroupShowsRetiredModelsAsAvailable(t *testing.T) {
 	groups := []Group{
 		{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5},
+		{ID: 52, Name: "GPT CYBER 分组（特价！）", Platform: "openai", RateMultiplier: 2},
 		{ID: 59, Name: "CodeX 企业级分组", Platform: "openai", RateMultiplier: 0.5},
 	}
 	prices := map[string]*LiteLLMModelPricing{
@@ -426,6 +427,7 @@ func TestModelPricingExemptedGroupShowsRetiredModelsAsAvailable(t *testing.T) {
 	}
 	models := map[int64][]string{
 		6:  {"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.4", "gpt-5.4-mini"},
+		52: {"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.4", "gpt-5.4-mini"},
 		59: {"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.4", "gpt-5.4-mini"},
 	}
 
@@ -434,14 +436,14 @@ func TestModelPricingExemptedGroupShowsRetiredModelsAsAvailable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(catalog.Groups) != 2 {
-		t.Fatalf("expected 2 groups, got %+v", catalog.Groups)
+	if len(catalog.Groups) != 3 {
+		t.Fatalf("expected 3 groups, got %+v", catalog.Groups)
 	}
-	byID := make(map[int64]PublicModelPricingGroup, 2)
+	byID := make(map[int64]PublicModelPricingGroup, 3)
 	for _, g := range catalog.Groups {
 		byID[g.GroupID] = g
 	}
-	for groupID, wantDisabled := range map[int64]bool{6: true, 59: false} {
+	for groupID, wantDisabled := range map[int64]bool{6: true, 52: false, 59: false} {
 		g := byID[groupID]
 		for _, name := range []string{"gpt-5.6-luna", "gpt-5.4-mini"} {
 			var row *PublicModelPrice

@@ -307,6 +307,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-26T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/fix-balance-lot-micro-drift-20260819",
+      "owner": "codex-balance-lot-micro-drift-20260819",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-26T23:59:59+08:00"
     }
   ]
 }

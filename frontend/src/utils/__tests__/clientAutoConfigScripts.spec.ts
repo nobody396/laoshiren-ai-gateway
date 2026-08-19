@@ -157,7 +157,7 @@ describe('client auto-config scripts', () => {
     // the config default keeps legacy groups on gpt-5.5.
     expect(modal).toContain('resolveCodexModels(')
     expect(modal).toContain('ONE_CLICK_CODEX_EXCLUDED_MODELS')
-    expect(modal).toContain("ONE_CLICK_CODEX_FALLBACK_DEFAULT = 'gpt-5.5'")
+    expect(modal).toContain("ONE_CLICK_CODEX_PREFERRED_DEFAULT = 'gpt-5.6-sol'")
     expect(modal).toContain('buildCodexModelCatalog(codexCatalogModels.value)')
     expect(modal).not.toContain("'gpt-5.3-codex-spark'")
   })

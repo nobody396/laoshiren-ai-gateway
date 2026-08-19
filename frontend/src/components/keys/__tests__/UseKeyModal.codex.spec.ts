@@ -90,11 +90,11 @@ describe('UseKeyModal Codex catalog', () => {
       expect(catalog).toContain(`"slug": "${model}"`)
     }
     expect(catalog).not.toContain('codex-auto-review')
-    // Enterprise group default_mapped_model is gpt-5.5 in production.
-    expect(configBlock(wrapper)).toContain('model = "gpt-5.5"')
+    // All OpenAI groups default to gpt-5.6-sol when routed (owner decision).
+    expect(configBlock(wrapper)).toContain('model = "gpt-5.6-sol"')
   })
 
-  it('keeps the legacy Pro 20X style catalog at exactly five models on gpt-5.5', async () => {
+  it('defaults the legacy Pro 20X style catalog to gpt-5.6-sol', async () => {
     getGatewayModelsMock.mockResolvedValue([
       'gpt-5.6-sol',
       'gpt-5.6-terra',
@@ -103,8 +103,8 @@ describe('UseKeyModal Codex catalog', () => {
       'gpt-5.4'
     ])
 
-    // Production group 6 has default_mapped_model = gpt-5.5; the legacy default
-    // must survive either way.
+    // Production group 6 has default_mapped_model = gpt-5.5; the owner-approved
+    // gpt-5.6-sol default must win either way.
     for (const defaultMappedModel of ['gpt-5.5', '']) {
       const wrapper = mountModal({ defaultMappedModel })
       await flushPromises()
@@ -115,12 +115,12 @@ describe('UseKeyModal Codex catalog', () => {
       expect(catalog).not.toContain('gpt-5.4-mini')
       expect(catalog).not.toContain('gpt-5.3-codex-spark')
       expect(catalog).not.toContain('codex-auto-review')
-      expect(configBlock(wrapper)).toContain('model = "gpt-5.5"')
+      expect(configBlock(wrapper)).toContain('model = "gpt-5.6-sol"')
       wrapper.unmount()
     }
   })
 
-  it('uses the group default model when it is listed', async () => {
+  it('uses the group default model when gpt-5.6-sol is not listed', async () => {
     getGatewayModelsMock.mockResolvedValue(['gpt-5.4', 'gpt-5.4-mini'])
 
     const wrapper = mountModal({ defaultMappedModel: 'gpt-5.4-mini' })
@@ -130,22 +130,13 @@ describe('UseKeyModal Codex catalog', () => {
     expect(configBlock(wrapper)).toContain('review_model = "gpt-5.4-mini"')
   })
 
-  it('falls back to gpt-5.5 when the group default is not listed', async () => {
-    getGatewayModelsMock.mockResolvedValue(['gpt-5.6-sol', 'gpt-5.5', 'gpt-5.4'])
+  it('uses the first listed model when neither sol nor the group default applies', async () => {
+    getGatewayModelsMock.mockResolvedValue(['gpt-5.4', 'gpt-5.4-mini'])
 
     const wrapper = mountModal({ defaultMappedModel: 'gpt-5.6-luna' })
     await flushPromises()
 
-    expect(configBlock(wrapper)).toContain('model = "gpt-5.5"')
-  })
-
-  it('uses the first listed model when neither default applies', async () => {
-    getGatewayModelsMock.mockResolvedValue(['gpt-5.6-sol', 'gpt-5.6-terra'])
-
-    const wrapper = mountModal()
-    await flushPromises()
-
-    expect(configBlock(wrapper)).toContain('model = "gpt-5.6-sol"')
+    expect(configBlock(wrapper)).toContain('model = "gpt-5.4"')
   })
 
   it('falls back to the static catalog when group model discovery fails', async () => {
@@ -158,6 +149,6 @@ describe('UseKeyModal Codex catalog', () => {
     expect(catalog.match(/"slug":/g)).toHaveLength(5)
     expect(catalog).toContain('"slug": "gpt-5.6-sol"')
     expect(catalog).not.toContain('gpt-5.6-luna')
-    expect(configBlock(wrapper)).toContain('model = "gpt-5.5"')
+    expect(configBlock(wrapper)).toContain('model = "gpt-5.6-sol"')
   })
 })

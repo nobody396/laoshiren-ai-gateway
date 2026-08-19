@@ -251,9 +251,10 @@ watch(
 // pick by hand; keep it out of the one-click catalog. CC Switch imports are
 // intentionally unaffected (the GPT CYBER group relies on it there).
 const ONE_CLICK_CODEX_EXCLUDED_MODELS = new Set(['codex-auto-review'])
-// Keep existing groups on their established default: group default first, then
-// gpt-5.5, then the first listed model.
-const ONE_CLICK_CODEX_FALLBACK_DEFAULT = 'gpt-5.5'
+// All OpenAI groups default to gpt-5.6-sol in the one-click config (owner
+// decision); the group default_mapped_model applies when sol is not routed,
+// then the first listed model.
+const ONE_CLICK_CODEX_PREFERRED_DEFAULT = 'gpt-5.6-sol'
 
 const codexCatalogModels = computed(() =>
   resolveCodexModels(openAIAvailableModels.value)
@@ -262,10 +263,10 @@ const codexCatalogModels = computed(() =>
 const codexDefaultModel = computed(() => {
   const models = codexCatalogModels.value
   const modelIDs = new Set(models.map((model) => model.model))
+  if (modelIDs.has(ONE_CLICK_CODEX_PREFERRED_DEFAULT)) return ONE_CLICK_CODEX_PREFERRED_DEFAULT
   const groupDefault = props.defaultMappedModel?.trim()
   if (groupDefault && modelIDs.has(groupDefault)) return groupDefault
-  if (modelIDs.has(ONE_CLICK_CODEX_FALLBACK_DEFAULT)) return ONE_CLICK_CODEX_FALLBACK_DEFAULT
-  return models[0]?.model ?? ONE_CLICK_CODEX_FALLBACK_DEFAULT
+  return models[0]?.model ?? ONE_CLICK_CODEX_PREFERRED_DEFAULT
 })
 
 // Icon components

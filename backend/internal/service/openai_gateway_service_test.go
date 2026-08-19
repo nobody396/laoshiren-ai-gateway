@@ -1934,6 +1934,23 @@ func TestExtractOpenAIUsageFromJSONBytes_AcceptsResponseAndChatUsageShapes(t *te
 	require.Equal(t, 13, usage.InputTokens)
 	require.Equal(t, 7, usage.OutputTokens)
 	require.Equal(t, 4, usage.CacheReadInputTokens)
+
+	usage, ok = extractOpenAIUsageFromJSONBytes([]byte(`{"data":{"usage":{"input_tokens":17,"output_tokens":19,"input_tokens_details":{"cached_tokens":6}}}}`))
+	require.True(t, ok)
+	require.Equal(t, 17, usage.InputTokens)
+	require.Equal(t, 19, usage.OutputTokens)
+	require.Equal(t, 6, usage.CacheReadInputTokens)
+
+	usage, ok = extractOpenAIUsageFromJSONBytes([]byte(`{"data":{"response":{"usage":{"prompt_tokens":23,"completion_tokens":29,"prompt_tokens_details":{"cached_tokens":7}}}}}`))
+	require.True(t, ok)
+	require.Equal(t, 23, usage.InputTokens)
+	require.Equal(t, 29, usage.OutputTokens)
+	require.Equal(t, 7, usage.CacheReadInputTokens)
+
+	usage, ok = extractOpenAIUsageFromJSONBytes([]byte(`{"usage":{"input_tokens":31,"output_tokens":37},"response":{"usage":{"input_tokens":41,"output_tokens":43}},"data":{"usage":{"input_tokens":47,"output_tokens":53}}}`))
+	require.True(t, ok)
+	require.Equal(t, 31, usage.InputTokens, "native usage must retain precedence over nested wrapper usage")
+	require.Equal(t, 37, usage.OutputTokens)
 }
 
 func TestExtractCodexFinalResponse_SampleReplay(t *testing.T) {

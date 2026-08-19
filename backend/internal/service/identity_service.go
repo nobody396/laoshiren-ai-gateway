@@ -36,7 +36,14 @@ var (
 	ErrPendingAuthSessionExpired  = infraerrors.Unauthorized("PENDING_AUTH_SESSION_EXPIRED", "pending auth session has expired")
 	ErrPendingAuthSessionConsumed = infraerrors.Unauthorized("PENDING_AUTH_SESSION_CONSUMED", "pending auth session has already been used")
 
-	userAgentVersionRegex = regexp.MustCompile(`/(\d+)\.(\d+)\.(\d+)`)
+	userAgentVersionRegex       = regexp.MustCompile(`/(\d+)\.(\d+)\.(\d+)`)
+	fingerprintUserAgentPattern = regexp.MustCompile(`^[A-Za-z0-9._-]+/\d+\.\d+\.\d+(\s|$)`)
+)
+
+const (
+	claudeCLIUserAgentProduct     = "claude-cli"
+	maxFingerprintUserAgentLength = 256
+	maxClaudeCLIMajorVersionSkew  = 2
 )
 
 var defaultFingerprint = Fingerprint{
@@ -284,17 +291,31 @@ func (s *IdentityService) GetOrCreateFingerprint(ctx context.Context, accountID 
 	if s.cache == nil {
 		return nil, fmt.Errorf("identity cache is not configured")
 	}
+	clientUA := strings.TrimSpace(headers.Get("User-Agent"))
+	uaAcceptable := isAcceptableFingerprintUserAgent(clientUA)
 
 	cached, err := s.cache.GetFingerprint(ctx, accountID)
 	if err == nil && cached != nil {
 		needWrite := false
 
-		clientUA := headers.Get("User-Agent")
-		if clientUA != "" && isNewerVersion(clientUA, cached.UserAgent) {
+		if !uaAcceptable && clientUA != "" && isNewerVersion(clientUA, cached.UserAgent) {
+			logger.LegacyPrintf("service.identity", "Rejected malformed or implausible fingerprint user-agent for account %d", accountID)
+		}
+
+		if !isAcceptableFingerprintUserAgent(cached.UserAgent) {
+			if uaAcceptable {
+				mergeHeadersIntoFingerprint(cached, headers)
+			} else {
+				cached.UserAgent = defaultFingerprint.UserAgent
+			}
+			needWrite = true
+			logger.LegacyPrintf("service.identity", "Replaced malformed cached fingerprint for account %d", accountID)
+		} else if uaAcceptable && isNewerVersion(clientUA, cached.UserAgent) {
 			mergeHeadersIntoFingerprint(cached, headers)
 			needWrite = true
 			logger.LegacyPrintf("service.identity", "Updated fingerprint for account %d: %s (merge update)", accountID, clientUA)
-		} else if time.Since(time.Unix(cached.UpdatedAt, 0)) > 24*time.Hour {
+		}
+		if !needWrite && time.Since(time.Unix(cached.UpdatedAt, 0)) > 24*time.Hour {
 			needWrite = true
 		}
 
@@ -307,6 +328,9 @@ func (s *IdentityService) GetOrCreateFingerprint(ctx context.Context, accountID 
 		return cached, nil
 	}
 
+	if !uaAcceptable && clientUA != "" {
+		logger.LegacyPrintf("service.identity", "Rejected malformed or implausible fingerprint user-agent for account %d", accountID)
+	}
 	fp := s.createFingerprintFromHeaders(headers)
 	fp.ClientID = generateClientID()
 	fp.UpdatedAt = time.Now().Unix()
@@ -322,7 +346,7 @@ func (s *IdentityService) GetOrCreateFingerprint(ctx context.Context, accountID 
 func (s *IdentityService) createFingerprintFromHeaders(headers http.Header) *Fingerprint {
 	fp := &Fingerprint{}
 
-	if ua := headers.Get("User-Agent"); ua != "" {
+	if ua := strings.TrimSpace(headers.Get("User-Agent")); isAcceptableFingerprintUserAgent(ua) {
 		fp.UserAgent = ua
 	} else {
 		fp.UserAgent = defaultFingerprint.UserAgent
@@ -336,6 +360,25 @@ func (s *IdentityService) createFingerprintFromHeaders(headers http.Header) *Fin
 	fp.StainlessRuntimeVersion = getHeaderOrDefault(headers, "X-Stainless-Runtime-Version", defaultFingerprint.StainlessRuntimeVersion)
 
 	return fp
+}
+
+func isAcceptableFingerprintUserAgent(ua string) bool {
+	ua = strings.TrimSpace(ua)
+	if ua == "" || len(ua) > maxFingerprintUserAgentLength || !fingerprintUserAgentPattern.MatchString(ua) {
+		return false
+	}
+	if extractProduct(ua) != claudeCLIUserAgentProduct {
+		return true
+	}
+	major, _, _, ok := parseUserAgentVersion(ua)
+	if !ok {
+		return false
+	}
+	currentMajor, _, _, currentOK := parseUserAgentVersion(defaultFingerprint.UserAgent)
+	if !currentOK {
+		return true
+	}
+	return major <= currentMajor+maxClaudeCLIMajorVersionSkew
 }
 
 func mergeHeadersIntoFingerprint(fp *Fingerprint, headers http.Header) {

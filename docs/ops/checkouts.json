@@ -307,6 +307,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-09-02T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/scheduler-group-priority-20260819",
+      "owner": "scheduler-group-priority-20260819",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-26T23:59:59+08:00"
     }
   ]
 }

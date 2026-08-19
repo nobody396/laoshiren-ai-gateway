@@ -513,6 +513,7 @@ type ChatMessage struct {
 	Role             string          `json:"role"` // "system" | "user" | "assistant" | "tool" | "function"
 	Content          json.RawMessage `json:"content,omitempty"`
 	ReasoningContent string          `json:"reasoning_content,omitempty"`
+	Reasoning        string          `json:"reasoning,omitempty"`
 	Name             string          `json:"name,omitempty"`
 	ToolCalls        []ChatToolCall  `json:"tool_calls,omitempty"`
 	ToolCallID       string          `json:"tool_call_id,omitempty"`
@@ -632,6 +633,13 @@ type ChatDelta struct {
 	Content          *string        `json:"content,omitempty"` // pointer: omit when not present, null vs "" matters
 	ReasoningContent *string        `json:"reasoning_content,omitempty"`
 	ToolCalls        []ChatToolCall `json:"tool_calls,omitempty"`
+}
+
+func (m ChatMessage) reasoningText() string {
+	if m.ReasoningContent != "" {
+		return m.ReasoningContent
+	}
+	return m.Reasoning
 }
 
 // ---------------------------------------------------------------------------

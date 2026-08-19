@@ -254,7 +254,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	// the fixed image renderer can replace the routing model with gpt-image-2
 	// and accidentally turn an unsupported text model into a working image-only
 	// compatibility alias. Groups on the rule's exemption list (e.g. the
-	// enterprise line) bypass the gate.
+	// enterprise line and the CYBER special group) bypass the gate.
 	retiredGateGroupID := int64(0)
 	if apiKey.Group != nil {
 		retiredGateGroupID = apiKey.Group.ID

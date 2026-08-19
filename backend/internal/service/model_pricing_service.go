@@ -111,8 +111,8 @@ func (rule disabledPublicModelRule) allowsGroup(groupID int64) bool {
 // model is present. This tells users they were intentionally retired instead
 // of making them look accidentally omitted from the price catalog.
 var disabledPublicModelRules = []disabledPublicModelRule{
-	{model: "gpt-5.6-luna", anchors: []string{"gpt-5.6-sol", "gpt-5.6-terra"}, allowedGroupIDs: []int64{59}},
-	{model: "gpt-5.4-mini", anchors: []string{"gpt-5.4"}, allowedGroupIDs: []int64{59}},
+	{model: "gpt-5.6-luna", anchors: []string{"gpt-5.6-sol", "gpt-5.6-terra"}, allowedGroupIDs: []int64{52, 59}},
+	{model: "gpt-5.4-mini", anchors: []string{"gpt-5.4"}, allowedGroupIDs: []int64{52, 59}},
 }
 
 // GPT Image 2 官方标准价（USD / 1M tokens）。图片模型同时存在文本与图片两套

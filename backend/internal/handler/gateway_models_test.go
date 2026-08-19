@@ -48,16 +48,18 @@ func TestGatewayModelInfoFromIDsHidesRetiredOpenAIModels(t *testing.T) {
 }
 
 func TestGatewayModelInfoFromIDsKeepsExemptedGroupModels(t *testing.T) {
-	models := gatewayModelInfoFromIDs([]string{
-		"gpt-5.4",
-		"gpt-5.4-mini",
-		"gpt-5.6-sol",
-		"gpt-5.6-luna",
-	}, 59)
+	for _, groupID := range []int64{52, 59} {
+		models := gatewayModelInfoFromIDs([]string{
+			"gpt-5.4",
+			"gpt-5.4-mini",
+			"gpt-5.6-sol",
+			"gpt-5.6-luna",
+		}, groupID)
 
-	require.Len(t, models, 4)
-	require.Equal(t, "gpt-5.4-mini", models[1].ID)
-	require.Equal(t, "gpt-5.6-luna", models[3].ID)
+		require.Len(t, models, 4, groupID)
+		require.Equal(t, "gpt-5.4-mini", models[1].ID, groupID)
+		require.Equal(t, "gpt-5.6-luna", models[3].ID, groupID)
+	}
 }
 
 func TestGatewayModelInfoFromOpenAINormalizesOwner(t *testing.T) {

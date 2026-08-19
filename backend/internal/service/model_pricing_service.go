@@ -62,6 +62,17 @@ var displayHiddenModelNames = map[string]struct{}{
 	"gpt-5.6": {},
 }
 
+// openAICompactVariantSuffix 标记 Codex 自动压缩使用的内部模型变体
+// （如 gpt-5.6-sol-openai-compact）。这些变体必须保持可请求（客户端自动
+// 压缩真实调用它们），但对用户隐藏：不进 /v1/models 列表，也不进公开定价页。
+const openAICompactVariantSuffix = "-openai-compact"
+
+// IsOpenAICompactVariant reports whether a model id is an internal Codex
+// auto-compaction variant. Hide-only; never use this to block requests.
+func IsOpenAICompactVariant(model string) bool {
+	return strings.HasSuffix(strings.ToLower(strings.TrimSpace(model)), openAICompactVariantSuffix)
+}
+
 type disabledPublicModelRule struct {
 	model   string
 	anchors []string
@@ -253,6 +264,11 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 		prices := make([]PublicModelPrice, 0, len(models))
 		for _, model := range models {
 			if s.isDisplayHiddenModel(model) {
+				continue
+			}
+			// openai-compact 变体是 Codex 自动压缩的内部模型：保持可路由，
+			// 但不在公开定价页展示。
+			if IsOpenAICompactVariant(model) {
 				continue
 			}
 			// 生图费率由分组独立配置决定；不要再把 gpt-image-2 当普通文本

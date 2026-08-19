@@ -57,6 +57,25 @@ func TestIsDisabledPublicModelNormalizesCodexAliases(t *testing.T) {
 	}
 }
 
+func TestIsDisabledPublicModelAllowsCompactVariants(t *testing.T) {
+	t.Parallel()
+
+	// Codex auto-compaction calls the compact variants directly; the retired
+	// model gate must never block them (they normalize to their base model).
+	for _, model := range []string{
+		"gpt-5.6-sol-openai-compact",
+		"gpt-5.6-terra-openai-compact",
+		"gpt-5.5-openai-compact",
+		"gpt-5.4-openai-compact",
+	} {
+		require.True(t, IsOpenAICompactVariant(model), model)
+		require.False(t, IsDisabledPublicModel(model), model)
+		require.False(t, IsDisabledPublicModelForGroup(model, 6), model)
+	}
+
+	require.False(t, IsOpenAICompactVariant("gpt-5.6-sol"))
+}
+
 func TestIsDisabledPublicModelForGroupExemption(t *testing.T) {
 	t.Parallel()
 

@@ -68,6 +68,19 @@ func newGatewayModelInfo(modelID, displayName string, created int64, createdAt s
 	}
 }
 
+// filterInternalOnlyModels drops internal-only model variants (Codex
+// auto-compaction) from user-facing model discovery. They stay routable.
+func filterInternalOnlyModels(modelIDs []string) []string {
+	filtered := make([]string, 0, len(modelIDs))
+	for _, modelID := range modelIDs {
+		if service.IsOpenAICompactVariant(modelID) {
+			continue
+		}
+		filtered = append(filtered, modelID)
+	}
+	return filtered
+}
+
 func gatewayModelInfoFromIDs(modelIDs []string, groupID int64) []gatewayModelInfo {
 	models := make([]gatewayModelInfo, 0, len(modelIDs))
 	for _, modelID := range modelIDs {
@@ -971,8 +984,10 @@ func (h *GatewayHandler) Models(c *gin.Context) {
 		platform = forcedPlatform
 	}
 
-	// Get available models from account configurations (without platform filter)
-	availableModels := h.gatewayService.GetAvailableModels(c.Request.Context(), groupID, "")
+	// Get available models from account configurations (without platform filter).
+	// Internal Codex auto-compaction variants stay routable but are hidden from
+	// user-facing discovery (CC Switch import and one-click setup read this).
+	availableModels := filterInternalOnlyModels(h.gatewayService.GetAvailableModels(c.Request.Context(), groupID, ""))
 
 	if len(availableModels) > 0 {
 		var listedGroupID int64

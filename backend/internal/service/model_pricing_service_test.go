@@ -342,6 +342,49 @@ func TestModelPricingAddsDisabledLunaWithoutProviderPrice(t *testing.T) {
 	}
 }
 
+func TestModelPricingHidesOpenAICompactVariants(t *testing.T) {
+	groups := []Group{{ID: 52, Name: "GPT CYBER 分组（特价！）", Platform: "openai", RateMultiplier: 0.5}}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-5.6-sol":                {InputCostPerToken: 5e-6, OutputCostPerToken: 30e-6, CacheReadInputTokenCost: 0.5e-6},
+		"gpt-5.6-sol-openai-compact": {InputCostPerToken: 5e-6, OutputCostPerToken: 30e-6, CacheReadInputTokenCost: 0.5e-6},
+		"gpt-5.5":                    {InputCostPerToken: 2.5e-6, OutputCostPerToken: 15e-6, CacheReadInputTokenCost: 0.25e-6},
+		"gpt-5.5-openai-compact":     {InputCostPerToken: 2.5e-6, OutputCostPerToken: 15e-6, CacheReadInputTokenCost: 0.25e-6},
+	}
+	models := map[int64][]string{52: {
+		"gpt-5.6-sol",
+		"gpt-5.6-sol-openai-compact",
+		"gpt-5.5",
+		"gpt-5.5-openai-compact",
+	}}
+
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(catalog.Groups) != 1 {
+		t.Fatalf("expected 1 group, got %+v", catalog.Groups)
+	}
+	got := make([]string, 0, len(catalog.Groups[0].Models))
+	for _, m := range catalog.Groups[0].Models {
+		got = append(got, m.Model)
+		if IsOpenAICompactVariant(m.Model) {
+			t.Fatalf("compact variant %s must not appear in public pricing", m.Model)
+		}
+	}
+	for _, base := range []string{"gpt-5.6-sol", "gpt-5.5"} {
+		found := false
+		for _, name := range got {
+			if name == base {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("base model %s missing from public pricing, got %v", base, got)
+		}
+	}
+}
+
 func TestModelPricingAddsDisabledGPT54MiniWhenRoutingNoLongerExposesIt(t *testing.T) {
 	groups := []Group{{ID: 6, Name: "CodeX Pro 20X 分组", Platform: "openai", RateMultiplier: 0.5}}
 	prices := map[string]*LiteLLMModelPricing{

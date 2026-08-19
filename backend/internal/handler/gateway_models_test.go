@@ -8,6 +8,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestFilterInternalOnlyModelsHidesCompactVariants(t *testing.T) {
+	models := filterInternalOnlyModels([]string{
+		"gpt-5.6-sol",
+		"gpt-5.6-sol-openai-compact",
+		"gpt-5.5",
+		"gpt-5.5-OpenAI-Compact",
+		"gpt-5.4-openai-compact",
+	})
+
+	require.Equal(t, []string{"gpt-5.6-sol", "gpt-5.5"}, models)
+}
+
 func TestGatewayModelInfoFromIDsUsesUnifiedOwner(t *testing.T) {
 	models := gatewayModelInfoFromIDs([]string{"gpt-5.5"}, 0)
 

@@ -3,6 +3,38 @@
   "client_auto_config_version": "0.7.11",
   "models": [
     {
+      "id": "glm-5.2",
+      "upstream_id": "glm-5.2",
+      "display_name": "GLM 5.2",
+      "platform": "anthropic",
+      "context_window": 128000,
+      "max_output_tokens": 8192,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "GLM 5.2",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 8,
+        "cached_input_per_mtok_usd": null,
+        "output_per_mtok_usd": 28,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://docs.z.ai/guides/overview/pricing.md"
+      },
+      "preset": {
+        "from": "glm-5.2",
+        "to": "glm-5.2",
+        "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+      }
+    },
+    {
       "id": "gemini-3.1-pro",
       "upstream_id": "gemini-3.1-pro",
       "display_name": "Gemini 3.1 Pro",

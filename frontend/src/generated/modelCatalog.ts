@@ -23,6 +23,22 @@ export const clientAutoConfigVersion = "0.7.11"
 
 export const modelCatalog: readonly CatalogModel[] = [
   {
+    "id": "glm-5.2",
+    "upstreamId": "glm-5.2",
+    "displayName": "GLM 5.2",
+    "platform": "anthropic",
+    "contextWindow": 128000,
+    "maxOutputTokens": 8192,
+    "clientDefault": false,
+    "preferredGroupName": "GLM 5.2",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "glm-5.2",
+      "to": "glm-5.2",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
+  {
     "id": "gemini-3.1-pro",
     "upstreamId": "gemini-3.1-pro",
     "displayName": "Gemini 3.1 Pro",

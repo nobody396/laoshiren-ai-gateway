@@ -463,6 +463,11 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 					h.handleOpenAIModelNotSupportedError(c, modelErr.RequestedModel, streamStarted)
 					return
 				}
+				var noServableErr *service.NoServableAccountsError
+				if errors.As(err, &noServableErr) {
+					h.handleOpenAINoServableAccountsError(c, reqModel, streamStarted)
+					return
+				}
 				if errors.Is(err, service.ErrNoAvailableCompactAccounts) {
 					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", service.ClientMessageServiceUnavailable, streamStarted)
 					return
@@ -912,6 +917,11 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 					h.handleAnthropicModelNotSupportedError(c, modelErr.RequestedModel, streamStarted)
 					return
 				}
+				var noServableErr *service.NoServableAccountsError
+				if errors.As(err, &noServableErr) {
+					h.handleAnthropicNoServableAccountsError(c, reqModel, streamStarted)
+					return
+				}
 				if err != nil {
 					h.anthropicStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", service.ClientMessageServiceUnavailable, streamStarted)
 					return
@@ -1145,6 +1155,23 @@ func (h *OpenAIGatewayHandler) handleOpenAINoServableAccountsError(c *gin.Contex
 // 但使用 Anthropic Messages API 错误格式。
 func (h *OpenAIGatewayHandler) handleAnthropicModelNotSupportedError(c *gin.Context, model string, streamStarted bool) {
 	message := service.ClientMessageModelNotSupported(model)
+	if streamStarted {
+		flusher, ok := c.Writer.(http.Flusher)
+		if ok {
+			errPayload, _ := json.Marshal(service.ClientErrorEnvelope(c, "invalid_request_error", message))
+			fmt.Fprintf(c.Writer, "event: error\ndata: %s\n\n", errPayload) //nolint:errcheck
+			flusher.Flush()
+		}
+		return
+	}
+	h.anthropicErrorResponse(c, http.StatusBadRequest, "invalid_request_error", message)
+}
+
+// handleAnthropicNoServableAccountsError 与 handleOpenAINoServableAccountsError
+// 同义（分组在该端点上没有任何可服务账号，归类为客户端误用 400），但使用
+// Anthropic Messages API 错误格式。
+func (h *OpenAIGatewayHandler) handleAnthropicNoServableAccountsError(c *gin.Context, model string, streamStarted bool) {
+	message := service.ClientMessageModelNotSupportedOnEndpoint(model)
 	if streamStarted {
 		flusher, ok := c.Writer.(http.Flusher)
 		if ok {

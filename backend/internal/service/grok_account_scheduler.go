@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // SelectOpenAICompatibleAccountWithScheduler dispatches a protocol-compatible
@@ -44,11 +45,25 @@ func (s *OpenAIGatewayService) SelectOpenAICompatibleAccountWithSchedulerForRout
 		selection, decision, err := s.SelectGrokAccountWithScheduler(ctx, groupID, sessionHash, requestedModel, excludedIDs, false)
 		return selection, decision, s.classifyNoServableSelectionError(ctx, platform, groupID, err)
 	}
+	if platform == PlatformGemini {
+		if geminiChatCompletionsRouteRequested(routeEndpoints) {
+			selection, decision, err := s.SelectGeminiAccountWithScheduler(ctx, groupID, sessionHash, requestedModel, excludedIDs)
+			return selection, decision, s.classifyNoServableSelectionError(ctx, platform, groupID, err)
+		}
+		// Gemini 平台仅在 /v1/chat/completions 上有桥接实现。其余端点
+		// （/v1/responses、/v1/messages）回落到原有 openai 调度语义，
+		// 保持零候选失败分类不变，不把 Gemini 账号泄漏到不支持的端点。
+		platform = PlatformOpenAI
+	}
 	selection, decision, err := s.selectAccountWithSchedulerForRouting(
 		ctx, groupID, previousResponseID, sessionHash, requestedModel,
 		excludedIDs, requiredTransport, requireCompact, preferImageGeneration, routeEndpoints...,
 	)
 	return selection, decision, s.classifyNoServableSelectionError(ctx, platform, groupID, err)
+}
+
+func geminiChatCompletionsRouteRequested(routeEndpoints []string) bool {
+	return len(routeEndpoints) > 0 && strings.TrimSpace(routeEndpoints[0]) == geminiChatCompletionsEndpoint
 }
 
 // classifyNoServableSelectionError 在“零候选账号”失败时区分结构性不可服务

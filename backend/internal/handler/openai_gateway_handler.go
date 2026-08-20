@@ -53,8 +53,13 @@ func (h *OpenAIGatewayHandler) SetGrokMediaEligibilityProber(prober interface {
 var errOpenAIWSUnsupportedModelSwitch = errors.New("selected account does not support websocket model switch")
 
 func openAICompatibleRequestPlatform(apiKey *service.APIKey) string {
-	if apiKey != nil && apiKey.Group != nil && apiKey.Group.Platform == service.PlatformGrok {
-		return service.PlatformGrok
+	if apiKey != nil && apiKey.Group != nil {
+		switch apiKey.Group.Platform {
+		case service.PlatformGrok:
+			return service.PlatformGrok
+		case service.PlatformGemini:
+			return service.PlatformGemini
+		}
 	}
 	return service.PlatformOpenAI
 }

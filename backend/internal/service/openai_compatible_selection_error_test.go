@@ -20,6 +20,16 @@ func (r *groupAccountsStubRepo) ListByGroup(ctx context.Context, groupID int64) 
 	return append([]Account(nil), r.groupAccounts...), nil
 }
 
+func (r *groupAccountsStubRepo) GetByID(ctx context.Context, id int64) (*Account, error) {
+	for i := range r.groupAccounts {
+		if r.groupAccounts[i].ID == id {
+			acc := r.groupAccounts[i]
+			return &acc, nil
+		}
+	}
+	return nil, errors.New("account not found")
+}
+
 func (r *groupAccountsStubRepo) ListSchedulableByGroupIDAndPlatform(ctx context.Context, groupID int64, platform string) ([]Account, error) {
 	var result []Account
 	for _, acc := range r.groupAccounts {

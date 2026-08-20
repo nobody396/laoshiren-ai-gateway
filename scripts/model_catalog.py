@@ -406,6 +406,10 @@ def render_powershell_block(catalog: dict[str, Any]) -> str:
         f"$CatalogGrokDefaultContextWindow = {values['grok']['context_window']}",
         f"$CatalogGrokManagedModels = @({model_profiles})",
         f"$CatalogGrokManagedModelSections = @({section_literal})",
+        f"$CatalogGeminiDefaultModel = {powershell_quote(values['gemini']['id'])}",
+        "$CatalogGeminiManagedModels = @(%s)" % ", ".join(
+            powershell_quote(model_id) for model_id in values["gemini"]["managed_ids"]
+        ),
         POWERSHELL_BLOCK_END,
     ))
 
@@ -424,6 +428,8 @@ def render_shell_block(catalog: dict[str, Any]) -> str:
         f"CATALOG_GROK_DEFAULT_DISPLAY_NAME={shell_quote(values['grok']['display_name'])}",
         f"CATALOG_GROK_DEFAULT_CONTEXT_WINDOW={values['grok']['context_window']}",
         f"CATALOG_GROK_MANAGED_MODELS_JSON={shell_quote(managed_json)}",
+        f"CATALOG_GEMINI_DEFAULT_MODEL={shell_quote(values['gemini']['id'])}",
+        "CATALOG_GEMINI_MANAGED_MODELS=%s" % shell_quote(" ".join(values["gemini"]["managed_ids"])),
         SHELL_BLOCK_END,
     ))
 

@@ -42,10 +42,12 @@ var generatedCatalogDisplayPrices = map[string]manualOfficialPrice{
 }
 
 var generatedCatalogClientDefaults = map[string]string{
+	"gemini": "gemini-3.7-flash",
 	"grok": "grok-4.6",
 }
 
 var generatedCatalogGroupPolicies = map[string]generatedCatalogGroupPolicy{
+	"gemini": {Preferred: "Gemini", Legacy: []string{}},
 	"grok": {Preferred: "Grok", Legacy: []string{"Grok 4.6", "Grok 4.5"}},
 }
 

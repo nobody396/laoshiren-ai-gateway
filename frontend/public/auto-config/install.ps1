@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.11'
+$ScriptVersion = '0.7.12'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 272000
 $CatalogOpenAIAutoCompactTokenLimit = 258000
@@ -12,6 +12,8 @@ $CatalogGrokDefaultDisplayName = 'Grok 4.6'
 $CatalogGrokDefaultContextWindow = 500000
 $CatalogGrokManagedModels = @(@{ Id = 'grok-4.5'; DisplayName = 'Grok 4.5'; ContextWindow = 500000 }, @{ Id = 'grok-4.6'; DisplayName = 'Grok 4.6'; ContextWindow = 500000 })
 $CatalogGrokManagedModelSections = @('model.grok-4.5', 'model."grok-4.5"', 'model.grok-4.6', 'model."grok-4.6"')
+$CatalogGeminiDefaultModel = 'gemini-3.7-flash'
+$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high')
 # END GENERATED MODEL CATALOG
 $DefaultBaseUrl = 'https://api.laoshirenai.com'
 $DefaultSetupExchangeUrl = 'https://laoshirenai.com/api/v1/public-setup/exchange'
@@ -47,6 +49,9 @@ $GrokDir = Join-Path $HOME '.grok'
 $GrokConfigPath = Join-Path $GrokDir 'config.toml'
 $GrokBinDir = Join-Path $GrokDir 'bin'
 $GrokCommandPath = Join-Path $GrokBinDir 'grok.exe'
+$GeminiDir = Join-Path $HOME '.gemini'
+$GeminiEnvPath = Join-Path $GeminiDir '.env'
+$GeminiSettingsPath = Join-Path $GeminiDir 'settings.json'
 
 # 支持通过环境变量传参，解决 `irm | iex` 管道模式下无法传命令行参数的问题
 $BaseUrl = if ($env:LAOSHIRENAI_BASE_URL) { $env:LAOSHIRENAI_BASE_URL } else { $DefaultBaseUrl }
@@ -54,6 +59,7 @@ $Tools = if ($env:LAOSHIRENAI_TOOLS) { $env:LAOSHIRENAI_TOOLS.ToLowerInvariant()
 $ClaudeApiKey = $env:LAOSHIRENAI_CLAUDE_API_KEY
 $CodexApiKey = $env:LAOSHIRENAI_CODEX_API_KEY
 $GrokApiKey = $env:LAOSHIRENAI_GROK_API_KEY
+$GeminiApiKey = $env:LAOSHIRENAI_GEMINI_API_KEY
 $UnifiedApiKey = $env:LAOSHIRENAI_API_KEY
 if ([string]::IsNullOrWhiteSpace($ClaudeApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
   $ClaudeApiKey = $UnifiedApiKey
@@ -63,6 +69,9 @@ if ([string]::IsNullOrWhiteSpace($CodexApiKey) -and -not [string]::IsNullOrWhite
 }
 if ([string]::IsNullOrWhiteSpace($GrokApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
   $GrokApiKey = $UnifiedApiKey
+}
+if ([string]::IsNullOrWhiteSpace($GeminiApiKey) -and -not [string]::IsNullOrWhiteSpace($UnifiedApiKey)) {
+  $GeminiApiKey = $UnifiedApiKey
 }
 $NodeVersionOverride = if ($env:LAOSHIRENAI_NODE_VERSION) { $env:LAOSHIRENAI_NODE_VERSION } else { '' }
 $SkipClientInstall = $env:LAOSHIRENAI_SKIP_CLIENT_INSTALL -eq '1'
@@ -88,9 +97,11 @@ $script:ActiveNpmRegistry = $DefaultNpmRegistry
 $script:InstallClaudeClient = $false
 $script:InstallCodexClient = $false
 $script:InstallGrokClient = $false
+$script:InstallGeminiClient = $false
 $script:ExistingClaudeCommand = ''
 $script:ExistingCodexCommand = ''
 $script:ExistingGrokCommand = ''
+$script:ExistingGeminiCommand = ''
 $script:ExistingCodexApp = ''
 
 # 输出信息日志，方便用户了解当前执行到了哪一步。
@@ -157,6 +168,11 @@ function Parse-Arguments {
         if ($i -ge $ArgsList.Count) { Stop-Script '--grok-api-key 需要一个值' }
         $script:GrokApiKey = $ArgsList[$i]
       }
+      '--gemini-api-key' {
+        $i++
+        if ($i -ge $ArgsList.Count) { Stop-Script '--gemini-api-key 需要一个值' }
+        $script:GeminiApiKey = $ArgsList[$i]
+      }
       '--base-url' {
         $i++
         if ($i -ge $ArgsList.Count) { Stop-Script '--base-url 需要一个值' }
@@ -166,8 +182,8 @@ function Parse-Arguments {
         $i++
         if ($i -ge $ArgsList.Count) { Stop-Script '--tools 需要一个值' }
         $Value = $ArgsList[$i].ToLowerInvariant()
-        if ($Value -notin @('all', 'claude', 'codex', 'grok')) {
-          Stop-Script '不支持的 --tools 值，可选值为 all / claude / codex / grok'
+        if ($Value -notin @('all', 'claude', 'codex', 'grok', 'gemini')) {
+          Stop-Script '不支持的 --tools 值，可选值为 all / claude / codex / grok / gemini'
         }
         $script:Tools = $Value
       }
@@ -194,15 +210,16 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.11 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.12 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.11 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.12 | iex
 
 参数:
   --api-key              Claude Code API Key
   --codex-api-key        Codex API Key
   --grok-api-key         Grok Build API Key
+  --gemini-api-key       Gemini CLI API Key
   --tools                需要配置的工具，默认 all
   --base-url             API 基础地址，默认 https://api.laoshirenai.com
   --node-version         指定 Node.js 版本，例如 v24.11.0
@@ -261,6 +278,13 @@ function Prompt-ApiKeys {
       Stop-Script 'Grok Build API Key 不能为空'
     }
   }
+
+  if ($script:Tools -eq 'gemini' -and [string]::IsNullOrWhiteSpace($script:GeminiApiKey)) {
+    $script:GeminiApiKey = Read-SecureInput -Prompt '请输入 Gemini CLI API Key'
+    if ([string]::IsNullOrWhiteSpace($script:GeminiApiKey)) {
+      Stop-Script 'Gemini CLI API Key 不能为空'
+    }
+  }
 }
 
 # 用一次性凭证领取当前目标的专用 API Key。凭证和 Key 均不会打印到终端。
@@ -281,7 +305,7 @@ function Exchange-SetupTicket {
 
   $Data = $Response.data
   if ($null -eq $Data -or
-      $Data.target -notin @('claude', 'codex', 'grok') -or
+      $Data.target -notin @('claude', 'codex', 'grok', 'gemini') -or
       [string]::IsNullOrWhiteSpace([string]$Data.api_key) -or
       [string]::IsNullOrWhiteSpace([string]$Data.base_url)) {
     Stop-Script '服务器返回的一键安装配置格式无效'
@@ -295,6 +319,8 @@ function Exchange-SetupTicket {
     $script:ClaudeApiKey = [string]$Data.api_key
   } elseif ($Data.target -eq 'codex') {
     $script:CodexApiKey = [string]$Data.api_key
+  } elseif ($Data.target -eq 'gemini') {
+    $script:GeminiApiKey = [string]$Data.api_key
   } else {
     $script:GrokApiKey = [string]$Data.api_key
   }
@@ -377,6 +403,7 @@ function Resolve-ClientInstallPlan {
   $script:InstallClaudeClient = $false
   $script:InstallCodexClient = $false
   $script:InstallGrokClient = $false
+  $script:InstallGeminiClient = $false
 
   if ($script:Tools -in @('all', 'claude')) {
     $script:ExistingClaudeCommand = Get-UsableClientCommand -CommandName 'claude'
@@ -427,6 +454,20 @@ function Resolve-ClientInstallPlan {
       $script:InstallGrokClient = $true
     }
   }
+
+  if ($script:Tools -eq 'gemini') {
+    $script:ExistingGeminiCommand = Get-UsableClientCommand -CommandName 'gemini'
+    if ($script:ForceClientInstall) {
+      $script:InstallGeminiClient = $true
+      Write-Info '已要求强制重新安装 Gemini CLI'
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingGeminiCommand)) {
+      Write-Info "检测到现有 Gemini CLI，跳过重复安装: $($script:ExistingGeminiCommand)"
+    } elseif ($script:SkipClientInstall) {
+      Write-WarnMessage '未检测到可用的 Gemini CLI，但已按要求跳过安装'
+    } else {
+      $script:InstallGeminiClient = $true
+    }
+  }
 }
 
 function Get-ClientVersion {
@@ -464,7 +505,8 @@ function Resolve-ClientUpdatePlan {
 
   $Checks = @(
     @{ Label = 'Claude Code CLI'; Command = $script:ExistingClaudeCommand; Package = '@anthropic-ai%2Fclaude-code'; Flag = 'InstallClaudeClient' },
-    @{ Label = 'Codex CLI'; Command = $script:ExistingCodexCommand; Package = '@openai%2Fcodex'; Flag = 'InstallCodexClient' }
+    @{ Label = 'Codex CLI'; Command = $script:ExistingCodexCommand; Package = '@openai%2Fcodex'; Flag = 'InstallCodexClient' },
+    @{ Label = 'Gemini CLI'; Command = $script:ExistingGeminiCommand; Package = '@google%2Fgemini-cli'; Flag = 'InstallGeminiClient' }
   )
   foreach ($Check in $Checks) {
     if ([string]::IsNullOrWhiteSpace([string]$Check.Command) -or (Get-Variable -Scope Script -Name $Check.Flag).Value) { continue }
@@ -482,11 +524,11 @@ function Resolve-ClientUpdatePlan {
 }
 
 function Test-NeedsClientInstall {
-  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGrokClient)
+  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGrokClient -or $script:InstallGeminiClient)
 }
 
 function Test-NeedsNpmClientInstall {
-  return ($script:InstallClaudeClient -or $script:InstallCodexClient)
+  return ($script:InstallClaudeClient -or $script:InstallCodexClient -or $script:InstallGeminiClient)
 }
 
 # 只解析 npm.cmd，避免 PowerShell 在 Restricted 执行策略下优先命中 npm.ps1。
@@ -1088,6 +1130,11 @@ function Install-RequestedClients {
   if ($script:InstallGrokClient) {
     Install-GrokBuild
   }
+
+  if ($script:InstallGeminiClient) {
+    Write-Info '正在安装或更新 Gemini CLI'
+    Install-NpmPackageWithFallback -PackageName '@google/gemini-cli@latest'
+  }
 }
 
 function Install-CodexAppIfRequested {
@@ -1391,6 +1438,100 @@ function Write-GrokTomlConfig {
   }
 }
 
+# 合并写入 Gemini CLI 的 .env 与 settings.json：.env 只更新本站管理的四个键并保留其他行，
+# settings.json 只更新鉴权方式、默认模型和本站管理的 thinkingConfig 覆盖项，其余字段原样保留。
+function Write-GeminiConfig {
+  Backup-IfNeeded $GeminiEnvPath
+  Backup-IfNeeded $GeminiSettingsPath
+  Ensure-Directory $GeminiDir
+
+  $ManagedEnv = [ordered]@{
+    GEMINI_API_KEY = $script:GeminiApiKey
+    GOOGLE_GEMINI_BASE_URL = $script:BaseUrl
+    GOOGLE_GENAI_USE_VERTEXAI = 'false'
+    GEMINI_MODEL = $CatalogGeminiDefaultModel
+  }
+  $EnvLines = [System.Collections.Generic.List[string]]::new()
+  if (Test-Path -LiteralPath $GeminiEnvPath) {
+    $EnvLines.AddRange([string[]]@(Get-Content -LiteralPath $GeminiEnvPath))
+  }
+  $SeenKeys = @{}
+  for ($i = 0; $i -lt $EnvLines.Count; $i++) {
+    if ($EnvLines[$i] -match '^([A-Za-z_][A-Za-z0-9_]*)=' -and $ManagedEnv.Contains($Matches[1])) {
+      $Key = $Matches[1]
+      $EnvLines[$i] = "$Key=$($ManagedEnv[$Key])"
+      $SeenKeys[$Key] = $true
+    }
+  }
+  foreach ($Key in $ManagedEnv.Keys) {
+    if (-not $SeenKeys.ContainsKey($Key)) {
+      $EnvLines.Add("$Key=$($ManagedEnv[$Key])")
+    }
+  }
+  [System.IO.File]::WriteAllLines($GeminiEnvPath, [string[]]$EnvLines, [System.Text.UTF8Encoding]::new($false))
+
+  if (Test-Path -LiteralPath $GeminiSettingsPath) {
+    try {
+      $Config = Get-Content -LiteralPath $GeminiSettingsPath -Raw | ConvertFrom-Json
+    } catch {
+      $Config = [pscustomobject]@{}
+    }
+  } else {
+    $Config = [pscustomobject]@{}
+  }
+  if ($null -eq $Config) {
+    $Config = [pscustomobject]@{}
+  }
+
+  # 严格模式下用 Where-Object 检查属性是否存在，避免直接访问 .Name 报错
+  $HasSecurity = $Config.PSObject.Properties | Where-Object { $_.Name -eq 'security' }
+  if (-not $HasSecurity -or $null -eq $Config.security) {
+    $Config | Add-Member -NotePropertyName security -NotePropertyValue ([pscustomobject]@{}) -Force
+  }
+  $HasAuth = $Config.security.PSObject.Properties | Where-Object { $_.Name -eq 'auth' }
+  if (-not $HasAuth -or $null -eq $Config.security.auth) {
+    $Config.security | Add-Member -NotePropertyName auth -NotePropertyValue ([pscustomobject]@{}) -Force
+  }
+  $Config.security.auth | Add-Member -NotePropertyName selectedType -NotePropertyValue 'gemini-api-key' -Force
+
+  $HasModel = $Config.PSObject.Properties | Where-Object { $_.Name -eq 'model' }
+  if (-not $HasModel -or $null -eq $Config.model) {
+    $Config | Add-Member -NotePropertyName model -NotePropertyValue ([pscustomobject]@{}) -Force
+  }
+  $Config.model | Add-Member -NotePropertyName name -NotePropertyValue $CatalogGeminiDefaultModel -Force
+
+  $HasModelConfigs = $Config.PSObject.Properties | Where-Object { $_.Name -eq 'modelConfigs' }
+  if (-not $HasModelConfigs -or $null -eq $Config.modelConfigs) {
+    $Config | Add-Member -NotePropertyName modelConfigs -NotePropertyValue ([pscustomobject]@{}) -Force
+  }
+  $HasOverrides = $Config.modelConfigs.PSObject.Properties | Where-Object { $_.Name -eq 'overrides' }
+  $ExistingOverrides = @()
+  if ($HasOverrides -and $null -ne $Config.modelConfigs.overrides) {
+    $ExistingOverrides = @($Config.modelConfigs.overrides)
+  }
+  $KeptOverrides = @($ExistingOverrides | Where-Object {
+    $Entry = $_
+    $MatchProperty = $Entry.PSObject.Properties | Where-Object { $_.Name -eq 'match' }
+    if ($null -eq $MatchProperty -or $null -eq $Entry.match) { return $true }
+    $ModelProperty = $Entry.match.PSObject.Properties | Where-Object { $_.Name -eq 'model' }
+    if ($null -eq $ModelProperty) { return $true }
+    return ([string]$Entry.match.model) -notin $CatalogGeminiManagedModels
+  })
+  $NewOverrides = [System.Collections.Generic.List[object]]@($KeptOverrides)
+  foreach ($ModelId in $CatalogGeminiManagedModels) {
+    $NewOverrides.Add([pscustomobject]@{
+      match = [pscustomobject]@{ model = $ModelId }
+      generateContentConfig = [pscustomobject]@{
+        thinkingConfig = [pscustomobject]@{ thinkingLevel = 'HIGH' }
+      }
+    })
+  }
+  $Config.modelConfigs | Add-Member -NotePropertyName overrides -NotePropertyValue $NewOverrides -Force
+
+  $json = $Config | ConvertTo-Json -Depth 20
+  [System.IO.File]::WriteAllText($GeminiSettingsPath, $json, [System.Text.UTF8Encoding]::new($false))
+}
+
 function Get-CcSwitchLaunchTarget {
   $StartApp = Get-StartApps -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -eq 'CC Switch' } |
@@ -1535,6 +1676,10 @@ function Test-UsesGrok {
   return $script:Tools -eq 'grok'
 }
 
+function Test-UsesGemini {
+  return $script:Tools -eq 'gemini'
+}
+
 function Get-OpenAIV1BaseUrl {
   param([string]$Value)
 
@@ -1616,6 +1761,12 @@ function Test-GrokApiKey {
   }
 }
 
+function Test-GeminiApiKey {
+  if (Test-UsesGemini) {
+    Test-ApiKeyReadiness -Label 'Gemini CLI' -ApiKey $script:GeminiApiKey
+  }
+}
+
 # 根据用户选择写入 Claude Code 配置。
 function Configure-Claude {
   if ($script:Tools -in @('all', 'claude')) {
@@ -1638,6 +1789,13 @@ function Configure-Grok {
   if (Test-UsesGrok) {
     Write-Info '正在写入 Grok Build 原生模型配置'
     Write-GrokTomlConfig
+  }
+}
+
+function Configure-Gemini {
+  if (Test-UsesGemini) {
+    Write-Info '正在写入 Gemini CLI 配置'
+    Write-GeminiConfig
   }
 }
 
@@ -1694,6 +1852,24 @@ function Verify-ClientCommands {
       Stop-Script "Grok Build 安装验证失败：未找到 $GrokCmd"
     }
   }
+
+  if (Test-UsesGemini) {
+    $GeminiCmd = if ($script:InstallGeminiClient) {
+      Join-Path $NpmPrefix 'gemini.cmd'
+    } else {
+      $script:ExistingGeminiCommand
+    }
+    if (-not [string]::IsNullOrWhiteSpace($GeminiCmd) -and (Test-Path -LiteralPath $GeminiCmd)) {
+      try {
+        & $GeminiCmd --version | Out-Null
+        Write-Info 'Gemini CLI 验证通过'
+      } catch {
+        Stop-Script "Gemini CLI 安装验证失败: $_"
+      }
+    } elseif ($script:InstallGeminiClient) {
+      Stop-Script "Gemini CLI 安装验证失败：未找到 $GeminiCmd"
+    }
+  }
 }
 
 # 输出最终结果和下一步指引，帮助用户立即开始使用。
@@ -1707,6 +1883,11 @@ function Print-Summary {
   Write-Host "  - Codex 配置: $CodexConfigPath"
   if (Test-UsesGrok) {
     Write-Host "  - Grok Build 配置: $GrokConfigPath"
+  }
+  if (Test-UsesGemini) {
+    Write-Host "  - Gemini CLI 环境配置: $GeminiEnvPath"
+    Write-Host "  - Gemini CLI 设置: $GeminiSettingsPath"
+    Write-Host "  - Gemini CLI 默认模型: $CatalogGeminiDefaultModel"
   }
   if (Test-UsesClaude) {
     Write-Host '  - Claude Code 专用 Key: 已配置'
@@ -1734,6 +1915,14 @@ function Print-Summary {
       Write-Host "  - Grok Build CLI: 已保留现有安装 ($($script:ExistingGrokCommand))"
     }
   }
+  if (Test-UsesGemini) {
+    Write-Host '  - Gemini CLI 专用 Key: 已配置'
+    if ($script:InstallGeminiClient) {
+      Write-Host '  - Gemini CLI: 本次已安装'
+    } elseif (-not [string]::IsNullOrWhiteSpace($script:ExistingGeminiCommand)) {
+      Write-Host "  - Gemini CLI: 已保留现有安装 ($($script:ExistingGeminiCommand))"
+    }
+  }
   Write-Host ''
   if ($script:BalanceReady) {
     Write-Host '✅ 余额/套餐额度充足，现在可以直接使用。'
@@ -1758,6 +1947,9 @@ function Print-Summary {
   if (Test-UsesGrok) {
     Write-Host '  - 重新打开 PowerShell 后执行 grok --version'
     Write-Host "  - 再执行 grok -m $CatalogGrokDefaultModel -p `"只回复 OK`""
+  }
+  if (Test-UsesGemini) {
+    Write-Host '  - 重新打开 PowerShell 后执行 gemini --version'
   }
 }
 
@@ -1792,9 +1984,11 @@ function Main {
   Configure-Claude
   Configure-Codex
   Configure-Grok
+  Configure-Gemini
   Test-ClaudeApiKey
   Test-CodexApiKey
   Test-GrokApiKey
+  Test-GeminiApiKey
   Verify-ClientCommands
   Open-CcSwitchIfRequested
   Print-Summary

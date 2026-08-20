@@ -21,8 +21,11 @@ describe('client auto-config target selection', () => {
     expect(getClientAutoConfigTarget('grok')).toBe('grok')
   })
 
+  it('maps Gemini groups to Gemini CLI', () => {
+    expect(getClientAutoConfigTarget('gemini')).toBe('gemini')
+  })
+
   it('does not offer an incompatible client setup', () => {
-    expect(getClientAutoConfigTarget('gemini')).toBeNull()
     expect(getClientAutoConfigTarget('gpt-image')).toBeNull()
     expect(getClientAutoConfigTarget()).toBeNull()
   })
@@ -31,6 +34,7 @@ describe('client auto-config target selection', () => {
     expect(getClientAutoConfigName('claude')).toBe('Claude Code')
     expect(getClientAutoConfigName('codex')).toBe('Codex')
     expect(getClientAutoConfigName('grok')).toBe('Grok Build')
+    expect(getClientAutoConfigName('gemini')).toBe('Gemini CLI')
   })
 })
 
@@ -104,6 +108,26 @@ describe('client auto-config commands', () => {
     })).toBe(
       `curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion}' | ` +
       "LAOSHIRENAI_SETUP_TOKEN='ticket-grok-test' LAOSHIRENAI_TOOLS='grok' bash"
+    )
+  })
+
+  it('builds Gemini CLI commands with a one-time ticket on both platforms', () => {
+    expect(buildClientAutoConfigCommand({
+      target: 'gemini',
+      ticket: 'ticket-gemini-test',
+      isWindows: false
+    })).toBe(
+      `curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=${clientAutoConfigVersion}' | ` +
+      "LAOSHIRENAI_SETUP_TOKEN='ticket-gemini-test' LAOSHIRENAI_TOOLS='gemini' bash"
+    )
+    expect(buildClientAutoConfigCommand({
+      target: 'gemini',
+      ticket: 'ticket-gemini-test',
+      isWindows: true
+    })).toBe(
+      "$env:LAOSHIRENAI_SETUP_TOKEN='ticket-gemini-test'; " +
+      "$env:LAOSHIRENAI_TOOLS='gemini'; " +
+      `irm https://laoshirenai.com/auto-config/install.ps1?v=${clientAutoConfigVersion} | iex`
     )
   })
 

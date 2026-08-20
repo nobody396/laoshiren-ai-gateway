@@ -19,7 +19,7 @@ export interface CodexClientModel {
   contextWindow: number
 }
 
-export const clientAutoConfigVersion = "0.7.11"
+export const clientAutoConfigVersion = "0.7.12"
 
 export const modelCatalog: readonly CatalogModel[] = [
   {
@@ -61,7 +61,7 @@ export const modelCatalog: readonly CatalogModel[] = [
     "platform": "gemini",
     "contextWindow": 128000,
     "maxOutputTokens": 8192,
-    "clientDefault": false,
+    "clientDefault": true,
     "preferredGroupName": "Gemini",
     "legacyGroupNames": [],
     "preset": {

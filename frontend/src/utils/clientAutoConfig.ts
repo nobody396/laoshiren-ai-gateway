@@ -1,7 +1,7 @@
 import type { GroupPlatform } from '@/types'
 import { clientAutoConfigVersion } from '@/generated/modelCatalog'
 
-export type ClientAutoConfigTarget = 'claude' | 'codex' | 'grok'
+export type ClientAutoConfigTarget = 'claude' | 'codex' | 'grok' | 'gemini'
 
 export interface BuildClientAutoConfigCommandInput {
   target: ClientAutoConfigTarget
@@ -36,6 +36,7 @@ export const getClientAutoConfigTarget = (
     case 'grok':
       return 'grok'
     case 'gemini':
+      return 'gemini'
     case 'gpt-image':
     case undefined:
     case null:
@@ -46,6 +47,7 @@ export const getClientAutoConfigTarget = (
 export const getClientAutoConfigName = (target: ClientAutoConfigTarget): string => {
   if (target === 'claude') return 'Claude Code'
   if (target === 'grok') return 'Grok Build'
+  if (target === 'gemini') return 'Gemini CLI'
   return 'Codex'
 }
 

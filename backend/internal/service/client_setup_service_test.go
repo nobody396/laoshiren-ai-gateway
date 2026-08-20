@@ -253,8 +253,14 @@ func TestClientSetupGroupCompatibility(t *testing.T) {
 }
 
 func TestNormalizeClientSetupTargetRejectsUnknownTarget(t *testing.T) {
-	_, err := normalizeClientSetupTarget("gemini")
+	_, err := normalizeClientSetupTarget("gpt-image")
 	require.ErrorIs(t, err, ErrInvalidClientSetupTarget)
+}
+
+func TestNormalizeClientSetupTargetAcceptsGemini(t *testing.T) {
+	target, err := normalizeClientSetupTarget(" Gemini ")
+	require.NoError(t, err)
+	require.Equal(t, ClientSetupTargetGemini, target)
 }
 
 func TestClientSetupTargetForGroup(t *testing.T) {
@@ -262,7 +268,7 @@ func TestClientSetupTargetForGroup(t *testing.T) {
 	require.Equal(t, ClientSetupTargetClaude, clientSetupTargetForGroup(&Group{Platform: PlatformAnthropic, Status: StatusActive}))
 	require.Equal(t, ClientSetupTargetClaude, clientSetupTargetForGroup(&Group{Platform: PlatformAntigravity, Status: StatusActive}))
 	require.Equal(t, ClientSetupTargetGrok, clientSetupTargetForGroup(&Group{Platform: PlatformGrok, Status: StatusActive}))
-	require.Empty(t, clientSetupTargetForGroup(&Group{Platform: PlatformGemini, Status: StatusActive}))
+	require.Equal(t, ClientSetupTargetGemini, clientSetupTargetForGroup(&Group{Platform: PlatformGemini, Status: StatusActive}))
 	require.Empty(t, clientSetupTargetForGroup(&Group{Platform: PlatformOpenAI, Status: "inactive"}))
 }
 
@@ -332,6 +338,36 @@ func TestIssueTicketForAPIKeyUsesAntigravityEndpoint(t *testing.T) {
 	require.Equal(t, clientSetupAPIBaseURL+"/antigravity", credential.BaseURL)
 }
 
+func TestIssueTicketForAPIKeyGeminiUsesRootBaseURL(t *testing.T) {
+	group := &Group{ID: 11, Name: "Gemini 分组", Platform: PlatformGemini, Status: StatusActive}
+	key := &APIKey{ID: 46, UserID: 9, Key: "sk-existing-gemini-key", Name: "我的 Gemini", Status: StatusActive, Group: group}
+	svc := &ClientSetupService{
+		apiKeys: &clientSetupAPIKeysStub{keys: map[int64]*APIKey{key.ID: key}},
+		tickets: newClientSetupTicketCacheStub(),
+	}
+
+	ticket, err := svc.IssueTicketForAPIKey(context.Background(), key.UserID, key.ID)
+	require.NoError(t, err)
+	require.Equal(t, ClientSetupTargetGemini, ticket.Target)
+
+	credential, err := svc.ExchangeTicket(context.Background(), ticket.Ticket)
+	require.NoError(t, err)
+	require.Equal(t, ClientSetupTargetGemini, credential.Target)
+	require.Equal(t, key.Key, credential.APIKey)
+	require.Equal(t, clientSetupAPIBaseURL, credential.BaseURL)
+}
+
+func TestIssueTicketRejectsGeminiWithoutExistingKey(t *testing.T) {
+	apiKeys := &clientSetupEnsureAPIKeysStub{
+		groups: []Group{{ID: 11, Name: "Gemini 分组", Platform: PlatformGemini, Status: StatusActive, SubscriptionType: SubscriptionTypeStandard}},
+	}
+	svc := &ClientSetupService{apiKeys: apiKeys, tickets: newClientSetupTicketCacheStub()}
+
+	_, err := svc.IssueTicket(context.Background(), 2, ClientSetupTargetGemini)
+	require.ErrorIs(t, err, ErrClientSetupKeyUnavailable)
+	require.Nil(t, apiKeys.createdReq.GroupID)
+}
+
 func TestIssueTicketForAPIKeyRejectsUnsafeSelections(t *testing.T) {
 	activeGroup := &Group{ID: 7, Name: "Codex", Platform: PlatformOpenAI, Status: StatusActive}
 	tests := []struct {
@@ -342,7 +378,7 @@ func TestIssueTicketForAPIKeyRejectsUnsafeSelections(t *testing.T) {
 		{name: "other owner", userID: 10, key: &APIKey{ID: 1, UserID: 9, Status: StatusActive, Group: activeGroup}},
 		{name: "inactive key", userID: 9, key: &APIKey{ID: 2, UserID: 9, Status: "inactive", Group: activeGroup}},
 		{name: "missing group", userID: 9, key: &APIKey{ID: 3, UserID: 9, Status: StatusActive}},
-		{name: "unsupported group", userID: 9, key: &APIKey{ID: 4, UserID: 9, Status: StatusActive, Group: &Group{Platform: PlatformGemini, Status: StatusActive}}},
+		{name: "unsupported group", userID: 9, key: &APIKey{ID: 4, UserID: 9, Status: StatusActive, Group: &Group{Platform: "unknown", Status: StatusActive}}},
 	}
 
 	for _, tt := range tests {

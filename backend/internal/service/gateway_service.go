@@ -375,6 +375,28 @@ func (e *ModelNotSupportedError) Unwrap() error {
 	return ErrNoAvailableAccounts
 }
 
+// NoServableAccountsError 表示分组在当前端点的请求平台上没有任何账号
+// （端点/平台结构性不匹配，例如 gemini 分组误调 /v1/chat/completions），
+// 属于用户侧误用，handler 应返回 4xx 而不是 503 服务不可用。
+// Error 文案保留 "no available accounts" 前缀以兼容 ops 错误日志的
+// 既有字符串分类与过滤规则。
+type NoServableAccountsError struct {
+	Platform string
+}
+
+func (e *NoServableAccountsError) Error() string {
+	if e == nil || e.Platform == "" {
+		return ErrNoAvailableAccounts.Error()
+	}
+	return fmt.Sprintf("%s for platform %s on this endpoint (group has no servable accounts)", ErrNoAvailableAccounts, e.Platform)
+}
+
+// Unwrap 保持 errors.Is(err, ErrNoAvailableAccounts) 与旧行为一致，
+// 让既有依赖 ErrNoAvailableAccounts 的错误处理与日志分类不受影响。
+func (e *NoServableAccountsError) Unwrap() error {
+	return ErrNoAvailableAccounts
+}
+
 // ErrClaudeCodeOnly 表示分组仅允许 Claude Code 客户端访问
 var ErrClaudeCodeOnly = errors.New("this group only allows Claude Code clients")
 

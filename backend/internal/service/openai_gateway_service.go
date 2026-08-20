@@ -385,6 +385,8 @@ type OpenAIGatewayService struct {
 	openaiWSRetryMetrics  openAIWSRetryMetrics
 	responseHeaderFilter  *responseheaders.CompiledHeaderFilter
 	codexSnapshotThrottle *accountWriteThrottle
+
+	groupPlatformAccountVerdicts sync.Map // key: string(groupID|platform), value: groupPlatformAccountsVerdict
 }
 
 // SetGrokTokenProvider injects the Grok OAuth request-path token provider
@@ -571,9 +573,75 @@ func noAvailableOpenAISelectionError(requestedModel string, compactBlocked bool,
 		if allOpenAICandidatesModelUnsupported(accounts, excludedIDs, requestedModel) {
 			return &ModelNotSupportedError{RequestedModel: requestedModel, Platform: PlatformOpenAI}
 		}
-		return fmt.Errorf("no available OpenAI accounts supporting model: %s", requestedModel)
+		return &noAvailableOpenAIAccountsError{requestedModel: requestedModel}
 	}
-	return errors.New("no available OpenAI accounts")
+	return &noAvailableOpenAIAccountsError{}
+}
+
+// noAvailableOpenAIAccountsError 保留既有错误文案，同时通过 Unwrap 暴露
+// ErrNoAvailableAccounts 语义，让调度入口能识别“零候选账号”类失败，
+// 用于区分结构性不可服务（客户端 4xx）与暂时性不可用（503）。
+type noAvailableOpenAIAccountsError struct {
+	requestedModel string
+}
+
+func (e *noAvailableOpenAIAccountsError) Error() string {
+	if e != nil && e.requestedModel != "" {
+		return fmt.Sprintf("no available OpenAI accounts supporting model: %s", e.requestedModel)
+	}
+	return "no available OpenAI accounts"
+}
+
+// Unwrap 保持 errors.Is(err, ErrNoAvailableAccounts) 与旧行为一致，
+// 让既有依赖 ErrNoAvailableAccounts 的错误处理与日志分类不受影响。
+func (e *noAvailableOpenAIAccountsError) Unwrap() error {
+	return ErrNoAvailableAccounts
+}
+
+type groupPlatformAccountsVerdict struct {
+	hasAccounts bool
+	expiresAt   time.Time
+}
+
+// groupPlatformAccountsVerdictTTL 是“分组是否拥有某平台账号”判定结果的进程内
+// 缓存时长。该判定只发生在调度零候选的失败路径上，短 TTL 既限制失败风暴时的
+// 额外数据库查询，也允许分组绑号变化在 30 秒内生效。
+const groupPlatformAccountsVerdictTTL = 30 * time.Second
+
+// groupHasAccountsForPlatform 判断分组内是否存在该平台的账号（忽略限流/过载等
+// 瞬态不可用窗口），用于区分“结构性不可服务”（分组在该平台下没有任何账号）
+// 与“暂时性不可用”（账号存在但被限流/过载/排队）。无法证明分组结构性为空时
+// 一律返回 true，保持既有 503 语义，避免把平台侧饥饿误判为客户端误用。
+func (s *OpenAIGatewayService) groupHasAccountsForPlatform(ctx context.Context, groupID *int64, platform string) bool {
+	if s == nil || s.accountRepo == nil || groupID == nil || *groupID <= 0 || platform == "" {
+		return true
+	}
+	if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
+		// simple 模式从全平台池调度，分组归属不代表可服务性。
+		return true
+	}
+	cacheKey := strconv.FormatInt(*groupID, 10) + "|" + platform
+	if cached, ok := s.groupPlatformAccountVerdicts.Load(cacheKey); ok {
+		if verdict, ok := cached.(groupPlatformAccountsVerdict); ok && time.Now().Before(verdict.expiresAt) {
+			return verdict.hasAccounts
+		}
+	}
+	accounts, err := s.accountRepo.ListByGroup(ctx, *groupID)
+	if err != nil {
+		return true
+	}
+	hasAccounts := false
+	for i := range accounts {
+		if accounts[i].Platform == platform {
+			hasAccounts = true
+			break
+		}
+	}
+	s.groupPlatformAccountVerdicts.Store(cacheKey, groupPlatformAccountsVerdict{
+		hasAccounts: hasAccounts,
+		expiresAt:   time.Now().Add(groupPlatformAccountsVerdictTTL),
+	})
+	return hasAccounts
 }
 
 func openAICompactSupportTier(account *Account) int {

@@ -1116,6 +1116,26 @@ func (h *OpenAIGatewayHandler) handleOpenAIModelNotSupportedError(c *gin.Context
 	h.errorResponseWithCode(c, http.StatusBadRequest, "invalid_request_error", service.ClientCodeModelNotSupported, message)
 }
 
+// handleOpenAINoServableAccountsError 处理“分组在该端点上没有任何可服务账号”的
+// 结构性失败（例如 gemini 分组误调 /v1/chat/completions）。返回 400
+// invalid_request_error，ops 错误日志按 request 阶段归类为客户端误用
+// （error_owner=client），不再计入平台成功率告警。
+func (h *OpenAIGatewayHandler) handleOpenAINoServableAccountsError(c *gin.Context, model string, streamStarted bool) {
+	message := service.ClientMessageModelNotSupportedOnEndpoint(model)
+	if streamStarted {
+		flusher, ok := c.Writer.(http.Flusher)
+		if ok {
+			errPayload, _ := json.Marshal(service.OpenAIClientErrorEnvelopeWithCode(c, "invalid_request_error", service.ClientCodeModelNotSupported, message))
+			if _, err := fmt.Fprintf(c.Writer, "event: error\ndata: %s\n\n", errPayload); err != nil {
+				_ = c.Error(err)
+			}
+			flusher.Flush()
+		}
+		return
+	}
+	h.errorResponseWithCode(c, http.StatusBadRequest, "invalid_request_error", service.ClientCodeModelNotSupported, message)
+}
+
 // handleAnthropicModelNotSupportedError 与 handleOpenAIModelNotSupportedError 同义，
 // 但使用 Anthropic Messages API 错误格式。
 func (h *OpenAIGatewayHandler) handleAnthropicModelNotSupportedError(c *gin.Context, model string, streamStarted bool) {

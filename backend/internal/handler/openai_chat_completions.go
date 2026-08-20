@@ -158,6 +158,11 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 					h.handleOpenAIModelNotSupportedError(c, modelErr.RequestedModel, streamStarted)
 					return
 				}
+				var noServableErr *service.NoServableAccountsError
+				if errors.As(err, &noServableErr) {
+					h.handleOpenAINoServableAccountsError(c, reqModel, streamStarted)
+					return
+				}
 				h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable", streamStarted)
 				return
 			} else {

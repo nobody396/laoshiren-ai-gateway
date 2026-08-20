@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -40,12 +41,36 @@ func (s *OpenAIGatewayService) SelectOpenAICompatibleAccountWithSchedulerForRout
 	routeEndpoints ...string,
 ) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
 	if platform == PlatformGrok {
-		return s.SelectGrokAccountWithScheduler(ctx, groupID, sessionHash, requestedModel, excludedIDs, false)
+		selection, decision, err := s.SelectGrokAccountWithScheduler(ctx, groupID, sessionHash, requestedModel, excludedIDs, false)
+		return selection, decision, s.classifyNoServableSelectionError(ctx, platform, groupID, err)
 	}
-	return s.selectAccountWithSchedulerForRouting(
+	selection, decision, err := s.selectAccountWithSchedulerForRouting(
 		ctx, groupID, previousResponseID, sessionHash, requestedModel,
 		excludedIDs, requiredTransport, requireCompact, preferImageGeneration, routeEndpoints...,
 	)
+	return selection, decision, s.classifyNoServableSelectionError(ctx, platform, groupID, err)
+}
+
+// classifyNoServableSelectionError 在“零候选账号”失败时区分结构性不可服务
+// （分组在该端点的请求平台下没有任何账号，例如 gemini 分组误调
+// /v1/chat/completions）与暂时性不可用（账号存在但限流/过载/排队）。
+// 前者返回 *NoServableAccountsError，由 handler 映射为客户端 4xx；
+// 后者保持原错误（handler 返回 503，继续计入平台侧告警）。
+func (s *OpenAIGatewayService) classifyNoServableSelectionError(ctx context.Context, platform string, groupID *int64, err error) error {
+	if err == nil {
+		return nil
+	}
+	var modelErr *ModelNotSupportedError
+	if errors.As(err, &modelErr) {
+		return err
+	}
+	if !errors.Is(err, ErrNoAvailableAccounts) {
+		return err
+	}
+	if s.groupHasAccountsForPlatform(ctx, groupID, platform) {
+		return err
+	}
+	return &NoServableAccountsError{Platform: platform}
 }
 
 // SelectGrokAccountWithScheduler is the deliberately narrow Grok scheduling

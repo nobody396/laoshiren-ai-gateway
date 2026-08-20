@@ -39,6 +39,21 @@ func ClientMessageModelNotSupported(model string) string {
 	)
 }
 
+// ClientMessageModelNotSupportedOnEndpoint 生成分组在当前端点上结构性不可服务时
+// 的用户侧错误文案（分组平台与该端点不匹配，例如 gemini 分组误调
+// /v1/chat/completions）。动态带上请求的模型名与支持模型查看入口。
+func ClientMessageModelNotSupportedOnEndpoint(model string) string {
+	model = strings.TrimSpace(model)
+	if model == "" {
+		model = "the requested model"
+	}
+	return fmt.Sprintf(
+		"The model %q is not supported on this endpoint for this group. Please switch to a supported model or use the endpoint that matches your group. You can view all supported models at %s",
+		model,
+		ModelPricingPageURL,
+	)
+}
+
 type ClientUpstreamError struct {
 	StatusCode int
 	Type       string

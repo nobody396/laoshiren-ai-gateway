@@ -35,7 +35,7 @@ func TestOpenAIRouteDecisionRepositoryStatsScansPromotionEvidence(t *testing.T) 
 	args := []driver.Value{start, end, groupID, "gpt-5.6-sol", "text", "shadow", version, "activation-4"}
 
 	aggregateColumns := []string{
-		"total", "evaluated", "not_evaluated", "diverged", "emergency",
+		"total", "evaluated", "not_evaluated", "no_candidate_abstentions", "diverged", "emergency",
 		"linked_success", "linked_failure", "ambiguous", "unlinked",
 		"evaluated_linked_success", "evaluated_linked_failure", "evaluated_ambiguous", "evaluated_unlinked",
 		"policy_variants", "activation_variants", "shadow_start_variants",
@@ -46,7 +46,7 @@ func TestOpenAIRouteDecisionRepositoryStatsScansPromotionEvidence(t *testing.T) 
 	mock.ExpectQuery(`(?s)COUNT\(DISTINCT snapshot->'policy'\).*FILTER \(WHERE evaluated\).*MIN\(created_at\) FILTER \(WHERE evaluated\).*FROM linked`).
 		WithArgs(append(args, start)...).
 		WillReturnRows(sqlmock.NewRows(aggregateColumns).AddRow(
-			200, 200, 0, 40, 0,
+			200, 200, 0, 0, 40, 0,
 			196, 4, 0, 0,
 			196, 4, 0, 0,
 			1, 1, 1, 1, 1, 1, start,
@@ -75,6 +75,7 @@ func TestOpenAIRouteDecisionRepositoryStatsScansPromotionEvidence(t *testing.T) 
 	stats, err := repo.GetOpenAIRouteShadowDecisionStats(context.Background(), filter)
 	require.NoError(t, err)
 	require.Equal(t, int64(200), stats.Evaluated)
+	require.Zero(t, stats.NoCandidateAbstentions)
 	require.Equal(t, int64(196), stats.EvaluatedLinkedSuccessfulUsage)
 	require.Equal(t, int64(4), stats.EvaluatedLinkedLegacyFailure)
 	require.Equal(t, int64(1), stats.PolicySnapshotVariants)

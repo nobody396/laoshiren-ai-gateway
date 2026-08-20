@@ -260,12 +260,13 @@ func TestBuildOpsAlertWebhookTextExplainsRootCause(t *testing.T) {
 		Description:    "error_rate > 20.00 (current 100.00) over last 1m (overall)",
 	}, nil)
 
+	require.Contains(t, text, "🚨 老实人AI 运维告警｜P0 错误率极高")
 	require.Contains(t, text, "结论：系统错误率高于阈值，当前 100.00%")
-	require.Contains(t, text, "级别：P0（最高优先级，可能影响可用性）")
-	require.Contains(t, text, "根因判断：平台或上游请求失败增多")
+	require.Contains(t, text, "状态：触发中｜级别：P0（最高优先级，可能影响可用性）")
+	require.Contains(t, text, "根因：平台或上游请求失败增多")
 	require.Contains(t, text, "客户端 401/400 这类用户请求错误不会再计入系统错误率")
-	require.Contains(t, text, "处理建议：先看运维面板的错误日志")
-	require.Contains(t, text, "触发时间：2026-05-18 05:11:00 CST")
+	require.Contains(t, text, "处理：先看运维面板的错误日志")
+	require.Contains(t, text, "时间：2026-05-18 05:11:00 CST")
 }
 
 func TestBuildOpsAlertWebhookTextIncludesDynamicDiagnosis(t *testing.T) {
@@ -285,21 +286,57 @@ func TestBuildOpsAlertWebhookTextIncludesDynamicDiagnosis(t *testing.T) {
 		Description:    "error_rate > 20.00",
 	}, &OpsAlertDiagnosis{
 		RootCause:        "账号/上游「KNA. 成本1.05r/1usd」：二级上游账号池无可用账号",
-		Impact:           "告警窗口内错误样本 12 条，主要根因 10 条，集中账号/上游：KNA. 成本1.05r/1usd",
+		Impact:           "SLA 样本 15 次：成功 3 / 真实失败 12；影响 2 个用户 / 1 个分组；已排除噪声：探针 1",
 		SampleWindowText: "5m",
 		Evidence: []string{
 			"10条，二级上游账号池无可用账号，账号/上游=KNA. 成本1.05r/1usd，状态=503，责任=上游/供应商",
 			"2条，请求或流式连接中途取消，账号/上游=dragoncode，状态=499，责任=客户端",
 		},
-		SuggestedAction: "先暂停或降权对应二级中转账号；到对方平台补充/恢复它后面的官方账号池；恢复后再重新启用。",
+		SuggestedAction:        "先暂停或降权对应二级中转账号；到对方平台补充/恢复它后面的官方账号池；恢复后再重新启用。",
+		CompensationAssessment: "暂不生成：符合规则 2 次，单个用户最多 2 次，未达到 3 次门槛（最终以小时批次为准）",
 	})
 
-	require.Contains(t, text, "根因判断：账号/上游「KNA. 成本1.05r/1usd」：二级上游账号池无可用账号")
-	require.Contains(t, text, "影响范围：告警窗口内错误样本 12 条")
-	require.Contains(t, text, "样本窗口：最近 5m")
-	require.Contains(t, text, "根因证据：")
+	require.Contains(t, text, "根因：账号/上游「KNA. 成本1.05r/1usd」：二级上游账号池无可用账号")
+	require.Contains(t, text, "影响：SLA 样本 15 次：成功 3 / 真实失败 12")
+	require.Contains(t, text, "证据：")
 	require.Contains(t, text, "- 10条，二级上游账号池无可用账号")
-	require.Contains(t, text, "处理建议：先暂停或降权对应二级中转账号")
+	require.Contains(t, text, "赔付预判：暂不生成：符合规则 2 次")
+	require.Contains(t, text, "处理：先暂停或降权对应二级中转账号")
+	require.Contains(t, text, "窗口：5m")
+}
+
+func TestBuildOpsAlertWebhookTextRendersRecoveryClearly(t *testing.T) {
+	value := 0.0
+	threshold := 5.0
+	firedAt := time.Date(2026, 8, 20, 7, 49, 36, 0, time.UTC)
+	resolvedAt := firedAt.Add(2*time.Minute + 7*time.Second)
+	text := buildOpsAlertWebhookTextWithDiagnosis(&OpsAlertRule{
+		Name: "错误率过高", MetricType: "error_rate", Operator: ">", Threshold: threshold, Severity: "P1",
+	}, &OpsAlertEvent{
+		ID: 332, Status: OpsAlertStatusResolved, MetricValue: &value, ThresholdValue: &threshold,
+		FiredAt: firedAt, ResolvedAt: &resolvedAt, Description: "resolution_reason=metric_recovered",
+	}, &OpsAlertDiagnosis{Impact: "SLA 样本 15 次：成功 13 / 真实失败 2", SampleWindowText: "5m"})
+
+	require.Contains(t, text, "✅ 老实人AI 运维恢复｜P1 错误率过高")
+	require.Contains(t, text, "结论：指标已回到阈值内，当前错误率 0.00%")
+	require.Contains(t, text, "状态：已恢复")
+	require.Contains(t, text, "持续：2分7秒")
+	require.Contains(t, text, "恢复 2026-08-20 15:51:43 CST")
+}
+
+func TestBuildOpsAlertWebhookTextDoesNotCallNoSamplesRecovery(t *testing.T) {
+	threshold := 5.0
+	firedAt := time.Date(2026, 8, 20, 7, 49, 36, 0, time.UTC)
+	resolvedAt := firedAt.Add(2 * time.Minute)
+	text := buildOpsAlertWebhookTextWithDiagnosis(&OpsAlertRule{
+		Name: "错误率过高", MetricType: "error_rate", Operator: ">", Threshold: threshold, Severity: "P1",
+	}, &OpsAlertEvent{
+		ID: 332, Status: OpsAlertStatusResolved, ThresholdValue: &threshold,
+		FiredAt: firedAt, ResolvedAt: &resolvedAt, Description: "resolution_reason=no_samples",
+	}, nil)
+
+	require.Contains(t, text, "⚪ 老实人AI 告警解除")
+	require.Contains(t, text, "这不等于服务恢复证明")
 }
 
 func TestOpsAlertWebhookNotificationsRespectSeverity(t *testing.T) {

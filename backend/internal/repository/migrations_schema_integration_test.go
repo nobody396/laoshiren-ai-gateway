@@ -487,6 +487,16 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 	// order; the partial unique index backstops the lookup-then-insert mint.
 	requireIndex(t, tx, "redeem_codes", "uq_redeem_codes_external_order_no_native_checkout")
 
+	// migration 196: the default success<95 rule exactly mirrors error>5 on
+	// the same SLA sample set, so only the error-rate rule should notify.
+	var mirroredSuccessRuleEnabled bool
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT enabled
+FROM ops_alert_rules
+WHERE name = '成功率过低'
+`).Scan(&mirroredSuccessRuleEnabled))
+	require.False(t, mirroredSuccessRuleEnabled)
+
 	var (
 		provider         string
 		providerGoodsKey string

@@ -52,23 +52,41 @@ func buildOpsAlertWebhookTextWithDiagnosis(rule *OpsAlertRule, event *OpsAlertEv
 		}
 	}
 
+	resolved := strings.TrimSpace(event.Status) == OpsAlertStatusResolved || strings.TrimSpace(event.Status) == OpsAlertStatusManualResolved
+	header := "🚨 老实人AI 运维告警｜" + strings.TrimSpace(rule.Severity) + " " + strings.TrimSpace(rule.Name)
+	statusText := "触发中"
+	if resolved {
+		header = "✅ 老实人AI 运维恢复｜" + strings.TrimSpace(rule.Severity) + " " + strings.TrimSpace(rule.Name)
+		statusText = "已恢复"
+		if strings.Contains(event.Description, "resolution_reason=no_samples") {
+			header = "⚪ 老实人AI 告警解除｜" + strings.TrimSpace(rule.Severity) + " " + strings.TrimSpace(rule.Name)
+			statusText = "已解除（样本不足）"
+		}
+	}
+
 	lines := []string{
-		"老实人AI 运维告警",
+		header,
 		"结论：" + buildOpsAlertPlainConclusion(rule, event),
-		"级别：" + severityLabel,
-		"规则：" + strings.TrimSpace(rule.Name),
-		"状态：" + strings.TrimSpace(event.Status),
-		"根因判断：" + rootCause,
+		"状态：" + statusText + "｜级别：" + severityLabel,
+		"指标：" + metricLabel + " " + value + "（阈值 " + strings.TrimSpace(rule.Operator) + " " + threshold + "）",
+	}
+	if resolved {
+		lines = append(lines,
+			"持续："+formatOpsAlertDuration(event.FiredAt, event.ResolvedAt),
+			"时间：开始 "+formatOpsAlertLocalTime(event.FiredAt)+"｜恢复 "+formatOpsAlertLocalTime(derefOpsAlertTime(event.ResolvedAt)),
+		)
+	} else {
+		lines = append(lines, "时间："+formatOpsAlertLocalTime(event.FiredAt))
 	}
 	if diagnosis != nil {
 		if impact := strings.TrimSpace(diagnosis.Impact); impact != "" {
-			lines = append(lines, "影响范围："+impact)
+			lines = append(lines, "影响："+impact)
 		}
-		if window := strings.TrimSpace(diagnosis.SampleWindowText); window != "" {
-			lines = append(lines, "样本窗口：最近 "+window)
-		}
+	}
+	lines = append(lines, "根因："+rootCause)
+	if diagnosis != nil {
 		if len(diagnosis.Evidence) > 0 {
-			lines = append(lines, "根因证据：")
+			lines = append(lines, "证据：")
 			for _, evidence := range diagnosis.Evidence {
 				evidence = strings.TrimSpace(evidence)
 				if evidence == "" {
@@ -77,15 +95,20 @@ func buildOpsAlertWebhookTextWithDiagnosis(rule *OpsAlertRule, event *OpsAlertEv
 				lines = append(lines, "- "+evidence)
 			}
 		}
+		if assessment := strings.TrimSpace(diagnosis.CompensationAssessment); assessment != "" {
+			lines = append(lines, "赔付预判："+assessment)
+		}
 	}
-	lines = append(lines,
-		"处理建议："+suggestedAction,
-		"指标："+metricLabel+" "+strings.TrimSpace(rule.Operator)+" "+threshold+"，当前 "+value,
-		"触发时间："+formatOpsAlertLocalTime(event.FiredAt),
-	)
-	if desc := strings.TrimSpace(event.Description); desc != "" {
-		lines = append(lines, "技术细节："+desc)
+	if resolved {
+		lines = append(lines, "后续："+suggestedAction)
+	} else {
+		lines = append(lines, "处理："+suggestedAction)
 	}
+	window := "-"
+	if diagnosis != nil && strings.TrimSpace(diagnosis.SampleWindowText) != "" {
+		window = strings.TrimSpace(diagnosis.SampleWindowText)
+	}
+	lines = append(lines, fmt.Sprintf("事件：#%d｜窗口：%s", event.ID, window))
 	return strings.Join(lines, "\n")
 }
 
@@ -158,6 +181,12 @@ func opsAlertSeverityLabel(severity string) string {
 func buildOpsAlertPlainConclusion(rule *OpsAlertRule, event *OpsAlertEvent) string {
 	metric := opsAlertMetricLabel(rule.MetricType)
 	value := formatOpsAlertMetricValue(rule.MetricType, event.MetricValue)
+	if strings.TrimSpace(event.Status) == OpsAlertStatusResolved || strings.TrimSpace(event.Status) == OpsAlertStatusManualResolved {
+		if strings.Contains(event.Description, "resolution_reason=no_samples") {
+			return "当前窗口没有足够样本，告警已关闭；这不等于服务恢复证明"
+		}
+		return "指标已回到阈值内，当前" + metric + " " + value
+	}
 	switch strings.TrimSpace(rule.MetricType) {
 	case "success_rate":
 		return "系统成功率低于阈值，当前 " + value
@@ -175,6 +204,27 @@ func buildOpsAlertPlainConclusion(rule *OpsAlertRule, event *OpsAlertEvent) stri
 		}
 		return "运维规则已触发"
 	}
+}
+
+func derefOpsAlertTime(value *time.Time) time.Time {
+	if value == nil {
+		return time.Time{}
+	}
+	return *value
+}
+
+func formatOpsAlertDuration(start time.Time, end *time.Time) string {
+	if start.IsZero() || end == nil || end.IsZero() || end.Before(start) {
+		return "-"
+	}
+	d := end.Sub(start).Round(time.Second)
+	if d < time.Minute {
+		return fmt.Sprintf("%d秒", int(d.Seconds()))
+	}
+	if d < time.Hour {
+		return fmt.Sprintf("%d分%d秒", int(d/time.Minute), int((d%time.Minute)/time.Second))
+	}
+	return fmt.Sprintf("%d小时%d分", int(d/time.Hour), int((d%time.Hour)/time.Minute))
 }
 
 func buildOpsAlertLikelyCause(rule *OpsAlertRule) string {

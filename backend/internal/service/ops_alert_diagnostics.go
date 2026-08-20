@@ -10,16 +10,18 @@ import (
 )
 
 const (
-	opsAlertDiagnosticPageSize    = 80
+	opsAlertDiagnosticPageSize    = 500
 	opsAlertDiagnosticMaxEvidence = 3
+	opsAlertCompensationMinErrors = 3
 )
 
 type OpsAlertDiagnosis struct {
-	RootCause        string
-	Impact           string
-	Evidence         []string
-	SuggestedAction  string
-	SampleWindowText string
+	RootCause              string
+	Impact                 string
+	Evidence               []string
+	SuggestedAction        string
+	SampleWindowText       string
+	CompensationAssessment string
 }
 
 type opsAlertCauseBucket struct {
@@ -43,9 +45,9 @@ func (s *OpsAlertEvaluatorService) buildOpsAlertDiagnosis(ctx context.Context, r
 		return nil
 	}
 
-	end := event.FiredAt
+	end := event.FiredAt.UTC().Truncate(time.Minute)
 	if end.IsZero() {
-		end = time.Now().UTC()
+		end = time.Now().UTC().Truncate(time.Minute)
 	}
 	windowMinutes := rule.WindowMinutes
 	if windowMinutes <= 0 {
@@ -64,10 +66,14 @@ func (s *OpsAlertEvaluatorService) buildOpsAlertDiagnosis(ctx context.Context, r
 	}
 
 	logs := s.listOpsAlertDiagnosisLogs(ctx, start, end, platform, groupID)
-	if len(logs) == 0 {
-		return nil
-	}
-	diagnosis := summarizeOpsAlertDiagnosisFromLogs(logs)
+	overview, _ := s.opsRepo.GetDashboardOverview(ctx, &OpsDashboardFilter{
+		StartTime: start,
+		EndTime:   end,
+		Platform:  platform,
+		GroupID:   groupID,
+		QueryMode: OpsQueryModeRaw,
+	})
+	diagnosis := summarizeOpsAlertDiagnosis(rule.MetricType, logs, overview)
 	if diagnosis == nil {
 		return nil
 	}
@@ -102,7 +108,7 @@ func (s *OpsAlertEvaluatorService) listOpsAlertDiagnosisLogs(ctx context.Context
 		EndTime:   &end,
 		Platform:  strings.TrimSpace(platform),
 		GroupID:   groupID,
-		View:      "errors",
+		View:      "all",
 		Page:      1,
 		PageSize:  opsAlertDiagnosticPageSize,
 	}
@@ -139,17 +145,41 @@ func (s *OpsAlertEvaluatorService) listOpsAlertDiagnosisLogs(ctx context.Context
 	return out
 }
 
-func summarizeOpsAlertDiagnosisFromLogs(logs []*OpsErrorLog) *OpsAlertDiagnosis {
+func summarizeOpsAlertDiagnosis(metricType string, logs []*OpsErrorLog, overview *OpsDashboardOverview) *OpsAlertDiagnosis {
 	buckets := map[string]*opsAlertCauseBucket{}
-	total := 0
+	included := make([]*OpsErrorLog, 0, len(logs))
+	excludedProbe := 0
+	excludedClient := 0
+	excludedBusiness := 0
+	excludedCountTokens := 0
+	excludedRecovered := 0
 	for _, item := range logs {
 		if item == nil {
 			continue
 		}
-		total++
+		switch opsAlertLogExclusion(item, metricType) {
+		case "":
+			included = append(included, item)
+		case "probe":
+			excludedProbe++
+		case "client":
+			excludedClient++
+		case "business":
+			excludedBusiness++
+		case "count_tokens":
+			excludedCountTokens++
+		case "recovered":
+			excludedRecovered++
+		}
+	}
+
+	for _, item := range included {
 		cause, action := classifyOpsAlertErrorCause(item)
 		account := strings.TrimSpace(item.AccountName)
 		model := strings.TrimSpace(item.Model)
+		if model == "" {
+			model = strings.TrimSpace(item.RequestedModel)
+		}
 		owner := strings.TrimSpace(item.Owner)
 		source := strings.TrimSpace(item.Source)
 		status := item.StatusCode
@@ -175,8 +205,14 @@ func summarizeOpsAlertDiagnosisFromLogs(logs []*OpsErrorLog) *OpsAlertDiagnosis 
 			bucket.LastSeen = item.CreatedAt
 		}
 	}
+	diagnosis := &OpsAlertDiagnosis{
+		Impact:                 opsAlertImpactText(overview, included, excludedProbe, excludedClient, excludedBusiness, excludedCountTokens, excludedRecovered),
+		CompensationAssessment: opsAlertCompensationAssessment(logs),
+	}
 	if len(buckets) == 0 {
-		return nil
+		diagnosis.RootCause = "未找到与告警指标同口径的真实失败；监控探针、客户端错误和已恢复的上游重试均已排除"
+		diagnosis.SuggestedAction = "先核对指标聚合窗口；不要根据被排除的探针噪声重启服务或发起赔付。"
+		return diagnosis
 	}
 
 	ordered := make([]*opsAlertCauseBucket, 0, len(buckets))
@@ -194,12 +230,9 @@ func summarizeOpsAlertDiagnosisFromLogs(logs []*OpsErrorLog) *OpsAlertDiagnosis 
 	})
 
 	top := ordered[0]
-	diagnosis := &OpsAlertDiagnosis{
-		RootCause:       opsAlertRootCauseText(top),
-		Impact:          opsAlertImpactText(total, top),
-		SuggestedAction: top.Action,
-		Evidence:        make([]string, 0, minInt(len(ordered), opsAlertDiagnosticMaxEvidence)),
-	}
+	diagnosis.RootCause = opsAlertRootCauseText(top)
+	diagnosis.SuggestedAction = top.Action
+	diagnosis.Evidence = make([]string, 0, minInt(len(ordered), opsAlertDiagnosticMaxEvidence))
 	for i, bucket := range ordered {
 		if i >= opsAlertDiagnosticMaxEvidence {
 			break
@@ -207,6 +240,152 @@ func summarizeOpsAlertDiagnosisFromLogs(logs []*OpsErrorLog) *OpsAlertDiagnosis 
 		diagnosis.Evidence = append(diagnosis.Evidence, opsAlertEvidenceText(bucket))
 	}
 	return diagnosis
+}
+
+func opsAlertLogExclusion(item *OpsErrorLog, metricType string) string {
+	if item == nil {
+		return "client"
+	}
+	owner := strings.ToLower(strings.TrimSpace(item.Owner))
+	source := strings.ToLower(strings.TrimSpace(item.Source))
+	if source == "monthly_upstream_probe" || owner == "ops" {
+		return "probe"
+	}
+	if item.IsCountTokens {
+		return "count_tokens"
+	}
+	if item.IsBusinessLimited {
+		return "business"
+	}
+
+	clientStatus := item.ClientStatusCode
+	if clientStatus == 0 {
+		// Compatibility for old callers/tests that only populated StatusCode.
+		clientStatus = item.StatusCode
+	}
+	switch strings.TrimSpace(metricType) {
+	case "success_rate", "error_rate":
+		if clientStatus < 400 {
+			return "recovered"
+		}
+		if owner == "client" || source == "client_request" {
+			return "client"
+		}
+	case "upstream_error_rate":
+		if owner != "provider" || item.StatusCode == 429 || item.StatusCode == 529 {
+			return "client"
+		}
+	default:
+		if clientStatus < 400 {
+			return "recovered"
+		}
+		if owner == "client" || source == "client_request" {
+			return "client"
+		}
+	}
+	return ""
+}
+
+func opsAlertImpactText(
+	overview *OpsDashboardOverview,
+	included []*OpsErrorLog,
+	excludedProbe int,
+	excludedClient int,
+	excludedBusiness int,
+	excludedCountTokens int,
+	excludedRecovered int,
+) string {
+	parts := make([]string, 0, 4)
+	if overview != nil {
+		parts = append(parts, fmt.Sprintf("SLA 样本 %d 次：成功 %d / 真实失败 %d", overview.RequestCountSLA, overview.SuccessCount, overview.ErrorCountSLA))
+	} else {
+		parts = append(parts, fmt.Sprintf("真实失败证据 %d 条", len(included)))
+	}
+
+	users := map[int64]struct{}{}
+	groups := map[int64]struct{}{}
+	for _, item := range included {
+		if item == nil {
+			continue
+		}
+		if item.UserID != nil && *item.UserID > 0 {
+			users[*item.UserID] = struct{}{}
+		}
+		if item.GroupID != nil && *item.GroupID > 0 {
+			groups[*item.GroupID] = struct{}{}
+		}
+	}
+	if len(users) > 0 || len(groups) > 0 {
+		parts = append(parts, fmt.Sprintf("影响 %d 个用户 / %d 个分组", len(users), len(groups)))
+	}
+
+	excluded := make([]string, 0, 5)
+	if excludedProbe > 0 {
+		excluded = append(excluded, fmt.Sprintf("探针 %d", excludedProbe))
+	}
+	if excludedClient > 0 {
+		excluded = append(excluded, fmt.Sprintf("客户端 %d", excludedClient))
+	}
+	if excludedBusiness > 0 {
+		excluded = append(excluded, fmt.Sprintf("业务限制 %d", excludedBusiness))
+	}
+	if excludedCountTokens > 0 {
+		excluded = append(excluded, fmt.Sprintf("count_tokens %d", excludedCountTokens))
+	}
+	if excludedRecovered > 0 {
+		excluded = append(excluded, fmt.Sprintf("已兜底恢复 %d", excludedRecovered))
+	}
+	if len(excluded) > 0 {
+		parts = append(parts, "已排除噪声："+strings.Join(excluded, "、"))
+	}
+	return strings.Join(parts, "；")
+}
+
+func opsAlertCompensationAssessment(logs []*OpsErrorLog) string {
+	eligibleByUser := map[int64]int{}
+	totalEligible := 0
+	for _, item := range logs {
+		if item == nil || item.UserID == nil || *item.UserID <= 0 || *item.UserID == 2 {
+			continue
+		}
+		clientStatus := item.ClientStatusCode
+		if clientStatus == 0 {
+			clientStatus = item.StatusCode
+		}
+		if clientStatus < 400 || item.IsBusinessLimited || item.IsCountTokens {
+			continue
+		}
+		if strings.TrimSpace(strings.ToLower(item.Owner)) != "provider" || strings.TrimSpace(strings.ToLower(item.Source)) == "monthly_upstream_probe" {
+			continue
+		}
+		switch item.StatusCode {
+		case 500, 502, 503, 504, 520, 524:
+		default:
+			continue
+		}
+		totalEligible++
+		eligibleByUser[*item.UserID]++
+	}
+
+	qualifiedUsers := 0
+	qualifiedFailures := 0
+	maxFailures := 0
+	for _, count := range eligibleByUser {
+		if count > maxFailures {
+			maxFailures = count
+		}
+		if count >= opsAlertCompensationMinErrors {
+			qualifiedUsers++
+			qualifiedFailures += count
+		}
+	}
+	if qualifiedUsers > 0 {
+		return fmt.Sprintf("候选 %d 人 / %d 次失败；小时批次会生成草案，仍需人工审批（失败请求本身不扣费）", qualifiedUsers, qualifiedFailures)
+	}
+	if totalEligible > 0 {
+		return fmt.Sprintf("暂不生成：符合规则 %d 次，单个用户最多 %d 次，未达到 %d 次门槛（失败请求本身不扣费；最终以小时批次为准）", totalEligible, maxFailures, opsAlertCompensationMinErrors)
+	}
+	return "不生成：没有符合规则的真实上游 5xx（失败请求本身不扣费；最终以小时批次为准）"
 }
 
 func classifyOpsAlertErrorCause(item *OpsErrorLog) (cause string, action string) {
@@ -262,23 +441,6 @@ func opsAlertRootCauseText(bucket *opsAlertCauseBucket) string {
 		prefix = "账号/上游「" + bucket.Account + "」："
 	}
 	return prefix + bucket.Cause
-}
-
-func opsAlertImpactText(total int, bucket *opsAlertCauseBucket) string {
-	if bucket == nil {
-		return ""
-	}
-	parts := []string{fmt.Sprintf("告警窗口内错误样本 %d 条", total)}
-	if bucket.Count > 0 {
-		parts = append(parts, fmt.Sprintf("主要根因 %d 条", bucket.Count))
-	}
-	if bucket.Account != "" {
-		parts = append(parts, "集中账号/上游："+bucket.Account)
-	}
-	if bucket.Model != "" {
-		parts = append(parts, "模型："+bucket.Model)
-	}
-	return strings.Join(parts, "，")
 }
 
 func opsAlertEvidenceText(bucket *opsAlertCauseBucket) string {

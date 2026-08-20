@@ -17,9 +17,22 @@ func TestFilterInternalOnlyModelsHidesCompactVariants(t *testing.T) {
 		"gpt-5.4-openai-compact",
 		"codex-auto-review",
 		" Codex-Auto-Review ",
-	})
+	}, 52)
 
 	require.Equal(t, []string{"gpt-5.6-sol", "gpt-5.5"}, models)
+}
+
+func TestFilterInternalOnlyModelsHidesImageRendererOutsideImageGroups(t *testing.T) {
+	candidates := []string{"gpt-5.6-sol", "gpt-image-2", " GPT-Image-2 "}
+
+	// The image renderer is an auto-invoked routing target in chat groups and
+	// in the no-group path: hidden from discovery, still routable.
+	for _, groupID := range []int64{0, 6, 52, 59} {
+		require.Equal(t, []string{"gpt-5.6-sol"}, filterInternalOnlyModels(candidates, groupID), groupID)
+	}
+
+	// The dedicated image group keeps it discoverable.
+	require.Equal(t, candidates, filterInternalOnlyModels(candidates, 51))
 }
 
 func TestGatewayModelInfoFromIDsUsesUnifiedOwner(t *testing.T) {

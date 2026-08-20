@@ -68,14 +68,26 @@ func newGatewayModelInfo(modelID, displayName string, created int64, createdAt s
 	}
 }
 
+// imageDiscoveryGroupIDs lists the groups whose product is image generation
+// itself (the GPT Image 2 group). Everywhere else the fixed image renderer
+// model is an auto-invoked routing target and must not appear in user-facing
+// model discovery.
+var imageDiscoveryGroupIDs = map[int64]struct{}{51: {}}
+
 // filterInternalOnlyModels drops internal-only model variants (Codex
 // auto-compaction variants and the auto-review target) from user-facing model
-// discovery. They stay routable.
-func filterInternalOnlyModels(modelIDs []string) []string {
+// discovery. They stay routable. The fixed image renderer model is also
+// dropped unless the group's product is image generation itself.
+func filterInternalOnlyModels(modelIDs []string, groupID int64) []string {
 	filtered := make([]string, 0, len(modelIDs))
 	for _, modelID := range modelIDs {
 		if service.IsInternalOnlyModel(modelID) {
 			continue
+		}
+		if strings.EqualFold(strings.TrimSpace(modelID), service.OpenAIFixedImageRendererModel) {
+			if _, ok := imageDiscoveryGroupIDs[groupID]; !ok {
+				continue
+			}
 		}
 		filtered = append(filtered, modelID)
 	}
@@ -988,13 +1000,15 @@ func (h *GatewayHandler) Models(c *gin.Context) {
 	// Get available models from account configurations (without platform filter).
 	// Internal Codex auto-compaction variants stay routable but are hidden from
 	// user-facing discovery (CC Switch import and one-click setup read this).
-	availableModels := filterInternalOnlyModels(h.gatewayService.GetAvailableModels(c.Request.Context(), groupID, ""))
+	// The auto-invoked image renderer model is hidden the same way unless the
+	// group's product is image generation itself.
+	var listedGroupID int64
+	if groupID != nil {
+		listedGroupID = *groupID
+	}
+	availableModels := filterInternalOnlyModels(h.gatewayService.GetAvailableModels(c.Request.Context(), groupID, ""), listedGroupID)
 
 	if len(availableModels) > 0 {
-		var listedGroupID int64
-		if groupID != nil {
-			listedGroupID = *groupID
-		}
 		c.JSON(http.StatusOK, gin.H{
 			"object": "list",
 			"data":   gatewayModelInfoFromIDs(availableModels, listedGroupID),

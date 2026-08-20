@@ -233,6 +233,7 @@ type OpenAIRouteShadowDecisionStats struct {
 	Total                          int64                                    `json:"total"`
 	Evaluated                      int64                                    `json:"evaluated"`
 	NotEvaluated                   int64                                    `json:"not_evaluated"`
+	NoCandidateAbstentions         int64                                    `json:"no_candidate_abstentions"`
 	Diverged                       int64                                    `json:"diverged"`
 	Emergency                      int64                                    `json:"emergency"`
 	LinkedSuccessfulUsage          int64                                    `json:"linked_successful_usage"`

@@ -142,19 +142,56 @@ func TestBuildOpenAIRoutePromotionAssessmentAllowsOnlyBoundedEdgeGap(t *testing.
 	require.Contains(t, assessment.Blockers, "observed_span")
 }
 
-func TestBuildOpenAIRoutePromotionAssessmentDoesNotDiluteWithWiderWindow(t *testing.T) {
+func TestBuildOpenAIRoutePromotionAssessmentKeepsFiniteSpanAndRequiresFreshEvidenceInWiderWindow(t *testing.T) {
 	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
 	start := end.Add(-96 * time.Hour)
 	filter := testOpenAIRoutePromotionFilter(start, end)
 	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
 
+	// A 71.5-hour observed span and a decision exactly 24 hours old satisfy the
+	// finite primary-span and freshness gates even though sampling was extended.
 	stats.LastDecisionAt = start.Add(72 * time.Hour)
 	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
-	require.Contains(t, assessment.Blockers, "observed_span")
+	require.NotContains(t, assessment.Blockers, "observed_span")
+	require.NotContains(t, assessment.Blockers, "latest_decision_freshness")
 
-	stats.LastDecisionAt = end.Add(-30 * time.Minute)
+	// Stale evidence remains blocked without making the historical span target
+	// grow with every retry window.
+	stats.LastDecisionAt = end.Add(-24*time.Hour - time.Second)
 	assessment = buildOpenAIRoutePromotionAssessment(filter, stats, health)
 	require.NotContains(t, assessment.Blockers, "observed_span")
+	require.Contains(t, assessment.Blockers, "latest_decision_freshness")
+
+	stats.LastDecisionAt = end.Add(-23 * time.Hour)
+	assessment = buildOpenAIRoutePromotionAssessment(filter, stats, health)
+	require.NotContains(t, assessment.Blockers, "observed_span")
+	require.NotContains(t, assessment.Blockers, "latest_decision_freshness")
+}
+
+func TestBuildOpenAIRoutePromotionAssessmentClassifiesBoundedNoCandidateAsAbstention(t *testing.T) {
+	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
+	start := end.Add(-72 * time.Hour)
+	filter := testOpenAIRoutePromotionFilter(start, end)
+	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
+
+	stats.Total = 205
+	stats.NotEvaluated = 5
+	stats.NoCandidateAbstentions = 5
+	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
+	require.NotContains(t, assessment.Blockers, "evaluation_completeness")
+	require.NotContains(t, assessment.Blockers, "no_candidate_abstention_rate")
+
+	stats.Total = 211
+	stats.NotEvaluated = 11
+	stats.NoCandidateAbstentions = 11
+	assessment = buildOpenAIRoutePromotionAssessment(filter, stats, health)
+	require.NotContains(t, assessment.Blockers, "evaluation_completeness")
+	require.Contains(t, assessment.Blockers, "no_candidate_abstention_rate")
+
+	// A timeout is not an intentional abstention and still fails completeness.
+	stats.NoCandidateAbstentions = 8
+	assessment = buildOpenAIRoutePromotionAssessment(filter, stats, health)
+	require.Contains(t, assessment.Blockers, "evaluation_completeness")
 }
 
 func TestBuildOpenAIRoutePromotionAssessmentRequiresFiniteStratifiedTimeCoverage(t *testing.T) {

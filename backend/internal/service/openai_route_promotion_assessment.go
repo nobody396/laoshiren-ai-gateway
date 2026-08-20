@@ -20,8 +20,13 @@ const (
 	// window and the 200-sample gate remain mandatory.
 	openAIRoutePromotionMaxBoundaryGap      = time.Hour
 	openAIRoutePromotionRetryInterval       = 24 * time.Hour
+	openAIRoutePromotionMaximumEvidenceAge  = 24 * time.Hour
 	openAIRoutePromotionMinimumDecisions    = int64(200)
 	openAIRoutePromotionMinimumCompleteness = 0.99
+	// A no-candidate result is an intentional fail-closed abstention rather than
+	// a crashed evaluator. It may count as a complete evaluation only while its
+	// rate stays small; selected-sample and explicit canary fallback gates remain.
+	openAIRoutePromotionMaximumAbstentionRate = 0.05
 	// New text sessions are the independent routing samples. Sticky follow-up
 	// requests deliberately bypass a new allocation, so requiring one decision
 	// in almost every wall-clock hour makes a safe experiment impossible to
@@ -279,7 +284,9 @@ func buildOpenAIRoutePromotionAssessmentWithLineage(
 		reviewSchedule.PrimaryAssessmentAt = evidenceStart.Add(openAIRoutePromotionMinimumWindow)
 	}
 
-	evaluatedRatio := safeOpenAIRouteRatio(evidenceStats.Evaluated, evidenceStats.Total)
+	completedEvaluations := evidenceStats.Evaluated + evidenceStats.NoCandidateAbstentions
+	evaluatedRatio := safeOpenAIRouteRatio(completedEvaluations, evidenceStats.Total)
+	abstentionRatio := safeOpenAIRouteRatio(evidenceStats.NoCandidateAbstentions, evidenceStats.Total)
 	linkedEvaluated := evidenceStats.EvaluatedLinkedSuccessfulUsage + evidenceStats.EvaluatedLinkedLegacyFailure
 	linkageRatio := safeOpenAIRouteRatio(linkedEvaluated, evidenceStats.Evaluated)
 	emergencyRatio := safeOpenAIRouteRatio(evidenceStats.Emergency, evidenceStats.Evaluated)
@@ -319,6 +326,7 @@ func buildOpenAIRoutePromotionAssessmentWithLineage(
 			"user-visible error and recovery rates must not regress versus a comparable legacy baseline",
 			"P95 and P99 TTFT/completion latency must not regress versus a comparable legacy baseline",
 			"route coverage and legacy-selection bias must be reviewed before treating passive observations as counterfactual evidence",
+			"a canary must atomically fall back to the unchanged Legacy choice whenever the adaptive evaluator abstains with no candidate",
 			"predicted route cost must be calibrated against later authoritative text settlements without using image token samples",
 			"text stickiness or image stateless behavior must be verified for this request class",
 			"an owner must explicitly authorize the next traffic stage",
@@ -349,13 +357,24 @@ func buildOpenAIRoutePromotionAssessmentWithLineage(
 	assessment.addGate("requested_window", evidenceWindow >= openAIRoutePromotionMinimumWindow,
 		">=72h of loss-proof promotion evidence", fmt.Sprintf("%.2fh", evidenceWindow.Hours()), evidenceWindow.Hours()/openAIRoutePromotionMinimumWindow.Hours(),
 		"Historical observations remain available for analysis, but the primary promotion review requires three full days covered by durable audit and observation epochs.")
-	minimumObservedSpan := evidenceWindow - openAIRoutePromotionMaxBoundaryGap
-	if floor := openAIRoutePromotionMinimumWindow - openAIRoutePromotionMaxBoundaryGap; minimumObservedSpan < floor {
-		minimumObservedSpan = floor
-	}
+	// Once a treatment has proved the primary 72-hour temporal span, extending
+	// the read-only window to collect 200 naturally sparse decisions must not
+	// move the span target forever. Freshness is enforced independently below.
+	minimumObservedSpan := openAIRoutePromotionMinimumWindow - openAIRoutePromotionMaxBoundaryGap
 	assessment.addGate("observed_span", observedSpan >= minimumObservedSpan,
-		fmt.Sprintf(">=%.2fh between first and last decision inside the %.2fh promotion window", minimumObservedSpan.Hours(), evidenceWindow.Hours()), fmt.Sprintf("%.2fh", observedSpan.Hours()), observedSpan.Hours()/minimumObservedSpan.Hours(),
-		"The end-exclusive query permits at most one hour of total boundary gap, including for an extended retry window; a wide query containing only a short traffic burst is not continuous evidence.")
+		fmt.Sprintf(">=%.2fh between first and last evaluated decision", minimumObservedSpan.Hours()), fmt.Sprintf("%.2fh", observedSpan.Hours()), observedSpan.Hours()/minimumObservedSpan.Hours(),
+		"The end-exclusive primary window permits one hour of total boundary gap. The target stays finite during extended sampling; stratified coverage, 200 decisions, durable epochs and a separate freshness gate prevent a short historical burst from qualifying.")
+	latestDecisionFresh := false
+	latestDecisionAge := time.Duration(0)
+	latestDecisionObserved := "missing"
+	if !evidenceStats.LastDecisionAt.IsZero() && !evidenceStats.LastDecisionAt.After(end) {
+		latestDecisionAge = end.Sub(evidenceStats.LastDecisionAt)
+		latestDecisionObserved = fmt.Sprintf("%.2fh", latestDecisionAge.Hours())
+		latestDecisionFresh = latestDecisionAge <= openAIRoutePromotionMaximumEvidenceAge
+	}
+	assessment.addGate("latest_decision_freshness", latestDecisionFresh,
+		fmt.Sprintf("<=%.0fh since the latest evaluated decision", openAIRoutePromotionMaximumEvidenceAge.Hours()), latestDecisionObserved, boolOpenAIRouteRatio(latestDecisionFresh),
+		"An extended evidence window cannot authorize a canary from stale route conditions; at least one successfully evaluated independent routing opportunity must remain recent.")
 	expectedHourBuckets := int64(math.Ceil(evidenceWindow.Hours()))
 	minimumCoveredHourBuckets := min(expectedHourBuckets-1, openAIRoutePromotionMinimumHourBuckets)
 	if minimumCoveredHourBuckets < 1 {
@@ -383,7 +402,10 @@ func buildOpenAIRoutePromotionAssessmentWithLineage(
 		"Only successfully evaluated Shadow decisions count as valid samples.")
 	assessment.addGate("evaluation_completeness", evaluatedRatio >= openAIRoutePromotionMinimumCompleteness,
 		">=99%", formatOpenAIRoutePercent(evaluatedRatio), evaluatedRatio,
-		"Unevaluated rows expose policy, runtime or audit problems and remain in the denominator.")
+		"Selected decisions and intentional no-candidate abstentions are complete evaluator outcomes. Timeouts, cancellation, invalid policy and other runtime failures remain incomplete and stay in the denominator.")
+	assessment.addGate("no_candidate_abstention_rate", abstentionRatio <= openAIRoutePromotionMaximumAbstentionRate,
+		fmt.Sprintf("<=%.0f%%", openAIRoutePromotionMaximumAbstentionRate*100), formatOpenAIRoutePercent(abstentionRatio), boolOpenAIRouteRatio(abstentionRatio <= openAIRoutePromotionMaximumAbstentionRate),
+		"Fail-closed abstention is safe only with an independently verified Legacy fallback, and a high rate means the adaptive router lacks usable route coverage.")
 	assessment.addGate("outcome_linkage", linkageRatio >= openAIRoutePromotionMinimumCompleteness,
 		">=99% of evaluated decisions", formatOpenAIRoutePercent(linkageRatio), linkageRatio,
 		"Ambiguous and unlinked outcomes are not counted as successful linkage.")

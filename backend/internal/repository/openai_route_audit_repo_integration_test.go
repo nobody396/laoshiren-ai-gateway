@@ -100,6 +100,7 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(1), stats.Total)
 	require.Equal(t, int64(1), stats.Evaluated)
+	require.Zero(t, stats.NoCandidateAbstentions)
 	require.Equal(t, int64(1), stats.Diverged)
 	require.Equal(t, int64(1), stats.UnlinkedOutcome)
 	require.Equal(t, int64(1), stats.EvaluatedUnlinkedOutcome)

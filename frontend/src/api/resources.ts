@@ -53,7 +53,7 @@ export interface DownloadVersionStatus {
   note: string
 }
 
-export type ClientSetupTarget = 'claude' | 'codex' | 'grok'
+export type ClientSetupTarget = 'claude' | 'codex' | 'grok' | 'gemini'
 
 export interface ClientSetupTicket {
   ticket: string

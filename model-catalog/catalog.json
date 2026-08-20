@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "client_auto_config_version": "0.7.11",
+  "client_auto_config_version": "0.7.12",
   "models": [
     {
       "id": "glm-5.2",
@@ -73,7 +73,7 @@
       "platform": "gemini",
       "context_window": 128000,
       "max_output_tokens": 8192,
-      "client_default": false,
+      "client_default": true,
       "public_group": {
         "preferred_name": "Gemini",
         "legacy_names": []

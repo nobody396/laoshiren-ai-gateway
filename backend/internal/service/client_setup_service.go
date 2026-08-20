@@ -18,6 +18,7 @@ const (
 	ClientSetupTargetClaude = "claude"
 	ClientSetupTargetCodex  = "codex"
 	ClientSetupTargetGrok   = "grok"
+	ClientSetupTargetGemini = "gemini"
 
 	clientSetupTicketPurpose = "client_setup"
 	clientSetupTicketTTL     = 10 * time.Minute
@@ -84,6 +85,12 @@ func (s *ClientSetupService) IssueTicket(ctx context.Context, userID int64, targ
 	target, err := normalizeClientSetupTarget(target)
 	if err != nil {
 		return nil, err
+	}
+	// Gemini one-click setup is only available for an existing Gemini-group key
+	// (IssueTicketForAPIKey). The lazy create-key flow must never auto-provision
+	// a Gemini group.
+	if target == ClientSetupTargetGemini {
+		return nil, ErrClientSetupKeyUnavailable
 	}
 	if s == nil || s.apiKeys == nil || s.tickets == nil || userID <= 0 {
 		return nil, ErrInvalidClientSetupTicket
@@ -219,6 +226,8 @@ func clientSetupTargetForGroup(group *Group) string {
 		return ClientSetupTargetClaude
 	case PlatformGrok:
 		return ClientSetupTargetGrok
+	case PlatformGemini:
+		return ClientSetupTargetGemini
 	default:
 		return ""
 	}
@@ -269,6 +278,8 @@ func normalizeClientSetupTarget(target string) (string, error) {
 		return ClientSetupTargetCodex, nil
 	case ClientSetupTargetGrok:
 		return ClientSetupTargetGrok, nil
+	case ClientSetupTargetGemini:
+		return ClientSetupTargetGemini, nil
 	default:
 		return "", ErrInvalidClientSetupTarget
 	}
@@ -280,6 +291,8 @@ func clientSetupKeyName(target string) string {
 		return "一键安装 · Claude Code"
 	case ClientSetupTargetGrok:
 		return "一键安装 · Grok Build"
+	case ClientSetupTargetGemini:
+		return "一键安装 · Gemini CLI"
 	default:
 		return "一键安装 · Codex"
 	}
@@ -294,6 +307,9 @@ func clientSetupGroupCompatible(target string, group *Group) bool {
 	}
 	if target == ClientSetupTargetCodex {
 		return group.Platform == PlatformOpenAI
+	}
+	if target == ClientSetupTargetGemini {
+		return group.Platform == PlatformGemini
 	}
 	return target == ClientSetupTargetGrok && group.Platform == PlatformGrok
 }

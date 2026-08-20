@@ -133,7 +133,7 @@ class ModelCatalogTest(unittest.TestCase):
             path.write_text(json.dumps(manifest), encoding="utf-8")
             merged = MODULE.merge_manifest(catalog, path)
         defaults = [row["id"] for row in merged["models"] if row["client_default"]]
-        self.assertEqual(defaults, ["grok-4.7"])
+        self.assertEqual(defaults, ["gemini-3.7-flash", "grok-4.7"])
         self.assertEqual(
             merged["client_auto_config_version"],
             MODULE.bump_patch(catalog["client_auto_config_version"]),
@@ -252,6 +252,27 @@ class ModelCatalogTest(unittest.TestCase):
             path.write_text(json.dumps(manifest), encoding="utf-8")
             merged = MODULE.merge_manifest(catalog, path)
         self.assertEqual(MODULE.installer_model_values(merged)["anthropic"]["id"], "claude-next")
+
+    def test_gemini_installer_values_render_in_generated_blocks(self) -> None:
+        catalog = MODULE.load_catalog(MODULE.DEFAULT_CATALOG)
+        values = MODULE.installer_model_values(catalog)
+        self.assertEqual(values["gemini"]["id"], "gemini-3.7-flash")
+        self.assertEqual(
+            values["gemini"]["managed_ids"],
+            ["gemini-3.1-pro", "gemini-3.7-flash", "gemini-3.7-flash-high"],
+        )
+        shell_block = MODULE.render_shell_block(catalog)
+        self.assertIn("CATALOG_GEMINI_DEFAULT_MODEL='gemini-3.7-flash'", shell_block)
+        self.assertIn(
+            "CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash gemini-3.7-flash-high'",
+            shell_block,
+        )
+        powershell_block = MODULE.render_powershell_block(catalog)
+        self.assertIn("$CatalogGeminiDefaultModel = 'gemini-3.7-flash'", powershell_block)
+        self.assertIn(
+            "$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high')",
+            powershell_block,
+        )
 
 
 if __name__ == "__main__":

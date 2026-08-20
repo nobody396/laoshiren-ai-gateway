@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # BEGIN GENERATED MODEL CATALOG
-SCRIPT_VERSION='0.7.11'
+SCRIPT_VERSION='0.7.12'
 CATALOG_OPENAI_DEFAULT_MODEL='gpt-5.6-sol'
 CATALOG_OPENAI_CONTEXT_WINDOW=272000
 CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT=258000
@@ -12,6 +12,8 @@ CATALOG_GROK_DEFAULT_MODEL='grok-4.6'
 CATALOG_GROK_DEFAULT_DISPLAY_NAME='Grok 4.6'
 CATALOG_GROK_DEFAULT_CONTEXT_WINDOW=500000
 CATALOG_GROK_MANAGED_MODELS_JSON='[{"id":"grok-4.5","display_name":"Grok 4.5","context_window":500000},{"id":"grok-4.6","display_name":"Grok 4.6","context_window":500000}]'
+CATALOG_GEMINI_DEFAULT_MODEL='gemini-3.7-flash'
+CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash gemini-3.7-flash-high'
 # END GENERATED MODEL CATALOG
 DEFAULT_BASE_URL="https://api.laoshirenai.com"
 DEFAULT_SETUP_EXCHANGE_URL="https://laoshirenai.com/api/v1/public-setup/exchange"
@@ -41,12 +43,16 @@ CODEX_MODEL_CATALOG_PATH="${CODEX_DIR}/laoshirenai-model-catalog.json"
 GROK_DIR="${HOME}/.grok"
 GROK_CONFIG_PATH="${GROK_DIR}/config.toml"
 GROK_BIN_PATH="${GROK_DIR}/bin/grok"
+GEMINI_DIR="${HOME}/.gemini"
+GEMINI_ENV_PATH="${GEMINI_DIR}/.env"
+GEMINI_SETTINGS_PATH="${GEMINI_DIR}/settings.json"
 
 BASE_URL="${DEFAULT_BASE_URL}"
 TOOLS="${DEFAULT_TOOLS}"
 CLAUDE_API_KEY="${LAOSHIRENAI_CLAUDE_API_KEY:-}"
 CODEX_API_KEY="${LAOSHIRENAI_CODEX_API_KEY:-}"
 GROK_API_KEY="${LAOSHIRENAI_GROK_API_KEY:-}"
+GEMINI_API_KEY="${LAOSHIRENAI_GEMINI_API_KEY:-}"
 GROK_CC_SWITCH_COMPAT=0
 NODE_VERSION_OVERRIDE="${LAOSHIRENAI_NODE_VERSION:-}"
 SKIP_CLIENT_INSTALL=0
@@ -65,6 +71,7 @@ if [ -n "$UNIFIED_API_KEY" ]; then
   [ -n "$CLAUDE_API_KEY" ] || CLAUDE_API_KEY="$UNIFIED_API_KEY"
   [ -n "$CODEX_API_KEY" ] || CODEX_API_KEY="$UNIFIED_API_KEY"
   [ -n "$GROK_API_KEY" ] || GROK_API_KEY="$UNIFIED_API_KEY"
+  [ -n "$GEMINI_API_KEY" ] || GEMINI_API_KEY="$UNIFIED_API_KEY"
 fi
 
 # 支持通过环境变量覆盖基础参数，兼容管道执行或预置 shell 环境。
@@ -87,9 +94,11 @@ ACTIVE_NPM_REGISTRY="${DEFAULT_NPM_REGISTRY}"
 INSTALL_CLAUDE_CLIENT=0
 INSTALL_CODEX_CLIENT=0
 INSTALL_GROK_CLIENT=0
+INSTALL_GEMINI_CLIENT=0
 EXISTING_CLAUDE_COMMAND=""
 EXISTING_CODEX_COMMAND=""
 EXISTING_GROK_COMMAND=""
+EXISTING_GEMINI_COMMAND=""
 
 # 输出信息日志，便于用户识别当前执行步骤。
 log_info() {
@@ -203,6 +212,15 @@ exec "${NPM_PREFIX}/bin/codex" "\$@"
 EOF
     chmod +x "${LOCAL_BIN_DIR}/codex"
   fi
+
+  if [ "$INSTALL_GEMINI_CLIENT" -eq 1 ]; then
+    cat >"${LOCAL_BIN_DIR}/gemini" <<EOF
+#!/usr/bin/env bash
+export PATH="${NODE_CURRENT_DIR}/bin:${NPM_PREFIX}/bin:\$PATH"
+exec "${NPM_PREFIX}/bin/gemini" "\$@"
+EOF
+    chmod +x "${LOCAL_BIN_DIR}/gemini"
+  fi
 }
 
 # 判断当前代理变量是否指向本地代理，避免用户残留的失效代理把 npm 请求全部带偏。
@@ -268,11 +286,11 @@ normalize_tools() {
   normalized_value="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
 
   case "$normalized_value" in
-    all|claude|codex|grok)
+    all|claude|codex|grok|gemini)
       printf '%s' "$normalized_value"
       ;;
     *)
-      log_error "不支持的 --tools 值: $1，可选值为 all / claude / codex / grok"
+      log_error "不支持的 --tools 值: $1，可选值为 all / claude / codex / grok / gemini"
       ;;
   esac
 }
@@ -294,6 +312,11 @@ parse_args() {
       --grok-api-key)
         [ $# -ge 2 ] || log_error "--grok-api-key 需要一个值"
         GROK_API_KEY="$2"
+        shift 2
+        ;;
+      --gemini-api-key)
+        [ $# -ge 2 ] || log_error "--gemini-api-key 需要一个值"
+        GEMINI_API_KEY="$2"
         shift 2
         ;;
       --base-url)
@@ -328,12 +351,13 @@ parse_args() {
 老实人 AI 一键安装与自动配置脚本
 
 用法:
-  bash install.sh --api-key <Claude_API_Key> [--codex-api-key <Codex_API_Key>] [--grok-api-key <Grok_API_Key>] [--tools all|claude|codex|grok] [--base-url https://api.laoshirenai.com]
+  bash install.sh --api-key <Claude_API_Key> [--codex-api-key <Codex_API_Key>] [--grok-api-key <Grok_API_Key>] [--gemini-api-key <Gemini_API_Key>] [--tools all|claude|codex|grok|gemini] [--base-url https://api.laoshirenai.com]
 
 参数:
   --api-key             Claude Code API Key
   --codex-api-key       Codex API Key
   --grok-api-key        Grok Build API Key
+  --gemini-api-key      Gemini CLI API Key
   --tools               需要配置的工具，默认 all
   --base-url            API 基础地址，默认 https://api.laoshirenai.com
   --node-version        指定 Node.js 版本，例如 v24.11.0
@@ -391,6 +415,10 @@ prompt_for_api_keys() {
 
   if [ "$TOOLS" = "grok" ] && [ -z "$GROK_API_KEY" ]; then
     prompt_for_named_api_key "Grok Build API Key" "请输入 Grok Build API Key" "GROK_API_KEY" "--grok-api-key" "LAOSHIRENAI_GROK_API_KEY"
+  fi
+
+  if [ "$TOOLS" = "gemini" ] && [ -z "$GEMINI_API_KEY" ]; then
+    prompt_for_named_api_key "Gemini CLI API Key" "请输入 Gemini CLI API Key" "GEMINI_API_KEY" "--gemini-api-key" "LAOSHIRENAI_GEMINI_API_KEY"
   fi
 }
 
@@ -462,6 +490,20 @@ resolve_client_install_plan() {
       INSTALL_GROK_CLIENT=1
     fi
   fi
+
+  if [ "$TOOLS" = "gemini" ]; then
+    EXISTING_GEMINI_COMMAND="$(get_usable_client_command gemini || true)"
+    if [ "$FORCE_CLIENT_INSTALL" -eq 1 ]; then
+      INSTALL_GEMINI_CLIENT=1
+      log_info "已要求强制重新安装 Gemini CLI"
+    elif [ -n "$EXISTING_GEMINI_COMMAND" ]; then
+      log_info "检测到现有 Gemini CLI，跳过重复安装: ${EXISTING_GEMINI_COMMAND}"
+    elif [ "$SKIP_CLIENT_INSTALL" -eq 1 ]; then
+      log_warn "未检测到可用的 Gemini CLI，但已按要求跳过安装"
+    else
+      INSTALL_GEMINI_CLIENT=1
+    fi
+  fi
 }
 
 # 从 npm registry 读取最新稳定版本；国内镜像失败时回退官方源。
@@ -520,14 +562,15 @@ resolve_client_update_plan() {
   [ "$FORCE_CLIENT_INSTALL" -eq 0 ] || return 0
   [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || check_client_update "Claude Code CLI" "$EXISTING_CLAUDE_COMMAND" '@anthropic-ai%2Fclaude-code' INSTALL_CLAUDE_CLIENT
   [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || check_client_update "Codex CLI" "$EXISTING_CODEX_COMMAND" '@openai%2Fcodex' INSTALL_CODEX_CLIENT
+  [ "$INSTALL_GEMINI_CLIENT" -eq 1 ] || check_client_update "Gemini CLI" "$EXISTING_GEMINI_COMMAND" '@google%2Fgemini-cli' INSTALL_GEMINI_CLIENT
 }
 
 needs_client_install() {
-  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || [ "$INSTALL_GROK_CLIENT" -eq 1 ]
+  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || [ "$INSTALL_GROK_CLIENT" -eq 1 ] || [ "$INSTALL_GEMINI_CLIENT" -eq 1 ]
 }
 
 needs_npm_client_install() {
-  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ]
+  [ "$INSTALL_CLAUDE_CLIENT" -eq 1 ] || [ "$INSTALL_CODEX_CLIENT" -eq 1 ] || [ "$INSTALL_GEMINI_CLIENT" -eq 1 ]
 }
 
 # 判断系统自带 node 是否可直接复用，避免重复下载安装。
@@ -715,7 +758,7 @@ EOF
 const fs = require('node:fs')
 const body = JSON.parse(fs.readFileSync(process.env.SETUP_RESPONSE_PATH, 'utf8'))
 const data = body && body.data
-if (!data || !['claude', 'codex', 'grok'].includes(data.target) || !data.api_key || !data.base_url) {
+if (!data || !['claude', 'codex', 'grok', 'gemini'].includes(data.target) || !data.api_key || !data.base_url) {
   process.exit(2)
 }
 process.stdout.write([
@@ -741,6 +784,8 @@ EOF
     CLAUDE_API_KEY="$received_key"
   elif [ "$target" = "codex" ]; then
     CODEX_API_KEY="$received_key"
+  elif [ "$target" = "gemini" ]; then
+    GEMINI_API_KEY="$received_key"
   else
     GROK_API_KEY="$received_key"
   fi
@@ -802,6 +847,11 @@ install_requested_clients() {
   if [ "$INSTALL_GROK_CLIENT" -eq 1 ]; then
     log_info "正在通过 xAI 官方安装器安装或更新 Grok Build"
     curl -fsSL https://x.ai/cli/install.sh | bash || log_error "Grok Build 安装失败，请检查网络后重试"
+  fi
+
+  if [ "$INSTALL_GEMINI_CLIENT" -eq 1 ]; then
+    log_info "正在安装或更新 Gemini CLI"
+    npm_install_with_fallback "@google/gemini-cli@latest"
   fi
 }
 
@@ -1129,6 +1179,101 @@ try {
 EOF
 }
 
+# 合并写入 Gemini CLI 的 ~/.gemini/.env 与 settings.json：.env 只更新本站管理的
+# 四个键并保留其他行，settings.json 只更新鉴权方式、默认模型和本站管理的
+# thinkingConfig 覆盖项，其余字段与 overrides 原样保留。
+write_gemini_config() {
+  create_backup_if_needed "$GEMINI_ENV_PATH"
+  create_backup_if_needed "$GEMINI_SETTINGS_PATH"
+  ensure_dir "$GEMINI_DIR"
+
+  ENV_PATH="$GEMINI_ENV_PATH" CONFIG_BASE_URL="$BASE_URL" CONFIG_API_KEY="$GEMINI_API_KEY" CONFIG_MODEL="$CATALOG_GEMINI_DEFAULT_MODEL" "$NODE_BIN" <<'EOF'
+const fs = require('node:fs')
+const path = process.env.ENV_PATH
+const managed = {
+  GEMINI_API_KEY: process.env.CONFIG_API_KEY,
+  GOOGLE_GEMINI_BASE_URL: process.env.CONFIG_BASE_URL,
+  GOOGLE_GENAI_USE_VERTEXAI: 'false',
+  GEMINI_MODEL: process.env.CONFIG_MODEL
+}
+
+let text = fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : ''
+let lines = text.length ? text.split(/\r?\n/) : []
+if (lines.length && lines[lines.length - 1] === '') lines.pop()
+
+const seen = new Set()
+lines = lines.map((line) => {
+  const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=/)
+  if (!match || !(match[1] in managed)) return line
+  seen.add(match[1])
+  return `${match[1]}=${managed[match[1]]}`
+})
+for (const [key, value] of Object.entries(managed)) {
+  if (!seen.has(key)) lines.push(`${key}=${value}`)
+}
+
+const temporaryPath = `${path}.tmp.${process.pid}.${Date.now()}`
+try {
+  fs.writeFileSync(temporaryPath, `${lines.join('\n')}\n`, { encoding: 'utf8', mode: 0o600 })
+  try { fs.chmodSync(temporaryPath, 0o600) } catch {}
+  fs.renameSync(temporaryPath, path)
+  try { fs.chmodSync(path, 0o600) } catch {}
+} finally {
+  try { fs.unlinkSync(temporaryPath) } catch {}
+}
+EOF
+
+  CONFIG_PATH="$GEMINI_SETTINGS_PATH" CONFIG_MODEL="$CATALOG_GEMINI_DEFAULT_MODEL" CONFIG_MANAGED_MODELS="$CATALOG_GEMINI_MANAGED_MODELS" "$NODE_BIN" <<'EOF'
+const fs = require('node:fs')
+const path = process.env.CONFIG_PATH
+const model = process.env.CONFIG_MODEL
+const managedModels = (process.env.CONFIG_MANAGED_MODELS || '').split(/\s+/).filter(Boolean)
+const managedSet = new Set(managedModels)
+
+let config = {}
+if (fs.existsSync(path)) {
+  try {
+    config = JSON.parse(fs.readFileSync(path, 'utf8'))
+  } catch (error) {
+    config = {}
+  }
+}
+
+if (!config || typeof config !== 'object' || Array.isArray(config)) {
+  config = {}
+}
+
+if (!config.security || typeof config.security !== 'object' || Array.isArray(config.security)) {
+  config.security = {}
+}
+if (!config.security.auth || typeof config.security.auth !== 'object' || Array.isArray(config.security.auth)) {
+  config.security.auth = {}
+}
+config.security.auth.selectedType = 'gemini-api-key'
+
+if (!config.model || typeof config.model !== 'object' || Array.isArray(config.model)) {
+  config.model = {}
+}
+config.model.name = model
+
+if (!config.modelConfigs || typeof config.modelConfigs !== 'object' || Array.isArray(config.modelConfigs)) {
+  config.modelConfigs = {}
+}
+const overrides = Array.isArray(config.modelConfigs.overrides) ? config.modelConfigs.overrides : []
+config.modelConfigs.overrides = overrides.filter(
+  (entry) => !entry || typeof entry !== 'object' || !entry.match || !managedSet.has(entry.match.model)
+)
+for (const modelId of managedModels) {
+  config.modelConfigs.overrides.push({
+    match: { model: modelId },
+    generateContentConfig: { thinkingConfig: { thinkingLevel: 'HIGH' } }
+  })
+}
+
+fs.writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`, 'utf8')
+EOF
+}
+
 stop_cc_switch_for_import() {
   command -v pgrep >/dev/null 2>&1 || return 0
   pgrep -x "cc-switch" >/dev/null 2>&1 || return 0
@@ -1216,6 +1361,10 @@ uses_grok() {
   [ "$TOOLS" = "grok" ]
 }
 
+uses_gemini() {
+  [ "$TOOLS" = "gemini" ]
+}
+
 normalize_openai_v1_base_url() {
   local normalized_url
 
@@ -1300,6 +1449,11 @@ verify_grok_api_key() {
   verify_api_key_readiness "Grok Build" "$GROK_API_KEY"
 }
 
+verify_gemini_api_key() {
+  uses_gemini || return 0
+  verify_api_key_readiness "Gemini CLI" "$GEMINI_API_KEY"
+}
+
 # 根据用户选择写入 Claude Code 配置。
 configure_claude() {
   if [ "$TOOLS" = "all" ] || [ "$TOOLS" = "claude" ]; then
@@ -1322,6 +1476,13 @@ configure_grok() {
   if uses_grok; then
     log_info "正在写入 Grok Build 原生模型配置"
     write_grok_config
+  fi
+}
+
+configure_gemini() {
+  if uses_gemini; then
+    log_info "正在写入 Gemini CLI 配置"
+    write_gemini_config
   fi
 }
 
@@ -1348,6 +1509,14 @@ verify_client_commands() {
     [ "$INSTALL_GROK_CLIENT" -eq 0 ] || grok_command="$GROK_BIN_PATH"
     [ -n "$grok_command" ] && "$grok_command" --version >/dev/null 2>&1 || log_error "Grok Build 安装验证失败"
   fi
+
+  if uses_gemini; then
+    if [ "$INSTALL_GEMINI_CLIENT" -eq 1 ]; then
+      "${NPM_PREFIX}/bin/gemini" --version >/dev/null 2>&1 || log_error "Gemini CLI 安装验证失败"
+    elif [ -n "$EXISTING_GEMINI_COMMAND" ]; then
+      "$EXISTING_GEMINI_COMMAND" --version >/dev/null 2>&1 || log_error "现有 Gemini CLI 验证失败"
+    fi
+  fi
 }
 
 # 输出最终结果和下一步指引，帮助用户在新终端中直接使用命令。
@@ -1361,6 +1530,11 @@ print_summary() {
   printf '  - Codex 配置: %s\n' "$CODEX_CONFIG_PATH"
   if uses_grok; then
     printf '  - Grok Build 配置: %s\n' "$GROK_CONFIG_PATH"
+  fi
+  if uses_gemini; then
+    printf '  - Gemini CLI 环境配置: %s\n' "$GEMINI_ENV_PATH"
+    printf '  - Gemini CLI 设置: %s\n' "$GEMINI_SETTINGS_PATH"
+    printf '  - Gemini CLI 默认模型: %s\n' "$CATALOG_GEMINI_DEFAULT_MODEL"
   fi
   if uses_claude; then
     printf '  - Claude Code 专用 Key: 已配置\n'
@@ -1386,6 +1560,14 @@ print_summary() {
       printf '  - Grok Build CLI: 已保留现有安装 (%s)\n' "$EXISTING_GROK_COMMAND"
     fi
   fi
+  if uses_gemini; then
+    printf '  - Gemini CLI 专用 Key: 已配置\n'
+    if [ "$INSTALL_GEMINI_CLIENT" -eq 1 ]; then
+      printf '  - Gemini CLI: 本次已安装\n'
+    elif [ -n "$EXISTING_GEMINI_COMMAND" ]; then
+      printf '  - Gemini CLI: 已保留现有安装 (%s)\n' "$EXISTING_GEMINI_COMMAND"
+    fi
+  fi
   if [ -n "$PROFILE_FILE" ]; then
     printf '  - PATH 已写入: %s\n' "$PROFILE_FILE"
   fi
@@ -1409,6 +1591,9 @@ print_summary() {
   if uses_grok; then
     printf '  grok --version\n'
     printf '  grok -m %s -p "只回复 OK"\n' "$CATALOG_GROK_DEFAULT_MODEL"
+  fi
+  if uses_gemini; then
+    printf '  gemini --version\n'
   fi
 }
 
@@ -1436,9 +1621,11 @@ main() {
   configure_claude
   configure_codex
   configure_grok
+  configure_gemini
   verify_claude_api_key
   verify_codex_api_key
   verify_grok_api_key
+  verify_gemini_api_key
   verify_client_commands
   open_cc_switch_if_requested
   print_summary

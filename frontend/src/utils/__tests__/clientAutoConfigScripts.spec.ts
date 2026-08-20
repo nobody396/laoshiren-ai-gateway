@@ -164,7 +164,7 @@ describe('client auto-config scripts', () => {
 
   it('installs and configures Grok Build with the native Responses model on macOS and Linux', () => {
     const script = readPublicScript('install.sh')
-    expect(script).toContain('all|claude|codex|grok')
+    expect(script).toContain('all|claude|codex|grok|gemini')
     expect(script).toContain("curl -fsSL https://x.ai/cli/install.sh | bash")
     expect(script).toContain('for (const profile of managedModels)')
     expect(script).toContain('`[model.${JSON.stringify(profile.id)}]`')
@@ -176,12 +176,12 @@ describe('client auto-config scripts', () => {
     expect(script).toContain('import-grok-cc-switch-provider.cjs')
     expect(script).toContain('已将 Grok 分组导入官方 CC Switch')
     expect(script).toContain('verify_api_key_readiness "Grok Build" "$GROK_API_KEY"')
-    expect(script).toContain("['claude', 'codex', 'grok'].includes(data.target)")
+    expect(script).toContain("['claude', 'codex', 'grok', 'gemini'].includes(data.target)")
   })
 
   it('installs and configures Grok Build with the native Responses model on Windows', () => {
     const script = readPublicScript('install.ps1')
-    expect(script).toContain("@('all', 'claude', 'codex', 'grok')")
+    expect(script).toContain("@('all', 'claude', 'codex', 'grok', 'gemini')")
     expect(script).toContain("$DefaultGrokBuildManifestUrl = 'https://laoshirenai.com/api/v1/public-downloads/grok-build/latest.json'")
     expect(script).toContain("$DefaultGrokBuildPackagePrefix = 'https://laoshirenai.com/downloads/grok-build/'")
     expect(script).toContain('-DownloadPrefix $script:GrokBuildPackagePrefix')
@@ -357,6 +357,123 @@ describe('client auto-config scripts', () => {
       runWriter()
       expect(readFileSync(configPath, 'utf8')).toBe(first)
       expect(readFileSync(`${configPath}.bak`, 'utf8')).toBe(original)
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
+  it('configures Gemini CLI through the gateway on macOS and Linux', () => {
+    const script = readPublicScript('install.sh')
+    expect(script).toContain('GEMINI_ENV_PATH="${GEMINI_DIR}/.env"')
+    expect(script).toContain('GEMINI_SETTINGS_PATH="${GEMINI_DIR}/settings.json"')
+    expect(script).toContain('write_gemini_config')
+    expect(script).toContain('configure_gemini')
+    expect(script).toContain('verify_gemini_api_key')
+    expect(script).toContain('verify_api_key_readiness "Gemini CLI" "$GEMINI_API_KEY"')
+    expect(script).toContain('GOOGLE_GEMINI_BASE_URL')
+    expect(script).toContain("GOOGLE_GENAI_USE_VERTEXAI: 'false'")
+    expect(script).toContain('GEMINI_MODEL')
+    expect(script).toContain("config.security.auth.selectedType = 'gemini-api-key'")
+    expect(script).toContain('config.model.name = model')
+    expect(script).toContain("thinkingConfig: { thinkingLevel: 'HIGH' }")
+    expect(script).toContain("CATALOG_GEMINI_DEFAULT_MODEL='gemini-3.7-flash'")
+    expect(script).toContain("CATALOG_GEMINI_MANAGED_MODELS='gemini-3.1-pro gemini-3.7-flash gemini-3.7-flash-high'")
+    expect(script).toContain('npm_install_with_fallback "@google/gemini-cli@latest"')
+    expect(script).toContain('LAOSHIRENAI_GEMINI_API_KEY')
+  })
+
+  it('configures Gemini CLI through the gateway on Windows', () => {
+    const script = readPublicScript('install.ps1')
+    expect(script).toContain("$GeminiEnvPath = Join-Path $GeminiDir '.env'")
+    expect(script).toContain("$GeminiSettingsPath = Join-Path $GeminiDir 'settings.json'")
+    expect(script).toContain('function Write-GeminiConfig')
+    expect(script).toContain('Configure-Gemini')
+    expect(script).toContain('Test-GeminiApiKey')
+    expect(script).toContain("Test-ApiKeyReadiness -Label 'Gemini CLI' -ApiKey $script:GeminiApiKey")
+    expect(script).toContain('GOOGLE_GEMINI_BASE_URL')
+    expect(script).toContain("GOOGLE_GENAI_USE_VERTEXAI = 'false'")
+    expect(script).toContain("GEMINI_MODEL = $CatalogGeminiDefaultModel")
+    expect(script).toContain("-NotePropertyName selectedType -NotePropertyValue 'gemini-api-key' -Force")
+    expect(script).toContain("thinkingConfig = [pscustomobject]@{ thinkingLevel = 'HIGH' }")
+    expect(script).toContain("$CatalogGeminiDefaultModel = 'gemini-3.7-flash'")
+    expect(script).toContain("$CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high')")
+    expect(script).toContain("Install-NpmPackageWithFallback -PackageName '@google/gemini-cli@latest'")
+    expect(script).toContain('$Data.target -notin @(\'claude\', \'codex\', \'grok\', \'gemini\')')
+    expect(script).toContain('$env:LAOSHIRENAI_GEMINI_API_KEY')
+  })
+
+  it('writes Gemini CLI .env and settings.json idempotently while preserving unrelated config', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-gemini-config-'))
+    const geminiDir = join(fixture, '.gemini')
+    const envPath = join(geminiDir, '.env')
+    const settingsPath = join(geminiDir, 'settings.json')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    const originalEnv = 'GEMINI_API_KEY=old-key\nFOO_BAR=keep\nGOOGLE_GENAI_USE_VERTEXAI=true\n'
+    const originalSettings = JSON.stringify({
+      security: { auth: { selectedType: 'oauth-personal', other: 1 } },
+      model: { name: 'old-model', extra: true },
+      modelConfigs: {
+        overrides: [
+          { match: { model: 'user-model' }, generateContentConfig: { temperature: 0.1 } },
+          { match: { model: 'gemini-3.7-flash' }, generateContentConfig: { thinkingConfig: { thinkingLevel: 'LOW' } } }
+        ]
+      },
+      theme: 'dark'
+    })
+    try {
+      mkdirSync(geminiDir, { recursive: true })
+      writeFileSync(envPath, originalEnv)
+      writeFileSync(settingsPath, originalSettings)
+      const runWriter = () => execFileSync('bash', [
+        '-c',
+        'source "$1"; NODE_BIN="$(command -v node)"; BASE_URL="https://api.example.com"; GEMINI_API_KEY="test-owned-key"; write_gemini_config',
+        '_',
+        installerPath
+      ], {
+        env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' },
+        stdio: 'pipe'
+      })
+
+      runWriter()
+      const firstEnv = readFileSync(envPath, 'utf8')
+      expect(firstEnv).toContain('GEMINI_API_KEY=test-owned-key')
+      expect(firstEnv).toContain('FOO_BAR=keep')
+      expect(firstEnv).toContain('GOOGLE_GEMINI_BASE_URL=https://api.example.com')
+      expect(firstEnv).toContain('GOOGLE_GENAI_USE_VERTEXAI=false')
+      expect(firstEnv).toContain('GEMINI_MODEL=gemini-3.7-flash')
+      expect(firstEnv).not.toContain('old-key')
+      expect(statSync(envPath).mode & 0o777).toBe(0o600)
+      expect(readFileSync(`${envPath}.bak`, 'utf8')).toBe(originalEnv)
+
+      const firstSettings = JSON.parse(readFileSync(settingsPath, 'utf8')) as {
+        security: { auth: { selectedType: string; other: number } }
+        model: { name: string; extra: boolean }
+        modelConfigs: { overrides: Array<{ match: { model: string }; generateContentConfig: Record<string, unknown> }> }
+        theme: string
+      }
+      expect(firstSettings.security.auth.selectedType).toBe('gemini-api-key')
+      expect(firstSettings.security.auth.other).toBe(1)
+      expect(firstSettings.model.name).toBe('gemini-3.7-flash')
+      expect(firstSettings.model.extra).toBe(true)
+      expect(firstSettings.theme).toBe('dark')
+      const overrideModels = firstSettings.modelConfigs.overrides.map((entry) => entry.match.model)
+      expect(overrideModels).toEqual([
+        'user-model',
+        'gemini-3.1-pro',
+        'gemini-3.7-flash',
+        'gemini-3.7-flash-high'
+      ])
+      for (const entry of firstSettings.modelConfigs.overrides.slice(1)) {
+        expect(entry.generateContentConfig).toEqual({ thinkingConfig: { thinkingLevel: 'HIGH' } })
+      }
+      expect(readFileSync(`${settingsPath}.bak`, 'utf8')).toBe(originalSettings)
+
+      runWriter()
+      expect(readFileSync(envPath, 'utf8')).toBe(firstEnv)
+      expect(readFileSync(settingsPath, 'utf8')).toBe(JSON.stringify(firstSettings, null, 2) + '\n')
+      expect(readFileSync(`${envPath}.bak`, 'utf8')).toBe(originalEnv)
+      expect(readFileSync(`${settingsPath}.bak`, 'utf8')).toBe(originalSettings)
+      expect(readdirSync(geminiDir).some(name => name.includes('.tmp.'))).toBe(false)
     } finally {
       rmSync(fixture, { recursive: true, force: true })
     }

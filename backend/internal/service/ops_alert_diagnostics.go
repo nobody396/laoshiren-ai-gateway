@@ -145,10 +145,6 @@ func (s *OpsAlertEvaluatorService) listOpsAlertDiagnosisLogs(ctx context.Context
 	return out
 }
 
-func summarizeOpsAlertDiagnosisFromLogs(logs []*OpsErrorLog) *OpsAlertDiagnosis {
-	return summarizeOpsAlertDiagnosis("error_rate", logs, nil)
-}
-
 func summarizeOpsAlertDiagnosis(metricType string, logs []*OpsErrorLog, overview *OpsDashboardOverview) *OpsAlertDiagnosis {
 	buckets := map[string]*opsAlertCauseBucket{}
 	included := make([]*OpsErrorLog, 0, len(logs))

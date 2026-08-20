@@ -45,7 +45,7 @@ func TestSummarizeOpsAlertDiagnosisFromLogsUsesTopCause(t *testing.T) {
 		},
 	}
 
-	diagnosis := summarizeOpsAlertDiagnosisFromLogs(logs)
+	diagnosis := summarizeOpsAlertDiagnosis("error_rate", logs, nil)
 
 	require.NotNil(t, diagnosis)
 	require.Contains(t, diagnosis.RootCause, "KNA. 成本1.05r/1usd")

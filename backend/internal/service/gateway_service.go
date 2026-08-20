@@ -629,6 +629,14 @@ func (e *UpstreamFailoverError) ShouldReportAccountScheduleFailure() bool {
 	return !e.IsCredentialFailure() || e.Scope == GatewayFailureScopeAccount
 }
 
+// sseStreamErrorEventError preserves the raw JSON from an upstream SSE
+// event:error frame so callers can classify it without losing diagnostics.
+type sseStreamErrorEventError struct {
+	RawData string
+}
+
+func (e *sseStreamErrorEventError) Error() string { return "have error in stream" }
+
 // TempUnscheduleRetryableError 对 RetryableOnSameAccount 类型的 failover 错误触发临时封禁。
 // 由 handler 层在同账号重试全部用尽、切换账号时调用。
 func (s *GatewayService) TempUnscheduleRetryableError(ctx context.Context, accountID int64, failoverErr *UpstreamFailoverError) {
@@ -4558,12 +4566,43 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 	var firstTokenMs *int
 	var clientDisconnect bool
 	if reqStream {
+		writerSizeBeforeStream := c.Writer.Size()
 		streamResult, err := s.handleStreamingResponse(ctx, resp, c, account, startTime, originalModel, reqModel, shouldMimicClaudeCode)
 		if err != nil {
-			if err.Error() == "have error in stream" {
-				return nil, &UpstreamFailoverError{
-					StatusCode: 403,
+			var sseErr *sseStreamErrorEventError
+			if errors.As(err, &sseErr) {
+				body := []byte(sseErr.RawData)
+				semanticStatus := http.StatusForbidden
+				if c.Writer.Size() == writerSizeBeforeStream && gjson.GetBytes(body, "error.type").String() == "overloaded_error" {
+					semanticStatus = 529
+					syntheticResp := &http.Response{
+						StatusCode: semanticStatus,
+						Header:     resp.Header.Clone(),
+						Body:       io.NopCloser(bytes.NewReader(body)),
+					}
+					s.handleFailoverSideEffects(ctx, syntheticResp, account)
 				}
+
+				upstreamMsg := sanitizeUpstreamErrorMessage(strings.TrimSpace(extractUpstreamErrorMessage(body)))
+				upstreamDetail := ""
+				if s.cfg != nil && s.cfg.Gateway.LogUpstreamErrorBody {
+					maxBytes := s.cfg.Gateway.LogUpstreamErrorBodyMaxBytes
+					if maxBytes <= 0 {
+						maxBytes = 2048
+					}
+					upstreamDetail = truncateString(string(body), maxBytes)
+				}
+				appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+					Platform:           account.Platform,
+					AccountID:          account.ID,
+					AccountName:        account.Name,
+					UpstreamStatusCode: semanticStatus,
+					UpstreamRequestID:  resp.Header.Get("x-request-id"),
+					Kind:               "stream_error",
+					Message:            upstreamMsg,
+					Detail:             upstreamDetail,
+				})
+				return nil, &UpstreamFailoverError{StatusCode: semanticStatus, ResponseBody: body}
 			}
 			if partial := partialStreamUsageResult(resp, streamResult, originalModel, mappedModel, startTime, err); partial != nil {
 				return partial, err
@@ -6758,7 +6797,7 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 		}
 
 		if eventName == "error" {
-			return nil, dataLine, nil, errors.New("have error in stream")
+			return nil, dataLine, nil, &sseStreamErrorEventError{RawData: dataLine}
 		}
 
 		if dataLine == "" {

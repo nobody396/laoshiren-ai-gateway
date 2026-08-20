@@ -233,7 +233,23 @@ func (s *OpsAlertEvaluatorService) evaluateOnce(interval time.Duration) {
 		if !metric.OK {
 			s.resetRuleState(rule.ID, now)
 			if metric.NoSamples {
-				resolved, err := s.resolveActiveAlertEvent(ctx, rule.ID, now)
+				activeEvent, lookupErr := s.opsRepo.GetActiveAlertEvent(ctx, rule.ID)
+				if lookupErr != nil {
+					logger.LegacyPrintf("service.ops_alert_evaluator", "[OpsAlertEvaluator] get active event failed for no-sample metric (rule=%d): %v", rule.ID, lookupErr)
+					continue
+				}
+				resolved := false
+				var err error
+				if activeEvent != nil {
+					err = s.opsRepo.UpdateAlertEventStatus(ctx, activeEvent.ID, OpsAlertStatusResolved, &now)
+					resolved = err == nil
+					if resolved {
+						resolvedEvent := buildResolvedOpsAlertEvent(activeEvent, now, nil, "no_samples")
+						if s.maybeSendAlertWebhooks(ctx, runtimeCfg, rule, resolvedEvent) {
+							webhooksSent++
+						}
+					}
+				}
 				if err != nil {
 					logger.LegacyPrintf("service.ops_alert_evaluator", "[OpsAlertEvaluator] resolve event failed for no-sample metric (rule=%d): %v", rule.ID, err)
 				} else if resolved {
@@ -320,6 +336,10 @@ func (s *OpsAlertEvaluatorService) evaluateOnce(interval time.Duration) {
 				logger.LegacyPrintf("service.ops_alert_evaluator", "[OpsAlertEvaluator] resolve event failed (event=%d): %v", activeEvent.ID, err)
 			} else {
 				eventsResolved++
+				resolvedEvent := buildResolvedOpsAlertEvent(activeEvent, resolvedAt, float64Ptr(metric.Value), "metric_recovered")
+				if s.maybeSendAlertWebhooks(ctx, runtimeCfg, rule, resolvedEvent) {
+					webhooksSent++
+				}
 			}
 		}
 	}
@@ -328,21 +348,16 @@ func (s *OpsAlertEvaluatorService) evaluateOnce(interval time.Duration) {
 	s.recordHeartbeatSuccess(runAt, time.Since(startedAt), result)
 }
 
-func (s *OpsAlertEvaluatorService) resolveActiveAlertEvent(ctx context.Context, ruleID int64, resolvedAt time.Time) (bool, error) {
-	if s == nil || s.opsRepo == nil || ruleID <= 0 {
-		return false, nil
+func buildResolvedOpsAlertEvent(active *OpsAlertEvent, resolvedAt time.Time, metricValue *float64, reason string) *OpsAlertEvent {
+	if active == nil {
+		return nil
 	}
-	activeEvent, err := s.opsRepo.GetActiveAlertEvent(ctx, ruleID)
-	if err != nil {
-		return false, err
-	}
-	if activeEvent == nil {
-		return false, nil
-	}
-	if err := s.opsRepo.UpdateAlertEventStatus(ctx, activeEvent.ID, OpsAlertStatusResolved, &resolvedAt); err != nil {
-		return false, err
-	}
-	return true, nil
+	resolved := *active
+	resolved.Status = OpsAlertStatusResolved
+	resolved.ResolvedAt = &resolvedAt
+	resolved.MetricValue = metricValue
+	resolved.Description = "resolution_reason=" + strings.TrimSpace(reason)
+	return &resolved
 }
 
 func (s *OpsAlertEvaluatorService) pruneRuleStates(rules []*OpsAlertRule) {

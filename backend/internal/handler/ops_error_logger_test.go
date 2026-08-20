@@ -293,6 +293,49 @@ func TestNormalizeOpsErrorType(t *testing.T) {
 	}
 }
 
+func TestReclassifyOpsErrorFromUpstreamEvidence(t *testing.T) {
+	status := http.StatusBadGateway
+	message := "upstream returned an empty response"
+	entry := &service.OpsInsertErrorLogInput{
+		ErrorPhase:           "internal",
+		ErrorType:            "api_error",
+		ErrorOwner:           "platform",
+		ErrorSource:          "gateway",
+		Severity:             "P1",
+		UpstreamStatusCode:   &status,
+		UpstreamErrorMessage: &message,
+	}
+
+	reclassifyOpsErrorFromUpstreamEvidence(entry)
+
+	require.Equal(t, "upstream", entry.ErrorPhase)
+	require.Equal(t, "upstream_error", entry.ErrorType)
+	require.Equal(t, "provider", entry.ErrorOwner)
+	require.Equal(t, "upstream_http", entry.ErrorSource)
+	require.True(t, entry.IsRetryable)
+}
+
+func TestReclassifyOpsErrorFromUpstreamEvidencePreservesClientErrors(t *testing.T) {
+	accountID := int64(14)
+	status := http.StatusBadGateway
+	message := "upstream rejected malformed input"
+	entry := &service.OpsInsertErrorLogInput{
+		AccountID:            &accountID,
+		ErrorPhase:           "request",
+		ErrorType:            "invalid_request_error",
+		ErrorOwner:           "client",
+		ErrorSource:          "client_request",
+		UpstreamStatusCode:   &status,
+		UpstreamErrorMessage: &message,
+	}
+
+	reclassifyOpsErrorFromUpstreamEvidence(entry)
+
+	require.Equal(t, "request", entry.ErrorPhase)
+	require.Equal(t, "client", entry.ErrorOwner)
+	require.Equal(t, "client_request", entry.ErrorSource)
+}
+
 func TestClassifyOpsIsBusinessLimitedExcludesPolicyAndCapacity(t *testing.T) {
 	tests := []struct {
 		name    string

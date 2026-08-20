@@ -4,7 +4,11 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -34,6 +38,10 @@ func (s *stubOpsRepo) GetDashboardOverview(ctx context.Context, filter *OpsDashb
 		return s.overview, nil
 	}
 	return &OpsDashboardOverview{}, nil
+}
+
+func (s *stubOpsRepo) ListErrorLogs(ctx context.Context, filter *OpsErrorLogFilter) (*OpsErrorLogList, error) {
+	return &OpsErrorLogList{Errors: []*OpsErrorLog{}, Page: 1, PageSize: 500}, nil
 }
 
 func (s *stubOpsRepo) ListAlertRules(ctx context.Context) ([]*OpsAlertRule, error) {
@@ -387,4 +395,50 @@ func TestAlertEvaluatorDoesNotResolveTrafficRateAlertWhenMetricReadFails(t *test
 	require.Zero(t, repo.updatedEventID)
 	require.Empty(t, repo.updatedStatus)
 	require.Equal(t, OpsAlertStatusFiring, repo.activeEvents[1].Status)
+}
+
+func TestAlertEvaluatorSendsFeishuRecoveryAfterMetricRecovers(t *testing.T) {
+	var message string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		message = string(body)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	now := time.Now().UTC()
+	rule := &OpsAlertRule{
+		ID: 1, Name: "错误率过高", Enabled: true, Severity: "P1", NotifyEmail: true,
+		MetricType: "error_rate", Operator: ">", Threshold: 5, WindowMinutes: 5, SustainedMinutes: 1,
+	}
+	repo := &stubOpsRepo{
+		overview: &OpsDashboardOverview{RequestCountSLA: 10, SuccessCount: 10, SLA: 1, ErrorRate: 0},
+		rules:    []*OpsAlertRule{rule},
+		activeEvents: map[int64]*OpsAlertEvent{
+			1: {ID: 332, RuleID: 1, Severity: "P1", Status: OpsAlertStatusFiring, FiredAt: now.Add(-2 * time.Minute)},
+		},
+	}
+	webhookCfg := &OpsWebhookNotificationConfig{
+		Feishu: OpsFeishuNotificationConfig{Enabled: true, WebhookURL: server.URL, MinSeverity: "warning"},
+	}
+	rawCfg, err := json.Marshal(webhookCfg)
+	require.NoError(t, err)
+	settings := &opsWebhookSettingRepoStub{values: map[string]string{
+		SettingKeyOpsWebhookNotificationConfig: string(rawCfg),
+	}}
+	svc := &OpsAlertEvaluatorService{
+		opsService:      &OpsService{settingRepo: settings},
+		opsRepo:         repo,
+		instanceID:      "test-instance",
+		ruleStates:      map[int64]*opsAlertRuleState{},
+		feishuLimiter:   newSlidingWindowLimiter(0, time.Hour),
+		telegramLimiter: newSlidingWindowLimiter(0, time.Hour),
+	}
+
+	svc.evaluateOnce(time.Minute)
+
+	require.Equal(t, OpsAlertStatusResolved, repo.updatedStatus)
+	require.NotEmpty(t, message)
+	require.Contains(t, message, "运维恢复")
+	require.Contains(t, message, "当前错误率")
 }

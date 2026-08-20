@@ -33,9 +33,16 @@ type OpsErrorLog struct {
 
 	Severity string `json:"severity"`
 
-	StatusCode int    `json:"status_code"`
-	Platform   string `json:"platform"`
-	Model      string `json:"model"`
+	// StatusCode is the effective status used by the Ops UI (upstream status
+	// when available). ClientStatusCode is the status actually returned to the
+	// caller and is required to keep alert evidence aligned with SLA metrics.
+	StatusCode       int    `json:"status_code"`
+	ClientStatusCode int    `json:"client_status_code"`
+	Platform         string `json:"platform"`
+	Model            string `json:"model"`
+
+	IsBusinessLimited bool `json:"is_business_limited"`
+	IsCountTokens     bool `json:"is_count_tokens"`
 
 	IsRetryable bool `json:"is_retryable"`
 	RetryCount  int  `json:"retry_count"`

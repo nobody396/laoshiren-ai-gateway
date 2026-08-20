@@ -904,6 +904,12 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 				}
 			}
 		}
+		// The client-facing body is deliberately sanitized, so it can look like a
+		// generic api_error/internal failure even when the gateway already captured
+		// a concrete upstream 5xx. Prefer that structured evidence for ownership;
+		// otherwise real supplier failures are mislabeled as platform failures and
+		// are omitted from upstream alerting and goodwill-compensation candidates.
+		reclassifyOpsErrorFromUpstreamEvidence(entry)
 
 		if apiKey != nil {
 			entry.APIKeyID = &apiKey.ID
@@ -1281,6 +1287,31 @@ func classifyOpsErrorSource(phase string, message string) string {
 		}
 		return "gateway"
 	}
+}
+
+func reclassifyOpsErrorFromUpstreamEvidence(entry *service.OpsInsertErrorLogInput) {
+	if entry == nil || entry.UpstreamStatusCode == nil {
+		return
+	}
+	status := *entry.UpstreamStatusCode
+	if status < http.StatusInternalServerError && status != http.StatusTooManyRequests && status != 529 {
+		return
+	}
+	// Never turn a request/auth/business-limit decision into supplier blame just
+	// because a handler attached auxiliary upstream context.
+	if entry.ErrorOwner == "client" || entry.IsBusinessLimited {
+		return
+	}
+	if entry.UpstreamErrorMessage == nil && entry.UpstreamErrorDetail == nil && len(entry.UpstreamErrors) == 0 {
+		return
+	}
+
+	entry.ErrorPhase = "upstream"
+	entry.ErrorType = "upstream_error"
+	entry.ErrorOwner = "provider"
+	entry.ErrorSource = "upstream_http"
+	entry.Severity = classifyOpsSeverity(entry.ErrorType, status)
+	entry.IsRetryable = classifyOpsIsRetryable(entry.ErrorType, status)
 }
 
 func truncateString(s string, max int) string {

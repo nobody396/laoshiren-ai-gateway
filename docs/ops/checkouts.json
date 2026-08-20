@@ -321,6 +321,13 @@
       "kind": "temporary",
       "allowed_actions": ["develop", "test"],
       "ttl": "2026-08-26T23:59:59+08:00"
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/feishu-alert-clarity-20260820",
+      "owner": "feishu-alert-clarity-20260820",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-27T23:59:59+08:00"
     }
   ]
 }

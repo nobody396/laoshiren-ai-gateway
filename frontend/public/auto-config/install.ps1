@@ -1451,10 +1451,9 @@ function Write-GeminiConfig {
     GOOGLE_GENAI_USE_VERTEXAI = 'false'
     GEMINI_MODEL = $CatalogGeminiDefaultModel
   }
-  $EnvLines = if (Test-Path -LiteralPath $GeminiEnvPath) {
-    [System.Collections.Generic.List[string]]@(Get-Content -LiteralPath $GeminiEnvPath)
-  } else {
-    [System.Collections.Generic.List[string]]@()
+  $EnvLines = [System.Collections.Generic.List[string]]::new()
+  if (Test-Path -LiteralPath $GeminiEnvPath) {
+    $EnvLines.AddRange([string[]]@(Get-Content -LiteralPath $GeminiEnvPath))
   }
   $SeenKeys = @{}
   for ($i = 0; $i -lt $EnvLines.Count; $i++) {

@@ -53,8 +53,13 @@ func (h *OpenAIGatewayHandler) SetGrokMediaEligibilityProber(prober interface {
 var errOpenAIWSUnsupportedModelSwitch = errors.New("selected account does not support websocket model switch")
 
 func openAICompatibleRequestPlatform(apiKey *service.APIKey) string {
-	if apiKey != nil && apiKey.Group != nil && apiKey.Group.Platform == service.PlatformGrok {
-		return service.PlatformGrok
+	if apiKey != nil && apiKey.Group != nil {
+		switch apiKey.Group.Platform {
+		case service.PlatformGrok:
+			return service.PlatformGrok
+		case service.PlatformGemini:
+			return service.PlatformGemini
+		}
 	}
 	return service.PlatformOpenAI
 }
@@ -1102,6 +1107,26 @@ func (h *OpenAIGatewayHandler) anthropicStreamingAwareError(c *gin.Context, stat
 // 请求的模型未上架（用户侧误用），而不是笼统的 503 服务不可用。
 func (h *OpenAIGatewayHandler) handleOpenAIModelNotSupportedError(c *gin.Context, model string, streamStarted bool) {
 	message := service.ClientMessageModelNotSupported(model)
+	if streamStarted {
+		flusher, ok := c.Writer.(http.Flusher)
+		if ok {
+			errPayload, _ := json.Marshal(service.OpenAIClientErrorEnvelopeWithCode(c, "invalid_request_error", service.ClientCodeModelNotSupported, message))
+			if _, err := fmt.Fprintf(c.Writer, "event: error\ndata: %s\n\n", errPayload); err != nil {
+				_ = c.Error(err)
+			}
+			flusher.Flush()
+		}
+		return
+	}
+	h.errorResponseWithCode(c, http.StatusBadRequest, "invalid_request_error", service.ClientCodeModelNotSupported, message)
+}
+
+// handleOpenAINoServableAccountsError 处理“分组在该端点上没有任何可服务账号”的
+// 结构性失败（例如 gemini 分组误调 /v1/chat/completions）。返回 400
+// invalid_request_error，ops 错误日志按 request 阶段归类为客户端误用
+// （error_owner=client），不再计入平台成功率告警。
+func (h *OpenAIGatewayHandler) handleOpenAINoServableAccountsError(c *gin.Context, model string, streamStarted bool) {
+	message := service.ClientMessageModelNotSupportedOnEndpoint(model)
 	if streamStarted {
 		flusher, ok := c.Writer.(http.Flusher)
 		if ok {

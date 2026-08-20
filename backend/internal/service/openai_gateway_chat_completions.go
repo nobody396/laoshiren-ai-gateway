@@ -53,6 +53,9 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 		}
 		return s.forwardAsRawChatCompletions(ctx, c, account, body, defaultMappedModel)
 	}
+	if account != nil && account.Platform == PlatformGemini {
+		return s.forwardGeminiChatCompletions(ctx, c, account, body, defaultMappedModel)
+	}
 	if account != nil && account.Type == AccountTypeAPIKey && !openai_compat.ShouldUseResponsesAPI(account.Extra) {
 		return s.forwardAsRawChatCompletions(ctx, c, account, body, defaultMappedModel)
 	}

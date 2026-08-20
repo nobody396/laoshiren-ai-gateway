@@ -782,7 +782,7 @@ func (s *defaultOpenAIAccountScheduler) selectByLoadBalance(
 		return nil, 0, 0, 0, err
 	}
 	if len(accounts) == 0 {
-		return nil, 0, 0, 0, errors.New("no available OpenAI accounts")
+		return nil, 0, 0, 0, &noAvailableOpenAIAccountsError{}
 	}
 
 	filtered := make([]*Account, 0, len(accounts))

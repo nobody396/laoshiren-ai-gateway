@@ -158,6 +158,11 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 					h.handleOpenAIModelNotSupportedError(c, modelErr.RequestedModel, streamStarted)
 					return
 				}
+				var noServableErr *service.NoServableAccountsError
+				if errors.As(err, &noServableErr) {
+					h.handleOpenAINoServableAccountsError(c, reqModel, streamStarted)
+					return
+				}
 				h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable", streamStarted)
 				return
 			} else {
@@ -329,6 +334,11 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 }
 
 func resolveRawCCUpstreamEndpoint(c *gin.Context, account *service.Account) string {
+	if account != nil && account.Platform == service.PlatformGemini {
+		// Gemini 桥接账号在 chat-completions 入站上固定透传到上游
+		// OpenAI 兼容端点，与原生 /v1beta/models 路径区分开。
+		return "/v1/chat/completions"
+	}
 	if account != nil && account.Type == service.AccountTypeAPIKey &&
 		!openai_compat.ShouldUseResponsesAPI(account.Extra) {
 		return "/v1/chat/completions"

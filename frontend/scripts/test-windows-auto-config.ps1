@@ -33,6 +33,7 @@ $RequiredFunctions = @(
   'ConvertTo-TomlString',
   'Get-OpenAIV1BaseUrl',
   'Write-GrokTomlConfig',
+  'Write-GeminiConfig',
   'Invoke-GrokCcSwitchImporter',
   'Get-UsableClientCommand',
   'Resolve-SystemNpmCmd',
@@ -178,6 +179,66 @@ name = "stale"
   Assert-True ([IO.File]::ReadAllText($GrokConfigPath) -eq $FirstGrokConfig) 'Grok config repair is not idempotent'
   Assert-True ([IO.File]::ReadAllText("$GrokConfigPath.bak") -eq $OriginalGrokConfig) 'A retry replaced the original Grok backup'
 
+  $GeminiDir = Join-Path $FixtureDir 'gemini-home'
+  $GeminiEnvPath = Join-Path $GeminiDir '.env'
+  $GeminiSettingsPath = Join-Path $GeminiDir 'settings.json'
+  New-Item -ItemType Directory -Path $GeminiDir -Force | Out-Null
+  $OriginalGeminiEnv = "GEMINI_API_KEY=old-key`nOTHER_KEY=keep-me`nGOOGLE_GENAI_USE_VERTEXAI=true`n"
+  [IO.File]::WriteAllText($GeminiEnvPath, $OriginalGeminiEnv, [Text.UTF8Encoding]::new($false))
+  $OriginalGeminiSettings = @'
+{
+  "security": { "auth": { "selectedType": "oauth-personal", "other": 1 } },
+  "model": { "name": "old-model", "extra": true },
+  "modelConfigs": {
+    "overrides": [
+      { "match": { "model": "user-model" }, "generateContentConfig": { "temperature": 0.1 } },
+      { "match": { "model": "gemini-3.7-flash" }, "generateContentConfig": { "thinkingConfig": { "thinkingLevel": "LOW" } } }
+    ]
+  },
+  "theme": "dark"
+}
+'@
+  [IO.File]::WriteAllText($GeminiSettingsPath, $OriginalGeminiSettings, [Text.UTF8Encoding]::new($false))
+  $CatalogGeminiDefaultModel = 'gemini-3.7-flash'
+  $CatalogGeminiManagedModels = @('gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.7-flash-high')
+  $script:BaseUrl = 'https://api.example.com'
+  $script:GeminiApiKey = 'test-owned-key'
+
+  Write-GeminiConfig
+  $FirstGeminiEnv = [IO.File]::ReadAllText($GeminiEnvPath)
+  $NormalizedGeminiEnv = $FirstGeminiEnv.Replace("`r`n", "`n")
+  Assert-True ($NormalizedGeminiEnv.Contains('GEMINI_API_KEY=test-owned-key')) 'Gemini API key was not written to .env'
+  Assert-True ($NormalizedGeminiEnv.Contains('OTHER_KEY=keep-me')) 'Unrelated Gemini .env entry was overwritten'
+  Assert-True ($NormalizedGeminiEnv.Contains('GOOGLE_GEMINI_BASE_URL=https://api.example.com')) 'Gemini base URL was not written to .env'
+  Assert-True ($NormalizedGeminiEnv.Contains('GOOGLE_GENAI_USE_VERTEXAI=false')) 'Gemini VertexAI flag was not forced off'
+  Assert-True ($NormalizedGeminiEnv.Contains('GEMINI_MODEL=gemini-3.7-flash')) 'Gemini default model was not written to .env'
+  Assert-True (-not $NormalizedGeminiEnv.Contains('old-key')) 'Stale Gemini API key survived the .env merge'
+  Assert-True ([IO.File]::ReadAllText("$GeminiEnvPath.bak") -eq $OriginalGeminiEnv) 'The original Gemini .env backup was not preserved'
+
+  $FirstGeminiSettings = [IO.File]::ReadAllText($GeminiSettingsPath)
+  $ParsedGeminiSettings = $FirstGeminiSettings | ConvertFrom-Json
+  Assert-True ($ParsedGeminiSettings.security.auth.selectedType -eq 'gemini-api-key') 'Gemini auth type was not switched to gemini-api-key'
+  Assert-True ($ParsedGeminiSettings.security.auth.other -eq 1) 'Unrelated Gemini security field was overwritten'
+  Assert-True ($ParsedGeminiSettings.model.name -eq 'gemini-3.7-flash') 'Gemini default model was not selected in settings.json'
+  Assert-True ($ParsedGeminiSettings.model.extra -eq $true) 'Unrelated Gemini model field was overwritten'
+  Assert-True ($ParsedGeminiSettings.theme -eq 'dark') 'Unrelated Gemini setting was overwritten'
+  $GeminiOverrideModels = @($ParsedGeminiSettings.modelConfigs.overrides | ForEach-Object { [string]$_.match.model })
+  Assert-True (($GeminiOverrideModels -join ',') -eq 'user-model,gemini-3.1-pro,gemini-3.7-flash,gemini-3.7-flash-high') "Gemini overrides mismatch: $($GeminiOverrideModels -join ',')"
+  $UserGeminiOverride = @($ParsedGeminiSettings.modelConfigs.overrides | Where-Object { $_.match.model -eq 'user-model' })[0]
+  Assert-True ($UserGeminiOverride.generateContentConfig.temperature -eq 0.1) 'User-owned Gemini override was overwritten'
+  foreach ($ManagedGeminiOverride in @($ParsedGeminiSettings.modelConfigs.overrides | Where-Object { $_.match.model -ne 'user-model' })) {
+    Assert-True ($ManagedGeminiOverride.generateContentConfig.thinkingConfig.thinkingLevel -eq 'HIGH') 'Managed Gemini override is missing thinkingLevel=HIGH'
+  }
+  Assert-True (-not $FirstGeminiSettings.Contains('老实人AI')) 'Provider/group branding leaked into Gemini settings'
+  Assert-True ([IO.File]::ReadAllText("$GeminiSettingsPath.bak") -eq $OriginalGeminiSettings) 'The original Gemini settings backup was not preserved'
+  Assert-True (-not (Get-ChildItem -LiteralPath $GeminiDir -Filter '*.tmp.*')) 'Gemini config write left temporary files behind'
+
+  Write-GeminiConfig
+  Assert-True ([IO.File]::ReadAllText($GeminiEnvPath) -eq $FirstGeminiEnv) 'Gemini .env repair is not idempotent'
+  Assert-True ([IO.File]::ReadAllText($GeminiSettingsPath) -eq $FirstGeminiSettings) 'Gemini settings repair is not idempotent'
+  Assert-True ([IO.File]::ReadAllText("$GeminiEnvPath.bak") -eq $OriginalGeminiEnv) 'A retry replaced the original Gemini .env backup'
+  Assert-True ([IO.File]::ReadAllText("$GeminiSettingsPath.bak") -eq $OriginalGeminiSettings) 'A retry replaced the original Gemini settings backup'
+
   $CcSwitchDir = Join-Path $FixtureDir 'cc-switch-home'
   $CcSwitchDb = Join-Path $CcSwitchDir 'cc-switch.db'
   $CcSwitchSettings = Join-Path $CcSwitchDir 'settings.json'
@@ -293,16 +354,20 @@ if (fs.readdirSync(backupRoot).length !== 1) throw new Error('idempotent retry c
   }
   Assert-True $FailureObserved 'A non-zero npm.cmd exit code was not converted into a retryable PowerShell error'
 
+  $script:InstallGeminiClient = $false
   $script:InstallClaudeClient = $true
   $script:InstallCodexClient = $false
   Assert-True (Test-NeedsNpmClientInstall) 'Claude Code must use the npm installation path'
   $script:InstallClaudeClient = $false
   $script:InstallCodexClient = $true
   Assert-True (Test-NeedsNpmClientInstall) 'Codex must use the npm installation path'
-  $script:InstallClaudeClient = $false
   $script:InstallCodexClient = $false
+  $script:InstallGeminiClient = $true
+  Assert-True (Test-NeedsNpmClientInstall) 'Gemini CLI must use the npm installation path'
+  $script:InstallGeminiClient = $false
   $script:InstallGrokClient = $true
   Assert-True (-not (Test-NeedsNpmClientInstall)) 'Grok Build must remain isolated from the npm installation path'
+  $script:InstallGrokClient = $false
 
   $fixtureSHA256 = (Get-FileHash -LiteralPath (Join-Path $env:SystemRoot 'System32\whoami.exe') -Algorithm SHA256).Hash.ToLowerInvariant()
   $nodeZipName = 'node-v24.0.0-win-x64.zip'

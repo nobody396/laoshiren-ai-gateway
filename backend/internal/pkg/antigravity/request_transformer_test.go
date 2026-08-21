@@ -3,6 +3,8 @@ package antigravity
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestBuildParts_ThinkingBlockWithoutSignature 测试thinking block无signature时的处理
@@ -258,6 +260,52 @@ func TestBuildTools_CustomTypeTools(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGeminiToolConfigIncludeServerSideToolInvocations(t *testing.T) {
+	functionTool := ClaudeTool{
+		Name:        "get_weather",
+		Description: "Get weather information",
+		InputSchema: map[string]any{"type": "object"},
+	}
+	webSearchTool := ClaudeTool{Type: "web_search_20250305", Name: "web_search"}
+
+	transform := func(t *testing.T, tools []ClaudeTool) (V1InternalRequest, string) {
+		t.Helper()
+		body, err := TransformClaudeToGeminiWithOptions(&ClaudeRequest{
+			Model: "claude-3-5-sonnet-latest",
+			Messages: []ClaudeMessage{{
+				Role:    "user",
+				Content: json.RawMessage(`[{"type":"text","text":"hello"}]`),
+			}},
+			Tools: tools,
+		}, "project-1", "gemini-2.5-flash", DefaultTransformOptions())
+		require.NoError(t, err)
+
+		var req V1InternalRequest
+		require.NoError(t, json.Unmarshal(body, &req))
+		return req, string(body)
+	}
+
+	t.Run("mixed built-in and function tools enable the flag", func(t *testing.T) {
+		req, raw := transform(t, []ClaudeTool{functionTool, webSearchTool})
+		require.NotNil(t, req.Request.ToolConfig)
+		require.NotNil(t, req.Request.ToolConfig.IncludeServerSideToolInvocations)
+		require.True(t, *req.Request.ToolConfig.IncludeServerSideToolInvocations)
+		require.Contains(t, raw, `"includeServerSideToolInvocations":true`)
+	})
+
+	t.Run("function tools alone leave the flag unset", func(t *testing.T) {
+		req, raw := transform(t, []ClaudeTool{functionTool})
+		require.Nil(t, req.Request.ToolConfig.IncludeServerSideToolInvocations)
+		require.NotContains(t, raw, "includeServerSideToolInvocations")
+	})
+
+	t.Run("built-in tools alone leave the flag unset", func(t *testing.T) {
+		req, raw := transform(t, []ClaudeTool{webSearchTool})
+		require.Nil(t, req.Request.ToolConfig.IncludeServerSideToolInvocations)
+		require.NotContains(t, raw, "includeServerSideToolInvocations")
+	})
 }
 
 func TestBuildGenerationConfig_ThinkingDynamicBudget(t *testing.T) {

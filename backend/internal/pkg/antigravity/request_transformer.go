@@ -146,6 +146,12 @@ func TransformClaudeToGeminiWithOptions(claudeReq *ClaudeRequest, projectID, map
 		// 总是生成 sessionId，基于用户消息内容
 		SessionID: generateStableSessionID(contents),
 	}
+	// Gemini requires this flag when built-in tools and client function tools
+	// are mixed; without it the upstream rejects an otherwise valid request.
+	if hasMixedToolInvocations(tools) {
+		enabled := true
+		innerRequest.ToolConfig.IncludeServerSideToolInvocations = &enabled
+	}
 
 	if systemInstruction != nil {
 		innerRequest.SystemInstruction = systemInstruction
@@ -674,6 +680,20 @@ func isWebSearchTool(tool ClaudeTool) bool {
 	default:
 		return false
 	}
+}
+
+func hasMixedToolInvocations(declarations []GeminiToolDeclaration) bool {
+	hasFunctions := false
+	hasBuiltins := false
+	for _, declaration := range declarations {
+		if len(declaration.FunctionDeclarations) > 0 {
+			hasFunctions = true
+		}
+		if declaration.GoogleSearch != nil {
+			hasBuiltins = true
+		}
+	}
+	return hasFunctions && hasBuiltins
 }
 
 // buildTools 构建 tools

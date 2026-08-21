@@ -5405,6 +5405,12 @@ func IsForwardableOpenAIResponsesRequestPath(c *gin.Context) bool {
 	return ok
 }
 
+// IsOpenAIResponsesInputTokensRequestPath identifies the native token-count
+// preflight before the generic Responses wildcard forwards a subpath upstream.
+func IsOpenAIResponsesInputTokensRequestPath(c *gin.Context) bool {
+	return openAIResponsesRequestPathSuffix(c) == "/input_tokens"
+}
+
 // rawOpenAIResponsesRequestPathSuffix extracts the suffix without validating it.
 func rawOpenAIResponsesRequestPathSuffix(c *gin.Context) string {
 	if c == nil || c.Request == nil || c.Request.URL == nil {

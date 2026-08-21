@@ -15,11 +15,12 @@ import (
 // ──────────────────────────────────────────────────────────
 
 const (
-	EndpointMessages        = "/v1/messages"
-	EndpointChatCompletions = "/v1/chat/completions"
-	EndpointResponses       = "/v1/responses"
-	EndpointImages          = "/v1/images/generations"
-	EndpointGeminiModels    = "/v1beta/models"
+	EndpointMessages             = "/v1/messages"
+	EndpointChatCompletions      = "/v1/chat/completions"
+	EndpointResponses            = "/v1/responses"
+	EndpointResponsesInputTokens = "/v1/responses/input_tokens"
+	EndpointImages               = "/v1/images/generations"
+	EndpointGeminiModels         = "/v1beta/models"
 )
 
 // gin.Context keys used by the middleware and helpers below.
@@ -41,6 +42,8 @@ const (
 func NormalizeInboundEndpoint(path string) string {
 	path = strings.TrimSpace(path)
 	switch {
+	case strings.Contains(path, EndpointResponsesInputTokens):
+		return EndpointResponsesInputTokens
 	case strings.Contains(path, EndpointImages):
 		return EndpointImages
 	case strings.Contains(path, EndpointChatCompletions):
@@ -71,6 +74,9 @@ func DeriveUpstreamEndpoint(inbound, rawRequestPath, platform string) string {
 
 	switch platform {
 	case service.PlatformOpenAI:
+		if inbound == EndpointResponsesInputTokens {
+			return EndpointResponsesInputTokens
+		}
 		if inbound == EndpointImages {
 			return EndpointImages
 		}
@@ -82,6 +88,9 @@ func DeriveUpstreamEndpoint(inbound, rawRequestPath, platform string) string {
 		return EndpointResponses
 
 	case service.PlatformGrok:
+		if inbound == EndpointResponsesInputTokens {
+			return EndpointResponsesInputTokens
+		}
 		if inbound == EndpointImages || strings.Contains(inbound, "/videos") {
 			return inbound
 		}

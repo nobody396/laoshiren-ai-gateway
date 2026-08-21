@@ -49,6 +49,23 @@ func TestGatewayRoutesOpenAIResponsesCompactPathIsRegistered(t *testing.T) {
 	}
 }
 
+func TestGatewayRoutesResponsesInputTokensAreRegistered(t *testing.T) {
+	router := newGatewayRoutesTestRouter()
+
+	for _, path := range []string{
+		"/v1/responses/input_tokens",
+		"/responses/input_tokens",
+		"/backend-api/codex/responses/input_tokens",
+	} {
+		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(`{"model":"gpt-5.6-sol","input":"hello"}`))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+		require.NotEqual(t, http.StatusNotFound, w.Code, "path=%s should hit input_tokens handler", path)
+	}
+}
+
 func TestGatewayRoutesGrokTextAndMediaAliasesAreRegistered(t *testing.T) {
 	router := newGatewayRoutesTestRouter()
 	routes := make(map[string]struct{})
@@ -84,6 +101,7 @@ func TestGatewayRoutesGrokTextAndMediaAliasesAreRegistered(t *testing.T) {
 		"POST /videos/extensions",
 		"GET /videos/:request_id",
 		"GET /videos/:request_id/content",
+		"POST /backend-api/codex/responses/input_tokens",
 	} {
 		_, ok := routes[expected]
 		require.True(t, ok, "missing Grok-compatible gateway route %s", expected)

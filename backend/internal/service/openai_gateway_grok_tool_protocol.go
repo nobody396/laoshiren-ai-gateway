@@ -16,14 +16,26 @@ import (
 const grokResponsesClientToolMappingContextKey = "grok_responses_client_tool_mapping"
 
 func adaptGrokResponsesClientTools(body []byte) ([]byte, apicompat.ResponsesClientToolMapping, error) {
+	return adaptResponsesClientToolsForFunctionUpstreamWithMapping(
+		body,
+		"Grok Responses",
+		apicompat.ResponsesClientToolMapping{},
+	)
+}
+
+func adaptResponsesClientToolsForFunctionUpstreamWithMapping(
+	body []byte,
+	upstream string,
+	inherited apicompat.ResponsesClientToolMapping,
+) ([]byte, apicompat.ResponsesClientToolMapping, error) {
 	decoder := json.NewDecoder(bytes.NewReader(body))
 	decoder.UseNumber()
 	var requestBody map[string]any
 	if err := decoder.Decode(&requestBody); err != nil {
-		return body, apicompat.ResponsesClientToolMapping{}, fmt.Errorf("decode Grok Responses client tools: %w", err)
+		return body, apicompat.ResponsesClientToolMapping{}, fmt.Errorf("decode %s client tools: %w", upstream, err)
 	}
 
-	mapping, changed, err := apicompat.AdaptResponsesClientTools(requestBody)
+	mapping, changed, err := apicompat.AdaptResponsesClientToolsWithInheritedMapping(requestBody, inherited)
 	if err != nil {
 		return body, apicompat.ResponsesClientToolMapping{}, err
 	}
@@ -32,7 +44,7 @@ func adaptGrokResponsesClientTools(body []byte) ([]byte, apicompat.ResponsesClie
 	}
 	rebuilt, err := marshalOpenAIUpstreamJSON(requestBody)
 	if err != nil {
-		return body, apicompat.ResponsesClientToolMapping{}, fmt.Errorf("encode Grok Responses client tools: %w", err)
+		return body, apicompat.ResponsesClientToolMapping{}, fmt.Errorf("encode %s client tools: %w", upstream, err)
 	}
 	return rebuilt, mapping, nil
 }

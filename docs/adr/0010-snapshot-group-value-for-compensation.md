@@ -1,0 +1,3 @@
+# Snapshot group value for compensation
+
+Compensation reflects the commercial value of the User-facing Group that actually failed without coupling historical incidents to a mutable live billing multiplier. Each group therefore has a versioned Group Compensation Weight, normally seeded from its commercial group value. The weight is frozen with the Incident evidence and multiplies the Status Product's base Product Compensation Rate. Higher-value groups can receive more and lower-value groups less while the public Service Status remains organized by customer-facing Status Product and exposes no internal pricing or routing details.

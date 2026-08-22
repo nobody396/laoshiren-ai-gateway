@@ -131,6 +131,10 @@ vite.config.js
 docs/*
 !docs/ops/
 !docs/ops/**
+!docs/agents/
+!docs/agents/**
+!docs/adr/
+!docs/adr/**
 .serena/
 .codex/
 frontend/coverage/

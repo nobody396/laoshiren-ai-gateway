@@ -97,3 +97,7 @@ read a theme token from JavaScript; never paste chart hexes into a component.
 ## Secrets
 
 Never commit secrets, tokens, OAuth client secrets, SMTP passwords, SSH keys, or admin API keys. Agent Switch is the only local secret/MCP control plane. Inspect names with `agent-switch secret list`; write values only with `agent-switch secret set --stdin NAME` or `--fd`, never command arguments or project `.env` files.
+
+## Domain docs
+
+**Reliability, Service Status, Channel Monitoring, incidents, routing evidence, Customer Tier, or compensation:** follow `docs/agents/domain.md`.

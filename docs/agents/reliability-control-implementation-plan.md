@@ -22,23 +22,18 @@ deploy or execute compensation.
 
 ## Module design
 
-Keep four deep modules with small, consumer-specific interfaces. HTTP handlers,
-scheduled jobs, probes, gateway handlers, and admin pages are adapters at these
-seams.
+Keep four deep modules with small, consumer-owned entry points. Start with
+concrete module services; introduce a Go interface only when a real second
+adapter exists. HTTP handlers, scheduled jobs, probes, gateway handlers, and
+admin pages call the narrow entry point they own rather than depending on one
+role-bucket interface.
 
 ### Reliability Evidence
 
-```go
-type ReliabilityRecorder interface {
-    RecordFinalOutcome(context.Context, FinalOutcome) error
-    RecordAttempt(context.Context, AttemptOutcome) error
-    RecordProbe(context.Context, ProbeOutcome) error
-}
-
-type ReliabilityReader interface {
-    Snapshot(context.Context, EvidenceQuery) (EvidenceSnapshot, error)
-}
-```
+Consumer entry points: gateway finalization records `FinalOutcome`; attempt
+collection records `AttemptOutcome`; probe runners record `ProbeOutcome`; status
+and routing projections read an `EvidenceSnapshot`. Each caller sees only its
+own method and data contract.
 
 The implementation normalizes facts, enforces idempotency, excludes client and
 business-limit outcomes from reliability, and stores no prompt, response,
@@ -48,17 +43,9 @@ separate fact types.
 
 ### Status Control
 
-```go
-type StatusReader interface {
-    PublicSnapshot(context.Context) (PublicStatusSnapshot, error)
-    OperatorSnapshot(context.Context, MonitoringQuery) (MonitoringSnapshot, error)
-}
-
-type StatusController interface {
-    Evaluate(context.Context, EvaluationWindow) (StatusEvaluation, error)
-    Override(context.Context, StatusOverrideCommand) (StatusOverride, error)
-}
-```
+Consumer entry points: the public handler reads `PublicStatusSnapshot`; the
+operator handler reads `MonitoringSnapshot`; the evaluator produces
+`StatusEvaluation`; the override handler applies `StatusOverrideCommand`.
 
 The implementation owns the explicit Status Catalog, evidence precedence,
 staleness, hysteresis, Monitoring, and sanitized public projection. It never
@@ -66,16 +53,9 @@ changes routing.
 
 ### Incident Control
 
-```go
-type IncidentController interface {
-    Reconcile(context.Context, StatusEvaluation) (IncidentChangeSet, error)
-    Transition(context.Context, IncidentTransitionCommand) (Incident, error)
-}
-
-type IncidentReader interface {
-    PublicTimeline(context.Context, IncidentQuery) ([]PublicIncident, error)
-}
-```
+Consumer entry points: the evaluator reconciles `StatusEvaluation`; the admin
+handler applies `IncidentTransitionCommand`; the public handler reads a
+sanitized incident timeline.
 
 The implementation owns Incident Candidates, phases, affected products,
 Customer Impact Segments, Monitoring relapses, public updates, and evidence
@@ -83,21 +63,14 @@ links. Alerts are inputs; they are not Incidents.
 
 ### Compensation Control
 
-```go
-type CompensationDrafting interface {
-    Draft(context.Context, IncidentID) (CompensationDraft, error)
-    Revise(context.Context, RevisionCommand) (CompensationDraft, error)
-}
-
-type CompensationExecution interface {
-    Execute(context.Context, ApprovedDraftID) (ExecutionSummary, error)
-}
-```
+Consumer entry points: the Shadow evaluator drafts from an Incident; the admin
+review flow creates a revision; the execution entry point does not exist until
+its dedicated PR.
 
 The module hides tier snapshots, policy versions, paid-value evidence, group
 weights, caps, rounding, channel allocation, evidence snapshots, idempotency,
-readback, and notices. Shadow exposes `CompensationDrafting` only;
-`CompensationExecution` is introduced with its dedicated PR.
+readback, and notices. Shadow exposes drafting and revision only; execution is
+introduced with its dedicated PR.
 
 ## Pull-request sequence
 
@@ -129,7 +102,7 @@ Scope:
   fact type, final outcome, ownership/exclusion classification, user/group/
   account internal identifiers where required, Service Component lookup fields,
   route fingerprint, latency, and timestamps.
-- Implement `ReliabilityEvidence` and a PostgreSQL adapter.
+- Implement the Reliability Evidence module and its PostgreSQL adapter.
 - Add adapters at final gateway outcomes, existing upstream-attempt reporting,
   and `RunMonthlyUpstreamProbeOnce`.
 - Deduplicate Active Probes by Upstream Route fingerprint so each concrete route
@@ -162,7 +135,7 @@ Scope:
   current-state, and Manual Status Override storage.
 - Seed common services and Other; seed Builder Pass GPT, Claude, and Grok as
   separate products. Exclude legacy monthly groups and unpublished access modes.
-- Implement `StatusControl` with customer evidence precedence, sparse-traffic
+- Implement Status Control with customer evidence precedence, sparse-traffic
   probes, stale evidence => Monitoring, accepted hysteresis, and override expiry.
 - Project one route-level probe observation to every explicitly bound Status
   Product and Service Component without counting it as customer traffic.
@@ -239,7 +212,7 @@ Ops pages remain available.
 
 Scope:
 
-- Add one adapter from `ReliabilityEvidence.Snapshot` to the existing OpenAI
+- Add one adapter from the Reliability Evidence snapshot entry point to the existing OpenAI
   route observation profile; do not introduce another policy engine.
 - Preserve route fingerprint, request class, protocol, access group, experiment,
   activation, treatment fingerprint, evidence epochs, and completeness gates.
@@ -266,7 +239,7 @@ Scope:
 
 - Add Incident, affected-product, Customer Impact Segment, update, observation
   link, and public-timeline storage.
-- Implement `IncidentControl`: automatic Incident Candidates, operator phases,
+- Implement Incident Control: automatic Incident Candidates, operator phases,
   product recovery into Monitoring, ten-minute healthy observation, relapse as
   a new segment in the same Incident, and resolution.
 - Manual Status Overrides remain separate and never mutate routing.

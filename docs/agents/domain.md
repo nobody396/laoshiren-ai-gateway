@@ -1,7 +1,9 @@
 # Domain Docs
 
-This repository has one domain context. Before exploring or changing a domain,
-read the root `CONTEXT.md` and the relevant decisions under `docs/adr/`.
+Reliability Control has one domain context. Before exploring or changing
+reliability, Service Status, Channel Monitoring, incidents, routing evidence,
+Customer Tier, or compensation, read the root `CONTEXT.md` and the relevant
+decisions under `docs/adr/`.
 
 ## Use the glossary's vocabulary
 
@@ -13,4 +15,4 @@ If the concept you need isn't in the glossary yet, that's a signal — either yo
 
 If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
 
-> _Contradicts ADR-0007 (event-sourced orders) — but worth reopening because…_
+> _Contradicts ADR-0001 (Service Status does not control routing) — but worth reopening because…_

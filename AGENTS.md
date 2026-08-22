@@ -100,4 +100,4 @@ Never commit secrets, tokens, OAuth client secrets, SMTP passwords, SSH keys, or
 
 ## Domain docs
 
-**Domain exploration or terminology:** follow `docs/agents/domain.md`.
+**Reliability, Service Status, Channel Monitoring, incidents, routing evidence, Customer Tier, or compensation:** follow `docs/agents/domain.md`.

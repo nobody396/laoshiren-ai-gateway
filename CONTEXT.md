@@ -141,7 +141,7 @@ The interval from the first Customer-impacting Failure through confirmed custome
 _Avoid_: Observation Window, Alert Window
 
 **Compensable Impact Duration**:
-For one affected user and Status Product, the sum of Customer Impact Segments that begin after that user's first Customer-impacting Failure, bounded by the Incident's Customer Impact Window. A segment ends when reliable recovery evidence moves the product into Monitoring; the subsequent healthy observation period is excluded.
+For one affected user and Status Product, the sum of intersections between each Customer Impact Segment and the interval beginning at that user's first Customer-impacting Failure, bounded by the Incident's Customer Impact Window. This includes the post-failure portion of a segment already in progress. A segment ends when reliable recovery evidence moves the product into Monitoring; the subsequent healthy observation period is excluded.
 _Avoid_: Customer Impact Window, Observation Window
 
 **Customer Impact Segment**:

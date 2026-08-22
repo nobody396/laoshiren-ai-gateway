@@ -1792,10 +1792,94 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		},
 	}
 
-	if err := h.gatewayService.ProxyResponsesWebSocketFromClient(ctx, c, wsConn, account, token, firstMessage, hooks); err != nil {
+	failedWSAccountIDs := make(map[int64]struct{})
+	wsAttemptMessage := append([]byte(nil), firstMessage...)
+	wsTurnOffset := 0
+	wsSwitchCount := 0
+	for {
+		hooks.TurnOffset = wsTurnOffset
+		err := h.gatewayService.ProxyResponsesWebSocketFromClient(ctx, c, wsConn, account, token, wsAttemptMessage, hooks)
+		if err == nil {
+			reqLog.Info("openai.websocket_ingress_closed", zap.Int64("account_id", account.ID))
+			return
+		}
+		var failoverErr *service.UpstreamFailoverError
+		retryPayload, retryTurn, retryCurrentTurn := service.OpenAIWSCurrentTurnRetryPayload(err)
+		if errors.As(err, &failoverErr) && retryCurrentTurn {
+			nextAttemptMessage, retrySafe := openAIWSNextAttemptMessage(wsAttemptMessage, retryPayload, true)
+			if !retrySafe || wsSwitchCount >= h.maxAccountSwitches {
+				closeOpenAIClientWS(wsConn, coderws.StatusInternalError, "upstream websocket failover exhausted")
+				return
+			}
+
+			failedWSAccountIDs[account.ID] = struct{}{}
+			releaseTurnSlots()
+			replacement, replacementDecision, selectErr := h.gatewayService.SelectOpenAICompatibleAccountWithSchedulerForRouting(
+				ctx,
+				requestPlatform,
+				apiKey.GroupID,
+				"",
+				routingSessionHash,
+				reqModel,
+				failedWSAccountIDs,
+				requiredTransport,
+				false,
+				imageGenerationIntent,
+			)
+			if selectErr != nil || replacement == nil || replacement.Account == nil {
+				reqLog.Warn("openai.websocket_failover_account_select_failed",
+					zap.Int("retry_turn", retryTurn),
+					zap.Int("excluded_account_count", len(failedWSAccountIDs)),
+					zap.Error(selectErr),
+				)
+				closeOpenAIClientWS(wsConn, coderws.StatusTryAgainLater, "no replacement account available")
+				return
+			}
+			if replacement.Acquired && replacement.ReleaseFunc != nil {
+				replacement.ReleaseFunc()
+			}
+
+			newAccount := replacement.Account
+			newMaxConcurrency := newAccount.Concurrency
+			if replacement.WaitPlan != nil && replacement.WaitPlan.MaxConcurrency > 0 {
+				newMaxConcurrency = replacement.WaitPlan.MaxConcurrency
+			}
+			newToken, _, tokenErr := h.gatewayService.GetAccessToken(ctx, newAccount)
+			if tokenErr != nil {
+				reqLog.Warn("openai.websocket_failover_get_access_token_failed",
+					zap.Int64("account_id", newAccount.ID),
+					zap.Error(tokenErr),
+				)
+				closeOpenAIClientWS(wsConn, coderws.StatusInternalError, "failed to get replacement account token")
+				return
+			}
+
+			previousAccountID := account.ID
+			account = newAccount
+			accountMaxConcurrency = newMaxConcurrency
+			token = newToken
+			wsAttemptMessage = nextAttemptMessage
+			wsTurnOffset = retryTurn - 1
+			wsSwitchCount++
+			if !imageGenerationIntent {
+				if bindErr := h.gatewayService.BindStickySession(ctx, apiKey.GroupID, sessionHash, account.ID); bindErr != nil {
+					reqLog.Warn("openai.websocket_failover_bind_sticky_session_failed", zap.Int64("account_id", account.ID), zap.Error(bindErr))
+				}
+			}
+			reqLog.Warn("openai.websocket_current_turn_failover_retry",
+				zap.Int64("failed_account_id", previousAccountID),
+				zap.Int64("replacement_account_id", account.ID),
+				zap.Int("retry_turn", retryTurn),
+				zap.Int("retry_payload_bytes", len(retryPayload)),
+				zap.Int("switch_count", wsSwitchCount),
+				zap.String("schedule_layer", replacementDecision.Layer),
+			)
+			continue
+		}
 		if shouldReportOpenAIWSProxyAccountFailure(err) {
 			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
 		}
+
 		closeStatus, closeReason := summarizeWSCloseErrorForLog(err)
 		reqLog.Warn("openai.websocket_proxy_failed",
 			zap.Int64("account_id", account.ID),
@@ -1811,7 +1895,6 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		closeOpenAIClientWS(wsConn, coderws.StatusInternalError, "upstream websocket proxy failed")
 		return
 	}
-	reqLog.Info("openai.websocket_ingress_closed", zap.Int64("account_id", account.ID))
 }
 
 func (h *OpenAIGatewayHandler) recoverResponsesPanic(c *gin.Context, streamStarted *bool) {
@@ -2142,6 +2225,16 @@ func closeOpenAIClientWS(conn *coderws.Conn, status coderws.StatusCode, reason s
 	}
 	_ = conn.Close(status, reason)
 	_ = conn.CloseNow()
+}
+
+func openAIWSNextAttemptMessage(current, retryPayload []byte, retryCurrentTurn bool) ([]byte, bool) {
+	if !retryCurrentTurn {
+		return append([]byte(nil), current...), true
+	}
+	if len(retryPayload) == 0 {
+		return nil, false
+	}
+	return append([]byte(nil), retryPayload...), true
 }
 
 func summarizeWSCloseErrorForLog(err error) (string, string) {

@@ -256,8 +256,9 @@ type OpenAIForwardResult struct {
 	ResponseStatus       int
 	ResponseType         string
 
-	wsReplayInput       []json.RawMessage
-	wsReplayInputExists bool
+	wsReplayInput                []json.RawMessage
+	wsReplayInputExists          bool
+	wsAccountFailoverReplayInput []json.RawMessage
 }
 
 type OpenAIWSRetryMetricsSnapshot struct {
@@ -5403,6 +5404,12 @@ func openAIResponsesRequestPathSuffix(c *gin.Context) string {
 func IsForwardableOpenAIResponsesRequestPath(c *gin.Context) bool {
 	_, ok := sanitizedUpstreamPathSuffix(rawOpenAIResponsesRequestPathSuffix(c))
 	return ok
+}
+
+// IsOpenAIResponsesInputTokensRequestPath identifies the native token-count
+// preflight before the generic Responses wildcard forwards a subpath upstream.
+func IsOpenAIResponsesInputTokensRequestPath(c *gin.Context) bool {
+	return openAIResponsesRequestPathSuffix(c) == "/input_tokens"
 }
 
 // rawOpenAIResponsesRequestPathSuffix extracts the suffix without validating it.

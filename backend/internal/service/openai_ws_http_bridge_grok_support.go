@@ -16,6 +16,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/apicompat"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 const (
@@ -23,6 +24,30 @@ const (
 	openAIWSHTTPBridgeThresholdBytesDefault int64 = 15 * 1024 * 1024
 	openAIWSHTTPBridgeErrorBodyLimitBytes         = 64 * 1024
 )
+
+const openAIWSHTTPBridgeToolStateContextKey = "openai_ws_http_bridge_tool_state"
+
+type openAIWSHTTPBridgeToolState struct {
+	ClientMapping apicompat.ResponsesClientToolMapping
+	LoweredTools  json.RawMessage
+}
+
+func openAIWSHTTPBridgeToolStateFromContext(c *gin.Context) (openAIWSHTTPBridgeToolState, bool) {
+	if c == nil {
+		return openAIWSHTTPBridgeToolState{}, false
+	}
+	value, ok := c.Get(openAIWSHTTPBridgeToolStateContextKey)
+	state, typed := value.(openAIWSHTTPBridgeToolState)
+	return state, ok && typed
+}
+
+func setOpenAIWSHTTPBridgeToolState(c *gin.Context, state openAIWSHTTPBridgeToolState) {
+	if c == nil {
+		return
+	}
+	state.LoweredTools = append(json.RawMessage(nil), state.LoweredTools...)
+	c.Set(openAIWSHTTPBridgeToolStateContextKey, state)
+}
 
 func ResolveOpenAIWSClientReadLimitBytes(cfg *config.Config) int64 {
 	if cfg == nil || cfg.Gateway.OpenAIWS.ClientReadLimitBytes <= 0 {
@@ -86,20 +111,25 @@ func buildOpenAIWSHTTPBridgeErrorEvent(statusCode int, message string) []byte {
 }
 
 type openAIWSToolCallReplayCollector struct {
-	items []json.RawMessage
-	seen  map[string]struct{}
+	items    []json.RawMessage
+	seen     map[string]struct{}
+	allItems []json.RawMessage
+	allSeen  map[string]struct{}
 }
 
 func (c *openAIWSToolCallReplayCollector) AddEvent(eventType string, message []byte) {
 	switch strings.TrimSpace(eventType) {
 	case "response.output_item.done":
-		c.addItem(gjson.GetBytes(message, "item"))
+		item := gjson.GetBytes(message, "item")
+		c.addAllItem(item)
+		c.addItem(item)
 	case "response.completed", "response.done":
 		output := gjson.GetBytes(message, "response.output")
 		if !output.IsArray() {
 			return
 		}
 		for _, item := range output.Array() {
+			c.addAllItem(item)
 			c.addItem(item)
 		}
 	}
@@ -107,6 +137,35 @@ func (c *openAIWSToolCallReplayCollector) AddEvent(eventType string, message []b
 
 func (c *openAIWSToolCallReplayCollector) Items() []json.RawMessage {
 	return cloneOpenAIWSRawMessages(c.items)
+}
+
+func (c *openAIWSToolCallReplayCollector) AllItems() []json.RawMessage {
+	return cloneOpenAIWSRawMessages(c.allItems)
+}
+
+func (c *openAIWSToolCallReplayCollector) addAllItem(item gjson.Result) {
+	if !item.Exists() || item.Type != gjson.JSON {
+		return
+	}
+	raw := strings.TrimSpace(item.Raw)
+	if raw == "" || !strings.HasPrefix(raw, "{") || strings.TrimSpace(item.Get("type").String()) == "" {
+		return
+	}
+	key := strings.TrimSpace(item.Get("id").String())
+	if key == "" {
+		key = strings.TrimSpace(item.Get("call_id").String())
+	}
+	if key == "" {
+		key = raw
+	}
+	if c.allSeen == nil {
+		c.allSeen = make(map[string]struct{})
+	}
+	if _, ok := c.allSeen[key]; ok {
+		return
+	}
+	c.allSeen[key] = struct{}{}
+	c.allItems = append(c.allItems, json.RawMessage(raw))
 }
 
 func (c *openAIWSToolCallReplayCollector) addItem(item gjson.Result) {
@@ -175,10 +234,35 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 	if account.Platform == PlatformGrok && upstreamModel == "" {
 		upstreamModel = grokDefaultResponsesModel
 	}
+	var clientToolMapping apicompat.ResponsesClientToolMapping
+	if account.Platform == PlatformOpenAI && account.Type == AccountTypeAPIKey {
+		inheritedState, _ := openAIWSHTTPBridgeToolStateFromContext(c)
+		toolsPresent := gjson.GetBytes(body, "tools").Exists()
+		body, clientToolMapping, err = adaptResponsesClientToolsForFunctionUpstreamWithMapping(
+			body,
+			"OpenAI WS HTTP bridge",
+			inheritedState.ClientMapping,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("adapt OpenAI WS HTTP bridge client tools: %w", err)
+		}
+		loweredTools := inheritedState.LoweredTools
+		if toolsPresent {
+			loweredTools = json.RawMessage(gjson.GetBytes(body, "tools").Raw)
+		} else if len(loweredTools) > 0 {
+			body, err = sjson.SetRawBytes(body, "tools", loweredTools)
+			if err != nil {
+				return nil, fmt.Errorf("inherit OpenAI WS HTTP bridge tools: %w", err)
+			}
+		}
+		setOpenAIWSHTTPBridgeToolState(c, openAIWSHTTPBridgeToolState{
+			ClientMapping: clientToolMapping,
+			LoweredTools:  loweredTools,
+		})
+	}
 
 	upstreamCtx, release := detachUpstreamContext(ctx)
 	var req *http.Request
-	var clientToolMapping apicompat.ResponsesClientToolMapping
 	if account.Platform == PlatformGrok {
 		intentBody := append([]byte(nil), body...)
 		body, clientToolMapping, err = patchGrokResponsesBodyWithClientTools(body, upstreamModel)
@@ -241,7 +325,7 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 			message,
 			upstreamModel,
 		)
-		if turn == 1 && failoverErr != nil {
+		if failoverErr != nil && (turn == 1 || resp.StatusCode == http.StatusTooManyRequests) {
 			return nil, failoverErr
 		}
 		_ = writeClientMessage(buildOpenAIWSHTTPBridgeErrorEvent(resp.StatusCode, message))
@@ -260,6 +344,8 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 		if hasGrokResponsesClientToolMapping(clientToolMapping) {
 			resp.Body = newGrokResponsesClientToolStreamBody(resp.Body, clientToolMapping, maxLineSize)
 		}
+	} else if hasGrokResponsesClientToolMapping(clientToolMapping) {
+		resp.Body = newGrokResponsesClientToolStreamBody(resp.Body, clientToolMapping, maxLineSize)
 	}
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Buffer(make([]byte, 64*1024), maxLineSize)
@@ -289,6 +375,7 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 			result.wsReplayInput = replayInput
 			result.wsReplayInputExists = true
 		}
+		result.wsAccountFailoverReplayInput = replayCollector.AllItems()
 		return finalizeOpenAIResponseImageBilling(result)
 	}
 	for scanner.Scan() {
@@ -336,7 +423,7 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 					errMessage,
 					upstreamModel,
 				)
-				if turn == 1 && !wroteDownstream && failoverErr != nil {
+				if !wroteDownstream && failoverErr != nil && (turn == 1 || statusCode == http.StatusTooManyRequests) {
 					return nil, failoverErr
 				}
 			}

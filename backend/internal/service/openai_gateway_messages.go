@@ -355,12 +355,11 @@ func (s *OpenAIGatewayService) handleAnthropicBufferedStreamingResponse(
 	}
 
 	if err := scanner.Err(); err != nil {
-		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
-			logger.L().Warn("openai messages buffered: read error",
-				zap.Error(err),
-				zap.String("request_id", requestID),
-			)
-		}
+		logger.L().Warn("openai messages buffered: read error",
+			zap.Error(err),
+			zap.String("request_id", requestID),
+		)
+		return nil, err
 	}
 
 	if finalResponse == nil {

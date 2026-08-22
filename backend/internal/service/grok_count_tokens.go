@@ -17,11 +17,33 @@ const (
 )
 
 type grokInputTokensCountRequest struct {
-	Model        string
-	Instructions string
-	Input        json.RawMessage
-	Tools        []apicompat.ResponsesTool
-	ToolChoice   json.RawMessage
+	Model        string                    `json:"model"`
+	Instructions string                    `json:"instructions,omitempty"`
+	Input        json.RawMessage           `json:"input,omitempty"`
+	Tools        []apicompat.ResponsesTool `json:"tools,omitempty"`
+	ToolChoice   json.RawMessage           `json:"tool_choice,omitempty"`
+}
+
+// EstimateOpenAIResponsesInputTokens estimates the native Responses
+// /input_tokens request locally. The endpoint is deliberately account-free and
+// cannot create usage, billing, provider penalties, or upstream traffic.
+func EstimateOpenAIResponsesInputTokens(body []byte) (int, string, error) {
+	var req grokInputTokensCountRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		return 0, "", fmt.Errorf("parse responses input_tokens request: %w", err)
+	}
+	req.Model = strings.TrimSpace(req.Model)
+	if req.Model == "" {
+		return 0, "", fmt.Errorf("parse responses input_tokens request: model is required")
+	}
+	estimated, err := estimateGrokInputTokens(req)
+	if err != nil {
+		return 0, "", fmt.Errorf("estimate responses input_tokens: %w", err)
+	}
+	if estimated < grokInputTokensFallbackMinimum {
+		estimated = grokInputTokensFallbackMinimum
+	}
+	return estimated, req.Model, nil
 }
 
 // EstimateGrokCountTokens estimates an Anthropic-compatible count_tokens

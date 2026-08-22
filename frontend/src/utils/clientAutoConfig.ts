@@ -37,6 +37,8 @@ export const getClientAutoConfigTarget = (
       return 'grok'
     case 'gemini':
       return 'gemini'
+    case 'universal':
+      return null
     case 'gpt-image':
     case undefined:
     case null:

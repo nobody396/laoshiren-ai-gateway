@@ -2473,7 +2473,13 @@ export default {
         gemini: 'Gemini',
         antigravity: 'Antigravity',
         grok: 'Grok',
-        'gpt-image': 'GPT-Image'
+        'gpt-image': 'GPT-Image',
+        universal: 'Universal'
+      },
+      universal: {
+        routes: 'Universal model routes (JSON)',
+        hint: 'Each route explicitly selects a model, inbound protocol, and existing target group. Accounts are not copied; before PR3 the lowest priority number wins.',
+        invalidJson: 'Universal model routes must be a valid JSON array'
       },
       deleteConfirm:
         "Are you sure you want to delete '{name}'? All associated API keys will no longer belong to any group.",

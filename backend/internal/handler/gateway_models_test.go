@@ -1,12 +1,33 @@
 package handler
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/claude"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/openai"
+	middleware2 "github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
+
+func TestGatewayModelsReturnsUniversalPublicCatalog(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	group := &service.Group{ID: 90, Platform: service.PlatformUniversal, UniversalRoutes: []service.UniversalRouteConfig{{
+		PublicModel: "gpt-5.6-sol", MatchType: service.UniversalRouteMatchExact, TargetGroupID: 6, Enabled: true,
+	}}}
+	key := &service.APIKey{Group: group}
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+	c.Set(string(middleware2.ContextKeyAPIKey), key)
+
+	(&GatewayHandler{}).Models(c)
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Contains(t, recorder.Body.String(), "gpt-5.6-sol")
+}
 
 func TestFilterInternalOnlyModelsHidesCompactVariants(t *testing.T) {
 	models := filterInternalOnlyModels([]string{

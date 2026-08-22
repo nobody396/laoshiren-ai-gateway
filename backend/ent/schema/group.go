@@ -197,6 +197,11 @@ func (Group) Fields() []ent.Field {
 			Default([]domain.ReasoningEffortMapping{}).
 			SchemaType(map[string]string{dialect.Postgres: "jsonb"}).
 			Comment("OpenAI reasoning effort 自定义精确映射；先映射再应用上限"),
+
+		field.JSON("universal_routes", []domain.UniversalRouteConfig{}).
+			Default([]domain.UniversalRouteConfig{}).
+			SchemaType(map[string]string{dialect.Postgres: "jsonb"}).
+			Comment("通用分组路由：公开模型/入站协议 -> 既有目标分组"),
 	}
 }
 

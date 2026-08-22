@@ -800,6 +800,18 @@ func (_u *GroupUpdate) AppendReasoningEffortMappings(v []domain.ReasoningEffortM
 	return _u
 }
 
+// SetUniversalRoutes sets the "universal_routes" field.
+func (_u *GroupUpdate) SetUniversalRoutes(v []domain.UniversalRouteConfig) *GroupUpdate {
+	_u.mutation.SetUniversalRoutes(v)
+	return _u
+}
+
+// AppendUniversalRoutes appends value to the "universal_routes" field.
+func (_u *GroupUpdate) AppendUniversalRoutes(v []domain.UniversalRouteConfig) *GroupUpdate {
+	_u.mutation.AppendUniversalRoutes(v)
+	return _u
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_u *GroupUpdate) AddAPIKeyIDs(ids ...int64) *GroupUpdate {
 	_u.mutation.AddAPIKeyIDs(ids...)
@@ -1373,6 +1385,14 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AppendedReasoningEffortMappings(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, group.FieldReasoningEffortMappings, value)
+		})
+	}
+	if value, ok := _u.mutation.UniversalRoutes(); ok {
+		_spec.SetField(group.FieldUniversalRoutes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedUniversalRoutes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, group.FieldUniversalRoutes, value)
 		})
 	}
 	if _u.mutation.APIKeysCleared() {
@@ -2497,6 +2517,18 @@ func (_u *GroupUpdateOne) AppendReasoningEffortMappings(v []domain.ReasoningEffo
 	return _u
 }
 
+// SetUniversalRoutes sets the "universal_routes" field.
+func (_u *GroupUpdateOne) SetUniversalRoutes(v []domain.UniversalRouteConfig) *GroupUpdateOne {
+	_u.mutation.SetUniversalRoutes(v)
+	return _u
+}
+
+// AppendUniversalRoutes appends value to the "universal_routes" field.
+func (_u *GroupUpdateOne) AppendUniversalRoutes(v []domain.UniversalRouteConfig) *GroupUpdateOne {
+	_u.mutation.AppendUniversalRoutes(v)
+	return _u
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_u *GroupUpdateOne) AddAPIKeyIDs(ids ...int64) *GroupUpdateOne {
 	_u.mutation.AddAPIKeyIDs(ids...)
@@ -3100,6 +3132,14 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	if value, ok := _u.mutation.AppendedReasoningEffortMappings(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, group.FieldReasoningEffortMappings, value)
+		})
+	}
+	if value, ok := _u.mutation.UniversalRoutes(); ok {
+		_spec.SetField(group.FieldUniversalRoutes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedUniversalRoutes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, group.FieldUniversalRoutes, value)
 		})
 	}
 	if _u.mutation.APIKeysCleared() {

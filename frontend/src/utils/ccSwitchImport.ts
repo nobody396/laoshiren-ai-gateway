@@ -202,6 +202,8 @@ export const getCompatibleCcsTargets = (
       return []
     case 'grok':
       return ['grokbuild']
+    case 'universal':
+      return ['codex', 'opencode', 'openclaw', 'hermes', 'claude']
   }
 }
 

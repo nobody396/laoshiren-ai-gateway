@@ -996,6 +996,14 @@ func (h *GatewayHandler) Models(c *gin.Context) {
 	if forcedPlatform, ok := middleware2.GetForcePlatformFromContext(c); ok && strings.TrimSpace(forcedPlatform) != "" {
 		platform = forcedPlatform
 	}
+	if platform == service.PlatformUniversal && apiKey != nil && apiKey.Group != nil {
+		models := apiKey.Group.UniversalPublicModels()
+		c.JSON(http.StatusOK, gin.H{
+			"object": "list",
+			"data":   gatewayModelInfoFromIDs(models, apiKey.Group.ID),
+		})
+		return
+	}
 
 	// Get available models from account configurations (without platform filter).
 	// Internal Codex auto-compaction variants stay routable but are hidden from

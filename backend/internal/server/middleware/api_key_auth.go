@@ -137,7 +137,8 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 		skipBilling := c.Request.URL.Path == "/v1/usage"
 
 		var subscription *service.UserSubscription
-		isSubscriptionType := apiKey.Group != nil && apiKey.Group.IsSubscriptionType()
+		deferUniversalGroupBilling := apiKey.Group != nil && apiKey.Group.IsUniversal()
+		isSubscriptionType := apiKey.Group != nil && apiKey.Group.IsSubscriptionType() && !deferUniversalGroupBilling
 
 		if isSubscriptionType && subscriptionService != nil {
 			sub, subErr := subscriptionService.GetActiveSubscription(
@@ -180,7 +181,11 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 			}
 
 			// 订阅模式：验证订阅限额
-			if subscription != nil {
+			if deferUniversalGroupBilling {
+				// The access group authenticates the key only. UniversalGroupRouting
+				// resolves and enforces the concrete route/billing group after reading
+				// the request model and protocol.
+			} else if subscription != nil {
 				needsMaintenance, validateErr := subscriptionService.ValidateAndCheckLimits(subscription, apiKey.Group)
 				if validateErr != nil {
 					status := infraerrors.Code(validateErr)

@@ -21285,6 +21285,8 @@ type GroupMutation struct {
 	max_reasoning_effort                    *string
 	reasoning_effort_mappings               *[]domain.ReasoningEffortMapping
 	appendreasoning_effort_mappings         []domain.ReasoningEffortMapping
+	universal_routes                        *[]domain.UniversalRouteConfig
+	appenduniversal_routes                  []domain.UniversalRouteConfig
 	clearedFields                           map[string]struct{}
 	api_keys                                map[int64]struct{}
 	removedapi_keys                         map[int64]struct{}
@@ -23499,6 +23501,57 @@ func (m *GroupMutation) ResetReasoningEffortMappings() {
 	m.appendreasoning_effort_mappings = nil
 }
 
+// SetUniversalRoutes sets the "universal_routes" field.
+func (m *GroupMutation) SetUniversalRoutes(drc []domain.UniversalRouteConfig) {
+	m.universal_routes = &drc
+	m.appenduniversal_routes = nil
+}
+
+// UniversalRoutes returns the value of the "universal_routes" field in the mutation.
+func (m *GroupMutation) UniversalRoutes() (r []domain.UniversalRouteConfig, exists bool) {
+	v := m.universal_routes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUniversalRoutes returns the old "universal_routes" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldUniversalRoutes(ctx context.Context) (v []domain.UniversalRouteConfig, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUniversalRoutes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUniversalRoutes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUniversalRoutes: %w", err)
+	}
+	return oldValue.UniversalRoutes, nil
+}
+
+// AppendUniversalRoutes adds drc to the "universal_routes" field.
+func (m *GroupMutation) AppendUniversalRoutes(drc []domain.UniversalRouteConfig) {
+	m.appenduniversal_routes = append(m.appenduniversal_routes, drc...)
+}
+
+// AppendedUniversalRoutes returns the list of values that were appended to the "universal_routes" field in this mutation.
+func (m *GroupMutation) AppendedUniversalRoutes() ([]domain.UniversalRouteConfig, bool) {
+	if len(m.appenduniversal_routes) == 0 {
+		return nil, false
+	}
+	return m.appenduniversal_routes, true
+}
+
+// ResetUniversalRoutes resets all changes to the "universal_routes" field.
+func (m *GroupMutation) ResetUniversalRoutes() {
+	m.universal_routes = nil
+	m.appenduniversal_routes = nil
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by ids.
 func (m *GroupMutation) AddAPIKeyIDs(ids ...int64) {
 	if m.api_keys == nil {
@@ -23911,7 +23964,7 @@ func (m *GroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroupMutation) Fields() []string {
-	fields := make([]string, 0, 42)
+	fields := make([]string, 0, 43)
 	if m.created_at != nil {
 		fields = append(fields, group.FieldCreatedAt)
 	}
@@ -24038,6 +24091,9 @@ func (m *GroupMutation) Fields() []string {
 	if m.reasoning_effort_mappings != nil {
 		fields = append(fields, group.FieldReasoningEffortMappings)
 	}
+	if m.universal_routes != nil {
+		fields = append(fields, group.FieldUniversalRoutes)
+	}
 	return fields
 }
 
@@ -24130,6 +24186,8 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.MaxReasoningEffort()
 	case group.FieldReasoningEffortMappings:
 		return m.ReasoningEffortMappings()
+	case group.FieldUniversalRoutes:
+		return m.UniversalRoutes()
 	}
 	return nil, false
 }
@@ -24223,6 +24281,8 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldMaxReasoningEffort(ctx)
 	case group.FieldReasoningEffortMappings:
 		return m.OldReasoningEffortMappings(ctx)
+	case group.FieldUniversalRoutes:
+		return m.OldUniversalRoutes(ctx)
 	}
 	return nil, fmt.Errorf("unknown Group field %s", name)
 }
@@ -24525,6 +24585,13 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetReasoningEffortMappings(v)
+		return nil
+	case group.FieldUniversalRoutes:
+		v, ok := value.([]domain.UniversalRouteConfig)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUniversalRoutes(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Group field %s", name)
@@ -25000,6 +25067,9 @@ func (m *GroupMutation) ResetField(name string) error {
 		return nil
 	case group.FieldReasoningEffortMappings:
 		m.ResetReasoningEffortMappings()
+		return nil
+	case group.FieldUniversalRoutes:
+		m.ResetUniversalRoutes()
 		return nil
 	}
 	return fmt.Errorf("unknown Group field %s", name)

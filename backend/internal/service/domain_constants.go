@@ -27,6 +27,7 @@ const (
 	PlatformAntigravity = domain.PlatformAntigravity
 	PlatformGPTImage    = domain.PlatformGPTImage
 	PlatformGrok        = domain.PlatformGrok
+	PlatformUniversal   = domain.PlatformUniversal
 )
 
 const (

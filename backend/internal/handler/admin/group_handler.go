@@ -141,7 +141,7 @@ func NewGroupHandler(adminService service.AdminService, dashboardService *servic
 type CreateGroupRequest struct {
 	Name             string             `json:"name" binding:"required"`
 	Description      string             `json:"description"`
-	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity gpt-image grok"`
+	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity gpt-image grok universal"`
 	RateMultiplier   float64            `json:"rate_multiplier"`
 	IsExclusive      bool               `json:"is_exclusive"`
 	ChatbotEnabled   bool               `json:"chatbot_enabled"`
@@ -180,6 +180,7 @@ type CreateGroupRequest struct {
 	MessagesDispatchModelConfig service.OpenAIMessagesDispatchModelConfig `json:"messages_dispatch_model_config"`
 	MaxReasoningEffort          string                                    `json:"max_reasoning_effort"`
 	ReasoningEffortMappings     []service.ReasoningEffortMapping          `json:"reasoning_effort_mappings"`
+	UniversalRoutes             []service.UniversalRouteConfig            `json:"universal_routes"`
 	// 从指定分组复制账号（创建后自动绑定）
 	CopyAccountsFromGroupIDs []int64 `json:"copy_accounts_from_group_ids"`
 }
@@ -188,7 +189,7 @@ type CreateGroupRequest struct {
 type UpdateGroupRequest struct {
 	Name             string              `json:"name"`
 	Description      optionalStringField `json:"description"`
-	Platform         string              `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity gpt-image grok"`
+	Platform         string              `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity gpt-image grok universal"`
 	RateMultiplier   *float64            `json:"rate_multiplier"`
 	IsExclusive      *bool               `json:"is_exclusive"`
 	ChatbotEnabled   *bool               `json:"chatbot_enabled"`
@@ -228,6 +229,7 @@ type UpdateGroupRequest struct {
 	MessagesDispatchModelConfig *service.OpenAIMessagesDispatchModelConfig `json:"messages_dispatch_model_config"`
 	MaxReasoningEffort          *string                                    `json:"max_reasoning_effort"`
 	ReasoningEffortMappings     *[]service.ReasoningEffortMapping          `json:"reasoning_effort_mappings"`
+	UniversalRoutes             *[]service.UniversalRouteConfig            `json:"universal_routes"`
 	// 从指定分组复制账号（同步操作：先清空当前分组的账号绑定，再绑定源分组的账号）
 	CopyAccountsFromGroupIDs []int64 `json:"copy_accounts_from_group_ids"`
 }
@@ -358,6 +360,7 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		MessagesDispatchModelConfig:     req.MessagesDispatchModelConfig,
 		MaxReasoningEffort:              req.MaxReasoningEffort,
 		ReasoningEffortMappings:         req.ReasoningEffortMappings,
+		UniversalRoutes:                 req.UniversalRoutes,
 		CopyAccountsFromGroupIDs:        req.CopyAccountsFromGroupIDs,
 	})
 	if err != nil {
@@ -422,6 +425,7 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		MessagesDispatchModelConfig:     req.MessagesDispatchModelConfig,
 		MaxReasoningEffort:              req.MaxReasoningEffort,
 		ReasoningEffortMappings:         req.ReasoningEffortMappings,
+		UniversalRoutes:                 req.UniversalRoutes,
 		CopyAccountsFromGroupIDs:        req.CopyAccountsFromGroupIDs,
 	})
 	if err != nil {
@@ -430,6 +434,34 @@ func (h *GroupHandler) Update(c *gin.Context) {
 	}
 
 	response.Success(c, dto.GroupFromServiceAdmin(group))
+}
+
+// PreviewUniversalRoute resolves a model/protocol without touching traffic.
+func (h *GroupHandler) PreviewUniversalRoute(c *gin.Context) {
+	groupID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid group ID")
+		return
+	}
+	var req struct {
+		Model    string `json:"model" binding:"required"`
+		Protocol string `json:"protocol" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	group, err := h.adminService.GetGroup(c.Request.Context(), groupID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	decision, err := group.ResolveUniversalRoute(req.Model, req.Protocol)
+	if err != nil {
+		response.NotFound(c, "No matching universal route")
+		return
+	}
+	response.Success(c, decision)
 }
 
 // Delete handles deleting a group

@@ -68,6 +68,21 @@ func (s *GroupRepoSuite) TestCreate() {
 	s.Require().Equal("test-create", got.Name)
 }
 
+func (s *GroupRepoSuite) TestUniversalRoutesRoundTrip() {
+	group := &service.Group{
+		Name: "test-universal-routes", Platform: service.PlatformUniversal,
+		RateMultiplier: 1, Status: service.StatusActive, SubscriptionType: service.SubscriptionTypeStandard,
+		UniversalRoutes: []service.UniversalRouteConfig{{
+			PublicModel: "gpt-5.6-sol", MatchType: service.UniversalRouteMatchExact,
+			InboundProtocol: service.APIProtocolResponses, TargetGroupID: 42, Priority: 10, Enabled: true,
+		}},
+	}
+	s.Require().NoError(s.repo.Create(s.ctx, group))
+	got, err := s.repo.GetByID(s.ctx, group.ID)
+	s.Require().NoError(err)
+	s.Require().Equal(group.UniversalRoutes, got.UniversalRoutes)
+}
+
 func (s *GroupRepoSuite) TestGetByID_NotFound() {
 	_, err := s.repo.GetByID(s.ctx, 999999)
 	s.Require().Error(err, "expected error for non-existent ID")

@@ -586,6 +586,12 @@ func (_c *GroupCreate) SetReasoningEffortMappings(v []domain.ReasoningEffortMapp
 	return _c
 }
 
+// SetUniversalRoutes sets the "universal_routes" field.
+func (_c *GroupCreate) SetUniversalRoutes(v []domain.UniversalRouteConfig) *GroupCreate {
+	_c.mutation.SetUniversalRoutes(v)
+	return _c
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_c *GroupCreate) AddAPIKeyIDs(ids ...int64) *GroupCreate {
 	_c.mutation.AddAPIKeyIDs(ids...)
@@ -838,6 +844,10 @@ func (_c *GroupCreate) defaults() error {
 		v := group.DefaultReasoningEffortMappings
 		_c.mutation.SetReasoningEffortMappings(v)
 	}
+	if _, ok := _c.mutation.UniversalRoutes(); !ok {
+		v := group.DefaultUniversalRoutes
+		_c.mutation.SetUniversalRoutes(v)
+	}
 	return nil
 }
 
@@ -953,6 +963,9 @@ func (_c *GroupCreate) check() error {
 	}
 	if _, ok := _c.mutation.ReasoningEffortMappings(); !ok {
 		return &ValidationError{Name: "reasoning_effort_mappings", err: errors.New(`ent: missing required field "Group.reasoning_effort_mappings"`)}
+	}
+	if _, ok := _c.mutation.UniversalRoutes(); !ok {
+		return &ValidationError{Name: "universal_routes", err: errors.New(`ent: missing required field "Group.universal_routes"`)}
 	}
 	return nil
 }
@@ -1148,6 +1161,10 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ReasoningEffortMappings(); ok {
 		_spec.SetField(group.FieldReasoningEffortMappings, field.TypeJSON, value)
 		_node.ReasoningEffortMappings = value
+	}
+	if value, ok := _c.mutation.UniversalRoutes(); ok {
+		_spec.SetField(group.FieldUniversalRoutes, field.TypeJSON, value)
+		_node.UniversalRoutes = value
 	}
 	if nodes := _c.mutation.APIKeysIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -2005,6 +2022,18 @@ func (u *GroupUpsert) UpdateReasoningEffortMappings() *GroupUpsert {
 	return u
 }
 
+// SetUniversalRoutes sets the "universal_routes" field.
+func (u *GroupUpsert) SetUniversalRoutes(v []domain.UniversalRouteConfig) *GroupUpsert {
+	u.Set(group.FieldUniversalRoutes, v)
+	return u
+}
+
+// UpdateUniversalRoutes sets the "universal_routes" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateUniversalRoutes() *GroupUpsert {
+	u.SetExcluded(group.FieldUniversalRoutes)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -2845,6 +2874,20 @@ func (u *GroupUpsertOne) SetReasoningEffortMappings(v []domain.ReasoningEffortMa
 func (u *GroupUpsertOne) UpdateReasoningEffortMappings() *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateReasoningEffortMappings()
+	})
+}
+
+// SetUniversalRoutes sets the "universal_routes" field.
+func (u *GroupUpsertOne) SetUniversalRoutes(v []domain.UniversalRouteConfig) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetUniversalRoutes(v)
+	})
+}
+
+// UpdateUniversalRoutes sets the "universal_routes" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateUniversalRoutes() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateUniversalRoutes()
 	})
 }
 
@@ -3854,6 +3897,20 @@ func (u *GroupUpsertBulk) SetReasoningEffortMappings(v []domain.ReasoningEffortM
 func (u *GroupUpsertBulk) UpdateReasoningEffortMappings() *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateReasoningEffortMappings()
+	})
+}
+
+// SetUniversalRoutes sets the "universal_routes" field.
+func (u *GroupUpsertBulk) SetUniversalRoutes(v []domain.UniversalRouteConfig) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetUniversalRoutes(v)
+	})
+}
+
+// UpdateUniversalRoutes sets the "universal_routes" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateUniversalRoutes() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateUniversalRoutes()
 	})
 }
 

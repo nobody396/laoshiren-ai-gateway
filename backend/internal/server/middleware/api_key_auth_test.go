@@ -209,6 +209,26 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 	})
 }
 
+func TestAPIKeyAuthDefersUniversalGroupBillingUntilRouteResolution(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	group := &service.Group{ID: 90, Name: "Universal", Platform: service.PlatformUniversal, Status: service.StatusActive, Hydrated: true, SubscriptionType: service.SubscriptionTypeStandard}
+	user := &service.User{ID: 7, Role: service.RoleUser, Status: service.StatusActive, Balance: 0, Concurrency: 3}
+	apiKey := &service.APIKey{ID: 100, UserID: user.ID, Key: "universal-key", Status: service.StatusActive, User: user, Group: group}
+	apiKey.GroupID = &group.ID
+	repo := &stubApiKeyRepo{getByKey: func(_ context.Context, _ string) (*service.APIKey, error) {
+		clone := *apiKey
+		return &clone, nil
+	}}
+	cfg := &config.Config{RunMode: config.RunModeStandard}
+	apiKeyService := service.NewAPIKeyService(repo, nil, nil, nil, nil, nil, cfg)
+	router := newAuthTestRouter(apiKeyService, nil, cfg)
+	req := httptest.NewRequest(http.MethodGet, "/t", nil)
+	req.Header.Set("x-api-key", apiKey.Key)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	require.Equal(t, http.StatusOK, rec.Code)
+}
+
 func TestAPIKeyAuthSetsGroupContext(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

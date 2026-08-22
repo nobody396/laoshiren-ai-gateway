@@ -100,6 +100,8 @@ const (
 	FieldMaxReasoningEffort = "max_reasoning_effort"
 	// FieldReasoningEffortMappings holds the string denoting the reasoning_effort_mappings field in the database.
 	FieldReasoningEffortMappings = "reasoning_effort_mappings"
+	// FieldUniversalRoutes holds the string denoting the universal_routes field in the database.
+	FieldUniversalRoutes = "universal_routes"
 	// EdgeAPIKeys holds the string denoting the api_keys edge name in mutations.
 	EdgeAPIKeys = "api_keys"
 	// EdgeRedeemCodes holds the string denoting the redeem_codes edge name in mutations.
@@ -226,6 +228,7 @@ var Columns = []string{
 	FieldMessagesDispatchModelConfig,
 	FieldMaxReasoningEffort,
 	FieldReasoningEffortMappings,
+	FieldUniversalRoutes,
 }
 
 var (
@@ -321,6 +324,8 @@ var (
 	MaxReasoningEffortValidator func(string) error
 	// DefaultReasoningEffortMappings holds the default value on creation for the "reasoning_effort_mappings" field.
 	DefaultReasoningEffortMappings []domain.ReasoningEffortMapping
+	// DefaultUniversalRoutes holds the default value on creation for the "universal_routes" field.
+	DefaultUniversalRoutes []domain.UniversalRouteConfig
 )
 
 // OrderOption defines the ordering options for the Group queries.

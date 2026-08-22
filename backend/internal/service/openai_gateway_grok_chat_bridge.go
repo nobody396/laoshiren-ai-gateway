@@ -580,6 +580,7 @@ func (s *OpenAIGatewayService) forwardGrokChatCompletionsViaResponses(
 		return nil, policyErr
 	}
 	responsesBody = updatedBody
+	effectiveServiceTier := extractOpenAIServiceTierFromBody(responsesBody)
 
 	token, _, err := s.getRequestCredential(ctx, c, account)
 	if err != nil {
@@ -648,6 +649,7 @@ func (s *OpenAIGatewayService) forwardGrokChatCompletionsViaResponses(
 			result.RequestID = firstNonEmpty(resp.Header.Get("x-request-id"), resp.Header.Get("xai-request-id"))
 		}
 		result.ReasoningEffort = extractOpenAIReasoningEffortFromBody(body, originalModel)
+		result.ServiceTier = effectiveServiceTier
 	}
 	return result, err
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -637,6 +638,20 @@ func checkPricesNotNegative(p ChannelModelPricing) error {
 	for _, c := range checks {
 		if c.val != nil && *c.val < 0 {
 			return infraerrors.BadRequest("NEGATIVE_PRICE", fmt.Sprintf("%s must be >= 0", c.field))
+		}
+	}
+	for _, multiplier := range []struct {
+		field string
+		val   *float64
+	}{
+		{"fast_multiplier", p.FastMultiplier},
+		{"flex_multiplier", p.FlexMultiplier},
+	} {
+		if multiplier.val != nil && (*multiplier.val <= 0 || math.IsNaN(*multiplier.val) || math.IsInf(*multiplier.val, 0)) {
+			return infraerrors.BadRequest(
+				"INVALID_SERVICE_TIER_MULTIPLIER",
+				fmt.Sprintf("%s must be > 0", multiplier.field),
+			)
 		}
 	}
 	return nil

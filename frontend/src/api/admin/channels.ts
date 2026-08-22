@@ -29,6 +29,8 @@ export interface ChannelModelPricing {
   output_price: number | null
   cache_write_price: number | null
   cache_read_price: number | null
+  fast_multiplier: number | null
+  flex_multiplier: number | null
   image_output_price: number | null
   per_request_price: number | null
   intervals: PricingInterval[]

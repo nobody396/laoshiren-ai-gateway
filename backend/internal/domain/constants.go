@@ -50,6 +50,16 @@ const (
 	PlatformGrok        = "grok"
 )
 
+// API protocol constants describe the wire protocol spoken to an API-key
+// upstream. They are intentionally independent from account platform and user
+// groups: PR2 can select the best native protocol per request without OAuth.
+const (
+	APIProtocolChatCompletions = "chat_completions"
+	APIProtocolAnthropic       = "anthropic"
+	APIProtocolResponses       = "responses"
+	APIProtocolAdaptive        = "adaptive"
+)
+
 // Account type constants
 const (
 	AccountTypeOAuth      = "oauth"       // OAuth类型账号（full scope: profile + inference）

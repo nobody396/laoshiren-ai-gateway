@@ -42,6 +42,13 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	// groups: OpenAI Live 默认关闭，管理员显式开启后才可访问。
 	requireColumn(t, tx, "groups", "allow_live", "boolean", 0, false)
 
+	// channel pricing: optional service-tier multipliers remain NULL until an
+	// upstream's Fast/Flex capability and price are verified.
+	requireColumn(t, tx, "channel_model_pricing", "fast_multiplier", "numeric", 0, true)
+	requireColumn(t, tx, "channel_model_pricing", "flex_multiplier", "numeric", 0, true)
+	requireColumn(t, tx, "channel_account_stats_model_pricing", "fast_multiplier", "numeric", 0, true)
+	requireColumn(t, tx, "channel_account_stats_model_pricing", "flex_multiplier", "numeric", 0, true)
+
 	// api_keys: key length should be 128
 	requireColumn(t, tx, "api_keys", "key", "character varying", 128, false)
 

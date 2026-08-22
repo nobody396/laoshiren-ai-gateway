@@ -27,6 +27,13 @@
       "kind": "report-only",
       "allowed_actions": ["report"],
       "ttl": null
+    },
+    {
+      "path": "/Users/fujunhao/laoshirenai/worktrees/upstream-apikey-foundations-pr1-20260822",
+      "owner": "upstream-apikey-foundations-pr1-20260822",
+      "kind": "temporary",
+      "allowed_actions": ["develop", "test"],
+      "ttl": "2026-08-29T23:59:59+08:00"
     }
   ]
 }

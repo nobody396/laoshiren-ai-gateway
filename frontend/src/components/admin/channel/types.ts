@@ -19,6 +19,8 @@ export interface PricingFormEntry {
   output_price: number | string | null
   cache_write_price: number | string | null
   cache_read_price: number | string | null
+  fast_multiplier: number | string | null
+  flex_multiplier: number | string | null
   image_output_price: number | string | null
   per_request_price: number | string | null
   intervals: IntervalFormEntry[]
@@ -31,6 +33,12 @@ export function toNullableNumber(val: number | string | null | undefined): numbe
   if (val === null || val === undefined || val === '') return null
   const num = Number(val)
   return isNaN(num) ? null : num
+}
+
+export function isValidPositiveMultiplier(val: number | string | null | undefined): boolean {
+  if (val === null || val === undefined || val === '') return true
+  const multiplier = Number(val)
+  return Number.isFinite(multiplier) && multiplier > 0
 }
 
 /** 前端显示值($/MTok) → 后端存储值(per-token) */

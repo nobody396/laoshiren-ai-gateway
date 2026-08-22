@@ -17,4 +17,11 @@ describe('usage service tier locale keys', () => {
     expect(en.usage.serviceTierFlex).toBe('Flex')
     expect(en.usage.serviceTierStandard).toBe('Standard')
   })
+
+  it('contains channel multiplier labels in both locales', () => {
+    expect(zh.admin.channels.form.fastMultiplier).toBe('Fast / Priority 倍率')
+    expect(zh.admin.channels.form.flexMultiplier).toBe('Flex 倍率')
+    expect(en.admin.channels.form.fastMultiplier).toBe('Fast / Priority Multiplier')
+    expect(en.admin.channels.form.flexMultiplier).toBe('Flex Multiplier')
+  })
 })

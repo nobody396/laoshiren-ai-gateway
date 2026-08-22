@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
-
 	"log"
+	"math"
 	"strings"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
@@ -43,20 +43,22 @@ type BillingCache interface {
 
 // ModelPricing 模型价格配置（per-token价格，与LiteLLM格式一致）
 type ModelPricing struct {
-	InputPricePerToken             float64 // 每token输入价格 (USD)
-	InputPricePerTokenPriority     float64 // priority service tier 下每token输入价格 (USD)
-	OutputPricePerToken            float64 // 每token输出价格 (USD)
-	OutputPricePerTokenPriority    float64 // priority service tier 下每token输出价格 (USD)
-	CacheCreationPricePerToken     float64 // 缓存创建每token价格 (USD)
-	CacheReadPricePerToken         float64 // 缓存读取每token价格 (USD)
-	CacheReadPricePerTokenPriority float64 // priority service tier 下缓存读取每token价格 (USD)
-	CacheCreation5mPrice           float64 // 5分钟缓存创建每token价格 (USD)
-	CacheCreation1hPrice           float64 // 1小时缓存创建每token价格 (USD)
-	SupportsCacheBreakdown         bool    // 是否支持详细的缓存分类
-	LongContextInputThreshold      int     // 超过阈值后按整次会话提升输入价格
-	LongContextInputMultiplier     float64 // 长上下文整次会话输入倍率
-	LongContextOutputMultiplier    float64 // 长上下文整次会话输出倍率
-	ImageOutputPricePerToken       float64 // 图片输出 token 价格 (USD)
+	InputPricePerToken             float64  // 每token输入价格 (USD)
+	InputPricePerTokenPriority     float64  // priority service tier 下每token输入价格 (USD)
+	OutputPricePerToken            float64  // 每token输出价格 (USD)
+	OutputPricePerTokenPriority    float64  // priority service tier 下每token输出价格 (USD)
+	CacheCreationPricePerToken     float64  // 缓存创建每token价格 (USD)
+	CacheReadPricePerToken         float64  // 缓存读取每token价格 (USD)
+	CacheReadPricePerTokenPriority float64  // priority service tier 下缓存读取每token价格 (USD)
+	FastMultiplier                 *float64 // 渠道显式 Fast/Priority 倍率；nil 使用模型目录价格
+	FlexMultiplier                 *float64 // 渠道显式 Flex 倍率；nil 使用默认倍率
+	CacheCreation5mPrice           float64  // 5分钟缓存创建每token价格 (USD)
+	CacheCreation1hPrice           float64  // 1小时缓存创建每token价格 (USD)
+	SupportsCacheBreakdown         bool     // 是否支持详细的缓存分类
+	LongContextInputThreshold      int      // 超过阈值后按整次会话提升输入价格
+	LongContextInputMultiplier     float64  // 长上下文整次会话输入倍率
+	LongContextOutputMultiplier    float64  // 长上下文整次会话输出倍率
+	ImageOutputPricePerToken       float64  // 图片输出 token 价格 (USD)
 }
 
 const (
@@ -70,7 +72,14 @@ func normalizeBillingServiceTier(serviceTier string) string {
 }
 
 func usePriorityServiceTierPricing(serviceTier string, pricing *ModelPricing) bool {
-	if pricing == nil || normalizeBillingServiceTier(serviceTier) != "priority" {
+	if pricing == nil {
+		return false
+	}
+	tier := normalizeBillingServiceTier(serviceTier)
+	if tier != "priority" && tier != "fast" {
+		return false
+	}
+	if pricing.FastMultiplier != nil {
 		return false
 	}
 	return pricing.InputPricePerTokenPriority > 0 || pricing.OutputPricePerTokenPriority > 0 || pricing.CacheReadPricePerTokenPriority > 0
@@ -78,13 +87,29 @@ func usePriorityServiceTierPricing(serviceTier string, pricing *ModelPricing) bo
 
 func serviceTierCostMultiplier(serviceTier string) float64 {
 	switch normalizeBillingServiceTier(serviceTier) {
-	case "priority":
+	case "priority", "fast":
 		return 2.0
 	case "flex":
 		return 0.5
 	default:
 		return 1.0
 	}
+}
+
+func configuredServiceTierMultiplier(serviceTier string, pricing *ModelPricing) float64 {
+	if pricing != nil {
+		switch normalizeBillingServiceTier(serviceTier) {
+		case "priority", "fast":
+			if pricing.FastMultiplier != nil && *pricing.FastMultiplier > 0 && !math.IsNaN(*pricing.FastMultiplier) && !math.IsInf(*pricing.FastMultiplier, 0) {
+				return *pricing.FastMultiplier
+			}
+		case "flex":
+			if pricing.FlexMultiplier != nil && *pricing.FlexMultiplier > 0 && !math.IsNaN(*pricing.FlexMultiplier) && !math.IsInf(*pricing.FlexMultiplier, 0) {
+				return *pricing.FlexMultiplier
+			}
+		}
+	}
+	return serviceTierCostMultiplier(serviceTier)
 }
 
 // UsageTokens 使用的token数量
@@ -520,13 +545,43 @@ func (s *BillingService) GetModelPricingWithChannel(model string, channelPricing
 	if channelPricing == nil {
 		return pricing, nil
 	}
+	// GetModelPricing may return a process-wide fallback pointer. Never mutate it
+	// while applying one channel's overrides.
+	cloned := *pricing
+	pricing = &cloned
+	applyChannelTokenPriceOverrides(pricing, channelPricing)
+	pricing.FastMultiplier = channelPricing.FastMultiplier
+	pricing.FlexMultiplier = channelPricing.FlexMultiplier
+	if channelPricing.ImageOutputPrice != nil {
+		pricing.ImageOutputPricePerToken = *channelPricing.ImageOutputPrice
+	}
+	return pricing, nil
+}
+
+// channelTierOverridePrice applies a Standard-tier channel override while
+// preserving an explicit model-catalog Priority/Standard ratio. A missing
+// catalog Priority price remains zero so the generic service-tier multiplier
+// can provide the fallback instead of silently flattening Fast pricing.
+func channelTierOverridePrice(baseStandard, baseTier, channelStandard float64) float64 {
+	if baseStandard > 0 && baseTier > 0 {
+		return channelStandard * (baseTier / baseStandard)
+	}
+	return 0
+}
+
+func applyChannelTokenPriceOverrides(pricing *ModelPricing, channelPricing *ChannelModelPricing) {
+	if pricing == nil || channelPricing == nil {
+		return
+	}
 	if channelPricing.InputPrice != nil {
+		priority := channelTierOverridePrice(pricing.InputPricePerToken, pricing.InputPricePerTokenPriority, *channelPricing.InputPrice)
 		pricing.InputPricePerToken = *channelPricing.InputPrice
-		pricing.InputPricePerTokenPriority = *channelPricing.InputPrice
+		pricing.InputPricePerTokenPriority = priority
 	}
 	if channelPricing.OutputPrice != nil {
+		priority := channelTierOverridePrice(pricing.OutputPricePerToken, pricing.OutputPricePerTokenPriority, *channelPricing.OutputPrice)
 		pricing.OutputPricePerToken = *channelPricing.OutputPrice
-		pricing.OutputPricePerTokenPriority = *channelPricing.OutputPrice
+		pricing.OutputPricePerTokenPriority = priority
 	}
 	if channelPricing.CacheWritePrice != nil {
 		pricing.CacheCreationPricePerToken = *channelPricing.CacheWritePrice
@@ -534,13 +589,10 @@ func (s *BillingService) GetModelPricingWithChannel(model string, channelPricing
 		pricing.CacheCreation1hPrice = *channelPricing.CacheWritePrice
 	}
 	if channelPricing.CacheReadPrice != nil {
+		priority := channelTierOverridePrice(pricing.CacheReadPricePerToken, pricing.CacheReadPricePerTokenPriority, *channelPricing.CacheReadPrice)
 		pricing.CacheReadPricePerToken = *channelPricing.CacheReadPrice
-		pricing.CacheReadPricePerTokenPriority = *channelPricing.CacheReadPrice
+		pricing.CacheReadPricePerTokenPriority = priority
 	}
-	if channelPricing.ImageOutputPrice != nil {
-		pricing.ImageOutputPricePerToken = *channelPricing.ImageOutputPrice
-	}
-	return pricing, nil
 }
 
 // --- 统一计费入口 ---
@@ -642,7 +694,7 @@ func (s *BillingService) computeTokenBreakdown(
 			cacheReadPrice = pricing.CacheReadPricePerTokenPriority
 		}
 	} else {
-		tierMultiplier = serviceTierCostMultiplier(serviceTier)
+		tierMultiplier = configuredServiceTierMultiplier(serviceTier, pricing)
 	}
 
 	if applyLongCtx && s.shouldApplySessionLongContextPricing(tokens, pricing) {

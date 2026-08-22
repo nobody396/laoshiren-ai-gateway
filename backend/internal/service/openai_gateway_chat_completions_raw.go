@@ -66,6 +66,7 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 		return nil, policyErr
 	}
 	upstreamBody = updatedBody
+	serviceTier = extractOpenAIServiceTierFromBody(upstreamBody)
 
 	authToken, tokenKind, err := s.getRequestCredential(ctx, c, account)
 	if err != nil {

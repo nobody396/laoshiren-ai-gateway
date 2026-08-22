@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
@@ -14,6 +16,7 @@ import (
 
 const stickySessionPrefix = "sticky_session:"
 const liveCallPrefix = "live:call:"
+const reasoningContentPrefix = "reasoning_content:v2:"
 
 type gatewayCache struct {
 	rdb *redis.Client
@@ -21,6 +24,46 @@ type gatewayCache struct {
 
 func NewGatewayCache(rdb *redis.Client) service.GatewayCache {
 	return &gatewayCache{rdb: rdb}
+}
+
+var _ service.ReasoningContentCache = (*gatewayCache)(nil)
+
+func reasoningContentKey(scope service.ReasoningCacheScope, itemID string) string {
+	raw := fmt.Sprintf("%d:%d:%s:%s", scope.UserID, scope.APIKeyID, strings.ToLower(strings.TrimSpace(scope.Model)), strings.TrimSpace(itemID))
+	sum := sha256.Sum256([]byte(raw))
+	return reasoningContentPrefix + hex.EncodeToString(sum[:])
+}
+
+func (c *gatewayCache) SetReasoningContent(ctx context.Context, scope service.ReasoningCacheScope, itemID, content string, ttl time.Duration) error {
+	if c == nil || c.rdb == nil {
+		return errors.New("reasoning cache unavailable")
+	}
+	itemID = strings.TrimSpace(itemID)
+	if !scope.Valid() || itemID == "" || content == "" {
+		return nil
+	}
+	if len(content) > service.ReasoningContentMaxBytes {
+		return service.ErrReasoningContentTooLarge
+	}
+	if ttl <= 0 || ttl > service.ReasoningContentDefaultTTL {
+		ttl = service.ReasoningContentDefaultTTL
+	}
+	return c.rdb.Set(ctx, reasoningContentKey(scope, itemID), content, ttl).Err()
+}
+
+func (c *gatewayCache) GetReasoningContent(ctx context.Context, scope service.ReasoningCacheScope, itemID string) (string, error) {
+	if c == nil || c.rdb == nil {
+		return "", errors.New("reasoning cache unavailable")
+	}
+	itemID = strings.TrimSpace(itemID)
+	if !scope.Valid() || itemID == "" {
+		return "", service.ErrReasoningContentNotFound
+	}
+	value, err := c.rdb.Get(ctx, reasoningContentKey(scope, itemID)).Result()
+	if errors.Is(err, redis.Nil) {
+		return "", service.ErrReasoningContentNotFound
+	}
+	return value, err
 }
 
 // buildSessionKey 构建 session key，包含 groupID 实现分组隔离

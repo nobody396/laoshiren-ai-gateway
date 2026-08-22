@@ -178,6 +178,10 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 		return nil, policyErr
 	}
 	responsesBody = updatedBody
+	// Billing and usage logs must reflect the tier that actually reached the
+	// upstream. A filter policy removes service_tier, so retaining the original
+	// parsed value here would charge Fast price for a Standard request.
+	responsesReq.ServiceTier = normalizedOpenAIServiceTierValue(gjson.GetBytes(responsesBody, "service_tier").String())
 
 	// 5. Get access token
 	token, _, err := s.GetAccessToken(ctx, account)

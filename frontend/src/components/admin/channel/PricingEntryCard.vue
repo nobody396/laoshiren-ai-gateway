@@ -129,6 +129,19 @@
             </div>
           </div>
 
+          <div class="mt-3 grid max-w-md grid-cols-2 gap-2">
+            <div>
+              <label class="text-xs text-gray-400">{{ t('admin.channels.form.fastMultiplier', 'Fast / Priority 倍率') }}</label>
+              <input :value="entry.fast_multiplier" @input="emitField('fast_multiplier', ($event.target as HTMLInputElement).value)"
+                type="number" step="any" min="0.000001" class="input mt-0.5 text-sm" :placeholder="t('admin.channels.form.multiplierPlaceholder', '使用模型默认价格')" />
+            </div>
+            <div>
+              <label class="text-xs text-gray-400">{{ t('admin.channels.form.flexMultiplier', 'Flex 倍率') }}</label>
+              <input :value="entry.flex_multiplier" @input="emitField('flex_multiplier', ($event.target as HTMLInputElement).value)"
+                type="number" step="any" min="0.000001" class="input mt-0.5 text-sm" :placeholder="t('admin.channels.form.multiplierPlaceholder', '默认 0.5')" />
+            </div>
+          </div>
+
           <!-- Token intervals -->
           <div class="mt-3">
             <div class="flex items-center justify-between">

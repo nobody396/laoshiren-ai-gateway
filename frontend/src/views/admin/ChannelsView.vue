@@ -407,6 +407,7 @@
                   :key="idx"
                   :entry="entry"
                   :platform="section.platform"
+                  :service-tier-capability="['openai', 'grok', 'gemini'].includes(section.platform)"
                   @update="updatePricingEntry(sIdx, idx, $event)"
                   @remove="removePricingEntry(sIdx, idx)"
                 />
@@ -813,6 +814,10 @@ function addPricingEntry(sectionIdx: number) {
     cache_read_price: null,
     fast_multiplier: null,
     flex_multiplier: null,
+    fast_supported: false,
+    flex_supported: false,
+    fast_verified_at: null,
+    flex_verified_at: null,
     image_output_price: null,
     per_request_price: null,
     intervals: []
@@ -873,6 +878,10 @@ function addRulePricingEntry(sectionIdx: number, ruleIndex: number) {
     cache_read_price: null,
     fast_multiplier: null,
     flex_multiplier: null,
+    fast_supported: false,
+    flex_supported: false,
+    fast_verified_at: null,
+    flex_verified_at: null,
     image_output_price: null,
     per_request_price: null,
     intervals: []
@@ -990,6 +999,10 @@ function accountStatsRulesToAPI(): AccountStatsPricingRule[] {
             cache_read_price: mTokToPerToken(p.cache_read_price),
             fast_multiplier: p.fast_multiplier != null && p.fast_multiplier !== '' ? Number(p.fast_multiplier) : null,
             flex_multiplier: p.flex_multiplier != null && p.flex_multiplier !== '' ? Number(p.flex_multiplier) : null,
+            fast_supported: false,
+            flex_supported: false,
+            fast_verified_at: null,
+            flex_verified_at: null,
             image_output_price: mTokToPerToken(p.image_output_price),
             per_request_price: p.per_request_price != null && p.per_request_price !== '' ? Number(p.per_request_price) : null,
             intervals: formIntervalsToAPI(p.intervals || [])
@@ -1032,6 +1045,10 @@ function formToAPI(): { group_ids: number[], model_pricing: ChannelModelPricing[
         cache_read_price: mTokToPerToken(entry.cache_read_price),
         fast_multiplier: entry.fast_multiplier != null && entry.fast_multiplier !== '' ? Number(entry.fast_multiplier) : null,
         flex_multiplier: entry.flex_multiplier != null && entry.flex_multiplier !== '' ? Number(entry.flex_multiplier) : null,
+        fast_supported: entry.fast_supported,
+        flex_supported: entry.flex_supported,
+        fast_verified_at: entry.fast_verified_at,
+        flex_verified_at: entry.flex_verified_at,
         image_output_price: mTokToPerToken(entry.image_output_price),
         per_request_price: entry.per_request_price != null && entry.per_request_price !== '' ? Number(entry.per_request_price) : null,
         intervals: formIntervalsToAPI(entry.intervals || [])
@@ -1096,6 +1113,10 @@ function apiToForm(channel: Channel): PlatformSection[] {
         cache_read_price: perTokenToMTok(p.cache_read_price),
         fast_multiplier: p.fast_multiplier,
         flex_multiplier: p.flex_multiplier,
+        fast_supported: p.fast_supported,
+        flex_supported: p.flex_supported,
+        fast_verified_at: p.fast_verified_at,
+        flex_verified_at: p.flex_verified_at,
         image_output_price: perTokenToMTok(p.image_output_price),
         per_request_price: p.per_request_price,
         intervals: apiIntervalsToForm(p.intervals || [])
@@ -1281,6 +1302,10 @@ function distributeRulesToPlatforms(apiRules: AccountStatsPricingRule[]) {
         cache_read_price: perTokenToMTok(p.cache_read_price),
         fast_multiplier: p.fast_multiplier,
         flex_multiplier: p.flex_multiplier,
+        fast_supported: false,
+        flex_supported: false,
+        fast_verified_at: null,
+        flex_verified_at: null,
         image_output_price: perTokenToMTok(p.image_output_price),
         per_request_price: p.per_request_price,
         intervals: apiIntervalsToForm(p.intervals || [])
@@ -1402,6 +1427,13 @@ async function handleSubmit() {
         activeTab.value = section.platform
         return
       }
+	  if ((entry.fast_supported && (entry.fast_multiplier == null || entry.fast_multiplier === '')) ||
+	      (entry.flex_supported && (entry.flex_multiplier == null || entry.flex_multiplier === ''))) {
+	    const modelLabel = entry.models.join(', ') || t('admin.channels.form.unnamed')
+	    appStore.showError(`${modelLabel}: ${t('admin.channels.form.capabilityMultiplierRequired', '启用 Fast/Flex 能力前必须配置对应的正倍率')}`)
+	    activeTab.value = section.platform
+	    return
+	  }
       if (!entry.intervals || entry.intervals.length === 0) continue
       const intervalErr = validateIntervals(entry.intervals)
       if (intervalErr) {

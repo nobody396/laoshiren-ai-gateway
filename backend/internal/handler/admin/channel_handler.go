@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
@@ -65,6 +66,10 @@ type channelModelPricingRequest struct {
 	CacheReadPrice   *float64                 `json:"cache_read_price" binding:"omitempty,min=0"`
 	FastMultiplier   *float64                 `json:"fast_multiplier" binding:"omitempty,gt=0"`
 	FlexMultiplier   *float64                 `json:"flex_multiplier" binding:"omitempty,gt=0"`
+	FastSupported    bool                     `json:"fast_supported"`
+	FlexSupported    bool                     `json:"flex_supported"`
+	FastVerifiedAt   *time.Time               `json:"fast_verified_at"`
+	FlexVerifiedAt   *time.Time               `json:"flex_verified_at"`
 	ImageOutputPrice *float64                 `json:"image_output_price" binding:"omitempty,min=0"`
 	PerRequestPrice  *float64                 `json:"per_request_price" binding:"omitempty,min=0"`
 	Intervals        []pricingIntervalRequest `json:"intervals"`
@@ -118,6 +123,10 @@ type channelModelPricingResponse struct {
 	CacheReadPrice   *float64                  `json:"cache_read_price"`
 	FastMultiplier   *float64                  `json:"fast_multiplier"`
 	FlexMultiplier   *float64                  `json:"flex_multiplier"`
+	FastSupported    bool                      `json:"fast_supported"`
+	FlexSupported    bool                      `json:"flex_supported"`
+	FastVerifiedAt   *time.Time                `json:"fast_verified_at"`
+	FlexVerifiedAt   *time.Time                `json:"flex_verified_at"`
 	ImageOutputPrice *float64                  `json:"image_output_price"`
 	PerRequestPrice  *float64                  `json:"per_request_price"`
 	Intervals        []pricingIntervalResponse `json:"intervals"`
@@ -230,6 +239,10 @@ func pricingToResponse(p *service.ChannelModelPricing) channelModelPricingRespon
 		CacheReadPrice:   p.CacheReadPrice,
 		FastMultiplier:   p.FastMultiplier,
 		FlexMultiplier:   p.FlexMultiplier,
+		FastSupported:    p.FastSupported,
+		FlexSupported:    p.FlexSupported,
+		FastVerifiedAt:   p.FastVerifiedAt,
+		FlexVerifiedAt:   p.FlexVerifiedAt,
 		ImageOutputPrice: p.ImageOutputPrice,
 		PerRequestPrice:  p.PerRequestPrice,
 		Intervals:        intervals,
@@ -283,12 +296,27 @@ func pricingRequestToService(reqs []channelModelPricingRequest) []service.Channe
 			CacheReadPrice:   r.CacheReadPrice,
 			FastMultiplier:   r.FastMultiplier,
 			FlexMultiplier:   r.FlexMultiplier,
+			FastSupported:    r.FastSupported,
+			FlexSupported:    r.FlexSupported,
+			FastVerifiedAt:   normalizedCapabilityTimestamp(r.FastSupported, r.FastVerifiedAt),
+			FlexVerifiedAt:   normalizedCapabilityTimestamp(r.FlexSupported, r.FlexVerifiedAt),
 			ImageOutputPrice: r.ImageOutputPrice,
 			PerRequestPrice:  r.PerRequestPrice,
 			Intervals:        intervals,
 		})
 	}
 	return result
+}
+
+func normalizedCapabilityTimestamp(supported bool, verifiedAt *time.Time) *time.Time {
+	if !supported {
+		return nil
+	}
+	value := time.Now().UTC()
+	if verifiedAt != nil && !verifiedAt.IsZero() {
+		value = verifiedAt.UTC()
+	}
+	return &value
 }
 
 func accountStatsPricingRuleRequestToService(r accountStatsPricingRuleRequest) service.AccountStatsPricingRule {

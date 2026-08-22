@@ -5,6 +5,7 @@ package service
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -27,6 +28,39 @@ func TestChannelFastAndFlexMultipliersApplyToChannelStandardPrice(t *testing.T) 
 
 	require.InDelta(t, standard.TotalCost*2.5, fast.TotalCost, 1e-12)
 	require.InDelta(t, standard.TotalCost*0.4, flex.TotalCost, 1e-12)
+}
+
+func TestValidateChannelPricingRequiresVerifiedServiceTierCapability(t *testing.T) {
+	multiplier := 2.0
+	err := validatePricingEntries([]ChannelModelPricing{{
+		Platform:       PlatformOpenAI,
+		Models:         []string{"gpt-5.4"},
+		BillingMode:    BillingModeToken,
+		FastMultiplier: &multiplier,
+		FastSupported:  true,
+	}})
+	require.Error(t, err)
+
+	verifiedAt := time.Now().UTC().Add(-time.Hour)
+	err = validatePricingEntries([]ChannelModelPricing{{
+		Platform:       PlatformOpenAI,
+		Models:         []string{"gpt-5.4"},
+		BillingMode:    BillingModeToken,
+		FastMultiplier: &multiplier,
+		FastSupported:  true,
+		FastVerifiedAt: &verifiedAt,
+	}})
+	require.NoError(t, err)
+
+	err = validatePricingEntries([]ChannelModelPricing{{
+		Platform:       PlatformAnthropic,
+		Models:         []string{"claude-sonnet-4"},
+		BillingMode:    BillingModeToken,
+		FastMultiplier: &multiplier,
+		FastSupported:  true,
+		FastVerifiedAt: &verifiedAt,
+	}})
+	require.Error(t, err)
 }
 
 func TestChannelOverridePreservesCatalogPriorityRatioWithoutExplicitMultiplier(t *testing.T) {

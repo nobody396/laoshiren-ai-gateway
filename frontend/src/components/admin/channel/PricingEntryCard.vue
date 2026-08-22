@@ -142,6 +142,41 @@
             </div>
           </div>
 
+          <div v-if="serviceTierCapability" class="mt-3 rounded-lg border border-gray-200 p-3 dark:border-dark-600">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+              {{ t('admin.channels.form.serviceTierCapability', '供应商能力确认') }}
+            </p>
+            <p class="mt-1 text-xs text-gray-400">
+              {{ t('admin.channels.form.serviceTierCapabilityHint', '只有供应商明确确认支持、并已配置正倍率后才允许转发；默认关闭。') }}
+            </p>
+            <div class="mt-2 grid gap-2 sm:grid-cols-2">
+              <label class="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-300">
+                <input
+                  :checked="entry.fast_supported"
+                  type="checkbox"
+                  class="mt-0.5 rounded border-gray-300"
+                  @change="emitCapability('fast', ($event.target as HTMLInputElement).checked)"
+                />
+                <span>
+                  {{ t('admin.channels.form.fastSupported', '已确认 Fast / Priority') }}
+                  <span v-if="entry.fast_verified_at" class="mt-0.5 block text-gray-400">{{ formatVerifiedAt(entry.fast_verified_at) }}</span>
+                </span>
+              </label>
+              <label class="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-300">
+                <input
+                  :checked="entry.flex_supported"
+                  type="checkbox"
+                  class="mt-0.5 rounded border-gray-300"
+                  @change="emitCapability('flex', ($event.target as HTMLInputElement).checked)"
+                />
+                <span>
+                  {{ t('admin.channels.form.flexSupported', '已确认 Flex') }}
+                  <span v-if="entry.flex_verified_at" class="mt-0.5 block text-gray-400">{{ formatVerifiedAt(entry.flex_verified_at) }}</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
           <!-- Token intervals -->
           <div class="mt-3">
             <div class="flex items-center justify-between">
@@ -256,6 +291,7 @@ const { t } = useI18n()
 const props = defineProps<{
   entry: PricingFormEntry
   platform?: string
+  serviceTierCapability?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -279,6 +315,21 @@ const billingModeLabel = computed(() => {
 
 function emitField(field: keyof PricingFormEntry, value: string) {
   emit('update', { ...props.entry, [field]: value === '' ? null : value })
+}
+
+function emitCapability(tier: 'fast' | 'flex', supported: boolean) {
+  const supportedField = `${tier}_supported` as const
+  const verifiedField = `${tier}_verified_at` as const
+  emit('update', {
+    ...props.entry,
+    [supportedField]: supported,
+    [verifiedField]: supported ? (props.entry[verifiedField] || new Date().toISOString()) : null
+  })
+}
+
+function formatVerifiedAt(value: string): string {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
 
 function addInterval() {

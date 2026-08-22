@@ -592,7 +592,57 @@ func validatePricingEntries(pricing []ChannelModelPricing) error {
 	if err := validatePricingIntervals(pricing); err != nil {
 		return err
 	}
+	if err := validateServiceTierCapabilities(pricing); err != nil {
+		return err
+	}
 	return validatePricingBillingMode(pricing)
+}
+
+func validateServiceTierCapabilities(pricing []ChannelModelPricing) error {
+	now := time.Now().UTC().Add(5 * time.Minute)
+	for _, p := range pricing {
+		if (p.FastSupported || p.FlexSupported) && !supportsOpenAIServiceTierCapability(p.Platform) {
+			return infraerrors.BadRequest(
+				"UNSUPPORTED_SERVICE_TIER_PLATFORM",
+				fmt.Sprintf("Fast/Flex capability is not available for platform %s", p.Platform),
+			)
+		}
+		if err := validateServiceTierCapability("fast", p.FastSupported, p.FastVerifiedAt, p.FastMultiplier, now); err != nil {
+			return err
+		}
+		if err := validateServiceTierCapability("flex", p.FlexSupported, p.FlexVerifiedAt, p.FlexMultiplier, now); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func supportsOpenAIServiceTierCapability(platform string) bool {
+	switch strings.ToLower(strings.TrimSpace(platform)) {
+	case PlatformOpenAI, PlatformGrok, PlatformGemini:
+		return true
+	default:
+		return false
+	}
+}
+
+func validateServiceTierCapability(tier string, supported bool, verifiedAt *time.Time, multiplier *float64, latest time.Time) error {
+	if !supported {
+		if verifiedAt != nil {
+			return infraerrors.BadRequest("INVALID_SERVICE_TIER_CAPABILITY", fmt.Sprintf("%s_verified_at requires %s_supported", tier, tier))
+		}
+		return nil
+	}
+	if verifiedAt == nil || verifiedAt.IsZero() || multiplier == nil || *multiplier <= 0 {
+		return infraerrors.BadRequest(
+			"UNVERIFIED_SERVICE_TIER_CAPABILITY",
+			fmt.Sprintf("%s support requires provider verification time and a positive multiplier", tier),
+		)
+	}
+	if verifiedAt.After(latest) {
+		return infraerrors.BadRequest("INVALID_SERVICE_TIER_CAPABILITY", fmt.Sprintf("%s_verified_at cannot be in the future", tier))
+	}
+	return nil
 }
 
 // validatePricingBillingMode 校验计费模式配置：按次/图片模式必须配价格或区间，所有价格字段不能为负，区间至少有一个价格字段。

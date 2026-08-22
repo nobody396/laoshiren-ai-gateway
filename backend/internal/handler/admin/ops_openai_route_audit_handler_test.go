@@ -56,12 +56,16 @@ func (adminOpenAIRouteAuditRepoStub) GetOpenAIRouteShadowDecisionStats(context.C
 func TestParseOpenAIRouteShadowDecisionFilter(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
-	c.Request = httptest.NewRequest("GET", "/?time_range=1h&group_id=7&model=gpt-5.6-sol&request_class=image&policy_mode=shadow&policy_version=3&activation_id=activation-3&evaluated=true&diverged=false&emergency=true&page=2&page_size=500", nil)
+	c.Request = httptest.NewRequest("GET", "/?time_range=1h&group_id=7&access_group_id=90&model=gpt-5.6-sol&inbound_protocol=responses&requested_service_tier=priority&request_class=image&policy_mode=shadow&policy_version=3&activation_id=activation-3&evaluated=true&diverged=false&emergency=true&page=2&page_size=500", nil)
 
 	filter, err := parseOpenAIRouteShadowDecisionFilter(c, true)
 	require.NoError(t, err)
 	require.NotNil(t, filter.GroupID)
 	require.Equal(t, int64(7), *filter.GroupID)
+	require.NotNil(t, filter.AccessGroupID)
+	require.Equal(t, int64(90), *filter.AccessGroupID)
+	require.Equal(t, service.APIProtocolResponses, filter.InboundProtocol)
+	require.Equal(t, service.OpenAIFastTierPriority, filter.RequestedServiceTier)
 	require.NotNil(t, filter.PolicyVersion)
 	require.Equal(t, 3, *filter.PolicyVersion)
 	require.Equal(t, "gpt-5.6-sol", filter.Model)
@@ -79,6 +83,9 @@ func TestParseOpenAIRouteShadowDecisionFilterRejectsInvalidValues(t *testing.T) 
 	gin.SetMode(gin.TestMode)
 	for _, query := range []string{
 		"/?group_id=bad",
+		"/?access_group_id=bad",
+		"/?inbound_protocol=grpc",
+		"/?requested_service_tier=turbo",
 		"/?policy_version=-1",
 		"/?evaluated=maybe",
 		"/?request_class=audio",

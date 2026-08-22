@@ -128,6 +128,10 @@ type OpenAIRouteShadowAuditSnapshot struct {
 	VariantID                        string                               `json:"variant_id"`
 	ShadowStartedAt                  time.Time                            `json:"shadow_started_at"`
 	RequestClass                     OpenAIRouteRequestClass              `json:"request_class"`
+	AccessGroupID                    int64                                `json:"access_group_id,omitempty"`
+	PublicModel                      string                               `json:"public_model,omitempty"`
+	InboundProtocol                  string                               `json:"inbound_protocol,omitempty"`
+	RequestedServiceTier             string                               `json:"requested_service_tier,omitempty"`
 	Policy                           OpenAIRouteShadowAuditPolicy         `json:"policy"`
 	AdaptiveSeedHex                  string                               `json:"adaptive_seed_hex"`
 	RequiredTransport                string                               `json:"required_transport"`
@@ -153,7 +157,10 @@ type OpenAIRouteShadowDecisionRecord struct {
 	ClientRequestID                  string                          `json:"client_request_id"`
 	Attempt                          int                             `json:"attempt"`
 	GroupID                          int64                           `json:"group_id"`
+	AccessGroupID                    int64                           `json:"access_group_id,omitempty"`
 	Model                            string                          `json:"model"`
+	InboundProtocol                  string                          `json:"inbound_protocol,omitempty"`
+	RequestedServiceTier             string                          `json:"requested_service_tier,omitempty"`
 	RequestClass                     OpenAIRouteRequestClass         `json:"request_class"`
 	PolicyMode                       OpenAIRoutePolicyMode           `json:"policy_mode"`
 	PolicyVersion                    int                             `json:"policy_version"`
@@ -182,7 +189,10 @@ type OpenAIRouteShadowDecisionFilter struct {
 	StartTime            *time.Time
 	EndTime              *time.Time
 	GroupID              *int64
+	AccessGroupID        *int64
 	Model                string
+	InboundProtocol      string
+	RequestedServiceTier string
 	RequestClass         OpenAIRouteRequestClass
 	PolicyMode           OpenAIRoutePolicyMode
 	PolicyVersion        *int
@@ -460,6 +470,20 @@ func prepareOpenAIRouteAuditRecord(record *OpenAIRouteShadowDecisionRecord) erro
 	record.RequestID = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.RequestID), 128)
 	record.ClientRequestID = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.ClientRequestID), 128)
 	record.Model = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.Model), 128)
+	record.InboundProtocol = truncateOpenAIRouteAuditValue(strings.ToLower(strings.TrimSpace(record.InboundProtocol)), 32)
+	record.RequestedServiceTier = truncateOpenAIRouteAuditValue(strings.ToLower(strings.TrimSpace(record.RequestedServiceTier)), 16)
+	record.Snapshot.PublicModel = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.Snapshot.PublicModel), 128)
+	record.Snapshot.InboundProtocol = truncateOpenAIRouteAuditValue(strings.ToLower(strings.TrimSpace(record.Snapshot.InboundProtocol)), 32)
+	record.Snapshot.RequestedServiceTier = truncateOpenAIRouteAuditValue(strings.ToLower(strings.TrimSpace(record.Snapshot.RequestedServiceTier)), 16)
+	if record.Snapshot.AccessGroupID <= 0 {
+		record.Snapshot.AccessGroupID = record.AccessGroupID
+	}
+	if record.Snapshot.InboundProtocol == "" {
+		record.Snapshot.InboundProtocol = record.InboundProtocol
+	}
+	if record.Snapshot.RequestedServiceTier == "" {
+		record.Snapshot.RequestedServiceTier = record.RequestedServiceTier
+	}
 	record.ActivationID = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.ActivationID), 128)
 	record.ExperimentID = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.ExperimentID), 128)
 	record.VariantID = truncateOpenAIRouteAuditValue(strings.TrimSpace(record.VariantID), 64)

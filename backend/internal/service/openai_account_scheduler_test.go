@@ -344,7 +344,10 @@ func (s *openAIRouteShadowEvaluatorStub) EvaluateShadow(_ context.Context, req O
 }
 
 func TestOpenAIGatewayService_SelectAccountWithScheduler_ShadowDecisionNeverOverridesLegacy(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.WithValue(context.Background(), ctxkey.UniversalAccessGroupID, int64(9001))
+	ctx = context.WithValue(ctx, ctxkey.UniversalPublicModel, "gpt-5.6-sol")
+	ctx = context.WithValue(ctx, ctxkey.UniversalInboundProtocol, APIProtocolResponses)
+	ctx = context.WithValue(ctx, ctxkey.OpenAIRequestedServiceTier, OpenAIFastTierPriority)
 	groupID := int64(7001)
 	legacyRate := 0.20
 	adaptiveRate := 0.15
@@ -393,6 +396,10 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_ShadowDecisionNeverOver
 	require.Equal(t, 3, decision.RoutePolicyVersion)
 	require.True(t, decision.AdaptiveDiverged)
 	require.Equal(t, OpenAIRouteRequestClassText, evaluator.request.RequestClass)
+	require.Equal(t, int64(9001), evaluator.request.AccessGroupID)
+	require.Equal(t, "gpt-5.6-sol", evaluator.request.PublicModel)
+	require.Equal(t, APIProtocolResponses, evaluator.request.InboundProtocol)
+	require.Equal(t, OpenAIFastTierPriority, evaluator.request.RequestedServiceTier)
 	require.Len(t, evaluator.request.Candidates, 2)
 	if selection.ReleaseFunc != nil {
 		selection.ReleaseFunc()

@@ -81,20 +81,24 @@ func (r *openAIRouteDecisionRepository) CreateOpenAIRouteShadowDecision(
 	}
 	_, err = r.db.ExecContext(ctx, `
 INSERT INTO openai_route_shadow_decisions (
-  decision_id, request_id, client_request_id, attempt, group_id, model, request_class,
+  decision_id, request_id, client_request_id, attempt, group_id, access_group_id,
+  inbound_protocol, requested_service_tier, model, request_class,
   policy_mode, policy_version, activation_id, experiment_id, variant_id, treatment_fingerprint,
   shadow_started_at, reason, evaluated, evaluation_duration_us,
   legacy_selected_account_id, adaptive_selected_account_id, adaptive_selected_rate,
   candidate_count, excluded_count, diverged, emergency, snapshot, created_at
 ) VALUES (
-  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,md5(COALESCE(($24::jsonb->'policy')::text, '{}')),
-  $13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24::jsonb,$25
+  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,md5(COALESCE(($27::jsonb->'policy')::text, '{}')),
+  $16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27::jsonb,$28
 )`,
 		record.DecisionID,
 		record.RequestID,
 		record.ClientRequestID,
 		record.Attempt,
 		record.GroupID,
+		nullablePositiveInt64(record.AccessGroupID),
+		record.InboundProtocol,
+		record.RequestedServiceTier,
 		record.Model,
 		string(record.RequestClass),
 		string(record.PolicyMode),
@@ -159,7 +163,8 @@ func (r *openAIRouteDecisionRepository) ListOpenAIRouteShadowDecisions(
 	query := `
 SELECT
   d.id, d.decision_id, d.request_id, d.client_request_id, d.attempt,
-  d.group_id, d.model, d.request_class, d.policy_mode, d.policy_version,
+  d.group_id, d.access_group_id, d.inbound_protocol, d.requested_service_tier,
+  d.model, d.request_class, d.policy_mode, d.policy_version,
   d.activation_id, d.experiment_id, d.variant_id, d.treatment_fingerprint,
   d.shadow_started_at, d.reason,
   d.evaluated, d.evaluation_duration_us,
@@ -181,13 +186,15 @@ LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
 	for rows.Next() {
 		item := &service.OpenAIRouteShadowDecisionRecord{}
 		var legacyID sql.NullInt64
+		var accessGroupID sql.NullInt64
 		var adaptiveID sql.NullInt64
 		var adaptiveRate sql.NullFloat64
 		var shadowStartedAt sql.NullTime
 		var snapshotRaw string
 		if err := rows.Scan(
 			&item.ID, &item.DecisionID, &item.RequestID, &item.ClientRequestID, &item.Attempt,
-			&item.GroupID, &item.Model, &item.RequestClass, &item.PolicyMode, &item.PolicyVersion,
+			&item.GroupID, &accessGroupID, &item.InboundProtocol, &item.RequestedServiceTier,
+			&item.Model, &item.RequestClass, &item.PolicyMode, &item.PolicyVersion,
 			&item.ActivationID, &item.ExperimentID, &item.VariantID, &item.TreatmentFingerprint,
 			&shadowStartedAt, &item.Reason,
 			&item.Evaluated, &item.EvaluationDurationMicros,
@@ -195,6 +202,9 @@ LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
 			&item.Diverged, &item.Emergency, &snapshotRaw, &item.CreatedAt,
 		); err != nil {
 			return nil, err
+		}
+		if accessGroupID.Valid {
+			item.AccessGroupID = accessGroupID.Int64
 		}
 		if legacyID.Valid {
 			item.LegacySelectedAccountID = legacyID.Int64
@@ -502,8 +512,8 @@ func buildOpenAIRouteShadowWhere(filter *service.OpenAIRouteShadowDecisionFilter
 	if prefix != "" {
 		prefix += "."
 	}
-	conditions := make([]string, 0, 17)
-	args := make([]any, 0, 17)
+	conditions := make([]string, 0, 20)
+	args := make([]any, 0, 20)
 	add := func(condition string, value any) {
 		args = append(args, value)
 		conditions = append(conditions, fmt.Sprintf(condition, len(args)))
@@ -517,8 +527,17 @@ func buildOpenAIRouteShadowWhere(filter *service.OpenAIRouteShadowDecisionFilter
 	if filter.GroupID != nil && *filter.GroupID > 0 {
 		add(prefix+"group_id = $%d", *filter.GroupID)
 	}
+	if filter.AccessGroupID != nil && *filter.AccessGroupID > 0 {
+		add(prefix+"access_group_id = $%d", *filter.AccessGroupID)
+	}
 	if value := strings.TrimSpace(filter.Model); value != "" {
 		add(prefix+"model = $%d", value)
+	}
+	if value := strings.TrimSpace(filter.InboundProtocol); value != "" {
+		add(prefix+"inbound_protocol = $%d", value)
+	}
+	if value := strings.TrimSpace(filter.RequestedServiceTier); value != "" {
+		add(prefix+"requested_service_tier = $%d", value)
 	}
 	if filter.RequestClass.Valid() {
 		add(prefix+"request_class = $%d", string(filter.RequestClass))

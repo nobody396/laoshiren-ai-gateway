@@ -70,6 +70,9 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	requireColumn(t, tx, "openai_route_shadow_decisions", "request_id", "character varying", 128, false)
 	requireColumn(t, tx, "openai_route_shadow_decisions", "client_request_id", "character varying", 128, false)
 	requireColumn(t, tx, "openai_route_shadow_decisions", "request_class", "character varying", 16, false)
+	requireColumn(t, tx, "openai_route_shadow_decisions", "access_group_id", "bigint", 0, true)
+	requireColumn(t, tx, "openai_route_shadow_decisions", "inbound_protocol", "character varying", 32, false)
+	requireColumn(t, tx, "openai_route_shadow_decisions", "requested_service_tier", "character varying", 16, false)
 	requireColumn(t, tx, "openai_route_shadow_decisions", "activation_id", "character varying", 128, false)
 	requireColumn(t, tx, "openai_route_shadow_decisions", "shadow_started_at", "timestamp with time zone", 0, true)
 	requireColumn(t, tx, "openai_route_shadow_decisions", "snapshot", "jsonb", 0, false)
@@ -78,6 +81,7 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	requireIndex(t, tx, "openai_route_shadow_decisions", "idx_openai_route_shadow_decisions_group_model_created")
 	requireIndex(t, tx, "openai_route_shadow_decisions", "idx_openai_route_shadow_decisions_group_model_class_created")
 	requireIndex(t, tx, "openai_route_shadow_decisions", "idx_openai_route_shadow_decisions_activation_scope")
+	requireIndex(t, tx, "openai_route_shadow_decisions", "idx_openai_route_shadow_decisions_access_scope")
 
 	// openai_route_observation_hourly: durable, non-sensitive aggregate checkpoints
 	requireColumn(t, tx, "openai_route_observation_hourly", "route_fingerprint", "character varying", 32, false)

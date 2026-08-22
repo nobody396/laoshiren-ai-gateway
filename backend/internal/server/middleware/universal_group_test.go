@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -46,10 +47,14 @@ func TestUniversalGroupRoutingRebindsRequestToConcreteBillingGroup(t *testing.T)
 		accessCtx, exists := c.Get(string(ContextKeyUniversalAccessGroup))
 		require.True(t, exists)
 		require.Equal(t, access.ID, accessCtx.(*service.Group).ID)
+		require.Equal(t, access.ID, c.Request.Context().Value(ctxkey.UniversalAccessGroupID))
+		require.Equal(t, service.APIProtocolResponses, c.Request.Context().Value(ctxkey.UniversalInboundProtocol))
+		require.Equal(t, "gpt-5.6-sol", c.Request.Context().Value(ctxkey.UniversalPublicModel))
+		require.Equal(t, service.OpenAIFastTierPriority, c.Request.Context().Value(ctxkey.OpenAIRequestedServiceTier))
 		c.Status(http.StatusNoContent)
 	})
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(`{"model":"gpt-5.6-sol"}`))
+	req := httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(`{"model":"gpt-5.6-sol","service_tier":"fast"}`))
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 	require.Equal(t, http.StatusNoContent, rec.Code)

@@ -139,7 +139,9 @@ func TestOpenAIRouteControllerEvaluateShadowsIsolatesParallelVariants(t *testing
 	controller := NewOpenAIRouteController(reader, &openAIRouteHealthStoreStub{}, budget, &openAIRouteObservationStoreStub{})
 	now := time.Date(2026, 8, 16, 3, 0, 0, 0, time.UTC)
 	decisions, err := controller.EvaluateShadows(context.Background(), OpenAIRouteShadowRequest{
-		GroupID: 7, Model: "gpt-5.6-sol", RequestClass: OpenAIRouteRequestClassText, Now: now,
+		GroupID: 7, AccessGroupID: 90, Model: "gpt-5.6-sol", PublicModel: "gpt-5.6-sol",
+		InboundProtocol: APIProtocolResponses, RequestedServiceTier: OpenAIFastTierPriority,
+		RequestClass: OpenAIRouteRequestClassText, Now: now,
 		Candidates: []OpenAIRouteShadowCandidate{{
 			Account: testOpenAIRouteControllerAccount(1, 0.15), Endpoint: "https://example.invalid/v1/responses", Transport: string(OpenAIUpstreamTransportHTTPSSE),
 		}},
@@ -152,6 +154,10 @@ func TestOpenAIRouteControllerEvaluateShadowsIsolatesParallelVariants(t *testing
 	require.NotEqual(t, decisions[0].DecisionID, decisions[1].DecisionID)
 	require.True(t, decisions[0].Evaluated)
 	require.True(t, decisions[1].Evaluated)
+	require.Equal(t, int64(90), decisions[0].Audit.AccessGroupID)
+	require.Equal(t, "gpt-5.6-sol", decisions[0].Audit.PublicModel)
+	require.Equal(t, APIProtocolResponses, decisions[0].Audit.InboundProtocol)
+	require.Equal(t, OpenAIFastTierPriority, decisions[0].Audit.RequestedServiceTier)
 	require.Len(t, budget.windowBatches, 2)
 	require.Contains(t, budget.windowBatches[0][0].Scope.Epoch, ":scheduler-v2:reliability:")
 	require.Contains(t, budget.windowBatches[1][0].Scope.Epoch, ":scheduler-v2:latency:")

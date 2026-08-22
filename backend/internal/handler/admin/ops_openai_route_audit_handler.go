@@ -134,6 +134,8 @@ func parseOpenAIRouteShadowDecisionFilter(c *gin.Context, withPagination bool) (
 		StartTime:            &start,
 		EndTime:              &end,
 		Model:                strings.TrimSpace(c.Query("model")),
+		InboundProtocol:      strings.ToLower(strings.TrimSpace(c.Query("inbound_protocol"))),
+		RequestedServiceTier: strings.ToLower(strings.TrimSpace(c.Query("requested_service_tier"))),
 		RequestClass:         service.OpenAIRouteRequestClass(strings.TrimSpace(c.Query("request_class"))),
 		PolicyMode:           service.OpenAIRoutePolicyMode(strings.TrimSpace(c.Query("policy_mode"))),
 		ActivationID:         strings.TrimSpace(c.Query("activation_id")),
@@ -168,6 +170,21 @@ func parseOpenAIRouteShadowDecisionFilter(c *gin.Context, withPagination bool) (
 			return nil, strconv.ErrSyntax
 		}
 		filter.GroupID = &value
+	}
+	if raw := strings.TrimSpace(c.Query("access_group_id")); raw != "" {
+		value, parseErr := strconv.ParseInt(raw, 10, 64)
+		if parseErr != nil || value <= 0 {
+			return nil, strconv.ErrSyntax
+		}
+		filter.AccessGroupID = &value
+	}
+	if filter.InboundProtocol != "" && filter.InboundProtocol != service.APIProtocolAnthropic && filter.InboundProtocol != service.APIProtocolResponses && filter.InboundProtocol != service.APIProtocolChatCompletions {
+		return nil, strconv.ErrSyntax
+	}
+	switch filter.RequestedServiceTier {
+	case "", "default", "auto", "scale", service.OpenAIFastTierPriority, service.OpenAIFastTierFlex:
+	default:
+		return nil, strconv.ErrSyntax
 	}
 	if raw := strings.TrimSpace(c.Query("policy_version")); raw != "" {
 		value, parseErr := strconv.Atoi(raw)

@@ -27,13 +27,6 @@
       "kind": "report-only",
       "allowed_actions": ["report"],
       "ttl": null
-    },
-    {
-      "path": "/Users/fujunhao/laoshirenai/worktrees/verified-fast-gate-pr4-20260822",
-      "owner": "verified-fast-gate-pr4-20260822",
-      "kind": "temporary",
-      "allowed_actions": ["develop", "test"],
-      "ttl": "2026-08-31T23:59:59+08:00"
     }
   ]
 }

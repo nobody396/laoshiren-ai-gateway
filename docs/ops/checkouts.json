@@ -27,13 +27,6 @@
       "kind": "report-only",
       "allowed_actions": ["report"],
       "ttl": null
-    },
-    {
-      "path": "/Users/fujunhao/laoshirenai/worktrees/universal-api-key-group-pr2-20260822",
-      "owner": "universal-api-key-group-pr2-20260822",
-      "kind": "temporary",
-      "allowed_actions": ["develop", "test"],
-      "ttl": "2026-08-31T23:59:59+08:00"
     }
   ]
 }

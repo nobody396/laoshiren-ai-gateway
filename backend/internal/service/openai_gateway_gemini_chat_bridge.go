@@ -36,7 +36,6 @@ func (s *OpenAIGatewayService) forwardGeminiChatCompletions(
 	}
 	clientStream := gjson.GetBytes(body, "stream").Bool()
 	reasoningEffort := extractOpenAIReasoningEffortFromBody(body, originalModel)
-	serviceTier := extractOpenAIServiceTierFromBody(body)
 
 	billingModel := resolveOpenAIForwardModel(account, originalModel, defaultMappedModel)
 	upstreamModel := normalizeOpenAIModelForUpstream(account, billingModel)
@@ -54,7 +53,7 @@ func (s *OpenAIGatewayService) forwardGeminiChatCompletions(
 		return nil, policyErr
 	}
 	upstreamBody = updatedBody
-	serviceTier = extractOpenAIServiceTierFromBody(upstreamBody)
+	serviceTier := extractOpenAIServiceTierFromBody(upstreamBody)
 	if clientStream {
 		var usageErr error
 		upstreamBody, usageErr = ensureOpenAIChatStreamUsage(upstreamBody)

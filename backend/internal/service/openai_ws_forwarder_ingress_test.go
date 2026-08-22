@@ -498,7 +498,9 @@ func TestOpenAIWSExtractNormalizedInputSequence(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, exists)
 		require.Len(t, items, 1)
-		require.Equal(t, `"hello"`, string(items[0]))
+		require.Equal(t, "message", gjson.GetBytes(items[0], "type").String())
+		require.Equal(t, "user", gjson.GetBytes(items[0], "role").String())
+		require.Equal(t, "hello", gjson.GetBytes(items[0], "content.0.text").String())
 	})
 
 	t.Run("input_number", func(t *testing.T) {
@@ -653,6 +655,17 @@ func TestBuildOpenAIWSReplayInputSequence(t *testing.T) {
 	lastFull := []json.RawMessage{
 		json.RawMessage(`{"type":"input_text","text":"hello"}`),
 	}
+
+	t.Run("top_level_string_becomes_valid_user_message_item", func(t *testing.T) {
+		items, exists, err := buildOpenAIWSReplayInputSequence(nil, false, []byte(`{"input":"hello"}`), false)
+		require.NoError(t, err)
+		require.True(t, exists)
+		require.Len(t, items, 1)
+		require.Equal(t, "message", gjson.GetBytes(items[0], "type").String())
+		require.Equal(t, "user", gjson.GetBytes(items[0], "role").String())
+		require.Equal(t, "input_text", gjson.GetBytes(items[0], "content.0.type").String())
+		require.Equal(t, "hello", gjson.GetBytes(items[0], "content.0.text").String())
+	})
 
 	t.Run("no_previous_response_id_use_current", func(t *testing.T) {
 		items, exists, err := buildOpenAIWSReplayInputSequence(

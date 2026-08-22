@@ -468,8 +468,13 @@ func (w *opsCaptureWriter) WriteString(s string) (int, error) {
 // Notes:
 // - It buffers response bodies only when status >= 400 to avoid overhead for successful traffic.
 // - Streaming errors after the response has started (SSE) may still need explicit logging.
-func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
+func OpsErrorLoggerMiddleware(ops *service.OpsService, reliabilityEvidence ...*service.ReliabilityEvidenceService) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		var evidence *service.ReliabilityEvidenceService
+		if len(reliabilityEvidence) > 0 {
+			evidence = reliabilityEvidence[0]
+		}
+		requestStartedAt := time.Now()
 		originalWriter := c.Writer
 		w := acquireOpsCaptureWriter(originalWriter)
 		defer func() {
@@ -483,15 +488,18 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 		c.Writer = w
 		c.Next()
 
-		if ops == nil {
-			return
-		}
-		if !ops.IsMonitoringEnabled(c.Request.Context()) {
+		opsEnabled := ops != nil && ops.IsMonitoringEnabled(c.Request.Context())
+		reliabilityEnabled := evidence != nil && evidence.Enabled()
+		if !opsEnabled && !reliabilityEnabled {
 			return
 		}
 
 		status := c.Writer.Status()
 		if status < 400 {
+			if evidence != nil {
+				evidence.SubmitFinalOutcome(buildFinalReliabilityObservation(c, requestStartedAt, nil))
+				evidence.SubmitAttemptOutcome(buildSuccessfulAttemptReliabilityObservation(c))
+			}
 			// Even when the client request succeeds, we still want to persist upstream error attempts
 			// (retries/failover) so ops can observe upstream instability that gets "covered" by retries.
 			var events []*service.OpsUpstreamErrorEvent
@@ -725,35 +733,31 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 				entry.ClientIP = &clientIP
 			}
 
+			for _, observation := range buildAttemptReliabilityObservations(entry, reliabilityProtocol(c), reliabilityRequestClass(entry.RequestPath)) {
+				if evidence != nil {
+					evidence.SubmitAttemptOutcome(observation)
+				}
+			}
+			if !opsEnabled {
+				return
+			}
 			// Store request headers/body only when an upstream error occurred to keep overhead minimal.
 			entry.RequestHeadersJSON = extractOpsRetryRequestHeaders(c)
 			attachOpsRequestBodyToEntry(c, entry)
 
-			// Skip logging if a passthrough rule with skip_monitoring=true matched.
+			// Skip verbose Ops logging if a passthrough rule requested it; the
+			// normalized reliability facts above remain independent.
 			if v, ok := c.Get(service.OpsSkipPassthroughKey); ok {
 				if skip, _ := v.(bool); skip {
 					return
 				}
 			}
-
 			enqueueOpsErrorLog(ops, entry)
 			return
 		}
 
 		body := w.buf.Bytes()
 		parsed := parseOpsErrorResponse(body)
-
-		// Skip logging if a passthrough rule with skip_monitoring=true matched.
-		if v, ok := c.Get(service.OpsSkipPassthroughKey); ok {
-			if skip, _ := v.(bool); skip {
-				return
-			}
-		}
-
-		// Skip logging if the error should be filtered based on settings
-		if shouldSkipOpsErrorLog(c.Request.Context(), ops, parsed.Message, string(body), c.Request.URL.Path) {
-			return
-		}
 
 		apiKey, _ := middleware2.GetAPIKeyFromContext(c)
 
@@ -923,6 +927,28 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 			if apiKey.Group != nil && apiKey.Group.Platform != "" {
 				entry.Platform = apiKey.Group.Platform
 			}
+		}
+
+		// Reliability keeps an explicit excluded/failure final outcome even when
+		// the verbose Ops error row is filtered by retention/noise settings.
+		if evidence != nil {
+			evidence.SubmitFinalOutcome(buildFinalReliabilityObservation(c, requestStartedAt, entry))
+		}
+		for _, observation := range buildAttemptReliabilityObservations(entry, reliabilityProtocol(c), reliabilityRequestClass(entry.RequestPath)) {
+			if evidence != nil {
+				evidence.SubmitAttemptOutcome(observation)
+			}
+		}
+		if !opsEnabled {
+			return
+		}
+		if v, ok := c.Get(service.OpsSkipPassthroughKey); ok {
+			if skip, _ := v.(bool); skip {
+				return
+			}
+		}
+		if shouldSkipOpsErrorLog(c.Request.Context(), ops, parsed.Message, string(body), c.Request.URL.Path) {
+			return
 		}
 
 		var clientIP string

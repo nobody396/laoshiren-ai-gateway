@@ -249,7 +249,8 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	openAIGatewayService := service.ProvideOpenAIGatewayService(accountRepository, usageLogRepository, usageBillingRepository, userRepository, userSubscriptionRepository, userGroupRateRepository, gatewayCache, configConfig, schedulerSnapshotService, concurrencyService, billingService, rateLimitService, billingCacheService, httpUpstream, deferredService, openAITokenProvider, grokTokenProvider, modelPricingResolver, channelService, accountQuotaAlertService, balanceAlertService, commissionService, gptImageTaskRepository, gptImageS3Storage, settingService, accountingService, openAIRouteController, openAIRouteAuditService, openAIRouteObservationCollector)
 	geminiMessagesCompatService := service.NewGeminiMessagesCompatService(accountRepository, groupRepository, gatewayCache, schedulerSnapshotService, geminiTokenProvider, rateLimitService, httpUpstream, antigravityGatewayService, configConfig)
 	opsSystemLogSink := service.ProvideOpsSystemLogSink(opsRepository)
-	opsService := service.ProvideOpsService(opsRepository, settingRepository, configConfig, accountRepository, userRepository, concurrencyService, gatewayService, openAIGatewayService, geminiMessagesCompatService, antigravityGatewayService, opsSystemLogSink, groupRepository, openAIRouteAuditService)
+	reliabilityEvidenceService := service.NewReliabilityEvidenceService(db, settingRepository)
+	opsService := service.ProvideOpsService(opsRepository, settingRepository, configConfig, accountRepository, userRepository, concurrencyService, gatewayService, openAIGatewayService, geminiMessagesCompatService, antigravityGatewayService, opsSystemLogSink, groupRepository, openAIRouteAuditService, reliabilityEvidenceService)
 	settingHandler := admin.NewSettingHandler(settingService, emailService, turnstileService, opsService)
 	opsHandler := admin.NewOpsHandler(opsService)
 	updateCache := repository.NewUpdateCache(redisClient)
@@ -327,7 +328,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	apiKeyAuthMiddleware := middleware.NewAPIKeyAuthMiddleware(apiKeyService, subscriptionService, userService, configConfig)
 	groupService := service.NewGroupService(groupRepository, apiKeyAuthCacheInvalidator)
 	readiness := server.ProvideReadiness(db, redisClient)
-	engine := server.ProvideRouter(configConfig, handlers, jwtAuthMiddleware, adminAuthMiddleware, apiKeyAuthMiddleware, apiKeyService, groupService, subscriptionService, opsService, settingService, changelogService, rbacService, redisClient, readiness)
+	engine := server.ProvideRouter(configConfig, handlers, jwtAuthMiddleware, adminAuthMiddleware, apiKeyAuthMiddleware, apiKeyService, groupService, subscriptionService, opsService, reliabilityEvidenceService, settingService, changelogService, rbacService, redisClient, readiness)
 	httpServer := server.ProvideHTTPServer(configConfig, engine)
 	accountExpiryService := service.ProvideAccountExpiryService(accountRepository)
 	subscriptionExpiryService := service.ProvideSubscriptionExpiryService(userSubscriptionRepository)
@@ -339,7 +340,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	opsScheduledReportService := service.ProvideOpsScheduledReportService(opsService, userService, emailService, redisClient, configConfig)
 	scheduledTestRunnerService := service.ProvideScheduledTestRunnerService(scheduledTestPlanRepository, scheduledTestService, accountTestService, rateLimitService, configConfig)
 	affiliateAgentActivationScheduler := service.NewAffiliateAgentActivationScheduler(affiliateAgentService)
-	lifecycle := service.ProvideRootLifecycle(configConfig, accountRepository, pricingService, apiKeyService, billingCacheService, emailQueueService, subscriptionService, accountingWorker, usageRecordWorkerPool, openAIRouteAuditService, openAIRouteObservationCollector, timingWheelService, dashboardAggregationService, deferredService, schedulerSnapshotService, concurrencyService, userMessageQueueService, tokenRefreshService, accountExpiryService, subscriptionExpiryService, usageCleanupService, agentLevelEvaluatorService, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, idempotencyCleanupService, scheduledTestRunnerService, downloadResourceService, backupService, pendingAuthSessionCleanupService, affiliateRewardService, affiliateAgentActivationScheduler, nativeCheckoutService)
+	lifecycle := service.ProvideRootLifecycle(configConfig, accountRepository, pricingService, apiKeyService, billingCacheService, emailQueueService, subscriptionService, accountingWorker, usageRecordWorkerPool, openAIRouteAuditService, openAIRouteObservationCollector, reliabilityEvidenceService, timingWheelService, dashboardAggregationService, deferredService, schedulerSnapshotService, concurrencyService, userMessageQueueService, tokenRefreshService, accountExpiryService, subscriptionExpiryService, usageCleanupService, agentLevelEvaluatorService, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, idempotencyCleanupService, scheduledTestRunnerService, downloadResourceService, backupService, pendingAuthSessionCleanupService, affiliateRewardService, affiliateAgentActivationScheduler, nativeCheckoutService)
 	v := provideCleanup(client, redisClient, lifecycle)
 	application := &Application{
 		Server:    httpServer,

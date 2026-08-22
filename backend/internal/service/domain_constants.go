@@ -204,6 +204,7 @@ const (
 	SettingKeySoraClientEnabled              = "sora_client_enabled"                // 是否启用 Sora 客户端（管理员手动控制）
 	SettingKeyMonthlyUpstreamProbeEnabled    = "monthly_upstream_probe_enabled"     // 是否启用月卡常驻探针
 	SettingKeyMonthlyCardPublicStatusEnabled = "monthly_card_public_status_enabled" // 是否向用户展示月卡运行状态
+	SettingKeyReliabilityObservationEnabled  = "reliability_observation_enabled"    // Reliability Observation collector (default off)
 	SettingKeyTableDefaultPageSize           = "table_default_page_size"            // 表格默认每页条数
 	SettingKeyTablePageSizeOptions           = "table_page_size_options"            // 表格可选每页条数（JSON 数组）
 	SettingKeyCustomMenuItems                = "custom_menu_items"                  // 自定义菜单项（JSON 数组）

@@ -56,6 +56,7 @@ type OpsService struct {
 	antigravityGatewayService *AntigravityGatewayService
 	systemLogSink             *OpsSystemLogSink
 	openAIRouteAuditService   *OpenAIRouteAuditService
+	reliabilityEvidence       *ReliabilityEvidenceService
 }
 
 func NewOpsService(

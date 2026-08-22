@@ -20,12 +20,13 @@ func RegisterGatewayRoutes(
 	groupService *service.GroupService,
 	subscriptionService *service.SubscriptionService,
 	opsService *service.OpsService,
+	reliabilityEvidence *service.ReliabilityEvidenceService,
 	settingService *service.SettingService,
 	cfg *config.Config,
 ) {
 	bodyLimit := middleware.RequestBodyLimit(cfg.Gateway.MaxBodySize)
 	clientRequestID := middleware.ClientRequestID()
-	opsErrorLogger := handler.OpsErrorLoggerMiddleware(opsService)
+	opsErrorLogger := handler.OpsErrorLoggerMiddleware(opsService, reliabilityEvidence)
 	endpointNorm := handler.InboundEndpointMiddleware()
 	universalRoute := middleware.UniversalGroupRouting(groupService, subscriptionService, cfg)
 

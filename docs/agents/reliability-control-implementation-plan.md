@@ -22,16 +22,20 @@ deploy or execute compensation.
 
 ## Module design
 
-Keep four deep modules with small interfaces. HTTP handlers, scheduled jobs,
-probes, gateway handlers, and admin pages are adapters at these seams.
+Keep four deep modules with small, consumer-specific interfaces. HTTP handlers,
+scheduled jobs, probes, gateway handlers, and admin pages are adapters at these
+seams.
 
 ### Reliability Evidence
 
 ```go
-type ReliabilityEvidence interface {
+type ReliabilityRecorder interface {
     RecordFinalOutcome(context.Context, FinalOutcome) error
     RecordAttempt(context.Context, AttemptOutcome) error
     RecordProbe(context.Context, ProbeOutcome) error
+}
+
+type ReliabilityReader interface {
     Snapshot(context.Context, EvidenceQuery) (EvidenceSnapshot, error)
 }
 ```
@@ -45,9 +49,12 @@ separate fact types.
 ### Status Control
 
 ```go
-type StatusControl interface {
+type StatusReader interface {
     PublicSnapshot(context.Context) (PublicStatusSnapshot, error)
     OperatorSnapshot(context.Context, MonitoringQuery) (MonitoringSnapshot, error)
+}
+
+type StatusController interface {
     Evaluate(context.Context, EvaluationWindow) (StatusEvaluation, error)
     Override(context.Context, StatusOverrideCommand) (StatusOverride, error)
 }
@@ -60,9 +67,12 @@ changes routing.
 ### Incident Control
 
 ```go
-type IncidentControl interface {
+type IncidentController interface {
     Reconcile(context.Context, StatusEvaluation) (IncidentChangeSet, error)
     Transition(context.Context, IncidentTransitionCommand) (Incident, error)
+}
+
+type IncidentReader interface {
     PublicTimeline(context.Context, IncidentQuery) ([]PublicIncident, error)
 }
 ```
@@ -74,17 +84,20 @@ links. Alerts are inputs; they are not Incidents.
 ### Compensation Control
 
 ```go
-type CompensationControl interface {
+type CompensationDrafting interface {
     Draft(context.Context, IncidentID) (CompensationDraft, error)
     Revise(context.Context, RevisionCommand) (CompensationDraft, error)
+}
+
+type CompensationExecution interface {
     Execute(context.Context, ApprovedDraftID) (ExecutionSummary, error)
 }
 ```
 
-The implementation hides tier snapshots, policy versions, paid-value evidence,
-group weights, caps, rounding, channel allocation, evidence snapshots,
-idempotency, readback, and notices. Shadow mode implements `Draft` and `Revise`
-only; the execution adapter is absent until its dedicated PR.
+The module hides tier snapshots, policy versions, paid-value evidence, group
+weights, caps, rounding, channel allocation, evidence snapshots, idempotency,
+readback, and notices. Shadow exposes `CompensationDrafting` only;
+`CompensationExecution` is introduced with its dedicated PR.
 
 ## Pull-request sequence
 
@@ -114,11 +127,14 @@ Scope:
 
 - Add an additive `reliability_observations` migration with an idempotency key,
   fact type, final outcome, ownership/exclusion classification, user/group/
-  account internal identifiers where required, Status Component lookup fields,
+  account internal identifiers where required, Service Component lookup fields,
   route fingerprint, latency, and timestamps.
 - Implement `ReliabilityEvidence` and a PostgreSQL adapter.
 - Add adapters at final gateway outcomes, existing upstream-attempt reporting,
   and `RunMonthlyUpstreamProbeOnce`.
+- Deduplicate Active Probes by Upstream Route fingerprint so each concrete route
+  is probed once per interval; projection to dependent Status Products and
+  Service Components belongs to Status Control rather than duplicate requests.
 - Add completeness counters and bounded asynchronous ingestion. Observation
   failure must never fail a customer request.
 - Default the collector off. Backfill is a separate read-only command and must
@@ -128,6 +144,7 @@ Checks:
 
 - unit tests for final-request versus attempt/probe separation
 - idempotency, exclusion, cancellation, and recovered-request tests
+- unique-route probe deduplication tests
 - Testcontainers migration/schema/index tests
 - secret/PII snapshot tests
 - existing gateway and OpenAI route-observation tests
@@ -147,6 +164,8 @@ Scope:
   separate products. Exclude legacy monthly groups and unpublished access modes.
 - Implement `StatusControl` with customer evidence precedence, sparse-traffic
   probes, stale evidence => Monitoring, accepted hysteresis, and override expiry.
+- Project one route-level probe observation to every explicitly bound Status
+  Product and Service Component without counting it as customer traffic.
 - Add sanitized `GET /api/v1/service-status` plus admin catalog/evaluation/
   override endpoints.
 - Add feature flags with public visibility off by default.
@@ -155,6 +174,7 @@ Checks:
 
 - table-driven state-transition and staleness tests
 - replay tests for Customer Availability versus Probe Availability
+- multi-product/component projection from one unique route probe
 - catalog seed/mapping integration tests
 - response tests proving no supplier, account, Base URL, route, or internal
   group disclosure
@@ -270,12 +290,9 @@ Scope:
 
 - Add current tier, immutable tier history, daily evaluation evidence, and
   time-bounded override storage.
-- Calculate rolling 90-day Verified Paid Value from exact paid cash/order/
-  entitlement relations, excluding gifts, compensation, tests, migrations,
-  refunds, and unresolved income.
-- Apply Standard `<250`, Priority `250..999.99`, Strategic `>=1000`, immediate
-  upgrade, 30-day downgrade grace, and incident-time Customer Tier Snapshot.
-- Consumption remains supporting evidence, not a hard threshold.
+- Implement the tier evidence, thresholds, refresh, grace, incident snapshot,
+  and override policy exactly as ADR-0009. Exact paid cash/order/entitlement
+  relations must support every included value and exclusion.
 - Add admin read-only tier explanation and audited override flow.
 
 Checks:
@@ -297,19 +314,19 @@ Scope:
   draft/revision/item, Customer Tier Snapshot, and Compensation Evidence
   Snapshot storage.
 - Implement `Draft` and `Revise`; no delivery adapter exists in this PR.
-- Eligibility: four distinct final failed Customer Requests across one Incident.
-- Raw value: summed product/group Customer Impact Segments × CNY 30/hour ×
-  incident-frozen group weight × tier multiplier.
-- Apply per-Incident tier caps, ten-percent Customer Relationship Cap, Standard
-  and Priority Rolling Goodwill Caps, proportional multi-channel allocation,
-  and two-decimal rounding without a minimum.
-- Flag High-value Compensation Drafts above ten percent of affected products'
-  rolling 30-day Verified Paid Value; they cannot be approved unchanged.
+- Implement eligibility, product/group calculation, policy values, benefit
+  conversion, rounding, caps, redesign, and Shadow gates exactly as ADR-0008
+  through ADR-0012.
+- For each product, intersect every segment with the interval beginning at that
+  user's first qualifying final failure; never award the pre-failure portion of
+  a segment to a late-arriving user.
 - Expose explanation-first admin draft/revision views.
 
 Checks:
 
 - golden formula fixtures including today's anonymized noon incident
+- late-arriving-user fixtures that clip an in-progress segment at the user's
+  first qualifying failure
 - multi-product, mixed-channel, cap-order, rolling-window, rounding, and high-
   value redesign tests
 - immutable revision and three-year evidence reproduction tests
@@ -321,9 +338,8 @@ Rollback: disable draft generation. This PR has no financial write path.
 
 **Title:** `feat(compensation): execute approved benefits with exact readback`
 
-Prerequisite: Shadow has run for at least 30 days, covered at least three real
-Incidents, passed review, and received explicit owner authorization for this PR
-to leave draft-only mode.
+Prerequisite: the ADR-0012 Shadow exit gates have passed and the owner has
+explicitly authorized this PR to leave draft-only mode.
 
 Scope:
 
@@ -366,8 +382,8 @@ the owner explicitly says `上线`.
    pass.
 5. **Routing stays Shadow.** Reliability integration does not authorize Enforce.
 6. **Compensation stays Shadow.** PR 8 cannot write financial or entitlement
-   state. PR 9 cannot be merged as executable until the accepted 30-day/three-
-   Incident gate and a fresh owner approval.
+   state. PR 9 cannot be merged as executable until the ADR-0012 gates and a
+   fresh owner approval pass.
 7. **Immutable release proof.** Required local checks, PR CI, main CI, exact
    commit image digest, replica health, `/health`, and relevant UI/API readback
    remain mandatory for each production release.
@@ -377,11 +393,12 @@ the owner explicitly says `上线`.
 ```text
 PR0 docs
   -> PR1 evidence
-      -> PR2 status backend -> PR3 public page
-      -> PR4 channel monitoring -> PR5 router Shadow adapter
-      -> PR6 incidents -> PR7 tiers -> PR8 compensation Shadow
-                                      -> [30 days + 3 incidents + owner approval]
-                                      -> PR9 execution
+      -> PR2 status backend
+          -> PR3 public page
+          -> PR4 channel monitoring -> PR5 router Shadow adapter
+          -> PR6 incidents -> PR7 tiers -> PR8 compensation Shadow
+                                          -> [ADR-0012 gates + owner approval]
+                                          -> PR9 execution
 ```
 
 Do not create all branches at once. Create one temporary registered worktree for

@@ -21,7 +21,7 @@ The product and access unit presented to users, such as a monthly-card group, en
 _Avoid_: Upstream Account, Pricing Channel
 
 **Service Family**:
-A public navigation category that groups related status products, such as OpenAI/CodeX, Claude, Grok, Gemini, or Other.
+A public navigation category that groups related status products, such as OpenAI/Codex, Claude, Grok, Gemini, or Other.
 _Avoid_: User-facing Group, Provider
 
 **Status Product**:
@@ -153,7 +153,7 @@ A real customer with at least one Customer-impacting Failure linked to an incide
 _Avoid_: Compensation Recipient, Failed Attempt
 
 **Compensation-eligible User**:
-An Affected User with at least four distinct final failed Customer Requests across the same Incident. Internal retries, Upstream Attempts, Active Probes, client errors, business-limit errors, and requests recovered before their final outcome do not count. Once eligible, compensation is still calculated separately for each affected Status Product and User-facing Group.
+An Affected User who meets the incident-wide final-failure threshold in the applicable Compensation Policy. Internal retries, Upstream Attempts, Active Probes, client errors, business-limit errors, and requests recovered before their final outcome remain excluded. Once eligible, compensation is still calculated separately for each affected Status Product and User-facing Group.
 _Avoid_: Affected User, Failed Attempt
 
 **Compensation Draft**:
@@ -165,7 +165,7 @@ An immutable replacement for a Compensation Draft after an operator changes an i
 _Avoid_: Edited Draft, Compensation Execution
 
 **High-value Compensation Draft**:
-A Compensation Draft whose proposed total exceeds ten percent of the affected Status Products' rolling 30-day Verified Paid Value. It cannot be approved unchanged: operators must redesign the proposed allocation or policy application, generate a replacement draft, and obtain explicit owner confirmation.
+A Compensation Draft whose proposed total crosses the high-value threshold in the applicable Compensation Policy. It cannot be approved unchanged: operators must redesign the proposed allocation or policy application, generate a replacement draft, and obtain explicit owner confirmation.
 _Avoid_: Compensation Draft, Automatic Scaling, Approval Warning
 
 **Compensation Policy**:
@@ -173,7 +173,7 @@ The approved rules that turn incident evidence and affected-user facts into elig
 _Avoid_: Compensation Draft, Manual Adjustment
 
 **Customer Tier**:
-A pre-existing service-recovery classification attached to one user account. All API keys, orders, balances, and Builder Pass entitlements under that account share the tier. It is derived from verified paid value, verified paid consumption, and loyalty evidence; it changes compensation size and cap but never compensation eligibility.
+A pre-existing service-recovery classification attached to one user account. All API keys, orders, balances, and Builder Pass entitlements under that account share the tier. The applicable Compensation Policy determines it from Verified Paid Value; Verified Paid Consumption remains supporting audit evidence rather than a qualification threshold. The tier changes compensation size and cap but never compensation eligibility.
 _Avoid_: User Role, Subscription Plan, API Key Tier
 
 **Verified Paid Consumption**:
@@ -205,7 +205,7 @@ The approved multiplier applied to a product compensation rate for one customer 
 _Avoid_: Group Rate Multiplier, Group Compensation Weight
 
 **Compensation Benefit**:
-The approved value delivered to an eligible affected user. CNY-equivalent goodwill is delivered as equal numeric pay-as-you-go balance or Builder Pass displayed credit according to the affected product. When one user has both benefit channels and a cap applies, the final value is allocated across channels in proportion to their uncapped raw values. The final value is rounded to two decimal places without a minimum benefit.
+The approved value delivered to an eligible affected user as pay-as-you-go balance or Builder Pass displayed credit according to the affected product. When one user has both benefit channels and a cap applies, the applicable Compensation Policy determines allocation, conversion, and rounding.
 _Avoid_: Refund, Validity Extension
 
 **Compensation Notice**:
@@ -221,15 +221,15 @@ The durable incident and customer evidence needed to reproduce a Compensation Dr
 _Avoid_: Raw Log Archive, Compensation Draft, Financial Ledger
 
 **Customer Relationship Cap**:
-The maximum goodwill Compensation Benefit supported by a customer's verified economic relationship for one Incident, equal to ten percent of rolling 90-day Verified Paid Value. It is applied together with the Customer Tier cap and does not limit an Erroneous Charge Refund.
+The maximum goodwill Compensation Benefit supported by a customer's Verified Paid Value for one Incident. It is applied together with the Customer Tier cap and does not limit an Erroneous Charge Refund.
 _Avoid_: Customer Tier Cap, Account Balance, Refund Limit
 
 **Rolling Goodwill Cap**:
-A customer-level limit on executed goodwill Compensation Benefits across a rolling 30-day window. Standard is capped at the lower of CNY 20 equivalent or twenty percent of rolling 90-day Verified Paid Value; Priority is capped at the lower of CNY 150 equivalent or thirty percent of that value; Strategic has no Rolling Goodwill Cap. Per-Incident caps still apply to every tier, and Erroneous Charge Refunds are excluded.
+A customer-level limit on executed goodwill Compensation Benefits across the rolling window defined by the applicable Compensation Policy. Per-Incident caps remain separate, and Erroneous Charge Refunds are excluded.
 _Avoid_: Customer Tier Cap, Customer Relationship Cap, Refund Limit
 
 **Shadow Compensation Evaluation**:
-A non-executing evaluation period that generates Compensation Drafts from real Incident evidence and compares policy results without delivering Compensation Benefits. Initial exit requires at least 30 days, at least three real Incidents, reviewed results, and explicit owner approval.
+A non-executing evaluation period that generates Compensation Drafts from real Incident evidence and compares policy results without delivering Compensation Benefits. Exit requires the evidence gates in the applicable decision record and explicit owner approval.
 _Avoid_: Compensation Draft, Automatic Compensation, Production Approval
 
 **Erroneous Charge Refund**:

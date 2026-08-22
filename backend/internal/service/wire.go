@@ -345,6 +345,7 @@ func ProvideOpsService(
 	systemLogSink *OpsSystemLogSink,
 	groupRepo GroupRepository,
 	openAIRouteAuditService *OpenAIRouteAuditService,
+	reliabilityEvidence *ReliabilityEvidenceService,
 ) *OpsService {
 	svc := NewOpsService(
 		opsRepo,
@@ -361,6 +362,7 @@ func ProvideOpsService(
 		groupRepo,
 	)
 	svc.SetOpenAIRouteAuditService(openAIRouteAuditService)
+	svc.SetReliabilityEvidenceService(reliabilityEvidence)
 	return svc
 }
 
@@ -671,6 +673,7 @@ var ProviderSet = wire.NewSet(
 	NewOpenAIRouteController,
 	wire.Bind(new(OpenAIRouteOutcomeRecorder), new(*OpenAIRouteController)),
 	NewOpenAIRouteAuditService,
+	NewReliabilityEvidenceService,
 	NewOpenAIRouteObservationCollector,
 	NewOAuthService,
 	NewOpenAIOAuthService,
@@ -844,6 +847,7 @@ func ProvideRootLifecycle(
 	usageRecordPool *UsageRecordWorkerPool,
 	openAIRouteAuditService *OpenAIRouteAuditService,
 	openAIRouteObservationCollector *OpenAIRouteObservationCollector,
+	reliabilityEvidence *ReliabilityEvidenceService,
 	timingWheel *TimingWheelService,
 	dashboardAggregation *DashboardAggregationService,
 	deferred *DeferredService,
@@ -898,6 +902,7 @@ func ProvideRootLifecycle(
 		component("usage-record-pool", usageRecordPool.Start, usageRecordPool.Stop),
 		component("openai-route-audit", openAIRouteAuditService.Start, openAIRouteAuditService.Stop),
 		component("openai-route-observations", openAIRouteObservationCollector.Start, openAIRouteObservationCollector.Stop),
+		reliabilityEvidence,
 		component("timing-wheel", timingWheel.Start, timingWheel.Stop),
 		component("dashboard-aggregation", dashboardAggregation.Start, nil),
 		component("deferred-writes", deferred.Start, deferred.Stop),

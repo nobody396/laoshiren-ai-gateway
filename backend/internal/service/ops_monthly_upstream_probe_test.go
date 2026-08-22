@@ -707,6 +707,49 @@ func TestMonthlyUpstreamProbeTimeoutForModelWidensOnlyGrok(t *testing.T) {
 	require.Equal(t, 25*time.Second, monthlyUpstreamProbeTimeoutForModel("gpt-5.6-sol"))
 }
 
+func TestMonthlyProbeReliabilityObservationIsProbeEvidenceNotCustomerTraffic(t *testing.T) {
+	checkedAt := time.Date(2026, 8, 22, 12, 0, 0, 0, time.FixedZone("CST", 8*60*60))
+	point := MonthlyUpstreamProbePoint{
+		AccountID: 53, Platform: PlatformOpenAI, Model: "gpt-5.6-sol",
+		ProbePath: MonthlyUpstreamProbePathGateway, Status: "failed",
+		HTTPStatus: intPointerForProbe(503), LatencyMs: 1250, CheckedAt: checkedAt,
+	}
+
+	observation := monthlyProbeReliabilityObservation(point, "0123456789abcdef")
+
+	require.Equal(t, ReliabilityOutcomeFailure, observation.Outcome)
+	require.Equal(t, int64(53), *observation.AccountID)
+	require.Equal(t, "0123456789abcdef", observation.EndpointHash)
+	require.Contains(t, observation.ProbeIdentity, MonthlyUpstreamProbePathGateway)
+}
+
+func TestMonthlyProbeReliabilityClaimMatchesPersistedConcreteRouteIdentity(t *testing.T) {
+	account := &Account{ID: 53, Platform: PlatformOpenAI, Credentials: map[string]any{"base_url": "https://example.invalid"}}
+	var claims []*ReliabilityProbeClaim
+	evidence := newReliabilityEvidenceForTest(true, &reliabilityRepoStub{claim: func(_ context.Context, claim *ReliabilityProbeClaim) (bool, error) {
+		copy := *claim
+		claims = append(claims, &copy)
+		return true, nil
+	}})
+	svc := &OpsService{reliabilityEvidence: evidence}
+	base := monthlyUpstreamProbeResolvedTarget{Platform: PlatformOpenAI, Model: "gpt-5.6-sol", GroupID: 40, Account: account}
+
+	claimed, err := svc.claimMonthlySelectedProbeRoute(context.Background(), base, account)
+	require.NoError(t, err)
+	require.True(t, claimed)
+	otherGroup := base
+	otherGroup.GroupID = 42
+	claimed, err = svc.claimMonthlySelectedProbeRoute(context.Background(), otherGroup, account)
+	require.NoError(t, err)
+	require.True(t, claimed)
+	require.Len(t, claims, 2)
+	require.Equal(t, claims[0].RouteFingerprint, claims[1].RouteFingerprint)
+	endpointHash := reliabilityProbeEndpointHash(account)
+	require.Equal(t, ReliabilityRouteFingerprint(PlatformOpenAI, account.ID, endpointHash, base.Model, "http"), claims[0].RouteFingerprint)
+}
+
+func intPointerForProbe(value int) *int { return &value }
+
 func TestMonthlyUpstreamProbeSlowThresholdWidensOnlyGPT56Sol(t *testing.T) {
 	require.Equal(t, 10*time.Second, monthlyUpstreamProbeSlowThresholdForModel("gpt-5.6-sol"))
 	require.Equal(t, 10*time.Second, monthlyUpstreamProbeSlowThresholdForModel(" GPT-5.6-SOL "))

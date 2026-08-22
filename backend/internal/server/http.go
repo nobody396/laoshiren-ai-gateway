@@ -38,6 +38,7 @@ func ProvideRouter(
 	groupService *service.GroupService,
 	subscriptionService *service.SubscriptionService,
 	opsService *service.OpsService,
+	reliabilityEvidence *service.ReliabilityEvidenceService,
 	settingService *service.SettingService,
 	changelogService *service.ChangelogService,
 	rbacService *service.RBACService,
@@ -99,7 +100,7 @@ func ProvideRouter(
 		service.SetWebSearchManager(websearch.NewManager(configs, redisClient))
 	})
 
-	return SetupRouter(r, handlers, jwtAuth, adminAuth, apiKeyAuth, apiKeyService, groupService, subscriptionService, opsService, settingService, changelogService, cfg, redisClient, rbacService, readiness)
+	return SetupRouter(r, handlers, jwtAuth, adminAuth, apiKeyAuth, apiKeyService, groupService, subscriptionService, opsService, reliabilityEvidence, settingService, changelogService, cfg, redisClient, rbacService, readiness)
 }
 
 // ProvideHTTPServer 提供 HTTP 服务器

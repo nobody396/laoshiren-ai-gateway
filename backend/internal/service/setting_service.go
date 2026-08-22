@@ -1395,6 +1395,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyGroupCacheHitRateEnabled:         "false",
 		SettingKeyMonthlyCardPublicStatusEnabled:   "false",
 		SettingKeyMonthlyCardPublicStatusChannels:  `["codex","claude","grok"]`,
+		SettingKeyReliabilityObservationEnabled:    "false",
 		SettingKeyChatbotURL:                       "",
 		SettingKeyLandingReportsEnabled:            "true",
 		SettingKeyLandingPricingProMultiplier:      strconv.FormatFloat(defaultLandingPricingProMultiplier, 'f', -1, 64),

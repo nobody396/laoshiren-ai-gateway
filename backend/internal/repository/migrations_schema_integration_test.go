@@ -96,6 +96,34 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	requireIndex(t, tx, "openai_route_observation_hourly", "openai_route_observation_hourly_pkey")
 	requireIndex(t, tx, "openai_route_observation_hourly", "idx_openai_route_observation_hourly_hour_start")
 
+	// reliability_observations: normalized append-only customer/attempt/probe evidence.
+	requireColumn(t, tx, "reliability_observations", "idempotency_key", "character varying", 180, false)
+	requireColumn(t, tx, "reliability_observations", "fact_type", "character varying", 32, false)
+	requireColumn(t, tx, "reliability_observations", "endpoint_hash", "character varying", 16, false)
+	requireColumn(t, tx, "reliability_observations", "route_fingerprint", "character varying", 32, false)
+	requireColumn(t, tx, "reliability_observations", "customer_impact", "boolean", 0, false)
+	requireColumn(t, tx, "reliability_observations", "observed_at", "timestamp with time zone", 0, false)
+	requireIndex(t, tx, "reliability_observations", "reliability_observations_idempotency_key_key")
+	requireIndex(t, tx, "reliability_observations", "idx_reliability_observations_observed")
+	requireIndex(t, tx, "reliability_observations", "idx_reliability_observations_route_observed")
+	requireColumn(t, tx, "reliability_probe_claims", "claim_key", "character varying", 180, false)
+	requireColumn(t, tx, "reliability_probe_claims", "route_fingerprint", "character varying", 32, false)
+	requireColumn(t, tx, "reliability_probe_claims", "interval_start", "timestamp with time zone", 0, false)
+	requireIndex(t, tx, "reliability_probe_claims", "reliability_probe_claims_pkey")
+	requireIndex(t, tx, "reliability_probe_claims", "reliability_probe_claim_route_interval_key")
+	var sensitiveReliabilityColumns int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT COUNT(*)
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'reliability_observations'
+  AND column_name = ANY(ARRAY['prompt','response_body','credential','raw_url','api_key','account_name','user_email'])
+`).Scan(&sensitiveReliabilityColumns))
+	require.Zero(t, sensitiveReliabilityColumns)
+	var reliabilityEnabled string
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key = 'reliability_observation_enabled'`).Scan(&reliabilityEnabled))
+	require.Equal(t, "false", reliabilityEnabled)
+
 	// groups: Grok video billing controls (migration 173)
 	requireColumn(t, tx, "groups", "video_rate_independent", "boolean", 0, false)
 	requireColumn(t, tx, "groups", "video_rate_multiplier", "numeric", 0, false)

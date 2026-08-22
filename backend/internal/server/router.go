@@ -55,6 +55,7 @@ func SetupRouter(
 	groupService *service.GroupService,
 	subscriptionService *service.SubscriptionService,
 	opsService *service.OpsService,
+	reliabilityEvidence *service.ReliabilityEvidenceService,
 	settingService *service.SettingService,
 	changelogService *service.ChangelogService,
 	cfg *config.Config,
@@ -119,7 +120,7 @@ func SetupRouter(
 	}
 
 	// 注册路由
-	registerRoutes(r, handlers, jwtAuth, adminAuth, apiKeyAuth, apiKeyService, groupService, subscriptionService, opsService, settingService, cfg, redisClient)
+	registerRoutes(r, handlers, jwtAuth, adminAuth, apiKeyAuth, apiKeyService, groupService, subscriptionService, opsService, reliabilityEvidence, settingService, cfg, redisClient)
 
 	// 全部 admin 路由注册完成后扫描并同步到 admin_apis 表。
 	SyncAdminAPIsOnStartup(r, rbacService)
@@ -138,6 +139,7 @@ func registerRoutes(
 	groupService *service.GroupService,
 	subscriptionService *service.SubscriptionService,
 	opsService *service.OpsService,
+	reliabilityEvidence *service.ReliabilityEvidenceService,
 	settingService *service.SettingService,
 	cfg *config.Config,
 	redisClient *redis.Client,
@@ -163,5 +165,5 @@ func registerRoutes(
 	routes.RegisterAuthRoutes(v1, h, jwtAuth, redisClient, settingService)
 	routes.RegisterUserRoutes(v1, h, jwtAuth, settingService)
 	routes.RegisterAdminRoutes(v1, h, adminAuth)
-	routes.RegisterGatewayRoutes(r, h, apiKeyAuth, apiKeyService, groupService, subscriptionService, opsService, settingService, cfg)
+	routes.RegisterGatewayRoutes(r, h, apiKeyAuth, apiKeyService, groupService, subscriptionService, opsService, reliabilityEvidence, settingService, cfg)
 }

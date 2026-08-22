@@ -890,6 +890,13 @@ func (s *OpsService) RunMonthlyUpstreamProbeOnce(ctx context.Context) error {
 	var errs []error
 	for _, target := range targets {
 		point, account := s.probeMonthlyGatewayTarget(ctx, target)
+		if point.ErrorCode == "reliability_probe_already_claimed" {
+			continue
+		}
+		if point.ErrorCode == "reliability_probe_claim_failed" {
+			errs = append(errs, errors.New(point.ErrorMessage))
+			continue
+		}
 		if point.AccountName == "" {
 			point.AccountName = target.AccountName
 		}
@@ -903,6 +910,9 @@ func (s *OpsService) RunMonthlyUpstreamProbeOnce(ctx context.Context) error {
 		if err := s.opsRepo.InsertMonthlyUpstreamProbeResult(ctx, &point); err != nil {
 			errs = append(errs, err)
 		}
+		if s.reliabilityEvidence != nil {
+			s.reliabilityEvidence.SubmitProbeOutcome(monthlyProbeReliabilityObservation(point, reliabilityProbeEndpointHash(account)))
+		}
 		if !isMonthlyUpstreamProbeHealthy(point.Status) {
 			s.recordMonthlyUpstreamProbeError(ctx, &point)
 		}
@@ -915,12 +925,100 @@ func (s *OpsService) RunMonthlyUpstreamProbeOnce(ctx context.Context) error {
 			if err := s.opsRepo.InsertMonthlyUpstreamProbeResult(ctx, &diagnostic); err != nil {
 				errs = append(errs, err)
 			}
+			if s.reliabilityEvidence != nil {
+				s.reliabilityEvidence.SubmitProbeOutcome(monthlyProbeReliabilityObservation(diagnostic, reliabilityProbeEndpointHash(account)))
+			}
 			if !isMonthlyUpstreamProbeHealthy(diagnostic.Status) {
 				s.recordMonthlyUpstreamProbeError(ctx, &diagnostic)
 			}
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func monthlyProbeReliabilityObservation(point MonthlyUpstreamProbePoint, endpointHash string) *ReliabilityProbeOutcome {
+	protocol := "http"
+	if point.ProbePath == MonthlyUpstreamProbePathDirectUpstream {
+		protocol = "http_direct"
+	}
+	fingerprint := ReliabilityRouteFingerprint(point.Platform, point.AccountID, endpointHash, point.Model, protocol)
+	observedAt := point.CheckedAt
+	if observedAt.IsZero() {
+		observedAt = time.Now()
+	}
+	sourceID := fmt.Sprintf("%s:%d:%s", fingerprint, observedAt.UnixMilli(), point.ProbePath)
+	outcome := ReliabilityOutcomeFailure
+	exclusionReason := ""
+	if isMonthlyUpstreamProbeHealthy(point.Status) {
+		outcome = ReliabilityOutcomeSuccess
+	} else if point.Status == "not_schedulable" || point.Status == "missing" {
+		outcome = ReliabilityOutcomeExcluded
+		exclusionReason = point.Status
+	}
+	latencyMs := point.LatencyMs
+	if latencyMs < 0 {
+		latencyMs = 0
+	}
+	return &ReliabilityProbeOutcome{
+		ProbeIdentity:   sourceID,
+		AccountID:       reliabilityOptionalProbeAccount(point.AccountID),
+		Platform:        point.Platform,
+		Model:           point.Model,
+		RequestClass:    ReliabilityRequestClassText,
+		Protocol:        protocol,
+		EndpointHash:    endpointHash,
+		Outcome:         outcome,
+		StatusCode:      point.HTTPStatus,
+		ErrorOwner:      "provider",
+		ExclusionReason: exclusionReason,
+		LatencyMs:       latencyMs,
+		ObservedAt:      observedAt,
+	}
+}
+
+func reliabilityProbeEndpointHash(account *Account) string {
+	if account == nil {
+		return ""
+	}
+	return OpenAIRouteEndpointHash(account.GetBaseURL())
+}
+
+func (s *OpsService) claimMonthlySelectedProbeRoute(ctx context.Context, target monthlyUpstreamProbeResolvedTarget, account *Account) (bool, error) {
+	if s == nil || s.reliabilityEvidence == nil || !s.reliabilityEvidence.Enabled() {
+		return true, nil
+	}
+	if account == nil {
+		return true, nil
+	}
+	endpointHash := reliabilityProbeEndpointHash(account)
+	fingerprint := ReliabilityRouteFingerprint(target.Platform, account.ID, endpointHash, target.Model, "http")
+	intervalStart := time.Now().Truncate(monthlyUpstreamProbeInterval)
+	return s.reliabilityEvidence.ClaimProbe(ctx, &ReliabilityProbeClaim{
+		ClaimIdentity:    fmt.Sprintf("monthly:%s:%d", fingerprint, intervalStart.Unix()),
+		RouteFingerprint: fingerprint,
+		IntervalStart:    intervalStart,
+		ExpiresAt:        intervalStart.Add(monthlyUpstreamProbeInterval),
+	})
+}
+
+func monthlyProbeClaimGateFailure(target monthlyUpstreamProbeResolvedTarget, err error) MonthlyUpstreamProbePoint {
+	code := "reliability_probe_already_claimed"
+	message := "route probe already claimed for this interval"
+	if err != nil {
+		code = "reliability_probe_claim_failed"
+		message = err.Error()
+	}
+	point := monthlyProbeTargetLocalFailure(target, code, message)
+	point.Status = "missing"
+	return point
+}
+
+func reliabilityOptionalProbeAccount(accountID int64) *int64 {
+	if accountID <= 0 {
+		return nil
+	}
+	value := accountID
+	return &value
 }
 
 func (s *OpsService) probeMonthlyGatewayTarget(ctx context.Context, target monthlyUpstreamProbeResolvedTarget) (MonthlyUpstreamProbePoint, *Account) {
@@ -937,6 +1035,8 @@ func (s *OpsService) probeMonthlyGatewayTarget(ctx context.Context, target month
 				ErrorMessage: "monthly upstream account was not found",
 				CheckedAt:    time.Now(),
 			}
+		} else if claimed, claimErr := s.claimMonthlySelectedProbeRoute(ctx, target, account); claimErr != nil || !claimed {
+			point = monthlyProbeClaimGateFailure(target, claimErr)
 		} else {
 			point = s.probeMonthlyGatewayAccount(ctx, account, target.Model)
 		}
@@ -980,8 +1080,12 @@ func (s *OpsService) probeMonthlyGrokGroupThroughGateway(ctx context.Context, ta
 	}
 	if selection.Acquired && selection.ReleaseFunc != nil {
 		defer selection.ReleaseFunc()
-	} else if !selection.Acquired {
+	}
+	if !selection.Acquired {
 		return monthlyProbeSelectedAccountBusy(target, selection.Account), selection.Account
+	}
+	if claimed, claimErr := s.claimMonthlySelectedProbeRoute(ctx, target, selection.Account); claimErr != nil || !claimed {
+		return monthlyProbeClaimGateFailure(target, claimErr), selection.Account
 	}
 
 	point := s.probeMonthlyGrokThroughGateway(ctx, selection.Account, target.Model, sessionHash)
@@ -1015,10 +1119,14 @@ func (s *OpsService) probeMonthlyOpenAIGroupThroughGateway(ctx context.Context, 
 	}
 	if selection.Acquired && selection.ReleaseFunc != nil {
 		defer selection.ReleaseFunc()
-	} else if !selection.Acquired && selection.WaitPlan != nil {
+	}
+	if !selection.Acquired && selection.WaitPlan != nil {
 		return monthlyProbeSelectedAccountBusy(target, selection.Account), selection.Account
 	} else if !selection.Acquired {
 		return monthlyProbeSelectedAccountBusy(target, selection.Account), selection.Account
+	}
+	if claimed, claimErr := s.claimMonthlySelectedProbeRoute(ctx, target, selection.Account); claimErr != nil || !claimed {
+		return monthlyProbeClaimGateFailure(target, claimErr), selection.Account
 	}
 
 	body, _ := json.Marshal(createOpenAICompactProbePayload(target.Model))
@@ -1062,10 +1170,14 @@ func (s *OpsService) probeMonthlyAnthropicGroupThroughGateway(ctx context.Contex
 	}
 	if selection.Acquired && selection.ReleaseFunc != nil {
 		defer selection.ReleaseFunc()
-	} else if !selection.Acquired && selection.WaitPlan != nil {
+	}
+	if !selection.Acquired && selection.WaitPlan != nil {
 		return monthlyProbeSelectedAccountBusy(target, selection.Account), selection.Account
 	} else if !selection.Acquired {
 		return monthlyProbeSelectedAccountBusy(target, selection.Account), selection.Account
+	}
+	if claimed, claimErr := s.claimMonthlySelectedProbeRoute(ctx, target, selection.Account); claimErr != nil || !claimed {
+		return monthlyProbeClaimGateFailure(target, claimErr), selection.Account
 	}
 
 	body, _ := json.Marshal(map[string]any{

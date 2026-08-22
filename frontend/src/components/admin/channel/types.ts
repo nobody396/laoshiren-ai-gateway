@@ -21,6 +21,10 @@ export interface PricingFormEntry {
   cache_read_price: number | string | null
   fast_multiplier: number | string | null
   flex_multiplier: number | string | null
+  fast_supported: boolean
+  flex_supported: boolean
+  fast_verified_at: string | null
+  flex_verified_at: string | null
   image_output_price: number | string | null
   per_request_price: number | string | null
   intervals: IntervalFormEntry[]

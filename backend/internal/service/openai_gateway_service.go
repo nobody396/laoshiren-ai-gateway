@@ -22,6 +22,7 @@ import (
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/apicompat"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ip"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/openai"
@@ -332,40 +333,42 @@ var defaultOpenAICodexSnapshotPersistThrottle = newAccountWriteThrottle(openAICo
 
 // OpenAIGatewayService handles OpenAI API gateway operations
 type OpenAIGatewayService struct {
-	accountRepo              AccountRepository
-	usageLogRepo             UsageLogRepository
-	usageBillingRepo         UsageBillingRepository
-	userRepo                 UserRepository
-	userSubRepo              UserSubscriptionRepository
-	cache                    GatewayCache
-	cfg                      *config.Config
-	codexDetector            CodexClientRestrictionDetector
-	schedulerSnapshot        *SchedulerSnapshotService
-	concurrencyService       *ConcurrencyService
-	billingService           *BillingService
-	rateLimitService         *RateLimitService
-	billingCacheService      *BillingCacheService
-	userGroupRateResolver    *userGroupRateResolver
-	httpUpstream             HTTPUpstream
-	deferredService          *DeferredService
-	openAITokenProvider      *OpenAITokenProvider
-	grokTokenProvider        *GrokTokenProvider
-	toolCorrector            *CodexToolCorrector
-	openaiWSResolver         OpenAIWSProtocolResolver
-	resolver                 *ModelPricingResolver
-	channelService           *ChannelService
-	accountQuotaAlertService *AccountQuotaAlertService
-	balanceAlertService      *BalanceAlertService
-	commissionService        *CommissionService
-	gptImageTaskRepo         GPTImageTaskRepository
-	gptImageS3Storage        *GPTImageS3Storage
-	settingService           *SettingService
-	liveAttestation          liveattestation.Provider
-	liveAttestationCipher    SecretEncryptor
-	openAIRouteEvaluator     OpenAIRouteShadowEvaluator
-	openAIRouteAuditService  *OpenAIRouteAuditService
-	openAIRouteObservations  *OpenAIRouteObservationCollector
-	pipeline                 *GatewayPipeline
+	accountRepo               AccountRepository
+	usageLogRepo              UsageLogRepository
+	usageBillingRepo          UsageBillingRepository
+	userRepo                  UserRepository
+	userSubRepo               UserSubscriptionRepository
+	cache                     GatewayCache
+	cfg                       *config.Config
+	codexDetector             CodexClientRestrictionDetector
+	schedulerSnapshot         *SchedulerSnapshotService
+	concurrencyService        *ConcurrencyService
+	billingService            *BillingService
+	rateLimitService          *RateLimitService
+	billingCacheService       *BillingCacheService
+	userGroupRateResolver     *userGroupRateResolver
+	httpUpstream              HTTPUpstream
+	deferredService           *DeferredService
+	openAITokenProvider       *OpenAITokenProvider
+	grokTokenProvider         *GrokTokenProvider
+	toolCorrector             *CodexToolCorrector
+	openaiWSResolver          OpenAIWSProtocolResolver
+	resolver                  *ModelPricingResolver
+	channelService            *ChannelService
+	serviceTierPricing        ChannelModelPricingProvider
+	serviceTierCapabilityGate bool
+	accountQuotaAlertService  *AccountQuotaAlertService
+	balanceAlertService       *BalanceAlertService
+	commissionService         *CommissionService
+	gptImageTaskRepo          GPTImageTaskRepository
+	gptImageS3Storage         *GPTImageS3Storage
+	settingService            *SettingService
+	liveAttestation           liveattestation.Provider
+	liveAttestationCipher     SecretEncryptor
+	openAIRouteEvaluator      OpenAIRouteShadowEvaluator
+	openAIRouteAuditService   *OpenAIRouteAuditService
+	openAIRouteObservations   *OpenAIRouteObservationCollector
+	pipeline                  *GatewayPipeline
 
 	openaiWSPoolOnce                    sync.Once
 	openaiWSStateStoreOnce              sync.Once
@@ -470,23 +473,25 @@ func NewOpenAIGatewayService(
 			nil,
 			"service.openai_gateway",
 		),
-		httpUpstream:             httpUpstream,
-		deferredService:          deferredService,
-		openAITokenProvider:      openAITokenProvider,
-		toolCorrector:            NewCodexToolCorrector(),
-		openaiWSResolver:         NewOpenAIWSProtocolResolver(cfg),
-		resolver:                 resolver,
-		channelService:           channelService,
-		accountQuotaAlertService: accountQuotaAlertService,
-		balanceAlertService:      balanceAlertService,
-		commissionService:        commissionService,
-		gptImageTaskRepo:         gptImageTaskRepo,
-		gptImageS3Storage:        gptImageS3Storage,
-		settingService:           settingService,
-		liveAttestation:          liveattestation.NewProvider(),
-		liveAttestationCipher:    newLiveAttestationCipher(cfg),
-		responseHeaderFilter:     compileResponseHeaderFilter(cfg),
-		codexSnapshotThrottle:    newAccountWriteThrottle(openAICodexSnapshotPersistMinInterval),
+		httpUpstream:              httpUpstream,
+		deferredService:           deferredService,
+		openAITokenProvider:       openAITokenProvider,
+		toolCorrector:             NewCodexToolCorrector(),
+		openaiWSResolver:          NewOpenAIWSProtocolResolver(cfg),
+		resolver:                  resolver,
+		channelService:            channelService,
+		serviceTierPricing:        channelService,
+		serviceTierCapabilityGate: true,
+		accountQuotaAlertService:  accountQuotaAlertService,
+		balanceAlertService:       balanceAlertService,
+		commissionService:         commissionService,
+		gptImageTaskRepo:          gptImageTaskRepo,
+		gptImageS3Storage:         gptImageS3Storage,
+		settingService:            settingService,
+		liveAttestation:           liveattestation.NewProvider(),
+		liveAttestationCipher:     newLiveAttestationCipher(cfg),
+		responseHeaderFilter:      compileResponseHeaderFilter(cfg),
+		codexSnapshotThrottle:     newAccountWriteThrottle(openAICodexSnapshotPersistMinInterval),
 	}
 	svc.logOpenAIWSModeBootstrap()
 	return svc
@@ -6171,7 +6176,7 @@ type OpenAIFastBlockedError struct {
 func (e *OpenAIFastBlockedError) Error() string { return e.Message }
 
 func (s *OpenAIGatewayService) evaluateOpenAIFastPolicy(ctx context.Context, account *Account, model, serviceTier string) (action, errMsg string) {
-	if s == nil || s.settingService == nil {
+	if s == nil {
 		return BetaPolicyActionPass, ""
 	}
 	tier := strings.ToLower(strings.TrimSpace(serviceTier))
@@ -6179,14 +6184,50 @@ func (s *OpenAIGatewayService) evaluateOpenAIFastPolicy(ctx context.Context, acc
 		return BetaPolicyActionPass, ""
 	}
 	settings := openAIFastPolicySettingsFromContext(ctx)
-	if settings == nil {
+	if settings == nil && s.settingService != nil {
 		fetched, err := s.settingService.GetOpenAIFastPolicySettings(ctx)
-		if err != nil || fetched == nil {
-			return BetaPolicyActionPass, ""
+		if err == nil && fetched != nil {
+			settings = fetched
 		}
-		settings = fetched
 	}
-	return evaluateOpenAIFastPolicyWithSettings(settings, account, model, tier)
+	if settings != nil {
+		action, errMsg = evaluateOpenAIFastPolicyWithSettings(settings, account, model, tier)
+		if action != BetaPolicyActionPass {
+			return action, errMsg
+		}
+	}
+	if s.serviceTierCapabilityGate && (tier == OpenAIFastTierPriority || tier == OpenAIFastTierFlex) && !s.hasVerifiedChannelServiceTier(ctx, model, tier) {
+		return BetaPolicyActionFilter, ""
+	}
+	return BetaPolicyActionPass, ""
+}
+
+func (s *OpenAIGatewayService) hasVerifiedChannelServiceTier(ctx context.Context, model, tier string) bool {
+	if s == nil || s.serviceTierPricing == nil || ctx == nil {
+		return false
+	}
+	group, _ := ctx.Value(ctxkey.Group).(*Group)
+	if !IsGroupContextValid(group) {
+		return false
+	}
+	pricing := s.serviceTierPricing.GetChannelModelPricing(ctx, group.ID, strings.TrimSpace(model))
+	return channelPricingSupportsServiceTier(pricing, tier)
+}
+
+func channelPricingSupportsServiceTier(pricing *ChannelModelPricing, tier string) bool {
+	if pricing == nil {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(tier)) {
+	case OpenAIFastTierPriority:
+		return pricing.FastSupported && pricing.FastVerifiedAt != nil && !pricing.FastVerifiedAt.IsZero() &&
+			pricing.FastMultiplier != nil && *pricing.FastMultiplier > 0
+	case OpenAIFastTierFlex:
+		return pricing.FlexSupported && pricing.FlexVerifiedAt != nil && !pricing.FlexVerifiedAt.IsZero() &&
+			pricing.FlexMultiplier != nil && *pricing.FlexMultiplier > 0
+	default:
+		return true
+	}
 }
 
 func evaluateOpenAIFastPolicyWithSettings(settings *OpenAIFastPolicySettings, account *Account, model, tier string) (action, errMsg string) {

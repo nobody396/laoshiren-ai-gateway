@@ -124,6 +124,23 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 		}
 	}
 
+	// Anthropic Fast mode is converted into the same service_tier contract as
+	// native Responses requests. Apply both the global policy and the verified
+	// channel/model capability gate before any upstream request is built.
+	updatedBody, policyErr := s.applyOpenAIFastPolicyToBody(ctx, account, upstreamModel, responsesBody)
+	if policyErr != nil {
+		var blocked *OpenAIFastBlockedError
+		if errors.As(policyErr, &blocked) && c != nil {
+			c.JSON(http.StatusForbidden, gin.H{
+				"type":  "error",
+				"error": gin.H{"type": "permission_error", "message": blocked.Message},
+			})
+		}
+		return nil, policyErr
+	}
+	responsesBody = updatedBody
+	effectiveServiceTier := extractOpenAIServiceTierFromBody(responsesBody)
+
 	grokCacheIdentity := ""
 	if account.Platform == PlatformGrok {
 		intentBody := responsesBody
@@ -249,9 +266,8 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 
 	// Propagate ServiceTier and ReasoningEffort to result for billing
 	if handleErr == nil && result != nil {
-		if responsesReq.ServiceTier != "" {
-			st := responsesReq.ServiceTier
-			result.ServiceTier = &st
+		if effectiveServiceTier != nil {
+			result.ServiceTier = effectiveServiceTier
 		}
 		if responsesReq.Reasoning != nil && responsesReq.Reasoning.Effort != "" {
 			re := responsesReq.Reasoning.Effort

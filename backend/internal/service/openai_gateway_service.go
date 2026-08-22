@@ -256,8 +256,9 @@ type OpenAIForwardResult struct {
 	ResponseStatus       int
 	ResponseType         string
 
-	wsReplayInput       []json.RawMessage
-	wsReplayInputExists bool
+	wsReplayInput                []json.RawMessage
+	wsReplayInputExists          bool
+	wsAccountFailoverReplayInput []json.RawMessage
 }
 
 type OpenAIWSRetryMetricsSnapshot struct {

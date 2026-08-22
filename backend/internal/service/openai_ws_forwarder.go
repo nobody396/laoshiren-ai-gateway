@@ -1539,7 +1539,18 @@ func openAIWSExtractNormalizedInputSequence(payload []byte) ([]json.RawMessage, 
 		return []json.RawMessage{json.RawMessage(raw)}, true, nil
 	}
 	if inputValue.Type == gjson.String {
-		encoded, _ := json.Marshal(inputValue.String())
+		// A top-level Responses input string is valid, but once turns are
+		// materialized into a replay array each element must be an input item.
+		// Preserve the original semantics as an explicit user message instead of
+		// inserting a bare JSON string that upstream rejects.
+		encoded, _ := json.Marshal(map[string]any{
+			"type": "message",
+			"role": "user",
+			"content": []any{map[string]any{
+				"type": "input_text",
+				"text": inputValue.String(),
+			}},
+		})
 		return []json.RawMessage{encoded}, true, nil
 	}
 	return []json.RawMessage{json.RawMessage(inputValue.Raw)}, true, nil

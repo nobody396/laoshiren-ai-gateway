@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ctxkey"
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/gin-gonic/gin"
@@ -119,8 +120,29 @@ func UniversalGroupRouting(groupService UniversalTargetGroupLoader, subscription
 		}
 		c.Set(string(ContextKeyUniversalAccessGroup), accessGroup)
 		c.Set(string(ContextKeyUniversalRoute), decision)
+		requestCtx := c.Request.Context()
+		requestCtx = context.WithValue(requestCtx, ctxkey.UniversalAccessGroupID, accessGroup.ID)
+		requestCtx = context.WithValue(requestCtx, ctxkey.UniversalInboundProtocol, protocol)
+		requestCtx = context.WithValue(requestCtx, ctxkey.UniversalPublicModel, model)
+		if tier := normalizeUniversalRequestedServiceTier(gjson.GetBytes(body, "service_tier").String()); tier != "" {
+			requestCtx = context.WithValue(requestCtx, ctxkey.OpenAIRequestedServiceTier, tier)
+		}
+		c.Request = c.Request.WithContext(requestCtx)
 		setGroupContext(c, target)
 		c.Next()
+	}
+}
+
+func normalizeUniversalRequestedServiceTier(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "fast", service.OpenAIFastTierPriority:
+		return service.OpenAIFastTierPriority
+	case service.OpenAIFastTierFlex:
+		return service.OpenAIFastTierFlex
+	case "default", "auto", "scale":
+		return strings.ToLower(strings.TrimSpace(raw))
+	default:
+		return ""
 	}
 }
 

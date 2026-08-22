@@ -29,7 +29,10 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 		ClientRequestID:           clientRequestID,
 		Attempt:                   2,
 		GroupID:                   7,
+		AccessGroupID:             90,
 		Model:                     "gpt-5.6-sol",
+		InboundProtocol:           service.APIProtocolResponses,
+		RequestedServiceTier:      service.OpenAIFastTierPriority,
 		RequestClass:              service.OpenAIRouteRequestClassText,
 		PolicyMode:                service.OpenAIRoutePolicyShadow,
 		PolicyVersion:             4,
@@ -50,6 +53,10 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 			ActivationID:         "activation-integration-4",
 			ShadowStartedAt:      shadowStartedAt,
 			RequestClass:         service.OpenAIRouteRequestClassText,
+			AccessGroupID:        90,
+			PublicModel:          "gpt-5.6-sol",
+			InboundProtocol:      service.APIProtocolResponses,
+			RequestedServiceTier: service.OpenAIFastTierPriority,
 			EstimatedBaseCostUSD: 0.01,
 			Policy: service.OpenAIRouteShadowAuditPolicy{
 				MaxAccountShare:  0.80,
@@ -71,25 +78,32 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 	start := createdAt.Add(-time.Minute)
 	end := createdAt.Add(time.Minute)
 	list, err := repo.ListOpenAIRouteShadowDecisions(context.Background(), &service.OpenAIRouteShadowDecisionFilter{
-		StartTime:    &start,
-		EndTime:      &end,
-		RequestID:    requestID,
-		RequestClass: service.OpenAIRouteRequestClassText,
-		ActivationID: "activation-integration-4",
-		ExperimentID: "experiment-integration",
-		VariantID:    "latency-v2",
+		StartTime:            &start,
+		EndTime:              &end,
+		RequestID:            requestID,
+		RequestClass:         service.OpenAIRouteRequestClassText,
+		ActivationID:         "activation-integration-4",
+		ExperimentID:         "experiment-integration",
+		VariantID:            "latency-v2",
+		AccessGroupID:        func() *int64 { value := int64(90); return &value }(),
+		InboundProtocol:      service.APIProtocolResponses,
+		RequestedServiceTier: service.OpenAIFastTierPriority,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, list.Total)
 	require.Len(t, list.Decisions, 1)
 	require.Equal(t, int64(28), list.Decisions[0].AdaptiveSelectedAccountID)
 	require.Equal(t, service.OpenAIRouteRequestClassText, list.Decisions[0].RequestClass)
+	require.Equal(t, int64(90), list.Decisions[0].AccessGroupID)
+	require.Equal(t, service.APIProtocolResponses, list.Decisions[0].InboundProtocol)
+	require.Equal(t, service.OpenAIFastTierPriority, list.Decisions[0].RequestedServiceTier)
 	require.Equal(t, "activation-integration-4", list.Decisions[0].ActivationID)
 	require.Equal(t, "experiment-integration", list.Decisions[0].ExperimentID)
 	require.Equal(t, "latency-v2", list.Decisions[0].VariantID)
 	require.Len(t, list.Decisions[0].TreatmentFingerprint, 32)
 	require.Equal(t, shadowStartedAt, list.Decisions[0].ShadowStartedAt)
 	require.Len(t, list.Decisions[0].Snapshot.Candidates, 1)
+	require.Equal(t, int64(90), list.Decisions[0].Snapshot.AccessGroupID)
 
 	stats, err := repo.GetOpenAIRouteShadowDecisionStats(context.Background(), &service.OpenAIRouteShadowDecisionFilter{
 		StartTime:    &start,

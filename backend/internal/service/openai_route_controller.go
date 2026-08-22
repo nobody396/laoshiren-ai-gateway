@@ -50,11 +50,15 @@ type OpenAIRouteShadowCandidate struct {
 }
 
 type OpenAIRouteShadowRequest struct {
-	GroupID      int64
-	Model        string
-	RequestClass OpenAIRouteRequestClass
-	Seed         uint64
-	Now          time.Time
+	GroupID              int64
+	AccessGroupID        int64
+	Model                string
+	PublicModel          string
+	InboundProtocol      string
+	RequestedServiceTier string
+	RequestClass         OpenAIRouteRequestClass
+	Seed                 uint64
+	Now                  time.Time
 
 	Candidates []OpenAIRouteShadowCandidate
 }
@@ -305,6 +309,10 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		EstimatedBaseCostUSD: config.EstimatedBaseCostUSD,
 		RequestClass:         req.RequestClass,
 		ActivationID:         decision.ActivationID,
+		AccessGroupID:        req.AccessGroupID,
+		PublicModel:          strings.TrimSpace(req.PublicModel),
+		InboundProtocol:      strings.TrimSpace(req.InboundProtocol),
+		RequestedServiceTier: strings.TrimSpace(req.RequestedServiceTier),
 	}
 	activationID, shadowStartedAt, err := config.normalizedShadowActivation(now)
 	if err != nil {

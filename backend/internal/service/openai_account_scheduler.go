@@ -1076,12 +1076,17 @@ func (s *defaultOpenAIAccountScheduler) evaluateOpenAIRouteShadows(
 	evaluationCtx, cancel := context.WithTimeout(ctx, openAIRouteShadowEvaluationTimeout)
 	defer cancel()
 	seed := deriveOpenAISelectionSeed(req)
+	accessGroupID, publicModel, inboundProtocol, requestedServiceTier := openAIRouteUniversalRequestContext(ctx)
 	shadowRequest := OpenAIRouteShadowRequest{
-		GroupID:      *req.GroupID,
-		Model:        req.RequestedModel,
-		RequestClass: openAIRouteRequestClassForScheduleRequest(req),
-		Seed:         seed,
-		Candidates:   projected,
+		GroupID:              *req.GroupID,
+		AccessGroupID:        accessGroupID,
+		Model:                req.RequestedModel,
+		PublicModel:          publicModel,
+		InboundProtocol:      inboundProtocol,
+		RequestedServiceTier: requestedServiceTier,
+		RequestClass:         openAIRouteRequestClassForScheduleRequest(req),
+		Seed:                 seed,
+		Candidates:           projected,
 	}
 	decisions := make([]OpenAIRouteShadowDecision, 0, 1)
 	var err error
@@ -1168,7 +1173,10 @@ func (s *defaultOpenAIAccountScheduler) persistOpenAIRouteShadowDecision(
 		ClientRequestID:                  clientRequestID,
 		Attempt:                          attempt,
 		GroupID:                          *req.GroupID,
+		AccessGroupID:                    decision.Audit.AccessGroupID,
 		Model:                            req.RequestedModel,
+		InboundProtocol:                  decision.Audit.InboundProtocol,
+		RequestedServiceTier:             decision.Audit.RequestedServiceTier,
 		RequestClass:                     openAIRouteRequestClassForScheduleRequest(req),
 		PolicyMode:                       decision.Mode,
 		PolicyVersion:                    decision.Version,
@@ -1194,6 +1202,20 @@ func (s *defaultOpenAIAccountScheduler) persistOpenAIRouteShadowDecision(
 	if !s.service.openAIRouteAuditService.TryRecord(record) {
 		invalidateUnrecordedOpenAIRouteShadowDecision(decision, "audit_persist_failed")
 	}
+}
+
+func openAIRouteUniversalRequestContext(ctx context.Context) (accessGroupID int64, publicModel, inboundProtocol, requestedServiceTier string) {
+	if ctx == nil {
+		return 0, "", "", ""
+	}
+	accessGroupID, _ = ctx.Value(ctxkey.UniversalAccessGroupID).(int64)
+	publicModel, _ = ctx.Value(ctxkey.UniversalPublicModel).(string)
+	inboundProtocol, _ = ctx.Value(ctxkey.UniversalInboundProtocol).(string)
+	requestedServiceTier, _ = ctx.Value(ctxkey.OpenAIRequestedServiceTier).(string)
+	return accessGroupID,
+		strings.TrimSpace(publicModel),
+		strings.ToLower(strings.TrimSpace(inboundProtocol)),
+		strings.ToLower(strings.TrimSpace(requestedServiceTier))
 }
 
 func (s *defaultOpenAIAccountScheduler) persistOpenAIRouteShadowDecisions(

@@ -37,6 +37,23 @@ const (
 	// Group 认证后的分组信息，由 API Key 认证中间件设置
 	Group Key = "ctx_group"
 
+	// UniversalAccessGroupID records the universal API-key group that admitted
+	// the request before it was rebound to a concrete routing/billing group.
+	UniversalAccessGroupID Key = "ctx_universal_access_group_id"
+
+	// UniversalInboundProtocol records the customer-facing protocol selected by
+	// universal routing (anthropic, responses, or chat_completions).
+	UniversalInboundProtocol Key = "ctx_universal_inbound_protocol"
+
+	// UniversalPublicModel records the model name requested through the
+	// universal group before any account-level upstream mapping.
+	UniversalPublicModel Key = "ctx_universal_public_model"
+
+	// OpenAIRequestedServiceTier records the normalized tier requested by the
+	// client. It is deliberately named requested: a later safety policy may
+	// filter the tier before forwarding and billing.
+	OpenAIRequestedServiceTier Key = "ctx_openai_requested_service_tier"
+
 	// IsMaxTokensOneHaikuRequest 标识当前请求是否为 max_tokens=1 + haiku 模型的探测请求
 	// 用于 ClaudeCodeOnly 验证绕过（绕过 system prompt 检查，但仍需验证 User-Agent）
 	IsMaxTokensOneHaikuRequest Key = "ctx_is_max_tokens_one_haiku"

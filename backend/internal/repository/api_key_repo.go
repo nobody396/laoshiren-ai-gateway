@@ -188,6 +188,7 @@ func (r *apiKeyRepository) GetByKeyForAuth(ctx context.Context, key string) (*se
 				group.FieldMessagesDispatchModelConfig,
 				group.FieldMaxReasoningEffort,
 				group.FieldReasoningEffortMappings,
+				group.FieldUniversalRoutes,
 			)
 		}).
 		Only(ctx)
@@ -700,6 +701,7 @@ func groupEntityToService(g *dbent.Group) *service.Group {
 		MessagesDispatchModelConfig:     g.MessagesDispatchModelConfig,
 		MaxReasoningEffort:              g.MaxReasoningEffort,
 		ReasoningEffortMappings:         append([]service.ReasoningEffortMapping(nil), g.ReasoningEffortMappings...),
+		UniversalRoutes:                 append([]service.UniversalRouteConfig(nil), g.UniversalRoutes...),
 		CreatedAt:                       g.CreatedAt,
 		UpdatedAt:                       g.UpdatedAt,
 	}

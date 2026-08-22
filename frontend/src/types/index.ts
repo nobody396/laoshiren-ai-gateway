@@ -665,7 +665,7 @@ export interface PaginationConfig {
 
 // ==================== API Key & Group Types ====================
 
-export type GroupPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity' | 'gpt-image' | 'grok'
+export type GroupPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity' | 'gpt-image' | 'grok' | 'universal'
 
 export type SubscriptionType = 'standard' | 'subscription' | 'credit'
 
@@ -679,6 +679,15 @@ export interface OpenAIMessagesDispatchModelConfig {
 export interface ReasoningEffortMapping {
   from: string
   to: string
+}
+
+export interface UniversalRouteConfig {
+  public_model: string
+  match_type: 'exact' | 'prefix'
+  inbound_protocol: 'chat_completions' | 'anthropic' | 'responses'
+  target_group_id: number
+  priority: number
+  enabled: boolean
 }
 
 export interface Group {
@@ -725,6 +734,7 @@ export interface Group {
 }
 
 export interface AdminGroup extends Group {
+	universal_routes?: UniversalRouteConfig[]
   // 模型路由配置（仅管理员可见，内部信息）
   model_routing: Record<string, number[]> | null
   model_routing_enabled: boolean
@@ -845,6 +855,7 @@ export interface CreateGroupRequest {
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
 	max_reasoning_effort?: string
 	reasoning_effort_mappings?: ReasoningEffortMapping[]
+  universal_routes?: UniversalRouteConfig[]
   // 从指定分组复制账号
   copy_accounts_from_group_ids?: number[]
 }
@@ -883,6 +894,7 @@ export interface UpdateGroupRequest {
   allow_live?: boolean
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
+  universal_routes?: UniversalRouteConfig[]
   copy_accounts_from_group_ids?: number[]
 }
 

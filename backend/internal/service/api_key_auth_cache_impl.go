@@ -262,6 +262,7 @@ func (s *APIKeyService) snapshotFromAPIKey(apiKey *APIKey) *APIKeyAuthSnapshot {
 			MessagesDispatchModelConfig:     apiKey.Group.MessagesDispatchModelConfig,
 			MaxReasoningEffort:              apiKey.Group.MaxReasoningEffort,
 			ReasoningEffortMappings:         append([]ReasoningEffortMapping(nil), apiKey.Group.ReasoningEffortMappings...),
+			UniversalRoutes:                 append([]UniversalRouteConfig(nil), apiKey.Group.UniversalRoutes...),
 		}
 	}
 	return snapshot
@@ -330,6 +331,7 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 			MessagesDispatchModelConfig:     snapshot.Group.MessagesDispatchModelConfig,
 			MaxReasoningEffort:              snapshot.Group.MaxReasoningEffort,
 			ReasoningEffortMappings:         append([]ReasoningEffortMapping(nil), snapshot.Group.ReasoningEffortMappings...),
+			UniversalRoutes:                 append([]UniversalRouteConfig(nil), snapshot.Group.UniversalRoutes...),
 		}
 	}
 	s.compileAPIKeyIPRules(apiKey)

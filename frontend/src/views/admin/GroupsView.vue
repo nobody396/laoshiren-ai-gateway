@@ -319,6 +319,11 @@
           />
           <p class="input-hint">{{ t('admin.groups.platformHint') }}</p>
         </div>
+        <div v-if="createForm.platform === 'universal'">
+          <label class="input-label">{{ t('admin.groups.universal.routes') }}</label>
+          <textarea v-model="createForm.universal_routes_json" rows="10" class="input font-mono text-xs" placeholder='[{"public_model":"gpt-5.6-sol","match_type":"exact","inbound_protocol":"responses","target_group_id":6,"priority":10,"enabled":true}]'></textarea>
+          <p class="input-hint">{{ t('admin.groups.universal.hint') }}</p>
+        </div>
         <!-- 从分组复制账号 -->
         <div v-if="copyAccountsGroupOptions.length > 0">
           <div class="mb-1.5 flex items-center gap-1">
@@ -1098,6 +1103,11 @@
             data-tour="group-form-platform"
           />
           <p class="input-hint">{{ t('admin.groups.platformNotEditable') }}</p>
+        </div>
+        <div v-if="editForm.platform === 'universal'">
+          <label class="input-label">{{ t('admin.groups.universal.routes') }}</label>
+          <textarea v-model="editForm.universal_routes_json" rows="10" class="input font-mono text-xs"></textarea>
+          <p class="input-hint">{{ t('admin.groups.universal.hint') }}</p>
         </div>
         <!-- 从分组复制账号（编辑时） -->
         <div v-if="copyAccountsGroupOptionsForEdit.length > 0">
@@ -1976,7 +1986,7 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { useOnboardingStore } from '@/stores/onboarding'
 import { adminAPI } from '@/api/admin'
-import type { AdminGroup, GroupPlatform, SubscriptionType } from '@/types'
+import type { AdminGroup, GroupPlatform, SubscriptionType, UniversalRouteConfig } from '@/types'
 import type { Column } from '@/components/common/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
@@ -2053,7 +2063,8 @@ const platformOptions = computed(() => [
   { value: 'gemini', label: 'Gemini' },
   { value: 'antigravity', label: 'Antigravity' },
   { value: 'grok', label: 'Grok' },
-  { value: 'gpt-image', label: 'GPT-Image' }
+  { value: 'gpt-image', label: 'GPT-Image' },
+  { value: 'universal', label: t('admin.groups.platforms.universal') }
 ])
 
 const platformFilterOptions = computed(() => [
@@ -2063,7 +2074,8 @@ const platformFilterOptions = computed(() => [
   { value: 'gemini', label: 'Gemini' },
   { value: 'antigravity', label: 'Antigravity' },
   { value: 'grok', label: 'Grok' },
-  { value: 'gpt-image', label: 'GPT-Image' }
+  { value: 'gpt-image', label: 'GPT-Image' },
+  { value: 'universal', label: t('admin.groups.platforms.universal') }
 ])
 
 const editStatusOptions = computed(() => [
@@ -2264,7 +2276,8 @@ const createForm = reactive({
   // 从分组复制账号
   copy_accounts_from_group_ids: [] as number[],
 	max_reasoning_effort: '',
-	reasoning_effort_mappings: [] as ReasoningEffortMappingRow[]
+	reasoning_effort_mappings: [] as ReasoningEffortMappingRow[],
+	universal_routes_json: '[]'
 })
 
 // 简单账号类型（用于模型路由选择）
@@ -2523,7 +2536,8 @@ const editForm = reactive({
   // 从分组复制账号
   copy_accounts_from_group_ids: [] as number[],
 	max_reasoning_effort: '',
-	reasoning_effort_mappings: [] as ReasoningEffortMappingRow[]
+	reasoning_effort_mappings: [] as ReasoningEffortMappingRow[],
+	universal_routes_json: '[]'
 })
 
 // 根据分组类型返回不同的删除确认消息
@@ -2709,6 +2723,7 @@ const closeCreateModal = () => {
   createForm.copy_accounts_from_group_ids = []
 	createForm.max_reasoning_effort = ''
 	createForm.reasoning_effort_mappings = []
+	createForm.universal_routes_json = '[]'
 	createReasoningEffortPolicyRef.value?.resetValidation()
   createModelRoutingRules.value = []
 }
@@ -2742,6 +2757,17 @@ const handleCreateGroup = async () => {
 	) {
 		return
 	}
+  let universalRoutes: UniversalRouteConfig[] = []
+  if (createForm.platform === 'universal') {
+    try {
+      const parsed = JSON.parse(createForm.universal_routes_json)
+      if (!Array.isArray(parsed)) throw new Error('routes must be an array')
+      universalRoutes = parsed as UniversalRouteConfig[]
+    } catch {
+      appStore.showError(t('admin.groups.universal.invalidJson'))
+      return
+    }
+  }
   submitting.value = true
   try {
     // 构建请求数据，包含模型路由配置
@@ -2762,7 +2788,8 @@ const handleCreateGroup = async () => {
               exact_model_mappings: createForm.exact_model_mappings
             })
           : undefined,
-		reasoning_effort_mappings: reasoningEffortMappingsToAPI(createForm.reasoning_effort_mappings)
+		reasoning_effort_mappings: reasoningEffortMappingsToAPI(createForm.reasoning_effort_mappings),
+      universal_routes: universalRoutes
     }
     // v-model.number 清空输入框时产生 ""，转为 null 让后端设为无限制
     const emptyToNull = (v: any) => v === '' ? null : v
@@ -2839,9 +2866,10 @@ const handleEdit = async (group: AdminGroup) => {
 		group.max_reasoning_effort
 	)
 	editForm.reasoning_effort_mappings = reasoningEffortMappingsToRows(
-		group.reasoning_effort_mappings,
+	group.reasoning_effort_mappings,
 		group.platform
 	)
+  editForm.universal_routes_json = JSON.stringify(group.universal_routes || [], null, 2)
   // 加载模型路由规则（异步加载账号名称）
   editModelRoutingRules.value = await convertApiFormatToRoutingRules(group.model_routing)
   showEditModal.value = true
@@ -2856,6 +2884,7 @@ const closeEditModal = () => {
   editingGroup.value = null
 	editForm.max_reasoning_effort = ''
 	editForm.reasoning_effort_mappings = []
+	editForm.universal_routes_json = '[]'
 	editReasoningEffortPolicyRef.value?.resetValidation()
   editModelRoutingRules.value = []
   editForm.copy_accounts_from_group_ids = []
@@ -2875,6 +2904,17 @@ const handleUpdateGroup = async () => {
 		!editReasoningEffortPolicyRef.value.validate()
 	) {
 		return
+	}
+	let universalRoutes: UniversalRouteConfig[] = []
+	if (editForm.platform === 'universal') {
+		try {
+			const parsed = JSON.parse(editForm.universal_routes_json)
+			if (!Array.isArray(parsed)) throw new Error('routes must be an array')
+			universalRoutes = parsed as UniversalRouteConfig[]
+		} catch {
+			appStore.showError(t('admin.groups.universal.invalidJson'))
+			return
+		}
 	}
 
   submitting.value = true
@@ -2902,7 +2942,8 @@ const handleUpdateGroup = async () => {
               exact_model_mappings: editForm.exact_model_mappings
             })
           : undefined,
-		reasoning_effort_mappings: reasoningEffortMappingsToAPI(editForm.reasoning_effort_mappings)
+		reasoning_effort_mappings: reasoningEffortMappingsToAPI(editForm.reasoning_effort_mappings),
+		universal_routes: universalRoutes
     }
     // v-model.number 清空输入框时产生 ""，转为 null 让后端设为无限制
     const emptyToNull = (v: any) => v === '' ? null : v

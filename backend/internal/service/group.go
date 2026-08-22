@@ -8,6 +8,7 @@ import (
 
 type OpenAIMessagesDispatchModelConfig = domain.OpenAIMessagesDispatchModelConfig
 type ReasoningEffortMapping = domain.ReasoningEffortMapping
+type UniversalRouteConfig = domain.UniversalRouteConfig
 
 type Group struct {
 	ID             int64
@@ -76,6 +77,8 @@ type Group struct {
 	MaxReasoningEffort string
 	// ReasoningEffortMappings rewrites explicit request values before applying the ceiling.
 	ReasoningEffortMappings []ReasoningEffortMapping
+
+	UniversalRoutes []UniversalRouteConfig
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

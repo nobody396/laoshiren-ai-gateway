@@ -48,6 +48,7 @@ const (
 	PlatformAntigravity = "antigravity"
 	PlatformGPTImage    = "gpt-image"
 	PlatformGrok        = "grok"
+	PlatformUniversal   = "universal"
 )
 
 // API protocol constants describe the wire protocol spoken to an API-key

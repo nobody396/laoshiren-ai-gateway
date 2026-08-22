@@ -2500,7 +2500,13 @@ export default {
         gemini: 'Gemini',
         antigravity: 'Antigravity',
         grok: 'Grok',
-        'gpt-image': 'GPT-Image'
+        'gpt-image': 'GPT-Image',
+        universal: '通用分组'
+      },
+      universal: {
+        routes: '通用模型路由（JSON）',
+        hint: '每条路由显式指定模型、入站协议和既有目标分组。通用分组不会复制账号；PR3 前按 priority 数值从小到大确定目标。',
+        invalidJson: '通用模型路由必须是合法的 JSON 数组'
       },
       saving: '保存中...',
       noGroups: '暂无分组',

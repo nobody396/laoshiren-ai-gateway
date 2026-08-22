@@ -1172,6 +1172,10 @@ func init() {
 	groupDescReasoningEffortMappings := groupFields[38].Descriptor()
 	// group.DefaultReasoningEffortMappings holds the default value on creation for the reasoning_effort_mappings field.
 	group.DefaultReasoningEffortMappings = groupDescReasoningEffortMappings.Default.([]domain.ReasoningEffortMapping)
+	// groupDescUniversalRoutes is the schema descriptor for universal_routes field.
+	groupDescUniversalRoutes := groupFields[39].Descriptor()
+	// group.DefaultUniversalRoutes holds the default value on creation for the universal_routes field.
+	group.DefaultUniversalRoutes = groupDescUniversalRoutes.Default.([]domain.UniversalRouteConfig)
 	idempotencyrecordMixin := schema.IdempotencyRecord{}.Mixin()
 	idempotencyrecordMixinFields0 := idempotencyrecordMixin[0].Fields()
 	_ = idempotencyrecordMixinFields0

@@ -79,6 +79,7 @@ type APIKeyAuthGroupSnapshot struct {
 	MessagesDispatchModelConfig OpenAIMessagesDispatchModelConfig `json:"messages_dispatch_model_config,omitempty"`
 	MaxReasoningEffort          string                            `json:"max_reasoning_effort,omitempty"`
 	ReasoningEffortMappings     []ReasoningEffortMapping          `json:"reasoning_effort_mappings"`
+	UniversalRoutes             []UniversalRouteConfig            `json:"universal_routes,omitempty"`
 }
 
 // APIKeyAuthCacheEntry 缓存条目，支持负缓存

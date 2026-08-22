@@ -175,6 +175,7 @@ type CreateGroupInput struct {
 	MessagesDispatchModelConfig OpenAIMessagesDispatchModelConfig
 	MaxReasoningEffort          string
 	ReasoningEffortMappings     []ReasoningEffortMapping
+	UniversalRoutes             []UniversalRouteConfig
 	// 从指定分组复制账号（创建分组后在同一事务内绑定）
 	CopyAccountsFromGroupIDs []int64
 }
@@ -226,6 +227,7 @@ type UpdateGroupInput struct {
 	MessagesDispatchModelConfig *OpenAIMessagesDispatchModelConfig
 	MaxReasoningEffort          *string
 	ReasoningEffortMappings     *[]ReasoningEffortMapping
+	UniversalRoutes             *[]UniversalRouteConfig
 	// 从指定分组复制账号（同步操作：先清空当前分组的账号绑定，再绑定源分组的账号）
 	CopyAccountsFromGroupIDs []int64
 }
@@ -917,6 +919,12 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 	if err != nil {
 		return nil, infraerrors.Newf(http.StatusBadRequest, "INVALID_REASONING_EFFORT_MAPPING", "%v", err)
 	}
+	if err := s.validateUniversalRoutes(ctx, 0, platform, input.UniversalRoutes); err != nil {
+		return nil, err
+	}
+	if platform == PlatformUniversal && len(input.CopyAccountsFromGroupIDs) > 0 {
+		return nil, infraerrors.BadRequest("UNIVERSAL_ACCOUNT_COPY_FORBIDDEN", "universal groups reference concrete groups and cannot copy account bindings")
+	}
 
 	subscriptionType := input.SubscriptionType
 	if subscriptionType == "" {
@@ -1050,6 +1058,7 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		MessagesDispatchModelConfig:     normalizeOpenAIMessagesDispatchModelConfig(input.MessagesDispatchModelConfig, 0),
 		MaxReasoningEffort:              maxReasoningEffort,
 		ReasoningEffortMappings:         reasoningEffortMappings,
+		UniversalRoutes:                 append([]UniversalRouteConfig(nil), input.UniversalRoutes...),
 	}
 	sanitizeGroupMessagesDispatchFields(group)
 	sanitizeGroupReasoningEffortPolicy(group)
@@ -1390,6 +1399,18 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 			return nil, infraerrors.Newf(http.StatusBadRequest, "INVALID_REASONING_EFFORT_MAPPING", "%v", err)
 		}
 		group.ReasoningEffortMappings = reasoningEffortMappings
+	}
+	if input.UniversalRoutes != nil {
+		group.UniversalRoutes = append([]UniversalRouteConfig(nil), (*input.UniversalRoutes)...)
+	}
+	if err := s.validateUniversalRoutes(ctx, id, group.Platform, group.UniversalRoutes); err != nil {
+		return nil, err
+	}
+	if group.Platform != PlatformUniversal {
+		group.UniversalRoutes = nil
+	}
+	if group.Platform == PlatformUniversal && len(input.CopyAccountsFromGroupIDs) > 0 {
+		return nil, infraerrors.BadRequest("UNIVERSAL_ACCOUNT_COPY_FORBIDDEN", "universal groups reference concrete groups and cannot copy account bindings")
 	}
 	sanitizeGroupMessagesDispatchFields(group)
 	sanitizeGroupReasoningEffortPolicy(group)

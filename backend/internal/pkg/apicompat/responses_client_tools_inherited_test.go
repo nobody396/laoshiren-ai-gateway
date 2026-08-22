@@ -20,10 +20,15 @@ func TestAdaptResponsesClientToolsWithInheritedMapping_LowersFollowupHistoryWith
 	require.NoError(t, err)
 	require.True(t, changed)
 	require.Equal(t, inherited, mapping)
-	items := req["input"].([]any)
-	require.Equal(t, "function_call", items[0].(map[string]any)["type"])
-	require.Equal(t, "function_call_output", items[1].(map[string]any)["type"])
-	require.NotContains(t, items[1].(map[string]any), "id")
+	items, ok := req["input"].([]any)
+	require.True(t, ok)
+	call, ok := items[0].(map[string]any)
+	require.True(t, ok)
+	output, ok := items[1].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "function_call", call["type"])
+	require.Equal(t, "function_call_output", output["type"])
+	require.NotContains(t, output, "id")
 }
 
 func TestAdaptResponsesClientToolsWithInheritedMapping_ExplicitToolsReplaceInherited(t *testing.T) {
@@ -40,5 +45,9 @@ func TestAdaptResponsesClientToolsWithInheritedMapping_ExplicitToolsReplaceInher
 	require.NoError(t, err)
 	require.False(t, changed)
 	require.Empty(t, mapping)
-	require.Equal(t, "custom_tool_call", req["input"].([]any)[0].(map[string]any)["type"])
+	items, ok := req["input"].([]any)
+	require.True(t, ok)
+	call, ok := items[0].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "custom_tool_call", call["type"])
 }

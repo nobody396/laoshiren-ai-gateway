@@ -1864,7 +1864,6 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 			token = newToken
 			wsAttemptMessage = nextAttemptMessage
 			wsTurnOffset = retryTurn - 1
-			previousResponseID = ""
 			wsSwitchCount++
 			if !imageGenerationIntent {
 				if bindErr := h.gatewayService.BindStickySession(ctx, apiKey.GroupID, sessionHash, account.ID); bindErr != nil {

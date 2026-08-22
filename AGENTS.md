@@ -97,3 +97,17 @@ read a theme token from JavaScript; never paste chart hexes into a component.
 ## Secrets
 
 Never commit secrets, tokens, OAuth client secrets, SMTP passwords, SSH keys, or admin API keys. Agent Switch is the only local secret/MCP control plane. Inspect names with `agent-switch secret list`; write values only with `agent-switch secret set --stdin NAME` or `--fd`, never command arguments or project `.env` files.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked in GitHub Issues for `nobody396/laoshiren-ai-gateway`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The canonical Matt Pocock triage roles map directly to repository labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This repository uses a single-context domain-doc layout. Read the root `CONTEXT.md` and relevant ADRs under `docs/adr/` when they exist. See `docs/agents/domain.md`.

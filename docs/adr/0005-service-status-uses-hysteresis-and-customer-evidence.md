@@ -1,0 +1,3 @@
+# Service status uses hysteresis and customer evidence
+
+Service Status does not change on a single probe result: one failure is internal evidence, two consecutive failures may produce Degraded Performance, and three may produce a Partial Outage, while broad loss of critical HTTP service produces a Major Outage. Customer-impacting Failures outweigh successful probes, and recovery requires two consecutive successful probes followed by at least ten minutes of Monitoring without new customer impact before Operational is restored. Reliable recovery evidence closes the current Customer Impact Segment when Monitoring begins; the healthy observation period is not compensable. A relapse during Monitoring opens another segment in the same Incident.

@@ -1803,10 +1803,6 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 			reqLog.Info("openai.websocket_ingress_closed", zap.Int64("account_id", account.ID))
 			return
 		}
-		if shouldReportOpenAIWSProxyAccountFailure(err) {
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
-		}
-
 		var failoverErr *service.UpstreamFailoverError
 		retryPayload, retryTurn, retryCurrentTurn := service.OpenAIWSCurrentTurnRetryPayload(err)
 		if errors.As(err, &failoverErr) && retryCurrentTurn {
@@ -1879,6 +1875,9 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 				zap.String("schedule_layer", replacementDecision.Layer),
 			)
 			continue
+		}
+		if shouldReportOpenAIWSProxyAccountFailure(err) {
+			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
 		}
 
 		closeStatus, closeReason := summarizeWSCloseErrorForLog(err)

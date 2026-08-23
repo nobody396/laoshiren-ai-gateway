@@ -437,6 +437,8 @@ export default {
     redeemCodes: 'Redeem Codes',
     billing: 'Billing',
     ops: 'Ops',
+    monthlyUpstreams: 'Monthly Upstreams',
+    channelMonitoring: 'Channel Monitoring',
     promoCodes: 'Promo Codes',
     settings: 'Settings',
     myAccount: 'My Account',

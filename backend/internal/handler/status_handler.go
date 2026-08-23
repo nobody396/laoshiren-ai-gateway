@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/response"
@@ -23,6 +25,31 @@ func (h *StatusHandler) GetAdminStatus(c *gin.Context) {
 		return
 	}
 	response.Success(c, snapshot)
+}
+
+func (h *StatusHandler) GetChannelMonitoring(c *gin.Context) {
+	window, err := parseChannelMonitoringWindow(c.Query("window_minutes"))
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	snapshot, err := h.service.MonitoringSnapshot(c.Request.Context(), window)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Channel Monitoring is temporarily unavailable")
+		return
+	}
+	response.Success(c, snapshot)
+}
+
+func parseChannelMonitoringWindow(raw string) (time.Duration, error) {
+	if raw == "" {
+		return 15 * time.Minute, nil
+	}
+	minutes, err := strconv.Atoi(raw)
+	if err != nil || minutes < 5 || minutes > 120 {
+		return 0, fmt.Errorf("window_minutes must be between 5 and 120")
+	}
+	return time.Duration(minutes) * time.Minute, nil
 }
 
 func (h *StatusHandler) GetSettings(c *gin.Context) {

@@ -63,3 +63,14 @@ func TestPublicStatusEndpointNeverExposesInternalSelectorsOrRoutes(t *testing.T)
 	}
 	require.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestParseChannelMonitoringWindowIsBounded(t *testing.T) {
+	window, err := parseChannelMonitoringWindow("")
+	require.NoError(t, err)
+	require.Equal(t, 15*time.Minute, window)
+	window, err = parseChannelMonitoringWindow("60")
+	require.NoError(t, err)
+	require.Equal(t, time.Hour, window)
+	_, err = parseChannelMonitoringWindow("121")
+	require.ErrorContains(t, err, "between 5 and 120")
+}

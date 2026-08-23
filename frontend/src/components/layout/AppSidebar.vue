@@ -842,6 +842,7 @@ const navPermissionMap: Record<string, string> = {
   '/admin/dashboard': 'admin:dashboard',
   '/admin/ops': 'admin:ops',
   '/admin/monthly-upstreams': 'admin:ops',
+  '/admin/channel-monitoring': 'admin:ops',
   '/admin/business-finance': 'admin:finance-transactions|admin:ops',
   '/admin/users': 'admin:users',
   '/admin/affiliate': 'admin:agents',
@@ -884,6 +885,10 @@ const adminNavItems = computed((): NavItem[] => {
           path: '/admin/monthly-upstreams',
           label: resolveAdminMenuLabel('/admin/monthly-upstreams', t('nav.monthlyUpstreams', '月卡监控')),
           icon: ServerIcon
+        }, {
+          path: '/admin/channel-monitoring',
+          label: resolveAdminMenuLabel('/admin/channel-monitoring', t('nav.channelMonitoring', '渠道监控')),
+          icon: ChartIcon
         }]
       : []),
     {

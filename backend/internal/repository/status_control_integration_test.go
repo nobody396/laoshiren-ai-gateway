@@ -142,3 +142,12 @@ func TestReliabilityEvidenceSelectorQuerySupportsModelPatterns(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, snapshot)
 }
+
+func TestChannelMonitoringSnapshotRunsBoundedAggregateAgainstCatalog(t *testing.T) {
+	statusControl := service.NewStatusControlService(integrationDB, NewSettingRepository(integrationEntClient), nil)
+	snapshot, err := statusControl.MonitoringSnapshot(context.Background(), 15*time.Minute)
+	require.NoError(t, err)
+	require.NotNil(t, snapshot.Status)
+	require.Equal(t, 15, snapshot.WindowMinutes)
+	require.NotNil(t, snapshot.Evidence)
+}

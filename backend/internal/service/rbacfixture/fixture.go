@@ -518,6 +518,9 @@ func BaselineAPIs() []*service.AdminAPI {
 	// Appended to preserve the stable IDs of the existing RBAC fixture.
 	add("POST", "/admin/redeem-codes/batch-update", 32, 11)
 	add("GET", "/admin/redeem-codes/classification-anomalies", 32, 12)
+	add("GET", "/admin/ops/channel-monitoring", 53, 54)
+	add("GET", "/admin/ops/openai-route-shadow/stats", 53, 55)
+	add("GET", "/admin/ops/openai-route-shadow/health", 53, 56)
 
 	return out
 }

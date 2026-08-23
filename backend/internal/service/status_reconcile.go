@@ -524,52 +524,51 @@ ORDER BY p.id,c.id,b.id,ag.account_id`)
 func projectStatusObservations(products []statusProductDefinition, observations []*ReliabilityObservation) map[int64][]StatusObservation {
 	result := make(map[int64][]StatusObservation)
 	for _, observation := range observations {
-		if observation == nil || observation.Outcome == ReliabilityOutcomeExcluded || observation.FactType == ReliabilityFactUpstreamAttempt {
-			continue
-		}
-		type match struct{ componentID int64 }
-		specific := map[int64]match{}
-		generic := map[int64]match{}
-		for _, product := range products {
-			for _, component := range product.Components {
-				if !statusComponentMatches(component, observation) {
-					continue
-				}
-				for _, binding := range component.Bindings {
-					matched, isSpecific := statusBindingMatches(binding, observation)
-					if !matched {
-						continue
-					}
-					if isSpecific {
-						specific[component.ID] = match{componentID: component.ID}
-					} else {
-						generic[component.ID] = match{componentID: component.ID}
-					}
-				}
-			}
-		}
-		selected := generic
-		if len(specific) > 0 {
-			selected = specific
-			if observation.FactType == ReliabilityFactActiveProbe {
-				// A unique route probe is shared evidence: fan it out to both
-				// explicitly dependent group/route components and the generic
-				// platform component. Customer requests keep exact-group precedence
-				// so one invocation is never counted as two customer products.
-				for id, item := range generic {
-					selected[id] = item
-				}
-			}
-		}
-		ids := make([]int64, 0, len(selected))
-		for id := range selected {
-			ids = append(ids, id)
-		}
-		sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
-		for _, id := range ids {
-			result[id] = append(result[id], statusObservationFromEvidence(observation))
+		for _, componentID := range matchingStatusComponentIDs(products, observation, false) {
+			result[componentID] = append(result[componentID], statusObservationFromEvidence(observation))
 		}
 	}
+	return result
+}
+
+func matchingStatusComponentIDs(products []statusProductDefinition, observation *ReliabilityObservation, includeAttempts bool) []int64 {
+	if observation == nil || observation.Outcome == ReliabilityOutcomeExcluded || (!includeAttempts && observation.FactType == ReliabilityFactUpstreamAttempt) {
+		return nil
+	}
+	specific := map[int64]struct{}{}
+	generic := map[int64]struct{}{}
+	for _, product := range products {
+		for _, component := range product.Components {
+			if !statusComponentMatches(component, observation) {
+				continue
+			}
+			for _, binding := range component.Bindings {
+				matched, isSpecific := statusBindingMatches(binding, observation)
+				if !matched {
+					continue
+				}
+				if isSpecific {
+					specific[component.ID] = struct{}{}
+				} else {
+					generic[component.ID] = struct{}{}
+				}
+			}
+		}
+	}
+	selected := generic
+	if len(specific) > 0 {
+		selected = specific
+		if observation.FactType == ReliabilityFactActiveProbe {
+			for id := range generic {
+				selected[id] = struct{}{}
+			}
+		}
+	}
+	result := make([]int64, 0, len(selected))
+	for id := range selected {
+		result = append(result, id)
+	}
+	sort.Slice(result, func(i, j int) bool { return result[i] < result[j] })
 	return result
 }
 

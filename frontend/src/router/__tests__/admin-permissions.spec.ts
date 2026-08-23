@@ -25,6 +25,7 @@ describe('后台路由权限声明', () => {
     const expectedPermissions: Record<string, string> = {
       '/admin/ops': 'admin:ops',
       '/admin/monthly-upstreams': 'admin:ops',
+      '/admin/channel-monitoring': 'admin:ops',
       '/admin/users': 'admin:users',
       '/admin/affiliate': 'admin:agents',
       '/admin/groups': 'admin:groups',

@@ -232,6 +232,13 @@ func registerOpsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 			ops.POST("/incidents/:id/public-updates", h.Status.PublishIncidentUpdate)
 			ops.POST("/incidents/:id/evidence-gap/acknowledge", h.Status.AcknowledgeIncidentEvidenceGap)
 		}
+		if h.CustomerTier != nil {
+			ops.GET("/customer-tiers", h.CustomerTier.GetSnapshot)
+			ops.GET("/customer-tiers/users/:id", h.CustomerTier.GetUser)
+			ops.PUT("/customer-tiers/settings", h.CustomerTier.UpdateSettings)
+			ops.POST("/customer-tiers/users/:id/overrides", h.CustomerTier.CreateOverride)
+			ops.POST("/customer-tiers/users/:id/refunds", h.CustomerTier.RecordRefund)
+		}
 
 		// Alerts (rules + events)
 		ops.GET("/alert-rules", h.Admin.Ops.ListAlertRules)

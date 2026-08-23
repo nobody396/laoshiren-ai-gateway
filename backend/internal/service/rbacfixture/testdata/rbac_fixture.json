@@ -3465,6 +3465,51 @@
       "description": "POST /admin/ops/incidents/:id/evidence-gap/acknowledge",
       "sort_order": 65,
       "status": "active"
+    },
+    {
+      "id": 459,
+      "group": "运维监控",
+      "path": "/admin/ops/customer-tiers",
+      "method": "GET",
+      "description": "GET /admin/ops/customer-tiers",
+      "sort_order": 66,
+      "status": "active"
+    },
+    {
+      "id": 460,
+      "group": "运维监控",
+      "path": "/admin/ops/customer-tiers/users/:id",
+      "method": "GET",
+      "description": "GET /admin/ops/customer-tiers/users/:id",
+      "sort_order": 67,
+      "status": "active"
+    },
+    {
+      "id": 461,
+      "group": "运维监控",
+      "path": "/admin/ops/customer-tiers/settings",
+      "method": "PUT",
+      "description": "PUT /admin/ops/customer-tiers/settings",
+      "sort_order": 68,
+      "status": "active"
+    },
+    {
+      "id": 462,
+      "group": "运维监控",
+      "path": "/admin/ops/customer-tiers/users/:id/overrides",
+      "method": "POST",
+      "description": "POST /admin/ops/customer-tiers/users/:id/overrides",
+      "sort_order": 69,
+      "status": "active"
+    },
+    {
+      "id": 463,
+      "group": "运维监控",
+      "path": "/admin/ops/customer-tiers/users/:id/refunds",
+      "method": "POST",
+      "description": "POST /admin/ops/customer-tiers/users/:id/refunds",
+      "sort_order": 70,
+      "status": "active"
     }
   ]
 }

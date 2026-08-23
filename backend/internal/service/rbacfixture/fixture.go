@@ -530,6 +530,11 @@ func BaselineAPIs() []*service.AdminAPI {
 	add("POST", "/admin/ops/incidents/:id/updates", 53, 63)
 	add("POST", "/admin/ops/incidents/:id/public-updates", 53, 64)
 	add("POST", "/admin/ops/incidents/:id/evidence-gap/acknowledge", 53, 65)
+	add("GET", "/admin/ops/customer-tiers", 53, 66)
+	add("GET", "/admin/ops/customer-tiers/users/:id", 53, 67)
+	add("PUT", "/admin/ops/customer-tiers/settings", 53, 68)
+	add("POST", "/admin/ops/customer-tiers/users/:id/overrides", 53, 69)
+	add("POST", "/admin/ops/customer-tiers/users/:id/refunds", 53, 70)
 
 	return out
 }

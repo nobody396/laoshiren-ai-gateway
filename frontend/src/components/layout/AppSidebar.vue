@@ -844,6 +844,7 @@ const navPermissionMap: Record<string, string> = {
   '/admin/monthly-upstreams': 'admin:ops',
   '/admin/channel-monitoring': 'admin:ops',
   '/admin/incidents': 'admin:ops',
+  '/admin/customer-tiers': 'admin:ops',
   '/admin/business-finance': 'admin:finance-transactions|admin:ops',
   '/admin/users': 'admin:users',
   '/admin/affiliate': 'admin:agents',
@@ -894,6 +895,10 @@ const adminNavItems = computed((): NavItem[] => {
           path: '/admin/incidents',
           label: resolveAdminMenuLabel('/admin/incidents', t('nav.incidents', 'Incident 管理')),
           icon: ChartIcon
+        }, {
+          path: '/admin/customer-tiers',
+          label: resolveAdminMenuLabel('/admin/customer-tiers', t('nav.customerTiers', '客户等级')),
+          icon: UsersIcon
         }]
       : []),
     {

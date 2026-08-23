@@ -172,6 +172,30 @@ WHERE table_schema = 'public'
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key='reliability_incidents_public_enabled'`).Scan(&incidentsPublicEnabled))
 	require.Equal(t, "false", incidentsEnabled)
 	require.Equal(t, "false", incidentsPublicEnabled)
+
+	// migration 208: Customer Tier evidence/history/overrides/snapshots.
+	requireColumn(t, tx, "customer_tier_policy_versions", "priority_threshold_cny_fen", "bigint", 0, false)
+	requireColumn(t, tx, "customer_tier_current", "effective_tier", "character varying", 16, false)
+	requireColumn(t, tx, "customer_tier_evaluations", "evidence_hash", "character", 64, false)
+	requireColumn(t, tx, "customer_tier_history", "evaluation_id", "bigint", 0, false)
+	requireColumn(t, tx, "customer_tier_overrides", "expires_at", "timestamp with time zone", 0, false)
+	requireColumn(t, tx, "customer_paid_value_refunds", "amount_cny_fen", "bigint", 0, false)
+	requireColumn(t, tx, "monthly_entitlement_consumptions", "confirmed_amount_micros", "bigint", 0, false)
+	requireColumn(t, tx, "customer_tier_incident_snapshots", "multiplier", "numeric", 0, false)
+	requireColumn(t, tx, "customer_tier_incident_snapshots", "policy_snapshot", "jsonb", 0, false)
+	requireColumn(t, tx, "customer_tier_evaluations", "policy_snapshot", "jsonb", 0, false)
+	requireIndex(t, tx, "customer_tier_current", "idx_customer_tier_current_effective")
+	requireIndex(t, tx, "customer_tier_incident_snapshots", "customer_tier_incident_snapshots_incident_id_user_id_key")
+	var tierEvaluationEnabled string
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key='customer_tier_evaluation_enabled'`).Scan(&tierEvaluationEnabled))
+	require.Equal(t, "false", tierEvaluationEnabled)
+	var policyWindow, policyGrace int
+	var priorityThreshold, strategicThreshold int64
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT rolling_window_days,downgrade_grace_days,priority_threshold_cny_fen,strategic_threshold_cny_fen FROM customer_tier_policy_versions WHERE version=1`).Scan(&policyWindow, &policyGrace, &priorityThreshold, &strategicThreshold))
+	require.Equal(t, 90, policyWindow)
+	require.Equal(t, 30, policyGrace)
+	require.Equal(t, int64(25_000), priorityThreshold)
+	require.Equal(t, int64(100_000), strategicThreshold)
 	var channelMonitoringAPI int
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM admin_apis WHERE method='GET' AND path IN ('/admin/ops/channel-monitoring','/admin/ops/openai-route-shadow/stats','/admin/ops/openai-route-shadow/health') AND status='active'`).Scan(&channelMonitoringAPI))
 	require.Equal(t, 3, channelMonitoringAPI)
@@ -201,6 +225,13 @@ WHERE table_schema = 'public'
 	var grantedIncidentAPIs int
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM admin_role_apis ra JOIN admin_apis a ON a.id=ra.api_id WHERE ra.role_id=$1 AND a.path LIKE '/admin/ops/incidents%'`, opsRoleID).Scan(&grantedIncidentAPIs))
 	require.Equal(t, 8, grantedIncidentAPIs)
+	tierRBACMigration, err := fs.ReadFile(embeddedmigrations.FS, "209_grant_customer_tier_rbac.sql")
+	require.NoError(t, err)
+	_, err = tx.ExecContext(context.Background(), string(tierRBACMigration))
+	require.NoError(t, err)
+	var grantedTierAPIs int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM admin_role_apis ra JOIN admin_apis a ON a.id=ra.api_id WHERE ra.role_id=$1 AND a.path LIKE '/admin/ops/customer-tiers%'`, opsRoleID).Scan(&grantedTierAPIs))
+	require.Equal(t, 5, grantedTierAPIs)
 	var catalogProducts, builderPassBindings, legacyBindings, nonHTTPComponents int
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM service_status_products WHERE enabled=TRUE`).Scan(&catalogProducts))
 	require.Equal(t, 7, catalogProducts)

@@ -21,15 +21,27 @@ const (
 )
 
 type IncidentControlService struct {
-	db          *sql.DB
-	settingRepo SettingRepository
-	status      *StatusControlService
-	evidence    *ReliabilityEvidenceService
-	lifecycleMu sync.Mutex
-	settingsMu  sync.Mutex
-	reconcileMu sync.Mutex
-	wg          sync.WaitGroup
-	cancel      context.CancelFunc
+	db              *sql.DB
+	settingRepo     SettingRepository
+	status          *StatusControlService
+	evidence        *ReliabilityEvidenceService
+	tierSnapshotter CustomerTierSnapshotter
+	lifecycleMu     sync.Mutex
+	settingsMu      sync.Mutex
+	reconcileMu     sync.Mutex
+	wg              sync.WaitGroup
+	cancel          context.CancelFunc
+}
+
+type CustomerTierSnapshotter interface {
+	EnsureIncidentSnapshots(context.Context, int64) error
+	CustomerTierSnapshotsEnabled(context.Context) bool
+}
+
+func (s *IncidentControlService) SetCustomerTierSnapshotter(snapshotter CustomerTierSnapshotter) {
+	if s != nil {
+		s.tierSnapshotter = snapshotter
+	}
 }
 
 func NewIncidentControlService(db *sql.DB, settingRepo SettingRepository, status *StatusControlService, evidence *ReliabilityEvidenceService) *IncidentControlService {

@@ -3510,6 +3510,60 @@
       "description": "POST /admin/ops/customer-tiers/users/:id/refunds",
       "sort_order": 70,
       "status": "active"
+    },
+    {
+      "id": 464,
+      "group": "运维监控",
+      "path": "/admin/ops/compensation",
+      "method": "GET",
+      "description": "GET /admin/ops/compensation",
+      "sort_order": 71,
+      "status": "active"
+    },
+    {
+      "id": 465,
+      "group": "运维监控",
+      "path": "/admin/ops/compensation/drafts/:id",
+      "method": "GET",
+      "description": "GET /admin/ops/compensation/drafts/:id",
+      "sort_order": 72,
+      "status": "active"
+    },
+    {
+      "id": 466,
+      "group": "运维监控",
+      "path": "/admin/ops/compensation/incidents/:id/draft",
+      "method": "POST",
+      "description": "POST /admin/ops/compensation/incidents/:id/draft",
+      "sort_order": 73,
+      "status": "active"
+    },
+    {
+      "id": 467,
+      "group": "运维监控",
+      "path": "/admin/ops/compensation/drafts/:id/revisions",
+      "method": "POST",
+      "description": "POST /admin/ops/compensation/drafts/:id/revisions",
+      "sort_order": 74,
+      "status": "active"
+    },
+    {
+      "id": 468,
+      "group": "运维监控",
+      "path": "/admin/ops/compensation/settings",
+      "method": "PUT",
+      "description": "PUT /admin/ops/compensation/settings",
+      "sort_order": 75,
+      "status": "active"
+    },
+    {
+      "id": 469,
+      "group": "运维监控",
+      "path": "/admin/ops/compensation/drafts/:id/reviews",
+      "method": "POST",
+      "description": "POST /admin/ops/compensation/drafts/:id/reviews",
+      "sort_order": 76,
+      "status": "active"
     }
   ]
 }

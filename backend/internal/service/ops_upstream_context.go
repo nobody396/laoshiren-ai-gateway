@@ -11,10 +11,11 @@ import (
 // Gin context keys used by Ops error logger for capturing upstream error details.
 // These keys are set by gateway services and consumed by handler/ops_error_logger.go.
 const (
-	OpsUpstreamStatusCodeKey   = "ops_upstream_status_code"
-	OpsUpstreamErrorMessageKey = "ops_upstream_error_message"
-	OpsUpstreamErrorDetailKey  = "ops_upstream_error_detail"
-	OpsUpstreamErrorsKey       = "ops_upstream_errors"
+	OpsUpstreamStatusCodeKey       = "ops_upstream_status_code"
+	OpsUpstreamErrorMessageKey     = "ops_upstream_error_message"
+	OpsUpstreamErrorDetailKey      = "ops_upstream_error_detail"
+	OpsUpstreamErrorsKey           = "ops_upstream_errors"
+	OpsReliabilityRouteIdentityKey = "ops_reliability_route_identity"
 
 	// Best-effort capture of the current upstream request body so ops can
 	// retry the specific upstream attempt (not just the client request).
@@ -113,9 +114,13 @@ type OpsUpstreamErrorEvent struct {
 	Passthrough bool `json:"passthrough,omitempty"`
 
 	// Context
-	Platform    string `json:"platform,omitempty"`
-	AccountID   int64  `json:"account_id,omitempty"`
-	AccountName string `json:"account_name,omitempty"`
+	Platform           string `json:"platform,omitempty"`
+	AccountID          int64  `json:"account_id,omitempty"`
+	AccountName        string `json:"account_name,omitempty"`
+	AccessGroupID      int64  `json:"access_group_id,omitempty"`
+	EndpointHash       string `json:"endpoint_hash,omitempty"`
+	RoutingFingerprint string `json:"routing_fingerprint,omitempty"`
+	UpstreamTransport  string `json:"upstream_transport,omitempty"`
 
 	// Outcome
 	UpstreamStatusCode int    `json:"upstream_status_code,omitempty"`
@@ -140,6 +145,38 @@ type OpsUpstreamErrorEvent struct {
 	Detail  string `json:"detail,omitempty"`
 }
 
+// OpsReliabilityRouteIdentity is the exact, non-sensitive route actually
+// selected by the legacy scheduler. It contains no raw URL or credential.
+type OpsReliabilityRouteIdentity struct {
+	AccountID          int64
+	AccessGroupID      int64
+	EndpointHash       string
+	RoutingFingerprint string
+	UpstreamTransport  string
+}
+
+func SetOpsReliabilityRouteIdentity(c *gin.Context, identity OpsReliabilityRouteIdentity) {
+	if c == nil || identity.AccountID <= 0 || !reliabilityEndpointHashPattern.MatchString(strings.ToLower(strings.TrimSpace(identity.EndpointHash))) || !reliabilityRouteFingerprintPattern.MatchString(strings.ToLower(strings.TrimSpace(identity.RoutingFingerprint))) {
+		return
+	}
+	identity.EndpointHash = strings.ToLower(strings.TrimSpace(identity.EndpointHash))
+	identity.RoutingFingerprint = strings.ToLower(strings.TrimSpace(identity.RoutingFingerprint))
+	identity.UpstreamTransport = strings.ToLower(strings.TrimSpace(identity.UpstreamTransport))
+	if identity.AccessGroupID < 0 || identity.UpstreamTransport == "" {
+		return
+	}
+	c.Set(OpsReliabilityRouteIdentityKey, identity)
+}
+
+func GetOpsReliabilityRouteIdentity(c *gin.Context) (OpsReliabilityRouteIdentity, bool) {
+	if c == nil {
+		return OpsReliabilityRouteIdentity{}, false
+	}
+	value, ok := c.Get(OpsReliabilityRouteIdentityKey)
+	identity, typed := value.(OpsReliabilityRouteIdentity)
+	return identity, ok && typed
+}
+
 func appendOpsUpstreamError(c *gin.Context, ev OpsUpstreamErrorEvent) {
 	if c == nil {
 		return
@@ -148,6 +185,18 @@ func appendOpsUpstreamError(c *gin.Context, ev OpsUpstreamErrorEvent) {
 		ev.AtUnixMs = time.Now().UnixMilli()
 	}
 	ev.Platform = strings.TrimSpace(ev.Platform)
+	if identity, ok := GetOpsReliabilityRouteIdentity(c); ok && (ev.AccountID == 0 || ev.AccountID == identity.AccountID) {
+		if ev.AccountID == 0 {
+			ev.AccountID = identity.AccountID
+		}
+		ev.AccessGroupID = identity.AccessGroupID
+		ev.EndpointHash = identity.EndpointHash
+		ev.RoutingFingerprint = identity.RoutingFingerprint
+		ev.UpstreamTransport = identity.UpstreamTransport
+	}
+	ev.EndpointHash = strings.ToLower(strings.TrimSpace(ev.EndpointHash))
+	ev.RoutingFingerprint = strings.ToLower(strings.TrimSpace(ev.RoutingFingerprint))
+	ev.UpstreamTransport = strings.ToLower(strings.TrimSpace(ev.UpstreamTransport))
 	ev.UpstreamRequestID = strings.TrimSpace(ev.UpstreamRequestID)
 	ev.UpstreamRequestBody = strings.TrimSpace(ev.UpstreamRequestBody)
 	ev.UpstreamResponseBody = strings.TrimSpace(ev.UpstreamResponseBody)

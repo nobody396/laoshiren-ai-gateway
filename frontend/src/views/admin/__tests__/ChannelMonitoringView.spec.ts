@@ -63,7 +63,16 @@ function mountView() {
 beforeEach(() => {
   vi.clearAllMocks()
   api.getChannelMonitoring.mockResolvedValue(snapshot)
-  api.getOpenAIShadowAudit.mockResolvedValue({ stats: { total: 100, evaluated: 90, diverged: 4, evaluation_duration_p95_us: 120 }, health: { ready: true, storage_ready: true, completeness: 1, attempted: 100, written: 100, failed: 0, dropped: 0 } })
+  api.getOpenAIShadowAudit.mockResolvedValue({
+    stats: { total: 100, evaluated: 90, diverged: 4, evaluation_duration_p95_us: 120 },
+    health: { ready: true, storage_ready: true, completeness: 1, attempted: 100, written: 100, failed: 0, dropped: 0 },
+    decisions: [{ decision_id: 'decision-123456789', model: 'gpt-5.6', snapshot: {
+      reliability_evidence_adapter_enabled: true,
+      reliability_evidence_adapter_applied: true,
+      reliability_evidence_adapter_reason: 'reliability_evidence_ready',
+      candidates: [{ account_id: 53, legacy_success_lower_bound: 0.8, reliability_evidence_success_lower_bound: 0.95, reliability_evidence_applied: true }]
+    } }]
+  })
 })
 
 describe('ChannelMonitoringView', () => {
@@ -78,6 +87,7 @@ describe('ChannelMonitoringView', () => {
     expect(wrapper.text()).toContain('未映射到公开产品的内部证据')
     expect(wrapper.text()).toContain('OpenAI 智能路由 Shadow 审计')
     expect(wrapper.text()).toContain('24h 决策')
+    expect(wrapper.text()).toContain('80.0% → 95.0%')
     expect(wrapper.text()).toContain('0.67/min')
     expect(wrapper.text()).not.toContain('禁用渠道')
     expect(wrapper.text()).not.toContain('切换 Base URL')

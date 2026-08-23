@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,8 @@ const (
 
 const openAIClientTransportContextKey = "openai_client_transport"
 
+type openAIClientTransportRequestContextKey struct{}
+
 // SetOpenAIClientTransport 标记当前请求的客户端入站协议。
 func SetOpenAIClientTransport(c *gin.Context, transport OpenAIClientTransport) {
 	if c == nil {
@@ -27,6 +30,17 @@ func SetOpenAIClientTransport(c *gin.Context, transport OpenAIClientTransport) {
 		return
 	}
 	c.Set(openAIClientTransportContextKey, string(normalized))
+	if c.Request != nil {
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), openAIClientTransportRequestContextKey{}, normalized))
+	}
+}
+
+func GetOpenAIClientTransportFromContext(ctx context.Context) OpenAIClientTransport {
+	if ctx == nil {
+		return OpenAIClientTransportUnknown
+	}
+	value, _ := ctx.Value(openAIClientTransportRequestContextKey{}).(OpenAIClientTransport)
+	return normalizeOpenAIClientTransport(value)
 }
 
 // GetOpenAIClientTransport 读取当前请求的客户端入站协议。

@@ -54,7 +54,7 @@ func newHandlerReliabilityEvidence(t *testing.T, settings handlerReliabilitySett
 }
 
 func expectOneReliabilityObservationInsert(mock sqlmock.Sqlmock) {
-	args := make([]driver.Value, 22)
+	args := make([]driver.Value, 25)
 	for index := range args {
 		args[index] = sqlmock.AnyArg()
 	}
@@ -181,7 +181,7 @@ func TestBuildAttemptReliabilityObservationsNeverCountAsCustomerImpact(t *testin
 	entry := &service.OpsInsertErrorLogInput{
 		RequestID: "req-3", GroupID: &groupID, Platform: service.PlatformOpenAI, Model: "gpt-5.6-sol",
 		UpstreamErrors: []*service.OpsUpstreamErrorEvent{
-			{AtUnixMs: time.Now().UnixMilli(), AccountID: 53, Platform: service.PlatformOpenAI, UpstreamStatusCode: 503},
+			{AtUnixMs: time.Now().UnixMilli(), AccountID: 53, Platform: service.PlatformOpenAI, UpstreamStatusCode: 503, AccessGroupID: 90, EndpointHash: "0123456789abcdef", RoutingFingerprint: "0123456789abcdef0123456789abcdef", UpstreamTransport: "http_sse"},
 			{AtUnixMs: time.Now().UnixMilli(), AccountID: 33, Platform: service.PlatformOpenAI, UpstreamStatusCode: 429},
 		},
 	}
@@ -190,6 +190,10 @@ func TestBuildAttemptReliabilityObservationsNeverCountAsCustomerImpact(t *testin
 
 	require.Len(t, observations, 2)
 	require.NotEqual(t, observations[0].AttemptIdentity, observations[1].AttemptIdentity)
+	require.Equal(t, int64(90), observations[0].AccessGroupID)
+	require.Equal(t, "0123456789abcdef", observations[0].EndpointHash)
+	require.Equal(t, "0123456789abcdef0123456789abcdef", observations[0].RoutingFingerprint)
+	require.Equal(t, "http_sse", observations[0].Transport)
 	for _, observation := range observations {
 		require.Equal(t, service.ReliabilityOutcomeFailure, observation.Outcome)
 		require.Equal(t, "req-3", observation.RequestIdentity)
@@ -208,6 +212,7 @@ func TestBuildSuccessfulAttemptReliabilityObservationCapturesSelectedRoute(t *te
 	})
 	c.Set(opsModelKey, "gpt-5.6-sol")
 	c.Set(opsAccountIDKey, int64(53))
+	service.SetOpsReliabilityRouteIdentity(c, service.OpsReliabilityRouteIdentity{AccountID: 53, AccessGroupID: 90, EndpointHash: "0123456789abcdef", RoutingFingerprint: "0123456789abcdef0123456789abcdef", UpstreamTransport: "http_sse"})
 	c.Writer.Header().Set("X-Request-Id", "req-success-attempt")
 
 	observation := buildSuccessfulAttemptReliabilityObservation(c)
@@ -216,6 +221,10 @@ func TestBuildSuccessfulAttemptReliabilityObservationCapturesSelectedRoute(t *te
 	require.Equal(t, service.ReliabilityOutcomeSuccess, observation.Outcome)
 	require.Equal(t, int64(53), *observation.AccountID)
 	require.Equal(t, "success", observation.AttemptIdentity)
+	require.Equal(t, int64(90), observation.AccessGroupID)
+	require.Equal(t, "0123456789abcdef", observation.EndpointHash)
+	require.Equal(t, "0123456789abcdef0123456789abcdef", observation.RoutingFingerprint)
+	require.Equal(t, "http_sse", observation.Transport)
 }
 
 func TestOpsErrorLoggerMiddlewareQueuesOneFinalCustomerOutcome(t *testing.T) {

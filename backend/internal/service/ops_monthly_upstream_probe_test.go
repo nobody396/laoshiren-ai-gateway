@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -720,11 +721,12 @@ func TestMonthlyProbeReliabilityObservationIsProbeEvidenceNotCustomerTraffic(t *
 	require.Equal(t, ReliabilityOutcomeFailure, observation.Outcome)
 	require.Equal(t, int64(53), *observation.AccountID)
 	require.Equal(t, "0123456789abcdef", observation.EndpointHash)
+	require.Equal(t, string(OpenAIUpstreamTransportHTTPSSE), observation.Transport)
 	require.Contains(t, observation.ProbeIdentity, MonthlyUpstreamProbePathGateway)
 }
 
 func TestMonthlyProbeReliabilityClaimMatchesPersistedConcreteRouteIdentity(t *testing.T) {
-	account := &Account{ID: 53, Platform: PlatformOpenAI, Credentials: map[string]any{"base_url": "https://example.invalid"}}
+	account := &Account{ID: 53, Type: AccountTypeAPIKey, Platform: PlatformOpenAI, Credentials: map[string]any{"base_url": "https://example.invalid"}}
 	var claims []*ReliabilityProbeClaim
 	evidence := newReliabilityEvidenceForTest(true, &reliabilityRepoStub{claim: func(_ context.Context, claim *ReliabilityProbeClaim) (bool, error) {
 		copy := *claim
@@ -744,8 +746,59 @@ func TestMonthlyProbeReliabilityClaimMatchesPersistedConcreteRouteIdentity(t *te
 	require.True(t, claimed)
 	require.Len(t, claims, 2)
 	require.Equal(t, claims[0].RouteFingerprint, claims[1].RouteFingerprint)
-	endpointHash := reliabilityProbeEndpointHash(account)
+	endpointHash := reliabilityProbeEndpointHash(account, PlatformOpenAI)
+	require.Equal(t, OpenAIRouteEndpointHash("https://example.invalid/v1/responses"), endpointHash)
 	require.Equal(t, ReliabilityRouteFingerprint(PlatformOpenAI, account.ID, endpointHash, base.Model, "http"), claims[0].RouteFingerprint)
+}
+
+func TestMonthlyProbeReliabilityEndpointMatchesSchedulerForDefaultAPIKeyAndOAuth(t *testing.T) {
+	for _, account := range []*Account{
+		{ID: 53, Type: AccountTypeAPIKey, Platform: PlatformOpenAI},
+		{ID: 54, Type: AccountTypeOAuth, Platform: PlatformOpenAI},
+	} {
+		t.Run(account.Type, func(t *testing.T) {
+			expectedEndpoint := openAIRouteEndpointForAccount(account, "/v1/responses")
+			require.NotEmpty(t, expectedEndpoint)
+			require.Equal(t, OpenAIRouteEndpointHash(expectedEndpoint), reliabilityProbeEndpointHash(account, PlatformOpenAI))
+		})
+	}
+}
+
+func TestMonthlyProbeProducerPersistenceFeedsAdapterForDefaultAPIKeyAndOAuth(t *testing.T) {
+	for _, account := range []*Account{
+		{ID: 53, Type: AccountTypeAPIKey, Platform: PlatformOpenAI},
+		{ID: 54, Type: AccountTypeOAuth, Platform: PlatformOpenAI},
+	} {
+		t.Run(account.Type, func(t *testing.T) {
+			now := time.Now().UTC()
+			groupID := int64(7)
+			model := "gpt-5.6-sol"
+			key, err := NewOpenAIRouteKey(account, groupID, model, OpenAIRouteRequestClassText, openAIRouteEndpointForAccount(account, "/v1/responses"), string(OpenAIUpstreamTransportHTTPSSE))
+			require.NoError(t, err)
+			var persisted []*ReliabilityObservation
+			repo := &reliabilityRepoStub{batch: func(_ context.Context, inputs []*ReliabilityObservation) (int64, error) {
+				persisted = append(persisted, inputs...)
+				return int64(len(inputs)), nil
+			}}
+			evidence := newReliabilityEvidenceForTest(true, repo)
+			for index, checkedAt := range []time.Time{now.Add(-3 * time.Second), now.Add(-2 * time.Second)} {
+				point := MonthlyUpstreamProbePoint{AccountID: account.ID, Platform: PlatformOpenAI, Model: model, ProbePath: MonthlyUpstreamProbePathGateway, Status: "ok", HTTPStatus: intPointerForProbe(200), CheckedAt: checkedAt}
+				probe := monthlyProbeReliabilityObservation(point, reliabilityProbeEndpointHash(account, PlatformOpenAI))
+				probe.ProbeIdentity += fmt.Sprintf(":%d", index)
+				_, err = evidence.recordProbeOutcomes(context.Background(), []*ReliabilityProbeOutcome{probe})
+				require.NoError(t, err)
+			}
+			evidence.running.Store(true)
+			evidence.listEvidence = func(context.Context, *ReliabilityEvidenceQuery) ([]*ReliabilityObservation, error) {
+				return persisted, nil
+			}
+			adapter := NewReliabilityEvidenceOpenAIRouteAdapter(evidence)
+			t.Cleanup(adapter.Stop)
+			result := adapter.refreshForTest(context.Background(), OpenAIRouteReliabilityEvidenceRequest{Keys: []OpenAIRouteKey{key}, GroupID: groupID, Model: model, RequestClass: OpenAIRouteRequestClassText, InboundProtocol: APIProtocolResponses, Now: now})
+			require.True(t, result.Meta.Applied)
+			require.Equal(t, uint64(2), result.Profiles[OpenAIRouteObservationFingerprint(key)].Global.SuccessCount)
+		})
+	}
 }
 
 func intPointerForProbe(value int) *int { return &value }

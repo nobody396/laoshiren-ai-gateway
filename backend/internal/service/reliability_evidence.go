@@ -58,14 +58,17 @@ type ReliabilityObservation struct {
 	ClientRequestID string
 	UserID          *int64
 	GroupID         *int64
+	AccessGroupID   int64
 	AccountID       *int64
 
-	Platform         string
-	Model            string
-	RequestClass     string
-	Protocol         string
-	EndpointHash     string
-	RouteFingerprint string
+	Platform           string
+	Model              string
+	RequestClass       string
+	Protocol           string
+	Transport          string
+	EndpointHash       string
+	RouteFingerprint   string
+	RoutingFingerprint string
 
 	Outcome         ReliabilityOutcome
 	StatusCode      *int
@@ -96,23 +99,26 @@ type ReliabilityFinalOutcome struct {
 }
 
 type ReliabilityAttemptOutcome struct {
-	RequestIdentity string
-	AttemptIdentity string
-	RequestID       string
-	ClientRequestID string
-	UserID          *int64
-	GroupID         *int64
-	AccountID       *int64
-	Platform        string
-	Model           string
-	RequestClass    string
-	Protocol        string
-	EndpointHash    string
-	Outcome         ReliabilityOutcome
-	StatusCode      *int
-	ErrorOwner      string
-	LatencyMs       int64
-	ObservedAt      time.Time
+	RequestIdentity    string
+	AttemptIdentity    string
+	RequestID          string
+	ClientRequestID    string
+	UserID             *int64
+	GroupID            *int64
+	AccessGroupID      int64
+	AccountID          *int64
+	Platform           string
+	Model              string
+	RequestClass       string
+	Protocol           string
+	Transport          string
+	EndpointHash       string
+	RoutingFingerprint string
+	Outcome            ReliabilityOutcome
+	StatusCode         *int
+	ErrorOwner         string
+	LatencyMs          int64
+	ObservedAt         time.Time
 }
 
 type ReliabilityProbeOutcome struct {
@@ -122,6 +128,7 @@ type ReliabilityProbeOutcome struct {
 	Model           string
 	RequestClass    string
 	Protocol        string
+	Transport       string
 	EndpointHash    string
 	Outcome         ReliabilityOutcome
 	StatusCode      *int
@@ -138,6 +145,29 @@ type ReliabilityProbeClaim struct {
 	ExpiresAt        time.Time
 }
 
+// ReliabilityEvidenceAttemptScope narrows a snapshot to exact adaptive-route
+// attempts. Routing fingerprints already include group, account, model,
+// request class, endpoint, transport, and failure domain; access group and
+// inbound protocol remain independent request dimensions.
+type ReliabilityEvidenceAttemptScope struct {
+	GroupID             int64
+	AccessGroupID       int64
+	Protocol            string
+	Transports          []string
+	RoutingFingerprints []string
+}
+
+type ReliabilityEvidenceProbeRoute struct {
+	AccountID    int64
+	EndpointHash string
+	Transport    string
+}
+
+type ReliabilityEvidenceProbeScope struct {
+	Protocol string
+	Routes   []ReliabilityEvidenceProbeRoute
+}
+
 type ReliabilityEvidenceQuery struct {
 	Start                time.Time
 	End                  time.Time
@@ -151,6 +181,8 @@ type ReliabilityEvidenceQuery struct {
 	AnyPlatforms         []string
 	AnyRouteFingerprints []string
 	AnyModelPatterns     []string
+	AttemptScope         *ReliabilityEvidenceAttemptScope
+	ProbeScope           *ReliabilityEvidenceProbeScope
 }
 
 type ReliabilityEvidenceSnapshot struct {
@@ -200,6 +232,33 @@ type ReliabilityEvidenceService struct {
 	queueStopping      bool
 	queueSize          int
 	workerCount        int
+	dependentMu        sync.Mutex
+	dependentStops     []func()
+	dependentStopOnce  sync.Once
+}
+
+func (s *ReliabilityEvidenceService) registerDependentStop(stop func()) {
+	if s == nil || stop == nil {
+		return
+	}
+	s.dependentMu.Lock()
+	s.dependentStops = append(s.dependentStops, stop)
+	s.dependentMu.Unlock()
+}
+
+func (s *ReliabilityEvidenceService) stopDependents() {
+	if s == nil {
+		return
+	}
+	s.dependentStopOnce.Do(func() {
+		s.dependentMu.Lock()
+		stops := append([]func(){}, s.dependentStops...)
+		s.dependentStops = nil
+		s.dependentMu.Unlock()
+		for _, stop := range stops {
+			stop()
+		}
+	})
 }
 
 func NewReliabilityEvidenceService(db *sql.DB, settingRepo SettingRepository) *ReliabilityEvidenceService {
@@ -297,11 +356,12 @@ func (s *ReliabilityEvidenceService) recordAttemptOutcomes(ctx context.Context, 
 		observations = append(observations, &ReliabilityObservation{
 			IdempotencyKey: "attempt:" + sourceID, FactType: ReliabilityFactUpstreamAttempt,
 			Source: "gateway_attempt", SourceID: sourceID, RequestID: input.RequestID, ClientRequestID: input.ClientRequestID,
-			UserID: input.UserID, GroupID: input.GroupID, AccountID: input.AccountID,
+			UserID: input.UserID, GroupID: input.GroupID, AccessGroupID: input.AccessGroupID, AccountID: input.AccountID,
 			Platform: input.Platform, Model: input.Model, RequestClass: input.RequestClass, Protocol: input.Protocol,
-			EndpointHash:     input.EndpointHash,
-			RouteFingerprint: ReliabilityRouteFingerprint(input.Platform, accountID, input.EndpointHash, input.Model, input.Protocol),
-			Outcome:          input.Outcome, StatusCode: input.StatusCode, ErrorOwner: input.ErrorOwner,
+			Transport: input.Transport, EndpointHash: input.EndpointHash,
+			RouteFingerprint:   ReliabilityRouteFingerprint(input.Platform, accountID, input.EndpointHash, input.Model, input.Protocol),
+			RoutingFingerprint: input.RoutingFingerprint,
+			Outcome:            input.Outcome, StatusCode: input.StatusCode, ErrorOwner: input.ErrorOwner,
 			CustomerImpact: false, LatencyMs: input.LatencyMs, ObservedAt: input.ObservedAt,
 		})
 	}
@@ -325,7 +385,7 @@ func (s *ReliabilityEvidenceService) recordProbeOutcomes(ctx context.Context, in
 		observations = append(observations, &ReliabilityObservation{
 			IdempotencyKey: "probe:" + identity, FactType: ReliabilityFactActiveProbe,
 			Source: "monthly_probe", SourceID: identity, AccountID: input.AccountID,
-			Platform: input.Platform, Model: input.Model, RequestClass: input.RequestClass, Protocol: input.Protocol,
+			Platform: input.Platform, Model: input.Model, RequestClass: input.RequestClass, Protocol: input.Protocol, Transport: input.Transport,
 			EndpointHash:     input.EndpointHash,
 			RouteFingerprint: ReliabilityRouteFingerprint(input.Platform, accountID, input.EndpointHash, input.Model, input.Protocol),
 			Outcome:          input.Outcome, StatusCode: input.StatusCode, ErrorOwner: input.ErrorOwner,
@@ -393,8 +453,8 @@ func (s *ReliabilityEvidenceService) snapshotAtPendingCutoff(ctx context.Context
 	if normalized.Limit <= 0 {
 		normalized.Limit = 1000
 	}
-	if normalized.Limit > 5000 {
-		normalized.Limit = 5000
+	if normalized.Limit > 5001 {
+		normalized.Limit = 5001
 	}
 	seenFactTypes := make(map[ReliabilityFactType]struct{}, len(normalized.FactTypes))
 	factTypes := make([]ReliabilityFactType, 0, len(normalized.FactTypes))
@@ -420,6 +480,45 @@ func (s *ReliabilityEvidenceService) snapshotAtPendingCutoff(ctx context.Context
 	normalized.AnyPlatforms = normalizeReliabilityStringSelectors(normalized.AnyPlatforms)
 	normalized.AnyRouteFingerprints = normalizeReliabilityStringSelectors(normalized.AnyRouteFingerprints)
 	normalized.AnyModelPatterns = normalizeReliabilityStringSelectors(normalized.AnyModelPatterns)
+	if normalized.AttemptScope != nil {
+		scope := *normalized.AttemptScope
+		scope.Protocol = strings.ToLower(strings.TrimSpace(scope.Protocol))
+		scope.Transports = normalizeReliabilityStringSelectors(scope.Transports)
+		scope.RoutingFingerprints = normalizeReliabilityStringSelectors(scope.RoutingFingerprints)
+		if scope.GroupID <= 0 || scope.AccessGroupID < 0 || scope.Protocol == "" || len(scope.Transports) == 0 || len(scope.RoutingFingerprints) == 0 {
+			return nil, fmt.Errorf("reliability evidence attempt scope is invalid")
+		}
+		for _, fingerprint := range scope.RoutingFingerprints {
+			if !reliabilityRouteFingerprintPattern.MatchString(fingerprint) {
+				return nil, fmt.Errorf("reliability evidence attempt routing fingerprint is invalid")
+			}
+		}
+		normalized.AttemptScope = &scope
+	}
+	if normalized.ProbeScope != nil {
+		scope := *normalized.ProbeScope
+		scope.Protocol = strings.ToLower(strings.TrimSpace(scope.Protocol))
+		routes := make([]ReliabilityEvidenceProbeRoute, 0, len(scope.Routes))
+		seen := make(map[string]struct{}, len(scope.Routes))
+		for _, route := range scope.Routes {
+			route.EndpointHash = strings.ToLower(strings.TrimSpace(route.EndpointHash))
+			route.Transport = strings.ToLower(strings.TrimSpace(route.Transport))
+			if route.AccountID <= 0 || !reliabilityEndpointHashPattern.MatchString(route.EndpointHash) || route.Transport == "" {
+				return nil, fmt.Errorf("reliability evidence probe route is invalid")
+			}
+			key := fmt.Sprintf("%d|%s|%s", route.AccountID, route.EndpointHash, route.Transport)
+			if _, exists := seen[key]; exists {
+				continue
+			}
+			seen[key] = struct{}{}
+			routes = append(routes, route)
+		}
+		if scope.Protocol == "" || len(routes) == 0 {
+			return nil, fmt.Errorf("reliability evidence probe scope is invalid")
+		}
+		scope.Routes = routes
+		normalized.ProbeScope = &scope
+	}
 	for _, fingerprint := range normalized.AnyRouteFingerprints {
 		if !reliabilityRouteFingerprintPattern.MatchString(fingerprint) {
 			return nil, fmt.Errorf("reliability evidence route fingerprint selector is invalid")
@@ -521,8 +620,10 @@ func normalizeReliabilityObservation(input *ReliabilityObservation) (*Reliabilit
 	item.Model = strings.TrimSpace(item.Model)
 	item.RequestClass = strings.ToLower(strings.TrimSpace(item.RequestClass))
 	item.Protocol = strings.ToLower(strings.TrimSpace(item.Protocol))
+	item.Transport = strings.ToLower(strings.TrimSpace(item.Transport))
 	item.EndpointHash = strings.ToLower(strings.TrimSpace(item.EndpointHash))
 	item.RouteFingerprint = strings.ToLower(strings.TrimSpace(item.RouteFingerprint))
+	item.RoutingFingerprint = strings.ToLower(strings.TrimSpace(item.RoutingFingerprint))
 	item.ErrorOwner = strings.ToLower(strings.TrimSpace(item.ErrorOwner))
 	item.ExclusionReason = strings.ToLower(strings.TrimSpace(item.ExclusionReason))
 	item.RequestID = truncateString(item.RequestID, 128)
@@ -530,6 +631,7 @@ func normalizeReliabilityObservation(input *ReliabilityObservation) (*Reliabilit
 	item.Platform = truncateString(item.Platform, 32)
 	item.Model = truncateString(item.Model, 128)
 	item.Protocol = truncateString(item.Protocol, 32)
+	item.Transport = truncateString(item.Transport, 32)
 	item.ErrorOwner = truncateString(item.ErrorOwner, 32)
 	item.ExclusionReason = truncateString(item.ExclusionReason, 64)
 
@@ -559,6 +661,12 @@ func normalizeReliabilityObservation(input *ReliabilityObservation) (*Reliabilit
 	}
 	if item.RouteFingerprint != "" && !reliabilityRouteFingerprintPattern.MatchString(item.RouteFingerprint) {
 		return nil, fmt.Errorf("reliability observation route fingerprint is invalid")
+	}
+	if item.RoutingFingerprint != "" && !reliabilityRouteFingerprintPattern.MatchString(item.RoutingFingerprint) {
+		return nil, fmt.Errorf("reliability observation routing fingerprint is invalid")
+	}
+	if item.AccessGroupID < 0 {
+		return nil, fmt.Errorf("reliability observation access group is invalid")
 	}
 	if item.EndpointHash != "" && !reliabilityEndpointHashPattern.MatchString(item.EndpointHash) {
 		return nil, fmt.Errorf("reliability observation endpoint hash is invalid")

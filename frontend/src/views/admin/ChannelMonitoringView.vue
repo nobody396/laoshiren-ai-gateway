@@ -69,7 +69,20 @@
 
         <section v-if="unmappedEvidence.length" class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-900/5 dark:bg-dark-800 dark:ring-dark-700"><h2 class="text-lg font-bold">未映射到公开产品的内部证据</h2><p class="mt-1 text-xs text-gray-500">用于发现 direct diagnostic、未发布协议或缺失 Catalog binding；不会出现在公开状态页。</p><div class="mt-4 overflow-x-auto"><table class="min-w-full text-left text-xs"><thead class="text-gray-500"><tr><th scope="col" class="pb-2 pr-4">证据</th><th scope="col" class="pb-2 pr-4">平台 / 模型</th><th scope="col" class="pb-2 pr-4">账号</th><th scope="col" class="pb-2 pr-4">样本</th><th scope="col" class="pb-2">Route</th></tr></thead><tbody><tr v-for="item in unmappedEvidence" :key="evidenceKey(item)" class="border-t border-gray-100 dark:border-dark-700"><td class="py-2 pr-4">{{ factLabel(item.fact_type) }}</td><td class="py-2 pr-4">{{ item.platform }} / {{ item.model }}</td><td class="py-2 pr-4">{{ item.account_name || '—' }}</td><td class="py-2 pr-4">{{ item.sample_count }}</td><td class="py-2 font-mono text-[11px]">{{ shortRoute(item.route_fingerprint) }}</td></tr></tbody></table></div></section>
 
-        <section id="shadow-audit" class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-900/5 dark:bg-dark-800 dark:ring-dark-700"><h2 class="text-lg font-bold">OpenAI 智能路由 Shadow 审计</h2><p class="mt-1 text-xs text-gray-500">读取现有 Shadow 统计和持久化健康度；不会启用 Enforce。</p><div v-if="shadowAudit" class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><MetricRow label="24h 决策" :value="String(shadowAudit.stats.total)" /><MetricRow label="已评估" :value="String(shadowAudit.stats.evaluated)" /><MetricRow label="分歧" :value="String(shadowAudit.stats.diverged)" /><MetricRow label="证据健康" :value="shadowAudit.health.ready ? 'Ready' : 'Not ready'" /></div><p v-else class="mt-4 text-sm text-gray-500">{{ shadowError || 'Shadow 审计加载中…' }}</p></section>
+        <section id="shadow-audit" class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-900/5 dark:bg-dark-800 dark:ring-dark-700">
+          <h2 class="text-lg font-bold">OpenAI 智能路由 Shadow 审计</h2>
+          <p class="mt-1 text-xs text-gray-500">读取现有 Shadow 统计、Reliability Evidence 对比和持久化健康度；不会启用 Enforce。</p>
+          <template v-if="shadowAudit">
+            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><MetricRow label="24h 决策" :value="String(shadowAudit.stats.total)" /><MetricRow label="已评估" :value="String(shadowAudit.stats.evaluated)" /><MetricRow label="分歧" :value="String(shadowAudit.stats.diverged)" /><MetricRow label="证据健康" :value="shadowAudit.health.ready ? 'Ready' : 'Not ready'" /></div>
+            <div class="mt-5 overflow-x-auto">
+              <table class="min-w-[760px] text-left text-xs">
+                <thead class="text-gray-500"><tr><th scope="col" class="pb-2 pr-4">Decision</th><th scope="col" class="pb-2 pr-4">模型</th><th scope="col" class="pb-2 pr-4">Adapter</th><th scope="col" class="pb-2">Legacy → Reliability Evidence</th></tr></thead>
+                <tbody><tr v-for="decision in shadowAudit.decisions" :key="decision.decision_id" class="border-t border-gray-100 dark:border-dark-700"><td class="py-2 pr-4 font-mono">{{ decision.decision_id.slice(0, 12) }}</td><td class="py-2 pr-4">{{ decision.model }}</td><td class="py-2 pr-4">{{ decision.snapshot?.reliability_evidence_adapter_applied ? 'Applied' : decision.snapshot?.reliability_evidence_adapter_reason || 'Disabled' }}</td><td class="py-2">{{ candidateComparison(decision.snapshot?.candidates?.[0]) }}</td></tr><tr v-if="!shadowAudit.decisions.length"><td colspan="4" class="py-4 text-center text-gray-500">最近 24 小时暂无 Shadow decision</td></tr></tbody>
+              </table>
+            </div>
+          </template>
+          <p v-else class="mt-4 text-sm text-gray-500">{{ shadowError || 'Shadow 审计加载中…' }}</p>
+        </section>
       </template>
     </div>
   </AppLayout>
@@ -78,7 +91,7 @@
 <script setup lang="ts">
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import { getChannelMonitoring, getOpenAIShadowAudit, type ChannelMonitoringEvidence, type ChannelMonitoringSnapshot, type OpenAIShadowAuditSummary } from '@/api/admin/channelMonitoring'
+import { getChannelMonitoring, getOpenAIShadowAudit, type ChannelMonitoringEvidence, type ChannelMonitoringSnapshot, type OpenAIShadowAuditSummary, type OpenAIShadowReliabilityCandidate } from '@/api/admin/channelMonitoring'
 import type { ServiceStatus } from '@/api/serviceStatus'
 
 const MetricRow = defineComponent({ props: { label: String, value: String }, setup: (props) => () => h('div', { class: 'flex items-center justify-between gap-3 border-b border-gray-100 pb-2 dark:border-dark-700' }, [h('span', { class: 'text-gray-500' }, props.label), h('strong', props.value)]) })
@@ -135,6 +148,12 @@ function shortRoute(value?: string) { return value ? `${value.slice(0, 8)}…${v
 function formatRate(value?: number) { return value == null ? '—' : `${(value * 100).toFixed(2)}%` }
 function formatTime(value: string) { return new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(Date.parse(value)) }
 function recoveryCopy(item: ChannelMonitoringEvidence) { if (item.last_recovery_at) return `恢复 ${formatTime(item.last_recovery_at)}`; if (item.last_success_at) return `成功 ${formatTime(item.last_success_at)}`; return '暂无成功证据' }
+function candidateComparison(candidate?: OpenAIShadowReliabilityCandidate) {
+  if (!candidate) return '—'
+  const legacy = candidate.legacy_success_lower_bound == null ? '—' : `${(candidate.legacy_success_lower_bound * 100).toFixed(1)}%`
+  const reliability = candidate.reliability_evidence_success_lower_bound == null ? '—' : `${(candidate.reliability_evidence_success_lower_bound * 100).toFixed(1)}%`
+  return `${legacy} → ${reliability}`
+}
 function factLabel(value: ChannelMonitoringEvidence['fact_type']) { return ({ customer_request: '最终请求', upstream_attempt: '上游尝试', active_probe: '主动探针' } as const)[value] }
 function statusLabel(value: ServiceStatus) { return ({ operational: '正常', degraded_performance: '性能下降', partial_outage: '部分中断', major_outage: '大范围中断', maintenance: '维护中', monitoring: '观察中' } as const)[value] }
 function statusClass(value: ServiceStatus) { return ({ operational: 'border-success-200 text-success-700', degraded_performance: 'border-warning-200 text-warning-700', partial_outage: 'border-warning-300 text-warning-800', major_outage: 'border-danger-200 text-danger-700', maintenance: 'border-info-200 text-info-700', monitoring: 'border-gray-200 text-gray-600' } as const)[value] }

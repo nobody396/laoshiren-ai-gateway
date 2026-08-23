@@ -98,6 +98,15 @@ export interface ChannelMonitoringSnapshot {
   }
 }
 
+export interface OpenAIShadowReliabilityCandidate {
+  account_id: number
+  legacy_observation_samples?: number
+  legacy_success_lower_bound?: number
+  reliability_evidence_samples?: number
+  reliability_evidence_success_lower_bound?: number
+  reliability_evidence_applied?: boolean
+}
+
 export interface OpenAIShadowAuditSummary {
   stats: {
     total: number
@@ -116,6 +125,18 @@ export interface OpenAIShadowAuditSummary {
     dropped: number
     last_success_at?: string
   }
+  decisions: Array<{
+    decision_id: string
+    model: string
+    created_at?: string
+    snapshot?: {
+      reliability_evidence_adapter_enabled?: boolean
+      reliability_evidence_adapter_applied?: boolean
+      reliability_evidence_adapter_reason?: string
+      reliability_evidence_adapter_samples?: number
+      candidates?: OpenAIShadowReliabilityCandidate[]
+    }
+  }>
 }
 
 export async function getChannelMonitoring(windowMinutes = 15, signal?: AbortSignal): Promise<ChannelMonitoringSnapshot> {
@@ -126,9 +147,10 @@ export async function getChannelMonitoring(windowMinutes = 15, signal?: AbortSig
 }
 
 export async function getOpenAIShadowAudit(signal?: AbortSignal): Promise<OpenAIShadowAuditSummary> {
-  const [stats, health] = await Promise.all([
+  const [stats, health, decisions] = await Promise.all([
     apiClient.get<OpenAIShadowAuditSummary['stats']>('/admin/ops/openai-route-shadow/stats', { params: { time_range: '24h', policy_mode: 'shadow' }, signal }),
-    apiClient.get<OpenAIShadowAuditSummary['health']>('/admin/ops/openai-route-shadow/health', { signal })
+    apiClient.get<OpenAIShadowAuditSummary['health']>('/admin/ops/openai-route-shadow/health', { signal }),
+    apiClient.get<{ items: OpenAIShadowAuditSummary['decisions'] }>('/admin/ops/openai-route-shadow/decisions', { params: { time_range: '24h', policy_mode: 'shadow', page: 1, page_size: 5 }, signal })
   ])
-  return { stats: stats.data, health: health.data }
+  return { stats: stats.data, health: health.data, decisions: decisions.data.items ?? [] }
 }

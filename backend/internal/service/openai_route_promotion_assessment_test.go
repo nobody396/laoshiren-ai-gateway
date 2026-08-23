@@ -96,6 +96,21 @@ func TestBuildOpenAIRoutePromotionAssessmentBlocksCounterResetInsideWindow(t *te
 	require.Contains(t, assessment.Blockers, "health_counter_coverage")
 }
 
+func TestBuildOpenAIRoutePromotionAssessmentKeepsReliabilityTreatmentNoGoUntilIsolated(t *testing.T) {
+	end := time.Date(2026, 8, 23, 12, 0, 0, 0, time.UTC)
+	start := end.Add(-72 * time.Hour)
+	filter := testOpenAIRoutePromotionFilter(start, end)
+	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
+	// Legacy-observation and Reliability-Evidence treatments must never be
+	// pooled into one promotion window even when all aggregate SLOs are green.
+	stats.TreatmentFingerprintVariants = 2
+
+	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
+
+	require.False(t, assessment.AutomatedEvidenceReady)
+	require.Contains(t, assessment.Blockers, "single_treatment_fingerprint")
+}
+
 func TestBuildOpenAIRoutePromotionAssessmentBlocksRecoveredStorageGap(t *testing.T) {
 	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
 	start := end.Add(-72 * time.Hour)

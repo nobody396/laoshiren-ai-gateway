@@ -196,6 +196,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 			zap.Bool("adaptive_emergency", scheduleDecision.AdaptiveEmergency),
 		)
 		setOpsSelectedAccount(c, account.ID, account.Platform)
+		setOpsSelectedOpenAIRoute(c, scheduleDecision)
 
 		accountReleaseFunc, acquired := h.acquireResponsesAccountSlot(c, apiKey.GroupID, sessionHash, selection, reqStream, &streamStarted, reqLog)
 		if !acquired {

@@ -50,14 +50,18 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 		ExcludedCount:             1,
 		Diverged:                  true,
 		Snapshot: &service.OpenAIRouteShadowAuditSnapshot{
-			ActivationID:         "activation-integration-4",
-			ShadowStartedAt:      shadowStartedAt,
-			RequestClass:         service.OpenAIRouteRequestClassText,
-			AccessGroupID:        90,
-			PublicModel:          "gpt-5.6-sol",
-			InboundProtocol:      service.APIProtocolResponses,
-			RequestedServiceTier: service.OpenAIFastTierPriority,
-			EstimatedBaseCostUSD: 0.01,
+			ActivationID:                      "activation-integration-4",
+			ShadowStartedAt:                   shadowStartedAt,
+			RequestClass:                      service.OpenAIRouteRequestClassText,
+			AccessGroupID:                     90,
+			PublicModel:                       "gpt-5.6-sol",
+			InboundProtocol:                   service.APIProtocolResponses,
+			RequestedServiceTier:              service.OpenAIFastTierPriority,
+			EstimatedBaseCostUSD:              0.01,
+			ReliabilityEvidenceAdapterEnabled: true,
+			ReliabilityEvidenceAdapterApplied: true,
+			ReliabilityEvidenceAdapterReason:  "reliability_evidence_ready",
+			ReliabilityEvidenceAdapterSamples: 12,
 			Policy: service.OpenAIRouteShadowAuditPolicy{
 				MaxAccountShare:  0.80,
 				MaxProviderShare: 0.90,
@@ -104,6 +108,10 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 	require.Equal(t, shadowStartedAt, list.Decisions[0].ShadowStartedAt)
 	require.Len(t, list.Decisions[0].Snapshot.Candidates, 1)
 	require.Equal(t, int64(90), list.Decisions[0].Snapshot.AccessGroupID)
+	require.True(t, list.Decisions[0].Snapshot.ReliabilityEvidenceAdapterEnabled)
+	require.True(t, list.Decisions[0].Snapshot.ReliabilityEvidenceAdapterApplied)
+	require.Equal(t, "reliability_evidence_ready", list.Decisions[0].Snapshot.ReliabilityEvidenceAdapterReason)
+	require.Equal(t, uint64(12), list.Decisions[0].Snapshot.ReliabilityEvidenceAdapterSamples)
 
 	stats, err := repo.GetOpenAIRouteShadowDecisionStats(context.Background(), &service.OpenAIRouteShadowDecisionFilter{
 		StartTime:    &start,

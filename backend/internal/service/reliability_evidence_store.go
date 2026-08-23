@@ -112,6 +112,34 @@ func (s *ReliabilityEvidenceService) listPostgres(ctx context.Context, query *Re
 		args = append(args, *query.CustomerImpact)
 		where = append(where, fmt.Sprintf("customer_impact = $%d", len(args)))
 	}
+	selectors := make([]string, 0, 4)
+	if len(query.AnyGroupIDs) > 0 {
+		args = append(args, pq.Array(query.AnyGroupIDs))
+		selectors = append(selectors, fmt.Sprintf("group_id = ANY($%d)", len(args)))
+	}
+	if len(query.AnyAccountIDs) > 0 {
+		args = append(args, pq.Array(query.AnyAccountIDs))
+		selectors = append(selectors, fmt.Sprintf("account_id = ANY($%d)", len(args)))
+	}
+	if len(query.AnyPlatforms) > 0 {
+		args = append(args, pq.Array(query.AnyPlatforms))
+		selectors = append(selectors, fmt.Sprintf("platform = ANY($%d)", len(args)))
+	}
+	if len(query.AnyRouteFingerprints) > 0 {
+		args = append(args, pq.Array(query.AnyRouteFingerprints))
+		selectors = append(selectors, fmt.Sprintf("route_fingerprint = ANY($%d)", len(args)))
+	}
+	if len(selectors) > 0 {
+		where = append(where, "("+strings.Join(selectors, " OR ")+")")
+	}
+	if len(query.AnyModelPatterns) > 0 {
+		patterns := make([]string, 0, len(query.AnyModelPatterns))
+		for _, pattern := range query.AnyModelPatterns {
+			patterns = append(patterns, reliabilityModelGlobToLike(pattern))
+		}
+		args = append(args, pq.Array(patterns))
+		where = append(where, fmt.Sprintf("LOWER(model) LIKE ANY($%d)", len(args)))
+	}
 	args = append(args, query.Limit)
 	rows, err := s.db.QueryContext(ctx, `
 SELECT
@@ -157,6 +185,24 @@ LIMIT $`+fmt.Sprint(len(args)), args...)
 		return nil, err
 	}
 	return observations, nil
+}
+
+func reliabilityModelGlobToLike(pattern string) string {
+	pattern = strings.ToLower(strings.TrimSpace(pattern))
+	result := make([]rune, 0, len(pattern))
+	for _, char := range pattern {
+		switch char {
+		case '\\', '%', '_':
+			result = append(result, '\\', char)
+		case '*':
+			result = append(result, '%')
+		case '?':
+			result = append(result, '_')
+		default:
+			result = append(result, char)
+		}
+	}
+	return string(result)
 }
 
 func reliabilityNullableInt64(value *int64) any {

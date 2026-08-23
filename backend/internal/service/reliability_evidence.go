@@ -139,13 +139,18 @@ type ReliabilityProbeClaim struct {
 }
 
 type ReliabilityEvidenceQuery struct {
-	Start            time.Time
-	End              time.Time
-	FactTypes        []ReliabilityFactType
-	GroupID          *int64
-	RouteFingerprint string
-	CustomerImpact   *bool
-	Limit            int
+	Start                time.Time
+	End                  time.Time
+	FactTypes            []ReliabilityFactType
+	GroupID              *int64
+	RouteFingerprint     string
+	CustomerImpact       *bool
+	Limit                int
+	AnyGroupIDs          []int64
+	AnyAccountIDs        []int64
+	AnyPlatforms         []string
+	AnyRouteFingerprints []string
+	AnyModelPatterns     []string
 }
 
 type ReliabilityEvidenceSnapshot struct {
@@ -155,40 +160,46 @@ type ReliabilityEvidenceSnapshot struct {
 }
 
 type ReliabilityEvidenceCompleteness struct {
-	Enabled    bool  `json:"enabled"`
-	Running    bool  `json:"running"`
-	Enqueued   int64 `json:"enqueued"`
-	Processed  int64 `json:"processed"`
-	Written    int64 `json:"written"`
-	Dropped    int64 `json:"dropped"`
-	Failed     int64 `json:"failed"`
-	QueueDepth int64 `json:"queue_depth"`
-	InFlight   int64 `json:"in_flight"`
-	Ready      bool  `json:"ready"`
+	Enabled         bool       `json:"enabled"`
+	Running         bool       `json:"running"`
+	Enqueued        int64      `json:"enqueued"`
+	Processed       int64      `json:"processed"`
+	Written         int64      `json:"written"`
+	Dropped         int64      `json:"dropped"`
+	Failed          int64      `json:"failed"`
+	QueueDepth      int64      `json:"queue_depth"`
+	InFlight        int64      `json:"in_flight"`
+	Ready           bool       `json:"ready"`
+	OldestPendingAt *time.Time `json:"oldest_pending_at,omitempty"`
+	PendingCutoffID uint64     `json:"pending_cutoff_id,omitempty"`
 }
 
 type ReliabilityEvidenceService struct {
-	db            *sql.DB
-	enabled       bool
-	batchInsert   func(context.Context, []*ReliabilityObservation) (int64, error)
-	listEvidence  func(context.Context, *ReliabilityEvidenceQuery) ([]*ReliabilityObservation, error)
-	claimProbe    func(context.Context, *ReliabilityProbeClaim) (bool, error)
-	enqueued      atomic.Int64
-	processed     atomic.Int64
-	written       atomic.Int64
-	dropped       atomic.Int64
-	failed        atomic.Int64
-	queueDepth    atomic.Int64
-	inFlight      atomic.Int64
-	running       atomic.Bool
-	lastDropLogAt atomic.Int64
-	queueMu       sync.Mutex
-	queueWG       sync.WaitGroup
-	queue         chan reliabilityEvidenceJob
-	queueStarted  bool
-	queueStopping bool
-	queueSize     int
-	workerCount   int
+	db                 *sql.DB
+	enabled            bool
+	batchInsert        func(context.Context, []*ReliabilityObservation) (int64, error)
+	listEvidence       func(context.Context, *ReliabilityEvidenceQuery) ([]*ReliabilityObservation, error)
+	claimProbe         func(context.Context, *ReliabilityProbeClaim) (bool, error)
+	enqueued           atomic.Int64
+	processed          atomic.Int64
+	written            atomic.Int64
+	dropped            atomic.Int64
+	failed             atomic.Int64
+	queueDepth         atomic.Int64
+	inFlight           atomic.Int64
+	running            atomic.Bool
+	lastDropLogAt      atomic.Int64
+	nextPendingID      atomic.Uint64
+	publishedPendingID atomic.Uint64
+	queueMu            sync.Mutex
+	pendingMu          sync.Mutex
+	pendingObserved    map[uint64]time.Time
+	queueWG            sync.WaitGroup
+	queue              chan reliabilityEvidenceJob
+	queueStarted       bool
+	queueStopping      bool
+	queueSize          int
+	workerCount        int
 }
 
 func NewReliabilityEvidenceService(db *sql.DB, settingRepo SettingRepository) *ReliabilityEvidenceService {
@@ -216,11 +227,30 @@ func (s *ReliabilityEvidenceService) Completeness() ReliabilityEvidenceCompleten
 	if s == nil {
 		return ReliabilityEvidenceCompleteness{}
 	}
+	return s.completenessThrough(s.publishedPendingID.Load())
+}
+
+func (s *ReliabilityEvidenceService) completenessThrough(cutoff uint64) ReliabilityEvidenceCompleteness {
+	if s == nil {
+		return ReliabilityEvidenceCompleteness{}
+	}
 	result := ReliabilityEvidenceCompleteness{
 		Enabled: s.enabled, Running: s.running.Load(), Enqueued: s.enqueued.Load(), Processed: s.processed.Load(), Written: s.written.Load(),
 		Dropped: s.dropped.Load(), Failed: s.failed.Load(), QueueDepth: s.queueDepth.Load(), InFlight: s.inFlight.Load(),
+		PendingCutoffID: cutoff,
 	}
 	result.Ready = result.Enabled && result.Running && result.Dropped == 0 && result.Failed == 0 && result.QueueDepth == 0 && result.InFlight == 0 && result.Processed == result.Enqueued
+	s.pendingMu.Lock()
+	for pendingID, observedAt := range s.pendingObserved {
+		if pendingID > cutoff {
+			continue
+		}
+		if result.OldestPendingAt == nil || observedAt.Before(*result.OldestPendingAt) {
+			value := observedAt
+			result.OldestPendingAt = &value
+		}
+	}
+	s.pendingMu.Unlock()
 	return result
 }
 
@@ -343,6 +373,13 @@ func (s *ReliabilityEvidenceService) recordObservations(ctx context.Context, inp
 }
 
 func (s *ReliabilityEvidenceService) Snapshot(ctx context.Context, query *ReliabilityEvidenceQuery) (*ReliabilityEvidenceSnapshot, error) {
+	if s == nil {
+		return nil, fmt.Errorf("reliability observation repository is not available")
+	}
+	return s.snapshotAtPendingCutoff(ctx, query, s.publishedPendingID.Load())
+}
+
+func (s *ReliabilityEvidenceService) snapshotAtPendingCutoff(ctx context.Context, query *ReliabilityEvidenceQuery, cutoff uint64) (*ReliabilityEvidenceSnapshot, error) {
 	if s == nil || s.listEvidence == nil {
 		return nil, fmt.Errorf("reliability observation repository is not available")
 	}
@@ -378,11 +415,90 @@ func (s *ReliabilityEvidenceService) Snapshot(ctx context.Context, query *Reliab
 	if normalized.RouteFingerprint != "" && !reliabilityRouteFingerprintPattern.MatchString(normalized.RouteFingerprint) {
 		return nil, fmt.Errorf("reliability evidence route fingerprint is invalid")
 	}
+	normalized.AnyGroupIDs = normalizeReliabilityInt64Selectors(normalized.AnyGroupIDs)
+	normalized.AnyAccountIDs = normalizeReliabilityInt64Selectors(normalized.AnyAccountIDs)
+	normalized.AnyPlatforms = normalizeReliabilityStringSelectors(normalized.AnyPlatforms)
+	normalized.AnyRouteFingerprints = normalizeReliabilityStringSelectors(normalized.AnyRouteFingerprints)
+	normalized.AnyModelPatterns = normalizeReliabilityStringSelectors(normalized.AnyModelPatterns)
+	for _, fingerprint := range normalized.AnyRouteFingerprints {
+		if !reliabilityRouteFingerprintPattern.MatchString(fingerprint) {
+			return nil, fmt.Errorf("reliability evidence route fingerprint selector is invalid")
+		}
+	}
+	before := s.completenessThrough(cutoff)
 	observations, err := s.listEvidence(ctx, &normalized)
 	if err != nil {
 		return nil, err
 	}
-	return &ReliabilityEvidenceSnapshot{GeneratedAt: time.Now(), Completeness: s.Completeness(), Observations: observations}, nil
+	after := s.completenessThrough(cutoff)
+	return &ReliabilityEvidenceSnapshot{GeneratedAt: time.Now(), Completeness: mergeReliabilityCompletenessConservative(before, after), Observations: observations}, nil
+}
+
+func mergeReliabilityCompletenessConservative(left, right ReliabilityEvidenceCompleteness) ReliabilityEvidenceCompleteness {
+	result := right
+	result.Enabled = left.Enabled && right.Enabled
+	result.Running = left.Running && right.Running
+	result.Ready = left.Ready && right.Ready
+	result.Enqueued = maxReliabilityInt64(left.Enqueued, right.Enqueued)
+	result.Processed = maxReliabilityInt64(left.Processed, right.Processed)
+	result.Written = maxReliabilityInt64(left.Written, right.Written)
+	result.Dropped = maxReliabilityInt64(left.Dropped, right.Dropped)
+	result.Failed = maxReliabilityInt64(left.Failed, right.Failed)
+	result.QueueDepth = maxReliabilityInt64(left.QueueDepth, right.QueueDepth)
+	result.InFlight = maxReliabilityInt64(left.InFlight, right.InFlight)
+	result.PendingCutoffID = maxReliabilityUint64(left.PendingCutoffID, right.PendingCutoffID)
+	if left.OldestPendingAt != nil && (result.OldestPendingAt == nil || left.OldestPendingAt.Before(*result.OldestPendingAt)) {
+		value := *left.OldestPendingAt
+		result.OldestPendingAt = &value
+	}
+	return result
+}
+
+func maxReliabilityInt64(left, right int64) int64 {
+	if left > right {
+		return left
+	}
+	return right
+}
+
+func maxReliabilityUint64(left, right uint64) uint64 {
+	if left > right {
+		return left
+	}
+	return right
+}
+
+func normalizeReliabilityInt64Selectors(values []int64) []int64 {
+	seen := make(map[int64]struct{}, len(values))
+	result := make([]int64, 0, len(values))
+	for _, value := range values {
+		if value <= 0 {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
+}
+
+func normalizeReliabilityStringSelectors(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.ToLower(strings.TrimSpace(value))
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
 }
 
 func (s *OpsService) SetReliabilityEvidenceService(evidence *ReliabilityEvidenceService) {

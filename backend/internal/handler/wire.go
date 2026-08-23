@@ -152,6 +152,7 @@ func ProvideHandlers(
 	nativeCheckoutHandler *NativeCheckoutHandler,
 	balanceAlertHandler *BalanceAlertHandler,
 	resourceHandler *ResourceHandler,
+	statusHandler *StatusHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 	_ *service.PendingAuthSessionCleanupService,
@@ -180,6 +181,7 @@ func ProvideHandlers(
 		NativeCheckout: nativeCheckoutHandler,
 		BalanceAlert:   balanceAlertHandler,
 		Resource:       resourceHandler,
+		Status:         statusHandler,
 	}
 }
 
@@ -208,6 +210,7 @@ var ProviderSet = wire.NewSet(
 	NewNativeCheckoutHandler,
 	NewBalanceAlertHandler,
 	NewResourceHandler,
+	NewStatusHandler,
 	NewModelPricingHandler,
 	ProvideSettingHandler,
 

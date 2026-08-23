@@ -66,6 +66,7 @@ type Handlers struct {
 	NativeCheckout *NativeCheckoutHandler
 	BalanceAlert   *BalanceAlertHandler
 	Resource       *ResourceHandler
+	Status         *StatusHandler
 }
 
 // BuildInfo contains build-time information

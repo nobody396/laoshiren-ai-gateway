@@ -112,6 +112,9 @@ func RegisterAuthRoutes(
 	if h.Admin != nil && h.Admin.Ops != nil {
 		v1.GET("/monthly-card/status", h.Admin.Ops.GetPublicMonthlyCardStatus)
 	}
+	if h.Status != nil {
+		v1.GET("/service-status", h.Status.GetPublicStatus)
+	}
 
 	// 公开模型价格目录（无需认证，独立价格页使用）
 	if h.ModelPricing != nil {

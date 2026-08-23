@@ -90,6 +90,20 @@ func TestBuildFinalReliabilityObservationSeparatesCustomerOutcome(t *testing.T) 
 	require.GreaterOrEqual(t, observation.LatencyMs, int64(200))
 }
 
+func TestBuildFinalReliabilityObservationPreservesWebSocketTransport(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest("POST", "/v1/responses", nil)
+	service.SetOpenAIClientTransport(c, service.OpenAIClientTransportWS)
+	c.Writer.Header().Set("X-Request-Id", "req-ws")
+	c.Writer.WriteHeader(200)
+
+	observation := buildFinalReliabilityObservation(c, time.Now(), nil)
+	require.NotNil(t, observation)
+	require.Equal(t, "websocket_responses", observation.Protocol)
+}
+
 func TestReliabilityCorrelationPrefersGatewayOwnedClientRequestID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()

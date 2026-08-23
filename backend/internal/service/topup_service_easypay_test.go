@@ -250,7 +250,7 @@ func TestTopupService_CreateTopupOrder_EasyPayAlipay(t *testing.T) {
 		SettingKeyFrontendURL:         "https://frontend.example/",
 	}, provider)
 
-	orderNo, qrCodeURL, err := svc.CreateTopupOrder(context.Background(), 42, 2000, "alipay")
+	orderNo, qrCodeURL, err := svc.CreateTopupOrder(context.Background(), 42, 2000, "alipay", "203.0.113.9")
 	require.NoError(t, err)
 	require.NotEmpty(t, orderNo)
 	require.Equal(t, "qr://easypay-content", qrCodeURL, "QR content preferred over cashier URL")
@@ -260,15 +260,33 @@ func TestTopupService_CreateTopupOrder_EasyPayAlipay(t *testing.T) {
 	require.Equal(t, orderNo, req.OutTradeNo)
 	require.Equal(t, payment.MethodAlipay, req.Method)
 	require.Equal(t, 2000, req.AmountCNYFen)
-	require.Equal(t, "Dragon Code 余额充值", req.Subject)
+	require.Equal(t, "老实人AI API调用额度充值", req.Subject)
 	require.Equal(t, "https://frontend.example/api/v1/pay/notify/easypay", req.NotifyURL)
 	require.Equal(t, "https://frontend.example/dashboard", req.ReturnURL)
+	require.Equal(t, "203.0.113.9", req.ClientIP)
 
 	stored := repo.storedOrder(orderNo)
 	require.Equal(t, payment.ProviderEasyPay, stored.Provider)
 	require.Equal(t, "alipay", stored.PayType)
 	require.Equal(t, TopupStatusPending, stored.Status)
 	require.Equal(t, []string{"qr://easypay-content"}, repo.qrUpdates[stored.ID])
+}
+
+func TestTopupService_CreateTopupOrder_EasyPayPrefersProviderQRImage(t *testing.T) {
+	repo := newTopupOrderRepoFake()
+	provider := &stubEasyPayProvider{createResult: &payment.CreateOrderResult{
+		QRImageURL: "https://zpayz.cn/qrcode/order.jpg",
+		QRContent:  "alipays://platformapi/startapp?appId=1",
+		PayURL:     "https://zpayz.cn/pay/order",
+	}}
+	svc := newEasyPayTopupService(t, repo, &topupUserRepoFake{}, map[string]string{
+		SettingKeyTopupAlipayProvider: "easypay",
+		SettingKeyFrontendURL:         "https://frontend.example",
+	}, provider)
+
+	_, qrCodeURL, err := svc.CreateTopupOrder(context.Background(), 42, 2000, "alipay", "203.0.113.9")
+	require.NoError(t, err)
+	require.Equal(t, "https://zpayz.cn/qrcode/order.jpg", qrCodeURL)
 }
 
 func TestTopupService_CreateTopupOrder_EasyPayWechatFallsBackToPayURL(t *testing.T) {
@@ -281,7 +299,7 @@ func TestTopupService_CreateTopupOrder_EasyPayWechatFallsBackToPayURL(t *testing
 		SettingKeyFrontendURL:         "https://frontend.example",
 	}, provider)
 
-	orderNo, qrCodeURL, err := svc.CreateTopupOrder(context.Background(), 42, 2000, "wechat")
+	orderNo, qrCodeURL, err := svc.CreateTopupOrder(context.Background(), 42, 2000, "wechat", "203.0.113.9")
 	require.NoError(t, err)
 	require.Equal(t, "https://pay.example/wx-cashier", qrCodeURL, "falls back to cashier URL when QR content is empty")
 
@@ -301,7 +319,7 @@ func TestTopupService_CreateTopupOrder_DefaultsToXunhuWithoutSetting(t *testing.
 	// 无任何 provider 设置：应走虎皮椒路径（配置缺失 → XUNHU_ALIPAY_DISABLED，不触网）
 	svc := newEasyPayTopupService(t, repo, &topupUserRepoFake{}, map[string]string{}, provider)
 
-	_, _, err := svc.CreateTopupOrder(context.Background(), 42, 2000, "alipay")
+	_, _, err := svc.CreateTopupOrder(context.Background(), 42, 2000, "alipay", "203.0.113.9")
 	require.Error(t, err)
 	require.Equal(t, "XUNHU_ALIPAY_DISABLED", infraerrors.Reason(err))
 	require.Zero(t, provider.createCallCount(), "easypay gateway must not be consulted for xunhu orders")
@@ -315,7 +333,7 @@ func TestTopupService_CreateTopupOrder_EasyPayNotConfiguredSurfacesCodedError(t 
 		SettingKeyFrontendURL:         "https://frontend.example",
 	}, provider)
 
-	_, _, err := svc.CreateTopupOrder(context.Background(), 42, 2000, "alipay")
+	_, _, err := svc.CreateTopupOrder(context.Background(), 42, 2000, "alipay", "203.0.113.9")
 	require.ErrorIs(t, err, payment.ErrEasyPayNotConfigured)
 }
 
@@ -328,7 +346,7 @@ func TestTopupService_CreateTopupOrder_EasyPayMissingFrontendURLRejected(t *test
 		SettingKeyTopupAlipayProvider: "easypay",
 	}, provider)
 
-	_, _, err := svc.CreateTopupOrder(context.Background(), 42, 2000, "alipay")
+	_, _, err := svc.CreateTopupOrder(context.Background(), 42, 2000, "alipay", "203.0.113.9")
 	require.Error(t, err)
 	require.Equal(t, "EASYPAY_NOTIFY_URL_MISSING", infraerrors.Reason(err))
 	require.Zero(t, provider.createCallCount())

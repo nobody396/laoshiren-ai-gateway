@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ip"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/response"
 	middleware2 "github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
@@ -47,6 +48,7 @@ func (h *TopupHandler) CreateTopupOrder(c *gin.Context) {
 		subject.UserID,
 		req.AmountCNYFen,
 		req.PayType,
+		ip.GetClientIP(c),
 	)
 	if err != nil {
 		response.ErrorFrom(c, err)

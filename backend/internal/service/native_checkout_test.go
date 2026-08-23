@@ -37,7 +37,7 @@ func TestNativeCheckoutCreateUsesRegisteredEmailAndReusesOnceOnlyOrder(t *testin
 		nativeCheckoutTestContactKey,
 	)
 
-	first, err := service.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10", "")
+	first, err := service.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10", "", "203.0.113.9")
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusPending, first.Status)
 	require.Equal(t, NativeCheckoutPaymentMethodWeChat, first.PaymentMethod)
@@ -45,7 +45,7 @@ func TestNativeCheckoutCreateUsesRegisteredEmailAndReusesOnceOnlyOrder(t *testin
 	require.Equal(t, 1, provider.createCalls)
 	require.NotEqual(t, "", first.ContactHash)
 
-	second, err := service.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10", "")
+	second, err := service.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10", "", "203.0.113.9")
 	require.NoError(t, err)
 	require.Equal(t, first.OrderNo, second.OrderNo)
 	require.Equal(t, 1, provider.createCalls, "a repeated click must not create another LDXP order")
@@ -109,7 +109,7 @@ func TestNativeCheckoutRecoveredRedeemCountsAsOnceOnlyPurchase(t *testing.T) {
 	require.True(t, offers[0].Claimed)
 	require.Nil(t, offers[0].Order)
 
-	_, err = svc.CreateOrder(context.Background(), 42, repo.offer.Code, "")
+	_, err = svc.CreateOrder(context.Background(), 42, repo.offer.Code, "", "203.0.113.9")
 	require.ErrorIs(t, err, ErrNativeCheckoutAlreadyClaimed)
 	require.Zero(t, provider.createCalls)
 
@@ -118,7 +118,7 @@ func TestNativeCheckoutRecoveredRedeemCountsAsOnceOnlyPurchase(t *testing.T) {
 	offers, err = svc.ListOffers(context.Background(), 42)
 	require.NoError(t, err)
 	require.True(t, offers[0].Claimed)
-	_, err = svc.CreateOrder(context.Background(), 42, repo.offer.Code, "")
+	_, err = svc.CreateOrder(context.Background(), 42, repo.offer.Code, "", "203.0.113.9")
 	require.ErrorIs(t, err, ErrNativeCheckoutAlreadyClaimed)
 }
 
@@ -139,7 +139,7 @@ func TestNativeCheckoutCreateFinishesAfterRequestCancellation(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	order, err := svc.CreateOrder(ctx, 42, "newcomer-balance-5-to-10", "")
+	order, err := svc.CreateOrder(ctx, 42, "newcomer-balance-5-to-10", "", "203.0.113.9")
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusPending, order.Status)
 	require.NoError(t, provider.createContextErr, "the durable provider operation must be detached from the browser request")
@@ -160,7 +160,7 @@ func TestNativeCheckoutCreateRejectsUnlabeledProviderPaymentMethod(t *testing.T)
 		nativeCheckoutTestContactKey,
 	)
 
-	_, err := svc.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10", "")
+	_, err := svc.CreateOrder(context.Background(), 42, "newcomer-balance-5-to-10", "", "203.0.113.9")
 	require.Error(t, err)
 	require.Equal(t, NativeCheckoutStatusManualReview, repo.order.Status)
 	require.Equal(t, "provider_payment_method_invalid", repo.order.FailureCode)
@@ -559,6 +559,7 @@ type nativeCheckoutProviderFake struct {
 	payType          string
 	orderNo          string
 	amountFen        int64
+	clientIP         string
 	createCalls      int
 	createContextErr error
 	validateErr      error
@@ -574,6 +575,7 @@ func (p *nativeCheckoutProviderFake) CreateOrder(ctx context.Context, req *Nativ
 	p.payType = req.PayType
 	p.orderNo = req.OrderNo
 	p.amountFen = req.ExpectedAmountCNYFen
+	p.clientIP = req.ClientIP
 	p.createCalls++
 	p.createContextErr = ctx.Err()
 	return p.created, nil

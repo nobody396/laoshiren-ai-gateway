@@ -247,7 +247,7 @@ const (
 	SettingKeyEasyPayEnabled = "easypay_enabled"  // 是否启用 EasyPay 网关
 	SettingKeyEasyPayPID     = "easypay_pid"      // EasyPay 商户号
 	SettingKeyEasyPayKey     = "easypay_key"      // EasyPay 商户密钥（MD5 签名）
-	SettingKeyEasyPayAPIBase = "easypay_api_base" // EasyPay 网关地址（默认 https://pay.hueling.cc）
+	SettingKeyEasyPayAPIBase = "easypay_api_base" // EasyPay 接口根地址（ZPay 示例 https://zpayz.cn）
 
 	// 充值网关选择（xunhu / easypay）
 	SettingKeyTopupAlipayProvider = "topup_alipay_provider" // 支付宝充值使用的网关

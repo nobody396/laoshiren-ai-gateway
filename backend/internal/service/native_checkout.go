@@ -180,6 +180,7 @@ type NativeCheckoutCreateRequest struct {
 	Contact              string
 	ExpectedAmountCNYFen int64
 	PayType              string
+	ClientIP             string
 }
 
 type NativeCheckoutProviderOrder struct {
@@ -392,7 +393,7 @@ func manualCheckoutPurchaseURL(offer *NativeCheckoutOffer) (string, error) {
 	return "https://pay.ldxp.cn/item/" + url.PathEscape(goodsKey), nil
 }
 
-func (s *NativeCheckoutService) CreateOrder(ctx context.Context, userID int64, offerCode, payType string) (*NativeCheckoutOrder, error) {
+func (s *NativeCheckoutService) CreateOrder(ctx context.Context, userID int64, offerCode, payType, clientIP string) (*NativeCheckoutOrder, error) {
 	offerCode = strings.TrimSpace(offerCode)
 	if offerCode == "" {
 		return nil, infraerrors.BadRequest("NATIVE_CHECKOUT_OFFER_REQUIRED", "checkout offer is required")
@@ -459,7 +460,7 @@ func (s *NativeCheckoutService) CreateOrder(ctx context.Context, userID int64, o
 		if !reset {
 			return existing, nil
 		}
-		return s.createProviderOrder(ctx, existing, contact, payType)
+		return s.createProviderOrder(ctx, existing, contact, payType, clientIP)
 	}
 
 	order := &NativeCheckoutOrder{
@@ -490,10 +491,10 @@ func (s *NativeCheckoutService) CreateOrder(ctx context.Context, userID int64, o
 	if !created {
 		return reserved, nil
 	}
-	return s.createProviderOrder(ctx, reserved, contact, payType)
+	return s.createProviderOrder(ctx, reserved, contact, payType, clientIP)
 }
 
-func (s *NativeCheckoutService) createProviderOrder(ctx context.Context, order *NativeCheckoutOrder, contact, payType string) (*NativeCheckoutOrder, error) {
+func (s *NativeCheckoutService) createProviderOrder(ctx context.Context, order *NativeCheckoutOrder, contact, payType, clientIP string) (*NativeCheckoutOrder, error) {
 	// Once the durable reservation exists, finish the provider call and record
 	// its outcome even if the browser disconnects. Otherwise a cancelled HTTP
 	// request can strand a once-only order forever in "creating".
@@ -508,6 +509,7 @@ func (s *NativeCheckoutService) createProviderOrder(ctx context.Context, order *
 			Contact:              contact,
 			ExpectedAmountCNYFen: order.PayAmountCNYFen,
 			PayType:              payType,
+			ClientIP:             clientIP,
 		})
 	}
 	if err != nil {

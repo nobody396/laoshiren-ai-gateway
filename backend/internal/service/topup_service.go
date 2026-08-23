@@ -29,7 +29,7 @@ const (
 	topupCNYFenToUSD = 1.0 / 100.0
 
 	// 充值订单标题，xunhu 与 easypay 保持一致
-	topupOrderSubject = "Dragon Code 余额充值"
+	topupOrderSubject = "老实人AI API调用额度充值"
 
 	// easyPayNotifyPath 是 EasyPay 异步回调的公开路由（见 server/router.go），
 	// 与 native checkout 共用同一 endpoint，由 payment 包统一定义。
@@ -168,7 +168,7 @@ func (s *TopupService) resolveXunhuReturnURL(ctx context.Context, notifyURL stri
 }
 
 // CreateTopupOrder 创建充值订单，返回订单号和二维码 URL
-func (s *TopupService) CreateTopupOrder(ctx context.Context, userID int64, amountCNYFen int, payType string) (orderNo, qrCodeURL string, err error) {
+func (s *TopupService) CreateTopupOrder(ctx context.Context, userID int64, amountCNYFen int, payType, clientIP string) (orderNo, qrCodeURL string, err error) {
 	// 参数校验
 	if amountCNYFen < TopupMinAmountFen {
 		return "", "", ErrTopupMinAmount
@@ -186,7 +186,7 @@ func (s *TopupService) CreateTopupOrder(ctx context.Context, userID int64, amoun
 		return "", "", fmt.Errorf("get topup provider: %w", err)
 	}
 	if provider == payment.ProviderEasyPay {
-		return s.createEasyPayTopupOrder(ctx, userID, amountCNYFen, payType)
+		return s.createEasyPayTopupOrder(ctx, userID, amountCNYFen, payType, clientIP)
 	}
 	return s.createXunhuTopupOrder(ctx, userID, amountCNYFen, payType)
 }
@@ -280,7 +280,7 @@ func (s *TopupService) resolveEasyPayNotifyURL(ctx context.Context) string {
 }
 
 // createEasyPayTopupOrder EasyPay（彩虹易支付兼容）下单路径
-func (s *TopupService) createEasyPayTopupOrder(ctx context.Context, userID int64, amountCNYFen int, payType string) (orderNo, qrCodeURL string, err error) {
+func (s *TopupService) createEasyPayTopupOrder(ctx context.Context, userID int64, amountCNYFen int, payType, clientIP string) (orderNo, qrCodeURL string, err error) {
 	gateway, err := s.paymentRegistry.Get(payment.ProviderEasyPay)
 	if err != nil {
 		return "", "", err
@@ -323,13 +323,17 @@ func (s *TopupService) createEasyPayTopupOrder(ctx context.Context, userID int64
 		Subject:      topupOrderSubject,
 		NotifyURL:    notifyURL,
 		ReturnURL:    returnURL,
+		ClientIP:     clientIP,
 	})
 	if err != nil {
 		return "", "", err
 	}
 
-	// 优先二维码内容，退回收银台 URL
-	qrCodeURL = result.QRContent
+	// 优先平台直接返回的二维码图片，其次二维码内容，最后退回收银台 URL。
+	qrCodeURL = result.QRImageURL
+	if qrCodeURL == "" {
+		qrCodeURL = result.QRContent
+	}
 	if qrCodeURL == "" {
 		qrCodeURL = result.PayURL
 	}

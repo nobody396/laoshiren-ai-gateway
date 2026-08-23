@@ -63,6 +63,7 @@ func easyPayCreateRequest(payType string) *service.NativeCheckoutCreateRequest {
 		Contact:              "buyer@example.com",
 		ExpectedAmountCNYFen: 500,
 		PayType:              payType,
+		ClientIP:             "203.0.113.9",
 	}
 }
 
@@ -84,7 +85,22 @@ func TestEasyPayCheckoutClientCreateOrderMapsRequestAndResult(t *testing.T) {
 	require.Equal(t, 500, gateway.gotCreate.AmountCNYFen)
 	require.Equal(t, "https://app.example.com/api/v1/pay/notify/easypay", gateway.gotCreate.NotifyURL)
 	require.Equal(t, "https://app.example.com/dashboard", gateway.gotCreate.ReturnURL)
+	require.Equal(t, "203.0.113.9", gateway.gotCreate.ClientIP)
 	require.NotEmpty(t, gateway.gotCreate.Subject)
+}
+
+func TestEasyPayCheckoutClientCreateOrderPrefersScannableQRContent(t *testing.T) {
+	gateway := &easyPayGatewayStub{createResult: &payment.CreateOrderResult{
+		QRImageURL: "https://zpayz.cn/qrcode/order.jpg",
+		QRContent:  "alipays://platformapi/startapp?appId=1",
+		PayURL:     "https://zpayz.cn/pay/order",
+	}}
+	settings := easyPayCheckoutSettingsStub{enabled: true, pid: "1001", key: "secret", frontendURL: "https://app.example.com"}
+	client := newEasyPayCheckoutClientForTest(gateway, settings)
+
+	order, err := client.CreateOrder(context.Background(), easyPayCreateRequest(""))
+	require.NoError(t, err)
+	require.Equal(t, "alipays://platformapi/startapp?appId=1", order.PaymentURL)
 }
 
 func TestEasyPayCheckoutClientCreateOrderWechatSelection(t *testing.T) {

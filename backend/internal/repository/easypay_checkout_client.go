@@ -10,9 +10,10 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 )
 
-// easyPayCheckoutSubject is the goods title shown on the EasyPay cashier. It
-// mirrors the tone of the LDXP newcomer goods page ("新人专享 · 10 元余额包").
-const easyPayCheckoutSubject = "老实人AI 新人专享"
+// easyPayCheckoutSubject is the concrete goods title shown on the EasyPay
+// cashier. ZPay requires the title to describe the actual product rather than
+// a vague internal promotion name.
+const easyPayCheckoutSubject = "老实人AI API调用额度包"
 
 // easyPayGateway is the subset of *payment.EasyPayClient the native checkout
 // provider needs. Kept as a narrow interface so tests can stub the gateway.
@@ -83,6 +84,7 @@ func (c *EasyPayCheckoutClient) CreateOrder(ctx context.Context, req *service.Na
 		Subject:      easyPayCheckoutSubject,
 		NotifyURL:    notifyURL,
 		ReturnURL:    c.returnURL(ctx),
+		ClientIP:     req.ClientIP,
 	})
 	if err != nil {
 		// Transport failures, timeouts, 5xx and undecodable responses are
@@ -94,9 +96,13 @@ func (c *EasyPayCheckoutClient) CreateOrder(ctx context.Context, req *service.Na
 			Cause:     err,
 		}
 	}
-	paymentURL := result.PayURL
+	// Native checkout persists a scannable payload, not a provider-hosted QR
+	// image URL. ZPay normally returns both qrcode and img; qrcode remains
+	// renderable after image-CDN expiry and avoids treating a page URL as an
+	// image. Topup may use QRImageURL directly in its own response path.
+	paymentURL := result.QRContent
 	if paymentURL == "" {
-		paymentURL = result.QRContent
+		paymentURL = result.PayURL
 	}
 	if paymentURL == "" {
 		// The provider accepted the create but returned nothing the customer

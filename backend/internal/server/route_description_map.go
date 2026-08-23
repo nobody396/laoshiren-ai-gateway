@@ -323,6 +323,7 @@ var scannerDescMap = map[string]string{
 	"GET /admin/ops/system-logs":                                    "系统日志列表",
 	"POST /admin/ops/system-logs/cleanup":                           "清理系统日志",
 	"GET /admin/ops/system-logs/health":                             "日志系统健康状态",
+	"GET /admin/ops/channel-monitoring":                             "渠道可靠性监控工作台",
 	"GET /admin/ops/openai-route-shadow/decisions":                  "OpenAI Shadow 路由决策列表",
 	"GET /admin/ops/openai-route-shadow/stats":                      "OpenAI Shadow 路由决策统计",
 	"GET /admin/ops/openai-route-shadow/health":                     "OpenAI Shadow 路由审计健康状态",

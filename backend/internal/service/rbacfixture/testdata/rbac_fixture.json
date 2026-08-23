@@ -3357,6 +3357,33 @@
       "description": "GET /admin/redeem-codes/classification-anomalies",
       "sort_order": 12,
       "status": "active"
+    },
+    {
+      "id": 447,
+      "group": "运维监控",
+      "path": "/admin/ops/channel-monitoring",
+      "method": "GET",
+      "description": "GET /admin/ops/channel-monitoring",
+      "sort_order": 54,
+      "status": "active"
+    },
+    {
+      "id": 448,
+      "group": "运维监控",
+      "path": "/admin/ops/openai-route-shadow/stats",
+      "method": "GET",
+      "description": "GET /admin/ops/openai-route-shadow/stats",
+      "sort_order": 55,
+      "status": "active"
+    },
+    {
+      "id": 449,
+      "group": "运维监控",
+      "path": "/admin/ops/openai-route-shadow/health",
+      "method": "GET",
+      "description": "GET /admin/ops/openai-route-shadow/health",
+      "sort_order": 56,
+      "status": "active"
     }
   ]
 }

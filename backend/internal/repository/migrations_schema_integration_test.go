@@ -146,6 +146,21 @@ WHERE table_schema = 'public'
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key='service_status_public_enabled'`).Scan(&publicStatusEnabled))
 	require.Equal(t, "false", statusEnabled)
 	require.Equal(t, "false", publicStatusEnabled)
+	var channelMonitoringAPI int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM admin_apis WHERE method='GET' AND path IN ('/admin/ops/channel-monitoring','/admin/ops/openai-route-shadow/stats','/admin/ops/openai-route-shadow/health') AND status='active'`).Scan(&channelMonitoringAPI))
+	require.Equal(t, 3, channelMonitoringAPI)
+	var opsRoleID, opsMenuID int64
+	require.NoError(t, tx.QueryRowContext(context.Background(), `INSERT INTO admin_roles(name,description,is_super_admin,status) VALUES('integration_ops_monitor','',FALSE,'active') RETURNING id`).Scan(&opsRoleID))
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT id FROM admin_menus WHERE permission_key='admin:ops'`).Scan(&opsMenuID))
+	_, err := tx.ExecContext(context.Background(), `INSERT INTO admin_role_menus(role_id,menu_id) VALUES($1,$2)`, opsRoleID, opsMenuID)
+	require.NoError(t, err)
+	rbacMigration, err := fs.ReadFile(embeddedmigrations.FS, "203_grant_channel_monitoring_rbac.sql")
+	require.NoError(t, err)
+	_, err = tx.ExecContext(context.Background(), string(rbacMigration))
+	require.NoError(t, err)
+	var grantedOpsAPIs int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM admin_role_apis ra JOIN admin_apis a ON a.id=ra.api_id WHERE ra.role_id=$1 AND a.path IN ('/admin/ops/channel-monitoring','/admin/ops/openai-route-shadow/stats','/admin/ops/openai-route-shadow/health')`, opsRoleID).Scan(&grantedOpsAPIs))
+	require.Equal(t, 3, grantedOpsAPIs)
 	var catalogProducts, builderPassBindings, legacyBindings, nonHTTPComponents int
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM service_status_products WHERE enabled=TRUE`).Scan(&catalogProducts))
 	require.Equal(t, 7, catalogProducts)

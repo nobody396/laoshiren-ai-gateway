@@ -398,6 +398,15 @@
   --chart-12: 216 158 130; /* #d89e82 */
 }
 
+/* Service Status semantic tones. Public and operator status surfaces share
+ * these names so state colours never drift between components. */
+.service-status-tone-operational { color: rgb(var(--color-success)); }
+.service-status-tone-degraded_performance { color: rgb(var(--color-warning)); }
+.service-status-tone-partial_outage { color: rgb(var(--color-terracotta)); }
+.service-status-tone-major_outage { color: rgb(var(--color-danger)); }
+.service-status-tone-maintenance { color: rgb(var(--color-indigo-600)); }
+.service-status-tone-monitoring { color: rgb(var(--color-slate-600)); }
+
 /* ─────────────────────────────────────────────────────────────
  * Motion — 时长与缓动的单一事实源
  *

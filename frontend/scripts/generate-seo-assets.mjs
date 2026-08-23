@@ -49,7 +49,26 @@ const homeRoute = {
 const publicRouteOverrides = new Map([
   ['/enterprise', { slug: 'enterprise-ai-api-gateway', title: '企业 AI API 网关 - 老实人AI', priority: 0.95, changefreq: 'weekly', ogType: 'website', schemaType: 'SoftwareApplication' }],
   ['/security', { slug: 'security', title: '安全与隐私 - 老实人AI', priority: 0.8, changefreq: 'monthly', ogType: 'website', schemaType: 'WebPage' }],
-  ['/status', { slug: 'sla-support', title: '服务状态 - 老实人AI', priority: 0.75, changefreq: 'daily', ogType: 'website', schemaType: 'WebPage' }],
+  ['/status', {
+    title: '服务状态 - 老实人AI',
+    description: '查看老实人AI OpenAI / Codex、Claude、Grok、Gemini 与 Builder Pass 的公开服务可用性、更新时间和受影响范围。',
+    priority: 0.75,
+    changefreq: 'daily',
+    ogType: 'website',
+    schemaType: 'WebPage',
+    staticHtml: `
+      <main class="seo-static-content">
+        <h1>老实人AI 服务状态</h1>
+        <p>这里展示 OpenAI / Codex、Claude、Grok、Gemini 与 Builder Pass 的公开服务可用性、最近更新时间和受影响范围。</p>
+        <p>实时状态不可用或尚未公开时，页面会保留服务排查与支持说明，不会把缺少证据误报为运行正常。</p>
+        <nav aria-label="服务状态相关页面">
+          <ul>
+            <li><a href="/status">查看实时服务状态</a></li>
+            <li><a href="/docs">查看接入与排查文档</a></li>
+          </ul>
+        </nav>
+      </main>`,
+  }],
   ['/legal/terms', { slug: 'legal-terms', title: '服务条款 - 老实人AI', description: '老实人AI 服务条款，说明账号、API Key、计费、上游服务、地区声明、责任边界和条款更新规则。', priority: 0.7, changefreq: 'monthly', ogType: 'website', schemaType: 'WebPage' }],
   ['/legal/usage-policy', { slug: 'legal-usage-policy', title: '使用政策 - 老实人AI', description: '老实人AI 使用政策，说明禁止行为、安全边界、隐私保护、高风险使用、下游用户管理和违规处理规则。', priority: 0.7, changefreq: 'monthly', ogType: 'website', schemaType: 'WebPage' }],
   ['/legal/supported-regions', { slug: 'legal-supported-regions', title: '支持的国家和地区 - 老实人AI', description: '老实人AI 支持的国家和地区说明，明确中国大陆地区不支持使用以及地区、制裁、出口管制和上游政策限制。', priority: 0.7, changefreq: 'monthly', ogType: 'website', schemaType: 'WebPage' }],
@@ -83,8 +102,8 @@ const routes = [
 ]
 
 for (const [path, override] of publicRouteOverrides) {
-  const doc = docsBySlug.get(override.slug)
-  const markdown = readMarkdown(override.slug)
+  const doc = override.slug ? docsBySlug.get(override.slug) : undefined
+  const markdown = override.slug ? readMarkdown(override.slug) : ''
   routes.push({
     path,
     title: override.title,
@@ -94,7 +113,7 @@ for (const [path, override] of publicRouteOverrides) {
     ogType: override.ogType,
     schemaType: override.schemaType,
     dateModified: override.lastModified || doc?.lastModified || docsLastModified,
-    staticHtml: markdownToStaticHtml(markdown, doc?.title || override.title),
+    staticHtml: override.staticHtml || markdownToStaticHtml(markdown, doc?.title || override.title),
     faq: extractFaq(markdown),
   })
 }

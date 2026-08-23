@@ -4,11 +4,13 @@ import ServiceStatusView from '../ServiceStatusView.vue'
 
 const mocks = vi.hoisted(() => ({
   getServiceStatus: vi.fn(),
+  getPublicIncidents: vi.fn(),
   loadMarkdown: vi.fn()
 }))
 
 vi.mock('@/api/serviceStatus', () => ({
-  getServiceStatus: (...args: unknown[]) => mocks.getServiceStatus(...args)
+  getServiceStatus: (...args: unknown[]) => mocks.getServiceStatus(...args),
+  getPublicIncidents: (...args: unknown[]) => mocks.getPublicIncidents(...args)
 }))
 
 vi.mock('@/docs/config', () => ({
@@ -84,6 +86,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.loadMarkdown.mockResolvedValue('# 服务支持说明')
   mocks.getServiceStatus.mockResolvedValue(snapshot())
+  mocks.getPublicIncidents.mockResolvedValue({ enabled: false, generated_at: new Date().toISOString(), incidents: [] })
 })
 
 afterEach(() => vi.useRealTimers())
@@ -96,6 +99,15 @@ describe('ServiceStatusView', () => {
     for (const [, label] of statuses) expect(wrapper.text()).toContain(label)
     expect(wrapper.text().indexOf('OpenAI / Codex')).toBeLessThan(wrapper.text().indexOf('其他服务'))
     expect(wrapper.find('[data-test="service-status-live"]').exists()).toBe(true)
+  })
+
+  it('renders only the sanitized public incident timeline', async () => {
+    mocks.getPublicIncidents.mockResolvedValue({ enabled: true, generated_at: new Date().toISOString(), incidents: [{ id: 'public-id', phase: 'monitoring', started_at: new Date().toISOString(), affected_products: ['Codex API'], timeline: [{ phase: 'monitoring', message: '相关服务已经恢复，用户无需进行额外操作。', published_at: new Date().toISOString() }] }] })
+    const wrapper = mountView()
+    await flushPromises()
+    expect(wrapper.text()).toContain('事件时间线')
+    expect(wrapper.text()).toContain('相关服务已经恢复，用户无需进行额外操作。')
+    expect(wrapper.text()).not.toContain('supplier')
   })
 
   it('shows only affected model details for a partial model impact', async () => {

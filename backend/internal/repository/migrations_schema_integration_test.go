@@ -151,6 +151,27 @@ WHERE table_schema = 'public'
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key='service_status_public_enabled'`).Scan(&publicStatusEnabled))
 	require.Equal(t, "false", statusEnabled)
 	require.Equal(t, "false", publicStatusEnabled)
+
+	// migration 206: Incident Control is additive, auditable, and default-off.
+	requireColumn(t, tx, "reliability_incident_candidates", "candidate_key", "character varying", 120, false)
+	requireColumn(t, tx, "reliability_incident_candidates", "last_reconciled_at", "timestamp with time zone", 0, true)
+	requireColumn(t, tx, "reliability_incidents", "public_id", "character varying", 36, false)
+	requireColumn(t, tx, "reliability_incidents", "phase", "character varying", 24, false)
+	requireColumn(t, tx, "reliability_incidents", "last_reconciled_at", "timestamp with time zone", 0, true)
+	requireColumn(t, tx, "reliability_incidents", "evidence_gap", "boolean", 0, false)
+	requireColumn(t, tx, "reliability_incident_products", "current_status", "character varying", 32, false)
+	requireColumn(t, tx, "reliability_incident_impact_segments", "started_at", "timestamp with time zone", 0, false)
+	requireColumn(t, tx, "reliability_incident_observation_links", "observation_id", "bigint", 0, false)
+	requireColumn(t, tx, "reliability_incident_public_timeline", "message", "character varying", 1000, false)
+	requireColumn(t, tx, "reliability_incident_audit_log", "after_state", "jsonb", 0, false)
+	requireColumn(t, tx, "reliability_incident_settings_audit", "after_state", "jsonb", 0, false)
+	requireIndex(t, tx, "reliability_incident_impact_segments", "idx_reliability_incident_segments_one_open")
+	requireIndex(t, tx, "reliability_incident_public_timeline", "idx_reliability_incident_public_timeline")
+	var incidentsEnabled, incidentsPublicEnabled string
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key='reliability_incidents_enabled'`).Scan(&incidentsEnabled))
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key='reliability_incidents_public_enabled'`).Scan(&incidentsPublicEnabled))
+	require.Equal(t, "false", incidentsEnabled)
+	require.Equal(t, "false", incidentsPublicEnabled)
 	var channelMonitoringAPI int
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM admin_apis WHERE method='GET' AND path IN ('/admin/ops/channel-monitoring','/admin/ops/openai-route-shadow/stats','/admin/ops/openai-route-shadow/health') AND status='active'`).Scan(&channelMonitoringAPI))
 	require.Equal(t, 3, channelMonitoringAPI)
@@ -173,6 +194,13 @@ WHERE table_schema = 'public'
 	var grantedShadowDecision int
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM admin_role_apis ra JOIN admin_apis a ON a.id=ra.api_id WHERE ra.role_id=$1 AND a.method='GET' AND a.path='/admin/ops/openai-route-shadow/decisions'`, opsRoleID).Scan(&grantedShadowDecision))
 	require.Equal(t, 1, grantedShadowDecision)
+	incidentRBACMigration, err := fs.ReadFile(embeddedmigrations.FS, "207_grant_incident_control_rbac.sql")
+	require.NoError(t, err)
+	_, err = tx.ExecContext(context.Background(), string(incidentRBACMigration))
+	require.NoError(t, err)
+	var grantedIncidentAPIs int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM admin_role_apis ra JOIN admin_apis a ON a.id=ra.api_id WHERE ra.role_id=$1 AND a.path LIKE '/admin/ops/incidents%'`, opsRoleID).Scan(&grantedIncidentAPIs))
+	require.Equal(t, 8, grantedIncidentAPIs)
 	var catalogProducts, builderPassBindings, legacyBindings, nonHTTPComponents int
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM service_status_products WHERE enabled=TRUE`).Scan(&catalogProducts))
 	require.Equal(t, 7, catalogProducts)

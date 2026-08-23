@@ -223,6 +223,14 @@ func registerOpsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 			ops.GET("/service-status/settings", h.Status.GetSettings)
 			ops.PUT("/service-status/settings", h.Status.UpdateSettings)
 			ops.POST("/service-status/products/:code/overrides", h.Status.CreateOverride)
+			ops.GET("/incidents", h.Status.GetAdminIncidents)
+			ops.PUT("/incidents/settings", h.Status.UpdateIncidentSettings)
+			ops.POST("/incidents/candidates/:id/confirm", h.Status.ConfirmIncidentCandidate)
+			ops.POST("/incidents/candidates/:id/dismiss", h.Status.DismissIncidentCandidate)
+			ops.POST("/incidents/:id/transition", h.Status.TransitionIncident)
+			ops.POST("/incidents/:id/updates", h.Status.AddIncidentUpdate)
+			ops.POST("/incidents/:id/public-updates", h.Status.PublishIncidentUpdate)
+			ops.POST("/incidents/:id/evidence-gap/acknowledge", h.Status.AcknowledgeIncidentEvidenceGap)
 		}
 
 		// Alerts (rules + events)

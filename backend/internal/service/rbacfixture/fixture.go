@@ -522,6 +522,14 @@ func BaselineAPIs() []*service.AdminAPI {
 	add("GET", "/admin/ops/openai-route-shadow/stats", 53, 55)
 	add("GET", "/admin/ops/openai-route-shadow/health", 53, 56)
 	add("GET", "/admin/ops/openai-route-shadow/decisions", 53, 57)
+	add("GET", "/admin/ops/incidents", 53, 58)
+	add("PUT", "/admin/ops/incidents/settings", 53, 59)
+	add("POST", "/admin/ops/incidents/candidates/:id/confirm", 53, 60)
+	add("POST", "/admin/ops/incidents/candidates/:id/dismiss", 53, 61)
+	add("POST", "/admin/ops/incidents/:id/transition", 53, 62)
+	add("POST", "/admin/ops/incidents/:id/updates", 53, 63)
+	add("POST", "/admin/ops/incidents/:id/public-updates", 53, 64)
+	add("POST", "/admin/ops/incidents/:id/evidence-gap/acknowledge", 53, 65)
 
 	return out
 }

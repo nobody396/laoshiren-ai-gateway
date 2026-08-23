@@ -49,6 +49,7 @@ func ReliabilityRouteFingerprint(platform string, accountID int64, endpointHash,
 // ReliabilityObservation is a normalized, non-sensitive fact. It deliberately
 // has no prompt, response body, credential, account name, or raw URL field.
 type ReliabilityObservation struct {
+	ID             int64
 	IdempotencyKey string
 	FactType       ReliabilityFactType
 	Source         string
@@ -183,6 +184,9 @@ type ReliabilityEvidenceQuery struct {
 	AnyModelPatterns     []string
 	AttemptScope         *ReliabilityEvidenceAttemptScope
 	ProbeScope           *ReliabilityEvidenceProbeScope
+	Outcomes             []ReliabilityOutcome
+	BeforeObservedAt     *time.Time
+	BeforeID             int64
 }
 
 type ReliabilityEvidenceSnapshot struct {
@@ -480,6 +484,30 @@ func (s *ReliabilityEvidenceService) snapshotAtPendingCutoff(ctx context.Context
 	normalized.AnyPlatforms = normalizeReliabilityStringSelectors(normalized.AnyPlatforms)
 	normalized.AnyRouteFingerprints = normalizeReliabilityStringSelectors(normalized.AnyRouteFingerprints)
 	normalized.AnyModelPatterns = normalizeReliabilityStringSelectors(normalized.AnyModelPatterns)
+	seenOutcomes := map[ReliabilityOutcome]struct{}{}
+	outcomes := make([]ReliabilityOutcome, 0, len(normalized.Outcomes))
+	for _, outcome := range normalized.Outcomes {
+		switch outcome {
+		case ReliabilityOutcomeSuccess, ReliabilityOutcomeFailure, ReliabilityOutcomeRecovered, ReliabilityOutcomeExcluded:
+		default:
+			return nil, fmt.Errorf("reliability evidence outcome selector is invalid")
+		}
+		if _, exists := seenOutcomes[outcome]; exists {
+			continue
+		}
+		seenOutcomes[outcome] = struct{}{}
+		outcomes = append(outcomes, outcome)
+	}
+	normalized.Outcomes = outcomes
+	if normalized.BeforeObservedAt != nil {
+		value := normalized.BeforeObservedAt.UTC()
+		if value.IsZero() || normalized.BeforeID <= 0 {
+			return nil, fmt.Errorf("reliability evidence cursor is invalid")
+		}
+		normalized.BeforeObservedAt = &value
+	} else if normalized.BeforeID != 0 {
+		return nil, fmt.Errorf("reliability evidence cursor is invalid")
+	}
 	if normalized.AttemptScope != nil {
 		scope := *normalized.AttemptScope
 		scope.Protocol = strings.ToLower(strings.TrimSpace(scope.Protocol))

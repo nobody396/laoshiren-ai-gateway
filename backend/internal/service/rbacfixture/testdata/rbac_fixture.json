@@ -3393,6 +3393,78 @@
       "description": "GET /admin/ops/openai-route-shadow/decisions",
       "sort_order": 57,
       "status": "active"
+    },
+    {
+      "id": 451,
+      "group": "运维监控",
+      "path": "/admin/ops/incidents",
+      "method": "GET",
+      "description": "GET /admin/ops/incidents",
+      "sort_order": 58,
+      "status": "active"
+    },
+    {
+      "id": 452,
+      "group": "运维监控",
+      "path": "/admin/ops/incidents/settings",
+      "method": "PUT",
+      "description": "PUT /admin/ops/incidents/settings",
+      "sort_order": 59,
+      "status": "active"
+    },
+    {
+      "id": 453,
+      "group": "运维监控",
+      "path": "/admin/ops/incidents/candidates/:id/confirm",
+      "method": "POST",
+      "description": "POST /admin/ops/incidents/candidates/:id/confirm",
+      "sort_order": 60,
+      "status": "active"
+    },
+    {
+      "id": 454,
+      "group": "运维监控",
+      "path": "/admin/ops/incidents/candidates/:id/dismiss",
+      "method": "POST",
+      "description": "POST /admin/ops/incidents/candidates/:id/dismiss",
+      "sort_order": 61,
+      "status": "active"
+    },
+    {
+      "id": 455,
+      "group": "运维监控",
+      "path": "/admin/ops/incidents/:id/transition",
+      "method": "POST",
+      "description": "POST /admin/ops/incidents/:id/transition",
+      "sort_order": 62,
+      "status": "active"
+    },
+    {
+      "id": 456,
+      "group": "运维监控",
+      "path": "/admin/ops/incidents/:id/updates",
+      "method": "POST",
+      "description": "POST /admin/ops/incidents/:id/updates",
+      "sort_order": 63,
+      "status": "active"
+    },
+    {
+      "id": 457,
+      "group": "运维监控",
+      "path": "/admin/ops/incidents/:id/public-updates",
+      "method": "POST",
+      "description": "POST /admin/ops/incidents/:id/public-updates",
+      "sort_order": 64,
+      "status": "active"
+    },
+    {
+      "id": 458,
+      "group": "运维监控",
+      "path": "/admin/ops/incidents/:id/evidence-gap/acknowledge",
+      "method": "POST",
+      "description": "POST /admin/ops/incidents/:id/evidence-gap/acknowledge",
+      "sort_order": 65,
+      "status": "active"
     }
   ]
 }

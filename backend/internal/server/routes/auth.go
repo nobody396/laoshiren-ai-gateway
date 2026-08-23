@@ -114,6 +114,7 @@ func RegisterAuthRoutes(
 	}
 	if h.Status != nil {
 		v1.GET("/service-status", h.Status.GetPublicStatus)
+		v1.GET("/service-incidents", h.Status.GetPublicIncidents)
 	}
 
 	// 公开模型价格目录（无需认证，独立价格页使用）

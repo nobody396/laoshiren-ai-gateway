@@ -112,6 +112,20 @@ func (s *ReliabilityEvidenceService) listPostgres(ctx context.Context, query *Re
 		args = append(args, *query.CustomerImpact)
 		where = append(where, fmt.Sprintf("customer_impact = $%d", len(args)))
 	}
+	if len(query.Outcomes) > 0 {
+		values := make([]string, 0, len(query.Outcomes))
+		for _, outcome := range query.Outcomes {
+			values = append(values, string(outcome))
+		}
+		args = append(args, pq.Array(values))
+		where = append(where, fmt.Sprintf("outcome = ANY($%d)", len(args)))
+	}
+	if query.BeforeObservedAt != nil {
+		args = append(args, *query.BeforeObservedAt)
+		observedArg := len(args)
+		args = append(args, query.BeforeID)
+		where = append(where, fmt.Sprintf("(observed_at,id) < ($%d,$%d)", observedArg, len(args)))
+	}
 	selectors := make([]string, 0, 4)
 	if len(query.AnyGroupIDs) > 0 {
 		args = append(args, pq.Array(query.AnyGroupIDs))
@@ -181,7 +195,7 @@ func (s *ReliabilityEvidenceService) listPostgres(ctx context.Context, query *Re
 	args = append(args, query.Limit)
 	rows, err := s.db.QueryContext(ctx, `
 SELECT
-  idempotency_key, fact_type, source, source_id,
+  id, idempotency_key, fact_type, source, source_id,
   request_id, client_request_id, user_id, group_id, access_group_id, account_id,
   platform, model, request_class, protocol, transport, endpoint_hash, route_fingerprint, routing_fingerprint,
   outcome, status_code, error_owner, exclusion_reason, customer_impact,
@@ -200,7 +214,7 @@ LIMIT $`+fmt.Sprint(len(args)), args...)
 		var factType, outcome string
 		var userID, groupID, accountID, statusCode sql.NullInt64
 		if err := rows.Scan(
-			&item.IdempotencyKey, &factType, &item.Source, &item.SourceID,
+			&item.ID, &item.IdempotencyKey, &factType, &item.Source, &item.SourceID,
 			&item.RequestID, &item.ClientRequestID, &userID, &groupID, &item.AccessGroupID, &accountID,
 			&item.Platform, &item.Model, &item.RequestClass, &item.Protocol, &item.Transport, &item.EndpointHash, &item.RouteFingerprint, &item.RoutingFingerprint,
 			&outcome, &statusCode, &item.ErrorOwner, &item.ExclusionReason, &item.CustomerImpact,

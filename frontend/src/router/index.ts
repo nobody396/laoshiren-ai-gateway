@@ -637,6 +637,17 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/incidents',
+    name: 'AdminIncidents',
+    component: () => import('@/views/admin/IncidentsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      permission: 'admin:ops',
+      title: 'Incident 管理'
+    }
+  },
+  {
     path: '/admin/business-finance',
     name: 'AdminBusinessFinance',
     component: () => import('@/views/admin/BusinessFinanceView.vue'),

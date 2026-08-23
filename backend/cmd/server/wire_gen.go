@@ -320,7 +320,8 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	clientSetupService := service.NewClientSetupService(apiKeyService, ssoTicketCache)
 	resourceHandler := handler.NewResourceHandler(downloadResourceService, clientSetupService)
 	statusControlService := service.NewStatusControlService(db, settingRepository, reliabilityEvidenceService)
-	statusHandler := handler.NewStatusHandler(statusControlService)
+	incidentControlService := service.NewIncidentControlService(db, settingRepository, statusControlService, reliabilityEvidenceService)
+	statusHandler := handler.ProvideStatusHandler(statusControlService, incidentControlService)
 	idempotencyCoordinator := service.ProvideIdempotencyCoordinator(idempotencyRepository, configConfig)
 	idempotencyCleanupService := service.ProvideIdempotencyCleanupService(idempotencyRepository, configConfig)
 	pendingAuthSessionCleanupService := service.ProvidePendingAuthSessionCleanupService(identityService)
@@ -342,7 +343,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	opsScheduledReportService := service.ProvideOpsScheduledReportService(opsService, userService, emailService, redisClient, configConfig)
 	scheduledTestRunnerService := service.ProvideScheduledTestRunnerService(scheduledTestPlanRepository, scheduledTestService, accountTestService, rateLimitService, configConfig)
 	affiliateAgentActivationScheduler := service.NewAffiliateAgentActivationScheduler(affiliateAgentService)
-	lifecycle := service.ProvideRootLifecycle(configConfig, accountRepository, pricingService, apiKeyService, billingCacheService, emailQueueService, subscriptionService, accountingWorker, usageRecordWorkerPool, openAIRouteAuditService, openAIRouteObservationCollector, reliabilityEvidenceService, statusControlService, timingWheelService, dashboardAggregationService, deferredService, schedulerSnapshotService, concurrencyService, userMessageQueueService, tokenRefreshService, accountExpiryService, subscriptionExpiryService, usageCleanupService, agentLevelEvaluatorService, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, idempotencyCleanupService, scheduledTestRunnerService, downloadResourceService, backupService, pendingAuthSessionCleanupService, affiliateRewardService, affiliateAgentActivationScheduler, nativeCheckoutService)
+	lifecycle := service.ProvideRootLifecycle(configConfig, accountRepository, pricingService, apiKeyService, billingCacheService, emailQueueService, subscriptionService, accountingWorker, usageRecordWorkerPool, openAIRouteAuditService, openAIRouteObservationCollector, reliabilityEvidenceService, statusControlService, incidentControlService, timingWheelService, dashboardAggregationService, deferredService, schedulerSnapshotService, concurrencyService, userMessageQueueService, tokenRefreshService, accountExpiryService, subscriptionExpiryService, usageCleanupService, agentLevelEvaluatorService, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, idempotencyCleanupService, scheduledTestRunnerService, downloadResourceService, backupService, pendingAuthSessionCleanupService, affiliateRewardService, affiliateAgentActivationScheduler, nativeCheckoutService)
 	v := provideCleanup(client, redisClient, lifecycle)
 	application := &Application{
 		Server:    httpServer,

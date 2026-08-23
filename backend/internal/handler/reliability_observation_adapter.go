@@ -265,18 +265,25 @@ func reliabilityBoundedExternalID(value string, maxBytes int) string {
 
 func reliabilityProtocol(c *gin.Context) string {
 	endpoint := strings.ToLower(strings.TrimSpace(GetInboundEndpoint(c)))
+	transportPrefix := ""
+	if service.GetOpenAIClientTransport(c) == service.OpenAIClientTransportWS {
+		transportPrefix = "websocket_"
+	}
 	switch {
 	case strings.Contains(endpoint, "/responses"):
-		return "responses"
+		return transportPrefix + "responses"
 	case strings.Contains(endpoint, "/messages"):
-		return "messages"
+		return transportPrefix + "messages"
 	case strings.Contains(endpoint, "/chat/completions"):
-		return "chat_completions"
+		return transportPrefix + "chat_completions"
 	case strings.Contains(endpoint, "/images"):
 		return "images"
 	case strings.Contains(endpoint, "/videos"):
 		return "videos"
 	default:
+		if transportPrefix != "" {
+			return "websocket"
+		}
 		return "http"
 	}
 }

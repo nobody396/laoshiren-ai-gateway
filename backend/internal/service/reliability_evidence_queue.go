@@ -14,9 +14,11 @@ const (
 )
 
 type reliabilityEvidenceJob struct {
-	final   *ReliabilityFinalOutcome
-	attempt *ReliabilityAttemptOutcome
-	probe   *ReliabilityProbeOutcome
+	final      *ReliabilityFinalOutcome
+	attempt    *ReliabilityAttemptOutcome
+	probe      *ReliabilityProbeOutcome
+	pendingID  uint64
+	observedAt time.Time
 }
 
 func (s *ReliabilityEvidenceService) Name() string { return "reliability-evidence" }
@@ -96,6 +98,10 @@ func (s *ReliabilityEvidenceService) enqueueReliabilityEvidence(job reliabilityE
 		return false
 	}
 	s.queueDepth.Add(1)
+	job.pendingID = s.nextPendingID.Add(1)
+	job.observedAt = reliabilityEvidenceJobObservedAt(job)
+	s.trackPendingReliabilityEvidence(job)
+	s.publishedPendingID.Store(job.pendingID)
 	select {
 	case s.queue <- job:
 		s.enqueued.Add(1)
@@ -103,6 +109,7 @@ func (s *ReliabilityEvidenceService) enqueueReliabilityEvidence(job reliabilityE
 	default:
 		s.queueDepth.Add(-1)
 		s.dropped.Add(1)
+		s.untrackPendingReliabilityEvidence([]reliabilityEvidenceJob{job})
 		s.maybeLogReliabilityEvidenceDrop()
 		return false
 	}
@@ -136,8 +143,39 @@ func (s *ReliabilityEvidenceService) runReliabilityEvidenceWorker(queue <-chan r
 			}
 		}
 		s.flushReliabilityEvidenceBatch(batch)
+		s.untrackPendingReliabilityEvidence(batch)
 		s.inFlight.Add(-int64(len(batch)))
 	}
+}
+
+func reliabilityEvidenceJobObservedAt(job reliabilityEvidenceJob) time.Time {
+	switch {
+	case job.final != nil && !job.final.ObservedAt.IsZero():
+		return job.final.ObservedAt
+	case job.attempt != nil && !job.attempt.ObservedAt.IsZero():
+		return job.attempt.ObservedAt
+	case job.probe != nil && !job.probe.ObservedAt.IsZero():
+		return job.probe.ObservedAt
+	default:
+		return time.Now()
+	}
+}
+
+func (s *ReliabilityEvidenceService) trackPendingReliabilityEvidence(job reliabilityEvidenceJob) {
+	s.pendingMu.Lock()
+	if s.pendingObserved == nil {
+		s.pendingObserved = make(map[uint64]time.Time)
+	}
+	s.pendingObserved[job.pendingID] = job.observedAt
+	s.pendingMu.Unlock()
+}
+
+func (s *ReliabilityEvidenceService) untrackPendingReliabilityEvidence(batch []reliabilityEvidenceJob) {
+	s.pendingMu.Lock()
+	for _, job := range batch {
+		delete(s.pendingObserved, job.pendingID)
+	}
+	s.pendingMu.Unlock()
 }
 
 func (s *ReliabilityEvidenceService) flushReliabilityEvidenceBatch(batch []reliabilityEvidenceJob) {

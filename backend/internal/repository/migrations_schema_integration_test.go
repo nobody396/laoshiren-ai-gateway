@@ -124,6 +124,45 @@ WHERE table_schema = 'public'
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key = 'reliability_observation_enabled'`).Scan(&reliabilityEnabled))
 	require.Equal(t, "false", reliabilityEnabled)
 
+	// migration 202: explicit Status Catalog and default-off current state.
+	requireColumn(t, tx, "service_status_families", "code", "character varying", 64, false)
+	requireIndex(t, tx, "reliability_observations", "idx_reliability_observations_platform_model_observed")
+	requireColumn(t, tx, "service_status_products", "critical", "boolean", 0, false)
+	requireColumn(t, tx, "service_status_components", "access_mode", "character varying", 16, false)
+	requireColumn(t, tx, "service_status_bindings", "binding_key", "character varying", 180, false)
+	requireColumn(t, tx, "service_status_bindings", "group_name", "character varying", 100, false)
+	requireColumn(t, tx, "service_status_bindings", "route_fingerprint", "character varying", 32, false)
+	requireColumn(t, tx, "service_status_component_current", "computed_status", "character varying", 32, false)
+	requireColumn(t, tx, "service_status_component_current", "recovery_confirmed_at", "timestamp with time zone", 0, true)
+	requireColumn(t, tx, "service_status_current", "effective_status", "character varying", 32, false)
+	requireColumn(t, tx, "service_status_current", "computed_reason", "character varying", 64, false)
+	requireColumn(t, tx, "service_status_current", "effective_reason", "character varying", 64, false)
+	requireColumn(t, tx, "service_status_current", "recovery_confirmed_at", "timestamp with time zone", 0, true)
+	requireColumn(t, tx, "service_status_overrides", "expires_at", "timestamp with time zone", 0, false)
+	requireIndex(t, tx, "service_status_products", "service_status_products_code_key")
+	requireIndex(t, tx, "service_status_bindings", "service_status_bindings_binding_key_key")
+	var statusEnabled, publicStatusEnabled string
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key='service_status_enabled'`).Scan(&statusEnabled))
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key='service_status_public_enabled'`).Scan(&publicStatusEnabled))
+	require.Equal(t, "false", statusEnabled)
+	require.Equal(t, "false", publicStatusEnabled)
+	var catalogProducts, builderPassBindings, legacyBindings, nonHTTPComponents int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM service_status_products WHERE enabled=TRUE`).Scan(&catalogProducts))
+	require.Equal(t, 7, catalogProducts)
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT COUNT(*)
+FROM service_status_bindings b
+JOIN service_status_components c ON c.id=b.component_id
+JOIN service_status_products p ON p.id=c.product_id
+WHERE p.code LIKE 'builder-pass-%' AND b.group_name <> ''`).Scan(&builderPassBindings))
+	require.Equal(t, 9, builderPassBindings, "GPT, Claude and Grok bindings must survive clean installs without pre-created groups")
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT COUNT(*) FROM service_status_bindings
+WHERE group_name ILIKE '%Apex%' OR group_name ILIKE '%Lite%' OR group_name ILIKE '%Ultra%'`).Scan(&legacyBindings))
+	require.Zero(t, legacyBindings)
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM service_status_components WHERE access_mode <> 'http'`).Scan(&nonHTTPComponents))
+	require.Zero(t, nonHTTPComponents)
+
 	// groups: Grok video billing controls (migration 173)
 	requireColumn(t, tx, "groups", "video_rate_independent", "boolean", 0, false)
 	requireColumn(t, tx, "groups", "video_rate_multiplier", "numeric", 0, false)

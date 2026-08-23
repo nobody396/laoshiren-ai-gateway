@@ -185,6 +185,29 @@ func TestGetReliabilityEvidenceSnapshotRejectsInvalidWindow(t *testing.T) {
 	require.ErrorContains(t, err, "window")
 }
 
+func TestGetReliabilityEvidenceSnapshotNormalizesAnySelectors(t *testing.T) {
+	now := time.Now()
+	repo := &reliabilityRepoStub{list: func(_ context.Context, query *ReliabilityEvidenceQuery) ([]*ReliabilityObservation, error) {
+		require.Equal(t, []int64{7}, query.AnyGroupIDs)
+		require.Equal(t, []int64{53}, query.AnyAccountIDs)
+		require.Equal(t, []string{"openai"}, query.AnyPlatforms)
+		require.Equal(t, []string{"0123456789abcdef0123456789abcdef"}, query.AnyRouteFingerprints)
+		require.Equal(t, []string{"gpt-*"}, query.AnyModelPatterns)
+		return nil, nil
+	}}
+	svc := newReliabilityEvidenceForTest(true, repo)
+	_, err := svc.Snapshot(context.Background(), &ReliabilityEvidenceQuery{
+		Start: now.Add(-time.Minute), End: now, AnyGroupIDs: []int64{0, 7, 7}, AnyAccountIDs: []int64{53, -1},
+		AnyPlatforms: []string{" OpenAI ", "openai"}, AnyRouteFingerprints: []string{"0123456789ABCDEF0123456789ABCDEF"}, AnyModelPatterns: []string{" GPT-* "},
+	})
+	require.NoError(t, err)
+}
+
+func TestReliabilityModelGlobToLikeEscapesSQLWildcards(t *testing.T) {
+	require.Equal(t, `gpt-%`, reliabilityModelGlobToLike("GPT-*"))
+	require.Equal(t, `model\_v_`, reliabilityModelGlobToLike("model_v?"))
+}
+
 func TestClaimProbeUsesDurableRepositoryWhenEnabled(t *testing.T) {
 	interval := time.Date(2026, 8, 22, 4, 0, 0, 0, time.UTC)
 	called := false
@@ -217,6 +240,7 @@ func TestReliabilityEvidenceQueueDropsWithoutBlockingWhenFull(t *testing.T) {
 	require.Equal(t, int64(1), stats.Enqueued)
 	require.Equal(t, int64(1), stats.Dropped)
 	require.Equal(t, int64(1), stats.QueueDepth)
+	require.NotNil(t, stats.OldestPendingAt)
 	require.False(t, stats.Ready)
 	close(svc.queue)
 }
@@ -229,6 +253,34 @@ func TestReliabilityEvidenceCompletenessIsNotReadyWhileWriteIsInFlight(t *testin
 	stats := svc.Completeness()
 	require.Equal(t, int64(1), stats.InFlight)
 	require.False(t, stats.Ready)
+}
+
+func TestReliabilityEvidenceCompletenessTracksOldestPendingWatermark(t *testing.T) {
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	repo := &reliabilityRepoStub{batch: func(_ context.Context, inputs []*ReliabilityObservation) (int64, error) {
+		close(entered)
+		<-release
+		return int64(len(inputs)), nil
+	}}
+	svc := newReliabilityEvidenceForTest(true, repo)
+	require.NoError(t, svc.Start(context.Background()))
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		require.NoError(t, svc.Stop(ctx))
+	})
+	observedAt := time.Now().Add(-2 * time.Second)
+	require.True(t, svc.SubmitFinalOutcome(&ReliabilityFinalOutcome{
+		RequestIdentity: "watermark", Platform: PlatformOpenAI, Model: "gpt-5.6", RequestClass: ReliabilityRequestClassText,
+		Protocol: "http", Outcome: ReliabilityOutcomeSuccess, ObservedAt: observedAt,
+	}))
+	<-entered
+	stats := svc.Completeness()
+	require.NotNil(t, stats.OldestPendingAt)
+	require.Equal(t, observedAt, *stats.OldestPendingAt)
+	close(release)
+	require.Eventually(t, func() bool { return svc.Completeness().OldestPendingAt == nil }, time.Second, 10*time.Millisecond)
 }
 
 func TestReliabilityEvidenceLifecycleControlsReadiness(t *testing.T) {

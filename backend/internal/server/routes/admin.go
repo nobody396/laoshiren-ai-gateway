@@ -217,6 +217,12 @@ func registerOpsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		ops.GET("/monthly-upstreams", h.Admin.Ops.GetMonthlyUpstreamProbeSnapshot)
 		ops.PUT("/monthly-upstreams/settings", h.Admin.Ops.UpdateMonthlyUpstreamProbeSettings)
 		ops.GET("/cost-accounting", h.Admin.Ops.GetCostAccounting)
+		if h.Status != nil {
+			ops.GET("/service-status", h.Status.GetAdminStatus)
+			ops.GET("/service-status/settings", h.Status.GetSettings)
+			ops.PUT("/service-status/settings", h.Status.UpdateSettings)
+			ops.POST("/service-status/products/:code/overrides", h.Status.CreateOverride)
+		}
 
 		// Alerts (rules + events)
 		ops.GET("/alert-rules", h.Admin.Ops.ListAlertRules)

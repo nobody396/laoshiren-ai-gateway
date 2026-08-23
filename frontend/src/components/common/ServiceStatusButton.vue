@@ -23,6 +23,6 @@ import Icon from '@/components/icons/Icon.vue'
 
 const { t } = useI18n()
 
-// 服务状态页 URL（与 HomeView 中使用的地址保持一致）
-const statusUrl = 'https://status.your-domain.example'
+// 使用站内公开状态页，避免外部占位域名和跨站状态不一致。
+const statusUrl = '/status'
 </script>

@@ -114,12 +114,11 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/status',
     name: 'Status',
-    component: () => import('@/views/PublicInfoView.vue'),
+    component: () => import('@/views/ServiceStatusView.vue'),
     meta: {
       requiresAuth: false,
       title: '服务状态',
-      description: '查看老实人AI 主站、API 健康检查、模型检测报告和异常反馈入口，用于判断 Claude Code、Codex 等接入链路状态。',
-      publicDocSlug: 'sla-support'
+      description: '查看老实人AI OpenAI / Codex、Claude、Grok、Gemini 与 Builder Pass 的实时公开可用性和受影响范围。'
     }
   },
   {

@@ -680,6 +680,7 @@ var ProviderSet = wire.NewSet(
 	NewReliabilityEvidenceService,
 	NewStatusControlService,
 	NewIncidentControlService,
+	NewCustomerTierService,
 	NewOpenAIRouteObservationCollector,
 	NewOAuthService,
 	NewOpenAIOAuthService,
@@ -856,6 +857,7 @@ func ProvideRootLifecycle(
 	reliabilityEvidence *ReliabilityEvidenceService,
 	statusControl *StatusControlService,
 	incidentControl *IncidentControlService,
+	customerTier *CustomerTierService,
 	timingWheel *TimingWheelService,
 	dashboardAggregation *DashboardAggregationService,
 	deferred *DeferredService,
@@ -882,6 +884,7 @@ func ProvideRootLifecycle(
 	affiliateActivation *AffiliateAgentActivationScheduler,
 	nativeCheckout *NativeCheckoutService,
 ) *Lifecycle {
+	incidentControl.SetCustomerTierSnapshotter(customerTier)
 	component := func(name string, start func(), stop func()) LifecycleComponent {
 		return LifecycleFunc{
 			ComponentName: name,
@@ -913,6 +916,7 @@ func ProvideRootLifecycle(
 		reliabilityEvidence,
 		statusControl,
 		incidentControl,
+		customerTier,
 		component("timing-wheel", timingWheel.Start, timingWheel.Stop),
 		component("dashboard-aggregation", dashboardAggregation.Start, nil),
 		component("deferred-writes", deferred.Start, deferred.Stop),

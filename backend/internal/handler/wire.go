@@ -153,6 +153,7 @@ func ProvideHandlers(
 	balanceAlertHandler *BalanceAlertHandler,
 	resourceHandler *ResourceHandler,
 	statusHandler *StatusHandler,
+	customerTierHandler *CustomerTierHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 	_ *service.PendingAuthSessionCleanupService,
@@ -182,6 +183,7 @@ func ProvideHandlers(
 		BalanceAlert:   balanceAlertHandler,
 		Resource:       resourceHandler,
 		Status:         statusHandler,
+		CustomerTier:   customerTierHandler,
 	}
 }
 
@@ -211,6 +213,7 @@ var ProviderSet = wire.NewSet(
 	NewBalanceAlertHandler,
 	NewResourceHandler,
 	ProvideStatusHandler,
+	NewCustomerTierHandler,
 	NewModelPricingHandler,
 	ProvideSettingHandler,
 

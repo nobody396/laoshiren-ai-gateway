@@ -116,7 +116,15 @@ func (s *IncidentControlService) ReconcileAt(ctx context.Context, now time.Time)
 			return err
 		}
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	if s.tierSnapshotter != nil && s.tierSnapshotter.CustomerTierSnapshotsEnabled(ctx) {
+		if err := s.tierSnapshotter.EnsureIncidentSnapshots(ctx, 0); err != nil {
+			return fmt.Errorf("freeze incident customer tiers: %w", err)
+		}
+	}
+	return nil
 }
 
 func (s *IncidentControlService) loadStatusProducts(ctx context.Context) ([]incidentStatusProduct, error) {

@@ -67,6 +67,7 @@ type Handlers struct {
 	BalanceAlert   *BalanceAlertHandler
 	Resource       *ResourceHandler
 	Status         *StatusHandler
+	CustomerTier   *CustomerTierHandler
 }
 
 // BuildInfo contains build-time information

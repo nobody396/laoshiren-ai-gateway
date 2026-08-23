@@ -424,6 +424,7 @@ func attributeUsageBillingMonthlyConsumption(
 		customerRateBPS   int32
 		partnerRateBPS    int32
 		confirmedMicros   int64
+		cycleID           int64
 		acquiredAt        time.Time
 	)
 	err := tx.QueryRowContext(ctx, `
@@ -464,6 +465,7 @@ func attributeUsageBillingMonthlyConsumption(
 			FROM candidate
 			WHERE c.id = candidate.id
 			RETURNING
+				c.id,
 				c.source_type,
 				c.affiliate_eligible,
 				c.affiliate_policy,
@@ -475,6 +477,7 @@ func attributeUsageBillingMonthlyConsumption(
 					- candidate.confirmed_consumption_micros AS confirmed_delta_micros
 		)
 		SELECT
+			id,
 			source_type,
 			affiliate_eligible,
 			affiliate_policy,
@@ -485,6 +488,7 @@ func attributeUsageBillingMonthlyConsumption(
 			GREATEST(0, confirmed_delta_micros)
 		FROM updated
 	`, *cmd.SubscriptionID, cmd.UserID, creditMicros).Scan(
+		&cycleID,
 		&sourceType,
 		&affiliateEligible,
 		&affiliatePolicy,
@@ -499,6 +503,14 @@ func attributeUsageBillingMonthlyConsumption(
 	}
 	if err != nil {
 		return 0, err
+	}
+	if confirmedMicros > 0 {
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO monthly_entitlement_consumptions(cycle_id,user_id,usage_log_id,usage_event_key,confirmed_amount_micros)
+			VALUES($1,$2,NULLIF($3::bigint,0),$4,$5) ON CONFLICT(usage_event_key) DO NOTHING`,
+			cycleID, cmd.UserID, cmd.UsageLogID, fmt.Sprintf("tier-monthly:%d:%s", cmd.UsageLogID, cmd.RequestID), confirmedMicros); err != nil {
+			return 0, err
+		}
 	}
 	if service.AffiliateSourceTracksQualification(sourceType) && confirmedMicros > 0 {
 		affiliatePolicyForEvent := service.AffiliateSourcePolicyNone

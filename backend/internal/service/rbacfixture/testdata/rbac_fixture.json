@@ -3384,6 +3384,15 @@
       "description": "GET /admin/ops/openai-route-shadow/health",
       "sort_order": 56,
       "status": "active"
+    },
+    {
+      "id": 450,
+      "group": "运维监控",
+      "path": "/admin/ops/openai-route-shadow/decisions",
+      "method": "GET",
+      "description": "GET /admin/ops/openai-route-shadow/decisions",
+      "sort_order": 57,
+      "status": "active"
     }
   ]
 }

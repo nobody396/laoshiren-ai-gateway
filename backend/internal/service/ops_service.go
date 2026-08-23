@@ -279,6 +279,18 @@ func sanitizeOpsUpstreamErrors(entry *OpsInsertErrorLogInput) error {
 		out := *ev
 
 		out.Platform = strings.TrimSpace(out.Platform)
+		out.EndpointHash = strings.ToLower(strings.TrimSpace(out.EndpointHash))
+		out.RoutingFingerprint = strings.ToLower(strings.TrimSpace(out.RoutingFingerprint))
+		out.UpstreamTransport = truncateString(strings.ToLower(strings.TrimSpace(out.UpstreamTransport)), 32)
+		if !reliabilityEndpointHashPattern.MatchString(out.EndpointHash) {
+			out.EndpointHash = ""
+		}
+		if !reliabilityRouteFingerprintPattern.MatchString(out.RoutingFingerprint) {
+			out.RoutingFingerprint = ""
+		}
+		if out.AccessGroupID < 0 {
+			out.AccessGroupID = 0
+		}
 		out.UpstreamRequestID = truncateString(strings.TrimSpace(out.UpstreamRequestID), 128)
 		out.Kind = truncateString(strings.TrimSpace(out.Kind), 64)
 

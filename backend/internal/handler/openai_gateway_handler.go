@@ -517,6 +517,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		sessionHash = ensureOpenAIPoolModeSessionHash(sessionHash, account)
 		reqLog.Debug("openai.account_selected", zap.Int64("account_id", account.ID), zap.String("account_name", account.Name))
 		setOpsSelectedAccount(c, account.ID, account.Platform)
+		setOpsSelectedOpenAIRoute(c, scheduleDecision)
 
 		accountReleaseFunc, acquired := h.acquireResponsesAccountSlot(c, apiKey.GroupID, sessionHash, selection, reqStream, &streamStarted, reqLog)
 		if !acquired {
@@ -957,6 +958,7 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 			zap.Bool("adaptive_emergency", scheduleDecision.AdaptiveEmergency),
 		)
 		setOpsSelectedAccount(c, account.ID, account.Platform)
+		setOpsSelectedOpenAIRoute(c, scheduleDecision)
 
 		accountReleaseFunc, acquired := h.acquireResponsesAccountSlot(c, apiKey.GroupID, sessionHash, selection, reqStream, &streamStarted, reqLog)
 		if !acquired {

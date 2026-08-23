@@ -338,6 +338,26 @@ type openAIRouteShadowEvaluatorStub struct {
 	err      error
 }
 
+type openAIRouteReliabilityCacheMissEvaluator struct {
+	adapter *ReliabilityEvidenceOpenAIRouteAdapter
+}
+
+func (e *openAIRouteReliabilityCacheMissEvaluator) EvaluateShadow(_ context.Context, req OpenAIRouteShadowRequest) (OpenAIRouteShadowDecision, error) {
+	keys := make([]OpenAIRouteKey, 0, len(req.Candidates))
+	for _, candidate := range req.Candidates {
+		key, err := NewOpenAIRouteKey(candidate.Account, req.GroupID, req.Model, req.RequestClass, candidate.Endpoint, candidate.Transport)
+		if err != nil {
+			return OpenAIRouteShadowDecision{}, err
+		}
+		keys = append(keys, key)
+	}
+	e.adapter.Lookup(OpenAIRouteReliabilityEvidenceRequest{
+		Keys: keys, GroupID: req.GroupID, AccessGroupID: req.AccessGroupID, Model: req.Model,
+		RequestClass: req.RequestClass, InboundProtocol: req.InboundProtocol, Now: time.Now().UTC(),
+	})
+	return OpenAIRouteShadowDecision{Evaluated: true, Mode: OpenAIRoutePolicyShadow, Reason: "cache_miss_neutral"}, nil
+}
+
 func (s *openAIRouteShadowEvaluatorStub) EvaluateShadow(_ context.Context, req OpenAIRouteShadowRequest) (OpenAIRouteShadowDecision, error) {
 	s.request = req
 	return s.decision, s.err
@@ -401,6 +421,44 @@ func TestOpenAIGatewayService_SelectAccountWithScheduler_ShadowDecisionNeverOver
 	require.Equal(t, APIProtocolResponses, evaluator.request.InboundProtocol)
 	require.Equal(t, OpenAIFastTierPriority, evaluator.request.RequestedServiceTier)
 	require.Len(t, evaluator.request.Candidates, 2)
+	require.Equal(t, int64(9001), decision.AccessGroupID)
+	require.Equal(t, string(OpenAIUpstreamTransportHTTPSSE), decision.LegacySelectedTransport)
+	require.Len(t, decision.LegacySelectedEndpointHash, 16)
+	require.Len(t, decision.LegacySelectedRouteFingerprint, 32)
+	if selection.ReleaseFunc != nil {
+		selection.ReleaseFunc()
+	}
+}
+
+func TestOpenAIGatewayServiceReliabilityCacheMissPreservesLegacyAndObservationBudget(t *testing.T) {
+	groupID := int64(7009)
+	rate := 0.20
+	account := Account{
+		ID: 7109, Platform: PlatformOpenAI, Type: AccountTypeAPIKey, Status: StatusActive,
+		Schedulable: true, Concurrency: 2, RateMultiplier: &rate,
+		Credentials:   map[string]any{"base_url": "https://example.invalid"},
+		AccountGroups: []AccountGroup{{AccountID: 7109, GroupID: groupID, Priority: 1}},
+	}
+	evidence := newReliabilityAdapterEvidence(nil)
+	evidence.listEvidence = func(ctx context.Context, _ *ReliabilityEvidenceQuery) ([]*ReliabilityObservation, error) {
+		<-ctx.Done()
+		return nil, ctx.Err()
+	}
+	adapter := NewReliabilityEvidenceOpenAIRouteAdapter(evidence)
+	t.Cleanup(adapter.Stop)
+	svc := &OpenAIGatewayService{
+		accountRepo: stubOpenAIAccountRepo{accounts: []Account{account}}, cfg: &config.Config{},
+		concurrencyService: NewConcurrencyService(stubConcurrencyCache{}),
+	}
+	svc.SetOpenAIRouteEvaluator(&openAIRouteReliabilityCacheMissEvaluator{adapter: adapter})
+	ctx := context.WithValue(context.Background(), openAIClientTransportRequestContextKey{}, OpenAIClientTransportHTTP)
+	started := time.Now()
+	selection, _, err := svc.SelectAccountWithScheduler(ctx, &groupID, "", "", "gpt-5.6-sol", nil, OpenAIUpstreamTransportAny)
+	elapsed := time.Since(started)
+
+	require.NoError(t, err)
+	require.Equal(t, account.ID, selection.Account.ID)
+	require.Less(t, elapsed, openAIRouteShadowEvaluationTimeout)
 	if selection.ReleaseFunc != nil {
 		selection.ReleaseFunc()
 	}

@@ -404,6 +404,19 @@ func setOpsSelectedAccount(c *gin.Context, accountID int64, platform ...string) 
 	}
 }
 
+func setOpsSelectedOpenAIRoute(c *gin.Context, decision service.OpenAIAccountScheduleDecision) {
+	if c == nil || decision.SelectedAccountID <= 0 {
+		return
+	}
+	service.SetOpsReliabilityRouteIdentity(c, service.OpsReliabilityRouteIdentity{
+		AccountID:          decision.SelectedAccountID,
+		AccessGroupID:      decision.AccessGroupID,
+		EndpointHash:       decision.LegacySelectedEndpointHash,
+		RoutingFingerprint: decision.LegacySelectedRouteFingerprint,
+		UpstreamTransport:  decision.LegacySelectedTransport,
+	})
+}
+
 type opsCaptureWriter struct {
 	gin.ResponseWriter
 	limit int

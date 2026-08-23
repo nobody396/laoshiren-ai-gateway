@@ -521,6 +521,7 @@ func BaselineAPIs() []*service.AdminAPI {
 	add("GET", "/admin/ops/channel-monitoring", 53, 54)
 	add("GET", "/admin/ops/openai-route-shadow/stats", 53, 55)
 	add("GET", "/admin/ops/openai-route-shadow/health", 53, 56)
+	add("GET", "/admin/ops/openai-route-shadow/decisions", 53, 57)
 
 	return out
 }

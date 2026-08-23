@@ -12,12 +12,12 @@ import (
 const insertReliabilityObservationSQL = `
 INSERT INTO reliability_observations (
   idempotency_key, fact_type, source, source_id,
-  request_id, client_request_id, user_id, group_id, account_id,
-  platform, model, request_class, protocol, endpoint_hash, route_fingerprint,
+  request_id, client_request_id, user_id, group_id, access_group_id, account_id,
+  platform, model, request_class, protocol, transport, endpoint_hash, route_fingerprint, routing_fingerprint,
   outcome, status_code, error_owner, exclusion_reason, customer_impact,
   latency_ms, observed_at
 ) VALUES (
-  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22
+  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25
 )
 ON CONFLICT (idempotency_key) DO NOTHING`
 
@@ -45,8 +45,8 @@ func (s *ReliabilityEvidenceService) batchInsertPostgres(ctx context.Context, in
 		}
 		result, execErr := stmt.ExecContext(ctx,
 			input.IdempotencyKey, string(input.FactType), input.Source, input.SourceID,
-			input.RequestID, input.ClientRequestID, reliabilityNullableInt64(input.UserID), reliabilityNullableInt64(input.GroupID), reliabilityNullableInt64(input.AccountID),
-			input.Platform, input.Model, input.RequestClass, input.Protocol, input.EndpointHash, input.RouteFingerprint,
+			input.RequestID, input.ClientRequestID, reliabilityNullableInt64(input.UserID), reliabilityNullableInt64(input.GroupID), input.AccessGroupID, reliabilityNullableInt64(input.AccountID),
+			input.Platform, input.Model, input.RequestClass, input.Protocol, input.Transport, input.EndpointHash, input.RouteFingerprint, input.RoutingFingerprint,
 			string(input.Outcome), reliabilityNullableInt(input.StatusCode), input.ErrorOwner, input.ExclusionReason, input.CustomerImpact,
 			input.LatencyMs, input.ObservedAt,
 		)
@@ -140,12 +140,50 @@ func (s *ReliabilityEvidenceService) listPostgres(ctx context.Context, query *Re
 		args = append(args, pq.Array(patterns))
 		where = append(where, fmt.Sprintf("LOWER(model) LIKE ANY($%d)", len(args)))
 	}
+	exactScopes := make([]string, 0, 2)
+	if scope := query.AttemptScope; scope != nil {
+		args = append(args, scope.GroupID)
+		groupArg := len(args)
+		args = append(args, scope.AccessGroupID)
+		accessArg := len(args)
+		args = append(args, scope.Protocol)
+		protocolArg := len(args)
+		args = append(args, pq.Array(scope.Transports))
+		transportArg := len(args)
+		args = append(args, pq.Array(scope.RoutingFingerprints))
+		fingerprintArg := len(args)
+		exactScopes = append(exactScopes, fmt.Sprintf(
+			"(fact_type = 'upstream_attempt' AND group_id = $%d AND access_group_id = $%d AND protocol = $%d AND transport = ANY($%d) AND routing_fingerprint = ANY($%d))",
+			groupArg, accessArg, protocolArg, transportArg, fingerprintArg,
+		))
+	}
+	if scope := query.ProbeScope; scope != nil {
+		args = append(args, scope.Protocol)
+		protocolArg := len(args)
+		routes := make([]string, 0, len(scope.Routes))
+		for _, route := range scope.Routes {
+			args = append(args, route.AccountID)
+			accountArg := len(args)
+			args = append(args, route.EndpointHash)
+			endpointArg := len(args)
+			args = append(args, route.Transport)
+			transportArg := len(args)
+			routes = append(routes, fmt.Sprintf("(account_id = $%d AND endpoint_hash = $%d AND transport = $%d)", accountArg, endpointArg, transportArg))
+		}
+		exactScopes = append(exactScopes, fmt.Sprintf(
+			"(fact_type = 'active_probe' AND group_id IS NULL AND protocol = $%d AND (%s))",
+			protocolArg, strings.Join(routes, " OR "),
+		))
+	}
+	if len(exactScopes) > 0 {
+		where = append(where, "("+strings.Join(exactScopes, " OR ")+")")
+	}
 	args = append(args, query.Limit)
 	rows, err := s.db.QueryContext(ctx, `
 SELECT
   idempotency_key, fact_type, source, source_id,
-  request_id, client_request_id, user_id, group_id, account_id,
-  platform, model, request_class, protocol, endpoint_hash, route_fingerprint,
+  request_id, client_request_id, user_id, group_id, access_group_id, account_id,
+  platform, model, request_class, protocol, transport, endpoint_hash, route_fingerprint, routing_fingerprint,
   outcome, status_code, error_owner, exclusion_reason, customer_impact,
   latency_ms, observed_at
 FROM reliability_observations
@@ -163,8 +201,8 @@ LIMIT $`+fmt.Sprint(len(args)), args...)
 		var userID, groupID, accountID, statusCode sql.NullInt64
 		if err := rows.Scan(
 			&item.IdempotencyKey, &factType, &item.Source, &item.SourceID,
-			&item.RequestID, &item.ClientRequestID, &userID, &groupID, &accountID,
-			&item.Platform, &item.Model, &item.RequestClass, &item.Protocol, &item.EndpointHash, &item.RouteFingerprint,
+			&item.RequestID, &item.ClientRequestID, &userID, &groupID, &item.AccessGroupID, &accountID,
+			&item.Platform, &item.Model, &item.RequestClass, &item.Protocol, &item.Transport, &item.EndpointHash, &item.RouteFingerprint, &item.RoutingFingerprint,
 			&outcome, &statusCode, &item.ErrorOwner, &item.ExclusionReason, &item.CustomerImpact,
 			&item.LatencyMs, &item.ObservedAt,
 		); err != nil {

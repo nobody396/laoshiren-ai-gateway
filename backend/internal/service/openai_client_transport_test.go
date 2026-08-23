@@ -22,6 +22,15 @@ func TestOpenAIClientTransport_SetAndGet(t *testing.T) {
 	require.Equal(t, OpenAIClientTransportWS, GetOpenAIClientTransport(c))
 }
 
+func TestOpenAIClientTransportPropagatesToSchedulerRequestContext(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest("POST", "/v1/responses", nil)
+	SetOpenAIClientTransport(c, OpenAIClientTransportWS)
+	require.Equal(t, OpenAIClientTransportWS, GetOpenAIClientTransportFromContext(c.Request.Context()))
+	require.Equal(t, "websocket_responses", openAIRouteInboundProtocolForScheduleRequest(c.Request.Context(), OpenAIAccountScheduleRequest{RouteEndpoint: "/v1/responses"}, ""))
+}
+
 func TestOpenAIClientTransport_GetNormalizesRawContextValue(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

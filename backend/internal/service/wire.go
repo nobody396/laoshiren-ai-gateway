@@ -559,6 +559,7 @@ func ProvideOpenAIGatewayService(
 	openAIRouteController *OpenAIRouteController,
 	openAIRouteAuditService *OpenAIRouteAuditService,
 	openAIRouteObservationCollector *OpenAIRouteObservationCollector,
+	reliabilityEvidence *ReliabilityEvidenceService,
 ) *OpenAIGatewayService {
 	svc := NewOpenAIGatewayService(
 		accountRepo, usageLogRepo, usageBillingRepo, userRepo, userSubRepo,
@@ -577,6 +578,9 @@ func ProvideOpenAIGatewayService(
 	svc.SetOpenAIRouteEvaluator(openAIRouteController)
 	svc.SetOpenAIRouteAuditService(openAIRouteAuditService)
 	svc.SetOpenAIRouteObservationCollector(openAIRouteObservationCollector)
+	if openAIRouteController != nil {
+		openAIRouteController.SetReliabilityEvidenceAdapter(NewReliabilityEvidenceOpenAIRouteAdapter(reliabilityEvidence))
+	}
 	if settingService != nil && openAIRouteController != nil {
 		settingService.AddOnUpdateCallback(openAIRouteController.InvalidatePolicyCache)
 	}

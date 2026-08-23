@@ -106,6 +106,66 @@ func TestReliabilityEvidenceServiceClaimsOneProbePerRouteInterval(t *testing.T) 
 	require.False(t, claimed)
 }
 
+func TestReliabilityRouteProducerPostgresSnapshotAdapterRoundTripIgnoresIrrelevantVolume(t *testing.T) {
+	ctx := context.Background()
+	evidence := integrationReliabilityEvidence(t)
+	prefix := "integration:route-adapter:"
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM reliability_observations WHERE idempotency_key LIKE $1`, prefix+"%")
+	})
+	now := time.Now().UTC()
+	groupID, accessGroupID, accountID := int64(7007), int64(9007), int64(53007)
+	model := "gpt-5.6-sol-integration"
+	account := &service.Account{ID: accountID, Type: service.AccountTypeAPIKey, Platform: service.PlatformOpenAI, Credentials: map[string]any{"base_url": "https://route-integration.invalid"}}
+	endpoint := service.OpenAIRouteEndpointForBaseURL("https://route-integration.invalid", "/v1/responses")
+	key, err := service.NewOpenAIRouteKey(account, groupID, model, service.OpenAIRouteRequestClassText, endpoint, string(service.OpenAIUpstreamTransportHTTPSSE))
+	require.NoError(t, err)
+	routingFingerprint := service.OpenAIRouteObservationFingerprint(key)
+	for index, observedAt := range []time.Time{now.Add(-4 * time.Second), now.Add(-3 * time.Second)} {
+		require.True(t, evidence.SubmitAttemptOutcome(&service.ReliabilityAttemptOutcome{
+			RequestIdentity: prefix + "request:" + string(rune('a'+index)), AttemptIdentity: "success",
+			GroupID: &groupID, AccessGroupID: accessGroupID, AccountID: &accountID,
+			Platform: service.PlatformOpenAI, Model: model, RequestClass: service.ReliabilityRequestClassText,
+			Protocol: service.APIProtocolResponses, Transport: string(service.OpenAIUpstreamTransportHTTPSSE),
+			EndpointHash: key.EndpointHash, RoutingFingerprint: routingFingerprint,
+			Outcome: service.ReliabilityOutcomeSuccess, ObservedAt: observedAt,
+		}))
+	}
+	require.Eventually(t, func() bool { return evidence.Completeness().Written >= 2 && evidence.Completeness().QueueDepth == 0 }, 3*time.Second, 10*time.Millisecond)
+
+	// Same model/account and inside the same one-hour window, but wrong exact
+	// access/protocol/route dimensions. A broad post-filter query would truncate
+	// here and incorrectly force neutral fallback.
+	_, err = integrationDB.ExecContext(ctx, `
+INSERT INTO reliability_observations (
+  idempotency_key,fact_type,source,source_id,group_id,access_group_id,account_id,
+  platform,model,request_class,protocol,transport,endpoint_hash,route_fingerprint,routing_fingerprint,
+  outcome,customer_impact,latency_ms,observed_at
+)
+SELECT $1 || gs::text,'upstream_attempt','integration_noise',$1 || gs::text,$2,$3,$4,
+  'openai',$5,'text','chat_completions','http_sse','aaaaaaaaaaaaaaaa',
+  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  'success',FALSE,10,$6
+FROM generate_series(1,5001) AS gs
+`, prefix+"noise:", groupID, accessGroupID+1, accountID, model, now.Add(-2*time.Second))
+	require.NoError(t, err)
+
+	adapter := service.NewReliabilityEvidenceOpenAIRouteAdapter(evidence)
+	t.Cleanup(adapter.Stop)
+	req := service.OpenAIRouteReliabilityEvidenceRequest{
+		Keys: []service.OpenAIRouteKey{key}, GroupID: groupID, AccessGroupID: accessGroupID,
+		Model: model, RequestClass: service.OpenAIRouteRequestClassText,
+		InboundProtocol: service.APIProtocolResponses, Now: now,
+	}
+	var result service.OpenAIRouteReliabilityEvidenceResult
+	require.Eventually(t, func() bool {
+		result = adapter.Lookup(req)
+		return result.Meta.Applied
+	}, 3*time.Second, 10*time.Millisecond)
+	require.Equal(t, uint64(2), result.Meta.SampleCount)
+	require.Equal(t, uint64(2), result.Profiles[routingFingerprint].Global.SuccessCount)
+}
+
 func integrationReliabilityEvidence(t *testing.T) *service.ReliabilityEvidenceService {
 	t.Helper()
 	settings := NewSettingRepository(integrationEntClient)

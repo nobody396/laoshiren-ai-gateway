@@ -52,6 +52,7 @@ func (s *ReliabilityEvidenceService) Stop(ctx context.Context) error {
 	if s == nil {
 		return nil
 	}
+	s.stopDependents()
 	s.queueMu.Lock()
 	if !s.queueStarted || s.queueStopping {
 		s.queueMu.Unlock()

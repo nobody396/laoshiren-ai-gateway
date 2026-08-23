@@ -109,6 +109,28 @@ func TestRecordProbeOutcomesCanNeverBecomeCustomerImpact(t *testing.T) {
 	require.Equal(t, ReliabilityFactActiveProbe, persisted[0].FactType)
 }
 
+func TestRecordAttemptOutcomePersistsExactRoutingIdentity(t *testing.T) {
+	var persisted []*ReliabilityObservation
+	repo := &reliabilityRepoStub{batch: func(_ context.Context, inputs []*ReliabilityObservation) (int64, error) {
+		persisted = append(persisted, inputs...)
+		return int64(len(inputs)), nil
+	}}
+	svc := newReliabilityEvidenceForTest(true, repo)
+	groupID, accountID := int64(7), int64(53)
+	_, err := svc.recordAttemptOutcomes(context.Background(), []*ReliabilityAttemptOutcome{{
+		RequestIdentity: "req-route", AttemptIdentity: "1", GroupID: &groupID, AccessGroupID: 90, AccountID: &accountID,
+		Platform: PlatformOpenAI, Model: "gpt-5.6-sol", RequestClass: ReliabilityRequestClassText,
+		Protocol: "responses", Transport: "http_sse", EndpointHash: "0123456789abcdef",
+		RoutingFingerprint: "0123456789abcdef0123456789abcdef", Outcome: ReliabilityOutcomeSuccess, ObservedAt: time.Now(),
+	}})
+	require.NoError(t, err)
+	require.Len(t, persisted, 1)
+	require.Equal(t, int64(90), persisted[0].AccessGroupID)
+	require.Equal(t, "http_sse", persisted[0].Transport)
+	require.Equal(t, "0123456789abcdef", persisted[0].EndpointHash)
+	require.Equal(t, "0123456789abcdef0123456789abcdef", persisted[0].RoutingFingerprint)
+}
+
 func TestRecordReliabilityObservationBatchIsDisabledByDefault(t *testing.T) {
 	called := false
 	repo := &reliabilityRepoStub{
@@ -157,7 +179,7 @@ func TestGetReliabilityEvidenceSnapshotUsesBoundedQuery(t *testing.T) {
 		list: func(_ context.Context, query *ReliabilityEvidenceQuery) ([]*ReliabilityObservation, error) {
 			require.Equal(t, start, query.Start)
 			require.Equal(t, end, query.End)
-			require.Equal(t, 5000, query.Limit)
+			require.Equal(t, 5001, query.Limit)
 			return []*ReliabilityObservation{{IdempotencyKey: "customer:req-1"}}, nil
 		},
 	}

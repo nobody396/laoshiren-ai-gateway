@@ -45,3 +45,23 @@ func TestAppendOpsUpstreamError_UsesRequestBodyStringFromContext(t *testing.T) {
 	require.Len(t, events, 1)
 	require.Equal(t, `{"model":"gpt-4"}`, events[0].UpstreamRequestBody)
 }
+
+func TestAppendOpsUpstreamErrorAttachesOnlyMatchingSelectedRouteIdentity(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	SetOpsReliabilityRouteIdentity(c, OpsReliabilityRouteIdentity{
+		AccountID: 53, AccessGroupID: 90, EndpointHash: "0123456789abcdef",
+		RoutingFingerprint: "0123456789abcdef0123456789abcdef", UpstreamTransport: "http_sse",
+	})
+	appendOpsUpstreamError(c, OpsUpstreamErrorEvent{AccountID: 53, UpstreamStatusCode: 503})
+	appendOpsUpstreamError(c, OpsUpstreamErrorEvent{AccountID: 33, UpstreamStatusCode: 503})
+
+	raw, _ := c.Get(OpsUpstreamErrorsKey)
+	events, ok := raw.([]*OpsUpstreamErrorEvent)
+	require.True(t, ok)
+	require.Equal(t, int64(90), events[0].AccessGroupID)
+	require.Equal(t, "0123456789abcdef", events[0].EndpointHash)
+	require.Equal(t, "0123456789abcdef0123456789abcdef", events[0].RoutingFingerprint)
+	require.Equal(t, "http_sse", events[0].UpstreamTransport)
+	require.Empty(t, events[1].EndpointHash)
+}

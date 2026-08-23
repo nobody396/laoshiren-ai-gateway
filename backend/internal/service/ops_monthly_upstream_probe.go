@@ -911,7 +911,7 @@ func (s *OpsService) RunMonthlyUpstreamProbeOnce(ctx context.Context) error {
 			errs = append(errs, err)
 		}
 		if s.reliabilityEvidence != nil {
-			s.reliabilityEvidence.SubmitProbeOutcome(monthlyProbeReliabilityObservation(point, reliabilityProbeEndpointHash(account)))
+			s.reliabilityEvidence.SubmitProbeOutcome(monthlyProbeReliabilityObservation(point, reliabilityProbeEndpointHash(account, point.Platform)))
 		}
 		if !isMonthlyUpstreamProbeHealthy(point.Status) {
 			s.recordMonthlyUpstreamProbeError(ctx, &point)
@@ -926,7 +926,7 @@ func (s *OpsService) RunMonthlyUpstreamProbeOnce(ctx context.Context) error {
 				errs = append(errs, err)
 			}
 			if s.reliabilityEvidence != nil {
-				s.reliabilityEvidence.SubmitProbeOutcome(monthlyProbeReliabilityObservation(diagnostic, reliabilityProbeEndpointHash(account)))
+				s.reliabilityEvidence.SubmitProbeOutcome(monthlyProbeReliabilityObservation(diagnostic, reliabilityProbeEndpointHash(account, diagnostic.Platform)))
 			}
 			if !isMonthlyUpstreamProbeHealthy(diagnostic.Status) {
 				s.recordMonthlyUpstreamProbeError(ctx, &diagnostic)
@@ -966,6 +966,7 @@ func monthlyProbeReliabilityObservation(point MonthlyUpstreamProbePoint, endpoin
 		Model:           point.Model,
 		RequestClass:    ReliabilityRequestClassText,
 		Protocol:        protocol,
+		Transport:       string(OpenAIUpstreamTransportHTTPSSE),
 		EndpointHash:    endpointHash,
 		Outcome:         outcome,
 		StatusCode:      point.HTTPStatus,
@@ -976,11 +977,20 @@ func monthlyProbeReliabilityObservation(point MonthlyUpstreamProbePoint, endpoin
 	}
 }
 
-func reliabilityProbeEndpointHash(account *Account) string {
+func reliabilityProbeEndpointHash(account *Account, platform string) string {
 	if account == nil {
 		return ""
 	}
-	return OpenAIRouteEndpointHash(account.GetBaseURL())
+	switch strings.ToLower(strings.TrimSpace(platform)) {
+	case PlatformOpenAI:
+		return OpenAIRouteEndpointHash(openAIRouteEndpointForAccount(account, "/v1/responses"))
+	case PlatformGrok:
+		return OpenAIRouteEndpointHash(OpenAIRouteEndpointForBaseURL(account.GetGrokBaseURL(), "/v1/responses"))
+	case PlatformAnthropic:
+		return OpenAIRouteEndpointHash(OpenAIRouteEndpointForBaseURL(account.GetBaseURL(), "/v1/messages"))
+	default:
+		return ""
+	}
 }
 
 func (s *OpsService) claimMonthlySelectedProbeRoute(ctx context.Context, target monthlyUpstreamProbeResolvedTarget, account *Account) (bool, error) {
@@ -990,7 +1000,7 @@ func (s *OpsService) claimMonthlySelectedProbeRoute(ctx context.Context, target 
 	if account == nil {
 		return true, nil
 	}
-	endpointHash := reliabilityProbeEndpointHash(account)
+	endpointHash := reliabilityProbeEndpointHash(account, target.Platform)
 	fingerprint := ReliabilityRouteFingerprint(target.Platform, account.ID, endpointHash, target.Model, "http")
 	intervalStart := time.Now().Truncate(monthlyUpstreamProbeInterval)
 	return s.reliabilityEvidence.ClaimProbe(ctx, &ReliabilityProbeClaim{

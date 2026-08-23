@@ -126,17 +126,18 @@ type openAIRoutePolicyConfig struct {
 	PriorityPenalty float64 `json:"priority_penalty"`
 	MinHealthFactor float64 `json:"min_health_factor"`
 
-	MaxAccountShare       float64                         `json:"max_account_share"`
-	MaxProviderShare      float64                         `json:"max_provider_share"`
-	NewAccountShare       float64                         `json:"new_account_canary_share"`
-	DegradedShare         float64                         `json:"degraded_share"`
-	RecoveryShares        []float64                       `json:"recovery_steps"`
-	GenericFailThreshold  int                             `json:"generic_fail_threshold"`
-	FailureWindowSeconds  int                             `json:"failure_window_seconds"`
-	ProbeBackoffSeconds   []int                           `json:"probe_backoff_seconds"`
-	HardShareCaps         bool                            `json:"hard_share_caps"`
-	BenchmarkPriorEnabled bool                            `json:"benchmark_prior_enabled,omitempty"`
-	RouteVariants         []openAIRouteRouteVariantConfig `json:"route_variants,omitempty"`
+	MaxAccountShare            float64                         `json:"max_account_share"`
+	MaxProviderShare           float64                         `json:"max_provider_share"`
+	NewAccountShare            float64                         `json:"new_account_canary_share"`
+	DegradedShare              float64                         `json:"degraded_share"`
+	RecoveryShares             []float64                       `json:"recovery_steps"`
+	GenericFailThreshold       int                             `json:"generic_fail_threshold"`
+	FailureWindowSeconds       int                             `json:"failure_window_seconds"`
+	ProbeBackoffSeconds        []int                           `json:"probe_backoff_seconds"`
+	HardShareCaps              bool                            `json:"hard_share_caps"`
+	BenchmarkPriorEnabled      bool                            `json:"benchmark_prior_enabled,omitempty"`
+	ReliabilityEvidenceEnabled bool                            `json:"reliability_evidence_enabled,omitempty"`
+	RouteVariants              []openAIRouteRouteVariantConfig `json:"route_variants,omitempty"`
 }
 
 type openAIRoutePolicyDocument struct {
@@ -150,16 +151,23 @@ type cachedOpenAIRoutePolicies struct {
 }
 
 type OpenAIRouteController struct {
-	reader           OpenAIRoutePolicyReader
-	healthStore      OpenAIRouteHealthStore
-	budgetStore      OpenAIRouteBudgetStore
-	observationStore OpenAIRouteObservationStore
-	benchmarkStore   OpenAIRouteBenchmarkObservationStore
-	observationCache *openAIRouteObservationProfileCache
-	benchmarkCache   *openAIRouteBenchmarkObservationProfileCache
+	reader             OpenAIRoutePolicyReader
+	healthStore        OpenAIRouteHealthStore
+	budgetStore        OpenAIRouteBudgetStore
+	observationStore   OpenAIRouteObservationStore
+	benchmarkStore     OpenAIRouteBenchmarkObservationStore
+	observationCache   *openAIRouteObservationProfileCache
+	benchmarkCache     *openAIRouteBenchmarkObservationProfileCache
+	reliabilityAdapter OpenAIRouteReliabilityEvidenceAdapter
 
 	cacheMu sync.Mutex
 	cache   cachedOpenAIRoutePolicies
+}
+
+func (c *OpenAIRouteController) SetReliabilityEvidenceAdapter(adapter OpenAIRouteReliabilityEvidenceAdapter) {
+	if c != nil {
+		c.reliabilityAdapter = adapter
+	}
 }
 
 func NewOpenAIRouteController(
@@ -358,6 +366,7 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		policy,
 		config.HardShareCaps,
 		config.BenchmarkPriorEnabled,
+		config.ReliabilityEvidenceEnabled,
 		auditRouteVariants,
 	)
 
@@ -420,6 +429,27 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		decision.ExcludedCount = len(decision.Audit.Exclusions)
 		return decision, ErrOpenAIRouteNoCandidate
 	}
+	reliabilityResult := openAIRouteReliabilityFallback("feature_disabled")
+	decision.Audit.ReliabilityEvidenceAdapterEnabled = config.ReliabilityEvidenceEnabled
+	if config.ReliabilityEvidenceEnabled {
+		// Reliability Control is intentionally HTTP-only in this release. WS
+		// attempts do not yet publish the same selected-route identity, so fail
+		// neutral rather than allowing a permanently incomplete treatment.
+		if !openAIRouteReliabilityAllowsHTTPProbe(req.InboundProtocol) {
+			reliabilityResult = openAIRouteReliabilityFallback("inbound_protocol_not_supported")
+		} else if c.reliabilityAdapter == nil {
+			reliabilityResult = openAIRouteReliabilityFallback("adapter_unavailable")
+		} else {
+			reliabilityResult = c.reliabilityAdapter.Lookup(OpenAIRouteReliabilityEvidenceRequest{
+				Keys: routeKeys, GroupID: req.GroupID, AccessGroupID: req.AccessGroupID, Model: req.Model, RequestClass: req.RequestClass,
+				InboundProtocol: req.InboundProtocol, Now: now,
+			})
+		}
+	}
+	decision.Audit.ReliabilityEvidenceAdapterApplied = reliabilityResult.Meta.Applied
+	decision.Audit.ReliabilityEvidenceAdapterReason = reliabilityResult.Meta.Reason
+	decision.Audit.ReliabilityEvidenceAdapterSamples = reliabilityResult.Meta.SampleCount
+	decision.Audit.ReliabilityEvidencePendingCutoffID = reliabilityResult.Meta.PendingCutoffID
 	profiles := make(map[string]OpenAIRouteObservationProfile)
 	benchmarkProfiles := make(map[string]OpenAIRouteBenchmarkObservationProfile)
 	var healthStates map[string]OpenAIRouteHealthState
@@ -449,6 +479,12 @@ func (c *OpenAIRouteController) EvaluateShadow(
 	}
 	if getErr := readGroup.Wait(); getErr != nil {
 		return decision, getErr
+	}
+	legacyProfiles := cloneOpenAIRouteObservationProfiles(profiles)
+	if reliabilityResult.Meta.Applied {
+		for fingerprint, shared := range reliabilityResult.Profiles {
+			profiles[fingerprint] = overlayOpenAIRouteReliability(profiles[fingerprint], shared)
+		}
 	}
 	for idx, key := range routeKeys {
 		routeStoreKey := OpenAIRouteHealthStoreKeyForRoute(key)
@@ -497,11 +533,22 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		profile := profileByCandidate[idx]
 		benchmarkProfile := benchmarkByCandidate[idx]
 		blended := blendedByCandidate[idx]
+		legacyProfile := legacyProfiles[OpenAIRouteObservationFingerprint(candidates[idx].Key)]
+		legacyBlended := BlendOpenAIRouteObservationProfile(legacyProfile)
+		legacyScoringBlended := legacyBlended
+		if config.BenchmarkPriorEnabled {
+			legacyScoringBlended, _ = ApplyOpenAIRouteBenchmarkPrior(legacyScoringBlended, benchmarkProfile)
+		}
 		observationSource := "process_local"
 		if blended.ReliabilityCount > 0 {
 			observationSource = "shared"
+			if reliabilityResult.Meta.Applied {
+				observationSource = "reliability_evidence"
+			}
 			if benchmarkAppliedByCandidate[idx] {
-				if profile.Global.ReliabilityCount > 0 {
+				if reliabilityResult.Meta.Applied {
+					observationSource = "reliability_evidence+active_benchmark_prior"
+				} else if profile.Global.ReliabilityCount > 0 {
 					observationSource = "shared+active_benchmark_prior"
 				} else {
 					observationSource = "active_benchmark_prior"
@@ -513,6 +560,9 @@ func (c *OpenAIRouteController) EvaluateShadow(
 			candidates[idx].P95CompletionLatencyMilliseconds = blended.LatencyPercentile(0.95)
 			candidates[idx].ObservationSampleCount = blended.ReliabilityCount
 			candidates[idx].PartialStreamRate = blended.PartialStreamRate()
+			if reliabilityResult.Meta.Applied {
+				candidates[idx].PartialStreamRate = legacyScoringBlended.PartialStreamRate()
+			}
 		}
 		if totalShareAttempts > 0 {
 			candidates[idx].CurrentAccountShare = float64(accountShareAttempts[candidates[idx].Key.AccountID]) / float64(totalShareAttempts)
@@ -530,6 +580,13 @@ func (c *OpenAIRouteController) EvaluateShadow(
 		decision.Audit.Candidates[auditIndex].ObservationSamples = profile.Global.ReliabilityCount
 		decision.Audit.Candidates[auditIndex].RecentSamples = profile.Recent.ReliabilityCount
 		decision.Audit.Candidates[auditIndex].HourOfWeekSamples = profile.HourOfWeek.ReliabilityCount
+		sharedProfile := reliabilityResult.Profiles[OpenAIRouteObservationFingerprint(candidates[idx].Key)]
+		sharedBlended := BlendOpenAIRouteObservationProfile(sharedProfile)
+		decision.Audit.Candidates[auditIndex].LegacyObservationSamples = legacyBlended.ReliabilityCount
+		decision.Audit.Candidates[auditIndex].LegacySuccessLowerBound = legacyBlended.SuccessLowerBound()
+		decision.Audit.Candidates[auditIndex].ReliabilityEvidenceSamples = sharedBlended.ReliabilityCount
+		decision.Audit.Candidates[auditIndex].ReliabilityEvidenceSuccessLowerBound = sharedBlended.SuccessLowerBound()
+		decision.Audit.Candidates[auditIndex].ReliabilityEvidenceApplied = reliabilityResult.Meta.Applied
 		decision.Audit.Candidates[auditIndex].BenchmarkSamples = benchmarkProfile.Evidence.RawSamples
 		decision.Audit.Candidates[auditIndex].BenchmarkEffectiveSamples = benchmarkProfile.Evidence.EffectiveSamples
 		decision.Audit.Candidates[auditIndex].BenchmarkRecentSamples = benchmarkProfile.Evidence.RecentSamples
@@ -683,13 +740,14 @@ func (c *OpenAIRouteController) EvaluateShadows(
 		}
 
 		isolated := &OpenAIRouteController{
-			reader:           openAIRouteFixedPolicyReader{config: config},
-			healthStore:      c.healthStore,
-			budgetStore:      c.budgetStore,
-			observationStore: c.observationStore,
-			benchmarkStore:   c.benchmarkStore,
-			observationCache: c.observationCache,
-			benchmarkCache:   c.benchmarkCache,
+			reader:             openAIRouteFixedPolicyReader{config: config},
+			healthStore:        c.healthStore,
+			budgetStore:        c.budgetStore,
+			observationStore:   c.observationStore,
+			benchmarkStore:     c.benchmarkStore,
+			observationCache:   c.observationCache,
+			benchmarkCache:     c.benchmarkCache,
+			reliabilityAdapter: c.reliabilityAdapter,
 		}
 		decision, evaluateErr := isolated.EvaluateShadow(ctx, req)
 		if evaluateErr != nil {
@@ -727,6 +785,7 @@ func newOpenAIRouteShadowAuditPolicy(
 	policy OpenAIRoutePolicy,
 	hardShareCaps bool,
 	benchmarkPriorEnabled bool,
+	reliabilityEvidenceEnabled bool,
 	routeVariants []OpenAIRouteShadowAuditRouteVariant,
 ) OpenAIRouteShadowAuditPolicy {
 	backoff := make([]int64, 0, len(policy.ProbeBackoff))
@@ -734,25 +793,26 @@ func newOpenAIRouteShadowAuditPolicy(
 		backoff = append(backoff, int64(value/time.Second))
 	}
 	return OpenAIRouteShadowAuditPolicy{
-		TargetAverageMultiplier: policy.TargetAverageMultiplier,
-		HardAverageMultiplier:   policy.HardAverageMultiplier,
-		EmergencyDebtLimitUSD:   policy.EmergencyDebtLimitUSD,
-		MaxCreditUSD:            policy.MaxCreditUSD,
-		PriceExponent:           policy.PriceExponent,
-		LatencyBeta:             policy.LatencyBeta,
-		PriorityPenalty:         policy.PriorityPenalty,
-		MinHealthFactor:         policy.MinHealthFactor,
-		MaxAccountShare:         policy.MaxAccountShare,
-		MaxProviderShare:        policy.MaxProviderShare,
-		NewAccountShare:         policy.NewAccountShare,
-		DegradedShare:           policy.DegradedShare,
-		RecoveryShares:          append([]float64(nil), policy.RecoveryShares...),
-		GenericFailThreshold:    policy.GenericFailThreshold,
-		FailureWindowSeconds:    int64(policy.FailureWindow / time.Second),
-		ProbeBackoffSeconds:     backoff,
-		HardShareCaps:           hardShareCaps,
-		BenchmarkPriorEnabled:   benchmarkPriorEnabled,
-		RouteVariants:           append([]OpenAIRouteShadowAuditRouteVariant(nil), routeVariants...),
+		TargetAverageMultiplier:    policy.TargetAverageMultiplier,
+		HardAverageMultiplier:      policy.HardAverageMultiplier,
+		EmergencyDebtLimitUSD:      policy.EmergencyDebtLimitUSD,
+		MaxCreditUSD:               policy.MaxCreditUSD,
+		PriceExponent:              policy.PriceExponent,
+		LatencyBeta:                policy.LatencyBeta,
+		PriorityPenalty:            policy.PriorityPenalty,
+		MinHealthFactor:            policy.MinHealthFactor,
+		MaxAccountShare:            policy.MaxAccountShare,
+		MaxProviderShare:           policy.MaxProviderShare,
+		NewAccountShare:            policy.NewAccountShare,
+		DegradedShare:              policy.DegradedShare,
+		RecoveryShares:             append([]float64(nil), policy.RecoveryShares...),
+		GenericFailThreshold:       policy.GenericFailThreshold,
+		FailureWindowSeconds:       int64(policy.FailureWindow / time.Second),
+		ProbeBackoffSeconds:        backoff,
+		HardShareCaps:              hardShareCaps,
+		BenchmarkPriorEnabled:      benchmarkPriorEnabled,
+		ReliabilityEvidenceEnabled: reliabilityEvidenceEnabled,
+		RouteVariants:              append([]OpenAIRouteShadowAuditRouteVariant(nil), routeVariants...),
 	}
 }
 

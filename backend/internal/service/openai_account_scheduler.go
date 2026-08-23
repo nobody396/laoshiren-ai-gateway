@@ -47,6 +47,10 @@ type OpenAIAccountScheduleDecision struct {
 	LoadSkew                       float64
 	SelectedAccountID              int64
 	SelectedAccountType            string
+	LegacySelectedEndpointHash     string
+	LegacySelectedRouteFingerprint string
+	LegacySelectedTransport        string
+	AccessGroupID                  int64
 	ImageGenerationIntent          bool
 	ImageGenerationRouteConfigured bool
 	ImageGenerationRoutePriority   int
@@ -1059,7 +1063,12 @@ func (s *defaultOpenAIAccountScheduler) evaluateOpenAIRouteShadows(
 		if candidate.account == nil || candidate.loadInfo == nil {
 			continue
 		}
-		transport := s.service.getOpenAIWSProtocolResolver().Resolve(candidate.account).Transport
+		transportDecision := s.service.getOpenAIWSProtocolResolver().Resolve(candidate.account)
+		transportDecision = resolveOpenAIWSDecisionByClientTransport(transportDecision, GetOpenAIClientTransportFromContext(ctx))
+		if req.RequiredTransport == OpenAIUpstreamTransportHTTPSSE {
+			transportDecision = openAIWSHTTPDecision("required_http")
+		}
+		transport := transportDecision.Transport
 		projected = append(projected, OpenAIRouteShadowCandidate{
 			Account:              candidate.account,
 			Endpoint:             openAIRouteEndpointForAccount(candidate.account, req.RouteEndpoint),
@@ -1077,6 +1086,7 @@ func (s *defaultOpenAIAccountScheduler) evaluateOpenAIRouteShadows(
 	defer cancel()
 	seed := deriveOpenAISelectionSeed(req)
 	accessGroupID, publicModel, inboundProtocol, requestedServiceTier := openAIRouteUniversalRequestContext(ctx)
+	inboundProtocol = openAIRouteInboundProtocolForScheduleRequest(ctx, req, inboundProtocol)
 	shadowRequest := OpenAIRouteShadowRequest{
 		GroupID:              *req.GroupID,
 		AccessGroupID:        accessGroupID,
@@ -1115,6 +1125,27 @@ func (s *defaultOpenAIAccountScheduler) evaluateOpenAIRouteShadows(
 		result = append(result, decision)
 	}
 	return result
+}
+
+func openAIRouteInboundProtocolForScheduleRequest(ctx context.Context, req OpenAIAccountScheduleRequest, configured string) string {
+	protocol := strings.ToLower(strings.TrimSpace(configured))
+	if protocol == "" {
+		endpoint := strings.ToLower(strings.TrimSpace(req.RouteEndpoint))
+		switch {
+		case strings.Contains(endpoint, "/chat/completions"):
+			protocol = "chat_completions"
+		case strings.Contains(endpoint, "/messages"):
+			protocol = "messages"
+		case strings.Contains(endpoint, "/images"):
+			protocol = "images"
+		default:
+			protocol = "responses"
+		}
+	}
+	if GetOpenAIClientTransportFromContext(ctx) == OpenAIClientTransportWS {
+		return "websocket_" + protocol
+	}
+	return protocol
 }
 
 func primaryOpenAIRouteShadowDecision(decisions []*OpenAIRouteShadowDecision) *OpenAIRouteShadowDecision {
@@ -1440,10 +1471,15 @@ func (s *OpenAIGatewayService) selectAccountWithSchedulerForRouting(
 		sessionHash = ""
 	}
 	decision := OpenAIAccountScheduleDecision{}
+	routeEndpoint := "/v1/responses"
+	if len(routeEndpoints) > 0 && strings.TrimSpace(routeEndpoints[0]) != "" {
+		routeEndpoint = strings.TrimSpace(routeEndpoints[0])
+	}
 	scheduler := s.getOpenAIAccountScheduler()
 	if scheduler == nil {
 		selection, err := s.selectAccountWithLoadAwareness(ctx, groupID, sessionHash, requestedModel, excludedIDs, requireCompact)
 		decision.Layer = openAIAccountScheduleLayerLoadBalance
+		s.populateOpenAISelectedRouteIdentity(ctx, &decision, selection, groupID, requestedModel, preferImageGeneration, routeEndpoint, requiredTransport)
 		return selection, decision, err
 	}
 
@@ -1454,11 +1490,7 @@ func (s *OpenAIGatewayService) selectAccountWithSchedulerForRouting(
 		}
 	}
 
-	routeEndpoint := "/v1/responses"
-	if len(routeEndpoints) > 0 && strings.TrimSpace(routeEndpoints[0]) != "" {
-		routeEndpoint = strings.TrimSpace(routeEndpoints[0])
-	}
-	return scheduler.Select(ctx, OpenAIAccountScheduleRequest{
+	selection, decision, err := scheduler.Select(ctx, OpenAIAccountScheduleRequest{
 		GroupID:               groupID,
 		SessionHash:           sessionHash,
 		StickyAccountID:       stickyAccountID,
@@ -1470,6 +1502,51 @@ func (s *OpenAIGatewayService) selectAccountWithSchedulerForRouting(
 		RouteEndpoint:         routeEndpoint,
 		ExcludedIDs:           excludedIDs,
 	})
+	s.populateOpenAISelectedRouteIdentity(ctx, &decision, selection, groupID, requestedModel, preferImageGeneration, routeEndpoint, requiredTransport)
+	return selection, decision, err
+}
+
+func (s *OpenAIGatewayService) populateOpenAISelectedRouteIdentity(
+	ctx context.Context,
+	decision *OpenAIAccountScheduleDecision,
+	selection *AccountSelectionResult,
+	groupID *int64,
+	model string,
+	image bool,
+	routeEndpoint string,
+	requiredTransport OpenAIUpstreamTransport,
+) {
+	if s == nil || decision == nil || selection == nil || selection.Account == nil || groupID == nil || *groupID <= 0 {
+		return
+	}
+	requestClass := OpenAIRouteRequestClassText
+	if image {
+		requestClass = OpenAIRouteRequestClassImage
+	}
+	transport := s.getOpenAIWSProtocolResolver().Resolve(selection.Account)
+	transport = resolveOpenAIWSDecisionByClientTransport(transport, GetOpenAIClientTransportFromContext(ctx))
+	if requiredTransport == OpenAIUpstreamTransportHTTPSSE {
+		transport = openAIWSHTTPDecision("required_http")
+	}
+	key, err := NewOpenAIRouteKey(
+		selection.Account,
+		*groupID,
+		model,
+		requestClass,
+		openAIRouteEndpointForAccount(selection.Account, routeEndpoint),
+		string(transport.Transport),
+	)
+	if err != nil {
+		return
+	}
+	accessGroupID, _, _, _ := openAIRouteUniversalRequestContext(ctx)
+	if decision.SelectedAccountID == 0 {
+		decision.SelectedAccountID = selection.Account.ID
+	}
+	decision.LegacySelectedEndpointHash = key.EndpointHash
+	decision.LegacySelectedRouteFingerprint = OpenAIRouteObservationFingerprint(key)
+	decision.LegacySelectedTransport = key.Transport
+	decision.AccessGroupID = accessGroupID
 }
 
 // SelectAccountWithSchedulerForCapability 按能力要求调度账号。

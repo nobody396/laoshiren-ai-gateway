@@ -210,7 +210,7 @@ var ProviderSet = wire.NewSet(
 	NewNativeCheckoutHandler,
 	NewBalanceAlertHandler,
 	NewResourceHandler,
-	NewStatusHandler,
+	ProvideStatusHandler,
 	NewModelPricingHandler,
 	ProvideSettingHandler,
 

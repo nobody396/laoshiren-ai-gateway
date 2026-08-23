@@ -90,6 +90,14 @@
           </section>
         </div>
 
+        <section v-if="publicIncidents.length" class="incident-timeline" aria-labelledby="incident-timeline-title">
+          <div class="section-heading"><h2 id="incident-timeline-title">事件时间线</h2><span>{{ publicIncidents.length }} 项</span></div>
+          <article v-for="incident in publicIncidents" :key="incident.id" class="incident-card">
+            <header><div><strong>{{ incident.resolved_at ? '已恢复' : phaseLabel(incident.phase) }}</strong><p>{{ incident.affected_products.join('、') }}</p></div><time :datetime="incident.started_at">{{ formatServiceStatusTime(incident.started_at) }}</time></header>
+            <ol><li v-for="update in incident.timeline" :key="`${update.published_at}:${update.message}`"><span class="incident-dot" aria-hidden="true" /><div><p>{{ update.message }}</p><time :datetime="update.published_at">{{ formatServiceStatusTime(update.published_at) }}</time></div></li></ol>
+          </article>
+        </section>
+
         <aside class="status-help">
           <div>
             <strong>仍然无法判断问题？</strong>
@@ -122,7 +130,10 @@ import StatusFamilyBlock from '@/components/status/StatusFamilyBlock.vue'
 import { useMarkdownRenderer } from '@/composables/useMarkdownRenderer'
 import { loadMarkdown } from '@/docs/config'
 import {
+  getPublicIncidents,
   getServiceStatus,
+  type PublicIncident,
+  type PublicIncidentPhase,
   type ServiceStatus,
   type ServiceStatusSnapshot
 } from '@/api/serviceStatus'
@@ -140,6 +151,7 @@ const REFRESH_INTERVAL_MS = 30_000
 
 const loading = ref(true)
 const snapshot = ref<ServiceStatusSnapshot | null>(null)
+const publicIncidents = ref<PublicIncident[]>([])
 const fallbackMarkdown = ref('')
 const fallbackLoading = ref(false)
 const fallbackNotFound = ref(false)
@@ -203,6 +215,7 @@ async function refreshStatus(initial = false) {
     const next = await getServiceStatus()
     if (stopped) return
     snapshot.value = next
+    void refreshIncidentTimeline()
     fallbackDueToError.value = false
     if (!next.enabled) await ensureFallbackDocument()
   } catch {
@@ -214,6 +227,19 @@ async function refreshStatus(initial = false) {
     refreshInFlight = false
     if (initial && !stopped) loading.value = false
   }
+}
+
+async function refreshIncidentTimeline() {
+  try {
+    const next = await getPublicIncidents()
+    if (!stopped) publicIncidents.value = next.enabled ? next.incidents : []
+  } catch {
+    if (!stopped) publicIncidents.value = []
+  }
+}
+
+function phaseLabel(phase: PublicIncidentPhase) {
+  return ({ investigating: '调查中', identified: '已定位', mitigating: '缓解中', monitoring: '观察中', resolved: '已恢复' } as const)[phase]
 }
 
 onMounted(() => {
@@ -271,6 +297,15 @@ onBeforeUnmount(() => {
 .section-heading h2 { margin: 0; color: rgb(var(--color-ink-deep)); font-size: 1.45rem; letter-spacing: -.02em; }
 .section-heading span { color: rgb(var(--color-muted)); font-size: .85rem; }
 .family-list { display: grid; gap: 2.25rem; margin-top: 2rem; }
+.incident-timeline { margin-top: 4rem; }
+.incident-card { margin-top: 1.5rem; border: 1px solid rgb(var(--color-gray-200)); border-radius: 1rem; padding: 1.25rem; background: rgb(var(--color-paper)); }
+.incident-card header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.incident-card header p { margin: .3rem 0 0; color: rgb(var(--color-muted)); font-size: .9rem; }
+.incident-card time { color: rgb(var(--color-muted)); font-size: .78rem; }
+.incident-card ol { display: grid; gap: 1rem; margin: 1.25rem 0 0; padding: 0; list-style: none; }
+.incident-card li { display: flex; gap: .75rem; }
+.incident-card li p { margin: 0 0 .25rem; line-height: 1.55; }
+.incident-dot { flex: 0 0 auto; width: .55rem; height: .55rem; margin-top: .4rem; border-radius: 999px; background: rgb(var(--color-terracotta)); }
 .status-help { display: flex; align-items: center; justify-content: space-between; gap: 2rem; margin-top: 4rem; border-top: 1px solid rgb(var(--color-gray-200)); padding-top: 1.5rem; }
 .status-help strong { color: rgb(var(--color-ink-deep)); }
 .status-help p { margin: .3rem 0 0; color: rgb(var(--color-muted)); font-size: .9rem; }

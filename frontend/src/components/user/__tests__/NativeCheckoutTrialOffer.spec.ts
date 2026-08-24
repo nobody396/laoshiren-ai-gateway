@@ -357,6 +357,41 @@ describe('NativeCheckoutTrialOffer', () => {
     wrapper.unmount()
   })
 
+  it('renders only the shared summary action and honors the parent payment method', async () => {
+    mocks.listOffers.mockResolvedValue([{ ...monthlyOffer }])
+    mocks.createOrder.mockResolvedValue({
+      order_no: 'EP-MONTHLY-WX',
+      status: 'pending',
+      pay_amount_cny_fen: 25900,
+      benefit_amount_cny_fen: 25900,
+      payment_url: 'https://pay.example/monthly',
+      payment_method: 'wechat',
+      created_at: '2026-08-24T00:00:00Z',
+    })
+    mocks.toDataURL.mockResolvedValue('data:image/png;base64,MONTHLY')
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      props: {
+        offerCode: 'plus',
+        actionOnly: true,
+        preferredPayMethod: 'wechat',
+        actionLabel: '立即支付 ¥255',
+      },
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+
+    expect(wrapper.find('.trial-offer').classes()).toContain('trial-offer--action-only')
+    expect(wrapper.find('.trial-offer__copy').exists()).toBe(false)
+    expect(wrapper.find('.trial-offer__amounts').exists()).toBe(false)
+    expect(wrapper.find('.trial-offer__paymethod').exists()).toBe(false)
+    expect(wrapper.find('.trial-offer__action').text()).toBe('立即支付 ¥255')
+
+    await wrapper.find('.trial-offer__action').trigger('click')
+    await flushPromises()
+    expect(mocks.createOrder).toHaveBeenCalledWith('plus', 'wechat')
+    wrapper.unmount()
+  })
+
   it('passes pay_type=wechat when the user picks WeChat before creating an easypay order', async () => {
     mocks.listOffers.mockResolvedValue([{ ...offer, provider: 'easypay' as const }])
     mocks.createOrder.mockResolvedValue({

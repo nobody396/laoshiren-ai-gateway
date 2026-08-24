@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   requestNewcomerPurchaseURL: vi.fn(),
   newcomerState: { value: 'available' },
   newcomerMode: { value: 'manual' },
+  nativeOfferByCode: { value: undefined as any },
 }))
 
 const publicSettings = {
@@ -94,7 +95,7 @@ vi.mock('@/composables/useManualNewcomerOffer', () => ({
 vi.mock('@/composables/useNativeCheckoutOffers', () => ({
   useNativeCheckoutOffers: () => ({
     loadOffers: mocks.loadOffers,
-    findNativeOfferByCode: () => undefined,
+    findNativeOfferByCode: () => mocks.nativeOfferByCode.value,
   }),
 }))
 
@@ -104,8 +105,8 @@ function mountView() {
       stubs: {
         AppLayout: { template: '<div><slot /></div>' },
         NativeCheckoutTrialOffer: {
-          props: ['offerCode', 'compact'],
-          template: '<div data-testid="native-checkout-offer" :data-offer-code="offerCode" :data-compact="compact" />',
+          props: ['offerCode', 'compact', 'actionOnly', 'preferredPayMethod', 'actionLabel'],
+          template: '<div data-testid="native-checkout-offer" :data-offer-code="offerCode" :data-compact="compact" :data-action-only="actionOnly" :data-pay-method="preferredPayMethod" :data-action-label="actionLabel" />',
         },
         RouterLink: { template: '<a><slot /></a>' },
       },
@@ -123,8 +124,39 @@ describe('GetSubscriptionView payment UX', () => {
     mocks.requestNewcomerPurchaseURL.mockResolvedValue('https://shop.example/5')
     mocks.newcomerState.value = 'available'
     mocks.newcomerMode.value = 'manual'
+    mocks.nativeOfferByCode.value = undefined
     mocks.refreshUser.mockResolvedValue({ balance: 48.48 })
     mocks.toDataURL.mockResolvedValue('data:image/png;base64,QR')
+  })
+
+  it('reuses the balance checkout rows for developer plans without the nested legacy offer card', async () => {
+    mocks.nativeOfferByCode.value = {
+      code: 'plus',
+      product_kind: 'subscription',
+      provider: 'easypay',
+    }
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.findAll('[role="tab"]')[1].trigger('click')
+
+    const mainProducts = wrapper.find('.topup-main').findAll('.topup-product')
+    expect(mainProducts).toHaveLength(3)
+    expect(mainProducts[0].text()).toBe('Plus¥255')
+    expect(mainProducts[1].text()).toBe('Pro¥715')
+    expect(mainProducts[2].text()).toBe('Max¥1525')
+
+    const summary = wrapper.find('.topup-summary-card')
+    expect(summary.find('[data-testid="monthly-method-alipay"]').exists()).toBe(true)
+    expect(summary.find('[data-testid="monthly-method-wechat"]').exists()).toBe(true)
+    expect(summary.find('[data-testid="monthly-method-card_shop"]').exists()).toBe(true)
+    const checkout = summary.get('[data-testid="native-checkout-offer"]')
+    expect(checkout.attributes('data-action-only')).toBe('')
+    expect(checkout.attributes('data-pay-method')).toBe('alipay')
+    expect(checkout.attributes('data-action-label')).toBe('立即支付 ¥255')
+    expect(wrapper.text()).not.toContain('支付成功后自动到账')
+
+    wrapper.unmount()
   })
 
   it('shows Alipay, WeChat, and backup payment methods inside the right summary card', async () => {

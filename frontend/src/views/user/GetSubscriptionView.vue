@@ -65,7 +65,6 @@
                   >
                     <span class="topup-radio" aria-hidden="true"><span></span></span>
                     <span class="topup-product-name">{{ plan.name }}</span>
-                    <span class="topup-monthly-credits">{{ plan.displayMonthlyCreditsText }} AI credits / 月</span>
                     <span class="topup-product-price">{{ plan.directPrice }}</span>
                   </button>
                 </div>
@@ -255,14 +254,60 @@
                   <div class="topup-summary-row"><span>{{ t('topup.monthlyPlanMonthlyLimit') }}</span><strong>{{ selectedMonthlyPlan?.displayMonthlyCreditsText }} AI credits</strong></div>
                   <div class="topup-summary-row"><span>有效期</span><strong>31 天</strong></div>
                 </div>
+
+                <section class="topup-summary-payment" aria-labelledby="monthly-summary-payment-title">
+                  <h2 id="monthly-summary-payment-title" class="topup-label">支付方式</h2>
+                  <div class="topup-summary-methods">
+                    <button
+                      type="button"
+                      data-testid="monthly-method-alipay"
+                      class="topup-summary-method"
+                      :class="{ 'topup-summary-method--active': selectedMonthlyTopupChannel === 'alipay' }"
+                      :disabled="!selectedMonthlyNativeOffer || !canUseAlipay"
+                      @click="selectMonthlyTopupChannel('alipay')"
+                    >
+                      <span class="topup-radio" aria-hidden="true"><span></span></span>
+                      <PaymentMethodIcon kind="alipay" />
+                      <strong>{{ t('nativeCheckout.alipayPay') }}</strong>
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="monthly-method-wechat"
+                      class="topup-summary-method"
+                      :class="{ 'topup-summary-method--active': selectedMonthlyTopupChannel === 'wechat' }"
+                      :disabled="!selectedMonthlyNativeOffer || !canUseWechat"
+                      @click="selectMonthlyTopupChannel('wechat')"
+                    >
+                      <span class="topup-radio" aria-hidden="true"><span></span></span>
+                      <PaymentMethodIcon kind="wechat" />
+                      <strong>{{ t('nativeCheckout.wechatPay') }}</strong>
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="monthly-method-card_shop"
+                      class="topup-summary-method"
+                      :class="{ 'topup-summary-method--active': selectedMonthlyTopupChannel === 'card_shop' }"
+                      :disabled="!canOpenSelectedMonthlyCardShop"
+                      @click="selectMonthlyTopupChannel('card_shop')"
+                    >
+                      <span class="topup-radio" aria-hidden="true"><span></span></span>
+                      <PaymentMethodIcon kind="backup" />
+                      <strong>{{ t('topup.cardShopChannelTitle') }}</strong>
+                    </button>
+                  </div>
+                </section>
+
                 <div class="topup-monthly-actions">
                   <NativeCheckoutTrialOffer
-                    v-if="selectedMonthlyNativeOffer"
+                    v-if="selectedMonthlyNativeOffer && selectedMonthlyPayMethod"
                     :key="selectedMonthlyPlan.id"
                     :offer-code="selectedMonthlyPlan.id"
-                    compact
+                    :preferred-pay-method="selectedMonthlyPayMethod"
+                    :action-label="`立即支付 ${selectedMonthlyPlan.directPrice}`"
+                    action-only
                   />
                   <button
+                    v-else
                     type="button"
                     class="topup-primary-action topup-action-with-icon"
                     :disabled="!canOpenSelectedMonthlyCardShop"
@@ -273,8 +318,6 @@
                   </button>
                 </div>
               </template>
-
-              <p class="topup-security-note">支付成功后自动到账</p>
             </div>
           </aside>
         </div>
@@ -305,6 +348,7 @@ import { useMonthlyCreditCardPlans } from '@/composables/useMonthlyCreditCardPla
 import { shouldShowManualNewcomerProduct, useManualNewcomerOffer } from '@/composables/useManualNewcomerOffer'
 import { useNativeCheckoutOffers } from '@/composables/useNativeCheckoutOffers'
 import NativeCheckoutTrialOffer from '@/components/user/NativeCheckoutTrialOffer.vue'
+import type { NativeCheckoutPaymentMethod } from '@/api/nativeCheckout'
 import { isDirectQrImageUrl, renderQrCodeDataUrl } from '@/utils/qrImage'
 
 const { t } = useI18n()
@@ -333,6 +377,7 @@ const selectedProductKind = ref<SelectedProductKind>('balance')
 const selectedBalanceProductId = ref('')
 const selectedQuantity = ref(1)
 const selectedMonthlyPlanId = ref<MonthlyCreditCardPlan['id']>('plus')
+const selectedMonthlyTopupChannel = ref<'card_shop' | NativeCheckoutPaymentMethod>('alipay')
 const payType = ref<TopupPayType>('alipay')
 const submitting = ref(false)
 const openingCardShop = ref(false)
@@ -458,6 +503,10 @@ const selectedMonthlyNativeOffer = computed(() => {
   if (!plan) return undefined
   return findNativeOfferByCode(plan.id, 'subscription')
 })
+const selectedMonthlyPayMethod = computed<NativeCheckoutPaymentMethod | undefined>(() => {
+  if (selectedMonthlyTopupChannel.value === 'card_shop') return undefined
+  return selectedMonthlyTopupChannel.value
+})
 const selectedMonthlyCardShopUrl = computed(() => selectedMonthlyPlan.value?.cardShopUrl || '')
 const canOpenSelectedMonthlyCardShop = computed(() => selectedMonthlyCardShopUrl.value.trim() !== '')
 const canUseCardShopForSelected = computed(() => cardShopMode.value && !!selectedCardShopProduct.value)
@@ -537,6 +586,7 @@ function balanceProductDisplayLabel(product: BalanceProduct) {
 function selectCatalog(kind: SelectedProductKind) {
   selectedProductKind.value = kind
   if (kind === 'balance') syncTopupChannelWithSettings()
+  else syncMonthlyTopupChannelWithSettings()
 }
 
 function selectBalanceProduct(product: BalanceProduct) {
@@ -549,6 +599,26 @@ function selectBalanceProduct(product: BalanceProduct) {
 function selectMonthlyPlan(plan: MonthlyCreditCardPlan) {
   selectedProductKind.value = 'monthly'
   selectedMonthlyPlanId.value = plan.id
+  syncMonthlyTopupChannelWithSettings()
+}
+
+function selectMonthlyTopupChannel(channel: 'card_shop' | NativeCheckoutPaymentMethod) {
+  if (channel === 'alipay' && (!selectedMonthlyNativeOffer.value || !canUseAlipay.value)) return
+  if (channel === 'wechat' && (!selectedMonthlyNativeOffer.value || !canUseWechat.value)) return
+  if (channel === 'card_shop' && !canOpenSelectedMonthlyCardShop.value) return
+  selectedMonthlyTopupChannel.value = channel
+}
+
+function syncMonthlyTopupChannelWithSettings() {
+  if (selectedMonthlyNativeOffer.value && canUseAlipay.value) {
+    selectedMonthlyTopupChannel.value = 'alipay'
+    return
+  }
+  if (selectedMonthlyNativeOffer.value && canUseWechat.value) {
+    selectedMonthlyTopupChannel.value = 'wechat'
+    return
+  }
+  if (canOpenSelectedMonthlyCardShop.value) selectedMonthlyTopupChannel.value = 'card_shop'
 }
 
 function selectTopupChannel(channel: TopupChannel) {
@@ -808,6 +878,7 @@ void Promise.all([
   loadNativeCheckoutOffers().catch(() => {})
 ]).then(() => {
   syncTopupChannelWithSettings()
+  syncMonthlyTopupChannelWithSettings()
 })
 </script>
 
@@ -993,12 +1064,6 @@ void Promise.all([
   font-size: 0.68rem;
   font-weight: 700;
   line-height: 1.35;
-  white-space: nowrap;
-}
-
-.topup-monthly-credits {
-  color: rgb(var(--color-gray-500));
-  font-size: 0.8rem;
   white-space: nowrap;
 }
 
@@ -1222,16 +1287,12 @@ void Promise.all([
   text-align: center;
 }
 
-.topup-security-note {
-  margin-top: 1.1rem;
-  color: rgb(var(--color-gray-400));
-  font-size: 0.72rem;
-  text-align: center;
+.topup-newcomer-actions {
+  margin-top: 1.35rem;
 }
 
-.topup-newcomer-actions,
 .topup-monthly-actions {
-  margin-top: 1.35rem;
+  margin-top: 0;
 }
 
 .topup-newcomer-actions :deep(.trial-offer),
@@ -1303,9 +1364,7 @@ void Promise.all([
 
 .dark .topup-copy,
 .dark .topup-summary-row,
-.dark .topup-monthly-credits,
-.dark .topup-monthly-catalog-note,
-.dark .topup-security-note {
+.dark .topup-monthly-catalog-note {
   color: rgb(var(--color-dark-300));
 }
 
@@ -1349,7 +1408,7 @@ void Promise.all([
   background: rgb(var(--color-dark-50));
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1200px) {
   .topup-page {
     padding-top: 2.5rem;
   }

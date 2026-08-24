@@ -464,7 +464,7 @@ func (s *TopupService) QueryOrderStatus(ctx context.Context, orderNo string, use
 		return nil, ErrTopupNotFound
 	}
 
-	if order.Status == TopupStatusPending {
+	if order.Status == TopupStatusPending || order.Status == TopupStatusExpired {
 		if order.Provider == payment.ProviderEasyPay {
 			s.selfHealEasyPayOrder(ctx, orderNo, order)
 		} else {
@@ -484,6 +484,11 @@ func (s *TopupService) QueryOrderStatus(ctx context.Context, orderNo string, use
 					}
 				}
 			}
+		}
+	}
+	if order.Status == TopupStatusPending && !order.CreatedAt.IsZero() && time.Since(order.CreatedAt) >= TopupOrderTTL {
+		if err := s.topupRepo.UpdateStatus(ctx, order.ID, TopupStatusExpired, nil); err == nil {
+			order.Status = TopupStatusExpired
 		}
 	}
 
@@ -547,7 +552,7 @@ func (s *TopupService) completeOrder(ctx context.Context, orderNo string, order 
 	txCtx := dbent.NewTxContext(ctx, tx)
 
 	// 原子标记订单完成（仅当状态为 pending 时生效，防止并发双重入账）
-	done, err := s.topupRepo.CompleteIfPending(txCtx, order.ID, xunhuTradeNo)
+	done, err := s.topupRepo.CompleteIfUnsettled(txCtx, order.ID, xunhuTradeNo)
 	if err != nil {
 		return fmt.Errorf("complete topup order: %w", err)
 	}

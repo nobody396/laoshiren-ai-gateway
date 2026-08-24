@@ -48,6 +48,9 @@ func (r *inMemoryInvoiceRepo) entClient(ctx context.Context) *dbent.Client {
 
 func (r *inMemoryInvoiceRepo) ListUserTopupOrders(ctx context.Context, userID int64, params pagination.PaginationParams, filters InvoiceTopupOrderListFilters) ([]InvoiceTopupOrder, int, error) {
 	client := r.entClient(ctx)
+	if err := testExpireStalePendingTopupOrders(ctx, client); err != nil {
+		return nil, 0, err
+	}
 	query := client.TopupOrder.Query().Where(topuporder.UserIDEQ(userID))
 	query = testApplyTopupOrderFilters(query, filters, false)
 	total, err := query.Clone().Count(ctx)
@@ -64,6 +67,9 @@ func (r *inMemoryInvoiceRepo) ListUserTopupOrders(ctx context.Context, userID in
 
 func (r *inMemoryInvoiceRepo) ListAdminTopupOrders(ctx context.Context, params pagination.PaginationParams, filters InvoiceTopupOrderListFilters) ([]InvoiceTopupOrder, int, error) {
 	client := r.entClient(ctx)
+	if err := testExpireStalePendingTopupOrders(ctx, client); err != nil {
+		return nil, 0, err
+	}
 	query := client.TopupOrder.Query().WithUser()
 	query = testApplyTopupOrderFilters(query, filters, true)
 	total, err := query.Clone().Count(ctx)
@@ -76,6 +82,18 @@ func (r *inMemoryInvoiceRepo) ListAdminTopupOrders(ctx context.Context, params p
 		return nil, 0, fmt.Errorf("list admin topup orders: %w", err)
 	}
 	return testMapTopupOrders(entities), total, nil
+}
+
+func testExpireStalePendingTopupOrders(ctx context.Context, client *dbent.Client) error {
+	_, err := client.TopupOrder.Update().
+		Where(
+			topuporder.StatusEQ(TopupStatusPending),
+			topuporder.CreatedAtLTE(time.Now().Add(-TopupOrderTTL)),
+		).
+		SetStatus(TopupStatusExpired).
+		SetUpdatedAt(time.Now()).
+		Save(ctx)
+	return err
 }
 
 func (r *inMemoryInvoiceRepo) SumSelectableAmountFen(ctx context.Context, userID int64, filters InvoiceTopupOrderListFilters) (int64, error) {

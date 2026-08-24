@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/payment"
@@ -81,12 +82,12 @@ func (f *topupOrderRepoFake) UpdateQRCodeURL(_ context.Context, id int64, qrCode
 	return nil
 }
 
-func (f *topupOrderRepoFake) CompleteIfPending(_ context.Context, id int64, tradeNo *string) (bool, error) {
+func (f *topupOrderRepoFake) CompleteIfUnsettled(_ context.Context, id int64, tradeNo *string) (bool, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.completeCalls++
 	stored := f.byID[id]
-	if stored == nil || stored.Status != TopupStatusPending {
+	if stored == nil || (stored.Status != TopupStatusPending && stored.Status != TopupStatusExpired) {
 		return false, nil
 	}
 	stored.Status = TopupStatusCompleted
@@ -406,6 +407,27 @@ func TestTopupService_HandleEasyPayNotify_CreditsOnce(t *testing.T) {
 	require.Equal(t, 1, userRepo.addCount(), "duplicate notify must not credit twice")
 }
 
+func TestTopupService_HandleEasyPayNotify_LatePaidExpiredOrderStillCreditsOnce(t *testing.T) {
+	ctx := context.Background()
+	repo := newTopupOrderRepoFake()
+	userRepo := &topupUserRepoFake{userRepoStub: &userRepoStub{}}
+	svc := newEasyPayTopupService(t, repo, userRepo, map[string]string{}, &stubEasyPayProvider{})
+	userID := seedTopupEntUser(t, svc, ctx)
+	order := seedPendingEasyPayOrder(repo, "TP000421234567890131", userID, 5000, "alipay")
+	order.Status = TopupStatusExpired
+
+	notify := &payment.NotifyResult{
+		OutTradeNo: "TP000421234567890131", TradeNo: "EP-LATE-1",
+		Method: "alipay", AmountCNYFen: 5000, Paid: true,
+	}
+	require.NoError(t, svc.HandleEasyPayNotify(ctx, notify))
+	require.Equal(t, TopupStatusCompleted, repo.storedOrder(notify.OutTradeNo).Status)
+	require.Equal(t, 1, userRepo.addCount())
+
+	require.NoError(t, svc.HandleEasyPayNotify(ctx, notify))
+	require.Equal(t, 1, userRepo.addCount(), "duplicate late notify must remain idempotent")
+}
+
 func TestTopupService_HandleEasyPayNotify_UnpaidAckOnly(t *testing.T) {
 	ctx := context.Background()
 	repo := newTopupOrderRepoFake()
@@ -506,6 +528,38 @@ func TestTopupService_QueryOrderStatus_EasyPaySelfHealCompletesPaidOrder(t *test
 	stored := repo.storedOrder("TP000421234567890128")
 	require.NotNil(t, stored.XunhuTradeNo)
 	require.Equal(t, "EP-Q-1", *stored.XunhuTradeNo)
+}
+
+func TestTopupService_QueryOrderStatus_ExpiresUnpaidOrderAfterFiveMinutes(t *testing.T) {
+	ctx := context.Background()
+	repo := newTopupOrderRepoFake()
+	provider := &stubEasyPayProvider{queryResult: &payment.QueryResult{Paid: false}}
+	svc := newEasyPayTopupService(t, repo, &topupUserRepoFake{userRepoStub: &userRepoStub{}}, map[string]string{}, provider)
+	order := seedPendingEasyPayOrder(repo, "TP000421234567890132", 42, 5000, "alipay")
+	order.CreatedAt = time.Now().Add(-TopupOrderTTL - time.Second)
+
+	got, err := svc.QueryOrderStatus(ctx, order.OrderNo, order.UserID)
+	require.NoError(t, err)
+	require.Equal(t, TopupStatusExpired, got.Status)
+	require.Equal(t, TopupStatusExpired, repo.storedOrder(order.OrderNo).Status)
+	require.Equal(t, []string{order.OrderNo}, provider.queryOutNos, "provider is checked before local expiry")
+}
+
+func TestTopupService_QueryOrderStatus_SelfHealsLatePaidExpiredOrder(t *testing.T) {
+	ctx := context.Background()
+	repo := newTopupOrderRepoFake()
+	userRepo := &topupUserRepoFake{userRepoStub: &userRepoStub{}}
+	provider := &stubEasyPayProvider{queryResult: &payment.QueryResult{Paid: true, TradeNo: "EP-LATE-Q", AmountCNYFen: 5000}}
+	svc := newEasyPayTopupService(t, repo, userRepo, map[string]string{}, provider)
+	userID := seedTopupEntUser(t, svc, ctx)
+	order := seedPendingEasyPayOrder(repo, "TP000421234567890133", userID, 5000, "alipay")
+	order.Status = TopupStatusExpired
+	order.CreatedAt = time.Now().Add(-TopupOrderTTL - time.Minute)
+
+	got, err := svc.QueryOrderStatus(ctx, order.OrderNo, userID)
+	require.NoError(t, err)
+	require.Equal(t, TopupStatusCompleted, got.Status)
+	require.Equal(t, 1, userRepo.addCount())
 }
 
 func TestTopupService_QueryOrderStatus_EasyPaySelfHealQueryFailureKeepsPending(t *testing.T) {

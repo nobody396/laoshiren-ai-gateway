@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/enttest"
@@ -14,6 +15,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/invoicerequestorder"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/topuporder"
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
 	"github.com/xuri/excelize/v2"
 
@@ -49,6 +51,37 @@ func newInvoiceServiceForTest(t *testing.T) (*InvoiceService, *dbent.Client) {
 	t.Helper()
 	repo, client := newInvoiceRepoForTest(t)
 	return NewInvoiceService(repo), client
+}
+
+func TestInvoiceServiceListTopupOrdersExpiresStalePendingRows(t *testing.T) {
+	svc, client := newInvoiceServiceForTest(t)
+	ctx := context.Background()
+	user := client.User.Create().SetEmail("topup-expiry@example.com").SetPasswordHash("hash").SaveX(ctx)
+	now := time.Now()
+	stale := client.TopupOrder.Create().
+		SetOrderNo("TP-STALE-LIST").
+		SetUserID(user.ID).
+		SetAmountCnyFen(2000).
+		SetPayType("alipay").
+		SetStatus(TopupStatusPending).
+		SetCreatedAt(now.Add(-TopupOrderTTL - time.Second)).
+		SetUpdatedAt(now.Add(-TopupOrderTTL - time.Second)).
+		SaveX(ctx)
+	fresh := client.TopupOrder.Create().
+		SetOrderNo("TP-FRESH-LIST").
+		SetUserID(user.ID).
+		SetAmountCnyFen(2000).
+		SetPayType("alipay").
+		SetStatus(TopupStatusPending).
+		SetCreatedAt(now).
+		SetUpdatedAt(now).
+		SaveX(ctx)
+
+	result, err := svc.ListUserTopupOrders(ctx, user.ID, pagination.DefaultPagination(), InvoiceTopupOrderListFilters{})
+	require.NoError(t, err)
+	require.Len(t, result.Items, 2)
+	require.Equal(t, TopupStatusExpired, client.TopupOrder.GetX(ctx, stale.ID).Status)
+	require.Equal(t, TopupStatusPending, client.TopupOrder.GetX(ctx, fresh.ID).Status)
 }
 
 func TestInvoiceServiceCreateProfileAcceptsChineseAddressByRuneLength(t *testing.T) {

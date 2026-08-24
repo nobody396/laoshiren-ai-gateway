@@ -33,6 +33,9 @@ func NewInvoiceRepository(client *dbent.Client) service.InvoiceRepository {
 
 func (r *invoiceRepository) ListUserTopupOrders(ctx context.Context, userID int64, params pagination.PaginationParams, filters service.InvoiceTopupOrderListFilters) ([]service.InvoiceTopupOrder, int, error) {
 	client := clientFromContext(ctx, r.client)
+	if err := expireStalePendingTopupOrders(ctx, client); err != nil {
+		return nil, 0, err
+	}
 	query := client.TopupOrder.Query().Where(topuporder.UserIDEQ(userID))
 	query = applyTopupOrderFilters(query, filters, false)
 
@@ -54,6 +57,9 @@ func (r *invoiceRepository) ListUserTopupOrders(ctx context.Context, userID int6
 
 func (r *invoiceRepository) ListAdminTopupOrders(ctx context.Context, params pagination.PaginationParams, filters service.InvoiceTopupOrderListFilters) ([]service.InvoiceTopupOrder, int, error) {
 	client := clientFromContext(ctx, r.client)
+	if err := expireStalePendingTopupOrders(ctx, client); err != nil {
+		return nil, 0, err
+	}
 	query := client.TopupOrder.Query().WithUser()
 	query = applyTopupOrderFilters(query, filters, true)
 
@@ -71,6 +77,22 @@ func (r *invoiceRepository) ListAdminTopupOrders(ctx context.Context, params pag
 		return nil, 0, fmt.Errorf("list admin topup orders: %w", err)
 	}
 	return mapTopupOrders(entities), total, nil
+}
+
+func expireStalePendingTopupOrders(ctx context.Context, client *dbent.Client) error {
+	cutoff := time.Now().Add(-service.TopupOrderTTL)
+	_, err := client.TopupOrder.Update().
+		Where(
+			topuporder.StatusEQ(service.TopupStatusPending),
+			topuporder.CreatedAtLTE(cutoff),
+		).
+		SetStatus(service.TopupStatusExpired).
+		SetUpdatedAt(time.Now()).
+		Save(ctx)
+	if err != nil {
+		return fmt.Errorf("expire stale pending topup orders: %w", err)
+	}
+	return nil
 }
 
 func (r *invoiceRepository) SumSelectableAmountFen(ctx context.Context, userID int64, filters service.InvoiceTopupOrderListFilters) (int64, error) {

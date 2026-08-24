@@ -44,9 +44,8 @@ describe('GA4 document bootstrap', () => {
     ])
   })
 
-  it('keeps the external loader in the initial HTML', () => {
-    expect(indexHTML).toContain(
-      '<script async id="ga4-gtag-js" src="https://www.googletagmanager.com/gtag/js?id=G-KY7X4XJS6B"></script>'
-    )
+  it('does not make the initial document wait for the external GA loader', () => {
+    expect(indexHTML).not.toContain('id="ga4-gtag-js"')
+    expect(indexHTML).not.toContain('src="https://www.googletagmanager.com/gtag/js')
   })
 })

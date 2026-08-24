@@ -212,15 +212,27 @@ WHERE code = 'newcomer-balance-5-to-10'
 
 	hidden, err := repo.ListVisibleOffers(ctx, user.ID)
 	require.NoError(t, err)
-	require.Empty(t, hidden, "a disabled offer must stay invisible before the owned tester is allowlisted")
+	hiddenCodes := make([]string, 0, len(hidden))
+	for _, offer := range hidden {
+		hiddenCodes = append(hiddenCodes, offer.Code)
+	}
+	require.ElementsMatch(t, []string{"plus", "pro", "max"}, hiddenCodes)
+	require.NotContains(t, hiddenCodes, "newcomer-balance-5-to-10", "the disabled newcomer offer must stay invisible before the owned tester is allowlisted")
 	_, err = repo.GetVisibleOffer(ctx, user.ID, "newcomer-balance-5-to-10")
 	require.ErrorIs(t, err, service.ErrNativeCheckoutOfferNotFound)
 	require.NoError(t, allowNativeCheckoutTester(ctx, user.ID))
 	visible, err := repo.ListVisibleOffers(ctx, user.ID)
 	require.NoError(t, err)
-	require.Len(t, visible, 1)
-	require.Equal(t, "newcomer-balance-5-to-10", visible[0].Code)
-	require.False(t, visible[0].Enabled, "tester visibility must not globally enable the offer")
+	require.Len(t, visible, 4)
+	var testerOffer *service.NativeCheckoutOffer
+	for i := range visible {
+		if visible[i].Code == "newcomer-balance-5-to-10" {
+			testerOffer = &visible[i]
+			break
+		}
+	}
+	require.NotNil(t, testerOffer)
+	require.False(t, testerOffer.Enabled, "tester visibility must not globally enable the offer")
 	visibleOffer, err := repo.GetVisibleOffer(ctx, user.ID, "newcomer-balance-5-to-10")
 	require.NoError(t, err)
 	require.False(t, visibleOffer.Enabled)

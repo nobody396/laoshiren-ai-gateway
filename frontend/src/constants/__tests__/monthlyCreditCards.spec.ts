@@ -15,7 +15,7 @@ describe('monthlyCreditCardPlans V3', () => {
       {
         id: 'plus',
         shop: 259,
-        direct: 249,
+        direct: 255,
         daily: 0,
         weekly: 0,
         monthly: 3000,
@@ -24,7 +24,7 @@ describe('monthlyCreditCardPlans V3', () => {
       {
         id: 'pro',
         shop: 729,
-        direct: 699,
+        direct: 715,
         daily: 0,
         weekly: 0,
         monthly: 9000,
@@ -33,7 +33,7 @@ describe('monthlyCreditCardPlans V3', () => {
       {
         id: 'max',
         shop: 1549,
-        direct: 1499,
+        direct: 1525,
         daily: 0,
         weekly: 0,
         monthly: 20000,

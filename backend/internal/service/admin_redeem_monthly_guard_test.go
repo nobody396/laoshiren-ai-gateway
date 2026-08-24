@@ -56,7 +56,7 @@ func TestCurrentMonthlyCardGenerationGuardAcceptsFreshCompleteBundle(t *testing.
 		affiliateProgram: NewAffiliateProgramService(&currentMonthlyProgramRepoStub{settings: settings}),
 	}
 
-	current, err := svc.guardCurrentMonthlyCardGeneration(context.Background(), []Group{gpt, claude, grok}, 31, 249)
+	current, err := svc.guardCurrentMonthlyCardGeneration(context.Background(), []Group{gpt, claude, grok}, 31, 255)
 
 	require.NoError(t, err)
 	require.True(t, current)
@@ -72,7 +72,7 @@ func TestCurrentMonthlyCardGenerationGuardRejectsPartialBundle(t *testing.T) {
 		affiliateProgram: NewAffiliateProgramService(&currentMonthlyProgramRepoStub{settings: settings}),
 	}
 
-	current, err := svc.guardCurrentMonthlyCardGeneration(context.Background(), []Group{gpt}, 31, 249)
+	current, err := svc.guardCurrentMonthlyCardGeneration(context.Background(), []Group{gpt}, 31, 255)
 
 	require.True(t, current)
 	require.ErrorContains(t, err, "complete GPT, Claude, and Grok group bundle")

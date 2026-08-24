@@ -72,9 +72,9 @@ var affiliateCommercialPackageCatalog = []affiliateCommercialPackageInput{
 	{id: "payg-20", name: "按量 ¥20", kind: "payg", shopPrice: 20, directPrice: 20, credits: 20},
 	{id: "payg-50", name: "按量 ¥50", kind: "payg", shopPrice: 50, directPrice: 50, credits: 50},
 	{id: "payg-100", name: "按量 ¥100", kind: "payg", shopPrice: 100, directPrice: 100, credits: 100},
-	{id: "plus", name: "Plus", kind: "monthly", shopPrice: 259, directPrice: 249, credits: 300},
-	{id: "pro", name: "Pro", kind: "monthly", shopPrice: 729, directPrice: 699, credits: 900},
-	{id: "max", name: "Max", kind: "monthly", shopPrice: 1549, directPrice: 1499, credits: 2000},
+	{id: "plus", name: "Plus", kind: "monthly", shopPrice: 259, directPrice: 255, credits: 300},
+	{id: "pro", name: "Pro", kind: "monthly", shopPrice: 729, directPrice: 715, credits: 900},
+	{id: "max", name: "Max", kind: "monthly", shopPrice: 1549, directPrice: 1525, credits: 2000},
 }
 
 var affiliateCommercialGroupTargets = []AffiliateCommercialGroupTarget{

@@ -50,7 +50,8 @@ export function initAnalytics(): void {
   if (initialized || !shouldEnableAnalytics()) return
 
   const id = measurementId()
-  if (window.__GA4_BOOTSTRAP__?.measurementId === id && window.gtag) {
+  const existingScript = document.getElementById('ga4-gtag-js')
+  if (window.__GA4_BOOTSTRAP__?.measurementId === id && window.gtag && existingScript) {
     initialized = true
     return
   }
@@ -62,7 +63,6 @@ export function initAnalytics(): void {
       window.dataLayer?.push(args)
     }
 
-  const existingScript = document.getElementById('ga4-gtag-js')
   if (!existingScript) {
     const script = document.createElement('script')
     script.id = 'ga4-gtag-js'
@@ -78,9 +78,33 @@ export function initAnalytics(): void {
   initialized = true
 }
 
+// Loading googletagmanager from the initial HTML keeps the browser's native
+// progress indicator running until a blocked/slow third-party request ends.
+// Queue page views immediately, but fetch the optional analytics runtime only
+// after the first-party document has fully loaded.
+export function scheduleAnalyticsInit(): void {
+  if (!shouldEnableAnalytics()) return
+
+  const start = () => {
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number
+    }
+    if (idleWindow.requestIdleCallback) {
+      idleWindow.requestIdleCallback(() => initAnalytics(), { timeout: 2000 })
+    } else {
+      window.setTimeout(() => initAnalytics(), 0)
+    }
+  }
+
+  if (document.readyState === 'complete') {
+    start()
+  } else {
+    window.addEventListener('load', start, { once: true })
+  }
+}
+
 export function trackPageView(path: string, params: AnalyticsParams = {}): void {
   if (!shouldEnableAnalytics()) return
-  initAnalytics()
 
   const pagePath = cleanPath(path)
   const bootstrap = window.__GA4_BOOTSTRAP__
@@ -88,6 +112,8 @@ export function trackPageView(path: string, params: AnalyticsParams = {}): void 
     bootstrap.initialPageViewConsumed = true
     if (bootstrap.initialPagePath === pagePath) return
   }
+
+  if (!window.gtag) initAnalytics()
 
   window.gtag?.('event', 'page_view', {
     page_path: pagePath,
@@ -99,6 +125,6 @@ export function trackPageView(path: string, params: AnalyticsParams = {}): void 
 
 export function trackEvent(eventName: string, params: AnalyticsParams = {}): void {
   if (!shouldEnableAnalytics()) return
-  initAnalytics()
+  if (!window.gtag) initAnalytics()
   window.gtag?.('event', eventName, cleanParams(params))
 }

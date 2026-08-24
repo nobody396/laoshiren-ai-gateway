@@ -15,6 +15,9 @@ var (
 	ErrTopupMinAmount        = infraerrors.BadRequest("TOPUP_MIN_AMOUNT", "minimum topup amount is ¥20")
 	ErrTopupMaxAmount        = infraerrors.BadRequest("TOPUP_MAX_AMOUNT", "单次充值最高为 ¥3000")
 	ErrTopupInvalidType      = infraerrors.BadRequest("TOPUP_INVALID_TYPE", "pay_type must be alipay or wechat")
+	ErrTopupInvalidProduct   = infraerrors.BadRequest("TOPUP_INVALID_PRODUCT", "不支持的余额卡面额")
+	ErrTopupInvalidQuantity  = infraerrors.BadRequest("TOPUP_INVALID_QUANTITY", "余额卡数量必须大于 0")
+	ErrTopupProductMismatch  = infraerrors.BadRequest("TOPUP_PRODUCT_MISMATCH", "充值总额与余额卡面额和数量不一致")
 )
 
 const (

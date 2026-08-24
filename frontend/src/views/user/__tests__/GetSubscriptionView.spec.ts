@@ -24,7 +24,7 @@ const publicSettings = {
   topup_alipay_enabled: true,
   topup_wechat_enabled: true,
   card_shop_enabled: true,
-  card_shop_products: [20, 50, 100, 500, 1000].map((amount, index) => ({
+  card_shop_products: [20, 50, 100, 300, 500, 1000].map((amount, index) => ({
     id: `card-${amount}`,
     label: `¥${amount} 余额卡`,
     amount_cny: amount,
@@ -139,10 +139,62 @@ describe('GetSubscriptionView payment UX', () => {
     expect(summary.find('[data-testid="topup-method-wechat"] img').attributes('src')).toContain('wechat.svg')
     expect(wrapper.find('.topup-main [data-testid^="topup-method-"]').exists()).toBe(false)
     expect(wrapper.find('.topup-pay-grid').exists()).toBe(false)
+    expect(wrapper.text()).toContain('¥300 余额卡')
+    expect(wrapper.text()).not.toContain('topup.monthlyDirectAction')
+    expect(wrapper.findAll('.topup-promotion-badge')).toHaveLength(2)
+    expect(wrapper.find('.topup-product-desc').exists()).toBe(false)
+
+    const tabs = wrapper.findAll('[role="tab"]')
+    await tabs[1].trigger('click')
     expect(wrapper.text()).toContain('¥255')
     expect(wrapper.text()).toContain('¥715')
     expect(wrapper.text()).toContain('¥1525')
-    expect(wrapper.text()).not.toContain('topup.monthlyDirectAction')
+
+    wrapper.unmount()
+  })
+
+  it('multiplies a balance-card quantity and sends the locked SKU selection', async () => {
+    mocks.createTopupOrder.mockResolvedValue({
+      order_no: 'TP-QTY-1',
+      amount_cny_fen: 6000,
+      bonus_amount_cny_fen: 0,
+      credited_amount_cny_fen: 6000,
+      pay_type: 'alipay',
+      qr_code_url: 'alipays://platformapi/startapp?appId=1',
+    })
+    mocks.queryTopupOrderStatus.mockResolvedValue({ order_no: 'TP-QTY-1', status: 'pending' })
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('[aria-label="增加数量"]').trigger('click')
+    await wrapper.find('[aria-label="增加数量"]').trigger('click')
+    expect(wrapper.get('[data-testid="topup-quantity"]').text()).toBe('3')
+    expect(wrapper.find('.topup-summary-amount').text()).toBe('¥60')
+    expect(wrapper.text()).toContain('立即支付 ¥60')
+
+    await wrapper.find('[data-testid="topup-submit"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.createTopupOrder).toHaveBeenCalledWith(6000, 'alipay', {
+      productAmountCnyFen: 2000,
+      quantity: 3,
+    })
+
+    wrapper.unmount()
+  })
+
+  it('keeps the limited-time bonus for every promotional card in the quantity', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    const promotional500 = wrapper.findAll('.topup-product').find((item) => item.text().includes('实付 ¥500 到账 ¥550'))
+    expect(promotional500).toBeDefined()
+    await promotional500!.trigger('click')
+    await wrapper.find('[aria-label="增加数量"]').trigger('click')
+    await wrapper.find('[aria-label="增加数量"]').trigger('click')
+
+    expect(wrapper.find('.topup-summary-amount').text()).toBe('¥1500')
+    expect(wrapper.find('.topup-credit-amount').text()).toBe('¥1650.00')
 
     wrapper.unmount()
   })
@@ -197,7 +249,10 @@ describe('GetSubscriptionView payment UX', () => {
     await wrapper.find('[data-testid="topup-submit"]').trigger('click')
     await flushPromises()
 
-    expect(mocks.createTopupOrder).toHaveBeenCalledWith(2000, 'alipay')
+    expect(mocks.createTopupOrder).toHaveBeenCalledWith(2000, 'alipay', {
+      productAmountCnyFen: 2000,
+      quantity: 1,
+    })
     expect(mocks.refreshUser).toHaveBeenCalledTimes(1)
 
     wrapper.unmount()

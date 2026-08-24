@@ -272,6 +272,29 @@ func TestTopupService_CreateTopupOrder_EasyPayAlipay(t *testing.T) {
 	require.Equal(t, []string{"qr://easypay-content"}, repo.qrUpdates[stored.ID])
 }
 
+func TestTopupService_CreateTopupProductOrder_LocksPerCardPromotion(t *testing.T) {
+	repo := newTopupOrderRepoFake()
+	provider := &stubEasyPayProvider{
+		createResult: &payment.CreateOrderResult{QRContent: "qr://quantity-promotion"},
+	}
+	svc := newEasyPayTopupService(t, repo, &topupUserRepoFake{}, map[string]string{
+		SettingKeyTopupAlipayProvider: "easypay",
+		SettingKeyFrontendURL:         "https://frontend.example",
+	}, provider)
+
+	orderNo, _, err := svc.CreateTopupProductOrder(
+		context.Background(), 42, TopupPromotion500PaidFen, 3, "alipay", "203.0.113.9",
+	)
+	require.NoError(t, err)
+	require.Len(t, provider.createReqs, 1)
+	require.Equal(t, 150_000, provider.createReqs[0].AmountCNYFen)
+
+	stored := repo.storedOrder(orderNo)
+	require.Equal(t, 150_000, stored.AmountCNYFen)
+	require.Equal(t, 15_000, stored.BonusAmountCNYFen)
+	require.Equal(t, 165_000, StoredTopupCreditQuote(stored.AmountCNYFen, stored.BonusAmountCNYFen).CreditedAmountCNYFen)
+}
+
 func TestTopupService_CreateTopupOrder_EasyPayPrefersProviderQRImage(t *testing.T) {
 	repo := newTopupOrderRepoFake()
 	provider := &stubEasyPayProvider{createResult: &payment.CreateOrderResult{

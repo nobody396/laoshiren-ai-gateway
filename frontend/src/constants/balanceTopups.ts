@@ -1,4 +1,4 @@
-export const BALANCE_TOPUP_PRESETS = [20, 50, 100] as const
+export const BALANCE_TOPUP_PRESETS = [20, 50, 100, 300] as const
 
 export type PromotionalBalanceTopup = {
   paidAmountCny: number
@@ -33,4 +33,9 @@ export function getPromotionalBalanceTopup(amount: number): PromotionalBalanceTo
 
 export function getCreditedBalanceTopupAmount(amount: number): number {
   return getPromotionalBalanceTopup(amount)?.creditedAmountCny ?? amount
+}
+
+export function getCreditedBalanceTopupProductAmount(amount: number, quantity: number): number {
+  const safeQuantity = Number.isInteger(quantity) && quantity > 0 ? quantity : 1
+  return getCreditedBalanceTopupAmount(amount) * safeQuantity
 }

@@ -169,11 +169,26 @@ func (s *TopupService) resolveXunhuReturnURL(ctx context.Context, notifyURL stri
 
 // CreateTopupOrder 创建充值订单，返回订单号和二维码 URL
 func (s *TopupService) CreateTopupOrder(ctx context.Context, userID int64, amountCNYFen int, payType, clientIP string) (orderNo, qrCodeURL string, err error) {
+	return s.createTopupOrderWithQuote(ctx, userID, QuoteTopupCredit(amountCNYFen), payType, clientIP)
+}
+
+// CreateTopupProductOrder creates an order for a catalog SKU and quantity. It
+// locks the per-card promotion into the order while the payment gateway still
+// receives the aggregate cash amount.
+func (s *TopupService) CreateTopupProductOrder(ctx context.Context, userID int64, productAmountCNYFen, quantity int, payType, clientIP string) (orderNo, qrCodeURL string, err error) {
+	quote, err := QuoteTopupProductCredit(productAmountCNYFen, quantity)
+	if err != nil {
+		return "", "", err
+	}
+	return s.createTopupOrderWithQuote(ctx, userID, quote, payType, clientIP)
+}
+
+func (s *TopupService) createTopupOrderWithQuote(ctx context.Context, userID int64, quote TopupCreditQuote, payType, clientIP string) (orderNo, qrCodeURL string, err error) {
 	// 参数校验
-	if amountCNYFen < TopupMinAmountFen {
+	if quote.PaidAmountCNYFen < TopupMinAmountFen {
 		return "", "", ErrTopupMinAmount
 	}
-	if amountCNYFen > TopupMaxAmountFen {
+	if quote.PaidAmountCNYFen > TopupMaxAmountFen {
 		return "", "", ErrTopupMaxAmount
 	}
 	if payType != "alipay" && payType != "wechat" {
@@ -186,13 +201,14 @@ func (s *TopupService) CreateTopupOrder(ctx context.Context, userID int64, amoun
 		return "", "", fmt.Errorf("get topup provider: %w", err)
 	}
 	if provider == payment.ProviderEasyPay {
-		return s.createEasyPayTopupOrder(ctx, userID, amountCNYFen, payType, clientIP)
+		return s.createEasyPayTopupOrder(ctx, userID, quote, payType, clientIP)
 	}
-	return s.createXunhuTopupOrder(ctx, userID, amountCNYFen, payType)
+	return s.createXunhuTopupOrder(ctx, userID, quote, payType)
 }
 
 // createXunhuTopupOrder 虎皮椒下单路径（原 CreateTopupOrder 实现，保持不变）
-func (s *TopupService) createXunhuTopupOrder(ctx context.Context, userID int64, amountCNYFen int, payType string) (orderNo, qrCodeURL string, err error) {
+func (s *TopupService) createXunhuTopupOrder(ctx context.Context, userID int64, quote TopupCreditQuote, payType string) (orderNo, qrCodeURL string, err error) {
+	amountCNYFen := quote.PaidAmountCNYFen
 	// 读取虎皮椒配置
 	appID, key, notifyURL, enabled, err := s.settingService.GetXunhuConfig(ctx, payType)
 	if err != nil {
@@ -214,7 +230,7 @@ func (s *TopupService) createXunhuTopupOrder(ctx context.Context, userID int64, 
 		OrderNo:           orderNo,
 		UserID:            userID,
 		AmountCNYFen:      amountCNYFen,
-		BonusAmountCNYFen: QuoteTopupCredit(amountCNYFen).BonusAmountCNYFen,
+		BonusAmountCNYFen: quote.BonusAmountCNYFen,
 		PayType:           payType,
 		Provider:          "xunhu",
 		Status:            TopupStatusPending,
@@ -280,7 +296,8 @@ func (s *TopupService) resolveEasyPayNotifyURL(ctx context.Context) string {
 }
 
 // createEasyPayTopupOrder EasyPay（彩虹易支付兼容）下单路径
-func (s *TopupService) createEasyPayTopupOrder(ctx context.Context, userID int64, amountCNYFen int, payType, clientIP string) (orderNo, qrCodeURL string, err error) {
+func (s *TopupService) createEasyPayTopupOrder(ctx context.Context, userID int64, quote TopupCreditQuote, payType, clientIP string) (orderNo, qrCodeURL string, err error) {
+	amountCNYFen := quote.PaidAmountCNYFen
 	gateway, err := s.paymentRegistry.Get(payment.ProviderEasyPay)
 	if err != nil {
 		return "", "", err
@@ -307,7 +324,7 @@ func (s *TopupService) createEasyPayTopupOrder(ctx context.Context, userID int64
 		OrderNo:           orderNo,
 		UserID:            userID,
 		AmountCNYFen:      amountCNYFen,
-		BonusAmountCNYFen: QuoteTopupCredit(amountCNYFen).BonusAmountCNYFen,
+		BonusAmountCNYFen: quote.BonusAmountCNYFen,
 		PayType:           payType,
 		Provider:          payment.ProviderEasyPay,
 		Status:            TopupStatusPending,

@@ -31,6 +31,41 @@ func TestQuoteTopupCredit(t *testing.T) {
 	}
 }
 
+func TestQuoteTopupProductCreditMultipliesPerCardPromotion(t *testing.T) {
+	tests := []struct {
+		name      string
+		unitFen   int
+		quantity  int
+		paidFen   int
+		bonusFen  int
+		creditFen int
+	}{
+		{name: "three ordinary 20 cards", unitFen: TopupProduct20PaidFen, quantity: 3, paidFen: 6_000, creditFen: 6_000},
+		{name: "three promotional 500 cards", unitFen: TopupPromotion500PaidFen, quantity: 3, paidFen: 150_000, bonusFen: 15_000, creditFen: 165_000},
+		{name: "two promotional 1000 cards", unitFen: TopupPromotion1000PaidFen, quantity: 2, paidFen: 200_000, bonusFen: 20_000, creditFen: 220_000},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			quote, err := QuoteTopupProductCredit(tt.unitFen, tt.quantity)
+			require.NoError(t, err)
+			require.Equal(t, tt.paidFen, quote.PaidAmountCNYFen)
+			require.Equal(t, tt.bonusFen, quote.BonusAmountCNYFen)
+			require.Equal(t, tt.creditFen, quote.CreditedAmountCNYFen)
+		})
+	}
+}
+
+func TestQuoteTopupProductCreditRejectsUnsupportedOrOversizedProducts(t *testing.T) {
+	_, err := QuoteTopupProductCredit(6_000, 1)
+	require.ErrorIs(t, err, ErrTopupInvalidProduct)
+
+	_, err = QuoteTopupProductCredit(TopupProduct20PaidFen, 0)
+	require.ErrorIs(t, err, ErrTopupInvalidQuantity)
+
+	_, err = QuoteTopupProductCredit(TopupPromotion1000PaidFen, 4)
+	require.ErrorIs(t, err, ErrTopupMaxAmount)
+}
+
 func TestStoredTopupCreditQuoteDoesNotRetroactivelyPromoteHistoricalOrder(t *testing.T) {
 	quote := StoredTopupCreditQuote(TopupPromotion500PaidFen, 0)
 	require.Equal(t, TopupPromotion500PaidFen, quote.CreditedAmountCNYFen)

@@ -47,6 +47,12 @@ const snapshot = {
     success_count: 1, failure_count: 0, recovered_count: 0, customer_impact_count: 0, availability: 1,
     average_latency_ms: 100, p95_latency_ms: 100, samples_per_minute: 0.06, last_observed_at: now,
     product_codes: [], component_codes: []
+  }, {
+    fact_type: 'customer_request', platform: 'unknown', model: 'unclassified-model', request_class: 'text', protocol: 'http',
+    account_id: 99, account_name: 'Unclassified route', route_fingerprint: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', sample_count: 2,
+    success_count: 0, failure_count: 2, recovered_count: 0, customer_impact_count: 2, availability: 0,
+    average_latency_ms: 5000, p95_latency_ms: 6000, samples_per_minute: 0.1, last_observed_at: now,
+    product_codes: [], component_codes: []
   }],
   evidence_bucket_total: 2,
   evidence_truncated: false,
@@ -84,7 +90,12 @@ describe('ChannelMonitoringView', () => {
     expect(wrapper.text()).toContain('Pomo JP')
     expect(wrapper.text()).toContain('01234567…abcdef')
     expect(wrapper.text()).toContain('状态证据可用于评估')
-    expect(wrapper.text()).toContain('未映射到公开产品的内部证据')
+    expect(wrapper.text()).toContain('不参与服务状态的上游直连诊断')
+    expect(wrapper.text()).toContain('上游直连诊断')
+    expect(wrapper.text()).toContain('不代表客户请求发生故障')
+    expect(wrapper.text()).toContain('待归类的内部监控数据')
+    expect(wrapper.text()).toContain('可能包含真实客户失败')
+    expect(wrapper.text()).toContain('unclassified-model')
     expect(wrapper.text()).toContain('OpenAI 智能路由 Shadow 审计')
     expect(wrapper.text()).toContain('24h 决策')
     expect(wrapper.text()).toContain('80.0% → 95.0%')

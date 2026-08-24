@@ -29,7 +29,8 @@ const (
 	TopupMinAmountFen = 2000 // ¥20
 	// TopupMaxAmountFen 单次充值最高金额（分）
 	TopupMaxAmountFen = 300000 // ¥3000
-
+	// TopupOrderTTL is the customer-facing payment window for QR orders.
+	TopupOrderTTL = 5 * time.Minute
 )
 
 // TopupOrder represents a topup order domain model

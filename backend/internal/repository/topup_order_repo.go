@@ -71,11 +71,14 @@ func (r *topupOrderRepository) UpdateStatus(ctx context.Context, id int64, statu
 	return up.Exec(ctx)
 }
 
-func (r *topupOrderRepository) CompleteIfPending(ctx context.Context, id int64, xunhuTradeNo *string) (bool, error) {
+func (r *topupOrderRepository) CompleteIfUnsettled(ctx context.Context, id int64, xunhuTradeNo *string) (bool, error) {
 	client := clientFromContext(ctx, r.client)
 	now := time.Now()
 	up := client.TopupOrder.Update().
-		Where(topuporder.IDEQ(id), topuporder.StatusEQ(service.TopupStatusPending)).
+		Where(
+			topuporder.IDEQ(id),
+			topuporder.StatusIn(service.TopupStatusPending, service.TopupStatusExpired),
+		).
 		SetStatus(service.TopupStatusCompleted).
 		SetCompletedAt(now).
 		SetUpdatedAt(now).

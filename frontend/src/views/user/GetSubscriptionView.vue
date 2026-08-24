@@ -80,7 +80,7 @@
                         </span>
                         <span class="topup-status topup-status--available">{{ t('topup.monthlyPlanStatus') }}</span>
                       </span>
-                      <span class="topup-monthly-product__price">{{ plan.price }} <small>/ 31 天</small></span>
+                      <span class="topup-monthly-product__price">{{ plan.directPrice }} <small>/ 31 天</small></span>
                       <span class="topup-monthly-product__credits">
                         {{ t('topup.monthlyPlanCreditsValue', { amount: plan.displayMonthlyCreditsText }) }}
                       </span>
@@ -94,13 +94,6 @@
                     {{ t('topup.monthlyPlanModelsPrefix') }}
                     <RouterLink to="/models">{{ t('topup.monthlyPlanModelsLink') }}</RouterLink>。
                   </p>
-                  <!-- 选中的月卡套餐有可见的 easypay 原生 offer 时，站内扫码购买
-                       承接（offer code == 套餐 id）；否则保持链动小铺外链。 -->
-                  <NativeCheckoutTrialOffer
-                    v-if="selectedMonthlyNativeOffer"
-                    :key="selectedMonthlyPlan.id"
-                    :offer-code="selectedMonthlyPlan.id"
-                  />
                 </section>
 
                 <section v-if="selectedProductKind === 'balance'">
@@ -109,8 +102,58 @@
                   </p>
                   <div class="topup-channel-grid">
                     <button
-                      v-if="cardShopMode"
                       type="button"
+                      data-testid="topup-method-alipay"
+                      @click="selectTopupChannel('alipay')"
+                      :disabled="!canUseAlipay || effectiveAmountYuan < 20"
+                      class="topup-choice"
+                      :class="{ 'topup-choice--active': selectedTopupChannel === 'alipay' }"
+                    >
+                      <span class="topup-choice-icon topup-choice-icon--alipay">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M21.422 15.358c-3.83-1.153-6.055-1.84-6.055-1.84.598-1.163.959-2.478 1.028-3.869H20V8.5h-4.5V7h-1.75v1.5h-4.5v1.149h7.397c-.106 2.73-1.5 4.872-3.5 6.114C11.47 17.21 9.48 16.5 7.5 16.5c-2.76 0-5 2.24-5 5 0 .17.01.34.03.5H2.5v.5h19v-.5h-.077A10.47 10.47 0 0022 20c0-1.9-.214-3.375-.578-4.642zM7.5 20c-1.38 0-2.5-1.12-2.5-2.5S6.12 15 7.5 15s2.5 1.12 2.5 2.5S8.88 20 7.5 20z"/>
+                        </svg>
+                      </span>
+                      <span class="topup-choice-content">
+                        <span class="topup-choice-title">{{ t('topup.alipayScanTitle') }}</span>
+                        <span class="topup-choice-desc">{{ t('topup.alipayScanDesc') }}</span>
+                        <span
+                          class="topup-status"
+                          :class="canUseAlipay && effectiveAmountYuan >= 20 ? 'topup-status--available' : 'topup-status--disabled'"
+                        >
+                          {{ canUseAlipay && effectiveAmountYuan >= 20 ? t('topup.availableNow') : t('topup.comingSoon') }}
+                        </span>
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      data-testid="topup-method-wechat"
+                      @click="selectTopupChannel('wechat')"
+                      :disabled="!canUseWechat || effectiveAmountYuan < 20"
+                      class="topup-choice"
+                      :class="{ 'topup-choice--active': selectedTopupChannel === 'wechat' }"
+                    >
+                      <span class="topup-choice-icon topup-choice-icon--wechat">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M8.667 12c0 .58.47 1.05 1.05 1.05S10.767 12.58 10.767 12s-.47-1.05-1.05-1.05S8.667 11.42 8.667 12zm5.666 0c0 .58.47 1.05 1.05 1.05s1.05-.47 1.05-1.05-.47-1.05-1.05-1.05-1.05.47-1.05 1.05zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+                        </svg>
+                      </span>
+                      <span class="topup-choice-content">
+                        <span class="topup-choice-title">{{ t('topup.wechatScanTitle') }}</span>
+                        <span class="topup-choice-desc">{{ t('topup.wechatScanDesc') }}</span>
+                        <span
+                          class="topup-status"
+                          :class="canUseWechat && effectiveAmountYuan >= 20 ? 'topup-status--available' : 'topup-status--disabled'"
+                        >
+                          {{ canUseWechat && effectiveAmountYuan >= 20 ? t('topup.availableNow') : t('topup.comingSoon') }}
+                        </span>
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      data-testid="topup-method-card_shop"
                       @click="selectTopupChannel('card_shop')"
                       :disabled="!canUseCardShopForSelected"
                       class="topup-choice"
@@ -127,28 +170,6 @@
                           :class="canUseCardShopForSelected ? 'topup-status--available' : 'topup-status--disabled'"
                         >
                           {{ canUseCardShopForSelected ? t('topup.availableNow') : t('topup.comingSoon') }}
-                        </span>
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      @click="selectTopupChannel('qr')"
-                      :disabled="!qrPaymentAvailableForSelected"
-                      class="topup-choice"
-                      :class="{ 'topup-choice--active': showingQrTopup }"
-                    >
-                      <span class="topup-choice-icon topup-choice-icon--laurel">
-                        <Icon name="creditCard" size="md" />
-                      </span>
-                      <span class="topup-choice-content">
-                        <span class="topup-choice-title">{{ t('topup.qrChannelTitle') }}</span>
-                        <span class="topup-choice-desc">{{ t('topup.qrChannelDesc') }}</span>
-                        <span
-                          class="topup-status"
-                          :class="qrPaymentAvailableForSelected ? 'topup-status--available' : 'topup-status--disabled'"
-                        >
-                          {{ qrPaymentAvailableForSelected ? t('topup.availableNow') : t('topup.comingSoon') }}
                         </span>
                       </span>
                     </button>
@@ -285,19 +306,17 @@
                 </div>
 
                 <div v-if="selectedProductKind === 'monthly'" class="topup-monthly-actions">
+                  <NativeCheckoutTrialOffer
+                    v-if="selectedMonthlyNativeOffer"
+                    :key="selectedMonthlyPlan.id"
+                    :offer-code="selectedMonthlyPlan.id"
+                  />
                   <button
-                    v-if="!selectedMonthlyNativeOffer"
                     @click="openSelectedMonthlyCardShop"
                     :disabled="!canOpenSelectedMonthlyCardShop"
                     class="topup-primary-action topup-monthly-action"
                   >
-                    {{ t('topup.monthlyCardShopAction') }}
-                  </button>
-                  <button
-                    @click="openMonthlyDirectPurchase"
-                    class="topup-secondary-action topup-monthly-action"
-                  >
-                    {{ t('topup.monthlyDirectAction') }}
+                    {{ t('topup.monthlyCardShopAction') }} — {{ selectedMonthlyPlan?.price }}
                   </button>
                 </div>
 
@@ -321,52 +340,10 @@
                 </template>
 
                 <section v-else-if="step === 1" class="topup-inline-pay">
-                  <p class="topup-label">
-                    {{ t('topup.selectPayType') }}
-                  </p>
-                  <div
-                    v-if="hasAvailablePayType"
-                    class="topup-pay-grid"
-                    :class="{ 'topup-pay-grid--single': !hasMultiplePayTypes }"
-                  >
-                    <button
-                      v-if="canUseAlipay"
-                      @click="selectPayType('alipay')"
-                      class="topup-pay-option"
-                      :class="{ 'topup-pay-option--active': payType === 'alipay' }"
-                    >
-                      <div>
-                        <span class="topup-choice-title">{{ t('topup.alipay') }}</span>
-                      </div>
-                      <span class="topup-choice-icon topup-choice-icon--laurel">
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M21.422 15.358c-3.83-1.153-6.055-1.84-6.055-1.84.598-1.163.959-2.478 1.028-3.869H20V8.5h-4.5V7h-1.75v1.5h-4.5v1.149h7.397c-.106 2.73-1.5 4.872-3.5 6.114C11.47 17.21 9.48 16.5 7.5 16.5c-2.76 0-5 2.24-5 5 0 .17.01.34.03.5H2.5v.5h19v-.5h-.077A10.47 10.47 0 0022 20c0-1.9-.214-3.375-.578-4.642zM7.5 20c-1.38 0-2.5-1.12-2.5-2.5S6.12 15 7.5 15s2.5 1.12 2.5 2.5S8.88 20 7.5 20z"/>
-                        </svg>
-                      </span>
-                    </button>
-
-                    <button
-                      v-if="canUseWechat"
-                      @click="selectPayType('wechat')"
-                      class="topup-pay-option"
-                      :class="{ 'topup-pay-option--active': payType === 'wechat' }"
-                    >
-                      <div>
-                        <span class="topup-choice-title">{{ t('topup.wechat') }}</span>
-                      </div>
-                      <span class="topup-choice-icon topup-choice-icon--laurel">
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M8.667 12c0 .58.47 1.05 1.05 1.05S10.767 12.58 10.767 12s-.47-1.05-1.05-1.05S8.667 11.42 8.667 12zm5.666 0c0 .58.47 1.05 1.05 1.05s1.05-.47 1.05-1.05-.47-1.05-1.05-1.05-1.05.47-1.05 1.05zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
-                        </svg>
-                      </span>
-                    </button>
-                  </div>
-                  <p v-else class="topup-warning">
-                    {{ t('topup.noAvailablePayType') }}
-                  </p>
                   <button
+                    data-testid="topup-submit"
                     @click="submitOrder"
-                    :disabled="submitting || !hasAvailablePayType || !!amountError || effectiveAmountYuan < 20"
+                    :disabled="submitting || !canUseSelectedQrMethod || !!amountError || effectiveAmountYuan < 20"
                     class="topup-primary-action"
                   >
                     <span v-if="submitting">{{ t('topup.submitting') }}</span>
@@ -391,39 +368,6 @@
         </section>
       </div>
     </div>
-    <div v-if="showMonthlyDirectPurchase" class="topup-modal-backdrop" @click.self="closeMonthlyDirectPurchase">
-      <section class="topup-direct-modal" role="dialog" aria-modal="true">
-        <div class="topup-direct-modal__head">
-          <div>
-            <p class="topup-summary-kicker">{{ t('topup.monthlyDirectAction') }}</p>
-            <h2>{{ selectedMonthlyPlan?.name }}</h2>
-          </div>
-          <button type="button" class="topup-modal-close" @click="closeMonthlyDirectPurchase">
-            ×
-          </button>
-        </div>
-        <div v-if="monthlyDirectPurchaseQRCode" class="topup-direct-qr">
-          <img :src="monthlyDirectPurchaseQRCode" alt="Monthly card support group QR code" />
-        </div>
-        <div v-else-if="monthlyDirectPurchaseContact" class="topup-direct-contact">
-          <span>{{ t('topup.monthlyDirectContactLabel') }}</span>
-          <strong>{{ monthlyDirectPurchaseContact }}</strong>
-        </div>
-        <div v-else class="topup-direct-qr topup-direct-qr--empty">
-          {{ t('topup.monthlyDirectNoQr') }}
-        </div>
-        <p class="topup-direct-copy">
-          {{
-            monthlyDirectPurchaseContact
-              ? t('topup.monthlyDirectWechatInstruction', {
-                  contact: monthlyDirectPurchaseContact,
-                  plan: selectedMonthlyPlan?.name
-                })
-              : t('topup.monthlyDirectInstruction', { plan: selectedMonthlyPlan?.name })
-          }}
-        </p>
-      </section>
-    </div>
   </AppLayout>
 </template>
 
@@ -434,7 +378,7 @@ import { useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/api/topup'
-import { useAppStore } from '@/stores'
+import { useAppStore, useAuthStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import type { CardShopProduct } from '@/types'
 import {
@@ -453,11 +397,12 @@ import { isDirectQrImageUrl, renderQrCodeDataUrl } from '@/utils/qrImage'
 
 const { t } = useI18n()
 const appStore = useAppStore()
+const authStore = useAuthStore()
 const router = useRouter()
 
 const presets = BALANCE_TOPUP_PRESETS
 const QR_TTL_SECONDS = 300
-type TopupChannel = 'card_shop' | 'qr'
+type TopupChannel = 'card_shop' | TopupPayType
 type SelectedProductKind = 'balance' | 'monthly'
 type BalanceProduct = {
   id: string
@@ -471,7 +416,7 @@ type BalanceProduct = {
 }
 
 const step = ref<1 | 2>(1)
-const selectedTopupChannel = ref<TopupChannel>('card_shop')
+const selectedTopupChannel = ref<TopupChannel>('alipay')
 const selectedProductKind = ref<SelectedProductKind>('balance')
 const selectedBalanceProductId = ref('')
 const selectedMonthlyPlanId = ref<MonthlyCreditCardPlan['id']>('plus')
@@ -486,7 +431,6 @@ const qrExpired = ref(false)
 const countdown = ref(QR_TTL_SECONDS)
 const activeOrderAmountYuan = ref(0)
 const activeOrderCreditedAmountYuan = ref(0)
-const showMonthlyDirectPurchase = ref(false)
 const { plans: monthlyCreditCardPlans, loadMonthlyCreditCardPlans } = useMonthlyCreditCardPlans()
 const { loadOffers: loadNativeCheckoutOffers, findNativeOfferByCode } = useNativeCheckoutOffers()
 const {
@@ -510,9 +454,6 @@ const topupWechatEnabled = computed(
 )
 const canUseAlipay = computed(() => topupAlipayEnabled.value)
 const canUseWechat = computed(() => topupWechatEnabled.value)
-const hasAvailablePayType = computed(() => canUseAlipay.value || canUseWechat.value)
-const qrTopupAvailable = computed(() => hasAvailablePayType.value)
-const hasMultiplePayTypes = computed(() => canUseAlipay.value && canUseWechat.value)
 const activeCardShopProducts = computed<CardShopProduct[]>(() =>
   [...(appStore.cachedPublicSettings?.card_shop_products ?? [])]
     .filter(
@@ -590,24 +531,21 @@ const selectedMonthlyNativeOffer = computed(() => {
 })
 const selectedMonthlyCardShopUrl = computed(() => selectedMonthlyPlan.value?.cardShopUrl || '')
 const canOpenSelectedMonthlyCardShop = computed(() => selectedMonthlyCardShopUrl.value.trim() !== '')
-const monthlyDirectPurchaseQRCode = computed(
-  () =>
-    (appStore.cachedPublicSettings?.after_sales_qrcode || appStore.cachedPublicSettings?.tech_support_qrcode || '').trim()
-)
-const monthlyDirectPurchaseContact = computed(
-  () => (appStore.cachedPublicSettings?.contact_info || appStore.contactInfo || '').trim()
-)
 const canUseCardShopForSelected = computed(() => cardShopMode.value && !!selectedCardShopProduct.value)
-const qrPaymentAvailableForSelected = computed(
-  () => selectedProductKind.value === 'balance' && qrTopupAvailable.value && effectiveAmountYuan.value >= 20
-)
 const showingCardShop = computed(
   () => selectedProductKind.value === 'balance' && selectedTopupChannel.value === 'card_shop' && canUseCardShopForSelected.value
 )
-const showingQrTopup = computed(() => selectedProductKind.value === 'balance' && selectedTopupChannel.value === 'qr')
+const showingQrTopup = computed(
+  () => selectedProductKind.value === 'balance' && (selectedTopupChannel.value === 'alipay' || selectedTopupChannel.value === 'wechat')
+)
+const canUseSelectedQrMethod = computed(() => {
+  if (!showingQrTopup.value) return false
+  return selectedTopupChannel.value === 'alipay' ? canUseAlipay.value : canUseWechat.value
+})
 const selectedTopupMethodLabel = computed(() => {
   if (showingCardShop.value) return t('topup.cardShopChannelTitle')
-  if (showingQrTopup.value) return t('topup.qrChannelTitle')
+  if (selectedTopupChannel.value === 'alipay') return t('topup.alipayScanTitle')
+  if (selectedTopupChannel.value === 'wechat') return t('topup.wechatScanTitle')
   return t('topup.comingSoon')
 })
 
@@ -633,7 +571,7 @@ const displayCreditedAmountYuan = computed(() => {
 const displayCreditedText = computed(() => formatMoney(displayCreditedAmountYuan.value, true))
 
 const amountError = computed<string>(() => {
-  if (selectedProductKind.value !== 'balance' || selectedTopupChannel.value !== 'qr') return ''
+  if (selectedProductKind.value !== 'balance' || !showingQrTopup.value) return ''
   if (effectiveAmountYuan.value > 0 && effectiveAmountYuan.value < 20) {
     return t('topup.minAmountError')
   }
@@ -644,8 +582,8 @@ const amountError = computed<string>(() => {
 })
 const paymentNotice = computed(() => {
   if (selectedProductKind.value !== 'balance') return ''
-  if (selectedTopupChannel.value === 'qr' && amountError.value) return amountError.value
-  if (selectedTopupChannel.value === 'qr' && !qrTopupAvailable.value) return t('topup.noAvailablePayType')
+  if (showingQrTopup.value && amountError.value) return amountError.value
+  if (showingQrTopup.value && !canUseSelectedQrMethod.value) return t('topup.noAvailablePayType')
   if (selectedTopupChannel.value === 'card_shop' && !canUseCardShopForSelected.value) return t('topup.cardShopUnavailable')
   return ''
 })
@@ -661,20 +599,10 @@ function formatMoney(value: number, fixed: boolean) {
   return fixed || !Number.isInteger(value) ? value.toFixed(2) : String(value)
 }
 
-function selectPayType(type: TopupPayType) {
-  if (type === 'alipay' && !canUseAlipay.value) return
-  if (type === 'wechat' && !canUseWechat.value) return
-  payType.value = type
-}
-
 function selectBalanceProduct(product: BalanceProduct) {
   selectedProductKind.value = 'balance'
   selectedBalanceProductId.value = product.id
-  if (selectedTopupChannel.value === 'card_shop' && !product.cardShopProduct && qrTopupAvailable.value && product.amountCny >= 20) {
-    selectedTopupChannel.value = 'qr'
-  } else if (selectedTopupChannel.value === 'qr' && (!qrTopupAvailable.value || product.amountCny < 20) && product.cardShopProduct) {
-    selectedTopupChannel.value = 'card_shop'
-  }
+  syncTopupChannelWithSettings()
 }
 
 function selectMonthlyPlan(plan: MonthlyCreditCardPlan) {
@@ -684,10 +612,11 @@ function selectMonthlyPlan(plan: MonthlyCreditCardPlan) {
 
 function selectTopupChannel(channel: TopupChannel) {
   if (channel === 'card_shop' && !canUseCardShopForSelected.value) return
-  if (channel === 'qr' && !qrPaymentAvailableForSelected.value) return
+  if (channel === 'alipay' && (!canUseAlipay.value || effectiveAmountYuan.value < 20)) return
+  if (channel === 'wechat' && (!canUseWechat.value || effectiveAmountYuan.value < 20)) return
   selectedTopupChannel.value = channel
-  if (channel === 'qr') {
-    syncPayTypeWithSettings()
+  if (channel === 'alipay' || channel === 'wechat') {
+    payType.value = channel
   }
 }
 
@@ -724,41 +653,35 @@ function openSelectedMonthlyCardShop() {
   window.location.assign(url)
 }
 
-function openMonthlyDirectPurchase() {
-  showMonthlyDirectPurchase.value = true
-}
-
-function closeMonthlyDirectPurchase() {
-  showMonthlyDirectPurchase.value = false
-}
-
 function goRedeem() {
   router.push('/redeem')
-}
-
-// 配置只保留一个渠道时，自动选中仍可用的支付方式。
-function syncPayTypeWithSettings() {
-  if (topupAlipayEnabled.value && !topupWechatEnabled.value) {
-    payType.value = 'alipay'
-  } else if (!topupAlipayEnabled.value && topupWechatEnabled.value) {
-    payType.value = 'wechat'
-  }
 }
 
 function syncTopupChannelWithSettings() {
   if (!selectedBalanceProductId.value && balanceProducts.value.length > 0) {
     selectedBalanceProductId.value = balanceProducts.value[0].id
   }
-  if (selectedTopupChannel.value === 'card_shop' && !canUseCardShopForSelected.value) {
-    selectedTopupChannel.value = 'qr'
-  } else if (selectedTopupChannel.value === 'qr' && !qrPaymentAvailableForSelected.value && canUseCardShopForSelected.value) {
-    selectedTopupChannel.value = 'card_shop'
+  const amountSupportsScan = effectiveAmountYuan.value >= 20
+  if (selectedTopupChannel.value === 'alipay' && canUseAlipay.value && amountSupportsScan) {
+    payType.value = 'alipay'
+    return
+  }
+  if (selectedTopupChannel.value === 'wechat' && canUseWechat.value && amountSupportsScan) {
+    payType.value = 'wechat'
+    return
+  }
+  if (selectedTopupChannel.value === 'card_shop' && canUseCardShopForSelected.value) {
+    return
+  }
+  if (canUseAlipay.value && amountSupportsScan) {
+    selectedTopupChannel.value = 'alipay'
+    payType.value = 'alipay'
+  } else if (canUseWechat.value && amountSupportsScan) {
+    selectedTopupChannel.value = 'wechat'
+    payType.value = 'wechat'
   } else if (canUseCardShopForSelected.value) {
     selectedTopupChannel.value = 'card_shop'
-  } else {
-    selectedTopupChannel.value = 'qr'
   }
-  syncPayTypeWithSettings()
 }
 
 function stopTimers() {
@@ -828,8 +751,8 @@ async function applyQrCodePayload(payload: string) {
 }
 
 async function submitOrder() {
-  if (!showingQrTopup.value || !hasAvailablePayType.value || effectiveAmountYuan.value < 20 || amountError.value) return
-  syncPayTypeWithSettings()
+  if (!showingQrTopup.value || !canUseSelectedQrMethod.value || effectiveAmountYuan.value < 20 || amountError.value) return
+  payType.value = selectedTopupChannel.value as TopupPayType
 
   submitting.value = true
   try {
@@ -891,6 +814,11 @@ async function pollOrderStatus() {
     updateActiveOrderMeta(status)
     if (status.status === 'completed') {
       stopTimers()
+      try {
+        await authStore.refreshUser()
+      } catch (error) {
+        console.error('Failed to refresh user balance after topup:', error)
+      }
       appStore.showSuccess(t('topup.paySuccessWithCredit', { amount: displayCreditedText.value }))
       resetToForm()
     } else if (status.status === 'expired') {
@@ -923,7 +851,7 @@ void Promise.all([
 .topup-page {
   position: relative;
   overflow: hidden;
-  padding: 2rem 1rem;
+  padding: 1rem 0.75rem;
 }
 
 .topup-page::before {
@@ -946,7 +874,7 @@ void Promise.all([
 
 .topup-shell {
   position: relative;
-  max-width: 64rem;
+  max-width: 76rem;
   margin: 0 auto;
 }
 
@@ -965,12 +893,12 @@ void Promise.all([
 }
 
 .topup-main {
-  padding: 2rem 1.5rem;
+  padding: 1.25rem;
   border-bottom: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
 }
 
 .topup-summary {
-  padding: 1.5rem;
+  padding: 1.25rem;
   background:
     linear-gradient(180deg, rgb(var(--color-terracotta) / 0.045), rgb(var(--color-laurel) / 0.035)),
     var(--admin-surface-soft, rgb(var(--color-stone) / 0.78));
@@ -990,9 +918,9 @@ void Promise.all([
 }
 
 .topup-heading {
-  margin-top: 1.25rem;
+  margin-top: 0.65rem;
   color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
-  font-size: clamp(2rem, 4vw, 2.6rem);
+  font-size: clamp(1.75rem, 3vw, 2.2rem);
   font-weight: 650;
   line-height: 1.16;
   letter-spacing: 0;
@@ -1000,10 +928,10 @@ void Promise.all([
 
 .topup-copy {
   max-width: 38rem;
-  margin-top: 0.85rem;
+  margin-top: 0.45rem;
   color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.95rem;
-  line-height: 1.85;
+  line-height: 1.55;
 }
 
 .topup-copy--compact {
@@ -1011,16 +939,16 @@ void Promise.all([
 }
 
 .topup-section {
-  margin-top: 2rem;
+  margin-top: 1.1rem;
 }
 
 .topup-section--stack {
   display: grid;
-  gap: 2rem;
+  gap: 1.15rem;
 }
 
 .topup-label {
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.55rem;
   color: var(--admin-ink, rgb(var(--color-ink)));
   font-size: 0.92rem;
   font-weight: 650;
@@ -1029,10 +957,9 @@ void Promise.all([
 .topup-channel-grid,
 .topup-products,
 .topup-presets,
-.topup-pay-grid,
 .topup-plan-grid {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.55rem;
 }
 
 .topup-channel-grid,
@@ -1045,10 +972,6 @@ void Promise.all([
 }
 
 .topup-plan-grid {
-  grid-template-columns: 1fr;
-}
-
-.topup-pay-grid {
   grid-template-columns: 1fr;
 }
 
@@ -1090,10 +1013,10 @@ void Promise.all([
 
 .topup-choice {
   display: flex;
-  gap: 0.9rem;
+  gap: 0.65rem;
   align-items: flex-start;
-  min-height: 8.5rem;
-  padding: 1rem;
+  min-height: 5.4rem;
+  padding: 0.7rem;
 }
 
 .topup-choice:disabled {
@@ -1118,8 +1041,8 @@ void Promise.all([
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2rem;
+  height: 2rem;
   border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
   background: rgb(var(--color-terracotta) / 0.08);
@@ -1131,6 +1054,16 @@ void Promise.all([
 
 .topup-choice-icon--laurel {
   color: var(--admin-laurel, rgb(var(--color-laurel)));
+  background: rgb(var(--color-laurel) / 0.1);
+}
+
+.topup-choice-icon--alipay {
+  color: rgb(var(--color-info));
+  background: rgb(var(--color-info) / 0.1);
+}
+
+.topup-choice-icon--wechat {
+  color: rgb(var(--color-laurel));
   background: rgb(var(--color-laurel) / 0.1);
 }
 
@@ -1147,25 +1080,25 @@ void Promise.all([
 }
 
 .topup-choice-title {
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 .topup-choice-desc,
 .topup-product-desc {
   display: block;
-  margin-top: 0.35rem;
+  margin-top: 0.2rem;
   color: var(--admin-muted, rgb(var(--color-muted)));
-  font-size: 0.88rem;
-  line-height: 1.55;
+  font-size: 0.75rem;
+  line-height: 1.35;
 }
 
 .topup-status {
   display: inline-flex;
-  margin-top: 0.85rem;
+  margin-top: 0.45rem;
   border: 1px solid transparent;
   border-radius: 4px;
-  padding: 0.25rem 0.55rem;
-  font-size: 0.76rem;
+  padding: 0.18rem 0.42rem;
+  font-size: 0.68rem;
   font-weight: 700;
 }
 
@@ -1182,8 +1115,8 @@ void Promise.all([
 }
 
 .topup-product {
-  min-height: 5.25rem;
-  padding: 1rem 1.15rem;
+  min-height: 4rem;
+  padding: 0.7rem 0.8rem;
 }
 
 .topup-product--preset {
@@ -1191,7 +1124,7 @@ void Promise.all([
 }
 
 .topup-product-title {
-  font-size: 1.15rem;
+  font-size: 0.95rem;
 }
 
 .topup-product-title--row {
@@ -1222,13 +1155,13 @@ void Promise.all([
 .topup-monthly-product {
   position: relative;
   overflow: hidden;
-  min-height: 9.5rem;
+  min-height: 6.75rem;
   width: 100%;
   border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
   background: var(--admin-control, rgb(var(--color-vellum) / 0.95));
   color: var(--admin-ink, rgb(var(--color-ink)));
-  padding: 1rem;
+  padding: 0.75rem;
   text-align: left;
   transition:
     border-color var(--duration-base) var(--ease-standard),
@@ -1431,9 +1364,9 @@ void Promise.all([
 
 .topup-monthly-product__price {
   display: block;
-  margin-top: 1.25rem;
+  margin-top: 0.75rem;
   color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
-  font-size: 1.65rem;
+  font-size: 1.35rem;
   font-weight: 850;
   line-height: 1;
 }
@@ -1451,19 +1384,19 @@ void Promise.all([
 
 .topup-monthly-product__credits {
   display: block;
-  margin-top: 0.62rem;
+  margin-top: 0.42rem;
   color: var(--admin-ink, rgb(var(--color-ink)));
-  font-size: 0.88rem;
+  font-size: 0.78rem;
   font-weight: 780;
   line-height: 1.4;
 }
 
 .topup-monthly-catalog-note {
-  margin: 0.75rem 0 0;
+  margin: 0.45rem 0 0;
   color: var(--admin-muted, rgb(var(--color-muted)));
   font-size: 0.8rem;
   font-weight: 620;
-  line-height: 1.65;
+  line-height: 1.4;
 }
 
 .topup-monthly-catalog-note a,
@@ -1640,7 +1573,7 @@ void Promise.all([
   background:
     linear-gradient(180deg, rgb(var(--color-terracotta) / 0.08), transparent 70%),
     var(--admin-surface, rgb(var(--color-marble) / 0.96));
-  padding: 1.5rem;
+  padding: 1.1rem;
   box-shadow: var(--admin-shadow-sm, 0 8px 24px rgb(var(--shadow-ink) / 0.08));
 }
 
@@ -1745,8 +1678,8 @@ void Promise.all([
 
 .topup-summary-rows {
   display: grid;
-  gap: 0.9rem;
-  margin-top: 1.5rem;
+  gap: 0.7rem;
+  margin-top: 1rem;
 }
 
 .topup-summary-row {
@@ -1778,7 +1711,7 @@ void Promise.all([
 
 .topup-monthly-detail {
   display: grid;
-  gap: 1rem;
+  gap: 0.7rem;
 }
 
 .topup-monthly-prices {
@@ -1802,7 +1735,7 @@ void Promise.all([
   border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 8px;
   background: rgb(var(--color-vellum) / 0.58);
-  padding: 0.85rem;
+  padding: 0.65rem;
 }
 
 .topup-monthly-prices span,
@@ -1964,14 +1897,38 @@ void Promise.all([
 
 .topup-monthly-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 0.75rem;
-  margin-top: 2rem;
+  margin-top: 1rem;
 }
 
 .topup-monthly-actions .topup-primary-action,
 .topup-monthly-actions .topup-secondary-action {
   margin-top: 0;
+}
+
+.topup-monthly-actions :deep(.trial-offer) {
+  margin-top: 0;
+  gap: 0.75rem;
+  padding: 0.9rem;
+}
+
+.topup-monthly-actions :deep(.trial-offer h2) {
+  margin-top: 0.45rem;
+  font-size: 1.1rem;
+}
+
+.topup-monthly-actions :deep(.trial-offer__amounts strong) {
+  font-size: 1.3rem;
+}
+
+.topup-monthly-actions :deep(.trial-offer__paymethod),
+.topup-monthly-actions :deep(.trial-offer__action) {
+  margin-top: 0.55rem;
+}
+
+.topup-monthly-actions :deep(.trial-offer__action) {
+  padding-block: 0.65rem;
 }
 
 .topup-summary-card--apex .topup-primary-action {
@@ -2134,120 +2091,7 @@ void Promise.all([
   }
 }
 
-.topup-modal-backdrop {
-  position: fixed;
-  z-index: 80;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 1rem;
-  /* Scrims must always darken. --color-ink-deep flips light under .dark, which
-   * turned this veil into a 42% *brightener* — the page behind the modal stayed
-   * fully legible and competed with it. --lacquer-base is one of the few tokens
-   * that deliberately holds its value in both themes, which is what a scrim needs. */
-  background: rgb(var(--lacquer-base) / 0.62);
-}
-
-.topup-direct-modal {
-  width: min(28rem, 100%);
-  border: 1px solid var(--admin-border-strong, rgb(var(--color-ink) / 0.32));
-  border-radius: 8px;
-  padding: 1.25rem;
-  background: var(--admin-surface, rgb(var(--color-marble)));
-  color: var(--admin-ink, rgb(var(--color-ink)));
-  box-shadow: 0 24px 60px rgb(var(--color-ink) / 0.24);
-}
-
-.topup-direct-modal__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.topup-direct-modal__head h2 {
-  margin-top: 0.25rem;
-  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
-  font-size: 1.55rem;
-  font-weight: 750;
-  line-height: 1.2;
-  letter-spacing: 0;
-}
-
-.topup-modal-close {
-  display: inline-grid;
-  width: 2rem;
-  height: 2rem;
-  place-items: center;
-  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
-  border-radius: 6px;
-  color: var(--admin-muted, rgb(var(--color-muted)));
-  background: var(--admin-control, rgb(var(--color-vellum) / 0.95));
-  font-size: 1.35rem;
-  line-height: 1;
-}
-
-.topup-direct-qr {
-  display: grid;
-  min-height: 14rem;
-  place-items: center;
-  margin-top: 1.25rem;
-  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
-  border-radius: 8px;
-  background: rgb(var(--color-vellum) / 0.78);
-}
-
-.topup-direct-qr img {
-  display: block;
-  width: min(13rem, 72vw);
-  height: min(13rem, 72vw);
-  object-fit: contain;
-}
-
-.topup-direct-qr--empty {
-  color: var(--admin-muted, rgb(var(--color-muted)));
-  font-weight: 650;
-}
-
-.topup-direct-contact {
-  display: grid;
-  min-height: 8.5rem;
-  place-items: center;
-  margin-top: 1.25rem;
-  border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
-  border-radius: 8px;
-  background: rgb(var(--color-vellum) / 0.78);
-  text-align: center;
-}
-
-.topup-direct-contact span {
-  color: var(--admin-muted, rgb(var(--color-muted)));
-  font-size: 0.86rem;
-  font-weight: 650;
-}
-
-.topup-direct-contact strong {
-  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
-  font-size: 1.35rem;
-  font-weight: 800;
-  letter-spacing: 0;
-  overflow-wrap: anywhere;
-}
-
-.topup-direct-copy {
-  margin-top: 1rem;
-  color: var(--admin-ink-deep, rgb(var(--color-ink-deep)));
-  font-size: 1rem;
-  font-weight: 750;
-  line-height: 1.65;
-  text-align: center;
-}
-
 @media (max-width: 520px) {
-  .topup-monthly-actions {
-    grid-template-columns: 1fr;
-  }
-
   .topup-monthly-prices,
   .topup-quota-grid {
     grid-template-columns: 1fr;
@@ -2261,7 +2105,7 @@ void Promise.all([
 
   .topup-main,
   .topup-summary {
-    padding: 2rem;
+    padding: 1.25rem;
   }
 
   .topup-channel-grid,
@@ -2274,22 +2118,15 @@ void Promise.all([
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .topup-pay-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .topup-pay-grid--single {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (min-width: 1024px) {
   .topup-page {
-    padding: 2rem;
+    padding: 1rem;
   }
 
   .topup-grid {
-    grid-template-columns: minmax(0, 1.05fr) minmax(22rem, 0.95fr);
+    grid-template-columns: minmax(0, 1.7fr) minmax(19rem, 0.72fr);
   }
 
   .topup-main {
@@ -2299,7 +2136,18 @@ void Promise.all([
 
   .topup-summary-card {
     position: sticky;
-    top: 6rem;
+    top: 5rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .topup-products {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .topup-plan-grid,
+  .topup-channel-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 </style>

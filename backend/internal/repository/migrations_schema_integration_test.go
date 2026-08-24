@@ -726,6 +726,55 @@ WHERE offer_code = 'newcomer-balance-5-to-10'
 `).Scan(&testerCount))
 	require.Zero(t, testerCount, "the final gate migration must not pre-authorize any test account")
 
+	// migration 212: monthly-card scan checkout uses the owner-approved EasyPay
+	// prices while preserving the existing card-shop face values/entitlements.
+	type monthlyOfferExpectation struct {
+		payFen       int64
+		benefitFen   int64
+		redeemValue  float64
+		groupIDsJSON string
+	}
+	monthlyOffers := map[string]monthlyOfferExpectation{
+		"plus": {payFen: 25500, benefitFen: 25900, redeemValue: 259, groupIDsJSON: "[40, 41]"},
+		"pro":  {payFen: 71500, benefitFen: 72900, redeemValue: 729, groupIDsJSON: "[42, 43]"},
+		"max":  {payFen: 152500, benefitFen: 154900, redeemValue: 1549, groupIDsJSON: "[44, 45]"},
+	}
+	for code, expected := range monthlyOffers {
+		var (
+			actualProvider     string
+			actualProductKind  string
+			actualPayFen       int64
+			actualBenefitFen   int64
+			actualRedeemValue  float64
+			actualGroupIDsJSON string
+			actualValidityDays int
+			actualOncePerUser  bool
+			actualEnabled      bool
+			actualManualRedeem bool
+		)
+		require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT provider, product_kind, pay_amount_cny_fen, benefit_amount_cny_fen,
+       redeem_value::double precision, redeem_group_ids::text,
+       redeem_validity_days, once_per_user, enabled, manual_redeem_enabled
+FROM native_checkout_offers
+WHERE code = $1
+`, code).Scan(
+			&actualProvider, &actualProductKind, &actualPayFen, &actualBenefitFen,
+			&actualRedeemValue, &actualGroupIDsJSON, &actualValidityDays,
+			&actualOncePerUser, &actualEnabled, &actualManualRedeem,
+		))
+		require.Equal(t, "easypay", actualProvider, code)
+		require.Equal(t, "subscription", actualProductKind, code)
+		require.Equal(t, expected.payFen, actualPayFen, code)
+		require.Equal(t, expected.benefitFen, actualBenefitFen, code)
+		require.Equal(t, expected.redeemValue, actualRedeemValue, code)
+		require.JSONEq(t, expected.groupIDsJSON, actualGroupIDsJSON, code)
+		require.Equal(t, 31, actualValidityDays, code)
+		require.False(t, actualOncePerUser, code)
+		require.True(t, actualEnabled, code)
+		require.False(t, actualManualRedeem, code)
+	}
+
 	var inventoryMatchTrigger, stockedOfferGuardTrigger, manualClaimTrigger bool
 	require.NoError(t, tx.QueryRowContext(context.Background(), `
 SELECT EXISTS (

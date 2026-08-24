@@ -31,6 +31,7 @@
         :aria-label="t('nativeCheckout.payMethodLabel')"
       >
         <button
+          v-if="canUseAlipay"
           type="button"
           class="trial-offer__paymethod-option"
           :class="{ 'trial-offer__paymethod-option--active': payMethod === 'alipay' }"
@@ -40,6 +41,7 @@
           {{ t('nativeCheckout.alipayPay') }}
         </button>
         <button
+          v-if="canUseWechat"
           type="button"
           class="trial-offer__paymethod-option"
           :class="{ 'trial-offer__paymethod-option--active': payMethod === 'wechat' }"
@@ -186,6 +188,15 @@ const isChecking = computed(() => (
 ))
 
 const isSubscription = computed(() => offer.value?.product_kind === 'subscription')
+const canUseAlipay = computed(
+  () => appStore.cachedPublicSettings?.topup_alipay_enabled ?? appStore.cachedPublicSettings?.xunhu_alipay_enabled ?? true
+)
+const canUseWechat = computed(
+  () => appStore.cachedPublicSettings?.topup_wechat_enabled ?? appStore.cachedPublicSettings?.xunhu_wechat_enabled ?? true
+)
+const canUseSelectedPayMethod = computed(
+  () => payMethod.value === 'alipay' ? canUseAlipay.value : canUseWechat.value
+)
 
 // 终态只针对终身限购 offer：可复购的月卡完成后回到可购买状态，允许续期。
 const isTerminal = computed(() => {
@@ -289,6 +300,7 @@ async function loadOffer() {
       ? offers.find((item) => item.code === props.offerCode) ?? null
       : offers.find((item) => item.product_kind === 'balance' && item.once_per_user) ?? null
     order.value = offer.value?.order ?? null
+    syncPayMethodWithSettings()
     if (shouldPollStatus()) {
       startPolling()
     }
@@ -301,6 +313,10 @@ async function loadOffer() {
 
 async function startCheckout() {
   if (!offer.value || submitting.value) return
+  if (offer.value.provider === 'easypay' && !canUseSelectedPayMethod.value) {
+    appStore.showError(t('topup.noAvailablePayType'))
+    return
+  }
   if (isTerminal.value) return
   if (order.value?.status === 'checking' || order.value?.status === 'manual_review') {
     clearQRImage()
@@ -335,6 +351,11 @@ async function startCheckout() {
   } finally {
     submitting.value = false
   }
+}
+
+function syncPayMethodWithSettings() {
+  if (canUseAlipay.value) payMethod.value = 'alipay'
+  else if (canUseWechat.value) payMethod.value = 'wechat'
 }
 
 async function loadPaymentQR(current: NativeCheckoutOrder) {
@@ -479,6 +500,7 @@ onUnmounted(() => {
 
 <style scoped>
 .trial-offer {
+  container-type: inline-size;
   display: grid;
   gap: 1.25rem;
   margin-top: 1.75rem;
@@ -581,7 +603,7 @@ onUnmounted(() => {
 @keyframes checkout-pulse { 70% { box-shadow: 0 0 0 7px rgb(var(--color-laurel) / 0); } 100% { box-shadow: 0 0 0 0 rgb(var(--color-laurel) / 0); } }
 @keyframes checkout-checking { 50% { opacity: 0.35; transform: translateY(-2px); } }
 
-@media (min-width: 720px) {
+@container (min-width: 44rem) {
   .trial-offer { grid-template-columns: minmax(0, 1fr) minmax(14rem, 0.72fr); align-items: center; }
 }
 

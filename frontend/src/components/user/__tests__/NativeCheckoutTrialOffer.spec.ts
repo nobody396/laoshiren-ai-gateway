@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   showSuccess: vi.fn(),
   refreshUser: vi.fn(),
   user: { email: 'buyer@example.com' },
+  publicSettings: { topup_alipay_enabled: true, topup_wechat_enabled: true },
 }))
 
 vi.mock('@/api/nativeCheckout', () => ({
@@ -26,7 +27,12 @@ vi.mock('@/api/nativeCheckout', () => ({
 vi.mock('qrcode', () => ({ default: { toDataURL: mocks.toDataURL } }))
 
 vi.mock('@/stores', () => ({
-  useAppStore: () => ({ showError: mocks.showError, showInfo: mocks.showInfo, showSuccess: mocks.showSuccess }),
+  useAppStore: () => ({
+    showError: mocks.showError,
+    showInfo: mocks.showInfo,
+    showSuccess: mocks.showSuccess,
+    cachedPublicSettings: mocks.publicSettings,
+  }),
   useAuthStore: () => ({ refreshUser: mocks.refreshUser, user: mocks.user }),
 }))
 
@@ -67,8 +73,25 @@ const monthlyOffer = {
 describe('NativeCheckoutTrialOffer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.publicSettings.topup_alipay_enabled = true
+    mocks.publicSettings.topup_wechat_enabled = true
     mocks.listOffers.mockResolvedValue([offer])
     mocks.refreshUser.mockResolvedValue({})
+  })
+
+  it('does not offer a disabled scan channel', async () => {
+    mocks.publicSettings.topup_wechat_enabled = false
+    mocks.listOffers.mockResolvedValue([{ ...monthlyOffer }])
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      props: { offerCode: 'plus' },
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+
+    const options = wrapper.findAll('.trial-offer__paymethod-option')
+    expect(options).toHaveLength(1)
+    expect(options[0].text()).toBe('nativeCheckout.alipayPay')
+    wrapper.unmount()
   })
 
   afterEach(() => {

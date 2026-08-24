@@ -6,7 +6,7 @@ import i18n, { initI18n, registerLocaleChangeHandler } from './i18n'
 import { useAppStore } from '@/stores/app'
 import { resolveDocumentTitle } from './router/title'
 import { updateRouteSeo } from '@/utils/seo'
-import { initAnalytics } from '@/utils/analytics'
+import { scheduleAnalyticsInit } from '@/utils/analytics'
 import { vPermission } from './directives/permission'
 import { authSession } from '@/auth'
 import { configureApiRuntime } from '@/api/runtime'
@@ -44,8 +44,6 @@ async function bootstrap() {
       void router.replace('/login')
     }
   })
-  initAnalytics()
-
   // Set document title immediately after config is loaded.
   document.title = resolveDocumentTitle('AI 编码网关', appStore.siteName, undefined, { siteNameFirst: true })
 
@@ -68,6 +66,7 @@ async function bootstrap() {
 
   app.mount('#app')
   window.__APP_LOAD_STATE__?.succeed()
+  scheduleAnalyticsInit()
 }
 
 void bootstrap().catch((error) => {

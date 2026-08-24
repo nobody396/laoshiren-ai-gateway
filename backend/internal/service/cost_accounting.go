@@ -22,9 +22,9 @@ var costAccountingPlanPricing = map[string]struct {
 	ShopPriceCNY   float64
 	DirectPriceCNY float64
 }{
-	"plus": {Name: "Plus", ShopPriceCNY: 259, DirectPriceCNY: 249},
-	"pro":  {Name: "Pro", ShopPriceCNY: 729, DirectPriceCNY: 699},
-	"max":  {Name: "Max", ShopPriceCNY: 1549, DirectPriceCNY: 1499},
+	"plus": {Name: "Plus", ShopPriceCNY: 259, DirectPriceCNY: 255},
+	"pro":  {Name: "Pro", ShopPriceCNY: 729, DirectPriceCNY: 715},
+	"max":  {Name: "Max", ShopPriceCNY: 1549, DirectPriceCNY: 1525},
 }
 
 var costAccountingMonthlyCardGroupNames = map[string]map[string]string{

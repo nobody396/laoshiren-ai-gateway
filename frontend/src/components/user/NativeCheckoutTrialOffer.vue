@@ -1,5 +1,10 @@
 <template>
-  <section v-if="offer" class="trial-offer" aria-labelledby="native-checkout-trial-title">
+  <section
+    v-if="offer"
+    class="trial-offer"
+    :class="{ 'trial-offer--compact': compact }"
+    aria-labelledby="native-checkout-trial-title"
+  >
     <div class="trial-offer__copy">
       <div class="trial-offer__badges">
         <span class="trial-offer__badge">{{ isSubscription ? t('nativeCheckout.subscriptionBadge') : t('nativeCheckout.trialBadge') }}</span>
@@ -38,7 +43,8 @@
           :disabled="payMethodLocked"
           @click="payMethod = 'alipay'"
         >
-          {{ t('nativeCheckout.alipayPay') }}
+          <PaymentMethodIcon kind="alipay" />
+          <span>{{ t('nativeCheckout.alipayPay') }}</span>
         </button>
         <button
           v-if="canUseWechat"
@@ -48,7 +54,8 @@
           :disabled="payMethodLocked"
           @click="payMethod = 'wechat'"
         >
-          {{ t('nativeCheckout.wechatPay') }}
+          <PaymentMethodIcon kind="wechat" />
+          <span>{{ t('nativeCheckout.wechatPay') }}</span>
         </button>
       </div>
       <p v-if="offer.provider === 'easypay' && payMethodLocked" class="trial-offer__paymethod-hint">
@@ -149,6 +156,7 @@ import {
 import { useAppStore, useAuthStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { renderQrCodeDataUrl } from '@/utils/qrImage'
+import PaymentMethodIcon from '@/components/user/PaymentMethodIcon.vue'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -156,7 +164,9 @@ const authStore = useAuthStore()
 
 // offerCode 缺省时保持新人余额卡行为（自动定位 balance + once_per_user 的
 // offer）；月卡等场景由调用方按约定传入 offer code（code == 商品/套餐 id）。
-const props = defineProps<{ offerCode?: string }>()
+const props = withDefaults(defineProps<{ offerCode?: string; compact?: boolean }>(), {
+  compact: false,
+})
 
 const offer = ref<NativeCheckoutOffer | null>(null)
 const order = ref<NativeCheckoutOrder | null>(null)
@@ -534,11 +544,30 @@ onUnmounted(() => {
 .trial-offer__arrow { color: var(--admin-muted, rgb(var(--color-muted))); }
 .trial-offer__paymethod { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-top: 0.85rem; }
 .trial-offer__paymethod-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   border: 1px solid var(--admin-border, rgb(var(--color-ink) / 0.14));
   border-radius: 7px; padding: 0.5rem 0.6rem;
   background: transparent; color: var(--admin-ink, rgb(var(--color-ink)));
   font-size: 0.82rem; font-weight: 650;
   transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.trial-offer--compact {
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+  margin-top: 0;
+  padding: 1rem;
+}
+
+.trial-offer--compact .trial-offer__copy {
+  display: none;
+}
+
+.trial-offer--compact .trial-offer__amounts strong {
+  font-size: 1.2rem;
 }
 .trial-offer__paymethod-option--active {
   border-color: rgb(var(--color-terracotta));

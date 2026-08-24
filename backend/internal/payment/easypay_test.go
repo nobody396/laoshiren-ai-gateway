@@ -6,9 +6,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	infraerrors "github.com/bozhouDev/DragonCode-sub2api/internal/pkg/errors"
@@ -203,19 +206,26 @@ func TestEasyPayVerifyNotify(t *testing.T) {
 }
 
 func TestEasyPayCreateOrder(t *testing.T) {
-	t.Run("success maps payurl, qrcode and trade_no", func(t *testing.T) {
+	t.Run("standard gateway uses root mapi, multipart, client ip and zpay fields", func(t *testing.T) {
 		var gotForm url.Values
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			require.Equal(t, http.MethodPost, r.Method)
 			require.Equal(t, easyPayCreatePath, r.URL.Path)
-			require.NoError(t, r.ParseForm())
-			gotForm = r.PostForm
+			mediaType, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+			require.NoError(t, err)
+			require.Equal(t, "multipart/form-data", mediaType)
+			reader := multipart.NewReader(r.Body, params["boundary"])
+			form, err := reader.ReadForm(easyPayMaxBodyBytes)
+			require.NoError(t, err)
+			gotForm = url.Values(form.Value)
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"code":     1,
 				"msg":      "success",
-				"payurl":   "https://pay.hueling.cc/pay/abc",
+				"O_id":     "zpay-order-1",
+				"payurl2":  "https://zpayz.cn/pay/abc",
 				"qrcode":   "weixin://wxpay/bizpayurl?pr=abc",
+				"img":      "https://zpayz.cn/qrcode/abc.jpg",
 				"trade_no": "2026081922001",
 			})
 		}))
@@ -229,10 +239,12 @@ func TestEasyPayCreateOrder(t *testing.T) {
 			Subject:      "Balance topup",
 			NotifyURL:    "https://example.com/notify",
 			ReturnURL:    "https://example.com/return",
+			ClientIP:     "203.0.113.9",
 		})
 		require.NoError(t, err)
-		require.Equal(t, "https://pay.hueling.cc/pay/abc", result.PayURL)
+		require.Equal(t, "https://zpayz.cn/pay/abc", result.PayURL)
 		require.Equal(t, "weixin://wxpay/bizpayurl?pr=abc", result.QRContent)
+		require.Equal(t, "https://zpayz.cn/qrcode/abc.jpg", result.QRImageURL)
 		require.Equal(t, "2026081922001", result.TradeNo)
 
 		// Verify the exact form the client sent: internal wechat maps to wxpay,
@@ -244,6 +256,7 @@ func TestEasyPayCreateOrder(t *testing.T) {
 		require.Equal(t, "https://example.com/notify", gotForm.Get("notify_url"))
 		require.Equal(t, "https://example.com/return", gotForm.Get("return_url"))
 		require.Equal(t, "Balance topup", gotForm.Get("name"))
+		require.Equal(t, "203.0.113.9", gotForm.Get("clientip"))
 		require.Equal(t, "MD5", gotForm.Get("sign_type"))
 
 		sent := make(map[string]string, len(gotForm))
@@ -253,10 +266,52 @@ func TestEasyPayCreateOrder(t *testing.T) {
 		require.Equal(t, easyPaySign(sent, testEasyPayKey), gotForm.Get("sign"))
 	})
 
+	t.Run("standard gateway requires client ip before creating an order", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Fatal("upstream must not be called without clientip")
+		}))
+		defer server.Close()
+
+		client := testEasyPayClient(server.URL)
+		_, err := client.CreateOrder(context.Background(), &CreateOrderRequest{
+			OutTradeNo:   "T20260819000",
+			Method:       MethodAlipay,
+			AmountCNYFen: 500,
+			Subject:      "Balance topup",
+			NotifyURL:    "https://example.com/notify",
+		})
+		require.Error(t, err)
+		require.Equal(t, "EASYPAY_CLIENT_IP_REQUIRED", infraerrors.Reason(err))
+	})
+
+	t.Run("legacy pika base keeps xpay paths and urlencoded form", func(t *testing.T) {
+		var gotForm url.Values
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			require.Equal(t, "/xpay/epay/mapi.php", r.URL.Path)
+			require.True(t, strings.HasPrefix(r.Header.Get("Content-Type"), "application/x-www-form-urlencoded"))
+			require.NoError(t, r.ParseForm())
+			gotForm = r.PostForm
+			_ = json.NewEncoder(w).Encode(map[string]any{"code": 1, "payurl": "https://pay.example/pay"})
+		}))
+		defer server.Close()
+
+		client := testEasyPayClient(server.URL + "/xpay/epay")
+		result, err := client.CreateOrder(context.Background(), &CreateOrderRequest{
+			OutTradeNo:   "T20260819008",
+			Method:       MethodAlipay,
+			AmountCNYFen: 500,
+			Subject:      "Balance topup",
+			NotifyURL:    "https://example.com/notify",
+		})
+		require.NoError(t, err)
+		require.Equal(t, "https://pay.example/pay", result.PayURL)
+		require.Empty(t, gotForm.Get("clientip"))
+	})
+
 	t.Run("return_url omitted when empty", func(t *testing.T) {
 		var gotForm url.Values
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			require.NoError(t, r.ParseForm())
+			require.NoError(t, r.ParseMultipartForm(easyPayMaxBodyBytes))
 			gotForm = r.PostForm
 			_ = json.NewEncoder(w).Encode(map[string]any{"code": 1, "msg": "success", "payurl": "https://pay.hueling.cc/pay/x"})
 		}))
@@ -269,6 +324,7 @@ func TestEasyPayCreateOrder(t *testing.T) {
 			AmountCNYFen: 500,
 			Subject:      "Balance topup",
 			NotifyURL:    "https://example.com/notify",
+			ClientIP:     "203.0.113.9",
 		})
 		require.NoError(t, err)
 		require.Equal(t, "alipay", gotForm.Get("type"))
@@ -289,6 +345,7 @@ func TestEasyPayCreateOrder(t *testing.T) {
 			AmountCNYFen: 500,
 			Subject:      "Balance topup",
 			NotifyURL:    "https://example.com/notify",
+			ClientIP:     "203.0.113.9",
 		})
 		require.NoError(t, err)
 		require.Empty(t, result.TradeNo)
@@ -296,7 +353,7 @@ func TestEasyPayCreateOrder(t *testing.T) {
 
 	t.Run("api error surfaces sanitized msg", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_ = json.NewEncoder(w).Encode(map[string]any{"code": 0, "msg": "没有找到商户信息"})
+			_ = json.NewEncoder(w).Encode(map[string]any{"code": "error", "msg": "没有找到商户信息"})
 		}))
 		defer server.Close()
 
@@ -307,6 +364,7 @@ func TestEasyPayCreateOrder(t *testing.T) {
 			AmountCNYFen: 500,
 			Subject:      "Balance topup",
 			NotifyURL:    "https://example.com/notify",
+			ClientIP:     "203.0.113.9",
 		})
 		require.Error(t, err)
 		require.Equal(t, "EASYPAY_API_ERROR", infraerrors.Reason(err))

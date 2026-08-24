@@ -27,13 +27,15 @@ type CreateOrderRequest struct {
 	Subject      string
 	NotifyURL    string
 	ReturnURL    string
+	ClientIP     string
 }
 
 // CreateOrderResult is the provider's response to a successful order creation.
 type CreateOrderResult struct {
-	TradeNo   string
-	PayURL    string
-	QRContent string
+	TradeNo    string
+	PayURL     string
+	QRContent  string
+	QRImageURL string
 }
 
 // NotifyResult is the verified content of an asynchronous payment notify.

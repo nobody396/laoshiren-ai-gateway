@@ -1,6 +1,7 @@
 package payment
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
@@ -8,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"sort"
@@ -19,11 +21,12 @@ import (
 )
 
 const (
-	// defaultEasyPayAPIBase is the 皮卡丘支付 gateway used when the admin has
-	// not overridden easypay_api_base.
-	defaultEasyPayAPIBase = "https://pay.hueling.cc"
-	easyPayCreatePath     = "/xpay/epay/mapi.php"
-	easyPayQueryPath      = "/xpay/epay/api.php"
+	// defaultEasyPayAPIBase preserves the historical Pikaqiu deployment when
+	// the admin has not overridden easypay_api_base. Standard EasyPay providers
+	// such as ZPay use a root base (for example https://zpayz.cn).
+	defaultEasyPayAPIBase = "https://pay.hueling.cc/xpay/epay"
+	easyPayCreatePath     = "/mapi.php"
+	easyPayQueryPath      = "/api.php"
 	easyPaySignType       = "MD5"
 	easyPayTradeSuccess   = "TRADE_SUCCESS"
 	easyPayMaxBodyBytes   = 1 << 20
@@ -39,6 +42,9 @@ var (
 	// ErrEasyPayNotifyFailed is returned when notify params are malformed
 	// (missing required fields, pid mismatch, or unparseable money).
 	ErrEasyPayNotifyFailed = infraerrors.BadRequest("EASYPAY_NOTIFY_FAILED", "easypay notify params are invalid")
+	// ErrEasyPayClientIPRequired is returned before calling a standard EasyPay
+	// gateway when the originating customer IP is unavailable.
+	ErrEasyPayClientIPRequired = infraerrors.BadRequest("EASYPAY_CLIENT_IP_REQUIRED", "easypay requires the customer IP address")
 	// ErrEasyPayUpstream wraps transport and response-decoding failures.
 	ErrEasyPayUpstream = infraerrors.ServiceUnavailable("EASYPAY_UPSTREAM", "easypay upstream request failed")
 )
@@ -68,9 +74,10 @@ func NewEasyPayClient(settingService EasyPaySettingSource) *EasyPayClient {
 func (c *EasyPayClient) Name() string { return ProviderEasyPay }
 
 type easyPayConfig struct {
-	pid     string
-	key     string
-	apiBase string
+	pid        string
+	key        string
+	apiBase    string
+	legacyPika bool
 }
 
 func (c *EasyPayClient) loadConfig(ctx context.Context) (easyPayConfig, error) {
@@ -83,11 +90,32 @@ func (c *EasyPayClient) loadConfig(ctx context.Context) (easyPayConfig, error) {
 	if !enabled || pid == "" || key == "" {
 		return easyPayConfig{}, ErrEasyPayNotConfigured
 	}
-	apiBase = strings.TrimRight(strings.TrimSpace(apiBase), "/")
+	apiBase, legacyPika := normalizeEasyPayAPIBase(apiBase)
+	return easyPayConfig{pid: pid, key: key, apiBase: apiBase, legacyPika: legacyPika}, nil
+}
+
+// normalizeEasyPayAPIBase accepts the interface root advertised by standard
+// EasyPay providers. It also upgrades the old Pikaqiu value
+// https://pay.hueling.cc to its actual /xpay/epay interface root so existing
+// disabled configurations remain reversible after this adapter ships.
+func normalizeEasyPayAPIBase(raw string) (apiBase string, legacyPika bool) {
+	apiBase = strings.TrimRight(strings.TrimSpace(raw), "/")
 	if apiBase == "" {
 		apiBase = defaultEasyPayAPIBase
 	}
-	return easyPayConfig{pid: pid, key: key, apiBase: apiBase}, nil
+	lower := strings.ToLower(apiBase)
+	for _, suffix := range []string{easyPayCreatePath, easyPayQueryPath} {
+		if strings.HasSuffix(lower, suffix) {
+			apiBase = strings.TrimRight(apiBase[:len(apiBase)-len(suffix)], "/")
+			lower = strings.ToLower(apiBase)
+			break
+		}
+	}
+	if lower == "https://pay.hueling.cc" || lower == "http://pay.hueling.cc" {
+		apiBase += "/xpay/epay"
+		lower += "/xpay/epay"
+	}
+	return apiBase, strings.HasSuffix(lower, "/xpay/epay")
 }
 
 // easyPayMethod maps the internal method name to the provider's spelling.
@@ -168,15 +196,19 @@ func sanitizeEasyPayMsg(msg string) string {
 }
 
 type easyPayCreateResponse struct {
-	Code    int    `json:"code"`
-	Msg     string `json:"msg"`
-	PayURL  string `json:"payurl"`
-	QRCode  string `json:"qrcode"`
-	TradeNo string `json:"trade_no"`
+	Code    json.RawMessage `json:"code"`
+	Msg     string          `json:"msg"`
+	OrderID string          `json:"O_id"`
+	PayURL  string          `json:"payurl"`
+	PayURL2 string          `json:"payurl2"`
+	QRCode  string          `json:"qrcode"`
+	QRImage string          `json:"img"`
+	TradeNo string          `json:"trade_no"`
 }
 
-// CreateOrder implements Provider: POST {api_base}/xpay/epay/mapi.php with a
-// signed form, returning the cashier URL and/or QR content.
+// CreateOrder implements Provider: POST {api_base}/mapi.php with a signed
+// form. Standard providers use multipart/form-data as documented by ZPay;
+// the historical Pikaqiu endpoint keeps its urlencoded request format.
 func (c *EasyPayClient) CreateOrder(ctx context.Context, req *CreateOrderRequest) (*CreateOrderResult, error) {
 	cfg, err := c.loadConfig(ctx)
 	if err != nil {
@@ -185,6 +217,10 @@ func (c *EasyPayClient) CreateOrder(ctx context.Context, req *CreateOrderRequest
 	payType, err := easyPayMethod(req.Method)
 	if err != nil {
 		return nil, err
+	}
+	clientIP := strings.TrimSpace(req.ClientIP)
+	if !cfg.legacyPika && clientIP == "" {
+		return nil, ErrEasyPayClientIPRequired
 	}
 
 	params := map[string]string{
@@ -195,21 +231,42 @@ func (c *EasyPayClient) CreateOrder(ctx context.Context, req *CreateOrderRequest
 		"name":         req.Subject,
 		"money":        fmt.Sprintf("%.2f", float64(req.AmountCNYFen)/100),
 	}
+	if clientIP != "" {
+		params["clientip"] = clientIP
+	}
 	if req.ReturnURL != "" {
 		params["return_url"] = req.ReturnURL
 	}
 	params["sign"] = easyPaySign(params, cfg.key)
 	params["sign_type"] = easyPaySignType
 
-	form := url.Values{}
-	for k, v := range params {
-		form.Set(k, v)
+	var requestBody io.Reader
+	contentType := "application/x-www-form-urlencoded"
+	if cfg.legacyPika {
+		form := url.Values{}
+		for k, v := range params {
+			form.Set(k, v)
+		}
+		requestBody = strings.NewReader(form.Encode())
+	} else {
+		var buffer bytes.Buffer
+		writer := multipart.NewWriter(&buffer)
+		for k, v := range params {
+			if err := writer.WriteField(k, v); err != nil {
+				return nil, fmt.Errorf("%w: encode create request: %v", ErrEasyPayUpstream, err)
+			}
+		}
+		if err := writer.Close(); err != nil {
+			return nil, fmt.Errorf("%w: encode create request: %v", ErrEasyPayUpstream, err)
+		}
+		requestBody = &buffer
+		contentType = writer.FormDataContentType()
 	}
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, cfg.apiBase+easyPayCreatePath, strings.NewReader(form.Encode()))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, cfg.apiBase+easyPayCreatePath, requestBody)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrEasyPayUpstream, err)
 	}
-	httpReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	httpReq.Header.Set("Content-Type", contentType)
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
@@ -225,13 +282,22 @@ func (c *EasyPayClient) CreateOrder(ctx context.Context, req *CreateOrderRequest
 	if err := json.Unmarshal(body, &out); err != nil {
 		return nil, fmt.Errorf("%w: decode create response: %v", ErrEasyPayUpstream, err)
 	}
-	if out.Code != 1 {
+	if easyPayResponseCode(out.Code) != 1 {
 		return nil, infraerrors.BadRequest("EASYPAY_API_ERROR", "easypay create order failed: "+sanitizeEasyPayMsg(out.Msg))
 	}
+	payURL := strings.TrimSpace(out.PayURL)
+	if payURL == "" {
+		payURL = strings.TrimSpace(out.PayURL2)
+	}
+	tradeNo := strings.TrimSpace(out.TradeNo)
+	if tradeNo == "" {
+		tradeNo = strings.TrimSpace(out.OrderID)
+	}
 	return &CreateOrderResult{
-		TradeNo:   strings.TrimSpace(out.TradeNo),
-		PayURL:    strings.TrimSpace(out.PayURL),
-		QRContent: strings.TrimSpace(out.QRCode),
+		TradeNo:    tradeNo,
+		PayURL:     payURL,
+		QRContent:  strings.TrimSpace(out.QRCode),
+		QRImageURL: strings.TrimSpace(out.QRImage),
 	}, nil
 }
 
@@ -283,14 +349,14 @@ func (c *EasyPayClient) VerifyNotify(params url.Values) (*NotifyResult, error) {
 // easyPayQueryResponse tolerates missing fields; money arrives as either a
 // quoted string ("5.00") or a bare number depending on the deployment.
 type easyPayQueryResponse struct {
-	Code    int             `json:"code"`
+	Code    json.RawMessage `json:"code"`
 	Msg     string          `json:"msg"`
 	Status  int             `json:"status"`
 	TradeNo string          `json:"trade_no"`
 	Money   json.RawMessage `json:"money"`
 }
 
-// QueryOrder implements Provider: GET {api_base}/xpay/epay/api.php?act=order.
+// QueryOrder implements Provider: GET {api_base}/api.php?act=order.
 // The async notify is authoritative for crediting; this query exists only as a
 // self-healing path when a notify was missed.
 func (c *EasyPayClient) QueryOrder(ctx context.Context, outTradeNo string) (*QueryResult, error) {
@@ -323,7 +389,7 @@ func (c *EasyPayClient) QueryOrder(ctx context.Context, outTradeNo string) (*Que
 	if err := json.Unmarshal(body, &out); err != nil {
 		return nil, fmt.Errorf("%w: decode query response: %v", ErrEasyPayUpstream, err)
 	}
-	if out.Code != 1 {
+	if easyPayResponseCode(out.Code) != 1 {
 		return nil, infraerrors.BadRequest("EASYPAY_API_ERROR", "easypay query order failed: "+sanitizeEasyPayMsg(out.Msg))
 	}
 
@@ -339,6 +405,24 @@ func (c *EasyPayClient) QueryOrder(ctx context.Context, outTradeNo string) (*Que
 		}
 	}
 	return result, nil
+}
+
+// easyPayResponseCode accepts both the integer success code and the string
+// failure code ("error") used by ZPay. A malformed or absent code is failure.
+func easyPayResponseCode(raw json.RawMessage) int {
+	if len(raw) == 0 {
+		return 0
+	}
+	var number int
+	if err := json.Unmarshal(raw, &number); err == nil {
+		return number
+	}
+	var text string
+	if err := json.Unmarshal(raw, &text); err == nil {
+		number, _ = strconv.Atoi(strings.TrimSpace(text))
+		return number
+	}
+	return 0
 }
 
 // easyPayRawMoneyString normalizes a money field that may be a JSON string or

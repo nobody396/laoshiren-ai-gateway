@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ip"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/response"
 	middleware2 "github.com/bozhouDev/DragonCode-sub2api/internal/server/middleware"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
@@ -128,7 +129,7 @@ func (h *NativeCheckoutHandler) CreateOrder(c *gin.Context) {
 		response.BadRequest(c, "Invalid checkout request")
 		return
 	}
-	order, err := h.service.CreateOrder(c.Request.Context(), userID, request.OfferCode, request.PayType)
+	order, err := h.service.CreateOrder(c.Request.Context(), userID, request.OfferCode, request.PayType, ip.GetClientIP(c))
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

@@ -62,7 +62,7 @@ func TestNativeCheckoutEasyPayCreatePassesOrderNoAndDefaultsAlipay(t *testing.T)
 		nativeCheckoutTestContactKey,
 	)
 
-	order, err := svc.CreateOrder(context.Background(), 42, repo.offer.Code, "")
+	order, err := svc.CreateOrder(context.Background(), 42, repo.offer.Code, "", "203.0.113.9")
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusPending, order.Status)
 	require.Equal(t, NativeCheckoutProviderEasyPay, order.Provider)
@@ -70,6 +70,7 @@ func TestNativeCheckoutEasyPayCreatePassesOrderNoAndDefaultsAlipay(t *testing.T)
 	require.Equal(t, NativeCheckoutPaymentMethodAlipay, provider.payType, "easypay defaults to alipay when pay_type is empty")
 	require.Equal(t, order.OrderNo, provider.orderNo, "easypay must receive our NC- order number as out_trade_no")
 	require.Equal(t, int64(500), provider.amountFen)
+	require.Equal(t, "203.0.113.9", provider.clientIP)
 }
 
 func TestNativeCheckoutEasyPayCreateHonorsWechatSelection(t *testing.T) {
@@ -87,7 +88,7 @@ func TestNativeCheckoutEasyPayCreateHonorsWechatSelection(t *testing.T) {
 		nativeCheckoutTestContactKey,
 	)
 
-	_, err := svc.CreateOrder(context.Background(), 42, repo.offer.Code, NativeCheckoutPaymentMethodWeChat)
+	_, err := svc.CreateOrder(context.Background(), 42, repo.offer.Code, NativeCheckoutPaymentMethodWeChat, "203.0.113.9")
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutPaymentMethodWeChat, provider.payType)
 }
@@ -103,7 +104,7 @@ func TestNativeCheckoutEasyPayCreateRejectsInvalidPayType(t *testing.T) {
 		nativeCheckoutTestContactKey,
 	)
 
-	_, err := svc.CreateOrder(context.Background(), 42, repo.offer.Code, "unionpay")
+	_, err := svc.CreateOrder(context.Background(), 42, repo.offer.Code, "unionpay", "203.0.113.9")
 	require.Error(t, err)
 	require.Equal(t, "NATIVE_CHECKOUT_PAY_TYPE_INVALID", infraerrors.Reason(err))
 	require.Zero(t, provider.createCalls)
@@ -125,7 +126,7 @@ func TestNativeCheckoutLDXPCreateIgnoresPayType(t *testing.T) {
 		nativeCheckoutTestContactKey,
 	)
 
-	_, err := svc.CreateOrder(context.Background(), 42, repo.offer.Code, NativeCheckoutPaymentMethodWeChat)
+	_, err := svc.CreateOrder(context.Background(), 42, repo.offer.Code, NativeCheckoutPaymentMethodWeChat, "203.0.113.9")
 	require.NoError(t, err)
 	require.Empty(t, provider.payType, "providers that pick their own channel must not receive the pay type hint")
 	require.Equal(t, 1, provider.createCalls)
@@ -471,7 +472,7 @@ func TestNativeCheckoutRepeatableOfferAllowsRepurchaseAfterCompletion(t *testing
 		nativeCheckoutTestContactKey,
 	)
 
-	first, err := svc.CreateOrder(context.Background(), 42, offer.Code, "")
+	first, err := svc.CreateOrder(context.Background(), 42, offer.Code, "", "203.0.113.9")
 	require.NoError(t, err)
 	require.Equal(t, NativeCheckoutStatusPending, first.Status)
 
@@ -481,7 +482,7 @@ func TestNativeCheckoutRepeatableOfferAllowsRepurchaseAfterCompletion(t *testing
 	repo.order.Status = NativeCheckoutStatusCompleted
 	repo.mu.Unlock()
 
-	second, err := svc.CreateOrder(context.Background(), 42, offer.Code, NativeCheckoutPaymentMethodWeChat)
+	second, err := svc.CreateOrder(context.Background(), 42, offer.Code, NativeCheckoutPaymentMethodWeChat, "203.0.113.9")
 	require.NoError(t, err)
 	require.NotEqual(t, first.OrderNo, second.OrderNo, "a completed order must not block repurchase of a repeatable offer")
 	require.NotEqual(t, first.ID, second.ID)
@@ -511,9 +512,9 @@ func TestNativeCheckoutRepeatableOfferBlocksConcurrentActiveOrder(t *testing.T) 
 		nativeCheckoutTestContactKey,
 	)
 
-	first, err := svc.CreateOrder(context.Background(), 42, offer.Code, "")
+	first, err := svc.CreateOrder(context.Background(), 42, offer.Code, "", "203.0.113.9")
 	require.NoError(t, err)
-	second, err := svc.CreateOrder(context.Background(), 42, offer.Code, "")
+	second, err := svc.CreateOrder(context.Background(), 42, offer.Code, "", "203.0.113.9")
 	require.NoError(t, err)
 	require.Equal(t, first.OrderNo, second.OrderNo, "an in-flight order is reused instead of duplicated")
 	require.Equal(t, 1, provider.createCalls)

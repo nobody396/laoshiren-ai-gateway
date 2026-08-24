@@ -157,7 +157,7 @@ export interface SystemSettings {
   xunhu_wechat_key_configured: boolean
   xunhu_notify_url: string
 
-  // 易支付（皮卡丘）聚合支付设置
+  // 彩虹易支付兼容网关（ZPay / 皮卡丘）设置
   easypay_enabled: boolean
   easypay_pid: string
   easypay_api_base: string
@@ -282,7 +282,7 @@ export interface UpdateSettingsRequest {
   xunhu_wechat_key?: string
   xunhu_notify_url?: string
 
-  // 易支付（皮卡丘）聚合支付设置
+  // 彩虹易支付兼容网关（ZPay / 皮卡丘）设置
   easypay_enabled?: boolean
   easypay_pid?: string
   easypay_api_base?: string

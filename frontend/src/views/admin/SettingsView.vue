@@ -2191,12 +2191,12 @@
           </div>
         </div>
 
-        <!-- 易支付（皮卡丘）聚合支付（余额充值） -->
+        <!-- 彩虹易支付兼容网关（ZPay / 皮卡丘） -->
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">易支付（皮卡丘）充值</h2>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">易支付兼容网关（ZPay / 皮卡丘）</h2>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              配置易支付聚合支付，可作为支付宝/微信余额充值的收款通道（人民币 1:1 换算为美元余额）
+              配置彩虹易支付兼容接口，可作为支付宝/微信余额充值的收款通道（人民币 1:1 换算为美元余额）
             </p>
           </div>
           <div class="space-y-6 p-6">
@@ -2230,8 +2230,8 @@
               </div>
               <div>
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">API 地址</label>
-                <input v-model="form.easypay_api_base" type="text" class="input font-mono text-sm" placeholder="https://pay.hueling.cc" />
-                <p class="mt-1 text-xs text-gray-400">留空则使用默认 https://pay.hueling.cc</p>
+                <input v-model="form.easypay_api_base" type="text" class="input font-mono text-sm" placeholder="https://zpayz.cn" />
+                <p class="mt-1 text-xs text-gray-400">填写接口根地址；ZPay 填 https://zpayz.cn。留空仅用于旧皮卡丘配置。</p>
               </div>
             </div>
 
@@ -2241,14 +2241,14 @@
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">支付宝充值通道</label>
                 <select v-model="form.topup_alipay_provider" class="input">
                   <option value="xunhu">虎皮椒（Xunhu）</option>
-                  <option value="easypay">易支付（皮卡丘）</option>
+                  <option value="easypay">易支付兼容网关（ZPay）</option>
                 </select>
               </div>
               <div>
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">微信充值通道</label>
                 <select v-model="form.topup_wechat_provider" class="input">
                   <option value="xunhu">虎皮椒（Xunhu）</option>
-                  <option value="easypay">易支付（皮卡丘）</option>
+                  <option value="easypay">易支付兼容网关（ZPay）</option>
                 </select>
               </div>
             </div>
@@ -2980,7 +2980,7 @@ const form = reactive<SettingsForm>({
   xunhu_wechat_key: '',
   xunhu_wechat_key_configured: false,
   xunhu_notify_url: '',
-  // 易支付（皮卡丘）充值
+  // 彩虹易支付兼容网关（ZPay / 皮卡丘）
   easypay_enabled: false,
   easypay_pid: '',
   easypay_api_base: '',

@@ -239,6 +239,14 @@ func registerOpsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 			ops.POST("/customer-tiers/users/:id/overrides", h.CustomerTier.CreateOverride)
 			ops.POST("/customer-tiers/users/:id/refunds", h.CustomerTier.RecordRefund)
 		}
+		if h.Compensation != nil {
+			ops.GET("/compensation", h.Compensation.GetSnapshot)
+			ops.GET("/compensation/drafts/:id", h.Compensation.GetDraft)
+			ops.POST("/compensation/incidents/:id/draft", h.Compensation.GenerateDraft)
+			ops.POST("/compensation/drafts/:id/revisions", h.Compensation.ReviseDraft)
+			ops.POST("/compensation/drafts/:id/reviews", h.Compensation.ReviewDraft)
+			ops.PUT("/compensation/settings", h.Compensation.UpdateSettings)
+		}
 
 		// Alerts (rules + events)
 		ops.GET("/alert-rules", h.Admin.Ops.ListAlertRules)

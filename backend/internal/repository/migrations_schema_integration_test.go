@@ -184,11 +184,20 @@ WHERE table_schema = 'public'
 	requireColumn(t, tx, "customer_tier_incident_snapshots", "multiplier", "numeric", 0, false)
 	requireColumn(t, tx, "customer_tier_incident_snapshots", "policy_snapshot", "jsonb", 0, false)
 	requireColumn(t, tx, "customer_tier_evaluations", "policy_snapshot", "jsonb", 0, false)
+	requireColumn(t, tx, "compensation_drafts", "proposed_total_cny_fen", "bigint", 0, false)
+	requireColumn(t, tx, "compensation_draft_users", "builder_pass_benefit_cny_fen", "bigint", 0, false)
+	requireColumn(t, tx, "compensation_draft_users", "evidence_complete", "boolean", 0, false)
+	requireColumn(t, tx, "compensation_draft_items", "product_rate_version_id", "bigint", 0, true)
+	requireColumn(t, tx, "compensation_group_weight_versions", "benefit_channel", "character varying", 24, false)
+	requireColumn(t, tx, "compensation_evidence_snapshots", "retention_until", "timestamp with time zone", 0, false)
 	requireIndex(t, tx, "customer_tier_current", "idx_customer_tier_current_effective")
 	requireIndex(t, tx, "customer_tier_incident_snapshots", "customer_tier_incident_snapshots_incident_id_user_id_key")
 	var tierEvaluationEnabled string
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key='customer_tier_evaluation_enabled'`).Scan(&tierEvaluationEnabled))
 	require.Equal(t, "false", tierEvaluationEnabled)
+	var compensationShadowEnabled string
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key='compensation_shadow_draft_enabled'`).Scan(&compensationShadowEnabled))
+	require.Equal(t, "false", compensationShadowEnabled)
 	var policyWindow, policyGrace int
 	var priorityThreshold, strategicThreshold int64
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT rolling_window_days,downgrade_grace_days,priority_threshold_cny_fen,strategic_threshold_cny_fen FROM customer_tier_policy_versions WHERE version=1`).Scan(&policyWindow, &policyGrace, &priorityThreshold, &strategicThreshold))
@@ -232,6 +241,13 @@ WHERE table_schema = 'public'
 	var grantedTierAPIs int
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM admin_role_apis ra JOIN admin_apis a ON a.id=ra.api_id WHERE ra.role_id=$1 AND a.path LIKE '/admin/ops/customer-tiers%'`, opsRoleID).Scan(&grantedTierAPIs))
 	require.Equal(t, 5, grantedTierAPIs)
+	compensationRBACMigration, err := fs.ReadFile(embeddedmigrations.FS, "211_grant_compensation_shadow_rbac.sql")
+	require.NoError(t, err)
+	_, err = tx.ExecContext(context.Background(), string(compensationRBACMigration))
+	require.NoError(t, err)
+	var grantedCompensationAPIs int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM admin_role_apis ra JOIN admin_apis a ON a.id=ra.api_id WHERE ra.role_id=$1 AND a.path LIKE '/admin/ops/compensation%'`, opsRoleID).Scan(&grantedCompensationAPIs))
+	require.Equal(t, 6, grantedCompensationAPIs)
 	var catalogProducts, builderPassBindings, legacyBindings, nonHTTPComponents int
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM service_status_products WHERE enabled=TRUE`).Scan(&catalogProducts))
 	require.Equal(t, 7, catalogProducts)

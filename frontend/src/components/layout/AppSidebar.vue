@@ -845,6 +845,7 @@ const navPermissionMap: Record<string, string> = {
   '/admin/channel-monitoring': 'admin:ops',
   '/admin/incidents': 'admin:ops',
   '/admin/customer-tiers': 'admin:ops',
+  '/admin/compensation': 'admin:ops',
   '/admin/business-finance': 'admin:finance-transactions|admin:ops',
   '/admin/users': 'admin:users',
   '/admin/affiliate': 'admin:agents',
@@ -899,6 +900,10 @@ const adminNavItems = computed((): NavItem[] => {
           path: '/admin/customer-tiers',
           label: resolveAdminMenuLabel('/admin/customer-tiers', t('nav.customerTiers', '客户等级')),
           icon: UsersIcon
+        }, {
+          path: '/admin/compensation',
+          label: resolveAdminMenuLabel('/admin/compensation', t('nav.compensationShadow', '赔付 Shadow')),
+          icon: ChartIcon
         }]
       : []),
     {

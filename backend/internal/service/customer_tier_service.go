@@ -408,13 +408,25 @@ func (s *CustomerTierService) loadCustomerTierEvaluation(ctx context.Context, id
 }
 
 func (s *CustomerTierService) loadEvidenceWithPolicy(ctx context.Context, userID int64, end time.Time, policy CustomerTierPolicy) (CustomerTierEvidence, error) {
-	start := end.Add(-policy.Window())
-	result := CustomerTierEvidence{WindowStartedAt: start, WindowEndedAt: end, PaidSources: []CustomerTierEvidenceItem{}, Policy: policy}
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
+	if err != nil {
+		return CustomerTierEvidence{}, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	result, err := s.loadEvidenceWithPolicyTx(ctx, tx, userID, end, policy)
 	if err != nil {
 		return result, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	if err = tx.Commit(); err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
+func (s *CustomerTierService) loadEvidenceWithPolicyTx(ctx context.Context, tx *sql.Tx, userID int64, end time.Time, policy CustomerTierPolicy) (CustomerTierEvidence, error) {
+	start := end.Add(-policy.Window())
+	result := CustomerTierEvidence{WindowStartedAt: start, WindowEndedAt: end, PaidSources: []CustomerTierEvidenceItem{}, Policy: policy}
+	var err error
 	cursorTime, cursorType, cursorID := start, "", int64(0)
 	for {
 		rows, err := tx.QueryContext(ctx, `
@@ -492,9 +504,6 @@ SELECT
 		return result, err
 	}
 	result.VerifiedPaidConsumptionMicros = result.BalancePaidConsumptionMicros + result.BuilderPassConsumptionMicros
-	if err := tx.Commit(); err != nil {
-		return result, err
-	}
 	return result, nil
 }
 

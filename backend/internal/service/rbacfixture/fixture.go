@@ -535,6 +535,12 @@ func BaselineAPIs() []*service.AdminAPI {
 	add("PUT", "/admin/ops/customer-tiers/settings", 53, 68)
 	add("POST", "/admin/ops/customer-tiers/users/:id/overrides", 53, 69)
 	add("POST", "/admin/ops/customer-tiers/users/:id/refunds", 53, 70)
+	add("GET", "/admin/ops/compensation", 53, 71)
+	add("GET", "/admin/ops/compensation/drafts/:id", 53, 72)
+	add("POST", "/admin/ops/compensation/incidents/:id/draft", 53, 73)
+	add("POST", "/admin/ops/compensation/drafts/:id/revisions", 53, 74)
+	add("PUT", "/admin/ops/compensation/settings", 53, 75)
+	add("POST", "/admin/ops/compensation/drafts/:id/reviews", 53, 76)
 
 	return out
 }

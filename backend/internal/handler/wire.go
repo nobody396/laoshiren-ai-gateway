@@ -214,6 +214,7 @@ var ProviderSet = wire.NewSet(
 	NewResourceHandler,
 	ProvideStatusHandler,
 	NewCustomerTierHandler,
+	NewCompensationHandler,
 	NewModelPricingHandler,
 	ProvideSettingHandler,
 

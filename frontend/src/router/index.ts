@@ -654,6 +654,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, requiresAdmin: true, permission: 'admin:ops', title: '客户等级' }
   },
   {
+    path: '/admin/compensation',
+    name: 'AdminCompensationShadow',
+    component: () => import('@/views/admin/CompensationShadowView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, permission: 'admin:ops', title: '赔付 Shadow' }
+  },
+  {
     path: '/admin/business-finance',
     name: 'AdminBusinessFinance',
     component: () => import('@/views/admin/BusinessFinanceView.vue'),

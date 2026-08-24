@@ -2,10 +2,11 @@
   <section
     v-if="offer"
     class="trial-offer"
-    :class="{ 'trial-offer--compact': compact }"
-    aria-labelledby="native-checkout-trial-title"
+    :class="{ 'trial-offer--compact': compact, 'trial-offer--action-only': actionOnly }"
+    :aria-labelledby="actionOnly ? undefined : 'native-checkout-trial-title'"
+    :aria-label="actionOnly ? offer.name : undefined"
   >
-    <div class="trial-offer__copy">
+    <div v-if="!actionOnly" class="trial-offer__copy">
       <div class="trial-offer__badges">
         <span class="trial-offer__badge">{{ isSubscription ? t('nativeCheckout.subscriptionBadge') : t('nativeCheckout.trialBadge') }}</span>
         <span v-if="offer.once_per_user" class="trial-offer__limit">{{ t('nativeCheckout.onceOnly') }}</span>
@@ -16,7 +17,7 @@
     </div>
 
     <div class="trial-offer__deal">
-      <div class="trial-offer__amounts">
+      <div v-if="!actionOnly" class="trial-offer__amounts">
         <span>
           <small>{{ t('nativeCheckout.pay') }}</small>
           <strong>¥{{ formatCNY(offer.pay_amount_cny_fen) }}</strong>
@@ -30,7 +31,7 @@
       </div>
 
       <div
-        v-if="offer.provider === 'easypay'"
+        v-if="!actionOnly && offer.provider === 'easypay'"
         class="trial-offer__paymethod"
         role="group"
         :aria-label="t('nativeCheckout.payMethodLabel')"
@@ -58,7 +59,7 @@
           <span>{{ t('nativeCheckout.wechatPay') }}</span>
         </button>
       </div>
-      <p v-if="offer.provider === 'easypay' && payMethodLocked" class="trial-offer__paymethod-hint">
+      <p v-if="!actionOnly && offer.provider === 'easypay' && payMethodLocked" class="trial-offer__paymethod-hint">
         {{ t('nativeCheckout.payMethodLockedHint') }}
       </p>
 
@@ -73,6 +74,7 @@
         <span v-else-if="order?.status === 'checking' || order?.status === 'manual_review'">{{ t('nativeCheckout.reviewing') }}</span>
         <span v-else-if="order?.status === 'pending'">{{ t('nativeCheckout.continuePayment') }}</span>
         <span v-else-if="order?.status === 'fulfilling'">{{ t('nativeCheckout.crediting') }}</span>
+        <span v-else-if="actionOnly && actionLabel">{{ actionLabel }}</span>
         <span v-else-if="isSubscription">
           {{ t('nativeCheckout.buySubscriptionNow', {
             payAmount: formatCNY(offer.pay_amount_cny_fen),
@@ -142,7 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   createNativeCheckoutOrder,
@@ -164,8 +166,16 @@ const authStore = useAuthStore()
 
 // offerCode 缺省时保持新人余额卡行为（自动定位 balance + once_per_user 的
 // offer）；月卡等场景由调用方按约定传入 offer code（code == 商品/套餐 id）。
-const props = withDefaults(defineProps<{ offerCode?: string; compact?: boolean }>(), {
+const props = withDefaults(defineProps<{
+  offerCode?: string
+  compact?: boolean
+  actionOnly?: boolean
+  preferredPayMethod?: NativeCheckoutPaymentMethod
+  actionLabel?: string
+}>(), {
   compact: false,
+  actionOnly: false,
+  actionLabel: '',
 })
 
 const offer = ref<NativeCheckoutOffer | null>(null)
@@ -364,9 +374,23 @@ async function startCheckout() {
 }
 
 function syncPayMethodWithSettings() {
+  if (props.preferredPayMethod === 'alipay' && canUseAlipay.value) {
+    payMethod.value = 'alipay'
+    return
+  }
+  if (props.preferredPayMethod === 'wechat' && canUseWechat.value) {
+    payMethod.value = 'wechat'
+    return
+  }
   if (canUseAlipay.value) payMethod.value = 'alipay'
   else if (canUseWechat.value) payMethod.value = 'wechat'
 }
+
+watch(() => props.preferredPayMethod, (value) => {
+  if (!value || payMethodLocked.value) return
+  if (value === 'alipay' && canUseAlipay.value) payMethod.value = value
+  if (value === 'wechat' && canUseWechat.value) payMethod.value = value
+})
 
 async function loadPaymentQR(current: NativeCheckoutOrder) {
   clearQRImage()
@@ -568,6 +592,37 @@ onUnmounted(() => {
 
 .trial-offer--compact .trial-offer__amounts strong {
   font-size: 1.2rem;
+}
+
+.trial-offer--action-only {
+  display: block;
+  margin-top: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.trial-offer--action-only .trial-offer__action {
+  min-height: 3.5rem;
+  margin-top: 1.35rem;
+  border: 1px solid rgb(var(--color-gray-950));
+  border-radius: 10px;
+  background: rgb(var(--color-gray-950));
+  color: #fff;
+  font-size: 0.94rem;
+  font-weight: 680;
+}
+
+.trial-offer--action-only .trial-offer__action:hover:not(:disabled) {
+  background: rgb(var(--color-gray-800));
+  transform: none;
+}
+
+.dark .trial-offer--action-only .trial-offer__action {
+  border-color: rgb(var(--color-dark-50));
+  background: rgb(var(--color-dark-50));
+  color: rgb(var(--color-dark-950));
 }
 .trial-offer__paymethod-option--active {
   border-color: rgb(var(--color-terracotta));

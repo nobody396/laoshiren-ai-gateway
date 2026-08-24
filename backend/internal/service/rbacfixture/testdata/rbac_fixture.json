@@ -3564,6 +3564,60 @@
       "description": "POST /admin/ops/compensation/drafts/:id/reviews",
       "sort_order": 76,
       "status": "active"
+    },
+    {
+      "id": 470,
+      "group": "运维监控",
+      "path": "/admin/ops/compensation/drafts/:id/approve",
+      "method": "POST",
+      "description": "POST /admin/ops/compensation/drafts/:id/approve",
+      "sort_order": 77,
+      "status": "active"
+    },
+    {
+      "id": 471,
+      "group": "运维监控",
+      "path": "/admin/ops/compensation/drafts/:id/execute",
+      "method": "POST",
+      "description": "POST /admin/ops/compensation/drafts/:id/execute",
+      "sort_order": 78,
+      "status": "active"
+    },
+    {
+      "id": 472,
+      "group": "运维监控",
+      "path": "/admin/ops/compensation/execution-settings",
+      "method": "PUT",
+      "description": "PUT /admin/ops/compensation/execution-settings",
+      "sort_order": 79,
+      "status": "active"
+    },
+    {
+      "id": 473,
+      "group": "运维监控",
+      "path": "/admin/ops/compensation/executions/:id",
+      "method": "GET",
+      "description": "GET /admin/ops/compensation/executions/:id",
+      "sort_order": 80,
+      "status": "active"
+    },
+    {
+      "id": 474,
+      "group": "运维监控",
+      "path": "/admin/ops/compensation/erroneous-charge-refunds",
+      "method": "POST",
+      "description": "POST /admin/ops/compensation/erroneous-charge-refunds",
+      "sort_order": 81,
+      "status": "active"
+    },
+    {
+      "id": 475,
+      "group": "运维监控",
+      "path": "/admin/ops/compensation/drafts/:id/execution-preview",
+      "method": "GET",
+      "description": "GET /admin/ops/compensation/drafts/:id/execution-preview",
+      "sort_order": 82,
+      "status": "active"
     }
   ]
 }

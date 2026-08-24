@@ -541,6 +541,12 @@ func BaselineAPIs() []*service.AdminAPI {
 	add("POST", "/admin/ops/compensation/drafts/:id/revisions", 53, 74)
 	add("PUT", "/admin/ops/compensation/settings", 53, 75)
 	add("POST", "/admin/ops/compensation/drafts/:id/reviews", 53, 76)
+	add("POST", "/admin/ops/compensation/drafts/:id/approve", 53, 77)
+	add("POST", "/admin/ops/compensation/drafts/:id/execute", 53, 78)
+	add("PUT", "/admin/ops/compensation/execution-settings", 53, 79)
+	add("GET", "/admin/ops/compensation/executions/:id", 53, 80)
+	add("POST", "/admin/ops/compensation/erroneous-charge-refunds", 53, 81)
+	add("GET", "/admin/ops/compensation/drafts/:id/execution-preview", 53, 82)
 
 	return out
 }

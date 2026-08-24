@@ -34,6 +34,13 @@ func (s *CompensationControlService) ReviseDraft(ctx context.Context, command Co
 	if latestID != prior.ID {
 		return nil, fmt.Errorf("only the latest immutable draft revision can be revised")
 	}
+	var approved bool
+	if err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM compensation_draft_approvals a JOIN compensation_drafts d ON d.id=a.draft_id WHERE d.series_id=$1)`, prior.SeriesID).Scan(&approved); err != nil {
+		return nil, err
+	}
+	if approved {
+		return nil, fmt.Errorf("an approved compensation series cannot be revised")
+	}
 	policy, err := loadCompensationPolicyVersion(ctx, tx, prior.PolicyVersion)
 	if err != nil {
 		return nil, err

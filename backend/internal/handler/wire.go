@@ -154,6 +154,7 @@ func ProvideHandlers(
 	resourceHandler *ResourceHandler,
 	statusHandler *StatusHandler,
 	customerTierHandler *CustomerTierHandler,
+	compensationHandler *CompensationHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 	_ *service.PendingAuthSessionCleanupService,
@@ -184,6 +185,7 @@ func ProvideHandlers(
 		Resource:       resourceHandler,
 		Status:         statusHandler,
 		CustomerTier:   customerTierHandler,
+		Compensation:   compensationHandler,
 	}
 }
 

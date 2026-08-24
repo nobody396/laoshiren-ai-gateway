@@ -190,6 +190,12 @@ WHERE table_schema = 'public'
 	requireColumn(t, tx, "compensation_draft_items", "product_rate_version_id", "bigint", 0, true)
 	requireColumn(t, tx, "compensation_group_weight_versions", "benefit_channel", "character varying", 24, false)
 	requireColumn(t, tx, "compensation_evidence_snapshots", "retention_until", "timestamp with time zone", 0, false)
+	requireColumn(t, tx, "compensation_executions", "amount_cny_fen", "bigint", 0, false)
+	requireColumn(t, tx, "compensation_draft_approvals", "approved_preview_hash", "character", 64, false)
+	requireColumn(t, tx, "compensation_approval_notices", "body", "text", 0, false)
+	requireColumn(t, tx, "compensation_execution_receipts", "payload_hash", "character", 64, false)
+	requireColumn(t, tx, "compensation_notices", "approval_notice_id", "bigint", 0, false)
+	requireColumn(t, tx, "erroneous_charge_refunds", "amount_micros", "bigint", 0, false)
 	requireIndex(t, tx, "customer_tier_current", "idx_customer_tier_current_effective")
 	requireIndex(t, tx, "customer_tier_incident_snapshots", "customer_tier_incident_snapshots_incident_id_user_id_key")
 	var tierEvaluationEnabled string
@@ -198,6 +204,9 @@ WHERE table_schema = 'public'
 	var compensationShadowEnabled string
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key='compensation_shadow_draft_enabled'`).Scan(&compensationShadowEnabled))
 	require.Equal(t, "false", compensationShadowEnabled)
+	var compensationExecutionEnabled string
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key='compensation_execution_enabled'`).Scan(&compensationExecutionEnabled))
+	require.Equal(t, "false", compensationExecutionEnabled)
 	var policyWindow, policyGrace int
 	var priorityThreshold, strategicThreshold int64
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT rolling_window_days,downgrade_grace_days,priority_threshold_cny_fen,strategic_threshold_cny_fen FROM customer_tier_policy_versions WHERE version=1`).Scan(&policyWindow, &policyGrace, &priorityThreshold, &strategicThreshold))
@@ -248,6 +257,15 @@ WHERE table_schema = 'public'
 	var grantedCompensationAPIs int
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM admin_role_apis ra JOIN admin_apis a ON a.id=ra.api_id WHERE ra.role_id=$1 AND a.path LIKE '/admin/ops/compensation%'`, opsRoleID).Scan(&grantedCompensationAPIs))
 	require.Equal(t, 6, grantedCompensationAPIs)
+	executionRBACMigration, err := fs.ReadFile(embeddedmigrations.FS, "215_grant_compensation_execution_rbac.sql")
+	require.NoError(t, err)
+	_, err = tx.ExecContext(context.Background(), string(executionRBACMigration))
+	require.NoError(t, err)
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM admin_role_apis ra JOIN admin_apis a ON a.id=ra.api_id WHERE ra.role_id=$1 AND a.path LIKE '/admin/ops/compensation%'`, opsRoleID).Scan(&grantedCompensationAPIs))
+	require.Equal(t, 8, grantedCompensationAPIs)
+	var nonOwnerMoneyAPIs int
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM admin_role_apis ra JOIN admin_apis a ON a.id=ra.api_id WHERE ra.role_id=$1 AND (a.method,a.path) IN (('POST','/admin/ops/compensation/drafts/:id/approve'),('POST','/admin/ops/compensation/drafts/:id/execute'),('PUT','/admin/ops/compensation/execution-settings'),('POST','/admin/ops/compensation/erroneous-charge-refunds'))`, opsRoleID).Scan(&nonOwnerMoneyAPIs))
+	require.Zero(t, nonOwnerMoneyAPIs)
 	var catalogProducts, builderPassBindings, legacyBindings, nonHTTPComponents int
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM service_status_products WHERE enabled=TRUE`).Scan(&catalogProducts))
 	require.Equal(t, 7, catalogProducts)

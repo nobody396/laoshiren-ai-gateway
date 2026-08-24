@@ -682,6 +682,7 @@ var ProviderSet = wire.NewSet(
 	NewIncidentControlService,
 	NewCustomerTierService,
 	NewCompensationControlService,
+	NewCompensationExecutionService,
 	NewOpenAIRouteObservationCollector,
 	NewOAuthService,
 	NewOpenAIOAuthService,

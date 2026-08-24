@@ -246,6 +246,12 @@ func registerOpsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 			ops.POST("/compensation/drafts/:id/revisions", h.Compensation.ReviseDraft)
 			ops.POST("/compensation/drafts/:id/reviews", h.Compensation.ReviewDraft)
 			ops.PUT("/compensation/settings", h.Compensation.UpdateSettings)
+			ops.POST("/compensation/drafts/:id/approve", h.Compensation.ApproveDraft)
+			ops.POST("/compensation/drafts/:id/execute", h.Compensation.ExecuteDraft)
+			ops.PUT("/compensation/execution-settings", h.Compensation.UpdateExecutionSettings)
+			ops.GET("/compensation/executions/:id", h.Compensation.GetExecution)
+			ops.GET("/compensation/drafts/:id/execution-preview", h.Compensation.GetExecutionPreview)
+			ops.POST("/compensation/erroneous-charge-refunds", h.Compensation.RefundErroneousCharge)
 		}
 
 		// Alerts (rules + events)

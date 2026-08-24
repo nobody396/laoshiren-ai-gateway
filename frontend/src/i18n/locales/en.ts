@@ -1222,7 +1222,7 @@ export default {
     buyNow: 'Unlock ¥{benefitAmount} balance for ¥{payAmount}',
     checkingHint: 'This order is being checked. Do not pay again; credit will be applied automatically after confirmation.',
     completedHint: 'This new-user deal has already been used.',
-    wechatPay: 'WeChat Pay',
+    wechatPay: 'WeChat',
     alipayPay: 'Alipay',
     qrPayment: 'QR payment',
     scanToPay: 'Scan to pay ¥{amount}',

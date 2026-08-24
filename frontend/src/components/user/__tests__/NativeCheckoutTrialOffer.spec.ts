@@ -326,6 +326,8 @@ describe('NativeCheckoutTrialOffer', () => {
     const options = wrapper.findAll('.trial-offer__paymethod-option')
     expect(options).toHaveLength(2)
     expect(options[0].classes()).toContain('trial-offer__paymethod-option--active')
+    expect(options[0].find('img').attributes('src')).toContain('alipay.svg')
+    expect(options[1].find('img').attributes('src')).toContain('wechat.svg')
 
     await wrapper.find('.trial-offer__action').trigger('click')
     await flushPromises()
@@ -338,6 +340,20 @@ describe('NativeCheckoutTrialOffer', () => {
     )
     expect(wrapper.find('.checkout-modal__qr img').attributes('src')).toBe('data:image/png;base64,EASYPAYQR')
     expect(wrapper.text()).not.toContain('nativeCheckout.linkQRHint')
+    wrapper.unmount()
+  })
+
+  it('renders a compact checkout control for the summary card', async () => {
+    mocks.listOffers.mockResolvedValue([{ ...offer, provider: 'easypay' as const }])
+    const wrapper = mount(NativeCheckoutTrialOffer, {
+      props: { compact: true },
+      global: { stubs: { Teleport: true } },
+    })
+    await flushPromises()
+
+    expect(wrapper.find('.trial-offer').classes()).toContain('trial-offer--compact')
+    expect(wrapper.find('.trial-offer__copy').exists()).toBe(true)
+    expect(wrapper.find('.trial-offer__paymethod').exists()).toBe(true)
     wrapper.unmount()
   })
 

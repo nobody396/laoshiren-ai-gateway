@@ -3,6 +3,7 @@ import {
   BALANCE_TOPUP_PRESETS,
   PROMOTIONAL_BALANCE_TOPUPS,
   getCreditedBalanceTopupAmount,
+  getCreditedBalanceTopupProductAmount,
   getPromotionalBalanceTopup,
   isNewcomerBalanceTopup,
   isSupportedBalanceTopupAmount
@@ -10,11 +11,17 @@ import {
 
 describe('balanceTopups', () => {
   it('keeps only the approved customer-facing denominations', () => {
-    expect(BALANCE_TOPUP_PRESETS).toEqual([20, 50, 100])
+    expect(BALANCE_TOPUP_PRESETS).toEqual([20, 50, 100, 300])
+  })
+
+  it('multiplies each card promotion when buying a quantity', () => {
+    expect(getCreditedBalanceTopupProductAmount(20, 3)).toBe(60)
+    expect(getCreditedBalanceTopupProductAmount(500, 3)).toBe(1650)
+    expect(getCreditedBalanceTopupProductAmount(1000, 2)).toBe(2200)
   })
 
   it('allows only ordinary and promotional shop denominations', () => {
-    for (const amount of [1, 10, 200, 300, 600, 2000]) {
+    for (const amount of [1, 10, 200, 600, 2000]) {
       expect(isSupportedBalanceTopupAmount(amount), String(amount)).toBe(false)
     }
 

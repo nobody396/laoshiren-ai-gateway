@@ -21,6 +21,11 @@ export interface TopupOrderStatus {
   qr_code_url?: string | null
 }
 
+export interface TopupProductSelection {
+  productAmountCnyFen: number
+  quantity: number
+}
+
 /**
  * 创建充值订单
  * @param amountCnyFen 充值金额（分，CNY）。例如 2000 = ¥20
@@ -28,11 +33,16 @@ export interface TopupOrderStatus {
  */
 export async function createTopupOrder(
   amountCnyFen: number,
-  payType: TopupPayType
+  payType: TopupPayType,
+  product?: TopupProductSelection
 ): Promise<CreateTopupOrderResponse> {
   const { data } = await apiClient.post<CreateTopupOrderResponse>('/topup/order', {
     amount_cny_fen: amountCnyFen,
     pay_type: payType,
+    ...(product ? {
+      product_amount_cny_fen: product.productAmountCnyFen,
+      quantity: product.quantity,
+    } : {}),
   })
   return data
 }

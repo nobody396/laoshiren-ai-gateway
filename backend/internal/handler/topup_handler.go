@@ -24,8 +24,10 @@ func NewTopupHandler(topupService *service.TopupService) *TopupHandler {
 // CreateTopupOrderRequest represents the request body for creating a topup order
 type CreateTopupOrderRequest struct {
 	// 充值金额，单位：分（CNY）。例如 2000 = ¥20
-	AmountCNYFen int    `json:"amount_cny_fen" binding:"required,min=2000"`
-	PayType      string `json:"pay_type" binding:"required,oneof=alipay wechat"`
+	AmountCNYFen        int    `json:"amount_cny_fen" binding:"required,min=2000"`
+	ProductAmountCNYFen int    `json:"product_amount_cny_fen" binding:"omitempty,min=2000"`
+	Quantity            int    `json:"quantity" binding:"omitempty,min=1"`
+	PayType             string `json:"pay_type" binding:"required,oneof=alipay wechat"`
 }
 
 // CreateTopupOrder 创建充值订单
@@ -43,19 +45,40 @@ func (h *TopupHandler) CreateTopupOrder(c *gin.Context) {
 		return
 	}
 
-	orderNo, qrCodeURL, err := h.topupService.CreateTopupOrder(
-		c.Request.Context(),
-		subject.UserID,
-		req.AmountCNYFen,
-		req.PayType,
-		ip.GetClientIP(c),
+	var (
+		orderNo   string
+		qrCodeURL string
+		quote     service.TopupCreditQuote
+		err       error
 	)
+	if req.ProductAmountCNYFen > 0 || req.Quantity > 0 {
+		if req.ProductAmountCNYFen <= 0 || req.Quantity <= 0 {
+			response.ErrorFrom(c, service.ErrTopupProductMismatch)
+			return
+		}
+		quote, err = service.QuoteTopupProductCredit(req.ProductAmountCNYFen, req.Quantity)
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+		if quote.PaidAmountCNYFen != req.AmountCNYFen {
+			response.ErrorFrom(c, service.ErrTopupProductMismatch)
+			return
+		}
+		orderNo, qrCodeURL, err = h.topupService.CreateTopupProductOrder(
+			c.Request.Context(), subject.UserID, req.ProductAmountCNYFen, req.Quantity, req.PayType, ip.GetClientIP(c),
+		)
+	} else {
+		quote = service.QuoteTopupCredit(req.AmountCNYFen)
+		orderNo, qrCodeURL, err = h.topupService.CreateTopupOrder(
+			c.Request.Context(), subject.UserID, req.AmountCNYFen, req.PayType, ip.GetClientIP(c),
+		)
+	}
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
 
-	quote := service.QuoteTopupCredit(req.AmountCNYFen)
 	response.Success(c, gin.H{
 		"order_no":                orderNo,
 		"qr_code_url":             qrCodeURL,

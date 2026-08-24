@@ -2090,10 +2090,51 @@ func (s *OpenAIGatewayService) shouldFailoverOpenAIUpstreamResponse(statusCode i
 	if IsOpenAIContextWindowExceeded(upstreamMsg, string(upstreamBody)) {
 		return false
 	}
+	// Some OpenAI-compatible providers expose one public model alias while
+	// dispatching requests across backend pools with different tool protocols,
+	// account permissions, or reasoning-effort capabilities. These responses
+	// are HTTP 400, but they are account/backend capability rejections rather
+	// than malformed customer requests. Treat only the exact known signatures
+	// as failover-safe; generic 400s must remain terminal.
+	if isOpenAIAccountCapabilityRejection(statusCode, upstreamMsg, upstreamBody) {
+		return true
+	}
 	if s.shouldFailoverUpstreamError(statusCode) {
 		return true
 	}
 	return isOpenAITransientProcessingError(statusCode, upstreamMsg, upstreamBody)
+}
+
+func isOpenAIAccountCapabilityRejection(statusCode int, upstreamMsg string, upstreamBody []byte) bool {
+	if statusCode != http.StatusBadRequest && statusCode != http.StatusUnprocessableEntity {
+		return false
+	}
+
+	combined := strings.ToLower(strings.Join([]string{upstreamMsg, string(upstreamBody)}, " "))
+	if strings.TrimSpace(combined) == "" {
+		return false
+	}
+
+	if strings.Contains(combined, "client-executed tool_search is not supported by the kiro upstream") {
+		return true
+	}
+	if strings.Contains(combined, "external_web_access=false is not supported by the configured kiro mcp backend") {
+		return true
+	}
+	if strings.Contains(combined, "gpt-daybreak-blue-latest") &&
+		strings.Contains(combined, "not supported when using codex with a chatgpt account") {
+		return true
+	}
+	if strings.Contains(combined, "expected an id that begins with 'tsc'") ||
+		strings.Contains(combined, `expected an id that begins with "tsc"`) {
+		return true
+	}
+	if strings.Contains(combined, "unsupported value: 'max'") &&
+		strings.Contains(combined, "not supported with the 'gpt-5.4' model") {
+		return true
+	}
+
+	return false
 }
 
 func (s *OpenAIGatewayService) handleFailoverSideEffects(ctx context.Context, resp *http.Response, account *Account) {

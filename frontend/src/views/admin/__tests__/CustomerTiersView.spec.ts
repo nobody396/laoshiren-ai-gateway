@@ -12,9 +12,9 @@ beforeEach(() => { vi.clearAllMocks(); api.getCustomerTiers.mockResolvedValue(st
 
 describe('CustomerTiersView', () => {
   it('renders current tier and explanation-first paid evidence', async () => {
-    const wrapper = mountView(); await flushPromises(); expect(wrapper.text()).toContain('customer@example.com'); expect(wrapper.text()).toContain('¥250.00')
+    const wrapper = mountView(); await flushPromises(); expect(wrapper.text()).toContain('customer@example.com'); expect(wrapper.text()).toContain('¥250.00'); expect(wrapper.text()).toContain('90天已核验付款'); expect(wrapper.text()).toContain('90天已使用付费额度'); expect(wrapper.text()).toContain('1.00 额度')
     await wrapper.get('[data-test="tier-row"]').trigger('click'); await flushPromises()
-    expect(wrapper.text()).toContain('1.25x'); expect(wrapper.text()).toContain('unresolved_paid_value'); expect(wrapper.text()).toContain('Standard → Priority'); expect(wrapper.text()).toContain('contract term'); expect(wrapper.text()).toContain('操作者 #9')
+    expect(wrapper.text()).toContain('1.25x'); expect(wrapper.text()).toContain('未找到精确付款关联'); expect(wrapper.text()).not.toContain('unresolved_paid_value'); expect(wrapper.text()).toContain('Standard → Priority'); expect(wrapper.text()).toContain('contract term'); expect(wrapper.text()).toContain('操作者 #9'); expect(wrapper.text()).toContain('额度消耗，不等于人民币付款金额')
   })
   it('creates a time-bounded audited override', async () => {
     const wrapper = mountView(); await flushPromises(); await wrapper.get('[data-test="tier-row"]').trigger('click'); await flushPromises()

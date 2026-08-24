@@ -89,6 +89,14 @@ func TestProjectStatusObservationsDoesNotLetDirectDiagnosticMaskGatewayProbeFail
 	require.Equal(t, ReliabilityOutcomeFailure, projection[11][0].Outcome)
 }
 
+func TestProjectStatusObservationsNeverPublishesDirectDiagnosticThroughExplicitRouteBinding(t *testing.T) {
+	route := "0123456789abcdef0123456789abcdef"
+	products := []statusProductDefinition{{ID: 1, Components: []statusComponentDefinition{{ID: 11, AccessMode: "http", Bindings: []statusBinding{{RouteFingerprint: route}}}}}}
+	observation := &ReliabilityObservation{FactType: ReliabilityFactActiveProbe, Outcome: ReliabilityOutcomeFailure, Platform: PlatformOpenAI, Protocol: "http_direct", RouteFingerprint: route, ObservedAt: time.Now()}
+	require.Empty(t, projectStatusObservations(products, []*ReliabilityObservation{observation}))
+	require.Empty(t, matchingStatusComponentIDs(products, observation, true), "operator monitoring must keep direct diagnostics in the non-status section")
+}
+
 func TestProjectStatusObservationsExcludesUnpublishedWebSocketFromHTTPComponent(t *testing.T) {
 	products := []statusProductDefinition{{ID: 1, Components: []statusComponentDefinition{{ID: 11, AccessMode: "http", Bindings: []statusBinding{{Platform: PlatformOpenAI}}}}}}
 	projection := projectStatusObservations(products, []*ReliabilityObservation{{

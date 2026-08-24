@@ -583,10 +583,10 @@ func statusBindingMatches(binding statusBinding, observation *ReliabilityObserva
 	if !matchStatusModel(binding.ModelPattern, observation.Model) {
 		return false, false
 	}
-	if strings.EqualFold(observation.Protocol, "http_direct") && binding.RouteFingerprint == "" {
+	if strings.EqualFold(observation.Protocol, "http_direct") {
 		// Direct-upstream diagnostics explain a gateway failure to operators but
-		// are not an offered customer access mode. Only an explicit route binding
-		// may publish them as status evidence.
+		// are never an offered customer access mode. Keep them private even when
+		// their route fingerprint also has an explicit catalog binding.
 		return false, false
 	}
 	if binding.RouteFingerprint != "" {

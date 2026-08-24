@@ -665,6 +665,10 @@ WHERE conrelid = 'affiliate_qualification_states'::regclass
 	// migration 171: sellable redeem codes preserve actual cash separately
 	// from promotional balance credited.
 	requireColumn(t, tx, "redeem_codes", "paid_value", "numeric", 0, false)
+	requireColumn(t, tx, "finance_transactions", "external_order_no", "text", 0, true)
+	requireColumn(t, tx, "finance_transactions", "gross_amount_fen", "bigint", 0, false)
+	requireIndex(t, tx, "finance_transactions", "idx_finance_transactions_external_sale_order")
+	requireIndex(t, tx, "redeem_codes", "idx_redeem_codes_external_order_lookup")
 
 	// migrations 185-190: native card-shop checkout owns a durable once-per-user
 	// order, restricts its inventory, snapshots the selected payment method, and

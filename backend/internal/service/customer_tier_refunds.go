@@ -111,8 +111,32 @@ func canonicalizeCustomerPaidSourceTx(ctx context.Context, tx *sql.Tx, command *
 	case "redeem_code":
 		var purpose, sales string
 		var nativeID, nativeGross sql.NullInt64
+		var structuredGross, linkedCount, linkedRedeemCount int64
 		var nativePurpose, nativeSales sql.NullString
-		err := tx.QueryRowContext(ctx, `SELECT ROUND(r.paid_value*100)::bigint,r.status,r.used_at,r.purpose,r.sales_status,n.id,n.pay_amount_cny_fen,n.redeem_purpose,n.redeem_sales_status FROM redeem_codes r LEFT JOIN LATERAL (SELECT id,pay_amount_cny_fen,redeem_purpose,redeem_sales_status FROM native_checkout_orders WHERE redeem_code_id=r.id AND user_id=$1 AND status='completed' ORDER BY id LIMIT 1) n ON TRUE WHERE r.used_by=$1 AND r.id=$2`, command.UserID, command.SourceID).Scan(&gross, &status, &completed, &purpose, &sales, &nativeID, &nativeGross, &nativePurpose, &nativeSales)
+		err := tx.QueryRowContext(ctx, `
+SELECT ROUND(r.paid_value*100)::bigint,
+ COALESCE(NULLIF(ROUND(r.paid_value*100)::bigint,0),linked.gross_amount_fen,0),
+ r.status,r.used_at,r.purpose,r.sales_status,
+ n.id,n.pay_amount_cny_fen,n.redeem_purpose,n.redeem_sales_status,
+ linked.match_count,
+ (SELECT COUNT(*)::bigint FROM redeem_codes peer
+  WHERE COALESCE(BTRIM(r.external_order_no),'')<>''
+   AND UPPER(BTRIM(peer.external_order_no))=UPPER(BTRIM(r.external_order_no)))
+FROM redeem_codes r
+LEFT JOIN LATERAL (
+ SELECT id,pay_amount_cny_fen,redeem_purpose,redeem_sales_status
+ FROM native_checkout_orders WHERE redeem_code_id=r.id AND user_id=$1 AND status='completed'
+ ORDER BY id LIMIT 1
+) n ON TRUE
+LEFT JOIN LATERAL (
+ SELECT MIN(f.gross_amount_fen)::bigint gross_amount_fen,COUNT(*)::bigint match_count
+ FROM finance_transactions f
+ WHERE f.type='income' AND f.category='sale_revenue'
+  AND COALESCE(BTRIM(r.external_order_no),'')<>''
+  AND UPPER(BTRIM(f.external_order_no))=UPPER(BTRIM(r.external_order_no))
+) linked ON TRUE
+WHERE r.used_by=$1 AND r.id=$2
+FOR UPDATE OF r`, command.UserID, command.SourceID).Scan(&structuredGross, &gross, &status, &completed, &purpose, &sales, &nativeID, &nativeGross, &nativePurpose, &nativeSales, &linkedCount, &linkedRedeemCount)
 		if err != nil {
 			return 0, customerPaidSourceLookupError(err)
 		}
@@ -121,7 +145,7 @@ func canonicalizeCustomerPaidSourceTx(ctx context.Context, tx *sql.Tx, command *
 				return 0, fmt.Errorf("paid source is not canonical included value")
 			}
 			command.SourceType, command.SourceID, gross = "native_checkout_order", nativeID.Int64, nativeGross.Int64
-		} else if status != "used" || purpose != "sale_recharge" || sales != "sold" || gross <= 0 {
+		} else if status != "used" || purpose != "sale_recharge" || sales != "sold" || gross <= 0 || (structuredGross <= 0 && (linkedCount != 1 || linkedRedeemCount != 1)) {
 			return 0, fmt.Errorf("paid source is not canonical included value")
 		}
 	default:

@@ -445,14 +445,28 @@ WITH gross_sources AS (
   CASE WHEN status<>'completed' OR completed_at IS NULL THEN 'status_not_completed' WHEN redeem_purpose<>'sale_recharge' THEN 'non_sale_purpose' WHEN redeem_sales_status<>'sold' THEN 'not_sold' ELSE '' END
  FROM native_checkout_orders WHERE user_id=$1 AND COALESCE(completed_at,updated_at,created_at)>=$2 AND COALESCE(completed_at,updated_at,created_at)<$3
  UNION ALL
- SELECT 'redeem_code',r.id,ROUND(r.paid_value*100)::bigint,COALESCE(r.sold_at,r.used_at,r.updated_at,r.created_at),
-  (r.status='used' AND r.used_by=$1 AND r.purpose='sale_recharge' AND r.sales_status='sold' AND r.paid_value>0 AND NOT EXISTS(SELECT 1 FROM native_checkout_orders n WHERE n.redeem_code_id=r.id AND n.status='completed')),
+ SELECT 'redeem_code',r.id,COALESCE(NULLIF(ROUND(r.paid_value*100)::bigint,0),linked.gross_amount_fen,0),COALESCE(linked.occurred_at,r.sold_at,r.used_at,r.updated_at,r.created_at),
+  (r.status='used' AND r.used_by=$1 AND r.purpose='sale_recharge' AND r.sales_status='sold' AND COALESCE(NULLIF(ROUND(r.paid_value*100)::bigint,0),linked.gross_amount_fen,0)>0 AND (r.paid_value>0 OR (linked.match_count=1 AND linked.window_match_count=1 AND card_link.match_count=1)) AND NOT EXISTS(SELECT 1 FROM native_checkout_orders n WHERE n.redeem_code_id=r.id AND n.status='completed')),
   CASE WHEN r.status<>'used' OR r.used_by IS DISTINCT FROM $1 THEN 'not_attributed_to_user'
        WHEN r.purpose<>'sale_recharge' THEN 'non_sale_purpose' WHEN r.sales_status<>'sold' THEN 'not_sold'
-       WHEN r.paid_value<=0 THEN 'unresolved_paid_value'
        WHEN EXISTS(SELECT 1 FROM native_checkout_orders n WHERE n.redeem_code_id=r.id AND n.status='completed') THEN 'native_checkout_duplicate'
+       WHEN r.paid_value<=0 AND (linked.match_count>1 OR card_link.match_count>1) THEN 'ambiguous_paid_value'
+       WHEN COALESCE(NULLIF(ROUND(r.paid_value*100)::bigint,0),linked.gross_amount_fen,0)<=0 THEN 'unresolved_paid_value'
        ELSE '' END
- FROM redeem_codes r WHERE r.used_by=$1 AND COALESCE(r.sold_at,r.used_at,r.updated_at,r.created_at)>=$2 AND COALESCE(r.sold_at,r.used_at,r.updated_at,r.created_at)<$3
+ FROM redeem_codes r
+ LEFT JOIN LATERAL (
+  SELECT MIN(income.gross_amount_fen) FILTER(WHERE income.occurred_at>=$2 AND income.occurred_at<$3)::bigint gross_amount_fen,
+   MIN(income.occurred_at) FILTER(WHERE income.occurred_at>=$2 AND income.occurred_at<$3) occurred_at,
+   COUNT(*)::bigint match_count,
+   COUNT(*) FILTER(WHERE income.occurred_at>=$2 AND income.occurred_at<$3)::bigint window_match_count
+  FROM finance_transactions income
+  WHERE income.type='income' AND income.category='sale_revenue' AND COALESCE(BTRIM(r.external_order_no),'')<>'' AND UPPER(BTRIM(income.external_order_no))=UPPER(BTRIM(r.external_order_no))
+ ) linked ON TRUE
+ LEFT JOIN LATERAL (
+  SELECT COUNT(*)::bigint match_count FROM redeem_codes peer
+  WHERE COALESCE(BTRIM(r.external_order_no),'')<>'' AND UPPER(BTRIM(peer.external_order_no))=UPPER(BTRIM(r.external_order_no))
+ ) card_link ON TRUE
+ WHERE r.used_by=$1 AND COALESCE(linked.occurred_at,r.sold_at,r.used_at,r.updated_at,r.created_at)>=$2 AND COALESCE(linked.occurred_at,r.sold_at,r.used_at,r.updated_at,r.created_at)<$3
 ), refunds AS (
  SELECT source_type,source_id,SUM(amount_cny_fen)::bigint refunded_amount_cny_fen
  FROM customer_paid_value_refunds WHERE user_id=$1 AND refunded_at<$3 GROUP BY source_type,source_id

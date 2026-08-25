@@ -111,3 +111,7 @@ func (r *redeemCreateRepoCapture) ListByUserPaginated(context.Context, int64, pa
 func (r *redeemCreateRepoCapture) SumPositiveBalanceByUser(context.Context, int64) (float64, error) {
 	panic("unexpected SumPositiveBalanceByUser call")
 }
+
+func (r *redeemCreateRepoCapture) SumGiftedRedeemValue(context.Context) (float64, error) {
+	panic("unexpected SumGiftedRedeemValue call")
+}

@@ -94,6 +94,10 @@ func (s *dashboardRepoStub) EnsureUsageLogsPartitions(ctx context.Context, now t
 	return nil
 }
 
+func (s *dashboardRepoStub) LifetimeTotals(ctx context.Context) (DashboardLifetimeTotals, error) {
+	return DashboardLifetimeTotals{}, nil
+}
+
 func (s *cleanupRepoStub) CreateTask(ctx context.Context, task *UsageCleanupTask) error {
 	if task == nil {
 		return nil

@@ -65,6 +65,10 @@ func (s *dashboardAggregationRepoTestStub) EnsureUsageLogsPartitions(ctx context
 	return s.ensurePartitionErr
 }
 
+func (s *dashboardAggregationRepoTestStub) LifetimeTotals(ctx context.Context) (DashboardLifetimeTotals, error) {
+	return DashboardLifetimeTotals{}, nil
+}
+
 func TestDashboardAggregationService_RunScheduledAggregation_EpochUsesRetentionStart(t *testing.T) {
 	repo := &dashboardAggregationRepoTestStub{watermark: time.Unix(0, 0).UTC()}
 	svc := &DashboardAggregationService{

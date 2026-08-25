@@ -25,6 +25,12 @@ var (
 	errDashboardAggregationRunning = errors.New("聚合作业正在运行")
 )
 
+// DashboardLifetimeTotals 全生命周期（聚合保留窗口内）累计用量。
+type DashboardLifetimeTotals struct {
+	TotalRequests int64
+	TotalTokens   int64
+}
+
 // DashboardAggregationRepository 定义仪表盘预聚合仓储接口。
 type DashboardAggregationRepository interface {
 	AggregateRange(ctx context.Context, start, end time.Time) error
@@ -37,6 +43,10 @@ type DashboardAggregationRepository interface {
 	CleanupUsageLogs(ctx context.Context, cutoff time.Time) error
 	CleanupUsageBillingDedup(ctx context.Context, cutoff time.Time) error
 	EnsureUsageLogsPartitions(ctx context.Context, now time.Time) error
+	// LifetimeTotals 汇总 usage_dashboard_daily 的累计请求数与 tokens 总量。
+	// 每次增量/回填聚合都会把当日已产生的小时数据 upsert 进当日 daily 行，
+	// 因此 daily 直接求和即包含今日部分数据，无需再叠加 hourly（避免重复计数）。
+	LifetimeTotals(ctx context.Context) (DashboardLifetimeTotals, error)
 }
 
 // DashboardAggregationService 负责定时聚合与回填。

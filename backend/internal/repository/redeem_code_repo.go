@@ -331,6 +331,32 @@ func (r *redeemCodeRepository) SumPositiveBalanceByUser(ctx context.Context, use
 	return result[0].Sum, nil
 }
 
+// SumGiftedRedeemValue 返回已赠送礼品/赔付卡密的面值总额（元）。
+// 口径：purpose IN (gift, compensation) 且 sales_status = gifted；
+// gift-card skill 每发出一张卡，该计数自动增长。
+func (r *redeemCodeRepository) SumGiftedRedeemValue(ctx context.Context) (float64, error) {
+	if r == nil || r.client == nil {
+		return 0, errors.New("redeem code repository not initialized")
+	}
+	var result []struct {
+		Sum float64 `json:"sum"`
+	}
+	err := r.client.RedeemCode.Query().
+		Where(
+			redeemcode.PurposeIn(service.RedeemCodePurposeGift, service.RedeemCodePurposeCompensation),
+			redeemcode.SalesStatusEQ(service.RedeemCodeSalesStatusGifted),
+		).
+		Aggregate(dbent.As(dbent.Sum(redeemcode.FieldValue), "sum")).
+		Scan(ctx, &result)
+	if err != nil {
+		return 0, err
+	}
+	if len(result) == 0 {
+		return 0, nil
+	}
+	return result[0].Sum, nil
+}
+
 func redeemCodeEntityToService(m *dbent.RedeemCode) *service.RedeemCode {
 	if m == nil {
 		return nil

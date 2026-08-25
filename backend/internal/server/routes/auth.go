@@ -122,6 +122,11 @@ func RegisterAuthRoutes(
 		v1.GET("/public/model-pricing", h.ModelPricing.GetModelPricing)
 	}
 
+	// 公开平台累计统计（无需认证，落地页计数器使用）
+	if h.PublicStats != nil {
+		v1.GET("/public/stats", h.PublicStats.GetPublicStats)
+	}
+
 	// 公开邀请码验证（无需认证，注册页使用）
 	v1.GET("/validate-referral-code", h.Agent.ValidateReferralCode)
 

@@ -188,6 +188,12 @@ func ProvideDashboardAggregationService(repo DashboardAggregationRepository, tim
 	return svc
 }
 
+// ProvidePublicStatsService 创建公开平台统计服务。
+// 聚合仓储在非 PostgreSQL 环境下为 nil，服务会降级为 503。
+func ProvidePublicStatsService(repo DashboardAggregationRepository, redeemRepo RedeemCodeRepository, cache PublicStatsCache) *PublicStatsService {
+	return NewPublicStatsService(repo, redeemRepo, cache)
+}
+
 // ProvideUsageCleanupService 创建并启动使用记录清理任务服务
 func ProvideUsageCleanupService(repo UsageCleanupRepository, timingWheel *TimingWheelService, dashboardAgg *DashboardAggregationService, cfg *config.Config) *UsageCleanupService {
 	svc := NewUsageCleanupService(repo, timingWheel, dashboardAgg, cfg)
@@ -658,6 +664,7 @@ var ProviderSet = wire.NewSet(
 	ProvidePricingService,
 	NewBillingService,
 	NewModelPricingService,
+	ProvidePublicStatsService,
 	wire.Bind(new(AvailableModelsLister), new(*GatewayService)),
 	wire.Bind(new(ModelPricingProvider), new(*PricingService)),
 	NewBillingCacheService,

@@ -132,6 +132,10 @@ func (s *dashboardAggregationRepoStub) EnsureUsageLogsPartitions(ctx context.Con
 	return nil
 }
 
+func (s *dashboardAggregationRepoStub) LifetimeTotals(ctx context.Context) (DashboardLifetimeTotals, error) {
+	return DashboardLifetimeTotals{}, nil
+}
+
 func (c *dashboardCacheStub) readLastEntry(t *testing.T) dashboardStatsCacheEntry {
 	t.Helper()
 	c.lastSetMu.Lock()

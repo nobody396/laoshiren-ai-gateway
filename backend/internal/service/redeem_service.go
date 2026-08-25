@@ -72,6 +72,9 @@ type RedeemCodeRepository interface {
 	ListByUserPaginated(ctx context.Context, userID int64, params pagination.PaginationParams, codeType string) ([]RedeemCode, *pagination.PaginationResult, error)
 	// SumPositiveBalanceByUser returns the total recharged amount (sum of positive balance values) for a user.
 	SumPositiveBalanceByUser(ctx context.Context, userID int64) (float64, error)
+	// SumGiftedRedeemValue 返回已赠送礼品/赔付卡密的面值总额（元）。
+	// 口径：purpose IN (gift, compensation) 且 sales_status = gifted。
+	SumGiftedRedeemValue(ctx context.Context) (float64, error)
 }
 
 // GenerateCodesRequest 生成兑换码请求

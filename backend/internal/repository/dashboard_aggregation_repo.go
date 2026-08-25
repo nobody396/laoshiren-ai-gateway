@@ -168,6 +168,23 @@ func (r *dashboardAggregationRepository) recomputeRangeInTx(ctx context.Context,
 	return nil
 }
 
+// LifetimeTotals 汇总 usage_dashboard_daily 的累计请求数与 tokens 总量（含今日部分数据）。
+// daily 行由 hourly 聚合 upsert 而来，每次聚合运行都会刷新当日行，因此无需再叠加 hourly。
+func (r *dashboardAggregationRepository) LifetimeTotals(ctx context.Context) (service.DashboardLifetimeTotals, error) {
+	var totals service.DashboardLifetimeTotals
+	if r == nil || r.sql == nil {
+		return totals, nil
+	}
+	query := `
+		SELECT
+			COALESCE(SUM(total_requests), 0)::BIGINT,
+			COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens), 0)::BIGINT
+		FROM usage_dashboard_daily
+	`
+	err := scanSingleRow(ctx, r.sql, query, nil, &totals.TotalRequests, &totals.TotalTokens)
+	return totals, err
+}
+
 func (r *dashboardAggregationRepository) GetAggregationWatermark(ctx context.Context) (time.Time, error) {
 	var ts time.Time
 	query := "SELECT last_aggregated_at FROM usage_dashboard_aggregation_watermark WHERE id = 1"

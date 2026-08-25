@@ -160,6 +160,10 @@ func (s *redeemRepoStubForAdminList) SumPositiveBalanceByUser(_ context.Context,
 	panic("unexpected SumPositiveBalanceByUser call")
 }
 
+func (s *redeemRepoStubForAdminList) SumGiftedRedeemValue(_ context.Context) (float64, error) {
+	panic("unexpected SumGiftedRedeemValue call")
+}
+
 func TestAdminService_ListAccounts_WithSearch(t *testing.T) {
 	t.Run("search 参数正常传递到 repository 层", func(t *testing.T) {
 		repo := &accountRepoStubForAdminList{

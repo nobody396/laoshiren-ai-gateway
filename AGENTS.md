@@ -63,6 +63,13 @@ Choose checks based on the change, but prefer:
 - Frontend production build: `pnpm --dir frontend run build`.
 - Lint only modified frontend files if the full lint is blocked by unrelated existing issues.
 
+## Landing public stats counters
+
+`GET /api/v1/public/stats` feeds the landing page counters (token 处理量、累计赔付金额). Both are displayed at a server-side ×10 scale (`landingStatsDisplayScale` in `internal/service/public_stats_service.go`).
+
+- 赠送/赔付卡密部分是 DB 实时 SUM(`redeem_codes` 中 `purpose IN ('gift','compensation') AND sales_status='gifted'`),发卡即自动计入,无需维护。
+- **执行手工赔付批次后(`local/compensation-batches/` 新增 executed 批次,直接调余额、不走卡密),必须在同一变更里把 `landingCompensationTotalCNY` 常量累加对应金额**;否则落地页计数器会静默失真。常量注释里有与批次文件的对账口径,superseded 批次与 manual 批次的 system_amount 部分不得重复计入。
+
 ## Frontend theming
 
 `frontend/src/styles/theme.css` is the only place colours and motion timings are

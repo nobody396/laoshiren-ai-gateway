@@ -13,19 +13,6 @@
             <span class="auth-shell__brand-tag">A Quiet Place for Code</span>
           </span>
         </router-link>
-
-        <div class="auth-shell__copy">
-          <p class="auth-shell__eyebrow">Founded on Craft · MMXXVI</p>
-          <h1>进入安静的编码柱廊</h1>
-          <p>
-            与 Claude、ChatGPT、Gemini 共同思考。每一次调用、每一笔费用，都清晰可查。
-          </p>
-        </div>
-
-        <blockquote class="auth-shell__quote">
-          <p>"The unexamined code is not worth shipping."</p>
-          <cite>After Socrates, Apology 38a</cite>
-        </blockquote>
       </section>
 
       <section class="auth-shell__form-panel">
@@ -86,11 +73,11 @@ onMounted(() => {
 .auth-shell__container {
   position: relative;
   z-index: 2;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 460px);
-  gap: 4rem;
-  align-items: center;
-  width: min(100% - 4rem, 1120px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  width: min(100% - 2rem, 460px);
   min-height: 100vh;
   margin: 0 auto;
   padding: 4rem 0;
@@ -98,11 +85,8 @@ onMounted(() => {
 
 .auth-shell__brand-panel {
   display: flex;
-  min-height: 36rem;
-  flex-direction: column;
-  justify-content: space-between;
-  border-left: 2px solid rgb(var(--color-laurel));
-  padding: 1.5rem 0 1.5rem 2rem;
+  justify-content: center;
+  margin-bottom: 2.25rem;
 }
 
 .auth-shell__brand {
@@ -150,60 +134,6 @@ onMounted(() => {
   font-weight: 600;
   letter-spacing: 0.18em;
   line-height: 1.1;
-  text-transform: uppercase;
-}
-
-.auth-shell__eyebrow {
-  margin: 0 0 1rem;
-  color: rgb(var(--color-muted));
-  font-family: 'Inter', sans-serif;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.auth-shell__copy h1 {
-  max-width: 10ch;
-  margin: 0 0 1.25rem;
-  color: rgb(var(--color-ink-deep));
-  font-family: 'Cinzel', 'Noto Serif SC', serif;
-  font-size: clamp(3.1rem, 6vw, 5rem);
-  font-weight: 500;
-  line-height: 1.05;
-}
-
-.auth-shell__copy p:last-child {
-  max-width: 34rem;
-  margin: 0;
-  color: rgb(var(--color-ink));
-  font-size: 1.28rem;
-  font-style: italic;
-  line-height: 1.6;
-}
-
-.auth-shell__quote {
-  margin: 3rem 0 0;
-  padding: 1.25rem 1.5rem;
-  background: rgb(var(--color-stone) / 0.48);
-}
-
-.auth-shell__quote p {
-  margin: 0 0 0.75rem;
-  color: rgb(var(--color-ink));
-  font-size: 1.2rem;
-  font-style: italic;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-.auth-shell__quote cite {
-  color: rgb(var(--color-muted));
-  font-family: 'Inter', sans-serif;
-  font-size: 0.65rem;
-  font-style: normal;
-  font-weight: 600;
-  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -341,30 +271,8 @@ onMounted(() => {
 
 @media (max-width: 920px) {
   .auth-shell__container {
-    grid-template-columns: 1fr;
-    gap: 2rem;
     width: min(100% - 2rem, 540px);
     padding: 2rem 0;
-  }
-
-  .auth-shell__brand-panel {
-    min-height: auto;
-    padding: 0 0 2rem;
-    border-left: 0;
-    border-bottom: 1px solid rgb(var(--color-laurel) / 0.18);
-  }
-
-  .auth-shell__copy {
-    margin-top: 2rem;
-  }
-
-  .auth-shell__copy h1 {
-    max-width: none;
-    font-size: clamp(2.5rem, 14vw, 3.5rem);
-  }
-
-  .auth-shell__quote {
-    display: none;
   }
 }
 

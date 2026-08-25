@@ -6,14 +6,14 @@
   "routes": [
     {
       "path": "/",
-      "title": "老实人AI - AI 编码网关",
-      "description": "老实人AI 提供面向开发者的 AI 编码接口与网关服务，支持 Claude Code、Codex、ChatGPT、Grok 等主流编码模型，适合快速配置、精确计费和稳定调用。",
+      "title": "老实人AI - 大模型网关",
+      "description": "老实人AI 大模型网关：一个 API Key 接入全球主流模型，支持 Claude Code、Codex、ChatGPT、Grok、Gemini 与 DeepSeek、Kimi 等国产模型，统一计费，调用异常自动赔付。",
       "priority": 1,
       "changefreq": "weekly",
       "ogType": "website",
       "schemaType": "WebSite",
       "dateModified": "2026-06-30",
-      "staticHtml": "\n    <main class=\"seo-static-content\">\n      <h1>老实人AI - AI 编码网关</h1>\n      <p>老实人AI 为开发者和企业团队提供 Claude Code、Codex、ChatGPT、Grok 等 AI 编码模型的统一 API 接入、Key 管理、用量统计和成本控制。</p>\n      <p>如果你正在搜索 Claude Code 国内使用、Codex 国内配置、Codex 免 API Key 登录或 Codex 自定义 API，请优先阅读文档中心的高意图指南。</p>\n      <nav aria-label=\"核心页面\">\n        <ul>\n          <li><a href=\"/docs/claude-code-china-guide\">Claude Code 国内使用指南</a></li>\n          <li><a href=\"/docs/codex-china-guide\">Codex 国内使用指南</a></li>\n          <li><a href=\"/docs/codex-no-api-key-guide\">Codex 免 API Key 使用指南</a></li>\n          <li><a href=\"/docs/codex-custom-api-guide\">Codex 自定义 API 配置教程</a></li>\n          <li><a href=\"/enterprise\">企业 AI API 网关方案</a></li>\n          <li><a href=\"/docs\">文档中心</a></li>\n        </ul>\n      </nav>\n    </main>"
+      "staticHtml": "\n    <main class=\"seo-static-content\">\n      <h1>老实人AI - 大模型网关</h1>\n      <p>老实人AI 为开发者和企业团队提供 Claude Code、Codex、ChatGPT、Grok、Gemini 与 DeepSeek、Kimi 等国内外主流模型的统一 API 接入、Key 管理、用量统计和成本控制，调用异常自动赔付。</p>\n      <p>如果你正在搜索 Claude Code 国内使用、Codex 国内配置、Codex 免 API Key 登录或 Codex 自定义 API，请优先阅读文档中心的高意图指南。</p>\n      <nav aria-label=\"核心页面\">\n        <ul>\n          <li><a href=\"/docs/claude-code-china-guide\">Claude Code 国内使用指南</a></li>\n          <li><a href=\"/docs/codex-china-guide\">Codex 国内使用指南</a></li>\n          <li><a href=\"/docs/codex-no-api-key-guide\">Codex 免 API Key 使用指南</a></li>\n          <li><a href=\"/docs/codex-custom-api-guide\">Codex 自定义 API 配置教程</a></li>\n          <li><a href=\"/enterprise\">企业 AI API 网关方案</a></li>\n          <li><a href=\"/docs\">文档中心</a></li>\n        </ul>\n      </nav>\n    </main>"
     },
     {
       "path": "/changelog",

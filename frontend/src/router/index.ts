@@ -38,8 +38,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/HomeView.vue'),
     meta: {
       requiresAuth: false,
-      title: 'AI 编码网关',
-      description: '老实人AI 提供面向开发者的 AI 编码接口与网关服务，支持 Claude Code、Codex、ChatGPT、Grok 等主流编码模型，适合快速配置、精确计费和稳定调用。',
+      title: '大模型网关',
+      description: '老实人AI 大模型网关：一个 API Key 接入全球主流模型，支持 Claude Code、Codex、ChatGPT、Grok、Gemini 与 DeepSeek、Kimi 等国产模型，统一计费，调用异常自动赔付。',
       titleSiteNameFirst: true
     }
   },

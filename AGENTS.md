@@ -101,6 +101,13 @@ Canvas cannot read CSS variables, so charts resolve tokens at runtime through
 `frontend/src/utils/chartPalette.ts`. That module is the only place allowed to
 read a theme token from JavaScript; never paste chart hexes into a component.
 
+The home page (`/`) is a fixed white ZenMux-style landing surface. Its tokens
+are the `--zen-*` block in `theme.css` (RGB triples, consumed as
+`rgb(var(--zen-*) / <alpha>)`); like the usage receipt they deliberately do not
+flip in dark mode. Its components live under `src/components/home/zen/` and its
+counters poll `GET /api/v1/public/stats` every 12s (see "Landing public stats
+counters" above).
+
 ## Secrets
 
 Never commit secrets, tokens, OAuth client secrets, SMTP passwords, SSH keys, or admin API keys. Agent Switch is the only local secret/MCP control plane. Inspect names with `agent-switch secret list`; write values only with `agent-switch secret set --stdin NAME` or `--fd`, never command arguments or project `.env` files.

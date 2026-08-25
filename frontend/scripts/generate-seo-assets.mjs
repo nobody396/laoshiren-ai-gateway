@@ -21,8 +21,8 @@ const marked = new Marked({
 
 const homeRoute = {
   path: '/',
-  title: '老实人AI - AI 编码网关',
-  description: '老实人AI 提供面向开发者的 AI 编码接口与网关服务，支持 Claude Code、Codex、ChatGPT、Grok 等主流编码模型，适合快速配置、精确计费和稳定调用。',
+  title: '老实人AI - 大模型网关',
+  description: '老实人AI 大模型网关：一个 API Key 接入全球主流模型，支持 Claude Code、Codex、ChatGPT、Grok、Gemini 与 DeepSeek、Kimi 等国产模型，统一计费，调用异常自动赔付。',
   priority: 1,
   changefreq: 'weekly',
   ogType: 'website',
@@ -30,8 +30,8 @@ const homeRoute = {
   dateModified: docsLastModified,
   staticHtml: `
     <main class="seo-static-content">
-      <h1>老实人AI - AI 编码网关</h1>
-      <p>老实人AI 为开发者和企业团队提供 Claude Code、Codex、ChatGPT、Grok 等 AI 编码模型的统一 API 接入、Key 管理、用量统计和成本控制。</p>
+      <h1>老实人AI - 大模型网关</h1>
+      <p>老实人AI 为开发者和企业团队提供 Claude Code、Codex、ChatGPT、Grok、Gemini 与 DeepSeek、Kimi 等国内外主流模型的统一 API 接入、Key 管理、用量统计和成本控制，调用异常自动赔付。</p>
       <p>如果你正在搜索 Claude Code 国内使用、Codex 国内配置、Codex 免 API Key 登录或 Codex 自定义 API，请优先阅读文档中心的高意图指南。</p>
       <nav aria-label="核心页面">
         <ul>

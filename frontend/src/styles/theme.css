@@ -353,6 +353,33 @@
    * one, kept as the single answer.
    * --------------------------------------------------------------------- */
   --shadow-ink: 49 38 20; /* #312614 */
+
+  /* ---------------------------------------------------------------------
+   * zen-landing — the fixed white surface of the home page redesign.
+   *
+   * Like the usage receipt, these deliberately do NOT flip in dark mode:
+   * the landing page is a fixed white marketing surface (ZenMux aesthetic),
+   * independent of the console theme. Eyebrows reuse --color-terracotta and
+   * the CTA Greek line reuses --color-dark-200 (the nearest existing gold);
+   * everything else lives here. Consume as rgb(var(--zen-*) / <alpha>).
+   * Shadows on this surface are built from --zen-ink (neutral), not
+   * --shadow-ink (warm) — a warm shadow on pure white reads as a tint.
+   * --------------------------------------------------------------------- */
+  --zen-bg: 255 255 255; /* #ffffff — landing canvas */
+  --zen-bg-soft: 250 250 250; /* #fafafa — recessed bands: banner, model wall, hover fills */
+  --zen-ink: 10 10 10; /* #0a0a0a — near-black text, CTA band, dark buttons */
+  --zen-text: 55 65 81; /* #374151 — nav and banner body text */
+  --zen-text-strong: 38 38 38; /* #262626 — brand-item names, dark-button hover */
+  --zen-muted: 107 114 128; /* #6b7280 — secondary copy */
+  --zen-muted-light: 156 163 175; /* #9ca3af — tertiary labels, separators, ¥ prefix */
+  --zen-line: 236 236 236; /* #ececec — hairlines */
+  --zen-line-dark: 226 226 226; /* #e2e2e2 — split-flap cells, card borders */
+  --zen-ok: 22 163 74; /* #16a34a — 200 OK status, compensation pulse */
+  --zen-violet: 139 92 246; /* #8b5cf6 — banner sparkle, gradient pill border, hero glow */
+  --zen-blue: 59 130 246; /* #3b82f6 — gradient pill border, hero glow */
+  --zen-cyan: 6 182 212; /* #06b6d4 — gradient pill border */
+  --zen-digit-face: 244 244 244; /* #f4f4f4 — split-flap cell lower half, light button fill */
+  --zen-hover-fill: 236 236 237; /* #ececed — light button hover */
 }
 
 /*

@@ -263,6 +263,7 @@ func TestAnthropicPomoGLM53UsageFallbackIsNarrow(t *testing.T) {
 		want    bool
 	}{
 		{name: "PomoAI GLM 5.3", baseURL: "https://jp.pomoai.xyz", model: "glm-5.3", want: true},
+		{name: "PomoAI GLM 5.3 Flash", baseURL: "https://jp.pomoai.xyz", model: "glm-5.3-flash", want: true},
 		{name: "PomoAI other model", baseURL: "https://jp.pomoai.xyz", model: "glm-5.2", want: false},
 		{name: "official GLM 5.3", baseURL: "https://api.anthropic.com", model: "glm-5.3", want: false},
 		{name: "lookalike host", baseURL: "https://pomoai.xyz.example.com", model: "glm-5.3", want: false},

@@ -111,6 +111,8 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	requireIndex(t, tx, "reliability_observations", "idx_reliability_observations_route_observed")
 	requireIndex(t, tx, "reliability_observations", "idx_reliability_observations_routing_scope_observed")
 	requireIndex(t, tx, "reliability_observations", "idx_reliability_observations_probe_route_observed")
+	requireIndex(t, tx, "reliability_observations", "idx_reliability_observations_customer_client_request")
+	requireIndex(t, tx, "reliability_observations", "idx_reliability_observations_customer_request")
 	requireColumn(t, tx, "reliability_probe_claims", "claim_key", "character varying", 180, false)
 	requireColumn(t, tx, "reliability_probe_claims", "route_fingerprint", "character varying", 32, false)
 	requireColumn(t, tx, "reliability_probe_claims", "interval_start", "timestamp with time zone", 0, false)

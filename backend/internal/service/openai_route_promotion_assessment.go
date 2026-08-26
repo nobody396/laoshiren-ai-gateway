@@ -287,7 +287,7 @@ func buildOpenAIRoutePromotionAssessmentWithLineage(
 	completedEvaluations := evidenceStats.Evaluated + evidenceStats.NoCandidateAbstentions
 	evaluatedRatio := safeOpenAIRouteRatio(completedEvaluations, evidenceStats.Total)
 	abstentionRatio := safeOpenAIRouteRatio(evidenceStats.NoCandidateAbstentions, evidenceStats.Total)
-	linkedEvaluated := evidenceStats.EvaluatedLinkedSuccessfulUsage + evidenceStats.EvaluatedLinkedLegacyFailure
+	linkedEvaluated := evidenceStats.EvaluatedLinkedSuccessfulUsage + evidenceStats.EvaluatedLinkedLegacyFailure + evidenceStats.EvaluatedLinkedExcludedOutcome
 	linkageRatio := safeOpenAIRouteRatio(linkedEvaluated, evidenceStats.Evaluated)
 	emergencyRatio := safeOpenAIRouteRatio(evidenceStats.Emergency, evidenceStats.Evaluated)
 	maxAccountShare := maxOpenAIRouteSelectedAccountShare(evidenceStats.SelectedAccounts)
@@ -408,7 +408,7 @@ func buildOpenAIRoutePromotionAssessmentWithLineage(
 		"Fail-closed abstention is safe only with an independently verified Legacy fallback, and a high rate means the adaptive router lacks usable route coverage.")
 	assessment.addGate("outcome_linkage", linkageRatio >= openAIRoutePromotionMinimumCompleteness,
 		">=99% of evaluated decisions", formatOpenAIRoutePercent(linkageRatio), linkageRatio,
-		"Ambiguous and unlinked outcomes are not counted as successful linkage.")
+		"Known excluded client/business outcomes prove correlation but do not count as route success or failure; ambiguous and unlinked outcomes remain blocking.")
 	assessment.addGate("unambiguous_outcomes", evidenceStats.EvaluatedAmbiguousOutcome == 0,
 		"0", fmt.Sprintf("%d", evidenceStats.EvaluatedAmbiguousOutcome), 0,
 		"A decision linked to both success and failure cannot prove its real outcome.")

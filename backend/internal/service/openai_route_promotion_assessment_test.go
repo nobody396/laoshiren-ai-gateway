@@ -124,6 +124,21 @@ func TestBuildOpenAIRoutePromotionAssessmentBlocksRecoveredStorageGap(t *testing
 	require.Contains(t, assessment.Blockers, "storage_check_history")
 }
 
+func TestBuildOpenAIRoutePromotionAssessmentCountsKnownExcludedOutcomeAsLinked(t *testing.T) {
+	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
+	start := end.Add(-72 * time.Hour)
+	filter := testOpenAIRoutePromotionFilter(start, end)
+	stats, health := healthyOpenAIRoutePromotionEvidence(start, end)
+	stats.EvaluatedLinkedSuccessfulUsage = 195
+	stats.EvaluatedLinkedLegacyFailure = 0
+	stats.EvaluatedLinkedExcludedOutcome = 3
+	stats.EvaluatedUnlinkedOutcome = 2
+
+	assessment := buildOpenAIRoutePromotionAssessment(filter, stats, health)
+
+	require.NotContains(t, assessment.Blockers, "outcome_linkage", "known client/business exclusions prove outcome correlation without becoming route failures")
+}
+
 func TestBuildOpenAIRoutePromotionAssessmentBlocksMissingAdaptiveAssignment(t *testing.T) {
 	end := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
 	start := end.Add(-72 * time.Hour)

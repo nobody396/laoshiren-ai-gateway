@@ -261,7 +261,10 @@ WITH filtered AS (
   SELECT d.*,
          u.id AS usage_id,
          u.first_token_ms AS legacy_first_token_ms,
-         e.id AS error_id
+         e.has_failure AS has_terminal_failure,
+         e.has_excluded AS has_excluded_error,
+         final.outcome AS final_outcome,
+         final.customer_impact AS final_customer_impact
   FROM filtered d
   LEFT JOIN LATERAL (
     SELECT ul.id, ul.first_token_ms
@@ -269,24 +272,54 @@ WITH filtered AS (
     WHERE (
         (d.client_request_id <> '' AND ul.request_id = 'client:' || d.client_request_id)
         OR
-        (d.client_request_id = '' AND d.request_id <> '' AND ul.request_id = 'local:' || d.request_id)
+        (d.request_id <> '' AND ul.request_id = 'local:' || d.request_id)
       )
       AND ul.group_id = d.group_id
-      AND ul.account_id = d.legacy_selected_account_id
     ORDER BY ul.created_at ASC, ul.id ASC
     LIMIT 1
   ) u ON TRUE
   LEFT JOIN LATERAL (
-    SELECT oe.id
+    SELECT
+      COALESCE(bool_or(
+        COALESCE(oe.is_business_limited,FALSE)=FALSE
+        AND COALESCE(oe.error_owner,'') IN ('provider','platform')
+        AND (oe.status_code IS NULL OR oe.status_code>=400)
+      ),FALSE) AS has_failure,
+      COALESCE(bool_or(
+        COALESCE(oe.is_business_limited,FALSE)=TRUE
+        OR COALESCE(oe.error_owner,'')='client'
+      ),FALSE) AS has_excluded
     FROM ops_error_logs oe
-    WHERE oe.account_id = d.legacy_selected_account_id
-      AND (
+    WHERE (
         (d.client_request_id <> '' AND oe.client_request_id = d.client_request_id)
         OR (d.request_id <> '' AND oe.request_id = d.request_id)
       )
-    ORDER BY oe.created_at ASC, oe.id ASC
-    LIMIT 1
   ) e ON TRUE
+  LEFT JOIN LATERAL (
+    SELECT ro.outcome, ro.customer_impact
+    FROM reliability_observations ro
+    WHERE ro.fact_type = 'customer_request'
+      AND (
+        (d.client_request_id <> '' AND ro.client_request_id = d.client_request_id)
+        OR (d.request_id <> '' AND ro.request_id = d.request_id)
+      )
+      AND (ro.group_id IS NULL OR ro.group_id = d.group_id)
+    ORDER BY ro.observed_at DESC, ro.id DESC
+    LIMIT 1
+  ) final ON TRUE
+), classified AS (
+  SELECT linked.*,
+         CASE
+           WHEN final_outcome IN ('success','recovered') THEN 'success'
+           WHEN final_outcome = 'failure' AND final_customer_impact THEN 'failure'
+           WHEN final_outcome IS NOT NULL THEN 'excluded'
+           WHEN usage_id IS NOT NULL AND has_terminal_failure THEN 'ambiguous'
+           WHEN usage_id IS NOT NULL THEN 'success'
+           WHEN has_terminal_failure THEN 'failure'
+           WHEN has_excluded_error THEN 'excluded'
+           ELSE 'unlinked'
+         END AS linked_outcome
+  FROM linked
 )
 SELECT
   COUNT(*)::bigint,
@@ -295,14 +328,16 @@ SELECT
   COUNT(*) FILTER (WHERE NOT evaluated AND reason = 'no_shadow_candidate')::bigint,
   COUNT(*) FILTER (WHERE diverged)::bigint,
   COUNT(*) FILTER (WHERE emergency)::bigint,
-  COUNT(*) FILTER (WHERE usage_id IS NOT NULL AND error_id IS NULL)::bigint,
-  COUNT(*) FILTER (WHERE usage_id IS NULL AND error_id IS NOT NULL)::bigint,
-  COUNT(*) FILTER (WHERE usage_id IS NOT NULL AND error_id IS NOT NULL)::bigint,
-  COUNT(*) FILTER (WHERE usage_id IS NULL AND error_id IS NULL)::bigint,
-  COUNT(*) FILTER (WHERE evaluated AND usage_id IS NOT NULL AND error_id IS NULL)::bigint,
-  COUNT(*) FILTER (WHERE evaluated AND usage_id IS NULL AND error_id IS NOT NULL)::bigint,
-  COUNT(*) FILTER (WHERE evaluated AND usage_id IS NOT NULL AND error_id IS NOT NULL)::bigint,
-  COUNT(*) FILTER (WHERE evaluated AND usage_id IS NULL AND error_id IS NULL)::bigint,
+  COUNT(*) FILTER (WHERE linked_outcome = 'success')::bigint,
+  COUNT(*) FILTER (WHERE linked_outcome = 'failure')::bigint,
+  COUNT(*) FILTER (WHERE linked_outcome = 'excluded')::bigint,
+  COUNT(*) FILTER (WHERE linked_outcome = 'ambiguous')::bigint,
+  COUNT(*) FILTER (WHERE linked_outcome = 'unlinked')::bigint,
+  COUNT(*) FILTER (WHERE evaluated AND linked_outcome = 'success')::bigint,
+  COUNT(*) FILTER (WHERE evaluated AND linked_outcome = 'failure')::bigint,
+  COUNT(*) FILTER (WHERE evaluated AND linked_outcome = 'excluded')::bigint,
+  COUNT(*) FILTER (WHERE evaluated AND linked_outcome = 'ambiguous')::bigint,
+  COUNT(*) FILTER (WHERE evaluated AND linked_outcome = 'unlinked')::bigint,
   COUNT(DISTINCT snapshot->'policy')::bigint,
   COUNT(DISTINCT NULLIF(activation_id, ''))::bigint,
   COUNT(DISTINCT shadow_started_at)::bigint,
@@ -329,7 +364,7 @@ SELECT
   COALESCE(percentile_cont(0.95) WITHIN GROUP (ORDER BY evaluation_duration_us), 0)::float8,
   COALESCE(percentile_cont(0.50) WITHIN GROUP (ORDER BY legacy_first_token_ms) FILTER (WHERE legacy_first_token_ms IS NOT NULL), 0)::float8,
   COALESCE(percentile_cont(0.95) WITHIN GROUP (ORDER BY legacy_first_token_ms) FILTER (WHERE legacy_first_token_ms IS NOT NULL), 0)::float8
-FROM linked`
+FROM classified`
 	var firstDecisionAt sql.NullTime
 	var lastDecisionAt sql.NullTime
 	var shadowStartedAt sql.NullTime
@@ -342,10 +377,12 @@ FROM linked`
 		&stats.Emergency,
 		&stats.LinkedSuccessfulUsage,
 		&stats.LinkedLegacyFailure,
+		&stats.LinkedExcludedOutcome,
 		&stats.AmbiguousOutcome,
 		&stats.UnlinkedOutcome,
 		&stats.EvaluatedLinkedSuccessfulUsage,
 		&stats.EvaluatedLinkedLegacyFailure,
+		&stats.EvaluatedLinkedExcludedOutcome,
 		&stats.EvaluatedAmbiguousOutcome,
 		&stats.EvaluatedUnlinkedOutcome,
 		&stats.PolicySnapshotVariants,

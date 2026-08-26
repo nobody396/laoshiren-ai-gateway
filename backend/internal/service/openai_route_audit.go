@@ -259,10 +259,12 @@ type OpenAIRouteShadowDecisionStats struct {
 	Emergency                      int64                                    `json:"emergency"`
 	LinkedSuccessfulUsage          int64                                    `json:"linked_successful_usage"`
 	LinkedLegacyFailure            int64                                    `json:"linked_legacy_failure"`
+	LinkedExcludedOutcome          int64                                    `json:"linked_excluded_outcome"`
 	AmbiguousOutcome               int64                                    `json:"ambiguous_outcome"`
 	UnlinkedOutcome                int64                                    `json:"unlinked_outcome"`
 	EvaluatedLinkedSuccessfulUsage int64                                    `json:"evaluated_linked_successful_usage"`
 	EvaluatedLinkedLegacyFailure   int64                                    `json:"evaluated_linked_legacy_failure"`
+	EvaluatedLinkedExcludedOutcome int64                                    `json:"evaluated_linked_excluded_outcome"`
 	EvaluatedAmbiguousOutcome      int64                                    `json:"evaluated_ambiguous_outcome"`
 	EvaluatedUnlinkedOutcome       int64                                    `json:"evaluated_unlinked_outcome"`
 	PolicySnapshotVariants         int64                                    `json:"policy_snapshot_variants"`

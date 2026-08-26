@@ -144,6 +144,81 @@ func TestOpenAIRouteDecisionRepositoryRoundTrip(t *testing.T) {
 	require.Equal(t, "account:28", stats.SelectedProviders[0].ProviderKey)
 }
 
+func TestOpenAIRouteDecisionStatsUsesFinalCustomerOutcomeAcrossFailover(t *testing.T) {
+	ctx := context.Background()
+	repo := NewOpenAIRouteDecisionRepository(integrationDB)
+	prefix := "sl-" + uuid.NewString()
+	activationID := prefix + "-activation"
+	createdAt := time.Now().UTC().Truncate(time.Microsecond)
+	shadowStartedAt := createdAt.Add(-72 * time.Hour)
+
+	successRequestID, successClientID := prefix+"-success", uuid.NewString()
+	failureRequestID, failureClientID := prefix+"-failure", uuid.NewString()
+	createShadowLinkageDecision(t, repo, prefix+"-decision-success", successRequestID, successClientID, activationID, shadowStartedAt, createdAt)
+	createShadowLinkageDecision(t, repo, prefix+"-decision-failure", failureRequestID, failureClientID, activationID, shadowStartedAt, createdAt.Add(time.Second))
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM reliability_observations WHERE source_id LIKE $1`, prefix+"%")
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM ops_error_logs WHERE request_id LIKE $1`, prefix+"%")
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM openai_route_shadow_decisions WHERE decision_id LIKE $1`, prefix+"%")
+	})
+
+	// A final Reliability Observation is authoritative even when accounting did
+	// not create a usage row. An intermediate failover error must not turn this
+	// successfully recovered customer request into an ambiguous outcome.
+	_, err := integrationDB.ExecContext(ctx, `
+INSERT INTO reliability_observations(
+ idempotency_key,fact_type,source,source_id,request_id,client_request_id,user_id,group_id,account_id,
+ platform,model,request_class,protocol,outcome,status_code,error_owner,customer_impact,observed_at
+) VALUES($1,'customer_request','integration_shadow',$2,$3,$4,900001,7,23,
+ 'openai','gpt-5.6-sol','text','chat_completions','success',200,'',FALSE,$5)`,
+		prefix+"-observation-success", successRequestID, successRequestID, successClientID, createdAt.Add(2*time.Second))
+	require.NoError(t, err)
+	_, err = integrationDB.ExecContext(ctx, `
+INSERT INTO ops_error_logs(request_id,client_request_id,account_id,group_id,platform,model,error_phase,error_type,status_code,error_owner,created_at)
+VALUES($1,$2,69,7,'openai','gpt-5.6-sol','upstream','upstream_error',502,'provider',$3)`,
+		successRequestID, successClientID, createdAt.Add(time.Second))
+	require.NoError(t, err)
+
+	// When every Legacy failover attempt fails, the terminal error can belong to
+	// a different account than the initial Legacy selection and must still link
+	// to the customer request.
+	_, err = integrationDB.ExecContext(ctx, `
+INSERT INTO ops_error_logs(request_id,client_request_id,account_id,group_id,platform,model,error_phase,error_type,status_code,error_owner,created_at)
+VALUES($1,$2,69,7,'openai','gpt-5.6-sol','upstream','upstream_error',503,'provider',$3)`,
+		failureRequestID, failureClientID, createdAt.Add(3*time.Second))
+	require.NoError(t, err)
+
+	start, end := shadowStartedAt, createdAt.Add(time.Minute)
+	stats, err := repo.GetOpenAIRouteShadowDecisionStats(ctx, &service.OpenAIRouteShadowDecisionFilter{
+		StartTime: &start, EndTime: &end, ActivationID: activationID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(2), stats.Evaluated)
+	require.Equal(t, int64(1), stats.EvaluatedLinkedSuccessfulUsage)
+	require.Equal(t, int64(1), stats.EvaluatedLinkedLegacyFailure)
+	require.Zero(t, stats.EvaluatedAmbiguousOutcome)
+	require.Zero(t, stats.EvaluatedUnlinkedOutcome)
+}
+
+func createShadowLinkageDecision(t *testing.T, repo service.OpenAIRouteDecisionRepository, decisionID, requestID, clientRequestID, activationID string, shadowStartedAt, createdAt time.Time) {
+	t.Helper()
+	require.NoError(t, repo.CreateOpenAIRouteShadowDecision(context.Background(), &service.OpenAIRouteShadowDecisionRecord{
+		DecisionID: decisionID, RequestID: requestID, ClientRequestID: clientRequestID,
+		Attempt: 1, GroupID: 7, Model: "gpt-5.6-sol", InboundProtocol: service.APIProtocolChatCompletions,
+		RequestClass: service.OpenAIRouteRequestClassText, PolicyMode: service.OpenAIRoutePolicyShadow,
+		PolicyVersion: 2026082601, ActivationID: activationID, ShadowStartedAt: shadowStartedAt,
+		Reason: "shadow_selected", Evaluated: true, LegacySelectedAccountID: 23, AdaptiveSelectedAccountID: 33,
+		AdaptiveSelectedRate: 0.2, CandidateCount: 2, Diverged: true,
+		Snapshot: &service.OpenAIRouteShadowAuditSnapshot{
+			ActivationID: activationID, ShadowStartedAt: shadowStartedAt, RequestClass: service.OpenAIRouteRequestClassText,
+			PublicModel: "gpt-5.6-sol", InboundProtocol: service.APIProtocolChatCompletions,
+			Policy:     service.OpenAIRouteShadowAuditPolicy{MaxAccountShare: 0.8, MaxProviderShare: 0.9},
+			Candidates: []service.OpenAIRouteShadowAuditCandidate{{AccountID: 33, RateMultiplier: 0.2, Selected: true}},
+		},
+		CreatedAt: createdAt,
+	}))
+}
+
 func TestOpenAIRouteEvidenceEpochRepositoryRoundTrip(t *testing.T) {
 	repo := NewOpenAIRouteDecisionRepository(integrationDB)
 	store, ok := repo.(service.OpenAIRouteEvidenceEpochStore)

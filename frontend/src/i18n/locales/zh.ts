@@ -2465,11 +2465,12 @@ export default {
 		maxReasoningEffort: '推理强度上限',
 		maxReasoningEffortUnlimited: '不限制（跟随请求）',
 		maxReasoningEffortHint:
-			'仅限制客户端主动请求的 OpenAI reasoning effort；超过上限时自动降档，不会为缺省请求主动开启推理。上限优先级高于映射。',
+			'上限仅约束客户端主动请求的 OpenAI reasoning effort；映射可用“未指定（默认值）”补齐缺省请求。上限优先级高于映射。',
 		reasoningEffortMappings: '推理强度映射',
 		addReasoningEffortMapping: '添加映射',
 		removeReasoningEffortMapping: '删除映射',
 		reasoningEffortFrom: '请求值',
+		reasoningEffortDefault: '未指定（默认值）',
 		reasoningEffortTo: '转发值',
 		reasoningEffortFromPlaceholder: '请选择 A',
 		reasoningEffortToPlaceholder: '请选择 B',

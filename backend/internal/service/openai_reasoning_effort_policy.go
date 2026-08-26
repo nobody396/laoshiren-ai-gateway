@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	maxReasoningEffortMappings = 64
-	maxReasoningEffortValueLen = 64
+	maxReasoningEffortMappings   = 64
+	maxReasoningEffortValueLen   = 64
+	reasoningEffortDefaultSource = "default"
 )
 
 var openAIReasoningEffortValues = []string{"minimal", "low", "medium", "high", "xhigh", "max"}
@@ -101,6 +102,14 @@ func reasoningEffortRank(raw string) (int, bool) {
 	}
 }
 
+func normalizeReasoningEffortMappingSource(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	if value == reasoningEffortDefaultSource {
+		return reasoningEffortDefaultSource
+	}
+	return NormalizeMaxReasoningEffort(raw)
+}
+
 // NormalizeReasoningEffortMappings validates group mapping rules against the
 // fixed effort values supported by OpenAI routes.
 func NormalizeReasoningEffortMappings(platform string, raw []ReasoningEffortMapping) ([]ReasoningEffortMapping, error) {
@@ -111,16 +120,29 @@ func NormalizeReasoningEffortMappings(platform string, raw []ReasoningEffortMapp
 	normalized := make([]ReasoningEffortMapping, 0, len(raw))
 	seen := make(map[string]struct{}, len(raw))
 	for i, mapping := range raw {
-		from := NormalizeMaxReasoningEffort(mapping.From)
+		from := normalizeReasoningEffortMappingSource(mapping.From)
 		to := NormalizeMaxReasoningEffort(mapping.To)
-		if from == "" || to == "" {
-			return nil, fmt.Errorf("reasoning effort mapping %d contains an empty or unknown value", i+1)
+		if from == "" {
+			return nil, fmt.Errorf("reasoning effort mapping %d source contains an empty or unknown value", i+1)
+		}
+		if to == "" {
+			return nil, fmt.Errorf("reasoning effort mapping %d target contains an empty or unknown value", i+1)
 		}
 		if len(from) > maxReasoningEffortValueLen || len(to) > maxReasoningEffortValueLen {
 			return nil, fmt.Errorf("reasoning effort mapping %d values cannot exceed %d characters", i+1, maxReasoningEffortValueLen)
 		}
-		if _, err := normalizeMaxReasoningEffortForPlatform(platform, from); err != nil {
-			return nil, fmt.Errorf("reasoning effort mapping %d source: %w", i+1, err)
+		if from == reasoningEffortDefaultSource {
+			if platform != PlatformOpenAI {
+				return nil, fmt.Errorf(
+					"reasoning effort mapping %d source: default reasoning effort is only supported for platform %q",
+					i+1,
+					PlatformOpenAI,
+				)
+			}
+		} else {
+			if _, err := normalizeMaxReasoningEffortForPlatform(platform, from); err != nil {
+				return nil, fmt.Errorf("reasoning effort mapping %d source: %w", i+1, err)
+			}
 		}
 		if _, err := normalizeMaxReasoningEffortForPlatform(platform, to); err != nil {
 			return nil, fmt.Errorf("reasoning effort mapping %d target: %w", i+1, err)
@@ -166,11 +188,53 @@ func mapReasoningEffort(raw string, mappings []ReasoningEffortMapping) (string, 
 	value := strings.TrimSpace(raw)
 	canonical := NormalizeMaxReasoningEffort(value)
 	for _, mapping := range mappings {
+		if normalizeReasoningEffortMappingSource(mapping.From) == reasoningEffortDefaultSource {
+			continue
+		}
 		if canonical != "" && canonical == NormalizeMaxReasoningEffort(mapping.From) {
 			return strings.TrimSpace(mapping.To), true
 		}
 	}
 	return value, false
+}
+
+func defaultReasoningEffort(mappings []ReasoningEffortMapping) (string, bool) {
+	for _, mapping := range mappings {
+		if normalizeReasoningEffortMappingSource(mapping.From) == reasoningEffortDefaultSource {
+			value := NormalizeMaxReasoningEffort(mapping.To)
+			return value, value != ""
+		}
+	}
+	return "", false
+}
+
+func requestHasExplicitReasoningChoice(body []byte) bool {
+	for _, path := range []string{"reasoning.effort", "reasoning_effort"} {
+		if gjson.GetBytes(body, path).Exists() {
+			return true
+		}
+	}
+	if thinkingType := gjson.GetBytes(body, "thinking.type"); thinkingType.Exists() {
+		// An explicit enabled toggle still needs a default effort. Disabled and
+		// unknown toggles are preserved byte-for-byte instead of being
+		// contradicted or masking an upstream validation error.
+		if thinkingType.Type != gjson.String || !strings.EqualFold(strings.TrimSpace(thinkingType.String()), "enabled") {
+			return true
+		}
+	}
+	model := strings.TrimSpace(gjson.GetBytes(body, "model").String())
+	return deriveOpenAIReasoningEffortFromModel(model) != ""
+}
+
+func defaultReasoningEffortPath(body []byte) string {
+	// Chat Completions owns a top-level messages array and a flat
+	// reasoning_effort field. HTTP/WS Responses requests use reasoning.effort;
+	// default to that shape so stateless response.create frames and valid
+	// previous_response_id-only requests do not get the Chat field by mistake.
+	if gjson.GetBytes(body, "messages").Exists() {
+		return "reasoning_effort"
+	}
+	return "reasoning.effort"
 }
 
 func sanitizeGroupReasoningEffortPolicy(group *Group) {
@@ -190,8 +254,9 @@ func sanitizeGroupReasoningEffortPolicy(group *Group) {
 }
 
 // ApplyOpenAIReasoningEffortPolicy applies one exact mapping and then caps
-// known effort levels. Omitted values remain untouched so upstream defaults
-// stay in control.
+// known effort levels. A reserved {"from":"default"} mapping supplies an
+// omitted value without overriding an explicit effort, disabled/invalid
+// thinking toggle, or model-suffix effort.
 func ApplyOpenAIReasoningEffortPolicy(body []byte, maxEffort string, mappings []ReasoningEffortMapping) ([]byte, bool) {
 	maxRank, hasMax := reasoningEffortRank(maxEffort)
 	if len(body) == 0 || (!hasMax && len(mappings) == 0) {
@@ -227,6 +292,19 @@ func ApplyOpenAIReasoningEffortPolicy(body []byte, maxEffort string, mappings []
 		}
 		result = updated
 		changed = true
+	}
+
+	if !requestHasExplicitReasoningChoice(body) {
+		if effective, ok := defaultReasoningEffort(mappings); ok {
+			if currentRank, recognized := reasoningEffortRank(effective); recognized && hasMax && currentRank > maxRank {
+				effective = NormalizeMaxReasoningEffort(maxEffort)
+			}
+			updated, err := sjson.SetBytes(result, defaultReasoningEffortPath(body), effective)
+			if err == nil {
+				result = updated
+				changed = true
+			}
+		}
 	}
 	return result, changed
 }

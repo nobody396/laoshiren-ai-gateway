@@ -196,7 +196,7 @@ func (Group) Fields() []ent.Field {
 		field.JSON("reasoning_effort_mappings", []domain.ReasoningEffortMapping{}).
 			Default([]domain.ReasoningEffortMapping{}).
 			SchemaType(map[string]string{dialect.Postgres: "jsonb"}).
-			Comment("OpenAI reasoning effort 自定义精确映射；先映射再应用上限"),
+			Comment("OpenAI reasoning effort 自定义精确映射；from=default 为缺省请求补值，先映射再应用上限"),
 
 		field.JSON("universal_routes", []domain.UniversalRouteConfig{}).
 			Default([]domain.UniversalRouteConfig{}).

@@ -2406,11 +2406,12 @@ export default {
 		maxReasoningEffort: 'Max reasoning effort',
 		maxReasoningEffortUnlimited: 'Unlimited (follow request)',
 		maxReasoningEffortHint:
-			'Limits explicit OpenAI reasoning effort requests only. Higher values are capped; omitted effort stays omitted. The ceiling takes precedence over mappings.',
+			'The ceiling limits explicit OpenAI reasoning effort requests. A mapping can supply an omitted default. The ceiling takes precedence over mappings.',
 		reasoningEffortMappings: 'Reasoning effort mappings',
 		addReasoningEffortMapping: 'Add mapping',
 		removeReasoningEffortMapping: 'Remove mapping',
 		reasoningEffortFrom: 'Request value',
+		reasoningEffortDefault: 'Omitted (default)',
 		reasoningEffortTo: 'Forwarded value',
 		reasoningEffortFromPlaceholder: 'Select A',
 		reasoningEffortToPlaceholder: 'Select B',

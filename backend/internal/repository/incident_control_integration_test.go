@@ -70,8 +70,8 @@ func TestIncidentControlConcurrentCandidateRelapseDurationResolutionAndPublicTim
 	insertIncidentCustomerFailure(t, prefix+"b1", groupB, modelB, base.Add(time.Minute))
 	preIncidentSuccessID := insertIncidentCustomerSuccess(t, prefix+"pre-incident-success", groupA, modelA, base.Add(-5*time.Minute))
 	_, err = integrationDB.ExecContext(ctx, `
-INSERT INTO reliability_observations(idempotency_key,fact_type,source,source_id,group_id,platform,model,request_class,protocol,outcome,status_code,error_owner,customer_impact,observed_at)
-SELECT $1 || gs::text,'customer_request','integration_incident',$1 || gs::text,$2,'openai',$4,'text','responses','failure',503,'provider',TRUE,$3::timestamptz + (gs || ' milliseconds')::interval
+	INSERT INTO reliability_observations(idempotency_key,fact_type,source,source_id,user_id,group_id,platform,model,request_class,protocol,outcome,status_code,error_owner,customer_impact,observed_at)
+	SELECT $1 || gs::text,'customer_request','integration_incident',$1 || gs::text,900001,$2,'openai',$4,'text','responses','failure',503,'provider',TRUE,$3::timestamptz + (gs || ' milliseconds')::interval
 FROM generate_series(1,5001) gs`, prefix+"bulk-a-", groupA, base.Add(30*time.Second), modelA)
 	require.NoError(t, err)
 
@@ -353,6 +353,49 @@ func TestIncidentControlKeepsUnrelatedFamiliesInSeparateOverlappingIncidents(t *
 	require.Zero(t, oldFailureLinked, "old unrelated customer failure must not move the late-attach impact boundary")
 }
 
+func TestIncidentControlReusesOneCandidateAcrossLongContinuousDegradation(t *testing.T) {
+	ctx := context.Background()
+	settings := NewSettingRepository(integrationEntClient)
+	require.NoError(t, settings.SetMultiple(ctx, map[string]string{
+		service.SettingKeyReliabilityObservationEnabled: "true",
+		service.SettingKeyServiceStatusEnabled:          "true",
+		service.SettingKeyReliabilityIncidentsEnabled:   "true",
+	}))
+	evidence := service.NewReliabilityEvidenceService(integrationDB, settings)
+	require.NoError(t, evidence.Start(ctx))
+	t.Cleanup(func() {
+		stop, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		_ = evidence.Stop(stop)
+		_ = settings.SetMultiple(context.Background(), map[string]string{
+			service.SettingKeyReliabilityObservationEnabled: "false",
+			service.SettingKeyServiceStatusEnabled:          "false",
+			service.SettingKeyReliabilityIncidentsEnabled:   "false",
+		})
+	})
+	status := service.NewStatusControlService(integrationDB, settings, evidence)
+	control := service.NewIncidentControlService(integrationDB, settings, status, evidence)
+	prefix := "incident-continuous-" + uuid.NewString()
+	familyID, productID, _, groupID, _ := seedIncidentControlCatalog(t, prefix)
+	t.Cleanup(func() { cleanupIncidentControlCatalog(prefix, familyID) })
+
+	base := time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Microsecond)
+	setIncidentProductStatus(t, productID, service.ServiceStatusDegradedPerformance, base, nil)
+	insertIncidentCustomerFailure(t, prefix+"-failure", groupID, prefix+"-model", base)
+	for _, offset := range []time.Duration{2 * time.Minute, 10 * time.Minute, 20 * time.Minute, 29 * time.Minute, 31 * time.Minute, 32 * time.Minute} {
+		require.NoError(t, control.ReconcileAt(ctx, base.Add(offset)))
+	}
+
+	var candidateCount int
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+SELECT COUNT(DISTINCT c.id)
+FROM reliability_incident_candidates c
+JOIN reliability_incident_candidate_products cp ON cp.candidate_id=c.id
+JOIN service_status_products p ON p.id=cp.product_id
+WHERE p.family_id=$1 AND c.state='open'`, familyID).Scan(&candidateCount))
+	require.Equal(t, 1, candidateCount, "one continuous degradation must remain one Incident Candidate")
+}
+
 func TestIncidentControlLinksProbeOnlyAbnormalEvidenceWithoutInventingImpactSegment(t *testing.T) {
 	ctx := context.Background()
 	var leakedIncidentFixtures int
@@ -499,8 +542,8 @@ func insertIncidentCustomerFailure(t *testing.T, identity string, groupID int64,
 	t.Helper()
 	var id int64
 	err := integrationDB.QueryRowContext(context.Background(), `
-INSERT INTO reliability_observations(idempotency_key,fact_type,source,source_id,group_id,platform,model,request_class,protocol,outcome,status_code,error_owner,customer_impact,observed_at)
-VALUES($1,'customer_request','integration_incident',$1,$2,'openai',$3,'text','responses','failure',503,'provider',TRUE,$4) RETURNING id`, identity, groupID, model, observedAt).Scan(&id)
+INSERT INTO reliability_observations(idempotency_key,fact_type,source,source_id,user_id,group_id,platform,model,request_class,protocol,outcome,status_code,error_owner,customer_impact,observed_at)
+VALUES($1,'customer_request','integration_incident',$1,900001,$2,'openai',$3,'text','responses','failure',503,'provider',TRUE,$4) RETURNING id`, identity, groupID, model, observedAt).Scan(&id)
 	require.NoError(t, err)
 	return id
 }
@@ -509,8 +552,8 @@ func insertIncidentCustomerSuccess(t *testing.T, identity string, groupID int64,
 	t.Helper()
 	var id int64
 	err := integrationDB.QueryRowContext(context.Background(), `
-INSERT INTO reliability_observations(idempotency_key,fact_type,source,source_id,group_id,platform,model,request_class,protocol,outcome,status_code,error_owner,customer_impact,observed_at)
-VALUES($1,'customer_request','integration_incident',$1,$2,'openai',$3,'text','responses','success',200,'',FALSE,$4) RETURNING id`, identity, groupID, model, observedAt).Scan(&id)
+INSERT INTO reliability_observations(idempotency_key,fact_type,source,source_id,user_id,group_id,platform,model,request_class,protocol,outcome,status_code,error_owner,customer_impact,observed_at)
+VALUES($1,'customer_request','integration_incident',$1,900001,$2,'openai',$3,'text','responses','success',200,'',FALSE,$4) RETURNING id`, identity, groupID, model, observedAt).Scan(&id)
 	require.NoError(t, err)
 	return id
 }

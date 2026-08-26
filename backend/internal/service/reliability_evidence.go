@@ -328,14 +328,25 @@ func (s *ReliabilityEvidenceService) recordFinalOutcomes(ctx context.Context, in
 			return 0, fmt.Errorf("reliability final outcome identity is invalid")
 		}
 		errorOwner := strings.ToLower(strings.TrimSpace(input.ErrorOwner))
-		customerImpact := input.Outcome == ReliabilityOutcomeFailure && (errorOwner == "provider" || errorOwner == "platform")
+		outcome := input.Outcome
+		exclusionReason := strings.ToLower(strings.TrimSpace(input.ExclusionReason))
+		if outcome == ReliabilityOutcomeFailure && (input.UserID == nil || *input.UserID <= 0) {
+			// A request that never resolved to a real customer cannot enter
+			// Customer Availability, an Incident, or compensation. Preserve the
+			// diagnostic owner/status while failing closed on attribution.
+			outcome = ReliabilityOutcomeExcluded
+			if exclusionReason == "" {
+				exclusionReason = "client_or_unowned"
+			}
+		}
+		customerImpact := outcome == ReliabilityOutcomeFailure && (errorOwner == "provider" || errorOwner == "platform")
 		observations = append(observations, &ReliabilityObservation{
 			IdempotencyKey: "customer:" + identity, FactType: ReliabilityFactCustomerRequest,
 			Source: "gateway_final", SourceID: identity, RequestID: input.RequestID, ClientRequestID: input.ClientRequestID,
 			UserID: input.UserID, GroupID: input.GroupID, AccountID: input.AccountID,
 			Platform: input.Platform, Model: input.Model, RequestClass: input.RequestClass, Protocol: input.Protocol,
-			Outcome: input.Outcome, StatusCode: input.StatusCode, ErrorOwner: errorOwner,
-			ExclusionReason: input.ExclusionReason, CustomerImpact: customerImpact, LatencyMs: input.LatencyMs, ObservedAt: input.ObservedAt,
+			Outcome: outcome, StatusCode: input.StatusCode, ErrorOwner: errorOwner,
+			ExclusionReason: exclusionReason, CustomerImpact: customerImpact, LatencyMs: input.LatencyMs, ObservedAt: input.ObservedAt,
 		})
 	}
 	return s.recordObservations(ctx, observations)

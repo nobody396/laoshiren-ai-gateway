@@ -59,6 +59,7 @@ func TestRecordReliabilityObservationBatchPersistsNormalizedFactsWhenEnabled(t *
 		},
 	}
 	svc := newReliabilityEvidenceForTest(true, repo)
+	userID, groupID := int64(92), int64(59)
 
 	inserted, err := svc.recordFinalOutcomes(context.Background(), []*ReliabilityFinalOutcome{
 		{
@@ -71,6 +72,8 @@ func TestRecordReliabilityObservationBatchPersistsNormalizedFactsWhenEnabled(t *
 			Outcome:         ReliabilityOutcomeFailure,
 			ErrorOwner:      " provider ",
 			StatusCode:      intPointer(503),
+			UserID:          &userID,
+			GroupID:         &groupID,
 			LatencyMs:       1250,
 		},
 	})
@@ -85,6 +88,31 @@ func TestRecordReliabilityObservationBatchPersistsNormalizedFactsWhenEnabled(t *
 	require.Equal(t, "provider", persisted[0].ErrorOwner)
 	require.True(t, persisted[0].CustomerImpact)
 	require.False(t, persisted[0].ObservedAt.IsZero())
+}
+
+func TestRecordFinalOutcomesExcludesUnattributedProviderFailure(t *testing.T) {
+	var persisted []*ReliabilityObservation
+	repo := &reliabilityRepoStub{batch: func(_ context.Context, inputs []*ReliabilityObservation) (int64, error) {
+		persisted = append(persisted, inputs...)
+		return int64(len(inputs)), nil
+	}}
+	svc := newReliabilityEvidenceForTest(true, repo)
+
+	_, err := svc.recordFinalOutcomes(context.Background(), []*ReliabilityFinalOutcome{{
+		RequestIdentity: "unattributed-auth-boundary",
+		Platform:        PlatformGemini,
+		Outcome:         ReliabilityOutcomeFailure,
+		ErrorOwner:      "platform",
+		StatusCode:      intPointer(401),
+		ObservedAt:      time.Now(),
+	}})
+
+	require.NoError(t, err)
+	require.Len(t, persisted, 1)
+	require.Equal(t, ReliabilityOutcomeExcluded, persisted[0].Outcome)
+	require.Equal(t, "client_or_unowned", persisted[0].ExclusionReason)
+	require.False(t, persisted[0].CustomerImpact)
+	require.Equal(t, "platform", persisted[0].ErrorOwner, "diagnostic ownership remains available without entering customer availability")
 }
 
 func TestRecordProbeOutcomesCanNeverBecomeCustomerImpact(t *testing.T) {

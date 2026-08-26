@@ -22,9 +22,9 @@ func TestStatusControlReconcilesCustomerImpactIntoProductState(t *testing.T) {
 	for index := 0; index < 3; index++ {
 		_, err := integrationDB.ExecContext(ctx, `
 INSERT INTO reliability_observations(
- idempotency_key,fact_type,source,source_id,platform,model,request_class,protocol,
+ idempotency_key,fact_type,source,source_id,user_id,platform,model,request_class,protocol,
  outcome,status_code,error_owner,customer_impact,observed_at
-) VALUES($1,'customer_request','integration',$2,'openai','gpt-5.6-sol','text','responses','failure',503,'provider',TRUE,$3)`,
+) VALUES($1,'customer_request','integration',$2,900001,'openai','gpt-5.6-sol','text','responses','failure',503,'provider',TRUE,$3)`,
 			prefix+fmt.Sprint(index), fmt.Sprint(index), now.Add(-time.Duration(index+2)*time.Second))
 		require.NoError(t, err)
 	}

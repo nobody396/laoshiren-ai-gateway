@@ -524,6 +524,11 @@ ORDER BY p.id,c.id,b.id,ag.account_id`)
 func projectStatusObservations(products []statusProductDefinition, observations []*ReliabilityObservation) map[int64][]StatusObservation {
 	result := make(map[int64][]StatusObservation)
 	for _, observation := range observations {
+		if observation != nil && observation.FactType == ReliabilityFactCustomerRequest && observation.CustomerImpact && (observation.UserID == nil || *observation.UserID <= 0) {
+			// Historical evidence may predate attribution validation. Never let an
+			// unowned auth-boundary request affect customer status.
+			continue
+		}
 		for _, componentID := range matchingStatusComponentIDs(products, observation, false) {
 			result[componentID] = append(result[componentID], statusObservationFromEvidence(observation))
 		}

@@ -75,7 +75,8 @@ type Group struct {
 
 	// MaxReasoningEffort limits effective OpenAI/Codex reasoning effort; empty means unlimited.
 	MaxReasoningEffort string
-	// ReasoningEffortMappings rewrites explicit request values before applying the ceiling.
+	// ReasoningEffortMappings rewrites request values before applying the ceiling;
+	// the reserved source "default" supplies an omitted request value.
 	ReasoningEffortMappings []ReasoningEffortMapping
 
 	UniversalRoutes []UniversalRouteConfig

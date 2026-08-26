@@ -32,11 +32,13 @@ func TestNormalizeReasoningEffortMappings(t *testing.T) {
 		got, err := NormalizeReasoningEffortMappings(PlatformOpenAI, []ReasoningEffortMapping{
 			{From: " MAX ", To: " x-high "},
 			{From: "minimal", To: "high"},
+			{From: " DEFAULT ", To: " low "},
 		})
 		require.NoError(t, err)
 		require.Equal(t, []ReasoningEffortMapping{
 			{From: "max", To: "xhigh"},
 			{From: "minimal", To: "high"},
+			{From: "default", To: "low"},
 		}, got)
 	})
 
@@ -64,6 +66,9 @@ func TestNormalizeReasoningEffortMappings(t *testing.T) {
 
 		_, err = NormalizeReasoningEffortMappings(PlatformOpenAI, []ReasoningEffortMapping{{From: "ultra", To: "high"}})
 		require.ErrorContains(t, err, "empty or unknown")
+
+		_, err = NormalizeReasoningEffortMappings(PlatformOpenAI, []ReasoningEffortMapping{{From: "low", To: "default"}})
+		require.ErrorContains(t, err, "target")
 	})
 }
 
@@ -108,6 +113,15 @@ func TestApplyOpenAIReasoningEffortPolicy(t *testing.T) {
 		{name: "nested caps high", body: `{"reasoning":{"effort":"xhigh"}}`, max: "medium", path: "reasoning.effort", want: "medium", changed: true},
 		{name: "flat caps high", body: `{"reasoning_effort":"high"}`, max: "low", path: "reasoning_effort", want: "low", changed: true},
 		{name: "does not raise omitted", body: `{"model":"gpt-5"}`, max: "low", path: "reasoning_effort", want: "", changed: false},
+		{name: "defaults omitted responses effort", body: `{"model":"deepseek-v4-flash","input":"hi"}`, mappings: []ReasoningEffortMapping{{From: "default", To: "low"}}, path: "reasoning.effort", want: "low", changed: true},
+		{name: "defaults responses effort without input", body: `{"model":"gpt-5","previous_response_id":"resp_1"}`, mappings: []ReasoningEffortMapping{{From: "default", To: "low"}}, path: "reasoning.effort", want: "low", changed: true},
+		{name: "defaults omitted websocket responses effort", body: `{"type":"response.create","model":"deepseek-v4-flash"}`, mappings: []ReasoningEffortMapping{{From: "default", To: "low"}}, path: "reasoning.effort", want: "low", changed: true},
+		{name: "defaults omitted chat completions effort", body: `{"model":"deepseek-v4-flash","messages":[{"role":"user","content":"hi"}]}`, mappings: []ReasoningEffortMapping{{From: "default", To: "low"}}, path: "reasoning_effort", want: "low", changed: true},
+		{name: "caps injected default", body: `{"model":"deepseek-v4-flash","input":"hi"}`, max: "minimal", mappings: []ReasoningEffortMapping{{From: "default", To: "low"}}, path: "reasoning.effort", want: "minimal", changed: true},
+		{name: "keeps explicit effort over default", body: `{"model":"deepseek-v4-flash","input":"hi","reasoning":{"effort":"high"}}`, mappings: []ReasoningEffortMapping{{From: "default", To: "low"}}, path: "reasoning.effort", want: "high", changed: false},
+		{name: "keeps explicit thinking toggle over default", body: `{"model":"deepseek-v4-flash","input":"hi","thinking":{"type":"disabled"}}`, mappings: []ReasoningEffortMapping{{From: "default", To: "low"}}, path: "reasoning.effort", want: "", changed: false},
+		{name: "defaults effort for enabled thinking toggle", body: `{"model":"deepseek-v4-flash","input":"hi","thinking":{"type":"enabled"}}`, mappings: []ReasoningEffortMapping{{From: "default", To: "low"}}, path: "reasoning.effort", want: "low", changed: true},
+		{name: "keeps model suffix effort over default", body: `{"model":"gpt-5-high","input":"hi"}`, mappings: []ReasoningEffortMapping{{From: "default", To: "low"}}, path: "reasoning.effort", want: "", changed: false},
 		{name: "keeps lower value", body: `{"reasoning_effort":"low"}`, max: "high", path: "reasoning_effort", want: "low", changed: false},
 		{name: "normalizes request alias", body: `{"reasoning_effort":"x-high"}`, max: "xhigh", path: "reasoning_effort", want: "xhigh", changed: true},
 		{name: "caps max below its distinct rank", body: `{"reasoning_effort":"max"}`, max: "xhigh", path: "reasoning_effort", want: "xhigh", changed: true},

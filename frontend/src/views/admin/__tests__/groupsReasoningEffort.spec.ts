@@ -6,6 +6,7 @@ import {
   reasoningEffortMappingsToAPI,
   reasoningEffortMappingsToRows,
   reasoningEffortOptionsForPlatform,
+  reasoningEffortSourceOptionsForPlatform,
   validateReasoningEffortMappings,
 } from "../groupsReasoningEffort";
 
@@ -31,18 +32,39 @@ describe("groupsReasoningEffort", () => {
     }
   });
 
+  it("offers an omitted-value source only on the mapping input side", () => {
+    expect(
+      reasoningEffortSourceOptionsForPlatform("openai").map(
+        (option) => option.value,
+      ),
+    ).toEqual([
+      "default",
+      "minimal",
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+    ]);
+    expect(
+      reasoningEffortOptionsForPlatform("openai").map((option) => option.value),
+    ).not.toContain("default");
+  });
+
   it("hydrates supported rows and drops stale custom values", () => {
     const rows = reasoningEffortMappingsToRows(
       [
         { from: " max ", to: " xhigh " },
+        { from: " default ", to: " low " },
         { from: "ultra", to: "high" },
       ],
       "openai",
     );
 
-    expect(rows).toHaveLength(1);
+    expect(rows).toHaveLength(2);
     expect(reasoningEffortMappingsToAPI(rows)).toEqual([
       { from: "max", to: "xhigh" },
+      { from: "default", to: "low" },
     ]);
   });
 
@@ -76,6 +98,16 @@ describe("groupsReasoningEffort", () => {
     const row = createReasoningEffortMappingRow({ from: "ultra", to: "high" });
     expect(validateReasoningEffortMappings([row], "openai")).toEqual({
       [row.id]: { from: "unsupportedFrom" },
+    });
+  });
+
+  it("rejects default as a mapping target", () => {
+    const row = createReasoningEffortMappingRow({
+      from: "low",
+      to: "default",
+    });
+    expect(validateReasoningEffortMappings([row], "openai")).toEqual({
+      [row.id]: { to: "unsupportedTo" },
     });
   });
 });

@@ -21,7 +21,6 @@ export type MonthlyCreditCardPlan = {
   legendaryCopy?: string
   rarityLabel?: string
   accent: string
-  cardShopUrl: string
 }
 
 export type MonthlyCreditCardPlanGroupEntitlement = {
@@ -41,7 +40,7 @@ export type MonthlyCreditCardPlanEntitlement = {
 }
 
 type PlanInput = Pick<MonthlyCreditCardPlan,
-  'id' | 'name' | 'priceCny' | 'directPriceCny' | 'monthlyCredits' | 'description' | 'accent' | 'cardShopUrl'
+  'id' | 'name' | 'priceCny' | 'directPriceCny' | 'monthlyCredits' | 'description' | 'accent'
 >
 
 function createMonthlyCreditCardPlan(input: PlanInput, entitlement?: MonthlyCreditCardPlanEntitlement): MonthlyCreditCardPlan {
@@ -74,8 +73,7 @@ const monthlyCreditCardPlanInputs: PlanInput[] = [
     directPriceCny: 255,
     monthlyCredits: 300,
     description: '轻量但完整的 31 天开发额度，适合日常编码、问答与短任务。',
-    accent: 'plus',
-    cardShopUrl: 'https://pay.ldxp.cn/item/c0dudc'
+    accent: 'plus'
   },
   {
     id: 'pro',
@@ -84,8 +82,7 @@ const monthlyCreditCardPlanInputs: PlanInput[] = [
     directPriceCny: 715,
     monthlyCredits: 900,
     description: '面向稳定高频开发与多轮代理任务，整月额度可自由安排。',
-    accent: 'pro',
-    cardShopUrl: 'https://pay.ldxp.cn/item/x4dup4'
+    accent: 'pro'
   },
   {
     id: 'max',
@@ -94,8 +91,7 @@ const monthlyCreditCardPlanInputs: PlanInput[] = [
     directPriceCny: 1525,
     monthlyCredits: 2000,
     description: '为大型重构、长上下文与连续高强度开发保留更大额度。',
-    accent: 'max',
-    cardShopUrl: 'https://pay.ldxp.cn/item/db9f6w'
+    accent: 'max'
   }
 ]
 

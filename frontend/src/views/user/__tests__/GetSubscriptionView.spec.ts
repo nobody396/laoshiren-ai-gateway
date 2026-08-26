@@ -73,9 +73,9 @@ vi.mock('@/composables/useMonthlyCreditCardPlans', async () => {
   return {
     useMonthlyCreditCardPlans: () => ({
       plans: ref([
-        { id: 'plus', name: 'Plus', price: '¥259', directPrice: '¥255', displayMonthlyCreditsText: '3,000', displayWeeklyCreditsText: '0', showWeeklyLimit: false, description: '', accent: 'plus', cardShopUrl: 'https://shop.example/plus' },
-        { id: 'pro', name: 'Pro', price: '¥729', directPrice: '¥715', displayMonthlyCreditsText: '9,000', displayWeeklyCreditsText: '0', showWeeklyLimit: false, description: '', accent: 'pro', cardShopUrl: 'https://shop.example/pro' },
-        { id: 'max', name: 'Max', price: '¥1549', directPrice: '¥1525', displayMonthlyCreditsText: '20,000', displayWeeklyCreditsText: '0', showWeeklyLimit: false, description: '', accent: 'max', cardShopUrl: 'https://shop.example/max' },
+        { id: 'plus', name: 'Plus', price: '¥259', directPrice: '¥255', displayMonthlyCreditsText: '3,000', displayWeeklyCreditsText: '0', showWeeklyLimit: false, description: '', accent: 'plus' },
+        { id: 'pro', name: 'Pro', price: '¥729', directPrice: '¥715', displayMonthlyCreditsText: '9,000', displayWeeklyCreditsText: '0', showWeeklyLimit: false, description: '', accent: 'pro' },
+        { id: 'max', name: 'Max', price: '¥1549', directPrice: '¥1525', displayMonthlyCreditsText: '20,000', displayWeeklyCreditsText: '0', showWeeklyLimit: false, description: '', accent: 'max' },
       ]),
       loadMonthlyCreditCardPlans: mocks.loadPlans,
     }),
@@ -149,7 +149,7 @@ describe('GetSubscriptionView payment UX', () => {
     const summary = wrapper.find('.topup-summary-card')
     expect(summary.find('[data-testid="monthly-method-alipay"]').exists()).toBe(true)
     expect(summary.find('[data-testid="monthly-method-wechat"]').exists()).toBe(true)
-    expect(summary.find('[data-testid="monthly-method-card_shop"]').exists()).toBe(true)
+    expect(summary.find('[data-testid="monthly-method-card_shop"]').exists()).toBe(false)
     const checkout = summary.get('[data-testid="native-checkout-offer"]')
     expect(checkout.attributes('data-action-only')).toBe('')
     expect(checkout.attributes('data-pay-method')).toBe('alipay')
@@ -159,14 +159,14 @@ describe('GetSubscriptionView payment UX', () => {
     wrapper.unmount()
   })
 
-  it('shows Alipay, WeChat, and backup payment methods inside the right summary card', async () => {
+  it('shows only the site QR payment methods inside the right summary card', async () => {
     const wrapper = mountView()
     await flushPromises()
 
     const summary = wrapper.find('.topup-summary-card')
     expect(summary.find('[data-testid="topup-method-alipay"]').exists()).toBe(true)
     expect(summary.find('[data-testid="topup-method-wechat"]').exists()).toBe(true)
-    expect(summary.find('[data-testid="topup-method-card_shop"]').exists()).toBe(true)
+    expect(summary.find('[data-testid="topup-method-card_shop"]').exists()).toBe(false)
     expect(summary.find('[data-testid="topup-method-alipay"] img').attributes('src')).toContain('alipay.svg')
     expect(summary.find('[data-testid="topup-method-wechat"] img').attributes('src')).toContain('wechat.svg')
     expect(wrapper.find('.topup-main [data-testid^="topup-method-"]').exists()).toBe(false)
@@ -231,7 +231,7 @@ describe('GetSubscriptionView payment UX', () => {
     wrapper.unmount()
   })
 
-  it('keeps the native newcomer checkout and its backup method in the right summary card', async () => {
+  it('keeps the native newcomer checkout without an external backup method', async () => {
     appStore.cachedPublicSettings = {
       ...publicSettings,
       card_shop_products: [
@@ -253,7 +253,8 @@ describe('GetSubscriptionView payment UX', () => {
     const summary = wrapper.find('.topup-summary-card')
     expect(summary.find('[data-testid="native-checkout-offer"]').exists()).toBe(true)
     expect(summary.find('[data-testid="native-checkout-offer"]').attributes('data-compact')).toBe('')
-    expect(summary.find('.topup-backup-action').text()).toContain('topup.cardShopAction')
+    expect(summary.find('.topup-backup-action').exists()).toBe(false)
+    expect(summary.find('[data-testid="topup-method-card_shop"]').exists()).toBe(false)
     expect(wrapper.find('.topup-main [data-testid="native-checkout-offer"]').exists()).toBe(false)
 
     wrapper.unmount()

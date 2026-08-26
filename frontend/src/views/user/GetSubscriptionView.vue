@@ -116,7 +116,7 @@
                     <span>单价</span>
                     <strong>¥{{ selectedBalanceProduct?.amountCny ?? 0 }}</strong>
                   </div>
-                  <div v-if="supportsSelectedQuantity && !showingCardShop && step === 1" class="topup-summary-row topup-summary-row--quantity">
+                  <div v-if="supportsSelectedQuantity && step === 1" class="topup-summary-row topup-summary-row--quantity">
                     <span>数量</span>
                     <div class="topup-quantity" aria-label="购买数量">
                       <button
@@ -180,51 +180,14 @@
                       <PaymentMethodIcon kind="wechat" />
                       <strong>{{ t('nativeCheckout.wechatPay') }}</strong>
                     </button>
-                    <button
-                      type="button"
-                      data-testid="topup-method-card_shop"
-                      :disabled="!canUseCardShopForSelected"
-                      :class="{ 'topup-summary-method--active': showingCardShop }"
-                      class="topup-summary-method"
-                      @click="selectTopupChannel('card_shop')"
-                    >
-                      <span class="topup-radio" aria-hidden="true"><span></span></span>
-                      <PaymentMethodIcon kind="backup" />
-                      <strong>{{ t('topup.cardShopChannelTitle') }}</strong>
-                    </button>
                   </div>
                   <p v-if="paymentNotice" class="topup-warning">{{ paymentNotice }}</p>
                 </section>
 
                 <div v-if="selectedNewcomerNative" class="topup-newcomer-actions">
                   <NativeCheckoutTrialOffer compact />
-                  <button
-                    v-if="canUseCardShopForSelected"
-                    type="button"
-                    class="topup-secondary-action topup-backup-action topup-action-with-icon"
-                    :disabled="openingCardShop"
-                    @click="openSelectedCardShopProduct"
-                  >
-                    <PaymentMethodIcon kind="backup" />
-                    <span>{{ t('topup.cardShopAction') }}</span>
-                  </button>
                   <p class="topup-warning">{{ t('topup.newcomerCardLimit') }}</p>
                 </div>
-
-                <template v-else-if="showingCardShop">
-                  <button
-                    type="button"
-                    class="topup-primary-action topup-action-with-icon"
-                    :disabled="!selectedCardShopProduct || openingCardShop"
-                    @click="openSelectedCardShopProduct"
-                  >
-                    <PaymentMethodIcon kind="backup" />
-                    <span>{{ t('topup.cardShopAction') }}</span>
-                  </button>
-                  <button type="button" class="topup-secondary-action" @click="goRedeem">
-                    {{ t('topup.cardShopGoRedeem') }}
-                  </button>
-                </template>
 
                 <button
                   v-else-if="step === 1"
@@ -282,18 +245,6 @@
                       <PaymentMethodIcon kind="wechat" />
                       <strong>{{ t('nativeCheckout.wechatPay') }}</strong>
                     </button>
-                    <button
-                      type="button"
-                      data-testid="monthly-method-card_shop"
-                      class="topup-summary-method"
-                      :class="{ 'topup-summary-method--active': selectedMonthlyTopupChannel === 'card_shop' }"
-                      :disabled="!canOpenSelectedMonthlyCardShop"
-                      @click="selectMonthlyTopupChannel('card_shop')"
-                    >
-                      <span class="topup-radio" aria-hidden="true"><span></span></span>
-                      <PaymentMethodIcon kind="backup" />
-                      <strong>{{ t('topup.cardShopChannelTitle') }}</strong>
-                    </button>
                   </div>
                 </section>
 
@@ -309,12 +260,10 @@
                   <button
                     v-else
                     type="button"
-                    class="topup-primary-action topup-action-with-icon"
-                    :disabled="!canOpenSelectedMonthlyCardShop"
-                    @click="openSelectedMonthlyCardShop"
+                    class="topup-primary-action"
+                    disabled
                   >
-                    <PaymentMethodIcon kind="backup" />
-                    <span>{{ t('topup.cardShopAction') }}</span>
+                    <span>{{ t('topup.noAvailablePayType') }}</span>
                   </button>
                 </div>
               </template>
@@ -329,23 +278,19 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import PaymentMethodIcon from '@/components/user/PaymentMethodIcon.vue'
 import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/api/topup'
 import { useAppStore, useAuthStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'
-import type { CardShopProduct } from '@/types'
 import {
   BALANCE_TOPUP_PRESETS,
   PROMOTIONAL_BALANCE_TOPUPS,
-  getCreditedBalanceTopupProductAmount,
-  isNewcomerBalanceTopup,
-  isSupportedBalanceTopupAmount
+  getCreditedBalanceTopupProductAmount
 } from '@/constants/balanceTopups'
 import { type MonthlyCreditCardPlan } from '@/constants/monthlyCreditCards'
 import { useMonthlyCreditCardPlans } from '@/composables/useMonthlyCreditCardPlans'
-import { shouldShowManualNewcomerProduct, useManualNewcomerOffer } from '@/composables/useManualNewcomerOffer'
+import { useManualNewcomerOffer } from '@/composables/useManualNewcomerOffer'
 import { useNativeCheckoutOffers } from '@/composables/useNativeCheckoutOffers'
 import NativeCheckoutTrialOffer from '@/components/user/NativeCheckoutTrialOffer.vue'
 import type { NativeCheckoutPaymentMethod } from '@/api/nativeCheckout'
@@ -354,17 +299,14 @@ import { isDirectQrImageUrl, renderQrCodeDataUrl } from '@/utils/qrImage'
 const { t } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
-const router = useRouter()
 
 const presets = BALANCE_TOPUP_PRESETS
 const QR_TTL_SECONDS = 300
-type TopupChannel = 'card_shop' | TopupPayType
 type SelectedProductKind = 'balance' | 'monthly'
 type BalanceProduct = {
   id: string
   label: string
   amountCny: number
-  cardShopProduct?: CardShopProduct
   creditedAmountCny?: number
   bonusAmountCny?: number
   promotional?: boolean
@@ -372,15 +314,14 @@ type BalanceProduct = {
 }
 
 const step = ref<1 | 2>(1)
-const selectedTopupChannel = ref<TopupChannel>('alipay')
+const selectedTopupChannel = ref<TopupPayType>('alipay')
 const selectedProductKind = ref<SelectedProductKind>('balance')
 const selectedBalanceProductId = ref('')
 const selectedQuantity = ref(1)
 const selectedMonthlyPlanId = ref<MonthlyCreditCardPlan['id']>('plus')
-const selectedMonthlyTopupChannel = ref<'card_shop' | NativeCheckoutPaymentMethod>('alipay')
+const selectedMonthlyTopupChannel = ref<NativeCheckoutPaymentMethod>('alipay')
 const payType = ref<TopupPayType>('alipay')
 const submitting = ref(false)
-const openingCardShop = ref(false)
 const qrCodeURL = ref('')
 const qrCodeRawPayload = ref('')
 const qrCodeClientRendered = ref(false)
@@ -394,8 +335,7 @@ const { loadOffers: loadNativeCheckoutOffers, findNativeOfferByCode } = useNativ
 const {
   state: newcomerOfferState,
   mode: newcomerOfferMode,
-  refresh: refreshNewcomerOffer,
-  requestPurchaseURL: requestNewcomerPurchaseURL,
+  refresh: refreshNewcomerOffer
 } = useManualNewcomerOffer()
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
@@ -412,42 +352,13 @@ const topupWechatEnabled = computed(
 )
 const canUseAlipay = computed(() => topupAlipayEnabled.value)
 const canUseWechat = computed(() => topupWechatEnabled.value)
-const configuredCardShopProducts = computed<CardShopProduct[]>(() =>
-  [...(appStore.cachedPublicSettings?.card_shop_products ?? [])]
-    .filter(
-      (product) =>
-        product.enabled &&
-        product.url &&
-        isSupportedBalanceTopupAmount(product.amount_cny)
-    )
-    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.amount_cny - b.amount_cny)
-)
-const activeCardShopProducts = computed<CardShopProduct[]>(() =>
-  configuredCardShopProducts.value.filter((product) =>
-    shouldShowManualNewcomerProduct(product.amount_cny, newcomerOfferState.value, newcomerOfferMode.value)
-  )
-)
-const newcomerBackupProduct = computed(() => {
-  if (newcomerOfferState.value !== 'available') return undefined
-  return configuredCardShopProducts.value.find((product) => isNewcomerBalanceTopup(product.amount_cny))
-})
-const cardShopMode = computed(
-  () => (appStore.cachedPublicSettings?.card_shop_enabled ?? false) && activeCardShopProducts.value.length > 0
-)
 const balanceProducts = computed<BalanceProduct[]>(() => {
-  const standardProducts: BalanceProduct[] = presets.map((amount) => {
-    const cardShopProduct = activeCardShopProducts.value.find((product) => product.amount_cny === amount)
-    return {
-      id: cardShopProduct?.id ?? `qr-${amount}`,
-      label: `¥${amount} 余额卡`,
-      amountCny: amount,
-      cardShopProduct
-    }
-  })
+  const standardProducts: BalanceProduct[] = presets.map((amount) => ({
+    id: `qr-${amount}`,
+    label: `¥${amount} 余额卡`,
+    amountCny: amount
+  }))
   const promotionalProducts: BalanceProduct[] = PROMOTIONAL_BALANCE_TOPUPS.map((product) => {
-    const cardShopProduct = product.newcomerOnly && newcomerOfferMode.value === 'native'
-      ? newcomerBackupProduct.value
-      : activeCardShopProducts.value.find((candidate) => candidate.amount_cny === product.paidAmountCny)
     return {
       id: `promotion-${product.paidAmountCny}`,
       label: product.newcomerOnly
@@ -457,16 +368,13 @@ const balanceProducts = computed<BalanceProduct[]>(() => {
       creditedAmountCny: product.creditedAmountCny,
       bonusAmountCny: product.bonusAmountCny,
       promotional: true,
-      newcomerOnly: product.newcomerOnly,
-      cardShopProduct
+      newcomerOnly: product.newcomerOnly
     }
   })
   const visiblePromotionalProducts = promotionalProducts.filter(
     (product) =>
       !product.newcomerOnly ||
-      (newcomerOfferState.value === 'available' && (
-        newcomerOfferMode.value === 'native' || !!product.cardShopProduct
-      ))
+      (newcomerOfferState.value === 'available' && newcomerOfferMode.value === 'native')
   )
   return [
     ...visiblePromotionalProducts.filter((product) => product.newcomerOnly),
@@ -485,7 +393,6 @@ const maxSelectedQuantity = computed(() => {
   if (!supportsSelectedQuantity.value || unitAmount <= 0) return 1
   return Math.max(1, Math.floor(3000 / unitAmount))
 })
-const selectedCardShopProduct = computed(() => selectedBalanceProduct.value?.cardShopProduct)
 const selectedNewcomerNative = computed(
   () => selectedProductKind.value === 'balance' &&
     selectedBalanceProduct.value?.newcomerOnly === true &&
@@ -495,26 +402,17 @@ const selectedMonthlyPlan = computed(
   () => monthlyCreditCardPlans.value.find((plan) => plan.id === selectedMonthlyPlanId.value) ?? monthlyCreditCardPlans.value[0]
 )
 // 约定：月卡套餐的原生结账 offer code 与前端套餐 id 相同（plus/pro/max）。
-// 只有可见且 provider=easypay 的订阅 offer 命中；命中后购买入口切换为站内
-// 扫码（NativeCheckoutTrialOffer），未命中保持链动小铺外链回退。
+// 只有可见且 provider=easypay 的订阅 offer 命中；未命中时保持关闭，
+// 不再回退到外部卡密商城。
 const selectedMonthlyNativeOffer = computed(() => {
   if (selectedProductKind.value !== 'monthly') return undefined
   const plan = selectedMonthlyPlan.value
   if (!plan) return undefined
   return findNativeOfferByCode(plan.id, 'subscription')
 })
-const selectedMonthlyPayMethod = computed<NativeCheckoutPaymentMethod | undefined>(() => {
-  if (selectedMonthlyTopupChannel.value === 'card_shop') return undefined
-  return selectedMonthlyTopupChannel.value
-})
-const selectedMonthlyCardShopUrl = computed(() => selectedMonthlyPlan.value?.cardShopUrl || '')
-const canOpenSelectedMonthlyCardShop = computed(() => selectedMonthlyCardShopUrl.value.trim() !== '')
-const canUseCardShopForSelected = computed(() => cardShopMode.value && !!selectedCardShopProduct.value)
-const showingCardShop = computed(
-  () => selectedProductKind.value === 'balance' && selectedTopupChannel.value === 'card_shop' && canUseCardShopForSelected.value
-)
+const selectedMonthlyPayMethod = computed<NativeCheckoutPaymentMethod>(() => selectedMonthlyTopupChannel.value)
 const showingQrTopup = computed(
-  () => selectedProductKind.value === 'balance' && (selectedTopupChannel.value === 'alipay' || selectedTopupChannel.value === 'wechat')
+  () => selectedProductKind.value === 'balance'
 )
 const canUseSelectedQrMethod = computed(() => {
   if (!showingQrTopup.value) return false
@@ -558,7 +456,6 @@ const paymentNotice = computed(() => {
   if (selectedProductKind.value !== 'balance') return ''
   if (showingQrTopup.value && amountError.value) return amountError.value
   if (showingQrTopup.value && !canUseSelectedQrMethod.value) return t('topup.noAvailablePayType')
-  if (selectedTopupChannel.value === 'card_shop' && !canUseCardShopForSelected.value) return t('topup.cardShopUnavailable')
   return ''
 })
 
@@ -602,10 +499,9 @@ function selectMonthlyPlan(plan: MonthlyCreditCardPlan) {
   syncMonthlyTopupChannelWithSettings()
 }
 
-function selectMonthlyTopupChannel(channel: 'card_shop' | NativeCheckoutPaymentMethod) {
+function selectMonthlyTopupChannel(channel: NativeCheckoutPaymentMethod) {
   if (channel === 'alipay' && (!selectedMonthlyNativeOffer.value || !canUseAlipay.value)) return
   if (channel === 'wechat' && (!selectedMonthlyNativeOffer.value || !canUseWechat.value)) return
-  if (channel === 'card_shop' && !canOpenSelectedMonthlyCardShop.value) return
   selectedMonthlyTopupChannel.value = channel
 }
 
@@ -616,20 +512,14 @@ function syncMonthlyTopupChannelWithSettings() {
   }
   if (selectedMonthlyNativeOffer.value && canUseWechat.value) {
     selectedMonthlyTopupChannel.value = 'wechat'
-    return
   }
-  if (canOpenSelectedMonthlyCardShop.value) selectedMonthlyTopupChannel.value = 'card_shop'
 }
 
-function selectTopupChannel(channel: TopupChannel) {
-  if (channel === 'card_shop' && !canUseCardShopForSelected.value) return
+function selectTopupChannel(channel: TopupPayType) {
   if (channel === 'alipay' && (!canUseAlipay.value || effectiveAmountYuan.value < 20)) return
   if (channel === 'wechat' && (!canUseWechat.value || effectiveAmountYuan.value < 20)) return
   selectedTopupChannel.value = channel
-  if (channel === 'card_shop') selectedQuantity.value = 1
-  if (channel === 'alipay' || channel === 'wechat') {
-    payType.value = channel
-  }
+  payType.value = channel
 }
 
 function decreaseQuantity() {
@@ -638,52 +528,6 @@ function decreaseQuantity() {
 
 function increaseQuantity() {
   selectedQuantity.value = Math.min(maxSelectedQuantity.value, selectedQuantity.value + 1)
-}
-
-async function openSelectedCardShopProduct() {
-  const product = selectedCardShopProduct.value
-  if (!product?.url || openingCardShop.value) return
-  if (!isNewcomerBalanceTopup(product.amount_cny)) {
-    window.location.assign(product.url)
-    return
-  }
-  openingCardShop.value = true
-  try {
-    await refreshNewcomerOffer()
-    if (newcomerOfferState.value === 'claimed') {
-      appStore.showInfo(t('topup.newcomerCardClaimed'))
-      return
-    }
-    if (newcomerOfferMode.value === 'native' && newcomerOfferState.value === 'available') {
-      window.location.assign(product.url)
-      return
-    }
-    const purchaseURL = await requestNewcomerPurchaseURL()
-    if (!purchaseURL) {
-      syncTopupChannelWithSettings()
-      if (String(newcomerOfferState.value) === 'claimed') {
-        appStore.showInfo(t('topup.newcomerCardClaimed'))
-      } else {
-        appStore.showError(t('topup.newcomerCardStatusUnavailable'))
-      }
-      return
-    }
-    window.location.assign(purchaseURL)
-  } catch (error) {
-    appStore.showError(extractApiErrorMessage(error, t('topup.newcomerCardStatusUnavailable')))
-  } finally {
-    openingCardShop.value = false
-  }
-}
-
-function openSelectedMonthlyCardShop() {
-  const url = selectedMonthlyCardShopUrl.value.trim()
-  if (!url) return
-  window.location.assign(url)
-}
-
-function goRedeem() {
-  router.push('/redeem')
 }
 
 function syncTopupChannelWithSettings() {
@@ -699,17 +543,12 @@ function syncTopupChannelWithSettings() {
     payType.value = 'wechat'
     return
   }
-  if (selectedTopupChannel.value === 'card_shop' && canUseCardShopForSelected.value) {
-    return
-  }
   if (canUseAlipay.value && amountSupportsScan) {
     selectedTopupChannel.value = 'alipay'
     payType.value = 'alipay'
   } else if (canUseWechat.value && amountSupportsScan) {
     selectedTopupChannel.value = 'wechat'
     payType.value = 'wechat'
-  } else if (canUseCardShopForSelected.value) {
-    selectedTopupChannel.value = 'card_shop'
   }
 }
 
@@ -874,7 +713,7 @@ void Promise.all([
   appStore.fetchPublicSettings(),
   loadMonthlyCreditCardPlans(),
   refreshNewcomerOffer(),
-  // 月卡原生扫码门控只读这份目录；失败时保持链动小铺外链回退，不影响页面。
+  // 月卡原生扫码门控只读这份目录；失败时保持关闭，不回退外部收银台。
   loadNativeCheckoutOffers().catch(() => {})
 ]).then(() => {
   syncTopupChannelWithSettings()

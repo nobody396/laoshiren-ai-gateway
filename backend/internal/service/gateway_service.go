@@ -4025,7 +4025,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 		return nil, fmt.Errorf("unsupported platform: %s", account.Platform)
 	}
 
-	if account != nil && account.IsAnthropicAPIKeyPassthroughEnabled() {
+	if account != nil && (account.IsAnthropicAPIKeyPassthroughEnabled() || anthropicPomoGLM53UsageFallback(account, parsed.Model)) {
 		passthroughBody := parsed.Body
 		passthroughModel := parsed.Model
 		originalPassthroughModel := passthroughModel

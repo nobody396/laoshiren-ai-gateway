@@ -236,6 +236,7 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForceNonStreamUsageSynthesize
 	account := newAnthropicAPIKeyAccountForTest()
 	account.Credentials["base_url"] = "https://jp.pomoai.xyz"
 	account.Credentials["model_mapping"] = map[string]any{"glm-5.3": "glm-5.3"}
+	account.Extra = nil
 
 	result, err := svc.Forward(context.Background(), c, account, parsed)
 	require.NoError(t, err)

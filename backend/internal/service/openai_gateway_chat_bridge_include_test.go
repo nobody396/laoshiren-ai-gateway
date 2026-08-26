@@ -48,6 +48,7 @@ func TestChatBridgeKeepsIncludeForOtherFamilies(t *testing.T) {
 		"kimi-k2.7-code",
 		"deepseek-v4-flash",
 		"glm-5.2",
+		"glm-5.3",
 	} {
 		req := chatBridgeResponsesRequestForModel(t, model)
 		require.Equal(t, []string{"reasoning.encrypted_content"}, req.Include, model)

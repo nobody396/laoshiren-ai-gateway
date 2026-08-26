@@ -18,9 +18,9 @@
 
         <!-- Step 1: Select amount & pay type -->
         <div v-if="step === 1" class="px-6 py-5 space-y-5">
-          <div v-if="showChannelSelector" class="space-y-2">
+          <div v-if="qrTopupAvailable" class="space-y-2">
             <p class="text-sm font-medium text-gray-700 dark:text-dark-300">{{ t('topup.chooseChannel') }}</p>
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 data-testid="recharge-method-alipay"
@@ -53,68 +53,12 @@
                   {{ canUseWechat ? t('topup.availableNow') : t('topup.comingSoon') }}
                 </span>
               </button>
-              <button
-                type="button"
-                data-testid="recharge-method-card_shop"
-                @click="selectTopupChannel('card_shop')"
-                :disabled="!cardShopMode"
-                :class="[
-                  'rounded-lg border-2 px-2 py-2.5 text-center transition-all disabled:cursor-not-allowed disabled:opacity-60',
-                  showingCardShop
-                    ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
-                    : 'border-gray-200 text-gray-700 hover:border-primary-300 dark:border-dark-600 dark:text-dark-200'
-                ]"
-              >
-                <span class="block text-sm font-semibold">{{ t('topup.cardShopChannelTitle') }}</span>
-                <span class="mt-1 block text-xs text-gray-500 dark:text-dark-400">{{ cardShopMode ? t('topup.availableNow') : t('topup.comingSoon') }}</span>
-              </button>
             </div>
           </div>
 
           <!-- 新人 ¥5→¥10 优惠由易支付通道提供时，在站内直接扫码购买 -->
           <NativeCheckoutTrialOffer v-if="newcomerOfferMode === 'native'" />
 
-          <template v-if="showingCardShop">
-            <div>
-              <p class="text-sm font-medium text-gray-700 dark:text-dark-300 mb-3">{{ t('topup.cardShopSelectAmount') }}</p>
-              <div class="grid grid-cols-1 gap-2">
-                <button
-                  v-for="product in activeCardShopProducts"
-                  :key="product.id"
-                  @click="openCardShopProduct(product)"
-                  :disabled="openingCardShop"
-                  class="rounded-lg border-2 border-gray-200 px-4 py-3 text-left transition-all hover:border-primary-300 hover:bg-primary-50 disabled:cursor-wait disabled:opacity-60 dark:border-dark-600 dark:hover:border-primary-500/40"
-                >
-                  <span class="block text-sm font-semibold text-gray-900 dark:text-white">
-                    {{ product.label || `¥${product.amount_cny}` }}
-                  </span>
-                  <span class="mt-1 block text-xs text-gray-500 dark:text-dark-400">
-                    <template v-if="isNewcomerBalanceTopup(product.amount_cny)">
-                      {{ t('topup.newcomerCardSummary', { paid: product.amount_cny, credited: getCreditedBalanceTopupAmount(product.amount_cny) }) }}
-                    </template>
-                    <template v-else>{{ t('topup.cardShopAmount', { amount: product.amount_cny }) }}</template>
-                  </span>
-                  <span v-if="isNewcomerBalanceTopup(product.amount_cny)" class="mt-1 block text-xs font-medium text-primary-700 dark:text-primary-300">
-                    {{ t('topup.newcomerCardLimit') }}
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            <p class="rounded-lg border border-primary-200 bg-primary-50 px-3 py-2.5 text-sm leading-6 text-primary-700 dark:border-primary-900/50 dark:bg-primary-900/20 dark:text-primary-300">
-              {{ t('topup.cardShopHint') }}
-            </p>
-
-            <button
-              type="button"
-              class="w-full btn btn-secondary py-3 text-base font-semibold"
-              @click="goRedeem"
-            >
-              {{ t('topup.cardShopGoRedeem') }}
-            </button>
-          </template>
-
-          <template v-else>
           <!-- Amount presets -->
           <div>
             <p class="text-sm font-medium text-gray-700 dark:text-dark-300 mb-3">{{ t('topup.selectAmount') }}</p>
@@ -205,7 +149,6 @@
             </span>
             <span v-else>{{ t('topup.confirmButton') }} — ¥{{ effectiveAmountYuan }}</span>
           </button>
-          </template>
         </div>
 
         <!-- Step 2: QR Code -->
@@ -266,26 +209,21 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import { createTopupOrder, queryTopupOrderStatus, type TopupPayType } from '@/api/topup'
 import NativeCheckoutTrialOffer from '@/components/user/NativeCheckoutTrialOffer.vue'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { useAppStore, useAuthStore } from '@/stores'
-import type { CardShopProduct } from '@/types'
 import {
   BALANCE_TOPUP_PRESETS,
   PROMOTIONAL_BALANCE_TOPUPS,
-  getCreditedBalanceTopupAmount,
-  isNewcomerBalanceTopup,
-  isSupportedBalanceTopupAmount
+  getCreditedBalanceTopupAmount
 } from '@/constants/balanceTopups'
-import { shouldShowManualNewcomerProduct, useManualNewcomerOffer } from '@/composables/useManualNewcomerOffer'
+import { useManualNewcomerOffer } from '@/composables/useManualNewcomerOffer'
 import { isDirectQrImageUrl, renderQrCodeDataUrl } from '@/utils/qrImage'
 
 const { t } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
-const router = useRouter()
 
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
@@ -296,17 +234,15 @@ const emit = defineEmits<{
 const presets = BALANCE_TOPUP_PRESETS
 const qrPromotionalTopups = PROMOTIONAL_BALANCE_TOPUPS.filter((product) => product.paidAmountCny >= 20)
 const QR_TTL_SECONDS = 300 // 5 分钟
-type TopupChannel = 'card_shop' | TopupPayType
 
 // State
 const step = ref<1 | 2>(1)
-const selectedTopupChannel = ref<TopupChannel>('alipay')
+const selectedTopupChannel = ref<TopupPayType>('alipay')
 const payType = ref<TopupPayType>('alipay')
 const selectedPreset = ref<number | null>(20)
 const useCustom = ref(false)
 const customAmountInput = ref('')
 const submitting = ref(false)
-const openingCardShop = ref(false)
 const qrCodeURL = ref('')
 const qrCodeRawPayload = ref('')
 const qrCodeClientRendered = ref(false)
@@ -320,10 +256,8 @@ let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let pollInFlight = false
 const {
-  state: newcomerOfferState,
   mode: newcomerOfferMode,
-  refresh: refreshNewcomerOffer,
-  requestPurchaseURL: requestNewcomerPurchaseURL,
+  refresh: refreshNewcomerOffer
 } = useManualNewcomerOffer()
 
 // 根据公开设置决定用户侧可见支付渠道；关闭的渠道直接不展示。
@@ -338,27 +272,9 @@ const canUseAlipay = computed(() => topupAlipayEnabled.value)
 const canUseWechat = computed(() => topupWechatEnabled.value)
 const hasAvailablePayType = computed(() => canUseAlipay.value || canUseWechat.value)
 const qrTopupAvailable = computed(() => hasAvailablePayType.value)
-const activeCardShopProducts = computed<CardShopProduct[]>(() =>
-  [...(appStore.cachedPublicSettings?.card_shop_products ?? [])]
-    .filter(
-      (product) =>
-        product.enabled &&
-        product.url &&
-        isSupportedBalanceTopupAmount(product.amount_cny) &&
-        shouldShowManualNewcomerProduct(product.amount_cny, newcomerOfferState.value, newcomerOfferMode.value)
-    )
-    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.amount_cny - b.amount_cny)
+const canUseSelectedQrMethod = computed(
+  () => selectedTopupChannel.value === 'alipay' ? canUseAlipay.value : canUseWechat.value
 )
-const cardShopMode = computed(
-  () => (appStore.cachedPublicSettings?.card_shop_enabled ?? false) && activeCardShopProducts.value.length > 0
-)
-const showChannelSelector = computed(() => cardShopMode.value || qrTopupAvailable.value)
-const showingCardShop = computed(() => selectedTopupChannel.value === 'card_shop' && cardShopMode.value)
-const showingQrTopup = computed(() => selectedTopupChannel.value === 'alipay' || selectedTopupChannel.value === 'wechat')
-const canUseSelectedQrMethod = computed(() => {
-  if (!showingQrTopup.value) return false
-  return selectedTopupChannel.value === 'alipay' ? canUseAlipay.value : canUseWechat.value
-})
 
 // 当前有效的金额（元）
 const effectiveAmountYuan = computed<number>(() => {
@@ -412,45 +328,11 @@ function selectPreset(v: number) {
   customAmountInput.value = ''
 }
 
-function selectTopupChannel(channel: TopupChannel) {
-  if (channel === 'card_shop' && !cardShopMode.value) return
+function selectTopupChannel(channel: TopupPayType) {
   if (channel === 'alipay' && !canUseAlipay.value) return
   if (channel === 'wechat' && !canUseWechat.value) return
   selectedTopupChannel.value = channel
-  if (channel === 'alipay' || channel === 'wechat') {
-    payType.value = channel
-  }
-}
-
-async function openCardShopProduct(product: CardShopProduct) {
-  if (!product.url || openingCardShop.value) return
-  if (!isNewcomerBalanceTopup(product.amount_cny)) {
-    window.location.assign(product.url)
-    return
-  }
-  openingCardShop.value = true
-  try {
-    const purchaseURL = await requestNewcomerPurchaseURL()
-    if (!purchaseURL) {
-      syncTopupChannelWithSettings()
-      if (newcomerOfferState.value === 'claimed') {
-        appStore.showInfo(t('topup.newcomerCardClaimed'))
-      } else {
-        appStore.showError(t('topup.newcomerCardStatusUnavailable'))
-      }
-      return
-    }
-    window.location.assign(purchaseURL)
-  } catch (error) {
-    appStore.showError(extractApiErrorMessage(error, t('topup.newcomerCardStatusUnavailable')))
-  } finally {
-    openingCardShop.value = false
-  }
-}
-
-async function goRedeem() {
-  emit('update:modelValue', false)
-  await router.push('/redeem')
+  payType.value = channel
 }
 
 function syncTopupChannelWithSettings() {
@@ -462,17 +344,12 @@ function syncTopupChannelWithSettings() {
     payType.value = 'wechat'
     return
   }
-  if (selectedTopupChannel.value === 'card_shop' && cardShopMode.value) {
-    return
-  }
   if (canUseAlipay.value) {
     selectedTopupChannel.value = 'alipay'
     payType.value = 'alipay'
   } else if (canUseWechat.value) {
     selectedTopupChannel.value = 'wechat'
     payType.value = 'wechat'
-  } else if (cardShopMode.value) {
-    selectedTopupChannel.value = 'card_shop'
   }
 }
 

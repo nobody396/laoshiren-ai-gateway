@@ -58,20 +58,15 @@
               {{ plan.legendaryCopy }}
             </p>
 
-            <a
-              v-if="plan.cardShopUrl && (showAction || variant === 'home')"
+            <RouterLink
+              v-if="showAction || variant === 'home'"
               class="monthly-credit-card__action"
-              :href="plan.cardShopUrl"
-              target="_blank"
-              rel="noopener noreferrer"
+              to="/get-subscription"
               :aria-label="`${plan.name} ${variant === 'home' ? '查看并购买' : '立即购买'}`"
             >
               <span>{{ variant === 'home' ? '查看并购买' : '立即购买' }}</span>
               <span class="monthly-credit-card__action-arrow" aria-hidden="true">→</span>
-            </a>
-            <span v-else-if="showAction" class="monthly-credit-card__action monthly-credit-card__action--disabled">
-              等待开售
-            </span>
+            </RouterLink>
           </article>
         </div>
       </div>

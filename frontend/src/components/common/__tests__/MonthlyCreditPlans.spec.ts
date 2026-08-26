@@ -61,7 +61,7 @@ describe('MonthlyCreditPlans AI credits copy', () => {
       '查看并购买→',
       '查看并购买→'
     ])
-    expect(purchaseLinks.every((link) => link.attributes('target') === '_blank')).toBe(true)
-    expect(purchaseLinks.every((link) => link.attributes('rel') === 'noopener noreferrer')).toBe(true)
+    expect(purchaseLinks.every((link) => link.attributes('href') === '/get-subscription')).toBe(true)
+    expect(purchaseLinks.every((link) => link.attributes('target') === undefined)).toBe(true)
   })
 })

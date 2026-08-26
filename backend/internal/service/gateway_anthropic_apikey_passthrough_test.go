@@ -213,6 +213,70 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardStreamPreservesBodyAnd
 	require.Equal(t, "claude-3-haiku-20240307", gjson.GetBytes(bodyBytes, "model").String(), "缓存的上游请求体应包含映射后的模型")
 }
 
+func TestGatewayService_AnthropicAPIKeyPassthrough_ForceNonStreamUsageSynthesizesClientStream(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+
+	body := []byte(`{"model":"glm-5.3","stream":true,"messages":[{"role":"user","content":"Reply with exactly OK."}],"max_tokens":256}`)
+	parsed := &ParsedRequest{Body: body, Model: "glm-5.3", Stream: true}
+	upstreamJSON := `{"id":"msg_glm53","type":"message","role":"assistant","model":"glm-5.3","content":[{"type":"thinking","thinking":"brief reasoning","signature":"sig"},{"type":"text","text":"OK"}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":17,"output_tokens":79,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}`
+	upstream := &anthropicHTTPUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}, "x-request-id": []string{"rid-glm53"}},
+		Body:       io.NopCloser(strings.NewReader(upstreamJSON)),
+	}}
+	svc := &GatewayService{
+		cfg:                  &config.Config{Gateway: config.GatewayConfig{MaxLineSize: defaultMaxLineSize}},
+		responseHeaderFilter: compileResponseHeaderFilter(&config.Config{}),
+		httpUpstream:         upstream,
+		rateLimitService:     &RateLimitService{},
+	}
+	account := newAnthropicAPIKeyAccountForTest()
+	account.Credentials["model_mapping"] = map[string]any{"glm-5.3": "glm-5.3"}
+	account.Extra[anthropicForceNonStreamUsageExtraKey] = true
+
+	result, err := svc.Forward(context.Background(), c, account, parsed)
+	require.NoError(t, err)
+	require.True(t, result.Stream)
+	require.Equal(t, 17, result.Usage.InputTokens)
+	require.Equal(t, 79, result.Usage.OutputTokens)
+	require.False(t, gjson.GetBytes(upstream.lastBody, "stream").Bool())
+	require.Equal(t, "text/event-stream", rec.Header().Get("Content-Type"))
+	require.Contains(t, rec.Body.String(), `event: message_start`)
+	require.Contains(t, rec.Body.String(), `"type":"thinking_delta"`)
+	require.Contains(t, rec.Body.String(), `"thinking":"brief reasoning"`)
+	require.Contains(t, rec.Body.String(), `"type":"signature_delta"`)
+	require.Contains(t, rec.Body.String(), `"type":"text_delta"`)
+	require.Contains(t, rec.Body.String(), `"text":"OK"`)
+	require.Contains(t, rec.Body.String(), `"output_tokens":79`)
+	require.Contains(t, rec.Body.String(), `event: message_stop`)
+}
+
+func TestGatewayService_AnthropicAPIKeyPassthrough_ForceNonStreamUsageRejectsMissingOutputUsage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+	body := []byte(`{"model":"glm-5.3","stream":true,"messages":[{"role":"user","content":"hi"}],"max_tokens":256}`)
+	parsed := &ParsedRequest{Body: body, Model: "glm-5.3", Stream: true}
+	upstream := &anthropicHTTPUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(`{"id":"msg_bad","type":"message","role":"assistant","model":"glm-5.3","content":[{"type":"text","text":"OK"}],"stop_reason":"end_turn","usage":{"input_tokens":8,"output_tokens":0}}`)),
+	}}
+	svc := &GatewayService{cfg: &config.Config{}, httpUpstream: upstream, rateLimitService: &RateLimitService{}}
+	account := newAnthropicAPIKeyAccountForTest()
+	account.Credentials["model_mapping"] = map[string]any{"glm-5.3": "glm-5.3"}
+	account.Extra[anthropicForceNonStreamUsageExtraKey] = true
+
+	result, err := svc.Forward(context.Background(), c, account, parsed)
+	require.Error(t, err)
+	require.Nil(t, result)
+	require.Contains(t, err.Error(), "forced non-stream usage incomplete")
+}
+
 func headerValuesCaseInsensitive(headers http.Header, key string) []string {
 	var values []string
 	for existing, existingValues := range headers {

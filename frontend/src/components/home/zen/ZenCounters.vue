@@ -2,11 +2,11 @@
   <div class="zen-counters">
     <article class="zen-counters__item zen-reveal">
       <label class="zen-counters__label">{{ ui.tokensLabel }}</label>
-      <ZenFlipNumber :value="tokensMillions" :pad="5" />
+      <ZenFlipNumber :value="tokensMillions" :pad="5" :intro="intro" />
     </article>
     <article class="zen-counters__item zen-reveal" style="--zen-reveal-i: 1">
       <label class="zen-counters__label">{{ ui.compensationLabel }}</label>
-      <ZenFlipNumber :value="compensationCny" prefix="¥" :pad="4" />
+      <ZenFlipNumber :value="compensationCny" prefix="¥" :pad="4" :intro="intro" />
     </article>
   </div>
 </template>
@@ -20,12 +20,16 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ZenFlipNumber from './ZenFlipNumber.vue'
 
-defineProps<{
+withDefaults(defineProps<{
   /** token 处理量(百万) */
   tokensMillions: number
   /** 累计赔付金额(元) */
   compensationCny: number
-}>()
+  /** 首次入场:从 0 减速滚动到真值 */
+  intro?: boolean
+}>(), {
+  intro: false
+})
 
 const { locale } = useI18n()
 const isEnglish = computed(() => locale.value === 'en')

@@ -57,6 +57,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/icons/Icon.vue'
+import { scrollToHash } from './scrollToHash'
 
 const props = defineProps<{
   /** 是否已认证 */
@@ -100,7 +101,7 @@ function onPush(path: string, event: MouseEvent): void {
 
 function onAnchor(hash: string, event: MouseEvent): void {
   event.preventDefault()
-  void $router.push({ path: '/', hash })
+  scrollToHash(hash)
 }
 </script>
 

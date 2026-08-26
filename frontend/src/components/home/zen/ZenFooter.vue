@@ -40,6 +40,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { scrollToHash } from './scrollToHash'
 
 const $router = useRouter()
 const { locale } = useI18n()
@@ -64,7 +65,7 @@ function onLinkClick(link: FooterLink, event: MouseEvent): void {
   if (link.external) return
   event.preventDefault()
   if (link.href.startsWith('#')) {
-    void $router.push({ path: '/', hash: link.href })
+    scrollToHash(link.href)
   } else {
     void $router.push(link.href)
   }

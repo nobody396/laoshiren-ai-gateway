@@ -7,7 +7,6 @@
     <ZenHeader
       :is-authenticated="isAuthenticated"
       :dashboard-path="dashboardPath"
-      :nav-items="navItems"
     />
 
     <main>
@@ -21,6 +20,7 @@
       <ZenCounters
         :tokens-millions="tokensMillions"
         :compensation-cny="compensationCny"
+        :intro="countersIntro"
       />
 
       <!-- 模型墙(国际 + 国产双 marquee) -->
@@ -77,37 +77,20 @@ const dashboardPath = computed(() => (isAdmin.value ? '/admin/dashboard' : '/das
 const showModelReports = computed(() => appStore.cachedPublicSettings?.landing_reports_enabled !== false)
 const isEnglish = computed(() => locale.value === 'en')
 
-// ── 导航项(# 开头为页内锚点,其余为路由路径) ──
-const navItems = computed(() => (isEnglish.value
-  ? [
-    { label: 'Models', href: '#models' },
-    { label: 'Compensation', href: '#compensation' },
-    { label: 'Access', href: '#access' },
-    { label: 'Pricing', href: '/models' },
-    { label: 'Status', href: '/status' },
-    { label: 'Changelog', href: '/changelog' },
-    { label: 'Docs', href: '/docs' }
-  ]
-  : [
-    { label: '模型', href: '#models' },
-    { label: '自动赔付', href: '#compensation' },
-    { label: '接入', href: '#access' },
-    { label: '定价', href: '/models' },
-    { label: '服务状态', href: '/status' },
-    { label: '更新日志', href: '/changelog' },
-    { label: '文档', href: '/docs' }
-  ]))
-
 // ── 公开统计计数器 ──
 // 首次成功拉取前的兜底展示值(与线上同口径,服务端已含 ×10 显示倍率)
 const FALLBACK_TOKENS_MILLIONS = 221911.14
 const FALLBACK_COMPENSATION_CNY = 17838.0
 const STATS_POLL_INTERVAL_MS = 12000
+// 首次加载/刷新:计数器从 0 减速滚动到真值(easeOutExpo,越接近越慢),播完后恢复正常轮询节奏
+const COUNTERS_INTRO_MS = 3600
 
 const tokensMillions = ref(0)
 const compensationCny = ref(0)
+const countersIntro = ref(true)
 let statsEntryTimer: number | null = null
 let statsPollTimer: number | null = null
+let countersIntroTimer: number | null = null
 
 async function pullStats(): Promise<void> {
   try {
@@ -173,9 +156,9 @@ const footerSections = computed(() => {
     {
       title: labels.product,
       links: [
-        { label: labels.intro, href: '#about', external: false },
+        { label: labels.intro, href: '/', external: false },
         ...(showModelReports.value
-          ? [{ label: labels.reports, href: '#model-reports', external: false }]
+          ? [{ label: labels.reports, href: '/status', external: false }]
           : []),
         { label: labels.pricing, href: '/models', external: false },
         { label: labels.enterprise, href: '/enterprise', external: false },
@@ -217,6 +200,15 @@ const pageRef = ref<HTMLElement | null>(null)
 const { revealReady } = useReveal(pageRef)
 
 onMounted(() => {
+  // 刷新永远回到顶部(浏览器默认会记住滚动位置或跳到地址栏里的锚点;
+  // 地址栏有合法锚点(别人分享的深链)时仍然尊重它)
+  if ('scrollRestoration' in window.history) {
+    window.history.scrollRestoration = 'manual'
+  }
+  if (!window.location.hash) {
+    window.scrollTo(0, 0)
+  }
+
   // 认证检查
   authStore.checkAuth()
   if (!appStore.publicSettingsLoaded) {
@@ -233,6 +225,11 @@ onMounted(() => {
   statsPollTimer = window.setInterval(() => {
     void pullStats()
   }, STATS_POLL_INTERVAL_MS)
+
+  // 入场减速滚动播完,之后的小幅轮询增量恢复正常 1s 滚动
+  countersIntroTimer = window.setTimeout(() => {
+    countersIntro.value = false
+  }, COUNTERS_INTRO_MS)
 })
 
 onUnmounted(() => {
@@ -241,6 +238,12 @@ onUnmounted(() => {
   }
   if (statsPollTimer != null) {
     window.clearInterval(statsPollTimer)
+  }
+  if (countersIntroTimer != null) {
+    window.clearTimeout(countersIntroTimer)
+  }
+  if ('scrollRestoration' in window.history) {
+    window.history.scrollRestoration = 'auto'
   }
 })
 </script>

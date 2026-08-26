@@ -16,10 +16,9 @@
  */
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import Icon from '@/components/icons/Icon.vue'
+import { scrollToHash } from './scrollToHash'
 
-const $router = useRouter()
 const { locale } = useI18n()
 
 const visible = ref(true)
@@ -38,7 +37,7 @@ const ui = computed(() => (isEnglish.value
 
 function onDetailsClick(event: MouseEvent): void {
   event.preventDefault()
-  void $router.push({ path: '/', hash: '#compensation' })
+  scrollToHash('#compensation')
 }
 </script>
 

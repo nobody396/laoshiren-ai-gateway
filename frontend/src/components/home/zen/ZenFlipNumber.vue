@@ -1,11 +1,11 @@
 <template>
-  <div class="zen-flip-number" :aria-label="`${prefix}${text}`" role="text">
+  <div class="zen-flip-number" :class="{ 'zen-flip-number--intro': intro }" :aria-label="`${prefix}${text}`" role="text">
     <b v-if="prefix" class="zen-flip-number__prefix">{{ prefix }}</b>
     <template v-for="(char, i) in chars" :key="`${i}-${char}`">
       <span v-if="isFlipDigit(char)" class="zen-flip-number__digit">
         <span
           class="zen-flip-number__col"
-          :style="{ transform: `translateY(-${Number(char)}em)`, transitionDelay: `${i * 45}ms` }"
+          :style="{ transform: `translateY(-${Number(char)}em)`, transitionDelay: `${i * (intro ? 90 : 45)}ms` }"
         >
           <i v-for="d in 10" :key="d">{{ d - 1 }}</i>
         </span>
@@ -19,8 +19,9 @@
 <script setup lang="ts">
 /**
  * 翻牌/里程表数字:每个数字位是一列 0-9 的滚轮,
- * 通过 translateY 滚动到目标值;字符级 45ms 错峰。
+ * 通过 translateY 滚动到目标值;字符级错峰。
  * 数值变化(轮询刷新)时同样平滑滚动。
+ * intro(首次加载入场):从 0 滚到真值,缓动先快后慢,越接近目标越慢。
  */
 import { computed } from 'vue'
 import { formatFlipNumber, isFlipDigit } from './flipNumber'
@@ -33,10 +34,13 @@ const props = withDefaults(defineProps<{
   decimals?: number
   /** 整数部分最小位数(前导补零) */
   pad?: number
+  /** 首次入场:长时间减速滚动(0 → 真值) */
+  intro?: boolean
 }>(), {
   prefix: '',
   decimals: 2,
-  pad: 5
+  pad: 5,
+  intro: false
 })
 
 const text = computed(() => formatFlipNumber(props.value, { pad: props.pad, decimals: props.decimals }))
@@ -81,6 +85,12 @@ const chars = computed(() => Array.from(text.value))
   font-size: var(--cell-h);
   line-height: 1;
   transition: transform 1s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* 首次入场:easeOutExpo 强减速,滚轮先快后慢,越接近真值越慢 */
+.zen-flip-number--intro .zen-flip-number__col {
+  transition-duration: 2.8s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .zen-flip-number__col i {

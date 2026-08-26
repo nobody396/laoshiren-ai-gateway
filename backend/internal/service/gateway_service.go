@@ -4645,6 +4645,7 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 	reqStream bool,
 	startTime time.Time,
 ) (*ForwardResult, error) {
+	clientStream := reqStream
 	token, tokenType, err := s.GetAccessToken(ctx, account)
 	if err != nil {
 		return nil, err
@@ -4662,6 +4663,15 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 		account.ID, account.Name, reqModel, reqStream)
 
 	body, cacheDecision := s.applyAnthropicCachePolicy(ctx, c, account, reqModel, body)
+	forceNonStreamUsage := clientStream && anthropicForceNonStreamUsage(account)
+	if forceNonStreamUsage {
+		body, err = sjson.SetBytes(body, "stream", false)
+		if err != nil {
+			return nil, fmt.Errorf("force Anthropic non-stream usage request: %w", err)
+		}
+		reqStream = false
+		logger.LegacyPrintf("service.gateway", "[Anthropic usage fallback] forcing non-stream upstream for exact usage: account=%d model=%s", account.ID, reqModel)
+	}
 
 	if c != nil {
 		c.Set("anthropic_passthrough", true)
@@ -4857,7 +4867,15 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 	var usage *ClaudeUsage
 	var firstTokenMs *int
 	var clientDisconnect bool
-	if reqStream {
+	if forceNonStreamUsage {
+		streamResult, err := s.handleNonStreamingResponseAsAnthropicStream(ctx, resp, c, account, startTime)
+		if err != nil {
+			return nil, err
+		}
+		usage = streamResult.usage
+		firstTokenMs = streamResult.firstTokenMs
+		clientDisconnect = streamResult.clientDisconnect
+	} else if reqStream {
 		streamResult, err := s.handleStreamingResponseAnthropicAPIKeyPassthrough(ctx, resp, c, account, startTime, reqModel)
 		if err != nil {
 			if partial := partialStreamUsageResult(resp, streamResult, originalModel, reqModel, startTime, err); partial != nil {
@@ -4886,12 +4904,29 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 		Usage:               *usage,
 		Model:               originalModel,
 		UpstreamModel:       reqModel,
-		Stream:              reqStream,
+		Stream:              clientStream,
 		Duration:            time.Since(startTime),
 		FirstTokenMs:        firstTokenMs,
 		ClientDisconnect:    clientDisconnect,
 		CachePolicyDecision: cacheDecision,
 	}, nil
+}
+
+const anthropicForceNonStreamUsageExtraKey = "anthropic_force_nonstream_for_usage"
+
+func anthropicForceNonStreamUsage(account *Account) bool {
+	if account == nil || account.Extra == nil {
+		return false
+	}
+	switch value := account.Extra[anthropicForceNonStreamUsageExtraKey].(type) {
+	case bool:
+		return value
+	case string:
+		parsed, err := strconv.ParseBool(strings.TrimSpace(value))
+		return err == nil && parsed
+	default:
+		return false
+	}
 }
 
 func (s *GatewayService) buildUpstreamRequestAnthropicAPIKeyPassthrough(
@@ -5263,6 +5298,154 @@ func (s *GatewayService) handleNonStreamingResponseAnthropicAPIKeyPassthrough(
 	}
 	c.Data(resp.StatusCode, contentType, body)
 	return usage, nil
+}
+
+// handleNonStreamingResponseAsAnthropicStream is an account-scoped billing
+// fallback for upstreams that omit terminal output_tokens from their SSE while
+// returning complete usage in the ordinary JSON response. The client keeps the
+// Anthropic streaming contract; the upstream request is buffered until the
+// exact usage object is available, then emitted as a synthetic SSE sequence.
+func (s *GatewayService) handleNonStreamingResponseAsAnthropicStream(
+	ctx context.Context,
+	resp *http.Response,
+	c *gin.Context,
+	account *Account,
+	startTime time.Time,
+) (*streamingResult, error) {
+	if s.rateLimitService != nil {
+		s.rateLimitService.UpdateSessionWindow(ctx, account, resp.Header)
+	}
+
+	body, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, anthropicTooLargeError)
+	if err != nil {
+		return nil, err
+	}
+	usage := parseClaudeUsageFromResponseBody(body)
+	if usage.InputTokens <= 0 || usage.OutputTokens <= 0 {
+		return nil, fmt.Errorf("forced non-stream usage incomplete: input_tokens=%d output_tokens=%d", usage.InputTokens, usage.OutputTokens)
+	}
+
+	var message struct {
+		ID           string           `json:"id"`
+		Type         string           `json:"type"`
+		Role         string           `json:"role"`
+		Model        string           `json:"model"`
+		Content      []map[string]any `json:"content"`
+		StopReason   any              `json:"stop_reason"`
+		StopSequence any              `json:"stop_sequence"`
+	}
+	if err := json.Unmarshal(body, &message); err != nil {
+		return nil, fmt.Errorf("decode forced non-stream Anthropic response: %w", err)
+	}
+	if message.ID == "" || len(message.Content) == 0 {
+		return nil, errors.New("forced non-stream Anthropic response is missing id or content")
+	}
+
+	writeAnthropicResponseHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+	flusher, ok := c.Writer.(http.Flusher)
+	if !ok {
+		return nil, errors.New("streaming not supported")
+	}
+
+	writeSSE(c.Writer, "message_start", map[string]any{
+		"type": "message_start",
+		"message": map[string]any{
+			"id":            message.ID,
+			"type":          firstNonEmptyAnthropic(message.Type, "message"),
+			"role":          firstNonEmptyAnthropic(message.Role, "assistant"),
+			"model":         message.Model,
+			"content":       []any{},
+			"stop_reason":   nil,
+			"stop_sequence": nil,
+			"usage": map[string]any{
+				"input_tokens":                usage.InputTokens,
+				"output_tokens":               0,
+				"cache_creation_input_tokens": usage.CacheCreationInputTokens,
+				"cache_read_input_tokens":     usage.CacheReadInputTokens,
+			},
+		},
+	})
+
+	var firstTokenMs *int
+	for index, block := range message.Content {
+		blockType, _ := block["type"].(string)
+		if firstTokenMs == nil {
+			ms := int(time.Since(startTime).Milliseconds())
+			firstTokenMs = &ms
+		}
+		switch blockType {
+		case "thinking":
+			writeSSE(c.Writer, "content_block_start", map[string]any{
+				"type": "content_block_start", "index": index,
+				"content_block": map[string]any{"type": "thinking", "thinking": ""},
+			})
+			if thinking, _ := block["thinking"].(string); thinking != "" {
+				writeSSE(c.Writer, "content_block_delta", map[string]any{
+					"type": "content_block_delta", "index": index,
+					"delta": map[string]any{"type": "thinking_delta", "thinking": thinking},
+				})
+			}
+			if signature, _ := block["signature"].(string); signature != "" {
+				writeSSE(c.Writer, "content_block_delta", map[string]any{
+					"type": "content_block_delta", "index": index,
+					"delta": map[string]any{"type": "signature_delta", "signature": signature},
+				})
+			}
+		case "text":
+			writeSSE(c.Writer, "content_block_start", map[string]any{
+				"type": "content_block_start", "index": index,
+				"content_block": map[string]any{"type": "text", "text": ""},
+			})
+			if text, _ := block["text"].(string); text != "" {
+				writeSSE(c.Writer, "content_block_delta", map[string]any{
+					"type": "content_block_delta", "index": index,
+					"delta": map[string]any{"type": "text_delta", "text": text},
+				})
+			}
+		case "tool_use":
+			input := block["input"]
+			writeSSE(c.Writer, "content_block_start", map[string]any{
+				"type": "content_block_start", "index": index,
+				"content_block": map[string]any{
+					"type": "tool_use", "id": block["id"], "name": block["name"], "input": map[string]any{},
+				},
+			})
+			encoded, marshalErr := json.Marshal(input)
+			if marshalErr != nil {
+				return nil, fmt.Errorf("encode forced non-stream tool input: %w", marshalErr)
+			}
+			writeSSE(c.Writer, "content_block_delta", map[string]any{
+				"type": "content_block_delta", "index": index,
+				"delta": map[string]any{"type": "input_json_delta", "partial_json": string(encoded)},
+			})
+		default:
+			return nil, fmt.Errorf("forced non-stream Anthropic response has unsupported content block: %s", blockType)
+		}
+		writeSSE(c.Writer, "content_block_stop", map[string]any{
+			"type": "content_block_stop", "index": index,
+		})
+	}
+
+	writeSSE(c.Writer, "message_delta", map[string]any{
+		"type":  "message_delta",
+		"delta": map[string]any{"stop_reason": message.StopReason, "stop_sequence": message.StopSequence},
+		"usage": map[string]any{"output_tokens": usage.OutputTokens},
+	})
+	writeSSE(c.Writer, "message_stop", map[string]any{"type": "message_stop"})
+	flusher.Flush()
+
+	return &streamingResult{usage: usage, firstTokenMs: firstTokenMs}, nil
+}
+
+func firstNonEmptyAnthropic(value, fallback string) string {
+	if strings.TrimSpace(value) != "" {
+		return value
+	}
+	return fallback
 }
 
 func classifyAnthropicResponseInputAsCacheRead(body []byte, usage *ClaudeUsage) ([]byte, error) {

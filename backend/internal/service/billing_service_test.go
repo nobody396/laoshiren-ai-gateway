@@ -134,6 +134,17 @@ func TestGetModelPricing_CaseInsensitive(t *testing.T) {
 	require.Equal(t, p1.InputPricePerToken, p2.InputPricePerToken)
 }
 
+func TestGetModelPricing_GLM53UsesCatalogPricing(t *testing.T) {
+	svc := newTestBillingService()
+
+	pricing, err := svc.GetModelPricing("GLM-5.3")
+	require.NoError(t, err)
+	require.InDelta(t, 8e-6, pricing.InputPricePerToken, 1e-12)
+	require.InDelta(t, 28e-6, pricing.OutputPricePerToken, 1e-12)
+	require.InDelta(t, 0.0, pricing.CacheReadPricePerToken, 1e-12)
+	require.Zero(t, pricing.LongContextInputThreshold)
+}
+
 func TestCalculateCost_Grok46UsesPomoRateCardAndLongContextTier(t *testing.T) {
 	svc := newTestBillingService()
 

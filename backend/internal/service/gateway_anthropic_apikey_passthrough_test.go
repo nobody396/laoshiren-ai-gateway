@@ -234,8 +234,8 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForceNonStreamUsageSynthesize
 		rateLimitService:     &RateLimitService{},
 	}
 	account := newAnthropicAPIKeyAccountForTest()
+	account.Credentials["base_url"] = "https://jp.pomoai.xyz"
 	account.Credentials["model_mapping"] = map[string]any{"glm-5.3": "glm-5.3"}
-	account.Extra[anthropicForceNonStreamUsageExtraKey] = true
 
 	result, err := svc.Forward(context.Background(), c, account, parsed)
 	require.NoError(t, err)
@@ -252,6 +252,28 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForceNonStreamUsageSynthesize
 	require.Contains(t, rec.Body.String(), `"text":"OK"`)
 	require.Contains(t, rec.Body.String(), `"output_tokens":79`)
 	require.Contains(t, rec.Body.String(), `event: message_stop`)
+}
+
+func TestAnthropicPomoGLM53UsageFallbackIsNarrow(t *testing.T) {
+	tests := []struct {
+		name    string
+		baseURL string
+		model   string
+		want    bool
+	}{
+		{name: "PomoAI GLM 5.3", baseURL: "https://jp.pomoai.xyz", model: "glm-5.3", want: true},
+		{name: "PomoAI other model", baseURL: "https://jp.pomoai.xyz", model: "glm-5.2", want: false},
+		{name: "official GLM 5.3", baseURL: "https://api.anthropic.com", model: "glm-5.3", want: false},
+		{name: "lookalike host", baseURL: "https://pomoai.xyz.example.com", model: "glm-5.3", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			account := newAnthropicAPIKeyAccountForTest()
+			account.Credentials["base_url"] = tt.baseURL
+			account.Extra = nil
+			require.Equal(t, tt.want, anthropicForceNonStreamUsage(account, tt.model))
+		})
+	}
 }
 
 func TestGatewayService_AnthropicAPIKeyPassthrough_ForceNonStreamUsageRejectsMissingOutputUsage(t *testing.T) {

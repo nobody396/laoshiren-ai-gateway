@@ -13,6 +13,7 @@ import (
 	mathrand "math/rand"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"sort"
@@ -4663,7 +4664,7 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 		account.ID, account.Name, reqModel, reqStream)
 
 	body, cacheDecision := s.applyAnthropicCachePolicy(ctx, c, account, reqModel, body)
-	forceNonStreamUsage := clientStream && anthropicForceNonStreamUsage(account)
+	forceNonStreamUsage := clientStream && anthropicForceNonStreamUsage(account, reqModel)
 	if forceNonStreamUsage {
 		body, err = sjson.SetBytes(body, "stream", false)
 		if err != nil {
@@ -4914,19 +4915,34 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 
 const anthropicForceNonStreamUsageExtraKey = "anthropic_force_nonstream_for_usage"
 
-func anthropicForceNonStreamUsage(account *Account) bool {
+func anthropicForceNonStreamUsage(account *Account, model string) bool {
 	if account == nil || account.Extra == nil {
-		return false
+		return anthropicPomoGLM53UsageFallback(account, model)
 	}
 	switch value := account.Extra[anthropicForceNonStreamUsageExtraKey].(type) {
 	case bool:
-		return value
+		if value {
+			return true
+		}
 	case string:
 		parsed, err := strconv.ParseBool(strings.TrimSpace(value))
-		return err == nil && parsed
-	default:
+		if err == nil && parsed {
+			return true
+		}
+	}
+	return anthropicPomoGLM53UsageFallback(account, model)
+}
+
+func anthropicPomoGLM53UsageFallback(account *Account, model string) bool {
+	if account == nil || !strings.EqualFold(strings.TrimSpace(model), "glm-5.3") {
 		return false
 	}
+	parsed, err := url.Parse(account.GetBaseURL())
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(parsed.Hostname())
+	return host == "pomoai.xyz" || strings.HasSuffix(host, ".pomoai.xyz")
 }
 
 func (s *GatewayService) buildUpstreamRequestAnthropicAPIKeyPassthrough(

@@ -55,6 +55,22 @@ export const modelCatalog: readonly CatalogModel[] = [
     }
   },
   {
+    "id": "glm-5.3-flash",
+    "upstreamId": "glm-5.3-flash",
+    "displayName": "GLM 5.3 Flash",
+    "platform": "anthropic",
+    "contextWindow": 1000000,
+    "maxOutputTokens": 131072,
+    "clientDefault": false,
+    "preferredGroupName": "GLM 5.2",
+    "legacyGroupNames": [],
+    "preset": {
+      "from": "glm-5.3-flash",
+      "to": "glm-5.3-flash",
+      "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+    }
+  },
+  {
     "id": "gemini-3.1-pro",
     "upstreamId": "gemini-3.1-pro",
     "displayName": "Gemini 3.1 Pro",

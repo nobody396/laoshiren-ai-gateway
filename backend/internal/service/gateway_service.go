@@ -4934,7 +4934,8 @@ func anthropicForceNonStreamUsage(account *Account, model string) bool {
 }
 
 func anthropicPomoGLM53UsageFallback(account *Account, model string) bool {
-	if account == nil || !strings.EqualFold(strings.TrimSpace(model), "glm-5.3") {
+	model = strings.ToLower(strings.TrimSpace(model))
+	if account == nil || (model != "glm-5.3" && model != "glm-5.3-flash") {
 		return false
 	}
 	parsed, err := url.Parse(account.GetBaseURL())

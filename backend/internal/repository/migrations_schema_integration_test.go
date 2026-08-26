@@ -128,6 +128,14 @@ WHERE table_schema = 'public'
 	var reliabilityEnabled string
 	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT value FROM settings WHERE key = 'reliability_observation_enabled'`).Scan(&reliabilityEnabled))
 	require.Equal(t, "false", reliabilityEnabled)
+	var impactIdentityConstraintExists, impactIdentityConstraintValidated bool
+	require.NoError(t, tx.QueryRowContext(context.Background(), `
+SELECT TRUE, convalidated
+FROM pg_constraint
+WHERE conrelid='reliability_observations'::regclass
+  AND conname='reliability_observation_customer_identity_check'`).Scan(&impactIdentityConstraintExists, &impactIdentityConstraintValidated))
+	require.True(t, impactIdentityConstraintExists)
+	require.False(t, impactIdentityConstraintValidated, "historical append-only observations remain unchanged while new writes fail closed")
 
 	// migration 202: explicit Status Catalog and default-off current state.
 	requireColumn(t, tx, "service_status_families", "code", "character varying", 64, false)

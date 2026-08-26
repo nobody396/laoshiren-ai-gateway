@@ -282,6 +282,11 @@ func (s *IncidentControlService) loadIncidentProductEvidence(ctx context.Context
 		if observation == nil || observation.ID <= 0 {
 			continue
 		}
+		if observation.FactType == ReliabilityFactCustomerRequest && observation.CustomerImpact && (observation.UserID == nil || *observation.UserID <= 0) {
+			// Preserve historical raw evidence, but do not let an unowned request
+			// enter an Incident or compensation snapshot.
+			continue
+		}
 		for _, componentID := range matchingStatusComponentIDs(definitions, observation, false) {
 			productID := componentProduct[componentID]
 			if productID <= 0 {
@@ -356,7 +361,7 @@ func reconcileIncidentCandidate(ctx context.Context, tx *sql.Tx, familyID int64,
 	created := false
 	err := tx.QueryRowContext(ctx, `
 SELECT c.id FROM reliability_incident_candidates c
-WHERE c.state='open' AND c.first_observed_at >= $1 AND EXISTS (
+WHERE c.state='open' AND c.last_observed_at >= $1 AND EXISTS (
  SELECT 1 FROM reliability_incident_candidate_products cp JOIN service_status_products p ON p.id=cp.product_id
  WHERE cp.candidate_id=c.id AND p.family_id=$2
 )

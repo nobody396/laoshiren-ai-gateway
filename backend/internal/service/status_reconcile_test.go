@@ -10,7 +10,7 @@ import (
 )
 
 func TestProjectStatusObservationsPrefersExplicitGroupBinding(t *testing.T) {
-	groupID := int64(40)
+	groupID, userID := int64(40), int64(92)
 	products := []statusProductDefinition{
 		{ID: 1, Code: "openai-codex-api", Components: []statusComponentDefinition{{ID: 11, AccessMode: "http", Bindings: []statusBinding{{Platform: PlatformOpenAI}}}}},
 		{ID: 2, Code: "builder-pass-gpt", Components: []statusComponentDefinition{{ID: 22, AccessMode: "http", Bindings: []statusBinding{{GroupID: &groupID}}}}},
@@ -18,7 +18,7 @@ func TestProjectStatusObservationsPrefersExplicitGroupBinding(t *testing.T) {
 	observed := time.Now()
 	projection := projectStatusObservations(products, []*ReliabilityObservation{{
 		FactType: ReliabilityFactCustomerRequest, Outcome: ReliabilityOutcomeFailure,
-		CustomerImpact: true, GroupID: &groupID, Platform: PlatformOpenAI, ObservedAt: observed,
+		CustomerImpact: true, UserID: &userID, GroupID: &groupID, Platform: PlatformOpenAI, ObservedAt: observed,
 	}})
 
 	require.Empty(t, projection[11], "group-bound Builder Pass traffic must not leak into generic OpenAI status")
@@ -104,6 +104,22 @@ func TestProjectStatusObservationsExcludesUnpublishedWebSocketFromHTTPComponent(
 		Platform: PlatformOpenAI, Protocol: "websocket_responses", ObservedAt: time.Now(),
 	}})
 	require.Empty(t, projection[11])
+}
+
+func TestProjectStatusObservationsExcludesLegacyUnattributedCustomerImpact(t *testing.T) {
+	products := []statusProductDefinition{{
+		ID: 1,
+		Components: []statusComponentDefinition{{
+			ID: 11, AccessMode: "http", Bindings: []statusBinding{{Platform: PlatformGemini}},
+		}},
+	}}
+	observation := &ReliabilityObservation{
+		FactType: ReliabilityFactCustomerRequest, Outcome: ReliabilityOutcomeFailure,
+		CustomerImpact: true, Platform: PlatformGemini, StatusCode: intPointer(401), ObservedAt: time.Now(),
+	}
+
+	require.Empty(t, projectStatusObservations(products, []*ReliabilityObservation{observation}),
+		"historical unowned failures must never change a customer-facing product status")
 }
 
 func TestStatusEvidenceReadinessUsesCurrentLifecycleEpoch(t *testing.T) {

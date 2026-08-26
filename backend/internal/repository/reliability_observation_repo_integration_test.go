@@ -85,6 +85,19 @@ func TestReliabilityObservationServiceFailsClosedBeforeInvalidWrite(t *testing.T
 	require.Zero(t, count)
 }
 
+func TestReliabilityObservationsRejectCustomerImpactWithoutUser(t *testing.T) {
+	key := "integration:reliability:unowned-impact"
+	t.Cleanup(func() {
+		_, _ = integrationDB.ExecContext(context.Background(), `DELETE FROM reliability_observations WHERE idempotency_key=$1`, key)
+	})
+	_, err := integrationDB.ExecContext(context.Background(), `
+INSERT INTO reliability_observations(
+ idempotency_key,fact_type,source,source_id,platform,request_class,protocol,
+ outcome,status_code,error_owner,customer_impact,observed_at
+) VALUES($1,'customer_request','integration',$1,'gemini','text','responses','failure',401,'platform',TRUE,NOW())`, key)
+	require.Error(t, err, "the database must fail closed when a producer bypasses service normalization")
+}
+
 func TestReliabilityEvidenceServiceClaimsOneProbePerRouteInterval(t *testing.T) {
 	ctx := context.Background()
 	evidence := integrationReliabilityEvidence(t)

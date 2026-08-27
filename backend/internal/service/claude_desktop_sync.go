@@ -14,7 +14,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -92,6 +91,9 @@ func (s *DownloadResourceService) SyncClaudeDesktop(ctx context.Context) error {
 	releaseID := claudeDesktopReleaseID(x64Latest)
 	if current, readErr := s.readManifest(claudeDesktopToolID); readErr == nil &&
 		current.Version == releaseID && s.claudeManifestComplete(current) {
+		if err := s.cleanupHistoricalToolVersions(claudeDesktopToolID, releaseID, "macos-static"); err != nil {
+			slog.Warn("claude desktop cache retention cleanup failed", "error", err)
+		}
 		return nil
 	}
 
@@ -154,7 +156,7 @@ func (s *DownloadResourceService) SyncClaudeDesktop(ctx context.Context) error {
 		return err
 	}
 	s.cleanupUnreferencedAssets(versionDir, assets)
-	if err := s.cleanupOldClaudeDesktopVersions(releaseID, s.cfg.ClaudeDesktopRetainVersions); err != nil {
+	if err := s.cleanupHistoricalToolVersions(claudeDesktopToolID, releaseID, "macos-static"); err != nil {
 		slog.Warn("claude desktop cache retention cleanup failed", "error", err)
 	}
 	slog.Info("download resource synced", "tool", claudeDesktopToolID, "version", releaseID, "assets", len(assets))
@@ -338,52 +340,6 @@ func jsonParseLiterals(raw []byte) [][]byte {
 		start = contentEnd + 2
 	}
 	return result
-}
-
-func (s *DownloadResourceService) cleanupOldClaudeDesktopVersions(current string, retain int) error {
-	if retain < 1 {
-		retain = 1
-	}
-	root := filepath.Join(s.cacheDir, claudeDesktopToolID)
-	entries, err := os.ReadDir(root)
-	if err != nil {
-		return err
-	}
-	type candidate struct {
-		path    string
-		modTime time.Time
-	}
-	old := make([]candidate, 0, len(entries))
-	for _, entry := range entries {
-		name := entry.Name()
-		if name == current || name == "macos-static" || sanitizePathSegment(name) != name {
-			continue
-		}
-		info, err := entry.Info()
-		if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
-			continue
-		}
-		raw, err := os.ReadFile(filepath.Join(root, name, versionManifestName))
-		if err != nil {
-			continue
-		}
-		var manifest CachedDownloadManifest
-		if json.Unmarshal(raw, &manifest) != nil || manifest.Tool != claudeDesktopToolID || sanitizePathSegment(manifest.Version) != name {
-			continue
-		}
-		old = append(old, candidate{path: filepath.Join(root, name), modTime: info.ModTime()})
-	}
-	sort.Slice(old, func(i, j int) bool { return old[i].modTime.After(old[j].modTime) })
-	keepOld := retain - 1
-	if keepOld > len(old) {
-		keepOld = len(old)
-	}
-	for _, stale := range old[keepOld:] {
-		if err := os.RemoveAll(stale.path); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (s *DownloadResourceService) cacheClaudeDesktopCode(

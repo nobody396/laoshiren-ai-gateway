@@ -129,9 +129,13 @@ func TestDownloadResourceServiceSyncCCSwitchCachesInstallAssets(t *testing.T) {
 			MaxAssetBytes:       1024,
 		},
 	}, stub)
+	staleDir := filepath.Join(dir, ccSwitchToolID, "v3.15.0")
+	require.NoError(t, os.MkdirAll(staleDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(staleDir, "old.msi"), []byte("old"), 0644))
 
 	err := svc.SyncCCSwitch(context.Background())
 	require.NoError(t, err)
+	require.NoDirExists(t, staleDir)
 
 	manifest, err := svc.ListCCSwitch(context.Background())
 	require.NoError(t, err)
@@ -439,8 +443,11 @@ func TestDownloadResourceServiceSyncClaudeDesktopPublishesVerifiedPairs(t *testi
 
 	require.NoError(t, svc.SyncClaudeDesktop(context.Background()))
 	largeDownloadCount := len(stub.downloads)
+	staleDir := filepath.Join(dir, claudeDesktopToolID, "1.30095.0-aaaaaaaaaaaa")
+	require.NoError(t, os.MkdirAll(staleDir, 0755))
 	require.NoError(t, svc.SyncClaudeDesktop(context.Background()))
 	require.Equal(t, largeDownloadCount+2, len(stub.downloads), "current release should only re-read two tiny .latest files")
+	require.NoDirExists(t, staleDir, "no-op sync should still enforce latest-only retention")
 
 	manifest, err := svc.ListTool(context.Background(), claudeDesktopToolID)
 	require.NoError(t, err)
@@ -582,24 +589,35 @@ func TestClaudeDesktopReleaseIDIncludesCommitIdentity(t *testing.T) {
 	}))
 }
 
-func TestClaudeDesktopRetentionKeepsCurrentAndTwoRollbackPairs(t *testing.T) {
+func TestDownloadRetentionKeepsOnlyCurrentVersionAndPreservedDirectories(t *testing.T) {
 	dir := t.TempDir()
 	svc := NewDownloadResourceService(&config.Config{Downloads: config.DownloadsConfig{
-		Enabled: true, CacheDir: dir, ClaudeDesktopRetainVersions: 3,
+		Enabled: true, CacheDir: dir,
 	}}, &downloadResourceGitHubStub{})
 
 	versions := []string{"1.0.0-aaaaaaaaaaaa", "1.0.1-bbbbbbbbbbbb", "1.0.2-cccccccccccc", "1.0.3-dddddddddddd"}
-	for i, version := range versions {
+	for _, version := range versions {
 		require.NoError(t, svc.writeManifest(CachedDownloadManifest{Tool: claudeDesktopToolID, Version: version}))
-		stamp := time.Now().Add(time.Duration(i) * time.Minute)
-		require.NoError(t, os.Chtimes(filepath.Join(dir, claudeDesktopToolID, version), stamp, stamp))
 	}
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, claudeDesktopToolID, "macos-static"), 0755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, claudeDesktopToolID, "incomplete-version"), 0755))
 
-	require.NoError(t, svc.cleanupOldClaudeDesktopVersions(versions[3], 3))
+	require.NoError(t, svc.cleanupHistoricalToolVersions(claudeDesktopToolID, versions[3], "macos-static"))
 	require.NoDirExists(t, filepath.Join(dir, claudeDesktopToolID, versions[0]))
-	require.DirExists(t, filepath.Join(dir, claudeDesktopToolID, versions[1]))
-	require.DirExists(t, filepath.Join(dir, claudeDesktopToolID, versions[2]))
+	require.NoDirExists(t, filepath.Join(dir, claudeDesktopToolID, versions[1]))
+	require.NoDirExists(t, filepath.Join(dir, claudeDesktopToolID, versions[2]))
+	require.NoDirExists(t, filepath.Join(dir, claudeDesktopToolID, "incomplete-version"))
 	require.DirExists(t, filepath.Join(dir, claudeDesktopToolID, versions[3]))
+	require.DirExists(t, filepath.Join(dir, claudeDesktopToolID, "macos-static"))
+}
+
+func TestDownloadRetentionRejectsUnsafeScope(t *testing.T) {
+	svc := NewDownloadResourceService(&config.Config{Downloads: config.DownloadsConfig{
+		Enabled: true, CacheDir: t.TempDir(),
+	}}, &downloadResourceGitHubStub{})
+
+	require.ErrorIs(t, svc.cleanupHistoricalToolVersions("unknown-tool", "v1"), ErrDownloadToolNotFound)
+	require.ErrorContains(t, svc.cleanupHistoricalToolVersions(codexToolID, ""), "current download version is empty")
 }
 
 func TestDownloadResourceServiceSyncGrokBuildUsesVerifiedOfficialVersion(t *testing.T) {

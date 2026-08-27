@@ -314,7 +314,7 @@ func isKnownSPARoute(path string) bool {
 		"/feedbacks", "/forgot-password", "/get-subscription", "/invoice", "/key-usage",
 		"/keys", "/login", "/pricing", "/profile", "/purchase", "/redeem", "/register",
 		"/resources", "/reset-password", "/settings", "/setup", "/subscriptions", "/topup", "/usage",
-		"/usage-receipt",
+		"/usage-receipt", "/team",
 		"/users",
 	}
 	for _, prefix := range prefixes {

@@ -137,6 +137,22 @@ docker context inspect laoshirenai-hostinger
 docker --context laoshirenai-hostinger service ls
 ```
 
+### 生产存储自动回收
+
+- 服务器脚本：`/usr/local/sbin/laoshirenai-storage-gc`
+- 仓库来源：`deploy/storage-gc.sh`
+- root cron：UTC 每天 `19:43`（北京时间每天 `03:43`）
+- 安装包策略：每个工具只保留当前 `manifest.json` 指向的完整版本；Claude
+  Desktop 额外保留当前版本复用的 `macos-static` 硬链接缓存，不保留历史发布。
+- Docker 策略：只回收停止超过 24 小时的容器和未被任何容器引用、超过
+  24 小时的镜像；绝不使用 `--volumes`，服务处于更新或回滚状态时跳过。
+- 该任务不重启应用、PostgreSQL 或 Redis。手动验证命令：
+
+```bash
+ssh laoshirenai-hostinger '/usr/local/sbin/laoshirenai-storage-gc'
+ssh laoshirenai-hostinger 'journalctl -t laoshirenai-storage-gc -n 20 --no-pager'
+```
+
 ## Dokploy / Docker Swarm 服务
 
 业务服务：

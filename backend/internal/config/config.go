@@ -160,13 +160,12 @@ type DownloadsConfig struct {
 	VersionCheckIntervalMinutes int    `mapstructure:"version_check_interval_minutes"`
 	// Deprecated: retained so older config files continue to decode. Resource
 	// release checks now use VersionCheckIntervalMinutes.
-	UpdateIntervalHours         int    `mapstructure:"update_interval_hours"`
-	ClaudeDesktopCheckMinutes   int    `mapstructure:"claude_desktop_check_minutes"`
-	ClaudeDesktopRetainVersions int    `mapstructure:"claude_desktop_retain_versions"`
-	StartupSync                 bool   `mapstructure:"startup_sync"`
-	CCSwitchRepo                string `mapstructure:"cc_switch_repo"`
-	CodexRepo                   string `mapstructure:"codex_repo"`
-	CodexWindowsMirrorRepo      string `mapstructure:"codex_windows_mirror_repo"`
+	UpdateIntervalHours       int    `mapstructure:"update_interval_hours"`
+	ClaudeDesktopCheckMinutes int    `mapstructure:"claude_desktop_check_minutes"`
+	StartupSync               bool   `mapstructure:"startup_sync"`
+	CCSwitchRepo              string `mapstructure:"cc_switch_repo"`
+	CodexRepo                 string `mapstructure:"codex_repo"`
+	CodexWindowsMirrorRepo    string `mapstructure:"codex_windows_mirror_repo"`
 	// Deprecated: Codex macOS DMGs now come from the versioned openai/codex
 	// release instead of an unversioned mutable URL.
 	CodexMacOfficialURL        string `mapstructure:"codex_mac_official_url"`
@@ -1414,7 +1413,6 @@ func setDefaults() {
 	viper.SetDefault("downloads.version_check_interval_minutes", 30)
 	viper.SetDefault("downloads.update_interval_hours", 24)
 	viper.SetDefault("downloads.claude_desktop_check_minutes", 5)
-	viper.SetDefault("downloads.claude_desktop_retain_versions", 3)
 	viper.SetDefault("downloads.startup_sync", true)
 	viper.SetDefault("downloads.cc_switch_repo", "farion1231/cc-switch")
 	viper.SetDefault("downloads.codex_repo", "openai/codex")

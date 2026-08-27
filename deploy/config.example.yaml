@@ -919,8 +919,8 @@ downloads:
   # Claude Desktop only downloads large packages after this tiny metadata poll
   # reports a new version.
   claude_desktop_check_minutes: 5
-  # Keep the current complete Windows pair plus two rollback versions.
-  claude_desktop_retain_versions: 3
+  # Every cached tool keeps only its current complete release. Previous release
+  # directories are deleted after the new manifest is published successfully.
   startup_sync: true
   cc_switch_repo: "farion1231/cc-switch"
   codex_repo: "openai/codex"

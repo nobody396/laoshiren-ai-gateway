@@ -127,7 +127,6 @@ func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseCl
 		VersionCheckIntervalMinutes: 30,
 		UpdateIntervalHours:         24,
 		ClaudeDesktopCheckMinutes:   5,
-		ClaudeDesktopRetainVersions: 3,
 		StartupSync:                 true,
 		CCSwitchRepo:                defaultCCSwitchRepo,
 		CodexRepo:                   defaultCodexRepo,
@@ -178,9 +177,6 @@ func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseCl
 	}
 	if downloadCfg.ClaudeDesktopCheckMinutes <= 0 {
 		downloadCfg.ClaudeDesktopCheckMinutes = 5
-	}
-	if downloadCfg.ClaudeDesktopRetainVersions <= 0 {
-		downloadCfg.ClaudeDesktopRetainVersions = 3
 	}
 	if downloadCfg.MaxAssetBytes <= 0 {
 		downloadCfg.MaxAssetBytes = 1024 * 1024 * 1024
@@ -342,6 +338,9 @@ func (s *DownloadResourceService) SyncCodex(ctx context.Context) error {
 		return err
 	}
 	s.cleanupUnreferencedAssets(versionDir, assets)
+	if err := s.cleanupHistoricalToolVersions(codexToolID, version); err != nil {
+		slog.Warn("download resource history cleanup failed", "tool", codexToolID, "error", err)
+	}
 	slog.Info("download resource synced", "tool", codexToolID, "version", version, "assets", len(assets))
 	return nil
 }
@@ -442,6 +441,9 @@ func (s *DownloadResourceService) SyncGrokBuild(ctx context.Context) error {
 		return err
 	}
 	s.cleanupUnreferencedAssets(versionDir, assets)
+	if err := s.cleanupHistoricalToolVersions(grokBuildToolID, version); err != nil {
+		slog.Warn("download resource history cleanup failed", "tool", grokBuildToolID, "error", err)
+	}
 	slog.Info("download resource synced", "tool", grokBuildToolID, "version", version, "assets", len(assets))
 	return nil
 }
@@ -504,6 +506,9 @@ func (s *DownloadResourceService) syncGitHubRelease(ctx context.Context, toolID,
 		return err
 	}
 	s.cleanupUnreferencedAssets(versionDir, assets)
+	if err := s.cleanupHistoricalToolVersions(toolID, release.TagName); err != nil {
+		slog.Warn("download resource history cleanup failed", "tool", toolID, "error", err)
+	}
 	slog.Info("download resource synced", "tool", toolID, "version", release.TagName, "assets", len(assets))
 	return nil
 }
@@ -1109,8 +1114,9 @@ func (s *DownloadResourceService) writeManifest(manifest CachedDownloadManifest)
 	if err != nil {
 		return err
 	}
-	// Persist history before advancing the mutable pointer. If either write
-	// fails, manifest.json never advertises an immutable URL we cannot resolve.
+	// Persist the version manifest before advancing the mutable pointer. If
+	// either write fails, manifest.json never advertises an immutable URL we
+	// cannot resolve. Successful sync then removes prior version directories.
 	if err := writeFileAtomically(s.versionManifestPath(toolID, version), raw, 0644); err != nil {
 		return err
 	}
@@ -1147,6 +1153,46 @@ func (s *DownloadResourceService) cleanupUnreferencedAssets(versionDir string, a
 			_ = os.Remove(filepath.Join(versionDir, entry.Name()))
 		}
 	}
+}
+
+// cleanupHistoricalToolVersions enforces the production cache policy: only
+// the version named by the current manifest remains locally available. The
+// caller holds s.mu, so a successful sync cannot race another in-process sync
+// while old or incomplete version directories are removed.
+func (s *DownloadResourceService) cleanupHistoricalToolVersions(toolID, current string, preservedNames ...string) error {
+	toolID, ok := normalizeDownloadToolID(toolID)
+	if !ok {
+		return ErrDownloadToolNotFound
+	}
+	current = strings.TrimSpace(current)
+	if current == "" {
+		return errors.New("current download version is empty")
+	}
+	root := filepath.Join(s.cacheDir, toolID)
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return err
+	}
+	keep := map[string]struct{}{
+		sanitizePathSegment(current): {},
+	}
+	for _, name := range preservedNames {
+		keep[name] = struct{}{}
+	}
+	for _, entry := range entries {
+		name := entry.Name()
+		if _, ok := keep[name]; ok {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 || sanitizePathSegment(name) != name {
+			continue
+		}
+		if err := os.RemoveAll(filepath.Join(root, name)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func isCCSwitchInstallAsset(name string) bool {

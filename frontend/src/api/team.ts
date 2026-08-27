@@ -49,6 +49,17 @@ export interface TeamInvitation {
   expires_at: string
   accepted_at: string | null
   created_at: string
+  invitation_url?: string
+}
+
+export interface TeamOwnershipTransfer {
+  id: number
+  team_id: number
+  from_user_id: number
+  to_user_id: number
+  status: string
+  expires_at: string
+  resolution_url?: string
 }
 
 export interface TeamInvitationPreview {
@@ -191,8 +202,9 @@ export const teamAPI = {
   async revokeInvitation(id: number): Promise<void> {
     await apiClient.delete(`/team/invitations/${id}`)
   },
-  async startTransfer(targetUserID: number): Promise<void> {
-    await apiClient.post('/team/ownership-transfer', { target_user_id: targetUserID })
+  async startTransfer(targetUserID: number): Promise<TeamOwnershipTransfer> {
+    const { data } = await apiClient.post<TeamOwnershipTransfer>('/team/ownership-transfer', { target_user_id: targetUserID })
+    return data
   },
   async resolveTransfer(token: string, resolution: 'accepted' | 'declined'): Promise<TeamContext | null> {
     const { data } = await apiClient.post<TeamContext | null>('/team/ownership-transfer/resolve', { token, resolution })

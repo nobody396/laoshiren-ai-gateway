@@ -193,7 +193,7 @@ func (s *GPTImageTaskSettlementService) settleTask(ctx context.Context, task *GP
 		return nil
 	}
 
-	apiKey, err := s.apiKeyService.GetByID(ctx, claimed.APIKeyID)
+	apiKey, err := s.apiKeyService.GetByIDForHistoricalBilling(ctx, claimed.APIKeyID, claimed.UserID)
 	if err != nil {
 		s.gatewayService.ReleaseGPTImageTaskBillingClaim(task.TaskID)
 		return err
@@ -205,7 +205,7 @@ func (s *GPTImageTaskSettlementService) settleTask(ctx context.Context, task *GP
 
 	var subscription *UserSubscription
 	if apiKey.GroupID != nil && s.userSubRepo != nil {
-		if sub, subErr := s.userSubRepo.GetActiveByUserIDAndGroupID(ctx, apiKey.UserID, *apiKey.GroupID); subErr == nil {
+		if sub, subErr := s.userSubRepo.GetActiveByUserIDAndGroupID(ctx, apiKeyBillingUserID(apiKey), *apiKey.GroupID); subErr == nil {
 			subscription = sub
 		}
 	}
@@ -237,4 +237,14 @@ func (s *GPTImageTaskSettlementService) settleTask(ctx context.Context, task *GP
 	}
 	s.gatewayService.MarkGPTImageTaskBilled(task.TaskID)
 	return nil
+}
+
+func apiKeyBillingUserID(apiKey *APIKey) int64 {
+	if apiKey != nil && apiKey.User != nil && apiKey.User.ID > 0 {
+		return apiKey.User.ID
+	}
+	if apiKey != nil {
+		return apiKey.UserID
+	}
+	return 0
 }

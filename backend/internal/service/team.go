@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"html"
 	"log/slog"
 	"net/mail"
 	"net/url"
@@ -103,6 +102,7 @@ type TeamInvitation struct {
 	ExpiresAt     time.Time  `json:"expires_at"`
 	AcceptedAt    *time.Time `json:"accepted_at"`
 	CreatedAt     time.Time  `json:"created_at"`
+	InvitationURL string     `json:"invitation_url,omitempty"`
 }
 
 // TeamInvitationPreview 是受邀用户确认邀请前可查看的最小必要信息。
@@ -120,14 +120,15 @@ type TeamInvitationLimiter interface {
 
 // TeamOwnershipTransfer 表示待目标成员确认的所有权转让。
 type TeamOwnershipTransfer struct {
-	ID         int64      `json:"id"`
-	TeamID     int64      `json:"team_id"`
-	FromUserID int64      `json:"from_user_id"`
-	ToUserID   int64      `json:"to_user_id"`
-	Status     string     `json:"status"`
-	ExpiresAt  time.Time  `json:"expires_at"`
-	ResolvedAt *time.Time `json:"resolved_at"`
-	CreatedAt  time.Time  `json:"created_at"`
+	ID            int64      `json:"id"`
+	TeamID        int64      `json:"team_id"`
+	FromUserID    int64      `json:"from_user_id"`
+	ToUserID      int64      `json:"to_user_id"`
+	Status        string     `json:"status"`
+	ExpiresAt     time.Time  `json:"expires_at"`
+	ResolvedAt    *time.Time `json:"resolved_at"`
+	CreatedAt     time.Time  `json:"created_at"`
+	ResolutionURL string     `json:"resolution_url,omitempty"`
 }
 
 // TeamAdminListItem 为平台管理员提供团队与所有者摘要。
@@ -258,15 +259,14 @@ type TeamRepository interface {
 type TeamService struct {
 	repo           TeamRepository
 	userRepo       UserRepository
-	emailService   *EmailService
 	apiKeyCache    APIKeyCache
 	inviteLimiter  TeamInvitationLimiter
 	settingService *SettingService
 	cfg            *config.Config
 }
 
-func NewTeamService(repo TeamRepository, userRepo UserRepository, emailService *EmailService, apiKeyCache APIKeyCache, inviteLimiter TeamInvitationLimiter, settingService *SettingService, cfg *config.Config) *TeamService {
-	return &TeamService{repo: repo, userRepo: userRepo, emailService: emailService, apiKeyCache: apiKeyCache, inviteLimiter: inviteLimiter, settingService: settingService, cfg: cfg}
+func NewTeamService(repo TeamRepository, userRepo UserRepository, apiKeyCache APIKeyCache, inviteLimiter TeamInvitationLimiter, settingService *SettingService, cfg *config.Config) *TeamService {
+	return &TeamService{repo: repo, userRepo: userRepo, apiKeyCache: apiKeyCache, inviteLimiter: inviteLimiter, settingService: settingService, cfg: cfg}
 }
 
 func (s *TeamService) ensureEnabled() error {
@@ -519,7 +519,7 @@ func normalizeTeamUsageQuery(query TeamUsageQuery) TeamUsageQuery {
 	return query
 }
 
-// Invite 创建绑定邮箱的邀请，明文令牌只用于本次邮件发送。
+// Invite 创建绑定邮箱的邀请。明文令牌只通过本次 Owner 响应返回，平台不自动发信。
 func (s *TeamService) Invite(ctx context.Context, userID int64, email string) (*TeamInvitation, error) {
 	teamCtx, err := s.requireOwner(ctx, userID)
 	if err != nil {
@@ -536,21 +536,16 @@ func (s *TeamService) Invite(ctx context.Context, userID int64, email string) (*
 	if err != nil {
 		return nil, err
 	}
-	link := ""
-	if s.emailService != nil {
-		link, err = s.frontendLink(ctx, "/team", "invitation", token)
-		if err != nil {
-			return nil, err
-		}
+	link, err := s.frontendLink(ctx, "/team", "invitation", token)
+	if err != nil {
+		return nil, err
 	}
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 	invitation, err := s.repo.CreateInvitation(ctx, teamCtx.Team.ID, userID, email, tokenHash, expiresAt)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.sendInvitationEmail(ctx, email, teamCtx.Team.Name, link, expiresAt); err != nil {
-		return nil, err
-	}
+	invitation.InvitationURL = link
 	return invitation, nil
 }
 
@@ -578,21 +573,16 @@ func (s *TeamService) ReissueInvitation(ctx context.Context, userID, invitationI
 	if err != nil {
 		return nil, err
 	}
-	link := ""
-	if s.emailService != nil {
-		link, err = s.frontendLink(ctx, "/team", "invitation", token)
-		if err != nil {
-			return nil, err
-		}
+	link, err := s.frontendLink(ctx, "/team", "invitation", token)
+	if err != nil {
+		return nil, err
 	}
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 	invitation, err := s.repo.ReissueInvitation(ctx, teamCtx.Team.ID, invitationID, tokenHash, expiresAt)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.sendInvitationEmail(ctx, invitation.Email, teamCtx.Team.Name, link, expiresAt); err != nil {
-		return nil, err
-	}
+	invitation.InvitationURL = link
 	return invitation, nil
 }
 
@@ -729,28 +719,16 @@ func (s *TeamService) StartOwnershipTransfer(ctx context.Context, ownerUserID, t
 	if err != nil {
 		return nil, err
 	}
-	var targetEmail, link string
-	if s.emailService != nil {
-		target, getErr := s.userRepo.GetByID(ctx, targetUserID)
-		if getErr == nil {
-			link, err = s.frontendLink(ctx, "/team", "transfer", token)
-			if err != nil {
-				return nil, err
-			}
-			targetEmail = target.Email
-		}
+	link, err := s.frontendLink(ctx, "/team", "transfer", token)
+	if err != nil {
+		return nil, err
 	}
 	expiresAt := time.Now().Add(24 * time.Hour)
 	transfer, err := s.repo.CreateOwnershipTransfer(ctx, teamCtx.Team.ID, ownerUserID, targetUserID, tokenHash, expiresAt)
 	if err != nil {
 		return nil, err
 	}
-	if targetEmail != "" {
-		body := fmt.Sprintf("<p>你收到团队 <strong>%s</strong> 的所有权转让请求。</p><p><a href=\"%s\">确认或拒绝转让</a></p>", html.EscapeString(teamCtx.Team.Name), html.EscapeString(link))
-		if sendErr := s.emailService.SendEmail(ctx, targetEmail, "团队所有权转让", body); sendErr != nil {
-			return nil, sendErr
-		}
-	}
+	transfer.ResolutionURL = link
 	return transfer, nil
 }
 
@@ -956,29 +934,6 @@ func teamAPIKeyAuthCacheKey(key string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func (s *TeamService) sendInvitationEmail(ctx context.Context, email, teamName, link string, expiresAt time.Time) error {
-	if s.emailService == nil {
-		return nil
-	}
-	if strings.TrimSpace(link) == "" {
-		return ErrTeamFrontendURLUnavailable
-	}
-	recipientName := teamEmailRecipientName(email)
-	var recipientUserID int64
-	if s.userRepo != nil {
-		if user, err := s.userRepo.GetByEmail(ctx, email); err == nil && user != nil {
-			recipientUserID = user.ID
-			if strings.TrimSpace(user.Username) != "" {
-				recipientName = strings.TrimSpace(user.Username)
-			}
-		}
-	}
-
-	body := fmt.Sprintf("<p>%s，你被邀请加入团队 <strong>%s</strong>。</p><p><a href=\"%s\">查看并处理邀请</a></p><p>邀请有效期至 %s。</p>", html.EscapeString(recipientName), html.EscapeString(teamName), html.EscapeString(link), expiresAt.Format(time.RFC3339))
-	_ = recipientUserID // 预留给后续统一通知日志归因。
-	return s.emailService.SendEmail(ctx, email, "团队邀请", body)
-}
-
 func (s *TeamService) frontendLink(ctx context.Context, path, parameter, token string) (string, error) {
 	base := ""
 	// 管理后台保存的动态设置优先，未配置时兼容启动配置中的 server.frontend_url。
@@ -988,7 +943,7 @@ func (s *TeamService) frontendLink(ctx context.Context, path, parameter, token s
 		base = strings.TrimRight(strings.TrimSpace(s.cfg.Server.FrontendURL), "/")
 	}
 	if base == "" {
-		return "", ErrTeamFrontendURLUnavailable
+		return path + "?" + url.QueryEscape(parameter) + "=" + url.QueryEscape(token), nil
 	}
 	return base + path + "?" + url.QueryEscape(parameter) + "=" + url.QueryEscape(token), nil
 }
@@ -1033,12 +988,4 @@ func maskTeamCredential(credential string) string {
 		return "****"
 	}
 	return credential[:6] + "****" + credential[len(credential)-4:]
-}
-
-func teamEmailRecipientName(email string) string {
-	trimmed := strings.TrimSpace(email)
-	if at := strings.Index(trimmed, "@"); at > 0 {
-		return trimmed[:at]
-	}
-	return trimmed
 }

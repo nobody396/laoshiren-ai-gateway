@@ -10,11 +10,69 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	appmigrations "github.com/bozhouDev/DragonCode-sub2api/migrations"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
+
+func TestTeamAPIKeyGetByIDHydratesCurrentOwnerForAsyncSettlement(t *testing.T) {
+	ensureTeamMigrations(t)
+	ctx := context.Background()
+	teamRepo := NewTeamRepository(integrationDB)
+	owner := mustCreateUser(t, integrationEntClient, &service.User{Email: uniqueTeamTestEmail("async-owner"), Balance: 10})
+	member := mustCreateUser(t, integrationEntClient, &service.User{Email: uniqueTeamTestEmail("async-member")})
+	teamCtx, err := teamRepo.Create(ctx, "异步结算团队", owner.ID, 5)
+	require.NoError(t, err)
+	token := uuid.NewString()
+	_, err = teamRepo.CreateInvitation(ctx, teamCtx.Team.ID, owner.ID, member.Email, token, time.Now().Add(time.Hour))
+	require.NoError(t, err)
+	_, err = teamRepo.ResolveInvitation(ctx, token, member.ID, member.Email, "accepted", time.Now())
+	require.NoError(t, err)
+	teamID := teamCtx.Team.ID
+	key := mustCreateApiKey(t, integrationEntClient, &service.APIKey{UserID: member.ID, TeamID: &teamID, Key: "sk-team-async-" + uuid.NewString()})
+
+	apiKeyService := service.NewAPIKeyService(
+		NewAPIKeyRepository(integrationEntClient, integrationDB),
+		NewUserRepository(integrationEntClient, integrationDB),
+		nil, nil, nil, nil,
+		&config.Config{Team: config.TeamConfig{Enabled: true}},
+	)
+	apiKeyService.SetTeamRepository(teamRepo)
+	hydrated, err := apiKeyService.GetByID(ctx, key.ID)
+	require.NoError(t, err)
+	require.Equal(t, owner.ID, hydrated.User.ID)
+	require.Equal(t, member.ID, hydrated.ActorUser.ID)
+
+	transferToken := uuid.NewString()
+	_, err = teamRepo.CreateOwnershipTransfer(ctx, teamID, owner.ID, member.ID, transferToken, time.Now().Add(time.Hour))
+	require.NoError(t, err)
+	_, err = teamRepo.ResolveOwnershipTransfer(ctx, transferToken, member.ID, "accepted", time.Now())
+	require.NoError(t, err)
+	require.NoError(t, teamRepo.Dissolve(ctx, teamID, time.Now()))
+
+	historical, err := apiKeyService.GetByIDForHistoricalBilling(ctx, key.ID, owner.ID)
+	require.NoError(t, err)
+	require.Equal(t, owner.ID, historical.User.ID, "captured payer survives transfer and dissolution")
+	require.Equal(t, member.ID, historical.ActorUser.ID)
+	account := mustCreateAccount(t, integrationEntClient, &service.Account{Name: "team-async-account-" + uuid.NewString(), Type: service.AccountTypeAPIKey})
+	usageRepo := newUsageLogRepositoryWithSQL(integrationEntClient, integrationDB)
+	_, err = usageRepo.Create(ctx, &service.UsageLog{
+		UserID: owner.ID, APIKeyID: key.ID, AccountID: account.ID,
+		RequestID: uuid.NewString(), Model: "gpt-image-2", ImageCount: 1,
+		TotalCost: 0.25, ActualCost: 0.25, CreatedAt: time.Now(),
+	})
+	require.NoError(t, err)
+	var billingUserID, actorUserID, persistedTeamID int64
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT billing_user_id, actor_user_id, team_id FROM usage_logs
+		WHERE api_key_id=$1 ORDER BY id DESC LIMIT 1`, key.ID).
+		Scan(&billingUserID, &actorUserID, &persistedTeamID))
+	require.Equal(t, owner.ID, billingUserID)
+	require.Equal(t, member.ID, actorUserID)
+	require.Equal(t, teamID, persistedTeamID)
+}
 
 var (
 	teamMigrationsOnce sync.Once
@@ -24,7 +82,7 @@ var (
 func ensureTeamMigrations(t *testing.T) {
 	t.Helper()
 	teamMigrationsOnce.Do(func() {
-		for _, name := range []string{"219_add_teams.sql", "220_add_team_default_member_limits.sql", "221_harden_team_lifecycle_and_allowance.sql"} {
+		for _, name := range []string{"219_add_teams.sql", "220_add_team_default_member_limits.sql", "221_harden_team_lifecycle_and_allowance.sql", "223_freeze_team_async_billing_user.sql"} {
 			var sqlBytes []byte
 			sqlBytes, teamMigrationsErr = appmigrations.FS.ReadFile(name)
 			if teamMigrationsErr != nil {

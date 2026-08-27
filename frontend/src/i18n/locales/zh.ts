@@ -6867,6 +6867,7 @@ export default {
     noUsage: '暂无团队用量',
     noKeys: '暂无团队密钥',
     noMembers: '暂无成员',
-    noInvitations: '暂无邀请'
+    noInvitations: '暂无邀请',
+    manualShareNotice: '平台不会自动发送邮件，请将此链接手动发给对应成员。'
   },
 }

@@ -13,6 +13,7 @@ import (
 
 	dbent "github.com/bozhouDev/DragonCode-sub2api/ent"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/apikey"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/schema/mixins"
 	dbuser "github.com/bozhouDev/DragonCode-sub2api/ent/user"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/userallowedgroup"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/usersubscription"
@@ -127,6 +128,19 @@ func (r *userRepository) GetByID(ctx context.Context, id int64) (*service.User, 
 		out.AllowedGroups = v
 	}
 	return out, nil
+}
+
+// GetByIDIncludingDeleted is reserved for historical settlement that was
+// accepted before a later soft-delete. It must not be used for authentication.
+func (r *userRepository) GetByIDIncludingDeleted(ctx context.Context, id int64) (*service.User, error) {
+	u, err := r.client.User.Query().Where(dbuser.IDEQ(id)).Only(mixins.SkipSoftDelete(ctx))
+	if err != nil {
+		if dbent.IsNotFound(err) {
+			return nil, service.ErrUserNotFound
+		}
+		return nil, err
+	}
+	return userEntityToService(u), nil
 }
 
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*service.User, error) {

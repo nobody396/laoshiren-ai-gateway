@@ -530,6 +530,53 @@ func (s *APIKeyService) GetByID(ctx context.Context, id int64) (*APIKey, error) 
 	if err != nil {
 		return nil, fmt.Errorf("get api key: %w", err)
 	}
+	if apiKey.TeamID != nil {
+		apiKey, err = s.hydrateTeamAPIKey(ctx, apiKey, nil)
+		if err != nil {
+			return nil, fmt.Errorf("hydrate team api key: %w", err)
+		}
+	}
+	s.compileAPIKeyIPRules(apiKey)
+	return apiKey, nil
+}
+
+type apiKeyHistoricalBillingReader interface {
+	GetByIDForBilling(ctx context.Context, id int64) (*APIKey, error)
+}
+
+type userHistoricalBillingReader interface {
+	GetByIDIncludingDeleted(ctx context.Context, id int64) (*User, error)
+}
+
+// GetByIDForHistoricalBilling reconstructs the actor/key metadata while using
+// the payer captured when an asynchronous request was accepted. Later Team
+// transfer, suspension, membership removal, or feature gating must not move or
+// erase that already-incurred charge.
+func (s *APIKeyService) GetByIDForHistoricalBilling(ctx context.Context, id, billingUserID int64) (*APIKey, error) {
+	var (
+		apiKey *APIKey
+		err    error
+	)
+	if reader, ok := s.apiKeyRepo.(apiKeyHistoricalBillingReader); ok {
+		apiKey, err = reader.GetByIDForBilling(ctx, id)
+	} else {
+		apiKey, err = s.apiKeyRepo.GetByID(ctx, id)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get historical api key: %w", err)
+	}
+	actor := apiKey.User
+	var payer *User
+	if reader, ok := s.userRepo.(userHistoricalBillingReader); ok {
+		payer, err = reader.GetByIDIncludingDeleted(ctx, billingUserID)
+	} else {
+		payer, err = s.userRepo.GetByID(ctx, billingUserID)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get historical billing user: %w", err)
+	}
+	apiKey.ActorUser = actor
+	apiKey.User = payer
 	s.compileAPIKeyIPRules(apiKey)
 	return apiKey, nil
 }

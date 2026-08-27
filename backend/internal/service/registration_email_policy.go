@@ -28,10 +28,10 @@ func NormalizeRegistrationEmailAddress(email string) string {
 		return ""
 	}
 	domain = strings.TrimRight(domain, ".")
-	if plusIndex := strings.IndexByte(local, '+'); plusIndex > 0 {
-		local = local[:plusIndex]
-	}
 	if domain == "gmail.com" || domain == "googlemail.com" {
+		if plusIndex := strings.IndexByte(local, '+'); plusIndex > 0 {
+			local = local[:plusIndex]
+		}
 		if dotStripped := strings.ReplaceAll(local, ".", ""); dotStripped != "" {
 			local = dotStripped
 		}

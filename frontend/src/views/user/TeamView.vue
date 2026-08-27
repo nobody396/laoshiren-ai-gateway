@@ -89,6 +89,14 @@
               <input v-model="inviteEmail" type="email" required class="input flex-1" :placeholder="t('team.inviteEmail')" />
               <button class="btn btn-primary" :disabled="submitting">{{ t('team.sendInvite') }}</button>
             </form>
+            <div v-if="latestShareURL" class="mt-4 rounded-lg border border-primary-200 bg-primary-50/60 p-3 dark:border-primary-800 dark:bg-primary-900/20">
+              <p class="text-sm font-medium text-gray-900 dark:text-white">{{ latestShareLabel }}</p>
+              <div class="mt-2 flex gap-2">
+                <input :value="latestShareURL" readonly class="input flex-1 font-mono text-xs" />
+                <button class="btn btn-secondary" @click="copyShareURL">{{ t('common.copy') }}</button>
+              </div>
+              <p class="mt-2 text-xs text-gray-500">{{ t('team.manualShareNotice') }}</p>
+            </div>
             <div class="mt-4 space-y-3">
               <div v-for="invite in invitations" :key="invite.id" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 p-3 dark:border-dark-700">
                 <div><p class="font-medium text-gray-900 dark:text-white">{{ invite.email }}</p><p class="text-xs text-gray-500">{{ invite.status }} · {{ formatDateTime(invite.expires_at) }}</p></div>
@@ -180,6 +188,7 @@ import { authAPI } from '@/api'
 import { teamAPI, type TeamAPIKey, type TeamContext, type TeamInvitation, type TeamInvitationPreview, type TeamMembership } from '@/api/team'
 import { useAppStore } from '@/stores/app'
 import { formatDateTime } from '@/utils/format'
+import { absoluteTeamShareURL } from '@/utils/teamShareURL'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -203,6 +212,8 @@ const memberLimits = reactive({ daily: 0, weekly: 0, monthly: 0 })
 const invitationPreview = ref<TeamInvitationPreview | null>(null)
 const invitationLoading = ref(false)
 const invitationError = ref('')
+const latestShareURL = ref('')
+const latestShareLabel = ref('')
 
 const invitationToken = computed(() => typeof route.query.invitation === 'string' ? route.query.invitation : '')
 const transferToken = computed(() => typeof route.query.transfer === 'string' ? route.query.transfer : '')
@@ -247,13 +258,15 @@ const refreshAll = async () => {
 const createTeam = async () => { submitting.value = true; try { teamContext.value = await teamAPI.create(createName.value); await loadTeamData(); appStore.showSuccess(t('team.created')) } catch (e: any) { appStore.showError(e?.message || t('common.error')) } finally { submitting.value = false } }
 const renameTeam = async () => { submitting.value = true; try { teamContext.value = await teamAPI.rename(renameName.value); appStore.showSuccess(t('team.updated')) } catch (e: any) { appStore.showError(e?.message || t('common.error')) } finally { submitting.value = false } }
 const saveDefaultLimits = async () => { submitting.value = true; try { teamContext.value = await teamAPI.updateDefaultMemberLimits({ default_daily_limit_usd: defaultLimits.daily, default_weekly_limit_usd: defaultLimits.weekly, default_monthly_limit_usd: defaultLimits.monthly }); appStore.showSuccess(t('team.defaultLimitsUpdated')) } catch (e: any) { appStore.showError(e?.message || t('common.error')) } finally { submitting.value = false } }
-const sendInvitation = async () => { submitting.value = true; try { await teamAPI.invite(inviteEmail.value); inviteEmail.value = ''; invitations.value = await teamAPI.invitations(); appStore.showSuccess(t('team.operationSuccess')) } catch (e: any) { appStore.showError(e?.message || t('common.error')) } finally { submitting.value = false } }
-const reissueInvitation = async (id: number) => { try { await teamAPI.reissueInvitation(id); invitations.value = await teamAPI.invitations() } catch (e: any) { appStore.showError(e?.message || t('common.error')) } }
+const publishShareURL = async (label: string, url?: string) => { const absoluteURL = absoluteTeamShareURL(url, window.location.origin); latestShareLabel.value = label; latestShareURL.value = absoluteURL; if (absoluteURL) { try { await navigator.clipboard.writeText(absoluteURL) } catch { /* 页面仍显示可复制链接。 */ } } }
+const copyShareURL = async () => { if (!latestShareURL.value) return; try { await navigator.clipboard.writeText(latestShareURL.value); appStore.showSuccess(t('common.copied')) } catch { appStore.showError(t('common.error')) } }
+const sendInvitation = async () => { submitting.value = true; try { const invitation = await teamAPI.invite(inviteEmail.value); await publishShareURL(t('team.inviteActionTitle'), invitation.invitation_url); inviteEmail.value = ''; invitations.value = await teamAPI.invitations(); appStore.showSuccess(t('team.operationSuccess')) } catch (e: any) { appStore.showError(e?.message || t('common.error')) } finally { submitting.value = false } }
+const reissueInvitation = async (id: number) => { try { const invitation = await teamAPI.reissueInvitation(id); await publishShareURL(t('team.inviteActionTitle'), invitation.invitation_url); invitations.value = await teamAPI.invitations() } catch (e: any) { appStore.showError(e?.message || t('common.error')) } }
 const revokeInvitation = async (id: number) => { try { await teamAPI.revokeInvitation(id); invitations.value = await teamAPI.invitations() } catch (e: any) { appStore.showError(e?.message || t('common.error')) } }
 const editMember = (member: TeamMembership) => { memberTarget.value = member; memberLimits.daily = member.daily_limit_usd; memberLimits.weekly = member.weekly_limit_usd; memberLimits.monthly = member.monthly_limit_usd }
 const saveMemberLimits = async () => { if (!memberTarget.value) return; try { await teamAPI.updateLimits(memberTarget.value.user_id, { daily_limit_usd: memberLimits.daily, weekly_limit_usd: memberLimits.weekly, monthly_limit_usd: memberLimits.monthly }); memberTarget.value = null; members.value = await teamAPI.members(); appStore.showSuccess(t('team.operationSuccess')) } catch (e: any) { appStore.showError(e?.message || t('common.error')) } }
 const removeMember = async (member: TeamMembership) => { if (!window.confirm(t('team.removeMessage'))) return; try { await teamAPI.removeMember(member.user_id); await refreshAll() } catch (e: any) { appStore.showError(e?.message || t('common.error')) } }
-const transferOwnership = async (member: TeamMembership) => { if (!window.confirm(t('team.transferMessage'))) return; try { await teamAPI.startTransfer(member.user_id); appStore.showSuccess(t('team.operationSuccess')) } catch (e: any) { appStore.showError(e?.message || t('common.error')) } }
+const transferOwnership = async (member: TeamMembership) => { if (!window.confirm(t('team.transferMessage'))) return; try { const transfer = await teamAPI.startTransfer(member.user_id); await publishShareURL(t('team.transferActionTitle'), transfer.resolution_url); appStore.showSuccess(t('team.operationSuccess')) } catch (e: any) { appStore.showError(e?.message || t('common.error')) } }
 const toggleKey = async (key: TeamAPIKey) => { try { if (key.status === 'active') await teamAPI.disableKey(key.id); else await teamAPI.enableKey(key.id); teamKeys.value = await teamAPI.keys() } catch (e: any) { appStore.showError(e?.message || t('common.error')) } }
 const deleteTeamKey = async (key: TeamAPIKey) => { if (!window.confirm(t('team.deleteKeyMessage'))) return; try { await teamAPI.deleteKey(key.id); teamKeys.value = await teamAPI.keys() } catch (e: any) { appStore.showError(e?.message || t('common.error')) } }
 const toggleStatus = async () => { if (!teamContext.value) return; const status = teamContext.value.team.status === 'active' ? 'suspended' : 'active'; try { teamContext.value = await teamAPI.setStatus(status); await loadTeamData() } catch (e: any) { appStore.showError(e?.message || t('common.error')) } }

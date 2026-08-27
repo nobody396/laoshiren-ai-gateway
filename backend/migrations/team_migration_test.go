@@ -63,3 +63,11 @@ func TestTeamRBACMigrationRegistersMenuAndAllAdminRoutes(t *testing.T) {
 	}
 	require.Contains(t, sql, "role.is_super_admin=true")
 }
+
+func TestTeamAsyncBillingMigrationFreezesAcceptedPayer(t *testing.T) {
+	content, err := FS.ReadFile("223_freeze_team_async_billing_user.sql")
+	require.NoError(t, err)
+	sql := strings.ToLower(string(content))
+	require.Contains(t, sql, "new.billing_user_id := coalesce(new.billing_user_id, new.user_id, resolved_billing_user_id)")
+	require.Contains(t, sql, "create or replace function fill_usage_log_team_attribution")
+}

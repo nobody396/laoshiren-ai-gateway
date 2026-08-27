@@ -17,6 +17,7 @@ import (
 )
 
 type authRepoStub struct {
+	getByID           func(ctx context.Context, id int64) (*APIKey, error)
 	getByKeyForAuth   func(ctx context.Context, key string) (*APIKey, error)
 	listKeysByUserID  func(ctx context.Context, userID int64) ([]string, error)
 	listKeysByGroupID func(ctx context.Context, groupID int64) ([]string, error)
@@ -27,6 +28,9 @@ func (s *authRepoStub) Create(ctx context.Context, key *APIKey) error {
 }
 
 func (s *authRepoStub) GetByID(ctx context.Context, id int64) (*APIKey, error) {
+	if s.getByID != nil {
+		return s.getByID(ctx, id)
+	}
 	panic("unexpected GetByID call")
 }
 

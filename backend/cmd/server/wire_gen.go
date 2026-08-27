@@ -287,7 +287,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	rbacService := service.NewRBACService(rbacRepository, rbacCache)
 	rbacHandler := admin.NewRBACHandler(rbacService)
 	teamInvitationLimiter := repository.NewTeamInvitationLimiter(redisClient)
-	teamService := service.NewTeamService(teamRepository, userRepository, emailService, apiKeyCache, teamInvitationLimiter, settingService, configConfig)
+	teamService := service.NewTeamService(teamRepository, userRepository, apiKeyCache, teamInvitationLimiter, settingService, configConfig)
 	teamHandler := admin.NewTeamHandler(teamService)
 	adminHandlers := handler.ProvideAdminHandlers(dashboardHandler, adminAgentHandler, adminUserHandler, groupHandler, accountHandler, adminAnnouncementHandler, adminChangelogHandler, adminFeedbackHandler, financeTransactionHandler, dataManagementHandler, backupHandler, oAuthHandler, openAIOAuthHandler, geminiOAuthHandler, antigravityOAuthHandler, grokOAuthHandler, proxyHandler, adminRedeemHandler, promoHandler, settingHandler, opsHandler, systemHandler, adminSubscriptionHandler, adminUsageHandler, adminInvoiceHandler, userAttributeHandler, errorPassthroughHandler, tlsFingerprintProfileHandler, adminAPIKeyHandler, scheduledTestHandler, channelHandler, supplierHandler, rbacHandler, teamHandler)
 	accountingWorker := service.NewAccountingWorker(accountingCommandRepository, usageBillingRepository)

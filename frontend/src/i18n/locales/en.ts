@@ -6681,6 +6681,7 @@ export default {
     noUsage: 'No team usage yet',
     noKeys: 'No team keys yet',
     noMembers: 'No members yet',
-    noInvitations: 'No invitations yet'
+    noInvitations: 'No invitations yet',
+    manualShareNotice: 'The platform does not send this email automatically. Share the link with the intended member yourself.'
   },
 }

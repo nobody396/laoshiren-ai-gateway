@@ -143,6 +143,9 @@ func APIKeyFromService(k *service.APIKey) *APIKey {
 	out.Scope = "personal"
 	if k.TeamID != nil {
 		out.Scope = "team"
+		if k.ActorUser != nil {
+			out.User = UserFromServiceShallow(k.ActorUser)
+		}
 	}
 	if k.Window5hStart != nil && !service.IsWindowExpired(k.Window5hStart, service.RateLimitWindow5h) {
 		t := k.Window5hStart.Add(service.RateLimitWindow5h)

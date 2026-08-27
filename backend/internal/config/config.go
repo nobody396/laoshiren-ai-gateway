@@ -91,6 +91,15 @@ type Config struct {
 	Update                  UpdateConfig                  `mapstructure:"update"`
 	Downloads               DownloadsConfig               `mapstructure:"downloads"`
 	Idempotency             IdempotencyConfig             `mapstructure:"idempotency"`
+	Team                    TeamConfig                    `mapstructure:"team"`
+}
+
+// TeamConfig 控制 Team 功能的开放策略。默认开启功能，但允许上线时通过配置关闭
+// 用户自助创建，仅由管理员建立试点团队。
+type TeamConfig struct {
+	Enabled            bool `mapstructure:"enabled"`
+	SelfServiceEnabled bool `mapstructure:"self_service_enabled"`
+	DefaultMemberLimit int  `mapstructure:"default_member_limit"`
 }
 
 type LogConfig struct {
@@ -1476,6 +1485,11 @@ func setDefaults() {
 	viper.SetDefault("idempotency.max_stored_response_len", 64*1024)
 	viper.SetDefault("idempotency.cleanup_interval_seconds", 60)
 	viper.SetDefault("idempotency.cleanup_batch_size", 500)
+
+	// Team 功能可以独立关闭；默认成员上限不包含 Owner。
+	viper.SetDefault("team.enabled", true)
+	viper.SetDefault("team.self_service_enabled", true)
+	viper.SetDefault("team.default_member_limit", 10)
 
 	// Gateway
 	viper.SetDefault("gateway.response_header_timeout", 600) // 600秒(10分钟)等待上游响应头，LLM高负载时可能排队较久

@@ -109,6 +109,22 @@ func RegisterAdminRoutes(
 
 		// RBAC 权限管理
 		registerRBACRoutes(admin, h)
+
+		registerTeamRoutes(admin, h)
+	}
+}
+
+func registerTeamRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	teams := admin.Group("/teams")
+	{
+		teams.GET("", h.Admin.Team.List)
+		teams.POST("", h.Admin.Team.Create)
+		teams.GET("/:id", h.Admin.Team.Get)
+		teams.PATCH("/:id", h.Admin.Team.Update)
+		teams.DELETE("/:id", h.Admin.Team.Dissolve)
+		teams.GET("/:id/members", h.Admin.Team.ListMembers)
+		teams.GET("/:id/usage", h.Admin.Team.GetUsage)
+		teams.POST("/:id/force-transfer", h.Admin.Team.ForceTransfer)
 	}
 }
 

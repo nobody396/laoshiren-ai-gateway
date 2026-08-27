@@ -90,6 +90,7 @@ var ProviderSet = wire.NewSet(
 	NewAffiliateRiskRepository,
 	NewAffiliateSelfCommissionPolicyRepository,
 	NewAPIKeyRepository,
+	NewTeamRepository,
 	NewGroupRepository,
 	NewAccountRepository,
 	NewScheduledTestPlanRepository,   // 定时测试计划仓储
@@ -144,6 +145,7 @@ var ProviderSet = wire.NewSet(
 	NewDashboardCache,
 	NewPublicStatsCache,
 	NewEmailCache,
+	NewTeamInvitationLimiter,
 	NewFeedbackRateLimitCache,
 	NewIdentityCache,
 	NewRedeemCache,

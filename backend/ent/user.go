@@ -105,11 +105,13 @@ type UserEdges struct {
 	InvoiceProfiles []*InvoiceProfile `json:"invoice_profiles,omitempty"`
 	// InvoiceRequests holds the value of the invoice_requests edge.
 	InvoiceRequests []*InvoiceRequest `json:"invoice_requests,omitempty"`
+	// TeamMemberships holds the value of the team_memberships edge.
+	TeamMemberships []*TeamMembership `json:"team_memberships,omitempty"`
 	// UserAllowedGroups holds the value of the user_allowed_groups edge.
 	UserAllowedGroups []*UserAllowedGroup `json:"user_allowed_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [18]bool
+	loadedTypes [19]bool
 }
 
 // APIKeysOrErr returns the APIKeys value or an error if the edge
@@ -265,10 +267,19 @@ func (e UserEdges) InvoiceRequestsOrErr() ([]*InvoiceRequest, error) {
 	return nil, &NotLoadedError{edge: "invoice_requests"}
 }
 
+// TeamMembershipsOrErr returns the TeamMemberships value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) TeamMembershipsOrErr() ([]*TeamMembership, error) {
+	if e.loadedTypes[17] {
+		return e.TeamMemberships, nil
+	}
+	return nil, &NotLoadedError{edge: "team_memberships"}
+}
+
 // UserAllowedGroupsOrErr returns the UserAllowedGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserAllowedGroupsOrErr() ([]*UserAllowedGroup, error) {
-	if e.loadedTypes[17] {
+	if e.loadedTypes[18] {
 		return e.UserAllowedGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_allowed_groups"}
@@ -553,6 +564,11 @@ func (_m *User) QueryInvoiceProfiles() *InvoiceProfileQuery {
 // QueryInvoiceRequests queries the "invoice_requests" edge of the User entity.
 func (_m *User) QueryInvoiceRequests() *InvoiceRequestQuery {
 	return NewUserClient(_m.config).QueryInvoiceRequests(_m)
+}
+
+// QueryTeamMemberships queries the "team_memberships" edge of the User entity.
+func (_m *User) QueryTeamMemberships() *TeamMembershipQuery {
+	return NewUserClient(_m.config).QueryTeamMemberships(_m)
 }
 
 // QueryUserAllowedGroups queries the "user_allowed_groups" edge of the User entity.

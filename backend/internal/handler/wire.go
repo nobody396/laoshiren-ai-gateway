@@ -43,6 +43,7 @@ func ProvideAdminHandlers(
 	channelHandler *admin.ChannelHandler,
 	supplierHandler *admin.SupplierHandler,
 	rbacHandler *admin.RBACHandler,
+	teamHandler *admin.TeamHandler,
 ) *AdminHandlers {
 	return &AdminHandlers{
 		Dashboard:             dashboardHandler,
@@ -78,6 +79,7 @@ func ProvideAdminHandlers(
 		Channel:               channelHandler,
 		Supplier:              supplierHandler,
 		RBAC:                  rbacHandler,
+		Team:                  teamHandler,
 	}
 }
 
@@ -156,6 +158,7 @@ func ProvideHandlers(
 	statusHandler *StatusHandler,
 	customerTierHandler *CustomerTierHandler,
 	compensationHandler *CompensationHandler,
+	teamHandler *TeamHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 	_ *service.PendingAuthSessionCleanupService,
@@ -188,6 +191,7 @@ func ProvideHandlers(
 		Status:         statusHandler,
 		CustomerTier:   customerTierHandler,
 		Compensation:   compensationHandler,
+		Team:           teamHandler,
 	}
 }
 
@@ -198,6 +202,7 @@ var ProviderSet = wire.NewSet(
 	ProvideUserHandler,
 	NewAgentHandler,
 	NewAPIKeyHandler,
+	NewTeamHandler,
 	NewUsageHandler,
 	NewRedeemHandler,
 	NewSubscriptionHandler,
@@ -257,6 +262,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewChannelHandler,
 	admin.NewSupplierHandler,
 	admin.NewRBACHandler,
+	admin.NewTeamHandler,
 
 	// AdminHandlers and Handlers constructors
 	ProvideAdminHandlers,

@@ -36,6 +36,7 @@ import costAccountingAPI from './costAccounting'
 import tlsFingerprintProfilesAPI from './tlsFingerprintProfile'
 import invoiceAPI from './invoice'
 import rbacAPI from './rbac'
+import teamsAPI from './teams'
 
 /**
  * Unified admin API object for convenient access
@@ -72,7 +73,8 @@ export const adminAPI = {
   monthlyUpstreams: monthlyUpstreamsAPI,
   costAccounting: costAccountingAPI,
   invoice: invoiceAPI,
-  rbac: rbacAPI,
+	rbac: rbacAPI,
+	teams: teamsAPI,
   tlsFingerprintProfiles: tlsFingerprintProfilesAPI
 }
 
@@ -107,7 +109,8 @@ export {
   suppliersAPI,
   monthlyUpstreamsAPI,
   invoiceAPI,
-  rbacAPI,
+	rbacAPI,
+	teamsAPI,
   tlsFingerprintProfilesAPI
 }
 

@@ -18,6 +18,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/usersubscription"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
+	"github.com/lib/pq"
 )
 
 type userRepository struct {
@@ -223,6 +224,10 @@ func (r *userRepository) IncrementTokenVersion(ctx context.Context, userID int64
 func (r *userRepository) Delete(ctx context.Context, id int64) error {
 	affected, err := clientFromContext(ctx, r.client).User.Delete().Where(dbuser.IDEQ(id)).Exec(ctx)
 	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && strings.Contains(pqErr.Message, "TEAM_OWNER_TRANSFER_REQUIRED") {
+			return service.ErrTeamOwnerTransferRequired
+		}
 		return translatePersistenceError(err, service.ErrUserNotFound, nil)
 	}
 	if affected == 0 {

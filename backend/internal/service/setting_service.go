@@ -270,6 +270,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 	)
 
 	return &PublicSettings{
+		TeamEnabled:                      s.cfg == nil || s.cfg.Team.Enabled,
+		TeamSelfServiceEnabled:           s.cfg == nil || s.cfg.Team.SelfServiceEnabled,
 		RegistrationEnabled:              settings[SettingKeyRegistrationEnabled] == "true",
 		EmailVerifyEnabled:               emailVerifyEnabled,
 		RegistrationEmailSuffixWhitelist: registrationEmailSuffixWhitelist,

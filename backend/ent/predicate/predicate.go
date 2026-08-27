@@ -108,6 +108,18 @@ type Setting func(*sql.Selector)
 // TLSFingerprintProfile is the predicate function for tlsfingerprintprofile builders.
 type TLSFingerprintProfile func(*sql.Selector)
 
+// Team is the predicate function for team builders.
+type Team func(*sql.Selector)
+
+// TeamInvitation is the predicate function for teaminvitation builders.
+type TeamInvitation func(*sql.Selector)
+
+// TeamMembership is the predicate function for teammembership builders.
+type TeamMembership func(*sql.Selector)
+
+// TeamOwnershipTransfer is the predicate function for teamownershiptransfer builders.
+type TeamOwnershipTransfer func(*sql.Selector)
+
 // TopupOrder is the predicate function for topuporder builders.
 type TopupOrder func(*sql.Selector)
 

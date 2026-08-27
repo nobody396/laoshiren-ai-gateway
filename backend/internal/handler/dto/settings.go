@@ -223,6 +223,8 @@ type DefaultSubscriptionSetting struct {
 }
 
 type PublicSettings struct {
+	TeamEnabled                      bool              `json:"team_enabled"`
+	TeamSelfServiceEnabled           bool              `json:"team_self_service_enabled"`
 	RegistrationEnabled              bool              `json:"registration_enabled"`
 	EmailVerifyEnabled               bool              `json:"email_verify_enabled"`
 	RegistrationEmailSuffixWhitelist []string          `json:"registration_email_suffix_whitelist"`

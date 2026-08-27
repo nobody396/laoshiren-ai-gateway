@@ -133,6 +133,7 @@ func (User) Edges() []ent.Edge {
 		edge.To("account_change_records", AccountChangeRecord.Type),
 		edge.To("invoice_profiles", InvoiceProfile.Type),
 		edge.To("invoice_requests", InvoiceRequest.Type),
+		edge.To("team_memberships", TeamMembership.Type),
 	}
 }
 

@@ -1710,6 +1710,22 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 	}
 
 	if len(candidates) == 0 {
+		stats := s.logDetailedSelectionFailure(
+			ctx,
+			groupID,
+			sessionHash,
+			requestedModel,
+			platform,
+			accounts,
+			excludedIDs,
+			useMixed,
+		)
+		if requestedModel != "" {
+			if len(excludedIDs) == 0 && stats.Total > 0 && stats.ModelUnsupported == stats.Total {
+				return nil, &ModelNotSupportedError{RequestedModel: requestedModel, Platform: platform}
+			}
+			return nil, fmt.Errorf("%w supporting model: %s (%s)", ErrNoAvailableAccounts, requestedModel, summarizeSelectionFailureStats(stats))
+		}
 		return nil, ErrNoAvailableAccounts
 	}
 

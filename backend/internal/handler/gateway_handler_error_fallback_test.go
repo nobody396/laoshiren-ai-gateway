@@ -37,6 +37,29 @@ func TestGatewayEnsureForwardErrorResponse_WritesFallbackWhenNotWritten(t *testi
 	assert.Equal(t, service.ClientMessageServiceUnavailable, errorObj["message"])
 }
 
+func TestGatewayHandleAccountSelectionError_ModelNotSupported(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, EndpointMessages, nil)
+
+	h := &GatewayHandler{}
+	handled := h.handleAccountSelectionError(c, &service.ModelNotSupportedError{
+		RequestedModel: "claude-opus-5",
+		Platform:       service.PlatformAnthropic,
+	}, false)
+
+	require.True(t, handled)
+	require.Equal(t, http.StatusBadRequest, w.Code)
+	var parsed map[string]any
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &parsed))
+	errorObj, ok := parsed["error"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "invalid_request_error", errorObj["type"])
+	require.Contains(t, errorObj["message"], "claude-opus-5")
+	require.Contains(t, errorObj["message"], service.ModelPricingPageURL)
+}
+
 // Writer 已写后 ensureForwardErrorResponse 必须把错误以 SSE 形式追加，
 // 而不是 silent EOF。非 /responses 路径走 legacy data:{"type":"error"} 分支。
 func TestGatewayEnsureForwardErrorResponse_AppendsSSEAfterWritten(t *testing.T) {

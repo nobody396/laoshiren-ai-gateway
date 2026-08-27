@@ -30,6 +30,8 @@ class ModelCatalogTest(unittest.TestCase):
         self.assertIn("grok-4.6", MODULE.render_go(catalog))
         self.assertIn('"id": "grok-4.6"', MODULE.render_ts(catalog))
         self.assertIn("export const codexClientModels", MODULE.render_ts(catalog))
+        self.assertIn("export const clientAutoConfigDefaults", MODULE.render_ts(catalog))
+        self.assertIn('"anthropic": "claude-opus-5"', MODULE.render_ts(catalog))
         self.assertNotIn("gpt-5.6-luna", codex_models)
         self.assertNotIn("gpt-5.4-mini", codex_models)
         self.assertIn("$CatalogGrokDefaultModel = 'grok-4.6'", MODULE.render_powershell_block(catalog))

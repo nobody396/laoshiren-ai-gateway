@@ -401,6 +401,9 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			selection, err := h.gatewayService.SelectAccountWithLoadAwareness(c.Request.Context(), apiKey.GroupID, sessionKey, reqModel, fs.FailedAccountIDs, "", int64(0)) // Gemini 不使用会话限制
 			if err != nil {
 				if len(fs.FailedAccountIDs) == 0 {
+					if h.handleAccountSelectionError(c, err, streamStarted) {
+						return
+					}
 					safeErr := service.SafeClientUpstreamError(http.StatusServiceUnavailable)
 					h.handleStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, streamStarted)
 					return
@@ -635,6 +638,9 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			selection, err := h.gatewayService.SelectAccountWithLoadAwareness(c.Request.Context(), currentAPIKey.GroupID, sessionKey, reqModel, fs.FailedAccountIDs, parsedReq.MetadataUserID, subject.UserID)
 			if err != nil {
 				if len(fs.FailedAccountIDs) == 0 {
+					if h.handleAccountSelectionError(c, err, streamStarted) {
+						return
+					}
 					safeErr := service.SafeClientUpstreamError(http.StatusServiceUnavailable)
 					h.handleStreamingAwareError(c, safeErr.StatusCode, safeErr.Type, safeErr.Message, streamStarted)
 					return
@@ -1543,6 +1549,24 @@ func (h *GatewayHandler) errorResponse(c *gin.Context, status int, errType, mess
 	c.JSON(status, service.ClientErrorEnvelope(c, errType, message))
 }
 
+// handleAccountSelectionError converts deterministic routing failures into
+// actionable client errors instead of disguising them as transient overload.
+// It returns true only when the error has been fully written to the client.
+func (h *GatewayHandler) handleAccountSelectionError(c *gin.Context, err error, streamStarted bool) bool {
+	var modelErr *service.ModelNotSupportedError
+	if !errors.As(err, &modelErr) {
+		return false
+	}
+	h.handleStreamingAwareError(
+		c,
+		http.StatusBadRequest,
+		"invalid_request_error",
+		service.ClientMessageModelNotSupported(modelErr.RequestedModel),
+		streamStarted,
+	)
+	return true
+}
+
 // CountTokens handles token counting endpoint
 // POST /v1/messages/count_tokens
 // 特点：校验订阅/余额，但不计算并发、不记录使用量
@@ -1628,6 +1652,9 @@ func (h *GatewayHandler) CountTokens(c *gin.Context) {
 	account, err := h.gatewayService.SelectAccountForModel(c.Request.Context(), apiKey.GroupID, sessionHash, parsedReq.Model)
 	if err != nil {
 		reqLog.Warn("gateway.count_tokens_select_account_failed", zap.Error(err))
+		if h.handleAccountSelectionError(c, err, false) {
+			return
+		}
 		h.errorResponse(c, http.StatusServiceUnavailable, "api_error", service.ClientMessageServiceUnavailable)
 		return
 	}

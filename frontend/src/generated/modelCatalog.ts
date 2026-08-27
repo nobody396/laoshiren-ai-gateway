@@ -21,6 +21,13 @@ export interface CodexClientModel {
 
 export const clientAutoConfigVersion = "0.7.13"
 
+export const clientAutoConfigDefaults = {
+  "anthropic": "claude-opus-5",
+  "gemini": "gemini-3.7-flash",
+  "grok": "grok-4.6",
+  "openai": "gpt-5.6-sol"
+} as const
+
 export const modelCatalog: readonly CatalogModel[] = [
   {
     "id": "glm-5.2",

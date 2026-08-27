@@ -2007,6 +2007,63 @@ func (m *mockConcurrencyCache) GetUsersLoadBatch(ctx context.Context, users []Us
 func TestGatewayService_SelectAccountWithLoadAwareness(t *testing.T) {
 	ctx := context.Background()
 
+	t.Run("负载感知路径-所有账号都不支持请求模型返回类型化错误", func(t *testing.T) {
+		groupID := int64(33)
+		repo := &mockAccountRepoForPlatform{
+			accounts: []Account{
+				{
+					ID:          72,
+					Platform:    PlatformAnthropic,
+					Status:      StatusActive,
+					Schedulable: true,
+					Concurrency: 20,
+					Credentials: map[string]any{
+						"model_mapping": map[string]any{"glm-5.3": "glm-5.3"},
+					},
+					AccountGroups: []AccountGroup{{GroupID: groupID}},
+				},
+			},
+			accountsByID: map[int64]*Account{},
+		}
+		for i := range repo.accounts {
+			repo.accountsByID[repo.accounts[i].ID] = &repo.accounts[i]
+		}
+
+		groupRepo := &mockGroupRepoForGateway{
+			groups: map[int64]*Group{
+				groupID: {
+					ID:       groupID,
+					Platform: PlatformAnthropic,
+					Status:   StatusActive,
+					Hydrated: true,
+				},
+			},
+		}
+		cfg := testConfig()
+		cfg.Gateway.Scheduling.LoadBatchEnabled = true
+		svc := &GatewayService{
+			accountRepo:        repo,
+			groupRepo:          groupRepo,
+			cache:              &mockGatewayCacheForPlatform{},
+			cfg:                cfg,
+			concurrencyService: NewConcurrencyService(&mockConcurrencyCache{}),
+		}
+
+		result, err := svc.SelectAccountWithLoadAwareness(
+			ctx,
+			&groupID,
+			"",
+			"claude-opus-5",
+			nil,
+			"",
+		)
+		require.Nil(t, result)
+		var modelErr *ModelNotSupportedError
+		require.ErrorAs(t, err, &modelErr)
+		require.Equal(t, "claude-opus-5", modelErr.RequestedModel)
+		require.ErrorIs(t, err, ErrNoAvailableAccounts)
+	})
+
 	t.Run("禁用负载批量查询-降级到传统选择", func(t *testing.T) {
 		repo := &mockAccountRepoForPlatform{
 			accounts: []Account{

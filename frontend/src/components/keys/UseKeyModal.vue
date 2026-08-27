@@ -143,18 +143,15 @@ import { useClipboard } from '@/composables/useClipboard'
 import {
   buildCodexModelCatalog,
   resolveCodexModels,
+  resolveClaudeClientModels,
   CODEX_AUTO_COMPACT_TOKEN_LIMIT,
   CODEX_CONTEXT_WINDOW_TOKENS
 } from '@/utils/ccSwitchImport'
 import { getGatewayModels } from '@/api/gatewayModels'
 import type { GroupPlatform } from '@/types'
-import {
-  catalogClientDefaultForPlatform,
-  optionalCatalogClientDefaultForPlatform
-} from '@/generated/modelCatalog'
+import { catalogClientDefaultForPlatform } from '@/generated/modelCatalog'
 
 const grokClientDefault = catalogClientDefaultForPlatform('grok')
-const claudeClientDefault = optionalCatalogClientDefaultForPlatform('anthropic')
 
 interface Props {
   show: boolean
@@ -657,15 +654,20 @@ $env:ANTHROPIC_AUTH_TOKEN="${apiKey}"`
     ? '~/.claude/settings.json'
     : '%userprofile%\\.claude\\settings.json'
 
-  const vscodeContent = `{
-  "model": "${claudeClientDefault?.id ?? 'claude-opus-5'}",
-  "effortLevel": "xhigh",
-  "env": {
-    "ANTHROPIC_BASE_URL": "${baseUrl}",
-    "ANTHROPIC_AUTH_TOKEN": "${apiKey}",
-    "CLAUDE_CODE_ATTRIBUTION_HEADER": "0"
-  }
-}`
+  const claudeModels = resolveClaudeClientModels(props.platform, props.defaultMappedModel)
+  const vscodeContent = JSON.stringify({
+    model: claudeModels.model,
+    effortLevel: 'xhigh',
+    env: {
+      ANTHROPIC_BASE_URL: baseUrl,
+      ANTHROPIC_AUTH_TOKEN: apiKey,
+      ANTHROPIC_MODEL: claudeModels.model,
+      ANTHROPIC_DEFAULT_OPUS_MODEL: claudeModels.opus,
+      ANTHROPIC_DEFAULT_SONNET_MODEL: claudeModels.sonnet,
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: claudeModels.haiku,
+      CLAUDE_CODE_ATTRIBUTION_HEADER: '0'
+    }
+  }, null, 2)
 
   return [
     { path, content },

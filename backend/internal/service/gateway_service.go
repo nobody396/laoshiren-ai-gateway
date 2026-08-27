@@ -692,6 +692,10 @@ type GatewayService struct {
 	accountQuotaAlertService *AccountQuotaAlertService
 	balanceAlertService      *BalanceAlertService
 	commissionService        *CommissionService
+	// Test override for the downstream keepalive used while exact-usage
+	// Anthropic fallbacks wait on a buffered upstream response. Production uses
+	// the configured stream keepalive interval or the safe default below.
+	anthropicBufferedUsageKeepaliveInterval time.Duration
 }
 
 // NewGatewayService creates a new GatewayService
@@ -4690,7 +4694,14 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 			return nil, err
 		}
 
-		resp, err = s.httpUpstream.DoWithTLS(upstreamReq, proxyURL, account.ID, account.Concurrency, s.resolveTLSProfile(account))
+		resp, err = s.doAnthropicAPIKeyPassthroughRequest(
+			ctx,
+			c,
+			upstreamReq,
+			proxyURL,
+			account,
+			forceNonStreamUsage,
+		)
 		if err != nil {
 			if resp != nil && resp.Body != nil {
 				_ = resp.Body.Close()
@@ -4707,7 +4718,13 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 				Message:            safeErr,
 			})
 			safeClientErr := SafeClientUpstreamError(http.StatusBadGateway)
-			c.JSON(safeClientErr.StatusCode, ClientErrorEnvelope(c, safeClientErr.Type, safeClientErr.Message))
+			// A buffered-usage keepalive may already have committed an SSE
+			// response. In that case the handler owns the protocol-correct SSE
+			// error frame after Forward returns; appending JSON here corrupts the
+			// stream.
+			if c != nil && c.Writer != nil && !c.Writer.Written() {
+				c.JSON(safeClientErr.StatusCode, ClientErrorEnvelope(c, safeClientErr.Type, safeClientErr.Message))
+			}
 			return nil, fmt.Errorf("upstream request failed: %s", safeErr)
 		}
 
@@ -4914,6 +4931,80 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthrough(
 }
 
 const anthropicForceNonStreamUsageExtraKey = "anthropic_force_nonstream_for_usage"
+
+const defaultAnthropicBufferedUsageKeepaliveInterval = 5 * time.Second
+
+func (s *GatewayService) anthropicBufferedUsageKeepaliveEvery() time.Duration {
+	if s != nil && s.anthropicBufferedUsageKeepaliveInterval > 0 {
+		return s.anthropicBufferedUsageKeepaliveInterval
+	}
+	if s != nil && s.cfg != nil && s.cfg.Gateway.StreamKeepaliveInterval > 0 {
+		return time.Duration(s.cfg.Gateway.StreamKeepaliveInterval) * time.Second
+	}
+	return defaultAnthropicBufferedUsageKeepaliveInterval
+}
+
+type anthropicBufferedUsageUpstreamResult struct {
+	resp *http.Response
+	err  error
+}
+
+// doAnthropicAPIKeyPassthroughRequest keeps the downstream Anthropic stream
+// alive while an exact-usage fallback waits for the upstream's non-streaming
+// JSON response. Without this, clients commonly cancel during a slow model
+// completion before the gateway can synthesize the first SSE message event.
+//
+// The upstream call is the only concurrent operation. All downstream writes
+// stay on this goroutine, and the buffered result channel prevents a goroutine
+// leak when the client disconnects while the upstream request is unwinding.
+func (s *GatewayService) doAnthropicAPIKeyPassthroughRequest(
+	ctx context.Context,
+	c *gin.Context,
+	req *http.Request,
+	proxyURL string,
+	account *Account,
+	forceNonStreamUsage bool,
+) (*http.Response, error) {
+	call := func() (*http.Response, error) {
+		return s.httpUpstream.DoWithTLS(req, proxyURL, account.ID, account.Concurrency, s.resolveTLSProfile(account))
+	}
+	if !forceNonStreamUsage || c == nil || c.Writer == nil {
+		return call()
+	}
+
+	flusher, ok := c.Writer.(http.Flusher)
+	if !ok {
+		return call()
+	}
+
+	resultCh := make(chan anthropicBufferedUsageUpstreamResult, 1)
+	go func() {
+		resp, err := call()
+		resultCh <- anthropicBufferedUsageUpstreamResult{resp: resp, err: err}
+	}()
+
+	ticker := time.NewTicker(s.anthropicBufferedUsageKeepaliveEvery())
+	defer ticker.Stop()
+	for {
+		select {
+		case result := <-resultCh:
+			return result.resp, result.err
+		case <-req.Context().Done():
+			return nil, req.Context().Err()
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-ticker.C:
+			c.Header("Content-Type", "text/event-stream")
+			c.Header("Cache-Control", "no-cache")
+			c.Header("Connection", "keep-alive")
+			c.Header("X-Accel-Buffering", "no")
+			if _, err := fmt.Fprint(c.Writer, "data: {\"type\":\"ping\"}\n\n"); err != nil {
+				return nil, fmt.Errorf("write Anthropic buffered-usage keepalive: %w", err)
+			}
+			flusher.Flush()
+		}
+	}
+}
 
 func anthropicForceNonStreamUsage(account *Account, model string) bool {
 	if account == nil || account.Extra == nil {
@@ -6665,6 +6756,16 @@ func (s *GatewayService) handleErrorResponse(ctx context.Context, resp *http.Res
 	}
 	if shouldDisable {
 		return nil, &UpstreamFailoverError{StatusCode: resp.StatusCode, ResponseBody: body}
+	}
+	// A concurrency or buffered-usage keepalive may already have committed an
+	// SSE response. Never append a standalone JSON error body to that stream;
+	// return the classified error so the gateway handler can emit its
+	// protocol-correct streaming error frame.
+	if c != nil && c.Writer != nil && c.Writer.Written() {
+		if upstreamMsg == "" {
+			return nil, fmt.Errorf("upstream error after stream start: %d", resp.StatusCode)
+		}
+		return nil, fmt.Errorf("upstream error after stream start: %d message=%s", resp.StatusCode, upstreamMsg)
 	}
 
 	MarkResponseCommitted(c)

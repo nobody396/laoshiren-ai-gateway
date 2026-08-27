@@ -97,6 +97,54 @@ func (w *failWriteResponseWriter) WriteString(_ string) (int, error) {
 	return 0, errors.New("client disconnected")
 }
 
+type notifyWriteResponseWriter struct {
+	gin.ResponseWriter
+	writes chan []byte
+}
+
+func (w *notifyWriteResponseWriter) notify(data []byte) {
+	copyOfData := append([]byte(nil), data...)
+	select {
+	case w.writes <- copyOfData:
+	default:
+	}
+}
+
+func (w *notifyWriteResponseWriter) Write(data []byte) (int, error) {
+	w.notify(data)
+	return w.ResponseWriter.Write(data)
+}
+
+func (w *notifyWriteResponseWriter) WriteString(data string) (int, error) {
+	w.notify([]byte(data))
+	return w.ResponseWriter.WriteString(data)
+}
+
+type blockingAnthropicHTTPUpstream struct {
+	started chan struct{}
+	release chan struct{}
+	resp    *http.Response
+	err     error
+}
+
+func (u *blockingAnthropicHTTPUpstream) Do(req *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
+	select {
+	case <-u.started:
+	default:
+		close(u.started)
+	}
+	select {
+	case <-u.release:
+	case <-req.Context().Done():
+		return nil, req.Context().Err()
+	}
+	return u.resp, u.err
+}
+
+func (u *blockingAnthropicHTTPUpstream) DoWithTLS(req *http.Request, proxyURL string, accountID int64, accountConcurrency int, _ *tlsfingerprint.Profile) (*http.Response, error) {
+	return u.Do(req, proxyURL, accountID, accountConcurrency)
+}
+
 func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardStreamPreservesBodyAndAuthReplacement(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -253,6 +301,198 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForceNonStreamUsageSynthesize
 	require.Contains(t, rec.Body.String(), `"text":"OK"`)
 	require.Contains(t, rec.Body.String(), `"output_tokens":79`)
 	require.Contains(t, rec.Body.String(), `event: message_stop`)
+}
+
+func TestGatewayService_AnthropicAPIKeyPassthrough_ForceNonStreamUsageKeepsClientStreamAliveWhileUpstreamBuffers(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+	writes := make(chan []byte, 8)
+	c.Writer = &notifyWriteResponseWriter{ResponseWriter: c.Writer, writes: writes}
+
+	body := []byte(`{"model":"glm-5.3-flash","stream":true,"messages":[{"role":"user","content":"Reply with exactly OK."}],"max_tokens":32}`)
+	parsed := &ParsedRequest{Body: body, Model: "glm-5.3-flash", Stream: true}
+	upstreamJSON := `{"id":"msg_glm53_flash","type":"message","role":"assistant","model":"glm-5.3-flash","content":[{"type":"text","text":"OK"}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":17,"output_tokens":9,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}`
+	upstream := &blockingAnthropicHTTPUpstream{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+		resp: &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{"Content-Type": []string{"application/json"}, "x-request-id": []string{"rid-glm53-flash"}},
+			Body:       io.NopCloser(strings.NewReader(upstreamJSON)),
+		},
+	}
+	svc := &GatewayService{
+		cfg:                                     &config.Config{Gateway: config.GatewayConfig{MaxLineSize: defaultMaxLineSize}},
+		responseHeaderFilter:                    compileResponseHeaderFilter(&config.Config{}),
+		httpUpstream:                            upstream,
+		rateLimitService:                        &RateLimitService{},
+		anthropicBufferedUsageKeepaliveInterval: 10 * time.Millisecond,
+	}
+	account := newAnthropicAPIKeyAccountForTest()
+	account.Credentials["base_url"] = "https://hk.pomoai.xyz"
+	account.Credentials["model_mapping"] = map[string]any{"glm-5.3-flash": "glm-5.3-flash"}
+	account.Extra = nil
+
+	type forwardOutcome struct {
+		result *ForwardResult
+		err    error
+	}
+	outcome := make(chan forwardOutcome, 1)
+	go func() {
+		result, err := svc.Forward(context.Background(), c, account, parsed)
+		outcome <- forwardOutcome{result: result, err: err}
+	}()
+
+	select {
+	case <-upstream.started:
+	case <-time.After(time.Second):
+		t.Fatal("upstream request did not start")
+	}
+
+	select {
+	case firstWrite := <-writes:
+		require.JSONEq(t, `{"type":"ping"}`, strings.TrimSpace(strings.TrimPrefix(string(firstWrite), "data:")))
+	case <-time.After(time.Second):
+		t.Fatal("client did not receive a keepalive before the buffered upstream response")
+	}
+
+	close(upstream.release)
+	select {
+	case got := <-outcome:
+		require.NoError(t, got.err)
+		require.NotNil(t, got.result)
+		require.Equal(t, 17, got.result.Usage.InputTokens)
+		require.Equal(t, 9, got.result.Usage.OutputTokens)
+	case <-time.After(time.Second):
+		t.Fatal("forwarding did not finish after the upstream response was released")
+	}
+
+	require.Contains(t, rec.Body.String(), `data: {"type":"ping"}`)
+	require.Contains(t, rec.Body.String(), `event: message_start`)
+	require.Contains(t, rec.Body.String(), `"text":"OK"`)
+	require.Contains(t, rec.Body.String(), `"output_tokens":9`)
+	require.Contains(t, rec.Body.String(), `event: message_stop`)
+}
+
+func TestGatewayService_AnthropicAPIKeyPassthrough_ForceNonStreamUsageDoesNotAppendJSONErrorAfterKeepalive(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+	writes := make(chan []byte, 8)
+	c.Writer = &notifyWriteResponseWriter{ResponseWriter: c.Writer, writes: writes}
+
+	upstream := &blockingAnthropicHTTPUpstream{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+		err:     errors.New("upstream unavailable"),
+	}
+	svc := &GatewayService{
+		cfg:                                     &config.Config{Gateway: config.GatewayConfig{MaxLineSize: defaultMaxLineSize}},
+		httpUpstream:                            upstream,
+		rateLimitService:                        &RateLimitService{},
+		anthropicBufferedUsageKeepaliveInterval: 10 * time.Millisecond,
+	}
+	account := newAnthropicAPIKeyAccountForTest()
+	account.Credentials["base_url"] = "https://hk.pomoai.xyz"
+	account.Credentials["model_mapping"] = map[string]any{"glm-5.3-flash": "glm-5.3-flash"}
+	account.Extra = nil
+	parsed := &ParsedRequest{
+		Body:   []byte(`{"model":"glm-5.3-flash","stream":true,"messages":[{"role":"user","content":"hi"}],"max_tokens":32}`),
+		Model:  "glm-5.3-flash",
+		Stream: true,
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		_, err := svc.Forward(context.Background(), c, account, parsed)
+		errCh <- err
+	}()
+
+	select {
+	case <-upstream.started:
+	case <-time.After(time.Second):
+		t.Fatal("upstream request did not start")
+	}
+	select {
+	case firstWrite := <-writes:
+		require.Contains(t, string(firstWrite), `"type":"ping"`)
+	case <-time.After(time.Second):
+		t.Fatal("client did not receive a keepalive before the buffered upstream error")
+	}
+	close(upstream.release)
+	select {
+	case err := <-errCh:
+		require.Error(t, err)
+	case <-time.After(time.Second):
+		t.Fatal("forwarding did not return the upstream error")
+	}
+
+	require.Equal(t, "text/event-stream", rec.Header().Get("Content-Type"))
+	require.Equal(t, "data: {\"type\":\"ping\"}\n\n", rec.Body.String(), "the handler owns the protocol-correct SSE error frame after Forward returns")
+}
+
+func TestGatewayService_AnthropicAPIKeyPassthrough_ForceNonStreamUsageDoesNotAppendHTTPErrorBodyAfterKeepalive(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+	writes := make(chan []byte, 8)
+	c.Writer = &notifyWriteResponseWriter{ResponseWriter: c.Writer, writes: writes}
+
+	upstream := &blockingAnthropicHTTPUpstream{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+		resp: &http.Response{
+			StatusCode: http.StatusBadRequest,
+			Header:     http.Header{"Content-Type": []string{"application/json"}},
+			Body:       io.NopCloser(strings.NewReader(`{"type":"error","error":{"type":"invalid_request_error","message":"bad request"}}`)),
+		},
+	}
+	svc := &GatewayService{
+		cfg:                                     &config.Config{Gateway: config.GatewayConfig{MaxLineSize: defaultMaxLineSize}},
+		httpUpstream:                            upstream,
+		rateLimitService:                        &RateLimitService{},
+		anthropicBufferedUsageKeepaliveInterval: 10 * time.Millisecond,
+	}
+	account := newAnthropicAPIKeyAccountForTest()
+	account.Credentials["base_url"] = "https://hk.pomoai.xyz"
+	account.Credentials["model_mapping"] = map[string]any{"glm-5.3-flash": "glm-5.3-flash"}
+	account.Extra = nil
+	parsed := &ParsedRequest{
+		Body:   []byte(`{"model":"glm-5.3-flash","stream":true,"messages":[{"role":"user","content":"hi"}],"max_tokens":32}`),
+		Model:  "glm-5.3-flash",
+		Stream: true,
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		_, err := svc.Forward(context.Background(), c, account, parsed)
+		errCh <- err
+	}()
+	select {
+	case <-upstream.started:
+	case <-time.After(time.Second):
+		t.Fatal("upstream request did not start")
+	}
+	select {
+	case firstWrite := <-writes:
+		require.Contains(t, string(firstWrite), `"type":"ping"`)
+	case <-time.After(time.Second):
+		t.Fatal("client did not receive a keepalive before the buffered upstream HTTP error")
+	}
+	close(upstream.release)
+	select {
+	case err := <-errCh:
+		require.Error(t, err)
+	case <-time.After(time.Second):
+		t.Fatal("forwarding did not return the upstream HTTP error")
+	}
+
+	require.Equal(t, "text/event-stream", rec.Header().Get("Content-Type"))
+	require.Equal(t, "data: {\"type\":\"ping\"}\n\n", rec.Body.String(), "the handler owns the protocol-correct SSE error frame after Forward returns")
 }
 
 func TestAnthropicPomoGLM53UsageFallbackIsNarrow(t *testing.T) {

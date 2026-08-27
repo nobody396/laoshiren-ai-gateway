@@ -28,22 +28,30 @@ func IsWindowExpired(windowStart *time.Time, duration time.Duration) bool {
 }
 
 type APIKey struct {
-	ID          int64
-	UserID      int64
-	Key         string
-	Name        string
-	GroupID     *int64
-	Status      string
-	IPWhitelist []string
-	IPBlacklist []string
+	ID     int64
+	UserID int64
+	TeamID *int64
+	// TeamOwnerDisabled 表示 Owner 已锁定该 Team Key，成员不能自行恢复。
+	TeamOwnerDisabled bool
+	Key               string
+	Name              string
+	GroupID           *int64
+	Status            string
+	IPWhitelist       []string
+	IPBlacklist       []string
 	// 预编译的 IP 规则，用于认证热路径避免重复 ParseIP/ParseCIDR。
 	CompiledIPWhitelist *ip.CompiledIPRules `json:"-"`
 	CompiledIPBlacklist *ip.CompiledIPRules `json:"-"`
 	LastUsedAt          *time.Time
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
-	User                *User
-	Group               *Group
+	// User 是实际付款并提供分组/订阅权限的用户；Team Key 中为当前 Owner。
+	User *User
+	// ActorUser 是创建并实际使用 Key 的成员；个人 Key 与 User 相同。
+	ActorUser      *User
+	Team           *Team
+	TeamMembership *TeamMembership
+	Group          *Group
 
 	// Quota fields
 	Quota     float64    // Quota limit in USD (0 = unlimited)
@@ -63,7 +71,7 @@ type APIKey struct {
 }
 
 func (k *APIKey) IsActive() bool {
-	return k.Status == StatusActive
+	return k.Status == StatusActive && !k.TeamOwnerDisabled
 }
 
 // HasRateLimits returns true if any rate limit window is configured
@@ -140,4 +148,5 @@ type APIKeyListFilters struct {
 	Search  string
 	Status  string
 	GroupID *int64 // nil=不筛选, 0=无分组, >0=指定分组
+	Scope   string // personal | team | empty(all)
 }

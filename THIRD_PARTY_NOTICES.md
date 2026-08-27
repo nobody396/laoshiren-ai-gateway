@@ -29,3 +29,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## TokenRouter Team module
+
+The Team functionality in this repository is adapted from
+[TokenFlux/TokenRouter](https://github.com/TokenFlux/TokenRouter), audited at
+commit `521b19f35ae4d64deac376aef0e23dc70b7bfadd`.
+
+Copyright (c) 2026 Wesley Liddick & TokenFlux.
+
+The adapted Team module is provided under the GNU Lesser General Public
+License v3.0 or later. A copy is available at
+`LICENSES/LGPL-3.0-or-later.txt`. The repository's existing MIT license does
+not replace the license that applies to this adapted module.

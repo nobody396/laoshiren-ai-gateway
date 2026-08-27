@@ -731,6 +731,7 @@ const userNavItems = computed((): NavItem[] => {
   const items: NavItem[] = [
     { path: '/dashboard', label: t('nav.dashboard'), icon: DashboardIcon },
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
+    { path: '/team', label: t('nav.teams'), icon: UsersIcon },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     { path: '/usage-receipt', label: t('nav.usageReceipt'), icon: ReceiptIcon },
     { path: '/get-subscription', label: t('nav.getSubscription'), icon: RechargeSubscriptionIcon },
@@ -763,6 +764,7 @@ const userNavItems = computed((): NavItem[] => {
 const personalNavItems = computed((): NavItem[] => {
   const items: NavItem[] = [
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
+    { path: '/team', label: t('nav.teams'), icon: UsersIcon },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     { path: '/usage-receipt', label: t('nav.usageReceipt'), icon: ReceiptIcon },
     { path: '/get-subscription', label: t('nav.getSubscription'), icon: RechargeSubscriptionIcon },
@@ -909,6 +911,12 @@ const adminNavItems = computed((): NavItem[] => {
     {
       path: '/admin/users',
       label: resolveAdminMenuLabel('/admin/users', t('nav.users')),
+      icon: UsersIcon,
+      hideInSimpleMode: true
+    },
+    {
+      path: '/admin/teams',
+      label: resolveAdminMenuLabel('/admin/teams', t('nav.teams')),
       icon: UsersIcon,
       hideInSimpleMode: true
     },

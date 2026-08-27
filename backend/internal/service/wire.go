@@ -452,6 +452,21 @@ func ProvideAPIKeyAuthCacheInvalidator(apiKeyService *APIKeyService) APIKeyAuthC
 	return apiKeyService
 }
 
+func ProvideAPIKeyService(
+	apiKeyRepo APIKeyRepository,
+	userRepo UserRepository,
+	groupRepo GroupRepository,
+	userSubRepo UserSubscriptionRepository,
+	userGroupRateRepo UserGroupRateRepository,
+	cache APIKeyCache,
+	teamRepo TeamRepository,
+	cfg *config.Config,
+) *APIKeyService {
+	svc := NewAPIKeyService(apiKeyRepo, userRepo, groupRepo, userSubRepo, userGroupRateRepo, cache, cfg)
+	svc.SetTeamRepository(teamRepo)
+	return svc
+}
+
 // ProvideBackupService creates and starts BackupService
 func ProvideBackupService(
 	settingRepo SettingRepository,
@@ -650,7 +665,8 @@ var ProviderSet = wire.NewSet(
 	// Core services
 	ProvideAuthService,
 	ProvideUserService,
-	NewAPIKeyService,
+	ProvideAPIKeyService,
+	NewTeamService,
 	NewClientSetupService,
 	ProvideAPIKeyAuthCacheInvalidator,
 	NewGroupService,

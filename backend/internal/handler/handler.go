@@ -39,6 +39,7 @@ type AdminHandlers struct {
 	Channel               *admin.ChannelHandler
 	Supplier              *admin.SupplierHandler
 	RBAC                  *admin.RBACHandler
+	Team                  *admin.TeamHandler
 }
 
 // Handlers contains all HTTP handlers
@@ -70,6 +71,7 @@ type Handlers struct {
 	Status         *StatusHandler
 	CustomerTier   *CustomerTierHandler
 	Compensation   *CompensationHandler
+	Team           *TeamHandler
 }
 
 // BuildInfo contains build-time information

@@ -20,6 +20,29 @@ func RegistrationEmailSuffix(email string) string {
 	return "@" + domain
 }
 
+// NormalizeRegistrationEmailAddress 返回邀请唯一性检查使用的收件箱身份。
+// 只对明确支持的 Gmail 语义折叠点号和 plus alias，其他域保持原样。
+func NormalizeRegistrationEmailAddress(email string) string {
+	local, domain, ok := splitEmailForPolicy(email)
+	if !ok {
+		return ""
+	}
+	domain = strings.TrimRight(domain, ".")
+	if domain == "gmail.com" || domain == "googlemail.com" {
+		if plusIndex := strings.IndexByte(local, '+'); plusIndex > 0 {
+			local = local[:plusIndex]
+		}
+		if dotStripped := strings.ReplaceAll(local, ".", ""); dotStripped != "" {
+			local = dotStripped
+		}
+		domain = "gmail.com"
+	}
+	if local == "" || domain == "" {
+		return ""
+	}
+	return local + "@" + domain
+}
+
 // IsRegistrationEmailSuffixAllowed checks whether an email is allowed by suffix whitelist.
 // Empty whitelist means allow all.
 func IsRegistrationEmailSuffixAllowed(email string, whitelist []string) bool {

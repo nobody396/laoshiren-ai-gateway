@@ -29,3 +29,8 @@ func TestIsRegistrationEmailSuffixAllowed(t *testing.T) {
 	require.False(t, IsRegistrationEmailSuffixAllowed("user@sub.example.com", []string{"@example.com"}))
 	require.True(t, IsRegistrationEmailSuffixAllowed("user@any.com", []string{}))
 }
+
+func TestNormalizeRegistrationEmailAddressOnlyFoldsGmailAliases(t *testing.T) {
+	require.Equal(t, "username@gmail.com", NormalizeRegistrationEmailAddress("User.Name+team@googlemail.com"))
+	require.Equal(t, "member+team@corp.example", NormalizeRegistrationEmailAddress("Member+team@corp.example"))
+}

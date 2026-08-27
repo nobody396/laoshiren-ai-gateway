@@ -17,7 +17,7 @@ import type { ApiKey, CreateApiKeyRequest, UpdateApiKeyRequest, PaginatedRespons
 export async function list(
   page: number = 1,
   pageSize: number = 10,
-  filters?: { search?: string; status?: string; group_id?: number | string },
+  filters?: { search?: string; status?: string; group_id?: number | string; scope?: 'personal' | 'team' },
   options?: {
     signal?: AbortSignal
   }
@@ -59,9 +59,10 @@ export async function create(
   ipBlacklist?: string[],
   quota?: number,
   expiresInDays?: number,
-  rateLimitData?: { rate_limit_5h?: number; rate_limit_1d?: number; rate_limit_7d?: number }
+  rateLimitData?: { rate_limit_5h?: number; rate_limit_1d?: number; rate_limit_7d?: number },
+  scope: 'personal' | 'team' = 'personal'
 ): Promise<ApiKey> {
-  const payload: CreateApiKeyRequest = { name }
+  const payload: CreateApiKeyRequest = { name, scope }
   if (groupId !== undefined) {
     payload.group_id = groupId
   }

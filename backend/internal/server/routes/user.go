@@ -113,6 +113,37 @@ func RegisterUserRoutes(
 			keys.DELETE("/:id", h.APIKey.Delete)
 		}
 
+		team := authenticated.Group("/team")
+		{
+			team.GET("", h.Team.GetCurrent)
+			team.POST("", h.Team.Create)
+			team.PATCH("", h.Team.Update)
+			team.PATCH("/default-member-limits", h.Team.UpdateDefaultMemberLimits)
+			team.POST("/status", h.Team.SetStatus)
+			team.DELETE("", h.Team.Dissolve)
+			team.GET("/members", h.Team.ListMembers)
+			team.GET("/usage", h.Team.GetUsageSummary)
+			team.GET("/usage/members", h.Team.ListMemberUsageSeries)
+			team.GET("/usage/logs", h.Team.ListUsageLogs)
+			team.GET("/keys", h.Team.ListTeamKeys)
+			team.POST("/keys/:id/disable", h.Team.DisableTeamKey)
+			team.POST("/keys/:id/enable", h.Team.EnableTeamKey)
+			team.DELETE("/keys/:id", h.Team.DeleteTeamKey)
+			team.DELETE("/members/:user_id", h.Team.RemoveMember)
+			team.PATCH("/members/:user_id/limits", h.Team.UpdateMemberLimits)
+			team.POST("/members/:user_id/usage/reset", h.Team.ResetMemberUsage)
+			team.POST("/leave", h.Team.Leave)
+			team.GET("/invitations", h.Team.ListInvitations)
+			team.POST("/invitations", h.Team.Invite)
+			team.POST("/invitations/preview", h.Team.PreviewInvitation)
+			team.POST("/invitations/resolve", h.Team.ResolveInvitation)
+			team.POST("/invitations/:id/reissue", h.Team.ReissueInvitation)
+			team.DELETE("/invitations/:id", h.Team.RevokeInvitation)
+			team.POST("/ownership-transfer", h.Team.StartOwnershipTransfer)
+			team.POST("/ownership-transfer/resolve", h.Team.ResolveOwnershipTransfer)
+			team.DELETE("/ownership-transfer", h.Team.CancelOwnershipTransfer)
+		}
+
 		// 用户可用分组（非管理员接口）
 		groups := authenticated.Group("/groups")
 		{

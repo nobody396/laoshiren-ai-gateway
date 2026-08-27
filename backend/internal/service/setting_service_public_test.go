@@ -63,6 +63,17 @@ func TestSettingService_GetPublicSettings_ExposesRegistrationEmailSuffixWhitelis
 	require.Equal(t, []string{"@example.com", "@foo.bar"}, settings.RegistrationEmailSuffixWhitelist)
 }
 
+func TestSettingService_GetPublicSettings_ExposesTeamFeatureGates(t *testing.T) {
+	svc := NewSettingService(&settingPublicRepoStub{values: map[string]string{}}, &config.Config{
+		Team: config.TeamConfig{Enabled: true, SelfServiceEnabled: false},
+	})
+
+	settings, err := svc.GetPublicSettings(context.Background())
+	require.NoError(t, err)
+	require.True(t, settings.TeamEnabled)
+	require.False(t, settings.TeamSelfServiceEnabled)
+}
+
 func TestSettingService_GetPublicSettings_CardShopFiltersUnavailableProducts(t *testing.T) {
 	repo := &settingPublicRepoStub{
 		values: map[string]string{

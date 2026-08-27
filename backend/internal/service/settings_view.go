@@ -195,6 +195,8 @@ type CardShopProduct struct {
 }
 
 type PublicSettings struct {
+	TeamEnabled                      bool
+	TeamSelfServiceEnabled           bool
 	RegistrationEnabled              bool
 	EmailVerifyEnabled               bool
 	RegistrationEmailSuffixWhitelist []string

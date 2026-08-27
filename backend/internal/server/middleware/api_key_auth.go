@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"net/http"
 	"strings"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
@@ -73,6 +74,9 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 				AbortWithError(c, 401, "INVALID_API_KEY", "Invalid API key")
 				return
 			}
+			if abortTeamAPIKeyError(c, err) {
+				return
+			}
 			AbortWithError(c, 500, "INTERNAL_ERROR", "Failed to validate API key")
 			return
 		}
@@ -85,6 +89,22 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 			apiKey.Status != service.StatusAPIKeyQuotaExhausted {
 			AbortWithError(c, 401, "API_KEY_DISABLED", "API key is disabled")
 			return
+		}
+		if err := apiKeyService.ValidateTeamKeyLifecycle(apiKey); err != nil {
+			if abortTeamAPIKeyError(c, err) {
+				return
+			}
+			AbortWithError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to validate team API key")
+			return
+		}
+		if c.Request.URL.Path != "/v1/usage" {
+			if err := apiKeyService.CheckTeamMemberLimits(apiKey); err != nil {
+				if abortTeamAPIKeyError(c, err) {
+					return
+				}
+				AbortWithError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to validate team member limits")
+				return
+			}
 		}
 
 		// 检查 IP 限制（白名单/黑名单）
@@ -125,7 +145,7 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 			setGroupContext(c, apiKey.Group)
 			_ = apiKeyService.TouchLastUsed(c.Request.Context(), apiKey.ID)
 			if userService != nil {
-				_ = userService.TouchLastActive(c.Request.Context(), apiKey.User.ID)
+				_ = userService.TouchLastActive(c.Request.Context(), apiKeyActivityUserID(apiKey))
 			}
 			c.Next()
 			return
@@ -226,11 +246,21 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 		setGroupContext(c, apiKey.Group)
 		_ = apiKeyService.TouchLastUsed(c.Request.Context(), apiKey.ID)
 		if userService != nil {
-			_ = userService.TouchLastActive(c.Request.Context(), apiKey.User.ID)
+			_ = userService.TouchLastActive(c.Request.Context(), apiKeyActivityUserID(apiKey))
 		}
 
 		c.Next()
 	}
+}
+
+func apiKeyActivityUserID(apiKey *service.APIKey) int64 {
+	if apiKey != nil && apiKey.ActorUser != nil && apiKey.ActorUser.ID > 0 {
+		return apiKey.ActorUser.ID
+	}
+	if apiKey != nil && apiKey.User != nil {
+		return apiKey.User.ID
+	}
+	return 0
 }
 
 // GetAPIKeyFromContext 从上下文中获取API key
@@ -285,4 +315,29 @@ func validateAPIKeyGroupAvailable(apiKey *service.APIKey) (string, string, bool)
 		return "GROUP_DISABLED", "API Key 所属分组已停用", false
 	}
 	return "", "", true
+}
+
+// abortTeamAPIKeyError 将团队生命周期与成员限额错误映射为稳定的网关响应。
+func abortTeamAPIKeyError(c *gin.Context, err error) bool {
+	switch {
+	case errors.Is(err, service.ErrTeamMemberDailyExceeded):
+		AbortWithError(c, http.StatusTooManyRequests, "TEAM_MEMBER_DAILY_LIMIT_EXCEEDED", "团队成员日限额已用完")
+	case errors.Is(err, service.ErrTeamMemberWeeklyExceeded):
+		AbortWithError(c, http.StatusTooManyRequests, "TEAM_MEMBER_WEEKLY_LIMIT_EXCEEDED", "团队成员周限额已用完")
+	case errors.Is(err, service.ErrTeamMemberMonthlyExceeded):
+		AbortWithError(c, http.StatusTooManyRequests, "TEAM_MEMBER_MONTHLY_LIMIT_EXCEEDED", "团队成员月限额已用完")
+	case errors.Is(err, service.ErrTeamFeatureDisabled):
+		AbortWithError(c, http.StatusForbidden, "TEAM_FEATURE_DISABLED", "团队功能未启用")
+	case errors.Is(err, service.ErrTeamSuspended):
+		AbortWithError(c, http.StatusForbidden, "TEAM_SUSPENDED", "团队已暂停")
+	case errors.Is(err, service.ErrTeamMembershipRequired):
+		AbortWithError(c, http.StatusForbidden, "TEAM_MEMBERSHIP_REQUIRED", "团队成员关系已失效")
+	case errors.Is(err, service.ErrTeamActorInactive):
+		AbortWithError(c, http.StatusForbidden, "TEAM_ACTOR_INACTIVE", "团队密钥所属成员已停用")
+	case errors.Is(err, service.ErrTeamBillingOwnerInactive):
+		AbortWithError(c, http.StatusForbidden, "TEAM_BILLING_OWNER_INACTIVE", "团队付款所有者已停用")
+	default:
+		return false
+	}
+	return true
 }

@@ -45,6 +45,10 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/ent/redeemcodebatch"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/securitysecret"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/setting"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/team"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/teaminvitation"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/teammembership"
+	"github.com/bozhouDev/DragonCode-sub2api/ent/teamownershiptransfer"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/tlsfingerprintprofile"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/topuporder"
 	"github.com/bozhouDev/DragonCode-sub2api/ent/usagecleanuptask"
@@ -149,6 +153,10 @@ func checkColumn(t, c string) error {
 			securitysecret.Table:          securitysecret.ValidColumn,
 			setting.Table:                 setting.ValidColumn,
 			tlsfingerprintprofile.Table:   tlsfingerprintprofile.ValidColumn,
+			team.Table:                    team.ValidColumn,
+			teaminvitation.Table:          teaminvitation.ValidColumn,
+			teammembership.Table:          teammembership.ValidColumn,
+			teamownershiptransfer.Table:   teamownershiptransfer.ValidColumn,
 			topuporder.Table:              topuporder.ValidColumn,
 			usagecleanuptask.Table:        usagecleanuptask.ValidColumn,
 			usagelog.Table:                usagelog.ValidColumn,

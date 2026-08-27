@@ -106,6 +106,8 @@ export interface CardShopProduct {
 }
 
 export interface PublicSettings {
+	team_enabled?: boolean
+	team_self_service_enabled?: boolean
   registration_enabled: boolean
   email_verify_enabled: boolean
   registration_email_suffix_whitelist: string[]
@@ -763,8 +765,11 @@ export interface AdminGroup extends Group {
 }
 
 export interface ApiKey {
-  id: number
-  user_id: number
+	id: number
+	user_id: number
+	team_id?: number | null
+	scope?: 'personal' | 'team'
+	team_owner_disabled?: boolean
   key: string
   name: string
   group_id: number | null
@@ -793,7 +798,8 @@ export interface ApiKey {
 }
 
 export interface CreateApiKeyRequest {
-  name: string
+	name: string
+	scope?: 'personal' | 'team'
   group_id?: number | null
   custom_key?: string // Optional custom API Key
   ip_whitelist?: string[]

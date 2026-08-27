@@ -24,8 +24,8 @@ export interface GroupCacheStatsResponse {
  * - Subscription groups: user has active subscription
  * @returns List of available groups
  */
-export async function getAvailable(): Promise<Group[]> {
-  const { data } = await apiClient.get<Group[]>('/groups/available')
+export async function getAvailable(scope: 'personal' | 'team' = 'personal'): Promise<Group[]> {
+  const { data } = await apiClient.get<Group[]>('/groups/available', { params: { scope } })
   return data
 }
 

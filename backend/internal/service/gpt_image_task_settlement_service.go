@@ -192,20 +192,26 @@ func (s *GPTImageTaskSettlementService) settleTask(ctx context.Context, task *GP
 	if !ok {
 		return nil
 	}
+	return s.settleClaimedUsage(ctx, task.TaskID, claimed, result, imageCount)
+}
 
-	apiKey, err := s.apiKeyService.GetByID(ctx, claimed.APIKeyID)
+func (s *GPTImageTaskSettlementService) settleClaimedUsage(ctx context.Context, taskID string, claimed *GPTImagePendingTaskUsage, result *OpenAIForwardResult, imageCount int) error {
+	if claimed == nil || result == nil {
+		return errors.New("gpt-image settlement claim or result missing")
+	}
+	apiKey, err := s.apiKeyService.GetByIDForHistoricalBilling(ctx, claimed.APIKeyID, claimed.UserID)
 	if err != nil {
-		s.gatewayService.ReleaseGPTImageTaskBillingClaim(task.TaskID)
+		s.gatewayService.ReleaseGPTImageTaskBillingClaim(taskID)
 		return err
 	}
 	if apiKey == nil || apiKey.User == nil {
-		s.gatewayService.ReleaseGPTImageTaskBillingClaim(task.TaskID)
+		s.gatewayService.ReleaseGPTImageTaskBillingClaim(taskID)
 		return errors.New("gpt-image settlement api key or user not found")
 	}
 
 	var subscription *UserSubscription
 	if apiKey.GroupID != nil && s.userSubRepo != nil {
-		if sub, subErr := s.userSubRepo.GetActiveByUserIDAndGroupID(ctx, apiKey.UserID, *apiKey.GroupID); subErr == nil {
+		if sub, subErr := s.userSubRepo.GetActiveByUserIDAndGroupID(ctx, apiKeyBillingUserID(apiKey), *apiKey.GroupID); subErr == nil {
 			subscription = sub
 		}
 	}
@@ -214,7 +220,7 @@ func (s *GPTImageTaskSettlementService) settleTask(ctx context.Context, task *GP
 	result.UpstreamModel = claimed.UpstreamModel
 	result.ImageSize = claimed.Resolution
 	result.ImageCount = imageCount
-	result.RequestID = "gpt-image-task:" + task.TaskID
+	result.RequestID = "gpt-image-task:" + taskID
 	if result.ImageCount <= 0 {
 		result.ImageCount = claimed.ImageCount
 	}
@@ -232,9 +238,19 @@ func (s *GPTImageTaskSettlementService) settleTask(ctx context.Context, task *GP
 		RequestPayloadHash: claimed.RequestPayloadHash,
 		APIKeyService:      s.apiKeyService,
 	}); err != nil {
-		s.gatewayService.ReleaseGPTImageTaskBillingClaim(task.TaskID)
+		s.gatewayService.ReleaseGPTImageTaskBillingClaim(taskID)
 		return err
 	}
-	s.gatewayService.MarkGPTImageTaskBilled(task.TaskID)
+	s.gatewayService.MarkGPTImageTaskBilled(taskID)
 	return nil
+}
+
+func apiKeyBillingUserID(apiKey *APIKey) int64 {
+	if apiKey != nil && apiKey.User != nil && apiKey.User.ID > 0 {
+		return apiKey.User.ID
+	}
+	if apiKey != nil {
+		return apiKey.UserID
+	}
+	return 0
 }

@@ -3,6 +3,10 @@
     <TablePageLayout>
       <template #filters>
         <div class="flex flex-wrap items-center gap-3">
+          <div class="flex rounded-lg bg-gray-100 p-1 dark:bg-dark-700" :aria-label="t('team.scopeSwitch')">
+            <button type="button" :class="['rounded-md px-3 py-1.5 text-sm', activeScope === 'personal' ? 'bg-white font-medium text-primary-600 shadow-sm dark:bg-dark-800' : 'text-gray-500']" @click="setScope('personal')">{{ t('team.personalKeys') }}</button>
+            <button type="button" :class="['rounded-md px-3 py-1.5 text-sm', activeScope === 'team' ? 'bg-white font-medium text-primary-600 shadow-sm dark:bg-dark-800' : 'text-gray-500']" @click="setScope('team')">{{ t('team.teamKeys') }}</button>
+          </div>
           <SearchInput
             v-model="filterSearch"
             :placeholder="t('keys.searchPlaceholder')"
@@ -1322,6 +1326,7 @@
 
 <script setup lang="ts">
 	import { ref, computed, onMounted, onUnmounted, type ComponentPublicInstance } from 'vue'
+	import { useRoute, useRouter } from 'vue-router'
 	import { useI18n } from 'vue-i18n'
 	import { useAppStore } from '@/stores/app'
 	import { useOnboardingStore } from '@/stores/onboarding'
@@ -1416,6 +1421,8 @@ type CcsClientOption = {
 }
 
 const appStore = useAppStore()
+const route = useRoute()
+const router = useRouter()
 const onboardingStore = useOnboardingStore()
 const subscriptionStore = useSubscriptionStore()
 const { copyToClipboard: clipboardCopy } = useClipboard()
@@ -1455,6 +1462,7 @@ const pagination = ref({
 const filterSearch = ref('')
 const filterStatus = ref('')
 const filterGroupId = ref<string | number>('')
+const activeScope = ref<'personal' | 'team'>(route.query.scope === 'team' ? 'team' : 'personal')
 
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
@@ -1872,7 +1880,7 @@ const loadApiKeys = async () => {
   loading.value = true
   try {
     // Build filters
-    const filters: { search?: string; status?: string; group_id?: number | string } = {}
+    const filters: { search?: string; status?: string; group_id?: number | string; scope?: 'personal' | 'team' } = { scope: activeScope.value }
     if (filterSearch.value) filters.search = filterSearch.value
     if (filterStatus.value) filters.status = filterStatus.value
     if (filterGroupId.value !== '') filters.group_id = filterGroupId.value
@@ -1912,7 +1920,7 @@ const loadApiKeys = async () => {
 
 const loadGroups = async () => {
   try {
-    groups.value = await userGroupsAPI.getAvailable()
+    groups.value = await userGroupsAPI.getAvailable(activeScope.value)
   } catch (error) {
     console.error('Failed to load groups:', error)
   }
@@ -2157,7 +2165,8 @@ const handleSubmit = async () => {
         ipBlacklist,
         quota,
         expiresInDays,
-        rateLimitData
+        rateLimitData,
+        activeScope.value
       )
       appStore.showSuccess(t('keys.keyCreatedSuccess'))
       // Only advance tour if active, on submit step, and creation succeeded
@@ -2466,6 +2475,15 @@ onMounted(() => {
   document.addEventListener('click', closeGroupSelector)
   resetTimer = setInterval(() => { now.value = new Date() }, 60000)
 })
+
+const setScope = async (scope: 'personal' | 'team') => {
+  if (activeScope.value === scope) return
+  activeScope.value = scope
+  pagination.value.page = 1
+  filterGroupId.value = ''
+  await router.replace({ query: { ...route.query, scope } })
+  await Promise.all([loadGroups(), loadApiKeys()])
+}
 
 onUnmounted(() => {
   document.removeEventListener('click', closeGroupSelector)

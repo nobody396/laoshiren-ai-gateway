@@ -262,6 +262,12 @@ func mustCreateApiKey(t *testing.T, client *dbent.Client, k *service.APIKey) *se
 		SetKey(k.Key).
 		SetName(k.Name).
 		SetStatus(k.Status)
+	if k.TeamID != nil {
+		create.SetTeamID(*k.TeamID)
+	}
+	if k.TeamOwnerDisabled {
+		create.SetTeamOwnerDisabled(true)
+	}
 	if k.Quota != 0 {
 		create.SetQuota(k.Quota)
 	}

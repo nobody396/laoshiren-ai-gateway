@@ -128,6 +128,7 @@ func TestSEOManifest_NotFound(t *testing.T) {
 	assert.True(t, manifest.shouldServeNotFound("/missing/nested"))
 	assert.False(t, manifest.shouldServeNotFound("/docs/base-url-guide"))
 	assert.False(t, manifest.shouldServeNotFound("/dashboard"))
+	assert.False(t, manifest.shouldServeNotFound("/team"))
 	assert.False(t, manifest.shouldServeNotFound("/legal"))
 
 	base := []byte(`<!doctype html><html><head><title>home</title><meta name="description" content="home" /><meta name="robots" content="index,follow" /><link rel="canonical" href="https://laoshirenai.com/" /></head><body><div id="app"></div></body></html>`)
@@ -535,6 +536,7 @@ func TestFrontendServer_Middleware(t *testing.T) {
 		spaPaths := []string{
 			"/",
 			"/dashboard",
+			"/team",
 			"/usage-receipt",
 			"/users/123",
 			"/settings/profile",

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "client_auto_config_version": "0.7.12",
+  "client_auto_config_version": "0.7.13",
   "models": [
     {
       "id": "glm-5.2",

@@ -142,6 +142,45 @@ describe('client auto-config scripts', () => {
     }
   })
 
+  it('filters the one-click Codex catalog to the API key group on macOS and Linux', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'laoshirenai-codex-cyber-catalog-'))
+    const sourcePath = join(fixture, 'source.json')
+    const authorizedPath = join(fixture, 'authorized.json')
+    const installerPath = resolve(process.cwd(), 'public', 'auto-config', 'install.sh')
+    try {
+      writeFileSync(sourcePath, readPublicScript('codex-model-catalog.json'))
+      writeFileSync(authorizedPath, JSON.stringify({
+        data: [
+          { id: 'gpt-5.6-sol' },
+          { id: 'gpt-daybreak-blue-latest' }
+        ]
+      }))
+      const selected = execFileSync('bash', [
+        '-c',
+        'source "$1"; NODE_BIN="$(command -v node)"; filter_codex_model_catalog "$2" "$3"',
+        '_',
+        installerPath,
+        sourcePath,
+        authorizedPath
+      ], {
+        env: { ...process.env, HOME: fixture, LAOSHIRENAI_INSTALLER_SOURCE_ONLY: '1' },
+        encoding: 'utf8'
+      })
+      const catalog = JSON.parse(readFileSync(sourcePath, 'utf8'))
+      expect(selected).toBe('gpt-5.6-sol')
+      expect(catalog.models.map((model: { slug: string }) => model.slug)).toEqual([
+        'gpt-5.6-sol',
+        'gpt-daybreak-blue-latest'
+      ])
+      expect(catalog.models[1].display_name).toBe('GPT Daybreak Blue Latest')
+      expect(catalog.models[1].base_instructions).toBeTruthy()
+      expect(catalog.models[1].visibility).toBe('list')
+      expect(catalog.models[1].context_window).toBe(272000)
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
   it('uses xhigh as the Claude Code default in the manual settings template', () => {
     const modal = readUseKeyModal()
     expect(modal).toContain("claudeClientDefault?.id ?? 'claude-opus-5'")

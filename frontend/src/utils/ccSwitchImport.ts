@@ -1,5 +1,6 @@
 import type { GroupPlatform } from '@/types'
 import {
+  clientAutoConfigDefaults,
   codexClientModels,
   optionalCatalogClientDefaultForPlatform,
   type CodexClientModel
@@ -168,11 +169,43 @@ export const buildCodexModelCatalog = (
   })
 }, null, 2)
 
+const CATALOG_CLAUDE_DEFAULT_MODEL = clientAutoConfigDefaults.anthropic
+
 const DEFAULT_CLAUDE_MODELS = {
   haiku: 'claude-haiku-4-5',
   sonnet: 'claude-sonnet-5',
-  opus: 'claude-opus-5'
+  opus: CATALOG_CLAUDE_DEFAULT_MODEL
 } as const
+
+export interface ClaudeClientModels {
+  model: string
+  haiku: string
+  sonnet: string
+  opus: string
+}
+
+// Native Anthropic-protocol groups such as GLM expose one group-owned client
+// default through default_mapped_model. That contract must win over the global
+// Claude catalog default for both the main model and every Claude role slot.
+export const resolveClaudeClientModels = (
+  platform: GroupPlatform | null,
+  groupDefault?: string
+): ClaudeClientModels => {
+  const nativeGroupModel = platform === 'anthropic' ? groupDefault?.trim() : ''
+  if (nativeGroupModel) {
+    return {
+      model: nativeGroupModel,
+      haiku: nativeGroupModel,
+      sonnet: nativeGroupModel,
+      opus: nativeGroupModel
+    }
+  }
+
+  return {
+    model: CATALOG_CLAUDE_DEFAULT_MODEL,
+    ...DEFAULT_CLAUDE_MODELS
+  }
+}
 
 /**
  * A group platform describes the protocol exposed by the key, while an import
@@ -448,7 +481,11 @@ export const buildCcsImportDeeplink = ({
   }
 
   if (target === 'claude') {
-    params.set('model', 'claude-opus-5')
+    const claudeModels = resolveClaudeClientModels(
+      platform,
+      key.group?.default_mapped_model
+    )
+    params.set('model', claudeModels.model)
     params.set('configFormat', 'json')
     params.set(
       'config',
@@ -456,9 +493,9 @@ export const buildCcsImportDeeplink = ({
     )
     const groupModel = key.group?.default_mapped_model?.trim()
     if (platform === 'anthropic' && groupModel) {
-      params.set('haikuModel', groupModel)
-      params.set('sonnetModel', groupModel)
-      params.set('opusModel', groupModel)
+      params.set('haikuModel', claudeModels.haiku)
+      params.set('sonnetModel', claudeModels.sonnet)
+      params.set('opusModel', claudeModels.opus)
     } else if (platform === 'anthropic' || platform === 'openai') {
       params.set('haikuModel', DEFAULT_CLAUDE_MODELS.haiku)
       params.set('sonnetModel', DEFAULT_CLAUDE_MODELS.sonnet)

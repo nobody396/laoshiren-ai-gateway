@@ -277,6 +277,27 @@ describe('CC Switch provider deeplinks', () => {
     })
   })
 
+  it('uses the native Anthropic group default for the Claude main model and every role slot', () => {
+    const url = new URL(buildCcsImportDeeplink({
+      apiBaseUrl: 'https://api.laoshirenai.com',
+      target: 'claude',
+      key: {
+        key: 'sk-test-not-a-secret',
+        name: 'GLM 5.3',
+        group: {
+          platform: 'anthropic',
+          name: 'GLM 分组',
+          default_mapped_model: 'glm-5.3'
+        }
+      }
+    }))
+
+    expect(url.searchParams.get('model')).toBe('glm-5.3')
+    expect(url.searchParams.get('haikuModel')).toBe('glm-5.3')
+    expect(url.searchParams.get('sonnetModel')).toBe('glm-5.3')
+    expect(url.searchParams.get('opusModel')).toBe('glm-5.3')
+  })
+
   it('adds Fable 5 only for Claude public groups whose complete pool supports it', () => {
     const url = new URL(buildCcsImportDeeplink({
       apiBaseUrl: 'https://api.laoshirenai.com',

@@ -183,8 +183,9 @@ describe('client auto-config scripts', () => {
 
   it('uses xhigh as the Claude Code default in the manual settings template', () => {
     const modal = readUseKeyModal()
-    expect(modal).toContain("claudeClientDefault?.id ?? 'claude-opus-5'")
-    expect(modal).toContain('"effortLevel": "xhigh"')
+    expect(modal).toContain('resolveClaudeClientModels(props.platform, props.defaultMappedModel)')
+    expect(modal).not.toContain("claudeClientDefault?.id ?? 'claude-opus-5'")
+    expect(modal).toContain("effortLevel: 'xhigh'")
   })
 
   it('shows the supported Codex catalog in the manual settings template', () => {

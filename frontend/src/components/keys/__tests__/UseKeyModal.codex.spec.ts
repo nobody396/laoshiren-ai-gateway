@@ -120,6 +120,24 @@ describe('UseKeyModal Codex catalog', () => {
     }
   })
 
+  it('limits the GPT CYBER manual config to Sol and Daybreak', async () => {
+    getGatewayModelsMock.mockResolvedValue([
+      'gpt-5.6-sol',
+      'gpt-daybreak-blue-latest'
+    ])
+
+    const wrapper = mountModal({ defaultMappedModel: 'gpt-5.5' })
+    await flushPromises()
+
+    const catalog = catalogBlock(wrapper)
+    expect(catalog.match(/"slug":/g)).toHaveLength(2)
+    expect(catalog).toContain('"slug": "gpt-5.6-sol"')
+    expect(catalog).toContain('"slug": "gpt-daybreak-blue-latest"')
+    expect(catalog).not.toContain('gpt-5.6-terra')
+    expect(catalog).not.toContain('gpt-5.5')
+    expect(configBlock(wrapper)).toContain('model = "gpt-5.6-sol"')
+  })
+
   it('uses the group default model when gpt-5.6-sol is not listed', async () => {
     getGatewayModelsMock.mockResolvedValue(['gpt-5.4', 'gpt-5.4-mini'])
 

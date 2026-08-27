@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 # BEGIN GENERATED MODEL CATALOG
-$ScriptVersion = '0.7.12'
+$ScriptVersion = '0.7.13'
 $CatalogOpenAIDefaultModel = 'gpt-5.6-sol'
 $CatalogOpenAIContextWindow = 272000
 $CatalogOpenAIAutoCompactTokenLimit = 258000
@@ -210,10 +210,10 @@ function Parse-Arguments {
   .\install.ps1 --api-key <Claude_Key> --codex-api-key <Codex_Key> --grok-api-key <Grok_Key> --tools grok
 
   # 方式二：管道模式（irm | iex），参数通过环境变量传入
-  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.12 | iex
+  $env:LAOSHIRENAI_CLAUDE_API_KEY='<Key>'; $env:LAOSHIRENAI_CODEX_API_KEY='<Key>'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.13 | iex
 
   # 方式三：最简管道模式（交互输入 API Key）
-  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.12 | iex
+  irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.13 | iex
 
 参数:
   --api-key              Claude Code API Key
@@ -1306,26 +1306,100 @@ function Write-CodexAuthConfig {
   [System.IO.File]::WriteAllText($CodexAuthPath, $json, [System.Text.UTF8Encoding]::new($false))
 }
 
-# 写入本站受支持模型目录，阻止 Codex 回退到官方缓存后展示网关不支持的模型。
-function Write-CodexModelCatalog {
-  Backup-IfNeeded $CodexModelCatalogPath
-  Ensure-Directory $CodexDir
+# 把全局模板裁剪成当前 API Key 所属分组真正开放的模型。未知但已授权的
+# 分组专属别名（例如 Daybreak）继承 Sol 的客户端能力模板。
+function Convert-CodexModelCatalog {
+  param(
+    [Parameter(Mandatory = $true)][string]$SourcePath,
+    [Parameter(Mandatory = $true)][string[]]$AuthorizedModels,
+    [Parameter(Mandatory = $true)][string]$OutputPath
+  )
 
-  $DownloadPath = "$CodexModelCatalogPath.download"
-  Download-FileWithFallback -OutputPath $DownloadPath -Urls @($DefaultCodexModelCatalogUrl)
-  $Source = Get-Content -LiteralPath $DownloadPath -Raw | ConvertFrom-Json
+  $Source = Get-Content -LiteralPath $SourcePath -Raw | ConvertFrom-Json
   $Models = @($Source.models)
   $RequiredFields = @('slug', 'base_instructions', 'supports_reasoning_summaries', 'context_window', 'visibility')
   $HasMissingFields = @($Models | Where-Object {
     $Model = $_
     @($RequiredFields | Where-Object { -not ($Model.PSObject.Properties.Name -contains $_) }).Count -gt 0
   }).Count -gt 0
+  $Authorized = @($AuthorizedModels |
+    ForEach-Object { ([string]$_).Trim() } |
+    Where-Object { $_ -and $_ -ne 'codex-auto-review' } |
+    Select-Object -Unique)
 
-  if ($Models.Count -eq 0 -or $HasMissingFields -or @($Models | Where-Object { $_.slug -eq 'gpt-5.3-codex-spark' }).Count -gt 0) {
-    Stop-Script 'Codex 模型目录无效'
+  if (
+    $Models.Count -eq 0 -or
+    $HasMissingFields -or
+    @($Models | Where-Object { $_.slug -eq 'gpt-5.3-codex-spark' }).Count -gt 0 -or
+    $Authorized.Count -eq 0
+  ) {
+    throw 'Codex 模型目录或分组模型列表无效'
   }
 
-  Move-Item -LiteralPath $DownloadPath -Destination $CodexModelCatalogPath -Force
+  $ById = @{}
+  foreach ($Model in $Models) {
+    $ById[[string]$Model.slug] = $Model
+  }
+  $Template = if ($ById.ContainsKey('gpt-5.6-sol')) { $ById['gpt-5.6-sol'] } else { $Models[0] }
+  $DisplayTokens = @{
+    gpt = 'GPT'; codex = 'Codex'; openai = 'OpenAI'; daybreak = 'Daybreak'
+    blue = 'Blue'; latest = 'Latest'; sol = 'Sol'; terra = 'Terra'; luna = 'Luna'
+  }
+  $Filtered = New-Object System.Collections.Generic.List[object]
+  for ($Index = 0; $Index -lt $Authorized.Count; $Index++) {
+    $Id = $Authorized[$Index]
+    if ($ById.ContainsKey($Id)) {
+      $Model = $ById[$Id] | ConvertTo-Json -Depth 100 | ConvertFrom-Json
+    } else {
+      $Model = $Template | ConvertTo-Json -Depth 100 | ConvertFrom-Json
+      $DisplayName = (($Id -split '-') | ForEach-Object {
+        $Token = $_.ToLowerInvariant()
+        if ($DisplayTokens.ContainsKey($Token)) { $DisplayTokens[$Token] } else { $_ }
+      }) -join ' '
+      $Model | Add-Member -NotePropertyName slug -NotePropertyValue $Id -Force
+      $Model | Add-Member -NotePropertyName display_name -NotePropertyValue $DisplayName -Force
+      $Model | Add-Member -NotePropertyName description -NotePropertyValue "$DisplayName coding model." -Force
+    }
+    $Model | Add-Member -NotePropertyName priority -NotePropertyValue ($Index + 1) -Force
+    $Filtered.Add($Model)
+  }
+
+  $FilteredMissingFields = @($Filtered | Where-Object {
+    $Model = $_
+    @($RequiredFields | Where-Object { -not ($Model.PSObject.Properties.Name -contains $_) }).Count -gt 0
+  }).Count -gt 0
+  if ($FilteredMissingFields) {
+    throw '筛选后的 Codex 模型目录不完整'
+  }
+
+  $Payload = [pscustomobject]@{ models = $Filtered.ToArray() }
+  $Json = $Payload | ConvertTo-Json -Depth 100
+  [System.IO.File]::WriteAllText($OutputPath, "$Json`n", [System.Text.UTF8Encoding]::new($false))
+  $script:CatalogOpenAIDefaultModel = if ($Authorized -contains 'gpt-5.6-sol') { 'gpt-5.6-sol' } else { $Authorized[0] }
+}
+
+# 写入当前分组受支持的模型目录，阻止 Codex 回退到官方缓存后展示网关不支持的模型。
+function Write-CodexModelCatalog {
+  Backup-IfNeeded $CodexModelCatalogPath
+  Ensure-Directory $CodexDir
+
+  $DownloadPath = "$CodexModelCatalogPath.download"
+  try {
+    Download-FileWithFallback -OutputPath $DownloadPath -Urls @($DefaultCodexModelCatalogUrl)
+    $ApiBaseUrl = Get-OpenAIV1BaseUrl -Value $script:BaseUrl
+    $Response = Invoke-RestMethod -Uri "$ApiBaseUrl/models" -Headers @{
+      Authorization = "Bearer $script:CodexApiKey"
+    } -Method GET
+    $AuthorizedModels = @($Response.data | ForEach-Object { [string]$_.id })
+    Convert-CodexModelCatalog `
+      -SourcePath $DownloadPath `
+      -AuthorizedModels $AuthorizedModels `
+      -OutputPath $DownloadPath
+    Move-Item -LiteralPath $DownloadPath -Destination $CodexModelCatalogPath -Force
+  } catch {
+    Remove-Item -LiteralPath $DownloadPath -Force -ErrorAction SilentlyContinue
+    Stop-Script "Codex 分组模型目录生成失败: $($_.Exception.Message)"
+  }
 }
 
 # 写入 Codex 的 TOML 主配置，第一版采用备份后确定性覆盖策略。

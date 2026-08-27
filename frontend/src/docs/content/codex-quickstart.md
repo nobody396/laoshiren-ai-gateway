@@ -70,16 +70,16 @@ codex --version
 macOS / Linux 命令格式：
 
 ```bash
-curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.12' | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
+curl -fsSL 'https://laoshirenai.com/auto-config/install.sh?v=0.7.13' | bash -s -- --codex-api-key YOUR_CODEX_KEY --tools codex --base-url https://api.laoshirenai.com
 ```
 
 Windows PowerShell 命令格式：
 
 ```powershell
-$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; $env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.12 | iex
+$env:LAOSHIRENAI_CODEX_API_KEY='YOUR_CODEX_KEY'; $env:LAOSHIRENAI_TOOLS='codex'; $env:LAOSHIRENAI_BASE_URL='https://api.laoshirenai.com'; irm https://laoshirenai.com/auto-config/install.ps1?v=0.7.13 | iex
 ```
 
-脚本会写入 `~/.codex/auth.json` 和 `~/.codex/config.toml`，并请求 `/v1/models` 测试这把 API Key 是否能正常使用。如果 Key、分组或 API 地址不正确，脚本会直接报错，不会假装配置成功。
+脚本会写入 `~/.codex/auth.json`、`~/.codex/config.toml` 和按当前 Key 分组生成的模型目录，并请求 `/v1/models` 测试这把 API Key 是否能正常使用。目录只保留该分组实际开放的模型；如果 Key、分组或 API 地址不正确，脚本会直接报错，不会假装配置成功。
 
 在 Windows 上，脚本会同时识别官方 `OpenAI.Codex` App 和 Codex CLI。只要其中一个已经可用，就会跳过 Codex/Node.js 下载，保留现有客户端并只更新配置。配置完成后完全退出并重新打开 Codex App 即可。
 

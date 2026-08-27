@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # BEGIN GENERATED MODEL CATALOG
-SCRIPT_VERSION='0.7.12'
+SCRIPT_VERSION='0.7.13'
 CATALOG_OPENAI_DEFAULT_MODEL='gpt-5.6-sol'
 CATALOG_OPENAI_CONTEXT_WINDOW=272000
 CATALOG_OPENAI_AUTO_COMPACT_TOKEN_LIMIT=258000
@@ -1049,33 +1049,96 @@ fs.writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`, 'utf8')
 EOF
 }
 
-# 写入本站受支持模型目录，阻止 Codex 回退到官方缓存后展示网关不支持的模型。
+# 把全局模板裁剪成当前 API Key 所属分组真正开放的模型。未知但已授权的
+# 分组专属别名（例如 Daybreak）继承 Sol 的客户端能力模板；目录内容仍以
+# /v1/models 为准，不能因为全局模板缺少别名而把它丢掉。
+filter_codex_model_catalog() {
+  local source_path="$1"
+  local authorized_path="$2"
+
+  SOURCE_PATH="$source_path" AUTHORIZED_PATH="$authorized_path" "$NODE_BIN" <<'EOF'
+const fs = require('node:fs')
+const sourcePath = process.env.SOURCE_PATH
+const authorizedPath = process.env.AUTHORIZED_PATH
+const source = JSON.parse(fs.readFileSync(sourcePath, 'utf8'))
+const response = JSON.parse(fs.readFileSync(authorizedPath, 'utf8'))
+const models = Array.isArray(source.models) ? source.models : []
+const required = ['slug', 'base_instructions', 'supports_reasoning_summaries', 'context_window', 'visibility']
+const authorized = []
+const seen = new Set()
+
+for (const row of Array.isArray(response.data) ? response.data : []) {
+  const id = typeof row?.id === 'string' ? row.id.trim() : ''
+  if (!id || id === 'codex-auto-review' || seen.has(id)) continue
+  seen.add(id)
+  authorized.push(id)
+}
+
+if (
+  models.length === 0 ||
+  models.some((model) => model.slug === 'gpt-5.3-codex-spark') ||
+  models.some((model) => required.some((field) => !(field in model))) ||
+  authorized.length === 0
+) {
+  throw new Error('invalid Codex model catalog or empty group model list')
+}
+
+const byID = new Map(models.map((model) => [model.slug, model]))
+const template = byID.get('gpt-5.6-sol') || models[0]
+const displayToken = (token) => ({
+  gpt: 'GPT', codex: 'Codex', openai: 'OpenAI', daybreak: 'Daybreak',
+  blue: 'Blue', latest: 'Latest', sol: 'Sol', terra: 'Terra', luna: 'Luna'
+}[token.toLowerCase()] || token)
+const displayName = (id) => id.split('-').map(displayToken).join(' ')
+const filtered = authorized.map((id, index) => {
+  const known = byID.get(id)
+  if (known) return { ...known, priority: index + 1 }
+  const cloned = JSON.parse(JSON.stringify(template))
+  cloned.slug = id
+  cloned.display_name = displayName(id)
+  cloned.description = `${cloned.display_name} coding model.`
+  cloned.priority = index + 1
+  return cloned
+})
+
+if (filtered.some((model) => required.some((field) => !(field in model)))) {
+  throw new Error('filtered Codex model catalog is incomplete')
+}
+
+fs.writeFileSync(sourcePath, `${JSON.stringify({ models: filtered }, null, 2)}\n`, 'utf8')
+process.stdout.write(authorized.includes('gpt-5.6-sol') ? 'gpt-5.6-sol' : authorized[0])
+EOF
+}
+
+# 写入当前分组受支持的模型目录，阻止 Codex 回退到官方缓存后展示网关不支持的模型。
 write_codex_model_catalog() {
   create_backup_if_needed "$CODEX_MODEL_CATALOG_PATH"
   ensure_dir "$CODEX_DIR"
 
   local source_path="${CODEX_MODEL_CATALOG_PATH}.download"
+  local authorized_path="${CODEX_MODEL_CATALOG_PATH}.authorized"
+  local api_base_url
+  local status_code
+  local selected_default
   download_to_file "$source_path" "$CODEX_MODEL_CATALOG_URL" || \
     log_error "Codex 模型目录下载失败，请稍后重试"
 
-  SOURCE_PATH="$source_path" TARGET_PATH="$CODEX_MODEL_CATALOG_PATH" "$NODE_BIN" <<'EOF'
-const fs = require('node:fs')
-const sourcePath = process.env.SOURCE_PATH
-const targetPath = process.env.TARGET_PATH
-const source = JSON.parse(fs.readFileSync(sourcePath, 'utf8'))
-const models = Array.isArray(source.models) ? source.models : []
-const required = ['slug', 'base_instructions', 'supports_reasoning_summaries', 'context_window', 'visibility']
+  api_base_url="$(normalize_openai_v1_base_url "$BASE_URL")"
+  status_code="$(curl -sS -o "$authorized_path" -w '%{http_code}' \
+    -H "Authorization: Bearer ${CODEX_API_KEY}" \
+    "${api_base_url}/models" || true)"
+  if [ "$status_code" != "200" ]; then
+    rm -f "$source_path" "$authorized_path"
+    log_error "Codex 分组模型读取失败: ${api_base_url}/models 返回 HTTP ${status_code}"
+  fi
 
-if (
-  models.length === 0 ||
-  models.some((model) => model.slug === 'gpt-5.3-codex-spark') ||
-  models.some((model) => required.some((field) => !(field in model)))
-) {
-  throw new Error('invalid Codex model catalog')
-}
-
-fs.renameSync(sourcePath, targetPath)
-EOF
+  if ! selected_default="$(filter_codex_model_catalog "$source_path" "$authorized_path")"; then
+    rm -f "$source_path" "$authorized_path"
+    log_error "Codex 分组模型目录生成失败"
+  fi
+  CATALOG_OPENAI_DEFAULT_MODEL="$selected_default"
+  mv -f "$source_path" "$CODEX_MODEL_CATALOG_PATH"
+  rm -f "$authorized_path"
 }
 
 # 生成 Codex 的核心 TOML 配置，第一版采用确定性覆盖策略并配合备份保证可回滚。

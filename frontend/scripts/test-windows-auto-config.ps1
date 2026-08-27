@@ -39,6 +39,8 @@ $RequiredFunctions = @(
   'Resolve-SystemNpmCmd',
   'Test-UsableSystemNode',
   'Ensure-NodeRuntime',
+  'Convert-CodexModelCatalog',
+  'Write-CodexModelCatalog',
   'Get-NodeReleaseChecksum',
   'Download-VerifiedFileWithFallback',
   'Get-VerifiedSameSiteAsset',
@@ -85,6 +87,24 @@ try {
   Ensure-NodeRuntime
   Assert-True ($script:NpmCmd.EndsWith('npm.cmd', [StringComparison]::OrdinalIgnoreCase)) "Ensure-NodeRuntime selected an unsafe npm shim: $script:NpmCmd"
   Invoke-NpmCommand -Arguments @('--version')
+
+  $CodexCatalogSource = Join-Path $PSScriptRoot '..\public\auto-config\codex-model-catalog.json'
+  $CodexCatalogOutput = Join-Path $FixtureDir 'cyber-codex-model-catalog.json'
+  $script:CatalogOpenAIDefaultModel = 'stale-default'
+  Convert-CodexModelCatalog `
+    -SourcePath $CodexCatalogSource `
+    -AuthorizedModels @('gpt-5.6-sol', 'gpt-daybreak-blue-latest') `
+    -OutputPath $CodexCatalogOutput
+  $CyberCatalog = Get-Content -LiteralPath $CodexCatalogOutput -Raw | ConvertFrom-Json
+  $CyberModelIds = @($CyberCatalog.models | ForEach-Object { [string]$_.slug })
+  Assert-True (($CyberModelIds -join ',') -eq 'gpt-5.6-sol,gpt-daybreak-blue-latest') "Cyber Codex model catalog mismatch: $($CyberModelIds -join ',')"
+  Assert-True ($script:CatalogOpenAIDefaultModel -eq 'gpt-5.6-sol') 'Cyber Codex default model was not set to Sol'
+  Assert-True (-not ($CyberModelIds -contains 'gpt-5.6-terra')) 'Unsupported Terra leaked into the Cyber Codex catalog'
+  $DaybreakModel = @($CyberCatalog.models | Where-Object { $_.slug -eq 'gpt-daybreak-blue-latest' })[0]
+  Assert-True ($DaybreakModel.display_name -eq 'GPT Daybreak Blue Latest') 'Daybreak display name was not synthesized'
+  Assert-True (-not [string]::IsNullOrWhiteSpace([string]$DaybreakModel.base_instructions)) 'Daybreak is missing base instructions'
+  Assert-True ($DaybreakModel.visibility -eq 'list') 'Daybreak is not visible in the Codex model selector'
+  Assert-True ([int]$DaybreakModel.context_window -eq 272000) 'Daybreak context window is incorrect'
 
   foreach ($Client in @('claude', 'codex')) {
     $CmdPath = Join-Path $FixtureDir "$Client.cmd"

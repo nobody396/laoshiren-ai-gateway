@@ -334,9 +334,10 @@ func (r *apiKeyRepository) ListByUserID(ctx context.Context, userID int64, param
 			q = q.Where(apikey.GroupIDEQ(*filters.GroupID))
 		}
 	}
-	if filters.Scope == "personal" {
+	switch filters.Scope {
+	case "personal":
 		q = q.Where(apikey.TeamIDIsNil())
-	} else if filters.Scope == "team" {
+	case "team":
 		q = q.Where(apikey.TeamIDNotNil())
 	}
 

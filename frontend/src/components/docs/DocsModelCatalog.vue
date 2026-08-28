@@ -96,10 +96,9 @@ const query = ref('')
 const models = computed<LogicalModel[]>(() => {
   const byID = new Map<string, { protocols: Set<string>; plans: AvailabilityPlan[] }>()
   for (const group of catalog.value?.groups ?? []) {
-    for (const model of group.models ?? []) {
-      if (model.disabled) continue
-      const current = byID.get(model.model) ?? { protocols: new Set<string>(), plans: [] }
-      current.protocols.add(protocolLabel(group.platform))
+    const addPlan = (modelID: string, protocol: string) => {
+      const current = byID.get(modelID) ?? { protocols: new Set<string>(), plans: [] }
+      current.protocols.add(protocol)
       if (!current.plans.some((plan) => plan.groupId === group.group_id)) {
         current.plans.push({
           groupId: group.group_id,
@@ -107,7 +106,16 @@ const models = computed<LogicalModel[]>(() => {
           multiplier: group.rate_multiplier,
         })
       }
-      byID.set(model.model, current)
+      byID.set(modelID, current)
+    }
+
+    for (const model of group.models ?? []) {
+      if (model.disabled) continue
+      addPlan(model.model, protocolLabel(group.platform))
+    }
+
+    if (group.image_generation && (group.models ?? []).length === 0) {
+      addPlan('gpt-image-2', 'Images API')
     }
   }
 
@@ -141,6 +149,7 @@ function protocolLabel(platform: string): string {
 
 function recommendedTool(model: string): string {
   const value = model.toLocaleLowerCase()
+  if (value === 'gpt-image-2') return 'Images API'
   if (value.startsWith('claude-')) return 'Claude Code'
   if (value.startsWith('grok-')) return 'Grok Build'
   if (value.startsWith('gemini-')) return 'Gemini CLI'

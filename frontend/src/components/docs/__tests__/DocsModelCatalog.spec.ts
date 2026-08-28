@@ -58,4 +58,43 @@ describe('DocsModelCatalog', () => {
     expect(articles[0].text()).toContain('GPT 混池分组')
     expect(wrapper.text()).not.toContain('gpt-hidden')
   })
+
+  it('keeps the dedicated image product separate from text models', async () => {
+    getPublicModelPricing.mockResolvedValue({
+      updated_at: '2026-08-28T00:00:00Z',
+      currency: 'CNY',
+      unit: 'per_million_tokens',
+      groups: [
+        {
+          group_id: 51,
+          name: 'GPT Image 2 生图分组',
+          platform: 'openai',
+          rate_multiplier: 4,
+          is_exclusive: false,
+          subscription_type: 'standard',
+          models: [],
+          image_generation: {
+            mode: 'token',
+            text_input_price: 20,
+            image_input_price: 32,
+            image_output_price: 120,
+          },
+        },
+      ],
+    })
+
+    const wrapper = mount(DocsModelCatalog, {
+      global: {
+        stubs: {
+          ModelIcon: { props: ['model'], template: '<span class="model-icon" :data-model="model" />' },
+        },
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.findAll('article')).toHaveLength(1)
+    expect(wrapper.get('h2').text()).toBe('gpt-image-2')
+    expect(wrapper.text()).toContain('Images API')
+    expect(wrapper.text()).toContain('GPT Image 2 生图分组')
+  })
 })

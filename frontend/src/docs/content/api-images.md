@@ -1,180 +1,149 @@
 # Images
 
-## 接入信息
+> 当前状态：生图上游文生图已实测通过；客户网关Key E2E通过前，本页保持草稿，不发布为“已验证”。
 
-| 用途 | Base URL | 说明 |
-| --- | --- | --- |
-| OpenAI 兼容图片接口 | `https://api.laoshirenai.com/v1` | 文生图和图片编辑 |
-| GPT-Image 专用分组 | `https://api.laoshirenai.com/gpt-image/v1` | 异步任务接口 |
+## 当前接入合同
 
-先在 [API 密钥](https://laoshirenai.com/keys) 创建支持图片生成的分组 Key。普通文本分组不一定开放图片能力。
+```text
+分组：GPT Image 2 生图分组
+模型：gpt-image-2
+Base URL：https://api.laoshirenai.com/v1
+接口：POST /images/generations
+鉴权：Authorization: Bearer YOUR_API_KEY
+```
 
-## 查询图片模型
+图片生成使用独立生图分组Key和独立图片模型。文本分组Key、`gpt-5.6-sol`、`gpt-5.5`等文本模型不作为生图入口。
+
+上游供应商和具体渠道属于内部路由，客户请求中不填写供应商名称或渠道名称。
+
+## 创建生图Key
+
+打开 [API 密钥](https://laoshirenai.com/keys)，选择 **GPT Image 2 生图分组** 创建Key。
+
+不要使用Claude、Codex或其他文本分组Key调用图片接口。
+
+## 查询模型
 
 ```bash
 curl https://api.laoshirenai.com/v1/models \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-请求必须使用当前 Key 返回的图片模型 ID。不要把文本模型名当成图片模型名。
+返回结果应包含：
+
+```text
+gpt-image-2
+```
 
 ## 文生图
+
+下面是当前生图线路已验证的最小请求形状：
 
 ```bash
 curl https://api.laoshirenai.com/v1/images/generations \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "YOUR_IMAGE_MODEL_ID",
-    "prompt": "一只坐在窗边的橘猫，柔和自然光，真实摄影质感",
-    "size": "1024x1024",
-    "quality": "high",
-    "n": 1,
-    "response_format": "b64_json"
-  }'
-```
-
-## 常用参数
-
-| 参数 | 必填 | 说明 |
-| --- | --- | --- |
-| `model` | 是 | 当前 Key 可用的图片模型 ID |
-| `prompt` | 是 | 图片内容、构图、风格和限制条件 |
-| `size` | 否 | 输出尺寸或比例，支持范围取决于模型 |
-| `quality` | 否 | `low`、`medium`、`high` 或模型支持值 |
-| `n` | 否 | 生成数量；没有明确支持时使用 `1` |
-| `response_format` | 否 | 常用值为 `b64_json`；部分通道固定返回 URL 或二进制 |
-| `background` | 否 | `auto`、`transparent` 或 `opaque`，取决于模型 |
-| `output_format` | 否 | `png`、`jpeg` 或 `webp`，取决于模型 |
-
-这些参数采用兼容转发。**接口接收参数不代表每个模型都支持该参数**，正式使用前必须用目标模型验证。
-
-## 同步响应
-
-接口可能返回 URL：
-
-```json
-{
-  "data": [
-    {"url": "https://example.com/generated/image.png"}
-  ]
-}
-```
-
-也可能返回 Base64：
-
-```json
-{
-  "data": [
-    {"b64_json": "iVBORw0KGgoAAAANSUhEUg..."}
-  ]
-}
-```
-
-部分通道直接返回 `image/png`、`image/jpeg` 或 `image/webp`。客户端应先检查响应头 `Content-Type`，再决定按 JSON 还是图片二进制处理。
-
-## 图片编辑
-
-图片编辑使用 `multipart/form-data`：
-
-```bash
-curl https://api.laoshirenai.com/v1/images/edits \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -F "model=YOUR_IMAGE_MODEL_ID" \
-  -F "prompt=保留商品主体和包装文字不变，把背景改成浅灰色摄影棚" \
-  -F "size=2048x2048" \
-  -F "quality=high" \
-  -F "n=1" \
-  -F "image=@/path/to/reference.png"
-```
-
-多图融合可以重复传入 `image`：
-
-```bash
--F "image=@/path/to/product.png" \
--F "image=@/path/to/background.png"
-```
-
-是否支持多图、遮罩和最大文件大小取决于目标模型与分组。上传前先压缩图片，避免请求体过大。
-
-## GPT-Image 专用异步任务
-
-GPT-Image 分组使用专用 Base URL：
-
-```text
-https://api.laoshirenai.com/gpt-image/v1
-```
-
-### 1. 提交任务
-
-```bash
-curl https://api.laoshirenai.com/gpt-image/v1/images/generations \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
     "model": "gpt-image-2",
-    "prompt": "一只坐在窗边的橘猫",
-    "n": 1,
-    "size": "1:1",
-    "resolution": "2k"
+    "prompt": "一只白色陶瓷杯放在纯色背景上，简洁产品摄影",
+    "size": "1024x1024",
+    "quality": "low",
+    "n": 1
   }'
 ```
 
-提交成功后读取 `data[0].task_id`。
+**不要传 `response_format`。** 当前生图线路由网关自动处理响应格式，上游会返回Base64图片。
 
-### 2. 查询任务
+## 已验证参数
 
-```bash
-curl https://api.laoshirenai.com/gpt-image/v1/tasks/TASK_ID \
-  -H "Authorization: Bearer YOUR_API_KEY"
+| 参数 | 值 | 说明 |
+| --- | --- | --- |
+| `model` | `gpt-image-2` | 固定图片模型 |
+| `prompt` | 字符串 | 图片内容、构图、风格和限制条件 |
+| `size` | `1024x1024` | 当前最小探测已通过 |
+| `quality` | `low` | 当前最小探测已通过 |
+| `n` | `1` | 当前按单张生成验收 |
+
+其他尺寸、质量、高级参数和图片编辑必须逐项实测后才能加入正式文档。
+
+## 成功响应
+
+当前生图线路实测返回JSON，`data[0]`包含 `b64_json`：
+
+```json
+{
+  "created": 1780000000,
+  "data": [
+    {
+      "b64_json": "iVBORw0KGgoAAAANSUhEUg..."
+    }
+  ],
+  "size": "1024x1024",
+  "quality": "low",
+  "output_format": "png",
+  "usage": {}
+}
 ```
 
-任务状态包括：
+成功标准：
 
-```text
-submitted
-processing
-completed
-failed
+1. HTTP 200。
+2. `Content-Type`为 `application/json`。
+3. `data[0].b64_json`存在且可以解码为图片。
+4. `size`和 `quality`与请求一致。
+5. Usage可以被网关记录并正确计费。
+
+## 保存Base64图片
+
+### Python
+
+```python
+import base64
+from pathlib import Path
+
+image_base64 = response_json["data"][0]["b64_json"]
+Path("result.png").write_bytes(base64.b64decode(image_base64))
 ```
 
-只有 `completed` 后才读取图片结果。任务失败时读取错误信息，不要无限轮询。
+### Node.js
 
-### 3. 获取图片
+```javascript
+import { writeFile } from "node:fs/promises";
 
-完成响应中的图片地址由老实人AI提供，格式类似：
-
-```text
-https://api.laoshirenai.com/gpt-image/media/TASK_ID/0?token=...
+const imageBase64 = responseJson.data[0].b64_json;
+await writeFile("result.png", Buffer.from(imageBase64, "base64"));
 ```
-
-这是临时访问地址。业务系统取得图片后应及时保存到自己的存储。
 
 ## 计费
 
-- 以模型目录和当前分组显示价格为准。
-- 图片实际生成成功后才记录对应图片用量。
-- GPT-Image异步任务在完成并取得图片后结算；失败任务不应产生成功图片用量。
-- `size`、`resolution`、`quality` 和数量可能影响价格，不能只按请求次数估算。
+- 当前生图分组采用图片Token计费。
+- 价格以[模型目录](models)和下单时的分组页面为准。
+- 只有取得有效图片并完成Usage记录后，才能认定调用成功并结算。
+- 失败、空图片和不可解码结果不能计为成功图片。
 
-## 生产处理建议
+## 图片编辑
 
-1. 为请求设置合理超时。
-2. 异步任务按返回状态轮询，不固定假设生成时间。
-3. URL、Base64和图片二进制三种响应都要兼容。
-4. 下载成功后保存图片，不长期依赖临时URL。
-5. 重试前先确认前一次任务是否已成功，避免重复生成和重复扣费。
+```text
+POST /v1/images/edits
+```
+
+当前生图线路的图片编辑、单图编辑、多图融合和遮罩参数尚未完成真实网关E2E。验收完成前，本页不提供可复制的图片编辑命令。
 
 ## 常见错误
 
-- `400 invalid model`：模型 ID 不属于当前 Key。
-- `400 invalid size/quality`：尺寸或质量档位不受目标模型支持。
-- `401`：Key 无效、停用或缺失。
-- `403`：当前 Key 所属分组未开放图片能力。
-- `413`：上传图片或 Base64 请求体过大。
-- `429`：并发或频率达到限制。
-- `500`–`504`：上游生成失败或超时；先查询任务状态，再决定是否重试。
+- `400 images endpoint requires an image model`：错误使用了文本模型名。
+- `400 invalid size/quality`：尺寸或质量未通过目标线路验证。
+- `400 response_format`：当前生图线路不要传 `response_format`。
+- `401`：Key无效、停用或缺失。
+- `403`：当前Key不是GPT Image 2生图分组。
+- `413`：请求体过大。
+- `429`：并发或请求频率达到限制。
+- `500`–`504`：上游生成失败或超时；确认没有成功图片后再重试。
 
-## 验证
+## 发布前剩余验收
 
-只有取得可解码的图片 URL、Base64或图片二进制才算成功。HTTP 200、202或任务已提交本身都不等于图片已经生成完成。
+1. 使用管理员所有者生图Key通过老实人AI公网网关完成上述请求。
+2. 回读账号39、分组51、模型 `gpt-image-2`、Usage和扣费。
+3. 验证失败请求不产生成功图片用量。
+4. Windows PowerShell、macOS和Linux命令分别执行。
+5. 完成图片编辑E2E后，再补充编辑参数和命令。

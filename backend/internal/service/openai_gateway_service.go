@@ -26,6 +26,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/ip"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/openai"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/openai_compat"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/platform/liveattestation"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/util/responseheaders"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/util/urlvalidator"
@@ -2372,6 +2373,16 @@ func (s *OpenAIGatewayService) forwardLegacy(ctx context.Context, c *gin.Context
 			}
 		}
 	}
+	useChatCompletionsBridge := account.Type == AccountTypeAPIKey &&
+		!openai_compat.ShouldUseResponsesAPIForModel(account.Extra, originalModel, billingModel, upstreamModel)
+	if useChatCompletionsBridge && wsDecision.Transport != OpenAIUpstreamTransportHTTPSSE {
+		return nil, fmt.Errorf("chat_completions protocol bridge only supports HTTP Responses clients")
+	}
+	if useChatCompletionsBridge {
+		if previousResponseID, _ := reqBody["previous_response_id"].(string); strings.TrimSpace(previousResponseID) != "" {
+			return nil, fmt.Errorf("previous_response_id requires a native Responses upstream")
+		}
+	}
 
 	// 规范化 reasoning.effort 参数（minimal -> none），与上游允许值对齐。
 	if reasoning, ok := reqBody["reasoning"].(map[string]any); ok {
@@ -2404,7 +2415,7 @@ func (s *OpenAIGatewayService) forwardLegacy(ctx context.Context, c *gin.Context
 			case PlatformOpenAI:
 				// For OpenAI API Key, remove max_output_tokens (not supported)
 				// For OpenAI OAuth (Responses API), keep it (supported)
-				if account.Type == AccountTypeAPIKey {
+				if account.Type == AccountTypeAPIKey && !useChatCompletionsBridge {
 					delete(reqBody, "max_output_tokens")
 					bodyModified = true
 					markPatchDelete("max_output_tokens")
@@ -2513,6 +2524,51 @@ func (s *OpenAIGatewayService) forwardLegacy(ctx context.Context, c *gin.Context
 				return nil, fmt.Errorf("serialize request body: %w", marshalErr)
 			}
 		}
+	}
+
+	if useChatCompletionsBridge {
+		resp, bridgeErr := s.doOpenAIResponsesViaChatCompletions(ctx, c, account, body, originalModel)
+		if bridgeErr != nil {
+			if c != nil && c.Writer != nil && !c.Writer.Written() {
+				var failoverErr *UpstreamFailoverError
+				if !errors.As(bridgeErr, &failoverErr) {
+					c.JSON(http.StatusBadRequest, OpenAIClientErrorEnvelope(c, "invalid_request_error", bridgeErr.Error()))
+				}
+			}
+			return nil, bridgeErr
+		}
+		defer func() { _ = resp.Body.Close() }()
+		if resp.StatusCode >= http.StatusBadRequest {
+			respBody, upstreamMsg := s.readOpenAIUpstreamError(resp)
+			if failoverErr := s.failoverOpenAIUpstreamHTTPError(ctx, c, account, resp, respBody, upstreamMsg, upstreamModel); failoverErr != nil {
+				return nil, failoverErr
+			}
+			resp.Body = io.NopCloser(bytes.NewReader(respBody))
+			return s.handleErrorResponse(ctx, resp, c, account, body)
+		}
+
+		if reqStream {
+			streamResult, streamErr := s.handleStreamingResponse(ctx, resp, c, account, startTime, originalModel, upstreamModel)
+			if streamErr != nil {
+				return nil, streamErr
+			}
+			usage := OpenAIUsage{}
+			if streamResult.usage != nil {
+				usage = *streamResult.usage
+			}
+			return &OpenAIForwardResult{
+				RequestID: resp.Header.Get("x-request-id"), Usage: usage, Model: originalModel,
+				BillingModel: billingModel, UpstreamModel: upstreamModel, UpstreamEndpoint: openAIResponsesViaChatEndpoint,
+				ServiceTier: extractOpenAIServiceTier(reqBody), ReasoningEffort: extractOpenAIReasoningEffort(reqBody, originalModel),
+				Stream: true, Duration: time.Since(startTime), FirstTokenMs: streamResult.firstTokenMs,
+			}, nil
+		}
+		result, bufferedErr := s.handleResponsesBufferedStreamingResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime)
+		if result != nil {
+			result.ServiceTier = extractOpenAIServiceTier(reqBody)
+			result.ReasoningEffort = extractOpenAIReasoningEffort(reqBody, originalModel)
+		}
+		return result, bufferedErr
 	}
 
 	// Get access token

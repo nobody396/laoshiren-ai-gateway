@@ -56,8 +56,13 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 	if account != nil && account.Platform == PlatformGemini {
 		return s.forwardGeminiChatCompletions(ctx, c, account, body, defaultMappedModel)
 	}
-	if account != nil && account.Type == AccountTypeAPIKey && !openai_compat.ShouldUseResponsesAPI(account.Extra) {
-		return s.forwardAsRawChatCompletions(ctx, c, account, body, defaultMappedModel)
+	if account != nil && account.Type == AccountTypeAPIKey {
+		originalModel := strings.TrimSpace(gjson.GetBytes(body, "model").String())
+		billingModel := resolveOpenAIForwardModel(account, originalModel, defaultMappedModel)
+		upstreamModel := normalizeOpenAIModelForUpstream(account, billingModel)
+		if !openai_compat.ShouldUseResponsesAPIForModel(account.Extra, originalModel, billingModel, upstreamModel) {
+			return s.forwardAsRawChatCompletions(ctx, c, account, body, defaultMappedModel)
+		}
 	}
 
 	startTime := time.Now()
@@ -349,8 +354,9 @@ func (s *OpenAIGatewayService) handleChatBufferedStreamingResponse(
 			finalResponse = event.Response
 			if event.Response.Usage != nil {
 				usage = OpenAIUsage{
-					InputTokens:  event.Response.Usage.InputTokens,
-					OutputTokens: event.Response.Usage.OutputTokens,
+					InputTokens:              event.Response.Usage.InputTokens,
+					OutputTokens:             event.Response.Usage.OutputTokens,
+					CacheCreationInputTokens: event.Response.Usage.CacheCreationInputTokens,
 				}
 				if event.Response.Usage.InputTokensDetails != nil {
 					usage.CacheReadInputTokens = event.Response.Usage.InputTokensDetails.CachedTokens
@@ -545,8 +551,9 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 			terminalSeen = true
 			if event.Response != nil && event.Response.Usage != nil {
 				usage = OpenAIUsage{
-					InputTokens:  event.Response.Usage.InputTokens,
-					OutputTokens: event.Response.Usage.OutputTokens,
+					InputTokens:              event.Response.Usage.InputTokens,
+					OutputTokens:             event.Response.Usage.OutputTokens,
+					CacheCreationInputTokens: event.Response.Usage.CacheCreationInputTokens,
 				}
 				if event.Response.Usage.InputTokensDetails != nil {
 					usage.CacheReadInputTokens = event.Response.Usage.InputTokensDetails.CachedTokens

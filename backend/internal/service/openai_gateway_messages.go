@@ -15,6 +15,7 @@ import (
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/apicompat"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/claude"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/openai_compat"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/util/responseheaders"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -140,6 +141,42 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 	}
 	responsesBody = updatedBody
 	effectiveServiceTier := extractOpenAIServiceTierFromBody(responsesBody)
+
+	if account.Type == AccountTypeAPIKey &&
+		!openai_compat.ShouldUseResponsesAPIForModel(account.Extra, originalModel, billingModel, upstreamModel) {
+		resp, bridgeErr := s.doOpenAIResponsesViaChatCompletions(ctx, c, account, responsesBody, originalModel)
+		if bridgeErr != nil {
+			var failoverErr *UpstreamFailoverError
+			if c != nil && c.Writer != nil && !c.Writer.Written() && !errors.As(bridgeErr, &failoverErr) {
+				c.JSON(http.StatusBadRequest, gin.H{"type": "error", "error": gin.H{"type": "invalid_request_error", "message": bridgeErr.Error()}})
+			}
+			return nil, bridgeErr
+		}
+		defer func() { _ = resp.Body.Close() }()
+		if resp.StatusCode >= http.StatusBadRequest {
+			respBody, upstreamMsg := s.readOpenAIUpstreamError(resp)
+			if failoverErr := s.failoverOpenAIUpstreamHTTPError(ctx, c, account, resp, respBody, upstreamMsg, upstreamModel); failoverErr != nil {
+				return nil, failoverErr
+			}
+			resp.Body = io.NopCloser(bytes.NewReader(respBody))
+			return s.handleAnthropicErrorResponse(resp, c, account)
+		}
+		var result *OpenAIForwardResult
+		if clientStream {
+			result, bridgeErr = s.handleAnthropicStreamingResponse(resp, c, originalModel, billingModel, upstreamModel, startTime)
+		} else {
+			result, bridgeErr = s.handleAnthropicBufferedStreamingResponse(resp, c, originalModel, billingModel, upstreamModel, startTime)
+		}
+		if result != nil {
+			result.UpstreamEndpoint = openAIResponsesViaChatEndpoint
+			result.ServiceTier = effectiveServiceTier
+			if responsesReq.Reasoning != nil && responsesReq.Reasoning.Effort != "" {
+				effort := responsesReq.Reasoning.Effort
+				result.ReasoningEffort = &effort
+			}
+		}
+		return result, bridgeErr
+	}
 
 	grokCacheIdentity := ""
 	if account.Platform == PlatformGrok {
@@ -339,8 +376,9 @@ func (s *OpenAIGatewayService) handleAnthropicBufferedStreamingResponse(
 			finalResponse = event.Response
 			if event.Response.Usage != nil {
 				usage = OpenAIUsage{
-					InputTokens:  event.Response.Usage.InputTokens,
-					OutputTokens: event.Response.Usage.OutputTokens,
+					InputTokens:              event.Response.Usage.InputTokens,
+					OutputTokens:             event.Response.Usage.OutputTokens,
+					CacheCreationInputTokens: event.Response.Usage.CacheCreationInputTokens,
 				}
 				if event.Response.Usage.InputTokensDetails != nil {
 					usage.CacheReadInputTokens = event.Response.Usage.InputTokensDetails.CachedTokens
@@ -479,8 +517,9 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 			terminalSeen = true
 			if event.Response != nil && event.Response.Usage != nil {
 				usage = OpenAIUsage{
-					InputTokens:  event.Response.Usage.InputTokens,
-					OutputTokens: event.Response.Usage.OutputTokens,
+					InputTokens:              event.Response.Usage.InputTokens,
+					OutputTokens:             event.Response.Usage.OutputTokens,
+					CacheCreationInputTokens: event.Response.Usage.CacheCreationInputTokens,
 				}
 				if event.Response.Usage.InputTokensDetails != nil {
 					usage.CacheReadInputTokens = event.Response.Usage.InputTokensDetails.CachedTokens

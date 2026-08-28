@@ -34,6 +34,44 @@ func chatResponseFormatToResponsesTextFormat(raw json.RawMessage) json.RawMessag
 	return out
 }
 
+func responsesTextFormatToChatResponseFormat(raw json.RawMessage) json.RawMessage {
+	raw = normalizedRawJSON(raw)
+	if len(raw) == 0 {
+		return nil
+	}
+
+	obj, ok := rawJSONObject(raw)
+	if !ok || rawString(obj["type"]) != "json_schema" {
+		return raw
+	}
+	if _, alreadyChatShape := obj["json_schema"]; alreadyChatShape {
+		return raw
+	}
+
+	schema := make(map[string]json.RawMessage, len(obj))
+	for key, value := range obj {
+		if key != "type" {
+			schema[key] = value
+		}
+	}
+	if len(schema) == 0 {
+		return raw
+	}
+
+	schemaRaw, err := json.Marshal(schema)
+	if err != nil {
+		return raw
+	}
+	out, err := json.Marshal(map[string]json.RawMessage{
+		"type":        rawJSONString("json_schema"),
+		"json_schema": schemaRaw,
+	})
+	if err != nil {
+		return raw
+	}
+	return out
+}
+
 func normalizedRawJSON(raw json.RawMessage) json.RawMessage {
 	raw = bytes.TrimSpace(raw)
 	if len(raw) == 0 || string(raw) == "null" {

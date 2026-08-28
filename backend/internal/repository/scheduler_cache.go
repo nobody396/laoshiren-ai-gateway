@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/openai_compat"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/redis/go-redis/v9"
 )
@@ -564,6 +565,9 @@ func filterSchedulerExtra(extra map[string]any) map[string]any {
 		service.OpenAIImageGenerationPriorityExtraKey,
 		"openai_apikey_responses_websockets_v2_enabled",
 		"openai_apikey_responses_websockets_v2_mode",
+		openai_compat.ExtraKeyResponsesSupported,
+		openai_compat.ExtraKeyResponsesMode,
+		openai_compat.ExtraKeyUpstreamProtocolByModel,
 		"openai_oauth_responses_websockets_v2_enabled",
 		"openai_oauth_responses_websockets_v2_mode",
 		"openai_ws_enabled",

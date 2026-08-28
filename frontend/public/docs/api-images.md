@@ -12,10 +12,6 @@ Base URL：https://api.laoshirenai.com/v1
 鉴权：Authorization: Bearer YOUR_API_KEY
 ```
 
-图片生成使用独立生图分组Key和独立图片模型。文本分组Key、`gpt-5.6-sol`、`gpt-5.5`等文本模型不作为生图入口。
-
-上游供应商和具体渠道属于内部路由，客户请求中不填写供应商名称或渠道名称。
-
 ## 创建生图Key
 
 打开 [API 密钥](https://laoshirenai.com/keys)，选择 **GPT Image 2 生图分组** 创建Key。

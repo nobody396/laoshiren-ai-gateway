@@ -19,6 +19,8 @@ type userRepoStub struct {
 	deleteErr       error
 	exists          bool
 	existsErr       error
+	aliasExists     bool
+	aliasExistsErr  error
 	allowGetByEmail bool
 	getByEmailUser  *User
 	getByEmailErr   error
@@ -114,6 +116,13 @@ func (s *userRepoStub) ExistsByEmail(ctx context.Context, email string) (bool, e
 		return false, s.existsErr
 	}
 	return s.exists, nil
+}
+
+func (s *userRepoStub) ExistsByEmailAlias(context.Context, string, int64) (bool, error) {
+	if s.aliasExistsErr != nil {
+		return false, s.aliasExistsErr
+	}
+	return s.aliasExists, nil
 }
 
 func (s *userRepoStub) RemoveGroupFromAllowedGroups(ctx context.Context, groupID int64) (int64, error) {

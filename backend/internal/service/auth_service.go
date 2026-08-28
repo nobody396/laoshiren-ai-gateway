@@ -215,6 +215,14 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 	if existsEmail {
 		return "", nil, ErrEmailExists
 	}
+	aliasExists, err := emailAliasExistsForAnotherUser(ctx, s.userRepo, email, 0)
+	if err != nil {
+		logger.LegacyPrintf("service.auth", "[Auth] Database error checking email alias exists: %v", err)
+		return "", nil, ErrServiceUnavailable
+	}
+	if aliasExists {
+		return "", nil, ErrEmailExists
+	}
 
 	// 密码哈希
 	hashedPassword, err := s.HashPassword(password)
@@ -320,6 +328,14 @@ func (s *AuthService) SendVerifyCode(ctx context.Context, email string) error {
 	if existsEmail {
 		return ErrEmailExists
 	}
+	aliasExists, err := emailAliasExistsForAnotherUser(ctx, s.userRepo, email, 0)
+	if err != nil {
+		logger.LegacyPrintf("service.auth", "[Auth] Database error checking email alias exists: %v", err)
+		return ErrServiceUnavailable
+	}
+	if aliasExists {
+		return ErrEmailExists
+	}
 
 	// 发送验证码
 	if s.emailService == nil {
@@ -360,6 +376,14 @@ func (s *AuthService) SendVerifyCodeAsync(ctx context.Context, email string) (*S
 	}
 	if existsEmail {
 		logger.LegacyPrintf("service.auth", "[Auth] Email already exists: %s", email)
+		return nil, ErrEmailExists
+	}
+	aliasExists, err := emailAliasExistsForAnotherUser(ctx, s.userRepo, email, 0)
+	if err != nil {
+		logger.LegacyPrintf("service.auth", "[Auth] Database error checking email alias exists: %v", err)
+		return nil, ErrServiceUnavailable
+	}
+	if aliasExists {
 		return nil, ErrEmailExists
 	}
 

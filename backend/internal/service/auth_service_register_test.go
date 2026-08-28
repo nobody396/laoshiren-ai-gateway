@@ -234,6 +234,15 @@ func TestAuthService_Register_EmailExists(t *testing.T) {
 	require.ErrorIs(t, err, ErrEmailExists)
 }
 
+func TestAuthServiceRegisterRejectsExistingMailboxAlias(t *testing.T) {
+	repo := &userRepoStub{aliasExists: true}
+	svc := newAuthService(repo, map[string]string{SettingKeyRegistrationEnabled: "true"}, nil)
+
+	_, _, err := svc.Register(context.Background(), "user.name+new@googlemail.com", "password")
+	require.ErrorIs(t, err, ErrEmailExists)
+	require.Empty(t, repo.created)
+}
+
 func TestAuthService_Register_InvitationFailureSuppressesPostCommitEffects(t *testing.T) {
 	repo := &userRepoStub{nextID: 42}
 	svc := newAuthService(repo, map[string]string{

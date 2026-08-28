@@ -1,11 +1,35 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
 )
+
+// NormalizeEmailForAliasDedup returns the mailbox identity used only for
+// duplicate detection. Persisted/login/send addresses remain unchanged.
+// Local policy intentionally folds aliases only for the Gmail family, whose
+// dot and plus semantics are explicit and stable.
+func NormalizeEmailForAliasDedup(email string) string {
+	if normalized := NormalizeRegistrationEmailAddress(email); normalized != "" {
+		return normalized
+	}
+	return strings.ToLower(strings.TrimSpace(email))
+}
+
+type emailAliasLookupRepository interface {
+	ExistsByEmailAlias(ctx context.Context, email string, excludeUserID int64) (bool, error)
+}
+
+func emailAliasExistsForAnotherUser(ctx context.Context, repo UserRepository, email string, excludeUserID int64) (bool, error) {
+	lookup, ok := repo.(emailAliasLookupRepository)
+	if !ok {
+		return false, nil
+	}
+	return lookup.ExistsByEmailAlias(ctx, email, excludeUserID)
+}
 
 var registrationEmailDomainPattern = regexp.MustCompile(
 	`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$`,

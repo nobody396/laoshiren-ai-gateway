@@ -1720,6 +1720,9 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 	compactBlocked := false
 
 	// ============ Layer 1: Sticky session ============
+	// A full sticky wait queue may spill one request to another healthy account,
+	// but that temporary capacity decision must not migrate the durable binding.
+	stickySpillover := false
 	if sessionHash != "" {
 		accountID := stickyAccountID
 		if accountID > 0 && !isExcluded(accountID) {
@@ -1751,6 +1754,7 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 								MaxWaiting:     cfg.StickySessionMaxWaiting,
 							})
 						}
+						stickySpillover = true
 					}
 				}
 			}
@@ -1808,7 +1812,7 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 			}
 			result, err := s.tryAcquireAccountSlot(ctx, fresh.ID, fresh.Concurrency)
 			if err == nil && result.Acquired {
-				if sessionHash != "" {
+				if sessionHash != "" && !stickySpillover {
 					_ = s.setStickySessionAccountID(ctx, groupID, sessionHash, fresh.ID, openaiStickySessionTTL)
 				}
 				return s.newSelectionResult(ctx, fresh, true, result.ReleaseFunc, nil)
@@ -1862,7 +1866,7 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 				}
 				result, err := s.tryAcquireAccountSlot(ctx, fresh.ID, fresh.Concurrency)
 				if err == nil && result.Acquired {
-					if sessionHash != "" {
+					if sessionHash != "" && !stickySpillover {
 						_ = s.setStickySessionAccountID(ctx, groupID, sessionHash, fresh.ID, openaiStickySessionTTL)
 					}
 					return s.newSelectionResult(ctx, fresh, true, result.ReleaseFunc, nil)
@@ -2838,7 +2842,7 @@ func (s *OpenAIGatewayService) forwardLegacy(ctx context.Context, c *gin.Context
 				return nil, &UpstreamFailoverError{
 					StatusCode:             resp.StatusCode,
 					ResponseBody:           respBody,
-					RetryableOnSameAccount: account.IsPoolMode() && (isPoolModeRetryableStatus(resp.StatusCode) || isOpenAITransientProcessingError(resp.StatusCode, upstreamMsg, respBody)),
+					RetryableOnSameAccount: isTransientOpenAIOAuth429(account, resp.StatusCode, resp.Header, respBody) || (account.IsPoolMode() && (isPoolModeRetryableStatus(resp.StatusCode) || isOpenAITransientProcessingError(resp.StatusCode, upstreamMsg, respBody))),
 				}
 			}
 			return s.handleErrorResponse(ctx, resp, c, account, body)
@@ -3334,9 +3338,10 @@ func (s *OpenAIGatewayService) handleFailoverErrorResponsePassthrough(
 		UpstreamResponseBody: upstreamDetail,
 	})
 	return &UpstreamFailoverError{
-		StatusCode:      resp.StatusCode,
-		ResponseBody:    body,
-		ResponseHeaders: resp.Header.Clone(),
+		StatusCode:             resp.StatusCode,
+		ResponseBody:           body,
+		ResponseHeaders:        resp.Header.Clone(),
+		RetryableOnSameAccount: isTransientOpenAIOAuth429(account, resp.StatusCode, resp.Header, body),
 	}
 }
 
@@ -3600,7 +3605,7 @@ func (s *OpenAIGatewayService) newOpenAIStreamFailoverError(
 	return &UpstreamFailoverError{
 		StatusCode:             safeClientErr.StatusCode,
 		ResponseBody:           body,
-		RetryableOnSameAccount: safeClientErr.Code == "" && isOpenAIUpstreamCapacityShedEvent(payload),
+		RetryableOnSameAccount: isTransientOpenAIOAuth429(account, safeClientErr.StatusCode, nil, payload) || (safeClientErr.Code == "" && isOpenAIUpstreamCapacityShedEvent(payload)),
 	}
 }
 

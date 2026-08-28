@@ -872,6 +872,26 @@ func TestCalculateCost_SupportsCacheBreakdown(t *testing.T) {
 	require.InDelta(t, expected5m+expected1h, cost.CacheCreationCost, 1e-10)
 }
 
+func TestComputeCacheCreationCostCapsContradictoryBreakdownAtAggregate(t *testing.T) {
+	svc := &BillingService{}
+	pricing := &ModelPricing{SupportsCacheBreakdown: true, CacheCreation5mPrice: 1, CacheCreation1hPrice: 1}
+	tokens := UsageTokens{CacheCreationTokens: 463184, CacheCreation5mTokens: 463184, CacheCreation1hTokens: 463184}
+
+	cost := svc.computeCacheCreationCost(pricing, tokens, 1)
+
+	require.Equal(t, float64(tokens.CacheCreationTokens), cost)
+}
+
+func TestNormalizeCacheCreationBreakdownPreservesRatioAndBounds(t *testing.T) {
+	fiveMinute, oneHour := normalizeCacheCreationBreakdown(UsageTokens{CacheCreationTokens: 100, CacheCreation5mTokens: 90, CacheCreation1hTokens: 60})
+	require.Equal(t, 60, fiveMinute)
+	require.Equal(t, 40, oneHour)
+
+	fiveMinute, oneHour = normalizeCacheCreationBreakdown(UsageTokens{CacheCreationTokens: 100, CacheCreation5mTokens: -50, CacheCreation1hTokens: 150})
+	require.Equal(t, 0, fiveMinute)
+	require.Equal(t, 100, oneHour)
+}
+
 func TestCalculateCost_LargeTokenCount(t *testing.T) {
 	svc := newTestBillingService()
 

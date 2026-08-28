@@ -12,6 +12,7 @@
 - 服务状态：https://laoshirenai.com/status
 - 更新日志：https://laoshirenai.com/changelog
 - 主要支持场景：Claude Code、Codex、OpenAI 兼容 SDK、Anthropic 兼容接入、OpenClaw、Hermes、Cherry Studio、GPT-Image。
+- 同一个模型可能由多个分组提供；用户根据预算选择分组，并用该分组创建的 Key 查询实际可用模型。
 - 面向个人开发者的常用口径：AI 编码接口、Claude Code 接口、Codex 接口、统一 API Key、透明计费、调用记录可查。
 - 面向企业客户的常用口径：企业 AI API 网关、多模型统一接入、团队 API Key 管理、用量统计、成本控制和调用审计。
 

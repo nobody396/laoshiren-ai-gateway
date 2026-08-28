@@ -51,16 +51,16 @@ describe('updateRouteSeo', () => {
       meta: { title: '文档' },
     }))
 
-    expect(document.title).toBe('Claude Code 快速开始指南 - 文档 - 老实人AI')
+    expect(document.title).toBe('Claude Code - 文档 - 老实人AI')
     expect(content('meta[name="robots"]')).toBe('noindex,nofollow')
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
-      'https://laoshirenai.com/docs/claude-code-quickstart'
+      'https://laoshirenai.com/docs/integration-claude-code'
     )
     expect(content('meta[property="og:type"]')).toBe('article')
     expect(document.head.querySelector('script[type="application/ld+json"]')).toBeNull()
   })
 
-  it('keeps the hidden Codex docs title but emits no public structured data', () => {
+  it('maps a hidden legacy Codex URL to the concise docs page without public structured data', () => {
     updateRouteSeo(route({
       name: 'DocsPage',
       path: '/docs/codex-custom-api-guide',
@@ -68,7 +68,7 @@ describe('updateRouteSeo', () => {
       meta: { title: '文档' },
     }))
 
-    expect(document.title).toBe('Codex 自定义 API 配置：Base URL 与 config.toml - 文档 - 老实人AI')
+    expect(document.title).toBe('Codex - 文档 - 老实人AI')
     expect(content('meta[name="robots"]')).toBe('noindex,nofollow')
     expect(document.head.querySelector('script[type="application/ld+json"]')).toBeNull()
   })
@@ -142,6 +142,6 @@ describe('updateRouteSeo', () => {
     expect(document.head.querySelectorAll('meta[name="robots"]').length).toBe(1)
     expect(document.head.querySelectorAll('meta[property="og:title"]').length).toBe(1)
     expect(document.head.querySelectorAll('link[rel="canonical"]').length).toBe(1)
-    expect(document.title).toBe('Codex 快速开始指南 - 文档 - 老实人AI')
+    expect(document.title).toBe('Codex - 文档 - 老实人AI')
   })
 })

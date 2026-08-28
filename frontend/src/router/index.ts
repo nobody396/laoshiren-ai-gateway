@@ -79,7 +79,7 @@ const routes: RouteRecordRaw[] = [
           meta: {
             requiresAuth: false,
             title: '文档',
-            description: '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
+            description: '老实人AI 文档：快速开始、API 参考、工具集成、图片生成与实时模型目录。'
           }
         },
         {
@@ -89,7 +89,7 @@ const routes: RouteRecordRaw[] = [
           meta: {
             requiresAuth: false,
             title: '文档',
-            description: '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio 和 GPT-Image-2 的配置教程与常见问题。'
+            description: '老实人AI 文档：快速开始、API 参考、工具集成、图片生成与实时模型目录。'
           }
         }
       ] satisfies RouteRecordRaw[]

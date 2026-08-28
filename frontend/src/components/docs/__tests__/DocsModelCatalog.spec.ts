@@ -57,6 +57,14 @@ describe('DocsModelCatalog', () => {
     expect(articles[0].text()).toContain('GPT Plus 月卡组')
     expect(articles[0].text()).toContain('GPT 混池分组')
     expect(wrapper.text()).not.toContain('gpt-hidden')
+
+    const monthlyRows = wrapper.findAll('section[aria-labelledby="monthly-plan-heading"] tbody tr')
+    expect(monthlyRows.map((row) => row.findAll('td').map((cell) => cell.text()))).toEqual([
+      ['Plus', '3,000 AI credits', '¥259', '¥255'],
+      ['Pro', '9,000 AI credits', '¥729', '¥715'],
+      ['Max', '20,000 AI credits', '¥1549', '¥1525'],
+    ])
+    expect(wrapper.text()).toContain('GPT、Claude 和 Grok 月卡分组')
   })
 
   it('keeps the dedicated image product separate from text models', async () => {

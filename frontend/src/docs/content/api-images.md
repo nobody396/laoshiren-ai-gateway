@@ -1,39 +1,34 @@
 # Images
 
-> 验证状态：2026-08-28已通过Linux生产源服务器到老实人AI公网网关的文生图E2E；Windows PowerShell和图片编辑仍待验收。
+> 已验证：图片生成、单图编辑、遮罩编辑和多图编辑均已通过老实人AI公网网关生产 E2E；Codex 也已通过自然语言自动调用生成与编辑能力。
 
-## 当前接入合同
+## 接入信息
 
 ```text
 分组：GPT Image 2 生图分组
 模型：gpt-image-2
 Base URL：https://api.laoshirenai.com/v1
-接口：POST /images/generations
+生成：POST /images/generations
+编辑：POST /images/edits
 鉴权：Authorization: Bearer YOUR_API_KEY
 ```
 
-## 创建生图Key
+图片接口使用独立的生图 Key。该分组只开放 `gpt-image-2`。
 
-打开 [API 密钥](https://laoshirenai.com/keys)，选择 **GPT Image 2 生图分组** 创建Key。
+当前文本分组仍可能保留自身的原生图片能力；新接入请使用独立生图分组，避免把文本 Key 和图片 Key 混在一起。
 
-不要使用Claude、Codex或其他文本分组Key调用图片接口。
+## 1. 创建并检查 Key
 
-## 查询模型
+打开 [API 密钥](https://laoshirenai.com/keys)，选择 **GPT Image 2 生图分组** 创建 Key，然后检查模型权限：
 
 ```bash
 curl https://api.laoshirenai.com/v1/models \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-返回结果应包含：
+返回结果应包含 `gpt-image-2`。这一步只查询模型，不生成图片，不产生图片费用。
 
-```text
-gpt-image-2
-```
-
-## 文生图
-
-下面是当前生图线路已验证的最小请求形状：
+## 2. 图片生成
 
 ```bash
 curl https://api.laoshirenai.com/v1/images/generations \
@@ -41,132 +36,150 @@ curl https://api.laoshirenai.com/v1/images/generations \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-image-2",
-    "prompt": "一只白色陶瓷杯放在纯色背景上，简洁产品摄影",
+    "prompt": "一只红色陶瓷杯，浅灰色背景，产品摄影，无文字",
     "size": "1024x1024",
     "quality": "low",
     "n": 1
   }'
 ```
 
-**不要传 `response_format`。** 当前生图线路由网关自动处理响应格式，上游会返回Base64图片。
+不要传 `response_format`。成功响应的 `data[0].b64_json` 是 Base64 图片。
 
-## 已验证参数
+## 3. 图片编辑
 
-| 参数 | 值 | 说明 |
-| --- | --- | --- |
-| `model` | `gpt-image-2` | 固定图片模型 |
-| `prompt` | 字符串 | 图片内容、构图、风格和限制条件 |
-| `size` | `1024x1024` | 当前最小探测已通过 |
-| `quality` | `low` | 当前最小探测已通过 |
-| `n` | `1` | 当前按单张生成验收 |
+安装 OpenAI Python SDK：
 
-其他尺寸、质量、高级参数和图片编辑必须逐项实测后才能加入正式文档。
-
-## 成功响应
-
-当前生图线路实测返回JSON，`data[0]`包含 `b64_json`：
-
-```json
-{
-  "created": 1780000000,
-  "data": [
-    {
-      "b64_json": "iVBORw0KGgoAAAANSUhEUg..."
-    }
-  ],
-  "size": "1024x1024",
-  "quality": "low",
-  "output_format": "png",
-  "usage": {}
-}
+```bash
+python3 -m pip install openai
 ```
 
-成功标准：
+下面三种编辑请求形状已经验证。所有示例均固定 `gpt-image-2`、`quality="low"` 和 `n=1`。
 
-1. HTTP 200。
-2. `Content-Type`为 `application/json`。
-3. `data[0].b64_json`存在且可以解码为图片。
-4. `size`和 `quality`与请求一致。
-5. Usage可以被网关记录并正确计费。
+### 单图编辑
 
-## 保存Base64图片
+```python
+from openai import OpenAI
 
-### Python
+client = OpenAI(
+    api_key="YOUR_API_KEY",
+    base_url="https://api.laoshirenai.com/v1",
+)
+
+with open("source.png", "rb") as source:
+    result = client.images.edit(
+        model="gpt-image-2",
+        image=source,
+        prompt="把背景改成纯白色，主体和构图保持不变，无文字",
+        size="1024x1024",
+        quality="low",
+        n=1,
+    )
+```
+
+### 遮罩编辑
+
+遮罩必须是 PNG，尺寸与原图一致；透明区域表示需要修改的范围。
+
+```python
+with open("source.png", "rb") as source, open("mask.png", "rb") as mask:
+    result = client.images.edit(
+        model="gpt-image-2",
+        image=source,
+        mask=mask,
+        prompt="只在遮罩区域加入一朵白色小花，其余部分保持不变",
+        size="1024x1024",
+        quality="low",
+        n=1,
+    )
+```
+
+### 多图编辑
+
+把多张参考图作为列表传入；不要先把图片转成 URL 或 `file_id`。
+
+```python
+with open("product.png", "rb") as product, open("scene.png", "rb") as scene:
+    result = client.images.edit(
+        model="gpt-image-2",
+        image=[product, scene],
+        prompt="把第一张图的产品放入第二张图的场景，保持产品外观，无文字",
+        size="1024x1024",
+        quality="low",
+        n=1,
+    )
+```
+
+### 保存结果
+
+生成和编辑使用相同的保存方式：
 
 ```python
 import base64
 from pathlib import Path
 
-image_base64 = response_json["data"][0]["b64_json"]
-Path("result.png").write_bytes(base64.b64decode(image_base64))
+Path("result.png").write_bytes(base64.b64decode(result.data[0].b64_json))
 ```
 
-### Node.js
+## 4. 在 Codex 中自动生图
 
-```javascript
-import { writeFile } from "node:fs/promises";
-
-const imageBase64 = responseJson.data[0].b64_json;
-await writeFile("result.png", Buffer.from(imageBase64, "base64"));
-```
-
-## 计费
-
-- 当前生图分组采用图片Token计费。
-- 价格以[模型目录](models)和下单时的分组页面为准。
-- 只有取得有效图片并完成Usage记录后，才能认定调用成功并结算。
-- 失败、空图片和不可解码结果不能计为成功图片。
-
-本次owned E2E生成1张1K图片，数据库只产生1条成功Usage；余额减少值与 `actual_cost` 精确一致。
-
-## 图片编辑
+安装公开 Skill：
 
 ```text
-POST /v1/images/edits
+请使用 $skill-installer 安装：
+https://github.com/nobody396/laoshirenai-skills/tree/main/skills/laoshirenai-imagegen
 ```
 
-当前公网网关尚不能解析图片编辑使用的 `multipart/form-data`，会在转发前返回：
+安装后直接对 Codex 说：
 
 ```text
-400 invalid_request_error: failed to parse request body
+生成一张 1024×1024 的红色陶瓷杯产品图，低质量草稿，浅灰色背景，无文字。
 ```
 
-因此图片编辑目前不对客户开放，本页不提供不可执行的编辑命令。
+首次调用时，Skill 会自动打开只监听 `127.0.0.1` 的本机配置页：
 
-## 图片编辑参数实测矩阵
+1. 粘贴 **GPT Image 2 生图分组** Key；
+2. 点击 **保存并完成配置**；
+3. Skill 自动保存 Key、准备运行环境，并通过 `/v1/models` 做零费用检查；
+4. 检查通过后自动继续刚才的图片任务，不需要重新提问。
 
-| 场景 | 上游直接测试 | 公网网关 | 当前结论 |
-| --- | --- | --- | --- |
-| 单图编辑 | HTTP 200，12.054秒，有效PNG | HTTP 400，无法解析multipart | 暂不开放 |
-| 遮罩编辑 | HTTP 200，41.626秒，有效PNG | 尚未转发 | 暂不开放 |
-| 多图融合 | 240秒读取超时 | 尚未转发 | 不支持 |
-| `1536x1024` + `quality=medium` | HTTP 200，51.658秒 | 尚未转发 | 待网关实现后复测 |
-| `1024x1536` + `quality=high` | HTTP 200，95.992秒 | 尚未转发 | 待网关实现后复测 |
-| `n=2` | HTTP 200但只返回1张图片 | 尚未转发 | 客户合同固定 `n=1` |
+以后提出生成、编辑、遮罩或多图合成需求时，Codex 会自动选择 `laoshirenai-imagegen`。生成调用 `/v1/images/generations`，编辑调用 `/v1/images/edits`。
 
-上游直接成功不等于客户可用。只有公网网关请求、图片结果、Usage和扣费全部通过后，参数才会进入正式命令。
+## 已验证范围
 
-## 已验证边界
+| 能力 | 已验证请求 |
+| --- | --- |
+| 图片生成 | `1024x1024`、`quality=low`、`n=1` |
+| 单图编辑 | 1 张 PNG + 文本提示词 |
+| 遮罩编辑 | 1 张 PNG + 1 张同尺寸 PNG 遮罩 + 文本提示词 |
+| 多图编辑 | 多张 PNG + 文本提示词 |
+| Codex 自动调用 | 自然语言生成与自然语言编辑 |
 
-- 生图Key使用 `gpt-image-2` 调用Images接口：HTTP 200并返回有效PNG。
-- Images接口传文本模型 `gpt-5.6-sol`：HTTP 400，未选择上游账号，未产生Usage。
-- 生图Key调用文本Responses模型：HTTP 400，未选择上游账号，未产生Usage。
+以下能力尚未完成同等级生产验收，因此不承诺：
+
+- 其他尺寸和质量；
+- `n>1`；
+- SSE 或其他流式图片输出；
+- 异步任务接口；
+- Variations 接口；
+- Files API 的 `file_id` 输入；
+- 未在上表列出的高级参数。
+
+## 成功标准
+
+1. HTTP 200；
+2. `data[0].b64_json` 存在且可解码为 1024×1024 图片；
+3. 网关生成一条完成状态的 Usage；
+4. 余额变化与该 Usage 的实际费用一致。
+
+非幂等图片任务超时后，不要立即自动重试；先确认前一次是否已经生成并计费。
 
 ## 常见错误
 
-- `400 images endpoint requires an image model`：错误使用了文本模型名。
-- `400 invalid size/quality`：尺寸或质量未通过目标线路验证。
-- `400 response_format`：当前生图线路不要传 `response_format`。
-- `401`：Key无效、停用或缺失。
-- `403`：当前Key不是GPT Image 2生图分组。
-- `413`：请求体过大。
+- `400 images endpoint requires an image model`：使用了文本模型名。
+- `401`：Key 缺失、无效或已停用。
+- `403`：当前 Key 不属于 GPT Image 2 生图分组。
+- `413`：上传图片或请求体过大。
 - `429`：并发或请求频率达到限制。
-- `500`–`504`：上游生成失败或超时；确认没有成功图片后再重试。
+- `500`–`504`：网关或上游暂时失败；确认没有成功图片后再决定是否重试。
 
-## 剩余验收
-
-1. Windows PowerShell命令真实执行。
-2. macOS终端命令真实执行。
-3. 网关增加OpenAI图片编辑multipart解析和转发。
-4. 单图、遮罩、横竖尺寸通过公网网关E2E后，再补充编辑命令。
-5. 文本分组关闭生图能力后，再执行最终交叉边界回归。
+不要把 Key 写入项目 `.env`、仓库、截图、聊天记录、URL 或命令参数。

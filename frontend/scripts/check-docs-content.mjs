@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url'
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const frontendRoot = resolve(scriptDir, '..')
 const contentDir = resolve(frontendRoot, 'src/docs/content')
+const publicDocsDir = resolve(frontendRoot, 'public/docs')
+const publicFeatures = JSON.parse(readFileSync(resolve(frontendRoot, 'config/public-features.json'), 'utf8'))
 const configSource = readFileSync(resolve(frontendRoot, 'src/docs/config.ts'), 'utf8')
 const itemPattern = /\{\s*title:\s*'((?:\\'|[^'])+)'\s*,\s*slug:\s*'((?:\\'|[^'])+)'[\s\S]*?description:\s*'((?:\\'|[^'])+)'[\s\S]*?\}/g
 const items = [...configSource.matchAll(itemPattern)].map((match) => ({
@@ -16,6 +18,9 @@ const failures = []
 
 if (items.length !== slugs.size) failures.push('docsConfig contains duplicate slugs')
 if (items.length !== 17) failures.push(`expected 17 primary docs, found ${items.length}`)
+if (publicFeatures.docs !== true && existsSync(publicDocsDir)) {
+  failures.push('hidden Docs must not leave public/docs assets that bypass the route guard')
+}
 
 for (const item of items) {
   const path = resolve(contentDir, `${item.slug}.md`)
@@ -53,6 +58,25 @@ for (const item of items) {
       }
     }
   }
+}
+
+const imagesDoc = readFileSync(resolve(contentDir, 'api-images.md'), 'utf8')
+for (const required of [
+  'POST /images/generations',
+  'POST /images/edits',
+  '单图编辑',
+  '遮罩编辑',
+  '多图编辑',
+  'laoshirenai-imagegen',
+  '127.0.0.1',
+  '/v1/models',
+  'SSE',
+  'file_id',
+]) {
+  if (!imagesDoc.includes(required)) failures.push(`api-images: missing verified boundary ${required}`)
+}
+for (const stale of ['图片编辑目前不对客户开放', '当前公网网关尚不能解析图片编辑']) {
+  if (imagesDoc.includes(stale)) failures.push(`api-images: stale pre-release statement ${stale}`)
 }
 
 if (failures.length > 0) {

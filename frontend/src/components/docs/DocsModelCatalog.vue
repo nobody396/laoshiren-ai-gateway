@@ -66,6 +66,40 @@
         没有匹配的模型。
       </p>
     </div>
+
+    <section class="space-y-3 border-t border-gray-200 pt-6 dark:border-dark-700" aria-labelledby="monthly-plan-heading">
+      <div>
+        <h2 id="monthly-plan-heading" class="text-xl font-bold text-gray-950 dark:text-white">月卡 Plus / Pro / Max</h2>
+        <p class="mt-2 text-sm text-gray-600 dark:text-dark-300">
+          一张月卡同时开放对应档位的 GPT、Claude 和 Grok 月卡分组，三类分组共用同一份 31 天额度。
+        </p>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-dark-700">
+        <table class="min-w-full divide-y divide-gray-200 text-left text-sm dark:divide-dark-700">
+          <thead class="bg-gray-50 text-gray-600 dark:bg-dark-800 dark:text-dark-300">
+            <tr>
+              <th class="px-4 py-3 font-semibold">档位</th>
+              <th class="px-4 py-3 font-semibold">31 天额度</th>
+              <th class="px-4 py-3 font-semibold">购买页价格</th>
+              <th class="px-4 py-3 font-semibold">站内直付价</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 bg-white text-gray-700 dark:divide-dark-800 dark:bg-dark-900 dark:text-dark-200">
+            <tr v-for="plan in monthlyCreditCardPlans" :key="plan.id">
+              <td class="px-4 py-3 font-semibold text-gray-950 dark:text-white">{{ plan.name }}</td>
+              <td class="px-4 py-3">{{ plan.displayMonthlyCreditsText }} AI credits</td>
+              <td class="px-4 py-3">{{ plan.price }}</td>
+              <td class="px-4 py-3">{{ plan.directPrice }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="text-xs text-gray-500 dark:text-dark-400">
+        创建 Key 时请选择准备使用的模型系列和档位；每把 Key 只使用所选分组的模型、倍率和共享额度。价格与权益以购买页实时显示为准。
+      </p>
+    </section>
   </section>
 </template>
 
@@ -74,6 +108,7 @@ import { computed, onMounted, ref } from 'vue'
 import ModelIcon from '@/components/common/ModelIcon.vue'
 import { getPublicModelPricing } from '@/api/publicPricing'
 import type { PublicModelPricingCatalog } from '@/api/publicPricing'
+import { monthlyCreditCardPlans } from '@/constants/monthlyCreditCards'
 
 interface AvailabilityPlan {
   groupId: number

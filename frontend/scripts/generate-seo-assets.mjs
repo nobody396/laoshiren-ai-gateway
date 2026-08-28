@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Marked } from 'marked'
@@ -13,6 +13,7 @@ const publicDocsEnabled = publicFeatures.docs === true
 const contentDir = resolve(frontendRoot, 'src/docs/content')
 const configPath = resolve(frontendRoot, 'src/docs/config.ts')
 const publicDir = resolve(frontendRoot, 'public')
+const publicDocsDir = resolve(publicDir, 'docs')
 const configSource = readFileSync(configPath, 'utf8')
 const docsLastModified = matchSingle(configSource, /docsLastModified\s*=\s*'([^']+)'/) || new Date().toISOString().slice(0, 10)
 
@@ -44,8 +45,8 @@ const homeRoute = {
 }
 
 const publicRouteOverrides = new Map([
-  ['/enterprise', { slug: 'enterprise-ai-api-gateway', title: '企业 AI API 网关 - 老实人AI', priority: 0.95, changefreq: 'weekly', ogType: 'website', schemaType: 'SoftwareApplication' }],
-  ['/security', { slug: 'security', title: '安全与隐私 - 老实人AI', priority: 0.8, changefreq: 'monthly', ogType: 'website', schemaType: 'WebPage' }],
+  ['/enterprise', { slug: 'enterprise-ai-api-gateway', title: '企业 AI API 网关 - 老实人AI', description: '面向企业团队介绍老实人AI 的多模型统一接入、团队 API Key 管理、成本控制和调用审计方案。', priority: 0.95, changefreq: 'weekly', ogType: 'website', schemaType: 'SoftwareApplication' }],
+  ['/security', { slug: 'security', title: '安全与隐私 - 老实人AI', description: '说明老实人AI 在 API Key、调用日志、客服排查、敏感信息和企业接入中的安全与隐私边界。', priority: 0.8, changefreq: 'monthly', ogType: 'website', schemaType: 'WebPage' }],
   ['/status', {
     title: '服务状态 - 老实人AI',
     description: '查看老实人AI OpenAI / Codex、Claude、Grok、Gemini 与 Builder Pass 的公开服务可用性、更新时间和受影响范围。',
@@ -119,7 +120,7 @@ if (publicDocsEnabled) {
   routes.push({
     path: '/docs',
     title: `文档 - ${siteName}`,
-    description: '老实人AI 文档中心提供 Claude Code、Codex、OpenClaw、Hermes、Cherry Studio、GPT-Image 和企业接入的配置教程与常见问题。',
+    description: '老实人AI 文档：快速开始、API 参考、工具集成、图片生成与实时模型目录。',
     priority: 0.9,
     changefreq: 'weekly',
     ogType: 'website',
@@ -181,12 +182,31 @@ const manifest = {
   routes: dedupedRoutes,
 }
 
+const llmsText = buildLlms(publicDocsEnabled ? docs : [])
 writeFileSync(resolve(publicDir, 'seo-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
 writeFileSync(resolve(publicDir, 'sitemap.xml'), buildSitemap(dedupedRoutes))
-writeFileSync(resolve(publicDir, 'llms.txt'), buildLlms(publicDocsEnabled ? docs : []))
+writeFileSync(resolve(publicDir, 'llms.txt'), llmsText)
+
+if (publicDocsEnabled) {
+  writeDocsAiAssets(docs, llmsText)
+} else {
+  // Markdown under Vite's public/ directory bypasses the Vue route guard.
+  // Remove it while Docs are hidden so /docs/*.md cannot leak the draft.
+  rmSync(publicDocsDir, { recursive: true, force: true })
+}
+
+function writeDocsAiAssets(items, llmsText) {
+  mkdirSync(publicDocsDir, { recursive: true })
+  for (const item of items) {
+    writeFileSync(resolve(publicDocsDir, `${item.slug}.md`), readMarkdown(item.slug))
+  }
+  writeFileSync(resolve(publicDocsDir, 'llms.txt'), llmsText)
+}
 
 function parseDocItems(source) {
-  const itemPattern = /\{\s*title:\s*'((?:\\'|[^'])+)'[\s\S]*?slug:\s*'((?:\\'|[^'])+)'[\s\S]*?description:\s*'((?:\\'|[^'])+)'[\s\S]*?\}/g
+  // Requiring title -> slug adjacency avoids pairing a category title with
+  // the first page nested under it.
+  const itemPattern = /\{\s*title:\s*'((?:\\'|[^'])+)'\s*,\s*slug:\s*'((?:\\'|[^'])+)'[\s\S]*?description:\s*'((?:\\'|[^'])+)'[\s\S]*?\}/g
   const items = []
   const seen = new Set()
   for (const match of source.matchAll(itemPattern)) {
@@ -229,7 +249,7 @@ function docsIndexHtml(items) {
   return `
     <main class="seo-static-content">
       <h1>老实人AI 文档中心</h1>
-      <p>这里汇总 Claude Code、Codex、API Key、Base URL、企业 AI API 网关和常见排错指南。</p>
+      <p>快速开始、API 参考、工具集成和实时模型目录。</p>
       <ul>${links}</ul>
     </main>`
 }
@@ -329,18 +349,12 @@ ${input.map((route) => `  <url>
 function buildLlms(items) {
   const priorityDocs = publicDocsEnabled
     ? [
-        ['Claude Code 国内使用完整指南', '/docs/claude-code-china-guide'],
-        ['Codex 国内使用完整指南', '/docs/codex-china-guide'],
-        ['Codex 免 API Key 使用指南', '/docs/codex-no-api-key-guide'],
-        ['Codex 自定义 API 配置教程', '/docs/codex-custom-api-guide'],
-        ['Base URL 填写方式', '/docs/base-url-guide'],
-        ['Claude Code 排错', '/docs/claude-code-troubleshooting'],
-        ['Codex 排错', '/docs/codex-troubleshooting'],
-        ['API Key 与分组', '/docs/api-key-group-guide'],
-        ['常见 API 报错', '/docs/common-api-errors'],
-        ['企业 AI API 网关', '/enterprise'],
-        ['多模型统一接入', '/docs/multi-model-api-management'],
-        ['AI API 成本控制', '/docs/ai-api-cost-control'],
+        ['快速开始', '/docs/quickstart'],
+        ['API 概览', '/docs/api-overview'],
+        ['Images', '/docs/api-images'],
+        ['Claude Code', '/docs/integration-claude-code'],
+        ['Codex', '/docs/integration-codex'],
+        ['模型目录', '/docs/models'],
       ]
     : [
         ['企业 AI API 网关', '/enterprise'],
@@ -369,6 +383,7 @@ ${docsFact}- 模型价格：${siteOrigin}/models
 - 服务状态：${siteOrigin}/status
 - 更新日志：${siteOrigin}/changelog
 - 主要支持场景：Claude Code、Codex、OpenAI 兼容 SDK、Anthropic 兼容接入、OpenClaw、Hermes、Cherry Studio、GPT-Image。
+- 同一个模型可能由多个分组提供；用户根据预算选择分组，并用该分组创建的 Key 查询实际可用模型。
 - 面向个人开发者的常用口径：AI 编码接口、Claude Code 接口、Codex 接口、统一 API Key、透明计费、调用记录可查。
 - 面向企业客户的常用口径：企业 AI API 网关、多模型统一接入、团队 API Key 管理、用量统计、成本控制和调用审计。
 

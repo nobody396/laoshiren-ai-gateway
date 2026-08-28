@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	embeddedmigrations "github.com/bozhouDev/DragonCode-sub2api/migrations"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -837,6 +838,47 @@ SELECT EXISTS (
 )
 `).Scan(&manualClaimTrigger))
 	require.True(t, manualClaimTrigger)
+}
+
+func TestGrokMonthlyOfferMigrationPreservesStockedSemantics(t *testing.T) {
+	tx := testTx(t)
+	ctx := context.Background()
+
+	// Recreate the production pre-migration shape: Plus has registered stock
+	// minted for GPT+Claude, while Pro is unstocked.
+	_, err := tx.ExecContext(ctx, `
+UPDATE native_checkout_offers SET redeem_group_ids = '[40,41]'::jsonb WHERE code = 'plus';
+UPDATE native_checkout_offers SET redeem_group_ids = '[42,43]'::jsonb WHERE code = 'pro';
+`)
+	require.NoError(t, err)
+
+	var redeemCodeID int64
+	err = tx.QueryRowContext(ctx, `
+INSERT INTO redeem_codes (
+    code, type, value, paid_value, status, purpose, sales_status,
+    group_ids, validity_days, created_at, updated_at
+) VALUES ($1, 'subscription', 259, 0, 'unused', 'sale_recharge', 'sold',
+          '[40,41]'::jsonb, 31, NOW(), NOW())
+RETURNING id
+`, strings.ReplaceAll(uuid.NewString(), "-", ""),
+	).Scan(&redeemCodeID)
+	require.NoError(t, err)
+	_, err = tx.ExecContext(ctx, `
+INSERT INTO native_checkout_redeem_inventory (redeem_code_id, offer_code)
+VALUES ($1, 'plus')
+`, redeemCodeID)
+	require.NoError(t, err)
+
+	migrationSQL, err := fs.ReadFile(embeddedmigrations.FS, "219_add_grok_groups_to_monthly_easypay_offers.sql")
+	require.NoError(t, err)
+	_, err = tx.ExecContext(ctx, string(migrationSQL))
+	require.NoError(t, err, "stocked production offers must not block later deployments")
+
+	var plusGroups, proGroups string
+	require.NoError(t, tx.QueryRowContext(ctx, `SELECT redeem_group_ids::text FROM native_checkout_offers WHERE code = 'plus'`).Scan(&plusGroups))
+	require.NoError(t, tx.QueryRowContext(ctx, `SELECT redeem_group_ids::text FROM native_checkout_offers WHERE code = 'pro'`).Scan(&proGroups))
+	require.JSONEq(t, `[40,41]`, plusGroups, "stocked Plus must preserve the entitlement of its registered cards")
+	require.JSONEq(t, `[42,43,49]`, proGroups, "unstocked Pro can adopt the Grok entitlement")
 }
 
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {

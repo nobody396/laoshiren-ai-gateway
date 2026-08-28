@@ -448,6 +448,8 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 				ValidityDays: validityDays,
 				AssignedBy:   0, // 系统分配
 				Notes:        notes,
+				// 复购兑换即开启新计费周期：延长到期时间的同时清零已用额度
+				ResetQuotaOnExtend: true,
 			})
 			if err != nil {
 				return nil, fmt.Errorf("assign or extend subscription group %d: %w", groupID, err)

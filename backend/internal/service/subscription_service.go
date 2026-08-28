@@ -159,6 +159,11 @@ type AssignSubscriptionInput struct {
 	ValidityDays int
 	AssignedBy   int64
 	Notes        string
+	// ResetQuotaOnExtend 为 true 且用户已有同分组订阅（续期）时，
+	// 在延长到期时间的同时重置日/周/月用量窗口。
+	// 适用于月卡复购兑换、支付购买订阅等“新购一个计费周期”的场景；
+	// 注册/后台的默认订阅分配不得开启，避免误清在用额度。
+	ResetQuotaOnExtend bool
 }
 
 // AssignSubscription 分配订阅给用户（不允许重复分配）
@@ -174,6 +179,7 @@ func (s *SubscriptionService) AssignSubscription(ctx context.Context, input *Ass
 // 如果用户已有同分组的订阅：
 //   - 未过期：从当前过期时间累加天数
 //   - 已过期：从当前时间开始计算新的过期时间，并激活订阅
+//   - 当 input.ResetQuotaOnExtend 为 true 时，同时重置日/周/月用量窗口
 //
 // 如果没有订阅：创建新订阅
 func (s *SubscriptionService) AssignOrExtendSubscription(ctx context.Context, input *AssignSubscriptionInput) (*UserSubscription, bool, error) {
@@ -203,6 +209,11 @@ func (s *SubscriptionService) AssignOrExtendSubscription(ctx context.Context, in
 		now := time.Now()
 		if err := s.userSubRepo.ExtendExpiryAtomically(ctx, existingSub.ID, validityDays, input.Notes, now, MaxExpiresAt); err != nil {
 			return nil, false, fmt.Errorf("extend subscription: %w", err)
+		}
+		if input.ResetQuotaOnExtend {
+			if err := s.resetSubscriptionUsageWindows(ctx, existingSub.ID, now); err != nil {
+				return nil, false, fmt.Errorf("reset subscription quota on extend: %w", err)
+			}
 		}
 
 		// 失效订阅缓存
@@ -703,6 +714,20 @@ func (s *SubscriptionService) AdminResetQuota(ctx context.Context, subscriptionI
 	}
 	// Return the refreshed subscription from DB
 	return s.userSubRepo.GetByID(ctx, subscriptionID)
+}
+
+// resetSubscriptionUsageWindows 清零订阅的日/周/月用量并开启新窗口，
+// 口径与 AdminResetQuota 一致（日窗口对齐本地零点，周/月窗口锚定当前时刻）。
+// 用于复购兑换、支付购买等“新购一个计费周期”的续期场景。
+func (s *SubscriptionService) resetSubscriptionUsageWindows(ctx context.Context, subscriptionID int64, now time.Time) error {
+	windowStart := rollingUsageWindowStart(now)
+	if err := s.userSubRepo.ResetDailyUsage(ctx, subscriptionID, timezone.StartOfDay(windowStart)); err != nil {
+		return err
+	}
+	if err := s.userSubRepo.ResetWeeklyUsage(ctx, subscriptionID, windowStart); err != nil {
+		return err
+	}
+	return s.userSubRepo.ResetMonthlyUsage(ctx, subscriptionID, windowStart)
 }
 
 // CheckAndResetWindows 检查并重置过期的窗口

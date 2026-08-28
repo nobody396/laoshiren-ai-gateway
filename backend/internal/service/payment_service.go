@@ -255,6 +255,8 @@ func (s *PaymentService) completeOrder(ctx context.Context, orderNo string, alip
 		ValidityDays: order.ValidityDays,
 		AssignedBy:   0, // system auto-assign
 		Notes:        fmt.Sprintf("Purchased via Alipay, order: %s", order.OrderNo),
+		// 支付购买即开启新计费周期：延长到期时间的同时清零已用额度
+		ResetQuotaOnExtend: true,
 	})
 	if err != nil {
 		return fmt.Errorf("assign subscription: %w", err)

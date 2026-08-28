@@ -232,6 +232,36 @@ func (s *subscriptionUserSubRepoStub) ExtendExpiryAtomically(_ context.Context, 
 	return nil
 }
 
+func (s *subscriptionUserSubRepoStub) ResetDailyUsage(_ context.Context, subscriptionID int64, windowStart time.Time) error {
+	sub := s.byID[subscriptionID]
+	if sub == nil {
+		return ErrSubscriptionNotFound
+	}
+	sub.DailyUsageUSD = 0
+	sub.DailyWindowStart = &windowStart
+	return nil
+}
+
+func (s *subscriptionUserSubRepoStub) ResetWeeklyUsage(_ context.Context, subscriptionID int64, windowStart time.Time) error {
+	sub := s.byID[subscriptionID]
+	if sub == nil {
+		return ErrSubscriptionNotFound
+	}
+	sub.WeeklyUsageUSD = 0
+	sub.WeeklyWindowStart = &windowStart
+	return nil
+}
+
+func (s *subscriptionUserSubRepoStub) ResetMonthlyUsage(_ context.Context, subscriptionID int64, windowStart time.Time) error {
+	sub := s.byID[subscriptionID]
+	if sub == nil {
+		return ErrSubscriptionNotFound
+	}
+	sub.MonthlyUsageUSD = 0
+	sub.MonthlyWindowStart = &windowStart
+	return nil
+}
+
 func TestAssignSubscriptionReuseWhenSemanticsMatch(t *testing.T) {
 	start := time.Date(2026, 2, 20, 10, 0, 0, 0, time.UTC)
 	groupRepo := &subscriptionGroupRepoStub{
@@ -466,6 +496,88 @@ func TestAssignOrExtendSubscriptionD5ExtendsExistingAtomically(t *testing.T) {
 	require.Equal(t, SubscriptionStatusActive, sub.Status)
 	require.Equal(t, "initial\nextended", sub.Notes)
 	require.WithinDuration(t, start.AddDate(0, 0, 30), sub.ExpiresAt, time.Second)
+}
+
+func TestAssignOrExtendSubscriptionKeepsQuotaByDefault(t *testing.T) {
+	start := time.Now().AddDate(0, 0, 10)
+	windowStart := time.Now().AddDate(0, 0, -15)
+	groupRepo := &subscriptionGroupRepoStub{
+		group: &Group{ID: 1, SubscriptionType: SubscriptionTypeSubscription},
+	}
+	subRepo := newSubscriptionUserSubRepoStub()
+	subRepo.seed(&UserSubscription{
+		ID:                 41,
+		UserID:             5003,
+		GroupID:            1,
+		StartsAt:           start.AddDate(0, 0, -30),
+		ExpiresAt:          start,
+		Status:             SubscriptionStatusActive,
+		DailyUsageUSD:      10,
+		WeeklyUsageUSD:     20,
+		MonthlyUsageUSD:    300,
+		DailyWindowStart:   &windowStart,
+		WeeklyWindowStart:  &windowStart,
+		MonthlyWindowStart: &windowStart,
+	})
+	svc := NewSubscriptionService(groupRepo, subRepo, nil, nil, nil)
+
+	sub, extended, err := svc.AssignOrExtendSubscription(context.Background(), &AssignSubscriptionInput{
+		UserID:       5003,
+		GroupID:      1,
+		ValidityDays: 30,
+	})
+
+	require.NoError(t, err)
+	require.True(t, extended)
+	require.WithinDuration(t, start.AddDate(0, 0, 30), sub.ExpiresAt, time.Second)
+	require.Equal(t, 300.0, sub.MonthlyUsageUSD, "default extension must keep consumed quota")
+	require.Equal(t, 20.0, sub.WeeklyUsageUSD)
+	require.Equal(t, 10.0, sub.DailyUsageUSD)
+	require.Equal(t, windowStart, *sub.MonthlyWindowStart, "window start must be untouched")
+}
+
+func TestAssignOrExtendSubscriptionResetsQuotaWhenRequested(t *testing.T) {
+	start := time.Now().AddDate(0, 0, 10)
+	windowStart := time.Now().AddDate(0, 0, -15)
+	groupRepo := &subscriptionGroupRepoStub{
+		group: &Group{ID: 1, SubscriptionType: SubscriptionTypeSubscription},
+	}
+	subRepo := newSubscriptionUserSubRepoStub()
+	subRepo.seed(&UserSubscription{
+		ID:                 42,
+		UserID:             5004,
+		GroupID:            1,
+		StartsAt:           start.AddDate(0, 0, -30),
+		ExpiresAt:          start,
+		Status:             SubscriptionStatusActive,
+		DailyUsageUSD:      10,
+		WeeklyUsageUSD:     20,
+		MonthlyUsageUSD:    300,
+		DailyWindowStart:   &windowStart,
+		WeeklyWindowStart:  &windowStart,
+		MonthlyWindowStart: &windowStart,
+	})
+	svc := NewSubscriptionService(groupRepo, subRepo, nil, nil, nil)
+
+	before := time.Now()
+	sub, extended, err := svc.AssignOrExtendSubscription(context.Background(), &AssignSubscriptionInput{
+		UserID:             5004,
+		GroupID:            1,
+		ValidityDays:       30,
+		Notes:              "repurchase",
+		ResetQuotaOnExtend: true,
+	})
+
+	require.NoError(t, err)
+	require.True(t, extended)
+	require.WithinDuration(t, start.AddDate(0, 0, 30), sub.ExpiresAt, time.Second)
+	require.Zero(t, sub.DailyUsageUSD, "repurchase extension must reset daily usage")
+	require.Zero(t, sub.WeeklyUsageUSD, "repurchase extension must reset weekly usage")
+	require.Zero(t, sub.MonthlyUsageUSD, "repurchase extension must reset monthly usage")
+	require.NotNil(t, sub.MonthlyWindowStart)
+	require.True(t, !sub.MonthlyWindowStart.Before(before), "monthly window must restart at reset time")
+	require.NotNil(t, sub.WeeklyWindowStart)
+	require.True(t, !sub.WeeklyWindowStart.Before(before), "weekly window must restart at reset time")
 }
 
 func strconvFormatInt(v int64) string {

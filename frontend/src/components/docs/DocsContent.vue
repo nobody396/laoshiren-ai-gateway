@@ -20,9 +20,14 @@
 
     <!-- Rendered markdown -->
     <div v-else class="docs-content-main">
-      <button v-if="canCopyWholeDoc" type="button" class="docs-doc-copy-btn" @click="handleCopyWholeDoc">
-        {{ copied ? '已复制' : '一键复制' }}
-      </button>
+      <div v-if="canCopyWholeDoc" class="docs-doc-actions">
+        <button type="button" class="docs-doc-copy-btn" @click="handleCopyWholeDoc">
+          {{ copied ? '已复制' : '复制本文' }}
+        </button>
+        <a v-if="slug" class="docs-doc-copy-btn" :href="`/docs/${slug}.md`" target="_blank" rel="noopener noreferrer">
+          查看 Markdown
+        </a>
+      </div>
 
       <div
         ref="markdownRef"
@@ -38,12 +43,15 @@
 import { computed, ref, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useClipboard } from '@/composables/useClipboard'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   html: string
   markdown: string
+  slug?: string
   loading: boolean
   notFound: boolean
-}>()
+}>(), {
+  slug: '',
+})
 
 const markdownRef = ref<HTMLElement | null>(null)
 const cleanups: (() => void)[] = []
@@ -127,11 +135,18 @@ onBeforeUnmount(() => {
   position: relative;
 }
 
-.docs-doc-copy-btn {
+.docs-doc-actions {
   position: absolute;
   top: 0.125rem;
   right: 0;
   z-index: 1;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.docs-doc-copy-btn {
+  display: inline-flex;
+  align-items: center;
   border: 1px solid rgb(var(--color-gray-200));
   border-radius: 0.75rem;
   background: rgb(var(--color-vellum) / 0.92);
@@ -141,6 +156,7 @@ onBeforeUnmount(() => {
   line-height: 1;
   padding: 0.8rem 1rem;
   cursor: pointer;
+  text-decoration: none;
   transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
   backdrop-filter: blur(8px);
 }
@@ -156,7 +172,18 @@ onBeforeUnmount(() => {
 }
 
 .docs-markdown--with-copy h1:first-child {
-  max-width: calc(100% - 8rem);
+  max-width: calc(100% - 17rem);
+}
+
+@media (max-width: 640px) {
+  .docs-doc-actions {
+    position: static;
+    margin-bottom: 1rem;
+  }
+
+  .docs-markdown--with-copy h1:first-child {
+    max-width: none;
+  }
 }
 
 /* Markdown rendering styles for docs */

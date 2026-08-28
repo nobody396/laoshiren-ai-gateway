@@ -1,8 +1,11 @@
 <template>
   <DocsLayout :current-slug="slug" :toc-items="tocItems">
+    <DocsModelCatalog v-if="slug === 'models'" />
     <DocsContent
+      v-else
       :html="renderedHtml"
       :markdown="markdownSource"
+      :slug="slug"
       :loading="loading"
       :not-found="notFound"
     />
@@ -16,6 +19,7 @@ import { defaultSlug, loadMarkdown, resolveDocSlug } from '@/docs/config'
 import { useMarkdownRenderer } from '@/composables/useMarkdownRenderer'
 import DocsLayout from '@/components/docs/DocsLayout.vue'
 import DocsContent from '@/components/docs/DocsContent.vue'
+import DocsModelCatalog from '@/components/docs/DocsModelCatalog.vue'
 
 const route = useRoute()
 // 侧边栏高亮和内容加载都统一使用规范化后的 slug。
@@ -35,6 +39,12 @@ watch(
   async (newSlug) => {
     loading.value = true
     notFound.value = false
+    if (newSlug === 'models') {
+      markdownSource.value = ''
+      loading.value = false
+      window.scrollTo({ top: 0 })
+      return
+    }
     const content = await loadMarkdown(newSlug)
     if (content === null) {
       notFound.value = true

@@ -2016,6 +2016,38 @@ func (h *AccountHandler) GetAvailableModels(c *gin.Context) {
 	response.Success(c, models)
 }
 
+// InspectOpenAIModelDrift compares one saved OpenAI account's upstream model
+// manifest with its explicit local model mapping. This endpoint is read-only:
+// it never changes the account, group allowlists, public catalog, or routing.
+// GET /api/v1/admin/accounts/:id/models/upstream-drift
+func (h *AccountHandler) InspectOpenAIModelDrift(c *gin.Context) {
+	accountID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid account ID")
+		return
+	}
+	account, err := h.adminService.GetAccount(c.Request.Context(), accountID)
+	if err != nil {
+		response.NotFound(c, "Account not found")
+		return
+	}
+	if h.accountTestService == nil {
+		response.InternalError(c, "Account test service is not configured")
+		return
+	}
+	drift, err := h.accountTestService.InspectOpenAIModelDrift(c.Request.Context(), account)
+	if err != nil {
+		if errors.Is(err, service.ErrOpenAIModelDriftUnsupported) {
+			response.BadRequest(c, "OpenAI model drift inspection is unsupported for this account")
+			return
+		}
+		slog.Warn("inspect_openai_model_drift_failed", "account_id", accountID, "error", err)
+		response.Error(c, http.StatusBadGateway, "Failed to inspect the upstream OpenAI model manifest")
+		return
+	}
+	response.Success(c, drift)
+}
+
 func (h *AccountHandler) SetPrivacy(c *gin.Context) {
 	accountID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

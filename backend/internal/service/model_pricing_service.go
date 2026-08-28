@@ -217,13 +217,36 @@ type PublicModelPricingGroup struct {
 
 // PublicModelPrice 单个模型的实付价（元/1M tokens），价格未知时为 nil。
 type PublicModelPrice struct {
-	Model           string                    `json:"model"`
-	InputPrice      *float64                  `json:"input_price"`
-	OutputPrice     *float64                  `json:"output_price"`
-	CacheWritePrice *float64                  `json:"cache_write_price"`
-	CacheReadPrice  *float64                  `json:"cache_read_price"`
-	LongContext     *PublicLongContextPricing `json:"long_context,omitempty"`
-	Disabled        bool                      `json:"disabled,omitempty"`
+	Model            string                         `json:"model"`
+	InputPrice       *float64                       `json:"input_price"`
+	OutputPrice      *float64                       `json:"output_price"`
+	CacheWritePrice  *float64                       `json:"cache_write_price"`
+	CacheReadPrice   *float64                       `json:"cache_read_price"`
+	LongContext      *PublicLongContextPricing      `json:"long_context,omitempty"`
+	ContextIntervals []PublicContextPricingInterval `json:"context_intervals,omitempty"`
+	TimePricing      *PublicTimePricing             `json:"time_pricing,omitempty"`
+	Disabled         bool                           `json:"disabled,omitempty"`
+}
+
+type PublicContextPricingInterval struct {
+	MinTokens       int      `json:"min_tokens"`
+	MaxTokens       *int     `json:"max_tokens,omitempty"`
+	InputPrice      *float64 `json:"input_price"`
+	OutputPrice     *float64 `json:"output_price"`
+	CacheWritePrice *float64 `json:"cache_write_price"`
+	CacheReadPrice  *float64 `json:"cache_read_price"`
+}
+
+type PublicTimePricing struct {
+	Timezone     string                    `json:"timezone"`
+	WeekdaysOnly bool                      `json:"weekdays_only,omitempty"`
+	Periods      []PublicTimePricingPeriod `json:"periods"`
+}
+
+type PublicTimePricingPeriod struct {
+	StartTime  string  `json:"start_time"`
+	EndTime    string  `json:"end_time"`
+	Multiplier float64 `json:"multiplier"`
 }
 
 // PublicLongContextPricing discloses the full-request surcharge applied when
@@ -454,9 +477,14 @@ func (s *ModelPricingService) priceForModel(ctx context.Context, groupID int64, 
 		}
 	}
 
+	var contextIntervals []PublicContextPricingInterval
+	var timePricing *PublicTimePricing
 	if s.channelPricing != nil {
 		if override := s.channelPricing.GetChannelModelPricing(ctx, groupID, model); override != nil &&
-			(override.BillingMode == "" || override.BillingMode == BillingModeToken) && len(override.Intervals) == 0 {
+			(override.BillingMode == "" || override.BillingMode == BillingModeToken) {
+			if len(override.Intervals) > 0 {
+				contextIntervals = publicContextPricingIntervals(override.Intervals, rateMultiplier)
+			}
 			if override.InputPrice != nil {
 				input = pricePerMTok(*override.InputPrice)
 			}
@@ -469,20 +497,63 @@ func (s *ModelPricingService) priceForModel(ctx context.Context, groupID int64, 
 			if override.CacheReadPrice != nil {
 				cacheRead = pricePerMTok(*override.CacheReadPrice)
 			}
+			timePricing = publicTimePricing(override.TimePricing)
 		}
 	}
 
 	if input == nil && output == nil && cacheWrite == nil && cacheRead == nil {
 		return PublicModelPrice{}, false
 	}
+	longContext := publicLongContextPricing(model)
+	if len(contextIntervals) > 0 {
+		longContext = nil
+	}
 	return PublicModelPrice{
-		Model:           model,
-		InputPrice:      multipliedPrice(input, rateMultiplier),
-		OutputPrice:     multipliedPrice(output, rateMultiplier),
-		CacheWritePrice: multipliedPrice(cacheWrite, rateMultiplier),
-		CacheReadPrice:  multipliedPrice(cacheRead, rateMultiplier),
-		LongContext:     publicLongContextPricing(model),
+		Model:            model,
+		InputPrice:       multipliedPrice(input, rateMultiplier),
+		OutputPrice:      multipliedPrice(output, rateMultiplier),
+		CacheWritePrice:  multipliedPrice(cacheWrite, rateMultiplier),
+		CacheReadPrice:   multipliedPrice(cacheRead, rateMultiplier),
+		LongContext:      longContext,
+		ContextIntervals: contextIntervals,
+		TimePricing:      timePricing,
 	}, true
+}
+
+func publicContextPricingIntervals(intervals []PricingInterval, rateMultiplier float64) []PublicContextPricingInterval {
+	result := make([]PublicContextPricingInterval, 0, len(intervals))
+	for _, interval := range intervals {
+		if interval.InputPrice == nil && interval.OutputPrice == nil && interval.CacheWritePrice == nil && interval.CacheReadPrice == nil {
+			continue
+		}
+		result = append(result, PublicContextPricingInterval{
+			MinTokens:       interval.MinTokens,
+			MaxTokens:       interval.MaxTokens,
+			InputPrice:      multipliedPrice(perTokenPricePerMTok(interval.InputPrice), rateMultiplier),
+			OutputPrice:     multipliedPrice(perTokenPricePerMTok(interval.OutputPrice), rateMultiplier),
+			CacheWritePrice: multipliedPrice(perTokenPricePerMTok(interval.CacheWritePrice), rateMultiplier),
+			CacheReadPrice:  multipliedPrice(perTokenPricePerMTok(interval.CacheReadPrice), rateMultiplier),
+		})
+	}
+	return result
+}
+
+func perTokenPricePerMTok(price *float64) *float64 {
+	if price == nil || *price < 0 {
+		return nil
+	}
+	return pricePerMTok(*price)
+}
+
+func publicTimePricing(pricing *ChannelTimePricing) *PublicTimePricing {
+	if pricing == nil || len(pricing.Periods) == 0 {
+		return nil
+	}
+	result := &PublicTimePricing{Timezone: pricing.Timezone, WeekdaysOnly: pricing.WeekdaysOnly, Periods: make([]PublicTimePricingPeriod, 0, len(pricing.Periods))}
+	for _, period := range pricing.Periods {
+		result.Periods = append(result.Periods, PublicTimePricingPeriod(period))
+	}
+	return result
 }
 
 func publicLongContextPricing(model string) *PublicLongContextPricing {
@@ -553,6 +624,14 @@ func cloneCatalog(c *PublicModelPricingCatalog) *PublicModelPricingCatalog {
 			if g.Models[j].LongContext != nil {
 				longContext := *g.Models[j].LongContext
 				out.Groups[i].Models[j].LongContext = &longContext
+			}
+			if g.Models[j].ContextIntervals != nil {
+				out.Groups[i].Models[j].ContextIntervals = append([]PublicContextPricingInterval(nil), g.Models[j].ContextIntervals...)
+			}
+			if g.Models[j].TimePricing != nil {
+				timePricing := *g.Models[j].TimePricing
+				timePricing.Periods = append([]PublicTimePricingPeriod(nil), g.Models[j].TimePricing.Periods...)
+				out.Groups[i].Models[j].TimePricing = &timePricing
 			}
 		}
 		if g.ImageGeneration != nil {

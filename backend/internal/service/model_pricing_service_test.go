@@ -180,6 +180,45 @@ func TestModelPricingUsesGroupChannelOverrideIncludingCacheWrite(t *testing.T) {
 	}
 }
 
+func TestModelPricingPublishesContextIntervalsAndTimeSchedule(t *testing.T) {
+	groups := []Group{{ID: 6, Name: "按量 GPT", Platform: "openai", RateMultiplier: 2}}
+	prices := map[string]*LiteLLMModelPricing{
+		"gpt-5.6-sol": {InputCostPerToken: 5e-6, OutputCostPerToken: 30e-6},
+	}
+	models := map[int64][]string{6: {"gpt-5.6-sol"}}
+	svc, _, _ := newModelPricingServiceForTest(groups, prices, models)
+	max := 272000
+	svc.channelPricing = &channelModelPricingProviderStub{prices: map[int64]map[string]*ChannelModelPricing{
+		6: {
+			"gpt-5.6-sol": {
+				BillingMode: BillingModeToken,
+				Intervals:   []PricingInterval{{MinTokens: 0, MaxTokens: &max, InputPrice: ptr(4e-6), OutputPrice: ptr(20e-6)}},
+				TimePricing: &ChannelTimePricing{
+					Timezone: "Asia/Shanghai",
+					Periods:  []ChannelTimePricingPeriod{{StartTime: "09:00", EndTime: "12:00", Multiplier: 1.5}},
+				},
+			},
+		},
+	}}
+
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	model := catalog.Groups[0].Models[0]
+	if model.LongContext != nil {
+		t.Fatalf("explicit context intervals must replace built-in long context disclosure: %+v", model.LongContext)
+	}
+	if len(model.ContextIntervals) != 1 {
+		t.Fatalf("expected one context interval, got %+v", model.ContextIntervals)
+	}
+	assertPrice(t, "interval input", model.ContextIntervals[0].InputPrice, 8)
+	assertPrice(t, "interval output", model.ContextIntervals[0].OutputPrice, 40)
+	if model.TimePricing == nil || model.TimePricing.Timezone != "Asia/Shanghai" || model.TimePricing.Periods[0].Multiplier != 1.5 {
+		t.Fatalf("missing time pricing disclosure: %+v", model.TimePricing)
+	}
+}
+
 func TestModelPricingFiltersInternalGroups(t *testing.T) {
 	groups := []Group{
 		{ID: 46, Name: "测试专用月卡 · GPT", Platform: "openai", RateMultiplier: 0.5},

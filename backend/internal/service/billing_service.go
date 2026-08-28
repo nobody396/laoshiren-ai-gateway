@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"strings"
+	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 )
@@ -133,6 +134,7 @@ type CostBreakdown struct {
 	TotalCost         float64
 	ActualCost        float64 // 应用倍率后的实际费用
 	BillingMode       string  // 计费模式（"token"/"per_request"/"image"），由 CalculateCostUnified 填充
+	BillingTier       string  // 命中的上下文/分时定价证据，可持久化到 usage_logs.billing_tier
 }
 
 // BillingService 计费服务
@@ -609,6 +611,7 @@ type CostInput struct {
 	ServiceTier    string                // "priority","flex","" 等
 	Resolver       *ModelPricingResolver // 定价解析器
 	Resolved       *ResolvedPricing      // 可选：预解析的定价结果（避免重复 Resolve 调用）
+	PricingAt      time.Time             // 分时定价使用的请求时刻；零值表示不应用
 }
 
 // CalculateCostUnified 统一计费入口，支持三种计费模式。
@@ -651,7 +654,7 @@ func (s *BillingService) CalculateCostUnified(input CostInput) (*CostBreakdown, 
 
 // calculateTokenCost 按 token 区间计费
 func (s *BillingService) calculateTokenCost(resolved *ResolvedPricing, input CostInput) (*CostBreakdown, error) {
-	totalContext := input.Tokens.InputTokens + input.Tokens.CacheReadTokens
+	totalContext := input.Tokens.InputTokens + input.Tokens.CacheCreationTokens + input.Tokens.CacheReadTokens
 
 	pricing := input.Resolver.GetIntervalPricing(resolved, totalContext)
 	if pricing == nil {
@@ -663,7 +666,67 @@ func (s *BillingService) calculateTokenCost(resolved *ResolvedPricing, input Cos
 	// 长上下文定价仅在无区间定价时应用（区间定价已包含上下文分层）
 	applyLongCtx := len(resolved.Intervals) == 0
 
-	return s.computeTokenBreakdown(pricing, input.Tokens, input.RateMultiplier, input.ServiceTier, applyLongCtx), nil
+	breakdown := s.computeTokenBreakdown(pricing, input.Tokens, input.RateMultiplier, input.ServiceTier, applyLongCtx)
+	tierParts := make([]string, 0, 2)
+	if interval := FindMatchingInterval(resolved.Intervals, totalContext); interval != nil {
+		tierParts = append(tierParts, formatContextBillingTier(interval))
+	}
+	timeMultiplier, timeTier := resolvedChannelTimeSelection(resolved, input.PricingAt)
+	applyCostBreakdownMultiplier(breakdown, timeMultiplier)
+	if timeTier != "" {
+		tierParts = append(tierParts, timeTier)
+	}
+	breakdown.BillingTier = strings.Join(tierParts, ";")
+	return breakdown, nil
+}
+
+func applyCostBreakdownMultiplier(cost *CostBreakdown, multiplier float64) {
+	if cost == nil || multiplier == 1 {
+		return
+	}
+	cost.InputCost *= multiplier
+	cost.OutputCost *= multiplier
+	cost.ImageOutputCost *= multiplier
+	cost.CacheCreationCost *= multiplier
+	cost.CacheReadCost *= multiplier
+	cost.TotalCost *= multiplier
+	cost.ActualCost *= multiplier
+}
+
+func resolvedChannelTimeSelection(resolved *ResolvedPricing, at time.Time) (float64, string) {
+	if resolved == nil || resolved.Source != PricingSourceChannel || resolved.channelPricing == nil {
+		return 1, ""
+	}
+	pricing := resolved.channelPricing.TimePricing
+	multiplier, period := pricing.matchAt(at)
+	if period == nil {
+		return 1, ""
+	}
+	return multiplier, fmt.Sprintf("time=%s,%s-%s,x%g,at=%s", pricing.Timezone, period.StartTime, period.EndTime, multiplier, at.UTC().Format(time.RFC3339))
+}
+
+func formatContextBillingTier(interval *PricingInterval) string {
+	if interval == nil {
+		return ""
+	}
+	if interval.MaxTokens == nil {
+		return fmt.Sprintf("context=(%d,inf]", interval.MinTokens)
+	}
+	return fmt.Sprintf("context=(%d,%d]", interval.MinTokens, *interval.MaxTokens)
+}
+
+func usagePricingAt(now func() time.Time, duration time.Duration) time.Time {
+	at := time.Now()
+	if now != nil {
+		at = now()
+	}
+	// Duration is measured from request start through upstream completion. Use
+	// that instant rather than settlement time so a long stream crossing a
+	// tariff boundary keeps the price selected when the request began.
+	if duration > 0 {
+		at = at.Add(-duration)
+	}
+	return at
 }
 
 // computeTokenBreakdown 是 token 计费的核心逻辑，由 calculateTokenCost 和 calculateCostInternal 共用。

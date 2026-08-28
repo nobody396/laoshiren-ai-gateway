@@ -137,8 +137,8 @@ jobs:
         working-directory: backend
         run: |
           lint_bin="$(go env GOPATH)/bin/golangci-lint"
-          if [[ ! -x "$lint_bin" ]] || ! "$lint_bin" version | grep -q '2.12.2'; then
-            go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+          if [[ ! -x "$lint_bin" ]] || ! "$lint_bin" version | grep -q '2.13.2'; then
+            go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
           fi
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Run backend test entrypoint
@@ -153,6 +153,11 @@ jobs:
     env:
       CI: "true"
       GIT_SHA: ${{ github.sha }}
+      # Docker Desktop 28 can leave HostPort="0" unresolved for Ryuk after a
+      # cross-platform Buildx job. Disable only the reaper sidecar and perform
+      # an explicit label-scoped cleanup below; test modules still own normal
+      # container termination.
+      TESTCONTAINERS_RYUK_DISABLED: "true"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -171,6 +176,13 @@ jobs:
           docker info --format 'docker_server_version={{.ServerVersion}}'
       - name: Run deterministic backend integration gate
         run: make test-backend-integration
+      - name: Remove Testcontainers leftovers
+        if: always()
+        run: |
+          while IFS= read -r id; do
+            [[ -n "$id" ]] || continue
+            docker rm -f -v "$id"
+          done < <(docker ps -aq --filter 'label=org.testcontainers=true')
 
   frontend-tests:
     name: Frontend tests and boundaries

@@ -17,6 +17,19 @@ export interface PublicModelPrice {
     input_multiplier: number
     output_multiplier: number
   }
+  context_intervals?: Array<{
+    min_tokens: number
+    max_tokens?: number
+    input_price: number | null
+    output_price: number | null
+    cache_write_price: number | null
+    cache_read_price: number | null
+  }>
+  time_pricing?: {
+    timezone: string
+    weekdays_only?: boolean
+    periods: Array<{ start_time: string; end_time: string; multiplier: number }>
+  }
   disabled?: boolean
 }
 

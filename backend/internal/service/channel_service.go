@@ -595,6 +595,16 @@ func validatePricingEntries(pricing []ChannelModelPricing) error {
 	if err := validateServiceTierCapabilities(pricing); err != nil {
 		return err
 	}
+	for i := range pricing {
+		if pricing[i].TimePricing != nil && len(pricing[i].TimePricing.Periods) > 0 {
+			if pricing[i].BillingMode != "" && pricing[i].BillingMode != BillingModeToken {
+				return infraerrors.BadRequest("INVALID_TIME_PRICING_MODE", "time pricing is only supported for token billing")
+			}
+			if err := validateChannelTimePricing(pricing[i].TimePricing); err != nil {
+				return infraerrors.BadRequest("INVALID_TIME_PRICING", err.Error())
+			}
+		}
+	}
 	return validatePricingBillingMode(pricing)
 }
 

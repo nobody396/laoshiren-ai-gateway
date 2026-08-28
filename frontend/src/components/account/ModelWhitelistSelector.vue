@@ -86,12 +86,49 @@
         {{ t('admin.accounts.fillRelatedModels') }}
       </button>
       <button
+        v-if="canInspectUpstream"
+        type="button"
+        data-testid="inspect-upstream-models"
+        :disabled="inspectingUpstream"
+        @click="inspectUpstreamModels"
+        class="rounded-lg border border-emerald-200 px-3 py-1.5 text-sm text-emerald-600 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+      >
+        {{ inspectingUpstream ? t('admin.accounts.inspectUpstreamModelsLoading') : t('admin.accounts.inspectUpstreamModels') }}
+      </button>
+      <button
         type="button"
         @click="clearAll"
         class="rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
       >
         {{ t('admin.accounts.clearAllModels') }}
       </button>
+    </div>
+
+    <div
+      v-if="modelDrift"
+      class="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300"
+      data-testid="upstream-model-drift"
+    >
+      <p class="font-medium">{{ t('admin.accounts.upstreamModelDriftTitle') }}</p>
+      <p class="mt-1">
+        {{ t('admin.accounts.upstreamModelDriftSummary', { added: modelDrift.upstream_unmapped.length, missing: modelDrift.configured_missing_upstream.length }) }}
+      </p>
+      <p v-if="modelDrift.upstream_unmapped.length" class="mt-2 break-all text-emerald-700 dark:text-emerald-400">
+        {{ modelDrift.upstream_unmapped.join(', ') }}
+      </p>
+      <p v-if="modelDrift.configured_missing_upstream.length" class="mt-2 break-all text-amber-700 dark:text-amber-400">
+        {{ modelDrift.configured_missing_upstream.join(', ') }}
+      </p>
+      <button
+        v-if="modelDrift.upstream_unmapped.length"
+        type="button"
+        data-testid="add-reviewed-upstream-models"
+        class="mt-3 rounded border border-emerald-300 px-2 py-1 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+        @click="addReviewedUpstreamModels"
+      >
+        {{ t('admin.accounts.addReviewedUpstreamModels') }}
+      </button>
+      <p class="mt-2 text-gray-500">{{ t('admin.accounts.upstreamModelDriftReadOnly') }}</p>
     </div>
 
     <!-- Custom Model Input -->
@@ -123,6 +160,8 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
+import { accountsAPI } from '@/api/admin/accounts'
+import type { OpenAIModelDrift } from '@/api/admin/accounts'
 import ModelIcon from '@/components/common/ModelIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { allModels, getModelsByPlatform } from '@/composables/useModelWhitelist'
@@ -133,6 +172,7 @@ const props = defineProps<{
   modelValue: string[]
   platform?: string
   platforms?: string[]
+	accountId?: number
 }>()
 
 const emit = defineEmits<{
@@ -145,6 +185,8 @@ const showDropdown = ref(false)
 const searchQuery = ref('')
 const customModel = ref('')
 const isComposing = ref(false)
+const inspectingUpstream = ref(false)
+const modelDrift = ref<OpenAIModelDrift | null>(null)
 const normalizedPlatforms = computed(() => {
   const rawPlatforms =
     props.platforms && props.platforms.length > 0
@@ -176,6 +218,10 @@ const availableOptions = computed(() => {
 
   return allModels.filter(model => allowedModels.has(model.value))
 })
+
+const canInspectUpstream = computed(() =>
+  Boolean(props.accountId) && normalizedPlatforms.value.some(platform => platform.toLowerCase() === 'openai')
+)
 
 const filteredModels = computed(() => {
   const query = searchQuery.value.toLowerCase().trim()
@@ -227,6 +273,28 @@ const fillRelated = () => {
     }
   }
   emit('update:modelValue', newModels)
+}
+
+const inspectUpstreamModels = async () => {
+  if (!props.accountId || inspectingUpstream.value) return
+  inspectingUpstream.value = true
+  try {
+    modelDrift.value = await accountsAPI.inspectOpenAIModelDrift(props.accountId)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    appStore.showError(t('admin.accounts.inspectUpstreamModelsError', { message }))
+  } finally {
+    inspectingUpstream.value = false
+  }
+}
+
+const addReviewedUpstreamModels = () => {
+  if (!modelDrift.value) return
+  const reviewed = [...props.modelValue]
+  for (const model of modelDrift.value.upstream_unmapped) {
+    if (!reviewed.includes(model)) reviewed.push(model)
+  }
+  emit('update:modelValue', reviewed)
 }
 
 const clearAll = () => {

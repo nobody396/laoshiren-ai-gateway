@@ -58,6 +58,19 @@
       </table>
     </div>
 
+    <div v-if="timePricingRows.length > 0" class="pricing-group__time-pricing">
+      <p class="pricing-group__time-title">{{ t('modelPricing.timePricing.title') }}</p>
+      <p v-for="row in timePricingRows" :key="row.key" class="pricing-group__time-row">
+        <strong>{{ row.model }}</strong>
+        <span>{{ row.timezone }}</span>
+        <span v-if="row.weekdaysOnly">{{ t('modelPricing.timePricing.weekdaysOnly') }}</span>
+        <span v-for="period in row.periods" :key="`${period.start_time}-${period.end_time}`">
+          {{ period.start_time }}–{{ period.end_time }} ×{{ period.multiplier }}
+        </span>
+      </p>
+      <p class="pricing-group__time-note">{{ t('modelPricing.timePricing.basePriceNote') }}</p>
+    </div>
+
   </section>
 </template>
 
@@ -154,18 +167,47 @@ const imagePricingRows = computed<PricingRow[]>(() => {
 })
 
 const pricingRows = computed<PricingRow[]>(() => [
-  ...models.value.map((model) => ({
-    key: `model-${model.model}`,
-    label: model.model,
-    input: model.input_price,
-    output: model.output_price,
-    cacheWrite: model.cache_write_price,
-    cacheRead: model.cache_read_price,
-    disabled: model.disabled
-  })),
+  ...models.value.flatMap((model) => {
+    const base: PricingRow = {
+      key: `model-${model.model}`,
+      label: model.context_intervals?.length ? `${model.model} · ${t('modelPricing.contextPricing.base')}` : model.model,
+      input: model.input_price,
+      output: model.output_price,
+      cacheWrite: model.cache_write_price,
+      cacheRead: model.cache_read_price,
+      disabled: model.disabled
+    }
+    const intervals = (model.context_intervals || []).map((interval, index): PricingRow => ({
+      key: `model-${model.model}-interval-${index}`,
+      label: `${model.model} · ${formatContextRange(interval.min_tokens, interval.max_tokens)}`,
+      input: interval.input_price,
+      output: interval.output_price,
+      cacheWrite: interval.cache_write_price,
+      cacheRead: interval.cache_read_price,
+      disabled: model.disabled
+    }))
+    return [base, ...intervals]
+  }),
   // 生图行固定排在文本模型之后
   ...imagePricingRows.value
 ])
+
+const timePricingRows = computed(() => models.value
+  .filter(model => model.time_pricing?.periods?.length)
+  .map(model => ({
+    key: model.model,
+    model: model.model,
+    timezone: model.time_pricing!.timezone,
+    weekdaysOnly: model.time_pricing!.weekdays_only === true,
+    periods: model.time_pricing!.periods
+  })))
+
+function formatContextRange(min: number, max?: number): string {
+  const lower = min.toLocaleString()
+  return max == null
+    ? t('modelPricing.contextPricing.above', { min: lower })
+    : t('modelPricing.contextPricing.range', { min: lower, max: max.toLocaleString() })
+}
 
 function formatPrice(v: number | null | undefined): string {
   if (v === null || v === undefined) return '—'
@@ -250,6 +292,30 @@ function formatPrice(v: number | null | undefined): string {
 
 .pricing-group__table-wrap {
   overflow-x: auto;
+}
+
+.pricing-group__time-pricing {
+  padding: 0.875rem 1.25rem;
+  border-top: 1px solid rgb(var(--color-muted) / 0.25);
+  color: rgb(var(--color-muted));
+  font-size: 0.75rem;
+}
+
+.pricing-group__time-title {
+  margin: 0 0 0.375rem;
+  color: rgb(var(--color-ink));
+  font-weight: 700;
+}
+
+.pricing-group__time-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.75rem;
+  margin: 0.25rem 0;
+}
+
+.pricing-group__time-note {
+  margin: 0.5rem 0 0;
 }
 
 .pricing-group__table {

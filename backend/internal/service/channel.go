@@ -77,24 +77,39 @@ type AccountStatsPricingRule struct {
 type ChannelModelPricing struct {
 	ID               int64
 	ChannelID        int64
-	Platform         string            // 所属平台（anthropic/openai/gemini/...）
-	Models           []string          // 绑定的模型列表
-	BillingMode      BillingMode       // 计费模式
-	InputPrice       *float64          // 每 token 输入价格（USD）— 向后兼容 flat 定价
-	OutputPrice      *float64          // 每 token 输出价格（USD）
-	CacheWritePrice  *float64          // 缓存写入价格
-	CacheReadPrice   *float64          // 缓存读取价格
-	FastMultiplier   *float64          // Fast/Priority 服务层级倍率；nil 使用模型目录默认价
-	FlexMultiplier   *float64          // Flex 服务层级倍率；nil 使用默认倍率
-	FastSupported    bool              // 供应商已确认并经管理员登记 Fast/Priority 能力
-	FlexSupported    bool              // 供应商已确认并经管理员登记 Flex 能力
-	FastVerifiedAt   *time.Time        // 最近一次 Fast/Priority 能力确认时间
-	FlexVerifiedAt   *time.Time        // 最近一次 Flex 能力确认时间
-	ImageOutputPrice *float64          // 图片输出价格（向后兼容）
-	PerRequestPrice  *float64          // 默认按次计费价格（USD）
-	Intervals        []PricingInterval // 区间定价列表
+	Platform         string              // 所属平台（anthropic/openai/gemini/...）
+	Models           []string            // 绑定的模型列表
+	BillingMode      BillingMode         // 计费模式
+	InputPrice       *float64            // 每 token 输入价格（USD）— 向后兼容 flat 定价
+	OutputPrice      *float64            // 每 token 输出价格（USD）
+	CacheWritePrice  *float64            // 缓存写入价格
+	CacheReadPrice   *float64            // 缓存读取价格
+	FastMultiplier   *float64            // Fast/Priority 服务层级倍率；nil 使用模型目录默认价
+	FlexMultiplier   *float64            // Flex 服务层级倍率；nil 使用默认倍率
+	FastSupported    bool                // 供应商已确认并经管理员登记 Fast/Priority 能力
+	FlexSupported    bool                // 供应商已确认并经管理员登记 Flex 能力
+	FastVerifiedAt   *time.Time          // 最近一次 Fast/Priority 能力确认时间
+	FlexVerifiedAt   *time.Time          // 最近一次 Flex 能力确认时间
+	ImageOutputPrice *float64            // 图片输出价格（向后兼容）
+	PerRequestPrice  *float64            // 默认按次计费价格（USD）
+	Intervals        []PricingInterval   // 区间定价列表
+	TimePricing      *ChannelTimePricing // token 模式分时倍率；nil 表示关闭
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
+}
+
+// ChannelTimePricing applies one recurring daily multiplier in an explicit
+// IANA timezone. Periods are left-closed/right-open and may not overlap.
+type ChannelTimePricing struct {
+	Timezone     string                     `json:"timezone"`
+	WeekdaysOnly bool                       `json:"weekdays_only,omitempty"`
+	Periods      []ChannelTimePricingPeriod `json:"periods"`
+}
+
+type ChannelTimePricingPeriod struct {
+	StartTime  string  `json:"start_time"`
+	EndTime    string  `json:"end_time"`
+	Multiplier float64 `json:"multiplier"`
 }
 
 // PricingInterval 定价区间（token 区间 / 按次分层 / 图片分辨率分层）
@@ -175,6 +190,13 @@ func (p ChannelModelPricing) Clone() ChannelModelPricing {
 	if p.Intervals != nil {
 		cp.Intervals = make([]PricingInterval, len(p.Intervals))
 		copy(cp.Intervals, p.Intervals)
+	}
+	if p.TimePricing != nil {
+		cp.TimePricing = &ChannelTimePricing{
+			Timezone:     p.TimePricing.Timezone,
+			WeekdaysOnly: p.TimePricing.WeekdaysOnly,
+			Periods:      append([]ChannelTimePricingPeriod(nil), p.TimePricing.Periods...),
+		}
 	}
 	return cp
 }

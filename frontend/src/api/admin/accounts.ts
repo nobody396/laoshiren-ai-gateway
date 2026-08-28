@@ -468,6 +468,21 @@ export async function getAvailableModels(id: number): Promise<ClaudeModel[]> {
   return data
 }
 
+export interface OpenAIModelDrift {
+  status: 'in_sync' | 'review_required'
+  applied: false
+  upstream_models: string[]
+  configured_request_models: string[]
+  configured_upstream_models: string[]
+  upstream_unmapped: string[]
+  configured_missing_upstream: string[]
+}
+
+export async function inspectOpenAIModelDrift(id: number): Promise<OpenAIModelDrift> {
+  const { data } = await apiClient.get<OpenAIModelDrift>(`/admin/accounts/${id}/models/upstream-drift`)
+  return data
+}
+
 export interface CRSPreviewAccount {
   crs_account_id: string
   kind: string
@@ -667,6 +682,7 @@ export const accountsAPI = {
   resetTempUnschedulable,
   setSchedulable,
   getAvailableModels,
+	inspectOpenAIModelDrift,
   generateAuthUrl,
   exchangeCode,
   refreshOpenAIToken,

@@ -525,6 +525,7 @@ func (h *GrokOAuthHandler) QueryQuota(c *gin.Context) {
 	response.Success(c, result)
 }
 
+//nolint:staticcheck // ResetQuota currently returns a typed unsupported error; preserve the success-shaped handler for future provider support.
 func (h *GrokOAuthHandler) ResetQuota(c *gin.Context) {
 	accountID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

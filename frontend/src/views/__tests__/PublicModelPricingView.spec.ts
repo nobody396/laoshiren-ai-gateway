@@ -143,7 +143,53 @@ describe('PublicModelPricingView', () => {
     await flushPromises()
 
     await clickTab(wrapper, 'modelPricing.block.gpt')
-    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Image 2 生图分组', 'GPT Pro 月卡组'])
+    expect(visibleGroupNames(wrapper)).toEqual(['GPT 按量组', 'GPT Pro 月卡组', 'GPT Image 2 生图分组'])
+  })
+
+  it('sorts OpenAI text groups by ascending multiplier within public/monthly tiers and keeps image last', async () => {
+    getPublicModelPricingMock.mockResolvedValue({
+      updated_at: '2026-08-28T00:00:00Z',
+      currency: 'CNY',
+      unit: 'per_1m_tokens',
+      groups: [
+        { group_id: 59, name: 'CodeX 企业级分组', platform: 'openai', rate_multiplier: 1, is_exclusive: false, subscription_type: 'standard', models: [price('gpt-5.6-sol')] },
+        { group_id: 58, name: 'GPT 混池分组', platform: 'openai', rate_multiplier: 0.35, is_exclusive: false, subscription_type: 'standard', models: [price('gpt-5.6-sol')] },
+        { group_id: 40, name: 'GPT Plus 月卡组', platform: 'openai', rate_multiplier: 0.5, is_exclusive: true, subscription_type: 'credit', models: [price('gpt-5.6-sol')] },
+        { group_id: 51, name: 'GPT Image 2 生图分组', platform: 'openai', rate_multiplier: 4, is_exclusive: false, subscription_type: 'standard', models: [], image_generation: { mode: 'fixed_per_image' as const, price_per_image: 0.3 } },
+      ],
+    })
+    const wrapper = mountView()
+    await flushPromises()
+
+    await clickTab(wrapper, 'modelPricing.block.gpt')
+    expect(visibleGroupNames(wrapper)).toEqual([
+      'GPT 混池分组',
+      'CodeX 企业级分组',
+      'GPT Plus 月卡组',
+      'GPT Image 2 生图分组',
+    ])
+  })
+
+  it('sorts monthly-card groups as Plus, Pro, then Max', async () => {
+    getPublicModelPricingMock.mockResolvedValue({
+      updated_at: '2026-08-28T00:00:00Z',
+      currency: 'CNY',
+      unit: 'per_1m_tokens',
+      groups: [
+        { group_id: 42, name: 'GPT Max 月卡组', platform: 'openai', rate_multiplier: 0.4, is_exclusive: true, subscription_type: 'credit', models: [price('gpt-5.6-sol')] },
+        { group_id: 41, name: 'GPT Pro 月卡组', platform: 'openai', rate_multiplier: 0.3, is_exclusive: true, subscription_type: 'credit', models: [price('gpt-5.6-sol')] },
+        { group_id: 40, name: 'GPT Plus 月卡组', platform: 'openai', rate_multiplier: 0.5, is_exclusive: true, subscription_type: 'credit', models: [price('gpt-5.6-sol')] },
+      ],
+    })
+    const wrapper = mountView()
+    await flushPromises()
+
+    await clickTab(wrapper, 'modelPricing.block.gpt')
+    expect(visibleGroupNames(wrapper)).toEqual([
+      'GPT Plus 月卡组',
+      'GPT Pro 月卡组',
+      'GPT Max 月卡组',
+    ])
   })
 
   it('classifies kimi, qwen3.x and gemini groups into their own blocks', async () => {

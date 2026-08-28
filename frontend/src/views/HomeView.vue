@@ -53,6 +53,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, useAppStore } from '@/stores'
 import { getPublicStats } from '@/api/publicStats'
+import { PUBLIC_DOCS_ENABLED } from '@/config/publicFeatures'
 
 // 子组件导入
 import ZenBanner from '@/components/home/zen/ZenBanner.vue'
@@ -166,15 +167,17 @@ const footerSections = computed(() => {
         { label: labels.login, href: '/login', external: false }
       ]
     },
-    {
-      title: labels.guides,
-      links: [
-        { label: labels.claudeCodeChina, href: '/docs/claude-code-china-guide', external: false },
-        { label: labels.codexChina, href: '/docs/codex-china-guide', external: false },
-        { label: labels.codexNoApiKey, href: '/docs/codex-no-api-key-guide', external: false },
-        { label: labels.codexCustomApi, href: '/docs/codex-custom-api-guide', external: false }
-      ]
-    },
+    ...(PUBLIC_DOCS_ENABLED
+      ? [{
+          title: labels.guides,
+          links: [
+            { label: labels.claudeCodeChina, href: '/docs/claude-code-china-guide', external: false },
+            { label: labels.codexChina, href: '/docs/codex-china-guide', external: false },
+            { label: labels.codexNoApiKey, href: '/docs/codex-no-api-key-guide', external: false },
+            { label: labels.codexCustomApi, href: '/docs/codex-custom-api-guide', external: false }
+          ]
+        }]
+      : []),
     {
       title: labels.commitment,
       links: [

@@ -13,6 +13,23 @@ vi.mock('vue-i18n', async () => {
 })
 
 describe('ModelPricingGroupSection', () => {
+  it('removes the temporary special-price suffix from the public group title', () => {
+    const wrapper = mount(ModelPricingGroupSection, {
+      props: {
+        group: {
+          group_id: 52,
+          name: 'GPT CYBER 分组（特价！）',
+          platform: 'openai',
+          rate_multiplier: 2,
+          is_exclusive: false,
+          subscription_type: 'standard',
+          models: [{ model: 'gpt-5.6-sol', input_price: 10, output_price: 60, cache_read_price: 1 }],
+        },
+      },
+    })
+
+    expect(wrapper.get('h3').text()).toBe('GPT CYBER 分组')
+  })
   it('renders GPT Image 2 token prices in the same table layout as text models', () => {
     const wrapper = mount(ModelPricingGroupSection, {
       props: {
@@ -42,8 +59,8 @@ describe('ModelPricingGroupSection', () => {
     expect(wrapper.find('.pricing-group__image').exists()).toBe(false)
     expect(wrapper.find('.pricing-group__table').exists()).toBe(true)
     expect(wrapper.findAll('tbody tr').map((row) => row.text())).toEqual([
-      'GPT Image 2 · modelPricing.image.textModality¥20.00——¥5.00',
-      'GPT Image 2 · modelPricing.image.imageModality¥32.00¥120.00—¥8.00'
+      'GPT Image 2modelPricing.image.textModality¥20.00——¥5.00',
+      'modelPricing.image.imageModality¥32.00¥120.00—¥8.00'
     ])
     expect(wrapper.text()).not.toContain('支持 quality、size、output_format 等参数。')
   })
@@ -77,8 +94,8 @@ describe('ModelPricingGroupSection', () => {
     })
 
     expect(wrapper.findAll('tbody tr').map((row) => row.text())).toEqual([
-      'gpt-5.6-sol¥2.50¥15.00¥3.13¥0.2500',
-      'GPT Image 2—¥0.3000modelPricing.image.perImageUnit——'
+      'gpt-5.6-solmodelPricing.table.standard¥2.50¥15.00¥3.13¥0.2500',
+      'GPT Image 2modelPricing.table.perImage—¥0.3000modelPricing.image.perImageUnit——'
     ])
   })
 
@@ -196,7 +213,7 @@ describe('ModelPricingGroupSection', () => {
     expect(wrapper.get('.pricing-group__title .pricing-group__badge').text()).toBe('Images API')
   })
 
-  it('renders context tiers and the reviewed time-pricing schedule', () => {
+  it('renders one model cell with vertically aligned context-tier price rows', () => {
     const wrapper = mount(ModelPricingGroupSection, {
       props: {
         group: {
@@ -209,22 +226,58 @@ describe('ModelPricingGroupSection', () => {
           models: [{
             model: 'gpt-5.6-sol', input_price: 10, output_price: 60,
             cache_write_price: null, cache_read_price: 1,
-            context_intervals: [{
-              min_tokens: 0, max_tokens: 272000,
-              input_price: 8, output_price: 40, cache_write_price: null, cache_read_price: 0.8
-            }],
+            context_intervals: [
+              {
+                min_tokens: 0, max_tokens: 272000,
+                input_price: 8, output_price: 40, cache_write_price: null, cache_read_price: 0.8
+              },
+              {
+                min_tokens: 272000, max_tokens: 1000000,
+                input_price: 16, output_price: 60, cache_write_price: null, cache_read_price: 1.6
+              }
+            ]
+          }]
+        }
+      }
+    })
+
+    const rows = wrapper.findAll('tbody tr')
+    expect(rows).toHaveLength(2)
+    expect(rows[0].text()).toContain('gpt-5.6-sol≤272,000¥8.00¥40.00—¥0.8000')
+    expect(rows[1].text()).toContain('>272,000–1M¥16.00¥60.00—¥1.60')
+    expect(rows[1].text()).not.toContain('gpt-5.6-sol')
+  })
+
+  it('renders one model cell with peak and valley prices aligned under the normal price columns', () => {
+    const wrapper = mount(ModelPricingGroupSection, {
+      props: {
+        group: {
+          group_id: 61,
+          name: 'DeepSeek（阿里云）',
+          platform: 'openai',
+          rate_multiplier: 0.95,
+          is_exclusive: false,
+          subscription_type: 'standard',
+          models: [{
+            model: 'deepseek-v4-pro-0813', input_price: 8.55, output_price: 25.65,
+            cache_write_price: null, cache_read_price: 0.855,
             time_pricing: {
-              timezone: 'Asia/Shanghai', weekdays_only: true,
-              periods: [{ start_time: '09:00', end_time: '12:00', multiplier: 1.5 }]
+              timezone: 'Asia/Shanghai', weekdays_only: false,
+              periods: [
+                { start_time: '00:00:00', end_time: '08:00:00', multiplier: 0.5 },
+                { start_time: '22:00:00', end_time: '00:00:00', multiplier: 0.5 }
+              ]
             }
           }]
         }
       }
     })
 
-    expect(wrapper.findAll('tbody tr')).toHaveLength(1)
-    expect(wrapper.findAll('tbody tr')[0].text()).toContain('gpt-5.6-sol · modelPricing.contextPricing.range')
-    expect(wrapper.get('.pricing-group__time-pricing').text()).toContain('Asia/Shanghai')
-    expect(wrapper.get('.pricing-group__time-pricing').text()).toContain('09:00–12:00 ×1.5')
+    const rows = wrapper.findAll('tbody tr')
+    expect(rows).toHaveLength(2)
+    expect(rows[0].text()).toContain('deepseek-v4-pro-0813modelPricing.timePricing.peak · 08:00–22:00¥8.55¥25.65—¥0.8550')
+    expect(rows[1].text()).toContain('modelPricing.timePricing.valley · 22:00–modelPricing.timePricing.nextDay08:00¥4.28¥12.82—¥0.4275')
+    expect(rows[1].text()).not.toContain('deepseek-v4-pro-0813')
+    expect(wrapper.text()).not.toContain('modelPricing.table.input ¥')
   })
 })

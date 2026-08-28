@@ -50,7 +50,7 @@
 
         <!-- Docs Link -->
         <a
-          v-if="docUrl"
+          v-if="PUBLIC_DOCS_ENABLED && docUrl"
           :href="docUrl"
           target="_blank"
           rel="noopener noreferrer"
@@ -237,6 +237,7 @@ import ChangelogHeaderLink from '@/components/common/ChangelogHeaderLink.vue'
 import CustomerServiceButton from '@/components/common/CustomerServiceButton.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { issueSSOTicket } from '@/api/auth'
+import { PUBLIC_DOCS_ENABLED } from '@/config/publicFeatures'
 
 const router = useRouter()
 const route = useRoute()

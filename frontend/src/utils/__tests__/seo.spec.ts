@@ -43,7 +43,7 @@ describe('updateRouteSeo', () => {
     expect(document.head.querySelectorAll('script[type="application/ld+json"]').length).toBe(1)
   })
 
-  it('sets article metadata for docs pages', () => {
+  it('marks temporarily hidden docs pages as non-indexable', () => {
     updateRouteSeo(route({
       name: 'DocsPage',
       path: '/docs/claude-code-quickstart',
@@ -52,15 +52,15 @@ describe('updateRouteSeo', () => {
     }))
 
     expect(document.title).toBe('Claude Code 快速开始指南 - 文档 - 老实人AI')
-    expect(content('meta[name="robots"]')).toBe('index,follow')
+    expect(content('meta[name="robots"]')).toBe('noindex,nofollow')
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
       'https://laoshirenai.com/docs/claude-code-quickstart'
     )
     expect(content('meta[property="og:type"]')).toBe('article')
-    expect(document.head.querySelector('script[type="application/ld+json"]')?.textContent).toContain('TechArticle')
+    expect(document.head.querySelector('script[type="application/ld+json"]')).toBeNull()
   })
 
-  it('uses the Codex custom API experiment title and truthful modified date', () => {
+  it('keeps the hidden Codex docs title but emits no public structured data', () => {
     updateRouteSeo(route({
       name: 'DocsPage',
       path: '/docs/codex-custom-api-guide',
@@ -69,8 +69,8 @@ describe('updateRouteSeo', () => {
     }))
 
     expect(document.title).toBe('Codex 自定义 API 配置：Base URL 与 config.toml - 文档 - 老实人AI')
-    const structuredData = document.head.querySelector('script[type="application/ld+json"]')?.textContent || ''
-    expect(structuredData).toContain('2026-08-10')
+    expect(content('meta[name="robots"]')).toBe('noindex,nofollow')
+    expect(document.head.querySelector('script[type="application/ld+json"]')).toBeNull()
   })
 
   it('sets indexable article metadata for a public changelog entry', () => {

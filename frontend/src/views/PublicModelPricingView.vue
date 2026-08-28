@@ -9,7 +9,7 @@
         <router-link to="/enterprise">{{ t('modelPricing.nav.enterprise') }}</router-link>
         <router-link to="/security">{{ t('modelPricing.nav.security') }}</router-link>
         <router-link to="/status">{{ t('modelPricing.nav.status') }}</router-link>
-        <router-link to="/docs">{{ t('modelPricing.nav.docs') }}</router-link>
+        <router-link v-if="PUBLIC_DOCS_ENABLED" to="/docs">{{ t('modelPricing.nav.docs') }}</router-link>
         <router-link to="/login">{{ t('modelPricing.nav.login') }}</router-link>
       </nav>
     </header>
@@ -107,6 +107,7 @@ import ModelPricingGroupSection from '@/components/pricing/ModelPricingGroupSect
 import PricingBillingExample from '@/components/pricing/PricingBillingExample.vue'
 import ModelIcon from '@/components/common/ModelIcon.vue'
 import Icon from '@/components/icons/Icon.vue'
+import { PUBLIC_DOCS_ENABLED } from '@/config/publicFeatures'
 import { getPublicModelPricing } from '@/api/publicPricing'
 import type { PublicModelPricingCatalog, PublicPricingGroup } from '@/api/publicPricing'
 
@@ -171,20 +172,36 @@ const blocks = computed<PricingBlock[]>(() => {
   return BLOCK_ORDER.filter((k) => map.has(k)).map((k) => ({ key: k, groups: sortGroups(map.get(k)!) }))
 })
 
-// 块内分组顺序：公开分组在前、专属（订阅/月卡）在后；文本分组在前、纯生图分组在后。
+// 块内统一顺序：文本分组在前、生图在最后；同类中公开按量在前、月卡在后；
+// 月卡固定按 Plus → Pro → Max 排列，其他同类再按用户看到的分组倍率从低到高排序。
 function isImageOnlyGroup(g: PublicPricingGroup): boolean {
   return Boolean(g.image_generation) && (g.models ?? []).length === 0
 }
 
+function monthlyPlanRank(g: PublicPricingGroup): number {
+  const name = g.name.toLowerCase()
+  if (/\bplus\b/.test(name)) return 0
+  if (/\bpro\b/.test(name)) return 1
+  if (/\bmax\b/.test(name)) return 2
+  return 3
+}
+
 function sortGroups(list: PublicPricingGroup[]): PublicPricingGroup[] {
   return [...list].sort((a, b) => {
-    const ea = a.is_exclusive ? 1 : 0
-    const eb = b.is_exclusive ? 1 : 0
-    if (ea !== eb) return ea - eb
     const ia = isImageOnlyGroup(a) ? 1 : 0
     const ib = isImageOnlyGroup(b) ? 1 : 0
     if (ia !== ib) return ia - ib
-    return a.group_id - b.group_id
+    const ma = a.subscription_type === 'credit' || a.subscription_type === 'subscription' ? 1 : 0
+    const mb = b.subscription_type === 'credit' || b.subscription_type === 'subscription' ? 1 : 0
+    if (ma !== mb) return ma - mb
+    if (ma === 1) {
+      const planDiff = monthlyPlanRank(a) - monthlyPlanRank(b)
+      if (planDiff !== 0) return planDiff
+    }
+    const rateDiff = a.rate_multiplier - b.rate_multiplier
+    if (rateDiff !== 0) return rateDiff
+    const nameDiff = a.name.localeCompare(b.name, 'zh-CN')
+    return nameDiff !== 0 ? nameDiff : a.group_id - b.group_id
   })
 }
 

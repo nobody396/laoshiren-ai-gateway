@@ -86,7 +86,8 @@ describe('RoutePolicy', () => {
   })
 
   it('allows only documented public paths in backend mode', () => {
-    expect(policy({ path: '/docs/quickstart', requiresAuth: false, isAuthenticated: false, backendModeEnabled: true }).allow).toBe(true)
+    expect(policy({ path: '/docs/quickstart', requiresAuth: false, isAuthenticated: false, backendModeEnabled: true }))
+      .toEqual({ allow: false, redirect: '/login' })
     expect(policy({ path: '/changelog/first-public-update', requiresAuth: false, isAuthenticated: false, backendModeEnabled: true }).allow).toBe(true)
     expect(policy({ path: '/pricing', requiresAuth: false, isAuthenticated: false, backendModeEnabled: true }))
       .toEqual({ allow: false, redirect: '/login' })

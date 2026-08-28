@@ -12,7 +12,7 @@
         <router-link to="/changelog">更新日志</router-link>
         <router-link to="/legal/terms">条款</router-link>
         <router-link to="/legal/affiliate-program">联盟规则</router-link>
-        <router-link to="/docs">文档</router-link>
+        <router-link v-if="PUBLIC_DOCS_ENABLED" to="/docs">文档</router-link>
         <router-link to="/login">登录</router-link>
       </nav>
     </header>
@@ -129,6 +129,7 @@ import DocsContent from '@/components/docs/DocsContent.vue'
 import StatusFamilyBlock from '@/components/status/StatusFamilyBlock.vue'
 import { useMarkdownRenderer } from '@/composables/useMarkdownRenderer'
 import { loadMarkdown } from '@/docs/config'
+import { PUBLIC_DOCS_ENABLED } from '@/config/publicFeatures'
 import {
   getPublicIncidents,
   getServiceStatus,

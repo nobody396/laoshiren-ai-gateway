@@ -3,7 +3,7 @@
     <header class="pricing-group__header">
       <div class="pricing-group__title">
         <ModelIcon :model="iconModel" size="18px" />
-        <h3>{{ group.name }}</h3>
+        <h3>{{ displayGroupName }}</h3>
         <span v-if="protocolLabelText" class="pricing-group__badge">{{ protocolLabelText }}</span>
       </div>
       <div class="pricing-group__meta">
@@ -19,56 +19,58 @@
       </div>
     </header>
 
-    <div v-if="pricingRows.length === 0" class="pricing-group__empty">
+    <div v-if="pricingModelGroups.length === 0" class="pricing-group__empty">
       {{ t('modelPricing.noModels') }}
     </div>
 
-    <div v-if="pricingRows.length > 0" class="pricing-group__table-wrap">
+    <div v-if="pricingModelGroups.length > 0" class="pricing-group__table-wrap">
       <table class="pricing-group__table">
+        <colgroup>
+          <col class="pricing-group__col-model" />
+          <col class="pricing-group__col-tier" />
+          <col class="pricing-group__col-price" />
+          <col class="pricing-group__col-price" />
+          <col class="pricing-group__col-price" />
+          <col class="pricing-group__col-price" />
+        </colgroup>
         <thead>
           <tr>
-            <th>{{ t('modelPricing.table.model') }}</th>
-            <th>{{ t('modelPricing.table.input') }}</th>
-            <th>{{ t('modelPricing.table.output') }}</th>
-            <th>{{ t('modelPricing.table.cacheWrite') }}</th>
-            <th>{{ t('modelPricing.table.cacheRead') }}</th>
+            <th class="pricing-group__model-header">{{ t('modelPricing.table.model') }}</th>
+            <th class="pricing-group__tier-header">{{ t('modelPricing.table.tier') }}</th>
+            <th class="pricing-group__price-header">{{ t('modelPricing.table.input') }}</th>
+            <th class="pricing-group__price-header">{{ t('modelPricing.table.output') }}</th>
+            <th class="pricing-group__price-header">{{ t('modelPricing.table.cacheWrite') }}</th>
+            <th class="pricing-group__price-header">{{ t('modelPricing.table.cacheRead') }}</th>
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="row in pricingRows"
-            :key="row.key"
-            :class="{ 'pricing-group__row--disabled': row.disabled }"
-          >
-            <td class="pricing-group__model">
-              <span class="pricing-group__value">{{ row.label }}</span>
-              <span v-if="row.disabled" class="pricing-group__disabled-badge">
-                {{ t('modelPricing.disabled') }}
-              </span>
-            </td>
-            <td><span class="pricing-group__value">{{ formatPrice(row.input) }}</span></td>
-            <td>
-              <span class="pricing-group__value">{{ formatPrice(row.output) }}</span>
-              <span v-if="row.outputUnit" class="pricing-group__unit">{{ row.outputUnit }}</span>
-            </td>
-            <td><span class="pricing-group__value">{{ formatPrice(row.cacheWrite) }}</span></td>
-            <td><span class="pricing-group__value">{{ formatPrice(row.cacheRead) }}</span></td>
-          </tr>
+          <template v-for="modelGroup in pricingModelGroups" :key="modelGroup.key">
+            <tr
+              v-for="(row, rowIndex) in modelGroup.rows"
+              :key="`${modelGroup.key}-${rowIndex}`"
+              :class="[
+                { 'pricing-group__row--disabled': modelGroup.disabled },
+                rowIndex > 0 ? 'pricing-group__subrow' : ''
+              ]"
+            >
+              <td v-if="rowIndex === 0" :rowspan="modelGroup.rows.length" class="pricing-group__model">
+                <span class="pricing-group__value">{{ modelGroup.label }}</span>
+                <span v-if="modelGroup.disabled" class="pricing-group__disabled-badge">
+                  {{ t('modelPricing.disabled') }}
+                </span>
+              </td>
+              <td class="pricing-group__tier-label">{{ row.tierLabel }}</td>
+              <td class="pricing-group__price-cell"><span class="pricing-group__value">{{ formatPrice(row.input) }}</span></td>
+              <td class="pricing-group__price-cell">
+                <span class="pricing-group__value">{{ formatPrice(row.output) }}</span>
+                <span v-if="row.outputUnit" class="pricing-group__unit">{{ row.outputUnit }}</span>
+              </td>
+              <td class="pricing-group__price-cell"><span class="pricing-group__value">{{ formatPrice(row.cacheWrite) }}</span></td>
+              <td class="pricing-group__price-cell"><span class="pricing-group__value">{{ formatPrice(row.cacheRead) }}</span></td>
+            </tr>
+          </template>
         </tbody>
       </table>
-    </div>
-
-    <div v-if="timePricingRows.length > 0" class="pricing-group__time-pricing">
-      <p class="pricing-group__time-title">{{ t('modelPricing.timePricing.title') }}</p>
-      <p v-for="row in timePricingRows" :key="row.key" class="pricing-group__time-row">
-        <strong>{{ row.model }}</strong>
-        <span>{{ row.timezone }}</span>
-        <span v-if="row.weekdaysOnly">{{ t('modelPricing.timePricing.weekdaysOnly') }}</span>
-        <span v-for="period in row.periods" :key="`${period.start_time}-${period.end_time}`">
-          {{ period.start_time }}–{{ period.end_time }} ×{{ period.multiplier }}
-        </span>
-      </p>
-      <p class="pricing-group__time-note">{{ t('modelPricing.timePricing.basePriceNote') }}</p>
     </div>
 
   </section>
@@ -85,6 +87,9 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+
+// 公开定价页不展示临时促销文案，分组名保持长期、稳定。
+const displayGroupName = computed(() => props.group.name.replace(/（特价！?）/g, '').trim())
 
 const models = computed(() => props.group.models ?? [])
 
@@ -117,100 +122,218 @@ const protocolLabelText = computed(() => {
   return GROUP_PROTOCOL[props.group.platform] ?? ''
 })
 
-interface PricingRow {
-  key: string
-  label: string
+interface PricingValueRow {
+  tierLabel: string
   input: number | null | undefined
   output: number | null | undefined
   cacheWrite: number | null | undefined
   cacheRead: number | null | undefined
   outputUnit?: string
+}
+
+interface PricingModelGroup {
+  key: string
+  label: string
+  rows: PricingValueRow[]
   disabled?: boolean
 }
 
-const imagePricingRows = computed<PricingRow[]>(() => {
+const imagePricingGroup = computed<PricingModelGroup | null>(() => {
   const image = props.group.image_generation
-  if (!image) return []
+  if (!image) return null
 
   if (image.mode === 'fixed_per_image') {
-    return [
-      {
-        key: 'image-fixed',
-        label: 'GPT Image 2',
+    return {
+      key: 'image-fixed',
+      label: 'GPT Image 2',
+      rows: [{
+        tierLabel: t('modelPricing.table.perImage'),
         input: null,
         output: image.price_per_image,
         outputUnit: t('modelPricing.image.perImageUnit'),
         cacheWrite: null,
         cacheRead: null
+      }]
+    }
+  }
+
+  return {
+    key: 'image-token',
+    label: 'GPT Image 2',
+    rows: [
+      {
+        tierLabel: t('modelPricing.image.textModality'),
+        input: image.text_input_price,
+        output: null,
+        cacheWrite: null,
+        cacheRead: image.text_cached_input_price
+      },
+      {
+        tierLabel: t('modelPricing.image.imageModality'),
+        input: image.image_input_price,
+        output: image.image_output_price,
+        cacheWrite: null,
+        cacheRead: image.image_cached_input_price
       }
     ]
   }
-
-  return [
-    {
-      key: 'image-token-text',
-      label: `GPT Image 2 · ${t('modelPricing.image.textModality')}`,
-      input: image.text_input_price,
-      output: null,
-      cacheWrite: null,
-      cacheRead: image.text_cached_input_price
-    },
-    {
-      key: 'image-token-image',
-      label: `GPT Image 2 · ${t('modelPricing.image.imageModality')}`,
-      input: image.image_input_price,
-      output: image.image_output_price,
-      cacheWrite: null,
-      cacheRead: image.image_cached_input_price
-    }
-  ]
 })
 
-const pricingRows = computed<PricingRow[]>(() => [
-  ...models.value.flatMap((model) => {
-    const base: PricingRow = {
-      key: `model-${model.model}`,
-      label: model.context_intervals?.length ? `${model.model} · ${t('modelPricing.contextPricing.base')}` : model.model,
-      input: model.input_price,
-      output: model.output_price,
-      cacheWrite: model.cache_write_price,
-      cacheRead: model.cache_read_price,
-      disabled: model.disabled
-    }
-    const intervals = (model.context_intervals || []).map((interval, index): PricingRow => ({
-      key: `model-${model.model}-interval-${index}`,
-      label: `${model.model} · ${formatContextRange(interval.min_tokens, interval.max_tokens)}`,
-      input: interval.input_price,
-      output: interval.output_price,
-      cacheWrite: interval.cache_write_price,
-      cacheRead: interval.cache_read_price,
-      disabled: model.disabled
-    }))
-    // A first interval starting at zero is the complete base tier, not an
-    // override. Do not render a duplicate generic "base" row above it.
-    const intervalsCoverBase = model.context_intervals?.some(interval => interval.min_tokens === 0) === true
-    return intervalsCoverBase ? intervals : [base, ...intervals]
-  }),
-  // 生图行固定排在文本模型之后
-  ...imagePricingRows.value
-])
+type ModelPrice = NonNullable<PublicPricingGroup['models']>[number]
+type ContextTier = NonNullable<ModelPrice['context_intervals']>[number]
+type PriceShape = Pick<ContextTier, 'input_price' | 'output_price' | 'cache_write_price' | 'cache_read_price'>
 
-const timePricingRows = computed(() => models.value
-  .filter(model => model.time_pricing?.periods?.length)
-  .map(model => ({
-    key: model.model,
-    model: model.model,
-    timezone: model.time_pricing!.timezone,
-    weekdaysOnly: model.time_pricing!.weekdays_only === true,
-    periods: model.time_pricing!.periods
-  })))
-
-function formatContextRange(min: number, max?: number): string {
-  const lower = min.toLocaleString()
-  return max == null
-    ? t('modelPricing.contextPricing.above', { min: lower })
-    : t('modelPricing.contextPricing.range', { min: lower, max: max.toLocaleString() })
+function displayBasePrice(model: ModelPrice): PriceShape {
+  return model.context_intervals?.find((interval) => interval.min_tokens === 0) ?? model
 }
+
+interface TimePricePeriod extends PriceShape {
+  startTime: number
+  endTime: number
+  multiplier: number
+  wrapsMidnight: boolean
+  label: string
+}
+
+const SECONDS_PER_DAY = 24 * 60 * 60
+
+function timeToSeconds(value: string, isEnd = false): number {
+  const [hours = 0, minutes = 0, seconds = 0] = value.split(':').map(Number)
+  if (isEnd && hours === 0 && minutes === 0 && seconds === 0) return SECONDS_PER_DAY
+  return hours * 3600 + minutes * 60 + seconds
+}
+
+function formatClock(seconds: number): string {
+  const normalized = seconds === SECONDS_PER_DAY ? 0 : seconds
+  const hours = Math.floor(normalized / 3600).toString().padStart(2, '0')
+  const minutes = Math.floor((normalized % 3600) / 60).toString().padStart(2, '0')
+  return `${hours}:${minutes}`
+}
+
+function multiplyPrice(value: number | null | undefined, multiplier: number): number | null {
+  return value === null || value === undefined ? null : value * multiplier
+}
+
+function withPeriodPrices(base: PriceShape, startTime: number, endTime: number, multiplier: number, wrapsMidnight = false): TimePricePeriod {
+  const endLabel = wrapsMidnight
+    ? `${t('modelPricing.timePricing.nextDay')}${formatClock(endTime)}`
+    : formatClock(endTime)
+  return {
+    startTime,
+    endTime,
+    multiplier,
+    wrapsMidnight,
+    label: `${formatClock(startTime)}–${endLabel}`,
+    input_price: multiplyPrice(base.input_price, multiplier),
+    output_price: multiplyPrice(base.output_price, multiplier),
+    cache_write_price: multiplyPrice(base.cache_write_price, multiplier),
+    cache_read_price: multiplyPrice(base.cache_read_price, multiplier)
+  }
+}
+
+function explicitTimePrices(model: ModelPrice): TimePricePeriod[] {
+  const configured = (model.time_pricing?.periods ?? [])
+    .map((period) => ({
+      startTime: timeToSeconds(period.start_time),
+      endTime: timeToSeconds(period.end_time, true),
+      multiplier: period.multiplier
+    }))
+    .sort((a, b) => a.startTime - b.startTime)
+  if (configured.length === 0) return []
+
+  const segments: Array<{ startTime: number; endTime: number; multiplier: number }> = []
+  let cursor = 0
+  for (const period of configured) {
+    if (period.startTime > cursor) segments.push({ startTime: cursor, endTime: period.startTime, multiplier: 1 })
+    segments.push(period)
+    cursor = period.endTime
+  }
+  if (cursor < SECONDS_PER_DAY) segments.push({ startTime: cursor, endTime: SECONDS_PER_DAY, multiplier: 1 })
+
+  const merged: typeof segments = []
+  for (const segment of segments) {
+    const previous = merged[merged.length - 1]
+    if (previous && previous.endTime === segment.startTime && previous.multiplier === segment.multiplier) {
+      previous.endTime = segment.endTime
+    } else {
+      merged.push({ ...segment })
+    }
+  }
+
+  const first = merged[0]
+  const last = merged[merged.length - 1]
+  const wraps = merged.length > 1 && first.startTime === 0 && last.endTime === SECONDS_PER_DAY && first.multiplier === last.multiplier
+  const normalized: Array<{ startTime: number; endTime: number; multiplier: number; wrapsMidnight: boolean }> = wraps
+    ? [
+        ...merged.slice(1, -1).map((period) => ({ ...period, wrapsMidnight: false })),
+        { startTime: last.startTime, endTime: first.endTime, multiplier: first.multiplier, wrapsMidnight: true }
+      ]
+    : merged.map((period) => ({ ...period, wrapsMidnight: false }))
+
+  const base = displayBasePrice(model)
+  return normalized
+    .map((period) => withPeriodPrices(base, period.startTime, period.endTime, period.multiplier, period.wrapsMidnight))
+    .sort((a, b) => b.multiplier - a.multiplier || a.startTime - b.startTime)
+}
+
+function formatTokenThreshold(tokens: number): string {
+  if (tokens >= 1_000_000 && tokens % 1_000_000 === 0) return `${tokens / 1_000_000}M`
+  if (tokens >= 1024 && tokens % 1024 === 0) return `${tokens / 1024}K`
+  return tokens.toLocaleString()
+}
+
+function contextTierLabel(tier: ContextTier): string {
+  const max = tier.max_tokens == null ? '' : formatTokenThreshold(tier.max_tokens)
+  if (tier.min_tokens === 0) return `≤${max}`
+  const min = formatTokenThreshold(tier.min_tokens)
+  return max ? `>${min}–${max}` : `>${min}`
+}
+
+function valueRow(label: string, price: PriceShape, outputUnit?: string): PricingValueRow {
+  return {
+    tierLabel: label,
+    input: price.input_price,
+    output: price.output_price,
+    cacheWrite: price.cache_write_price,
+    cacheRead: price.cache_read_price,
+    outputUnit
+  }
+}
+
+const pricingModelGroups = computed<PricingModelGroup[]>(() => {
+  const textGroups = models.value.map((model): PricingModelGroup => {
+    const timePrices = explicitTimePrices(model)
+    if (timePrices.length > 0) {
+      return {
+        key: `model-${model.model}`,
+        label: model.model,
+        disabled: model.disabled,
+        rows: timePrices.map((period) => valueRow(
+          `${period.multiplier < 1 ? t('modelPricing.timePricing.valley') : t('modelPricing.timePricing.peak')} · ${period.label}`,
+          period
+        ))
+      }
+    }
+
+    const contextPrices = [...(model.context_intervals ?? [])].sort((a, b) => a.min_tokens - b.min_tokens)
+    if (contextPrices.length > 0) {
+      return {
+        key: `model-${model.model}`,
+        label: model.model,
+        disabled: model.disabled,
+        rows: contextPrices.map((tier) => valueRow(contextTierLabel(tier), tier))
+      }
+    }
+
+    return {
+      key: `model-${model.model}`,
+      label: model.model,
+      disabled: model.disabled,
+      rows: [valueRow(t('modelPricing.table.standard'), model)]
+    }
+  })
+  return imagePricingGroup.value ? [...textGroups, imagePricingGroup.value] : textGroups
+})
 
 function formatPrice(v: number | null | undefined): string {
   if (v === null || v === undefined) return '—'
@@ -297,40 +420,26 @@ function formatPrice(v: number | null | undefined): string {
   overflow-x: auto;
 }
 
-.pricing-group__time-pricing {
-  padding: 0.875rem 1.25rem;
-  border-top: 1px solid rgb(var(--color-muted) / 0.25);
-  color: rgb(var(--color-muted));
-  font-size: 0.75rem;
-}
-
-.pricing-group__time-title {
-  margin: 0 0 0.375rem;
-  color: rgb(var(--color-ink));
-  font-weight: 700;
-}
-
-.pricing-group__time-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem 0.75rem;
-  margin: 0.25rem 0;
-}
-
-.pricing-group__time-note {
-  margin: 0.5rem 0 0;
-}
-
 .pricing-group__table {
   width: 100%;
-  min-width: 560px;
+  min-width: 880px;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.875rem;
 }
 
+.pricing-group__col-model,
+.pricing-group__col-tier {
+  width: 25%;
+}
+
+.pricing-group__col-price {
+  width: 12.5%;
+}
+
 .pricing-group__table th {
   padding: 0.625rem 1.25rem;
-  text-align: right;
+  text-align: left;
   color: #6b7280;
   font-size: 0.75rem;
   font-weight: 600;
@@ -338,17 +447,35 @@ function formatPrice(v: number | null | undefined): string {
   background: #ffffff;
 }
 
-.pricing-group__table th:first-child,
-.pricing-group__table td:first-child {
+.pricing-group__model-header,
+.pricing-group__tier-header,
+.pricing-group__model,
+.pricing-group__tier-label {
+  text-align: left;
+}
+
+.pricing-group__price-header,
+.pricing-group__price-cell {
   text-align: left;
 }
 
 .pricing-group__table td {
   padding: 0.625rem 1.25rem;
-  text-align: right;
+  text-align: left;
   color: #111827;
   border-bottom: 1px solid #f3f4f6;
   font-variant-numeric: tabular-nums;
+}
+
+.pricing-group__subrow td {
+  border-top: 1px dashed #f3f4f6;
+}
+
+.pricing-group__tier-label {
+  color: #4b5563;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .pricing-group__table tr:last-child td {
@@ -358,6 +485,7 @@ function formatPrice(v: number | null | undefined): string {
 .pricing-group__model {
   font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
   font-size: 0.8125rem;
+  vertical-align: middle;
   word-break: break-all;
 }
 

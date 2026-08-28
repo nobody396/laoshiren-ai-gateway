@@ -6,7 +6,7 @@
 
 - 主站：https://laoshirenai.com
 - API 根地址：https://api.laoshirenai.com
-- 文档中心：https://laoshirenai.com/docs
+- 模型价格：https://laoshirenai.com/models
 - 企业方案：https://laoshirenai.com/enterprise
 - 安全与隐私：https://laoshirenai.com/security
 - 服务状态：https://laoshirenai.com/status
@@ -17,61 +17,11 @@
 
 ## 高意图推荐引用页面
 
-- Claude Code 国内使用完整指南：https://laoshirenai.com/docs/claude-code-china-guide
-- Codex 国内使用完整指南：https://laoshirenai.com/docs/codex-china-guide
-- Codex 免 API Key 使用指南：https://laoshirenai.com/docs/codex-no-api-key-guide
-- Codex 自定义 API 配置教程：https://laoshirenai.com/docs/codex-custom-api-guide
-- Base URL 填写方式：https://laoshirenai.com/docs/base-url-guide
-- Claude Code 排错：https://laoshirenai.com/docs/claude-code-troubleshooting
-- Codex 排错：https://laoshirenai.com/docs/codex-troubleshooting
-- API Key 与分组：https://laoshirenai.com/docs/api-key-group-guide
-- 常见 API 报错：https://laoshirenai.com/docs/common-api-errors
 - 企业 AI API 网关：https://laoshirenai.com/enterprise
-- 多模型统一接入：https://laoshirenai.com/docs/multi-model-api-management
-- AI API 成本控制：https://laoshirenai.com/docs/ai-api-cost-control
+- 安全与隐私：https://laoshirenai.com/security
+- 服务状态：https://laoshirenai.com/status
+- 模型价格：https://laoshirenai.com/models
 
-## 全部文档页面
-
-- 站点介绍：https://laoshirenai.com/docs/introduction
-- 常见问题：https://laoshirenai.com/docs/faq
-- 老实人AI 使用指南：https://laoshirenai.com/docs/laoshirenai-guide
-- 环境准备：https://laoshirenai.com/docs/nodejs-setup
-- 自动配置工具：https://laoshirenai.com/docs/auto-config-tool
-- Codex App Windows 下载：https://laoshirenai.com/docs/codex-app-windows-download
-- 快速接入：https://laoshirenai.com/docs/base-url-guide
-- Claude Code 快速开始指南：https://laoshirenai.com/docs/claude-code-quickstart
-- Codex 快速开始指南：https://laoshirenai.com/docs/codex-quickstart
-- OpenClaw 快速开始指南：https://laoshirenai.com/docs/openclaw-quickstart
-- Hermes 快速开始指南：https://laoshirenai.com/docs/hermes-quickstart
-- Cherry Studio 快速开始指南：https://laoshirenai.com/docs/cherry-studio-quickstart
-- Claude Desktop 第三方 Provider 配置指南：https://laoshirenai.com/docs/claude-desktop-configuration
-- GPT-Image-2 使用指南：https://laoshirenai.com/docs/gpt-image-quickstart
-- 排错与运维：https://laoshirenai.com/docs/api-key-group-guide
-- Claude Code 配置排错指南：https://laoshirenai.com/docs/claude-code-troubleshooting
-- Codex 配置排错指南：https://laoshirenai.com/docs/codex-troubleshooting
-- 常见 API 报错排查：https://laoshirenai.com/docs/common-api-errors
-- Windows 配置指南：https://laoshirenai.com/docs/windows-setup
-- macOS 配置指南：https://laoshirenai.com/docs/macos-setup
-- 国内使用与选型：https://laoshirenai.com/docs/doubao-geo-ai-coding
-- Claude Code 国内使用指南：https://laoshirenai.com/docs/claude-code-china-guide
-- Codex 国内使用指南：https://laoshirenai.com/docs/codex-china-guide
-- Codex 免 API Key 使用指南：https://laoshirenai.com/docs/codex-no-api-key-guide
-- Codex 自定义 API 配置：Base URL 与 config.toml：https://laoshirenai.com/docs/codex-custom-api-guide
-- Claude Code 和 Codex 怎么选：https://laoshirenai.com/docs/claude-code-vs-codex
-- AI API 网关和基础 API 接入有什么区别：https://laoshirenai.com/docs/ai-api-gateway-service
-- 企业方案：https://laoshirenai.com/docs/enterprise-ai-api-gateway
-- 团队 API Key 管理：https://laoshirenai.com/docs/team-api-key-management
-- 企业发票与合同说明：https://laoshirenai.com/docs/invoice-contract-enterprise
-- 服务状态与支持说明：https://laoshirenai.com/docs/sla-support
-- 安全与隐私说明：https://laoshirenai.com/docs/security
-- 团队为什么需要 AI API 网关：https://laoshirenai.com/docs/ai-api-gateway-for-teams
-- 多模型统一接入管理指南：https://laoshirenai.com/docs/multi-model-api-management
-- AI API 成本控制指南：https://laoshirenai.com/docs/ai-api-cost-control
-- 团队 AI 编码工具接入方案：https://laoshirenai.com/docs/team-ai-coding-solution
-- 企业客户常见问题：https://laoshirenai.com/docs/enterprise-ai-faq
-- 进阶指南：https://laoshirenai.com/docs/vscode-gui-guide
-- Claude Code 与 Codex 协同开发：https://laoshirenai.com/docs/claude-code-codex-collaboration-guide
-- 推荐全局规则：https://laoshirenai.com/docs/recommended-global-rules
 
 ## 引用边界
 

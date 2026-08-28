@@ -2,6 +2,7 @@ import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { i18n } from '@/i18n'
 import { findDocItemBySlug, resolveDocSlug, docsLastModified } from '@/docs/config'
 import { resolveDocumentTitle } from '@/router/title'
+import { PUBLIC_DOCS_ENABLED } from '@/config/publicFeatures'
 
 const DEFAULT_SITE_NAME = '老实人AI'
 const DEFAULT_SITE_ORIGIN = 'https://laoshirenai.com'
@@ -14,8 +15,7 @@ const INDEXABLE_ROUTE_NAMES = new Set([
   'Home',
   'Changelog',
   'ChangelogDetail',
-  'Docs',
-  'DocsPage',
+  ...(PUBLIC_DOCS_ENABLED ? ['Docs', 'DocsPage'] : []),
   'Enterprise',
   'Security',
   'Status',

@@ -22,6 +22,8 @@ import (
 
 type GrokMediaEndpoint string
 
+const grokMediaMaxUploadPartSize int64 = 20 << 20
+
 const (
 	GrokMediaEndpointImagesGenerations GrokMediaEndpoint = "images_generations"
 	GrokMediaEndpointImagesEdits       GrokMediaEndpoint = "images_edits"
@@ -217,7 +219,7 @@ func parseGrokMediaMultipartRequest(contentType string, body []byte, info *GrokM
 			_ = part.Close()
 			continue
 		}
-		data, err := io.ReadAll(io.LimitReader(part, openAIImageMaxUploadPartSize))
+		data, err := io.ReadAll(io.LimitReader(part, grokMediaMaxUploadPartSize))
 		_ = part.Close()
 		if err != nil {
 			return
@@ -609,6 +611,9 @@ func prepareGrokMediaForwardBody(endpoint GrokMediaEndpoint, body []byte, conten
 	if err != nil || !strings.EqualFold(mediaType, "multipart/form-data") {
 		return body, contentType, nil
 	}
+	if err := validateGrokMediaMultipartRequest(contentType, body); err != nil {
+		return nil, "", err
+	}
 
 	info := ParseGrokMediaRequest(contentType, body)
 	payload := make(map[string]any)
@@ -662,6 +667,44 @@ func prepareGrokMediaForwardBody(endpoint GrokMediaEndpoint, body []byte, conten
 		return nil, "", err
 	}
 	return out, "application/json", nil
+}
+
+func validateGrokMediaMultipartRequest(contentType string, body []byte) error {
+	return validateGrokMediaMultipartRequestWithLimit(contentType, body, grokMediaMaxUploadPartSize)
+}
+
+func validateGrokMediaMultipartRequestWithLimit(contentType string, body []byte, fileLimit int64) error {
+	_, params, err := mime.ParseMediaType(strings.TrimSpace(contentType))
+	if err != nil {
+		return fmt.Errorf("invalid multipart content-type: %w", err)
+	}
+	boundary := strings.TrimSpace(params["boundary"])
+	if boundary == "" {
+		return fmt.Errorf("multipart boundary is required")
+	}
+	reader := multipart.NewReader(bytes.NewReader(body), boundary)
+	for {
+		part, nextErr := reader.NextPart()
+		if nextErr == io.EOF {
+			return nil
+		}
+		if nextErr != nil {
+			return fmt.Errorf("read multipart body: %w", nextErr)
+		}
+		if strings.TrimSpace(part.FileName()) == "" {
+			_, err = io.Copy(io.Discard, part)
+			_ = part.Close()
+			if err != nil {
+				return fmt.Errorf("read multipart field %s: %w", part.FormName(), err)
+			}
+			continue
+		}
+		_, err = readOpenAIImagesMultipartPartWithLimit(part, part.FormName(), fileLimit)
+		_ = part.Close()
+		if err != nil {
+			return err
+		}
+	}
 }
 
 func normalizeGrokMediaForwardBody(endpoint GrokMediaEndpoint, body []byte, contentType string) ([]byte, string, error) {

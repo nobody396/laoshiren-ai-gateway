@@ -12,11 +12,15 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/logger"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/util/responseheaders"
@@ -30,7 +34,10 @@ import (
 
 const (
 	openAIImagesGenerationsEndpoint        = "/v1/images/generations"
-	openAIImageMaxUploadPartSize           = 20 << 20
+	openAIImagesEditsEndpoint              = "/v1/images/edits"
+	openAIImageMaxUploadPartSize           = 50 << 20
+	openAIImagesMaxInputImages             = 16
+	openAIImagesMaxPromptRunes             = 32000
 	codexNativeImageBridgeModel            = "gpt-5.6-sol"
 	codexNativeImageMaxBase64Bytes         = 32 << 20
 	codexNativeImageMaxResponseBytes       = 48 << 20
@@ -54,6 +61,7 @@ type OpenAIImagesUpload struct {
 	Data        []byte
 	Width       int
 	Height      int
+	Format      string
 }
 
 func (u OpenAIImagesUpload) ModerationDataURL() string {
@@ -71,13 +79,22 @@ func (u OpenAIImagesUpload) ModerationDataURL() string {
 }
 
 type OpenAIImagesRequest struct {
-	Model          string
-	Prompt         string
-	N              int
-	Size           string
-	SizeTier       string
-	ResponseFormat string
-	Body           []byte
+	Endpoint          string
+	ContentType       string
+	Multipart         bool
+	Model             string
+	Prompt            string
+	N                 int
+	Size              string
+	SizeTier          string
+	ResponseFormat    string
+	OutputCompression *int
+	PartialImages     *int
+	InputImageURLs    []string
+	MaskImageURL      string
+	Uploads           []OpenAIImagesUpload
+	MaskUpload        *OpenAIImagesUpload
+	Body              []byte
 }
 
 // CodexNativeImageBridgeModel is the Responses model used for the official
@@ -115,15 +132,39 @@ func (r *OpenAIImagesRequest) StickySessionSeed() string {
 	}
 	return strings.Join([]string{
 		"openai-images",
+		strings.TrimSpace(r.Endpoint),
 		strings.TrimSpace(r.Model),
 		strings.TrimSpace(r.SizeTier),
 		strings.TrimSpace(r.Prompt),
 	}, "|")
 }
 
+func (r *OpenAIImagesRequest) IsEdits() bool {
+	return r != nil && r.Endpoint == openAIImagesEditsEndpoint
+}
+
 func (s *OpenAIGatewayService) ParseOpenAIImagesRequest(body []byte) (*OpenAIImagesRequest, error) {
+	return s.parseOpenAIImagesRequest(openAIImagesGenerationsEndpoint, "application/json", body)
+}
+
+func (s *OpenAIGatewayService) ParseOpenAIImagesHTTPRequest(c *gin.Context, body []byte) (*OpenAIImagesRequest, error) {
+	if c == nil || c.Request == nil {
+		return nil, fmt.Errorf("missing request context")
+	}
+	endpoint := normalizeOpenAIImagesEndpointPath(c.Request.URL.Path)
+	if endpoint == "" {
+		return nil, fmt.Errorf("unsupported images endpoint")
+	}
+	return s.parseOpenAIImagesRequest(endpoint, c.GetHeader("Content-Type"), body)
+}
+
+func (s *OpenAIGatewayService) parseOpenAIImagesRequest(endpoint, contentType string, body []byte) (*OpenAIImagesRequest, error) {
 	if len(body) == 0 {
 		return nil, fmt.Errorf("request body is empty")
+	}
+	mediaType, _, mediaErr := mime.ParseMediaType(strings.TrimSpace(contentType))
+	if mediaErr == nil && strings.EqualFold(mediaType, "multipart/form-data") {
+		return parseOpenAIImagesMultipartRequest(endpoint, contentType, body)
 	}
 	if !gjson.ValidBytes(body) {
 		return nil, fmt.Errorf("failed to parse request body")
@@ -158,6 +199,9 @@ func (s *OpenAIGatewayService) ParseOpenAIImagesRequest(body []byte) (*OpenAIIma
 		if parsedN <= 0 {
 			return nil, fmt.Errorf("n must be greater than 0")
 		}
+		if parsedN > 10 {
+			return nil, fmt.Errorf("n must be less than or equal to 10")
+		}
 		n = int(parsedN)
 	}
 
@@ -173,17 +217,289 @@ func (s *OpenAIGatewayService) ParseOpenAIImagesRequest(body []byte) (*OpenAIIma
 	if responseFormatResult.Exists() && responseFormatResult.Type != gjson.String {
 		return nil, fmt.Errorf("invalid response_format field type")
 	}
+	for _, field := range []string{"quality", "background", "output_format", "moderation", "input_fidelity", "style", "user"} {
+		value := gjson.GetBytes(body, field)
+		if value.Exists() && value.Type != gjson.String {
+			return nil, fmt.Errorf("invalid %s field type", field)
+		}
+	}
+	outputCompression, err := parseOpenAIImagesOptionalInteger(body, "output_compression", 0, 100)
+	if err != nil {
+		return nil, err
+	}
+	partialImages, err := parseOpenAIImagesOptionalInteger(body, "partial_images", 0, 3)
+	if err != nil {
+		return nil, err
+	}
+	prompt := strings.TrimSpace(promptResult.String())
+	if prompt == "" {
+		return nil, fmt.Errorf("prompt is required")
+	}
+	if utf8.RuneCountInString(prompt) > openAIImagesMaxPromptRunes {
+		return nil, fmt.Errorf("prompt must be at most %d characters", openAIImagesMaxPromptRunes)
+	}
 
 	size := strings.TrimSpace(sizeResult.String())
-	return &OpenAIImagesRequest{
-		Model:          model,
-		Prompt:         strings.TrimSpace(promptResult.String()),
-		N:              n,
-		Size:           size,
-		SizeTier:       normalizeOpenAIImageSizeTier(size),
-		ResponseFormat: strings.ToLower(strings.TrimSpace(responseFormatResult.String())),
-		Body:           body,
-	}, nil
+	request := &OpenAIImagesRequest{
+		Endpoint:          endpoint,
+		ContentType:       normalizedOpenAIImagesContentType(contentType),
+		Model:             model,
+		Prompt:            prompt,
+		N:                 n,
+		Size:              size,
+		SizeTier:          normalizeOpenAIImageSizeTier(size),
+		ResponseFormat:    strings.ToLower(strings.TrimSpace(responseFormatResult.String())),
+		OutputCompression: outputCompression,
+		PartialImages:     partialImages,
+		Body:              body,
+	}
+	if request.IsEdits() {
+		if err := parseOpenAIImagesJSONEditInputs(body, request); err != nil {
+			return nil, err
+		}
+	}
+	return request, nil
+}
+
+func parseOpenAIImagesOptionalInteger(body []byte, field string, minValue, maxValue int) (*int, error) {
+	value := gjson.GetBytes(body, field)
+	if !value.Exists() {
+		return nil, nil
+	}
+	if value.Type != gjson.Number {
+		return nil, fmt.Errorf("invalid %s field type", field)
+	}
+	parsed, err := strconv.ParseInt(strings.TrimSpace(value.Raw), 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("%s must be an integer", field)
+	}
+	if parsed < int64(minValue) || parsed > int64(maxValue) {
+		return nil, fmt.Errorf("%s must be between %d and %d", field, minValue, maxValue)
+	}
+	result := int(parsed)
+	return &result, nil
+}
+
+func parseOpenAIImagesJSONEditInputs(body []byte, req *OpenAIImagesRequest) error {
+	images := gjson.GetBytes(body, "images")
+	if !images.Exists() || !images.IsArray() {
+		return fmt.Errorf("images must be an array")
+	}
+	items := images.Array()
+	if len(items) == 0 {
+		return fmt.Errorf("at least one image is required")
+	}
+	if len(items) > openAIImagesMaxInputImages {
+		return fmt.Errorf("at most %d images are supported", openAIImagesMaxInputImages)
+	}
+	for index, item := range items {
+		if item.Get("file_id").Exists() {
+			return fmt.Errorf("images[%d].file_id is not supported; use image_url instead", index)
+		}
+		imageURL := strings.TrimSpace(item.Get("image_url").String())
+		if imageURL == "" {
+			return fmt.Errorf("images[%d].image_url is required", index)
+		}
+		if !validOpenAIImagesInputURL(imageURL) {
+			return fmt.Errorf("images[%d].image_url must be an http(s) URL or image data URL", index)
+		}
+		req.InputImageURLs = append(req.InputImageURLs, imageURL)
+	}
+	mask := gjson.GetBytes(body, "mask")
+	if mask.Exists() {
+		if mask.Get("file_id").Exists() {
+			return fmt.Errorf("mask.file_id is not supported; use image_url instead")
+		}
+		maskURL := strings.TrimSpace(mask.Get("image_url").String())
+		if maskURL == "" {
+			return fmt.Errorf("mask.image_url is required")
+		}
+		if !validOpenAIImagesInputURL(maskURL) {
+			return fmt.Errorf("mask.image_url must be an http(s) URL or image data URL")
+		}
+		req.MaskImageURL = maskURL
+	}
+	return nil
+}
+
+func validOpenAIImagesInputURL(value string) bool {
+	lower := strings.ToLower(strings.TrimSpace(value))
+	return strings.HasPrefix(lower, "https://") || strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "data:image/")
+}
+
+func parseOpenAIImagesMultipartRequest(endpoint, contentType string, body []byte) (*OpenAIImagesRequest, error) {
+	_, params, err := mime.ParseMediaType(strings.TrimSpace(contentType))
+	if err != nil {
+		return nil, fmt.Errorf("invalid multipart content-type: %w", err)
+	}
+	boundary := strings.TrimSpace(params["boundary"])
+	if boundary == "" {
+		return nil, fmt.Errorf("multipart boundary is required")
+	}
+	req := &OpenAIImagesRequest{
+		Endpoint:    endpoint,
+		ContentType: contentType,
+		Multipart:   true,
+		N:           1,
+		Body:        body,
+	}
+	reader := multipart.NewReader(bytes.NewReader(body), boundary)
+	for {
+		part, nextErr := reader.NextPart()
+		if errors.Is(nextErr, io.EOF) {
+			break
+		}
+		if nextErr != nil {
+			return nil, fmt.Errorf("read multipart body: %w", nextErr)
+		}
+		name := strings.TrimSpace(part.FormName())
+		if name == "" {
+			_ = part.Close()
+			continue
+		}
+		data, readErr := readOpenAIImagesMultipartPart(part, name)
+		fileName := strings.TrimSpace(part.FileName())
+		partContentType := strings.TrimSpace(part.Header.Get("Content-Type"))
+		_ = part.Close()
+		if readErr != nil {
+			return nil, readErr
+		}
+		if fileName != "" {
+			upload := OpenAIImagesUpload{
+				FieldName: name, FileName: fileName, ContentType: partContentType, Data: data,
+			}
+			if name == "mask" {
+				req.MaskUpload = &upload
+				continue
+			}
+			if name == "image" || name == "image[]" || strings.HasPrefix(name, "image[") {
+				req.Uploads = append(req.Uploads, upload)
+			}
+			continue
+		}
+		value := strings.TrimSpace(string(data))
+		switch name {
+		case "model":
+			req.Model = value
+		case "prompt":
+			req.Prompt = value
+		case "size":
+			req.Size = value
+		case "response_format":
+			req.ResponseFormat = strings.ToLower(value)
+		case "n":
+			parsedN, parseErr := strconv.Atoi(value)
+			if parseErr != nil || parsedN <= 0 || parsedN > 10 {
+				return nil, fmt.Errorf("n must be between 1 and 10")
+			}
+			req.N = parsedN
+		case "stream":
+			stream, parseErr := strconv.ParseBool(value)
+			if parseErr != nil {
+				return nil, fmt.Errorf("invalid stream field value")
+			}
+			if stream {
+				return nil, fmt.Errorf("image streaming is not supported")
+			}
+		case "output_compression":
+			parsedValue, parseErr := strconv.Atoi(value)
+			if parseErr != nil || parsedValue < 0 || parsedValue > 100 {
+				return nil, fmt.Errorf("output_compression must be between 0 and 100")
+			}
+			req.OutputCompression = &parsedValue
+		case "partial_images":
+			parsedValue, parseErr := strconv.Atoi(value)
+			if parseErr != nil || parsedValue < 0 || parsedValue > 3 {
+				return nil, fmt.Errorf("partial_images must be between 0 and 3")
+			}
+			req.PartialImages = &parsedValue
+		}
+	}
+	if err := validateOpenAIImagesModel(req.Model); err != nil {
+		return nil, err
+	}
+	if req.Prompt == "" {
+		return nil, fmt.Errorf("prompt is required")
+	}
+	if utf8.RuneCountInString(req.Prompt) > openAIImagesMaxPromptRunes {
+		return nil, fmt.Errorf("prompt must be at most %d characters", openAIImagesMaxPromptRunes)
+	}
+	if req.IsEdits() && len(req.Uploads) == 0 {
+		return nil, fmt.Errorf("image file is required")
+	}
+	if len(req.Uploads) > openAIImagesMaxInputImages {
+		return nil, fmt.Errorf("at most %d images are supported", openAIImagesMaxInputImages)
+	}
+	for index := range req.Uploads {
+		if err := validateOpenAIImagesUpload(&req.Uploads[index]); err != nil {
+			return nil, fmt.Errorf("invalid image %d: %w", index+1, err)
+		}
+	}
+	if req.MaskUpload != nil {
+		if err := validateOpenAIImagesUpload(req.MaskUpload); err != nil {
+			return nil, fmt.Errorf("invalid mask: %w", err)
+		}
+		if len(req.Uploads) > 0 {
+			first := req.Uploads[0]
+			if req.MaskUpload.Format != first.Format || req.MaskUpload.Width != first.Width || req.MaskUpload.Height != first.Height {
+				return nil, fmt.Errorf("mask must match the first image format and dimensions")
+			}
+		}
+	}
+	req.SizeTier = normalizeOpenAIImageSizeTier(req.Size)
+	return req, nil
+}
+
+func readOpenAIImagesMultipartPart(part *multipart.Part, fieldName string) ([]byte, error) {
+	return readOpenAIImagesMultipartPartWithLimit(part, fieldName, openAIImageMaxUploadPartSize)
+}
+
+func readOpenAIImagesMultipartPartWithLimit(part *multipart.Part, fieldName string, limit int64) ([]byte, error) {
+	data, err := io.ReadAll(io.LimitReader(part, limit+1))
+	if err != nil {
+		return nil, fmt.Errorf("read multipart field %s: %w", fieldName, err)
+	}
+	if int64(len(data)) > limit {
+		return nil, fmt.Errorf("multipart field %s exceeds %d bytes: %w", fieldName, limit, &http.MaxBytesError{Limit: limit})
+	}
+	return data, nil
+}
+
+func validateOpenAIImagesUpload(upload *OpenAIImagesUpload) error {
+	if upload == nil || len(upload.Data) == 0 {
+		return fmt.Errorf("file is empty")
+	}
+	config, format, err := image.DecodeConfig(bytes.NewReader(upload.Data))
+	if err != nil || config.Width <= 0 || config.Height <= 0 {
+		return fmt.Errorf("file is not a supported decodable image")
+	}
+	detectedType := http.DetectContentType(upload.Data)
+	if !strings.HasPrefix(strings.ToLower(detectedType), "image/") {
+		return fmt.Errorf("file is not an image")
+	}
+	upload.ContentType = detectedType
+	upload.Width = config.Width
+	upload.Height = config.Height
+	upload.Format = strings.ToLower(format)
+	return nil
+}
+
+func normalizedOpenAIImagesContentType(contentType string) string {
+	if strings.TrimSpace(contentType) == "" {
+		return "application/json"
+	}
+	return contentType
+}
+
+func normalizeOpenAIImagesEndpointPath(path string) string {
+	switch {
+	case strings.Contains(strings.TrimSpace(path), "/images/edits"):
+		return openAIImagesEditsEndpoint
+	case strings.Contains(strings.TrimSpace(path), "/images/generations"):
+		return openAIImagesGenerationsEndpoint
+	default:
+		return ""
+	}
 }
 
 func validateOpenAIImagesModel(model string) error {
@@ -216,7 +532,11 @@ func (s *OpenAIGatewayService) SelectAccountWithSchedulerForImages(
 	sessionHash string,
 	requestedModel string,
 	excludedIDs map[int64]struct{},
+	endpoint string,
 ) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
+	if endpoint != openAIImagesEditsEndpoint {
+		endpoint = openAIImagesGenerationsEndpoint
+	}
 	workingExcluded := make(map[int64]struct{}, len(excludedIDs))
 	for id := range excludedIDs {
 		workingExcluded[id] = struct{}{}
@@ -225,12 +545,12 @@ func (s *OpenAIGatewayService) SelectAccountWithSchedulerForImages(
 	for {
 		selection, decision, err := s.selectAccountWithSchedulerForRouting(
 			ctx, groupID, "", "", requestedModel, workingExcluded,
-			OpenAIUpstreamTransportAny, false, true, openAIImagesGenerationsEndpoint,
+			OpenAIUpstreamTransportAny, false, true, endpoint,
 		)
 		if err != nil || selection == nil || selection.Account == nil {
 			return selection, decision, err
 		}
-		if supportsOpenAIImages(selection.Account) {
+		if supportsOpenAIImagesEndpoint(selection.Account, endpoint) {
 			return selection, decision, nil
 		}
 		workingExcluded[selection.Account.ID] = struct{}{}
@@ -251,6 +571,20 @@ func supportsOpenAIImages(account *Account) bool {
 		if allowed, ok := raw.(bool); ok {
 			return allowed
 		}
+	}
+	return true
+}
+
+func supportsOpenAIImagesEndpoint(account *Account, endpoint string) bool {
+	if !supportsOpenAIImages(account) {
+		return false
+	}
+	if endpoint != openAIImagesEditsEndpoint {
+		return true
+	}
+	if raw, exists := account.Extra["supports_image_edits"]; exists {
+		allowed, ok := raw.(bool)
+		return ok && allowed
 	}
 	return true
 }
@@ -1455,8 +1789,12 @@ func (s *OpenAIGatewayService) ForwardImages(
 	if parsed == nil {
 		return nil, fmt.Errorf("parsed image request is required")
 	}
-	if !supportsOpenAIImages(account) {
-		return nil, fmt.Errorf("selected account does not support image generation")
+	endpoint := parsed.Endpoint
+	if endpoint != openAIImagesEditsEndpoint {
+		endpoint = openAIImagesGenerationsEndpoint
+	}
+	if !supportsOpenAIImagesEndpoint(account, endpoint) {
+		return nil, fmt.Errorf("selected account does not support %s", strings.TrimPrefix(endpoint, "/v1/"))
 	}
 
 	startTime := time.Now()
@@ -1476,7 +1814,13 @@ func (s *OpenAIGatewayService) ForwardImages(
 		c.Set("ops_upstream_model", strings.TrimSpace(upstreamModel))
 	}
 
-	forwardBody, err := sjson.SetBytes(body, "model", upstreamModel)
+	forwardBody, forwardContentType, err := rewriteOpenAIImagesRequestBody(
+		body,
+		parsed.ContentType,
+		upstreamModel,
+		account.OmitOpenAIImageGenerationResponseFormat() &&
+			(parsed.ResponseFormat == "" || parsed.ResponseFormat == "b64_json"),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("rewrite image request model: %w", err)
 	}
@@ -1484,14 +1828,11 @@ func (s *OpenAIGatewayService) ForwardImages(
 	// otherwise standard response_format=b64_json field. Strip it only when the
 	// selected account explicitly opts in and doing so preserves client
 	// semantics; non-base64 formats continue upstream unchanged.
-	if account.OmitOpenAIImageGenerationResponseFormat() &&
-		(parsed.ResponseFormat == "" || parsed.ResponseFormat == "b64_json") {
-		forwardBody, err = sjson.DeleteBytes(forwardBody, "response_format")
-		if err != nil {
-			return nil, fmt.Errorf("normalize image response format: %w", err)
-		}
+	if parsed.Multipart || parsed.IsEdits() {
+		setOpsUpstreamRequestBody(c, nil)
+	} else {
+		setOpsUpstreamRequestBody(c, forwardBody)
 	}
-	setOpsUpstreamRequestBody(c, forwardBody)
 
 	// Image generation can keep consuming upstream resources after the client
 	// disconnects. Keep the selected upstream round trip alive so a completed
@@ -1503,7 +1844,7 @@ func (s *OpenAIGatewayService) ForwardImages(
 	if err != nil {
 		return nil, err
 	}
-	req, err := s.buildOpenAIImagesRequest(upstreamCtx, c, account, forwardBody, token)
+	req, err := s.buildOpenAIImagesRequest(upstreamCtx, c, account, forwardBody, forwardContentType, token, endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -1555,7 +1896,11 @@ func (s *OpenAIGatewayService) ForwardImages(
 				RetryableOnSameAccount: account.IsPoolMode() && isPoolModeRetryableStatus(resp.StatusCode),
 			}
 		}
-		return s.handleErrorResponse(ctx, resp, c, account, forwardBody)
+		errorRequestBody := forwardBody
+		if parsed.Multipart || parsed.IsEdits() {
+			errorRequestBody = nil
+		}
+		return s.handleErrorResponse(ctx, resp, c, account, errorRequestBody)
 	}
 
 	respBody, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
@@ -1592,14 +1937,15 @@ func (s *OpenAIGatewayService) ForwardImages(
 	c.Data(resp.StatusCode, contentType, respBody)
 
 	return &OpenAIForwardResult{
-		RequestID:       resp.Header.Get("x-request-id"),
-		Usage:           usage,
-		Model:           requestModel,
-		UpstreamModel:   upstreamModel,
-		ResponseHeaders: resp.Header.Clone(),
-		Duration:        time.Since(startTime),
-		ImageCount:      imageCount,
-		ImageSize:       parsed.SizeTier,
+		RequestID:        resp.Header.Get("x-request-id"),
+		Usage:            usage,
+		Model:            requestModel,
+		UpstreamModel:    upstreamModel,
+		ResponseHeaders:  resp.Header.Clone(),
+		Duration:         time.Since(startTime),
+		ImageCount:       imageCount,
+		ImageSize:        parsed.SizeTier,
+		UpstreamEndpoint: endpoint,
 	}, nil
 }
 
@@ -1608,7 +1954,9 @@ func (s *OpenAIGatewayService) buildOpenAIImagesRequest(
 	c *gin.Context,
 	account *Account,
 	body []byte,
+	contentType string,
 	token string,
+	endpoint string,
 ) (*http.Request, error) {
 	baseURL := account.GetOpenAIBaseURL()
 	if baseURL == "" {
@@ -1618,14 +1966,17 @@ func (s *OpenAIGatewayService) buildOpenAIImagesRequest(
 	if err != nil {
 		return nil, err
 	}
-	targetURL := buildOpenAIEndpointURL(validatedURL, openAIImagesGenerationsEndpoint)
+	if endpoint != openAIImagesEditsEndpoint {
+		endpoint = openAIImagesGenerationsEndpoint
+	}
+	targetURL := buildOpenAIEndpointURL(validatedURL, endpoint)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", normalizedOpenAIImagesContentType(contentType))
 	for key, values := range c.Request.Header {
 		if !openaiPassthroughAllowedHeaders[strings.ToLower(key)] {
 			continue
@@ -1638,6 +1989,85 @@ func (s *OpenAIGatewayService) buildOpenAIImagesRequest(
 		req.Header.Set("User-Agent", customUA)
 	}
 	return req, nil
+}
+
+func rewriteOpenAIImagesRequestBody(body []byte, contentType, model string, omitResponseFormat bool) ([]byte, string, error) {
+	mediaType, _, err := mime.ParseMediaType(strings.TrimSpace(contentType))
+	if err == nil && strings.EqualFold(mediaType, "multipart/form-data") {
+		return rewriteOpenAIImagesMultipartBody(body, contentType, model, omitResponseFormat)
+	}
+	rewritten, err := sjson.SetBytes(body, "model", strings.TrimSpace(model))
+	if err != nil {
+		return nil, "", err
+	}
+	if omitResponseFormat {
+		rewritten, err = sjson.DeleteBytes(rewritten, "response_format")
+		if err != nil {
+			return nil, "", err
+		}
+	}
+	return rewritten, normalizedOpenAIImagesContentType(contentType), nil
+}
+
+func rewriteOpenAIImagesMultipartBody(body []byte, contentType, model string, omitResponseFormat bool) ([]byte, string, error) {
+	_, params, err := mime.ParseMediaType(strings.TrimSpace(contentType))
+	if err != nil {
+		return nil, "", fmt.Errorf("parse multipart content-type: %w", err)
+	}
+	boundary := strings.TrimSpace(params["boundary"])
+	if boundary == "" {
+		return nil, "", fmt.Errorf("multipart boundary is required")
+	}
+	reader := multipart.NewReader(bytes.NewReader(body), boundary)
+	var buffer bytes.Buffer
+	writer := multipart.NewWriter(&buffer)
+	modelWritten := false
+	for {
+		part, nextErr := reader.NextPart()
+		if errors.Is(nextErr, io.EOF) {
+			break
+		}
+		if nextErr != nil {
+			return nil, "", fmt.Errorf("read multipart body: %w", nextErr)
+		}
+		formName := strings.TrimSpace(part.FormName())
+		if omitResponseFormat && formName == "response_format" && part.FileName() == "" {
+			_ = part.Close()
+			continue
+		}
+		target, createErr := writer.CreatePart(cloneOpenAIImagesMultipartHeader(part.Header))
+		if createErr != nil {
+			_ = part.Close()
+			return nil, "", fmt.Errorf("create multipart part: %w", createErr)
+		}
+		if formName == "model" && part.FileName() == "" {
+			_, createErr = target.Write([]byte(strings.TrimSpace(model)))
+			modelWritten = true
+		} else {
+			_, createErr = io.Copy(target, part)
+		}
+		_ = part.Close()
+		if createErr != nil {
+			return nil, "", fmt.Errorf("copy multipart part: %w", createErr)
+		}
+	}
+	if !modelWritten {
+		if err := writer.WriteField("model", strings.TrimSpace(model)); err != nil {
+			return nil, "", fmt.Errorf("append multipart model field: %w", err)
+		}
+	}
+	if err := writer.Close(); err != nil {
+		return nil, "", fmt.Errorf("finalize multipart body: %w", err)
+	}
+	return buffer.Bytes(), writer.FormDataContentType(), nil
+}
+
+func cloneOpenAIImagesMultipartHeader(src textproto.MIMEHeader) textproto.MIMEHeader {
+	dst := make(textproto.MIMEHeader, len(src))
+	for key, values := range src {
+		dst[key] = append([]string(nil), values...)
+	}
+	return dst
 }
 
 func extractOpenAIImageCountFromJSONBytes(body []byte) int {

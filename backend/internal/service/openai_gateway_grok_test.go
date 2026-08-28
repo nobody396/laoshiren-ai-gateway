@@ -1225,6 +1225,27 @@ func TestForwardGrokMediaImagesEditMultipartConvertsToJSON(t *testing.T) {
 	require.Equal(t, "vendor-image-edit", result.UpstreamModel)
 }
 
+func TestValidateGrokMediaMultipartRequestRejectsOverflowWithoutTruncation(t *testing.T) {
+	buildBody := func(t *testing.T, size int) ([]byte, string) {
+		t.Helper()
+		var buf bytes.Buffer
+		writer := multipart.NewWriter(&buf)
+		part, err := writer.CreateFormFile("image", "input.png")
+		require.NoError(t, err)
+		_, err = part.Write(bytes.Repeat([]byte{0x1}, size))
+		require.NoError(t, err)
+		require.NoError(t, writer.Close())
+		return buf.Bytes(), writer.FormDataContentType()
+	}
+
+	exactBody, exactType := buildBody(t, 16)
+	require.NoError(t, validateGrokMediaMultipartRequestWithLimit(exactType, exactBody, 16))
+
+	overBody, overType := buildBody(t, 17)
+	err := validateGrokMediaMultipartRequestWithLimit(overType, overBody, 16)
+	require.ErrorContains(t, err, "exceeds 16 bytes")
+}
+
 func TestForwardGrokMediaVideoGenerationReturnsUsageAndResponseID(t *testing.T) {
 	t.Setenv(xai.EnvAllowUnsafeURLOverrides, "true")
 	gin.SetMode(gin.TestMode)

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -60,6 +61,9 @@ const (
 	openAI403DisableThreshold       = 3
 	openAI403CounterWindowMinutes   = 180
 )
+
+var openCodeGoUsageLimitResetPattern = regexp.MustCompile(`(?i)\bresets\s+in\s+`)
+var openCodeGoUsageLimitDurationPartPattern = regexp.MustCompile(`(?i)^([0-9]+(?:\.[0-9]+)?)\s*(s|sec|secs|second|seconds|m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days|w|week|weeks)\b`)
 
 // NewRateLimitService 创建RateLimitService实例
 func NewRateLimitService(accountRepo AccountRepository, usageRepo UsageLogRepository, cfg *config.Config, geminiQuotaService *GeminiQuotaService, tempUnschedCache TempUnschedCache) *RateLimitService {
@@ -1129,9 +1133,9 @@ func parseOpenAIRateLimitResetTime(body []byte) *int64 {
 		return nil
 	}
 
-	// 检查是否为 usage_limit_reached 或 rate_limit_exceeded 类型
+	// 只接受明确的账号用量限制类型；普通错误消息不得驱动长时间冷却。
 	errType, _ := errObj["type"].(string)
-	if errType != "usage_limit_reached" && errType != "rate_limit_exceeded" {
+	if errType != "usage_limit_reached" && errType != "rate_limit_exceeded" && errType != "GoUsageLimitError" {
 		return nil
 	}
 
@@ -1158,7 +1162,70 @@ func parseOpenAIRateLimitResetTime(body []byte) *int64 {
 		}
 	}
 
+	if errType == "GoUsageLimitError" {
+		message, _ := errObj["message"].(string)
+		if resetAfter := parseOpenCodeGoUsageLimitResetDuration(message); resetAfter > 0 {
+			ts := time.Now().Add(resetAfter).Unix()
+			return &ts
+		}
+	}
+
 	return nil
+}
+
+func parseOpenCodeGoUsageLimitResetDuration(message string) time.Duration {
+	resetPrefix := openCodeGoUsageLimitResetPattern.FindStringIndex(message)
+	if resetPrefix == nil {
+		return 0
+	}
+
+	remainder := message[resetPrefix[1]:]
+	var total time.Duration
+	for {
+		remainder = strings.TrimSpace(remainder)
+		matches := openCodeGoUsageLimitDurationPartPattern.FindStringSubmatchIndex(remainder)
+		if matches == nil {
+			break
+		}
+
+		value, err := strconv.ParseFloat(remainder[matches[2]:matches[3]], 64)
+		if err != nil || value <= 0 {
+			return 0
+		}
+		unit := openCodeGoUsageLimitDurationUnit(remainder[matches[4]:matches[5]])
+		if unit <= 0 {
+			return 0
+		}
+
+		const maxDuration = time.Duration(1<<63 - 1)
+		if value >= float64(maxDuration)/float64(unit) {
+			return 0
+		}
+		part := time.Duration(value * float64(unit))
+		if part <= 0 || total > maxDuration-part {
+			return 0
+		}
+		total += part
+		remainder = remainder[matches[1]:]
+	}
+	return total
+}
+
+func openCodeGoUsageLimitDurationUnit(raw string) time.Duration {
+	switch strings.ToLower(raw) {
+	case "s", "sec", "secs", "second", "seconds":
+		return time.Second
+	case "m", "min", "mins", "minute", "minutes":
+		return time.Minute
+	case "h", "hr", "hrs", "hour", "hours":
+		return time.Hour
+	case "d", "day", "days":
+		return 24 * time.Hour
+	case "w", "week", "weeks":
+		return 7 * 24 * time.Hour
+	default:
+		return 0
+	}
 }
 
 // handle529 处理529过载错误

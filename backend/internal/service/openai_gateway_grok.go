@@ -22,7 +22,6 @@ import (
 const (
 	grokComposerImageBridgeVisionModel     = "grok-build-0.1"
 	grokComposerImageBridgeMaxOutputTokens = 512
-	grokUpstreamUserAgent                  = "sub2api-grok/1.0"
 	grokCLIVersion                         = xai.CLIClientVersion
 	grokDefaultResponsesModel              = "grok-4.5"
 	grokRateLimitFallbackCooldown          = 2 * time.Minute
@@ -31,6 +30,8 @@ const (
 	grokRateLimitMaxAdaptiveCooldown       = time.Hour
 	grokRateLimitBackoffQuietPeriod        = time.Hour
 )
+
+var grokUpstreamUserAgent = xai.CLIUserAgent(grokCLIVersion)
 
 func isGrokResponsesBridgeModel(model string) bool {
 	switch strings.ToLower(strings.TrimSpace(model)) {
@@ -1107,6 +1108,8 @@ func applyGrokCLIHeaders(headers http.Header) {
 	headers.Set("User-Agent", grokUpstreamUserAgent)
 	headers.Set("X-Grok-Client-Version", grokCLIVersion)
 	headers.Set("X-Grok-Client-Mode", "interactive")
+	headers.Set("X-Grok-Client-Identifier", xai.CLIClientIdentifier)
+	headers.Set("X-XAI-Token-Auth", xai.CLITokenAuth)
 }
 
 func (s *OpenAIGatewayService) updateGrokUsageSnapshot(ctx context.Context, account *Account, snapshot *xai.QuotaSnapshot) {

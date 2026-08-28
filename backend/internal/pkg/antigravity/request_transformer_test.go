@@ -97,6 +97,17 @@ func TestBuildParts_ThinkingBlockWithoutSignature(t *testing.T) {
 	}
 }
 
+func TestBuildGenerationConfigClampsCompatibleMaxOutputTokens(t *testing.T) {
+	for _, model := range []string{"gemini-3.1-pro-high", "claude-sonnet-4-5"} {
+		t.Run(model, func(t *testing.T) {
+			cfg := buildGenerationConfig(&ClaudeRequest{Model: model, MaxTokens: 64001})
+			if cfg.MaxOutputTokens != 64000 {
+				t.Fatalf("MaxOutputTokens = %d, want 64000", cfg.MaxOutputTokens)
+			}
+		})
+	}
+}
+
 func TestBuildParts_ToolUseSignatureHandling(t *testing.T) {
 	content := `[
 		{"type": "tool_use", "id": "t1", "name": "Bash", "input": {"command": "ls"}, "signature": "sig_tool_abc"}

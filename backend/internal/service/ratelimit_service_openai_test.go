@@ -185,6 +185,40 @@ func TestCalculateOpenAI429ResetTime_NoCodexHeaders(t *testing.T) {
 	}
 }
 
+func TestParseOpenAIRateLimitResetTimeOpenCodeGoUsageLimit(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want time.Duration
+	}{
+		{name: "days", body: `{"error":{"type":"GoUsageLimitError","message":"Weekly usage limit reached. Resets in 2 days."}}`, want: 48 * time.Hour},
+		{name: "hours", body: `{"error":{"type":"GoUsageLimitError","message":"Weekly usage limit reached. Resets in 18 hours."}}`, want: 18 * time.Hour},
+		{name: "compound", body: `{"error":{"type":"GoUsageLimitError","message":"5-hour usage limit reached. Resets in 4hr 59min."}}`, want: 4*time.Hour + 59*time.Minute},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			before := time.Now()
+			resetAt := parseOpenAIRateLimitResetTime([]byte(tt.body))
+			after := time.Now()
+			if resetAt == nil {
+				t.Fatal("expected reset time")
+			}
+			actual := time.Unix(*resetAt, 0)
+			if actual.Before(before.Add(tt.want).Truncate(time.Second)) || actual.After(after.Add(tt.want)) {
+				t.Fatalf("reset time %v outside expected interval", actual)
+			}
+		})
+	}
+}
+
+func TestParseOpenAIRateLimitResetTimeDoesNotParseUnknownErrorMessage(t *testing.T) {
+	body := []byte(`{"error":{"type":"rate_limit_error","message":"Resets in 2 days."}}`)
+	if got := parseOpenAIRateLimitResetTime(body); got != nil {
+		t.Fatalf("unknown error type must not produce reset time: %v", *got)
+	}
+}
+
 func TestCalculateOpenAI429ResetTime_ReversedWindowOrder(t *testing.T) {
 	svc := &RateLimitService{}
 

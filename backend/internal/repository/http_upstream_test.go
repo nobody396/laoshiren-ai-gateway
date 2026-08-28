@@ -9,10 +9,45 @@ import (
 	"time"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
+	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/xai"
 	"github.com/bozhouDev/DragonCode-sub2api/internal/service"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
+
+func TestHTTPUpstreamAppliesOfficialGrokCLIIdentityBeforeRoundTrip(t *testing.T) {
+	t.Setenv(xai.CLIVersionEnv, "")
+	upstream := NewHTTPUpstream(nil)
+	svc, ok := upstream.(*httpUpstreamService)
+	require.True(t, ok)
+
+	const accountID int64 = 4084
+	isolation := svc.getIsolationMode()
+	proxyKey := directProxyKey
+	cacheKey := buildCacheKey(isolation, proxyKey, accountID)
+	poolKey := svc.buildPoolKey(isolation, 1)
+	var captured http.Header
+	svc.clients[cacheKey] = &upstreamClientEntry{
+		client: &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			captured = req.Header.Clone()
+			return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: http.NoBody, Request: req}, nil
+		})},
+		proxyKey: proxyKey,
+		poolKey:  poolKey,
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "https://cli-chat-proxy.grok.com/v1/responses", nil)
+	require.NoError(t, err)
+	req.Header.Set("User-Agent", "legacy-client/1.0")
+	resp, err := svc.Do(req, "", accountID, 1)
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+
+	require.Equal(t, xai.CLIClientVersion, captured.Get("x-grok-client-version"))
+	require.Equal(t, xai.CLIClientIdentifier, captured.Get("x-grok-client-identifier"))
+	require.Equal(t, xai.CLITokenAuth, captured.Get("X-XAI-Token-Auth"))
+	require.Equal(t, xai.CLIUserAgent(xai.CLIClientVersion), captured.Get("User-Agent"))
+}
 
 func TestHTTPUpstreamDoCanDisableRedirectsPerRequest(t *testing.T) {
 	var redirectedCalls atomic.Int64

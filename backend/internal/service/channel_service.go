@@ -695,6 +695,12 @@ func checkPricesNotNegative(p ChannelModelPricing) error {
 		{"image_output_price", p.ImageOutputPrice},
 		{"per_request_price", p.PerRequestPrice},
 	}
+	if p.CostMultiplier != nil && (*p.CostMultiplier <= 0 || math.IsNaN(*p.CostMultiplier) || math.IsInf(*p.CostMultiplier, 0)) {
+		return infraerrors.BadRequest(
+			"INVALID_COST_MULTIPLIER",
+			"cost_multiplier must be > 0",
+		)
+	}
 	for _, c := range checks {
 		if c.val != nil && *c.val < 0 {
 			return infraerrors.BadRequest("NEGATIVE_PRICE", fmt.Sprintf("%s must be >= 0", c.field))

@@ -7,39 +7,7 @@
       "upstream_id": "glm-5.2",
       "display_name": "GLM 5.2",
       "platform": "anthropic",
-      "context_window": 128000,
-      "max_output_tokens": 8192,
-      "client_default": false,
-      "public_group": {
-        "preferred_name": "GLM 5.2",
-        "legacy_names": []
-      },
-      "client_config": {
-        "managed_predecessor_ids": [],
-        "managed_predecessor_models": [],
-        "codex_catalog_entry": null
-      },
-      "pricing": {
-        "input_per_mtok_usd": 8,
-        "cached_input_per_mtok_usd": null,
-        "output_per_mtok_usd": 28,
-        "long_context_input_threshold": null,
-        "long_context_input_multiplier": null,
-        "long_context_output_multiplier": null,
-        "evidence_url": "https://docs.z.ai/guides/overview/pricing.md"
-      },
-      "preset": {
-        "from": "glm-5.2",
-        "to": "glm-5.2",
-        "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
-      }
-    },
-    {
-      "id": "glm-5.3",
-      "upstream_id": "glm-5.3",
-      "display_name": "GLM 5.3",
-      "platform": "anthropic",
-      "context_window": 1000000,
+      "context_window": 1048576,
       "max_output_tokens": 131072,
       "client_default": false,
       "public_group": {
@@ -53,12 +21,44 @@
       },
       "pricing": {
         "input_per_mtok_usd": 8,
-        "cached_input_per_mtok_usd": null,
+        "cached_input_per_mtok_usd": 2,
         "output_per_mtok_usd": 28,
         "long_context_input_threshold": null,
         "long_context_input_multiplier": null,
         "long_context_output_multiplier": null,
-        "evidence_url": "https://bigmodel.cn/pricing"
+        "evidence_url": "https://help.aliyun.com/zh/model-studio/glm-5-2"
+      },
+      "preset": {
+        "from": "glm-5.2",
+        "to": "glm-5.2",
+        "color": "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400"
+      }
+    },
+    {
+      "id": "glm-5.3",
+      "upstream_id": "glm-5.3",
+      "display_name": "GLM 5.3",
+      "platform": "anthropic",
+      "context_window": 1048576,
+      "max_output_tokens": 131072,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "GLM 5.2",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 8,
+        "cached_input_per_mtok_usd": 2,
+        "output_per_mtok_usd": 28,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://help.aliyun.com/zh/model-studio/glm-5-3-by-zhipu"
       },
       "preset": {
         "from": "glm-5.3",
@@ -269,12 +269,76 @@
       }
     },
     {
+      "id": "deepseek-v4-flash-0731",
+      "upstream_id": "deepseek-v4-flash-0731",
+      "display_name": "DeepSeek V4 Flash 0731",
+      "platform": "openai",
+      "context_window": 1000000,
+      "max_output_tokens": 393216,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "DeepSeek",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 3,
+        "cached_input_per_mtok_usd": 0.3,
+        "output_per_mtok_usd": 9,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://help.aliyun.com/zh/model-studio/deepseek-v4-flash"
+      },
+      "preset": {
+        "from": "deepseek-v4-flash-0731",
+        "to": "deepseek-v4-flash-0731",
+        "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+      }
+    },
+    {
+      "id": "deepseek-v4-pro-0813",
+      "upstream_id": "deepseek-v4-pro-0813",
+      "display_name": "DeepSeek V4 Pro 0813",
+      "platform": "openai",
+      "context_window": 1000000,
+      "max_output_tokens": 393216,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "DeepSeek",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 9,
+        "cached_input_per_mtok_usd": 0.9,
+        "output_per_mtok_usd": 27,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://help.aliyun.com/zh/model-studio/deepseek-v4-pro"
+      },
+      "preset": {
+        "from": "deepseek-v4-pro-0813",
+        "to": "deepseek-v4-pro-0813",
+        "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+      }
+    },
+    {
       "id": "kimi-k2.7-code",
       "upstream_id": "kimi-k2.7-code",
       "display_name": "Kimi K2.7 Code",
       "platform": "openai",
-      "context_window": 128000,
-      "max_output_tokens": 8192,
+      "context_window": 262144,
+      "max_output_tokens": 16384,
       "client_default": false,
       "public_group": {
         "preferred_name": "Kimi",
@@ -287,12 +351,12 @@
       },
       "pricing": {
         "input_per_mtok_usd": 6.5,
-        "cached_input_per_mtok_usd": null,
+        "cached_input_per_mtok_usd": 1.3,
         "output_per_mtok_usd": 27,
         "long_context_input_threshold": null,
         "long_context_input_multiplier": null,
         "long_context_output_multiplier": null,
-        "evidence_url": "https://platform.moonshot.cn/docs/pricing/chat"
+        "evidence_url": "https://help.aliyun.com/zh/model-studio/kimi-k2-7-code"
       },
       "preset": {
         "from": "kimi-k2.7-code",
@@ -305,8 +369,8 @@
       "upstream_id": "kimi-k3",
       "display_name": "Kimi K3",
       "platform": "openai",
-      "context_window": 128000,
-      "max_output_tokens": 8192,
+      "context_window": 1048576,
+      "max_output_tokens": 1048576,
       "client_default": false,
       "public_group": {
         "preferred_name": "Kimi",
@@ -324,7 +388,7 @@
         "long_context_input_threshold": null,
         "long_context_input_multiplier": null,
         "long_context_output_multiplier": null,
-        "evidence_url": "https://platform.moonshot.cn/docs/pricing/chat"
+        "evidence_url": "https://help.aliyun.com/zh/model-studio/kimi-k3"
       },
       "preset": {
         "from": "kimi-k3",
@@ -333,12 +397,44 @@
       }
     },
     {
+      "id": "minimax-m3",
+      "upstream_id": "minimax-m3",
+      "display_name": "MiniMax M3",
+      "platform": "openai",
+      "context_window": 1048576,
+      "max_output_tokens": 32768,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "MiniMax",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 4.2,
+        "cached_input_per_mtok_usd": 0.84,
+        "output_per_mtok_usd": 16.8,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://help.aliyun.com/zh/model-studio/minimax-m3"
+      },
+      "preset": {
+        "from": "minimax-m3",
+        "to": "minimax-m3",
+        "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+      }
+    },
+    {
       "id": "qwen3.6-flash",
       "upstream_id": "qwen3.6-flash",
       "display_name": "Qwen 3.6 Flash",
       "platform": "openai",
-      "context_window": 128000,
-      "max_output_tokens": 8192,
+      "context_window": 1000000,
+      "max_output_tokens": 65536,
       "client_default": false,
       "public_group": {
         "preferred_name": "千问 Qwen",
@@ -351,12 +447,12 @@
       },
       "pricing": {
         "input_per_mtok_usd": 1.2,
-        "cached_input_per_mtok_usd": null,
+        "cached_input_per_mtok_usd": 0.24,
         "output_per_mtok_usd": 7.2,
         "long_context_input_threshold": null,
         "long_context_input_multiplier": null,
         "long_context_output_multiplier": null,
-        "evidence_url": "https://help.aliyun.com/zh/model-studio/models"
+        "evidence_url": "https://help.aliyun.com/zh/model-studio/model-pricing"
       },
       "preset": {
         "from": "qwen3.6-flash",
@@ -369,8 +465,8 @@
       "upstream_id": "qwen3.6-plus",
       "display_name": "Qwen 3.6 Plus",
       "platform": "openai",
-      "context_window": 128000,
-      "max_output_tokens": 8192,
+      "context_window": 1000000,
+      "max_output_tokens": 65536,
       "client_default": false,
       "public_group": {
         "preferred_name": "千问 Qwen",
@@ -383,12 +479,12 @@
       },
       "pricing": {
         "input_per_mtok_usd": 2,
-        "cached_input_per_mtok_usd": null,
+        "cached_input_per_mtok_usd": 0.4,
         "output_per_mtok_usd": 12,
         "long_context_input_threshold": null,
         "long_context_input_multiplier": null,
         "long_context_output_multiplier": null,
-        "evidence_url": "https://help.aliyun.com/zh/model-studio/models"
+        "evidence_url": "https://help.aliyun.com/zh/model-studio/model-pricing"
       },
       "preset": {
         "from": "qwen3.6-plus",
@@ -397,12 +493,44 @@
       }
     },
     {
+      "id": "qwen3.7-flash",
+      "upstream_id": "qwen3.7-flash",
+      "display_name": "Qwen 3.7 Flash",
+      "platform": "openai",
+      "context_window": 1000000,
+      "max_output_tokens": 65536,
+      "client_default": false,
+      "public_group": {
+        "preferred_name": "千问 Qwen",
+        "legacy_names": []
+      },
+      "client_config": {
+        "managed_predecessor_ids": [],
+        "managed_predecessor_models": [],
+        "codex_catalog_entry": null
+      },
+      "pricing": {
+        "input_per_mtok_usd": 0.2,
+        "cached_input_per_mtok_usd": 0.04,
+        "output_per_mtok_usd": 0.8,
+        "long_context_input_threshold": null,
+        "long_context_input_multiplier": null,
+        "long_context_output_multiplier": null,
+        "evidence_url": "https://help.aliyun.com/zh/model-studio/model-pricing"
+      },
+      "preset": {
+        "from": "qwen3.7-flash",
+        "to": "qwen3.7-flash",
+        "color": "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+      }
+    },
+    {
       "id": "qwen3.7-max",
       "upstream_id": "qwen3.7-max",
       "display_name": "Qwen 3.7 Max",
       "platform": "openai",
-      "context_window": 128000,
-      "max_output_tokens": 8192,
+      "context_window": 1000000,
+      "max_output_tokens": 131072,
       "client_default": false,
       "public_group": {
         "preferred_name": "千问 Qwen",
@@ -415,12 +543,12 @@
       },
       "pricing": {
         "input_per_mtok_usd": 12,
-        "cached_input_per_mtok_usd": null,
+        "cached_input_per_mtok_usd": 2.4,
         "output_per_mtok_usd": 36,
         "long_context_input_threshold": null,
         "long_context_input_multiplier": null,
         "long_context_output_multiplier": null,
-        "evidence_url": "https://help.aliyun.com/zh/model-studio/models"
+        "evidence_url": "https://help.aliyun.com/zh/model-studio/qwen3-7-max"
       },
       "preset": {
         "from": "qwen3.7-max",
@@ -433,8 +561,8 @@
       "upstream_id": "qwen3.7-plus",
       "display_name": "Qwen 3.7 Plus",
       "platform": "openai",
-      "context_window": 128000,
-      "max_output_tokens": 8192,
+      "context_window": 1000000,
+      "max_output_tokens": 131072,
       "client_default": false,
       "public_group": {
         "preferred_name": "千问 Qwen",
@@ -447,12 +575,12 @@
       },
       "pricing": {
         "input_per_mtok_usd": 2,
-        "cached_input_per_mtok_usd": null,
+        "cached_input_per_mtok_usd": 0.4,
         "output_per_mtok_usd": 8,
         "long_context_input_threshold": null,
         "long_context_input_multiplier": null,
         "long_context_output_multiplier": null,
-        "evidence_url": "https://help.aliyun.com/zh/model-studio/models"
+        "evidence_url": "https://help.aliyun.com/zh/model-studio/qwen3-7-plus"
       },
       "preset": {
         "from": "qwen3.7-plus",
@@ -465,8 +593,8 @@
       "upstream_id": "qwen3.8-max",
       "display_name": "Qwen 3.8 Max",
       "platform": "openai",
-      "context_window": 128000,
-      "max_output_tokens": 8192,
+      "context_window": 1000000,
+      "max_output_tokens": 131072,
       "client_default": false,
       "public_group": {
         "preferred_name": "千问 Qwen",
@@ -479,12 +607,12 @@
       },
       "pricing": {
         "input_per_mtok_usd": 12,
-        "cached_input_per_mtok_usd": null,
+        "cached_input_per_mtok_usd": 1.5,
         "output_per_mtok_usd": 36,
         "long_context_input_threshold": null,
         "long_context_input_multiplier": null,
         "long_context_output_multiplier": null,
-        "evidence_url": "https://help.aliyun.com/zh/model-studio/models"
+        "evidence_url": "https://help.aliyun.com/zh/model-studio/qwen3-8-max"
       },
       "preset": {
         "from": "qwen3.8-max",

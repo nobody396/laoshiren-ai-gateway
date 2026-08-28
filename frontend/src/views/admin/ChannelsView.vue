@@ -539,6 +539,7 @@
                       :key="pIdx"
                       :entry="entry"
                       :platform="section.platform"
+                      :enable-cost-multiplier="true"
                       @update="rule.pricing.splice(pIdx, 1, $event)"
                       @remove="removeRulePricingEntry(sIdx, ruleIndex, pIdx)"
                     />
@@ -813,6 +814,7 @@ function addPricingEntry(sectionIdx: number) {
     output_price: null,
     cache_write_price: null,
     cache_read_price: null,
+    cost_multiplier: null,
     fast_multiplier: null,
     flex_multiplier: null,
     fast_supported: false,
@@ -878,6 +880,7 @@ function addRulePricingEntry(sectionIdx: number, ruleIndex: number) {
     output_price: null,
     cache_write_price: null,
     cache_read_price: null,
+    cost_multiplier: null,
     fast_multiplier: null,
     flex_multiplier: null,
     fast_supported: false,
@@ -1000,6 +1003,7 @@ function accountStatsRulesToAPI(): AccountStatsPricingRule[] {
             output_price: mTokToPerToken(p.output_price),
             cache_write_price: mTokToPerToken(p.cache_write_price),
             cache_read_price: mTokToPerToken(p.cache_read_price),
+            cost_multiplier: p.cost_multiplier != null && p.cost_multiplier !== '' ? Number(p.cost_multiplier) : null,
             fast_multiplier: p.fast_multiplier != null && p.fast_multiplier !== '' ? Number(p.fast_multiplier) : null,
             flex_multiplier: p.flex_multiplier != null && p.flex_multiplier !== '' ? Number(p.flex_multiplier) : null,
             fast_supported: false,
@@ -1115,6 +1119,7 @@ function apiToForm(channel: Channel): PlatformSection[] {
         output_price: perTokenToMTok(p.output_price),
         cache_write_price: perTokenToMTok(p.cache_write_price),
         cache_read_price: perTokenToMTok(p.cache_read_price),
+        cost_multiplier: p.cost_multiplier,
         fast_multiplier: p.fast_multiplier,
         flex_multiplier: p.flex_multiplier,
         fast_supported: p.fast_supported,
@@ -1305,6 +1310,7 @@ function distributeRulesToPlatforms(apiRules: AccountStatsPricingRule[]) {
         output_price: perTokenToMTok(p.output_price),
         cache_write_price: perTokenToMTok(p.cache_write_price),
         cache_read_price: perTokenToMTok(p.cache_read_price),
+        cost_multiplier: p.cost_multiplier,
         fast_multiplier: p.fast_multiplier,
         flex_multiplier: p.flex_multiplier,
         fast_supported: false,

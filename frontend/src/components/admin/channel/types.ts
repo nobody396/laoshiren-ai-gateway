@@ -21,6 +21,7 @@ export interface PricingFormEntry {
   output_price: number | string | null
   cache_write_price: number | string | null
   cache_read_price: number | string | null
+  cost_multiplier?: number | string | null
   fast_multiplier: number | string | null
   flex_multiplier: number | string | null
   fast_supported: boolean

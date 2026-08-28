@@ -222,8 +222,8 @@ describe('ModelPricingGroupSection', () => {
       }
     })
 
-    expect(wrapper.findAll('tbody tr')).toHaveLength(2)
-    expect(wrapper.findAll('tbody tr')[1].text()).toContain('gpt-5.6-sol · modelPricing.contextPricing.range')
+    expect(wrapper.findAll('tbody tr')).toHaveLength(1)
+    expect(wrapper.findAll('tbody tr')[0].text()).toContain('gpt-5.6-sol · modelPricing.contextPricing.range')
     expect(wrapper.get('.pricing-group__time-pricing').text()).toContain('Asia/Shanghai')
     expect(wrapper.get('.pricing-group__time-pricing').text()).toContain('09:00–12:00 ×1.5')
   })

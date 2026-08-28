@@ -191,10 +191,10 @@ jobs:
       - name: Remove Testcontainers leftovers
         if: always()
         run: |
-          ids="$(docker ps -aq --filter 'label=org.testcontainers=true')"
-          if [[ -n "$ids" ]]; then
-            docker rm -f -v $ids
-          fi
+          while IFS= read -r id; do
+            [[ -n "$id" ]] || continue
+            docker rm -f -v "$id"
+          done < <(docker ps -aq --filter 'label=org.testcontainers=true')
 
   frontend-tests:
     name: Frontend tests and boundaries

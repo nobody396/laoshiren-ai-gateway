@@ -172,18 +172,6 @@ jobs:
           cache: false
       - name: Verify Docker integration runtime
         run: |
-          # Reset Docker Desktop's dynamic-port allocator after the preceding
-          # linux/amd64 Buildx job. Without this, Docker 28 may retain a
-          # HostPort="0" binding and Testcontainers cannot discover PostgreSQL.
-          docker desktop restart
-          for attempt in {1..60}; do
-            if docker info >/dev/null 2>&1; then break; fi
-            if [[ "$attempt" == "60" ]]; then
-              echo "Docker Desktop did not recover after restart" >&2
-              exit 1
-            fi
-            sleep 2
-          done
           docker version
           docker info --format 'docker_server_version={{.ServerVersion}}'
       - name: Run deterministic backend integration gate

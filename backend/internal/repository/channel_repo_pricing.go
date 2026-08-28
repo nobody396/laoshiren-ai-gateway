@@ -267,7 +267,7 @@ func createModelPricingExec(ctx context.Context, exec dbExec, pricing *service.C
 	return nil
 }
 
-func marshalChannelTimePricing(pricing *service.ChannelTimePricing) ([]byte, error) {
+func marshalChannelTimePricing(pricing *service.ChannelTimePricing) (any, error) {
 	if pricing == nil || len(pricing.Periods) == 0 {
 		return nil, nil
 	}

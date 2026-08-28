@@ -191,6 +191,35 @@ func TestOpenAIGatewayService_GenerateSessionHash_Priority(t *testing.T) {
 	}
 }
 
+func TestOpenAIGatewayService_GenerateSessionHash_PrefersOfficialSessionIDHeader(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/openai/v1/responses", nil)
+	c.Request.Header.Set("session-id", "official-codex-session")
+	c.Request.Header.Set("session_id", "legacy-session")
+
+	svc := &OpenAIGatewayService{}
+	got := svc.GenerateSessionHash(c, []byte(`{"prompt_cache_key":"body-session"}`))
+	want := fmt.Sprintf("%016x", xxhash.Sum64String("official-codex-session"))
+	require.Equal(t, want, got)
+}
+
+func TestResolveOpenAIWSSessionHeadersPrefersOfficialSessionIDHeader(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/openai/v1/responses", nil)
+	c.Request.Header.Set("session-id", "official-codex-session")
+	c.Request.Header.Set("session_id", "legacy-session")
+	c.Request.Header.Set("conversation_id", "conversation")
+
+	resolved := resolveOpenAIWSSessionHeaders(c, "body-session")
+	require.Equal(t, "official-codex-session", resolved.SessionID)
+	require.Equal(t, "header_session-id", resolved.SessionSource)
+	require.Equal(t, "conversation", resolved.ConversationID)
+}
+
 func TestOpenAIGatewayService_GenerateSessionHash_UsesXXHash64(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	rec := httptest.NewRecorder()

@@ -56,6 +56,18 @@ func TestFilterInternalOnlyModelsHidesImageRendererOutsideImageGroups(t *testing
 	require.Equal(t, candidates, filterInternalOnlyModels(candidates, 51))
 }
 
+func TestFilterChannelRestrictedModels(t *testing.T) {
+	models := []string{"glm-5.3", "glm-5.2", "kimi-k3", "qwen3.8-max"}
+	allowed := map[string]bool{"glm-5.3": true, "glm-5.2": true}
+
+	filtered := filterChannelRestrictedModels(models, func(model string) bool {
+		return !allowed[model]
+	})
+
+	require.Equal(t, []string{"glm-5.3", "glm-5.2"}, filtered)
+	require.Equal(t, models, filterChannelRestrictedModels(models, nil))
+}
+
 func TestGatewayModelInfoFromIDsUsesUnifiedOwner(t *testing.T) {
 	models := gatewayModelInfoFromIDs([]string{"gpt-5.5"}, 0)
 

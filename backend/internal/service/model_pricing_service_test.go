@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/pagination"
+	"github.com/stretchr/testify/require"
 )
 
 // --- stubs ---
@@ -76,11 +77,16 @@ type modelsListerStub struct {
 }
 
 type channelModelPricingProviderStub struct {
-	prices map[int64]map[string]*ChannelModelPricing
+	prices     map[int64]map[string]*ChannelModelPricing
+	restricted map[int64]map[string]bool
 }
 
 func (s *channelModelPricingProviderStub) GetChannelModelPricing(_ context.Context, groupID int64, model string) *ChannelModelPricing {
 	return s.prices[groupID][model]
+}
+
+func (s *channelModelPricingProviderStub) IsModelRestricted(_ context.Context, groupID int64, model string) bool {
+	return s.restricted[groupID][model]
 }
 
 func (s *modelsListerStub) GetAvailableModels(_ context.Context, groupID *int64, _ string) []string {
@@ -178,6 +184,34 @@ func TestModelPricingUsesGroupChannelOverrideIncludingCacheWrite(t *testing.T) {
 	if m.LongContext.InputThreshold != 272000 || m.LongContext.InputMultiplier != 2 || m.LongContext.OutputMultiplier != 1.5 {
 		t.Fatalf("unexpected long-context pricing disclosure: %+v", m.LongContext)
 	}
+}
+
+func TestModelPricingOmitsModelsRestrictedByFamilyChannel(t *testing.T) {
+	groups := []Group{{ID: 60, Name: "阿里云官方 GLM 分组", Platform: "openai", RateMultiplier: 1}}
+	models := map[int64][]string{60: {"glm-5.3", "glm-5.2", "kimi-k3", "qwen3.8-max"}}
+	svc, _, _ := newModelPricingServiceForTest(groups, map[string]*LiteLLMModelPricing{
+		"glm-5.3":     {InputCostPerToken: 8e-6, OutputCostPerToken: 28e-6},
+		"glm-5.2":     {InputCostPerToken: 8e-6, OutputCostPerToken: 28e-6},
+		"kimi-k3":     {InputCostPerToken: 20e-6, OutputCostPerToken: 100e-6},
+		"qwen3.8-max": {InputCostPerToken: 12e-6, OutputCostPerToken: 36e-6},
+	}, models)
+	svc.channelPricing = &channelModelPricingProviderStub{
+		prices: map[int64]map[string]*ChannelModelPricing{60: {
+			"glm-5.3": {BillingMode: BillingModeToken, InputPrice: ptr(8e-6), OutputPrice: ptr(28e-6)},
+			"glm-5.2": {BillingMode: BillingModeToken, InputPrice: ptr(8e-6), OutputPrice: ptr(28e-6)},
+		}},
+		restricted: map[int64]map[string]bool{60: {"kimi-k3": true, "qwen3.8-max": true}},
+	}
+
+	catalog, err := svc.GetPublicModelPricing(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	require.Len(t, catalog.Groups, 1)
+	require.Equal(t, []string{"glm-5.3", "glm-5.2"}, []string{
+		catalog.Groups[0].Models[0].Model,
+		catalog.Groups[0].Models[1].Model,
+	})
 }
 
 func TestModelPricingPublishesContextIntervalsAndTimeSchedule(t *testing.T) {

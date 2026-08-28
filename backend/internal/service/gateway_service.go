@@ -9276,6 +9276,17 @@ func (s *GatewayService) GetAvailableModels(ctx context.Context, groupID *int64,
 	return cloneStringSlice(models)
 }
 
+// IsModelRestricted reports whether the group's authoritative channel rate
+// card excludes the requested public model. Discovery must use the same gate
+// as request routing so one multi-model account cannot leak every mapped model
+// into each family-specific group.
+func (s *GatewayService) IsModelRestricted(ctx context.Context, groupID int64, model string) bool {
+	if s == nil || s.channelService == nil {
+		return false
+	}
+	return s.channelService.IsModelRestricted(ctx, groupID, model)
+}
+
 func (s *GatewayService) InvalidateAvailableModelsCache(groupID *int64, platform string) {
 	if s == nil || s.modelsListCache == nil {
 		return

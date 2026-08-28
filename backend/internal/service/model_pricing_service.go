@@ -32,6 +32,10 @@ type ChannelModelPricingProvider interface {
 	GetChannelModelPricing(ctx context.Context, groupID int64, model string) *ChannelModelPricing
 }
 
+type ChannelModelRestrictionProvider interface {
+	IsModelRestricted(ctx context.Context, groupID int64, model string) bool
+}
+
 // catalogCacheKey 公开模型价格目录的缓存 key。
 const catalogCacheKey = "public-model-pricing-catalog"
 
@@ -302,6 +306,9 @@ func (s *ModelPricingService) GetPublicModelPricing(ctx context.Context) (*Publi
 		}
 		prices := make([]PublicModelPrice, 0, len(models))
 		for _, model := range models {
+			if restrictions, ok := s.channelPricing.(ChannelModelRestrictionProvider); ok && restrictions.IsModelRestricted(ctx, g.ID, model) {
+				continue
+			}
 			if s.isDisplayHiddenModel(model) {
 				continue
 			}

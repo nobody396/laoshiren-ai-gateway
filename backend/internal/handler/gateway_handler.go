@@ -94,6 +94,19 @@ func filterInternalOnlyModels(modelIDs []string, groupID int64) []string {
 	return filtered
 }
 
+func filterChannelRestrictedModels(modelIDs []string, restricted func(string) bool) []string {
+	if restricted == nil {
+		return modelIDs
+	}
+	filtered := make([]string, 0, len(modelIDs))
+	for _, modelID := range modelIDs {
+		if !restricted(modelID) {
+			filtered = append(filtered, modelID)
+		}
+	}
+	return filtered
+}
+
 func gatewayModelInfoFromIDs(modelIDs []string, groupID int64) []gatewayModelInfo {
 	models := make([]gatewayModelInfo, 0, len(modelIDs))
 	for _, modelID := range modelIDs {
@@ -1021,6 +1034,11 @@ func (h *GatewayHandler) Models(c *gin.Context) {
 		listedGroupID = *groupID
 	}
 	availableModels := filterInternalOnlyModels(h.gatewayService.GetAvailableModels(c.Request.Context(), groupID, ""), listedGroupID)
+	if groupID != nil {
+		availableModels = filterChannelRestrictedModels(availableModels, func(model string) bool {
+			return h.gatewayService.IsModelRestricted(c.Request.Context(), *groupID, model)
+		})
+	}
 
 	if len(availableModels) > 0 {
 		c.JSON(http.StatusOK, gin.H{

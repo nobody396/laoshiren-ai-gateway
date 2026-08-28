@@ -15,8 +15,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const codexNativeImagesRequestBodyLimit = 1 << 20
-
 func shouldBridgeCodexNativeImageRequest(c *gin.Context, apiKey *service.APIKey, parsed *service.OpenAIImagesRequest) bool {
 	return apiKey != nil && apiKey.Group != nil && apiKey.Group.Platform == service.PlatformOpenAI &&
 		service.ShouldBridgeCodexNativeImageGeneration(isOfficialCodexRequest(c), parsed)
@@ -24,6 +22,7 @@ func shouldBridgeCodexNativeImageRequest(c *gin.Context, apiKey *service.APIKey,
 
 // Images handles OpenAI Images API requests.
 // POST /v1/images/generations
+// POST /v1/images/edits
 func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 	streamStarted := false
 	defer h.recoverResponsesPanic(c, &streamStarted)
@@ -52,7 +51,7 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		return
 	}
 
-	body, err := pkghttputil.ReadRequestBodyWithPreallocLimit(c.Request, codexNativeImagesRequestBodyLimit)
+	body, err := pkghttputil.ReadRequestBodyWithPrealloc(c.Request)
 	if err != nil {
 		if maxErr, ok := extractMaxBytesError(err); ok {
 			h.errorResponse(c, http.StatusRequestEntityTooLarge, "invalid_request_error", buildBodyTooLargeMessage(maxErr.Limit))
@@ -61,8 +60,12 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Failed to read request body")
 		return
 	}
-	parsed, err := h.gatewayService.ParseOpenAIImagesRequest(body)
+	parsed, err := h.gatewayService.ParseOpenAIImagesHTTPRequest(c, body)
 	if err != nil {
+		if maxErr, ok := extractMaxBytesError(err); ok {
+			h.errorResponse(c, http.StatusRequestEntityTooLarge, "invalid_request_error", buildBodyTooLargeMessage(maxErr.Limit))
+			return
+		}
 		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", err.Error())
 		return
 	}
@@ -82,9 +85,15 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		zap.String("model", parsed.Model),
 		zap.Int("n", parsed.N),
 		zap.String("size_tier", parsed.SizeTier),
+		zap.String("images_endpoint", parsed.Endpoint),
+		zap.Bool("multipart", parsed.Multipart),
 	)
 
-	setOpsRequestContext(c, parsed.Model, false, body)
+	if parsed.Multipart || parsed.IsEdits() {
+		setOpsRequestContext(c, parsed.Model, false, nil)
+	} else {
+		setOpsRequestContext(c, parsed.Model, false, body)
+	}
 	upstreamModel := ""
 	if bridgeCodexImage {
 		upstreamModel = service.CodexNativeImageBridgeModel()
@@ -141,7 +150,7 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 			)
 		} else {
 			selection, scheduleDecision, err = h.gatewayService.SelectAccountWithSchedulerForImages(
-				c.Request.Context(), apiKey.GroupID, sessionHash, parsed.Model, failedAccountIDs,
+				c.Request.Context(), apiKey.GroupID, sessionHash, parsed.Model, failedAccountIDs, parsed.Endpoint,
 			)
 		}
 		if err != nil {
@@ -195,7 +204,7 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		}
 		service.SetOpsLatencyMs(c, service.OpsResponseLatencyMsKey, responseLatencyMs)
 
-		reportOpenAIRouteAttempt(h.gatewayService, account, apiKey.GroupID, parsed.Model, service.OpenAIRouteRequestClassImage, openAIRouteObservationEndpoint(result, "/v1/images/generations"), forwardDuration, nil, err, c.Writer.Size() != writerSizeBeforeForward)
+		reportOpenAIRouteAttempt(h.gatewayService, account, apiKey.GroupID, parsed.Model, service.OpenAIRouteRequestClassImage, openAIRouteObservationEndpoint(result, parsed.Endpoint), forwardDuration, nil, err, c.Writer.Size() != writerSizeBeforeForward)
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
 			if errors.As(err, &failoverErr) {

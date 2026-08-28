@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -92,6 +94,158 @@ func TestSupportsOpenAIImages(t *testing.T) {
 	}))
 }
 
+func TestSupportsOpenAIImagesEndpointHonorsEditCapability(t *testing.T) {
+	account := &Account{
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeAPIKey,
+		Extra:    map[string]any{"supports_images": true, "supports_image_edits": false},
+	}
+	require.True(t, supportsOpenAIImagesEndpoint(account, openAIImagesGenerationsEndpoint))
+	require.False(t, supportsOpenAIImagesEndpoint(account, openAIImagesEditsEndpoint))
+
+	account.Extra["supports_image_edits"] = true
+	require.True(t, supportsOpenAIImagesEndpoint(account, openAIImagesEditsEndpoint))
+	account.Extra["supports_image_edits"] = "true"
+	require.False(t, supportsOpenAIImagesEndpoint(account, openAIImagesEditsEndpoint), "invalid config must fail closed")
+}
+
+func TestParseOpenAIImagesHTTPRequestMultipartEditSupportsMultipleImagesAndMask(t *testing.T) {
+	pngBytes, err := base64.StdEncoding.DecodeString(codexBridgeTestPNG)
+	require.NoError(t, err)
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	require.NoError(t, writer.WriteField("model", "gpt-image-2"))
+	require.NoError(t, writer.WriteField("prompt", "edit"))
+	require.NoError(t, writer.WriteField("n", "1"))
+	require.NoError(t, writer.WriteField("size", "1024x1536"))
+	for index, field := range []string{"image", "image[]", "image[2]"} {
+		part, err := writer.CreateFormFile(field, fmt.Sprintf("image-%d.png", index))
+		require.NoError(t, err)
+		_, err = part.Write(pngBytes)
+		require.NoError(t, err)
+	}
+	mask, err := writer.CreateFormFile("mask", "mask.png")
+	require.NoError(t, err)
+	_, err = mask.Write(pngBytes)
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/edits", bytes.NewReader(body.Bytes()))
+	c.Request.Header.Set("Content-Type", writer.FormDataContentType())
+
+	parsed, err := (&OpenAIGatewayService{}).ParseOpenAIImagesHTTPRequest(c, body.Bytes())
+	require.NoError(t, err)
+	require.True(t, parsed.IsEdits())
+	require.True(t, parsed.Multipart)
+	require.Equal(t, "gpt-image-2", parsed.Model)
+	require.Equal(t, "2K", parsed.SizeTier)
+	require.Len(t, parsed.Uploads, 3)
+	require.NotNil(t, parsed.MaskUpload)
+}
+
+func TestParseOpenAIImagesHTTPRequestRejectsOversizedMultipartPart(t *testing.T) {
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, err := writer.CreateFormFile("image", "too-large.png")
+	require.NoError(t, err)
+	_, err = part.Write(bytes.Repeat([]byte{0x1}, 17))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+
+	_, params, err := mime.ParseMediaType(writer.FormDataContentType())
+	require.NoError(t, err)
+	reader := multipart.NewReader(bytes.NewReader(body.Bytes()), params["boundary"])
+	parsedPart, err := reader.NextPart()
+	require.NoError(t, err)
+	_, err = readOpenAIImagesMultipartPartWithLimit(parsedPart, "image", 16)
+	require.ErrorContains(t, err, "exceeds")
+}
+
+func TestParseOpenAIImagesHTTPRequestJSONEditAcceptsSixteenImageURLsAndMask(t *testing.T) {
+	images := make([]map[string]string, 0, openAIImagesMaxInputImages)
+	for index := 0; index < openAIImagesMaxInputImages; index++ {
+		images = append(images, map[string]string{"image_url": fmt.Sprintf("https://images.example.test/%d.png", index)})
+	}
+	body, err := json.Marshal(map[string]any{
+		"model":              "gpt-image-2",
+		"prompt":             "combine references",
+		"images":             images,
+		"mask":               map[string]string{"image_url": "data:image/png;base64," + codexBridgeTestPNG},
+		"output_compression": 80,
+		"partial_images":     0,
+	})
+	require.NoError(t, err)
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/edits", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	parsed, err := (&OpenAIGatewayService{}).ParseOpenAIImagesHTTPRequest(c, body)
+	require.NoError(t, err)
+	require.Len(t, parsed.InputImageURLs, openAIImagesMaxInputImages)
+	require.Equal(t, "data:image/png;base64,"+codexBridgeTestPNG, parsed.MaskImageURL)
+	require.Equal(t, 80, *parsed.OutputCompression)
+	require.Zero(t, *parsed.PartialImages)
+}
+
+func TestParseOpenAIImagesHTTPRequestJSONEditRejectsUnsupportedOrExcessInputs(t *testing.T) {
+	tests := []struct {
+		name string
+		body map[string]any
+		want string
+	}{
+		{
+			name: "file id needs files integration",
+			body: map[string]any{"model": "gpt-image-2", "prompt": "edit", "images": []any{map[string]any{"file_id": "file_123"}}},
+			want: "file_id is not supported",
+		},
+		{
+			name: "seventeen images",
+			body: map[string]any{"model": "gpt-image-2", "prompt": "edit", "images": make([]map[string]string, openAIImagesMaxInputImages+1)},
+			want: "at most 16 images",
+		},
+		{
+			name: "invalid image url",
+			body: map[string]any{"model": "gpt-image-2", "prompt": "edit", "images": []any{map[string]any{"image_url": "file:///tmp/image.png"}}},
+			want: "http(s) URL or image data URL",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			body, err := json.Marshal(tt.body)
+			require.NoError(t, err)
+			recorder := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(recorder)
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/edits", bytes.NewReader(body))
+			c.Request.Header.Set("Content-Type", "application/json")
+			_, err = (&OpenAIGatewayService{}).ParseOpenAIImagesHTTPRequest(c, body)
+			require.ErrorContains(t, err, tt.want)
+		})
+	}
+}
+
+func TestParseOpenAIImagesRequestValidatesStableBounds(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want string
+	}{
+		{name: "missing prompt", body: `{"model":"gpt-image-2"}`, want: "prompt is required"},
+		{name: "n too large", body: `{"model":"gpt-image-2","prompt":"draw","n":11}`, want: "less than or equal to 10"},
+		{name: "compression fractional", body: `{"model":"gpt-image-2","prompt":"draw","output_compression":1.5}`, want: "must be an integer"},
+		{name: "compression too large", body: `{"model":"gpt-image-2","prompt":"draw","output_compression":101}`, want: "between 0 and 100"},
+		{name: "partial images too large", body: `{"model":"gpt-image-2","prompt":"draw","partial_images":4}`, want: "between 0 and 3"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := (&OpenAIGatewayService{}).ParseOpenAIImagesRequest([]byte(tt.body))
+			require.ErrorContains(t, err, tt.want)
+		})
+	}
+}
+
 func TestExtractOpenAIImageCountFromJSONBytes(t *testing.T) {
 	count := extractOpenAIImageCountFromJSONBytes([]byte(`{
 		"created": 1,
@@ -139,6 +293,50 @@ func TestForwardOpenAIImagesEmptySuccessDoesNotBillAndSafelyFailsOver(t *testing
 	require.ErrorAs(t, err, &failoverErr)
 	require.Equal(t, GatewayFailureReason("native_image_no_output"), failoverErr.Reason)
 	require.Empty(t, recorder.Body.String())
+}
+
+func TestForwardOpenAIImagesJSONEditUsesEditsEndpointAndMappedModel(t *testing.T) {
+	body := []byte(`{
+		"model":"gpt-image-2",
+		"prompt":"edit the image",
+		"images":[{"image_url":"https://images.example.test/source.png"}],
+		"mask":{"image_url":"data:image/png;base64,` + codexBridgeTestPNG + `"},
+		"quality":"low",
+		"output_format":"png"
+	}`)
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(`{"data":[{"b64_json":"` + codexBridgeTestPNG + `"}]}`)),
+	}}
+	svc := &OpenAIGatewayService{
+		httpUpstream: upstream,
+		cfg:          &config.Config{Security: config.SecurityConfig{URLAllowlist: config.URLAllowlistConfig{Enabled: false}}},
+	}
+	account := &Account{
+		ID: 39, Platform: PlatformOpenAI, Type: AccountTypeAPIKey,
+		Credentials: map[string]any{
+			"api_key": "test", "base_url": "https://images.example/v1",
+			"model_mapping": map[string]any{"gpt-image-2": "gpt-image-2-upstream"},
+		},
+		Extra: map[string]any{"supports_images": true, "supports_image_edits": true},
+	}
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/edits", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	parsed, err := svc.ParseOpenAIImagesHTTPRequest(c, body)
+	require.NoError(t, err)
+
+	result, err := svc.ForwardImages(context.Background(), c, account, body, parsed, "")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Equal(t, openAIImagesEditsEndpoint, result.UpstreamEndpoint)
+	require.Equal(t, "/v1/images/edits", upstream.lastReq.URL.Path)
+	require.Equal(t, "application/json", upstream.lastReq.Header.Get("Content-Type"))
+	require.Equal(t, "gpt-image-2-upstream", gjson.GetBytes(upstream.lastBody, "model").String())
+	require.Equal(t, "https://images.example.test/source.png", gjson.GetBytes(upstream.lastBody, "images.0.image_url").String())
+	require.Equal(t, "low", gjson.GetBytes(upstream.lastBody, "quality").String())
 }
 
 func TestCodexNativeImageBridgeValidation(t *testing.T) {

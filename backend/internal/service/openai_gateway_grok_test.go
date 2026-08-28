@@ -3193,7 +3193,12 @@ func TestOpenAIWSHTTPBridgeSSEErrorSideEffectsRunOncePerPlatform(t *testing.T) {
 			require.ErrorAs(t, err, &failoverErr)
 			require.Equal(t, http.StatusTooManyRequests, failoverErr.StatusCode)
 			require.Zero(t, writes)
-			require.Equal(t, 1, repo.rateLimitedCalls)
+			if platform == PlatformOpenAI {
+				require.Zero(t, repo.rateLimitedCalls, "HTTP 200 stream 429 without a quota reset signal is transient")
+				require.True(t, failoverErr.RetryableOnSameAccount)
+			} else {
+				require.Equal(t, 1, repo.rateLimitedCalls)
+			}
 		})
 	}
 }

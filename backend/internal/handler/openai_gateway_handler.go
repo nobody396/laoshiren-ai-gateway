@@ -576,6 +576,9 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 				// 池模式：同账号重试
 				if failoverErr.RetryableOnSameAccount {
 					retryLimit := account.GetPoolModeRetryCount()
+					if !account.IsPoolMode() && account.IsOpenAIOAuth() && failoverErr.StatusCode == http.StatusTooManyRequests {
+						retryLimit = 1
+					}
 					if sameAccountRetryCount[account.ID] < retryLimit {
 						sameAccountRetryCount[account.ID]++
 						reqLog.Warn("openai.pool_mode_same_account_retry",
@@ -1004,6 +1007,9 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 				// 池模式：同账号重试
 				if failoverErr.RetryableOnSameAccount {
 					retryLimit := account.GetPoolModeRetryCount()
+					if !account.IsPoolMode() && account.IsOpenAIOAuth() && failoverErr.StatusCode == http.StatusTooManyRequests {
+						retryLimit = 1
+					}
 					if sameAccountRetryCount[account.ID] < retryLimit {
 						sameAccountRetryCount[account.ID]++
 						reqLog.Warn("openai_messages.pool_mode_same_account_retry",

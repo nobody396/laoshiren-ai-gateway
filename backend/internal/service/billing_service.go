@@ -752,14 +752,34 @@ func (s *BillingService) computeTokenBreakdown(
 // multiplier 用于长上下文等场景下的整体价格缩放（普通调用传 1.0 即可）。
 func (s *BillingService) computeCacheCreationCost(pricing *ModelPricing, tokens UsageTokens, multiplier float64) float64 {
 	if pricing.SupportsCacheBreakdown && (pricing.CacheCreation5mPrice > 0 || pricing.CacheCreation1hPrice > 0) {
-		if tokens.CacheCreation5mTokens == 0 && tokens.CacheCreation1hTokens == 0 && tokens.CacheCreationTokens > 0 {
+		cacheCreation5mTokens, cacheCreation1hTokens := normalizeCacheCreationBreakdown(tokens)
+		if cacheCreation5mTokens == 0 && cacheCreation1hTokens == 0 && tokens.CacheCreationTokens > 0 {
 			// API 未返回 ephemeral 明细，回退到全部按 5m 单价计费
 			return float64(tokens.CacheCreationTokens) * pricing.CacheCreation5mPrice * multiplier
 		}
-		return float64(tokens.CacheCreation5mTokens)*pricing.CacheCreation5mPrice*multiplier +
-			float64(tokens.CacheCreation1hTokens)*pricing.CacheCreation1hPrice*multiplier
+		return float64(cacheCreation5mTokens)*pricing.CacheCreation5mPrice*multiplier +
+			float64(cacheCreation1hTokens)*pricing.CacheCreation1hPrice*multiplier
 	}
 	return float64(tokens.CacheCreationTokens) * pricing.CacheCreationPricePerToken * multiplier
+}
+
+// normalizeCacheCreationBreakdown caps contradictory 5m/1h details at the
+// positive aggregate while retaining their reported ratio as closely as whole
+// token accounting permits.
+func normalizeCacheCreationBreakdown(tokens UsageTokens) (int, int) {
+	fiveMinute := max(tokens.CacheCreation5mTokens, 0)
+	oneHour := max(tokens.CacheCreation1hTokens, 0)
+	aggregate := tokens.CacheCreationTokens
+	if aggregate <= 0 || (fiveMinute <= aggregate && oneHour <= aggregate-fiveMinute) {
+		return fiveMinute, oneHour
+	}
+	detailTotal := float64(fiveMinute) + float64(oneHour)
+	normalizedFiveMinute := math.Round(float64(aggregate) * float64(fiveMinute) / detailTotal)
+	if normalizedFiveMinute >= float64(aggregate) {
+		return aggregate, 0
+	}
+	fiveMinute = int(normalizedFiveMinute)
+	return fiveMinute, aggregate - fiveMinute
 }
 
 // calculatePerRequestCost 按次/图片计费

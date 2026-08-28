@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
@@ -23,8 +24,11 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
+	dockercontainer "github.com/docker/docker/api/types/container"
+	"github.com/docker/go-connections/nat"
 	_ "github.com/lib/pq"
 	redisclient "github.com/redis/go-redis/v9"
+	"github.com/testcontainers/testcontainers-go"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 )
@@ -62,6 +66,11 @@ func TestMain(m *testing.M) {
 	}
 
 	postgresImage := selectDockerImage(ctx, postgresImageTag)
+	postgresHostPort, err := reserveIntegrationHostPort()
+	if err != nil {
+		log.Printf("failed to reserve postgres integration port: %v", err)
+		os.Exit(1)
+	}
 	pgContainer, err := tcpostgres.Run(
 		ctx,
 		postgresImage,
@@ -69,22 +78,28 @@ func TestMain(m *testing.M) {
 		tcpostgres.WithUsername("postgres"),
 		tcpostgres.WithPassword("postgres"),
 		tcpostgres.BasicWaitStrategies(),
+		fixedIntegrationHostPort("5432/tcp", postgresHostPort),
 	)
 	if err != nil {
 		log.Printf("failed to start postgres container: %v", err)
 		os.Exit(1)
 	}
-	defer func() { _ = pgContainer.Terminate(ctx) }()
 
+	redisHostPort, err := reserveIntegrationHostPort()
+	if err != nil {
+		_ = pgContainer.Terminate(ctx)
+		log.Printf("failed to reserve redis integration port: %v", err)
+		os.Exit(1)
+	}
 	redisContainer, err := tcredis.Run(
 		ctx,
 		redisImageTag,
+		fixedIntegrationHostPort("6379/tcp", redisHostPort),
 	)
 	if err != nil {
 		log.Printf("failed to start redis container: %v", err)
 		os.Exit(1)
 	}
-	defer func() { _ = redisContainer.Terminate(ctx) }()
 
 	dsn, err := pgContainer.ConnectionString(ctx, "sslmode=disable", "TimeZone=UTC")
 	if err != nil {
@@ -162,8 +177,40 @@ WHERE filename = '138_add_apex_monthly_card_groups.sql'
 	_ = integrationEntClient.Close()
 	_ = integrationRedis.Close()
 	_ = integrationDB.Close()
+	if err := redisContainer.Terminate(ctx); err != nil {
+		log.Printf("failed to terminate redis integration container: %v", err)
+		code = 1
+	}
+	if err := pgContainer.Terminate(ctx); err != nil {
+		log.Printf("failed to terminate postgres integration container: %v", err)
+		code = 1
+	}
 
 	os.Exit(code)
+}
+
+func reserveIntegrationHostPort() (string, error) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = listener.Close() }()
+	address, ok := listener.Addr().(*net.TCPAddr)
+	if !ok || address.Port <= 0 {
+		return "", fmt.Errorf("unexpected integration listener address %q", listener.Addr())
+	}
+	return strconv.Itoa(address.Port), nil
+}
+
+func fixedIntegrationHostPort(containerPort, hostPort string) testcontainers.CustomizeRequestOption {
+	return testcontainers.WithHostConfigModifier(func(hostConfig *dockercontainer.HostConfig) {
+		if hostConfig.PortBindings == nil {
+			hostConfig.PortBindings = nat.PortMap{}
+		}
+		hostConfig.PortBindings[nat.Port(containerPort)] = []nat.PortBinding{{
+			HostIP: "127.0.0.1", HostPort: hostPort,
+		}}
+	})
 }
 
 // TestIntegrationHarnessSentinel proves the required integration gate reached

@@ -14,6 +14,9 @@ func TestResolveResponsesSupport(t *testing.T) {
 		{"value true", map[string]any{ExtraKeyResponsesSupported: true}, ResponsesSupportYes},
 		{"value false", map[string]any{ExtraKeyResponsesSupported: false}, ResponsesSupportNo},
 		{"wrong type", map[string]any{ExtraKeyResponsesSupported: "true"}, ResponsesSupportUnknown},
+		{"force responses", map[string]any{ExtraKeyResponsesMode: "force_responses", ExtraKeyResponsesSupported: false}, ResponsesSupportYes},
+		{"force chat", map[string]any{ExtraKeyResponsesMode: "force_chat_completions", ExtraKeyResponsesSupported: true}, ResponsesSupportNo},
+		{"invalid mode uses probe", map[string]any{ExtraKeyResponsesMode: "invalid", ExtraKeyResponsesSupported: false}, ResponsesSupportNo},
 	}
 
 	for _, tc := range tests {

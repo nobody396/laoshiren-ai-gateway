@@ -376,8 +376,9 @@ func (s *OpenAIGatewayService) handleAnthropicBufferedStreamingResponse(
 			finalResponse = event.Response
 			if event.Response.Usage != nil {
 				usage = OpenAIUsage{
-					InputTokens:  event.Response.Usage.InputTokens,
-					OutputTokens: event.Response.Usage.OutputTokens,
+					InputTokens:              event.Response.Usage.InputTokens,
+					OutputTokens:             event.Response.Usage.OutputTokens,
+					CacheCreationInputTokens: event.Response.Usage.CacheCreationInputTokens,
 				}
 				if event.Response.Usage.InputTokensDetails != nil {
 					usage.CacheReadInputTokens = event.Response.Usage.InputTokensDetails.CachedTokens
@@ -516,8 +517,9 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 			terminalSeen = true
 			if event.Response != nil && event.Response.Usage != nil {
 				usage = OpenAIUsage{
-					InputTokens:  event.Response.Usage.InputTokens,
-					OutputTokens: event.Response.Usage.OutputTokens,
+					InputTokens:              event.Response.Usage.InputTokens,
+					OutputTokens:             event.Response.Usage.OutputTokens,
+					CacheCreationInputTokens: event.Response.Usage.CacheCreationInputTokens,
 				}
 				if event.Response.Usage.InputTokensDetails != nil {
 					usage.CacheReadInputTokens = event.Response.Usage.InputTokensDetails.CachedTokens

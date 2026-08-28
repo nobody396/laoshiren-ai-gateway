@@ -35,15 +35,33 @@ func (s *OpenAIGatewayService) doOpenAIResponsesViaChatCompletions(
 	if account == nil || account.Type != AccountTypeAPIKey {
 		return nil, fmt.Errorf("responses-to-chat bridge requires an API-key account")
 	}
-	if previousID := strings.TrimSpace(gjsonString(responsesBody, "previous_response_id")); previousID != "" {
-		return nil, fmt.Errorf("previous_response_id requires a native Responses upstream")
+	if field := responsesBridgeUnsupportedStatefulField(responsesBody); field != "" {
+		return nil, fmt.Errorf("%s requires a native Responses upstream", field)
 	}
 
 	var responsesReq apicompat.ResponsesRequest
 	if err := json.Unmarshal(responsesBody, &responsesReq); err != nil {
 		return nil, fmt.Errorf("parse Responses bridge request: %w", err)
 	}
-	chatReq, err := apicompat.ResponsesToChatCompletionsRequest(&responsesReq)
+	effectiveTools, err := apicompat.EffectiveResponsesTools(&responsesReq)
+	if err != nil {
+		return nil, fmt.Errorf("resolve Responses bridge tools: %w", err)
+	}
+	customTools := apicompat.CustomToolNames(effectiveTools)
+	functionTools := apicompat.FunctionToolNames(effectiveTools)
+	toolSearch := apicompat.HasToolSearchTool(effectiveTools)
+	namespaceTools := apicompat.NamespaceToolNames(effectiveTools)
+
+	reasoningScope := reasoningBridgeCacheScope(c, responsesReq.Model)
+	s.recacheResponsesBridgeReasoningInput(responsesReq.Input, reasoningScope)
+	if err := s.validateResponsesBridgeFailClosed(&responsesReq, effectiveTools, reasoningScope); err != nil {
+		return nil, err
+	}
+	chatReq, err := apicompat.ResponsesToChatCompletionsRequestWithOptions(&responsesReq, &apicompat.ResponsesToChatOptions{
+		ReasoningContentByID: func(itemID string) string {
+			return s.responsesBridgeReasoningContent(reasoningScope, itemID)
+		},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("convert Responses request to Chat Completions: %w", err)
 	}
@@ -109,9 +127,78 @@ func (s *OpenAIGatewayService) doOpenAIResponsesViaChatCompletions(
 		return resp, nil
 	}
 
-	resp.Body = chatCompletionsSSEToResponsesBody(resp.Body, publicModel, s.maxOpenAICompatLineSize())
+	resp.Body = chatCompletionsSSEToResponsesBody(
+		resp.Body,
+		publicModel,
+		customTools,
+		functionTools,
+		toolSearch,
+		namespaceTools,
+		func(events []apicompat.ResponsesStreamEvent) {
+			s.cacheResponsesBridgeReasoningEvents(reasoningScope, events)
+		},
+		s.maxOpenAICompatLineSize(),
+	)
 	resp.Header.Set("Content-Type", "text/event-stream")
 	return resp, nil
+}
+
+func responsesBridgeUnsupportedStatefulField(body []byte) string {
+	for _, field := range []string{"previous_response_id", "conversation", "prompt", "context_management"} {
+		value := gjson.GetBytes(body, field)
+		if !value.Exists() || value.Type == gjson.Null {
+			continue
+		}
+		if value.Type != gjson.String || strings.TrimSpace(value.String()) != "" {
+			return field
+		}
+	}
+	return ""
+}
+
+func (s *OpenAIGatewayService) validateResponsesBridgeFailClosed(req *apicompat.ResponsesRequest, tools []apicompat.ResponsesTool, scope ReasoningCacheScope) error {
+	for _, tool := range tools {
+		switch tool.Type {
+		case "function", "custom", "tool_search", "namespace":
+			// These have explicit downgrade/restore implementations in apicompat.
+		default:
+			return fmt.Errorf("responses server tool %q requires a native Responses upstream", tool.Type)
+		}
+	}
+
+	input := bytes.TrimSpace(req.Input)
+	if len(input) == 0 || input[0] != '[' {
+		return nil
+	}
+	var items []json.RawMessage
+	if err := json.Unmarshal(input, &items); err != nil {
+		return fmt.Errorf("parse Responses input for reasoning validation: %w", err)
+	}
+	for _, rawItem := range items {
+		var item map[string]json.RawMessage
+		if err := json.Unmarshal(rawItem, &item); err != nil {
+			return fmt.Errorf("parse Responses reasoning item: %w", err)
+		}
+		var itemType string
+		_ = json.Unmarshal(item["type"], &itemType)
+		if itemType != "reasoning" {
+			continue
+		}
+		var encrypted, id string
+		_ = json.Unmarshal(item["encrypted_content"], &encrypted)
+		_ = json.Unmarshal(item["id"], &id)
+		if strings.TrimSpace(encrypted) == "" {
+			continue
+		}
+		_, plaintext, _ := apicompat.ExtractResponsesReasoningItem(rawItem)
+		if strings.TrimSpace(plaintext) != "" {
+			continue
+		}
+		if strings.TrimSpace(id) == "" || s.responsesBridgeReasoningContent(scope, id) == "" {
+			return fmt.Errorf("encrypted reasoning item %q cannot be replayed safely through Chat Completions without cached plaintext", id)
+		}
+	}
+	return nil
 }
 
 type releaseOnCloseReadCloser struct {
@@ -135,14 +222,31 @@ func (s *OpenAIGatewayService) maxOpenAICompatLineSize() int {
 	return defaultMaxLineSize
 }
 
-func chatCompletionsSSEToResponsesBody(source io.ReadCloser, model string, maxLineSize int) io.ReadCloser {
+func chatCompletionsSSEToResponsesBody(
+	source io.ReadCloser,
+	model string,
+	customTools map[string]bool,
+	functionTools map[string]bool,
+	toolSearch bool,
+	namespaceTools map[string]apicompat.NamespacedToolName,
+	onEvents func([]apicompat.ResponsesStreamEvent),
+	maxLineSize int,
+) io.ReadCloser {
 	reader, writer := io.Pipe()
 	go func() {
 		defer func() { _ = source.Close() }()
 		scanner := bufio.NewScanner(source)
 		scanner.Buffer(make([]byte, 0, 64*1024), maxLineSize)
-		state := apicompat.NewChatChunkToResponsesState(model)
+		state := apicompat.NewChatCompletionsToResponsesStreamState(model)
+		state.CustomTools = customTools
+		state.FunctionTools = functionTools
+		state.ToolSearchDeclared = toolSearch
+		state.NamespaceTools = namespaceTools
+		sawDone := false
 		writeEvents := func(events []apicompat.ResponsesStreamEvent) error {
+			if onEvents != nil && len(events) > 0 {
+				onEvents(events)
+			}
 			for _, event := range events {
 				frame, err := apicompat.ResponsesEventToSSE(event)
 				if err != nil {
@@ -160,6 +264,7 @@ func chatCompletionsSSEToResponsesBody(source io.ReadCloser, model string, maxLi
 				continue
 			}
 			if strings.TrimSpace(payload) == "[DONE]" {
+				sawDone = true
 				break
 			}
 			var chunk apicompat.ChatCompletionsChunk
@@ -167,7 +272,7 @@ func chatCompletionsSSEToResponsesBody(source io.ReadCloser, model string, maxLi
 				_ = writer.CloseWithError(fmt.Errorf("decode Chat Completions stream chunk: %w", err))
 				return
 			}
-			if err := writeEvents(apicompat.ChatChunkToResponsesEvents(&chunk, state)); err != nil {
+			if err := writeEvents(apicompat.ChatCompletionsChunkToResponsesEvents(&chunk, state)); err != nil {
 				_ = writer.CloseWithError(err)
 				return
 			}
@@ -176,7 +281,19 @@ func chatCompletionsSSEToResponsesBody(source io.ReadCloser, model string, maxLi
 			_ = writer.CloseWithError(err)
 			return
 		}
-		if err := writeEvents(apicompat.FinalizeChatResponsesStream(state)); err != nil {
+		if strings.TrimSpace(state.FinishReason) == "" {
+			_ = writer.CloseWithError(fmt.Errorf("chat-completions upstream stream ended without finish_reason (done=%v)", sawDone))
+			return
+		}
+		if state.Usage == nil {
+			_ = writer.CloseWithError(fmt.Errorf("chat-completions upstream stream ended without usage (done=%v)", sawDone))
+			return
+		}
+		if err := state.ValidateToolCallArguments(); err != nil {
+			_ = writer.CloseWithError(fmt.Errorf("invalid tool call arguments from Chat Completions upstream: %w", err))
+			return
+		}
+		if err := writeEvents(apicompat.FinalizeChatCompletionsResponsesStream(state)); err != nil {
 			_ = writer.CloseWithError(err)
 			return
 		}
@@ -184,6 +301,97 @@ func chatCompletionsSSEToResponsesBody(source io.ReadCloser, model string, maxLi
 		_ = writer.Close()
 	}()
 	return reader
+}
+
+const responsesBridgeReasoningCacheTTL = 7 * 24 * time.Hour
+
+func reasoningBridgeCacheScope(c *gin.Context, model string) ReasoningCacheScope {
+	if c == nil {
+		return ReasoningCacheScope{}
+	}
+	value, exists := c.Get("api_key")
+	if !exists {
+		return ReasoningCacheScope{}
+	}
+	apiKey, ok := value.(*APIKey)
+	if !ok || apiKey == nil {
+		return ReasoningCacheScope{}
+	}
+	return ReasoningCacheScope{UserID: apiKey.UserID, APIKeyID: apiKey.ID, Model: strings.TrimSpace(model)}
+}
+
+func (s *OpenAIGatewayService) responsesBridgeReasoningCache() ReasoningContentCache {
+	if s == nil || s.cache == nil {
+		return nil
+	}
+	cache, _ := s.cache.(ReasoningContentCache)
+	return cache
+}
+
+func (s *OpenAIGatewayService) responsesBridgeReasoningContent(scope ReasoningCacheScope, itemID string) string {
+	cache := s.responsesBridgeReasoningCache()
+	if cache == nil || !scope.Valid() || strings.TrimSpace(itemID) == "" {
+		return ""
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	content, err := cache.GetReasoningContent(ctx, scope, itemID)
+	if err != nil {
+		return ""
+	}
+	return content
+}
+
+func (s *OpenAIGatewayService) recacheResponsesBridgeReasoningInput(input json.RawMessage, scope ReasoningCacheScope) {
+	if !scope.Valid() {
+		return
+	}
+	input = bytes.TrimSpace(input)
+	if len(input) == 0 || input[0] != '[' {
+		return
+	}
+	var items []json.RawMessage
+	if json.Unmarshal(input, &items) != nil {
+		return
+	}
+	for _, item := range items {
+		id, content, ok := apicompat.ExtractResponsesReasoningItem(item)
+		if ok && id != "" && content != "" {
+			s.setResponsesBridgeReasoningContent(scope, id, content)
+		}
+	}
+}
+
+func (s *OpenAIGatewayService) cacheResponsesBridgeReasoningEvents(scope ReasoningCacheScope, events []apicompat.ResponsesStreamEvent) {
+	if !scope.Valid() {
+		return
+	}
+	for _, event := range events {
+		if event.Type != "response.output_item.done" || event.Item == nil || event.Item.Type != "reasoning" {
+			continue
+		}
+		var parts []string
+		for _, summary := range event.Item.Summary {
+			if text := strings.TrimSpace(summary.Text); text != "" {
+				parts = append(parts, text)
+			}
+		}
+		if event.Item.ID != "" && len(parts) > 0 {
+			s.setResponsesBridgeReasoningContent(scope, event.Item.ID, strings.Join(parts, "\n"))
+		}
+	}
+}
+
+func (s *OpenAIGatewayService) setResponsesBridgeReasoningContent(scope ReasoningCacheScope, itemID, content string) {
+	cache := s.responsesBridgeReasoningCache()
+	if cache == nil || !scope.Valid() || strings.TrimSpace(itemID) == "" || strings.TrimSpace(content) == "" {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := cache.SetReasoningContent(ctx, scope, itemID, content, responsesBridgeReasoningCacheTTL); err != nil {
+		logger.L().Warn("openai responses-via-chat: cache reasoning content failed", zap.Error(err), zap.String("item_id", itemID))
+	}
 }
 
 func (s *OpenAIGatewayService) handleResponsesBufferedStreamingResponse(
@@ -213,7 +421,10 @@ func (s *OpenAIGatewayService) handleResponsesBufferedStreamingResponse(
 		if isOpenAICompatResponsesTerminalEvent(event.Type) && event.Response != nil {
 			finalResponse = event.Response
 			if event.Response.Usage != nil {
-				usage = OpenAIUsage{InputTokens: event.Response.Usage.InputTokens, OutputTokens: event.Response.Usage.OutputTokens}
+				usage = OpenAIUsage{
+					InputTokens: event.Response.Usage.InputTokens, OutputTokens: event.Response.Usage.OutputTokens,
+					CacheCreationInputTokens: event.Response.Usage.CacheCreationInputTokens,
+				}
 				if event.Response.Usage.InputTokensDetails != nil {
 					usage.CacheReadInputTokens = event.Response.Usage.InputTokensDetails.CachedTokens
 				}
@@ -237,7 +448,7 @@ func (s *OpenAIGatewayService) handleResponsesBufferedStreamingResponse(
 	if finalResponse == nil {
 		safe := SafeClientUpstreamError(http.StatusBadGateway)
 		c.JSON(safe.StatusCode, OpenAIClientErrorEnvelope(c, safe.Type, safe.Message))
-		return nil, fmt.Errorf("Chat Completions bridge stream ended without terminal event")
+		return nil, fmt.Errorf("chat-completions bridge stream ended without terminal event")
 	}
 	acc.SupplementResponseOutput(finalResponse)
 	finalResponse.Model = originalModel
@@ -250,10 +461,4 @@ func (s *OpenAIGatewayService) handleResponsesBufferedStreamingResponse(
 		UpstreamModel: upstreamModel, UpstreamEndpoint: openAIResponsesViaChatEndpoint,
 		Stream: false, Duration: time.Since(startTime),
 	}, nil
-}
-
-func gjsonString(body []byte, path string) string {
-	// Kept local to the bridge so its standard-field validation stays cheap and
-	// does not force the gateway hot path through an additional full unmarshal.
-	return gjson.GetBytes(body, path).String()
 }

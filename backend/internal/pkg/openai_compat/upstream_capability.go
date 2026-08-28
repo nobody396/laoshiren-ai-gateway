@@ -6,6 +6,8 @@ import "strings"
 // the Responses API. It is meaningful only for platform=openai + type=apikey.
 type AccountResponsesSupport int
 
+type ResponsesSupportMode string
+
 const (
 	// ResponsesSupportUnknown means no probe result is stored. Callers should
 	// preserve the old behavior and use the Responses API.
@@ -14,8 +16,19 @@ const (
 	ResponsesSupportNo
 )
 
+const (
+	ResponsesSupportModeAuto                 ResponsesSupportMode = "auto"
+	ResponsesSupportModeForceResponses       ResponsesSupportMode = "force_responses"
+	ResponsesSupportModeForceChatCompletions ResponsesSupportMode = "force_chat_completions"
+)
+
 // ExtraKeyResponsesSupported is stored in accounts.extra.
 const ExtraKeyResponsesSupported = "openai_responses_supported"
+
+// ExtraKeyResponsesMode is the official Sub2API account-wide manual override.
+// Per-model overrides below take precedence when a mixed-protocol account is
+// used, while this mode remains useful for single-protocol accounts.
+const ExtraKeyResponsesMode = "openai_responses_mode"
 
 // ExtraKeyUpstreamProtocolByModel stores exact, case-insensitive model
 // overrides in accounts.extra. Supported values are "responses" and
@@ -33,6 +46,14 @@ func ResolveResponsesSupport(extra map[string]any) AccountResponsesSupport {
 	if extra == nil {
 		return ResponsesSupportUnknown
 	}
+	if mode, ok := extra[ExtraKeyResponsesMode].(string); ok {
+		switch NormalizeResponsesSupportMode(mode) {
+		case ResponsesSupportModeForceResponses:
+			return ResponsesSupportYes
+		case ResponsesSupportModeForceChatCompletions:
+			return ResponsesSupportNo
+		}
+	}
 	v, ok := extra[ExtraKeyResponsesSupported]
 	if !ok {
 		return ResponsesSupportUnknown
@@ -45,6 +66,17 @@ func ResolveResponsesSupport(extra map[string]any) AccountResponsesSupport {
 		return ResponsesSupportYes
 	}
 	return ResponsesSupportNo
+}
+
+func NormalizeResponsesSupportMode(mode string) ResponsesSupportMode {
+	switch ResponsesSupportMode(strings.ToLower(strings.TrimSpace(mode))) {
+	case ResponsesSupportModeForceResponses:
+		return ResponsesSupportModeForceResponses
+	case ResponsesSupportModeForceChatCompletions:
+		return ResponsesSupportModeForceChatCompletions
+	default:
+		return ResponsesSupportModeAuto
+	}
 }
 
 // ShouldUseResponsesAPI returns false only when a probe explicitly confirmed

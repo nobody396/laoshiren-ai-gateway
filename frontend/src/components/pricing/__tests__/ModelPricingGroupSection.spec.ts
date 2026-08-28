@@ -13,6 +13,23 @@ vi.mock('vue-i18n', async () => {
 })
 
 describe('ModelPricingGroupSection', () => {
+  it('removes the temporary special-price suffix from the public group title', () => {
+    const wrapper = mount(ModelPricingGroupSection, {
+      props: {
+        group: {
+          group_id: 52,
+          name: 'GPT CYBER 分组（特价！）',
+          platform: 'openai',
+          rate_multiplier: 2,
+          is_exclusive: false,
+          subscription_type: 'standard',
+          models: [{ model: 'gpt-5.6-sol', input_price: 10, output_price: 60, cache_read_price: 1 }],
+        },
+      },
+    })
+
+    expect(wrapper.get('h3').text()).toBe('GPT CYBER 分组')
+  })
   it('renders GPT Image 2 token prices in the same table layout as text models', () => {
     const wrapper = mount(ModelPricingGroupSection, {
       props: {

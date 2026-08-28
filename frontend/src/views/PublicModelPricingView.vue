@@ -173,9 +173,17 @@ const blocks = computed<PricingBlock[]>(() => {
 })
 
 // 块内统一顺序：文本分组在前、生图在最后；同类中公开按量在前、月卡在后；
-// 最后按用户看到的分组倍率从低到高排序。
+// 月卡固定按 Plus → Pro → Max 排列，其他同类再按用户看到的分组倍率从低到高排序。
 function isImageOnlyGroup(g: PublicPricingGroup): boolean {
   return Boolean(g.image_generation) && (g.models ?? []).length === 0
+}
+
+function monthlyPlanRank(g: PublicPricingGroup): number {
+  const name = g.name.toLowerCase()
+  if (/\bplus\b/.test(name)) return 0
+  if (/\bpro\b/.test(name)) return 1
+  if (/\bmax\b/.test(name)) return 2
+  return 3
 }
 
 function sortGroups(list: PublicPricingGroup[]): PublicPricingGroup[] {
@@ -186,6 +194,10 @@ function sortGroups(list: PublicPricingGroup[]): PublicPricingGroup[] {
     const ma = a.subscription_type === 'credit' || a.subscription_type === 'subscription' ? 1 : 0
     const mb = b.subscription_type === 'credit' || b.subscription_type === 'subscription' ? 1 : 0
     if (ma !== mb) return ma - mb
+    if (ma === 1) {
+      const planDiff = monthlyPlanRank(a) - monthlyPlanRank(b)
+      if (planDiff !== 0) return planDiff
+    }
     const rateDiff = a.rate_multiplier - b.rate_multiplier
     if (rateDiff !== 0) return rateDiff
     const nameDiff = a.name.localeCompare(b.name, 'zh-CN')

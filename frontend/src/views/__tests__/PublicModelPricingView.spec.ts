@@ -170,6 +170,28 @@ describe('PublicModelPricingView', () => {
     ])
   })
 
+  it('sorts monthly-card groups as Plus, Pro, then Max', async () => {
+    getPublicModelPricingMock.mockResolvedValue({
+      updated_at: '2026-08-28T00:00:00Z',
+      currency: 'CNY',
+      unit: 'per_1m_tokens',
+      groups: [
+        { group_id: 42, name: 'GPT Max 月卡组', platform: 'openai', rate_multiplier: 0.4, is_exclusive: true, subscription_type: 'credit', models: [price('gpt-5.6-sol')] },
+        { group_id: 41, name: 'GPT Pro 月卡组', platform: 'openai', rate_multiplier: 0.3, is_exclusive: true, subscription_type: 'credit', models: [price('gpt-5.6-sol')] },
+        { group_id: 40, name: 'GPT Plus 月卡组', platform: 'openai', rate_multiplier: 0.5, is_exclusive: true, subscription_type: 'credit', models: [price('gpt-5.6-sol')] },
+      ],
+    })
+    const wrapper = mountView()
+    await flushPromises()
+
+    await clickTab(wrapper, 'modelPricing.block.gpt')
+    expect(visibleGroupNames(wrapper)).toEqual([
+      'GPT Plus 月卡组',
+      'GPT Pro 月卡组',
+      'GPT Max 月卡组',
+    ])
+  })
+
   it('classifies kimi, qwen3.x and gemini groups into their own blocks', async () => {
     getPublicModelPricingMock.mockResolvedValue({
       updated_at: '2026-08-19T00:00:00Z',

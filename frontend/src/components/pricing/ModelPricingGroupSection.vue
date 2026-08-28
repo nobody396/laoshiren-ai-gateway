@@ -3,7 +3,7 @@
     <header class="pricing-group__header">
       <div class="pricing-group__title">
         <ModelIcon :model="iconModel" size="18px" />
-        <h3>{{ group.name }}</h3>
+        <h3>{{ displayGroupName }}</h3>
         <span v-if="protocolLabelText" class="pricing-group__badge">{{ protocolLabelText }}</span>
       </div>
       <div class="pricing-group__meta">
@@ -87,6 +87,9 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+
+// 公开定价页不展示临时促销文案，分组名保持长期、稳定。
+const displayGroupName = computed(() => props.group.name.replace(/（特价！?）/g, '').trim())
 
 const models = computed(() => props.group.models ?? [])
 

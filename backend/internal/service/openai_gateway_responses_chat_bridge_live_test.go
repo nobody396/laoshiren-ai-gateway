@@ -122,7 +122,7 @@ func TestLiveAliyunBeijingProtocolMatrix(t *testing.T) {
 		model := model
 		t.Run("chat-only/text/non-stream/"+model, func(t *testing.T) {
 			body := mustLiveProtocolJSON(t, map[string]any{
-				"model": model, "input": "Reply with exactly BRIDGE_OK.", "max_output_tokens": 128, "stream": false,
+				"model": model, "input": "Reply with exactly BRIDGE_OK.", "max_output_tokens": 1024, "stream": false,
 			})
 			result, recorder, err := runLiveResponsesForward(t, svc, account, body)
 			require.NoError(t, err)
@@ -137,7 +137,7 @@ func TestLiveAliyunBeijingProtocolMatrix(t *testing.T) {
 
 		t.Run("chat-only/text/stream/"+model, func(t *testing.T) {
 			body := mustLiveProtocolJSON(t, map[string]any{
-				"model": model, "input": "Reply with exactly STREAM_OK.", "max_output_tokens": 128, "stream": true,
+				"model": model, "input": "Reply with exactly STREAM_OK.", "max_output_tokens": 1024, "stream": true,
 			})
 			result, recorder, err := runLiveResponsesForward(t, svc, account, body)
 			require.NoError(t, err)
@@ -169,7 +169,7 @@ func TestLiveAliyunBeijingProtocolMatrix(t *testing.T) {
 
 		t.Run("chat-only/messages/non-stream/"+model, func(t *testing.T) {
 			body := mustLiveProtocolJSON(t, map[string]any{
-				"model": model, "max_tokens": 128, "stream": false,
+				"model": model, "max_tokens": 1024, "stream": false,
 				"messages": []map[string]any{{"role": "user", "content": "Reply with exactly MESSAGES_OK."}},
 			})
 			result, recorder, err := runLiveAnthropicForward(t, svc, account, body)

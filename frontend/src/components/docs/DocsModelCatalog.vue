@@ -1,15 +1,9 @@
 <template>
   <section class="space-y-6">
     <header class="space-y-2">
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <h1 class="text-3xl font-bold text-gray-950 dark:text-white">模型目录</h1>
-        <div class="flex gap-2 text-xs font-semibold">
-          <a class="rounded-lg border border-gray-200 px-3 py-2 text-gray-600 hover:text-gray-950 dark:border-dark-700 dark:text-dark-300 dark:hover:text-white" href="/docs/models.md" target="_blank" rel="noopener noreferrer">查看 Markdown</a>
-          <a class="rounded-lg border border-gray-200 px-3 py-2 text-gray-600 hover:text-gray-950 dark:border-dark-700 dark:text-dark-300 dark:hover:text-white" href="/docs/llms.txt" target="_blank" rel="noopener noreferrer">llms.txt</a>
-        </div>
-      </div>
+      <h1 class="text-3xl font-bold text-gray-950 dark:text-white">模型目录</h1>
       <p class="text-gray-600 dark:text-dark-300">
-        一个模型只出现一次。不同分组只是不同的可用方案。
+        同一个模型可以由多个分组提供。请根据预算选择对应分组。
       </p>
       <p v-if="catalog" class="text-xs text-gray-500 dark:text-dark-400">
         更新于 {{ formatUpdatedAt(catalog.updated_at) }}
@@ -22,7 +16,7 @@
         v-model.trim="query"
         type="search"
         class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100 dark:border-dark-700 dark:bg-dark-900 dark:text-white dark:focus:border-primary-500 dark:focus:ring-primary-900/30"
-        placeholder="搜索模型 ID 或可用方案"
+        placeholder="搜索模型 ID 或可用分组"
       />
     </label>
 
@@ -52,7 +46,7 @@
             </div>
           </div>
           <span class="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-700 dark:bg-primary-900/20 dark:text-primary-300">
-            {{ model.plans.length }} 个可用方案
+            {{ model.plans.length }} 个可用分组
           </span>
         </div>
 

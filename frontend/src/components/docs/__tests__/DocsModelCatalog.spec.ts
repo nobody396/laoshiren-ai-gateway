@@ -53,7 +53,7 @@ describe('DocsModelCatalog', () => {
     expect(articles).toHaveLength(1)
     expect(articles[0].get('h2').text()).toBe('gpt-5.6-sol')
     expect(articles[0].text()).toContain('推荐 Codex')
-    expect(articles[0].text()).toContain('2 个可用方案')
+    expect(articles[0].text()).toContain('2 个可用分组')
     expect(articles[0].text()).toContain('GPT Plus 月卡组')
     expect(articles[0].text()).toContain('GPT 混池分组')
     expect(wrapper.text()).not.toContain('gpt-hidden')

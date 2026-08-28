@@ -5,7 +5,6 @@
       v-else
       :html="renderedHtml"
       :markdown="markdownSource"
-      :slug="slug"
       :loading="loading"
       :not-found="notFound"
     />

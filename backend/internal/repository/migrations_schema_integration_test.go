@@ -767,9 +767,9 @@ WHERE offer_code = 'newcomer-balance-5-to-10'
 		groupIDsJSON string
 	}
 	monthlyOffers := map[string]monthlyOfferExpectation{
-		"plus": {payFen: 25500, benefitFen: 25900, redeemValue: 259, groupIDsJSON: "[40, 41]"},
-		"pro":  {payFen: 71500, benefitFen: 72900, redeemValue: 729, groupIDsJSON: "[42, 43]"},
-		"max":  {payFen: 152500, benefitFen: 154900, redeemValue: 1549, groupIDsJSON: "[44, 45]"},
+		"plus": {payFen: 25500, benefitFen: 25900, redeemValue: 259, groupIDsJSON: "[40, 41, 48]"},
+		"pro":  {payFen: 71500, benefitFen: 72900, redeemValue: 729, groupIDsJSON: "[42, 43, 49]"},
+		"max":  {payFen: 152500, benefitFen: 154900, redeemValue: 1549, groupIDsJSON: "[44, 45, 50]"},
 	}
 	for code, expected := range monthlyOffers {
 		var (

@@ -195,4 +195,36 @@ describe('ModelPricingGroupSection', () => {
     expect(wrapper.get('.model-icon-stub').attributes('data-model')).toBe('gpt-image-2')
     expect(wrapper.get('.pricing-group__title .pricing-group__badge').text()).toBe('Images API')
   })
+
+  it('renders context tiers and the reviewed time-pricing schedule', () => {
+    const wrapper = mount(ModelPricingGroupSection, {
+      props: {
+        group: {
+          group_id: 6,
+          name: '按量 GPT',
+          platform: 'openai',
+          rate_multiplier: 2,
+          is_exclusive: false,
+          subscription_type: 'standard',
+          models: [{
+            model: 'gpt-5.6-sol', input_price: 10, output_price: 60,
+            cache_write_price: null, cache_read_price: 1,
+            context_intervals: [{
+              min_tokens: 0, max_tokens: 272000,
+              input_price: 8, output_price: 40, cache_write_price: null, cache_read_price: 0.8
+            }],
+            time_pricing: {
+              timezone: 'Asia/Shanghai', weekdays_only: true,
+              periods: [{ start_time: '09:00', end_time: '12:00', multiplier: 1.5 }]
+            }
+          }]
+        }
+      }
+    })
+
+    expect(wrapper.findAll('tbody tr')).toHaveLength(2)
+    expect(wrapper.findAll('tbody tr')[1].text()).toContain('gpt-5.6-sol · modelPricing.contextPricing.range')
+    expect(wrapper.get('.pricing-group__time-pricing').text()).toContain('Asia/Shanghai')
+    expect(wrapper.get('.pricing-group__time-pricing').text()).toContain('09:00–12:00 ×1.5')
+  })
 })

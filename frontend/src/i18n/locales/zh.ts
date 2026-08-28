@@ -2679,6 +2679,13 @@ export default {
       pricingUnit: '条定价规则',
       noChannelsYet: '暂无渠道',
       createFirstChannel: '创建您的第一个渠道，统一管理模型映射和定价规则。',
+	  timePricingValidation: {
+		timezone: '请选择有效的 IANA 时区',
+		format: '时间必须使用 HH:mm:ss 格式',
+		range: '开始时间必须早于结束时间；跨午夜请拆成两段',
+		multiplier: '分时倍率必须不小于 0.01，且最多两位小数',
+		overlap: '分时时段不能重叠'
+	  },
       loadError: '加载渠道失败',
       createSuccess: '渠道创建成功',
       updateSuccess: '渠道更新成功',
@@ -2755,6 +2762,16 @@ export default {
         multiplierPlaceholder: '使用模型默认价格',
         multiplierPositive: 'Fast/Flex 倍率必须大于 0',
         intervals: '上下文区间定价（可选）',
+		timePricing: '分时计费（仅按 Token）',
+		timezone: '计费时区',
+		timePricingDayScope: '生效日期',
+		timePricingEveryDay: '每天',
+		timePricingWeekdaysOnly: '仅工作日',
+		addTimePeriod: '添加时段',
+		startTime: '开始时间',
+		endTime: '结束时间',
+		multiplier: '倍率',
+		removeTimePeriod: '删除时段',
         addInterval: '添加区间',
         defaultPerRequestPrice: '默认单次价格（未命中层级时使用）',
         requestTiers: '按次计费层级',
@@ -6690,6 +6707,16 @@ export default {
       cacheWrite: '缓存创建',
       cacheRead: '缓存读取'
     },
+	contextPricing: {
+	  base: '默认价格',
+	  range: '上下文 ({min}, {max}]',
+	  above: '上下文 > {min}'
+	},
+	timePricing: {
+	  title: '分时倍率',
+	  weekdaysOnly: '仅工作日',
+	  basePriceNote: '表格展示基础价格；命中时段后，输入、输出和缓存费用统一乘以上述倍率。'
+	},
     image: {
       title: '生图计费',
       successfulImage: '按成功图片计费',

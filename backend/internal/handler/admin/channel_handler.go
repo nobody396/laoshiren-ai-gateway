@@ -57,22 +57,35 @@ type updateChannelRequest struct {
 }
 
 type channelModelPricingRequest struct {
-	Platform         string                   `json:"platform" binding:"omitempty,max=50"`
-	Models           []string                 `json:"models" binding:"required,min=1,max=100"`
-	BillingMode      string                   `json:"billing_mode" binding:"omitempty,oneof=token per_request image"`
-	InputPrice       *float64                 `json:"input_price" binding:"omitempty,min=0"`
-	OutputPrice      *float64                 `json:"output_price" binding:"omitempty,min=0"`
-	CacheWritePrice  *float64                 `json:"cache_write_price" binding:"omitempty,min=0"`
-	CacheReadPrice   *float64                 `json:"cache_read_price" binding:"omitempty,min=0"`
-	FastMultiplier   *float64                 `json:"fast_multiplier" binding:"omitempty,gt=0"`
-	FlexMultiplier   *float64                 `json:"flex_multiplier" binding:"omitempty,gt=0"`
-	FastSupported    bool                     `json:"fast_supported"`
-	FlexSupported    bool                     `json:"flex_supported"`
-	FastVerifiedAt   *time.Time               `json:"fast_verified_at"`
-	FlexVerifiedAt   *time.Time               `json:"flex_verified_at"`
-	ImageOutputPrice *float64                 `json:"image_output_price" binding:"omitempty,min=0"`
-	PerRequestPrice  *float64                 `json:"per_request_price" binding:"omitempty,min=0"`
-	Intervals        []pricingIntervalRequest `json:"intervals"`
+	Platform         string                     `json:"platform" binding:"omitempty,max=50"`
+	Models           []string                   `json:"models" binding:"required,min=1,max=100"`
+	BillingMode      string                     `json:"billing_mode" binding:"omitempty,oneof=token per_request image"`
+	InputPrice       *float64                   `json:"input_price" binding:"omitempty,min=0"`
+	OutputPrice      *float64                   `json:"output_price" binding:"omitempty,min=0"`
+	CacheWritePrice  *float64                   `json:"cache_write_price" binding:"omitempty,min=0"`
+	CacheReadPrice   *float64                   `json:"cache_read_price" binding:"omitempty,min=0"`
+	FastMultiplier   *float64                   `json:"fast_multiplier" binding:"omitempty,gt=0"`
+	FlexMultiplier   *float64                   `json:"flex_multiplier" binding:"omitempty,gt=0"`
+	FastSupported    bool                       `json:"fast_supported"`
+	FlexSupported    bool                       `json:"flex_supported"`
+	FastVerifiedAt   *time.Time                 `json:"fast_verified_at"`
+	FlexVerifiedAt   *time.Time                 `json:"flex_verified_at"`
+	ImageOutputPrice *float64                   `json:"image_output_price" binding:"omitempty,min=0"`
+	PerRequestPrice  *float64                   `json:"per_request_price" binding:"omitempty,min=0"`
+	Intervals        []pricingIntervalRequest   `json:"intervals"`
+	TimePricing      *channelTimePricingRequest `json:"time_pricing"`
+}
+
+type channelTimePricingRequest struct {
+	Timezone     string                            `json:"timezone"`
+	WeekdaysOnly bool                              `json:"weekdays_only"`
+	Periods      []channelTimePricingPeriodRequest `json:"periods"`
+}
+
+type channelTimePricingPeriodRequest struct {
+	StartTime  string  `json:"start_time"`
+	EndTime    string  `json:"end_time"`
+	Multiplier float64 `json:"multiplier"`
 }
 
 type pricingIntervalRequest struct {
@@ -113,23 +126,36 @@ type channelResponse struct {
 }
 
 type channelModelPricingResponse struct {
-	ID               int64                     `json:"id"`
-	Platform         string                    `json:"platform"`
-	Models           []string                  `json:"models"`
-	BillingMode      string                    `json:"billing_mode"`
-	InputPrice       *float64                  `json:"input_price"`
-	OutputPrice      *float64                  `json:"output_price"`
-	CacheWritePrice  *float64                  `json:"cache_write_price"`
-	CacheReadPrice   *float64                  `json:"cache_read_price"`
-	FastMultiplier   *float64                  `json:"fast_multiplier"`
-	FlexMultiplier   *float64                  `json:"flex_multiplier"`
-	FastSupported    bool                      `json:"fast_supported"`
-	FlexSupported    bool                      `json:"flex_supported"`
-	FastVerifiedAt   *time.Time                `json:"fast_verified_at"`
-	FlexVerifiedAt   *time.Time                `json:"flex_verified_at"`
-	ImageOutputPrice *float64                  `json:"image_output_price"`
-	PerRequestPrice  *float64                  `json:"per_request_price"`
-	Intervals        []pricingIntervalResponse `json:"intervals"`
+	ID               int64                       `json:"id"`
+	Platform         string                      `json:"platform"`
+	Models           []string                    `json:"models"`
+	BillingMode      string                      `json:"billing_mode"`
+	InputPrice       *float64                    `json:"input_price"`
+	OutputPrice      *float64                    `json:"output_price"`
+	CacheWritePrice  *float64                    `json:"cache_write_price"`
+	CacheReadPrice   *float64                    `json:"cache_read_price"`
+	FastMultiplier   *float64                    `json:"fast_multiplier"`
+	FlexMultiplier   *float64                    `json:"flex_multiplier"`
+	FastSupported    bool                        `json:"fast_supported"`
+	FlexSupported    bool                        `json:"flex_supported"`
+	FastVerifiedAt   *time.Time                  `json:"fast_verified_at"`
+	FlexVerifiedAt   *time.Time                  `json:"flex_verified_at"`
+	ImageOutputPrice *float64                    `json:"image_output_price"`
+	PerRequestPrice  *float64                    `json:"per_request_price"`
+	Intervals        []pricingIntervalResponse   `json:"intervals"`
+	TimePricing      *channelTimePricingResponse `json:"time_pricing"`
+}
+
+type channelTimePricingResponse struct {
+	Timezone     string                             `json:"timezone"`
+	WeekdaysOnly bool                               `json:"weekdays_only"`
+	Periods      []channelTimePricingPeriodResponse `json:"periods"`
+}
+
+type channelTimePricingPeriodResponse struct {
+	StartTime  string  `json:"start_time"`
+	EndTime    string  `json:"end_time"`
+	Multiplier float64 `json:"multiplier"`
 }
 
 type pricingIntervalResponse struct {
@@ -228,6 +254,15 @@ func pricingToResponse(p *service.ChannelModelPricing) channelModelPricingRespon
 	for _, iv := range p.Intervals {
 		intervals = append(intervals, intervalToResponse(iv))
 	}
+	var timePricing *channelTimePricingResponse
+	if p.TimePricing != nil && len(p.TimePricing.Periods) > 0 {
+		timePricing = &channelTimePricingResponse{Timezone: p.TimePricing.Timezone, WeekdaysOnly: p.TimePricing.WeekdaysOnly}
+		for _, period := range p.TimePricing.Periods {
+			timePricing.Periods = append(timePricing.Periods, channelTimePricingPeriodResponse{
+				StartTime: period.StartTime, EndTime: period.EndTime, Multiplier: period.Multiplier,
+			})
+		}
+	}
 	return channelModelPricingResponse{
 		ID:               p.ID,
 		Platform:         platform,
@@ -246,6 +281,7 @@ func pricingToResponse(p *service.ChannelModelPricing) channelModelPricingRespon
 		ImageOutputPrice: p.ImageOutputPrice,
 		PerRequestPrice:  p.PerRequestPrice,
 		Intervals:        intervals,
+		TimePricing:      timePricing,
 	}
 }
 
@@ -286,6 +322,15 @@ func pricingRequestToService(reqs []channelModelPricingRequest) []service.Channe
 				SortOrder:       iv.SortOrder,
 			})
 		}
+		var timePricing *service.ChannelTimePricing
+		if r.TimePricing != nil && len(r.TimePricing.Periods) > 0 {
+			timePricing = &service.ChannelTimePricing{Timezone: r.TimePricing.Timezone, WeekdaysOnly: r.TimePricing.WeekdaysOnly}
+			for _, period := range r.TimePricing.Periods {
+				timePricing.Periods = append(timePricing.Periods, service.ChannelTimePricingPeriod{
+					StartTime: period.StartTime, EndTime: period.EndTime, Multiplier: period.Multiplier,
+				})
+			}
+		}
 		result = append(result, service.ChannelModelPricing{
 			Platform:         platform,
 			Models:           r.Models,
@@ -303,6 +348,7 @@ func pricingRequestToService(reqs []channelModelPricingRequest) []service.Channe
 			ImageOutputPrice: r.ImageOutputPrice,
 			PerRequestPrice:  r.PerRequestPrice,
 			Intervals:        intervals,
+			TimePricing:      timePricing,
 		})
 	}
 	return result

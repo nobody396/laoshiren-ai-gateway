@@ -199,6 +199,12 @@
               />
             </div>
           </div>
+
+          <TimePricingSection
+            v-if="enableTimePricing"
+            :model-value="entry.time_pricing"
+            @update:model-value="emit('update', { ...entry, time_pricing: $event })"
+          />
         </div>
 
         <!-- Per-request mode -->
@@ -281,6 +287,7 @@ import Select from '@/components/common/Select.vue'
 import Icon from '@/components/icons/Icon.vue'
 import IntervalRow from './IntervalRow.vue'
 import ModelTagInput from './ModelTagInput.vue'
+import TimePricingSection from './TimePricingSection.vue'
 import type { PricingFormEntry, IntervalFormEntry } from './types'
 import { perTokenToMTok, getPlatformTagClass } from './types'
 import type { BillingMode } from '@/api/admin/channels'
@@ -292,6 +299,7 @@ const props = defineProps<{
   entry: PricingFormEntry
   platform?: string
   serviceTierCapability?: boolean
+	  enableTimePricing?: boolean
 }>()
 
 const emit = defineEmits<{

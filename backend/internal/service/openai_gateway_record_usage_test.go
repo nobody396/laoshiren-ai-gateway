@@ -1274,6 +1274,45 @@ func TestOpenAIGatewayServiceRecordUsage_ServiceTierPriorityUsesFastPricing(t *t
 	require.InDelta(t, baseCost.TotalCost*2, usageRepo.lastLog.TotalCost, 1e-10)
 }
 
+func TestOpenAIGatewayServiceRecordUsage_PAYGTimePricingFlowsIntoAccountingCommand(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, &openAIRecordUsageSubRepoStub{}, nil)
+	groupID := int64(6)
+	channelSvc := &ChannelService{}
+	channelSvc.cache.Store(populateChannelCache([]Channel{{
+		ID: 9, Status: StatusActive, GroupIDs: []int64{groupID},
+		ModelPricing: []ChannelModelPricing{{
+			Platform: PlatformOpenAI, Models: []string{"gpt-5.4"}, BillingMode: BillingModeToken,
+			InputPrice: ptr(2e-6), OutputPrice: ptr(10e-6),
+			TimePricing: &ChannelTimePricing{
+				Timezone: "UTC",
+				Periods:  []ChannelTimePricingPeriod{{StartTime: "00:00:00", EndTime: "23:59:59", Multiplier: 2}},
+			},
+		}},
+	}}, map[int64]string{groupID: PlatformOpenAI}))
+	svc.resolver = NewModelPricingResolver(channelSvc, svc.billingService)
+	svc.usageBillingNow = func() time.Time { return time.Date(2026, 8, 28, 12, 0, 0, 0, time.UTC) }
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID: "resp_payg_time_price", Usage: OpenAIUsage{InputTokens: 100, OutputTokens: 10},
+			Model: "gpt-5.4", Duration: time.Second,
+		},
+		APIKey: &APIKey{ID: 1017, GroupID: &groupID, Group: &Group{ID: groupID, Platform: PlatformOpenAI, RateMultiplier: 1}},
+		User:   &User{ID: 2017}, Account: &Account{ID: 3017}, Subscription: nil,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.Equal(t, BillingTypeBalance, usageRepo.lastLog.BillingType)
+	require.InDelta(t, (100*2e-6+10*10e-6)*2, usageRepo.lastLog.ActualCost, 1e-12)
+	require.NotNil(t, usageRepo.lastLog.AccountingCommand)
+	require.InDelta(t, usageRepo.lastLog.ActualCost, usageRepo.lastLog.AccountingCommand.BalanceCost, 1e-12)
+	require.Equal(t, 1, userRepo.deductCalls)
+	require.InDelta(t, usageRepo.lastLog.ActualCost, userRepo.lastAmount, 1e-12)
+}
+
 func TestOpenAIGatewayServiceRecordUsage_ServiceTierFlexHalvesCost(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	userRepo := &openAIRecordUsageUserRepoStub{}

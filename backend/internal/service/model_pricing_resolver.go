@@ -34,6 +34,10 @@ type ResolvedPricing struct {
 
 	// 是否支持缓存细分
 	SupportsCacheBreakdown bool
+
+	// channelPricing is retained only for request-time modifiers such as
+	// time pricing. It is an immutable cache clone and is never serialized.
+	channelPricing *ChannelModelPricing
 }
 
 // ModelPricingResolver 统一模型定价解析器。
@@ -96,6 +100,7 @@ func (r *ModelPricingResolver) applyChannelOverrides(ctx context.Context, groupI
 	if chPricing == nil {
 		return
 	}
+	resolved.channelPricing = chPricing
 
 	resolved.Source = PricingSourceChannel
 	resolved.Mode = chPricing.BillingMode

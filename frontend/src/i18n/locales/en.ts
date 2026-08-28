@@ -2605,6 +2605,13 @@ export default {
       pricingUnit: 'pricing rules',
       noChannelsYet: 'No Channels Yet',
       createFirstChannel: 'Create your first channel to manage model mappings and pricing rules.',
+	  timePricingValidation: {
+		timezone: 'Select a valid IANA timezone',
+		format: 'Time must use HH:mm:ss format',
+		range: 'Start must be before end; split periods that cross midnight',
+		multiplier: 'Multiplier must be at least 0.01 with at most two decimals',
+		overlap: 'Time pricing periods cannot overlap'
+	  },
       loadError: 'Failed to load channels',
       createSuccess: 'Channel created',
       updateSuccess: 'Channel updated',
@@ -2681,6 +2688,16 @@ export default {
         multiplierPlaceholder: 'Use model default',
         multiplierPositive: 'Fast/Flex multipliers must be greater than 0',
         intervals: 'Context Range Pricing (Optional)',
+		timePricing: 'Time Pricing (Token only)',
+		timezone: 'Billing timezone',
+		timePricingDayScope: 'Day scope',
+		timePricingEveryDay: 'Every day',
+		timePricingWeekdaysOnly: 'Weekdays only',
+		addTimePeriod: 'Add period',
+		startTime: 'Start time',
+		endTime: 'End time',
+		multiplier: 'Multiplier',
+		removeTimePeriod: 'Remove period',
         addInterval: 'Add Range',
         defaultPerRequestPrice: 'Default Per-request Price (used when no tier matches)',
         requestTiers: 'Per-request Tiers',
@@ -6504,6 +6521,16 @@ export default {
       cacheWrite: 'Cache write',
       cacheRead: 'Cache read'
     },
+	contextPricing: {
+	  base: 'Base price',
+	  range: 'Context ({min}, {max}]',
+	  above: 'Context > {min}'
+	},
+	timePricing: {
+	  title: 'Time multiplier',
+	  weekdaysOnly: 'Weekdays only',
+	  basePriceNote: 'The table shows base prices. Matching periods multiply input, output, and cache charges by the listed factor.'
+	},
     image: {
       title: 'Image generation pricing',
       successfulImage: 'Per successful image',

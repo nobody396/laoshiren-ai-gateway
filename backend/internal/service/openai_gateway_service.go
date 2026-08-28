@@ -371,6 +371,7 @@ type OpenAIGatewayService struct {
 	openAIRouteAuditService   *OpenAIRouteAuditService
 	openAIRouteObservations   *OpenAIRouteObservationCollector
 	pipeline                  *GatewayPipeline
+	usageBillingNow           func() time.Time
 
 	openaiWSPoolOnce                    sync.Once
 	openaiWSStateStoreOnce              sync.Once
@@ -5710,6 +5711,10 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 			cost = s.billingService.CalculateGPTImageCallCost(apiKey.Group.GPTImageCallPrice, result.ImageCount, imageMultiplier)
 		}
 	} else if s.resolver != nil && apiKey.Group != nil {
+		pricingAt := time.Now()
+		if s.usageBillingNow != nil {
+			pricingAt = s.usageBillingNow()
+		}
 		gid := apiKey.Group.ID
 		cost, err = s.billingService.CalculateCostUnified(CostInput{
 			Ctx:            ctx,
@@ -5720,6 +5725,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 			RateMultiplier: imageMultiplier,
 			ServiceTier:    serviceTier,
 			SizeTier:       sizeTier,
+			PricingAt:      pricingAt,
 			Resolver:       s.resolver,
 		})
 	} else {

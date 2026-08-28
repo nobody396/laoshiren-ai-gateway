@@ -51,6 +51,7 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	requireColumn(t, tx, "channel_model_pricing", "flex_supported", "boolean", 0, false)
 	requireColumn(t, tx, "channel_model_pricing", "fast_verified_at", "timestamp with time zone", 0, true)
 	requireColumn(t, tx, "channel_model_pricing", "flex_verified_at", "timestamp with time zone", 0, true)
+	requireColumn(t, tx, "channel_model_pricing", "time_pricing", "jsonb", 0, true)
 	requireColumn(t, tx, "channel_account_stats_model_pricing", "fast_multiplier", "numeric", 0, true)
 	requireColumn(t, tx, "channel_account_stats_model_pricing", "flex_multiplier", "numeric", 0, true)
 

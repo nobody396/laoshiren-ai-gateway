@@ -408,6 +408,7 @@
                   :entry="entry"
                   :platform="section.platform"
                   :service-tier-capability="['openai', 'grok', 'gemini'].includes(section.platform)"
+				  :enable-time-pricing="true"
                   @update="updatePricingEntry(sIdx, idx, $event)"
                   @remove="removePricingEntry(sIdx, idx)"
                 />
@@ -593,7 +594,7 @@ import { extractApiErrorMessage } from '@/utils/apiError'
 import { adminAPI } from '@/api/admin'
 import type { Channel, ChannelModelPricing, CreateChannelRequest, UpdateChannelRequest, AccountStatsPricingRule } from '@/api/admin/channels'
 import type { PricingFormEntry } from '@/components/admin/channel/types'
-import { mTokToPerToken, perTokenToMTok, apiIntervalsToForm, formIntervalsToAPI, findModelConflict, isValidPositiveMultiplier, validateIntervals } from '@/components/admin/channel/types'
+import { mTokToPerToken, perTokenToMTok, apiIntervalsToForm, formIntervalsToAPI, apiTimePricingToForm, createDefaultTimePricingForm, formTimePricingToAPI, findModelConflict, isValidPositiveMultiplier, validateIntervals, validateTimePricing } from '@/components/admin/channel/types'
 import type { AdminGroup, GroupPlatform } from '@/types'
 import type { Column } from '@/components/common/types'
 import { platformTextClass, platformBadgeLightClass } from '@/utils/platformColors'
@@ -820,7 +821,8 @@ function addPricingEntry(sectionIdx: number) {
     flex_verified_at: null,
     image_output_price: null,
     per_request_price: null,
-    intervals: []
+    intervals: [],
+	time_pricing: createDefaultTimePricingForm()
   })
 }
 
@@ -884,7 +886,8 @@ function addRulePricingEntry(sectionIdx: number, ruleIndex: number) {
     flex_verified_at: null,
     image_output_price: null,
     per_request_price: null,
-    intervals: []
+    intervals: [],
+	time_pricing: createDefaultTimePricingForm()
   })
 }
 
@@ -1051,7 +1054,8 @@ function formToAPI(): { group_ids: number[], model_pricing: ChannelModelPricing[
         flex_verified_at: entry.flex_verified_at,
         image_output_price: mTokToPerToken(entry.image_output_price),
         per_request_price: entry.per_request_price != null && entry.per_request_price !== '' ? Number(entry.per_request_price) : null,
-        intervals: formIntervalsToAPI(entry.intervals || [])
+		intervals: formIntervalsToAPI(entry.intervals || []),
+		time_pricing: formTimePricingToAPI(entry.time_pricing)
       })
     }
   }
@@ -1119,7 +1123,8 @@ function apiToForm(channel: Channel): PlatformSection[] {
         flex_verified_at: p.flex_verified_at,
         image_output_price: perTokenToMTok(p.image_output_price),
         per_request_price: p.per_request_price,
-        intervals: apiIntervalsToForm(p.intervals || [])
+		intervals: apiIntervalsToForm(p.intervals || []),
+		time_pricing: apiTimePricingToForm(p.time_pricing)
       } as PricingFormEntry))
 
     // Read web_search_emulation from features_config
@@ -1308,7 +1313,8 @@ function distributeRulesToPlatforms(apiRules: AccountStatsPricingRule[]) {
         flex_verified_at: null,
         image_output_price: perTokenToMTok(p.image_output_price),
         per_request_price: p.per_request_price,
-        intervals: apiIntervalsToForm(p.intervals || [])
+		intervals: apiIntervalsToForm(p.intervals || []),
+		time_pricing: createDefaultTimePricingForm()
       } as PricingFormEntry))
     }
     section.account_stats_pricing_rules.push(formRule)
@@ -1445,6 +1451,18 @@ async function handleSubmit() {
       }
     }
   }
+
+	for (const section of form.platforms.filter(s => s.enabled)) {
+	  for (const entry of section.model_pricing) {
+		const timePricingError = validateTimePricing(entry.time_pricing, t)
+		if (timePricingError) {
+		  const modelLabel = entry.models.join(', ') || t('admin.channels.form.unnamed')
+		  appStore.showError(`${modelLabel}: ${timePricingError}`)
+		  activeTab.value = section.platform
+		  return
+		}
+	  }
+	}
 
   const { group_ids, model_pricing, model_mapping, features_config } = formToAPI()
 

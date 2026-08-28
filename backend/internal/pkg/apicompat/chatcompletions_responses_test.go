@@ -181,6 +181,42 @@ func TestChatCompletionsToResponses_ImageURL(t *testing.T) {
 	assert.Equal(t, "data:image/png;base64,abc123", parts[1].ImageURL)
 }
 
+func TestChatCompletionsToResponsesFileParts(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    ResponsesContentPart
+	}{
+		{name: "file data", content: `[{"type":"file","file":{"filename":"document.pdf","file_data":"data:application/pdf;base64,JVBERi0xLjQ="}}]`, want: ResponsesContentPart{Type: "input_file", Filename: "document.pdf", FileData: "data:application/pdf;base64,JVBERi0xLjQ="}},
+		{name: "file id", content: `[{"type":"file","file":{"file_id":"file-abc123"}}]`, want: ResponsesContentPart{Type: "input_file", FileID: "file-abc123"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := &ChatCompletionsRequest{Model: "gpt-5.6", Messages: []ChatMessage{{Role: "user", Content: json.RawMessage(tt.content)}}}
+			resp, err := ChatCompletionsToResponses(req)
+			require.NoError(t, err)
+			var items []ResponsesInputItem
+			require.NoError(t, json.Unmarshal(resp.Input, &items))
+			require.Len(t, items, 1)
+			var parts []ResponsesContentPart
+			require.NoError(t, json.Unmarshal(items[0].Content, &parts))
+			require.Equal(t, []ResponsesContentPart{tt.want}, parts)
+		})
+	}
+}
+
+func TestChatCompletionsToResponsesSkipsEmptyFilePart(t *testing.T) {
+	content := `[{"type":"text","text":"Describe this"},{"type":"file","file":{"filename":"empty.pdf"}}]`
+	req := &ChatCompletionsRequest{Model: "gpt-5.6", Messages: []ChatMessage{{Role: "user", Content: json.RawMessage(content)}}}
+	resp, err := ChatCompletionsToResponses(req)
+	require.NoError(t, err)
+	var items []ResponsesInputItem
+	require.NoError(t, json.Unmarshal(resp.Input, &items))
+	var parts []ResponsesContentPart
+	require.NoError(t, json.Unmarshal(items[0].Content, &parts))
+	require.Equal(t, []ResponsesContentPart{{Type: "input_text", Text: "Describe this"}}, parts)
+}
+
 func TestChatCompletionsToResponses_EmptyContentNeverNull(t *testing.T) {
 	req := &ChatCompletionsRequest{
 		Model: "gpt-4o",

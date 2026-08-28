@@ -125,7 +125,6 @@ func NewDownloadResourceService(cfg *config.Config, githubClient GitHubReleaseCl
 		Enabled:                     true,
 		CacheDir:                    "./data/downloads",
 		VersionCheckIntervalMinutes: 30,
-		UpdateIntervalHours:         24,
 		ClaudeDesktopCheckMinutes:   5,
 		StartupSync:                 true,
 		CCSwitchRepo:                defaultCCSwitchRepo,

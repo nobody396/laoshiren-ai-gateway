@@ -122,11 +122,10 @@ func TestDownloadResourceServiceSyncCCSwitchCachesInstallAssets(t *testing.T) {
 	}
 	svc := NewDownloadResourceService(&config.Config{
 		Downloads: config.DownloadsConfig{
-			Enabled:             true,
-			CacheDir:            dir,
-			UpdateIntervalHours: 1,
-			CCSwitchRepo:        "farion1231/cc-switch",
-			MaxAssetBytes:       1024,
+			Enabled:       true,
+			CacheDir:      dir,
+			CCSwitchRepo:  "farion1231/cc-switch",
+			MaxAssetBytes: 1024,
 		},
 	}, stub)
 	staleDir := filepath.Join(dir, ccSwitchToolID, "v3.15.0")
@@ -171,11 +170,10 @@ func TestDownloadResourceServiceSyncCCSwitchVerifiesOfficialDigest(t *testing.T)
 	}
 	svc := NewDownloadResourceService(&config.Config{
 		Downloads: config.DownloadsConfig{
-			Enabled:             true,
-			CacheDir:            dir,
-			UpdateIntervalHours: 1,
-			CCSwitchRepo:        "farion1231/cc-switch",
-			MaxAssetBytes:       1024,
+			Enabled:       true,
+			CacheDir:      dir,
+			CCSwitchRepo:  "farion1231/cc-switch",
+			MaxAssetBytes: 1024,
 		},
 	}, stub)
 
@@ -203,11 +201,10 @@ func TestDownloadResourceServiceSyncCCSwitchRejectsDigestMismatch(t *testing.T) 
 	}
 	svc := NewDownloadResourceService(&config.Config{
 		Downloads: config.DownloadsConfig{
-			Enabled:             true,
-			CacheDir:            dir,
-			UpdateIntervalHours: 1,
-			CCSwitchRepo:        "farion1231/cc-switch",
-			MaxAssetBytes:       1024,
+			Enabled:       true,
+			CacheDir:      dir,
+			CCSwitchRepo:  "farion1231/cc-switch",
+			MaxAssetBytes: 1024,
 		},
 	}, stub)
 
@@ -219,11 +216,10 @@ func TestDownloadResourceServiceSyncCCSwitchRejectsDigestMismatch(t *testing.T) 
 func TestDownloadResourceServiceGetCCSwitchAssetNotReady(t *testing.T) {
 	svc := NewDownloadResourceService(&config.Config{
 		Downloads: config.DownloadsConfig{
-			Enabled:             true,
-			CacheDir:            t.TempDir(),
-			UpdateIntervalHours: 1,
-			CCSwitchRepo:        "farion1231/cc-switch",
-			MaxAssetBytes:       1024,
+			Enabled:       true,
+			CacheDir:      t.TempDir(),
+			CCSwitchRepo:  "farion1231/cc-switch",
+			MaxAssetBytes: 1024,
 		},
 	}, &downloadResourceGitHubStub{})
 
@@ -247,11 +243,10 @@ func TestDownloadResourceServiceDownloadTokenReturnsAsset(t *testing.T) {
 	}
 	svc := NewDownloadResourceService(&config.Config{
 		Downloads: config.DownloadsConfig{
-			Enabled:             true,
-			CacheDir:            dir,
-			UpdateIntervalHours: 1,
-			CCSwitchRepo:        "farion1231/cc-switch",
-			MaxAssetBytes:       1024,
+			Enabled:       true,
+			CacheDir:      dir,
+			CCSwitchRepo:  "farion1231/cc-switch",
+			MaxAssetBytes: 1024,
 		},
 	}, stub)
 	require.NoError(t, svc.SyncCCSwitch(context.Background()))
@@ -286,11 +281,10 @@ func TestDownloadResourceServiceDownloadTokenExpires(t *testing.T) {
 	}
 	svc := NewDownloadResourceService(&config.Config{
 		Downloads: config.DownloadsConfig{
-			Enabled:             true,
-			CacheDir:            dir,
-			UpdateIntervalHours: 1,
-			CCSwitchRepo:        "farion1231/cc-switch",
-			MaxAssetBytes:       1024,
+			Enabled:       true,
+			CacheDir:      dir,
+			CCSwitchRepo:  "farion1231/cc-switch",
+			MaxAssetBytes: 1024,
 		},
 	}, stub)
 	require.NoError(t, svc.SyncCCSwitch(context.Background()))
@@ -348,7 +342,6 @@ func TestDownloadResourceServiceSyncCodexCachesSelectedAssets(t *testing.T) {
 		Downloads: config.DownloadsConfig{
 			Enabled:                true,
 			CacheDir:               dir,
-			UpdateIntervalHours:    1,
 			CodexRepo:              "openai/codex",
 			CodexWindowsMirrorRepo: "Wangnov/codex-app-mirror",
 			MaxAssetBytes:          1024,
@@ -395,11 +388,10 @@ func TestDownloadResourceServiceSyncCodexPlusPlusCachesInstallAssets(t *testing.
 	}
 	svc := NewDownloadResourceService(&config.Config{
 		Downloads: config.DownloadsConfig{
-			Enabled:             true,
-			CacheDir:            dir,
-			UpdateIntervalHours: 1,
-			CodexPlusPlusRepo:   "BigPizzaV3/CodexPlusPlus",
-			MaxAssetBytes:       1024,
+			Enabled:           true,
+			CacheDir:          dir,
+			CodexPlusPlusRepo: "BigPizzaV3/CodexPlusPlus",
+			MaxAssetBytes:     1024,
 		},
 	}, stub)
 

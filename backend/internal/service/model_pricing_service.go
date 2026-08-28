@@ -551,7 +551,7 @@ func publicTimePricing(pricing *ChannelTimePricing) *PublicTimePricing {
 	}
 	result := &PublicTimePricing{Timezone: pricing.Timezone, WeekdaysOnly: pricing.WeekdaysOnly, Periods: make([]PublicTimePricingPeriod, 0, len(pricing.Periods))}
 	for _, period := range pricing.Periods {
-		result.Periods = append(result.Periods, PublicTimePricingPeriod{StartTime: period.StartTime, EndTime: period.EndTime, Multiplier: period.Multiplier})
+		result.Periods = append(result.Periods, PublicTimePricingPeriod(period))
 	}
 	return result
 }

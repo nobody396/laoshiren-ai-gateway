@@ -64,6 +64,34 @@ func TestCleanToolSchemaDropsAmbiguousExclusiveMinimum(t *testing.T) {
 	}
 }
 
+func TestCleanToolSchemaRemovesNestedDeprecatedAndNormalizesScalarEnum(t *testing.T) {
+	schema := map[string]any{
+		"anyOf": []any{
+			map[string]any{"type": "string", "deprecated": true},
+			map[string]any{"enum": []any{"enabled", false, float64(1), nil}},
+		},
+	}
+
+	cleaned, ok := cleanToolSchema(schema).(map[string]any)
+	require.True(t, ok)
+	anyOf, ok := cleaned["anyOf"].([]any)
+	require.True(t, ok)
+	deprecatedSchema, ok := anyOf[0].(map[string]any)
+	require.True(t, ok)
+	enumSchema, ok := anyOf[1].(map[string]any)
+	require.True(t, ok)
+	require.NotContains(t, deprecatedSchema, "deprecated")
+	require.Equal(t, []any{"enabled", "false", "1", "null"}, enumSchema["enum"])
+}
+
+func TestCleanToolSchemaDropsEnumWithNonScalarValue(t *testing.T) {
+	cleaned, ok := cleanToolSchema(map[string]any{
+		"enum": []any{"valid", map[string]any{"invalid": true}},
+	}).(map[string]any)
+	require.True(t, ok)
+	require.NotContains(t, cleaned, "enum")
+}
+
 // TestConvertClaudeToolsToGeminiTools_CustomType 测试custom类型工具转换
 func TestConvertClaudeToolsToGeminiTools_CustomType(t *testing.T) {
 	tests := []struct {

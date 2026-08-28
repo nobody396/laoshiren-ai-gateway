@@ -23,6 +23,11 @@ const (
 	// Oversized clients get a deterministic HTTP 413 before account selection
 	// instead of a retryable upstream 502.
 	DefaultOpenAIResponsesMaxBodySize int64 = 48 * 1024 * 1024
+
+	// DefaultModelsListReadMaxBytes bounds upstream model-list responses.
+	// Model discovery payloads are metadata and must never share the much
+	// larger media-capable response budget.
+	DefaultModelsListReadMaxBytes int64 = 8 * 1024 * 1024
 )
 
 // 使用量记录队列溢出策略
@@ -397,6 +402,8 @@ type GatewayConfig struct {
 	OpenAIResponsesMaxBodySize int64 `mapstructure:"openai_responses_max_body_size"`
 	// 非流式上游响应体读取上限（字节），用于防止无界读取导致内存放大
 	UpstreamResponseReadMaxBytes int64 `mapstructure:"upstream_response_read_max_bytes"`
+	// 上游模型列表响应体读取上限（字节）
+	ModelsListReadMaxBytes int64 `mapstructure:"models_list_read_max_bytes"`
 	// 代理探测响应体读取上限（字节）
 	ProxyProbeResponseReadMaxBytes int64 `mapstructure:"proxy_probe_response_read_max_bytes"`
 	// Gemini 上游响应头调试日志开关（默认关闭，避免高频日志开销）
@@ -1583,6 +1590,7 @@ func setDefaults() {
 	viper.SetDefault("gateway.max_body_size", int64(256*1024*1024))
 	viper.SetDefault("gateway.openai_responses_max_body_size", DefaultOpenAIResponsesMaxBodySize)
 	viper.SetDefault("gateway.upstream_response_read_max_bytes", int64(8*1024*1024))
+	viper.SetDefault("gateway.models_list_read_max_bytes", DefaultModelsListReadMaxBytes)
 	viper.SetDefault("gateway.proxy_probe_response_read_max_bytes", int64(1024*1024))
 	viper.SetDefault("gateway.gemini_debug_response_headers", false)
 	viper.SetDefault("gateway.connection_pool_isolation", ConnectionPoolIsolationAccountProxy)
@@ -2026,6 +2034,9 @@ func (c *Config) Validate() error {
 	}
 	if c.Gateway.UpstreamResponseReadMaxBytes <= 0 {
 		return fmt.Errorf("gateway.upstream_response_read_max_bytes must be positive")
+	}
+	if c.Gateway.ModelsListReadMaxBytes <= 0 {
+		return fmt.Errorf("gateway.models_list_read_max_bytes must be positive")
 	}
 	if c.Gateway.ProxyProbeResponseReadMaxBytes <= 0 {
 		return fmt.Errorf("gateway.proxy_probe_response_read_max_bytes must be positive")

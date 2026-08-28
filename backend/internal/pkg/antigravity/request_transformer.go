@@ -577,7 +577,7 @@ func parseToolResultContent(content json.RawMessage, isError bool) string {
 // buildGenerationConfig 构建 generationConfig
 const (
 	defaultMaxOutputTokens    = 64000
-	maxOutputTokensUpperBound = 65000
+	maxOutputTokensUpperBound = 64000
 	maxOutputTokensClaude     = 64000
 )
 

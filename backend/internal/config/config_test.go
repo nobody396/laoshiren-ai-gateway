@@ -78,6 +78,13 @@ func TestLoadDefaultSchedulingConfig(t *testing.T) {
 	}
 }
 
+func TestLoadDefaultModelsListReadMaxBytes(t *testing.T) {
+	resetViperWithJWTSecret(t)
+	cfg, err := Load()
+	require.NoError(t, err)
+	require.Equal(t, DefaultModelsListReadMaxBytes, cfg.Gateway.ModelsListReadMaxBytes)
+}
+
 func TestLoadDefaultOpenAIWSConfig(t *testing.T) {
 	resetViperWithJWTSecret(t)
 
@@ -1106,6 +1113,11 @@ func TestValidateConfigErrors(t *testing.T) {
 				c.Gateway.OpenAIResponsesMaxBodySize = c.Gateway.MaxBodySize + 1
 			},
 			wantErr: "gateway.openai_responses_max_body_size must not exceed",
+		},
+		{
+			name:    "gateway models list read limit",
+			mutate:  func(c *Config) { c.Gateway.ModelsListReadMaxBytes = 0 },
+			wantErr: "gateway.models_list_read_max_bytes",
 		},
 		{
 			name:    "gateway max idle conns",

@@ -3,13 +3,48 @@
 package service
 
 import (
+	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/bozhouDev/DragonCode-sub2api/internal/config"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bozhouDev/DragonCode-sub2api/internal/pkg/antigravity"
 )
+
+func TestFetchQuotaUsesConfiguredModelsListBodyLimit(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"models":{"model-a":{}}}`))
+	}))
+	defer server.Close()
+
+	oldBaseURLs := append([]string(nil), antigravity.BaseURLs...)
+	oldAvailability := antigravity.DefaultURLAvailability
+	t.Cleanup(func() {
+		antigravity.BaseURLs = oldBaseURLs
+		antigravity.DefaultURLAvailability = oldAvailability
+	})
+	antigravity.BaseURLs = []string{server.URL}
+	antigravity.DefaultURLAvailability = antigravity.NewURLAvailability(time.Minute)
+
+	cfg := &config.Config{}
+	cfg.Gateway.ModelsListReadMaxBytes = 8
+	fetcher := NewAntigravityQuotaFetcher(nil, cfg)
+	_, err := fetcher.FetchQuota(context.Background(), &Account{
+		Platform: PlatformAntigravity,
+		Type:     AccountTypeOAuth,
+		Credentials: map[string]any{
+			"access_token": "token",
+			"project_id":   "project",
+		},
+	}, "")
+	require.ErrorContains(t, err, "响应超过 8 字节")
+}
 
 // ---------------------------------------------------------------------------
 // normalizeTier

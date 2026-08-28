@@ -666,3 +666,14 @@ func TestAccountOmitOpenAIImageGenerationResponseFormat(t *testing.T) {
 	require.False(t, account.OmitOpenAIImageGenerationResponseFormat(), "invalid config must fail closed")
 	require.False(t, (*Account)(nil).OmitOpenAIImageGenerationResponseFormat())
 }
+
+func TestAccountRepeatOpenAIImageEditField(t *testing.T) {
+	account := &Account{Extra: map[string]any{
+		OpenAIImageEditRepeatImageFieldExtraKey: true,
+	}}
+	require.True(t, account.RepeatOpenAIImageEditField())
+
+	account.Extra[OpenAIImageEditRepeatImageFieldExtraKey] = "true"
+	require.False(t, account.RepeatOpenAIImageEditField(), "invalid config must fail closed")
+	require.False(t, (*Account)(nil).RepeatOpenAIImageEditField())
+}

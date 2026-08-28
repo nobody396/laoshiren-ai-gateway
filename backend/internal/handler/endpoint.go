@@ -20,6 +20,7 @@ const (
 	EndpointResponses            = "/v1/responses"
 	EndpointResponsesInputTokens = "/v1/responses/input_tokens"
 	EndpointImages               = "/v1/images/generations"
+	EndpointImageEdits           = "/v1/images/edits"
 	EndpointGeminiModels         = "/v1beta/models"
 )
 
@@ -44,6 +45,8 @@ func NormalizeInboundEndpoint(path string) string {
 	switch {
 	case strings.Contains(path, EndpointResponsesInputTokens):
 		return EndpointResponsesInputTokens
+	case strings.Contains(path, EndpointImageEdits):
+		return EndpointImageEdits
 	case strings.Contains(path, EndpointImages):
 		return EndpointImages
 	case strings.Contains(path, EndpointChatCompletions):
@@ -77,8 +80,8 @@ func DeriveUpstreamEndpoint(inbound, rawRequestPath, platform string) string {
 		if inbound == EndpointResponsesInputTokens {
 			return EndpointResponsesInputTokens
 		}
-		if inbound == EndpointImages {
-			return EndpointImages
+		if inbound == EndpointImages || inbound == EndpointImageEdits {
+			return inbound
 		}
 		// OpenAI forwards everything to the Responses API.
 		// Preserve subresource suffix (e.g. /v1/responses/compact).
@@ -91,7 +94,7 @@ func DeriveUpstreamEndpoint(inbound, rawRequestPath, platform string) string {
 		if inbound == EndpointResponsesInputTokens {
 			return EndpointResponsesInputTokens
 		}
-		if inbound == EndpointImages || strings.Contains(inbound, "/videos") {
+		if inbound == EndpointImages || inbound == EndpointImageEdits || strings.Contains(inbound, "/videos") {
 			return inbound
 		}
 		if suffix := responsesSubpathSuffix(rawRequestPath); suffix != "" {

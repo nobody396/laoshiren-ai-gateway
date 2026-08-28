@@ -23,6 +23,41 @@ type openAIImagesEditsUpstream struct {
 	body    []byte
 }
 
+type repeatedImageFieldOnlyUpstream struct {
+	service.HTTPUpstream
+	fieldNames []string
+}
+
+func (u *repeatedImageFieldOnlyUpstream) Do(req *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
+	mediaType, params, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
+	if err != nil || mediaType != "multipart/form-data" {
+		return openAIImagesEditTestResponse(http.StatusBadRequest, `{"error":{"type":"invalid_request_error","code":"invalid_multipart_form","message":"invalid multipart"}}`), nil
+	}
+	reader := multipart.NewReader(req.Body, params["boundary"])
+	form, err := reader.ReadForm(1 << 20)
+	if err != nil {
+		return openAIImagesEditTestResponse(http.StatusBadRequest, `{"error":{"type":"invalid_request_error","code":"invalid_multipart_form","message":"invalid multipart"}}`), nil
+	}
+	defer func() { _ = form.RemoveAll() }()
+	for name, files := range form.File {
+		for range files {
+			u.fieldNames = append(u.fieldNames, name)
+		}
+	}
+	if len(form.File["image"]) != 2 || len(form.File["image[]"]) != 0 {
+		return openAIImagesEditTestResponse(http.StatusBadRequest, `{"error":{"type":"invalid_request_error","code":"invalid_multipart_form","message":"image fields must repeat the image name"}}`), nil
+	}
+	return openAIImagesEditTestResponse(http.StatusOK, `{"created":1710000000,"data":[{"b64_json":"`+codexNativeImageBridgeTestPNG+`"}],"usage":{"input_tokens":10,"output_tokens":20,"total_tokens":30}}`), nil
+}
+
+func openAIImagesEditTestResponse(status int, body string) *http.Response {
+	return &http.Response{
+		StatusCode: status,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(body)),
+	}
+}
+
 func (u *openAIImagesEditsUpstream) Do(req *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
 	u.request = req
 	u.body, _ = io.ReadAll(req.Body)
@@ -145,4 +180,54 @@ func TestOpenAIImagesEdits_MultipartForwardsFilesMaskAndParameters(t *testing.T)
 	require.Equal(t, "reference.png", form.File["image[]"][0].Filename)
 	require.Len(t, form.File["mask"], 1)
 	require.Equal(t, "mask.png", form.File["mask"][0].Filename)
+}
+
+func TestOpenAIImagesEdits_SDKMultiImageCanNormalizeArrayFieldsForCompatibleAccount(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	group := &service.Group{ID: 51, Name: "GPT Image 2", Platform: service.PlatformOpenAI, AllowImageGeneration: true}
+	account := service.Account{
+		ID: 39, Name: "strict-multipart-upstream", Platform: service.PlatformOpenAI, Type: service.AccountTypeAPIKey,
+		Status: service.StatusActive, Schedulable: true, Concurrency: 4,
+		Credentials: map[string]any{
+			"api_key": "test-only-key", "base_url": "https://images.example.test/v1",
+			"model_mapping": map[string]any{"gpt-image-2": "gpt-image-2"},
+		},
+		Extra: map[string]any{
+			"supports_images": true, "supports_image_edits": true,
+			service.OpenAIImageEditRepeatImageFieldExtraKey: true,
+			service.OpenAIImageGenerationPriorityExtraKey:   1,
+			service.OpenAIImageGenerationModelsExtraKey:     []any{"gpt-image-2"},
+			service.OpenAIImageGenerationTransportExtraKey:  service.OpenAIImageGenerationTransportImages,
+		},
+		AccountGroups: []service.AccountGroup{{AccountID: 39, GroupID: group.ID, Priority: 1}},
+	}
+	upstream := &repeatedImageFieldOnlyUpstream{}
+	handler := newCodexResponsesTestHandler(t, []service.Account{account}, upstream)
+
+	pngBytes, err := base64.StdEncoding.DecodeString(codexNativeImageBridgeTestPNG)
+	require.NoError(t, err)
+	var requestBody bytes.Buffer
+	writer := multipart.NewWriter(&requestBody)
+	require.NoError(t, writer.WriteField("model", "gpt-image-2"))
+	require.NoError(t, writer.WriteField("prompt", "combine the two images"))
+	for _, name := range []string{"one.png", "two.png"} {
+		part, partErr := writer.CreateFormFile("image[]", name)
+		require.NoError(t, partErr)
+		_, partErr = part.Write(pngBytes)
+		require.NoError(t, partErr)
+	}
+	require.NoError(t, writer.Close())
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/edits", bytes.NewReader(requestBody.Bytes()))
+	c.Request.Header.Set("Content-Type", writer.FormDataContentType())
+	apiKey := &service.APIKey{ID: 199, GroupID: &group.ID, Group: group, User: &service.User{ID: 2, Status: service.StatusActive}}
+	c.Set(string(middleware.ContextKeyAPIKey), apiKey)
+	c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 2, Concurrency: 4})
+
+	handler.Images(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
+	require.ElementsMatch(t, []string{"image", "image"}, upstream.fieldNames)
 }

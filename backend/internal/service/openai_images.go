@@ -1820,6 +1820,7 @@ func (s *OpenAIGatewayService) ForwardImages(
 		upstreamModel,
 		account.OmitOpenAIImageGenerationResponseFormat() &&
 			(parsed.ResponseFormat == "" || parsed.ResponseFormat == "b64_json"),
+		parsed.IsEdits() && account.RepeatOpenAIImageEditField(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("rewrite image request model: %w", err)
@@ -1991,10 +1992,10 @@ func (s *OpenAIGatewayService) buildOpenAIImagesRequest(
 	return req, nil
 }
 
-func rewriteOpenAIImagesRequestBody(body []byte, contentType, model string, omitResponseFormat bool) ([]byte, string, error) {
+func rewriteOpenAIImagesRequestBody(body []byte, contentType, model string, omitResponseFormat, repeatImageField bool) ([]byte, string, error) {
 	mediaType, _, err := mime.ParseMediaType(strings.TrimSpace(contentType))
 	if err == nil && strings.EqualFold(mediaType, "multipart/form-data") {
-		return rewriteOpenAIImagesMultipartBody(body, contentType, model, omitResponseFormat)
+		return rewriteOpenAIImagesMultipartBody(body, contentType, model, omitResponseFormat, repeatImageField)
 	}
 	rewritten, err := sjson.SetBytes(body, "model", strings.TrimSpace(model))
 	if err != nil {
@@ -2009,7 +2010,7 @@ func rewriteOpenAIImagesRequestBody(body []byte, contentType, model string, omit
 	return rewritten, normalizedOpenAIImagesContentType(contentType), nil
 }
 
-func rewriteOpenAIImagesMultipartBody(body []byte, contentType, model string, omitResponseFormat bool) ([]byte, string, error) {
+func rewriteOpenAIImagesMultipartBody(body []byte, contentType, model string, omitResponseFormat, repeatImageField bool) ([]byte, string, error) {
 	_, params, err := mime.ParseMediaType(strings.TrimSpace(contentType))
 	if err != nil {
 		return nil, "", fmt.Errorf("parse multipart content-type: %w", err)
@@ -2035,7 +2036,15 @@ func rewriteOpenAIImagesMultipartBody(body []byte, contentType, model string, om
 			_ = part.Close()
 			continue
 		}
-		target, createErr := writer.CreatePart(cloneOpenAIImagesMultipartHeader(part.Header))
+		partHeader := cloneOpenAIImagesMultipartHeader(part.Header)
+		if repeatImageField && part.FileName() != "" &&
+			(formName == "image[]" || strings.HasPrefix(formName, "image[")) {
+			if err := replaceOpenAIImagesMultipartFormName(partHeader, "image"); err != nil {
+				_ = part.Close()
+				return nil, "", err
+			}
+		}
+		target, createErr := writer.CreatePart(partHeader)
 		if createErr != nil {
 			_ = part.Close()
 			return nil, "", fmt.Errorf("create multipart part: %w", createErr)
@@ -2060,6 +2069,19 @@ func rewriteOpenAIImagesMultipartBody(body []byte, contentType, model string, om
 		return nil, "", fmt.Errorf("finalize multipart body: %w", err)
 	}
 	return buffer.Bytes(), writer.FormDataContentType(), nil
+}
+
+func replaceOpenAIImagesMultipartFormName(header textproto.MIMEHeader, name string) error {
+	disposition, params, err := mime.ParseMediaType(header.Get("Content-Disposition"))
+	if err != nil {
+		return fmt.Errorf("parse multipart content-disposition: %w", err)
+	}
+	if !strings.EqualFold(disposition, "form-data") {
+		return fmt.Errorf("unsupported multipart content-disposition %q", disposition)
+	}
+	params["name"] = name
+	header.Set("Content-Disposition", mime.FormatMediaType(disposition, params))
+	return nil
 }
 
 func cloneOpenAIImagesMultipartHeader(src textproto.MIMEHeader) textproto.MIMEHeader {

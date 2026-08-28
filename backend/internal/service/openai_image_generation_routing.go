@@ -35,6 +35,10 @@ const (
 	// with native Images providers (notably Azure-backed routes) that always
 	// return base64 image data and reject the OpenAI response_format field.
 	OpenAIImageGenerationOmitResponseFormatExtraKey = "openai_image_generation_omit_response_format"
+	// OpenAIImageEditRepeatImageFieldExtraKey enables compatibility with
+	// Images edit providers that accept repeated `image` file parts but reject
+	// the OpenAI Python SDK's repeated `image[]` multipart field name.
+	OpenAIImageEditRepeatImageFieldExtraKey = "openai_image_edit_repeat_image_field"
 )
 
 var (
@@ -866,6 +870,16 @@ func (a *Account) OmitOpenAIImageGenerationResponseFormat() bool {
 		return false
 	}
 	value, ok := a.Extra[OpenAIImageGenerationOmitResponseFormatExtraKey].(bool)
+	return ok && value
+}
+
+// RepeatOpenAIImageEditField reports whether SDK-style image array fields
+// should be normalized to repeated `image` fields for this account only.
+func (a *Account) RepeatOpenAIImageEditField() bool {
+	if a == nil || a.Extra == nil {
+		return false
+	}
+	value, ok := a.Extra[OpenAIImageEditRepeatImageFieldExtraKey].(bool)
 	return ok && value
 }
 

@@ -80,7 +80,7 @@ func (s *OpenAIGatewayService) shouldBridgeOpenAIWSHTTP(payloadBytes int, previo
 
 func prepareOpenAIWSHTTPBridgeBody(payload []byte) ([]byte, error) {
 	var body map[string]any
-	if err := json.Unmarshal(payload, &body); err != nil {
+	if err := decodeOpenAIJSONUseNumber(payload, &body); err != nil {
 		return nil, err
 	}
 	if body == nil {

@@ -594,6 +594,7 @@ func TestForwardCodexNativeImageGenerationBridge(t *testing.T) {
 	require.Equal(t, 1, result.ImageCount)
 	require.Equal(t, "gpt-5.6-sol", gjson.GetBytes(upstream.lastBody, "model").String())
 	require.Equal(t, "draw breakfast", gjson.GetBytes(upstream.lastBody, "input").String())
+	require.Equal(t, openAIImagesVerbatimPromptInstructions, gjson.GetBytes(upstream.lastBody, "instructions").String())
 	require.Equal(t, "image_generation", gjson.GetBytes(upstream.lastBody, "tools.0.type").String())
 	require.Equal(t, "image_generation", gjson.GetBytes(upstream.lastBody, "tool_choice.type").String())
 	require.False(t, gjson.GetBytes(upstream.lastBody, "stream").Bool())

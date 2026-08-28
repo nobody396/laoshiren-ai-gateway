@@ -29,13 +29,14 @@ import (
 )
 
 const (
-	openAIImagesGenerationsEndpoint  = "/v1/images/generations"
-	openAIImageMaxUploadPartSize     = 20 << 20
-	codexNativeImageBridgeModel      = "gpt-5.6-sol"
-	codexNativeImageMaxBase64Bytes   = 32 << 20
-	codexNativeImageMaxResponseBytes = 48 << 20
-	codexNativeImageMaxPixels        = 64 * 1024 * 1024
-	openAIRawUpstreamHTTPStatusKey   = "openai_raw_upstream_http_status"
+	openAIImagesGenerationsEndpoint        = "/v1/images/generations"
+	openAIImageMaxUploadPartSize           = 20 << 20
+	codexNativeImageBridgeModel            = "gpt-5.6-sol"
+	codexNativeImageMaxBase64Bytes         = 32 << 20
+	codexNativeImageMaxResponseBytes       = 48 << 20
+	codexNativeImageMaxPixels              = 64 * 1024 * 1024
+	openAIRawUpstreamHTTPStatusKey         = "openai_raw_upstream_http_status"
+	openAIImagesVerbatimPromptInstructions = "When invoking the image_generation tool, use the user's image prompt verbatim. Do not rewrite, expand, summarize, embellish, translate, normalize punctuation, or add or remove visual details or constraints. Preserve the original language, wording, capitalization, quotes, and punctuation exactly."
 )
 
 var (
@@ -328,11 +329,12 @@ func (s *OpenAIGatewayService) ForwardCodexNativeImageGenerationBridge(
 	}
 
 	requestBody, err := json.Marshal(map[string]any{
-		"model":       codexNativeImageBridgeModel,
-		"input":       parsed.Prompt,
-		"tools":       []map[string]any{{"type": "image_generation"}},
-		"tool_choice": map[string]any{"type": "image_generation"},
-		"stream":      false,
+		"model":        codexNativeImageBridgeModel,
+		"instructions": openAIImagesVerbatimPromptInstructions,
+		"input":        parsed.Prompt,
+		"tools":        []map[string]any{{"type": "image_generation"}},
+		"tool_choice":  map[string]any{"type": "image_generation"},
+		"stream":       false,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("encode Codex image bridge request: %w", err)

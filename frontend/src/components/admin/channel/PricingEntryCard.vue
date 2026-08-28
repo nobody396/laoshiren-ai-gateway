@@ -130,6 +130,11 @@
           </div>
 
           <div class="mt-3 grid max-w-md grid-cols-2 gap-2">
+            <div v-if="enableCostMultiplier" class="col-span-2">
+              <label class="text-xs text-gray-400">{{ t('admin.channels.form.costMultiplier', '账号成本倍率') }}</label>
+              <input :value="entry.cost_multiplier" @input="emitField('cost_multiplier', ($event.target as HTMLInputElement).value)"
+                type="number" step="any" min="0.000001" class="input mt-0.5 text-sm" :placeholder="t('admin.channels.form.costMultiplierPlaceholder', '复用客户基础价与分时/阶梯后再乘此倍率')" />
+            </div>
             <div>
               <label class="text-xs text-gray-400">{{ t('admin.channels.form.fastMultiplier', 'Fast / Priority 倍率') }}</label>
               <input :value="entry.fast_multiplier" @input="emitField('fast_multiplier', ($event.target as HTMLInputElement).value)"
@@ -299,7 +304,8 @@ const props = defineProps<{
   entry: PricingFormEntry
   platform?: string
   serviceTierCapability?: boolean
-	  enableTimePricing?: boolean
+  enableTimePricing?: boolean
+  enableCostMultiplier?: boolean
 }>()
 
 const emit = defineEmits<{

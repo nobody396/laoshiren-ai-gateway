@@ -64,6 +64,7 @@ type channelModelPricingRequest struct {
 	OutputPrice      *float64                   `json:"output_price" binding:"omitempty,min=0"`
 	CacheWritePrice  *float64                   `json:"cache_write_price" binding:"omitempty,min=0"`
 	CacheReadPrice   *float64                   `json:"cache_read_price" binding:"omitempty,min=0"`
+	CostMultiplier   *float64                   `json:"cost_multiplier" binding:"omitempty,gt=0"`
 	FastMultiplier   *float64                   `json:"fast_multiplier" binding:"omitempty,gt=0"`
 	FlexMultiplier   *float64                   `json:"flex_multiplier" binding:"omitempty,gt=0"`
 	FastSupported    bool                       `json:"fast_supported"`
@@ -134,6 +135,7 @@ type channelModelPricingResponse struct {
 	OutputPrice      *float64                    `json:"output_price"`
 	CacheWritePrice  *float64                    `json:"cache_write_price"`
 	CacheReadPrice   *float64                    `json:"cache_read_price"`
+	CostMultiplier   *float64                    `json:"cost_multiplier"`
 	FastMultiplier   *float64                    `json:"fast_multiplier"`
 	FlexMultiplier   *float64                    `json:"flex_multiplier"`
 	FastSupported    bool                        `json:"fast_supported"`
@@ -272,6 +274,7 @@ func pricingToResponse(p *service.ChannelModelPricing) channelModelPricingRespon
 		OutputPrice:      p.OutputPrice,
 		CacheWritePrice:  p.CacheWritePrice,
 		CacheReadPrice:   p.CacheReadPrice,
+		CostMultiplier:   p.CostMultiplier,
 		FastMultiplier:   p.FastMultiplier,
 		FlexMultiplier:   p.FlexMultiplier,
 		FastSupported:    p.FastSupported,
@@ -339,6 +342,7 @@ func pricingRequestToService(reqs []channelModelPricingRequest) []service.Channe
 			OutputPrice:      r.OutputPrice,
 			CacheWritePrice:  r.CacheWritePrice,
 			CacheReadPrice:   r.CacheReadPrice,
+			CostMultiplier:   r.CostMultiplier,
 			FastMultiplier:   r.FastMultiplier,
 			FlexMultiplier:   r.FlexMultiplier,
 			FastSupported:    r.FastSupported,

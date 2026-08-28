@@ -38,7 +38,7 @@ func resolveAccountStatsCost(
 	platform := channelService.GetGroupPlatform(ctx, groupID)
 
 	// 优先级 1：自定义规则（始终尝试）
-	if cost := tryCustomRules(channel, accountID, groupID, platform, upstreamModel, tokens, requestCount); cost != nil {
+	if cost := tryCustomRules(channel, accountID, groupID, platform, upstreamModel, tokens, requestCount, totalCost); cost != nil {
 		return cost
 	}
 
@@ -79,7 +79,7 @@ func tryModelFilePricing(billingService *BillingService, model string, tokens Us
 // tryCustomRules 遍历自定义规则，按数组顺序先命中为准。
 func tryCustomRules(
 	channel *Channel, accountID, groupID int64,
-	platform, model string, tokens UsageTokens, requestCount int,
+	platform, model string, tokens UsageTokens, requestCount int, totalCost float64,
 ) *float64 {
 	modelLower := strings.ToLower(model)
 	for _, rule := range channel.AccountStatsPricingRules {
@@ -89,6 +89,17 @@ func tryCustomRules(
 		pricing := findPricingForModel(rule.Pricing, platform, modelLower)
 		if pricing == nil {
 			continue // 规则匹配但模型不在规则定价中，继续下一条
+		}
+		// CostMultiplier deliberately reuses the already-settled customer base
+		// cost before the group multiplier. That base has selected the same
+		// context interval and request-start time period as customer billing, so
+		// supplier cost cannot drift from the advertised rate card.
+		if pricing.CostMultiplier != nil {
+			if totalCost <= 0 || *pricing.CostMultiplier <= 0 {
+				return nil
+			}
+			cost := totalCost * *pricing.CostMultiplier
+			return &cost
 		}
 		return calculateStatsCost(pricing, tokens, requestCount)
 	}

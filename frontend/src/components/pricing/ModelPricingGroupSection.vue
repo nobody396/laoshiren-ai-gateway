@@ -186,7 +186,10 @@ const pricingRows = computed<PricingRow[]>(() => [
       cacheRead: interval.cache_read_price,
       disabled: model.disabled
     }))
-    return [base, ...intervals]
+    // A first interval starting at zero is the complete base tier, not an
+    // override. Do not render a duplicate generic "base" row above it.
+    const intervalsCoverBase = model.context_intervals?.some(interval => interval.min_tokens === 0) === true
+    return intervalsCoverBase ? intervals : [base, ...intervals]
   }),
   // 生图行固定排在文本模型之后
   ...imagePricingRows.value

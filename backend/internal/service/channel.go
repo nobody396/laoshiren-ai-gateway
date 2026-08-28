@@ -84,6 +84,7 @@ type ChannelModelPricing struct {
 	OutputPrice      *float64            // 每 token 输出价格（USD）
 	CacheWritePrice  *float64            // 缓存写入价格
 	CacheReadPrice   *float64            // 缓存读取价格
+	CostMultiplier   *float64            // 账号统计成本倍率；仅 account_stats_pricing_rules 使用
 	FastMultiplier   *float64            // Fast/Priority 服务层级倍率；nil 使用模型目录默认价
 	FlexMultiplier   *float64            // Flex 服务层级倍率；nil 使用默认倍率
 	FastSupported    bool                // 供应商已确认并经管理员登记 Fast/Priority 能力

@@ -41,6 +41,7 @@ export interface ChannelModelPricing {
   output_price: number | null
   cache_write_price: number | null
   cache_read_price: number | null
+  cost_multiplier?: number | null
   fast_multiplier: number | null
   flex_multiplier: number | null
   fast_supported: boolean

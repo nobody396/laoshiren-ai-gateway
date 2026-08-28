@@ -17,6 +17,7 @@ func TestChannelPricingServiceTierMultipliersRoundTrip(t *testing.T) {
 	repo := NewChannelRepository(integrationDB)
 	fast := 2.5
 	flex := 0.4
+	costMultiplier := 0.7
 	verifiedAt := time.Now().UTC().Add(-time.Hour).Truncate(time.Microsecond)
 	channel := &service.Channel{
 		Name:               fmt.Sprintf("pr1-tier-multiplier-%d", time.Now().UnixNano()),
@@ -32,7 +33,7 @@ func TestChannelPricingServiceTierMultipliersRoundTrip(t *testing.T) {
 			Name: "supplier cost", GroupIDs: []int64{}, AccountIDs: []int64{},
 			Pricing: []service.ChannelModelPricing{{
 				Platform: service.PlatformOpenAI, Models: []string{"gpt-5.4"}, BillingMode: service.BillingModeToken,
-				FastMultiplier: &fast, FlexMultiplier: &flex,
+				CostMultiplier: &costMultiplier, FastMultiplier: &fast, FlexMultiplier: &flex,
 			}},
 		}},
 	}
@@ -62,6 +63,8 @@ func TestChannelPricingServiceTierMultipliersRoundTrip(t *testing.T) {
 
 	require.Len(t, readback.AccountStatsPricingRules, 1)
 	require.Len(t, readback.AccountStatsPricingRules[0].Pricing, 1)
+	require.NotNil(t, readback.AccountStatsPricingRules[0].Pricing[0].CostMultiplier)
+	require.InDelta(t, costMultiplier, *readback.AccountStatsPricingRules[0].Pricing[0].CostMultiplier, 1e-9)
 	require.InDelta(t, fast, *readback.AccountStatsPricingRules[0].Pricing[0].FastMultiplier, 1e-9)
 	require.InDelta(t, flex, *readback.AccountStatsPricingRules[0].Pricing[0].FlexMultiplier, 1e-9)
 }

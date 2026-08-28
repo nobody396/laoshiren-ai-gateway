@@ -881,6 +881,80 @@ VALUES ($1, 'plus')
 	require.JSONEq(t, `[42,43,49]`, proGroups, "unstocked Pro can adopt the Grok entitlement")
 }
 
+func TestAssignedMonthlyCheckoutInventoryDoesNotFreezeFutureOfferTerms(t *testing.T) {
+	tx := testTx(t)
+	ctx := context.Background()
+
+	// Recreate the production history: one legacy Plus card was fully assigned
+	// under GPT+Claude semantics. The order snapshots those terms permanently,
+	// so future Plus sales may advance without deleting the audit link.
+	_, err := tx.ExecContext(ctx, `
+UPDATE native_checkout_offers
+SET redeem_group_ids = '[40,41]'::jsonb
+WHERE code = 'plus';
+`)
+	require.NoError(t, err)
+
+	var userID int64
+	require.NoError(t, tx.QueryRowContext(ctx, `
+INSERT INTO users (email, password_hash, role, status, balance, concurrency, created_at, updated_at)
+VALUES ($1, 'hash', 'user', 'active', 0, 1, NOW(), NOW())
+RETURNING id
+`, "assigned-stock-"+strings.ReplaceAll(uuid.NewString(), "-", "")+"@example.com").Scan(&userID))
+
+	var redeemCodeID int64
+	err = tx.QueryRowContext(ctx, `
+INSERT INTO redeem_codes (
+    code, type, value, paid_value, status, purpose, sales_status,
+    group_ids, validity_days, created_at, updated_at
+) VALUES ($1, 'subscription', 259, 0, 'unused', 'sale_recharge', 'sold',
+          '[40,41]'::jsonb, 31, NOW(), NOW())
+RETURNING id
+`, strings.ReplaceAll(uuid.NewString(), "-", "")).Scan(&redeemCodeID)
+	require.NoError(t, err)
+
+	var orderID int64
+	err = tx.QueryRowContext(ctx, `
+INSERT INTO native_checkout_orders (
+    order_no, user_id, offer_code, provider, provider_goods_key,
+    contact_hash, product_kind, pay_amount_cny_fen, benefit_amount_cny_fen,
+    redeem_type, redeem_value, redeem_paid_value, redeem_purpose,
+    redeem_sales_status, redeem_group_ids, redeem_validity_days,
+    enforce_once, status, redeem_code_id, completed_at
+)
+SELECT $1, $2, code, provider, provider_goods_key,
+       repeat('a', 64), product_kind, pay_amount_cny_fen, benefit_amount_cny_fen,
+       redeem_type, redeem_value, redeem_paid_value, redeem_purpose,
+       redeem_sales_status, redeem_group_ids, redeem_validity_days,
+       FALSE, 'completed', $3, NOW()
+FROM native_checkout_offers
+WHERE code = 'plus'
+RETURNING id
+`, "NC-"+strings.ReplaceAll(uuid.NewString(), "-", ""), userID, redeemCodeID).Scan(&orderID)
+	require.NoError(t, err)
+
+	_, err = tx.ExecContext(ctx, `
+INSERT INTO native_checkout_redeem_inventory (redeem_code_id, offer_code, assigned_order_id, assigned_at)
+VALUES ($1, 'plus', $2, NOW())
+`, redeemCodeID, orderID)
+	require.NoError(t, err)
+
+	_, err = tx.ExecContext(ctx, `
+UPDATE native_checkout_offers
+SET redeem_group_ids = '[40,41,48]'::jsonb
+WHERE code = 'plus'
+`)
+	require.NoError(t, err, "assigned historical inventory must not freeze future Plus terms")
+
+	var plusGroups string
+	require.NoError(t, tx.QueryRowContext(ctx, `SELECT redeem_group_ids::text FROM native_checkout_offers WHERE code = 'plus'`).Scan(&plusGroups))
+	require.JSONEq(t, `[40,41,48]`, plusGroups)
+
+	var historicalGroups string
+	require.NoError(t, tx.QueryRowContext(ctx, `SELECT group_ids::text FROM redeem_codes WHERE id = $1`, redeemCodeID).Scan(&historicalGroups))
+	require.JSONEq(t, `[40,41]`, historicalGroups, "assigned historical card semantics must remain unchanged")
+}
+
 func nonEmptyEmbeddedMigrationCount(t *testing.T) int {
 	t.Helper()
 
